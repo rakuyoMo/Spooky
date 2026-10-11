@@ -1,0 +1,4 @@
+[tools]
+python = "3.11"
+node = "22"
+java = "temurin-21"

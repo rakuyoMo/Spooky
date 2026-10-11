@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# SwiftPM
+.build/
+.swiftpm/
+
+# Xcode
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
+# mise 本机配置
+mise.local.toml
