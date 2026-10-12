@@ -12,3 +12,6 @@ xcuserdata/
 
 # mise 本机配置
 mise.local.toml
+
+# Codex 本机覆盖指引
+AGENTS.override.md
