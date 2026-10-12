@@ -14,6 +14,12 @@ swift build
 swift test
 ```
 
+## Git 要求
+
+第一版要求本机和服务器上的 Git 均为 `2.41.0` 或更高版本。该版本要求由第一版使用的 `git fetch --porcelain` 确定；版本不足时，Spooky 会显示最低版本和更新方向，由用户负责更新 Git。
+
+本机仓库默认使用 `/usr/bin/git`；服务器仓库使用 SSH 主机别名对应的服务器 Git。
+
 ## 协议
 
 [GPL-3.0](LICENSE)
