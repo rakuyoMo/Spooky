@@ -1,0 +1,242 @@
+"app.name" = "Spooky";
+
+"menu.file" = "File";
+
+"menu.edit" = "Edit";
+
+"menu.view" = "View";
+
+"menu.window" = "Window";
+
+"menu.newWindow" = "New Window";
+
+"menu.openRecent" = "Open Recent";
+
+"menu.closeWindow" = "Close Window";
+
+"menu.showRepositories" = "Show Repositories";
+
+"menu.showWorkingCopy" = "Show Working Copy";
+
+"menu.showHistory" = "Show History";
+
+"menu.fullscreen" = "Enter Full Screen";
+
+"menu.minimize" = "Minimize";
+
+"menu.zoom" = "Zoom";
+
+"menu.bringAll" = "Bring All to Front";
+
+"menu.hide" = "Hide Spooky";
+
+"menu.hideOthers" = "Hide Others";
+
+"menu.showAll" = "Show All";
+
+"menu.quit" = "Quit Spooky";
+
+"menu.cut" = "Cut";
+
+"menu.copy" = "Copy";
+
+"menu.paste" = "Paste";
+
+"menu.selectAll" = "Select All";
+
+"action.openLocal" = "Open Local Repository…";
+
+"action.open" = "Open";
+
+"action.openNewWindow" = "Open in New Window";
+
+"action.closeRepository" = "Close Repository";
+
+"action.refresh" = "Refresh";
+
+"action.close" = "Close";
+
+"action.chooseAnother" = "Choose Another Folder…";
+
+"repositories.title" = "Repositories";
+
+"repositories.recent" = "Recent Repositories";
+
+"repositories.empty.title" = "Open a Git Repository";
+
+"repositories.empty.message" = "Choose a local working tree, or drop a repository folder here.";
+
+"repositories.unavailable" = "Unavailable — open to retry";
+
+"repositories.path" = "Location";
+
+"repositories.panel.message" = "Select an existing Git working tree.";
+
+"workspace.group" = "Workspace";
+
+"workspace.title" = "Working Copy";
+
+"history.title" = "History";
+
+"history.pending" = "History is not implemented in this milestone.";
+
+"loading.open" = "Opening repository…";
+
+"loading.status" = "Refreshing status…";
+
+"loading.check" = "Checking repository…";
+
+"branch.unborn" = "%@ (no commits)";
+
+"branch.detached" = "%@ (detached HEAD)";
+
+"branch.noHead" = "No HEAD branch";
+
+"branch.noTracking" = "No Tracking";
+
+"branch.ahead" = "%ld ahead";
+
+"branch.behind" = "%ld behind";
+
+"workspace.changed" = "Changed files: %ld";
+
+"status.column" = "Status";
+
+"status.filename" = "Filename";
+
+"status.modified" = "Modified";
+
+"status.typeChanged" = "Type Changed";
+
+"status.added" = "Added";
+
+"status.deleted" = "Deleted";
+
+"status.renamed" = "Renamed";
+
+"status.copied" = "Copied";
+
+"status.conflicted" = "Conflicted";
+
+"status.untracked" = "Untracked";
+
+"status.ignored" = "Ignored";
+
+"status.unchanged" = "Unchanged";
+
+"status.description" = "Index: %@; Working tree: %@";
+
+"detail.empty.title" = "No File Selected";
+
+"detail.empty.message" = "Select a status entry to see its path.";
+
+"detail.diff.title" = "Diff Not Implemented Yet";
+
+"detail.diff.message" = "This milestone displays file paths and status.";
+
+"detail.originalPath" = "Previous path: %@";
+
+"error.command" = "Git Command Failed";
+
+"error.launch" = "Git Could Not Start";
+
+"error.notRepository" = "Not a Git Repository";
+
+"error.notWorkingTree" = "Git Working Tree Required";
+
+"error.path" = "Repository Path Unavailable";
+
+"error.ownership" = "Git Rejected Repository Ownership";
+
+"error.cancelled" = "Operation Cancelled";
+
+"error.outputLimit" = "Git Output Is Too Large";
+
+"error.process" = "Git Process Communication Failed";
+
+"error.version" = "Git 2.41.0 or Later Required";
+
+"error.parse" = "Git Status Could Not Be Read";
+
+"error.openHelp" = "Choose an accessible Git working tree. Spooky requires /usr/bin/git 2.41.0 or later; update Xcode or Command Line Tools if needed. Original output is shown below.";
+
+"error.refreshHelp" = "Any previous result is kept when a refresh fails. Check the original output, then refresh to try again.";
+
+"error.details" = "Original Output";
+
+"error.noOutput" = "The command did not provide any output.";
+
+"error.outputLimitHelp" = "The command exceeded the 256 MiB standard output limit or the 1 MiB standard error limit. The oversized result was not loaded.";
+"action.addRemote" = "Add Server Repository…";
+"action.openTerminal" = "Open in Terminal";
+"action.revealFinder" = "Reveal in Finder";
+"action.copyPath" = "Copy Path";
+"action.reconnect" = "Reconnect";
+"action.cancel" = "Cancel";
+"action.continue" = "Continue";
+"remote.form.help" = "Use a host alias from your SSH configuration and an absolute path on that server.";
+"remote.host" = "Host alias:";
+"remote.path" = "Repository path:";
+"remote.checking" = "Checking connection…";
+"connection.connecting" = "Connecting";
+"connection.connected" = "Connected";
+"connection.reconnecting" = "Reconnecting";
+"connection.unavailable" = "Unavailable";
+"connection.cached" = "Showing the last successful snapshot. Writes are disabled until the connection recovers.";
+"connection.recovery" = "Interrupted operation checked; it was not retried. Branch: %@ · Changes: %ld · Index lock: %@ · Merge: %@ · Rebase: %@";
+"state.yes" = "Yes";
+"state.no" = "No";
+"branch.detachedShort" = "Detached HEAD";
+"settings.title" = "Settings…";
+"settings.general" = "General";
+"settings.themes" = "Themes";
+"settings.terminal" = "Terminal application:";
+"callback.editor" = "Edit Remote Text";
+"callback.credentials" = "Server Credential Request";
+"callback.saveKeychain" = "Save in this Mac’s Keychain";
+"callback.value" = "Credential";
+"error.indexLocked" = "The index is locked by another Git process. Wait for it to finish, then retry.";
+"error.terminal" = "Could Not Open Terminal";
+"error.terminalHelp" = "Check the selected terminal in Settings and its macOS Automation permission.";
+"error.exitCode" = "Exit status: %ld";
+"terminal.notInstalled" = "%@ is not installed.";
+"themes.font" = "Font: %@ · %.0f pt";
+"themes.followsSystem" = "Light appearance uses Default; dark appearance uses Default (Dark).";
+"themes.background" = "Background";
+"themes.added" = "Added";
+"themes.deleted" = "Deleted";
+"themes.preview.context" = "  Unchanged text";
+"themes.preview.added" = "+ Added text";
+"themes.preview.deleted" = "− Deleted text";
+"remoteError.invalidHost" = "Invalid SSH Host Alias";
+"remoteError.invalidHost.help" = "Enter one host alias from ~/.ssh/config, without a user name or port.";
+"remoteError.absolutePathRequired" = "Absolute Path Required";
+"remoteError.absolutePathRequired.help" = "Enter the full repository path on the server, starting with /.";
+"remoteError.unknownHostKey" = "Unknown Host Fingerprint";
+"remoteError.unknownHostKey.help" = "Verify the server fingerprint in a trusted terminal first, then reconnect. Spooky will not accept it automatically.";
+"remoteError.changedHostKey" = "Host Fingerprint Changed";
+"remoteError.changedHostKey.help" = "Confirm the fingerprint change with the server owner in a trusted terminal before reconnecting.";
+"remoteError.authentication" = "SSH Authentication Failed";
+"remoteError.authentication.help" = "Check this Mac’s SSH key, Keychain or SSH agent. The private-key passphrase is never sent to the server.";
+"remoteError.unavailable" = "Server Connection Unavailable";
+"remoteError.unavailable.help" = "Check the host alias and connection, then retry. The last successful snapshot remains available.";
+"remoteError.gitUnavailable" = "Git Is Unavailable on the Server";
+"remoteError.gitUnavailable.help" = "Install Git 2.41.0 or later on the server and make it available in the non-interactive SSH environment.";
+"remoteError.gitVersion" = "Server Git Version Is Unsupported";
+"remoteError.gitVersion.help" = "Update Git on the server to 2.41.0 or later. Spooky uses the same minimum version locally and remotely.";
+"remoteError.pathUnavailable" = "Server Directory Not Found";
+"remoteError.pathUnavailable.help" = "Check that the absolute path exists on the selected server.";
+"remoteError.pathPermission" = "Server Directory Access Denied";
+"remoteError.pathPermission.help" = "The SSH user needs read and search permission for this directory.";
+"remoteError.notWorkingTree" = "Server Path Is Not a Git Working Tree";
+"remoteError.notWorkingTree.help" = "Select an existing Git working tree on the server. Check the original Git output for ownership restrictions.";
+"remoteError.statusFormat" = "Could Not Read Server Status";
+"remoteError.statusFormat.help" = "Check the Git status error below. Git must support porcelain v2 with NUL-separated output.";
+"remoteError.deployment" = "Could Not Set Up the Server Session";
+"remoteError.deployment.help" = "Check SSH Unix socket forwarding, /usr/bin/perl and write access to ~/.spooky/bin and the session temporary directory.";
+"remoteError.protocolFailure" = "Server Operation Result Is Incomplete";
+"remoteError.protocolFailure.help" = "Reconnect and inspect the repository before repeating any write operation.";
+"remoteError.cancellationUnconfirmed" = "Remote Cancellation Not Confirmed";
+"remoteError.cancellationUnconfirmed.help" = "The local channel was closed, but the server process could not be confirmed stopped. Reconnect and inspect the repository; do not repeat the write automatically.";
+"remoteError.interruptedWrite" = "Interrupted Write Needs Verification";
+"remoteError.interruptedWrite.help" = "Reconnect to check the branch, working tree, index lock and merge or rebase state before writing again.";

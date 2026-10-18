@@ -115,4 +115,25 @@ struct WorkingCopyStatusTests {
             try WorkingCopyStatus(porcelainV2: output("2 R. N... 100644 100644 100644 aaaa aaaa R100 new.txt"))
         }
     }
+
+    /// 空路径、截断记录与损坏的分支计数都必须让整份快照失败。
+    @Test("损坏的分隔符、路径和分支头", arguments: [
+        "? missing terminator",
+        "?\0",
+        "? \0",
+        "?file\0",
+        "? file\0\0",
+        "# branch.ab +x -1\0",
+        "# branch.ab +1\0",
+        "# branch.ab 1 -2\0",
+        "# branch.head\0",
+        "# branch.oid invalid\0",
+        "2 R. N... 100644 100644 100644 aaaa aaaa R100 new.txt\0\0",
+        "1 M. N... 100644 100644 100644 aaaa bbbb \0",
+    ])
+    func truncatedAndMalformed(_ record: String) {
+        #expect(throws: StatusParseError.self) {
+            try WorkingCopyStatus(porcelainV2: Data(record.utf8))
+        }
+    }
 }

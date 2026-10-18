@@ -41,7 +41,7 @@ public enum FileChange: Character, Sendable {
 /// 一个有变化的文件
 public struct StatusEntry: Sendable, Equatable {
     /// 条目的类别
-    public enum Kind: Sendable {
+    public enum Kind: Sendable, Hashable {
         /// 已跟踪的文件，包括重命名与复制
         case tracked
 
@@ -100,22 +100,28 @@ extension WorkingCopyStatus {
         var branch = BranchStatus()
         var entries: [StatusEntry] = []
 
+        // 截断的记录不能作为有效快照展示，否则刷新失败会被误认为文件已消失。
+        guard output.isEmpty || output.last == 0 else {
+            throw StatusParseError(record: String(decoding: output, as: UTF8.self))
+        }
+
         // -z 模式下每条记录以 NUL 结尾；重命名、复制记录的后面紧跟一条 “原路径” 记录
-        var records = output
-            .split(separator: 0)
+        let terminatedRecords = output.isEmpty ? [] : output
+            .dropLast()
+            .split(separator: 0, omittingEmptySubsequences: false)
             .map { String(decoding: $0, as: UTF8.self) }
-            .makeIterator()
+        var records = terminatedRecords.makeIterator()
 
         while let record = records.next() {
             switch record.first {
             case "#":
-                branch.apply(header: record)
+                try branch.apply(header: record)
 
             case "1":
                 entries.append(try StatusEntry(ordinary: record))
 
             case "2":
-                guard let originalPath = records.next() else {
+                guard let originalPath = records.next(), !originalPath.isEmpty else {
                     throw StatusParseError(record: record)
                 }
 
@@ -125,10 +131,10 @@ extension WorkingCopyStatus {
                 entries.append(try StatusEntry(unmerged: record))
 
             case "?":
-                entries.append(StatusEntry(kind: .untracked, path: String(record.dropFirst(2))))
+                entries.append(try StatusEntry(kind: .untracked, record: record))
 
             case "!":
-                entries.append(StatusEntry(kind: .ignored, path: String(record.dropFirst(2))))
+                entries.append(try StatusEntry(kind: .ignored, record: record))
 
             default:
                 throw StatusParseError(record: record)
@@ -141,17 +147,30 @@ extension WorkingCopyStatus {
 
 extension BranchStatus {
     /// 吸收一条 `# branch.*` 头信息；不认识的头（如 `# stash`）直接忽略
-    fileprivate mutating func apply(header record: String) {
+    fileprivate mutating func apply(header record: String) throws {
         let parts = record.split(separator: " ", maxSplits: 2)
 
-        guard parts.count == 3 else {
+        guard parts.count >= 2 else {
+            throw StatusParseError(record: record)
+        }
+
+        // porcelain 允许增加新的头字段；只严格验证当前使用的分支字段。
+        guard ["branch.oid", "branch.head", "branch.upstream", "branch.ab"].contains(parts[1]) else {
             return
+        }
+
+        guard parts.count == 3 else {
+            throw StatusParseError(record: record)
         }
 
         let value = String(parts[2])
 
         switch parts[1] {
         case "branch.oid":
+            guard value == "(initial)" || value.allSatisfy(\.isHexDigit) else {
+                throw StatusParseError(record: record)
+            }
+
             oid = value == "(initial)" ? nil : value
 
         case "branch.head":
@@ -164,8 +183,20 @@ extension BranchStatus {
 
             // 形如 `+3 -1`：领先 3 个、落后 1 个
             let counts = value.split(separator: " ")
-            ahead = counts.first.flatMap { Int($0.dropFirst()) } ?? 0
-            behind = counts.last.flatMap { Int($0.dropFirst()) } ?? 0
+
+            guard counts.count == 2,
+                  counts[0].first == "+",
+                  counts[1].first == "-",
+                  let ahead = Int(counts[0].dropFirst()),
+                  let behind = Int(counts[1].dropFirst()),
+                  ahead >= 0,
+                  behind >= 0
+            else {
+                throw StatusParseError(record: record)
+            }
+
+            self.ahead = ahead
+            self.behind = behind
 
         default:
             break
@@ -175,10 +206,14 @@ extension BranchStatus {
 
 extension StatusEntry {
     /// 只有类别与路径的条目：未跟踪或被忽略的文件
-    fileprivate init(kind: Kind, path: String) {
+    fileprivate init(kind: Kind, record: String) throws {
+        guard record.count > 2, record.dropFirst().first == " " else {
+            throw StatusParseError(record: record)
+        }
+
         self.init(
             kind: kind,
-            path: path,
+            path: String(record.dropFirst(2)),
             originalPath: nil,
             staged: nil,
             unstaged: nil
@@ -233,7 +268,7 @@ extension StatusEntry {
             .split(separator: " ", maxSplits: count - 1, omittingEmptySubsequences: false)
             .map(String.init)
 
-        guard fields.count == count else {
+        guard fields.count == count, fields.allSatisfy({ !$0.isEmpty }) else {
             throw StatusParseError(record: record)
         }
 
