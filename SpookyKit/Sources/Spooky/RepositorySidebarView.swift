@@ -40,6 +40,9 @@ struct RepositorySidebarView: View {
                 }
                 .tag(RepositoryView.workingCopy)
                 .contextMenu {
+                    Button(AppLocalization.text("working.discardAll")) { session.discard(session.status?.entries ?? []) }
+                        .disabled(!session.canWrite || session.status?.entries.isEmpty != false)
+                    Divider()
                     Button(AppLocalization.text("action.openTerminal"), action: openTerminal)
                     Button(AppLocalization.text("action.revealFinder"), action: revealFinder)
                         .disabled(session.repository?.localURL == nil)

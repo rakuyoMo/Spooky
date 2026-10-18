@@ -60,7 +60,7 @@ struct LocalizationTests {
         let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "swift" }
         let pattern = try NSRegularExpression(
-            pattern: #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal)\.[A-Za-z.]+)""#
+            pattern: #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working)\.[A-Za-z.]+)""#
         )
         let english = try strings("en")
 
@@ -69,6 +69,7 @@ struct LocalizationTests {
 
             for match in pattern.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
                 let key = (content as NSString).substring(with: match.range(at: 1))
+                if key.hasSuffix(".") { continue }
                 #expect(english[key] != nil, "缺少界面资源键：\(key)")
             }
         }
@@ -91,6 +92,16 @@ struct LocalizationTests {
 
             for key in ["background", "added", "deleted"] {
                 #expect(values["themes." + key] != nil)
+            }
+
+            for operation in ["merge", "squash", "rebase", "cherryPick", "revert"] {
+                #expect(values["working.operation." + operation] != nil)
+            }
+
+            for action in ["stage", "unstage", "discard"] {
+                for selection in ["Chunk", "Line", "Lines"] {
+                    #expect(values["working." + action + selection] != nil)
+                }
             }
         }
     }

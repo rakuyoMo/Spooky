@@ -12,7 +12,7 @@ struct RepositorySessionTests {
     func refreshAndRecovery() async throws {
         let source = ControlledStatusSource()
         var calls = source.calls.makeAsyncIterator()
-        let session = RepositorySession { _ in try await source.read() }
+        let session = RepositorySession(loadStatus: { _ in try await source.read() })
         session.display(RepositoryLocation.local(path: "/temporary/repository"))
 
         let first = try snapshot("first.txt")
@@ -60,7 +60,7 @@ struct RepositorySessionTests {
     func obsoleteResponses() async throws {
         let source = ControlledStatusSource()
         var calls = source.calls.makeAsyncIterator()
-        let session = RepositorySession { _ in try await source.read() }
+        let session = RepositorySession(loadStatus: { _ in try await source.read() })
         session.display(RepositoryLocation.local(path: "/temporary/first"))
         session.refresh()
         _ = await calls.next()
@@ -101,7 +101,7 @@ struct RepositorySessionTests {
         )
 
         let repository = RepositoryLocation.local(path: "/temporary/reused")
-        let session = RepositorySession { _ in try snapshot("file") }
+        let session = RepositorySession(loadStatus: { _ in try snapshot("file") })
         session.display(repository)
         session.refresh()
         await session.refreshTask?.value
@@ -112,6 +112,79 @@ struct RepositorySessionTests {
         #expect(session.activeView == .history)
         #expect(session.selectedID?.path == "file")
         #expect(session.status?.entries.count == 1)
+    }
+
+    /// 暂存失败回滚勾选框，提交失败保留草稿，重试成功才清空输入。
+    @Test("写入失败回滚、提交草稿与本机文件监听")
+    func writingAndDrafts() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-session-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let location = RepositoryLocation.local(path: directory.path)
+        let runner = GitRunner(location: location, environment: .inherit.updating([
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+            "GIT_CONFIG_SYSTEM": "/dev/null",
+            "GIT_CONFIG_NOSYSTEM": "1",
+        ]))
+        _ = try await runner.run(["-c", "init.templateDir=", "init", "-q", "-b", "main"])
+        _ = try await runner.run(["config", "--local", "user.name", "Spooky Test"])
+        _ = try await runner.run(["config", "--local", "user.email", "spooky@example.invalid"])
+        _ = try await runner.run(["config", "--local", "commit.gpgSign", "false"])
+        let session = RepositorySession(makeRunner: { _ in runner })
+        defer { session.close() }
+        session.display(location)
+        session.refresh()
+        await session.refreshTask?.value
+
+        // 不调用手动刷新，新增文件必须由真实 FSEvents 进入列表。
+        try Data("new\n".utf8).write(to: directory.appending(path: "file"))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+
+        while session.status?.entries.isEmpty != false && .now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+
+        let entry = try #require(session.status?.entries.first)
+        let row = StatusRowID(path: entry.path, kind: entry.kind)
+        session.selectedID = row
+        session.selectedIDs = [row]
+        let lock = directory.appending(path: ".git/index.lock")
+        try Data().write(to: lock)
+        session.stage([entry], staged: true)
+        #expect(session.stagingOverrides[row] == true)
+        #expect(session.isWriting)
+        await session.writeTask?.value
+        await session.refreshTask?.value
+        #expect(session.stagingOverrides.isEmpty)
+        #expect(session.status?.entries.first?.kind == .untracked)
+        try FileManager.default.removeItem(at: lock)
+        session.stage([entry], staged: true)
+        await session.writeTask?.value
+        await session.refreshTask?.value
+        #expect(session.status?.entries.first?.hasStagedChanges == true)
+        #expect(session.selectedID?.path == entry.path)
+        #expect(session.selectedID?.kind == .tracked)
+
+        let hooks = directory.appending(path: ".git/hooks")
+        try FileManager.default.createDirectory(at: hooks, withIntermediateDirectories: false)
+        let hook = hooks.appending(path: "pre-commit")
+        try Data("#!/bin/sh\nprintf 'hook rejected\\n' >&2\nexit 1\n".utf8).write(to: hook)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: hook.path)
+        session.commitSubject = "标题"
+        session.commitBody = "正文"
+        session.commit()
+        await session.writeTask?.value
+        await session.refreshTask?.value
+        #expect(session.commitSubject == "标题")
+        #expect(session.commitBody == "正文")
+        #expect(try await runner.status().branch.oid == nil)
+        try FileManager.default.removeItem(at: hook)
+        session.commit()
+        await session.writeTask?.value
+        await session.refreshTask?.value
+        #expect(session.commitSubject.isEmpty && session.commitBody.isEmpty)
+        #expect(session.status?.entries.isEmpty == true)
+        #expect(session.status?.branch.oid != nil)
     }
 }
 

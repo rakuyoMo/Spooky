@@ -58,6 +58,22 @@ struct AppFailure: Identifiable {
         var recoveryKey: String?
 
         switch error {
+        case let working as WorkingCopyError:
+            switch working {
+            case .staleSnapshot: key = "working.error.stale"
+            case .malformedDiff: key = "error.parse"
+            case .invalidSelection: key = "working.error.selection"
+            case .unsupportedFile: key = "working.error.file"
+            }
+
+        case let file as RepositoryFileError:
+            switch file {
+            case .unsupportedPath: key = "working.error.path"
+            case .tooLarge:
+                key = "error.outputLimit"
+                exceededOutputLimit = true
+            }
+
         case let remote as RemoteConnectionError:
             key = "remoteError." + remote.kind.rawValue
             recoveryKey = key + ".help"

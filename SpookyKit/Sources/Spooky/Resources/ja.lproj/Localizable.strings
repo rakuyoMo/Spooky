@@ -130,9 +130,7 @@
 
 "detail.empty.message" = "状態の一覧から項目を選ぶとパスが表示されます。";
 
-"detail.diff.title" = "差分は未実装です";
 
-"detail.diff.message" = "このマイルストーンではファイルのパスと状態を表示します。";
 
 "detail.originalPath" = "変更前のパス：%@";
 
@@ -240,3 +238,69 @@
 "remoteError.cancellationUnconfirmed.help" = "ローカル接続は閉じましたが、サーバープロセスの終了を確認できません。再接続して確認してください。書き込みは自動再実行しません。";
 "remoteError.interruptedWrite" = "中断した書き込みの確認が必要です";
 "remoteError.interruptedWrite.help" = "再接続してブランチ、作業ツリー、ロック、マージとリベースの状態を確認してください。";
+
+"working.stage" = "ステージ";
+"working.unstage" = "ステージ解除";
+"working.stageAll" = "すべてステージ";
+"working.unstageAll" = "すべてステージ解除";
+"working.commit" = "コミット";
+"working.amend" = "直前のコミットを修正";
+"working.amend.confirm" = "直前のコミットを書き換えます。続行しますか？";
+"working.subject" = "コミットの件名";
+"working.body" = "詳細な説明";
+"working.identityLoading" = "コミッターを読み込み中…";
+"working.staging" = "ステージ状態：%@";
+"working.writing" = "作業コピーを更新中…";
+"working.list" = "リスト表示";
+"working.tree" = "ツリー表示";
+"working.viewMode" = "作業コピーの表示";
+"working.staged" = "ステージ済み";
+"working.unstaged" = "未ステージ";
+"working.diffSide" = "表示する変更";
+"working.multiple" = "複数のファイルを選択中";
+"working.largeDiff" = "この Diff は %d kB です。内容を読み込みますか？";
+"working.showDiff" = "Diff を表示";
+"working.loadingDiff" = "Diff を読み込み中…";
+"working.noDiff" = "テキストの変更はありません";
+"working.binary" = "バイナリファイルが変更されています。テキストプレビューは利用できません。";
+"working.diffSummary" = "%d 個のブロック、%d 行追加、%d 行削除";
+"working.noNewline" = "ファイル末尾に改行なし";
+"working.selectLine" = "%d 行目の変更を選択";
+"working.selected" = "選択済み";
+"working.stageChunk" = "ブロックをステージ";
+"working.stageLine" = "行をステージ";
+"working.stageLines" = "選択行をステージ";
+"working.unstageChunk" = "ブロックをステージ解除";
+"working.unstageLine" = "行をステージ解除";
+"working.unstageLines" = "選択行をステージ解除";
+"working.discardChunk" = "ブロックを破棄";
+"working.discardLine" = "行を破棄";
+"working.discardLines" = "選択行を破棄";
+"working.discard" = "変更を破棄";
+"working.discardAll" = "すべての変更を破棄…";
+"working.discard.message" = "%d ファイルの変更を永久に破棄します。対象：%@。ステージ済みの変更と未追跡ファイルも対象です。元に戻せません。";
+"working.discard.remote" = "サーバー上の %d ファイルを永久に削除または上書きします。対象：%@。ステージ済みの変更も破棄され、元に戻せません。";
+"working.discard.lines" = "%@ の選択行の変更を永久に破棄します。元に戻せません。";
+"working.discard.remoteLines" = "サーバー %@ 上の選択内容を永久に上書きします。元に戻せません。";
+"working.ours" = "ours 側で解決";
+"working.theirs" = "theirs 側で解決";
+"working.resolved" = "解決済みにする";
+"working.copyRelative" = "相対ファイルパスをコピー";
+"working.operation.merge" = "マージ進行中";
+"working.operation.squash" = "スカッシュマージのコミット待ち";
+"working.operation.rebase" = "リベース進行中";
+"working.operation.cherryPick" = "チェリーピック進行中";
+"working.operation.revert" = "リバート進行中";
+"working.conflicts" = "未解決の競合：%d 件";
+"working.onlyConflicts" = "競合のみ表示";
+"working.rebaseSides" = "リベース中の ours は上流、theirs は再適用中のコミットです。";
+"working.abort" = "中止";
+"working.continue" = "続行";
+"working.skip" = "スキップ";
+"working.diffThreshold" = "Diff 警告のしきい値（kB）：";
+"working.error.stale" = "ファイルが変更されました。Diff を更新して変更を選び直してください。";
+"working.error.selection" = "適用できるテキスト変更が選択されていません。";
+"working.error.file" = "この操作には通常のファイルが必要です。";
+"working.error.path" = "このパスは SFTP バッチコマンドで表現できません。";
+"working.emptyMerge" = "空のマージコミットを作成";
+"working.emptyMerge.message" = "このマージにはステージ済みの変更がありません。マージコミットを作成するか、マージを中止してください。";

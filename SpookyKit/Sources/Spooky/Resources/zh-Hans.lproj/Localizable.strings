@@ -130,9 +130,7 @@
 
 "detail.empty.message" = "选择一条状态记录以查看路径。";
 
-"detail.diff.title" = "Diff 尚未实现";
 
-"detail.diff.message" = "本里程碑显示文件路径与状态。";
 
 "detail.originalPath" = "原路径：%@";
 
@@ -240,3 +238,69 @@
 "remoteError.cancellationUnconfirmed.help" = "本机通道已关闭，但尚未确认服务器进程已退出。请重新连接并核对仓库，不会自动重复写入。";
 "remoteError.interruptedWrite" = "中断的写操作需要核对";
 "remoteError.interruptedWrite.help" = "请重新连接，核对分支、工作区、暂存区锁及合并或变基状态后再写入。";
+
+"working.stage" = "暂存";
+"working.unstage" = "取消暂存";
+"working.stageAll" = "全部暂存";
+"working.unstageAll" = "全部取消暂存";
+"working.commit" = "提交";
+"working.amend" = "修补最近提交";
+"working.amend.confirm" = "这会改写最近一次提交，是否继续？";
+"working.subject" = "提交标题";
+"working.body" = "详细说明";
+"working.identityLoading" = "正在读取提交人…";
+"working.staging" = "暂存状态：%@";
+"working.writing" = "正在更新工作区…";
+"working.list" = "平铺显示";
+"working.tree" = "树形显示";
+"working.viewMode" = "工作区显示模式";
+"working.staged" = "已暂存";
+"working.unstaged" = "未暂存";
+"working.diffSide" = "显示的改动";
+"working.multiple" = "已选择多个文件";
+"working.largeDiff" = "此 Diff 为 %d kB，是否加载内容？";
+"working.showDiff" = "显示 Diff";
+"working.loadingDiff" = "正在加载 Diff…";
+"working.noDiff" = "没有文本改动";
+"working.binary" = "二进制文件有变化，无法显示文本预览。";
+"working.diffSummary" = "%d 个块，新增 %d 行，删除 %d 行";
+"working.noNewline" = "文件末尾没有换行";
+"working.selectLine" = "选择第 %d 行改动";
+"working.selected" = "已选择";
+"working.stageChunk" = "暂存块";
+"working.stageLine" = "暂存行";
+"working.stageLines" = "暂存所选行";
+"working.unstageChunk" = "取消暂存块";
+"working.unstageLine" = "取消暂存行";
+"working.unstageLines" = "取消暂存所选行";
+"working.discardChunk" = "丢弃块";
+"working.discardLine" = "丢弃行";
+"working.discardLines" = "丢弃所选行";
+"working.discard" = "丢弃改动";
+"working.discardAll" = "丢弃全部改动…";
+"working.discard.message" = "将永久丢弃 %d 个文件的改动（含暂存改动和未跟踪文件）。仓库：%@。此操作无法撤销。";
+"working.discard.remote" = "将在服务器上永久删除或覆盖 %d 个文件（含暂存改动）。仓库：%@。此操作无法撤销。";
+"working.discard.lines" = "将永久丢弃 %@ 中所选行的改动，无法撤销。";
+"working.discard.remoteLines" = "将在服务器 %@ 上永久覆盖所选内容，无法撤销。";
+"working.ours" = "采用 ours 版本";
+"working.theirs" = "采用 theirs 版本";
+"working.resolved" = "标记已解决";
+"working.copyRelative" = "复制相对文件路径";
+"working.operation.merge" = "合并进行中";
+"working.operation.squash" = "压缩合并等待提交";
+"working.operation.rebase" = "变基进行中";
+"working.operation.cherryPick" = "摘取进行中";
+"working.operation.revert" = "反转进行中";
+"working.conflicts" = "%d 个未解决冲突";
+"working.onlyConflicts" = "仅显示冲突";
+"working.rebaseSides" = "变基时，ours 为上游，theirs 为正在重放的提交。";
+"working.abort" = "中止";
+"working.continue" = "继续";
+"working.skip" = "跳过";
+"working.diffThreshold" = "Diff 警告阈值（kB）：";
+"working.error.stale" = "文件已发生变化，请刷新 Diff 后重新选择改动。";
+"working.error.selection" = "未选择可应用的文本改动。";
+"working.error.file" = "此操作需要普通文件。";
+"working.error.path" = "此路径无法通过 SFTP 批处理表示。";
+"working.emptyMerge" = "创建空合并提交";
+"working.emptyMerge.message" = "本次合并没有暂存改动。可创建合并提交，或中止合并。";
