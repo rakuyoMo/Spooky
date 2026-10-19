@@ -248,6 +248,7 @@ LICENSE                       GPL-3.0 许可证全文
 - 简述用中文写成一句 “改动结果”
 - 标题不超过 50 个字符，中文一字算一，可用 `printf '%s' '<标题>' | wc -m` 核对
 - 不含任何 AI 署名：`Co-Authored-By`、`Generated with`、🤖 之类的行与尾注一律不写
+- 例外：merge commit 保留默认生成的提交信息，如 `Merge pull request #12 from …`，不按本节格式改写
 
 ## PR 标题与描述
 
@@ -270,6 +271,10 @@ PR 文案与 commit message 一样是产物，受 “产物可追溯性” 一�
 5. `## 注意`：平台限制、与需求仍有的差别、留下的 `#warning`
 
 口吻是作者向 reviewer 说明：自然的中文，不带 “我”，不刻板也不俏皮；事实与数字照实写，不含任何 AI 署名。
+
+## PR 合并方式
+
+- 合并 PR 一律使用 merge commit，不使用 squash 把整个 PR 压成一个普通提交
 
 ## 本文件的回写约定
 
