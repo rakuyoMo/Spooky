@@ -53,6 +53,12 @@ private struct GeneralSettingsView: View {
     /// 单次补丁的警告阈值，单位为 1000 字节。
     @AppStorage("diffWarningKilobytes") private var diffWarning = WorkingCopyOperations.defaultWarningKilobytes
 
+    /// 历史每页条数固定为四个档位。
+    @AppStorage("historyPageSize") private var historyPageSize = 100
+
+    /// 创建和发布分支时实时规范引用名。
+    @AppStorage("cleanRefNames") private var cleanRefNames = true
+
     /// General 表单的控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
@@ -87,6 +93,24 @@ private struct GeneralSettingsView: View {
                     .frame(width: 100, alignment: .leading)
                     .accessibilityLabel(AppLocalization.text("working.diffThreshold"))
                     .onChange(of: diffWarning) { diffWarning = max(0, min(diffWarning, 268_435)) }
+            }
+
+            GridRow {
+                Text(AppLocalization.text("history.pageSize"))
+                Picker("", selection: $historyPageSize) {
+                    ForEach([100, 200, 500, 1000], id: \.self) {
+                        Text(AppLocalization.text("history.commitCount", $0)).tag($0)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 278)
+                .accessibilityLabel(AppLocalization.text("history.pageSize"))
+            }
+
+            GridRow {
+                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                Toggle(AppLocalization.text("branch.cleanNames"), isOn: $cleanRefNames)
+                    .frame(width: 278, alignment: .leading)
             }
         }
         .padding(40)

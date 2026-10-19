@@ -18,20 +18,34 @@ final class RemoteOutputFilter: Sendable {
         self.onOutput = onOutput
     }
 
-    /// stderr 保留最多 128 字节尾部，完整帧不会泄露到日志。
+    /// 只延迟可能属于完成帧的前缀，短进度也能在命令运行时立即显示。
     func receive(_ event: GitOutputEvent) {
         switch event {
         case .standardOutput:
             onOutput(event)
 
         case .standardError(let data):
-            pending.withLock {
-                $0.tail.append(data)
+            pending.withLock { state in
+                state.tail.append(data)
 
-                if $0.tail.count > 128 {
-                    let chunk = Data($0.tail.prefix($0.tail.count - 128))
-                    $0.tail.removeFirst(chunk.count)
-                    $0.emitted += chunk.count
+                let marker = Data("\u{1e}SPOOKY:\(operation):".utf8)
+                let retained: Int
+
+                // 完整标记出现后等待状态字段；其余时候只保留跨块的最长标记前缀。
+                if let range = state.tail.range(of: marker, options: .backwards),
+                    state.tail.distance(from: range.lowerBound, to: state.tail.endIndex) <= 128
+                {
+                    retained = state.tail.distance(from: range.lowerBound, to: state.tail.endIndex)
+                } else {
+                    retained =
+                        stride(from: min(marker.count, state.tail.count), through: 1, by: -1)
+                        .first { state.tail.suffix($0) == marker.prefix($0) } ?? 0
+                }
+
+                if state.tail.count > retained {
+                    let chunk = Data(state.tail.prefix(state.tail.count - retained))
+                    state.tail.removeFirst(chunk.count)
+                    state.emitted += chunk.count
                     onOutput(.standardError(chunk))
                 }
             }

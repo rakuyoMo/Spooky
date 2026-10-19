@@ -6,6 +6,29 @@ import Testing
 
 /// 默认主题、命名色和终端参数的产品约定。
 struct ThemeAndTerminalTests {
+    /// 命名色缺失会在窗口绘制时崩溃，检查实际 Swift 界面引用。
+    @Test("界面命名色均存在")
+    func referencedColors() throws {
+        let sources = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "Sources/Spooky")
+        let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "swift" }
+        let expression = try NSRegularExpression(pattern: #"AppPalette\.color\("([^"]+)"\)"#)
+
+        for file in files {
+            let text = try String(contentsOf: file, encoding: .utf8)
+            for match in expression.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+                let name = (text as NSString).substring(with: match.range(at: 1))
+                #expect(AppPalette.colors[name] != nil, "缺少界面颜色：\(name)")
+            }
+        }
+        for prefix in ["blue", "gray", "yellow", "selected"] {
+            #expect(AppPalette.colors[prefix + "_badge_text_color"] != nil)
+            #expect(AppPalette.colors[prefix + "_badge_background_color"] != nil)
+        }
+    }
+
     /// 主题字体和 Diff 颜色从实际交付的资源读取。
     @Test("两套默认主题的字体和透明度")
     func builtinThemes() throws {

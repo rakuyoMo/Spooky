@@ -135,6 +135,7 @@ private struct DiffSidePicker: NSViewRepresentable {
     }
 
     /// 分段选择只更新模型，由详情发起异步读取。
+    @MainActor
     final class Coordinator: NSObject {
         /// 最新绑定。
         var parent: DiffSidePicker
@@ -220,7 +221,7 @@ private struct DiffContentView: View {
 }
 
 /// 一块文本独立保存行号选区，单击、拖动与 ⇧ 范围选择共用同一规则。
-private struct DiffHunkView: View {
+struct DiffHunkView: View {
     /// 带原始字节的块。
     let hunk: DiffHunk
 
@@ -232,6 +233,9 @@ private struct DiffHunkView: View {
 
     /// 写入或重载期间不可操作。
     let enabled: Bool
+
+    /// 历史复用相同主题和行布局，只读补丁不出现工作区写按钮。
+    var readOnly = false
 
     /// 把选区交给会话，确认和命令均在视图外执行。
     let apply: (Set<Int>, Bool) -> Void
@@ -291,10 +295,12 @@ private struct DiffHunkView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Spacer(minLength: 4)
-                if !staged {
-                    Button(actionTitle("discard")) { apply(selected, true) }
+                if !readOnly {
+                    if !staged {
+                        Button(actionTitle("discard")) { apply(selected, true) }
+                    }
+                    Button(actionTitle(staged ? "unstage" : "stage")) { apply(selected, false) }
                 }
-                Button(actionTitle(staged ? "unstage" : "stage")) { apply(selected, false) }
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
@@ -335,10 +341,11 @@ private struct DiffHunkView: View {
             .onEnded { _ in dragSelecting = nil })
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(AppLocalization.text("working.selectLine", line.oldNumber ?? line.newNumber ?? 0))
-        .accessibilityAddTraits(line.isChange ? .isButton : [])
+        .accessibilityAddTraits(line.isChange && !readOnly ? .isButton : [])
         .accessibilityValue(selected.contains(line.id) ? AppLocalization.text("working.selected") : "")
         .accessibilityAction { select(line.id, range: false) }
-        .focusable(line.isChange)
+        .focusable(line.isChange && !readOnly)
+        .allowsHitTesting(!readOnly)
         .onKeyPress(.space) { select(line.id, range: false); return .handled }
     }
 

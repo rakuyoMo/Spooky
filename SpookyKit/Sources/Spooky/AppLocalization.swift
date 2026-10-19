@@ -58,6 +58,16 @@ struct AppFailure: Identifiable {
         var recoveryKey: String?
 
         switch error {
+        case is RepositoryReadError:
+            key = "error.parse"
+
+        case let sync as RepositorySyncError:
+            switch sync {
+            case .dirtyWorkingCopy: key = "sync.error.dirty"
+            case .requiresBranch: key = "sync.error.branch"
+            case .missingRemote: key = "sync.error.remote"
+            }
+
         case let working as WorkingCopyError:
             switch working {
             case .staleSnapshot: key = "working.error.stale"
@@ -90,6 +100,14 @@ struct AppFailure: Identifiable {
             diagnostic = git.diagnostic
 
             switch git.category {
+            case .pushRejected: key = "sync.error.rejected"
+            case .authenticationFailed: key = "sync.error.authentication"
+            case .remoteNotFound: key = "sync.error.remote"
+            case .connectionTimedOut: key = "sync.error.timeout"
+            case .connectionUnavailable: key = "sync.error.connection"
+            case .noUpstream: key = "sync.error.upstream"
+            case .branchNotMerged: key = "branch.error.unmerged"
+            case .localChanges: key = "sync.error.dirty"
             case .indexLocked: key = "error.indexLocked"
             case .launchFailed: key = "error.launch"
             case .notRepository: key = "error.notRepository"

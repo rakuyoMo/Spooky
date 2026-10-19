@@ -108,5 +108,95 @@
       "hex": "#3D4140",
       "alpha": 0.85
     }
+  },
+  "blue_badge_background_color": {
+    "light": {
+      "hex": "#007AFF",
+      "alpha": 0.9
+    },
+    "dark": {
+      "hex": "#0A84FF",
+      "alpha": 0.7
+    }
+  },
+  "blue_badge_text_color": {
+    "light": {
+      "hex": "#FFFFFF",
+      "alpha": 0.9
+    },
+    "dark": {
+      "hex": "#FFFFFF",
+      "alpha": 0.847
+    }
+  },
+  "general_secondary_background_color": {
+    "light": {
+      "hex": "#E6E6E6",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#46484B",
+      "alpha": 1.0
+    }
+  },
+  "gray_badge_background_color": {
+    "light": {
+      "hex": "#8E8E93",
+      "alpha": 0.7
+    },
+    "dark": {
+      "hex": "#98989D",
+      "alpha": 0.9
+    }
+  },
+  "gray_badge_text_color": {
+    "light": {
+      "hex": "#FFFFFF",
+      "alpha": 0.9
+    },
+    "dark": {
+      "hex": "#FFFFFF",
+      "alpha": 0.847
+    }
+  },
+  "selected_badge_background_color": {
+    "light": {
+      "hex": "#FFFFFF",
+      "alpha": 0.4
+    },
+    "dark": {
+      "hex": "#FFFFFF",
+      "alpha": 0.4
+    }
+  },
+  "selected_badge_text_color": {
+    "light": {
+      "hex": "#FFFFFF",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#FFFFFF",
+      "alpha": 1.0
+    }
+  },
+  "yellow_badge_background_color": {
+    "light": {
+      "hex": "#FFCC00",
+      "alpha": 0.85
+    },
+    "dark": {
+      "hex": "#FFD60A",
+      "alpha": 0.65
+    }
+  },
+  "yellow_badge_text_color": {
+    "light": {
+      "hex": "#000000",
+      "alpha": 0.847
+    },
+    "dark": {
+      "hex": "#FFFFFF",
+      "alpha": 0.847
+    }
   }
 }

@@ -60,7 +60,8 @@ struct LocalizationTests {
         let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "swift" }
         let pattern = try NSRegularExpression(
-            pattern: #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working)\.[A-Za-z.]+)""#
+            pattern:
+                #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog)\.[A-Za-z.]+)""#
         )
         let english = try strings("en")
 

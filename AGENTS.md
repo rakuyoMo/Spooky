@@ -7,7 +7,7 @@
 Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能经 SSH 直接操作另一台机器上的仓库。
 
 - `Spooky` 是可运行的桌面 App；`SpookyKit` 核心库负责在本机或远端执行 Git、读取工作区状态并解析输出
-- 当前 App 支持本机与服务器工作区、混合最近记录、连接体检、断线重连、Diff、文件 / 块 / 行操作、提交与冲突收尾、文件监听与轮询刷新、终端与默认主题设置；产品按 M1–M10 逐步完成 `1.0.0`
+- 当前 App 支持本机与服务器工作区、混合最近记录、连接体检、断线重连、Diff、文件 / 块 / 行操作、提交与冲突收尾、分页历史、分支、同步、合并预览、Activity、文件监听与轮询刷新、终端与默认主题设置；产品按 M1–M10 逐步完成 `1.0.0`
 - 远端仓库的工作区留在远端机器，客户端经系统 SSH、用 `~/.ssh/config` 中的主机别名访问
 - 纯开源的个人工具，只在 GitHub 分发
 - 许可证为 [GPL-3.0](LICENSE)
@@ -42,6 +42,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 | `swift test --package-path SpookyKit` | 运行核心库、会话状态与本地化测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteConnectionTests` | 显式运行 `spooky-test` 远端集成测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteWorkingCopyTests` | 显式运行 M3 的 SFTP 与远端提交测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteHistorySyncTests` | 显式运行 M4 的服务器历史、同步与取消测试 |
 | `swift build --package-path SpookyKit --product Spooky` | 编译可执行 App product |
 | `swift run --package-path SpookyKit Spooky` | 启动 App 的仓库管理窗口 |
 | `./scripts/build-app.sh` | 生成开发用 `SpookyKit/.build/Spooky.app` |
@@ -70,6 +71,11 @@ SpookyKit/                    核心库与 App 的 Swift Package
     RepositoryDiff.swift      按字节解析 Diff 与生成选区补丁
     WorkingCopyOperations.swift 工作区写操作、快照校验、身份与进行中状态
     RepositoryFiles.swift     本机文件访问与复用主连接的 SFTP 传输
+    RepositoryHistory.swift   NUL 历史分页、提交变更集与第一父 Diff
+    CommitGraph.swift         与界面解耦的增量提交图
+    RepositoryReferences.swift 引用快照、分支读写与双向计数
+    RepositorySync.swift      Fetch、Pull、Push、合并与预览
+    LocalGitAuthentication.swift 本机凭据回调与 SSH agent 接入
   Sources/Spooky/             App 入口、窗口协调、会话状态与各内容视图
     Info.plist                应用身份和支持语言
     Resources/                五语文案、系统权限说明、命名色与内置主题 JSON
@@ -79,6 +85,7 @@ scripts/build-app.sh          开发 App Bundle 生成脚本
 docs/testing/M1.md            M1 的 App 手动验收步骤
 docs/testing/M2.md            M2 的连接、终端与主题验收步骤
 docs/testing/M3.md            M3 的工作区、Diff、提交与冲突验收步骤
+docs/testing/M4.md            M4 的历史、分支、同步与活动验收步骤
 README.md                     项目说明、构建与测试命令
 LICENSE                       GPL-3.0 许可证全文
 ```
@@ -110,6 +117,7 @@ LICENSE                       GPL-3.0 许可证全文
 - 改动 App 时还须运行 `swift build --package-path SpookyKit --product Spooky`，按 [M1 验收步骤](docs/testing/M1.md) 实际启动、操作并截图；未执行的检查明确记录为未验证
 - M2 的服务器、终端与主题场景见 [M2 验收步骤](docs/testing/M2.md)；远端测试默认不跑，必须通过 `SPOOKY_REMOTE_TESTS=1` 显式开启
 - M3 的本机 / 服务器提交闭环、行选择、确认与冲突收尾见 [M3 验收步骤](docs/testing/M3.md)
+- M4 的分页历史、分支、同步、合并预览、活动日志与取消见 [M4 验收步骤](docs/testing/M4.md)
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
 - 本地化新增资源键时同步五种语言，并保持格式参数一致；错误标题和恢复说明本地化，Git 原文保持不变
 

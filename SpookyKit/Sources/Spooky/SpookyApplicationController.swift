@@ -14,6 +14,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 单例设置窗口。
     private var settingsWindow: SettingsWindowController?
 
+    /// 跨仓库共用的 Activity 窗口。
+    private var activityWindow: ActivityWindowController?
+
     /// 正在退出时先回收自己的 SSH 主连接。
     private var isTerminating = false
 
@@ -40,6 +43,11 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         UserDefaults.standard.register(defaults: [
             "workingCopyViewMode": 0,
             "diffWarningKilobytes": WorkingCopyOperations.defaultWarningKilobytes,
+            "historyShowGraph": true,
+            "historyPageSize": 100,
+            "historyAutoExpand": 0,
+            "cleanRefNames": true,
+            "checkoutCreatedBranch": true
         ])
         configureMenu()
         newWindow()
@@ -200,6 +208,13 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         if settingsWindow == nil { settingsWindow = SettingsWindowController() }
         settingsWindow?.showWindow(nil)
         settingsWindow?.window?.makeKeyAndOrderFront(nil)
+    }
+
+    /// Activity 保持单例，关闭仓库后仍能查看完成日志。
+    @objc func showActivity() {
+        if activityWindow == nil { activityWindow = ActivityWindowController() }
+        activityWindow?.showWindow(nil)
+        activityWindow?.window?.makeKeyAndOrderFront(nil)
     }
 
     /// 退出等待自己创建的进程和中继清理完成，不影响用户 SSH 会话。
@@ -367,6 +382,57 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         )
         addItem("menu.showWorkingCopy", action: #selector(RepositoryWindowController.showWorkingCopy), key: "1", to: view)
         addItem("menu.showHistory", action: #selector(RepositoryWindowController.showHistory), key: "2", to: view)
+        addItem(
+            "history.showHead",
+            action: #selector(RepositoryWindowController.showHeadBranch),
+            key: "0",
+            to: view
+        )
+        let history = addMenu("history.title", to: view)
+        addItem(
+            "history.showGraph",
+            action: #selector(RepositoryWindowController.toggleHistoryGraph),
+            key: "g",
+            modifiers: [.control, .command],
+            to: history
+        )
+        addItem(
+            "history.medium",
+            action: #selector(RepositoryWindowController.mediumHistoryRows),
+            to: history
+        )
+        addItem("history.small", action: #selector(RepositoryWindowController.smallHistoryRows), to: history)
+        let changes = addMenu("history.diffs", to: view)
+        addItem(
+            "history.expandAll",
+            action: #selector(RepositoryWindowController.expandChanges),
+            key: "\u{f703}",
+            modifiers: [.control, .command],
+            to: changes
+        )
+        addItem(
+            "history.collapseAll",
+            action: #selector(RepositoryWindowController.collapseChanges),
+            key: "\u{f702}",
+            modifiers: [.control, .command],
+            to: changes
+        )
+        changes.addItem(.separator())
+        for threshold in [0, 5, 10, 15, 20, 25, 50, Int.max] {
+            let title =
+                threshold == 0
+                ? AppLocalization.text("history.autoExpand.never")
+                : (threshold == Int.max
+                    ? AppLocalization.text("history.autoExpand.always")
+                    : AppLocalization.text("history.autoExpand.items", threshold))
+            let item = NSMenuItem(
+                title: title,
+                action: #selector(RepositoryWindowController.setAutoExpand(_:)),
+                keyEquivalent: ""
+            )
+            item.tag = threshold
+            changes.addItem(item)
+        }
         view.addItem(.separator())
         addItem(
             "working.list", action: #selector(RepositoryWindowController.viewAsList),
@@ -385,7 +451,54 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             to: view
         )
 
+        let repository = addMenu("menu.repository", to: menu)
+        addItem(
+            "sync.fetch",
+            action: #selector(RepositoryWindowController.fetch),
+            key: "f",
+            modifiers: [.shift, .command],
+            to: repository
+        )
+        addItem("sync.fetchAll", action: #selector(RepositoryWindowController.fetchAll), to: repository)
+        addItem(
+            "sync.pull",
+            action: #selector(RepositoryWindowController.pull),
+            key: "p",
+            modifiers: [.shift, .command],
+            to: repository
+        )
+        addItem(
+            "sync.push",
+            action: #selector(RepositoryWindowController.push),
+            key: "u",
+            modifiers: [.shift, .command],
+            to: repository
+        )
+        addItem("sync.publish", action: #selector(RepositoryWindowController.publishBranch), to: repository)
+        repository.addItem(.separator())
+        addItem(
+            "branch.create",
+            action: #selector(RepositoryWindowController.createBranch),
+            key: "b",
+            to: repository
+        )
+
         let working = addMenu("workspace.title", to: menu)
+        addItem(
+            "branch.checkout",
+            action: #selector(RepositoryWindowController.checkoutBranch),
+            key: "b",
+            modifiers: [.shift, .command],
+            to: working
+        )
+        addItem(
+            "sync.merge",
+            action: #selector(RepositoryWindowController.merge),
+            key: "m",
+            modifiers: [.shift, .command],
+            to: working
+        )
+        working.addItem(.separator())
         addItem(
             "working.commit", action: #selector(RepositoryWindowController.composeCommit),
             key: "c", modifiers: [.shift, .command], to: working
@@ -409,6 +522,14 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
         let window = addMenu("menu.window", to: menu)
         NSApp.windowsMenu = window
+        addItem(
+            "activity.title",
+            action: #selector(showActivity),
+            key: "0",
+            modifiers: [.control, .command],
+            target: self,
+            to: window
+        )
         addItem("menu.minimize", action: #selector(NSWindow.performMiniaturize(_:)), key: "m", to: window)
         addItem("menu.zoom", action: #selector(NSWindow.performZoom(_:)), to: window)
         addItem("menu.bringAll", action: #selector(NSApplication.arrangeInFront(_:)), to: window)

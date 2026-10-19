@@ -23,10 +23,18 @@ enum CommandExecutor {
 
             // 两条管道必须同时消费，否则较大的 stderr 会堵住仍在等待 stdout 的调用。
             // 即使没有输入也显式送入 EOF，Git 不会等待交互式终端输入。
+            var platform = PlatformOptions()
+            platform.createSession = true
+
+            // 取消只结束本次创建的进程组，SSH、askpass 和钩子不能遗留为后台写入。
+            platform.teardownSequence = [
+                .send(signal: .kill, toProcessGroup: true, allowedDurationToNextStep: .zero)
+            ]
             let result = try await Subprocess.run(
                 .path(FilePath(command.executable)),
                 arguments: Arguments(command.arguments),
                 environment: environment,
+                platformOptions: platform,
                 input: .data(input ?? Data()),
                 output: .sequence,
                 error: .sequence
