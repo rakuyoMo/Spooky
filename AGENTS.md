@@ -86,7 +86,8 @@ docs/testing/M1.md            M1 的 App 手动验收步骤
 docs/testing/M2.md            M2 的连接、终端与主题验收步骤
 docs/testing/M3.md            M3 的工作区、Diff、提交与冲突验收步骤
 docs/testing/M4.md            M4 的历史、分支、同步与活动验收步骤
-README.md                     项目说明、构建与测试命令
+README.md                     英文 README：介绍、功能、系统要求、构建、权限、工作原理、开发与贡献说明
+README-ZH.md                  README.md 的简体中文版，与它同步修改
 LICENSE                       GPL-3.0 许可证全文
 ```
 
@@ -120,6 +121,10 @@ LICENSE                       GPL-3.0 许可证全文
 - M4 的分页历史、分支、同步、合并预览、活动日志与取消见 [M4 验收步骤](docs/testing/M4.md)
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
 - 本地化新增资源键时同步五种语言，并保持格式参数一致；错误标题和恢复说明本地化，Git 原文保持不变
+
+### README
+
+- README 不写使用方法：快速上手、操作步骤和快捷键说明都不放进 README，使用方法由项目的专门网站介绍
 
 ## 协作约定
 
