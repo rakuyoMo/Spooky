@@ -1,66 +1,404 @@
+import AppKit
+import SpookyKit
 import SwiftUI
 
-/// 仓库的两个主视图入口及工作区读取反馈。
+/// Workspace、Branches、Remotes 与活动区共用仓库窗口侧边栏。
 struct RepositorySidebarView: View {
-    /// 当前仓库会话。
+    /// 当前窗口会话。
     @Bindable var session: RepositorySession
 
-    /// 切换主视图后由窗口替换右侧内容。
+    /// 主视图切换后替换右侧分栏。
     let selectionChanged: () -> Void
 
-    /// 仓库级系统动作和复制路径入口。
+    /// 终端入口。
     let openTerminal: () -> Void
 
-    /// Finder 动作只对本机启用。
+    /// 本机 Finder 入口。
     let revealFinder: () -> Void
 
-    /// 复制可区分主机的仓库路径。
+    /// 复制带主机前缀的路径。
     let copyPath: () -> Void
 
-    /// 系统侧边栏样式，保持随系统字号变化的行尺寸。
-    var body: some View {
-        List(selection: $session.activeView) {
-            Section(AppLocalization.text("workspace.group")) {
-                HStack {
-                    Label(AppLocalization.text("workspace.title"), systemImage: "folder")
-                    Spacer(minLength: 4)
+    /// 多个入口共享同一操作对话框。
+    let request: (RepositoryActionRequest) -> Void
 
-                    if session.isRefreshing {
-                        ProgressView()
-                            .controlSize(.small)
-                            .accessibilityLabel(AppLocalization.text("loading.status"))
-                    } else if let status = session.status {
-                        Text(status.entries.count.formatted())
-                            .font(.system(size: 11))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(AppPalette.color("sidebarBadgeBackgroundColor"), in: Capsule())
-                            .accessibilityLabel(AppLocalization.text("workspace.changed", status.entries.count))
+    /// 打开全局活动窗口。
+    let showActivity: () -> Void
+
+    /// 空分组保留标题和提示，远端按名称分组。
+    var body: some View {
+        VStack(spacing: 0) {
+            List(selection: selection) {
+                Section(AppLocalization.text("workspace.group")) {
+                    workingCopy
+                        .tag("workingCopy")
+                        .modifier(
+                            RepositoryDropTarget(session: session, destination: .head, request: request)
+                        )
+                    Label(AppLocalization.text("history.title"), systemImage: "clock").tag("history")
+                }
+                localBranches
+                remoteBranches
+            }
+            .listStyle(.sidebar)
+
+            activityRows
+            Divider()
+            HStack {
+                Menu {
+                    Button(AppLocalization.text("branch.create")) {
+                        request(RepositoryActionRequest(kind: .create))
+                    }
+                    .disabled(!session.canWrite || session.status?.branch.oid == nil)
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .accessibilityLabel(AppLocalization.text("branch.create"))
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .frame(height: 40)
+        }
+    }
+
+    /// 系统列表和菜单导航使用同一组选择身份。
+    private var selectedItems: Set<String> {
+        if session.activeView == .workingCopy { return ["workingCopy"] }
+        return session.history.selectedReferences.isEmpty ? ["history"] : session.history.selectedReferences
+    }
+
+    /// 选择存入会话，快捷键与点击保持一致。
+    private var selection: Binding<Set<String>> {
+        Binding(
+            get: { selectedItems },
+            set: { value in
+                guard !value.isEmpty else { return }
+                let added = value.subtracting(selectedItems)
+                session.history.showsCommitPage = false
+                if added.contains("workingCopy") || value == ["workingCopy"] {
+                    session.activeView = .workingCopy
+                } else {
+                    session.activeView = .history
+                    session.history.selectedReferences =
+                        added.contains("history") || value == ["history"]
+                        ? [] : value.subtracting(["workingCopy", "history"])
+                }
+                selectionChanged()
+            }
+        )
+    }
+
+    /// 未出生和分离 HEAD 仍有稳定的当前分支行。
+    private var localBranches: some View {
+        Section {
+            let locals = session.history.branches.filter(\.isLocal)
+            if locals.isEmpty { Text(AppLocalization.text("branch.empty")).foregroundStyle(.secondary) }
+            if session.status?.branch.head == nil || session.status?.branch.oid == nil {
+                Text(session.status?.branch.head ?? AppLocalization.text("branch.detachedShort")).tag("HEAD")
+            }
+            ForEach(locals) { ref in
+                branchRow(ref)
+                    .tag(ref.id)
+                    .onTapGesture(count: 2) { checkout(ref) }
+                    .onDrag {
+                        RepositoryDragPayload(
+                            repository: session.repository!,
+                            kind: .local,
+                            reference: ref.id
+                        )
+                        .provider()
+                    }
+                    .contextMenu { branchMenu(ref) }
+                    .modifier(
+                        RepositoryDropTarget(
+                            session: session,
+                            destination: ref.name == session.status?.branch.head ? .head : .none,
+                            request: request
+                        )
+                    )
+            }
+        } header: {
+            Text(AppLocalization.text("branch.group"))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .modifier(RepositoryDropTarget(session: session, destination: .branches, request: request))
+        }
+    }
+
+    /// 每个配置远端都有分组，符号 HEAD 作为默认分支标记。
+    private var remoteBranches: some View {
+        Section(AppLocalization.text("remote.group")) {
+            if session.history.snapshot?.remotes.isEmpty != false {
+                Text(AppLocalization.text("sync.noRemotes")).foregroundStyle(.secondary)
+            }
+            ForEach(session.history.snapshot?.remotes ?? []) { remote in
+                DisclosureGroup {
+                    let refs = session.history.branches.filter {
+                        $0.isRemote && session.history.snapshot?.remote(for: $0)?.name == remote.name
+                    }
+                    if refs.isEmpty { Text(AppLocalization.text("branch.empty")).foregroundStyle(.secondary) }
+                    ForEach(refs) { ref in
+                        branchRow(ref)
+                            .tag(ref.id)
+                            .onTapGesture(count: 2) {
+                                checkoutRemote(ref)
+                            }
+                            .onDrag {
+                                RepositoryDragPayload(
+                                    repository: session.repository!,
+                                    kind: .remote,
+                                    reference: ref.id
+                                )
+                                .provider()
+                            }
+                            .contextMenu { branchMenu(ref) }
+                            .modifier(
+                                RepositoryDropTarget(
+                                    session: session,
+                                    destination: .remoteBranch(remote.name, ref.id),
+                                    request: request
+                                )
+                            )
+                    }
+                } label: {
+                    Label(remote.name, systemImage: "network")
+                        .contextMenu {
+                            Button(AppLocalization.text("sync.fetch")) {
+                                request(RepositoryActionRequest(kind: .fetch, remote: remote.name))
+                            }
+                            .disabled(!session.canWrite)
+                            Button(AppLocalization.text("sync.prune")) {
+                                request(
+                                    RepositoryActionRequest(kind: .fetch, remote: remote.name, prune: true)
+                                )
+                            }
+                            .disabled(!session.canWrite)
+                        }
+                        .modifier(
+                            RepositoryDropTarget(
+                                session: session,
+                                destination: .remote(remote.name),
+                                request: request
+                            )
+                        )
+                }
+            }
+        }
+    }
+
+    /// 工作区保留改动数及已有文件操作入口。
+    private var workingCopy: some View {
+        HStack {
+            Label(AppLocalization.text("workspace.title"), systemImage: "folder")
+            Spacer(minLength: 4)
+            if session.isRefreshing {
+                ProgressView().controlSize(.small)
+            } else if let status = session.status {
+                Text(status.entries.count.formatted())
+                    .font(.system(size: 11))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(AppPalette.color("sidebarBadgeBackgroundColor"), in: Capsule())
+            }
+        }
+        .contextMenu {
+            Button(AppLocalization.text("sync.pull")) { request(RepositoryActionRequest(kind: .pull)) }
+                .disabled(!session.canWrite || session.history.branches.allSatisfy { !$0.isRemote })
+            Button(AppLocalization.text("sync.push")) { request(RepositoryActionRequest(kind: .push)) }
+                .disabled(!session.canWrite || session.status?.branch.oid == nil)
+            Button(AppLocalization.text("sync.publish")) { request(RepositoryActionRequest(kind: .publish)) }
+                .disabled(!session.canWrite || session.status?.branch.oid == nil)
+            Button(AppLocalization.text("sync.merge")) { request(RepositoryActionRequest(kind: .merge)) }
+                .disabled(!session.canWrite || session.status?.branch.oid == nil)
+            Divider()
+            Button(AppLocalization.text("working.discardAll")) {
+                session.discard(session.status?.entries ?? [])
+            }
+            .disabled(!session.canWrite || session.status?.entries.isEmpty != false)
+            Divider()
+            Button(AppLocalization.text("action.openTerminal"), action: openTerminal)
+            Button(AppLocalization.text("action.revealFinder"), action: revealFinder)
+                .disabled(session.repository?.localURL == nil)
+            Button(AppLocalization.text("action.copyPath"), action: copyPath)
+        }
+    }
+
+    /// HEAD 和双向数量组成胶囊徽标，服务器主机写入辅助说明。
+    private func branchRow(_ ref: RepositoryReference) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: ref.isLocal ? "arrow.triangle.branch" : "network")
+            Text(ref.name).lineLimit(1)
+            Spacer(minLength: 4)
+            if ref.isLocal && ref.name == session.status?.branch.head
+                || session.history.divergence[ref.id] != nil
+            {
+                HStack(spacing: 4) {
+                    if ref.isLocal && ref.name == session.status?.branch.head {
+                        Text("HEAD").fontWeight(.semibold)
+                    }
+                    if let counts = session.history.divergence[ref.id] {
+                        if counts.ahead > 0 { Text("↑ \(counts.ahead)") }
+                        if counts.behind > 0 { Text("↓ \(counts.behind)") }
                     }
                 }
-                .tag(RepositoryView.workingCopy)
-                .contextMenu {
-                    Button(AppLocalization.text("working.discardAll")) { session.discard(session.status?.entries ?? []) }
-                        .disabled(!session.canWrite || session.status?.entries.isEmpty != false)
-                    Divider()
-                    Button(AppLocalization.text("action.openTerminal"), action: openTerminal)
-                    Button(AppLocalization.text("action.revealFinder"), action: revealFinder)
-                        .disabled(session.repository?.localURL == nil)
-                    Button(AppLocalization.text("action.copyPath"), action: copyPath)
-                }
+                .font(.system(size: 12))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(AppPalette.color("sidebarBadgeBackgroundColor"), in: Capsule())
+            }
+            if let remote = session.history.snapshot?.remote(for: ref),
+                session.history.snapshot?.defaultBranch(for: remote) == ref.id
+            {
+                Image(systemName: "house").help(AppLocalization.text("branch.default"))
+            }
+        }
+        .help(
+            (session.repository?.host.map { $0 + ": " } ?? "") + ref.name
+                + (ref.upstream.map { " → " + $0 } ?? "")
+        )
+    }
 
-                Label(AppLocalization.text("history.title"), systemImage: "clock")
-                    .tag(RepositoryView.history)
+    /// 分支菜单只包含已经实现的动作。
+    @ViewBuilder
+    private func branchMenu(_ ref: RepositoryReference) -> some View {
+        let selected = session.history.branches.filter { session.history.selectedReferences.contains($0.id) }
+        if selected.count > 1, selected.contains(where: { $0.id == ref.id }), selected.allSatisfy(\.isLocal) {
+            Button(AppLocalization.text("branch.deleteMultiple")) { delete(selected) }
+                .disabled(!session.canWrite || selected.contains { $0.name == session.status?.branch.head })
+        } else {
+            if ref.isLocal {
+                Button(AppLocalization.text("branch.checkout")) { checkout(ref) }
+                    .disabled(!session.canWrite || ref.name == session.status?.branch.head)
+                Button(AppLocalization.text("sync.publish")) {
+                    request(RepositoryActionRequest(kind: .publish, localBranch: ref.name))
+                }
+                .disabled(!session.canWrite)
+                Button(AppLocalization.text("sync.push")) {
+                    request(RepositoryActionRequest(kind: .push, localBranch: ref.name))
+                }
+                .disabled(!session.canWrite)
+            } else {
+                Button(AppLocalization.text("branch.track")) {
+                    request(RepositoryActionRequest(kind: .track, reference: ref.id))
+                }
+                .disabled(!session.canWrite)
+                Button(AppLocalization.text("sync.pull")) {
+                    request(RepositoryActionRequest(kind: .pull, reference: ref.id))
+                }
+                .disabled(!session.canWrite || session.status?.branch.head == nil)
+            }
+            Button(AppLocalization.text("branch.create")) {
+                request(RepositoryActionRequest(kind: .create, reference: ref.id))
+            }
+            .disabled(!session.canWrite)
+            Button(AppLocalization.text("sync.merge")) {
+                request(RepositoryActionRequest(kind: .merge, reference: ref.id))
+            }
+            .disabled(
+                !session.canWrite || session.status?.branch.head == nil
+                    || ref.name == session.status?.branch.head
+            )
+            if ref.isLocal {
+                Divider()
+                Button(AppLocalization.text("branch.delete")) { delete([ref]) }
+                    .disabled(!session.canWrite || ref.name == session.status?.branch.head)
+            }
+            Divider()
+            Button(AppLocalization.text("branch.copyName")) {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(ref.name, forType: .string)
             }
         }
-        .listStyle(.sidebar)
-        .onChange(of: session.activeView) { selectionChanged() }
-        .overlay(alignment: .bottom) {
-            if session.isOpening {
-                ProgressView(AppLocalization.text("loading.open"))
-                    .controlSize(.small)
-                    .padding()
+    }
+
+    /// 最近三个活动显示持续进度和取消，点击打开完整日志。
+    private var activityRows: some View {
+        let items = RepositoryActivities.shared.items.filter { $0.repository == session.repository }
+        return VStack(spacing: 0) {
+            ForEach(Array(items.prefix(3))) { activity in
+                HStack {
+                    Button(action: showActivity) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(activity.title).font(.system(size: 11, weight: .semibold))
+                            Text(AppLocalization.text(activity.state)).font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                            if activity.cancel != nil { ProgressView().controlSize(.mini) }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    if let cancel = activity.cancel {
+                        Button(action: cancel) { Image(systemName: "stop.circle") }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel(AppLocalization.text("action.cancel"))
+                    }
+                }
+                .padding(.horizontal, 8)
+                .frame(height: 65)
+                Divider()
             }
         }
+    }
+
+    /// 双击检出保留 Git 对本地修改的覆盖保护。
+    private func checkout(_ ref: RepositoryReference) {
+        guard session.canWrite, ref.name != session.status?.branch.head else { return }
+        session.performGit(
+            { runner, _ in
+                try await RepositoryReferences(runner: runner).checkout(ref.id)
+            },
+            title: AppLocalization.text("branch.checkout")
+        )
+    }
+
+    /// 双击远端分支检出已有跟踪分支，或原子创建并检出同名跟踪分支。
+    private func checkoutRemote(_ ref: RepositoryReference) {
+        guard session.canWrite, let snapshot = session.history.snapshot,
+            let remote = snapshot.remote(for: ref)
+        else { return }
+        if let existing = snapshot.references.first(where: { $0.isLocal && $0.upstream == ref.id }) {
+            checkout(existing)
+            return
+        }
+        let name = String(ref.id.dropFirst(("refs/remotes/" + remote.name + "/").count))
+
+        // 同名本地分支可能有不同含义，保留它并让用户在跟踪表单中指定名称。
+        if snapshot.references.contains(where: { $0.id == "refs/heads/" + name }) {
+            request(RepositoryActionRequest(kind: .track, reference: ref.id))
+            return
+        }
+        session.performGit(
+            { runner, _ in
+                try await RepositoryReferences(runner: runner)
+                    .create(
+                        name: name,
+                        startingAt: ref.id,
+                        track: true,
+                        checkout: true
+                    )
+            },
+            title: AppLocalization.text("branch.checkout")
+        )
+    }
+
+    /// 删除始终确认，普通删除失败不转为强制删除。
+    private func delete(_ references: [RepositoryReference]) {
+        let repository = session.repository
+        let names = references.map(\.name).joined(separator: ", ")
+        session.onConfirm?(
+            AppLocalization.text(references.count == 1 ? "branch.delete" : "branch.deleteMultiple"),
+            AppLocalization.text("branch.delete.confirm", names, repository?.displayPath ?? ""),
+            {
+                guard session.repository == repository else { return }
+                session.performGit(
+                    { runner, _ in
+                        try await RepositoryReferences(runner: runner).delete(references.map(\.id))
+                    },
+                    title: AppLocalization.text("branch.delete")
+                )
+            },
+            nil
+        )
     }
 }

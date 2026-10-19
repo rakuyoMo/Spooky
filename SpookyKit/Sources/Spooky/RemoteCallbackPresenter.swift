@@ -39,8 +39,14 @@ final class RemoteCallbackPresenter {
         guard current == nil, !pending.isEmpty else { return }
         let (request, continuation) = pending.removeFirst()
         let alert = NSAlert()
-        alert.messageText = AppLocalization.text(request.kind == .editor ? "callback.editor" : "callback.credentials")
+        let privateKey = request.kind == .sshAskpass && request.prompt.lowercased().contains("passphrase")
+        alert.messageText = AppLocalization.text(
+            request.kind == .editor
+                ? "callback.editor" : (privateKey ? "callback.privateKey" : "callback.credentials")
+        )
         alert.informativeText = request.host + "\n" + request.prompt
+            + (privateKey && request.host.hasPrefix("/")
+                ? "\n\n" + AppLocalization.text("callback.privateKey.help") : "")
         alert.addButton(withTitle: AppLocalization.text("action.continue"))
         alert.addButton(withTitle: AppLocalization.text("action.cancel"))
         let input: NSView

@@ -1,0 +1,104 @@
+import AppKit
+import SwiftUI
+
+/// Activity 保留所有窗口的同步记录与原始日志。
+@MainActor
+final class ActivityWindowController: NSWindowController {
+    /// 551 × 299 pt 的初始窗口分为活动列表与日志两栏。
+    init() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 551, height: 299),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = AppLocalization.text("activity.title")
+        window.contentViewController = NSHostingController(rootView: ActivityView())
+        window.isReleasedWhenClosed = false
+        window.tabbingMode = .disallowed
+        window.setFrameAutosaveName("Spooky.Activity")
+        window.center()
+        super.init(window: window)
+    }
+
+    /// 活动窗口只由代码创建。
+    required init?(coder: NSCoder) { return nil }
+}
+
+/// 列表包含进行中与已完成操作，日志可选择复制。
+private struct ActivityView: View {
+    /// 跨仓库活动数据。
+    @Bindable private var activities = RepositoryActivities.shared
+
+    /// 当前查看的活动。
+    @State private var selected: UUID?
+
+    /// 按仓库或日志筛选。
+    @State private var query = ""
+
+    /// 左列表与右日志保持独立滚动。
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button(AppLocalization.text("activity.clear")) { activities.clearCompleted() }
+                TextField(AppLocalization.text("activity.search"), text: $query)
+            }
+            .padding(8)
+            Divider()
+            HSplitView {
+                List(
+                    activities.items.filter {
+                        query.isEmpty || $0.repository.displayPath.localizedCaseInsensitiveContains(query)
+                            || $0.log.localizedCaseInsensitiveContains(query)
+                    },
+                    selection: $selected
+                ) { activity in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(activity.repository.name)
+                            Spacer()
+                            Text(activity.started, style: .time)
+                        }
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        Text(activity.title).font(.system(size: 12, weight: .semibold))
+                        HStack {
+                            Text(AppLocalization.text(activity.state)).font(.system(size: 11))
+                            Spacer()
+                            if let cancel = activity.cancel {
+                                Button(action: cancel) { Image(systemName: "stop.circle") }
+                                    .buttonStyle(.borderless)
+                                    .accessibilityLabel(AppLocalization.text("action.cancel"))
+                            }
+                        }
+                    }
+                    .frame(minHeight: 59)
+                    .tag(activity.id)
+                }
+                .frame(minWidth: 200, idealWidth: 220)
+
+                if let activity = activities.items.first(where: { $0.id == selected }) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(activity.repository.displayPath).font(.system(size: 11)).textSelection(.enabled)
+                        ScrollView {
+                            Text(activity.log)
+                                .font(.system(size: 11, design: .monospaced))
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .defaultScrollAnchor(.bottom)
+                    }
+                    .padding(20)
+                    .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    Text(AppLocalization.text("activity.empty"))
+                        .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+        }
+        .onChange(of: activities.items.count) {
+            if selected == nil { selected = activities.items.first?.id }
+        }
+        .onAppear { selected = activities.items.first?.id }
+    }
+}

@@ -17,6 +17,7 @@ struct RemoteTransportTests {
         let stderr = Data(("git diagnostic\n" + "\u{1e}SPOOKY:\(id):255:0:0\u{1f}").utf8)
 
         for byte in stderr { filter.receive(.standardError(Data([byte]))) }
+        #expect(captured.withLock { $0 } == Data("git diagnostic\n".utf8))
         let result = try filter.completed(result(stderr: stderr, exit: 255))
         #expect(result.exitCode == 255)
         #expect(result.standardError == Data("git diagnostic\n".utf8))

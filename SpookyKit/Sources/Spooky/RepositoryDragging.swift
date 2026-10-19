@@ -1,0 +1,199 @@
+import AppKit
+import SpookyKit
+import SwiftUI
+
+/// 应用内部的分支与提交拖动，不接受文件路径作为 Git 引用。
+struct RepositoryDragPayload: Codable, Sendable {
+    /// Spooky 专用粘贴板类型。
+    static let type = "com.rakuyo.spooky.repository-reference"
+
+    /// 来源种类决定可用目标。
+    enum Kind: String, Codable, Sendable {
+        /// 本地分支。
+        case local
+
+        /// 远端跟踪分支。
+        case remote
+
+        /// 历史提交。
+        case commit
+    }
+
+    /// 来源仓库，用于阻止跨仓库误操作。
+    let repository: RepositoryLocation
+
+    /// 来源种类。
+    let kind: Kind
+
+    /// 完整引用名或提交哈希。
+    let reference: String
+
+    /// 数据仅供应用内部拖放，悬停期间共享来源来显示动作名。
+    @MainActor
+    func provider() -> NSItemProvider {
+        RepositoryDragContext.shared.payload = self
+        let provider = NSItemProvider()
+        let data = try? JSONEncoder().encode(self)
+        provider.registerDataRepresentation(forTypeIdentifier: Self.type, visibility: .ownProcess) {
+            completion in
+            completion(data, nil)
+            return nil
+        }
+        return provider
+    }
+}
+
+/// 当前拖动来源只用于同步计算悬停动作。
+@MainActor
+final class RepositoryDragContext {
+    /// 应用内一次拖动共用一份来源。
+    static let shared = RepositoryDragContext()
+
+    /// 当前来源身份。
+    var payload: RepositoryDragPayload?
+}
+
+/// 已实现的引用落点。
+enum RepositoryDropDestination {
+    /// 工作区或 HEAD。
+    case head
+
+    /// Branches 标题。
+    case branches
+
+    /// 发布到指定远端。
+    case remote(String)
+
+    /// 推送到指定远端分支。
+    case remoteBranch(String, String)
+
+    /// 该行不接受拖动。
+    case none
+}
+
+/// 在目标行展示动作名，落下只打开已有参数表单。
+struct RepositoryDropTarget: ViewModifier {
+    /// 当前会话。
+    let session: RepositorySession
+
+    /// 当前行的目标种类。
+    let destination: RepositoryDropDestination
+
+    /// 参数表单入口。
+    let request: (RepositoryActionRequest) -> Void
+
+    /// 悬停提示文字。
+    @State private var label: String?
+
+    /// SwiftUI 落点高亮承载当前动作标签。
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .trailing) {
+                if let label {
+                    Text(label)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color.accentColor)
+                        .padding(.horizontal, 8)
+                        .frame(height: 24)
+                        .background(.white, in: RoundedRectangle(cornerRadius: 4))
+                        .allowsHitTesting(false)
+                }
+            }
+            .onDrop(
+                of: [RepositoryDragPayload.type],
+                delegate: ReferenceDropDelegate(
+                    session: session,
+                    destination: destination,
+                    request: request,
+                    label: $label
+                )
+            )
+    }
+}
+
+/// 来源、目标与修饰键共用一张动作表，未交付的变体明确拒绝。
+private struct ReferenceDropDelegate: DropDelegate {
+    /// 当前仓库及写入状态。
+    let session: RepositorySession
+
+    /// 落点身份。
+    let destination: RepositoryDropDestination
+
+    /// 对话框入口。
+    let request: (RepositoryActionRequest) -> Void
+
+    /// 当前动作文字。
+    @Binding var label: String?
+
+    /// 本阶段只接受同仓库的单项引用拖放。
+    func validateDrop(info: DropInfo) -> Bool {
+        info.itemProviders(for: [RepositoryDragPayload.type]).count == 1 && action() != nil
+    }
+
+    /// 修饰键变化时同步更新动作提示。
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        let action = action()
+        label = action.map { AppLocalization.text($0.kind.rawValue) }
+        return DropProposal(operation: action == nil ? .forbidden : .copy)
+    }
+
+    /// 离开落点后移除提示。
+    func dropExited(info: DropInfo) { label = nil }
+
+    /// 核对实际载荷后打开表单，异步期间仓库变化则放弃。
+    func performDrop(info: DropInfo) -> Bool {
+        label = nil
+        guard validateDrop(info: info), let action = action(),
+            let expected = RepositoryDragContext.shared.payload,
+            let provider = info.itemProviders(for: [RepositoryDragPayload.type]).first
+        else { return false }
+        provider.loadDataRepresentation(forTypeIdentifier: RepositoryDragPayload.type) { data, _ in
+            guard let data, let payload = try? JSONDecoder().decode(RepositoryDragPayload.self, from: data),
+                payload.repository == expected.repository, payload.reference == expected.reference
+            else { return }
+            Task { @MainActor in
+                guard session.repository == payload.repository, session.canWrite else { return }
+                request(action)
+            }
+        }
+        return true
+    }
+
+    /// 每个映射都指向实际可用的业务动作。
+    private func action() -> RepositoryActionRequest? {
+        guard session.canWrite, let payload = RepositoryDragContext.shared.payload,
+            payload.repository == session.repository
+        else { return nil }
+        let alternate = NSEvent.modifierFlags.contains(.option)
+
+        switch (payload.kind, destination) {
+        case (.local, .head):
+            guard !alternate, payload.reference != "refs/heads/" + (session.status?.branch.head ?? "") else {
+                return nil
+            }
+            return RepositoryActionRequest(kind: .merge, reference: payload.reference)
+        case (.remote, .head):
+            guard !alternate else { return nil }
+            return RepositoryActionRequest(kind: .pull, reference: payload.reference)
+        case (.local, .branches), (.commit, .branches):
+            guard !alternate else { return nil }
+            return RepositoryActionRequest(kind: .create, reference: payload.reference)
+        case (.remote, .branches):
+            return RepositoryActionRequest(kind: .track, reference: payload.reference)
+        case (.local, .remote(let remote)):
+            return RepositoryActionRequest(
+                kind: .publish,
+                remote: remote,
+                localBranch: String(payload.reference.dropFirst(11))
+            )
+        case (.local, .remoteBranch(let remote, let reference)):
+            return RepositoryActionRequest(
+                kind: .push,
+                reference: reference,
+                remote: remote,
+                localBranch: String(payload.reference.dropFirst(11))
+            )
+        default: return nil
+        }
+    }
+}

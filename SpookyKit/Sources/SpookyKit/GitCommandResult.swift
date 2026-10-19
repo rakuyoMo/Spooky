@@ -67,6 +67,30 @@ public struct GitError: Error, Sendable {
         /// 另一个 Git 进程持有暂存区锁，不能自动删除锁文件。
         case indexLocked
 
+        /// 推送被远端拒绝，包括非快进与服务端钩子拒绝。
+        case pushRejected
+
+        /// Git 远端认证失败。
+        case authenticationFailed
+
+        /// Git 远端仓库或已配置的远端不存在。
+        case remoteNotFound
+
+        /// 网络连接超时。
+        case connectionTimedOut
+
+        /// Git 访问远端时连接中断或不可达。
+        case connectionUnavailable
+
+        /// 当前分支未设置上游。
+        case noUpstream
+
+        /// 普通删除因分支尚未合并而被拒绝。
+        case branchNotMerged
+
+        /// 检出或合并会覆盖未提交改动。
+        case localChanges
+
         /// 命令因 Swift 任务取消而结束。
         case cancelled
 

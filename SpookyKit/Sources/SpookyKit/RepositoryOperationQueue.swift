@@ -116,11 +116,37 @@ actor RepositoryOperationQueue {
         }
     }
 
-    /// 未知命令和带配置覆盖的命令统一按写操作调度。
+    /// 只读查询可越过写队列；merge-tree 会创建对象，仍按写操作调度。
     nonisolated static func isReadOnly(_ arguments: [String]) -> Bool {
-        guard let command = arguments.drop(while: { $0 == "--literal-pathspecs" }).first else { return false }
-        return ["status", "rev-parse", "show", "log", "ls-files", "for-each-ref", "diff", "var", "cat-file", "--version"]
-            .contains(command)
+        guard let command = command(in: arguments) else { return false }
+        if command == "config" {
+            guard let index = arguments.firstIndex(of: "config") else { return false }
+            let options = arguments.dropFirst(index + 1)
+            return options.prefix(2).elementsEqual(["-z", "--get-regexp"])
+                && options.count == 3
+        }
+        return [
+            "status", "rev-parse", "rev-list", "merge-base", "check-ref-format",
+            "show", "log", "ls-files", "for-each-ref", "diff", "var", "cat-file", "--version",
+        ]
+        .contains(command)
+    }
+
+    /// 跳过受支持的全局参数，供调度和认证判断真正的子命令。
+    nonisolated static func command(in arguments: [String]) -> String? {
+        var index = 0
+
+        // 全局配置只改变查询方式，读写属性由真正的子命令决定。
+        while index < arguments.count {
+            if arguments[index] == "--literal-pathspecs" {
+                index += 1
+            } else if arguments[index] == "-c", index + 1 < arguments.count {
+                index += 2
+            } else {
+                break
+            }
+        }
+        return index < arguments.count ? arguments[index] : nil
     }
 }
 

@@ -9,6 +9,9 @@ public struct GitRunner: Sendable {
     /// 远端会话由执行器持有，多条命令共享同一主连接。
     public let remote: RemoteConnection?
 
+    /// 本机网络操作的口令输入入口；服务器沿用连接上的回调处理器。
+    public var credentialHandler: RemoteCallbackHandler?
+
     /// 本机 Git 程序路径；测试可使用临时程序验证启动和取消边界。
     private let executablePath: String
 
@@ -134,6 +137,26 @@ public struct GitRunner: Sendable {
                 writing: !RepositoryOperationQueue.isReadOnly(arguments)
             ) {
                 event(.started)
+
+                // 只有网络命令需要 askpass；本机 SSH 解锁后由系统 agent 保留密钥。
+                if let credentialHandler,
+                    ["fetch", "push", "ls-remote"]
+                        .contains(RepositoryOperationQueue.command(in: arguments) ?? "")
+                {
+                    return try await LocalGitAuthentication.execute(
+                        executable: executablePath,
+                        location: location,
+                        arguments: arguments,
+                        environment: environment,
+                        input: input,
+                        acceptedExitCodes: acceptedExitCodes,
+                        handler: credentialHandler
+                    ) {
+                        event(.output($0))
+                        onOutput?($0)
+                    }
+                }
+
                 return try await CommandExecutor.execute(
                     executable: executablePath,
                     processArguments: ["-C", location.path] + Self.globalOptions + arguments,
@@ -194,9 +217,49 @@ public struct GitRunner: Sendable {
         "GIT_PREFIX": nil,
     ]
 
-    /// 只匹配已知的本机错误前缀，避免把路径或权限错误误报为网络错误。
+    /// 固定 locale 下区分仓库、分支与网络失败，原始输出仍保留在结果中。
     static func category(for result: GitCommandResult) -> GitError.Category {
         let stderr = String(decoding: result.standardError, as: UTF8.self).lowercased()
+        let stdout = String(decoding: result.standardOutput, as: UTF8.self).lowercased()
+        let command = RepositoryOperationQueue.command(in: result.arguments)
+
+        // 网络错误按具体诊断分类；凭据与仓库权限错误不使用宽泛的 “not found” 匹配。
+        if stderr.contains("has no upstream branch") || stderr.contains("no upstream configured")
+            || stderr.contains("no tracking information")
+        {
+            return .noUpstream
+        }
+        if stderr.contains("is not fully merged") { return .branchNotMerged }
+        if stderr.contains("would be overwritten by") { return .localChanges }
+        if command == "push",
+            stderr.contains("[rejected]") || stderr.contains("[remote rejected]")
+                || stdout.split(separator: "\n").contains(where: { $0.hasPrefix("!\t") })
+        {
+            return .pushRejected
+        }
+        if stderr.contains("connection timed out") || stderr.contains("operation timed out") {
+            return .connectionTimedOut
+        }
+        if stderr.contains("authentication failed") || stderr.contains("permission denied (publickey")
+            || stderr.contains("too many authentication failures")
+            || stderr.contains("could not read username")
+            || stderr.contains("could not read password")
+        {
+            return .authenticationFailed
+        }
+        if stderr.contains("does not appear to be a git repository")
+            || stderr.contains("repository not found")
+            || (stderr.contains("repository '") && stderr.contains("' not found"))
+        {
+            return .remoteNotFound
+        }
+        if [
+            "connection refused", "could not resolve hostname", "could not resolve host:",
+            "connection reset", "connection closed", "network is unreachable", "broken pipe",
+        ]
+        .contains(where: stderr.contains) {
+            return .connectionUnavailable
+        }
 
         if stderr.contains("index.lock"), stderr.contains("file exists") {
             return .indexLocked

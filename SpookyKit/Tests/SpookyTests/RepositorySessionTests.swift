@@ -186,6 +186,130 @@ struct RepositorySessionTests {
         #expect(session.status?.entries.isEmpty == true)
         #expect(session.status?.branch.oid != nil)
     }
+
+    /// 用户取消后必须释放界面写锁，日志保留取消状态并允许重新刷新。
+    @Test("同步取消恢复可写状态并保留活动记录")
+    func cancelSync() async throws {
+        let status = try snapshot("file")
+        let session = RepositorySession(loadStatus: { _ in status })
+        let location = RepositoryLocation.local(path: "/temporary/cancel-" + UUID().uuidString)
+        session.display(location)
+        defer { session.close() }
+        let (started, continuation) = AsyncStream<Void>.makeStream()
+        session.performGit(
+            { _, output in
+                output(.standardError(Data("transferring\n".utf8)))
+                continuation.yield(())
+                continuation.finish()
+                try await Task.sleep(for: .seconds(30))
+            },
+            title: "Fetch"
+        )
+        for await _ in started { break }
+        #expect(session.isWriting)
+        let task = try #require(session.writeTask)
+        task.cancel()
+        await task.value
+        await session.refreshTask?.value
+        #expect(!session.isWriting)
+        #expect(session.canWrite)
+        #expect(session.failure == nil)
+        let activity = try #require(RepositoryActivities.shared.items.first { $0.repository == location })
+        #expect(activity.state == "activity.cancelled")
+        #expect(activity.log.contains("transferring"))
+        #expect(activity.cancel == nil)
+        RepositoryActivities.shared.items.removeAll { $0.repository == location }
+    }
+
+    /// 分支写入和提交后，History 与引用必须跟随真实 Git 更新。
+    @Test("History 跨视图刷新、选择与关闭生命周期")
+    func historyLifecycle() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(
+            path: "spooky-history-" + UUID().uuidString
+        )
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let location = RepositoryLocation.local(path: directory.path)
+        let runner = GitRunner(
+            location: location,
+            environment: .inherit.updating([
+                "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null",
+                "GIT_CONFIG_NOSYSTEM": "1",
+            ])
+        )
+        _ = try await runner.run(["-c", "init.templateDir=", "init", "-q", "-b", "main"])
+        _ = try await runner.run(["config", "--local", "user.name", "Spooky Test"])
+        _ = try await runner.run(["config", "--local", "user.email", "spooky@example.invalid"])
+        _ = try await runner.run(["config", "--local", "commit.gpgSign", "false"])
+        _ = try await runner.run(["commit", "--allow-empty", "-m", "root"])
+        let session = RepositorySession(makeRunner: { _ in runner })
+        defer { session.close() }
+        session.display(location)
+        session.refresh()
+        await session.refreshTask?.value
+        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+
+        while session.history.commits.isEmpty && .now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        let commit = try #require(session.history.commits.first)
+        session.history.selectedIDs = [commit.id]
+        session.activeView = .history
+        session.performGit(
+            { runner, _ in
+                try await RepositoryReferences(runner: runner)
+                    .create(
+                        name: "topic",
+                        startingAt: commit.id,
+                        track: false,
+                        checkout: true
+                    )
+            },
+            title: "Create Branch"
+        )
+        await session.writeTask?.value
+        await session.refreshTask?.value
+
+        while session.history.snapshot?.references.contains(where: { $0.id == "refs/heads/topic" }) != true
+            && .now < deadline
+        {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(session.status?.branch.head == "topic")
+        #expect(session.history.snapshot?.references.contains(where: { $0.id == "refs/heads/topic" }) == true)
+        #expect(session.history.selectedIDs == [commit.id])
+
+        // 本地与上游各增加一个提交，History 必须同时显示两侧并正确标记归属。
+        session.performGit { runner, _ in
+            _ = try await runner.run(["commit", "--allow-empty", "-m", "local"])
+            try await RepositoryReferences(runner: runner).checkout("refs/heads/main")
+            _ = try await runner.run(["commit", "--allow-empty", "-m", "upstream"])
+            try await RepositoryReferences(runner: runner).checkout("refs/heads/topic")
+            _ = try await runner.run(["branch", "--set-upstream-to=main", "topic"])
+        }
+        await session.writeTask?.value
+        await session.refreshTask?.value
+        session.history.selectedReference = "refs/heads/topic"
+        let trackingDeadline = ContinuousClock.now.advanced(by: .seconds(5))
+
+        while session.history.unpushed.isEmpty && .now < trackingDeadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        let local = try #require(session.history.commits.first { $0.subject == "local" })
+        let upstream = try #require(session.history.commits.first { $0.subject == "upstream" })
+        #expect(session.history.unpushed == [local.id])
+        #expect(session.history.unpulled == [upstream.id])
+        #expect(
+            !session.history.unpushed.contains(commit.id) && !session.history.unpulled.contains(commit.id)
+        )
+        session.history.loadNextPage()
+        session.close()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(session.history.snapshot == nil)
+        #expect(session.history.commits.isEmpty)
+        #expect(!session.history.isLoading)
+        RepositoryActivities.shared.items.removeAll { $0.repository == location }
+    }
 }
 
 /// 测试快照经生产解析器生成，避免镜像实现中的状态构造逻辑。

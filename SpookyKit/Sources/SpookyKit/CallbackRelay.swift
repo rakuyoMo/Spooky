@@ -2,21 +2,21 @@ import Darwin
 import Foundation
 import Security
 
-/// 远端交互请求；令牌留在传输层，不传给 UI 或日志。
+/// Git 交互请求；令牌留在传输层，不传给 UI 或日志。
 public struct RemoteCallbackRequest: Sendable {
     /// 回调类别。
     public enum Kind: String, Sendable, Codable {
         /// Git 的用户名或密码提示。
         case askpass
 
-        /// B 侧 SSH 私钥口令。
+        /// 仓库所在机器的 SSH 私钥口令。
         case sshAskpass = "ssh-askpass"
 
         /// 必须交互编辑的文本。
         case editor
     }
 
-    /// 当前服务器仓库的主机别名。
+    /// 服务器主机别名或本机仓库路径，用于区分凭据上下文。
     public let host: String
 
     /// 本次回调的随机标识。
@@ -35,7 +35,7 @@ public struct RemoteCallbackRequest: Sendable {
     public let content: String?
 }
 
-/// UI 返回 nil 表示取消；值只经当前主连接交回请求进程。
+/// UI 返回 nil 表示取消；值只经当前会话的 socket 交回请求进程。
 public typealias RemoteCallbackHandler = @Sendable (RemoteCallbackRequest) async -> String?
 
 /// 单会话 Unix socket 服务；锁保护描述符、活动操作和一次性请求集合。

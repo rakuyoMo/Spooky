@@ -7,7 +7,7 @@ enum RepositoryView: String, CaseIterable {
     /// 工作区状态列表。
     case workingCopy
 
-    /// 历史视图的里程碑占位。
+    /// 分页提交列表与只读提交详情。
     case history
 }
 
@@ -24,6 +24,9 @@ struct StatusRowID: Hashable {
 @MainActor
 @Observable
 final class RepositorySession {
+    /// 历史和引用与工作区共用一个窗口生命周期。
+    let history = RepositoryHistoryState()
+
     /// 当前工作区身份。
     private(set) var repository: RepositoryLocation?
 
@@ -184,7 +187,11 @@ final class RepositorySession {
 
     /// 创建窗口状态；生产环境的所有 Git 读取都经过核心命令层。
     init(
-        makeRunner: @escaping @Sendable (RepositoryLocation) -> GitRunner = { GitRunner(location: $0) },
+        makeRunner: @escaping @Sendable (RepositoryLocation) -> GitRunner = {
+            var runner = GitRunner(location: $0)
+            runner.credentialHandler = { await RemoteCallbackPresenter.shared.respond(to: $0) }
+            return runner
+        },
         loadStatus: (@Sendable (RepositoryLocation) async throws -> WorkingCopyStatus)? = nil
     ) {
         self.makeRunner = makeRunner
@@ -249,6 +256,7 @@ final class RepositorySession {
                 if self.loadsRepositoryDetails {
                     self.loadContext()
                     self.loadDiff()
+                    self.history.refresh(status: status, runner: self.makeRunner(repository))
                 }
             } catch {
                 guard let self, self.generation == request, !Task.isCancelled else {
@@ -280,6 +288,7 @@ final class RepositorySession {
     /// 结束当前读取并清空仓库，不影响 App 的其它窗口和进程。
     func close() {
         generation += 1
+        history.close()
         fileMonitor?.stop()
         fileMonitor = nil
         writeTask?.cancel()
@@ -371,7 +380,9 @@ final class RepositorySession {
         stagingOverrides = Dictionary(uniqueKeysWithValues: entries.map {
             (StatusRowID(path: $0.path, kind: $0.kind), staged)
         })
-        perform { try await $0.stage(entries, staged: staged) }
+        performGit { runner, _ in
+            try await WorkingCopyOperations(runner: runner).stage(entries, staged: staged)
+        }
     }
 
     /// 全部动作同时供主菜单、工具栏与提交区调用。
@@ -388,10 +399,17 @@ final class RepositorySession {
             entries.count,
             repository?.displayPath ?? ""
         )
-        onConfirm?(AppLocalization.text("working.discard"), message, { [weak self] in
-            guard let self, self.generation == request else { return }
-            self.perform { try await $0.discard(entries) }
-        }, nil)
+        onConfirm?(
+            AppLocalization.text("working.discard"),
+            message,
+            { [weak self] in
+                guard let self, self.generation == request else { return }
+                self.performGit { runner, _ in
+                    try await WorkingCopyOperations(runner: runner).discard(entries)
+                }
+            },
+            nil
+        )
     }
 
     /// 暂存与丢弃使用正在显示的快照，确认期间的变化由核心库拒绝。
@@ -400,7 +418,16 @@ final class RepositorySession {
         let request = generation
         let action: () -> Void = { [weak self] in
             guard let self, self.generation == request else { return }
-            self.perform { try await $0.apply(snapshot, file: file, hunk: hunk, lines: lines, discard: discard) }
+            self.performGit { runner, _ in
+                try await WorkingCopyOperations(runner: runner)
+                    .apply(
+                        snapshot,
+                        file: file,
+                        hunk: hunk,
+                        lines: lines,
+                        discard: discard
+                    )
+            }
         }
 
         if discard {
@@ -444,7 +471,10 @@ final class RepositorySession {
         let request = generation
         let action: () -> Void = { [weak self] in
             guard let self, self.generation == request else { return }
-            self.perform({ try await $0.commit(subject: subject, body: body, amend: amend) }) { [weak self] in
+            self.performGit({ runner, _ in
+                try await WorkingCopyOperations(runner: runner)
+                    .commit(subject: subject, body: body, amend: amend)
+            }) { [weak self] in
                 self?.commitSubject = ""
                 self?.commitBody = ""
                 self?.amend = false
@@ -476,13 +506,17 @@ final class RepositorySession {
 
     /// 采用 Git 的 ours / theirs 语义，变基时界面另行说明两侧含义。
     func resolve(_ entries: [StatusEntry], theirs: Bool) {
-        perform { try await $0.resolve(entries, theirs: theirs) }
+        performGit { runner, _ in
+            try await WorkingCopyOperations(runner: runner).resolve(entries, theirs: theirs)
+        }
     }
 
     /// 横幅仅暴露当前操作的收尾动作。
     func finishOperation(_ action: String) {
         guard let operation = context?.operation else { return }
-        perform { try await $0.finish(operation, action: action) }
+        performGit { runner, _ in
+            try await WorkingCopyOperations(runner: runner).finish(operation, action: action)
+        }
     }
 
     /// 选区或暂存侧变化后取消旧 Diff，较晚完成的旧请求不会覆盖新选择。
@@ -522,9 +556,14 @@ final class RepositorySession {
         }
     }
 
-    /// 写任务独占窗口控件，完成后读取实际状态，不把命令发出当作成功。
-    private func perform(
-        _ action: @escaping @Sendable (WorkingCopyOperations) async throws -> Void,
+    /// 对话框可读取同一执行器，保持本机凭据与测试隔离环境一致。
+    var runner: GitRunner? { repository.map(makeRunner) }
+
+    /// 新建、检出、同步和工作区写入共用任务生命周期，取消后仍刷新真实状态。
+    func performGit(
+        _ action:
+            @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
+        title: String? = nil,
         success: (() -> Void)? = nil
     ) {
         guard canWrite, let repository else { return }
@@ -532,29 +571,53 @@ final class RepositorySession {
         contextTask?.cancel()
         contextTask = nil
         diffTask?.cancel()
+        history.suspend()
         isRefreshing = false
         isWriting = true
         let request = generation
-        let service = WorkingCopyOperations(runner: makeRunner(repository))
+        let runner = makeRunner(repository)
+        let activity = title.map { RepositoryActivity(repository: repository, title: $0) }
+        if let activity { RepositoryActivities.shared.items.insert(activity, at: 0) }
+        let (outputs, continuation) = AsyncStream<GitOutputEvent>.makeStream()
         writeTask = Task { [weak self] in
-            do {
-                try await action(service)
-                guard let self, self.generation == request, !Task.isCancelled else { return }
-                success?()
-            } catch {
-                guard let self, self.generation == request, !Task.isCancelled else { return }
-                self.stagingOverrides = [:]
-                let failure = AppFailure(error: error, opening: false)
-                self.failure = failure
-                self.onFailure?(failure)
-                if error is RemoteConnectionError { self.reconnect() }
+            let collector = Task { @MainActor in
+                for await output in outputs { activity?.append(output) }
             }
 
-            guard let self, self.generation == request, !Task.isCancelled else { return }
+            do {
+                try await action(runner) { continuation.yield($0) }
+                activity?.state = Task.isCancelled ? "activity.cancelled" : "activity.finished"
+                if let self, self.generation == request, !Task.isCancelled { success?() }
+            } catch {
+                let cancelled =
+                    Task.isCancelled || error is CancellationError
+                    || (error as? GitError)?.isCancelled == true
+                activity?.state = cancelled ? "activity.cancelled" : "activity.failed"
+
+                if let self, self.generation == request {
+                    self.stagingOverrides = [:]
+
+                    // 取消未确认仍须报告；普通取消只回到可刷新状态。
+                    if !cancelled || (error as? RemoteConnectionError)?.kind == .cancellationUnconfirmed {
+                        let failure = AppFailure(error: error, opening: false)
+                        self.failure = failure
+                        self.onFailure?(failure)
+                    }
+                    if error is RemoteConnectionError { self.reconnect() }
+                }
+            }
+
+            continuation.finish()
+            await collector.value
+            activity?.cancel = nil
+
+            guard let self, self.generation == request else { return }
             self.isWriting = false
             self.writeTask = nil
             self.refresh()
         }
+        let task = writeTask
+        activity?.cancel = { task?.cancel() }
     }
 
     /// 身份与状态加载失败仍展示诊断，不能误把未知状态当成普通改动。
