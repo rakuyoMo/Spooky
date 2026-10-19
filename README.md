@@ -2,8 +2,8 @@
 
 macOS 原生 Git 客户端：既能打开本机的仓库，也能经 SSH 直接操作另一台机器上的仓库。
 
-当前 App 支持本机与 SSH 服务器工作区：混合最近记录、连接体检、工作区状态、前后台轮询、断线重连，以及终端程序和默认主题设置。
-历史和 Diff 显示里程碑占位。完整 `1.0.0` 按 M1–M10 连续交付。
+当前 App 支持本机与 SSH 服务器工作区：混合最近记录、连接体检、工作区状态、文件 / 块 / 行暂存和丢弃、Diff、提交与 Amend、冲突收尾，以及终端程序和默认主题设置。
+本机通过文件事件刷新，服务器沿用前后台轮询与断线重连。历史显示里程碑占位，完整 `1.0.0` 按 M1–M10 连续交付。
 
 ## 目录
 
@@ -14,6 +14,7 @@ macOS 原生 Git 客户端：既能打开本机的仓库，也能经 SSH 直接�
 - `scripts/build-app.sh`：生成开发 App Bundle
 - [docs/testing/M1.md](docs/testing/M1.md)：本机 App 手动验收步骤
 - [docs/testing/M2.md](docs/testing/M2.md)：服务器连接、终端、主题与回归验收
+- [docs/testing/M3.md](docs/testing/M3.md)：工作区、补丁、提交、冲突与 SFTP 验收
 
 ## 构建、运行与测试
 
@@ -66,7 +67,13 @@ Bundle Identifier 固定为 `com.rakuyo.spooky`。界面跟随系统或 macOS �
 
 每个工作区使用 Spooky 专属主连接，空闲 10 分钟退出。前台每 2 秒、后台每 10 秒轮询，重新激活立即刷新。断线保留旧快照，后台重连；中断的写操作不自动重试，重连后核对分支、状态、暂存区锁和进行中的合并 / 变基。
 
-`RemoteConnection.sftpCommand()` 提供复用当前主连接的 SFTP 批处理启动接口；文件内容读写由 M3 实现。
+`RepositoryFiles` 使用系统 SFTP、复用当前主连接读写文件；传输经私有临时目录中继，取消只终止当前传输。远端路径不会交给本机文件 API。系统 SFTP 的批处理不能表示含 CR / LF 的路径，相关操作会明确报错。
+
+工作区默认平铺，⌃⌘T / ⌃⌘L 切换树形 / 平铺。三态勾选框和空格切换暂存；⇧⌘E 全部暂存，⌥⇧⌘E 全部取消暂存。详情区分别显示 Staged / Unstaged，行号支持点选、拖选与 ⇧ 范围选择。
+
+⇧⌘C 聚焦提交标题，编辑信息时 ⌘↩ 提交。提交信息经 stdin 传入并规范化为 NFC；修补最近提交需要确认。文件、块、行丢弃始终确认，服务器文案明确说明永久删除或覆盖。
+
+Diff 警告阈值在 General 设置中调整，默认 `20,000 kB`（`1 kB = 1,000` 字节），按单次补丁字节数计算；`256 MiB` 为单次输出上限。Show Diff 只放行当前文件。补丁应用前重新核对文件与暂存区快照，变化时拒绝应用并刷新。
 
 Git askpass、B 侧 SSH 私钥口令与编辑器请求只经当前主连接的反向 Unix socket 返回 A，使用随机会话令牌、一次性应答和 120 秒超时。凭据默认只在内存中，用户可选择存入 A 的钥匙串；输出中的凭据回显会被脱敏。
 
@@ -76,6 +83,12 @@ Git askpass、B 侧 SSH 私钥口令与编辑器请求只经当前主连接的�
 
 ```sh
 SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteConnectionTests
+```
+
+M3 远端提交与 SFTP 验收：
+
+```sh
+SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteWorkingCopyTests
 ```
 
 测试只使用 `spooky-test` 和 `~/.ssh/spooky-test_ed25519`，每次在 `/Users/wgy/spooky-test/` 下新建并清理独立子目录。指纹和认证失败使用 A 上的临时配置构造，不修改双方 SSH 配置、known_hosts 或全局 Git 配置。

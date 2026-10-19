@@ -37,6 +37,40 @@ public struct GitRunner: Sendable {
         self.environment = environment.updating(Self.environmentOverrides)
     }
 
+    /// 在集成测试中沿用专用认证配置对应的已建立连接。
+    init(location: RepositoryLocation, remote: RemoteConnection) {
+        self.location = location
+        self.remote = remote
+        self.executablePath = "/usr/bin/git"
+        self.environment = .inherit.updating(Self.environmentOverrides)
+    }
+
+    /// 将校验与多条写命令作为一个仓库操作，避免其它窗口在中间插入写入。
+    func writeTransaction<T: Sendable>(
+        _ action: @Sendable () async throws -> T
+    ) async throws -> T {
+        let target = try await remote?.open().location ?? location
+
+        if RepositoryOperationQueue.transaction == target {
+            return try await action()
+        }
+
+        let pool = await RepositoryOperationQueue.shared.permits(for: target).write
+        try await pool.acquire()
+
+        do {
+            let result = try await RepositoryOperationQueue.$transaction.withValue(target) {
+                try Task.checkCancellation()
+                return try await action()
+            }
+            await pool.release()
+            return result
+        } catch {
+            await pool.release()
+            throw error
+        }
+    }
+
     /// 执行一条 git 子命令，成功时返回标准输出
     ///
     /// - Parameters:
@@ -148,6 +182,8 @@ public struct GitRunner: Sendable {
         "LANG": "en_US.UTF-8",
         "LC_ALL": "en_US.UTF-8",
         "GIT_TERMINAL_PROMPT": "0",
+        "GIT_EDITOR": nil,
+        "GIT_SEQUENCE_EDITOR": nil,
         "GIT_DIR": nil,
         "GIT_WORK_TREE": nil,
         "GIT_COMMON_DIR": nil,

@@ -16,7 +16,10 @@ struct FileStatusView: View {
             case .ignored:
                 badge("!")
 
-            case .conflicted, .tracked:
+            case .conflicted:
+                badge("U")
+
+            case .tracked:
                 badge(entry.staged.map { String($0.rawValue) } ?? "")
                 badge(entry.unstaged.map { String($0.rawValue) } ?? "")
             }

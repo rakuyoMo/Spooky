@@ -37,6 +37,10 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
     /// 启动总是进入仓库管理，不以 shell 当前目录作为仓库。
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UserDefaults.standard.register(defaults: [
+            "workingCopyViewMode": 0,
+            "diffWarningKilobytes": WorkingCopyOperations.defaultWarningKilobytes,
+        ])
         configureMenu()
         newWindow()
         NSApp.activate(ignoringOtherApps: true)
@@ -364,6 +368,14 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         addItem("menu.showWorkingCopy", action: #selector(RepositoryWindowController.showWorkingCopy), key: "1", to: view)
         addItem("menu.showHistory", action: #selector(RepositoryWindowController.showHistory), key: "2", to: view)
         view.addItem(.separator())
+        addItem(
+            "working.list", action: #selector(RepositoryWindowController.viewAsList),
+            key: "l", modifiers: [.control, .command], to: view
+        )
+        addItem(
+            "working.tree", action: #selector(RepositoryWindowController.viewAsTree),
+            key: "t", modifiers: [.control, .command], to: view
+        )
         addItem("action.refresh", action: #selector(RepositoryWindowController.refreshRepository), key: "r", to: view)
         addItem(
             "menu.fullscreen",
@@ -372,6 +384,28 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             modifiers: [.control, .command],
             to: view
         )
+
+        let working = addMenu("workspace.title", to: menu)
+        addItem(
+            "working.commit", action: #selector(RepositoryWindowController.composeCommit),
+            key: "c", modifiers: [.shift, .command], to: working
+        )
+        addItem("working.stage", action: #selector(RepositoryWindowController.stageSelected), to: working)
+        addItem("working.unstage", action: #selector(RepositoryWindowController.unstageSelected), to: working)
+        addItem(
+            "working.stageAll", action: #selector(RepositoryWindowController.stageAll),
+            key: "e", modifiers: [.shift, .command], to: working
+        )
+        addItem(
+            "working.unstageAll", action: #selector(RepositoryWindowController.unstageAll),
+            key: "e", modifiers: [.option, .shift, .command], to: working
+        )
+        working.addItem(.separator())
+        addItem(
+            "working.discard", action: #selector(RepositoryWindowController.discardSelected),
+            key: "\u{8}", modifiers: [.shift, .command], to: working
+        )
+        addItem("working.discardAll", action: #selector(RepositoryWindowController.discardAll), to: working)
 
         let window = addMenu("menu.window", to: menu)
         NSApp.windowsMenu = window

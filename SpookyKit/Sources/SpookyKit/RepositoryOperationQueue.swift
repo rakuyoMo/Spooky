@@ -54,6 +54,9 @@ actor OperationPermitPool {
 
 /// 同一主机的通道上限与同一工作区的写锁跨执行器共享。
 actor RepositoryOperationQueue {
+    /// 组合写操作持有的仓库锁，让内部命令继续共享同一临界区。
+    @TaskLocal static var transaction: RepositoryLocation?
+
     /// 应用进程中的统一调度器。
     static let shared = RepositoryOperationQueue()
 
@@ -89,12 +92,14 @@ actor RepositoryOperationQueue {
         action: @Sendable () async throws -> T
     ) async throws -> T {
         let pools = permits(for: location)
-        if writing { try await pools.write.acquire() }
+        let ownsWrite = writing && Self.transaction != location
+
+        if ownsWrite { try await pools.write.acquire() }
 
         do {
             try await pools.host.acquire()
         } catch {
-            if writing { await pools.write.release() }
+            if ownsWrite { await pools.write.release() }
             throw error
         }
 
@@ -102,19 +107,19 @@ actor RepositoryOperationQueue {
             try Task.checkCancellation()
             let result = try await action()
             await pools.host.release()
-            if writing { await pools.write.release() }
+            if ownsWrite { await pools.write.release() }
             return result
         } catch {
             await pools.host.release()
-            if writing { await pools.write.release() }
+            if ownsWrite { await pools.write.release() }
             throw error
         }
     }
 
     /// 未知命令和带配置覆盖的命令统一按写操作调度。
     nonisolated static func isReadOnly(_ arguments: [String]) -> Bool {
-        guard let command = arguments.first else { return false }
-        return ["status", "rev-parse", "show", "log", "ls-files", "for-each-ref", "diff", "--version"]
+        guard let command = arguments.drop(while: { $0 == "--literal-pathspecs" }).first else { return false }
+        return ["status", "rev-parse", "show", "log", "ls-files", "for-each-ref", "diff", "var", "cat-file", "--version"]
             .contains(command)
     }
 }

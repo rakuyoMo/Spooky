@@ -130,9 +130,7 @@
 
 "detail.empty.message" = "Select a status entry to see its path.";
 
-"detail.diff.title" = "Diff Not Implemented Yet";
 
-"detail.diff.message" = "This milestone displays file paths and status.";
 
 "detail.originalPath" = "Previous path: %@";
 
@@ -240,3 +238,69 @@
 "remoteError.cancellationUnconfirmed.help" = "The local channel was closed, but the server process could not be confirmed stopped. Reconnect and inspect the repository; do not repeat the write automatically.";
 "remoteError.interruptedWrite" = "Interrupted Write Needs Verification";
 "remoteError.interruptedWrite.help" = "Reconnect to check the branch, working tree, index lock and merge or rebase state before writing again.";
+
+"working.stage" = "Stage";
+"working.unstage" = "Unstage";
+"working.stageAll" = "Stage All";
+"working.unstageAll" = "Unstage All";
+"working.commit" = "Commit";
+"working.amend" = "Amend";
+"working.amend.confirm" = "This replaces the most recent commit. Continue?";
+"working.subject" = "Commit Subject";
+"working.body" = "Detailed Description";
+"working.identityLoading" = "Loading committer…";
+"working.staging" = "Staging status: %@";
+"working.writing" = "Updating working copy…";
+"working.list" = "View as List";
+"working.tree" = "View as Tree";
+"working.viewMode" = "Working copy display";
+"working.staged" = "Staged";
+"working.unstaged" = "Unstaged";
+"working.diffSide" = "Changes to display";
+"working.multiple" = "Multiple files selected";
+"working.largeDiff" = "This diff is %d kB. Load its contents?";
+"working.showDiff" = "Show Diff";
+"working.loadingDiff" = "Loading Diff…";
+"working.noDiff" = "No text changes";
+"working.binary" = "Binary file differs. Text preview is unavailable.";
+"working.diffSummary" = "%d chunks, %d insertions, %d deletions";
+"working.noNewline" = "No newline at end of file";
+"working.selectLine" = "Select change at line %d";
+"working.selected" = "Selected";
+"working.stageChunk" = "Stage Chunk";
+"working.stageLine" = "Stage Line";
+"working.stageLines" = "Stage Lines";
+"working.unstageChunk" = "Unstage Chunk";
+"working.unstageLine" = "Unstage Line";
+"working.unstageLines" = "Unstage Lines";
+"working.discardChunk" = "Discard Chunk";
+"working.discardLine" = "Discard Line";
+"working.discardLines" = "Discard Lines";
+"working.discard" = "Discard Changes";
+"working.discardAll" = "Discard All Changes…";
+"working.discard.message" = "Permanently discard changes in %d files in %@, including staged changes and untracked files. This cannot be undone.";
+"working.discard.remote" = "Permanently delete or overwrite %d files on the server at %@. Staged changes are also discarded. This cannot be undone.";
+"working.discard.lines" = "Permanently discard the selected lines in %@. This cannot be undone.";
+"working.discard.remoteLines" = "Permanently overwrite the selected content on the server at %@. This cannot be undone.";
+"working.ours" = "Resolve Using Ours";
+"working.theirs" = "Resolve Using Theirs";
+"working.resolved" = "Mark as Resolved";
+"working.copyRelative" = "Copy Relative File Path";
+"working.operation.merge" = "Merge in Progress";
+"working.operation.squash" = "Squash Merge Awaiting Commit";
+"working.operation.rebase" = "Rebase in Progress";
+"working.operation.cherryPick" = "Cherry-Pick in Progress";
+"working.operation.revert" = "Revert in Progress";
+"working.conflicts" = "%d unresolved conflicts";
+"working.onlyConflicts" = "Show only conflicts";
+"working.rebaseSides" = "During rebase, ours is the upstream; theirs is the commit being replayed.";
+"working.abort" = "Abort";
+"working.continue" = "Continue";
+"working.skip" = "Skip";
+"working.diffThreshold" = "Show warning for diffs larger than (kB):";
+"working.error.stale" = "The file changed. Refresh the diff and select the changes again.";
+"working.error.selection" = "No applicable text changes selected.";
+"working.error.file" = "This operation requires a regular file.";
+"working.error.path" = "This path cannot be represented by SFTP batch commands.";
+"working.emptyMerge" = "Create Empty Merge Commit";
+"working.emptyMerge.message" = "This merge has no staged changes. Create the merge commit or abort the merge.";

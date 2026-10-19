@@ -1,4 +1,5 @@
 import AppKit
+import SpookyKit
 import SwiftUI
 
 /// 设置窗口采用原生工具栏式页签，单例入口为 ⌘,。
@@ -49,6 +50,9 @@ private struct GeneralSettingsView: View {
     /// 偏好只保存终端 Bundle Identifier。
     @AppStorage("terminalApplication") private var terminal = TerminalApplication.terminal.rawValue
 
+    /// 单次补丁的警告阈值，单位为 1000 字节。
+    @AppStorage("diffWarningKilobytes") private var diffWarning = WorkingCopyOperations.defaultWarningKilobytes
+
     /// General 表单的控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
@@ -74,6 +78,15 @@ private struct GeneralSettingsView: View {
                 .labelsHidden()
                 .frame(width: 278)
                 .accessibilityIdentifier("terminal-application")
+            }
+
+            GridRow {
+                Text(AppLocalization.text("working.diffThreshold"))
+                    .gridColumnAlignment(.trailing)
+                TextField("", value: $diffWarning, format: .number.grouping(.never))
+                    .frame(width: 100, alignment: .leading)
+                    .accessibilityLabel(AppLocalization.text("working.diffThreshold"))
+                    .onChange(of: diffWarning) { diffWarning = max(0, min(diffWarning, 268_435)) }
             }
         }
         .padding(40)

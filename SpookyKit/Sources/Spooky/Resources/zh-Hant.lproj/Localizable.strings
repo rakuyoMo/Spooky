@@ -130,9 +130,7 @@
 
 "detail.empty.message" = "選擇一筆狀態記錄以檢視路徑。";
 
-"detail.diff.title" = "Diff 尚未實作";
 
-"detail.diff.message" = "本里程碑顯示檔案路徑與狀態。";
 
 "detail.originalPath" = "原路徑：%@";
 
@@ -240,3 +238,69 @@
 "remoteError.cancellationUnconfirmed.help" = "本機通道已關閉，但尚未確認伺服器程序已結束。請重新連線並核對儲存庫，不會自動重複寫入。";
 "remoteError.interruptedWrite" = "中斷的寫入操作需要核對";
 "remoteError.interruptedWrite.help" = "請重新連線，核對分支、工作目錄、暫存區鎖定及合併或重定基底狀態後再寫入。";
+
+"working.stage" = "暫存";
+"working.unstage" = "取消暫存";
+"working.stageAll" = "全部暫存";
+"working.unstageAll" = "全部取消暫存";
+"working.commit" = "提交";
+"working.amend" = "修補最近提交";
+"working.amend.confirm" = "這會改寫最近一次提交，是否繼續？";
+"working.subject" = "提交標題";
+"working.body" = "詳細說明";
+"working.identityLoading" = "正在讀取提交人…";
+"working.staging" = "暫存狀態：%@";
+"working.writing" = "正在更新工作區…";
+"working.list" = "平鋪顯示";
+"working.tree" = "樹狀顯示";
+"working.viewMode" = "工作區顯示模式";
+"working.staged" = "已暫存";
+"working.unstaged" = "未暫存";
+"working.diffSide" = "顯示的變更";
+"working.multiple" = "已選取多個檔案";
+"working.largeDiff" = "此 Diff 為 %d kB，是否載入內容？";
+"working.showDiff" = "顯示 Diff";
+"working.loadingDiff" = "正在載入 Diff…";
+"working.noDiff" = "沒有文字變更";
+"working.binary" = "二進位檔案有變更，無法顯示文字預覽。";
+"working.diffSummary" = "%d 個區塊，新增 %d 行，刪除 %d 行";
+"working.noNewline" = "檔案結尾沒有換行";
+"working.selectLine" = "選取第 %d 行變更";
+"working.selected" = "已選取";
+"working.stageChunk" = "暫存區塊";
+"working.stageLine" = "暫存行";
+"working.stageLines" = "暫存所選行";
+"working.unstageChunk" = "取消暫存區塊";
+"working.unstageLine" = "取消暫存行";
+"working.unstageLines" = "取消暫存所選行";
+"working.discardChunk" = "捨棄區塊";
+"working.discardLine" = "捨棄行";
+"working.discardLines" = "捨棄所選行";
+"working.discard" = "捨棄變更";
+"working.discardAll" = "捨棄全部變更…";
+"working.discard.message" = "將永久捨棄 %d 個檔案的變更（含暫存變更和未追蹤檔案）。儲存庫：%@。此操作無法復原。";
+"working.discard.remote" = "將在伺服器上永久刪除或覆寫 %d 個檔案（含暫存變更）。儲存庫：%@。此操作無法復原。";
+"working.discard.lines" = "將永久捨棄 %@ 中所選行的變更，無法復原。";
+"working.discard.remoteLines" = "將在伺服器 %@ 上永久覆寫所選內容，無法復原。";
+"working.ours" = "採用 ours 版本";
+"working.theirs" = "採用 theirs 版本";
+"working.resolved" = "標記已解決";
+"working.copyRelative" = "複製相對檔案路徑";
+"working.operation.merge" = "合併進行中";
+"working.operation.squash" = "壓縮合併等待提交";
+"working.operation.rebase" = "變基進行中";
+"working.operation.cherryPick" = "摘取進行中";
+"working.operation.revert" = "反轉進行中";
+"working.conflicts" = "%d 個未解決衝突";
+"working.onlyConflicts" = "僅顯示衝突";
+"working.rebaseSides" = "變基時，ours 為上游，theirs 為正在重播的提交。";
+"working.abort" = "中止";
+"working.continue" = "繼續";
+"working.skip" = "跳過";
+"working.diffThreshold" = "Diff 警告門檻（kB）：";
+"working.error.stale" = "檔案已發生變更，請重新整理 Diff 後重新選取變更。";
+"working.error.selection" = "未選取可套用的文字變更。";
+"working.error.file" = "此操作需要一般檔案。";
+"working.error.path" = "此路徑無法透過 SFTP 批次指令表示。";
+"working.emptyMerge" = "建立空合併提交";
+"working.emptyMerge.message" = "本次合併沒有暫存變更。可建立合併提交，或中止合併。";

@@ -130,9 +130,7 @@
 
 "detail.empty.message" = "상태 항목을 선택하면 경로가 표시됩니다.";
 
-"detail.diff.title" = "Diff가 아직 구현되지 않았습니다";
 
-"detail.diff.message" = "이 마일스톤에서는 파일 경로와 상태를 표시합니다.";
 
 "detail.originalPath" = "이전 경로: %@";
 
@@ -240,3 +238,69 @@
 "remoteError.cancellationUnconfirmed.help" = "로컬 채널은 닫혔지만 서버 프로세스 종료를 확인하지 못했습니다. 다시 연결하여 저장소를 확인하세요. 쓰기는 자동 재실행되지 않습니다.";
 "remoteError.interruptedWrite" = "중단된 쓰기 확인 필요";
 "remoteError.interruptedWrite.help" = "다시 연결하여 브랜치, 작업 트리, 인덱스 잠금, 병합 및 리베이스 상태를 확인한 후 쓰세요.";
+
+"working.stage" = "스테이지";
+"working.unstage" = "스테이지 해제";
+"working.stageAll" = "모두 스테이지";
+"working.unstageAll" = "모두 스테이지 해제";
+"working.commit" = "커밋";
+"working.amend" = "최근 커밋 수정";
+"working.amend.confirm" = "가장 최근 커밋을 다시 작성합니다. 계속하시겠습니까?";
+"working.subject" = "커밋 제목";
+"working.body" = "상세 설명";
+"working.identityLoading" = "커미터 읽는 중…";
+"working.staging" = "스테이지 상태: %@";
+"working.writing" = "작업 복사본 업데이트 중…";
+"working.list" = "목록으로 보기";
+"working.tree" = "트리로 보기";
+"working.viewMode" = "작업 복사본 표시";
+"working.staged" = "스테이지됨";
+"working.unstaged" = "스테이지 안 됨";
+"working.diffSide" = "표시할 변경 사항";
+"working.multiple" = "여러 파일 선택됨";
+"working.largeDiff" = "이 Diff 는 %d kB 입니다. 내용을 불러오시겠습니까?";
+"working.showDiff" = "Diff 표시";
+"working.loadingDiff" = "Diff 읽는 중…";
+"working.noDiff" = "텍스트 변경 없음";
+"working.binary" = "바이너리 파일이 변경되었습니다. 텍스트 미리 보기를 사용할 수 없습니다.";
+"working.diffSummary" = "블록 %d 개, 추가 %d 줄, 삭제 %d 줄";
+"working.noNewline" = "파일 끝에 줄 바꿈 없음";
+"working.selectLine" = "%d 번째 줄 변경 선택";
+"working.selected" = "선택됨";
+"working.stageChunk" = "블록 스테이지";
+"working.stageLine" = "줄 스테이지";
+"working.stageLines" = "선택한 줄 스테이지";
+"working.unstageChunk" = "블록 스테이지 해제";
+"working.unstageLine" = "줄 스테이지 해제";
+"working.unstageLines" = "선택한 줄 스테이지 해제";
+"working.discardChunk" = "블록 버리기";
+"working.discardLine" = "줄 버리기";
+"working.discardLines" = "선택한 줄 버리기";
+"working.discard" = "변경 사항 버리기";
+"working.discardAll" = "모든 변경 사항 버리기…";
+"working.discard.message" = "파일 %d 개의 변경을 영구적으로 버립니다. 저장소: %@. 스테이지된 변경과 추적되지 않은 파일도 포함되며 되돌릴 수 없습니다.";
+"working.discard.remote" = "서버의 파일 %d 개를 영구적으로 삭제하거나 덮어씁니다. 저장소: %@. 스테이지된 변경도 버려지며 되돌릴 수 없습니다.";
+"working.discard.lines" = "%@ 의 선택한 줄 변경을 영구적으로 버립니다. 되돌릴 수 없습니다.";
+"working.discard.remoteLines" = "서버 %@ 의 선택한 내용을 영구적으로 덮어씁니다. 되돌릴 수 없습니다.";
+"working.ours" = "ours 버전으로 해결";
+"working.theirs" = "theirs 버전으로 해결";
+"working.resolved" = "해결됨으로 표시";
+"working.copyRelative" = "상대 파일 경로 복사";
+"working.operation.merge" = "병합 진행 중";
+"working.operation.squash" = "스쿼시 병합 커밋 대기 중";
+"working.operation.rebase" = "리베이스 진행 중";
+"working.operation.cherryPick" = "체리픽 진행 중";
+"working.operation.revert" = "되돌리기 진행 중";
+"working.conflicts" = "해결되지 않은 충돌 %d 개";
+"working.onlyConflicts" = "충돌만 표시";
+"working.rebaseSides" = "리베이스에서 ours 는 업스트림이고 theirs 는 다시 적용 중인 커밋입니다.";
+"working.abort" = "중단";
+"working.continue" = "계속";
+"working.skip" = "건너뛰기";
+"working.diffThreshold" = "Diff 경고 임계값 (kB):";
+"working.error.stale" = "파일이 변경되었습니다. Diff 를 새로 고친 뒤 변경을 다시 선택하세요.";
+"working.error.selection" = "적용 가능한 텍스트 변경이 선택되지 않았습니다.";
+"working.error.file" = "이 작업에는 일반 파일이 필요합니다.";
+"working.error.path" = "이 경로는 SFTP 배치 명령으로 표현할 수 없습니다.";
+"working.emptyMerge" = "빈 병합 커밋 만들기";
+"working.emptyMerge.message" = "이 병합에는 스테이지된 변경이 없습니다. 병합 커밋을 만들거나 병합을 중단하세요.";

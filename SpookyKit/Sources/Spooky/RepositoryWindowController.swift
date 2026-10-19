@@ -24,6 +24,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 工作区的列表与详情分栏。
     private var workingCopySplit: NSSplitViewController?
 
+    /// 窗口级快捷键跨越 AppKit 文件列表与 SwiftUI 信息框。
+    private var keyMonitor: Any?
+
     /// 创建原生窗口；标签合并被关闭，显式新窗口始终独立。
     init(coordinator: SpookyApplicationController, session: RepositorySession = RepositorySession()) {
         self.coordinator = coordinator
@@ -41,7 +44,23 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         super.init(window: window)
 
         window.delegate = self
+        configureWorkingCopyKeys()
         session.onFailure = { [weak self] in self?.showFailure($0) }
+        session.onConfirm = { [weak self] title, message, action, abort in
+            guard let window = self?.window, window.attachedSheet == nil else { return }
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = title
+            alert.informativeText = message
+            alert.addButton(withTitle: title)
+            alert.addButton(withTitle: AppLocalization.text(abort == nil ? "action.cancel" : "working.abort"))
+
+            // Sheet 已结束后才开始写入，错误与进度由仓库视图承接。
+            alert.beginSheetModal(for: window) { response in
+                if response == .alertFirstButtonReturn { action() }
+                else if response == .alertSecondButtonReturn { abort?() }
+            }
+        }
         showRepositories()
 
         // 内容控制器装入后再设初始尺寸，避免 SwiftUI 的理想尺寸覆盖窗口默认值。
@@ -214,6 +233,40 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         session.refresh()
     }
 
+    /// 提交菜单与工具栏聚焦已有的工作区标题框。
+    @objc func composeCommit() {
+        if session.activeView != .workingCopy { showWorkingCopy() }
+        session.commitFocusRequest += 1
+    }
+
+    /// 全部暂存的工具栏入口支持 ⌥ 切换到全部取消暂存。
+    @objc func stageAll() {
+        let unstage = NSEvent.modifierFlags.contains(.option)
+            && session.status?.entries.contains(where: \.hasStagedChanges) == true
+        session.stageAll(staged: !unstage)
+    }
+
+    /// 主菜单的独立取消暂存动作。
+    @objc func unstageAll() { session.stageAll(staged: false) }
+
+    /// 选中文件的菜单暂存入口。
+    @objc func stageSelected() { session.stage(session.selectedEntries, staged: true) }
+
+    /// 选中文件的菜单取消暂存入口。
+    @objc func unstageSelected() { session.stage(session.selectedEntries, staged: false) }
+
+    /// 主菜单和文件右键共用丢弃确认。
+    @objc func discardSelected() { session.discard(session.selectedEntries) }
+
+    /// 全部丢弃只覆盖当前状态中的改动。
+    @objc func discardAll() { session.discard(session.status?.entries ?? []) }
+
+    /// 平铺偏好跨仓库共享。
+    @objc func viewAsList() { UserDefaults.standard.set(0, forKey: "workingCopyViewMode") }
+
+    /// 树形偏好跨仓库共享。
+    @objc func viewAsTree() { UserDefaults.standard.set(1, forKey: "workingCopyViewMode") }
+
     /// 切换到工作区，⌘1 与侧边栏使用相同状态。
     @objc func showWorkingCopy() {
         guard session.repository != nil else {
@@ -290,6 +343,8 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
 
     /// 关窗时取消该窗口的工作，并从应用窗口集合中移除。
     func windowWillClose(_ notification: Notification) {
+        if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+        keyMonitor = nil
         coordinator?.cancelOpening(in: self)
         let location = session.repository
         session.close()
@@ -300,6 +355,26 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 仓库动作按当前视图与加载状态启用。
     func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
         switch item.action {
+        case #selector(composeCommit), #selector(viewAsList), #selector(viewAsTree):
+            return !showsManager && session.repository != nil
+
+        case #selector(stageAll):
+            let unstage = NSEvent.modifierFlags.contains(.option)
+                && session.status?.entries.contains(where: \.hasStagedChanges) == true
+            return !showsManager && session.canWrite
+                && session.status?.entries.contains(where: {
+                    unstage ? $0.hasStagedChanges : $0.hasUnstagedChanges
+                }) == true
+
+        case #selector(unstageAll):
+            return !showsManager && session.canWrite && session.status?.entries.contains(where: \.hasStagedChanges) == true
+
+        case #selector(stageSelected), #selector(unstageSelected), #selector(discardSelected):
+            return !showsManager && session.canWrite && !session.selectedEntries.isEmpty
+
+        case #selector(discardAll):
+            return !showsManager && session.canWrite && session.status?.entries.isEmpty == false
+
         case #selector(openInTerminal), #selector(copyPath):
             return (showsManager ? session.selectedRecentLocation : session.repository) != nil
 
@@ -331,6 +406,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
 
         if workingCopySplit != nil {
             items.append(.init("detailSeparator"))
+            items.append(contentsOf: [.init("stageAll"), .init("commit")])
         }
 
         if !showsManager, session.repository?.host != nil {
@@ -380,6 +456,12 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         let configuration: (String, String, Selector)
 
         switch identifier.rawValue {
+        case "stageAll":
+            configuration = ("working.stageAll", "checkmark.square", #selector(stageAll))
+
+        case "commit":
+            configuration = ("working.commit", "checkmark.circle", #selector(composeCommit))
+
         case "open":
             configuration = ("action.openLocal", "folder.badge.plus", #selector(chooseRepository))
 
@@ -409,6 +491,49 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         item.target = self
         item.action = configuration.2
         return item
+    }
+
+    /// 本窗口的修饰键、提交快捷键和工具栏状态使用同一事件源。
+    private func configureWorkingCopyKeys() {
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
+            let handled = MainActor.assumeIsolated {
+                guard let self, NSApp.keyWindow === self.window, !self.showsManager,
+                      self.session.activeView == .workingCopy,
+                      self.window?.attachedSheet == nil else { return false }
+                let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+                if event.type == .flagsChanged {
+                    let unstage = flags.contains(.option)
+                        && self.session.status?.entries.contains(where: \.hasStagedChanges) == true
+                    let item = self.window?.toolbar?.items.first { $0.itemIdentifier.rawValue == "stageAll" }
+                    item?.label = AppLocalization.text(unstage ? "working.unstageAll" : "working.stageAll")
+                    item?.toolTip = item?.label
+                    self.window?.toolbar?.validateVisibleItems()
+                    return false
+                }
+
+                let enter = event.keyCode == 36 && (flags == .command || flags == [.command, .option])
+                    || event.keyCode == 76 && flags.isEmpty
+                guard enter, self.session.isEditingCommitMessage || flags.contains(.option) else { return false }
+
+                // 快速修补在确认前捕获最近信息，取消确认不会覆盖原来的普通草稿。
+                let quick = flags.contains(.option) && !self.session.isEditingCommitMessage && !self.session.amend
+                if quick { self.session.setAmend(true) }
+
+                if let operation = self.session.context?.operation,
+                   [.rebase, .cherryPick, .revert].contains(operation),
+                   self.session.canWrite, self.session.conflictCount == 0 {
+                    self.session.finishOperation("continue")
+                } else if self.session.canCommit {
+                    self.session.commit()
+                } else {
+                    NSSound.beep()
+                }
+
+                if quick { self.session.setAmend(false) }
+                return true
+            }
+            return handled ? nil : event
+        }
     }
 
     /// 仓库主视图切换没有转场；列表与详情只在工作区出现。

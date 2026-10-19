@@ -277,7 +277,7 @@ public actor RemoteConnection {
         }
     }
 
-    /// 为 SFTP 批处理预留同主连接的启动接口，复用失效时禁止新建连接。
+    /// 为 SFTP 批处理提供同主连接的启动接口，复用失效时禁止新建连接。
     public func sftpCommand() async throws -> (executable: String, arguments: [String]) {
         if let canonical { return try await canonical.sftpCommand() }
         try await check()
@@ -291,6 +291,19 @@ public actor RemoteConnection {
             "--", host,
         ]
         return ("/usr/bin/sftp", arguments)
+    }
+
+    /// 文件传输共用主机队列和写入核对规则，取消只终止本次 SFTP 通道。
+    func transferSFTP(_ input: Data, writing: Bool) async throws -> GitCommandResult {
+        if let canonical { return try await canonical.transferSFTP(input, writing: writing) }
+        guard !writing || !requiresReconciliation else {
+            throw RemoteConnectionError(.interruptedWrite)
+        }
+
+        let location = repository?.location ?? .remote(host: host, path: requestedPath)
+        return try await RepositoryOperationQueue.shared.perform(at: location, writing: writing) {
+            try await self.runSFTP(input, writing: writing)
+        }
     }
 
     /// 用于断线验收：仅关闭 Spooky 自己的 SSH 主连接。
@@ -355,6 +368,49 @@ public actor RemoteConnection {
             writing: writing,
             onOutput: { event(.output($0)) }
         )
+    }
+
+    /// 活跃传输阻止空闲回收，失败后检查主连接以区分文件错误与断线。
+    private func runSFTP(_ input: Data, writing: Bool) async throws -> GitCommandResult {
+        guard !writing || !requiresReconciliation else {
+            throw RemoteConnectionError(.interruptedWrite)
+        }
+
+        let command = try await sftpCommand()
+        activeChannels += 1
+        defer {
+            activeChannels -= 1
+            lastCommand = .now
+        }
+
+        do {
+            return try await CommandExecutor.execute(
+                executable: command.executable,
+                processArguments: command.arguments,
+                arguments: ["sftp"],
+                environment: .inherit.updating(["LC_ALL": "en_US.UTF-8"]),
+                input: input
+            )
+        } catch {
+            let original = error
+            let result = (error as? GitError)?.result
+
+            if Task.isCancelled {
+                if writing { requiresReconciliation = true }
+                throw original
+            }
+
+            do { try await check() }
+            catch {
+                requiresReconciliation = writing || requiresReconciliation
+                let failure = RemoteConnectionError(writing ? .interruptedWrite : .unavailable, result: result)
+                self.failure = failure
+                updateState(.unavailable)
+                throw failure
+            }
+
+            throw original
+        }
     }
 
     /// 检查输入结构；单引号属于合法数据，但选项、用户和端口不在别名中拆解。
@@ -487,12 +543,14 @@ public actor RemoteConnection {
         mkdir -p "$HOME/.spooky/bin"
         chmod 700 "$HOME/.spooky" "$HOME/.spooky/bin"
         spooky_install_file=$(mktemp "$HOME/.spooky/bin/.install-XXXXXXXX")
-        trap 'rm -f "$spooky_install_file"' EXIT HUP INT TERM
+        trap 'rm -f "$spooky_install_file" "$spooky_install_file-askpass" "$spooky_install_file-git-askpass"' EXIT HUP INT TERM
         cat > "$spooky_install_file"
         chmod 700 "$spooky_install_file"
+        ln "$spooky_install_file" "$spooky_install_file-askpass"
+        ln "$spooky_install_file" "$spooky_install_file-git-askpass"
         mv -f "$spooky_install_file" "$HOME/.spooky/bin/\(filename)"
-        ln -f "$HOME/.spooky/bin/\(filename)" "$HOME/.spooky/bin/\(filename)-askpass"
-        ln -f "$HOME/.spooky/bin/\(filename)" "$HOME/.spooky/bin/\(filename)-git-askpass"
+        mv -f "$spooky_install_file-askpass" "$HOME/.spooky/bin/\(filename)-askpass"
+        mv -f "$spooky_install_file-git-askpass" "$HOME/.spooky/bin/\(filename)-git-askpass"
         printf '%s\\n' "$HOME/.spooky/bin/\(filename)"
         """
         let installed = try await probe(["/bin/sh", "-c", install], input: source, kind: .deployment)

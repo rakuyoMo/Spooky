@@ -7,7 +7,7 @@
 Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能经 SSH 直接操作另一台机器上的仓库。
 
 - `Spooky` 是可运行的桌面 App；`SpookyKit` 核心库负责在本机或远端执行 Git、读取工作区状态并解析输出
-- 当前 App 支持本机与服务器工作区、混合最近记录、连接体检、断线重连、三栏状态视图、轮询刷新、终端与默认主题设置；产品按 M1–M10 逐步完成 `1.0.0`
+- 当前 App 支持本机与服务器工作区、混合最近记录、连接体检、断线重连、Diff、文件 / 块 / 行操作、提交与冲突收尾、文件监听与轮询刷新、终端与默认主题设置；产品按 M1–M10 逐步完成 `1.0.0`
 - 远端仓库的工作区留在远端机器，客户端经系统 SSH、用 `~/.ssh/config` 中的主机别名访问
 - 纯开源的个人工具，只在 GitHub 分发
 - 许可证为 [GPL-3.0](LICENSE)
@@ -41,6 +41,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 | `swift build --package-path SpookyKit` | 编译核心库与 App |
 | `swift test --package-path SpookyKit` | 运行核心库、会话状态与本地化测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteConnectionTests` | 显式运行 `spooky-test` 远端集成测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteWorkingCopyTests` | 显式运行 M3 的 SFTP 与远端提交测试 |
 | `swift build --package-path SpookyKit --product Spooky` | 编译可执行 App product |
 | `swift run --package-path SpookyKit Spooky` | 启动 App 的仓库管理窗口 |
 | `./scripts/build-app.sh` | 生成开发用 `SpookyKit/.build/Spooky.app` |
@@ -66,6 +67,9 @@ SpookyKit/                    核心库与 App 的 Swift Package
     Resources/spooky-remote.pl 远端进程组与回调客户端
     LocalRepository.swift     Git 最低版本检查与本机工作区识别
     WorkingCopyStatus.swift   porcelain v2 工作区状态模型与解析
+    RepositoryDiff.swift      按字节解析 Diff 与生成选区补丁
+    WorkingCopyOperations.swift 工作区写操作、快照校验、身份与进行中状态
+    RepositoryFiles.swift     本机文件访问与复用主连接的 SFTP 传输
   Sources/Spooky/             App 入口、窗口协调、会话状态与各内容视图
     Info.plist                应用身份和支持语言
     Resources/                五语文案、系统权限说明、命名色与内置主题 JSON
@@ -74,6 +78,7 @@ SpookyKit/                    核心库与 App 的 Swift Package
 scripts/build-app.sh          开发 App Bundle 生成脚本
 docs/testing/M1.md            M1 的 App 手动验收步骤
 docs/testing/M2.md            M2 的连接、终端与主题验收步骤
+docs/testing/M3.md            M3 的工作区、Diff、提交与冲突验收步骤
 README.md                     项目说明、构建与测试命令
 LICENSE                       GPL-3.0 许可证全文
 ```
@@ -92,7 +97,9 @@ LICENSE                       GPL-3.0 许可证全文
 - 远端包装器由资源 `spooky-remote.pl` 按内容摘要版本化，原子安装到 B 的 `~/.spooky/bin`；依赖 B 的系统 Perl 核心模块，不安装常驻服务
 - 所有写命令通过仓库队列串行；断线不重试写入，未确认的取消需要重连核对；新增纯读取命令时在 `RepositoryOperationQueue.isReadOnly` 明确登记
 - 回调请求使用会话令牌和一次性应答，凭据不进入记录、日志或错误对象；用户选择保存时仅写 A 的钥匙串
-- 服务器轮询间隔统一使用 `RemoteConnection` 的前台 2 秒、后台 10 秒常量；M3 的 SFTP 文件读写通过 `RemoteConnection.sftpCommand()` 接入同一主连接
+- 服务器轮询间隔统一使用 `RemoteConnection` 的前台 2 秒、后台 10 秒常量；本机使用 `RepositoryFileMonitor` 的递归 FSEvents，并保留手动刷新
+- 文件读写使用 `RepositoryFiles`；SFTP 经 `RemoteConnection.sftpCommand()` 接入同一主连接，读写分别遵循主机并发和仓库写队列规则
+- 工作区 UI 通过 `WorkingCopyOperations` 发起写入；组合操作用 `GitRunner.writeTransaction` 持有仓库锁，补丁以原始字节生成并核对快照，路径列表经字面 NUL 输入传递
 
 ### 测试
 
@@ -102,6 +109,7 @@ LICENSE                       GPL-3.0 许可证全文
 - Git 或 SSH 的失败路径检查 `GitError` 的退出码与错误信息
 - 改动 App 时还须运行 `swift build --package-path SpookyKit --product Spooky`，按 [M1 验收步骤](docs/testing/M1.md) 实际启动、操作并截图；未执行的检查明确记录为未验证
 - M2 的服务器、终端与主题场景见 [M2 验收步骤](docs/testing/M2.md)；远端测试默认不跑，必须通过 `SPOOKY_REMOTE_TESTS=1` 显式开启
+- M3 的本机 / 服务器提交闭环、行选择、确认与冲突收尾见 [M3 验收步骤](docs/testing/M3.md)
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
 - 本地化新增资源键时同步五种语言，并保持格式参数一致；错误标题和恢复说明本地化，Git 原文保持不变
 
