@@ -1,0 +1,112 @@
+{
+  "general_background_color": {
+    "light": {
+      "hex": "#FFFFFF",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#323437",
+      "alpha": 1.0
+    }
+  },
+  "general_header_background_color": {
+    "light": {
+      "hex": "#F5F5F5",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#46484B",
+      "alpha": 1.0
+    }
+  },
+  "general_alternate_row_background_color": {
+    "light": {
+      "hex": "#FAFAFA",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#282828",
+      "alpha": 1.0
+    }
+  },
+  "general_border_color": {
+    "light": {
+      "hex": "#C9C9C9",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#5F5F5F",
+      "alpha": 1.0
+    }
+  },
+  "general_info_background_color": {
+    "light": {
+      "hex": "#007AFF",
+      "alpha": 0.05
+    },
+    "dark": {
+      "hex": "#0A84FF",
+      "alpha": 0.25
+    }
+  },
+  "general_warning_bg_color": {
+    "light": {
+      "hex": "#FFCC00",
+      "alpha": 0.3
+    },
+    "dark": {
+      "hex": "#FFCC00",
+      "alpha": 0.15
+    }
+  },
+  "green_file_status_background_color": {
+    "light": {
+      "hex": "#28CD41",
+      "alpha": 0.85
+    },
+    "dark": {
+      "hex": "#32D74B",
+      "alpha": 0.85
+    }
+  },
+  "blue_file_status_background_color": {
+    "light": {
+      "hex": "#007AFF",
+      "alpha": 0.9
+    },
+    "dark": {
+      "hex": "#0A84FF",
+      "alpha": 0.7
+    }
+  },
+  "red_file_status_background_color": {
+    "light": {
+      "hex": "#FF3B30",
+      "alpha": 0.85
+    },
+    "dark": {
+      "hex": "#FF453A",
+      "alpha": 0.85
+    }
+  },
+  "gray_file_status_background_color": {
+    "light": {
+      "hex": "#8E8E93",
+      "alpha": 0.6
+    },
+    "dark": {
+      "hex": "#98989D",
+      "alpha": 0.9
+    }
+  },
+  "sidebarBadgeBackgroundColor": {
+    "light": {
+      "hex": "#969696",
+      "alpha": 0.2
+    },
+    "dark": {
+      "hex": "#3D4140",
+      "alpha": 0.85
+    }
+  }
+}

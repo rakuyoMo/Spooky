@@ -1,0 +1,242 @@
+"app.name" = "Spooky";
+
+"menu.file" = "文件";
+
+"menu.edit" = "编辑";
+
+"menu.view" = "视图";
+
+"menu.window" = "窗口";
+
+"menu.newWindow" = "新建窗口";
+
+"menu.openRecent" = "打开最近仓库";
+
+"menu.closeWindow" = "关闭窗口";
+
+"menu.showRepositories" = "显示仓库管理";
+
+"menu.showWorkingCopy" = "显示工作区";
+
+"menu.showHistory" = "显示历史";
+
+"menu.fullscreen" = "进入全屏幕";
+
+"menu.minimize" = "最小化";
+
+"menu.zoom" = "缩放";
+
+"menu.bringAll" = "前置全部窗口";
+
+"menu.hide" = "隐藏 Spooky";
+
+"menu.hideOthers" = "隐藏其他";
+
+"menu.showAll" = "全部显示";
+
+"menu.quit" = "退出 Spooky";
+
+"menu.cut" = "剪切";
+
+"menu.copy" = "拷贝";
+
+"menu.paste" = "粘贴";
+
+"menu.selectAll" = "全选";
+
+"action.openLocal" = "打开本机仓库…";
+
+"action.open" = "打开";
+
+"action.openNewWindow" = "在新窗口打开";
+
+"action.closeRepository" = "关闭当前仓库";
+
+"action.refresh" = "刷新";
+
+"action.close" = "关闭";
+
+"action.chooseAnother" = "重新选择目录…";
+
+"repositories.title" = "仓库管理";
+
+"repositories.recent" = "最近打开的仓库";
+
+"repositories.empty.title" = "打开 Git 仓库";
+
+"repositories.empty.message" = "选择本机工作区，或将仓库文件夹拖到这里。";
+
+"repositories.unavailable" = "路径失效或不可访问，可重新打开";
+
+"repositories.path" = "绝对路径";
+
+"repositories.panel.message" = "选择已有 Git 仓库的工作区目录。";
+
+"workspace.group" = "工作空间";
+
+"workspace.title" = "工作区";
+
+"history.title" = "历史";
+
+"history.pending" = "本里程碑尚未实现历史视图。";
+
+"loading.open" = "正在打开仓库…";
+
+"loading.status" = "正在刷新状态…";
+
+"loading.check" = "正在检查仓库…";
+
+"branch.unborn" = "%@（尚无提交）";
+
+"branch.detached" = "%@（分离 HEAD）";
+
+"branch.noHead" = "没有 HEAD 分支";
+
+"branch.noTracking" = "没有上游";
+
+"branch.ahead" = "领先 %ld";
+
+"branch.behind" = "落后 %ld";
+
+"workspace.changed" = "改动文件：%ld";
+
+"status.column" = "状态";
+
+"status.filename" = "文件名";
+
+"status.modified" = "已修改";
+
+"status.typeChanged" = "类型变化";
+
+"status.added" = "已新增";
+
+"status.deleted" = "已删除";
+
+"status.renamed" = "已重命名";
+
+"status.copied" = "已复制";
+
+"status.conflicted" = "存在冲突";
+
+"status.untracked" = "未跟踪";
+
+"status.ignored" = "已忽略";
+
+"status.unchanged" = "没有变化";
+
+"status.description" = "暂存区：%@；工作区：%@";
+
+"detail.empty.title" = "未选择文件";
+
+"detail.empty.message" = "选择一条状态记录以查看路径。";
+
+"detail.diff.title" = "Diff 尚未实现";
+
+"detail.diff.message" = "本里程碑显示文件路径与状态。";
+
+"detail.originalPath" = "原路径：%@";
+
+"error.command" = "Git 命令执行失败";
+
+"error.launch" = "无法启动 Git";
+
+"error.notRepository" = "所选目录不是 Git 仓库";
+
+"error.notWorkingTree" = "需要 Git 工作区";
+
+"error.path" = "仓库路径失效或不可访问";
+
+"error.ownership" = "Git 拒绝访问此仓库的所有权";
+
+"error.cancelled" = "操作已取消";
+
+"error.outputLimit" = "Git 输出超过大小限制";
+
+"error.process" = "与 Git 进程通信失败";
+
+"error.version" = "需要 Git 2.41.0 或更高版本";
+
+"error.parse" = "无法解析 Git 状态";
+
+"error.openHelp" = "请选择可访问的 Git 工作区。Spooky 要求 /usr/bin/git 不低于 2.41.0；版本不足时请更新 Xcode 或命令行工具。下方保留原始输出。";
+
+"error.refreshHelp" = "刷新失败时保留已有结果。请查看原始输出，处理问题后刷新重试。";
+
+"error.details" = "原始输出";
+
+"error.noOutput" = "命令未提供输出。";
+
+"error.outputLimitHelp" = "命令超过标准输出 256 MiB 或标准错误 1 MiB 的收集上限，已拒绝载入超限结果。";
+"action.addRemote" = "添加服务器仓库…";
+"action.openTerminal" = "在终端中打开";
+"action.revealFinder" = "在 Finder 中显示";
+"action.copyPath" = "复制路径";
+"action.reconnect" = "重新连接";
+"action.cancel" = "取消";
+"action.continue" = "继续";
+"remote.form.help" = "输入 SSH 配置中的主机别名及该服务器上的绝对路径。";
+"remote.host" = "主机别名：";
+"remote.path" = "仓库路径：";
+"remote.checking" = "正在检查连接…";
+"connection.connecting" = "连接中";
+"connection.connected" = "已连接";
+"connection.reconnecting" = "重连中";
+"connection.unavailable" = "不可用";
+"connection.cached" = "正在显示上次成功读取的状态，连接恢复前禁止写入。";
+"connection.recovery" = "已核对中断的操作，未重试。分支：%@ · 改动：%ld · 暂存区锁：%@ · 合并中：%@ · 变基中：%@";
+"state.yes" = "是";
+"state.no" = "否";
+"branch.detachedShort" = "分离 HEAD";
+"settings.title" = "设置…";
+"settings.general" = "通用";
+"settings.themes" = "主题";
+"settings.terminal" = "终端程序：";
+"callback.editor" = "编辑远端文本";
+"callback.credentials" = "服务器凭据请求";
+"callback.saveKeychain" = "存入这台 Mac 的钥匙串";
+"callback.value" = "凭据";
+"error.indexLocked" = "另一个 Git 进程持有暂存区锁，请等待它结束后重试。";
+"error.terminal" = "无法打开终端";
+"error.terminalHelp" = "请检查设置中的终端选择及 macOS 自动化权限。";
+"error.exitCode" = "退出码：%ld";
+"terminal.notInstalled" = "未安装 %@。";
+"themes.font" = "字体：%@ · %.0f pt";
+"themes.followsSystem" = "浅色外观使用 Default，深色外观使用 Default (Dark)。";
+"themes.background" = "背景";
+"themes.added" = "新增";
+"themes.deleted" = "删除";
+"themes.preview.context" = "  未改动的文本";
+"themes.preview.added" = "+ 新增的文本";
+"themes.preview.deleted" = "− 删除的文本";
+"remoteError.invalidHost" = "SSH 主机别名无效";
+"remoteError.invalidHost.help" = "请输入 ~/.ssh/config 中的一个主机别名，不包含用户名或端口。";
+"remoteError.absolutePathRequired" = "需要绝对路径";
+"remoteError.absolutePathRequired.help" = "请输入以 / 开头的服务器仓库完整路径。";
+"remoteError.unknownHostKey" = "主机指纹尚未确认";
+"remoteError.unknownHostKey.help" = "请先在受信任的终端中核实服务器指纹，再重新连接。Spooky 不会自动接受指纹。";
+"remoteError.changedHostKey" = "主机指纹已变化";
+"remoteError.changedHostKey.help" = "请先在受信任的终端中与服务器所有者核实指纹变化，再重新连接。";
+"remoteError.authentication" = "SSH 认证失败";
+"remoteError.authentication.help" = "请检查这台 Mac 的 SSH 密钥、钥匙串或 SSH agent。私钥口令不会发送到服务器。";
+"remoteError.unavailable" = "服务器连接不可用";
+"remoteError.unavailable.help" = "请检查主机别名和连接后重试。上次成功读取的状态仍会保留。";
+"remoteError.gitUnavailable" = "服务器上的 Git 不可用";
+"remoteError.gitUnavailable.help" = "请在服务器上安装 Git 2.41.0 或更高版本，并确保非交互 SSH 环境可以找到它。";
+"remoteError.gitVersion" = "服务器 Git 版本不符合要求";
+"remoteError.gitVersion.help" = "请将服务器 Git 更新至 2.41.0 或更高版本。本机与远端采用相同的最低版本。";
+"remoteError.pathUnavailable" = "服务器目录不存在";
+"remoteError.pathUnavailable.help" = "请检查绝对路径是否存在于所选服务器。";
+"remoteError.pathPermission" = "无权访问服务器目录";
+"remoteError.pathPermission.help" = "SSH 登录用户需要该目录的读取和搜索权限。";
+"remoteError.notWorkingTree" = "服务器路径不是 Git 工作区";
+"remoteError.notWorkingTree.help" = "请选择服务器上已有的 Git 工作区，并查看 Git 原文中的所有权限制。";
+"remoteError.statusFormat" = "无法读取服务器状态";
+"remoteError.statusFormat.help" = "请查看下方 Git status 错误。Git 必须支持以 NUL 分隔的 porcelain v2 输出。";
+"remoteError.deployment" = "无法建立服务器会话";
+"remoteError.deployment.help" = "请检查 SSH Unix socket 转发、/usr/bin/perl，以及 ~/.spooky/bin 和会话临时目录的写入权限。";
+"remoteError.protocolFailure" = "服务器操作结果不完整";
+"remoteError.protocolFailure.help" = "请重新连接并核对仓库，再决定是否重新执行写操作。";
+"remoteError.cancellationUnconfirmed" = "远端取消尚未确认";
+"remoteError.cancellationUnconfirmed.help" = "本机通道已关闭，但尚未确认服务器进程已退出。请重新连接并核对仓库，不会自动重复写入。";
+"remoteError.interruptedWrite" = "中断的写操作需要核对";
+"remoteError.interruptedWrite.help" = "请重新连接，核对分支、工作区、暂存区锁及合并或变基状态后再写入。";

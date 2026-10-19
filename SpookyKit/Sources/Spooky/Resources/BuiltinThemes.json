@@ -1,0 +1,208 @@
+[
+  {
+    "name": "Default",
+    "fontName": "Menlo-Regular",
+    "fontSize": 11,
+    "colors": {
+      "text": {
+        "hex": "#000000",
+        "alpha": 0.85
+      },
+      "background": {
+        "hex": "#FFFFFF",
+        "alpha": 1
+      },
+      "selection": {
+        "hex": "#A3CCFE",
+        "alpha": 1
+      },
+      "invisible": {
+        "hex": "#000000",
+        "alpha": 1
+      },
+      "added": {
+        "hex": "#28CD41",
+        "alpha": 0.18
+      },
+      "deleted": {
+        "hex": "#FF3030",
+        "alpha": 0.18
+      },
+      "keyword": {
+        "hex": "#9A2392",
+        "alpha": 1
+      },
+      "identifier": {
+        "hex": "#0B4F79",
+        "alpha": 1
+      },
+      "function": {
+        "hex": "#0E67A0",
+        "alpha": 1
+      },
+      "number": {
+        "hex": "#1C00CF",
+        "alpha": 1
+      },
+      "string": {
+        "hex": "#C41A16",
+        "alpha": 1
+      },
+      "symbol": {
+        "hex": "#C41A16",
+        "alpha": 1
+      },
+      "attributeValue": {
+        "hex": "#C41A16",
+        "alpha": 1
+      },
+      "comment": {
+        "hex": "#5D6C79",
+        "alpha": 1
+      },
+      "preprocessor": {
+        "hex": "#643820",
+        "alpha": 1
+      },
+      "xmlTag": {
+        "hex": "#9B2393",
+        "alpha": 1
+      },
+      "attributeName": {
+        "hex": "#815F03",
+        "alpha": 1
+      },
+      "cssSelector": {
+        "hex": "#815F03",
+        "alpha": 1
+      },
+      "delimiter": {
+        "hex": "#815F03",
+        "alpha": 1
+      },
+      "heading": {
+        "hex": "#000000",
+        "alpha": 1
+      },
+      "emphasized": {
+        "hex": "#000000",
+        "alpha": 1
+      },
+      "stronglyEmphasized": {
+        "hex": "#000000",
+        "alpha": 1
+      },
+      "codeBlock": {
+        "hex": "#4A5560",
+        "alpha": 1
+      },
+      "url": {
+        "hex": "#0E0EFF",
+        "alpha": 1
+      }
+    }
+  },
+  {
+    "name": "Default (Dark)",
+    "fontName": "Menlo-Regular",
+    "fontSize": 11,
+    "colors": {
+      "text": {
+        "hex": "#FFFFFF",
+        "alpha": 0.85
+      },
+      "background": {
+        "hex": "#000000",
+        "alpha": 1
+      },
+      "selection": {
+        "hex": "#FBD1AD",
+        "alpha": 1
+      },
+      "invisible": {
+        "hex": "#555F6C",
+        "alpha": 1
+      },
+      "added": {
+        "hex": "#32D74B",
+        "alpha": 0.18
+      },
+      "deleted": {
+        "hex": "#FF453A",
+        "alpha": 0.2
+      },
+      "keyword": {
+        "hex": "#FC5FA2",
+        "alpha": 1
+      },
+      "identifier": {
+        "hex": "#5CD7FE",
+        "alpha": 1
+      },
+      "function": {
+        "hex": "#41A1BF",
+        "alpha": 1
+      },
+      "number": {
+        "hex": "#D0BF69",
+        "alpha": 1
+      },
+      "string": {
+        "hex": "#FC6A5D",
+        "alpha": 1
+      },
+      "symbol": {
+        "hex": "#FC6A5D",
+        "alpha": 1
+      },
+      "attributeValue": {
+        "hex": "#FC6A5D",
+        "alpha": 1
+      },
+      "comment": {
+        "hex": "#6C7986",
+        "alpha": 1
+      },
+      "preprocessor": {
+        "hex": "#FD8F3F",
+        "alpha": 1
+      },
+      "xmlTag": {
+        "hex": "#FC5FA3",
+        "alpha": 1
+      },
+      "attributeName": {
+        "hex": "#BF8555",
+        "alpha": 1
+      },
+      "cssSelector": {
+        "hex": "#BF8555",
+        "alpha": 1
+      },
+      "delimiter": {
+        "hex": "#BF8555",
+        "alpha": 1
+      },
+      "heading": {
+        "hex": "#FFFFFF",
+        "alpha": 0.85
+      },
+      "emphasized": {
+        "hex": "#FFFFFF",
+        "alpha": 0.85
+      },
+      "stronglyEmphasized": {
+        "hex": "#FFFFFF",
+        "alpha": 0.85
+      },
+      "codeBlock": {
+        "hex": "#92A1B1",
+        "alpha": 1
+      },
+      "url": {
+        "hex": "#5482FF",
+        "alpha": 1
+      }
+    }
+  }
+]

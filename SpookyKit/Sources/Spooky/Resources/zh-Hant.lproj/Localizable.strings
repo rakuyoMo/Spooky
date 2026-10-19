@@ -1,0 +1,242 @@
+"app.name" = "Spooky";
+
+"menu.file" = "檔案";
+
+"menu.edit" = "編輯";
+
+"menu.view" = "顯示";
+
+"menu.window" = "視窗";
+
+"menu.newWindow" = "新增視窗";
+
+"menu.openRecent" = "開啟最近的儲存庫";
+
+"menu.closeWindow" = "關閉視窗";
+
+"menu.showRepositories" = "顯示儲存庫管理";
+
+"menu.showWorkingCopy" = "顯示工作區";
+
+"menu.showHistory" = "顯示歷史";
+
+"menu.fullscreen" = "進入全螢幕";
+
+"menu.minimize" = "最小化";
+
+"menu.zoom" = "縮放";
+
+"menu.bringAll" = "將所有視窗移至最前";
+
+"menu.hide" = "隱藏 Spooky";
+
+"menu.hideOthers" = "隱藏其他";
+
+"menu.showAll" = "全部顯示";
+
+"menu.quit" = "結束 Spooky";
+
+"menu.cut" = "剪下";
+
+"menu.copy" = "拷貝";
+
+"menu.paste" = "貼上";
+
+"menu.selectAll" = "全選";
+
+"action.openLocal" = "開啟本機儲存庫…";
+
+"action.open" = "開啟";
+
+"action.openNewWindow" = "在新視窗開啟";
+
+"action.closeRepository" = "關閉目前的儲存庫";
+
+"action.refresh" = "重新整理";
+
+"action.close" = "關閉";
+
+"action.chooseAnother" = "重新選擇目錄…";
+
+"repositories.title" = "儲存庫管理";
+
+"repositories.recent" = "最近開啟的儲存庫";
+
+"repositories.empty.title" = "開啟 Git 儲存庫";
+
+"repositories.empty.message" = "選擇本機工作區，或將儲存庫檔案夾拖到這裡。";
+
+"repositories.unavailable" = "路徑失效或無法存取，可重新開啟";
+
+"repositories.path" = "絕對路徑";
+
+"repositories.panel.message" = "選擇現有 Git 儲存庫的工作區目錄。";
+
+"workspace.group" = "工作空間";
+
+"workspace.title" = "工作區";
+
+"history.title" = "歷史";
+
+"history.pending" = "本里程碑尚未實作歷史檢視。";
+
+"loading.open" = "正在開啟儲存庫…";
+
+"loading.status" = "正在重新整理狀態…";
+
+"loading.check" = "正在檢查儲存庫…";
+
+"branch.unborn" = "%@（尚無提交）";
+
+"branch.detached" = "%@（分離 HEAD）";
+
+"branch.noHead" = "沒有 HEAD 分支";
+
+"branch.noTracking" = "沒有上游";
+
+"branch.ahead" = "領先 %ld";
+
+"branch.behind" = "落後 %ld";
+
+"workspace.changed" = "變更檔案：%ld";
+
+"status.column" = "狀態";
+
+"status.filename" = "檔案名稱";
+
+"status.modified" = "已修改";
+
+"status.typeChanged" = "類型變更";
+
+"status.added" = "已新增";
+
+"status.deleted" = "已刪除";
+
+"status.renamed" = "已重新命名";
+
+"status.copied" = "已複製";
+
+"status.conflicted" = "存在衝突";
+
+"status.untracked" = "未追蹤";
+
+"status.ignored" = "已忽略";
+
+"status.unchanged" = "沒有變更";
+
+"status.description" = "暫存區：%@；工作區：%@";
+
+"detail.empty.title" = "未選擇檔案";
+
+"detail.empty.message" = "選擇一筆狀態記錄以檢視路徑。";
+
+"detail.diff.title" = "Diff 尚未實作";
+
+"detail.diff.message" = "本里程碑顯示檔案路徑與狀態。";
+
+"detail.originalPath" = "原路徑：%@";
+
+"error.command" = "Git 命令執行失敗";
+
+"error.launch" = "無法啟動 Git";
+
+"error.notRepository" = "所選目錄不是 Git 儲存庫";
+
+"error.notWorkingTree" = "需要 Git 工作區";
+
+"error.path" = "儲存庫路徑失效或無法存取";
+
+"error.ownership" = "Git 因儲存庫擁有權而拒絕存取";
+
+"error.cancelled" = "操作已取消";
+
+"error.outputLimit" = "Git 輸出超過大小限制";
+
+"error.process" = "與 Git 程序通訊失敗";
+
+"error.version" = "需要 Git 2.41.0 或更新版本";
+
+"error.parse" = "無法解析 Git 狀態";
+
+"error.openHelp" = "請選擇可存取的 Git 工作區。Spooky 要求 /usr/bin/git 不低於 2.41.0；版本不足時請更新 Xcode 或命令列工具。下方保留原始輸出。";
+
+"error.refreshHelp" = "重新整理失敗時保留既有結果。請查看原始輸出，處理問題後重新整理。";
+
+"error.details" = "原始輸出";
+
+"error.noOutput" = "命令未提供輸出。";
+
+"error.outputLimitHelp" = "命令超過標準輸出 256 MiB 或標準錯誤 1 MiB 的收集上限，已拒絕載入超限結果。";
+"action.addRemote" = "加入伺服器儲存庫…";
+"action.openTerminal" = "在終端機中開啟";
+"action.revealFinder" = "在 Finder 中顯示";
+"action.copyPath" = "拷貝路徑";
+"action.reconnect" = "重新連線";
+"action.cancel" = "取消";
+"action.continue" = "繼續";
+"remote.form.help" = "輸入 SSH 設定中的主機別名及該伺服器上的絕對路徑。";
+"remote.host" = "主機別名：";
+"remote.path" = "儲存庫路徑：";
+"remote.checking" = "正在檢查連線…";
+"connection.connecting" = "連線中";
+"connection.connected" = "已連線";
+"connection.reconnecting" = "重新連線中";
+"connection.unavailable" = "無法使用";
+"connection.cached" = "正在顯示上次成功讀取的狀態，連線恢復前禁止寫入。";
+"connection.recovery" = "已核對中斷的操作，未重試。分支：%@ · 變更：%ld · 暫存區鎖定：%@ · 合併中：%@ · 重定基底中：%@";
+"state.yes" = "是";
+"state.no" = "否";
+"branch.detachedShort" = "分離 HEAD";
+"settings.title" = "設定…";
+"settings.general" = "一般";
+"settings.themes" = "主題";
+"settings.terminal" = "終端機程式：";
+"callback.editor" = "編輯遠端文字";
+"callback.credentials" = "伺服器認證資訊請求";
+"callback.saveKeychain" = "儲存至這台 Mac 的鑰匙圈";
+"callback.value" = "認證資訊";
+"error.indexLocked" = "另一個 Git 程序持有暫存區鎖定，請等待它結束後重試。";
+"error.terminal" = "無法開啟終端機";
+"error.terminalHelp" = "請檢查設定中的終端機選擇及 macOS 自動化權限。";
+"error.exitCode" = "結束碼：%ld";
+"terminal.notInstalled" = "尚未安裝 %@。";
+"themes.font" = "字型：%@ · %.0f pt";
+"themes.followsSystem" = "淺色外觀使用 Default，深色外觀使用 Default (Dark)。";
+"themes.background" = "背景";
+"themes.added" = "新增";
+"themes.deleted" = "刪除";
+"themes.preview.context" = "  未變更的文字";
+"themes.preview.added" = "+ 新增的文字";
+"themes.preview.deleted" = "− 刪除的文字";
+"remoteError.invalidHost" = "SSH 主機別名無效";
+"remoteError.invalidHost.help" = "請輸入 ~/.ssh/config 中的一個主機別名，不包含使用者名稱或連接埠。";
+"remoteError.absolutePathRequired" = "需要絕對路徑";
+"remoteError.absolutePathRequired.help" = "請輸入以 / 開頭的伺服器儲存庫完整路徑。";
+"remoteError.unknownHostKey" = "主機指紋尚未確認";
+"remoteError.unknownHostKey.help" = "請先在受信任的終端機中核實伺服器指紋，再重新連線。Spooky 不會自動接受指紋。";
+"remoteError.changedHostKey" = "主機指紋已變更";
+"remoteError.changedHostKey.help" = "請先在受信任的終端機中與伺服器擁有者核實指紋變更，再重新連線。";
+"remoteError.authentication" = "SSH 認證失敗";
+"remoteError.authentication.help" = "請檢查這台 Mac 的 SSH 金鑰、鑰匙圈或 SSH agent。私鑰密語不會傳送至伺服器。";
+"remoteError.unavailable" = "伺服器連線無法使用";
+"remoteError.unavailable.help" = "請檢查主機別名和連線後重試。上次成功讀取的狀態仍會保留。";
+"remoteError.gitUnavailable" = "伺服器上的 Git 無法使用";
+"remoteError.gitUnavailable.help" = "請在伺服器上安裝 Git 2.41.0 或更新版本，並確保非互動 SSH 環境可以找到它。";
+"remoteError.gitVersion" = "伺服器 Git 版本不符合需求";
+"remoteError.gitVersion.help" = "請將伺服器 Git 更新至 2.41.0 或更新版本。本機與遠端採用相同的最低版本。";
+"remoteError.pathUnavailable" = "伺服器目錄不存在";
+"remoteError.pathUnavailable.help" = "請檢查絕對路徑是否存在於所選伺服器。";
+"remoteError.pathPermission" = "無權存取伺服器目錄";
+"remoteError.pathPermission.help" = "SSH 登入使用者需要該目錄的讀取與搜尋權限。";
+"remoteError.notWorkingTree" = "伺服器路徑不是 Git 工作目錄";
+"remoteError.notWorkingTree.help" = "請選擇伺服器上現有的 Git 工作目錄，並查看 Git 原文中的擁有權限制。";
+"remoteError.statusFormat" = "無法讀取伺服器狀態";
+"remoteError.statusFormat.help" = "請查看下方 Git status 錯誤。Git 必須支援以 NUL 分隔的 porcelain v2 輸出。";
+"remoteError.deployment" = "無法建立伺服器工作階段";
+"remoteError.deployment.help" = "請檢查 SSH Unix socket 轉送、/usr/bin/perl，以及 ~/.spooky/bin 和工作階段暫存目錄的寫入權限。";
+"remoteError.protocolFailure" = "伺服器操作結果不完整";
+"remoteError.protocolFailure.help" = "請重新連線並核對儲存庫，再決定是否重新執行寫入操作。";
+"remoteError.cancellationUnconfirmed" = "遠端取消尚未確認";
+"remoteError.cancellationUnconfirmed.help" = "本機通道已關閉，但尚未確認伺服器程序已結束。請重新連線並核對儲存庫，不會自動重複寫入。";
+"remoteError.interruptedWrite" = "中斷的寫入操作需要核對";
+"remoteError.interruptedWrite.help" = "請重新連線，核對分支、工作目錄、暫存區鎖定及合併或重定基底狀態後再寫入。";

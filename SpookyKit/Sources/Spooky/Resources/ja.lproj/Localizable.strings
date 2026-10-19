@@ -1,0 +1,242 @@
+"app.name" = "Spooky";
+
+"menu.file" = "ファイル";
+
+"menu.edit" = "編集";
+
+"menu.view" = "表示";
+
+"menu.window" = "ウインドウ";
+
+"menu.newWindow" = "新規ウインドウ";
+
+"menu.openRecent" = "最近使ったリポジトリ";
+
+"menu.closeWindow" = "ウインドウを閉じる";
+
+"menu.showRepositories" = "リポジトリを表示";
+
+"menu.showWorkingCopy" = "作業コピーを表示";
+
+"menu.showHistory" = "履歴を表示";
+
+"menu.fullscreen" = "フルスクリーンにする";
+
+"menu.minimize" = "しまう";
+
+"menu.zoom" = "拡大／縮小";
+
+"menu.bringAll" = "すべてを手前に移動";
+
+"menu.hide" = "Spooky を隠す";
+
+"menu.hideOthers" = "ほかを隠す";
+
+"menu.showAll" = "すべてを表示";
+
+"menu.quit" = "Spooky を終了";
+
+"menu.cut" = "カット";
+
+"menu.copy" = "コピー";
+
+"menu.paste" = "ペースト";
+
+"menu.selectAll" = "すべてを選択";
+
+"action.openLocal" = "ローカルリポジトリを開く…";
+
+"action.open" = "開く";
+
+"action.openNewWindow" = "新しいウインドウで開く";
+
+"action.closeRepository" = "リポジトリを閉じる";
+
+"action.refresh" = "更新";
+
+"action.close" = "閉じる";
+
+"action.chooseAnother" = "別のフォルダを選択…";
+
+"repositories.title" = "リポジトリ";
+
+"repositories.recent" = "最近使ったリポジトリ";
+
+"repositories.empty.title" = "Git リポジトリを開く";
+
+"repositories.empty.message" = "ローカルの作業ツリーを選択するか、リポジトリのフォルダをここにドロップしてください。";
+
+"repositories.unavailable" = "利用できません。開き直して再試行できます";
+
+"repositories.path" = "場所";
+
+"repositories.panel.message" = "既存の Git 作業ツリーを選択してください。";
+
+"workspace.group" = "ワークスペース";
+
+"workspace.title" = "作業コピー";
+
+"history.title" = "履歴";
+
+"history.pending" = "このマイルストーンでは履歴表示は未実装です。";
+
+"loading.open" = "リポジトリを開いています…";
+
+"loading.status" = "状態を更新しています…";
+
+"loading.check" = "リポジトリを確認しています…";
+
+"branch.unborn" = "%@（コミットなし）";
+
+"branch.detached" = "%@（分離した HEAD）";
+
+"branch.noHead" = "HEAD ブランチなし";
+
+"branch.noTracking" = "追跡先なし";
+
+"branch.ahead" = "%ld 進んでいます";
+
+"branch.behind" = "%ld 遅れています";
+
+"workspace.changed" = "変更ファイル数：%ld";
+
+"status.column" = "状態";
+
+"status.filename" = "ファイル名";
+
+"status.modified" = "変更";
+
+"status.typeChanged" = "種類の変更";
+
+"status.added" = "追加";
+
+"status.deleted" = "削除";
+
+"status.renamed" = "名前変更";
+
+"status.copied" = "コピー";
+
+"status.conflicted" = "競合";
+
+"status.untracked" = "未追跡";
+
+"status.ignored" = "無視";
+
+"status.unchanged" = "変更なし";
+
+"status.description" = "インデックス：%@、作業ツリー：%@";
+
+"detail.empty.title" = "ファイル未選択";
+
+"detail.empty.message" = "状態の一覧から項目を選ぶとパスが表示されます。";
+
+"detail.diff.title" = "差分は未実装です";
+
+"detail.diff.message" = "このマイルストーンではファイルのパスと状態を表示します。";
+
+"detail.originalPath" = "変更前のパス：%@";
+
+"error.command" = "Git コマンドが失敗しました";
+
+"error.launch" = "Git を起動できません";
+
+"error.notRepository" = "Git リポジトリではありません";
+
+"error.notWorkingTree" = "Git 作業ツリーが必要です";
+
+"error.path" = "リポジトリのパスにアクセスできません";
+
+"error.ownership" = "Git がリポジトリの所有権を拒否しました";
+
+"error.cancelled" = "操作をキャンセルしました";
+
+"error.outputLimit" = "Git の出力が大きすぎます";
+
+"error.process" = "Git プロセスとの通信に失敗しました";
+
+"error.version" = "Git 2.41.0 以降が必要です";
+
+"error.parse" = "Git の状態を解析できません";
+
+"error.openHelp" = "アクセスできる Git 作業ツリーを選択してください。/usr/bin/git は 2.41.0 以降が必要です。必要に応じて Xcode または Command Line Tools を更新してください。元の出力を下に表示しています。";
+
+"error.refreshHelp" = "更新に失敗しても以前の結果は保持されます。元の出力を確認してから更新を再試行してください。";
+
+"error.details" = "元の出力";
+
+"error.noOutput" = "コマンドから出力がありませんでした。";
+
+"error.outputLimitHelp" = "標準出力の 256 MiB または標準エラー出力の 1 MiB の上限を超えたため、結果を読み込みませんでした。";
+"action.addRemote" = "サーバーリポジトリを追加…";
+"action.openTerminal" = "ターミナルで開く";
+"action.revealFinder" = "Finder に表示";
+"action.copyPath" = "パスをコピー";
+"action.reconnect" = "再接続";
+"action.cancel" = "キャンセル";
+"action.continue" = "続ける";
+"remote.form.help" = "SSH 設定のホスト名とサーバー上の絶対パスを入力してください。";
+"remote.host" = "ホスト名：";
+"remote.path" = "リポジトリのパス：";
+"remote.checking" = "接続を確認中…";
+"connection.connecting" = "接続中";
+"connection.connected" = "接続済み";
+"connection.reconnecting" = "再接続中";
+"connection.unavailable" = "利用不可";
+"connection.cached" = "最後に取得した状態を表示しています。接続が復旧するまで書き込みは無効です。";
+"connection.recovery" = "中断した操作の状態を確認しました。再実行していません。ブランチ：%@ · 変更：%ld · ロック：%@ · マージ：%@ · リベース：%@";
+"state.yes" = "あり";
+"state.no" = "なし";
+"branch.detachedShort" = "分離した HEAD";
+"settings.title" = "設定…";
+"settings.general" = "一般";
+"settings.themes" = "テーマ";
+"settings.terminal" = "ターミナルアプリ：";
+"callback.editor" = "リモートのテキストを編集";
+"callback.credentials" = "サーバーの認証情報";
+"callback.saveKeychain" = "この Mac のキーチェーンに保存";
+"callback.value" = "認証情報";
+"error.indexLocked" = "別の Git プロセスがインデックスをロックしています。終了後に再試行してください。";
+"error.terminal" = "ターミナルを開けません";
+"error.terminalHelp" = "設定のターミナル選択と macOS のオートメーション権限を確認してください。";
+"error.exitCode" = "終了コード：%ld";
+"terminal.notInstalled" = "%@ がインストールされていません。";
+"themes.font" = "フォント：%@ · %.0f pt";
+"themes.followsSystem" = "ライト表示では Default、ダーク表示では Default (Dark) を使用します。";
+"themes.background" = "背景";
+"themes.added" = "追加";
+"themes.deleted" = "削除";
+"themes.preview.context" = "  変更のないテキスト";
+"themes.preview.added" = "+ 追加されたテキスト";
+"themes.preview.deleted" = "− 削除されたテキスト";
+"remoteError.invalidHost" = "SSH ホスト名が無効です";
+"remoteError.invalidHost.help" = "~/.ssh/config のホスト名を入力してください。ユーザー名やポートは含めません。";
+"remoteError.absolutePathRequired" = "絶対パスが必要です";
+"remoteError.absolutePathRequired.help" = "/ で始まるサーバー上の完全なパスを入力してください。";
+"remoteError.unknownHostKey" = "ホスト鍵が未確認です";
+"remoteError.unknownHostKey.help" = "信頼できるターミナルで指紋を確認してから再接続してください。自動承認は行いません。";
+"remoteError.changedHostKey" = "ホスト鍵が変更されています";
+"remoteError.changedHostKey.help" = "サーバー管理者に変更を確認し、信頼できるターミナルで鍵を確認してから再接続してください。";
+"remoteError.authentication" = "SSH 認証に失敗しました";
+"remoteError.authentication.help" = "この Mac の SSH 鍵、キーチェーン、SSH エージェントを確認してください。秘密鍵のパスフレーズはサーバーに送信しません。";
+"remoteError.unavailable" = "サーバーに接続できません";
+"remoteError.unavailable.help" = "ホスト名と接続を確認して再試行してください。最後の状態は保持されます。";
+"remoteError.gitUnavailable" = "サーバーで Git を実行できません";
+"remoteError.gitUnavailable.help" = "サーバーに Git 2.41.0 以降をインストールし、非対話 SSH 環境から実行できるようにしてください。";
+"remoteError.gitVersion" = "サーバーの Git バージョンが非対応です";
+"remoteError.gitVersion.help" = "サーバーの Git を 2.41.0 以降に更新してください。ローカルとリモートで最低バージョンは同じです。";
+"remoteError.pathUnavailable" = "サーバーのディレクトリが見つかりません";
+"remoteError.pathUnavailable.help" = "指定したサーバーに絶対パスが存在するか確認してください。";
+"remoteError.pathPermission" = "サーバーのディレクトリにアクセスできません";
+"remoteError.pathPermission.help" = "SSH ユーザーにはディレクトリの読み取りと検索権限が必要です。";
+"remoteError.notWorkingTree" = "サーバーのパスは Git 作業ツリーではありません";
+"remoteError.notWorkingTree.help" = "サーバーの既存の Git 作業ツリーを選択してください。所有権の制限は Git 出力で確認できます。";
+"remoteError.statusFormat" = "サーバーの状態を読み取れません";
+"remoteError.statusFormat.help" = "下記の Git status エラーを確認してください。NUL 区切りの porcelain v2 出力が必要です。";
+"remoteError.deployment" = "サーバーセッションを準備できません";
+"remoteError.deployment.help" = "SSH Unix ソケット転送、/usr/bin/perl、~/.spooky/bin と一時ディレクトリの書き込み権限を確認してください。";
+"remoteError.protocolFailure" = "サーバーの操作結果が不完全です";
+"remoteError.protocolFailure.help" = "再接続してリポジトリを確認してから、書き込み操作の再実行を判断してください。";
+"remoteError.cancellationUnconfirmed" = "リモートのキャンセルが未確認です";
+"remoteError.cancellationUnconfirmed.help" = "ローカル接続は閉じましたが、サーバープロセスの終了を確認できません。再接続して確認してください。書き込みは自動再実行しません。";
+"remoteError.interruptedWrite" = "中断した書き込みの確認が必要です";
+"remoteError.interruptedWrite.help" = "再接続してブランチ、作業ツリー、ロック、マージとリベースの状態を確認してください。";
