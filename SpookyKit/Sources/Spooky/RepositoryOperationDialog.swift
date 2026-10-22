@@ -57,12 +57,12 @@ struct RepositoryOperationDialog: View {
     /// 取消只关闭表单。
     let cancel: () -> Void
 
-    /// 提交交付显式参数对应的业务操作。
+    /// 提交交付显式参数对应的业务操作；返回 false 表示仓库暂不可写，表单保持打开。
     let submit:
         (
             String,
             @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
-        ) -> Void
+        ) -> Bool
 
     /// 名称输入在确认前经过 Git 校验。
     @State private var name = ""
@@ -163,6 +163,14 @@ struct RepositoryOperationDialog: View {
                 Label(error, systemImage: "exclamationmark.triangle")
                     .font(.system(size: 12))
                     .textSelection(.enabled)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 12)
+            }
+
+            // 断线或其它写操作进行中时主按钮禁用，说明原因并保留已填写的参数。
+            if !session.canWrite {
+                Label(AppLocalization.text("dialog.blocked"), systemImage: "exclamationmark.triangle")
+                    .font(.system(size: 12))
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
             }
@@ -457,7 +465,9 @@ struct RepositoryOperationDialog: View {
             validName = true
             error = ""
         } catch {
-            if !Task.isCancelled { self.error = AppFailure(error: error, opening: false).details }
+            if !Task.isCancelled {
+                self.error = AppFailure(error: error, opening: false, location: session.repository).details
+            }
         }
     }
 
@@ -474,7 +484,9 @@ struct RepositoryOperationDialog: View {
             try Task.checkCancellation()
             preview = result
         } catch {
-            if !Task.isCancelled { preview = .unavailable(AppFailure(error: error, opening: false).details) }
+            if !Task.isCancelled {
+                preview = .unavailable(AppFailure(error: error, opening: false, location: session.repository).details)
+            }
         }
         if !Task.isCancelled { checking = false }
     }
@@ -514,7 +526,8 @@ struct RepositoryOperationDialog: View {
         mergeOptions.skipHooks = skipHooks
         let options = mergeOptions
 
-        submit(AppLocalization.text(kind.rawValue)) { runner, output in
+        // 仓库在点击瞬间变为不可写时表单不关闭，原因显示在表单内，已填写的参数原样保留。
+        _ = submit(AppLocalization.text(kind.rawValue)) { runner, output in
             switch kind {
             case .create, .track:
                 try await RepositoryReferences(runner: runner)

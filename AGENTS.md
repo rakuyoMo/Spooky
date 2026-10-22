@@ -7,7 +7,7 @@
 Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能经 SSH 直接操作另一台机器上的仓库。
 
 - `Spooky` 是可运行的桌面 App；`SpookyKit` 核心库负责在本机或远端执行 Git、读取工作区状态并解析输出
-- 当前 App 支持本机与服务器工作区、混合最近记录、连接体检、断线重连、Diff、文件 / 块 / 行操作、提交与冲突收尾、分页历史、分支、同步、合并预览、Activity、文件监听与轮询刷新、终端与默认主题设置；产品按 M1–M10 逐步完成 `1.0.0`
+- 当前 App 支持本机与服务器工作区、混合最近记录、连接体检、断线重连与写入核对、Diff、文件 / 块 / 行操作、提交与冲突收尾、分页历史、分支、同步、合并预览、Activity、文件监听与轮询刷新、按仓库恢复的视图状态、终端与默认主题设置，并可打包发布用 App；产品按 M1–M10 逐步完成 `1.0.0`
 - 远端仓库的工作区留在远端机器，客户端经系统 SSH、用 `~/.ssh/config` 中的主机别名访问
 - 纯开源的个人工具，只在 GitHub 分发
 - 许可证为 [GPL-3.0](LICENSE)
@@ -20,7 +20,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 - Git 子进程通过 [swift-subprocess](https://github.com/swiftlang/swift-subprocess) 启动
 - 单元测试使用 Swift Testing（`import Testing`），不使用 XCTest
 - `Spooky` executable target 使用 AppKit 管理窗口、分栏、工具栏和菜单，SwiftUI 承载内容
-- App 的 Bundle Identifier 为 `com.rakuyo.spooky`；`Info.plist` 嵌入可执行文件，开发 Bundle 由 `scripts/build-app.sh` 生成
+- App 的 Bundle Identifier 为 `com.rakuyo.spooky`；`Info.plist` 嵌入可执行文件，开发 Bundle 由 `scripts/build-app.sh` 生成，发布 Bundle 由 `scripts/bundle.sh` 生成
 - 界面资源位于 `SpookyKit/Sources/Spooky/Resources/`，支持 `en`、`zh-Hans`、`zh-Hant`、`ja`、`ko`，默认跟随系统并以英文回退
 
 ### `mise`
@@ -46,6 +46,9 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 | `swift build --package-path SpookyKit --product Spooky` | 编译可执行 App product |
 | `swift run --package-path SpookyKit Spooky` | 启动 App 的仓库管理窗口 |
 | `./scripts/build-app.sh` | 生成开发用 `SpookyKit/.build/Spooky.app` |
+| `./scripts/bundle.sh` | release 构建并生成 `build/Spooky.app`，拷贝资源与图标后 ad-hoc 签名并校验 |
+| `SPOOKY_PERFORMANCE_TESTS=1 swift test --package-path SpookyKit -c release -Xswiftc -enable-testing --filter PerformanceTests` | 显式运行大仓库首屏、历史分页与内存的性能验收 |
+| `swift scripts/make-icon.swift SpookyKit/Sources/Spooky/AppIcon.icns` | 重新生成静态应用图标 |
 
 ## 目录结构
 
@@ -76,16 +79,22 @@ SpookyKit/                    核心库与 App 的 Swift Package
     RepositoryReferences.swift 引用快照、分支读写与双向计数
     RepositorySync.swift      Fetch、Pull、Push、合并与预览
     LocalGitAuthentication.swift 本机凭据回调与 SSH agent 接入
+    ImmutableReadCache.swift  只由对象哈希决定的读取结果缓存
   Sources/Spooky/             App 入口、窗口协调、会话状态与各内容视图
     Info.plist                应用身份和支持语言
+    AppIcon.icns              静态应用图标，由 scripts/make-icon.swift 生成
     Resources/                五语文案、系统权限说明、命名色与内置主题 JSON
   Tests/SpookyKitTests/       单元测试（Swift Testing）
-  Tests/SpookyTests/          会话生命周期、最近记录与本地化测试
+    Fixtures/                 固定的 Git 输出夹具
+  Tests/SpookyTests/          会话生命周期、最近记录、错误呈现与本地化测试
 scripts/build-app.sh          开发 App Bundle 生成脚本
+scripts/bundle.sh             发布 App Bundle 生成脚本，输出到 build/Spooky.app
+scripts/make-icon.swift       应用图标生成脚本
 docs/testing/M1.md            M1 的 App 手动验收步骤
 docs/testing/M2.md            M2 的连接、终端与主题验收步骤
 docs/testing/M3.md            M3 的工作区、Diff、提交与冲突验收步骤
 docs/testing/M4.md            M4 的历史、分支、同步与活动验收步骤
+docs/testing/M5.md            M5 的集成、恢复、性能、可访问性与发布前验收步骤
 README.md                     英文 README：介绍、功能、系统要求、构建、权限、工作原理、开发与贡献说明
 README-ZH.md                  README.md 的简体中文版，与它同步修改
 LICENSE                       GPL-3.0 许可证全文
@@ -106,6 +115,9 @@ LICENSE                       GPL-3.0 许可证全文
 - 所有写命令通过仓库队列串行；断线不重试写入，未确认的取消需要重连核对；新增纯读取命令时在 `RepositoryOperationQueue.isReadOnly` 明确登记
 - 回调请求使用会话令牌和一次性应答，凭据不进入记录、日志或错误对象；用户选择保存时仅写 A 的钥匙串
 - 服务器轮询间隔统一使用 `RemoteConnection` 的前台 2 秒、后台 10 秒常量；本机使用 `RepositoryFileMonitor` 的递归 FSEvents，并保留手动刷新
+- 服务器轮询只读 status 与所选文件的内容哈希，有变化才读取身份、引用、历史与 Diff；写入完成、重连、窗口重新激活和手动刷新执行完整刷新
+- 只由对象哈希决定的读取（历史分页、提交变更集与补丁、双向计数、指定提交的信息）经 `GitRunner.immutableRun` 缓存；结果会随工作区、索引或配置变化的命令不能使用它
+- App 内同一仓库同时只允许一个写操作（`RepositoryWriteLocks`）；菜单、工具栏、右键菜单与拖放统一使用 `RepositorySession` 的 `can…` 可用性规则
 - 文件读写使用 `RepositoryFiles`；SFTP 经 `RemoteConnection.sftpCommand()` 接入同一主连接，读写分别遵循主机并发和仓库写队列规则
 - 工作区 UI 通过 `WorkingCopyOperations` 发起写入；组合操作用 `GitRunner.writeTransaction` 持有仓库锁，补丁以原始字节生成并核对快照，路径列表经字面 NUL 输入传递
 
@@ -119,6 +131,8 @@ LICENSE                       GPL-3.0 许可证全文
 - M2 的服务器、终端与主题场景见 [M2 验收步骤](docs/testing/M2.md)；远端测试默认不跑，必须通过 `SPOOKY_REMOTE_TESTS=1` 显式开启
 - M3 的本机 / 服务器提交闭环、行选择、确认与冲突收尾见 [M3 验收步骤](docs/testing/M3.md)
 - M4 的分页历史、分支、同步、合并预览、活动日志与取消见 [M4 验收步骤](docs/testing/M4.md)
+- M5 的跨视图一致性、错误恢复、性能、可访问性与发布检查见 [M5 验收步骤](docs/testing/M5.md)；性能测试默认不跑，通过 `SPOOKY_PERFORMANCE_TESTS=1` 显式开启
+- 解析器的固定输入放在 `Tests/SpookyKitTests/Fixtures/`，由真实 Git 在隔离配置、固定身份与时间的临时仓库中生成
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
 - 本地化新增资源键时同步五种语言，并保持格式参数一致；错误标题和恢复说明本地化，Git 原文保持不变
 

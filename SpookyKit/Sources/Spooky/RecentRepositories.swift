@@ -52,6 +52,15 @@ final class RecentRepositories {
         unavailable.insert(location)
     }
 
+    /// 退出时停止后台校验；返回被取消的任务，调用方等待它回收子进程。
+    func stopValidation() -> Task<Void, Never>? {
+        let task = validationTask
+        task?.cancel()
+        validationTask = nil
+        checking = []
+        return task
+    }
+
     /// 管理页只检查本机记录；服务器记录由用户打开时体检，避免后台认证。
     func validate() {
         validationTask?.cancel()

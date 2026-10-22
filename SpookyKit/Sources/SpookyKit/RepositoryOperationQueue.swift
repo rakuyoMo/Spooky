@@ -125,6 +125,11 @@ actor RepositoryOperationQueue {
             return options.prefix(2).elementsEqual(["-z", "--get-regexp"])
                 && options.count == 3
         }
+
+        // 只计算对象哈希不写入对象库；带 -w 的写入仍走写队列。
+        if command == "hash-object" {
+            return !arguments.contains("-w")
+        }
         return [
             "status", "rev-parse", "rev-list", "merge-base", "check-ref-format",
             "show", "log", "ls-files", "for-each-ref", "diff", "var", "cat-file", "--version",

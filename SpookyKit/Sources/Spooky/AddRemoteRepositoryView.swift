@@ -57,18 +57,7 @@ struct AddRemoteRepositoryView: View {
             .disabled(task != nil)
 
             if let failure {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label(failure.title, systemImage: "exclamationmark.triangle.fill")
-                    Text(failure.message)
-                    ScrollView {
-                        Text(failure.details)
-                            .font(.system(size: 11, design: .monospaced))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .frame(maxHeight: 120)
-                }
-                .font(.system(size: 12))
+                FailureDetailsView(failure: failure)
             }
 
             Divider()
@@ -115,7 +104,7 @@ struct AddRemoteRepositoryView: View {
             } catch {
                 await remote.close()
                 guard !Task.isCancelled else { return }
-                failure = AppFailure(error: error, opening: true)
+                failure = AppFailure(error: error, opening: true, location: location)
                 task = nil
             }
         }

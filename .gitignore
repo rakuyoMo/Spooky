@@ -5,6 +5,9 @@
 .build/
 .swiftpm/
 
+# 发布 Bundle
+/build/
+
 # Xcode
 DerivedData/
 xcuserdata/

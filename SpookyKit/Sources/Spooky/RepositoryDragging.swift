@@ -159,34 +159,36 @@ private struct ReferenceDropDelegate: DropDelegate {
         return true
     }
 
-    /// 每个映射都指向实际可用的业务动作。
+    /// 每个映射都指向实际可用的业务动作，可用条件与菜单和右键菜单相同。
     private func action() -> RepositoryActionRequest? {
-        guard session.canWrite, let payload = RepositoryDragContext.shared.payload,
+        guard let payload = RepositoryDragContext.shared.payload,
             payload.repository == session.repository
         else { return nil }
         let alternate = NSEvent.modifierFlags.contains(.option)
+        let source = session.history.branches.first { $0.id == payload.reference }
 
         switch (payload.kind, destination) {
         case (.local, .head):
-            guard !alternate, payload.reference != "refs/heads/" + (session.status?.branch.head ?? "") else {
-                return nil
-            }
+            guard !alternate, let source, session.canMerge(source) else { return nil }
             return RepositoryActionRequest(kind: .merge, reference: payload.reference)
         case (.remote, .head):
-            guard !alternate else { return nil }
+            guard !alternate, let source, session.canPull(from: source) else { return nil }
             return RepositoryActionRequest(kind: .pull, reference: payload.reference)
         case (.local, .branches), (.commit, .branches):
-            guard !alternate else { return nil }
+            guard !alternate, session.canCreateBranchFromReference else { return nil }
             return RepositoryActionRequest(kind: .create, reference: payload.reference)
         case (.remote, .branches):
+            guard let source, session.canTrack(source) else { return nil }
             return RepositoryActionRequest(kind: .track, reference: payload.reference)
         case (.local, .remote(let remote)):
+            guard let source, session.canPush(source) else { return nil }
             return RepositoryActionRequest(
                 kind: .publish,
                 remote: remote,
                 localBranch: String(payload.reference.dropFirst(11))
             )
         case (.local, .remoteBranch(let remote, let reference)):
+            guard let source, session.canPush(source) else { return nil }
             return RepositoryActionRequest(
                 kind: .push,
                 reference: reference,

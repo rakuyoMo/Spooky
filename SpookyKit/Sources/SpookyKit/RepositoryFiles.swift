@@ -23,7 +23,7 @@ public struct RepositoryFiles: Sendable {
     public func read(_ paths: [String]) async throws -> [String: Data] {
         guard !paths.isEmpty else { return [:] }
 
-        if runner.remote == nil {
+        guard let remote = runner.remote else {
             var result: [String: Data] = [:]
 
             for path in paths {
@@ -37,11 +37,19 @@ public struct RepositoryFiles: Sendable {
             return result
         }
 
+        // 状态文件多数不存在：先用一次往返确认存在性，只为存在的文件启动 SFTP。
+        let flags = try await remote.inspect(paths)
+        let existing = zip(paths, flags).filter(\.1).map(\.0)
+
+        guard !existing.isEmpty else {
+            return [:]
+        }
+
         let directory = try Self.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
 
         // 独立编号避免把远端路径解释为本机路径，也避免文件名的规范化碰撞。
-        let commands = try paths.enumerated().map {
+        let commands = try existing.enumerated().map {
             "-get " + (try Self.quoted($0.element)) + " "
                 + (try Self.quoted(directory.appending(path: String($0.offset)).path))
         }
@@ -62,7 +70,7 @@ public struct RepositoryFiles: Sendable {
 
         var contents: [String: Data] = [:]
 
-        for (index, path) in paths.enumerated() {
+        for (index, path) in existing.enumerated() {
             let local = directory.appending(path: String(index))
 
             if FileManager.default.fileExists(atPath: local.path) {

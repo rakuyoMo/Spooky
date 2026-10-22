@@ -267,20 +267,28 @@ public struct WorkingCopyOperations: Sendable {
     }
 
     /// 一次读取状态文件快照，进行中模式不依赖人读的 git status 文案。
-    public func context(hasHead: Bool) async throws -> WorkingCopyContext {
-        let identity = try await runner.execute(["var", "GIT_COMMITTER_IDENT"], acceptedExitCodes: [0, 128])
-        let rawIdentity = String(decoding: identity.standardOutput, as: UTF8.self)
-        let committer = rawIdentity.lastIndex(of: ">")
-            .map { String(rawIdentity[...$0]) } ?? ""
-        let lastMessage = hasHead ? String(decoding: try await runner.run([
-            "-c", "i18n.logOutputEncoding=UTF-8", "log", "-1", "--format=%B",
-        ]), as: UTF8.self).trimmingCharacters(in: .newlines) : ""
+    ///
+    /// - Parameter head: 状态快照中的 HEAD 提交；未出生分支为 nil。最近信息按该哈希复用。
+    public func context(head: String?) async throws -> WorkingCopyContext {
+        guard head.map(GitObjectID.isValid) ?? true else {
+            throw RepositoryReadError.invalidQuery
+        }
+
         let names = [
             "MERGE_HEAD", "SQUASH_MSG", "CHERRY_PICK_HEAD", "REVERT_HEAD", "MERGE_MSG",
             "rebase-merge/head-name", "rebase-apply/head-name", "sequencer/todo",
         ]
-        let output = try await runner.run(["rev-parse", "--path-format=absolute"] + names.flatMap { ["--git-path", $0] })
-        let paths = String(decoding: output, as: UTF8.self).split(separator: "\n").map(String.init)
+
+        // 三项读取互不依赖，并发执行；服务器上只占一次往返的等待时间。
+        async let identity = runner.execute(["var", "GIT_COMMITTER_IDENT"], acceptedExitCodes: [0, 128])
+        async let message = lastMessage(of: head)
+        async let located = runner.run(["rev-parse", "--path-format=absolute"] + names.flatMap { ["--git-path", $0] })
+
+        let rawIdentity = String(decoding: try await identity.standardOutput, as: UTF8.self)
+        let committer = rawIdentity.lastIndex(of: ">")
+            .map { String(rawIdentity[...$0]) } ?? ""
+        let lastMessage = try await message
+        let paths = String(decoding: try await located, as: UTF8.self).split(separator: "\n").map(String.init)
         guard paths.count == names.count else { throw RepositoryFileError.unsupportedPath }
         let content = try await RepositoryFiles(runner: runner).read(paths)
         let files = Dictionary(uniqueKeysWithValues: zip(names, paths).compactMap { name, path in
@@ -309,6 +317,32 @@ public struct WorkingCopyOperations: Sendable {
             .joined(separator: "\n")
             .trimmingCharacters(in: .newlines)
         return WorkingCopyContext(committer: committer, lastMessage: lastMessage, operation: operation, mergeMessage: mergeMessage)
+    }
+
+    /// 工作区文件内容的对象哈希，供服务器轮询判断已显示的 Diff 是否过期；文件不存在或无法读取时为 nil。
+    public func worktreeHash(of entry: StatusEntry) async throws -> String? {
+        let result = try await runner.execute(
+            ["hash-object", "--no-filters", "--", entry.path],
+            acceptedExitCodes: [0, 128]
+        )
+
+        guard result.exitCode == 0 else {
+            return nil
+        }
+
+        return String(decoding: result.standardOutput, as: UTF8.self).trimmingCharacters(in: .newlines)
+    }
+
+    /// 指定提交的完整信息；提交信息不可变，按哈希复用。
+    private func lastMessage(of head: String?) async throws -> String {
+        guard let head else {
+            return ""
+        }
+
+        let output = try await runner.immutableRun([
+            "-c", "i18n.logOutputEncoding=UTF-8", "log", "-1", "--format=%B", head, "--",
+        ])
+        return String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)
     }
 
     /// 两侧补丁与路径状态一起校验，暂存视图也会察觉外部工作区编辑。

@@ -153,11 +153,13 @@
 
 "error.version" = "Git 2.41.0 이상이 필요합니다";
 
-"error.parse" = "Git 상태를 읽을 수 없습니다";
+"error.parse" = "Git 출력을 읽을 수 없습니다";
 
 "error.openHelp" = "접근 가능한 Git 작업 트리를 선택하세요. /usr/bin/git 2.41.0 이상이 필요합니다. 필요한 경우 Xcode 또는 Command Line Tools를 업데이트하세요. 원본 출력은 아래에 표시됩니다.";
 
 "error.refreshHelp" = "새로 고침에 실패해도 기존 결과는 유지됩니다. 원본 출력을 확인한 후 다시 시도하세요.";
+
+"error.writeHelp" = "작업을 완료하지 못했습니다. 원본 출력을 확인한 후 새로 고쳐 저장소의 현재 상태를 확인하세요.";
 
 "error.details" = "원본 출력";
 
@@ -420,3 +422,27 @@
 "history.unpushed" = "푸시되지 않음";
 "history.unpulled" = "풀되지 않음";
 "branch.deleteMultiple" = "브랜치 삭제";
+
+/* 错误类别、断线核对、空状态与加载上限。 */
+"failure.category" = "분류: %@";
+"failure.location" = "저장소: %@";
+"failure.kind.connection" = "서버 연결";
+"failure.kind.git" = "Git 명령 실패";
+"failure.kind.output" = "읽을 수 없는 Git 출력";
+"failure.kind.cancelled" = "취소됨";
+"failure.kind.version" = "지원되지 않는 Git 버전";
+"failure.kind.repository" = "저장소 상태";
+"failure.kind.environment" = "프로세스 또는 시스템";
+"recovery.title" = "중단된 작업 확인 완료";
+"recovery.changed" = "“%@”은(는) 연결이 끊겨 중단되었으며 재시도하지 않았습니다. HEAD가 %@에서 %@(으)로 바뀌었으므로 작업이 완료되었을 수 있습니다. 결과를 확인한 후 다시 시도하세요.";
+"recovery.unchanged" = "“%@”은(는) 연결이 끊겨 중단되었으며 재시도하지 않았습니다. HEAD는 여전히 %@입니다. 작업 사본을 확인한 후 다시 시도하세요.";
+"recovery.notStarted" = "서버 연결을 사용할 수 없어 “%@”이(가) 시작되지 않았습니다. 서버에서 변경된 내용은 없습니다.";
+"recovery.unborn" = "커밋 없음";
+"dialog.blocked" = "이 저장소에서 다른 작업이 진행 중이거나 서버 연결이 끊겼습니다. 입력한 설정은 유지되며, 저장소를 사용할 수 있게 되면 다시 시도하세요.";
+"working.clean" = "로컬 변경 사항 없음";
+"working.refreshFailed" = "새로 고침에 실패했습니다. 마지막으로 성공한 결과를 표시합니다.";
+"history.limit" = "처음 %ld개 커밋만 표시합니다. 브랜치를 선택하면 범위를 좁힐 수 있습니다.";
+"history.loadingChanges" = "변경된 파일 불러오는 중…";
+"repositories.checking" = "확인하는 중…";
+"repositories.unavailableShort" = "사용 불가";
+"activity.truncated" = "이전 출력은 생략되었습니다.";

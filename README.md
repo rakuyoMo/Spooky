@@ -27,6 +27,10 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Automatic refresh**: local repositories refresh when files change. Server repositories refresh every 2 seconds in the foreground and every 10 seconds in the background. You can also refresh at any time
 
+- **Per-repository view state**: each window remembers the view, selection, and commit message draft of up to 15 repositories, and restores them when you switch back
+
+- **Clear errors**: errors show their category, the repository, and the original Git or SSH output, which you can select and copy
+
 - **Stage files, hunks, or lines**: view the working copy as a list or a tree, with multiple selection and three-state checkboxes. Select lines in a diff to stage or discard just those lines
 
 - **Commits and conflicts**: amend the most recent commit. During a merge, rebase, cherry-pick, or revert, resolve files using ours or theirs, mark them as resolved, then continue or abort
@@ -81,6 +85,13 @@ You can also build a development app that opens from Finder:
 open SpookyKit/.build/Spooky.app
 ```
 
+The release app uses a release build, includes the app icon, and is ad-hoc signed:
+
+```sh
+# Build build/Spooky.app
+./scripts/bundle.sh
+```
+
 ## Permissions
 
 ### Automation
@@ -98,11 +109,12 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
 - After the first successful connection check, Spooky installs a small helper program, named after a digest of its contents, in `~/.spooky/bin/` on the server with your user permissions. It manages remote processes and callbacks, relies on the server's Perl, and doesn't keep running in the background
 - Files are read and written with the system's SFTP over the same master connection
   - The system SFTP batch mode can't represent paths that contain CR or LF, so file operations on such paths fail with a clear error
+- Polling reads only the status and the selected file's content hash, and reads everything else only when something changed. History pages and commit details, which depend only on commit hashes, are cached to save round trips
 
 ### Writes and disconnections
 
-- Writes to the same repository run one at a time
-- If the connection drops during a write, Spooky doesn't retry it. After reconnecting, it checks the branch, working copy, index lock, and any merge or rebase in progress before allowing writes again
+- Writes to the same repository run one at a time. Only one window can start a write to a repository at a time, and every window showing the repository refreshes when the write finishes
+- If the connection drops during a write, Spooky doesn't retry it. After reconnecting, it checks the branch, working copy, index lock, and any merge or rebase in progress, tells you whether HEAD changed, and only then allows writes again
 - To cancel an operation on a server, Spooky closes the command channel, then ends the remote process group: it sends TERM, waits 2 seconds, sends KILL, and confirms that the processes have exited
   - If it can't confirm this, Spooky says so and blocks writes until a reconnection check
 
@@ -159,6 +171,12 @@ SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteHistory
 ```
 
 Each run creates and removes its own subdirectory there, and doesn't change the SSH configuration, `known_hosts`, or global Git configuration on either machine.
+
+Performance tests for large repositories are also skipped by default. They generate a temporary repository with 100,000 files and 50,000 commits, and check how long the first status takes to load and how much memory is used:
+
+```sh
+SPOOKY_PERFORMANCE_TESTS=1 swift test --package-path SpookyKit -c release -Xswiftc -enable-testing --filter PerformanceTests
+```
 
 ## Contributing
 

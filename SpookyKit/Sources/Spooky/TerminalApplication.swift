@@ -136,7 +136,7 @@ enum TerminalLauncher {
             if let directory = location.localURL {
                 _ = try await NSWorkspace.shared.open([directory], withApplicationAt: application, configuration: .init())
             } else {
-                #warning("TODO: 在安装 Prompt 3 与 Local Terminal 后核实 .command 的远端命令入口。")
+                #warning("TODO: 在安装 Prompt 3 与 Local Terminal 的 Mac 上打开服务器仓库，核实 .command 的远端命令入口；只影响终端程序选 Prompt 时打开服务器仓库。")
 
                 let file = FileManager.default.temporaryDirectory
                     .appending(path: "Spooky-" + UUID().uuidString + ".command")

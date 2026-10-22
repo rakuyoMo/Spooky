@@ -16,8 +16,15 @@ final class ActivityWindowController: NSWindowController {
         window.contentViewController = NSHostingController(rootView: ActivityView())
         window.isReleasedWhenClosed = false
         window.tabbingMode = .disallowed
+
+        // 装入内容会把窗口缩到 SwiftUI 的理想尺寸，先回到初始尺寸；有保存的位置与尺寸时沿用，否则居中。
+        window.setContentSize(NSSize(width: 551, height: 299))
+
+        if !window.setFrameUsingName("Spooky.Activity") {
+            window.center()
+        }
+
         window.setFrameAutosaveName("Spooky.Activity")
-        window.center()
         super.init(window: window)
     }
 

@@ -14,7 +14,7 @@ struct ThemeAndTerminalTests {
             .appending(path: "Sources/Spooky")
         let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "swift" }
-        let expression = try NSRegularExpression(pattern: #"AppPalette\.color\("([^"]+)"\)"#)
+        let expression = try NSRegularExpression(pattern: #"AppPalette\.(?:color|nsColor)\("([^"]+)"\)"#)
 
         for file in files {
             let text = try String(contentsOf: file, encoding: .utf8)
@@ -27,6 +27,30 @@ struct ThemeAndTerminalTests {
             #expect(AppPalette.colors[prefix + "_badge_text_color"] != nil)
             #expect(AppPalette.colors[prefix + "_badge_background_color"] != nil)
         }
+
+        // 提交图的泳道颜色按名称拼接，逐个检查十种颜色。
+        for lane in ["gray", "blue", "pink", "green", "yellow", "orange", "indigo", "red", "teal", "purple"] {
+            #expect(AppPalette.colors[lane + "_history_graph_line_color"] != nil)
+        }
+    }
+
+    /// 界面颜色只来自命名色资源与系统语义色，源码中没有写死的十六进制或 RGB 数值。
+    @Test("界面源码不写死颜色数值")
+    func noHardCodedColors() throws {
+        let sources = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "Sources/Spooky")
+        let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "swift" && $0.lastPathComponent != "AppPalette.swift" }
+        let expression = try NSRegularExpression(
+            pattern: ##""#[0-9A-Fa-f]{6}"|NSColor\((?:white|srgbRed|red|calibratedRed|deviceRed):|Color\((?:red|white):"##
+        )
+
+        for file in files {
+            let text = try String(contentsOf: file, encoding: .utf8)
+            let matches = expression.numberOfMatches(in: text, range: NSRange(text.startIndex..., in: text))
+            #expect(matches == 0, "写死的颜色：\(file.lastPathComponent)")
+        }
     }
 
     /// 主题字体和 Diff 颜色从实际交付的资源读取。
@@ -38,6 +62,7 @@ struct ThemeAndTerminalTests {
         #expect(dark.name == "Default (Dark)")
         #expect(light.fontName == "Menlo-Regular" && dark.fontSize == 11)
         #expect(Set(light.colors.keys) == Set(dark.colors.keys))
+        #expect(Set(["text", "background", "added", "deleted"]).isSubset(of: Set(light.colors.keys)))
         #expect(light.colors["deleted"]?.hex == "#FF3030")
         #expect(light.colors["deleted"]?.alpha == 0.18)
         #expect(dark.colors["deleted"]?.hex == "#FF453A")

@@ -277,24 +277,24 @@ struct WorkingCopyFileList: NSViewRepresentable {
             add(
                 "working.stage",
                 action: #selector(stageMenu),
-                enabled: session.canWrite && menuEntries.contains(where: \.hasUnstagedChanges),
+                enabled: session.canStage(menuEntries),
                 menu: menu
             )
             add(
                 "working.unstage",
                 action: #selector(unstageMenu),
-                enabled: session.canWrite && menuEntries.contains(where: \.hasStagedChanges),
+                enabled: session.canUnstage(menuEntries),
                 menu: menu
             )
 
             if menuEntries.contains(where: { $0.kind == .conflicted }) {
-                add("working.ours", action: #selector(ours), enabled: session.canWrite, menu: menu)
-                add("working.theirs", action: #selector(theirs), enabled: session.canWrite, menu: menu)
-                add("working.resolved", action: #selector(stageMenu), enabled: session.canWrite, menu: menu)
+                add("working.ours", action: #selector(ours), enabled: session.canResolve(menuEntries), menu: menu)
+                add("working.theirs", action: #selector(theirs), enabled: session.canResolve(menuEntries), menu: menu)
+                add("working.resolved", action: #selector(stageMenu), enabled: session.canResolve(menuEntries), menu: menu)
             }
 
             menu.addItem(.separator())
-            add("working.discard", action: #selector(discardMenu), enabled: session.canWrite, menu: menu)
+            add("working.discard", action: #selector(discardMenu), enabled: session.canDiscard(menuEntries), menu: menu)
             menu.addItem(.separator())
             add("action.copyPath", action: #selector(copyAbsolute), enabled: true, menu: menu)
             add("working.copyRelative", action: #selector(copyRelative), enabled: true, menu: menu)

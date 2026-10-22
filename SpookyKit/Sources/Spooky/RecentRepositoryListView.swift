@@ -40,13 +40,19 @@ struct RecentRepositoryListView: View {
 
                             Spacer(minLength: 4)
 
+                            // 校验中与失效都配有文字，不只依靠图标或颜色区分。
                             if recent.checking.contains(path) {
                                 ProgressView()
                                     .controlSize(.small)
-                                    .accessibilityLabel(AppLocalization.text("loading.check"))
+                                    .accessibilityHidden(true)
+                                Text(AppLocalization.text("repositories.checking"))
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
                             } else if recent.unavailable.contains(path) {
                                 Image(systemName: "exclamationmark.triangle")
-                                    .accessibilityLabel(AppLocalization.text("repositories.unavailable"))
+                                    .accessibilityHidden(true)
+                                Text(AppLocalization.text("repositories.unavailableShort"))
+                                    .font(.system(size: 11))
                             }
                         }
                         .foregroundStyle(recent.unavailable.contains(path) ? .secondary : .primary)

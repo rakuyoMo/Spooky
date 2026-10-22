@@ -23,6 +23,14 @@ struct WorkingCopyListView: View {
 
             WorkingCopyFileList(session: session)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay {
+                    // 干净的工作区用文字说明，不只留下空白列表。
+                    if session.status?.entries.isEmpty == true {
+                        Text(AppLocalization.text("working.clean"))
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+                }
 
             Divider()
 
@@ -31,6 +39,12 @@ struct WorkingCopyListView: View {
                     ProgressView()
                         .controlSize(.mini)
                     Text(AppLocalization.text(session.isWriting ? "working.writing" : "loading.status"))
+                } else if session.failure != nil, session.connectionState == nil || session.connectionState == .connected {
+                    // 刷新失败后列表仍是上一次的结果，底栏持续说明这一点；断线由连接横幅说明。
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(AppPalette.color("warning_tint_color"))
+                        .accessibilityHidden(true)
+                    Text(AppLocalization.text("working.refreshFailed"))
                 } else if let status = session.status {
                     Text(AppLocalization.text("workspace.changed", status.entries.count))
                 }

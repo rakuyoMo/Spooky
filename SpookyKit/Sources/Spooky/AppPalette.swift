@@ -46,12 +46,16 @@ enum AppPalette {
 
     /// 通过命名颜色映射动态外观，未定义的名称属于资源错误。
     static func color(_ name: String) -> Color {
+        Color(nsColor: nsColor(name))
+    }
+
+    /// AppKit 绘制使用的动态命名色，外观切换时自动取对应的值。
+    static func nsColor(_ name: String) -> NSColor {
         guard let pair = colors[name] else { preconditionFailure("命名色缺失：\(name)") }
-        let dynamic = NSColor(name: NSColor.Name(name)) { appearance in
+        return NSColor(name: NSColor.Name(name)) { appearance in
             appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
                 ? pair.dark.nsColor : pair.light.nsColor
         }
-        return Color(nsColor: dynamic)
     }
 }
 

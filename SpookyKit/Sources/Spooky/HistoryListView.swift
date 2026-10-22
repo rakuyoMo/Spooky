@@ -22,6 +22,8 @@ struct HistoryListView: View {
     /// 40 pt 表头、24 / 46 pt 列表行和持续可见的取消入口。
     var body: some View {
         VStack(spacing: 0) {
+            ConnectionStatusView(session: session)
+
             HStack(spacing: 8) {
                 Text(session.history.title)
                     .lineLimit(1)
@@ -65,13 +67,18 @@ struct HistoryListView: View {
             }
 
             if let failure = session.history.failure {
-                Text(failure.title + "\n" + failure.details)
-                    .font(.system(size: 11))
-                    .textSelection(.enabled)
+                FailureDetailsView(failure: failure) { session.history.reloadCommits() }
                     .padding(12)
-                Button(AppLocalization.text("action.refresh")) { session.history.reloadCommits() }
-                    .padding(.bottom, 8)
             }
+
+            // 达到加载上限后不再续载，提示用户选择分支缩小范围。
+            if session.history.reachedLimit {
+                Text(AppLocalization.text("history.limit", RepositoryHistoryState.maximumLoadedCommits))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .padding(8)
+            }
+
             if session.history.isLoading {
                 HStack {
                     ProgressView().controlSize(.small)
@@ -119,6 +126,7 @@ private struct HistoryCommitTable: NSViewRepresentable {
         table.target = context.coordinator
         table.doubleAction = #selector(Coordinator.doubleClick)
         table.copySelection = { context.coordinator.copyHashes() }
+        table.openSelection = { context.coordinator.doubleClick() }
         table.setDraggingSourceOperationMask(.copy, forLocal: true)
         table.setDraggingSourceOperationMask([], forLocal: false)
         table.setAccessibilityIdentifier("history-commits")
@@ -137,13 +145,26 @@ private struct HistoryCommitTable: NSViewRepresentable {
         context.coordinator.update(self)
     }
 
-    /// 响应链上的 ⌘C 复制完整哈希。
+    /// 响应链上的 ⌘C 复制完整哈希，回车与双击一样进入整页详情。
     final class CommitTableView: NSTableView {
         /// 当前选择对应的复制动作。
         var copySelection: (() -> Void)?
 
+        /// 键盘打开整页提交详情的动作。
+        var openSelection: (() -> Void)?
+
         /// 文本焦点位于表格时响应系统复制菜单。
         @objc func copy(_ sender: Any?) { copySelection?() }
+
+        /// 回车与小键盘 Enter 是双击的键盘入口，其它按键交给系统列表。
+        override func keyDown(with event: NSEvent) {
+            if [36, 76].contains(event.keyCode), event.modifierFlags.intersection([.command, .option, .control]).isEmpty {
+                openSelection?()
+                return
+            }
+
+            super.keyDown(with: event)
+        }
     }
 
     /// 表格委托把事件交给历史状态，不组装 Git 参数。
@@ -349,7 +370,7 @@ private struct HistoryCommitRow: View {
                 badges
                 Text(commit.subject).lineLimit(1)
                 Spacer(minLength: 0)
-                Text(commit.author).foregroundStyle(selected ? Color.white : .secondary).lineLimit(1)
+                Text(commit.author).foregroundStyle(selected ? Self.selectedText : .secondary).lineLimit(1)
                 date
             } else {
                 Text(String(commit.author.prefix(1)))
@@ -358,7 +379,7 @@ private struct HistoryCommitRow: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
-                        Text(commit.author).foregroundStyle(selected ? Color.white : .secondary).lineLimit(1)
+                        Text(commit.author).foregroundStyle(selected ? Self.selectedText : .secondary).lineLimit(1)
                         badges
                         Spacer(minLength: 0)
                         date
@@ -380,24 +401,28 @@ private struct HistoryCommitRow: View {
         .font(.system(size: small ? 11 : 12))
         .padding(.trailing, 8)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .foregroundStyle(selected ? Color.white : (unpulled ? .secondary : .primary))
+        .foregroundStyle(selected ? Self.selectedText : (unpulled ? .secondary : .primary))
         .background(
             unpulled && !selected ? AppPalette.color("general_alternate_row_background_color") : .clear
         )
         .help(commit.id + "\n" + commit.subject)
+        .accessibilityElement(children: .combine)
     }
+
+    /// 选中行的文字使用系统的选中文字语义色。
+    private static let selectedText = Color(nsColor: .alternateSelectedControlTextColor)
 
     /// 哈希使用等宽字体，动作仍使用完整 ID。
     private var hash: some View {
         Text(commit.shortID)
             .font(.system(size: small ? 10 : 12, design: .monospaced))
-            .foregroundStyle(selected ? Color.white : .secondary)
+            .foregroundStyle(selected ? Self.selectedText : .secondary)
     }
 
     /// 列表显示提交人日期，完整两种日期在详情中展示。
     private var date: some View {
         Text(commit.commitDate, format: .dateTime.year().month().day())
-            .foregroundStyle(selected ? Color.white : .secondary)
+            .foregroundStyle(selected ? Self.selectedText : .secondary)
             .lineLimit(1)
             .layoutPriority(1)
     }
@@ -459,17 +484,12 @@ private struct HistoryGraphView: NSViewRepresentable {
         /// 线段换列时在中间三分之一使用贝塞尔过渡。
         override func draw(_ dirtyRect: NSRect) {
             guard let row else { return }
-            let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-            let colors =
-                dark
-                ? [
-                    "#98989D", "#0091FF", "#FF375F", "#30D158", "#FFD600", "#FF9230", "#6D7CFF", "#FF4245",
-                    "#00D2E0", "#DB34F2",
-                ]
-                : [
-                    "#8E8E93", "#0088FF", "#FF2D55", "#34C759", "#FFCC00", "#FF8D28", "#6155F5", "#FF383C",
-                    "#00C3D0", "#CB30E0",
-                ]
+
+            // 十条泳道颜色按命名色循环，深浅外观由命名色自动切换。
+            let colors = [
+                "gray", "blue", "pink", "green", "yellow", "orange", "indigo", "red", "teal", "purple",
+            ]
+            .map { AppPalette.nsColor($0 + "_history_graph_line_color") }
 
             for segment in row.segments {
                 let start = NSPoint(
@@ -491,7 +511,7 @@ private struct HistoryGraphView: NSViewRepresentable {
                     controlPoint2: NSPoint(x: end.x, y: end.y - distance * 1.5)
                 )
                 path.line(to: end)
-                PaletteColor(hex: colors[segment.line % 10], alpha: 1).nsColor.setStroke()
+                colors[segment.line % 10].setStroke()
                 path.stroke()
             }
 
@@ -500,9 +520,9 @@ private struct HistoryGraphView: NSViewRepresentable {
                 ovalIn: NSRect(x: CGFloat(row.column) * 10 + 3.5, y: bounds.midY - 3.5, width: 7, height: 7)
             )
             dot.lineWidth = 3
-            (dark ? NSColor(white: 0.867, alpha: 1) : NSColor(white: 0.4, alpha: 1)).setStroke()
+            AppPalette.nsColor("repository_history_commit_bubble_border_color").setStroke()
             dot.stroke()
-            (dark ? NSColor(white: 0.133, alpha: 1) : .white).setFill()
+            AppPalette.nsColor("repository_history_commit_bubble_bg_color").setFill()
             dot.fill()
         }
     }

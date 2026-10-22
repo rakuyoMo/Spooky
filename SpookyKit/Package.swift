@@ -43,7 +43,7 @@ let package = Package(
         .executableTarget(
             name: "Spooky",
             dependencies: ["SpookyKit"],
-            exclude: ["Info.plist"],
+            exclude: ["Info.plist", "AppIcon.icns"],
             resources: [.process("Resources")],
             linkerSettings: [
                 .unsafeFlags([
@@ -56,7 +56,8 @@ let package = Package(
         ),
         .testTarget(
             name: "SpookyKitTests",
-            dependencies: ["SpookyKit"]
+            dependencies: ["SpookyKit"],
+            resources: [.copy("Fixtures")]
         ),
         .testTarget(
             name: "SpookyTests",
