@@ -91,6 +91,7 @@ actor RepositoryOperationQueue {
         return [
             "status", "rev-parse", "rev-list", "merge-base", "check-ref-format",
             "show", "log", "ls-files", "for-each-ref", "diff", "var", "cat-file", "--version",
+            "ls-tree", "blame", "shortlog",
         ]
         .contains(command)
     }
