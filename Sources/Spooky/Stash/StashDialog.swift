@@ -119,6 +119,7 @@ extension StashDialog {
                 GridRow {
                     Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
                     Toggle(AppLocalization.text("stash.includeUntracked"), isOn: $includeUntracked)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
 
@@ -126,12 +127,13 @@ extension StashDialog {
             applyRows
 
         case .autoStash:
-            messageRow(placeholder: "stash.autoStash.placeholder")
-                .disabled(reapply)
+            // 完成后恢复时储藏只是临时的，说明不可编辑
+            messageRow(placeholder: "stash.autoStash.placeholder", disabled: reapply)
 
             GridRow {
                 Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
                 Toggle(AppLocalization.text("stash.autoStash.reapply"), isOn: $reapply)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -158,6 +160,7 @@ extension StashDialog {
                 Toggle(AppLocalization.text("stash.deleteAfterApply"), isOn: $deleteAfterApply)
                 Toggle(AppLocalization.text("stash.restoreIndex"), isOn: $restoreIndex)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -191,11 +194,13 @@ extension StashDialog {
     }
 
     /// 说明输入行。
-    private func messageRow(placeholder: String) -> some View {
+    private func messageRow(placeholder: String, disabled: Bool = false) -> some View {
         GridRow {
             Text(AppLocalization.text("stash.message")).gridColumnAlignment(.trailing)
 
             TextField("", text: $message, prompt: Text(AppLocalization.text(placeholder)))
+                .frame(width: 350)
+                .disabled(disabled)
                 .accessibilityLabel(AppLocalization.text("stash.message"))
         }
     }
