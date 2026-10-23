@@ -31,9 +31,21 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **错误说明**：错误会写明类别、所在仓库和 Git / SSH 的原始输出，原文可以选择复制
 
-- **按文件、块、行暂存**：工作区支持平铺和树形显示、多选与三态勾选框。Diff 中可以按行选择，只暂存或丢弃选中的行
+- **工作区**：改动可以平铺或按树形显示，也可以浏览仓库里的全部文件；可以显示被忽略和 assume-unchanged 的文件，并按路径筛选。支持停止跟踪、删除、移动、忽略或排除文件，把文件恢复到指定版本，以及应用补丁文件；文件可以用 Quick Look 预览、拖出，或用默认程序打开
 
-- **提交与冲突收尾**：支持修补最近一次提交。合并、变基、摘取或反转进行中时，可以采用 ours / theirs 版本、标记已解决，再继续或中止
+- **按文件、块、行暂存**：支持多选与三态勾选框。Diff 中可以按行选择，只暂存或丢弃选中的行
+
+- **Diff 选项**：可以调整上下文行数、显示整个文件、忽略空白、显示不可见字符和设置 Tab 宽度。语法着色支持 28 种语言，其它文件显示为纯文本。图片可以并排对照，也可以逐张切换。Diff 可以保存为补丁或导出
+
+- **提交信息**：标题字数提示、正文软折行或硬折行、注释行处理，以及最近提交、改动文件和 `fixup!` / `squash!` 标题的自动补全。支持修补最近一次提交、Sign Off 和跳过钩子
+
+- **身份与签名**：用身份档案切换仓库的提交人身份。支持 GPG / SSH 提交签名；服务器仓库在服务器上签名，口令询问回到本机
+
+- **冲突向导**：合并、变基、摘取或反转进行中时，显示当前步骤和剩余的冲突数量。逐个文件对照两侧版本，采用其中一方或手动编辑结果，可以保留备份文件，再继续、跳过或中止
+
+- **储藏**：可以储藏全部或选中的改动，也可以创建不改动工作区的快照；应用储藏时可以恢复暂存状态，或只应用其中的一个文件。本地改动挡住检出、拉取或合并时，Spooky 会询问是否先储藏，完成后再恢复
+
+- **文件历史与 Blame**：查看一个文件的历史，可按作者、提交人、版本或日期筛选；查看每一行最后由谁修改，查看、复制或导出文件的任意版本
 
 - **历史**：分页加载，显示提交图、引用标记和领先 / 落后计数。合并提交显示与第一父提交之间的 Diff
 
@@ -45,7 +57,7 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **在终端中打开**：支持 Terminal、iTerm、Warp、Ghostty、WezTerm、Prompt 和 Otty。服务器仓库会在终端里经 SSH 进入远端路径
 
-- **默认主题**：内置 Default 与 Default (Dark)，随系统浅色、深色外观切换
+- **主题**：内置 Default 与 Default (Dark)。可以新建、改名、编辑、导入和导出自己的 Diff 与文件内容主题，并为浅色、深色外观各选一套
 
 - **支持八种语言**：英文、简体中文、繁体中文、日文、韩文、德文、法文和西班牙文，自动跟随系统语言。其它语言环境下显示英文
 
@@ -109,6 +121,7 @@ open .build/Spooky.app
 - 首次连接检查通过后，Spooky 以当前用户的权限，在服务器的 `~/.spooky/bin/` 里安装一个按内容摘要命名的小程序，用来管理远端进程和回调。它依赖服务器自带的 Perl，不常驻运行
 - 文件读写使用系统 SFTP，复用同一个主连接
   - 系统 SFTP 的批处理无法表示含 CR / LF 的路径，涉及这类路径的文件操作会明确报错
+- Quick Look、其它程序和拖出的文件都拿不到服务器上的路径，拿到的是本机私有临时目录里的文件副本；关闭仓库后这个目录会被删除
 - 轮询只读取状态和所选文件的内容哈希，有变化时才读取其它内容；只由提交哈希决定的历史分页和提交详情会缓存起来，减少往返
 
 ### 写操作与断线
@@ -120,9 +133,11 @@ open .build/Spooky.app
 
 ### 凭据
 
-- 服务器上的 Git 需要密码、SSH 私钥口令或编辑器时，请求经当前主连接上的反向 Unix socket 回到本机，由 Spooky 弹窗处理
+- 服务器上的 Git 需要密码、SSH 私钥口令、签名密钥口令或编辑器时，请求经当前主连接上的反向 Unix socket 回到本机，由 Spooky 弹窗处理
   - 每个请求都带随机的会话令牌，只能应答一次，120 秒后超时
+  - 服务器仓库的提交在服务器上由仓库配置的签名程序签名；GPG 只在确实需要口令时才询问
 - 本机仓库的网络操作同样通过私有的 Unix socket 回调输入凭据；SSH 私钥解锁后，由 OpenSSH 加入当前的 SSH agent
+- 本机的提交、合并、变基、摘取和反转也以同样的方式询问 SSH 签名密钥的口令；GPG 的口令交给本机自己的 pinentry 处理
 - 凭据默认只保存在内存中，勾选 “存入这台 Mac 的钥匙串” 后才写入本机钥匙串
 - 凭据不会写入临时文件、活动日志或错误信息，输出中回显的凭据会被隐去
 
@@ -130,14 +145,16 @@ open .build/Spooky.app
 
 本机：
 
-- 设置和最近记录保存在偏好设置域 `com.rakuyo.spooky`
+- 设置、身份档案和最近记录保存在偏好设置域 `com.rakuyo.spooky`
+- 自己新建的主题保存在 `~/Library/Application Support/Spooky/Themes`，一个主题一个 `.spookytheme` 文件
 - 存入钥匙串的凭据，服务名为 `com.rakuyo.spooky.remote.<主机别名>`
 - 连接和回调使用私有的 `/tmp/spooky-*` 临时目录，关闭会话后清理
+- 交给 Quick Look 和其它程序的文件副本放在私有的 `spooky-files-*` 临时目录，关闭仓库后清理
 - 用 Warp 打开服务器仓库时，会在 `~/.warp/launch_configurations/` 写入 `Spooky-*.yaml`；用 Prompt 打开时使用临时的 `.command` 文件。退出 Spooky 时只清理它自己创建的这些文件
 
 服务器：
 
-- `~/.spooky/bin/`：远端程序与 askpass 入口，权限为 `0700`，会话结束后保留，供下次连接使用
+- `~/.spooky/bin/`：远端程序及其 askpass、GPG 与 ssh-keygen 入口，权限为 `0700`，会话结束后保留，供下次连接使用
 - `/tmp/spooky-*`：会话期间的私有运行时目录，关闭会话后清理
 
 ## 开发
@@ -163,11 +180,23 @@ swift test
 # 连接、连接检查、断线恢复与回调
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
 
-# SFTP 与服务器提交
+# SFTP、本机文件缓存与服务器提交
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests
 
 # 服务器历史、同步与取消
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests
+
+# 文件操作、补丁与 Diff 选项
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyFilesTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteDiffTests
+
+# 储藏与冲突向导
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteStashTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConflictTests
+
+# 文件历史、Blame 与提交签名
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteFileViewsTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteCommitSigningTests
 ```
 
 每次运行只在这个目录下新建并清理独立的子目录，不修改双方的 SSH 配置、`known_hosts` 或全局 Git 配置。
