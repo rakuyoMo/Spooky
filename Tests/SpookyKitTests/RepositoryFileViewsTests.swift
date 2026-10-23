@@ -183,6 +183,7 @@ struct RepositoryFileViewsTests {
                 ["update-index", "--add", "-z", "--index-info"],
                 input: Data("100644 blob \(id)\t\(decomposed)\0".utf8)
             )
+
             // 工作区里没有这个文件，直接提交索引，不能先把工作区的状态加入索引
             _ = try await runner.run(["commit", "-q", "-m", "版本 \(index)"])
         }
