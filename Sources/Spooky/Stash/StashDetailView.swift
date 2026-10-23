@@ -239,7 +239,7 @@ private struct StashFileDiffView: View {
 
     /// 补丁、二进制、超限和失败各自有明确状态。
     var body: some View {
-        let theme = BuiltinTheme.current(dark: colorScheme == .dark)
+        let theme = TextTheme.current(dark: colorScheme == .dark)
 
         VStack(alignment: .leading, spacing: 0) {
             if let failure = stashes.diffFailures[path] {
@@ -271,7 +271,7 @@ private struct StashFileDiffView: View {
 
     /// 补丁头、二进制提示与只读的块。
     @ViewBuilder
-    private func fileDiff(_ file: DiffFile, theme: BuiltinTheme) -> some View {
+    private func fileDiff(_ file: DiffFile, theme: TextTheme) -> some View {
         Text(file.headers.joined(separator: "\n"))
             .font(.custom(theme.fontName, size: theme.fontSize))
             .foregroundStyle(.secondary)
