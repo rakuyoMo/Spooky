@@ -35,6 +35,7 @@ final class SettingsWindowController: NSWindowController {
         window.setContentSize(NSSize(width: 900, height: 450))
         window.center()
         super.init(window: window)
+
         selectionObservation = tabs.observe(\.selectedTabViewItemIndex, options: [.initial, .new]) { [weak window] tabs, _ in
             MainActor.assumeIsolated {
                 guard tabs.tabViewItems.indices.contains(tabs.selectedTabViewItemIndex) else { return }
@@ -70,29 +71,7 @@ private struct GeneralSettingsView: View {
     /// General 表单的控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
-            GridRow {
-                Text(AppLocalization.text("settings.terminal"))
-                    .gridColumnAlignment(.trailing)
-
-                Picker(AppLocalization.text("settings.terminal"), selection: $terminal) {
-                    ForEach(TerminalApplication.allCases.filter { $0.applicationURL != nil }) { application in
-                        HStack(spacing: 8) {
-                            if let url = application.applicationURL {
-                                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                                    .resizable()
-                                    .frame(width: 16, height: 16)
-                                    .accessibilityHidden(true)
-                            }
-
-                            Text(application.displayName)
-                        }
-                        .tag(application.rawValue)
-                    }
-                }
-                .labelsHidden()
-                .frame(width: 278)
-                .accessibilityIdentifier("terminal-application")
-            }
+            terminalRow
 
             GridRow {
                 Text(AppLocalization.text("working.diffThreshold"))
@@ -126,6 +105,37 @@ private struct GeneralSettingsView: View {
     }
 }
 
+// MARK: - Private
+
+extension GeneralSettingsView {
+    /// 终端选择行，每个候选显示应用图标与名称。
+    private var terminalRow: some View {
+        GridRow {
+            Text(AppLocalization.text("settings.terminal"))
+                .gridColumnAlignment(.trailing)
+
+            Picker(AppLocalization.text("settings.terminal"), selection: $terminal) {
+                ForEach(TerminalApplication.allCases.filter { $0.applicationURL != nil }) { application in
+                    HStack(spacing: 8) {
+                        if let url = application.applicationURL {
+                            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                                .resizable()
+                                .frame(width: 16, height: 16)
+                                .accessibilityHidden(true)
+                        }
+
+                        Text(application.displayName)
+                    }
+                    .tag(application.rawValue)
+                }
+            }
+            .labelsHidden()
+            .frame(width: 278)
+            .accessibilityIdentifier("terminal-application")
+        }
+    }
+}
+
 // MARK: - ThemesSettingsView
 
 /// 两套内置主题的字体与色板预览，系统外观决定实际使用的主题。
@@ -147,36 +157,7 @@ private struct ThemesSettingsView: View {
             .frame(width: 150)
 
             if let theme = BuiltinTheme.all.first(where: { $0.name == selected }) {
-                VStack(alignment: .leading, spacing: 20) {
-                    Text(AppLocalization.text("themes.font", theme.fontName, theme.fontSize))
-                    Text(AppLocalization.text("themes.followsSystem"))
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-
-                    HStack(spacing: 30) {
-                        ForEach(["background", "added", "deleted"], id: \.self) { key in
-                            VStack(spacing: 4) {
-                                Rectangle()
-                                    .fill(theme.colors[key]!.color)
-                                    .frame(width: 50, height: 30)
-                                    .overlay(Rectangle().stroke(AppPalette.color("general_border_color")))
-                                Text(AppLocalization.text("themes." + key))
-                                    .font(.system(size: 11))
-                            }
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 0) {
-                        previewLine(AppLocalization.text("themes.preview.context"), theme: theme, kind: "background")
-                        previewLine(AppLocalization.text("themes.preview.deleted"), theme: theme, kind: "deleted")
-                        previewLine(AppLocalization.text("themes.preview.added"), theme: theme, kind: "added")
-                    }
-                    .padding(12)
-                    .background(theme.colors["background"]!.color)
-                    .overlay(Rectangle().stroke(AppPalette.color("general_border_color")))
-                }
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                themePreview(theme)
             }
         }
         .padding(20)
@@ -187,14 +168,52 @@ private struct ThemesSettingsView: View {
             selected = BuiltinTheme.current(dark: colorScheme == .dark).name
         }
     }
+}
+
+// MARK: - Private
+
+extension ThemesSettingsView {
+    /// 所选主题的字体说明、背景与增删色板，以及按主题绘制的示例文本。
+    private func themePreview(_ theme: BuiltinTheme) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text(AppLocalization.text("themes.font", theme.fontName, theme.fontSize))
+            Text(AppLocalization.text("themes.followsSystem"))
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 30) {
+                ForEach(["background", "added", "deleted"], id: \.self) { key in
+                    VStack(spacing: 4) {
+                        Rectangle()
+                            .fill(theme.colors[key]?.color ?? .clear)
+                            .frame(width: 50, height: 30)
+                            .overlay(Rectangle().stroke(AppPalette.color("general_border_color")))
+                        Text(AppLocalization.text("themes." + key))
+                            .font(.system(size: 11))
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 0) {
+                previewLine(AppLocalization.text("themes.preview.context"), theme: theme, kind: "background")
+                previewLine(AppLocalization.text("themes.preview.deleted"), theme: theme, kind: "deleted")
+                previewLine(AppLocalization.text("themes.preview.added"), theme: theme, kind: "added")
+            }
+            .padding(12)
+            .background(theme.colors["background"]?.color ?? .clear)
+            .overlay(Rectangle().stroke(AppPalette.color("general_border_color")))
+        }
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
     /// 使用主题自己的字体、正文色和增删背景，便于直接核对配色。
     private func previewLine(_ text: String, theme: BuiltinTheme, kind: String) -> some View {
         Text(text)
             .font(.custom(theme.fontName, size: theme.fontSize))
-            .foregroundStyle(theme.colors["text"]!.color)
+            .foregroundStyle(theme.colors["text"]?.color ?? .primary)
             .padding(6)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.colors[kind]!.color)
+            .background(theme.colors[kind]?.color ?? .clear)
     }
 }

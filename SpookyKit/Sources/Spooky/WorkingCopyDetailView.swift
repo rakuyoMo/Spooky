@@ -204,7 +204,7 @@ private struct DiffContentView: View {
                 }
             }
         }
-        .background(theme.colors["background"]!.color)
+        .background(theme.colors["background"]?.color ?? .clear)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             let lines = diff.files.flatMap(\.hunks).flatMap(\.lines)
             HStack {
@@ -282,12 +282,12 @@ struct DiffHunkView: View {
                             .padding(.horizontal, 8)
                     }
                     .font(.custom(theme.fontName, size: theme.fontSize))
-                    .foregroundStyle(theme.colors["text"]!.color)
+                    .foregroundStyle(theme.colors["text"]?.color ?? .primary)
                     .frame(minHeight: 18)
                     .background(
                         line.prefix == 43
-                            ? theme.colors["added"]!.color
-                            : (line.prefix == 45 ? theme.colors["deleted"]!.color : .clear)
+                            ? (theme.colors["added"]?.color ?? .clear)
+                            : (line.prefix == 45 ? (theme.colors["deleted"]?.color ?? .clear) : .clear)
                     )
 
                     if line.noNewline {
@@ -343,16 +343,20 @@ struct DiffHunkView: View {
             DragGesture(minimumDistance: 1, coordinateSpace: .named(coordinateID))
                 .onChanged { value in
                     guard enabled, line.isChange else { return }
-                    if dragSelecting == nil { dragSelecting = !selected.contains(line.id)
+
+                    if dragSelecting == nil {
+                        dragSelecting = !selected.contains(line.id)
                         anchor = line.id
                     }
+
                     guard
                         let end = rowFrames.first(where: {
                             $0.value.minY <= value.location.y && $0.value.maxY >= value.location.y
                         })?.key
                     else { return }
+
                     for item in hunk.lines where item.isChange && (min(line.id, end) ... max(line.id, end)).contains(item.id) {
-                        if dragSelecting == true { selected.insert(item.id) }
+                        if dragSelecting ?? false { selected.insert(item.id) }
                         else { selected.remove(item.id) }
                     }
                 }
@@ -365,7 +369,8 @@ struct DiffHunkView: View {
         .accessibilityAction { select(line.id, range: false) }
         .focusable(line.isChange && !readOnly)
         .allowsHitTesting(!readOnly)
-        .onKeyPress(.space) { select(line.id, range: false)
+        .onKeyPress(.space) {
+            select(line.id, range: false)
             return .handled
         }
     }

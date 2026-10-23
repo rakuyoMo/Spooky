@@ -2,6 +2,8 @@ import AppKit
 import SpookyKit
 import SwiftUI
 
+// MARK: - WorkingCopyFileList
+
 /// 原生文件树支持多选勾选框、空格暂存与固定行高。
 struct WorkingCopyFileList: NSViewRepresentable {
     /// 所有入口共享同一会话状态。
@@ -57,7 +59,11 @@ struct WorkingCopyFileList: NSViewRepresentable {
     func updateNSView(_: NSScrollView, context: Context) {
         context.coordinator.update(mode: mode)
     }
+}
 
+// MARK: - Nested Types
+
+extension WorkingCopyFileList {
     /// 文件树节点同时保留相对路径与叶子状态。
     final class Node: NSObject {
         /// 相对路径，也是目录的稳定身份。
@@ -89,7 +95,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
 
         /// 默认动作是 Toggle staging；Quick Look 在对应里程碑接入。
         override func keyDown(with event: NSEvent) {
-            if event.keyCode == 49, event.modifierFlags.intersection([.command, .control, .option]).isEmpty {
+            if event.keyCode == 49, event.modifierFlags.isDisjoint(with: [.command, .control, .option]) {
                 toggleSelection?()
                 return
             }
@@ -203,12 +209,16 @@ struct WorkingCopyFileList: NSViewRepresentable {
 
         /// 只有目录显示展开三角。
         func outlineView(_: NSOutlineView, isItemExpandable item: Any) -> Bool {
-            (item as? Node)?.children.isEmpty == false
+            guard let node = item as? Node else { return false }
+
+            return !node.children.isEmpty
         }
 
         /// 平铺不留展开控件，树形仅为目录提供三角。
         func outlineView(_: NSOutlineView, shouldShowOutlineCellForItem item: Any) -> Bool {
-            tree && (item as? Node)?.children.isEmpty == false
+            guard tree, let node = item as? Node else { return false }
+
+            return !node.children.isEmpty
         }
 
         /// 冲突状态不只通过文字颜色表达。
@@ -242,14 +252,18 @@ struct WorkingCopyFileList: NSViewRepresentable {
                 return stack
             }
 
-            let label = NSTextField(labelWithString: tree ? (node.path as NSString).lastPathComponent : node.path)
+            // 树形只显示末级名称，完整路径放在提示中。
+            let name = node.path.split(separator: "/").last.map(String.init) ?? node.path
+            let label = NSTextField(labelWithString: tree ? name : node.path)
             label.font = .systemFont(ofSize: 13)
             label.lineBreakMode = .byTruncatingMiddle
             label.toolTip = node.path
+
+            // 冲突、目录与文件使用各自的系统符号；符号不可用时保留空白图标位。
             let symbol = node.entry?.kind == .conflicted
                 ? "exclamationmark.circle.fill"
                 : (node.entry == nil ? "folder" : "doc")
-            let icon = NSImageView(image: NSImage(systemSymbolName: symbol, accessibilityDescription: nil)!)
+            let icon = NSImageView(image: NSImage(systemSymbolName: symbol, accessibilityDescription: nil) ?? NSImage())
             icon.contentTintColor = node.entry?.kind == .conflicted ? .systemRed : .secondaryLabelColor
             icon.widthAnchor.constraint(equalToConstant: 16).isActive = true
             let stack = NSStackView(views: [icon, label])
@@ -307,9 +321,11 @@ struct WorkingCopyFileList: NSViewRepresentable {
         /// 空格沿用 “存在可暂存项则全部暂存” 的规则。
         func toggleSelection() {
             let entries = session.selectedEntries
-            if entries.isEmpty { NSSound.beep()
+            if entries.isEmpty {
+                NSSound.beep()
                 return
             }
+
             session.stage(entries, staged: entries.contains(where: \.hasUnstagedChanges))
         }
 
