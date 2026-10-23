@@ -443,3 +443,6 @@
 "repositories.checking" = "正在檢查…";
 "repositories.unavailableShort" = "無法使用";
 "activity.truncated" = "較早的輸出已省略。";
+
+/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+"diff.error.whitespace" = "忽略空白時，選取的行與檔案中的變更對應不上。請顯示空白變更後重新選取。";

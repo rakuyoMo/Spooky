@@ -204,6 +204,7 @@ struct AppFailure: Identifiable {
         case .staleSnapshot: ("working.error.stale", .repository)
         case .invalidSelection: ("working.error.selection", .repository)
         case .unsupportedFile: ("working.error.file", .repository)
+        case .whitespaceMismatch: ("diff.error.whitespace", .repository)
         case .malformedDiff: ("error.parse", .output)
         }
     }

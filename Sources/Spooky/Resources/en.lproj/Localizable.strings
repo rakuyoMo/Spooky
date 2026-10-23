@@ -443,3 +443,6 @@
 "repositories.checking" = "Checking…";
 "repositories.unavailableShort" = "Unavailable";
 "activity.truncated" = "Earlier output was omitted.";
+
+/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+"diff.error.whitespace" = "With whitespace ignored, the selected lines don’t match the changes in the file. Show whitespace changes and select the lines again.";

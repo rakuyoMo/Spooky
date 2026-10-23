@@ -54,8 +54,14 @@ public struct DiffSnapshot: Sendable {
     /// 超过警告阈值时保留空值，显式加载后才解析。
     public let diff: RepositoryDiff?
 
-    /// 当前文件的工作区、暂存区与状态联合摘要。
+    /// 当前文件的工作区、暂存区与状态联合摘要，生成时的显示选项一并计入。
     public let fingerprint: Data
+
+    /// 生成这份 Diff 的显示选项，写入前按同一选项重新核对快照。
+    public let options: DiffOptions
+
+    /// 忽略空白后这一侧没有剩下任何改动，逐字节比较仍有差异。
+    public let onlyWhitespaceChanges: Bool
 }
 
 extension StatusEntry {
@@ -104,11 +110,13 @@ public struct WorkingCopyOperations: Sendable {
     public func diff(
         for entry: StatusEntry,
         side: DiffSide,
+        options: DiffOptions = DiffOptions(),
         warningKilobytes: Int = Self.defaultWarningKilobytes,
         showLarge: Bool = false
     ) async throws -> DiffSnapshot {
-        let contents = try await snapshot(entry)
+        let contents = try await snapshot(entry, options: options)
         let patch = side == .staged ? contents.staged : contents.unstaged
+        let exact = side == .staged ? contents.exactStaged : contents.exactUnstaged
         let threshold = max(0, min(warningKilobytes, Int.max / 1000)) * 1000
 
         // Foundation 的 range(of:) 与 contains 结果相同，在数十 MB 的补丁上快数百倍。
@@ -121,7 +129,9 @@ public struct WorkingCopyOperations: Sendable {
             side: side,
             byteCount: patch.count,
             diff: parsed,
-            fingerprint: contents.fingerprint
+            fingerprint: contents.fingerprint,
+            options: options,
+            onlyWhitespaceChanges: patch.isEmpty && !exact.isEmpty
         )
     }
 
@@ -155,24 +165,25 @@ public struct WorkingCopyOperations: Sendable {
         discard: Bool = false
     ) async throws {
         guard
-            let diff = snapshot.diff,
-            diff.files.count == 1,
+            snapshot.diff?.files.count == 1,
             !discard || snapshot.side == .unstaged
         else { throw WorkingCopyError.invalidSelection }
 
         let reverse = discard || snapshot.side == .staged
-        let patch = try diff.patch(
-            path: snapshot.entry.path,
-            file: file,
-            hunk: hunk,
-            selectedLines: lines,
-            reverse: reverse
-        )
 
         try await runner.writeTransaction {
-            guard try await self.snapshot(snapshot.entry).fingerprint == snapshot.fingerprint else {
+            guard try await isCurrent(snapshot) else {
                 throw WorkingCopyError.staleSnapshot
             }
+
+            // 补丁在写锁内生成：忽略空白时要读取同一时刻的逐字节 Diff。
+            let patch = try await writablePatch(
+                snapshot,
+                file: file,
+                hunk: hunk,
+                lines: lines,
+                reverse: reverse
+            )
 
             var arguments = ["apply", "--whitespace=nowarn"]
             if !discard { arguments.append("--cached") }
@@ -180,7 +191,7 @@ public struct WorkingCopyOperations: Sendable {
 
             // 不放宽空白或上下文匹配；预检失败保留 Git 原始输出。
             _ = try await runner.run(arguments + ["--check", "-"], input: patch)
-            guard try await self.snapshot(snapshot.entry).fingerprint == snapshot.fingerprint else {
+            guard try await isCurrent(snapshot) else {
                 throw WorkingCopyError.staleSnapshot
             }
 
@@ -397,39 +408,48 @@ extension WorkingCopyOperations {
     }
 
     /// 两侧补丁与路径状态一起校验，暂存视图也会察觉外部工作区编辑。
-    private func snapshot(_ entry: StatusEntry) async throws -> (staged: Data, unstaged: Data, fingerprint: Data) {
-        let options = [
-            "--no-color", "--word-diff=none", "--no-ext-diff", "--no-textconv", "--full-index",
-            "--src-prefix=a/", "--dst-prefix=b/", "--no-relative", "--diff-algorithm=myers", "-U3", "-C", "-M",
-        ]
+    ///
+    /// 逐字节的两侧补丁始终计入摘要；忽略空白时另取显示用的补丁，同样计入，外部只改空白也能察觉。
+    func snapshot(_ entry: StatusEntry, options: DiffOptions = DiffOptions()) async throws -> DiffContents {
         let statusArguments = ["--literal-pathspecs", "status", "--porcelain=v2", "-z", "--untracked-files=all", "--"]
             + entry.operationPaths
-        let before = try await runner.run(statusArguments)
-        let staged = try await runner.run(
-            ["--literal-pathspecs", "diff", "--cached"] + options + ["--"] + entry.operationPaths
-        )
-        let unstaged: Data
+        var exactOptions = options
+        exactOptions.ignoresWhitespace = false
 
-        if entry.kind == .untracked {
-            guard !entry.path.hasSuffix("/") else { throw WorkingCopyError.unsupportedFile }
-            unstaged = try await runner.execute(
-                ["diff", "--no-index"] + options + ["--", "/dev/null", entry.path],
-                acceptedExitCodes: [0, 1]
-            ).standardOutput
-        } else {
-            unstaged = try await runner.run(
-                ["--literal-pathspecs", "diff"] + options + ["--", entry.path]
+        let before = try await runner.run(statusArguments)
+        let staged = try await patch(for: entry, side: .staged, options: exactOptions)
+        let unstaged = try await patch(for: entry, side: .unstaged, options: exactOptions)
+        var shown = (staged: staged, unstaged: unstaged)
+
+        if options.ignoresWhitespace {
+            shown = (
+                try await patch(for: entry, side: .staged, options: options),
+                try await patch(for: entry, side: .unstaged, options: options)
             )
         }
 
         guard try await runner.run(statusArguments) == before else { throw WorkingCopyError.staleSnapshot }
         var hash = SHA256()
 
-        for data in [before, staged, unstaged] {
+        // 选项不同的快照即使补丁恰好相同也不互相冒充
+        hash.update(data: Data(options.arguments.joined(separator: " ").utf8))
+
+        for data in [before, staged, unstaged] + (options.ignoresWhitespace ? [shown.staged, shown.unstaged] : []) {
             hash.update(data: Data("\(data.count):".utf8))
             hash.update(data: data)
         }
 
-        return (staged, unstaged, Data(hash.finalize()))
+        return DiffContents(
+            staged: shown.staged,
+            unstaged: shown.unstaged,
+            exactStaged: staged,
+            exactUnstaged: unstaged,
+            fingerprint: Data(hash.finalize())
+        )
+    }
+
+    /// 按快照生成时的选项重新读取，摘要相同说明文件与暂存区都没有变化。
+    func isCurrent(_ snapshot: DiffSnapshot) async throws -> Bool {
+        try await self.snapshot(snapshot.entry, options: snapshot.options).fingerprint == snapshot.fingerprint
     }
 }

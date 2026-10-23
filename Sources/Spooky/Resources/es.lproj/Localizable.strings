@@ -443,3 +443,6 @@
 "repositories.checking" = "Comprobando…";
 "repositories.unavailableShort" = "No disponible";
 "activity.truncated" = "Se ha omitido la salida anterior.";
+
+/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+"diff.error.whitespace" = "Al ignorar los espacios, las líneas seleccionadas no coinciden con los cambios del archivo. Muestra los cambios de espacios y vuelve a seleccionar las líneas.";

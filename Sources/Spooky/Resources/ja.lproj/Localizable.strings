@@ -443,3 +443,6 @@
 "repositories.checking" = "確認中…";
 "repositories.unavailableShort" = "利用不可";
 "activity.truncated" = "以前の出力は省略されました。";
+
+/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+"diff.error.whitespace" = "空白を無視しているため、選択した行がファイルの変更と一致しません。空白の変更を表示してから選択し直してください。";

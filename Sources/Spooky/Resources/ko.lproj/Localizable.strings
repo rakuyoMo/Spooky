@@ -443,3 +443,6 @@
 "repositories.checking" = "확인하는 중…";
 "repositories.unavailableShort" = "사용 불가";
 "activity.truncated" = "이전 출력은 생략되었습니다.";
+
+/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+"diff.error.whitespace" = "공백을 무시하는 동안에는 선택한 줄이 파일의 변경 사항과 일치하지 않습니다. 공백 변경 사항을 표시한 후 다시 선택하십시오.";

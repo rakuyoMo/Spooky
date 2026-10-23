@@ -443,3 +443,6 @@
 "repositories.checking" = "Wird geprüft …";
 "repositories.unavailableShort" = "Nicht verfügbar";
 "activity.truncated" = "Frühere Ausgabe wurde ausgelassen.";
+
+/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+"diff.error.whitespace" = "Bei ignorierten Leerzeichen passen die ausgewählten Zeilen nicht zu den Änderungen in der Datei. Blende Leerzeichenänderungen ein und wähle die Zeilen erneut aus.";
