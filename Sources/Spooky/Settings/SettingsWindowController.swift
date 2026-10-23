@@ -68,6 +68,10 @@ private struct GeneralSettingsView: View {
     @AppStorage("cleanRefNames")
     private var cleanRefNames = true
 
+    /// 检出、拉取与合并被本地改动挡住时询问是否先储藏。
+    @AppStorage("offerAutoStash")
+    private var offerAutoStash = true
+
     /// General 表单的控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
@@ -92,6 +96,12 @@ private struct GeneralSettingsView: View {
                 .labelsHidden()
                 .frame(width: 278)
                 .accessibilityLabel(AppLocalization.text("history.pageSize"))
+            }
+
+            GridRow {
+                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                Toggle(AppLocalization.text("stash.offerAutoStash"), isOn: $offerAutoStash)
+                    .frame(width: 278, alignment: .leading)
             }
 
             GridRow {

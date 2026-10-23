@@ -80,6 +80,8 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
             self.coordinator?.repositoryChanged(location, by: self)
         }
 
+        session.onStashRequest = { [weak self] in self?.presentStash($0) }
+
         session.onViewReset = { [weak self] in
             guard let self, !self.showsManager else { return }
             configureRepositoryView()
@@ -332,6 +334,18 @@ extension RepositoryWindowController {
         configureRepositoryView()
     }
 
+    /// 切换到储藏列表，⌘3 与侧边栏使用相同状态。
+    @objc
+    func showStashes() {
+        guard session.repository != nil else {
+            return
+        }
+
+        session.activeView = .stashes
+        showsManager = false
+        configureRepositoryView()
+    }
+
     /// ⌘0 选中当前 HEAD，分离和未出生分支仍可定位。
     @objc
     func showHeadBranch() {
@@ -440,7 +454,7 @@ extension RepositoryWindowController {
             items.append(.init("host"))
         }
 
-        if !showsManager { items.append(contentsOf: [.init("sync"), .init("merge")]) }
+        if !showsManager { items.append(contentsOf: [.init("sync"), .init("merge"), .init("stashes")]) }
 
         items += [.init("terminal"), .init("finder"), .init("refresh"), .init("closeRepository")]
 
@@ -488,6 +502,10 @@ extension RepositoryWindowController {
         }
         if identifier.rawValue == "search" {
             return makeSearchItem(identifier)
+        }
+
+        if identifier.rawValue == "stashes" {
+            return makeStashToolbarItem(identifier)
         }
 
         if identifier.rawValue == "host", let host = session.repository?.host {
@@ -564,7 +582,7 @@ extension RepositoryWindowController {
 
 extension RepositoryWindowController {
     /// 分栏按名称恢复宽度；记录不可用时视为恢复失败，先清除记录，由调用方按默认宽度建立。
-    private static func setAutosaveName(_ name: String, of split: NSSplitViewController) {
+    static func setAutosaveName(_ name: String, of split: NSSplitViewController) {
         let key = "NSSplitView Subview Frames " + name
 
         if let frames = UserDefaults.standard.array(forKey: key), !isUsable(splitFrames: frames) {
@@ -598,6 +616,7 @@ extension RepositoryWindowController {
             for action in [
                 #selector(fetch), #selector(pull), #selector(push), #selector(merge),
                 #selector(stageAll), #selector(refreshRepository), #selector(closeRepository),
+                #selector(applyStash), #selector(saveStash),
             ] {
                 _ = validateUserInterfaceItem(NSMenuItem(title: "", action: action, keyEquivalent: ""))
             }
@@ -715,6 +734,11 @@ extension RepositoryWindowController {
             let split = makeHistorySplit()
             historySplit = split
             detail = split
+
+        case .stashes:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeStashSplit()
         }
 
         installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repository")
@@ -729,6 +753,14 @@ extension RepositoryWindowController {
             UserDefaults.standard.object(forKey: "NSSplitView Subview Frames " + name) == nil
         {
             historySplit.splitView.setPosition(320, ofDividerAt: 0)
+        }
+
+        // 首次使用或恢复失败后储藏列表同样宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
+        if
+            session.activeView == .stashes, let split = detail as? NSSplitViewController,
+            UserDefaults.standard.object(forKey: "NSSplitView Subview Frames Spooky.Stashes") == nil
+        {
+            split.splitView.setPosition(320, ofDividerAt: 0)
         }
     }
 

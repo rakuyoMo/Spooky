@@ -13,10 +13,14 @@ enum RepositoryView: String, CaseIterable {
     /// 分页提交列表与只读提交详情。
     case history
 
+    /// 储藏列表与只读储藏详情。
+    case stashes
+
     /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
     var supportsSearch: Bool {
         switch self {
         case .workingCopy, .history: false
+        case .stashes: true
         }
     }
 }
@@ -57,6 +61,9 @@ final class RepositorySession {
 
     /// 历史和引用与工作区共用一个窗口生命周期。
     let history = RepositoryHistoryState()
+
+    /// 储藏列表、选择与储藏详情。
+    let stashes = RepositoryStashState()
 
     /// 当前工作区身份。
     private(set) var repository: RepositoryLocation? = nil
@@ -157,6 +164,9 @@ final class RepositorySession {
 
     /// 窗口负责呈现错误 sheet。
     var onFailure: ((AppFailure) -> Void)? = nil
+
+    /// 窗口负责呈现储藏的对话框。
+    var onStashRequest: ((StashRequest) -> Void)? = nil
 
     /// 当前刷新任务，关闭仓库时取消。
     private(set) var refreshTask: Task<Void, Never>? = nil
@@ -355,6 +365,7 @@ final class RepositorySession {
                     if full || statusChanged {
                         loadContext()
                         history.refresh(status: status, runner: makeRunner(repository), reload: full)
+                        stashes.refresh(runner: makeRunner(repository))
                     }
 
                     if full || statusChanged || contentChanged(probe, hash: hash) {
@@ -385,6 +396,7 @@ final class RepositorySession {
 
         generation += 1
         history.close()
+        stashes.close()
         fileMonitor?.stop()
         fileMonitor = nil
         fileCache?.removeAll()
@@ -434,7 +446,7 @@ final class RepositorySession {
     /// 退出前取消本窗口的全部任务并等待结束，本机子进程与远端操作随之回收。
     func shutdown() async {
         let tasks = [writeTask, refreshTask, diffTask, contextTask, pollingTask, connectionTask, reconnectTask]
-            .compactMap { $0 } + history.activeTasks
+            .compactMap { $0 } + history.activeTasks + stashes.activeTasks
         close()
 
         for task in tasks {
@@ -552,6 +564,7 @@ extension RepositorySession {
     /// - Parameters:
     ///   - title: 已本地化的操作名称，用于 Activity 与断线后的核对报告。
     ///   - recordsActivity: 网络与引用操作记入 Activity；工作区的高频写入只用于核对报告。
+    ///   - offersAutoStash: 被本地改动挡住时是否按设置询问先储藏，检出、拉取与合并使用。
     /// - Returns: 是否已开始执行；仓库不可写时不启动，调用方据此保留未发送的参数。
     @discardableResult
     func performGit(
@@ -559,6 +572,7 @@ extension RepositorySession {
         @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
         recordsActivity: Bool = true,
+        offersAutoStash: Bool = false,
         success: (() -> Void)? = nil
     ) -> Bool {
         guard canWrite, let repository, RepositoryWriteLocks.shared.acquire(repository) else {
@@ -572,6 +586,7 @@ extension RepositorySession {
         contextTask = nil
         diffTask?.cancel()
         history.suspend()
+        stashes.suspend()
         isRefreshing = false
         pendingFullRefresh = false
         isWriting = true
@@ -604,8 +619,11 @@ extension RepositorySession {
                 // 失败的类别在 reportWriteFailure 归类后记录，这里只记取消
                 if cancelled { Self.logger.info("写操作已取消：\(title, privacy: .public)") }
 
+                // 被本地改动挡住的检出、拉取与合并改为询问是否先储藏，用户不储藏时再报告失败
                 if let self, generation == request {
-                    reportWriteFailure(error, cancelled: cancelled, title: title, branch: branch, in: repository)
+                    if !(offersAutoStash && !cancelled && offerAutoStash(after: error, title: title, action: action)) {
+                        reportWriteFailure(error, cancelled: cancelled, title: title, branch: branch, in: repository)
+                    }
                 }
             }
 
