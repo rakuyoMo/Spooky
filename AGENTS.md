@@ -193,6 +193,7 @@ LICENSE                       GPL-3.0 许可证全文
 - Diff、原文、Blame 与主题示例取主题一律用 `TextTheme.current(dark:)`；在 SwiftUI 的 `body` 里调用，即随主题的编辑、切换与外观变化刷新
 - 用户主题在 `~/Library/Application Support/Spooky/Themes`，一个主题一个 `.spookytheme` JSON；两种外观所选的主题记在偏好 `lightTheme`、`darkTheme`
 - 语法着色、Tab 宽度与不可见字符的偏好集中在 `TextPreferences`，一行文本按 `TextStyle` 经 `TextLineRenderer` 渲染；提交详情、储藏详情与文件历史的只读 Diff 共用 `ReadOnlyFileDiffView`
+- Diff 的块是懒加载栈里的分节：文件头与各块经 `DiffSegment` 排成栈里同一层的元素，块内每行连同无换行提示只占一个元素，身份带上块的起点；一个元素展开成多个视图或行的身份在各块间重复时，块头与行会漏显示
 
 ### 日志
 
