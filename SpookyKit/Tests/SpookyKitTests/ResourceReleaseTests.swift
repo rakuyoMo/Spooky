@@ -12,9 +12,11 @@ struct ResourceReleaseTests {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
         let lock = temporary.directory.appending(path: "index.lock")
+
+        // 进程组在取消时可能先后收到两次 TERM：清理开始时先忽略 TERM，删除锁文件的 rm 才不会被第二次 TERM 结束
         let executable = try script(in: temporary, name: "locking-git", body: """
             lock=\(GitRunner.shellQuoted(lock.path))
-            trap 'rm -f "$lock"; exit 143' TERM
+            trap 'trap "" TERM; rm -f "$lock"; exit 143' TERM
             touch "$lock"
             printf '%s\\n' "$$"
             while :; do sleep 0.1; done
