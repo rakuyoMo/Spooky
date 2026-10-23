@@ -69,7 +69,7 @@ extension SpookyApplicationController {
         addItem("action.find", action: #selector(RepositoryWindowController.focusSearch), key: "f", to: find)
     }
 
-    /// View 菜单：仓库管理、工作区与历史视图，历史的显示选项，以及文件列表样式、刷新与全屏。
+    /// View 菜单：仓库管理、工作区与历史视图，工作区文件列表与历史的显示选项，以及刷新与全屏。
     private func configureViewMenu(in menu: NSMenu) {
         let view = addMenu("menu.view", to: menu)
         addItem(
@@ -89,18 +89,11 @@ extension SpookyApplicationController {
             to: view
         )
 
+        configureWorkingCopyStatusMenu(in: view)
         configureHistoryMenu(in: view)
         configureHistoryDiffsMenu(in: view)
 
         view.addItem(.separator())
-        addItem(
-            "working.list", action: #selector(RepositoryWindowController.viewAsList),
-            key: "l", modifiers: [.control, .command], to: view
-        )
-        addItem(
-            "working.tree", action: #selector(RepositoryWindowController.viewAsTree),
-            key: "t", modifiers: [.control, .command], to: view
-        )
         addItem("action.refresh", action: #selector(RepositoryWindowController.refreshRepository), key: "r", to: view)
         addItem(
             "menu.fullscreen",
@@ -108,6 +101,48 @@ extension SpookyApplicationController {
             key: "f",
             modifiers: [.control, .command],
             to: view
+        )
+    }
+
+    /// 工作区状态子菜单：平铺与树形、显示未改动、被忽略与 assume-unchanged 的文件。
+    private func configureWorkingCopyStatusMenu(in view: NSMenu) {
+        let status = addMenu("files.statusMenu", to: view)
+        addItem(
+            "working.tree",
+            action: #selector(RepositoryWindowController.viewAsTree),
+            key: "t",
+            modifiers: [.control, .command],
+            to: status
+        )
+        addItem(
+            "working.list",
+            action: #selector(RepositoryWindowController.viewAsList),
+            key: "l",
+            modifiers: [.control, .command],
+            to: status
+        )
+
+        status.addItem(.separator())
+        addItem(
+            "files.showNonModified",
+            action: #selector(RepositoryWindowController.toggleNonModifiedItems),
+            key: "m",
+            modifiers: [.control, .command],
+            to: status
+        )
+        addItem(
+            "files.showIgnored",
+            action: #selector(RepositoryWindowController.toggleIgnoredItems),
+            key: "i",
+            modifiers: [.control, .command],
+            to: status
+        )
+        addItem(
+            "files.showAssumeUnchanged",
+            action: #selector(RepositoryWindowController.toggleAssumeUnchangedItems),
+            key: "u",
+            modifiers: [.control, .command],
+            to: status
         )
     }
 
@@ -205,7 +240,7 @@ extension SpookyApplicationController {
         )
     }
 
-    /// Working Copy 菜单：检出与合并、提交与暂存，以及丢弃改动。
+    /// Working Copy 菜单：检出、合并与应用补丁，提交与暂存，以及丢弃改动。
     private func configureWorkingCopyMenu(in menu: NSMenu) {
         let working = addMenu("workspace.title", to: menu)
         addItem(
@@ -222,6 +257,7 @@ extension SpookyApplicationController {
             modifiers: [.shift, .command],
             to: working
         )
+        addItem("files.applyPatch.menu", action: #selector(RepositoryWindowController.applyPatch), to: working)
 
         working.addItem(.separator())
         addItem(

@@ -143,6 +143,15 @@ struct AppFailure: Identifiable {
             recoveryKey = "error.terminalHelp"
             diagnostic = terminal.diagnostic
 
+        case let file as WorkingCopyFileError:
+            kind = .repository
+            (key, recoveryKey, diagnostic) = Self.classification(of: file)
+
+        case let tool as DiffToolLaunchError:
+            key = "files.error.diffTool"
+            recoveryKey = "files.error.diffToolHelp"
+            diagnostic = tool.diagnostic
+
         case let git as GitError:
             output = git.result
             diagnostic = git.diagnostic
@@ -205,6 +214,19 @@ struct AppFailure: Identifiable {
         case .invalidSelection: ("working.error.selection", .repository)
         case .unsupportedFile: ("working.error.file", .repository)
         case .malformedDiff: ("error.parse", .output)
+        }
+    }
+
+    /// 工作区文件操作失败的文案键、恢复说明与诊断：补丁前像不符时列出这些文件。
+    private static func classification(
+        of file: WorkingCopyFileError
+    ) -> (key: String, recovery: String?, diagnostic: String?) {
+        switch file {
+        case .patchPreimageMismatch(let paths):
+            ("files.error.preimage", "files.error.preimageHelp", paths.joined(separator: "\n"))
+
+        case .destinationExists:
+            ("files.error.destination", nil, nil)
         }
     }
 

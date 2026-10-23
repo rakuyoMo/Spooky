@@ -85,7 +85,7 @@ public struct WorkingCopyOperations: Sendable {
     public static let defaultWarningKilobytes = 20_000
 
     /// 所有支持批量路径的写命令使用同一 NUL 输入协议。
-    private static let pathInputOptions = ["--pathspec-from-file=-", "--pathspec-file-nul"]
+    static let pathInputOptions = ["--pathspec-from-file=-", "--pathspec-file-nul"]
 
     /// 本机与服务器共用命令执行器。
     public let runner: GitRunner
@@ -96,7 +96,7 @@ public struct WorkingCopyOperations: Sendable {
     }
 
     /// 不规范化实际路径字节，字面路径语义交由 Git 的全局开关保证。
-    private static func pathInput(_ paths: [String]) -> Data {
+    static func pathInput(_ paths: [String]) -> Data {
         Data(paths.flatMap { Array($0.utf8) + [0] })
     }
 

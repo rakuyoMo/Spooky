@@ -26,7 +26,7 @@ struct WorkingCopyDetailView: View {
                         .help(entry.path)
                     Spacer(minLength: 0)
 
-                    if entry.kind != .conflicted {
+                    if entry.hasWorkingCopyDiff {
                         DiffSidePicker(
                             side: $session.diffSide,
                             staged: entry.hasStagedChanges,
@@ -44,6 +44,8 @@ struct WorkingCopyDetailView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .onChange(of: session.diffSide) { session.loadDiff() }
+        } else if let directory = session.selectedDirectory {
+            unchangedView(AppLocalization.text(directoryMessage(directory)), symbol: "folder")
         } else {
             VStack(spacing: 16) {
                 EmptyStateView(
@@ -53,8 +55,16 @@ struct WorkingCopyDetailView: View {
                 )
 
                 if session.selectedIDs.count > 1 {
-                    Button(AppLocalization.text("working.discard")) { session.discard(session.selectedEntries) }
-                        .disabled(!session.canDiscard(session.selectedEntries))
+                    HStack(spacing: 8) {
+                        Button(AppLocalization.text("working.discard")) { session.discard(session.selectedEntries) }
+                            .disabled(!session.canDiscard(session.selectedEntries))
+
+                        // 本机移到废纸篓，服务器上永久删除，执行前都会确认
+                        Button(AppLocalization.text(session.repository?.host == nil ? "files.trash" : "files.delete")) {
+                            session.delete(session.selectedEntries)
+                        }
+                        .disabled(!session.canDelete(session.selectedEntries))
+                    }
                 }
             }
             .padding(24)
@@ -73,6 +83,8 @@ struct WorkingCopyDetailView: View {
                 Button(AppLocalization.text("working.resolved")) { session.stage([entry], staged: true) }
             }
             .disabled(!session.canResolve([entry]))
+        } else if !entry.hasWorkingCopyDiff {
+            unchangedView(AppLocalization.text(unchangedMessage(entry)), symbol: "doc")
         } else if let failure = session.diffFailure {
             FailureDetailsView(failure: failure) { session.loadDiff() }
                 .padding(20)
@@ -96,6 +108,35 @@ struct WorkingCopyDetailView: View {
             Text(AppLocalization.text("working.noDiff"))
                 .foregroundStyle(.secondary)
         }
+    }
+}
+
+// MARK: - Unchanged
+
+extension WorkingCopyDetailView {
+    /// 未改动视图：没有可显示的 Diff 时说明文件或目录的状态。
+    private func unchangedView(_ text: String, symbol: String) -> some View {
+        EmptyStateView(title: text, message: "", symbol: symbol)
+            .padding(24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// 目录说明的资源键：目录下有改动的文件时说明这一点。
+    private func directoryMessage(_ directory: String) -> String {
+        let prefix = directory + "/"
+        let modified = session.status?.entries.contains { $0.path.hasPrefix(prefix) } ?? false
+
+        return modified ? "files.unchanged.directoryModified" : "files.unchanged.directory"
+    }
+
+    /// 文件说明的资源键：被忽略、assume-unchanged 与没有改动的文件各有说明。
+    private func unchangedMessage(_ entry: StatusEntry) -> String {
+        if entry.kind == .ignored {
+            return entry.path.hasSuffix("/") ? "files.unchanged.ignoredDirectory" : "files.unchanged.ignored"
+        }
+
+        let marked = session.workingTreeFiles.assumeUnchanged.contains(entry.path)
+        return marked ? "files.unchanged.assumeUnchanged" : "files.unchanged.file"
     }
 }
 

@@ -1,22 +1,35 @@
 import AppKit
+import QuickLookUI
 import SpookyKit
 import SwiftUI
 
 // MARK: - WorkingCopyFileList
 
-/// 原生文件树支持多选勾选框、空格暂存与固定行高。
+/// 原生文件树支持多选勾选框、空格暂存、拖出文件、Quick Look 与固定行高。
 struct WorkingCopyFileList: NSViewRepresentable {
     /// 所有入口共享同一会话状态。
     let session: RepositorySession
 
-    /// 全局记忆的显示模式；0 为平铺，1 为树形。
-    @AppStorage("workingCopyViewMode")
-    private var mode = 0
+    /// 是否显示被忽略的文件，全局偏好。
+    @AppStorage(WorkingCopyPreferences.showIgnored)
+    private var showsIgnored = false
+
+    /// 是否显示 assume-unchanged 文件，全局偏好。
+    @AppStorage(WorkingCopyPreferences.showAssumeUnchanged)
+    private var showsAssumeUnchanged = false
+
+    /// 文件名的字号档位。
+    @AppStorage(WorkingCopyPreferences.fontSize)
+    private var fontSize = WorkingCopyPreferences.FontSize.regular
+
+    /// 长文件名的截断位置。
+    @AppStorage(WorkingCopyPreferences.truncation)
+    private var truncation = WorkingCopyPreferences.Truncation.middle
 
     /// 构建事件与模型桥接器。
     func makeCoordinator() -> Coordinator { Coordinator(session: session) }
 
-    /// 表格固定状态列宽、行高与目录缩进。
+    /// 表格固定状态列宽、行高与目录缩进，文件可以拖出到其它程序。
     func makeNSView(context: Context) -> NSScrollView {
         let outline = FileOutlineView()
         outline.delegate = context.coordinator
@@ -29,6 +42,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
         outline.autoresizesOutlineColumn = false
         outline.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
         outline.setAccessibilityIdentifier("working-copy-status")
+
         let status = NSTableColumn(identifier: .init("status"))
         status.title = AppLocalization.text("status.column")
         status.width = 68
@@ -36,6 +50,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
         status.maxWidth = 68
         status.sortDescriptorPrototype = NSSortDescriptor(key: "status", ascending: true)
         outline.addTableColumn(status)
+
         let path = NSTableColumn(identifier: .init("path"))
         path.title = AppLocalization.text("status.filename")
         path.minWidth = 100
@@ -43,7 +58,14 @@ struct WorkingCopyFileList: NSViewRepresentable {
         outline.addTableColumn(path)
         outline.outlineTableColumn = path
         outline.sortDescriptors = [NSSortDescriptor(key: "path", ascending: true)]
-        outline.toggleSelection = { context.coordinator.toggleSelection() }
+
+        // 键盘、双击、拖出与 Quick Look 都交给桥接器按偏好处理
+        outline.coordinator = context.coordinator
+        outline.target = context.coordinator
+        outline.doubleAction = #selector(Coordinator.doubleClicked(_:))
+        outline.setDraggingSourceOperationMask(.copy, forLocal: false)
+        outline.setDraggingSourceOperationMask(.copy, forLocal: true)
+
         let menu = NSMenu()
         menu.delegate = context.coordinator
         outline.menu = menu
@@ -55,15 +77,56 @@ struct WorkingCopyFileList: NSViewRepresentable {
         return scroll
     }
 
-    /// 数据变化才重建树，普通选区变化不打断键盘焦点。
+    /// 数据或显示选项变化才重建树，普通选区变化不打断键盘焦点。
     func updateNSView(_: NSScrollView, context: Context) {
-        context.coordinator.update(mode: mode)
+        let listing = WorkingCopyListing(
+            mode: session.listMode,
+            showsIgnored: showsIgnored,
+            showsAssumeUnchanged: showsAssumeUnchanged,
+            onlyConflicts: session.onlyConflicts,
+            filter: session.searchText
+        )
+
+        context.coordinator.update(listing: listing, style: Style(fontSize: fontSize, truncation: truncation))
     }
 }
 
 // MARK: - Nested Types
 
 extension WorkingCopyFileList {
+    /// 文件名的字号与截断方式。
+    struct Style: Equatable {
+        /// 字号档位。
+        var fontSize: WorkingCopyPreferences.FontSize
+
+        /// 截断位置。
+        var truncation: WorkingCopyPreferences.Truncation
+    }
+
+    /// 决定是否需要重建树的全部输入。
+    struct RenderState: Equatable {
+        /// 列表里的条目。
+        var entries: [StatusEntry]
+
+        /// 勾选框的临时状态。
+        var overrides: [StatusRowID: Bool]
+
+        /// 显示选项。
+        var listing: WorkingCopyListing
+
+        /// 标记了 assume-unchanged 的路径。
+        var marked: Set<String>
+
+        /// 仓库是否可写。
+        var canWrite: Bool
+
+        /// 表头排序。
+        var sort: [NSSortDescriptor]
+
+        /// 字号与截断方式。
+        var style: Style
+    }
+
     /// 文件树节点同时保留相对路径与叶子状态。
     final class Node: NSObject {
         /// 相对路径，也是目录的稳定身份。
@@ -80,27 +143,51 @@ extension WorkingCopyFileList {
             entry.map { [$0] } ?? children.flatMap(\.entries)
         }
 
+        /// 末级名称。
+        var name: String { WorkingCopyFileList.fileName(of: path) }
+
         /// 建立目录或文件节点。
         init(path: String, entry: StatusEntry? = nil) {
             self.path = path
             self.entry = entry
         }
-
     }
 
-    /// 只接管空格键，其它键盘行为交给系统列表。
+    /// 接管空格、⌘⌫ 与回车，并把 Quick Look 面板的控制权交给桥接器。
     final class FileOutlineView: NSOutlineView {
-        /// 空格对应当前选中项的暂存切换。
-        var toggleSelection: (() -> Void)?
+        /// 处理按键与 Quick Look 的桥接器。
+        weak var coordinator: Coordinator?
 
-        /// 默认动作是 Toggle staging；Quick Look 在对应里程碑接入。
+        /// 空格按偏好切换暂存或打开 Quick Look；⌘⌫ 删除所选文件；回车与双击执行同一个动作。
         override func keyDown(with event: NSEvent) {
-            if event.keyCode == 49, event.modifierFlags.isDisjoint(with: [.command, .control, .option]) {
-                toggleSelection?()
-                return
-            }
+            let flags = event.modifierFlags.intersection([.command, .control, .option, .shift])
 
-            super.keyDown(with: event)
+            switch (event.keyCode, flags) {
+            case (49, []):
+                coordinator?.spacePressed()
+
+            case (51, [.command]):
+                coordinator?.deletePressed()
+
+            case (36, []):
+                coordinator?.openPressed()
+
+            default:
+                super.keyDown(with: event)
+            }
+        }
+
+        /// 列表成为第一响应者时接管系统 Quick Look 面板。
+        override func acceptsPreviewPanelControl(_: QLPreviewPanel?) -> Bool { true }
+
+        /// 面板开始显示本列表的所选文件。
+        override func beginPreviewPanelControl(_ panel: QLPreviewPanel?) {
+            coordinator?.quickLook.begin(panel)
+        }
+
+        /// 面板不再由本列表控制。
+        override func endPreviewPanelControl(_ panel: QLPreviewPanel?) {
+            coordinator?.quickLook.end(panel)
         }
     }
 
@@ -120,6 +207,16 @@ extension WorkingCopyFileList {
         }
     }
 
+    /// 路径的末级名称；被忽略的整个目录去掉末尾的 “/”。
+    nonisolated static func fileName(of path: String) -> String {
+        let trimmed = path.hasSuffix("/") ? String(path.dropLast()) : path
+        return trimmed.split(separator: "/").last.map(String.init) ?? trimmed
+    }
+}
+
+// MARK: WorkingCopyFileList.Coordinator
+
+extension WorkingCopyFileList {
     /// 将原生列表事件转换为业务动作，不在 UI 拼接 Git 命令。
     @MainActor
     final class Coordinator: NSObject, NSOutlineViewDelegate, NSOutlineViewDataSource, NSMenuDelegate {
@@ -129,72 +226,56 @@ extension WorkingCopyFileList {
         /// 对原生列表的非持有引用。
         weak var outline: NSOutlineView?
 
+        /// 本列表的 Quick Look 面板数据源。
+        let quickLook: WorkingCopyQuickLook
+
+        /// 右键菜单作用的条目。
+        var menuEntries: [StatusEntry] = []
+
         /// 树形或平铺的顶层节点。
-        private var roots: [Node] = []
+        var roots: [Node] = []
 
-        /// 上次渲染的数据与锁定状态，用于避免无关重载。
-        private var renderKey = ""
-
-        /// 当前视图是否为树形。
-        private var tree = false
+        /// 上次渲染的输入，用于避免无关重载。
+        private(set) var renderState: RenderState?
 
         /// 恢复选区期间不回写会话。
         private var updating = false
 
-        /// 右键菜单作用的条目。
-        private var menuEntries: [StatusEntry] = []
-
         /// 初始化原生事件桥接。
-        init(session: RepositorySession) { self.session = session }
+        init(session: RepositorySession) {
+            self.session = session
+            quickLook = WorkingCopyQuickLook(session: session)
+        }
 
-        /// 根据 Git 模型和乐观状态重建行，目录按显示模式组织。
-        func update(mode: Int) {
+        /// 根据 Git 模型、补充清单、显示选项和乐观状态重建行。
+        func update(listing: WorkingCopyListing, style: Style) {
             guard let outline else { return }
-            let entries = (session.status?.entries ?? []).filter { !session.onlyConflicts || $0.kind == .conflicted }
-            let key = String(describing: entries) + String(describing: session.stagingOverrides)
-                + "\(mode):\(session.canWrite):\(outline.sortDescriptors)"
-            guard key != renderKey else { return }
-            renderKey = key
+
+            let entries = listing.entries(status: session.status?.entries ?? [], files: session.workingTreeFiles)
+            let state = RenderState(
+                entries: entries,
+                overrides: session.stagingOverrides,
+                listing: listing,
+                marked: session.workingTreeFiles.assumeUnchanged,
+                canWrite: session.canWrite,
+                sort: outline.sortDescriptors,
+                style: style
+            )
+
+            guard state != renderState else { return }
+
+            let expanded = expandedPaths()
+            renderState = state
             updating = true
             defer { updating = false }
-            tree = mode == 1
-            outline.indentationPerLevel = tree ? 16 : 0
-            roots = []
 
-            for entry in entries {
-                if !tree {
-                    roots.append(Node(path: entry.path, entry: entry))
-                    continue
-                }
-
-                let components = entry.path.split(separator: "/").map(String.init)
-                var parent: Node?
-                var prefix = ""
-
-                for (index, component) in components.enumerated() {
-                    prefix += (prefix.isEmpty ? "" : "/") + component
-                    let siblings = parent?.children ?? roots
-                    let leaf = index == components.count - 1
-                    let node = siblings.first { $0.path == prefix && $0.entry == nil }
-                        ?? Node(path: prefix, entry: leaf ? entry : nil)
-
-                    if !siblings.contains(where: { $0 === node }) {
-                        if let parent { parent.children.append(node) }
-                        else { roots.append(node) }
-                    }
-
-                    parent = node
-                }
-            }
-
+            outline.indentationPerLevel = listing.mode.isTree ? 16 : 0
+            roots = listing.mode.isTree ? Self.tree(entries) : entries.map { Node(path: $0.path, entry: $0) }
             sortNodes()
             outline.reloadData()
-            if tree { outline.expandItem(nil, expandChildren: true) }
-            let selection = IndexSet((0 ..< outline.numberOfRows).filter { row in
-                guard let node = outline.item(atRow: row) as? Node, let entry = node.entry else { return false }
-                return session.selectedIDs.contains(StatusRowID(path: entry.path, kind: entry.kind))
-            })
-            outline.selectRowIndexes(selection, byExtendingSelection: false)
+            restoreExpansion(mode: listing.mode, expanded: expanded)
+            restoreSelection()
+            dropHiddenSelection(visible: entries, filtered: !listing.filter.isEmpty)
         }
 
         /// 根节点与目录子项均直接取当前显示模型。
@@ -216,7 +297,7 @@ extension WorkingCopyFileList {
 
         /// 平铺不留展开控件，树形仅为目录提供三角。
         func outlineView(_: NSOutlineView, shouldShowOutlineCellForItem item: Any) -> Bool {
-            guard tree, let node = item as? Node else { return false }
+            guard renderState?.listing.mode.isTree ?? false, let node = item as? Node else { return false }
 
             return !node.children.isEmpty
         }
@@ -226,194 +307,37 @@ extension WorkingCopyFileList {
             (item as? Node)?.entry?.kind == .conflicted ? ConflictRowView() : nil
         }
 
-        /// 状态列为三态勾选和徽标，文件列保留路径的中间截断。
+        /// 状态列为三态勾选和徽标，文件列为图标与按偏好截断的路径。
         func outlineView(_: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
             guard let node = item as? Node else { return nil }
 
             if tableColumn?.identifier.rawValue == "status" {
-                let button = StagingButton(checkboxWithTitle: "", target: self, action: #selector(toggle(_:)))
-                button.node = node
-                button.allowsMixedState = true
-                let states = node.entries.map { entry -> Int in
-                    if let override = session.stagingOverrides[StatusRowID(path: entry.path, kind: entry.kind)] {
-                        return override ? 1 : 0
-                    }
-
-                    if entry.hasStagedChanges { return entry.hasUnstagedChanges ? -1 : 1 }
-                    return 0
-                }
-                button.state = states.allSatisfy { $0 == 1 } ? .on : (states.allSatisfy { $0 == 0 } ? .off : .mixed)
-                button.isEnabled = session.canWrite
-                button.setAccessibilityLabel(AppLocalization.text("working.staging", node.path))
-                var views: [NSView] = [button]
-                if let entry = node.entry { views.append(NSHostingView(rootView: FileStatusView(entry: entry))) }
-                let stack = NSStackView(views: views)
-                stack.spacing = 3
-                return stack
+                return statusCell(node)
             }
 
-            // 树形只显示末级名称，完整路径放在提示中。
-            let name = node.path.split(separator: "/").last.map(String.init) ?? node.path
-            let label = NSTextField(labelWithString: tree ? name : node.path)
-            label.font = .systemFont(ofSize: 13)
-            label.lineBreakMode = .byTruncatingMiddle
-            label.toolTip = node.path
-
-            // 冲突、目录与文件使用各自的系统符号；符号不可用时保留空白图标位。
-            let symbol = node.entry?.kind == .conflicted
-                ? "exclamationmark.circle.fill"
-                : (node.entry == nil ? "folder" : "doc")
-            let icon = NSImageView(image: NSImage(systemSymbolName: symbol, accessibilityDescription: nil) ?? NSImage())
-            icon.contentTintColor = node.entry?.kind == .conflicted ? .systemRed : .secondaryLabelColor
-            icon.widthAnchor.constraint(equalToConstant: 16).isActive = true
-            let stack = NSStackView(views: [icon, label])
-            stack.spacing = 8
-            return stack
+            return pathCell(node)
         }
 
-        /// 多选显示独立空状态，单选驱动 Diff。
+        /// 单独选中一个目录时右栏显示目录说明，单选文件驱动 Diff，多选显示独立空状态。
         func outlineViewSelectionDidChange(_: Notification) {
             guard !updating, let outline else { return }
-            let entries = outline.selectedRowIndexes.flatMap { (outline.item(atRow: $0) as? Node)?.entries ?? [] }
+
+            let nodes = outline.selectedRowIndexes.compactMap { outline.item(atRow: $0) as? Node }
+            let entries = nodes.flatMap(\.entries)
+            let directory = nodes.count == 1 && nodes[0].entry == nil ? nodes[0].path : nil
+
             session.selectedIDs = Set(entries.map { StatusRowID(path: $0.path, kind: $0.kind) })
-            session.selectedID = entries.count == 1 ? session.selectedIDs.first : nil
+            session.selectedDirectory = directory
+            session.selectedID = directory == nil && entries.count == 1 ? session.selectedIDs.first : nil
+            quickLook.selectionChanged()
         }
 
         /// 表头排序改变后按相同模型恢复选择。
         func outlineView(_: NSOutlineView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
-            renderKey = ""
-            update(mode: tree ? 1 : 0)
-        }
+            guard let state = renderState else { return }
 
-        /// 右键点击已选行时作用于整个选区，否则只处理该行。
-        func menuNeedsUpdate(_ menu: NSMenu) {
-            menu.removeAllItems()
-            guard let outline, let node = outline.item(atRow: outline.clickedRow) as? Node else { return }
-            menuEntries = outline.isRowSelected(outline.clickedRow) ? session.selectedEntries : node.entries
-            add(
-                "working.stage",
-                action: #selector(stageMenu),
-                enabled: session.canStage(menuEntries),
-                menu: menu
-            )
-            add(
-                "working.unstage",
-                action: #selector(unstageMenu),
-                enabled: session.canUnstage(menuEntries),
-                menu: menu
-            )
-
-            if menuEntries.contains(where: { $0.kind == .conflicted }) {
-                add("working.ours", action: #selector(ours), enabled: session.canResolve(menuEntries), menu: menu)
-                add("working.theirs", action: #selector(theirs), enabled: session.canResolve(menuEntries), menu: menu)
-                add("working.resolved", action: #selector(stageMenu), enabled: session.canResolve(menuEntries), menu: menu)
-            }
-
-            menu.addItem(.separator())
-            add("working.discard", action: #selector(discardMenu), enabled: session.canDiscard(menuEntries), menu: menu)
-            menu.addItem(.separator())
-            add("action.copyPath", action: #selector(copyAbsolute), enabled: true, menu: menu)
-            add("working.copyRelative", action: #selector(copyRelative), enabled: true, menu: menu)
-            add("action.revealFinder", action: #selector(reveal), enabled: session.repository?.localURL != nil, menu: menu)
-            add("action.openTerminal", action: #selector(terminal), enabled: true, menu: menu)
-        }
-
-        /// 空格沿用 “存在可暂存项则全部暂存” 的规则。
-        func toggleSelection() {
-            let entries = session.selectedEntries
-            if entries.isEmpty {
-                NSSound.beep()
-                return
-            }
-
-            session.stage(entries, staged: entries.contains(where: \.hasUnstagedChanges))
-        }
-
-        /// 勾选框的目标状态按 Git 模型计算，不采用系统对 mixed 的默认轮转。
-        @objc
-        private func toggle(_ sender: StagingButton) {
-            guard let node = sender.node, let outline else { return }
-            let entries = outline.isRowSelected(outline.row(forItem: node)) ? session.selectedEntries : node.entries
-            session.stage(entries, staged: entries.contains(where: \.hasUnstagedChanges))
-            outline.window?.makeFirstResponder(outline)
-        }
-
-        /// 菜单暂存所选条目。
-        @objc
-        private func stageMenu() { session.stage(menuEntries, staged: true) }
-
-        /// 菜单取消暂存所选条目。
-        @objc
-        private func unstageMenu() { session.stage(menuEntries, staged: false) }
-
-        /// 丢弃必须经过会话的确认入口。
-        @objc
-        private func discardMenu() { session.discard(menuEntries) }
-
-        /// 采用索引中的 ours 一侧。
-        @objc
-        private func ours() { session.resolve(menuEntries, theirs: false) }
-
-        /// 采用索引中的 theirs 一侧。
-        @objc
-        private func theirs() { session.resolve(menuEntries, theirs: true) }
-
-        /// 复制远端路径时保留主机前缀。
-        @objc
-        private func copyAbsolute() {
-            guard let repository = session.repository else { return }
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(
-                menuEntries.map { repository.displayPath + "/" + $0.path }.joined(separator: "\n"),
-                forType: .string
-            )
-        }
-
-        /// 相对路径适合提交信息与终端中的仓库内引用。
-        @objc
-        private func copyRelative() {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(menuEntries.map(\.path).joined(separator: "\n"), forType: .string)
-        }
-
-        /// 只有本机条目才交给 Finder。
-        @objc
-        private func reveal() {
-            guard let root = session.repository?.localURL else { return }
-            NSWorkspace.shared.activateFileViewerSelecting(menuEntries.map { root.appending(path: $0.path) })
-        }
-
-        /// 终端沿用当前仓库已实现的应用选择。
-        @objc
-        private func terminal() {
-            NSApp.sendAction(#selector(RepositoryWindowController.openInTerminal), to: nil, from: outline)
-        }
-
-        /// 递归排序使目录与文件使用相同的用户选项。
-        private func sortNodes() {
-            let descriptor = outline?.sortDescriptors.first
-            let ascending = descriptor?.ascending ?? true
-
-            /// 目录内部沿用相同排序，不把平铺的比较结果跨层混用。
-            func sorted(_ nodes: [Node]) -> [Node] {
-                for node in nodes { node.children = sorted(node.children) }
-                return nodes.sorted {
-                    let left = descriptor?.key == "status" ? String($0.entry?.staged?.rawValue ?? ".") + $0.path : $0.path
-                    let right = descriptor?.key == "status" ? String($1.entry?.staged?.rawValue ?? ".") + $1.path : $1.path
-                    return ascending ? left < right : left > right
-                }
-            }
-
-            roots = sorted(roots)
-        }
-
-        /// 菜单可用性由当前会话决定，不依赖响应链的隐式校验。
-        private func add(_ key: String, action: Selector, enabled: Bool, menu: NSMenu) {
-            menu.autoenablesItems = false
-            let item = NSMenuItem(title: AppLocalization.text(key), action: action, keyEquivalent: "")
-            item.target = self
-            item.isEnabled = enabled
-            menu.addItem(item)
+            renderState = nil
+            update(listing: state.listing, style: state.style)
         }
     }
 }

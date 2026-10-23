@@ -85,6 +85,8 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
             configureRepositoryView()
         }
 
+        session.onFileRequest = { [weak self] in self?.presentFileRequest($0) }
+
         session.onConfirm = { [weak self] title, message, action, abort in
             guard let window = self?.window, window.attachedSheet == nil else { return }
             let alert = NSAlert()

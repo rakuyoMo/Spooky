@@ -16,7 +16,8 @@ enum RepositoryView: String, CaseIterable {
     /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
     var supportsSearch: Bool {
         switch self {
-        case .workingCopy, .history: false
+        case .workingCopy: true
+        case .history: false
         }
     }
 }
@@ -208,6 +209,22 @@ final class RepositorySession {
     @ObservationIgnored
     private(set) var fileCache: RepositoryFileCache? = nil
 
+    /// 工作区列表按仓库记住的显示模式。
+    var listMode = WorkingCopyListMode.list
+
+    /// 显示全部文件、被忽略与 assume-unchanged 文件时补充的清单。
+    var workingTreeFiles = WorkingTreeFileListing()
+
+    /// 补充清单的读取任务，关闭仓库时取消。
+    @ObservationIgnored
+    var workingTreeFilesTask: Task<Void, Never>? = nil
+
+    /// 树形列表里单独选中的目录，右栏据此显示目录说明；选中文件时为 nil。
+    var selectedDirectory: String? = nil
+
+    /// 窗口负责呈现文件操作的参数表单与多按钮询问。
+    var onFileRequest: ((WorkingCopyFileRequest) -> Void)? = nil
+
     /// 快照读取边界，测试可控制响应顺序和失败。
     private let loadStatus: @Sendable (RepositoryLocation) async throws -> WorkingCopyStatus
 
@@ -232,19 +249,6 @@ final class RepositorySession {
             diffSide = (selectedEntry?.hasUnstagedChanges ?? false) ? .unstaged : .staged
             loadDiff()
         }
-    }
-
-    /// 当前详情对应的条目，Unicode 等价路径沿用 Swift 的规范等价比较。
-    var selectedEntry: StatusEntry? {
-        status?.entries.first { $0.path == selectedID?.path && $0.kind == selectedID?.kind }
-    }
-
-    /// 批量动作对应当前多选；单选详情也可从菜单操作。
-    var selectedEntries: [StatusEntry] {
-        status?.entries.filter {
-            selectedIDs.contains(StatusRowID(path: $0.path, kind: $0.kind))
-                || (selectedIDs.isEmpty && $0.path == selectedID?.path && $0.kind == selectedID?.kind)
-        } ?? []
     }
 
     /// 未解决冲突期间不允许提交或修补。
@@ -292,6 +296,7 @@ final class RepositorySession {
         close()
         self.repository = repository
         fileCache = RepositoryFileCache(runner: makeRunner(repository))
+        listMode = WorkingCopyListMode.stored(for: repository)
 
         // 正在显示的仓库也计入缓存上限，超出时淘汰最久未使用的仓库。
         let saved = viewStates.state(for: repository)
@@ -333,7 +338,7 @@ final class RepositorySession {
         let previous = status
 
         // 轮询时顺带读取所选文件的内容哈希，与状态并发，服务器上只占一次往返的等待时间。
-        let probe = full || !loadsRepositoryDetails ? nil : selectedEntry.flatMap { $0.kind == .conflicted ? nil : $0 }
+        let probe = full || !loadsRepositoryDetails ? nil : selectedEntry.flatMap { $0.hasWorkingCopyDiff ? $0 : nil }
         let service = WorkingCopyOperations(runner: makeRunner(repository))
 
         refreshTask = Task { [weak self] in
@@ -355,6 +360,7 @@ final class RepositorySession {
                     if full || statusChanged {
                         loadContext()
                         history.refresh(status: status, runner: makeRunner(repository), reload: full)
+                        loadWorkingTreeFiles()
                     }
 
                     if full || statusChanged || contentChanged(probe, hash: hash) {
@@ -389,6 +395,10 @@ final class RepositorySession {
         fileMonitor = nil
         fileCache?.removeAll()
         fileCache = nil
+        workingTreeFilesTask?.cancel()
+        workingTreeFilesTask = nil
+        workingTreeFiles = WorkingTreeFileListing()
+        selectedDirectory = nil
         writeTask?.cancel()
         diffTask?.cancel()
         contextTask?.cancel()
@@ -506,7 +516,7 @@ extension RepositorySession {
     func loadDiff() {
         diffTask?.cancel()
         diffFailure = nil
-        guard loadsRepositoryDetails, let repository, let entry = selectedEntry, entry.kind != .conflicted else {
+        guard loadsRepositoryDetails, let repository, let entry = selectedEntry, entry.hasWorkingCopyDiff else {
             diffSnapshot = nil
             isLoadingDiff = false
             return

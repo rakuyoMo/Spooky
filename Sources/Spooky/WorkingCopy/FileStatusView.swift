@@ -6,14 +6,22 @@ struct FileStatusView: View {
     /// 原始状态条目。
     let entry: StatusEntry
 
+    /// 文件标记了 assume-unchanged，显示灰色徽标与对应说明。
+    var assumeUnchanged = false
+
     /// 辅助技术与悬停提示使用本地化全称。
     private var description: String {
+        if assumeUnchanged {
+            return AppLocalization.text("files.assumeUnchanged.status")
+        }
+
         switch entry.kind {
-        case .untracked: AppLocalization.text("status.untracked")
-        case .ignored: AppLocalization.text("status.ignored")
-        case .conflicted: AppLocalization.text("status.conflicted")
+        case .untracked: return AppLocalization.text("status.untracked")
+        case .ignored: return AppLocalization.text("status.ignored")
+        case .conflicted: return AppLocalization.text("status.conflicted")
+        case .unchanged: return AppLocalization.text("status.unchanged")
         case .tracked:
-            AppLocalization.text(
+            return AppLocalization.text(
                 "status.description",
                 changeName(entry.staged),
                 changeName(entry.unstaged)
@@ -33,6 +41,11 @@ struct FileStatusView: View {
 
             case .conflicted:
                 badge("U")
+
+            // 没有改动的文件不画徽标；assume-unchanged 用 ls-files -v 的小写标记 h
+            case .unchanged:
+                #warning("TODO: 打开 Show Assume-Unchanged Items，核实 assume-unchanged 文件的徽标字母，目前取 ls-files -v 的小写 h；只影响这类文件的徽标文字")
+                badge(assumeUnchanged ? "h" : "")
 
             case .tracked:
                 badge(entry.staged.map { String($0.rawValue) } ?? "")

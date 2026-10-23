@@ -61,6 +61,9 @@ public struct StatusEntry: Sendable, Equatable {
 
         /// 被忽略的文件
         case ignored
+
+        /// 暂存区与工作区都没有变化的已跟踪文件；git status 不列出，由索引清单补出
+        case unchanged
     }
 
     /// 条目的类别
@@ -77,6 +80,21 @@ public struct StatusEntry: Sendable, Equatable {
 
     /// 工作区里尚未暂存的变化；没有变化时为 nil
     public var unstaged: FileChange?
+
+    /// 创建条目；界面据此补出 git status 不列出的未改动与被忽略文件
+    public init(
+        kind: Kind,
+        path: String,
+        originalPath: String? = nil,
+        staged: FileChange? = nil,
+        unstaged: FileChange? = nil
+    ) {
+        self.kind = kind
+        self.path = path
+        self.originalPath = originalPath
+        self.staged = staged
+        self.unstaged = unstaged
+    }
 }
 
 // MARK: - StatusParseError

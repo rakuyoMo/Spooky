@@ -99,9 +99,11 @@ private struct GeneralSettingsView: View {
                 Toggle(AppLocalization.text("branch.cleanNames"), isOn: $cleanRefNames)
                     .frame(width: 278, alignment: .leading)
             }
+
+            WorkingCopySettingsRows()
         }
         .padding(40)
-        .frame(width: 900, height: 240, alignment: .top)
+        .frame(width: 900, height: 380, alignment: .top)
     }
 }
 
