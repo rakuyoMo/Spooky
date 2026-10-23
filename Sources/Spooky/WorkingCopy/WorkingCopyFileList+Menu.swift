@@ -37,7 +37,7 @@ extension WorkingCopyFileList.Coordinator {
             .flatMap(WorkingCopyPreferences.SpacebarAction.init(rawValue:)) ?? .toggleStaging
 
         guard action == .toggleStaging else {
-            quickLook.toggle(entries)
+            toggleQuickLook(entries)
             return
         }
 
@@ -66,6 +66,12 @@ extension WorkingCopyFileList.Coordinator {
         }
 
         session.performDoubleClickAction(entry)
+    }
+
+    /// 打开或关闭 Quick Look：先让列表成为第一响应者，面板才会向列表索取预览项。
+    func toggleQuickLook(_ entries: [StatusEntry]) {
+        outline?.window?.makeFirstResponder(outline)
+        quickLook.toggle(entries)
     }
 
     /// 双击文件按偏好打开或比较；双击目录展开或收起。
@@ -221,7 +227,7 @@ extension WorkingCopyFileList.Coordinator {
 
     /// 打开或关闭 Quick Look 面板。
     @objc
-    private func quickLookMenu() { quickLook.toggle(menuEntries) }
+    private func quickLookMenu() { toggleQuickLook(menuEntries) }
 
     /// 菜单暂存所选条目。
     @objc

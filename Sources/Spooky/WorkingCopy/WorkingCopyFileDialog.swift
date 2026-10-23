@@ -131,6 +131,7 @@ extension WorkingCopyFileDialog {
                     Image(systemName: "chevron.down")
                 }
                 .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
                 .frame(width: 24)
                 .disabled(revisions.isEmpty)
                 .accessibilityLabel(AppLocalization.text("files.revert.revision"))

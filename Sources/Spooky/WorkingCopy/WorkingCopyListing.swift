@@ -21,21 +21,25 @@ enum WorkingCopyListMode: String {
     var isTree: Bool { self != .list }
 
     /// 仓库记住的显示模式；还没有记录的仓库沿用全局的平铺 / 树形偏好。
-    static func stored(for location: RepositoryLocation) -> Self {
-        let modes = UserDefaults.standard.dictionary(forKey: storageKey) as? [String: String]
+    ///
+    /// - Parameter defaults: 保存偏好的位置，测试使用独立的偏好域。
+    static func stored(for location: RepositoryLocation, defaults: UserDefaults = .standard) -> Self {
+        let modes = defaults.dictionary(forKey: storageKey) as? [String: String]
 
         if let raw = modes?[location.displayPath], let mode = Self(rawValue: raw) {
             return mode
         }
 
-        return UserDefaults.standard.integer(forKey: "workingCopyViewMode") == 1 ? .tree : .list
+        return defaults.integer(forKey: "workingCopyViewMode") == 1 ? .tree : .list
     }
 
     /// 记住仓库的显示模式。
-    static func store(_ mode: Self, for location: RepositoryLocation) {
-        var modes = UserDefaults.standard.dictionary(forKey: storageKey) as? [String: String] ?? [:]
+    ///
+    /// - Parameter defaults: 保存偏好的位置，测试使用独立的偏好域。
+    static func store(_ mode: Self, for location: RepositoryLocation, defaults: UserDefaults = .standard) {
+        var modes = defaults.dictionary(forKey: storageKey) as? [String: String] ?? [:]
         modes[location.displayPath] = mode.rawValue
-        UserDefaults.standard.set(modes, forKey: storageKey)
+        defaults.set(modes, forKey: storageKey)
     }
 }
 

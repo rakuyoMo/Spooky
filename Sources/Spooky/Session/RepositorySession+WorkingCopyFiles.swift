@@ -97,7 +97,12 @@ extension RepositorySession {
 
         guard let repository, let runner, needsIndex || options.showsIgnored else {
             workingTreeFilesTask = nil
-            workingTreeFiles = WorkingTreeFileListing()
+
+            // 不需要补充清单时清空；已经为空就不再写入，避免触发无谓的界面更新
+            if workingTreeFiles != WorkingTreeFileListing() {
+                workingTreeFiles = WorkingTreeFileListing()
+            }
+
             return
         }
 

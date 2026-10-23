@@ -15,7 +15,7 @@ struct WorkingCopyDetailView: View {
         if let entry = session.selectedEntry {
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
-                    Image(systemName: "doc")
+                    Image(systemName: entry.path.hasSuffix("/") ? "folder" : "doc")
                         .font(.system(size: 24))
                         .accessibilityHidden(true)
                     Text(entry.path)

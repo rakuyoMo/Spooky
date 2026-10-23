@@ -471,7 +471,7 @@
 "files.revert" = "還原到指定版本";
 "files.revert.button" = "還原";
 "files.revert.revision" = "版本：";
-"files.revert.message" = "輸入或選擇要將以下檔案還原到的版本。儲存庫：%2$@。這些檔案的本機變更會被捨棄，該版本中沒有的檔案會被刪除。\n\n%1$@";
+"files.revert.message" = "輸入或選擇要將以下檔案還原到的版本。這些檔案的本機變更會被捨棄，該版本中沒有的檔案會被刪除。\n\n%1$@";
 "files.revert.remote" = "輸入或選擇要將以下檔案還原到的版本。儲存庫：%2$@。伺服器上的這些檔案會被永久覆寫，該版本中沒有的檔案會在伺服器上被永久刪除。\n\n%1$@";
 "files.ignore" = "忽略";
 "files.ignore.item" = "忽略此項目";

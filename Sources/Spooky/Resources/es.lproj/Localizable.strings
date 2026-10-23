@@ -471,7 +471,7 @@
 "files.revert" = "Revertir a una revisión";
 "files.revert.button" = "Revertir";
 "files.revert.revision" = "Revisión:";
-"files.revert.message" = "Introduce o elige la revisión a la que revertir los siguientes archivos de %2$@. Se descartan sus cambios locales, y se eliminan los archivos que no existen en esa revisión.\n\n%1$@";
+"files.revert.message" = "Introduce o elige la revisión a la que revertir los siguientes archivos. Se descartan sus cambios locales, y se eliminan los archivos que no existen en esa revisión.\n\n%1$@";
 "files.revert.remote" = "Introduce o elige la revisión a la que revertir los siguientes archivos del servidor en %2$@. Allí se sobrescriben permanentemente, y los archivos que no existen en esa revisión se eliminan permanentemente del servidor.\n\n%1$@";
 "files.ignore" = "Ignorar";
 "files.ignore.item" = "Ignorar este ítem";

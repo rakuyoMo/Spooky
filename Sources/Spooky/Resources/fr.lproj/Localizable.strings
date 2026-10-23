@@ -471,7 +471,7 @@
 "files.revert" = "Rétablir la révision";
 "files.revert.button" = "Rétablir";
 "files.revert.revision" = "Révision :";
-"files.revert.message" = "Saisissez ou choisissez la révision à rétablir pour les fichiers suivants dans %2$@. Leurs modifications locales sont abandonnées, et les fichiers absents de cette révision sont supprimés.\n\n%1$@";
+"files.revert.message" = "Saisissez ou choisissez la révision à rétablir pour les fichiers suivants. Leurs modifications locales sont abandonnées, et les fichiers absents de cette révision sont supprimés.\n\n%1$@";
 "files.revert.remote" = "Saisissez ou choisissez la révision à rétablir pour les fichiers suivants sur le serveur dans %2$@. Ils y seront définitivement écrasés, et les fichiers absents de cette révision seront définitivement supprimés du serveur.\n\n%1$@";
 "files.ignore" = "Ignorer";
 "files.ignore.item" = "Ignorer cet élément";

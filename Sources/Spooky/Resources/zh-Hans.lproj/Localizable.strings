@@ -471,7 +471,7 @@
 "files.revert" = "恢复到指定版本";
 "files.revert.button" = "恢复";
 "files.revert.revision" = "版本：";
-"files.revert.message" = "输入或选择要把以下文件恢复到的版本。仓库：%2$@。这些文件的本地改动会被丢弃，该版本里没有的文件会被删除。\n\n%1$@";
+"files.revert.message" = "输入或选择要把以下文件恢复到的版本。这些文件的本地改动会被丢弃，该版本里没有的文件会被删除。\n\n%1$@";
 "files.revert.remote" = "输入或选择要把以下文件恢复到的版本。仓库：%2$@。服务器上的这些文件会被永久覆盖，该版本里没有的文件会在服务器上被永久删除。\n\n%1$@";
 "files.ignore" = "忽略";
 "files.ignore.item" = "忽略此项目";

@@ -471,7 +471,7 @@
 "files.revert" = "Auf Revision zurücksetzen";
 "files.revert.button" = "Zurücksetzen";
 "files.revert.revision" = "Revision:";
-"files.revert.message" = "Geben Sie die Revision ein, auf die folgende Dateien in %2$@ zurückgesetzt werden sollen, oder wählen Sie sie aus. Ihre lokalen Änderungen werden verworfen, und Dateien, die es in dieser Revision nicht gibt, werden gelöscht.\n\n%1$@";
+"files.revert.message" = "Geben Sie die Revision ein, auf die folgende Dateien zurückgesetzt werden sollen, oder wählen Sie sie aus. Ihre lokalen Änderungen werden verworfen, und Dateien, die es in dieser Revision nicht gibt, werden gelöscht.\n\n%1$@";
 "files.revert.remote" = "Geben Sie die Revision ein, auf die folgende Dateien auf dem Server unter %2$@ zurückgesetzt werden sollen, oder wählen Sie sie aus. Die Dateien werden dort endgültig überschrieben, und Dateien, die es in dieser Revision nicht gibt, werden auf dem Server endgültig gelöscht.\n\n%1$@";
 "files.ignore" = "Ignorieren";
 "files.ignore.item" = "Dieses Objekt ignorieren";

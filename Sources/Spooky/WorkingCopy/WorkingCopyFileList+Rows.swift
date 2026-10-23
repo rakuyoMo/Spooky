@@ -11,11 +11,18 @@ extension WorkingCopyFileList.Coordinator {
     /// 勾选框与状态徽标；不能暂存的未改动、被忽略文件隐藏勾选框。
     func statusCell(_ node: WorkingCopyFileList.Node) -> NSView {
         let entries = node.entries.filter(\.isStageable)
-        let button = WorkingCopyFileList.StagingButton(checkboxWithTitle: "", target: self, action: #selector(toggle(_:)))
+        let button = WorkingCopyFileList.StagingButton(
+            checkboxWithTitle: "",
+            target: self,
+            action: #selector(toggle(_:))
+        )
         button.node = node
         button.allowsMixedState = true
-        button.isHidden = entries.isEmpty
-        button.isEnabled = session.canWrite
+
+        // 不能暂存的行隐藏勾选框但保留位置，各行的徽标保持对齐
+        button.alphaValue = entries.isEmpty ? 0 : 1
+        button.isEnabled = session.canWrite && !entries.isEmpty
+        button.setAccessibilityElement(!entries.isEmpty)
         button.setAccessibilityLabel(AppLocalization.text("working.staging", node.path))
 
         // 勾选状态按 Git 模型计算，点击后的临时状态优先
@@ -146,10 +153,18 @@ extension WorkingCopyFileList.Coordinator {
         guard filtered, session.status != nil else { return }
 
         let visible = Set(entries.map { StatusRowID(path: $0.path, kind: $0.kind) })
-        guard !session.selectedIDs.isSubset(of: visible) else { return }
+        let directoryHidden = session.selectedDirectory.map { directory in
+            !entries.contains { $0.path.hasPrefix(directory + "/") }
+        } ?? false
+
+        guard !session.selectedIDs.isSubset(of: visible) || directoryHidden else { return }
 
         Task { @MainActor [session] in
             session.selectedIDs.formIntersection(visible)
+
+            if directoryHidden {
+                session.selectedDirectory = nil
+            }
 
             if let selected = session.selectedID, !visible.contains(selected) {
                 session.selectedID = nil

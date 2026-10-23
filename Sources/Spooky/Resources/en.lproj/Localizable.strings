@@ -471,7 +471,7 @@
 "files.revert" = "Revert to Revision";
 "files.revert.button" = "Revert";
 "files.revert.revision" = "Revision:";
-"files.revert.message" = "Enter or choose the revision to restore the following files in %2$@ to. Their local changes are discarded, and files that don’t exist in that revision are deleted.\n\n%1$@";
+"files.revert.message" = "Enter or choose the revision to restore the following files to. Their local changes are discarded, and files that don’t exist in that revision are deleted.\n\n%1$@";
 "files.revert.remote" = "Enter or choose the revision to restore the following files to on the server at %2$@. They are permanently overwritten there, and files that don’t exist in that revision are permanently deleted.\n\n%1$@";
 "files.ignore" = "Ignore";
 "files.ignore.item" = "Ignore This Item";
