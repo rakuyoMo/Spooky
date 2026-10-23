@@ -29,6 +29,46 @@
       "alpha": 1.0
     }
   },
+  "light_blue_badge_background_color": {
+    "light": {
+      "hex": "#007AFF",
+      "alpha": 0.6
+    },
+    "dark": {
+      "hex": "#0A84FF",
+      "alpha": 0.6
+    }
+  },
+  "light_blue_badge_text_color": {
+    "light": {
+      "hex": "#FFFFFF",
+      "alpha": 0.9
+    },
+    "dark": {
+      "hex": "#FFFFFF",
+      "alpha": 0.85
+    }
+  },
+  "text_view_warning_background_color": {
+    "light": {
+      "hex": "#FFFF00",
+      "alpha": 0.35
+    },
+    "dark": {
+      "hex": "#FFFF00",
+      "alpha": 0.35
+    }
+  },
+  "text_view_off_page_background_color": {
+    "light": {
+      "hex": "#F2F2F2",
+      "alpha": 0.95
+    },
+    "dark": {
+      "hex": "#262626",
+      "alpha": 1.0
+    }
+  },
   "general_border_color": {
     "light": {
       "hex": "#C9C9C9",

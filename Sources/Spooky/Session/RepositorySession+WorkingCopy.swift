@@ -110,19 +110,52 @@ extension RepositorySession {
         amend = enabled
     }
 
-    /// 提交失败保留草稿，修补必须先明确确认改写最近提交。
+    /// 提交失败保留草稿，修补必须先明确确认改写最近提交；注释行先按 Editor 设置询问或删除。
     func commit() {
         guard canCommit else { return }
-        let subject = commitSubject
-        let body = commitBody
         let amend = amend
+        let signOff = CommitEditorSettings.signOff
+        let skipHooks = skipHooks
+        let request = generation
+
+        // 询问注释行与确认修补都使用此刻的选项，⌥ 快速修补松开后也不会改变这次提交。
+        prepareCommitMessage { [weak self] message in
+            guard let self, generation == request else { return }
+            confirmCommit(
+                CommitMessage.parts(of: message),
+                amend: amend,
+                signOff: signOff,
+                skipHooks: skipHooks
+            )
+        }
+    }
+
+    /// 确认修补或空合并后提交整理好的信息。
+    ///
+    /// - Parameters:
+    ///   - message: 已按折行与注释设置整理的标题与正文。
+    ///   - amend: 改写最近一次提交。
+    ///   - signOff: 追加 Signed-off-by 尾注。
+    ///   - skipHooks: 跳过 pre-commit 与 commit-msg 钩子。
+    func confirmCommit(
+        _ message: (subject: String, body: String),
+        amend: Bool,
+        signOff: Bool,
+        skipHooks: Bool
+    ) {
         let request = generation
         let action: () -> Void = { [weak self] in
             guard let self, generation == request else { return }
             performGit(
                 { runner, _ in
                     try await WorkingCopyOperations(runner: runner)
-                        .commit(subject: subject, body: body, amend: amend)
+                        .commit(
+                            subject: message.subject,
+                            body: message.body,
+                            amend: amend,
+                            signOff: signOff,
+                            skipHooks: skipHooks
+                        )
                 },
                 title: AppLocalization.text(amend ? "working.amend" : "working.commit"),
                 recordsActivity: false
@@ -131,6 +164,11 @@ extension RepositorySession {
                 self?.commitBody = ""
                 self?.amend = false
                 self?.originalDraft = nil
+
+                #warning(
+                    "TODO: 提交成功后是否取消 Skip Hooks 未核实：当前随标题与正文一起清除，避免之后的提交意外跳过钩子。核实方式：勾选 Skip Hooks 提交一次，再写下一次提交时查看勾选状态；影响连续提交时钩子是否运行。"
+                )
+                self?.skipHooks = false
             }
         }
 
@@ -183,8 +221,6 @@ extension RepositorySession {
 
     /// 第一行成为标题，正文保留内部换行。
     func setMessage(_ message: String) {
-        let parts = message.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false)
-        commitSubject = parts.first.map(String.init) ?? ""
-        commitBody = parts.count > 1 ? String(parts[1]).trimmingCharacters(in: .newlines) : ""
+        (commitSubject, commitBody) = CommitMessage.parts(of: message)
     }
 }

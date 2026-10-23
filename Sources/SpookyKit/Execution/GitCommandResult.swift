@@ -99,6 +99,9 @@ public struct GitError: Error, Sendable {
         /// 检出或合并会覆盖未提交改动。
         case localChanges
 
+        /// gpg 或 ssh-keygen 没能为提交签名。
+        case signingFailed
+
         /// 命令因 Swift 任务取消而结束。
         case cancelled
 

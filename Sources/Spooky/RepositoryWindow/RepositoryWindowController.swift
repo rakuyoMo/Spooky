@@ -60,6 +60,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
 
         window.delegate = self
         configureWorkingCopyKeys()
+        configureCommentPrompt()
         session.onFailure = { [weak self] in self?.showFailure($0) }
 
         session.history.onFailure = { [weak self] error in

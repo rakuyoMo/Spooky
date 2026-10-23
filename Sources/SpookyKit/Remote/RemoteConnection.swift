@@ -562,25 +562,7 @@ extension RemoteConnection {
         let source = try Data(contentsOf: resource)
         let version = SHA256.hash(data: source).map { String(format: "%02x", $0) }.joined()
         let filename = "spooky-remote-v1-" + String(version.prefix(16))
-        let install = """
-            set -eu
-            umask 077
-            /usr/bin/perl -MIO::Socket::UNIX -MJSON::PP -MPOSIX -e 'exit 0'
-            test ! -L "$HOME/.spooky"
-            test ! -L "$HOME/.spooky/bin"
-            mkdir -p "$HOME/.spooky/bin"
-            chmod 700 "$HOME/.spooky" "$HOME/.spooky/bin"
-            spooky_install_file=$(mktemp "$HOME/.spooky/bin/.install-XXXXXXXX")
-            trap 'rm -f "$spooky_install_file" "$spooky_install_file-askpass" "$spooky_install_file-git-askpass"' EXIT HUP INT TERM
-            cat > "$spooky_install_file"
-            chmod 700 "$spooky_install_file"
-            ln "$spooky_install_file" "$spooky_install_file-askpass"
-            ln "$spooky_install_file" "$spooky_install_file-git-askpass"
-            mv -f "$spooky_install_file" "$HOME/.spooky/bin/\(filename)"
-            mv -f "$spooky_install_file-askpass" "$HOME/.spooky/bin/\(filename)-askpass"
-            mv -f "$spooky_install_file-git-askpass" "$HOME/.spooky/bin/\(filename)-git-askpass"
-            printf '%s\\n' "$HOME/.spooky/bin/\(filename)"
-            """
+        let install = Self.installScript(filename: filename)
         let installed = try await probe(["/bin/sh", "-c", install], input: source, kind: .deployment)
         guard
             let path = String(data: installed.standardOutput, encoding: .utf8),
@@ -633,17 +615,10 @@ extension RemoteConnection {
         let operation = UUID().uuidString.lowercased()
         relay.register(operation)
         defer { relay.unregister(operation) }
-        let callback = GitRunner.shellQuoted(wrapper)
         let command = [
             wrapper, "run", remoteDirectory, operation, String(configuration.cancellationGrace),
             "git", "-C", repository?.path ?? requestedPath,
-        ] + GitRunner.globalOptions + [
-            "-c", "credential.helper=",
-            "-c", "core.askPass=\(wrapper)-git-askpass",
-            "-c", "core.editor=\(callback) editor",
-            "-c", "sequence.editor=\(callback) editor",
-            "-c", "core.sshCommand=\(callback) ssh",
-        ] + arguments
+        ] + GitRunner.globalOptions + Self.callbackOptions(wrapper: wrapper) + arguments
         let redactor = RemoteOutputRedactor(
             values: { relay.sensitiveValues(for: operation) },
             output: onOutput

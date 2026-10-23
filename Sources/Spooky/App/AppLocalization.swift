@@ -262,6 +262,7 @@ struct AppFailure: Identifiable {
         case .noUpstream: ("sync.error.upstream", .git)
         case .branchNotMerged: ("branch.error.unmerged", .git)
         case .localChanges: ("sync.error.dirty", .git)
+        case .signingFailed: ("signing.error", .git)
         case .indexLocked: ("error.indexLocked", .git)
         case .commandFailed: ("error.command", .git)
         case .launchFailed: ("error.launch", .environment)

@@ -40,11 +40,15 @@ final class RemoteCallbackPresenter {
         let (request, continuation) = pending.removeFirst()
         let alert = NSAlert()
         let privateKey = request.kind == .sshAskpass && request.prompt.lowercased().contains("passphrase")
-        alert.messageText = AppLocalization.text(
-            request.kind == .editor
-                ? "callback.editor"
-                : (privateKey ? "callback.privateKey" : "callback.credentials")
-        )
+
+        // 签名口令单独命名：解锁的签名私钥不会加入 SSH agent，不能沿用网络私钥的说明。
+        let title: String =
+            switch request.kind {
+            case .editor: "callback.editor"
+            case .signing: "signing.unlock"
+            case .askpass, .sshAskpass: privateKey ? "callback.privateKey" : "callback.credentials"
+            }
+        alert.messageText = AppLocalization.text(title)
         alert.informativeText = request.host + "\n" + request.prompt
             + (
                 privateKey && request.host.hasPrefix("/")
