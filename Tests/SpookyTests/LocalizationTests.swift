@@ -94,7 +94,7 @@ struct LocalizationTests {
 
         let pattern = try NSRegularExpression(
             pattern:
-            #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog|failure|recovery)\.[A-Za-z.]+)""#
+            #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog|failure|recovery|files|fileHistory|blame|showFile|diff|text|themes|stash|conflict|commit|profiles|editor|signing)\.[A-Za-z.]+)""#
         )
         let english = try strings("en")
 
