@@ -1,5 +1,8 @@
 import Foundation
+import os
 import Subprocess
+
+// MARK: - GitRunner
 
 /// 在仓库所在的位置执行 git：本机直接调用 git，远端经系统 ssh 在对方机器上调用
 public struct GitRunner: Sendable {
@@ -31,6 +34,9 @@ public struct GitRunner: Sendable {
         "GIT_NAMESPACE": nil,
         "GIT_PREFIX": nil,
     ]
+
+    /// 命令失败与取消的日志；只记录子命令名，参数里可能有带凭据的地址。
+    private static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "GitRunner")
 
     /// 目标仓库
     public let location: RepositoryLocation
@@ -82,83 +88,6 @@ public struct GitRunner: Sendable {
         "'" + argument.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
-    /// 固定 locale 下区分仓库、分支与网络失败，原始输出仍保留在结果中。
-    static func category(for result: GitCommandResult) -> GitError.Category {
-        let stderr = String(decoding: result.standardError, as: UTF8.self).lowercased()
-        let stdout = String(decoding: result.standardOutput, as: UTF8.self).lowercased()
-        let command = RepositoryOperationQueue.command(in: result.arguments)
-
-        // 网络错误按具体诊断分类；凭据与仓库权限错误不使用宽泛的 “not found” 匹配。
-        if
-            stderr.contains("has no upstream branch") || stderr.contains("no upstream configured")
-            || stderr.contains("no tracking information")
-        {
-            return .noUpstream
-        }
-        if stderr.contains("is not fully merged") { return .branchNotMerged }
-        if stderr.contains("would be overwritten by") { return .localChanges }
-        if
-            command == "push",
-            stderr.contains("[rejected]") || stderr.contains("[remote rejected]")
-            || stdout.split(separator: "\n").contains(where: { $0.hasPrefix("!\t") })
-        {
-            return .pushRejected
-        }
-        if stderr.contains("connection timed out") || stderr.contains("operation timed out") {
-            return .connectionTimedOut
-        }
-        if
-            stderr.contains("authentication failed") || stderr.contains("permission denied (publickey")
-            || stderr.contains("too many authentication failures")
-            || stderr.contains("could not read username")
-            || stderr.contains("could not read password")
-        {
-            return .authenticationFailed
-        }
-        if
-            stderr.contains("does not appear to be a git repository")
-            || stderr.contains("repository not found")
-            || (stderr.contains("repository '") && stderr.contains("' not found"))
-        {
-            return .remoteNotFound
-        }
-        if
-            [
-                "connection refused", "could not resolve hostname", "could not resolve host:",
-                "connection reset", "connection closed", "network is unreachable", "broken pipe",
-            ]
-                .contains(where: stderr.contains)
-        {
-            return .connectionUnavailable
-        }
-
-        if stderr.contains("index.lock"), stderr.contains("file exists") {
-            return .indexLocked
-        }
-
-        guard result.exitCode == 128 else {
-            return .commandFailed
-        }
-
-        if stderr.hasPrefix("fatal: not a git repository") {
-            return .notRepository
-        }
-
-        if stderr.hasPrefix("fatal: this operation must be run in a work tree") {
-            return .notWorkingTree
-        }
-
-        if stderr.hasPrefix("fatal: cannot change to") {
-            return .pathUnavailable
-        }
-
-        if stderr.hasPrefix("fatal: detected dubious ownership") {
-            return .unsafeRepository
-        }
-
-        return .commandFailed
-    }
-
     /// 执行一条 git 子命令，成功时返回标准输出
     ///
     /// - Parameters:
@@ -189,7 +118,25 @@ public struct GitRunner: Sendable {
                 acceptedExitCodes: acceptedExitCodes,
                 onOutput: onOutput
             ).value
+        } catch let error as GitError {
+            let command = RepositoryOperationQueue.command(in: arguments) ?? "git"
+            let exitCode = error.exitCode.map(String.init) ?? "-"
+            let category = String(describing: error.category)
+
+            // 远端取消同样以 GitError 返回，只作信息记录；其余失败带上退出码与错误类别。
+            if error.isCancelled {
+                Self.logger.info("Git 子命令 \(command, privacy: .public) 已取消")
+            } else {
+                Self.logger.error(
+                    "Git 子命令 \(command, privacy: .public) 失败：退出码 \(exitCode, privacy: .public)，类别 \(category, privacy: .public)"
+                )
+            }
+
+            throw error
         } catch is CancellationError {
+            let command = RepositoryOperationQueue.command(in: arguments) ?? "git"
+            Self.logger.info("Git 子命令 \(command, privacy: .public) 在排队或执行中被取消")
+
             // 保留 M1 的取消错误语义，排队取消同样携带原始业务参数。
             throw GitError(
                 result: GitCommandResult(
@@ -308,4 +255,85 @@ public struct GitRunner: Sendable {
         )
     }
 
+}
+
+// MARK: - Error Category
+
+extension GitRunner {
+    /// 固定 locale 下区分仓库、分支与网络失败，原始输出仍保留在结果中。
+    static func category(for result: GitCommandResult) -> GitError.Category {
+        let stderr = String(decoding: result.standardError, as: UTF8.self).lowercased()
+        let stdout = String(decoding: result.standardOutput, as: UTF8.self).lowercased()
+        let command = RepositoryOperationQueue.command(in: result.arguments)
+
+        // 网络错误按具体诊断分类；凭据与仓库权限错误不使用宽泛的 “not found” 匹配。
+        if
+            stderr.contains("has no upstream branch") || stderr.contains("no upstream configured")
+            || stderr.contains("no tracking information")
+        {
+            return .noUpstream
+        }
+        if stderr.contains("is not fully merged") { return .branchNotMerged }
+        if stderr.contains("would be overwritten by") { return .localChanges }
+        if
+            command == "push",
+            stderr.contains("[rejected]") || stderr.contains("[remote rejected]")
+            || stdout.split(separator: "\n").contains(where: { $0.hasPrefix("!\t") })
+        {
+            return .pushRejected
+        }
+        if stderr.contains("connection timed out") || stderr.contains("operation timed out") {
+            return .connectionTimedOut
+        }
+        if
+            stderr.contains("authentication failed") || stderr.contains("permission denied (publickey")
+            || stderr.contains("too many authentication failures")
+            || stderr.contains("could not read username")
+            || stderr.contains("could not read password")
+        {
+            return .authenticationFailed
+        }
+        if
+            stderr.contains("does not appear to be a git repository")
+            || stderr.contains("repository not found")
+            || (stderr.contains("repository '") && stderr.contains("' not found"))
+        {
+            return .remoteNotFound
+        }
+        if
+            [
+                "connection refused", "could not resolve hostname", "could not resolve host:",
+                "connection reset", "connection closed", "network is unreachable", "broken pipe",
+            ]
+                .contains(where: stderr.contains)
+        {
+            return .connectionUnavailable
+        }
+
+        if stderr.contains("index.lock"), stderr.contains("file exists") {
+            return .indexLocked
+        }
+
+        guard result.exitCode == 128 else {
+            return .commandFailed
+        }
+
+        if stderr.hasPrefix("fatal: not a git repository") {
+            return .notRepository
+        }
+
+        if stderr.hasPrefix("fatal: this operation must be run in a work tree") {
+            return .notWorkingTree
+        }
+
+        if stderr.hasPrefix("fatal: cannot change to") {
+            return .pathUnavailable
+        }
+
+        if stderr.hasPrefix("fatal: detected dubious ownership") {
+            return .unsafeRepository
+        }
+
+        return .commandFailed
+    }
 }

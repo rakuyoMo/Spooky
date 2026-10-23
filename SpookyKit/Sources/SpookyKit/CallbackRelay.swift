@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import os
 import Security
 import Synchronization
 
@@ -107,6 +108,9 @@ final class CallbackRelay: Sendable {
         /// 每个随机请求仅允许应答一次。
         var requests: Set<String> = []
     }
+
+    /// 回调请求的日志：只记类型与是否应答，提示文字与应答内容都不记录。
+    private static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "CallbackRelay")
 
     /// 本机 socket 的绝对路径。
     let path: String
@@ -301,6 +305,7 @@ final class CallbackRelay: Sendable {
         }
 
         guard accepted else {
+            Self.logger.error("拒绝回调请求：操作未登记、请求重复或会话已关闭")
             finish(client, id: id, value: nil)
             return
         }
@@ -311,10 +316,17 @@ final class CallbackRelay: Sendable {
         }
 
         guard let kind = RemoteCallbackRequest.Kind(rawValue: message.kind) else {
+            Self.logger.error("拒绝回调请求：未知的请求类型")
             finish(client, id: id, value: nil)
             return
         }
 
+        Self.logger.info("收到回调请求：\(kind.rawValue, privacy: .public)")
+        answer(message, kind: kind, client: client, id: id)
+    }
+
+    /// 已接受的交互请求交给界面应答；应答时再次确认操作与连接仍然有效，口令类应答记入脱敏集合。
+    private func answer(_ message: Message, kind: RemoteCallbackRequest.Kind, client: Int32, id: UUID) {
         let request = RemoteCallbackRequest(
             host: host,
             id: message.id,
@@ -341,7 +353,10 @@ final class CallbackRelay: Sendable {
 
                 return true
             }
-            finish(client, id: id, value: !Task.isCancelled && active ? response : nil)
+            let answered = !Task.isCancelled && active && response != nil
+            Self.logger.info("回调请求\(answered ? "已应答" : "未应答，按取消处理", privacy: .public)：\(kind.rawValue, privacy: .public)")
+
+            finish(client, id: id, value: answered ? response : nil)
         }
 
         state.withLock {

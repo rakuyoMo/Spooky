@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import os
 import Subprocess
 import Synchronization
 import System
@@ -56,6 +57,9 @@ public actor RemoteConnection {
 
     /// 多个执行器复用同一工作区会话。
     private static let connections = Mutex<[RepositoryLocation: RemoteConnection]>([:])
+
+    /// 连接状态、远端会话与取消结果的日志；主机别名按私有记录。
+    private static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "RemoteConnection")
 
     /// SSH 配置中的主机别名。
     public nonisolated let host: String
@@ -585,6 +589,8 @@ extension RemoteConnection {
 
         let wrapper = String(path.dropLast())
         self.wrapper = wrapper
+        Self.logger.info("远端包装器已就绪：\(filename, privacy: .public)")
+
         let relay = try CallbackRelay(
             path: directory.appending(path: "relay.sock").path,
             host: host,
@@ -712,7 +718,16 @@ extension RemoteConnection {
         let result = try? await commandChannel([
             wrapper, "cancel", directory, operation, String(configuration.cancellationGrace),
         ], arguments: ["cancel"])
-        return result?.exitCode == 0
+        let confirmed = result?.exitCode == 0
+        let host = host
+
+        // 未确认的取消要等重连核对后才能继续写入，记为错误便于事后排查
+        Self.logger.log(
+            level: confirmed ? .info : .error,
+            "远端取消\(confirmed ? "已确认，进程组已退出" : "未得到确认", privacy: .public)：\(host, privacy: .private)"
+        )
+
+        return confirmed
     }
 
     /// 重连后的核对由 Git 定位元数据，只检查锁与进行中操作的存在性。
@@ -891,6 +906,8 @@ extension RemoteConnection {
         }
 
         if localDirectory != nil {
+            let host = host
+            Self.logger.info("关闭专属主连接：\(host, privacy: .private)")
             _ = try? await ssh(["-O", "exit"], arguments: ["connection-close"])
         }
 
@@ -905,6 +922,15 @@ extension RemoteConnection {
 
     /// 广播连接状态供工具栏、横幅和测试观察。
     private func updateState(_ state: RemoteConnectionState) {
+        // 只记录真正发生的切换；进入不可用时附上失败类别，便于定位断线原因
+        if state != self.state {
+            let host = host
+            let reason = state == .unavailable ? failure?.kind.rawValue ?? "-" : "-"
+            Self.logger.info(
+                "连接状态 \(self.state.rawValue, privacy: .public) → \(state.rawValue, privacy: .public)：\(host, privacy: .private)，失败类别 \(reason, privacy: .public)"
+            )
+        }
+
         self.state = state
         for observer in observers.values { observer.yield(state) }
     }

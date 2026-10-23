@@ -1,4 +1,5 @@
 import AppKit
+import os
 import SpookyKit
 import SwiftUI
 
@@ -9,6 +10,9 @@ import SwiftUI
 final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// 退出时等待任务结束的上限，取消确认最长需要远端的宽限期与通道关闭时间。
     private static let terminationGrace = Duration.seconds(10)
+
+    /// 退出收尾的日志：宽限期先到时说明仍有任务未结束。
+    private nonisolated static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "SpookyApplicationController")
 
     /// 跨窗口共享的最近仓库记录。
     let recent: RecentRepositories
@@ -135,7 +139,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
         Task {
             // 先取消并等待各窗口的读取、写入和子进程结束，再关闭专属主连接；超过宽限期也会退出。
-            await withTaskGroup(of: Void.self) { group in
+            await withTaskGroup(of: Bool.self) { group in
                 group.addTask {
                     await withTaskGroup(of: Void.self) { shutdown in
                         for session in sessions {
@@ -146,9 +150,20 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
                             shutdown.addTask { await task.value }
                         }
                     }
+
+                    return true
                 }
-                group.addTask { try? await Task.sleep(for: Self.terminationGrace) }
-                await group.next()
+
+                group.addTask {
+                    try? await Task.sleep(for: Self.terminationGrace)
+                    return false
+                }
+
+                // 宽限期先到时照常退出，留下记录便于排查未结束的读取、写入或子进程
+                if let finished = await group.next(), !finished {
+                    Self.logger.error("退出等待超过宽限期，仍有任务未结束")
+                }
+
                 group.cancelAll()
             }
 
