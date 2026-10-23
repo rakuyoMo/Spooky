@@ -64,6 +64,7 @@ SpookyKit/                    核心库与 App 的 Swift Package
     GitCommandResult.swift    命令结果、错误分类与流式输出事件
     RepositoryOperationQueue.swift 仓库写队列、主机并发限制与操作事件
     RemoteConnection.swift    SSH 主连接、体检、重连与远端取消
+    RemoteConnection+HealthCheck.swift 经主连接依次检查远端 Git、路径权限、工作区与状态格式
     SSHConfiguration.swift    SSH 参数及远端环境清洗
     CallbackRelay.swift       本机 Unix socket 回调服务
     RemoteOutputFilter.swift  远端完成帧与退出状态解析
