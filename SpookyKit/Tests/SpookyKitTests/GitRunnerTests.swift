@@ -70,6 +70,6 @@ struct GitRunnerTests {
         }
 
         #expect(error?.exitCode == 128)
-        #expect(error?.message.contains("cannot change to") == true)
+        #expect(error?.message.contains("cannot change to") ?? false)
     }
 }

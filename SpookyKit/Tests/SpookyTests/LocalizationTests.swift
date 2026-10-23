@@ -18,10 +18,12 @@ struct LocalizationTests {
             #expect(!value.isEmpty, "译文不能为空：\(language) / \(key)")
             #expect(value != key)
             let base = try #require(english[key])
-            let expected = pattern.matches(in: base, range: NSRange(base.startIndex..., in: base))
-                .map { (base as NSString).substring(with: $0.range) }
-            let actual = pattern.matches(in: value, range: NSRange(value.startIndex..., in: value))
-                .map { (value as NSString).substring(with: $0.range) }
+            let expected = try pattern.matches(in: base, range: NSRange(base.startIndex..., in: base))
+                .map { try #require(Range($0.range, in: base)) }
+                .map { String(base[$0]) }
+            let actual = try pattern.matches(in: value, range: NSRange(value.startIndex..., in: value))
+                .map { try #require(Range($0.range, in: value)) }
+                .map { String(value[$0]) }
             #expect(actual == expected, "格式参数不一致：\(language) / \(key)")
         }
     }
@@ -73,7 +75,8 @@ struct LocalizationTests {
             let content = try String(contentsOf: file, encoding: .utf8)
 
             for match in pattern.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
-                let key = (content as NSString).substring(with: match.range(at: 1))
+                let range = try #require(Range(match.range(at: 1), in: content))
+                let key = String(content[range])
                 if key.hasSuffix(".") { continue }
                 #expect(english[key] != nil, "缺少界面资源键：\(key)")
             }

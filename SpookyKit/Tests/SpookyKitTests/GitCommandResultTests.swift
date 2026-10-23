@@ -63,7 +63,7 @@ struct GitCommandResultTests {
 
         #expect(error?.category == .launchFailed)
         #expect(error?.exitCode == nil)
-        #expect(error?.diagnostic?.isEmpty == false)
+        #expect(!(error?.diagnostic?.isEmpty ?? true))
         #expect(error?.result.arguments == ["--version"])
     }
 
@@ -105,7 +105,7 @@ struct GitCommandResultTests {
 
         let error = await #expect(throws: GitError.self) { try await task.value }
         #expect(error?.category == .cancelled)
-        #expect(error?.isCancelled == true)
+        #expect(error?.isCancelled ?? false)
         #expect(error?.message == "ready\n")
         #expect(error?.result.standardOutput == output)
         #expect(kill(pid, 0) == -1)
@@ -132,7 +132,7 @@ struct GitCommandResultTests {
             return await group.next() ?? nil
         }
 
-        #expect(error?.isCancelled == true)
+        #expect(error?.isCancelled ?? false)
         #expect(error?.result.terminationStatus == nil)
     }
 
@@ -157,7 +157,7 @@ struct GitCommandResultTests {
         }
         #expect(error?.category == .outputLimitExceeded)
         #expect(error?.result.standardError.count == 1_048_576)
-        #expect(error?.isCancelled == false)
+        #expect(!(error?.isCancelled ?? true))
     }
 
     /// 特殊路径与同路径双记录按 Git 原文返回，不能被 shell 或解析器改写。

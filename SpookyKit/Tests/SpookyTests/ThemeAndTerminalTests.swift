@@ -10,7 +10,9 @@ struct ThemeAndTerminalTests {
     @Test("界面命名色均存在")
     func referencedColors() throws {
         let sources = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
             .appending(path: "Sources/Spooky")
         let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "swift" }
@@ -19,7 +21,8 @@ struct ThemeAndTerminalTests {
         for file in files {
             let text = try String(contentsOf: file, encoding: .utf8)
             for match in expression.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
-                let name = (text as NSString).substring(with: match.range(at: 1))
+                let range = try #require(Range(match.range(at: 1), in: text))
+                let name = String(text[range])
                 #expect(AppPalette.colors[name] != nil, "缺少界面颜色：\(name)")
             }
         }
@@ -38,7 +41,9 @@ struct ThemeAndTerminalTests {
     @Test("界面源码不写死颜色数值")
     func noHardCodedColors() throws {
         let sources = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
             .appending(path: "Sources/Spooky")
         let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "swift" && $0.lastPathComponent != "AppPalette.swift" }

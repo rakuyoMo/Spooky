@@ -122,6 +122,9 @@ struct PerformanceTests {
         let growth = withExtendedLifetime((status, history.commits)) { Self.footprint() - baseline }
         #expect(history.commits.count == Self.commits)
         #expect(growth < 512 * 1024 * 1024)
+
+        // 性能测试把实测数值写进测试日志，供人工核对；只在显式开启性能测试时输出。
+        // swiftlint:disable:next no_direct_standard_out_logs
         print(
             "local first screen: \(firstScreen), history: \(history.duration), "
                 + "memory growth: \(growth / 1024 / 1024) MiB"
@@ -163,7 +166,11 @@ struct PerformanceTests {
             let firstScreen = start.duration(to: .now)
             #expect(firstScreen < .seconds(5))
             #expect(status.entries.count == Self.modified + Self.untracked)
+
+            // 性能测试把实测数值写进测试日志，供人工核对；只在显式开启性能测试时输出。
+            // swiftlint:disable:next no_direct_standard_out_logs
             print("remote first screen: \(firstScreen)")
+
             await connection.close()
             try await fixture.remove()
         } catch {

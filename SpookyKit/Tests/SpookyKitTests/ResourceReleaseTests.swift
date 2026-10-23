@@ -141,7 +141,7 @@ struct ResourceReleaseTests {
         task.cancel()
         continuation.finish()
         let error = await #expect(throws: GitError.self) { try await task.value }
-        #expect(error?.isCancelled == true)
+        #expect(error?.isCancelled ?? false)
         return try #require(Int32(String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)))
     }
 

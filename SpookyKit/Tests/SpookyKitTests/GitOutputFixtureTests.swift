@@ -49,7 +49,7 @@ struct GitOutputFixtureTests {
         #expect(file.hunks.count == 2)
         #expect(file.hunks[0].oldStart == 1 && file.hunks[0].newStart == 1)
         #expect(file.hunks[1].oldStart == 7 && file.hunks[1].newStart == 7)
-        #expect(file.hunks[1].lines.last?.noNewline == true)
+        #expect(file.hunks[1].lines.last?.noNewline ?? false)
 
         let patch = try diff.patch(path: "lines.txt", file: 0, hunk: 1, selectedLines: [3, 5], reverse: false)
         let expected = """
@@ -86,7 +86,7 @@ struct GitOutputFixtureTests {
         #expect(commits.count == count)
         #expect(commits.allSatisfy { $0.id.count == hashLength && $0.tree.count == hashLength })
         #expect(commits.filter { $0.parents.count == 2 }.count == 1)
-        #expect(commits.last?.parents.isEmpty == true)
+        #expect(commits.last?.parents.isEmpty ?? false)
         #expect(commits.allSatisfy { $0.author == "Zoë Ünicode" && $0.committer == "Spooky Test" })
 
         let root = try #require(commits.last)
@@ -136,7 +136,7 @@ struct GitOutputFixtureTests {
         #expect(flags["refs/remotes/origin/fresh"] == "*")
         #expect(flags["refs/remotes/origin/side"] == "+")
         #expect(flags["refs/tags/v2.0"] == "*")
-        #expect(updates.first { $0.flag == "*" }?.oldObject?.allSatisfy { $0 == "0" } == true)
+        #expect(updates.first { $0.flag == "*" }?.oldObject?.allSatisfy { $0 == "0" } ?? false)
     }
 
     /// Push porcelain 跳过 To / Done 行，保留被拒原因。
