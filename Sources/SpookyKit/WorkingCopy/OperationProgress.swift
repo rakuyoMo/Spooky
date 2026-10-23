@@ -108,6 +108,8 @@ extension OperationProgress {
         }
 
         // 摘取与反转的序列不记录已完成的步数：从序列开始时的 HEAD 数到当前 HEAD
+        #warning("TODO: 用 git cherry-pick A B C 停在第一个提交时执行 --skip，核对横幅显示的步数；被跳过的提交不产生新提交，步数可能少算，只影响跳过之后的摘取与反转序列进度。")
+
         if
             let todo = files["sequencer/todo"],
             let start = files["sequencer/head"]?.trimmingCharacters(in: .whitespacesAndNewlines),
