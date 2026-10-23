@@ -30,6 +30,12 @@ let package = Package(
         .package(
             url: "https://github.com/swiftlang/swift-subprocess.git",
             .upToNextMinor(from: "1.0.1")
+        ),
+
+        // 代码规范：提供 `swift package format` 命令插件
+        .package(
+            url: "https://github.com/RakuyoKit/swift.git",
+            exact: "1.4.0"
         )
     ],
     targets: [

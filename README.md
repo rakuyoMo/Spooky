@@ -180,7 +180,7 @@ SPOOKY_PERFORMANCE_TESTS=1 swift test --package-path SpookyKit -c release -Xswif
 
 ## Contributing
 
-- Before opening a pull request, run `swift build --package-path SpookyKit` and `swift test --package-path SpookyKit` and make sure both pass
+- Before opening a pull request, use [mise](https://mise.jdx.dev) to run `mise run swift:lint`, `mise run build`, and `mise run test`, and make sure they all pass. CI runs the same checks on every pull request
 - If you change the app, also launch it and check that your change works
 - See [AGENTS.md](AGENTS.md) for branch names, commit messages, and other contribution guidelines (in Chinese)
 - Before bringing in outside code, make sure its license is compatible with GPL-3.0

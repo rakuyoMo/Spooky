@@ -25,10 +25,9 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 
 ### `mise`
 
-根目录的 `mise.toml` 目前只声明 Python 3.11、Node 22 与 Java 21，没有项目 task。
+根目录的 `mise.toml` 定义构建、测试、打包与代码规范检查的 task，这些操作优先经 `mise run` 执行。
 
-- Swift 命令直接执行，不经 `mise`
-- Python、Node 与 Java 命令使用 `mise exec --`
+- 没有对应 task 的 Swift 命令直接执行
 - 纯 shell 命令不经 `mise` 执行
 - 本机专用的配置写进 `mise.local.toml`（已列入 `.gitignore`）
 
@@ -38,15 +37,17 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 
 | 命令 | 作用 |
 |---|---|
-| `swift build --package-path SpookyKit` | 编译核心库与 App |
-| `swift test --package-path SpookyKit` | 运行核心库、会话状态与本地化测试 |
+| `mise run build` | 编译核心库与 App |
+| `mise run test` | 运行核心库、会话状态与本地化测试 |
+| `mise run swift:lint` | 检查代码规范 |
+| `mise run swift:format` | 按代码规范格式化，并自动修复可修复的问题 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteConnectionTests` | 显式运行 `spooky-test` 远端集成测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteWorkingCopyTests` | 显式运行 M3 的 SFTP 与远端提交测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteHistorySyncTests` | 显式运行 M4 的服务器历史、同步与取消测试 |
 | `swift build --package-path SpookyKit --product Spooky` | 编译可执行 App product |
 | `swift run --package-path SpookyKit Spooky` | 启动 App 的仓库管理窗口 |
 | `./scripts/build-app.sh` | 生成开发用 `SpookyKit/.build/Spooky.app` |
-| `./scripts/bundle.sh` | release 构建并生成 `build/Spooky.app`，拷贝资源与图标后 ad-hoc 签名并校验 |
+| `mise run bundle` | release 构建并生成 `build/Spooky.app`，拷贝资源与图标后 ad-hoc 签名并校验 |
 | `SPOOKY_PERFORMANCE_TESTS=1 swift test --package-path SpookyKit -c release -Xswiftc -enable-testing --filter PerformanceTests` | 显式运行大仓库首屏、历史分页与内存的性能验收 |
 | `swift scripts/make-icon.swift SpookyKit/Sources/Spooky/AppIcon.icns` | 重新生成静态应用图标 |
 
@@ -90,6 +91,8 @@ SpookyKit/                    核心库与 App 的 Swift Package
 scripts/build-app.sh          开发 App Bundle 生成脚本
 scripts/bundle.sh             发布 App Bundle 生成脚本，输出到 build/Spooky.app
 scripts/make-icon.swift       应用图标生成脚本
+.github/workflows/ci.yml      PR 与 main 上的代码规范检查、编译、测试与打包
+mise.toml                     构建、测试、打包与代码规范检查的 task
 docs/testing/M1.md            M1 的 App 手动验收步骤
 docs/testing/M2.md            M2 的连接、终端与主题验收步骤
 docs/testing/M3.md            M3 的工作区、Diff、提交与冲突验收步骤
@@ -200,7 +203,10 @@ LICENSE                       GPL-3.0 许可证全文
 
 ### 代码规范验证流程
 
-项目当前没有格式化或 lint 工具。新建或编辑 `.swift` 文件后，必须运行 `swift build --package-path SpookyKit` 与 `swift test --package-path SpookyKit`，两者都通过才算完成。
+代码风格以 [RakuyoKit/swift](https://github.com/RakuyoKit/swift) 为准；运行过任一 `mise run` task 后，规则原文位于 `SpookyKit/.build/checkouts/swift/Sources/RakuyoSwiftFormatTool/`。
+
+- 新建或编辑 `.swift` 文件后，运行 `mise run swift:lint`；不通过时先运行 `mise run swift:format` 自动修复，再运行 `mise run swift:lint`
+- `mise run swift:lint`、`mise run build` 与 `mise run test` 都通过才算完成；CI 在每个 PR 与推送到 main 时运行同样的检查
 
 ## 产物可追溯性（番茄炒蛋原则）
 
