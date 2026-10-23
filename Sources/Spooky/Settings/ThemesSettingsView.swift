@@ -274,7 +274,9 @@ extension ThemesSettingsView {
             try action()
         } catch {
             let window = NSApp.keyWindow
-            Task { await ThemeTransfer.report(error, titleKey: titleKey, file: nil, window: window) }
+            Task {
+                await ThemeTransfer.report(error, titleKey: titleKey, file: nil, window: window)
+            }
         }
     }
 }

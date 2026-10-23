@@ -49,12 +49,17 @@ struct ThemeListView: NSViewRepresentable {
         table.addTableColumn(NSTableColumn(identifier: .init("name")))
         table.headerView = nil
         table.style = .fullWidth
+
+        // 始终选中一行：选中的就是当前外观的主题。
         table.allowsEmptySelection = false
         table.allowsMultipleSelection = false
         table.dataSource = coordinator
         table.delegate = coordinator
+
+        // 拖入主题文件导入，拖出到其它 App 导出。
         table.registerForDraggedTypes([.fileURL])
         table.setDraggingSourceOperationMask(.copy, forLocal: false)
+
         table.setAccessibilityLabel(AppLocalization.text("settings.themes"))
         table.beginRename = { [weak coordinator] in coordinator?.beginRename() }
 
@@ -179,7 +184,9 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
             try parent.store.rename(identifier, to: field.stringValue)
         } catch {
             let window = table.window
-            Task { await ThemeTransfer.report(error, titleKey: "themes.error.rename", file: nil, window: window) }
+            Task {
+                await ThemeTransfer.report(error, titleKey: "themes.error.rename", file: nil, window: window)
+            }
         }
 
         // 文本框显示存储里的实际名称，改名没有生效时回到原名。

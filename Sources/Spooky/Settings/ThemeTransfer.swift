@@ -61,6 +61,8 @@ enum ThemeTransfer {
     ///
     /// 文件承诺在拖放结束后才要求写入，此时可以弹出模态提示。
     static func writePromise(_ theme: TextTheme, to url: URL) -> Error? {
+        #warning("TODO: 把主题拖到已有同名文件的 Finder 文件夹，核实是弹出覆盖确认还是由 Finder 改名、确认框开着时 Finder 是否超时；只影响拖出导出的同名处理。")
+
         let exists = FileManager.default.fileExists(atPath: url.path)
 
         if exists, replaceAlert(url).runModal() != .alertFirstButtonReturn {
@@ -71,7 +73,9 @@ enum ThemeTransfer {
             try theme.encoded().write(to: url, options: .atomic)
             return nil
         } catch {
-            Task { await report(error, titleKey: "themes.error.export", file: nil, window: nil) }
+            Task {
+                await report(error, titleKey: "themes.error.export", file: nil, window: nil)
+            }
             return error
         }
     }
