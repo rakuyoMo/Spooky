@@ -443,3 +443,7 @@
 "repositories.checking" = "Comprobando…";
 "repositories.unavailableShort" = "No disponible";
 "activity.truncated" = "Se ha omitido la salida anterior.";
+
+/* 提交体验、身份档案与签名。 */
+"signing.error" = "No se ha podido firmar el commit. Comprobar la clave de firma y el programa de firma.";
+"signing.unlock" = "Desbloquear la clave de firma";

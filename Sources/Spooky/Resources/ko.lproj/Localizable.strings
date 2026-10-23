@@ -443,3 +443,7 @@
 "repositories.checking" = "확인하는 중…";
 "repositories.unavailableShort" = "사용 불가";
 "activity.truncated" = "이전 출력은 생략되었습니다.";
+
+/* 提交体验、身份档案与签名。 */
+"signing.error" = "커밋 서명에 실패했습니다. 서명 키와 서명 프로그램을 확인하세요.";
+"signing.unlock" = "서명 키 잠금 해제";

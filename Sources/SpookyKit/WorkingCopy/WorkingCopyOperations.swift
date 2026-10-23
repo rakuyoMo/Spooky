@@ -243,12 +243,28 @@ public struct WorkingCopyOperations: Sendable {
         )
     }
 
-    /// NFC 与 UTF-8 只作用于提交信息，Git 路径保留原始表示。
-    public func commit(subject: String, body: String, amend: Bool = false) async throws {
-        let message = (subject + (body.isEmpty ? "\n" : "\n\n" + body + "\n"))
-            .precomposedStringWithCanonicalMapping
+    /// NFC 与 UTF-8 只作用于提交信息，Git 路径保留原始表示；签名完全由仓库配置决定，不加签名参数。
+    ///
+    /// - Parameters:
+    ///   - amend: 改写最近一次提交。
+    ///   - signOff: 追加 `Signed-off-by` 尾注。
+    ///   - skipHooks: 跳过 pre-commit 与 commit-msg 钩子。
+    public func commit(
+        subject: String,
+        body: String,
+        amend: Bool = false,
+        signOff: Bool = false,
+        skipHooks: Bool = false
+    ) async throws {
+        let message = CommitMessage.text(subject: subject, body: body)
         var arguments = ["-c", "i18n.commitencoding=UTF-8", "-c", "commit.verbose=false", "commit", "-F", "-"]
+
         if amend { arguments.append("--amend") }
+
+        if signOff { arguments.append("--signoff") }
+
+        if skipHooks { arguments.append("--no-verify") }
+
         _ = try await runner.run(arguments, input: Data(message.utf8))
     }
 

@@ -443,3 +443,7 @@
 "repositories.checking" = "正在檢查…";
 "repositories.unavailableShort" = "無法使用";
 "activity.truncated" = "較早的輸出已省略。";
+
+/* 提交体验、身份档案与签名。 */
+"signing.error" = "提交簽署失敗。請檢查簽署金鑰與簽署程式。";
+"signing.unlock" = "解鎖簽署金鑰";

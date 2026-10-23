@@ -18,6 +18,9 @@ public struct RemoteCallbackRequest: Sendable {
 
         /// 必须交互编辑的文本。
         case editor
+
+        /// 提交签名密钥的口令，来自 gpg 的 loopback 索取或 ssh-keygen 解锁签名私钥。
+        case signing
     }
 
     /// 服务器主机别名或本机仓库路径，用于区分凭据上下文。

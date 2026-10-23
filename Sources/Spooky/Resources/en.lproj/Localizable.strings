@@ -443,3 +443,7 @@
 "repositories.checking" = "Checking…";
 "repositories.unavailableShort" = "Unavailable";
 "activity.truncated" = "Earlier output was omitted.";
+
+/* 提交体验、身份档案与签名。 */
+"signing.error" = "Commit signing failed. Check the signing key and the signing program.";
+"signing.unlock" = "Unlock Signing Key";

@@ -226,10 +226,10 @@ public struct GitRunner: Sendable {
         acceptedExitCodes: Set<Int32>,
         onOutput: @escaping @Sendable (GitOutputEvent) -> Void
     ) async throws -> GitCommandResult {
-        // 只有网络命令需要 askpass；本机 SSH 解锁后由系统 agent 保留密钥。
+        // 网络命令需要 askpass，本机 SSH 解锁后由系统 agent 保留密钥；会生成提交的命令可能经 ssh-keygen 签名，私钥口令同样经中继询问。
         if
             let credentialHandler,
-            ["fetch", "push", "ls-remote"]
+            ["fetch", "push", "ls-remote", "commit", "merge", "rebase", "cherry-pick", "revert"]
                 .contains(RepositoryOperationQueue.command(in: arguments) ?? "")
         {
             return try await LocalGitAuthentication.execute(
@@ -312,6 +312,19 @@ extension GitRunner {
 
         if stderr.contains("index.lock"), stderr.contains("file exists") {
             return .indexLocked
+        }
+
+        // OpenPGP 签名失败有固定文案；SSH 签名只转述 ssh-keygen 的输出，随后以无法写入提交对象结束。
+        if
+            stderr.contains("gpg failed to sign the data")
+            || stderr.contains("failed to write commit object")
+            && [
+                "ssh-keygen", "load key", "public key", "private key", "signingkey", "signing key",
+                "sign message", "fingerprint",
+            ]
+            .contains(where: stderr.contains)
+        {
+            return .signingFailed
         }
 
         guard result.exitCode == 128 else {

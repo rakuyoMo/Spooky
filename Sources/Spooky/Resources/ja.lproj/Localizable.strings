@@ -443,3 +443,7 @@
 "repositories.checking" = "確認中…";
 "repositories.unavailableShort" = "利用不可";
 "activity.truncated" = "以前の出力は省略されました。";
+
+/* 提交体验、身份档案与签名。 */
+"signing.error" = "コミットの署名に失敗しました。署名鍵と署名プログラムを確認してください。";
+"signing.unlock" = "署名鍵のロックを解除";

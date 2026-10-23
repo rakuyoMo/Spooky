@@ -443,3 +443,7 @@
 "repositories.checking" = "Wird geprüft …";
 "repositories.unavailableShort" = "Nicht verfügbar";
 "activity.truncated" = "Frühere Ausgabe wurde ausgelassen.";
+
+/* 提交体验、身份档案与签名。 */
+"signing.error" = "Das Signieren des Commits ist fehlgeschlagen. Prüfen Sie den Signaturschlüssel und das Signaturprogramm.";
+"signing.unlock" = "Signaturschlüssel entsperren";

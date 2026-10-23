@@ -443,3 +443,7 @@
 "repositories.checking" = "Vérification…";
 "repositories.unavailableShort" = "Indisponible";
 "activity.truncated" = "La sortie antérieure a été omise.";
+
+/* 提交体验、身份档案与签名。 */
+"signing.error" = "La signature du commit a échoué. Vérifiez la clé de signature et le programme de signature.";
+"signing.unlock" = "Déverrouiller la clé de signature";
