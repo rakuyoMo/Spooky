@@ -64,7 +64,8 @@ struct TextSettingsView: View {
                 .multilineTextAlignment(.trailing)
                 .accessibilityLabel(AppLocalization.text("text.tabWidth"))
                 .onChange(of: tabWidth) {
-                    tabWidth = min(max(tabWidth, TextPreferences.tabWidths.lowerBound), TextPreferences.tabWidths.upperBound)
+                    let range = TextPreferences.tabWidths
+                    tabWidth = min(max(tabWidth, range.lowerBound), range.upperBound)
                 }
 
             Stepper("", value: $tabWidth, in: TextPreferences.tabWidths)

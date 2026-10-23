@@ -267,8 +267,11 @@ private struct CheckerboardView: View {
 
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(background))
 
-            for row in 0 ..< Int((size.height / square).rounded(.up)) {
-                for column in 0 ..< Int((size.width / square).rounded(.up)) where (row + column).isMultiple(of: 2) {
+            let rows = Int((size.height / square).rounded(.up))
+            let columns = Int((size.width / square).rounded(.up))
+
+            for row in 0 ..< rows {
+                for column in 0 ..< columns where (row + column).isMultiple(of: 2) {
                     let rect = CGRect(
                         x: Double(column) * square,
                         y: Double(row) * square,

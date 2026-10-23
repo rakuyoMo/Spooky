@@ -82,7 +82,13 @@ struct DiffOptionsTests {
         #expect(whole.byteCount > 1000)
         #expect(whole.diff == nil)
 
-        let shown = try await service.diff(for: entry, side: .unstaged, options: options, warningKilobytes: 1, showLarge: true)
+        let shown = try await service.diff(
+            for: entry,
+            side: .unstaged,
+            options: options,
+            warningKilobytes: 1,
+            showLarge: true
+        )
         #expect(shown.diff?.files.first?.hunks.first?.lines.count == 3001)
     }
 
@@ -112,7 +118,8 @@ struct DiffOptionsTests {
         let refreshed = try #require(try await repository.runner.status().entries.first { $0.path == current.path })
         let unstaged = try await service.diff(for: refreshed, side: .unstaged, options: options)
         try await service.apply(unstaged, file: 0, hunk: 0, discard: true)
-        #expect(try String(contentsOf: file, encoding: .utf8) == text(["func a() {", "    one", "    two", "}", "three"]))
+        let discarded = try String(contentsOf: file, encoding: .utf8)
+        #expect(discarded == text(["func a() {", "    one", "    two", "}", "three"]))
     }
 
     /// 只剩空白差异时显示为空并给出标记；快照仍按逐字节内容校验，外部只改空白也会被拒绝写入。
@@ -151,7 +158,8 @@ struct DiffOptionsTests {
         try write(["b ", "a"], to: file)
 
         let entry = try #require(try await repository.runner.status().entries.first)
-        let snapshot = try await service.diff(for: entry, side: .unstaged, options: DiffOptions(ignoresWhitespace: true))
+        let options = DiffOptions(ignoresWhitespace: true)
+        let snapshot = try await service.diff(for: entry, side: .unstaged, options: options)
         let deletion = try #require(snapshot.diff?.files.first?.hunks.first?.lines.first { $0.prefix == 45 })
 
         await #expect(throws: WorkingCopyError.whitespaceMismatch) {

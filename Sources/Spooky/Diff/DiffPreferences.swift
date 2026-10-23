@@ -21,10 +21,13 @@ enum DiffPreferences {
     ///   - showsEntireFile: 底栏的显示整个文件开关。
     ///   - defaults: 偏好来源，测试可以注入独立的偏好域。
     static func options(showsEntireFile: Bool = false, defaults: UserDefaults = .standard) -> DiffOptions {
-        let context = defaults.object(forKey: contextLinesKey) as? Int ?? DiffOptions.defaultContextLines
+        let stored = defaults.object(forKey: contextLinesKey) as? Int ?? DiffOptions.defaultContextLines
+
+        // 不在档位中的旧值或手改的值按默认行数处理
+        let context = DiffOptions.contextChoices.contains(stored) ? stored : DiffOptions.defaultContextLines
 
         return DiffOptions(
-            contextLines: DiffOptions.contextChoices.contains(context) ? context : DiffOptions.defaultContextLines,
+            contextLines: context,
             showsEntireFile: showsEntireFile,
             ignoresWhitespace: defaults.bool(forKey: ignoresWhitespaceKey)
         )

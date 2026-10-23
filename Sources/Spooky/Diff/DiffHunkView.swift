@@ -140,7 +140,11 @@ struct DiffHunkView: View {
         .padding(.trailing, 4)
         .frame(minHeight: 18)
         .background(selected.contains(line.id) ? Color.accentColor : .clear)
-        .foregroundStyle(selected.contains(line.id) ? Color(nsColor: .alternateSelectedControlTextColor) : .secondary)
+        .foregroundStyle(
+            selected.contains(line.id)
+                ? Color(nsColor: .alternateSelectedControlTextColor)
+                : .secondary
+        )
         .contentShape(Rectangle())
         .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .named(Self.coordinateSpace))
@@ -179,7 +183,9 @@ struct DiffHunkView: View {
                     })?.key
                 else { return }
 
-                for item in hunk.lines where item.isChange && (min(line.id, end) ... max(line.id, end)).contains(item.id) {
+                let range = min(line.id, end) ... max(line.id, end)
+
+                for item in hunk.lines where item.isChange && range.contains(item.id) {
                     if dragSelecting ?? false {
                         selected.insert(item.id)
                     } else {
@@ -195,7 +201,9 @@ struct DiffHunkView: View {
         guard enabled, hunk.lines.contains(where: { $0.id == id && $0.isChange }) else { return }
 
         if range, let anchor {
-            for line in hunk.lines where line.isChange && (min(anchor, id) ... max(anchor, id)).contains(line.id) {
+            let lines = min(anchor, id) ... max(anchor, id)
+
+            for line in hunk.lines where line.isChange && lines.contains(line.id) {
                 selected.insert(line.id)
             }
         } else if selected.contains(id) {
@@ -209,7 +217,8 @@ struct DiffHunkView: View {
 
     /// 没有选行时处理整块，否则使用单行或多行文案。
     private func actionTitle(_ action: String) -> String {
-        AppLocalization.text("working." + action + (selected.isEmpty ? "Chunk" : (selected.count == 1 ? "Line" : "Lines")))
+        let suffix = selected.isEmpty ? "Chunk" : (selected.count == 1 ? "Line" : "Lines")
+        return AppLocalization.text("working." + action + suffix)
     }
 
     /// 改动行的主题颜色键，上下文行没有底色。

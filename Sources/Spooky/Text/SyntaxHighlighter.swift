@@ -208,7 +208,10 @@ enum SyntaxHighlighter {
             return language
         }
 
-        if !pathExtension.isEmpty, let language = languages.first(where: { $0.extensions.contains(pathExtension) }) {
+        if
+            !pathExtension.isEmpty,
+            let language = languages.first(where: { $0.extensions.contains(pathExtension) })
+        {
             return language
         }
 
@@ -244,7 +247,10 @@ enum SyntaxHighlighter {
 
         // env 之后的第一个非选项参数才是解释器
         let program = words.first == "env" ? words.dropFirst().first { !$0.hasPrefix("-") } : words.first
-        let interpreter = program?.trimmingCharacters(in: .decimalDigits.union(CharacterSet(charactersIn: ".")))
+
+        // python3、python3.12 这类带版本号的名字按去掉版本号后的名字匹配
+        let versionCharacters = CharacterSet.decimalDigits.union(CharacterSet(charactersIn: "."))
+        let interpreter = program?.trimmingCharacters(in: versionCharacters)
 
         return languages.first { language in
             language.interpreters.contains { $0 == interpreter }

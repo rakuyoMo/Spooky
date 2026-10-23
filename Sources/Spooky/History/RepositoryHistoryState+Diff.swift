@@ -48,6 +48,10 @@ extension RepositoryHistoryState {
             throw CancellationError()
         }
 
-        return try await DiffImageSource(runner: runner).contents(of: file, path: path, newFromWorkingTree: false)
+        return try await DiffImageSource(runner: runner).contents(
+            of: file,
+            path: path,
+            newFromWorkingTree: false
+        )
     }
 }

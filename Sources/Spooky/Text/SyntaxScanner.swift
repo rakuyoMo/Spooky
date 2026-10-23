@@ -165,10 +165,16 @@ struct SyntaxScanner {
         let end = wordEnd(from: index)
         let word = String(decoding: units[index ..< end], as: UTF16.self)
         let next = nextNonSpace(from: end)
+        let keyword = language.keywords.contains(language.caseInsensitiveKeywords ? word.lowercased() : word)
+
+        // 配置语言里行首、紧跟冒号或等号的词是键
+        let key = atLineStart
+            && ((language.keys == "colon" && next == 58) || (language.keys == "equals" && next == 61))
+
         let style: SyntaxStyle? =
-            if language.keywords.contains(language.caseInsensitiveKeywords ? word.lowercased() : word) {
+            if keyword {
                 .keyword
-            } else if atLineStart, (language.keys == "colon" && next == 58) || (language.keys == "equals" && next == 61) {
+            } else if key {
                 .attributeName
             } else if next == 40 {
                 .function
@@ -188,7 +194,8 @@ struct SyntaxScanner {
 
         if let prefix = language.attributePrefix?.utf16.first, unit == prefix {
             if next == 91 {
-                emit(to: min(lineEnd(from: index), (find([93], from: index) ?? units.count) + 1), .preprocessor)
+                let close = (find([93], from: index) ?? units.count) + 1
+                emit(to: min(lineEnd(from: index), close), .preprocessor)
                 return true
             }
 
@@ -218,7 +225,8 @@ struct SyntaxScanner {
         }
 
         if next == 123 {
-            emit(to: min(lineEnd(from: index), (find([125], from: index) ?? units.count) + 1), .identifier)
+            let close = (find([125], from: index) ?? units.count) + 1
+            emit(to: min(lineEnd(from: index), close), .identifier)
         } else if Self.isWordStart(next) || Self.isDigit(next) {
             emit(to: wordEnd(from: index + 1), .identifier)
         } else if "#?@*!$-".utf16.contains(next) {

@@ -15,7 +15,8 @@ struct SyntaxHighlighterTests {
         #expect(SyntaxHighlighter.language(forPath: "Sources/App.swift", content: nil)?.name == "swift")
         #expect(SyntaxHighlighter.language(forPath: "目录 一/Makefile", content: nil)?.name == "makefile")
         #expect(SyntaxHighlighter.language(forPath: "Info.PLIST", content: nil)?.name == "xml")
-        #expect(SyntaxHighlighter.language(forPath: "tool", content: "#!/usr/bin/env python3\nprint(1)\n")?.name == "python")
+        let script = "#!/usr/bin/env python3\nprint(1)\n"
+        #expect(SyntaxHighlighter.language(forPath: "tool", content: script)?.name == "python")
         #expect(SyntaxHighlighter.language(forPath: "run", content: "#!/bin/bash -e\n")?.name == "shell")
 
         // 识别不了的扩展名、没有解释器行和超出大小上限的内容都按纯文本显示

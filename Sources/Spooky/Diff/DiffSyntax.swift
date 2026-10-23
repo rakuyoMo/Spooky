@@ -36,7 +36,9 @@ struct DiffSyntax: Sendable {
             return false
         }
 
-        return (options.showsEntireFile && !options.ignoresWhitespace) || file.addedMode != nil || file.deletedMode != nil
+        return (options.showsEntireFile && !options.ignoresWhitespace)
+            || file.addedMode != nil
+            || file.deletedMode != nil
     }
 
     /// 从整文件上下文的 Diff 重建两侧全文再着色，两侧按各自的路径识别语言。

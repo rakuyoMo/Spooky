@@ -216,7 +216,13 @@ extension SyntaxScanner {
 
     /// `[文字](地址)` 的地址部分，以及裸写的 http / https 地址。
     private mutating func scanLink(line: Int) -> Bool {
-        if units[index] == 93, index + 1 < line, units[index + 1] == 40, let close = find([41], from: index + 2), close < line {
+        if
+            units[index] == 93,
+            index + 1 < line,
+            units[index + 1] == 40,
+            let close = find([41], from: index + 2),
+            close < line
+        {
             emit(to: index + 1, nil)
             emit(to: close + 1, .url)
             return true

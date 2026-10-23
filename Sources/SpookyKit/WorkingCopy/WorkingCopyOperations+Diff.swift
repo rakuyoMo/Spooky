@@ -68,7 +68,8 @@ extension WorkingCopyOperations {
     public func patchFile(for entries: [StatusEntry], omittingPrefixes: Bool) async throws -> Data {
         let prefixes = omittingPrefixes ? ["--no-prefix"] : ["--src-prefix=a/", "--dst-prefix=b/"]
         let arguments = [
-            "--binary", "--no-color", "--no-ext-diff", "--no-textconv", "--full-index", "--no-relative", "-C", "-M",
+            "--binary", "--no-color", "--no-ext-diff", "--no-textconv",
+            "--full-index", "--no-relative", "-C", "-M",
         ] + prefixes
 
         let tracked = entries.filter { $0.kind != .untracked }.flatMap(\.operationPaths)
@@ -81,8 +82,10 @@ extension WorkingCopyOperations {
 
         // git diff 不能从标准输入读路径，分批传参，避免超出本机与 SSH 的命令长度上限
         for start in stride(from: 0, to: paths.count, by: 1000) {
+            let batch = paths[start ..< min(start + 1000, paths.count)]
+
             patch += try await runner.run(
-                ["--literal-pathspecs", "diff"] + arguments + [base, "--"] + paths[start ..< min(start + 1000, paths.count)]
+                ["--literal-pathspecs", "diff"] + arguments + [base, "--"] + batch
             )
         }
 
@@ -127,9 +130,12 @@ extension WorkingCopyOperations {
         }
 
         // 整文件上下文让全部改动落在同一块里，选中的行无论相隔多远都能一次写回
-        let exact = try RepositoryDiff(
-            patch: try await patch(for: snapshot.entry, side: snapshot.side, options: DiffOptions(showsEntireFile: true))
+        let exactPatch = try await patch(
+            for: snapshot.entry,
+            side: snapshot.side,
+            options: DiffOptions(showsEntireFile: true)
         )
+        let exact = try RepositoryDiff(patch: exactPatch)
 
         guard let matched = exact.matchingChanges(of: shown) else {
             throw WorkingCopyError.whitespaceMismatch
@@ -146,7 +152,10 @@ extension WorkingCopyOperations {
 
     /// 补丁文件的比较起点：HEAD，没有提交时为当前对象格式的空树。
     private func comparisonBase() async throws -> String {
-        let head = try await runner.execute(["rev-parse", "--verify", "--quiet", "HEAD"], acceptedExitCodes: [0, 1])
+        let head = try await runner.execute(
+            ["rev-parse", "--verify", "--quiet", "HEAD"],
+            acceptedExitCodes: [0, 1]
+        )
 
         guard head.exitCode != 0 else {
             return "HEAD"

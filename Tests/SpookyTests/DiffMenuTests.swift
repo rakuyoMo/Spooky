@@ -25,7 +25,8 @@ struct DiffMenuTests {
         // 每个档位一项，标签即行数，标题与底栏的弹出菜单一致
         #expect(context.items.map(\.tag) == DiffOptions.contextChoices)
         #expect(context.items.map(\.title) == DiffOptions.contextChoices.map(DiffPreferences.contextTitle))
-        #expect(context.items.allSatisfy { $0.action == #selector(RepositoryWindowController.setDiffContextLines(_:)) })
+        let action = #selector(RepositoryWindowController.setDiffContextLines(_:))
+        #expect(context.items.allSatisfy { $0.action == action })
 
         let actions = Set(items.compactMap(\.action))
         #expect(actions.contains(#selector(RepositoryWindowController.savePatch)))
