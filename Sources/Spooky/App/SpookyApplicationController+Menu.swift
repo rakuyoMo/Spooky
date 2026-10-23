@@ -1,4 +1,5 @@
 import AppKit
+import SpookyKit
 
 // MARK: - Menu
 
@@ -91,6 +92,7 @@ extension SpookyApplicationController {
 
         configureHistoryMenu(in: view)
         configureHistoryDiffsMenu(in: view)
+        configureDiffContextMenu(in: view)
 
         view.addItem(.separator())
         addItem(
@@ -166,6 +168,21 @@ extension SpookyApplicationController {
             )
             item.tag = threshold
             changes.addItem(item)
+        }
+    }
+
+    /// Diff 上下文行数子菜单：每个档位一项，当前值打勾。
+    private func configureDiffContextMenu(in view: NSMenu) {
+        let context = addMenu("diff.contextMenu", to: view)
+
+        for lines in DiffOptions.contextChoices {
+            let item = NSMenuItem(
+                title: DiffPreferences.contextTitle(lines),
+                action: #selector(RepositoryWindowController.setDiffContextLines(_:)),
+                keyEquivalent: ""
+            )
+            item.tag = lines
+            context.addItem(item)
         }
     }
 

@@ -446,3 +446,18 @@
 
 /* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
 "diff.error.whitespace" = "忽略空白時，選取的行與檔案中的變更對應不上。請顯示空白變更後重新選取。";
+"diff.ignoreWhitespace" = "忽略空白變更";
+"diff.showEntireFile" = "顯示整個檔案";
+"diff.context" = "上下文：";
+"diff.contextMenu" = "Diff 上下文行數";
+"diff.contextLine" = "1 行";
+"diff.contextLines" = "%ld 行";
+"diff.onlyWhitespace" = "Diff 只包含空白變更。";
+"settings.text" = "文字";
+"text.syntaxColoring" = "語法著色：";
+"text.enableSyntaxColoring" = "啟用語法著色";
+"text.syntaxColoringInDiffs" = "在 Diff 中使用語法著色";
+"text.invisibles" = "不可見字元：";
+"text.showInvisibles" = "顯示不可見字元";
+"text.tabWidth" = "Tab 寬度：";
+"text.spaces" = "個空格";

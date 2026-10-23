@@ -97,6 +97,9 @@ final class RepositorySession {
     /// 大 Diff 放行只对当前文件有效。
     var showsLargeDiff = false
 
+    /// Diff 底栏的显示整个文件开关，只属于本窗口的工作区视图，不写偏好。
+    var diffShowsEntireFile = false
+
     /// Diff 加载中仍保留旧内容。
     private(set) var isLoadingDiff = false
 
@@ -517,6 +520,10 @@ extension RepositorySession {
         let side = diffSide
         let request = generation
         let showLarge = showsLargeDiff
+
+        // 上下文与忽略空白取全局偏好，显示整个文件取本窗口的底栏开关
+        let options = DiffPreferences.options(showsEntireFile: diffShowsEntireFile)
+
         let threshold = UserDefaults.standard.object(forKey: "diffWarningKilobytes") as? Int
             ?? WorkingCopyOperations.defaultWarningKilobytes
         let service = WorkingCopyOperations(runner: makeRunner(repository))
@@ -527,7 +534,11 @@ extension RepositorySession {
                 // 服务器先记下内容哈希再读补丁：之后的修改一定使哈希不同，轮询不会漏掉。
                 let hash = remote ? try await service.worktreeHash(of: entry) : nil
                 let snapshot = try await service.diff(
-                    for: entry, side: side, warningKilobytes: threshold, showLarge: showLarge
+                    for: entry,
+                    side: side,
+                    options: options,
+                    warningKilobytes: threshold,
+                    showLarge: showLarge
                 )
                 guard let self, generation == request, !Task.isCancelled else { return }
                 diffSnapshot = snapshot

@@ -446,3 +446,18 @@
 
 /* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
 "diff.error.whitespace" = "공백을 무시하는 동안에는 선택한 줄이 파일의 변경 사항과 일치하지 않습니다. 공백 변경 사항을 표시한 후 다시 선택하십시오.";
+"diff.ignoreWhitespace" = "공백 변경 사항 무시";
+"diff.showEntireFile" = "전체 파일 보기";
+"diff.context" = "컨텍스트:";
+"diff.contextMenu" = "Diff 컨텍스트 줄 수";
+"diff.contextLine" = "1줄";
+"diff.contextLines" = "%ld줄";
+"diff.onlyWhitespace" = "Diff에 공백 변경 사항만 있습니다.";
+"settings.text" = "텍스트";
+"text.syntaxColoring" = "구문 색상:";
+"text.enableSyntaxColoring" = "구문 색상 사용";
+"text.syntaxColoringInDiffs" = "Diff에서 구문 색상 사용";
+"text.invisibles" = "보이지 않는 문자:";
+"text.showInvisibles" = "보이지 않는 문자 표시";
+"text.tabWidth" = "탭 너비:";
+"text.spaces" = "칸";

@@ -446,3 +446,18 @@
 
 /* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
 "diff.error.whitespace" = "With whitespace ignored, the selected lines don’t match the changes in the file. Show whitespace changes and select the lines again.";
+"diff.ignoreWhitespace" = "Ignore Whitespace Changes";
+"diff.showEntireFile" = "Show Entire File";
+"diff.context" = "Context:";
+"diff.contextMenu" = "Diff Context Lines";
+"diff.contextLine" = "1 line";
+"diff.contextLines" = "%ld lines";
+"diff.onlyWhitespace" = "Diff contains only whitespace changes.";
+"settings.text" = "Text";
+"text.syntaxColoring" = "Syntax coloring:";
+"text.enableSyntaxColoring" = "Enable Syntax Coloring";
+"text.syntaxColoringInDiffs" = "Syntax Coloring in Diffs";
+"text.invisibles" = "Invisibles:";
+"text.showInvisibles" = "Show invisible characters";
+"text.tabWidth" = "Tab width:";
+"text.spaces" = "spaces";

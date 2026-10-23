@@ -446,3 +446,18 @@
 
 /* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
 "diff.error.whitespace" = "Les espaces étant ignorés, les lignes sélectionnées ne correspondent pas aux modifications du fichier. Affichez les modifications d’espaces, puis sélectionnez à nouveau les lignes.";
+"diff.ignoreWhitespace" = "Ignorer les modifications d’espaces";
+"diff.showEntireFile" = "Afficher le fichier entier";
+"diff.context" = "Contexte :";
+"diff.contextMenu" = "Lignes de contexte du diff";
+"diff.contextLine" = "1 ligne";
+"diff.contextLines" = "%ld lignes";
+"diff.onlyWhitespace" = "Le diff ne contient que des modifications d’espaces.";
+"settings.text" = "Texte";
+"text.syntaxColoring" = "Coloration syntaxique :";
+"text.enableSyntaxColoring" = "Activer la coloration syntaxique";
+"text.syntaxColoringInDiffs" = "Coloration syntaxique dans les diffs";
+"text.invisibles" = "Caractères invisibles :";
+"text.showInvisibles" = "Afficher les caractères invisibles";
+"text.tabWidth" = "Largeur de tabulation :";
+"text.spaces" = "espaces";

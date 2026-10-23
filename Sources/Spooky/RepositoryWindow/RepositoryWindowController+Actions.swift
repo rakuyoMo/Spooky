@@ -203,6 +203,7 @@ extension RepositoryWindowController {
         let enabled = branchAndSyncAvailability(of: item.action, repositoryView: repositoryView)
             ?? workingCopyAvailability(of: item.action, repositoryView: repositoryView)
             ?? historyDisplayAvailability(of: item)
+            ?? diffAvailability(of: item)
 
         if let enabled {
             return enabled
