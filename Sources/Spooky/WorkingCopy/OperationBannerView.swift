@@ -83,7 +83,6 @@ extension OperationBannerView {
                 Text(hint(progress.state))
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 12)
 
                 stepProgress(progress)
