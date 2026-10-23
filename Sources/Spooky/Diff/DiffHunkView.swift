@@ -9,7 +9,7 @@ import SwiftUI
 /// 块头是分节头，行直接放进分节内容，放在懒加载栈里时只排版可见的行，显示整个文件也能流畅滚动。
 struct DiffHunkView: View {
     /// 行号拖选使用的坐标系，由外层的懒加载栈提供。
-    static let coordinateSpace = "diff-content"
+    nonisolated static let coordinateSpace = "diff-content"
 
     /// 带原始字节的块。
     let hunk: DiffHunk

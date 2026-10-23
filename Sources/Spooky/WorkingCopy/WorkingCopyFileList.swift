@@ -181,14 +181,18 @@ extension WorkingCopyFileList {
         /// 列表成为第一响应者时接管系统 Quick Look 面板。
         override func acceptsPreviewPanelControl(_: QLPreviewPanel?) -> Bool { true }
 
-        /// 面板开始显示本列表的所选文件。
+        /// 面板开始显示本列表的所选文件；Quick Look 只在主线程回调。
         override func beginPreviewPanelControl(_ panel: QLPreviewPanel?) {
-            coordinator?.quickLook.begin(panel)
+            MainActor.assumeIsolated {
+                coordinator?.quickLook.begin(panel)
+            }
         }
 
-        /// 面板不再由本列表控制。
+        /// 面板不再由本列表控制；Quick Look 只在主线程回调。
         override func endPreviewPanelControl(_ panel: QLPreviewPanel?) {
-            coordinator?.quickLook.end(panel)
+            MainActor.assumeIsolated {
+                coordinator?.quickLook.end(panel)
+            }
         }
     }
 
