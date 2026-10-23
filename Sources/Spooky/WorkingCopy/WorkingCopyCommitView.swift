@@ -72,6 +72,8 @@ struct WorkingCopyCommitView: View {
     private var bodyHeight = CommitEditorSettings.minimumBodyHeight
 
     /// 进行中横幅位于信息区上方，冲突解决后重新显示提交控件。
+    ///
+    /// 储藏恢复等没有进行中操作的冲突既没有横幅也没有提交控件，此时整块不留边距，不显示空的底色块。
     var body: some View {
         VStack(spacing: 12) {
             OperationBannerView(session: session)
@@ -88,7 +90,7 @@ struct WorkingCopyCommitView: View {
                 }
             }
         }
-        .padding(20)
+        .padding(session.conflictCount == 0 || session.context?.progress != nil ? 20 : 0)
         .background(AppPalette.color("general_header_background_color"))
         .onModifierKeysChanged(mask: .option) { _, flags in
             optionPressed = flags.contains(.option)
