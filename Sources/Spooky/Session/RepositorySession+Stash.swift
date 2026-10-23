@@ -42,7 +42,7 @@ extension RepositorySession {
         canWrite && conflictCount == 0 && !stashes.entries.isEmpty
     }
 
-    /// 储藏所选文件：文件都不能处于冲突中。
+    /// 储藏所选文件需要 HEAD 已有提交，且所选文件都不在冲突中。
     func canStash(_ entries: [StatusEntry]) -> Bool {
         canWrite && status?.branch.oid != nil && !entries.isEmpty
             && !entries.contains { $0.kind == .conflicted || $0.kind == .ignored }

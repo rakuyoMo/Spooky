@@ -111,7 +111,7 @@ public struct RepositoryStashes: Sendable {
     /// 把改动存成储藏但保留工作区。
     ///
     /// 全部已跟踪改动用 `stash create` 与 `stash store` 生成，不触碰任何文件；
-    /// 包含未跟踪文件或只取所选文件时，Git 没有不动工作区的做法，改为先储藏、再以 `--index` 原样应用回来。
+    /// 包含未跟踪文件或只取所选文件时先储藏，再以 `--index` 把同一个储藏原样应用回工作区，因为 `stash create` 不支持这两种情形。
     public func snapshot(message: String, includeUntracked: Bool, entries: [StatusEntry]? = nil) async throws {
         guard entries == nil, !includeUntracked else {
             try await runner.writeTransaction {
