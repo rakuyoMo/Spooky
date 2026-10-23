@@ -199,6 +199,9 @@ extension RepositoryStashState {
             UserDefaults.standard.object(forKey: "diffWarningKilobytes") as? Int
                 ?? WorkingCopyOperations.defaultWarningKilobytes
 
+        // 与工作区和提交详情使用同样的上下文行数与忽略空白偏好
+        let options = DiffPreferences.options()
+
         // 已跟踪文件比较储藏提交与基准提交，未跟踪文件读取第三个父提交里的新增
         diffTasks[path] = Task { [weak self] in
             do {
@@ -206,6 +209,7 @@ extension RepositoryStashState {
                     .diff(
                         in: change.commit,
                         file: change.file,
+                        options: options,
                         warningKilobytes: threshold,
                         showLarge: showLarge
                     )
@@ -220,6 +224,28 @@ extension RepositoryStashState {
             loadingPaths.remove(path)
             diffTasks[path] = nil
         }
+    }
+
+    /// 上下文行数或忽略空白改变后丢弃已读的补丁，重新读取展开的文件。
+    func reloadDiffs() {
+        for task in diffTasks.values { task.cancel() }
+        diffTasks = [:]
+        loadingPaths = []
+        diffs = [:]
+        diffFailures = [:]
+
+        for path in expandedPaths {
+            loadDiff(path)
+        }
+    }
+
+    /// 所选储藏里一个文件的只读补丁来源，供语法着色与图片对照读取内容；没有选中储藏或文件不在变更里时为空。
+    func diffSource(path: String) -> CommitFileDiffSource? {
+        guard let runner, let change = changes.first(where: { $0.id == path }) else {
+            return nil
+        }
+
+        return CommitFileDiffSource(runner: runner, commit: change.commit, file: change.file)
     }
 
     /// 全部展开或收起；补丁仍逐文件按需读取。

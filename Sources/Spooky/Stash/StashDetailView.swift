@@ -28,6 +28,7 @@ struct StashDetailView: View {
                 ScrollView {
                     scrollContent(stash)
                 }
+                .reloadsOnDiffPreferenceChange { stashes.reloadDiffs() }
             }
         } else if stashes.selectedIDs.count > 1 {
             VStack(spacing: 20) {
@@ -225,7 +226,7 @@ private struct StashFileLabel: View {
 
 // MARK: - StashFileDiffView
 
-/// 单文件的只读补丁，沿用工作区的块渲染、字体与主题。
+/// 单文件的只读补丁：读取失败、读取中与已读取的补丁各有明确状态，补丁复用只读 Diff 视图。
 private struct StashFileDiffView: View {
     /// 当前储藏的读取状态。
     let stashes: RepositoryStashState
@@ -233,69 +234,21 @@ private struct StashFileDiffView: View {
     /// 展开的文件路径。
     let path: String
 
-    /// 当前外观决定使用哪一套所选主题。
-    @Environment(\.colorScheme)
-    private var colorScheme
-
-    /// 一个制表符占的空格数。
-    @AppStorage(TextPreferences.tabWidthKey)
-    private var tabWidth = TextPreferences.defaultTabWidth
-
-    /// 标出不可见字符。
-    @AppStorage(TextPreferences.showsInvisiblesKey)
-    private var showsInvisibles = false
-
-    /// 补丁、二进制、超限和失败各自有明确状态。
+    /// 失败可重试，补丁读取完成前显示进度。
     var body: some View {
-        let style = TextStyle(
-            theme: TextTheme.current(dark: colorScheme == .dark),
-            tabWidth: tabWidth,
-            showsInvisibles: showsInvisibles
-        )
-
-        VStack(alignment: .leading, spacing: 0) {
-            if let failure = stashes.diffFailures[path] {
-                FailureDetailsView(failure: failure) { stashes.loadDiff(path) }
-                    .padding(20)
-            } else if let result = stashes.diffs[path] {
-                if let diff = result.diff {
-                    ForEach(diff.files) { file in
-                        fileDiff(file, style: style)
-                    }
-                } else {
-                    Text(AppLocalization.text("working.largeDiff", (result.byteCount + 999) / 1000))
-                        .padding(12)
-
-                    Button(AppLocalization.text("working.showDiff")) {
-                        stashes.loadDiff(path, showLarge: true)
-                    }
-                    .padding(12)
-                }
-            } else {
-                ProgressView(AppLocalization.text("working.loadingDiff"))
-                    .controlSize(.small)
-                    .padding(20)
+        if let failure = stashes.diffFailures[path] {
+            FailureDetailsView(failure: failure) { stashes.loadDiff(path) }
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else if let result = stashes.diffs[path], let source = stashes.diffSource(path: path) {
+            ReadOnlyFileDiffView(result: result, source: source) {
+                stashes.loadDiff(path, showLarge: true)
             }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(style.color("background"))
-    }
-
-    /// 补丁头、二进制提示与只读的块。
-    @ViewBuilder
-    private func fileDiff(_ file: DiffFile, style: TextStyle) -> some View {
-        DiffFileHeader(file: file, style: style)
-
-        if file.isBinary { Text(AppLocalization.text("working.binary")).padding(20) }
-
-        ForEach(file.hunks) { hunk in
-            DiffHunkView(
-                hunk: hunk,
-                style: style,
-                staged: false,
-                enabled: false,
-                readOnly: true
-            ) { _, _ in }
+        } else {
+            ProgressView(AppLocalization.text("working.loadingDiff"))
+                .controlSize(.small)
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

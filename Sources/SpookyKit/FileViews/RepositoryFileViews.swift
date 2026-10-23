@@ -171,6 +171,17 @@ public struct RepositoryFileViews: Sendable {
         self.runner = runner
     }
 
+    /// 文件历史里一个文件在某个提交中的改动；不跨重命名追踪，原路径为空。
+    public static func change(of path: String) -> CommitFileChange {
+        CommitFileChange(
+            path: path,
+            originalPath: nil,
+            status: "M",
+            additions: nil,
+            deletions: nil
+        )
+    }
+
     /// 读取修改过该文件的一页提交，从指定提交开始向前；不跨越重命名追踪。
     ///
     /// - Parameters:
@@ -305,21 +316,24 @@ public struct RepositoryFileViews: Sendable {
     }
 
     /// 该文件在指定提交中的补丁，与第一父提交比较。
+    ///
+    /// - Parameters:
+    ///   - path: 树中存储的路径。
+    ///   - commit: 提交哈希。
+    ///   - options: 上下文行数、显示整个文件与忽略空白。
+    ///   - warningKilobytes: 大 Diff 警告阈值，超过时不解析。
+    ///   - showLarge: 是否放行超过阈值的补丁。
     public func diff(
         of path: String,
         in commit: String,
+        options: DiffOptions = DiffOptions(),
         warningKilobytes: Int = WorkingCopyOperations.defaultWarningKilobytes,
         showLarge: Bool = false
     ) async throws -> CommitDiff {
         try await RepositoryHistory(runner: runner).diff(
             in: commit,
-            file: CommitFileChange(
-                path: path,
-                originalPath: nil,
-                status: "M",
-                additions: nil,
-                deletions: nil
-            ),
+            file: Self.change(of: path),
+            options: options,
             warningKilobytes: warningKilobytes,
             showLarge: showLarge
         )

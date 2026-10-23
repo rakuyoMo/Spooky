@@ -370,8 +370,12 @@ struct FileHistoryDetailView: View {
         if let failure = state.detailFailure {
             FailureDetailsView(failure: failure) { state.loadDetail() }
                 .padding(20)
-        } else if state.detailMode == .diff, let diff = state.diff {
-            FileDiffContentView(result: diff) { state.loadDetail(showLarge: true) }
+        } else if state.detailMode == .diff, let diff = state.diff, let source = state.detailSource {
+            ScrollView {
+                ReadOnlyFileDiffView(result: diff, source: source) { state.loadDetail(showLarge: true) }
+            }
+            .background(TextTheme.current(dark: colorScheme == .dark).colors["background"]?.color ?? .clear)
+            .reloadsOnDiffPreferenceChange { state.loadDetail() }
         } else if state.detailMode == .raw, let content = state.content {
             raw(content, commit: commit)
         } else {

@@ -160,6 +160,15 @@ final class FileHistoryState {
         )
     }
 
+    /// 所选提交里这个文件的只读补丁来源，供语法着色与图片对照读取内容；没有选中提交时为空。
+    var detailSource: CommitFileDiffSource? {
+        guard let commit = selectedCommit, let path, let runner else {
+            return nil
+        }
+
+        return CommitFileDiffSource(runner: runner, commit: commit.id, file: RepositoryFileViews.change(of: path))
+    }
+
     /// 打开一个文件的历史，从当前 HEAD 开始读取；条件与选择都重置。
     func open(_ path: String, head: String?, runner: GitRunner) {
         close()
@@ -309,6 +318,9 @@ final class FileHistoryState {
         let mode = detailMode
         let threshold = UserDefaults.standard.object(forKey: "diffWarningKilobytes") as? Int
             ?? WorkingCopyOperations.defaultWarningKilobytes
+
+        // 与工作区和提交详情使用同样的上下文行数与忽略空白偏好
+        let options = DiffPreferences.options()
         isLoadingDetail = true
 
         detailTask = Task { [weak self] in
@@ -320,6 +332,7 @@ final class FileHistoryState {
                     ? try await views.diff(
                         of: path,
                         in: commit.id,
+                        options: options,
                         warningKilobytes: threshold,
                         showLarge: showLarge
                     )

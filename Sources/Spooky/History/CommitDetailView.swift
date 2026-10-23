@@ -295,7 +295,7 @@ private struct CommitMetadataView: View {
 
 // MARK: - CommitFileDiffView
 
-/// 单文件历史 Diff 复用工作区的块渲染、字体和主题，不提供写操作。
+/// 单文件历史 Diff：读取失败、读取中与已读取的补丁各有明确状态，补丁复用只读 Diff 视图。
 struct CommitFileDiffView: View {
     /// 当前提交的加载状态。
     let history: RepositoryHistoryState
@@ -303,99 +303,21 @@ struct CommitFileDiffView: View {
     /// 已选择或展开的文件路径。
     let path: String
 
-    /// 当前外观决定使用哪一套所选主题。
-    @Environment(\.colorScheme)
-    private var colorScheme
-
-    /// 一个制表符占的空格数。
-    @AppStorage(TextPreferences.tabWidthKey)
-    private var tabWidth = TextPreferences.defaultTabWidth
-
-    /// 标出不可见字符。
-    @AppStorage(TextPreferences.showsInvisiblesKey)
-    private var showsInvisibles = false
-
-    /// 语法着色总开关。
-    @AppStorage(TextPreferences.syntaxColoringKey)
-    private var colorsSyntax = true
-
-    /// Diff 中的语法着色。
-    @AppStorage(TextPreferences.diffSyntaxColoringKey)
-    private var colorsDiffSyntax = false
-
-    /// 两侧全文的语法片段，只由提交内容决定，显示选项改变后仍然适用。
-    @State
-    private var syntax: DiffSyntax?
-
-    /// 补丁、二进制、超限和失败各自有明确状态。
+    /// 失败可重试，补丁读取完成前显示进度。
     var body: some View {
-        let style = TextStyle(
-            theme: TextTheme.current(dark: colorScheme == .dark),
-            tabWidth: tabWidth,
-            showsInvisibles: showsInvisibles
-        )
-
-        VStack(alignment: .leading, spacing: 0) {
-            if let failure = history.diffFailures[path] {
-                FailureDetailsView(failure: failure) { history.loadDiff(path) }
-                    .padding(20)
-            } else if let result = history.diffs[path] {
-                if result.onlyWhitespaceChanges {
-                    DiffNotice(key: "diff.onlyWhitespace", style: style)
-                }
-
-                if let diff = result.diff {
-                    ForEach(diff.files) { file in
-                        fileDiff(file, style: style)
-                    }
-                } else {
-                    Text(AppLocalization.text("working.largeDiff", (result.byteCount + 999) / 1000))
-                        .padding(12)
-                    Button(AppLocalization.text("working.showDiff")) {
-                        history.loadDiff(path, showLarge: true)
-                    }
-                    .padding(12)
-                }
-            } else {
-                ProgressView(AppLocalization.text("working.loadingDiff"))
-                    .controlSize(.small)
-                    .padding(20)
+        if let failure = history.diffFailures[path] {
+            FailureDetailsView(failure: failure) { history.loadDiff(path) }
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else if let result = history.diffs[path], let source = history.diffSource(path: path) {
+            ReadOnlyFileDiffView(result: result, source: source) {
+                history.loadDiff(path, showLarge: true)
             }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(style.color("background"))
-        .task(id: [colorsSyntax, colorsDiffSyntax, history.diffs[path]?.diff != nil]) {
-            guard let diff = history.diffs[path]?.diff else {
-                return
-            }
-
-            syntax = await history.diffSyntax(path: path, diff: diff)
-        }
-    }
-
-    /// 单个文件的补丁头、二进制提示与只读的块。
-    @ViewBuilder
-    private func fileDiff(_ file: DiffFile, style: TextStyle) -> some View {
-        DiffFileHeader(file: file, style: style)
-
-        if ImageDiffView.isImage(file, path: path) {
-            // 图片换成两侧对照，两侧都取自对象库
-            ImageDiffView(placement: .top, id: (history.selectedCommit?.id ?? "") + "\u{0}" + path) {
-                try await history.imageContents(path: path, file: file)
-            }
-        } else if file.isBinary {
-            Text(AppLocalization.text("working.binary")).padding(20)
-        }
-
-        ForEach(file.hunks) { hunk in
-            DiffHunkView(
-                hunk: hunk,
-                style: style,
-                spans: { syntax?.spans(for: $0) },
-                staged: false,
-                enabled: false,
-                readOnly: true
-            ) { _, _ in }
+        } else {
+            ProgressView(AppLocalization.text("working.loadingDiff"))
+                .controlSize(.small)
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
