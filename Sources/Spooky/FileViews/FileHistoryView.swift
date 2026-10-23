@@ -375,7 +375,9 @@ struct FileHistoryDetailView: View {
         } else if state.detailMode == .raw, let content = state.content {
             raw(content, commit: commit)
         } else {
-            ProgressView(AppLocalization.text(state.detailMode == .diff ? "working.loadingDiff" : "showFile.loading"))
+            let key = state.detailMode == .diff ? "working.loadingDiff" : "showFile.loading"
+
+            ProgressView(AppLocalization.text(key))
                 .controlSize(.small)
         }
     }

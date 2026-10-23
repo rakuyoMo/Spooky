@@ -62,7 +62,7 @@ struct FileContentView: View {
 
             Spacer(minLength: 8)
 
-            FileActionBar(actions: actions, hovering: hovering)
+            FileActionBar(actions: navigationActions, hovering: hovering)
 
             Picker("", selection: $state.mode) {
                 Text(AppLocalization.text("showFile.raw")).tag(FileContentMode.raw)
@@ -77,7 +77,7 @@ struct FileContentView: View {
         .padding(.horizontal, 12)
         .frame(height: 40)
         .background(AppPalette.color("general_header_background_color"))
-        .modifier(FileActionHeader(actions: actions, hovering: $hovering))
+        .modifier(FileActionHeader(actions: headerActions, hovering: $hovering))
     }
 
     /// 版本按钮：显示短哈希或 HEAD，点开版本选择器。
@@ -136,11 +136,10 @@ struct FileContentView: View {
         }
     }
 
-    /// 动作条、头部右键菜单与正文右键菜单共用的动作。
-    private var actions: [FileViewAction] {
+    /// 动作条上的动作：文件历史与回到当前版本的提交。
+    private var navigationActions: [FileViewAction] {
         let path = state.path ?? ""
         let revision = state.resolvedRevision
-        let available = revision != nil && state.content?.data != nil
 
         return [
             FileViewAction(title: AppLocalization.text("fileHistory.title")) {
@@ -149,7 +148,16 @@ struct FileContentView: View {
             FileViewAction(title: AppLocalization.text("fileHistory.showCommit"), enabled: revision != nil) {
                 if let revision { session.showCommit(id: revision) }
             },
-        ] + contentActions(path: path, revision: revision, available: available)
+        ]
+    }
+
+    /// 头部右键菜单的动作：动作条上的动作，再加复制、导出与用默认程序打开。
+    private var headerActions: [FileViewAction] {
+        let revision = state.resolvedRevision
+        let available = revision != nil && state.content?.data != nil
+
+        return navigationActions
+            + contentActions(path: state.path ?? "", revision: revision, available: available)
     }
 
     /// 读取完成后才显示的内容：失败、不能显示的说明、原文或逐行追溯。

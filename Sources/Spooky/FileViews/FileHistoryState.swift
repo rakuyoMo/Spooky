@@ -317,9 +317,16 @@ final class FileHistoryState {
 
                 // 原文与补丁分别读取，切换显示方式时才读另一种
                 let diff = mode == .diff
-                    ? try await views.diff(of: path, in: commit.id, warningKilobytes: threshold, showLarge: showLarge)
+                    ? try await views.diff(
+                        of: path,
+                        in: commit.id,
+                        warningKilobytes: threshold,
+                        showLarge: showLarge
+                    )
                     : nil
-                let content = mode == .raw ? try await FileRevisionContent.load(path, at: commit.id, views: views) : nil
+                let content = mode == .raw
+                    ? try await FileRevisionContent.load(path, at: commit.id, views: views)
+                    : nil
 
                 guard let self, generation == request, selectedID == commit.id, !Task.isCancelled else {
                     return
@@ -394,7 +401,11 @@ extension FileHistoryState {
     }
 
     /// 时间线的起点：按版本范围筛选时是该版本，版本不存在时没有起点，其余情况是 HEAD。
-    private static func root(for filter: FileHistoryFilter, head: String, runner: GitRunner) async throws -> String? {
+    private static func root(
+        for filter: FileHistoryFilter,
+        head: String,
+        runner: GitRunner
+    ) async throws -> String? {
         guard filter.scope == .revision, !filter.trimmedText.isEmpty else {
             return head
         }

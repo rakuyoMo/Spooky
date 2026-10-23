@@ -136,7 +136,9 @@ struct FileTextView: NSViewRepresentable {
 
         /// 单击注释：高亮同一提交的所有段，并在注释旁弹出摘要。
         func annotationClicked(_ index: Int, rect: NSRect, in view: NSView) {
-            guard let annotations = parent.annotations, let commit = annotations.commits[annotations.groups[index].commitID]
+            guard
+                let annotations = parent.annotations,
+                let commit = annotations.commits[annotations.groups[index].commitID]
             else { return }
 
             parent.highlight?(commit.id)
@@ -321,8 +323,13 @@ final class FileTextDocumentView: NSTextView {
 
             if group.commitID == annotations.highlightedCommit {
                 style.highlight.setFill()
-                NSRect(x: rect.minX, y: top, width: rect.width, height: CGFloat(group.lineCount) * style.lineHeight)
-                    .fill()
+                NSRect(
+                    x: rect.minX,
+                    y: top,
+                    width: rect.width,
+                    height: CGFloat(group.lineCount) * style.lineHeight
+                )
+                .fill()
             }
 
             if index > 0 {
@@ -419,6 +426,9 @@ final class FileGutterView: NSRulerView {
         clientView = document
         reservedThicknessForMarkers = 0
         reservedThicknessForAccessoryView = 0
+
+        // 标尺只在自己的范围内绘制，不画到正文上方的头部里
+        clipsToBounds = true
 
         scrollView.contentView.postsBoundsChangedNotifications = true
         NotificationCenter.default.addObserver(
