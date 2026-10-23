@@ -141,14 +141,7 @@ struct AppFailure: Identifiable {
             kind = .repository
 
         case let remote as RemoteConnectionError:
-            // 写入中途断线的结果未知，统一提示先核对仓库，不能引导用户直接重试。
-            let interrupted = writing && [.unavailable, .protocolFailure].contains(remote.kind)
-            let remoteKind = interrupted ? .interruptedWrite : remote.kind
-            key = "remoteError." + remoteKind.rawValue
-            recoveryKey = key + ".help"
-            kind = Self.kind(of: remoteKind)
-            output = remote.result
-            diagnostic = remote.diagnostic
+            (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: remote, writing: writing)
 
         case let terminal as TerminalLaunchError:
             key = "error.terminal"
@@ -208,6 +201,18 @@ struct AppFailure: Identifiable {
         .joined(separator: "\n")
 
         details = raw.isEmpty ? AppLocalization.text("error.noOutput") : raw
+    }
+
+    /// 服务器连接错误的文案键、类别、恢复说明与原文；写入中途断线的结果未知，统一提示先核对仓库，不能引导用户直接重试。
+    private static func classification(
+        of remote: RemoteConnectionError,
+        writing: Bool
+    ) -> (key: String, kind: FailureKind, recoveryKey: String, output: GitCommandResult?, diagnostic: String?) {
+        let interrupted = writing && [.unavailable, .protocolFailure].contains(remote.kind)
+        let remoteKind = interrupted ? .interruptedWrite : remote.kind
+        let key = "remoteError." + remoteKind.rawValue
+
+        return (key, kind(of: remoteKind), key + ".help", remote.result, remote.diagnostic)
     }
 
     /// 发起同步前仓库条件不满足时的文案键与类别，这类失败都属于仓库状态问题。

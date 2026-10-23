@@ -79,60 +79,81 @@ private struct GeneralSettingsView: View {
     @AppStorage(RepositorySession.keepsConflictBackupsKey)
     private var keepsConflictBackups = false
 
-    /// General 表单的控件列固定为 278 pt。
+    /// General 表单按功能分组，组间以分隔线隔开；控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
             terminalRow
 
-            GridRow {
-                Text(AppLocalization.text("working.diffThreshold"))
-                    .gridColumnAlignment(.trailing)
-                TextField("", value: $diffWarning, format: .number.grouping(.never))
-                    .frame(width: 100, alignment: .leading)
-                    .accessibilityLabel(AppLocalization.text("working.diffThreshold"))
-                    .onChange(of: diffWarning) { diffWarning = max(0, min(diffWarning, 268_435)) }
-            }
+            Divider()
+                .gridCellUnsizedAxes(.horizontal)
 
-            GridRow {
-                Text(AppLocalization.text("history.pageSize"))
-                Picker("", selection: $historyPageSize) {
-                    ForEach([100, 200, 500, 1000], id: \.self) {
-                        Text(AppLocalization.text("history.commitCount", $0)).tag($0)
-                    }
-                }
-                .labelsHidden()
-                .frame(width: 278)
-                .accessibilityLabel(AppLocalization.text("history.pageSize"))
-            }
+            operationRows
 
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                Toggle(AppLocalization.text("stash.offerAutoStash"), isOn: $offerAutoStash)
-                    .frame(width: 278, alignment: .leading)
-            }
+            Divider()
+                .gridCellUnsizedAxes(.horizontal)
 
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                Toggle(AppLocalization.text("branch.cleanNames"), isOn: $cleanRefNames)
-                    .frame(width: 278, alignment: .leading)
-            }
+            historyRows
 
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                Toggle(AppLocalization.text("conflict.keepBackups"), isOn: $keepsConflictBackups)
-                    .frame(width: 278, alignment: .leading)
-            }
+            Divider()
+                .gridCellUnsizedAxes(.horizontal)
 
             WorkingCopySettingsRows()
         }
         .padding(40)
-        .frame(width: 900, height: 380, alignment: .top)
+        .frame(width: 900, height: 480, alignment: .top)
     }
 }
 
 // MARK: - Private
 
 extension GeneralSettingsView {
+    /// 操作相关的三个开关：被本地改动挡住时询问储藏、输入时规范引用名、覆盖冲突文件前保留备份。
+    @ViewBuilder
+    private var operationRows: some View {
+        GridRow {
+            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+            Toggle(AppLocalization.text("stash.offerAutoStash"), isOn: $offerAutoStash)
+                .frame(width: 278, alignment: .leading)
+        }
+
+        GridRow {
+            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+            Toggle(AppLocalization.text("branch.cleanNames"), isOn: $cleanRefNames)
+                .frame(width: 278, alignment: .leading)
+        }
+
+        GridRow {
+            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+            Toggle(AppLocalization.text("conflict.keepBackups"), isOn: $keepsConflictBackups)
+                .frame(width: 278, alignment: .leading)
+        }
+    }
+
+    /// 历史每页条数与大 Diff 的警告阈值。
+    @ViewBuilder
+    private var historyRows: some View {
+        GridRow {
+            Text(AppLocalization.text("history.pageSize"))
+            Picker("", selection: $historyPageSize) {
+                ForEach([100, 200, 500, 1000], id: \.self) {
+                    Text(AppLocalization.text("history.commitCount", $0)).tag($0)
+                }
+            }
+            .labelsHidden()
+            .frame(width: 278)
+            .accessibilityLabel(AppLocalization.text("history.pageSize"))
+        }
+
+        GridRow {
+            Text(AppLocalization.text("working.diffThreshold"))
+                .gridColumnAlignment(.trailing)
+            TextField("", value: $diffWarning, format: .number.grouping(.never))
+                .frame(width: 100, alignment: .leading)
+                .accessibilityLabel(AppLocalization.text("working.diffThreshold"))
+                .onChange(of: diffWarning) { diffWarning = max(0, min(diffWarning, 268_435)) }
+        }
+    }
+
     /// 终端选择行，每个候选显示应用图标与名称。
     private var terminalRow: some View {
         GridRow {

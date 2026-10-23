@@ -401,17 +401,13 @@ final class RepositorySession {
 
                 // 状态没有变化的轮询不再重复读取身份、引用、补充清单和 Diff，减少服务器往返。
                 if loadsRepositoryDetails {
-                    if full || statusChanged {
-                        loadContext()
-                        loadCommitConfiguration()
-                        history.refresh(status: status, runner: makeRunner(repository), reload: full)
-                        stashes.refresh(runner: makeRunner(repository))
-                        loadWorkingTreeFiles()
-                    }
-
-                    if full || statusChanged || contentChanged(probe, hash: hash) {
-                        loadDiff()
-                    }
+                    loadDetails(
+                        of: status,
+                        in: repository,
+                        full: full,
+                        statusChanged: statusChanged,
+                        contentChanged: contentChanged(probe, hash: hash)
+                    )
                 }
             } catch {
                 guard let self, generation == request, !Task.isCancelled else {
@@ -428,7 +424,11 @@ final class RepositorySession {
             finishRefresh()
         }
     }
+}
 
+// MARK: - Lifecycle
+
+extension RepositorySession {
     /// 结束当前读取并清空仓库，视图状态存入窗口缓存；不影响 App 的其它窗口和进程。
     func close() {
         if let repository {
@@ -735,6 +735,27 @@ extension RepositorySession {
 
         if let selected = selectedID {
             selectedID = retainedID(selected)
+        }
+    }
+
+    /// 刷新成功后按需重读其余视图数据：状态变化或完整刷新时重读身份、提交配置、引用、储藏与补充清单，所选文件内容变化时另外重读 Diff。
+    private func loadDetails(
+        of status: WorkingCopyStatus,
+        in repository: RepositoryLocation,
+        full: Bool,
+        statusChanged: Bool,
+        contentChanged: Bool
+    ) {
+        if full || statusChanged {
+            loadContext()
+            loadCommitConfiguration()
+            history.refresh(status: status, runner: makeRunner(repository), reload: full)
+            stashes.refresh(runner: makeRunner(repository))
+            loadWorkingTreeFiles()
+        }
+
+        if full || statusChanged || contentChanged {
+            loadDiff()
         }
     }
 
