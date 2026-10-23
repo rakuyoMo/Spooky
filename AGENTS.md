@@ -125,6 +125,15 @@ LICENSE                       GPL-3.0 许可证全文
 - 文件读写使用 `RepositoryFiles`；SFTP 经 `RemoteConnection.sftpCommand()` 接入同一主连接，读写分别遵循主机并发和仓库写队列规则
 - 工作区 UI 通过 `WorkingCopyOperations` 发起写入；组合操作用 `GitRunner.writeTransaction` 持有仓库锁，补丁以原始字节生成并核对快照，路径列表经字面 NUL 输入传递
 
+### 日志
+
+- 使用 `os.Logger`，subsystem 为 `com.rakuyo.spooky`，category 为所在类型名；每个类型声明一个 `private static let logger`，`@MainActor` 类型再加 `nonisolated`
+- 日志用中文，只记连接状态切换、远端会话的建立与关闭、Git 命令的失败与取消、写操作的起止与失败、回调请求、文件监听失败和退出超时；成功的读取不记
+- 退出码、错误类别、状态名、Git 子命令名与操作名用 `privacy: .public`；仓库路径、主机别名等用户数据用 `privacy: .private`
+- 不记命令参数、命令输出、提交信息、凭据、口令与环境变量；Git 命令只记 `RepositoryOperationQueue.command(in:)` 取出的子命令名
+- 日志插值里引用属性时先取到局部常量：格式化会删掉插值中的 `self.`，而编译器要求显式写出
+- 实时查看：`log stream --predicate 'subsystem == "com.rakuyo.spooky"' --level info`
+
 ### 测试
 
 - 新增或修改 Git 输出解析时，测试覆盖成功输出、路径特殊字符和格式错误

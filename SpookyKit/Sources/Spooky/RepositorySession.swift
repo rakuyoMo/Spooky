@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 import SpookyKit
 
 // MARK: - RepositoryView
@@ -44,6 +45,9 @@ struct InterruptedWrite {
 @MainActor
 @Observable
 final class RepositorySession {
+    /// 写操作、刷新失败与重连核对的日志；只记操作名与错误类别，不记路径和 Git 输出。
+    private nonisolated static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "RepositorySession")
+
     /// 历史和引用与工作区共用一个窗口生命周期。
     let history = RepositoryHistoryState()
 
@@ -731,6 +735,7 @@ extension RepositorySession {
         let activity = recordsActivity ? RepositoryActivity(repository: repository, title: title) : nil
         if let activity { RepositoryActivities.shared.insert(activity) }
         let (outputs, continuation) = AsyncStream<GitOutputEvent>.makeStream()
+        Self.logger.info("写操作开始：\(title, privacy: .public)")
 
         writeTask = Task { [weak self] in
             let collector = Task { @MainActor in
@@ -740,12 +745,17 @@ extension RepositorySession {
             do {
                 try await action(runner) { continuation.yield($0) }
                 activity?.state = Task.isCancelled ? "activity.cancelled" : "activity.finished"
+                Self.logger.info("写操作\(Task.isCancelled ? "已取消" : "完成", privacy: .public)：\(title, privacy: .public)")
+
                 if let self, generation == request, !Task.isCancelled { success?() }
             } catch {
                 let cancelled =
                     Task.isCancelled || error is CancellationError
                         || ((error as? GitError)?.isCancelled ?? false)
                 activity?.state = cancelled ? "activity.cancelled" : "activity.failed"
+
+                // 失败的类别在 reportWriteFailure 归类后记录，这里只记取消
+                if cancelled { Self.logger.info("写操作已取消：\(title, privacy: .public)") }
 
                 if let self, generation == request {
                     reportWriteFailure(error, cancelled: cancelled, title: title, branch: branch, in: repository)
@@ -813,6 +823,7 @@ extension RepositorySession {
 
         let failure = AppFailure(error: error, opening: false, location: repository)
         self.failure = failure
+        Self.logger.error("刷新失败，类别 \(failure.kind.rawValue, privacy: .public)")
 
         if error is RemoteConnectionError {
             reconnect()
@@ -852,12 +863,14 @@ extension RepositorySession {
         if !cancelled || remoteFailure?.kind == .cancellationUnconfirmed {
             let failure = AppFailure(error: error, opening: false, location: repository, writing: true)
             self.failure = failure
+            Self.logger.error("写操作失败：\(title, privacy: .public)，类别 \(failure.kind.rawValue, privacy: .public)")
             onFailure?(failure)
         }
 
         // 结果未知的服务器写入不重试，等待重连核对后再报告。
         if remoteFailure != nil {
             interruptedWrite = InterruptedWrite(title: title, branch: branch, time: Date())
+            Self.logger.error("服务器写入在断线中中断，等待重连核对：\(title, privacy: .public)")
             reconnect()
         }
     }
@@ -889,6 +902,10 @@ extension RepositorySession {
         if let interruptedWrite {
             let checked = recovery.flatMap { $0.checkedAt >= interruptedWrite.time ? $0 : nil }
             self.interruptedWrite = nil
+            Self.logger
+                .info(
+                    "中断的写入已核对：\(interruptedWrite.title, privacy: .public)，\(checked == nil ? "未在服务器上开始" : "取得中断后的核对结果", privacy: .public)"
+                )
             onRecovery?(interruptedWrite, checked)
         }
 

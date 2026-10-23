@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import Testing
 
 @testable import SpookyKit
@@ -71,5 +72,49 @@ struct GitRunnerTests {
 
         #expect(error?.exitCode == 128)
         #expect(error?.message.contains("cannot change to") ?? false)
+    }
+
+    /// 参数里可能有带凭据的地址，失败日志只能留下子命令名、退出码与错误类别。
+    @Test("Git 失败日志只记子命令名，不记参数")
+    func failureLogOmitsArguments() async throws {
+        let temporary = try TemporaryRepository()
+        defer { temporary.remove() }
+        try await temporary.initialize()
+
+        // 不存在的修订让 git show 以 128 退出；修订名充当可识别的假凭据
+        let secret = "spooky-secret-" + UUID().uuidString
+        let started = Date()
+
+        await #expect(throws: GitError.self) {
+            try await temporary.runner.execute(["show", secret])
+        }
+
+        let messages = try await loggedMessages(since: started) { $0.contains("show") }
+        #expect(messages.contains { $0.contains("show") && $0.contains("128") })
+        #expect(!messages.contains { $0.contains(secret) })
+    }
+
+    /// 读取本进程在指定时间之后写入的应用日志，出现目标条目或重试用尽为止。
+    ///
+    /// 日志库按创建时刻取快照，所以每次重试都重新打开。
+    private func loggedMessages(
+        since date: Date,
+        until found: (String) -> Bool
+    ) async throws -> [String] {
+        let predicate = NSPredicate(format: "subsystem == %@", "com.rakuyo.spooky")
+        var messages: [String] = []
+
+        for _ in 0 ..< 5 {
+            let store = try OSLogStore(scope: .currentProcessIdentifier)
+            messages = try store
+                .getEntries(at: store.position(date: date), matching: predicate)
+                .compactMap { ($0 as? OSLogEntryLog)?.composedMessage }
+
+            if messages.contains(where: found) { break }
+
+            try await Task.sleep(for: .milliseconds(200))
+        }
+
+        return messages
     }
 }

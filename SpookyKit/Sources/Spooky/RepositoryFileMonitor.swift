@@ -1,9 +1,13 @@
 import CoreServices
 import Foundation
+import os
 
 /// 本机工作区的递归文件事件监听，Git 目录与新建子目录同样触发刷新。
 @MainActor
 final class RepositoryFileMonitor {
+    /// 监听失败的日志：失败后本机仓库只能靠手动刷新与窗口激活刷新。
+    private nonisolated static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "RepositoryFileMonitor")
+
     /// FSEvents 持有的流，由本对象负责停止和释放。
     private var stream: FSEventStreamRef? = nil
 
@@ -41,9 +45,15 @@ final class RepositoryFileMonitor {
             FSEventStreamCreateFlags(kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagUseCFTypes)
         )
 
-        if let stream {
-            FSEventStreamSetDispatchQueue(stream, .main)
-            FSEventStreamStart(stream)
+        guard let stream else {
+            Self.logger.error("无法创建文件事件流：\(path, privacy: .private)")
+            return
+        }
+
+        FSEventStreamSetDispatchQueue(stream, .main)
+
+        if !FSEventStreamStart(stream) {
+            Self.logger.error("文件事件流启动失败：\(path, privacy: .private)")
         }
     }
 
