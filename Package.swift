@@ -49,7 +49,13 @@ let package = Package(
         .executableTarget(
             name: "Spooky",
             dependencies: ["SpookyKit"],
-            exclude: ["Info.plist", "AppIcon.icns"],
+            exclude: [
+                "Info.plist",
+                "AppIcon/AppIcon.icns",
+                "AppIcon/AppIconConnected.icns",
+                "AppIcon/AppIconDark.icns",
+                "AppIcon/AppIconDarkConnected.icns",
+            ],
             resources: [.process("Resources")],
             linkerSettings: [
                 .unsafeFlags([

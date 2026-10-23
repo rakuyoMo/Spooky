@@ -104,6 +104,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         showRepositories()
         restoreFrame()
         observeToolbarState()
+        observeConnectionState()
     }
 
     /// 窗口由代码构建，不从归档恢复控制器。
@@ -598,6 +599,19 @@ extension RepositoryWindowController {
             Task { @MainActor in
                 self?.window?.toolbar?.validateVisibleItems()
                 self?.observeToolbarState()
+            }
+        }
+    }
+
+    /// 连接状态变化后通知应用，App 图标上的指示灯随所有窗口的连接状态亮灭。
+    private func observeConnectionState() {
+        withObservationTracking {
+            _ = session.connectionState
+        } onChange: { [weak self] in
+            // 变更通知早于新值写入，下一轮主线程再通知并重新订阅。
+            Task { @MainActor in
+                self?.coordinator?.connectionStateChanged()
+                self?.observeConnectionState()
             }
         }
     }

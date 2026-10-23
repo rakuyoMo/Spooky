@@ -49,7 +49,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 | `./scripts/build-app.sh` | 生成开发用 `.build/Spooky.app` |
 | `mise run bundle` | release 构建并生成 `build/Spooky.app`，拷贝资源与图标后 ad-hoc 签名并校验 |
 | `SPOOKY_PERFORMANCE_TESTS=1 swift test -c release -Xswiftc -enable-testing --filter PerformanceTests` | 显式运行大仓库首屏、历史分页与内存的性能验收 |
-| `swift scripts/make-icon.swift Sources/Spooky/AppIcon.icns` | 重新生成静态应用图标 |
+| `swift scripts/make-icon.swift Sources/Spooky/AppIcon` | 重新生成全部四份应用图标 |
 
 ## 目录结构
 
@@ -91,6 +91,11 @@ Sources/SpookyKit/            库源码，按功能分目录
   Resources/spooky-remote.pl  远端进程组与回调客户端
 Sources/Spooky/               App 入口、窗口协调、会话状态与各内容视图，按功能分目录
   App/                        入口、窗口与菜单协调、本地化与错误说明、命名色与主题、回调请求呈现
+  AppIcon/                    Dock 与 ⌘Tab 中的 App 图标随 “图标与小组件样式” 与连接状态切换，以及四份 icns
+    AppIcon.icns              默认应用图标，指示灯灭着；与下面三份一样由 scripts/make-icon.swift 生成
+    AppIconConnected.icns     指示灯亮着的默认图标，App 连着服务器时换到 Dock 与 ⌘Tab
+    AppIconDark.icns          深色应用图标，指示灯灭着；App 运行时按 “图标与小组件样式” 换到 Dock 与 ⌘Tab
+    AppIconDarkConnected.icns 指示灯亮着的深色图标
   Components/                 空状态、错误详情与连接状态等共用视图
   RepositoryManager/          仓库管理窗口、最近记录与添加服务器仓库
   RepositoryWindow/           仓库窗口与菜单动作、侧边栏、操作对话框与拖放
@@ -101,13 +106,13 @@ Sources/Spooky/               App 入口、窗口协调、会话状态与各内�
   Settings/                   设置窗口与终端程序
   Resources/                  各语言文案、系统权限说明、命名色与内置主题 JSON
   Info.plist                  应用身份和支持语言
-  AppIcon.icns                静态应用图标，由 scripts/make-icon.swift 生成
 Tests/SpookyKitTests/         单元测试（Swift Testing）
   Fixtures/                   固定的 Git 输出夹具
-Tests/SpookyTests/            会话生命周期、最近记录、错误呈现与本地化测试
+Tests/SpookyTests/            会话生命周期、最近记录、错误呈现、本地化与 App 图标测试
 scripts/build-app.sh          开发 App Bundle 生成脚本
 scripts/bundle.sh             发布 App Bundle 生成脚本，输出到 build/Spooky.app
-scripts/make-icon.swift       应用图标生成脚本
+scripts/make-icon.swift       应用图标生成脚本，在无窗口的 WebKit 中运行 make-icon.js，为默认与深色图标各合成指示灯灭着、亮着两份 .icns
+scripts/make-icon.js          应用图标的 Canvas 2D 绘制
 .github/workflows/ci.yml      PR 与 main 上的代码规范检查、编译、测试与打包
 mise.toml                     构建、测试、打包与代码规范检查的 task
 docs/testing/M1.md            M1 的 App 手动验收步骤

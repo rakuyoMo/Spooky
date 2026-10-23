@@ -15,7 +15,10 @@ mkdir -p "$app_directory/Contents/MacOS" "$app_directory/Contents/Resources"
 cp Sources/Spooky/Info.plist "$app_directory/Contents/Info.plist"
 cp "$binary_directory/Spooky" "$app_directory/Contents/MacOS/Spooky.new"
 mv "$app_directory/Contents/MacOS/Spooky.new" "$app_directory/Contents/MacOS/Spooky"
-cp Sources/Spooky/AppIcon.icns "$app_directory/Contents/Resources/AppIcon.icns"
+
+# 默认图标由 Info.plist 的 `CFBundleIconFile` 指定；其余几版由 App 在运行时按 “图标与小组件样式” 与连接状态换上。
+cp Sources/Spooky/AppIcon/*.icns "$app_directory/Contents/Resources/"
+
 ditto "$binary_directory/Spooky_Spooky.bundle" "$app_directory/Contents/Resources/Spooky_Spooky.bundle"
 
 ditto "$binary_directory/Spooky_SpookyKit.bundle" "$app_directory/Contents/Resources/Spooky_SpookyKit.bundle"
