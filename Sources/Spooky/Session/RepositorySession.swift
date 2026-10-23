@@ -119,6 +119,9 @@ final class RepositorySession {
     /// 横幅的冲突过滤选项。
     var onlyConflicts = false
 
+    /// 冲突向导在各仓库生成、尚未清理的备份文件，切换仓库后仍保留，供向导与横幅列出和清理。
+    var conflictBackups: [RepositoryLocation: [String]] = [:]
+
     /// 主菜单请求聚焦提交标题。
     var commitFocusRequest = 0
 

@@ -212,7 +212,7 @@ extension RepositorySessionTests {
     }
 
     /// 在测试创建的临时目录中初始化仓库，返回隔离了本机 Git 配置的执行器。
-    private func initializeRepository(at location: RepositoryLocation) async throws -> GitRunner {
+    func initializeRepository(at location: RepositoryLocation) async throws -> GitRunner {
         // 忽略系统与用户的全局配置，测试只受仓库本地配置影响。
         let runner = GitRunner(
             location: location,

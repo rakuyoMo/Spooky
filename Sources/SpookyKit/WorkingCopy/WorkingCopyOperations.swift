@@ -34,6 +34,9 @@ public struct WorkingCopyContext: Sendable {
     /// 已识别的进行中操作。
     public let operation: RepositoryOperationState?
 
+    /// 进行中操作的两侧、序列进度与已解决的冲突；没有进行中的操作时为 nil。
+    public let progress: OperationProgress?
+
     /// Git 准备的结论信息。
     public let mergeMessage: String
 }
@@ -85,7 +88,7 @@ public struct WorkingCopyOperations: Sendable {
     public static let defaultWarningKilobytes = 20_000
 
     /// 所有支持批量路径的写命令使用同一 NUL 输入协议。
-    private static let pathInputOptions = ["--pathspec-from-file=-", "--pathspec-file-nul"]
+    static let pathInputOptions = ["--pathspec-from-file=-", "--pathspec-file-nul"]
 
     /// 本机与服务器共用命令执行器。
     public let runner: GitRunner
@@ -96,7 +99,7 @@ public struct WorkingCopyOperations: Sendable {
     }
 
     /// 不规范化实际路径字节，字面路径语义交由 Git 的全局开关保证。
-    private static func pathInput(_ paths: [String]) -> Data {
+    static func pathInput(_ paths: [String]) -> Data {
         Data(paths.flatMap { Array($0.utf8) + [0] })
     }
 
@@ -253,31 +256,43 @@ public struct WorkingCopyOperations: Sendable {
     }
 
     /// 采用一侧后立即通过 Git 标记解决，缺失的一侧对应删除。
-    public func resolve(_ entries: [StatusEntry], theirs: Bool) async throws {
+    ///
+    /// - Parameters:
+    ///   - entries: 要解决的文件，其中不是冲突的条目被忽略。
+    ///   - theirs: 采用对方版本；否则采用我方版本。
+    ///   - backup: 传入时先把冲突文件另存为备份，再把备份路径交给它。
+    public func resolve(
+        _ entries: [StatusEntry],
+        theirs: Bool,
+        backup: (@Sendable ([String]) async -> Void)? = nil
+    ) async throws {
         try await runner.writeTransaction {
-            let current = try await runner.status()
             let paths = Set(entries.map(\.path))
+            let targets = try await runner.status().entries.filter { $0.kind == .conflicted && paths.contains($0.path) }
 
-            for entry in current.entries where entry.kind == .conflicted && paths.contains(entry.path) {
-                let stages = try await runner.run(["--literal-pathspecs", "ls-files", "--stage", "-z", "--", entry.path])
-                let wanted = theirs ? "3" : "2"
-                let exists = stages.split(separator: 0).contains {
-                    let prefix = $0.prefix(while: { $0 != 9 })
-                    return String(decoding: prefix, as: UTF8.self).split(separator: " ").last == Substring(wanted)
-                }
+            if let backup {
+                await backup(try await backUp(targets.map(\.path)))
+            }
 
-                if exists {
-                    _ = try await runner.run(
-                        ["--literal-pathspecs", "checkout", theirs ? "--theirs" : "--ours"] + Self.pathInputOptions,
-                        input: Self.pathInput([entry.path])
-                    )
-                    try await stage([entry], staged: true)
-                } else {
-                    _ = try await runner.run(
-                        ["--literal-pathspecs", "rm", "-f"] + Self.pathInputOptions,
-                        input: Self.pathInput([entry.path])
-                    )
-                }
+            // porcelain v2 的 stage 记录说明采用的一侧是否存在，不必逐个文件查询索引
+            let kept = targets.filter { (theirs ? $0.conflict?.theirs : $0.conflict?.ours) != nil }
+            let removed = targets.filter { (theirs ? $0.conflict?.theirs : $0.conflict?.ours) == nil }
+
+            if !kept.isEmpty {
+                _ = try await runner.run(
+                    ["--literal-pathspecs", "checkout", theirs ? "--theirs" : "--ours"] + Self.pathInputOptions,
+                    input: Self.pathInput(kept.map(\.path))
+                )
+
+                try await stage(kept, staged: true)
+            }
+
+            // 采用的一侧删除了文件，解决的结果就是删除
+            if !removed.isEmpty {
+                _ = try await runner.run(
+                    ["--literal-pathspecs", "rm", "-f", "-q"] + Self.pathInputOptions,
+                    input: Self.pathInput(removed.map(\.path))
+                )
             }
         }
     }
@@ -302,7 +317,14 @@ public struct WorkingCopyOperations: Sendable {
         case .revert: command = "revert"
         }
 
-        _ = try await runner.run(["-c", "core.editor=:", "-c", "core.trustctime=false", command, "--" + action])
+        try await runner.writeTransaction {
+            // 序列的这一步没有可提交的改动时，继续表示保留一个空提交，再接着处理后面的步骤
+            if action == "continue", try await commitEmptyStep(of: operation) {
+                return
+            }
+
+            _ = try await runner.run(["-c", "core.editor=:", "-c", "core.trustctime=false", command, "--" + action])
+        }
     }
 
     /// 一次读取状态文件快照，进行中模式不依赖人读的 git status 文案。
@@ -313,43 +335,19 @@ public struct WorkingCopyOperations: Sendable {
             throw RepositoryReadError.invalidQuery
         }
 
-        let names = [
-            "MERGE_HEAD", "SQUASH_MSG", "CHERRY_PICK_HEAD", "REVERT_HEAD", "MERGE_MSG",
-            "rebase-merge/head-name", "rebase-apply/head-name", "sequencer/todo",
-        ]
-
         // 三项读取互不依赖，并发执行；服务器上只占一次往返的等待时间。
         async let identity = runner.execute(["var", "GIT_COMMITTER_IDENT"], acceptedExitCodes: [0, 128])
         async let message = lastMessage(of: head)
-        async let located = runner.run(["rev-parse", "--path-format=absolute"] + names.flatMap { ["--git-path", $0] })
+        async let state = stateFiles(OperationProgress.stateFiles)
 
         let rawIdentity = String(decoding: try await identity.standardOutput, as: UTF8.self)
         let committer = rawIdentity.lastIndex(of: ">")
             .map { String(rawIdentity[...$0]) } ?? ""
         let lastMessage = try await message
-        let paths = String(decoding: try await located, as: UTF8.self).split(separator: "\n").map(String.init)
-        guard paths.count == names.count else { throw RepositoryFileError.unsupportedPath }
-        let content = try await RepositoryFiles(runner: runner).read(paths)
-        let files = Dictionary(uniqueKeysWithValues: zip(names, paths).compactMap { name, path in
-            content[path].map { (name, String(decoding: $0, as: UTF8.self)) }
-        })
-        let operation: RepositoryOperationState? =
-            if
-                files["rebase-merge/head-name"] != nil
-                || files["rebase-apply/head-name"] != nil
-            {
-                .rebase
-            } else if files["REVERT_HEAD"] != nil || (files["sequencer/todo"]?.hasPrefix("revert ") ?? false) {
-                .revert
-            } else if files["CHERRY_PICK_HEAD"] != nil || (files["sequencer/todo"]?.hasPrefix("pick ") ?? false) {
-                .cherryPick
-            } else if files["MERGE_HEAD"] != nil {
-                .merge
-            } else if files["SQUASH_MSG"] != nil {
-                .squash
-            } else {
-                nil
-            }
+        let files = try await state
+
+        // 进行中的操作与它的两侧、步数和已解决的冲突都从同一份状态文件快照算出
+        let progress = try await OperationProgress.read(files: files, head: head, runner: runner)
 
         // Git 生成的冲突清单不属于提交正文，预填时移除其注释行。
         let mergeMessage = (files["SQUASH_MSG"] ?? files["MERGE_MSG"] ?? "")
@@ -360,7 +358,8 @@ public struct WorkingCopyOperations: Sendable {
         return WorkingCopyContext(
             committer: committer,
             lastMessage: lastMessage,
-            operation: operation,
+            operation: progress?.state,
+            progress: progress,
             mergeMessage: mergeMessage
         )
     }

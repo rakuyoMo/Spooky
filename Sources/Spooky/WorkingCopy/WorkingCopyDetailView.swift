@@ -66,13 +66,9 @@ struct WorkingCopyDetailView: View {
     @ViewBuilder
     private func content(_ entry: StatusEntry) -> some View {
         if entry.kind == .conflicted {
-            VStack(spacing: 16) {
-                Label(AppLocalization.text("status.conflicted"), systemImage: "exclamationmark.triangle")
-                Button(AppLocalization.text("working.ours")) { session.resolve([entry], theirs: false) }
-                Button(AppLocalization.text("working.theirs")) { session.resolve([entry], theirs: true) }
-                Button(AppLocalization.text("working.resolved")) { session.stage([entry], staged: true) }
-            }
-            .disabled(!session.canResolve([entry]))
+            // 换一个冲突文件时重建向导，上一个文件的内容与未保存的编辑不会带过来
+            ConflictWizardView(session: session, entry: entry)
+                .id(entry.path)
         } else if let failure = session.diffFailure {
             FailureDetailsView(failure: failure) { session.loadDiff() }
                 .padding(20)

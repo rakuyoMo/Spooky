@@ -77,6 +77,9 @@ public struct StatusEntry: Sendable, Equatable {
 
     /// 工作区里尚未暂存的变化；没有变化时为 nil
     public var unstaged: FileChange?
+
+    /// 冲突文件在索引中的三方版本；不是冲突时为 nil
+    public var conflict: ConflictStages? = nil
 }
 
 // MARK: - StatusParseError
@@ -271,7 +274,8 @@ extension StatusEntry {
             path: fields[10],
             originalPath: nil,
             staged: changes.staged,
-            unstaged: changes.unstaged
+            unstaged: changes.unstaged,
+            conflict: try ConflictStages(unmerged: fields, record: record)
         )
     }
 

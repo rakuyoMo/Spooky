@@ -34,9 +34,7 @@ struct WorkingCopyCommitView: View {
     /// 进行中横幅位于信息区上方，冲突解决后重新显示提交控件。
     var body: some View {
         VStack(spacing: 12) {
-            if let operation = session.context?.operation {
-                operationBanner(operation)
-            }
+            OperationBannerView(session: session)
 
             if session.conflictCount == 0 {
                 subjectField
@@ -171,41 +169,5 @@ extension WorkingCopyCommitView {
     private var continuesSequence: Bool {
         guard let operation = session.context?.operation else { return false }
         return [.rebase, .cherryPick, .revert].contains(operation)
-    }
-
-    /// 横幅只显示当前操作可用的收尾入口，不提供后续里程碑的启动动作。
-    private func operationBanner(_ operation: RepositoryOperationState) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label(
-                AppLocalization.text("working.operation." + operation.rawValue),
-                systemImage: "exclamationmark.triangle.fill"
-            )
-            .font(.system(size: 13, weight: .semibold))
-            Text(AppLocalization.text("working.conflicts", session.conflictCount))
-            if operation == .rebase {
-                Text(AppLocalization.text("working.rebaseSides"))
-                    .font(.system(size: 11))
-            }
-
-            HStack(spacing: 8) {
-                Toggle(AppLocalization.text("working.onlyConflicts"), isOn: $session.onlyConflicts)
-                    .toggleStyle(.checkbox)
-                    .disabled(session.conflictCount == 0)
-                Spacer(minLength: 0)
-                Button(AppLocalization.text("working.abort")) { session.finishOperation("abort") }
-
-                if
-                    [.rebase, .cherryPick, .revert].contains(operation), session.conflictCount == 0,
-                    session.status?.entries.isEmpty ?? false
-                {
-                    Button(AppLocalization.text("working.skip")) { session.finishOperation("skip") }
-                }
-            }
-            .disabled(!session.canWrite)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.red.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(.red.opacity(0.25)))
     }
 }

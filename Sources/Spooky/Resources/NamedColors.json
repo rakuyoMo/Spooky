@@ -328,5 +328,25 @@
       "hex": "#DDDDDD",
       "alpha": 1.0
     }
+  },
+  "repository_mergeconflict_tile_background_light_color": {
+    "light": {
+      "hex": "#FFFFFF",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#1E1E1E",
+      "alpha": 1.0
+    }
+  },
+  "repository_mergeconflict_tile_background_dark_color": {
+    "light": {
+      "hex": "#333333",
+      "alpha": 0.04
+    },
+    "dark": {
+      "hex": "#CCCCCC",
+      "alpha": 0.06
+    }
   }
 }

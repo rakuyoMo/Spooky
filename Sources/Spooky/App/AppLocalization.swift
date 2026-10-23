@@ -131,6 +131,11 @@ struct AppFailure: Identifiable {
             (key, kind) = Self.classification(of: file)
             exceededOutputLimit = file == .tooLarge
 
+        // 冲突向导的写入前提不满足属于仓库状态问题
+        case let conflict as ConflictResolutionError:
+            key = conflict == .fileChanged ? "conflict.error.changed" : "conflict.error.version"
+            kind = .repository
+
         case let remote as RemoteConnectionError:
             // 写入中途断线的结果未知，统一提示先核对仓库，不能引导用户直接重试。
             let interrupted = writing && [.unavailable, .protocolFailure].contains(remote.kind)
