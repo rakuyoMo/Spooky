@@ -1,6 +1,8 @@
 import AppKit
 import SpookyKit
 
+// MARK: - TerminalApplication
+
 /// General 设置中受支持的终端，名称与 Bundle Identifier 按需求固定。
 enum TerminalApplication: String, CaseIterable, Identifiable {
     /// macOS 自带终端。
@@ -30,27 +32,32 @@ enum TerminalApplication: String, CaseIterable, Identifiable {
     /// 第三方产品名不翻译。
     var displayName: String {
         switch self {
-        case .terminal: return "Terminal"
-        case .iTerm: return "iTerm"
-        case .warp: return "Warp"
-        case .ghostty: return "Ghostty"
-        case .wezTerm: return "WezTerm"
-        case .prompt: return "Prompt"
-        case .otty: return "Otty"
+        case .terminal: "Terminal"
+        case .iTerm: "iTerm"
+        case .warp: "Warp"
+        case .ghostty: "Ghostty"
+        case .wezTerm: "WezTerm"
+        case .prompt: "Prompt"
+        case .otty: "Otty"
         }
     }
 
     /// 按系统注册信息找安装位置，不假定应用一定在 /Applications。
-    @MainActor var applicationURL: URL? {
+    @MainActor
+    var applicationURL: URL? {
         NSWorkspace.shared.urlForApplication(withBundleIdentifier: rawValue)
     }
 }
+
+// MARK: - TerminalLaunchError
 
 /// 外部终端启动失败的本地化边界。
 struct TerminalLaunchError: Error {
     /// 原始系统诊断。
     let diagnostic: String
 }
+
+// MARK: - TerminalLauncher
 
 /// 把统一的仓库终端命令交给用户选择的程序。
 @MainActor
@@ -178,7 +185,12 @@ enum TerminalLauncher {
         try JSONSerialization.data(withJSONObject: configuration).write(to: file, options: .atomic)
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
         temporaryFiles.append(file)
-        let url = URL(string: "warp://launch/" + name)!
+        let link = "warp://launch/" + name
+
+        guard let url = URL(string: link) else {
+            throw TerminalLaunchError(diagnostic: link)
+        }
+
         _ = try await NSWorkspace.shared.open([url], withApplicationAt: application, configuration: .init())
     }
 

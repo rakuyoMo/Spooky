@@ -2,6 +2,8 @@ import Foundation
 import Observation
 import SpookyKit
 
+// MARK: - RepositoryView
+
 /// 当前窗口选中的主视图。
 enum RepositoryView: String, CaseIterable {
     /// 工作区状态列表。
@@ -11,6 +13,8 @@ enum RepositoryView: String, CaseIterable {
     case history
 }
 
+// MARK: - StatusRowID
+
 /// 文件行的稳定标识，区分 `rm --cached` 后同路径的已跟踪与未跟踪记录。
 struct StatusRowID: Hashable {
     /// Git 给出的相对路径。
@@ -19,6 +23,8 @@ struct StatusRowID: Hashable {
     /// 同一路径可以同时拥有已跟踪和未跟踪状态。
     let kind: StatusEntry.Kind
 }
+
+// MARK: - InterruptedWrite
 
 /// 因断线而结果未知的写操作；重连核对后据此告诉用户 HEAD 是否变化。
 struct InterruptedWrite {
@@ -32,6 +38,8 @@ struct InterruptedWrite {
     let time: Date
 }
 
+// MARK: - RepositorySession
+
 /// 一个窗口的仓库读取状态，异步刷新失败时保留完整的上一份快照。
 @MainActor
 @Observable
@@ -40,28 +48,19 @@ final class RepositorySession {
     let history = RepositoryHistoryState()
 
     /// 当前工作区身份。
-    private(set) var repository: RepositoryLocation?
+    private(set) var repository: RepositoryLocation? = nil
 
     /// 最近一次成功读取的状态。
-    private(set) var status: WorkingCopyStatus?
+    private(set) var status: WorkingCopyStatus? = nil
 
     /// 服务器连接状态，本机仓库为 nil。
-    private(set) var connectionState: RemoteConnectionState?
+    private(set) var connectionState: RemoteConnectionState? = nil
 
     /// 写操作断线后的仓库核对结果。
-    private(set) var recovery: RemoteRecoverySnapshot?
+    private(set) var recovery: RemoteRecoverySnapshot? = nil
 
     /// 断线中断、等待重连核对的写操作。
-    private(set) var interruptedWrite: InterruptedWrite?
-
-    /// 连接可用、本窗口没有写操作，且应用内没有同一仓库的写操作时才允许写入。
-    var canWrite: Bool {
-        guard let repository, !isWriting, !RepositoryWriteLocks.shared.contains(repository) else {
-            return false
-        }
-
-        return repository.host == nil || connectionState == .connected
-    }
+    private(set) var interruptedWrite: InterruptedWrite? = nil
 
     /// 写操作期间所有写入口共用锁定状态。
     private(set) var isWriting = false
@@ -75,17 +74,14 @@ final class RepositorySession {
     /// 显式修补选项。
     var amend = false
 
-    /// ⌥ 快速修补生效前保存的普通草稿。
-    private var originalDraft: (subject: String, body: String)?
-
     /// Git 返回的身份和进行中操作。
-    private(set) var context: WorkingCopyContext?
+    private(set) var context: WorkingCopyContext? = nil
 
     /// 当前文件的补丁快照。
-    private(set) var diffSnapshot: DiffSnapshot?
+    private(set) var diffSnapshot: DiffSnapshot? = nil
 
     /// 当前显示哪一侧改动。
-    var diffSide: DiffSide = .unstaged
+    var diffSide = DiffSide.unstaged
 
     /// 大 Diff 放行只对当前文件有效。
     var showsLargeDiff = false
@@ -94,7 +90,7 @@ final class RepositorySession {
     private(set) var isLoadingDiff = false
 
     /// Diff 失败显示在详情中，并保留可复制原文。
-    private(set) var diffFailure: AppFailure?
+    private(set) var diffFailure: AppFailure? = nil
 
     /// 点击勾选框后的临时状态，刷新成功或失败后撤回。
     private(set) var stagingOverrides: [StatusRowID: Bool] = [:]
@@ -112,28 +108,52 @@ final class RepositorySession {
     var isEditingCommitMessage = false
 
     /// 窗口负责确认并在 sheet 关闭后执行操作。
-    var onConfirm: ((String, String, @escaping () -> Void, (() -> Void)?) -> Void)?
+    var onConfirm: ((String, String, @escaping () -> Void, (() -> Void)?) -> Void)? = nil
 
     /// 窗口在重连核对完成后向用户报告中断写入的结果；没有新的核对时表示写入没有开始。
-    var onRecovery: ((InterruptedWrite, RemoteRecoverySnapshot?) -> Void)?
+    var onRecovery: ((InterruptedWrite, RemoteRecoverySnapshot?) -> Void)? = nil
 
     /// 写操作结束后通知应用刷新显示同一仓库的其它窗口。
-    var onWriteFinished: ((RepositoryLocation) -> Void)?
+    var onWriteFinished: ((RepositoryLocation) -> Void)? = nil
 
     /// 恢复的视图状态失效、回到 Working Copy 时，窗口据此重建主视图。
-    var onViewReset: (() -> Void)?
+    var onViewReset: (() -> Void)? = nil
 
     /// 当前窗口的写操作任务。
-    private(set) var writeTask: Task<Void, Never>?
+    private(set) var writeTask: Task<Void, Never>? = nil
+
+    /// 当前主视图。
+    var activeView = RepositoryView.workingCopy
+
+    /// 仓库管理中选中的最近记录。
+    var selectedRecentLocation: RepositoryLocation? = nil
+
+    /// 是否正在刷新。
+    private(set) var isRefreshing = false
+
+    /// 是否正在验证要打开的目录。
+    var isOpening = false
+
+    /// 最近一次读取失败，供界面及测试检查。
+    private(set) var failure: AppFailure? = nil
+
+    /// 窗口负责呈现错误 sheet。
+    var onFailure: ((AppFailure) -> Void)? = nil
+
+    /// 当前刷新任务，关闭仓库时取消。
+    private(set) var refreshTask: Task<Void, Never>? = nil
+
+    /// ⌥ 快速修补生效前保存的普通草稿。
+    private var originalDraft: (subject: String, body: String)? = nil
 
     /// 当前文件的读取任务。
-    private var diffTask: Task<Void, Never>?
+    private var diffTask: Task<Void, Never>? = nil
 
     /// 提交信息与进行中状态的读取任务。
-    private var contextTask: Task<Void, Never>?
+    private var contextTask: Task<Void, Never>? = nil
 
     /// 本机递归文件监听。
-    private var fileMonitor: RepositoryFileMonitor?
+    private var fileMonitor: RepositoryFileMonitor? = nil
 
     /// 注入状态源的测试不额外访问真实仓库。
     private let loadsRepositoryDetails: Bool
@@ -145,13 +165,13 @@ final class RepositorySession {
     private var isActive = true
 
     /// 远端状态轮询任务。
-    private var pollingTask: Task<Void, Never>?
+    private var pollingTask: Task<Void, Never>? = nil
 
     /// 连接状态订阅任务。
-    private var connectionTask: Task<Void, Never>?
+    private var connectionTask: Task<Void, Never>? = nil
 
     /// 自动重连任务，重复断线事件共用一次重连。
-    private var reconnectTask: Task<Void, Never>?
+    private var reconnectTask: Task<Void, Never>? = nil
 
     /// 刷新进行中收到的完整刷新请求，本次结束后补做。
     private var pendingFullRefresh = false
@@ -160,21 +180,34 @@ final class RepositorySession {
     private var refreshID = UUID()
 
     /// 已显示 Diff 对应的工作区内容哈希，服务器轮询据此判断文件内容是否变化。
-    private var contentHash: (id: StatusRowID, hash: String?)?
+    private var contentHash: (id: StatusRowID, hash: String?)? = nil
 
     /// 本窗口打开过的仓库视图状态，切换回仓库时恢复。
-    @ObservationIgnored private var viewStates = RepositoryViewStateCache()
+    @ObservationIgnored
+    private var viewStates = RepositoryViewStateCache()
 
-    /// 当前主视图。
-    var activeView = RepositoryView.workingCopy
+    /// 快照读取边界，测试可控制响应顺序和失败。
+    private let loadStatus: @Sendable (RepositoryLocation) async throws -> WorkingCopyStatus
+
+    /// 请求代数，阻止已取消的旧请求覆盖新仓库。
+    private var generation = 0
+
+    /// 连接可用、本窗口没有写操作，且应用内没有同一仓库的写操作时才允许写入。
+    var canWrite: Bool {
+        guard let repository, !isWriting, !RepositoryWriteLocks.shared.contains(repository) else {
+            return false
+        }
+
+        return repository.host == nil || connectionState == .connected
+    }
 
     /// 当前选中的文件行。
-    var selectedID: StatusRowID? {
+    var selectedID: StatusRowID? = nil {
         didSet {
             guard selectedID != oldValue else { return }
             showsLargeDiff = false
             diffSnapshot = nil
-            diffSide = selectedEntry?.hasUnstagedChanges == true ? .unstaged : .staged
+            diffSide = (selectedEntry?.hasUnstagedChanges ?? false) ? .unstaged : .staged
             loadDiff()
         }
     }
@@ -198,32 +231,15 @@ final class RepositorySession {
     /// 有标题、有暂存改动或可修补的 HEAD 时允许提交；合并可产生空树差异。
     var canCommit: Bool {
         canWrite && conflictCount == 0 && !commitSubject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && (amend || context?.operation == .merge || status?.entries.contains(where: \.hasStagedChanges) == true)
+            && (
+                amend
+                    || context?.operation == .merge
+                    || (status?.entries.contains(where: \.hasStagedChanges) ?? false)
+            )
     }
 
-    /// 仓库管理中选中的最近记录。
-    var selectedRecentLocation: RepositoryLocation?
-
-    /// 是否正在刷新。
-    private(set) var isRefreshing = false
-
-    /// 是否正在验证要打开的目录。
-    var isOpening = false
-
-    /// 最近一次读取失败，供界面及测试检查。
-    private(set) var failure: AppFailure?
-
-    /// 窗口负责呈现错误 sheet。
-    var onFailure: ((AppFailure) -> Void)?
-
-    /// 当前刷新任务，关闭仓库时取消。
-    private(set) var refreshTask: Task<Void, Never>?
-
-    /// 快照读取边界，测试可控制响应顺序和失败。
-    private let loadStatus: @Sendable (RepositoryLocation) async throws -> WorkingCopyStatus
-
-    /// 请求代数，阻止已取消的旧请求覆盖新仓库。
-    private var generation = 0
+    /// 对话框可读取同一执行器，保持本机凭据与测试隔离环境一致。
+    var runner: GitRunner? { repository.map(makeRunner) }
 
     /// 创建窗口状态；生产环境的所有 Git 读取都经过核心命令层。
     init(
@@ -304,72 +320,37 @@ final class RepositorySession {
                 let status = try await loaded
                 let hash = await probed
 
-                guard let self, self.generation == request, !Task.isCancelled else {
+                guard let self, generation == request, !Task.isCancelled else {
                     return
                 }
 
                 let statusChanged = status != previous
-
-                // 成功后一次性替换快照；仍存在的文件继续选中。
-                self.status = status
-                if !status.entries.contains(where: { $0.kind == .conflicted }) { self.onlyConflicts = false }
-                self.stagingOverrides = [:]
-
-                // 暂存会把未跟踪项变为已跟踪项；同路径优先延续选择，双记录仍优先匹配类别。
-                func retainedID(_ selected: StatusRowID) -> StatusRowID? {
-                    let entry = status.entries.first { $0.path == selected.path && $0.kind == selected.kind }
-                        ?? status.entries.first { $0.path == selected.path }
-                    return entry.map { StatusRowID(path: $0.path, kind: $0.kind) }
-                }
-
-                self.selectedIDs = Set(self.selectedIDs.compactMap(retainedID))
-
-                if let selected = self.selectedID {
-                    self.selectedID = retainedID(selected)
-                }
+                replaceStatus(status)
 
                 // 状态没有变化的轮询不再重复读取身份、引用和 Diff，减少服务器往返。
-                if self.loadsRepositoryDetails {
+                if loadsRepositoryDetails {
                     if full || statusChanged {
-                        self.loadContext()
-                        self.history.refresh(status: status, runner: self.makeRunner(repository), reload: full)
+                        loadContext()
+                        history.refresh(status: status, runner: makeRunner(repository), reload: full)
                     }
 
-                    if full || statusChanged || self.contentChanged(probe, hash: hash) {
-                        self.loadDiff()
+                    if full || statusChanged || contentChanged(probe, hash: hash) {
+                        loadDiff()
                     }
                 }
             } catch {
-                guard let self, self.generation == request, !Task.isCancelled else {
+                guard let self, generation == request, !Task.isCancelled else {
                     return
                 }
 
-                // 保留旧快照，错误反馈与数据展示互不覆盖。
-                self.stagingOverrides = [:]
-
-                if (error as? GitError)?.isCancelled != true, !(error is CancellationError) {
-                    let failure = AppFailure(error: error, opening: false, location: repository)
-                    self.failure = failure
-
-                    if error is RemoteConnectionError {
-                        self.reconnect()
-                    } else {
-                        self.onFailure?(failure)
-                    }
-                }
+                reportRefreshFailure(error, in: repository)
             }
 
-            guard let self, self.generation == request, self.refreshID == id else {
+            guard let self, generation == request, refreshID == id else {
                 return
             }
 
-            self.isRefreshing = false
-            self.refreshTask = nil
-
-            if self.pendingFullRefresh {
-                self.pendingFullRefresh = false
-                self.refresh(full: true)
-            }
+            finishRefresh()
         }
     }
 
@@ -434,7 +415,11 @@ final class RepositorySession {
             await task.value
         }
     }
+}
 
+// MARK: - Connection
+
+extension RepositorySession {
     /// 窗口重新激活后立即完整刷新一次；前后台切换重新计算下一次轮询时间。
     func setActive(_ active: Bool) {
         let wasActive = isActive
@@ -449,16 +434,17 @@ final class RepositorySession {
         }
 
         // 应用激活与窗口成为主窗口会先后通知，只有从后台回到前台时刷新。
-        if active && !wasActive {
+        if active, !wasActive {
             refresh(full: true)
         }
     }
 
     /// 重连失败保留最后快照和原始错误，后台定时重试不阻塞 UI。
     func reconnect() {
-        guard reconnectTask == nil,
-              let repository,
-              let remote = GitRunner(location: repository).remote
+        guard
+            reconnectTask == nil,
+            let repository,
+            let remote = GitRunner(location: repository).remote
         else { return }
 
         let request = generation
@@ -467,25 +453,29 @@ final class RepositorySession {
             while !Task.isCancelled {
                 do {
                     _ = try await remote.reconnect()
-                    guard let self, self.generation == request, !Task.isCancelled else { return }
-                    self.reconnectTask = nil
-                    await self.connectionRestored(remote, request: request)
+                    guard let self, generation == request, !Task.isCancelled else { return }
+                    reconnectTask = nil
+                    await connectionRestored(remote, request: request)
                     return
                 } catch {
-                    guard let self, self.generation == request, !Task.isCancelled else { return }
-                    self.connectionState = .unavailable
-                    self.failure = AppFailure(error: error, opening: false, location: repository)
+                    guard let self, generation == request, !Task.isCancelled else { return }
+                    connectionState = .unavailable
+                    failure = AppFailure(error: error, opening: false, location: repository)
                 }
 
                 do { try await Task.sleep(for: RemoteConnection.reconnectInterval) }
                 catch { return }
 
-                guard let self, self.generation == request else { return }
-                self.connectionState = .reconnecting
+                guard let self, generation == request else { return }
+                connectionState = .reconnecting
             }
         }
     }
+}
 
+// MARK: - Working Copy
+
+extension RepositorySession {
     /// 勾选框先更新，再执行命令；任何失败都会撤回临时状态。
     func stage(_ entries: [StatusEntry], staged: Bool) {
         guard canWrite, !entries.isEmpty else { return }
@@ -519,8 +509,8 @@ final class RepositorySession {
             AppLocalization.text("working.discard"),
             message,
             { [weak self] in
-                guard let self, self.generation == request else { return }
-                self.performGit(
+                guard let self, generation == request else { return }
+                performGit(
                     { runner, _ in
                         try await WorkingCopyOperations(runner: runner).discard(entries)
                     },
@@ -543,8 +533,8 @@ final class RepositorySession {
             "working." + action + (lines.isEmpty ? "Chunk" : (lines.count == 1 ? "Line" : "Lines"))
         )
         let perform: () -> Void = { [weak self] in
-            guard let self, self.generation == request else { return }
-            self.performGit(
+            guard let self, generation == request else { return }
+            performGit(
                 { runner, _ in
                     try await WorkingCopyOperations(runner: runner)
                         .apply(
@@ -600,8 +590,8 @@ final class RepositorySession {
         let amend = amend
         let request = generation
         let action: () -> Void = { [weak self] in
-            guard let self, self.generation == request else { return }
-            self.performGit(
+            guard let self, generation == request else { return }
+            performGit(
                 { runner, _ in
                     try await WorkingCopyOperations(runner: runner)
                         .commit(subject: subject, body: body, amend: amend)
@@ -629,8 +619,8 @@ final class RepositorySession {
                 AppLocalization.text("working.emptyMerge.message"),
                 action,
                 { [weak self] in
-                    guard let self, self.generation == request else { return }
-                    self.finishOperation("abort")
+                    guard let self, generation == request else { return }
+                    finishOperation("abort")
                 }
             )
         } else {
@@ -671,8 +661,8 @@ final class RepositorySession {
             return
         }
 
-        if diffSide == .staged && !entry.hasStagedChanges { diffSide = .unstaged }
-        if diffSide == .unstaged && !entry.hasUnstagedChanges { diffSide = .staged }
+        if diffSide == .staged, !entry.hasStagedChanges { diffSide = .unstaged }
+        if diffSide == .unstaged, !entry.hasUnstagedChanges { diffSide = .staged }
         let side = diffSide
         let request = generation
         let showLarge = showsLargeDiff
@@ -688,23 +678,24 @@ final class RepositorySession {
                 let snapshot = try await service.diff(
                     for: entry, side: side, warningKilobytes: threshold, showLarge: showLarge
                 )
-                guard let self, self.generation == request, !Task.isCancelled else { return }
-                self.diffSnapshot = snapshot
-                self.contentHash = (StatusRowID(path: entry.path, kind: entry.kind), hash)
+                guard let self, generation == request, !Task.isCancelled else { return }
+                diffSnapshot = snapshot
+                contentHash = (StatusRowID(path: entry.path, kind: entry.kind), hash)
             } catch {
-                guard let self, self.generation == request, !Task.isCancelled else { return }
-                self.diffSnapshot = nil
-                self.diffFailure = AppFailure(error: error, opening: false, location: repository)
+                guard let self, generation == request, !Task.isCancelled else { return }
+                diffSnapshot = nil
+                diffFailure = AppFailure(error: error, opening: false, location: repository)
             }
 
-            guard let self, self.generation == request, !Task.isCancelled else { return }
-            self.isLoadingDiff = false
+            guard let self, generation == request, !Task.isCancelled else { return }
+            isLoadingDiff = false
         }
     }
+}
 
-    /// 对话框可读取同一执行器，保持本机凭据与测试隔离环境一致。
-    var runner: GitRunner? { repository.map(makeRunner) }
+// MARK: - Write Operations
 
+extension RepositorySession {
     /// 新建、检出、同步和工作区写入共用任务生命周期，取消后仍刷新真实状态。
     ///
     /// - Parameters:
@@ -714,7 +705,7 @@ final class RepositorySession {
     @discardableResult
     func performGit(
         _ action:
-            @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
+        @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
         recordsActivity: Bool = true,
         success: (() -> Void)? = nil
@@ -749,29 +740,15 @@ final class RepositorySession {
             do {
                 try await action(runner) { continuation.yield($0) }
                 activity?.state = Task.isCancelled ? "activity.cancelled" : "activity.finished"
-                if let self, self.generation == request, !Task.isCancelled { success?() }
+                if let self, generation == request, !Task.isCancelled { success?() }
             } catch {
                 let cancelled =
                     Task.isCancelled || error is CancellationError
-                    || (error as? GitError)?.isCancelled == true
+                        || ((error as? GitError)?.isCancelled ?? false)
                 activity?.state = cancelled ? "activity.cancelled" : "activity.failed"
 
-                if let self, self.generation == request {
-                    self.stagingOverrides = [:]
-                    let remoteFailure = error as? RemoteConnectionError
-
-                    // 取消未确认仍须报告；普通取消只回到可刷新状态。
-                    if !cancelled || remoteFailure?.kind == .cancellationUnconfirmed {
-                        let failure = AppFailure(error: error, opening: false, location: repository, writing: true)
-                        self.failure = failure
-                        self.onFailure?(failure)
-                    }
-
-                    // 结果未知的服务器写入不重试，等待重连核对后再报告。
-                    if remoteFailure != nil {
-                        self.interruptedWrite = InterruptedWrite(title: title, branch: branch, time: Date())
-                        self.reconnect()
-                    }
+                if let self, generation == request {
+                    reportWriteFailure(error, cancelled: cancelled, title: title, branch: branch, in: repository)
                 }
             }
 
@@ -781,17 +758,21 @@ final class RepositorySession {
             RepositoryWriteLocks.shared.release(repository)
             finished?(repository)
 
-            guard let self, self.generation == request else { return }
-            self.isWriting = false
-            self.writeTask = nil
-            self.refresh(full: true)
+            guard let self, generation == request else { return }
+            isWriting = false
+            writeTask = nil
+            refresh(full: true)
         }
 
         let task = writeTask
         activity?.cancel = { task?.cancel() }
         return true
     }
+}
 
+// MARK: - Private
+
+extension RepositorySession {
     /// 轮询时的所选文件内容哈希；没有可比较的文件或读取失败时为 nil。
     private static func contentHash(of entry: StatusEntry?, service: WorkingCopyOperations) async -> String? {
         guard let entry else {
@@ -801,10 +782,91 @@ final class RepositorySession {
         return try? await service.worktreeHash(of: entry)
     }
 
+    /// 刷新成功后一次性替换快照；仍存在的文件继续选中。
+    private func replaceStatus(_ status: WorkingCopyStatus) {
+        self.status = status
+        if !status.entries.contains(where: { $0.kind == .conflicted }) { onlyConflicts = false }
+        stagingOverrides = [:]
+
+        // 暂存会把未跟踪项变为已跟踪项；同路径优先延续选择，双记录仍优先匹配类别。
+        func retainedID(_ selected: StatusRowID) -> StatusRowID? {
+            let entry = status.entries.first { $0.path == selected.path && $0.kind == selected.kind }
+                ?? status.entries.first { $0.path == selected.path }
+            return entry.map { StatusRowID(path: $0.path, kind: $0.kind) }
+        }
+
+        selectedIDs = Set(selectedIDs.compactMap(retainedID))
+
+        if let selected = selectedID {
+            selectedID = retainedID(selected)
+        }
+    }
+
+    /// 刷新失败时撤回临时勾选并报告错误：取消不报告，断线交给重连，其余错误交给窗口呈现。
+    private func reportRefreshFailure(_ error: Error, in repository: RepositoryLocation) {
+        // 保留旧快照，错误反馈与数据展示互不覆盖。
+        stagingOverrides = [:]
+
+        guard (error as? GitError)?.isCancelled != true, !(error is CancellationError) else {
+            return
+        }
+
+        let failure = AppFailure(error: error, opening: false, location: repository)
+        self.failure = failure
+
+        if error is RemoteConnectionError {
+            reconnect()
+        } else {
+            onFailure?(failure)
+        }
+    }
+
+    /// 本次刷新结束：解除刷新状态，并补做刷新期间收到的完整刷新请求。
+    private func finishRefresh() {
+        isRefreshing = false
+        refreshTask = nil
+
+        if pendingFullRefresh {
+            pendingFullRefresh = false
+            refresh(full: true)
+        }
+    }
+
+    /// 写入失败时撤回临时勾选并报告错误；服务器写入断线后结果未知，记下中断的写入等待重连核对。
+    ///
+    /// - Parameters:
+    ///   - title: 已本地化的操作名称，用于断线后的核对报告。
+    ///   - branch: 写入前状态快照中的分支与 HEAD。
+    private func reportWriteFailure(
+        _ error: Error,
+        cancelled: Bool,
+        title: String,
+        branch: BranchStatus?,
+        in repository: RepositoryLocation
+    ) {
+        stagingOverrides = [:]
+
+        let remoteFailure = error as? RemoteConnectionError
+
+        // 取消未确认仍须报告；普通取消只回到可刷新状态。
+        if !cancelled || remoteFailure?.kind == .cancellationUnconfirmed {
+            let failure = AppFailure(error: error, opening: false, location: repository, writing: true)
+            self.failure = failure
+            onFailure?(failure)
+        }
+
+        // 结果未知的服务器写入不重试，等待重连核对后再报告。
+        if remoteFailure != nil {
+            interruptedWrite = InterruptedWrite(title: title, branch: branch, time: Date())
+            reconnect()
+        }
+    }
+
     /// 所选文件与已显示 Diff 的记录一致、但内容哈希不同，说明需要重读 Diff。
     private func contentChanged(_ entry: StatusEntry?, hash: String?) -> Bool {
-        guard let entry, let contentHash,
-              contentHash.id == StatusRowID(path: entry.path, kind: entry.kind)
+        guard
+            let entry, let contentHash,
+            contentHash.id == StatusRowID(path: entry.path, kind: entry.kind)
         else { return false }
 
         return contentHash.hash != hash
@@ -842,28 +904,28 @@ final class RepositorySession {
         contextTask = Task { [weak self] in
             do {
                 let context = try await service.context(head: head)
-                guard let self, self.generation == request, !Task.isCancelled else { return }
+                guard let self, generation == request, !Task.isCancelled else { return }
                 let previous = self.context?.operation
                 self.context = context
 
-                if previous != context.operation, context.operation != nil, self.commitSubject.isEmpty {
-                    self.setMessage(context.mergeMessage)
+                if previous != context.operation, context.operation != nil, commitSubject.isEmpty {
+                    setMessage(context.mergeMessage)
                 }
             } catch {
-                guard let self, self.generation == request, !Task.isCancelled else { return }
+                guard let self, generation == request, !Task.isCancelled else { return }
                 let failure = AppFailure(error: error, opening: false, location: repository)
                 self.failure = failure
 
                 // 读取中断线由连接横幅和重连接管，不额外弹出 sheet。
                 if error is RemoteConnectionError {
-                    self.reconnect()
+                    reconnect()
                 } else {
-                    self.onFailure?(failure)
+                    onFailure?(failure)
                 }
             }
 
-            guard let self, self.generation == request else { return }
-            self.contextTask = nil
+            guard let self, generation == request else { return }
+            contextTask = nil
         }
     }
 
@@ -914,21 +976,21 @@ final class RepositorySession {
 
         connectionTask = Task { [weak self] in
             for await state in await remote.states() {
-                guard let self, self.generation == request, !Task.isCancelled else { return }
-                let previous = self.connectionState
-                self.connectionState = state
+                guard let self, generation == request, !Task.isCancelled else { return }
+                let previous = connectionState
+                connectionState = state
 
                 if state == .unavailable {
                     if let error = await remote.failure {
-                        self.failure = AppFailure(error: error, opening: false, location: repository)
+                        failure = AppFailure(error: error, opening: false, location: repository)
                     }
 
-                    self.reconnect()
+                    reconnect()
                 }
 
                 // 重连由其它窗口完成时同样完整刷新；本窗口的重连任务自行处理。
-                if state == .connected, previous != nil, previous != .connected, self.reconnectTask == nil {
-                    await self.connectionRestored(remote, request: request)
+                if state == .connected, previous != nil, previous != .connected, reconnectTask == nil {
+                    await connectionRestored(remote, request: request)
                 }
             }
         }
@@ -946,120 +1008,9 @@ final class RepositorySession {
                 do { try await Task.sleep(for: interval) }
                 catch { return }
 
-                guard let self, self.repository?.host != nil else { return }
-                if self.connectionState == .connected { self.refresh() }
+                guard let self, repository?.host != nil else { return }
+                if connectionState == .connected { refresh() }
             }
         }
-    }
-}
-
-// MARK: - Action Availability
-
-extension RepositorySession {
-    /// 菜单、工具栏、右键菜单与拖放共用的获取条件：需要已配置远端。
-    var canFetch: Bool {
-        canWrite && hasRemotes
-    }
-
-    /// 拉取需要可同步的当前分支，以及至少一个远端分支。
-    var canPull: Bool {
-        canWrite && hasCurrentBranch && history.branches.contains(where: \.isRemote)
-    }
-
-    /// 推送当前分支需要已出生的本地分支与远端。
-    var canPush: Bool {
-        canWrite && status?.branch.head != nil && status?.branch.oid != nil && hasRemotes
-    }
-
-    /// 发布需要本地分支与远端。
-    var canPublish: Bool {
-        canWrite && history.branches.contains(where: \.isLocal) && hasRemotes
-    }
-
-    /// 合并需要可同步的当前分支，以及它以外的分支。
-    var canMerge: Bool {
-        canWrite && hasCurrentBranch && history.branches.contains { $0.id != currentBranchID }
-    }
-
-    /// 新建分支需要 HEAD 已有提交，且没有进行中的操作。
-    var canCreateBranch: Bool {
-        canWrite && status?.branch.oid != nil && context?.operation == nil
-    }
-
-    /// 从指定引用或提交新建分支，起点不依赖当前 HEAD。
-    var canCreateBranchFromReference: Bool {
-        canWrite && context?.operation == nil
-    }
-
-    /// 检出需要当前分支以外的本地分支，且没有进行中的操作。
-    var canCheckout: Bool {
-        canWrite && context?.operation == nil
-            && history.branches.contains { $0.isLocal && $0.id != currentBranchID }
-    }
-
-    /// 双击或右键检出指定分支；远端分支检出已有或新建的跟踪分支。
-    func canCheckout(_ reference: RepositoryReference) -> Bool {
-        canWrite && context?.operation == nil && (reference.isRemote || reference.id != currentBranchID)
-    }
-
-    /// 把指定分支合并到当前分支。
-    func canMerge(_ reference: RepositoryReference) -> Bool {
-        canWrite && hasCurrentBranch && reference.id != currentBranchID
-    }
-
-    /// 从指定远端分支拉取到当前分支。
-    func canPull(from reference: RepositoryReference) -> Bool {
-        canWrite && hasCurrentBranch && reference.isRemote
-    }
-
-    /// 推送或发布指定的本地分支。
-    func canPush(_ reference: RepositoryReference) -> Bool {
-        canWrite && hasRemotes && reference.isLocal
-    }
-
-    /// 为指定远端分支新建跟踪分支。
-    func canTrack(_ reference: RepositoryReference) -> Bool {
-        canCreateBranchFromReference && reference.isRemote
-    }
-
-    /// 删除只针对本地分支，当前分支不能删除。
-    func canDelete(_ references: [RepositoryReference]) -> Bool {
-        canWrite && !references.isEmpty && references.allSatisfy(\.isLocal)
-            && !references.contains { $0.id == currentBranchID }
-    }
-
-    /// 所选文件中存在未暂存的改动。
-    func canStage(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains(where: \.hasUnstagedChanges)
-    }
-
-    /// 所选文件中存在已暂存的改动。
-    func canUnstage(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains(where: \.hasStagedChanges)
-    }
-
-    /// 丢弃需要至少一个文件，执行前仍会确认。
-    func canDiscard(_ entries: [StatusEntry]) -> Bool {
-        canWrite && !entries.isEmpty
-    }
-
-    /// 采用一侧与标记已解决只作用于冲突文件。
-    func canResolve(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains { $0.kind == .conflicted }
-    }
-
-    /// 当前分支已附着、已有提交且没有进行中的操作。
-    private var hasCurrentBranch: Bool {
-        status?.branch.head != nil && status?.branch.oid != nil && context?.operation == nil
-    }
-
-    /// 至少配置了一个远端。
-    private var hasRemotes: Bool {
-        history.snapshot?.remotes.isEmpty == false
-    }
-
-    /// 当前分支的完整引用名；分离或未出生时为空。
-    private var currentBranchID: String {
-        status?.branch.head.map { "refs/heads/" + $0 } ?? ""
     }
 }

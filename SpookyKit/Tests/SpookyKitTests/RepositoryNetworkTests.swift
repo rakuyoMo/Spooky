@@ -57,7 +57,8 @@ struct RepositoryNetworkTests {
         var received = false
 
         for await event in operation.events {
-            if case .output(.standardError(let data)) = event,
+            if
+                case .output(.standardError(let data)) = event,
                 String(decoding: data, as: UTF8.self).contains("TRANSFER_STARTED")
             {
                 received = true
@@ -98,7 +99,7 @@ struct RepositoryNetworkTests {
         }
 
         do {
-            for _ in 0..<100 {
+            for _ in 0 ..< 100 {
                 if FileManager.default.fileExists(atPath: socket) { break }
                 try await Task.sleep(for: .milliseconds(20))
             }

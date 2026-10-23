@@ -67,18 +67,18 @@ struct RemoteTransportTests {
         relay.register(operation)
 
         let invalid = try await request(relay, token: "wrong", id: "first", operation: operation)
-        #expect(invalid["accepted"] as? Bool == false)
+        #expect(!(invalid["accepted"] as? Bool ?? true))
         #expect(calls.withLock { $0 } == 0)
 
         let valid = try await request(relay, token: relay.token, id: "once", operation: operation)
         #expect(valid["value"] as? String == "test-answer")
         let repeated = try await request(relay, token: relay.token, id: "once", operation: operation)
-        #expect(repeated["accepted"] as? Bool == false)
+        #expect(!(repeated["accepted"] as? Bool ?? true))
         #expect(calls.withLock { $0 } == 1)
 
         relay.unregister(operation)
         let expired = try await request(relay, token: relay.token, id: "late", operation: operation)
-        #expect(expired["accepted"] as? Bool == false)
+        #expect(!(expired["accepted"] as? Bool ?? true))
         relay.stop()
         #expect(!FileManager.default.fileExists(atPath: relay.path))
     }
@@ -94,13 +94,13 @@ struct RemoteTransportTests {
             "token": token, "id": id, "operation": operation, "kind": "askpass", "prompt": "Password:",
         ]) + Data([10])
         let script = """
-        use IO::Socket::UNIX;
-        my $socket = IO::Socket::UNIX->new(Type => SOCK_STREAM, Peer => $ARGV[0]) or die;
-        local $/;
-        my $request = <STDIN>;
-        print {$socket} $request;
-        print scalar <$socket>;
-        """
+            use IO::Socket::UNIX;
+            my $socket = IO::Socket::UNIX->new(Type => SOCK_STREAM, Peer => $ARGV[0]) or die;
+            local $/;
+            my $request = <STDIN>;
+            print {$socket} $request;
+            print scalar <$socket>;
+            """
         let response = try await CommandExecutor.execute(
             executable: "/usr/bin/perl",
             processArguments: ["-e", script, relay.path],

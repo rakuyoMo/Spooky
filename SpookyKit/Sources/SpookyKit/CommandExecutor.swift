@@ -2,10 +2,12 @@ import Foundation
 import Subprocess
 import System
 
+// MARK: - CommandExecutor
+
 /// Git 与 SSH 共用的异步进程边界，保留原始输出并响应任务取消。
 enum CommandExecutor {
     /// 取消时 TERM 与 KILL 之间的宽限期，与服务器包装器的默认宽限期一致。
-    static let cancellationGrace: Duration = .seconds(2)
+    static let cancellationGrace = Duration.seconds(2)
 
     /// 同时排空两条管道；公开结果只包含业务参数，不记录环境和输入。
     static func execute(
@@ -32,7 +34,7 @@ enum CommandExecutor {
             // 取消只结束本次创建的进程组：先发 TERM，让 Git 移除自己的锁文件；
             // 宽限期后仍未退出再 KILL，SSH、askpass 和钩子不能遗留为后台写入。
             platform.teardownSequence = [
-                .gracefulShutDown(toProcessGroup: true, allowedDurationToNextStep: cancellationGrace)
+                .gracefulShutDown(toProcessGroup: true, allowedDurationToNextStep: cancellationGrace),
             ]
             let result = try await Subprocess.run(
                 .path(FilePath(command.executable)),
@@ -62,19 +64,20 @@ enum CommandExecutor {
                 termination: nil,
                 cancelled: cancelled
             )
-            let category: GitError.Category
-
-            if cancelled {
-                category = .cancelled
-            } else if error is GitOutputLimitError {
-                category = .outputLimitExceeded
-            } else if let processError = error as? SubprocessError,
-                      [.spawnFailed, .executableNotFound, .failedToChangeWorkingDirectory]
-                        .contains(processError.code) {
-                category = .launchFailed
-            } else {
-                category = .processIOFailed
-            }
+            let category: GitError.Category =
+                if cancelled {
+                    .cancelled
+                } else if error is GitOutputLimitError {
+                    .outputLimitExceeded
+                } else if
+                    let processError = error as? SubprocessError,
+                    [.spawnFailed, .executableNotFound, .failedToChangeWorkingDirectory]
+                        .contains(processError.code)
+                {
+                    .launchFailed
+                } else {
+                    .processIOFailed
+                }
 
             throw GitError(
                 result: result,
@@ -102,8 +105,12 @@ enum CommandExecutor {
     }
 }
 
+// MARK: - GitOutputLimitError
+
 /// 输出超限时结束读取，由进程库负责回收子进程。
-private struct GitOutputLimitError: Error {}
+private struct GitOutputLimitError: Error { }
+
+// MARK: - GitOutputCollector
 
 /// 同时收集两条输出管道，失败时仍能取回此前收到的数据。
 private actor GitOutputCollector {

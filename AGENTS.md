@@ -25,10 +25,9 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 
 ### `mise`
 
-根目录的 `mise.toml` 目前只声明 Python 3.11、Node 22 与 Java 21，没有项目 task。
+根目录的 `mise.toml` 定义构建、测试、打包与代码规范检查的 task，这些操作优先经 `mise run` 执行。
 
-- Swift 命令直接执行，不经 `mise`
-- Python、Node 与 Java 命令使用 `mise exec --`
+- 没有对应 task 的 Swift 命令直接执行
 - 纯 shell 命令不经 `mise` 执行
 - 本机专用的配置写进 `mise.local.toml`（已列入 `.gitignore`）
 
@@ -38,15 +37,17 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 
 | 命令 | 作用 |
 |---|---|
-| `swift build --package-path SpookyKit` | 编译核心库与 App |
-| `swift test --package-path SpookyKit` | 运行核心库、会话状态与本地化测试 |
+| `mise run build` | 编译核心库与 App |
+| `mise run test` | 运行核心库、会话状态与本地化测试 |
+| `mise run swift:lint` | 检查代码规范 |
+| `mise run swift:format` | 按代码规范格式化，并自动修复可修复的问题 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteConnectionTests` | 显式运行 `spooky-test` 远端集成测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteWorkingCopyTests` | 显式运行 M3 的 SFTP 与远端提交测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteHistorySyncTests` | 显式运行 M4 的服务器历史、同步与取消测试 |
 | `swift build --package-path SpookyKit --product Spooky` | 编译可执行 App product |
 | `swift run --package-path SpookyKit Spooky` | 启动 App 的仓库管理窗口 |
 | `./scripts/build-app.sh` | 生成开发用 `SpookyKit/.build/Spooky.app` |
-| `./scripts/bundle.sh` | release 构建并生成 `build/Spooky.app`，拷贝资源与图标后 ad-hoc 签名并校验 |
+| `mise run bundle` | release 构建并生成 `build/Spooky.app`，拷贝资源与图标后 ad-hoc 签名并校验 |
 | `SPOOKY_PERFORMANCE_TESTS=1 swift test --package-path SpookyKit -c release -Xswiftc -enable-testing --filter PerformanceTests` | 显式运行大仓库首屏、历史分页与内存的性能验收 |
 | `swift scripts/make-icon.swift SpookyKit/Sources/Spooky/AppIcon.icns` | 重新生成静态应用图标 |
 
@@ -63,6 +64,7 @@ SpookyKit/                    核心库与 App 的 Swift Package
     GitCommandResult.swift    命令结果、错误分类与流式输出事件
     RepositoryOperationQueue.swift 仓库写队列、主机并发限制与操作事件
     RemoteConnection.swift    SSH 主连接、体检、重连与远端取消
+    RemoteConnection+HealthCheck.swift 经主连接依次检查远端 Git、路径权限、工作区与状态格式
     SSHConfiguration.swift    SSH 参数及远端环境清洗
     CallbackRelay.swift       本机 Unix socket 回调服务
     RemoteOutputFilter.swift  远端完成帧与退出状态解析
@@ -90,6 +92,8 @@ SpookyKit/                    核心库与 App 的 Swift Package
 scripts/build-app.sh          开发 App Bundle 生成脚本
 scripts/bundle.sh             发布 App Bundle 生成脚本，输出到 build/Spooky.app
 scripts/make-icon.swift       应用图标生成脚本
+.github/workflows/ci.yml      PR 与 main 上的代码规范检查、编译、测试与打包
+mise.toml                     构建、测试、打包与代码规范检查的 task
 docs/testing/M1.md            M1 的 App 手动验收步骤
 docs/testing/M2.md            M2 的连接、终端与主题验收步骤
 docs/testing/M3.md            M3 的工作区、Diff、提交与冲突验收步骤
@@ -135,6 +139,12 @@ LICENSE                       GPL-3.0 许可证全文
 - 解析器的固定输入放在 `Tests/SpookyKitTests/Fixtures/`，由真实 Git 在隔离配置、固定身份与时间的临时仓库中生成
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
 - 本地化新增资源键时同步五种语言，并保持格式参数一致；错误标题和恢复说明本地化，Git 原文保持不变
+
+### 版本号
+
+- 版本号写在 `SpookyKit/Sources/Spooky/Info.plist`：`CFBundleShortVersionString` 是对外版本号，`CFBundleVersion` 是正整数构建号
+- 1.0.0 之前，完成里程碑 Mn 的 PR 把 `CFBundleShortVersionString` 改为 `0.n.0`，如 M5 为 `0.5.0`、M10 为 `0.10.0`
+- 1.0.0 由维护者确认后手动发起发布
 
 ### README
 
@@ -200,7 +210,10 @@ LICENSE                       GPL-3.0 许可证全文
 
 ### 代码规范验证流程
 
-项目当前没有格式化或 lint 工具。新建或编辑 `.swift` 文件后，必须运行 `swift build --package-path SpookyKit` 与 `swift test --package-path SpookyKit`，两者都通过才算完成。
+代码风格以 [RakuyoKit/swift](https://github.com/RakuyoKit/swift) 为准；运行过任一 `mise run` task 后，规则原文位于 `SpookyKit/.build/checkouts/swift/Sources/RakuyoSwiftFormatTool/`。
+
+- 新建或编辑 `.swift` 文件后，运行 `mise run swift:lint`；不通过时先运行 `mise run swift:format` 自动修复，再运行 `mise run swift:lint`
+- `mise run swift:lint`、`mise run build` 与 `mise run test` 都通过才算完成；CI 在每个 PR 与推送到 main 时运行同样的检查
 
 ## 产物可追溯性（番茄炒蛋原则）
 

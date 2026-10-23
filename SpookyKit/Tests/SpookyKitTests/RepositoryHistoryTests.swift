@@ -18,7 +18,7 @@ struct RepositoryHistoryTests {
         _ = try await fixture.runner.run(["config", "--local", "user.name", "李 café 🐈"])
         let subject = String(repeating: "长标题", count: 100)
 
-        for index in 0..<3 {
+        for index in 0 ..< 3 {
             _ = try await fixture.runner.run(
                 ["commit", "--allow-empty", "-F", "-"],
                 input: Data("\(subject) \(index)\n\n正文\u{1f}\u{1d}\n".utf8)
@@ -72,7 +72,7 @@ struct RepositoryHistoryTests {
         #expect(rename.path == "renamed")
         #expect(
             try await history.diff(in: tip, file: rename).diff?.files.first?.headers
-                .contains(where: { $0.hasPrefix("rename from") }) == true
+                .contains(where: { $0.hasPrefix("rename from") }) ?? false
         )
         try await refs.checkout("refs/heads/main")
         var options = MergeOptions()
@@ -85,7 +85,7 @@ struct RepositoryHistoryTests {
         var graph = CommitGraph()
         let rows = commits.commits.map { graph.append($0) }
         #expect(rows.first?.segments.filter(\.startsAtCommit).count == 2)
-        #expect(rows.last?.segments.allSatisfy(\.endsAtCommit) == true)
+        #expect(rows.last?.segments.allSatisfy(\.endsAtCommit) ?? false)
     }
 
     /// 非法协议不能被静默当作空列表。

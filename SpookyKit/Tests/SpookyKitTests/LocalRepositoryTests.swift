@@ -99,21 +99,21 @@ struct LocalRepositoryTests {
         }
         #expect(notRepository?.category == .notRepository)
         #expect(notRepository?.exitCode == 128)
-        #expect(notRepository?.message.contains("not a git repository") == true)
+        #expect(notRepository?.message.contains("not a git repository") ?? false)
 
         let missing = await #expect(throws: GitError.self) {
             try await temporary.runner(at: temporary.directory.appending(path: "missing").path)
                 .openLocalRepository()
         }
         #expect(missing?.category == .pathUnavailable)
-        #expect(missing?.message.contains("cannot change to") == true)
+        #expect(missing?.message.contains("cannot change to") ?? false)
 
         _ = try await temporary.runner.run(["-c", "init.templateDir=", "init", "--bare", "-q"])
         let bare = await #expect(throws: GitError.self) {
             try await temporary.runner.openLocalRepository()
         }
         #expect(bare?.category == .notWorkingTree)
-        #expect(bare?.message.isEmpty == false)
+        #expect(!(bare?.message.isEmpty ?? true))
     }
 
     /// 版本不足在路径验证之前报出，保留版本 stdout 与 stderr。

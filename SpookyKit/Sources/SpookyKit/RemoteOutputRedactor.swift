@@ -70,7 +70,7 @@ final class RemoteOutputRedactor: Sendable {
             if let match {
                 result.append(data[..<match.lowerBound])
                 result.append(Data("[REDACTED]".utf8))
-                data.removeSubrange(data.startIndex..<match.upperBound)
+                data.removeSubrange(data.startIndex ..< match.upperBound)
                 continue
             }
 
@@ -81,11 +81,11 @@ final class RemoteOutputRedactor: Sendable {
                     let maximum = min(data.count, secret.count - 1)
                     guard maximum > retained else { continue }
 
-                    for length in stride(from: maximum, through: retained + 1, by: -1) {
-                        if data.suffix(length) == secret.prefix(length) {
-                            retained = length
-                            break
-                        }
+                    let lengths = stride(from: maximum, through: retained + 1, by: -1)
+
+                    for length in lengths where data.suffix(length) == secret.prefix(length) {
+                        retained = length
+                        break
                     }
                 }
             }

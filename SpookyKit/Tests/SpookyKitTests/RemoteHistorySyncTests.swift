@@ -49,7 +49,8 @@ struct RemoteHistorySyncTests {
             #expect(page.commits.first?.parents.count == 2)
             let change = try #require(try await history.changes(in: head).first)
             #expect(change.path == "你好 [*].txt")
-            #expect(try await history.diff(in: head, file: change).diff?.files.first?.hunks.isEmpty == false)
+            let commitDiff = try await history.diff(in: head, file: change)
+            #expect(!(commitDiff.diff?.files.first?.hunks.isEmpty ?? true))
             _ = try await sync.push(branch: "main", remote: "origin", destination: "main", setUpstream: true)
             _ = try await runner.run(["clone", "-b", "main", bare, otherPath])
             let otherLocation = try await otherRemote.open().location
@@ -138,7 +139,7 @@ struct RemoteHistorySyncTests {
                 } catch {
                     #expect(
                         error is CancellationError || error is RemoteConnectionError
-                            || (error as? GitError)?.isCancelled == true
+                            || ((error as? GitError)?.isCancelled ?? false)
                     )
                 }
                 _ = try await remote.reconnect()

@@ -9,8 +9,8 @@ enum LocalGitAuthentication {
         location: RepositoryLocation,
         arguments: [String],
         environment: Environment,
-        input: Data?,
-        acceptedExitCodes: Set<Int32>,
+        input: Data? = nil,
+        acceptedExitCodes: Set<Int32> = [0],
         handler: @escaping RemoteCallbackHandler,
         onOutput: @escaping @Sendable (GitOutputEvent) -> Void
     ) async throws -> GitCommandResult {

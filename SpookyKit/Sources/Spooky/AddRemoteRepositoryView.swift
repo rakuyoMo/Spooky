@@ -10,33 +10,25 @@ struct AddRemoteRepositoryView: View {
     let cancelled: () -> Void
 
     /// SSH 主机别名不拆解成用户、地址和端口。
-    @State private var host = ""
+    @State
+    private var host = ""
 
     /// B 上工作区的绝对路径。
-    @State private var path = ""
+    @State
+    private var path = ""
 
     /// 正在执行的体检任务，取消表单时一并取消。
-    @State private var task: Task<Void, Never>?
+    @State
+    private var task: Task<Void, Never>?
 
     /// 体检失败的本地化说明和原始诊断。
-    @State private var failure: AppFailure?
+    @State
+    private var failure: AppFailure?
 
     /// 标题、两列表单、错误区和底栏沿用统一 sheet 骨架。
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            HStack(alignment: .top, spacing: 16) {
-                Image(systemName: "server.rack")
-                    .font(.system(size: 48))
-                    .frame(width: 64, height: 64)
-                    .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(AppLocalization.text("action.addRemote"))
-                        .font(.system(size: 14, weight: .bold))
-                    Text(AppLocalization.text("remote.form.help"))
-                        .font(.system(size: 13))
-                }
-            }
+            header
 
             Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 12) {
                 GridRow {
@@ -62,35 +54,62 @@ struct AddRemoteRepositoryView: View {
 
             Divider()
 
-            HStack(spacing: 8) {
-                if task != nil {
-                    ProgressView(AppLocalization.text("remote.checking"))
-                        .controlSize(.small)
-                }
-
-                Spacer()
-                Button(AppLocalization.text("action.cancel")) {
-                    task?.cancel()
-                    cancelled()
-                }
-                .keyboardShortcut(.cancelAction)
-
-                Button(AppLocalization.text("action.open"), action: submit)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(host.isEmpty || !path.hasPrefix("/") || task != nil)
-                    .accessibilityIdentifier("remote-open")
-            }
+            footer
         }
         .padding(20)
         .frame(width: 520)
         .onDisappear { task?.cancel() }
     }
 
+    /// 服务器图标、表单标题与填写说明。
+    private var header: some View {
+        HStack(alignment: .top, spacing: 16) {
+            Image(systemName: "server.rack")
+                .font(.system(size: 48))
+                .frame(width: 64, height: 64)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(AppLocalization.text("action.addRemote"))
+                    .font(.system(size: 14, weight: .bold))
+
+                Text(AppLocalization.text("remote.form.help"))
+                    .font(.system(size: 13))
+            }
+        }
+    }
+
+    /// 底栏：体检进度、取消与打开按钮。
+    private var footer: some View {
+        HStack(spacing: 8) {
+            if task != nil {
+                ProgressView(AppLocalization.text("remote.checking"))
+                    .controlSize(.small)
+            }
+
+            Spacer()
+
+            Button(AppLocalization.text("action.cancel")) {
+                task?.cancel()
+                cancelled()
+            }
+            .keyboardShortcut(.cancelAction)
+
+            Button(AppLocalization.text("action.open"), action: submit)
+                .keyboardShortcut(.defaultAction)
+                .disabled(host.isEmpty || !path.hasPrefix("/") || task != nil)
+                .accessibilityIdentifier("remote-open")
+        }
+    }
+
     /// 体检通过才加入最近记录；取消和失败会关闭本次连接。
     private func submit() {
         failure = nil
         let location = RepositoryLocation.remote(host: host, path: path)
-        let remote = GitRunner(location: location).remote!
+
+        // 服务器位置创建的执行器总带有 SSH 连接。
+        guard let remote = GitRunner(location: location).remote else { return }
+
         task = Task {
             await remote.setCallbackHandler { request in
                 await RemoteCallbackPresenter.shared.respond(to: request)

@@ -1,6 +1,8 @@
 import AppKit
 import SwiftUI
 
+// MARK: - PaletteColor
+
 /// 以 sRGB 数值与透明度保存颜色。
 struct PaletteColor: Decodable, Sendable, Equatable {
     /// 六位 RGB 值。
@@ -24,6 +26,8 @@ struct PaletteColor: Decodable, Sendable, Equatable {
     var color: Color { Color(nsColor: nsColor) }
 }
 
+// MARK: - AppPalette
+
 /// 当前界面使用的命名色，外观改变时由 AppKit 自动切换。
 enum AppPalette {
     /// 两种外观对应的颜色。
@@ -37,9 +41,10 @@ enum AppPalette {
 
     /// 资源只包含当前视图使用的颜色。
     static let colors: [String: Variants] = {
-        guard let url = Bundle.module.url(forResource: "NamedColors", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let colors = try? JSONDecoder().decode([String: Variants].self, from: data)
+        guard
+            let url = Bundle.module.url(forResource: "NamedColors", withExtension: "json"),
+            let data = try? Data(contentsOf: url),
+            let colors = try? JSONDecoder().decode([String: Variants].self, from: data)
         else { preconditionFailure("命名色资源无法读取") }
         return colors
     }()
@@ -54,15 +59,25 @@ enum AppPalette {
         guard let pair = colors[name] else { preconditionFailure("命名色缺失：\(name)") }
         return NSColor(name: NSColor.Name(name)) { appearance in
             appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-                ? pair.dark.nsColor : pair.light.nsColor
+                ? pair.dark.nsColor
+                : pair.light.nsColor
         }
     }
 }
 
+// MARK: - BuiltinTheme
+
 /// 内置文本主题，设置页提供只读预览，实际主题随系统外观选择。
 struct BuiltinTheme: Decodable, Identifiable, Sendable {
-    /// 主题身份与名称相同。
-    var id: String { name }
+    /// 随应用交付的两套主题。
+    static let all: [Self] = {
+        guard
+            let url = Bundle.module.url(forResource: "BuiltinThemes", withExtension: "json"),
+            let data = try? Data(contentsOf: url),
+            let themes = try? JSONDecoder().decode([Self].self, from: data)
+        else { preconditionFailure("内置主题资源无法读取") }
+        return themes
+    }()
 
     /// 需求固定的 Default 或 Default (Dark)。
     let name: String
@@ -76,15 +91,9 @@ struct BuiltinTheme: Decodable, Identifiable, Sendable {
     /// 正文、背景、选区、增删行及语法色。
     let colors: [String: PaletteColor]
 
-    /// 随应用交付的两套主题。
-    static let all: [BuiltinTheme] = {
-        guard let url = Bundle.module.url(forResource: "BuiltinThemes", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let themes = try? JSONDecoder().decode([BuiltinTheme].self, from: data)
-        else { preconditionFailure("内置主题资源无法读取") }
-        return themes
-    }()
+    /// 主题身份与名称相同。
+    var id: String { name }
 
     /// 深浅外观分别使用对应默认主题。
-    static func current(dark: Bool) -> BuiltinTheme { all[dark ? 1 : 0] }
+    static func current(dark: Bool) -> Self { all[dark ? 1 : 0] }
 }

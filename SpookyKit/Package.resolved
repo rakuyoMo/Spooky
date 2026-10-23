@@ -1,6 +1,24 @@
 {
-  "originHash" : "d6093b74926a4fe1fddbbb3564b0d8b5458aacacb26dcd01c6617c3b3e557429",
+  "originHash" : "5368de9d0084511efa4554a398b326c8b23fcb51bc1379ea31d328112e5cfb59",
   "pins" : [
+    {
+      "identity" : "swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/RakuyoKit/swift.git",
+      "state" : {
+        "revision" : "5d13a5fb69e44b637b3eee0f7761077bed29d6ee",
+        "version" : "1.4.0"
+      }
+    },
+    {
+      "identity" : "swift-argument-parser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-argument-parser.git",
+      "state" : {
+        "revision" : "6a52f3251125d74daf04fcbd5e6f08a75d074382",
+        "version" : "1.8.2"
+      }
+    },
     {
       "identity" : "swift-subprocess",
       "kind" : "remoteSourceControl",

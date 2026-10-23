@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - DiffSide
+
 /// 工作区详情的两个比较方向。
 public enum DiffSide: String, Sendable, CaseIterable {
     /// 暂存区相对 HEAD。
@@ -8,6 +10,8 @@ public enum DiffSide: String, Sendable, CaseIterable {
     /// 工作区相对暂存区。
     case unstaged
 }
+
+// MARK: - WorkingCopyError
 
 /// 补丁操作失败的明确类别，显示文案由 App 本地化。
 public enum WorkingCopyError: Error, Sendable, Equatable {
@@ -23,6 +27,8 @@ public enum WorkingCopyError: Error, Sendable, Equatable {
     /// 目录或子模块不能当作普通文件丢弃。
     case unsupportedFile
 }
+
+// MARK: - DiffLine
 
 /// 一行 diff 的原始字节与两侧行号，显示解码不影响补丁内容。
 public struct DiffLine: Sendable, Equatable, Identifiable {
@@ -48,6 +54,8 @@ public struct DiffLine: Sendable, Equatable, Identifiable {
     public var isChange: Bool { prefix == 43 || prefix == 45 }
 }
 
+// MARK: - DiffHunk
+
 /// 一块带上下文的文本改动。
 public struct DiffHunk: Sendable, Equatable, Identifiable {
     /// 文件内的块序号。
@@ -65,6 +73,8 @@ public struct DiffHunk: Sendable, Equatable, Identifiable {
     /// 包含上下文与增删的行序列。
     public let lines: [DiffLine]
 }
+
+// MARK: - DiffFile
 
 /// 一个文件的单个 diff 段；类型变化可能产生删除和新增两个段。
 public struct DiffFile: Sendable, Equatable, Identifiable {
@@ -87,6 +97,8 @@ public struct DiffFile: Sendable, Equatable, Identifiable {
     public let hunks: [DiffHunk]
 }
 
+// MARK: - RepositoryDiff
+
 /// 一次单文件 diff 的解析结果，保留多个段以表示类型变化。
 public struct RepositoryDiff: Sendable, Equatable {
     /// 文件段按 Git 输出顺序排列。
@@ -100,7 +112,13 @@ public struct RepositoryDiff: Sendable, Equatable {
         }
 
         guard patch.last == 10 else { throw WorkingCopyError.malformedDiff }
-        let lines = patch.dropLast().split(separator: 10, omittingEmptySubsequences: false).map(Data.init)
+
+        // 逐步标注为 Data：Swift 6.3 无法在 Sequence 与 Collection 的 dropLast、split 重载之间选择
+        let content: Data = patch.dropLast()
+        let segments: [Data] = content.split(separator: 10, omittingEmptySubsequences: false)
+
+        // 切片沿用原补丁的下标，复制后每行都从 0 开始
+        let lines = segments.map { Data($0) }
         var cursor = 0
         var files: [DiffFile] = []
 
@@ -144,70 +162,6 @@ public struct RepositoryDiff: Sendable, Equatable {
         self.files = files
     }
 
-    /// 从选中块生成目标文件补丁，非连续行与无换行末行保持原始字节。
-    public func patch(
-        path: String,
-        file index: Int,
-        hunk hunkIndex: Int,
-        selectedLines: Set<Int>,
-        reverse: Bool
-    ) throws -> Data {
-        guard files.indices.contains(index),
-              files[index].hunks.indices.contains(hunkIndex)
-        else { throw WorkingCopyError.invalidSelection }
-
-        let file = files[index]
-        let hunk = file.hunks[hunkIndex]
-        let selection = selectedLines.isEmpty
-            ? Set(hunk.lines.filter(\.isChange).map(\.id))
-            : selectedLines
-        guard !selection.isEmpty,
-              selection.allSatisfy({ id in hunk.lines.contains { $0.id == id && $0.isChange } })
-        else { throw WorkingCopyError.invalidSelection }
-
-        var body = Data()
-        var oldCount = 0
-        var newCount = 0
-
-        // 正向保留旧侧，反向保留新侧；未选中的改动变为上下文或从补丁移除。
-        for line in hunk.lines {
-            var prefix = line.prefix
-
-            if line.isChange && !selection.contains(line.id) {
-                if prefix == (reverse ? 45 : 43) { continue }
-                prefix = 32
-            }
-
-            if prefix != 43 { oldCount += 1 }
-            if prefix != 45 { newCount += 1 }
-            body.append(prefix)
-            body.append(line.content)
-            body.append(10)
-
-            if line.noNewline {
-                body.append(Data("\\ No newline at end of file\n".utf8))
-            }
-        }
-
-        // 目标侧的行号是唯一锚点，另一侧按本块实际增量重算，避免前面块的偏移泄漏。
-        let anchor = reverse ? hunk.newStart : hunk.oldStart
-        let oldStart = oldCount == 0 ? max(0, anchor - (reverse ? 1 : 0)) : max(1, anchor)
-        let newStart = newCount == 0 ? max(0, anchor - (reverse ? 0 : 1)) : max(1, anchor)
-        let entireFile = file.hunks.count == 1 && selection == Set(hunk.lines.filter(\.isChange).map(\.id))
-        let oldAbsent = file.addedMode != nil && (!reverse || entireFile)
-        let newAbsent = file.deletedMode != nil && (reverse || entireFile)
-        let oldPath = Self.quotedPath("a/" + path)
-        let newPath = Self.quotedPath("b/" + path)
-        var header = "diff --git \(oldPath) \(newPath)\n"
-
-        if oldAbsent { header += "new file mode \(file.addedMode!)\n" }
-        if newAbsent { header += "deleted file mode \(file.deletedMode!)\n" }
-        header += "--- \(oldAbsent ? "/dev/null" : oldPath)\n"
-        header += "+++ \(newAbsent ? "/dev/null" : newPath)\n"
-        header += "@@ -\(oldAbsent ? 0 : oldStart),\(oldCount) +\(newAbsent ? 0 : newStart),\(newCount) @@\n"
-        return Data(header.utf8) + body
-    }
-
     /// 块内计数必须与标题完全一致，截断或损坏的输出不能成为可写补丁。
     private static func hunk(_ source: [Data], cursor: inout Int, id: Int) throws -> DiffHunk {
         let header = text(source[cursor])
@@ -238,7 +192,7 @@ public struct RepositoryDiff: Sendable, Equatable {
                 continue
             }
 
-            if oldCount == old.1 && newCount == new.1 { break }
+            if oldCount == old.1, newCount == new.1 { break }
             guard let prefix = raw.first, [32, 43, 45].contains(prefix) else {
                 throw WorkingCopyError.malformedDiff
             }
@@ -250,8 +204,17 @@ public struct RepositoryDiff: Sendable, Equatable {
                 oldNumber: prefix == 43 ? nil : oldNumber,
                 newNumber: prefix == 45 ? nil : newNumber
             ))
-            if prefix != 43 { oldNumber += 1; oldCount += 1 }
-            if prefix != 45 { newNumber += 1; newCount += 1 }
+
+            if prefix != 43 {
+                oldNumber += 1
+                oldCount += 1
+            }
+
+            if prefix != 45 {
+                newNumber += 1
+                newCount += 1
+            }
+
             cursor += 1
         }
 
@@ -262,11 +225,12 @@ public struct RepositoryDiff: Sendable, Equatable {
     /// 缺省行数为 1，空文件范围允许起点和行数为 0。
     private static func range(_ value: Substring, prefix: Character) throws -> (Int, Int) {
         let parts = value.dropFirst().split(separator: ",", omittingEmptySubsequences: false)
-        guard value.first == prefix,
-              (1...2).contains(parts.count),
-              let start = Int(parts[0]),
-              let count = parts.count == 2 ? Int(parts[1]) : 1,
-              start >= 0, count >= 0, start <= Int.max - count
+        guard
+            value.first == prefix,
+            (1 ... 2).contains(parts.count),
+            let start = Int(parts[0]),
+            let count = parts.count == 2 ? Int(parts[1]) : 1,
+            start >= 0, count >= 0, start <= Int.max - count
         else { throw WorkingCopyError.malformedDiff }
         return (start, count)
     }
@@ -284,11 +248,78 @@ public struct RepositoryDiff: Sendable, Equatable {
             switch byte {
             case 34: result += "\\\""
             case 92: result += "\\\\"
-            case 32...126: result.append(Character(UnicodeScalar(byte)))
+            case 32 ... 126: result.append(Character(UnicodeScalar(byte)))
             default: result += String(format: "\\%03o", Int(byte))
             }
         }
 
         return result + "\""
     }
+
+    /// 从选中块生成目标文件补丁，非连续行与无换行末行保持原始字节。
+    public func patch(
+        path: String,
+        file index: Int,
+        hunk hunkIndex: Int,
+        selectedLines: Set<Int>,
+        reverse: Bool
+    ) throws -> Data {
+        guard
+            files.indices.contains(index),
+            files[index].hunks.indices.contains(hunkIndex)
+        else { throw WorkingCopyError.invalidSelection }
+
+        let file = files[index]
+        let hunk = file.hunks[hunkIndex]
+        let selection = selectedLines.isEmpty
+            ? Set(hunk.lines.filter(\.isChange).map(\.id))
+            : selectedLines
+        guard
+            !selection.isEmpty,
+            selection.allSatisfy({ id in hunk.lines.contains { $0.id == id && $0.isChange } })
+        else { throw WorkingCopyError.invalidSelection }
+
+        var body = Data()
+        var oldCount = 0
+        var newCount = 0
+
+        // 正向保留旧侧，反向保留新侧；未选中的改动变为上下文或从补丁移除。
+        for line in hunk.lines {
+            var prefix = line.prefix
+
+            if line.isChange, !selection.contains(line.id) {
+                if prefix == (reverse ? 45 : 43) { continue }
+                prefix = 32
+            }
+
+            if prefix != 43 { oldCount += 1 }
+            if prefix != 45 { newCount += 1 }
+            body.append(prefix)
+            body.append(line.content)
+            body.append(10)
+
+            if line.noNewline {
+                body.append(Data("\\ No newline at end of file\n".utf8))
+            }
+        }
+
+        // 目标侧的行号是唯一锚点，另一侧按本块实际增量重算，避免前面块的偏移泄漏。
+        let anchor = reverse ? hunk.newStart : hunk.oldStart
+        let oldStart = oldCount == 0 ? max(0, anchor - (reverse ? 1 : 0)) : max(1, anchor)
+        let newStart = newCount == 0 ? max(0, anchor - (reverse ? 0 : 1)) : max(1, anchor)
+        let entireFile = file.hunks.count == 1 && selection == Set(hunk.lines.filter(\.isChange).map(\.id))
+        let oldAbsent = file.addedMode != nil && (!reverse || entireFile)
+        let newAbsent = file.deletedMode != nil && (reverse || entireFile)
+        let oldPath = Self.quotedPath("a/" + path)
+        let newPath = Self.quotedPath("b/" + path)
+        var header = "diff --git \(oldPath) \(newPath)\n"
+
+        if oldAbsent, let mode = file.addedMode { header += "new file mode \(mode)\n" }
+        if newAbsent, let mode = file.deletedMode { header += "deleted file mode \(mode)\n" }
+        header += "--- \(oldAbsent ? "/dev/null" : oldPath)\n"
+        header += "+++ \(newAbsent ? "/dev/null" : newPath)\n"
+        header += "@@ -\(oldAbsent ? 0 : oldStart),\(oldCount) +\(newAbsent ? 0 : newStart),\(newCount) @@\n"
+        return Data(header.utf8) + body
+    }
+
 }

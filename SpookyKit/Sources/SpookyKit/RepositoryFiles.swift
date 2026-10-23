@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - RepositoryFileError
+
 /// 文件访问失败的类别，界面负责本地化，底层诊断保留在关联的命令结果中。
 public enum RepositoryFileError: Error, Sendable {
     /// SFTP 批处理无法表示换行或 NUL 路径。
@@ -9,6 +11,8 @@ public enum RepositoryFileError: Error, Sendable {
     case tooLarge
 }
 
+// MARK: - RepositoryFiles
+
 /// 工作区所在机器的文件访问边界；远端路径始终作为 SFTP 数据处理。
 public struct RepositoryFiles: Sendable {
     /// 文件访问与 Git 使用相同的仓库和 SSH 会话。
@@ -17,6 +21,40 @@ public struct RepositoryFiles: Sendable {
     /// 建立文件访问服务，不立即访问磁盘或网络。
     public init(runner: GitRunner) {
         self.runner = runner
+    }
+
+    /// SFTP 自动将引号内通配符视为字面值，只转义引号与反斜杠。
+    static func quoted(_ path: String) throws -> String {
+        guard !path.contains("\n"), !path.contains("\r"), !path.utf8.contains(0) else {
+            throw RepositoryFileError.unsupportedPath
+        }
+
+        var result = "\""
+
+        for character in path {
+            if "\\\"".contains(character) { result.append("\\") }
+            result.append(character)
+        }
+
+        return result + "\""
+    }
+
+    /// 中继文件只落在本次调用独占的 0700 目录中。
+    private static func temporaryDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-sftp-" + UUID().uuidString)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+        return directory
+    }
+
+    /// 使用映射读取并验证上限，避免把异常大的状态文件复制进内存。
+    private static func boundedRead(_ url: URL) throws -> Data {
+        let data = try Data(contentsOf: url, options: .mappedIfSafe)
+        guard data.count <= 256 * 1024 * 1024 else { throw RepositoryFileError.tooLarge }
+        return data
     }
 
     /// 批量读取已定位的绝对路径；缺失文件不进入快照，权限与传输失败仍抛错。
@@ -124,37 +162,4 @@ public struct RepositoryFiles: Sendable {
         )
     }
 
-    /// SFTP 自动将引号内通配符视为字面值，只转义引号与反斜杠。
-    static func quoted(_ path: String) throws -> String {
-        guard !path.contains("\n"), !path.contains("\r"), !path.utf8.contains(0) else {
-            throw RepositoryFileError.unsupportedPath
-        }
-
-        var result = "\""
-
-        for character in path {
-            if "\\\"".contains(character) { result.append("\\") }
-            result.append(character)
-        }
-
-        return result + "\""
-    }
-
-    /// 中继文件只落在本次调用独占的 0700 目录中。
-    private static func temporaryDirectory() throws -> URL {
-        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-sftp-" + UUID().uuidString)
-        try FileManager.default.createDirectory(
-            at: directory,
-            withIntermediateDirectories: false,
-            attributes: [.posixPermissions: 0o700]
-        )
-        return directory
-    }
-
-    /// 使用映射读取并验证上限，避免把异常大的状态文件复制进内存。
-    private static func boundedRead(_ url: URL) throws -> Data {
-        let data = try Data(contentsOf: url, options: .mappedIfSafe)
-        guard data.count <= 256 * 1024 * 1024 else { throw RepositoryFileError.tooLarge }
-        return data
-    }
 }

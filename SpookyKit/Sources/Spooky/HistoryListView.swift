@@ -2,6 +2,8 @@ import AppKit
 import SpookyKit
 import SwiftUI
 
+// MARK: - HistoryListView
+
 /// 历史头部与原生可复用列表，滚到底时自动读取下一页。
 struct HistoryListView: View {
     /// 当前仓库会话。
@@ -14,57 +16,22 @@ struct HistoryListView: View {
     let openCommit: () -> Void
 
     /// 提交图可见性跨仓库记忆。
-    @AppStorage("historyShowGraph") private var showGraph = true
+    @AppStorage("historyShowGraph")
+    private var showGraph = true
 
     /// 0 为中号，1 为小号。
-    @AppStorage("historySmallRows") private var smallRows = false
+    @AppStorage("historySmallRows")
+    private var smallRows = false
 
     /// 40 pt 表头、24 / 46 pt 列表行和持续可见的取消入口。
     var body: some View {
         VStack(spacing: 0) {
             ConnectionStatusView(session: session)
 
-            HStack(spacing: 8) {
-                Text(session.history.title)
-                    .lineLimit(1)
-                    .help(session.repository?.displayPath ?? "")
-                if let id = session.history.selectedReference, let counts = session.history.divergence[id] {
-                    Text("↑ \(counts.ahead) ↓ \(counts.behind)")
-                        .font(.system(size: 11))
-                }
-                Spacer(minLength: 4)
-                Menu {
-                    Toggle(AppLocalization.text("history.showGraph"), isOn: $showGraph)
-                    Button(AppLocalization.text("history.medium")) { smallRows = false }
-                        .disabled(!showGraph)
-                    Button(AppLocalization.text("history.small")) { smallRows = true }
-                        .disabled(!showGraph)
-                } label: {
-                    Image(systemName: "slider.horizontal.3")
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .accessibilityLabel(AppLocalization.text("history.viewOptions"))
-            }
-            .font(.system(size: 13))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 12)
-            .frame(height: 40)
-            .background(.bar)
+            header
             Divider()
 
-            if session.history.commits.isEmpty, !session.history.isLoading {
-                EmptyStateView(title: AppLocalization.text("history.empty"), message: "", symbol: "clock")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                HistoryCommitTable(
-                    session: session,
-                    showGraph: showGraph,
-                    smallRows: smallRows,
-                    createBranch: createBranch,
-                    openCommit: openCommit
-                )
-            }
+            commitList
 
             if let failure = session.history.failure {
                 FailureDetailsView(failure: failure) { session.history.reloadCommits() }
@@ -91,10 +58,262 @@ struct HistoryListView: View {
         }
         .frame(minWidth: 300)
     }
+
+    /// 历史标题、所选分支的双向数量与视图选项菜单。
+    private var header: some View {
+        HStack(spacing: 8) {
+            Text(session.history.title)
+                .lineLimit(1)
+                .help(session.repository?.displayPath ?? "")
+
+            if
+                let id = session.history.selectedReference,
+                let counts = session.history.divergence[id]
+            {
+                Text("↑ \(counts.ahead) ↓ \(counts.behind)")
+                    .font(.system(size: 11))
+            }
+
+            Spacer(minLength: 4)
+
+            Menu {
+                Toggle(AppLocalization.text("history.showGraph"), isOn: $showGraph)
+                Button(AppLocalization.text("history.medium")) { smallRows = false }
+                    .disabled(!showGraph)
+                Button(AppLocalization.text("history.small")) { smallRows = true }
+                    .disabled(!showGraph)
+            } label: {
+                Image(systemName: "slider.horizontal.3")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .accessibilityLabel(AppLocalization.text("history.viewOptions"))
+        }
+        .font(.system(size: 13))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 12)
+        .frame(height: 40)
+        .background(.bar)
+    }
+
+    /// 没有提交且不在读取时显示空状态，否则显示提交表格。
+    @ViewBuilder
+    private var commitList: some View {
+        if session.history.commits.isEmpty, !session.history.isLoading {
+            EmptyStateView(title: AppLocalization.text("history.empty"), message: "", symbol: "clock")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            HistoryCommitTable(
+                session: session,
+                showGraph: showGraph,
+                smallRows: smallRows,
+                createBranch: createBranch,
+                openCommit: openCommit
+            )
+        }
+    }
 }
+
+// MARK: - HistoryCommitTable
 
 /// NSTableView 提供固定行高、多选、复制和只限应用内的提交拖动。
 private struct HistoryCommitTable: NSViewRepresentable {
+    /// 响应链上的 ⌘C 复制完整哈希，回车与双击一样进入整页详情。
+    final class CommitTableView: NSTableView {
+        /// 当前选择对应的复制动作。
+        var copySelection: (() -> Void)?
+
+        /// 键盘打开整页提交详情的动作。
+        var openSelection: (() -> Void)?
+
+        /// 回车与小键盘 Enter 是双击的键盘入口，其它按键交给系统列表。
+        override func keyDown(with event: NSEvent) {
+            if
+                [36, 76].contains(event.keyCode),
+                event.modifierFlags.isDisjoint(with: [.command, .option, .control])
+            {
+                openSelection?()
+                return
+            }
+
+            super.keyDown(with: event)
+        }
+
+        /// 文本焦点位于表格时响应系统复制菜单。
+        @objc
+        func copy(_: Any?) { copySelection?() }
+
+    }
+
+    /// 表格委托把事件交给历史状态，不组装 Git 参数。
+    @MainActor
+    final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate {
+        /// 当前 SwiftUI 输入。
+        var parent: HistoryCommitTable
+
+        /// 原生列表的弱引用。
+        weak var table: NSTableView?
+
+        /// 已显示的提交身份，决定是否重载。
+        private var displayed: [String] = []
+
+        /// 引用变化也需要更新徽标。
+        private var snapshot: ReferenceSnapshot?
+
+        /// 两侧归属变化时刷新相同行的进度标记。
+        private var trackingMarkers: [Set<String>] = []
+
+        /// 选中背景与引用徽标保持一致。
+        private var selection = Set<String>()
+
+        /// 程序恢复选区时忽略表格的中间通知，防止 reloadData 清空业务选择。
+        private var isUpdating = false
+
+        /// 建立会话绑定。
+        init(_ parent: HistoryCommitTable) { self.parent = parent }
+
+        /// 选择单独同步，图与行高变化时才重新构建可见行。
+        func update(_ parent: HistoryCommitTable) {
+            let changedStyle =
+                self.parent.showGraph != parent.showGraph || self.parent.smallRows != parent.smallRows
+            self.parent = parent
+            guard let table else { return }
+            isUpdating = true
+            defer { isUpdating = false }
+            let ids = parent.session.history.commits.map(\.id)
+            let markers = [parent.session.history.unpushed, parent.session.history.unpulled]
+            if
+                displayed != ids || changedStyle || snapshot != parent.session.history.snapshot
+                || trackingMarkers != markers || selection != parent.session.history.selectedIDs
+            {
+                displayed = ids
+                snapshot = parent.session.history.snapshot
+                trackingMarkers = markers
+                selection = parent.session.history.selectedIDs
+                table.rowHeight = parent.smallRows ? 24 : 46
+                table.reloadData()
+            }
+            let indexes = IndexSet(
+                ids.indices.filter { parent.session.history.selectedIDs.contains(ids[$0]) }
+            )
+            if table.selectedRowIndexes != indexes {
+                table.selectRowIndexes(indexes, byExtendingSelection: false)
+            }
+        }
+
+        /// 行数只来自当前已完成的页。
+        func numberOfRows(in _: NSTableView) -> Int { parent.session.history.commits.count }
+
+        /// 行内容按需复用，最后一行触发续页。
+        func tableView(_ tableView: NSTableView, viewFor _: NSTableColumn?, row: Int) -> NSView? {
+            let history = parent.session.history
+            guard history.commits.indices.contains(row) else { return nil }
+            let commit = history.commits[row]
+            let view = HistoryCommitRow(
+                commit: commit,
+                graph: parent.showGraph ? history.graphRows[commit.id] : nil,
+                references: history.snapshot?.references.filter { $0.objectID == commit.id } ?? [],
+                isHead: history.branch?.oid == commit.id,
+                small: parent.smallRows,
+                unpushed: history.unpushed.contains(commit.id),
+                unpulled: history.unpulled.contains(commit.id),
+                selected: history.selectedIDs.contains(commit.id)
+            )
+            let identifier = NSUserInterfaceItemIdentifier("history-commit")
+            let cell =
+                tableView.makeView(withIdentifier: identifier, owner: nil) as? NSHostingView<HistoryCommitRow>
+                    ?? NSHostingView(rootView: view)
+            cell.rootView = view
+            cell.identifier = identifier
+            if row == history.commits.count - 1, history.hasMore {
+                Task { @MainActor in history.loadNextPage() }
+            }
+            return cell
+        }
+
+        /// 单选与多选共享完整哈希，视图刷新后可以恢复选择。
+        func tableViewSelectionDidChange(_: Notification) {
+            guard !isUpdating, let table else { return }
+            let commits = parent.session.history.commits
+            parent.session.history.selectedIDs = Set(
+                table.selectedRowIndexes.compactMap {
+                    commits.indices.contains($0) ? commits[$0].id : nil
+                }
+            )
+        }
+
+        /// 拖出单个提交，侧边栏的 Branches 标题接受新建分支动作。
+        func tableView(_: NSTableView, pasteboardWriterForRow row: Int) -> (
+            any NSPasteboardWriting
+        )? {
+            guard
+                let location = parent.session.repository,
+                parent.session.history.commits.indices.contains(row)
+            else { return nil }
+            let item = NSPasteboardItem()
+            let payload = RepositoryDragPayload(
+                repository: location,
+                kind: .commit,
+                reference: parent.session.history.commits[row].id
+            )
+            RepositoryDragContext.shared.payload = payload
+            guard let data = try? JSONEncoder().encode(payload) else { return nil }
+            item.setData(data, forType: .init(RepositoryDragPayload.type))
+            return item
+        }
+
+        /// 右键在选区外时只作用于该行。
+        func menuNeedsUpdate(_ menu: NSMenu) {
+            menu.removeAllItems()
+            guard let table else { return }
+            if table.clickedRow >= 0, !table.selectedRowIndexes.contains(table.clickedRow) {
+                table.selectRowIndexes(IndexSet(integer: table.clickedRow), byExtendingSelection: false)
+            }
+            let copy = NSMenuItem(
+                title: AppLocalization.text("history.copyHash"),
+                action: #selector(copyHashes),
+                keyEquivalent: ""
+            )
+            copy.target = self
+            copy.isEnabled = !parent.session.history.selectedIDs.isEmpty
+            menu.addItem(copy)
+            let create = NSMenuItem(
+                title: AppLocalization.text("branch.createFromCommit"),
+                action: #selector(create),
+                keyEquivalent: ""
+            )
+            create.target = self
+            create.isEnabled = parent.session.canWrite && parent.session.history.selectedCommit != nil
+            menu.addItem(create)
+            menu.autoenablesItems = false
+        }
+
+        /// 多选复制按照列表顺序换行连接。
+        @objc
+        func copyHashes() {
+            let history = parent.session.history
+            let hashes = history.commits.filter { history.selectedIDs.contains($0.id) }.map(\.id)
+            guard !hashes.isEmpty else { return }
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(hashes.joined(separator: "\n"), forType: .string)
+        }
+
+        /// 双击进入整页提交详情，保持相同 First Parent 比较语义。
+        @objc
+        func doubleClick() {
+            guard parent.session.history.selectedCommit != nil else { return }
+            parent.openCommit()
+        }
+
+        /// 从单个提交打开有预填起点的分支对话框。
+        @objc
+        private func create() {
+            guard let commit = parent.session.history.selectedCommit else { return }
+            parent.createBranch(commit.id)
+        }
+
+    }
+
     /// 当前仓库及历史模型。
     let session: RepositorySession
 
@@ -141,198 +360,19 @@ private struct HistoryCommitTable: NSViewRepresentable {
     }
 
     /// 数据不变时不 reload，避免进度和选择更新打断滚动。
-    func updateNSView(_ scroll: NSScrollView, context: Context) {
+    func updateNSView(_: NSScrollView, context: Context) {
         context.coordinator.update(self)
     }
 
-    /// 响应链上的 ⌘C 复制完整哈希，回车与双击一样进入整页详情。
-    final class CommitTableView: NSTableView {
-        /// 当前选择对应的复制动作。
-        var copySelection: (() -> Void)?
-
-        /// 键盘打开整页提交详情的动作。
-        var openSelection: (() -> Void)?
-
-        /// 文本焦点位于表格时响应系统复制菜单。
-        @objc func copy(_ sender: Any?) { copySelection?() }
-
-        /// 回车与小键盘 Enter 是双击的键盘入口，其它按键交给系统列表。
-        override func keyDown(with event: NSEvent) {
-            if [36, 76].contains(event.keyCode), event.modifierFlags.intersection([.command, .option, .control]).isEmpty {
-                openSelection?()
-                return
-            }
-
-            super.keyDown(with: event)
-        }
-    }
-
-    /// 表格委托把事件交给历史状态，不组装 Git 参数。
-    @MainActor
-    final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate {
-        /// 当前 SwiftUI 输入。
-        var parent: HistoryCommitTable
-
-        /// 原生列表的弱引用。
-        weak var table: NSTableView?
-
-        /// 已显示的提交身份，决定是否重载。
-        private var displayed: [String] = []
-
-        /// 引用变化也需要更新徽标。
-        private var snapshot: ReferenceSnapshot?
-
-        /// 两侧归属变化时刷新相同行的进度标记。
-        private var trackingMarkers: [Set<String>] = []
-
-        /// 选中背景与引用徽标保持一致。
-        private var selection = Set<String>()
-
-        /// 程序恢复选区时忽略表格的中间通知，防止 reloadData 清空业务选择。
-        private var isUpdating = false
-
-        /// 建立会话绑定。
-        init(_ parent: HistoryCommitTable) { self.parent = parent }
-
-        /// 选择单独同步，图与行高变化时才重新构建可见行。
-        func update(_ parent: HistoryCommitTable) {
-            let changedStyle =
-                self.parent.showGraph != parent.showGraph || self.parent.smallRows != parent.smallRows
-            self.parent = parent
-            guard let table else { return }
-            isUpdating = true
-            defer { isUpdating = false }
-            let ids = parent.session.history.commits.map(\.id)
-            let markers = [parent.session.history.unpushed, parent.session.history.unpulled]
-            if displayed != ids || changedStyle || snapshot != parent.session.history.snapshot
-                || trackingMarkers != markers || selection != parent.session.history.selectedIDs
-            {
-                displayed = ids
-                snapshot = parent.session.history.snapshot
-                trackingMarkers = markers
-                selection = parent.session.history.selectedIDs
-                table.rowHeight = parent.smallRows ? 24 : 46
-                table.reloadData()
-            }
-            let indexes = IndexSet(
-                ids.indices.filter { parent.session.history.selectedIDs.contains(ids[$0]) }
-            )
-            if table.selectedRowIndexes != indexes {
-                table.selectRowIndexes(indexes, byExtendingSelection: false)
-            }
-        }
-
-        /// 行数只来自当前已完成的页。
-        func numberOfRows(in tableView: NSTableView) -> Int { parent.session.history.commits.count }
-
-        /// 行内容按需复用，最后一行触发续页。
-        func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-            let history = parent.session.history
-            guard history.commits.indices.contains(row) else { return nil }
-            let commit = history.commits[row]
-            let view = HistoryCommitRow(
-                commit: commit,
-                graph: parent.showGraph ? history.graphRows[commit.id] : nil,
-                references: history.snapshot?.references.filter { $0.objectID == commit.id } ?? [],
-                isHead: history.branch?.oid == commit.id,
-                small: parent.smallRows,
-                unpushed: history.unpushed.contains(commit.id),
-                unpulled: history.unpulled.contains(commit.id),
-                selected: history.selectedIDs.contains(commit.id)
-            )
-            let identifier = NSUserInterfaceItemIdentifier("history-commit")
-            let cell =
-                tableView.makeView(withIdentifier: identifier, owner: nil) as? NSHostingView<HistoryCommitRow>
-                ?? NSHostingView(rootView: view)
-            cell.rootView = view
-            cell.identifier = identifier
-            if row == history.commits.count - 1, history.hasMore {
-                Task { @MainActor in history.loadNextPage() }
-            }
-            return cell
-        }
-
-        /// 单选与多选共享完整哈希，视图刷新后可以恢复选择。
-        func tableViewSelectionDidChange(_ notification: Notification) {
-            guard !isUpdating, let table else { return }
-            let commits = parent.session.history.commits
-            parent.session.history.selectedIDs = Set(
-                table.selectedRowIndexes.compactMap {
-                    commits.indices.contains($0) ? commits[$0].id : nil
-                }
-            )
-        }
-
-        /// 拖出单个提交，侧边栏的 Branches 标题接受新建分支动作。
-        func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> (
-            any NSPasteboardWriting
-        )? {
-            guard let location = parent.session.repository,
-                parent.session.history.commits.indices.contains(row)
-            else { return nil }
-            let item = NSPasteboardItem()
-            let payload = RepositoryDragPayload(
-                repository: location,
-                kind: .commit,
-                reference: parent.session.history.commits[row].id
-            )
-            RepositoryDragContext.shared.payload = payload
-            guard let data = try? JSONEncoder().encode(payload) else { return nil }
-            item.setData(data, forType: .init(RepositoryDragPayload.type))
-            return item
-        }
-
-        /// 右键在选区外时只作用于该行。
-        func menuNeedsUpdate(_ menu: NSMenu) {
-            menu.removeAllItems()
-            guard let table else { return }
-            if table.clickedRow >= 0, !table.selectedRowIndexes.contains(table.clickedRow) {
-                table.selectRowIndexes(IndexSet(integer: table.clickedRow), byExtendingSelection: false)
-            }
-            let copy = NSMenuItem(
-                title: AppLocalization.text("history.copyHash"),
-                action: #selector(copyHashes),
-                keyEquivalent: ""
-            )
-            copy.target = self
-            copy.isEnabled = !parent.session.history.selectedIDs.isEmpty
-            menu.addItem(copy)
-            let create = NSMenuItem(
-                title: AppLocalization.text("branch.createFromCommit"),
-                action: #selector(create),
-                keyEquivalent: ""
-            )
-            create.target = self
-            create.isEnabled = parent.session.canWrite && parent.session.history.selectedCommit != nil
-            menu.addItem(create)
-            menu.autoenablesItems = false
-        }
-
-        /// 多选复制按照列表顺序换行连接。
-        @objc func copyHashes() {
-            let history = parent.session.history
-            let hashes = history.commits.filter { history.selectedIDs.contains($0.id) }.map(\.id)
-            guard !hashes.isEmpty else { return }
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(hashes.joined(separator: "\n"), forType: .string)
-        }
-
-        /// 从单个提交打开有预填起点的分支对话框。
-        @objc private func create() {
-            guard let commit = parent.session.history.selectedCommit else { return }
-            parent.createBranch(commit.id)
-        }
-
-        /// 双击进入整页提交详情，保持相同 First Parent 比较语义。
-        @objc func doubleClick() {
-            guard parent.session.history.selectedCommit != nil else { return }
-            parent.openCommit()
-        }
-    }
 }
+
+// MARK: - HistoryCommitRow
 
 /// 提交行提供中号双行和小号单行两种布局。
 private struct HistoryCommitRow: View {
+    /// 选中行的文字使用系统的选中文字语义色。
+    private static let selectedText = Color(nsColor: .alternateSelectedControlTextColor)
+
     /// 当前提交元信息。
     let commit: HistoryCommit
 
@@ -366,29 +406,9 @@ private struct HistoryCommitRow: View {
                     .accessibilityHidden(true)
             }
             if small {
-                hash
-                badges
-                Text(commit.subject).lineLimit(1)
-                Spacer(minLength: 0)
-                Text(commit.author).foregroundStyle(selected ? Self.selectedText : .secondary).lineLimit(1)
-                date
+                smallLayout
             } else {
-                Text(String(commit.author.prefix(1)))
-                    .frame(width: 32, height: 32)
-                    .background(.quaternary, in: Circle())
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Text(commit.author).foregroundStyle(selected ? Self.selectedText : .secondary).lineLimit(1)
-                        badges
-                        Spacer(minLength: 0)
-                        date
-                    }
-                    HStack(spacing: 8) {
-                        hash
-                        Text(commit.subject).lineLimit(1)
-                    }
-                }
+                mediumLayout
             }
             if unpushed || unpulled {
                 Image(systemName: unpushed ? "arrow.up" : "arrow.down")
@@ -409,8 +429,46 @@ private struct HistoryCommitRow: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// 选中行的文字使用系统的选中文字语义色。
-    private static let selectedText = Color(nsColor: .alternateSelectedControlTextColor)
+    /// 小号单行：哈希、徽标、标题、作者与日期依次排开。
+    @ViewBuilder
+    private var smallLayout: some View {
+        hash
+        badges
+        Text(commit.subject).lineLimit(1)
+        Spacer(minLength: 0)
+
+        Text(commit.author)
+            .foregroundStyle(selected ? Self.selectedText : .secondary)
+            .lineLimit(1)
+
+        date
+    }
+
+    /// 中号双行：作者首字母在左，右侧上行为作者、徽标与日期，下行为哈希与标题。
+    @ViewBuilder
+    private var mediumLayout: some View {
+        Text(String(commit.author.prefix(1)))
+            .frame(width: 32, height: 32)
+            .background(.quaternary, in: Circle())
+            .accessibilityHidden(true)
+
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Text(commit.author)
+                    .foregroundStyle(selected ? Self.selectedText : .secondary)
+                    .lineLimit(1)
+
+                badges
+                Spacer(minLength: 0)
+                date
+            }
+
+            HStack(spacing: 8) {
+                hash
+                Text(commit.subject).lineLimit(1)
+            }
+        }
+    }
 
     /// 哈希使用等宽字体，动作仍使用完整 ID。
     private var hash: some View {
@@ -456,20 +514,10 @@ private struct HistoryCommitRow: View {
     }
 }
 
+// MARK: - HistoryGraphView
+
 /// 每行一个原生画布，线段跨行拼接，点击穿透给列表。
 private struct HistoryGraphView: NSViewRepresentable {
-    /// 当前行的图模型。
-    let row: CommitGraphRow
-
-    /// 建立轻量画布。
-    func makeNSView(context: Context) -> GraphCanvas { GraphCanvas() }
-
-    /// 分页只更新对应行的几何模型。
-    func updateNSView(_ view: GraphCanvas, context: Context) {
-        view.row = row
-        view.needsDisplay = true
-    }
-
     /// 10 pt 列距、2 pt 线宽与 7 pt 圆点的原生绘制。
     final class GraphCanvas: NSView {
         /// 无模型时保持空画布。
@@ -479,10 +527,10 @@ private struct HistoryGraphView: NSViewRepresentable {
         override var isFlipped: Bool { true }
 
         /// 图不接管点击，列表保留选择和双击语义。
-        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+        override func hitTest(_: NSPoint) -> NSView? { nil }
 
         /// 线段换列时在中间三分之一使用贝塞尔过渡。
-        override func draw(_ dirtyRect: NSRect) {
+        override func draw(_: NSRect) {
             guard let row else { return }
 
             // 十条泳道颜色按命名色循环，深浅外观由命名色自动切换。
@@ -526,4 +574,17 @@ private struct HistoryGraphView: NSViewRepresentable {
             dot.fill()
         }
     }
+
+    /// 当前行的图模型。
+    let row: CommitGraphRow
+
+    /// 建立轻量画布。
+    func makeNSView(context _: Context) -> GraphCanvas { GraphCanvas() }
+
+    /// 分页只更新对应行的几何模型。
+    func updateNSView(_ view: GraphCanvas, context _: Context) {
+        view.row = row
+        view.needsDisplay = true
+    }
+
 }

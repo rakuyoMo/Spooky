@@ -180,7 +180,7 @@ SPOOKY_PERFORMANCE_TESTS=1 swift test --package-path SpookyKit -c release -Xswif
 
 ## 参与贡献
 
-- 提交 PR 前，请运行 `swift build --package-path SpookyKit` 和 `swift test --package-path SpookyKit`，确认都能通过
+- 提交 PR 前，请用 [mise](https://mise.jdx.dev) 运行 `mise run swift:lint`、`mise run build` 和 `mise run test`，确认都能通过；CI 会在每个 PR 上运行同样的检查
 - 改动 App 时，还要实际启动 App，确认改动的效果
 - 分支命名和提交信息等约定见 [AGENTS.md](AGENTS.md)
 - 引入外部代码前，请先确认它的许可证与 GPL-3.0 兼容

@@ -18,10 +18,12 @@ struct LocalizationTests {
             #expect(!value.isEmpty, "译文不能为空：\(language) / \(key)")
             #expect(value != key)
             let base = try #require(english[key])
-            let expected = pattern.matches(in: base, range: NSRange(base.startIndex..., in: base))
-                .map { (base as NSString).substring(with: $0.range) }
-            let actual = pattern.matches(in: value, range: NSRange(value.startIndex..., in: value))
-                .map { (value as NSString).substring(with: $0.range) }
+            let expected = try pattern.matches(in: base, range: NSRange(base.startIndex..., in: base))
+                .map { try #require(Range($0.range, in: base)) }
+                .map { String(base[$0]) }
+            let actual = try pattern.matches(in: value, range: NSRange(value.startIndex..., in: value))
+                .map { try #require(Range($0.range, in: value)) }
+                .map { String(value[$0]) }
             #expect(actual == expected, "格式参数不一致：\(language) / \(key)")
         }
     }
@@ -65,7 +67,7 @@ struct LocalizationTests {
             .filter { $0.pathExtension == "swift" }
         let pattern = try NSRegularExpression(
             pattern:
-                #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog|failure|recovery)\.[A-Za-z.]+)""#
+            #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog|failure|recovery)\.[A-Za-z.]+)""#
         )
         let english = try strings("en")
 
@@ -73,7 +75,8 @@ struct LocalizationTests {
             let content = try String(contentsOf: file, encoding: .utf8)
 
             for match in pattern.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
-                let key = (content as NSString).substring(with: match.range(at: 1))
+                let range = try #require(Range(match.range(at: 1), in: content))
+                let key = String(content[range])
                 if key.hasSuffix(".") { continue }
                 #expect(english[key] != nil, "缺少界面资源键：\(key)")
             }
@@ -117,7 +120,12 @@ struct LocalizationTests {
 
     /// 读取已构建资源包中的字典，验证随产品交付的实际文件。
     private func strings(_ language: String) throws -> [String: String] {
-        let directory = try #require(AppLocalization.bundle.url(forResource: language, withExtension: "lproj"))
+        // SwiftPM 把语言目录名转成小写，Bundle 的资源查找在部分系统上区分大小写，所以直接列出目录比对
+        let resources = try #require(AppLocalization.bundle.resourceURL)
+        let directories = try FileManager.default.contentsOfDirectory(at: resources, includingPropertiesForKeys: nil)
+        let directory = try #require(
+            directories.first { $0.lastPathComponent.caseInsensitiveCompare(language + ".lproj") == .orderedSame }
+        )
         let url = directory.appending(path: "Localizable.strings")
         let data = try Data(contentsOf: url)
         let values = try PropertyListSerialization.propertyList(from: data, options: [], format: nil)

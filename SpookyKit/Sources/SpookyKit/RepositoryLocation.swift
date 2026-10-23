@@ -14,7 +14,7 @@ public enum RepositoryLocation: Hashable, Sendable, Codable {
     /// 工作区绝对路径；远端路径不经过本机文件系统归一化。
     public var path: String {
         switch self {
-        case .local(let path), .remote(_, let path): return path
+        case .local(let path), .remote(_, let path): path
         }
     }
 

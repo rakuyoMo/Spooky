@@ -1,6 +1,8 @@
 import CryptoKit
 import Foundation
 
+// MARK: - RepositoryOperationState
+
 /// 正在进行的 Git 操作，启动入口由对应里程碑提供。
 public enum RepositoryOperationState: String, Sendable {
     /// 普通合并等待提交。
@@ -19,6 +21,8 @@ public enum RepositoryOperationState: String, Sendable {
     case revert
 }
 
+// MARK: - WorkingCopyContext
+
 /// 提交区需要的身份、最近提交与进行中状态。
 public struct WorkingCopyContext: Sendable {
     /// 实际提交人的姓名与邮箱，由 Git var 返回。
@@ -33,6 +37,8 @@ public struct WorkingCopyContext: Sendable {
     /// Git 准备的结论信息。
     public let mergeMessage: String
 }
+
+// MARK: - DiffSnapshot
 
 /// 可写 Diff 连同生成时的完整文件快照。
 public struct DiffSnapshot: Sendable {
@@ -71,10 +77,15 @@ extension StatusEntry {
     }
 }
 
+// MARK: - WorkingCopyOperations
+
 /// 工作区读写的业务边界，所有 Git 参数与写入编排集中在核心库。
 public struct WorkingCopyOperations: Sendable {
     /// 按单次补丁计算的大 Diff 默认阈值。
     public static let defaultWarningKilobytes = 20_000
+
+    /// 所有支持批量路径的写命令使用同一 NUL 输入协议。
+    private static let pathInputOptions = ["--pathspec-from-file=-", "--pathspec-file-nul"]
 
     /// 本机与服务器共用命令执行器。
     public let runner: GitRunner
@@ -82,6 +93,11 @@ public struct WorkingCopyOperations: Sendable {
     /// 创建服务，不进行隐式写入。
     public init(runner: GitRunner) {
         self.runner = runner
+    }
+
+    /// 不规范化实际路径字节，字面路径语义交由 Git 的全局开关保证。
+    private static func pathInput(_ paths: [String]) -> Data {
+        Data(paths.flatMap { Array($0.utf8) + [0] })
     }
 
     /// 加载单文件补丁，先判断补丁字节数，再分配行模型。
@@ -94,6 +110,9 @@ public struct WorkingCopyOperations: Sendable {
         let contents = try await snapshot(entry)
         let patch = side == .staged ? contents.staged : contents.unstaged
         let threshold = max(0, min(warningKilobytes, Int.max / 1000)) * 1000
+
+        // Foundation 的 range(of:) 与 contains 结果相同，在数十 MB 的补丁上快数百倍。
+        // swiftlint:disable:next contains_over_range_nil_comparison
         let binary = patch.range(of: Data("\nBinary files ".utf8)) != nil
         let parsed = patch.count <= threshold || showLarge || binary ? try RepositoryDiff(patch: patch) : nil
 
@@ -135,9 +154,10 @@ public struct WorkingCopyOperations: Sendable {
         lines: Set<Int> = [],
         discard: Bool = false
     ) async throws {
-        guard let diff = snapshot.diff,
-              diff.files.count == 1,
-              !discard || snapshot.side == .unstaged
+        guard
+            let diff = snapshot.diff,
+            diff.files.count == 1,
+            !discard || snapshot.side == .unstaged
         else { throw WorkingCopyError.invalidSelection }
 
         let reverse = discard || snapshot.side == .staged
@@ -184,15 +204,14 @@ public struct WorkingCopyOperations: Sendable {
 
             if !tracked.isEmpty {
                 // 空仓库以真实空树为来源，新增文件也能恢复为未存在状态。
-                let source: String
-
-                if let oid = current.branch.oid {
-                    source = oid
-                } else {
-                    source = String(decoding: try await runner.run(
-                        ["hash-object", "-w", "-t", "tree", "--stdin"], input: Data()
-                    ), as: UTF8.self).trimmingCharacters(in: .newlines)
-                }
+                let source: String =
+                    if let oid = current.branch.oid {
+                        oid
+                    } else {
+                        String(decoding: try await runner.run(
+                            ["hash-object", "-w", "-t", "tree", "--stdin"], input: Data()
+                        ), as: UTF8.self).trimmingCharacters(in: .newlines)
+                    }
 
                 _ = try await runner.run(
                     ["--literal-pathspecs", "restore", "--source=" + source, "--staged", "--worktree"]
@@ -254,12 +273,16 @@ public struct WorkingCopyOperations: Sendable {
 
         switch operation {
         case .merge: command = "merge"
+
         case .squash:
             guard action == "abort" else { throw WorkingCopyError.invalidSelection }
             _ = try await runner.run(["reset", "--merge"])
             return
+
         case .rebase: command = "rebase"
+
         case .cherryPick: command = "cherry-pick"
+
         case .revert: command = "revert"
         }
 
@@ -294,21 +317,23 @@ public struct WorkingCopyOperations: Sendable {
         let files = Dictionary(uniqueKeysWithValues: zip(names, paths).compactMap { name, path in
             content[path].map { (name, String(decoding: $0, as: UTF8.self)) }
         })
-        let operation: RepositoryOperationState?
-
-        if files["rebase-merge/head-name"] != nil || files["rebase-apply/head-name"] != nil {
-            operation = .rebase
-        } else if files["REVERT_HEAD"] != nil || files["sequencer/todo"]?.hasPrefix("revert ") == true {
-            operation = .revert
-        } else if files["CHERRY_PICK_HEAD"] != nil || files["sequencer/todo"]?.hasPrefix("pick ") == true {
-            operation = .cherryPick
-        } else if files["MERGE_HEAD"] != nil {
-            operation = .merge
-        } else if files["SQUASH_MSG"] != nil {
-            operation = .squash
-        } else {
-            operation = nil
-        }
+        let operation: RepositoryOperationState? =
+            if
+                files["rebase-merge/head-name"] != nil
+                || files["rebase-apply/head-name"] != nil
+            {
+                .rebase
+            } else if files["REVERT_HEAD"] != nil || (files["sequencer/todo"]?.hasPrefix("revert ") ?? false) {
+                .revert
+            } else if files["CHERRY_PICK_HEAD"] != nil || (files["sequencer/todo"]?.hasPrefix("pick ") ?? false) {
+                .cherryPick
+            } else if files["MERGE_HEAD"] != nil {
+                .merge
+            } else if files["SQUASH_MSG"] != nil {
+                .squash
+            } else {
+                nil
+            }
 
         // Git 生成的冲突清单不属于提交正文，预填时移除其注释行。
         let mergeMessage = (files["SQUASH_MSG"] ?? files["MERGE_MSG"] ?? "")
@@ -316,7 +341,12 @@ public struct WorkingCopyOperations: Sendable {
             .filter { !$0.hasPrefix("#") }
             .joined(separator: "\n")
             .trimmingCharacters(in: .newlines)
-        return WorkingCopyContext(committer: committer, lastMessage: lastMessage, operation: operation, mergeMessage: mergeMessage)
+        return WorkingCopyContext(
+            committer: committer,
+            lastMessage: lastMessage,
+            operation: operation,
+            mergeMessage: mergeMessage
+        )
     }
 
     /// 工作区文件内容的对象哈希，供服务器轮询判断已显示的 Diff 是否过期；文件不存在或无法读取时为 nil。
@@ -333,6 +363,11 @@ public struct WorkingCopyOperations: Sendable {
         return String(decoding: result.standardOutput, as: UTF8.self).trimmingCharacters(in: .newlines)
     }
 
+}
+
+// MARK: - Private
+
+extension WorkingCopyOperations {
     /// 指定提交的完整信息；提交信息不可变，按哈希复用。
     private func lastMessage(of head: String?) async throws -> String {
         guard let head else {
@@ -380,13 +415,5 @@ public struct WorkingCopyOperations: Sendable {
         }
 
         return (staged, unstaged, Data(hash.finalize()))
-    }
-
-    /// 所有支持批量路径的写命令使用同一 NUL 输入协议。
-    private static let pathInputOptions = ["--pathspec-from-file=-", "--pathspec-file-nul"]
-
-    /// 不规范化实际路径字节，字面路径语义交由 Git 的全局开关保证。
-    private static func pathInput(_ paths: [String]) -> Data {
-        Data(paths.flatMap { Array($0.utf8) + [0] })
     }
 }

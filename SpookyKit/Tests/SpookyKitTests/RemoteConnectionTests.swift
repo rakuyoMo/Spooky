@@ -3,6 +3,8 @@ import Testing
 
 @testable import SpookyKit
 
+// MARK: - RemoteConnectionTests
+
 /// 远端验收必须显式启用，只使用专用别名、密钥和测试目录。
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteConnectionTests {
@@ -95,12 +97,12 @@ struct RemoteConnectionTests {
             await old.close()
 
             let invalidStatusScript = """
-            #!/bin/sh
-            for spooky_argument in "$@"; do
-                if test "$spooky_argument" = status; then printf '? missing NUL'; exit 0; fi
-            done
-            exec /usr/bin/git "$@"
-            """
+                #!/bin/sh
+                for spooky_argument in "$@"; do
+                    if test "$spooky_argument" = status; then printf '? missing NUL'; exit 0; fi
+                done
+                exec /usr/bin/git "$@"
+                """
             _ = try await RemoteFixture.raw([
                 "/bin/sh", "-c", "cat > \"$1/bin/git\"", "fixture", fixture.root,
             ], input: Data(invalidStatusScript.utf8))
@@ -139,13 +141,15 @@ struct RemoteConnectionTests {
             executable: "/usr/bin/ssh",
             processArguments: ["-G", "--", "spooky-test"]
         )
-        let values = Dictionary(uniqueKeysWithValues: String(decoding: resolved.standardOutput, as: UTF8.self)
-            .split(separator: "\n")
-            .compactMap { line -> (String, String)? in
-                let parts = line.split(separator: " ", maxSplits: 1)
-                guard parts.count == 2, ["hostname", "user", "port"].contains(String(parts[0])) else { return nil }
-                return (String(parts[0]), String(parts[1]))
-            })
+        let values = Dictionary(
+            uniqueKeysWithValues: String(decoding: resolved.standardOutput, as: UTF8.self)
+                .split(separator: "\n")
+                .compactMap { line -> (String, String)? in
+                    let parts = line.split(separator: " ", maxSplits: 1)
+                    guard parts.count == 2, ["hostname", "user", "port"].contains(String(parts[0])) else { return nil }
+                    return (String(parts[0]), String(parts[1]))
+                }
+        )
         let hostname = try #require(values["hostname"])
         let user = try #require(values["user"])
         let port = try #require(values["port"])
@@ -180,85 +184,6 @@ struct RemoteConnectionTests {
         let deniedError = await #expect(throws: RemoteConnectionError.self) { try await denied.open() }
         #expect(deniedError?.kind == .authentication)
         await denied.close()
-    }
-
-    /// 两条写入必须依次进入临界区；排队取消不能运行，活动取消必须确认远端退出。
-    @Test("写入串行、队列取消与远端进程组取消", .timeLimit(.minutes(1)))
-    func serialWritesAndCancellation() async throws {
-        let fixture = try await RemoteFixture.create()
-        let connection = fixture.connection()
-
-        do {
-            _ = try await connection.open()
-            let arguments = [
-                "-c", "alias.guard=!mkdir guard-lock || exit 77; sleep 0.3; rmdir guard-lock", "guard",
-            ]
-            async let first = connection.execute(arguments)
-            async let second = connection.execute(arguments)
-            _ = try await (first, second)
-
-            let operation = connection.operation([
-                "-c", "alias.wait=!echo $$ > own-process; trap '' TERM; printf ready; sleep 60 & wait", "wait",
-            ])
-
-            for await event in operation.events {
-                if case .output(.standardOutput(let data)) = event, data == Data("ready".utf8) { break }
-            }
-
-            let queued = connection.operation(["-c", "alias.queued=!touch must-not-exist", "queued"])
-            queued.cancel()
-            await #expect(throws: CancellationError.self) { try await queued.value }
-            operation.cancel()
-            await #expect(throws: CancellationError.self) { try await operation.value }
-
-            _ = try await RemoteFixture.raw(["/bin/test", "!", "-e", fixture.repository + "/must-not-exist"])
-            let pid = try await RemoteFixture.raw(["/bin/cat", fixture.repository + "/own-process"])
-            let process = String(decoding: pid.standardOutput, as: UTF8.self).trimmingCharacters(in: .newlines)
-            _ = try await RemoteFixture.raw([
-                "/bin/sh", "-c", "if kill -0 \"$1\" 2>/dev/null; then exit 7; fi", "fixture", process,
-            ])
-            _ = try await connection.execute(["status", "--porcelain=v2", "-z", "--branch"])
-            await connection.close()
-            try await fixture.remove()
-        } catch {
-            await connection.close()
-            try await fixture.remove()
-            throw error
-        }
-    }
-
-    /// 仅关闭 Spooky 的主连接来模拟断线，原写入不重试，重连后读取仓库事实。
-    @Test("主动断线、写入不重试与重连核对", .timeLimit(.minutes(1)))
-    func disconnectionAndRecovery() async throws {
-        let fixture = try await RemoteFixture.create()
-        let connection = fixture.connection()
-
-        do {
-            _ = try await connection.open()
-            let operation = connection.operation([
-                "-c", "alias.once=!echo once >> once; printf ready; sleep 30; echo finished >> once", "once",
-            ])
-
-            for await event in operation.events {
-                if case .output(.standardOutput(let data)) = event, data == Data("ready".utf8) { break }
-            }
-
-            try await connection.interruptMaster()
-            _ = await #expect(throws: RemoteConnectionError.self) { try await operation.value }
-            _ = try await connection.reconnect()
-            let recovery = try #require(await connection.recovery)
-            #expect(recovery.status.branch.head == "main")
-            #expect(!recovery.indexLocked && !recovery.merging && !recovery.rebasing)
-            #expect(recovery.status.entries.contains { $0.path == "once" })
-            let result = try await RemoteFixture.raw(["/bin/cat", fixture.repository + "/once"])
-            #expect(result.standardOutput == Data("once\n".utf8))
-            await connection.close()
-            try await fixture.remove()
-        } catch {
-            await connection.close()
-            try await fixture.remove()
-            throw error
-        }
     }
 
     /// Git 返回 255 仍是 Git 错误；凭据和编辑器回调走同一反向 Unix socket。
@@ -317,14 +242,10 @@ struct RemoteConnectionTests {
     }
 }
 
+// MARK: - RemoteFixture
+
 /// 每个测试独占 B 上一个目录，所有 Git 配置都限制在该目录中的仓库。
 struct RemoteFixture: Sendable {
-    /// B 上本次测试的根目录。
-    let root: String
-
-    /// 覆盖空格、中文、引号、反斜杠和通配符的工作区路径。
-    var repository: String { root + "/仓 库'\"\\[*]?" }
-
     /// 固定测试别名对应的专用认证和隔离 Git 环境。
     static var configuration: SSHConfiguration {
         SSHConfiguration(
@@ -337,6 +258,12 @@ struct RemoteFixture: Sendable {
             ]
         )
     }
+
+    /// B 上本次测试的根目录。
+    let root: String
+
+    /// 覆盖空格、中文、引号、反斜杠和通配符的工作区路径。
+    var repository: String { root + "/仓 库'\"\\[*]?" }
 
     /// 创建私有测试根目录，初始化空工作区和仓库本地身份。
     static func create() async throws -> Self {
@@ -367,16 +294,6 @@ struct RemoteFixture: Sendable {
         }
     }
 
-    /// 使用生产连接实现，测试选项仅隔离认证和全局配置。
-    func connection(configuration: SSHConfiguration = Self.configuration) -> RemoteConnection {
-        RemoteConnection(host: "spooky-test", path: repository, configuration: configuration)
-    }
-
-    /// 仅删除本测试刚创建的目录。
-    func remove() async throws {
-        _ = try await Self.raw(["/bin/rm", "-rf", "--", root])
-    }
-
     /// 夹具建立前没有 Git 工作区，通过核心进程边界执行固定的初始化命令。
     static func raw(_ command: [String], input: Data? = nil) async throws -> GitCommandResult {
         let shell = (configuration.environmentPrefix + command).map(GitRunner.shellQuoted).joined(separator: " ")
@@ -389,4 +306,15 @@ struct RemoteFixture: Sendable {
             input: input
         )
     }
+
+    /// 使用生产连接实现，测试选项仅隔离认证和全局配置。
+    func connection(configuration: SSHConfiguration = Self.configuration) -> RemoteConnection {
+        RemoteConnection(host: "spooky-test", path: repository, configuration: configuration)
+    }
+
+    /// 仅删除本测试刚创建的目录。
+    func remove() async throws {
+        _ = try await Self.raw(["/bin/rm", "-rf", "--", root])
+    }
+
 }

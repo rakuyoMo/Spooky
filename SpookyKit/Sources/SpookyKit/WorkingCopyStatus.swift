@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - WorkingCopyStatus
+
 /// 工作区状态：当前分支的信息，加上所有有变化的文件
 public struct WorkingCopyStatus: Sendable, Equatable {
     /// 当前分支
@@ -8,6 +10,8 @@ public struct WorkingCopyStatus: Sendable, Equatable {
     /// 有变化的文件，顺序与 git 的输出一致
     public var entries: [StatusEntry]
 }
+
+// MARK: - BranchStatus
 
 /// `git status --branch` 给出的分支信息
 public struct BranchStatus: Sendable, Equatable {
@@ -27,6 +31,8 @@ public struct BranchStatus: Sendable, Equatable {
     public var behind = 0
 }
 
+// MARK: - FileChange
+
 /// 文件的一种变化：暂存区相对 HEAD，或工作区相对暂存区
 public enum FileChange: Character, Sendable {
     case modified = "M"
@@ -37,6 +43,8 @@ public enum FileChange: Character, Sendable {
     case copied = "C"
     case unmerged = "U"
 }
+
+// MARK: - StatusEntry
 
 /// 一个有变化的文件
 public struct StatusEntry: Sendable, Equatable {
@@ -70,6 +78,8 @@ public struct StatusEntry: Sendable, Equatable {
     /// 工作区里尚未暂存的变化；没有变化时为 nil
     public var unstaged: FileChange?
 }
+
+// MARK: - StatusParseError
 
 /// git status 的输出不符合 porcelain v2 格式
 public struct StatusParseError: Error, Sendable, Equatable {
@@ -106,10 +116,12 @@ extension WorkingCopyStatus {
         }
 
         // -z 模式下每条记录以 NUL 结尾；重命名、复制记录的后面紧跟一条 “原路径” 记录
-        let terminatedRecords = output.isEmpty ? [] : output
-            .dropLast()
-            .split(separator: 0, omittingEmptySubsequences: false)
-            .map { String(decoding: $0, as: UTF8.self) }
+        let terminatedRecords = output.isEmpty
+            ? []
+            : output
+                .dropLast()
+                .split(separator: 0, omittingEmptySubsequences: false)
+                .map { String(decoding: $0, as: UTF8.self) }
         var records = terminatedRecords.makeIterator()
 
         while let record = records.next() {
@@ -184,13 +196,14 @@ extension BranchStatus {
             // 形如 `+3 -1`：领先 3 个、落后 1 个
             let counts = value.split(separator: " ")
 
-            guard counts.count == 2,
-                  counts[0].first == "+",
-                  counts[1].first == "-",
-                  let ahead = Int(counts[0].dropFirst()),
-                  let behind = Int(counts[1].dropFirst()),
-                  ahead >= 0,
-                  behind >= 0
+            guard
+                counts.count == 2,
+                counts[0].first == "+",
+                counts[1].first == "-",
+                let ahead = Int(counts[0].dropFirst()),
+                let behind = Int(counts[1].dropFirst()),
+                ahead >= 0,
+                behind >= 0
             else {
                 throw StatusParseError(record: record)
             }
@@ -280,9 +293,10 @@ extension StatusEntry {
         _ xy: String,
         in record: String
     ) throws -> (staged: FileChange?, unstaged: FileChange?) {
-        guard xy.count == 2,
-              let x = xy.first,
-              let y = xy.last
+        guard
+            xy.count == 2,
+            let x = xy.first,
+            let y = xy.last
         else {
             throw StatusParseError(record: record)
         }

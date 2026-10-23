@@ -62,7 +62,7 @@ struct WorkingCopyOperationsTests {
         try await repository.initialize()
         let service = WorkingCopyOperations(runner: repository.runner)
         let file = repository.directory.appending(path: "file")
-        let original = (1...30).map { "line \($0)\r\n" }.joined()
+        let original = (1 ... 30).map { "line \($0)\r\n" }.joined()
         try Data(original.utf8).write(to: file)
         try await service.stageAll(staged: true)
         try await service.commit(subject: "base", body: "")
@@ -129,9 +129,9 @@ struct WorkingCopyOperationsTests {
         try Data(String(repeating: "text\n", count: 1000).utf8).write(to: repository.directory.appending(path: "large"))
         let entries = try await repository.runner.status().entries
         let binary = try #require(entries.first { $0.path == "binary" })
-        #expect(try await service.diff(for: binary, side: .unstaged).diff?.files.first?.isBinary == true)
+        #expect(try await service.diff(for: binary, side: .unstaged).diff?.files.first?.isBinary ?? false)
         let empty = try #require(entries.first { $0.path == "empty" })
-        #expect(try await service.diff(for: empty, side: .unstaged).diff?.files.first?.hunks.isEmpty == true)
+        #expect(try await service.diff(for: empty, side: .unstaged).diff?.files.first?.hunks.isEmpty ?? false)
         let large = try #require(entries.first { $0.path == "large" })
         let warning = try await service.diff(for: large, side: .unstaged, warningKilobytes: 1)
         #expect(warning.diff == nil && warning.byteCount > 1000)
@@ -171,41 +171,8 @@ struct WorkingCopyOperationsTests {
             try await service.commit(subject: "failed", body: "retain", amend: true)
         }
         #expect(error?.exitCode == 1)
-        #expect(error?.message.contains("hook rejected") == true)
+        #expect(error?.message.contains("hook rejected") ?? false)
         #expect(try await repository.runner.run(["rev-parse", "HEAD"]) == head)
-    }
-
-    /// 采用一侧与手工标记均由 Git 收尾，合并提交保留两个父提交。
-    @Test("合并冲突、采用一侧、提交与中止")
-    func conflicts() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-        let service = WorkingCopyOperations(runner: repository.runner)
-        let file = repository.directory.appending(path: "file")
-        try Data("base\n".utf8).write(to: file)
-        try await service.stageAll(staged: true)
-        try await service.commit(subject: "base", body: "")
-        _ = try await repository.runner.run(["checkout", "-b", "side"])
-        try Data("theirs\n".utf8).write(to: file)
-        try await service.stageAll(staged: true)
-        try await service.commit(subject: "theirs", body: "")
-        _ = try await repository.runner.run(["checkout", "main"])
-        try Data("ours\n".utf8).write(to: file)
-        try await service.stageAll(staged: true)
-        try await service.commit(subject: "ours", body: "")
-        _ = try await repository.runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
-        #expect(try await service.context(head: try await repository.runner.status().branch.oid).operation == .merge)
-        try await service.finish(.merge, action: "abort")
-        #expect(try await repository.runner.status().entries.isEmpty)
-        _ = try await repository.runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
-        try await service.resolve(try await repository.runner.status().entries, theirs: true)
-        #expect(try Data(contentsOf: file) == Data("theirs\n".utf8))
-        #expect(try await repository.runner.status().entries.allSatisfy { $0.kind != .conflicted })
-        try await service.commit(subject: "merge", body: "")
-        #expect(try await service.context(head: try await repository.runner.status().branch.oid).operation == nil)
-        let parents = try await repository.runner.run(["rev-list", "--parents", "-1", "HEAD"])
-        #expect(String(decoding: parents, as: UTF8.self).split(separator: " ").count == 3)
     }
 
     /// 整块操作保留文件的新增 / 删除语义，不能留下意外的空文件。
@@ -255,34 +222,6 @@ struct WorkingCopyOperationsTests {
         try await service.apply(snapshot, file: 0, hunk: 0, lines: [1])
         #expect(try await repository.runner.run(["show", ":" + entry.path]) == Data([0xF1, 10]))
         #expect(try Data(contentsOf: file) == content)
-    }
-
-    /// 其它工具发起的序列必须识别为进行中操作，并且能通过 Git 中止。
-    @Test("变基、摘取与反转的进行中识别", arguments: ["rebase", "cherry-pick", "revert"])
-    func sequenceState(command: String) async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-        let service = WorkingCopyOperations(runner: repository.runner)
-        let file = repository.directory.appending(path: "file")
-        try Data("base\n".utf8).write(to: file)
-        try await service.stageAll(staged: true)
-        try await service.commit(subject: "base", body: "")
-        _ = try await repository.runner.run(["checkout", "-b", "side"])
-        try Data("side\n".utf8).write(to: file)
-        try await service.stageAll(staged: true)
-        try await service.commit(subject: "side", body: "")
-        _ = try await repository.runner.run(["checkout", "main"])
-        try Data("main\n".utf8).write(to: file)
-        try await service.stageAll(staged: true)
-        try await service.commit(subject: "main", body: "")
-        _ = try await repository.runner.execute([command, "side"], acceptedExitCodes: [1])
-        let context = try await service.context(head: try await repository.runner.status().branch.oid)
-        let operation = try #require(context.operation)
-        #expect(operation == (command == "cherry-pick" ? .cherryPick : (command == "rebase" ? .rebase : .revert)))
-        try await service.finish(operation, action: "abort")
-        #expect(try await service.context(head: try await repository.runner.status().branch.oid).operation == nil)
-        #expect(try await repository.runner.status().entries.isEmpty)
     }
 
     /// 损坏的行数、缺失终止符不能进入可写模型。

@@ -1,0 +1,39 @@
+# 提 PR 与推送到 main 时，检查代码规范、编译、测试并打包
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+# 同一 PR 的新推送取消旧运行；推送到 main 按提交各自分组，互不取消
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: 检查与构建
+    runs-on: macos-26
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v4
+
+      - name: 检查代码规范
+        run: mise run swift:lint
+
+      - name: 编译
+        run: mise run build
+
+      - name: 测试
+        run: mise run test
+
+      - name: 打包
+        run: mise run bundle

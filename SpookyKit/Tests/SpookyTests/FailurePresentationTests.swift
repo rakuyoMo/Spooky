@@ -179,10 +179,10 @@ struct FailurePresentationTests {
 
         let activities = RepositoryActivities()
         let running = RepositoryActivity(repository: location, title: "Push")
-        running.cancel = {}
+        running.cancel = { }
         activities.insert(running)
 
-        for _ in 0..<(RepositoryActivities.limit + 5) {
+        for _ in 0 ..< (RepositoryActivities.limit + 5) {
             activities.insert(RepositoryActivity(repository: location, title: "Fetch"))
         }
 
