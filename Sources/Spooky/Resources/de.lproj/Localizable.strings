@@ -472,3 +472,10 @@
 "diff.imageSize" = "%ld × %ld Pixel, %@";
 "diff.imageMode" = "Bildvergleich";
 "diff.imageSide" = "Angezeigte Version";
+"diff.savePatch" = "Patch sichern …";
+"diff.exportDiff" = "Diff exportieren …";
+"diff.savePatch.title" = "Patch sichern";
+"diff.savePatch.message" = "Die Änderungen gegenüber HEAD in den ausgewählten Dateien (%ld), einschließlich vorgemerkter, nicht vorgemerkter und nicht verfolgter Änderungen, werden als Patch-Datei gesichert, die mit git apply angewendet werden kann.";
+"diff.savePatch.submit" = "Patch sichern";
+"diff.omitPrefixes" = "Präfixe weglassen";
+"diff.omitPrefixes.help" = "Keine Quell- oder Zielpräfixe anzeigen";

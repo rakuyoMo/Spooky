@@ -472,3 +472,10 @@
 "diff.imageSize" = "%ld × %ld ピクセル、%@";
 "diff.imageMode" = "画像の比較方法";
 "diff.imageSide" = "表示するバージョン";
+"diff.savePatch" = "パッチを保存…";
+"diff.exportDiff" = "Diff を書き出す…";
+"diff.savePatch.title" = "パッチを保存";
+"diff.savePatch.message" = "選択した %ld 個のファイルの HEAD からの変更（ステージ済み、未ステージ、未追跡の変更を含む）を、git apply で適用できるパッチファイルとして保存します。";
+"diff.savePatch.submit" = "パッチを保存";
+"diff.omitPrefixes" = "プレフィックスを省略";
+"diff.omitPrefixes.help" = "ソースとデスティネーションのプレフィックスを付けません";

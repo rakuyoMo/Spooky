@@ -472,3 +472,10 @@
 "diff.imageSize" = "%ld × %ld 像素，%@";
 "diff.imageMode" = "图片对照方式";
 "diff.imageSide" = "显示的版本";
+"diff.savePatch" = "保存补丁…";
+"diff.exportDiff" = "导出 Diff…";
+"diff.savePatch.title" = "保存补丁";
+"diff.savePatch.message" = "将所选的 %ld 个文件相对 HEAD 的改动（含已暂存、未暂存与未跟踪的改动）保存为补丁文件，可用 git apply 应用。";
+"diff.savePatch.submit" = "保存补丁";
+"diff.omitPrefixes" = "省略前缀";
+"diff.omitPrefixes.help" = "路径不带来源与目标前缀";

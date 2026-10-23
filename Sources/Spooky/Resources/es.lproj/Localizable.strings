@@ -472,3 +472,10 @@
 "diff.imageSize" = "%ld × %ld píxeles, %@";
 "diff.imageMode" = "Comparación de imágenes";
 "diff.imageSide" = "Versión mostrada";
+"diff.savePatch" = "Guardar parche…";
+"diff.exportDiff" = "Exportar diff…";
+"diff.savePatch.title" = "Guardar parche";
+"diff.savePatch.message" = "Los cambios respecto a HEAD en los archivos seleccionados (%ld), incluidos los preparados, no preparados y sin seguimiento, se guardarán como un archivo de parche que se puede aplicar con git apply.";
+"diff.savePatch.submit" = "Guardar parche";
+"diff.omitPrefixes" = "Omitir prefijos";
+"diff.omitPrefixes.help" = "No mostrar prefijos de origen ni de destino";

@@ -472,3 +472,10 @@
 "diff.imageSize" = "%ld × %ld pixels, %@";
 "diff.imageMode" = "Image Comparison";
 "diff.imageSide" = "Displayed Version";
+"diff.savePatch" = "Save Patch…";
+"diff.exportDiff" = "Export Diff…";
+"diff.savePatch.title" = "Save Patch";
+"diff.savePatch.message" = "Changes relative to HEAD in the selected files (%ld), including staged, unstaged, and untracked changes, will be saved as a patch file that can be applied with git apply.";
+"diff.savePatch.submit" = "Save Patch";
+"diff.omitPrefixes" = "Omit Prefixes";
+"diff.omitPrefixes.help" = "Don’t show any source or destination prefix";

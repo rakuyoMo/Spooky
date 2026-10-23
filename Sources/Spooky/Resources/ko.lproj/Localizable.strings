@@ -472,3 +472,10 @@
 "diff.imageSize" = "%ld × %ld 픽셀, %@";
 "diff.imageMode" = "이미지 비교 방식";
 "diff.imageSide" = "표시할 버전";
+"diff.savePatch" = "패치 저장…";
+"diff.exportDiff" = "Diff 내보내기…";
+"diff.savePatch.title" = "패치 저장";
+"diff.savePatch.message" = "선택한 %ld개 파일의 HEAD 대비 변경 사항(스테이징됨, 스테이징되지 않음, 추적되지 않음 포함)을 git apply로 적용할 수 있는 패치 파일로 저장합니다.";
+"diff.savePatch.submit" = "패치 저장";
+"diff.omitPrefixes" = "접두사 생략";
+"diff.omitPrefixes.help" = "원본 및 대상 접두사를 표시하지 않습니다";

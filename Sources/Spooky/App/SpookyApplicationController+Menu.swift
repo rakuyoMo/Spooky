@@ -222,7 +222,7 @@ extension SpookyApplicationController {
         )
     }
 
-    /// Working Copy 菜单：检出与合并、提交与暂存，以及丢弃改动。
+    /// Working Copy 菜单：检出与合并、提交与暂存、丢弃改动，以及保存补丁与导出 Diff。
     private func configureWorkingCopyMenu(in menu: NSMenu) {
         let working = addMenu("workspace.title", to: menu)
         addItem(
@@ -262,6 +262,10 @@ extension SpookyApplicationController {
             key: "\u{8}", modifiers: [.shift, .command], to: working
         )
         addItem("working.discardAll", action: #selector(RepositoryWindowController.discardAll), to: working)
+
+        working.addItem(.separator())
+        addItem("diff.savePatch", action: #selector(RepositoryWindowController.savePatch), to: working)
+        addItem("diff.exportDiff", action: #selector(RepositoryWindowController.exportDiff), to: working)
     }
 
     /// Window 菜单：Activity 与系统窗口动作，并登记为应用的窗口菜单。
