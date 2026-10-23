@@ -120,7 +120,12 @@ struct LocalizationTests {
 
     /// 读取已构建资源包中的字典，验证随产品交付的实际文件。
     private func strings(_ language: String) throws -> [String: String] {
-        let directory = try #require(AppLocalization.bundle.url(forResource: language, withExtension: "lproj"))
+        // SwiftPM 把语言目录名转成小写，Bundle 的资源查找在部分系统上区分大小写，所以直接列出目录比对
+        let resources = try #require(AppLocalization.bundle.resourceURL)
+        let directories = try FileManager.default.contentsOfDirectory(at: resources, includingPropertiesForKeys: nil)
+        let directory = try #require(
+            directories.first { $0.lastPathComponent.caseInsensitiveCompare(language + ".lproj") == .orderedSame }
+        )
         let url = directory.appending(path: "Localizable.strings")
         let data = try Data(contentsOf: url)
         let values = try PropertyListSerialization.propertyList(from: data, options: [], format: nil)
