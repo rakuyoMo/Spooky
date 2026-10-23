@@ -83,8 +83,6 @@
 
 "loading.status" = "Refreshing status…";
 
-"loading.check" = "Checking repository…";
-
 "branch.unborn" = "%@ (no commits)";
 
 "branch.detached" = "%@ (detached HEAD)";
@@ -127,11 +125,7 @@
 
 "detail.empty.title" = "No File Selected";
 
-"detail.empty.message" = "Select a status entry to see its path.";
 
-
-
-"detail.originalPath" = "Previous path: %@";
 
 "error.command" = "Git Command Failed";
 
@@ -236,7 +230,7 @@
 "remoteError.protocolFailure" = "Server Operation Result Is Incomplete";
 "remoteError.protocolFailure.help" = "Reconnect and inspect the repository before repeating any write operation.";
 "remoteError.cancellationUnconfirmed" = "Remote Cancellation Not Confirmed";
-"remoteError.cancellationUnconfirmed.help" = "The local channel was closed, but the server process could not be confirmed stopped. Reconnect and inspect the repository; do not repeat the write automatically.";
+"remoteError.cancellationUnconfirmed.help" = "The local channel was closed, but the server process could not be confirmed stopped. Reconnect and inspect the repository; the write won’t be repeated automatically.";
 "remoteError.interruptedWrite" = "Interrupted Write Needs Verification";
 "remoteError.interruptedWrite.help" = "Reconnect to check the branch, working tree, index lock and merge or rebase state before writing again.";
 

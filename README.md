@@ -47,7 +47,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Default themes**: Default and Default (Dark) are built in and follow your Mac's light or dark appearance
 
-- **Five languages**: English, Simplified Chinese, Traditional Chinese, Japanese, and Korean. The app uses your system language, or English if that language isn't supported
+- **Eight languages**: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish. The app uses your system language, or English if that language isn't supported
 
 ## Requirements
 

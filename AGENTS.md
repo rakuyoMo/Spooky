@@ -21,7 +21,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 - 单元测试使用 Swift Testing（`import Testing`），不使用 XCTest
 - `Spooky` executable target 使用 AppKit 管理窗口、分栏、工具栏和菜单，SwiftUI 承载内容
 - App 的 Bundle Identifier 为 `com.rakuyo.spooky`；`Info.plist` 嵌入可执行文件，开发 Bundle 由 `scripts/build-app.sh` 生成，发布 Bundle 由 `scripts/bundle.sh` 生成
-- 界面资源位于 `SpookyKit/Sources/Spooky/Resources/`，支持 `en`、`zh-Hans`、`zh-Hant`、`ja`、`ko`，默认跟随系统并以英文回退
+- 界面资源位于 `SpookyKit/Sources/Spooky/Resources/`，支持 `en`、`zh-Hans`、`zh-Hant`、`ja`、`ko`、`de`、`fr`、`es`，默认跟随系统并以英文回退
 
 ### `mise`
 
@@ -85,7 +85,7 @@ SpookyKit/                    核心库与 App 的 Swift Package
   Sources/Spooky/             App 入口、窗口协调、会话状态与各内容视图
     Info.plist                应用身份和支持语言
     AppIcon.icns              静态应用图标，由 scripts/make-icon.swift 生成
-    Resources/                五语文案、系统权限说明、命名色与内置主题 JSON
+    Resources/                各语言文案、系统权限说明、命名色与内置主题 JSON
   Tests/SpookyKitTests/       单元测试（Swift Testing）
     Fixtures/                 固定的 Git 输出夹具
   Tests/SpookyTests/          会话生命周期、最近记录、错误呈现与本地化测试
@@ -147,7 +147,7 @@ LICENSE                       GPL-3.0 许可证全文
 - M5 的跨视图一致性、错误恢复、性能、可访问性与发布检查见 [M5 验收步骤](docs/testing/M5.md)；性能测试默认不跑，通过 `SPOOKY_PERFORMANCE_TESTS=1` 显式开启
 - 解析器的固定输入放在 `Tests/SpookyKitTests/Fixtures/`，由真实 Git 在隔离配置、固定身份与时间的临时仓库中生成
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
-- 本地化新增资源键时同步五种语言，并保持格式参数一致；错误标题和恢复说明本地化，Git 原文保持不变
+- 本地化新增资源键时同步全部支持语言，并保持格式参数一致；动态拼接的资源键登记在 `LocalizationTests.dynamicKeys`；错误标题和恢复说明本地化，Git 原文保持不变
 
 ### 版本号
 

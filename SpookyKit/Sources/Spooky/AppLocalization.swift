@@ -6,7 +6,7 @@ import SpookyKit
 /// App 文案统一从资源包读取，语言由系统及应用的 AppleLanguages 偏好决定。
 enum AppLocalization {
     /// 支持的语言；资源包的开发语言提供英文回退。
-    static let languages = ["en", "zh-Hans", "zh-Hant", "ja", "ko"]
+    static let languages = ["en", "zh-Hans", "zh-Hant", "ja", "ko", "de", "fr", "es"]
 
     /// 应用的 SwiftPM 资源包。
     static let bundle = Bundle.module
