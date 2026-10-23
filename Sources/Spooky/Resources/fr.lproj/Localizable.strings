@@ -167,6 +167,9 @@
 "action.reconnect" = "Se reconnecter";
 "action.cancel" = "Annuler";
 "action.continue" = "Continuer";
+"action.search" = "Rechercher";
+"action.find" = "Rechercher…";
+"menu.find" = "Rechercher";
 "remote.form.help" = "Utilisez un alias d’hôte de votre configuration SSH et un chemin absolu sur ce serveur.";
 "remote.host" = "Alias d’hôte :";
 "remote.path" = "Chemin du dépôt :";

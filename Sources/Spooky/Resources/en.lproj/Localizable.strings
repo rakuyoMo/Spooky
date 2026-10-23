@@ -167,6 +167,9 @@
 "action.reconnect" = "Reconnect";
 "action.cancel" = "Cancel";
 "action.continue" = "Continue";
+"action.search" = "Search";
+"action.find" = "Find…";
+"menu.find" = "Find";
 "remote.form.help" = "Use a host alias from your SSH configuration and an absolute path on that server.";
 "remote.host" = "Host alias:";
 "remote.path" = "Repository path:";

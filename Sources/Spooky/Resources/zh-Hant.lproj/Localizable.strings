@@ -167,6 +167,9 @@
 "action.reconnect" = "重新連線";
 "action.cancel" = "取消";
 "action.continue" = "繼續";
+"action.search" = "搜尋";
+"action.find" = "尋找…";
+"menu.find" = "尋找";
 "remote.form.help" = "輸入 SSH 設定中的主機別名及該伺服器上的絕對路徑。";
 "remote.host" = "主機別名：";
 "remote.path" = "儲存庫路徑：";

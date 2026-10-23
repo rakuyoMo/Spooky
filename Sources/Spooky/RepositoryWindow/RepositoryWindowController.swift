@@ -442,7 +442,10 @@ extension RepositoryWindowController {
 
         if !showsManager { items.append(contentsOf: [.init("sync"), .init("merge")]) }
 
-        return items + [.init("terminal"), .init("finder"), .init("refresh"), .init("closeRepository")]
+        items += [.init("terminal"), .init("finder"), .init("refresh"), .init("closeRepository")]
+
+        // 搜索框排在最后，空间不足时最后才收进溢出菜单
+        return showsManager ? items : items + [.init("search")]
     }
 
     /// 工具栏固定为本里程碑已有动作。
@@ -483,6 +486,10 @@ extension RepositoryWindowController {
 
             return group
         }
+        if identifier.rawValue == "search" {
+            return makeSearchItem(identifier)
+        }
+
         if identifier.rawValue == "host", let host = session.repository?.host {
             let item = NSToolbarItem(itemIdentifier: identifier)
             item.label = host + ":"

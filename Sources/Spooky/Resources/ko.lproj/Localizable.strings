@@ -167,6 +167,9 @@
 "action.reconnect" = "다시 연결";
 "action.cancel" = "취소";
 "action.continue" = "계속";
+"action.search" = "검색";
+"action.find" = "찾기…";
+"menu.find" = "찾기";
 "remote.form.help" = "SSH 설정의 호스트 별칭과 서버의 절대 경로를 입력하세요.";
 "remote.host" = "호스트 별칭:";
 "remote.path" = "저장소 경로:";

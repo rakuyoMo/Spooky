@@ -63,6 +63,10 @@ extension SpookyApplicationController {
         addItem("menu.copy", action: #selector(NSText.copy(_:)), key: "c", to: edit)
         addItem("menu.paste", action: #selector(NSText.paste(_:)), key: "v", to: edit)
         addItem("menu.selectAll", action: #selector(NSText.selectAll(_:)), key: "a", to: edit)
+
+        edit.addItem(.separator())
+        let find = addMenu("menu.find", to: edit)
+        addItem("action.find", action: #selector(RepositoryWindowController.focusSearch), key: "f", to: find)
     }
 
     /// View 菜单：仓库管理、工作区与历史视图，历史的显示选项，以及文件列表样式、刷新与全屏。

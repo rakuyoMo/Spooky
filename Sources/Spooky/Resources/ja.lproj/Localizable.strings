@@ -167,6 +167,9 @@
 "action.reconnect" = "再接続";
 "action.cancel" = "キャンセル";
 "action.continue" = "続ける";
+"action.search" = "検索";
+"action.find" = "検索…";
+"menu.find" = "検索";
 "remote.form.help" = "SSH 設定のホスト名とサーバー上の絶対パスを入力してください。";
 "remote.host" = "ホスト名：";
 "remote.path" = "リポジトリのパス：";

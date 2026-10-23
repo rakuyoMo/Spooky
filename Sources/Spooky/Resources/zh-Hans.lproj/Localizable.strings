@@ -167,6 +167,9 @@
 "action.reconnect" = "重新连接";
 "action.cancel" = "取消";
 "action.continue" = "继续";
+"action.search" = "搜索";
+"action.find" = "查找…";
+"menu.find" = "查找";
 "remote.form.help" = "输入 SSH 配置中的主机别名及该服务器上的绝对路径。";
 "remote.host" = "主机别名：";
 "remote.path" = "仓库路径：";

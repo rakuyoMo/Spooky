@@ -12,6 +12,13 @@ enum RepositoryView: String, CaseIterable {
 
     /// 分页提交列表与只读提交详情。
     case history
+
+    /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
+    var supportsSearch: Bool {
+        switch self {
+        case .workingCopy, .history: false
+        }
+    }
 }
 
 // MARK: - StatusRowID
@@ -126,8 +133,15 @@ final class RepositorySession {
     /// 当前窗口的写操作任务。
     private(set) var writeTask: Task<Void, Never>? = nil
 
-    /// 当前主视图。
-    var activeView = RepositoryView.workingCopy
+    /// 当前主视图；切换视图时清空搜索，过滤不会在看不到搜索框内容的视图里生效。
+    var activeView = RepositoryView.workingCopy {
+        didSet {
+            if activeView != oldValue { searchText = "" }
+        }
+    }
+
+    /// 工具栏搜索框的内容，过滤当前主视图的列表。
+    var searchText = ""
 
     /// 仓库管理中选中的最近记录。
     var selectedRecentLocation: RepositoryLocation? = nil
@@ -413,6 +427,7 @@ final class RepositorySession {
         selectedRecentLocation = nil
         failure = nil
         activeView = .workingCopy
+        searchText = ""
         isRefreshing = false
     }
 
