@@ -10,6 +10,10 @@ struct WorkingCopyDetailView: View {
     @Bindable
     var session: RepositorySession
 
+    /// 鼠标是否在文件头部上，决定 Blame 与文件历史的动作条是否显示。
+    @State
+    private var hoveringHeader = false
+
     /// 文件头、比较侧和可访问的内容状态。
     var body: some View {
         if let entry = session.selectedEntry {
@@ -26,6 +30,9 @@ struct WorkingCopyDetailView: View {
                         .help(entry.path)
                     Spacer(minLength: 0)
 
+                    // 悬停时出现的 Blame 与文件历史，头部右键菜单提供同样的入口
+                    FileActionBar(actions: session.workingCopyFileActions(entry.path), hovering: hoveringHeader)
+
                     if entry.kind != .conflicted {
                         DiffSidePicker(
                             side: $session.diffSide,
@@ -38,6 +45,9 @@ struct WorkingCopyDetailView: View {
                 .padding(.horizontal, 20)
                 .frame(height: 40)
                 .background(AppPalette.color("general_header_background_color"))
+                .modifier(
+                    FileActionHeader(actions: session.workingCopyFileActions(entry.path), hovering: $hoveringHeader)
+                )
                 Divider()
 
                 content(entry)

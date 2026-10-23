@@ -12,6 +12,12 @@ extension RepositoryWindowController {
         item.searchField.isEnabled = session.activeView.supportsSearch
         item.searchField.target = self
         item.searchField.action = #selector(searchChanged(_:))
+
+        // 文件历史的搜索框带范围菜单
+        if session.activeView == .fileHistory {
+            configureFileHistorySearch(item.searchField)
+        }
+
         return item
     }
 
