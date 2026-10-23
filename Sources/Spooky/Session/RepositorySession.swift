@@ -296,6 +296,8 @@ final class RepositorySession {
         close()
         self.repository = repository
         fileCache = RepositoryFileCache(runner: makeRunner(repository))
+
+        // 工作区列表沿用这个仓库上次选择的显示模式
         listMode = WorkingCopyListMode.stored(for: repository)
 
         // 正在显示的仓库也计入缓存上限，超出时淘汰最久未使用的仓库。
@@ -355,7 +357,7 @@ final class RepositorySession {
                 let statusChanged = status != previous
                 replaceStatus(status)
 
-                // 状态没有变化的轮询不再重复读取身份、引用和 Diff，减少服务器往返。
+                // 状态没有变化的轮询不再重复读取身份、引用、补充清单和 Diff，减少服务器往返。
                 if loadsRepositoryDetails {
                     if full || statusChanged {
                         loadContext()

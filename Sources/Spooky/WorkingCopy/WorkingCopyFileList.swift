@@ -265,16 +265,20 @@ extension WorkingCopyFileList {
 
             guard state != renderState else { return }
 
+            // 重建前记下展开着的目录，显示全部文件时据此恢复
             let expanded = expandedPaths()
             renderState = state
             updating = true
             defer { updating = false }
 
+            // 平铺每个条目一行；树形按目录组织并缩进
             outline.indentationPerLevel = listing.mode.isTree ? 16 : 0
             roots = listing.mode.isTree ? Self.tree(entries) : entries.map { Node(path: $0.path, entry: $0) }
             sortNodes()
             outline.reloadData()
             restoreExpansion(mode: listing.mode, expanded: expanded)
+
+            // 恢复会话里的选区，搜索过滤掉的选择随后取消
             restoreSelection()
             dropHiddenSelection(visible: entries, filtered: !listing.filter.isEmpty)
         }
