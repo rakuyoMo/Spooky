@@ -1,0 +1,5 @@
+To /tmp/spooky-fixtures.lyvOXF/remote.git
+ 	refs/heads/main:refs/heads/main	a8be130..92142e8
+*	refs/heads/published:refs/heads/published	[new branch]
+!	refs/heads/side:refs/heads/side	[rejected] (non-fast-forward)
+Done

@@ -44,7 +44,6 @@ struct RepositoryManagerView: View {
                     Text(path.displayPath)
                         .textSelection(.enabled)
                         .font(.system(size: 13))
-                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if recent.unavailable.contains(path) {

@@ -83,7 +83,11 @@ struct WorkingCopyCommitView: View {
                     Button(AppLocalization.text(unstageAll ? "working.unstageAll" : "working.stageAll")) {
                         session.stageAll(staged: !unstageAll)
                     }
-                    .disabled(!session.canWrite || session.status?.entries.isEmpty != false)
+                    .disabled(
+                        unstageAll
+                            ? !session.canUnstage(session.status?.entries ?? [])
+                            : !session.canStage(session.status?.entries ?? [])
+                    )
 
                     Spacer(minLength: 0)
 

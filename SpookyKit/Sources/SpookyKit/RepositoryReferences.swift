@@ -158,16 +158,41 @@ public struct RepositoryReferences: Sendable {
         )
     }
 
-    /// 两侧均用快照中的哈希查询，避免刷新途中引用移动改变计数含义。
+    /// 两侧均用快照中的哈希查询，避免刷新途中引用移动改变计数含义；同一对哈希的计数不变，按哈希复用。
     public func divergence(local: String, upstream: String) async throws -> ReferenceDivergence {
         guard GitObjectID.isValid(local), GitObjectID.isValid(upstream) else {
             throw RepositoryReadError.invalidQuery
         }
         return try ReferenceDivergence.parse(
-            await runner.run([
+            await runner.immutableRun([
                 "rev-list", "--left-right", "--count", local + "..." + upstream, "--",
             ])
         )
+    }
+
+    /// 快照中所有本地分支相对上游的计数；各分支并发查询，上游已删除的分支不计数。
+    public func divergences(in snapshot: ReferenceSnapshot) async throws -> [String: ReferenceDivergence] {
+        let pairs = snapshot.references.filter(\.isLocal).compactMap { reference in
+            snapshot.references.first { $0.id == reference.upstream }
+                .map { (reference.id, reference.objectID, $0.objectID) }
+        }
+
+        // 并发度由仓库队列的主机槽统一限制，服务器上不会超出会话上限。
+        return try await withThrowingTaskGroup(of: (String, ReferenceDivergence).self) { group in
+            for (id, local, upstream) in pairs {
+                group.addTask {
+                    (id, try await divergence(local: local, upstream: upstream))
+                }
+            }
+
+            var counts: [String: ReferenceDivergence] = [:]
+
+            for try await (id, divergence) in group {
+                counts[id] = divergence
+            }
+
+            return counts
+        }
     }
 
     /// 以 Git 的分支规则校验，拒绝前一分支快捷写法及选项形式。

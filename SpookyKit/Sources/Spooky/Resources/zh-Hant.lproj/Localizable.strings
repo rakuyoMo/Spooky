@@ -153,11 +153,13 @@
 
 "error.version" = "需要 Git 2.41.0 或更新版本";
 
-"error.parse" = "無法解析 Git 狀態";
+"error.parse" = "無法解析 Git 輸出";
 
 "error.openHelp" = "請選擇可存取的 Git 工作區。Spooky 要求 /usr/bin/git 不低於 2.41.0；版本不足時請更新 Xcode 或命令列工具。下方保留原始輸出。";
 
 "error.refreshHelp" = "重新整理失敗時保留既有結果。請查看原始輸出，處理問題後重新整理。";
+
+"error.writeHelp" = "操作沒有完成。請查看原始輸出，再重新整理以查看儲存庫的目前狀態。";
 
 "error.details" = "原始輸出";
 
@@ -420,3 +422,27 @@
 "history.unpushed" = "尚未推送";
 "history.unpulled" = "尚未拉取";
 "branch.deleteMultiple" = "刪除分支";
+
+/* 错误类别、断线核对、空状态与加载上限。 */
+"failure.category" = "類別：%@";
+"failure.location" = "儲存庫：%@";
+"failure.kind.connection" = "伺服器連線";
+"failure.kind.git" = "Git 指令失敗";
+"failure.kind.output" = "Git 輸出無法解析";
+"failure.kind.cancelled" = "已取消";
+"failure.kind.version" = "不支援的 Git 版本";
+"failure.kind.repository" = "儲存庫狀態";
+"failure.kind.environment" = "程序或系統";
+"recovery.title" = "已核對中斷的操作";
+"recovery.changed" = "“%@” 因連線中斷而停止，沒有重試。HEAD 已從 %@ 變為 %@，操作可能已經完成。請先核對結果，再決定是否重試。";
+"recovery.unchanged" = "“%@” 因連線中斷而停止，沒有重試。HEAD 仍是 %@。請先檢查工作區，再決定是否重試。";
+"recovery.notStarted" = "伺服器連線無法使用，“%@” 沒有開始執行，伺服器上沒有任何變更。";
+"recovery.unborn" = "尚無提交";
+"dialog.blocked" = "此儲存庫有其他操作正在進行，或伺服器已中斷連線。已填寫的設定會保留，請在儲存庫可用後重試。";
+"working.clean" = "沒有本機變更";
+"working.refreshFailed" = "重新整理失敗，正在顯示上一次成功的結果。";
+"history.limit" = "僅顯示前 %ld 個提交。選擇分支可以縮小歷史範圍。";
+"history.loadingChanges" = "正在讀取變更檔案…";
+"repositories.checking" = "正在檢查…";
+"repositories.unavailableShort" = "無法使用";
+"activity.truncated" = "較早的輸出已省略。";

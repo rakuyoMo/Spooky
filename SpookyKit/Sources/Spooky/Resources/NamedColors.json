@@ -198,5 +198,135 @@
       "hex": "#FFFFFF",
       "alpha": 0.847
     }
+  },
+  "warning_tint_color": {
+    "light": {
+      "hex": "#FFCC00",
+      "alpha": 0.85
+    },
+    "dark": {
+      "hex": "#FFD60A",
+      "alpha": 0.65
+    }
+  },
+  "gray_history_graph_line_color": {
+    "light": {
+      "hex": "#8E8E93",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#98989D",
+      "alpha": 1.0
+    }
+  },
+  "blue_history_graph_line_color": {
+    "light": {
+      "hex": "#0088FF",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#0091FF",
+      "alpha": 1.0
+    }
+  },
+  "pink_history_graph_line_color": {
+    "light": {
+      "hex": "#FF2D55",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#FF375F",
+      "alpha": 1.0
+    }
+  },
+  "green_history_graph_line_color": {
+    "light": {
+      "hex": "#34C759",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#30D158",
+      "alpha": 1.0
+    }
+  },
+  "yellow_history_graph_line_color": {
+    "light": {
+      "hex": "#FFCC00",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#FFD600",
+      "alpha": 1.0
+    }
+  },
+  "orange_history_graph_line_color": {
+    "light": {
+      "hex": "#FF8D28",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#FF9230",
+      "alpha": 1.0
+    }
+  },
+  "indigo_history_graph_line_color": {
+    "light": {
+      "hex": "#6155F5",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#6D7CFF",
+      "alpha": 1.0
+    }
+  },
+  "red_history_graph_line_color": {
+    "light": {
+      "hex": "#FF383C",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#FF4245",
+      "alpha": 1.0
+    }
+  },
+  "teal_history_graph_line_color": {
+    "light": {
+      "hex": "#00C3D0",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#00D2E0",
+      "alpha": 1.0
+    }
+  },
+  "purple_history_graph_line_color": {
+    "light": {
+      "hex": "#CB30E0",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#DB34F2",
+      "alpha": 1.0
+    }
+  },
+  "repository_history_commit_bubble_bg_color": {
+    "light": {
+      "hex": "#FFFFFF",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#222222",
+      "alpha": 1.0
+    }
+  },
+  "repository_history_commit_bubble_border_color": {
+    "light": {
+      "hex": "#666666",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#DDDDDD",
+      "alpha": 1.0
+    }
   }
 }

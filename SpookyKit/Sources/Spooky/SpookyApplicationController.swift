@@ -20,6 +20,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 正在退出时先回收自己的 SSH 主连接。
     private var isTerminating = false
 
+    /// 退出时等待任务结束的上限，取消确认最长需要远端的宽限期与通道关闭时间。
+    private static let terminationGrace: Duration = .seconds(10)
+
     /// 每个打开动作独立取消，避免旧目录的检查覆盖新选择。
     private var openingTasks: [UUID: Task<Void, Never>] = [:]
 
@@ -164,7 +167,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
                 self.recent.markUnavailable(location)
                 let destination = source ?? self.makeWindow()
                 destination.showWindow(nil)
-                destination.showFailure(AppFailure(error: error, opening: true))
+                destination.showFailure(AppFailure(error: error, opening: true, location: location))
             }
         }
     }
@@ -221,12 +224,34 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard !isTerminating else { return .terminateNow }
         isTerminating = true
-        for task in openingTasks.values { task.cancel() }
-        for task in addingTasks.values { task.cancel() }
-        for window in windows { window.session.close() }
+        let pending = Array(openingTasks.values) + Array(addingTasks.values)
+            + [recent.stopValidation()].compactMap { $0 }
+        let sessions = windows.map(\.session)
         TerminalLauncher.cleanup()
 
+        for task in pending {
+            task.cancel()
+        }
+
         Task {
+            // 先取消并等待各窗口的读取、写入和子进程结束，再关闭专属主连接；超过宽限期也会退出。
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask {
+                    await withTaskGroup(of: Void.self) { shutdown in
+                        for session in sessions {
+                            shutdown.addTask { await session.shutdown() }
+                        }
+
+                        for task in pending {
+                            shutdown.addTask { await task.value }
+                        }
+                    }
+                }
+                group.addTask { try? await Task.sleep(for: Self.terminationGrace) }
+                await group.next()
+                group.cancelAll()
+            }
+
             await RemoteConnection.closeAll()
             sender.reply(toApplicationShouldTerminate: true)
         }
@@ -234,10 +259,10 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         return .terminateLater
     }
 
-    /// 应用重新激活立即刷新远端状态。
+    /// 应用重新激活立即刷新显示仓库的主窗口。
     func applicationDidBecomeActive(_ notification: Notification) {
         for controller in windows {
-            controller.session.setActive(controller.window?.isKeyWindow == true)
+            controller.session.setActive(controller.window?.isKeyWindow == true && !controller.showsManager)
         }
     }
 
@@ -267,7 +292,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
                         return
                     }
 
-                    source?.showFailure(AppFailure(error: error, opening: true))
+                    source?.showFailure(
+                        AppFailure(error: error, opening: true, location: .local(path: url.path))
+                    )
                     return
                 }
             }
@@ -288,6 +315,13 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 删除关闭窗口的强引用，不影响其它窗口。
     func removeWindow(_ controller: RepositoryWindowController) {
         windows.removeAll { $0 === controller }
+    }
+
+    /// 一个窗口完成写入后，显示同一仓库的其它窗口完整刷新，避免各窗口状态不一致。
+    func repositoryChanged(_ location: RepositoryLocation, by source: RepositoryWindowController) {
+        for controller in windows where controller !== source && controller.session.repository == location {
+            controller.session.refresh(full: true)
+        }
     }
 
     /// 最后一个持有仓库的窗口关闭后，回收专属主连接和会话临时目录。

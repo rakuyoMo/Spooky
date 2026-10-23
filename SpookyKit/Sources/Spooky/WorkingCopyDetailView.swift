@@ -51,7 +51,7 @@ struct WorkingCopyDetailView: View {
 
                 if session.selectedIDs.count > 1 {
                     Button(AppLocalization.text("working.discard")) { session.discard(session.selectedEntries) }
-                        .disabled(!session.canWrite)
+                        .disabled(!session.canDiscard(session.selectedEntries))
                 }
             }
             .padding(24)
@@ -69,15 +69,10 @@ struct WorkingCopyDetailView: View {
                 Button(AppLocalization.text("working.theirs")) { session.resolve([entry], theirs: true) }
                 Button(AppLocalization.text("working.resolved")) { session.stage([entry], staged: true) }
             }
-            .disabled(!session.canWrite)
+            .disabled(!session.canResolve([entry]))
         } else if let failure = session.diffFailure {
-            VStack(spacing: 12) {
-                Text(failure.title).font(.headline)
-                Text(failure.message)
-                ScrollView { Text(failure.details).textSelection(.enabled).font(.system(size: 11, design: .monospaced)) }
-                Button(AppLocalization.text("action.refresh")) { session.loadDiff() }
-            }
-            .padding(20)
+            FailureDetailsView(failure: failure) { session.loadDiff() }
+                .padding(20)
         } else if let snapshot = session.diffSnapshot {
             if let diff = snapshot.diff {
                 DiffContentView(session: session, snapshot: snapshot, diff: diff)
@@ -320,7 +315,7 @@ struct DiffHunkView: View {
         .padding(.trailing, 4)
         .frame(minHeight: 18)
         .background(selected.contains(line.id) ? Color.accentColor : .clear)
-        .foregroundStyle(selected.contains(line.id) ? .white : .secondary)
+        .foregroundStyle(selected.contains(line.id) ? Color(nsColor: .alternateSelectedControlTextColor) : .secondary)
         .contentShape(Rectangle())
         .background(GeometryReader { proxy in
             Color.clear.preference(key: DiffRowFrames.self, value: [line.id: proxy.frame(in: .named(coordinateID))])

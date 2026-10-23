@@ -66,13 +66,14 @@ struct CommitDetailView: View {
                         .padding(.horizontal, 8)
                         .frame(height: 32)
 
-                        if history.isLoadingChanges { ProgressView().padding(20) }
-                        if let failure = history.changesFailure {
-                            Text(failure.title + "\n" + failure.details)
-                                .textSelection(.enabled)
+                        if history.isLoadingChanges {
+                            ProgressView(AppLocalization.text("history.loadingChanges"))
+                                .controlSize(.small)
                                 .padding(20)
-                            Button(AppLocalization.text("action.refresh")) { history.loadChanges() }
-                                .padding(.horizontal, 20)
+                        }
+                        if let failure = history.changesFailure {
+                            FailureDetailsView(failure: failure) { history.loadChanges() }
+                                .padding(20)
                         }
                         ForEach(history.changes) { file in
                             DisclosureGroup(
@@ -119,6 +120,9 @@ struct CommitDetailView: View {
 
 /// 完整提交页的左侧文件列表，右侧复用同一只读补丁。
 struct CommitFileListView: View {
+    /// 连接横幅所属的窗口会话。
+    let session: RepositorySession
+
     /// 与历史列表共享选择。
     @Bindable var history: RepositoryHistoryState
 
@@ -128,6 +132,8 @@ struct CommitFileListView: View {
     /// 提交卡片、文件数与原生选择列表。
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            ConnectionStatusView(session: session)
+
             Button(action: back) {
                 Label(AppLocalization.text("history.back"), systemImage: "chevron.left")
             }
@@ -147,7 +153,11 @@ struct CommitFileListView: View {
             List(history.changes, selection: $history.selectedPath) { file in
                 CommitFileLabel(file: file).tag(file.path)
             }
-            if history.isLoadingChanges { ProgressView().padding(12) }
+            if history.isLoadingChanges {
+                ProgressView(AppLocalization.text("history.loadingChanges"))
+                    .controlSize(.small)
+                    .padding(12)
+            }
         }
         .frame(minWidth: 300)
     }
@@ -240,8 +250,8 @@ struct CommitFileDiffView: View {
         let theme = BuiltinTheme.current(dark: colorScheme == .dark)
         VStack(alignment: .leading, spacing: 0) {
             if let failure = history.diffFailures[path] {
-                Text(failure.title + "\n" + failure.details).textSelection(.enabled).padding(20)
-                Button(AppLocalization.text("action.refresh")) { history.loadDiff(path) }
+                FailureDetailsView(failure: failure) { history.loadDiff(path) }
+                    .padding(20)
             } else if let result = history.diffs[path] {
                 if let diff = result.diff {
                     ForEach(diff.files) { file in
@@ -270,7 +280,9 @@ struct CommitFileDiffView: View {
                     .padding(12)
                 }
             } else {
-                ProgressView().padding(20)
+                ProgressView(AppLocalization.text("working.loadingDiff"))
+                    .controlSize(.small)
+                    .padding(20)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

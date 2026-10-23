@@ -37,10 +37,7 @@ struct ConnectionStatusView: View {
 
                 if let failure = session.failure {
                     DisclosureGroup(failure.title, isExpanded: $showsDetails) {
-                        Text(failure.message)
-                        Text(failure.details)
-                            .font(.system(size: 11, design: .monospaced))
-                            .textSelection(.enabled)
+                        FailureDetailsView(failure: failure)
                     }
                     .font(.system(size: 11))
                 }

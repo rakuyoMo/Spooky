@@ -4,6 +4,9 @@ import System
 
 /// Git 与 SSH 共用的异步进程边界，保留原始输出并响应任务取消。
 enum CommandExecutor {
+    /// 取消时 TERM 与 KILL 之间的宽限期，与服务器包装器的默认宽限期一致。
+    static let cancellationGrace: Duration = .seconds(2)
+
     /// 同时排空两条管道；公开结果只包含业务参数，不记录环境和输入。
     static func execute(
         executable: String,
@@ -26,9 +29,10 @@ enum CommandExecutor {
             var platform = PlatformOptions()
             platform.createSession = true
 
-            // 取消只结束本次创建的进程组，SSH、askpass 和钩子不能遗留为后台写入。
+            // 取消只结束本次创建的进程组：先发 TERM，让 Git 移除自己的锁文件；
+            // 宽限期后仍未退出再 KILL，SSH、askpass 和钩子不能遗留为后台写入。
             platform.teardownSequence = [
-                .send(signal: .kill, toProcessGroup: true, allowedDurationToNextStep: .zero)
+                .gracefulShutDown(toProcessGroup: true, allowedDurationToNextStep: cancellationGrace)
             ]
             let result = try await Subprocess.run(
                 .path(FilePath(command.executable)),

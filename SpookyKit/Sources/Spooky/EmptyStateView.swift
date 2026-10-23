@@ -28,7 +28,6 @@ struct EmptyStateView: View {
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

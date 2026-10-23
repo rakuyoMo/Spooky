@@ -1,0 +1,7 @@
+diff --git a/image.bin b/image.bin
+index 0f49c4ae77b43dff338093c78e009676e7e308ba..93732173f8f37cf4ba94d35da5924b019a3ff5b5 100644
+Binary files a/image.bin and b/image.bin differ
+diff --git a/renamed source.txt b/重命名 target.txt
+similarity index 100%
+rename from renamed source.txt
+rename to 重命名 target.txt

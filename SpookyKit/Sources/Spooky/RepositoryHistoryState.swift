@@ -43,6 +43,12 @@ final class RepositoryHistoryState {
     /// 还有下一页时滚动到底自动读取。
     private(set) var hasMore = false
 
+    /// 已加载的提交达到上限，提示用户选择分支缩小范围，不再继续累积。
+    private(set) var reachedLimit = false
+
+    /// 单个列表最多加载的提交数，限制长时间滚动后的内存占用。
+    static let maximumLoadedCommits = 50_000
+
     /// 列表加载状态。
     private(set) var isLoading = false
 
@@ -90,6 +96,9 @@ final class RepositoryHistoryState {
     /// 窗口错误入口用于引用刷新失败。
     var onFailure: ((Error) -> Void)?
 
+    /// 恢复的引用在新快照中已不存在时通知会话回退视图。
+    var onRestoreFailure: (() -> Void)?
+
     /// 当前窗口的执行器，测试可以注入隔离环境。
     private var runner: GitRunner?
 
@@ -120,6 +129,9 @@ final class RepositoryHistoryState {
     /// 写入取消读取后，即使引用未改变也需要恢复分页和详情。
     private var needsReload = false
 
+    /// 切回仓库时恢复的引用选择，首个引用快照到达后校验一次。
+    private var restoredReferences: Set<String>?
+
     /// 当前单选提交，多选时详情显示空状态。
     var selectedCommit: HistoryCommit? {
         guard selectedIDs.count == 1 else { return nil }
@@ -142,39 +154,45 @@ final class RepositoryHistoryState {
     }
 
     /// 刷新引用后只在根变化时重载列表，轮询不打断翻页或选择。
-    func refresh(status: WorkingCopyStatus, runner: GitRunner) {
+    ///
+    /// - Parameter reload: 完整刷新时即使引用未变也重读第一页，固定根的分页由核心库缓存复用。
+    func refresh(status: WorkingCopyStatus, runner: GitRunner, reload: Bool = false) {
         guard referenceTask == nil else { return }
         self.runner = runner
+        needsReload = needsReload || reload
         let request = generation
         referenceTask = Task { [weak self] in
             do {
                 let service = RepositoryReferences(runner: runner)
                 let snapshot = try await service.snapshot()
-                var counts: [String: ReferenceDivergence] = [:]
 
                 // 上游计数只查询存在的引用，已删除的上游仍保留跟踪名称。
-                for ref in snapshot.references where ref.isLocal {
-                    guard let upstream = snapshot.references.first(where: { $0.id == ref.upstream }) else {
-                        continue
-                    }
-                    counts[ref.id] = try await service.divergence(
-                        local: ref.objectID,
-                        upstream: upstream.objectID
-                    )
-                }
+                let counts = try await service.divergences(in: snapshot)
 
                 guard let self, self.generation == request, !Task.isCancelled else { return }
                 let changed = self.snapshot != snapshot || self.branch?.oid != status.branch.oid
                 self.snapshot = snapshot
                 self.branch = status.branch
                 self.divergence = counts
+
+                // 恢复的引用已被删除时回到全部历史，并让会话回到 Working Copy。
+                if let restored = self.restoredReferences {
+                    self.restoredReferences = nil
+                    let known = Set(snapshot.references.map(\.id)).union(["HEAD"])
+
+                    if !restored.isSubset(of: known) {
+                        self.selectedReferences = []
+                        self.onRestoreFailure?()
+                    }
+                }
+
                 if changed || self.needsReload {
                     self.needsReload = false
                     self.reloadCommits()
                 }
             } catch {
                 guard let self, self.generation == request, !Task.isCancelled else { return }
-                self.failure = AppFailure(error: error, opening: false)
+                self.failure = AppFailure(error: error, opening: false, location: runner.location)
                 self.onFailure?(error)
             }
 
@@ -217,6 +235,7 @@ final class RepositoryHistoryState {
         }
         graph = CommitGraph()
         hasMore = !roots.isEmpty
+        reachedLimit = false
 
         if roots.isEmpty {
             commits = []
@@ -229,9 +248,9 @@ final class RepositoryHistoryState {
         loadNextPage(replacing: true)
     }
 
-    /// 表格请求最后一行时续载，单次最多使用设置中规定的 1000 条。
+    /// 表格请求最后一行时续载，单次最多使用设置中规定的 1000 条；累计达到上限后停止续载。
     func loadNextPage(replacing: Bool = false) {
-        guard !isLoading, hasMore, let runner else { return }
+        guard !isLoading, hasMore, replacing || !reachedLimit, let runner else { return }
         let request = generation
         let roots = roots
         let offset = replacing ? 0 : commits.count
@@ -252,6 +271,7 @@ final class RepositoryHistoryState {
                 self.commits += page.commits
                 self.updateTrackingMarkers()
                 self.hasMore = page.hasMore
+                self.reachedLimit = page.hasMore && self.commits.count >= Self.maximumLoadedCommits
                 if replacing {
                     let selected = self.selectedIDs.intersection(Set(self.commits.map(\.id)))
                     if selected == self.selectedIDs {
@@ -263,7 +283,7 @@ final class RepositoryHistoryState {
                 self.failure = nil
             } catch {
                 guard let self, self.generation == request, !Task.isCancelled else { return }
-                self.failure = AppFailure(error: error, opening: false)
+                self.failure = AppFailure(error: error, opening: false, location: runner.location)
             }
 
             guard let self, self.generation == request, !Task.isCancelled else { return }
@@ -307,7 +327,7 @@ final class RepositoryHistoryState {
                 guard let self, self.generation == request, self.selectedCommit?.id == commit.id,
                     !Task.isCancelled
                 else { return }
-                self.diffFailures[path] = AppFailure(error: error, opening: false)
+                self.diffFailures[path] = AppFailure(error: error, opening: false, location: runner.location)
             }
 
             guard let self, self.generation == request, self.selectedCommit?.id == commit.id,
@@ -322,6 +342,18 @@ final class RepositoryHistoryState {
     func expandAll(_ expanded: Bool) {
         expandedPaths = expanded ? Set(changes.map(\.path)) : []
         if expanded { for file in changes { loadDiff(file.path) } }
+    }
+
+    /// 切回仓库时恢复分支与提交选择；引用快照到达后再校验引用是否仍存在。
+    func restore(references: Set<String>, commits: Set<String>) {
+        selectedReferences = references
+        selectedIDs = commits
+        restoredReferences = references.isEmpty ? nil : references
+    }
+
+    /// 正在运行的读取任务，退出前等待它们结束。
+    var activeTasks: [Task<Void, Never>] {
+        [referenceTask, pageTask, changeTask].compactMap { $0 } + Array(diffTasks.values)
     }
 
     /// 写入前取消读取，避免旧引用或补丁在写入后覆盖新快照。
@@ -362,6 +394,8 @@ final class RepositoryHistoryState {
         failure = nil
         roots = []
         hasMore = false
+        reachedLimit = false
+        restoredReferences = nil
     }
 
     /// 单选变化后丢弃上一提交的补丁，元信息直接复用列表记录。
@@ -393,7 +427,7 @@ final class RepositoryHistoryState {
                 guard let self, self.generation == request, self.selectedCommit?.id == commit.id,
                     !Task.isCancelled
                 else { return }
-                self.changesFailure = AppFailure(error: error, opening: false)
+                self.changesFailure = AppFailure(error: error, opening: false, location: runner.location)
             }
 
             guard let self, self.generation == request, self.selectedCommit?.id == commit.id,

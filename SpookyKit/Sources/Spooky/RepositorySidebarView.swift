@@ -49,7 +49,7 @@ struct RepositorySidebarView: View {
                     Button(AppLocalization.text("branch.create")) {
                         request(RepositoryActionRequest(kind: .create))
                     }
-                    .disabled(!session.canWrite || session.status?.branch.oid == nil)
+                    .disabled(!session.canCreateBranch)
                 } label: {
                     Image(systemName: "plus")
                 }
@@ -102,14 +102,7 @@ struct RepositorySidebarView: View {
                 branchRow(ref)
                     .tag(ref.id)
                     .onTapGesture(count: 2) { checkout(ref) }
-                    .onDrag {
-                        RepositoryDragPayload(
-                            repository: session.repository!,
-                            kind: .local,
-                            reference: ref.id
-                        )
-                        .provider()
-                    }
+                    .onDrag { dragProvider(kind: .local, reference: ref.id) }
                     .contextMenu { branchMenu(ref) }
                     .modifier(
                         RepositoryDropTarget(
@@ -144,14 +137,7 @@ struct RepositorySidebarView: View {
                             .onTapGesture(count: 2) {
                                 checkoutRemote(ref)
                             }
-                            .onDrag {
-                                RepositoryDragPayload(
-                                    repository: session.repository!,
-                                    kind: .remote,
-                                    reference: ref.id
-                                )
-                                .provider()
-                            }
+                            .onDrag { dragProvider(kind: .remote, reference: ref.id) }
                             .contextMenu { branchMenu(ref) }
                             .modifier(
                                 RepositoryDropTarget(
@@ -167,13 +153,13 @@ struct RepositorySidebarView: View {
                             Button(AppLocalization.text("sync.fetch")) {
                                 request(RepositoryActionRequest(kind: .fetch, remote: remote.name))
                             }
-                            .disabled(!session.canWrite)
+                            .disabled(!session.canFetch)
                             Button(AppLocalization.text("sync.prune")) {
                                 request(
                                     RepositoryActionRequest(kind: .fetch, remote: remote.name, prune: true)
                                 )
                             }
-                            .disabled(!session.canWrite)
+                            .disabled(!session.canFetch)
                         }
                         .modifier(
                             RepositoryDropTarget(
@@ -193,29 +179,32 @@ struct RepositorySidebarView: View {
             Label(AppLocalization.text("workspace.title"), systemImage: "folder")
             Spacer(minLength: 4)
             if session.isRefreshing {
-                ProgressView().controlSize(.small)
+                ProgressView()
+                    .controlSize(.small)
+                    .accessibilityLabel(AppLocalization.text("loading.status"))
             } else if let status = session.status {
                 Text(status.entries.count.formatted())
                     .font(.system(size: 11))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(AppPalette.color("sidebarBadgeBackgroundColor"), in: Capsule())
+                    .accessibilityLabel(AppLocalization.text("workspace.changed", status.entries.count))
             }
         }
         .contextMenu {
             Button(AppLocalization.text("sync.pull")) { request(RepositoryActionRequest(kind: .pull)) }
-                .disabled(!session.canWrite || session.history.branches.allSatisfy { !$0.isRemote })
+                .disabled(!session.canPull)
             Button(AppLocalization.text("sync.push")) { request(RepositoryActionRequest(kind: .push)) }
-                .disabled(!session.canWrite || session.status?.branch.oid == nil)
+                .disabled(!session.canPush)
             Button(AppLocalization.text("sync.publish")) { request(RepositoryActionRequest(kind: .publish)) }
-                .disabled(!session.canWrite || session.status?.branch.oid == nil)
+                .disabled(!session.canPublish)
             Button(AppLocalization.text("sync.merge")) { request(RepositoryActionRequest(kind: .merge)) }
-                .disabled(!session.canWrite || session.status?.branch.oid == nil)
+                .disabled(!session.canMerge)
             Divider()
             Button(AppLocalization.text("working.discardAll")) {
                 session.discard(session.status?.entries ?? [])
             }
-            .disabled(!session.canWrite || session.status?.entries.isEmpty != false)
+            .disabled(!session.canDiscard(session.status?.entries ?? []))
             Divider()
             Button(AppLocalization.text("action.openTerminal"), action: openTerminal)
             Button(AppLocalization.text("action.revealFinder"), action: revealFinder)
@@ -246,6 +235,8 @@ struct RepositorySidebarView: View {
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
                 .background(AppPalette.color("sidebarBadgeBackgroundColor"), in: Capsule())
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(badgeDescription(ref))
             }
             if let remote = session.history.snapshot?.remote(for: ref),
                 session.history.snapshot?.defaultBranch(for: remote) == ref.id
@@ -265,44 +256,41 @@ struct RepositorySidebarView: View {
         let selected = session.history.branches.filter { session.history.selectedReferences.contains($0.id) }
         if selected.count > 1, selected.contains(where: { $0.id == ref.id }), selected.allSatisfy(\.isLocal) {
             Button(AppLocalization.text("branch.deleteMultiple")) { delete(selected) }
-                .disabled(!session.canWrite || selected.contains { $0.name == session.status?.branch.head })
+                .disabled(!session.canDelete(selected))
         } else {
             if ref.isLocal {
                 Button(AppLocalization.text("branch.checkout")) { checkout(ref) }
-                    .disabled(!session.canWrite || ref.name == session.status?.branch.head)
+                    .disabled(!session.canCheckout(ref))
                 Button(AppLocalization.text("sync.publish")) {
                     request(RepositoryActionRequest(kind: .publish, localBranch: ref.name))
                 }
-                .disabled(!session.canWrite)
+                .disabled(!session.canPush(ref))
                 Button(AppLocalization.text("sync.push")) {
                     request(RepositoryActionRequest(kind: .push, localBranch: ref.name))
                 }
-                .disabled(!session.canWrite)
+                .disabled(!session.canPush(ref))
             } else {
                 Button(AppLocalization.text("branch.track")) {
                     request(RepositoryActionRequest(kind: .track, reference: ref.id))
                 }
-                .disabled(!session.canWrite)
+                .disabled(!session.canTrack(ref))
                 Button(AppLocalization.text("sync.pull")) {
                     request(RepositoryActionRequest(kind: .pull, reference: ref.id))
                 }
-                .disabled(!session.canWrite || session.status?.branch.head == nil)
+                .disabled(!session.canPull(from: ref))
             }
             Button(AppLocalization.text("branch.create")) {
                 request(RepositoryActionRequest(kind: .create, reference: ref.id))
             }
-            .disabled(!session.canWrite)
+            .disabled(!session.canCreateBranchFromReference)
             Button(AppLocalization.text("sync.merge")) {
                 request(RepositoryActionRequest(kind: .merge, reference: ref.id))
             }
-            .disabled(
-                !session.canWrite || session.status?.branch.head == nil
-                    || ref.name == session.status?.branch.head
-            )
+            .disabled(!session.canMerge(ref))
             if ref.isLocal {
                 Divider()
                 Button(AppLocalization.text("branch.delete")) { delete([ref]) }
-                    .disabled(!session.canWrite || ref.name == session.status?.branch.head)
+                    .disabled(!session.canDelete([ref]))
             }
             Divider()
             Button(AppLocalization.text("branch.copyName")) {
@@ -341,9 +329,34 @@ struct RepositorySidebarView: View {
         }
     }
 
+    /// 拖动开始时仓库仍在显示才提供载荷；仓库刚关闭时返回空的拖动内容。
+    private func dragProvider(kind: RepositoryDragPayload.Kind, reference: String) -> NSItemProvider {
+        guard let repository = session.repository else {
+            return NSItemProvider()
+        }
+
+        return RepositoryDragPayload(repository: repository, kind: kind, reference: reference).provider()
+    }
+
+    /// HEAD 与双向数量的辅助说明，VoiceOver 不朗读箭头符号。
+    private func badgeDescription(_ ref: RepositoryReference) -> String {
+        var parts: [String] = []
+
+        if ref.isLocal && ref.name == session.status?.branch.head {
+            parts.append("HEAD")
+        }
+
+        if let counts = session.history.divergence[ref.id] {
+            if counts.ahead > 0 { parts.append(AppLocalization.text("branch.ahead", counts.ahead)) }
+            if counts.behind > 0 { parts.append(AppLocalization.text("branch.behind", counts.behind)) }
+        }
+
+        return parts.joined(separator: ", ")
+    }
+
     /// 双击检出保留 Git 对本地修改的覆盖保护。
     private func checkout(_ ref: RepositoryReference) {
-        guard session.canWrite, ref.name != session.status?.branch.head else { return }
+        guard session.canCheckout(ref) else { return }
         session.performGit(
             { runner, _ in
                 try await RepositoryReferences(runner: runner).checkout(ref.id)
@@ -354,7 +367,7 @@ struct RepositorySidebarView: View {
 
     /// 双击远端分支检出已有跟踪分支，或原子创建并检出同名跟踪分支。
     private func checkoutRemote(_ ref: RepositoryReference) {
-        guard session.canWrite, let snapshot = session.history.snapshot,
+        guard session.canCheckout(ref), let snapshot = session.history.snapshot,
             let remote = snapshot.remote(for: ref)
         else { return }
         if let existing = snapshot.references.first(where: { $0.isLocal && $0.upstream == ref.id }) {

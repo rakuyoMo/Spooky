@@ -153,11 +153,13 @@
 
 "error.version" = "Git 2.41.0 以降が必要です";
 
-"error.parse" = "Git の状態を解析できません";
+"error.parse" = "Git の出力を解析できません";
 
 "error.openHelp" = "アクセスできる Git 作業ツリーを選択してください。/usr/bin/git は 2.41.0 以降が必要です。必要に応じて Xcode または Command Line Tools を更新してください。元の出力を下に表示しています。";
 
 "error.refreshHelp" = "更新に失敗しても以前の結果は保持されます。元の出力を確認してから更新を再試行してください。";
+
+"error.writeHelp" = "操作は完了しませんでした。元の出力を確認してから更新し、リポジトリの現在の状態を確認してください。";
 
 "error.details" = "元の出力";
 
@@ -420,3 +422,27 @@
 "history.unpushed" = "未プッシュ";
 "history.unpulled" = "未プル";
 "branch.deleteMultiple" = "ブランチを削除";
+
+/* 错误类别、断线核对、空状态与加载上限。 */
+"failure.category" = "分類：%@";
+"failure.location" = "リポジトリ：%@";
+"failure.kind.connection" = "サーバー接続";
+"failure.kind.git" = "Git コマンドの失敗";
+"failure.kind.output" = "解析できない Git の出力";
+"failure.kind.cancelled" = "キャンセル";
+"failure.kind.version" = "サポートされていない Git のバージョン";
+"failure.kind.repository" = "リポジトリの状態";
+"failure.kind.environment" = "プロセスまたはシステム";
+"recovery.title" = "中断した操作を確認しました";
+"recovery.changed" = "「%@」は接続の切断で中断し、再実行していません。HEAD が %@ から %@ に変わっているため、操作は完了した可能性があります。結果を確認してから再試行してください。";
+"recovery.unchanged" = "「%@」は接続の切断で中断し、再実行していません。HEAD は %@ のままです。作業コピーを確認してから再試行してください。";
+"recovery.notStarted" = "サーバーに接続できなかったため、「%@」は開始されていません。サーバー上は何も変更されていません。";
+"recovery.unborn" = "コミットなし";
+"dialog.blocked" = "このリポジトリで別の操作が実行中か、サーバーとの接続が切れています。入力した設定は保持されます。リポジトリが利用可能になってから再試行してください。";
+"working.clean" = "ローカルの変更はありません";
+"working.refreshFailed" = "更新に失敗しました。最後に成功した結果を表示しています。";
+"history.limit" = "最初の %ld 件のコミットのみを表示しています。ブランチを選択すると範囲を絞り込めます。";
+"history.loadingChanges" = "変更ファイルを読み込み中…";
+"repositories.checking" = "確認中…";
+"repositories.unavailableShort" = "利用不可";
+"activity.truncated" = "以前の出力は省略されました。";

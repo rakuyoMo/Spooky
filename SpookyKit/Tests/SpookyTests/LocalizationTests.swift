@@ -40,13 +40,17 @@ struct LocalizationTests {
         ).first == "en")
     }
 
-    /// 外部错误原文保持原样，面向用户的说明来自本地化资源。
+    /// 外部错误原文保持原样，面向用户的说明、类别与仓库位置来自本地化资源。
     @Test("错误说明本地化且保留原文")
     func errorPresentation() {
-        let failure = AppFailure(error: StatusParseError(record: "broken Git output"), opening: false)
+        let location = RepositoryLocation.remote(host: "spooky-test", path: "/tmp/仓 库")
+        let failure = AppFailure(error: StatusParseError(record: "broken Git output"), opening: false, location: location)
         #expect(failure.title == AppLocalization.text("error.parse"))
         #expect(failure.message == AppLocalization.text("error.refreshHelp"))
         #expect(failure.details == "broken Git output")
+        #expect(failure.kind == .output)
+        #expect(failure.context.contains(AppLocalization.text("failure.kind.output")))
+        #expect(failure.context.contains("spooky-test:/tmp/仓 库"))
     }
 
     /// 界面新增资源键时，五种资源都漏写也必须被检测出来。
@@ -61,7 +65,7 @@ struct LocalizationTests {
             .filter { $0.pathExtension == "swift" }
         let pattern = try NSRegularExpression(
             pattern:
-                #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog)\.[A-Za-z.]+)""#
+                #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog|failure|recovery)\.[A-Za-z.]+)""#
         )
         let english = try strings("en")
 
@@ -89,6 +93,10 @@ struct LocalizationTests {
 
             for state in RemoteConnectionState.allCases {
                 #expect(values["connection." + state.rawValue] != nil)
+            }
+
+            for kind in FailureKind.allCases {
+                #expect(values["failure.kind." + kind.rawValue] != nil)
             }
 
             for key in ["background", "added", "deleted"] {

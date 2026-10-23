@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# 从脚本位置定位仓库，所有 Swift 命令仍使用根目录下的 --package-path。
+project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$project_root"
+
+# 发布构建与开发构建使用各自的产物目录，互不覆盖。
+swift build --package-path SpookyKit --product Spooky --configuration release
+binary_directory="$(swift build --package-path SpookyKit --configuration release --show-bin-path)"
+app_directory="$project_root/build/Spooky.app"
+
+# 每次从空目录组装，上一次打包残留的文件不会进入新的 Bundle。
+rm -rf "$app_directory"
+mkdir -p "$app_directory/Contents/MacOS" "$app_directory/Contents/Resources"
+cp SpookyKit/Sources/Spooky/Info.plist "$app_directory/Contents/Info.plist"
+cp "$binary_directory/Spooky" "$app_directory/Contents/MacOS/Spooky"
+cp SpookyKit/Sources/Spooky/AppIcon.icns "$app_directory/Contents/Resources/AppIcon.icns"
+
+# 界面文案、命名色、主题与远端包装器都在 SwiftPM 资源包内，运行时从 Contents/Resources 读取。
+ditto "$binary_directory/SpookyKit_Spooky.bundle" "$app_directory/Contents/Resources/SpookyKit_Spooky.bundle"
+ditto "$binary_directory/SpookyKit_SpookyKit.bundle" "$app_directory/Contents/Resources/SpookyKit_SpookyKit.bundle"
+
+# 系统权限弹窗从 App 自身的资源目录读取用途说明。
+for locale in en zh-Hans zh-Hant ja ko; do
+    mkdir -p "$app_directory/Contents/Resources/$locale.lproj"
+    cp "SpookyKit/Sources/Spooky/Resources/$locale.lproj/InfoPlist.strings" \
+        "$app_directory/Contents/Resources/$locale.lproj/InfoPlist.strings"
+done
+
+# ad-hoc 签名只保证 Bundle 内容完整、不代表开发者身份；签名后立即校验。
+codesign --force --sign - --timestamp=none "$app_directory"
+codesign --verify --strict --deep "$app_directory"
+
+printf '%s\n' "$app_directory"

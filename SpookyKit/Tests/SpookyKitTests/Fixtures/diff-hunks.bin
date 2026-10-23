@@ -1,0 +1,19 @@
+diff --git a/lines.txt b/lines.txt
+index 7e7b824297338fd273c2ccf3fa13e3dbde299261..d70b4416e044109f1ad1996b3801c1e028d12303 100644
+--- a/lines.txt
++++ b/lines.txt
+@@ -1,4 +1,4 @@
+-one
++ONE
+ two
+ three
+ four
+@@ -7,5 +7,5 @@ six
+ seven
+ eight
+ nine
+-ten
+-ahead
++TEN
++ahead
+\ No newline at end of file

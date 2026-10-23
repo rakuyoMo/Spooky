@@ -216,8 +216,8 @@ public struct RepositoryHistory: Sendable {
         }
         guard !roots.isEmpty else { return HistoryPage(commits: [], hasMore: false) }
 
-        // 根集合经 stdin 传递，引用数量不会扩大进程参数长度。
-        let output = try await runner.run(
+        // 根集合经 stdin 传递，引用数量不会扩大进程参数长度；固定根的分页结果不再变化，可按哈希复用。
+        let output = try await runner.immutableRun(
             Self.logOptions + [
                 "log", "--no-color", "--no-decorate", "--no-patch", "--topo-order", "-z",
                 "--format=tformat:%H%x00%T%x00%P%x00%an%x00%ae%x00%at%x00%cn%x00%ce%x00%ct%x00%B",
@@ -229,10 +229,10 @@ public struct RepositoryHistory: Sendable {
         return HistoryPage(commits: Array(commits.prefix(limit)), hasMore: commits.count > limit)
     }
 
-    /// 根提交显式显示全部新增，合并提交统一比较第一父提交。
+    /// 根提交显式显示全部新增，合并提交统一比较第一父提交；变更集只由提交哈希决定，按哈希复用。
     public func changes(in commit: String) async throws -> [CommitFileChange] {
         guard GitObjectID.isValid(commit) else { throw RepositoryReadError.invalidQuery }
-        let output = try await runner.run(
+        let output = try await runner.immutableRun(
             Self.logOptions + [
                 "show", "--format=", "--root", "--diff-merges=first-parent", "--no-color",
                 "--no-ext-diff", "--no-textconv", "--raw", "--numstat", "--no-abbrev", "-z", "-M", "-C",
@@ -242,7 +242,7 @@ public struct RepositoryHistory: Sendable {
         return try CommitFileChange.parse(output)
     }
 
-    /// 按需加载指定提交的文件补丁，不沿历史搜索更早修改。
+    /// 按需加载指定提交的文件补丁，不沿历史搜索更早修改；补丁按提交哈希与路径复用。
     public func diff(
         in commit: String,
         file: CommitFileChange,
@@ -251,7 +251,7 @@ public struct RepositoryHistory: Sendable {
     ) async throws -> CommitDiff {
         guard GitObjectID.isValid(commit) else { throw RepositoryReadError.invalidQuery }
         let paths = [file.path] + (file.originalPath.map { [$0] } ?? [])
-        let patch = try await runner.run(
+        let patch = try await runner.immutableRun(
             ["--literal-pathspecs"] + Self.logOptions + [
                 "show", "--format=", "--root", "--diff-merges=first-parent", "--no-color",
                 "--word-diff=none", "--no-ext-diff", "--no-textconv", "--full-index", "-M", "-C",

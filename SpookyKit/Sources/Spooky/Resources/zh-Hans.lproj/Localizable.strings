@@ -153,11 +153,13 @@
 
 "error.version" = "需要 Git 2.41.0 或更高版本";
 
-"error.parse" = "无法解析 Git 状态";
+"error.parse" = "无法解析 Git 输出";
 
 "error.openHelp" = "请选择可访问的 Git 工作区。Spooky 要求 /usr/bin/git 不低于 2.41.0；版本不足时请更新 Xcode 或命令行工具。下方保留原始输出。";
 
 "error.refreshHelp" = "刷新失败时保留已有结果。请查看原始输出，处理问题后刷新重试。";
+
+"error.writeHelp" = "操作没有完成。请查看原始输出，再刷新查看仓库的当前状态。";
 
 "error.details" = "原始输出";
 
@@ -420,3 +422,27 @@
 "history.unpushed" = "尚未推送";
 "history.unpulled" = "尚未拉取";
 "branch.deleteMultiple" = "删除分支";
+
+/* 错误类别、断线核对、空状态与加载上限。 */
+"failure.category" = "类别：%@";
+"failure.location" = "仓库：%@";
+"failure.kind.connection" = "服务器连接";
+"failure.kind.git" = "Git 命令失败";
+"failure.kind.output" = "Git 输出无法解析";
+"failure.kind.cancelled" = "已取消";
+"failure.kind.version" = "Git 版本不受支持";
+"failure.kind.repository" = "仓库状态";
+"failure.kind.environment" = "进程或系统";
+"recovery.title" = "已核对中断的操作";
+"recovery.changed" = "“%@” 因断线中断，没有重试。HEAD 已从 %@ 变为 %@，操作可能已经完成。请先核对结果，再决定是否重试。";
+"recovery.unchanged" = "“%@” 因断线中断，没有重试。HEAD 仍是 %@。请先检查工作区，再决定是否重试。";
+"recovery.notStarted" = "服务器连接不可用，“%@” 没有开始执行，服务器上没有任何改动。";
+"recovery.unborn" = "尚无提交";
+"dialog.blocked" = "此仓库有其它操作正在进行，或服务器已断开。已填写的设置会保留，请在仓库可用后重试。";
+"working.clean" = "没有本地改动";
+"working.refreshFailed" = "刷新失败，正在显示上一次成功的结果。";
+"history.limit" = "仅显示前 %ld 个提交。选择分支可以缩小历史范围。";
+"history.loadingChanges" = "正在读取变更文件…";
+"repositories.checking" = "正在检查…";
+"repositories.unavailableShort" = "不可用";
+"activity.truncated" = "较早的输出已省略。";

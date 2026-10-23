@@ -153,11 +153,13 @@
 
 "error.version" = "Git 2.41.0 or Later Required";
 
-"error.parse" = "Git Status Could Not Be Read";
+"error.parse" = "Git Output Could Not Be Read";
 
 "error.openHelp" = "Choose an accessible Git working tree. Spooky requires /usr/bin/git 2.41.0 or later; update Xcode or Command Line Tools if needed. Original output is shown below.";
 
 "error.refreshHelp" = "Any previous result is kept when a refresh fails. Check the original output, then refresh to try again.";
+
+"error.writeHelp" = "The operation did not finish. Check the original output, then refresh to see the repository’s current state.";
 
 "error.details" = "Original Output";
 
@@ -420,3 +422,27 @@
 "history.unpushed" = "Not pushed";
 "history.unpulled" = "Not pulled";
 "branch.deleteMultiple" = "Delete Branches";
+
+/* 错误类别、断线核对、空状态与加载上限。 */
+"failure.category" = "Category: %@";
+"failure.location" = "Repository: %@";
+"failure.kind.connection" = "Server connection";
+"failure.kind.git" = "Git command failed";
+"failure.kind.output" = "Unreadable Git output";
+"failure.kind.cancelled" = "Cancelled";
+"failure.kind.version" = "Unsupported Git version";
+"failure.kind.repository" = "Repository state";
+"failure.kind.environment" = "Process or system";
+"recovery.title" = "Interrupted Operation Checked";
+"recovery.changed" = "“%@” was interrupted by the disconnection and was not retried. HEAD moved from %@ to %@, so the operation may have completed. Check the result before trying again.";
+"recovery.unchanged" = "“%@” was interrupted by the disconnection and was not retried. HEAD is still %@. Check the working copy before trying again.";
+"recovery.notStarted" = "“%@” did not start because the server connection was unavailable. Nothing was changed on the server.";
+"recovery.unborn" = "no commits";
+"dialog.blocked" = "Another operation is running on this repository, or the server is disconnected. Your settings are kept; try again when the repository is available.";
+"working.clean" = "No local changes";
+"working.refreshFailed" = "Refresh failed. Showing the last successful result.";
+"history.limit" = "Showing the first %ld commits. Select a branch to narrow the history.";
+"history.loadingChanges" = "Loading changed files…";
+"repositories.checking" = "Checking…";
+"repositories.unavailableShort" = "Unavailable";
+"activity.truncated" = "Earlier output was omitted.";

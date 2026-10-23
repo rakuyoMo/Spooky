@@ -15,6 +15,7 @@ mkdir -p "$app_directory/Contents/MacOS" "$app_directory/Contents/Resources"
 cp SpookyKit/Sources/Spooky/Info.plist "$app_directory/Contents/Info.plist"
 cp "$binary_directory/Spooky" "$app_directory/Contents/MacOS/Spooky.new"
 mv "$app_directory/Contents/MacOS/Spooky.new" "$app_directory/Contents/MacOS/Spooky"
+cp SpookyKit/Sources/Spooky/AppIcon.icns "$app_directory/Contents/Resources/AppIcon.icns"
 ditto "$binary_directory/SpookyKit_Spooky.bundle" "$app_directory/Contents/Resources/SpookyKit_Spooky.bundle"
 
 ditto "$binary_directory/SpookyKit_SpookyKit.bundle" "$app_directory/Contents/Resources/SpookyKit_SpookyKit.bundle"
