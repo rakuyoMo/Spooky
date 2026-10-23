@@ -51,19 +51,29 @@ struct DiffHunkView: View {
     /// 常驻块头按钮随选择数量更新文案。
     var body: some View {
         Section {
-            ForEach(hunk.lines) { line in
-                row(line)
+            ForEach(rows) { item in
+                // 每行与它的无换行提示合成一个视图：懒加载栈里一个元素展开成多个视图时，分节的第一行不会显示
+                VStack(alignment: .leading, spacing: 0) {
+                    row(item.line)
 
-                if line.noNewline {
-                    Text(AppLocalization.text("working.noNewline"))
-                        .font(style.font)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, 88)
+                    if item.line.noNewline {
+                        Text(AppLocalization.text("working.noNewline"))
+                            .font(style.font)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.leading, 88)
+                    }
                 }
             }
         } header: {
             header
+        }
+    }
+
+    /// 各行与它们在整个补丁里的身份。
+    private var rows: [HunkRow] {
+        hunk.lines.map { line in
+            HunkRow(id: HunkRow.ID(oldStart: hunk.oldStart, newStart: hunk.newStart, index: line.id), line: line)
         }
     }
 
@@ -229,4 +239,29 @@ struct DiffHunkView: View {
         default: nil
         }
     }
+}
+
+// MARK: - HunkRow
+
+/// 块里的一行与它在整个补丁里的身份。
+///
+/// 懒加载栈把各块的行排在同一层，只用块内序号作身份时，后面的块里序号相同的行不会显示。
+private struct HunkRow: Identifiable {
+    /// 块两侧的起点加块内序号；同一补丁里不同块的两侧起点不会都相同。
+    struct ID: Hashable {
+        /// 块的旧版起点。
+        let oldStart: Int
+
+        /// 块的新版起点。
+        let newStart: Int
+
+        /// 块内序号。
+        let index: Int
+    }
+
+    /// 补丁内唯一的身份。
+    let id: ID
+
+    /// 这一行。
+    let line: DiffLine
 }

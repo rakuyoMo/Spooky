@@ -52,8 +52,8 @@ struct DiffContentView: View {
                     DiffNotice(key: "diff.onlyWhitespace", style: style)
                 }
 
-                ForEach(diff.files) { file in
-                    fileSection(file, style: style)
+                ForEach(DiffSegment.all(in: diff)) { segment in
+                    segmentView(segment, style: style)
                 }
             }
             .coordinateSpace(name: DiffHunkView.coordinateSpace)
@@ -67,20 +67,14 @@ struct DiffContentView: View {
         }
     }
 
-    /// 一个文件段：Git 扩展头、二进制或无文本改动的提示，以及各块。
+    /// 一个元素：文件段的开头，或可以按块、按行写入的块。
     @ViewBuilder
-    private func fileSection(_ file: DiffFile, style: TextStyle) -> some View {
-        DiffFileHeader(file: file, style: style)
+    private func segmentView(_ segment: DiffSegment, style: TextStyle) -> some View {
+        switch segment {
+        case .file(let file):
+            fileHeader(file, style: style)
 
-        if file.isBinary {
-            Text(AppLocalization.text("working.binary"))
-                .padding(20)
-        } else if file.hunks.isEmpty {
-            Text(AppLocalization.text("working.noDiff"))
-                .padding(20)
-        }
-
-        ForEach(file.hunks) { hunk in
+        case .hunk(let file, let hunk):
             DiffHunkView(
                 hunk: hunk,
                 style: style,
@@ -90,6 +84,49 @@ struct DiffContentView: View {
             ) { lines, discard in
                 session.apply(file: file.id, hunk: hunk.id, lines: lines, discard: discard)
             }
+        }
+    }
+
+    /// 文件段的开头：Git 扩展头，以及二进制或无文本改动的提示。
+    private func fileHeader(_ file: DiffFile, style: TextStyle) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            DiffFileHeader(file: file, style: style)
+
+            if file.isBinary {
+                Text(AppLocalization.text("working.binary"))
+                    .padding(20)
+            } else if file.hunks.isEmpty {
+                Text(AppLocalization.text("working.noDiff"))
+                    .padding(20)
+            }
+        }
+    }
+}
+
+// MARK: - DiffSegment
+
+/// 懒加载栈里的一个元素：文件段的开头，或文件段里的一个块。
+///
+/// 文件头与各块要作为同一层的元素放进懒加载栈；一个元素展开成多个视图时，第一个块的块头不会显示。
+enum DiffSegment: Identifiable {
+    /// 文件段的开头。
+    case file(DiffFile)
+
+    /// 文件段里的一个块。
+    case hunk(DiffFile, DiffHunk)
+
+    /// 文件段序号，块再加上块序号。
+    var id: [Int] {
+        switch self {
+        case .file(let file): [file.id]
+        case .hunk(let file, let hunk): [file.id, hunk.id]
+        }
+    }
+
+    /// 按补丁顺序排出的全部元素。
+    static func all(in diff: RepositoryDiff) -> [Self] {
+        diff.files.flatMap { file in
+            [.file(file)] + file.hunks.map { .hunk(file, $0) }
         }
     }
 }

@@ -119,8 +119,8 @@ struct ReadOnlyFileDiffView: View {
             }
 
             if let diff = result.diff {
-                ForEach(diff.files) { file in
-                    fileDiff(file, style: style)
+                ForEach(DiffSegment.all(in: diff)) { segment in
+                    segmentView(segment, style: style)
                 }
             } else {
                 Text(AppLocalization.text("working.largeDiff", (result.byteCount + 999) / 1000))
@@ -157,22 +157,26 @@ struct ReadOnlyFileDiffView: View {
         .joined(separator: "\u{0}")
     }
 
-    /// 单个文件段的补丁头、图片对照或二进制提示，以及只读的块。
+    /// 一个元素：文件段的补丁头、图片对照或二进制提示，或者只读的块。
     @ViewBuilder
-    private func fileDiff(_ file: DiffFile, style: TextStyle) -> some View {
-        DiffFileHeader(file: file, style: style)
+    private func segmentView(_ segment: DiffSegment, style: TextStyle) -> some View {
+        switch segment {
+        case .file(let file):
+            VStack(alignment: .leading, spacing: 0) {
+                DiffFileHeader(file: file, style: style)
 
-        if ImageDiffView.isImage(file, path: source.file.path) {
-            // 图片换成两侧对照，两侧都取自对象库
-            ImageDiffView(placement: .top, id: source.commit + "\u{0}" + source.file.path) {
-                try await source.imageContents(of: file)
+                if ImageDiffView.isImage(file, path: source.file.path) {
+                    // 图片换成两侧对照，两侧都取自对象库
+                    ImageDiffView(placement: .top, id: source.commit + "\u{0}" + source.file.path) {
+                        try await source.imageContents(of: file)
+                    }
+                } else if file.isBinary {
+                    Text(AppLocalization.text("working.binary"))
+                        .padding(20)
+                }
             }
-        } else if file.isBinary {
-            Text(AppLocalization.text("working.binary"))
-                .padding(20)
-        }
 
-        ForEach(file.hunks) { hunk in
+        case .hunk(_, let hunk):
             DiffHunkView(
                 hunk: hunk,
                 style: style,
