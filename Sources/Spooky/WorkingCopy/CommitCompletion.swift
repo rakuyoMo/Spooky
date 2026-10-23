@@ -191,7 +191,7 @@ final class CommitCompletionPanel {
         model.items = []
     }
 
-    /// 弹窗显示时处理文本视图的按键：↑↓ 移动、↩ 接受、Esc 关闭，其它命令先关闭弹窗再照常执行。
+    /// 弹窗显示时处理文本视图的按键：↑↓ 移动、↩ 接受、Esc 关闭、删除后重新筛选，其它命令先关闭弹窗再照常执行。
     ///
     /// - Returns: 按键是否已由弹窗处理。
     func handle(_ selector: Selector) -> Bool {
@@ -213,6 +213,10 @@ final class CommitCompletionPanel {
         case #selector(NSResponder.cancelOperation(_:)):
             close()
             return true
+
+        // 删除字符时保留弹窗，内容变化后按新的查询重新筛选。
+        case #selector(NSResponder.deleteBackward(_:)), #selector(NSResponder.deleteWordBackward(_:)):
+            return false
 
         default:
             close()

@@ -51,6 +51,29 @@ extension RepositorySessionTests {
         #expect(try await lastMessage(runner) == "# 只有注释")
     }
 
+    /// `core.commentChar=auto` 时 Git 不会把任何一行当注释，提交不询问，行首的 # 原样保留。
+    @Test("auto 注释字符不询问")
+    func autoCommentCharacter() async throws {
+        let (session, runner, directory) = try await commitSession()
+        defer {
+            session.close()
+            try? FileManager.default.removeItem(at: directory)
+        }
+
+        var prompts = 0
+        session.onCommentPrompt = { _, _ in prompts += 1 }
+        _ = try await runner.run(["config", "--local", "core.commentChar", "auto"])
+        try await stageChange(in: session, directory: directory, content: "auto")
+        try await waitForConfiguration(session) { $0.commentPrefix == nil }
+
+        session.commitSubject = "#42 修复"
+        session.commit()
+        await session.writeTask?.value
+        await session.refreshTask?.value
+        #expect(prompts == 0)
+        #expect(try await lastMessage(runner) == "#42 修复")
+    }
+
     /// 选用档案前说明改写的配置与仓库，确认后刷新的身份与签名配置来自写入的值。
     @Test("选用身份档案改写本仓库的提交人")
     func applyProfile() async throws {

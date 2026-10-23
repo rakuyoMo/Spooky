@@ -119,7 +119,7 @@ extension RepositorySession {
         let request = generation
 
         // 询问注释行与确认修补都使用此刻的选项，⌥ 快速修补松开后也不会改变这次提交。
-        resolveComments { [weak self] message in
+        prepareCommitMessage { [weak self] message in
             guard let self, generation == request else { return }
             confirmCommit(
                 CommitMessage.parts(of: message),

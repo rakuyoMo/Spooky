@@ -94,8 +94,10 @@ extension CommitIdentityView {
 
         Divider()
 
-        if current == nil, !identity.name.isEmpty, let window = NSApp.keyWindow {
+        if current == nil, !identity.name.isEmpty {
             Button(AppLocalization.text("profiles.addCurrent", identity.email)) {
+                guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
+
                 UserProfiles.add(
                     name: identity.name,
                     email: identity.email,
