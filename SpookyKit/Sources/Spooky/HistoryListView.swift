@@ -28,47 +28,10 @@ struct HistoryListView: View {
         VStack(spacing: 0) {
             ConnectionStatusView(session: session)
 
-            HStack(spacing: 8) {
-                Text(session.history.title)
-                    .lineLimit(1)
-                    .help(session.repository?.displayPath ?? "")
-                if let id = session.history.selectedReference, let counts = session.history.divergence[id] {
-                    Text("↑ \(counts.ahead) ↓ \(counts.behind)")
-                        .font(.system(size: 11))
-                }
-                Spacer(minLength: 4)
-                Menu {
-                    Toggle(AppLocalization.text("history.showGraph"), isOn: $showGraph)
-                    Button(AppLocalization.text("history.medium")) { smallRows = false }
-                        .disabled(!showGraph)
-                    Button(AppLocalization.text("history.small")) { smallRows = true }
-                        .disabled(!showGraph)
-                } label: {
-                    Image(systemName: "slider.horizontal.3")
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .accessibilityLabel(AppLocalization.text("history.viewOptions"))
-            }
-            .font(.system(size: 13))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 12)
-            .frame(height: 40)
-            .background(.bar)
+            header
             Divider()
 
-            if session.history.commits.isEmpty, !session.history.isLoading {
-                EmptyStateView(title: AppLocalization.text("history.empty"), message: "", symbol: "clock")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                HistoryCommitTable(
-                    session: session,
-                    showGraph: showGraph,
-                    smallRows: smallRows,
-                    createBranch: createBranch,
-                    openCommit: openCommit
-                )
-            }
+            commitList
 
             if let failure = session.history.failure {
                 FailureDetailsView(failure: failure) { session.history.reloadCommits() }
@@ -95,6 +58,60 @@ struct HistoryListView: View {
         }
         .frame(minWidth: 300)
     }
+
+    /// 历史标题、所选分支的双向数量与视图选项菜单。
+    private var header: some View {
+        HStack(spacing: 8) {
+            Text(session.history.title)
+                .lineLimit(1)
+                .help(session.repository?.displayPath ?? "")
+
+            if
+                let id = session.history.selectedReference,
+                let counts = session.history.divergence[id]
+            {
+                Text("↑ \(counts.ahead) ↓ \(counts.behind)")
+                    .font(.system(size: 11))
+            }
+
+            Spacer(minLength: 4)
+
+            Menu {
+                Toggle(AppLocalization.text("history.showGraph"), isOn: $showGraph)
+                Button(AppLocalization.text("history.medium")) { smallRows = false }
+                    .disabled(!showGraph)
+                Button(AppLocalization.text("history.small")) { smallRows = true }
+                    .disabled(!showGraph)
+            } label: {
+                Image(systemName: "slider.horizontal.3")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .accessibilityLabel(AppLocalization.text("history.viewOptions"))
+        }
+        .font(.system(size: 13))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 12)
+        .frame(height: 40)
+        .background(.bar)
+    }
+
+    /// 没有提交且不在读取时显示空状态，否则显示提交表格。
+    @ViewBuilder
+    private var commitList: some View {
+        if session.history.commits.isEmpty, !session.history.isLoading {
+            EmptyStateView(title: AppLocalization.text("history.empty"), message: "", symbol: "clock")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            HistoryCommitTable(
+                session: session,
+                showGraph: showGraph,
+                smallRows: smallRows,
+                createBranch: createBranch,
+                openCommit: openCommit
+            )
+        }
+    }
 }
 
 // MARK: - HistoryCommitTable
@@ -111,7 +128,10 @@ private struct HistoryCommitTable: NSViewRepresentable {
 
         /// 回车与小键盘 Enter 是双击的键盘入口，其它按键交给系统列表。
         override func keyDown(with event: NSEvent) {
-            if [36, 76].contains(event.keyCode), event.modifierFlags.intersection([.command, .option, .control]).isEmpty {
+            if
+                [36, 76].contains(event.keyCode),
+                event.modifierFlags.isDisjoint(with: [.command, .option, .control])
+            {
                 openSelection?()
                 return
             }
@@ -386,29 +406,9 @@ private struct HistoryCommitRow: View {
                     .accessibilityHidden(true)
             }
             if small {
-                hash
-                badges
-                Text(commit.subject).lineLimit(1)
-                Spacer(minLength: 0)
-                Text(commit.author).foregroundStyle(selected ? Self.selectedText : .secondary).lineLimit(1)
-                date
+                smallLayout
             } else {
-                Text(String(commit.author.prefix(1)))
-                    .frame(width: 32, height: 32)
-                    .background(.quaternary, in: Circle())
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Text(commit.author).foregroundStyle(selected ? Self.selectedText : .secondary).lineLimit(1)
-                        badges
-                        Spacer(minLength: 0)
-                        date
-                    }
-                    HStack(spacing: 8) {
-                        hash
-                        Text(commit.subject).lineLimit(1)
-                    }
-                }
+                mediumLayout
             }
             if unpushed || unpulled {
                 Image(systemName: unpushed ? "arrow.up" : "arrow.down")
@@ -427,6 +427,47 @@ private struct HistoryCommitRow: View {
         )
         .help(commit.id + "\n" + commit.subject)
         .accessibilityElement(children: .combine)
+    }
+
+    /// 小号单行：哈希、徽标、标题、作者与日期依次排开。
+    @ViewBuilder
+    private var smallLayout: some View {
+        hash
+        badges
+        Text(commit.subject).lineLimit(1)
+        Spacer(minLength: 0)
+
+        Text(commit.author)
+            .foregroundStyle(selected ? Self.selectedText : .secondary)
+            .lineLimit(1)
+
+        date
+    }
+
+    /// 中号双行：作者首字母在左，右侧上行为作者、徽标与日期，下行为哈希与标题。
+    @ViewBuilder
+    private var mediumLayout: some View {
+        Text(String(commit.author.prefix(1)))
+            .frame(width: 32, height: 32)
+            .background(.quaternary, in: Circle())
+            .accessibilityHidden(true)
+
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Text(commit.author)
+                    .foregroundStyle(selected ? Self.selectedText : .secondary)
+                    .lineLimit(1)
+
+                badges
+                Spacer(minLength: 0)
+                date
+            }
+
+            HStack(spacing: 8) {
+                hash
+                Text(commit.subject).lineLimit(1)
+            }
+        }
     }
 
     /// 哈希使用等宽字体，动作仍使用完整 ID。

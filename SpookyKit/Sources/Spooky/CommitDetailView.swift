@@ -45,70 +45,7 @@ struct CommitDetailView: View {
                 Divider()
 
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        CommitMetadataView(commit: commit)
-                        Text(commit.message)
-                            .font(.system(size: 13))
-                            .lineSpacing(3)
-                            .textSelection(.enabled)
-                            .padding(20)
-                        Divider()
-
-                        HStack {
-                            Button(
-                                AppLocalization.text(
-                                    history.expandedPaths.isEmpty
-                                        ? "history.expandAll"
-                                        : "history.collapseAll"
-                                )
-                            ) {
-                                history.expandAll(history.expandedPaths.isEmpty)
-                            }
-                            .disabled(history.changes.isEmpty)
-                            Spacer()
-                            Text(AppLocalization.text("history.changes", history.changes.count))
-                        }
-                        .font(.system(size: 11))
-                        .padding(.horizontal, 8)
-                        .frame(height: 32)
-
-                        if history.isLoadingChanges {
-                            ProgressView(AppLocalization.text("history.loadingChanges"))
-                                .controlSize(.small)
-                                .padding(20)
-                        }
-                        if let failure = history.changesFailure {
-                            FailureDetailsView(failure: failure) { history.loadChanges() }
-                                .padding(20)
-                        }
-                        ForEach(history.changes) { file in
-                            DisclosureGroup(
-                                isExpanded: Binding(
-                                    get: { history.expandedPaths.contains(file.path) },
-                                    set: {
-                                        if $0 {
-                                            history.expandedPaths.insert(file.path)
-                                            history.loadDiff(file.path)
-                                        } else {
-                                            history.expandedPaths.remove(file.path)
-                                        }
-                                    }
-                                )
-                            ) {
-                                CommitFileDiffView(history: history, path: file.path)
-                            } label: {
-                                CommitFileLabel(file: file)
-                                    .frame(height: 30)
-                            }
-                            .padding(.horizontal, 8)
-                            Divider()
-                        }
-                        if history.changes.isEmpty, !history.isLoadingChanges, history.changesFailure == nil {
-                            Text(AppLocalization.text("working.noDiff"))
-                                .foregroundStyle(.secondary)
-                                .padding(20)
-                        }
-                    }
+                    scrollContent(commit)
                 }
             }
         } else {
@@ -121,6 +58,93 @@ struct CommitDetailView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+
+    /// 全部展开或收起的按钮与变更文件数。
+    private var changesBar: some View {
+        HStack {
+            Button(
+                AppLocalization.text(
+                    history.expandedPaths.isEmpty
+                        ? "history.expandAll"
+                        : "history.collapseAll"
+                )
+            ) {
+                history.expandAll(history.expandedPaths.isEmpty)
+            }
+            .disabled(history.changes.isEmpty)
+
+            Spacer()
+            Text(AppLocalization.text("history.changes", history.changes.count))
+        }
+        .font(.system(size: 11))
+        .padding(.horizontal, 8)
+        .frame(height: 32)
+    }
+
+    /// 滚动区域的内容：元信息、完整信息、变更文件栏与逐个文件的 Diff。
+    private func scrollContent(_ commit: HistoryCommit) -> some View {
+        LazyVStack(alignment: .leading, spacing: 0) {
+            CommitMetadataView(commit: commit)
+
+            Text(commit.message)
+                .font(.system(size: 13))
+                .lineSpacing(3)
+                .textSelection(.enabled)
+                .padding(20)
+            Divider()
+
+            changesBar
+
+            if history.isLoadingChanges {
+                ProgressView(AppLocalization.text("history.loadingChanges"))
+                    .controlSize(.small)
+                    .padding(20)
+            }
+
+            if let failure = history.changesFailure {
+                FailureDetailsView(failure: failure) { history.loadChanges() }
+                    .padding(20)
+            }
+
+            ForEach(history.changes) { file in
+                fileSection(file)
+                Divider()
+            }
+
+            if
+                history.changes.isEmpty,
+                !history.isLoadingChanges,
+                history.changesFailure == nil
+            {
+                Text(AppLocalization.text("working.noDiff"))
+                    .foregroundStyle(.secondary)
+                    .padding(20)
+            }
+        }
+    }
+
+    /// 单个变更文件的折叠组，展开时才读取它的 Diff。
+    private func fileSection(_ file: CommitFileChange) -> some View {
+        DisclosureGroup(
+            isExpanded: Binding(
+                get: { history.expandedPaths.contains(file.path) },
+                set: {
+                    if $0 {
+                        history.expandedPaths.insert(file.path)
+                        history.loadDiff(file.path)
+                    } else {
+                        history.expandedPaths.remove(file.path)
+                    }
+                }
+            )
+        ) {
+            CommitFileDiffView(history: history, path: file.path)
+        } label: {
+            CommitFileLabel(file: file)
+                .frame(height: 30)
+        }
+        .padding(.horizontal, 8)
     }
 }
 
@@ -272,21 +296,7 @@ struct CommitFileDiffView: View {
             } else if let result = history.diffs[path] {
                 if let diff = result.diff {
                     ForEach(diff.files) { file in
-                        Text(file.headers.joined(separator: "\n"))
-                            .font(.custom(theme.fontName, size: theme.fontSize))
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                            .padding(12)
-                        if file.isBinary { Text(AppLocalization.text("working.binary")).padding(20) }
-                        ForEach(file.hunks) { hunk in
-                            DiffHunkView(
-                                hunk: hunk,
-                                theme: theme,
-                                staged: false,
-                                enabled: false,
-                                readOnly: true
-                            ) { _, _ in }
-                        }
+                        fileDiff(file, theme: theme)
                     }
                 } else {
                     Text(AppLocalization.text("working.largeDiff", (result.byteCount + 999) / 1000))
@@ -303,6 +313,28 @@ struct CommitFileDiffView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.colors["background"]!.color)
+        .background(theme.colors["background"]?.color ?? .clear)
+    }
+
+    /// 单个文件的补丁头、二进制提示与只读的块。
+    @ViewBuilder
+    private func fileDiff(_ file: DiffFile, theme: BuiltinTheme) -> some View {
+        Text(file.headers.joined(separator: "\n"))
+            .font(.custom(theme.fontName, size: theme.fontSize))
+            .foregroundStyle(.secondary)
+            .textSelection(.enabled)
+            .padding(12)
+
+        if file.isBinary { Text(AppLocalization.text("working.binary")).padding(20) }
+
+        ForEach(file.hunks) { hunk in
+            DiffHunkView(
+                hunk: hunk,
+                theme: theme,
+                staged: false,
+                enabled: false,
+                readOnly: true
+            ) { _, _ in }
+        }
     }
 }

@@ -2,6 +2,8 @@ import AppKit
 import SpookyKit
 import SwiftUI
 
+// MARK: - RepositorySidebarView
+
 /// Workspace、Branches、Remotes 与活动区共用仓库窗口侧边栏。
 struct RepositorySidebarView: View {
     /// 当前窗口会话。
@@ -73,22 +75,7 @@ struct RepositorySidebarView: View {
 
             activityRows
             Divider()
-            HStack {
-                Menu {
-                    Button(AppLocalization.text("branch.create")) {
-                        request(RepositoryActionRequest(kind: .create))
-                    }
-                    .disabled(!session.canCreateBranch)
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .accessibilityLabel(AppLocalization.text("branch.create"))
-                Spacer()
-            }
-            .padding(.horizontal, 8)
-            .frame(height: 40)
+            bottomBar
         }
     }
 
@@ -109,7 +96,7 @@ struct RepositorySidebarView: View {
                     .modifier(
                         RepositoryDropTarget(
                             session: session,
-                            destination: ref.name == session.status?.branch.head ? .head : .none,
+                            destination: ref.name == session.status?.branch.head ? .head : .localBranch,
                             request: request
                         )
                     )
@@ -129,47 +116,9 @@ struct RepositorySidebarView: View {
             }
             ForEach(session.history.snapshot?.remotes ?? []) { remote in
                 DisclosureGroup {
-                    let refs = session.history.branches.filter {
-                        $0.isRemote && session.history.snapshot?.remote(for: $0)?.name == remote.name
-                    }
-                    if refs.isEmpty { Text(AppLocalization.text("branch.empty")).foregroundStyle(.secondary) }
-                    ForEach(refs) { ref in
-                        branchRow(ref)
-                            .tag(ref.id)
-                            .onTapGesture(count: 2) {
-                                checkoutRemote(ref)
-                            }
-                            .onDrag { dragProvider(kind: .remote, reference: ref.id) }
-                            .contextMenu { branchMenu(ref) }
-                            .modifier(
-                                RepositoryDropTarget(
-                                    session: session,
-                                    destination: .remoteBranch(remote.name, ref.id),
-                                    request: request
-                                )
-                            )
-                    }
+                    remoteBranchRows(remote)
                 } label: {
-                    Label(remote.name, systemImage: "network")
-                        .contextMenu {
-                            Button(AppLocalization.text("sync.fetch")) {
-                                request(RepositoryActionRequest(kind: .fetch, remote: remote.name))
-                            }
-                            .disabled(!session.canFetch)
-                            Button(AppLocalization.text("sync.prune")) {
-                                request(
-                                    RepositoryActionRequest(kind: .fetch, remote: remote.name, prune: true)
-                                )
-                            }
-                            .disabled(!session.canFetch)
-                        }
-                        .modifier(
-                            RepositoryDropTarget(
-                                session: session,
-                                destination: .remote(remote.name),
-                                request: request
-                            )
-                        )
+                    remoteLabel(remote)
                 }
             }
         }
@@ -242,6 +191,86 @@ struct RepositorySidebarView: View {
                 Divider()
             }
         }
+    }
+
+    /// 侧边栏底部的新建分支菜单。
+    private var bottomBar: some View {
+        HStack {
+            Menu {
+                Button(AppLocalization.text("branch.create")) {
+                    request(RepositoryActionRequest(kind: .create))
+                }
+                .disabled(!session.canCreateBranch)
+            } label: {
+                Image(systemName: "plus")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .accessibilityLabel(AppLocalization.text("branch.create"))
+
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+        .frame(height: 40)
+    }
+}
+
+// MARK: - Rows
+
+extension RepositorySidebarView {
+    /// 一个远端下的远端分支行：双击检出，接受本地分支拖入以推送。
+    @ViewBuilder
+    private func remoteBranchRows(_ remote: RepositoryRemote) -> some View {
+        // 按最长前缀判断归属，远端名带斜杠时也不会混入其它远端的分支。
+        let refs = session.history.branches.filter {
+            $0.isRemote && session.history.snapshot?.remote(for: $0)?.name == remote.name
+        }
+
+        if refs.isEmpty {
+            Text(AppLocalization.text("branch.empty")).foregroundStyle(.secondary)
+        }
+
+        ForEach(refs) { ref in
+            branchRow(ref)
+                .tag(ref.id)
+                .onTapGesture(count: 2) {
+                    checkoutRemote(ref)
+                }
+                .onDrag { dragProvider(kind: .remote, reference: ref.id) }
+                .contextMenu { branchMenu(ref) }
+                .modifier(
+                    RepositoryDropTarget(
+                        session: session,
+                        destination: .remoteBranch(remote.name, ref.id),
+                        request: request
+                    )
+                )
+        }
+    }
+
+    /// 远端名称行：右键获取或清理，接受本地分支拖入以发布。
+    private func remoteLabel(_ remote: RepositoryRemote) -> some View {
+        Label(remote.name, systemImage: "network")
+            .contextMenu {
+                Button(AppLocalization.text("sync.fetch")) {
+                    request(RepositoryActionRequest(kind: .fetch, remote: remote.name))
+                }
+                .disabled(!session.canFetch)
+
+                Button(AppLocalization.text("sync.prune")) {
+                    request(
+                        RepositoryActionRequest(kind: .fetch, remote: remote.name, prune: true)
+                    )
+                }
+                .disabled(!session.canFetch)
+            }
+            .modifier(
+                RepositoryDropTarget(
+                    session: session,
+                    destination: .remote(remote.name),
+                    request: request
+                )
+            )
     }
 
     /// HEAD 和双向数量组成胶囊徽标，服务器主机写入辅助说明。
@@ -357,7 +386,11 @@ struct RepositorySidebarView: View {
 
         return parts.joined(separator: ", ")
     }
+}
 
+// MARK: - Actions
+
+extension RepositorySidebarView {
     /// 双击检出保留 Git 对本地修改的覆盖保护。
     private func checkout(_ ref: RepositoryReference) {
         guard session.canCheckout(ref) else { return }

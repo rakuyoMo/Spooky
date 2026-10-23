@@ -36,8 +36,10 @@ struct RepositoryDragPayload: Codable, Sendable {
         RepositoryDragContext.shared.payload = self
         let provider = NSItemProvider()
         let data = try? JSONEncoder().encode(self)
-        provider.registerDataRepresentation(forTypeIdentifier: Self.type, visibility: .ownProcess) {
-            completion in
+        provider.registerDataRepresentation(
+            forTypeIdentifier: Self.type,
+            visibility: .ownProcess
+        ) { completion in
             completion(data, nil)
             return nil
         }
@@ -73,8 +75,8 @@ enum RepositoryDropDestination {
     /// 推送到指定远端分支。
     case remoteBranch(String, String)
 
-    /// 该行不接受拖动。
-    case none
+    /// HEAD 以外的本地分支，该行不接受拖动。
+    case localBranch
 }
 
 // MARK: - RepositoryDropTarget

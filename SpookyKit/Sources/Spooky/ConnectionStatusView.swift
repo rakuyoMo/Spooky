@@ -14,22 +14,7 @@ struct ConnectionStatusView: View {
     var body: some View {
         if let host = session.repository?.host, let state = session.connectionState {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    if state == .connecting || state == .reconnecting {
-                        ProgressView().controlSize(.small)
-                    }
-
-                    Text(host + ": " + AppLocalization.text("connection." + state.rawValue))
-                        .font(.system(size: 11))
-                        .accessibilityIdentifier("connection-status")
-
-                    Spacer()
-
-                    if state == .unavailable {
-                        Button(AppLocalization.text("action.reconnect")) { session.reconnect() }
-                            .controlSize(.small)
-                    }
-                }
+                statusLine(host: host, state: state)
 
                 if state != .connected {
                     Text(AppLocalization.text("connection.cached"))
@@ -58,6 +43,26 @@ struct ConnectionStatusView: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(AppPalette.color(state == .connected ? "general_info_background_color" : "general_warning_bg_color"))
+        }
+    }
+
+    /// 主机与连接状态一行显示：连接中带进度，不可用时提供重连。
+    private func statusLine(host: String, state: RemoteConnectionState) -> some View {
+        HStack(spacing: 8) {
+            if state == .connecting || state == .reconnecting {
+                ProgressView().controlSize(.small)
+            }
+
+            Text(host + ": " + AppLocalization.text("connection." + state.rawValue))
+                .font(.system(size: 11))
+                .accessibilityIdentifier("connection-status")
+
+            Spacer()
+
+            if state == .unavailable {
+                Button(AppLocalization.text("action.reconnect")) { session.reconnect() }
+                    .controlSize(.small)
+            }
         }
     }
 }
