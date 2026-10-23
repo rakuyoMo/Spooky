@@ -1,2 +1,2 @@
 # 解析夹具是 Git 的原样输出，行首的空格与制表符都是数据，不做空白检查。
-SpookyKit/Tests/SpookyKitTests/Fixtures/** -whitespace
+Tests/SpookyKitTests/Fixtures/** -whitespace

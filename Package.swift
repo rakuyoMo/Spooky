@@ -11,7 +11,7 @@ let appInfoPlist = URL(fileURLWithPath: #filePath)
 
 /// 核心库、桌面应用及各自的验证目标。
 let package = Package(
-    name: "SpookyKit",
+    name: "Spooky",
     defaultLocalization: "en",
     platforms: [
         .macOS(.v26),
