@@ -63,6 +63,29 @@ struct DiffOptionsTests {
         #expect(try String(contentsOf: file, encoding: .utf8).contains("line 28\n"))
     }
 
+    /// 大 Diff 警告按显示的这份补丁的字节数判断：同一处改动在显示整个文件时可能超过阈值，放行后才解析。
+    @Test("显示整个文件时的大 Diff 警告")
+    func entireFileThreshold() async throws {
+        let repository = try TemporaryRepository()
+        defer { repository.remove() }
+
+        let (service, file) = try await committedFile(in: repository, lines: (1 ... 3000).map { "line \($0)" })
+        try write((1 ... 3000).map { $0 == 1500 ? "changed" : "line \($0)" }, to: file)
+
+        let entry = try #require(try await repository.runner.status().entries.first)
+        let narrow = try await service.diff(for: entry, side: .unstaged, warningKilobytes: 1)
+        #expect(narrow.byteCount < 1000)
+        #expect(narrow.diff != nil)
+
+        let options = DiffOptions(showsEntireFile: true)
+        let whole = try await service.diff(for: entry, side: .unstaged, options: options, warningKilobytes: 1)
+        #expect(whole.byteCount > 1000)
+        #expect(whole.diff == nil)
+
+        let shown = try await service.diff(for: entry, side: .unstaged, options: options, warningKilobytes: 1, showLarge: true)
+        #expect(shown.diff?.files.first?.hunks.first?.lines.count == 3001)
+    }
+
     /// 忽略空白时只写回显示出的改动：缩进变化留在工作区，真正的修改进入暂存区。
     @Test("忽略空白下按块暂存与丢弃")
     func ignoredWhitespace() async throws {
