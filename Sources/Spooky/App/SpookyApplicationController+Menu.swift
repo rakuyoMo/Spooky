@@ -56,13 +56,20 @@ extension SpookyApplicationController {
         addItem("menu.closeWindow", action: #selector(NSWindow.performClose(_:)), key: "w", to: file)
     }
 
-    /// Edit 菜单只放系统文本动作。
+    /// Edit 菜单：系统文本动作、提交信息的段落重排与查找。
     private func configureEditMenu(in menu: NSMenu) {
         let edit = addMenu("menu.edit", to: menu)
         addItem("menu.cut", action: #selector(NSText.cut(_:)), key: "x", to: edit)
         addItem("menu.copy", action: #selector(NSText.copy(_:)), key: "c", to: edit)
         addItem("menu.paste", action: #selector(NSText.paste(_:)), key: "v", to: edit)
         addItem("menu.selectAll", action: #selector(NSText.selectAll(_:)), key: "a", to: edit)
+        addItem(
+            "commit.reformatParagraph",
+            action: #selector(CommitMessageTextView.reformatParagraph(_:)),
+            key: "w",
+            modifiers: [.command, .shift],
+            to: edit
+        )
 
         edit.addItem(.separator())
         let find = addMenu("menu.find", to: edit)

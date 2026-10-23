@@ -29,6 +29,26 @@
       "alpha": 1.0
     }
   },
+  "text_view_warning_background_color": {
+    "light": {
+      "hex": "#FFFF00",
+      "alpha": 0.35
+    },
+    "dark": {
+      "hex": "#FFFF00",
+      "alpha": 0.35
+    }
+  },
+  "text_view_off_page_background_color": {
+    "light": {
+      "hex": "#F2F2F2",
+      "alpha": 0.95
+    },
+    "dark": {
+      "hex": "#262626",
+      "alpha": 1.0
+    }
+  },
   "general_border_color": {
     "light": {
       "hex": "#C9C9C9",

@@ -17,7 +17,9 @@ final class SettingsWindowController: NSWindowController {
 
         for (key, symbol, view) in [
             ("settings.general", "gearshape", AnyView(GeneralSettingsView())),
+            ("settings.editor", "square.and.pencil", AnyView(EditorSettingsView())),
             ("settings.themes", "paintbrush", AnyView(ThemesSettingsView())),
+            ("settings.profiles", "rectangle.stack.person.crop", AnyView(UserProfilesSettingsView())),
         ] {
             let controller = NSHostingController(rootView: view)
             let tab = NSTabViewItem(viewController: controller)

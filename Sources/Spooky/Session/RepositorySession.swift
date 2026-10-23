@@ -118,6 +118,18 @@ final class RepositorySession {
     /// 窗口快捷键只在编辑信息或按住 ⌥ 时提交。
     var isEditingCommitMessage = false
 
+    /// 提交区使用的身份、签名、注释字符与钩子配置。
+    var commitConfiguration: CommitConfiguration? = nil
+
+    /// 读取提交配置的任务。
+    var configurationTask: Task<Void, Never>? = nil
+
+    /// 本次提交跳过 pre-commit 与 commit-msg 钩子，只对当前仓库有效。
+    var skipHooks = false
+
+    /// 窗口询问注释行的处理方式；参数为去掉注释后信息是否为空，用户取消时不回调。
+    var onCommentPrompt: ((Bool, @escaping (CommentHandling) -> Void) -> Void)? = nil
+
     /// 窗口负责确认并在 sheet 关闭后执行操作。
     var onConfirm: ((String, String, @escaping () -> Void, (() -> Void)?) -> Void)? = nil
 
@@ -354,6 +366,7 @@ final class RepositorySession {
                 if loadsRepositoryDetails {
                     if full || statusChanged {
                         loadContext()
+                        loadCommitConfiguration()
                         history.refresh(status: status, runner: makeRunner(repository), reload: full)
                     }
 
@@ -409,6 +422,7 @@ final class RepositorySession {
         originalDraft = nil
         onlyConflicts = false
         isEditingCommitMessage = false
+        resetCommitConfiguration()
         pollingTask?.cancel()
         connectionTask?.cancel()
         reconnectTask?.cancel()
