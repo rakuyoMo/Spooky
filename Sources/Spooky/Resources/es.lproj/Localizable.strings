@@ -196,8 +196,7 @@
 "error.terminalHelp" = "Comprobar el terminal seleccionado en Ajustes y su permiso de Automatización de macOS.";
 "error.exitCode" = "Estado de salida: %ld";
 "terminal.notInstalled" = "%@ no está instalado.";
-"themes.font" = "Tipo de letra: %@ · %.0f pt";
-"themes.followsSystem" = "El aspecto claro usa Default; el aspecto oscuro usa Default (Dark).";
+"themes.font" = "%@ %@ pt";
 "themes.background" = "Fondo";
 "themes.added" = "Añadido";
 "themes.deleted" = "Eliminado";
@@ -443,3 +442,28 @@
 "repositories.checking" = "Comprobando…";
 "repositories.unavailableShort" = "No disponible";
 "activity.truncated" = "Se ha omitido la salida anterior.";
+
+/* 主题管理。 */
+"themes.newName" = "Tema nuevo";
+"themes.usedInLight" = "El tema seleccionado se usa en el aspecto claro. Cambiar al aspecto oscuro para elegir el tema de este.";
+"themes.usedInDark" = "El tema seleccionado se usa en el aspecto oscuro. Cambiar al aspecto claro para elegir el tema de este.";
+"themes.change" = "Cambiar…";
+"themes.fontLabel" = "Tipo de letra";
+"themes.text" = "Texto";
+"themes.add" = "Añadir tema";
+"themes.remove" = "Eliminar tema";
+"themes.actions" = "Importar o exportar";
+"themes.import" = "Importar tema…";
+"themes.export" = "Exportar tema…";
+"themes.invalidTitle" = "Temas que no se han podido cargar";
+"themes.invalid" = "Estos archivos de tema no se han podido cargar porque están dañados o porque otro tema ya usa su nombre o su identificador:";
+"themes.exists" = "El tema ya existe";
+"themes.exists.message" = "Ya hay un tema en “%@”. ¿Reemplazarlo?";
+"themes.replace" = "Reemplazar";
+"themes.error.import" = "No se ha podido importar el tema";
+"themes.error.export" = "No se ha podido exportar el tema";
+"themes.error.save" = "No se ha podido guardar el tema";
+"themes.error.rename" = "No se ha podido renombrar el tema";
+"themes.error.delete" = "No se ha podido eliminar el tema";
+"themes.error.invalidFile" = "“%@” no es un archivo de tema válido.";
+"themes.error.nameInUse" = "Ya existe un tema llamado “%@”. Elegir otro nombre.";

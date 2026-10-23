@@ -3,13 +3,18 @@ import SwiftUI
 
 // MARK: - PaletteColor
 
-/// 以 sRGB 数值与透明度保存颜色。
-struct PaletteColor: Decodable, Sendable, Equatable {
-    /// 六位 RGB 值。
+/// 以 sRGB 数值与透明度保存颜色；命名色资源与主题文件使用同一种写法。
+struct PaletteColor: Codable, Sendable, Equatable {
+    /// `#` 开头的六位 RGB 值。
     let hex: String
 
     /// 不透明度。
     let alpha: Double
+
+    /// 值是否可以解释成颜色：六位十六进制，不透明度在 0–1 之间。
+    var isValid: Bool {
+        hex.wholeMatch(of: /#[0-9A-Fa-f]{6}/) != nil && (0 ... 1).contains(alpha)
+    }
 
     /// AppKit 与 SwiftUI 共用同一种色彩空间。
     var nsColor: NSColor {
@@ -24,6 +29,24 @@ struct PaletteColor: Decodable, Sendable, Equatable {
 
     /// 文本主题的固定外观颜色。
     var color: Color { Color(nsColor: nsColor) }
+}
+
+extension PaletteColor {
+    /// 取颜色面板等处选出的颜色；无法换算到 sRGB 的颜色（如图案）返回 nil。
+    init?(nsColor: NSColor) {
+        guard let srgb = nsColor.usingColorSpace(.sRGB) else {
+            return nil
+        }
+
+        // 分量先夹到 0–1，扩展色域的颜色超出范围时取最接近的 sRGB 值。
+        let components = [srgb.redComponent, srgb.greenComponent, srgb.blueComponent]
+            .map { Int((min(max(Double($0), 0), 1) * 255).rounded()) }
+
+        hex = String(format: "#%02X%02X%02X", components[0], components[1], components[2])
+
+        // 颜色面板的不透明度以百分比调节，保留两位小数即可还原面板上的值。
+        alpha = (min(max(Double(srgb.alphaComponent), 0), 1) * 100).rounded() / 100
+    }
 }
 
 // MARK: - AppPalette
@@ -63,37 +86,4 @@ enum AppPalette {
                 : pair.light.nsColor
         }
     }
-}
-
-// MARK: - BuiltinTheme
-
-/// 内置文本主题，设置页提供只读预览，实际主题随系统外观选择。
-struct BuiltinTheme: Decodable, Identifiable, Sendable {
-    /// 随应用交付的两套主题。
-    static let all: [Self] = {
-        guard
-            let url = Bundle.module.url(forResource: "BuiltinThemes", withExtension: "json"),
-            let data = try? Data(contentsOf: url),
-            let themes = try? JSONDecoder().decode([Self].self, from: data)
-        else { preconditionFailure("内置主题资源无法读取") }
-        return themes
-    }()
-
-    /// 需求固定的 Default 或 Default (Dark)。
-    let name: String
-
-    /// 两套主题均使用 Menlo-Regular。
-    let fontName: String
-
-    /// 主题字号为 11 pt。
-    let fontSize: Double
-
-    /// 正文、背景、选区、增删行及语法色。
-    let colors: [String: PaletteColor]
-
-    /// 主题身份与名称相同。
-    var id: String { name }
-
-    /// 深浅外观分别使用对应默认主题。
-    static func current(dark: Bool) -> Self { all[dark ? 1 : 0] }
 }

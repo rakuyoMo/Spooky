@@ -282,13 +282,13 @@ struct CommitFileDiffView: View {
     /// 已选择或展开的文件路径。
     let path: String
 
-    /// 内置主题随系统外观切换。
+    /// 当前外观决定使用哪一套所选主题。
     @Environment(\.colorScheme)
     private var colorScheme
 
     /// 补丁、二进制、超限和失败各自有明确状态。
     var body: some View {
-        let theme = BuiltinTheme.current(dark: colorScheme == .dark)
+        let theme = TextTheme.current(dark: colorScheme == .dark)
         VStack(alignment: .leading, spacing: 0) {
             if let failure = history.diffFailures[path] {
                 FailureDetailsView(failure: failure) { history.loadDiff(path) }
@@ -318,7 +318,7 @@ struct CommitFileDiffView: View {
 
     /// 单个文件的补丁头、二进制提示与只读的块。
     @ViewBuilder
-    private func fileDiff(_ file: DiffFile, theme: BuiltinTheme) -> some View {
+    private func fileDiff(_ file: DiffFile, theme: TextTheme) -> some View {
         Text(file.headers.joined(separator: "\n"))
             .font(.custom(theme.fontName, size: theme.fontSize))
             .foregroundStyle(.secondary)

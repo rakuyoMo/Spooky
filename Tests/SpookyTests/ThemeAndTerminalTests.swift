@@ -69,8 +69,8 @@ struct ThemeAndTerminalTests {
     /// 主题字体和 Diff 颜色从实际交付的资源读取。
     @Test("两套默认主题的字体和透明度")
     func builtinThemes() throws {
-        let light = BuiltinTheme.current(dark: false)
-        let dark = BuiltinTheme.current(dark: true)
+        let light = TextTheme.builtin[0]
+        let dark = TextTheme.builtin[1]
         #expect(light.name == "Default")
         #expect(dark.name == "Default (Dark)")
         #expect(light.fontName == "Menlo-Regular" && dark.fontSize == 11)

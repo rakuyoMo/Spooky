@@ -196,8 +196,7 @@
 "error.terminalHelp" = "请检查设置中的终端选择及 macOS 自动化权限。";
 "error.exitCode" = "退出码：%ld";
 "terminal.notInstalled" = "未安装 %@。";
-"themes.font" = "字体：%@ · %.0f pt";
-"themes.followsSystem" = "浅色外观使用 Default，深色外观使用 Default (Dark)。";
+"themes.font" = "%@ %@ pt";
 "themes.background" = "背景";
 "themes.added" = "新增";
 "themes.deleted" = "删除";
@@ -443,3 +442,28 @@
 "repositories.checking" = "正在检查…";
 "repositories.unavailableShort" = "不可用";
 "activity.truncated" = "较早的输出已省略。";
+
+/* 主题管理。 */
+"themes.newName" = "新主题";
+"themes.usedInLight" = "所选主题用于浅色外观。切换到深色外观后，可以为深色外观选择主题。";
+"themes.usedInDark" = "所选主题用于深色外观。切换到浅色外观后，可以为浅色外观选择主题。";
+"themes.change" = "更改…";
+"themes.fontLabel" = "字体";
+"themes.text" = "正文";
+"themes.add" = "添加主题";
+"themes.remove" = "移除主题";
+"themes.actions" = "导入或导出";
+"themes.import" = "导入主题…";
+"themes.export" = "导出主题…";
+"themes.invalidTitle" = "无法载入的主题";
+"themes.invalid" = "以下主题文件已损坏，或者名称、标识已被其他主题使用，因此无法载入：";
+"themes.exists" = "主题已存在";
+"themes.exists.message" = "“%@” 处已有主题。要替换它吗？";
+"themes.replace" = "替换";
+"themes.error.import" = "无法导入主题";
+"themes.error.export" = "无法导出主题";
+"themes.error.save" = "无法存储主题";
+"themes.error.rename" = "无法重命名主题";
+"themes.error.delete" = "无法删除主题";
+"themes.error.invalidFile" = "“%@” 不是有效的主题文件。";
+"themes.error.nameInUse" = "已有名为 “%@” 的主题。请换一个名称。";

@@ -196,8 +196,7 @@
 "error.terminalHelp" = "Vérifiez le terminal sélectionné dans les Réglages, ainsi que son autorisation d’automatisation dans macOS.";
 "error.exitCode" = "Code de sortie : %ld";
 "terminal.notInstalled" = "%@ n’est pas installé.";
-"themes.font" = "Police : %@ · %.0f pt";
-"themes.followsSystem" = "L’apparence claire utilise Default ; l’apparence sombre utilise Default (Dark).";
+"themes.font" = "%@ %@ pt";
 "themes.background" = "Arrière-plan";
 "themes.added" = "Ajouts";
 "themes.deleted" = "Suppressions";
@@ -443,3 +442,28 @@
 "repositories.checking" = "Vérification…";
 "repositories.unavailableShort" = "Indisponible";
 "activity.truncated" = "La sortie antérieure a été omise.";
+
+/* 主题管理。 */
+"themes.newName" = "Nouveau thème";
+"themes.usedInLight" = "Le thème sélectionné est utilisé avec l’apparence claire. Passez à l’apparence sombre pour choisir le thème de celle-ci.";
+"themes.usedInDark" = "Le thème sélectionné est utilisé avec l’apparence sombre. Passez à l’apparence claire pour choisir le thème de celle-ci.";
+"themes.change" = "Modifier…";
+"themes.fontLabel" = "Police";
+"themes.text" = "Texte";
+"themes.add" = "Ajouter un thème";
+"themes.remove" = "Supprimer le thème";
+"themes.actions" = "Importer ou exporter";
+"themes.import" = "Importer un thème…";
+"themes.export" = "Exporter le thème…";
+"themes.invalidTitle" = "Thèmes impossibles à charger";
+"themes.invalid" = "Impossible de charger ces fichiers de thème : ils sont endommagés, ou leur nom ou leur identifiant est déjà utilisé par un autre thème.";
+"themes.exists" = "Le thème existe déjà";
+"themes.exists.message" = "Un thème existe déjà à l’emplacement « %@ ». Voulez-vous le remplacer ?";
+"themes.replace" = "Remplacer";
+"themes.error.import" = "Impossible d’importer le thème";
+"themes.error.export" = "Impossible d’exporter le thème";
+"themes.error.save" = "Impossible d’enregistrer le thème";
+"themes.error.rename" = "Impossible de renommer le thème";
+"themes.error.delete" = "Impossible de supprimer le thème";
+"themes.error.invalidFile" = "« %@ » n’est pas un fichier de thème valide.";
+"themes.error.nameInUse" = "Un thème nommé « %@ » existe déjà. Choisissez un autre nom.";

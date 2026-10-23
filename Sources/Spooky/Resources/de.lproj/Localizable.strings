@@ -196,8 +196,7 @@
 "error.terminalHelp" = "Prüfen Sie das in den Einstellungen ausgewählte Terminal und seine macOS-Berechtigung für Automation.";
 "error.exitCode" = "Exit-Status: %ld";
 "terminal.notInstalled" = "%@ ist nicht installiert.";
-"themes.font" = "Schrift: %@ · %.0f pt";
-"themes.followsSystem" = "Das helle Erscheinungsbild verwendet Default; das dunkle verwendet Default (Dark).";
+"themes.font" = "%@ %@ pt";
 "themes.background" = "Hintergrund";
 "themes.added" = "Hinzugefügt";
 "themes.deleted" = "Gelöscht";
@@ -443,3 +442,28 @@
 "repositories.checking" = "Wird geprüft …";
 "repositories.unavailableShort" = "Nicht verfügbar";
 "activity.truncated" = "Frühere Ausgabe wurde ausgelassen.";
+
+/* 主题管理。 */
+"themes.newName" = "Neues Thema";
+"themes.usedInLight" = "Das ausgewählte Thema wird im hellen Erscheinungsbild verwendet. Wechseln Sie zum dunklen Erscheinungsbild, um dessen Thema auszuwählen.";
+"themes.usedInDark" = "Das ausgewählte Thema wird im dunklen Erscheinungsbild verwendet. Wechseln Sie zum hellen Erscheinungsbild, um dessen Thema auszuwählen.";
+"themes.change" = "Ändern …";
+"themes.fontLabel" = "Schrift";
+"themes.text" = "Text";
+"themes.add" = "Thema hinzufügen";
+"themes.remove" = "Thema entfernen";
+"themes.actions" = "Importieren oder exportieren";
+"themes.import" = "Thema importieren …";
+"themes.export" = "Thema exportieren …";
+"themes.invalidTitle" = "Nicht geladene Themen";
+"themes.invalid" = "Diese Themendateien konnten nicht geladen werden, weil sie beschädigt sind oder ihr Name bzw. ihre Kennung bereits von einem anderen Thema verwendet wird:";
+"themes.exists" = "Thema existiert bereits";
+"themes.exists.message" = "Unter „%@“ existiert bereits ein Thema. Möchten Sie es ersetzen?";
+"themes.replace" = "Ersetzen";
+"themes.error.import" = "Thema konnte nicht importiert werden";
+"themes.error.export" = "Thema konnte nicht exportiert werden";
+"themes.error.save" = "Thema konnte nicht gesichert werden";
+"themes.error.rename" = "Thema konnte nicht umbenannt werden";
+"themes.error.delete" = "Thema konnte nicht gelöscht werden";
+"themes.error.invalidFile" = "„%@“ ist keine gültige Themendatei.";
+"themes.error.nameInUse" = "Ein Thema namens „%@“ existiert bereits. Wählen Sie einen anderen Namen.";

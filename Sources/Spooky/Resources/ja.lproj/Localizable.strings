@@ -196,8 +196,7 @@
 "error.terminalHelp" = "設定のターミナル選択と macOS のオートメーション権限を確認してください。";
 "error.exitCode" = "終了コード：%ld";
 "terminal.notInstalled" = "%@ がインストールされていません。";
-"themes.font" = "フォント：%@ · %.0f pt";
-"themes.followsSystem" = "ライト表示では Default、ダーク表示では Default (Dark) を使用します。";
+"themes.font" = "%@ %@ pt";
 "themes.background" = "背景";
 "themes.added" = "追加";
 "themes.deleted" = "削除";
@@ -443,3 +442,28 @@
 "repositories.checking" = "確認中…";
 "repositories.unavailableShort" = "利用不可";
 "activity.truncated" = "以前の出力は省略されました。";
+
+/* 主题管理。 */
+"themes.newName" = "新規テーマ";
+"themes.usedInLight" = "選択したテーマはライト表示で使用されます。ダーク表示のテーマを選ぶには、ダーク表示に切り替えてください。";
+"themes.usedInDark" = "選択したテーマはダーク表示で使用されます。ライト表示のテーマを選ぶには、ライト表示に切り替えてください。";
+"themes.change" = "変更…";
+"themes.fontLabel" = "フォント";
+"themes.text" = "テキスト";
+"themes.add" = "テーマを追加";
+"themes.remove" = "テーマを削除";
+"themes.actions" = "読み込みまたは書き出し";
+"themes.import" = "テーマを読み込む…";
+"themes.export" = "テーマを書き出す…";
+"themes.invalidTitle" = "読み込めなかったテーマ";
+"themes.invalid" = "次のテーマファイルは、破損しているか、名前または識別子がほかのテーマで使われているため、読み込めませんでした：";
+"themes.exists" = "テーマはすでに存在します";
+"themes.exists.message" = "「%@」にはすでにテーマがあります。置き換えますか？";
+"themes.replace" = "置き換える";
+"themes.error.import" = "テーマを読み込めませんでした";
+"themes.error.export" = "テーマを書き出せませんでした";
+"themes.error.save" = "テーマを保存できませんでした";
+"themes.error.rename" = "テーマの名前を変更できませんでした";
+"themes.error.delete" = "テーマを削除できませんでした";
+"themes.error.invalidFile" = "「%@」は有効なテーマファイルではありません。";
+"themes.error.nameInUse" = "「%@」という名前のテーマはすでにあります。別の名前を指定してください。";

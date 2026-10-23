@@ -166,13 +166,13 @@ private struct DiffContentView: View {
     /// 已解析的文件段。
     let diff: RepositoryDiff
 
-    /// 内置主题随系统外观切换。
+    /// 当前外观决定使用哪一套所选主题。
     @Environment(\.colorScheme)
     private var colorScheme
 
     /// 文本区与摘要共享同一组块数据。
     var body: some View {
-        let theme = BuiltinTheme.current(dark: colorScheme == .dark)
+        let theme = TextTheme.current(dark: colorScheme == .dark)
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
                 ForEach(diff.files) { file in
@@ -233,8 +233,8 @@ struct DiffHunkView: View {
     /// 带原始字节的块。
     let hunk: DiffHunk
 
-    /// 当前内置主题。
-    let theme: BuiltinTheme
+    /// 当前外观的所选主题。
+    let theme: TextTheme
 
     /// 暂存侧显示取消暂存按钮。
     let staged: Bool
