@@ -6,7 +6,7 @@ import Testing
 
 /// 各支持语言的资源完整性、占位参数、英文回退与资源键的使用情况。
 struct LocalizationTests {
-    /// SpookyKit 包目录：本文件位于 `Tests/SpookyTests/` 下，向上三级。
+    /// 包目录，也是仓库根目录：本文件位于 `Tests/SpookyTests/` 下，向上三级。
     private static let package = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .deletingLastPathComponent()
@@ -86,8 +86,12 @@ struct LocalizationTests {
     @Test("Swift 界面引用的资源键全部存在")
     func referencedKeysExist() throws {
         let sources = Self.package.appending(path: "Sources/Spooky")
-        let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
+
+        // 界面源码分在各功能子目录中，逐层列出
+        let files = try FileManager.default.subpathsOfDirectory(atPath: sources.path)
+            .map { sources.appending(path: $0) }
             .filter { $0.pathExtension == "swift" }
+
         let pattern = try NSRegularExpression(
             pattern:
             #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog|failure|recovery)\.[A-Za-z.]+)""#
@@ -156,7 +160,7 @@ struct LocalizationTests {
         let pattern = try NSRegularExpression(pattern: "^for locale in (.+); do$", options: .anchorsMatchLines)
 
         for script in ["scripts/build-app.sh", "scripts/bundle.sh"] {
-            let url = Self.package.deletingLastPathComponent().appending(path: script)
+            let url = Self.package.appending(path: script)
             let content = try String(contentsOf: url, encoding: .utf8)
             let match = try #require(pattern.firstMatch(in: content, range: NSRange(content.startIndex..., in: content)))
             let range = try #require(Range(match.range(at: 1), in: content))
@@ -175,8 +179,12 @@ struct LocalizationTests {
     /// App 源码中的全部字符串字面量，用来判断资源键是否被引用。
     private func sourceLiterals() throws -> Set<String> {
         let sources = Self.package.appending(path: "Sources/Spooky")
-        let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
+
+        // 界面源码分在各功能子目录中，逐层列出
+        let files = try FileManager.default.subpathsOfDirectory(atPath: sources.path)
+            .map { sources.appending(path: $0) }
             .filter { $0.pathExtension == "swift" }
+
         let pattern = try NSRegularExpression(pattern: #""((?:[^"\\\n]|\\.)*)""#)
         var literals: Set<String> = []
 

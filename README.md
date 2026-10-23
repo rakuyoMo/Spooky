@@ -69,20 +69,20 @@ The project uses Swift Package Manager. Run these commands from the repository r
 
 ```sh
 # Build the core library and the app
-swift build --package-path SpookyKit
+swift build
 
 # Launch the app
-swift run --package-path SpookyKit Spooky
+swift run Spooky
 ```
 
 You can also build a development app that opens from Finder:
 
 ```sh
-# Build SpookyKit/.build/Spooky.app
+# Build .build/Spooky.app
 ./scripts/build-app.sh
 
 # Launch the built app
-open SpookyKit/.build/Spooky.app
+open .build/Spooky.app
 ```
 
 The release app uses a release build, includes the app icon, and is ad-hoc signed:
@@ -145,7 +145,7 @@ On the server:
 ### Tests
 
 ```sh
-swift test --package-path SpookyKit
+swift test
 ```
 
 - Tests use Swift Testing
@@ -161,13 +161,13 @@ Once it's set up, enable them explicitly:
 
 ```sh
 # Connections, connection checks, recovery, and callbacks
-SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteConnectionTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
 
 # SFTP and server commits
-SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteWorkingCopyTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests
 
 # Server history, sync, and cancellation
-SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteHistorySyncTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests
 ```
 
 Each run creates and removes its own subdirectory there, and doesn't change the SSH configuration, `known_hosts`, or global Git configuration on either machine.
@@ -175,7 +175,7 @@ Each run creates and removes its own subdirectory there, and doesn't change the 
 Performance tests for large repositories are also skipped by default. They generate a temporary repository with 100,000 files and 50,000 commits, and check how long the first status takes to load and how much memory is used:
 
 ```sh
-SPOOKY_PERFORMANCE_TESTS=1 swift test --package-path SpookyKit -c release -Xswiftc -enable-testing --filter PerformanceTests
+SPOOKY_PERFORMANCE_TESTS=1 swift test -c release -Xswiftc -enable-testing --filter PerformanceTests
 ```
 
 ## Contributing

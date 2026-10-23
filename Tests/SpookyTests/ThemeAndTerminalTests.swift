@@ -14,8 +14,12 @@ struct ThemeAndTerminalTests {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appending(path: "Sources/Spooky")
-        let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
+
+        // 界面源码分在各功能子目录中，逐层列出
+        let files = try FileManager.default.subpathsOfDirectory(atPath: sources.path)
+            .map { sources.appending(path: $0) }
             .filter { $0.pathExtension == "swift" }
+
         let expression = try NSRegularExpression(pattern: #"AppPalette\.(?:color|nsColor)\("([^"]+)"\)"#)
 
         for file in files {
@@ -45,8 +49,12 @@ struct ThemeAndTerminalTests {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appending(path: "Sources/Spooky")
-        let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
+
+        // 界面源码分在各功能子目录中，逐层列出
+        let files = try FileManager.default.subpathsOfDirectory(atPath: sources.path)
+            .map { sources.appending(path: $0) }
             .filter { $0.pathExtension == "swift" && $0.lastPathComponent != "AppPalette.swift" }
+
         let expression = try NSRegularExpression(
             pattern: ##""#[0-9A-Fa-f]{6}"|NSColor\((?:white|srgbRed|red|calibratedRed|deviceRed):|Color\((?:red|white):"##
         )

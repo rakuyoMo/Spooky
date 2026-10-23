@@ -1,6 +1,6 @@
 import AppKit
 
-/// `swift run --package-path SpookyKit Spooky` 的原生应用入口。
+/// `swift run Spooky` 的原生应用入口。
 @main
 enum SpookyApplication {
     /// 保持应用委托存活，进入 AppKit 事件循环。

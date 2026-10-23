@@ -69,20 +69,20 @@ Spooky 尚未提供下载，需要从源码构建。构建需要 Swift 6.2 或�
 
 ```sh
 # 编译核心库与 App
-swift build --package-path SpookyKit
+swift build
 
 # 直接启动 App
-swift run --package-path SpookyKit Spooky
+swift run Spooky
 ```
 
 也可以生成能在 Finder 中打开的开发版 App：
 
 ```sh
-# 生成 SpookyKit/.build/Spooky.app
+# 生成 .build/Spooky.app
 ./scripts/build-app.sh
 
 # 启动生成的 App
-open SpookyKit/.build/Spooky.app
+open .build/Spooky.app
 ```
 
 发布版 App 使用 release 构建，带应用图标，并做 ad-hoc 签名：
@@ -145,7 +145,7 @@ open SpookyKit/.build/Spooky.app
 ### 测试
 
 ```sh
-swift test --package-path SpookyKit
+swift test
 ```
 
 - 测试使用 Swift Testing
@@ -161,13 +161,13 @@ swift test --package-path SpookyKit
 
 ```sh
 # 连接、连接检查、断线恢复与回调
-SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteConnectionTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
 
 # SFTP 与服务器提交
-SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteWorkingCopyTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests
 
 # 服务器历史、同步与取消
-SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteHistorySyncTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests
 ```
 
 每次运行只在这个目录下新建并清理独立的子目录，不修改双方的 SSH 配置、`known_hosts` 或全局 Git 配置。
@@ -175,7 +175,7 @@ SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteHistory
 大仓库的性能测试同样默认跳过。它会生成一个包含 10 万个文件、5 万个提交的临时仓库，检查首屏状态的读取时间与内存占用：
 
 ```sh
-SPOOKY_PERFORMANCE_TESTS=1 swift test --package-path SpookyKit -c release -Xswiftc -enable-testing --filter PerformanceTests
+SPOOKY_PERFORMANCE_TESTS=1 swift test -c release -Xswiftc -enable-testing --filter PerformanceTests
 ```
 
 ## 参与贡献

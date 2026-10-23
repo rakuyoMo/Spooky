@@ -1,10 +1,10 @@
 [tasks.build]
 description = "编译核心库与 App 的 debug 版本"
-run = "swift build --package-path SpookyKit"
+run = "swift build"
 
 [tasks.test]
 description = "运行默认开启的单元测试"
-run = "swift test --package-path SpookyKit"
+run = "swift test"
 
 [tasks.bundle]
 description = "编译 release 版本，打包为 build/Spooky.app 并 ad-hoc 签名"
@@ -12,7 +12,9 @@ run = "./scripts/bundle.sh"
 
 [tasks."swift:format"]
 description = "格式化 Swift 代码"
-run = "swift package --package-path SpookyKit --allow-writing-to-package-directory format"
+
+# 插件默认处理包根目录下的全部子目录；包根目录就是仓库根目录，所以只列出源码、测试与包清单
+run = "swift package --allow-writing-to-package-directory format --paths Sources --paths Tests --paths Package.swift"
 
 [tasks."swift:lint"]
 description = "检查 Swift 代码规范"

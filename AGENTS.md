@@ -16,12 +16,12 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 ## 技术栈与环境
 
 - Swift 6.2，工程由 Swift Package Manager 管理
-- `SpookyKit` 的最低平台为 macOS 26，定义于 `SpookyKit/Package.swift`
+- 包的最低平台为 macOS 26，定义于 `Package.swift`
 - Git 子进程通过 [swift-subprocess](https://github.com/swiftlang/swift-subprocess) 启动
 - 单元测试使用 Swift Testing（`import Testing`），不使用 XCTest
 - `Spooky` executable target 使用 AppKit 管理窗口、分栏、工具栏和菜单，SwiftUI 承载内容
 - App 的 Bundle Identifier 为 `com.rakuyo.spooky`；`Info.plist` 嵌入可执行文件，开发 Bundle 由 `scripts/build-app.sh` 生成，发布 Bundle 由 `scripts/bundle.sh` 生成
-- 界面资源位于 `SpookyKit/Sources/Spooky/Resources/`，支持 `en`、`zh-Hans`、`zh-Hant`、`ja`、`ko`、`de`、`fr`、`es`，默认跟随系统并以英文回退
+- 界面资源位于 `Sources/Spooky/Resources/`，支持 `en`、`zh-Hans`、`zh-Hant`、`ja`、`ko`、`de`、`fr`、`es`，默认跟随系统并以英文回退
 
 ### `mise`
 
@@ -33,7 +33,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 
 ## 常用命令
 
-命令都在仓库根目录执行，用 `--package-path` 指定包目录，不切换工作目录。
+命令都在仓库根目录执行，不切换工作目录。
 
 | 命令 | 作用 |
 |---|---|
@@ -41,54 +41,70 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 | `mise run test` | 运行核心库、会话状态与本地化测试 |
 | `mise run swift:lint` | 检查代码规范 |
 | `mise run swift:format` | 按代码规范格式化，并自动修复可修复的问题 |
-| `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteConnectionTests` | 显式运行 `spooky-test` 远端集成测试 |
-| `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteWorkingCopyTests` | 显式运行 M3 的 SFTP 与远端提交测试 |
-| `SPOOKY_REMOTE_TESTS=1 swift test --package-path SpookyKit --filter RemoteHistorySyncTests` | 显式运行 M4 的服务器历史、同步与取消测试 |
-| `swift build --package-path SpookyKit --product Spooky` | 编译可执行 App product |
-| `swift run --package-path SpookyKit Spooky` | 启动 App 的仓库管理窗口 |
-| `./scripts/build-app.sh` | 生成开发用 `SpookyKit/.build/Spooky.app` |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests` | 显式运行 `spooky-test` 远端集成测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests` | 显式运行 M3 的 SFTP 与远端提交测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests` | 显式运行 M4 的服务器历史、同步与取消测试 |
+| `swift build --product Spooky` | 编译可执行 App product |
+| `swift run Spooky` | 启动 App 的仓库管理窗口 |
+| `./scripts/build-app.sh` | 生成开发用 `.build/Spooky.app` |
 | `mise run bundle` | release 构建并生成 `build/Spooky.app`，拷贝资源与图标后 ad-hoc 签名并校验 |
-| `SPOOKY_PERFORMANCE_TESTS=1 swift test --package-path SpookyKit -c release -Xswiftc -enable-testing --filter PerformanceTests` | 显式运行大仓库首屏、历史分页与内存的性能验收 |
-| `swift scripts/make-icon.swift SpookyKit/Sources/Spooky/AppIcon.icns` | 重新生成静态应用图标 |
+| `SPOOKY_PERFORMANCE_TESTS=1 swift test -c release -Xswiftc -enable-testing --filter PerformanceTests` | 显式运行大仓库首屏、历史分页与内存的性能验收 |
+| `swift scripts/make-icon.swift Sources/Spooky/AppIcon.icns` | 重新生成静态应用图标 |
 
 ## 目录结构
 
 ```
-SpookyKit/                    核心库与 App 的 Swift Package
-  Package.swift               Swift Package 定义与平台、依赖配置
-  Package.resolved            依赖版本锁定
-  Sources/SpookyKit/          库源码
-    RepositoryLocation.swift  本机或 SSH 远端仓库位置
+Package.swift                 Swift Package 定义与平台、依赖配置
+Package.resolved              依赖版本锁定
+Sources/SpookyKit/            库源码，按功能分目录
+  Execution/                  Git 命令执行
     GitRunner.swift           本机 / 远端 Git 命令执行
     CommandExecutor.swift     异步子进程、管道收集与取消
     GitCommandResult.swift    命令结果、错误分类与流式输出事件
     RepositoryOperationQueue.swift 仓库写队列、主机并发限制与操作事件
+    ImmutableReadCache.swift  只由对象哈希决定的读取结果缓存
+  Remote/                     服务器连接
     RemoteConnection.swift    SSH 主连接、体检、重连与远端取消
     RemoteConnection+HealthCheck.swift 经主连接依次检查远端 Git、路径权限、工作区与状态格式
-    SSHConfiguration.swift    SSH 参数及远端环境清洗
-    CallbackRelay.swift       本机 Unix socket 回调服务
+    RemoteConnectionError.swift 连接分类与服务器仓库身份
     RemoteOutputFilter.swift  远端完成帧与退出状态解析
     RemoteOutputRedactor.swift 中继凭据的跨输出块脱敏
-    RemoteConnectionError.swift 连接分类与服务器仓库身份
-    Resources/spooky-remote.pl 远端进程组与回调客户端
+    SSHConfiguration.swift    SSH 参数及远端环境清洗
+  Callback/                   口令、密码与编辑器回调
+    CallbackRelay.swift       本机 Unix socket 回调服务
+    LocalGitAuthentication.swift 本机凭据回调与 SSH agent 接入
+  Repository/                 仓库位置与文件读写
+    RepositoryLocation.swift  本机或 SSH 远端仓库位置
     LocalRepository.swift     Git 最低版本检查与本机工作区识别
+    RepositoryFiles.swift     本机文件访问与复用主连接的 SFTP 传输
+  WorkingCopy/                工作区状态、Diff 与写操作
     WorkingCopyStatus.swift   porcelain v2 工作区状态模型与解析
     RepositoryDiff.swift      按字节解析 Diff 与生成选区补丁
     WorkingCopyOperations.swift 工作区写操作、快照校验、身份与进行中状态
-    RepositoryFiles.swift     本机文件访问与复用主连接的 SFTP 传输
+  History/                    历史与提交图
     RepositoryHistory.swift   NUL 历史分页、提交变更集与第一父 Diff
     CommitGraph.swift         与界面解耦的增量提交图
+  References/                 引用与分支
     RepositoryReferences.swift 引用快照、分支读写与双向计数
+  Sync/                       同步与合并
     RepositorySync.swift      Fetch、Pull、Push、合并与预览
-    LocalGitAuthentication.swift 本机凭据回调与 SSH agent 接入
-    ImmutableReadCache.swift  只由对象哈希决定的读取结果缓存
-  Sources/Spooky/             App 入口、窗口协调、会话状态与各内容视图
-    Info.plist                应用身份和支持语言
-    AppIcon.icns              静态应用图标，由 scripts/make-icon.swift 生成
-    Resources/                各语言文案、系统权限说明、命名色与内置主题 JSON
-  Tests/SpookyKitTests/       单元测试（Swift Testing）
-    Fixtures/                 固定的 Git 输出夹具
-  Tests/SpookyTests/          会话生命周期、最近记录、错误呈现与本地化测试
+  Resources/spooky-remote.pl  远端进程组与回调客户端
+Sources/Spooky/               App 入口、窗口协调、会话状态与各内容视图，按功能分目录
+  App/                        入口、窗口与菜单协调、本地化与错误说明、命名色与主题、回调请求呈现
+  Components/                 空状态、错误详情与连接状态等共用视图
+  RepositoryManager/          仓库管理窗口、最近记录与添加服务器仓库
+  RepositoryWindow/           仓库窗口与菜单动作、侧边栏、操作对话框与拖放
+  Session/                    仓库会话、操作可用性、视图状态与文件监听
+  WorkingCopy/                工作区文件列表、Diff、提交区与文件状态
+  History/                    历史列表、提交详情与历史状态
+  Activity/                   Activity 窗口、操作记录与仓库写锁
+  Settings/                   设置窗口与终端程序
+  Resources/                  各语言文案、系统权限说明、命名色与内置主题 JSON
+  Info.plist                  应用身份和支持语言
+  AppIcon.icns                静态应用图标，由 scripts/make-icon.swift 生成
+Tests/SpookyKitTests/         单元测试（Swift Testing）
+  Fixtures/                   固定的 Git 输出夹具
+Tests/SpookyTests/            会话生命周期、最近记录、错误呈现与本地化测试
 scripts/build-app.sh          开发 App Bundle 生成脚本
 scripts/bundle.sh             发布 App Bundle 生成脚本，输出到 build/Spooky.app
 scripts/make-icon.swift       应用图标生成脚本
@@ -140,7 +156,7 @@ LICENSE                       GPL-3.0 许可证全文
 - 涉及本机 Git 的测试使用临时目录，并在测试结束后清理
 - Git 测试通过隔离环境忽略系统和用户全局配置，提交身份只写入临时仓库的本地配置
 - Git 或 SSH 的失败路径检查 `GitError` 的退出码与错误信息
-- 改动 App 时还须运行 `swift build --package-path SpookyKit --product Spooky`，按 [M1 验收步骤](docs/testing/M1.md) 实际启动、操作并截图；未执行的检查明确记录为未验证
+- 改动 App 时还须运行 `swift build --product Spooky`，按 [M1 验收步骤](docs/testing/M1.md) 实际启动、操作并截图；未执行的检查明确记录为未验证
 - M2 的服务器、终端与主题场景见 [M2 验收步骤](docs/testing/M2.md)；远端测试默认不跑，必须通过 `SPOOKY_REMOTE_TESTS=1` 显式开启
 - M3 的本机 / 服务器提交闭环、行选择、确认与冲突收尾见 [M3 验收步骤](docs/testing/M3.md)
 - M4 的分页历史、分支、同步、合并预览、活动日志与取消见 [M4 验收步骤](docs/testing/M4.md)
@@ -151,7 +167,7 @@ LICENSE                       GPL-3.0 许可证全文
 
 ### 版本号
 
-- 版本号写在 `SpookyKit/Sources/Spooky/Info.plist`：`CFBundleShortVersionString` 是对外版本号，`CFBundleVersion` 是正整数构建号
+- 版本号写在 `Sources/Spooky/Info.plist`：`CFBundleShortVersionString` 是对外版本号，`CFBundleVersion` 是正整数构建号
 - 1.0.0 之前，完成里程碑 Mn 的 PR 把 `CFBundleShortVersionString` 改为 `0.n.0`，如 M5 为 `0.5.0`、M10 为 `0.10.0`
 - 1.0.0 由维护者确认后手动发起发布
 
@@ -176,6 +192,7 @@ LICENSE                       GPL-3.0 许可证全文
 ### Swift
 
 - 按功能组织类型；相关模型可以像当前的 `WorkingCopyStatus.swift` 一样放在同一个文件中，不为满足 “每个文件一个类型” 而机械拆分
+  - 源文件放进所属 target 下对应功能的子目录，如 `Sources/SpookyKit/WorkingCopy/`；现有目录都不合适时，按功能新建目录
 - 文件名与主要类型名保持一致
 - 访问级别按 API 边界取：
   - 对外 API 用 `public`
@@ -219,7 +236,7 @@ LICENSE                       GPL-3.0 许可证全文
 
 ### 代码规范验证流程
 
-代码风格以 [RakuyoKit/swift](https://github.com/RakuyoKit/swift) 为准；运行过任一 `mise run` task 后，规则原文位于 `SpookyKit/.build/checkouts/swift/Sources/RakuyoSwiftFormatTool/`。
+代码风格以 [RakuyoKit/swift](https://github.com/RakuyoKit/swift) 为准；运行过任一 `mise run` task 后，规则原文位于 `.build/checkouts/swift/Sources/RakuyoSwiftFormatTool/`。
 
 - 新建或编辑 `.swift` 文件后，运行 `mise run swift:lint`；不通过时先运行 `mise run swift:format` 自动修复，再运行 `mise run swift:lint`
 - `mise run swift:lint`、`mise run build` 与 `mise run test` 都通过才算完成；CI 在每个 PR 与推送到 main 时运行同样的检查
