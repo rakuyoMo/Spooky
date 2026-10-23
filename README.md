@@ -31,9 +31,21 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Clear errors**: errors show their category, the repository, and the original Git or SSH output, which you can select and copy
 
-- **Stage files, hunks, or lines**: view the working copy as a list or a tree, with multiple selection and three-state checkboxes. Select lines in a diff to stage or discard just those lines
+- **Working copy**: view changes as a list or a tree, or browse every file in the repository. Show ignored and assume-unchanged files, and filter by path. Untrack, delete, move, ignore, or exclude files, restore them to a revision, and apply patch files. Preview files with Quick Look, drag them out, or open them in their default app
 
-- **Commits and conflicts**: amend the most recent commit. During a merge, rebase, cherry-pick, or revert, resolve files using ours or theirs, mark them as resolved, then continue or abort
+- **Stage files, hunks, or lines**: multiple selection and three-state checkboxes. Select lines in a diff to stage or discard just those lines
+
+- **Diff options**: change the number of context lines, show the entire file, ignore whitespace, show invisible characters, and set the tab width. Syntax coloring covers 28 languages, and anything else is shown as plain text. Images are compared side by side or one at a time. Diffs can be saved as patches or exported
+
+- **Commit messages**: a subject length counter, soft or hard wrapping for the body, handling of comment lines, and completion for recent commits, changed files, and `fixup!` or `squash!` subjects. Amend the most recent commit, sign off, or skip hooks
+
+- **Identities and signing**: switch the committer identity of a repository with user profiles. Sign commits with GPG or SSH; for a server repository, signing happens on the server and passphrase prompts come back to your Mac
+
+- **Conflict wizard**: during a merge, rebase, cherry-pick, or revert, see the current step and how many conflicts are left. Compare both versions of each file, use one of them or edit the result, keep backup files if you like, then continue, skip, or abort
+
+- **Stashes**: save all or only selected changes, take snapshots that leave the working copy as it is, and apply a stash with its staged state or apply a single file from it. When local changes block a checkout, pull, or merge, Spooky offers to stash them first and reapply them afterward
+
+- **File history and blame**: follow a file through history, filtered by author, committer, revision, or date. See who last changed each line, and view, copy, or export any version of a file
 
 - **History**: commits load page by page, with a commit graph, ref badges, and ahead and behind counts. Merge commits show their diff against the first parent
 
@@ -45,7 +57,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Open in Terminal**: supports Terminal, iTerm, Warp, Ghostty, WezTerm, Prompt, and Otty. For a server repository, the terminal connects over SSH and opens the remote path
 
-- **Default themes**: Default and Default (Dark) are built in and follow your Mac's light or dark appearance
+- **Themes**: Default and Default (Dark) are built in. Create, rename, edit, import, and export your own themes for diffs and file contents, and choose one for the light appearance and one for the dark appearance
 
 - **Eight languages**: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish. The app uses your system language, or English if that language isn't supported
 
@@ -109,6 +121,7 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
 - After the first successful connection check, Spooky installs a small helper program, named after a digest of its contents, in `~/.spooky/bin/` on the server with your user permissions. It manages remote processes and callbacks, relies on the server's Perl, and doesn't keep running in the background
 - Files are read and written with the system's SFTP over the same master connection
   - The system SFTP batch mode can't represent paths that contain CR or LF, so file operations on such paths fail with a clear error
+- Quick Look, other apps, and files you drag out never receive a server path. They get a copy of the file in a private temporary directory on your Mac, which is removed when the repository closes
 - Polling reads only the status and the selected file's content hash, and reads everything else only when something changed. History pages and commit details, which depend only on commit hashes, are cached to save round trips
 
 ### Writes and disconnections
@@ -120,9 +133,11 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
 
 ### Credentials
 
-- When Git on the server needs a password, an SSH private key passphrase, or an editor, the request comes back to your Mac through a reverse Unix socket on the current master connection, and Spooky shows a dialog
+- When Git on the server needs a password, an SSH private key passphrase, a signing key passphrase, or an editor, the request comes back to your Mac through a reverse Unix socket on the current master connection, and Spooky shows a dialog
   - Each request carries a random session token, can be answered only once, and times out after 120 seconds
+  - Commits on a server are signed there by the signing program the repository is configured with. GPG is asked for a passphrase only when it actually needs one
 - Network operations in local repositories also ask for credentials through a private Unix socket callback. After an SSH private key is unlocked, OpenSSH adds it to the current SSH agent
+- Local commits, merges, rebases, cherry-picks, and reverts ask for SSH signing key passphrases the same way. GPG passphrases are handled by your Mac's own pinentry
 - Credentials stay in memory by default. They're written to your Mac's Keychain only when you select **Save in this Mac’s Keychain**
 - Credentials are never written to temporary files, activity logs, or error messages, and credentials echoed in output are hidden
 
@@ -130,14 +145,16 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
 
 On your Mac:
 
-- Settings and recent repositories are stored in the preferences domain `com.rakuyo.spooky`
+- Settings, user profiles, and recent repositories are stored in the preferences domain `com.rakuyo.spooky`
+- Themes you create are stored in `~/Library/Application Support/Spooky/Themes`, one `.spookytheme` file per theme
 - Credentials saved to the Keychain use the service name `com.rakuyo.spooky.remote.<host alias>`
 - Connections and callbacks use private `/tmp/spooky-*` temporary directories, which are removed when the session closes
+- File copies for Quick Look and other apps are kept in private `spooky-files-*` temporary directories, which are removed when the repository closes
 - Opening a server repository in Warp writes `Spooky-*.yaml` to `~/.warp/launch_configurations/`, and opening it in Prompt uses a temporary `.command` file. When Spooky quits, it removes only the files it created
 
 On the server:
 
-- `~/.spooky/bin/`: the remote helper and askpass entry points, with `0700` permissions. They stay after the session ends so later connections can use them
+- `~/.spooky/bin/`: the remote helper and its askpass, GPG, and ssh-keygen entry points, with `0700` permissions. They stay after the session ends so later connections can use them
 - `/tmp/spooky-*`: a private runtime directory for the session, removed when the session closes
 
 ## Development
@@ -163,11 +180,23 @@ Once it's set up, enable them explicitly:
 # Connections, connection checks, recovery, and callbacks
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
 
-# SFTP and server commits
+# SFTP, the local file cache, and server commits
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests
 
 # Server history, sync, and cancellation
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests
+
+# File operations, patches, and diff options
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyFilesTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteDiffTests
+
+# Stashes and the conflict wizard
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteStashTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConflictTests
+
+# File history, blame, and commit signing
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteFileViewsTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteCommitSigningTests
 ```
 
 Each run creates and removes its own subdirectory there, and doesn't change the SSH configuration, `known_hosts`, or global Git configuration on either machine.

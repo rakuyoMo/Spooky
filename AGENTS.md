@@ -7,7 +7,12 @@
 Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能经 SSH 直接操作另一台机器上的仓库。
 
 - `Spooky` 是可运行的桌面 App；`SpookyKit` 核心库负责在本机或远端执行 Git、读取工作区状态并解析输出
-- 当前 App 支持本机与服务器工作区、混合最近记录、连接体检、断线重连与写入核对、Diff、文件 / 块 / 行操作、提交与冲突收尾、分页历史、分支、同步、合并预览、Activity、文件监听与轮询刷新、按仓库恢复的视图状态、终端与默认主题设置，并可打包发布用 App；产品按 M1–M10 逐步完成 `1.0.0`
+- 当前 App 支持以下能力，并可打包发布用 App；产品按 M1–M10 逐步完成 `1.0.0`
+  - 本机与服务器工作区、混合最近记录、连接体检、断线重连与写入核对
+  - 工作区的三种显示模式、忽略规则与文件操作；带显示选项、语法着色与图片对照的 Diff；文件 / 块 / 行操作
+  - 提交信息编辑、身份档案与提交签名；冲突向导与冲突收尾；储藏与 Auto Stash
+  - 分页历史、文件历史、Blame 与原文、分支、同步、合并预览、Activity
+  - 文件监听与轮询刷新、按仓库恢复的视图状态、终端程序与文本区主题管理
 - 远端仓库的工作区留在远端机器，客户端经系统 SSH、用 `~/.ssh/config` 中的主机别名访问
 - 纯开源的个人工具，只在 GitHub 分发
 - 许可证为 [GPL-3.0](LICENSE)
@@ -42,8 +47,14 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 | `mise run swift:lint` | 检查代码规范 |
 | `mise run swift:format` | 按代码规范格式化，并自动修复可修复的问题 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests` | 显式运行 `spooky-test` 远端集成测试 |
-| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests` | 显式运行 M3 的 SFTP 与远端提交测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests` | 显式运行 M3 的 SFTP 与远端提交测试，以及 M6 的服务器文件缓存测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests` | 显式运行 M4 的服务器历史、同步与取消测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyFilesTests` | 显式运行 M6 的服务器文件操作与应用补丁测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteDiffTests` | 显式运行 M6 的服务器 Diff 选项、图片与保存补丁测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteStashTests` | 显式运行 M6 的服务器储藏与 Auto Stash 断线测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConflictTests` | 显式运行 M6 的服务器冲突向导与断线测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteFileViewsTests` | 显式运行 M6 的服务器文件历史、Blame、原文与 NFD 路径测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteCommitSigningTests` | 显式运行 M6 的服务器提交签名测试 |
 | `swift build --product Spooky` | 编译可执行 App product |
 | `swift run Spooky` | 启动 App 的仓库管理窗口 |
 | `./scripts/build-app.sh` | 生成开发用 `.build/Spooky.app` |
@@ -66,49 +77,73 @@ Sources/SpookyKit/            库源码，按功能分目录
   Remote/                     服务器连接
     RemoteConnection.swift    SSH 主连接、体检、重连与远端取消
     RemoteConnection+HealthCheck.swift 经主连接依次检查远端 Git、路径权限、工作区与状态格式
+    RemoteConnection+Wrapper.swift 包装器的安装脚本，以及凭据、编辑器、SSH 与签名程序的远端回调配置
     RemoteConnectionError.swift 连接分类与服务器仓库身份
     RemoteOutputFilter.swift  远端完成帧与退出状态解析
     RemoteOutputRedactor.swift 中继凭据的跨输出块脱敏
     SSHConfiguration.swift    SSH 参数及远端环境清洗
-  Callback/                   口令、密码与编辑器回调
+  Callback/                   口令、密码、签名口令与编辑器回调
     CallbackRelay.swift       本机 Unix socket 回调服务
-    LocalGitAuthentication.swift 本机凭据回调与 SSH agent 接入
+    LocalGitAuthentication.swift 本机凭据与 SSH 签名口令回调、SSH agent 接入
   Repository/                 仓库位置与文件读写
     RepositoryLocation.swift  本机或 SSH 远端仓库位置
     LocalRepository.swift     Git 最低版本检查与本机工作区识别
     RepositoryFiles.swift     本机文件访问与复用主连接的 SFTP 传输
-  WorkingCopy/                工作区状态、Diff 与写操作
+    RepositoryFileCache.swift 交给本机程序的文件副本，位于会话专属的 0700 缓存目录，关闭仓库时删除
+  WorkingCopy/                工作区状态、Diff、文件操作、冲突与提交
     WorkingCopyStatus.swift   porcelain v2 工作区状态模型与解析
-    RepositoryDiff.swift      按字节解析 Diff 与生成选区补丁
+    WorkingTreeFiles.swift    暂存区清单与被忽略文件清单
+    RepositoryDiff.swift      Diff 显示选项、按字节解析 Diff 与生成选区补丁
+    DiffImageSource.swift     图片 Diff 两侧的字节
     WorkingCopyOperations.swift 工作区写操作、快照校验、身份与进行中状态
+    WorkingCopyOperations+Diff.swift 按显示选项读取补丁、保存补丁与忽略空白时的写入补丁
+    WorkingCopyFileOperations.swift 停止跟踪、删除、移动、assume-unchanged、忽略 / 排除规则与应用补丁
+    PatchPreimage.swift       补丁文件头的前像读取
+    MergeConflict.swift       冲突的三方内容、恢复、手动编辑写回与备份
+    OperationProgress.swift   进行中操作的两侧、步数、已解决冲突与空步骤继续
+    CommitConfiguration.swift 提交身份、签名、注释字符与钩子的读取，身份档案的写入
+    CommitMessage.swift       提交信息的拼接、注释行与按字数折行
   History/                    历史与提交图
     RepositoryHistory.swift   NUL 历史分页、提交变更集与第一父 Diff
     CommitGraph.swift         与界面解耦的增量提交图
+  FileViews/                  文件历史、Blame 与原文
+    RepositoryFileViews.swift 文件历史分页与筛选、树条目、Unicode 等价路径、原文、Blame 与贡献者
+    FileBlame.swift           blame --porcelain 解析
   References/                 引用与分支
     RepositoryReferences.swift 引用快照、分支读写与双向计数
   Sync/                       同步与合并
     RepositorySync.swift      Fetch、Pull、Push、合并与预览
-  Resources/spooky-remote.pl  远端进程组与回调客户端
+  Stash/                      储藏
+    StashEntry.swift          储藏记录与 stash list -z 解析
+    RepositoryStashes.swift   储藏读写、快照、单文件应用与 Auto Stash
+  Resources/spooky-remote.pl  远端进程组、回调客户端与签名程序入口
 Sources/Spooky/               App 入口、窗口协调、会话状态与各内容视图，按功能分目录
   App/                        入口、窗口与菜单协调、本地化与错误说明、命名色与主题、回调请求呈现
+    TextTheme.swift           文本区主题模型、内置主题与 .spookytheme 主题文件格式
+    ThemeStore.swift          用户主题目录、浅色与深色外观的主题选择与导入
   AppIcon/                    Dock 与 ⌘Tab 中的 App 图标随 “图标与小组件样式” 与连接状态切换，以及四份 icns
     AppIcon.icns              默认应用图标，指示灯灭着；与下面三份一样由 scripts/make-icon.swift 生成
     AppIconConnected.icns     指示灯亮着的默认图标，App 连着服务器时换到 Dock 与 ⌘Tab
     AppIconDark.icns          深色应用图标，指示灯灭着；App 运行时按 “图标与小组件样式” 换到 Dock 与 ⌘Tab
     AppIconDarkConnected.icns 指示灯亮着的深色图标
-  Components/                 空状态、错误详情与连接状态等共用视图
+  Components/                 空状态、错误详情、连接状态与首字母头像等共用视图
   RepositoryManager/          仓库管理窗口、最近记录与添加服务器仓库
-  RepositoryWindow/           仓库窗口与菜单动作、侧边栏、操作对话框与拖放
-  Session/                    仓库会话、操作可用性、视图状态与文件监听
-  WorkingCopy/                工作区文件列表、Diff、提交区与文件状态
+  RepositoryWindow/           仓库窗口与菜单动作、侧边栏、搜索、操作对话框与拖放
+  Session/                    仓库会话、操作可用性、视图状态与文件监听，各功能的会话动作分在扩展文件中
+  WorkingCopy/                工作区文件列表与显示模式、文件状态、Quick Look 与拖出、文件操作对话框、冲突向导与进行中操作横幅、提交区的信息编辑器、自动补全与身份菜单
+  Diff/                       工作区 Diff、块与行选择、底栏选项、图片对照、语法着色的两侧全文、提交 / 储藏 / 文件历史共用的只读 Diff 与保存补丁对话框
+  Text/                       语法着色的扫描器与语言规则、一行文本的渲染、Settings → Text 的偏好
   History/                    历史列表、提交详情与历史状态
+  FileViews/                  文件历史、原文与 Blame 的整页视图、行号与注释栏、版本与文件选择器
+  Stash/                      储藏视图、储藏对话框、拖放与状态
   Activity/                   Activity 窗口、操作记录与仓库写锁
-  Settings/                   设置窗口与终端程序
-  Resources/                  各语言文案、系统权限说明、命名色与内置主题 JSON
+  Settings/                   设置窗口的 General、Text、Editor、Themes 与 User Profiles 页，以及终端程序
+  Resources/                  各语言文案、系统权限说明、命名色、内置主题与语法着色规则 JSON
+    SyntaxLanguages.json      语法着色支持的 28 种语言的规则
   Info.plist                  应用身份和支持语言
 Tests/SpookyKitTests/         单元测试（Swift Testing）
   Fixtures/                   固定的 Git 输出夹具
-Tests/SpookyTests/            会话生命周期、最近记录、错误呈现、本地化与 App 图标测试
+Tests/SpookyTests/            会话生命周期、最近记录、错误呈现、本地化、App 图标、主题存储、语法着色与提交补全测试
 scripts/build-app.sh          开发 App Bundle 生成脚本
 scripts/bundle.sh             发布 App Bundle 生成脚本，输出到 build/Spooky.app
 scripts/make-icon.swift       应用图标生成脚本，在无窗口的 WebKit 中运行 make-icon.js，为默认与深色图标各合成指示灯灭着、亮着两份 .icns
@@ -120,6 +155,7 @@ docs/testing/M2.md            M2 的连接、终端与主题验收步骤
 docs/testing/M3.md            M3 的工作区、Diff、提交与冲突验收步骤
 docs/testing/M4.md            M4 的历史、分支、同步与活动验收步骤
 docs/testing/M5.md            M5 的集成、恢复、性能、可访问性与发布前验收步骤
+docs/testing/M6.md            M6 的工作区、Diff、主题、储藏、冲突向导、文件视图与提交体验验收步骤
 README.md                     英文 README：介绍、功能、系统要求、构建、权限、工作原理、开发与贡献说明
 README-ZH.md                  README.md 的简体中文版，与它同步修改
 LICENSE                       GPL-3.0 许可证全文
@@ -145,6 +181,18 @@ LICENSE                       GPL-3.0 许可证全文
 - App 内同一仓库同时只允许一个写操作（`RepositoryWriteLocks`）；菜单、工具栏、右键菜单与拖放统一使用 `RepositorySession` 的 `can…` 可用性规则
 - 文件读写使用 `RepositoryFiles`；SFTP 经 `RemoteConnection.sftpCommand()` 接入同一主连接，读写分别遵循主机并发和仓库写队列规则
 - 工作区 UI 通过 `WorkingCopyOperations` 发起写入；组合操作用 `GitRunner.writeTransaction` 持有仓库锁，补丁以原始字节生成并核对快照，路径列表经字面 NUL 输入传递
+- 交给 Quick Look、默认程序、比较工具或拖出的文件一律经 `RepositoryFileCache`：本机工作区文件用原路径，服务器文件与历史版本写进缓存目录、只保留文件名，关闭仓库时删除；远端路径不交给本机文件 API
+- 按路径寻址树中对象的只读查询使用 `RepositoryFileViews.storedPathOptions`，路径先经 `storedEntry(for:in:)` 换成树中存储的形式：macOS 的 Git 会把命令行参数里的路径转成 NFC，树中以 NFD 存储的路径用原样的参数查不到
+- 会生成提交的命令（`commit`、`merge`、`rebase`、`cherry-pick`、`revert`）在本机同样经 `LocalGitAuthentication` 执行：SSH 签名的私钥口令经回调询问，GPG 交给本机的 pinentry
+- 远端的签名经包装器的 `-gpg`、`-ssh-keygen` 入口（`-c gpg.program=…`、`-c gpg.ssh.program=…`）接入中继，仍执行仓库配置的签名程序；gpg 以 loopback 模式运行，只在确实需要口令时询问
+- `stash list` 与 `stash show` 是读取，其余 `stash` 子命令（包括不带子命令的 `stash`）按写操作排队；储藏全部改动时不加 `--literal-pathspecs`，它会让 `stash push -u` 把未跟踪文件留在工作区
+- 冲突备份只在偏好 `keepConflictBackups` 打开时写入，依次尝试 `<文件>.orig`、`<文件>.1.orig`…，不覆盖已有文件
+
+### 文本区
+
+- Diff、原文、Blame 与主题示例取主题一律用 `TextTheme.current(dark:)`；在 SwiftUI 的 `body` 里调用，即随主题的编辑、切换与外观变化刷新
+- 用户主题在 `~/Library/Application Support/Spooky/Themes`，一个主题一个 `.spookytheme` JSON；两种外观所选的主题记在偏好 `lightTheme`、`darkTheme`
+- 语法着色、Tab 宽度与不可见字符的偏好集中在 `TextPreferences`，一行文本按 `TextStyle` 经 `TextLineRenderer` 渲染；提交详情、储藏详情与文件历史的只读 Diff 共用 `ReadOnlyFileDiffView`
 
 ### 日志
 
@@ -166,6 +214,7 @@ LICENSE                       GPL-3.0 许可证全文
 - M3 的本机 / 服务器提交闭环、行选择、确认与冲突收尾见 [M3 验收步骤](docs/testing/M3.md)
 - M4 的分页历史、分支、同步、合并预览、活动日志与取消见 [M4 验收步骤](docs/testing/M4.md)
 - M5 的跨视图一致性、错误恢复、性能、可访问性与发布检查见 [M5 验收步骤](docs/testing/M5.md)；性能测试默认不跑，通过 `SPOOKY_PERFORMANCE_TESTS=1` 显式开启
+- M6 的工作区文件操作、Diff 选项、主题、储藏、冲突向导、文件视图、提交体验与本机 / 服务器端到端流程见 [M6 验收步骤](docs/testing/M6.md)
 - 解析器的固定输入放在 `Tests/SpookyKitTests/Fixtures/`，由真实 Git 在隔离配置、固定身份与时间的临时仓库中生成
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
 - 本地化新增资源键时同步全部支持语言，并保持格式参数一致；动态拼接的资源键登记在 `LocalizationTests.dynamicKeys`；错误标题和恢复说明本地化，Git 原文保持不变
@@ -244,6 +293,8 @@ LICENSE                       GPL-3.0 许可证全文
 代码风格以 [RakuyoKit/swift](https://github.com/RakuyoKit/swift) 为准；运行过任一 `mise run` task 后，规则原文位于 `.build/checkouts/swift/Sources/RakuyoSwiftFormatTool/`。
 
 - 新建或编辑 `.swift` 文件后，运行 `mise run swift:lint`；不通过时先运行 `mise run swift:format` 自动修复，再运行 `mise run swift:lint`
+- SwiftLint 以 `--strict` 运行，警告同样算不通过；长度上限为类型体 250 行、函数体 80 行、闭包体 30 行、文件 600 行（不计纯注释行）
+  - 类型体超限时，按功能把成员移到 `类型名+功能.swift` 的扩展文件，如 `RepositorySession+Stash.swift`
 - `mise run swift:lint`、`mise run build` 与 `mise run test` 都通过才算完成；CI 在每个 PR 与推送到 main 时运行同样的检查
 
 ## 产物可追溯性（番茄炒蛋原则）
