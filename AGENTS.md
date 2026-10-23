@@ -139,6 +139,12 @@ LICENSE                       GPL-3.0 许可证全文
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
 - 本地化新增资源键时同步五种语言，并保持格式参数一致；错误标题和恢复说明本地化，Git 原文保持不变
 
+### 版本号
+
+- 版本号写在 `SpookyKit/Sources/Spooky/Info.plist`：`CFBundleShortVersionString` 是对外版本号，`CFBundleVersion` 是正整数构建号
+- 1.0.0 之前，完成里程碑 Mn 的 PR 把 `CFBundleShortVersionString` 改为 `0.n.0`，如 M5 为 `0.5.0`、M10 为 `0.10.0`
+- 1.0.0 由维护者确认后手动发起发布
+
 ### README
 
 - README 不写使用方法：快速上手、操作步骤和快捷键说明都不放进 README，使用方法由项目的专门网站介绍
