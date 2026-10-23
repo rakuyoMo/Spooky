@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - CommitMessageTextView
 
-/// 提交标题与正文共用的文本视图：占位文字、超出字数的警告底色、硬折行的参考线与段落重排。
+/// 提交标题与正文共用的文本视图：占位文字、超出字数的警告底色、提交哈希的胶囊、硬折行的参考线与段落重排。
 final class CommitMessageTextView: NSTextView {
     /// 内容为空时显示的占位文字，可以有多行。
     var placeholder = "" {
@@ -13,7 +13,7 @@ final class CommitMessageTextView: NSTextView {
 
     /// 每行的字数上限，超出部分铺警告底色；nil 表示不检查。
     var characterLimit: Int? {
-        didSet { updateLimitHighlight() }
+        didSet { updateHighlights() }
     }
 
     /// 硬折行的列数：文字在这一列折行，列外铺页外底色并画参考线；nil 表示按视图宽度折行。
@@ -28,6 +28,14 @@ final class CommitMessageTextView: NSTextView {
 
     /// Reformat Paragraph 使用的字数上限；nil 表示这个视图不提供重排。
     var reformatLimit: Int?
+
+    /// 最近提交的完整哈希；文字里与它们前缀相同的十六进制词画成蓝色胶囊。
+    var knownCommits: [String] = [] {
+        didSet { updateHighlights() }
+    }
+
+    /// 当前画成胶囊的文字范围。
+    private var badgeRanges: [NSRange] = []
 
     /// 成为或失去第一响应者时通知外层。
     var onFocusChange: (Bool) -> Void = { _ in }
@@ -61,7 +69,7 @@ final class CommitMessageTextView: NSTextView {
     override func didChangeText() {
         super.didChangeText()
 
-        updateLimitHighlight()
+        updateHighlights()
     }
 
     /// 内容为空时在文字起点画占位文字。
@@ -86,16 +94,18 @@ final class CommitMessageTextView: NSTextView {
         .draw(with: area, options: [.usesLineFragmentOrigin])
     }
 
-    /// 硬折行时，参考线右侧铺页外底色，参考线用分隔线颜色。
+    /// 硬折行时参考线右侧铺页外底色、参考线用分隔线颜色；提交哈希的胶囊画在这些底色之上。
     override func drawBackground(in rect: NSRect) {
         super.drawBackground(in: rect)
 
-        guard showsGuide, let x = guideX else { return }
+        if showsGuide, let x = guideX {
+            AppPalette.nsColor("text_view_off_page_background_color").setFill()
+            NSRect(x: x, y: rect.minY, width: max(0, bounds.maxX - x), height: rect.height).fill()
+            NSColor.separatorColor.setFill()
+            NSRect(x: x, y: rect.minY, width: 1, height: rect.height).fill()
+        }
 
-        AppPalette.nsColor("text_view_off_page_background_color").setFill()
-        NSRect(x: x, y: rect.minY, width: max(0, bounds.maxX - x), height: rect.height).fill()
-        NSColor.separatorColor.setFill()
-        NSRect(x: x, y: rect.minY, width: 1, height: rect.height).fill()
+        drawBadges()
     }
 
     /// Edit › Reformat Paragraph：把光标所在段落按字数上限断行；作为一次编辑，可以撤销。
@@ -165,26 +175,63 @@ extension CommitMessageTextView {
         needsDisplay = true
     }
 
-    /// 每行超出字数上限的部分铺警告底色；用临时属性，不进入撤销记录与内容。
-    private func updateLimitHighlight() {
+    /// 重新标注每行超出字数上限的部分与提交哈希；用临时属性，不进入撤销记录与内容。
+    private func updateHighlights() {
         guard let layoutManager else { return }
 
         let text = string
-        layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: NSRange(text.startIndex..., in: text))
-        guard let characterLimit else { return }
+        let full = NSRange(text.startIndex..., in: text)
+        layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: full)
+        layoutManager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: full)
 
+        if let characterLimit {
+            markExcess(in: text, limit: characterLimit, layoutManager: layoutManager)
+        }
+
+        // 与最近提交前缀相同的十六进制词画成胶囊，文字改用胶囊上的颜色。
+        badgeRanges = text.ranges(of: #/\b[0-9a-fA-F]{7,64}\b/#)
+            .filter { range in knownCommits.contains { $0.hasPrefix(text[range].lowercased()) } }
+            .map { NSRange($0, in: text) }
+
+        for range in badgeRanges {
+            layoutManager.addTemporaryAttribute(
+                .foregroundColor,
+                value: AppPalette.nsColor("light_blue_badge_text_color"),
+                forCharacterRange: range
+            )
+        }
+
+        needsDisplay = true
+    }
+
+    /// 每行超出字数上限的部分铺警告底色；上限按字符计，换算成文本视图使用的 UTF-16 范围再标注。
+    private func markExcess(in text: String, limit: Int, layoutManager: NSLayoutManager) {
         let color = AppPalette.nsColor("text_view_warning_background_color")
 
         text.enumerateSubstrings(in: text.startIndex..., options: .byLines) { line, lines, _, _ in
-            guard let line, line.count > characterLimit else { return }
+            guard let line, line.count > limit else { return }
 
-            // 上限按字符计，超出部分换算成文本视图使用的 UTF-16 范围再标注。
-            let excess = text.index(lines.lowerBound, offsetBy: characterLimit) ..< lines.upperBound
-            layoutManager.addTemporaryAttribute(
-                .backgroundColor,
-                value: color,
-                forCharacterRange: NSRange(excess, in: text)
-            )
+            let excess = text.index(lines.lowerBound, offsetBy: limit) ..< lines.upperBound
+            layoutManager.addTemporaryAttribute(.backgroundColor, value: color, forCharacterRange: NSRange(excess, in: text))
+        }
+    }
+
+    /// 胶囊按文字所在的行片段绘制，跨行的哈希分成几段。
+    private func drawBadges() {
+        guard let layoutManager, let textContainer, !badgeRanges.isEmpty else { return }
+
+        AppPalette.nsColor("light_blue_badge_background_color").setFill()
+
+        for range in badgeRanges {
+            let glyphs = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+            layoutManager.enumerateEnclosingRects(
+                forGlyphRange: glyphs,
+                withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0),
+                in: textContainer
+            ) { rect, _ in
+                let frame = rect.offsetBy(dx: self.textContainerOrigin.x, dy: self.textContainerOrigin.y)
+                NSBezierPath(roundedRect: frame.insetBy(dx: -2, dy: 0), xRadius: 4, yRadius: 4).fill()
+            }
         }
     }
 }
@@ -258,7 +305,8 @@ struct CommitMessageEditor: NSViewRepresentable {
         scrollView.hasVerticalScroller = role == .body
         scrollView.autohidesScrollers = true
 
-        let textView = CommitMessageTextView()
+        // 警告底色与胶囊依赖 NSLayoutManager 的临时属性，明确使用 TextKit 1。
+        let textView = CommitMessageTextView(usingTextLayoutManager: false)
         textView.delegate = context.coordinator
         textView.isRichText = false
         textView.allowsUndo = true
@@ -292,6 +340,7 @@ struct CommitMessageEditor: NSViewRepresentable {
 
         scrollView.documentView = textView
         context.coordinator.textView = textView
+        context.coordinator.loadKnownCommits()
         return scrollView
     }
 
@@ -409,6 +458,19 @@ extension CommitMessageEditor {
 // MARK: - Completion
 
 extension CommitMessageEditor.Coordinator {
+    /// 读取最近提交的哈希，文字里引用它们的地方画成胶囊。
+    func loadKnownCommits() {
+        let load = parent.completions
+
+        Task { [weak self] in
+            let items = await load(.commit(query: "", range: NSRange(location: 0, length: 0)))
+
+            self?.textView?.knownCommits = items.compactMap {
+                if case .commit(let commit) = $0.content { commit.id } else { nil }
+            }
+        }
+    }
+
     /// 识别光标处的补全，读取候选后显示；不再成立时关闭弹窗。
     private func updateCompletion() {
         guard
