@@ -23,7 +23,7 @@ ditto "$binary_directory/SpookyKit_Spooky.bundle" "$app_directory/Contents/Resou
 ditto "$binary_directory/SpookyKit_SpookyKit.bundle" "$app_directory/Contents/Resources/SpookyKit_SpookyKit.bundle"
 
 # 系统权限弹窗从 App 自身的资源目录读取用途说明。
-for locale in en zh-Hans zh-Hant ja ko; do
+for locale in en zh-Hans zh-Hant ja ko de fr es; do
     mkdir -p "$app_directory/Contents/Resources/$locale.lproj"
     cp "SpookyKit/Sources/Spooky/Resources/$locale.lproj/InfoPlist.strings" \
         "$app_directory/Contents/Resources/$locale.lproj/InfoPlist.strings"

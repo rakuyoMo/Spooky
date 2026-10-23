@@ -83,8 +83,6 @@
 
 "loading.status" = "正在刷新状态…";
 
-"loading.check" = "正在检查仓库…";
-
 "branch.unborn" = "%@（尚无提交）";
 
 "branch.detached" = "%@（分离 HEAD）";
@@ -127,11 +125,7 @@
 
 "detail.empty.title" = "未选择文件";
 
-"detail.empty.message" = "选择一条状态记录以查看路径。";
 
-
-
-"detail.originalPath" = "原路径：%@";
 
 "error.command" = "Git 命令执行失败";
 

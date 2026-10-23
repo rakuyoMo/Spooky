@@ -83,8 +83,6 @@
 
 "loading.status" = "상태를 새로 고치는 중…";
 
-"loading.check" = "저장소를 확인하는 중…";
-
 "branch.unborn" = "%@ (커밋 없음)";
 
 "branch.detached" = "%@ (분리된 HEAD)";
@@ -127,11 +125,7 @@
 
 "detail.empty.title" = "선택한 파일 없음";
 
-"detail.empty.message" = "상태 항목을 선택하면 경로가 표시됩니다.";
 
-
-
-"detail.originalPath" = "이전 경로: %@";
 
 "error.command" = "Git 명령 실패";
 

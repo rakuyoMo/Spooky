@@ -4,8 +4,34 @@ import Testing
 @testable import Spooky
 @testable import SpookyKit
 
-/// 五种语言的资源完整性、占位参数和英文回退。
+/// 各支持语言的资源完整性、占位参数、英文回退与资源键的使用情况。
 struct LocalizationTests {
+    /// SpookyKit 包目录：本文件位于 `Tests/SpookyTests/` 下，向上三级。
+    private static let package = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+
+    /// 由枚举或固定列表拼出的资源键；界面新增动态拼接时在这里登记。
+    private static var dynamicKeys: [String] {
+        var keys: [String] = []
+
+        for kind in RemoteConnectionError.Kind.allCases {
+            keys += ["remoteError." + kind.rawValue, "remoteError." + kind.rawValue + ".help"]
+        }
+
+        keys += RemoteConnectionState.allCases.map { "connection." + $0.rawValue }
+        keys += FailureKind.allCases.map { "failure.kind." + $0.rawValue }
+        keys += ["background", "added", "deleted"].map { "themes." + $0 }
+        keys += ["merge", "squash", "rebase", "cherryPick", "revert"].map { "working.operation." + $0 }
+
+        for action in ["stage", "unstage", "discard"] {
+            keys += ["Chunk", "Line", "Lines"].map { "working." + action + $0 }
+        }
+
+        return keys
+    }
+
     /// 任一语言缺少键、空译文或格式参数变化都会失败。
     @Test("本地化键集合和格式参数一致", arguments: AppLocalization.languages)
     func completeResources(language: String) throws {
@@ -28,17 +54,18 @@ struct LocalizationTests {
         }
     }
 
-    /// 空状态、仓库标签和错误提示都必须有五种实际译文。
+    /// 空状态、仓库标签和错误提示在每种语言里都有各不相同的实际译文。
     @Test("主要界面文案有对应译文")
     func translatedSurfaces() throws {
         for key in ["repositories.empty.title", "workspace.title", "error.notRepository"] {
             let values = try AppLocalization.languages.map { try #require(strings($0)[key]) }
-            #expect(Set(values).count == 5)
+            #expect(Set(values).count == AppLocalization.languages.count)
         }
 
+        // 意大利文不在支持语言之列，应回退到英文
         #expect(Bundle.preferredLocalizations(
             from: AppLocalization.languages,
-            forPreferences: ["fr-FR"]
+            forPreferences: ["it-IT"]
         ).first == "en")
     }
 
@@ -55,14 +82,10 @@ struct LocalizationTests {
         #expect(failure.context.contains("spooky-test:/tmp/仓 库"))
     }
 
-    /// 界面新增资源键时，五种资源都漏写也必须被检测出来。
+    /// 界面新增资源键时，所有语言的资源都漏写也必须被检测出来。
     @Test("Swift 界面引用的资源键全部存在")
     func referencedKeysExist() throws {
-        let package = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let sources = package.appending(path: "Sources/Spooky")
+        let sources = Self.package.appending(path: "Sources/Spooky")
         let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "swift" }
         let pattern = try NSRegularExpression(
@@ -83,39 +106,90 @@ struct LocalizationTests {
         }
     }
 
-    /// 动态拼出的错误和连接状态资源键同样必须覆盖所有支持语言。
-    @Test("远端状态与修复方向的五语资源")
-    func remoteResources() throws {
+    /// 资源里不能留下界面用不到的键：源码里有同名字符串字面量，或属于登记的动态键。
+    @Test("资源键都被界面使用")
+    func resourceKeysAreUsed() throws {
+        let referenced = try sourceLiterals().union(Self.dynamicKeys)
+
+        // 对话框的说明文字由基础键拼接 ".help" 得到，基础键被使用即可
+        let unused = try strings("en").keys.filter { key in
+            let base = key.hasSuffix(".help") ? String(key.dropLast(".help".count)) : key
+            return !referenced.contains(key) && !referenced.contains(base)
+        }
+
+        #expect(unused.isEmpty, "资源键没有被界面使用：\(unused.sorted())；动态拼接的键需要登记在 dynamicKeys")
+    }
+
+    /// 动态拼出的错误、连接状态与操作资源键同样必须覆盖所有支持语言。
+    @Test("动态拼接的资源键覆盖全部支持语言")
+    func dynamicResources() throws {
         for language in AppLocalization.languages {
             let values = try strings(language)
 
-            for kind in RemoteConnectionError.Kind.allCases {
-                #expect(values["remoteError." + kind.rawValue] != nil)
-                #expect(values["remoteError." + kind.rawValue + ".help"] != nil)
-            }
-
-            for state in RemoteConnectionState.allCases {
-                #expect(values["connection." + state.rawValue] != nil)
-            }
-
-            for kind in FailureKind.allCases {
-                #expect(values["failure.kind." + kind.rawValue] != nil)
-            }
-
-            for key in ["background", "added", "deleted"] {
-                #expect(values["themes." + key] != nil)
-            }
-
-            for operation in ["merge", "squash", "rebase", "cherryPick", "revert"] {
-                #expect(values["working.operation." + operation] != nil)
-            }
-
-            for action in ["stage", "unstage", "discard"] {
-                for selection in ["Chunk", "Line", "Lines"] {
-                    #expect(values["working." + action + selection] != nil)
-                }
+            for key in Self.dynamicKeys {
+                #expect(values[key] != nil, "缺少动态资源键：\(language) / \(key)")
             }
         }
+    }
+
+    /// 权限弹窗读取各语言的 InfoPlist.strings：每种语言都要覆盖 Info.plist 里的全部用途说明，且不多出键。
+    @Test("权限说明覆盖全部支持语言", arguments: AppLocalization.languages)
+    func usageDescriptions(language: String) throws {
+        let usageKeys = try Set(infoPlist().keys.filter { $0.hasSuffix("UsageDescription") })
+        let url = Self.package.appending(path: "Sources/Spooky/Resources/\(language).lproj/InfoPlist.strings")
+        let data = try Data(contentsOf: url)
+        let values = try #require(
+            PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: String]
+        )
+
+        #expect(!usageKeys.isEmpty)
+        #expect(Set(values.keys) == usageKeys)
+        #expect(values.values.allSatisfy { !$0.isEmpty })
+    }
+
+    /// 支持语言在 Info.plist 与两个打包脚本里各写了一份，必须与 `AppLocalization.languages` 一致。
+    @Test("支持语言列表在 Info.plist 与打包脚本中一致")
+    func languageLists() throws {
+        let declared = try #require(infoPlist()["CFBundleLocalizations"] as? [String])
+        #expect(Set(declared) == Set(AppLocalization.languages))
+
+        let pattern = try NSRegularExpression(pattern: "^for locale in (.+); do$", options: .anchorsMatchLines)
+
+        for script in ["scripts/build-app.sh", "scripts/bundle.sh"] {
+            let url = Self.package.deletingLastPathComponent().appending(path: script)
+            let content = try String(contentsOf: url, encoding: .utf8)
+            let match = try #require(pattern.firstMatch(in: content, range: NSRange(content.startIndex..., in: content)))
+            let range = try #require(Range(match.range(at: 1), in: content))
+            let locales = content[range].split(separator: " ").map(String.init)
+
+            #expect(Set(locales) == Set(AppLocalization.languages), "语言列表不一致：\(script)")
+        }
+    }
+
+    /// 读取 App 的 Info.plist 源文件。
+    private func infoPlist() throws -> [String: Any] {
+        let data = try Data(contentsOf: Self.package.appending(path: "Sources/Spooky/Info.plist"))
+        return try #require(PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any])
+    }
+
+    /// App 源码中的全部字符串字面量，用来判断资源键是否被引用。
+    private func sourceLiterals() throws -> Set<String> {
+        let sources = Self.package.appending(path: "Sources/Spooky")
+        let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "swift" }
+        let pattern = try NSRegularExpression(pattern: #""((?:[^"\\\n]|\\.)*)""#)
+        var literals: Set<String> = []
+
+        for file in files {
+            let content = try String(contentsOf: file, encoding: .utf8)
+
+            for match in pattern.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
+                let range = try #require(Range(match.range(at: 1), in: content))
+                literals.insert(String(content[range]))
+            }
+        }
+
+        return literals
     }
 
     /// 读取已构建资源包中的字典，验证随产品交付的实际文件。

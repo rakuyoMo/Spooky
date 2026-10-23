@@ -83,8 +83,6 @@
 
 "loading.status" = "状態を更新しています…";
 
-"loading.check" = "リポジトリを確認しています…";
-
 "branch.unborn" = "%@（コミットなし）";
 
 "branch.detached" = "%@（分離した HEAD）";
@@ -127,11 +125,7 @@
 
 "detail.empty.title" = "ファイル未選択";
 
-"detail.empty.message" = "状態の一覧から項目を選ぶとパスが表示されます。";
 
-
-
-"detail.originalPath" = "変更前のパス：%@";
 
 "error.command" = "Git コマンドが失敗しました";
 

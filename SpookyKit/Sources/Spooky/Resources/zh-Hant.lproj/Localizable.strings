@@ -83,8 +83,6 @@
 
 "loading.status" = "正在重新整理狀態…";
 
-"loading.check" = "正在檢查儲存庫…";
-
 "branch.unborn" = "%@（尚無提交）";
 
 "branch.detached" = "%@（分離 HEAD）";
@@ -127,11 +125,7 @@
 
 "detail.empty.title" = "未選擇檔案";
 
-"detail.empty.message" = "選擇一筆狀態記錄以檢視路徑。";
 
-
-
-"detail.originalPath" = "原路徑：%@";
 
 "error.command" = "Git 命令執行失敗";
 

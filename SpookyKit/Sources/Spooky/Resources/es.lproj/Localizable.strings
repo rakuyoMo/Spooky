@@ -1,0 +1,442 @@
+"app.name" = "Spooky";
+
+"menu.file" = "Archivo";
+
+"menu.edit" = "Edición";
+
+"menu.view" = "Visualización";
+
+"menu.window" = "Ventana";
+
+"menu.newWindow" = "Nueva ventana";
+
+"menu.openRecent" = "Abrir recientes";
+
+"menu.closeWindow" = "Cerrar ventana";
+
+"menu.showRepositories" = "Mostrar repositorios";
+
+"menu.showWorkingCopy" = "Mostrar copia de trabajo";
+
+"menu.showHistory" = "Mostrar historial";
+
+"menu.fullscreen" = "Usar pantalla completa";
+
+"menu.minimize" = "Minimizar";
+
+"menu.zoom" = "Zoom";
+
+"menu.bringAll" = "Traer todo al frente";
+
+"menu.hide" = "Ocultar Spooky";
+
+"menu.hideOthers" = "Ocultar otras apps";
+
+"menu.showAll" = "Mostrar todo";
+
+"menu.quit" = "Salir de Spooky";
+
+"menu.cut" = "Cortar";
+
+"menu.copy" = "Copiar";
+
+"menu.paste" = "Pegar";
+
+"menu.selectAll" = "Seleccionar todo";
+
+"action.openLocal" = "Abrir repositorio local…";
+
+"action.open" = "Abrir";
+
+"action.openNewWindow" = "Abrir en una ventana nueva";
+
+"action.closeRepository" = "Cerrar repositorio";
+
+"action.refresh" = "Actualizar";
+
+"action.close" = "Cerrar";
+
+"action.chooseAnother" = "Seleccionar otra carpeta…";
+
+"repositories.title" = "Repositorios";
+
+"repositories.recent" = "Repositorios recientes";
+
+"repositories.empty.title" = "Abrir un repositorio de Git";
+
+"repositories.empty.message" = "Seleccionar un árbol de trabajo local o soltar aquí la carpeta de un repositorio.";
+
+"repositories.unavailable" = "No disponible — abrir para reintentar";
+
+"repositories.path" = "Ubicación";
+
+"repositories.panel.message" = "Seleccionar un árbol de trabajo de Git existente.";
+
+"workspace.group" = "Espacio de trabajo";
+
+"workspace.title" = "Copia de trabajo";
+
+"history.title" = "Historial";
+
+
+"loading.open" = "Abriendo el repositorio…";
+
+"loading.status" = "Actualizando el estado…";
+
+"branch.unborn" = "%@ (sin commits)";
+
+"branch.detached" = "%@ (HEAD desacoplado)";
+
+"branch.noHead" = "Sin rama HEAD";
+
+"branch.noTracking" = "Sin seguimiento";
+
+"branch.ahead" = "%ld por delante";
+
+"branch.behind" = "%ld por detrás";
+
+"workspace.changed" = "Archivos modificados: %ld";
+
+"status.column" = "Estado";
+
+"status.filename" = "Nombre de archivo";
+
+"status.modified" = "Modificado";
+
+"status.typeChanged" = "Tipo cambiado";
+
+"status.added" = "Añadido";
+
+"status.deleted" = "Eliminado";
+
+"status.renamed" = "Renombrado";
+
+"status.copied" = "Copiado";
+
+"status.conflicted" = "En conflicto";
+
+"status.untracked" = "Sin seguimiento";
+
+"status.ignored" = "Ignorado";
+
+"status.unchanged" = "Sin cambios";
+
+"status.description" = "Índice: %@; árbol de trabajo: %@";
+
+"detail.empty.title" = "Ningún archivo seleccionado";
+
+
+
+"error.command" = "El comando de Git ha fallado";
+
+"error.launch" = "No se ha podido iniciar Git";
+
+"error.notRepository" = "No es un repositorio de Git";
+
+"error.notWorkingTree" = "Se necesita un árbol de trabajo de Git";
+
+"error.path" = "Ruta del repositorio no disponible";
+
+"error.ownership" = "Git ha rechazado la propiedad del repositorio";
+
+"error.cancelled" = "Operación cancelada";
+
+"error.outputLimit" = "La salida de Git es demasiado grande";
+
+"error.process" = "Error de comunicación con el proceso de Git";
+
+"error.version" = "Se necesita Git 2.41.0 o posterior";
+
+"error.parse" = "No se ha podido leer la salida de Git";
+
+"error.openHelp" = "Seleccionar un árbol de trabajo de Git accesible. Spooky requiere /usr/bin/git 2.41.0 o posterior; si es necesario, actualizar Xcode o Command Line Tools. La salida original se muestra debajo.";
+
+"error.refreshHelp" = "Cuando falla una actualización, se conserva el resultado anterior, si lo hay. Revisar la salida original y, después, actualizar para volver a intentarlo.";
+
+"error.writeHelp" = "La operación no ha terminado. Revisar la salida original y, después, actualizar para ver el estado actual del repositorio.";
+
+"error.details" = "Salida original";
+
+"error.noOutput" = "El comando no ha generado ninguna salida.";
+
+"error.outputLimitHelp" = "El comando ha superado el límite de 256 MiB de la salida estándar o el de 1 MiB del error estándar. No se ha cargado el resultado que superaba el límite.";
+"action.addRemote" = "Añadir repositorio de servidor…";
+"action.openTerminal" = "Abrir en el terminal";
+"action.revealFinder" = "Mostrar en el Finder";
+"action.copyPath" = "Copiar ruta";
+"action.reconnect" = "Volver a conectar";
+"action.cancel" = "Cancelar";
+"action.continue" = "Continuar";
+"remote.form.help" = "Usar un alias de host de la configuración de SSH y una ruta absoluta en ese servidor.";
+"remote.host" = "Alias del host:";
+"remote.path" = "Ruta del repositorio:";
+"remote.checking" = "Comprobando la conexión…";
+"connection.connecting" = "Conectando";
+"connection.connected" = "Conectado";
+"connection.reconnecting" = "Conectando de nuevo";
+"connection.unavailable" = "No disponible";
+"connection.cached" = "Se muestra la última instantánea correcta. Las escrituras están desactivadas hasta que se recupere la conexión.";
+"connection.recovery" = "Se ha comprobado la operación interrumpida; no se ha reintentado. Rama: %@ · Cambios: %ld · Bloqueo del índice: %@ · Fusión: %@ · Rebase: %@";
+"state.yes" = "Sí";
+"state.no" = "No";
+"branch.detachedShort" = "HEAD desacoplado";
+"settings.title" = "Ajustes…";
+"settings.general" = "General";
+"settings.themes" = "Temas";
+"settings.terminal" = "App de terminal:";
+"callback.editor" = "Editar texto remoto";
+"callback.credentials" = "Solicitud de credenciales del servidor";
+"callback.saveKeychain" = "Guardar en el llavero de este Mac";
+"callback.value" = "Credencial";
+"error.indexLocked" = "El índice está bloqueado por otro proceso de Git. Esperar a que termine y volver a intentarlo.";
+"error.terminal" = "No se ha podido abrir el terminal";
+"error.terminalHelp" = "Comprobar el terminal seleccionado en Ajustes y su permiso de Automatización de macOS.";
+"error.exitCode" = "Estado de salida: %ld";
+"terminal.notInstalled" = "%@ no está instalado.";
+"themes.font" = "Tipo de letra: %@ · %.0f pt";
+"themes.followsSystem" = "El aspecto claro usa Default; el aspecto oscuro usa Default (Dark).";
+"themes.background" = "Fondo";
+"themes.added" = "Añadido";
+"themes.deleted" = "Eliminado";
+"themes.preview.context" = "  Texto sin cambios";
+"themes.preview.added" = "+ Texto añadido";
+"themes.preview.deleted" = "− Texto eliminado";
+"remoteError.invalidHost" = "Alias de host SSH no válido";
+"remoteError.invalidHost.help" = "Introducir un único alias de host de ~/.ssh/config, sin nombre de usuario ni puerto.";
+"remoteError.absolutePathRequired" = "Se necesita una ruta absoluta";
+"remoteError.absolutePathRequired.help" = "Introducir la ruta completa del repositorio en el servidor, empezando por /.";
+"remoteError.unknownHostKey" = "Huella digital del host desconocida";
+"remoteError.unknownHostKey.help" = "Verificar primero la huella digital del servidor en un terminal de confianza y, después, volver a conectar. Spooky no la aceptará automáticamente.";
+"remoteError.changedHostKey" = "La huella digital del host ha cambiado";
+"remoteError.changedHostKey.help" = "Confirmar el cambio de huella digital con el propietario del servidor en un terminal de confianza antes de volver a conectar.";
+"remoteError.authentication" = "Error de autenticación SSH";
+"remoteError.authentication.help" = "Comprobar la clave SSH, el llavero o el agente SSH de este Mac. La frase de contraseña de la clave privada nunca se envía al servidor.";
+"remoteError.unavailable" = "Conexión con el servidor no disponible";
+"remoteError.unavailable.help" = "Comprobar el alias del host y la conexión y volver a intentarlo. La última instantánea correcta sigue disponible.";
+"remoteError.gitUnavailable" = "Git no está disponible en el servidor";
+"remoteError.gitUnavailable.help" = "Instalar Git 2.41.0 o posterior en el servidor y hacer que esté disponible en el entorno SSH no interactivo.";
+"remoteError.gitVersion" = "La versión de Git del servidor no es compatible";
+"remoteError.gitVersion.help" = "Actualizar Git en el servidor a la versión 2.41.0 o posterior. Spooky usa la misma versión mínima en local y en remoto.";
+"remoteError.pathUnavailable" = "No se ha encontrado el directorio en el servidor";
+"remoteError.pathUnavailable.help" = "Comprobar que la ruta absoluta existe en el servidor seleccionado.";
+"remoteError.pathPermission" = "Acceso denegado al directorio del servidor";
+"remoteError.pathPermission.help" = "El usuario de SSH necesita permisos de lectura y búsqueda en este directorio.";
+"remoteError.notWorkingTree" = "La ruta del servidor no es un árbol de trabajo de Git";
+"remoteError.notWorkingTree.help" = "Seleccionar un árbol de trabajo de Git existente en el servidor. Revisar la salida original de Git por si hay restricciones de propiedad.";
+"remoteError.statusFormat" = "No se ha podido leer el estado del servidor";
+"remoteError.statusFormat.help" = "Revisar el error de Git status que aparece debajo. Git debe admitir porcelain v2 con salida separada por NUL.";
+"remoteError.deployment" = "No se ha podido preparar la sesión en el servidor";
+"remoteError.deployment.help" = "Comprobar el reenvío de sockets Unix de SSH, /usr/bin/perl y el acceso de escritura a ~/.spooky/bin y al directorio temporal de la sesión.";
+"remoteError.protocolFailure" = "El resultado de la operación en el servidor está incompleto";
+"remoteError.protocolFailure.help" = "Volver a conectar e inspeccionar el repositorio antes de repetir cualquier operación de escritura.";
+"remoteError.cancellationUnconfirmed" = "Cancelación remota no confirmada";
+"remoteError.cancellationUnconfirmed.help" = "Se ha cerrado el canal local, pero no se ha podido confirmar que el proceso del servidor se haya detenido. Volver a conectar e inspeccionar el repositorio; la escritura no se repetirá automáticamente.";
+"remoteError.interruptedWrite" = "La escritura interrumpida requiere verificación";
+"remoteError.interruptedWrite.help" = "Volver a conectar para comprobar la rama, el árbol de trabajo, el bloqueo del índice y el estado de fusión o rebase antes de volver a escribir.";
+
+"working.stage" = "Añadir al stage";
+"working.unstage" = "Quitar del stage";
+"working.stageAll" = "Añadir todo al stage";
+"working.unstageAll" = "Quitar todo del stage";
+"working.commit" = "Hacer commit";
+"working.amend" = "Enmendar";
+"working.amend.confirm" = "Esta acción reemplaza el commit más reciente. ¿Continuar?";
+"working.subject" = "Asunto del commit";
+"working.body" = "Descripción detallada";
+"working.identityLoading" = "Cargando el committer…";
+"working.staging" = "Estado en el stage: %@";
+"working.writing" = "Actualizando la copia de trabajo…";
+"working.list" = "Ver como lista";
+"working.tree" = "Ver como árbol";
+"working.viewMode" = "Visualización de la copia de trabajo";
+"working.staged" = "En el stage";
+"working.unstaged" = "Fuera del stage";
+"working.diffSide" = "Cambios que mostrar";
+"working.multiple" = "Varios archivos seleccionados";
+"working.largeDiff" = "Este diff ocupa %d kB. ¿Cargar su contenido?";
+"working.showDiff" = "Mostrar diff";
+"working.loadingDiff" = "Cargando diff…";
+"working.noDiff" = "No hay cambios de texto";
+"working.binary" = "El archivo binario tiene diferencias. La previsualización de texto no está disponible.";
+"working.diffSummary" = "%d fragmentos, %d inserciones, %d eliminaciones";
+"working.noNewline" = "Sin salto de línea al final del archivo";
+"working.selectLine" = "Seleccionar el cambio de la línea %d";
+"working.selected" = "Seleccionado";
+"working.stageChunk" = "Añadir fragmento al stage";
+"working.stageLine" = "Añadir línea al stage";
+"working.stageLines" = "Añadir líneas al stage";
+"working.unstageChunk" = "Quitar fragmento del stage";
+"working.unstageLine" = "Quitar línea del stage";
+"working.unstageLines" = "Quitar líneas del stage";
+"working.discardChunk" = "Descartar fragmento";
+"working.discardLine" = "Descartar línea";
+"working.discardLines" = "Descartar líneas";
+"working.discard" = "Descartar cambios";
+"working.discardAll" = "Descartar todos los cambios…";
+"working.discard.message" = "Descartar permanentemente los cambios de %d archivos en %@, incluidos los cambios en el stage y los archivos sin seguimiento. Esta acción no se puede deshacer.";
+"working.discard.remote" = "Eliminar o sobrescribir permanentemente %d archivos del servidor en %@. También se descartan los cambios en el stage. Esta acción no se puede deshacer.";
+"working.discard.lines" = "Descartar permanentemente las líneas seleccionadas en %@. Esta acción no se puede deshacer.";
+"working.discard.remoteLines" = "Sobrescribir permanentemente el contenido seleccionado del servidor en %@. Esta acción no se puede deshacer.";
+"working.ours" = "Resolver con ours";
+"working.theirs" = "Resolver con theirs";
+"working.resolved" = "Marcar como resuelto";
+"working.copyRelative" = "Copiar ruta relativa del archivo";
+"working.operation.merge" = "Fusión en curso";
+"working.operation.squash" = "Fusión con squash pendiente de commit";
+"working.operation.rebase" = "Rebase en curso";
+"working.operation.cherryPick" = "Cherry-pick en curso";
+"working.operation.revert" = "Reversión en curso";
+"working.conflicts" = "%d conflictos sin resolver";
+"working.onlyConflicts" = "Mostrar solo conflictos";
+"working.rebaseSides" = "Durante el rebase, ours es el upstream; theirs es el commit que se está reaplicando.";
+"working.abort" = "Abortar";
+"working.continue" = "Continuar";
+"working.skip" = "Omitir";
+"working.diffThreshold" = "Mostrar aviso para diffs mayores de (kB):";
+"working.error.stale" = "El archivo ha cambiado. Actualizar el diff y volver a seleccionar los cambios.";
+"working.error.selection" = "No se ha seleccionado ningún cambio de texto aplicable.";
+"working.error.file" = "Esta operación requiere un archivo regular.";
+"working.error.path" = "Esta ruta no se puede representar con comandos por lotes de SFTP.";
+"working.emptyMerge" = "Crear commit de fusión vacío";
+"working.emptyMerge.message" = "Esta fusión no tiene cambios en el stage. Crear el commit de fusión o abortar la fusión.";
+
+/* 历史、分支、同步与活动。 */
+"history.all" = "Todas las ramas, remotos y etiquetas";
+"history.showGraph" = "Mostrar gráfico";
+"history.medium" = "Vista de commits de tamaño mediano";
+"history.small" = "Vista de commits de tamaño pequeño";
+"history.viewOptions" = "Opciones de visualización del historial";
+"history.empty" = "No hay commits";
+"history.loading" = "Cargando commits…";
+"history.copyHash" = "Copiar hashes de los commits";
+"history.firstParent" = "Diff con el primer padre";
+"history.changes" = "%d archivos modificados";
+"history.noSelection" = "Ningún commit seleccionado";
+"history.multiple" = "Varios commits seleccionados";
+"history.expandAll" = "Expandir todo";
+"history.collapseAll" = "Contraer todo";
+"history.back" = "Volver al historial";
+"history.metadata" = "Mostrar metadatos del commit";
+"history.author" = "Autor";
+"history.authorDate" = "Fecha de autoría";
+"history.committer" = "Committer";
+"history.commitDate" = "Fecha del committer";
+"history.hash" = "Hash del commit";
+"history.treeHash" = "Hash del árbol";
+"history.parents" = "Hashes de los padres";
+"history.showHead" = "Mostrar rama HEAD";
+"history.diffs" = "Diffs del conjunto de cambios";
+"history.autoExpand.never" = "Nunca expandir automáticamente";
+"history.autoExpand.always" = "Expandir siempre automáticamente";
+"history.autoExpand.items" = "%d ítems";
+"history.pageSize" = "Número de commits en el historial:";
+"history.commitCount" = "%d commits";
+"branch.group" = "Ramas";
+"remote.group" = "Remotos";
+"branch.empty" = "No hay ramas";
+"branch.default" = "Rama predeterminada";
+"branch.create" = "Crear rama";
+"branch.create.help" = "Crea una rama local a partir de una revisión.";
+"branch.createFromCommit" = "Crear rama a partir del commit…";
+"branch.track" = "Seguir rama remota";
+"branch.track.help" = "Crea una rama local que sigue la rama remota seleccionada.";
+"branch.checkout" = "Hacer checkout de la rama";
+"branch.checkout.help" = "Cambia la copia de trabajo a una rama local.";
+"branch.delete" = "Eliminar rama";
+"branch.delete.confirm" = "¿Eliminar la rama “%@” de %@?";
+"branch.copyName" = "Copiar nombre de la rama";
+"branch.start" = "Punto de partida:";
+"branch.name" = "Nombre de la rama:";
+"branch.local" = "Rama local:";
+"branch.target" = "Rama:";
+"branch.trackStart" = "Seguir la rama de partida";
+"branch.trackStart.help" = "Usa la rama de partida como upstream.";
+"branch.checkoutCreated" = "Hacer checkout de la rama";
+"branch.checkoutCreated.help" = "Cambia la copia de trabajo tras crear la rama.";
+"branch.cleanNames" = "Convertir automáticamente los nombres de referencia a un formato válido al escribir";
+"branch.exists" = "Ya existe una rama con este nombre.";
+"branch.error.unmerged" = "La rama no se ha fusionado por completo.";
+"sync.fetch" = "Hacer fetch";
+"sync.fetch.help" = "Descarga las actualizaciones del remoto sin cambiar la copia de trabajo.";
+"sync.fetchAll" = "Hacer fetch de todos los remotos";
+"sync.pull" = "Hacer pull";
+"sync.pull.help" = "Hace fetch de la rama seleccionada y, después, fusiona o hace rebase de forma explícita.";
+"sync.push" = "Hacer push";
+"sync.push.help" = "Hace push de una rama local al destino seleccionado.";
+"sync.publish" = "Publicar rama";
+"sync.publish.help" = "Crea una rama en el remoto seleccionado.";
+"sync.merge" = "Fusionar";
+"sync.merge.help" = "Fusiona la rama seleccionada en la rama HEAD actual.";
+"sync.remote" = "Remoto:";
+"sync.allRemotes" = "Hacer fetch de todos los remotos";
+"sync.prune" = "Podar ramas remotas obsoletas";
+"sync.prune.help" = "Elimina las referencias de seguimiento locales que se han borrado en el remoto.";
+"sync.allTags" = "Hacer fetch de todas las etiquetas";
+"sync.allTags.help" = "Incluye todas las etiquetas de los remotos seleccionados.";
+"sync.rebase" = "Usar rebase en lugar de fusión";
+"sync.rebase.help" = "Reaplica los commits locales sobre la rama descargada.";
+"sync.setUpstream" = "Seguir esta rama remota";
+"sync.setUpstream.help" = "Usa este destino para hacer pull y push en adelante.";
+"sync.skipHooks" = "Omitir hooks";
+"sync.skipHooks.help" = "Omite los hooks asociados a esta operación.";
+"sync.noRemotes" = "No hay remotos configurados";
+"sync.error.dirty" = "Hacer commit de los cambios locales o descartarlos antes de continuar.";
+"sync.error.branch" = "Esta operación requiere una rama local con commits.";
+"sync.error.remote" = "No se ha encontrado el repositorio remoto.";
+"sync.error.rejected" = "El remoto ha rechazado el push. Hacer fetch e integrar sus actualizaciones antes de volver a intentarlo.";
+"sync.error.authentication" = "Error de autenticación en el remoto. Comprobar las credenciales configuradas.";
+"sync.error.timeout" = "Se ha agotado el tiempo de espera de la conexión remota.";
+"sync.error.connection" = "La conexión remota se ha interrumpido o no está disponible.";
+"sync.error.upstream" = "No hay ningún upstream configurado. Publicar esta rama o seleccionar una rama remota.";
+"merge.squash" = "Hacer squash de los commits";
+"merge.squash.help" = "Añade al stage los cambios combinados para un único commit.";
+"merge.alwaysCommit" = "Generar siempre un commit de fusión";
+"merge.alwaysCommit.help" = "Crea un commit de fusión aunque sea posible hacer fast-forward.";
+"merge.autoCommit" = "Hacer commit directamente de los cambios fusionados";
+"merge.autoCommit.help" = "Crea el commit tras una fusión correcta.";
+"merge.verify" = "Verificar firmas";
+"merge.verify.help" = "Exige una firma de confianza en el commit de destino.";
+"merge.checking" = "Comprobando el estado de la fusión…";
+"merge.clean" = "Sin conflictos al fusionar";
+"merge.unchanged" = "No hay cambios que fusionar";
+"merge.conflicts" = "Se han detectado conflictos de fusión en %d archivos";
+"merge.unavailable" = "No se ha podido previsualizar esta fusión";
+"activity.title" = "Actividad";
+"activity.clear" = "Borrar completadas";
+"activity.search" = "Buscar actividades";
+"activity.empty" = "Seleccionar una actividad para ver su registro.";
+"activity.running" = "En ejecución";
+"activity.finished" = "Terminada";
+"activity.cancelled" = "Cancelada";
+"activity.failed" = "Fallida";
+"dialog.options" = "Opciones";
+"menu.repository" = "Repositorio";
+"callback.privateKey" = "Desbloquear clave privada SSH";
+"callback.privateKey.help" = "La clave desbloqueada se añadirá al agente SSH.";
+"history.unpushed" = "Pendiente de push";
+"history.unpulled" = "Pendiente de pull";
+"branch.deleteMultiple" = "Eliminar ramas";
+
+/* 错误类别、断线核对、空状态与加载上限。 */
+"failure.category" = "Categoría: %@";
+"failure.location" = "Repositorio: %@";
+"failure.kind.connection" = "Conexión con el servidor";
+"failure.kind.git" = "Comando de Git fallido";
+"failure.kind.output" = "Salida de Git ilegible";
+"failure.kind.cancelled" = "Cancelación";
+"failure.kind.version" = "Versión de Git no compatible";
+"failure.kind.repository" = "Estado del repositorio";
+"failure.kind.environment" = "Proceso o sistema";
+"recovery.title" = "Se ha comprobado la operación interrumpida";
+"recovery.changed" = "“%@” se ha interrumpido por la desconexión y no se ha reintentado. HEAD ha pasado de %@ a %@, así que es posible que la operación se haya completado. Comprobar el resultado antes de volver a intentarlo.";
+"recovery.unchanged" = "“%@” se ha interrumpido por la desconexión y no se ha reintentado. HEAD sigue en %@. Comprobar la copia de trabajo antes de volver a intentarlo.";
+"recovery.notStarted" = "“%@” no se ha iniciado porque la conexión con el servidor no estaba disponible. No se ha cambiado nada en el servidor.";
+"recovery.unborn" = "ningún commit";
+"dialog.blocked" = "Hay otra operación en curso en este repositorio o el servidor está desconectado. Se conserva la configuración indicada; volver a intentarlo cuando el repositorio esté disponible.";
+"working.clean" = "No hay cambios locales";
+"working.refreshFailed" = "Error al actualizar. Se muestra el último resultado correcto.";
+"history.limit" = "Se muestran los primeros %ld commits. Seleccionar una rama para acotar el historial.";
+"history.loadingChanges" = "Cargando archivos modificados…";
+"repositories.checking" = "Comprobando…";
+"repositories.unavailableShort" = "No disponible";
+"activity.truncated" = "Se ha omitido la salida anterior.";

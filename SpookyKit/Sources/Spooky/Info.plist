@@ -27,6 +27,9 @@
         <string>zh-Hant</string>
         <string>ja</string>
         <string>ko</string>
+        <string>de</string>
+        <string>fr</string>
+        <string>es</string>
     </array>
     <key>CFBundleAllowMixedLocalizations</key>
     <true/>
