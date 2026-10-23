@@ -359,7 +359,14 @@ struct CommitFileDiffView: View {
     private func fileDiff(_ file: DiffFile, style: TextStyle) -> some View {
         DiffFileHeader(file: file, style: style)
 
-        if file.isBinary { Text(AppLocalization.text("working.binary")).padding(20) }
+        if ImageDiffView.isImage(file, path: path) {
+            // 图片换成两侧对照，两侧都取自对象库
+            ImageDiffView(placement: .top, id: (history.selectedCommit?.id ?? "") + "\u{0}" + path) {
+                try await history.imageContents(path: path, file: file)
+            }
+        } else if file.isBinary {
+            Text(AppLocalization.text("working.binary")).padding(20)
+        }
 
         ForEach(file.hunks) { hunk in
             DiffHunkView(

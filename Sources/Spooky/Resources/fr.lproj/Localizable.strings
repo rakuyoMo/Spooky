@@ -461,3 +461,14 @@
 "text.showInvisibles" = "Afficher les caractères invisibles";
 "text.tabWidth" = "Largeur de tabulation :";
 "text.spaces" = "espaces";
+"diff.twoUp" = "Côte à côte";
+"diff.oneUp" = "Une à la fois";
+"diff.old" = "Ancienne";
+"diff.new" = "Nouvelle";
+"diff.oldLabel" = "ANCIENNE";
+"diff.newLabel" = "NOUVELLE";
+"diff.loadingImage" = "Chargement des données d’image…";
+"diff.imageFailed" = "Échec du chargement des données d’image";
+"diff.imageSize" = "%ld × %ld pixels, %@";
+"diff.imageMode" = "Comparaison d’images";
+"diff.imageSide" = "Version affichée";

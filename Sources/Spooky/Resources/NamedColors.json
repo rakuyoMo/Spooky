@@ -328,5 +328,25 @@
       "hex": "#DDDDDD",
       "alpha": 1.0
     }
+  },
+  "repository_diff_image_checkerboard_background_color": {
+    "light": {
+      "hex": "#FFFFFF",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#FFFFFF",
+      "alpha": 1.0
+    }
+  },
+  "repository_diff_image_checkerboard_square_color": {
+    "light": {
+      "hex": "#CCCCCC",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#CCCCCC",
+      "alpha": 1.0
+    }
   }
 }

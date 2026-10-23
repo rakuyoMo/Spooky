@@ -461,3 +461,14 @@
 "text.showInvisibles" = "Show invisible characters";
 "text.tabWidth" = "Tab width:";
 "text.spaces" = "spaces";
+"diff.twoUp" = "Two-Up";
+"diff.oneUp" = "One-Up";
+"diff.old" = "Old";
+"diff.new" = "New";
+"diff.oldLabel" = "OLD";
+"diff.newLabel" = "NEW";
+"diff.loadingImage" = "Loading Image Data…";
+"diff.imageFailed" = "Loading Image Data Failed";
+"diff.imageSize" = "%ld × %ld pixels, %@";
+"diff.imageMode" = "Image Comparison";
+"diff.imageSide" = "Displayed Version";

@@ -78,7 +78,12 @@ struct WorkingCopyDetailView: View {
             FailureDetailsView(failure: failure) { session.loadDiff() }
                 .padding(20)
         } else if let snapshot = session.diffSnapshot {
-            if let diff = snapshot.diff {
+            if let file = snapshot.diff?.files.first, ImageDiffView.isImage(file, path: entry.path) {
+                // 图片换成两侧对照，内容随快照重新读取
+                ImageDiffView(placement: .bottom, id: snapshot.fingerprint.base64EncodedString()) {
+                    try await session.imageContents(of: snapshot, file: file)
+                }
+            } else if let diff = snapshot.diff {
                 DiffContentView(session: session, snapshot: snapshot, diff: diff)
                     .id(snapshot.fingerprint)
             } else {

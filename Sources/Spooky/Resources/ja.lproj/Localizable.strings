@@ -461,3 +461,14 @@
 "text.showInvisibles" = "不可視文字を表示";
 "text.tabWidth" = "タブ幅:";
 "text.spaces" = "スペース";
+"diff.twoUp" = "並べて表示";
+"diff.oneUp" = "1 枚ずつ表示";
+"diff.old" = "旧";
+"diff.new" = "新";
+"diff.oldLabel" = "旧";
+"diff.newLabel" = "新";
+"diff.loadingImage" = "画像データを読み込み中…";
+"diff.imageFailed" = "画像データを読み込めませんでした";
+"diff.imageSize" = "%ld × %ld ピクセル、%@";
+"diff.imageMode" = "画像の比較方法";
+"diff.imageSide" = "表示するバージョン";

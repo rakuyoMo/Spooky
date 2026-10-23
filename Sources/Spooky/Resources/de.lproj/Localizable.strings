@@ -461,3 +461,14 @@
 "text.showInvisibles" = "Unsichtbare Zeichen anzeigen";
 "text.tabWidth" = "Tabulatorbreite:";
 "text.spaces" = "Leerzeichen";
+"diff.twoUp" = "Nebeneinander";
+"diff.oneUp" = "Einzeln";
+"diff.old" = "Alt";
+"diff.new" = "Neu";
+"diff.oldLabel" = "ALT";
+"diff.newLabel" = "NEU";
+"diff.loadingImage" = "Bilddaten werden geladen …";
+"diff.imageFailed" = "Bilddaten konnten nicht geladen werden";
+"diff.imageSize" = "%ld × %ld Pixel, %@";
+"diff.imageMode" = "Bildvergleich";
+"diff.imageSide" = "Angezeigte Version";

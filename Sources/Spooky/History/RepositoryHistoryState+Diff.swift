@@ -41,4 +41,13 @@ extension RepositoryHistoryState {
             DiffSyntax.make(from: full, oldPath: oldPath, newPath: file.path)
         }.value
     }
+
+    /// 提交里一个图片文件两侧的内容，都取自对象库。
+    func imageContents(path: String, file: DiffFile) async throws -> (old: Data?, new: Data?) {
+        guard let runner else {
+            throw CancellationError()
+        }
+
+        return try await DiffImageSource(runner: runner).contents(of: file, path: path, newFromWorkingTree: false)
+    }
 }

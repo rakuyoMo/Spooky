@@ -461,3 +461,14 @@
 "text.showInvisibles" = "显示不可见字符";
 "text.tabWidth" = "Tab 宽度：";
 "text.spaces" = "个空格";
+"diff.twoUp" = "并排";
+"diff.oneUp" = "单张";
+"diff.old" = "旧版";
+"diff.new" = "新版";
+"diff.oldLabel" = "旧版";
+"diff.newLabel" = "新版";
+"diff.loadingImage" = "正在读取图片数据…";
+"diff.imageFailed" = "读取图片数据失败";
+"diff.imageSize" = "%ld × %ld 像素，%@";
+"diff.imageMode" = "图片对照方式";
+"diff.imageSide" = "显示的版本";

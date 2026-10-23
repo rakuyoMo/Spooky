@@ -45,4 +45,17 @@ extension RepositorySession {
             DiffSyntax.make(from: full, oldPath: oldPath, newPath: entry.path)
         }.value
     }
+
+    /// 图片 Diff 两侧的内容：工作区相对暂存区时新的一侧读工作区所在机器上的文件，其余取对象库。
+    func imageContents(of snapshot: DiffSnapshot, file: DiffFile) async throws -> (old: Data?, new: Data?) {
+        guard let runner else {
+            throw CancellationError()
+        }
+
+        return try await DiffImageSource(runner: runner).contents(
+            of: file,
+            path: snapshot.entry.path,
+            newFromWorkingTree: snapshot.side == .unstaged
+        )
+    }
 }

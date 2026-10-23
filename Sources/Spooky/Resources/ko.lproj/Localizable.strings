@@ -461,3 +461,14 @@
 "text.showInvisibles" = "보이지 않는 문자 표시";
 "text.tabWidth" = "탭 너비:";
 "text.spaces" = "칸";
+"diff.twoUp" = "나란히 보기";
+"diff.oneUp" = "한 장씩 보기";
+"diff.old" = "이전";
+"diff.new" = "새로운";
+"diff.oldLabel" = "이전";
+"diff.newLabel" = "새로운";
+"diff.loadingImage" = "이미지 데이터를 불러오는 중…";
+"diff.imageFailed" = "이미지 데이터를 불러오지 못했습니다";
+"diff.imageSize" = "%ld × %ld 픽셀, %@";
+"diff.imageMode" = "이미지 비교 방식";
+"diff.imageSide" = "표시할 버전";
