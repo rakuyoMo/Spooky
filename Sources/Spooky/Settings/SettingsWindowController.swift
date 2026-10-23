@@ -68,6 +68,10 @@ private struct GeneralSettingsView: View {
     @AppStorage("cleanRefNames")
     private var cleanRefNames = true
 
+    /// 冲突向导覆盖冲突文件之前是否先保留备份。
+    @AppStorage(RepositorySession.keepsConflictBackupsKey)
+    private var keepsConflictBackups = false
+
     /// General 表单的控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
@@ -97,6 +101,12 @@ private struct GeneralSettingsView: View {
             GridRow {
                 Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
                 Toggle(AppLocalization.text("branch.cleanNames"), isOn: $cleanRefNames)
+                    .frame(width: 278, alignment: .leading)
+            }
+
+            GridRow {
+                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                Toggle(AppLocalization.text("conflict.keepBackups"), isOn: $keepsConflictBackups)
                     .frame(width: 278, alignment: .leading)
             }
         }

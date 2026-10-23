@@ -75,21 +75,26 @@ extension WorkingCopyListView {
     private var branchSummary: some View {
         VStack(alignment: .leading, spacing: 4) {
             if let branch = session.status?.branch {
-                HStack(spacing: 4) {
-                    Text(branchTitle(branch))
-                        .foregroundStyle(.secondary)
+                // 进行中的操作用一行文字说明两侧，代替分支与跟踪分支
+                if let title = session.operationHeaderTitle {
+                    operationTitle(title)
+                } else {
+                    HStack(spacing: 4) {
+                        Text(branchTitle(branch))
+                            .foregroundStyle(.secondary)
 
-                    if branch.head != nil {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 10))
-                            .accessibilityHidden(true)
-                        Text(branch.upstream ?? AppLocalization.text("branch.noTracking"))
-                            .foregroundStyle(.tertiary)
+                        if branch.head != nil {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10))
+                                .accessibilityHidden(true)
+                            Text(branch.upstream ?? AppLocalization.text("branch.noTracking"))
+                                .foregroundStyle(.tertiary)
+                        }
                     }
+                    .font(.system(size: 13))
+                    .lineLimit(1)
+                    .help(branchTitle(branch))
                 }
-                .font(.system(size: 13))
-                .lineLimit(1)
-                .help(branchTitle(branch))
 
                 HStack(spacing: 8) {
                     Text(AppLocalization.text("branch.ahead", branch.ahead))
@@ -128,6 +133,15 @@ extension WorkingCopyListView {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 12)
         .frame(height: 28)
+    }
+
+    /// 进行中操作的一行说明，完整文字放在提示中。
+    private func operationTitle(_ title: String) -> some View {
+        Text(title)
+            .foregroundStyle(.secondary)
+            .font(.system(size: 13))
+            .lineLimit(1)
+            .help(title)
     }
 
     /// 分离 HEAD 使用已有哈希的短显示，未出生分支保留其名称。

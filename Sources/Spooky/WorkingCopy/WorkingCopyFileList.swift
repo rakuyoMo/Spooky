@@ -303,11 +303,8 @@ extension WorkingCopyFileList {
                 menu: menu
             )
 
-            if menuEntries.contains(where: { $0.kind == .conflicted }) {
-                add("working.ours", action: #selector(ours), enabled: session.canResolve(menuEntries), menu: menu)
-                add("working.theirs", action: #selector(theirs), enabled: session.canResolve(menuEntries), menu: menu)
-                add("working.resolved", action: #selector(stageMenu), enabled: session.canResolve(menuEntries), menu: menu)
-            }
+            menu.addItem(.separator())
+            ConflictMenu.add(to: menu, entries: menuEntries, session: session)
 
             menu.addItem(.separator())
             add("working.discard", action: #selector(discardMenu), enabled: session.canDiscard(menuEntries), menu: menu)
@@ -349,14 +346,6 @@ extension WorkingCopyFileList {
         /// 丢弃必须经过会话的确认入口。
         @objc
         private func discardMenu() { session.discard(menuEntries) }
-
-        /// 采用索引中的 ours 一侧。
-        @objc
-        private func ours() { session.resolve(menuEntries, theirs: false) }
-
-        /// 采用索引中的 theirs 一侧。
-        @objc
-        private func theirs() { session.resolve(menuEntries, theirs: true) }
 
         /// 复制远端路径时保留主机前缀。
         @objc
