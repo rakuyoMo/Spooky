@@ -2,6 +2,8 @@ import AppKit
 import SpookyKit
 import SwiftUI
 
+// MARK: - SpookyApplicationController
+
 /// 管理窗口身份、打开请求和应用级菜单；Git 参数只在核心库中构造。
 @MainActor
 final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenuDelegate {
@@ -94,115 +96,6 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         controller.window?.makeKeyAndOrderFront(nil)
     }
 
-    /// 使用系统目录选择 sheet；取消不改变当前仓库。
-    func chooseRepository(in source: RepositoryWindowController) {
-        guard let window = source.window, window.attachedSheet == nil else {
-            return
-        }
-
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.canCreateDirectories = false
-        panel.prompt = AppLocalization.text("action.open")
-        panel.message = AppLocalization.text("repositories.panel.message")
-        panel.title = AppLocalization.text("action.openLocal")
-        source.showWindow(nil)
-
-        panel.beginSheetModal(for: window) { [weak self, weak source] response in
-            guard response == .OK, let path = panel.url?.path, let source else {
-                return
-            }
-
-            self?.openRepository(at: .local(path: path), from: source, inNewWindow: false)
-        }
-    }
-
-    /// 验证后按规范根路径去重；显式新窗口打开跳过去重。
-    func openRepository(
-        at location: RepositoryLocation,
-        from source: RepositoryWindowController?,
-        inNewWindow: Bool
-    ) {
-        if let source {
-            cancelOpening(in: source)
-        }
-
-        let request = UUID()
-        source?.openingRequest = request
-        source?.session.isOpening = true
-
-        openingTasks[request] = Task { [weak self, weak source] in
-            guard let self else {
-                return
-            }
-
-            defer {
-                self.openingTasks[request] = nil
-
-                if source?.openingRequest == request {
-                    source?.openingRequest = nil
-                    source?.session.isOpening = false
-                }
-            }
-
-            do {
-                let runner = GitRunner(location: location)
-                let repository: RepositoryLocation
-
-                if let remote = runner.remote {
-                    await remote.setCallbackHandler { request in
-                        await RemoteCallbackPresenter.shared.respond(to: request)
-                    }
-                    repository = try await remote.open().location
-                } else {
-                    repository = try await runner.openLocalRepository().location
-                }
-                try Task.checkCancellation()
-
-                displayRepository(repository, from: source, inNewWindow: inNewWindow)
-            } catch {
-                guard !Task.isCancelled else {
-                    return
-                }
-
-                recent.markUnavailable(location)
-                let destination = source ?? makeWindow()
-                destination.showWindow(nil)
-                destination.showFailure(AppFailure(error: error, opening: true, location: location))
-            }
-        }
-    }
-
-    /// 已验证的本机和远端仓库共用窗口去重规则。
-    func displayRepository(
-        _ repository: RepositoryLocation,
-        from source: RepositoryWindowController?,
-        inNewWindow: Bool
-    ) {
-        let destination: RepositoryWindowController =
-            if
-                !inNewWindow,
-                let existing = windows.first(where: {
-                    !$0.showsManager && $0.session.repository == repository
-                })
-            {
-                existing
-            } else if !inNewWindow, let source, windows.contains(where: { $0 === source }) {
-                source
-            } else {
-                makeWindow()
-            }
-
-        recent.remember(repository)
-        let previous = destination.session.repository
-        destination.display(repository)
-
-        if let previous, previous != repository { releaseConnection(previous) }
-        NSApp.activate(ignoringOtherApps: true)
-    }
-
     /// 添加服务器仓库是管理页与 File 菜单共用的 sheet。
     @objc
     func addRemoteRepository() {
@@ -269,13 +162,154 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 应用重新激活立即刷新显示仓库的主窗口。
     func applicationDidBecomeActive(_: Notification) {
         for controller in windows {
-            controller.session.setActive(controller.window?.isKeyWindow == true && !controller.showsManager)
+            controller.session.setActive((controller.window?.isKeyWindow ?? false) && !controller.showsManager)
         }
     }
 
     /// 应用退到后台统一降低远端轮询频率。
     func applicationDidResignActive(_: Notification) {
         for controller in windows { controller.session.setActive(false) }
+    }
+
+    /// 删除关闭窗口的强引用，不影响其它窗口。
+    func removeWindow(_ controller: RepositoryWindowController) {
+        windows.removeAll { $0 === controller }
+    }
+
+    /// 一个窗口完成写入后，显示同一仓库的其它窗口完整刷新，避免各窗口状态不一致。
+    func repositoryChanged(_ location: RepositoryLocation, by source: RepositoryWindowController) {
+        for controller in windows where controller !== source && controller.session.repository == location {
+            controller.session.refresh(full: true)
+        }
+    }
+
+    /// 最后一个持有仓库的窗口关闭后，回收专属主连接和会话临时目录。
+    func releaseConnection(_ location: RepositoryLocation) {
+        guard
+            location.host != nil,
+            !windows.contains(where: { $0.session.repository == location }),
+            let remote = GitRunner(location: location).remote
+        else { return }
+
+        Task { await remote.close() }
+    }
+
+    /// 最近菜单每次展开时反映当前记录，失效记录仍可选择重试。
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
+
+        for path in recent.locations {
+            let item = NSMenuItem(title: path.displayPath, action: #selector(openRecent(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = path
+            item.toolTip = recent.unavailable.contains(path)
+                ? AppLocalization.text("repositories.unavailable")
+                : path.displayPath
+            menu.addItem(item)
+        }
+    }
+}
+
+// MARK: - Repository Opening
+
+extension SpookyApplicationController {
+    /// 使用系统目录选择 sheet；取消不改变当前仓库。
+    func chooseRepository(in source: RepositoryWindowController) {
+        guard let window = source.window, window.attachedSheet == nil else {
+            return
+        }
+
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = false
+        panel.prompt = AppLocalization.text("action.open")
+        panel.message = AppLocalization.text("repositories.panel.message")
+        panel.title = AppLocalization.text("action.openLocal")
+        source.showWindow(nil)
+
+        panel.beginSheetModal(for: window) { [weak self, weak source] response in
+            guard response == .OK, let path = panel.url?.path, let source else {
+                return
+            }
+
+            self?.openRepository(at: .local(path: path), from: source, inNewWindow: false)
+        }
+    }
+
+    /// 验证后按规范根路径去重；显式新窗口打开跳过去重。
+    func openRepository(
+        at location: RepositoryLocation,
+        from source: RepositoryWindowController?,
+        inNewWindow: Bool
+    ) {
+        if let source {
+            cancelOpening(in: source)
+        }
+
+        let request = UUID()
+        source?.openingRequest = request
+        source?.session.isOpening = true
+
+        openingTasks[request] = Task { [weak self, weak source] in
+            guard let self else {
+                return
+            }
+
+            defer {
+                self.openingTasks[request] = nil
+
+                if source?.openingRequest == request {
+                    source?.openingRequest = nil
+                    source?.session.isOpening = false
+                }
+            }
+
+            do {
+                let repository = try await Self.verifiedLocation(of: location)
+                try Task.checkCancellation()
+
+                displayRepository(repository, from: source, inNewWindow: inNewWindow)
+            } catch {
+                guard !Task.isCancelled else {
+                    return
+                }
+
+                recent.markUnavailable(location)
+                let destination = source ?? makeWindow()
+                destination.showWindow(nil)
+                destination.showFailure(AppFailure(error: error, opening: true, location: location))
+            }
+        }
+    }
+
+    /// 已验证的本机和远端仓库共用窗口去重规则。
+    func displayRepository(
+        _ repository: RepositoryLocation,
+        from source: RepositoryWindowController?,
+        inNewWindow: Bool
+    ) {
+        let destination: RepositoryWindowController =
+            if
+                !inNewWindow,
+                let existing = windows.first(where: {
+                    !$0.showsManager && $0.session.repository == repository
+                })
+            {
+                existing
+            } else if !inNewWindow, let source, windows.contains(where: { $0 === source }) {
+                source
+            } else {
+                makeWindow()
+            }
+
+        recent.remember(repository)
+        let previous = destination.session.repository
+        destination.display(repository)
+
+        if let previous, previous != repository { releaseConnection(previous) }
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     /// 拖入文件夹只添加已验证的本机仓库，多个目录依次检查。
@@ -318,43 +352,26 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         source.openingRequest = nil
         source.session.isOpening = false
     }
+}
 
-    /// 删除关闭窗口的强引用，不影响其它窗口。
-    func removeWindow(_ controller: RepositoryWindowController) {
-        windows.removeAll { $0 === controller }
-    }
+// MARK: - Private
 
-    /// 一个窗口完成写入后，显示同一仓库的其它窗口完整刷新，避免各窗口状态不一致。
-    func repositoryChanged(_ location: RepositoryLocation, by source: RepositoryWindowController) {
-        for controller in windows where controller !== source && controller.session.repository == location {
-            controller.session.refresh(full: true)
+extension SpookyApplicationController {
+    /// 经核心库验证所选位置，返回规范化后的仓库位置。
+    private static func verifiedLocation(of location: RepositoryLocation) async throws -> RepositoryLocation {
+        let runner = GitRunner(location: location)
+
+        // 服务器仓库在连接建立前接入界面回调，再完成 SSH、Git、路径与工作区检查。
+        if let remote = runner.remote {
+            await remote.setCallbackHandler { request in
+                await RemoteCallbackPresenter.shared.respond(to: request)
+            }
+
+            return try await remote.open().location
         }
-    }
 
-    /// 最后一个持有仓库的窗口关闭后，回收专属主连接和会话临时目录。
-    func releaseConnection(_ location: RepositoryLocation) {
-        guard
-            location.host != nil,
-            !windows.contains(where: { $0.session.repository == location }),
-            let remote = GitRunner(location: location).remote
-        else { return }
-
-        Task { await remote.close() }
-    }
-
-    /// 最近菜单每次展开时反映当前记录，失效记录仍可选择重试。
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        menu.removeAllItems()
-
-        for path in recent.locations {
-            let item = NSMenuItem(title: path.displayPath, action: #selector(openRecent(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = path
-            item.toolTip = recent.unavailable.contains(path)
-                ? AppLocalization.text("repositories.unavailable")
-                : path.displayPath
-            menu.addItem(item)
-        }
+        // 本机仓库先校验 Git 版本，再把子目录和符号链接统一到工作区根目录。
+        return try await runner.openLocalRepository().location
     }
 
     /// 最近菜单直接走窗口复用与版本检查流程。
@@ -379,8 +396,20 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         let menu = NSMenu()
         NSApp.mainMenu = menu
 
+        configureApplicationMenu(in: menu)
+        configureFileMenu(in: menu)
+        configureEditMenu(in: menu)
+        configureViewMenu(in: menu)
+        configureRepositoryMenu(in: menu)
+        configureWorkingCopyMenu(in: menu)
+        configureWindowMenu(in: menu)
+    }
+
+    /// 应用菜单：设置、隐藏与退出。
+    private func configureApplicationMenu(in menu: NSMenu) {
         let application = addMenu("app.name", to: menu)
         addItem("settings.title", action: #selector(showSettings), key: ",", target: self, to: application)
+
         application.addItem(.separator())
         addItem("menu.hide", action: #selector(NSApplication.hide(_:)), key: "h", to: application)
         addItem(
@@ -391,9 +420,13 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             to: application
         )
         addItem("menu.showAll", action: #selector(NSApplication.unhideAllApplications(_:)), to: application)
+
         application.addItem(.separator())
         addItem("menu.quit", action: #selector(NSApplication.terminate(_:)), key: "q", to: application)
+    }
 
+    /// File 菜单：新窗口、打开本机或服务器仓库、最近仓库，以及仓库位置与关闭动作。
+    private func configureFileMenu(in menu: NSMenu) {
         let file = addMenu("menu.file", to: menu)
         addItem("menu.newWindow", action: #selector(newWindow), key: "n", target: self, to: file)
         addItem("action.openLocal", action: #selector(openRepositoryPanel), key: "o", target: self, to: file)
@@ -401,19 +434,27 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         addItem("action.addRemote", action: #selector(addRemoteRepository), target: self, to: file)
         let recentMenu = addMenu("menu.openRecent", to: file)
         recentMenu.delegate = self
+
         file.addItem(.separator())
         addItem("action.openTerminal", action: #selector(RepositoryWindowController.openInTerminal), to: file)
         addItem("action.revealFinder", action: #selector(RepositoryWindowController.revealInFinder), to: file)
+
         file.addItem(.separator())
         addItem("action.closeRepository", action: #selector(RepositoryWindowController.closeRepository), to: file)
         addItem("menu.closeWindow", action: #selector(NSWindow.performClose(_:)), key: "w", to: file)
+    }
 
+    /// Edit 菜单只放系统文本动作。
+    private func configureEditMenu(in menu: NSMenu) {
         let edit = addMenu("menu.edit", to: menu)
         addItem("menu.cut", action: #selector(NSText.cut(_:)), key: "x", to: edit)
         addItem("menu.copy", action: #selector(NSText.copy(_:)), key: "c", to: edit)
         addItem("menu.paste", action: #selector(NSText.paste(_:)), key: "v", to: edit)
         addItem("menu.selectAll", action: #selector(NSText.selectAll(_:)), key: "a", to: edit)
+    }
 
+    /// View 菜单：仓库管理、工作区与历史视图，历史的显示选项，以及文件列表样式、刷新与全屏。
+    private func configureViewMenu(in menu: NSMenu) {
         let view = addMenu("menu.view", to: menu)
         addItem(
             "menu.showRepositories",
@@ -431,53 +472,10 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             key: "0",
             to: view
         )
-        let history = addMenu("history.title", to: view)
-        addItem(
-            "history.showGraph",
-            action: #selector(RepositoryWindowController.toggleHistoryGraph),
-            key: "g",
-            modifiers: [.control, .command],
-            to: history
-        )
-        addItem(
-            "history.medium",
-            action: #selector(RepositoryWindowController.mediumHistoryRows),
-            to: history
-        )
-        addItem("history.small", action: #selector(RepositoryWindowController.smallHistoryRows), to: history)
-        let changes = addMenu("history.diffs", to: view)
-        addItem(
-            "history.expandAll",
-            action: #selector(RepositoryWindowController.expandChanges),
-            key: "\u{f703}",
-            modifiers: [.control, .command],
-            to: changes
-        )
-        addItem(
-            "history.collapseAll",
-            action: #selector(RepositoryWindowController.collapseChanges),
-            key: "\u{f702}",
-            modifiers: [.control, .command],
-            to: changes
-        )
-        changes.addItem(.separator())
-        for threshold in [0, 5, 10, 15, 20, 25, 50, Int.max] {
-            let title =
-                threshold == 0
-                    ? AppLocalization.text("history.autoExpand.never")
-                    : (
-                        threshold == Int.max
-                            ? AppLocalization.text("history.autoExpand.always")
-                            : AppLocalization.text("history.autoExpand.items", threshold)
-                    )
-            let item = NSMenuItem(
-                title: title,
-                action: #selector(RepositoryWindowController.setAutoExpand(_:)),
-                keyEquivalent: ""
-            )
-            item.tag = threshold
-            changes.addItem(item)
-        }
+
+        configureHistoryMenu(in: view)
+        configureHistoryDiffsMenu(in: view)
+
         view.addItem(.separator())
         addItem(
             "working.list", action: #selector(RepositoryWindowController.viewAsList),
@@ -495,7 +493,68 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             modifiers: [.control, .command],
             to: view
         )
+    }
 
+    /// 历史子菜单：提交图开关与行高。
+    private func configureHistoryMenu(in view: NSMenu) {
+        let history = addMenu("history.title", to: view)
+        addItem(
+            "history.showGraph",
+            action: #selector(RepositoryWindowController.toggleHistoryGraph),
+            key: "g",
+            modifiers: [.control, .command],
+            to: history
+        )
+        addItem(
+            "history.medium",
+            action: #selector(RepositoryWindowController.mediumHistoryRows),
+            to: history
+        )
+        addItem("history.small", action: #selector(RepositoryWindowController.smallHistoryRows), to: history)
+    }
+
+    /// 变更集子菜单：全部展开、全部收起与自动展开阈值。
+    private func configureHistoryDiffsMenu(in view: NSMenu) {
+        let changes = addMenu("history.diffs", to: view)
+        addItem(
+            "history.expandAll",
+            action: #selector(RepositoryWindowController.expandChanges),
+            key: "\u{f703}",
+            modifiers: [.control, .command],
+            to: changes
+        )
+        addItem(
+            "history.collapseAll",
+            action: #selector(RepositoryWindowController.collapseChanges),
+            key: "\u{f702}",
+            modifiers: [.control, .command],
+            to: changes
+        )
+
+        changes.addItem(.separator())
+
+        for threshold in [0, 5, 10, 15, 20, 25, 50, Int.max] {
+            let title =
+                threshold == 0
+                    ? AppLocalization.text("history.autoExpand.never")
+                    : (
+                        threshold == Int.max
+                            ? AppLocalization.text("history.autoExpand.always")
+                            : AppLocalization.text("history.autoExpand.items", threshold)
+                    )
+
+            let item = NSMenuItem(
+                title: title,
+                action: #selector(RepositoryWindowController.setAutoExpand(_:)),
+                keyEquivalent: ""
+            )
+            item.tag = threshold
+            changes.addItem(item)
+        }
+    }
+
+    /// Repository 菜单：获取、拉取、推送、发布与新建分支。
+    private func configureRepositoryMenu(in menu: NSMenu) {
         let repository = addMenu("menu.repository", to: menu)
         addItem(
             "sync.fetch",
@@ -520,6 +579,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             to: repository
         )
         addItem("sync.publish", action: #selector(RepositoryWindowController.publishBranch), to: repository)
+
         repository.addItem(.separator())
         addItem(
             "branch.create",
@@ -527,7 +587,10 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             key: "b",
             to: repository
         )
+    }
 
+    /// Working Copy 菜单：检出与合并、提交与暂存，以及丢弃改动。
+    private func configureWorkingCopyMenu(in menu: NSMenu) {
         let working = addMenu("workspace.title", to: menu)
         addItem(
             "branch.checkout",
@@ -543,6 +606,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             modifiers: [.shift, .command],
             to: working
         )
+
         working.addItem(.separator())
         addItem(
             "working.commit", action: #selector(RepositoryWindowController.composeCommit),
@@ -558,15 +622,20 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             "working.unstageAll", action: #selector(RepositoryWindowController.unstageAll),
             key: "e", modifiers: [.option, .shift, .command], to: working
         )
+
         working.addItem(.separator())
         addItem(
             "working.discard", action: #selector(RepositoryWindowController.discardSelected),
             key: "\u{8}", modifiers: [.shift, .command], to: working
         )
         addItem("working.discardAll", action: #selector(RepositoryWindowController.discardAll), to: working)
+    }
 
+    /// Window 菜单：Activity 与系统窗口动作，并登记为应用的窗口菜单。
+    private func configureWindowMenu(in menu: NSMenu) {
         let window = addMenu("menu.window", to: menu)
         NSApp.windowsMenu = window
+
         addItem(
             "activity.title",
             action: #selector(showActivity),

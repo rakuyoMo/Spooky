@@ -2,6 +2,8 @@ import AppKit
 import SpookyKit
 import SwiftUI
 
+// MARK: - RepositoryWindowController
+
 /// 仓库窗口的 AppKit 外壳，负责两层分栏、工具栏与错误 sheet。
 @MainActor
 final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
@@ -152,17 +154,6 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         }
     }
 
-    /// 分栏按名称恢复宽度；记录不可用时视为恢复失败，先清除记录，由调用方按默认宽度建立。
-    private static func setAutosaveName(_ name: String, of split: NSSplitViewController) {
-        let key = "NSSplitView Subview Frames " + name
-
-        if let frames = UserDefaults.standard.array(forKey: key), !isUsable(splitFrames: frames) {
-            UserDefaults.standard.removeObject(forKey: key)
-        }
-
-        split.splitView.autosaveName = name
-    }
-
     /// 显示已验证的仓库，并立即开始读取工作区。
     func display(_ repository: RepositoryLocation) {
         let sameRepositoryView = session.repository == repository && !showsManager
@@ -251,6 +242,37 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         coordinator.recent.validate()
     }
 
+    /// 窗口激活会立即刷新仓库状态；显示管理页时仓库保持后台频率。
+    func windowDidBecomeKey(_: Notification) {
+        session.setActive(!showsManager)
+    }
+
+    /// 后台窗口降为十秒轮询。
+    func windowDidResignKey(_: Notification) {
+        session.setActive(false)
+    }
+
+    /// 关窗时取消该窗口的工作，并从应用窗口集合中移除。
+    func windowWillClose(_: Notification) {
+        if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+        keyMonitor = nil
+        coordinator?.cancelOpening(in: self)
+        let location = session.repository
+        session.close()
+        coordinator?.removeWindow(self)
+        if let location { coordinator?.releaseConnection(location) }
+    }
+}
+
+// MARK: - Navigation
+
+extension RepositoryWindowController {
+    /// 打开系统目录选择器，发起窗口决定普通打开的目的地。
+    @objc
+    func chooseRepository() {
+        coordinator?.chooseRepository(in: self)
+    }
+
     /// 体检在表单内部进行，只有成功的工作区才进入可用列表。
     @objc
     func addRemoteRepository() {
@@ -273,49 +295,6 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         window.beginSheet(sheet)
     }
 
-    /// 主菜单和工具栏使用当前仓库，管理页使用当前选中的记录。
-    @objc
-    func openInTerminal() {
-        guard let location = showsManager ? session.selectedRecentLocation : session.repository else { return }
-        openLocationInTerminal(location)
-    }
-
-    /// 右键菜单可直接指定记录，错误显示在发起操作的窗口。
-    func openLocationInTerminal(_ location: RepositoryLocation) {
-        Task { [weak self] in
-            do { try await TerminalLauncher.open(location) }
-            catch { self?.showFailure(AppFailure(error: error, opening: false, location: location)) }
-        }
-    }
-
-    /// Finder 只能显示本机路径。
-    @objc
-    func revealInFinder() {
-        guard
-            let location = showsManager ? session.selectedRecentLocation : session.repository,
-            let url = location.localURL
-        else { return }
-        NSWorkspace.shared.activateFileViewerSelecting([url])
-    }
-
-    /// 服务器路径带主机前缀，避免复制后误认为本机目录。
-    @objc
-    func copyPath() {
-        guard let location = showsManager ? session.selectedRecentLocation : session.repository else { return }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(location.displayPath, forType: .string)
-    }
-
-    /// 窗口激活会立即刷新仓库状态；显示管理页时仓库保持后台频率。
-    func windowDidBecomeKey(_: Notification) {
-        session.setActive(!showsManager)
-    }
-
-    /// 后台窗口降为十秒轮询。
-    func windowDidResignKey(_: Notification) {
-        session.setActive(false)
-    }
-
     /// 关闭仓库只回到管理界面，不关闭窗口或结束 App。
     @objc
     func closeRepository() {
@@ -325,59 +304,6 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         if let location { coordinator?.releaseConnection(location) }
         showRepositories()
     }
-
-    /// 菜单和工具栏共用刷新入口。
-    @objc
-    func refreshRepository() {
-        guard !showsManager else {
-            return
-        }
-
-        session.refresh(full: true)
-    }
-
-    /// 提交菜单与工具栏聚焦已有的工作区标题框。
-    @objc
-    func composeCommit() {
-        if session.activeView != .workingCopy { showWorkingCopy() }
-        session.commitFocusRequest += 1
-    }
-
-    /// 全部暂存的工具栏入口支持 ⌥ 切换到全部取消暂存。
-    @objc
-    func stageAll() {
-        let unstage = NSEvent.modifierFlags.contains(.option)
-            && session.status?.entries.contains(where: \.hasStagedChanges) == true
-        session.stageAll(staged: !unstage)
-    }
-
-    /// 主菜单的独立取消暂存动作。
-    @objc
-    func unstageAll() { session.stageAll(staged: false) }
-
-    /// 选中文件的菜单暂存入口。
-    @objc
-    func stageSelected() { session.stage(session.selectedEntries, staged: true) }
-
-    /// 选中文件的菜单取消暂存入口。
-    @objc
-    func unstageSelected() { session.stage(session.selectedEntries, staged: false) }
-
-    /// 主菜单和文件右键共用丢弃确认。
-    @objc
-    func discardSelected() { session.discard(session.selectedEntries) }
-
-    /// 全部丢弃只覆盖当前状态中的改动。
-    @objc
-    func discardAll() { session.discard(session.status?.entries ?? []) }
-
-    /// 平铺偏好跨仓库共享。
-    @objc
-    func viewAsList() { UserDefaults.standard.set(0, forKey: "workingCopyViewMode") }
-
-    /// 树形偏好跨仓库共享。
-    @objc
-    func viewAsTree() { UserDefaults.standard.set(1, forKey: "workingCopyViewMode") }
 
     /// 切换到工作区，⌘1 与侧边栏使用相同状态。
     @objc
@@ -416,128 +342,20 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         configureRepositoryView()
     }
 
-    /// 新建分支默认从当前选中提交或 HEAD 开始。
-    @objc
-    func createBranch() {
-        let revision = session.activeView == .history ? session.history.selectedCommit?.id : nil
-        presentRepositoryAction(RepositoryActionRequest(kind: .create, reference: revision))
-    }
-
-    /// 检出表单只列出本地分支。
-    @objc
-    func checkoutBranch() { presentRepositoryAction(RepositoryActionRequest(kind: .checkout)) }
-
-    /// 获取入口收集远端与清理选项。
-    @objc
-    func fetch() { presentRepositoryAction(RepositoryActionRequest(kind: .fetch)) }
-
-    /// 全部获取使用持久化的清理与标签选项。
-    @objc
-    func fetchAll() {
-        let prune = UserDefaults.standard.bool(forKey: "fetchPrune")
-        let tags = UserDefaults.standard.bool(forKey: "fetchAllTags")
-        session.performGit(
-            { runner, output in
-                _ = try await RepositorySync(runner: runner)
-                    .fetch(prune: prune, allTags: tags, onOutput: output)
-            },
-            title: AppLocalization.text("sync.fetch")
-        )
-    }
-
-    /// 拉取表单明确选择合并或变基。
-    @objc
-    func pull() { presentRepositoryAction(RepositoryActionRequest(kind: .pull)) }
-
-    /// 推送表单明确目标远端和目标分支。
-    @objc
-    func push() { presentRepositoryAction(RepositoryActionRequest(kind: .push)) }
-
-    /// 发布表单允许首次设置 upstream。
-    @objc
-    func publishBranch() { presentRepositoryAction(RepositoryActionRequest(kind: .publish)) }
-
-    /// 合并表单在执行前显示 merge-tree 预览。
-    @objc
-    func merge() { presentRepositoryAction(RepositoryActionRequest(kind: .merge)) }
-
-    /// 全局 Activity 窗口由应用统一持有。
-    @objc
-    func showActivity() { coordinator?.showActivity() }
-
-    /// 提交图开关同时作用于列表头和主菜单。
-    @objc
-    func toggleHistoryGraph() {
-        UserDefaults.standard.set(
-            !UserDefaults.standard.bool(forKey: "historyShowGraph"),
-            forKey: "historyShowGraph"
-        )
-    }
-
-    /// 小号行采用 24 pt 高度。
-    @objc
-    func smallHistoryRows() { UserDefaults.standard.set(true, forKey: "historySmallRows") }
-
-    /// 中号行采用 46 pt 高度。
-    @objc
-    func mediumHistoryRows() { UserDefaults.standard.set(false, forKey: "historySmallRows") }
-
-    /// 变更集展开快捷键复用文件懒加载。
-    @objc
-    func expandChanges() { session.history.expandAll(true) }
-
-    /// 折叠不丢弃已取得的只读补丁。
-    @objc
-    func collapseChanges() { session.history.expandAll(false) }
-
-    /// 自动展开阈值立即更新当前提交的文件展示。
-    @objc
-    func setAutoExpand(_ sender: NSMenuItem) {
-        UserDefaults.standard.set(sender.tag, forKey: "historyAutoExpand")
-        session.history.expandAll(sender.tag > 0 && session.history.changes.count <= sender.tag)
-    }
-
     /// 双击详情保留提交选择，只替换内层分栏。
     func showCommitPage() {
         session.history.showsCommitPage = true
         configureRepositoryView()
     }
 
-    /// 对话框关闭之后才启动写入，保存发起仓库身份以拒绝迟到提交。
-    func presentRepositoryAction(_ request: RepositoryActionRequest) {
-        guard session.canWrite, let window, window.attachedSheet == nil else { return }
-        let repository = session.repository
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-        sheet.contentViewController = NSHostingController(
-            rootView: RepositoryOperationDialog(
-                session: session,
-                request: request,
-                cancel: { [weak sheet] in
-                    if let sheet { window.endSheet(sheet) }
-                },
-                submit: { [weak self, weak sheet] title, action in
-                    // 只有写操作真正开始才关闭表单；仓库忙碌或断线时保留未发送的参数。
-                    guard
-                        let self, let sheet, session.repository == repository,
-                        session.performGit(action, title: title)
-                    else { return false }
-
-                    window.endSheet(sheet)
-                    return true
-                }
-            )
-        )
-        window.beginSheet(sheet)
-    }
-
-    /// 打开系统目录选择器，发起窗口决定普通打开的目的地。
+    /// 全局 Activity 窗口由应用统一持有。
     @objc
-    func chooseRepository() {
-        coordinator?.chooseRepository(in: self)
-    }
+    func showActivity() { coordinator?.showActivity() }
+}
 
+// MARK: - Alerts
+
+extension RepositoryWindowController {
     /// 把错误原文放入可滚动、可复制的附件，恢复操作在 sheet 结束后执行。
     func showFailure(_ failure: AppFailure) {
         guard let window else {
@@ -601,110 +419,11 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 中断时的错误 sheet 可能仍未关闭，AppKit 会在它结束后依次显示。
         alert.beginSheetModal(for: window)
     }
+}
 
-    /// 关窗时取消该窗口的工作，并从应用窗口集合中移除。
-    func windowWillClose(_: Notification) {
-        if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
-        keyMonitor = nil
-        coordinator?.cancelOpening(in: self)
-        let location = session.repository
-        session.close()
-        coordinator?.removeWindow(self)
-        if let location { coordinator?.releaseConnection(location) }
-    }
+// MARK: - Toolbar
 
-    /// 仓库动作按当前视图与加载状态启用；菜单、工具栏与右键菜单共用会话的可用性规则。
-    func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
-        let repositoryView = !showsManager && session.repository != nil
-
-        switch item.action {
-        case #selector(fetch), #selector(fetchAll):
-            return repositoryView && session.canFetch
-
-        case #selector(pull):
-            return repositoryView && session.canPull
-
-        case #selector(push):
-            return repositoryView && session.canPush
-
-        case #selector(publishBranch):
-            return repositoryView && session.canPublish
-
-        case #selector(merge):
-            return repositoryView && session.canMerge
-
-        case #selector(createBranch):
-            return repositoryView && session.canCreateBranch
-
-        case #selector(checkoutBranch):
-            return repositoryView && session.canCheckout
-
-        case #selector(showHeadBranch):
-            return session.repository != nil
-
-        case #selector(toggleHistoryGraph):
-            (item as? NSMenuItem)?.state = UserDefaults.standard.bool(forKey: "historyShowGraph") ? .on : .off
-            return !showsManager && session.activeView == .history
-
-        case #selector(smallHistoryRows), #selector(mediumHistoryRows):
-            let small = UserDefaults.standard.bool(forKey: "historySmallRows")
-            (item as? NSMenuItem)?.state = (item.action == #selector(smallHistoryRows)) == small ? .on : .off
-            return !showsManager && session.activeView == .history
-                && UserDefaults.standard.bool(forKey: "historyShowGraph")
-
-        case #selector(expandChanges), #selector(collapseChanges), #selector(setAutoExpand(_:)):
-            if item.action == #selector(setAutoExpand(_:)), let item = item as? NSMenuItem {
-                item.state =
-                    item.tag == UserDefaults.standard.integer(forKey: "historyAutoExpand") ? .on : .off
-            }
-            return !showsManager && session.activeView == .history && session.history.selectedCommit != nil
-
-        case #selector(composeCommit), #selector(viewAsList), #selector(viewAsTree):
-            return repositoryView
-
-        case #selector(stageAll):
-            let entries = session.status?.entries ?? []
-            let unstage = NSEvent.modifierFlags.contains(.option) && entries.contains(where: \.hasStagedChanges)
-            return repositoryView && (unstage ? session.canUnstage(entries) : session.canStage(entries))
-
-        case #selector(unstageAll):
-            return repositoryView && session.canUnstage(session.status?.entries ?? [])
-
-        case #selector(stageSelected):
-            return repositoryView && session.canStage(session.selectedEntries)
-
-        case #selector(unstageSelected):
-            return repositoryView && session.canUnstage(session.selectedEntries)
-
-        case #selector(discardSelected):
-            return repositoryView && session.canDiscard(session.selectedEntries)
-
-        case #selector(discardAll):
-            return repositoryView && session.canDiscard(session.status?.entries ?? [])
-
-        case #selector(openInTerminal), #selector(copyPath):
-            return (showsManager ? session.selectedRecentLocation : session.repository) != nil
-
-        case #selector(revealInFinder):
-            return (showsManager ? session.selectedRecentLocation : session.repository)?.localURL != nil
-
-        case #selector(refreshRepository):
-            return !showsManager
-                && session.repository != nil
-                && !session.isRefreshing
-                && !session.isOpening
-
-        case #selector(closeRepository):
-            return !showsManager && session.repository != nil
-
-        case #selector(showWorkingCopy), #selector(showHistory):
-            return session.repository != nil
-
-        default:
-            return true
-        }
-    }
-
+extension RepositoryWindowController {
     /// 当前视图需要的工具栏项，工作区额外跟随内层分隔线。
     func toolbarDefaultItemIdentifiers(_: NSToolbar) -> [NSToolbarItem.Identifier] {
         var items: [NSToolbarItem.Identifier] = [
@@ -741,7 +460,8 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
                 itemIdentifier: identifier,
                 images: ["arrow.down.circle", "arrow.down.to.line", "arrow.up.circle"]
                     .map {
-                        NSImage(systemSymbolName: $0, accessibilityDescription: nil)!
+                        // 取不到符号时以空图占位，分段数与标签保持一致。
+                        NSImage(systemSymbolName: $0, accessibilityDescription: nil) ?? NSImage()
                     },
                 selectionMode: .momentary,
                 labels: ["sync.fetch", "sync.pull", "sync.push"].map { AppLocalization.text($0) },
@@ -830,6 +550,21 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         item.action = configuration.2
         return item
     }
+}
+
+// MARK: - Private
+
+extension RepositoryWindowController {
+    /// 分栏按名称恢复宽度；记录不可用时视为恢复失败，先清除记录，由调用方按默认宽度建立。
+    private static func setAutosaveName(_ name: String, of split: NSSplitViewController) {
+        let key = "NSSplitView Subview Frames " + name
+
+        if let frames = UserDefaults.standard.array(forKey: key), !isUsable(splitFrames: frames) {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+
+        split.splitView.autosaveName = name
+    }
 
     /// 恢复上次的位置和尺寸；记录缺失或已不在任何屏幕内时回到默认尺寸并居中。
     private func restoreFrame() {
@@ -871,47 +606,57 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     private func configureWorkingCopyKeys() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
             let handled = MainActor.assumeIsolated {
-                guard
-                    let self, NSApp.keyWindow === self.window, !self.showsManager,
-                    self.session.activeView == .workingCopy,
-                    self.window?.attachedSheet == nil
-                else { return false }
-                let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
-                if event.type == .flagsChanged {
-                    let unstage = flags.contains(.option)
-                        && self.session.status?.entries.contains(where: \.hasStagedChanges) == true
-                    let item = self.window?.toolbar?.items.first { $0.itemIdentifier.rawValue == "stageAll" }
-                    item?.label = AppLocalization.text(unstage ? "working.unstageAll" : "working.stageAll")
-                    item?.toolTip = item?.label
-                    self.window?.toolbar?.validateVisibleItems()
-                    return false
-                }
-
-                let enter = event.keyCode == 36 && (flags == .command || flags == [.command, .option])
-                    || event.keyCode == 76 && flags.isEmpty
-                guard enter, self.session.isEditingCommitMessage || flags.contains(.option) else { return false }
-
-                // 快速修补在确认前捕获最近信息，取消确认不会覆盖原来的普通草稿。
-                let quick = flags.contains(.option) && !self.session.isEditingCommitMessage && !self.session.amend
-                if quick { self.session.setAmend(true) }
-
-                if
-                    let operation = self.session.context?.operation,
-                    [.rebase, .cherryPick, .revert].contains(operation),
-                    self.session.canWrite, self.session.conflictCount == 0
-                {
-                    self.session.finishOperation("continue")
-                } else if self.session.canCommit {
-                    self.session.commit()
-                } else {
-                    NSSound.beep()
-                }
-
-                if quick { self.session.setAmend(false) }
-                return true
+                self?.handleWorkingCopyKey(event) ?? false
             }
+
             return handled ? nil : event
         }
+    }
+
+    /// 工作区处于前台时处理按键：修饰键变化时切换全部暂存按钮的文案，回车键提交或继续进行中的操作；返回事件是否已处理。
+    private func handleWorkingCopyKey(_ event: NSEvent) -> Bool {
+        guard
+            NSApp.keyWindow === window, !showsManager,
+            session.activeView == .workingCopy,
+            window?.attachedSheet == nil
+        else { return false }
+
+        let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+
+        // 按住 ⌥ 且有已暂存改动时，全部暂存按钮改为全部取消暂存。
+        if event.type == .flagsChanged {
+            let unstage = flags.contains(.option)
+                && (session.status?.entries.contains(where: \.hasStagedChanges) ?? false)
+            let item = window?.toolbar?.items.first { $0.itemIdentifier.rawValue == "stageAll" }
+            item?.label = AppLocalization.text(unstage ? "working.unstageAll" : "working.stageAll")
+            item?.toolTip = item?.label
+            window?.toolbar?.validateVisibleItems()
+            return false
+        }
+
+        // 主键盘回车需要 ⌘ 或 ⌘⌥，小键盘回车不带修饰键；只在编辑提交信息或按住 ⌥ 时生效。
+        let enter = event.keyCode == 36 && (flags == .command || flags == [.command, .option])
+            || event.keyCode == 76 && flags.isEmpty
+        guard enter, session.isEditingCommitMessage || flags.contains(.option) else { return false }
+
+        // 快速修补在确认前捕获最近信息，取消确认不会覆盖原来的普通草稿。
+        let quick = flags.contains(.option) && !session.isEditingCommitMessage && !session.amend
+        if quick { session.setAmend(true) }
+
+        if
+            let operation = session.context?.operation,
+            [.rebase, .cherryPick, .revert].contains(operation),
+            session.canWrite, session.conflictCount == 0
+        {
+            session.finishOperation("continue")
+        } else if session.canCommit {
+            session.commit()
+        } else {
+            NSSound.beep()
+        }
+
+        if quick { session.setAmend(false) }
+        return true
     }
 
     /// 仓库主视图切换没有转场；工作区与历史分别保存分栏宽度。
@@ -934,82 +679,19 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
             showActivity: { [weak self] in self?.showActivity() }
         ))
         sidebar.sizingOptions = [.minSize]
+
         let detail: NSViewController
 
         switch session.activeView {
         case .workingCopy:
             historySplit = nil
-            let split = NSSplitViewController()
-            split.splitView.isVertical = true
-            split.splitView.dividerStyle = .thin
-            Self.setAutosaveName("Spooky.WorkingCopy", of: split)
-
-            // 窗口与分栏决定内容尺寸，HostingController 只提供最小内容约束。
-            let list = NSHostingController(rootView: WorkingCopyListView(session: session))
-            list.sizingOptions = [.minSize]
-            let listItem = NSSplitViewItem(contentListWithViewController: list)
-            listItem.holdingPriority = .init(475)
-            listItem.canCollapse = false
-
-            let fileDetail = NSHostingController(rootView: WorkingCopyDetailView(session: session))
-            fileDetail.sizingOptions = [.minSize]
-            let detailItem = NSSplitViewItem(viewController: fileDetail)
-            detailItem.holdingPriority = .init(470)
-
-            split.addSplitViewItem(listItem)
-            split.addSplitViewItem(detailItem)
+            let split = makeWorkingCopySplit()
             workingCopySplit = split
             detail = split
 
         case .history:
             workingCopySplit = nil
-            let split = NSSplitViewController()
-            split.splitView.isVertical = true
-            split.splitView.dividerStyle = .thin
-            Self.setAutosaveName(session.history.showsCommitPage ? "Spooky.Commit" : "Spooky.History", of: split)
-            let list: NSViewController
-            let content: NSViewController
-
-            if session.history.showsCommitPage {
-                let controller = NSHostingController(
-                    rootView: CommitFileListView(session: session, history: session.history) { [weak self] in
-                        self?.session.history.showsCommitPage = false
-                        self?.configureRepositoryView()
-                    }
-                )
-                controller.sizingOptions = [.minSize]
-                list = controller
-                let diff = NSHostingController(rootView: CommitPageDiffView(history: session.history))
-                diff.sizingOptions = [.minSize]
-                content = diff
-            } else {
-                let controller = NSHostingController(
-                    rootView: HistoryListView(
-                        session: session,
-                        createBranch: { [weak self] in
-                            self?
-                                .presentRepositoryAction(
-                                    RepositoryActionRequest(kind: .create, reference: $0)
-                                )
-                        },
-                        openCommit: { [weak self] in self?.showCommitPage() }
-                    )
-                )
-                controller.sizingOptions = [.minSize]
-                list = controller
-                let detail = NSHostingController(rootView: CommitDetailView(history: session.history))
-                detail.sizingOptions = [.minSize]
-                content = detail
-            }
-            let listItem = NSSplitViewItem(contentListWithViewController: list)
-            listItem.minimumThickness = 300
-            listItem.holdingPriority = .init(475)
-            listItem.canCollapse = false
-            let contentItem = NSSplitViewItem(viewController: content)
-            contentItem.holdingPriority = .init(470)
-            contentItem.canCollapse = false
-            split.addSplitViewItem(listItem)
-            split.addSplitViewItem(contentItem)
+            let split = makeHistorySplit()
             historySplit = split
             detail = split
         }
@@ -1020,12 +702,95 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         if UserDefaults.standard.object(forKey: "NSSplitView Subview Frames Spooky.WorkingCopy") == nil {
             workingCopySplit?.splitView.setPosition(400, ofDividerAt: 0)
         }
+
         if
             let historySplit, let name = historySplit.splitView.autosaveName,
             UserDefaults.standard.object(forKey: "NSSplitView Subview Frames " + name) == nil
         {
             historySplit.splitView.setPosition(320, ofDividerAt: 0)
         }
+    }
+
+    /// 工作区的文件列表与 Diff 详情分栏，宽度按工作区单独保存。
+    private func makeWorkingCopySplit() -> NSSplitViewController {
+        let split = NSSplitViewController()
+        split.splitView.isVertical = true
+        split.splitView.dividerStyle = .thin
+        Self.setAutosaveName("Spooky.WorkingCopy", of: split)
+
+        // 窗口与分栏决定内容尺寸，HostingController 只提供最小内容约束。
+        let list = NSHostingController(rootView: WorkingCopyListView(session: session))
+        list.sizingOptions = [.minSize]
+        let listItem = NSSplitViewItem(contentListWithViewController: list)
+        listItem.holdingPriority = .init(475)
+        listItem.canCollapse = false
+
+        let fileDetail = NSHostingController(rootView: WorkingCopyDetailView(session: session))
+        fileDetail.sizingOptions = [.minSize]
+        let detailItem = NSSplitViewItem(viewController: fileDetail)
+        detailItem.holdingPriority = .init(470)
+
+        split.addSplitViewItem(listItem)
+        split.addSplitViewItem(detailItem)
+        return split
+    }
+
+    /// 历史的提交列表与提交详情分栏；整页提交详情换成文件列表与补丁，两种布局分别保存宽度。
+    private func makeHistorySplit() -> NSSplitViewController {
+        let split = NSSplitViewController()
+        split.splitView.isVertical = true
+        split.splitView.dividerStyle = .thin
+        Self.setAutosaveName(session.history.showsCommitPage ? "Spooky.Commit" : "Spooky.History", of: split)
+
+        let list: NSViewController
+        let content: NSViewController
+
+        if session.history.showsCommitPage {
+            let controller = NSHostingController(
+                rootView: CommitFileListView(session: session, history: session.history) { [weak self] in
+                    self?.session.history.showsCommitPage = false
+                    self?.configureRepositoryView()
+                }
+            )
+            controller.sizingOptions = [.minSize]
+            list = controller
+
+            let diff = NSHostingController(rootView: CommitPageDiffView(history: session.history))
+            diff.sizingOptions = [.minSize]
+            content = diff
+        } else {
+            let controller = NSHostingController(
+                rootView: HistoryListView(
+                    session: session,
+                    createBranch: { [weak self] in
+                        self?
+                            .presentRepositoryAction(
+                                RepositoryActionRequest(kind: .create, reference: $0)
+                            )
+                    },
+                    openCommit: { [weak self] in self?.showCommitPage() }
+                )
+            )
+            controller.sizingOptions = [.minSize]
+            list = controller
+
+            let detail = NSHostingController(rootView: CommitDetailView(history: session.history))
+            detail.sizingOptions = [.minSize]
+            content = detail
+        }
+
+        let listItem = NSSplitViewItem(contentListWithViewController: list)
+        listItem.minimumThickness = 300
+        listItem.holdingPriority = .init(475)
+        listItem.canCollapse = false
+
+        let contentItem = NSSplitViewItem(viewController: content)
+        contentItem.holdingPriority = .init(470)
+        contentItem.canCollapse = false
+
+        split.addSplitViewItem(listItem)
+        split.addSplitViewItem(contentItem)
+        return split
     }
 
     /// 侧边栏不可折叠且最小 150 pt，宽度按视图保存并在仓库间共用。
@@ -1083,5 +848,4 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         toolbar.delegate = self
         window?.toolbar = toolbar
     }
-
 }

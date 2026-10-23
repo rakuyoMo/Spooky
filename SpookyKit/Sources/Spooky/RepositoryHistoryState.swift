@@ -2,6 +2,8 @@ import Foundation
 import Observation
 import SpookyKit
 
+// MARK: - RepositoryHistoryState
+
 /// 一个仓库窗口的引用、历史与只读提交详情，过期请求不能倒灌。
 @MainActor
 @Observable
@@ -146,9 +148,12 @@ final class RepositoryHistoryState {
     /// 历史表头当前引用，没有选择时展示全部引用语义。
     var title: String {
         if selectedReferences.count > 1 {
-            return snapshot?.references.filter { selectedReferences.contains($0.id) }.map(\.name)
+            return snapshot?.references
+                .filter { selectedReferences.contains($0.id) }
+                .map(\.name)
                 .joined(separator: ", ") ?? ""
         }
+
         return snapshot?.references.first { $0.id == selectedReference }?.name
             ?? (selectedReference == "HEAD" ? (branch?.head ?? "HEAD") : AppLocalization.text("history.all"))
     }
@@ -305,55 +310,6 @@ final class RepositoryHistoryState {
         isLoading = false
     }
 
-    /// 展开时才取文件补丁，放行大 Diff 只影响当前提交的当前文件。
-    func loadDiff(_ path: String, showLarge: Bool = false) {
-        guard
-            !loadingPaths.contains(path), showLarge || diffs[path] == nil,
-            let runner, let commit = selectedCommit, let file = changes.first(where: { $0.path == path })
-        else { return }
-        let request = generation
-        loadingPaths.insert(path)
-        diffFailures[path] = nil
-        let threshold =
-            UserDefaults.standard.object(forKey: "diffWarningKilobytes") as? Int
-                ?? WorkingCopyOperations.defaultWarningKilobytes
-        diffTasks[path] = Task { [weak self] in
-            do {
-                let diff = try await RepositoryHistory(runner: runner)
-                    .diff(
-                        in: commit.id,
-                        file: file,
-                        warningKilobytes: threshold,
-                        showLarge: showLarge
-                    )
-                guard
-                    let self, generation == request, selectedCommit?.id == commit.id,
-                    !Task.isCancelled
-                else { return }
-                diffs[path] = diff
-            } catch {
-                guard
-                    let self, generation == request, selectedCommit?.id == commit.id,
-                    !Task.isCancelled
-                else { return }
-                diffFailures[path] = AppFailure(error: error, opening: false, location: runner.location)
-            }
-
-            guard
-                let self, generation == request, selectedCommit?.id == commit.id,
-                !Task.isCancelled
-            else { return }
-            loadingPaths.remove(path)
-            diffTasks[path] = nil
-        }
-    }
-
-    /// 全部展开 / 收起与快捷键共用状态，补丁仍逐文件按需读取。
-    func expandAll(_ expanded: Bool) {
-        expandedPaths = expanded ? Set(changes.map(\.path)) : []
-        if expanded { for file in changes { loadDiff(file.path) } }
-    }
-
     /// 切回仓库时恢复分支与提交选择；引用快照到达后再校验引用是否仍存在。
     func restore(references: Set<String>, commits: Set<String>) {
         selectedReferences = references
@@ -402,7 +358,11 @@ final class RepositoryHistoryState {
         reachedLimit = false
         restoredReferences = nil
     }
+}
 
+// MARK: - Commit Details
+
+extension RepositoryHistoryState {
     /// 单选变化后丢弃上一提交的补丁，元信息直接复用列表记录。
     func loadChanges() {
         changeTask?.cancel()
@@ -445,6 +405,59 @@ final class RepositoryHistoryState {
         }
     }
 
+    /// 展开时才取文件补丁，放行大 Diff 只影响当前提交的当前文件。
+    func loadDiff(_ path: String, showLarge: Bool = false) {
+        guard
+            !loadingPaths.contains(path), showLarge || diffs[path] == nil,
+            let runner, let commit = selectedCommit, let file = changes.first(where: { $0.path == path })
+        else { return }
+        let request = generation
+        loadingPaths.insert(path)
+        diffFailures[path] = nil
+        let threshold =
+            UserDefaults.standard.object(forKey: "diffWarningKilobytes") as? Int
+                ?? WorkingCopyOperations.defaultWarningKilobytes
+        diffTasks[path] = Task { [weak self] in
+            do {
+                let diff = try await RepositoryHistory(runner: runner)
+                    .diff(
+                        in: commit.id,
+                        file: file,
+                        warningKilobytes: threshold,
+                        showLarge: showLarge
+                    )
+                guard
+                    let self, generation == request, selectedCommit?.id == commit.id,
+                    !Task.isCancelled
+                else { return }
+                diffs[path] = diff
+            } catch {
+                guard
+                    let self, generation == request, selectedCommit?.id == commit.id,
+                    !Task.isCancelled
+                else { return }
+                diffFailures[path] = AppFailure(error: error, opening: false, location: runner.location)
+            }
+
+            guard
+                let self, generation == request, selectedCommit?.id == commit.id,
+                !Task.isCancelled
+            else { return }
+            loadingPaths.remove(path)
+            diffTasks[path] = nil
+        }
+    }
+
+    /// 全部展开 / 收起与快捷键共用状态，补丁仍逐文件按需读取。
+    func expandAll(_ expanded: Bool) {
+        expandedPaths = expanded ? Set(changes.map(\.path)) : []
+        if expanded { for file in changes { loadDiff(file.path) } }
+    }
+}
+
+// MARK: - Private
+
+extension RepositoryHistoryState {
     /// 拓扑序保证孩子先到达，已加载父链即可判定两侧归属，无需逐提交 SSH 查询。
     private func updateTrackingMarkers() {
         unpushed = []

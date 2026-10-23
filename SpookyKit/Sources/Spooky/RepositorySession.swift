@@ -207,7 +207,7 @@ final class RepositorySession {
             guard selectedID != oldValue else { return }
             showsLargeDiff = false
             diffSnapshot = nil
-            diffSide = selectedEntry?.hasUnstagedChanges == true ? .unstaged : .staged
+            diffSide = (selectedEntry?.hasUnstagedChanges ?? false) ? .unstaged : .staged
             loadDiff()
         }
     }
@@ -231,7 +231,11 @@ final class RepositorySession {
     /// 有标题、有暂存改动或可修补的 HEAD 时允许提交；合并可产生空树差异。
     var canCommit: Bool {
         canWrite && conflictCount == 0 && !commitSubject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && (amend || context?.operation == .merge || status?.entries.contains(where: \.hasStagedChanges) == true)
+            && (
+                amend
+                    || context?.operation == .merge
+                    || (status?.entries.contains(where: \.hasStagedChanges) ?? false)
+            )
     }
 
     /// 对话框可读取同一执行器，保持本机凭据与测试隔离环境一致。
@@ -255,15 +259,6 @@ final class RepositorySession {
             self?.activeView = .workingCopy
             self?.onViewReset?()
         }
-    }
-
-    /// 轮询时的所选文件内容哈希；没有可比较的文件或读取失败时为 nil。
-    private static func contentHash(of entry: StatusEntry?, service: WorkingCopyOperations) async -> String? {
-        guard let entry else {
-            return nil
-        }
-
-        return try? await service.worktreeHash(of: entry)
     }
 
     /// 切换工作区；同一仓库保留选区和视图，切回打开过的仓库时恢复它的视图状态。
@@ -330,24 +325,7 @@ final class RepositorySession {
                 }
 
                 let statusChanged = status != previous
-
-                // 成功后一次性替换快照；仍存在的文件继续选中。
-                self.status = status
-                if !status.entries.contains(where: { $0.kind == .conflicted }) { onlyConflicts = false }
-                stagingOverrides = [:]
-
-                // 暂存会把未跟踪项变为已跟踪项；同路径优先延续选择，双记录仍优先匹配类别。
-                func retainedID(_ selected: StatusRowID) -> StatusRowID? {
-                    let entry = status.entries.first { $0.path == selected.path && $0.kind == selected.kind }
-                        ?? status.entries.first { $0.path == selected.path }
-                    return entry.map { StatusRowID(path: $0.path, kind: $0.kind) }
-                }
-
-                selectedIDs = Set(selectedIDs.compactMap(retainedID))
-
-                if let selected = selectedID {
-                    selectedID = retainedID(selected)
-                }
+                replaceStatus(status)
 
                 // 状态没有变化的轮询不再重复读取身份、引用和 Diff，减少服务器往返。
                 if loadsRepositoryDetails {
@@ -365,32 +343,14 @@ final class RepositorySession {
                     return
                 }
 
-                // 保留旧快照，错误反馈与数据展示互不覆盖。
-                stagingOverrides = [:]
-
-                if (error as? GitError)?.isCancelled != true, !(error is CancellationError) {
-                    let failure = AppFailure(error: error, opening: false, location: repository)
-                    self.failure = failure
-
-                    if error is RemoteConnectionError {
-                        reconnect()
-                    } else {
-                        onFailure?(failure)
-                    }
-                }
+                reportRefreshFailure(error, in: repository)
             }
 
             guard let self, generation == request, refreshID == id else {
                 return
             }
 
-            isRefreshing = false
-            refreshTask = nil
-
-            if pendingFullRefresh {
-                pendingFullRefresh = false
-                refresh(full: true)
-            }
+            finishRefresh()
         }
     }
 
@@ -455,7 +415,11 @@ final class RepositorySession {
             await task.value
         }
     }
+}
 
+// MARK: - Connection
+
+extension RepositorySession {
     /// 窗口重新激活后立即完整刷新一次；前后台切换重新计算下一次轮询时间。
     func setActive(_ active: Bool) {
         let wasActive = isActive
@@ -507,7 +471,11 @@ final class RepositorySession {
             }
         }
     }
+}
 
+// MARK: - Working Copy
+
+extension RepositorySession {
     /// 勾选框先更新，再执行命令；任何失败都会撤回临时状态。
     func stage(_ entries: [StatusEntry], staged: Bool) {
         guard canWrite, !entries.isEmpty else { return }
@@ -723,7 +691,11 @@ final class RepositorySession {
             isLoadingDiff = false
         }
     }
+}
 
+// MARK: - Write Operations
+
+extension RepositorySession {
     /// 新建、检出、同步和工作区写入共用任务生命周期，取消后仍刷新真实状态。
     ///
     /// - Parameters:
@@ -772,25 +744,11 @@ final class RepositorySession {
             } catch {
                 let cancelled =
                     Task.isCancelled || error is CancellationError
-                        || (error as? GitError)?.isCancelled == true
+                        || ((error as? GitError)?.isCancelled ?? false)
                 activity?.state = cancelled ? "activity.cancelled" : "activity.failed"
 
                 if let self, generation == request {
-                    stagingOverrides = [:]
-                    let remoteFailure = error as? RemoteConnectionError
-
-                    // 取消未确认仍须报告；普通取消只回到可刷新状态。
-                    if !cancelled || remoteFailure?.kind == .cancellationUnconfirmed {
-                        let failure = AppFailure(error: error, opening: false, location: repository, writing: true)
-                        self.failure = failure
-                        onFailure?(failure)
-                    }
-
-                    // 结果未知的服务器写入不重试，等待重连核对后再报告。
-                    if remoteFailure != nil {
-                        interruptedWrite = InterruptedWrite(title: title, branch: branch, time: Date())
-                        reconnect()
-                    }
+                    reportWriteFailure(error, cancelled: cancelled, title: title, branch: branch, in: repository)
                 }
             }
 
@@ -809,6 +767,99 @@ final class RepositorySession {
         let task = writeTask
         activity?.cancel = { task?.cancel() }
         return true
+    }
+}
+
+// MARK: - Private
+
+extension RepositorySession {
+    /// 轮询时的所选文件内容哈希；没有可比较的文件或读取失败时为 nil。
+    private static func contentHash(of entry: StatusEntry?, service: WorkingCopyOperations) async -> String? {
+        guard let entry else {
+            return nil
+        }
+
+        return try? await service.worktreeHash(of: entry)
+    }
+
+    /// 刷新成功后一次性替换快照；仍存在的文件继续选中。
+    private func replaceStatus(_ status: WorkingCopyStatus) {
+        self.status = status
+        if !status.entries.contains(where: { $0.kind == .conflicted }) { onlyConflicts = false }
+        stagingOverrides = [:]
+
+        // 暂存会把未跟踪项变为已跟踪项；同路径优先延续选择，双记录仍优先匹配类别。
+        func retainedID(_ selected: StatusRowID) -> StatusRowID? {
+            let entry = status.entries.first { $0.path == selected.path && $0.kind == selected.kind }
+                ?? status.entries.first { $0.path == selected.path }
+            return entry.map { StatusRowID(path: $0.path, kind: $0.kind) }
+        }
+
+        selectedIDs = Set(selectedIDs.compactMap(retainedID))
+
+        if let selected = selectedID {
+            selectedID = retainedID(selected)
+        }
+    }
+
+    /// 刷新失败时撤回临时勾选并报告错误：取消不报告，断线交给重连，其余错误交给窗口呈现。
+    private func reportRefreshFailure(_ error: Error, in repository: RepositoryLocation) {
+        // 保留旧快照，错误反馈与数据展示互不覆盖。
+        stagingOverrides = [:]
+
+        guard (error as? GitError)?.isCancelled != true, !(error is CancellationError) else {
+            return
+        }
+
+        let failure = AppFailure(error: error, opening: false, location: repository)
+        self.failure = failure
+
+        if error is RemoteConnectionError {
+            reconnect()
+        } else {
+            onFailure?(failure)
+        }
+    }
+
+    /// 本次刷新结束：解除刷新状态，并补做刷新期间收到的完整刷新请求。
+    private func finishRefresh() {
+        isRefreshing = false
+        refreshTask = nil
+
+        if pendingFullRefresh {
+            pendingFullRefresh = false
+            refresh(full: true)
+        }
+    }
+
+    /// 写入失败时撤回临时勾选并报告错误；服务器写入断线后结果未知，记下中断的写入等待重连核对。
+    ///
+    /// - Parameters:
+    ///   - title: 已本地化的操作名称，用于断线后的核对报告。
+    ///   - branch: 写入前状态快照中的分支与 HEAD。
+    private func reportWriteFailure(
+        _ error: Error,
+        cancelled: Bool,
+        title: String,
+        branch: BranchStatus?,
+        in repository: RepositoryLocation
+    ) {
+        stagingOverrides = [:]
+
+        let remoteFailure = error as? RemoteConnectionError
+
+        // 取消未确认仍须报告；普通取消只回到可刷新状态。
+        if !cancelled || remoteFailure?.kind == .cancellationUnconfirmed {
+            let failure = AppFailure(error: error, opening: false, location: repository, writing: true)
+            self.failure = failure
+            onFailure?(failure)
+        }
+
+        // 结果未知的服务器写入不重试，等待重连核对后再报告。
+        if remoteFailure != nil {
+            interruptedWrite = InterruptedWrite(title: title, branch: branch, time: Date())
+            reconnect()
+        }
     }
 
     /// 所选文件与已显示 Diff 的记录一致、但内容哈希不同，说明需要重读 Diff。
@@ -962,116 +1013,4 @@ final class RepositorySession {
             }
         }
     }
-}
-
-// MARK: - Action Availability
-
-extension RepositorySession {
-    /// 菜单、工具栏、右键菜单与拖放共用的获取条件：需要已配置远端。
-    var canFetch: Bool {
-        canWrite && hasRemotes
-    }
-
-    /// 拉取需要可同步的当前分支，以及至少一个远端分支。
-    var canPull: Bool {
-        canWrite && hasCurrentBranch && history.branches.contains(where: \.isRemote)
-    }
-
-    /// 推送当前分支需要已出生的本地分支与远端。
-    var canPush: Bool {
-        canWrite && status?.branch.head != nil && status?.branch.oid != nil && hasRemotes
-    }
-
-    /// 发布需要本地分支与远端。
-    var canPublish: Bool {
-        canWrite && history.branches.contains(where: \.isLocal) && hasRemotes
-    }
-
-    /// 合并需要可同步的当前分支，以及它以外的分支。
-    var canMerge: Bool {
-        canWrite && hasCurrentBranch && history.branches.contains { $0.id != currentBranchID }
-    }
-
-    /// 新建分支需要 HEAD 已有提交，且没有进行中的操作。
-    var canCreateBranch: Bool {
-        canWrite && status?.branch.oid != nil && context?.operation == nil
-    }
-
-    /// 从指定引用或提交新建分支，起点不依赖当前 HEAD。
-    var canCreateBranchFromReference: Bool {
-        canWrite && context?.operation == nil
-    }
-
-    /// 检出需要当前分支以外的本地分支，且没有进行中的操作。
-    var canCheckout: Bool {
-        canWrite && context?.operation == nil
-            && history.branches.contains { $0.isLocal && $0.id != currentBranchID }
-    }
-
-    /// 当前分支已附着、已有提交且没有进行中的操作。
-    private var hasCurrentBranch: Bool {
-        status?.branch.head != nil && status?.branch.oid != nil && context?.operation == nil
-    }
-
-    /// 至少配置了一个远端。
-    private var hasRemotes: Bool {
-        history.snapshot?.remotes.isEmpty == false
-    }
-
-    /// 当前分支的完整引用名；分离或未出生时为空。
-    private var currentBranchID: String {
-        status?.branch.head.map { "refs/heads/" + $0 } ?? ""
-    }
-
-    /// 双击或右键检出指定分支；远端分支检出已有或新建的跟踪分支。
-    func canCheckout(_ reference: RepositoryReference) -> Bool {
-        canWrite && context?.operation == nil && (reference.isRemote || reference.id != currentBranchID)
-    }
-
-    /// 把指定分支合并到当前分支。
-    func canMerge(_ reference: RepositoryReference) -> Bool {
-        canWrite && hasCurrentBranch && reference.id != currentBranchID
-    }
-
-    /// 从指定远端分支拉取到当前分支。
-    func canPull(from reference: RepositoryReference) -> Bool {
-        canWrite && hasCurrentBranch && reference.isRemote
-    }
-
-    /// 推送或发布指定的本地分支。
-    func canPush(_ reference: RepositoryReference) -> Bool {
-        canWrite && hasRemotes && reference.isLocal
-    }
-
-    /// 为指定远端分支新建跟踪分支。
-    func canTrack(_ reference: RepositoryReference) -> Bool {
-        canCreateBranchFromReference && reference.isRemote
-    }
-
-    /// 删除只针对本地分支，当前分支不能删除。
-    func canDelete(_ references: [RepositoryReference]) -> Bool {
-        canWrite && !references.isEmpty && references.allSatisfy(\.isLocal)
-            && !references.contains { $0.id == currentBranchID }
-    }
-
-    /// 所选文件中存在未暂存的改动。
-    func canStage(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains(where: \.hasUnstagedChanges)
-    }
-
-    /// 所选文件中存在已暂存的改动。
-    func canUnstage(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains(where: \.hasStagedChanges)
-    }
-
-    /// 丢弃需要至少一个文件，执行前仍会确认。
-    func canDiscard(_ entries: [StatusEntry]) -> Bool {
-        canWrite && !entries.isEmpty
-    }
-
-    /// 采用一侧与标记已解决只作用于冲突文件。
-    func canResolve(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains { $0.kind == .conflicted }
-    }
-
 }

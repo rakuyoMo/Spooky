@@ -185,7 +185,12 @@ enum TerminalLauncher {
         try JSONSerialization.data(withJSONObject: configuration).write(to: file, options: .atomic)
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
         temporaryFiles.append(file)
-        let url = URL(string: "warp://launch/" + name)!
+        let link = "warp://launch/" + name
+
+        guard let url = URL(string: link) else {
+            throw TerminalLaunchError(diagnostic: link)
+        }
+
         _ = try await NSWorkspace.shared.open([url], withApplicationAt: application, configuration: .init())
     }
 

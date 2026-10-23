@@ -119,37 +119,14 @@ struct AppFailure: Identifiable {
             kind = .output
 
         case let sync as RepositorySyncError:
-            kind = .repository
-
-            switch sync {
-            case .dirtyWorkingCopy: key = "sync.error.dirty"
-            case .requiresBranch: key = "sync.error.branch"
-            case .missingRemote: key = "sync.error.remote"
-            }
+            (key, kind) = Self.classification(of: sync)
 
         case let working as WorkingCopyError:
-            kind = .repository
-
-            switch working {
-            case .staleSnapshot: key = "working.error.stale"
-            case .invalidSelection: key = "working.error.selection"
-            case .unsupportedFile: key = "working.error.file"
-            case .malformedDiff:
-                key = "error.parse"
-                kind = .output
-            }
+            (key, kind) = Self.classification(of: working)
 
         case let file as RepositoryFileError:
-            switch file {
-            case .unsupportedPath:
-                key = "working.error.path"
-                kind = .repository
-
-            case .tooLarge:
-                key = "error.outputLimit"
-                kind = .output
-                exceededOutputLimit = true
-            }
+            (key, kind) = Self.classification(of: file)
+            exceededOutputLimit = file == .tooLarge
 
         case let remote as RemoteConnectionError:
             // 写入中途断线的结果未知，统一提示先核对仓库，不能引导用户直接重试。
@@ -169,79 +146,11 @@ struct AppFailure: Identifiable {
         case let git as GitError:
             output = git.result
             diagnostic = git.diagnostic
-            kind = .git
-
-            switch git.category {
-            case .pushRejected: key = "sync.error.rejected"
-
-            case .authenticationFailed: key = "sync.error.authentication"
-
-            case .remoteNotFound: key = "sync.error.remote"
-
-            case .connectionTimedOut: key = "sync.error.timeout"
-
-            case .connectionUnavailable: key = "sync.error.connection"
-
-            case .noUpstream: key = "sync.error.upstream"
-
-            case .branchNotMerged: key = "branch.error.unmerged"
-
-            case .localChanges: key = "sync.error.dirty"
-
-            case .indexLocked: key = "error.indexLocked"
-
-            case .commandFailed: key = "error.command"
-
-            case .launchFailed:
-                key = "error.launch"
-                kind = .environment
-
-            case .processIOFailed:
-                key = "error.process"
-                kind = .environment
-
-            case .notRepository:
-                key = "error.notRepository"
-                kind = .repository
-
-            case .notWorkingTree:
-                key = "error.notWorkingTree"
-                kind = .repository
-
-            case .pathUnavailable:
-                key = "error.path"
-                kind = .repository
-
-            case .unsafeRepository:
-                key = "error.ownership"
-                kind = .repository
-
-            case .cancelled:
-                key = "error.cancelled"
-                kind = .cancelled
-
-            case .outputLimitExceeded:
-                key = "error.outputLimit"
-                kind = .output
-                exceededOutputLimit = true
-            }
+            (key, kind) = Self.classification(of: git.category)
+            exceededOutputLimit = git.category == .outputLimitExceeded
 
         case let problem as RepositoryOpenError:
-            switch problem {
-            case .requiresLocalAbsolutePath:
-                key = "error.path"
-                kind = .repository
-
-            case .invalidGitVersion(let result), .unsupportedGitVersion(let result):
-                key = "error.version"
-                kind = .version
-                output = result
-
-            case .invalidWorktreeResponse(let result):
-                key = "error.notWorkingTree"
-                kind = .repository
-                output = result
-            }
+            (key, kind, output) = Self.classification(of: problem)
 
         case let parse as StatusParseError:
             key = "error.parse"
@@ -280,6 +189,33 @@ struct AppFailure: Identifiable {
         details = raw.isEmpty ? AppLocalization.text("error.noOutput") : raw
     }
 
+    /// 发起同步前仓库条件不满足时的文案键与类别，这类失败都属于仓库状态问题。
+    private static func classification(of sync: RepositorySyncError) -> (key: String, kind: FailureKind) {
+        switch sync {
+        case .dirtyWorkingCopy: ("sync.error.dirty", .repository)
+        case .requiresBranch: ("sync.error.branch", .repository)
+        case .missingRemote: ("sync.error.remote", .repository)
+        }
+    }
+
+    /// 补丁操作失败的文案键与类别：补丁格式错误属于输出问题，其余属于仓库状态问题。
+    private static func classification(of working: WorkingCopyError) -> (key: String, kind: FailureKind) {
+        switch working {
+        case .staleSnapshot: ("working.error.stale", .repository)
+        case .invalidSelection: ("working.error.selection", .repository)
+        case .unsupportedFile: ("working.error.file", .repository)
+        case .malformedDiff: ("error.parse", .output)
+        }
+    }
+
+    /// 文件访问失败的文案键与类别：路径不受支持属于仓库问题，超过读取上限属于输出问题。
+    private static func classification(of file: RepositoryFileError) -> (key: String, kind: FailureKind) {
+        switch file {
+        case .unsupportedPath: ("working.error.path", .repository)
+        case .tooLarge: ("error.outputLimit", .output)
+        }
+    }
+
     /// 服务器体检与连接错误按阶段归类：版本、仓库位置与输出格式各自独立，其余属于连接。
     private static func kind(of remote: RemoteConnectionError.Kind) -> FailureKind {
         switch remote {
@@ -298,6 +234,47 @@ struct AppFailure: Identifiable {
         case .unknownHostKey, .changedHostKey, .authentication, .unavailable, .deployment,
              .protocolFailure, .cancellationUnconfirmed, .interruptedWrite:
             .connection
+        }
+    }
+
+    /// Git 失败按分类取文案键与类别：启动与管道问题属于环境，位置与所有权问题属于仓库，
+    /// 取消与输出超限各自成类，其余属于 Git 失败。
+    private static func classification(of category: GitError.Category) -> (key: String, kind: FailureKind) {
+        switch category {
+        case .pushRejected: ("sync.error.rejected", .git)
+        case .authenticationFailed: ("sync.error.authentication", .git)
+        case .remoteNotFound: ("sync.error.remote", .git)
+        case .connectionTimedOut: ("sync.error.timeout", .git)
+        case .connectionUnavailable: ("sync.error.connection", .git)
+        case .noUpstream: ("sync.error.upstream", .git)
+        case .branchNotMerged: ("branch.error.unmerged", .git)
+        case .localChanges: ("sync.error.dirty", .git)
+        case .indexLocked: ("error.indexLocked", .git)
+        case .commandFailed: ("error.command", .git)
+        case .launchFailed: ("error.launch", .environment)
+        case .processIOFailed: ("error.process", .environment)
+        case .notRepository: ("error.notRepository", .repository)
+        case .notWorkingTree: ("error.notWorkingTree", .repository)
+        case .pathUnavailable: ("error.path", .repository)
+        case .unsafeRepository: ("error.ownership", .repository)
+        case .cancelled: ("error.cancelled", .cancelled)
+        case .outputLimitExceeded: ("error.outputLimit", .output)
+        }
+    }
+
+    /// 打开工作区前置校验失败的文案键与类别，版本与工作区根目录的校验失败同时带回 Git 的原始结果。
+    private static func classification(
+        of problem: RepositoryOpenError
+    ) -> (key: String, kind: FailureKind, output: GitCommandResult?) {
+        switch problem {
+        case .requiresLocalAbsolutePath:
+            ("error.path", .repository, nil)
+
+        case .invalidGitVersion(let result), .unsupportedGitVersion(let result):
+            ("error.version", .version, result)
+
+        case .invalidWorktreeResponse(let result):
+            ("error.notWorkingTree", .repository, result)
         }
     }
 }
