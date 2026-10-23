@@ -58,8 +58,13 @@ struct ImageDiffView: View {
                 Divider()
             }
 
+            // 工作区里图片区占满动作条以上的空间，变更集里按图片高度排列
             content
-                .frame(maxWidth: .infinity)
+                .frame(
+                    maxWidth: .infinity,
+                    maxHeight: placement == .bottom ? .infinity : nil,
+                    alignment: .top
+                )
 
             if placement == .bottom {
                 Divider()
