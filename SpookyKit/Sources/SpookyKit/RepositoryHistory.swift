@@ -122,7 +122,9 @@ public struct CommitFileChange: Sendable, Equatable, Identifiable {
     static func parse(_ data: Data) throws -> [Self] {
         guard !data.isEmpty else { return [] }
         guard data.last == 0 else { throw RepositoryReadError.malformedOutput("changeset") }
-        let fields = data.dropLast().split(separator: 0, omittingEmptySubsequences: false)
+        let fields = data
+            .dropLast()
+            .split(separator: 0, omittingEmptySubsequences: false)
             .map { String(decoding: $0, as: UTF8.self) }
         var files: [Self] = []
         var indices: [String: Int] = [:]
@@ -188,7 +190,7 @@ public struct CommitFileChange: Sendable, Equatable, Identifiable {
                 guard
                     let index = indices[path], !counted.contains(path),
                     files[index].originalPath == original,
-                    binary || (additions != nil && deletions != nil && additions! >= 0 && deletions! >= 0)
+                    binary || ((additions ?? -1) >= 0 && (deletions ?? -1) >= 0)
                 else { throw RepositoryReadError.malformedOutput("numstat") }
                 files[index].additions = additions
                 files[index].deletions = deletions
@@ -280,6 +282,9 @@ public struct RepositoryHistory: Sendable {
             ] + paths
         )
         let threshold = max(0, min(warningKilobytes, Int.max / 1000)) * 1000
+
+        // Foundation 的 range(of:) 与 contains 结果相同，在数十 MB 的补丁上快数百倍。
+        // swiftlint:disable:next contains_over_range_nil_comparison
         let binary = patch.range(of: Data("\nBinary files ".utf8)) != nil
         return CommitDiff(
             byteCount: patch.count,

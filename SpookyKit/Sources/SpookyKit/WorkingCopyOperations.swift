@@ -110,6 +110,9 @@ public struct WorkingCopyOperations: Sendable {
         let contents = try await snapshot(entry)
         let patch = side == .staged ? contents.staged : contents.unstaged
         let threshold = max(0, min(warningKilobytes, Int.max / 1000)) * 1000
+
+        // Foundation 的 range(of:) 与 contains 结果相同，在数十 MB 的补丁上快数百倍。
+        // swiftlint:disable:next contains_over_range_nil_comparison
         let binary = patch.range(of: Data("\nBinary files ".utf8)) != nil
         let parsed = patch.count <= threshold || showLarge || binary ? try RepositoryDiff(patch: patch) : nil
 
@@ -316,13 +319,13 @@ public struct WorkingCopyOperations: Sendable {
         })
         let operation: RepositoryOperationState? =
             if
-                files["rebase-merge/head-name"] != nil || files["rebase-apply/head-name"] !=
-                nil
+                files["rebase-merge/head-name"] != nil
+                || files["rebase-apply/head-name"] != nil
             {
                 .rebase
-            } else if files["REVERT_HEAD"] != nil || files["sequencer/todo"]?.hasPrefix("revert ") == true {
+            } else if files["REVERT_HEAD"] != nil || (files["sequencer/todo"]?.hasPrefix("revert ") ?? false) {
                 .revert
-            } else if files["CHERRY_PICK_HEAD"] != nil || files["sequencer/todo"]?.hasPrefix("pick ") == true {
+            } else if files["CHERRY_PICK_HEAD"] != nil || (files["sequencer/todo"]?.hasPrefix("pick ") ?? false) {
                 .cherryPick
             } else if files["MERGE_HEAD"] != nil {
                 .merge
@@ -360,6 +363,11 @@ public struct WorkingCopyOperations: Sendable {
         return String(decoding: result.standardOutput, as: UTF8.self).trimmingCharacters(in: .newlines)
     }
 
+}
+
+// MARK: - Private
+
+extension WorkingCopyOperations {
     /// 指定提交的完整信息；提交信息不可变，按哈希复用。
     private func lastMessage(of head: String?) async throws -> String {
         guard let head else {
@@ -408,5 +416,4 @@ public struct WorkingCopyOperations: Sendable {
 
         return (staged, unstaged, Data(hash.finalize()))
     }
-
 }

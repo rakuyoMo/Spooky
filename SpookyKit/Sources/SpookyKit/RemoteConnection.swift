@@ -221,9 +221,11 @@ public actor RemoteConnection {
             return
         }
 
-        if let closing { await closing.value
+        if let closing {
+            await closing.value
             return
         }
+
         let attempt = connecting
         connecting = nil
         attempt?.cancel()
@@ -276,9 +278,11 @@ public actor RemoteConnection {
 
     /// 只检查主连接，不允许 SSH 因复用失败悄悄新建连接。
     public func check() async throws {
-        if let canonical { try await canonical.check()
+        if let canonical {
+            try await canonical.check()
             return
         }
+
         guard localDirectory != nil else { throw RemoteConnectionError(.unavailable) }
         let result = try await ssh(["-O", "check"], arguments: ["connection-check"])
 
@@ -339,12 +343,31 @@ public actor RemoteConnection {
 
     /// 用于断线验收：仅关闭 Spooky 自己的 SSH 主连接。
     func interruptMaster() async throws {
-        if let canonical { try await canonical.interruptMaster()
+        if let canonical {
+            try await canonical.interruptMaster()
             return
         }
+
         _ = try await ssh(["-O", "exit"], arguments: ["connection-close"])
     }
 
+    /// 阶段失败归入对应体检错误；SSH 255 优先按连接诊断识别。
+    func probe(
+        _ command: [String],
+        input: Data? = nil,
+        kind: RemoteConnectionError.Kind
+    ) async throws -> GitCommandResult {
+        let result = try await commandChannel(command, input: input, arguments: [kind.rawValue])
+        if result.exitCode == 255 { throw RemoteConnectionError.ssh(result) }
+        guard result.exitCode == 0 else { throw RemoteConnectionError(kind, result: result) }
+        return result
+    }
+
+}
+
+// MARK: - Private
+
+extension RemoteConnection {
     /// 同一仓库写入串行，同一主机最多同时执行八条命令。
     private func perform(
         _ arguments: [String],
@@ -492,55 +515,7 @@ public actor RemoteConnection {
         guard master.exitCode == 0 else { throw RemoteConnectionError.ssh(master) }
         try await check()
 
-        _ = try await probe(["/bin/sh", "-c", "command -v git"], kind: .gitUnavailable)
-        let version = try await probe(["git", "--version"], kind: .gitUnavailable)
-        guard let parsed = GitVersion(output: version.standardOutput), parsed >= .minimum else {
-            throw RemoteConnectionError(.gitVersion, result: version)
-        }
-
-        // 存在、读取和搜索权限分别检查，路径只作为位置参数进入固定脚本。
-        _ = try await probe([
-            "/bin/sh", "-c",
-            "if ! test -d \"$1\"; then printf '%s\\n' 'Directory does not exist' >&2; exit 2; fi",
-            "spooky-path", requestedPath,
-        ], kind: .pathUnavailable)
-        _ = try await probe([
-            "/bin/sh", "-c",
-            """
-            if ! test -r "$1" || ! test -x "$1"; then
-                printf '%s\\n' 'Directory is not readable or searchable' >&2
-                exit 3
-            fi
-            """,
-            "spooky-path", requestedPath,
-        ], kind: .pathPermission)
-        let worktree = try await probe(
-            ["git", "-C", requestedPath, "rev-parse", "--is-inside-work-tree"],
-            kind: .notWorkingTree
-        )
-        guard worktree.standardOutput == Data("true\n".utf8) else {
-            throw RemoteConnectionError(.notWorkingTree, result: worktree)
-        }
-
-        let status = try await probe(
-            ["git", "-C", requestedPath] + GitRunner.globalOptions
-                + ["status", "--porcelain=v2", "-z", "--branch", "--untracked-files=all"],
-            kind: .statusFormat
-        )
-
-        do { _ = try WorkingCopyStatus(porcelainV2: status.standardOutput) }
-        catch { throw RemoteConnectionError(.statusFormat, result: status) }
-
-        let root = try await probe(
-            ["git", "-C", requestedPath, "rev-parse", "--show-toplevel"],
-            kind: .notWorkingTree
-        )
-        guard
-            let rootPath = String(data: root.standardOutput, encoding: .utf8),
-            rootPath.hasPrefix("/"), rootPath.hasSuffix("\n")
-        else { throw RemoteConnectionError(.notWorkingTree, result: root) }
-
-        let repository = RemoteRepository(host: host, path: String(rootPath.dropLast()))
+        let repository = try await verifyRepository()
         let existing = Self.connections.withLock { connections -> RemoteConnection? in
             if let existing = connections[repository.location], existing !== self {
                 connections[.remote(host: host, path: requestedPath)] = existing
@@ -608,7 +583,8 @@ public actor RemoteConnection {
             path.hasPrefix("/"), path.hasSuffix("\n")
         else { throw RemoteConnectionError(.deployment, result: installed) }
 
-        wrapper = String(path.dropLast())
+        let wrapper = String(path.dropLast())
+        self.wrapper = wrapper
         let relay = try CallbackRelay(
             path: directory.appending(path: "relay.sock").path,
             host: host,
@@ -617,22 +593,23 @@ public actor RemoteConnection {
         try relay.start()
         self.relay = relay
         let input = try JSONSerialization.data(withJSONObject: ["token": relay.token]) + Data([10])
-        let created = try await probe([wrapper!, "create-session"], input: input, kind: .deployment)
+        let created = try await probe([wrapper, "create-session"], input: input, kind: .deployment)
         guard
             let path = String(data: created.standardOutput, encoding: .utf8),
             path.hasPrefix("/tmp/spooky-"), path.hasSuffix("\n"),
             !path.dropLast().contains("\n")
         else { throw RemoteConnectionError(.deployment, result: created) }
 
-        remoteDirectory = String(path.dropLast())
+        let remoteDirectory = String(path.dropLast())
+        self.remoteDirectory = remoteDirectory
         let forward = try await ssh([
             "-O", "forward",
             "-o", "ExitOnForwardFailure=yes",
             "-o", "StreamLocalBindUnlink=yes",
-            "-R", remoteDirectory! + "/relay.sock:" + relay.path,
+            "-R", remoteDirectory + "/relay.sock:" + relay.path,
         ], arguments: ["relay-forward"])
         guard forward.exitCode == 0 else { throw RemoteConnectionError(.deployment, result: forward) }
-        _ = try await probe([wrapper!, "watch", remoteDirectory!], kind: .deployment)
+        _ = try await probe([wrapper, "watch", remoteDirectory], kind: .deployment)
     }
 
     /// 远端输出携带操作专属的结束标记，Git 返回 255 时仍保留 Git 错误身份。
@@ -693,7 +670,7 @@ public actor RemoteConnection {
 
             let gitFailure = redacted as? GitError
             if
-                Task.isCancelled || gitFailure?.isCancelled == true
+                Task.isCancelled || (gitFailure?.isCancelled ?? false)
                 || gitFailure?.category == .outputLimitExceeded
                 || gitFailure?.category == .processIOFailed
             {
@@ -787,18 +764,6 @@ public actor RemoteConnection {
         }
 
         return flags.map { $0 == "1" }
-    }
-
-    /// 阶段失败归入对应体检错误；SSH 255 优先按连接诊断识别。
-    private func probe(
-        _ command: [String],
-        input: Data? = nil,
-        kind: RemoteConnectionError.Kind
-    ) async throws -> GitCommandResult {
-        let result = try await commandChannel(command, input: input, arguments: [kind.rawValue])
-        if result.exitCode == 255 { throw RemoteConnectionError.ssh(result) }
-        guard result.exitCode == 0 else { throw RemoteConnectionError(kind, result: result) }
-        return result
     }
 
     /// 每个远端参数独立转义，主连接失效时禁止回退到新连接执行写操作。
@@ -948,5 +913,4 @@ public actor RemoteConnection {
     private func removeObserver(_ id: UUID) {
         observers[id] = nil
     }
-
 }

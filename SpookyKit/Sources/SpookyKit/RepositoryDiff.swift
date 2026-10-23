@@ -198,12 +198,17 @@ public struct RepositoryDiff: Sendable, Equatable {
                 oldNumber: prefix == 43 ? nil : oldNumber,
                 newNumber: prefix == 45 ? nil : newNumber
             ))
-            if prefix != 43 { oldNumber += 1
+
+            if prefix != 43 {
+                oldNumber += 1
                 oldCount += 1
             }
-            if prefix != 45 { newNumber += 1
+
+            if prefix != 45 {
+                newNumber += 1
                 newCount += 1
             }
+
             cursor += 1
         }
 
@@ -303,8 +308,8 @@ public struct RepositoryDiff: Sendable, Equatable {
         let newPath = Self.quotedPath("b/" + path)
         var header = "diff --git \(oldPath) \(newPath)\n"
 
-        if oldAbsent { header += "new file mode \(file.addedMode!)\n" }
-        if newAbsent { header += "deleted file mode \(file.deletedMode!)\n" }
+        if oldAbsent, let mode = file.addedMode { header += "new file mode \(mode)\n" }
+        if newAbsent, let mode = file.deletedMode { header += "deleted file mode \(mode)\n" }
         header += "--- \(oldAbsent ? "/dev/null" : oldPath)\n"
         header += "+++ \(newAbsent ? "/dev/null" : newPath)\n"
         header += "@@ -\(oldAbsent ? 0 : oldStart),\(oldCount) +\(newAbsent ? 0 : newStart),\(newCount) @@\n"

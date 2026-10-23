@@ -223,31 +223,8 @@ public struct GitRunner: Sendable {
             ) {
                 event(.started)
 
-                // 只有网络命令需要 askpass；本机 SSH 解锁后由系统 agent 保留密钥。
-                if
-                    let credentialHandler,
-                    ["fetch", "push", "ls-remote"]
-                        .contains(RepositoryOperationQueue.command(in: arguments) ?? "")
-                {
-                    return try await LocalGitAuthentication.execute(
-                        executable: executablePath,
-                        location: location,
-                        arguments: arguments,
-                        environment: environment,
-                        input: input,
-                        acceptedExitCodes: acceptedExitCodes,
-                        handler: credentialHandler
-                    ) {
-                        event(.output($0))
-                        onOutput?($0)
-                    }
-                }
-
-                return try await CommandExecutor.execute(
-                    executable: executablePath,
-                    processArguments: ["-C", location.path] + Self.globalOptions + arguments,
-                    arguments: arguments,
-                    environment: environment,
+                return try await executeLocally(
+                    arguments,
                     input: input,
                     acceptedExitCodes: acceptedExitCodes
                 ) {
@@ -293,6 +270,42 @@ public struct GitRunner: Sendable {
         )
 
         return try await runner.execute(["--version"])
+    }
+
+    /// 在本机启动 Git；配有口令入口的网络命令经凭据中继执行。
+    private func executeLocally(
+        _ arguments: [String],
+        input: Data?,
+        acceptedExitCodes: Set<Int32>,
+        onOutput: @escaping @Sendable (GitOutputEvent) -> Void
+    ) async throws -> GitCommandResult {
+        // 只有网络命令需要 askpass；本机 SSH 解锁后由系统 agent 保留密钥。
+        if
+            let credentialHandler,
+            ["fetch", "push", "ls-remote"]
+                .contains(RepositoryOperationQueue.command(in: arguments) ?? "")
+        {
+            return try await LocalGitAuthentication.execute(
+                executable: executablePath,
+                location: location,
+                arguments: arguments,
+                environment: environment,
+                input: input,
+                acceptedExitCodes: acceptedExitCodes,
+                handler: credentialHandler,
+                onOutput: onOutput
+            )
+        }
+
+        return try await CommandExecutor.execute(
+            executable: executablePath,
+            processArguments: ["-C", location.path] + Self.globalOptions + arguments,
+            arguments: arguments,
+            environment: environment,
+            input: input,
+            acceptedExitCodes: acceptedExitCodes,
+            onOutput: onOutput
+        )
     }
 
 }

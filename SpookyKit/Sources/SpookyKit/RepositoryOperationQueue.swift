@@ -221,7 +221,7 @@ public final class GitOperation: Sendable {
                 continuation.yield(.completed(result))
                 return result
             } catch {
-                if error is CancellationError || (error as? GitError)?.isCancelled == true {
+                if error is CancellationError || ((error as? GitError)?.isCancelled ?? false) {
                     continuation.yield(.cancelled(confirmed: true))
                 } else if (error as? RemoteConnectionError)?.kind == .cancellationUnconfirmed {
                     continuation.yield(.cancelled(confirmed: false))

@@ -192,18 +192,10 @@ public struct RepositorySync: Sendable {
                 throw RepositorySyncError.requiresBranch
             }
             guard status.entries.isEmpty else { throw RepositorySyncError.dirtyWorkingCopy }
-            let target = try await pullTarget(remote: remote, branch: branch, current: current)
-            let result = try await runner.execute(
-                [
-                    "fetch", "--porcelain", "--progress", "--no-recurse-submodules", "--no-auto-maintenance",
-                    "--no-tags", "--", target.0, target.1,
-                ],
-                onOutput: onOutput
-            )
-            _ = try RemoteReferenceUpdate.parseFetch(result.standardOutput)
 
-            // FETCH_HEAD 固定为本次单分支获取结果，不能复用可能陈旧的跟踪引用。
-            let fetched = try await RepositoryReferences(runner: runner).resolve("FETCH_HEAD")
+            let target = try await pullTarget(remote: remote, branch: branch, current: current)
+            let fetched = try await fetchPullTarget(target, onOutput: onOutput)
+
             if rebase {
                 if verifySignatures {
                     _ = try await runner.execute(["verify-commit", fetched], onOutput: onOutput)
@@ -280,7 +272,7 @@ public struct RepositorySync: Sendable {
             }
             return result.exitCode == 0 ? .clean : .conflicts(Array(fields.dropFirst()))
         } catch {
-            if Task.isCancelled || (error as? GitError)?.isCancelled == true || error is CancellationError {
+            if Task.isCancelled || ((error as? GitError)?.isCancelled ?? false) || error is CancellationError {
                 throw CancellationError()
             }
             if error is RemoteConnectionError { throw error }
@@ -341,5 +333,23 @@ public struct RepositorySync: Sendable {
         guard branch.hasPrefix("refs/heads/") else { throw RepositoryReadError.invalidQuery }
         try await references.validate(name: String(branch.dropFirst(11)))
         return (remote, branch)
+    }
+
+    /// 只获取拉取目标这一个分支，返回本次获取写入 FETCH_HEAD 的提交。
+    private func fetchPullTarget(
+        _ target: (String, String),
+        onOutput: (@Sendable (GitOutputEvent) -> Void)?
+    ) async throws -> String {
+        let result = try await runner.execute(
+            [
+                "fetch", "--porcelain", "--progress", "--no-recurse-submodules", "--no-auto-maintenance",
+                "--no-tags", "--", target.0, target.1,
+            ],
+            onOutput: onOutput
+        )
+        _ = try RemoteReferenceUpdate.parseFetch(result.standardOutput)
+
+        // FETCH_HEAD 固定为本次单分支获取结果，不能复用可能陈旧的跟踪引用。
+        return try await RepositoryReferences(runner: runner).resolve("FETCH_HEAD")
     }
 }
