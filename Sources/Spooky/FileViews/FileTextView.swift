@@ -126,6 +126,18 @@ struct FileTextView: NSViewRepresentable {
         /// 已应用的样式。
         var style: FileTextStyle?
 
+        /// 已应用的 Tab 宽度与不可见字符设置。
+        var renderingKey: String?
+
+        /// 已着色的内容身份与是否着色；变化时重新着色。
+        var syntaxKey: String?
+
+        /// 当前内容的语法片段，与行一一对应；不着色或识别不了语言时为空。
+        var spans: [[SyntaxSpan]]?
+
+        /// 后台着色任务，内容变化时取消。
+        var syntaxTask: Task<Void, Never>?
+
         /// 单击注释弹出的提交摘要。
         var popover: NSPopover?
 
@@ -165,6 +177,9 @@ struct FileTextView: NSViewRepresentable {
     /// 内容身份：文件、版本与显示方式。
     let contentID: String
 
+    /// 文件在仓库里的路径，按它识别语法着色的语言。
+    let path: String
+
     /// 各行原文。
     let lines: [String]
 
@@ -182,6 +197,18 @@ struct FileTextView: NSViewRepresentable {
 
     /// 双击注释时回到的提交。
     var openCommit: ((String) -> Void)? = nil
+
+    /// 语法着色总开关。
+    @AppStorage(TextPreferences.syntaxColoringKey)
+    private var colorsSyntax = true
+
+    /// 一个制表符占的空格数。
+    @AppStorage(TextPreferences.tabWidthKey)
+    private var tabWidth = TextPreferences.defaultTabWidth
+
+    /// 标出不可见字符。
+    @AppStorage(TextPreferences.showsInvisiblesKey)
+    private var showsInvisibles = false
 
     /// 建立桥接。
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -221,12 +248,20 @@ struct FileTextView: NSViewRepresentable {
         else { return }
 
         let style = FileTextStyle(theme: theme)
+        let rendering = TextStyle(theme: theme, tabWidth: tabWidth, showsInvisibles: showsInvisibles)
+        let renderingKey = "\(tabWidth)\u{0}\(showsInvisibles)"
         let replaced = coordinator.contentID != contentID
 
-        if replaced || coordinator.style != style {
-            document.show(lines, style: style)
+        // 内容换了就丢掉上一份语法片段，着色完成后再补上颜色
+        if replaced {
+            coordinator.spans = nil
+        }
+
+        if replaced || coordinator.style != style || coordinator.renderingKey != renderingKey {
+            document.show(lines, style: style, rendering: rendering, spans: coordinator.spans)
             coordinator.contentID = contentID
             coordinator.style = style
+            coordinator.renderingKey = renderingKey
         }
 
         if replaced {
@@ -234,10 +269,68 @@ struct FileTextView: NSViewRepresentable {
             document.scroll(.zero)
         }
 
+        highlight(in: document, style: style, rendering: rendering, coordinator: coordinator)
+
         document.annotations = annotations
         document.menuActions = menuActions
         gutter.update(lineCount: lines.count, annotations: annotations)
         document.needsDisplay = true
+    }
+}
+
+// MARK: - Syntax
+
+extension FileTextView {
+    /// 内容或着色开关变化时在后台重新着色；内容超过大 Diff 警告阈值时不着色，按纯文本显示。
+    private func highlight(
+        in document: FileTextDocumentView,
+        style: FileTextStyle,
+        rendering: TextStyle,
+        coordinator: Coordinator
+    ) {
+        let key = contentID + "\u{0}" + String(colorsSyntax)
+
+        guard coordinator.syntaxKey != key else {
+            return
+        }
+
+        coordinator.syntaxKey = key
+        coordinator.syntaxTask?.cancel()
+
+        // 关掉着色时立即恢复纯文本
+        guard colorsSyntax else {
+            if coordinator.spans != nil {
+                coordinator.spans = nil
+                document.show(lines, style: style, rendering: rendering, spans: nil)
+            }
+
+            return
+        }
+
+        let lines = lines
+        let path = path
+        let text = lines.joined(separator: "\n")
+
+        guard text.utf8.count <= RepositorySession.diffWarningBytes else {
+            return
+        }
+
+        coordinator.syntaxTask = Task { [weak coordinator, weak document] in
+            let spans = await Task.detached(priority: .userInitiated) {
+                SyntaxHighlighter.language(forPath: path, content: text)
+                    .map { SyntaxHighlighter.highlight(text, as: $0) }
+            }.value
+
+            // 着色期间内容或开关又变了，结果作废
+            guard
+                let coordinator, let document, let spans,
+                coordinator.syntaxKey == key, !Task.isCancelled,
+                let style = coordinator.style
+            else { return }
+
+            coordinator.spans = spans
+            document.show(lines, style: style, rendering: document.rendering ?? rendering, spans: spans)
+        }
     }
 }
 
@@ -247,6 +340,9 @@ struct FileTextView: NSViewRepresentable {
 final class FileTextDocumentView: NSTextView {
     /// 当前样式。
     private(set) var style: FileTextStyle?
+
+    /// 当前的 Tab 宽度、不可见字符与主题颜色设置。
+    private(set) var rendering: TextStyle?
 
     /// Blame 的注释；原文为 nil。
     var annotations: FileTextAnnotations?
@@ -292,17 +388,51 @@ final class FileTextDocumentView: NSTextView {
     }
 
     /// 替换正文与样式，所有行使用同一个固定行高。
-    func show(_ lines: [String], style: FileTextStyle) {
+    ///
+    /// - Parameters:
+    ///   - lines: 各行原文。
+    ///   - style: 字体、行高与颜色。
+    ///   - rendering: Tab 宽度与不可见字符设置，与 Diff 的显示一致。
+    ///   - spans: 与行一一对应的语法片段；为空时按正文色显示。
+    func show(_ lines: [String], style: FileTextStyle, rendering: TextStyle, spans: [[SyntaxSpan]]?) {
         self.style = style
+        self.rendering = rendering
 
         let paragraph = NSMutableParagraphStyle()
         paragraph.minimumLineHeight = style.lineHeight
         paragraph.maximumLineHeight = style.lineHeight
 
-        textStorage?.setAttributedString(NSAttributedString(
-            string: lines.joined(separator: "\n"),
-            attributes: [.font: style.font, .foregroundColor: style.text, .paragraphStyle: paragraph]
-        ))
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: style.font,
+            .foregroundColor: style.text,
+            .paragraphStyle: paragraph,
+        ]
+        let content = NSMutableAttributedString()
+
+        // 每行经与 Diff 相同的渲染展开制表符、标出空白，再把片段颜色换成 AppKit 的颜色
+        for (index, line) in lines.enumerated() {
+            if index > 0 {
+                content.append(NSAttributedString(string: "\n", attributes: attributes))
+            }
+
+            let lineSpans = spans.flatMap { $0.indices.contains(index) ? $0[index] : nil }
+            let rendered = TextLineRenderer.attributed(line, spans: lineSpans, style: rendering)
+
+            for run in rendered.runs {
+                var runAttributes = attributes
+
+                if let color = run.foregroundColor {
+                    runAttributes[.foregroundColor] = NSColor(color)
+                }
+
+                content.append(NSAttributedString(
+                    string: String(rendered[run.range].characters),
+                    attributes: runAttributes
+                ))
+            }
+        }
+
+        textStorage?.setAttributedString(content)
         backgroundColor = style.background
         insertionPointColor = style.text
         selectedTextAttributes = [.backgroundColor: style.selection]

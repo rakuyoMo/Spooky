@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 
@@ -33,6 +34,22 @@ struct FileViewsTests {
         return runner
     }
 
+    /// 两个颜色换算到 sRGB 后各分量相差不超过 1 / 255。
+    private static func sameColor(_ left: NSColor, _ right: NSColor) -> Bool {
+        guard let left = left.usingColorSpace(.sRGB), let right = right.usingColorSpace(.sRGB) else {
+            return false
+        }
+
+        let pairs = [
+            (left.redComponent, right.redComponent),
+            (left.greenComponent, right.greenComponent),
+            (left.blueComponent, right.blueComponent),
+            (left.alphaComponent, right.alphaComponent),
+        ]
+
+        return pairs.allSatisfy { abs($0.0 - $0.1) <= 1 / 255 }
+    }
+
     /// 等待异步读取完成，超时视为失败。
     private static func wait(_ condition: () -> Bool) async throws {
         let deadline = ContinuousClock.now.advanced(by: .seconds(5))
@@ -56,6 +73,38 @@ struct FileViewsTests {
         #expect(FileRevisionContent.displayLines(Data("last".utf8)) == ["last"])
         #expect(FileRevisionContent.displayLines(Data()).isEmpty)
         #expect(FileRevisionContent.displayLine("tab\tkept\r") == "tab\tkept")
+    }
+
+    /// 原文与 Blame 的正文和 Diff 用同一套渲染：制表符按 Tab 宽度展开，语法片段换成主题颜色，没有片段的部分用正文色。
+    @Test("原文按 Tab 宽度展开并套用语法颜色")
+    func textRendering() throws {
+        let theme = TextTheme.builtin[0]
+        let style = FileTextStyle(theme: theme)
+        let document = FileTextDocumentView.make()
+
+        // 第一行依次是制表符、关键字与其余文字，第二行没有片段
+        let spans = [[
+            SyntaxSpan(length: 1, style: nil),
+            SyntaxSpan(length: 3, style: .keyword),
+            SyntaxSpan(length: 6, style: nil),
+        ]]
+
+        document.show(
+            ["\tlet x = 1", "plain"],
+            style: style,
+            rendering: TextStyle(theme: theme, tabWidth: 4, showsInvisibles: false),
+            spans: spans
+        )
+
+        let storage = try #require(document.textStorage)
+        #expect(storage.string == "    let x = 1\nplain")
+
+        let keyword = try #require(storage.attribute(.foregroundColor, at: 4, effectiveRange: nil) as? NSColor)
+        let expected = try #require(theme.colors["keyword"]?.nsColor)
+        #expect(Self.sameColor(keyword, expected))
+
+        let plain = try #require(storage.attribute(.foregroundColor, at: 15, effectiveRange: nil) as? NSColor)
+        #expect(Self.sameColor(plain, style.text))
     }
 
     /// 单击注释按行找到所在的段；段外的行没有归属。

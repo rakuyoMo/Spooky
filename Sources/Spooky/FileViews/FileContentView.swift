@@ -217,10 +217,17 @@ struct FileContentView: View {
         let menu = contentActions(path: content.path, revision: state.resolvedRevision, available: true)
 
         if state.mode == .raw {
-            FileTextView(contentID: identity + "/raw", lines: content.lines, theme: theme, menuActions: menu)
+            FileTextView(
+                contentID: identity + "/raw",
+                path: content.path,
+                lines: content.lines,
+                theme: theme,
+                menuActions: menu
+            )
         } else if let blame = state.blame {
             FileTextView(
                 contentID: identity + "/blame",
+                path: content.path,
                 lines: state.blameLines,
                 theme: theme,
                 annotations: FileTextAnnotations(

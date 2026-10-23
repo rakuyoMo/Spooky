@@ -402,6 +402,7 @@ struct FileHistoryDetailView: View {
         case nil:
             FileTextView(
                 contentID: content.path + "@" + commit.id,
+                path: content.path,
                 lines: content.lines,
                 theme: TextTheme.current(dark: colorScheme == .dark),
                 menuActions: [
