@@ -26,6 +26,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 跨仓库共用的 Activity 窗口。
     private var activityWindow: ActivityWindowController?
 
+    /// Dock 与 ⌘Tab 中的 App 图标：跟随 “图标与小组件样式”，连着服务器时指示灯亮起。
+    private let appIconController = AppIconController()
+
     /// 正在退出时先回收自己的 SSH 主连接。
     private var isTerminating = false
 
@@ -59,6 +62,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             "checkoutCreatedBranch": true,
         ])
         configureMenu()
+        appIconController.start()
         newWindow()
         NSApp.activate(ignoringOtherApps: true)
     }
@@ -189,6 +193,14 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 删除关闭窗口的强引用，不影响其它窗口。
     func removeWindow(_ controller: RepositoryWindowController) {
         windows.removeAll { $0 === controller }
+
+        // 关掉的窗口可能是最后一个连着服务器的窗口。
+        connectionStateChanged()
+    }
+
+    /// 窗口的连接状态变化或窗口关闭后，按是否还有连着的服务器仓库点亮或熄灭 App 图标上的指示灯。
+    func connectionStateChanged() {
+        appIconController.isConnected = windows.contains { $0.session.connectionState == .connected }
     }
 
     /// 一个窗口完成写入后，显示同一仓库的其它窗口完整刷新，避免各窗口状态不一致。
