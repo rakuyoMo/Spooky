@@ -316,6 +316,14 @@ extension WorkingCopyFileList {
             add("working.copyRelative", action: #selector(copyRelative), enabled: true, menu: menu)
             add("action.revealFinder", action: #selector(reveal), enabled: session.repository?.localURL != nil, menu: menu)
             add("action.openTerminal", action: #selector(terminal), enabled: true, menu: menu)
+
+            // 查看组：原文、Blame 与文件历史，只对单个文件提供
+            let viewItems = session.fileViewMenuItems(for: menuEntries)
+
+            if !viewItems.isEmpty {
+                menu.addItem(.separator())
+                viewItems.forEach(menu.addItem)
+            }
         }
 
         /// 空格沿用 “存在可暂存项则全部暂存” 的规则。

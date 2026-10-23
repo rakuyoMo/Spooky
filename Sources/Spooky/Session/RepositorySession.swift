@@ -13,10 +13,17 @@ enum RepositoryView: String, CaseIterable {
     /// 分页提交列表与只读提交详情。
     case history
 
+    /// 一个文件的提交时间线与所选版本的详情。
+    case fileHistory
+
+    /// 某个版本的文件原文与逐行追溯。
+    case fileContent
+
     /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
     var supportsSearch: Bool {
         switch self {
-        case .workingCopy, .history: false
+        case .workingCopy, .history, .fileContent: false
+        case .fileHistory: true
         }
     }
 }
@@ -57,6 +64,12 @@ final class RepositorySession {
 
     /// 历史和引用与工作区共用一个窗口生命周期。
     let history = RepositoryHistoryState()
+
+    /// 文件历史的时间线、筛选与详情。
+    let fileHistory = FileHistoryState()
+
+    /// 文件原文与逐行追溯。
+    let fileContent = FileContentState()
 
     /// 当前工作区身份。
     private(set) var repository: RepositoryLocation? = nil
@@ -129,6 +142,9 @@ final class RepositorySession {
 
     /// 恢复的视图状态失效、回到 Working Copy 时，窗口据此重建主视图。
     var onViewReset: (() -> Void)? = nil
+
+    /// 文件视图与提交详情的入口在内容区里切换主视图，窗口据此重建分栏。
+    var onActiveViewChange: (() -> Void)? = nil
 
     /// 当前窗口的写操作任务。
     private(set) var writeTask: Task<Void, Never>? = nil
@@ -385,6 +401,8 @@ final class RepositorySession {
 
         generation += 1
         history.close()
+        fileHistory.close()
+        fileContent.close()
         fileMonitor?.stop()
         fileMonitor = nil
         fileCache?.removeAll()
@@ -642,6 +660,11 @@ extension RepositorySession {
     /// 刷新成功后一次性替换快照；仍存在的文件继续选中。
     private func replaceStatus(_ status: WorkingCopyStatus) {
         self.status = status
+
+        // 跟随 HEAD 的文件视图只在 HEAD 移动后重读
+        fileHistory.update(head: status.branch.oid)
+        fileContent.update(head: status.branch.oid)
+
         if !status.entries.contains(where: { $0.kind == .conflicted }) { onlyConflicts = false }
         stagingOverrides = [:]
 
@@ -796,7 +819,8 @@ extension RepositorySession {
     /// 当前仓库的视图状态，切换仓库时存入窗口缓存。
     private func captureViewState() -> RepositoryViewState {
         RepositoryViewState(
-            activeView: activeView,
+            // 文件视图的目标不随仓库保存，切回时显示它们所属的历史
+            activeView: [.fileHistory, .fileContent].contains(activeView) ? .history : activeView,
             selectedID: selectedID,
             selectedIDs: selectedIDs,
             diffSide: diffSide,

@@ -29,6 +29,9 @@ struct CommitDetailView: View {
     @Bindable
     var history: RepositoryHistoryState
 
+    /// 文件右键菜单打开文件视图，并把文件恢复到工作区或导出。
+    let session: RepositorySession
+
     /// 头部和所有文件共享同一个滚动区域。
     var body: some View {
         if let commit = history.selectedCommit {
@@ -143,6 +146,11 @@ struct CommitDetailView: View {
         } label: {
             CommitFileLabel(file: file)
                 .frame(height: 30)
+                .contextMenu {
+                    if let commit = history.selectedCommit {
+                        ChangesetFileMenu(session: session, path: file.path, commit: commit)
+                    }
+                }
         }
         .padding(.horizontal, 8)
     }
@@ -183,9 +191,7 @@ struct CommitFileListView: View {
                 .frame(height: 40)
                 .background(.bar)
             }
-            List(history.changes, selection: $history.selectedPath) { file in
-                CommitFileLabel(file: file).tag(file.path)
-            }
+            fileList
             if history.isLoadingChanges {
                 ProgressView(AppLocalization.text("history.loadingChanges"))
                     .controlSize(.small)
@@ -193,6 +199,19 @@ struct CommitFileListView: View {
             }
         }
         .frame(minWidth: 300)
+    }
+
+    /// 变更文件列表，右键菜单打开文件视图，并把文件恢复到工作区或导出。
+    private var fileList: some View {
+        List(history.changes, selection: $history.selectedPath) { file in
+            CommitFileLabel(file: file)
+                .tag(file.path)
+                .contextMenu {
+                    if let commit = history.selectedCommit {
+                        ChangesetFileMenu(session: session, path: file.path, commit: commit)
+                    }
+                }
+        }
     }
 }
 

@@ -31,6 +31,10 @@ struct RepositorySidebarView: View {
     /// 系统列表和菜单导航使用同一组选择身份。
     private var selectedItems: Set<String> {
         if session.activeView == .workingCopy { return ["workingCopy"] }
+
+        // 文件视图不对应侧边栏的任何一项，点 Working Copy 或 History 都能离开
+        if [.fileHistory, .fileContent].contains(session.activeView) { return [] }
+
         return session.history.selectedReferences.isEmpty ? ["history"] : session.history.selectedReferences
     }
 

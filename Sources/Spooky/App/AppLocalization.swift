@@ -128,6 +128,10 @@ struct AppFailure: Identifiable {
             (key, kind) = Self.classification(of: file)
             exceededOutputLimit = file == .tooLarge
 
+        case is FileViewError:
+            key = "showFile.error.missing"
+            kind = .repository
+
         case let remote as RemoteConnectionError:
             // 写入中途断线的结果未知，统一提示先核对仓库，不能引导用户直接重试。
             let interrupted = writing && [.unavailable, .protocolFailure].contains(remote.kind)

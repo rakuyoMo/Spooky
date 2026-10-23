@@ -58,6 +58,9 @@ final class RepositoryHistoryState {
     /// 双击进入左文件列表、右补丁的整页提交详情。
     var showsCommitPage = false
 
+    /// 从文件视图回到的提交；不在已加载的分页里时，整页详情仍按它显示。
+    private(set) var revealedCommit: HistoryCommit? = nil
+
     /// 当前提交变更的文件列表。
     private(set) var changes: [CommitFileChange] = []
 
@@ -134,10 +137,12 @@ final class RepositoryHistoryState {
         }
     }
 
-    /// 当前单选提交，多选时详情显示空状态。
+    /// 当前单选提交，多选时详情显示空状态；回到的提交不在已加载的分页里时使用它的记录。
     var selectedCommit: HistoryCommit? {
         guard selectedIDs.count == 1 else { return nil }
+
         return commits.first { selectedIDs.contains($0.id) }
+            ?? revealedCommit.flatMap { selectedIDs.contains($0.id) ? $0 : nil }
     }
 
     /// 只展示真实分支，远端 HEAD 用于默认分支标记。
@@ -284,7 +289,9 @@ final class RepositoryHistoryState {
                 hasMore = page.hasMore
                 reachedLimit = page.hasMore && commits.count >= Self.maximumLoadedCommits
                 if replacing {
-                    let selected = selectedIDs.intersection(Set(commits.map(\.id)))
+                    // 回到的提交可以不在已加载的分页里，选择仍然保留
+                    let loaded = Set(commits.map(\.id)).union(revealedCommit.map { [$0.id] } ?? [])
+                    let selected = selectedIDs.intersection(loaded)
                     if selected == selectedIDs {
                         loadChanges()
                     } else {
@@ -352,6 +359,7 @@ final class RepositoryHistoryState {
         expandedPaths = []
         selectedPath = nil
         showsCommitPage = false
+        revealedCommit = nil
         failure = nil
         roots = []
         hasMore = false
@@ -452,6 +460,19 @@ extension RepositoryHistoryState {
     func expandAll(_ expanded: Bool) {
         expandedPaths = expanded ? Set(changes.map(\.path)) : []
         if expanded { for file in changes { loadDiff(file.path) } }
+    }
+
+    /// 从文件视图回到某个提交：打开它的整页详情，提交不在已加载的分页里也能显示。
+    func reveal(_ commit: HistoryCommit) {
+        revealedCommit = commit
+        showsCommitPage = true
+
+        // 选择没有变化时不会触发重读，这里显式读取变更集
+        if selectedIDs == [commit.id] {
+            loadChanges()
+        } else {
+            selectedIDs = [commit.id]
+        }
     }
 }
 

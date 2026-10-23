@@ -36,7 +36,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 工作区的列表与详情分栏。
     private var workingCopySplit: NSSplitViewController?
 
-    /// 历史与整页提交详情拥有各自保存宽度的内层分栏。
+    /// 历史、整页提交详情与文件历史拥有各自保存宽度的内层分栏。
     private var historySplit: NSSplitViewController?
 
     /// 窗口级快捷键跨越 AppKit 文件列表与 SwiftUI 信息框。
@@ -81,6 +81,12 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         }
 
         session.onViewReset = { [weak self] in
+            guard let self, !self.showsManager else { return }
+            configureRepositoryView()
+        }
+
+        // 文件视图与提交详情的入口在内容区里，切换主视图后同样重建分栏
+        session.onActiveViewChange = { [weak self] in
             guard let self, !self.showsManager else { return }
             configureRepositoryView()
         }
@@ -564,7 +570,7 @@ extension RepositoryWindowController {
 
 extension RepositoryWindowController {
     /// 分栏按名称恢复宽度；记录不可用时视为恢复失败，先清除记录，由调用方按默认宽度建立。
-    private static func setAutosaveName(_ name: String, of split: NSSplitViewController) {
+    static func setAutosaveName(_ name: String, of split: NSSplitViewController) {
         let key = "NSSplitView Subview Frames " + name
 
         if let frames = UserDefaults.standard.array(forKey: key), !isUsable(splitFrames: frames) {
@@ -715,11 +721,22 @@ extension RepositoryWindowController {
             let split = makeHistorySplit()
             historySplit = split
             detail = split
+
+        case .fileHistory:
+            workingCopySplit = nil
+            let split = makeFileHistorySplit()
+            historySplit = split
+            detail = split
+
+        case .fileContent:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeFileContentView()
         }
 
         installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repository")
 
-        // 首次使用或恢复失败后工作区列表宽 400 pt、历史列表宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
+        // 首次使用或恢复失败后工作区列表宽 400 pt、历史与文件历史的列表宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
         if UserDefaults.standard.object(forKey: "NSSplitView Subview Frames Spooky.WorkingCopy") == nil {
             workingCopySplit?.splitView.setPosition(400, ofDividerAt: 0)
         }
@@ -795,7 +812,7 @@ extension RepositoryWindowController {
             controller.sizingOptions = [.minSize]
             list = controller
 
-            let detail = NSHostingController(rootView: CommitDetailView(history: session.history))
+            let detail = NSHostingController(rootView: CommitDetailView(history: session.history, session: session))
             detail.sizingOptions = [.minSize]
             content = detail
         }
