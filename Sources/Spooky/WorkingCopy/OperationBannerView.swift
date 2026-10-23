@@ -10,10 +10,10 @@ struct OperationBannerView: View {
         /// 还有未解决的冲突。
         case conflicts
 
-        /// 冲突都已解决，有可提交的改动。
+        /// 冲突都已解决，已跟踪的文件还有改动。
         case resolved
 
-        /// 冲突都已解决，这一步没有可提交的改动。
+        /// 冲突都已解决，已跟踪的文件没有任何改动；跳过这一步不会丢掉工作区里的改动。
         case empty
     }
 
@@ -32,14 +32,14 @@ struct OperationBannerView: View {
 // MARK: - Private
 
 extension OperationBannerView {
-    /// 当前阶段，按冲突与已暂存的改动判断。
+    /// 当前阶段，按冲突与已跟踪文件的改动判断；未跟踪的文件不影响跳过。
     private var phase: Phase {
         if session.conflictCount > 0 {
             return .conflicts
         }
 
-        let staged = session.status?.entries.contains(where: \.hasStagedChanges) ?? false
-        return staged ? .resolved : .empty
+        let changed = session.status?.entries.contains { $0.kind == .tracked } ?? false
+        return changed ? .resolved : .empty
     }
 
     /// 未解决与已解决的冲突数；从没有出现过冲突时不显示。
