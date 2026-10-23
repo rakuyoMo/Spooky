@@ -16,8 +16,11 @@ enum DiffPreferences {
     static let omitsPatchPrefixesKey = "savePatchOmitsPrefixes"
 
     /// 按当前偏好组成的选项；显示整个文件只属于当前视图，由调用方传入。
-    static func options(showsEntireFile: Bool = false) -> DiffOptions {
-        let defaults = UserDefaults.standard
+    ///
+    /// - Parameters:
+    ///   - showsEntireFile: 底栏的显示整个文件开关。
+    ///   - defaults: 偏好来源，测试可以注入独立的偏好域。
+    static func options(showsEntireFile: Bool = false, defaults: UserDefaults = .standard) -> DiffOptions {
         let context = defaults.object(forKey: contextLinesKey) as? Int ?? DiffOptions.defaultContextLines
 
         return DiffOptions(
