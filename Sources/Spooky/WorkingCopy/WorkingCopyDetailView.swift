@@ -19,7 +19,7 @@ struct WorkingCopyDetailView: View {
         if let entry = session.selectedEntry {
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
-                    Image(systemName: "doc")
+                    Image(systemName: entry.path.hasSuffix("/") ? "folder" : "doc")
                         .font(.system(size: 24))
                         .accessibilityHidden(true)
                     Text(entry.path)
@@ -33,7 +33,7 @@ struct WorkingCopyDetailView: View {
                     // 悬停时出现的 Blame 与文件历史，头部右键菜单提供同样的入口
                     FileActionBar(actions: session.workingCopyFileActions(entry.path), hovering: hoveringHeader)
 
-                    if entry.kind != .conflicted {
+                    if entry.hasWorkingCopyDiff {
                         DiffSidePicker(
                             side: $session.diffSide,
                             staged: entry.hasStagedChanges,
@@ -55,6 +55,8 @@ struct WorkingCopyDetailView: View {
             }
             .onChange(of: session.diffSide) { session.loadDiff() }
             .reloadsOnDiffPreferenceChange { session.loadDiff() }
+        } else if let directory = session.selectedDirectory {
+            unchangedView(AppLocalization.text(directoryMessage(directory)), symbol: "folder")
         } else {
             VStack(spacing: 16) {
                 EmptyStateView(
@@ -64,8 +66,16 @@ struct WorkingCopyDetailView: View {
                 )
 
                 if session.selectedIDs.count > 1 {
-                    Button(AppLocalization.text("working.discard")) { session.discard(session.selectedEntries) }
-                        .disabled(!session.canDiscard(session.selectedEntries))
+                    HStack(spacing: 8) {
+                        Button(AppLocalization.text("working.discard")) { session.discard(session.selectedEntries) }
+                            .disabled(!session.canDiscard(session.selectedEntries))
+
+                        // 本机移到废纸篓，服务器上永久删除，执行前都会确认
+                        Button(AppLocalization.text(session.repository?.host == nil ? "files.trash" : "files.delete")) {
+                            session.delete(session.selectedEntries)
+                        }
+                        .disabled(!session.canDelete(session.selectedEntries))
+                    }
                 }
             }
             .padding(24)
@@ -80,6 +90,8 @@ struct WorkingCopyDetailView: View {
             // 换一个冲突文件时重建向导，上一个文件的内容与未保存的编辑不会带过来
             ConflictWizardView(session: session, entry: entry)
                 .id(entry.path)
+        } else if !entry.hasWorkingCopyDiff {
+            unchangedView(AppLocalization.text(unchangedMessage(entry)), symbol: "doc")
         } else if let failure = session.diffFailure {
             FailureDetailsView(failure: failure) { session.loadDiff() }
                 .padding(20)
@@ -108,5 +120,34 @@ struct WorkingCopyDetailView: View {
             Text(AppLocalization.text("working.noDiff"))
                 .foregroundStyle(.secondary)
         }
+    }
+}
+
+// MARK: - Unchanged
+
+extension WorkingCopyDetailView {
+    /// 未改动视图：没有可显示的 Diff 时说明文件或目录的状态。
+    private func unchangedView(_ text: String, symbol: String) -> some View {
+        EmptyStateView(title: text, message: "", symbol: symbol)
+            .padding(24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// 目录说明的资源键：目录下有改动的文件时说明这一点。
+    private func directoryMessage(_ directory: String) -> String {
+        let prefix = directory + "/"
+        let modified = session.status?.entries.contains { $0.path.hasPrefix(prefix) } ?? false
+
+        return modified ? "files.unchanged.directoryModified" : "files.unchanged.directory"
+    }
+
+    /// 文件说明的资源键：被忽略、assume-unchanged 与没有改动的文件各有说明。
+    private func unchangedMessage(_ entry: StatusEntry) -> String {
+        if entry.kind == .ignored {
+            return entry.path.hasSuffix("/") ? "files.unchanged.ignoredDirectory" : "files.unchanged.ignored"
+        }
+
+        let marked = session.workingTreeFiles.assumeUnchanged.contains(entry.path)
+        return marked ? "files.unchanged.assumeUnchanged" : "files.unchanged.file"
     }
 }

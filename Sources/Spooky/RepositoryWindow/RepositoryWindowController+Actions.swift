@@ -81,14 +81,6 @@ extension RepositoryWindowController {
     @objc
     func discardAll() { session.discard(session.status?.entries ?? []) }
 
-    /// 平铺偏好跨仓库共享。
-    @objc
-    func viewAsList() { UserDefaults.standard.set(0, forKey: "workingCopyViewMode") }
-
-    /// 树形偏好跨仓库共享。
-    @objc
-    func viewAsTree() { UserDefaults.standard.set(1, forKey: "workingCopyViewMode") }
-
     /// 新建分支默认从当前选中提交或 HEAD 开始。
     @objc
     func createBranch() {
@@ -210,6 +202,7 @@ extension RepositoryWindowController {
             ?? historyDisplayAvailability(of: item)
             ?? stashAvailability(of: item.action, repositoryView: repositoryView)
             ?? diffAvailability(of: item)
+            ?? workingCopyFileAvailability(of: item)
 
         if let enabled {
             return enabled
@@ -277,7 +270,7 @@ extension RepositoryWindowController {
     /// 工作区文件动作的可用性，按住 ⌥ 时全部暂存按全部取消暂存判断；动作不属于本组时为 nil。
     private func workingCopyAvailability(of action: Selector?, repositoryView: Bool) -> Bool? {
         switch action {
-        case #selector(composeCommit), #selector(viewAsList), #selector(viewAsTree):
+        case #selector(composeCommit):
             return repositoryView
 
         case #selector(stageAll):

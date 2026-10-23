@@ -28,6 +28,12 @@ struct LocalizationTests {
             keys += ["Chunk", "Line", "Lines"].map { "working." + action + $0 }
         }
 
+        // 忽略与排除子菜单的各项由同一组后缀拼出
+        for file in ["ignore", "exclude"] {
+            keys += [".item", ".items", ".name.single", ".name", ".type.single", ".type", ".custom"]
+                .map { "files." + file + $0 }
+        }
+
         return keys
     }
 

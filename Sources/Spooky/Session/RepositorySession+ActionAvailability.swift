@@ -98,9 +98,9 @@ extension RepositorySession {
         canWrite && entries.contains(where: \.hasStagedChanges)
     }
 
-    /// 丢弃需要至少一个文件，执行前仍会确认。
+    /// 丢弃需要至少一个有改动的文件，未改动与被忽略的文件没有可丢弃的内容；执行前仍会确认。
     func canDiscard(_ entries: [StatusEntry]) -> Bool {
-        canWrite && !entries.isEmpty
+        canWrite && entries.contains { $0.kind != .unchanged && $0.kind != .ignored }
     }
 
     /// 采用一侧与标记已解决只作用于冲突文件。
