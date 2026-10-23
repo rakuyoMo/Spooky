@@ -68,6 +68,7 @@ extension WorkingCopyOperations {
 
         return try await runner.writeTransaction {
             guard runner.remote != nil else {
+                #warning("TODO: 核实删除已跟踪文件后是否同时暂存删除，目前只把文件移到废纸篓、删除留待暂存；只影响本机删除之后的暂存状态")
                 return try files.moveToTrash(paths.map { root + "/" + $0 })
             }
 
@@ -210,6 +211,8 @@ extension WorkingCopyOperations {
 
             switch scope {
             case .items:
+                #warning("TODO: 核实 Ignore This Item 写入的规则格式，目前以 “/” 开头、只匹配仓库根目录下的这一项；只影响忽略与排除规则的写法")
+
                 // 以 “/” 开头只匹配仓库根目录下的这一项
                 pattern = "/" + escapedPattern(trimmed) + (directory ? "/" : "")
 

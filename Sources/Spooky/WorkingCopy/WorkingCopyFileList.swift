@@ -170,6 +170,7 @@ extension WorkingCopyFileList {
                 coordinator?.deletePressed()
 
             case (36, []):
+                #warning("TODO: 回车键与双击执行同一个动作是推断的键盘入口，核实工作区列表里打开文件的按键；只影响列表获得焦点时的回车键")
                 coordinator?.openPressed()
 
             default:

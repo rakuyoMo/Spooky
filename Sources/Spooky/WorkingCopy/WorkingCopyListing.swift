@@ -176,6 +176,7 @@ struct WorkingCopyListing: Equatable {
             entries += supplementaryEntries(status: status, files: files)
         }
 
+        #warning("TODO: 核实搜索过滤后全部暂存、丢弃全部等动作是否只作用于可见的文件，目前作用于整个工作区；只影响过滤状态下的全部动作")
         let query = filter.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !query.isEmpty else {
