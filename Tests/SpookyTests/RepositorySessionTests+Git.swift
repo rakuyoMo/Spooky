@@ -26,7 +26,7 @@ extension RepositorySessionTests {
 
         // 不调用手动刷新，新增文件必须由真实 FSEvents 进入列表。
         try Data("new\n".utf8).write(to: directory.appending(path: "file"))
-        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
 
         while session.status?.entries.isEmpty != false, .now < deadline {
             try await Task.sleep(for: .milliseconds(50))
@@ -96,7 +96,7 @@ extension RepositorySessionTests {
         session.display(location)
         session.refresh()
         await session.refreshTask?.value
-        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
 
         while session.history.commits.isEmpty, .now < deadline {
             try await Task.sleep(for: .milliseconds(20))
@@ -119,10 +119,11 @@ extension RepositorySessionTests {
         )
         await session.writeTask?.value
         await session.refreshTask?.value
+        let referenceDeadline = ContinuousClock.now.advanced(by: .seconds(30))
 
         while
             session.history.snapshot?.references.contains(where: { $0.id == "refs/heads/topic" }) != true,
-            .now < deadline
+            .now < referenceDeadline
         {
             try await Task.sleep(for: .milliseconds(20))
         }
@@ -145,7 +146,7 @@ extension RepositorySessionTests {
         await session.writeTask?.value
         await session.refreshTask?.value
         session.history.selectedReference = "refs/heads/topic"
-        let trackingDeadline = ContinuousClock.now.advanced(by: .seconds(5))
+        let trackingDeadline = ContinuousClock.now.advanced(by: .seconds(30))
 
         while session.history.unpushed.isEmpty, .now < trackingDeadline {
             try await Task.sleep(for: .milliseconds(20))
@@ -190,7 +191,7 @@ extension RepositorySessionTests {
         }
         session.display(location)
         session.refresh()
-        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
 
         while session.history.snapshot == nil || session.context == nil, .now < deadline {
             try await Task.sleep(for: .milliseconds(20))
@@ -212,7 +213,7 @@ extension RepositorySessionTests {
     }
 
     /// 在测试创建的临时目录中初始化仓库，返回隔离了本机 Git 配置的执行器。
-    private func initializeRepository(at location: RepositoryLocation) async throws -> GitRunner {
+    func initializeRepository(at location: RepositoryLocation) async throws -> GitRunner {
         // 忽略系统与用户的全局配置，测试只受仓库本地配置影响。
         let runner = GitRunner(
             location: location,

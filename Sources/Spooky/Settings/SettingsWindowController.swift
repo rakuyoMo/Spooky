@@ -17,7 +17,10 @@ final class SettingsWindowController: NSWindowController {
 
         for (key, symbol, view) in [
             ("settings.general", "gearshape", AnyView(GeneralSettingsView())),
+            ("settings.text", "character.cursor.ibeam", AnyView(TextSettingsView())),
+            ("settings.editor", "square.and.pencil", AnyView(EditorSettingsView())),
             ("settings.themes", "paintbrush", AnyView(ThemesSettingsView())),
+            ("settings.profiles", "rectangle.stack.person.crop", AnyView(UserProfilesSettingsView())),
         ] {
             let controller = NSHostingController(rootView: view)
             let tab = NSTabViewItem(viewController: controller)
@@ -68,46 +71,89 @@ private struct GeneralSettingsView: View {
     @AppStorage("cleanRefNames")
     private var cleanRefNames = true
 
-    /// General 表单的控件列固定为 278 pt。
+    /// 检出、拉取与合并被本地改动挡住时询问是否先储藏。
+    @AppStorage("offerAutoStash")
+    private var offerAutoStash = true
+
+    /// 冲突向导覆盖冲突文件之前是否先保留备份。
+    @AppStorage(RepositorySession.keepsConflictBackupsKey)
+    private var keepsConflictBackups = false
+
+    /// General 表单按功能分组，组间以分隔线隔开；控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
             terminalRow
 
-            GridRow {
-                Text(AppLocalization.text("working.diffThreshold"))
-                    .gridColumnAlignment(.trailing)
-                TextField("", value: $diffWarning, format: .number.grouping(.never))
-                    .frame(width: 100, alignment: .leading)
-                    .accessibilityLabel(AppLocalization.text("working.diffThreshold"))
-                    .onChange(of: diffWarning) { diffWarning = max(0, min(diffWarning, 268_435)) }
-            }
+            Divider()
+                .gridCellUnsizedAxes(.horizontal)
 
-            GridRow {
-                Text(AppLocalization.text("history.pageSize"))
-                Picker("", selection: $historyPageSize) {
-                    ForEach([100, 200, 500, 1000], id: \.self) {
-                        Text(AppLocalization.text("history.commitCount", $0)).tag($0)
-                    }
-                }
-                .labelsHidden()
-                .frame(width: 278)
-                .accessibilityLabel(AppLocalization.text("history.pageSize"))
-            }
+            operationRows
 
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                Toggle(AppLocalization.text("branch.cleanNames"), isOn: $cleanRefNames)
-                    .frame(width: 278, alignment: .leading)
-            }
+            Divider()
+                .gridCellUnsizedAxes(.horizontal)
+
+            historyRows
+
+            Divider()
+                .gridCellUnsizedAxes(.horizontal)
+
+            WorkingCopySettingsRows()
         }
         .padding(40)
-        .frame(width: 900, height: 240, alignment: .top)
+        .frame(width: 900, height: 480, alignment: .top)
     }
 }
 
 // MARK: - Private
 
 extension GeneralSettingsView {
+    /// 操作相关的三个开关：被本地改动挡住时询问储藏、输入时规范引用名、覆盖冲突文件前保留备份。
+    @ViewBuilder
+    private var operationRows: some View {
+        GridRow {
+            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+            Toggle(AppLocalization.text("stash.offerAutoStash"), isOn: $offerAutoStash)
+                .frame(width: 278, alignment: .leading)
+        }
+
+        GridRow {
+            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+            Toggle(AppLocalization.text("branch.cleanNames"), isOn: $cleanRefNames)
+                .frame(width: 278, alignment: .leading)
+        }
+
+        GridRow {
+            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+            Toggle(AppLocalization.text("conflict.keepBackups"), isOn: $keepsConflictBackups)
+                .frame(width: 278, alignment: .leading)
+        }
+    }
+
+    /// 历史每页条数与大 Diff 的警告阈值。
+    @ViewBuilder
+    private var historyRows: some View {
+        GridRow {
+            Text(AppLocalization.text("history.pageSize"))
+            Picker("", selection: $historyPageSize) {
+                ForEach([100, 200, 500, 1000], id: \.self) {
+                    Text(AppLocalization.text("history.commitCount", $0)).tag($0)
+                }
+            }
+            .labelsHidden()
+            .frame(width: 278)
+            .accessibilityLabel(AppLocalization.text("history.pageSize"))
+        }
+
+        GridRow {
+            Text(AppLocalization.text("working.diffThreshold"))
+                .gridColumnAlignment(.trailing)
+            TextField("", value: $diffWarning, format: .number.grouping(.never))
+                .frame(width: 100, alignment: .leading)
+                .accessibilityLabel(AppLocalization.text("working.diffThreshold"))
+                .onChange(of: diffWarning) { diffWarning = max(0, min(diffWarning, 268_435)) }
+        }
+    }
+
     /// 终端选择行，每个候选显示应用图标与名称。
     private var terminalRow: some View {
         GridRow {
@@ -133,87 +179,5 @@ extension GeneralSettingsView {
             .frame(width: 278)
             .accessibilityIdentifier("terminal-application")
         }
-    }
-}
-
-// MARK: - ThemesSettingsView
-
-/// 两套内置主题的字体与色板预览，系统外观决定实际使用的主题。
-private struct ThemesSettingsView: View {
-    /// 当前预览主题，不改变系统外观或默认主题对应关系。
-    @State
-    private var selected = "Default"
-
-    /// 当前系统外观。
-    @Environment(\.colorScheme)
-    private var colorScheme
-
-    /// 150 pt 主题列表和右侧字体、色板、文本预览。
-    var body: some View {
-        HStack(alignment: .top, spacing: 20) {
-            List(BuiltinTheme.all, selection: $selected) { theme in
-                Text(theme.name).tag(theme.name)
-            }
-            .frame(width: 150)
-
-            if let theme = BuiltinTheme.all.first(where: { $0.name == selected }) {
-                themePreview(theme)
-            }
-        }
-        .padding(20)
-        .frame(width: 900, height: 450)
-        .background(AppPalette.color("general_background_color"))
-        .onAppear { selected = BuiltinTheme.current(dark: colorScheme == .dark).name }
-        .onChange(of: colorScheme) {
-            selected = BuiltinTheme.current(dark: colorScheme == .dark).name
-        }
-    }
-}
-
-// MARK: - Private
-
-extension ThemesSettingsView {
-    /// 所选主题的字体说明、背景与增删色板，以及按主题绘制的示例文本。
-    private func themePreview(_ theme: BuiltinTheme) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text(AppLocalization.text("themes.font", theme.fontName, theme.fontSize))
-            Text(AppLocalization.text("themes.followsSystem"))
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 30) {
-                ForEach(["background", "added", "deleted"], id: \.self) { key in
-                    VStack(spacing: 4) {
-                        Rectangle()
-                            .fill(theme.colors[key]?.color ?? .clear)
-                            .frame(width: 50, height: 30)
-                            .overlay(Rectangle().stroke(AppPalette.color("general_border_color")))
-                        Text(AppLocalization.text("themes." + key))
-                            .font(.system(size: 11))
-                    }
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 0) {
-                previewLine(AppLocalization.text("themes.preview.context"), theme: theme, kind: "background")
-                previewLine(AppLocalization.text("themes.preview.deleted"), theme: theme, kind: "deleted")
-                previewLine(AppLocalization.text("themes.preview.added"), theme: theme, kind: "added")
-            }
-            .padding(12)
-            .background(theme.colors["background"]?.color ?? .clear)
-            .overlay(Rectangle().stroke(AppPalette.color("general_border_color")))
-        }
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// 使用主题自己的字体、正文色和增删背景，便于直接核对配色。
-    private func previewLine(_ text: String, theme: BuiltinTheme, kind: String) -> some View {
-        Text(text)
-            .font(.custom(theme.fontName, size: theme.fontSize))
-            .foregroundStyle(theme.colors["text"]?.color ?? .primary)
-            .padding(6)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.colors[kind]?.color ?? .clear)
     }
 }

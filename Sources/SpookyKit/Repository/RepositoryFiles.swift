@@ -138,6 +138,24 @@ public struct RepositoryFiles: Sendable {
         }
     }
 
+    /// 把工作区所在机器上的文件复制到本机指定位置；服务器路径只作为 SFTP 数据传递，不交给本机文件 API。
+    ///
+    /// - Parameters:
+    ///   - path: 工作区所在机器上的绝对路径。
+    ///   - destination: 本机目标文件，必须尚不存在。
+    public func download(_ path: String, to destination: URL) async throws {
+        guard runner.remote != nil else {
+            try FileManager.default.copyItem(at: URL(fileURLWithPath: path), to: destination)
+            return
+        }
+
+        // 不带 “-” 前缀的 get 失败时 SFTP 以非零状态退出，缺失与权限错误都会抛出
+        _ = try await transfer(
+            ["get " + (try Self.quoted(path)) + " " + (try Self.quoted(destination.path))],
+            writing: false
+        )
+    }
+
     /// 丢弃未跟踪文件只删除明确选中的文件，不递归进入嵌套仓库。
     func remove(_ paths: [String]) async throws {
         guard !paths.isEmpty else { return }
@@ -151,6 +169,65 @@ public struct RepositoryFiles: Sendable {
         }
 
         _ = try await transfer(try paths.map { "rm " + (try Self.quoted($0)) }, writing: true)
+    }
+
+    /// 把本机文件或目录移到废纸篓，用户可以从废纸篓找回；服务器文件不经过这里。
+    ///
+    /// - Returns: 各项在废纸篓里的位置。
+    func moveToTrash(_ paths: [String]) throws -> [URL] {
+        try paths.compactMap { path in
+            // trashItem 只接受 NSURL 的输出参数
+            // swiftlint:disable:next legacy_objc_type
+            var trashed: NSURL?
+            try FileManager.default.trashItem(at: URL(fileURLWithPath: path), resultingItemURL: &trashed)
+
+            return trashed as URL?
+        }
+    }
+
+    /// 把工作区所在机器上的文件移到新位置，目标已存在时不覆盖。
+    ///
+    /// - Parameters:
+    ///   - path: 原文件的绝对路径。
+    ///   - destination: 目标的绝对路径，所在目录必须已存在。
+    func move(_ path: String, to destination: String) async throws {
+        try await runner.writeTransaction {
+            guard let remote = runner.remote else {
+                guard !FileManager.default.fileExists(atPath: destination) else {
+                    throw WorkingCopyFileError.destinationExists
+                }
+
+                try FileManager.default.moveItem(
+                    at: URL(fileURLWithPath: path),
+                    to: URL(fileURLWithPath: destination)
+                )
+                return
+            }
+
+            // 服务器支持 posix-rename 时 SFTP 的 rename 会覆盖目标，先确认目标不存在
+            guard try await remote.inspect([destination]) == [false] else {
+                throw WorkingCopyFileError.destinationExists
+            }
+
+            _ = try await transfer(
+                ["rename " + (try Self.quoted(path)) + " " + (try Self.quoted(destination))],
+                writing: true
+            )
+        }
+    }
+
+    /// 确保目录存在：本机逐级创建；服务器经 SFTP 创建最后一级，已存在时不算失败。
+    func createDirectory(_ path: String) async throws {
+        guard runner.remote != nil else {
+            try FileManager.default.createDirectory(
+                at: URL(fileURLWithPath: path),
+                withIntermediateDirectories: true
+            )
+            return
+        }
+
+        // 批处理里带 “-” 前缀的命令失败时不中断，目录已存在属于这种情况
+        _ = try await transfer(["-mkdir " + (try Self.quoted(path))], writing: true)
     }
 
     /// 执行一批 SFTP 命令；取消会直接结束本批子进程，SSH 主连接保留。

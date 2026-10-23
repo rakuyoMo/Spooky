@@ -50,6 +50,36 @@ struct RemoteWorkingCopyTests {
         }
     }
 
+    /// 服务器文件经 SFTP 取到本机缓存，副本路径不含远端目录；清理后副本消失。
+    @Test("服务器文件进入本机缓存与清理", .timeLimit(.minutes(2)))
+    func fileCache() async throws {
+        let fixture = try await RemoteFixture.create()
+        let remote = fixture.connection()
+
+        do {
+            let location = try await remote.open().location
+            let runner = GitRunner(location: location, remote: remote)
+            let path = "图 片 ' [*]?.txt"
+            try await RepositoryFiles(runner: runner).write(Data("remote\n".utf8), to: fixture.repository + "/" + path)
+
+            let cache = RepositoryFileCache(runner: runner)
+            let copy = try await cache.workingTreeFile(path)
+            #expect(copy.lastPathComponent == path)
+            #expect(!copy.path.contains(fixture.repository))
+            #expect(try Data(contentsOf: copy) == Data("remote\n".utf8))
+
+            cache.removeAll()
+            #expect(!FileManager.default.fileExists(atPath: copy.path))
+            await remote.close()
+            try await fixture.remove()
+        } catch {
+            if let git = error as? GitError { Issue.record(Comment(rawValue: git.message)) }
+            await remote.close()
+            try await fixture.remove()
+            throw error
+        }
+    }
+
     /// 断线后的写入必须失败，重连核对不能制造成功提交。
     @Test("服务器旧 Diff 与断线提交拒绝", .timeLimit(.minutes(2)))
     func disconnectedWrite() async throws {

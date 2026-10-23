@@ -34,6 +34,9 @@ public struct WorkingCopyContext: Sendable {
     /// 已识别的进行中操作。
     public let operation: RepositoryOperationState?
 
+    /// 进行中操作的两侧、序列进度与已解决的冲突；没有进行中的操作时为 nil。
+    public let progress: OperationProgress?
+
     /// Git 准备的结论信息。
     public let mergeMessage: String
 }
@@ -54,8 +57,14 @@ public struct DiffSnapshot: Sendable {
     /// 超过警告阈值时保留空值，显式加载后才解析。
     public let diff: RepositoryDiff?
 
-    /// 当前文件的工作区、暂存区与状态联合摘要。
+    /// 当前文件的工作区、暂存区与状态联合摘要，生成时的显示选项一并计入。
     public let fingerprint: Data
+
+    /// 生成这份 Diff 的显示选项，写入前按同一选项重新核对快照。
+    public let options: DiffOptions
+
+    /// 忽略空白后这一侧没有剩下任何改动，逐字节比较仍有差异。
+    public let onlyWhitespaceChanges: Bool
 }
 
 extension StatusEntry {
@@ -85,7 +94,7 @@ public struct WorkingCopyOperations: Sendable {
     public static let defaultWarningKilobytes = 20_000
 
     /// 所有支持批量路径的写命令使用同一 NUL 输入协议。
-    private static let pathInputOptions = ["--pathspec-from-file=-", "--pathspec-file-nul"]
+    static let pathInputOptions = ["--pathspec-from-file=-", "--pathspec-file-nul"]
 
     /// 本机与服务器共用命令执行器。
     public let runner: GitRunner
@@ -96,7 +105,7 @@ public struct WorkingCopyOperations: Sendable {
     }
 
     /// 不规范化实际路径字节，字面路径语义交由 Git 的全局开关保证。
-    private static func pathInput(_ paths: [String]) -> Data {
+    static func pathInput(_ paths: [String]) -> Data {
         Data(paths.flatMap { Array($0.utf8) + [0] })
     }
 
@@ -104,11 +113,13 @@ public struct WorkingCopyOperations: Sendable {
     public func diff(
         for entry: StatusEntry,
         side: DiffSide,
+        options: DiffOptions = DiffOptions(),
         warningKilobytes: Int = Self.defaultWarningKilobytes,
         showLarge: Bool = false
     ) async throws -> DiffSnapshot {
-        let contents = try await snapshot(entry)
+        let contents = try await snapshot(entry, options: options)
         let patch = side == .staged ? contents.staged : contents.unstaged
+        let exact = side == .staged ? contents.exactStaged : contents.exactUnstaged
         let threshold = max(0, min(warningKilobytes, Int.max / 1000)) * 1000
 
         // Foundation 的 range(of:) 与 contains 结果相同，在数十 MB 的补丁上快数百倍。
@@ -121,7 +132,9 @@ public struct WorkingCopyOperations: Sendable {
             side: side,
             byteCount: patch.count,
             diff: parsed,
-            fingerprint: contents.fingerprint
+            fingerprint: contents.fingerprint,
+            options: options,
+            onlyWhitespaceChanges: patch.isEmpty && !exact.isEmpty
         )
     }
 
@@ -155,24 +168,25 @@ public struct WorkingCopyOperations: Sendable {
         discard: Bool = false
     ) async throws {
         guard
-            let diff = snapshot.diff,
-            diff.files.count == 1,
+            snapshot.diff?.files.count == 1,
             !discard || snapshot.side == .unstaged
         else { throw WorkingCopyError.invalidSelection }
 
         let reverse = discard || snapshot.side == .staged
-        let patch = try diff.patch(
-            path: snapshot.entry.path,
-            file: file,
-            hunk: hunk,
-            selectedLines: lines,
-            reverse: reverse
-        )
 
         try await runner.writeTransaction {
-            guard try await self.snapshot(snapshot.entry).fingerprint == snapshot.fingerprint else {
+            guard try await isCurrent(snapshot) else {
                 throw WorkingCopyError.staleSnapshot
             }
+
+            // 补丁在写锁内生成：忽略空白时要读取同一时刻的逐字节 Diff。
+            let patch = try await writablePatch(
+                snapshot,
+                file: file,
+                hunk: hunk,
+                lines: lines,
+                reverse: reverse
+            )
 
             var arguments = ["apply", "--whitespace=nowarn"]
             if !discard { arguments.append("--cached") }
@@ -180,7 +194,7 @@ public struct WorkingCopyOperations: Sendable {
 
             // 不放宽空白或上下文匹配；预检失败保留 Git 原始输出。
             _ = try await runner.run(arguments + ["--check", "-"], input: patch)
-            guard try await self.snapshot(snapshot.entry).fingerprint == snapshot.fingerprint else {
+            guard try await isCurrent(snapshot) else {
                 throw WorkingCopyError.staleSnapshot
             }
 
@@ -227,41 +241,85 @@ public struct WorkingCopyOperations: Sendable {
         }
     }
 
-    /// NFC 与 UTF-8 只作用于提交信息，Git 路径保留原始表示。
-    public func commit(subject: String, body: String, amend: Bool = false) async throws {
-        let message = (subject + (body.isEmpty ? "\n" : "\n\n" + body + "\n"))
-            .precomposedStringWithCanonicalMapping
+    /// 把所选文件的暂存区与工作区恢复到指定版本，版本中不存在的文件随之删除；调用方必须先获得用户确认。
+    ///
+    /// - Parameters:
+    ///   - paths: 仓库内的相对路径，按字面匹配。
+    ///   - revision: 提交哈希或引用名。
+    public func restore(_ paths: [String], to revision: String) async throws {
+        guard !paths.isEmpty else { return }
+
+        // 版本作为 --source 的值整体传入，不会被解释成选项；路径经 NUL 输入，不受通配符和数量影响
+        _ = try await runner.run(
+            ["--literal-pathspecs", "restore", "--source=" + revision, "--staged", "--worktree"]
+                + Self.pathInputOptions,
+            input: Self.pathInput(Array(Set(paths)))
+        )
+    }
+
+    /// NFC 与 UTF-8 只作用于提交信息，Git 路径保留原始表示；签名完全由仓库配置决定，不加签名参数。
+    ///
+    /// - Parameters:
+    ///   - amend: 改写最近一次提交。
+    ///   - signOff: 追加 `Signed-off-by` 尾注。
+    ///   - skipHooks: 跳过 pre-commit 与 commit-msg 钩子。
+    public func commit(
+        subject: String,
+        body: String,
+        amend: Bool = false,
+        signOff: Bool = false,
+        skipHooks: Bool = false
+    ) async throws {
+        let message = CommitMessage.text(subject: subject, body: body)
         var arguments = ["-c", "i18n.commitencoding=UTF-8", "-c", "commit.verbose=false", "commit", "-F", "-"]
+
         if amend { arguments.append("--amend") }
+
+        if signOff { arguments.append("--signoff") }
+
+        if skipHooks { arguments.append("--no-verify") }
+
         _ = try await runner.run(arguments, input: Data(message.utf8))
     }
 
     /// 采用一侧后立即通过 Git 标记解决，缺失的一侧对应删除。
-    public func resolve(_ entries: [StatusEntry], theirs: Bool) async throws {
+    ///
+    /// - Parameters:
+    ///   - entries: 要解决的文件，其中不是冲突的条目被忽略。
+    ///   - theirs: 采用对方版本；否则采用我方版本。
+    ///   - backup: 传入时先把冲突文件另存为备份，再把备份路径交给它。
+    public func resolve(
+        _ entries: [StatusEntry],
+        theirs: Bool,
+        backup: (@Sendable ([String]) async -> Void)? = nil
+    ) async throws {
         try await runner.writeTransaction {
-            let current = try await runner.status()
             let paths = Set(entries.map(\.path))
+            let targets = try await runner.status().entries.filter { $0.kind == .conflicted && paths.contains($0.path) }
 
-            for entry in current.entries where entry.kind == .conflicted && paths.contains(entry.path) {
-                let stages = try await runner.run(["--literal-pathspecs", "ls-files", "--stage", "-z", "--", entry.path])
-                let wanted = theirs ? "3" : "2"
-                let exists = stages.split(separator: 0).contains {
-                    let prefix = $0.prefix(while: { $0 != 9 })
-                    return String(decoding: prefix, as: UTF8.self).split(separator: " ").last == Substring(wanted)
-                }
+            if let backup {
+                await backup(try await backUp(targets.map(\.path)))
+            }
 
-                if exists {
-                    _ = try await runner.run(
-                        ["--literal-pathspecs", "checkout", theirs ? "--theirs" : "--ours"] + Self.pathInputOptions,
-                        input: Self.pathInput([entry.path])
-                    )
-                    try await stage([entry], staged: true)
-                } else {
-                    _ = try await runner.run(
-                        ["--literal-pathspecs", "rm", "-f"] + Self.pathInputOptions,
-                        input: Self.pathInput([entry.path])
-                    )
-                }
+            // porcelain v2 的 stage 记录说明采用的一侧是否存在，不必逐个文件查询索引
+            let kept = targets.filter { (theirs ? $0.conflict?.theirs : $0.conflict?.ours) != nil }
+            let removed = targets.filter { (theirs ? $0.conflict?.theirs : $0.conflict?.ours) == nil }
+
+            if !kept.isEmpty {
+                _ = try await runner.run(
+                    ["--literal-pathspecs", "checkout", theirs ? "--theirs" : "--ours"] + Self.pathInputOptions,
+                    input: Self.pathInput(kept.map(\.path))
+                )
+
+                try await stage(kept, staged: true)
+            }
+
+            // 采用的一侧删除了文件，解决的结果就是删除
+            if !removed.isEmpty {
+                _ = try await runner.run(
+                    ["--literal-pathspecs", "rm", "-f", "-q"] + Self.pathInputOptions,
+                    input: Self.pathInput(removed.map(\.path))
+                )
             }
         }
     }
@@ -286,7 +344,14 @@ public struct WorkingCopyOperations: Sendable {
         case .revert: command = "revert"
         }
 
-        _ = try await runner.run(["-c", "core.editor=:", "-c", "core.trustctime=false", command, "--" + action])
+        try await runner.writeTransaction {
+            // 序列的这一步没有可提交的改动时，继续表示保留一个空提交，再接着处理后面的步骤
+            if action == "continue", try await commitEmptyStep(of: operation) {
+                return
+            }
+
+            _ = try await runner.run(["-c", "core.editor=:", "-c", "core.trustctime=false", command, "--" + action])
+        }
     }
 
     /// 一次读取状态文件快照，进行中模式不依赖人读的 git status 文案。
@@ -297,43 +362,19 @@ public struct WorkingCopyOperations: Sendable {
             throw RepositoryReadError.invalidQuery
         }
 
-        let names = [
-            "MERGE_HEAD", "SQUASH_MSG", "CHERRY_PICK_HEAD", "REVERT_HEAD", "MERGE_MSG",
-            "rebase-merge/head-name", "rebase-apply/head-name", "sequencer/todo",
-        ]
-
         // 三项读取互不依赖，并发执行；服务器上只占一次往返的等待时间。
         async let identity = runner.execute(["var", "GIT_COMMITTER_IDENT"], acceptedExitCodes: [0, 128])
         async let message = lastMessage(of: head)
-        async let located = runner.run(["rev-parse", "--path-format=absolute"] + names.flatMap { ["--git-path", $0] })
+        async let state = stateFiles(OperationProgress.stateFiles)
 
         let rawIdentity = String(decoding: try await identity.standardOutput, as: UTF8.self)
         let committer = rawIdentity.lastIndex(of: ">")
             .map { String(rawIdentity[...$0]) } ?? ""
         let lastMessage = try await message
-        let paths = String(decoding: try await located, as: UTF8.self).split(separator: "\n").map(String.init)
-        guard paths.count == names.count else { throw RepositoryFileError.unsupportedPath }
-        let content = try await RepositoryFiles(runner: runner).read(paths)
-        let files = Dictionary(uniqueKeysWithValues: zip(names, paths).compactMap { name, path in
-            content[path].map { (name, String(decoding: $0, as: UTF8.self)) }
-        })
-        let operation: RepositoryOperationState? =
-            if
-                files["rebase-merge/head-name"] != nil
-                || files["rebase-apply/head-name"] != nil
-            {
-                .rebase
-            } else if files["REVERT_HEAD"] != nil || (files["sequencer/todo"]?.hasPrefix("revert ") ?? false) {
-                .revert
-            } else if files["CHERRY_PICK_HEAD"] != nil || (files["sequencer/todo"]?.hasPrefix("pick ") ?? false) {
-                .cherryPick
-            } else if files["MERGE_HEAD"] != nil {
-                .merge
-            } else if files["SQUASH_MSG"] != nil {
-                .squash
-            } else {
-                nil
-            }
+        let files = try await state
+
+        // 进行中的操作与它的两侧、步数和已解决的冲突都从同一份状态文件快照算出
+        let progress = try await OperationProgress.read(files: files, head: head, runner: runner)
 
         // Git 生成的冲突清单不属于提交正文，预填时移除其注释行。
         let mergeMessage = (files["SQUASH_MSG"] ?? files["MERGE_MSG"] ?? "")
@@ -344,7 +385,8 @@ public struct WorkingCopyOperations: Sendable {
         return WorkingCopyContext(
             committer: committer,
             lastMessage: lastMessage,
-            operation: operation,
+            operation: progress?.state,
+            progress: progress,
             mergeMessage: mergeMessage
         )
     }
@@ -381,39 +423,48 @@ extension WorkingCopyOperations {
     }
 
     /// 两侧补丁与路径状态一起校验，暂存视图也会察觉外部工作区编辑。
-    private func snapshot(_ entry: StatusEntry) async throws -> (staged: Data, unstaged: Data, fingerprint: Data) {
-        let options = [
-            "--no-color", "--word-diff=none", "--no-ext-diff", "--no-textconv", "--full-index",
-            "--src-prefix=a/", "--dst-prefix=b/", "--no-relative", "--diff-algorithm=myers", "-U3", "-C", "-M",
-        ]
+    ///
+    /// 逐字节的两侧补丁始终计入摘要；忽略空白时另取显示用的补丁，同样计入，外部只改空白也能察觉。
+    func snapshot(_ entry: StatusEntry, options: DiffOptions = DiffOptions()) async throws -> DiffContents {
         let statusArguments = ["--literal-pathspecs", "status", "--porcelain=v2", "-z", "--untracked-files=all", "--"]
             + entry.operationPaths
-        let before = try await runner.run(statusArguments)
-        let staged = try await runner.run(
-            ["--literal-pathspecs", "diff", "--cached"] + options + ["--"] + entry.operationPaths
-        )
-        let unstaged: Data
+        var exactOptions = options
+        exactOptions.ignoresWhitespace = false
 
-        if entry.kind == .untracked {
-            guard !entry.path.hasSuffix("/") else { throw WorkingCopyError.unsupportedFile }
-            unstaged = try await runner.execute(
-                ["diff", "--no-index"] + options + ["--", "/dev/null", entry.path],
-                acceptedExitCodes: [0, 1]
-            ).standardOutput
-        } else {
-            unstaged = try await runner.run(
-                ["--literal-pathspecs", "diff"] + options + ["--", entry.path]
+        let before = try await runner.run(statusArguments)
+        let staged = try await patch(for: entry, side: .staged, options: exactOptions)
+        let unstaged = try await patch(for: entry, side: .unstaged, options: exactOptions)
+        var shown = (staged: staged, unstaged: unstaged)
+
+        if options.ignoresWhitespace {
+            shown = (
+                try await patch(for: entry, side: .staged, options: options),
+                try await patch(for: entry, side: .unstaged, options: options)
             )
         }
 
         guard try await runner.run(statusArguments) == before else { throw WorkingCopyError.staleSnapshot }
         var hash = SHA256()
 
-        for data in [before, staged, unstaged] {
+        // 选项不同的快照即使补丁恰好相同也不互相冒充
+        hash.update(data: Data(options.arguments.joined(separator: " ").utf8))
+
+        for data in [before, staged, unstaged] + (options.ignoresWhitespace ? [shown.staged, shown.unstaged] : []) {
             hash.update(data: Data("\(data.count):".utf8))
             hash.update(data: data)
         }
 
-        return (staged, unstaged, Data(hash.finalize()))
+        return DiffContents(
+            staged: shown.staged,
+            unstaged: shown.unstaged,
+            exactStaged: staged,
+            exactUnstaged: unstaged,
+            fingerprint: Data(hash.finalize())
+        )
+    }
+
+    /// 按快照生成时的选项重新读取，摘要相同说明文件与暂存区都没有变化。
+    func isCurrent(_ snapshot: DiffSnapshot) async throws -> Bool {
+        try await self.snapshot(snapshot.entry, options: snapshot.options).fingerprint == snapshot.fingerprint
     }
 }

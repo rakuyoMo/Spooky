@@ -124,24 +124,38 @@ struct AppFailure: Identifiable {
         case let working as WorkingCopyError:
             (key, kind) = Self.classification(of: working)
 
+        case let stash as StashError:
+            (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: stash)
+
         case let file as RepositoryFileError:
             (key, kind) = Self.classification(of: file)
             exceededOutputLimit = file == .tooLarge
 
+        // 冲突向导的写入前提不满足属于仓库状态问题
+        case let conflict as ConflictResolutionError:
+            key = conflict == .fileChanged ? "conflict.error.changed" : "conflict.error.version"
+            kind = .repository
+
+        case is FileViewError:
+            key = "showFile.error.missing"
+            kind = .repository
+
         case let remote as RemoteConnectionError:
-            // 写入中途断线的结果未知，统一提示先核对仓库，不能引导用户直接重试。
-            let interrupted = writing && [.unavailable, .protocolFailure].contains(remote.kind)
-            let remoteKind = interrupted ? .interruptedWrite : remote.kind
-            key = "remoteError." + remoteKind.rawValue
-            recoveryKey = key + ".help"
-            kind = Self.kind(of: remoteKind)
-            output = remote.result
-            diagnostic = remote.diagnostic
+            (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: remote, writing: writing)
 
         case let terminal as TerminalLaunchError:
             key = "error.terminal"
             recoveryKey = "error.terminalHelp"
             diagnostic = terminal.diagnostic
+
+        case let file as WorkingCopyFileError:
+            kind = .repository
+            (key, recoveryKey, diagnostic) = Self.classification(of: file)
+
+        case let tool as DiffToolLaunchError:
+            key = "files.error.diffTool"
+            recoveryKey = "files.error.diffToolHelp"
+            diagnostic = tool.diagnostic
 
         case let git as GitError:
             output = git.result
@@ -189,6 +203,18 @@ struct AppFailure: Identifiable {
         details = raw.isEmpty ? AppLocalization.text("error.noOutput") : raw
     }
 
+    /// 服务器连接错误的文案键、类别、恢复说明与原文；写入中途断线的结果未知，统一提示先核对仓库，不能引导用户直接重试。
+    private static func classification(
+        of remote: RemoteConnectionError,
+        writing: Bool
+    ) -> (key: String, kind: FailureKind, recoveryKey: String, output: GitCommandResult?, diagnostic: String?) {
+        let interrupted = writing && [.unavailable, .protocolFailure].contains(remote.kind)
+        let remoteKind = interrupted ? .interruptedWrite : remote.kind
+        let key = "remoteError." + remoteKind.rawValue
+
+        return (key, kind(of: remoteKind), key + ".help", remote.result, remote.diagnostic)
+    }
+
     /// 发起同步前仓库条件不满足时的文案键与类别，这类失败都属于仓库状态问题。
     private static func classification(of sync: RepositorySyncError) -> (key: String, kind: FailureKind) {
         switch sync {
@@ -204,7 +230,21 @@ struct AppFailure: Identifiable {
         case .staleSnapshot: ("working.error.stale", .repository)
         case .invalidSelection: ("working.error.selection", .repository)
         case .unsupportedFile: ("working.error.file", .repository)
+        case .whitespaceMismatch: ("diff.error.whitespace", .repository)
         case .malformedDiff: ("error.parse", .output)
+        }
+    }
+
+    /// 工作区文件操作失败的文案键、恢复说明与诊断：补丁前像不符时列出这些文件。
+    private static func classification(
+        of file: WorkingCopyFileError
+    ) -> (key: String, recovery: String?, diagnostic: String?) {
+        switch file {
+        case .patchPreimageMismatch(let paths):
+            ("files.error.preimage", "files.error.preimageHelp", paths.joined(separator: "\n"))
+
+        case .destinationExists:
+            ("files.error.destination", nil, nil)
         }
     }
 
@@ -249,6 +289,7 @@ struct AppFailure: Identifiable {
         case .noUpstream: ("sync.error.upstream", .git)
         case .branchNotMerged: ("branch.error.unmerged", .git)
         case .localChanges: ("sync.error.dirty", .git)
+        case .signingFailed: ("signing.error", .git)
         case .indexLocked: ("error.indexLocked", .git)
         case .commandFailed: ("error.command", .git)
         case .launchFailed: ("error.launch", .environment)

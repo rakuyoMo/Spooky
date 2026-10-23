@@ -76,7 +76,8 @@ struct WorkingCopyStatusTests {
                 path: "conflict.txt",
                 originalPath: nil,
                 staged: .unmerged,
-                unstaged: .unmerged
+                unstaged: .unmerged,
+                conflict: ConflictStages(base: "aaaa", ours: "bbbb", theirs: "cccc", existsInWorktree: true)
             ),
             StatusEntry(
                 kind: .untracked,

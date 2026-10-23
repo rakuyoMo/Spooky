@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use Encode qw(decode encode);
+use Fcntl qw(F_SETFD);
 use File::Path qw(remove_tree);
 use File::Temp qw(tempdir);
 use IO::Select;
@@ -16,7 +17,9 @@ use Time::HiRes qw(time sleep);
 umask 0077;
 $SIG{PIPE} = 'IGNORE';
 my $mode = $0 =~ /-git-askpass\z/ ? 'askpass'
-    : $0 =~ /-askpass\z/ ? 'ssh-askpass' : (shift(@ARGV) // '');
+    : $0 =~ /-askpass\z/ ? 'ssh-askpass'
+    : $0 =~ /-gpg\z/ ? 'gpg'
+    : $0 =~ /-ssh-keygen\z/ ? 'ssh-keygen' : (shift(@ARGV) // '');
 
 # 随机标识来自内核，不能由仓库内容决定操作身份。
 sub identifier {
@@ -173,7 +176,7 @@ sub run_operation {
             SSH_ASKPASS_REQUIRE GIT_SSH GIT_SSH_COMMAND GIT_SSH_VARIANT
             GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_INDEX_FILE
             GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
-            GIT_NAMESPACE GIT_PREFIX GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT)};
+            GIT_NAMESPACE GIT_PREFIX GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT SPOOKY_SIGNING)};
         $ENV{LANG} = $ENV{LC_ALL} = 'en_US.UTF-8';
         $ENV{GIT_TERMINAL_PROMPT} = '0';
         $ENV{SPOOKY_SESSION} = $session;
@@ -248,6 +251,91 @@ sub run_operation {
     return $signal ? 128 + $signal : $code;
 }
 
+# 签名程序沿用仓库生效的配置；读取时去掉本会话追加的 -c 覆盖，否则查到的是包装器自己。
+sub configured_program {
+    my ($pattern, $fallback) = @_;
+    local %ENV = %ENV;
+    delete @ENV{qw(GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT)};
+    open(my $config, '-|', 'git', 'config', '--type=path', '-z', '--get-regexp', $pattern) or return $fallback;
+    local $/;
+    my $output = <$config> // '';
+    close $config;
+
+    # 每条记录是 “键、换行、值”，同一程序的两个别名以最后读到的为准。
+    my @values = map { (split /\n/, $_, 2)[1] } grep { length } split /\0/, $output;
+    my $value = $values[-1];
+    return defined($value) && length($value) ? $value : $fallback;
+}
+
+# 找不到签名程序时与 Git 自己启动失败的报错一致，原始错误随签名失败一起保留。
+sub exec_program {
+    my ($program, @arguments) = @_;
+    {
+        no warnings 'exec';
+        exec { $program } $program, @arguments;
+    }
+    print STDERR "fatal: cannot exec '$program': $!\n";
+    POSIX::_exit(127);
+}
+
+# gpg 以 loopback 方式在状态输出里索取口令；只有真正索取时才经中继询问，agent 已缓存或密钥无口令时不打扰用户。
+sub sign_with_relay {
+    my ($program, @arguments) = @_;
+    my $session = $ENV{SPOOKY_SESSION} // die "callback session missing\n";
+    my $operation = $ENV{SPOOKY_OPERATION} // die "callback operation missing\n";
+    pipe(my $status_read, my $status_write) or die "signing channel unavailable\n";
+    pipe(my $command_read, my $command_write) or die "signing channel unavailable\n";
+    my $pid = fork();
+    die "cannot start signing program\n" unless defined $pid;
+
+    if ($pid == 0) {
+        close $status_read;
+        close $command_write;
+        open(STDERR, '>&', $status_write) or POSIX::_exit(126);
+
+        # 命令管道要跨过 exec 留给 gpg，Perl 默认给新描述符设了 close-on-exec。
+        fcntl($command_read, F_SETFD, 0) or POSIX::_exit(126);
+        exec_program($program, '--pinentry-mode', 'loopback', '--command-fd', fileno($command_read), @arguments);
+    }
+
+    close $status_write;
+    close $command_read;
+    my ($pending, $hint, $open) = ('', '', 1);
+
+    # Git 从标准错误读取状态行，这里原样转发；口令只写进 gpg 的命令管道。
+    while (sysread($status_read, my $chunk, 4096)) {
+        syswrite(STDERR, $chunk);
+        $pending .= $chunk;
+
+        while ((my $end = index($pending, "\n")) >= 0) {
+            my $line = substr($pending, 0, $end + 1, '');
+            next unless $open;
+
+            if ($line =~ /\A\[GNUPG:\] USERID_HINT (.*)\n\z/) {
+                $hint = $1;
+            } elsif ($line =~ /\A\[GNUPG:\] GET_HIDDEN passphrase\.enter/) {
+                my $request = { kind => 'signing', operation => $operation, prompt => decode('UTF-8', $hint) };
+                my $value = eval { relay_request($session, $request, 120) };
+
+                # 用户取消或中继不可用时关闭命令管道，gpg 随即以取消结束。
+                if (defined $value) {
+                    syswrite($command_write, encode('UTF-8', $value) . "\n");
+                } else {
+                    close $command_write;
+                    $open = 0;
+                }
+            } elsif ($line =~ /\A\[GNUPG:\] GET_(?:BOOL|LINE) /) {
+                # 签名不应再有其它提问，回答空行可能让 gpg 反复追问，直接结束输入。
+                close $command_write;
+                $open = 0;
+            }
+        }
+    }
+
+    waitpid($pid, 0);
+    return $? & 127 ? 128 + ($? & 127) : $? >> 8;
+}
+
 if ($mode eq 'create-session') {
     my $request = read_message(\*STDIN);
     die "invalid session token\n" unless ($request->{token} // '') =~ /\A[a-f0-9]{64}\z/;
@@ -291,7 +379,7 @@ if ($mode eq 'create-session') {
     my $operation = $ENV{SPOOKY_OPERATION} // die "callback operation missing\n";
     my $argument = shift(@ARGV) // '';
     my $request = {
-        kind => $mode,
+        kind => $mode eq 'ssh-askpass' && $ENV{SPOOKY_SIGNING} ? 'signing' : $mode,
         operation => $operation,
         prompt => decode('UTF-8', $argument)
     };
@@ -319,6 +407,21 @@ if ($mode eq 'create-session') {
     $ENV{DISPLAY} = 'spooky:0';
     exec '/usr/bin/ssh', '-o', 'ForwardAgent=no', '-o', 'StrictHostKeyChecking=yes', @ARGV;
     die "cannot launch remote ssh\n";
+} elsif ($mode eq 'gpg') {
+    my $program = configured_program('^gpg\.(openpgp\.)?program$', 'gpg');
+
+    # Git 签名固定使用 -bsau；校验等其它调用不会索取口令，原样交给 gpg。
+    exec_program($program, @ARGV) unless grep { $_ eq '-bsau' } @ARGV;
+    exit sign_with_relay($program, @ARGV);
+} elsif ($mode eq 'ssh-keygen') {
+    # ssh-keygen 解锁私钥时经 SSH_ASKPASS 回到中继，不会等待不存在的终端；agent 里的密钥不需要口令。
+    my $program = configured_program('^gpg\.ssh\.program$', 'ssh-keygen');
+    (my $base = $0) =~ s/-ssh-keygen\z//;
+    $ENV{SSH_ASKPASS} = "$base-askpass";
+    $ENV{SSH_ASKPASS_REQUIRE} = 'force';
+    $ENV{DISPLAY} = 'spooky:0';
+    $ENV{SPOOKY_SIGNING} = '1';
+    exec_program($program, @ARGV);
 } elsif ($mode eq 'inspect') {
     # 路径由 git rev-parse --git-path 提供，只检查存在性，不读取元数据内容。
     for my $path (@ARGV) {

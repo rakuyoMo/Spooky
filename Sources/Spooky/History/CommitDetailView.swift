@@ -14,6 +14,7 @@ struct CommitPageDiffView: View {
             ScrollView {
                 CommitFileDiffView(history: history, path: path)
             }
+            .reloadsOnDiffPreferenceChange { history.reloadDiffs() }
         } else {
             EmptyStateView(title: AppLocalization.text("detail.empty.title"), message: "", symbol: "doc")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -28,6 +29,9 @@ struct CommitDetailView: View {
     /// 当前提交和文件读取状态。
     @Bindable
     var history: RepositoryHistoryState
+
+    /// 文件右键菜单打开文件视图，并把文件恢复到工作区或导出。
+    let session: RepositorySession
 
     /// 头部和所有文件共享同一个滚动区域。
     var body: some View {
@@ -48,6 +52,7 @@ struct CommitDetailView: View {
                     scrollContent(commit)
                 }
             }
+            .reloadsOnDiffPreferenceChange { history.reloadDiffs() }
         } else {
             EmptyStateView(
                 title: AppLocalization.text(
@@ -143,6 +148,11 @@ struct CommitDetailView: View {
         } label: {
             CommitFileLabel(file: file)
                 .frame(height: 30)
+                .contextMenu {
+                    if let commit = history.selectedCommit {
+                        ChangesetFileMenu(session: session, path: file.path, commit: commit)
+                    }
+                }
         }
         .padding(.horizontal, 8)
     }
@@ -183,9 +193,7 @@ struct CommitFileListView: View {
                 .frame(height: 40)
                 .background(.bar)
             }
-            List(history.changes, selection: $history.selectedPath) { file in
-                CommitFileLabel(file: file).tag(file.path)
-            }
+            fileList
             if history.isLoadingChanges {
                 ProgressView(AppLocalization.text("history.loadingChanges"))
                     .controlSize(.small)
@@ -193,6 +201,19 @@ struct CommitFileListView: View {
             }
         }
         .frame(minWidth: 300)
+    }
+
+    /// 变更文件列表，右键菜单打开文件视图，并把文件恢复到工作区或导出。
+    private var fileList: some View {
+        List(history.changes, selection: $history.selectedPath) { file in
+            CommitFileLabel(file: file)
+                .tag(file.path)
+                .contextMenu {
+                    if let commit = history.selectedCommit {
+                        ChangesetFileMenu(session: session, path: file.path, commit: commit)
+                    }
+                }
+        }
     }
 }
 
@@ -274,7 +295,7 @@ private struct CommitMetadataView: View {
 
 // MARK: - CommitFileDiffView
 
-/// 单文件历史 Diff 复用工作区的块渲染、字体和主题，不提供写操作。
+/// 单文件历史 Diff：读取失败、读取中与已读取的补丁各有明确状态，补丁复用只读 Diff 视图。
 struct CommitFileDiffView: View {
     /// 当前提交的加载状态。
     let history: RepositoryHistoryState
@@ -282,59 +303,21 @@ struct CommitFileDiffView: View {
     /// 已选择或展开的文件路径。
     let path: String
 
-    /// 内置主题随系统外观切换。
-    @Environment(\.colorScheme)
-    private var colorScheme
-
-    /// 补丁、二进制、超限和失败各自有明确状态。
+    /// 失败可重试，补丁读取完成前显示进度。
     var body: some View {
-        let theme = BuiltinTheme.current(dark: colorScheme == .dark)
-        VStack(alignment: .leading, spacing: 0) {
-            if let failure = history.diffFailures[path] {
-                FailureDetailsView(failure: failure) { history.loadDiff(path) }
-                    .padding(20)
-            } else if let result = history.diffs[path] {
-                if let diff = result.diff {
-                    ForEach(diff.files) { file in
-                        fileDiff(file, theme: theme)
-                    }
-                } else {
-                    Text(AppLocalization.text("working.largeDiff", (result.byteCount + 999) / 1000))
-                        .padding(12)
-                    Button(AppLocalization.text("working.showDiff")) {
-                        history.loadDiff(path, showLarge: true)
-                    }
-                    .padding(12)
-                }
-            } else {
-                ProgressView(AppLocalization.text("working.loadingDiff"))
-                    .controlSize(.small)
-                    .padding(20)
+        if let failure = history.diffFailures[path] {
+            FailureDetailsView(failure: failure) { history.loadDiff(path) }
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else if let result = history.diffs[path], let source = history.diffSource(path: path) {
+            ReadOnlyFileDiffView(result: result, source: source) {
+                history.loadDiff(path, showLarge: true)
             }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.colors["background"]?.color ?? .clear)
-    }
-
-    /// 单个文件的补丁头、二进制提示与只读的块。
-    @ViewBuilder
-    private func fileDiff(_ file: DiffFile, theme: BuiltinTheme) -> some View {
-        Text(file.headers.joined(separator: "\n"))
-            .font(.custom(theme.fontName, size: theme.fontSize))
-            .foregroundStyle(.secondary)
-            .textSelection(.enabled)
-            .padding(12)
-
-        if file.isBinary { Text(AppLocalization.text("working.binary")).padding(20) }
-
-        ForEach(file.hunks) { hunk in
-            DiffHunkView(
-                hunk: hunk,
-                theme: theme,
-                staged: false,
-                enabled: false,
-                readOnly: true
-            ) { _, _ in }
+        } else {
+            ProgressView(AppLocalization.text("working.loadingDiff"))
+                .controlSize(.small)
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

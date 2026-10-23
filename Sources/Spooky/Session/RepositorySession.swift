@@ -12,6 +12,23 @@ enum RepositoryView: String, CaseIterable {
 
     /// 分页提交列表与只读提交详情。
     case history
+
+    /// 储藏列表与只读储藏详情。
+    case stashes
+
+    /// 一个文件的提交时间线与所选版本的详情。
+    case fileHistory
+
+    /// 某个版本的文件原文与逐行追溯。
+    case fileContent
+
+    /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
+    var supportsSearch: Bool {
+        switch self {
+        case .history, .fileContent: false
+        case .workingCopy, .stashes, .fileHistory: true
+        }
+    }
 }
 
 // MARK: - StatusRowID
@@ -50,6 +67,15 @@ final class RepositorySession {
 
     /// 历史和引用与工作区共用一个窗口生命周期。
     let history = RepositoryHistoryState()
+
+    /// 储藏列表、选择与储藏详情。
+    let stashes = RepositoryStashState()
+
+    /// 文件历史的时间线、筛选与详情。
+    let fileHistory = FileHistoryState()
+
+    /// 文件原文与逐行追溯。
+    let fileContent = FileContentState()
 
     /// 当前工作区身份。
     private(set) var repository: RepositoryLocation? = nil
@@ -90,6 +116,9 @@ final class RepositorySession {
     /// 大 Diff 放行只对当前文件有效。
     var showsLargeDiff = false
 
+    /// Diff 底栏的显示整个文件开关，只属于本窗口的工作区视图，不写偏好。
+    var diffShowsEntireFile = false
+
     /// Diff 加载中仍保留旧内容。
     private(set) var isLoadingDiff = false
 
@@ -97,7 +126,7 @@ final class RepositorySession {
     private(set) var diffFailure: AppFailure? = nil
 
     /// 点击勾选框后的临时状态，刷新成功或失败后撤回。
-    private(set) var stagingOverrides: [StatusRowID: Bool] = [:]
+    var stagingOverrides: [StatusRowID: Bool] = [:]
 
     /// 列表多选使用的稳定标识。
     var selectedIDs: Set<StatusRowID> = []
@@ -105,11 +134,26 @@ final class RepositorySession {
     /// 横幅的冲突过滤选项。
     var onlyConflicts = false
 
+    /// 冲突向导在各仓库生成、尚未清理的备份文件，切换仓库后仍保留，供向导与横幅列出和清理。
+    var conflictBackups: [RepositoryLocation: [String]] = [:]
+
     /// 主菜单请求聚焦提交标题。
     var commitFocusRequest = 0
 
     /// 窗口快捷键只在编辑信息或按住 ⌥ 时提交。
     var isEditingCommitMessage = false
+
+    /// 提交区使用的身份、签名、注释字符与钩子配置。
+    var commitConfiguration: CommitConfiguration? = nil
+
+    /// 读取提交配置的任务。
+    var configurationTask: Task<Void, Never>? = nil
+
+    /// 本次提交跳过 pre-commit 与 commit-msg 钩子，只对当前仓库有效。
+    var skipHooks = false
+
+    /// 窗口询问注释行的处理方式；参数为去掉注释后信息是否为空，用户取消时不回调。
+    var onCommentPrompt: ((Bool, @escaping (CommentHandling) -> Void) -> Void)? = nil
 
     /// 窗口负责确认并在 sheet 关闭后执行操作。
     var onConfirm: ((String, String, @escaping () -> Void, (() -> Void)?) -> Void)? = nil
@@ -123,11 +167,21 @@ final class RepositorySession {
     /// 恢复的视图状态失效、回到 Working Copy 时，窗口据此重建主视图。
     var onViewReset: (() -> Void)? = nil
 
+    /// 文件视图与提交详情的入口在内容区里切换主视图，窗口据此重建分栏。
+    var onActiveViewChange: (() -> Void)? = nil
+
     /// 当前窗口的写操作任务。
     private(set) var writeTask: Task<Void, Never>? = nil
 
-    /// 当前主视图。
-    var activeView = RepositoryView.workingCopy
+    /// 当前主视图；切换视图时清空搜索，过滤不会在看不到搜索框内容的视图里生效。
+    var activeView = RepositoryView.workingCopy {
+        didSet {
+            if activeView != oldValue { searchText = "" }
+        }
+    }
+
+    /// 工具栏搜索框的内容，过滤当前主视图的列表。
+    var searchText = ""
 
     /// 仓库管理中选中的最近记录。
     var selectedRecentLocation: RepositoryLocation? = nil
@@ -144,11 +198,14 @@ final class RepositorySession {
     /// 窗口负责呈现错误 sheet。
     var onFailure: ((AppFailure) -> Void)? = nil
 
+    /// 窗口负责呈现储藏的对话框。
+    var onStashRequest: ((StashRequest) -> Void)? = nil
+
     /// 当前刷新任务，关闭仓库时取消。
     private(set) var refreshTask: Task<Void, Never>? = nil
 
     /// ⌥ 快速修补生效前保存的普通草稿。
-    private var originalDraft: (subject: String, body: String)? = nil
+    var originalDraft: (subject: String, body: String)? = nil
 
     /// 当前文件的读取任务。
     private var diffTask: Task<Void, Never>? = nil
@@ -190,11 +247,31 @@ final class RepositorySession {
     @ObservationIgnored
     private var viewStates = RepositoryViewStateCache()
 
+    /// 当前仓库交给本机程序打开的文件副本，关闭仓库时删除。
+    @ObservationIgnored
+    private(set) var fileCache: RepositoryFileCache? = nil
+
+    /// 工作区列表按仓库记住的显示模式。
+    var listMode = WorkingCopyListMode.list
+
+    /// 显示全部文件、被忽略与 assume-unchanged 文件时补充的清单。
+    var workingTreeFiles = WorkingTreeFileListing()
+
+    /// 补充清单的读取任务，关闭仓库时取消。
+    @ObservationIgnored
+    var workingTreeFilesTask: Task<Void, Never>? = nil
+
+    /// 树形列表里单独选中的目录，右栏据此显示目录说明；选中文件时为 nil。
+    var selectedDirectory: String? = nil
+
+    /// 窗口负责呈现文件操作的参数表单与多按钮询问。
+    var onFileRequest: ((WorkingCopyFileRequest) -> Void)? = nil
+
     /// 快照读取边界，测试可控制响应顺序和失败。
     private let loadStatus: @Sendable (RepositoryLocation) async throws -> WorkingCopyStatus
 
     /// 请求代数，阻止已取消的旧请求覆盖新仓库。
-    private var generation = 0
+    private(set) var generation = 0
 
     /// 连接可用、本窗口没有写操作，且应用内没有同一仓库的写操作时才允许写入。
     var canWrite: Bool {
@@ -214,19 +291,6 @@ final class RepositorySession {
             diffSide = (selectedEntry?.hasUnstagedChanges ?? false) ? .unstaged : .staged
             loadDiff()
         }
-    }
-
-    /// 当前详情对应的条目，Unicode 等价路径沿用 Swift 的规范等价比较。
-    var selectedEntry: StatusEntry? {
-        status?.entries.first { $0.path == selectedID?.path && $0.kind == selectedID?.kind }
-    }
-
-    /// 批量动作对应当前多选；单选详情也可从菜单操作。
-    var selectedEntries: [StatusEntry] {
-        status?.entries.filter {
-            selectedIDs.contains(StatusRowID(path: $0.path, kind: $0.kind))
-                || (selectedIDs.isEmpty && $0.path == selectedID?.path && $0.kind == selectedID?.kind)
-        } ?? []
     }
 
     /// 未解决冲突期间不允许提交或修补。
@@ -273,6 +337,10 @@ final class RepositorySession {
 
         close()
         self.repository = repository
+        fileCache = RepositoryFileCache(runner: makeRunner(repository))
+
+        // 工作区列表沿用这个仓库上次选择的显示模式
+        listMode = WorkingCopyListMode.stored(for: repository)
 
         // 正在显示的仓库也计入缓存上限，超出时淘汰最久未使用的仓库。
         let saved = viewStates.state(for: repository)
@@ -314,7 +382,7 @@ final class RepositorySession {
         let previous = status
 
         // 轮询时顺带读取所选文件的内容哈希，与状态并发，服务器上只占一次往返的等待时间。
-        let probe = full || !loadsRepositoryDetails ? nil : selectedEntry.flatMap { $0.kind == .conflicted ? nil : $0 }
+        let probe = full || !loadsRepositoryDetails ? nil : selectedEntry.flatMap { $0.hasWorkingCopyDiff ? $0 : nil }
         let service = WorkingCopyOperations(runner: makeRunner(repository))
 
         refreshTask = Task { [weak self] in
@@ -331,16 +399,15 @@ final class RepositorySession {
                 let statusChanged = status != previous
                 replaceStatus(status)
 
-                // 状态没有变化的轮询不再重复读取身份、引用和 Diff，减少服务器往返。
+                // 状态没有变化的轮询不再重复读取身份、引用、补充清单和 Diff，减少服务器往返。
                 if loadsRepositoryDetails {
-                    if full || statusChanged {
-                        loadContext()
-                        history.refresh(status: status, runner: makeRunner(repository), reload: full)
-                    }
-
-                    if full || statusChanged || contentChanged(probe, hash: hash) {
-                        loadDiff()
-                    }
+                    loadDetails(
+                        of: status,
+                        in: repository,
+                        full: full,
+                        statusChanged: statusChanged,
+                        contentChanged: contentChanged(probe, hash: hash)
+                    )
                 }
             } catch {
                 guard let self, generation == request, !Task.isCancelled else {
@@ -357,7 +424,11 @@ final class RepositorySession {
             finishRefresh()
         }
     }
+}
 
+// MARK: - Lifecycle
+
+extension RepositorySession {
     /// 结束当前读取并清空仓库，视图状态存入窗口缓存；不影响 App 的其它窗口和进程。
     func close() {
         if let repository {
@@ -366,8 +437,17 @@ final class RepositorySession {
 
         generation += 1
         history.close()
+        stashes.close()
+        fileHistory.close()
+        fileContent.close()
         fileMonitor?.stop()
         fileMonitor = nil
+        fileCache?.removeAll()
+        fileCache = nil
+        workingTreeFilesTask?.cancel()
+        workingTreeFilesTask = nil
+        workingTreeFiles = WorkingTreeFileListing()
+        selectedDirectory = nil
         writeTask?.cancel()
         diffTask?.cancel()
         contextTask?.cancel()
@@ -388,6 +468,7 @@ final class RepositorySession {
         originalDraft = nil
         onlyConflicts = false
         isEditingCommitMessage = false
+        resetCommitConfiguration()
         pollingTask?.cancel()
         connectionTask?.cancel()
         reconnectTask?.cancel()
@@ -406,13 +487,14 @@ final class RepositorySession {
         selectedRecentLocation = nil
         failure = nil
         activeView = .workingCopy
+        searchText = ""
         isRefreshing = false
     }
 
     /// 退出前取消本窗口的全部任务并等待结束，本机子进程与远端操作随之回收。
     func shutdown() async {
         let tasks = [writeTask, refreshTask, diffTask, contextTask, pollingTask, connectionTask, reconnectTask]
-            .compactMap { $0 } + history.activeTasks
+            .compactMap { $0 } + history.activeTasks + stashes.activeTasks
         close()
 
         for task in tasks {
@@ -477,189 +559,14 @@ extension RepositorySession {
     }
 }
 
-// MARK: - Working Copy
+// MARK: - Diff
 
 extension RepositorySession {
-    /// 勾选框先更新，再执行命令；任何失败都会撤回临时状态。
-    func stage(_ entries: [StatusEntry], staged: Bool) {
-        guard canWrite, !entries.isEmpty else { return }
-        stagingOverrides = Dictionary(uniqueKeysWithValues: entries.map {
-            (StatusRowID(path: $0.path, kind: $0.kind), staged)
-        })
-        performGit(
-            { runner, _ in
-                try await WorkingCopyOperations(runner: runner).stage(entries, staged: staged)
-            },
-            title: AppLocalization.text(staged ? "working.stage" : "working.unstage"),
-            recordsActivity: false
-        )
-    }
-
-    /// 全部动作同时供主菜单、工具栏与提交区调用。
-    func stageAll(staged: Bool) {
-        stage(status?.entries.filter { staged ? $0.hasUnstagedChanges : $0.hasStagedChanges } ?? [], staged: staged)
-    }
-
-    /// 丢弃确认点名目标机器，关闭 sheet 后才开始 Git 操作。
-    func discard(_ entries: [StatusEntry]) {
-        guard canWrite, !entries.isEmpty else { return }
-        let request = generation
-        let message = AppLocalization.text(
-            repository?.host == nil ? "working.discard.message" : "working.discard.remote",
-            entries.count,
-            repository?.displayPath ?? ""
-        )
-        onConfirm?(
-            AppLocalization.text("working.discard"),
-            message,
-            { [weak self] in
-                guard let self, generation == request else { return }
-                performGit(
-                    { runner, _ in
-                        try await WorkingCopyOperations(runner: runner).discard(entries)
-                    },
-                    title: AppLocalization.text("working.discard"),
-                    recordsActivity: false
-                )
-            },
-            nil
-        )
-    }
-
-    /// 暂存与丢弃使用正在显示的快照，确认期间的变化由核心库拒绝。
-    func apply(file: Int, hunk: Int, lines: Set<Int>, discard: Bool) {
-        guard canWrite, let snapshot = diffSnapshot else { return }
-        let request = generation
-
-        // 中断报告沿用块头按钮的动作名称。
-        let action = discard ? "discard" : (snapshot.side == .staged ? "unstage" : "stage")
-        let title = AppLocalization.text(
-            "working." + action + (lines.isEmpty ? "Chunk" : (lines.count == 1 ? "Line" : "Lines"))
-        )
-        let perform: () -> Void = { [weak self] in
-            guard let self, generation == request else { return }
-            performGit(
-                { runner, _ in
-                    try await WorkingCopyOperations(runner: runner)
-                        .apply(
-                            snapshot,
-                            file: file,
-                            hunk: hunk,
-                            lines: lines,
-                            discard: discard
-                        )
-                },
-                title: title,
-                recordsActivity: false
-            )
-        }
-
-        if discard {
-            onConfirm?(
-                AppLocalization.text("working.discard"),
-                AppLocalization.text(
-                    repository?.host == nil ? "working.discard.lines" : "working.discard.remoteLines",
-                    repository?.displayPath ?? ""
-                ),
-                perform,
-                nil
-            )
-        } else {
-            perform()
-        }
-    }
-
-    /// 修补载入最近信息，退出修补时恢复普通提交草稿。
-    func setAmend(_ enabled: Bool) {
-        guard enabled != amend else { return }
-
-        if enabled {
-            guard status?.branch.oid != nil, context?.operation == nil, let context else { return }
-            originalDraft = (commitSubject, commitBody)
-            setMessage(context.lastMessage)
-        } else if let originalDraft {
-            commitSubject = originalDraft.subject
-            commitBody = originalDraft.body
-            self.originalDraft = nil
-        }
-
-        amend = enabled
-    }
-
-    /// 提交失败保留草稿，修补必须先明确确认改写最近提交。
-    func commit() {
-        guard canCommit else { return }
-        let subject = commitSubject
-        let body = commitBody
-        let amend = amend
-        let request = generation
-        let action: () -> Void = { [weak self] in
-            guard let self, generation == request else { return }
-            performGit(
-                { runner, _ in
-                    try await WorkingCopyOperations(runner: runner)
-                        .commit(subject: subject, body: body, amend: amend)
-                },
-                title: AppLocalization.text(amend ? "working.amend" : "working.commit"),
-                recordsActivity: false
-            ) { [weak self] in
-                self?.commitSubject = ""
-                self?.commitBody = ""
-                self?.amend = false
-                self?.originalDraft = nil
-            }
-        }
-
-        if amend {
-            onConfirm?(
-                AppLocalization.text("working.amend"),
-                AppLocalization.text("working.amend.confirm"),
-                action,
-                nil
-            )
-        } else if context?.operation == .merge, status?.entries.contains(where: \.hasStagedChanges) != true {
-            onConfirm?(
-                AppLocalization.text("working.emptyMerge"),
-                AppLocalization.text("working.emptyMerge.message"),
-                action,
-                { [weak self] in
-                    guard let self, generation == request else { return }
-                    finishOperation("abort")
-                }
-            )
-        } else {
-            action()
-        }
-    }
-
-    /// 采用 Git 的 ours / theirs 语义，变基时界面另行说明两侧含义。
-    func resolve(_ entries: [StatusEntry], theirs: Bool) {
-        performGit(
-            { runner, _ in
-                try await WorkingCopyOperations(runner: runner).resolve(entries, theirs: theirs)
-            },
-            title: AppLocalization.text(theirs ? "working.theirs" : "working.ours"),
-            recordsActivity: false
-        )
-    }
-
-    /// 横幅仅暴露当前操作的收尾动作。
-    func finishOperation(_ action: String) {
-        guard let operation = context?.operation else { return }
-        performGit(
-            { runner, _ in
-                try await WorkingCopyOperations(runner: runner).finish(operation, action: action)
-            },
-            title: AppLocalization.text("working." + action),
-            recordsActivity: false
-        )
-    }
-
     /// 选区或暂存侧变化后取消旧 Diff，较晚完成的旧请求不会覆盖新选择。
     func loadDiff() {
         diffTask?.cancel()
         diffFailure = nil
-        guard loadsRepositoryDetails, let repository, let entry = selectedEntry, entry.kind != .conflicted else {
+        guard loadsRepositoryDetails, let repository, let entry = selectedEntry, entry.hasWorkingCopyDiff else {
             diffSnapshot = nil
             isLoadingDiff = false
             return
@@ -670,6 +577,10 @@ extension RepositorySession {
         let side = diffSide
         let request = generation
         let showLarge = showsLargeDiff
+
+        // 上下文与忽略空白取全局偏好，显示整个文件取本窗口的底栏开关
+        let options = DiffPreferences.options(showsEntireFile: diffShowsEntireFile)
+
         let threshold = UserDefaults.standard.object(forKey: "diffWarningKilobytes") as? Int
             ?? WorkingCopyOperations.defaultWarningKilobytes
         let service = WorkingCopyOperations(runner: makeRunner(repository))
@@ -680,7 +591,11 @@ extension RepositorySession {
                 // 服务器先记下内容哈希再读补丁：之后的修改一定使哈希不同，轮询不会漏掉。
                 let hash = remote ? try await service.worktreeHash(of: entry) : nil
                 let snapshot = try await service.diff(
-                    for: entry, side: side, warningKilobytes: threshold, showLarge: showLarge
+                    for: entry,
+                    side: side,
+                    options: options,
+                    warningKilobytes: threshold,
+                    showLarge: showLarge
                 )
                 guard let self, generation == request, !Task.isCancelled else { return }
                 diffSnapshot = snapshot
@@ -705,6 +620,7 @@ extension RepositorySession {
     /// - Parameters:
     ///   - title: 已本地化的操作名称，用于 Activity 与断线后的核对报告。
     ///   - recordsActivity: 网络与引用操作记入 Activity；工作区的高频写入只用于核对报告。
+    ///   - offersAutoStash: 被本地改动挡住时是否按设置询问先储藏，检出、拉取与合并使用。
     /// - Returns: 是否已开始执行；仓库不可写时不启动，调用方据此保留未发送的参数。
     @discardableResult
     func performGit(
@@ -712,6 +628,7 @@ extension RepositorySession {
         @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
         recordsActivity: Bool = true,
+        offersAutoStash: Bool = false,
         success: (() -> Void)? = nil
     ) -> Bool {
         guard canWrite, let repository, RepositoryWriteLocks.shared.acquire(repository) else {
@@ -725,6 +642,7 @@ extension RepositorySession {
         contextTask = nil
         diffTask?.cancel()
         history.suspend()
+        stashes.suspend()
         isRefreshing = false
         pendingFullRefresh = false
         isWriting = true
@@ -757,8 +675,11 @@ extension RepositorySession {
                 // 失败的类别在 reportWriteFailure 归类后记录，这里只记取消
                 if cancelled { Self.logger.info("写操作已取消：\(title, privacy: .public)") }
 
+                // 被本地改动挡住的检出、拉取与合并改为询问是否先储藏，用户不储藏时再报告失败
                 if let self, generation == request {
-                    reportWriteFailure(error, cancelled: cancelled, title: title, branch: branch, in: repository)
+                    if !(offersAutoStash && !cancelled && offerAutoStash(after: error, title: title, action: action)) {
+                        reportWriteFailure(error, cancelled: cancelled, title: title, branch: branch, in: repository)
+                    }
                 }
             }
 
@@ -795,6 +716,11 @@ extension RepositorySession {
     /// 刷新成功后一次性替换快照；仍存在的文件继续选中。
     private func replaceStatus(_ status: WorkingCopyStatus) {
         self.status = status
+
+        // 跟随 HEAD 的文件视图只在 HEAD 移动后重读
+        fileHistory.update(head: status.branch.oid)
+        fileContent.update(head: status.branch.oid)
+
         if !status.entries.contains(where: { $0.kind == .conflicted }) { onlyConflicts = false }
         stagingOverrides = [:]
 
@@ -809,6 +735,27 @@ extension RepositorySession {
 
         if let selected = selectedID {
             selectedID = retainedID(selected)
+        }
+    }
+
+    /// 刷新成功后按需重读其余视图数据：状态变化或完整刷新时重读身份、提交配置、引用、储藏与补充清单，所选文件内容变化时另外重读 Diff。
+    private func loadDetails(
+        of status: WorkingCopyStatus,
+        in repository: RepositoryLocation,
+        full: Bool,
+        statusChanged: Bool,
+        contentChanged: Bool
+    ) {
+        if full || statusChanged {
+            loadContext()
+            loadCommitConfiguration()
+            history.refresh(status: status, runner: makeRunner(repository), reload: full)
+            stashes.refresh(runner: makeRunner(repository))
+            loadWorkingTreeFiles()
+        }
+
+        if full || statusChanged || contentChanged {
+            loadDiff()
         }
     }
 
@@ -946,17 +893,11 @@ extension RepositorySession {
         }
     }
 
-    /// 第一行成为标题，正文保留内部换行。
-    private func setMessage(_ message: String) {
-        let parts = message.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false)
-        commitSubject = parts.first.map(String.init) ?? ""
-        commitBody = parts.count > 1 ? String(parts[1]).trimmingCharacters(in: .newlines) : ""
-    }
-
     /// 当前仓库的视图状态，切换仓库时存入窗口缓存。
     private func captureViewState() -> RepositoryViewState {
         RepositoryViewState(
-            activeView: activeView,
+            // 文件视图的目标不随仓库保存，切回时显示它们所属的历史
+            activeView: [.fileHistory, .fileContent].contains(activeView) ? .history : activeView,
             selectedID: selectedID,
             selectedIDs: selectedIDs,
             diffSide: diffSide,

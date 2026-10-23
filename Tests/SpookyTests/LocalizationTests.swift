@@ -23,10 +23,15 @@ struct LocalizationTests {
         keys += RemoteConnectionState.allCases.map { "connection." + $0.rawValue }
         keys += FailureKind.allCases.map { "failure.kind." + $0.rawValue }
         keys += ["background", "added", "deleted"].map { "themes." + $0 }
-        keys += ["merge", "squash", "rebase", "cherryPick", "revert"].map { "working.operation." + $0 }
 
         for action in ["stage", "unstage", "discard"] {
             keys += ["Chunk", "Line", "Lines"].map { "working." + action + $0 }
+        }
+
+        // 忽略与排除子菜单的各项由同一组后缀拼出
+        for file in ["ignore", "exclude"] {
+            keys += [".item", ".items", ".name.single", ".name", ".type.single", ".type", ".custom"]
+                .map { "files." + file + $0 }
         }
 
         return keys
@@ -94,7 +99,7 @@ struct LocalizationTests {
 
         let pattern = try NSRegularExpression(
             pattern:
-            #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog|failure|recovery)\.[A-Za-z.]+)""#
+            #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog|failure|recovery|files|fileHistory|blame|showFile|diff|text|themes|stash|conflict|commit|profiles|editor|signing)\.[A-Za-z.]+)""#
         )
         let english = try strings("en")
 

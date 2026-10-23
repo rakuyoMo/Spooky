@@ -36,7 +36,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 工作区的列表与详情分栏。
     private var workingCopySplit: NSSplitViewController?
 
-    /// 历史与整页提交详情拥有各自保存宽度的内层分栏。
+    /// 历史、整页提交详情与文件历史拥有各自保存宽度的内层分栏。
     private var historySplit: NSSplitViewController?
 
     /// 窗口级快捷键跨越 AppKit 文件列表与 SwiftUI 信息框。
@@ -60,6 +60,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
 
         window.delegate = self
         configureWorkingCopyKeys()
+        configureCommentPrompt()
         session.onFailure = { [weak self] in self?.showFailure($0) }
 
         session.history.onFailure = { [weak self] error in
@@ -80,10 +81,21 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
             self.coordinator?.repositoryChanged(location, by: self)
         }
 
+        session.onStashRequest = { [weak self] in self?.presentStash($0) }
+
         session.onViewReset = { [weak self] in
             guard let self, !self.showsManager else { return }
             configureRepositoryView()
         }
+
+        // 文件视图与提交详情的入口在内容区里，切换主视图后同样重建分栏
+        session.onActiveViewChange = { [weak self] in
+            guard let self, !self.showsManager else { return }
+            configureRepositoryView()
+        }
+
+        // 文件操作的参数表单与多按钮询问同样以窗口的 sheet 呈现
+        session.onFileRequest = { [weak self] in self?.presentFileRequest($0) }
 
         session.onConfirm = { [weak self] title, message, action, abort in
             guard let window = self?.window, window.attachedSheet == nil else { return }
@@ -332,6 +344,18 @@ extension RepositoryWindowController {
         configureRepositoryView()
     }
 
+    /// 切换到储藏列表，⌘3 与侧边栏使用相同状态。
+    @objc
+    func showStashes() {
+        guard session.repository != nil else {
+            return
+        }
+
+        session.activeView = .stashes
+        showsManager = false
+        configureRepositoryView()
+    }
+
     /// ⌘0 选中当前 HEAD，分离和未出生分支仍可定位。
     @objc
     func showHeadBranch() {
@@ -440,9 +464,12 @@ extension RepositoryWindowController {
             items.append(.init("host"))
         }
 
-        if !showsManager { items.append(contentsOf: [.init("sync"), .init("merge")]) }
+        if !showsManager { items.append(contentsOf: [.init("sync"), .init("merge"), .init("stashes")]) }
 
-        return items + [.init("terminal"), .init("finder"), .init("refresh"), .init("closeRepository")]
+        items += [.init("terminal"), .init("finder"), .init("refresh"), .init("closeRepository")]
+
+        // 搜索框排在最后，空间不足时最后才收进溢出菜单
+        return showsManager ? items : items + [.init("search")]
     }
 
     /// 工具栏固定为本里程碑已有动作。
@@ -483,6 +510,14 @@ extension RepositoryWindowController {
 
             return group
         }
+        if identifier.rawValue == "search" {
+            return makeSearchItem(identifier)
+        }
+
+        if identifier.rawValue == "stashes" {
+            return makeStashToolbarItem(identifier)
+        }
+
         if identifier.rawValue == "host", let host = session.repository?.host {
             let item = NSToolbarItem(itemIdentifier: identifier)
             item.label = host + ":"
@@ -557,7 +592,7 @@ extension RepositoryWindowController {
 
 extension RepositoryWindowController {
     /// 分栏按名称恢复宽度；记录不可用时视为恢复失败，先清除记录，由调用方按默认宽度建立。
-    private static func setAutosaveName(_ name: String, of split: NSSplitViewController) {
+    static func setAutosaveName(_ name: String, of split: NSSplitViewController) {
         let key = "NSSplitView Subview Frames " + name
 
         if let frames = UserDefaults.standard.array(forKey: key), !isUsable(splitFrames: frames) {
@@ -591,6 +626,7 @@ extension RepositoryWindowController {
             for action in [
                 #selector(fetch), #selector(pull), #selector(push), #selector(merge),
                 #selector(stageAll), #selector(refreshRepository), #selector(closeRepository),
+                #selector(applyStash), #selector(saveStash),
             ] {
                 _ = validateUserInterfaceItem(NSMenuItem(title: "", action: action, keyEquivalent: ""))
             }
@@ -708,11 +744,27 @@ extension RepositoryWindowController {
             let split = makeHistorySplit()
             historySplit = split
             detail = split
+
+        case .stashes:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeStashSplit()
+
+        case .fileHistory:
+            workingCopySplit = nil
+            let split = makeFileHistorySplit()
+            historySplit = split
+            detail = split
+
+        case .fileContent:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeFileContentView()
         }
 
         installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repository")
 
-        // 首次使用或恢复失败后工作区列表宽 400 pt、历史列表宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
+        // 首次使用或恢复失败后工作区列表宽 400 pt、历史与文件历史的列表宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
         if UserDefaults.standard.object(forKey: "NSSplitView Subview Frames Spooky.WorkingCopy") == nil {
             workingCopySplit?.splitView.setPosition(400, ofDividerAt: 0)
         }
@@ -722,6 +774,14 @@ extension RepositoryWindowController {
             UserDefaults.standard.object(forKey: "NSSplitView Subview Frames " + name) == nil
         {
             historySplit.splitView.setPosition(320, ofDividerAt: 0)
+        }
+
+        // 首次使用或恢复失败后储藏列表同样宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
+        if
+            session.activeView == .stashes, let split = detail as? NSSplitViewController,
+            UserDefaults.standard.object(forKey: "NSSplitView Subview Frames Spooky.Stashes") == nil
+        {
+            split.splitView.setPosition(320, ofDividerAt: 0)
         }
     }
 
@@ -788,7 +848,7 @@ extension RepositoryWindowController {
             controller.sizingOptions = [.minSize]
             list = controller
 
-            let detail = NSHostingController(rootView: CommitDetailView(history: session.history))
+            let detail = NSHostingController(rootView: CommitDetailView(history: session.history, session: session))
             detail.sizingOptions = [.minSize]
             content = detail
         }

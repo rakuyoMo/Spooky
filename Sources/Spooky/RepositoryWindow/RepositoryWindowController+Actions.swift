@@ -81,14 +81,6 @@ extension RepositoryWindowController {
     @objc
     func discardAll() { session.discard(session.status?.entries ?? []) }
 
-    /// 平铺偏好跨仓库共享。
-    @objc
-    func viewAsList() { UserDefaults.standard.set(0, forKey: "workingCopyViewMode") }
-
-    /// 树形偏好跨仓库共享。
-    @objc
-    func viewAsTree() { UserDefaults.standard.set(1, forKey: "workingCopyViewMode") }
-
     /// 新建分支默认从当前选中提交或 HEAD 开始。
     @objc
     func createBranch() {
@@ -182,9 +174,14 @@ extension RepositoryWindowController {
                 },
                 submit: { [weak self, weak sheet] title, action in
                     // 只有写操作真正开始才关闭表单；仓库忙碌或断线时保留未发送的参数。
+                    // 检出、拉取与合并被本地改动挡住时按设置询问是否先储藏
                     guard
                         let self, let sheet, session.repository == repository,
-                        session.performGit(action, title: title)
+                        session.performGit(
+                            action,
+                            title: title,
+                            offersAutoStash: [.checkout, .pull, .merge].contains(request.kind)
+                        )
                     else { return false }
 
                     window.endSheet(sheet)
@@ -199,10 +196,13 @@ extension RepositoryWindowController {
     func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
         let repositoryView = !showsManager && session.repository != nil
 
-        // 分支与同步、工作区文件和历史显示三组动作各自判断，组外的窗口级动作在下方判断。
+        // 分支与同步、工作区文件、历史显示、储藏与 Diff 各组动作分别判断，组外的窗口级动作在下方判断。
         let enabled = branchAndSyncAvailability(of: item.action, repositoryView: repositoryView)
             ?? workingCopyAvailability(of: item.action, repositoryView: repositoryView)
             ?? historyDisplayAvailability(of: item)
+            ?? stashAvailability(of: item.action, repositoryView: repositoryView)
+            ?? diffAvailability(of: item)
+            ?? workingCopyFileAvailability(of: item)
 
         if let enabled {
             return enabled
@@ -229,6 +229,9 @@ extension RepositoryWindowController {
 
         case #selector(showWorkingCopy), #selector(showHistory):
             return session.repository != nil
+
+        case #selector(focusSearch):
+            return repositoryView && session.activeView.supportsSearch
 
         default:
             return true
@@ -267,7 +270,7 @@ extension RepositoryWindowController {
     /// 工作区文件动作的可用性，按住 ⌥ 时全部暂存按全部取消暂存判断；动作不属于本组时为 nil。
     private func workingCopyAvailability(of action: Selector?, repositoryView: Bool) -> Bool? {
         switch action {
-        case #selector(composeCommit), #selector(viewAsList), #selector(viewAsTree):
+        case #selector(composeCommit):
             return repositoryView
 
         case #selector(stageAll):

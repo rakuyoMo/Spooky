@@ -15,6 +15,9 @@ public enum RepositoryReadError: Error, Sendable, Equatable {
 
 /// 历史中的不可变提交元信息，日期以 64 位 Unix 秒读取。
 public struct HistoryCommit: Sendable, Equatable, Identifiable {
+    /// 与 ``parse(_:)`` 配套的 log 格式：十个以 NUL 分隔的字段，正文在最后。
+    static let format = "--format=tformat:%H%x00%T%x00%P%x00%an%x00%ae%x00%at%x00%cn%x00%ce%x00%ct%x00%B"
+
     /// 完整对象标识，不限定 SHA-1 的长度。
     public let id: String
 
@@ -212,14 +215,17 @@ public struct CommitDiff: Sendable {
 
     /// 超过阈值时等待用户放行。
     public let diff: RepositoryDiff?
+
+    /// 忽略空白后没有剩下任何改动；变更集列出的文件一定有差异，空补丁只能来自空白。
+    public let onlyWhitespaceChanges: Bool
 }
 
 // MARK: - RepositoryHistory
 
 /// 历史读取在仓库所在机器完成；分页的根固定为对象哈希，避免新提交导致翻页重复。
 public struct RepositoryHistory: Sendable {
-    /// 屏蔽用户配置中的签名、编码与根提交显示选项，保持协议稳定。
-    private static let logOptions = [
+    /// 屏蔽用户配置中的签名、编码与根提交显示选项，保持协议稳定；文件历史沿用同一组选项。
+    static let logOptions = [
         "-c", "log.showSignature=false", "-c", "i18n.logOutputEncoding=UTF-8",
         "-c", "log.date=default", "-c", "log.showRoot=true",
     ]
@@ -242,8 +248,7 @@ public struct RepositoryHistory: Sendable {
         // 根集合经 stdin 传递，引用数量不会扩大进程参数长度；固定根的分页结果不再变化，可按哈希复用。
         let output = try await runner.immutableRun(
             Self.logOptions + [
-                "log", "--no-color", "--no-decorate", "--no-patch", "--topo-order", "-z",
-                "--format=tformat:%H%x00%T%x00%P%x00%an%x00%ae%x00%at%x00%cn%x00%ce%x00%ct%x00%B",
+                "log", "--no-color", "--no-decorate", "--no-patch", "--topo-order", "-z", HistoryCommit.format,
                 "--max-count=\(limit + 1)", "--skip=\(offset)", "--stdin", "--",
             ],
             input: Data((roots.joined(separator: "\n") + "\n").utf8)
@@ -269,17 +274,18 @@ public struct RepositoryHistory: Sendable {
     public func diff(
         in commit: String,
         file: CommitFileChange,
+        options: DiffOptions = DiffOptions(),
         warningKilobytes: Int = WorkingCopyOperations.defaultWarningKilobytes,
         showLarge: Bool = false
     ) async throws -> CommitDiff {
         guard GitObjectID.isValid(commit) else { throw RepositoryReadError.invalidQuery }
         let paths = [file.path] + (file.originalPath.map { [$0] } ?? [])
         let patch = try await runner.immutableRun(
-            ["--literal-pathspecs"] + Self.logOptions + [
+            RepositoryFileViews.storedPathOptions + Self.logOptions + [
                 "show", "--format=", "--root", "--diff-merges=first-parent", "--no-color",
                 "--word-diff=none", "--no-ext-diff", "--no-textconv", "--full-index", "-M", "-C",
-                "--src-prefix=a/", "--dst-prefix=b/", "--unified=3", commit, "--",
-            ] + paths
+                "--src-prefix=a/", "--dst-prefix=b/",
+            ] + options.arguments + [commit, "--"] + paths
         )
         let threshold = max(0, min(warningKilobytes, Int.max / 1000)) * 1000
 
@@ -288,7 +294,8 @@ public struct RepositoryHistory: Sendable {
         let binary = patch.range(of: Data("\nBinary files ".utf8)) != nil
         return CommitDiff(
             byteCount: patch.count,
-            diff: patch.count <= threshold || showLarge || binary ? try RepositoryDiff(patch: patch) : nil
+            diff: patch.count <= threshold || showLarge || binary ? try RepositoryDiff(patch: patch) : nil,
+            onlyWhitespaceChanges: options.ignoresWhitespace && patch.isEmpty
         )
     }
 
