@@ -69,7 +69,7 @@ extension SpookyApplicationController {
         addItem("action.find", action: #selector(RepositoryWindowController.focusSearch), key: "f", to: find)
     }
 
-    /// View 菜单：仓库管理、工作区与历史视图，历史的显示选项，以及文件列表样式、刷新与全屏。
+    /// View 菜单：仓库管理、工作区、历史与储藏视图，历史的显示选项，以及文件列表样式、刷新与全屏。
     private func configureViewMenu(in menu: NSMenu) {
         let view = addMenu("menu.view", to: menu)
         addItem(
@@ -82,6 +82,7 @@ extension SpookyApplicationController {
         )
         addItem("menu.showWorkingCopy", action: #selector(RepositoryWindowController.showWorkingCopy), key: "1", to: view)
         addItem("menu.showHistory", action: #selector(RepositoryWindowController.showHistory), key: "2", to: view)
+        addItem("stash.show", action: #selector(RepositoryWindowController.showStashes), key: "3", to: view)
         addItem(
             "history.showHead",
             action: #selector(RepositoryWindowController.showHeadBranch),
@@ -205,7 +206,7 @@ extension SpookyApplicationController {
         )
     }
 
-    /// Working Copy 菜单：检出与合并、提交与暂存，以及丢弃改动。
+    /// Working Copy 菜单：检出与合并、储藏、提交与暂存，以及丢弃改动。
     private func configureWorkingCopyMenu(in menu: NSMenu) {
         let working = addMenu("workspace.title", to: menu)
         addItem(
@@ -221,6 +222,20 @@ extension SpookyApplicationController {
             key: "m",
             modifiers: [.shift, .command],
             to: working
+        )
+
+        working.addItem(.separator())
+        addItem(
+            "stash.saveMenu", action: #selector(RepositoryWindowController.saveStash),
+            key: "s", modifiers: [.shift, .command], to: working
+        )
+        addItem(
+            "stash.applyMenu", action: #selector(RepositoryWindowController.applyStash),
+            key: "s", modifiers: [.option, .shift, .command], to: working
+        )
+        addItem(
+            "stash.snapshotMenu", action: #selector(RepositoryWindowController.createSnapshot),
+            key: "s", modifiers: [.control, .shift, .command], to: working
         )
 
         working.addItem(.separator())

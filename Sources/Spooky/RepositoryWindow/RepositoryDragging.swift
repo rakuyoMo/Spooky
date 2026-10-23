@@ -16,6 +16,12 @@ struct RepositoryDragPayload: Codable, Sendable {
 
         /// 历史提交。
         case commit
+
+        /// 储藏，引用为储藏提交的哈希。
+        case stash
+
+        /// 储藏详情中的单个文件，引用为储藏提交的哈希。
+        case stashFile
     }
 
     /// Spooky 专用粘贴板类型。
@@ -29,6 +35,9 @@ struct RepositoryDragPayload: Codable, Sendable {
 
     /// 完整引用名或提交哈希。
     let reference: String
+
+    /// 储藏文件在仓库内的相对路径；其它来源为 nil。
+    var path: String? = nil
 
     /// 数据仅供应用内部拖放，悬停期间共享来源来显示动作名。
     @MainActor
@@ -139,16 +148,19 @@ private struct ReferenceDropDelegate: DropDelegate {
     @Binding
     var label: String?
 
-    /// 本阶段只接受同仓库的单项引用拖放。
+    /// 本阶段只接受同仓库的单项引用或储藏拖放。
     func validateDrop(info: DropInfo) -> Bool {
-        info.itemProviders(for: [RepositoryDragPayload.type]).count == 1 && action() != nil
+        info.itemProviders(for: [RepositoryDragPayload.type]).count == 1
+            && (action() != nil || stashAction() != nil)
     }
 
     /// 修饰键变化时同步更新动作提示。
     func dropUpdated(info _: DropInfo) -> DropProposal? {
         let action = action()
+        let stash = stashAction()
         label = action.map { AppLocalization.text($0.kind.rawValue) }
-        return DropProposal(operation: action == nil ? .forbidden : .copy)
+            ?? stash.map { AppLocalization.text($0.titleKey) }
+        return DropProposal(operation: action == nil && stash == nil ? .forbidden : .copy)
     }
 
     /// 离开落点后移除提示。
@@ -157,22 +169,37 @@ private struct ReferenceDropDelegate: DropDelegate {
     /// 核对实际载荷后打开表单，异步期间仓库变化则放弃。
     func performDrop(info: DropInfo) -> Bool {
         label = nil
+        let action = action()
+        let stash = stashAction()
         guard
-            validateDrop(info: info), let action = action(),
+            validateDrop(info: info),
             let expected = RepositoryDragContext.shared.payload,
             let provider = info.itemProviders(for: [RepositoryDragPayload.type]).first
         else { return false }
         provider.loadDataRepresentation(forTypeIdentifier: RepositoryDragPayload.type) { data, _ in
             guard
                 let data, let payload = try? JSONDecoder().decode(RepositoryDragPayload.self, from: data),
-                payload.repository == expected.repository, payload.reference == expected.reference
+                payload.repository == expected.repository, payload.reference == expected.reference,
+                payload.path == expected.path
             else { return }
             Task { @MainActor in
                 guard session.repository == payload.repository, session.canWrite else { return }
-                request(action)
+
+                // 储藏直接交给会话的储藏入口，其余动作打开参数表单
+                if let action { request(action) } else { stash?.perform(in: session) }
             }
         }
         return true
+    }
+
+    /// 储藏或储藏文件拖到工作区与 HEAD 分支时的动作；可用条件与菜单和右键菜单相同。
+    private func stashAction() -> StashDropAction? {
+        guard
+            let payload = RepositoryDragContext.shared.payload,
+            payload.repository == session.repository
+        else { return nil }
+
+        return StashDropAction(payload: payload, destination: destination, session: session)
     }
 
     /// 每个映射都指向实际可用的业务动作，可用条件与菜单和右键菜单相同。

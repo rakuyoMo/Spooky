@@ -182,9 +182,14 @@ extension RepositoryWindowController {
                 },
                 submit: { [weak self, weak sheet] title, action in
                     // 只有写操作真正开始才关闭表单；仓库忙碌或断线时保留未发送的参数。
+                    // 检出、拉取与合并被本地改动挡住时按设置询问是否先储藏
                     guard
                         let self, let sheet, session.repository == repository,
-                        session.performGit(action, title: title)
+                        session.performGit(
+                            action,
+                            title: title,
+                            offersAutoStash: [.checkout, .pull, .merge].contains(request.kind)
+                        )
                     else { return false }
 
                     window.endSheet(sheet)
@@ -199,10 +204,11 @@ extension RepositoryWindowController {
     func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
         let repositoryView = !showsManager && session.repository != nil
 
-        // 分支与同步、工作区文件和历史显示三组动作各自判断，组外的窗口级动作在下方判断。
+        // 分支与同步、工作区文件、历史显示和储藏四组动作各自判断，组外的窗口级动作在下方判断。
         let enabled = branchAndSyncAvailability(of: item.action, repositoryView: repositoryView)
             ?? workingCopyAvailability(of: item.action, repositoryView: repositoryView)
             ?? historyDisplayAvailability(of: item)
+            ?? stashAvailability(of: item.action, repositoryView: repositoryView)
 
         if let enabled {
             return enabled

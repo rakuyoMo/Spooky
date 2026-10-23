@@ -31,6 +31,7 @@ struct RepositorySidebarView: View {
     /// 系统列表和菜单导航使用同一组选择身份。
     private var selectedItems: Set<String> {
         if session.activeView == .workingCopy { return ["workingCopy"] }
+        if session.activeView == .stashes { return ["stashes"] }
         return session.history.selectedReferences.isEmpty ? ["history"] : session.history.selectedReferences
     }
 
@@ -44,12 +45,14 @@ struct RepositorySidebarView: View {
                 session.history.showsCommitPage = false
                 if added.contains("workingCopy") || value == ["workingCopy"] {
                     session.activeView = .workingCopy
+                } else if added.contains("stashes") || value == ["stashes"] {
+                    session.activeView = .stashes
                 } else {
                     session.activeView = .history
                     session.history.selectedReferences =
                         added.contains("history") || value == ["history"]
                             ? []
-                            : value.subtracting(["workingCopy", "history"])
+                            : value.subtracting(["workingCopy", "history", "stashes"])
                 }
                 selectionChanged()
             }
@@ -67,6 +70,11 @@ struct RepositorySidebarView: View {
                             RepositoryDropTarget(session: session, destination: .head, request: request)
                         )
                     Label(AppLocalization.text("history.title"), systemImage: "clock").tag("history")
+
+                    // 工作区文件拖到这里保存部分储藏
+                    Label(AppLocalization.text("stash.title"), systemImage: "tray.full")
+                        .tag("stashes")
+                        .modifier(StashesDropTarget(session: session))
                 }
                 localBranches
                 remoteBranches
@@ -398,7 +406,8 @@ extension RepositorySidebarView {
             { runner, _ in
                 try await RepositoryReferences(runner: runner).checkout(ref.id)
             },
-            title: AppLocalization.text("branch.checkout")
+            title: AppLocalization.text("branch.checkout"),
+            offersAutoStash: true
         )
     }
 
@@ -429,7 +438,8 @@ extension RepositorySidebarView {
                         checkout: true
                     )
             },
-            title: AppLocalization.text("branch.checkout")
+            title: AppLocalization.text("branch.checkout"),
+            offersAutoStash: true
         )
     }
 

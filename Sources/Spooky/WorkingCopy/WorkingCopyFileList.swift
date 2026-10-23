@@ -311,6 +311,7 @@ extension WorkingCopyFileList {
 
             menu.addItem(.separator())
             add("working.discard", action: #selector(discardMenu), enabled: session.canDiscard(menuEntries), menu: menu)
+            addStashItems(to: menu, entries: menuEntries)
             menu.addItem(.separator())
             add("action.copyPath", action: #selector(copyAbsolute), enabled: true, menu: menu)
             add("working.copyRelative", action: #selector(copyRelative), enabled: true, menu: menu)

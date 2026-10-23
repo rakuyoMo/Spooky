@@ -124,6 +124,9 @@ struct AppFailure: Identifiable {
         case let working as WorkingCopyError:
             (key, kind) = Self.classification(of: working)
 
+        case let stash as StashError:
+            (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: stash)
+
         case let file as RepositoryFileError:
             (key, kind) = Self.classification(of: file)
             exceededOutputLimit = file == .tooLarge
