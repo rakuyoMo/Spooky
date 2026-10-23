@@ -204,11 +204,12 @@ extension RepositoryWindowController {
     func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
         let repositoryView = !showsManager && session.repository != nil
 
-        // 分支与同步、工作区文件、历史显示和储藏四组动作各自判断，组外的窗口级动作在下方判断。
+        // 分支与同步、工作区文件、历史显示、储藏与 Diff 各组动作分别判断，组外的窗口级动作在下方判断。
         let enabled = branchAndSyncAvailability(of: item.action, repositoryView: repositoryView)
             ?? workingCopyAvailability(of: item.action, repositoryView: repositoryView)
             ?? historyDisplayAvailability(of: item)
             ?? stashAvailability(of: item.action, repositoryView: repositoryView)
+            ?? diffAvailability(of: item)
 
         if let enabled {
             return enabled

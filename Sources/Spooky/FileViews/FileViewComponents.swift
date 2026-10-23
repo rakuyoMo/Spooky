@@ -102,19 +102,31 @@ struct FileDiffContentView: View {
     /// 放行大 Diff 后重新读取。
     let showLarge: () -> Void
 
-    /// 内置主题随系统外观切换。
+    /// 当前外观决定使用哪一套所选主题。
     @Environment(\.colorScheme)
     private var colorScheme
 
+    /// 一个制表符占的空格数。
+    @AppStorage(TextPreferences.tabWidthKey)
+    private var tabWidth = TextPreferences.defaultTabWidth
+
+    /// 标出不可见字符。
+    @AppStorage(TextPreferences.showsInvisiblesKey)
+    private var showsInvisibles = false
+
     /// 补丁头、二进制提示与只读的块共享一个滚动区域。
     var body: some View {
-        let theme = TextTheme.current(dark: colorScheme == .dark)
+        let style = TextStyle(
+            theme: TextTheme.current(dark: colorScheme == .dark),
+            tabWidth: tabWidth,
+            showsInvisibles: showsInvisibles
+        )
 
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 if let diff = result.diff {
                     ForEach(diff.files) { file in
-                        fileDiff(file, theme: theme)
+                        fileDiff(file, style: style)
                     }
                 } else {
                     Text(AppLocalization.text("working.largeDiff", (result.byteCount + 999) / 1000))
@@ -126,17 +138,13 @@ struct FileDiffContentView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.colors["background"]?.color ?? .clear)
+        .background(style.color("background"))
     }
 
     /// 单个文件的补丁头、二进制提示与只读的块。
     @ViewBuilder
-    private func fileDiff(_ file: DiffFile, theme: TextTheme) -> some View {
-        Text(file.headers.joined(separator: "\n"))
-            .font(.custom(theme.fontName, size: theme.fontSize))
-            .foregroundStyle(.secondary)
-            .textSelection(.enabled)
-            .padding(12)
+    private func fileDiff(_ file: DiffFile, style: TextStyle) -> some View {
+        DiffFileHeader(file: file, style: style)
 
         if file.isBinary {
             Text(AppLocalization.text("working.binary"))
@@ -146,7 +154,7 @@ struct FileDiffContentView: View {
         ForEach(file.hunks) { hunk in
             DiffHunkView(
                 hunk: hunk,
-                theme: theme,
+                style: style,
                 staged: false,
                 enabled: false,
                 readOnly: true

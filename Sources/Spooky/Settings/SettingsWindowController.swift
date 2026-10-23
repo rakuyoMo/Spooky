@@ -17,6 +17,7 @@ final class SettingsWindowController: NSWindowController {
 
         for (key, symbol, view) in [
             ("settings.general", "gearshape", AnyView(GeneralSettingsView())),
+            ("settings.text", "character.cursor.ibeam", AnyView(TextSettingsView())),
             ("settings.themes", "paintbrush", AnyView(ThemesSettingsView())),
         ] {
             let controller = NSHostingController(rootView: view)

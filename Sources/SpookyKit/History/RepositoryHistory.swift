@@ -215,6 +215,9 @@ public struct CommitDiff: Sendable {
 
     /// 超过阈值时等待用户放行。
     public let diff: RepositoryDiff?
+
+    /// 忽略空白后没有剩下任何改动；变更集列出的文件一定有差异，空补丁只能来自空白。
+    public let onlyWhitespaceChanges: Bool
 }
 
 // MARK: - RepositoryHistory
@@ -271,6 +274,7 @@ public struct RepositoryHistory: Sendable {
     public func diff(
         in commit: String,
         file: CommitFileChange,
+        options: DiffOptions = DiffOptions(),
         warningKilobytes: Int = WorkingCopyOperations.defaultWarningKilobytes,
         showLarge: Bool = false
     ) async throws -> CommitDiff {
@@ -280,8 +284,8 @@ public struct RepositoryHistory: Sendable {
             RepositoryFileViews.storedPathOptions + Self.logOptions + [
                 "show", "--format=", "--root", "--diff-merges=first-parent", "--no-color",
                 "--word-diff=none", "--no-ext-diff", "--no-textconv", "--full-index", "-M", "-C",
-                "--src-prefix=a/", "--dst-prefix=b/", "--unified=3", commit, "--",
-            ] + paths
+                "--src-prefix=a/", "--dst-prefix=b/",
+            ] + options.arguments + [commit, "--"] + paths
         )
         let threshold = max(0, min(warningKilobytes, Int.max / 1000)) * 1000
 
@@ -290,7 +294,8 @@ public struct RepositoryHistory: Sendable {
         let binary = patch.range(of: Data("\nBinary files ".utf8)) != nil
         return CommitDiff(
             byteCount: patch.count,
-            diff: patch.count <= threshold || showLarge || binary ? try RepositoryDiff(patch: patch) : nil
+            diff: patch.count <= threshold || showLarge || binary ? try RepositoryDiff(patch: patch) : nil,
+            onlyWhitespaceChanges: options.ignoresWhitespace && patch.isEmpty
         )
     }
 

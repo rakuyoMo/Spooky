@@ -14,6 +14,7 @@ struct CommitPageDiffView: View {
             ScrollView {
                 CommitFileDiffView(history: history, path: path)
             }
+            .reloadsOnDiffPreferenceChange { history.reloadDiffs() }
         } else {
             EmptyStateView(title: AppLocalization.text("detail.empty.title"), message: "", symbol: "doc")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -51,6 +52,7 @@ struct CommitDetailView: View {
                     scrollContent(commit)
                 }
             }
+            .reloadsOnDiffPreferenceChange { history.reloadDiffs() }
         } else {
             EmptyStateView(
                 title: AppLocalization.text(
@@ -305,17 +307,46 @@ struct CommitFileDiffView: View {
     @Environment(\.colorScheme)
     private var colorScheme
 
+    /// 一个制表符占的空格数。
+    @AppStorage(TextPreferences.tabWidthKey)
+    private var tabWidth = TextPreferences.defaultTabWidth
+
+    /// 标出不可见字符。
+    @AppStorage(TextPreferences.showsInvisiblesKey)
+    private var showsInvisibles = false
+
+    /// 语法着色总开关。
+    @AppStorage(TextPreferences.syntaxColoringKey)
+    private var colorsSyntax = true
+
+    /// Diff 中的语法着色。
+    @AppStorage(TextPreferences.diffSyntaxColoringKey)
+    private var colorsDiffSyntax = false
+
+    /// 两侧全文的语法片段，只由提交内容决定，显示选项改变后仍然适用。
+    @State
+    private var syntax: DiffSyntax?
+
     /// 补丁、二进制、超限和失败各自有明确状态。
     var body: some View {
-        let theme = TextTheme.current(dark: colorScheme == .dark)
+        let style = TextStyle(
+            theme: TextTheme.current(dark: colorScheme == .dark),
+            tabWidth: tabWidth,
+            showsInvisibles: showsInvisibles
+        )
+
         VStack(alignment: .leading, spacing: 0) {
             if let failure = history.diffFailures[path] {
                 FailureDetailsView(failure: failure) { history.loadDiff(path) }
                     .padding(20)
             } else if let result = history.diffs[path] {
+                if result.onlyWhitespaceChanges {
+                    DiffNotice(key: "diff.onlyWhitespace", style: style)
+                }
+
                 if let diff = result.diff {
                     ForEach(diff.files) { file in
-                        fileDiff(file, theme: theme)
+                        fileDiff(file, style: style)
                     }
                 } else {
                     Text(AppLocalization.text("working.largeDiff", (result.byteCount + 999) / 1000))
@@ -332,24 +363,35 @@ struct CommitFileDiffView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.colors["background"]?.color ?? .clear)
+        .background(style.color("background"))
+        .task(id: [colorsSyntax, colorsDiffSyntax, history.diffs[path]?.diff != nil]) {
+            guard let diff = history.diffs[path]?.diff else {
+                return
+            }
+
+            syntax = await history.diffSyntax(path: path, diff: diff)
+        }
     }
 
     /// 单个文件的补丁头、二进制提示与只读的块。
     @ViewBuilder
-    private func fileDiff(_ file: DiffFile, theme: TextTheme) -> some View {
-        Text(file.headers.joined(separator: "\n"))
-            .font(.custom(theme.fontName, size: theme.fontSize))
-            .foregroundStyle(.secondary)
-            .textSelection(.enabled)
-            .padding(12)
+    private func fileDiff(_ file: DiffFile, style: TextStyle) -> some View {
+        DiffFileHeader(file: file, style: style)
 
-        if file.isBinary { Text(AppLocalization.text("working.binary")).padding(20) }
+        if ImageDiffView.isImage(file, path: path) {
+            // 图片换成两侧对照，两侧都取自对象库
+            ImageDiffView(placement: .top, id: (history.selectedCommit?.id ?? "") + "\u{0}" + path) {
+                try await history.imageContents(path: path, file: file)
+            }
+        } else if file.isBinary {
+            Text(AppLocalization.text("working.binary")).padding(20)
+        }
 
         ForEach(file.hunks) { hunk in
             DiffHunkView(
                 hunk: hunk,
-                theme: theme,
+                style: style,
+                spans: { syntax?.spans(for: $0) },
                 staged: false,
                 enabled: false,
                 readOnly: true

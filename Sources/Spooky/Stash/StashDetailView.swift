@@ -233,13 +233,25 @@ private struct StashFileDiffView: View {
     /// 展开的文件路径。
     let path: String
 
-    /// 内置主题随系统外观切换。
+    /// 当前外观决定使用哪一套所选主题。
     @Environment(\.colorScheme)
     private var colorScheme
 
+    /// 一个制表符占的空格数。
+    @AppStorage(TextPreferences.tabWidthKey)
+    private var tabWidth = TextPreferences.defaultTabWidth
+
+    /// 标出不可见字符。
+    @AppStorage(TextPreferences.showsInvisiblesKey)
+    private var showsInvisibles = false
+
     /// 补丁、二进制、超限和失败各自有明确状态。
     var body: some View {
-        let theme = TextTheme.current(dark: colorScheme == .dark)
+        let style = TextStyle(
+            theme: TextTheme.current(dark: colorScheme == .dark),
+            tabWidth: tabWidth,
+            showsInvisibles: showsInvisibles
+        )
 
         VStack(alignment: .leading, spacing: 0) {
             if let failure = stashes.diffFailures[path] {
@@ -248,7 +260,7 @@ private struct StashFileDiffView: View {
             } else if let result = stashes.diffs[path] {
                 if let diff = result.diff {
                     ForEach(diff.files) { file in
-                        fileDiff(file, theme: theme)
+                        fileDiff(file, style: style)
                     }
                 } else {
                     Text(AppLocalization.text("working.largeDiff", (result.byteCount + 999) / 1000))
@@ -266,24 +278,20 @@ private struct StashFileDiffView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.colors["background"]?.color ?? .clear)
+        .background(style.color("background"))
     }
 
     /// 补丁头、二进制提示与只读的块。
     @ViewBuilder
-    private func fileDiff(_ file: DiffFile, theme: TextTheme) -> some View {
-        Text(file.headers.joined(separator: "\n"))
-            .font(.custom(theme.fontName, size: theme.fontSize))
-            .foregroundStyle(.secondary)
-            .textSelection(.enabled)
-            .padding(12)
+    private func fileDiff(_ file: DiffFile, style: TextStyle) -> some View {
+        DiffFileHeader(file: file, style: style)
 
         if file.isBinary { Text(AppLocalization.text("working.binary")).padding(20) }
 
         ForEach(file.hunks) { hunk in
             DiffHunkView(
                 hunk: hunk,
-                theme: theme,
+                style: style,
                 staged: false,
                 enabled: false,
                 readOnly: true

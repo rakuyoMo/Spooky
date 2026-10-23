@@ -1,4 +1,5 @@
 import AppKit
+import SpookyKit
 
 // MARK: - Menu
 
@@ -92,6 +93,7 @@ extension SpookyApplicationController {
 
         configureHistoryMenu(in: view)
         configureHistoryDiffsMenu(in: view)
+        configureDiffContextMenu(in: view)
 
         view.addItem(.separator())
         addItem(
@@ -170,6 +172,21 @@ extension SpookyApplicationController {
         }
     }
 
+    /// Diff 上下文行数子菜单：每个档位一项，当前值打勾。
+    private func configureDiffContextMenu(in view: NSMenu) {
+        let context = addMenu("diff.contextMenu", to: view)
+
+        for lines in DiffOptions.contextChoices {
+            let item = NSMenuItem(
+                title: DiffPreferences.contextTitle(lines),
+                action: #selector(RepositoryWindowController.setDiffContextLines(_:)),
+                keyEquivalent: ""
+            )
+            item.tag = lines
+            context.addItem(item)
+        }
+    }
+
     /// Repository 菜单：获取、拉取、推送、发布与新建分支。
     private func configureRepositoryMenu(in menu: NSMenu) {
         let repository = addMenu("menu.repository", to: menu)
@@ -206,7 +223,7 @@ extension SpookyApplicationController {
         )
     }
 
-    /// Working Copy 菜单：检出与合并、储藏、提交与暂存，以及丢弃改动。
+    /// Working Copy 菜单：检出与合并、储藏、提交与暂存、丢弃改动，以及保存补丁与导出 Diff。
     private func configureWorkingCopyMenu(in menu: NSMenu) {
         let working = addMenu("workspace.title", to: menu)
         addItem(
@@ -260,6 +277,10 @@ extension SpookyApplicationController {
             key: "\u{8}", modifiers: [.shift, .command], to: working
         )
         addItem("working.discardAll", action: #selector(RepositoryWindowController.discardAll), to: working)
+
+        working.addItem(.separator())
+        addItem("diff.savePatch", action: #selector(RepositoryWindowController.savePatch), to: working)
+        addItem("diff.exportDiff", action: #selector(RepositoryWindowController.exportDiff), to: working)
     }
 
     /// Window 菜单：Activity 与系统窗口动作，并登记为应用的窗口菜单。

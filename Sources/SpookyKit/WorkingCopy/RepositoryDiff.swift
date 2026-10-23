@@ -11,6 +11,46 @@ public enum DiffSide: String, Sendable, CaseIterable {
     case unstaged
 }
 
+// MARK: - DiffOptions
+
+/// Diff 的显示选项：上下文行数、显示整个文件与忽略空白，工作区与历史共用。
+public struct DiffOptions: Sendable, Equatable {
+    /// 上下文行数的可选档位。
+    public static let contextChoices = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 25, 50]
+
+    /// 未设置偏好时的上下文行数。
+    public static let defaultContextLines = 3
+
+    /// 显示整个文件时的上下文行数，远大于可显示的文件行数，补丁因此只有一块。
+    static let entireFileContext = 100_000_000
+
+    /// 改动前后保留的上下文行数；不足 1 行的补丁无法按块写回，按 1 行处理。
+    public var contextLines: Int
+
+    /// 显示整个文件，此时不看上下文行数。
+    public var showsEntireFile: Bool
+
+    /// 忽略所有空白差异。
+    public var ignoresWhitespace: Bool
+
+    /// 传给 git diff 的上下文与空白参数。
+    var arguments: [String] {
+        let context = showsEntireFile ? Self.entireFileContext : max(1, contextLines)
+        return ["--unified=\(context)"] + (ignoresWhitespace ? ["--ignore-all-space"] : [])
+    }
+
+    /// 创建选项，默认值即工作区 Diff 的固定格式。
+    public init(
+        contextLines: Int = Self.defaultContextLines,
+        showsEntireFile: Bool = false,
+        ignoresWhitespace: Bool = false
+    ) {
+        self.contextLines = contextLines
+        self.showsEntireFile = showsEntireFile
+        self.ignoresWhitespace = ignoresWhitespace
+    }
+}
+
 // MARK: - WorkingCopyError
 
 /// 补丁操作失败的明确类别，显示文案由 App 本地化。
@@ -26,6 +66,9 @@ public enum WorkingCopyError: Error, Sendable, Equatable {
 
     /// 目录或子模块不能当作普通文件丢弃。
     case unsupportedFile
+
+    /// 忽略空白时选中的行在逐字节的 Diff 里不是同一批改动，不能据此生成补丁。
+    case whitespaceMismatch
 }
 
 // MARK: - DiffLine
@@ -95,6 +138,27 @@ public struct DiffFile: Sendable, Equatable, Identifiable {
 
     /// 可选择的文本改动块。
     public let hunks: [DiffHunk]
+
+    /// `index` 头里两侧的完整对象哈希；一侧不存在（全零哈希）或没有 `index` 头时为空。
+    public var objectIDs: (old: String?, new: String?) {
+        guard let line = headers.first(where: { $0.hasPrefix("index ") }) else {
+            return (nil, nil)
+        }
+
+        // 格式为 “index <旧>..<新>[ <模式>]”，组合 Diff 的多个旧哈希不用于图片两侧。
+        let range = line.dropFirst(6).split(separator: " ").first ?? ""
+        let parts = range.components(separatedBy: "..")
+
+        guard parts.count == 2 else {
+            return (nil, nil)
+        }
+
+        let ids = parts.map { id in
+            id.allSatisfy { $0 == "0" } || id.contains(",") ? nil : id
+        }
+
+        return (ids[0], ids[1])
+    }
 }
 
 // MARK: - RepositoryDiff
@@ -322,4 +386,40 @@ public struct RepositoryDiff: Sendable, Equatable {
         return Data(header.utf8) + body
     }
 
+    /// 在逐字节的 Diff 中找出与显示行相同的改动行，供忽略空白时生成补丁。
+    ///
+    /// 删除行按旧行号、新增行按新行号对应，内容必须逐字节相同，且全部落在同一块中。
+    ///
+    /// - Parameter lines: 忽略空白的 Diff 中选中的改动行。
+    /// - Returns: 本 Diff 中对应的块序号与行序号；任何一行对应不上时为空。
+    public func matchingChanges(of lines: [DiffLine]) -> (hunk: Int, lines: Set<Int>)? {
+        guard files.count == 1, !lines.isEmpty, lines.allSatisfy(\.isChange) else {
+            return nil
+        }
+
+        for hunk in files[0].hunks {
+            // 两张行号表让整文件的大块也能线性完成对应
+            var deleted: [Int: DiffLine] = [:]
+            var added: [Int: DiffLine] = [:]
+
+            for line in hunk.lines {
+                if line.prefix == 45, let number = line.oldNumber { deleted[number] = line }
+                if line.prefix == 43, let number = line.newNumber { added[number] = line }
+            }
+
+            let matched = lines.compactMap { line in
+                let candidate = line.prefix == 45
+                    ? line.oldNumber.flatMap { deleted[$0] }
+                    : line.newNumber.flatMap { added[$0] }
+
+                return candidate?.content == line.content ? candidate?.id : nil
+            }
+
+            if matched.count == lines.count {
+                return (hunk.id, Set(matched))
+            }
+        }
+
+        return nil
+    }
 }

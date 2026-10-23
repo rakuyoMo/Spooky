@@ -92,7 +92,7 @@ final class RepositoryHistoryState {
     var onRestoreFailure: (() -> Void)? = nil
 
     /// 当前窗口的执行器，测试可以注入隔离环境。
-    private var runner: GitRunner? = nil
+    private(set) var runner: GitRunner? = nil
 
     /// 引用读取任务，轮询期间合并重复请求。
     private var referenceTask: Task<Void, Never>? = nil
@@ -425,12 +425,17 @@ extension RepositoryHistoryState {
         let threshold =
             UserDefaults.standard.object(forKey: "diffWarningKilobytes") as? Int
                 ?? WorkingCopyOperations.defaultWarningKilobytes
+
+        // 变更集沿用工作区的上下文与忽略空白偏好
+        let options = DiffPreferences.options()
+
         diffTasks[path] = Task { [weak self] in
             do {
                 let diff = try await RepositoryHistory(runner: runner)
                     .diff(
                         in: commit.id,
                         file: file,
+                        options: options,
                         warningKilobytes: threshold,
                         showLarge: showLarge
                     )
@@ -453,6 +458,19 @@ extension RepositoryHistoryState {
             else { return }
             loadingPaths.remove(path)
             diffTasks[path] = nil
+        }
+    }
+
+    /// 上下文行数或忽略空白改变后丢弃已读的补丁，重新读取正在显示的文件。
+    func reloadDiffs() {
+        for task in diffTasks.values { task.cancel() }
+        diffTasks = [:]
+        loadingPaths = []
+        diffs = [:]
+        diffFailures = [:]
+
+        for path in expandedPaths.union(selectedPath.map { [$0] } ?? []) {
+            loadDiff(path)
         }
     }
 
