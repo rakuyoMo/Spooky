@@ -190,6 +190,10 @@ final class RepositorySession {
     @ObservationIgnored
     private var viewStates = RepositoryViewStateCache()
 
+    /// 当前仓库交给本机程序打开的文件副本，关闭仓库时删除。
+    @ObservationIgnored
+    private(set) var fileCache: RepositoryFileCache? = nil
+
     /// 快照读取边界，测试可控制响应顺序和失败。
     private let loadStatus: @Sendable (RepositoryLocation) async throws -> WorkingCopyStatus
 
@@ -273,6 +277,7 @@ final class RepositorySession {
 
         close()
         self.repository = repository
+        fileCache = RepositoryFileCache(runner: makeRunner(repository))
 
         // 正在显示的仓库也计入缓存上限，超出时淘汰最久未使用的仓库。
         let saved = viewStates.state(for: repository)
@@ -368,6 +373,8 @@ final class RepositorySession {
         history.close()
         fileMonitor?.stop()
         fileMonitor = nil
+        fileCache?.removeAll()
+        fileCache = nil
         writeTask?.cancel()
         diffTask?.cancel()
         contextTask?.cancel()

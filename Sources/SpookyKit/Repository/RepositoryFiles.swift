@@ -138,6 +138,24 @@ public struct RepositoryFiles: Sendable {
         }
     }
 
+    /// 把工作区所在机器上的文件复制到本机指定位置；服务器路径只作为 SFTP 数据传递，不交给本机文件 API。
+    ///
+    /// - Parameters:
+    ///   - path: 工作区所在机器上的绝对路径。
+    ///   - destination: 本机目标文件，必须尚不存在。
+    public func download(_ path: String, to destination: URL) async throws {
+        guard runner.remote != nil else {
+            try FileManager.default.copyItem(at: URL(fileURLWithPath: path), to: destination)
+            return
+        }
+
+        // 不带 “-” 前缀的 get 失败时 SFTP 以非零状态退出，缺失与权限错误都会抛出
+        _ = try await transfer(
+            ["get " + (try Self.quoted(path)) + " " + (try Self.quoted(destination.path))],
+            writing: false
+        )
+    }
+
     /// 丢弃未跟踪文件只删除明确选中的文件，不递归进入嵌套仓库。
     func remove(_ paths: [String]) async throws {
         guard !paths.isEmpty else { return }

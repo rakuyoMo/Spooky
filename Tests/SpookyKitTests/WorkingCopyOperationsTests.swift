@@ -5,6 +5,42 @@ import Testing
 
 /// 用真实 Git 验证补丁的结果，断言未选内容仍留在原处。
 struct WorkingCopyOperationsTests {
+    /// 恢复到指定版本同时改写暂存区与工作区，旧版本里没有的文件随之删除，路径按字面匹配。
+    @Test("文件恢复到指定版本")
+    func restoreToRevision() async throws {
+        let repository = try TemporaryRepository()
+        defer { repository.remove() }
+        try await repository.initialize()
+
+        let service = WorkingCopyOperations(runner: repository.runner)
+        let target = repository.directory.appending(path: "文件 *.txt")
+        let similar = repository.directory.appending(path: "文件 其它.txt")
+        let added = repository.directory.appending(path: "added.txt")
+
+        try Data("one\n".utf8).write(to: target)
+        try Data("keep\n".utf8).write(to: similar)
+        try await service.stageAll(staged: true)
+        try await service.commit(subject: "one", body: "")
+        let revision = try #require(try await repository.runner.status().branch.oid)
+
+        try Data("two\n".utf8).write(to: target)
+        try Data("new\n".utf8).write(to: added)
+        try await service.stageAll(staged: true)
+        try await service.commit(subject: "two", body: "")
+
+        try Data("three\n".utf8).write(to: target)
+        try Data("changed\n".utf8).write(to: similar)
+        try await service.restore(["文件 *.txt", "added.txt"], to: revision)
+
+        // 目标文件的暂存区与工作区都回到旧版本，旧版本里没有的文件被删除
+        #expect(try Data(contentsOf: target) == Data("one\n".utf8))
+        #expect(try await repository.runner.run(["show", ":文件 *.txt"]) == Data("one\n".utf8))
+        #expect(!FileManager.default.fileExists(atPath: added.path))
+
+        // 通配符按字面匹配，名字相近的其它文件保留改动
+        #expect(try Data(contentsOf: similar) == Data("changed\n".utf8))
+    }
+
     /// 新文件按非连续行暂存，取消暂存不改变工作区。
     @Test("未跟踪文件、非连续行与字面特殊路径")
     func newFileLines() async throws {

@@ -227,6 +227,22 @@ public struct WorkingCopyOperations: Sendable {
         }
     }
 
+    /// 把所选文件的暂存区与工作区恢复到指定版本，版本中不存在的文件随之删除；调用方必须先获得用户确认。
+    ///
+    /// - Parameters:
+    ///   - paths: 仓库内的相对路径，按字面匹配。
+    ///   - revision: 提交哈希或引用名。
+    public func restore(_ paths: [String], to revision: String) async throws {
+        guard !paths.isEmpty else { return }
+
+        // 版本作为 --source 的值整体传入，不会被解释成选项；路径经 NUL 输入，不受通配符和数量影响
+        _ = try await runner.run(
+            ["--literal-pathspecs", "restore", "--source=" + revision, "--staged", "--worktree"]
+                + Self.pathInputOptions,
+            input: Self.pathInput(Array(Set(paths)))
+        )
+    }
+
     /// NFC 与 UTF-8 只作用于提交信息，Git 路径保留原始表示。
     public func commit(subject: String, body: String, amend: Bool = false) async throws {
         let message = (subject + (body.isEmpty ? "\n" : "\n\n" + body + "\n"))
