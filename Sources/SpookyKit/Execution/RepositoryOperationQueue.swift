@@ -88,6 +88,13 @@ actor RepositoryOperationQueue {
         if command == "hash-object" {
             return !arguments.contains("-w")
         }
+
+        // 只有列出与查看储藏是读取；不带子命令的 stash 等同 push，与其余子命令一样会写入。
+        if command == "stash" {
+            guard let index = arguments.firstIndex(of: "stash"), index + 1 < arguments.count else { return false }
+            return ["list", "show"].contains(arguments[index + 1])
+        }
+
         return [
             "status", "rev-parse", "rev-list", "merge-base", "check-ref-format",
             "show", "log", "ls-files", "for-each-ref", "diff", "var", "cat-file", "--version",
