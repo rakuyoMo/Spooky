@@ -89,7 +89,7 @@ final class RepositoryHistoryState {
     var onRestoreFailure: (() -> Void)? = nil
 
     /// 当前窗口的执行器，测试可以注入隔离环境。
-    private var runner: GitRunner? = nil
+    private(set) var runner: GitRunner? = nil
 
     /// 引用读取任务，轮询期间合并重复请求。
     private var referenceTask: Task<Void, Never>? = nil

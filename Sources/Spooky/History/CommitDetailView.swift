@@ -296,6 +296,18 @@ struct CommitFileDiffView: View {
     @AppStorage(TextPreferences.showsInvisiblesKey)
     private var showsInvisibles = false
 
+    /// 语法着色总开关。
+    @AppStorage(TextPreferences.syntaxColoringKey)
+    private var colorsSyntax = true
+
+    /// Diff 中的语法着色。
+    @AppStorage(TextPreferences.diffSyntaxColoringKey)
+    private var colorsDiffSyntax = false
+
+    /// 两侧全文的语法片段，只由提交内容决定，显示选项改变后仍然适用。
+    @State
+    private var syntax: DiffSyntax?
+
     /// 补丁、二进制、超限和失败各自有明确状态。
     var body: some View {
         let style = TextStyle(
@@ -333,6 +345,13 @@ struct CommitFileDiffView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(style.color("background"))
+        .task(id: [colorsSyntax, colorsDiffSyntax, history.diffs[path]?.diff != nil]) {
+            guard let diff = history.diffs[path]?.diff else {
+                return
+            }
+
+            syntax = await history.diffSyntax(path: path, diff: diff)
+        }
     }
 
     /// 单个文件的补丁头、二进制提示与只读的块。
@@ -346,6 +365,7 @@ struct CommitFileDiffView: View {
             DiffHunkView(
                 hunk: hunk,
                 style: style,
+                spans: { syntax?.spans(for: $0) },
                 staged: false,
                 enabled: false,
                 readOnly: true

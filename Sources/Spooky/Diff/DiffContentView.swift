@@ -26,6 +26,18 @@ struct DiffContentView: View {
     @AppStorage(TextPreferences.showsInvisiblesKey)
     private var showsInvisibles = false
 
+    /// 语法着色总开关。
+    @AppStorage(TextPreferences.syntaxColoringKey)
+    private var colorsSyntax = true
+
+    /// Diff 中的语法着色。
+    @AppStorage(TextPreferences.diffSyntaxColoringKey)
+    private var colorsDiffSyntax = false
+
+    /// 两侧全文的语法片段，读完之前与识别不了语言时按纯文本显示。
+    @State
+    private var syntax: DiffSyntax?
+
     /// 文本区与摘要共享同一组块数据。
     var body: some View {
         let style = TextStyle(
@@ -50,6 +62,9 @@ struct DiffContentView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             DiffBottomBar(session: session, diff: diff)
         }
+        .task(id: [colorsSyntax, colorsDiffSyntax]) {
+            syntax = await session.diffSyntax(for: snapshot, diff: diff)
+        }
     }
 
     /// 一个文件段：Git 扩展头、二进制或无文本改动的提示，以及各块。
@@ -69,6 +84,7 @@ struct DiffContentView: View {
             DiffHunkView(
                 hunk: hunk,
                 style: style,
+                spans: { syntax?.spans(for: $0) },
                 staged: snapshot.side == .staged,
                 enabled: session.canWrite && !session.isLoadingDiff && diff.files.count == 1
             ) { lines, discard in
