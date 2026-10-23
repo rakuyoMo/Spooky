@@ -4,6 +4,8 @@ import Testing
 @testable import Spooky
 @testable import SpookyKit
 
+// MARK: - RepositorySessionTests
+
 /// 刷新生命周期的回归测试，以受控响应验证旧数据保留和过期请求隔离。
 @MainActor
 struct RepositorySessionTests {
@@ -140,7 +142,7 @@ struct RepositorySessionTests {
         try Data("new\n".utf8).write(to: directory.appending(path: "file"))
         let deadline = ContinuousClock.now.advanced(by: .seconds(5))
 
-        while session.status?.entries.isEmpty != false && .now < deadline {
+        while session.status?.entries.isEmpty != false, .now < deadline {
             try await Task.sleep(for: .milliseconds(50))
         }
 
@@ -249,7 +251,7 @@ struct RepositorySessionTests {
         await session.refreshTask?.value
         let deadline = ContinuousClock.now.advanced(by: .seconds(5))
 
-        while session.history.commits.isEmpty && .now < deadline {
+        while session.history.commits.isEmpty, .now < deadline {
             try await Task.sleep(for: .milliseconds(20))
         }
         let commit = try #require(session.history.commits.first)
@@ -270,8 +272,9 @@ struct RepositorySessionTests {
         await session.writeTask?.value
         await session.refreshTask?.value
 
-        while session.history.snapshot?.references.contains(where: { $0.id == "refs/heads/topic" }) != true
-            && .now < deadline
+        while
+            session.history.snapshot?.references.contains(where: { $0.id == "refs/heads/topic" }) != true,
+            .now < deadline
         {
             try await Task.sleep(for: .milliseconds(20))
         }
@@ -295,7 +298,7 @@ struct RepositorySessionTests {
         session.history.selectedReference = "refs/heads/topic"
         let trackingDeadline = ContinuousClock.now.advanced(by: .seconds(5))
 
-        while session.history.unpushed.isEmpty && .now < trackingDeadline {
+        while session.history.unpushed.isEmpty, .now < trackingDeadline {
             try await Task.sleep(for: .milliseconds(20))
         }
         let local = try #require(session.history.commits.first { $0.subject == "local" })
@@ -332,7 +335,7 @@ struct RepositorySessionTests {
         var finished: [RepositoryLocation] = []
         first.onWriteFinished = { finished.append($0) }
         let (gate, release) = AsyncStream<Void>.makeStream()
-        let started = first.performGit({ _, _ in for await _ in gate {} }, title: "Push")
+        let started = first.performGit({ _, _ in for await _ in gate { } }, title: "Push")
         #expect(started)
 
         // 重复点击与另一个窗口的同类写入都被拒绝，界面据此禁用入口。
@@ -378,7 +381,7 @@ struct RepositorySessionTests {
     @Test("视图状态缓存淘汰最久未使用的仓库")
     func viewStateEviction() {
         var cache = RepositoryViewStateCache()
-        let locations = (0..<16).map { RepositoryLocation.local(path: "/temporary/cache-\($0)") }
+        let locations = (0 ..< 16).map { RepositoryLocation.local(path: "/temporary/cache-\($0)") }
 
         for location in locations.prefix(15) {
             cache.store(RepositoryViewState(), for: location)
@@ -468,7 +471,7 @@ struct RepositorySessionTests {
         session.refresh()
         let deadline = ContinuousClock.now.advanced(by: .seconds(5))
 
-        while (session.history.snapshot == nil || session.context == nil) && .now < deadline {
+        while session.history.snapshot == nil || session.context == nil, .now < deadline {
             try await Task.sleep(for: .milliseconds(20))
         }
 
@@ -480,7 +483,7 @@ struct RepositorySessionTests {
 
         // 写入进行中所有写入口一起禁用，结束后恢复。
         let (gate, release) = AsyncStream<Void>.makeStream()
-        session.performGit({ _, _ in for await _ in gate {} }, title: "Fetch")
+        session.performGit({ _, _ in for await _ in gate { } }, title: "Fetch")
         #expect(!session.canFetch && !session.canPush && !session.canCreateBranch && !session.canStage(entries))
         release.finish()
         await session.writeTask?.value
@@ -494,6 +497,8 @@ private func snapshot(_ path: String) throws -> WorkingCopyStatus {
         "# branch.oid (initial)\0# branch.head main\0? \(path)\0".utf8
     ))
 }
+
+// MARK: - ControlledStatusSource
 
 /// 由测试决定读取完成顺序，故意允许已取消任务继续收到响应。
 private actor ControlledStatusSource {

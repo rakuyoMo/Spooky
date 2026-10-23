@@ -2,6 +2,8 @@ import AppKit
 import SpookyKit
 import SwiftUI
 
+// MARK: - SettingsWindowController
+
 /// 设置窗口采用原生工具栏式页签，单例入口为 ⌘,。
 @MainActor
 final class SettingsWindowController: NSWindowController {
@@ -42,22 +44,28 @@ final class SettingsWindowController: NSWindowController {
     }
 
     /// 设置窗口只由代码构建。
-    required init?(coder: NSCoder) { return nil }
+    required init?(coder _: NSCoder) { nil }
 }
+
+// MARK: - GeneralSettingsView
 
 /// 通用设置立即生效，候选仅显示本机已安装的受支持终端。
 private struct GeneralSettingsView: View {
     /// 偏好只保存终端 Bundle Identifier。
-    @AppStorage("terminalApplication") private var terminal = TerminalApplication.terminal.rawValue
+    @AppStorage("terminalApplication")
+    private var terminal = TerminalApplication.terminal.rawValue
 
     /// 单次补丁的警告阈值，单位为 1000 字节。
-    @AppStorage("diffWarningKilobytes") private var diffWarning = WorkingCopyOperations.defaultWarningKilobytes
+    @AppStorage("diffWarningKilobytes")
+    private var diffWarning = WorkingCopyOperations.defaultWarningKilobytes
 
     /// 历史每页条数固定为四个档位。
-    @AppStorage("historyPageSize") private var historyPageSize = 100
+    @AppStorage("historyPageSize")
+    private var historyPageSize = 100
 
     /// 创建和发布分支时实时规范引用名。
-    @AppStorage("cleanRefNames") private var cleanRefNames = true
+    @AppStorage("cleanRefNames")
+    private var cleanRefNames = true
 
     /// General 表单的控件列固定为 278 pt。
     var body: some View {
@@ -118,13 +126,17 @@ private struct GeneralSettingsView: View {
     }
 }
 
+// MARK: - ThemesSettingsView
+
 /// 两套内置主题的字体与色板预览，系统外观决定实际使用的主题。
 private struct ThemesSettingsView: View {
     /// 当前预览主题，不改变系统外观或默认主题对应关系。
-    @State private var selected = "Default"
+    @State
+    private var selected = "Default"
 
     /// 当前系统外观。
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorScheme)
+    private var colorScheme
 
     /// 150 pt 主题列表和右侧字体、色板、文本预览。
     var body: some View {

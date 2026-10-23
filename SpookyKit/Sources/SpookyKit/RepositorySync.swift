@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - RepositorySyncError
+
 /// 发起同步前的仓库条件错误，不伪造 Git 输出。
 public enum RepositorySyncError: Error, Sendable, Equatable {
     /// 合并和拉取必须从干净工作区开始。
@@ -11,6 +13,8 @@ public enum RepositorySyncError: Error, Sendable, Equatable {
     /// 选择的远端已不存在。
     case missingRemote
 }
+
+// MARK: - RemoteReferenceUpdate
 
 /// Fetch / Push porcelain 的引用更新结果，原始输出仍留在命令结果中。
 public struct RemoteReferenceUpdate: Sendable, Equatable {
@@ -36,13 +40,15 @@ public struct RemoteReferenceUpdate: Sendable, Equatable {
     static func parseFetch(_ data: Data) throws -> [Self] {
         try String(decoding: data, as: UTF8.self).split(separator: "\n")
             .map { line in
-                guard line.count > 2, let flag = line.first, " *+-=!t".contains(flag),
+                guard
+                    line.count > 2, let flag = line.first, " *+-=!t".contains(flag),
                     line.dropFirst().first == " "
                 else {
                     throw RepositoryReadError.malformedOutput("fetch --porcelain")
                 }
                 let fields = line.dropFirst(2).split(separator: " ", omittingEmptySubsequences: false)
-                guard fields.count == 3, GitObjectID.isValid(String(fields[0])),
+                guard
+                    fields.count == 3, GitObjectID.isValid(String(fields[0])),
                     GitObjectID.isValid(String(fields[1])), !fields[2].isEmpty
                 else {
                     throw RepositoryReadError.malformedOutput("fetch --porcelain")
@@ -65,7 +71,8 @@ public struct RemoteReferenceUpdate: Sendable, Equatable {
         for line in String(decoding: data, as: UTF8.self).split(separator: "\n") {
             if line.hasPrefix("To ") || line == "Done" || line.hasPrefix("branch '") { continue }
             let fields = line.split(separator: "\t", maxSplits: 2, omittingEmptySubsequences: false)
-            guard fields.count == 3, fields[0].count == 1, let flag = fields[0].first,
+            guard
+                fields.count == 3, fields[0].count == 1, let flag = fields[0].first,
                 " *+-=!".contains(flag)
             else {
                 throw RepositoryReadError.malformedOutput("push --porcelain")
@@ -89,6 +96,8 @@ public struct RemoteReferenceUpdate: Sendable, Equatable {
     }
 }
 
+// MARK: - MergePreview
+
 /// 合并预览以退出状态判定，检查失败保留原始诊断。
 public enum MergePreview: Sendable {
     /// 目标已是 HEAD 的祖先。
@@ -103,6 +112,8 @@ public enum MergePreview: Sendable {
     /// 当前环境无法计算预览，不能当作可干净合并。
     case unavailable(String)
 }
+
+// MARK: - MergeOptions
 
 /// 合并对话框的显式选项，不依赖用户的 merge.ff 等全局默认。
 public struct MergeOptions: Sendable {
@@ -122,8 +133,10 @@ public struct MergeOptions: Sendable {
     public var skipHooks = false
 
     /// 默认允许快进，普通合并自动提交。
-    public init() {}
+    public init() { }
 }
+
+// MARK: - RepositorySync
 
 /// 获取、拉取、推送与合并在统一仓库写队列内完成。
 public struct RepositorySync: Sendable {
@@ -273,9 +286,9 @@ public struct RepositorySync: Sendable {
             if error is RemoteConnectionError { throw error }
             let details =
                 (error as? GitError)
-                .map {
-                    String(decoding: $0.result.standardError + $0.result.standardOutput, as: UTF8.self)
-                } ?? String(describing: error)
+                    .map {
+                        String(decoding: $0.result.standardError + $0.result.standardOutput, as: UTF8.self)
+                    } ?? String(describing: error)
             return .unavailable(details)
         }
     }
@@ -315,7 +328,8 @@ public struct RepositorySync: Sendable {
         let references = RepositoryReferences(runner: runner)
         let snapshot = try await references.snapshot()
         let head = snapshot.references.first { $0.id == "refs/heads/" + current }
-        guard let remote = remote ?? head?.upstreamRemote,
+        guard
+            let remote = remote ?? head?.upstreamRemote,
             let branch = branch ?? head?.upstreamBranch
         else {
             _ = try await runner.run(["rev-parse", "--verify", "@{upstream}"])

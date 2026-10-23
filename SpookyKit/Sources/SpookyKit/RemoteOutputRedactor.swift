@@ -70,7 +70,7 @@ final class RemoteOutputRedactor: Sendable {
             if let match {
                 result.append(data[..<match.lowerBound])
                 result.append(Data("[REDACTED]".utf8))
-                data.removeSubrange(data.startIndex..<match.upperBound)
+                data.removeSubrange(data.startIndex ..< match.upperBound)
                 continue
             }
 

@@ -7,7 +7,8 @@ struct ConnectionStatusView: View {
     let session: RepositorySession
 
     /// 诊断默认收起，用户可展开复制原始 SSH 输出。
-    @State private var showsDetails = false
+    @State
+    private var showsDetails = false
 
     /// 状态、恢复动作和必要的诊断内容。
     var body: some View {

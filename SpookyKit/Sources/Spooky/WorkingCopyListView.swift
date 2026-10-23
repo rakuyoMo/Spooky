@@ -4,10 +4,12 @@ import SwiftUI
 /// 工作区列表保留所有状态条目，刷新期间仍展示旧快照。
 struct WorkingCopyListView: View {
     /// 当前仓库会话。
-    @Bindable var session: RepositorySession
+    @Bindable
+    var session: RepositorySession
 
     /// 平铺为固定默认值，选择立即保存到全局偏好。
-    @AppStorage("workingCopyViewMode") private var mode = 0
+    @AppStorage("workingCopyViewMode")
+    private var mode = 0
 
     /// 分支头、状态表与底部的读取反馈。
     var body: some View {

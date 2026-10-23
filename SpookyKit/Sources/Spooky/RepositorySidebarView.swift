@@ -5,7 +5,8 @@ import SwiftUI
 /// Workspace、Branches、Remotes 与活动区共用仓库窗口侧边栏。
 struct RepositorySidebarView: View {
     /// 当前窗口会话。
-    @Bindable var session: RepositorySession
+    @Bindable
+    var session: RepositorySession
 
     /// 主视图切换后替换右侧分栏。
     let selectionChanged: () -> Void
@@ -24,6 +25,34 @@ struct RepositorySidebarView: View {
 
     /// 打开全局活动窗口。
     let showActivity: () -> Void
+
+    /// 系统列表和菜单导航使用同一组选择身份。
+    private var selectedItems: Set<String> {
+        if session.activeView == .workingCopy { return ["workingCopy"] }
+        return session.history.selectedReferences.isEmpty ? ["history"] : session.history.selectedReferences
+    }
+
+    /// 选择存入会话，快捷键与点击保持一致。
+    private var selection: Binding<Set<String>> {
+        Binding(
+            get: { selectedItems },
+            set: { value in
+                guard !value.isEmpty else { return }
+                let added = value.subtracting(selectedItems)
+                session.history.showsCommitPage = false
+                if added.contains("workingCopy") || value == ["workingCopy"] {
+                    session.activeView = .workingCopy
+                } else {
+                    session.activeView = .history
+                    session.history.selectedReferences =
+                        added.contains("history") || value == ["history"]
+                            ? []
+                            : value.subtracting(["workingCopy", "history"])
+                }
+                selectionChanged()
+            }
+        )
+    }
 
     /// 空分组保留标题和提示，远端按名称分组。
     var body: some View {
@@ -61,33 +90,6 @@ struct RepositorySidebarView: View {
             .padding(.horizontal, 8)
             .frame(height: 40)
         }
-    }
-
-    /// 系统列表和菜单导航使用同一组选择身份。
-    private var selectedItems: Set<String> {
-        if session.activeView == .workingCopy { return ["workingCopy"] }
-        return session.history.selectedReferences.isEmpty ? ["history"] : session.history.selectedReferences
-    }
-
-    /// 选择存入会话，快捷键与点击保持一致。
-    private var selection: Binding<Set<String>> {
-        Binding(
-            get: { selectedItems },
-            set: { value in
-                guard !value.isEmpty else { return }
-                let added = value.subtracting(selectedItems)
-                session.history.showsCommitPage = false
-                if added.contains("workingCopy") || value == ["workingCopy"] {
-                    session.activeView = .workingCopy
-                } else {
-                    session.activeView = .history
-                    session.history.selectedReferences =
-                        added.contains("history") || value == ["history"]
-                        ? [] : value.subtracting(["workingCopy", "history"])
-                }
-                selectionChanged()
-            }
-        )
     }
 
     /// 未出生和分离 HEAD 仍有稳定的当前分支行。
@@ -213,17 +215,47 @@ struct RepositorySidebarView: View {
         }
     }
 
+    /// 最近三个活动显示持续进度和取消，点击打开完整日志。
+    private var activityRows: some View {
+        let items = RepositoryActivities.shared.items.filter { $0.repository == session.repository }
+        return VStack(spacing: 0) {
+            ForEach(Array(items.prefix(3))) { activity in
+                HStack {
+                    Button(action: showActivity) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(activity.title).font(.system(size: 11, weight: .semibold))
+                            Text(AppLocalization.text(activity.state)).font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                            if activity.cancel != nil { ProgressView().controlSize(.mini) }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    if let cancel = activity.cancel {
+                        Button(action: cancel) { Image(systemName: "stop.circle") }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel(AppLocalization.text("action.cancel"))
+                    }
+                }
+                .padding(.horizontal, 8)
+                .frame(height: 65)
+                Divider()
+            }
+        }
+    }
+
     /// HEAD 和双向数量组成胶囊徽标，服务器主机写入辅助说明。
     private func branchRow(_ ref: RepositoryReference) -> some View {
         HStack(spacing: 4) {
             Image(systemName: ref.isLocal ? "arrow.triangle.branch" : "network")
             Text(ref.name).lineLimit(1)
             Spacer(minLength: 4)
-            if ref.isLocal && ref.name == session.status?.branch.head
+            if
+                ref.isLocal && ref.name == session.status?.branch.head
                 || session.history.divergence[ref.id] != nil
             {
                 HStack(spacing: 4) {
-                    if ref.isLocal && ref.name == session.status?.branch.head {
+                    if ref.isLocal, ref.name == session.status?.branch.head {
                         Text("HEAD").fontWeight(.semibold)
                     }
                     if let counts = session.history.divergence[ref.id] {
@@ -238,7 +270,8 @@ struct RepositorySidebarView: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(badgeDescription(ref))
             }
-            if let remote = session.history.snapshot?.remote(for: ref),
+            if
+                let remote = session.history.snapshot?.remote(for: ref),
                 session.history.snapshot?.defaultBranch(for: remote) == ref.id
             {
                 Image(systemName: "house").help(AppLocalization.text("branch.default"))
@@ -300,35 +333,6 @@ struct RepositorySidebarView: View {
         }
     }
 
-    /// 最近三个活动显示持续进度和取消，点击打开完整日志。
-    private var activityRows: some View {
-        let items = RepositoryActivities.shared.items.filter { $0.repository == session.repository }
-        return VStack(spacing: 0) {
-            ForEach(Array(items.prefix(3))) { activity in
-                HStack {
-                    Button(action: showActivity) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(activity.title).font(.system(size: 11, weight: .semibold))
-                            Text(AppLocalization.text(activity.state)).font(.system(size: 11))
-                                .foregroundStyle(.secondary)
-                            if activity.cancel != nil { ProgressView().controlSize(.mini) }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .buttonStyle(.plain)
-                    if let cancel = activity.cancel {
-                        Button(action: cancel) { Image(systemName: "stop.circle") }
-                            .buttonStyle(.borderless)
-                            .accessibilityLabel(AppLocalization.text("action.cancel"))
-                    }
-                }
-                .padding(.horizontal, 8)
-                .frame(height: 65)
-                Divider()
-            }
-        }
-    }
-
     /// 拖动开始时仓库仍在显示才提供载荷；仓库刚关闭时返回空的拖动内容。
     private func dragProvider(kind: RepositoryDragPayload.Kind, reference: String) -> NSItemProvider {
         guard let repository = session.repository else {
@@ -342,7 +346,7 @@ struct RepositorySidebarView: View {
     private func badgeDescription(_ ref: RepositoryReference) -> String {
         var parts: [String] = []
 
-        if ref.isLocal && ref.name == session.status?.branch.head {
+        if ref.isLocal, ref.name == session.status?.branch.head {
             parts.append("HEAD")
         }
 
@@ -367,7 +371,8 @@ struct RepositorySidebarView: View {
 
     /// 双击远端分支检出已有跟踪分支，或原子创建并检出同名跟踪分支。
     private func checkoutRemote(_ ref: RepositoryReference) {
-        guard session.canCheckout(ref), let snapshot = session.history.snapshot,
+        guard
+            session.canCheckout(ref), let snapshot = session.history.snapshot,
             let remote = snapshot.remote(for: ref)
         else { return }
         if let existing = snapshot.references.first(where: { $0.isLocal && $0.upstream == ref.id }) {

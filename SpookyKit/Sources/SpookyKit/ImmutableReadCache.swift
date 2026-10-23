@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - ImmutableReadCache
+
 /// 只由对象哈希决定的 Git 输出缓存；同一仓库重复查询时直接复用，减少服务器往返。
 ///
 /// 总量按字节和条目数双重限制，超出时淘汰最久未使用的结果。
@@ -33,6 +35,11 @@ actor ImmutableReadCache {
 
     /// 当前缓存的输出字节数。
     private var byteCount = 0
+
+    /// 当前条目数量，供测试核对淘汰结果。
+    var count: Int {
+        entries.count
+    }
 
     /// 以给定上限创建缓存，测试可使用较小的容量验证淘汰。
     init(byteCapacity: Int, countCapacity: Int) {
@@ -70,11 +77,6 @@ actor ImmutableReadCache {
             order.removeFirst()
             byteCount -= entries.removeValue(forKey: oldest)?.count ?? 0
         }
-    }
-
-    /// 当前条目数量，供测试核对淘汰结果。
-    var count: Int {
-        entries.count
     }
 
     /// 把命中的条目移到使用顺序末尾。

@@ -5,16 +5,20 @@ import SwiftUI
 /// 提交区保持正文、身份与按钮可见，所有写操作共享会话锁定状态。
 struct WorkingCopyCommitView: View {
     /// 当前仓库的草稿与操作状态。
-    @Bindable var session: RepositorySession
+    @Bindable
+    var session: RepositorySession
 
     /// 信息框焦点决定 ⌥ 是否进入快速修补。
-    @FocusState private var focusedField: Field?
+    @FocusState
+    private var focusedField: Field?
 
     /// ⌥ 同时切换全部暂存与快速修补。
-    @State private var optionPressed = false
+    @State
+    private var optionPressed = false
 
     /// 松开 ⌥ 时仅撤销本视图自动开启的修补状态。
-    @State private var quickAmend = false
+    @State
+    private var quickAmend = false
 
     /// 标题与正文的键盘焦点。
     private enum Field: Hashable {
@@ -109,8 +113,10 @@ struct WorkingCopyCommitView: View {
         .onModifierKeysChanged(mask: .option) { _, flags in
             optionPressed = flags.contains(.option)
 
-            if optionPressed, focusedField == nil, !session.amend,
-               session.status?.branch.oid != nil, session.context?.operation == nil {
+            if
+                optionPressed, focusedField == nil, !session.amend,
+                session.status?.branch.oid != nil, session.context?.operation == nil
+            {
                 session.setAmend(true)
                 quickAmend = session.amend
             } else if !optionPressed, quickAmend {
@@ -123,7 +129,9 @@ struct WorkingCopyCommitView: View {
         .onChange(of: session.commitFocusRequest) { focusedField = .subject }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
             optionPressed = false
-            if quickAmend { session.setAmend(false); quickAmend = false }
+            if quickAmend { session.setAmend(false)
+                quickAmend = false
+            }
         }
     }
 
@@ -161,8 +169,10 @@ struct WorkingCopyCommitView: View {
                 Spacer(minLength: 0)
                 Button(AppLocalization.text("working.abort")) { session.finishOperation("abort") }
 
-                if [.rebase, .cherryPick, .revert].contains(operation), session.conflictCount == 0,
-                   session.status?.entries.isEmpty == true {
+                if
+                    [.rebase, .cherryPick, .revert].contains(operation), session.conflictCount == 0,
+                    session.status?.entries.isEmpty == true
+                {
                     Button(AppLocalization.text("working.skip")) { session.finishOperation("skip") }
                 }
             }

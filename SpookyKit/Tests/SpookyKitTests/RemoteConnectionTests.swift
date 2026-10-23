@@ -3,6 +3,8 @@ import Testing
 
 @testable import SpookyKit
 
+// MARK: - RemoteConnectionTests
+
 /// 远端验收必须显式启用，只使用专用别名、密钥和测试目录。
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteConnectionTests {
@@ -95,12 +97,12 @@ struct RemoteConnectionTests {
             await old.close()
 
             let invalidStatusScript = """
-            #!/bin/sh
-            for spooky_argument in "$@"; do
-                if test "$spooky_argument" = status; then printf '? missing NUL'; exit 0; fi
-            done
-            exec /usr/bin/git "$@"
-            """
+                #!/bin/sh
+                for spooky_argument in "$@"; do
+                    if test "$spooky_argument" = status; then printf '? missing NUL'; exit 0; fi
+                done
+                exec /usr/bin/git "$@"
+                """
             _ = try await RemoteFixture.raw([
                 "/bin/sh", "-c", "cat > \"$1/bin/git\"", "fixture", fixture.root,
             ], input: Data(invalidStatusScript.utf8))
@@ -139,13 +141,15 @@ struct RemoteConnectionTests {
             executable: "/usr/bin/ssh",
             processArguments: ["-G", "--", "spooky-test"]
         )
-        let values = Dictionary(uniqueKeysWithValues: String(decoding: resolved.standardOutput, as: UTF8.self)
-            .split(separator: "\n")
-            .compactMap { line -> (String, String)? in
-                let parts = line.split(separator: " ", maxSplits: 1)
-                guard parts.count == 2, ["hostname", "user", "port"].contains(String(parts[0])) else { return nil }
-                return (String(parts[0]), String(parts[1]))
-            })
+        let values = Dictionary(
+            uniqueKeysWithValues: String(decoding: resolved.standardOutput, as: UTF8.self)
+                .split(separator: "\n")
+                .compactMap { line -> (String, String)? in
+                    let parts = line.split(separator: " ", maxSplits: 1)
+                    guard parts.count == 2, ["hostname", "user", "port"].contains(String(parts[0])) else { return nil }
+                    return (String(parts[0]), String(parts[1]))
+                }
+        )
         let hostname = try #require(values["hostname"])
         let user = try #require(values["user"])
         let port = try #require(values["port"])
@@ -317,14 +321,10 @@ struct RemoteConnectionTests {
     }
 }
 
+// MARK: - RemoteFixture
+
 /// 每个测试独占 B 上一个目录，所有 Git 配置都限制在该目录中的仓库。
 struct RemoteFixture: Sendable {
-    /// B 上本次测试的根目录。
-    let root: String
-
-    /// 覆盖空格、中文、引号、反斜杠和通配符的工作区路径。
-    var repository: String { root + "/仓 库'\"\\[*]?" }
-
     /// 固定测试别名对应的专用认证和隔离 Git 环境。
     static var configuration: SSHConfiguration {
         SSHConfiguration(
@@ -337,6 +337,12 @@ struct RemoteFixture: Sendable {
             ]
         )
     }
+
+    /// B 上本次测试的根目录。
+    let root: String
+
+    /// 覆盖空格、中文、引号、反斜杠和通配符的工作区路径。
+    var repository: String { root + "/仓 库'\"\\[*]?" }
 
     /// 创建私有测试根目录，初始化空工作区和仓库本地身份。
     static func create() async throws -> Self {
@@ -367,16 +373,6 @@ struct RemoteFixture: Sendable {
         }
     }
 
-    /// 使用生产连接实现，测试选项仅隔离认证和全局配置。
-    func connection(configuration: SSHConfiguration = Self.configuration) -> RemoteConnection {
-        RemoteConnection(host: "spooky-test", path: repository, configuration: configuration)
-    }
-
-    /// 仅删除本测试刚创建的目录。
-    func remove() async throws {
-        _ = try await Self.raw(["/bin/rm", "-rf", "--", root])
-    }
-
     /// 夹具建立前没有 Git 工作区，通过核心进程边界执行固定的初始化命令。
     static func raw(_ command: [String], input: Data? = nil) async throws -> GitCommandResult {
         let shell = (configuration.environmentPrefix + command).map(GitRunner.shellQuoted).joined(separator: " ")
@@ -389,4 +385,15 @@ struct RemoteFixture: Sendable {
             input: input
         )
     }
+
+    /// 使用生产连接实现，测试选项仅隔离认证和全局配置。
+    func connection(configuration: SSHConfiguration = Self.configuration) -> RemoteConnection {
+        RemoteConnection(host: "spooky-test", path: repository, configuration: configuration)
+    }
+
+    /// 仅删除本测试刚创建的目录。
+    func remove() async throws {
+        _ = try await Self.raw(["/bin/rm", "-rf", "--", root])
+    }
+
 }

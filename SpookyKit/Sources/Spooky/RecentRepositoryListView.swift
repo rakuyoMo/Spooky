@@ -5,7 +5,8 @@ import SwiftUI
 /// 仓库管理的最近记录列表；双击、回车和右键共用同一个打开动作。
 struct RecentRepositoryListView: View {
     /// 当前窗口状态。
-    @Bindable var session: RepositorySession
+    @Bindable
+    var session: RepositorySession
 
     /// 跨窗口共享的最近记录。
     let recent: RecentRepositories

@@ -29,18 +29,18 @@ final class RemoteOutputFilter: Sendable {
                 state.tail.append(data)
 
                 let marker = Data("\u{1e}SPOOKY:\(operation):".utf8)
-                let retained: Int
+                let retained: Int =
 
-                // 完整标记出现后等待状态字段；其余时候只保留跨块的最长标记前缀。
-                if let range = state.tail.range(of: marker, options: .backwards),
-                    state.tail.distance(from: range.lowerBound, to: state.tail.endIndex) <= 128
-                {
-                    retained = state.tail.distance(from: range.lowerBound, to: state.tail.endIndex)
-                } else {
-                    retained =
+                    // 完整标记出现后等待状态字段；其余时候只保留跨块的最长标记前缀。
+                    if
+                    let range = state.tail.range(of: marker, options: .backwards),
+                        state.tail.distance(from: range.lowerBound, to: state.tail.endIndex) <= 128
+                    {
+                        state.tail.distance(from: range.lowerBound, to: state.tail.endIndex)
+                    } else {
                         stride(from: min(marker.count, state.tail.count), through: 1, by: -1)
-                        .first { state.tail.suffix($0) == marker.prefix($0) } ?? 0
-                }
+                            .first { state.tail.suffix($0) == marker.prefix($0) } ?? 0
+                    }
 
                 if state.tail.count > retained {
                     let chunk = Data(state.tail.prefix(state.tail.count - retained))
@@ -55,8 +55,9 @@ final class RemoteOutputFilter: Sendable {
     /// 只有操作标识匹配且位于末尾的帧才作为进程状态。
     func completed(_ raw: GitCommandResult) throws -> GitCommandResult {
         let marker = Data("\u{1e}SPOOKY:\(operation):".utf8)
-        guard raw.standardError.last == 0x1f,
-              let range = raw.standardError.range(of: marker, options: .backwards)
+        guard
+            raw.standardError.last == 0x1f,
+            let range = raw.standardError.range(of: marker, options: .backwards)
         else {
             pending.withLock {
                 if !$0.tail.isEmpty { onOutput(.standardError($0.tail)) }
@@ -71,10 +72,11 @@ final class RemoteOutputFilter: Sendable {
             decoding: raw.standardError[range.upperBound...].dropLast(),
             as: UTF8.self
         ).split(separator: ":")
-        guard fields.count == 3,
-              let code = Int32(fields[0]), (0...255).contains(code),
-              let signal = Int32(fields[1]), (0...127).contains(signal),
-              fields[2] == "0" || fields[2] == "1"
+        guard
+            fields.count == 3,
+            let code = Int32(fields[0]), (0 ... 255).contains(code),
+            let signal = Int32(fields[1]), (0 ... 127).contains(signal),
+            fields[2] == "0" || fields[2] == "1"
         else { throw RemoteConnectionError(.protocolFailure, result: raw) }
 
         let stderr = Data(raw.standardError[..<range.lowerBound])

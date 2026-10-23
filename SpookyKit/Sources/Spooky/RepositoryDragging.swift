@@ -2,11 +2,10 @@ import AppKit
 import SpookyKit
 import SwiftUI
 
+// MARK: - RepositoryDragPayload
+
 /// 应用内部的分支与提交拖动，不接受文件路径作为 Git 引用。
 struct RepositoryDragPayload: Codable, Sendable {
-    /// Spooky 专用粘贴板类型。
-    static let type = "com.rakuyo.spooky.repository-reference"
-
     /// 来源种类决定可用目标。
     enum Kind: String, Codable, Sendable {
         /// 本地分支。
@@ -18,6 +17,9 @@ struct RepositoryDragPayload: Codable, Sendable {
         /// 历史提交。
         case commit
     }
+
+    /// Spooky 专用粘贴板类型。
+    static let type = "com.rakuyo.spooky.repository-reference"
 
     /// 来源仓库，用于阻止跨仓库误操作。
     let repository: RepositoryLocation
@@ -43,6 +45,8 @@ struct RepositoryDragPayload: Codable, Sendable {
     }
 }
 
+// MARK: - RepositoryDragContext
+
 /// 当前拖动来源只用于同步计算悬停动作。
 @MainActor
 final class RepositoryDragContext {
@@ -50,8 +54,10 @@ final class RepositoryDragContext {
     static let shared = RepositoryDragContext()
 
     /// 当前来源身份。
-    var payload: RepositoryDragPayload?
+    var payload: RepositoryDragPayload? = nil
 }
+
+// MARK: - RepositoryDropDestination
 
 /// 已实现的引用落点。
 enum RepositoryDropDestination {
@@ -71,6 +77,8 @@ enum RepositoryDropDestination {
     case none
 }
 
+// MARK: - RepositoryDropTarget
+
 /// 在目标行展示动作名，落下只打开已有参数表单。
 struct RepositoryDropTarget: ViewModifier {
     /// 当前会话。
@@ -83,7 +91,8 @@ struct RepositoryDropTarget: ViewModifier {
     let request: (RepositoryActionRequest) -> Void
 
     /// 悬停提示文字。
-    @State private var label: String?
+    @State
+    private var label: String?
 
     /// SwiftUI 落点高亮承载当前动作标签。
     func body(content: Content) -> some View {
@@ -111,6 +120,8 @@ struct RepositoryDropTarget: ViewModifier {
     }
 }
 
+// MARK: - ReferenceDropDelegate
+
 /// 来源、目标与修饰键共用一张动作表，未交付的变体明确拒绝。
 private struct ReferenceDropDelegate: DropDelegate {
     /// 当前仓库及写入状态。
@@ -123,7 +134,8 @@ private struct ReferenceDropDelegate: DropDelegate {
     let request: (RepositoryActionRequest) -> Void
 
     /// 当前动作文字。
-    @Binding var label: String?
+    @Binding
+    var label: String?
 
     /// 本阶段只接受同仓库的单项引用拖放。
     func validateDrop(info: DropInfo) -> Bool {
@@ -131,24 +143,26 @@ private struct ReferenceDropDelegate: DropDelegate {
     }
 
     /// 修饰键变化时同步更新动作提示。
-    func dropUpdated(info: DropInfo) -> DropProposal? {
+    func dropUpdated(info _: DropInfo) -> DropProposal? {
         let action = action()
         label = action.map { AppLocalization.text($0.kind.rawValue) }
         return DropProposal(operation: action == nil ? .forbidden : .copy)
     }
 
     /// 离开落点后移除提示。
-    func dropExited(info: DropInfo) { label = nil }
+    func dropExited(info _: DropInfo) { label = nil }
 
     /// 核对实际载荷后打开表单，异步期间仓库变化则放弃。
     func performDrop(info: DropInfo) -> Bool {
         label = nil
-        guard validateDrop(info: info), let action = action(),
+        guard
+            validateDrop(info: info), let action = action(),
             let expected = RepositoryDragContext.shared.payload,
             let provider = info.itemProviders(for: [RepositoryDragPayload.type]).first
         else { return false }
         provider.loadDataRepresentation(forTypeIdentifier: RepositoryDragPayload.type) { data, _ in
-            guard let data, let payload = try? JSONDecoder().decode(RepositoryDragPayload.self, from: data),
+            guard
+                let data, let payload = try? JSONDecoder().decode(RepositoryDragPayload.self, from: data),
                 payload.repository == expected.repository, payload.reference == expected.reference
             else { return }
             Task { @MainActor in
@@ -161,7 +175,8 @@ private struct ReferenceDropDelegate: DropDelegate {
 
     /// 每个映射都指向实际可用的业务动作，可用条件与菜单和右键菜单相同。
     private func action() -> RepositoryActionRequest? {
-        guard let payload = RepositoryDragContext.shared.payload,
+        guard
+            let payload = RepositoryDragContext.shared.payload,
             payload.repository == session.repository
         else { return nil }
         let alternate = NSEvent.modifierFlags.contains(.option)
@@ -171,15 +186,19 @@ private struct ReferenceDropDelegate: DropDelegate {
         case (.local, .head):
             guard !alternate, let source, session.canMerge(source) else { return nil }
             return RepositoryActionRequest(kind: .merge, reference: payload.reference)
+
         case (.remote, .head):
             guard !alternate, let source, session.canPull(from: source) else { return nil }
             return RepositoryActionRequest(kind: .pull, reference: payload.reference)
+
         case (.local, .branches), (.commit, .branches):
             guard !alternate, session.canCreateBranchFromReference else { return nil }
             return RepositoryActionRequest(kind: .create, reference: payload.reference)
+
         case (.remote, .branches):
             guard let source, session.canTrack(source) else { return nil }
             return RepositoryActionRequest(kind: .track, reference: payload.reference)
+
         case (.local, .remote(let remote)):
             guard let source, session.canPush(source) else { return nil }
             return RepositoryActionRequest(
@@ -187,6 +206,7 @@ private struct ReferenceDropDelegate: DropDelegate {
                 remote: remote,
                 localBranch: String(payload.reference.dropFirst(11))
             )
+
         case (.local, .remoteBranch(let remote, let reference)):
             guard let source, session.canPush(source) else { return nil }
             return RepositoryActionRequest(
@@ -195,6 +215,7 @@ private struct ReferenceDropDelegate: DropDelegate {
                 remote: remote,
                 localBranch: String(payload.reference.dropFirst(11))
             )
+
         default: return nil
         }
     }

@@ -62,7 +62,7 @@ struct WorkingCopyOperationsTests {
         try await repository.initialize()
         let service = WorkingCopyOperations(runner: repository.runner)
         let file = repository.directory.appending(path: "file")
-        let original = (1...30).map { "line \($0)\r\n" }.joined()
+        let original = (1 ... 30).map { "line \($0)\r\n" }.joined()
         try Data(original.utf8).write(to: file)
         try await service.stageAll(staged: true)
         try await service.commit(subject: "base", body: "")

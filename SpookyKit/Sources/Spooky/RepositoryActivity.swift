@@ -2,10 +2,15 @@ import Foundation
 import Observation
 import SpookyKit
 
+// MARK: - RepositoryActivity
+
 /// 一次远程 Git 操作的日志和状态，完成后仍可在 Activity 查看。
 @MainActor
 @Observable
 final class RepositoryActivity: Identifiable {
+    /// 每条输出流最多保留的字节数，长时间运行的进度输出只保留最近部分。
+    static let streamLimit = 512 * 1024
+
     /// 活动的稳定身份。
     let id = UUID()
 
@@ -30,17 +35,8 @@ final class RepositoryActivity: Identifiable {
     /// 原始 stderr 进度。
     private(set) var stderr = Data()
 
-    /// 建立一个仓库操作记录。
-    init(repository: RepositoryLocation, title: String) {
-        self.repository = repository
-        self.title = title
-    }
-
     /// 较早的输出因超过保留上限被丢弃。
     private(set) var truncated = false
-
-    /// 每条输出流最多保留的字节数，长时间运行的进度输出只保留最近部分。
-    static let streamLimit = 512 * 1024
 
     /// 控制字符 CR 显示为换行，原始字节仍保留在各自缓冲区。
     var log: String {
@@ -49,9 +45,15 @@ final class RepositoryActivity: Identifiable {
             String(decoding: stdout, as: UTF8.self),
             String(decoding: stderr, as: UTF8.self),
         ]
-            .filter { !$0.isEmpty }
-            .joined(separator: "\n")
-            .replacingOccurrences(of: "\r", with: "\n")
+        .filter { !$0.isEmpty }
+        .joined(separator: "\n")
+        .replacingOccurrences(of: "\r", with: "\n")
+    }
+
+    /// 建立一个仓库操作记录。
+    init(repository: RepositoryLocation, title: String) {
+        self.repository = repository
+        self.title = title
     }
 
     /// 执行器已经脱敏，此处只按管道追加原始数据，超出上限时丢弃最早的字节。
@@ -75,6 +77,8 @@ final class RepositoryActivity: Identifiable {
         }
     }
 }
+
+// MARK: - RepositoryActivities
 
 /// Activity 跨窗口保留记录，关闭一个仓库不会抹掉已完成日志。
 @MainActor
@@ -104,6 +108,8 @@ final class RepositoryActivities {
         items.removeAll { $0.cancel == nil }
     }
 }
+
+// MARK: - RepositoryWriteLocks
 
 /// 应用内每个仓库同一时间只允许一个明确的写操作；所有窗口的写入口都据此禁用。
 @MainActor

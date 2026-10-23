@@ -13,10 +13,10 @@ final class RemoteCallbackPresenter {
     private var pending: [(RemoteCallbackRequest, CheckedContinuation<String?, Never>)] = []
 
     /// 当前正在显示的请求。
-    private var current: (RemoteCallbackRequest, CheckedContinuation<String?, Never>, NSAlert)?
+    private var current: (RemoteCallbackRequest, CheckedContinuation<String?, Never>, NSAlert)? = nil
 
     /// 当前输入的超时任务，与 B 侧的 120 秒上限一致。
-    private var timeout: Task<Void, Never>?
+    private var timeout: Task<Void, Never>? = nil
 
     /// 已存凭据直接从 A 的钥匙串取出，其余请求排队呈现。
     func respond(to request: RemoteCallbackRequest) async -> String? {
@@ -42,11 +42,15 @@ final class RemoteCallbackPresenter {
         let privateKey = request.kind == .sshAskpass && request.prompt.lowercased().contains("passphrase")
         alert.messageText = AppLocalization.text(
             request.kind == .editor
-                ? "callback.editor" : (privateKey ? "callback.privateKey" : "callback.credentials")
+                ? "callback.editor"
+                : (privateKey ? "callback.privateKey" : "callback.credentials")
         )
         alert.informativeText = request.host + "\n" + request.prompt
-            + (privateKey && request.host.hasPrefix("/")
-                ? "\n\n" + AppLocalization.text("callback.privateKey.help") : "")
+            + (
+                privateKey && request.host.hasPrefix("/")
+                    ? "\n\n" + AppLocalization.text("callback.privateKey.help")
+                    : ""
+            )
         alert.addButton(withTitle: AppLocalization.text("action.continue"))
         alert.addButton(withTitle: AppLocalization.text("action.cancel"))
         let input: NSView
@@ -66,7 +70,8 @@ final class RemoteCallbackPresenter {
             value = { editor.string }
         } else {
             let field: NSTextField = request.kind == .askpass && request.prompt.lowercased().hasPrefix("username")
-                ? NSTextField() : NSSecureTextField()
+                ? NSTextField()
+                : NSSecureTextField()
             field.setAccessibilityLabel(AppLocalization.text("callback.value"))
             field.frame = NSRect(x: 0, y: 36, width: 400, height: 24)
             save.frame = NSRect(x: 0, y: 0, width: 400, height: 24)
@@ -91,14 +96,14 @@ final class RemoteCallbackPresenter {
         }
 
         alert.beginSheetModal(for: window.attachedSheet ?? window) { [weak self] response in
-            guard let self, self.current?.0.id == request.id else { return }
+            guard let self, current?.0.id == request.id else { return }
             let answer = response == .alertFirstButtonReturn ? value() : nil
 
             if let answer, request.kind != .editor, save.state == .on {
-                self.store(answer, for: request)
+                store(answer, for: request)
             }
 
-            self.finish(request.id, value: answer)
+            finish(request.id, value: answer)
         }
     }
 
@@ -138,9 +143,10 @@ final class RemoteCallbackPresenter {
         var query = keychainQuery(request)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
-        var value: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &value) == errSecSuccess,
-              let data = value as? Data
+        var value: CFTypeRef? = nil
+        guard
+            SecItemCopyMatching(query as CFDictionary, &value) == errSecSuccess,
+            let data = value as? Data
         else { return nil }
         return String(data: data, encoding: .utf8)
     }

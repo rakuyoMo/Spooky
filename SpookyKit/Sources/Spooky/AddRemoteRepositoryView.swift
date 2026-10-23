@@ -10,16 +10,20 @@ struct AddRemoteRepositoryView: View {
     let cancelled: () -> Void
 
     /// SSH 主机别名不拆解成用户、地址和端口。
-    @State private var host = ""
+    @State
+    private var host = ""
 
     /// B 上工作区的绝对路径。
-    @State private var path = ""
+    @State
+    private var path = ""
 
     /// 正在执行的体检任务，取消表单时一并取消。
-    @State private var task: Task<Void, Never>?
+    @State
+    private var task: Task<Void, Never>?
 
     /// 体检失败的本地化说明和原始诊断。
-    @State private var failure: AppFailure?
+    @State
+    private var failure: AppFailure?
 
     /// 标题、两列表单、错误区和底栏沿用统一 sheet 骨架。
     var body: some View {

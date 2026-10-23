@@ -8,7 +8,8 @@ struct WorkingCopyFileList: NSViewRepresentable {
     let session: RepositorySession
 
     /// 全局记忆的显示模式；0 为平铺，1 为树形。
-    @AppStorage("workingCopyViewMode") private var mode = 0
+    @AppStorage("workingCopyViewMode")
+    private var mode = 0
 
     /// 构建事件与模型桥接器。
     func makeCoordinator() -> Coordinator { Coordinator(session: session) }
@@ -53,7 +54,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
     }
 
     /// 数据变化才重建树，普通选区变化不打断键盘焦点。
-    func updateNSView(_ scroll: NSScrollView, context: Context) {
+    func updateNSView(_: NSScrollView, context: Context) {
         context.coordinator.update(mode: mode)
     }
 
@@ -68,16 +69,17 @@ struct WorkingCopyFileList: NSViewRepresentable {
         /// 子节点按路径排序。
         var children: [Node] = []
 
+        /// 目录勾选作用于当前显示的全部后代文件。
+        var entries: [StatusEntry] {
+            entry.map { [$0] } ?? children.flatMap(\.entries)
+        }
+
         /// 建立目录或文件节点。
         init(path: String, entry: StatusEntry? = nil) {
             self.path = path
             self.entry = entry
         }
 
-        /// 目录勾选作用于当前显示的全部后代文件。
-        var entries: [StatusEntry] {
-            entry.map { [$0] } ?? children.flatMap(\.entries)
-        }
     }
 
     /// 只接管空格键，其它键盘行为交给系统列表。
@@ -182,7 +184,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
             sortNodes()
             outline.reloadData()
             if tree { outline.expandItem(nil, expandChildren: true) }
-            let selection = IndexSet((0..<outline.numberOfRows).filter { row in
+            let selection = IndexSet((0 ..< outline.numberOfRows).filter { row in
                 guard let node = outline.item(atRow: row) as? Node, let entry = node.entry else { return false }
                 return session.selectedIDs.contains(StatusRowID(path: entry.path, kind: entry.kind))
             })
@@ -190,32 +192,32 @@ struct WorkingCopyFileList: NSViewRepresentable {
         }
 
         /// 根节点与目录子项均直接取当前显示模型。
-        func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
+        func outlineView(_: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
             (item as? Node)?.children.count ?? roots.count
         }
 
         /// 系统按索引索取节点。
-        func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
+        func outlineView(_: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
             ((item as? Node)?.children ?? roots)[index]
         }
 
         /// 只有目录显示展开三角。
-        func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
+        func outlineView(_: NSOutlineView, isItemExpandable item: Any) -> Bool {
             (item as? Node)?.children.isEmpty == false
         }
 
         /// 平铺不留展开控件，树形仅为目录提供三角。
-        func outlineView(_ outlineView: NSOutlineView, shouldShowOutlineCellForItem item: Any) -> Bool {
+        func outlineView(_: NSOutlineView, shouldShowOutlineCellForItem item: Any) -> Bool {
             tree && (item as? Node)?.children.isEmpty == false
         }
 
         /// 冲突状态不只通过文字颜色表达。
-        func outlineView(_ outlineView: NSOutlineView, rowViewForItem item: Any) -> NSTableRowView? {
+        func outlineView(_: NSOutlineView, rowViewForItem item: Any) -> NSTableRowView? {
             (item as? Node)?.entry?.kind == .conflicted ? ConflictRowView() : nil
         }
 
         /// 状态列为三态勾选和徽标，文件列保留路径的中间截断。
-        func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
+        func outlineView(_: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
             guard let node = item as? Node else { return nil }
 
             if tableColumn?.identifier.rawValue == "status" {
@@ -256,7 +258,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
         }
 
         /// 多选显示独立空状态，单选驱动 Diff。
-        func outlineViewSelectionDidChange(_ notification: Notification) {
+        func outlineViewSelectionDidChange(_: Notification) {
             guard !updating, let outline else { return }
             let entries = outline.selectedRowIndexes.flatMap { (outline.item(atRow: $0) as? Node)?.entries ?? [] }
             session.selectedIDs = Set(entries.map { StatusRowID(path: $0.path, kind: $0.kind) })
@@ -264,7 +266,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
         }
 
         /// 表头排序改变后按相同模型恢复选择。
-        func outlineView(_ outlineView: NSOutlineView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
+        func outlineView(_: NSOutlineView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
             renderKey = ""
             update(mode: tree ? 1 : 0)
         }
@@ -305,12 +307,15 @@ struct WorkingCopyFileList: NSViewRepresentable {
         /// 空格沿用 “存在可暂存项则全部暂存” 的规则。
         func toggleSelection() {
             let entries = session.selectedEntries
-            if entries.isEmpty { NSSound.beep(); return }
+            if entries.isEmpty { NSSound.beep()
+                return
+            }
             session.stage(entries, staged: entries.contains(where: \.hasUnstagedChanges))
         }
 
         /// 勾选框的目标状态按 Git 模型计算，不采用系统对 mixed 的默认轮转。
-        @objc private func toggle(_ sender: StagingButton) {
+        @objc
+        private func toggle(_ sender: StagingButton) {
             guard let node = sender.node, let outline else { return }
             let entries = outline.isRowSelected(outline.row(forItem: node)) ? session.selectedEntries : node.entries
             session.stage(entries, staged: entries.contains(where: \.hasUnstagedChanges))
@@ -318,22 +323,28 @@ struct WorkingCopyFileList: NSViewRepresentable {
         }
 
         /// 菜单暂存所选条目。
-        @objc private func stageMenu() { session.stage(menuEntries, staged: true) }
+        @objc
+        private func stageMenu() { session.stage(menuEntries, staged: true) }
 
         /// 菜单取消暂存所选条目。
-        @objc private func unstageMenu() { session.stage(menuEntries, staged: false) }
+        @objc
+        private func unstageMenu() { session.stage(menuEntries, staged: false) }
 
         /// 丢弃必须经过会话的确认入口。
-        @objc private func discardMenu() { session.discard(menuEntries) }
+        @objc
+        private func discardMenu() { session.discard(menuEntries) }
 
         /// 采用索引中的 ours 一侧。
-        @objc private func ours() { session.resolve(menuEntries, theirs: false) }
+        @objc
+        private func ours() { session.resolve(menuEntries, theirs: false) }
 
         /// 采用索引中的 theirs 一侧。
-        @objc private func theirs() { session.resolve(menuEntries, theirs: true) }
+        @objc
+        private func theirs() { session.resolve(menuEntries, theirs: true) }
 
         /// 复制远端路径时保留主机前缀。
-        @objc private func copyAbsolute() {
+        @objc
+        private func copyAbsolute() {
             guard let repository = session.repository else { return }
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(
@@ -343,19 +354,22 @@ struct WorkingCopyFileList: NSViewRepresentable {
         }
 
         /// 相对路径适合提交信息与终端中的仓库内引用。
-        @objc private func copyRelative() {
+        @objc
+        private func copyRelative() {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(menuEntries.map(\.path).joined(separator: "\n"), forType: .string)
         }
 
         /// 只有本机条目才交给 Finder。
-        @objc private func reveal() {
+        @objc
+        private func reveal() {
             guard let root = session.repository?.localURL else { return }
             NSWorkspace.shared.activateFileViewerSelecting(menuEntries.map { root.appending(path: $0.path) })
         }
 
         /// 终端沿用当前仓库已实现的应用选择。
-        @objc private func terminal() {
+        @objc
+        private func terminal() {
             NSApp.sendAction(#selector(RepositoryWindowController.openInTerminal), to: nil, from: outline)
         }
 

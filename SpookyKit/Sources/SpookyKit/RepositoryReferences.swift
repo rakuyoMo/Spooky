@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - ReferenceDivergence
+
 /// 相对指定上游的双向提交数量。
 public struct ReferenceDivergence: Sendable, Equatable {
     /// 本地独有的提交数。
@@ -11,7 +13,8 @@ public struct ReferenceDivergence: Sendable, Equatable {
     /// 只接受 rev-list 的两个非负整数，不解析 branch 的人读文字。
     static func parse(_ data: Data) throws -> Self {
         let fields = String(decoding: data, as: UTF8.self).split(whereSeparator: \.isWhitespace)
-        guard fields.count == 2, let ahead = Int(fields[0]), let behind = Int(fields[1]), ahead >= 0,
+        guard
+            fields.count == 2, let ahead = Int(fields[0]), let behind = Int(fields[1]), ahead >= 0,
             behind >= 0
         else {
             throw RepositoryReadError.malformedOutput("rev-list")
@@ -19,6 +22,8 @@ public struct ReferenceDivergence: Sendable, Equatable {
         return Self(ahead: ahead, behind: behind)
     }
 }
+
+// MARK: - RepositoryReference
 
 /// 同一次 for-each-ref 快照中的引用。
 public struct RepositoryReference: Sendable, Equatable, Identifiable {
@@ -67,9 +72,10 @@ public struct RepositoryReference: Sendable, Equatable, Identifiable {
 
         return try stride(from: 0, to: fields.count - 1, by: 9)
             .map { start in
-                var values = fields[start..<(start + 9)].map { String(decoding: $0, as: UTF8.self) }
+                var values = fields[start ..< (start + 9)].map { String(decoding: $0, as: UTF8.self) }
                 if start > 0, values[0].hasPrefix("\n") { values[0].removeFirst() }
-                guard values[0].hasPrefix("refs/"), GitObjectID.isValid(values[1]),
+                guard
+                    values[0].hasPrefix("refs/"), GitObjectID.isValid(values[1]),
                     values[3].isEmpty || GitObjectID.isValid(values[3])
                 else {
                     throw RepositoryReadError.malformedOutput("for-each-ref")
@@ -88,6 +94,8 @@ public struct RepositoryReference: Sendable, Equatable, Identifiable {
     }
 }
 
+// MARK: - RepositoryRemote
+
 /// 配置远端的名称及其分支归属，不额外访问服务器的仓库列表。
 public struct RepositoryRemote: Sendable, Equatable, Identifiable {
     /// Git 配置中的远端名。
@@ -96,6 +104,8 @@ public struct RepositoryRemote: Sendable, Equatable, Identifiable {
     /// 默认 fetch 布局的分组身份。
     public var id: String { name }
 }
+
+// MARK: - ReferenceSnapshot
 
 /// 一致读取的引用与远端名单。
 public struct ReferenceSnapshot: Sendable, Equatable {
@@ -117,6 +127,8 @@ public struct ReferenceSnapshot: Sendable, Equatable {
     }
 }
 
+// MARK: - RepositoryReferences
+
 /// 引用读写的业务边界，名称校验和写入都经过统一 Git 执行器。
 public struct RepositoryReferences: Sendable {
     /// 本机与服务器使用相同参数协议。
@@ -125,6 +137,26 @@ public struct RepositoryReferences: Sendable {
     /// 创建引用服务，不执行隐式操作。
     public init(runner: GitRunner) {
         self.runner = runner
+    }
+
+    /// 输入时清理必然非法的字符；尾部约束留给 Git 校验，保留打字过程。
+    public static func normalizedName(_ value: String) -> String {
+        var result = ""
+
+        for scalar in value.precomposedStringWithCanonicalMapping.unicodeScalars {
+            if CharacterSet.whitespacesAndNewlines.contains(scalar) {
+                result.append("-")
+            } else if scalar.value >= 32, scalar.value != 127, !"~^:?*[\\".unicodeScalars.contains(scalar) {
+                result.unicodeScalars.append(scalar)
+            }
+        }
+
+        result = result.replacingOccurrences(of: "@{", with: "")
+        while result.contains("..") { result = result.replacingOccurrences(of: "..", with: ".") }
+        while result.contains("//") { result = result.replacingOccurrences(of: "//", with: "/") }
+        while let first = result.first, "-/.".contains(first) { result.removeFirst() }
+        result = result.replacingOccurrences(of: "/.", with: "/")
+        return result
     }
 
     /// 一次读取全部引用，另一次读取远端名字，空仓库也是合法快照。
@@ -145,12 +177,13 @@ public struct RepositoryReferences: Sendable {
         // 配置键的第一和最后一个点包住远端名，名字本身可含点。
         for record in configuration.split(separator: 0) {
             let key = String(decoding: record.prefix { $0 != 10 }, as: UTF8.self)
-            guard key.hasPrefix("remote."), let last = key.lastIndex(of: "."),
+            guard
+                key.hasPrefix("remote."), let last = key.lastIndex(of: "."),
                 last > key.index(key.startIndex, offsetBy: 6)
             else {
                 throw RepositoryReadError.malformedOutput("remote config")
             }
-            names.insert(String(key[key.index(key.startIndex, offsetBy: 7)..<last]))
+            names.insert(String(key[key.index(key.startIndex, offsetBy: 7) ..< last]))
         }
         return ReferenceSnapshot(
             references: references,
@@ -241,23 +274,4 @@ public struct RepositoryReferences: Sendable {
         return value
     }
 
-    /// 输入时清理必然非法的字符；尾部约束留给 Git 校验，保留打字过程。
-    public static func normalizedName(_ value: String) -> String {
-        var result = ""
-
-        for scalar in value.precomposedStringWithCanonicalMapping.unicodeScalars {
-            if CharacterSet.whitespacesAndNewlines.contains(scalar) {
-                result.append("-")
-            } else if scalar.value >= 32, scalar.value != 127, !"~^:?*[\\".unicodeScalars.contains(scalar) {
-                result.unicodeScalars.append(scalar)
-            }
-        }
-
-        result = result.replacingOccurrences(of: "@{", with: "")
-        while result.contains("..") { result = result.replacingOccurrences(of: "..", with: ".") }
-        while result.contains("//") { result = result.replacingOccurrences(of: "//", with: "/") }
-        while let first = result.first, "-/.".contains(first) { result.removeFirst() }
-        result = result.replacingOccurrences(of: "/.", with: "/")
-        return result
-    }
 }

@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - GitCommandResult
+
 /// 一次 Git 调用的输出与结束状态，不包含进程环境或标准输入。
 public struct GitCommandResult: Sendable, Equatable {
     /// 调用方传入的子命令及参数。
@@ -27,6 +29,8 @@ public struct GitCommandResult: Sendable, Equatable {
     }
 }
 
+// MARK: - GitTerminationStatus
+
 /// 与进程库解耦的 Git 结束状态。
 public enum GitTerminationStatus: Sendable, Equatable {
     /// 进程自行退出，并提供退出码。
@@ -36,6 +40,8 @@ public enum GitTerminationStatus: Sendable, Equatable {
     case signaled(Int32)
 }
 
+// MARK: - GitOutputEvent
+
 /// 流式输出的数据块；块边界不代表文本行或 UTF-8 字符边界。
 public enum GitOutputEvent: Sendable {
     /// 来自标准输出的数据。
@@ -44,6 +50,8 @@ public enum GitOutputEvent: Sendable {
     /// 来自标准错误的数据。
     case standardError(Data)
 }
+
+// MARK: - GitError
 
 /// Git 调用失败；保留原始输出，并将启动、取消与命令失败分开。
 public struct GitError: Error, Sendable {

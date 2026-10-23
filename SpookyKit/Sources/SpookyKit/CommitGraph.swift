@@ -1,3 +1,5 @@
+// MARK: - CommitGraphRow
+
 /// 一行提交图的几何模型，与 Git 颜色和界面框架无关。
 public struct CommitGraphRow: Sendable, Equatable {
     /// 提交圆点所在列。
@@ -11,6 +13,8 @@ public struct CommitGraphRow: Sendable, Equatable {
         1 + segments.reduce(column) { max($0, $1.start, $1.end) }
     }
 }
+
+// MARK: - CommitGraphSegment
 
 /// 相邻行依靠列索引连接，首尾线段在当前提交圆点处起止。
 public struct CommitGraphSegment: Sendable, Equatable {
@@ -30,6 +34,8 @@ public struct CommitGraphSegment: Sendable, Equatable {
     public let endsAtCommit: Bool
 }
 
+// MARK: - CommitGraph
+
 /// 按拓扑序增量分配父链，分页时保留活动线即可连续绘制。
 public struct CommitGraph: Sendable {
     /// 等待父提交到来的线段。
@@ -48,7 +54,7 @@ public struct CommitGraph: Sendable {
     private var nextID = 1
 
     /// 新的历史快照从空图开始。
-    public init() {}
+    public init() { }
 
     /// 第一父延续主线，其余父分叉；重复等待同一提交的线在该行汇合。
     public mutating func append(_ commit: HistoryCommit) -> CommitGraphRow {

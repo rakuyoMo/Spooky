@@ -53,18 +53,18 @@ struct GitOutputFixtureTests {
 
         let patch = try diff.patch(path: "lines.txt", file: 0, hunk: 1, selectedLines: [3, 5], reverse: false)
         let expected = """
-        diff --git "a/lines.txt" "b/lines.txt"
-        --- "a/lines.txt"
-        +++ "b/lines.txt"
-        @@ -7,5 +7,5 @@
-         seven
-         eight
-         nine
-        -ten
-         ahead
-        +TEN
+            diff --git "a/lines.txt" "b/lines.txt"
+            --- "a/lines.txt"
+            +++ "b/lines.txt"
+            @@ -7,5 +7,5 @@
+             seven
+             eight
+             nine
+            -ten
+             ahead
+            +TEN
 
-        """
+            """
         #expect(String(decoding: patch, as: UTF8.self) == expected)
     }
 

@@ -1,6 +1,8 @@
 import AppKit
 import SwiftUI
 
+// MARK: - ActivityWindowController
+
 /// Activity 保留所有窗口的同步记录与原始日志。
 @MainActor
 final class ActivityWindowController: NSWindowController {
@@ -29,19 +31,24 @@ final class ActivityWindowController: NSWindowController {
     }
 
     /// 活动窗口只由代码创建。
-    required init?(coder: NSCoder) { return nil }
+    required init?(coder _: NSCoder) { nil }
 }
+
+// MARK: - ActivityView
 
 /// 列表包含进行中与已完成操作，日志可选择复制。
 private struct ActivityView: View {
     /// 跨仓库活动数据。
-    @Bindable private var activities = RepositoryActivities.shared
+    @Bindable
+    private var activities = RepositoryActivities.shared
 
     /// 当前查看的活动。
-    @State private var selected: UUID?
+    @State
+    private var selected: UUID?
 
     /// 按仓库或日志筛选。
-    @State private var query = ""
+    @State
+    private var query = ""
 
     /// 左列表与右日志保持独立滚动。
     var body: some View {

@@ -94,13 +94,13 @@ struct RemoteTransportTests {
             "token": token, "id": id, "operation": operation, "kind": "askpass", "prompt": "Password:",
         ]) + Data([10])
         let script = """
-        use IO::Socket::UNIX;
-        my $socket = IO::Socket::UNIX->new(Type => SOCK_STREAM, Peer => $ARGV[0]) or die;
-        local $/;
-        my $request = <STDIN>;
-        print {$socket} $request;
-        print scalar <$socket>;
-        """
+            use IO::Socket::UNIX;
+            my $socket = IO::Socket::UNIX->new(Type => SOCK_STREAM, Peer => $ARGV[0]) or die;
+            local $/;
+            my $request = <STDIN>;
+            print {$socket} $request;
+            print scalar <$socket>;
+            """
         let response = try await CommandExecutor.execute(
             executable: "/usr/bin/perl",
             processArguments: ["-e", script, relay.path],

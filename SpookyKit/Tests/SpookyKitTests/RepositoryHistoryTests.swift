@@ -18,7 +18,7 @@ struct RepositoryHistoryTests {
         _ = try await fixture.runner.run(["config", "--local", "user.name", "李 café 🐈"])
         let subject = String(repeating: "长标题", count: 100)
 
-        for index in 0..<3 {
+        for index in 0 ..< 3 {
             _ = try await fixture.runner.run(
                 ["commit", "--allow-empty", "-F", "-"],
                 input: Data("\(subject) \(index)\n\n正文\u{1f}\u{1d}\n".utf8)

@@ -65,7 +65,7 @@ struct LocalizationTests {
             .filter { $0.pathExtension == "swift" }
         let pattern = try NSRegularExpression(
             pattern:
-                #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog|failure|recovery)\.[A-Za-z.]+)""#
+            #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog|failure|recovery)\.[A-Za-z.]+)""#
         )
         let english = try strings("en")
 

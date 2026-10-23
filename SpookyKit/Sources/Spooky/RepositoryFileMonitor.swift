@@ -5,10 +5,10 @@ import Foundation
 @MainActor
 final class RepositoryFileMonitor {
     /// FSEvents 持有的流，由本对象负责停止和释放。
-    private var stream: FSEventStreamRef?
+    private var stream: FSEventStreamRef? = nil
 
     /// 合并短时间内的事件，避免保存文件时连续执行 Git。
-    private var debounce: Task<Void, Never>?
+    private var debounce: Task<Void, Never>? = nil
 
     /// 事件到达后的会话刷新入口。
     private let changed: @MainActor () -> Void
@@ -33,6 +33,9 @@ final class RepositoryFileMonitor {
             },
             &context,
             [path] as CFArray,
+
+            // FSEvents 的系统名称写作 Id，格式化的缩写规则不能改动这一行
+            // swiftformat:disable:next acronyms
             FSEventStreamEventId(kFSEventStreamEventIdSinceNow),
             0.2,
             FSEventStreamCreateFlags(kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagUseCFTypes)

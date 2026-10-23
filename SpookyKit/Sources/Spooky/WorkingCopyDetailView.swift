@@ -2,10 +2,13 @@ import AppKit
 import SpookyKit
 import SwiftUI
 
+// MARK: - WorkingCopyDetailView
+
 /// 单文件详情按暂存侧显示 Diff，冲突与多选使用独立内容状态。
 struct WorkingCopyDetailView: View {
     /// 当前仓库的选择和补丁快照。
-    @Bindable var session: RepositorySession
+    @Bindable
+    var session: RepositorySession
 
     /// 文件头、比较侧和可访问的内容状态。
     var body: some View {
@@ -96,10 +99,29 @@ struct WorkingCopyDetailView: View {
     }
 }
 
+// MARK: - DiffSidePicker
+
 /// AppKit 分段控件可以分别禁用没有改动的一侧。
 private struct DiffSidePicker: NSViewRepresentable {
+    /// 分段选择只更新模型，由详情发起异步读取。
+    @MainActor
+    final class Coordinator: NSObject {
+        /// 最新绑定。
+        var parent: DiffSidePicker
+
+        /// 保存初始绑定。
+        init(_ parent: DiffSidePicker) { self.parent = parent }
+
+        /// 原生选择转换为比较方向。
+        @objc
+        func changed(_ sender: NSSegmentedControl) {
+            parent.side = sender.selectedSegment == 0 ? .staged : .unstaged
+        }
+    }
+
     /// 当前暂存侧。
-    @Binding var side: DiffSide
+    @Binding
+    var side: DiffSide
 
     /// 暂存侧是否可用。
     let staged: Bool
@@ -129,21 +151,9 @@ private struct DiffSidePicker: NSViewRepresentable {
         control.setAccessibilityLabel(AppLocalization.text("working.diffSide"))
     }
 
-    /// 分段选择只更新模型，由详情发起异步读取。
-    @MainActor
-    final class Coordinator: NSObject {
-        /// 最新绑定。
-        var parent: DiffSidePicker
-
-        /// 保存初始绑定。
-        init(_ parent: DiffSidePicker) { self.parent = parent }
-
-        /// 原生选择转换为比较方向。
-        @objc func changed(_ sender: NSSegmentedControl) {
-            parent.side = sender.selectedSegment == 0 ? .staged : .unstaged
-        }
-    }
 }
+
+// MARK: - DiffContentView
 
 /// 单列表 Diff 以吸顶块头和可换行正文展示，底栏显示增删统计。
 private struct DiffContentView: View {
@@ -157,7 +167,8 @@ private struct DiffContentView: View {
     let diff: RepositoryDiff
 
     /// 内置主题随系统外观切换。
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorScheme)
+    private var colorScheme
 
     /// 文本区与摘要共享同一组块数据。
     var body: some View {
@@ -215,6 +226,8 @@ private struct DiffContentView: View {
     }
 }
 
+// MARK: - DiffHunkView
+
 /// 一块文本独立保存行号选区，单击、拖动与 ⇧ 范围选择共用同一规则。
 struct DiffHunkView: View {
     /// 带原始字节的块。
@@ -236,19 +249,24 @@ struct DiffHunkView: View {
     let apply: (Set<Int>, Bool) -> Void
 
     /// 仅包含增删行序号的选区。
-    @State private var selected: Set<Int> = []
+    @State
+    private var selected: Set<Int> = []
 
     /// ⇧ 范围选择的锚点。
-    @State private var anchor: Int?
+    @State
+    private var anchor: Int?
 
     /// 拖动开始时固定为选中或取消，后续经过各行不反复切换。
-    @State private var dragSelecting: Bool?
+    @State
+    private var dragSelecting: Bool?
 
     /// 行号区域在块坐标系中的位置。
-    @State private var rowFrames: [Int: CGRect] = [:]
+    @State
+    private var rowFrames: [Int: CGRect] = [:]
 
     /// 每块独立的手势坐标系。
-    @State private var coordinateID = UUID()
+    @State
+    private var coordinateID = UUID()
 
     /// 常驻块头按钮随选择数量更新文案。
     var body: some View {
@@ -321,19 +339,25 @@ struct DiffHunkView: View {
             Color.clear.preference(key: DiffRowFrames.self, value: [line.id: proxy.frame(in: .named(coordinateID))])
         })
         .onTapGesture { select(line.id, range: NSEvent.modifierFlags.contains(.shift)) }
-        .gesture(DragGesture(minimumDistance: 1, coordinateSpace: .named(coordinateID))
-            .onChanged { value in
-                guard enabled, line.isChange else { return }
-                if dragSelecting == nil { dragSelecting = !selected.contains(line.id); anchor = line.id }
-                guard let end = rowFrames.first(where: {
-                    $0.value.minY <= value.location.y && $0.value.maxY >= value.location.y
-                })?.key else { return }
-                for item in hunk.lines where item.isChange && (min(line.id, end)...max(line.id, end)).contains(item.id) {
-                    if dragSelecting == true { selected.insert(item.id) }
-                    else { selected.remove(item.id) }
+        .gesture(
+            DragGesture(minimumDistance: 1, coordinateSpace: .named(coordinateID))
+                .onChanged { value in
+                    guard enabled, line.isChange else { return }
+                    if dragSelecting == nil { dragSelecting = !selected.contains(line.id)
+                        anchor = line.id
+                    }
+                    guard
+                        let end = rowFrames.first(where: {
+                            $0.value.minY <= value.location.y && $0.value.maxY >= value.location.y
+                        })?.key
+                    else { return }
+                    for item in hunk.lines where item.isChange && (min(line.id, end) ... max(line.id, end)).contains(item.id) {
+                        if dragSelecting == true { selected.insert(item.id) }
+                        else { selected.remove(item.id) }
+                    }
                 }
-            }
-            .onEnded { _ in dragSelecting = nil })
+                .onEnded { _ in dragSelecting = nil }
+        )
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(AppLocalization.text("working.selectLine", line.oldNumber ?? line.newNumber ?? 0))
         .accessibilityAddTraits(line.isChange && !readOnly ? .isButton : [])
@@ -341,14 +365,16 @@ struct DiffHunkView: View {
         .accessibilityAction { select(line.id, range: false) }
         .focusable(line.isChange && !readOnly)
         .allowsHitTesting(!readOnly)
-        .onKeyPress(.space) { select(line.id, range: false); return .handled }
+        .onKeyPress(.space) { select(line.id, range: false)
+            return .handled
+        }
     }
 
     /// 单击切换，⇧ 单击选中锚点与当前行之间的全部改动行。
     private func select(_ id: Int, range: Bool) {
         guard enabled, hunk.lines.contains(where: { $0.id == id && $0.isChange }) else { return }
         if range, let anchor {
-            for line in hunk.lines where line.isChange && (min(anchor, id)...max(anchor, id)).contains(line.id) {
+            for line in hunk.lines where line.isChange && (min(anchor, id) ... max(anchor, id)).contains(line.id) {
                 selected.insert(line.id)
             }
         } else if selected.contains(id) {
@@ -364,6 +390,8 @@ struct DiffHunkView: View {
         AppLocalization.text("working." + action + (selected.isEmpty ? "Chunk" : (selected.count == 1 ? "Line" : "Lines")))
     }
 }
+
+// MARK: - DiffRowFrames
 
 /// 逐行几何信息仅用于行号拖选。
 private struct DiffRowFrames: PreferenceKey {

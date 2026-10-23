@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - RepositoryReadError
+
 /// 结构化 Git 输出损坏时拒绝显示不完整或错位的数据。
 public enum RepositoryReadError: Error, Sendable, Equatable {
     /// 发生格式错误的查询名称。
@@ -8,6 +10,8 @@ public enum RepositoryReadError: Error, Sendable, Equatable {
     /// 查询参数不能表示单个提交或有界分页。
     case invalidQuery
 }
+
+// MARK: - HistoryCommit
 
 /// 历史中的不可变提交元信息，日期以 64 位 Unix 秒读取。
 public struct HistoryCommit: Sendable, Equatable, Identifiable {
@@ -56,10 +60,11 @@ public struct HistoryCommit: Sendable, Equatable, Identifiable {
 
         return try stride(from: 0, to: fields.count, by: 10)
             .map { start in
-                let values = fields[start..<(start + 10)].map { String(decoding: $0, as: UTF8.self) }
+                let values = fields[start ..< (start + 10)].map { String(decoding: $0, as: UTF8.self) }
                 let parents = values[2].split(separator: " ").map(String.init)
 
-                guard GitObjectID.isValid(values[0]), GitObjectID.isValid(values[1]),
+                guard
+                    GitObjectID.isValid(values[0]), GitObjectID.isValid(values[1]),
                     parents.allSatisfy(GitObjectID.isValid),
                     let authorTime = Int64(values[5]), let commitTime = Int64(values[8])
                 else { throw RepositoryReadError.malformedOutput("log") }
@@ -80,6 +85,8 @@ public struct HistoryCommit: Sendable, Equatable, Identifiable {
     }
 }
 
+// MARK: - HistoryPage
+
 /// 一页历史与继续加载标记，额外读取一条即可判断是否存在下一页。
 public struct HistoryPage: Sendable {
     /// 当前页的提交。
@@ -89,11 +96,10 @@ public struct HistoryPage: Sendable {
     public let hasMore: Bool
 }
 
+// MARK: - CommitFileChange
+
 /// 提交变更集中的单个文件，路径来自 NUL 字段而非补丁标题。
 public struct CommitFileChange: Sendable, Equatable, Identifiable {
-    /// 新路径作为变更集内的稳定标识。
-    public var id: String { path }
-
     /// 修改后的路径，删除时为原路径。
     public let path: String
 
@@ -108,6 +114,9 @@ public struct CommitFileChange: Sendable, Equatable, Identifiable {
 
     /// 文本删除行数，二进制为 nil。
     public var deletions: Int?
+
+    /// 新路径作为变更集内的稳定标识。
+    public var id: String { path }
 
     /// raw 与 numstat 通过原始路径配对，二进制和重命名不会让后续统计错位。
     static func parse(_ data: Data) throws -> [Self] {
@@ -126,7 +135,8 @@ public struct CommitFileChange: Sendable, Equatable, Identifiable {
 
             if field.hasPrefix(":") {
                 let header = field.dropFirst().split(separator: " ")
-                guard header.count == 5,
+                guard
+                    header.count == 5,
                     header[0].count == 6, header[1].count == 6,
                     header[0].allSatisfy({ "01234567".contains($0) }),
                     header[1].allSatisfy({ "01234567".contains($0) }),
@@ -175,7 +185,8 @@ public struct CommitFileChange: Sendable, Equatable, Identifiable {
                 let binary = stats[0] == "-" && stats[1] == "-"
                 let additions = Int(stats[0])
                 let deletions = Int(stats[1])
-                guard let index = indices[path], !counted.contains(path),
+                guard
+                    let index = indices[path], !counted.contains(path),
                     files[index].originalPath == original,
                     binary || (additions != nil && deletions != nil && additions! >= 0 && deletions! >= 0)
                 else { throw RepositoryReadError.malformedOutput("numstat") }
@@ -190,6 +201,8 @@ public struct CommitFileChange: Sendable, Equatable, Identifiable {
     }
 }
 
+// MARK: - CommitDiff
+
 /// 历史补丁只读，沿用工作区的大 Diff 阈值与解析器。
 public struct CommitDiff: Sendable {
     /// 单次补丁字节数。
@@ -199,8 +212,16 @@ public struct CommitDiff: Sendable {
     public let diff: RepositoryDiff?
 }
 
+// MARK: - RepositoryHistory
+
 /// 历史读取在仓库所在机器完成；分页的根固定为对象哈希，避免新提交导致翻页重复。
 public struct RepositoryHistory: Sendable {
+    /// 屏蔽用户配置中的签名、编码与根提交显示选项，保持协议稳定。
+    private static let logOptions = [
+        "-c", "log.showSignature=false", "-c", "i18n.logOutputEncoding=UTF-8",
+        "-c", "log.date=default", "-c", "log.showRoot=true",
+    ]
+
     /// 共享的本机或服务器执行器。
     public let runner: GitRunner
 
@@ -211,7 +232,7 @@ public struct RepositoryHistory: Sendable {
 
     /// 读取固定根集合的一页；空集合表示仓库没有可显示的提交。
     public func page(roots: [String], offset: Int = 0, limit: Int = 100) async throws -> HistoryPage {
-        guard offset >= 0, (1...1000).contains(limit), roots.allSatisfy(GitObjectID.isValid) else {
+        guard offset >= 0, (1 ... 1000).contains(limit), roots.allSatisfy(GitObjectID.isValid) else {
             throw RepositoryReadError.invalidQuery
         }
         guard !roots.isEmpty else { return HistoryPage(commits: [], hasMore: false) }
@@ -266,17 +287,14 @@ public struct RepositoryHistory: Sendable {
         )
     }
 
-    /// 屏蔽用户配置中的签名、编码与根提交显示选项，保持协议稳定。
-    private static let logOptions = [
-        "-c", "log.showSignature=false", "-c", "i18n.logOutputEncoding=UTF-8",
-        "-c", "log.date=default", "-c", "log.showRoot=true",
-    ]
 }
+
+// MARK: - GitObjectID
 
 /// 对象参数只接受十六进制，长度由仓库算法决定。
 enum GitObjectID {
     /// 拒绝空值、选项和修订表达式，允许 Git 支持的动态哈希长度。
     static func isValid(_ value: String) -> Bool {
-        value.count >= 4 && value.utf8.allSatisfy { (48...57).contains($0) || (97...102).contains($0) }
+        value.count >= 4 && value.utf8.allSatisfy { (48 ... 57).contains($0) || (97 ... 102).contains($0) }
     }
 }

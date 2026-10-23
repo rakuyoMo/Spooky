@@ -5,6 +5,9 @@ import SwiftUI
 /// 管理窗口身份、打开请求和应用级菜单；Git 参数只在核心库中构造。
 @MainActor
 final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenuDelegate {
+    /// 退出时等待任务结束的上限，取消确认最长需要远端的宽限期与通道关闭时间。
+    private static let terminationGrace = Duration.seconds(10)
+
     /// 跨窗口共享的最近仓库记录。
     let recent: RecentRepositories
 
@@ -19,9 +22,6 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
     /// 正在退出时先回收自己的 SSH 主连接。
     private var isTerminating = false
-
-    /// 退出时等待任务结束的上限，取消确认最长需要远端的宽限期与通道关闭时间。
-    private static let terminationGrace: Duration = .seconds(10)
 
     /// 每个打开动作独立取消，避免旧目录的检查覆盖新选择。
     private var openingTasks: [UUID: Task<Void, Never>] = [:]
@@ -42,7 +42,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     }
 
     /// 启动总是进入仓库管理，不以 shell 当前目录作为仓库。
-    func applicationDidFinishLaunching(_ notification: Notification) {
+    func applicationDidFinishLaunching(_: Notification) {
         UserDefaults.standard.register(defaults: [
             "workingCopyViewMode": 0,
             "diffWarningKilobytes": WorkingCopyOperations.defaultWarningKilobytes,
@@ -50,7 +50,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             "historyPageSize": 100,
             "historyAutoExpand": 0,
             "cleanRefNames": true,
-            "checkoutCreatedBranch": true
+            "checkoutCreatedBranch": true,
         ])
         configureMenu()
         newWindow()
@@ -58,12 +58,12 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     }
 
     /// 关闭仓库或最后一个窗口都不退出应用。
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+    func applicationShouldTerminateAfterLastWindowClosed(_: NSApplication) -> Bool {
         false
     }
 
     /// 点击 Dock 图标时恢复一个可用的管理窗口。
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+    func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag {
             newWindow()
         }
@@ -72,19 +72,22 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     }
 
     /// 新窗口始终独立，普通打开仍优先复用发起窗口。
-    @objc func newWindow() {
+    @objc
+    func newWindow() {
         let controller = makeWindow()
         controller.showWindow(nil)
         controller.window?.makeKeyAndOrderFront(nil)
     }
 
     /// 应用级 ⌘O 在没有主窗口时也能选择仓库。
-    @objc func openRepositoryPanel() {
+    @objc
+    func openRepositoryPanel() {
         chooseRepository(in: activeWindow ?? makeWindow())
     }
 
     /// 仓库管理始终可进入，没有可用窗口时创建一个管理窗口。
-    @objc func showRepositoryManager() {
+    @objc
+    func showRepositoryManager() {
         let controller = activeWindow ?? makeWindow()
         controller.showRepositories()
         controller.showWindow(nil)
@@ -158,14 +161,14 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
                 }
                 try Task.checkCancellation()
 
-                self.displayRepository(repository, from: source, inNewWindow: inNewWindow)
+                displayRepository(repository, from: source, inNewWindow: inNewWindow)
             } catch {
                 guard !Task.isCancelled else {
                     return
                 }
 
-                self.recent.markUnavailable(location)
-                let destination = source ?? self.makeWindow()
+                recent.markUnavailable(location)
+                let destination = source ?? makeWindow()
                 destination.showWindow(nil)
                 destination.showFailure(AppFailure(error: error, opening: true, location: location))
             }
@@ -178,18 +181,19 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         from source: RepositoryWindowController?,
         inNewWindow: Bool
     ) {
-        let destination: RepositoryWindowController
-
-        if !inNewWindow,
-           let existing = windows.first(where: {
-               !$0.showsManager && $0.session.repository == repository
-           }) {
-            destination = existing
-        } else if !inNewWindow, let source, windows.contains(where: { $0 === source }) {
-            destination = source
-        } else {
-            destination = makeWindow()
-        }
+        let destination: RepositoryWindowController =
+            if
+                !inNewWindow,
+                let existing = windows.first(where: {
+                    !$0.showsManager && $0.session.repository == repository
+                })
+            {
+                existing
+            } else if !inNewWindow, let source, windows.contains(where: { $0 === source }) {
+                source
+            } else {
+                makeWindow()
+            }
 
         recent.remember(repository)
         let previous = destination.session.repository
@@ -200,21 +204,24 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     }
 
     /// 添加服务器仓库是管理页与 File 菜单共用的 sheet。
-    @objc func addRemoteRepository() {
+    @objc
+    func addRemoteRepository() {
         let controller = activeWindow ?? makeWindow()
         controller.showWindow(nil)
         controller.addRemoteRepository()
     }
 
     /// ⌘, 始终打开同一个设置窗口。
-    @objc func showSettings() {
+    @objc
+    func showSettings() {
         if settingsWindow == nil { settingsWindow = SettingsWindowController() }
         settingsWindow?.showWindow(nil)
         settingsWindow?.window?.makeKeyAndOrderFront(nil)
     }
 
     /// Activity 保持单例，关闭仓库后仍能查看完成日志。
-    @objc func showActivity() {
+    @objc
+    func showActivity() {
         if activityWindow == nil { activityWindow = ActivityWindowController() }
         activityWindow?.showWindow(nil)
         activityWindow?.window?.makeKeyAndOrderFront(nil)
@@ -260,14 +267,14 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     }
 
     /// 应用重新激活立即刷新显示仓库的主窗口。
-    func applicationDidBecomeActive(_ notification: Notification) {
+    func applicationDidBecomeActive(_: Notification) {
         for controller in windows {
             controller.session.setActive(controller.window?.isKeyWindow == true && !controller.showsManager)
         }
     }
 
     /// 应用退到后台统一降低远端轮询频率。
-    func applicationDidResignActive(_ notification: Notification) {
+    func applicationDidResignActive(_: Notification) {
         for controller in windows { controller.session.setActive(false) }
     }
 
@@ -286,7 +293,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
                 do {
                     let repository = try await GitRunner(location: .local(path: url.path)).openLocalRepository()
                     try Task.checkCancellation()
-                    self.recent.remember(repository.location)
+                    recent.remember(repository.location)
                 } catch {
                     guard !Task.isCancelled else {
                         return
@@ -326,9 +333,10 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
     /// 最后一个持有仓库的窗口关闭后，回收专属主连接和会话临时目录。
     func releaseConnection(_ location: RepositoryLocation) {
-        guard location.host != nil,
-              !windows.contains(where: { $0.session.repository == location }),
-              let remote = GitRunner(location: location).remote
+        guard
+            location.host != nil,
+            !windows.contains(where: { $0.session.repository == location }),
+            let remote = GitRunner(location: location).remote
         else { return }
 
         Task { await remote.close() }
@@ -350,7 +358,8 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     }
 
     /// 最近菜单直接走窗口复用与版本检查流程。
-    @objc private func openRecent(_ sender: NSMenuItem) {
+    @objc
+    private func openRecent(_ sender: NSMenuItem) {
         guard let path = sender.representedObject as? RepositoryLocation else {
             return
         }
@@ -455,10 +464,12 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         for threshold in [0, 5, 10, 15, 20, 25, 50, Int.max] {
             let title =
                 threshold == 0
-                ? AppLocalization.text("history.autoExpand.never")
-                : (threshold == Int.max
-                    ? AppLocalization.text("history.autoExpand.always")
-                    : AppLocalization.text("history.autoExpand.items", threshold))
+                    ? AppLocalization.text("history.autoExpand.never")
+                    : (
+                        threshold == Int.max
+                            ? AppLocalization.text("history.autoExpand.always")
+                            : AppLocalization.text("history.autoExpand.items", threshold)
+                    )
             let item = NSMenuItem(
                 title: title,
                 action: #selector(RepositoryWindowController.setAutoExpand(_:)),

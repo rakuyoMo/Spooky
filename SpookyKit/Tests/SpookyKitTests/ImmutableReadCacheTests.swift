@@ -10,7 +10,7 @@ struct ImmutableReadCacheTests {
     func eviction() async throws {
         let cache = ImmutableReadCache(byteCapacity: 100, countCapacity: 3)
         let location = RepositoryLocation.local(path: "/temporary/cache")
-        let keys = (0..<6).map { ImmutableReadCache.Key(location: location, arguments: ["show", String($0)], input: nil) }
+        let keys = (0 ..< 6).map { ImmutableReadCache.Key(location: location, arguments: ["show", String($0)], input: nil) }
 
         await cache.store(Data(count: 25), for: keys[0])
         await cache.store(Data(count: 25), for: keys[1])
@@ -42,14 +42,14 @@ struct ImmutableReadCacheTests {
         let log = temporary.directory.appending(path: "invocations")
         let executable = temporary.directory.appending(path: "counting-git")
         let script = """
-        #!/bin/sh
-        printf 'run\\n' >> \(GitRunner.shellQuoted(log.path))
-        for argument in "$@"; do
-            if test "$argument" = fail; then printf 'failed\\n' >&2; exit 1; fi
-        done
-        cat
-        printf 'output\\n'
-        """
+            #!/bin/sh
+            printf 'run\\n' >> \(GitRunner.shellQuoted(log.path))
+            for argument in "$@"; do
+                if test "$argument" = fail; then printf 'failed\\n' >&2; exit 1; fi
+            done
+            cat
+            printf 'output\\n'
+            """
         try Data(script.utf8).write(to: executable)
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
         let runner = temporary.runner(at: temporary.directory.path, executable: executable.path)

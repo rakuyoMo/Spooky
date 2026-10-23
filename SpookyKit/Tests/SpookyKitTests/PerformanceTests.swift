@@ -17,10 +17,83 @@ struct PerformanceTests {
     static let commits = 50_000
 
     /// 已修改的跟踪文件数。
-    static let modified = 2_000
+    static let modified = 2000
 
     /// 未跟踪文件数。
-    static let untracked = 1_000
+    static let untracked = 1000
+
+    /// fast-import 输入：第一个提交写入全部文件，其余提交依次修改同一个记录文件。
+    private static func stream() -> Data {
+        var text = "commit refs/heads/main\nmark :1\ncommitter Spooky Test <spooky@example.invalid> 1790000000 +0000\n"
+        text += "data 4\nroot\n"
+
+        for index in 0 ..< files {
+            let content = "file \(index)\n"
+            text += "M 100644 inline dir\(index % 100)/file\(index).txt\ndata \(content.utf8.count)\n\(content)\n"
+        }
+
+        var stream = Data(text.utf8)
+
+        for index in 2 ... commits {
+            let message = "Commit \(index)\n"
+            let content = "\(index)\n"
+            stream.append(Data("""
+                commit refs/heads/main
+                mark :\(index)
+                committer Spooky Test <spooky@example.invalid> \(1_790_000_000 + index) +0000
+                data \(message.utf8.count)
+                \(message)from :\(index - 1)
+                M 100644 inline history.txt
+                data \(content.utf8.count)
+                \(content)
+
+                """.utf8))
+        }
+
+        return stream
+    }
+
+    /// 在本机工作区制造已修改与未跟踪文件。
+    private static func change(root: URL) throws {
+        for index in 0 ..< modified {
+            let url = root.appending(path: "dir\(index % 100)/file\(index).txt")
+            try Data("file \(index)\nchanged\n".utf8).write(to: url)
+        }
+
+        for index in 0 ..< untracked {
+            try Data("new\n".utf8).write(to: root.appending(path: "untracked\(index).txt"))
+        }
+    }
+
+    /// 按界面的最大分页逐页读到最后一页，返回全部提交与耗时。
+    private static func loadHistory(
+        _ history: RepositoryHistory,
+        head: String
+    ) async throws -> (commits: [HistoryCommit], duration: Duration) {
+        let start = ContinuousClock.now
+        var commits: [HistoryCommit] = []
+        var hasMore = true
+
+        while hasMore {
+            let page = try await history.page(roots: [head], offset: commits.count, limit: 1000)
+            commits += page.commits
+            hasMore = page.hasMore
+        }
+
+        return (commits, start.duration(to: .now))
+    }
+
+    /// 进程的物理内存占用，与活动监视器的 “内存” 一致。
+    private static func footprint() -> Int {
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+            }
+        }
+        return result == KERN_SUCCESS ? Int(info.phys_footprint) : 0
+    }
 
     /// 本机大仓库的首屏状态与历史分页。
     @Test("本机大仓库首屏状态与历史分页", .timeLimit(.minutes(10)))
@@ -71,12 +144,12 @@ struct PerformanceTests {
             )
             _ = try await RemoteFixture.raw(["git", "-C", fixture.repository, "reset", "--hard", "--quiet", "main"])
             let script = """
-            cd "$1" || exit 1
-            i=0
-            while test "$i" -lt \(Self.modified); do printf 'changed\\n' >> "dir$((i % 100))/file$i.txt"; i=$((i + 1)); done
-            i=0
-            while test "$i" -lt \(Self.untracked); do printf 'new\\n' > "untracked$i.txt"; i=$((i + 1)); done
-            """
+                cd "$1" || exit 1
+                i=0
+                while test "$i" -lt \(Self.modified); do printf 'changed\\n' >> "dir$((i % 100))/file$i.txt"; i=$((i + 1)); done
+                i=0
+                while test "$i" -lt \(Self.untracked); do printf 'new\\n' > "untracked$i.txt"; i=$((i + 1)); done
+                """
             _ = try await RemoteFixture.raw(["/bin/sh", "-c", script, "fixture", fixture.repository])
 
             // 首屏包括主连接、体检、包装器部署与第一次状态读取。
@@ -99,76 +172,4 @@ struct PerformanceTests {
         }
     }
 
-    /// fast-import 输入：第一个提交写入全部文件，其余提交依次修改同一个记录文件。
-    private static func stream() -> Data {
-        var text = "commit refs/heads/main\nmark :1\ncommitter Spooky Test <spooky@example.invalid> 1790000000 +0000\n"
-        text += "data 4\nroot\n"
-
-        for index in 0..<files {
-            let content = "file \(index)\n"
-            text += "M 100644 inline dir\(index % 100)/file\(index).txt\ndata \(content.utf8.count)\n\(content)\n"
-        }
-
-        var stream = Data(text.utf8)
-
-        for index in 2...commits {
-            let message = "Commit \(index)\n"
-            let content = "\(index)\n"
-            stream.append(Data("""
-            commit refs/heads/main
-            mark :\(index)
-            committer Spooky Test <spooky@example.invalid> \(1_790_000_000 + index) +0000
-            data \(message.utf8.count)
-            \(message)from :\(index - 1)
-            M 100644 inline history.txt
-            data \(content.utf8.count)
-            \(content)
-
-            """.utf8))
-        }
-
-        return stream
-    }
-
-    /// 在本机工作区制造已修改与未跟踪文件。
-    private static func change(root: URL) throws {
-        for index in 0..<modified {
-            let url = root.appending(path: "dir\(index % 100)/file\(index).txt")
-            try Data("file \(index)\nchanged\n".utf8).write(to: url)
-        }
-
-        for index in 0..<untracked {
-            try Data("new\n".utf8).write(to: root.appending(path: "untracked\(index).txt"))
-        }
-    }
-
-    /// 按界面的最大分页逐页读到最后一页，返回全部提交与耗时。
-    private static func loadHistory(
-        _ history: RepositoryHistory,
-        head: String
-    ) async throws -> (commits: [HistoryCommit], duration: Duration) {
-        let start = ContinuousClock.now
-        var commits: [HistoryCommit] = []
-        var hasMore = true
-
-        while hasMore {
-            let page = try await history.page(roots: [head], offset: commits.count, limit: 1000)
-            commits += page.commits
-            hasMore = page.hasMore
-        }
-
-        return (commits, start.duration(to: .now))
-    }
-
-    /// 进程的物理内存占用，与活动监视器的 “内存” 一致。
-    private static func footprint() -> Int {
-        var info = task_vm_info_data_t()
-        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
-        let result = withUnsafeMutablePointer(to: &info) {
-            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
-                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
-            }
-        }
-        return result == KERN_SUCCESS ? Int(info.phys_footprint) : 0
-    }
 }

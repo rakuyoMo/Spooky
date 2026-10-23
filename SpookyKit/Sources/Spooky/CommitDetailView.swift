@@ -1,6 +1,8 @@
 import SpookyKit
 import SwiftUI
 
+// MARK: - CommitPageDiffView
+
 /// 整页提交的右侧只展示当前选择文件的补丁。
 struct CommitPageDiffView: View {
     /// 与左侧列表共享选择。
@@ -19,10 +21,13 @@ struct CommitPageDiffView: View {
     }
 }
 
+// MARK: - CommitDetailView
+
 /// 历史右侧的一体滚动详情：元信息、完整信息、变更文件与懒加载 Diff。
 struct CommitDetailView: View {
     /// 当前提交和文件读取状态。
-    @Bindable var history: RepositoryHistoryState
+    @Bindable
+    var history: RepositoryHistoryState
 
     /// 头部和所有文件共享同一个滚动区域。
     var body: some View {
@@ -53,7 +58,8 @@ struct CommitDetailView: View {
                             Button(
                                 AppLocalization.text(
                                     history.expandedPaths.isEmpty
-                                        ? "history.expandAll" : "history.collapseAll"
+                                        ? "history.expandAll"
+                                        : "history.collapseAll"
                                 )
                             ) {
                                 history.expandAll(history.expandedPaths.isEmpty)
@@ -118,13 +124,16 @@ struct CommitDetailView: View {
     }
 }
 
+// MARK: - CommitFileListView
+
 /// 完整提交页的左侧文件列表，右侧复用同一只读补丁。
 struct CommitFileListView: View {
     /// 连接横幅所属的窗口会话。
     let session: RepositorySession
 
     /// 与历史列表共享选择。
-    @Bindable var history: RepositoryHistoryState
+    @Bindable
+    var history: RepositoryHistoryState
 
     /// 返回历史只退出详情子视图。
     let back: () -> Void
@@ -163,6 +172,8 @@ struct CommitFileListView: View {
     }
 }
 
+// MARK: - CommitFileLabel
+
 /// 文件状态与重命名路径在两种提交详情中保持一致。
 private struct CommitFileLabel: View {
     /// 当前文件变更。
@@ -186,13 +197,16 @@ private struct CommitFileLabel: View {
     }
 }
 
+// MARK: - CommitMetadataView
+
 /// 完整元信息展开后包含树与父哈希，不触发额外 Git 查询。
 private struct CommitMetadataView: View {
     /// 已从列表读取的提交记录。
     let commit: HistoryCommit
 
     /// 摘要和全部信息之间切换。
-    @State private var expanded = false
+    @State
+    private var expanded = false
 
     /// 标签与值两列对齐，值可以复制。
     var body: some View {
@@ -234,6 +248,8 @@ private struct CommitMetadataView: View {
     }
 }
 
+// MARK: - CommitFileDiffView
+
 /// 单文件历史 Diff 复用工作区的块渲染、字体和主题，不提供写操作。
 struct CommitFileDiffView: View {
     /// 当前提交的加载状态。
@@ -243,7 +259,8 @@ struct CommitFileDiffView: View {
     let path: String
 
     /// 内置主题随系统外观切换。
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorScheme)
+    private var colorScheme
 
     /// 补丁、二进制、超限和失败各自有明确状态。
     var body: some View {

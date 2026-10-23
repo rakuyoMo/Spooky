@@ -13,12 +13,12 @@ struct ResourceReleaseTests {
         defer { temporary.remove() }
         let lock = temporary.directory.appending(path: "index.lock")
         let executable = try script(in: temporary, name: "locking-git", body: """
-        lock=\(GitRunner.shellQuoted(lock.path))
-        trap 'rm -f "$lock"; exit 143' TERM
-        touch "$lock"
-        printf '%s\\n' "$$"
-        while :; do sleep 0.1; done
-        """)
+            lock=\(GitRunner.shellQuoted(lock.path))
+            trap 'rm -f "$lock"; exit 143' TERM
+            touch "$lock"
+            printf '%s\\n' "$$"
+            while :; do sleep 0.1; done
+            """)
         let runner = temporary.runner(at: "/", executable: executable.path)
         let pid = try await cancelAfterStart(runner)
 
@@ -32,10 +32,10 @@ struct ResourceReleaseTests {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
         let executable = try script(in: temporary, name: "stubborn-git", body: """
-        trap '' TERM
-        printf '%s\\n' "$$"
-        exec /bin/sleep 30
-        """)
+            trap '' TERM
+            printf '%s\\n' "$$"
+            exec /bin/sleep 30
+            """)
         let runner = temporary.runner(at: "/", executable: executable.path)
         let start = ContinuousClock.now
         let pid = try await cancelAfterStart(runner)
@@ -51,13 +51,13 @@ struct ResourceReleaseTests {
         defer { temporary.remove() }
         try await temporary.initialize()
         let waiting = try script(in: temporary, name: "waiting-git", body: """
-        printf '%s\\n' "$$"
-        exec /bin/sleep 30
-        """)
+            printf '%s\\n' "$$"
+            exec /bin/sleep 30
+            """)
         let cancelling = temporary.runner(at: "/", executable: waiting.path)
         let before = try openDescriptors()
 
-        for _ in 0..<20 {
+        for _ in 0 ..< 20 {
             _ = try await temporary.runner.execute(["status", "--porcelain=v2", "-z"])
             await #expect(throws: GitError.self) {
                 try await temporary.runner.execute(["rev-parse", "--verify", "missing-revision"])
@@ -75,14 +75,14 @@ struct ResourceReleaseTests {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
         let executable = try script(in: temporary, name: "session-git", body: """
-        printf '%s\\n' "$SPOOKY_SESSION"
-        for argument in "$@"; do
-            case "$argument" in
-                failing) exit 1 ;;
-                waiting) exec /bin/sleep 30 ;;
-            esac
-        done
-        """)
+            printf '%s\\n' "$SPOOKY_SESSION"
+            for argument in "$@"; do
+                case "$argument" in
+                    failing) exit 1 ;;
+                    waiting) exec /bin/sleep 30 ;;
+                esac
+            done
+            """)
         var runner = temporary.runner(at: temporary.directory.path, executable: executable.path)
         runner.credentialHandler = { _ in nil }
 

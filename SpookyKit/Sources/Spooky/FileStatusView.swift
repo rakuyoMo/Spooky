@@ -6,6 +6,21 @@ struct FileStatusView: View {
     /// 原始状态条目。
     let entry: StatusEntry
 
+    /// 辅助技术与悬停提示使用本地化全称。
+    private var description: String {
+        switch entry.kind {
+        case .untracked: AppLocalization.text("status.untracked")
+        case .ignored: AppLocalization.text("status.ignored")
+        case .conflicted: AppLocalization.text("status.conflicted")
+        case .tracked:
+            AppLocalization.text(
+                "status.description",
+                changeName(entry.staged),
+                changeName(entry.unstaged)
+            )
+        }
+    }
+
     /// 最多两枚状态徽标与可访问的完整说明。
     var body: some View {
         HStack(spacing: 3) {
@@ -40,47 +55,30 @@ struct FileStatusView: View {
 
     /// 状态颜色取自命名色，不使用图片资源。
     private func color(_ code: String) -> Color {
-        let name: String
-
-        switch code {
-        case "A", "C": name = "green_file_status_background_color"
-        case "M", "R", "T": name = "blue_file_status_background_color"
-        case "D", "U": name = "red_file_status_background_color"
-        default: name = "gray_file_status_background_color"
-        }
+        let name =
+            switch code {
+            case "A", "C": "green_file_status_background_color"
+            case "M", "R", "T": "blue_file_status_background_color"
+            case "D", "U": "red_file_status_background_color"
+            default: "gray_file_status_background_color"
+            }
 
         return AppPalette.color(name)
     }
 
-    /// 辅助技术与悬停提示使用本地化全称。
-    private var description: String {
-        switch entry.kind {
-        case .untracked: return AppLocalization.text("status.untracked")
-        case .ignored: return AppLocalization.text("status.ignored")
-        case .conflicted: return AppLocalization.text("status.conflicted")
-        case .tracked:
-            return AppLocalization.text(
-                "status.description",
-                changeName(entry.staged),
-                changeName(entry.unstaged)
-            )
-        }
-    }
-
     /// 将 Git 状态映射为资源键。
     private func changeName(_ change: FileChange?) -> String {
-        let key: String
-
-        switch change {
-        case .modified: key = "status.modified"
-        case .typeChanged: key = "status.typeChanged"
-        case .added: key = "status.added"
-        case .deleted: key = "status.deleted"
-        case .renamed: key = "status.renamed"
-        case .copied: key = "status.copied"
-        case .unmerged: key = "status.conflicted"
-        case nil: key = "status.unchanged"
-        }
+        let key =
+            switch change {
+            case .modified: "status.modified"
+            case .typeChanged: "status.typeChanged"
+            case .added: "status.added"
+            case .deleted: "status.deleted"
+            case .renamed: "status.renamed"
+            case .copied: "status.copied"
+            case .unmerged: "status.conflicted"
+            case nil: "status.unchanged"
+            }
 
         return AppLocalization.text(key)
     }

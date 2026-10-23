@@ -2,6 +2,8 @@ import Darwin
 import Foundation
 import Security
 
+// MARK: - RemoteCallbackRequest
+
 /// Git 交互请求；令牌留在传输层，不传给 UI 或日志。
 public struct RemoteCallbackRequest: Sendable {
     /// 回调类别。
@@ -38,8 +40,55 @@ public struct RemoteCallbackRequest: Sendable {
 /// UI 返回 nil 表示取消；值只经当前会话的 socket 交回请求进程。
 public typealias RemoteCallbackHandler = @Sendable (RemoteCallbackRequest) async -> String?
 
+// MARK: - CallbackRelay
+
 /// 单会话 Unix socket 服务；锁保护描述符、活动操作和一次性请求集合。
 final class CallbackRelay: @unchecked Sendable {
+    /// 每次接受的连接有独立身份，防止超时任务误关被复用的描述符。
+    private struct Client {
+        /// 本机连接身份。
+        let id: UUID
+
+        /// 等待用户输入的任务。
+        var task: Task<Void, Never>? = nil
+
+        /// 回调所属操作，结束操作时可取消仍在等待的输入。
+        var operation: String? = nil
+
+        /// 一条连接只能进入一次应答流程。
+        var finishing = false
+    }
+
+    /// 传输报文中的令牌只用于验证，不交给上层。
+    private struct Message: Decodable {
+        /// 随机会话令牌。
+        let token: String
+
+        /// 随机请求标识。
+        let id: String
+
+        /// 发起回调的命令标识。
+        let operation: String
+
+        /// 请求种类。
+        let kind: String
+
+        /// 原始提示文字。
+        let prompt: String?
+
+        /// 可编辑文本。
+        let content: String?
+    }
+
+    /// 一次性应答，拒绝时不携带值。
+    private struct Response: Encodable {
+        /// 用户是否确认输入。
+        let accepted: Bool
+
+        /// 只在当前 socket 中传输的输入值。
+        let value: String?
+    }
+
     /// 本机 socket 的绝对路径。
     let path: String
 
@@ -60,21 +109,6 @@ final class CallbackRelay: @unchecked Sendable {
 
     /// 待处理连接及其回调任务。
     private var clients: [Int32: Client] = [:]
-
-    /// 每次接受的连接有独立身份，防止超时任务误关被复用的描述符。
-    private struct Client {
-        /// 本机连接身份。
-        let id: UUID
-
-        /// 等待用户输入的任务。
-        var task: Task<Void, Never>?
-
-        /// 回调所属操作，结束操作时可取消仍在等待的输入。
-        var operation: String?
-
-        /// 一条连接只能进入一次应答流程。
-        var finishing = false
-    }
 
     /// 回调交付的凭据只保留到操作结束，用来清除错误与日志中的回显。
     private var secrets: [String: [Data]] = [:]
@@ -212,9 +246,9 @@ final class CallbackRelay: @unchecked Sendable {
             queue.async { [weak self] in self?.receive(client, id: id) }
             queue.asyncAfter(deadline: .now() + 120) { [weak self] in
                 guard let self else { return }
-                let task = self.lock.withLock { self.clients[client]?.id == id ? self.clients[client]?.task : nil }
+                let task = lock.withLock { self.clients[client]?.id == id ? self.clients[client]?.task : nil }
                 task?.cancel()
-                self.finish(client, id: id, value: nil)
+                finish(client, id: id, value: nil)
             }
         }
     }
@@ -226,23 +260,28 @@ final class CallbackRelay: @unchecked Sendable {
 
         while data.count <= 8 * 1024 * 1024 {
             let count = Darwin.read(client, &buffer, buffer.count)
-            guard count > 0 else { finish(client, id: id, value: nil); return }
+            guard count > 0 else { finish(client, id: id, value: nil)
+                return
+            }
             data.append(contentsOf: buffer.prefix(count))
 
             if data.last == 10 { break }
         }
 
-        guard data.count <= 8 * 1024 * 1024,
-              let message = try? JSONDecoder().decode(Message.self, from: data),
-              validToken(message.token)
+        guard
+            data.count <= 8 * 1024 * 1024,
+            let message = try? JSONDecoder().decode(Message.self, from: data),
+            validToken(message.token)
         else {
             finish(client, id: id, value: nil)
             return
         }
 
         let accepted = lock.withLock {
-            guard descriptor >= 0, clients[client]?.id == id,
-                  !requests.contains(message.id), requests.count < 100_000 else {
+            guard
+                descriptor >= 0, clients[client]?.id == id,
+                !requests.contains(message.id), requests.count < 100_000
+            else {
                 return false
             }
 
@@ -254,7 +293,9 @@ final class CallbackRelay: @unchecked Sendable {
             return true
         }
 
-        guard accepted else { finish(client, id: id, value: nil); return }
+        guard accepted else { finish(client, id: id, value: nil)
+            return
+        }
 
         if message.kind == "heartbeat" {
             finish(client, id: id, value: "")
@@ -277,12 +318,16 @@ final class CallbackRelay: @unchecked Sendable {
         let task = Task { [self] in
             let response = await handler(request)
             let active = lock.withLock {
-                guard operations.contains(message.operation), descriptor >= 0,
-                      clients[client]?.id == id else { return false }
+                guard
+                    operations.contains(message.operation), descriptor >= 0,
+                    clients[client]?.id == id
+                else { return false }
 
-                if request.kind != .editor,
-                   !request.prompt.lowercased().hasPrefix("username"),
-                   let response, !response.isEmpty {
+                if
+                    request.kind != .editor,
+                    !request.prompt.lowercased().hasPrefix("username"),
+                    let response, !response.isEmpty
+                {
                     secrets[message.operation, default: []].append(Data(response.utf8))
                 }
 
@@ -334,33 +379,4 @@ final class CallbackRelay: @unchecked Sendable {
         Darwin.close(client)
     }
 
-    /// 传输报文中的令牌只用于验证，不交给上层。
-    private struct Message: Decodable {
-        /// 随机会话令牌。
-        let token: String
-
-        /// 随机请求标识。
-        let id: String
-
-        /// 发起回调的命令标识。
-        let operation: String
-
-        /// 请求种类。
-        let kind: String
-
-        /// 原始提示文字。
-        let prompt: String?
-
-        /// 可编辑文本。
-        let content: String?
-    }
-
-    /// 一次性应答，拒绝时不携带值。
-    private struct Response: Encodable {
-        /// 用户是否确认输入。
-        let accepted: Bool
-
-        /// 只在当前 socket 中传输的输入值。
-        let value: String?
-    }
 }

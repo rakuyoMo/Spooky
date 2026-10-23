@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - RemoteConnectionError
+
 /// 连接体检的阶段与原始输出；界面据此给出具体的修复方向。
 public struct RemoteConnectionError: Error, Sendable {
     /// 可恢复的连接错误与远端环境问题。
@@ -77,20 +79,26 @@ public struct RemoteConnectionError: Error, Sendable {
             return Self(.changedHostKey, result: result)
         }
 
-        if message.contains("host key verification failed")
-            || message.contains("no matching host key") {
+        if
+            message.contains("host key verification failed")
+            || message.contains("no matching host key")
+        {
             return Self(.unknownHostKey, result: result)
         }
 
-        if message.contains("permission denied (")
+        if
+            message.contains("permission denied (")
             || message.contains("too many authentication failures")
-            || message.contains("no supported authentication methods") {
+            || message.contains("no supported authentication methods")
+        {
             return Self(.authentication, result: result)
         }
 
         return Self(.unavailable, result: result)
     }
 }
+
+// MARK: - RemoteRepository
 
 /// 已通过体检的服务器工作区，身份由别名和 Git 返回的根路径组成。
 public struct RemoteRepository: Sendable, Hashable {

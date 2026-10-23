@@ -5,11 +5,6 @@ import Testing
 
 /// porcelain v2 输出的解析
 struct WorkingCopyStatusTests {
-    /// 把若干条记录按 `-z` 的格式拼成 git 的输出：每条以 NUL 结尾
-    private func output(_ records: String...) -> Data {
-        Data(records.map { $0 + "\0" }.joined().utf8)
-    }
-
     @Test("分支头信息：分支名、提交、上游、领先与落后")
     func branchHeaders() throws {
         let status = try WorkingCopyStatus(porcelainV2: output(
@@ -136,4 +131,10 @@ struct WorkingCopyStatusTests {
             try WorkingCopyStatus(porcelainV2: Data(record.utf8))
         }
     }
+
+    /// 把若干条记录按 `-z` 的格式拼成 git 的输出：每条以 NUL 结尾
+    private func output(_ records: String...) -> Data {
+        Data(records.map { $0 + "\0" }.joined().utf8)
+    }
+
 }

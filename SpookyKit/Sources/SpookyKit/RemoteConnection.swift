@@ -4,6 +4,8 @@ import Subprocess
 import Synchronization
 import System
 
+// MARK: - RemoteConnectionState
+
 /// 仓库的 SSH 连接状态，断线不清空上次成功的工作区快照。
 public enum RemoteConnectionState: String, Sendable, CaseIterable {
     /// 正在完成首次体检与部署。
@@ -18,6 +20,8 @@ public enum RemoteConnectionState: String, Sendable, CaseIterable {
     /// 当前不可用，保留诊断供重试。
     case unavailable
 }
+
+// MARK: - RemoteRecoverySnapshot
 
 /// 写操作中断后重新读取的仓库事实，不推测原命令是否成功。
 public struct RemoteRecoverySnapshot: Sendable {
@@ -37,16 +41,18 @@ public struct RemoteRecoverySnapshot: Sendable {
     public let checkedAt: Date
 }
 
+// MARK: - RemoteConnection
+
 /// 每个服务器工作区的专属主连接、体检、回调与远端进程生命周期。
 public actor RemoteConnection {
     /// 前台轮询间隔。
-    public static let foregroundPollInterval: Duration = .seconds(2)
+    public static let foregroundPollInterval = Duration.seconds(2)
 
     /// 后台窗口轮询间隔。
-    public static let backgroundPollInterval: Duration = .seconds(10)
+    public static let backgroundPollInterval = Duration.seconds(10)
 
     /// 重连失败后的重试间隔。
-    public static let reconnectInterval: Duration = .seconds(5)
+    public static let reconnectInterval = Duration.seconds(5)
 
     /// 多个执行器复用同一工作区会话。
     private static let connections = Mutex<[RepositoryLocation: RemoteConnection]>([:])
@@ -61,37 +67,37 @@ public actor RemoteConnection {
     public private(set) var state = RemoteConnectionState.unavailable
 
     /// 上次连接错误。
-    public private(set) var failure: RemoteConnectionError?
+    public private(set) var failure: RemoteConnectionError? = nil
 
     /// 最近一次体检确认的仓库身份。
-    public private(set) var repository: RemoteRepository?
+    public private(set) var repository: RemoteRepository? = nil
 
     /// 写操作断线后取得的核对结果。
-    public private(set) var recovery: RemoteRecoverySnapshot?
+    public private(set) var recovery: RemoteRecoverySnapshot? = nil
 
     /// 同一主机的每条连接使用独立控制目录。
-    private var localDirectory: URL?
+    private var localDirectory: URL? = nil
 
     /// B 上的 0700 会话目录。
-    private var remoteDirectory: String?
+    private var remoteDirectory: String? = nil
 
     /// 已原子部署的版本化包装器。
-    private var wrapper: String?
+    private var wrapper: String? = nil
 
     /// 从子目录打开时复用已登记的工作区根会话。
-    private var canonical: RemoteConnection?
+    private var canonical: RemoteConnection? = nil
 
     /// 本机回调服务，凭据只通过此对象在内存中流转。
-    private var relay: CallbackRelay?
+    private var relay: CallbackRelay? = nil
 
     /// 主连接检查任务。
-    private var monitor: Task<Void, Never>?
+    private var monitor: Task<Void, Never>? = nil
 
     /// 合并同时发起的连接请求。
-    private var connecting: Task<RemoteRepository, Error>?
+    private var connecting: Task<RemoteRepository, Error>? = nil
 
     /// 关闭流程合并执行，重新打开必须等待旧会话清理完毕。
-    private var closing: Task<Void, Never>?
+    private var closing: Task<Void, Never>? = nil
 
     /// 状态的多订阅者事件流。
     private var observers: [UUID: AsyncStream<RemoteConnectionState>.Continuation] = [:]
@@ -109,12 +115,12 @@ public actor RemoteConnection {
     private let configuration: SSHConfiguration
 
     /// 应用提供的凭据及编辑器交互入口。
-    private var callbackHandler: RemoteCallbackHandler?
+    private var callbackHandler: RemoteCallbackHandler? = nil
 
     /// 创建会话不产生网络访问，首次 open 或 execute 才建立连接。
     init(host: String, path: String, configuration: SSHConfiguration = SSHConfiguration()) {
         self.host = host
-        self.requestedPath = path
+        requestedPath = path
         self.configuration = configuration
     }
 
@@ -122,6 +128,17 @@ public actor RemoteConnection {
     deinit {
         monitor?.cancel()
         relay?.stop()
+    }
+
+    /// App 退出时只关闭自己创建的连接。
+    public static func closeAll() async {
+        let existing = connections.withLock { connections in
+            let values = Array(connections.values)
+            connections.removeAll()
+            return values
+        }
+
+        for connection in existing { await connection.close() }
     }
 
     /// 为现有 GitRunner API 提供按仓库共享的远端执行服务。
@@ -134,17 +151,6 @@ public actor RemoteConnection {
             $0[location] = connection
             return connection
         }
-    }
-
-    /// App 退出时只关闭自己创建的连接。
-    public static func closeAll() async {
-        let existing = connections.withLock { connections in
-            let values = Array(connections.values)
-            connections.removeAll()
-            return values
-        }
-
-        for connection in existing { await connection.close() }
     }
 
     /// 在连接建立前安装 UI 回调，测试可以提供受控应答。
@@ -215,7 +221,9 @@ public actor RemoteConnection {
             return
         }
 
-        if let closing { await closing.value; return }
+        if let closing { await closing.value
+            return
+        }
         let attempt = connecting
         connecting = nil
         attempt?.cancel()
@@ -268,7 +276,9 @@ public actor RemoteConnection {
 
     /// 只检查主连接，不允许 SSH 因复用失败悄悄新建连接。
     public func check() async throws {
-        if let canonical { try await canonical.check(); return }
+        if let canonical { try await canonical.check()
+            return
+        }
         guard localDirectory != nil else { throw RemoteConnectionError(.unavailable) }
         let result = try await ssh(["-O", "check"], arguments: ["connection-check"])
 
@@ -329,7 +339,9 @@ public actor RemoteConnection {
 
     /// 用于断线验收：仅关闭 Spooky 自己的 SSH 主连接。
     func interruptMaster() async throws {
-        if let canonical { try await canonical.interruptMaster(); return }
+        if let canonical { try await canonical.interruptMaster()
+            return
+        }
         _ = try await ssh(["-O", "exit"], arguments: ["connection-close"])
     }
 
@@ -450,11 +462,12 @@ public actor RemoteConnection {
 
     /// 检查输入结构；单引号属于合法数据，但选项、用户和端口不在别名中拆解。
     private func validateLocation() throws {
-        guard !host.isEmpty,
-              !host.hasPrefix("-"),
-              !host.contains(where: { $0.isWhitespace || $0.isNewline }),
-              !host.contains("@"), !host.contains(":"), !host.contains("/"),
-              !host.utf8.contains(0)
+        guard
+            !host.isEmpty,
+            !host.hasPrefix("-"),
+            !host.contains(where: { $0.isWhitespace || $0.isNewline }),
+            !host.contains("@"), !host.contains(":"), !host.contains("/"),
+            !host.utf8.contains(0)
         else { throw RemoteConnectionError(.invalidHost) }
 
         guard requestedPath.hasPrefix("/"), !requestedPath.utf8.contains(0) else {
@@ -522,8 +535,9 @@ public actor RemoteConnection {
             ["git", "-C", requestedPath, "rev-parse", "--show-toplevel"],
             kind: .notWorkingTree
         )
-        guard let rootPath = String(data: root.standardOutput, encoding: .utf8),
-              rootPath.hasPrefix("/"), rootPath.hasSuffix("\n")
+        guard
+            let rootPath = String(data: root.standardOutput, encoding: .utf8),
+            rootPath.hasPrefix("/"), rootPath.hasSuffix("\n")
         else { throw RemoteConnectionError(.notWorkingTree, result: root) }
 
         let repository = RemoteRepository(host: host, path: String(rootPath.dropLast()))
@@ -570,27 +584,28 @@ public actor RemoteConnection {
         let version = SHA256.hash(data: source).map { String(format: "%02x", $0) }.joined()
         let filename = "spooky-remote-v1-" + String(version.prefix(16))
         let install = """
-        set -eu
-        umask 077
-        /usr/bin/perl -MIO::Socket::UNIX -MJSON::PP -MPOSIX -e 'exit 0'
-        test ! -L "$HOME/.spooky"
-        test ! -L "$HOME/.spooky/bin"
-        mkdir -p "$HOME/.spooky/bin"
-        chmod 700 "$HOME/.spooky" "$HOME/.spooky/bin"
-        spooky_install_file=$(mktemp "$HOME/.spooky/bin/.install-XXXXXXXX")
-        trap 'rm -f "$spooky_install_file" "$spooky_install_file-askpass" "$spooky_install_file-git-askpass"' EXIT HUP INT TERM
-        cat > "$spooky_install_file"
-        chmod 700 "$spooky_install_file"
-        ln "$spooky_install_file" "$spooky_install_file-askpass"
-        ln "$spooky_install_file" "$spooky_install_file-git-askpass"
-        mv -f "$spooky_install_file" "$HOME/.spooky/bin/\(filename)"
-        mv -f "$spooky_install_file-askpass" "$HOME/.spooky/bin/\(filename)-askpass"
-        mv -f "$spooky_install_file-git-askpass" "$HOME/.spooky/bin/\(filename)-git-askpass"
-        printf '%s\\n' "$HOME/.spooky/bin/\(filename)"
-        """
+            set -eu
+            umask 077
+            /usr/bin/perl -MIO::Socket::UNIX -MJSON::PP -MPOSIX -e 'exit 0'
+            test ! -L "$HOME/.spooky"
+            test ! -L "$HOME/.spooky/bin"
+            mkdir -p "$HOME/.spooky/bin"
+            chmod 700 "$HOME/.spooky" "$HOME/.spooky/bin"
+            spooky_install_file=$(mktemp "$HOME/.spooky/bin/.install-XXXXXXXX")
+            trap 'rm -f "$spooky_install_file" "$spooky_install_file-askpass" "$spooky_install_file-git-askpass"' EXIT HUP INT TERM
+            cat > "$spooky_install_file"
+            chmod 700 "$spooky_install_file"
+            ln "$spooky_install_file" "$spooky_install_file-askpass"
+            ln "$spooky_install_file" "$spooky_install_file-git-askpass"
+            mv -f "$spooky_install_file" "$HOME/.spooky/bin/\(filename)"
+            mv -f "$spooky_install_file-askpass" "$HOME/.spooky/bin/\(filename)-askpass"
+            mv -f "$spooky_install_file-git-askpass" "$HOME/.spooky/bin/\(filename)-git-askpass"
+            printf '%s\\n' "$HOME/.spooky/bin/\(filename)"
+            """
         let installed = try await probe(["/bin/sh", "-c", install], input: source, kind: .deployment)
-        guard let path = String(data: installed.standardOutput, encoding: .utf8),
-              path.hasPrefix("/"), path.hasSuffix("\n")
+        guard
+            let path = String(data: installed.standardOutput, encoding: .utf8),
+            path.hasPrefix("/"), path.hasSuffix("\n")
         else { throw RemoteConnectionError(.deployment, result: installed) }
 
         wrapper = String(path.dropLast())
@@ -603,9 +618,10 @@ public actor RemoteConnection {
         self.relay = relay
         let input = try JSONSerialization.data(withJSONObject: ["token": relay.token]) + Data([10])
         let created = try await probe([wrapper!, "create-session"], input: input, kind: .deployment)
-        guard let path = String(data: created.standardOutput, encoding: .utf8),
-              path.hasPrefix("/tmp/spooky-"), path.hasSuffix("\n"),
-              !path.dropLast().contains("\n")
+        guard
+            let path = String(data: created.standardOutput, encoding: .utf8),
+            path.hasPrefix("/tmp/spooky-"), path.hasSuffix("\n"),
+            !path.dropLast().contains("\n")
         else { throw RemoteConnectionError(.deployment, result: created) }
 
         remoteDirectory = String(path.dropLast())
@@ -663,23 +679,24 @@ public actor RemoteConnection {
             }
 
             return result
-        } catch let caught {
-            let error: any Error
+        } catch {
+            let redacted: any Error =
+                if let remote = error as? RemoteConnectionError {
+                    RemoteConnectionError(
+                        remote.kind,
+                        result: remote.result.map { redactor.result($0) },
+                        diagnostic: remote.diagnostic
+                    )
+                } else {
+                    error
+                }
 
-            if let remote = caught as? RemoteConnectionError {
-                error = RemoteConnectionError(
-                    remote.kind,
-                    result: remote.result.map { redactor.result($0) },
-                    diagnostic: remote.diagnostic
-                )
-            } else {
-                error = caught
-            }
-
-            let gitFailure = error as? GitError
-            if Task.isCancelled || gitFailure?.isCancelled == true
+            let gitFailure = redacted as? GitError
+            if
+                Task.isCancelled || gitFailure?.isCancelled == true
                 || gitFailure?.category == .outputLimitExceeded
-                || gitFailure?.category == .processIOFailed {
+                || gitFailure?.category == .processIOFailed
+            {
                 // 命令通道已由进程执行器关闭，取消确认使用不继承取消状态的控制任务。
                 let confirmed = await Task.detached {
                     await self.cancelRemote(operation, directory: remoteDirectory, wrapper: wrapper)
@@ -700,14 +717,16 @@ public actor RemoteConnection {
                 throw CancellationError()
             }
 
-            if let connection = error as? RemoteConnectionError,
-               [.unavailable, .protocolFailure].contains(connection.kind) {
+            if
+                let connection = redacted as? RemoteConnectionError,
+                [.unavailable, .protocolFailure].contains(connection.kind)
+            {
                 requiresReconciliation = writing || requiresReconciliation
                 failure = connection
                 updateState(.unavailable)
             }
 
-            throw error
+            throw redacted
         }
     }
 
@@ -829,12 +848,11 @@ public actor RemoteConnection {
                 output: .discarded,
                 error: .discarded
             )
-            let status: GitTerminationStatus
-
-            switch result.terminationStatus {
-            case .exited(let code): status = .exited(code)
-            case .signaled(let signal): status = .signaled(signal)
-            }
+            let status: GitTerminationStatus =
+                switch result.terminationStatus {
+                case .exited(let code): .exited(code)
+                case .signaled(let signal): .signaled(signal)
+                }
 
             return GitCommandResult(
                 arguments: arguments,
@@ -851,7 +869,7 @@ public actor RemoteConnection {
             arguments: arguments,
             environment: .inherit.updating(["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]),
             input: input,
-            acceptedExitCodes: Set(0...255),
+            acceptedExitCodes: Set(0 ... 255),
             onOutput: onOutput
         )
     }
@@ -883,9 +901,9 @@ public actor RemoteConnection {
                     try await Task.sleep(for: Self.foregroundPollInterval)
                     guard let self else { return }
 
-                    if await self.closeIfIdle() { return }
+                    if await closeIfIdle() { return }
 
-                    try await self.check()
+                    try await check()
                 } catch { return }
             }
         }

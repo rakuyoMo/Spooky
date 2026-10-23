@@ -14,7 +14,7 @@ let package = Package(
     name: "SpookyKit",
     defaultLocalization: "en",
     platforms: [
-        .macOS(.v26)
+        .macOS(.v26),
     ],
     products: [
         .library(
@@ -24,7 +24,7 @@ let package = Package(
         .executable(
             name: "Spooky",
             targets: ["Spooky"]
-        )
+        ),
     ],
     dependencies: [
         .package(
@@ -36,13 +36,13 @@ let package = Package(
         .package(
             url: "https://github.com/RakuyoKit/swift.git",
             exact: "1.4.0"
-        )
+        ),
     ],
     targets: [
         .target(
             name: "SpookyKit",
             dependencies: [
-                .product(name: "Subprocess", package: "swift-subprocess")
+                .product(name: "Subprocess", package: "swift-subprocess"),
             ],
             resources: [.copy("Resources/spooky-remote.pl")]
         ),
@@ -57,7 +57,7 @@ let package = Package(
                     "-Xlinker", "__TEXT",
                     "-Xlinker", "__info_plist",
                     "-Xlinker", appInfoPlist,
-                ])
+                ]),
             ]
         ),
         .testTarget(
@@ -68,6 +68,6 @@ let package = Package(
         .testTarget(
             name: "SpookyTests",
             dependencies: ["Spooky", "SpookyKit"]
-        )
+        ),
     ]
 )

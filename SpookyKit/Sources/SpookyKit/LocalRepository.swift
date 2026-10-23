@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - LocalRepository
+
 /// 已验证的本机工作区，使用 Git 返回的根路径作为窗口复用标识。
 public struct LocalRepository: Sendable, Hashable {
     /// 工作区根目录的绝对路径。
@@ -12,8 +14,13 @@ public struct LocalRepository: Sendable, Hashable {
     public var location: RepositoryLocation { .local(path: path) }
 }
 
+// MARK: - GitVersion
+
 /// Git 版本的数值部分，兼容 Apple Git 的附加版本说明。
 public struct GitVersion: Sendable, Equatable, Comparable {
+    /// Spooky 1.0.0 所需的最低 Git 版本。
+    public static let minimum = Self(major: 2, minor: 41, patch: 0)
+
     /// 主版本号。
     public let major: Int
 
@@ -23,29 +30,22 @@ public struct GitVersion: Sendable, Equatable, Comparable {
     /// 修订号。
     public let patch: Int
 
-    /// Spooky 1.0.0 所需的最低 Git 版本。
-    public static let minimum = GitVersion(major: 2, minor: 41, patch: 0)
-
     /// 从 `git --version` 的结构化版本前缀解析数值，忽略厂商后缀。
     public init?(output: Data) {
         let text = String(decoding: output, as: UTF8.self)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let pattern = /^git version ([0-9]+)\.([0-9]+)\.([0-9]+)(?:[ .-]|$)/
 
-        guard let match = text.firstMatch(of: pattern),
-              let major = Int(match.1),
-              let minor = Int(match.2),
-              let patch = Int(match.3)
+        guard
+            let match = text.firstMatch(of: pattern),
+            let major = Int(match.1),
+            let minor = Int(match.2),
+            let patch = Int(match.3)
         else {
             return nil
         }
 
         self.init(major: major, minor: minor, patch: patch)
-    }
-
-    /// 按数值比较版本，避免把 2.9 当作高于 2.41。
-    public static func < (lhs: Self, rhs: Self) -> Bool {
-        (lhs.major, lhs.minor, lhs.patch) < (rhs.major, rhs.minor, rhs.patch)
     }
 
     /// 用已验证的数值创建版本。
@@ -54,7 +54,15 @@ public struct GitVersion: Sendable, Equatable, Comparable {
         self.minor = minor
         self.patch = patch
     }
+
+    /// 按数值比较版本，避免把 2.9 当作高于 2.41。
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        (lhs.major, lhs.minor, lhs.patch) < (rhs.major, rhs.minor, rhs.patch)
+    }
+
 }
+
+// MARK: - RepositoryOpenError
 
 /// 打开工作区时的前置校验错误，命令失败本身使用 GitError。
 public enum RepositoryOpenError: Error, Sendable {
@@ -95,9 +103,10 @@ extension GitRunner {
             "--show-toplevel",
         ])
 
-        guard let response = String(data: result.standardOutput, encoding: .utf8),
-              response.hasPrefix("true\n/"),
-              response.hasSuffix("\n")
+        guard
+            let response = String(data: result.standardOutput, encoding: .utf8),
+            response.hasPrefix("true\n/"),
+            response.hasSuffix("\n")
         else {
             throw RepositoryOpenError.invalidWorktreeResponse(result)
         }

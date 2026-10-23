@@ -3,6 +3,35 @@ import Subprocess
 
 /// 在仓库所在的位置执行 git：本机直接调用 git，远端经系统 ssh 在对方机器上调用
 public struct GitRunner: Sendable {
+    /// 每条 git 调用都带上的全局选项
+    ///
+    /// - `--no-pager`、`color.ui=never`：输出交给程序解析，不要分页，也不要颜色
+    /// - `--no-optional-locks`：读状态时不顺手回写 index，免得和终端里、对方机器上 agent 的 git 操作抢锁
+    /// - `core.quotepath=off`：中文等非 ASCII 路径原样输出，不转成八进制转义
+    static let globalOptions = [
+        "--no-pager",
+        "--no-optional-locks",
+        "-c", "color.ui=never",
+        "-c", "core.quotepath=off",
+    ]
+
+    /// 固定错误输出语言，并清除会让 Git 越过 `-C` 访问其它仓库的环境变量。
+    private static let environmentOverrides: [Environment.Key: String?] = [
+        "LANG": "en_US.UTF-8",
+        "LC_ALL": "en_US.UTF-8",
+        "GIT_TERMINAL_PROMPT": "0",
+        "GIT_EDITOR": nil,
+        "GIT_SEQUENCE_EDITOR": nil,
+        "GIT_DIR": nil,
+        "GIT_WORK_TREE": nil,
+        "GIT_COMMON_DIR": nil,
+        "GIT_INDEX_FILE": nil,
+        "GIT_OBJECT_DIRECTORY": nil,
+        "GIT_ALTERNATE_OBJECT_DIRECTORIES": nil,
+        "GIT_NAMESPACE": nil,
+        "GIT_PREFIX": nil,
+    ]
+
     /// 目标仓库
     public let location: RepositoryLocation
 
@@ -23,9 +52,9 @@ public struct GitRunner: Sendable {
     /// - Parameter location: 目标仓库
     public init(location: RepositoryLocation) {
         self.location = location
-        self.remote = RemoteConnection.forLocation(location)
-        self.executablePath = "/usr/bin/git"
-        self.environment = .inherit.updating(Self.environmentOverrides)
+        remote = RemoteConnection.forLocation(location)
+        executablePath = "/usr/bin/git"
+        environment = .inherit.updating(Self.environmentOverrides)
     }
 
     /// 用隔离环境执行测试，避免读取用户全局 Git 配置。
@@ -35,7 +64,7 @@ public struct GitRunner: Sendable {
         environment: Environment
     ) {
         self.location = location
-        self.remote = RemoteConnection.forLocation(location)
+        remote = RemoteConnection.forLocation(location)
         self.executablePath = executablePath
         self.environment = environment.updating(Self.environmentOverrides)
     }
@@ -44,34 +73,90 @@ public struct GitRunner: Sendable {
     init(location: RepositoryLocation, remote: RemoteConnection) {
         self.location = location
         self.remote = remote
-        self.executablePath = "/usr/bin/git"
-        self.environment = .inherit.updating(Self.environmentOverrides)
+        executablePath = "/usr/bin/git"
+        environment = .inherit.updating(Self.environmentOverrides)
     }
 
-    /// 将校验与多条写命令作为一个仓库操作，避免其它窗口在中间插入写入。
-    func writeTransaction<T: Sendable>(
-        _ action: @Sendable () async throws -> T
-    ) async throws -> T {
-        let target = try await remote?.open().location ?? location
+    /// 按 POSIX shell 的规则给参数加单引号，参数里的单引号写成 `'\''`
+    static func shellQuoted(_ argument: String) -> String {
+        "'" + argument.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
 
-        if RepositoryOperationQueue.transaction == target {
-            return try await action()
+    /// 固定 locale 下区分仓库、分支与网络失败，原始输出仍保留在结果中。
+    static func category(for result: GitCommandResult) -> GitError.Category {
+        let stderr = String(decoding: result.standardError, as: UTF8.self).lowercased()
+        let stdout = String(decoding: result.standardOutput, as: UTF8.self).lowercased()
+        let command = RepositoryOperationQueue.command(in: result.arguments)
+
+        // 网络错误按具体诊断分类；凭据与仓库权限错误不使用宽泛的 “not found” 匹配。
+        if
+            stderr.contains("has no upstream branch") || stderr.contains("no upstream configured")
+            || stderr.contains("no tracking information")
+        {
+            return .noUpstream
+        }
+        if stderr.contains("is not fully merged") { return .branchNotMerged }
+        if stderr.contains("would be overwritten by") { return .localChanges }
+        if
+            command == "push",
+            stderr.contains("[rejected]") || stderr.contains("[remote rejected]")
+            || stdout.split(separator: "\n").contains(where: { $0.hasPrefix("!\t") })
+        {
+            return .pushRejected
+        }
+        if stderr.contains("connection timed out") || stderr.contains("operation timed out") {
+            return .connectionTimedOut
+        }
+        if
+            stderr.contains("authentication failed") || stderr.contains("permission denied (publickey")
+            || stderr.contains("too many authentication failures")
+            || stderr.contains("could not read username")
+            || stderr.contains("could not read password")
+        {
+            return .authenticationFailed
+        }
+        if
+            stderr.contains("does not appear to be a git repository")
+            || stderr.contains("repository not found")
+            || (stderr.contains("repository '") && stderr.contains("' not found"))
+        {
+            return .remoteNotFound
+        }
+        if
+            [
+                "connection refused", "could not resolve hostname", "could not resolve host:",
+                "connection reset", "connection closed", "network is unreachable", "broken pipe",
+            ]
+                .contains(where: stderr.contains)
+        {
+            return .connectionUnavailable
         }
 
-        let pool = await RepositoryOperationQueue.shared.permits(for: target).write
-        try await pool.acquire()
-
-        do {
-            let result = try await RepositoryOperationQueue.$transaction.withValue(target) {
-                try Task.checkCancellation()
-                return try await action()
-            }
-            await pool.release()
-            return result
-        } catch {
-            await pool.release()
-            throw error
+        if stderr.contains("index.lock"), stderr.contains("file exists") {
+            return .indexLocked
         }
+
+        guard result.exitCode == 128 else {
+            return .commandFailed
+        }
+
+        if stderr.hasPrefix("fatal: not a git repository") {
+            return .notRepository
+        }
+
+        if stderr.hasPrefix("fatal: this operation must be run in a work tree") {
+            return .notWorkingTree
+        }
+
+        if stderr.hasPrefix("fatal: cannot change to") {
+            return .pathUnavailable
+        }
+
+        if stderr.hasPrefix("fatal: detected dubious ownership") {
+            return .unsafeRepository
+        }
+
+        return .commandFailed
     }
 
     /// 执行一条 git 子命令，成功时返回标准输出
@@ -139,7 +224,8 @@ public struct GitRunner: Sendable {
                 event(.started)
 
                 // 只有网络命令需要 askpass；本机 SSH 解锁后由系统 agent 保留密钥。
-                if let credentialHandler,
+                if
+                    let credentialHandler,
                     ["fetch", "push", "ls-remote"]
                         .contains(RepositoryOperationQueue.command(in: arguments) ?? "")
                 {
@@ -172,9 +258,35 @@ public struct GitRunner: Sendable {
         }
     }
 
+    /// 将校验与多条写命令作为一个仓库操作，避免其它窗口在中间插入写入。
+    func writeTransaction<T: Sendable>(
+        _ action: @Sendable () async throws -> T
+    ) async throws -> T {
+        let target = try await remote?.open().location ?? location
+
+        if RepositoryOperationQueue.transaction == target {
+            return try await action()
+        }
+
+        let pool = await RepositoryOperationQueue.shared.permits(for: target).write
+        try await pool.acquire()
+
+        do {
+            let result = try await RepositoryOperationQueue.$transaction.withValue(target) {
+                try Task.checkCancellation()
+                return try await action()
+            }
+            await pool.release()
+            return result
+        } catch {
+            await pool.release()
+            throw error
+        }
+    }
+
     /// 版本检查在文件系统根目录进行，避免失效的仓库路径掩盖 Git 版本问题。
     func versionResult() async throws -> GitCommandResult {
-        let runner = GitRunner(
+        let runner = Self(
             location: .local(path: "/"),
             executablePath: executablePath,
             environment: environment
@@ -183,108 +295,4 @@ public struct GitRunner: Sendable {
         return try await runner.execute(["--version"])
     }
 
-    /// 按 POSIX shell 的规则给参数加单引号，参数里的单引号写成 `'\''`
-    static func shellQuoted(_ argument: String) -> String {
-        "'" + argument.replacingOccurrences(of: "'", with: "'\\''") + "'"
-    }
-
-    /// 每条 git 调用都带上的全局选项
-    ///
-    /// - `--no-pager`、`color.ui=never`：输出交给程序解析，不要分页，也不要颜色
-    /// - `--no-optional-locks`：读状态时不顺手回写 index，免得和终端里、对方机器上 agent 的 git 操作抢锁
-    /// - `core.quotepath=off`：中文等非 ASCII 路径原样输出，不转成八进制转义
-    static let globalOptions = [
-        "--no-pager",
-        "--no-optional-locks",
-        "-c", "color.ui=never",
-        "-c", "core.quotepath=off",
-    ]
-
-    /// 固定错误输出语言，并清除会让 Git 越过 `-C` 访问其它仓库的环境变量。
-    private static let environmentOverrides: [Environment.Key: String?] = [
-        "LANG": "en_US.UTF-8",
-        "LC_ALL": "en_US.UTF-8",
-        "GIT_TERMINAL_PROMPT": "0",
-        "GIT_EDITOR": nil,
-        "GIT_SEQUENCE_EDITOR": nil,
-        "GIT_DIR": nil,
-        "GIT_WORK_TREE": nil,
-        "GIT_COMMON_DIR": nil,
-        "GIT_INDEX_FILE": nil,
-        "GIT_OBJECT_DIRECTORY": nil,
-        "GIT_ALTERNATE_OBJECT_DIRECTORIES": nil,
-        "GIT_NAMESPACE": nil,
-        "GIT_PREFIX": nil,
-    ]
-
-    /// 固定 locale 下区分仓库、分支与网络失败，原始输出仍保留在结果中。
-    static func category(for result: GitCommandResult) -> GitError.Category {
-        let stderr = String(decoding: result.standardError, as: UTF8.self).lowercased()
-        let stdout = String(decoding: result.standardOutput, as: UTF8.self).lowercased()
-        let command = RepositoryOperationQueue.command(in: result.arguments)
-
-        // 网络错误按具体诊断分类；凭据与仓库权限错误不使用宽泛的 “not found” 匹配。
-        if stderr.contains("has no upstream branch") || stderr.contains("no upstream configured")
-            || stderr.contains("no tracking information")
-        {
-            return .noUpstream
-        }
-        if stderr.contains("is not fully merged") { return .branchNotMerged }
-        if stderr.contains("would be overwritten by") { return .localChanges }
-        if command == "push",
-            stderr.contains("[rejected]") || stderr.contains("[remote rejected]")
-                || stdout.split(separator: "\n").contains(where: { $0.hasPrefix("!\t") })
-        {
-            return .pushRejected
-        }
-        if stderr.contains("connection timed out") || stderr.contains("operation timed out") {
-            return .connectionTimedOut
-        }
-        if stderr.contains("authentication failed") || stderr.contains("permission denied (publickey")
-            || stderr.contains("too many authentication failures")
-            || stderr.contains("could not read username")
-            || stderr.contains("could not read password")
-        {
-            return .authenticationFailed
-        }
-        if stderr.contains("does not appear to be a git repository")
-            || stderr.contains("repository not found")
-            || (stderr.contains("repository '") && stderr.contains("' not found"))
-        {
-            return .remoteNotFound
-        }
-        if [
-            "connection refused", "could not resolve hostname", "could not resolve host:",
-            "connection reset", "connection closed", "network is unreachable", "broken pipe",
-        ]
-        .contains(where: stderr.contains) {
-            return .connectionUnavailable
-        }
-
-        if stderr.contains("index.lock"), stderr.contains("file exists") {
-            return .indexLocked
-        }
-
-        guard result.exitCode == 128 else {
-            return .commandFailed
-        }
-
-        if stderr.hasPrefix("fatal: not a git repository") {
-            return .notRepository
-        }
-
-        if stderr.hasPrefix("fatal: this operation must be run in a work tree") {
-            return .notWorkingTree
-        }
-
-        if stderr.hasPrefix("fatal: cannot change to") {
-            return .pathUnavailable
-        }
-
-        if stderr.hasPrefix("fatal: detected dubious ownership") {
-            return .unsafeRepository
-        }
-
-        return .commandFailed
-    }
 }

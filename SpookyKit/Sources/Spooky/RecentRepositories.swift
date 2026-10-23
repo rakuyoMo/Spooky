@@ -19,14 +19,16 @@ final class RecentRepositories {
     private let defaults: UserDefaults
 
     /// 记录校验任务。
-    private var validationTask: Task<Void, Never>?
+    private var validationTask: Task<Void, Never>? = nil
 
     /// 隔离持久化域，测试使用独立的临时 suite。
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
 
-        if let data = defaults.data(forKey: "recentRepositories"),
-           let saved = try? JSONDecoder().decode([RepositoryLocation].self, from: data) {
+        if
+            let data = defaults.data(forKey: "recentRepositories"),
+            let saved = try? JSONDecoder().decode([RepositoryLocation].self, from: data)
+        {
             locations = saved
         } else {
             // 保留 M1 的本机记录，迁移时不触发网络连接或删除失效路径。

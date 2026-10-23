@@ -1,6 +1,8 @@
 import Foundation
 import SpookyKit
 
+// MARK: - AppLocalization
+
 /// App 文案统一从资源包读取，语言由系统及应用的 AppleLanguages 偏好决定。
 enum AppLocalization {
     /// 支持的语言；资源包的开发语言提供英文回退。
@@ -12,20 +14,24 @@ enum AppLocalization {
     /// 读取并格式化当前语言的文案，不以键名作为回退文本。
     static func text(_ key: String, _ arguments: CVarArg...) -> String {
         let localized = bundle.localizedString(forKey: key, value: nil, table: nil)
-        let format: String
+        let format: String =
 
-        // 英文兜底独立于当前系统语言，缺失的翻译不能直接暴露资源键。
-        if localized == key,
-           let url = bundle.url(forResource: "en", withExtension: "lproj"),
-           let english = Bundle(url: url) {
-            format = english.localizedString(forKey: key, value: "", table: nil)
-        } else {
-            format = localized
-        }
+            // 英文兜底独立于当前系统语言，缺失的翻译不能直接暴露资源键。
+            if
+            localized == key,
+                let url = bundle.url(forResource: "en", withExtension: "lproj"),
+                let english = Bundle(url: url)
+            {
+                english.localizedString(forKey: key, value: "", table: nil)
+            } else {
+                localized
+            }
 
         return String(format: format, locale: Locale.current, arguments: arguments)
     }
 }
+
+// MARK: - FailureKind
 
 /// 错误界面统一展示的类别：连接断开、Git 退出失败、输出解析失败、用户取消和版本不支持彼此区分。
 enum FailureKind: String, CaseIterable {
@@ -50,6 +56,8 @@ enum FailureKind: String, CaseIterable {
     /// 进程启动、管道、文件访问或外部程序失败。
     case environment
 }
+
+// MARK: - AppFailure
 
 /// 错误 sheet 与内嵌错误共用的本地化说明、类别、仓库位置和可复制原文。
 struct AppFailure: Identifiable {
@@ -165,36 +173,53 @@ struct AppFailure: Identifiable {
 
             switch git.category {
             case .pushRejected: key = "sync.error.rejected"
+
             case .authenticationFailed: key = "sync.error.authentication"
+
             case .remoteNotFound: key = "sync.error.remote"
+
             case .connectionTimedOut: key = "sync.error.timeout"
+
             case .connectionUnavailable: key = "sync.error.connection"
+
             case .noUpstream: key = "sync.error.upstream"
+
             case .branchNotMerged: key = "branch.error.unmerged"
+
             case .localChanges: key = "sync.error.dirty"
+
             case .indexLocked: key = "error.indexLocked"
+
             case .commandFailed: key = "error.command"
+
             case .launchFailed:
                 key = "error.launch"
                 kind = .environment
+
             case .processIOFailed:
                 key = "error.process"
                 kind = .environment
+
             case .notRepository:
                 key = "error.notRepository"
                 kind = .repository
+
             case .notWorkingTree:
                 key = "error.notWorkingTree"
                 kind = .repository
+
             case .pathUnavailable:
                 key = "error.path"
                 kind = .repository
+
             case .unsafeRepository:
                 key = "error.ownership"
                 kind = .repository
+
             case .cancelled:
                 key = "error.cancelled"
                 kind = .cancelled
+
             case .outputLimitExceeded:
                 key = "error.outputLimit"
                 kind = .output
@@ -248,9 +273,9 @@ struct AppFailure: Identifiable {
             diagnostic,
             output?.exitCode.map { AppLocalization.text("error.exitCode", Int($0)) },
         ]
-            .compactMap { $0 }
-            .filter { !$0.isEmpty }
-            .joined(separator: "\n")
+        .compactMap { $0 }
+        .filter { !$0.isEmpty }
+        .joined(separator: "\n")
 
         details = raw.isEmpty ? AppLocalization.text("error.noOutput") : raw
     }
@@ -259,20 +284,20 @@ struct AppFailure: Identifiable {
     private static func kind(of remote: RemoteConnectionError.Kind) -> FailureKind {
         switch remote {
         case .gitVersion:
-            return .version
+            .version
 
         case .invalidHost, .absolutePathRequired, .pathUnavailable, .pathPermission, .notWorkingTree:
-            return .repository
+            .repository
 
         case .statusFormat:
-            return .output
+            .output
 
         case .gitUnavailable:
-            return .environment
+            .environment
 
         case .unknownHostKey, .changedHostKey, .authentication, .unavailable, .deployment,
-            .protocolFailure, .cancellationUnconfirmed, .interruptedWrite:
-            return .connection
+             .protocolFailure, .cancellationUnconfirmed, .interruptedWrite:
+            .connection
         }
     }
 }

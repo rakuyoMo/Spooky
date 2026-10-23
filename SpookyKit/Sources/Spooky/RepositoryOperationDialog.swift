@@ -1,6 +1,8 @@
 import SpookyKit
 import SwiftUI
 
+// MARK: - RepositoryActionRequest
+
 /// 同一个 Git 动作的菜单、工具栏、右键和拖放共享参数入口。
 struct RepositoryActionRequest {
     /// 本里程碑有实际行为的操作种类。
@@ -34,17 +36,19 @@ struct RepositoryActionRequest {
     let kind: Kind
 
     /// 已选的起点或目标引用。
-    var reference: String?
+    var reference: String? = nil
 
     /// 拖放或远端右键指定的远端。
-    var remote: String?
+    var remote: String? = nil
 
     /// 推送拖放指定的本地源分支。
-    var localBranch: String?
+    var localBranch: String? = nil
 
     /// 清理右键预设的选项。
     var prune = false
 }
+
+// MARK: - RepositoryOperationDialog
 
 /// 参数 sheet 提交后立即关闭，Git 的进度与失败由仓库窗口承接。
 struct RepositoryOperationDialog: View {
@@ -65,73 +69,96 @@ struct RepositoryOperationDialog: View {
         ) -> Bool
 
     /// 名称输入在确认前经过 Git 校验。
-    @State private var name = ""
+    @State
+    private var name = ""
 
     /// 起点、合并目标或拉取来源的完整引用。
-    @State private var source = ""
+    @State
+    private var source = ""
 
     /// 用户选定的远端。
-    @State private var remote = ""
+    @State
+    private var remote = ""
 
     /// 推送来源的本地分支短名。
-    @State private var localBranch = ""
+    @State
+    private var localBranch = ""
 
     /// 新建分支是否跟踪起点。
-    @State private var track = false
+    @State
+    private var track = false
 
     /// 发布后设置 upstream。
-    @State private var upstream = true
+    @State
+    private var upstream = true
 
     /// 校验完成后才能创建引用。
-    @State private var validName = false
+    @State
+    private var validName = false
 
     /// 校验和预加载错误只显示在表单内部。
-    @State private var error = ""
+    @State
+    private var error = ""
 
     /// 合并预览只属于当前选择，变化后取消旧查询。
-    @State private var preview: MergePreview?
+    @State
+    private var preview: MergePreview?
 
     /// 预览正在进行时显示明确状态。
-    @State private var checking = false
+    @State
+    private var checking = false
 
     /// 选项展开状态不持久化。
-    @State private var optionsExpanded = false
+    @State
+    private var optionsExpanded = false
 
     /// 压缩合并与强制合并提交互斥。
-    @State private var squash = false
+    @State
+    private var squash = false
 
     /// 跳过钩子只在本次表单生效。
-    @State private var skipHooks = false
+    @State
+    private var skipHooks = false
 
     /// 新建后检出偏好跨仓库保存。
-    @AppStorage("checkoutCreatedBranch") private var checkout = true
+    @AppStorage("checkoutCreatedBranch")
+    private var checkout = true
 
     /// 输入时规范化名称的开关。
-    @AppStorage("cleanRefNames") private var cleanNames = true
+    @AppStorage("cleanRefNames")
+    private var cleanNames = true
 
     /// 获取全部远端的默认选择。
-    @AppStorage("fetchAllRemotes") private var allRemotes = true
+    @AppStorage("fetchAllRemotes")
+    private var allRemotes = true
 
     /// 清理远端引用的默认选择。
-    @AppStorage("fetchPrune") private var prune = false
+    @AppStorage("fetchPrune")
+    private var prune = false
 
     /// 获取全部标签是 Fetch 的附带选项。
-    @AppStorage("fetchAllTags") private var allTags = false
+    @AppStorage("fetchAllTags")
+    private var allTags = false
 
     /// 拉取方式始终明确写入参数。
-    @AppStorage("pullUseRebase") private var rebase = false
+    @AppStorage("pullUseRebase")
+    private var rebase = false
 
     /// 合并是否总是创建合并提交。
-    @AppStorage("mergeAlwaysCreateCommit") private var alwaysCommit = false
+    @AppStorage("mergeAlwaysCreateCommit")
+    private var alwaysCommit = false
 
     /// 非快进合并是否立即提交。
-    @AppStorage("mergeAutoCommit") private var autoCommit = true
+    @AppStorage("mergeAutoCommit")
+    private var autoCommit = true
 
     /// 合并和拉取的签名验证偏好分别记忆。
-    @AppStorage("mergeVerifySignatures") private var mergeVerify = false
+    @AppStorage("mergeVerifySignatures")
+    private var mergeVerify = false
 
     /// 拉取目标签名验证偏好。
-    @AppStorage("pullVerifySignatures") private var pullVerify = false
+    @AppStorage("pullVerifySignatures")
+    private var pullVerify = false
 
     /// 原生 sheet 骨架保持头部、内容、校验、折叠选项和底栏顺序。
     var body: some View {
@@ -251,6 +278,7 @@ struct RepositoryOperationDialog: View {
                         option("branch.checkoutCreated", value: $checkout)
                     }
                 }
+
             case .track:
                 branchPicker(local: false)
                 nameRow
@@ -258,20 +286,24 @@ struct RepositoryOperationDialog: View {
                     Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
                     option("branch.checkoutCreated", value: $checkout)
                 }
+
             case .checkout:
                 branchPicker(local: true)
+
             case .fetch:
                 remotePicker.disabled(allRemotes)
                 GridRow {
                     Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
                     Toggle(AppLocalization.text("sync.allRemotes"), isOn: $allRemotes)
                 }
+
             case .pull:
                 branchPicker(local: false)
                 GridRow {
                     Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
                     option("sync.rebase", value: $rebase)
                 }
+
             case .merge:
                 branchPicker(local: nil)
                 GridRow {
@@ -289,6 +321,7 @@ struct RepositoryOperationDialog: View {
                         .disabled(!alwaysCommit || squash)
                     }
                 }
+
             case .push, .publish:
                 GridRow {
                     Text(AppLocalization.text("branch.local")).gridColumnAlignment(.trailing)
@@ -378,13 +411,16 @@ struct RepositoryOperationDialog: View {
         } else if let preview {
             switch preview {
             case .clean: Label(AppLocalization.text("merge.clean"), systemImage: "checkmark.circle")
+
             case .unchanged: Label(AppLocalization.text("merge.unchanged"), systemImage: "equal.circle")
+
             case .conflicts(let paths):
                 Label(
                     AppLocalization.text("merge.conflicts", paths.count),
                     systemImage: "exclamationmark.triangle"
                 )
                 .help(paths.joined(separator: "\n"))
+
             case .unavailable(let details):
                 Label(AppLocalization.text("merge.unavailable"), systemImage: "questionmark.circle")
                     .help(details)
@@ -401,22 +437,27 @@ struct RepositoryOperationDialog: View {
 
         switch request.kind {
         case .create: source = request.reference ?? "HEAD"
+
         case .track:
             source = request.reference ?? branches.first(where: \.isRemote)?.id ?? ""
             name = remoteBranchName(source)
+
         case .checkout:
             source = request.reference ?? branches.first(where: { $0.isLocal && $0.id != head?.id })?.id ?? ""
+
         case .fetch:
             if request.remote != nil { allRemotes = false }
             if request.prune { prune = true }
+
         case .merge, .pull:
             let tracked = branches.first {
                 $0.id == head?.upstream && (request.kind == .merge || $0.isRemote)
             }
             source =
                 request.reference ?? tracked?.id
-                ?? branches.first(where: { $0.id != head?.id && (request.kind == .merge || $0.isRemote) })?.id
-                ?? ""
+                    ?? branches.first(where: { $0.id != head?.id && (request.kind == .merge || $0.isRemote) })?.id
+                    ?? ""
+
         case .push, .publish:
             let selected = branches.first { $0.isLocal && $0.name == localBranch }
 
@@ -433,7 +474,8 @@ struct RepositoryOperationDialog: View {
             upstream = request.kind == .publish || selected?.upstream == nil
         }
 
-        if [.fetch, .pull, .push, .publish, .track].contains(request.kind),
+        if
+            [.fetch, .pull, .push, .publish, .track].contains(request.kind),
             session.history.snapshot?.remotes.isEmpty != false
         {
             error = AppLocalization.text("sync.noRemotes")
@@ -443,20 +485,23 @@ struct RepositoryOperationDialog: View {
     /// 同名本地分支不能覆盖；名称校验异步去抖，保留 Git 原始错误。
     private func validateName() async {
         validName = false
-        guard [.create, .track, .push, .publish].contains(request.kind), !name.isEmpty,
+        guard
+            [.create, .track, .push, .publish].contains(request.kind), !name.isEmpty,
             let runner = session.runner
         else { return }
         do {
             try await Task.sleep(for: .milliseconds(150))
             try await RepositoryReferences(runner: runner).validate(name: name)
             try Task.checkCancellation()
-            if [.create, .track].contains(request.kind),
+            if
+                [.create, .track].contains(request.kind),
                 branches.contains(where: { $0.id == "refs/heads/" + name })
             {
                 error = AppLocalization.text("branch.exists")
                 return
             }
-            if request.kind == .publish,
+            if
+                request.kind == .publish,
                 branches.contains(where: { $0.id == "refs/remotes/" + remote + "/" + name })
             {
                 error = AppLocalization.text("branch.exists")
@@ -493,7 +538,8 @@ struct RepositoryOperationDialog: View {
 
     /// 远端分支短名按所属远端切除前缀，兼容远端名中的斜杠。
     private func remoteBranchName(_ reference: String) -> String {
-        guard let ref = branches.first(where: { $0.id == reference }),
+        guard
+            let ref = branches.first(where: { $0.id == reference }),
             let remote = session.history.snapshot?.remote(for: ref)
         else { return reference }
         return String(reference.dropFirst(("refs/remotes/" + remote.name + "/").count))
@@ -537,7 +583,9 @@ struct RepositoryOperationDialog: View {
                         track: kind == .track || track,
                         checkout: checkout
                     )
+
             case .checkout: try await RepositoryReferences(runner: runner).checkout(source)
+
             case .fetch:
                 _ = try await RepositorySync(runner: runner)
                     .fetch(
@@ -546,6 +594,7 @@ struct RepositoryOperationDialog: View {
                         allTags: allTags,
                         onOutput: output
                     )
+
             case .pull:
                 try await RepositorySync(runner: runner)
                     .pull(
@@ -556,6 +605,7 @@ struct RepositoryOperationDialog: View {
                         skipHooks: skipHooks,
                         onOutput: output
                     )
+
             case .push, .publish:
                 _ = try await RepositorySync(runner: runner)
                     .push(
@@ -566,6 +616,7 @@ struct RepositoryOperationDialog: View {
                         skipHooks: skipHooks,
                         onOutput: output
                     )
+
             case .merge:
                 try await RepositorySync(runner: runner).merge(source, options: options, onOutput: output)
             }

@@ -1,5 +1,5 @@
-import SpookyKit
 import AppKit
+import SpookyKit
 import SwiftUI
 
 /// 仓库管理右侧显示所选路径，未选时给出打开与拖放入口。
@@ -23,7 +23,8 @@ struct RepositoryManagerView: View {
     let addFolders: ([URL]) -> Void
 
     /// 拖放悬停状态。
-    @State private var isDropTarget = false
+    @State
+    private var isDropTarget = false
 
     /// 路径详情或居中的空状态。
     var body: some View {
