@@ -20,6 +20,9 @@ extension RepositorySession {
 
         fileHistory.open(path, head: status?.branch.oid, runner: runner)
         activeView = .fileHistory
+
+        // 从文件历史里换文件时搜索框保留内容，新文件沿用同样的筛选
+        fileHistory.search(searchText)
         onActiveViewChange?()
     }
 
