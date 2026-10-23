@@ -625,7 +625,9 @@ extension RepositoryOperationDialog {
     /// 捕获表单值后关闭 sheet，再运行核心库动作。
     private func perform() {
         let name = name
-        let source = branches.first { $0.id == source || $0.name == source }?.id ?? source
+
+        // 不与属性 source 同名：闭包里引用同名属性会让 Swift 6.3 的类型推断失败
+        let revision = branches.first { $0.id == source || $0.name == source }?.id ?? source
         let remote = remote
         let localBranch = localBranch
         let checkout = checkout
@@ -638,7 +640,7 @@ extension RepositoryOperationDialog {
         let verify = request.kind == .pull ? pullVerify : mergeVerify
         let skipHooks = skipHooks
         let kind = request.kind
-        let selected = branches.first { $0.id == source }
+        let selected = branches.first { $0.id == revision }
         let pullRemote = selected.flatMap { session.history.snapshot?.remote(for: $0) }
         let pullBranch = selected.map { "refs/heads/" + remoteBranchName($0.id) }
         var mergeOptions = MergeOptions()
@@ -660,12 +662,12 @@ extension RepositoryOperationDialog {
                 try await RepositoryReferences(runner: runner)
                     .create(
                         name: name,
-                        startingAt: source,
+                        startingAt: revision,
                         track: kind == .track || track,
                         checkout: checkout
                     )
 
-            case .checkout: try await RepositoryReferences(runner: runner).checkout(source)
+            case .checkout: try await RepositoryReferences(runner: runner).checkout(revision)
 
             case .fetch:
                 _ = try await RepositorySync(runner: runner)
@@ -699,7 +701,7 @@ extension RepositoryOperationDialog {
                     )
 
             case .merge:
-                try await RepositorySync(runner: runner).merge(source, options: options, onOutput: output)
+                try await RepositorySync(runner: runner).merge(revision, options: options, onOutput: output)
             }
         }
 

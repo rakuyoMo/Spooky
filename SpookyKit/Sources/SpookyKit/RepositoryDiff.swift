@@ -112,7 +112,13 @@ public struct RepositoryDiff: Sendable, Equatable {
         }
 
         guard patch.last == 10 else { throw WorkingCopyError.malformedDiff }
-        let lines = patch.dropLast().split(separator: 10, omittingEmptySubsequences: false).map(Data.init)
+
+        // 逐步标注为 Data：Swift 6.3 无法在 Sequence 与 Collection 的 dropLast、split 重载之间选择
+        let content: Data = patch.dropLast()
+        let segments: [Data] = content.split(separator: 10, omittingEmptySubsequences: false)
+
+        // 切片沿用原补丁的下标，复制后每行都从 0 开始
+        let lines = segments.map { Data($0) }
         var cursor = 0
         var files: [DiffFile] = []
 
