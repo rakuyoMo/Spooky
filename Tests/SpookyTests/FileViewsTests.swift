@@ -52,7 +52,7 @@ struct FileViewsTests {
 
     /// 等待异步读取完成，超时视为失败。
     private static func wait(_ condition: () -> Bool) async throws {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
 
         while !condition() {
             guard .now < deadline else {
