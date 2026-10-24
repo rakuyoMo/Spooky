@@ -9,14 +9,14 @@ import Testing
 @MainActor
 struct FileViewsTests {
     /// 测试独占的临时目录。
-    private static func temporaryDirectory() throws -> URL {
+    static func temporaryDirectory() throws -> URL {
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-file-views-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         return directory
     }
 
     /// 忽略系统与用户的全局配置，提交身份只写入仓库本地配置。
-    private static func initializeRepository(at location: RepositoryLocation) async throws -> GitRunner {
+    static func initializeRepository(at location: RepositoryLocation) async throws -> GitRunner {
         let runner = GitRunner(
             location: location,
             environment: .inherit.updating([
@@ -51,7 +51,7 @@ struct FileViewsTests {
     }
 
     /// 等待异步读取完成，超时视为失败。
-    private static func wait(_ condition: () -> Bool) async throws {
+    static func wait(_ condition: () -> Bool) async throws {
         let deadline = ContinuousClock.now.advanced(by: .seconds(30))
 
         while !condition() {
