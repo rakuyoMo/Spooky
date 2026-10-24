@@ -20,13 +20,18 @@ final class RepositoryHistoryState {
     /// 分支相对上游的结构化计数。
     private(set) var divergence: [String: ReferenceDivergence] = [:]
 
-    /// 本地分支的完全合并、最后更新时间与跟踪错误，以完整引用名为键。
-    private(set) var conditions: [String: BranchCondition] = [:]
+    /// 本地分支的完全合并、最后更新时间与跟踪错误，以完整引用名为键；每次读完引用都会写入，随后通知窗口。
+    private(set) var conditions: [String: BranchCondition] = [:] {
+        didSet { onReferencesLoaded?() }
+    }
 
     /// 侧边栏可同时选择多个分支，空集合表示全部历史。
     var selectedReferences = Set<String>() {
         didSet {
-            if selectedReferences != oldValue { reloadCommits() }
+            if selectedReferences != oldValue {
+                comparisonBase = nil
+                reloadCommits()
+            }
         }
     }
 
@@ -166,6 +171,24 @@ final class RepositoryHistoryState {
     /// 切回仓库时恢复的引用选择，首个引用快照到达后校验一次。
     private var restoredReferences: Set<String>? = nil
 
+    /// 引用快照与分支状态读完后调用，窗口据此检查自动归档。
+    var onReferencesLoaded: (() -> Void)? = nil
+
+    /// 打开 Compare Branches 时所选分支与基准分支的比较；没打开或所选不是单个本地分支时为 nil。
+    var baseComparison: HistoryBaseComparison? = nil
+
+    /// 所选分支与父分支的比较，供集成父分支改动的按钮使用；没有父分支时为 nil。
+    var parentComparison: HistoryBaseComparison? = nil
+
+    /// 用户在 Compare to 里选的基准分支；换了所选分支后清空。
+    var comparisonBase: String? = nil
+
+    /// 分叉点及其之下属于基准分支的提交，置灰显示。
+    var parentCommits = Set<String>()
+
+    /// 读取分叉点与比较的任务。
+    var comparisonTask: Task<Void, Never>? = nil
+
     /// 单个引用入口与多选状态共用同一选择，HEAD 表示分离或未出生分支。
     var selectedReference: String? {
         get { selectedReferences.count == 1 ? selectedReferences.first : nil }
@@ -285,6 +308,8 @@ final class RepositoryHistoryState {
         countTask = nil
         searchTask?.cancel()
         searchTask = nil
+        comparisonTask?.cancel()
+        comparisonTask = nil
         changeTask?.cancel()
         changeTask = nil
         for task in diffTasks.values { task.cancel() }
@@ -312,6 +337,10 @@ final class RepositoryHistoryState {
         graphRows = [:]
         unpushed = []
         unpulled = []
+        baseComparison = nil
+        parentComparison = nil
+        comparisonBase = nil
+        parentCommits = []
         selectedIDs = []
         changes = []
         changesFailure = nil
@@ -344,6 +373,7 @@ extension RepositoryHistoryState {
         let settings = HistoryViewSettings(defaults: preferences)
         query = settings.query(conditions: searchConditions)
         grouping = settings.grouping
+        loadBaseComparison()
 
         let references = snapshot?.references ?? []
         trackingRoots = nil
@@ -632,8 +662,8 @@ extension RepositoryHistoryState {
         }
 
         commits += page.commits
-        rows = HistoryRow.rows(for: commits, grouping: grouping)
         updateTrackingMarkers()
+        updateComparisonRows()
         hasMore = page.hasMore
         reachedLimit = page.hasMore && commits.count >= Self.maximumLoadedCommits
 

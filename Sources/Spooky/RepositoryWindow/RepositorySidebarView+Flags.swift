@@ -22,7 +22,7 @@ extension RepositorySidebarView {
         }
     }
 
-    /// 归档菜单项：规则与置顶相同。
+    /// 归档菜单项：规则与置顶相同；一个分支时其下还有 “自动归档时跳过” 与 “隐藏完全合并提示” 两个勾选项。
     @ViewBuilder
     func archiveMenuItems(_ branches: [RepositoryReference]) -> some View {
         let archived = branches.map { metadata(for: $0).isArchived }
@@ -37,6 +37,10 @@ extension RepositorySidebarView {
                 session.setArchived(false, branches: branches)
             }
             .disabled(!session.canSetArchived(branches))
+        }
+
+        if branches.count == 1, let branch = branches.first {
+            BranchArchiveOptions(session: session, branch: branch, metadata: metadata(for: branch))
         }
     }
 

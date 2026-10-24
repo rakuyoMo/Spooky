@@ -75,6 +75,10 @@ private struct GeneralSettingsView: View {
     @AppStorage("offerAutoStash")
     private var offerAutoStash = true
 
+    /// 自动归档已完全合并或陈旧的分支，与侧边栏视图设置同一个偏好。
+    @AppStorage(SidebarPreferences.autoArchiveKey)
+    private var autoArchiveBranches = SidebarPreferences.defaultFlag(SidebarPreferences.autoArchiveKey)
+
     /// General 表单按功能分组，组间以分隔线隔开；控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
@@ -103,7 +107,7 @@ private struct GeneralSettingsView: View {
 // MARK: - Private
 
 extension GeneralSettingsView {
-    /// 操作相关的设置：自动获取的间隔、被本地改动挡住时询问储藏、输入时规范引用名。
+    /// 操作相关的设置：自动获取的间隔、被本地改动挡住时询问储藏、输入时规范引用名、自动归档分支。
     @ViewBuilder
     private var operationRows: some View {
         AutoFetchSettingsRow()
@@ -117,6 +121,12 @@ extension GeneralSettingsView {
         GridRow {
             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
             Toggle(AppLocalization.text("branch.cleanNames"), isOn: $cleanRefNames)
+                .frame(width: 278, alignment: .leading)
+        }
+
+        GridRow {
+            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+            Toggle(AppLocalization.text("settings.autoArchive"), isOn: $autoArchiveBranches)
                 .frame(width: 278, alignment: .leading)
         }
     }

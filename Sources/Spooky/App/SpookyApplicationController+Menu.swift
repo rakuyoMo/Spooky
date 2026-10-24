@@ -102,6 +102,12 @@ extension SpookyApplicationController {
         addItem("menu.showHistory", action: #selector(RepositoryWindowController.showHistory), key: "2", to: view)
         addItem("stash.show", action: #selector(RepositoryWindowController.showStashes), key: "3", to: view)
         addItem(
+            "review.show",
+            action: #selector(RepositoryWindowController.showBranchesReview),
+            key: "5",
+            to: view
+        )
+        addItem(
             "history.showHead",
             action: #selector(RepositoryWindowController.showHeadBranch),
             key: "0",

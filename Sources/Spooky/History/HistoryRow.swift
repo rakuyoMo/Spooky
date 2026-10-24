@@ -3,7 +3,7 @@ import SpookyKit
 
 // MARK: - HistoryRow
 
-/// 历史列表的一行：日期分组的标题或一个提交。
+/// 历史列表的一行：日期分组的标题、一个提交，或与基准分支比较时的分叉点与 “没有新提交” 行。
 ///
 /// 按日期分组时表格的行号与提交的位置不再相同，选择、右键与拖放都经行取得对应的提交。
 enum HistoryRow: Equatable {
@@ -13,11 +13,19 @@ enum HistoryRow: Equatable {
     /// 一个提交。
     case commit(HistoryCommit)
 
+    /// 基准分支的分叉点，插在分叉点提交之前；参数是基准分支名。
+    case forkPoint(String)
+
+    /// 所选分支没有自己的提交，排在最前；参数是基准分支名。
+    case noNewCommits(String)
+
     /// 表格比较行是否变化时用的身份。
     var id: String {
         switch self {
         case .group(let start): "group-\(start.timeIntervalSince1970)"
         case .commit(let commit): commit.id
+        case .forkPoint: "fork-point"
+        case .noNewCommits: "no-new-commits"
         }
     }
 

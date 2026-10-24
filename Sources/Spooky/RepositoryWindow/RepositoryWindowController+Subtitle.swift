@@ -23,6 +23,9 @@ extension RepositoryWindowController {
 
         case .remote:
             AppLocalization.text("remote.subtitle", session.selectedRemote ?? "")
+
+        case .branchesReview:
+            AppLocalization.text("review.title")
         }
     }
 
@@ -59,10 +62,14 @@ extension RepositoryWindowController {
         return AppLocalization.text("working.subtitle.branch", branch, count)
     }
 
-    /// 历史的副标题：所选引用以 “, ” 相连，没有选引用时是 “History”；后面是提交数，数到上限时写 “or more”。
+    /// 历史的副标题：所选引用以 “, ” 相连，没有选引用时是 “History”，与基准分支比较时是 “分支 → 基准”；后面是提交数，数到上限时写 “or more”。
     private var historySubtitle: String {
         let history = session.history
-        let name = history.selectedReferences.isEmpty ? AppLocalization.text("history.title") : history.title
+        var name = history.selectedReferences.isEmpty ? AppLocalization.text("history.title") : history.title
+
+        if let comparison = history.baseComparison {
+            name = comparison.branch.name + " → " + comparison.base.name
+        }
 
         guard let count = history.commitCount else {
             return name
