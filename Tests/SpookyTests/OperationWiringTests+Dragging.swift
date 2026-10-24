@@ -90,7 +90,7 @@ extension OperationWiringTests {
 
         // 已在这个文件夹里时名字不变，不接受
         fixture.session.refresh(full: true)
-        await fixture.session.refreshTask?.value
+        await fixture.session.waitForRefresh()
         try await FileViewsTests.wait { fixture.session.history.branches.contains { $0.name == "功能/side" } }
         #expect(fixture.drop([.local("refs/heads/功能/side")], on: .branchFolder("功能")) == nil)
     }

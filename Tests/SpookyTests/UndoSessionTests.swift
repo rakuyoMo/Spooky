@@ -137,7 +137,7 @@ struct UndoSessionTests {
         )
         #expect(session.undoMenuState(redo: false) == .blocked("Branch", reason: "undo.reason.busy"))
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         // 合并停在冲突上
         _ = try await runner.run(["switch", "-q", "topic"])
@@ -165,7 +165,7 @@ struct UndoSessionTests {
         try await fixture.createBranch("topic")
 
         other.refresh(full: true)
-        await other.refreshTask?.value
+        await other.waitForRefresh()
         try await FileViewsTests.wait { Self.hasBranch("topic", in: other) }
         #expect(other.undoHistory === fixture.session.undoHistory)
         #expect(try await Self.settledState(of: other, redo: false) == .available("Branch"))
@@ -193,7 +193,7 @@ struct UndoSessionTests {
         defer { controller.window?.close() }
 
         controller.display(fixture.location)
-        await fixture.session.refreshTask?.value
+        await fixture.session.waitForRefresh()
         let window = try #require(controller.window)
         let item = NSMenuItem(title: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
 
@@ -274,14 +274,14 @@ extension UndoSessionTests {
             session = RepositorySession(makeRunner: { _ in runner })
             session.display(location)
             session.refresh(full: true)
-            await session.refreshTask?.value
+            await session.waitForRefresh()
         }
 
         /// 发起写操作，等它与随后的完整刷新、引用读取都结束。
         func perform(_ start: () -> Void) async throws {
             start()
             await session.writeTask?.value
-            await session.refreshTask?.value
+            await session.waitForRefresh()
 
             for task in session.history.activeTasks + session.stashes.activeTasks {
                 await task.value
@@ -302,7 +302,7 @@ extension UndoSessionTests {
         /// 读取一次完整状态，等引用与储藏也读完。
         func refresh() async {
             session.refresh(full: true)
-            await session.refreshTask?.value
+            await session.waitForRefresh()
 
             for task in session.history.activeTasks + session.stashes.activeTasks {
                 await task.value

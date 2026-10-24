@@ -142,7 +142,7 @@ extension RewriteSessionTests {
         let session = RepositorySession(makeRunner: { _ in runner })
         session.display(location)
         session.refresh()
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         return (session, directory, commits)
     }
 
@@ -169,7 +169,7 @@ extension RewriteSessionTests {
     /// 等待写操作与随后的完整刷新结束。
     private func settle(_ session: RepositorySession) async {
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
     }
 
     /// 当前分支从新到旧的提交标题。

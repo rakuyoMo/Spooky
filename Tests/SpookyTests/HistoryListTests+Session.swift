@@ -106,7 +106,7 @@ extension HistoryListTests {
         try Data("changed\n".utf8).write(to: fixture.directory.appending(path: "file.txt"))
         try Data("new\n".utf8).write(to: fixture.directory.appending(path: "new.txt"))
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         #expect(controller.repositorySubtitle == AppLocalization.text("working.subtitle.branch", "main", 2))
 
         session.activeView = .history
@@ -135,7 +135,7 @@ extension HistoryListTests {
         _ = try await fixture.runner.run(["checkout", "-q", "--detach", "HEAD"])
         session.activeView = .workingCopy
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         #expect(controller.repositorySubtitle == AppLocalization.text("working.subtitle", 2))
     }
 
@@ -258,7 +258,7 @@ extension HistoryListTests {
 
         session.display(location)
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         return SessionFixture(directory: directory, runner: runner, session: session, controller: controller)
     }

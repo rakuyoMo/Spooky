@@ -116,7 +116,7 @@ extension RepositorySessionTests {
         // 新分支没有跟踪分支，快速推送不开始写入，只说明原因
         _ = try await runner.run(["switch", "-q", "-c", "topic"])
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         try await waitForSession { session.headBranch?.id == "refs/heads/topic" }
 
         session.quickPush()
@@ -167,7 +167,7 @@ extension RepositorySessionTests {
         let session = RepositorySession(makeRunner: { _ in runner })
         session.display(runner.location)
         session.refresh()
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         try await waitForSession { !(session.history.snapshot?.remotes.isEmpty ?? true) }
         return session
     }

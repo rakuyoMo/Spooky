@@ -51,7 +51,7 @@ extension FileViewsTests {
 
         session.display(location)
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         session.showFileHistory("a.txt")
         try await Self.wait { session.fileHistory.totalCount != nil }
@@ -61,7 +61,7 @@ extension FileViewsTests {
         try Data("two\n".utf8).write(to: directory.appending(path: "b.txt"))
         _ = try await runner.run(["commit", "-q", "-a", "--author=Author C <c@example.invalid>", "-m", "c"])
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         session.showFileHistory("b.txt")
         try await Self.wait { session.fileHistory.totalCount != nil }

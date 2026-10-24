@@ -29,7 +29,7 @@ struct StashSessionTests {
 
         session.display(location)
         session.refresh()
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         try Data("local\n".utf8).write(to: directory.appending(path: "tracked.txt"))
 
         let merge: @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void = {
@@ -37,7 +37,7 @@ struct StashSessionTests {
         }
         session.performGit(merge, title: "Merge", offersAutoStash: true)
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         #expect(failures.isEmpty)
         guard case .autoStash(let pending) = try #require(requests.first) else {
@@ -51,7 +51,7 @@ struct StashSessionTests {
 
         session.performAutoStash(pending, message: "auto", reapply: true)
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         await allTasks(of: session.stashes)
 
         #expect(FileManager.default.fileExists(atPath: directory.appending(path: "feature.txt").path))
