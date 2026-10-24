@@ -110,6 +110,7 @@ extension SpookyApplicationController {
 
         configureWorkingCopyStatusMenu(in: view)
         configureHistoryMenu(in: view)
+        configureSidebarMenu(in: view)
         configureHistoryDiffsMenu(in: view)
         configureDiffContextMenu(in: view)
 

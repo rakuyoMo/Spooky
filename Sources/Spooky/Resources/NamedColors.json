@@ -149,6 +149,26 @@
       "alpha": 0.85
     }
   },
+  "sidebarBadgeSeparatorColor": {
+    "light": {
+      "hex": "#000000",
+      "alpha": 0.25
+    },
+    "dark": {
+      "hex": "#FFFFFF",
+      "alpha": 0.25
+    }
+  },
+  "highlightedSidebarBadgeSeparatorColor": {
+    "light": {
+      "hex": "#FFFFFF",
+      "alpha": 0.35
+    },
+    "dark": {
+      "hex": "#FFFFFF",
+      "alpha": 0.25
+    }
+  },
   "blue_badge_background_color": {
     "light": {
       "hex": "#007AFF",
