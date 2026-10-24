@@ -9,8 +9,10 @@ struct FileStatusView: View {
     /// 文件标记了 assume-unchanged，显示灰色徽标与对应说明。
     var assumeUnchanged = false
 
-    /// 辅助技术与悬停提示使用本地化全称。
+    /// 辅助技术与悬停提示使用本地化全称；冲突文件说明冲突类型。
     private var description: String {
+        #warning("TODO: 悬停冲突文件的状态列，核对提示是否为 “File requires merging: <冲突类型>”；只影响冲突文件行的悬停提示")
+
         if assumeUnchanged {
             return AppLocalization.text("files.assumeUnchanged.status")
         }
@@ -18,7 +20,7 @@ struct FileStatusView: View {
         switch entry.kind {
         case .untracked: return AppLocalization.text("status.untracked")
         case .ignored: return AppLocalization.text("status.ignored")
-        case .conflicted: return AppLocalization.text("status.conflicted")
+        case .conflicted: return AppLocalization.text("conflict.toolTip", (entry.conflictKind ?? .bothModified).title)
         case .unchanged: return AppLocalization.text("status.unchanged")
         case .tracked:
             return AppLocalization.text(

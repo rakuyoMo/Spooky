@@ -15,6 +15,15 @@ public struct ConflictStages: Sendable, Equatable {
 
     /// 工作区里是否还有这个文件。
     public let existsInWorktree: Bool
+
+    /// 共同祖先版本的文件模式，如 `100644`；没有共同祖先时为 nil。
+    public let baseMode: String?
+
+    /// 我方版本的文件模式；我方删除了文件时为 nil。
+    public let oursMode: String?
+
+    /// 对方版本的文件模式；对方删除了文件时为 nil。
+    public let theirsMode: String?
 }
 
 extension ConflictStages {
@@ -40,11 +49,19 @@ extension ConflictStages {
             modes[index] == "000000" ? nil : hashes[index]
         }
 
+        /// 在索引中的 stage 的文件模式。
+        func mode(_ index: Int) -> String? {
+            modes[index] == "000000" ? nil : modes[index]
+        }
+
         self.init(
             base: stage(0),
             ours: stage(1),
             theirs: stage(2),
-            existsInWorktree: modes[3] != "000000"
+            existsInWorktree: modes[3] != "000000",
+            baseMode: mode(0),
+            oursMode: mode(1),
+            theirsMode: mode(2)
         )
     }
 }
@@ -111,6 +128,32 @@ public struct ConflictContents: Sendable, Equatable {
     public let worktree: Data?
 }
 
+extension ConflictContents {
+    /// 冲突块的开始标记。
+    private static let openingMarker = Array("<<<<<<<".utf8)
+
+    /// 冲突块的结束标记。
+    private static let closingMarker = Array(">>>>>>>".utf8)
+
+    /// 工作区文件已是手动编辑或合并工具得到的结果：文件还在、与两侧版本都不同，且不再含有冲突标记。
+    public var isManuallyEdited: Bool {
+        #warning("TODO: 在外部编辑器改动冲突文件后核对 “Manually Edited or Merged Version” 何时出现，目前要求与两侧都不同且没有冲突标记；只影响这张卡片的显示")
+
+        guard let worktree, worktree != ours, worktree != theirs else {
+            return false
+        }
+
+        let lines = worktree.split(separator: 10, omittingEmptySubsequences: false)
+
+        // 冲突块以 <<<<<<< 行开始、以 >>>>>>> 行结束；两者先后都在，文件里就还有未处理的冲突
+        guard let opening = lines.firstIndex(where: { $0.starts(with: Self.openingMarker) }) else {
+            return true
+        }
+
+        return !lines[opening...].contains { $0.starts(with: Self.closingMarker) }
+    }
+}
+
 // MARK: - ConflictVersion
 
 /// 冲突文件可以恢复到的版本；恢复只改工作区，文件仍是未解决的冲突。
@@ -132,10 +175,7 @@ public enum ConflictVersion: Sendable {
 
 /// 冲突向导的写入不满足前提，界面负责本地化。
 public enum ConflictResolutionError: Error, Sendable, Equatable {
-    /// 文件在载入之后被其它程序改动，手动编辑的结果不会覆盖它。
-    case fileChanged
-
-    /// 所选文件都没有要恢复的那个版本。
+    /// 所选文件都没有要恢复或采用的那个版本。
     case versionUnavailable
 }
 
@@ -167,26 +207,17 @@ extension WorkingCopyOperations {
         )
     }
 
-    /// 把冲突文件的工作区恢复到指定版本，索引里的冲突保持不变；调用方负责确认。
+    /// 把冲突文件的工作区恢复到指定版本，索引里的冲突保持不变。
     ///
     /// - Parameters:
     ///   - entries: 要恢复的文件；重新生成冲突也接受已经标记解决、仍有 resolve-undo 记录的文件。
     ///   - version: 恢复到的版本；缺少该版本的文件跳过，全部缺少时抛出 ``ConflictResolutionError/versionUnavailable``。
-    ///   - backup: 传入时先把当前文件另存为备份，再把备份路径交给它。
-    public func restoreConflicts(
-        _ entries: [StatusEntry],
-        to version: ConflictVersion,
-        backup: (@Sendable ([String]) async -> Void)? = nil
-    ) async throws {
+    public func restoreConflicts(_ entries: [StatusEntry], to version: ConflictVersion) async throws {
         try await runner.writeTransaction {
             let paths = try await restorablePaths(entries, version: version)
 
             guard !paths.isEmpty else {
                 throw ConflictResolutionError.versionUnavailable
-            }
-
-            if let backup {
-                await backup(try await backUp(paths))
             }
 
             // 路径都经 NUL 输入传递；checkout-index 不认路径规格，按字面读取 stdin 里的路径
@@ -202,63 +233,30 @@ extension WorkingCopyOperations {
         }
     }
 
-    /// 把手动编辑的结果写回冲突文件；写入前核对文件仍是载入时的内容，被其它程序改过就拒绝覆盖。
+    /// 采用两侧版本并标记解决：在仓库所在的机器上逐个冲突块保留两侧的行，我方在前；结果写入索引后再检出到工作区。
     ///
-    /// - Parameters:
-    ///   - data: 编辑后的完整文件内容。
-    ///   - entry: 冲突文件。
-    ///   - expected: 载入时读到的工作区内容；载入时文件不存在为 nil。
-    ///   - backup: 传入时先把当前文件另存为备份，再把备份路径交给它。
-    public func saveResolution(
-        _ data: Data,
-        for entry: StatusEntry,
-        replacing expected: Data?,
-        backup: (@Sendable ([String]) async -> Void)? = nil
-    ) async throws {
-        let path = runner.location.path + "/" + entry.path
-        let files = RepositoryFiles(runner: runner)
-
+    /// 两侧中有一方删除了文件时抛出 ``ConflictResolutionError/versionUnavailable``。
+    public func resolveUsingBoth(_ entry: StatusEntry) async throws {
         try await runner.writeTransaction {
-            let current = try await files.read([path])[path]
-
-            guard current == expected else {
-                throw ConflictResolutionError.fileChanged
+            let current = try await runner.status().entries.first {
+                $0.kind == .conflicted && $0.path == entry.path
             }
 
-            if let backup, let current {
-                await backup(try await writeBackups([entry.path: current]))
+            guard let stages = current?.conflict else {
+                throw ConflictResolutionError.versionUnavailable
             }
 
-            try await files.write(data, to: path)
+            let merged = try await unionMerge(stages)
+
+            // stage 0 的条目替换三个冲突 stage，Git 同时留下 resolve-undo 记录；路径经 stdin 原样传递
+            _ = try await runner.run(
+                ["update-index", "-z", "--index-info"],
+                input: Data("\(merged.mode) \(merged.object)\t\(entry.path)".utf8) + [0]
+            )
+
+            // 由索引检出到工作区，照常经过过滤与换行转换
+            _ = try await runner.run(["checkout-index", "-f", "-z", "--stdin"], input: Self.pathInput([entry.path]))
         }
-    }
-
-    /// 删除冲突向导生成的备份文件；已经不存在的路径直接跳过。
-    ///
-    /// - Parameter paths: 备份文件在仓库内的相对路径。
-    public func removeBackups(_ paths: [String]) async throws {
-        guard !paths.isEmpty else { return }
-
-        let absolute = paths.map { runner.location.path + "/" + $0 }
-
-        try await runner.writeTransaction {
-            try await RepositoryFiles(runner: runner).remove(try await existing(absolute))
-        }
-    }
-
-    /// 把文件当前的内容另存为同目录的备份，不在工作区的文件跳过；须在调用方的写事务中执行。
-    ///
-    /// - Parameter paths: 仓库内的相对路径。
-    /// - Returns: 新建的备份文件的相对路径。
-    func backUp(_ paths: [String]) async throws -> [String] {
-        let absolute = paths.map { runner.location.path + "/" + $0 }
-        let contents = try await RepositoryFiles(runner: runner).read(absolute)
-
-        let current = Dictionary(uniqueKeysWithValues: zip(paths, absolute).compactMap { path, absolute in
-            contents[absolute].map { (path, $0) }
-        })
-
-        return try await writeBackups(current)
     }
 }
 
@@ -316,6 +314,52 @@ extension WorkingCopyOperations {
         return try Self.parseBatch(try await runner.immutableRun(["cat-file", "--batch"], input: input))
     }
 
+    /// 两侧版本按冲突块合并：union 合并把结果写进对象库并只输出对象哈希，内容不经过本机。
+    ///
+    /// - Parameter stages: 冲突文件的三方版本；两侧各自新增时没有共同祖先，以空内容作为祖先。
+    /// - Returns: 合并结果的文件模式与对象哈希。
+    private func unionMerge(_ stages: ConflictStages) async throws -> (mode: String, object: String) {
+        #warning("TODO: 对两侧都修改的文件选 “Resolve Using Both Versions”，核对结果是逐个冲突块保留两侧、我方在前，还是整份拼接两侧；只影响这个动作写入的内容")
+
+        guard
+            let ours = stages.ours,
+            let theirs = stages.theirs,
+            let oursMode = stages.oursMode,
+            let theirsMode = stages.theirsMode
+        else {
+            throw ConflictResolutionError.versionUnavailable
+        }
+
+        let base: String =
+            if let existing = stages.base {
+                existing
+            } else {
+                try await emptyBlob()
+            }
+
+        let output = try await runner.run(["merge-file", "--object-id", "--union", ours, base, theirs])
+        let object = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard GitObjectID.isValid(object) else {
+            throw RepositoryReadError.malformedOutput("merge-file")
+        }
+
+        // 文件模式按三方取：我方没有改动模式时沿用对方的
+        return (oursMode == stages.baseMode ? theirsMode : oursMode, object)
+    }
+
+    /// 空内容的对象哈希，随仓库的对象格式变化；写入对象库供 merge-file 读取。
+    private func emptyBlob() async throws -> String {
+        let output = try await runner.run(["hash-object", "-w", "--stdin"], input: Data())
+        let hash = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard GitObjectID.isValid(hash) else {
+            throw RepositoryReadError.malformedOutput("hash-object")
+        }
+
+        return hash
+    }
+
     /// 当前状态中可以恢复到指定版本的冲突文件路径。
     private func restorablePaths(_ entries: [StatusEntry], version: ConflictVersion) async throws -> [String] {
         let wanted = Set(entries.map(\.path))
@@ -344,54 +388,5 @@ extension WorkingCopyOperations {
             .filter(resolved.contains)
 
         return available.map(\.path) + resolvedOnly.sorted()
-    }
-
-    /// 为每个文件选一个尚不存在的备份名并写入内容，不覆盖任何已有文件。
-    ///
-    /// - Parameter contents: 相对路径与要备份的内容。
-    /// - Returns: 新建的备份文件的相对路径。
-    private func writeBackups(_ contents: [String: Data]) async throws -> [String] {
-        let files = RepositoryFiles(runner: runner)
-        var created: [String] = []
-
-        for (path, data) in contents.sorted(by: { $0.key < $1.key }) {
-            let name = try await freeBackupName(for: path, excluding: Set(created))
-            try await files.write(data, to: runner.location.path + "/" + name)
-            created.append(name)
-        }
-
-        return created
-    }
-
-    /// 备份依次尝试 `<文件>.orig`、`<文件>.1.orig`、`<文件>.2.orig`…，每次往返检查一批候选。
-    private func freeBackupName(for path: String, excluding taken: Set<String>) async throws -> String {
-        var start = 0
-
-        while true {
-            let names = (start ..< start + 10)
-                .map { $0 == 0 ? path + ".orig" : path + ".\($0).orig" }
-                .filter { !taken.contains($0) }
-
-            let used = Set(try await existing(names.map { runner.location.path + "/" + $0 }))
-
-            if let free = names.first(where: { !used.contains(runner.location.path + "/" + $0) }) {
-                return free
-            }
-
-            start += 10
-        }
-    }
-
-    /// 实际存在的路径；本机不跟随最后一级符号链接，服务器经包装器一次往返检查。
-    private func existing(_ paths: [String]) async throws -> [String] {
-        guard let remote = runner.remote else {
-            return paths.filter { (try? FileManager.default.attributesOfItem(atPath: $0)) != nil }
-        }
-
-        guard !paths.isEmpty else {
-            return []
-        }
-
-        return zip(paths, try await remote.inspect(paths)).filter(\.1).map(\.0)
     }
 }

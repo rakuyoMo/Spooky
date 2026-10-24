@@ -194,13 +194,11 @@ extension RepositorySession {
         }
     }
 
-    /// 采用 Git 的 ours / theirs 语义，界面用两侧的引用名说明；偏好开启时先保留冲突文件的备份。
+    /// 采用 Git 的 ours / theirs 语义，界面用两侧的引用名说明。
     func resolve(_ entries: [StatusEntry], theirs: Bool) {
-        let backup = conflictBackupRecorder()
-
         performGit(
             { runner, _ in
-                try await WorkingCopyOperations(runner: runner).resolve(entries, theirs: theirs, backup: backup)
+                try await WorkingCopyOperations(runner: runner).resolve(entries, theirs: theirs)
             },
             title: AppLocalization.text("conflict.resolveUsingVersion", theirs ? theirsName : oursName),
             recordsActivity: false

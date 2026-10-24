@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - ConflictWizardView
 
-/// 选中冲突文件时的右栏：我方、对方两张版本卡片与可以手动编辑的结果卡片，提供采用一方、保存编辑、标记解决和重新载入。
+/// 选中冲突文件时的右栏：我方、对方两张版本卡片与采用两侧；文件已在别处改过时，多一张手动编辑结果的卡片。
 struct ConflictWizardView: View {
     /// 触发载入的请求：文件的三方版本变化或用户要求重新载入时重新读取。
     private struct LoadRequest: Equatable {
@@ -39,19 +39,13 @@ struct ConflictWizardView: View {
     @State
     private var failure: AppFailure?
 
-    /// 结果卡片里正在编辑的文本。
-    @State
-    private var text = ""
-
-    /// 载入时工作区文件的文本；文件不在工作区或不是 UTF-8 文本时为 nil，结果卡片不可编辑。
-    @State
-    private var loadedText: String?
-
     /// 重新载入的请求序号。
     @State
     private var reloads = 0
 
-    /// 载入中、失败或向导内容；写入结束与重新连上服务器后，没有未保存的编辑时自动重新载入。
+    /// 载入中、失败或向导内容。
+    ///
+    /// 写入结束、重新连上服务器与切回本程序时自动重新载入：文件可能已在外部编辑器里改过。
     var body: some View {
         Group {
             if let failure {
@@ -66,10 +60,13 @@ struct ConflictWizardView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task(id: LoadRequest(entry: entry, reloads: reloads)) { await load() }
         .onChange(of: session.isWriting) {
-            if !session.isWriting, !isEdited { reloads += 1 }
+            if !session.isWriting { reloads += 1 }
         }
         .onChange(of: session.connectionState) {
-            if session.connectionState == .connected, !isEdited { reloads += 1 }
+            if session.connectionState == .connected { reloads += 1 }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            reloads += 1
         }
     }
 }
@@ -77,12 +74,12 @@ struct ConflictWizardView: View {
 // MARK: - Private
 
 extension ConflictWizardView {
-    /// 结果卡片里有尚未保存的编辑。
-    private var isEdited: Bool {
-        loadedText.map { $0 != text } ?? false
+    /// 没有进行中的操作时，冲突来自应用补丁或储藏，对方卡片用专门的标题。
+    private var isAppliedChange: Bool {
+        session.context?.progress == nil
     }
 
-    /// 卡片底色与描边。
+    /// 卡片底色。
     private var tile: some View {
         RoundedRectangle(cornerRadius: 8)
             .fill(AppPalette.color("repository_mergeconflict_tile_background_light_color"))
@@ -95,20 +92,20 @@ extension ConflictWizardView {
             .fill(AppPalette.color("repository_mergeconflict_tile_background_dark_color"))
     }
 
-    /// 冲突类型的说明。
-    private var kindTitle: String {
-        switch entry.conflictKind ?? .bothModified {
-        case .bothModified: AppLocalization.text("conflict.kind.bothModified")
-        case .bothAdded: AppLocalization.text("conflict.kind.bothAdded")
-        case .bothDeleted: AppLocalization.text("conflict.kind.bothDeleted")
-        case .addedByUs: AppLocalization.text("conflict.kind.addedByUs")
-        case .addedByThem: AppLocalization.text("conflict.kind.addedByThem")
-        case .deletedByUs: AppLocalization.text("conflict.kind.deletedByUs")
-        case .deletedByThem: AppLocalization.text("conflict.kind.deletedByThem")
+    /// 冲突类型的说明与重新载入。
+    private var header: some View {
+        HStack(spacing: 8) {
+            Label(entry.conflictKind?.title ?? "", systemImage: "exclamationmark.triangle.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.red)
+
+            Spacer(minLength: 0)
+
+            Button(AppLocalization.text("conflict.reload")) { reloads += 1 }
         }
     }
 
-    /// 可以按文本显示与编辑的内容：不含 NUL 且是有效的 UTF-8。
+    /// 可以按文本显示的内容：不含 NUL 且是有效的 UTF-8。
     private static func text(_ data: Data) -> String? {
         guard !data.contains(0) else {
             return nil
@@ -117,22 +114,27 @@ extension ConflictWizardView {
         return String(data: data, encoding: .utf8)
     }
 
-    /// 冲突类型、两张版本卡片、结果卡片与备份文件。
+    /// 冲突类型与重新载入、两张版本卡片、采用两侧，以及手动编辑结果的卡片。
     private func wizard(_ contents: ConflictContents) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Label(kindTitle, systemImage: "exclamationmark.triangle.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.red)
+        #warning("TODO: 制造冲突后打开向导核对：版本卡片是否显示原文，“Resolve Using Both Versions” 位于卡片下方还是两张卡片之间；只影响冲突向导右栏的卡片内容与按钮位置")
+
+        return VStack(alignment: .leading, spacing: 16) {
+            header
 
             HStack(alignment: .top, spacing: 12) {
                 versionCard(.ours, data: contents.ours)
                 versionCard(.theirs, data: contents.theirs)
             }
-            .frame(height: 220)
 
-            resultCard(contents)
+            if contents.ours != nil, contents.theirs != nil {
+                Button(AppLocalization.text("conflict.resolveBoth")) { session.resolveUsingBoth(entry) }
+                    .disabled(!canResolveUsingBoth(contents))
+                    .frame(maxWidth: .infinity)
+            }
 
-            ConflictBackupsView(session: session)
+            if contents.isManuallyEdited {
+                editedCard(contents)
+            }
         }
         .padding(20)
     }
@@ -140,7 +142,15 @@ extension ConflictWizardView {
     /// 一侧的版本：标题、打开与导出菜单、原文预览和采用这一侧的按钮。
     private func versionCard(_ side: Side, data: Data?) -> some View {
         let name = side == .ours ? session.oursName : session.theirsName
-        let title = AppLocalization.text("conflict.version", name)
+        let applied = side == .theirs && isAppliedChange
+
+        let title = applied
+            ? AppLocalization.text("conflict.version.applied")
+            : AppLocalization.text("conflict.version", name)
+
+        let resolveTitle = applied
+            ? AppLocalization.text("conflict.resolveUsing.applied")
+            : AppLocalization.text("conflict.resolveUsing", name)
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
@@ -157,89 +167,81 @@ extension ConflictWizardView {
 
             preview(data, label: title)
 
-            Button(AppLocalization.text("conflict.resolveUsing", name)) {
-                session.resolve([entry], theirs: side == .theirs)
-            }
-            .disabled(!session.canResolve([entry]))
+            Button(resolveTitle) { session.resolve([entry], theirs: side == .theirs) }
+                .disabled(!session.canResolve([entry]))
         }
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(tile)
     }
 
-    /// 打开或导出这一侧的原文；这一侧删除了文件时不可用。
+    /// 打开或导出这一侧的原文；这一侧删除了文件时两项都不可用，只显示动作名。
     private func versionMenu(name: String, data: Data?) -> some View {
         Menu {
-            Button(AppLocalization.text("conflict.open", name)) {
-                if let data { open(data) }
-            }
+            if let data {
+                Button(AppLocalization.text("conflict.open", name)) { open(data) }
 
-            Button(AppLocalization.text("conflict.export", name)) {
-                if let data { export(data) }
+                Divider()
+
+                Button(AppLocalization.text("conflict.export", name)) { export(data) }
+            } else {
+                Button(AppLocalization.text("conflict.open.missing")) { }
+                    .disabled(true)
+
+                Divider()
+
+                Button(AppLocalization.text("conflict.export.missing")) { }
+                    .disabled(true)
             }
         } label: {
             Image(systemName: "ellipsis.circle")
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .disabled(data == nil)
         .accessibilityLabel(AppLocalization.text("conflict.versionMenu", name))
     }
 
-    /// 工作区里的当前文件：文本可编辑并保存；保存前后都可以重新载入或用它标记解决。
-    private func resultCard(_ contents: ConflictContents) -> some View {
+    /// 工作区里已经改过的当前文件，可以直接用它标记解决。
+    private func editedCard(_ contents: ConflictContents) -> some View {
         let title = AppLocalization.text("conflict.result")
 
         return VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
 
-            if loadedText != nil {
-                ConflictTextView(text: $text, editable: session.canWrite)
-                    .background(innerTile)
-                    .accessibilityLabel(title)
-            } else {
-                placeholder(contents.worktree == nil ? "conflict.worktreeMissing" : "conflict.binary")
-            }
+            preview(contents.worktree, label: title)
 
-            HStack(spacing: 8) {
-                Button(AppLocalization.text("conflict.reload")) { reloads += 1 }
-
-                Spacer(minLength: 0)
-
-                Button(AppLocalization.text("conflict.save")) { save(contents) }
-                    .disabled(!isEdited || !session.canWrite)
-
-                Button(AppLocalization.text("conflict.resolveCurrent")) {
-                    session.stage([entry], staged: true)
-                }
-                .disabled(isEdited || !session.canResolve([entry]))
-            }
+            Button(AppLocalization.text("conflict.resolveCurrent")) { session.stage([entry], staged: true) }
+                .disabled(!session.canResolve([entry]))
         }
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(tile)
     }
 
-    /// 版本原文的只读预览；删除了文件的一侧与二进制内容只显示说明。
+    /// 只读预览；删除了文件的一侧与二进制内容只显示说明。
     @ViewBuilder
     private func preview(_ data: Data?, label: String) -> some View {
         if let data, let string = Self.text(data) {
-            ConflictTextView(text: .constant(string), editable: false)
+            ConflictTextView(text: string)
                 .background(innerTile)
                 .accessibilityLabel(label)
         } else {
-            placeholder(data == nil ? "conflict.missing" : "conflict.binary")
+            Text(AppLocalization.text(data == nil ? "conflict.missing" : "conflict.binary"))
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(innerTile)
         }
     }
 
-    /// 内容区里居中的说明文字。
-    private func placeholder(_ key: String) -> some View {
-        Text(AppLocalization.text(key))
-            .font(.system(size: 12))
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(innerTile)
+    /// 两侧都是文本时才能按冲突块合并；二进制内容交给 Git 会直接失败。
+    private func canResolveUsingBoth(_ contents: ConflictContents) -> Bool {
+        guard let ours = contents.ours, let theirs = contents.theirs else {
+            return false
+        }
+
+        return session.canResolveUsingBoth(entry) && !ours.contains(0) && !theirs.contains(0)
     }
 
     /// 读取三方内容；被新的请求取代的结果直接丢弃。
@@ -251,19 +253,10 @@ extension ConflictWizardView {
 
             contents = loaded
             failure = nil
-            loadedText = loaded.worktree.flatMap(Self.text)
-            text = loadedText ?? ""
         } catch {
             guard !Task.isCancelled else { return }
 
             failure = AppFailure(error: error, opening: false, location: session.repository)
-        }
-    }
-
-    /// 保存编辑结果，写入成功后重新载入，让编辑区与磁盘一致。
-    private func save(_ contents: ConflictContents) {
-        session.saveConflictResolution(text, for: entry, replacing: contents.worktree) {
-            reloads += 1
         }
     }
 
@@ -278,7 +271,7 @@ extension ConflictWizardView {
         }
     }
 
-    /// 把这一侧的原文导出到用户选择的位置。
+    /// 把这一侧的原文导出到用户选择的位置；服务器上的版本在载入时已经取到本机。
     private func export(_ data: Data) {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = entry.path.split(separator: "/").last.map(String.init) ?? entry.path
@@ -304,77 +297,32 @@ extension ConflictWizardView {
     }
 }
 
-// MARK: - ConflictBackupsView
+// MARK: - ConflictKind
 
-/// 冲突向导在当前仓库生成的备份文件与清理入口；没有备份时不占位置。
-struct ConflictBackupsView: View {
-    /// 当前仓库会话。
-    let session: RepositorySession
-
-    /// 备份文件的路径可以选中复制，清理前要确认。
-    var body: some View {
-        let backups = session.currentConflictBackups
-
-        if !backups.isEmpty {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(AppLocalization.text("conflict.backups"))
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
-
-                ForEach(backups, id: \.self) { path in
-                    Text(path)
-                        .font(.system(size: 11, design: .monospaced))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
-                        .help(path)
-                }
-
-                Button(AppLocalization.text("conflict.removeBackups")) { session.removeConflictBackups() }
-                    .controlSize(.small)
-                    .disabled(!session.canWrite)
-                    .padding(.top, 4)
-            }
+extension ConflictKind {
+    /// 冲突类型的本地化名称，向导标题与文件行的悬停提示共用。
+    var title: String {
+        switch self {
+        case .bothModified: AppLocalization.text("conflict.kind.bothModified")
+        case .bothAdded: AppLocalization.text("conflict.kind.bothAdded")
+        case .bothDeleted: AppLocalization.text("conflict.kind.bothDeleted")
+        case .addedByUs: AppLocalization.text("conflict.kind.addedByUs")
+        case .addedByThem: AppLocalization.text("conflict.kind.addedByThem")
+        case .deletedByUs: AppLocalization.text("conflict.kind.deletedByUs")
+        case .deletedByThem: AppLocalization.text("conflict.kind.deletedByThem")
         }
     }
 }
 
 // MARK: - ConflictTextView
 
-/// 冲突内容的等宽文本区：版本卡片只读，结果卡片可编辑；大文件交给 NSTextView 排版。
+/// 冲突内容的只读等宽文本区：可以选中复制，大文件交给 NSTextView 排版。
 private struct ConflictTextView: NSViewRepresentable {
-    /// 把编辑同步回绑定。
-    @MainActor
-    final class Coordinator: NSObject, NSTextViewDelegate {
-        /// 最新绑定。
-        var text: Binding<String>
+    /// 显示的文本。
+    let text: String
 
-        /// 保存初始绑定。
-        init(text: Binding<String>) {
-            self.text = text
-        }
-
-        /// 每次编辑后写回绑定。
-        func textDidChange(_ notification: Notification) {
-            guard let view = notification.object as? NSTextView else { return }
-            text.wrappedValue = view.string
-        }
-    }
-
-    /// 显示与编辑的文本。
-    @Binding
-    var text: String
-
-    /// 是否允许编辑。
-    let editable: Bool
-
-    /// 创建同步编辑的协调器。
-    func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text)
-    }
-
-    /// 关闭自动替换，保存的内容与输入的字符一致。
-    func makeNSView(context: Context) -> NSScrollView {
+    /// 关闭编辑，保留选择与复制。
+    func makeNSView(context _: Context) -> NSScrollView {
         let scroll = NSTextView.scrollableTextView()
         scroll.drawsBackground = false
 
@@ -384,29 +332,18 @@ private struct ConflictTextView: NSViewRepresentable {
 
         view.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
         view.isRichText = false
-        view.allowsUndo = true
+        view.isEditable = false
+        view.isSelectable = true
         view.drawsBackground = false
-        view.isAutomaticQuoteSubstitutionEnabled = false
-        view.isAutomaticDashSubstitutionEnabled = false
-        view.isAutomaticTextReplacementEnabled = false
-        view.isContinuousSpellCheckingEnabled = false
         view.textContainerInset = NSSize(width: 4, height: 4)
-        view.delegate = context.coordinator
         view.string = text
-        view.isEditable = editable
         return scroll
     }
 
-    /// 内容只在与绑定不同时替换，编辑中的光标与撤销记录保持不变。
-    func updateNSView(_ scroll: NSScrollView, context: Context) {
-        context.coordinator.text = $text
+    /// 内容变化时才替换，选区保持不变。
+    func updateNSView(_ scroll: NSScrollView, context _: Context) {
+        guard let view = scroll.documentView as? NSTextView, view.string != text else { return }
 
-        guard let view = scroll.documentView as? NSTextView else { return }
-
-        view.isEditable = editable
-
-        if view.string != text {
-            view.string = text
-        }
+        view.string = text
     }
 }

@@ -532,9 +532,7 @@
 "stash.error.reapply.help" = "L’opération est terminée, mais vos modifications locales n’ont pas pu être réappliquées. Elles restent dans le remisage ; appliquez-le quand vous êtes prêt.";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "Patch ou remisage appliqué";
-"conflict.backups" = "Fichiers de sauvegarde";
 "conflict.binary" = "Le contenu binaire n’est pas affiché.";
-"conflict.error.changed" = "Le fichier a été modifié après son chargement. Rechargez le conflit, puis modifiez-le à nouveau.";
 "conflict.error.version" = "Les fichiers sélectionnés n’ont pas cette version.";
 "conflict.export" = "Exporter la version de « %@ »…";
 "conflict.header.cherryPick" = "Cherry-pick de %@ dans %@";
@@ -551,7 +549,6 @@
 "conflict.hint.sequence.conflicts" = "Résolvez tous les conflits pour poursuivre.";
 "conflict.hint.sequence.resolved" = "Cliquez sur **Continuer** pour valider cette étape et passer aux commits suivants.";
 "conflict.hint.sequence.empty" = "Il ne reste aucune modification dans cette étape. Cliquez sur **Ignorer** pour écarter ce commit, ou sur **Continuer** pour conserver un commit vide et poursuivre.";
-"conflict.keepBackups" = "Conserver les fichiers de sauvegarde des conflits de fusion";
 "conflict.kind.addedByThem" = "Ajouté par eux";
 "conflict.kind.addedByUs" = "Ajouté par nous";
 "conflict.kind.bothAdded" = "Ajouté des deux côtés";
@@ -567,26 +564,19 @@
 "conflict.missing" = "Cette version supprime le fichier.";
 "conflict.open" = "Ouvrir la version de « %@ »";
 "conflict.reload" = "Recharger";
-"conflict.removeBackups" = "Supprimer les fichiers de sauvegarde";
-"conflict.removeBackups.message" = "%d fichiers de sauvegarde dans %@ seront définitivement supprimés. Cette action est irréversible.";
-"conflict.removeBackups.remote" = "%d fichiers de sauvegarde seront définitivement supprimés sur le serveur dans %@. Cette action est irréversible.";
 "conflict.resolveCurrent" = "Résoudre avec la version actuelle";
 "conflict.resolvedSuffix" = "%@ (%d résolus)";
 "conflict.resolveUsing" = "Résoudre avec « %@ »";
 "conflict.resolveUsingVersion" = "Résoudre avec la version de « %@ »";
-"conflict.restore.message" = "%d fichiers dans %@ seront écrasés par la version sélectionnée. Les modifications actuelles de ces fichiers seront perdues.";
-"conflict.restore.remote" = "%d fichiers seront écrasés sur le serveur dans %@ par la version sélectionnée. Les modifications actuelles de ces fichiers seront perdues.";
 "conflict.restoreAncestor" = "Restaurer la version de l’ancêtre commun";
 "conflict.restoreUnmerged" = "Restaurer la version non fusionnée";
 "conflict.restoreUnmerged.many" = "Restaurer la version non fusionnée de %d éléments";
 "conflict.restoreUnmerged.one" = "Restaurer la version non fusionnée de « %@ »";
 "conflict.restoreVersion" = "Restaurer la version de « %@ »";
 "conflict.result" = "Version modifiée à la main ou fusionnée";
-"conflict.save" = "Enregistrer";
 "conflict.step" = "Étape %d sur %d";
 "conflict.step.applying" = "Étape %d sur %d : application de « %@ »";
 "conflict.step.editing" = "Étape %d sur %d : modification de « %@ »";
-"conflict.step.reverting" = "Étape %d sur %d : revert de « %@ »";
 "conflict.title.cherryPick" = "Cherry-pick de %d commits sur « %@ »";
 "conflict.title.cherryPick.one" = "Cherry-pick de 1 commit sur « %@ »";
 "conflict.title.merge" = "Fusion de « %@ » dans « %@ »";
@@ -598,7 +588,6 @@
 "conflict.unresolved.one" = "1 conflit non résolu";
 "conflict.version" = "Version de « %@ »";
 "conflict.versionMenu" = "Actions pour la version de « %@ »";
-"conflict.worktreeMissing" = "Le fichier n’est pas dans la copie de travail.";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "Historique du fichier";
 "fileHistory.showCommit" = "Afficher le commit";
@@ -829,3 +818,13 @@
 "files.truncation" = "Tronquer les noms de fichiers longs dans la copie de travail :";
 "files.truncation.beginning" = "Tronquer le début";
 "files.truncation.middle" = "Tronquer le milieu";
+
+/* 冲突向导。 */
+"conflict.resolveBoth" = "Résoudre avec les deux versions";
+"conflict.version.applied" = "Version du patch ou remisage appliqué";
+"conflict.resolveUsing.applied" = "Résoudre avec le patch ou remisage appliqué";
+"conflict.open.missing" = "Ouvrir";
+"conflict.export.missing" = "Exporter…";
+"conflict.toolTip" = "Fichier à fusionner : %@";
+"conflict.sequence.applying" = "Application de « %@ »";
+"conflict.sequence.reverting" = "Revert de « %@ »";

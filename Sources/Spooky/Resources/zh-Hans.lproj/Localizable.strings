@@ -532,9 +532,7 @@
 "stash.error.reapply.help" = "操作已完成，但本地改动未能重新应用，仍保留在储藏中；准备好后再应用它。";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "应用的补丁或储藏";
-"conflict.backups" = "备份文件";
 "conflict.binary" = "不显示二进制内容。";
-"conflict.error.changed" = "文件在载入后被改动。请重新载入冲突，再重新编辑。";
 "conflict.error.version" = "所选文件没有这个版本。";
 "conflict.export" = "导出来自 “%@” 的版本…";
 "conflict.header.cherryPick" = "正在把 %@ 摘取到 %@";
@@ -551,7 +549,6 @@
 "conflict.hint.sequence.conflicts" = "解决全部冲突后才能继续。";
 "conflict.hint.sequence.resolved" = "点按 **继续** 提交这一步，再处理后面的提交。";
 "conflict.hint.sequence.empty" = "这一步没有可提交的改动。点按 **跳过** 略过这个提交，或点按 **继续** 保留一个空提交再继续。";
-"conflict.keepBackups" = "为合并冲突保留备份文件";
 "conflict.kind.addedByThem" = "对方新增";
 "conflict.kind.addedByUs" = "我方新增";
 "conflict.kind.bothAdded" = "双方新增";
@@ -567,26 +564,19 @@
 "conflict.missing" = "这个版本删除了文件。";
 "conflict.open" = "打开来自 “%@” 的版本";
 "conflict.reload" = "重新载入";
-"conflict.removeBackups" = "删除备份文件";
-"conflict.removeBackups.message" = "将永久删除 %d 个备份文件。仓库：%@。此操作无法撤销。";
-"conflict.removeBackups.remote" = "将在服务器上永久删除 %d 个备份文件。仓库：%@。此操作无法撤销。";
 "conflict.resolveCurrent" = "采用当前版本解决";
 "conflict.resolvedSuffix" = "%@（已解决 %d 个）";
 "conflict.resolveUsing" = "采用 “%@” 解决";
 "conflict.resolveUsingVersion" = "采用来自 “%@” 的版本解决";
-"conflict.restore.message" = "将用所选版本覆盖 %d 个文件。仓库：%@。这些文件当前的编辑会丢失。";
-"conflict.restore.remote" = "将在服务器上用所选版本覆盖 %d 个文件。仓库：%@。这些文件当前的编辑会丢失。";
 "conflict.restoreAncestor" = "恢复共同祖先版本";
 "conflict.restoreUnmerged" = "恢复未合并的版本";
 "conflict.restoreUnmerged.many" = "恢复 %d 个项目的未合并版本";
 "conflict.restoreUnmerged.one" = "恢复 “%@” 的未合并版本";
 "conflict.restoreVersion" = "恢复来自 “%@” 的版本";
 "conflict.result" = "手动编辑或合并后的版本";
-"conflict.save" = "保存";
 "conflict.step" = "第 %d 步，共 %d 步";
 "conflict.step.applying" = "第 %d 步，共 %d 步：正在应用 “%@”";
 "conflict.step.editing" = "第 %d 步，共 %d 步：正在编辑 “%@”";
-"conflict.step.reverting" = "第 %d 步，共 %d 步：正在反转 “%@”";
 "conflict.title.cherryPick" = "正在把 %d 个提交摘取到 “%@”";
 "conflict.title.cherryPick.one" = "正在把 1 个提交摘取到 “%@”";
 "conflict.title.merge" = "正在把 “%@” 合并到 “%@”";
@@ -598,7 +588,6 @@
 "conflict.unresolved.one" = "1 个未解决冲突";
 "conflict.version" = "来自 “%@” 的版本";
 "conflict.versionMenu" = "来自 “%@” 的版本的操作";
-"conflict.worktreeMissing" = "工作区里没有这个文件。";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "文件历史";
 "fileHistory.showCommit" = "显示提交";
@@ -829,3 +818,13 @@
 "files.truncation" = "截断工作区中过长的文件名：";
 "files.truncation.beginning" = "截断开头";
 "files.truncation.middle" = "截断中间";
+
+/* 冲突向导。 */
+"conflict.resolveBoth" = "采用两侧版本解决";
+"conflict.version.applied" = "来自应用的补丁或储藏的版本";
+"conflict.resolveUsing.applied" = "采用应用的补丁或储藏解决";
+"conflict.open.missing" = "打开";
+"conflict.export.missing" = "导出…";
+"conflict.toolTip" = "文件需要合并：%@";
+"conflict.sequence.applying" = "正在应用 “%@”";
+"conflict.sequence.reverting" = "正在反转 “%@”";

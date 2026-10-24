@@ -532,9 +532,7 @@
 "stash.error.reapply.help" = "The operation finished, but your local changes could not be applied again. They are kept on the Stash; apply them when you are ready.";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "Applied Patch or Stash";
-"conflict.backups" = "Backup Files";
 "conflict.binary" = "Binary content isn’t shown.";
-"conflict.error.changed" = "The file changed after it was loaded. Reload the conflict, then edit it again.";
 "conflict.error.version" = "The selected files don’t have this version.";
 "conflict.export" = "Export Version from “%@”…";
 "conflict.header.cherryPick" = "Cherry-Picking %@ into %@";
@@ -551,7 +549,6 @@
 "conflict.hint.sequence.conflicts" = "Resolve all conflicts to continue.";
 "conflict.hint.sequence.resolved" = "Click **Continue** to commit this step and go on with the remaining commits.";
 "conflict.hint.sequence.empty" = "No changes are left in this step. Click **Skip** to leave out this commit, or **Continue** to keep an empty commit and go on.";
-"conflict.keepBackups" = "Keep backup files for merge conflicts";
 "conflict.kind.addedByThem" = "Added by Them";
 "conflict.kind.addedByUs" = "Added by Us";
 "conflict.kind.bothAdded" = "Both Added";
@@ -567,26 +564,19 @@
 "conflict.missing" = "This version deletes the file.";
 "conflict.open" = "Open Version from “%@”";
 "conflict.reload" = "Reload";
-"conflict.removeBackups" = "Delete Backup Files";
-"conflict.removeBackups.message" = "Permanently delete %d backup files in %@. This cannot be undone.";
-"conflict.removeBackups.remote" = "Permanently delete %d backup files on the server at %@. This cannot be undone.";
 "conflict.resolveCurrent" = "Resolve Using Current Version";
 "conflict.resolvedSuffix" = "%@ (%d resolved)";
 "conflict.resolveUsing" = "Resolve Using “%@”";
 "conflict.resolveUsingVersion" = "Resolve Using Version from “%@”";
-"conflict.restore.message" = "Overwrite %d files in %@ with the selected version. Current edits to these files are lost.";
-"conflict.restore.remote" = "Overwrite %d files on the server at %@ with the selected version. Current edits to these files are lost.";
 "conflict.restoreAncestor" = "Restore Ancestor Version";
 "conflict.restoreUnmerged" = "Restore Unmerged Version";
 "conflict.restoreUnmerged.many" = "Restore Unmerged Version of %d Items";
 "conflict.restoreUnmerged.one" = "Restore Unmerged Version of “%@”";
 "conflict.restoreVersion" = "Restore Version from “%@”";
 "conflict.result" = "Manually Edited or Merged Version";
-"conflict.save" = "Save";
 "conflict.step" = "Step %d of %d";
 "conflict.step.applying" = "Step %d of %d: Applying “%@”";
 "conflict.step.editing" = "Step %d of %d: Editing “%@”";
-"conflict.step.reverting" = "Step %d of %d: Reverting “%@”";
 "conflict.title.cherryPick" = "Cherry-Picking %d commits onto “%@”";
 "conflict.title.cherryPick.one" = "Cherry-Picking 1 commit onto “%@”";
 "conflict.title.merge" = "Merging “%@” into “%@”";
@@ -598,7 +588,6 @@
 "conflict.unresolved.one" = "1 unresolved conflict";
 "conflict.version" = "Version from “%@”";
 "conflict.versionMenu" = "Actions for the version from “%@”";
-"conflict.worktreeMissing" = "The file isn’t in the working copy.";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "File History";
 "fileHistory.showCommit" = "Show Commit";
@@ -829,3 +818,13 @@
 "files.truncation" = "Truncate long file names in working copy:";
 "files.truncation.beginning" = "Truncate beginning";
 "files.truncation.middle" = "Truncate middle";
+
+/* 冲突向导。 */
+"conflict.resolveBoth" = "Resolve Using Both Versions";
+"conflict.version.applied" = "Version from Applied Patch or Stash";
+"conflict.resolveUsing.applied" = "Resolve Using Applied Patch or Stash";
+"conflict.open.missing" = "Open";
+"conflict.export.missing" = "Export…";
+"conflict.toolTip" = "File requires merging: %@";
+"conflict.sequence.applying" = "Applying “%@”";
+"conflict.sequence.reverting" = "Reverting “%@”";

@@ -532,9 +532,7 @@
 "stash.error.reapply.help" = "작업은 끝났지만 로컬 변경 사항을 다시 적용하지 못했습니다. 변경 사항은 스태시에 남아 있으니 준비가 되면 적용하세요.";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "적용한 패치 또는 스태시";
-"conflict.backups" = "백업 파일";
 "conflict.binary" = "바이너리 내용은 표시하지 않습니다.";
-"conflict.error.changed" = "불러온 후에 파일이 변경되었습니다. 충돌을 다시 불러온 다음 다시 편집하세요.";
 "conflict.error.version" = "선택한 파일에 이 버전이 없습니다.";
 "conflict.export" = "“%@”의 버전 내보내기…";
 "conflict.header.cherryPick" = "%@을(를) %@에 체리픽하는 중";
@@ -551,7 +549,6 @@
 "conflict.hint.sequence.conflicts" = "계속하려면 모든 충돌을 해결하세요.";
 "conflict.hint.sequence.resolved" = "**계속**을 클릭하면 이 단계를 커밋하고 남은 커밋으로 넘어갑니다.";
 "conflict.hint.sequence.empty" = "이 단계에는 남은 변경이 없습니다. **건너뛰기**를 클릭해 이 커밋을 빼거나 **계속**을 클릭해 빈 커밋을 남기고 계속하세요.";
-"conflict.keepBackups" = "병합 충돌 백업 파일 유지";
 "conflict.kind.addedByThem" = "상대 쪽에서 추가함";
 "conflict.kind.addedByUs" = "내 쪽에서 추가함";
 "conflict.kind.bothAdded" = "양쪽에서 추가함";
@@ -567,26 +564,19 @@
 "conflict.missing" = "이 버전에서는 파일이 삭제되었습니다.";
 "conflict.open" = "“%@”의 버전 열기";
 "conflict.reload" = "다시 불러오기";
-"conflict.removeBackups" = "백업 파일 삭제";
-"conflict.removeBackups.message" = "백업 파일 %d 개를 영구적으로 삭제합니다. 저장소: %@. 되돌릴 수 없습니다.";
-"conflict.removeBackups.remote" = "서버의 백업 파일 %d 개를 영구적으로 삭제합니다. 저장소: %@. 되돌릴 수 없습니다.";
 "conflict.resolveCurrent" = "현재 버전으로 해결";
 "conflict.resolvedSuffix" = "%@ (%d 개 해결됨)";
 "conflict.resolveUsing" = "“%@”(으)로 해결";
 "conflict.resolveUsingVersion" = "“%@”의 버전으로 해결";
-"conflict.restore.message" = "파일 %d 개를 선택한 버전으로 덮어씁니다. 저장소: %@. 이 파일들의 현재 편집 내용은 사라집니다.";
-"conflict.restore.remote" = "서버의 파일 %d 개를 선택한 버전으로 덮어씁니다. 저장소: %@. 이 파일들의 현재 편집 내용은 사라집니다.";
 "conflict.restoreAncestor" = "공통 조상 버전 복원";
 "conflict.restoreUnmerged" = "병합되지 않은 버전 복원";
 "conflict.restoreUnmerged.many" = "항목 %d 개의 병합되지 않은 버전 복원";
 "conflict.restoreUnmerged.one" = "“%@”의 병합되지 않은 버전 복원";
 "conflict.restoreVersion" = "“%@”의 버전 복원";
 "conflict.result" = "직접 편집하거나 병합한 버전";
-"conflict.save" = "저장";
 "conflict.step" = "%d / %d 단계";
 "conflict.step.applying" = "%d / %d 단계: “%@” 적용 중";
 "conflict.step.editing" = "%d / %d 단계: “%@” 편집 중";
-"conflict.step.reverting" = "%d / %d 단계: “%@” 되돌리는 중";
 "conflict.title.cherryPick" = "커밋 %d 개를 “%@”에 체리픽하는 중";
 "conflict.title.cherryPick.one" = "커밋 1 개를 “%@”에 체리픽하는 중";
 "conflict.title.merge" = "“%@”을(를) “%@”에 병합하는 중";
@@ -598,7 +588,6 @@
 "conflict.unresolved.one" = "해결되지 않은 충돌 1 개";
 "conflict.version" = "“%@”의 버전";
 "conflict.versionMenu" = "“%@”의 버전 작업";
-"conflict.worktreeMissing" = "작업 사본에 이 파일이 없습니다.";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "파일 기록";
 "fileHistory.showCommit" = "커밋 보기";
@@ -829,3 +818,13 @@
 "files.truncation" = "작업 사본의 긴 파일 이름 줄이기:";
 "files.truncation.beginning" = "앞부분 줄이기";
 "files.truncation.middle" = "가운데 줄이기";
+
+/* 冲突向导。 */
+"conflict.resolveBoth" = "양쪽 버전으로 해결";
+"conflict.version.applied" = "적용한 패치 또는 스태시의 버전";
+"conflict.resolveUsing.applied" = "적용한 패치 또는 스태시로 해결";
+"conflict.open.missing" = "열기";
+"conflict.export.missing" = "내보내기…";
+"conflict.toolTip" = "병합이 필요한 파일: %@";
+"conflict.sequence.applying" = "“%@” 적용 중";
+"conflict.sequence.reverting" = "“%@” 되돌리는 중";

@@ -7,8 +7,8 @@ import Testing
 
 /// 用真实 Git 在临时仓库里构造合并、变基、摘取与反转的冲突，验证冲突向导读到的内容和每个写入的结果。
 struct MergeConflictTests {
-    /// 向导显示的三方内容必须与索引一致；采用一侧前的备份不能覆盖用户已有的同名文件，清理只删除向导生成的备份。
-    @Test("合并冲突：三方内容、采用一侧时保留备份与清理备份")
+    /// 向导显示的三方内容必须与索引一致；采用一侧后 resolve-undo 记录让横幅能数出已解决的冲突。
+    @Test("合并冲突：三方内容与采用一侧")
     func mergeWizard() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
@@ -35,6 +35,9 @@ struct MergeConflictTests {
         #expect(contents.theirs == Data("theirs\n".utf8))
         #expect(String(decoding: marked, as: UTF8.self).contains("<<<<<<<"))
 
+        // Git 刚写入的冲突标记还在，不算手动编辑过
+        #expect(!contents.isManuallyEdited)
+
         // 合并的我方是当前 HEAD，对方是被合并的提交，还没有解决任何冲突
         let progress = try #require(try await service.context(head: status.branch.oid).progress)
 
@@ -43,32 +46,57 @@ struct MergeConflictTests {
         #expect(progress.theirs == side)
         #expect(progress.resolvedPaths.isEmpty)
 
-        // 用户自己的同名 .orig 文件保持原样，备份换用下一个名字
-        let existing = repository.directory.appending(path: path + ".orig")
-        try Data("user file\n".utf8).write(to: existing)
-
-        let recorder = BackupRecorder()
-        try await service.resolve([entry], theirs: true) { await recorder.add($0) }
-        let backups = await recorder.paths
-
-        #expect(backups == [path + ".1.orig"])
-        #expect(try Data(contentsOf: repository.directory.appending(path: path + ".1.orig")) == marked)
-        #expect(try Data(contentsOf: existing) == Data("user file\n".utf8))
+        try await service.resolve([entry], theirs: true)
         #expect(try Data(contentsOf: repository.directory.appending(path: path)) == Data("theirs\n".utf8))
 
         // 解决之后，resolve-undo 记录让横幅能数出已解决的冲突
         let resolved = try #require(try await service.context(head: status.branch.oid).progress)
         #expect(resolved.resolvedPaths == [path])
-
-        try await service.removeBackups(backups + ["missing.orig"])
-
-        #expect(!FileManager.default.fileExists(atPath: repository.directory.appending(path: path + ".1.orig").path))
-        #expect(FileManager.default.fileExists(atPath: existing.path))
     }
 
-    /// 恢复只改工作区，文件仍是冲突；手动编辑在文件被外部改过时拒绝覆盖；标记解决后还能重新生成冲突。
-    @Test("恢复冲突版本与手动编辑")
-    func restoreAndEdit() async throws {
+    /// 采用两侧时冲突块里两侧的行都要保留、我方在前，不冲突的改动照常合并；结果直接标记解决，横幅仍能数出它。
+    @Test("采用两侧版本：按冲突块保留两侧并标记解决")
+    func resolveUsingBoth() async throws {
+        let repository = try TemporaryRepository()
+        defer { repository.remove() }
+        try await repository.initialize()
+
+        let path = "日志 [*].txt"
+        let file = repository.directory.appending(path: path)
+
+        _ = try await diverge(
+            repository,
+            base: [path: "one\ntwo\nthree\nfour\nfive\n"],
+            ours: [path: "one\nours\nthree\nfour\nfive\n", "added.txt": "shared\nmine\n"],
+            theirs: [path: "one\ntheirs\nthree\nfour\n5\n", "added.txt": "shared\nyours\n"]
+        )
+
+        _ = try await repository.runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
+
+        let service = WorkingCopyOperations(runner: repository.runner)
+        let entries = Dictionary(uniqueKeysWithValues: try await repository.runner.status().entries.map { ($0.path, $0) })
+
+        try await service.resolveUsingBoth(try #require(entries[path]))
+
+        // 第二行在两侧都改了，按冲突块保留两侧；第五行只有对方改了，照常合并
+        #expect(try Data(contentsOf: file) == Data("one\nours\ntheirs\nthree\nfour\n5\n".utf8))
+
+        // 两侧各自新增的文件没有共同祖先，相同的开头只保留一份
+        try await service.resolveUsingBoth(try #require(entries["added.txt"]))
+
+        let added = repository.directory.appending(path: "added.txt")
+        #expect(try Data(contentsOf: added) == Data("shared\nmine\nyours\n".utf8))
+
+        let status = try await repository.runner.status()
+        #expect(status.entries.allSatisfy { $0.kind != .conflicted })
+
+        let progress = try #require(try await service.context(head: status.branch.oid).progress)
+        #expect(progress.resolvedPaths == [path, "added.txt"])
+    }
+
+    /// 恢复只改工作区，文件仍是冲突；恢复成某一侧之外的内容就算手动改过；标记解决后还能重新生成冲突。
+    @Test("恢复冲突版本与手动编辑的识别")
+    func restoreConflictVersions() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
         try await repository.initialize()
@@ -85,25 +113,20 @@ struct MergeConflictTests {
         #expect(try Data(contentsOf: file) == Data("ours\n".utf8))
         #expect(try await repository.runner.status().entries.first?.kind == .conflicted)
 
+        // 与我方相同的内容只是一侧的版本，不算手动编辑
+        #expect(try await !service.conflictContents(of: entry).isManuallyEdited)
+
         try await service.restoreConflicts([entry], to: .base)
         #expect(try Data(contentsOf: file) == Data("base\n".utf8))
+        #expect(try await service.conflictContents(of: entry).isManuallyEdited)
 
         try await service.restoreConflicts([entry], to: .unmerged)
         #expect(String(decoding: try Data(contentsOf: file), as: UTF8.self).contains(">>>>>>>"))
+        #expect(try await !service.conflictContents(of: entry).isManuallyEdited)
 
-        // 手动编辑：载入时的内容与磁盘一致才写入
-        let loaded = try Data(contentsOf: file)
-        try await service.saveResolution(Data("edited\n".utf8), for: entry, replacing: loaded)
-        #expect(try Data(contentsOf: file) == Data("edited\n".utf8))
-
-        // 其它程序在载入之后改了文件，编辑结果不能覆盖它
-        try Data("external\n".utf8).write(to: file)
-
-        await #expect(throws: ConflictResolutionError.fileChanged) {
-            try await service.saveResolution(Data("mine\n".utf8), for: entry, replacing: Data("edited\n".utf8))
-        }
-
-        #expect(try Data(contentsOf: file) == Data("external\n".utf8))
+        // 在外部编辑器里删掉冲突标记、写成自己的结果
+        try Data("edited\n".utf8).write(to: file)
+        #expect(try await service.conflictContents(of: entry).isManuallyEdited)
 
         // 标记解决之后，Git 的 resolve-undo 记录仍能重新生成冲突
         try await service.stage([entry], staged: true)
@@ -210,8 +233,8 @@ struct MergeConflictTests {
         #expect(try await runner.status().branch.oid == original)
     }
 
-    /// 摘取序列的步数从已完成的提交数出；这一步解决后没有改动时，继续保留一个沿用原作者与信息的空提交。
-    @Test("摘取序列：步数与空的一步继续")
+    /// 摘取序列不记录已完成的步数，只能数出剩余的提交；这一步解决后没有改动时，继续保留一个沿用原作者与信息的空提交。
+    @Test("摘取序列：剩余提交数与空的一步继续")
     func cherryPickSequence() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
@@ -231,7 +254,7 @@ struct MergeConflictTests {
         let progress = try #require(try await service.context(head: try await runner.status().branch.oid).progress)
 
         #expect(progress.state == .cherryPick)
-        #expect(progress.step == 1 && progress.stepCount == 2)
+        #expect(progress.step == nil && progress.stepCount == 2)
         #expect(progress.stepSubject == "pick me")
 
         // 采用我方后这一步与 HEAD 相同
@@ -305,17 +328,6 @@ struct MergeConflictTests {
 // MARK: - Helpers
 
 extension MergeConflictTests {
-    /// 收集备份回调交出的路径。
-    private actor BackupRecorder {
-        /// 已经交出的备份路径。
-        private(set) var paths: [String] = []
-
-        /// 追加一批备份路径。
-        func add(_ new: [String]) {
-            paths += new
-        }
-    }
-
     /// 从同一个基础提交分出 main 与 side 两侧，各自提交一次；值为 nil 的文件在那一侧被删除。
     ///
     /// - Returns: side 分支的提交，结束时检出 main。

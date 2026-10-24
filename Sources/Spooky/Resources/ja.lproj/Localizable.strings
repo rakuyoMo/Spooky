@@ -532,9 +532,7 @@
 "stash.error.reapply.help" = "操作は完了しましたが、ローカルの変更を再適用できませんでした。変更はスタッシュに残っているので、準備ができたら適用してください。";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "適用したパッチまたはスタッシュ";
-"conflict.backups" = "バックアップファイル";
 "conflict.binary" = "バイナリの内容は表示しません。";
-"conflict.error.changed" = "読み込んだ後にファイルが変更されました。競合を再読み込みしてから、もう一度編集してください。";
 "conflict.error.version" = "選択したファイルにはこのバージョンがありません。";
 "conflict.export" = "「%@」のバージョンを書き出す…";
 "conflict.header.cherryPick" = "%@ を %@ にチェリーピック中";
@@ -551,7 +549,6 @@
 "conflict.hint.sequence.conflicts" = "続けるには、すべての競合を解決してください。";
 "conflict.hint.sequence.resolved" = "**続行** をクリックすると、このステップをコミットして残りのコミットに進みます。";
 "conflict.hint.sequence.empty" = "このステップには変更が残っていません。**スキップ** でこのコミットを除くか、**続行** で空のコミットを残して続けてください。";
-"conflict.keepBackups" = "マージ競合のバックアップファイルを残す";
 "conflict.kind.addedByThem" = "相手側で追加";
 "conflict.kind.addedByUs" = "自分側で追加";
 "conflict.kind.bothAdded" = "両方で追加";
@@ -567,26 +564,19 @@
 "conflict.missing" = "このバージョンではファイルが削除されています。";
 "conflict.open" = "「%@」のバージョンを開く";
 "conflict.reload" = "再読み込み";
-"conflict.removeBackups" = "バックアップファイルを削除";
-"conflict.removeBackups.message" = "%d 個のバックアップファイルを永久に削除します。対象：%@。元に戻せません。";
-"conflict.removeBackups.remote" = "サーバー上の %d 個のバックアップファイルを永久に削除します。対象：%@。元に戻せません。";
 "conflict.resolveCurrent" = "現在のバージョンで解決";
 "conflict.resolvedSuffix" = "%@（解決済み：%d 件）";
 "conflict.resolveUsing" = "「%@」で解決";
 "conflict.resolveUsingVersion" = "「%@」のバージョンで解決";
-"conflict.restore.message" = "%d ファイルを選択したバージョンで上書きします。対象：%@。これらのファイルの現在の編集は失われます。";
-"conflict.restore.remote" = "サーバー上の %d ファイルを選択したバージョンで上書きします。対象：%@。これらのファイルの現在の編集は失われます。";
 "conflict.restoreAncestor" = "共通祖先のバージョンを復元";
 "conflict.restoreUnmerged" = "未マージのバージョンを復元";
 "conflict.restoreUnmerged.many" = "%d 項目の未マージのバージョンを復元";
 "conflict.restoreUnmerged.one" = "「%@」の未マージのバージョンを復元";
 "conflict.restoreVersion" = "「%@」のバージョンを復元";
 "conflict.result" = "手動で編集またはマージしたバージョン";
-"conflict.save" = "保存";
 "conflict.step" = "ステップ %d / %d";
 "conflict.step.applying" = "ステップ %d / %d：「%@」を適用中";
 "conflict.step.editing" = "ステップ %d / %d：「%@」を編集中";
-"conflict.step.reverting" = "ステップ %d / %d：「%@」をリバート中";
 "conflict.title.cherryPick" = "%d 件のコミットを「%@」にチェリーピック中";
 "conflict.title.cherryPick.one" = "1 件のコミットを「%@」にチェリーピック中";
 "conflict.title.merge" = "「%@」を「%@」にマージ中";
@@ -598,7 +588,6 @@
 "conflict.unresolved.one" = "未解決の競合：1 件";
 "conflict.version" = "「%@」のバージョン";
 "conflict.versionMenu" = "「%@」のバージョンの操作";
-"conflict.worktreeMissing" = "作業コピーにこのファイルがありません。";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "ファイル履歴";
 "fileHistory.showCommit" = "コミットを表示";
@@ -829,3 +818,13 @@
 "files.truncation" = "作業コピーの長いファイル名の省略：";
 "files.truncation.beginning" = "先頭を省略";
 "files.truncation.middle" = "中央を省略";
+
+/* 冲突向导。 */
+"conflict.resolveBoth" = "両方のバージョンで解決";
+"conflict.version.applied" = "適用したパッチまたはスタッシュのバージョン";
+"conflict.resolveUsing.applied" = "適用したパッチまたはスタッシュで解決";
+"conflict.open.missing" = "開く";
+"conflict.export.missing" = "書き出す…";
+"conflict.toolTip" = "マージが必要なファイル：%@";
+"conflict.sequence.applying" = "「%@」を適用中";
+"conflict.sequence.reverting" = "「%@」をリバート中";
