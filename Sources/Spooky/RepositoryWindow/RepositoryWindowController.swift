@@ -45,6 +45,11 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 文件历史搜索框的贡献者补全。
     let contributorCompletion = ContributorCompletion()
 
+    /// 本窗口仓库的自动获取：只在窗口显示仓库且 App 处于前台时进行。
+    private lazy var autoFetch = RepositoryAutoFetch(session: session) { [weak self] in
+        NSApp.isActive && !(self?.showsManager ?? true)
+    }
+
     /// 创建原生窗口；标签合并被关闭，显式新窗口始终独立。
     init(coordinator: SpookyApplicationController, session: RepositorySession = RepositorySession()) {
         self.coordinator = coordinator
@@ -124,6 +129,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         observeConnectionState()
         observeSubtitle()
         observeHistorySearch()
+        autoFetch.start()
     }
 
     /// 窗口由代码构建，不从归档恢复控制器。
@@ -151,7 +157,32 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
             AppLocalization.text(snapshot.merging ? "state.yes" : "state.no"),
             AppLocalization.text(snapshot.rebasing ? "state.yes" : "state.no")
         )
-        return summary + "\n\n" + state
+        return summary + "\n\n" + state + "\n\n" + remoteReferenceChanges(write, snapshot: snapshot)
+    }
+
+    /// 中断前后远端跟踪分支的变化，每个变化的分支一行；获取或推送可能已经部分完成。
+    static func remoteReferenceChanges(_ write: InterruptedWrite, snapshot: RemoteRecoverySnapshot) -> String {
+        let before = write.remoteReferences
+        let after = snapshot.remoteReferences
+
+        // 提交取前 8 位，引用不存在时写 “无”
+        let name: (String?) -> String = { object in
+            object.map { String($0.prefix(8)) } ?? AppLocalization.text("recovery.noReference")
+        }
+
+        let changes = Set(before.keys).union(after.keys)
+            .filter { before[$0] != after[$0] }
+            .sorted()
+            .map { reference in
+                let branch = String(reference.dropFirst("refs/remotes/".count))
+                return branch + "  " + name(before[reference]) + " → " + name(after[reference])
+            }
+
+        guard !changes.isEmpty else {
+            return AppLocalization.text("recovery.remoteUnchanged")
+        }
+
+        return AppLocalization.text("recovery.remoteChanged") + "\n" + changes.joined(separator: "\n")
     }
 
     /// 恢复的窗口位置必须有一半以上落在某个屏幕内，且尺寸不超过该屏幕；否则视为恢复失败。
@@ -267,15 +298,17 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         session.setActive(!showsManager)
     }
 
-    /// 后台窗口降为十秒轮询。
+    /// 后台窗口降为十秒轮询；App 或窗口失去前台时，按住 ⌥ 换出的快速操作复原。
     func windowDidResignKey(_: Notification) {
         session.setActive(false)
+        updateQuickToolbarItems(option: false)
     }
 
     /// 关窗时取消该窗口的工作，并从应用窗口集合中移除。
     func windowWillClose(_: Notification) {
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
         keyMonitor = nil
+        autoFetch.stop()
         coordinator?.cancelOpening(in: self)
         let location = session.repository
         session.close()
@@ -471,7 +504,9 @@ extension RepositoryWindowController {
             items.append(.init("host"))
         }
 
-        if !showsManager { items.append(contentsOf: [.init("sync"), .init("merge"), .init("stashes")]) }
+        if !showsManager {
+            items.append(contentsOf: [.init("sync"), .init("synchronize"), .init("merge"), .init("stashes")])
+        }
 
         items += [.init("terminal"), .init("finder"), .init("refresh"), .init("closeRepository")]
 
@@ -490,33 +525,11 @@ extension RepositoryWindowController {
         itemForItemIdentifier identifier: NSToolbarItem.Identifier,
         willBeInsertedIntoToolbar _: Bool
     ) -> NSToolbarItem? {
-        if identifier.rawValue == "sync" {
-            let group = NSToolbarItemGroup(
-                itemIdentifier: identifier,
-                images: ["arrow.down.circle", "arrow.down.to.line", "arrow.up.circle"]
-                    .map {
-                        // 取不到符号时以空图占位，分段数与标签保持一致。
-                        NSImage(systemSymbolName: $0, accessibilityDescription: nil) ?? NSImage()
-                    },
-                selectionMode: .momentary,
-                labels: ["sync.fetch", "sync.pull", "sync.push"].map { AppLocalization.text($0) },
-                target: self,
-                action: nil
-            )
-
-            // 始终以分段控件显示，空间不足时整组进入工具栏的溢出菜单。
-            group.controlRepresentation = .expanded
-
-            // 每段带上自己的动作：点击直接分派到对应动作，工具栏自动校验时也逐段决定可用性。
-            let actions = [#selector(fetch), #selector(pull), #selector(push)]
-
-            for (segment, action) in zip(group.subitems, actions) {
-                segment.target = self
-                segment.action = action
-            }
-
-            return group
+        // Fetch | Pull | Push、Sync 与 Merge | Rebase 随 ⌥ 切换成快速操作
+        if let item = makeSyncToolbarItem(identifier) {
+            return item
         }
+
         if identifier.rawValue == "search" {
             return makeSearchItem(identifier)
         }
@@ -554,9 +567,6 @@ extension RepositoryWindowController {
         let configuration: (String, String, Selector)
 
         switch identifier.rawValue {
-        case "merge":
-            configuration = ("sync.merge", "arrow.triangle.merge", #selector(merge))
-
         case "stageAll":
             configuration = ("working.stageAll", "checkmark.square", #selector(stageAll))
 
@@ -663,7 +673,12 @@ extension RepositoryWindowController {
     private func configureWorkingCopyKeys() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
             let handled = MainActor.assumeIsolated {
-                self?.handleWorkingCopyKey(event) ?? false
+                // 主窗口的同步按钮随 ⌥ 换成快速操作，与当前视图无关
+                if event.type == .flagsChanged, let self, NSApp.keyWindow === self.window {
+                    self.updateQuickToolbarItems(option: event.modifierFlags.contains(.option))
+                }
+
+                return self?.handleWorkingCopyKey(event) ?? false
             }
 
             return handled ? nil : event

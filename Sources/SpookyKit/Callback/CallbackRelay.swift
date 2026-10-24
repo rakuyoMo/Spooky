@@ -40,6 +40,15 @@ public struct RemoteCallbackRequest: Sendable {
 
     /// 编辑器的初始文本，仅存在内存中。
     public let content: String?
+
+    /// 发起回调的操作能否询问用户；不能时只用已存的凭据，取不到就按取消处理。
+    public let isInteractive: Bool
+}
+
+extension RemoteCallbackRequest {
+    /// 在本任务里启动的 Git 操作发起回调时能否询问用户；自动获取这类不是用户直接发起的操作置为 false。
+    @TaskLocal
+    public static var allowsInteraction = true
 }
 
 /// UI 返回 nil 表示取消；值只经当前会话的 socket 交回请求进程。
@@ -107,6 +116,9 @@ final class CallbackRelay: Sendable {
 
         /// 允许请求凭据的正在运行的操作。
         var operations: Set<String> = []
+
+        /// 其中不能询问用户的操作。
+        var quietOperations: Set<String> = []
 
         /// 每个随机请求仅允许应答一次。
         var requests: Set<String> = []
@@ -181,39 +193,13 @@ final class CallbackRelay: Sendable {
         queue.async { [weak self] in self?.acceptConnections(socket) }
     }
 
-    /// 操作启动前允许该随机标识发起回调。
-    func register(_ operation: String) {
-        state.withLock {
-            $0.operations.insert(operation)
-            $0.secrets[operation] = []
-        }
-    }
-
-    /// 操作结束后拒绝迟到的回调。
-    func unregister(_ operation: String) {
-        let pending = state.withLock {
-            $0.operations.remove(operation)
-            $0.secrets[operation] = nil
-            return $0.clients.filter { $0.value.operation == operation }
-        }
-
-        for (client, entry) in pending {
-            entry.task?.cancel()
-            finish(client, id: entry.id, value: nil)
-        }
-    }
-
-    /// 读取本操作已经交付的敏感值，供跨输出块脱敏使用。
-    func sensitiveValues(for operation: String) -> [Data] {
-        state.withLock { $0.secrets[operation] ?? [] }
-    }
-
     /// 主连接关闭时立即终止所有回调并删除本机 socket。
     func stop() {
         let (descriptor, clients) = state.withLock {
             let current = ($0.descriptor, $0.clients)
             $0.descriptor = -1
             $0.operations = []
+            $0.quietOperations = []
             return current
         }
 
@@ -330,13 +316,16 @@ final class CallbackRelay: Sendable {
 
     /// 已接受的交互请求交给界面应答；应答时再次确认操作与连接仍然有效，口令类应答记入脱敏集合。
     private func answer(_ message: Message, kind: RemoteCallbackRequest.Kind, client: Int32, id: UUID) {
+        let quiet = state.withLock { $0.quietOperations.contains(message.operation) }
+
         let request = RemoteCallbackRequest(
             host: host,
             id: message.id,
             operation: message.operation,
             kind: kind,
             prompt: message.prompt ?? "",
-            content: message.content
+            content: message.content,
+            isInteractive: !quiet
         )
         let task = Task { [self] in
             let response = await handler(request)
@@ -407,4 +396,42 @@ final class CallbackRelay: Sendable {
         Darwin.close(client)
     }
 
+}
+
+// MARK: - Operations
+
+extension CallbackRelay {
+    /// 操作启动前允许该随机标识发起回调；当前任务不允许询问用户时，记下这个操作只能用已存的凭据。
+    func register(_ operation: String) {
+        let quiet = !RemoteCallbackRequest.allowsInteraction
+
+        state.withLock {
+            $0.operations.insert(operation)
+            $0.secrets[operation] = []
+
+            if quiet {
+                $0.quietOperations.insert(operation)
+            }
+        }
+    }
+
+    /// 操作结束后拒绝迟到的回调。
+    func unregister(_ operation: String) {
+        let pending = state.withLock {
+            $0.operations.remove(operation)
+            $0.quietOperations.remove(operation)
+            $0.secrets[operation] = nil
+            return $0.clients.filter { $0.value.operation == operation }
+        }
+
+        for (client, entry) in pending {
+            entry.task?.cancel()
+            finish(client, id: entry.id, value: nil)
+        }
+    }
+
+    /// 读取本操作已经交付的敏感值，供跨输出块脱敏使用。
+    func sensitiveValues(for operation: String) -> [Data] {
+        state.withLock { $0.secrets[operation] ?? [] }
+    }
 }

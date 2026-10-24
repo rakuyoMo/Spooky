@@ -71,7 +71,7 @@ struct AppFailure: Identifiable {
     let title: String
 
     /// 用户可采取的恢复步骤。
-    let message: String
+    var message: String
 
     /// Git 输出或进程错误原文。
     let details: String
@@ -224,6 +224,7 @@ struct AppFailure: Identifiable {
         case .dirtyWorkingCopy: ("sync.error.dirty", .repository)
         case .requiresBranch: ("sync.error.branch", .repository)
         case .missingRemote: ("sync.error.remote", .repository)
+        case .missingUpstream: ("sync.error.upstream", .repository)
         }
     }
 

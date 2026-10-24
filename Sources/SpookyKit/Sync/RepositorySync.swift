@@ -12,6 +12,9 @@ public enum RepositorySyncError: Error, Sendable, Equatable {
 
     /// 选择的远端已不存在。
     case missingRemote
+
+    /// 不弹对话框的快速操作以跟踪分支为对象，分支没有跟踪分支时无法执行。
+    case missingUpstream
 }
 
 // MARK: - RemoteReferenceUpdate
@@ -38,21 +41,29 @@ public struct RemoteReferenceUpdate: Sendable, Equatable {
 
     /// Fetch 使用空格分隔的机器格式，首字符本身可能是空格。
     static func parseFetch(_ data: Data) throws -> [Self] {
-        try String(decoding: data, as: UTF8.self).split(separator: "\n")
+        try String(decoding: data, as: UTF8.self)
+            .split(separator: "\n")
             .map { line in
                 guard
-                    line.count > 2, let flag = line.first, " *+-=!t".contains(flag),
+                    line.count > 2,
+                    let flag = line.first,
+                    " *+-=!t".contains(flag),
                     line.dropFirst().first == " "
                 else {
                     throw RepositoryReadError.malformedOutput("fetch --porcelain")
                 }
+
                 let fields = line.dropFirst(2).split(separator: " ", omittingEmptySubsequences: false)
+
                 guard
-                    fields.count == 3, GitObjectID.isValid(String(fields[0])),
-                    GitObjectID.isValid(String(fields[1])), !fields[2].isEmpty
+                    fields.count == 3,
+                    GitObjectID.isValid(String(fields[0])),
+                    GitObjectID.isValid(String(fields[1])),
+                    !fields[2].isEmpty
                 else {
                     throw RepositoryReadError.malformedOutput("fetch --porcelain")
                 }
+
                 return Self(
                     flag: flag,
                     reference: String(fields[2]),
@@ -69,18 +80,27 @@ public struct RemoteReferenceUpdate: Sendable, Equatable {
         var updates: [Self] = []
 
         for line in String(decoding: data, as: UTF8.self).split(separator: "\n") {
-            if line.hasPrefix("To ") || line == "Done" || line.hasPrefix("branch '") { continue }
+            if line.hasPrefix("To ") || line == "Done" || line.hasPrefix("branch '") {
+                continue
+            }
+
             let fields = line.split(separator: "\t", maxSplits: 2, omittingEmptySubsequences: false)
+
             guard
-                fields.count == 3, fields[0].count == 1, let flag = fields[0].first,
+                fields.count == 3,
+                fields[0].count == 1,
+                let flag = fields[0].first,
                 " *+-=!".contains(flag)
             else {
                 throw RepositoryReadError.malformedOutput("push --porcelain")
             }
+
             let refs = fields[1].split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+
             guard refs.count == 2, !refs[1].isEmpty else {
                 throw RepositoryReadError.malformedOutput("push --porcelain")
             }
+
             updates.append(
                 Self(
                     flag: flag,
@@ -92,6 +112,7 @@ public struct RemoteReferenceUpdate: Sendable, Equatable {
                 )
             )
         }
+
         return updates
     }
 }
@@ -136,6 +157,34 @@ public struct MergeOptions: Sendable {
     public init() { }
 }
 
+// MARK: - SubmodulePushMode
+
+/// 推送时对子模块的处理，对应 `push --recurse-submodules` 的两种取值。
+public enum SubmodulePushMode: String, Sendable, CaseIterable {
+    /// 先推送子模块里远端还没有的提交。
+    case onDemand = "on-demand"
+
+    /// 推送前确认子模块引用的提交都已在远端，否则拒绝推送。
+    case check
+}
+
+// MARK: - PushOptions
+
+/// 推送对话框的附带选项；默认不推标签、不处理子模块、照常运行钩子。
+public struct PushOptions: Sendable, Equatable {
+    /// 在本次 refspec 之外推送全部标签。
+    public var allTags = false
+
+    /// 递归处理子模块的方式；nil 表示不处理子模块。
+    public var submodules: SubmodulePushMode? = nil
+
+    /// 用户明确要求跳过 pre-push 钩子。
+    public var skipHooks = false
+
+    /// 默认的推送选项。
+    public init() { }
+}
+
 // MARK: - RepositorySync
 
 /// 获取、拉取、推送与合并在统一仓库写队列内完成。
@@ -148,31 +197,44 @@ public struct RepositorySync: Sendable {
         self.runner = runner
     }
 
-    /// nil 表示全部远端；每个远端都使用 porcelain，并持续转发 stderr 进度。
+    /// nil 表示全部远端，跳过设了 `skipFetchAll` 的远端；每个远端都使用 porcelain，并持续转发 stderr 进度。
+    ///
+    /// - Parameters:
+    ///   - remote: 指定的远端；明确指定时即使设了 `skipFetchAll` 也照常获取。
+    ///   - prune: 清理远端已删除的跟踪引用。
+    ///   - allTags: 在默认 refspec 之外获取全部标签。
+    ///   - submodules: 同时获取全部已检出子模块的新提交。
     public func fetch(
         remote: String? = nil,
         prune: Bool = false,
         allTags: Bool = false,
+        submodules: Bool = false,
         onOutput: (@Sendable (GitOutputEvent) -> Void)? = nil
     ) async throws -> [RemoteReferenceUpdate] {
         try await runner.writeTransaction {
-            let remotes = try await RepositoryReferences(runner: runner).snapshot().remotes.map(\.name)
-            let selected = remote.map { [$0] } ?? remotes
-            guard !selected.isEmpty, selected.allSatisfy({ remotes.contains($0) }) else {
-                throw RepositorySyncError.missingRemote
-            }
+            let selected = try await fetchTargets(remote)
             var updates: [RemoteReferenceUpdate] = []
 
             for name in selected {
                 try Task.checkCancellation()
+
                 var arguments = [
                     "fetch", "--porcelain", "--progress", "--no-recurse-submodules", "--no-auto-maintenance",
                     prune ? "--prune" : "--no-prune",
                 ]
-                if allTags { arguments.append("--tags") }
+
+                if allTags {
+                    arguments.append("--tags")
+                }
+
                 let result = try await runner.execute(arguments + ["--", name], onOutput: onOutput)
                 updates += try RemoteReferenceUpdate.parseFetch(result.standardOutput)
             }
+
+            if submodules, !selected.isEmpty {
+                try await fetchSubmodules(onOutput: onOutput)
+            }
+
             return updates
         }
     }
@@ -188,64 +250,32 @@ public struct RepositorySync: Sendable {
     ) async throws {
         try await runner.writeTransaction {
             let status = try await runner.status()
+
             guard let current = status.branch.head, status.branch.oid != nil else {
                 throw RepositorySyncError.requiresBranch
             }
-            guard status.entries.isEmpty else { throw RepositorySyncError.dirtyWorkingCopy }
+
+            guard status.entries.isEmpty else {
+                throw RepositorySyncError.dirtyWorkingCopy
+            }
 
             let target = try await pullTarget(remote: remote, branch: branch, current: current)
             let fetched = try await fetchPullTarget(target, onOutput: onOutput)
 
-            if rebase {
-                if verifySignatures {
-                    _ = try await runner.execute(["verify-commit", fetched], onOutput: onOutput)
-                }
-                _ = try await runner.execute(
-                    [
-                        "-c", "core.editor=:", "-c", "rebase.autoStash=false",
-                        "rebase", "--merge", "--no-autostash", "--no-rebase-merges", "--no-update-refs",
-                        skipHooks ? "--no-verify" : "--verify", fetched,
-                    ],
-                    onOutput: onOutput
-                )
-            } else {
+            guard rebase else {
                 var options = MergeOptions()
                 options.verifySignatures = verifySignatures
                 options.skipHooks = skipHooks
                 try await merge(fetched, options: options, onOutput: onOutput)
+                return
             }
-        }
-    }
 
-    /// 显式 refspec 防止 push.default、followTags 或 mirror 改变推送范围。
-    public func push(
-        branch: String,
-        remote: String,
-        destination: String,
-        setUpstream: Bool,
-        skipHooks: Bool = false,
-        onOutput: (@Sendable (GitOutputEvent) -> Void)? = nil
-    ) async throws -> [RemoteReferenceUpdate] {
-        try await runner.writeTransaction {
-            let references = RepositoryReferences(runner: runner)
-            try await references.validate(name: branch)
-            try await references.validate(name: destination)
-            let snapshot = try await references.snapshot()
-            guard snapshot.remotes.contains(where: { $0.name == remote }) else {
-                throw RepositorySyncError.missingRemote
+            // 变基没有 merge 的签名校验参数，先单独校验取回的提交
+            if verifySignatures {
+                _ = try await runner.execute(["verify-commit", fetched], onOutput: onOutput)
             }
-            guard snapshot.references.contains(where: { $0.id == "refs/heads/" + branch }) else {
-                throw RepositorySyncError.requiresBranch
-            }
-            var arguments = [
-                "-c", "push.followTags=false", "-c", "remote.\(remote).mirror=false",
-                "push", "--porcelain", "--progress", "--no-force", "--no-recurse-submodules",
-            ]
-            if setUpstream { arguments.append("--set-upstream") }
-            if skipHooks { arguments.append("--no-verify") }
-            arguments += ["--", remote, "refs/heads/" + branch + ":refs/heads/" + destination]
-            let result = try await runner.execute(arguments, onOutput: onOutput)
-            return try RemoteReferenceUpdate.parsePush(result.standardOutput)
+
+            try await rebaseCurrentBranch(onto: fetched, skipHooks: skipHooks, onOutput: onOutput)
         }
     }
 
@@ -255,32 +285,44 @@ public struct RepositorySync: Sendable {
             let references = RepositoryReferences(runner: runner)
             let head = try await references.resolve("HEAD")
             let target = try await references.resolve(revision)
+
             let ancestor = try await runner.execute(
                 ["merge-base", "--is-ancestor", target, head],
                 acceptedExitCodes: [0, 1]
             )
-            if ancestor.exitCode == 0 { return .unchanged }
+
+            if ancestor.exitCode == 0 {
+                return .unchanged
+            }
+
             let result = try await runner.execute(
-                [
-                    "merge-tree", "--write-tree", "--name-only", "-z", "--no-messages", head, target,
-                ],
+                ["merge-tree", "--write-tree", "--name-only", "-z", "--no-messages", head, target],
                 acceptedExitCodes: [0, 1]
             )
-            let fields = result.standardOutput.split(separator: 0).map { String(decoding: $0, as: UTF8.self) }
+
+            let fields = result.standardOutput
+                .split(separator: 0)
+                .map { String(decoding: $0, as: UTF8.self) }
+
             guard let tree = fields.first, GitObjectID.isValid(tree) else {
                 throw RepositoryReadError.malformedOutput("merge-tree")
             }
+
             return result.exitCode == 0 ? .clean : .conflicts(Array(fields.dropFirst()))
         } catch {
             if Task.isCancelled || ((error as? GitError)?.isCancelled ?? false) || error is CancellationError {
                 throw CancellationError()
             }
-            if error is RemoteConnectionError { throw error }
+
+            if error is RemoteConnectionError {
+                throw error
+            }
+
             let details =
                 (error as? GitError)
-                    .map {
-                        String(decoding: $0.result.standardError + $0.result.standardOutput, as: UTF8.self)
-                    } ?? String(describing: error)
+                    .map { String(decoding: $0.result.standardError + $0.result.standardOutput, as: UTF8.self) }
+                    ?? String(describing: error)
+
             return .unavailable(details)
         }
     }
@@ -295,6 +337,7 @@ public struct RepositorySync: Sendable {
             guard try await runner.status().entries.isEmpty else {
                 throw RepositorySyncError.dirtyWorkingCopy
             }
+
             let target = try await RepositoryReferences(runner: runner).resolve(revision)
             var arguments = ["-c", "merge.autoStash=false", "merge", "--no-edit", "--no-autostash"]
 
@@ -305,21 +348,83 @@ public struct RepositorySync: Sendable {
                 arguments += [options.alwaysCreateCommit ? "--no-ff" : "--ff"]
                 arguments += [options.commit ? "--commit" : "--no-commit"]
             }
+
             arguments.append(
                 options.verifySignatures && !options.squash ? "--verify-signatures" : "--no-verify-signatures"
             )
-            if options.skipHooks { arguments.append("--no-verify") }
+
+            if options.skipHooks {
+                arguments.append("--no-verify")
+            }
+
             _ = try await runner.execute(arguments + [target], onOutput: onOutput)
         }
     }
+}
+
+// MARK: - Helpers
+
+extension RepositorySync {
+    /// 解析 `config -z --get-regexp` 读出的 `remote.<名称>.skipFetchAll`，返回自动获取与获取全部远端时跳过的远端。
+    ///
+    /// 键的第一个点与最后一个点之间是远端名，名字本身可以含点；只写键不写值同样表示真。
+    static func skippedRemotes(in data: Data) throws -> Set<String> {
+        var skipped = Set<String>()
+
+        for record in data.split(separator: 0) {
+            let key = String(decoding: record.prefix { $0 != 10 }, as: UTF8.self)
+            let value = record.firstIndex(of: 10).map { String(decoding: record[($0 + 1)...], as: UTF8.self) }
+
+            guard
+                key.hasPrefix("remote."),
+                let last = key.lastIndex(of: "."),
+                last > key.index(key.startIndex, offsetBy: 6),
+                key[key.index(after: last)...].lowercased() == "skipfetchall"
+            else {
+                throw RepositoryReadError.malformedOutput("remote config")
+            }
+
+            // 同一个键出现多次时，Git 采用最后一次的值
+            let name = String(key[key.index(key.startIndex, offsetBy: 7) ..< last])
+
+            if ["true", "yes", "on", "1", ""].contains(value?.lowercased() ?? "") {
+                skipped.insert(name)
+            } else {
+                skipped.remove(name)
+            }
+        }
+
+        return skipped
+    }
+
+    /// 把当前分支变基到指定提交上；关掉自动储藏与编辑器，钩子按选择运行。
+    func rebaseCurrentBranch(
+        onto target: String,
+        skipHooks: Bool,
+        onOutput: (@Sendable (GitOutputEvent) -> Void)?
+    ) async throws {
+        _ = try await runner.execute(
+            [
+                "-c", "core.editor=:",
+                "-c", "rebase.autoStash=false",
+                "rebase", "--merge", "--no-autostash", "--no-rebase-merges", "--no-update-refs",
+                skipHooks ? "--no-verify" : "--verify",
+                target,
+            ],
+            onOutput: onOutput
+        )
+    }
 
     /// 未显式指定来源时读取当前分支的跟踪信息，缺失时保留 Git 的原始错误。
-    private func pullTarget(remote: String?, branch: String?, current: String) async throws -> (
-        String, String
-    ) {
+    func pullTarget(
+        remote: String?,
+        branch: String?,
+        current: String
+    ) async throws -> (remote: String, branch: String) {
         let references = RepositoryReferences(runner: runner)
         let snapshot = try await references.snapshot()
         let head = snapshot.references.first { $0.id == "refs/heads/" + current }
+
         guard
             let remote = remote ?? head?.upstreamRemote,
             let branch = branch ?? head?.upstreamBranch
@@ -327,29 +432,68 @@ public struct RepositorySync: Sendable {
             _ = try await runner.run(["rev-parse", "--verify", "@{upstream}"])
             throw RepositorySyncError.requiresBranch
         }
+
         guard remote == "." || snapshot.remotes.contains(where: { $0.name == remote }) else {
             throw RepositorySyncError.missingRemote
         }
-        guard branch.hasPrefix("refs/heads/") else { throw RepositoryReadError.invalidQuery }
+
+        guard branch.hasPrefix("refs/heads/") else {
+            throw RepositoryReadError.invalidQuery
+        }
+
         try await references.validate(name: String(branch.dropFirst(11)))
         return (remote, branch)
     }
 
     /// 只获取拉取目标这一个分支，返回本次获取写入 FETCH_HEAD 的提交。
-    private func fetchPullTarget(
-        _ target: (String, String),
+    func fetchPullTarget(
+        _ target: (remote: String, branch: String),
         onOutput: (@Sendable (GitOutputEvent) -> Void)?
     ) async throws -> String {
         let result = try await runner.execute(
             [
                 "fetch", "--porcelain", "--progress", "--no-recurse-submodules", "--no-auto-maintenance",
-                "--no-tags", "--", target.0, target.1,
+                "--no-tags", "--", target.remote, target.branch,
             ],
             onOutput: onOutput
         )
+
         _ = try RemoteReferenceUpdate.parseFetch(result.standardOutput)
 
         // FETCH_HEAD 固定为本次单分支获取结果，不能复用可能陈旧的跟踪引用。
         return try await RepositoryReferences(runner: runner).resolve("FETCH_HEAD")
+    }
+
+    /// 要获取的远端：指定的远端必须存在；未指定时是全部远端，去掉设了 `skipFetchAll` 的。
+    private func fetchTargets(_ remote: String?) async throws -> [String] {
+        let remotes = try await RepositoryReferences(runner: runner).snapshot().remotes.map(\.name)
+
+        guard !remotes.isEmpty, remote.map(remotes.contains) ?? true else {
+            throw RepositorySyncError.missingRemote
+        }
+
+        if let remote {
+            return [remote]
+        }
+
+        // 没有任何记录时 config 以 1 退出，是正常的空结果
+        let result = try await runner.execute(
+            ["config", "-z", "--get-regexp", "^remote\\..*\\.skipfetchall$"],
+            acceptedExitCodes: [0, 1]
+        )
+
+        let skipped = try Self.skippedRemotes(in: result.standardOutput)
+        return remotes.filter { !skipped.contains($0) }
+    }
+
+    /// porcelain 输出不能与递归子模块同用，子模块在仓库本身获取完之后逐个获取。
+    private func fetchSubmodules(onOutput: (@Sendable (GitOutputEvent) -> Void)?) async throws {
+        _ = try await runner.execute(
+            [
+                "submodule", "--quiet", "foreach", "--recursive",
+                "git fetch --progress --no-auto-maintenance",
+            ],
+            onOutput: onOutput
+        )
     }
 }
