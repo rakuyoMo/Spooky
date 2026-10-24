@@ -56,7 +56,7 @@ public struct TreeEntry: Sendable, Equatable {
 
 // MARK: - FileHistoryFilter
 
-/// 文件历史的筛选条件：搜索框按范围匹配作者、提交人或版本，日期按提交人日期限定；空条件表示全部历史。
+/// 文件历史的筛选条件：搜索框按范围匹配作者、提交人或版本；空条件表示全部历史。
 public struct FileHistoryFilter: Sendable, Equatable {
     /// 搜索框的匹配范围。
     public enum Scope: String, Sendable, CaseIterable {
@@ -76,42 +76,23 @@ public struct FileHistoryFilter: Sendable, Equatable {
     /// 搜索框的内容，首尾空白不参与匹配。
     public var text: String
 
-    /// 只保留不早于该时刻的提交。
-    public var since: Date?
-
-    /// 只保留不晚于该时刻的提交。
-    public var until: Date?
-
     /// 去掉首尾空白后的搜索内容。
     public var trimmedText: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     /// 交给 log 与 rev-list 的限定参数；版本范围改变的是起点，不在这里表达。
     var arguments: [String] {
-        var arguments: [String] = []
-
         // 贡献者按字面子串匹配并忽略大小写，输入中的正则符号不会被解释
-        if !trimmedText.isEmpty, scope != .revision {
-            arguments += ["-i", "-F", (scope == .author ? "--author=" : "--committer=") + trimmedText]
+        guard !trimmedText.isEmpty, scope != .revision else {
+            return []
         }
 
-        // 日期以 Unix 秒传给 Git，与本机和服务器的时区设置无关
-        if let since {
-            arguments.append("--since=@\(Int64(since.timeIntervalSince1970.rounded(.down)))")
-        }
-
-        if let until {
-            arguments.append("--until=@\(Int64(until.timeIntervalSince1970.rounded(.down)))")
-        }
-
-        return arguments
+        return ["-i", "-F", (scope == .author ? "--author=" : "--committer=") + trimmedText]
     }
 
     /// 创建筛选条件，默认不过滤。
-    public init(scope: Scope = .author, text: String = "", since: Date? = nil, until: Date? = nil) {
+    public init(scope: Scope = .author, text: String = "") {
         self.scope = scope
         self.text = text
-        self.since = since
-        self.until = until
     }
 }
 
@@ -187,7 +168,7 @@ public struct RepositoryFileViews: Sendable {
     /// - Parameters:
     ///   - path: 树中存储的相对路径。
     ///   - revision: 起点提交的完整哈希，固定起点使翻页结果不随新提交变化。
-    ///   - filter: 贡献者与日期条件；版本范围由调用方解析成起点。
+    ///   - filter: 贡献者条件；版本范围由调用方解析成起点。
     public func page(
         of path: String,
         from revision: String,

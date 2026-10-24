@@ -604,12 +604,6 @@
 "fileHistory.showCommit" = "コミットを表示";
 "fileHistory.oneCommit" = "1 件のコミット";
 "fileHistory.commits" = "%ld 件のコミット";
-"fileHistory.date" = "日付";
-"fileHistory.anyDate" = "指定なし";
-"fileHistory.after" = "当日以降";
-"fileHistory.before" = "当日以前";
-"fileHistory.between" = "範囲";
-"fileHistory.to" = "から";
 "fileHistory.submodule" = "サブモジュールのファイル履歴は表示できません";
 "fileHistory.showAt" = "「%@」のリビジョン「%@」を表示";
 "fileHistory.blameAt" = "「%@」のリビジョン「%@」の Blame を表示";
@@ -646,9 +640,6 @@
 "showFile.noContributors" = "まだコントリビュータはいません";
 "showFile.oneContributor" = "コントリビュータ 1 人";
 "showFile.contributors" = "コントリビュータ %ld 人";
-"showFile.copy" = "内容をコピー";
-"showFile.export" = "書き出す…";
-"showFile.open" = "開く";
 "showFile.searchRevisions" = "リビジョンを検索";
 "showFile.searchFiles" = "ファイルを検索";
 "showFile.error.missing" = "このリビジョンにファイルがありません";

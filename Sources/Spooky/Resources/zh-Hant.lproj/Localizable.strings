@@ -604,12 +604,6 @@
 "fileHistory.showCommit" = "顯示提交";
 "fileHistory.oneCommit" = "1 個提交";
 "fileHistory.commits" = "%ld 個提交";
-"fileHistory.date" = "日期";
-"fileHistory.anyDate" = "不限";
-"fileHistory.after" = "當天及之後";
-"fileHistory.before" = "當天及之前";
-"fileHistory.between" = "區間";
-"fileHistory.to" = "至";
 "fileHistory.submodule" = "無法顯示子模組類型檔案的檔案歷史";
 "fileHistory.showAt" = "顯示 “%@” 在版本 “%@” 的內容";
 "fileHistory.blameAt" = "顯示 “%@” 在版本 “%@” 的 Blame";
@@ -646,9 +640,6 @@
 "showFile.noContributors" = "還沒有貢獻者";
 "showFile.oneContributor" = "1 位貢獻者";
 "showFile.contributors" = "%ld 位貢獻者";
-"showFile.copy" = "拷貝內容";
-"showFile.export" = "匯出…";
-"showFile.open" = "打開";
 "showFile.searchRevisions" = "搜尋版本";
 "showFile.searchFiles" = "搜尋檔案";
 "showFile.error.missing" = "該版本中沒有這個檔案";

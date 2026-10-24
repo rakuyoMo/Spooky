@@ -125,31 +125,6 @@ struct FileViewsTests {
         #expect(annotations.groupIndex(containing: 0) == nil)
     }
 
-    /// 日期筛选包含所选的当天，区间两端都包含。
-    @Test("文件历史的日期筛选换算成当天的开始与结束")
-    func dateFilter() throws {
-        let state = FileHistoryState()
-        let calendar = Calendar.current
-        let start = try #require(calendar.date(from: DateComponents(year: 2026, month: 9, day: 8, hour: 15)))
-        let end = try #require(calendar.date(from: DateComponents(year: 2026, month: 9, day: 10, hour: 9)))
-        state.startDate = start
-        state.endDate = end
-
-        #expect(state.filter.since == nil && state.filter.until == nil)
-
-        state.dateRange = .after
-        #expect(state.filter.since == calendar.startOfDay(for: start))
-        #expect(state.filter.until == nil)
-
-        state.dateRange = .before
-        #expect(state.filter.since == nil)
-        #expect(state.filter.until == calendar.startOfDay(for: start).addingTimeInterval(86_400 - 1))
-
-        state.dateRange = .between
-        #expect(state.filter.since == calendar.startOfDay(for: start))
-        #expect(state.filter.until == calendar.startOfDay(for: end).addingTimeInterval(86_400 - 1))
-    }
-
     /// 回到的提交不在已加载的分页里时，整页详情仍然显示它，重读分页也不会丢掉选择。
     @Test("回到不在已加载分页里的提交")
     func revealUnloadedCommit() {

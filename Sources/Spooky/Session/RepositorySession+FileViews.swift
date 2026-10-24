@@ -5,7 +5,7 @@ import SpookyKit
 
 /// 文件视图动作的前置条件不满足，界面负责本地化。
 enum FileViewError: Error {
-    /// 所选版本中没有这个文件，无法导出或打开。
+    /// 所选版本中没有这个文件，无法导出。
     case missingAtRevision
 }
 
@@ -124,23 +124,6 @@ extension RepositorySession {
             panel.beginSheetModal(for: window, completionHandler: save)
         } else {
             panel.begin(completionHandler: save)
-        }
-    }
-
-    /// 用默认程序打开某个版本的文件：内容写成会话缓存里的同名副本，本机程序拿不到远端路径。
-    func openFile(_ path: String, at revision: String) {
-        withContents(of: path, at: revision) { [weak self] data in
-            guard let cache = self?.fileCache else { return }
-
-            NSWorkspace.shared.open(try cache.store(data, named: path))
-        }
-    }
-
-    /// 把某个版本的文件内容作为文本复制到剪贴板。
-    func copyFile(_ path: String, at revision: String) {
-        withContents(of: path, at: revision) { data in
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(String(decoding: data, as: UTF8.self), forType: .string)
         }
     }
 

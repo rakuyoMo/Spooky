@@ -13,23 +13,6 @@ enum FileHistoryDetailMode: Hashable {
     case raw
 }
 
-// MARK: - FileHistoryDateRange
-
-/// 文件历史按提交人日期筛选的方式，所选的日期都包含当天。
-enum FileHistoryDateRange: Hashable, CaseIterable {
-    /// 不限日期。
-    case any
-
-    /// 所选日期当天及之后。
-    case after
-
-    /// 所选日期当天及之前。
-    case before
-
-    /// 两个日期之间，包含两端的当天。
-    case between
-}
-
 // MARK: - FileHistoryState
 
 /// 一个文件的提交时间线、筛选条件与所选提交的详情，过期请求不能覆盖新的结果。
@@ -64,27 +47,6 @@ final class FileHistoryState {
     var scope = FileHistoryFilter.Scope.author {
         didSet {
             if scope != oldValue { reload() }
-        }
-    }
-
-    /// 日期筛选的方式。
-    var dateRange = FileHistoryDateRange.any {
-        didSet {
-            if dateRange != oldValue { reload() }
-        }
-    }
-
-    /// 之后、之前与区间起点使用的日期。
-    var startDate = Calendar.current.startOfDay(for: Date()) {
-        didSet {
-            if startDate != oldValue, dateRange != .any { reload() }
-        }
-    }
-
-    /// 区间终点使用的日期。
-    var endDate = Calendar.current.startOfDay(for: Date()) {
-        didSet {
-            if endDate != oldValue, dateRange == .between { reload() }
         }
     }
 
@@ -143,21 +105,9 @@ final class FileHistoryState {
         commits.first { $0.id == selectedID }
     }
 
-    /// 读取时使用的条件；日期换算成所选日期当天的开始或结束。
+    /// 读取时使用的条件：搜索框的范围与停顿后生效的内容。
     var filter: FileHistoryFilter {
-        let calendar = Calendar.current
-        let start = calendar.startOfDay(for: startDate)
-        let endDay = dateRange == .between ? endDate : startDate
-        let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: endDay))?
-            .addingTimeInterval(-1)
-
-        #warning("TODO: 在真实仓库里按日期筛选文件历史，确认 “之后 / 之前 / 区间” 都包含所选当天的取舍是否符合预期；只影响文件历史的日期筛选")
-        return FileHistoryFilter(
-            scope: scope,
-            text: searchText,
-            since: [.after, .between].contains(dateRange) ? start : nil,
-            until: [.before, .between].contains(dateRange) ? end : nil
-        )
+        FileHistoryFilter(scope: scope, text: searchText)
     }
 
     /// 所选提交里这个文件的只读补丁来源，供语法着色与图片对照读取内容；没有选中提交时为空。
@@ -382,7 +332,6 @@ final class FileHistoryState {
         failure = nil
         searchText = ""
         scope = .author
-        dateRange = .any
         selectedID = nil
         detailMode = .diff
         diff = nil

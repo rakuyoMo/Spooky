@@ -604,12 +604,6 @@
 "fileHistory.showCommit" = "Mostrar commit";
 "fileHistory.oneCommit" = "1 commit";
 "fileHistory.commits" = "%ld commits";
-"fileHistory.date" = "Fecha";
-"fileHistory.anyDate" = "Cualquiera";
-"fileHistory.after" = "El día o después";
-"fileHistory.before" = "El día o antes";
-"fileHistory.between" = "Entre";
-"fileHistory.to" = "y";
 "fileHistory.submodule" = "No se puede mostrar el historial de un submódulo";
 "fileHistory.showAt" = "Mostrar “%@” en la revisión “%@”";
 "fileHistory.blameAt" = "Mostrar blame de “%@” en la revisión “%@”";
@@ -646,9 +640,6 @@
 "showFile.noContributors" = "Aún no hay colaboradores";
 "showFile.oneContributor" = "1 colaborador";
 "showFile.contributors" = "%ld colaboradores";
-"showFile.copy" = "Copiar contenido";
-"showFile.export" = "Exportar…";
-"showFile.open" = "Abrir";
 "showFile.searchRevisions" = "Buscar revisiones";
 "showFile.searchFiles" = "Buscar archivos";
 "showFile.error.missing" = "El archivo no existe en esta revisión";

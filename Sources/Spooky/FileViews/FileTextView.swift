@@ -189,9 +189,6 @@ struct FileTextView: NSViewRepresentable {
     /// Blame 的注释；原文为 nil。
     var annotations: FileTextAnnotations? = nil
 
-    /// 正文右键菜单在系统的复制等项之后追加的动作。
-    var menuActions: [FileViewAction] = []
-
     /// 单击注释时高亮的提交。
     var highlight: ((String) -> Void)? = nil
 
@@ -272,7 +269,6 @@ struct FileTextView: NSViewRepresentable {
         highlight(in: document, style: style, rendering: rendering, coordinator: coordinator)
 
         document.annotations = annotations
-        document.menuActions = menuActions
         gutter.update(lineCount: lines.count, annotations: annotations)
         document.needsDisplay = true
     }
@@ -346,9 +342,6 @@ final class FileTextDocumentView: NSTextView {
 
     /// Blame 的注释；原文为 nil。
     var annotations: FileTextAnnotations?
-
-    /// 右键菜单追加的动作。
-    var menuActions: [FileViewAction] = []
 
     /// 第一行顶边离正文顶部的距离。
     var topInset: CGFloat { textContainerInset.height }
@@ -467,23 +460,6 @@ final class FileTextDocumentView: NSTextView {
                 NSRect(x: rect.minX, y: top, width: rect.width, height: 1).fill()
             }
         }
-    }
-
-    /// 在系统的复制等菜单项之后追加文件动作。
-    override func menu(for event: NSEvent) -> NSMenu? {
-        let menu = super.menu(for: event) ?? NSMenu()
-
-        guard !menuActions.isEmpty else {
-            return menu
-        }
-
-        menu.addItem(.separator())
-
-        for action in menuActions {
-            menu.addItem(FileViewMenuItem(action))
-        }
-
-        return menu
     }
 
     /// 与某个矩形相交的段的序号。

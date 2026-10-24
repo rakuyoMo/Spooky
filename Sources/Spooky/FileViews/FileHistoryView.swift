@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - FileHistoryTimelineView
 
-/// 文件历史的左栏：文件按钮与提交数、日期筛选，以及按天分组的提交时间线。
+/// 文件历史的左栏：文件按钮与提交数，以及按天分组的提交时间线。
 struct FileHistoryTimelineView: View {
     /// 同一天的提交组成一个分组。
     private struct DaySection: Identifiable {
@@ -55,13 +55,12 @@ struct FileHistoryTimelineView: View {
         }
     }
 
-    /// 连接横幅、40 pt 头部、日期筛选、时间线与读取状态。
+    /// 连接横幅、40 pt 头部、时间线与读取状态。
     var body: some View {
         VStack(spacing: 0) {
             ConnectionStatusView(session: session)
 
             header
-            dateFilter
             Divider()
 
             timeline
@@ -114,44 +113,6 @@ struct FileHistoryTimelineView: View {
         .padding(.horizontal, 12)
         .frame(height: 40)
         .background(.bar)
-    }
-
-    /// 按提交人日期筛选：不限、之后、之前或区间。
-    private var dateFilter: some View {
-        HStack(spacing: 6) {
-            Text(AppLocalization.text("fileHistory.date"))
-                .foregroundStyle(.secondary)
-
-            Picker("", selection: $state.dateRange) {
-                Text(AppLocalization.text("fileHistory.anyDate")).tag(FileHistoryDateRange.any)
-                Text(AppLocalization.text("fileHistory.after")).tag(FileHistoryDateRange.after)
-                Text(AppLocalization.text("fileHistory.before")).tag(FileHistoryDateRange.before)
-                Text(AppLocalization.text("fileHistory.between")).tag(FileHistoryDateRange.between)
-            }
-            .labelsHidden()
-            .fixedSize()
-
-            if state.dateRange != .any {
-                DatePicker("", selection: $state.startDate, displayedComponents: .date)
-                    .labelsHidden()
-                    .datePickerStyle(.field)
-            }
-
-            if state.dateRange == .between {
-                Text(AppLocalization.text("fileHistory.to"))
-                    .foregroundStyle(.secondary)
-
-                DatePicker("", selection: $state.endDate, displayedComponents: .date)
-                    .labelsHidden()
-                    .datePickerStyle(.field)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .font(.system(size: 11))
-        .controlSize(.small)
-        .padding(.horizontal, 12)
-        .frame(height: 28)
     }
 
     /// 子模块与空结果显示说明，否则显示按天分组的时间线。
@@ -404,18 +365,7 @@ struct FileHistoryDetailView: View {
                 contentID: content.path + "@" + commit.id,
                 path: content.path,
                 lines: content.lines,
-                theme: TextTheme.current(dark: colorScheme == .dark),
-                menuActions: [
-                    FileViewAction(title: AppLocalization.text("showFile.copy")) {
-                        session.copyFile(content.path, at: commit.id)
-                    },
-                    FileViewAction(title: AppLocalization.text("showFile.export")) {
-                        session.exportFile(content.path, at: commit.id)
-                    },
-                    FileViewAction(title: AppLocalization.text("showFile.open")) {
-                        session.openFile(content.path, at: commit.id)
-                    },
-                ]
+                theme: TextTheme.current(dark: colorScheme == .dark)
             )
         }
     }
