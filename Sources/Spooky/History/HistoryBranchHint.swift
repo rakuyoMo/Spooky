@@ -59,7 +59,11 @@ struct HistoryBranchHint: View {
     private func kind(of branch: RepositoryReference) -> HistoryHintKind? {
         let metadata = session.history.snapshot?.metadata(for: branch.id) ?? BranchMetadata()
 
-        guard let condition = session.history.conditions[branch.id], !condition.isBase, !metadata.hidesMergedHint else {
+        guard
+            let condition = session.history.conditions[branch.id],
+            !condition.isBase,
+            !metadata.hidesMergedHint
+        else {
             return nil
         }
 
@@ -78,10 +82,14 @@ struct HistoryBranchHint: View {
     /// 图标、标题、说明与关闭菜单；完全合并时可以展开看合并到了哪里。
     private func hint(_ kind: HistoryHintKind, branch: RepositoryReference) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            Image(systemName: kind.mergedBase == nil ? "clock.badge.exclamationmark" : "checkmark.circle.fill")
-                .font(.system(size: 16))
-                .foregroundStyle(kind.tint)
-                .accessibilityHidden(true)
+            Image(
+                systemName: kind.mergedBase == nil
+                    ? "clock.badge.exclamationmark"
+                    : "checkmark.circle.fill"
+            )
+            .font(.system(size: 16))
+            .foregroundStyle(kind.tint)
+            .accessibilityHidden(true)
 
             text(kind)
 

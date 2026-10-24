@@ -159,7 +159,14 @@ struct IntegrateParentButton: View {
                 HistoryBadge(symbol: "arrow.down", count: behind)
             }
             .buttonStyle(.plain)
-            .help(AppLocalization.text("history.behindBase", comparison.branch.name, behind, comparison.base.name))
+            .help(
+                AppLocalization.text(
+                    "history.behindBase",
+                    comparison.branch.name,
+                    behind,
+                    comparison.base.name
+                )
+            )
             .accessibilityLabel(AppLocalization.text("review.updateBranch"))
             .popover(isPresented: $showsPopover, arrowEdge: .bottom) {
                 UpdateBranchPopover(session: session, comparison: comparison) { showsPopover = false }

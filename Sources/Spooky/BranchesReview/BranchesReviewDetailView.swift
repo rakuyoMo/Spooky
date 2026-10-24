@@ -21,7 +21,10 @@ struct BranchesReviewDetailView: View {
                 symbol: "arrow.triangle.branch"
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if let id = selected.first, let branch = session.history.branches.first(where: { $0.id == id }) {
+        } else if
+            let id = selected.first,
+            let branch = session.history.branches.first(where: { $0.id == id })
+        {
             VStack(spacing: 0) {
                 BranchesReviewDetailHeader(session: session, branch: branch)
                 Divider()

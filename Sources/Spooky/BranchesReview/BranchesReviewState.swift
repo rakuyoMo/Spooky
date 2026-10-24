@@ -287,7 +287,13 @@ final class BranchesReviewState {
         let items = (snapshot?.references ?? [])
             .filter { $0.isLocal && $0.id != baseID }
             .filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }
-            .map { BranchesReviewItem(reference: $0, comparison: comparisons[$0.id], condition: conditions[$0.id]) }
+            .map { reference in
+                BranchesReviewItem(
+                    reference: reference,
+                    comparison: comparisons[reference.id],
+                    condition: conditions[reference.id]
+                )
+            }
             .filter { Self.matches($0, filter: order.filter, staleMonths: staleMonths, now: now) }
 
         return Self.sorted(items, by: order)
@@ -299,7 +305,10 @@ final class BranchesReviewState {
 
 extension BranchesReviewState {
     /// 按排序属性与方向排列；同名或同时间时按引用名排列，结果稳定。
-    private static func sorted(_ items: [BranchesReviewItem], by order: BranchesReviewOrder) -> [BranchesReviewItem] {
+    private static func sorted(
+        _ items: [BranchesReviewItem],
+        by order: BranchesReviewOrder
+    ) -> [BranchesReviewItem] {
         let ascending = order.ascending
 
         return items.sorted { lhs, rhs in
@@ -373,7 +382,8 @@ extension BranchesReviewState {
 
         detailTask = Task { [weak self] in
             // 没有共同历史时直接与基准顶端比较
-            let fork = try? await RepositoryReferences(runner: runner).forkPoint(of: branch.objectID, base: base.objectID)
+            let fork = try? await RepositoryReferences(runner: runner)
+                .forkPoint(of: branch.objectID, base: base.objectID)
 
             guard let self, !Task.isCancelled else { return }
 

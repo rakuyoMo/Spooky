@@ -102,7 +102,11 @@ struct ParentBranchMenuItems: View {
 
     /// 只有 HEAD 分支设了仍存在的父分支时出现。
     var body: some View {
-        if reference.isLocal, reference.name == session.status?.branch.head, let parent = session.parentBranch(of: reference) {
+        if
+            reference.isLocal,
+            reference.name == session.status?.branch.head,
+            let parent = session.parentBranch(of: reference)
+        {
             Button(AppLocalization.text("branch.mergeWith", parent.name)) {
                 request(RepositoryActionRequest(kind: .merge, reference: parent.id))
             }

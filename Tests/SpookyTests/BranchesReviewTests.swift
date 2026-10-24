@@ -12,7 +12,8 @@ struct BranchesReviewTests {
     /// 列表按与基准的比较筛选与排序；归档带待审阅标记并可撤销；Update Branch 合并父分支。
     @Test("分支整理的比较、筛选、归档与 Update Branch")
     func reviewSession() async throws {
-        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-review-" + UUID().uuidString)
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-review-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -35,8 +36,13 @@ struct BranchesReviewTests {
         try await waitUntil { review.comparisons.count == 3 }
 
         let ids = { (filter: BranchesReviewFilter) in
-            review.items(conditions: session.history.conditions, search: "", order: order(filter), staleMonths: 3)
-                .map(\.id)
+            review.items(
+                conditions: session.history.conditions,
+                search: "",
+                order: order(filter),
+                staleMonths: 3
+            )
+            .map(\.id)
         }
 
         #expect(ids(.fullyMerged) == ["refs/heads/merged"])
@@ -73,7 +79,8 @@ struct BranchesReviewTests {
     /// 打开 Compare Branches 后插入分叉点行、置灰父分支的提交；没有新提交的分支只有一行说明。
     @Test("与基准分支比较的表格行")
     func compareRows() async throws {
-        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-compare-" + UUID().uuidString)
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-compare-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -106,7 +113,8 @@ struct BranchesReviewTests {
         _ = try await runner.run(["config", "branch.conflict.spooky-parent", "refs/heads/gone"])
         session.refresh(full: true)
         try await waitUntil { session.history.snapshot?.metadata(for: "refs/heads/conflict").parent != nil }
-        #expect(session.history.defaultBase(for: try #require(session.history.selectedLocalBranch))?.name == "main")
+        let selected = try #require(session.history.selectedLocalBranch)
+        #expect(session.history.defaultBase(for: selected)?.name == "main")
 
         // 顶端就是分叉点的分支没有新提交
         session.history.selectedReference = "refs/heads/merged"
@@ -182,8 +190,10 @@ struct BranchesReviewTests {
 
         #expect(BranchArchiving.isDue(for: repository, defaults: defaults, now: date))
         BranchArchiving.recordCheck(for: repository, defaults: defaults, now: date)
-        #expect(!BranchArchiving.isDue(for: repository, defaults: defaults, now: date.addingTimeInterval(3600)))
-        #expect(BranchArchiving.isDue(for: repository, defaults: defaults, now: date.addingTimeInterval(86_400)))
+        let hourLater = date.addingTimeInterval(3600)
+        let dayLater = date.addingTimeInterval(86_400)
+        #expect(!BranchArchiving.isDue(for: repository, defaults: defaults, now: hourLater))
+        #expect(BranchArchiving.isDue(for: repository, defaults: defaults, now: dayLater))
         #expect(BranchArchiving.isDue(for: .local(path: "/other"), defaults: defaults, now: date))
     }
 

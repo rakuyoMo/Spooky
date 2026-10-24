@@ -36,7 +36,9 @@ extension RepositoryWindowController {
 
         case #selector(toggleCompareBranches):
             (item as? NSMenuItem)?.state = session.history.comparesBranches ? .on : .off
-            return !showsManager && session.activeView == .history && session.history.selectedLocalBranch != nil
+            return !showsManager
+                && session.activeView == .history
+                && session.history.selectedLocalBranch != nil
 
         default:
             return nil
@@ -88,7 +90,11 @@ extension RepositoryWindowController {
         let sheet = NSWindow()
         sheet.styleMask = [.titled]
         sheet.tabbingMode = .disallowed
-        let dialog = ArchiveBranchesDialog(session: session, automatic: automatic, candidates: candidates) { [weak sheet] in
+        let dialog = ArchiveBranchesDialog(
+            session: session,
+            automatic: automatic,
+            candidates: candidates
+        ) { [weak sheet] in
             if let sheet {
                 window.endSheet(sheet)
             }

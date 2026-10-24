@@ -48,7 +48,10 @@ extension RepositoryHistoryState {
     func defaultBase(for branch: RepositoryReference) -> RepositoryReference? {
         let locals = (snapshot?.references ?? []).filter { $0.isLocal && $0.id != branch.id }
 
-        if let parent = snapshot?.metadata(for: branch.id).parent, let found = locals.first(where: { $0.id == parent }) {
+        if
+            let parent = snapshot?.metadata(for: branch.id).parent,
+            let found = locals.first(where: { $0.id == parent })
+        {
             return found
         }
 

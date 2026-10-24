@@ -55,7 +55,11 @@ enum BranchArchiving {
     }
 
     /// 距上次检查已满一天，该再检查一次自动归档。
-    static func isDue(for repository: RepositoryLocation, defaults: UserDefaults = .standard, now: Date = Date()) -> Bool {
+    static func isDue(
+        for repository: RepositoryLocation,
+        defaults: UserDefaults = .standard,
+        now: Date = Date()
+    ) -> Bool {
         let checks = defaults.dictionary(forKey: lastCheckKey) as? [String: Double] ?? [:]
 
         guard let last = checks[repository.displayPath] else {
@@ -66,7 +70,11 @@ enum BranchArchiving {
     }
 
     /// 记下这次检查的时刻；无论是否归档、用户是否确认，都等一天后再检查。
-    static func recordCheck(for repository: RepositoryLocation, defaults: UserDefaults = .standard, now: Date = Date()) {
+    static func recordCheck(
+        for repository: RepositoryLocation,
+        defaults: UserDefaults = .standard,
+        now: Date = Date()
+    ) {
         var checks = defaults.dictionary(forKey: lastCheckKey) as? [String: Double] ?? [:]
         checks[repository.displayPath] = now.timeIntervalSince1970
         defaults.set(checks, forKey: lastCheckKey)

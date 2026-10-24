@@ -63,7 +63,11 @@ struct BranchesReviewListView: View {
         }
         .frame(minWidth: 300)
         .task(id: snapshotKey) {
-            state.update(snapshot: session.history.snapshot, head: session.status?.branch.head, runner: session.runner)
+            state.update(
+                snapshot: session.history.snapshot,
+                head: session.status?.branch.head,
+                runner: session.runner
+            )
         }
     }
 
@@ -273,7 +277,11 @@ struct BranchesReviewRow: View {
             icon("checkmark.circle.fill", color: Color(nsColor: .systemGray), help: "review.status.merged")
 
         case .clean:
-            icon("checkmark.circle.fill", color: Color(nsColor: .systemGreen), help: "review.status.mergeable")
+            icon(
+                "checkmark.circle.fill",
+                color: Color(nsColor: .systemGreen),
+                help: "review.status.mergeable"
+            )
 
         case .conflicts:
             icon(

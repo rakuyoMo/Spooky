@@ -55,7 +55,8 @@ extension RepositorySession {
 
         performGit(
             { runner, _ in
-                try await RepositoryReferences(runner: runner).setArchived(true, branches: ids, review: automatic)
+                try await RepositoryReferences(runner: runner)
+                    .setArchived(true, branches: ids, review: automatic)
             },
             title: AppLocalization.text(automatic ? "review.autoArchive" : "branch.archive"),
             success: { review.archivedBranches = ids }
@@ -138,7 +139,13 @@ extension RepositorySession {
         performGit(
             { runner, output in
                 try await RepositorySync(runner: runner)
-                    .updateBranch(reference.id, from: parent.id, rebase: rebase, options: options, onOutput: output)
+                    .updateBranch(
+                        reference.id,
+                        from: parent.id,
+                        rebase: rebase,
+                        options: options,
+                        onOutput: output
+                    )
             },
             title: AppLocalization.text("review.updateBranch"),
             offersAutoStash: true
@@ -156,7 +163,13 @@ extension RepositorySession {
         performGit(
             { runner, output in
                 try await RepositorySync(runner: runner)
-                    .updateBranch(reference.id, from: base.id, rebase: false, options: options, onOutput: output)
+                    .updateBranch(
+                        reference.id,
+                        from: base.id,
+                        rebase: false,
+                        options: options,
+                        onOutput: output
+                    )
             },
             title: AppLocalization.text("review.resolveConflicts"),
             offersAutoStash: true

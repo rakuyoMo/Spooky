@@ -234,8 +234,14 @@ struct BranchComparisonTests {
 
         // 配置里的布尔写法与 Git 一致：只写键也表示真
         let parsed = try BranchMetadata.parse(Data(
-            "branch.a.spooky-archive-review\0branch.a.spooky-skip-auto-archive\nno\0branch.a.spooky-hide-merged-hint\nyes\0"
-                .utf8
+            [
+                "branch.a.spooky-archive-review",
+                "branch.a.spooky-skip-auto-archive\nno",
+                "branch.a.spooky-hide-merged-hint\nyes",
+            ]
+            .map { $0 + "\0" }
+            .joined()
+            .utf8
         ))
         let flags = try #require(parsed["refs/heads/a"])
         #expect(flags.needsArchiveReview)
@@ -250,7 +256,10 @@ extension BranchComparisonTests {
     /// 在工作区里写一个文件，按需创建目录。
     private func write(_ content: String, to path: String, in fixture: TemporaryRepository) throws {
         let url = fixture.directory.appending(path: path)
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
         try Data(content.utf8).write(to: url)
     }
 }
