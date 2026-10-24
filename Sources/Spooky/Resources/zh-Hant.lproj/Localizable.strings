@@ -820,3 +820,10 @@
 "conflict.toolTip" = "檔案需要合併：%@";
 "conflict.sequence.applying" = "正在套用 “%@”";
 "conflict.sequence.reverting" = "正在反轉 “%@”";
+
+/* 提交体验。 */
+"profiles.add.message" = "將 “%@ <%@> (%@)” 儲存為身分設定檔，請為它輸入標題。";
+"profiles.add.submit" = "加入設定檔";
+"profiles.titleExists" = "已有相同標題的身分設定檔。";
+"profiles.signer" = "簽署者：";
+"commit.doNotAskAgain" = "不再詢問";

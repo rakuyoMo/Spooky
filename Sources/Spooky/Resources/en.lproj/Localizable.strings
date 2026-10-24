@@ -820,3 +820,10 @@
 "conflict.toolTip" = "File requires merging: %@";
 "conflict.sequence.applying" = "Applying “%@”";
 "conflict.sequence.reverting" = "Reverting “%@”";
+
+/* 提交体验。 */
+"profiles.add.message" = "Saves “%@ <%@> (%@)” as a user profile. Enter a title for it.";
+"profiles.add.submit" = "Add Profile";
+"profiles.titleExists" = "A user profile with this title already exists.";
+"profiles.signer" = "Signer:";
+"commit.doNotAskAgain" = "Do not ask again";

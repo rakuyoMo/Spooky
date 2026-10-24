@@ -820,3 +820,10 @@
 "conflict.toolTip" = "Fichier à fusionner : %@";
 "conflict.sequence.applying" = "Application de « %@ »";
 "conflict.sequence.reverting" = "Revert de « %@ »";
+
+/* 提交体验。 */
+"profiles.add.message" = "« %@ <%@> (%@) » sera enregistré comme profil utilisateur. Saisissez un titre pour ce profil.";
+"profiles.add.submit" = "Ajouter le profil";
+"profiles.titleExists" = "Un profil utilisateur portant ce titre existe déjà.";
+"profiles.signer" = "Signataire :";
+"commit.doNotAskAgain" = "Ne plus demander";

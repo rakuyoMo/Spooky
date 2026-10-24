@@ -160,15 +160,14 @@ extension RepositorySession {
                 title: AppLocalization.text(amend ? "working.amend" : "working.commit"),
                 recordsActivity: false
             ) { [weak self] in
-                self?.commitSubject = ""
-                self?.commitBody = ""
-                self?.amend = false
-                self?.originalDraft = nil
+                // 提交成功 0.3 秒后才清空信息，其间提交区保持锁定，不会接受新的输入。
+                self?.commitResetTask = Task { [weak self] in
+                    try? await Task.sleep(for: .milliseconds(300))
 
-                #warning(
-                    "TODO: 提交成功后是否取消 Skip Hooks 未核实：当前随标题与正文一起清除，避免之后的提交意外跳过钩子。核实方式：勾选 Skip Hooks 提交一次，再写下一次提交时查看勾选状态；影响连续提交时钩子是否运行。"
-                )
-                self?.skipHooks = false
+                    guard !Task.isCancelled else { return }
+
+                    self?.clearCommittedMessage()
+                }
             }
         }
 
@@ -192,6 +191,21 @@ extension RepositorySession {
         } else {
             action()
         }
+    }
+
+    /// 清空已经提交的信息与这次的提交选项，结束提交后的锁定。
+    func clearCommittedMessage() {
+        commitResetTask?.cancel()
+        commitResetTask = nil
+        commitSubject = ""
+        commitBody = ""
+        amend = false
+        originalDraft = nil
+
+        #warning(
+            "TODO: 提交成功后是否取消 Skip Hooks 未核实：当前随标题与正文一起清除，避免之后的提交意外跳过钩子。核实方式：勾选 Skip Hooks 提交一次，再写下一次提交时查看勾选状态；影响连续提交时钩子是否运行。"
+        )
+        skipHooks = false
     }
 
     /// 采用 Git 的 ours / theirs 语义，界面用两侧的引用名说明。

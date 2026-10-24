@@ -820,3 +820,10 @@
 "conflict.toolTip" = "Datei muss zusammengeführt werden: %@";
 "conflict.sequence.applying" = "„%@“ wird angewendet";
 "conflict.sequence.reverting" = "„%@“ wird zurückgenommen";
+
+/* 提交体验。 */
+"profiles.add.message" = "„%@ <%@> (%@)“ wird als Benutzerprofil gespeichert. Geben Sie einen Titel dafür ein.";
+"profiles.add.submit" = "Profil hinzufügen";
+"profiles.titleExists" = "Ein Benutzerprofil mit diesem Titel ist bereits vorhanden.";
+"profiles.signer" = "Signierer:";
+"commit.doNotAskAgain" = "Nicht mehr fragen";

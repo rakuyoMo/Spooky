@@ -820,3 +820,10 @@
 "conflict.toolTip" = "병합이 필요한 파일: %@";
 "conflict.sequence.applying" = "“%@” 적용 중";
 "conflict.sequence.reverting" = "“%@” 되돌리는 중";
+
+/* 提交体验。 */
+"profiles.add.message" = "“%@ <%@> (%@)”을(를) 사용자 프로필로 저장합니다. 제목을 입력하세요.";
+"profiles.add.submit" = "프로필 추가";
+"profiles.titleExists" = "같은 제목의 사용자 프로필이 이미 있습니다.";
+"profiles.signer" = "서명자:";
+"commit.doNotAskAgain" = "다시 묻지 않음";

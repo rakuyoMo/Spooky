@@ -820,3 +820,10 @@
 "conflict.toolTip" = "文件需要合并：%@";
 "conflict.sequence.applying" = "正在应用 “%@”";
 "conflict.sequence.reverting" = "正在反转 “%@”";
+
+/* 提交体验。 */
+"profiles.add.message" = "将 “%@ <%@> (%@)” 存为身份档案，请为它填写标题。";
+"profiles.add.submit" = "添加档案";
+"profiles.titleExists" = "已有同样标题的身份档案。";
+"profiles.signer" = "签名人：";
+"commit.doNotAskAgain" = "不再询问";

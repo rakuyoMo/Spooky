@@ -820,3 +820,10 @@
 "conflict.toolTip" = "マージが必要なファイル：%@";
 "conflict.sequence.applying" = "「%@」を適用中";
 "conflict.sequence.reverting" = "「%@」をリバート中";
+
+/* 提交体验。 */
+"profiles.add.message" = "“%@ <%@> (%@)” をユーザプロファイルとして保存します。タイトルを入力してください。";
+"profiles.add.submit" = "プロファイルを追加";
+"profiles.titleExists" = "同じタイトルのユーザプロファイルがすでにあります。";
+"profiles.signer" = "署名者：";
+"commit.doNotAskAgain" = "今後確認しない";
