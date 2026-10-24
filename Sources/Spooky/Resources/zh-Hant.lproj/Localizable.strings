@@ -820,3 +820,7 @@
 "files.truncation" = "截斷工作區中過長的檔案名稱：";
 "files.truncation.beginning" = "截斷開頭";
 "files.truncation.middle" = "截斷中間";
+/* 文件视图。 */
+"fileHistory.subtitle" = "檔案歷史 – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";

@@ -820,3 +820,7 @@
 "files.truncation" = "Lange Dateinamen in der Arbeitskopie kürzen:";
 "files.truncation.beginning" = "Anfang kürzen";
 "files.truncation.middle" = "Mitte kürzen";
+/* 文件视图。 */
+"fileHistory.subtitle" = "Dateiverlauf – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";

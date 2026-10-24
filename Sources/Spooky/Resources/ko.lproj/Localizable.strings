@@ -820,3 +820,7 @@
 "files.truncation" = "작업 사본의 긴 파일 이름 줄이기:";
 "files.truncation.beginning" = "앞부분 줄이기";
 "files.truncation.middle" = "가운데 줄이기";
+/* 文件视图。 */
+"fileHistory.subtitle" = "파일 기록 – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";

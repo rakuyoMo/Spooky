@@ -820,3 +820,7 @@
 "files.truncation" = "Truncate long file names in working copy:";
 "files.truncation.beginning" = "Truncate beginning";
 "files.truncation.middle" = "Truncate middle";
+/* 文件视图。 */
+"fileHistory.subtitle" = "File History – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";

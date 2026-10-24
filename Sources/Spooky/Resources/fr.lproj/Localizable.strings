@@ -820,3 +820,7 @@
 "files.truncation" = "Tronquer les noms de fichiers longs dans la copie de travail :";
 "files.truncation.beginning" = "Tronquer le début";
 "files.truncation.middle" = "Tronquer le milieu";
+/* 文件视图。 */
+"fileHistory.subtitle" = "Historique du fichier – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";
