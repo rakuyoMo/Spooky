@@ -143,7 +143,7 @@ extension RepositorySync {
     /// 把任意版本推到远端的指定引用：普通推送，不强推、不推标签与子模块。
     ///
     /// - Parameters:
-    ///   - revision: 要推送的分支、标签或提交，推送它指向的提交。
+    ///   - revision: 要推送的分支、标签或提交，推送它指向的提交；推到标签时推送标签对象本身。
     ///   - remote: 远端名。
     ///   - destination: 远端引用；不以 `refs/` 开头时视为分支名，如 Gerrit 评审写 `refs/for/<分支>`。
     ///   - skipHooks: 跳过 pre-push 钩子。
@@ -168,17 +168,33 @@ extension RepositorySync {
                 throw RepositorySyncError.missingRemote
             }
 
-            // 来源先解析成提交哈希，refspec 两侧都不会被当成选项或强推标记
-            let commit = try await references.resolve(revision)
+            // 来源先解析成对象哈希，refspec 两侧都不会被当成选项或强推标记
+            let object = try await pushedObject(revision, to: target)
             var options = PushOptions()
             options.skipHooks = skipHooks
 
             let arguments = pushPrefix(remote: remote) + ["--no-force"] + pushArguments(options)
-                + ["--", remote, commit + ":" + target]
+                + ["--", remote, object + ":" + target]
 
             let result = try await runner.execute(arguments, onOutput: onOutput)
             return try RemoteReferenceUpdate.parsePush(result.standardOutput)
         }
+    }
+
+    /// 推送任意版本时交给 refspec 的对象：推到标签时保留标签对象，附注标签在远端仍是附注标签；推到其它引用时是提交。
+    private func pushedObject(_ revision: String, to target: String) async throws -> String {
+        guard target.hasPrefix("refs/tags/") else {
+            return try await RepositoryReferences(runner: runner).resolve(revision)
+        }
+
+        let output = try await runner.run(["rev-parse", "--verify", "--end-of-options", revision + "^{object}"])
+        let object = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)
+
+        guard GitObjectID.isValid(object) else {
+            throw RepositoryReadError.malformedOutput("rev-parse")
+        }
+
+        return object
     }
 
     /// 推送命令的公共前缀：固定 porcelain 与进度，关掉会扩大推送范围的配置。

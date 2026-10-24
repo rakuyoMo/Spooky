@@ -113,6 +113,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 批量归档对话框与自动归档的确认同样以窗口的 sheet 呈现
         configureBranchesReview()
 
+        // 侧边栏与标签菜单预选了分支或版本的同步对话框同样以窗口的 sheet 呈现
+        session.onSyncRequest = { [weak self] in self?.presentSyncDialog($0.kind, preselecting: $0.preselection) }
+
         session.onConfirm = { [weak self] title, message, action, abort in
             guard let window = self?.window, window.attachedSheet == nil else { return }
             let alert = NSAlert()

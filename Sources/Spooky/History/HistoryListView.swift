@@ -63,6 +63,9 @@ struct HistoryListView: View {
                 HistorySearchPanel(history: session.history)
             }
 
+            // 当前分支上有带 fixup! 等标记的提交时，提示自动压缩
+            HistoryAutosquashBanner(session: session)
+
             // 回到的提交在当前历史里找不到时说明原因
             if let reason = session.history.lookupFailure {
                 notice(reason) { session.history.lookupFailure = nil }
@@ -224,6 +227,9 @@ private struct HistoryCommitTable: NSViewRepresentable {
         /// 键盘打开整页提交详情的动作。
         var openSelection: (() -> Void)?
 
+        /// 列表内拖放时落点旁的动作名。
+        let dropLabel = HistoryDropLabel()
+
         /// 回车与小键盘 Enter 是双击的键盘入口，其它按键交给系统列表。
         override func keyDown(with event: NSEvent) {
             if
@@ -240,6 +246,20 @@ private struct HistoryCommitTable: NSViewRepresentable {
         /// 文本焦点位于表格时响应系统复制菜单。
         @objc
         func copy(_: Any?) { copySelection?() }
+
+        /// 拖动离开列表时移除落点旁的动作名。
+        override func draggingExited(_ sender: (any NSDraggingInfo)?) {
+            super.draggingExited(sender)
+
+            dropLabel.hide()
+        }
+
+        /// 拖动结束时移除落点旁的动作名。
+        override func draggingEnded(_ sender: any NSDraggingInfo) {
+            super.draggingEnded(sender)
+
+            dropLabel.hide()
+        }
 
     }
 
@@ -319,7 +339,7 @@ private struct HistoryCommitTable: NSViewRepresentable {
             }
         }
 
-        /// 拖出单个提交，侧边栏的 Branches 标题接受新建分支动作。
+        /// 每个被拖的提交写一个载荷；侧边栏的落点据此新建分支或标签，或者摘取与反转。
         func tableView(_: NSTableView, pasteboardWriterForRow row: Int) -> (
             any NSPasteboardWriting
         )? {
@@ -339,6 +359,60 @@ private struct HistoryCommitTable: NSViewRepresentable {
             return item
         }
 
+        /// 拖动开始时记下全部被拖的提交，按列表顺序；多选拖到工作区或 HEAD 分支时一起摘取或反转。
+        func tableView(
+            _: NSTableView,
+            draggingSession _: NSDraggingSession,
+            willBeginAt _: NSPoint,
+            forRowIndexes rowIndexes: IndexSet
+        ) {
+            guard let location = parent.session.repository else { return }
+
+            let history = parent.session.history
+            let payloads = rowIndexes.compactMap { history.commit(atRow: $0) }.map {
+                RepositoryDragPayload(repository: location, kind: .commit, reference: $0.id)
+            }
+
+            RepositoryDragContext.shared.payload = payloads.first
+            RepositoryDragContext.shared.batch = payloads.count > 1 ? payloads : []
+        }
+
+        /// 列表内拖动提交：在看 HEAD 分支时可以压缩、fixup 或移到别处，落点旁显示动作名。
+        func tableView(
+            _ tableView: NSTableView,
+            validateDrop info: any NSDraggingInfo,
+            proposedRow row: Int,
+            proposedDropOperation operation: NSTableView.DropOperation
+        ) -> NSDragOperation {
+            let action = internalDrop(info, in: tableView, row: row, operation: operation)
+
+            (tableView as? CommitTableView)?.dropLabel.show(
+                action.map { AppLocalization.text(HistoryListDrop.titleKey(of: $0)) },
+                row: row,
+                between: operation == .above,
+                in: tableView
+            )
+
+            return action == nil ? [] : .move
+        }
+
+        /// 落下时先计划交互式变基，再请求确认。
+        func tableView(
+            _ tableView: NSTableView,
+            acceptDrop info: any NSDraggingInfo,
+            row: Int,
+            dropOperation: NSTableView.DropOperation
+        ) -> Bool {
+            (tableView as? CommitTableView)?.dropLabel.hide()
+
+            guard let action = internalDrop(info, in: tableView, row: row, operation: dropOperation) else {
+                return false
+            }
+
+            parent.session.requestRewrite(action)
+            return true
+        }
+
         /// 右键在选区外时只作用于该行。
         func menuNeedsUpdate(_ menu: NSMenu) {
             menu.removeAllItems()
@@ -354,22 +428,15 @@ private struct HistoryCommitTable: NSViewRepresentable {
             copy.target = self
             copy.isEnabled = !parent.session.history.selectedIDs.isEmpty
             menu.addItem(copy)
-            let create = NSMenuItem(
-                title: AppLocalization.text("branch.createFromCommit"),
-                action: #selector(create),
-                keyEquivalent: ""
-            )
-            create.target = self
-            create.isEnabled = parent.session.canWrite && parent.session.history.selectedCommit != nil
-            menu.addItem(create)
 
-            // 保存补丁、导出文件与比较版本，按列表顺序传入选中的提交
+            // 检出、改写、新建与补丁各组，按列表顺序传入选中的提交
             let history = parent.session.history
             let selected = history.commits.filter { history.selectedIDs.contains($0.id) }
 
             for item in HistoryCommitMenu.items(
                 for: selected.isEmpty ? (history.selectedCommit.map { [$0] } ?? []) : selected,
-                session: parent.session
+                session: parent.session,
+                createBranch: parent.createBranch
             ) {
                 menu.addItem(item)
             }
@@ -394,11 +461,24 @@ private struct HistoryCommitTable: NSViewRepresentable {
             parent.openCommit()
         }
 
-        /// 从单个提交打开有预填起点的分支对话框。
-        @objc
-        private func create() {
-            guard let commit = parent.session.history.selectedCommit else { return }
-            parent.createBranch(commit.id)
+        /// 只认本列表自己拖出的提交，动作按列表内拖放的规则算出。
+        private func internalDrop(
+            _ info: any NSDraggingInfo,
+            in tableView: NSTableView,
+            row: Int,
+            operation: NSTableView.DropOperation
+        ) -> RewriteAction? {
+            guard (info.draggingSource as? NSTableView) === tableView else { return nil }
+
+            let dragged = RepositoryDragContext.shared.payloads.filter { $0.kind == .commit }.map(\.reference)
+
+            return HistoryListDrop.action(
+                dragged: dragged,
+                row: row,
+                between: operation == .above,
+                alternate: NSEvent.modifierFlags.contains(.option),
+                session: parent.session
+            )
         }
 
     }
@@ -438,8 +518,11 @@ private struct HistoryCommitTable: NSViewRepresentable {
         table.doubleAction = #selector(Coordinator.doubleClick)
         table.copySelection = { context.coordinator.copyHashes() }
         table.openSelection = { context.coordinator.doubleClick() }
-        table.setDraggingSourceOperationMask(.copy, forLocal: true)
+        table.setDraggingSourceOperationMask([.copy, .move], forLocal: true)
         table.setDraggingSourceOperationMask([], forLocal: false)
+
+        // 列表内拖放提交是交互式变基
+        table.registerForDraggedTypes([.init(RepositoryDragPayload.type)])
         table.setAccessibilityIdentifier("history-commits")
         let menu = NSMenu()
         menu.delegate = context.coordinator

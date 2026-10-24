@@ -228,9 +228,6 @@ final class RepositorySession {
     /// 窗口负责呈现改写操作的对话框与确认。
     var onRewriteRequest: ((RewriteRequest) -> Void)? = nil
 
-    /// 打开预选了目标的变基对话框，参数是目标的完整引用名；由窗口呈现 sheet。
-    var onRebaseRequest: ((String) -> Void)? = nil
-
     /// 当前刷新任务，关闭仓库时取消。
     private(set) var refreshTask: Task<Void, Never>? = nil
 
@@ -299,6 +296,9 @@ final class RepositorySession {
 
     /// 窗口负责呈现分支、标签与远端管理的对话框和询问。
     var onReferenceRequest: ((ReferenceRequest) -> Void)? = nil
+
+    /// 窗口负责呈现同步、变基、安全强推与推送任意版本的对话框。
+    var onSyncRequest: ((SyncDialogRequest) -> Void)? = nil
 
     /// 远端视图显示的远端名。
     var selectedRemote: String? = nil

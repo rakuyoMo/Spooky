@@ -45,6 +45,10 @@ struct CommitDetailView: View {
     @AppStorage(MergeDiffMode.preferenceKey)
     private var mergeMode = MergeDiffMode.firstParent.rawValue
 
+    /// 鼠标是否在变更集详情上，决定操作按钮行是否显示。
+    @State
+    private var hovering = false
+
     /// 换选提交时结束比较。
     var body: some View {
         content
@@ -69,6 +73,7 @@ struct CommitDetailView: View {
                     ScrollView {
                         scrollContent(commit)
                     }
+                    .onHover { hovering = $0 }
                 }
             }
             .reloadsOnDiffPreferenceChange { history.reloadDiffs() }
@@ -117,7 +122,7 @@ struct CommitDetailView: View {
         }
     }
 
-    /// 滚动区域的内容：元信息、完整信息、变更集摘要与逐个文件的 Diff。
+    /// 滚动区域的内容：元信息、完整信息、操作按钮行、变更集摘要与逐个文件的 Diff。
     private func scrollContent(_ commit: HistoryCommit) -> some View {
         LazyVStack(alignment: .leading, spacing: 0) {
             CommitMetadataView(commit: commit, signature: session.signatures.signatures[commit.id])
@@ -127,6 +132,12 @@ struct CommitDetailView: View {
                 .lineSpacing(3)
                 .textSelection(.enabled)
                 .padding(20)
+
+            // 在看 HEAD 分支时，信息下面是 Rollback 与 Revert
+            if session.isViewingHead {
+                CommitActionRow(session: session, commit: commit, hovering: hovering)
+                    .padding(.bottom, 8)
+            }
 
             Divider()
 
@@ -164,6 +175,7 @@ struct CommitDetailView: View {
                         ChangesetFileMenu(session: session, path: file.path, commit: commit)
                     }
                 }
+                .onDrag { CommitFileDragging.provider(file, session: session) }
         }
         .padding(.horizontal, 8)
     }
@@ -231,6 +243,7 @@ struct CommitFileListView: View {
                         ChangesetFileMenu(session: session, path: file.path, commit: commit)
                     }
                 }
+                .onDrag { CommitFileDragging.provider(file, session: session) }
         }
     }
 

@@ -47,8 +47,8 @@ extension RepositoryWindowController {
 
     /// 同步相关对话框以 sheet 呈现；对话框自己开始写操作，结束后关闭。
     ///
-    /// - Parameter source: 预选的源分支；为 nil 时按 HEAD 的跟踪关系选。
-    func presentSyncDialog(_ kind: SyncDialogKind, source: String? = nil) {
+    /// - Parameter preselection: 入口预选的分支或版本；为 nil 时按 HEAD 的跟踪关系预选。
+    func presentSyncDialog(_ kind: SyncDialogKind, preselecting preselection: String? = nil) {
         guard session.canWrite, let window, window.attachedSheet == nil else {
             return
         }
@@ -57,7 +57,7 @@ extension RepositoryWindowController {
         sheet.styleMask = [.titled]
         sheet.tabbingMode = .disallowed
         sheet.contentViewController = NSHostingController(
-            rootView: SyncDialog(session: session, kind: kind, preset: source) { [weak sheet] in
+            rootView: SyncDialog(session: session, kind: kind, preselection: preselection) { [weak sheet] in
                 if let sheet {
                     window.endSheet(sheet)
                 }

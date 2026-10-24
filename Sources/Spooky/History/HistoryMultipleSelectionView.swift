@@ -3,7 +3,8 @@ import SwiftUI
 
 // MARK: - HistoryMultipleSelectionView
 
-/// 历史里选中多个提交时的详情：“N commits selected”；恰好两个时有 Compare 按钮，按住 ⌥ 时反向比较。
+/// 历史里选中多个提交时的详情：“N commits selected”，下面在看 HEAD 分支时是 Revert，否则是 Cherry-Pick；
+/// 恰好两个时再加 Compare 按钮，按住 ⌥ 时反向比较。
 struct HistoryMultipleSelectionView: View {
     /// 当前仓库会话。
     let session: RepositorySession
@@ -28,19 +29,38 @@ struct HistoryMultipleSelectionView: View {
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
 
-            if let (newer, older) = session.comparedCommits {
-                Button(
-                    optionDown
-                        ? AppLocalization.text("compare.selected", newer.shortID, older.shortID)
-                        : AppLocalization.text("compare.submit")
-                ) {
-                    session.compareSelectedCommits(reversed: optionDown)
+            HStack(spacing: 8) {
+                pickButton
+
+                if let (newer, older) = session.comparedCommits {
+                    Button(
+                        optionDown
+                            ? AppLocalization.text("compare.selected", newer.shortID, older.shortID)
+                            : AppLocalization.text("compare.submit")
+                    ) {
+                        session.compareSelectedCommits(reversed: optionDown)
+                    }
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear(perform: startMonitoring)
         .onDisappear(perform: stopMonitoring)
+    }
+
+    /// 在看 HEAD 分支时反转所选提交，否则把它们摘取到 HEAD；按列表顺序传入。
+    private var pickButton: some View {
+        let history = session.history
+        let ids = history.commits.filter { history.selectedIDs.contains($0.id) }.map(\.id)
+
+        return Button(AppLocalization.text(session.isViewingHead ? "rewrite.revert.button" : "rewrite.cherryPick.button")) {
+            if session.isViewingHead {
+                session.requestRevert(ids)
+            } else {
+                session.requestCherryPick(ids)
+            }
+        }
+        .disabled(!session.canRewrite || ids.isEmpty)
     }
 
     /// 监听修饰键变化；窗口失去焦点时按键状态以下一次事件为准。

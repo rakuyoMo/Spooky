@@ -110,6 +110,10 @@ struct RepositorySidebarView: View {
     @State
     var rowSelection: Set<String> = []
 
+    /// 正在显示签名弹窗的标签的完整引用名。
+    @State
+    var signatureTag: String?
+
     /// 系统列表和菜单导航使用同一组选择身份。
     private var selectedItems: Set<String> {
         if session.activeView == .workingCopy { return ["workingCopy"] }
@@ -364,10 +368,12 @@ extension RepositorySidebarView {
                         )
                     )
             }
+        } folder: { node in
+            folderLabel(node, destination: .remoteBranchFolder(remote.name, node.path))
         }
     }
 
-    /// 远端名称行：右键获取或清理，接受本地分支拖入以发布。
+    /// 远端名称行：右键获取或清理，按住 ⌥ 换成快速获取；接受本地分支拖入以发布分支、标签拖入以发布标签。
     func remoteLabel(_ remote: RepositoryRemote) -> some View {
         Label(remote.name, systemImage: "network")
             .contextMenu {
@@ -375,6 +381,9 @@ extension RepositorySidebarView {
                     request(RepositoryActionRequest(kind: .fetch, remote: remote.name))
                 }
                 .disabled(!session.canFetch)
+                .quickAlternate(AppLocalization.text("sync.quickFetchNamed", remote.name), enabled: session.canFetch) {
+                    session.quickFetch(remote: remote.name)
+                }
 
                 Button(AppLocalization.text("sync.prune")) {
                     request(
@@ -446,28 +455,24 @@ extension RepositorySidebarView {
                     request(RepositoryActionRequest(kind: .publish, localBranch: ref.name))
                 }
                 .disabled(!session.canPush(ref))
-                Button(AppLocalization.text("sync.push")) {
-                    request(RepositoryActionRequest(kind: .push, localBranch: ref.name))
-                }
-                .disabled(!session.canPush(ref))
+
+                // 推送、拉取与同步，按住 ⌥ 换成快速操作
+                BranchSyncMenu(session: session, reference: ref, request: request)
             } else {
                 Button(AppLocalization.text("branch.track")) {
                     request(RepositoryActionRequest(kind: .track, reference: ref.id))
                 }
                 .disabled(!session.canTrack(ref))
-                Button(AppLocalization.text("sync.pull")) {
-                    request(RepositoryActionRequest(kind: .pull, reference: ref.id))
-                }
-                .disabled(!session.canPull(from: ref))
+
+                BranchSyncMenu(session: session, reference: ref, request: request)
             }
             Button(AppLocalization.text("branch.create")) {
                 request(RepositoryActionRequest(kind: .create, reference: ref.id))
             }
             .disabled(!session.canCreateBranchFromReference)
-            Button(AppLocalization.text("sync.merge")) {
-                request(RepositoryActionRequest(kind: .merge, reference: ref.id))
-            }
-            .disabled(!session.canMerge(ref))
+
+            // 合并与变基，按住 ⌥ 换成快速操作
+            BranchIntegrationMenu(session: session, reference: ref, request: request)
 
             // HEAD 分支设了父分支时可以并入父分支或变基到父分支上
             ParentBranchMenuItems(session: session, reference: ref, request: request)

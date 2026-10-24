@@ -14,11 +14,6 @@ extension RepositoryWindowController {
         session.history.onReferencesLoaded = { [weak self] in
             self?.offerAutoArchiveIfDue()
         }
-
-        // 分支右键的 Rebase On “父分支”… 打开预选了父分支的变基对话框
-        session.onRebaseRequest = { [weak self] in
-            self?.presentSyncDialog(.rebase, source: $0)
-        }
     }
 
     /// Compare Branches 的开关，所有窗口共用；历史列表头的按钮是同一个偏好。

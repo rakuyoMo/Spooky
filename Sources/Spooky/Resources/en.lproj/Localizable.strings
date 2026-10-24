@@ -329,7 +329,6 @@
 "branch.default" = "Default Branch";
 "branch.create" = "Create Branch";
 "branch.create.help" = "Create a local branch from a revision.";
-"branch.createFromCommit" = "Create Branch from Commit…";
 "branch.track" = "Track Remote Branch";
 "branch.track.help" = "Create a local branch that tracks the selected remote branch.";
 "branch.checkout" = "Check Out Branch";
@@ -1398,3 +1397,43 @@
 "branch.rebaseOn" = "Rebase On “%@”…";
 "branch.quickRebaseOn" = "Quick Rebase “%1$@” on “%2$@”";
 "settings.autoArchive" = "Automatically archive stale and fully merged branches";
+/* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
+"rewrite.menu.checkout" = "Check Out “%@”";
+"rewrite.menu.checkoutGeneric" = "Check Out Revision…";
+"rewrite.menu.reset" = "Reset HEAD to “%@”…";
+"rewrite.menu.resetGeneric" = "Reset HEAD…";
+"rewrite.menu.revert" = "Revert “%@”…";
+"rewrite.menu.revertMany" = "Revert %ld Revisions…";
+"rewrite.menu.revertGeneric" = "Revert…";
+"rewrite.menu.cherryPick" = "Cherry-Pick “%@”…";
+"rewrite.menu.cherryPickMany" = "Cherry-Pick %ld Revisions…";
+"rewrite.menu.rebaseOnto" = "Rebase “%@” Onto…";
+"rewrite.menu.rebaseOntoMany" = "Rebase %ld Revisions Onto…";
+"rewrite.menu.amend" = "Amend “%@”";
+"rewrite.menu.edit" = "Edit “%@”";
+"rewrite.menu.reword" = "Edit Commit Message of “%@”…";
+"rewrite.menu.delete" = "Delete “%@”…";
+"rewrite.menu.deleteMany" = "Delete %ld Revisions…";
+"rewrite.menu.squashMany" = "Squash %ld Revisions…";
+"rewrite.menu.fixupMany" = "Fixup %ld Revisions…";
+"history.createBranch" = "Create New Branch from “%@”…";
+"history.createBranchGeneric" = "Create New Branch…";
+"history.rollback" = "Rollback";
+
+/* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
+"sync.quickFetchNamed" = "Quick Fetch “%@”";
+"sync.quickPullNamed" = "Quick Pull “%@”";
+"sync.quickPushNamed" = "Quick Push “%1$@” to “%2$@”";
+"sync.quickPullInto" = "Quick Pull “%1$@” Into “%2$@”";
+"sync.quickSyncNamed" = "Quick Sync “%1$@” with “%2$@”";
+"sync.quickMergeInto" = "Quick Merge “%1$@” Into “%2$@”";
+"sync.quickRebaseOn" = "Quick Rebase “%1$@” on “%2$@”";
+"sync.rebaseOnNamed" = "Rebase On “%@”…";
+"branch.pushToMenu" = "Push “%@” To…";
+"tag.compareMenu" = "Compare “%@” With Revision…";
+
+/* 分支拖进 “/” 文件夹时的动作名。 */
+"branch.moveHere" = "Move Here";
+
+/* 历史列表头下方的自动压缩横幅。 */
+"history.autosquash" = "Some commits on this branch are marked with fixup!, squash! or amend!.";

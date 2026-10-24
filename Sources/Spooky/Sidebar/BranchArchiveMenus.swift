@@ -119,7 +119,7 @@ struct ParentBranchMenuItems: View {
             }
 
             Button(AppLocalization.text("branch.rebaseOn", parent.name)) {
-                session.onRebaseRequest?(parent.id)
+                session.requestSyncDialog(.rebase, preselecting: parent.id)
             }
             .disabled(!session.canRebase)
             .modifierKeyAlternate(.option) {

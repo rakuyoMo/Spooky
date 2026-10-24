@@ -147,14 +147,9 @@ struct TagBadgeButton<Label: View>: View {
     @State
     private var showsPopover = false
 
-    /// 校验结果；正在校验时为空。
-    @State
-    private var signature: CommitSignature? = nil
-
-    /// 每次打开弹窗都重新校验，密钥环的变化立即反映出来。
+    /// 点击打开弹窗，弹窗每次打开都重新校验。
     var body: some View {
         Button {
-            signature = nil
             showsPopover = true
         } label: {
             label()
@@ -162,9 +157,31 @@ struct TagBadgeButton<Label: View>: View {
         .buttonStyle(.plain)
         .accessibilityLabel(AppLocalization.text("signature.show"))
         .popover(isPresented: $showsPopover, arrowEdge: .top) {
-            SignaturePopover(signature: signature)
-                .task { await verify() }
+            TagSignaturePopover(reference: reference, runner: runner)
         }
+    }
+}
+
+// MARK: - TagSignaturePopover
+
+/// 标签签名的弹窗内容，历史行的标签标记与侧边栏标签的 Show Signature 共用。
+///
+/// 每次打开都重新校验，密钥环的变化立即反映出来。
+struct TagSignaturePopover: View {
+    /// 标签的完整引用名。
+    let reference: String
+
+    /// 校验用的执行器；没有仓库时一直显示校验中。
+    let runner: GitRunner?
+
+    /// 校验结果；正在校验时为空。
+    @State
+    private var signature: CommitSignature? = nil
+
+    /// 打开时开始校验。
+    var body: some View {
+        SignaturePopover(signature: signature)
+            .task { await verify() }
     }
 
     /// 校验标签签名；校验失败按无法校验显示。

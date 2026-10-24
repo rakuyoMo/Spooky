@@ -329,7 +329,6 @@
 "branch.default" = "デフォルトブランチ";
 "branch.create" = "ブランチを作成";
 "branch.create.help" = "指定したリビジョンからローカルブランチを作成します。";
-"branch.createFromCommit" = "コミットからブランチを作成…";
 "branch.track" = "リモートブランチを追跡";
 "branch.track.help" = "選択したリモートブランチを追跡するローカルブランチを作成します。";
 "branch.checkout" = "ブランチをチェックアウト";
@@ -1398,3 +1397,43 @@
 "branch.rebaseOn" = "「%@」にリベース…";
 "branch.quickRebaseOn" = "「%1$@」を「%2$@」にクイックリベース";
 "settings.autoArchive" = "古いブランチと完全にマージ済みのブランチを自動でアーカイブ";
+/* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
+"rewrite.menu.checkout" = "「%@」をチェックアウト";
+"rewrite.menu.checkoutGeneric" = "リビジョンをチェックアウト…";
+"rewrite.menu.reset" = "HEAD を「%@」へリセット…";
+"rewrite.menu.resetGeneric" = "HEAD をリセット…";
+"rewrite.menu.revert" = "「%@」をリバート…";
+"rewrite.menu.revertMany" = "%ld 個のリビジョンをリバート…";
+"rewrite.menu.revertGeneric" = "リバート…";
+"rewrite.menu.cherryPick" = "「%@」をチェリーピック…";
+"rewrite.menu.cherryPickMany" = "%ld 個のリビジョンをチェリーピック…";
+"rewrite.menu.rebaseOnto" = "「%@」を別の場所へリベース…";
+"rewrite.menu.rebaseOntoMany" = "%ld 個のリビジョンを別の場所へリベース…";
+"rewrite.menu.amend" = "「%@」を修正";
+"rewrite.menu.edit" = "「%@」を編集";
+"rewrite.menu.reword" = "「%@」のコミットメッセージを編集…";
+"rewrite.menu.delete" = "「%@」を削除…";
+"rewrite.menu.deleteMany" = "%ld 個のリビジョンを削除…";
+"rewrite.menu.squashMany" = "%ld 個のリビジョンをスカッシュ…";
+"rewrite.menu.fixupMany" = "%ld 個のリビジョンを Fixup…";
+"history.createBranch" = "「%@」から新しいブランチを作成…";
+"history.createBranchGeneric" = "新しいブランチを作成…";
+"history.rollback" = "ロールバック";
+
+/* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
+"sync.quickFetchNamed" = "「%@」をクイックフェッチ";
+"sync.quickPullNamed" = "「%@」をクイックプル";
+"sync.quickPushNamed" = "「%1$@」を「%2$@」へクイックプッシュ";
+"sync.quickPullInto" = "「%1$@」を「%2$@」へクイックプル";
+"sync.quickSyncNamed" = "「%1$@」を「%2$@」とクイック同期";
+"sync.quickMergeInto" = "「%1$@」を「%2$@」へクイックマージ";
+"sync.quickRebaseOn" = "「%1$@」を「%2$@」の上へクイックリベース";
+"sync.rebaseOnNamed" = "「%@」の上へリベース…";
+"branch.pushToMenu" = "「%@」を指定先にプッシュ…";
+"tag.compareMenu" = "「%@」を別のリビジョンと比較…";
+
+/* 分支拖进 “/” 文件夹时的动作名。 */
+"branch.moveHere" = "ここへ移動";
+
+/* 历史列表头下方的自动压缩横幅。 */
+"history.autosquash" = "このブランチには fixup!、squash!、amend! の付いたコミットがあります。";

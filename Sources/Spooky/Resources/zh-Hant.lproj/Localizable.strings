@@ -329,7 +329,6 @@
 "branch.default" = "預設分支";
 "branch.create" = "新增分支";
 "branch.create.help" = "從指定版本建立本機分支。";
-"branch.createFromCommit" = "從提交新增分支…";
 "branch.track" = "追蹤遠端分支";
 "branch.track.help" = "建立追蹤所選遠端分支的本機分支。";
 "branch.checkout" = "簽出分支";
@@ -1398,3 +1397,43 @@
 "branch.rebaseOn" = "重定基底到 “%@” …";
 "branch.quickRebaseOn" = "快速把 “%1$@” 重定基底到 “%2$@”";
 "settings.autoArchive" = "自動封存陳舊與已完全合併的分支";
+/* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
+"rewrite.menu.checkout" = "檢出 “%@”";
+"rewrite.menu.checkoutGeneric" = "檢出版本…";
+"rewrite.menu.reset" = "把 HEAD 重設到 “%@”…";
+"rewrite.menu.resetGeneric" = "重設 HEAD…";
+"rewrite.menu.revert" = "反轉 “%@”…";
+"rewrite.menu.revertMany" = "反轉 %ld 個版本…";
+"rewrite.menu.revertGeneric" = "反轉…";
+"rewrite.menu.cherryPick" = "摘取 “%@”…";
+"rewrite.menu.cherryPickMany" = "摘取 %ld 個版本…";
+"rewrite.menu.rebaseOnto" = "把 “%@” 變基到別處…";
+"rewrite.menu.rebaseOntoMany" = "把 %ld 個版本變基到別處…";
+"rewrite.menu.amend" = "修補 “%@”";
+"rewrite.menu.edit" = "編輯 “%@”";
+"rewrite.menu.reword" = "編輯 “%@” 的提交訊息…";
+"rewrite.menu.delete" = "刪除 “%@”…";
+"rewrite.menu.deleteMany" = "刪除 %ld 個版本…";
+"rewrite.menu.squashMany" = "壓縮 %ld 個版本…";
+"rewrite.menu.fixupMany" = "Fixup %ld 個版本…";
+"history.createBranch" = "從 “%@” 新增分支…";
+"history.createBranchGeneric" = "新增分支…";
+"history.rollback" = "回滾";
+
+/* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
+"sync.quickFetchNamed" = "快速擷取 “%@”";
+"sync.quickPullNamed" = "快速拉取 “%@”";
+"sync.quickPushNamed" = "快速把 “%1$@” 推送到 “%2$@”";
+"sync.quickPullInto" = "快速把 “%1$@” 拉取到 “%2$@”";
+"sync.quickSyncNamed" = "快速同步 “%1$@” 與 “%2$@”";
+"sync.quickMergeInto" = "快速把 “%1$@” 合併到 “%2$@”";
+"sync.quickRebaseOn" = "快速把 “%1$@” 重定基底到 “%2$@”";
+"sync.rebaseOnNamed" = "重定基底到 “%@”…";
+"branch.pushToMenu" = "把 “%@” 推送到…";
+"tag.compareMenu" = "將 “%@” 與其他版本比較…";
+
+/* 分支拖进 “/” 文件夹时的动作名。 */
+"branch.moveHere" = "移到這裡";
+
+/* 历史列表头下方的自动压缩横幅。 */
+"history.autosquash" = "這個分支上有標記為 fixup!、squash! 或 amend! 的提交。";

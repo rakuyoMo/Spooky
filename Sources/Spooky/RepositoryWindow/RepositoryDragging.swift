@@ -25,6 +25,9 @@ struct RepositoryDragPayload: Codable, Sendable {
 
         /// 标签，引用为完整的标签名。
         case tag
+
+        /// 提交变更集里的单个文件，引用为提交哈希。
+        case commitFile
     }
 
     /// Spooky 专用粘贴板类型。
@@ -39,7 +42,7 @@ struct RepositoryDragPayload: Codable, Sendable {
     /// 完整引用名或提交哈希。
     let reference: String
 
-    /// 储藏文件在仓库内的相对路径；其它来源为 nil。
+    /// 储藏或提交里的文件在仓库内的相对路径；其它来源为 nil。
     var path: String? = nil
 
     /// 数据仅供应用内部拖放，悬停期间共享来源来显示动作名。
@@ -67,8 +70,18 @@ final class RepositoryDragContext {
     /// 应用内一次拖动共用一份来源。
     static let shared = RepositoryDragContext()
 
-    /// 当前来源身份。
-    var payload: RepositoryDragPayload? = nil
+    /// 当前来源身份；换成新的来源时清掉上一次的整批来源。
+    var payload: RepositoryDragPayload? = nil {
+        didSet { batch = [] }
+    }
+
+    /// 一次拖动多项时的全部来源，按列表顺序；由历史列表在拖动开始时写入，单项拖动时为空。
+    var batch: [RepositoryDragPayload] = []
+
+    /// 当前拖动的全部来源：多项拖动时是整批，否则是唯一的来源。
+    var payloads: [RepositoryDragPayload] {
+        batch.isEmpty ? (payload.map { [$0] } ?? []) : batch
+    }
 }
 
 // MARK: - RepositoryDropDestination
@@ -95,6 +108,18 @@ enum RepositoryDropDestination {
 
     /// Archived Branches 标题。
     case archived
+
+    /// Tags 标题。
+    case tags
+
+    /// 本地分支的 “/” 文件夹，值是文件夹的完整路径。
+    case branchFolder(String)
+
+    /// 标签的 “/” 文件夹，值是文件夹的完整路径。
+    case tagFolder(String)
+
+    /// 一个远端下远端分支的 “/” 文件夹：远端名，以及文件夹在远端分支名里的路径。
+    case remoteBranchFolder(String, String)
 }
 
 // MARK: - RepositoryDropTarget
@@ -119,13 +144,7 @@ struct RepositoryDropTarget: ViewModifier {
         content
             .overlay(alignment: .trailing) {
                 if let label {
-                    Text(label)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(Color.accentColor)
-                        .padding(.horizontal, 8)
-                        .frame(height: 24)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 4))
-                        .allowsHitTesting(false)
+                    DropActionLabel(text: label)
                 }
             }
             .onDrop(
@@ -137,6 +156,25 @@ struct RepositoryDropTarget: ViewModifier {
                     label: $label
                 )
             )
+    }
+}
+
+// MARK: - DropActionLabel
+
+/// 拖动悬停在落点上时的动作名：白底圆角 4、高 24，13 pt 粗体强调色文字；侧边栏与历史列表的落点共用。
+struct DropActionLabel: View {
+    /// 动作名。
+    let text: String
+
+    /// 不拦截鼠标，拖放事件照常交给落点。
+    var body: some View {
+        Text(text)
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 8)
+            .frame(height: 24)
+            .background(.white, in: RoundedRectangle(cornerRadius: 4))
+            .allowsHitTesting(false)
     }
 }
 
@@ -157,10 +195,25 @@ private struct ReferenceDropDelegate: DropDelegate {
     @Binding
     var label: String?
 
-    /// 本阶段只接受同仓库的单项引用或储藏拖放。
+    /// 本次拖动的唯一来源；历史里多选的提交拖动时为 nil，那时只有改写动作可用。
+    private var singlePayload: RepositoryDragPayload? {
+        let payloads = RepositoryDragContext.shared.payloads
+        return payloads.count == 1 ? payloads.first : nil
+    }
+
+    /// 只接受同仓库的拖放：单项引用、储藏或文件，或历史里多选的提交；拖动的每一项都在载荷里。
     func validateDrop(info: DropInfo) -> Bool {
-        info.itemProviders(for: [RepositoryDragPayload.type]).count == 1
-            && (action() != nil || stashAction() != nil || upstreamAction() != nil || flagAction() != nil)
+        let count = RepositoryDragContext.shared.payloads.count
+
+        guard count > 0, info.itemProviders(for: [RepositoryDragPayload.type]).count == count else {
+            return false
+        }
+
+        return action() != nil
+            || stashAction() != nil
+            || upstreamAction() != nil
+            || flagAction() != nil
+            || operationAction() != nil
     }
 
     /// 修饰键变化时同步更新动作提示。
@@ -169,13 +222,18 @@ private struct ReferenceDropDelegate: DropDelegate {
         let stash = stashAction()
         let upstream = upstreamAction()
         let flag = flagAction()
-        label = action.map { AppLocalization.text($0.kind.rawValue) }
+        let operation = operationAction()
+
+        // 长的可选链分段写，避免类型检查超时
+        let requestLabel = action.map { AppLocalization.text($0.kind.rawValue) }
             ?? stash.map { AppLocalization.text($0.titleKey) }
             ?? upstream.map { _ in AppLocalization.text("branch.dragTrack") }
+
+        label = requestLabel
             ?? flag.map { AppLocalization.text($0.titleKey) }
-        return DropProposal(
-            operation: action == nil && stash == nil && upstream == nil && flag == nil ? .forbidden : .copy
-        )
+            ?? operation.map { AppLocalization.text($0.titleKey) }
+
+        return DropProposal(operation: label == nil ? .forbidden : .copy)
     }
 
     /// 离开落点后移除提示。
@@ -188,39 +246,56 @@ private struct ReferenceDropDelegate: DropDelegate {
         let stash = stashAction()
         let upstream = upstreamAction()
         let flag = flagAction()
+        let operation = operationAction()
+        let expected = RepositoryDragContext.shared.payloads
+
         guard
             validateDrop(info: info),
-            let expected = RepositoryDragContext.shared.payload,
             let provider = info.itemProviders(for: [RepositoryDragPayload.type]).first
         else { return false }
+
         provider.loadDataRepresentation(forTypeIdentifier: RepositoryDragPayload.type) { data, _ in
+            // 实际载荷必须是本次拖动的来源之一
             guard
                 let data, let payload = try? JSONDecoder().decode(RepositoryDragPayload.self, from: data),
-                payload.repository == expected.repository, payload.reference == expected.reference,
-                payload.path == expected.path
+                expected.contains(where: {
+                    $0.repository == payload.repository && $0.reference == payload.reference && $0.path == payload.path
+                })
             else { return }
             Task { @MainActor in
                 guard session.repository == payload.repository, session.canWrite else { return }
 
-                // 储藏、置顶与归档直接交给会话，设置上游直接执行，其余动作打开参数表单
+                // 储藏、置顶、归档与改写直接交给会话，设置上游直接执行，其余动作打开参数表单
                 if let action {
                     request(action)
                 } else if let upstream {
                     session.setUpstream(upstream.remote, for: upstream.branch)
                 } else if let stash {
                     stash.perform(in: session)
+                } else if let flag {
+                    flag.perform(in: session)
                 } else {
-                    flag?.perform(in: session)
+                    operation?.perform(in: session)
                 }
             }
         }
         return true
     }
 
+    /// 提交、提交里的文件、分支与标签拖到落点时的改写、标签与改名动作；可用条件与对应的菜单项相同。
+    private func operationAction() -> RepositoryOperationDrop? {
+        RepositoryOperationDrop(
+            payloads: RepositoryDragContext.shared.payloads,
+            destination: destination,
+            alternate: NSEvent.modifierFlags.contains(.option),
+            session: session
+        )
+    }
+
     /// 储藏或储藏文件拖到工作区与 HEAD 分支时的动作；可用条件与菜单和右键菜单相同。
     private func stashAction() -> StashDropAction? {
         guard
-            let payload = RepositoryDragContext.shared.payload,
+            let payload = singlePayload,
             payload.repository == session.repository
         else { return nil }
 
@@ -230,7 +305,7 @@ private struct ReferenceDropDelegate: DropDelegate {
     /// 本地分支拖到 Pinned 或 Archived Branches 标题时的动作；可用条件与右键菜单相同。
     private func flagAction() -> BranchFlagDropAction? {
         guard
-            let payload = RepositoryDragContext.shared.payload,
+            let payload = singlePayload,
             payload.repository == session.repository
         else { return nil }
 
@@ -242,7 +317,7 @@ private struct ReferenceDropDelegate: DropDelegate {
         guard
             NSEvent.modifierFlags.contains(.option),
             case .head = destination,
-            let payload = RepositoryDragContext.shared.payload,
+            let payload = singlePayload,
             payload.repository == session.repository,
             payload.kind == .remote,
             let remote = session.history.branches.first(where: { $0.id == payload.reference }),
@@ -256,7 +331,7 @@ private struct ReferenceDropDelegate: DropDelegate {
     /// 每个映射都指向实际可用的业务动作，可用条件与菜单和右键菜单相同。
     private func action() -> RepositoryActionRequest? {
         guard
-            let payload = RepositoryDragContext.shared.payload,
+            let payload = singlePayload,
             payload.repository == session.repository
         else { return nil }
         let alternate = NSEvent.modifierFlags.contains(.option)
@@ -271,7 +346,7 @@ private struct ReferenceDropDelegate: DropDelegate {
             guard !alternate, let source, session.canPull(from: source) else { return nil }
             return RepositoryActionRequest(kind: .pull, reference: payload.reference)
 
-        case (.local, .branches), (.commit, .branches), (.tag, .branches):
+        case (.local, .branches), (.commit, .branches), (.tag, .branches), (.commit, .branchFolder):
             guard !alternate, session.canCreateBranchFromReference else { return nil }
             return RepositoryActionRequest(kind: .create, reference: payload.reference)
 

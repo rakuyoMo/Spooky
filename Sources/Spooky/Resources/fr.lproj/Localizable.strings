@@ -329,7 +329,6 @@
 "branch.default" = "Branche par défaut";
 "branch.create" = "Créer une branche";
 "branch.create.help" = "Créer une branche locale à partir d’une révision.";
-"branch.createFromCommit" = "Créer une branche à partir du commit…";
 "branch.track" = "Suivre la branche distante";
 "branch.track.help" = "Créer une branche locale qui suit la branche distante sélectionnée.";
 "branch.checkout" = "Basculer sur la branche";
@@ -1398,3 +1397,43 @@
 "branch.rebaseOn" = "Rebaser sur « %@ »…";
 "branch.quickRebaseOn" = "Rebase rapide de « %1$@ » sur « %2$@ »";
 "settings.autoArchive" = "Archiver automatiquement les branches obsolètes et entièrement fusionnées";
+/* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
+"rewrite.menu.checkout" = "Extraire « %@ »";
+"rewrite.menu.checkoutGeneric" = "Extraire une révision…";
+"rewrite.menu.reset" = "Réinitialiser HEAD à « %@ »…";
+"rewrite.menu.resetGeneric" = "Réinitialiser HEAD…";
+"rewrite.menu.revert" = "Revert de « %@ »…";
+"rewrite.menu.revertMany" = "Revert de %ld révisions…";
+"rewrite.menu.revertGeneric" = "Revert…";
+"rewrite.menu.cherryPick" = "Cherry-pick de « %@ »…";
+"rewrite.menu.cherryPickMany" = "Cherry-pick de %ld révisions…";
+"rewrite.menu.rebaseOnto" = "Rebaser « %@ » ailleurs…";
+"rewrite.menu.rebaseOntoMany" = "Rebaser %ld révisions ailleurs…";
+"rewrite.menu.amend" = "Compléter « %@ »";
+"rewrite.menu.edit" = "Modifier « %@ »";
+"rewrite.menu.reword" = "Modifier le message de commit de « %@ »…";
+"rewrite.menu.delete" = "Supprimer « %@ »…";
+"rewrite.menu.deleteMany" = "Supprimer %ld révisions…";
+"rewrite.menu.squashMany" = "Fusionner %ld révisions…";
+"rewrite.menu.fixupMany" = "Fixup de %ld révisions…";
+"history.createBranch" = "Créer une branche à partir de « %@ »…";
+"history.createBranchGeneric" = "Créer une branche…";
+"history.rollback" = "Revenir ici";
+
+/* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
+"sync.quickFetchNamed" = "Récupération rapide de « %@ »";
+"sync.quickPullNamed" = "Tirage rapide de « %@ »";
+"sync.quickPushNamed" = "Pousser rapidement « %1$@ » vers « %2$@ »";
+"sync.quickPullInto" = "Tirer rapidement « %1$@ » dans « %2$@ »";
+"sync.quickSyncNamed" = "Synchroniser rapidement « %1$@ » avec « %2$@ »";
+"sync.quickMergeInto" = "Fusionner rapidement « %1$@ » dans « %2$@ »";
+"sync.quickRebaseOn" = "Rebaser rapidement « %1$@ » sur « %2$@ »";
+"sync.rebaseOnNamed" = "Rebaser sur « %@ »…";
+"branch.pushToMenu" = "Pousser « %@ » vers…";
+"tag.compareMenu" = "Comparer « %@ » à une révision…";
+
+/* 分支拖进 “/” 文件夹时的动作名。 */
+"branch.moveHere" = "Déplacer ici";
+
+/* 历史列表头下方的自动压缩横幅。 */
+"history.autosquash" = "Cette branche contient des commits marqués fixup!, squash! ou amend!.";
