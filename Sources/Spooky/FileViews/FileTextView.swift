@@ -316,10 +316,12 @@ extension FileTextView {
         }
 
         coordinator.syntaxTask = Task { [weak coordinator, weak document] in
-            let spans = await Task.detached(priority: .userInitiated) {
-                SyntaxHighlighter.language(forPath: path, content: text)
-                    .map { SyntaxHighlighter.highlight(text, as: $0) }
-            }.value
+            var spans: [[SyntaxSpan]]?
+
+            // 识别与着色在语法着色的串行队列上排队；内容或开关变化时任务取消，尚未开始的着色直接跳过
+            if let language = await SyntaxHighlighter.language(forPath: path, content: text) {
+                spans = await SyntaxHighlighter.highlight(text, as: language)
+            }
 
             // 着色期间内容或开关又变了，结果作废
             guard

@@ -28,7 +28,7 @@ struct CommitFileDiffSource: Sendable {
 
         guard
             TextPreferences.colorsDiffSyntax,
-            DiffSyntax.mayColor(diff, oldPath: oldPath, newPath: newPath)
+            await DiffSyntax.mayColor(diff, oldPath: oldPath, newPath: newPath)
         else { return nil }
 
         var full = diff
@@ -49,10 +49,8 @@ struct CommitFileDiffSource: Sendable {
             full = parsed
         }
 
-        // 着色按全文线性扫描，大文件放到后台完成
-        return await Task.detached(priority: .userInitiated) { [full] in
-            DiffSyntax.make(from: full, oldPath: oldPath, newPath: newPath)
-        }.value
+        // 在当前任务中着色：视图换掉内容、任务取消时，尚未开始的着色直接跳过
+        return await DiffSyntax.make(from: full, oldPath: oldPath, newPath: newPath)
     }
 
     /// 图片两侧的内容，都取自对象库。
