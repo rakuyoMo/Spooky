@@ -179,7 +179,7 @@ extension RevisionDialog {
                 .gridColumnAlignment(.trailing)
 
             RevisionComboBox(text: text, items: references, label: AppLocalization.text(key))
-                .frame(maxWidth: 350, alignment: .leading)
+                .frame(width: 350, alignment: .leading)
         }
     }
 
