@@ -1,9 +1,10 @@
+import AppKit
 import SpookyKit
 import SwiftUI
 
 // MARK: - OperationBannerView
 
-/// 提交区上方的进行中操作横幅：标题、冲突计数、当前阶段的提示、序列进度与备份文件，以及只看冲突、中止和跳过。
+/// 提交区上方的进行中操作横幅：标题、冲突计数、当前阶段的提示与序列进度，以及只看冲突、中止和跳过。
 struct OperationBannerView: View {
     /// 当前阶段：决定提示文字与是否提供跳过。
     private enum Phase {
@@ -61,14 +62,12 @@ extension OperationBannerView {
         return AppLocalization.text("conflict.resolvedSuffix", base, resolved)
     }
 
-    /// 左侧是警示图标，右侧是文字列；底行的勾选框与文字列左对齐，按钮靠右。
+    /// 左侧是操作类型的图标，右侧是文字列；底行的勾选框与文字列左对齐，按钮靠右。
     private func banner(_ progress: OperationProgress) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 36))
-                .foregroundStyle(.yellow)
-                .frame(width: 48, height: 48)
-                .accessibilityHidden(true)
+        #warning("TODO: 核对横幅着色所用的命名色，目前取系统红色；只影响进行中操作横幅的底色与描边")
+
+        return HStack(alignment: .top, spacing: 8) {
+            icon(progress.state)
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(session.operationBannerTitle ?? "")
@@ -87,23 +86,48 @@ extension OperationBannerView {
 
                 stepProgress(progress)
 
-                ConflictBackupsView(session: session)
-                    .padding(.top, 12)
-
                 actionRow(progress)
                     .padding(.top, 16)
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.red.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(.red.opacity(0.25)))
+        .background {
+            // 着色铺在最下层，上面盖一层半透明的标题栏材质
+            ZStack {
+                Color.red.opacity(0.15)
+
+                BannerMaterialView()
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.red.opacity(0.25), lineWidth: 1))
     }
 
-    /// 序列进度：只在变基、摘取或反转多个提交时显示。
+    /// 合并与压缩合并用合并的图标，变基、摘取与反转用分支的图标；系统黄色，略微透明。
+    private func icon(_ state: RepositoryOperationState) -> some View {
+        let merging = state == .merge || state == .squash
+
+        return Image(systemName: merging ? "arrow.triangle.merge" : "arrow.triangle.branch")
+            .font(.system(size: 36))
+            .foregroundStyle(Color(nsColor: .systemYellow).opacity(0.9))
+            .frame(width: 48, height: 48)
+            .accessibilityHidden(true)
+    }
+
+    /// 序列进度：变基多个提交时显示第几步与进度条；摘取与反转不记录已完成的步数，只说明正在处理的提交。
     @ViewBuilder
     private func stepProgress(_ progress: OperationProgress) -> some View {
-        if let step = progress.step, let count = progress.stepCount, count > 1 {
+        if [.cherryPick, .revert].contains(progress.state), let subject = progress.stepSubject {
+            Text(AppLocalization.text(
+                progress.stepKind == .reverting ? "conflict.sequence.reverting" : "conflict.sequence.applying",
+                subject
+            ))
+            .font(.system(size: 12))
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+            .padding(.top, 12)
+        } else if let step = progress.step, let count = progress.stepCount, count > 1 {
             VStack(alignment: .leading, spacing: 4) {
                 ProgressView(value: Double(min(step, count)), total: Double(count))
 
@@ -154,16 +178,31 @@ extension OperationBannerView {
         return (try? AttributedString(markdown: text)) ?? AttributedString(text)
     }
 
-    /// “第 N 步，共 M 步” 加上当前一步的动作与提交标题。
+    /// 变基的 “第 N 步，共 M 步” 加上当前一步的动作与提交标题。
     private func stepText(_ progress: OperationProgress, step: Int, count: Int) -> String {
         guard let subject = progress.stepSubject else {
             return AppLocalization.text("conflict.step", step, count)
         }
 
-        switch progress.stepKind ?? .applying {
-        case .applying: return AppLocalization.text("conflict.step.applying", step, count, subject)
-        case .editing: return AppLocalization.text("conflict.step.editing", step, count, subject)
-        case .reverting: return AppLocalization.text("conflict.step.reverting", step, count, subject)
-        }
+        let key = progress.stepKind == .editing ? "conflict.step.editing" : "conflict.step.applying"
+        return AppLocalization.text(key, step, count, subject)
     }
+}
+
+// MARK: - BannerMaterialView
+
+/// 横幅底色上半透明的标题栏材质，让着色随窗口背景略微变化。
+private struct BannerMaterialView: NSViewRepresentable {
+    /// 标题栏材质、在窗口内混合、强调样式，整体半透明。
+    func makeNSView(context _: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = .headerView
+        view.blendingMode = .withinWindow
+        view.isEmphasized = true
+        view.alphaValue = 0.5
+        return view
+    }
+
+    /// 材质参数固定，无需更新。
+    func updateNSView(_: NSVisualEffectView, context _: Context) { }
 }

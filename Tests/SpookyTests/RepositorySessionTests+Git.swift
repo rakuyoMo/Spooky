@@ -73,6 +73,7 @@ extension RepositorySessionTests {
         session.commit()
         await session.writeTask?.value
         await session.refreshTask?.value
+        await session.commitResetTask?.value
         #expect(session.commitSubject.isEmpty && session.commitBody.isEmpty)
         #expect(session.status?.entries.isEmpty ?? false)
         #expect(session.status?.branch.oid != nil)

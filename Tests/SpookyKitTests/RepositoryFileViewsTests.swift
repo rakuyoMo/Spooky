@@ -9,8 +9,8 @@ struct RepositoryFileViewsTests {
     /// 文件名同时含有中文、空格、制表符、换行、引号、反斜杠与通配符。
     private static let path = "目录 [*]/你好 \t\n'\\.txt"
 
-    /// 文件历史只包含修改过该文件的提交；翻页、计数与贡献者、日期筛选都由 Git 在仓库所在的机器上完成。
-    @Test("文件历史的分页、计数、贡献者与日期筛选", arguments: ["sha1", "sha256"])
+    /// 文件历史只包含修改过该文件的提交；翻页、计数与贡献者筛选都由 Git 在仓库所在的机器上完成。
+    @Test("文件历史的分页、计数与贡献者筛选", arguments: ["sha1", "sha256"])
     func history(objectFormat: String) async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
@@ -68,13 +68,6 @@ struct RepositoryFileViewsTests {
         let carol = FileHistoryFilter(scope: .committer, text: "carol")
         #expect(try await subjects(carol) == ["applied"])
 
-        // 日期按提交人日期限定，两端可以单独使用
-        let middle = try #require(ISO8601DateFormatter().date(from: "2021-06-01T00:00:00Z"))
-        let since = FileHistoryFilter(since: middle)
-        let until = FileHistoryFilter(until: middle)
-        #expect(try await subjects(since) == ["applied", "edit"])
-        #expect(try await subjects(until) == ["add"])
-
         // 版本范围改变的是起点，不会变成作者或提交人条件
         #expect(FileHistoryFilter(scope: .revision, text: "HEAD~1").arguments.isEmpty)
 
@@ -83,6 +76,11 @@ struct RepositoryFileViewsTests {
         #expect(contributors.map(\.name) == ["Alice", "Bob [x]"])
         #expect(contributors.first?.commitCount == 2)
         #expect(contributors.first?.email == "alice@example.invalid")
+
+        // 不给路径时是整个仓库的作者，包括只改过其它文件的人
+        let authors = try await views.contributors(of: nil, at: head)
+        #expect(authors.map(\.name) == ["Alice", "Bob", "Bob [x]"])
+        #expect(authors.first?.commitCount == 2)
     }
 
     /// Blame 的段、提交元信息与原文按 porcelain 协议解析，哈希长度随仓库算法变化。

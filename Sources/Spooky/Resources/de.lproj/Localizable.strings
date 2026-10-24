@@ -196,7 +196,6 @@
 "error.terminalHelp" = "Prüfen Sie das in den Einstellungen ausgewählte Terminal und seine macOS-Berechtigung für Automation.";
 "error.exitCode" = "Exit-Status: %ld";
 "terminal.notInstalled" = "%@ ist nicht installiert.";
-"themes.font" = "%@ %@ pt";
 "themes.background" = "Hintergrund";
 "themes.added" = "Hinzugefügt";
 "themes.deleted" = "Gelöscht";
@@ -437,16 +436,11 @@
 
 /* 主题管理。 */
 "themes.newName" = "Neues Thema";
-"themes.usedInLight" = "Das ausgewählte Thema wird im hellen Erscheinungsbild verwendet. Wechseln Sie zum dunklen Erscheinungsbild, um dessen Thema auszuwählen.";
-"themes.usedInDark" = "Das ausgewählte Thema wird im dunklen Erscheinungsbild verwendet. Wechseln Sie zum hellen Erscheinungsbild, um dessen Thema auszuwählen.";
 "themes.change" = "Ändern …";
 "themes.fontLabel" = "Schrift";
 "themes.text" = "Text";
 "themes.add" = "Thema hinzufügen";
 "themes.remove" = "Thema entfernen";
-"themes.actions" = "Importieren oder exportieren";
-"themes.import" = "Thema importieren …";
-"themes.export" = "Thema exportieren …";
 "themes.invalidTitle" = "Nicht geladene Themen";
 "themes.invalid" = "Diese Themendateien konnten nicht geladen werden, weil sie beschädigt sind oder ihr Name bzw. ihre Kennung bereits von einem anderen Thema verwendet wird:";
 "themes.exists" = "Thema existiert bereits";
@@ -532,9 +526,7 @@
 "stash.error.reapply.help" = "Der Vorgang ist abgeschlossen, aber Ihre lokalen Änderungen konnten nicht wieder angewendet werden. Sie bleiben im Stash erhalten; wenden Sie ihn an, wenn Sie bereit sind.";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "Angewendeter Patch oder Stash";
-"conflict.backups" = "Sicherungsdateien";
 "conflict.binary" = "Binäre Inhalte werden nicht angezeigt.";
-"conflict.error.changed" = "Die Datei wurde nach dem Laden geändert. Laden Sie den Konflikt neu und bearbeiten Sie ihn erneut.";
 "conflict.error.version" = "Die ausgewählten Dateien haben diese Version nicht.";
 "conflict.export" = "Version aus „%@“ exportieren …";
 "conflict.header.cherryPick" = "Cherry-Pick von %@ in %@";
@@ -551,7 +543,6 @@
 "conflict.hint.sequence.conflicts" = "Lösen Sie alle Konflikte auf, um fortzufahren.";
 "conflict.hint.sequence.resolved" = "Klicken Sie auf **Fortsetzen**, um diesen Schritt zu committen und mit den übrigen Commits fortzufahren.";
 "conflict.hint.sequence.empty" = "In diesem Schritt sind keine Änderungen übrig. Klicken Sie auf **Überspringen**, um diesen Commit auszulassen, oder auf **Fortsetzen**, um einen leeren Commit zu behalten und fortzufahren.";
-"conflict.keepBackups" = "Sicherungsdateien für Merge-Konflikte behalten";
 "conflict.kind.addedByThem" = "Von der Gegenseite hinzugefügt";
 "conflict.kind.addedByUs" = "Von uns hinzugefügt";
 "conflict.kind.bothAdded" = "Beidseitig hinzugefügt";
@@ -567,26 +558,19 @@
 "conflict.missing" = "Diese Version löscht die Datei.";
 "conflict.open" = "Version aus „%@“ öffnen";
 "conflict.reload" = "Neu laden";
-"conflict.removeBackups" = "Sicherungsdateien löschen";
-"conflict.removeBackups.message" = "%d Sicherungsdateien in %@ werden endgültig gelöscht. Dies kann nicht widerrufen werden.";
-"conflict.removeBackups.remote" = "%d Sicherungsdateien auf dem Server unter %@ werden endgültig gelöscht. Dies kann nicht widerrufen werden.";
 "conflict.resolveCurrent" = "Mit aktueller Version auflösen";
 "conflict.resolvedSuffix" = "%@ (%d aufgelöst)";
 "conflict.resolveUsing" = "Mit „%@“ auflösen";
 "conflict.resolveUsingVersion" = "Mit Version aus „%@“ auflösen";
-"conflict.restore.message" = "%d Dateien in %@ werden mit der ausgewählten Version überschrieben. Aktuelle Bearbeitungen dieser Dateien gehen verloren.";
-"conflict.restore.remote" = "%d Dateien auf dem Server unter %@ werden mit der ausgewählten Version überschrieben. Aktuelle Bearbeitungen dieser Dateien gehen verloren.";
 "conflict.restoreAncestor" = "Version des gemeinsamen Vorfahren wiederherstellen";
 "conflict.restoreUnmerged" = "Nicht zusammengeführte Version wiederherstellen";
 "conflict.restoreUnmerged.many" = "Nicht zusammengeführte Version von %d Objekten wiederherstellen";
 "conflict.restoreUnmerged.one" = "Nicht zusammengeführte Version von „%@“ wiederherstellen";
 "conflict.restoreVersion" = "Version aus „%@“ wiederherstellen";
 "conflict.result" = "Manuell bearbeitete oder zusammengeführte Version";
-"conflict.save" = "Sichern";
 "conflict.step" = "Schritt %d von %d";
 "conflict.step.applying" = "Schritt %d von %d: „%@“ wird angewendet";
 "conflict.step.editing" = "Schritt %d von %d: „%@“ wird bearbeitet";
-"conflict.step.reverting" = "Schritt %d von %d: „%@“ wird zurückgenommen";
 "conflict.title.cherryPick" = "Cherry-Pick von %d Commits auf „%@“";
 "conflict.title.cherryPick.one" = "Cherry-Pick von 1 Commit auf „%@“";
 "conflict.title.merge" = "Merge von „%@“ in „%@“";
@@ -598,18 +582,11 @@
 "conflict.unresolved.one" = "1 nicht aufgelöster Konflikt";
 "conflict.version" = "Version aus „%@“";
 "conflict.versionMenu" = "Aktionen für die Version aus „%@“";
-"conflict.worktreeMissing" = "Die Datei ist nicht in der Arbeitskopie.";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "Dateiverlauf";
 "fileHistory.showCommit" = "Commit anzeigen";
 "fileHistory.oneCommit" = "1 Commit";
 "fileHistory.commits" = "%ld Commits";
-"fileHistory.date" = "Datum";
-"fileHistory.anyDate" = "Beliebig";
-"fileHistory.after" = "Am oder nach";
-"fileHistory.before" = "Am oder vor";
-"fileHistory.between" = "Zwischen";
-"fileHistory.to" = "und";
 "fileHistory.submodule" = "Für Submodule kann kein Dateiverlauf angezeigt werden";
 "fileHistory.showAt" = "„%@“ in Revision „%@“ anzeigen";
 "fileHistory.blameAt" = "Blame für „%@“ in Revision „%@“ anzeigen";
@@ -646,13 +623,10 @@
 "showFile.noContributors" = "Noch keine Beitragenden";
 "showFile.oneContributor" = "1 Beitragende Person";
 "showFile.contributors" = "%ld Beitragende";
-"showFile.copy" = "Inhalt kopieren";
-"showFile.export" = "Exportieren …";
-"showFile.open" = "Öffnen";
 "showFile.searchRevisions" = "Revisionen durchsuchen";
 "showFile.searchFiles" = "Dateien durchsuchen";
 "showFile.error.missing" = "Datei in dieser Revision nicht vorhanden";
-/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+/* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "Bei ignorierten Leerzeichen passen die ausgewählten Zeilen nicht zu den Änderungen in der Datei. Blende Leerzeichenänderungen ein und wähle die Zeilen erneut aus.";
 "diff.ignoreWhitespace" = "Leerzeichenänderungen ignorieren";
 "diff.showEntireFile" = "Gesamte Datei anzeigen";
@@ -680,13 +654,6 @@
 "diff.imageSize" = "%ld × %ld Pixel, %@";
 "diff.imageMode" = "Bildvergleich";
 "diff.imageSide" = "Angezeigte Version";
-"diff.savePatch" = "Patch sichern …";
-"diff.exportDiff" = "Diff exportieren …";
-"diff.savePatch.title" = "Patch sichern";
-"diff.savePatch.message" = "Die Änderungen gegenüber HEAD in den ausgewählten Dateien (%ld), einschließlich vorgemerkter, nicht vorgemerkter und nicht verfolgter Änderungen, werden als Patch-Datei gesichert, die mit git apply angewendet werden kann.";
-"diff.savePatch.submit" = "Patch sichern";
-"diff.omitPrefixes" = "Präfixe weglassen";
-"diff.omitPrefixes.help" = "Keine Quell- oder Zielpräfixe anzeigen";
 
 /* 提交体验、身份档案与签名。 */
 "signing.error" = "Das Signieren des Commits ist fehlgeschlagen. Prüfen Sie den Signaturschlüssel und das Signaturprogramm.";
@@ -752,9 +719,7 @@
 "files.untrack" = "Nicht mehr verfolgen";
 "files.untrack.single" = "„%@“ nicht mehr verfolgen";
 "files.untrack.multiple" = "%ld Objekte nicht mehr verfolgen";
-"files.untrack.message" = "Folgende Dateien in %2$@ nicht mehr verfolgen? Die Dateien bleiben in der Arbeitskopie, und der nächste Commit entfernt sie aus dem Repository.\n\n%1$@";
 "files.trash" = "In den Papierkorb legen";
-"files.trash.message" = "Folgende Dateien in %2$@ in den Papierkorb legen? Sie können sie aus dem Papierkorb zurücklegen.\n\n%1$@";
 "files.delete" = "Löschen";
 "files.delete.remote" = "Folgende Dateien auf dem Server unter %2$@ endgültig löschen? Dies kann nicht widerrufen werden.\n\n%1$@";
 "files.move.menu" = "Bewegen …";
@@ -829,3 +794,32 @@
 "files.truncation" = "Lange Dateinamen in der Arbeitskopie kürzen:";
 "files.truncation.beginning" = "Anfang kürzen";
 "files.truncation.middle" = "Mitte kürzen";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "Dieses Repository hat noch keine Referenzen.";
+
+/* 储藏视图。 */
+"stash.search" = "Nach Stash-Beschreibung suchen";
+"stash.subtitle" = "Stashes (%ld Stashes)";
+
+/* 冲突向导。 */
+"conflict.resolveBoth" = "Mit beiden Versionen auflösen";
+"conflict.version.applied" = "Version aus angewendetem Patch oder Stash";
+"conflict.resolveUsing.applied" = "Mit angewendetem Patch oder Stash auflösen";
+"conflict.open.missing" = "Öffnen";
+"conflict.export.missing" = "Exportieren …";
+"conflict.toolTip" = "Datei muss zusammengeführt werden: %@";
+"conflict.sequence.applying" = "„%@“ wird angewendet";
+"conflict.sequence.reverting" = "„%@“ wird zurückgenommen";
+
+/* 提交体验。 */
+"profiles.add.message" = "„%@ <%@> (%@)“ wird als Benutzerprofil gespeichert. Geben Sie einen Titel dafür ein.";
+"profiles.add.submit" = "Profil hinzufügen";
+"profiles.titleExists" = "Ein Benutzerprofil mit diesem Titel ist bereits vorhanden.";
+"profiles.signer" = "Signierer:";
+"commit.doNotAskAgain" = "Nicht mehr fragen";
+
+/* 文件视图。 */
+"fileHistory.subtitle" = "Dateiverlauf – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";

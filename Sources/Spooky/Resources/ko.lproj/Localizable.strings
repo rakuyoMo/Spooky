@@ -196,7 +196,6 @@
 "error.terminalHelp" = "설정에서 터미널 선택과 macOS 자동화 권한을 확인하세요.";
 "error.exitCode" = "종료 코드: %ld";
 "terminal.notInstalled" = "%@이(가) 설치되어 있지 않습니다.";
-"themes.font" = "%@ %@ pt";
 "themes.background" = "배경";
 "themes.added" = "추가";
 "themes.deleted" = "삭제";
@@ -437,16 +436,11 @@
 
 /* 主题管理。 */
 "themes.newName" = "새로운 테마";
-"themes.usedInLight" = "선택한 테마는 밝은 모양에서 사용됩니다. 어두운 모양의 테마를 선택하려면 어두운 모양으로 전환하세요.";
-"themes.usedInDark" = "선택한 테마는 어두운 모양에서 사용됩니다. 밝은 모양의 테마를 선택하려면 밝은 모양으로 전환하세요.";
 "themes.change" = "변경…";
 "themes.fontLabel" = "서체";
 "themes.text" = "텍스트";
 "themes.add" = "테마 추가";
 "themes.remove" = "테마 제거";
-"themes.actions" = "가져오기 또는 내보내기";
-"themes.import" = "테마 가져오기…";
-"themes.export" = "테마 내보내기…";
 "themes.invalidTitle" = "불러올 수 없는 테마";
 "themes.invalid" = "다음 테마 파일은 손상되었거나 이름 또는 식별자를 다른 테마가 이미 사용하고 있어 불러올 수 없습니다.";
 "themes.exists" = "테마가 이미 있음";
@@ -532,9 +526,7 @@
 "stash.error.reapply.help" = "작업은 끝났지만 로컬 변경 사항을 다시 적용하지 못했습니다. 변경 사항은 스태시에 남아 있으니 준비가 되면 적용하세요.";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "적용한 패치 또는 스태시";
-"conflict.backups" = "백업 파일";
 "conflict.binary" = "바이너리 내용은 표시하지 않습니다.";
-"conflict.error.changed" = "불러온 후에 파일이 변경되었습니다. 충돌을 다시 불러온 다음 다시 편집하세요.";
 "conflict.error.version" = "선택한 파일에 이 버전이 없습니다.";
 "conflict.export" = "“%@”의 버전 내보내기…";
 "conflict.header.cherryPick" = "%@을(를) %@에 체리픽하는 중";
@@ -551,7 +543,6 @@
 "conflict.hint.sequence.conflicts" = "계속하려면 모든 충돌을 해결하세요.";
 "conflict.hint.sequence.resolved" = "**계속**을 클릭하면 이 단계를 커밋하고 남은 커밋으로 넘어갑니다.";
 "conflict.hint.sequence.empty" = "이 단계에는 남은 변경이 없습니다. **건너뛰기**를 클릭해 이 커밋을 빼거나 **계속**을 클릭해 빈 커밋을 남기고 계속하세요.";
-"conflict.keepBackups" = "병합 충돌 백업 파일 유지";
 "conflict.kind.addedByThem" = "상대 쪽에서 추가함";
 "conflict.kind.addedByUs" = "내 쪽에서 추가함";
 "conflict.kind.bothAdded" = "양쪽에서 추가함";
@@ -567,26 +558,19 @@
 "conflict.missing" = "이 버전에서는 파일이 삭제되었습니다.";
 "conflict.open" = "“%@”의 버전 열기";
 "conflict.reload" = "다시 불러오기";
-"conflict.removeBackups" = "백업 파일 삭제";
-"conflict.removeBackups.message" = "백업 파일 %d 개를 영구적으로 삭제합니다. 저장소: %@. 되돌릴 수 없습니다.";
-"conflict.removeBackups.remote" = "서버의 백업 파일 %d 개를 영구적으로 삭제합니다. 저장소: %@. 되돌릴 수 없습니다.";
 "conflict.resolveCurrent" = "현재 버전으로 해결";
 "conflict.resolvedSuffix" = "%@ (%d 개 해결됨)";
 "conflict.resolveUsing" = "“%@”(으)로 해결";
 "conflict.resolveUsingVersion" = "“%@”의 버전으로 해결";
-"conflict.restore.message" = "파일 %d 개를 선택한 버전으로 덮어씁니다. 저장소: %@. 이 파일들의 현재 편집 내용은 사라집니다.";
-"conflict.restore.remote" = "서버의 파일 %d 개를 선택한 버전으로 덮어씁니다. 저장소: %@. 이 파일들의 현재 편집 내용은 사라집니다.";
 "conflict.restoreAncestor" = "공통 조상 버전 복원";
 "conflict.restoreUnmerged" = "병합되지 않은 버전 복원";
 "conflict.restoreUnmerged.many" = "항목 %d 개의 병합되지 않은 버전 복원";
 "conflict.restoreUnmerged.one" = "“%@”의 병합되지 않은 버전 복원";
 "conflict.restoreVersion" = "“%@”의 버전 복원";
 "conflict.result" = "직접 편집하거나 병합한 버전";
-"conflict.save" = "저장";
 "conflict.step" = "%d / %d 단계";
 "conflict.step.applying" = "%d / %d 단계: “%@” 적용 중";
 "conflict.step.editing" = "%d / %d 단계: “%@” 편집 중";
-"conflict.step.reverting" = "%d / %d 단계: “%@” 되돌리는 중";
 "conflict.title.cherryPick" = "커밋 %d 개를 “%@”에 체리픽하는 중";
 "conflict.title.cherryPick.one" = "커밋 1 개를 “%@”에 체리픽하는 중";
 "conflict.title.merge" = "“%@”을(를) “%@”에 병합하는 중";
@@ -598,18 +582,11 @@
 "conflict.unresolved.one" = "해결되지 않은 충돌 1 개";
 "conflict.version" = "“%@”의 버전";
 "conflict.versionMenu" = "“%@”의 버전 작업";
-"conflict.worktreeMissing" = "작업 사본에 이 파일이 없습니다.";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "파일 기록";
 "fileHistory.showCommit" = "커밋 보기";
 "fileHistory.oneCommit" = "커밋 1개";
 "fileHistory.commits" = "커밋 %ld개";
-"fileHistory.date" = "날짜";
-"fileHistory.anyDate" = "전체";
-"fileHistory.after" = "당일 이후";
-"fileHistory.before" = "당일 이전";
-"fileHistory.between" = "기간";
-"fileHistory.to" = "~";
 "fileHistory.submodule" = "서브모듈 파일의 파일 기록은 표시할 수 없습니다";
 "fileHistory.showAt" = "“%@”의 리비전 “%@” 보기";
 "fileHistory.blameAt" = "“%@”의 리비전 “%@” Blame 보기";
@@ -646,13 +623,10 @@
 "showFile.noContributors" = "아직 기여자가 없습니다";
 "showFile.oneContributor" = "기여자 1명";
 "showFile.contributors" = "기여자 %ld명";
-"showFile.copy" = "내용 복사";
-"showFile.export" = "내보내기…";
-"showFile.open" = "열기";
 "showFile.searchRevisions" = "리비전 검색";
 "showFile.searchFiles" = "파일 검색";
 "showFile.error.missing" = "이 리비전에 파일이 없음";
-/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+/* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "공백을 무시하는 동안에는 선택한 줄이 파일의 변경 사항과 일치하지 않습니다. 공백 변경 사항을 표시한 후 다시 선택하십시오.";
 "diff.ignoreWhitespace" = "공백 변경 사항 무시";
 "diff.showEntireFile" = "전체 파일 보기";
@@ -680,13 +654,6 @@
 "diff.imageSize" = "%ld × %ld 픽셀, %@";
 "diff.imageMode" = "이미지 비교 방식";
 "diff.imageSide" = "표시할 버전";
-"diff.savePatch" = "패치 저장…";
-"diff.exportDiff" = "Diff 내보내기…";
-"diff.savePatch.title" = "패치 저장";
-"diff.savePatch.message" = "선택한 %ld개 파일의 HEAD 대비 변경 사항(스테이징됨, 스테이징되지 않음, 추적되지 않음 포함)을 git apply로 적용할 수 있는 패치 파일로 저장합니다.";
-"diff.savePatch.submit" = "패치 저장";
-"diff.omitPrefixes" = "접두사 생략";
-"diff.omitPrefixes.help" = "원본 및 대상 접두사를 표시하지 않습니다";
 
 /* 提交体验、身份档案与签名。 */
 "signing.error" = "커밋 서명에 실패했습니다. 서명 키와 서명 프로그램을 확인하세요.";
@@ -752,9 +719,7 @@
 "files.untrack" = "추적 중단";
 "files.untrack.single" = "“%@” 추적 중단";
 "files.untrack.multiple" = "항목 %ld개 추적 중단";
-"files.untrack.message" = "다음 파일의 추적을 중단할까요? 저장소: %2$@. 파일은 작업 사본에 남고, 다음 커밋에서 저장소에서 제거됩니다.\n\n%1$@";
 "files.trash" = "휴지통으로 이동";
-"files.trash.message" = "다음 파일을 휴지통으로 이동할까요? 저장소: %2$@. 휴지통에서 되돌려 놓을 수 있습니다.\n\n%1$@";
 "files.delete" = "삭제";
 "files.delete.remote" = "서버에서 다음 파일을 영구적으로 삭제할까요? 저장소: %2$@. 되돌릴 수 없습니다.\n\n%1$@";
 "files.move.menu" = "이동…";
@@ -829,3 +794,32 @@
 "files.truncation" = "작업 사본의 긴 파일 이름 줄이기:";
 "files.truncation.beginning" = "앞부분 줄이기";
 "files.truncation.middle" = "가운데 줄이기";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "이 저장소에는 아직 참조가 없습니다.";
+
+/* 储藏视图。 */
+"stash.search" = "스태시 메시지 검색";
+"stash.subtitle" = "스태시 (스태시 %ld개)";
+
+/* 冲突向导。 */
+"conflict.resolveBoth" = "양쪽 버전으로 해결";
+"conflict.version.applied" = "적용한 패치 또는 스태시의 버전";
+"conflict.resolveUsing.applied" = "적용한 패치 또는 스태시로 해결";
+"conflict.open.missing" = "열기";
+"conflict.export.missing" = "내보내기…";
+"conflict.toolTip" = "병합이 필요한 파일: %@";
+"conflict.sequence.applying" = "“%@” 적용 중";
+"conflict.sequence.reverting" = "“%@” 되돌리는 중";
+
+/* 提交体验。 */
+"profiles.add.message" = "“%@ <%@> (%@)”을(를) 사용자 프로필로 저장합니다. 제목을 입력하세요.";
+"profiles.add.submit" = "프로필 추가";
+"profiles.titleExists" = "같은 제목의 사용자 프로필이 이미 있습니다.";
+"profiles.signer" = "서명자:";
+"commit.doNotAskAgain" = "다시 묻지 않음";
+
+/* 文件视图。 */
+"fileHistory.subtitle" = "파일 기록 – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";

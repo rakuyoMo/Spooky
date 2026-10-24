@@ -28,7 +28,7 @@ struct CommitFileDiffSource: Sendable {
 
         guard
             TextPreferences.colorsDiffSyntax,
-            DiffSyntax.mayColor(diff, oldPath: oldPath, newPath: newPath)
+            await DiffSyntax.mayColor(diff, oldPath: oldPath, newPath: newPath)
         else { return nil }
 
         var full = diff
@@ -49,10 +49,8 @@ struct CommitFileDiffSource: Sendable {
             full = parsed
         }
 
-        // 着色按全文线性扫描，大文件放到后台完成
-        return await Task.detached(priority: .userInitiated) { [full] in
-            DiffSyntax.make(from: full, oldPath: oldPath, newPath: newPath)
-        }.value
+        // 在当前任务中着色：视图换掉内容、任务取消时，尚未开始的着色直接跳过
+        return await DiffSyntax.make(from: full, oldPath: oldPath, newPath: newPath)
     }
 
     /// 图片两侧的内容，都取自对象库。
@@ -70,7 +68,7 @@ struct CommitFileDiffSource: Sendable {
 
 /// 提交里一个文件的只读补丁：只剩空白改动的说明、文件头、图片对照、二进制提示与只读的块，超过大 Diff 阈值时等待放行。
 ///
-/// 字体、颜色、Tab 宽度、不可见字符与语法着色与工作区的 Diff 相同；提交详情、储藏详情与文件历史共用。
+/// 字体、颜色、Tab 宽度、不可见字符、语法着色与行内高亮都与工作区的 Diff 相同；提交详情、储藏详情与文件历史共用。
 struct ReadOnlyFileDiffView: View {
     /// 已读取的补丁与字节数。
     let result: CommitDiff
@@ -104,6 +102,10 @@ struct ReadOnlyFileDiffView: View {
     /// 两侧全文的语法片段，只由提交内容决定，显示选项改变后仍然适用。
     @State
     private var syntax: DiffSyntax?
+
+    /// 各块的行内高亮，按块元素的身份存放；随显示的补丁重新计算。
+    @State
+    private var highlights: [[Int]: [Int: [Range<Int>]]] = [:]
 
     /// 补丁较长时只排版可见的行。
     var body: some View {
@@ -140,7 +142,31 @@ struct ReadOnlyFileDiffView: View {
                 return
             }
 
-            syntax = await source.syntax(for: diff)
+            let colored = await source.syntax(for: diff)
+
+            // 着色期间换了内容时任务已取消，结果作废，不套到新的行上
+            guard !Task.isCancelled else {
+                return
+            }
+
+            syntax = colored
+        }
+        .task(id: result.diff) {
+            // 换了补丁时先清掉旧的范围，避免套到新的行上
+            highlights = [:]
+
+            guard let diff = result.diff else {
+                return
+            }
+
+            let ranges = await DiffSegment.highlights(in: diff)
+
+            // 计算期间换了补丁时任务已取消，结果作废
+            guard !Task.isCancelled else {
+                return
+            }
+
+            highlights = ranges
         }
     }
 
@@ -181,6 +207,7 @@ struct ReadOnlyFileDiffView: View {
                 hunk: hunk,
                 style: style,
                 spans: { syntax?.spans(for: $0) },
+                highlights: highlights[segment.id] ?? [:],
                 staged: false,
                 enabled: false,
                 readOnly: true

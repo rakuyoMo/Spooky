@@ -22,7 +22,7 @@ extension RepositorySession {
         guard
             TextPreferences.colorsDiffSyntax,
             let runner,
-            DiffSyntax.mayColor(diff, oldPath: oldPath, newPath: entry.path)
+            await DiffSyntax.mayColor(diff, oldPath: oldPath, newPath: entry.path)
         else { return nil }
 
         var full = diff
@@ -40,10 +40,8 @@ extension RepositorySession {
             full = parsed
         }
 
-        // 着色按全文线性扫描，大文件放到后台完成
-        return await Task.detached(priority: .userInitiated) { [full] in
-            DiffSyntax.make(from: full, oldPath: oldPath, newPath: entry.path)
-        }.value
+        // 在当前任务中着色：视图换掉内容、任务取消时，尚未开始的着色直接跳过
+        return await DiffSyntax.make(from: full, oldPath: oldPath, newPath: entry.path)
     }
 
     /// 图片 Diff 两侧的内容：工作区相对暂存区时新的一侧读工作区所在机器上的文件，其余取对象库。

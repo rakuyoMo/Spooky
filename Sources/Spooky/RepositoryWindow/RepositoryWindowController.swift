@@ -42,6 +42,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 窗口级快捷键跨越 AppKit 文件列表与 SwiftUI 信息框。
     private var keyMonitor: Any?
 
+    /// 文件历史搜索框的贡献者补全。
+    let contributorCompletion = ContributorCompletion()
+
     /// 创建原生窗口；标签合并被关闭，显式新窗口始终独立。
     init(coordinator: SpookyApplicationController, session: RepositorySession = RepositorySession()) {
         self.coordinator = coordinator
@@ -117,6 +120,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         restoreFrame()
         observeToolbarState()
         observeConnectionState()
+        observeSubtitle()
     }
 
     /// 窗口由代码构建，不从归档恢复控制器。
@@ -173,7 +177,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         session.display(repository)
         showsManager = false
         window?.title = repository.name
-        window?.subtitle = repository.displayPath
+        updateSubtitle()
         window?.representedURL = repository.localURL
 
         if !sameRepositoryView {
@@ -200,7 +204,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
 
         showsManager = true
         window?.title = AppLocalization.text("repositories.title")
-        window?.subtitle = ""
+        updateSubtitle()
         window?.representedURL = nil
         workingCopySplit = nil
         historySplit = nil
@@ -716,7 +720,7 @@ extension RepositoryWindowController {
         }
 
         window?.title = repository.name
-        window?.subtitle = repository.displayPath
+        updateSubtitle()
         window?.representedURL = repository.localURL
 
         let sidebar = NSHostingController(rootView: RepositorySidebarView(

@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 // MARK: - Commit
 
@@ -10,38 +11,31 @@ extension RepositoryWindowController {
         session.onCommentPrompt = { [weak self] empty, decide in
             guard let window = self?.window, window.attachedSheet == nil else { return }
 
-            let alert = NSAlert()
-            alert.alertStyle = .warning
-            alert.messageText = AppLocalization.text(empty ? "commit.commentsOnly" : "commit.comments")
-            alert.informativeText = AppLocalization.text(empty ? "commit.commentsOnly.help" : "commit.comments.help")
+            let sheet = NSWindow()
+            sheet.styleMask = [.titled]
+            sheet.tabbingMode = .disallowed
 
-            if empty {
-                alert.addButton(withTitle: AppLocalization.text("commit.keepCommentsAndCommit"))
-            } else {
-                alert.addButton(withTitle: AppLocalization.text("commit.removeComments"))
-                alert.addButton(withTitle: AppLocalization.text("commit.keepComments"))
-                alert.showsSuppressionButton = true
-            }
-
-            alert.addButton(withTitle: AppLocalization.text("action.cancel"))
-
-            alert.beginSheetModal(for: window) { response in
-                let decision: CommentHandling? =
-                    switch response {
-                    case .alertFirstButtonReturn: empty ? .keep : .remove
-                    case .alertSecondButtonReturn where !empty: .keep
-                    default: nil
+            let content = NSHostingController(
+                rootView: CommitCommentsDialog(empty: empty) { [weak sheet] decision, doNotAskAgain in
+                    if let sheet {
+                        window.endSheet(sheet)
                     }
 
-                guard let decision else { return }
+                    guard let decision else { return }
 
-                if alert.suppressionButton?.state == .on {
-                    UserDefaults.standard.set(false, forKey: CommitEditorSettings.warnsCommentsKey)
-                    UserDefaults.standard.set(decision == .remove, forKey: CommitEditorSettings.stripsCommentsKey)
+                    if doNotAskAgain {
+                        UserDefaults.standard.set(false, forKey: CommitEditorSettings.warnsCommentsKey)
+                        UserDefaults.standard.set(decision == .remove, forKey: CommitEditorSettings.stripsCommentsKey)
+                    }
+
+                    decide(decision)
                 }
+            )
 
-                decide(decision)
-            }
+            // 按钮文字较长的语言里按钮组比默认宽度宽，sheet 按内容的理想尺寸加宽。
+            content.sizingOptions = .preferredContentSize
+            sheet.contentViewController = content
+            window.beginSheet(sheet)
         }
     }
 }

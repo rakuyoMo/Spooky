@@ -18,6 +18,11 @@ extension RepositoryWindowController {
             configureFileHistorySearch(item.searchField)
         }
 
+        // 储藏视图按说明过滤，占位文字写明搜索的内容
+        if session.activeView == .stashes {
+            item.searchField.placeholderString = AppLocalization.text("stash.search")
+        }
+
         return item
     }
 

@@ -196,7 +196,6 @@
 "error.terminalHelp" = "Check the selected terminal in Settings and its macOS Automation permission.";
 "error.exitCode" = "Exit status: %ld";
 "terminal.notInstalled" = "%@ is not installed.";
-"themes.font" = "%@ %@ pt";
 "themes.background" = "Background";
 "themes.added" = "Added";
 "themes.deleted" = "Deleted";
@@ -437,16 +436,11 @@
 
 /* 主题管理。 */
 "themes.newName" = "New Theme";
-"themes.usedInLight" = "The selected theme is used in the light appearance. Switch to the dark appearance to choose the theme for it.";
-"themes.usedInDark" = "The selected theme is used in the dark appearance. Switch to the light appearance to choose the theme for it.";
 "themes.change" = "Change…";
 "themes.fontLabel" = "Font";
 "themes.text" = "Text";
 "themes.add" = "Add Theme";
 "themes.remove" = "Remove Theme";
-"themes.actions" = "Import or Export";
-"themes.import" = "Import Theme…";
-"themes.export" = "Export Theme…";
 "themes.invalidTitle" = "Themes That Couldn’t Be Loaded";
 "themes.invalid" = "These theme files couldn’t be loaded because they are damaged, or their name or identifier is already used by another theme:";
 "themes.exists" = "Theme Already Exists";
@@ -532,9 +526,7 @@
 "stash.error.reapply.help" = "The operation finished, but your local changes could not be applied again. They are kept on the Stash; apply them when you are ready.";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "Applied Patch or Stash";
-"conflict.backups" = "Backup Files";
 "conflict.binary" = "Binary content isn’t shown.";
-"conflict.error.changed" = "The file changed after it was loaded. Reload the conflict, then edit it again.";
 "conflict.error.version" = "The selected files don’t have this version.";
 "conflict.export" = "Export Version from “%@”…";
 "conflict.header.cherryPick" = "Cherry-Picking %@ into %@";
@@ -551,7 +543,6 @@
 "conflict.hint.sequence.conflicts" = "Resolve all conflicts to continue.";
 "conflict.hint.sequence.resolved" = "Click **Continue** to commit this step and go on with the remaining commits.";
 "conflict.hint.sequence.empty" = "No changes are left in this step. Click **Skip** to leave out this commit, or **Continue** to keep an empty commit and go on.";
-"conflict.keepBackups" = "Keep backup files for merge conflicts";
 "conflict.kind.addedByThem" = "Added by Them";
 "conflict.kind.addedByUs" = "Added by Us";
 "conflict.kind.bothAdded" = "Both Added";
@@ -567,26 +558,19 @@
 "conflict.missing" = "This version deletes the file.";
 "conflict.open" = "Open Version from “%@”";
 "conflict.reload" = "Reload";
-"conflict.removeBackups" = "Delete Backup Files";
-"conflict.removeBackups.message" = "Permanently delete %d backup files in %@. This cannot be undone.";
-"conflict.removeBackups.remote" = "Permanently delete %d backup files on the server at %@. This cannot be undone.";
 "conflict.resolveCurrent" = "Resolve Using Current Version";
 "conflict.resolvedSuffix" = "%@ (%d resolved)";
 "conflict.resolveUsing" = "Resolve Using “%@”";
 "conflict.resolveUsingVersion" = "Resolve Using Version from “%@”";
-"conflict.restore.message" = "Overwrite %d files in %@ with the selected version. Current edits to these files are lost.";
-"conflict.restore.remote" = "Overwrite %d files on the server at %@ with the selected version. Current edits to these files are lost.";
 "conflict.restoreAncestor" = "Restore Ancestor Version";
 "conflict.restoreUnmerged" = "Restore Unmerged Version";
 "conflict.restoreUnmerged.many" = "Restore Unmerged Version of %d Items";
 "conflict.restoreUnmerged.one" = "Restore Unmerged Version of “%@”";
 "conflict.restoreVersion" = "Restore Version from “%@”";
 "conflict.result" = "Manually Edited or Merged Version";
-"conflict.save" = "Save";
 "conflict.step" = "Step %d of %d";
 "conflict.step.applying" = "Step %d of %d: Applying “%@”";
 "conflict.step.editing" = "Step %d of %d: Editing “%@”";
-"conflict.step.reverting" = "Step %d of %d: Reverting “%@”";
 "conflict.title.cherryPick" = "Cherry-Picking %d commits onto “%@”";
 "conflict.title.cherryPick.one" = "Cherry-Picking 1 commit onto “%@”";
 "conflict.title.merge" = "Merging “%@” into “%@”";
@@ -598,18 +582,11 @@
 "conflict.unresolved.one" = "1 unresolved conflict";
 "conflict.version" = "Version from “%@”";
 "conflict.versionMenu" = "Actions for the version from “%@”";
-"conflict.worktreeMissing" = "The file isn’t in the working copy.";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "File History";
 "fileHistory.showCommit" = "Show Commit";
 "fileHistory.oneCommit" = "1 commit";
 "fileHistory.commits" = "%ld commits";
-"fileHistory.date" = "Date";
-"fileHistory.anyDate" = "Any";
-"fileHistory.after" = "On or After";
-"fileHistory.before" = "On or Before";
-"fileHistory.between" = "Between";
-"fileHistory.to" = "and";
 "fileHistory.submodule" = "Cannot show file history for submodule file types";
 "fileHistory.showAt" = "Show “%@” at Revision “%@”";
 "fileHistory.blameAt" = "Show Blame for “%@” at Revision “%@”";
@@ -646,13 +623,10 @@
 "showFile.noContributors" = "No contributors yet";
 "showFile.oneContributor" = "1 contributor";
 "showFile.contributors" = "%ld contributors";
-"showFile.copy" = "Copy Contents";
-"showFile.export" = "Export…";
-"showFile.open" = "Open";
 "showFile.searchRevisions" = "Search Revisions";
 "showFile.searchFiles" = "Search Files";
 "showFile.error.missing" = "File Not Found at This Revision";
-/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+/* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "With whitespace ignored, the selected lines don’t match the changes in the file. Show whitespace changes and select the lines again.";
 "diff.ignoreWhitespace" = "Ignore Whitespace Changes";
 "diff.showEntireFile" = "Show Entire File";
@@ -680,13 +654,6 @@
 "diff.imageSize" = "%ld × %ld pixels, %@";
 "diff.imageMode" = "Image Comparison";
 "diff.imageSide" = "Displayed Version";
-"diff.savePatch" = "Save Patch…";
-"diff.exportDiff" = "Export Diff…";
-"diff.savePatch.title" = "Save Patch";
-"diff.savePatch.message" = "Changes relative to HEAD in the selected files (%ld), including staged, unstaged, and untracked changes, will be saved as a patch file that can be applied with git apply.";
-"diff.savePatch.submit" = "Save Patch";
-"diff.omitPrefixes" = "Omit Prefixes";
-"diff.omitPrefixes.help" = "Don’t show any source or destination prefix";
 
 /* 提交体验、身份档案与签名。 */
 "signing.error" = "Commit signing failed. Check the signing key and the signing program.";
@@ -752,9 +719,7 @@
 "files.untrack" = "Untrack";
 "files.untrack.single" = "Untrack “%@”";
 "files.untrack.multiple" = "Untrack %ld Items";
-"files.untrack.message" = "Stop tracking the following in %2$@? The files stay in your working copy, and the next commit removes them from the repository.\n\n%1$@";
 "files.trash" = "Move to Trash";
-"files.trash.message" = "Move the following in %2$@ to the Trash? You can put them back from the Trash.\n\n%1$@";
 "files.delete" = "Delete";
 "files.delete.remote" = "Permanently delete the following on the server at %2$@? This cannot be undone.\n\n%1$@";
 "files.move.menu" = "Move…";
@@ -829,3 +794,32 @@
 "files.truncation" = "Truncate long file names in working copy:";
 "files.truncation.beginning" = "Truncate beginning";
 "files.truncation.middle" = "Truncate middle";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "This repository has no refs yet.";
+
+/* 储藏视图。 */
+"stash.search" = "Search for Stash Message";
+"stash.subtitle" = "Stashes (%ld Stashes)";
+
+/* 冲突向导。 */
+"conflict.resolveBoth" = "Resolve Using Both Versions";
+"conflict.version.applied" = "Version from Applied Patch or Stash";
+"conflict.resolveUsing.applied" = "Resolve Using Applied Patch or Stash";
+"conflict.open.missing" = "Open";
+"conflict.export.missing" = "Export…";
+"conflict.toolTip" = "File requires merging: %@";
+"conflict.sequence.applying" = "Applying “%@”";
+"conflict.sequence.reverting" = "Reverting “%@”";
+
+/* 提交体验。 */
+"profiles.add.message" = "Saves “%@ <%@> (%@)” as a user profile. Enter a title for it.";
+"profiles.add.submit" = "Add Profile";
+"profiles.titleExists" = "A user profile with this title already exists.";
+"profiles.signer" = "Signer:";
+"commit.doNotAskAgain" = "Do not ask again";
+
+/* 文件视图。 */
+"fileHistory.subtitle" = "File History – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";

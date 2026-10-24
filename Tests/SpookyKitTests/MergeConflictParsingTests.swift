@@ -5,8 +5,8 @@ import Testing
 
 /// 冲突向导依赖的 Git 输出解析：status 的三方 stage、cat-file 批量输出、resolve-undo 记录与进行中操作的状态文件。
 struct MergeConflictParsingTests {
-    /// 缺少的一侧必须识别为不存在，否则向导会去取一个全零的对象，采用那一侧时也会误用 checkout。
-    @Test("冲突记录的三方 stage、工作区存在性与 SHA-256 哈希")
+    /// 缺少的一侧必须识别为不存在，否则向导会去取一个全零的对象，采用那一侧时也会误用 checkout；采用两侧时按三方的模式决定结果的模式。
+    @Test("冲突记录的三方 stage、文件模式、工作区存在性与 SHA-256 哈希")
     func conflictStages() throws {
         let sha256 = String(repeating: "ab", count: 32)
         let zero = String(repeating: "0", count: 40)
@@ -21,16 +21,33 @@ struct MergeConflictParsingTests {
 
         #expect(entries.count == 3)
         #expect(entries[0].path == "冲突 'x' [*]? 文件.txt")
-        #expect(entries[0].conflict == ConflictStages(base: "aaaa", ours: "bbbb", theirs: "cccc", existsInWorktree: true))
+        #expect(entries[0].conflict == ConflictStages(
+            base: "aaaa",
+            ours: "bbbb",
+            theirs: "cccc",
+            existsInWorktree: true,
+            baseMode: "100644",
+            oursMode: "100644",
+            theirsMode: "100644"
+        ))
         #expect(entries[0].conflictKind == .bothModified)
 
-        // 我方删除了文件：没有我方版本，工作区里也已经没有它
-        #expect(entries[1].conflict == ConflictStages(base: "aaaa", ours: nil, theirs: "cccc", existsInWorktree: false))
+        // 我方删除了文件：没有我方版本与模式，工作区里也已经没有它
+        #expect(entries[1].conflict == ConflictStages(
+            base: "aaaa",
+            ours: nil,
+            theirs: "cccc",
+            existsInWorktree: false,
+            baseMode: "100644",
+            oursMode: nil,
+            theirsMode: "100644"
+        ))
         #expect(entries[1].conflictKind == .deletedByUs)
 
-        // 两侧都新增：没有共同祖先，哈希长度随对象格式变化
-        #expect(entries[2].conflict?.base == nil)
+        // 两侧都新增：没有共同祖先，哈希长度随对象格式变化，两侧的模式各自保留
+        #expect(entries[2].conflict?.base == nil && entries[2].conflict?.baseMode == nil)
         #expect(entries[2].conflict?.ours == sha256)
+        #expect(entries[2].conflict?.theirsMode == "100755")
         #expect(entries[2].conflictKind == .bothAdded)
     }
 
@@ -124,6 +141,33 @@ struct MergeConflictParsingTests {
         }
     }
 
+    /// 采用两侧版本要知道三个 stage 各自的临时文件；缺少的 stage 为 “.”，路径里的空格与制表符不影响切分。
+    @Test("checkout-index 的临时文件清单")
+    func stageFiles() throws {
+        let both = try WorkingCopyOperations.parseStageFiles(
+            output(".merge_file_a .merge_file_b .merge_file_c\t冲突 [*]\tname.txt")
+        )
+
+        #expect(both == [".merge_file_a", ".merge_file_b", ".merge_file_c"])
+
+        let added = try WorkingCopyOperations.parseStageFiles(output(". .merge_file_b .merge_file_c\tadded.txt"))
+        #expect(added == [nil, ".merge_file_b", ".merge_file_c"])
+    }
+
+    /// 字段数不对、缺少分隔符或截断的输出必须报错，否则会合并错误的文件或漏删临时文件。
+    @Test("checkout-index 的临时文件清单损坏", arguments: [
+        ".merge_file_a .merge_file_b\tfile\0",
+        ".merge_file_a .merge_file_b .merge_file_c file\0",
+        ".merge_file_a  .merge_file_c\tfile\0",
+        "../escape .merge_file_b .merge_file_c\tfile\0",
+        ".merge_file_a .merge_file_b .merge_file_c\tfile",
+    ])
+    func malformedStageFiles(output: String) {
+        #expect(throws: RepositoryReadError.self) {
+            try WorkingCopyOperations.parseStageFiles(Data(output.utf8))
+        }
+    }
+
     /// merge 后端的变基从 done 的最后一条取当前一步；新旧两种 Git 的标题写法都要识别。
     @Test("变基进度：merge 后端", arguments: ["# feature two", "feature two"])
     func mergeBackendRebase(subject: String) throws {
@@ -178,7 +222,7 @@ struct MergeConflictParsingTests {
         #expect(editing.stepKind == .editing)
     }
 
-    /// 序列看 todo 的第一条指令；单个提交的摘取、反转与合并只看伪引用文件。
+    /// 序列看 todo 的第一条指令，只数得出剩余的提交，没有当前一步；单个提交的摘取、反转与合并只看伪引用文件。
     @Test("摘取、反转与合并的识别")
     func sequencesAndMerges() throws {
         let picking = try #require(OperationProgress(files: [
@@ -188,10 +232,12 @@ struct MergeConflictParsingTests {
 
         #expect(picking.state == .cherryPick)
         #expect(picking.ours == "cccc" && picking.theirs == "aaaaaaaa")
+        #expect(picking.step == nil && picking.stepCount == 2)
         #expect(picking.stepSubject == "first commit")
 
         let reverting = try #require(OperationProgress(files: ["REVERT_HEAD": "dddd\n"], head: "cccc"))
         #expect(reverting.state == .revert && reverting.theirs == "dddd" && reverting.stepKind == .reverting)
+        #expect(reverting.stepCount == nil && reverting.stepSubject == nil)
 
         let merging = try #require(OperationProgress(files: ["MERGE_HEAD": "eeee\nffff\n", "MERGE_MSG": "Merge"], head: "cccc"))
         #expect(merging.state == .merge && merging.theirs == "eeee" && merging.ours == "cccc")

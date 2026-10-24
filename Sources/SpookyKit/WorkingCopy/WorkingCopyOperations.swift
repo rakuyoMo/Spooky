@@ -287,19 +287,10 @@ public struct WorkingCopyOperations: Sendable {
     /// - Parameters:
     ///   - entries: 要解决的文件，其中不是冲突的条目被忽略。
     ///   - theirs: 采用对方版本；否则采用我方版本。
-    ///   - backup: 传入时先把冲突文件另存为备份，再把备份路径交给它。
-    public func resolve(
-        _ entries: [StatusEntry],
-        theirs: Bool,
-        backup: (@Sendable ([String]) async -> Void)? = nil
-    ) async throws {
+    public func resolve(_ entries: [StatusEntry], theirs: Bool) async throws {
         try await runner.writeTransaction {
             let paths = Set(entries.map(\.path))
             let targets = try await runner.status().entries.filter { $0.kind == .conflicted && paths.contains($0.path) }
-
-            if let backup {
-                await backup(try await backUp(targets.map(\.path)))
-            }
 
             // porcelain v2 的 stage 记录说明采用的一侧是否存在，不必逐个文件查询索引
             let kept = targets.filter { (theirs ? $0.conflict?.theirs : $0.conflict?.ours) != nil }

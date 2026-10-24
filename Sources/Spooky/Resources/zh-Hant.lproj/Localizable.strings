@@ -196,7 +196,6 @@
 "error.terminalHelp" = "請檢查設定中的終端機選擇及 macOS 自動化權限。";
 "error.exitCode" = "結束碼：%ld";
 "terminal.notInstalled" = "尚未安裝 %@。";
-"themes.font" = "%@ %@ pt";
 "themes.background" = "背景";
 "themes.added" = "新增";
 "themes.deleted" = "刪除";
@@ -437,16 +436,11 @@
 
 /* 主题管理。 */
 "themes.newName" = "新主題";
-"themes.usedInLight" = "所選主題用於淺色外觀。切換到深色外觀後，可以為深色外觀選擇主題。";
-"themes.usedInDark" = "所選主題用於深色外觀。切換到淺色外觀後，可以為淺色外觀選擇主題。";
 "themes.change" = "更改…";
 "themes.fontLabel" = "字型";
 "themes.text" = "內文";
 "themes.add" = "加入主題";
 "themes.remove" = "移除主題";
-"themes.actions" = "匯入或匯出";
-"themes.import" = "匯入主題…";
-"themes.export" = "匯出主題…";
 "themes.invalidTitle" = "無法載入的主題";
 "themes.invalid" = "以下主題檔案已損毀，或者名稱、識別碼已被其他主題使用，因此無法載入：";
 "themes.exists" = "主題已存在";
@@ -532,9 +526,7 @@
 "stash.error.reapply.help" = "操作已完成，但本機變更未能重新套用，仍保留在儲藏中；準備好後再套用它。";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "套用的修補或儲藏";
-"conflict.backups" = "備份檔案";
 "conflict.binary" = "不顯示二進位內容。";
-"conflict.error.changed" = "檔案在載入後被變更。請重新載入衝突，再重新編輯。";
 "conflict.error.version" = "所選檔案沒有這個版本。";
 "conflict.export" = "匯出來自 “%@” 的版本…";
 "conflict.header.cherryPick" = "正在把 %@ 摘取到 %@";
@@ -551,7 +543,6 @@
 "conflict.hint.sequence.conflicts" = "解決全部衝突後才能繼續。";
 "conflict.hint.sequence.resolved" = "按一下 **繼續** 提交這一步，再處理後面的提交。";
 "conflict.hint.sequence.empty" = "這一步沒有可提交的變更。按一下 **跳過** 略過這個提交，或按一下 **繼續** 保留一個空提交再繼續。";
-"conflict.keepBackups" = "為合併衝突保留備份檔案";
 "conflict.kind.addedByThem" = "對方新增";
 "conflict.kind.addedByUs" = "我方新增";
 "conflict.kind.bothAdded" = "雙方新增";
@@ -567,26 +558,19 @@
 "conflict.missing" = "這個版本刪除了檔案。";
 "conflict.open" = "開啟來自 “%@” 的版本";
 "conflict.reload" = "重新載入";
-"conflict.removeBackups" = "刪除備份檔案";
-"conflict.removeBackups.message" = "將永久刪除 %d 個備份檔案。儲存庫：%@。此操作無法復原。";
-"conflict.removeBackups.remote" = "將在伺服器上永久刪除 %d 個備份檔案。儲存庫：%@。此操作無法復原。";
 "conflict.resolveCurrent" = "採用目前版本解決";
 "conflict.resolvedSuffix" = "%@（已解決 %d 個）";
 "conflict.resolveUsing" = "採用 “%@” 解決";
 "conflict.resolveUsingVersion" = "採用來自 “%@” 的版本解決";
-"conflict.restore.message" = "將用所選版本覆寫 %d 個檔案。儲存庫：%@。這些檔案目前的編輯會遺失。";
-"conflict.restore.remote" = "將在伺服器上用所選版本覆寫 %d 個檔案。儲存庫：%@。這些檔案目前的編輯會遺失。";
 "conflict.restoreAncestor" = "回復共同祖先版本";
 "conflict.restoreUnmerged" = "回復未合併的版本";
 "conflict.restoreUnmerged.many" = "回復 %d 個項目的未合併版本";
 "conflict.restoreUnmerged.one" = "回復 “%@” 的未合併版本";
 "conflict.restoreVersion" = "回復來自 “%@” 的版本";
 "conflict.result" = "手動編輯或合併後的版本";
-"conflict.save" = "儲存";
 "conflict.step" = "第 %d 步，共 %d 步";
 "conflict.step.applying" = "第 %d 步，共 %d 步：正在套用 “%@”";
 "conflict.step.editing" = "第 %d 步，共 %d 步：正在編輯 “%@”";
-"conflict.step.reverting" = "第 %d 步，共 %d 步：正在反轉 “%@”";
 "conflict.title.cherryPick" = "正在把 %d 個提交摘取到 “%@”";
 "conflict.title.cherryPick.one" = "正在把 1 個提交摘取到 “%@”";
 "conflict.title.merge" = "正在把 “%@” 合併到 “%@”";
@@ -598,18 +582,11 @@
 "conflict.unresolved.one" = "1 個未解決衝突";
 "conflict.version" = "來自 “%@” 的版本";
 "conflict.versionMenu" = "來自 “%@” 的版本的操作";
-"conflict.worktreeMissing" = "工作區裡沒有這個檔案。";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "檔案歷史";
 "fileHistory.showCommit" = "顯示提交";
 "fileHistory.oneCommit" = "1 個提交";
 "fileHistory.commits" = "%ld 個提交";
-"fileHistory.date" = "日期";
-"fileHistory.anyDate" = "不限";
-"fileHistory.after" = "當天及之後";
-"fileHistory.before" = "當天及之前";
-"fileHistory.between" = "區間";
-"fileHistory.to" = "至";
 "fileHistory.submodule" = "無法顯示子模組類型檔案的檔案歷史";
 "fileHistory.showAt" = "顯示 “%@” 在版本 “%@” 的內容";
 "fileHistory.blameAt" = "顯示 “%@” 在版本 “%@” 的 Blame";
@@ -646,13 +623,10 @@
 "showFile.noContributors" = "還沒有貢獻者";
 "showFile.oneContributor" = "1 位貢獻者";
 "showFile.contributors" = "%ld 位貢獻者";
-"showFile.copy" = "拷貝內容";
-"showFile.export" = "匯出…";
-"showFile.open" = "打開";
 "showFile.searchRevisions" = "搜尋版本";
 "showFile.searchFiles" = "搜尋檔案";
 "showFile.error.missing" = "該版本中沒有這個檔案";
-/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+/* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "忽略空白時，選取的行與檔案中的變更對應不上。請顯示空白變更後重新選取。";
 "diff.ignoreWhitespace" = "忽略空白變更";
 "diff.showEntireFile" = "顯示整個檔案";
@@ -680,13 +654,6 @@
 "diff.imageSize" = "%ld × %ld 像素，%@";
 "diff.imageMode" = "圖片對照方式";
 "diff.imageSide" = "顯示的版本";
-"diff.savePatch" = "儲存修補檔…";
-"diff.exportDiff" = "輸出 Diff…";
-"diff.savePatch.title" = "儲存修補檔";
-"diff.savePatch.message" = "將所選的 %ld 個檔案相對 HEAD 的變更（含已暫存、未暫存與未追蹤的變更）儲存為修補檔，可用 git apply 套用。";
-"diff.savePatch.submit" = "儲存修補檔";
-"diff.omitPrefixes" = "省略前綴";
-"diff.omitPrefixes.help" = "路徑不帶來源與目標前綴";
 
 /* 提交体验、身份档案与签名。 */
 "signing.error" = "提交簽署失敗。請檢查簽署金鑰與簽署程式。";
@@ -752,9 +719,7 @@
 "files.untrack" = "停止追蹤";
 "files.untrack.single" = "停止追蹤 “%@”";
 "files.untrack.multiple" = "停止追蹤 %ld 個項目";
-"files.untrack.message" = "要停止追蹤以下檔案嗎？儲存庫：%2$@。檔案會保留在工作區，下次提交會將它們從版本庫中移除。\n\n%1$@";
 "files.trash" = "丟到垃圾桶";
-"files.trash.message" = "要將以下檔案丟到垃圾桶嗎？儲存庫：%2$@。之後可以從垃圾桶放回原處。\n\n%1$@";
 "files.delete" = "刪除";
 "files.delete.remote" = "要在伺服器上永久刪除以下檔案嗎？儲存庫：%2$@。此操作無法復原。\n\n%1$@";
 "files.move.menu" = "移動…";
@@ -829,3 +794,32 @@
 "files.truncation" = "截斷工作區中過長的檔案名稱：";
 "files.truncation.beginning" = "截斷開頭";
 "files.truncation.middle" = "截斷中間";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "這個儲存庫還沒有任何引用。";
+
+/* 储藏视图。 */
+"stash.search" = "搜尋儲藏說明";
+"stash.subtitle" = "儲藏（%ld 個儲藏）";
+
+/* 冲突向导。 */
+"conflict.resolveBoth" = "採用兩側版本解決";
+"conflict.version.applied" = "來自套用的修補或儲藏的版本";
+"conflict.resolveUsing.applied" = "採用套用的修補或儲藏解決";
+"conflict.open.missing" = "開啟";
+"conflict.export.missing" = "匯出…";
+"conflict.toolTip" = "檔案需要合併：%@";
+"conflict.sequence.applying" = "正在套用 “%@”";
+"conflict.sequence.reverting" = "正在反轉 “%@”";
+
+/* 提交体验。 */
+"profiles.add.message" = "將 “%@ <%@> (%@)” 儲存為身分設定檔，請為它輸入標題。";
+"profiles.add.submit" = "加入設定檔";
+"profiles.titleExists" = "已有相同標題的身分設定檔。";
+"profiles.signer" = "簽署者：";
+"commit.doNotAskAgain" = "不再詢問";
+
+/* 文件视图。 */
+"fileHistory.subtitle" = "檔案歷史 – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";

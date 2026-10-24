@@ -5,10 +5,10 @@ import Testing
 @testable import Spooky
 @testable import SpookyKit
 
-/// 上下文行数、保存补丁与导出 Diff 的菜单入口必须存在，并连到窗口的动作上，否则功能只能从底栏使用。
+/// 上下文行数的菜单入口必须存在，并连到窗口的动作上，否则功能只能从底栏使用。
 @MainActor
 struct DiffMenuTests {
-    /// View 菜单列出全部上下文档位，Working Copy 菜单提供保存补丁与导出 Diff。
+    /// View 菜单列出全部上下文档位。
     @Test("Diff 菜单入口")
     func menuItems() throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-menu-" + UUID().uuidString)
@@ -27,10 +27,6 @@ struct DiffMenuTests {
         #expect(context.items.map(\.title) == DiffOptions.contextChoices.map(DiffPreferences.contextTitle))
         let action = #selector(RepositoryWindowController.setDiffContextLines(_:))
         #expect(context.items.allSatisfy { $0.action == action })
-
-        let actions = Set(items.compactMap(\.action))
-        #expect(actions.contains(#selector(RepositoryWindowController.savePatch)))
-        #expect(actions.contains(#selector(RepositoryWindowController.exportDiff)))
     }
 
     /// 偏好里没有记录或记录了不在档位中的值时，按默认的 3 行处理。

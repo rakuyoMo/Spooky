@@ -35,10 +35,6 @@ struct WorkingCopyCommitView: View {
     @State
     private var bodyFocusRequest = 0
 
-    /// 拖动改变正文高度时的起始高度。
-    @State
-    private var dragStartHeight: Double?
-
     /// 是否显示标题剩余字数。
     @AppStorage(CommitEditorSettings.showsSubjectCounterKey)
     private var showsCounter = true
@@ -79,6 +75,7 @@ struct WorkingCopyCommitView: View {
             OperationBannerView(session: session)
 
             if session.conflictCount == 0 {
+                // 提交成功到清空信息之间，选项与按钮同信息框一起锁定。
                 VStack(spacing: 8) {
                     subjectField
 
@@ -88,6 +85,7 @@ struct WorkingCopyCommitView: View {
 
                     actionRow
                 }
+                .disabled(session.commitResetTask != nil)
             }
         }
         .padding(session.conflictCount == 0 || session.context?.progress != nil ? 20 : 0)
@@ -127,9 +125,9 @@ extension WorkingCopyCommitView {
         focusedField != nil || pinned || !session.commitBody.isEmpty
     }
 
-    /// 写入、快速修补和继续序列期间信息只读。
+    /// 写入、提交后等待清空、快速修补和继续序列期间信息只读。
     private var isEditable: Bool {
-        !(session.isWriting || quickAmend || continuesSequence)
+        !(session.isWriting || session.commitResetTask != nil || quickAmend || continuesSequence)
     }
 
     /// 标题剩余字数，超出上限时为负数。
@@ -174,7 +172,7 @@ extension WorkingCopyCommitView {
         .overlay(RoundedRectangle(cornerRadius: 5).stroke(.separator))
     }
 
-    /// 正文框连同底部的钉住与折行按钮，下沿可拖动改变高度；其下是提交选项与提交人。
+    /// 正文框连同底部的钉住与折行按钮，下沿与右下角可拖动；其下是提交选项与提交人。
     private var details: some View {
         VStack(spacing: 12) {
             VStack(spacing: 0) {
@@ -200,7 +198,7 @@ extension WorkingCopyCommitView {
             .frame(height: bodyHeight)
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
             .overlay(RoundedRectangle(cornerRadius: 5).stroke(.separator))
-            .overlay(alignment: .bottom) { resizeHandle }
+            .overlay { resizeHandles }
 
             HStack(alignment: .top, spacing: 12) {
                 options
@@ -240,24 +238,17 @@ extension WorkingCopyCommitView {
         .frame(height: 24)
     }
 
-    /// 正文框下沿 4 pt 高的拖动条，高度不小于 192 pt、不超过窗口高度的一半。
-    private var resizeHandle: some View {
-        Color.clear
-            .frame(height: 4)
-            .contentShape(Rectangle())
-            .onHover { inside in
-                if inside { NSCursor.resizeUpDown.push() } else { NSCursor.pop() }
-            }
-            .gesture(
-                DragGesture(minimumDistance: 1)
-                    .onChanged { value in
-                        let start = dragStartHeight ?? bodyHeight
-                        let maximum = max(CommitEditorSettings.minimumBodyHeight, (NSApp.keyWindow?.frame.height ?? 0) / 2)
-                        dragStartHeight = start
-                        bodyHeight = min(max(start + value.translation.height, CommitEditorSettings.minimumBodyHeight), maximum)
-                    }
-                    .onEnded { _ in dragStartHeight = nil }
-            )
+    /// 正文框下沿 4 pt 高、只改高度的细条，以及右下角 20 × 20 pt、还能移动分隔线的拖柄。
+    private var resizeHandles: some View {
+        ZStack(alignment: .bottomTrailing) {
+            CommitBodyResizeHandle(kind: .edge, height: $bodyHeight)
+                .frame(height: 4)
+                .padding(.trailing, 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+
+            CommitBodyResizeHandle(kind: .corner, height: $bodyHeight)
+                .frame(width: 20, height: 20)
+        }
     }
 
     /// Amend、Sign Off 与 Skip Hooks；Skip Hooks 只在仓库启用了提交钩子时出现。

@@ -56,7 +56,12 @@ let package = Package(
                 "AppIcon/AppIconDark.icns",
                 "AppIcon/AppIconDarkConnected.icns",
             ],
-            resources: [.process("Resources")],
+            resources: [
+                .process("Resources"),
+
+                // highlight.js 的脚本与许可证保持原有目录结构，`.process` 会把子目录摊平到资源包根目录
+                .copy("HighlightJS"),
+            ],
             linkerSettings: [
                 .unsafeFlags([
                     "-Xlinker", "-sectcreate",

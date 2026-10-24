@@ -4,19 +4,16 @@ import Testing
 @testable import Spooky
 @testable import SpookyKit
 
-/// 以真实的合并冲突验证横幅与状态头的文字、已解决计数，以及冲突向导的备份记录与清理。
+/// 以真实的合并冲突验证横幅与状态头的文字、已解决计数，以及恢复冲突版本与采用两侧版本。
 extension RepositorySessionTests {
-    /// 两侧要用引用名说明；解决一个冲突后计数与备份都要能追溯，撤回解决与清理备份都由会话完成。
-    @Test("合并冲突的标题、已解决计数、恢复冲突与备份清理")
+    /// 两侧要用引用名说明；解决一个冲突后计数要能追溯；恢复冲突版本只改工作区，不经确认直接执行。
+    @Test("合并冲突的标题、已解决计数、恢复冲突与采用两侧")
     func conflictSession() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(
             path: "spooky-conflict-" + UUID().uuidString
         )
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         defer { try? FileManager.default.removeItem(at: directory) }
-
-        UserDefaults.standard.set(true, forKey: RepositorySession.keepsConflictBackupsKey)
-        defer { UserDefaults.standard.removeObject(forKey: RepositorySession.keepsConflictBackupsKey) }
 
         let location = RepositoryLocation.local(path: directory.path)
         let runner = try await initializeRepository(at: location)
@@ -25,8 +22,8 @@ extension RepositorySessionTests {
         let session = RepositorySession(makeRunner: { _ in runner })
         defer { session.close() }
 
-        // 确认直接执行，模拟用户在确认框里点了主按钮
-        session.onConfirm = { _, _, action, _ in action() }
+        // 冲突向导的操作都不需要确认，弹出确认就是错误
+        session.onConfirm = { title, _, _, _ in Issue.record("不应弹出确认：\(title)") }
         session.display(location)
         session.refresh()
 
@@ -36,15 +33,13 @@ extension RepositorySessionTests {
         #expect(session.operationBannerTitle == AppLocalization.text("conflict.title.merge", "side", "main"))
         #expect(session.conflictCount == 2)
 
-        // 采用对方之前留下备份，横幅能数出已解决的冲突
+        // 采用对方之后，横幅能数出已解决的冲突
         let first = try #require(session.status?.entries.first { $0.path == "a.txt" })
         session.resolve([first], theirs: true)
         await session.writeTask?.value
 
         try await waitUntil { session.resolvedConflictCount == 1 }
-
         #expect(session.conflictCount == 1)
-        #expect(session.currentConflictBackups == ["a.txt.orig"])
 
         // 已经解决的文件仍可重新生成冲突，但没有我方版本可恢复
         let resolved = try #require(session.status?.entries.first { $0.path == "a.txt" })
@@ -56,12 +51,15 @@ extension RepositorySessionTests {
 
         try await waitUntil { session.conflictCount == 2 }
 
-        // 清理只删除记录在案的备份文件
-        session.removeConflictBackups()
+        // 采用两侧：两侧的内容都留在文件里，文件随即标记解决
+        let second = try #require(session.status?.entries.first { $0.path == "b.txt" })
+        #expect(session.canResolveUsingBoth(second))
+
+        session.resolveUsingBoth(second)
         await session.writeTask?.value
 
-        #expect(session.currentConflictBackups.isEmpty)
-        #expect(!FileManager.default.fileExists(atPath: directory.appending(path: "a.txt.orig").path))
+        try await waitUntil { session.conflictCount == 1 }
+        #expect(try Data(contentsOf: directory.appending(path: "b.txt")) == Data("main\nside\n".utf8))
     }
 }
 

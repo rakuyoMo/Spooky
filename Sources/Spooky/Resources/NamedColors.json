@@ -408,5 +408,25 @@
       "hex": "#CCCCCC",
       "alpha": 1.0
     }
+  },
+  "diff_inline_added_highlight_color": {
+    "light": {
+      "hex": "#28CD41",
+      "alpha": 0.4
+    },
+    "dark": {
+      "hex": "#32D74B",
+      "alpha": 0.5
+    }
+  },
+  "diff_inline_deleted_highlight_color": {
+    "light": {
+      "hex": "#FF3B30",
+      "alpha": 0.4
+    },
+    "dark": {
+      "hex": "#FF453A",
+      "alpha": 0.5
+    }
   }
 }

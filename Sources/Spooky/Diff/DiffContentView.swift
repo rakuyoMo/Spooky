@@ -38,6 +38,10 @@ struct DiffContentView: View {
     @State
     private var syntax: DiffSyntax?
 
+    /// 各块的行内高亮，按块元素的身份存放；算完之前不高亮。
+    @State
+    private var highlights: [[Int]: [Int: [Range<Int>]]] = [:]
+
     /// 文本区与摘要共享同一组块数据。
     var body: some View {
         let style = TextStyle(
@@ -63,7 +67,26 @@ struct DiffContentView: View {
             DiffBottomBar(session: session, diff: diff)
         }
         .task(id: [colorsSyntax, colorsDiffSyntax]) {
-            syntax = await session.diffSyntax(for: snapshot, diff: diff)
+            let colored = await session.diffSyntax(for: snapshot, diff: diff)
+
+            // 着色期间切换了开关时任务已取消，结果作废，不覆盖新任务写入的片段
+            guard !Task.isCancelled else {
+                return
+            }
+
+            syntax = colored
+        }
+        .task(id: diff) {
+            // 补丁重新读取后先清掉旧的范围，避免套到新的行上
+            highlights = [:]
+
+            let ranges = await DiffSegment.highlights(in: diff)
+
+            guard !Task.isCancelled else {
+                return
+            }
+
+            highlights = ranges
         }
     }
 
@@ -79,6 +102,7 @@ struct DiffContentView: View {
                 hunk: hunk,
                 style: style,
                 spans: { syntax?.spans(for: $0) },
+                highlights: highlights[segment.id] ?? [:],
                 staged: snapshot.side == .staged,
                 enabled: session.canWrite && !session.isLoadingDiff && diff.files.count == 1
             ) { lines, discard in
@@ -128,6 +152,23 @@ enum DiffSegment: Identifiable {
         diff.files.flatMap { file in
             [.file(file)] + file.hunks.map { .hunk(file, $0) }
         }
+    }
+
+    /// 补丁里各块的行内高亮，按块元素的身份存放，块内的键是行序号。
+    ///
+    /// 显示整个文件的大补丁也要逐对比较，放到后台完成；每份补丁只算一次，排版时只取结果。
+    static func highlights(in diff: RepositoryDiff) async -> [[Int]: [Int: [Range<Int>]]] {
+        await Task.detached(priority: .userInitiated) {
+            var result: [[Int]: [Int: [Range<Int>]]] = [:]
+
+            for file in diff.files {
+                for hunk in file.hunks {
+                    result[[file.id, hunk.id]] = InlineDiff.ranges(in: hunk)
+                }
+            }
+
+            return result
+        }.value
     }
 }
 

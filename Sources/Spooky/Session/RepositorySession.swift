@@ -134,9 +134,6 @@ final class RepositorySession {
     /// 横幅的冲突过滤选项。
     var onlyConflicts = false
 
-    /// 冲突向导在各仓库生成、尚未清理的备份文件，切换仓库后仍保留，供向导与横幅列出和清理。
-    var conflictBackups: [RepositoryLocation: [String]] = [:]
-
     /// 主菜单请求聚焦提交标题。
     var commitFocusRequest = 0
 
@@ -151,6 +148,9 @@ final class RepositorySession {
 
     /// 本次提交跳过 pre-commit 与 commit-msg 钩子，只对当前仓库有效。
     var skipHooks = false
+
+    /// 提交成功后等待清空提交信息的任务；存在期间提交区保持锁定。
+    var commitResetTask: Task<Void, Never>? = nil
 
     /// 窗口询问注释行的处理方式；参数为去掉注释后信息是否为空，用户取消时不回调。
     var onCommentPrompt: ((Bool, @escaping (CommentHandling) -> Void) -> Void)? = nil
@@ -251,7 +251,7 @@ final class RepositorySession {
     @ObservationIgnored
     private(set) var fileCache: RepositoryFileCache? = nil
 
-    /// 工作区列表按仓库记住的显示模式。
+    /// 工作区列表的显示模式，所有仓库共用一个选择。
     var listMode = WorkingCopyListMode.list
 
     /// 显示全部文件、被忽略与 assume-unchanged 文件时补充的清单。
@@ -298,7 +298,8 @@ final class RepositorySession {
 
     /// 有标题、有暂存改动或可修补的 HEAD 时允许提交；合并可产生空树差异。
     var canCommit: Bool {
-        canWrite && conflictCount == 0 && !commitSubject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        canWrite && commitResetTask == nil && conflictCount == 0
+            && !commitSubject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && (
                 amend
                     || context?.operation == .merge
@@ -339,8 +340,8 @@ final class RepositorySession {
         self.repository = repository
         fileCache = RepositoryFileCache(runner: makeRunner(repository))
 
-        // 工作区列表沿用这个仓库上次选择的显示模式
-        listMode = WorkingCopyListMode.stored(for: repository)
+        // 工作区列表沿用所有仓库共用的显示模式
+        listMode = WorkingCopyListMode.stored()
 
         // 正在显示的仓库也计入缓存上限，超出时淘汰最久未使用的仓库。
         let saved = viewStates.state(for: repository)
@@ -431,6 +432,11 @@ final class RepositorySession {
 extension RepositorySession {
     /// 结束当前读取并清空仓库，视图状态存入窗口缓存；不影响 App 的其它窗口和进程。
     func close() {
+        // 提交后还没清空的信息属于已完成的提交，不能随视图状态存下来。
+        if commitResetTask != nil {
+            clearCommittedMessage()
+        }
+
         if let repository {
             viewStates.store(captureViewState(), for: repository)
         }

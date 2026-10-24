@@ -63,6 +63,18 @@ struct DiffOptionsTests {
         #expect(try String(contentsOf: file, encoding: .utf8).contains("line 28\n"))
     }
 
+    /// 显示整个文件时上下文取 10 万行，不看上下文行数的偏好；不超过这个行数的文件因此只有一块。
+    @Test("显示整个文件的上下文行数")
+    func entireFileArguments() {
+        #expect(DiffOptions(showsEntireFile: true).arguments == ["--unified=100000"])
+
+        let whitespace = DiffOptions(contextLines: 7, showsEntireFile: true, ignoresWhitespace: true)
+        #expect(whitespace.arguments == ["--unified=100000", "--ignore-all-space"])
+
+        // 关掉显示整个文件时回到偏好的行数
+        #expect(DiffOptions(contextLines: 7).arguments == ["--unified=7"])
+    }
+
     /// 大 Diff 警告按显示的这份补丁的字节数判断：同一处改动在显示整个文件时可能超过阈值，放行后才解析。
     @Test("显示整个文件时的大 Diff 警告")
     func entireFileThreshold() async throws {
@@ -193,51 +205,6 @@ struct DiffOptionsTests {
         let ignored = try await history.diff(in: commit, file: change, options: DiffOptions(ignoresWhitespace: true))
         #expect(ignored.onlyWhitespaceChanges)
         #expect(!narrow.onlyWhitespaceChanges)
-    }
-
-    /// 补丁文件包含暂存区、工作区与未跟踪文件的改动，能在原始提交上直接应用；省略前缀时路径不带 a/、b/。
-    @Test("保存补丁可在原提交上应用")
-    func patchFile() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-
-        let (service, file) = try await committedFile(in: repository, lines: ["one", "two"])
-        try write(["one", "two", "staged"], to: file)
-        try await service.stageAll(staged: true)
-        try write(["zero", "one", "two", "staged"], to: file)
-        try Data("new\n".utf8).write(to: repository.directory.appending(path: "新 文件.txt"))
-
-        let entries = try await repository.runner.status().entries
-        let patch = try await service.patchFile(for: entries, omittingPrefixes: false)
-        let bare = try await service.patchFile(for: entries, omittingPrefixes: true)
-
-        // 回到提交时的状态再应用，结果与工作区一致
-        try await service.discard(entries)
-        _ = try await repository.runner.run(["apply", "--check", "-"], input: patch)
-        _ = try await repository.runner.run(["apply", "-"], input: patch)
-        #expect(try String(contentsOf: file, encoding: .utf8) == text(["zero", "one", "two", "staged"]))
-        #expect(FileManager.default.fileExists(atPath: repository.directory.appending(path: "新 文件.txt").path))
-
-        let bareText = String(decoding: bare, as: UTF8.self)
-        #expect(bareText.contains("+++ file\n"))
-        #expect(!bareText.contains("+++ b/"))
-    }
-
-    /// 还没有提交时与空树比较，已暂存的新文件也进入补丁。
-    @Test("没有提交时保存补丁")
-    func unbornPatchFile() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-
-        let service = WorkingCopyOperations(runner: repository.runner)
-        try Data("a\n".utf8).write(to: repository.directory.appending(path: "a.txt"))
-        try await service.stageAll(staged: true)
-
-        let entries = try await repository.runner.status().entries
-        let patch = String(decoding: try await service.patchFile(for: entries, omittingPrefixes: false), as: UTF8.self)
-        #expect(patch.contains("new file mode 100644"))
-        #expect(patch.contains("+a\n"))
     }
 
     /// `index` 头给出两侧对象；全零、缺失与格式不对时没有对象。

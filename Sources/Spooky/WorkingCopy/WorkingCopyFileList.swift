@@ -153,12 +153,12 @@ extension WorkingCopyFileList {
         }
     }
 
-    /// 接管空格、⌘⌫ 与回车，并把 Quick Look 面板的控制权交给桥接器。
+    /// 接管空格与 ⌘⌫，并把 Quick Look 面板的控制权交给桥接器。
     final class FileOutlineView: NSOutlineView {
         /// 处理按键与 Quick Look 的桥接器。
         weak var coordinator: Coordinator?
 
-        /// 空格按偏好切换暂存或打开 Quick Look；⌘⌫ 删除所选文件；回车与双击执行同一个动作。
+        /// 空格按偏好切换暂存或打开 Quick Look；⌘⌫ 删除所选文件。
         override func keyDown(with event: NSEvent) {
             let flags = event.modifierFlags.intersection([.command, .control, .option, .shift])
 
@@ -168,10 +168,6 @@ extension WorkingCopyFileList {
 
             case (51, [.command]):
                 coordinator?.deletePressed()
-
-            case (36, []):
-                #warning("TODO: 回车键与双击执行同一个动作是推断的键盘入口，核实工作区列表里打开文件的按键；只影响列表获得焦点时的回车键")
-                coordinator?.openPressed()
 
             default:
                 super.keyDown(with: event)

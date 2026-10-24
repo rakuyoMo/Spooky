@@ -113,28 +113,20 @@ extension WorkingCopyFileDialog {
         }
     }
 
-    /// 版本输入：可以直接输入提交哈希，也可以从引用里选。
+    /// 版本输入：组合框里可以直接输入版本，也可以从引用里选。
     private var revisionRow: some View {
         GridRow {
             Text(AppLocalization.text("files.revert.revision"))
                 .gridColumnAlignment(.trailing)
 
-            HStack(spacing: 4) {
-                TextField("", text: $text)
-                    .accessibilityLabel(AppLocalization.text("files.revert.revision"))
-
-                Menu {
-                    ForEach(revisions, id: \.self) { name in
-                        Button(name) { text = name }
-                    }
-                } label: {
-                    Image(systemName: "chevron.down")
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .frame(width: 24)
-                .disabled(revisions.isEmpty)
-                .accessibilityLabel(AppLocalization.text("files.revert.revision"))
+            RevisionComboBox(
+                text: $text,
+                items: revisions,
+                label: AppLocalization.text("files.revert.revision")
+            )
+            .onChange(of: text) {
+                // 输入版本后不再显示 “没有引用” 的说明
+                error = ""
             }
         }
     }
@@ -244,11 +236,12 @@ extension WorkingCopyFileDialog {
         }
     }
 
-    /// 可选的版本：HEAD 与全部本地分支、远端分支和标签。
+    /// 组合框的候选，来自当前的引用快照与分支。
     private var revisions: [String] {
-        ["HEAD"] + (session.history.snapshot?.references ?? [])
-            .filter { $0.symbolicTarget == nil }
-            .map(\.name)
+        Self.revisions(
+            in: session.history.snapshot?.references ?? [],
+            currentBranch: session.status?.branch.head
+        )
     }
 
     /// 参数完整且仓库可写时允许提交。
@@ -260,6 +253,22 @@ extension WorkingCopyFileDialog {
         case .move(let entry): return Self.destination(text, from: entry.path) != nil
         case .applyPatch: return patchFile != nil
         }
+    }
+
+    /// 组合框的候选：当前分支在前，其后依次是本地分支、远端分支与标签，不含符号引用；第一项是打开时预选的版本。
+    ///
+    /// - Parameters:
+    ///   - references: 按完整名称排序的引用快照。
+    ///   - currentBranch: 当前分支名，分离 HEAD 时为 nil。
+    static func revisions(in references: [RepositoryReference], currentBranch: String?) -> [String] {
+        #warning("TODO: 核实 Revert to Revision 候选引用的顺序与打开时预选的引用，目前当前分支在前、其后依次是本地分支、远端分支与标签；只影响组合框的候选顺序与预填的版本")
+        let candidates = references.filter { $0.symbolicTarget == nil }
+        let current = currentBranch.map { "refs/heads/" + $0 }
+
+        // 同名的分支与标签各占一项，按引用的完整名称认出当前分支
+        let ordered = candidates.filter { $0.id == current } + candidates.filter { $0.id != current }
+
+        return ordered.map(\.name)
     }
 
     /// 新路径必须是仓库内的相对路径：不能为空、以 “/” 开头、含 “.” 与 “..” 段或换行，也不能与原路径相同。
@@ -279,7 +288,7 @@ extension WorkingCopyFileDialog {
 // MARK: - Actions
 
 extension WorkingCopyFileDialog {
-    /// 预填输入：移动预填原路径，自定义规则预填只匹配第一个所选文件的规则。
+    /// 预填输入：移动预填原路径，自定义规则预填只匹配第一个所选文件的规则，恢复版本预选第一个候选引用。
     private func prepare() {
         switch form {
         case .move(let entry):
@@ -288,7 +297,15 @@ extension WorkingCopyFileDialog {
         case .pattern(_, let entries):
             text = WorkingCopyOperations.ignorePatterns(for: entries.prefix(1).map(\.path), scope: .items).first ?? ""
 
-        case .revert, .applyPatch:
+        case .revert:
+            // 预选第一个候选；仓库还没有引用时说明原因，仍可直接输入版本
+            text = revisions.first ?? ""
+
+            if revisions.isEmpty {
+                error = AppLocalization.text("files.revert.noRefs")
+            }
+
+        case .applyPatch:
             break
         }
     }
@@ -341,6 +358,77 @@ extension WorkingCopyFileDialog {
             if session.applyPatch(patch) { close() }
         } catch {
             self.error = error.localizedDescription
+        }
+    }
+}
+
+// MARK: - RevisionComboBox
+
+/// 可以直接输入、也可以从下拉列表选择的版本框；SwiftUI 没有组合框，由 NSComboBox 承担。
+private struct RevisionComboBox: NSViewRepresentable {
+    /// 键入与选择都即时写回绑定。
+    @MainActor
+    final class Coordinator: NSObject, NSComboBoxDelegate {
+        /// 最新的绑定与候选。
+        var parent: RevisionComboBox
+
+        /// 保存初始绑定。
+        init(_ parent: RevisionComboBox) { self.parent = parent }
+
+        /// 键入的文字写回绑定。
+        func controlTextDidChange(_ notification: Notification) {
+            guard let box = notification.object as? NSComboBox else { return }
+
+            parent.text = box.stringValue
+        }
+
+        /// 从下拉列表选中的候选写回绑定；通知早于输入框的更新，直接取所选的候选。
+        func comboBoxSelectionDidChange(_ notification: Notification) {
+            guard
+                let box = notification.object as? NSComboBox,
+                let value = box.objectValueOfSelectedItem as? String
+            else { return }
+
+            parent.text = value
+        }
+    }
+
+    /// 输入框里的版本。
+    @Binding
+    var text: String
+
+    /// 下拉列表里的引用名。
+    let items: [String]
+
+    /// 读屏使用的名称。
+    let label: String
+
+    /// 键入与选择的桥接。
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    /// 可编辑的组合框：下拉列表一次显示 5 项、行高 18 pt，键入时不自动补全。
+    func makeNSView(context: Context) -> NSComboBox {
+        let box = NSComboBox()
+        box.font = .systemFont(ofSize: 13)
+        box.numberOfVisibleItems = 5
+        box.itemHeight = 18
+        box.intercellSpacing = NSSize(width: 17, height: 0)
+        box.delegate = context.coordinator
+        return box
+    }
+
+    /// 候选或绑定变化时同步到控件；内容相同时不重写，避免打断正在进行的输入。
+    func updateNSView(_ box: NSComboBox, context: Context) {
+        context.coordinator.parent = self
+        box.setAccessibilityLabel(label)
+
+        if box.objectValues as? [String] != items {
+            box.removeAllItems()
+            box.addItems(withObjectValues: items)
+        }
+
+        if box.stringValue != text {
+            box.stringValue = text
         }
     }
 }

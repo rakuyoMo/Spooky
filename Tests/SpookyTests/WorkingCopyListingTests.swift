@@ -74,27 +74,22 @@ struct WorkingCopyListingTests {
         #expect(entries("zzz").isEmpty)
     }
 
-    /// 显示模式按仓库分别记住；没有记录的仓库沿用全局的平铺或树形偏好。
-    @Test("显示模式按仓库记住")
-    func listModePerRepository() throws {
+    /// 显示模式只有一个全局记录：没有记录时为平铺，记下的模式对之后打开的每个仓库都生效，无法识别的记录回到平铺。
+    @Test("显示模式所有仓库共用")
+    func sharedListMode() throws {
         // 偏好写进临时目录里的 plist，测试结束随目录删除
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-modes-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         defer { try? FileManager.default.removeItem(at: directory) }
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
 
-        let local = RepositoryLocation.local(path: "/tmp/仓 库")
-        let remote = RepositoryLocation.remote(host: "server", path: "/tmp/仓 库")
+        #expect(WorkingCopyListMode.stored(defaults: defaults) == .list)
 
-        #expect(WorkingCopyListMode.stored(for: local, defaults: defaults) == .list)
+        WorkingCopyListMode.store(.allFiles, defaults: defaults)
+        #expect(WorkingCopyListMode.stored(defaults: defaults) == .allFiles)
 
-        defaults.set(1, forKey: "workingCopyViewMode")
-        #expect(WorkingCopyListMode.stored(for: remote, defaults: defaults) == .tree)
-
-        WorkingCopyListMode.store(.allFiles, for: local, defaults: defaults)
-        WorkingCopyListMode.store(.list, for: remote, defaults: defaults)
-        #expect(WorkingCopyListMode.stored(for: local, defaults: defaults) == .allFiles)
-        #expect(WorkingCopyListMode.stored(for: remote, defaults: defaults) == .list)
+        defaults.set(9, forKey: "workingCopyViewMode")
+        #expect(WorkingCopyListMode.stored(defaults: defaults) == .list)
     }
 
     /// 文件操作的可用范围：只有暂存区里的文件能停止跟踪，工作区里已经没有的文件不能删除或打开。
@@ -122,6 +117,27 @@ struct WorkingCopyListingTests {
         }
     }
 
+    /// 恢复版本的候选：当前分支排在最前，打开表单时预选它；同名标签仍各占一项，符号引用不列出，分离 HEAD 时保持快照顺序。
+    @Test("恢复版本的候选顺序")
+    func revisionCandidates() {
+        let references = [
+            Self.reference("refs/heads/feature"),
+            Self.reference("refs/heads/main"),
+            Self.reference("refs/remotes/origin/HEAD", symbolicTarget: "refs/remotes/origin/main"),
+            Self.reference("refs/remotes/origin/main"),
+            Self.reference("refs/tags/main"),
+        ]
+
+        #expect(
+            WorkingCopyFileDialog.revisions(in: references, currentBranch: "main")
+                == ["main", "feature", "origin/main", "main"]
+        )
+        #expect(
+            WorkingCopyFileDialog.revisions(in: references, currentBranch: nil)
+                == ["feature", "main", "origin/main", "main"]
+        )
+    }
+
     /// 补丁前像不符与移动目标已存在都属于仓库状态问题；前像不符时列出这些文件。
     @Test("文件操作错误的呈现")
     func failures() {
@@ -145,5 +161,22 @@ struct WorkingCopyListingTests {
         )
         #expect(tool.details.contains("xcode-select: error"))
         #expect(tool.message == AppLocalization.text("files.error.diffToolHelp"))
+    }
+}
+
+// MARK: - Helpers
+
+extension WorkingCopyListingTests {
+    /// 指向同一个提交的引用。
+    private static func reference(_ id: String, symbolicTarget: String? = nil) -> RepositoryReference {
+        RepositoryReference(
+            id: id,
+            objectID: String(repeating: "a", count: 40),
+            objectType: "commit",
+            upstream: nil,
+            upstreamRemote: nil,
+            upstreamBranch: nil,
+            symbolicTarget: symbolicTarget
+        )
     }
 }

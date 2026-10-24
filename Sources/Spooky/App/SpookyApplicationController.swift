@@ -61,6 +61,10 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             "cleanRefNames": true,
             "checkoutCreatedBranch": true,
         ])
+
+        // 主题目录缺少 Default 或 Default (Dark)、或它们的文件无法加载时从资源写入；写不进去时文本区用资源里的版本。
+        try? ThemeStore.shared.installDefaultThemes()
+
         configureMenu()
         appIconController.start()
         newWindow()

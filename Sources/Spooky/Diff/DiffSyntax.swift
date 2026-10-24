@@ -14,15 +14,16 @@ struct DiffSyntax: Sendable {
     let new: [[SyntaxSpan]]
 
     /// 显示的 Diff 能否着色：按路径识别出语言，或新版首行是 `#!`（需要全文再判断）。
-    static func mayColor(_ diff: RepositoryDiff, oldPath: String, newPath: String) -> Bool {
+    static func mayColor(_ diff: RepositoryDiff, oldPath: String, newPath: String) async -> Bool {
         guard let file = diff.files.first, !file.isBinary else {
             return false
         }
 
-        if
-            SyntaxHighlighter.language(forPath: newPath, content: nil) != nil
-            || SyntaxHighlighter.language(forPath: oldPath, content: nil) != nil
-        {
+        if await SyntaxHighlighter.language(forPath: newPath, content: nil) != nil {
+            return true
+        }
+
+        if await SyntaxHighlighter.language(forPath: oldPath, content: nil) != nil {
             return true
         }
 
@@ -43,8 +44,11 @@ struct DiffSyntax: Sendable {
 
     /// 从整文件上下文的 Diff 重建两侧全文再着色，两侧按各自的路径识别语言。
     ///
+    /// 全文重建在后台执行，着色借用 highlight.js 的上下文完成。
+    ///
     /// - Returns: 两侧都识别不了语言时为空，调用方按纯文本显示。
-    static func make(from full: RepositoryDiff, oldPath: String, newPath: String) -> Self? {
+    @concurrent
+    static func make(from full: RepositoryDiff, oldPath: String, newPath: String) async -> Self? {
         guard let file = full.files.first, !file.isBinary else {
             return nil
         }
@@ -67,17 +71,25 @@ struct DiffSyntax: Sendable {
 
         let oldText = joined(oldLines)
         let newText = joined(newLines)
-        let oldLanguage = SyntaxHighlighter.language(forPath: oldPath, content: oldText)
-        let newLanguage = SyntaxHighlighter.language(forPath: newPath, content: newText)
+        let oldLanguage = await SyntaxHighlighter.language(forPath: oldPath, content: oldText)
+        let newLanguage = await SyntaxHighlighter.language(forPath: newPath, content: newText)
 
         guard oldLanguage != nil || newLanguage != nil else {
             return nil
         }
 
-        return Self(
-            old: oldLanguage.map { SyntaxHighlighter.highlight(oldText, as: $0) } ?? [],
-            new: newLanguage.map { SyntaxHighlighter.highlight(newText, as: $0) } ?? []
-        )
+        var old: [[SyntaxSpan]] = []
+        var new: [[SyntaxSpan]] = []
+
+        if let oldLanguage {
+            old = await SyntaxHighlighter.highlight(oldText, as: oldLanguage)
+        }
+
+        if let newLanguage {
+            new = await SyntaxHighlighter.highlight(newText, as: newLanguage)
+        }
+
+        return Self(old: old, new: new)
     }
 
     /// 按行号拼回全文，缺失的行留空，行号与原文保持一致。
