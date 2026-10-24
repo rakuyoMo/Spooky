@@ -175,6 +175,7 @@ struct CommitDetailView: View {
                         ChangesetFileMenu(session: session, path: file.path, commit: commit)
                     }
                 }
+                .onDrag { CommitFileDragging.provider(file, session: session) }
         }
         .padding(.horizontal, 8)
     }
@@ -242,6 +243,7 @@ struct CommitFileListView: View {
                         ChangesetFileMenu(session: session, path: file.path, commit: commit)
                     }
                 }
+                .onDrag { CommitFileDragging.provider(file, session: session) }
         }
     }
 

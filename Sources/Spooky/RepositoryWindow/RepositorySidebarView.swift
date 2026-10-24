@@ -356,10 +356,12 @@ extension RepositorySidebarView {
                         )
                     )
             }
+        } folder: { node in
+            folderLabel(node, destination: .remoteBranchFolder(remote.name, node.path))
         }
     }
 
-    /// 远端名称行：右键获取或清理，接受本地分支拖入以发布。
+    /// 远端名称行：右键获取或清理，按住 ⌥ 换成快速获取；接受本地分支拖入以发布分支、标签拖入以发布标签。
     func remoteLabel(_ remote: RepositoryRemote) -> some View {
         Label(remote.name, systemImage: "network")
             .contextMenu {

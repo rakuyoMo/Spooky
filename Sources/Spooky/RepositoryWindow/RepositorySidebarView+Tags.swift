@@ -12,9 +12,12 @@ extension RepositorySidebarView {
                 if let ref = node.reference {
                     tagRow(ref, name: node.name)
                 }
+            } folder: { node in
+                folderLabel(node, destination: .tagFolder(node.path))
             }
         } header: {
-            Text(AppLocalization.text("sidebar.tags"))
+            // 提交或本地分支拖到标题上新建标签
+            groupHeader("sidebar.tags", destination: .tags)
         }
     }
 

@@ -24,6 +24,9 @@ struct SidebarRefNode: Identifiable, Equatable {
     /// 显示的名字：折叠时是最后一段，不折叠时是完整名。
     let name: String
 
+    /// 文件夹在分组里的完整路径，各级名字以 “/” 连接，拖进文件夹时用它拼出新名字；引用节点为空。
+    var path = ""
+
     /// 引用节点的引用；文件夹为 nil。
     let reference: RepositoryReference?
 
@@ -235,6 +238,7 @@ extension SidebarRefTree {
             return SidebarRefNode(
                 id: SidebarNodeID(value: scope + "|folder|" + path.joined(separator: "/")),
                 name: name,
+                path: path.joined(separator: "/"),
                 reference: nil,
                 children: level(folders[name] ?? [], prefix: path, foldersFirst: foldersFirst, scope: scope)
             )

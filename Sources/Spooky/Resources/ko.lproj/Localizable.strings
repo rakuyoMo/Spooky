@@ -1355,3 +1355,6 @@
 "sync.rebaseOnNamed" = "“%@” 위로 리베이스…";
 "branch.pushToMenu" = "“%@”을(를) 지정 위치로 푸시…";
 "tag.compareMenu" = "“%@”을(를) 다른 리비전과 비교…";
+
+/* 分支拖进 “/” 文件夹时的动作名。 */
+"branch.moveHere" = "여기로 이동";

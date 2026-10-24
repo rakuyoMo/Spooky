@@ -15,6 +15,8 @@ extension RepositorySidebarView {
                     if let ref = node.reference {
                         localBranchRow(ref, name: node.name, tag: Self.pinnedRowPrefix + ref.id)
                     }
+                } folder: { node in
+                    folderLabel(node, destination: .branchFolder(node.path))
                 }
             } header: {
                 groupHeader("sidebar.pinned", destination: .pinned)
@@ -38,6 +40,8 @@ extension RepositorySidebarView {
                 if let ref = node.reference {
                     localBranchRow(ref, name: node.name, tag: ref.id)
                 }
+            } folder: { node in
+                folderLabel(node, destination: .branchFolder(node.path))
             }
         } header: {
             groupHeader("branch.group", destination: .branches)
@@ -60,6 +64,8 @@ extension RepositorySidebarView {
                 if let ref = node.reference {
                     localBranchRow(ref, name: node.name, tag: ref.id)
                 }
+            } folder: { node in
+                folderLabel(node, destination: .branchFolder(node.path))
             }
         } header: {
             groupHeader("sidebar.archived", destination: .archived)
@@ -130,6 +136,12 @@ extension RepositorySidebarView {
     func groupHeader(_ key: String, destination: RepositoryDropDestination) -> some View {
         Text(AppLocalization.text(key))
             .frame(maxWidth: .infinity, alignment: .leading)
+            .modifier(RepositoryDropTarget(session: session, destination: destination, request: request))
+    }
+
+    /// 按 “/” 折叠出的文件夹行；作为落点接受拖入改名、新建分支或标签。
+    func folderLabel(_ node: SidebarRefNode, destination: RepositoryDropDestination) -> some View {
+        SidebarFolderLabel(name: node.name)
             .modifier(RepositoryDropTarget(session: session, destination: destination, request: request))
     }
 

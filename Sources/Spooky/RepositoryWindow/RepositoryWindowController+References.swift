@@ -107,8 +107,8 @@ extension RepositoryWindowController {
         case .createTag(let revision):
             AnyView(CreateTagDialog(session: session, revision: revision, close: close))
 
-        case .publishTag(let tag):
-            AnyView(PublishTagDialog(session: session, tag: tag, close: close))
+        case .publishTag(let tag, let remote):
+            AnyView(PublishTagDialog(session: session, tag: tag, preselectedRemote: remote, close: close))
 
         case .addRemote:
             AnyView(AddRemoteDialog(session: session, close: close))

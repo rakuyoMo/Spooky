@@ -1355,3 +1355,6 @@
 "sync.rebaseOnNamed" = "Rebase On “%@”…";
 "branch.pushToMenu" = "Push “%@” To…";
 "tag.compareMenu" = "Compare “%@” With Revision…";
+
+/* 分支拖进 “/” 文件夹时的动作名。 */
+"branch.moveHere" = "Move Here";

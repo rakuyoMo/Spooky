@@ -11,6 +11,9 @@ struct PublishTagDialog: View {
     /// 预选的标签短名；为 nil 时选第一个标签。
     let tag: String?
 
+    /// 预选的远端，如标签拖到的远端；为 nil 时选 HEAD 跟踪的远端。
+    var preselectedRemote: String? = nil
+
     /// 关闭 sheet。
     let close: () -> Void
 
@@ -82,7 +85,7 @@ extension PublishTagDialog {
         return ""
     }
 
-    /// 预选入口指定的标签与当前分支的上游远端。
+    /// 预选入口指定的标签与远端；没有指定远端时预选当前分支的上游远端。
     private func prepare() {
         repository = session.repository
         selectedTag = tag ?? session.tags.first?.name ?? ""
@@ -90,7 +93,9 @@ extension PublishTagDialog {
         let remotes = session.history.snapshot?.remotes.map(\.name) ?? []
         let head = session.history.branches.first { $0.isLocal && $0.name == session.status?.branch.head }
         let upstream = head?.upstreamRemote.flatMap { remotes.contains($0) ? $0 : nil }
-        remote = upstream ?? remotes.first ?? ""
+
+        // 入口预选的远端优先，如标签拖到的远端
+        remote = preselectedRemote.flatMap { remotes.contains($0) ? $0 : nil } ?? upstream ?? remotes.first ?? ""
     }
 
     /// 捕获表单值后开始推送；仓库忙碌或已切换时表单保持打开。

@@ -1355,3 +1355,6 @@
 "sync.rebaseOnNamed" = "重定基底到 “%@”…";
 "branch.pushToMenu" = "把 “%@” 推送到…";
 "tag.compareMenu" = "將 “%@” 與其他版本比較…";
+
+/* 分支拖进 “/” 文件夹时的动作名。 */
+"branch.moveHere" = "移到這裡";

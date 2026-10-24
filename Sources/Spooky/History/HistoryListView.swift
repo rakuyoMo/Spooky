@@ -297,7 +297,7 @@ private struct HistoryCommitTable: NSViewRepresentable {
             }
         }
 
-        /// 拖出单个提交，侧边栏的 Branches 标题接受新建分支动作。
+        /// 每个被拖的提交写一个载荷；侧边栏的落点据此新建分支或标签，或者摘取与反转。
         func tableView(_: NSTableView, pasteboardWriterForRow row: Int) -> (
             any NSPasteboardWriting
         )? {
@@ -315,6 +315,24 @@ private struct HistoryCommitTable: NSViewRepresentable {
             guard let data = try? JSONEncoder().encode(payload) else { return nil }
             item.setData(data, forType: .init(RepositoryDragPayload.type))
             return item
+        }
+
+        /// 拖动开始时记下全部被拖的提交，按列表顺序；多选拖到工作区或 HEAD 分支时一起摘取或反转。
+        func tableView(
+            _: NSTableView,
+            draggingSession _: NSDraggingSession,
+            willBeginAt _: NSPoint,
+            forRowIndexes rowIndexes: IndexSet
+        ) {
+            guard let location = parent.session.repository else { return }
+
+            let history = parent.session.history
+            let payloads = rowIndexes.compactMap { history.commit(atRow: $0) }.map {
+                RepositoryDragPayload(repository: location, kind: .commit, reference: $0.id)
+            }
+
+            RepositoryDragContext.shared.payload = payloads.first
+            RepositoryDragContext.shared.batch = payloads.count > 1 ? payloads : []
         }
 
         /// 右键在选区外时只作用于该行。

@@ -18,4 +18,21 @@ extension RepositorySession {
 
         return status?.branch.head.map { reference == "refs/heads/" + $0 } ?? false
     }
+
+    /// 只把提交里一个文件的改动套用到工作区，不改暂存区；套用不上时整体失败，工作区保持不变。
+    ///
+    /// - Returns: 是否已开始执行。
+    @discardableResult
+    func cherryPickFile(_ change: CommitFileChange, from commit: HistoryCommit) -> Bool {
+        let path = change.path
+        let originalPath = change.originalPath
+        let id = commit.id
+
+        return performGit(
+            { runner, _ in
+                try await RepositoryRewrite(runner: runner).cherryPick(path: path, originalPath: originalPath, from: id)
+            },
+            title: AppLocalization.text("files.applyPatch")
+        )
+    }
 }

@@ -19,8 +19,8 @@ enum ReferenceRequest {
     /// 新建标签；版本为 nil 时从 HEAD 开始。
     case createTag(revision: String?)
 
-    /// 发布一个本地标签；为 nil 时由对话框选择。
-    case publishTag(String?)
+    /// 发布一个本地标签；标签为 nil 时由对话框选择，远端为 nil 时预选 HEAD 跟踪的远端。
+    case publishTag(String?, remote: String? = nil)
 
     /// 删除若干本地标签，可选同时从远端删除。
     case deleteTags([String])
