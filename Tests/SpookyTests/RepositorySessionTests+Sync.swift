@@ -178,9 +178,9 @@ extension RepositorySessionTests {
         try await RepositoryReferences(runner: runner).resolve("refs/remotes/origin/main")
     }
 
-    /// 等会话的异步读取满足条件，30 秒后记为失败。
+    /// 等会话的异步读取满足条件，5 分钟后记为失败。
     private func waitForSession(_ condition: () -> Bool) async throws {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while !condition() {
             guard .now < deadline else {

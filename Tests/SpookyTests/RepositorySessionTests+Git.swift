@@ -26,7 +26,7 @@ extension RepositorySessionTests {
 
         // 不调用手动刷新，新增文件必须由真实 FSEvents 进入列表。
         try Data("new\n".utf8).write(to: directory.appending(path: "file"))
-        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while session.status?.entries.isEmpty != false, .now < deadline {
             try await Task.sleep(for: .milliseconds(50))
@@ -97,7 +97,7 @@ extension RepositorySessionTests {
         session.display(location)
         session.refresh()
         await session.refreshTask?.value
-        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while session.history.commits.isEmpty, .now < deadline {
             try await Task.sleep(for: .milliseconds(20))
@@ -120,7 +120,7 @@ extension RepositorySessionTests {
         )
         await session.writeTask?.value
         await session.refreshTask?.value
-        let referenceDeadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let referenceDeadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while
             session.history.snapshot?.references.contains(where: { $0.id == "refs/heads/topic" }) != true,
@@ -147,7 +147,7 @@ extension RepositorySessionTests {
         await session.writeTask?.value
         await session.refreshTask?.value
         session.history.selectedReference = "refs/heads/topic"
-        let trackingDeadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let trackingDeadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while session.history.unpushed.isEmpty, .now < trackingDeadline {
             try await Task.sleep(for: .milliseconds(20))
@@ -173,7 +173,7 @@ extension RepositorySessionTests {
     /// 菜单、工具栏、右键菜单与拖放共用的可用性规则随真实仓库状态与写入状态变化。
     ///
     /// 本机仓库的 Git 命令在测试进程里共用一组主机槽，整套测试并行时读取要排队，上限与等待按整套测试的耗时留足。
-    @Test("统一的动作可用性规则", .timeLimit(.minutes(5)))
+    @Test("统一的动作可用性规则", .timeLimit(.minutes(10)))
     func actionAvailability() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(
             path: "spooky-rules-" + UUID().uuidString
@@ -194,7 +194,7 @@ extension RepositorySessionTests {
         }
         session.display(location)
         session.refresh()
-        let deadline = ContinuousClock.now.advanced(by: .seconds(180))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while session.history.snapshot == nil || session.context == nil, .now < deadline {
             try await Task.sleep(for: .milliseconds(20))

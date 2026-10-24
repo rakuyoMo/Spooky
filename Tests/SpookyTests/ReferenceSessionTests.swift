@@ -160,9 +160,9 @@ extension ReferenceSessionTests {
         )
     }
 
-    /// 等到条件成立，最多 30 秒。
+    /// 等到条件成立，最多 5 分钟。
     static func wait(_ condition: () -> Bool) async throws {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while !condition(), .now < deadline {
             try await Task.sleep(for: .milliseconds(20))

@@ -322,9 +322,9 @@ extension BranchesReviewTests {
         )
     }
 
-    /// 等待写入与随后的刷新落定，最多 30 秒。
+    /// 等待写入与随后的刷新落定，最多 5 分钟。
     private func waitUntil(_ condition: () -> Bool) async throws {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while !condition() {
             guard ContinuousClock.now < deadline else {

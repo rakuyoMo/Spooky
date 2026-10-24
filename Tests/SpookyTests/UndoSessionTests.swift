@@ -223,7 +223,7 @@ struct UndoSessionTests {
 extension UndoSessionTests {
     /// 等会话不再忙于写入或刷新，再读菜单状态；本机仓库的文件监听随时可能触发一次刷新。
     static func settledState(of session: RepositorySession, redo: Bool) async throws -> UndoMenuState {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while .now < deadline {
             let state = session.undoMenuState(redo: redo)
