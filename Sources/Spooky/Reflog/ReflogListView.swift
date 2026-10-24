@@ -145,7 +145,7 @@ extension ReflogListView {
     /// 本地分支，当前分支在前，其余按名称排列。
     private var branches: [String] {
         #warning(
-            "TODO: 引用菜单里分支的排序按推测：当前分支在前，其余按名称。核实方式：在参照客户端的 Reflog 里打开 Ref 菜单，对比多个分支（含最近提交过与很久没动的）的先后；只影响菜单项的顺序。"
+            "TODO: 引用菜单里分支的排序未核实：当前分支在前，其余按名称。核实方式：建几个最近提交时间不同的分支，比对 Ref 菜单里的先后；只影响菜单项的顺序。"
         )
 
         let current = session.status?.branch.head.map { "refs/heads/" + $0 }

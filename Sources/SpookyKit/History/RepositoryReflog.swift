@@ -42,7 +42,7 @@ public struct ReflogEntry: Sendable, Equatable, Identifiable {
     /// 动作标记的配色类别，由命令名决定。
     public var category: ReflogCategory {
         #warning(
-            "TODO: 命令名到三类配色的归属未核实：合并与拉取归合并类，提交、摘取、反转与 am 归提交类，其余归移动类。核实方式：在参照客户端的 Reflog 里分别做一次 merge、pull、commit --amend、cherry-pick、revert、rebase、reset 与 branch，记下各自标记的颜色；影响 Reflog 列表的动作标记颜色。"
+            "TODO: 命令名到三类配色的归属未核实：合并与拉取归合并类，提交、摘取、反转与 am 归提交类，其余归移动类。核实方式：分别做一次 merge、pull、commit --amend、cherry-pick、revert、rebase、reset 与 branch，比对 Reflog 里各自标记的颜色；影响 Reflog 列表的动作标记颜色。"
         )
 
         switch command {

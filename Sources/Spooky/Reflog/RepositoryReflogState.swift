@@ -162,7 +162,7 @@ extension RepositoryReflogState {
         let reference = reference
         let query = query
         #warning(
-            "TODO: 每页条数沿用历史的 Number of commits in history 设置是推测：参照客户端另有一个没有设置界面的条数偏好，默认值未知。核实方式：在参照客户端打开记录很多的仓库的 Reflog，数首屏读到的条数与滚到底后续读的条数；只影响分页大小。"
+            "TODO: 每页条数沿用历史的 Number of commits in history 设置未核实，Reflog 可能另有没有设置项的条数。核实方式：在记录很多的仓库里比对 Reflog 首屏读到的条数与滚到底后续读的条数；只影响分页大小。"
         )
 
         let configured = UserDefaults.standard.integer(forKey: "historyPageSize")
