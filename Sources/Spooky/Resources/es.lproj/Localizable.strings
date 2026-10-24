@@ -829,3 +829,9 @@
 "files.truncation" = "Acortar los nombres de archivo largos en la copia de trabajo:";
 "files.truncation.beginning" = "Acortar el principio";
 "files.truncation.middle" = "Acortar la parte central";
+/* 提交体验。 */
+"profiles.add.message" = "“%@ <%@> (%@)” se guardará como perfil de usuario. Introduce un título para él.";
+"profiles.add.submit" = "Añadir perfil";
+"profiles.titleExists" = "Ya existe un perfil de usuario con este título.";
+"profiles.signer" = "Firmante:";
+"commit.doNotAskAgain" = "No volver a preguntar";

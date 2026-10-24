@@ -1,4 +1,5 @@
 import AppKit
+import SpookyKit
 import SwiftUI
 
 // MARK: - UserProfile
@@ -38,31 +39,41 @@ enum UserProfiles {
         (try? JSONEncoder().encode(profiles)) ?? Data()
     }
 
-    /// 把当前提交人身份存成新档案：只询问标题，姓名、邮箱与签名密钥取自仓库。
-    @MainActor
-    static func add(name: String, email: String, signingKey: String?, in window: NSWindow) {
-        let alert = NSAlert()
-        alert.messageText = AppLocalization.text("profiles.add")
-        alert.informativeText = name + " <" + email + ">"
-        alert.addButton(withTitle: AppLocalization.text("profiles.save"))
-        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
-
-        let field = NSTextField(string: AppLocalization.text("profiles.newProfile"))
-        field.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
-        field.setAccessibilityLabel(AppLocalization.text("profiles.title"))
-        alert.accessoryView = field
-        alert.window.initialFirstResponder = field
-
-        alert.beginSheetModal(for: window.attachedSheet ?? window) { response in
-            let title = field.stringValue.trimmingCharacters(in: .whitespaces)
-            guard response == .alertFirstButtonReturn, !title.isEmpty else { return }
-
-            // 只追加新档案，已有档案原样保留。
-            let defaults = UserDefaults.standard
-            let profiles = decode(defaults.data(forKey: key) ?? Data())
-                + [UserProfile(title: title, name: name, email: email, signingKey: signingKey)]
-            defaults.set(encode(profiles), forKey: key)
+    /// 签名密钥的简短写法：字面 SSH 公钥换成指纹，OpenPGP 指纹取末 16 位，其它写法原样显示。
+    ///
+    /// - Parameter value: `user.signingkey` 的值。
+    static func keyDescription(_ value: String) -> String {
+        if let fingerprint = SigningKeys.fingerprint(ofLiteral: value) {
+            return fingerprint
         }
+
+        guard value.count > 16, value.allSatisfy(\.isHexDigit) else {
+            return value
+        }
+
+        return value.suffix(16).uppercased()
+    }
+
+    /// 签名密钥菜单里一把密钥的名称：OpenPGP 是签名人与短指纹，SSH 是注释与指纹。
+    ///
+    /// SSH 的注释是现有文件的路径时把家目录缩写成 `~`，没有注释时用密钥类型。
+    static func title(of key: SigningKey) -> String {
+        #warning(
+            "TODO: 签名密钥菜单项的写法是推断：OpenPGP 为 “签名人 (指纹末 16 位)”，SSH 为 “注释 (SHA256 指纹)”。核实方式：在编辑档案的对话框里打开签名密钥菜单，对照 GPG 与 SSH 密钥各一项的文字；只影响菜单项文字。"
+        )
+
+        guard key.format == .ssh else {
+            return (key.signer.map { $0 + " " } ?? "") + "(" + keyDescription(key.value) + ")"
+        }
+
+        let type = key.value.dropFirst("key::".count).split(separator: " ").first.map(String.init) ?? ""
+        let comment = key.comment ?? ""
+        let home = FileManager.default.homeDirectoryForCurrentUser.path + "/"
+        let name = FileManager.default.fileExists(atPath: comment) && comment.hasPrefix(home)
+            ? "~/" + comment.dropFirst(home.count)
+            : comment
+
+        return (name.isEmpty ? type : name) + " (" + key.fingerprint + ")"
     }
 }
 
@@ -82,6 +93,10 @@ struct UserProfilesSettingsView: View {
     @State
     private var editing: UserProfile?
 
+    /// 本机可用的签名密钥，供详情显示签名人与编辑时选择。
+    @State
+    private var keys: [SigningKey] = []
+
     /// 250 pt 列表、8 pt 间距与带边框的详情，底部是说明文字。
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -100,7 +115,11 @@ struct UserProfilesSettingsView: View {
         .padding(20)
         .frame(width: 900, height: 381)
         .sheet(item: $editing) { profile in
-            UserProfileEditor(profile: profile) { save($0) }
+            UserProfileEditor(profile: profile, keys: keys) { save($0) }
+        }
+        .task(id: editing == nil) {
+            // 打开页面与每次打开、关闭编辑框时重新列出密钥，agent 里的密钥可能随时增减。
+            keys = await SigningKeys.local()
         }
     }
 }
@@ -158,7 +177,7 @@ extension UserProfilesSettingsView {
         .buttonStyle(.borderless)
     }
 
-    /// 所选档案：首字母头像、粗体标题、分隔线下的身份与签名密钥，右下角为编辑按钮；没有选中时只留空白边框。
+    /// 所选档案：首字母头像、粗体标题、分隔线下的身份、签名密钥与签名人，右下角为编辑按钮；没有选中时只留空白边框。
     private var detail: some View {
         ZStack(alignment: .topLeading) {
             Color.clear
@@ -187,7 +206,15 @@ extension UserProfilesSettingsView {
                 detailRow("profiles.email", value: profile.email)
 
                 if let key = profile.signingKey {
-                    detailRow("profiles.signingKey", value: key)
+                    detailRow("profiles.signingKey", value: UserProfiles.keyDescription(key))
+                }
+
+                // 签名人是本机钥匙环里这把 OpenPGP 密钥的用户标识；SSH 密钥与本机找不到的密钥没有这一行。
+                if
+                    let key = profile.signingKey,
+                    let signer = keys.first(where: { $0.format == .openpgp && $0.matches(key) })?.signer
+                {
+                    detailRow("profiles.signer", value: signer)
                 }
             }
 
@@ -232,14 +259,20 @@ extension UserProfilesSettingsView {
 
 // MARK: - UserProfileEditor
 
-/// 编辑档案的对话框：标题、姓名、邮箱与签名密钥；签名密钥留空表示档案不带密钥。
+/// 编辑档案的对话框：标题、姓名、邮箱与签名密钥；签名密钥从本机的密钥里选，或不带密钥。
 private struct UserProfileEditor: View {
     /// 编辑中的副本。
     @State
-    var profile: UserProfile
+    private var profile: UserProfile
+
+    /// 本机可用的签名密钥。
+    let keys: [SigningKey]
 
     /// 保存回调。
     let onSave: (UserProfile) -> Void
+
+    /// 打开时档案里的签名密钥；本机找不到它时仍作为一项留在菜单里。
+    private let configuredKey: String?
 
     /// 关闭 sheet。
     @Environment(\.dismiss)
@@ -252,17 +285,17 @@ private struct UserProfileEditor: View {
                 field("profiles.title", text: $profile.title)
                 field("profiles.userName", text: $profile.name)
                 field("profiles.email", text: $profile.email)
-                field("profiles.signingKey", text: Binding(
-                    get: { profile.signingKey ?? "" },
-                    set: { profile.signingKey = $0.isEmpty ? nil : $0 }
-                ), placeholder: "signing.none")
+                signingKeyRow
             }
 
             HStack {
                 Button(AppLocalization.text("action.cancel"), role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
+
                 Button(AppLocalization.text("profiles.save")) {
-                    onSave(profile)
+                    var saved = profile
+                    saved.signingKey = selectedKey.wrappedValue
+                    onSave(saved)
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
@@ -273,15 +306,71 @@ private struct UserProfileEditor: View {
             }
         }
         .padding(20)
-        .frame(width: 448)
     }
 
-    /// 一行标签与 328 pt 输入框。
-    private func field(_ label: String, text: Binding<String>, placeholder: String? = nil) -> some View {
+    /// 以档案的副本创建编辑框。
+    init(profile: UserProfile, keys: [SigningKey], onSave: @escaping (UserProfile) -> Void) {
+        _profile = State(initialValue: profile)
+        self.keys = keys
+        self.onSave = onSave
+        configuredKey = profile.signingKey
+    }
+}
+
+// MARK: - UserProfileEditor Private
+
+extension UserProfileEditor {
+    /// 本机找不到的已配置密钥，菜单里显示为不可选的一项。
+    private var unknownKey: String? {
+        configuredKey.flatMap { value in keys.contains { $0.matches(value) } ? nil : value }
+    }
+
+    /// 菜单的选中项：档案的密钥能对上本机的某把密钥时选中那一把，保存时写入它的完整写法。
+    private var selectedKey: Binding<String?> {
+        Binding(
+            get: { profile.signingKey.map { value in keys.first { $0.matches(value) }?.value ?? value } },
+            set: { profile.signingKey = $0 }
+        )
+    }
+
+    /// 签名密钥的弹出菜单：本机的 OpenPGP 与 SSH 密钥，找不到的已配置密钥，最后是不带密钥；本机没有密钥时整行不可用。
+    private var signingKeyRow: some View {
+        GridRow {
+            Text(AppLocalization.text("profiles.signingKey"))
+                .foregroundStyle(keys.isEmpty ? Color(nsColor: .disabledControlTextColor) : Color.primary)
+                .fixedSize()
+                .gridColumnAlignment(.trailing)
+
+            Picker(AppLocalization.text("profiles.signingKey"), selection: selectedKey) {
+                ForEach(keys, id: \.value) { key in
+                    Text(UserProfiles.title(of: key))
+                        .tag(Optional(key.value))
+                }
+
+                if let unknownKey {
+                    Text(UserProfiles.keyDescription(unknownKey))
+                        .tag(Optional(unknownKey))
+                        .disabled(true)
+                }
+
+                Text(AppLocalization.text("signing.none"))
+                    .tag(String?.none)
+            }
+            .labelsHidden()
+            .frame(width: 328)
+            .disabled(keys.isEmpty)
+            .accessibilityLabel(AppLocalization.text("profiles.signingKey"))
+        }
+    }
+
+    /// 一行不折行的标签与 328 pt 输入框；标签列按最长的标签加宽。
+    private func field(_ label: String, text: Binding<String>) -> some View {
         GridRow {
             Text(AppLocalization.text(label))
+                .fixedSize()
                 .gridColumnAlignment(.trailing)
-            TextField(placeholder.map { AppLocalization.text($0) } ?? "", text: text)
+
+            TextField("", text: text)
                 .frame(width: 328)
                 .accessibilityLabel(AppLocalization.text(label))
         }

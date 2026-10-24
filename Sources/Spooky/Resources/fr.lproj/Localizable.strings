@@ -829,3 +829,9 @@
 "files.truncation" = "Tronquer les noms de fichiers longs dans la copie de travail :";
 "files.truncation.beginning" = "Tronquer le début";
 "files.truncation.middle" = "Tronquer le milieu";
+/* 提交体验。 */
+"profiles.add.message" = "« %@ <%@> (%@) » sera enregistré comme profil utilisateur. Saisissez un titre pour ce profil.";
+"profiles.add.submit" = "Ajouter le profil";
+"profiles.titleExists" = "Un profil utilisateur portant ce titre existe déjà.";
+"profiles.signer" = "Signataire :";
+"commit.doNotAskAgain" = "Ne plus demander";

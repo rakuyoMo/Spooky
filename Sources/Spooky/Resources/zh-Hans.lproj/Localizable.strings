@@ -829,3 +829,9 @@
 "files.truncation" = "截断工作区中过长的文件名：";
 "files.truncation.beginning" = "截断开头";
 "files.truncation.middle" = "截断中间";
+/* 提交体验。 */
+"profiles.add.message" = "将 “%@ <%@> (%@)” 存为身份档案，请为它填写标题。";
+"profiles.add.submit" = "添加档案";
+"profiles.titleExists" = "已有同样标题的身份档案。";
+"profiles.signer" = "签名人：";
+"commit.doNotAskAgain" = "不再询问";
