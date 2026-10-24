@@ -287,10 +287,11 @@ private struct HistoryCommitTable: NSViewRepresentable {
                 }
             }
 
-            // 回到历史时找到的提交滚动到列表中间，等表格完成布局后再滚动
+            // 回到历史时找到的提交滚动到列表中间并让列表获得焦点，等表格完成布局后再滚动
             if let target = history.scrollTarget, let row = history.row(of: target) {
                 Task { @MainActor in
                     Self.center(row, in: table)
+                    table.window?.makeFirstResponder(table)
                     history.scrollTarget = nil
                 }
             }

@@ -91,9 +91,9 @@ private struct HistorySearchConditionRow: View {
     @Binding
     var focused: UUID?
 
-    /// 种类菜单宽 87 pt，输入区占满中间，− / + 在最右；上下各留 7 pt。
+    /// 种类菜单宽 108 pt，放得下最长的 “Commit Hash”；输入区占满中间，− / + 在最右；上下各留 7 pt。
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .top, spacing: 8) {
             Picker("", selection: binding(\.kind)) {
                 ForEach(HistorySearchCondition.Kind.allCases, id: \.self) { kind in
                     Text(kind.title).tag(kind)
@@ -101,14 +101,18 @@ private struct HistorySearchConditionRow: View {
             }
             .labelsHidden()
             .pickerStyle(.menu)
-            .frame(width: 87)
+            .frame(width: 108)
             .accessibilityLabel(AppLocalization.text("history.search.kind"))
 
-            if condition.kind == .date {
-                dateInput
-            } else {
-                textInput
+            // 输入区占满中间的宽度，内容放不下时不把两侧的控件挤出去
+            Group {
+                if condition.kind == .date {
+                    dateInput
+                } else {
+                    textInput
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             AddRemoveControl { add in
                 if add {
@@ -152,30 +156,54 @@ private struct HistorySearchConditionRow: View {
         .frame(height: 24)
     }
 
-    /// 日期条件：关系菜单、日期，区间时另有 “to” 与结束日。
+    /// 日期条件：关系菜单、日期，区间时另有 “to” 与结束日；列表窄时逐个换行排列。
     private var dateInput: some View {
-        HStack(spacing: 8) {
-            Picker("", selection: binding(\.relation)) {
-                ForEach(HistorySearchCondition.DateRelation.allCases, id: \.self) { relation in
-                    Text(relation.title).tag(relation)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                relationPicker
+                datePicker(\.date)
+
+                if condition.relation == .range {
+                    Text(AppLocalization.text("history.search.to"))
+                        .fixedSize()
+
+                    datePicker(\.endDate)
                 }
             }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .frame(width: 111)
 
-            DatePicker("", selection: binding(\.date), displayedComponents: .date)
-                .labelsHidden()
+            VStack(alignment: .leading, spacing: 6) {
+                relationPicker
+                datePicker(\.date)
 
-            if condition.relation == .range {
-                Text(AppLocalization.text("history.search.to"))
+                if condition.relation == .range {
+                    HStack(spacing: 8) {
+                        Text(AppLocalization.text("history.search.to"))
+                            .fixedSize()
 
-                DatePicker("", selection: binding(\.endDate), displayedComponents: .date)
-                    .labelsHidden()
+                        datePicker(\.endDate)
+                    }
+                }
             }
-
-            Spacer(minLength: 0)
         }
+    }
+
+    /// 日期关系菜单：之后、之前与区间。
+    private var relationPicker: some View {
+        Picker("", selection: binding(\.relation)) {
+            ForEach(HistorySearchCondition.DateRelation.allCases, id: \.self) { relation in
+                Text(relation.title).tag(relation)
+            }
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .fixedSize()
+    }
+
+    /// 只选年月日的日期框。
+    private func datePicker(_ keyPath: WritableKeyPath<HistorySearchCondition, Date>) -> some View {
+        DatePicker("", selection: binding(keyPath), displayedComponents: .date)
+            .labelsHidden()
+            .fixedSize()
     }
 
     /// 改动条件的一个属性后交给历史重读。

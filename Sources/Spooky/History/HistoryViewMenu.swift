@@ -67,8 +67,10 @@ struct HistoryViewMenuButton: NSViewRepresentable {
         button.setAccessibilityLabel(AppLocalization.text("history.viewOptions"))
         button.toolTip = AppLocalization.text("history.viewOptions")
 
+        button.imagePosition = .imageOnly
+
         let menu = NSMenu()
-        let icon = NSMenuItem()
+        let icon = NSMenuItem(title: "", action: nil, keyEquivalent: "")
         icon.image = NSImage(
             systemSymbolName: "slider.horizontal.3",
             accessibilityDescription: AppLocalization.text("history.viewOptions")
