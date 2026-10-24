@@ -3,73 +3,155 @@ import SwiftUI
 
 // MARK: - ThemeColorWell
 
-/// 主题颜色的色板：点开系统颜色面板编辑，可以调不透明度；内置主题只读时禁用。
-struct ThemeColorWell: NSViewRepresentable {
-    /// 色板动作的接收方，持有最新的写回闭包。
-    @MainActor
-    final class Coordinator: NSObject {
-        /// 把面板选出的颜色写回主题。
-        var change: (PaletteColor) -> Void
-
-        /// 建立写回闭包。
-        init(_ change: @escaping (PaletteColor) -> Void) { self.change = change }
-
-        /// 颜色面板里每次调色都会送来；无法换算到 sRGB 的颜色不写回。
-        @objc
-        func colorChanged(_ sender: NSColorWell) {
-            guard let color = PaletteColor(nsColor: sender.color) else {
-                return
-            }
-
-            change(color)
-        }
-    }
-
+/// 主题颜色的方形色块：点开系统颜色面板编辑这一种颜色，可以调不透明度。
+///
+/// 颜色面板正在编辑这个色块时，描边加粗并换成强调色。
+struct ThemeColorWell: View {
     /// 当前颜色；主题缺少这个颜色时为 nil。
     let color: PaletteColor?
+
+    /// 颜色键，颜色面板据此认出正在编辑的色块。
+    let key: String
 
     /// 是否允许编辑。
     let isEnabled: Bool
 
-    /// 色板的读屏名称。
+    /// 色块的读屏名称。
     let label: String
 
-    /// 用户选出新颜色。
+    /// 用户在颜色面板里调出新颜色。
     let change: (PaletteColor) -> Void
 
-    /// 建立动作接收方。
-    func makeCoordinator() -> Coordinator { Coordinator(change) }
+    /// 共用的颜色面板接收方，它记着正在编辑哪个色块。
+    private let picker = ThemeColorPicker.shared
 
-    /// 带边框的系统色板，打开的颜色面板显示不透明度。
-    func makeNSView(context: Context) -> NSColorWell {
-        let well = NSColorWell(style: .default)
-        well.supportsAlpha = true
-        well.target = context.coordinator
-        well.action = #selector(Coordinator.colorChanged(_:))
-        return well
+    /// 填满颜色的方块与 1 pt 描边；正在编辑时描边为 2 pt 强调色。
+    var body: some View {
+        #warning("TODO: 打开 Themes 页并点开一个色块，核实色块的描边颜色与宽度、正在编辑时的选中样式和禁用时的样子；只影响 Themes 页的四个色块。")
+
+        let isActive = picker.key == key
+
+        Button {
+            guard let color else {
+                return
+            }
+
+            picker.show(color, key: key, apply: change)
+        } label: {
+            GeometryReader { proxy in
+                Image(nsImage: Self.swatch(color, size: proxy.size))
+            }
+            .overlay {
+                Rectangle().strokeBorder(
+                    isActive ? Color.accentColor : AppPalette.color("general_border_color"),
+                    lineWidth: isActive ? 2 : 1
+                )
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .accessibilityLabel(label)
+        .accessibilityValue(color?.hex ?? "")
     }
 
-    /// 同步颜色、可用状态与读屏名称。
-    func updateNSView(_ well: NSColorWell, context: Context) {
-        context.coordinator.change = change
-        well.setAccessibilityLabel(label)
+    /// 用系统的色块画法画出颜色：半透明的颜色沿对角线分别铺在黑底与白底上，不透明度一眼可见。
+    private static func swatch(_ color: PaletteColor?, size: CGSize) -> NSImage {
+        let fill = color?.nsColor
 
-        // 禁用前先断开颜色面板，面板里的后续改动不能落到只读主题上。
-        if !isEnabled, well.isActive {
-            well.deactivate()
+        return NSImage(size: size, flipped: false) { rect in
+            fill?.drawSwatch(in: rect)
+            return true
         }
+    }
+}
 
-        well.isEnabled = isEnabled
+// MARK: - ThemeColorPicker
 
-        // 程序设置颜色不会触发动作；只在值不同时设置，避免打断面板里的拖动。
-        if let color, PaletteColor(nsColor: well.color) != color {
-            well.color = color.nsColor
+/// 系统颜色面板的接收方：把面板里调出的颜色写回正在编辑的那一种主题颜色。
+///
+/// 编辑期间颜色面板的目标指向这里；结束或面板关闭后清掉目标，色块回到未选中的样子。
+@MainActor
+@Observable
+final class ThemeColorPicker: NSObject {
+    /// 设置窗口只有一个 Themes 页，共用同一个接收方。
+    static let shared = ThemeColorPicker()
+
+    /// 正在编辑的颜色键；nil 表示没有在编辑。
+    private(set) var key: String?
+
+    /// 把面板调出的颜色写回主题。
+    @ObservationIgnored
+    private var apply: ((PaletteColor) -> Void)?
+
+    /// 颜色面板关闭的通知。
+    @ObservationIgnored
+    private var closeObserver: NSObjectProtocol?
+
+    /// 监听颜色面板关闭：用户直接关掉面板时同样结束编辑。
+    override private init() {
+        super.init()
+
+        closeObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: NSColorPanel.shared,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.finish() }
         }
     }
 
-    /// 色板按外层给出的尺寸绘制。
-    func sizeThatFits(_ proposal: ProposedViewSize, nsView _: NSColorWell, context _: Context) -> CGSize? {
-        proposal.replacingUnspecifiedDimensions(by: CGSize(width: 44, height: 24))
+    /// 打开颜色面板编辑一种颜色：面板显示不透明度，拖动时连续写回。
+    ///
+    /// - Parameters:
+    ///   - color: 这种颜色当前的值。
+    ///   - key: 颜色键。
+    ///   - apply: 面板每次改动后写回主题。
+    func show(_ color: PaletteColor, key: String, apply: @escaping (PaletteColor) -> Void) {
+        let panel = NSColorPanel.shared
+
+        // 先断开目标再换颜色：换到另一个色块时，面板显示的新颜色不能写回上一个色块。
+        panel.setTarget(nil)
+        panel.setAction(nil)
+        panel.showsAlpha = true
+        panel.isContinuous = true
+        panel.color = color.nsColor
+
+        self.key = key
+        self.apply = apply
+
+        panel.setTarget(self)
+        panel.setAction(#selector(colorChanged(_:)))
+        panel.orderFront(nil)
+    }
+
+    /// 结束编辑并关闭颜色面板。
+    func stop() {
+        guard key != nil else {
+            return
+        }
+
+        finish()
+        NSColorPanel.shared.orderOut(nil)
+    }
+
+    /// 颜色面板里每次调色都会送来；无法换算到 sRGB 的颜色不写回。
+    @objc
+    private func colorChanged(_ sender: NSColorPanel) {
+        guard let apply, let color = PaletteColor(nsColor: sender.color) else {
+            return
+        }
+
+        apply(color)
+    }
+
+    /// 清掉编辑状态，颜色面板不再向这里发送改动。
+    private func finish() {
+        key = nil
+        apply = nil
+
+        NSColorPanel.shared.setTarget(nil)
+        NSColorPanel.shared.setAction(nil)
     }
 }
 

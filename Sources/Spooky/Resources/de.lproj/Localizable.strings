@@ -196,7 +196,6 @@
 "error.terminalHelp" = "Prüfen Sie das in den Einstellungen ausgewählte Terminal und seine macOS-Berechtigung für Automation.";
 "error.exitCode" = "Exit-Status: %ld";
 "terminal.notInstalled" = "%@ ist nicht installiert.";
-"themes.font" = "%@ %@ pt";
 "themes.background" = "Hintergrund";
 "themes.added" = "Hinzugefügt";
 "themes.deleted" = "Gelöscht";
@@ -437,16 +436,11 @@
 
 /* 主题管理。 */
 "themes.newName" = "Neues Thema";
-"themes.usedInLight" = "Das ausgewählte Thema wird im hellen Erscheinungsbild verwendet. Wechseln Sie zum dunklen Erscheinungsbild, um dessen Thema auszuwählen.";
-"themes.usedInDark" = "Das ausgewählte Thema wird im dunklen Erscheinungsbild verwendet. Wechseln Sie zum hellen Erscheinungsbild, um dessen Thema auszuwählen.";
 "themes.change" = "Ändern …";
 "themes.fontLabel" = "Schrift";
 "themes.text" = "Text";
 "themes.add" = "Thema hinzufügen";
 "themes.remove" = "Thema entfernen";
-"themes.actions" = "Importieren oder exportieren";
-"themes.import" = "Thema importieren …";
-"themes.export" = "Thema exportieren …";
 "themes.invalidTitle" = "Nicht geladene Themen";
 "themes.invalid" = "Diese Themendateien konnten nicht geladen werden, weil sie beschädigt sind oder ihr Name bzw. ihre Kennung bereits von einem anderen Thema verwendet wird:";
 "themes.exists" = "Thema existiert bereits";

@@ -7,8 +7,8 @@ import SwiftUI
 ///
 /// 列表里选中的主题就是当前外观使用的主题，浅色、深色外观各自记住一套。
 struct ThemesSettingsView: View {
-    /// 用户主题与外观选择。
-    private let store = ThemeStore.shared
+    /// 主题与外观选择。
+    private let store: ThemeStore
 
     /// 当前外观，决定列表的选择写入浅色还是深色。
     @Environment(\.colorScheme)
@@ -18,21 +18,32 @@ struct ThemesSettingsView: View {
     @State
     private var showsInvalidFiles = false
 
-    /// 150 pt 主题列表和右侧的字体、色板与示例文本。
+    /// 150 pt 主题列表和右侧的字体、色块与示例文本。
     var body: some View {
         let dark = colorScheme == .dark
         let theme = TextTheme.current(dark: dark, in: store)
 
         HStack(alignment: .top, spacing: 20) {
             themeList(selected: theme, dark: dark)
-            editor(theme, dark: dark)
+            editor(theme)
         }
         .padding(20)
         .frame(width: 900, height: 450)
         .background(AppPalette.color("general_background_color"))
         .onAppear { store.reload() }
-        .onDisappear { ThemeFontPicker.shared.stop() }
-        .onChange(of: theme.id) { followFontPanel(to: theme) }
+        .onDisappear {
+            ThemeFontPicker.shared.stop()
+            ThemeColorPicker.shared.stop()
+        }
+        .onChange(of: isStored(theme) ? theme.id : nil) {
+            followFontPanel(to: theme)
+            followColorPanel(to: theme)
+        }
+    }
+
+    /// 使用给定的主题存储；App 用共享的存储，进程内检查界面时传入使用临时目录的实例。
+    init(store: ThemeStore = .shared) {
+        self.store = store
     }
 }
 
@@ -79,7 +90,7 @@ extension ThemesSettingsView {
         .overlay(Rectangle().stroke(AppPalette.color("general_border_color")))
     }
 
-    /// 新建、删除、无法加载的提示，以及导入导出菜单。
+    /// 新建、删除与无法加载的提示；导入、导出经列表的拖放完成。
     private func actionBar(_ theme: TextTheme, dark: Bool) -> some View {
         HStack(spacing: 0) {
             barButton("plus", label: "themes.add") {
@@ -93,13 +104,11 @@ extension ThemesSettingsView {
             }
             .disabled(!isStored(theme))
 
+            Spacer(minLength: 0)
+
             if !store.invalidFiles.isEmpty {
                 invalidFilesButton
             }
-
-            Spacer(minLength: 0)
-
-            transferMenu(theme)
         }
         .padding(.horizontal, 3)
         .frame(height: 22)
@@ -116,44 +125,17 @@ extension ThemesSettingsView {
         .help(AppLocalization.text(key))
         .accessibilityLabel(AppLocalization.text(key))
     }
-
-    /// 拖放之外的导入、导出入口，键盘与读屏同样可以使用。
-    private func transferMenu(_ theme: TextTheme) -> some View {
-        Menu {
-            Button(AppLocalization.text("themes.import")) {
-                let window = NSApp.keyWindow
-                Task { await ThemeTransfer.chooseImport(into: store, window: window) }
-            }
-
-            Button(AppLocalization.text("themes.export")) {
-                let window = NSApp.keyWindow
-                Task { await ThemeTransfer.export(theme, window: window) }
-            }
-        } label: {
-            Image(systemName: "ellipsis.circle")
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .help(AppLocalization.text("themes.actions"))
-        .accessibilityLabel(AppLocalization.text("themes.actions"))
-    }
 }
 
 // MARK: - 编辑
 
 extension ThemesSettingsView {
-    /// 字体、正文色、三个色板与示例文本；用的是资源里的版本时没有文件可写，控件全部禁用。
-    private func editor(_ theme: TextTheme, dark: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
+    /// 字体、正文色、三个色块与示例文本，上下相隔 8 pt；用的是资源里的版本时没有文件可写，控件全部禁用。
+    private func editor(_ theme: TextTheme) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
             fontRow(theme)
 
             colorWells(theme)
-
-            Text(AppLocalization.text(dark ? "themes.usedInDark" : "themes.usedInLight"))
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
 
             Divider()
 
@@ -162,10 +144,9 @@ extension ThemesSettingsView {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// 只读的字体名称与字号、打开字体面板的按钮和 25 pt 宽的正文色板。
+    /// 只读的字体框、相隔 4 pt 的字体面板按钮，和再隔 8 pt、25 pt 宽的正文色块；色块与按钮等高。
     private func fontRow(_ theme: TextTheme) -> some View {
-        let fontName = theme.font.displayName ?? theme.fontName
-        let description = AppLocalization.text("themes.font", fontName, theme.fontSize.formatted())
+        let description = Self.fontDescription(theme)
 
         return HStack(spacing: 4) {
             Text(description)
@@ -182,20 +163,25 @@ extension ThemesSettingsView {
 
             ThemeColorWell(
                 color: theme.colors["text"],
+                key: "text",
                 isEnabled: isStored(theme),
                 label: AppLocalization.text("themes.text")
             ) { setColor($0, for: "text", of: theme) }
-                .frame(width: 25, height: 22)
+                .frame(width: 25)
+                .frame(maxHeight: .infinity)
+                .padding(.leading, 4)
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
-    /// 背景、新增、删除三个 50 × 30 pt 的色板，标签在色板下方 4 pt。
+    /// 背景、新增、删除三个 50 × 30 pt 的色块，相隔 30 pt，标签在色块下方 4 pt。
     private func colorWells(_ theme: TextTheme) -> some View {
         HStack(spacing: 30) {
             ForEach(["background", "added", "deleted"], id: \.self) { key in
                 VStack(spacing: 4) {
                     ThemeColorWell(
                         color: theme.colors[key],
+                        key: key,
                         isEnabled: isStored(theme),
                         label: AppLocalization.text("themes." + key)
                     ) { setColor($0, for: key, of: theme) }
@@ -248,7 +234,7 @@ extension ThemesSettingsView {
         }
     }
 
-    /// 选中别的主题时，打开着的字体面板改为编辑新主题；新主题没有文件可写就关闭面板。
+    /// 选中别的主题时，打开着的字体面板改为编辑新主题；新主题没有文件可写（包括刚删掉了文件）就关闭面板。
     private func followFontPanel(to theme: TextTheme) {
         guard ThemeFontPicker.shared.isEditing else {
             return
@@ -261,12 +247,26 @@ extension ThemesSettingsView {
         }
     }
 
-    /// 主题是否在 Themes 目录里；所选主题与 Default 的文件都无法加载时，页面显示的是资源里的版本。
+    /// 选中别的主题时，正在编辑的色块改为编辑新主题的同一种颜色；新主题没有文件可写（包括刚删掉了文件）就关闭颜色面板。
+    private func followColorPanel(to theme: TextTheme) {
+        guard let key = ThemeColorPicker.shared.key else {
+            return
+        }
+
+        guard isStored(theme), let color = theme.colors[key] else {
+            ThemeColorPicker.shared.stop()
+            return
+        }
+
+        ThemeColorPicker.shared.show(color, key: key) { setColor($0, for: key, of: theme) }
+    }
+
+    /// 主题是否在 Themes 目录里；所选主题与 Default 或 Default (Dark) 的文件都不可用时，页面显示的是资源里的版本。
     private func isStored(_ theme: TextTheme) -> Bool {
         store.themes.contains { $0.id == theme.id }
     }
 
-    /// 把色板选出的颜色写回主题文件。
+    /// 把颜色面板调出的颜色写回主题文件。
     private func setColor(_ color: PaletteColor, for key: String, of theme: TextTheme) {
         perform("themes.error.save") {
             try store.update(theme.id) { $0.colors[key] = color }
@@ -283,5 +283,18 @@ extension ThemesSettingsView {
                 await ThemeTransfer.report(error, titleKey: titleKey, file: nil, window: window)
             }
         }
+    }
+}
+
+// MARK: - Helpers
+
+extension ThemesSettingsView {
+    /// 字体框里的文字：字体的显示名与字号，如 “Menlo Regular – 11.0”；字体没有安装时只显示 PostScript 名称。
+    private static func fontDescription(_ theme: TextTheme) -> String {
+        guard let name = NSFont(name: theme.fontName, size: theme.fontSize)?.displayName else {
+            return theme.fontName
+        }
+
+        return name + " – " + String(Float(theme.fontSize))
     }
 }
