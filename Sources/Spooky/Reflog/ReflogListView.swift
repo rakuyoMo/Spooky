@@ -38,7 +38,7 @@ struct ReflogListView: View {
         .onChange(of: session.history.snapshot) {
             followReferences()
         }
-        .onChange(of: session.status?.branch.oid) {
+        .onChange(of: [session.status?.branch.head, session.status?.branch.oid]) {
             session.reflog.reload()
         }
     }
@@ -144,6 +144,10 @@ extension ReflogListView {
 extension ReflogListView {
     /// 本地分支，当前分支在前，其余按名称排列。
     private var branches: [String] {
+        #warning(
+            "TODO: 引用菜单里分支的排序按推测：当前分支在前，其余按名称。核实方式：在参照客户端的 Reflog 里打开 Ref 菜单，对比多个分支（含最近提交过与很久没动的）的先后；只影响菜单项的顺序。"
+        )
+
         let current = session.status?.branch.head.map { "refs/heads/" + $0 }
         let local = session.history.snapshot?.references.filter(\.isLocal).map(\.id).sorted() ?? []
 
