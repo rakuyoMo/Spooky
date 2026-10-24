@@ -410,7 +410,11 @@ if ($mode eq 'create-session') {
 } elsif ($mode eq 'gpg') {
     my $program = configured_program('^gpg\.(openpgp\.)?program$', 'gpg');
 
-    # Git 签名固定使用 -bsau；校验等其它调用不会索取口令，原样交给 gpg。
+    # 校验签名时不访问网络：关闭按需从密钥服务器取钥与自动检查信任库。
+    exec_program($program, '--no-auto-key-retrieve', '--no-auto-check-trustdb', @ARGV)
+        if grep { $_ eq '--verify' } @ARGV;
+
+    # Git 签名固定使用 -bsau；其它调用不会索取口令，原样交给 gpg。
     exec_program($program, @ARGV) unless grep { $_ eq '-bsau' } @ARGV;
     exit sign_with_relay($program, @ARGV);
 } elsif ($mode eq 'ssh-keygen') {

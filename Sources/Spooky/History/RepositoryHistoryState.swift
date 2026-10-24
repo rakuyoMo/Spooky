@@ -448,10 +448,11 @@ extension RepositoryHistoryState {
         isLoadingChanges = false
         guard let runner, let commit = selectedCommit else { return }
         let request = generation
+        let mergeMode = MergeDiffMode.preferred
         isLoadingChanges = true
         changeTask = Task { [weak self] in
             do {
-                let files = try await RepositoryHistory(runner: runner).changes(in: commit.id)
+                let files = try await RepositoryHistory(runner: runner).changes(in: commit.id, mergeMode: mergeMode)
                 guard
                     let self, generation == request, selectedCommit?.id == commit.id,
                     !Task.isCancelled
@@ -490,6 +491,7 @@ extension RepositoryHistoryState {
 
         // 变更集沿用工作区的上下文与忽略空白偏好
         let options = DiffPreferences.options()
+        let mergeMode = MergeDiffMode.preferred
 
         diffTasks[path] = Task { [weak self] in
             do {
@@ -497,6 +499,7 @@ extension RepositoryHistoryState {
                     .diff(
                         in: commit.id,
                         file: file,
+                        mergeMode: mergeMode,
                         options: options,
                         warningKilobytes: threshold,
                         showLarge: showLarge

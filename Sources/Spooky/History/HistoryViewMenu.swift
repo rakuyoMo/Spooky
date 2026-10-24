@@ -8,7 +8,7 @@ import SwiftUI
 /// 菜单项的动作沿响应链交给仓库窗口，勾选与可用状态由窗口的菜单校验统一设置；只有主菜单里的那份带快捷键。
 @MainActor
 enum HistoryViewMenu {
-    /// 依次加入提交图、第一父、排序、分组与行高各项。
+    /// 依次加入提交图、第一父、排序、分组、行高与签名校验各项。
     static func addItems(to menu: NSMenu, keyEquivalents: Bool) {
         let graph = item("history.showGraph", action: #selector(RepositoryWindowController.toggleHistoryGraph))
 
@@ -46,6 +46,9 @@ enum HistoryViewMenu {
         menu.addItem(.separator())
         menu.addItem(item("history.medium", action: #selector(RepositoryWindowController.mediumHistoryRows)))
         menu.addItem(item("history.small", action: #selector(RepositoryWindowController.smallHistoryRows)))
+
+        menu.addItem(.separator())
+        menu.addItem(item("signature.verify", action: #selector(RepositoryWindowController.toggleVerifySignatures)))
     }
 
     /// 一个菜单项；没有动作的是灰色的小标题。
