@@ -160,18 +160,22 @@ private struct ReferenceDropDelegate: DropDelegate {
     /// 本阶段只接受同仓库的单项引用或储藏拖放。
     func validateDrop(info: DropInfo) -> Bool {
         info.itemProviders(for: [RepositoryDragPayload.type]).count == 1
-            && (action() != nil || stashAction() != nil || flagAction() != nil)
+            && (action() != nil || stashAction() != nil || upstreamAction() != nil || flagAction() != nil)
     }
 
     /// 修饰键变化时同步更新动作提示。
     func dropUpdated(info _: DropInfo) -> DropProposal? {
         let action = action()
         let stash = stashAction()
+        let upstream = upstreamAction()
         let flag = flagAction()
         label = action.map { AppLocalization.text($0.kind.rawValue) }
             ?? stash.map { AppLocalization.text($0.titleKey) }
+            ?? upstream.map { _ in AppLocalization.text("branch.dragTrack") }
             ?? flag.map { AppLocalization.text($0.titleKey) }
-        return DropProposal(operation: action == nil && stash == nil && flag == nil ? .forbidden : .copy)
+        return DropProposal(
+            operation: action == nil && stash == nil && upstream == nil && flag == nil ? .forbidden : .copy
+        )
     }
 
     /// 离开落点后移除提示。
@@ -182,6 +186,7 @@ private struct ReferenceDropDelegate: DropDelegate {
         label = nil
         let action = action()
         let stash = stashAction()
+        let upstream = upstreamAction()
         let flag = flagAction()
         guard
             validateDrop(info: info),
@@ -197,9 +202,11 @@ private struct ReferenceDropDelegate: DropDelegate {
             Task { @MainActor in
                 guard session.repository == payload.repository, session.canWrite else { return }
 
-                // 储藏、置顶与归档直接交给会话，其余动作打开参数表单
+                // 储藏、置顶与归档直接交给会话，设置上游直接执行，其余动作打开参数表单
                 if let action {
                     request(action)
+                } else if let upstream {
+                    session.setUpstream(upstream.remote, for: upstream.branch)
                 } else if let stash {
                     stash.perform(in: session)
                 } else {
@@ -228,6 +235,22 @@ private struct ReferenceDropDelegate: DropDelegate {
         else { return nil }
 
         return BranchFlagDropAction(payload: payload, destination: destination, session: session)
+    }
+
+    /// 按住 ⌥ 把远端分支拖到 HEAD 落点上：设为当前分支的上游；没按 ⌥ 时这个落点是拉取。
+    private func upstreamAction() -> (remote: RepositoryReference, branch: RepositoryReference)? {
+        guard
+            NSEvent.modifierFlags.contains(.option),
+            case .head = destination,
+            let payload = RepositoryDragContext.shared.payload,
+            payload.repository == session.repository,
+            payload.kind == .remote,
+            let remote = session.history.branches.first(where: { $0.id == payload.reference }),
+            let head = session.history.branches.first(where: { $0.isLocal && $0.name == session.status?.branch.head }),
+            session.canManage(head)
+        else { return nil }
+
+        return (remote, head)
     }
 
     /// 每个映射都指向实际可用的业务动作，可用条件与菜单和右键菜单相同。

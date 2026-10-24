@@ -289,13 +289,14 @@ struct RepositorySidebarView: View {
                     request(RepositoryActionRequest(kind: .create))
                 }
                 .disabled(!session.canCreateBranch)
+                AddReferenceMenu(session: session)
             } label: {
                 Image(systemName: "plus")
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .accessibilityLabel(AppLocalization.text("branch.create"))
+            .accessibilityLabel(AppLocalization.text("reference.addMenu"))
 
             SidebarViewSettingsButton(defaults: defaults)
                 .frame(width: 22, height: 20)
@@ -352,6 +353,7 @@ extension RepositorySidebarView {
                     )
                 }
                 .disabled(!session.canFetch)
+                RemoteManagementMenu(session: session, remote: remote.name)
             }
             .modifier(
                 RepositoryDropTarget(
@@ -444,6 +446,7 @@ extension RepositorySidebarView {
                 Button(AppLocalization.text("branch.delete")) { delete([ref]) }
                     .disabled(!session.canDelete([ref]))
             }
+            BranchManagementMenu(session: session, reference: ref)
             Divider()
             Button(AppLocalization.text("branch.copyName")) {
                 NSPasteboard.general.clearContents()
@@ -509,23 +512,8 @@ extension RepositorySidebarView {
         )
     }
 
-    /// 删除始终确认，普通删除失败不转为强制删除。
+    /// 删除前在对话框里确认，可选同时删除跟踪的远端分支与强制删除。
     private func delete(_ references: [RepositoryReference]) {
-        let repository = session.repository
-        let names = references.map(\.name).joined(separator: ", ")
-        session.onConfirm?(
-            AppLocalization.text(references.count == 1 ? "branch.delete" : "branch.deleteMultiple"),
-            AppLocalization.text("branch.delete.confirm", names, repository?.displayPath ?? ""),
-            {
-                guard session.repository == repository else { return }
-                session.performGit(
-                    { runner, _ in
-                        try await RepositoryReferences(runner: runner).delete(references.map(\.id))
-                    },
-                    title: AppLocalization.text("branch.delete")
-                )
-            },
-            nil
-        )
+        session.requestReference(.deleteBranches(references))
     }
 }

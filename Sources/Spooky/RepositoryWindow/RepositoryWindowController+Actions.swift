@@ -189,19 +189,23 @@ extension RepositoryWindowController {
     func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
         let repositoryView = !showsManager && session.repository != nil
 
-        // 分支与同步、工作区文件、历史显示、储藏与 Diff 各组动作分别判断，组外的窗口级动作在下方判断。
-        let enabled = branchAndSyncAvailability(of: item.action, repositoryView: repositoryView)
+        // 各组动作分别判断，组与组认领的动作互不重叠；一条链太长会让类型检查超时，按引用、视图与内容分成三段。
+        let references: Bool? = branchAndSyncAvailability(of: item.action, repositoryView: repositoryView)
             ?? syncAvailability(of: item.action, repositoryView: repositoryView)
-            ?? workingCopyAvailability(of: item.action, repositoryView: repositoryView)
+            ?? rewriteAvailability(of: item.action, repositoryView: repositoryView)
+            ?? referenceAvailability(of: item.action, repositoryView: repositoryView)
+
+        let views: Bool? = workingCopyAvailability(of: item.action, repositoryView: repositoryView)
             ?? historyDisplayAvailability(of: item)
             ?? historyViewSettingsAvailability(of: item)
-            ?? stashAvailability(of: item.action, repositoryView: repositoryView)
+            ?? historyDetailsAvailability(of: item, repositoryView: repositoryView)
+
+        let contents: Bool? = stashAvailability(of: item.action, repositoryView: repositoryView)
             ?? diffAvailability(of: item)
             ?? workingCopyFileAvailability(of: item)
-            ?? historyDetailsAvailability(of: item, repositoryView: repositoryView)
-            ?? rewriteAvailability(of: item.action, repositoryView: repositoryView)
 
-        if let enabled {
+        // 组外的窗口级动作在下方判断
+        if let enabled = references ?? views ?? contents {
             return enabled
         }
 

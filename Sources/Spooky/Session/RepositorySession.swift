@@ -22,10 +22,13 @@ enum RepositoryView: String, CaseIterable {
     /// 某个版本的文件原文与逐行追溯。
     case fileContent
 
+    /// 一个远端的设置与远端分支。
+    case remote
+
     /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
     var supportsSearch: Bool {
         switch self {
-        case .fileContent: false
+        case .fileContent, .remote: false
         case .workingCopy, .history, .stashes, .fileHistory: true
         }
     }
@@ -284,6 +287,12 @@ final class RepositorySession {
 
     /// 窗口负责呈现文件操作的参数表单与多按钮询问。
     var onFileRequest: ((WorkingCopyFileRequest) -> Void)? = nil
+
+    /// 窗口负责呈现分支、标签与远端管理的对话框和询问。
+    var onReferenceRequest: ((ReferenceRequest) -> Void)? = nil
+
+    /// 远端视图显示的远端名。
+    var selectedRemote: String? = nil
 
     /// 快照读取边界，测试可控制响应顺序和失败。
     private let loadStatus: @Sendable (RepositoryLocation) async throws -> WorkingCopyStatus
@@ -839,7 +848,7 @@ extension RepositorySession {
         }
     }
 
-    /// 写入失败时撤回临时勾选并报告错误；服务器写入断线后结果未知，记下中断的写入等待重连核对。
+    /// 写入失败时撤回临时勾选并报告错误，未合并分支的普通删除改为询问强制删除；服务器写入断线后结果未知，记下中断的写入等待重连核对。
     ///
     /// - Parameters:
     ///   - title: 已本地化的操作名称，用于断线后的核对报告。
@@ -867,7 +876,11 @@ extension RepositorySession {
 
             self.failure = failure
             Self.logger.error("写操作失败：\(title, privacy: .public)，类别 \(failure.kind.rawValue, privacy: .public)")
-            onFailure?(failure)
+
+            // 未合并分支的普通删除改为询问是否强制删除，询问里带着失败的说明与 Git 原文
+            if !offerForceDeletion(after: error) {
+                onFailure?(failure)
+            }
         }
 
         // 结果未知的服务器写入不重试，等待重连核对后再报告。
@@ -985,8 +998,8 @@ extension RepositorySession {
     /// 当前仓库的视图状态，切换仓库时存入窗口缓存。
     private func captureViewState() -> RepositoryViewState {
         RepositoryViewState(
-            // 文件视图的目标不随仓库保存，切回时显示它们所属的历史
-            activeView: [.fileHistory, .fileContent].contains(activeView) ? .history : activeView,
+            // 文件视图与远端视图的目标不随仓库保存，切回时显示历史
+            activeView: [.fileHistory, .fileContent, .remote].contains(activeView) ? .history : activeView,
             selectedID: selectedID,
             selectedIDs: selectedIDs,
             diffSide: diffSide,

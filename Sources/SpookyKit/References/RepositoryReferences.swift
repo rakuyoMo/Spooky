@@ -321,16 +321,28 @@ public struct RepositoryReferences: Sendable {
         }
     }
 
-    /// 以 Git 的分支规则校验，拒绝前一分支快捷写法及选项形式。
+    /// 以 Git 的分支规则校验，拒绝前一分支快捷写法、选项形式、控制字符与和对象哈希混淆的名字。
     public func validate(name: String) async throws {
-        guard !name.isEmpty, !name.hasPrefix("-"), !name.contains("@{") else {
-            throw RepositoryReadError.invalidQuery
+        guard Self.isPlausibleName(name) else {
+            throw ReferenceError.invalidName(name)
         }
-        _ = try await runner.run(["check-ref-format", "--branch", name])
+
+        try await checkFormat(["--branch", name], rejecting: name)
     }
 
-    /// 新建并检出使用同一条 switch，检出失败不会遗留已创建的分支。
-    public func create(name: String, startingAt start: String, track: Bool, checkout: Bool) async throws {
+    /// 新建并检出使用同一条 switch，检出失败不会遗留已创建的分支；置顶与父分支在同一个仓库操作里写入。
+    ///
+    /// - Parameters:
+    ///   - pinned: 是否置顶新分支。
+    ///   - parent: 父分支的完整引用名；为 nil 时不设置。
+    public func create(
+        name: String,
+        startingAt start: String,
+        track: Bool,
+        checkout: Bool,
+        pinned: Bool = false,
+        parent: String? = nil
+    ) async throws {
         try await runner.writeTransaction {
             try await validate(name: name)
             let revision = try await resolve(start)
@@ -340,6 +352,15 @@ public struct RepositoryReferences: Sendable {
             }
             let command = checkout ? ["switch", "-c", name] : ["branch", name]
             _ = try await runner.run(command + [track ? "--track=direct" : "--no-track", target])
+
+            // 分支已经建好，附加信息写在它的配置段里
+            if pinned {
+                try await setPinned(true, branches: ["refs/heads/" + name])
+            }
+
+            if let parent {
+                try await setParent(parent, of: "refs/heads/" + name)
+            }
         }
     }
 
@@ -349,12 +370,22 @@ public struct RepositoryReferences: Sendable {
         _ = try await runner.run(["switch", "--no-guess", "--", String(reference.dropFirst(11))])
     }
 
-    /// 普通删除保留 Git 的未合并保护；失败由调用方展示原始输出。
-    public func delete(_ references: [String]) async throws {
+    /// 普通删除保留 Git 的未合并保护，强制删除用 `-D`；多个分支一条命令删除，Git 删掉能删的。
+    ///
+    /// 普通删除因未合并失败时抛出 ``ReferenceError/unmergedBranches(_:_:)``，带上未合并分支与 Git 原文，供强制删除。
+    public func delete(_ references: [String], force: Bool = false) async throws {
         guard !references.isEmpty, references.allSatisfy({ $0.hasPrefix("refs/heads/") }) else {
             throw RepositoryReadError.invalidQuery
         }
-        _ = try await runner.run(["branch", "-d", "--"] + references.map { String($0.dropFirst(11)) })
+
+        do {
+            _ = try await runner.run(
+                ["branch", force ? "-D" : "-d", "--"] + references.map { String($0.dropFirst(11)) }
+            )
+        } catch let error as GitError where error.category == .branchNotMerged {
+            let unmerged = Self.unmergedBranches(in: error.message)
+            throw ReferenceError.unmergedBranches(unmerged.map { "refs/heads/" + $0 }, error)
+        }
     }
 
     /// 起点解析只接受一个提交，--end-of-options 阻止输入成为 Git 选项。

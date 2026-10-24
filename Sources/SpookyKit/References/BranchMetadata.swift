@@ -84,7 +84,7 @@ public struct BranchMetadata: Sendable, Equatable {
     }
 
     /// Git 把 true、yes、on、1 与空值都当作真。
-    private static func isTrue(_ value: String?) -> Bool {
+    static func isTrue(_ value: String?) -> Bool {
         guard let value else { return true }
         return ["true", "yes", "on", "1", ""].contains(value.lowercased())
     }

@@ -130,6 +130,12 @@ struct AppFailure: Identifiable {
         case let rewrite as RewriteError:
             (key, kind, recoveryKey, output) = Self.classification(of: rewrite)
 
+        case let reference as ReferenceError:
+            (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: reference)
+
+        case let offer as ForceDeletionOffer:
+            (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: offer.failure)
+
         case let file as RepositoryFileError:
             (key, kind) = Self.classification(of: file)
             exceededOutputLimit = file == .tooLarge
