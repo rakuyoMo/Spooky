@@ -136,6 +136,44 @@ struct SignatureVerificationTests {
         #expect(signature.email == "spooky@example.invalid")
     }
 
+    /// OpenPGP 校验经包装器调用仓库配置的 gpg，并关闭自动取钥与信任库检查；用记录参数的假 gpg 验证，不需要真的 gpg。
+    @Test("OpenPGP 校验关闭自动取钥与信任库检查")
+    func verificationOptions() async throws {
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+
+        try await fixture.initialize()
+        let scripts = try Self.keyDirectory()
+        defer { try? FileManager.default.removeItem(at: scripts) }
+
+        // 假 gpg 只记下收到的参数，然后以失败退出
+        let record = scripts.appending(path: "arguments")
+        let program = scripts.appending(path: "fake gpg")
+        try Data("#!/bin/sh\nprintf '%s\\n' \"$@\" > '\(record.path)'\nexit 2\n".utf8).write(to: program)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: program.path)
+
+        let runner = fixture.runner
+        _ = try await runner.run(["config", "--local", "gpg.program", program.path])
+        let unsigned = try await Self.commit(fixture, message: "base", sign: false)
+
+        // 在提交对象里放一段 OpenPGP 签名头，Git 校验时会调用 gpg
+        let object = String(decoding: try await runner.run(["cat-file", "commit", unsigned]), as: UTF8.self)
+        let header = "gpgsig -----BEGIN PGP SIGNATURE-----\n \n iQEz\n -----END PGP SIGNATURE-----\n\n"
+        let signed = Data(object.replacingOccurrences(of: "\n\n", with: "\n" + header).utf8)
+        let id = String(
+            decoding: try await runner.run(["hash-object", "-t", "commit", "-w", "--stdin"], input: signed),
+            as: UTF8.self
+        )
+        .trimmingCharacters(in: .newlines)
+
+        let signature = try #require(try await RepositoryHistory(runner: runner).signatures(of: [id])[id])
+        #expect(signature.status != .good)
+
+        let arguments = String(decoding: try Data(contentsOf: record), as: UTF8.self).split(separator: "\n")
+        #expect(Array(arguments.prefix(2)) == ["--no-auto-key-retrieve", "--no-auto-check-trustdb"])
+        #expect(arguments.contains("--verify"))
+    }
+
     /// 签名查询与 cat-file 输出的格式错误；标签的 gpg 状态行按 Git 的规则归类。
     @Test("签名输出的解析")
     func parsing() throws {
