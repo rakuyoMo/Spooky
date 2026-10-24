@@ -47,13 +47,21 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **文件历史与 Blame**：查看一个文件的历史，可按作者、提交人或版本筛选，输入时自动补全作者姓名；查看每一行最后由谁修改，查看文件任意一次提交的版本，并从文件历史中导出
 
-- **历史**：分页加载，显示提交图、引用标记和领先 / 落后计数。合并提交显示与第一父提交之间的 Diff
+- **历史**：分页加载，显示提交图、引用标记和领先 / 落后计数。可以按提交信息、作者、提交人、文件、提交哈希和日期搜索，并组合多个条件；可以按日期或拓扑顺序排列，按天、周或月分组，或只沿第一父提交查看。日期可以显示完整时间或相对现在的时间，作者显示 Gravatar 头像或姓名首字母
 
-- **分支**：新建、跟踪、检出和删除分支。输入名称时自动规范成有效的引用名
+- **提交详情**：浏览一次提交的完整文件树，校验 GPG 与 SSH 签名。合并提交可以显示与第一父提交之间的 Diff、只显示真正合并过的文件，或不显示 Diff。可以比较任意两个版本，把某个版本的文件导出为文件夹或 zip 归档，把提交存成补丁文件
 
-- **同步与合并**：获取、拉取、推送和首次发布分支；合并前先预览是否会冲突。所有操作的日志集中在 “活动” 窗口里，进行中的操作可以取消
+- **分支、标签与远端**：侧边栏按 “/” 把引用折叠成文件夹，并可以过滤。分支可以置顶和归档，并标出已完全合并、陈旧或跟踪的分支已不存在。支持快进、重命名和删除本地与远端分支，设置上游和父分支，新建轻量、附注或签名标签，管理远端及其地址与 refspec。输入分支名时自动规范成有效的引用名
 
-- **拖放操作**：把分支或提交拖到侧边栏，就能新建分支、合并、拉取、发布或推送
+- **同步与合并**：获取、拉取、推送和同步，可以选择清理已删除的分支、获取全部标签、处理子模块和跳过钩子。强推只覆盖你上次看到的版本，任意版本都可以推到任意引用，例如 Gerrit 评审。Spooky 在前台时可以自动获取远端，不会询问凭据。合并前先预览是否会冲突。所有操作的日志集中在 “活动” 窗口里，进行中的操作可以取消
+
+- **改写历史**：反转、摘取、以 soft、mixed 或 hard 方式重置、检出任意版本，以及变基到新的基点。交互式变基可以压缩、fixup、编辑、改信息、删除或调整提交顺序，把暂存的改动并入较早的提交，或自动压缩。改写之前，Spooky 会列出受影响的提交，并提示其中已经推送或已并入其它分支的提交
+
+- **分支整理**：把本地分支与基准分支比较，看它是否已经合并、能否干净合并或会不会冲突。可以用合并或变基把父分支的新提交并入分支，批量或自动归档过时的分支，自动归档前先由你确认列表
+
+- **Reflog 与撤销**：浏览并搜索 HEAD 或任一分支的 Reflog，从任一记录恢复分支或新建分支。每个仓库的 Git 操作都可以撤销与重做；恢复前 Spooky 会先核对仓库，不能撤销时说明原因
+
+- **拖放操作**：把分支、提交和标签拖到侧边栏，就能新建分支与标签、合并、变基、摘取、反转、拉取、发布、推送、置顶、归档或改名；在历史里拖动提交，可以压缩、fixup 或移动它们
 
 - **在终端中打开**：支持 Terminal、iTerm、Warp、Ghostty、WezTerm、Prompt 和 Otty。服务器仓库会在终端里经 SSH 进入远端路径
 
@@ -123,11 +131,14 @@ open .build/Spooky.app
   - 系统 SFTP 的批处理无法表示含 CR / LF 的路径，涉及这类路径的文件操作会明确报错
 - Quick Look、其它程序和拖出的文件都拿不到服务器上的路径，拿到的是本机私有临时目录里的文件副本；关闭仓库后这个目录会被删除
 - 轮询只读取状态和所选文件的内容哈希，有变化时才读取其它内容；只由提交哈希决定的历史分页和提交详情会缓存起来，减少往返
+- 服务器仓库的导出、归档和补丁由服务器上的 Git 生成，经同一个主连接流回本机存盘，不在服务器上写文件
+- 交互式变基完全在服务器上进行：提交序列与提交信息由内置在命令里的编辑器写入，本机不会打开编辑器
 
 ### 写操作与断线
 
 - 同一仓库的写操作排队依次执行；同一时间只有一个窗口能对它发起写操作，完成后显示这个仓库的窗口都会刷新
-- 写操作中途断线时不会自动重试。重新连接后，Spooky 会先核对分支、工作区、暂存区锁，以及是否有进行中的合并或变基，说明 HEAD 是否已经变化，再允许写入
+- 写操作中途断线时不会自动重试。重新连接后，Spooky 会先核对分支、工作区、暂存区锁、远端跟踪分支，以及是否有进行中的合并或变基，说明 HEAD 与远端跟踪分支是否已经变化，再允许写入
+- 撤销会在每次操作前后记下 HEAD、分支、标签、分支设置、储藏列表、暂存区和已跟踪文件的内容。快照写进仓库自己的对象库，本机或服务器都一样；恢复前 Spooky 会先核对仓库是否仍与记录一致
 - 取消服务器上的操作时，Spooky 先关闭命令通道，再结束远端的整组进程：先发 TERM，2 秒后发 KILL，并确认进程已退出
   - 无法确认时会明确提示，重新连接核对之前不能继续写入
 
@@ -140,6 +151,8 @@ open .build/Spooky.app
 - 本机的提交、合并、变基、摘取和反转也以同样的方式询问 SSH 签名密钥的口令；GPG 的口令交给本机自己的 pinentry 处理
 - 凭据默认只保存在内存中，勾选 “存入这台 Mac 的钥匙串” 后才写入本机钥匙串
 - 凭据不会写入临时文件、活动日志或错误信息，输出中回显的凭据会被隐去
+- 自动获取不会弹出任何输入框，只使用钥匙串里已存的凭据；取不到时，失败只记在 “活动” 窗口里
+- 校验签名时不会去密钥服务器取钥，也不会更新 GPG 信任库，本机和服务器都一样
 
 ### 数据与对系统的改动
 
@@ -148,7 +161,8 @@ open .build/Spooky.app
 - 设置、身份档案和最近记录保存在偏好设置域 `com.rakuyo.spooky`
 - 主题（包括 Default 与 Default (Dark)）保存在 `~/Library/Application Support/Spooky/Themes`，一个主题一个 `.spookytheme` 文件
 - 存入钥匙串的凭据，服务名为 `com.rakuyo.spooky.remote.<主机别名>`
-- 连接和回调使用私有的 `/tmp/spooky-*` 临时目录，关闭会话后清理
+- 连接和回调使用私有的 `/tmp/spooky-*` 临时目录，关闭会话后清理。本机仓库校验签名时同样使用这样一个目录，校验结束即删除
+- 作者头像以作者邮箱的 SHA-256 哈希向 Gravatar 请求，只在 Spooky 运行期间保存在内存里
 - 交给 Quick Look 和其它程序的文件副本放在私有的 `spooky-files-*` 临时目录，关闭仓库后清理
 - 用 Warp 打开服务器仓库时，会在 `~/.warp/launch_configurations/` 写入 `Spooky-*.yaml`；用 Prompt 打开时使用临时的 `.command` 文件。退出 Spooky 时只清理它自己创建的这些文件
 
@@ -156,6 +170,10 @@ open .build/Spooky.app
 
 - `~/.spooky/bin/`：远端程序及其 askpass、GPG 与 ssh-keygen 入口，权限为 `0700`，会话结束后保留，供下次连接使用
 - `/tmp/spooky-*`：会话期间的私有运行时目录，关闭会话后清理
+
+仓库里：
+
+- 分支的置顶、归档、父分支与分支整理标记保存在仓库自己的 Git 配置里，键为 `branch.<名称>.spooky-*`；分支改名时随之移动，删除分支时一并清除
 
 ## 开发
 
@@ -183,7 +201,7 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
 # SFTP、本机文件缓存与服务器提交
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests
 
-# 服务器历史、同步与取消
+# 服务器历史、同步、强推与取消
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests
 
 # 文件操作、补丁与 Diff 选项
@@ -197,6 +215,19 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConflictTests
 # 文件历史、Blame 与提交签名
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteFileViewsTests
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteCommitSigningTests
+
+# 历史搜索、提交详情与侧边栏
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySearchTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistoryDetailsTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteSidebarTests
+
+# 分支、标签与远端管理，改写历史与分支整理
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReferenceManagementTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteRewriteTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteBranchesReviewTests
+
+# Reflog、撤销与重做
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReflogUndoTests
 ```
 
 每次运行只在这个目录下新建并清理独立的子目录，不修改双方的 SSH 配置、`known_hosts` 或全局 Git 配置。

@@ -47,13 +47,21 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **File history and blame**: follow a file through history, filtered by author, committer, or revision, with author names suggested as you type. See who last changed each line, view any committed version of a file, and export versions from its history
 
-- **History**: commits load page by page, with a commit graph, ref badges, and ahead and behind counts. Merge commits show their diff against the first parent
+- **History**: commits load page by page, with a commit graph, ref badges, and ahead and behind counts. Search by message, author, committer, file, commit hash, and date, and combine several conditions. Sort by date or topology, group commits by day, week, or month, or follow only first parents. Dates can be shown in full or relative to now, and authors appear with their Gravatar picture or their initials
 
-- **Branches**: create, track, check out, and delete branches. Branch names are converted into valid ref names as you type
+- **Commit details**: browse the full file tree of a commit and check GPG and SSH signatures. Merge commits can be shown against their first parent, as only the files that were actually merged, or without a diff. Compare any two revisions, export the files of a revision as a folder or a zip archive, and save commits as patch files
 
-- **Sync and merge**: fetch, pull, push, and publish branches. Merges are previewed for conflicts first. Every operation is logged in the **Activity** window, and running operations can be cancelled
+- **Branches, tags, and remotes**: the sidebar groups refs into folders by “/” and can be filtered. Pin and archive branches, and see which ones are fully merged, stale, or tracking a branch that no longer exists. Fast-forward, rename, and delete local and remote branches, set upstream and parent branches, create lightweight, annotated, or signed tags, and manage remotes with their URLs and refspecs. Branch names are converted into valid ref names as you type
 
-- **Drag and drop**: drag branches or commits in the sidebar to create branches, merge, pull, publish, or push
+- **Sync and merge**: fetch, pull, push, and sync, with options for pruning, all tags, submodules, and hooks. Force pushes only overwrite the version you last saw, and any revision can be pushed to any ref, such as a Gerrit review. Remotes can be fetched automatically while Spooky is in the foreground, without asking for credentials. Merges are previewed for conflicts first. Every operation is logged in the **Activity** window, and running operations can be cancelled
+
+- **Rewriting history**: revert, cherry-pick, reset with a soft, mixed, or hard mode, check out any revision, and rebase onto a new base. Rebase interactively to squash, fixup, edit, reword, delete, or reorder commits, add staged changes to an older commit, or autosquash. Before rewriting, Spooky lists the affected commits and warns about those that were already pushed or merged
+
+- **Branches review**: compare local branches with a base branch to see whether they're merged, can be merged cleanly, or would conflict. Update a branch from its parent branch by merging or rebasing, and archive obsolete branches in bulk or automatically, after you confirm the list
+
+- **Reflog and undo**: browse and search the reflog of HEAD or any branch, and restore a branch or create a new one from any entry. Undo and redo Git operations in each repository; Spooky checks the repository before restoring it, and tells you when an operation can't be undone
+
+- **Drag and drop**: drag branches, commits, and tags in the sidebar to create branches and tags, merge, rebase, cherry-pick, revert, pull, publish, push, pin, archive, or rename. Drag commits within the history to squash, fixup, or move them
 
 - **Open in Terminal**: supports Terminal, iTerm, Warp, Ghostty, WezTerm, Prompt, and Otty. For a server repository, the terminal connects over SSH and opens the remote path
 
@@ -123,11 +131,14 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
   - The system SFTP batch mode can't represent paths that contain CR or LF, so file operations on such paths fail with a clear error
 - Quick Look, other apps, and files you drag out never receive a server path. They get a copy of the file in a private temporary directory on your Mac, which is removed when the repository closes
 - Polling reads only the status and the selected file's content hash, and reads everything else only when something changed. History pages and commit details, which depend only on commit hashes, are cached to save round trips
+- Exports, archives, and patches of a server repository are produced by Git on the server and streamed to your Mac over the same master connection. Nothing is written on the server
+- Interactive rebases run entirely on the server: the commit sequence and messages are written by an editor built into the command, so no editor opens on your Mac
 
 ### Writes and disconnections
 
 - Writes to the same repository run one at a time. Only one window can start a write to a repository at a time, and every window showing the repository refreshes when the write finishes
-- If the connection drops during a write, Spooky doesn't retry it. After reconnecting, it checks the branch, working copy, index lock, and any merge or rebase in progress, tells you whether HEAD changed, and only then allows writes again
+- If the connection drops during a write, Spooky doesn't retry it. After reconnecting, it checks the branch, working copy, index lock, remote-tracking branches, and any merge or rebase in progress, tells you whether HEAD and the remote-tracking branches changed, and only then allows writes again
+- Undo records HEAD, branches, tags, branch settings, the stash list, the index, and the content of tracked files before and after each operation. The snapshots are written to the object database of the repository, on your Mac or on the server, and Spooky checks that the repository still matches the record before restoring it
 - To cancel an operation on a server, Spooky closes the command channel, then ends the remote process group: it sends TERM, waits 2 seconds, sends KILL, and confirms that the processes have exited
   - If it can't confirm this, Spooky says so and blocks writes until a reconnection check
 
@@ -140,6 +151,8 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
 - Local commits, merges, rebases, cherry-picks, and reverts ask for SSH signing key passphrases the same way. GPG passphrases are handled by your Mac's own pinentry
 - Credentials stay in memory by default. They're written to your Mac's Keychain only when you select **Save in this Mac’s Keychain**
 - Credentials are never written to temporary files, activity logs, or error messages, and credentials echoed in output are hidden
+- Automatic fetches never show a dialog. They only use credentials saved in the Keychain, and if none are available, the failure is only recorded in the **Activity** window
+- Signature checks never download keys from key servers or update the GPG trust database, on your Mac or on the server
 
 ### Data and system changes
 
@@ -148,7 +161,8 @@ On your Mac:
 - Settings, user profiles, and recent repositories are stored in the preferences domain `com.rakuyo.spooky`
 - Themes, including Default and Default (Dark), are stored in `~/Library/Application Support/Spooky/Themes`, one `.spookytheme` file per theme
 - Credentials saved to the Keychain use the service name `com.rakuyo.spooky.remote.<host alias>`
-- Connections and callbacks use private `/tmp/spooky-*` temporary directories, which are removed when the session closes
+- Connections and callbacks use private `/tmp/spooky-*` temporary directories, which are removed when the session closes. Signature checks in local repositories use one of these directories as well, removed as soon as the check finishes
+- Author pictures are requested from Gravatar with a SHA-256 hash of each author's email address, and are kept in memory only while Spooky is running
 - File copies for Quick Look and other apps are kept in private `spooky-files-*` temporary directories, which are removed when the repository closes
 - Opening a server repository in Warp writes `Spooky-*.yaml` to `~/.warp/launch_configurations/`, and opening it in Prompt uses a temporary `.command` file. When Spooky quits, it removes only the files it created
 
@@ -156,6 +170,10 @@ On the server:
 
 - `~/.spooky/bin/`: the remote helper and its askpass, GPG, and ssh-keygen entry points, with `0700` permissions. They stay after the session ends so later connections can use them
 - `/tmp/spooky-*`: a private runtime directory for the session, removed when the session closes
+
+In your repositories:
+
+- Pins, archives, parent branches, and branch review marks are stored in the repository's own Git configuration, as `branch.<name>.spooky-*`. They move with a branch when it's renamed and are removed when it's deleted
 
 ## Development
 
@@ -183,7 +201,7 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
 # SFTP, the local file cache, and server commits
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests
 
-# Server history, sync, and cancellation
+# Server history, sync, force pushes, and cancellation
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests
 
 # File operations, patches, and diff options
@@ -197,6 +215,19 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConflictTests
 # File history, blame, and commit signing
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteFileViewsTests
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteCommitSigningTests
+
+# History search, commit details, and the sidebar
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySearchTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistoryDetailsTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteSidebarTests
+
+# Branch, tag, and remote management, rewriting history, and branches review
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReferenceManagementTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteRewriteTests
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteBranchesReviewTests
+
+# Reflog, undo, and redo
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReflogUndoTests
 ```
 
 Each run creates and removes its own subdirectory there, and doesn't change the SSH configuration, `known_hosts`, or global Git configuration on either machine.
