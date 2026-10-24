@@ -117,6 +117,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         restoreFrame()
         observeToolbarState()
         observeConnectionState()
+        observeSubtitle()
     }
 
     /// 窗口由代码构建，不从归档恢复控制器。
@@ -173,7 +174,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         session.display(repository)
         showsManager = false
         window?.title = repository.name
-        window?.subtitle = repository.displayPath
+        updateSubtitle()
         window?.representedURL = repository.localURL
 
         if !sameRepositoryView {
@@ -200,7 +201,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
 
         showsManager = true
         window?.title = AppLocalization.text("repositories.title")
-        window?.subtitle = ""
+        updateSubtitle()
         window?.representedURL = nil
         workingCopySplit = nil
         historySplit = nil
@@ -716,7 +717,7 @@ extension RepositoryWindowController {
         }
 
         window?.title = repository.name
-        window?.subtitle = repository.displayPath
+        updateSubtitle()
         window?.representedURL = repository.localURL
 
         let sidebar = NSHostingController(rootView: RepositorySidebarView(
