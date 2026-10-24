@@ -54,6 +54,9 @@ struct InterruptedWrite {
 
     /// 中断发生的时间，只采用在此之后完成的核对结果。
     let time: Date
+
+    /// 写入前快照中的远端跟踪分支与提交，核对获取、推送是否已改动它们。
+    var remoteReferences: [String: String] = [:]
 }
 
 // MARK: - RepositorySession
@@ -627,6 +630,8 @@ extension RepositorySession {
     ///   - title: 已本地化的操作名称，用于 Activity 与断线后的核对报告。
     ///   - recordsActivity: 网络与引用操作记入 Activity；工作区的高频写入只用于核对报告。
     ///   - offersAutoStash: 被本地改动挡住时是否按设置询问先储藏，检出、拉取与合并使用。
+    ///   - reportsFailure: 失败时是否弹出错误 sheet；自动获取只把失败记进 Activity。
+    ///   - failureNote: 失败时补在错误说明前面的一段话，如同步停在了哪一步。
     /// - Returns: 是否已开始执行；仓库不可写时不启动，调用方据此保留未发送的参数。
     @discardableResult
     func performGit(
@@ -635,7 +640,9 @@ extension RepositorySession {
         title: String,
         recordsActivity: Bool = true,
         offersAutoStash: Bool = false,
-        success: (() -> Void)? = nil
+        reportsFailure: Bool = true,
+        success: (() -> Void)? = nil,
+        failureNote: (() -> String?)? = nil
     ) -> Bool {
         guard canWrite, let repository, RepositoryWriteLocks.shared.acquire(repository) else {
             return false
@@ -661,6 +668,30 @@ extension RepositorySession {
         let (outputs, continuation) = AsyncStream<GitOutputEvent>.makeStream()
         Self.logger.info("写操作开始：\(title, privacy: .public)")
 
+        // 后台写入只记进 Activity；被本地改动挡住的检出、拉取与合并改为询问是否先储藏，用户不储藏时再报告失败
+        let reportFailure: (Error, Bool) -> Void = { [weak self] error, cancelled in
+            guard let self else { return }
+
+            guard reportsFailure else {
+                recordQuietFailure(error, cancelled: cancelled, activity: activity, in: repository)
+                return
+            }
+
+            let stashing = offersAutoStash && !cancelled
+                && offerAutoStash(after: error, title: title, action: action, failureNote: failureNote)
+
+            if !stashing {
+                reportWriteFailure(
+                    error,
+                    cancelled: cancelled,
+                    title: title,
+                    note: failureNote?(),
+                    branch: branch,
+                    in: repository
+                )
+            }
+        }
+
         writeTask = Task { [weak self] in
             let collector = Task { @MainActor in
                 for await output in outputs { activity?.append(output) }
@@ -681,12 +712,7 @@ extension RepositorySession {
                 // 失败的类别在 reportWriteFailure 归类后记录，这里只记取消
                 if cancelled { Self.logger.info("写操作已取消：\(title, privacy: .public)") }
 
-                // 被本地改动挡住的检出、拉取与合并改为询问是否先储藏，用户不储藏时再报告失败
-                if let self, generation == request {
-                    if !(offersAutoStash && !cancelled && offerAutoStash(after: error, title: title, action: action)) {
-                        reportWriteFailure(error, cancelled: cancelled, title: title, branch: branch, in: repository)
-                    }
-                }
+                if let self, generation == request { reportFailure(error, cancelled) }
             }
 
             continuation.finish()
@@ -800,11 +826,13 @@ extension RepositorySession {
     ///
     /// - Parameters:
     ///   - title: 已本地化的操作名称，用于断线后的核对报告。
+    ///   - note: 补在恢复说明前面的一段话。
     ///   - branch: 写入前状态快照中的分支与 HEAD。
     private func reportWriteFailure(
         _ error: Error,
         cancelled: Bool,
         title: String,
+        note: String?,
         branch: BranchStatus?,
         in repository: RepositoryLocation
     ) {
@@ -814,7 +842,12 @@ extension RepositorySession {
 
         // 取消未确认仍须报告；普通取消只回到可刷新状态。
         if !cancelled || remoteFailure?.kind == .cancellationUnconfirmed {
-            let failure = AppFailure(error: error, opening: false, location: repository, writing: true)
+            var failure = AppFailure(error: error, opening: false, location: repository, writing: true)
+
+            if let note {
+                failure.message = note + "\n\n" + failure.message
+            }
+
             self.failure = failure
             Self.logger.error("写操作失败：\(title, privacy: .public)，类别 \(failure.kind.rawValue, privacy: .public)")
             onFailure?(failure)
@@ -822,8 +855,41 @@ extension RepositorySession {
 
         // 结果未知的服务器写入不重试，等待重连核对后再报告。
         if remoteFailure != nil {
-            interruptedWrite = InterruptedWrite(title: title, branch: branch, time: Date())
+            // 写入期间引用快照不刷新，此时读到的仍是写入前的远端跟踪分支
+            let remotes = history.snapshot?.references.filter(\.isRemote) ?? []
+
+            interruptedWrite = InterruptedWrite(
+                title: title,
+                branch: branch,
+                time: Date(),
+                remoteReferences: Dictionary(uniqueKeysWithValues: remotes.map { ($0.id, $0.objectID) })
+            )
             Self.logger.error("服务器写入在断线中中断，等待重连核对：\(title, privacy: .public)")
+            reconnect()
+        }
+    }
+
+    /// 不弹错误 sheet 的写入失败：错误标题与原因记进 Activity；断线照常重连，结果由重连后的完整刷新核对。
+    private func recordQuietFailure(
+        _ error: Error,
+        cancelled: Bool,
+        activity: RepositoryActivity?,
+        in repository: RepositoryLocation
+    ) {
+        stagingOverrides = [:]
+
+        guard !cancelled else {
+            return
+        }
+
+        let failure = AppFailure(error: error, opening: false, location: repository, writing: true)
+        Self.logger.error("后台写操作失败，类别 \(failure.kind.rawValue, privacy: .public)")
+
+        // Git 的原始输出已经流进日志，其余错误补上说明
+        let details = error is GitError ? "" : "\n" + failure.details
+        activity?.append(.standardError(Data(("\n" + failure.title + details + "\n").utf8)))
+
+        if error is RemoteConnectionError {
             reconnect()
         }
     }

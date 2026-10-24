@@ -103,9 +103,11 @@ private struct GeneralSettingsView: View {
 // MARK: - Private
 
 extension GeneralSettingsView {
-    /// 操作相关的两个开关：被本地改动挡住时询问储藏、输入时规范引用名。
+    /// 操作相关的设置：自动获取的间隔、被本地改动挡住时询问储藏、输入时规范引用名。
     @ViewBuilder
     private var operationRows: some View {
+        AutoFetchSettingsRow()
+
         GridRow {
             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
             Toggle(AppLocalization.text("stash.offerAutoStash"), isOn: $offerAutoStash)

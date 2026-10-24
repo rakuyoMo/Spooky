@@ -100,13 +100,9 @@ struct RepositoryOperationDialog: View {
     @State
     private var error = ""
 
-    /// 合并预览只属于当前选择，变化后取消旧查询。
+    /// 推送时强推：只在远端分支仍是上次获取到的版本时覆盖，不记忆。
     @State
-    private var preview: MergePreview?
-
-    /// 预览正在进行时显示明确状态。
-    @State
-    private var checking = false
+    private var forcePush = false
 
     /// 选项展开状态不持久化。
     @State
@@ -139,6 +135,22 @@ struct RepositoryOperationDialog: View {
     /// 获取全部标签是 Fetch 的附带选项。
     @AppStorage("fetchAllTags")
     private var allTags = false
+
+    /// 获取时同时获取已检出的子模块。
+    @AppStorage("fetchSubmodules")
+    private var fetchSubmodules = false
+
+    /// 推送时另推全部标签。
+    @AppStorage("pushAllTags")
+    private var pushAllTags = false
+
+    /// 推送时递归处理子模块。
+    @AppStorage("pushRecurseSubmodules")
+    private var pushSubmodules = false
+
+    /// 递归处理子模块的方式。
+    @AppStorage("pushSubmoduleMode")
+    private var pushSubmoduleMode = SubmodulePushMode.onDemand.rawValue
 
     /// 拉取方式始终明确写入参数。
     @AppStorage("pullUseRebase")
@@ -185,9 +197,7 @@ struct RepositoryOperationDialog: View {
                     .padding(.bottom, 12)
             }
 
-            if [.merge, .pull].contains(request.kind) {
-                previewView.padding(.horizontal, 20).padding(.bottom, 12)
-            }
+            if [.merge, .pull].contains(request.kind) { preview }
 
             if [.fetch, .merge, .pull, .push, .publish].contains(request.kind) {
                 DisclosureGroup(AppLocalization.text("dialog.options"), isExpanded: $optionsExpanded) {
@@ -209,7 +219,6 @@ struct RepositoryOperationDialog: View {
         }
         .onChange(of: localBranch) { if request.kind == .publish { name = localBranch } }
         .task(id: name + "\u{0}" + remote) { await validateName() }
-        .task(id: source) { await loadPreview() }
     }
 
     /// 当前所有可见的分支，起点组合框仍可输入提交哈希。
@@ -418,45 +427,34 @@ extension RepositoryOperationDialog {
         }
     }
 
+    /// 合并与拉取的可行性预览，随所选分支重新计算。
+    private var preview: some View {
+        MergeabilityPreview(session: session, revision: source)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 12)
+    }
+
     /// Fetch、合并及推送附带的选项按各自行为过滤。
     @ViewBuilder
     private var options: some View {
         VStack(alignment: .leading, spacing: 8) {
             if request.kind == .fetch {
                 option("sync.prune", value: $prune)
+                option("sync.fetchSubmodules", value: $fetchSubmodules)
                 option("sync.allTags", value: $allTags)
             }
+
             if request.kind == .merge { option("merge.verify", value: $mergeVerify).disabled(squash) }
             if request.kind == .pull { option("merge.verify", value: $pullVerify) }
+
+            if request.kind == .push {
+                option("sync.pushAllTags", value: $pushAllTags)
+                option("sync.forcePush", value: $forcePush)
+
+                SubmodulePushOption(enabled: $pushSubmodules, mode: $pushSubmoduleMode)
+            }
+
             if request.kind != .fetch { option("sync.skipHooks", value: $skipHooks) }
-        }
-    }
-
-    /// 未知预览独立于干净与冲突，不阻止用户依实际 Git 结果执行合并。
-    @ViewBuilder
-    private var previewView: some View {
-        if checking {
-            HStack {
-                ProgressView().controlSize(.small)
-                Text(AppLocalization.text("merge.checking"))
-            }
-        } else if let preview {
-            switch preview {
-            case .clean: Label(AppLocalization.text("merge.clean"), systemImage: "checkmark.circle")
-
-            case .unchanged: Label(AppLocalization.text("merge.unchanged"), systemImage: "equal.circle")
-
-            case .conflicts(let paths):
-                Label(
-                    AppLocalization.text("merge.conflicts", paths.count),
-                    systemImage: "exclamationmark.triangle"
-                )
-                .help(paths.joined(separator: "\n"))
-
-            case .unavailable(let details):
-                Label(AppLocalization.text("merge.unavailable"), systemImage: "questionmark.circle")
-                    .help(details)
-            }
         }
     }
 
@@ -593,24 +591,23 @@ extension RepositoryOperationDialog {
         }
     }
 
-    /// 每次切换目标取消旧预览，服务器慢响应不会覆盖新目标。
-    private func loadPreview() async {
-        guard [.merge, .pull].contains(request.kind), !source.isEmpty, let runner = session.runner else {
-            return
+    /// 推送的选项与强推期望值：发布只带跳过钩子；推送时强推以表单所见的远端跟踪分支为期望值，没有跟踪分支时要求远端分支不存在。
+    private func pushConfiguration() -> (options: PushOptions, lease: String?) {
+        var options = PushOptions()
+        options.skipHooks = skipHooks
+
+        guard request.kind == .push else {
+            return (options, nil)
         }
-        preview = nil
-        checking = true
-        do {
-            try await Task.sleep(for: .milliseconds(150))
-            let result = try await RepositorySync(runner: runner).previewMerge(source)
-            try Task.checkCancellation()
-            preview = result
-        } catch {
-            if !Task.isCancelled {
-                preview = .unavailable(AppFailure(error: error, opening: false, location: session.repository).details)
-            }
+
+        options.allTags = pushAllTags
+
+        if pushSubmodules {
+            options.submodules = SubmodulePushMode(rawValue: pushSubmoduleMode) ?? .onDemand
         }
-        if !Task.isCancelled { checking = false }
+
+        let tracking = branches.first { $0.id == "refs/remotes/" + remote + "/" + name }
+        return (options, forcePush ? tracking?.objectID ?? "" : nil)
     }
 
     /// 远端分支短名按所属远端切除前缀，兼容远端名中的斜杠。
@@ -636,6 +633,7 @@ extension RepositoryOperationDialog {
         let allRemotes = allRemotes
         let prune = prune
         let allTags = allTags
+        let submodules = fetchSubmodules
         let rebase = rebase
         let verify = request.kind == .pull ? pullVerify : mergeVerify
         let skipHooks = skipHooks
@@ -650,9 +648,7 @@ extension RepositoryOperationDialog {
         mergeOptions.verifySignatures = verify
         mergeOptions.skipHooks = skipHooks
         let options = mergeOptions
-        var pushSettings = PushOptions()
-        pushSettings.skipHooks = skipHooks
-        let pushOptions = pushSettings
+        let push = pushConfiguration()
 
         /// 按动作种类调用核心库，只读取上面复制的表单值。
         @Sendable
@@ -678,6 +674,7 @@ extension RepositoryOperationDialog {
                         remote: allRemotes ? nil : remote,
                         prune: prune,
                         allTags: allTags,
+                        submodules: submodules,
                         onOutput: output
                     )
 
@@ -699,7 +696,8 @@ extension RepositoryOperationDialog {
                         remote: remote,
                         destination: name,
                         setUpstream: upstream,
-                        options: pushOptions,
+                        options: push.options,
+                        lease: push.lease,
                         onOutput: output
                     )
 

@@ -27,6 +27,9 @@ struct AutoStashRequest {
 
     /// 原操作的执行闭包。
     let action: @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
+
+    /// 原操作失败时补在错误说明前的一段话，储藏后重新执行时沿用。
+    var failureNote: (() -> String?)? = nil
 }
 
 // MARK: - Availability
@@ -172,13 +175,15 @@ extension RepositorySession {
     func offerAutoStash(
         after error: any Error,
         title: String,
-        action: @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
+        action: @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
+        failureNote: (() -> String?)? = nil
     ) -> Bool {
         // 设置 “Always offer to stash local changes” 默认开启
         let enabled = UserDefaults.standard.object(forKey: "offerAutoStash") as? Bool ?? true
         guard enabled, Self.isBlockedByLocalChanges(error), let onStashRequest else { return false }
 
-        onStashRequest(.autoStash(AutoStashRequest(title: title, error: error, action: action)))
+        let request = AutoStashRequest(title: title, error: error, action: action, failureNote: failureNote)
+        onStashRequest(.autoStash(request))
         return true
     }
 
@@ -196,7 +201,8 @@ extension RepositorySession {
                         try await action(runner, output)
                     }
             },
-            title: request.title
+            title: request.title,
+            failureNote: request.failureNote
         )
     }
 

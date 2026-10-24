@@ -198,6 +198,7 @@ extension RepositoryWindowController {
 
         // 分支与同步、工作区文件、历史显示、储藏与 Diff 各组动作分别判断，组外的窗口级动作在下方判断。
         let enabled = branchAndSyncAvailability(of: item.action, repositoryView: repositoryView)
+            ?? syncAvailability(of: item.action, repositoryView: repositoryView)
             ?? workingCopyAvailability(of: item.action, repositoryView: repositoryView)
             ?? historyDisplayAvailability(of: item)
             ?? stashAvailability(of: item.action, repositoryView: repositoryView)

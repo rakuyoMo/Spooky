@@ -229,7 +229,7 @@ extension SpookyApplicationController {
         }
     }
 
-    /// Repository 菜单：获取、拉取、推送、发布与新建分支。
+    /// Repository 菜单：获取、拉取、同步、推送（按住 ⌥ 换成快速操作）、安全强推、推送任意版本、发布与新建分支。
     private func configureRepositoryMenu(in menu: NSMenu) {
         let repository = addMenu("menu.repository", to: menu)
         addItem(
@@ -237,6 +237,12 @@ extension SpookyApplicationController {
             action: #selector(RepositoryWindowController.fetch),
             key: "f",
             modifiers: [.shift, .command],
+            to: repository
+        )
+        addAlternate(
+            "sync.quickFetch",
+            action: #selector(RepositoryWindowController.quickFetch),
+            key: "f",
             to: repository
         )
         addItem("sync.fetchAll", action: #selector(RepositoryWindowController.fetchAll), to: repository)
@@ -247,11 +253,48 @@ extension SpookyApplicationController {
             modifiers: [.shift, .command],
             to: repository
         )
+        addAlternate(
+            "sync.quickPull",
+            action: #selector(RepositoryWindowController.quickPull),
+            key: "p",
+            to: repository
+        )
+        addItem(
+            "sync.syncMenu",
+            action: #selector(RepositoryWindowController.sync),
+            key: "y",
+            modifiers: [.shift, .command],
+            to: repository
+        )
+        addAlternate(
+            "sync.quickSync",
+            action: #selector(RepositoryWindowController.quickSync),
+            key: "y",
+            to: repository
+        )
         addItem(
             "sync.push",
             action: #selector(RepositoryWindowController.push),
             key: "u",
             modifiers: [.shift, .command],
+            to: repository
+        )
+        addAlternate(
+            "sync.quickPush",
+            action: #selector(RepositoryWindowController.quickPush),
+            key: "u",
+            to: repository
+        )
+        addItem(
+            "sync.forcePushMenu",
+            action: #selector(RepositoryWindowController.forcePushWithLease),
+            key: "u",
+            modifiers: [.control, .command],
+            to: repository
+        )
+        addItem(
+            "sync.pushToMenu",
+            action: #selector(RepositoryWindowController.pushRevision),
             to: repository
         )
         addItem("sync.publish", action: #selector(RepositoryWindowController.publishBranch), to: repository)
@@ -265,7 +308,7 @@ extension SpookyApplicationController {
         )
     }
 
-    /// Working Copy 菜单：检出、合并与应用补丁，储藏，提交与暂存，丢弃改动。
+    /// Working Copy 菜单：检出、合并与变基（按住 ⌥ 换成快速操作）、应用补丁，储藏，提交与暂存，丢弃改动。
     private func configureWorkingCopyMenu(in menu: NSMenu) {
         let working = addMenu("workspace.title", to: menu)
         addItem(
@@ -280,6 +323,25 @@ extension SpookyApplicationController {
             action: #selector(RepositoryWindowController.merge),
             key: "m",
             modifiers: [.shift, .command],
+            to: working
+        )
+        addAlternate(
+            "sync.quickMerge",
+            action: #selector(RepositoryWindowController.quickMerge),
+            key: "m",
+            to: working
+        )
+        addItem(
+            "sync.rebaseMenu",
+            action: #selector(RepositoryWindowController.rebase),
+            key: "r",
+            modifiers: [.shift, .command],
+            to: working
+        )
+        addAlternate(
+            "sync.quickRebase",
+            action: #selector(RepositoryWindowController.quickRebase),
+            key: "r",
             to: working
         )
         addItem("files.applyPatch.menu", action: #selector(RepositoryWindowController.applyPatch), to: working)
@@ -347,6 +409,12 @@ extension SpookyApplicationController {
         item.submenu = submenu
         parent.addItem(item)
         return submenu
+    }
+
+    /// 按住 ⌥ 时替换上一项的快速操作：同一个按键，修饰键是 ⌥⇧⌘。
+    private func addAlternate(_ key: String, action: Selector, key shortcut: String, to menu: NSMenu) {
+        addItem(key, action: action, key: shortcut, modifiers: [.option, .shift, .command], to: menu)
+        menu.items.last?.isAlternate = true
     }
 
     /// 统一菜单文案、快捷键和响应链目标。

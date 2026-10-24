@@ -71,7 +71,7 @@ struct AppFailure: Identifiable {
     let title: String
 
     /// 用户可采取的恢复步骤。
-    let message: String
+    var message: String
 
     /// Git 输出或进程错误原文。
     let details: String
