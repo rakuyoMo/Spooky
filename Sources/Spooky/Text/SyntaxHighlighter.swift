@@ -127,6 +127,8 @@ actor SyntaxActor {
 
 /// 语法着色的入口：按路径与内容识别 highlight.js 的语言，再把整段文本切成每行的片段；Diff、Blame 与原文视图共用。
 enum SyntaxHighlighter {
+    #warning("TODO: 核实按内容识别的细节：上限按 UTF-8 字节数比较、候选只取核心脚本自带的常用语言，都是推断；用没有扩展名的各类文件比对识别结果，影响无扩展名与未知扩展名文件的着色")
+
     /// 扩展名无法识别时，只对不超过这个字节数的内容按内容识别语言。
     static let unknownFileLimit = 20_000
 
