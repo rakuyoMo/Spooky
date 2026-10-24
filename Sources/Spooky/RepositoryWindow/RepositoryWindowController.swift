@@ -121,6 +121,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         observeToolbarState()
         observeConnectionState()
         observeSubtitle()
+        observeHistorySearch()
     }
 
     /// 窗口由代码构建，不从归档恢复控制器。

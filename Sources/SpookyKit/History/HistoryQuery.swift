@@ -83,7 +83,7 @@ public struct HistorySearchCondition: Sendable, Equatable, Identifiable {
     ///
     /// “之后” 从下一天开始，“之前” 截止到前一天结束，区间从起始日开始、到结束日结束。
     func bounds(in calendar: Calendar) -> (since: Int64?, until: Int64?) {
-        #warning("TODO: 日期条件按整天比较，“之后” 与 “之前” 都不含所选那一天；需在参照应用里实测边界是否包含所选日期，影响历史按日期筛选的首尾一天")
+        #warning("TODO: 日期条件按整天比较，“之后” 与 “之前” 都不含所选那一天；所选那一天是否应包含在内需实测核实，只影响按日期筛选结果的首尾一天")
 
         let start = calendar.startOfDay(for: date)
         let next = calendar.date(byAdding: .day, value: 1, to: start) ?? start
@@ -200,5 +200,13 @@ public struct HistoryQuery: Sendable, Equatable {
         self.firstParentOnly = firstParentOnly
         self.conditions = conditions
         self.calendar = calendar
+    }
+
+    /// 两个查询是否读出同样的提交：只比较交给 Git 的参数，空条件与条件的身份不算差别。
+    public func hasSameResults(as other: Self) -> Bool {
+        orderArguments == other.orderArguments
+            && filterArguments == other.filterArguments
+            && paths == other.paths
+            && hashPrefixes == other.hashPrefixes
     }
 }

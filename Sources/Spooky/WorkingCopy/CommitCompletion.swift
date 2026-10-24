@@ -352,10 +352,10 @@ extension CommitCompletionList {
         .background(selected ? Color.accentColor : .clear, in: RoundedRectangle(cornerRadius: 5))
     }
 
-    /// 32 pt 首字母头像；上行作者与日期，下行等宽短哈希与截断的标题。
+    /// 32 pt 作者头像；上行作者与日期，下行等宽短哈希与截断的标题。
     private func commitRow(_ commit: HistoryCommit) -> some View {
         HStack(spacing: 8) {
-            InitialsAvatar(name: commit.author, size: 32)
+            InitialsAvatar(name: commit.author, email: commit.authorEmail, size: 32)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack {

@@ -3,9 +3,15 @@ import AppKit
 // MARK: - Subtitle
 
 extension RepositoryWindowController {
-    /// 仓库视图的窗口副标题：储藏视图显示储藏的数量，文件历史与文件原文写出所看的文件，其余视图显示仓库路径。
+    /// 仓库视图的窗口副标题：工作区写出分支与改动数，历史写出所选引用与提交数，储藏视图显示储藏的数量，文件历史与文件原文写出所看的文件。
     var repositorySubtitle: String {
         switch session.activeView {
+        case .workingCopy:
+            workingCopySubtitle
+
+        case .history:
+            historySubtitle
+
         case .stashes:
             AppLocalization.text("stash.subtitle", session.stashes.entries.count)
 
@@ -14,9 +20,6 @@ extension RepositoryWindowController {
 
         case .fileContent:
             fileContentSubtitle
-
-        default:
-            session.repository?.displayPath ?? ""
         }
     }
 
@@ -42,6 +45,30 @@ extension RepositoryWindowController {
 // MARK: - Private
 
 extension RepositoryWindowController {
+    /// 工作区的副标题：“Working Copy (分支 – n Changed Files)”，分离 HEAD 或还没读到状态时不写分支。
+    private var workingCopySubtitle: String {
+        let count = session.status?.entries.count ?? 0
+
+        guard let branch = session.status?.branch.head else {
+            return AppLocalization.text("working.subtitle", count)
+        }
+
+        return AppLocalization.text("working.subtitle.branch", branch, count)
+    }
+
+    /// 历史的副标题：所选引用以 “, ” 相连，没有选引用时是 “History”；后面是提交数，数到上限时写 “or more”。
+    private var historySubtitle: String {
+        let history = session.history
+        let name = history.selectedReferences.isEmpty ? AppLocalization.text("history.title") : history.title
+
+        guard let count = history.commitCount else {
+            return name
+        }
+
+        let key = count >= RepositoryHistoryState.maximumLoadedCommits ? "history.subtitle.more" : "history.subtitle"
+        return AppLocalization.text(key, name, count)
+    }
+
     /// 文件历史的副标题：“File History – 文件名”。
     private var fileHistorySubtitle: String {
         guard let path = session.fileHistory.path else {

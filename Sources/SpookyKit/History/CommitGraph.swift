@@ -57,7 +57,10 @@ public struct CommitGraph: Sendable {
     public init() { }
 
     /// 第一父延续主线，其余父分叉；重复等待同一提交的线在该行汇合。
-    public mutating func append(_ commit: HistoryCommit) -> CommitGraphRow {
+    ///
+    /// - Parameter firstParentOnly: 历史只沿第一父读取时为 true，其余父提交不会出现，不为它们分叉。
+    public mutating func append(_ commit: HistoryCommit, firstParentOnly: Bool = false) -> CommitGraphRow {
+        let parents = firstParentOnly ? Array(commit.parents.prefix(1)) : commit.parents
         let before = lanes
         let matching = before.filter { $0.target == commit.id }
         let primary = matching.first
@@ -67,10 +70,10 @@ public struct CommitGraph: Sendable {
         lanes.removeAll { $0.target == commit.id && $0.id != primary?.id }
         var starting: [Int] = []
 
-        if commit.parents.isEmpty {
+        if parents.isEmpty {
             lanes.removeAll { $0.id == primary?.id }
         } else {
-            for (index, parent) in commit.parents.enumerated() {
+            for (index, parent) in parents.enumerated() {
                 if index == 0, let primary, let position = lanes.firstIndex(where: { $0.id == primary.id }) {
                     lanes[position].target = parent
                 } else if primary != nil, let existing = lanes.first(where: { $0.target == parent }) {

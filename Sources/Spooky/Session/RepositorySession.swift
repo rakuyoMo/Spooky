@@ -25,8 +25,8 @@ enum RepositoryView: String, CaseIterable {
     /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
     var supportsSearch: Bool {
         switch self {
-        case .history, .fileContent: false
-        case .workingCopy, .stashes, .fileHistory: true
+        case .fileContent: false
+        case .workingCopy, .history, .stashes, .fileHistory: true
         }
     }
 }
@@ -176,7 +176,10 @@ final class RepositorySession {
     /// 当前主视图；切换视图时清空搜索，过滤不会在看不到搜索框内容的视图里生效。
     var activeView = RepositoryView.workingCopy {
         didSet {
-            if activeView != oldValue { searchText = "" }
+            if activeView != oldValue {
+                searchText = ""
+                history.clearSearch()
+            }
         }
     }
 

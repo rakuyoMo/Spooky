@@ -36,7 +36,7 @@ extension FileViewsTests {
         session.display(location)
         session.refresh(full: true)
         await session.refreshTask?.value
-        #expect(controller.repositorySubtitle == location.displayPath)
+        #expect(controller.repositorySubtitle == AppLocalization.text("working.subtitle.branch", "main", 0))
 
         // 文件历史与原文只写文件名
         session.showFileHistory("dir/a.txt")

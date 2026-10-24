@@ -30,6 +30,45 @@ final class RepositoryHistoryState {
     /// 已加载的有界分页结果。
     private(set) var commits: [HistoryCommit] = []
 
+    /// 表格的行：提交与日期分组的标题，随分页与分组方式重排。
+    var rows: [HistoryRow] = []
+
+    /// 当前列表使用的日期分组方式。
+    var grouping = HistoryGrouping.ungrouped
+
+    /// 当前列表使用的查询；视图设置或搜索条件改变读出的提交时重读。
+    var query = HistoryQuery()
+
+    /// 当前查询下的提交数，最多数到加载上限；读到之前为 nil。
+    var commitCount: Int? = nil
+
+    /// 搜索条件，按界面中的顺序；工具栏搜索框对应第一个文字条件。
+    var searchConditions: [HistorySearchCondition] = []
+
+    /// 工具栏搜索框的范围菜单所选的条件种类。
+    var searchScope = HistorySearchCondition.Kind.message
+
+    /// 回到历史时要在列表里选中的提交，找到或放弃后清空。
+    var lookup: String? = nil
+
+    /// 列表要滚动到的提交，表格滚动后清空。
+    var scrollTarget: String? = nil
+
+    /// 回到的提交在当前历史里找不到的原因。
+    var lookupFailure: String? = nil
+
+    /// 视图设置所在的偏好域，测试注入临时域。
+    var preferences = UserDefaults.standard
+
+    /// 作者与文件补全的数据，同一 HEAD 只读取一次。
+    let suggestions = HistorySearchSuggestions()
+
+    /// 计数任务，查询变化时取消。
+    var countTask: Task<Void, Never>? = nil
+
+    /// 搜索条件变化后的延迟重读，输入期间合并为一次。
+    var searchTask: Task<Void, Never>? = nil
+
     /// 每个提交独立的图模型，与分页保持相同次序。
     private(set) var graphRows: [String: CommitGraphRow] = [:]
 
@@ -165,7 +204,7 @@ final class RepositoryHistoryState {
 
     /// 正在运行的读取任务，退出前等待它们结束。
     var activeTasks: [Task<Void, Never>] {
-        [referenceTask, pageTask, changeTask].compactMap { $0 } + Array(diffTasks.values)
+        [referenceTask, pageTask, changeTask, countTask, searchTask].compactMap { $0 } + Array(diffTasks.values)
     }
 
     /// 刷新引用后只在根变化时重载列表，轮询不打断翻页或选择。
@@ -216,10 +255,90 @@ final class RepositoryHistoryState {
         }
     }
 
-    /// 固定当前引用哈希，清空图状态后读取第一页。
+    /// 用户取消分页后保留已有结果，可以继续滚动重试。
+    func cancelPage() {
+        pageTask?.cancel()
+        pageTask = nil
+        isLoading = false
+    }
+
+    /// 切回仓库时恢复分支与提交选择；引用快照到达后再校验引用是否仍存在。
+    func restore(references: Set<String>, commits: Set<String>) {
+        selectedReferences = references
+        selectedIDs = commits
+        restoredReferences = references.isEmpty ? nil : references
+    }
+
+    /// 写入前取消读取，避免旧引用或补丁在写入后覆盖新快照。
+    func suspend() {
+        generation += 1
+        needsReload = true
+        referenceTask?.cancel()
+        referenceTask = nil
+        cancelPage()
+        countTask?.cancel()
+        countTask = nil
+        searchTask?.cancel()
+        searchTask = nil
+        changeTask?.cancel()
+        changeTask = nil
+        for task in diffTasks.values { task.cancel() }
+        diffTasks = [:]
+        loadingPaths = []
+        isLoadingChanges = false
+    }
+
+    /// 关闭仓库时清除全部快照和选区。
+    func close() {
+        suspend()
+        runner = nil
+        snapshot = nil
+        branch = nil
+        divergence = [:]
+        selectedReference = nil
+        commits = []
+        rows = []
+        commitCount = nil
+        searchConditions = []
+        lookup = nil
+        scrollTarget = nil
+        lookupFailure = nil
+        graphRows = [:]
+        unpushed = []
+        unpulled = []
+        selectedIDs = []
+        changes = []
+        changesFailure = nil
+        diffs = [:]
+        diffFailures = [:]
+        expandedPaths = []
+        selectedPath = nil
+        showsCommitPage = false
+        revealedCommit = nil
+        failure = nil
+        roots = []
+        hasMore = false
+        reachedLimit = false
+        restoredReferences = nil
+    }
+}
+
+// MARK: - Paging
+
+extension RepositoryHistoryState {
+    /// 固定当前引用哈希与视图设置、搜索条件，清空图状态后读取第一页与总数。
     func reloadCommits() {
         cancelPage()
+        countTask?.cancel()
+        countTask = nil
         failure = nil
+        lookupFailure = nil
+        commitCount = nil
+
+        let settings = HistoryViewSettings(defaults: preferences)
+        query = settings.query(conditions: searchConditions)
+        grouping = settings.grouping
+
         let references = snapshot?.references ?? []
         trackingRoots = nil
 
@@ -249,122 +368,65 @@ final class RepositoryHistoryState {
             )
             .sorted()
         }
+
+        // 搜索结果不连续，图与推拉标记都依赖完整的父链，搜索时不计算
+        if query.isSearching {
+            trackingRoots = nil
+        }
+
         graph = CommitGraph()
         hasMore = !roots.isEmpty
         reachedLimit = false
 
         if roots.isEmpty {
             commits = []
+            rows = []
             graphRows = [:]
             unpushed = []
             unpulled = []
             selectedIDs = []
+            commitCount = snapshot == nil ? nil : 0
+            continueLookup()
             return
         }
+
         loadNextPage(replacing: true)
+        loadCount()
     }
 
     /// 表格请求最后一行时续载，单次最多使用设置中规定的 1000 条；累计达到上限后停止续载。
-    func loadNextPage(replacing: Bool = false) {
+    ///
+    /// - Parameter pageSize: 回到历史查找提交时按 1000 条扩大加载；nil 时用设置中的条数。
+    func loadNextPage(replacing: Bool = false, pageSize: Int? = nil) {
         guard !isLoading, hasMore, replacing || !reachedLimit, let runner else { return }
         let request = generation
         let roots = roots
+        let query = query
         let offset = replacing ? 0 : commits.count
         let configured = UserDefaults.standard.integer(forKey: "historyPageSize")
-        let limit = [100, 200, 500, 1000].contains(configured) ? configured : 100
+        let limit = pageSize ?? ([100, 200, 500, 1000].contains(configured) ? configured : 100)
         isLoading = true
         pageTask = Task { [weak self] in
             do {
                 let page = try await RepositoryHistory(runner: runner)
-                    .page(roots: roots, offset: offset, limit: limit)
+                    .page(roots: roots, query: query, offset: offset, limit: limit)
                 guard let self, generation == request, !Task.isCancelled else { return }
 
-                if replacing {
-                    commits = []
-                    graphRows = [:]
-                }
-                for commit in page.commits { graphRows[commit.id] = graph.append(commit) }
-                commits += page.commits
-                updateTrackingMarkers()
-                hasMore = page.hasMore
-                reachedLimit = page.hasMore && commits.count >= Self.maximumLoadedCommits
-                if replacing {
-                    // 回到的提交可以不在已加载的分页里，选择仍然保留
-                    let loaded = Set(commits.map(\.id)).union(revealedCommit.map { [$0.id] } ?? [])
-                    let selected = selectedIDs.intersection(loaded)
-                    if selected == selectedIDs {
-                        loadChanges()
-                    } else {
-                        selectedIDs = selected
-                    }
-                }
+                append(page, replacing: replacing)
                 failure = nil
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
                 failure = AppFailure(error: error, opening: false, location: runner.location)
+                lookup = nil
             }
 
             guard let self, generation == request, !Task.isCancelled else { return }
             isLoading = false
             pageTask = nil
+
+            // 回到历史时要选中的提交还没出现在已加载的分页里，继续扩大加载
+            continueLookup()
         }
-    }
-
-    /// 用户取消分页后保留已有结果，可以继续滚动重试。
-    func cancelPage() {
-        pageTask?.cancel()
-        pageTask = nil
-        isLoading = false
-    }
-
-    /// 切回仓库时恢复分支与提交选择；引用快照到达后再校验引用是否仍存在。
-    func restore(references: Set<String>, commits: Set<String>) {
-        selectedReferences = references
-        selectedIDs = commits
-        restoredReferences = references.isEmpty ? nil : references
-    }
-
-    /// 写入前取消读取，避免旧引用或补丁在写入后覆盖新快照。
-    func suspend() {
-        generation += 1
-        needsReload = true
-        referenceTask?.cancel()
-        referenceTask = nil
-        cancelPage()
-        changeTask?.cancel()
-        changeTask = nil
-        for task in diffTasks.values { task.cancel() }
-        diffTasks = [:]
-        loadingPaths = []
-        isLoadingChanges = false
-    }
-
-    /// 关闭仓库时清除全部快照和选区。
-    func close() {
-        suspend()
-        runner = nil
-        snapshot = nil
-        branch = nil
-        divergence = [:]
-        selectedReference = nil
-        commits = []
-        graphRows = [:]
-        unpushed = []
-        unpulled = []
-        selectedIDs = []
-        changes = []
-        changesFailure = nil
-        diffs = [:]
-        diffFailures = [:]
-        expandedPaths = []
-        selectedPath = nil
-        showsCommitPage = false
-        revealedCommit = nil
-        failure = nil
-        roots = []
-        hasMore = false
-        reachedLimit = false
-        restoredReferences = nil
     }
 }
 
@@ -481,9 +543,25 @@ extension RepositoryHistoryState {
     }
 
     /// 从文件视图回到某个提交：打开它的整页详情，提交不在已加载的分页里也能显示。
+    ///
+    /// 列表回到全部历史并选中这个提交；它不在已加载的分页里时扩大加载去找，返回列表后滚动到它。
     func reveal(_ commit: HistoryCommit) {
         revealedCommit = commit
         showsCommitPage = true
+        lookup = commit.id
+        lookupFailure = nil
+
+        // 在全部历史里找这个提交，搜索条件不再适用
+        let searching = !searchConditions.isEmpty
+        searchConditions = []
+        searchTask?.cancel()
+        searchTask = nil
+
+        if !selectedReferences.isEmpty {
+            selectedReferences = []
+        } else if searching {
+            reloadCommits()
+        }
 
         // 选择没有变化时不会触发重读，这里显式读取变更集
         if selectedIDs == [commit.id] {
@@ -491,12 +569,73 @@ extension RepositoryHistoryState {
         } else {
             selectedIDs = [commit.id]
         }
+
+        continueLookup()
     }
 }
 
 // MARK: - Private
 
 extension RepositoryHistoryState {
+    /// 读取当前查询下的提交数，供窗口副标题使用；数到加载上限为止。
+    private func loadCount() {
+        countTask?.cancel()
+        countTask = nil
+        commitCount = nil
+
+        guard let runner, !roots.isEmpty else {
+            return
+        }
+
+        let request = generation
+        let roots = roots
+        let query = query
+
+        countTask = Task { [weak self] in
+            // 计数失败只让副标题不显示数量，不影响列表
+            let count = try? await RepositoryHistory(runner: runner)
+                .count(roots: roots, query: query, limit: Self.maximumLoadedCommits)
+
+            guard let self, generation == request, !Task.isCancelled else { return }
+
+            commitCount = count
+            countTask = nil
+        }
+    }
+
+    /// 把一页提交接到列表后面并重排表格行；第一页还要核对原来的选择是否仍在列表里。
+    private func append(_ page: HistoryPage, replacing: Bool) {
+        if replacing {
+            commits = []
+            graphRows = [:]
+        }
+
+        // 搜索结果不画提交图；只看第一父时不为其余父提交分叉
+        if !query.isSearching {
+            for commit in page.commits {
+                graphRows[commit.id] = graph.append(commit, firstParentOnly: query.firstParentOnly)
+            }
+        }
+
+        commits += page.commits
+        rows = HistoryRow.rows(for: commits, grouping: grouping)
+        updateTrackingMarkers()
+        hasMore = page.hasMore
+        reachedLimit = page.hasMore && commits.count >= Self.maximumLoadedCommits
+
+        guard replacing else { return }
+
+        // 回到的提交可以不在已加载的分页里，选择仍然保留
+        let loaded = Set(commits.map(\.id)).union(revealedCommit.map { [$0.id] } ?? [])
+        let selected = selectedIDs.intersection(loaded)
+
+        if selected == selectedIDs {
+            loadChanges()
+        } else {
+            selectedIDs = selected
+        }
+    }
+
     /// 拓扑序保证孩子先到达，已加载父链即可判定两侧归属，无需逐提交 SSH 查询。
     private func updateTrackingMarkers() {
         unpushed = []
