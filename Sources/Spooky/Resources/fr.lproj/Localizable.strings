@@ -329,7 +329,6 @@
 "branch.default" = "Branche par défaut";
 "branch.create" = "Créer une branche";
 "branch.create.help" = "Créer une branche locale à partir d’une révision.";
-"branch.createFromCommit" = "Créer une branche à partir du commit…";
 "branch.track" = "Suivre la branche distante";
 "branch.track.help" = "Créer une branche locale qui suit la branche distante sélectionnée.";
 "branch.checkout" = "Basculer sur la branche";
@@ -1321,3 +1320,26 @@
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Réglages du dépôt distant (%@)";
+
+/* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
+"rewrite.menu.checkout" = "Extraire « %@ »";
+"rewrite.menu.checkoutGeneric" = "Extraire une révision…";
+"rewrite.menu.reset" = "Réinitialiser HEAD à « %@ »…";
+"rewrite.menu.resetGeneric" = "Réinitialiser HEAD…";
+"rewrite.menu.revert" = "Revert de « %@ »…";
+"rewrite.menu.revertMany" = "Revert de %ld révisions…";
+"rewrite.menu.revertGeneric" = "Revert…";
+"rewrite.menu.cherryPick" = "Cherry-pick de « %@ »…";
+"rewrite.menu.cherryPickMany" = "Cherry-pick de %ld révisions…";
+"rewrite.menu.rebaseOnto" = "Rebaser « %@ » ailleurs…";
+"rewrite.menu.rebaseOntoMany" = "Rebaser %ld révisions ailleurs…";
+"rewrite.menu.amend" = "Compléter « %@ »";
+"rewrite.menu.edit" = "Modifier « %@ »";
+"rewrite.menu.reword" = "Modifier le message de commit de « %@ »…";
+"rewrite.menu.delete" = "Supprimer « %@ »…";
+"rewrite.menu.deleteMany" = "Supprimer %ld révisions…";
+"rewrite.menu.squashMany" = "Fusionner %ld révisions…";
+"rewrite.menu.fixupMany" = "Fixup de %ld révisions…";
+"history.createBranch" = "Créer une branche à partir de « %@ »…";
+"history.createBranchGeneric" = "Créer une branche…";
+"history.rollback" = "Revenir ici";

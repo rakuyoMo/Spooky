@@ -329,7 +329,6 @@
 "branch.default" = "デフォルトブランチ";
 "branch.create" = "ブランチを作成";
 "branch.create.help" = "指定したリビジョンからローカルブランチを作成します。";
-"branch.createFromCommit" = "コミットからブランチを作成…";
 "branch.track" = "リモートブランチを追跡";
 "branch.track.help" = "選択したリモートブランチを追跡するローカルブランチを作成します。";
 "branch.checkout" = "ブランチをチェックアウト";
@@ -1321,3 +1320,26 @@
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "リモート設定（%@）";
+
+/* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
+"rewrite.menu.checkout" = "「%@」をチェックアウト";
+"rewrite.menu.checkoutGeneric" = "リビジョンをチェックアウト…";
+"rewrite.menu.reset" = "HEAD を「%@」へリセット…";
+"rewrite.menu.resetGeneric" = "HEAD をリセット…";
+"rewrite.menu.revert" = "「%@」をリバート…";
+"rewrite.menu.revertMany" = "%ld 個のリビジョンをリバート…";
+"rewrite.menu.revertGeneric" = "リバート…";
+"rewrite.menu.cherryPick" = "「%@」をチェリーピック…";
+"rewrite.menu.cherryPickMany" = "%ld 個のリビジョンをチェリーピック…";
+"rewrite.menu.rebaseOnto" = "「%@」を別の場所へリベース…";
+"rewrite.menu.rebaseOntoMany" = "%ld 個のリビジョンを別の場所へリベース…";
+"rewrite.menu.amend" = "「%@」を修正";
+"rewrite.menu.edit" = "「%@」を編集";
+"rewrite.menu.reword" = "「%@」のコミットメッセージを編集…";
+"rewrite.menu.delete" = "「%@」を削除…";
+"rewrite.menu.deleteMany" = "%ld 個のリビジョンを削除…";
+"rewrite.menu.squashMany" = "%ld 個のリビジョンをスカッシュ…";
+"rewrite.menu.fixupMany" = "%ld 個のリビジョンを Fixup…";
+"history.createBranch" = "「%@」から新しいブランチを作成…";
+"history.createBranchGeneric" = "新しいブランチを作成…";
+"history.rollback" = "ロールバック";

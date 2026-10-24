@@ -329,7 +329,6 @@
 "branch.default" = "默认分支";
 "branch.create" = "新建分支";
 "branch.create.help" = "从指定版本新建本地分支。";
-"branch.createFromCommit" = "从提交新建分支…";
 "branch.track" = "跟踪远端分支";
 "branch.track.help" = "新建跟踪所选远端分支的本地分支。";
 "branch.checkout" = "检出分支";
@@ -1321,3 +1320,26 @@
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "远端设置（%@）";
+
+/* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
+"rewrite.menu.checkout" = "检出 “%@”";
+"rewrite.menu.checkoutGeneric" = "检出版本…";
+"rewrite.menu.reset" = "把 HEAD 重置到 “%@”…";
+"rewrite.menu.resetGeneric" = "重置 HEAD…";
+"rewrite.menu.revert" = "反转 “%@”…";
+"rewrite.menu.revertMany" = "反转 %ld 个版本…";
+"rewrite.menu.revertGeneric" = "反转…";
+"rewrite.menu.cherryPick" = "摘取 “%@”…";
+"rewrite.menu.cherryPickMany" = "摘取 %ld 个版本…";
+"rewrite.menu.rebaseOnto" = "把 “%@” 变基到别处…";
+"rewrite.menu.rebaseOntoMany" = "把 %ld 个版本变基到别处…";
+"rewrite.menu.amend" = "修补 “%@”";
+"rewrite.menu.edit" = "编辑 “%@”";
+"rewrite.menu.reword" = "编辑 “%@” 的提交信息…";
+"rewrite.menu.delete" = "删除 “%@”…";
+"rewrite.menu.deleteMany" = "删除 %ld 个版本…";
+"rewrite.menu.squashMany" = "压缩 %ld 个版本…";
+"rewrite.menu.fixupMany" = "Fixup %ld 个版本…";
+"history.createBranch" = "从 “%@” 新建分支…";
+"history.createBranchGeneric" = "新建分支…";
+"history.rollback" = "回滚";

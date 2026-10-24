@@ -329,7 +329,6 @@
 "branch.default" = "기본 브랜치";
 "branch.create" = "브랜치 만들기";
 "branch.create.help" = "지정한 리비전에서 로컬 브랜치를 만듭니다.";
-"branch.createFromCommit" = "커밋에서 브랜치 만들기…";
 "branch.track" = "원격 브랜치 추적";
 "branch.track.help" = "선택한 원격 브랜치를 추적하는 로컬 브랜치를 만듭니다.";
 "branch.checkout" = "브랜치 체크아웃";
@@ -1321,3 +1320,26 @@
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "원격 설정 (%@)";
+
+/* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
+"rewrite.menu.checkout" = "“%@” 체크아웃";
+"rewrite.menu.checkoutGeneric" = "리비전 체크아웃…";
+"rewrite.menu.reset" = "HEAD를 “%@”(으)로 재설정…";
+"rewrite.menu.resetGeneric" = "HEAD 재설정…";
+"rewrite.menu.revert" = "“%@” 되돌리기…";
+"rewrite.menu.revertMany" = "리비전 %ld개 되돌리기…";
+"rewrite.menu.revertGeneric" = "되돌리기…";
+"rewrite.menu.cherryPick" = "“%@” 체리픽…";
+"rewrite.menu.cherryPickMany" = "리비전 %ld개 체리픽…";
+"rewrite.menu.rebaseOnto" = "“%@”을(를) 다른 곳으로 리베이스…";
+"rewrite.menu.rebaseOntoMany" = "리비전 %ld개를 다른 곳으로 리베이스…";
+"rewrite.menu.amend" = "“%@” 수정";
+"rewrite.menu.edit" = "“%@” 편집";
+"rewrite.menu.reword" = "“%@”의 커밋 메시지 편집…";
+"rewrite.menu.delete" = "“%@” 삭제…";
+"rewrite.menu.deleteMany" = "리비전 %ld개 삭제…";
+"rewrite.menu.squashMany" = "리비전 %ld개 스쿼시…";
+"rewrite.menu.fixupMany" = "리비전 %ld개 Fixup…";
+"history.createBranch" = "“%@”에서 새 브랜치 만들기…";
+"history.createBranchGeneric" = "새 브랜치 만들기…";
+"history.rollback" = "롤백";

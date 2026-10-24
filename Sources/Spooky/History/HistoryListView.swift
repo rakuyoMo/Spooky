@@ -332,22 +332,15 @@ private struct HistoryCommitTable: NSViewRepresentable {
             copy.target = self
             copy.isEnabled = !parent.session.history.selectedIDs.isEmpty
             menu.addItem(copy)
-            let create = NSMenuItem(
-                title: AppLocalization.text("branch.createFromCommit"),
-                action: #selector(create),
-                keyEquivalent: ""
-            )
-            create.target = self
-            create.isEnabled = parent.session.canWrite && parent.session.history.selectedCommit != nil
-            menu.addItem(create)
 
-            // 保存补丁、导出文件与比较版本，按列表顺序传入选中的提交
+            // 检出、改写、新建与补丁各组，按列表顺序传入选中的提交
             let history = parent.session.history
             let selected = history.commits.filter { history.selectedIDs.contains($0.id) }
 
             for item in HistoryCommitMenu.items(
                 for: selected.isEmpty ? (history.selectedCommit.map { [$0] } ?? []) : selected,
-                session: parent.session
+                session: parent.session,
+                createBranch: parent.createBranch
             ) {
                 menu.addItem(item)
             }
@@ -370,13 +363,6 @@ private struct HistoryCommitTable: NSViewRepresentable {
         func doubleClick() {
             guard parent.session.history.selectedCommit != nil else { return }
             parent.openCommit()
-        }
-
-        /// 从单个提交打开有预填起点的分支对话框。
-        @objc
-        private func create() {
-            guard let commit = parent.session.history.selectedCommit else { return }
-            parent.createBranch(commit.id)
         }
 
     }

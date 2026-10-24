@@ -329,7 +329,6 @@
 "branch.default" = "Rama predeterminada";
 "branch.create" = "Crear rama";
 "branch.create.help" = "Crea una rama local a partir de una revisión.";
-"branch.createFromCommit" = "Crear rama a partir del commit…";
 "branch.track" = "Seguir rama remota";
 "branch.track.help" = "Crea una rama local que sigue la rama remota seleccionada.";
 "branch.checkout" = "Hacer checkout de la rama";
@@ -1321,3 +1320,26 @@
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Ajustes del remoto (%@)";
+
+/* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
+"rewrite.menu.checkout" = "Hacer checkout de “%@”";
+"rewrite.menu.checkoutGeneric" = "Hacer checkout de una revisión…";
+"rewrite.menu.reset" = "Restablecer HEAD a “%@”…";
+"rewrite.menu.resetGeneric" = "Restablecer HEAD…";
+"rewrite.menu.revert" = "Revertir “%@”…";
+"rewrite.menu.revertMany" = "Revertir %ld revisiones…";
+"rewrite.menu.revertGeneric" = "Revertir…";
+"rewrite.menu.cherryPick" = "Cherry-pick de “%@”…";
+"rewrite.menu.cherryPickMany" = "Cherry-pick de %ld revisiones…";
+"rewrite.menu.rebaseOnto" = "Hacer rebase de “%@” en otra base…";
+"rewrite.menu.rebaseOntoMany" = "Hacer rebase de %ld revisiones en otra base…";
+"rewrite.menu.amend" = "Enmendar “%@”";
+"rewrite.menu.edit" = "Editar “%@”";
+"rewrite.menu.reword" = "Editar el mensaje de commit de “%@”…";
+"rewrite.menu.delete" = "Eliminar “%@”…";
+"rewrite.menu.deleteMany" = "Eliminar %ld revisiones…";
+"rewrite.menu.squashMany" = "Combinar %ld revisiones…";
+"rewrite.menu.fixupMany" = "Fixup de %ld revisiones…";
+"history.createBranch" = "Crear rama desde “%@”…";
+"history.createBranchGeneric" = "Crear rama…";
+"history.rollback" = "Retroceder";

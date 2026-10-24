@@ -103,18 +103,22 @@ struct CommitDetailsSessionTests {
             )
         }
 
-        let single = HistoryCommitMenu.items(for: [commits[0]], session: session)
+        // 这一组排在菜单最后，前面是一条分隔线
+        let single = HistoryCommitMenu.items(for: [commits[0]], session: session) { _ in }
         #expect(single.first?.isSeparatorItem ?? false)
-        #expect(single.dropFirst().map(\.title) == [
+        #expect(single.dropLast(4).last?.isSeparatorItem ?? false)
+        #expect(single.suffix(4).map(\.title) == [
             AppLocalization.text("patch.menu", "00000000"),
             AppLocalization.text("patch.quickMenu", "00000000"),
             AppLocalization.text("export.menuFrom", "00000000"),
             AppLocalization.text("compare.menuFrom", "00000000"),
         ])
-        #expect(single[2].isAlternate && single[2].keyEquivalentModifierMask == .option)
+
+        let quick = single[single.count - 3]
+        #expect(quick.isAlternate && quick.keyEquivalentModifierMask == .option)
 
         // 列表从新到旧，默认从较早的比较到较新的
-        let pair = HistoryCommitMenu.items(for: Array(commits.prefix(2)), session: session)
+        let pair = HistoryCommitMenu.items(for: Array(commits.prefix(2)), session: session) { _ in }
         let titles = pair.filter { !$0.isSeparatorItem }.map(\.title)
         #expect(titles.suffix(2) == [
             AppLocalization.text("compare.menuPair", "11111111", "00000000"),
@@ -122,9 +126,9 @@ struct CommitDetailsSessionTests {
         ])
         #expect(pair.last?.isAlternate ?? false)
 
-        let many = HistoryCommitMenu.items(for: commits, session: session)
+        let many = HistoryCommitMenu.items(for: commits, session: session) { _ in }
         #expect(many.last?.title == AppLocalization.text("compare.menu"))
-        #expect(HistoryCommitMenu.items(for: [], session: session).isEmpty)
+        #expect(HistoryCommitMenu.items(for: [], session: session) { _ in }.isEmpty)
     }
 }
 

@@ -329,7 +329,6 @@
 "branch.default" = "Default Branch";
 "branch.create" = "Create Branch";
 "branch.create.help" = "Create a local branch from a revision.";
-"branch.createFromCommit" = "Create Branch from Commit…";
 "branch.track" = "Track Remote Branch";
 "branch.track.help" = "Create a local branch that tracks the selected remote branch.";
 "branch.checkout" = "Check Out Branch";
@@ -1321,3 +1320,26 @@
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Remote Settings (%@)";
+
+/* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
+"rewrite.menu.checkout" = "Check Out “%@”";
+"rewrite.menu.checkoutGeneric" = "Check Out Revision…";
+"rewrite.menu.reset" = "Reset HEAD to “%@”…";
+"rewrite.menu.resetGeneric" = "Reset HEAD…";
+"rewrite.menu.revert" = "Revert “%@”…";
+"rewrite.menu.revertMany" = "Revert %ld Revisions…";
+"rewrite.menu.revertGeneric" = "Revert…";
+"rewrite.menu.cherryPick" = "Cherry-Pick “%@”…";
+"rewrite.menu.cherryPickMany" = "Cherry-Pick %ld Revisions…";
+"rewrite.menu.rebaseOnto" = "Rebase “%@” Onto…";
+"rewrite.menu.rebaseOntoMany" = "Rebase %ld Revisions Onto…";
+"rewrite.menu.amend" = "Amend “%@”";
+"rewrite.menu.edit" = "Edit “%@”";
+"rewrite.menu.reword" = "Edit Commit Message of “%@”…";
+"rewrite.menu.delete" = "Delete “%@”…";
+"rewrite.menu.deleteMany" = "Delete %ld Revisions…";
+"rewrite.menu.squashMany" = "Squash %ld Revisions…";
+"rewrite.menu.fixupMany" = "Fixup %ld Revisions…";
+"history.createBranch" = "Create New Branch from “%@”…";
+"history.createBranchGeneric" = "Create New Branch…";
+"history.rollback" = "Rollback";
