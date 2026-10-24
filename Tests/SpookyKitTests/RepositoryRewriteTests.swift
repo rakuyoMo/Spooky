@@ -7,16 +7,20 @@ import Testing
 
 /// 反转、摘取、重置、检出版本与变基到别处在真实 Git 上的结果；路径含空格、中文、引号与通配符。
 struct RepositoryRewriteTests {
-    /// 反转一个提交会新增一个抵消它的提交，原提交仍在历史里。
-    @Test("反转单个提交")
-    func revertSingle() async throws {
-        let (repository, commits) = try await makeRepository(["一", "二"])
+    /// 反转一个提交会新增一个抵消它的提交，原提交仍在历史里；再摘取原提交又把改动带回来。SHA-1 与 SHA-256 仓库结果相同。
+    @Test("反转单个提交再摘取回来", arguments: ["sha1", "sha256"])
+    func revertSingle(objectFormat: String) async throws {
+        let (repository, commits) = try await makeRepository(["一", "二"], objectFormat: objectFormat)
         defer { repository.remove() }
 
-        try await RepositoryRewrite(runner: repository.runner).revert([commits[1]], options: PickOptions())
+        let rewrite = RepositoryRewrite(runner: repository.runner)
+        try await rewrite.revert([commits[1]], options: PickOptions())
 
         #expect(try await subjects(in: repository) == ["Revert \"二\"", "二", "一"])
         #expect(!exists(file(1), in: repository))
+
+        try await rewrite.cherryPick([commits[1]], options: PickOptions())
+        #expect(exists(file(1), in: repository))
     }
 
     /// 不直接提交时，多个提交的反转只留在暂存区，HEAD 不动。

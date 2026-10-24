@@ -56,6 +56,34 @@ extension RepositoryRewriteTests {
         #expect(try await WorkingCopyOperations(runner: repository.runner).context(head: commits[2]).operation == nil)
     }
 
+    /// 调整顺序引起冲突时变基停下，进行中状态是变基；中止后回到开始之前。
+    @Test("移动提交引起冲突后中止")
+    func moveConflictThenAbort() async throws {
+        let (repository, _) = try await makeRepository(["一"])
+        defer { repository.remove() }
+
+        var changed: [String] = []
+
+        for content in ["甲", "乙"] {
+            try write(content + "\n", to: file(0), in: repository)
+            _ = try await repository.runner.run(["commit", "-q", "-am", content])
+            changed.append(try await head(in: repository))
+        }
+
+        let rewrite = RepositoryRewrite(runner: repository.runner)
+        let operations = WorkingCopyOperations(runner: repository.runner)
+        let plan = try await rewrite.plan(.move([changed[1]], to: changed[0], position: .below))
+
+        await #expect(throws: GitError.self) { try await rewrite.perform(plan) }
+
+        let context = try await operations.context(head: try await head(in: repository))
+        #expect(context.operation == .rebase)
+        #expect(!(context.progress?.stopsForEdit ?? true))
+
+        try await operations.finish(.rebase, action: "abort")
+        #expect(try await head(in: repository) == changed[1])
+    }
+
     /// 范围里有合并提交时不做交互式变基；不在 HEAD 历史里的提交同样拒绝。
     @Test("合并提交与不在 HEAD 里的提交")
     func rejectsMergesAndForeignCommits() async throws {

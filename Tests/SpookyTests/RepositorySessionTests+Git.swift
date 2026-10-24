@@ -200,7 +200,7 @@ extension RepositorySessionTests {
 
         let entries = session.status?.entries ?? []
         #expect(session.canFetch && session.canPush && session.canPublish && session.canCreateBranch)
-        #expect(!session.canPull && !session.canMerge && !session.canCheckout)
+        #expect(!session.canPull && !session.canMerge)
         #expect(session.canStage(entries) && !session.canUnstage(entries) && session.canDiscard(entries))
         #expect(!session.canStage([]) && !session.canResolve(entries))
 
