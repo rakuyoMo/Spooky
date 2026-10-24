@@ -138,6 +138,65 @@ extension HistoryListTests {
         await session.refreshTask?.value
         #expect(controller.repositorySubtitle == AppLocalization.text("working.subtitle", 2))
     }
+
+    /// 读取引用期间又要求刷新时，读完后按最新的请求再读一次，读取开始之后新建的分支随之出现。
+    @Test("读取引用期间的刷新在读完后补上")
+    func refreshDuringReferenceRead() async throws {
+        let directory = try FileViewsTests.temporaryDirectory()
+        let tools = try FileViewsTests.temporaryDirectory()
+        defer {
+            try? FileManager.default.removeItem(at: directory)
+            try? FileManager.default.removeItem(at: tools)
+        }
+
+        let location = RepositoryLocation.local(path: directory.path)
+        let runner = try await FileViewsTests.initializeRepository(at: location)
+        _ = try await runner.run(["commit", "--allow-empty", "-q", "-m", "first"])
+
+        // 读全部引用的命令读完先留下记号，等闸门文件出现后才交出结果；其余命令直接交给 Git
+        let script = tools.appending(path: "gated-git")
+        try Data("""
+            #!/bin/sh
+            case "$*" in
+                *for-each-ref*--sort=refname*)
+                    tools=$(dirname "$0")
+                    output=$(mktemp)
+                    /usr/bin/git "$@" > "$output"
+                    code=$?
+                    : > "$tools/read"
+                    while [ ! -e "$tools/gate" ]; do sleep 0.02; done
+                    cat "$output"
+                    rm -f "$output"
+                    exit $code
+                    ;;
+            esac
+            exec /usr/bin/git "$@"
+            """.utf8).write(to: script)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: script.path)
+
+        let gated = GitRunner(
+            location: location,
+            executablePath: script.path,
+            environment: .inherit.updating([
+                "GIT_CONFIG_GLOBAL": "/dev/null",
+                "GIT_CONFIG_SYSTEM": "/dev/null",
+                "GIT_CONFIG_NOSYSTEM": "1",
+            ])
+        )
+        let status = try await runner.status()
+        let history = RepositoryHistoryState()
+        defer { history.close() }
+
+        // 第一次读取读完引用后停在闸门前，这时新建分支并再要求刷新
+        history.refresh(status: status, runner: gated)
+        try await FileViewsTests.wait { FileManager.default.fileExists(atPath: tools.appending(path: "read").path) }
+        _ = try await runner.run(["branch", "late"])
+        history.refresh(status: status, runner: gated)
+
+        // 闸门打开后，第一次读取交出没有新分支的结果，补上的刷新读到它
+        try Data().write(to: tools.appending(path: "gate"))
+        try await FileViewsTests.wait { history.snapshot?.references.contains { $0.id == "refs/heads/late" } ?? false }
+    }
 }
 
 // MARK: - Fixture
