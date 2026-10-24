@@ -100,6 +100,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 文件操作的参数表单与多按钮询问同样以窗口的 sheet 呈现
         session.onFileRequest = { [weak self] in self?.presentFileRequest($0) }
 
+        // 分支、标签与远端管理的对话框与询问同样以窗口的 sheet 呈现
+        session.onReferenceRequest = { [weak self] in self?.presentReferenceRequest($0) }
+
         session.onConfirm = { [weak self] title, message, action, abort in
             guard let window = self?.window, window.attachedSheet == nil else { return }
             let alert = NSAlert()
@@ -764,6 +767,11 @@ extension RepositoryWindowController {
             workingCopySplit = nil
             historySplit = nil
             detail = makeFileContentView()
+
+        case .remote:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeRemoteDetailView()
         }
 
         installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repository")

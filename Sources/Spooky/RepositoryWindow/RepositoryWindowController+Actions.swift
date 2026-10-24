@@ -203,6 +203,7 @@ extension RepositoryWindowController {
             ?? stashAvailability(of: item.action, repositoryView: repositoryView)
             ?? diffAvailability(of: item)
             ?? workingCopyFileAvailability(of: item)
+            ?? referenceAvailability(of: item.action, repositoryView: repositoryView)
 
         if let enabled {
             return enabled

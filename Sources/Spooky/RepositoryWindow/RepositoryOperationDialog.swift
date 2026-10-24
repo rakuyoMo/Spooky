@@ -88,6 +88,14 @@ struct RepositoryOperationDialog: View {
     @State
     private var track = false
 
+    /// 新建分支是否置顶，只在本次表单生效。
+    @State
+    private var pin = false
+
+    /// 新建分支的父分支完整引用名；空字符串表示不设置，起点是分支时默认是它。
+    @State
+    private var parent = ""
+
     /// 发布后设置 upstream。
     @State
     private var upstream = true
@@ -189,7 +197,7 @@ struct RepositoryOperationDialog: View {
                 previewView.padding(.horizontal, 20).padding(.bottom, 12)
             }
 
-            if [.fetch, .merge, .pull, .push, .publish].contains(request.kind) {
+            if [.create, .fetch, .merge, .pull, .push, .publish].contains(request.kind) {
                 DisclosureGroup(AppLocalization.text("dialog.options"), isExpanded: $optionsExpanded) {
                     options.padding(.vertical, 12)
                 }
@@ -206,6 +214,9 @@ struct RepositoryOperationDialog: View {
         .onChange(of: source) {
             if request.kind == .track { name = remoteBranchName(source) }
             if !canTrack { track = false }
+
+            // 起点是分支时，新分支的父分支默认是它
+            if request.kind == .create { parent = startBranch?.id ?? "" }
         }
         .onChange(of: localBranch) { if request.kind == .publish { name = localBranch } }
         .task(id: name + "\u{0}" + remote) { await validateName() }
@@ -216,7 +227,10 @@ struct RepositoryOperationDialog: View {
     private var branches: [RepositoryReference] { session.history.branches }
 
     /// 起点必须是实际分支才允许勾选跟踪。
-    private var canTrack: Bool { branches.contains { $0.id == source || $0.name == source } }
+    private var canTrack: Bool { startBranch != nil }
+
+    /// 起点对应的分支；起点是提交哈希、标签或其它写法时为 nil。
+    private var startBranch: RepositoryReference? { branches.first { $0.id == source || $0.name == source } }
 
     /// 表单校验在客户端及时反馈，执行时核心库仍重新核对。
     private var canSubmit: Bool {
@@ -294,25 +308,65 @@ extension RepositoryOperationDialog {
         .font(.system(size: 13))
     }
 
-    /// 新建分支：名称、起点，以及跟踪起点与新建后检出的选项。
+    /// 新建分支：名称、可输入也可从引用列表选的起点，以及跟踪起点、置顶与新建后检出的选项。
     @ViewBuilder
     private var createRows: some View {
         nameRow
 
-        GridRow {
+        // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐
+        GridRow(alignment: .center) {
             Text(AppLocalization.text("branch.start")).gridColumnAlignment(.trailing)
-            TextField("", text: $source)
-                .textInputSuggestions {
-                    ForEach(branches) { Text($0.name).textInputCompletion($0.id) }
-                }
-                .accessibilityLabel(AppLocalization.text("branch.start"))
+
+            RevisionComboBox(
+                text: $source,
+                items: session.revisionReferences.map(\.name),
+                label: AppLocalization.text("branch.start")
+            )
+            .frame(maxWidth: 350, alignment: .leading)
         }
 
         GridRow {
             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
             VStack(alignment: .leading, spacing: 8) {
-                option("branch.trackStart", value: $track).disabled(!canTrack)
+                // 起点是分支时标题写出它的名字
+                option(
+                    "branch.trackStart",
+                    title: startBranch.map { AppLocalization.text("branch.trackStart.named", $0.name) },
+                    value: $track
+                )
+                .disabled(!canTrack)
+
+                option("branch.pin", value: $pin)
                 option("branch.checkoutCreated", value: $checkout)
+            }
+        }
+    }
+
+    #warning(
+        "TODO: 新建分支选项区的父分支下拉以 None 开头、默认选中起点分支是推断。核实方式：分别从分支和从提交打开新建分支对话框，展开 Options 比对 Parent Branch 的列表与默认值；只影响父分支的可选项与默认值。"
+    )
+
+    /// 新建分支的选项区：父分支下拉，第一项表示不设置。
+    private var parentRow: some View {
+        Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 8) {
+            GridRow {
+                Text(AppLocalization.text("branch.parentOption")).gridColumnAlignment(.trailing)
+
+                Picker("", selection: $parent) {
+                    Text(AppLocalization.text("branch.parentOption.none")).tag("")
+
+                    ForEach(branches) { Text($0.name).tag($0.id) }
+                }
+                .labelsHidden()
+                .accessibilityLabel(AppLocalization.text("branch.parentOption"))
+            }
+
+            GridRow {
+                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+
+                Text(AppLocalization.text("branch.parentOption.help"))
+                    .font(.system(size: 11))
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -320,7 +374,7 @@ extension RepositoryOperationDialog {
     /// 跟踪远端分支：远端分支、本地名称与新建后检出的选项。
     @ViewBuilder
     private var trackRows: some View {
-        branchPicker(local: false)
+        branchPicker(local: false, label: "branch.remoteField")
         nameRow
 
         GridRow {
@@ -418,17 +472,21 @@ extension RepositoryOperationDialog {
         }
     }
 
-    /// Fetch、合并及推送附带的选项按各自行为过滤。
+    /// 新建分支的父分支，以及 Fetch、合并及推送附带的选项，按各自行为过滤。
     @ViewBuilder
     private var options: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if request.kind == .fetch {
-                option("sync.prune", value: $prune)
-                option("sync.allTags", value: $allTags)
+        if request.kind == .create {
+            parentRow
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                if request.kind == .fetch {
+                    option("sync.prune", value: $prune)
+                    option("sync.allTags", value: $allTags)
+                }
+                if request.kind == .merge { option("merge.verify", value: $mergeVerify).disabled(squash) }
+                if request.kind == .pull { option("merge.verify", value: $pullVerify) }
+                if request.kind != .fetch { option("sync.skipHooks", value: $skipHooks) }
             }
-            if request.kind == .merge { option("merge.verify", value: $mergeVerify).disabled(squash) }
-            if request.kind == .pull { option("merge.verify", value: $pullVerify) }
-            if request.kind != .fetch { option("sync.skipHooks", value: $skipHooks) }
         }
     }
 
@@ -477,23 +535,27 @@ extension RepositoryOperationDialog {
     }
 
     /// 合并可选两类分支；拉取和跟踪只选远端；检出只选本地。
-    private func branchPicker(local: Bool?) -> some View {
+    ///
+    /// - Parameter label: 标签的文案键；跟踪远端分支写明是远端分支。
+    private func branchPicker(local: Bool?, label: String = "branch.target") -> some View {
         GridRow {
-            Text(AppLocalization.text("branch.target")).gridColumnAlignment(.trailing)
+            Text(AppLocalization.text(label)).gridColumnAlignment(.trailing)
             Picker("", selection: $source) {
                 ForEach(branches.filter { local == nil || $0.isLocal == local }) {
                     Text($0.name).tag($0.id)
                 }
             }
             .labelsHidden()
-            .accessibilityLabel(AppLocalization.text("branch.target"))
+            .accessibilityLabel(AppLocalization.text(label))
         }
     }
 
     /// 勾选项说明保持正常文本色，仅禁用时随控件变灰。
-    private func option(_ key: String, value: Binding<Bool>) -> some View {
+    ///
+    /// - Parameter title: 随表单内容变化的标题；为 nil 时用文案键对应的标题。
+    private func option(_ key: String, title: String? = nil, value: Binding<Bool>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Toggle(AppLocalization.text(key), isOn: value)
+            Toggle(title ?? AppLocalization.text(key), isOn: value)
             Text(AppLocalization.text(key + ".help"))
                 .font(.system(size: 11))
                 .padding(.leading, 19)
@@ -513,7 +575,12 @@ extension RepositoryOperationDialog {
             request.localBranch ?? session.status?.branch.head ?? branches.first(where: \.isLocal)?.name ?? ""
 
         switch request.kind {
-        case .create: source = request.reference ?? "HEAD"
+        case .create:
+            // 起点框显示引用的短名，没有指定时是当前分支；起点是分支时它也是默认的父分支
+            source = request.reference.map { reference in
+                session.revisionReferences.first { $0.id == reference }?.name ?? reference
+            } ?? head?.name ?? "HEAD"
+            parent = startBranch?.id ?? ""
 
         case .track:
             source = request.reference ?? branches.first(where: \.isRemote)?.id ?? ""
@@ -627,7 +694,9 @@ extension RepositoryOperationDialog {
         let name = name
 
         // 不与属性 source 同名：闭包里引用同名属性会让 Swift 6.3 的类型推断失败
-        let revision = branches.first { $0.id == source || $0.name == source }?.id ?? source
+        let revision = session.revision(for: source)
+        let pinned = request.kind == .create && pin
+        let parentBranch = request.kind == .create && !parent.isEmpty ? parent : nil
         let remote = remote
         let localBranch = localBranch
         let checkout = checkout
@@ -664,7 +733,9 @@ extension RepositoryOperationDialog {
                         name: name,
                         startingAt: revision,
                         track: kind == .track || track,
-                        checkout: checkout
+                        checkout: checkout,
+                        pinned: pinned,
+                        parent: parentBranch
                     )
 
             case .checkout: try await RepositoryReferences(runner: runner).checkout(revision)

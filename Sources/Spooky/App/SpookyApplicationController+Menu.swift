@@ -229,7 +229,7 @@ extension SpookyApplicationController {
         }
     }
 
-    /// Repository 菜单：获取、拉取、推送、发布与新建分支。
+    /// Repository 菜单：获取、拉取、推送、发布分支与标签、添加远端、新建分支与标签。
     private func configureRepositoryMenu(in menu: NSMenu) {
         let repository = addMenu("menu.repository", to: menu)
         addItem(
@@ -255,12 +255,23 @@ extension SpookyApplicationController {
             to: repository
         )
         addItem("sync.publish", action: #selector(RepositoryWindowController.publishBranch), to: repository)
+        addItem("tag.publishMainMenu", action: #selector(RepositoryWindowController.publishTag), to: repository)
+
+        repository.addItem(.separator())
+        addItem("remote.addMainMenu", action: #selector(RepositoryWindowController.addRemote), to: repository)
 
         repository.addItem(.separator())
         addItem(
             "branch.create",
             action: #selector(RepositoryWindowController.createBranch),
             key: "b",
+            to: repository
+        )
+        addItem(
+            "tag.createMenu",
+            action: #selector(RepositoryWindowController.createTag),
+            key: "t",
+            modifiers: [.shift, .command],
             to: repository
         )
     }
