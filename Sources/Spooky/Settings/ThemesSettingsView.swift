@@ -5,7 +5,7 @@ import SwiftUI
 
 /// Themes 页：左侧主题列表，右侧编辑所选主题的字体与颜色，下方按主题绘制示例文本。
 ///
-/// 列表里选中的主题就是当前外观使用的主题，浅色、深色外观各自记住一套；内置主题只读。
+/// 列表里选中的主题就是当前外观使用的主题，浅色、深色外观各自记住一套。
 struct ThemesSettingsView: View {
     /// 用户主题与外观选择。
     private let store = ThemeStore.shared
@@ -91,7 +91,7 @@ extension ThemesSettingsView {
             barButton("minus", label: "themes.remove") {
                 perform("themes.error.delete") { try store.delete(theme.id) }
             }
-            .disabled(theme.isBuiltin)
+            .disabled(!isStored(theme))
 
             if !store.invalidFiles.isEmpty {
                 invalidFilesButton
@@ -143,7 +143,7 @@ extension ThemesSettingsView {
 // MARK: - 编辑
 
 extension ThemesSettingsView {
-    /// 字体、正文色、三个色板与示例文本；内置主题的控件全部禁用。
+    /// 字体、正文色、三个色板与示例文本；用的是资源里的版本时没有文件可写，控件全部禁用。
     private func editor(_ theme: TextTheme, dark: Bool) -> some View {
         VStack(alignment: .leading, spacing: 20) {
             fontRow(theme)
@@ -178,11 +178,11 @@ extension ThemesSettingsView {
                 .accessibilityValue(description)
 
             Button(AppLocalization.text("themes.change")) { showFontPanel(theme) }
-                .disabled(theme.isBuiltin)
+                .disabled(!isStored(theme))
 
             ThemeColorWell(
                 color: theme.colors["text"],
-                isEnabled: !theme.isBuiltin,
+                isEnabled: isStored(theme),
                 label: AppLocalization.text("themes.text")
             ) { setColor($0, for: "text", of: theme) }
                 .frame(width: 25, height: 22)
@@ -196,7 +196,7 @@ extension ThemesSettingsView {
                 VStack(spacing: 4) {
                     ThemeColorWell(
                         color: theme.colors[key],
-                        isEnabled: !theme.isBuiltin,
+                        isEnabled: isStored(theme),
                         label: AppLocalization.text("themes." + key)
                     ) { setColor($0, for: key, of: theme) }
                         .frame(width: 50, height: 30)
@@ -248,17 +248,22 @@ extension ThemesSettingsView {
         }
     }
 
-    /// 选中别的主题时，打开着的字体面板改为编辑新主题；新主题只读就关闭面板。
+    /// 选中别的主题时，打开着的字体面板改为编辑新主题；新主题没有文件可写就关闭面板。
     private func followFontPanel(to theme: TextTheme) {
         guard ThemeFontPicker.shared.isEditing else {
             return
         }
 
-        if theme.isBuiltin {
-            ThemeFontPicker.shared.stop()
-        } else {
+        if isStored(theme) {
             showFontPanel(theme)
+        } else {
+            ThemeFontPicker.shared.stop()
         }
+    }
+
+    /// 主题是否在 Themes 目录里；所选主题与 Default 的文件都无法加载时，页面显示的是资源里的版本。
+    private func isStored(_ theme: TextTheme) -> Bool {
+        store.themes.contains { $0.id == theme.id }
     }
 
     /// 把色板选出的颜色写回主题文件。
