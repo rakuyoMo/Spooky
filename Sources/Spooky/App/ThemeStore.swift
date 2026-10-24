@@ -109,15 +109,20 @@ final class ThemeStore {
 
     /// 把资源里的 Default 与 Default (Dark) 写进 Themes 目录，App 启动时调用。
     ///
-    /// 目录里已有这个名称的主题或文件时跳过，用户编辑过的内容不被覆盖；删除或改名后，下次启动重新写入。
+    /// 这个名称的文件缺少，或者读不出、解码失败时，用资源里的内容写入原位置；能加载的文件（包括编辑过的）不动。
+    /// 名称已被另一个文件里的主题占用时跳过；删除或改名后，下次启动重新写入。
     func installDefaultThemes() throws {
         for var theme in TextTheme.builtin {
-            let url = directory.appending(path: TextTheme.fileName(for: theme.name))
+            let standard = directory.appending(path: TextTheme.fileName(for: theme.name))
 
-            guard
-                !FileManager.default.fileExists(atPath: url.path),
-                !isNameInUse(theme.name, except: nil)
-            else { continue }
+            // 无法加载的同名文件沿用它原来的文件名覆盖，文件名只差大小写时也不另起一份。
+            let url = invalidFiles.first { Self.sameFile($0, standard) } ?? standard
+            let loadable = (try? Data(contentsOf: url)).flatMap { try? TextTheme.decode($0) } != nil
+            let named = themes.contains { Self.nameKey($0.name) == Self.nameKey(theme.name) }
+
+            guard !loadable, !named else {
+                continue
+            }
 
             // 改了名的那一份仍用着资源里的标识时，新写入的这份换一个标识，两份文件不共用标识。
             if themes.contains(where: { $0.id == theme.id }) {

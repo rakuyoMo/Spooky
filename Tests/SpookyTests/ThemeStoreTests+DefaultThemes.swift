@@ -5,7 +5,7 @@ import Testing
 
 // MARK: - ThemeStoreTests + DefaultThemes
 
-/// 启动时把 Default 与 Default (Dark) 写进 Themes 目录：只在缺少时写入，写入后与其它主题一样可以编辑、改名和删除。
+/// 启动时把 Default 与 Default (Dark) 写进 Themes 目录：只在缺少或无法加载时写入，写入后与其它主题一样可以编辑、改名和删除。
 extension ThemeStoreTests {
     /// 空目录里写入两套默认主题，内容取自资源；没有选过主题时按名称用的就是这两份文件，编辑后立即生效。
     @Test("首次启动写入两套默认主题并可编辑")
@@ -67,6 +67,47 @@ extension ThemeStoreTests {
 
         #expect(Set(try Self.themeFiles(root)) == ["Default.spookytheme", "Night.spookytheme"])
         #expect(third.invalidFiles.isEmpty)
+    }
+
+    /// 默认主题的文件损坏后，下次启动在原位置写回资源里的内容，之后能正常加载与选用；另一份编辑过的文件不受影响。
+    @Test("损坏的默认主题文件在启动时恢复")
+    func installRestoresUnloadableFile() throws {
+        let root = try Self.makeRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let store = try Self.store(in: root)
+        try store.installDefaultThemes()
+
+        let day = try #require(store.themes.first { $0.name == "Default" })
+        try store.update(day.id) { $0.fontSize = 20 }
+
+        let dayFile = Self.themes(root).appending(path: "Default.spookytheme")
+        let edited = try Data(contentsOf: dayFile)
+
+        // 写坏 Default (Dark)：下次启动时它列为无法加载，深色外观暂时用资源里的版本。
+        let nightFile = Self.themes(root).appending(path: "Default (Dark).spookytheme")
+        try Data("{".utf8).write(to: nightFile)
+
+        let relaunched = try Self.store(in: root)
+        #expect(relaunched.invalidFiles.map(\.lastPathComponent) == ["Default (Dark).spookytheme"])
+
+        try relaunched.installDefaultThemes()
+
+        // 原位置写回资源里的内容，不再列为无法加载；编辑过的 Default 原样保留。
+        #expect(Set(try Self.themeFiles(root)) == ["Default.spookytheme", "Default (Dark).spookytheme"])
+        #expect(try TextTheme.decode(Data(contentsOf: nightFile)) == TextTheme.builtin[1])
+        #expect(relaunched.invalidFiles.isEmpty)
+        #expect(try Data(contentsOf: dayFile) == edited)
+
+        // 恢复的主题可以选用，再次启动时从文件加载。
+        let night = try #require(relaunched.themes.first { $0.name == "Default (Dark)" })
+        relaunched.select(night.id, dark: false)
+        #expect(TextTheme.current(dark: false, in: relaunched) == night)
+
+        let reopened = try Self.store(in: root)
+        #expect(reopened.invalidFiles.isEmpty)
+        #expect(TextTheme.current(dark: false, in: reopened) == night)
+        #expect(TextTheme.current(dark: true, in: reopened) == night)
     }
 
     /// 改名或删除后，下次启动按名称发现缺少，重新写入；改了名的那份仍用资源里的标识，新写入的换成新标识。
