@@ -197,7 +197,8 @@ struct RepositorySidebarView: View {
 
                     // 视图设置打开 Show Reflog 时才显示
                     if showsReflog {
-                        Label(AppLocalization.text("reflog.title"), systemImage: "clock.arrow.circlepath").tag("reflog")
+                        Label(AppLocalization.text("reflog.title"), systemImage: "clock.arrow.circlepath")
+                            .tag("reflog")
                     }
                 } header: {
                     Text(AppLocalization.text("workspace.group"))
