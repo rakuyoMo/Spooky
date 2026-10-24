@@ -159,7 +159,14 @@ struct ReadOnlyFileDiffView: View {
                 return
             }
 
-            highlights = await DiffSegment.highlights(in: diff)
+            let ranges = await DiffSegment.highlights(in: diff)
+
+            // 计算期间换了补丁时任务已取消，结果作废
+            guard !Task.isCancelled else {
+                return
+            }
+
+            highlights = ranges
         }
     }
 

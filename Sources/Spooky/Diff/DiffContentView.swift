@@ -67,10 +67,26 @@ struct DiffContentView: View {
             DiffBottomBar(session: session, diff: diff)
         }
         .task(id: [colorsSyntax, colorsDiffSyntax]) {
-            syntax = await session.diffSyntax(for: snapshot, diff: diff)
+            let colored = await session.diffSyntax(for: snapshot, diff: diff)
+
+            // 着色期间切换了开关时任务已取消，结果作废，不覆盖新任务写入的片段
+            guard !Task.isCancelled else {
+                return
+            }
+
+            syntax = colored
         }
         .task(id: diff) {
-            highlights = await DiffSegment.highlights(in: diff)
+            // 补丁重新读取后先清掉旧的范围，避免套到新的行上
+            highlights = [:]
+
+            let ranges = await DiffSegment.highlights(in: diff)
+
+            guard !Task.isCancelled else {
+                return
+            }
+
+            highlights = ranges
         }
     }
 
