@@ -650,6 +650,9 @@ extension RepositoryOperationDialog {
         mergeOptions.verifySignatures = verify
         mergeOptions.skipHooks = skipHooks
         let options = mergeOptions
+        var pushSettings = PushOptions()
+        pushSettings.skipHooks = skipHooks
+        let pushOptions = pushSettings
 
         /// 按动作种类调用核心库，只读取上面复制的表单值。
         @Sendable
@@ -696,7 +699,7 @@ extension RepositoryOperationDialog {
                         remote: remote,
                         destination: name,
                         setUpstream: upstream,
-                        skipHooks: skipHooks,
+                        options: pushOptions,
                         onOutput: output
                     )
 

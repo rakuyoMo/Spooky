@@ -221,6 +221,7 @@ struct AppFailure: Identifiable {
         case .dirtyWorkingCopy: ("sync.error.dirty", .repository)
         case .requiresBranch: ("sync.error.branch", .repository)
         case .missingRemote: ("sync.error.remote", .repository)
+        case .missingUpstream: ("sync.error.upstream", .repository)
         }
     }
 
