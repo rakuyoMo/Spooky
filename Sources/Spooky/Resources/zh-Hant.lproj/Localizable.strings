@@ -823,3 +823,7 @@
 
 /* 恢复到指定版本。 */
 "files.revert.noRefs" = "這個儲存庫還沒有任何引用。";
+
+/* 储藏视图。 */
+"stash.search" = "搜尋儲藏說明";
+"stash.subtitle" = "儲藏（%ld 個儲藏）";

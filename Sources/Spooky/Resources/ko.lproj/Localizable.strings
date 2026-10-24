@@ -823,3 +823,7 @@
 
 /* 恢复到指定版本。 */
 "files.revert.noRefs" = "이 저장소에는 아직 참조가 없습니다.";
+
+/* 储藏视图。 */
+"stash.search" = "스태시 메시지 검색";
+"stash.subtitle" = "스태시 (스태시 %ld개)";

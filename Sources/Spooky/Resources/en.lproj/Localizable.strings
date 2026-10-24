@@ -823,3 +823,7 @@
 
 /* 恢复到指定版本。 */
 "files.revert.noRefs" = "This repository has no refs yet.";
+
+/* 储藏视图。 */
+"stash.search" = "Search for Stash Message";
+"stash.subtitle" = "Stashes (%ld Stashes)";

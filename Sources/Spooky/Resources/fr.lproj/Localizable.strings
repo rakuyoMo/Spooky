@@ -823,3 +823,7 @@
 
 /* 恢复到指定版本。 */
 "files.revert.noRefs" = "Ce dépôt n’a encore aucune référence.";
+
+/* 储藏视图。 */
+"stash.search" = "Rechercher un message de remisage";
+"stash.subtitle" = "Remisages (%ld remisages)";
