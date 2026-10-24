@@ -171,7 +171,9 @@ extension RepositorySessionTests {
     }
 
     /// 菜单、工具栏、右键菜单与拖放共用的可用性规则随真实仓库状态与写入状态变化。
-    @Test("统一的动作可用性规则", .timeLimit(.minutes(1)))
+    ///
+    /// 本机仓库的 Git 命令在测试进程里共用一组主机槽，整套测试并行时读取要排队，上限与等待按整套测试的耗时留足。
+    @Test("统一的动作可用性规则", .timeLimit(.minutes(5)))
     func actionAvailability() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(
             path: "spooky-rules-" + UUID().uuidString
@@ -192,7 +194,7 @@ extension RepositorySessionTests {
         }
         session.display(location)
         session.refresh()
-        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(180))
 
         while session.history.snapshot == nil || session.context == nil, .now < deadline {
             try await Task.sleep(for: .milliseconds(20))

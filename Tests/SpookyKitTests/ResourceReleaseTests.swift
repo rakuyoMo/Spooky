@@ -47,7 +47,9 @@ struct ResourceReleaseTests {
     }
 
     /// 反复执行成功、非零退出与取消后，进程打开的描述符数量不随次数增长。
-    @Test("成功、失败与取消都释放文件描述符", .timeLimit(.minutes(2)))
+    ///
+    /// 本机仓库的 Git 命令在测试进程里共用一组主机槽，整套测试并行时 60 次调用要依次排队，上限按整套测试的耗时留足。
+    @Test("成功、失败与取消都释放文件描述符", .timeLimit(.minutes(5)))
     func descriptors() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
