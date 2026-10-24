@@ -6,7 +6,7 @@ import Testing
 
 /// 自动获取的调度与失败记录、同步停在哪一步的说明，以及快速操作缺少跟踪分支时的说明。
 extension RepositorySessionTests {
-    /// 只在前台、到期且仓库可写时获取；设了 skipFetchAll 的远端不获取；间隔为 0 时不再获取。
+    /// 只在前台、到期且仓库可写时获取；设了 skipFetchAll 的远端不获取；间隔为 0 时不获取。
     @Test("自动获取的间隔、前台限制与跳过的远端")
     func autoFetchSchedule() async throws {
         let directory = try temporaryDirectory()
@@ -48,8 +48,14 @@ extension RepositorySessionTests {
         await session.writeTask?.value
         #expect(try await tracking(runner) == pushed)
 
-        defaults.set(0, forKey: RepositoryAutoFetch.intervalKey)
-        #expect(!scheduler.check(now: start.addingTimeInterval(100_000)))
+        // 间隔为 0 时到期也不获取。0 写进另一个偏好域：覆盖同一个域里已有的值时，若进程的偏好缓存在这之前被清掉过，紧接着读到的可能仍是旧值
+        let manual = try #require(UserDefaults(suiteName: directory.appending(path: "manual").path))
+        manual.set(0, forKey: RepositoryAutoFetch.intervalKey)
+        let paused = RepositoryAutoFetch(session: session, defaults: manual) { true }
+
+        // 第一次检查开始计时，第二次时早已到期
+        paused.check(now: start)
+        #expect(!paused.check(now: start.addingTimeInterval(100_000)))
     }
 
     /// 自动获取失败不弹错误，原因记进 Activity。
