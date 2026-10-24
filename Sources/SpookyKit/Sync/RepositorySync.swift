@@ -120,7 +120,7 @@ public struct RemoteReferenceUpdate: Sendable, Equatable {
 // MARK: - MergePreview
 
 /// 合并预览以退出状态判定，检查失败保留原始诊断。
-public enum MergePreview: Sendable {
+public enum MergePreview: Sendable, Equatable {
     /// 目标已是 HEAD 的祖先。
     case unchanged
 

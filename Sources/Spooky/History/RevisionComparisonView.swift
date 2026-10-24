@@ -15,11 +15,16 @@ struct RevisionComparisonView: View {
     /// 结束比较的入口；嵌在别的详情里、不能单独关闭时为空。
     var close: (() -> Void)? = nil
 
+    /// 显示自带的顶栏；分支整理的详情用自己的头部时关掉。
+    var showsHeader = true
+
     /// 读取失败时在内容上方显示诊断。
     var body: some View {
         VStack(spacing: 0) {
-            header
-            Divider()
+            if showsHeader {
+                header
+                Divider()
+            }
 
             if let failure = state.failure {
                 FailureDetailsView(failure: failure)

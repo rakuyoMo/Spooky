@@ -114,6 +114,7 @@ struct RepositorySidebarView: View {
     private var selectedItems: Set<String> {
         if session.activeView == .workingCopy { return ["workingCopy"] }
         if session.activeView == .stashes { return ["stashes"] }
+        if session.activeView == .branchesReview { return ["branchesReview"] }
 
         // 远端设置对应侧边栏里那个远端的行
         if session.activeView == .remote {
@@ -154,10 +155,12 @@ struct RepositorySidebarView: View {
                     session.activeView = .workingCopy
                 } else if added.contains("stashes") || value == ["stashes"] {
                     session.activeView = .stashes
+                } else if added.contains("branchesReview") || value == ["branchesReview"] {
+                    session.activeView = .branchesReview
                 } else {
                     // 置顶分组里的行换回分支的完整引用名
                     let references = value
-                        .subtracting(["workingCopy", "history", "stashes"])
+                        .subtracting(["workingCopy", "history", "stashes", "branchesReview"])
                         .filter { !$0.hasPrefix(Self.remoteRowPrefix) }
                         .map(Self.reference(forRow:))
 
@@ -187,6 +190,9 @@ struct RepositorySidebarView: View {
                     stashes
                         .tag("stashes")
                         .modifier(StashesDropTarget(session: session))
+
+                    Label(AppLocalization.text("review.title"), systemImage: "arrow.triangle.pull")
+                        .tag("branchesReview")
                 } header: {
                     Text(AppLocalization.text("workspace.group"))
                 }
@@ -198,6 +204,9 @@ struct RepositorySidebarView: View {
                 remoteBranches
             }
             .listStyle(.sidebar)
+
+            // 刚归档的分支数与撤销
+            ArchiveNoticeView(session: session)
 
             activityRows
             Divider()
@@ -300,6 +309,9 @@ struct RepositorySidebarView: View {
             SidebarFilterField(text: $filterText)
 
             Spacer(minLength: 8)
+
+            // 自动归档关闭且有建议归档的分支时显示
+            ArchiveFooterButton(session: session)
 
             Menu {
                 Button(AppLocalization.text("branch.create")) {
@@ -456,6 +468,9 @@ extension RepositorySidebarView {
                 request(RepositoryActionRequest(kind: .merge, reference: ref.id))
             }
             .disabled(!session.canMerge(ref))
+
+            // HEAD 分支设了父分支时可以并入父分支或变基到父分支上
+            ParentBranchMenuItems(session: session, reference: ref, request: request)
             if ref.isLocal {
                 Divider()
                 archiveMenuItems([ref])

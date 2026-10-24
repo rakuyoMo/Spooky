@@ -43,6 +43,10 @@ struct HistoryListView: View {
     @AppStorage(CommitDateFormat.key)
     private var dateFormat = CommitDateFormat.absolute
 
+    /// 与基准分支比较的开关。
+    @AppStorage(RepositoryHistoryState.comparesBranchesKey)
+    private var comparesBranches = false
+
     /// 40 pt 表头、搜索过滤面板、24 / 46 pt 列表行和持续可见的取消入口。
     var body: some View {
         VStack(spacing: 0) {
@@ -50,6 +54,9 @@ struct HistoryListView: View {
 
             header
             Divider()
+
+            // 选中已完全合并或陈旧的分支时表头下方是提示条
+            HistoryBranchHint(session: session)
 
             // 有搜索条件时表头下方是过滤面板
             if !session.history.searchConditions.isEmpty {
@@ -92,37 +99,23 @@ struct HistoryListView: View {
             session.history.applyViewSettings()
         }
         .onChange(of: grouping) { session.history.applyViewSettings() }
+        .onChange(of: comparesBranches) { session.history.loadBaseComparison() }
     }
 
-    /// 所选引用与它的跟踪分支、所选分支的双向数量与视图设置按钮。
+    /// 所选引用与它的跟踪分支、所选分支的双向数量与视图设置按钮；与基准分支比较时左侧换成基准分支头。
     private var header: some View {
         HStack(spacing: 8) {
-            HStack(spacing: 2) {
-                Text(session.history.title)
-                    .lineLimit(1)
-                    .help(session.repository?.displayPath ?? "")
-
-                // 本地分支有跟踪分支时写在后面
-                if let tracking = trackingName {
-                    Image(systemName: "chevron.compact.right")
-                        .foregroundStyle(.tertiary)
-                        .accessibilityHidden(true)
-
-                    Text(tracking)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                }
-            }
-
-            if
-                let id = session.history.selectedReference,
-                let counts = session.history.divergence[id]
-            {
-                Text("↑ \(counts.ahead) ↓ \(counts.behind)")
-                    .font(.system(size: 11))
+            if session.history.baseComparison != nil {
+                HistoryBaseBranchHeader(history: session.history)
+            } else {
+                referenceTitle
             }
 
             Spacer(minLength: 4)
+
+            IntegrateParentButton(session: session)
+
+            CompareBranchesToggle(history: session.history)
 
             HistoryViewMenuButton()
                 .fixedSize()
@@ -133,6 +126,35 @@ struct HistoryListView: View {
         .padding(.trailing, 8)
         .frame(height: 40)
         .background(.bar)
+    }
+
+    /// 所选引用与它的跟踪分支，以及所选分支相对上游的双向数量。
+    @ViewBuilder
+    private var referenceTitle: some View {
+        HStack(spacing: 2) {
+            Text(session.history.title)
+                .lineLimit(1)
+                .help(session.repository?.displayPath ?? "")
+
+            // 本地分支有跟踪分支时写在后面
+            if let tracking = trackingName {
+                Image(systemName: "chevron.compact.right")
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+
+                Text(tracking)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+            }
+        }
+
+        if
+            let id = session.history.selectedReference,
+            let counts = session.history.divergence[id]
+        {
+            Text("↑ \(counts.ahead) ↓ \(counts.behind)")
+                .font(.system(size: 11))
+        }
     }
 
     /// 单选的本地分支的跟踪分支名；没有时为 nil。
@@ -261,7 +283,7 @@ private struct HistoryCommitTable: NSViewRepresentable {
 
             let history = parent.session.history
             let ids = history.rows.map(\.id)
-            let markers = [history.unpushed, history.unpulled]
+            let markers = [history.unpushed, history.unpulled, history.parentCommits]
 
             if
                 displayed != ids || changedStyle || snapshot != history.snapshot
@@ -464,15 +486,19 @@ extension HistoryCommitTable.Coordinator {
     /// 行数来自当前已完成的页与日期分组。
     func numberOfRows(in _: NSTableView) -> Int { parent.session.history.rows.count }
 
-    /// 提交行 24 / 46 pt，日期分组行 30 pt。
+    /// 提交行与分叉点行 24 / 46 pt，“没有新提交” 行 40 / 46 pt，日期分组行 30 pt。
     func tableView(_: NSTableView, heightOfRow row: Int) -> CGFloat {
         let rows = parent.session.history.rows
 
-        if rows.indices.contains(row), rows[row].commit == nil {
-            return 30
+        guard rows.indices.contains(row) else {
+            return parent.smallRows ? 24 : 46
         }
 
-        return parent.smallRows ? 24 : 46
+        switch rows[row] {
+        case .group: return 30
+        case .noNewCommits: return parent.smallRows ? 40 : 46
+        case .commit, .forkPoint: return parent.smallRows ? 24 : 46
+        }
     }
 
     /// 只有提交行可以选中。
@@ -506,6 +532,19 @@ extension HistoryCommitTable.Coordinator {
 
             return Self.reuse(view, identifier: "history-group", in: tableView)
 
+        case .forkPoint(let base):
+            // 分叉点行同样画出穿到分叉点提交的线
+            let next = history.commit(atRow: row + 1).flatMap { history.graphRows[$0.id] }
+            let view = HistoryForkPointRow(
+                base: base,
+                graph: parent.showGraph && next != nil ? HistoryGraphView(passingInto: next) : nil
+            )
+
+            return Self.reuse(view, identifier: "history-fork-point", in: tableView)
+
+        case .noNewCommits(let base):
+            return Self.reuse(HistoryNoNewCommitsRow(base: base), identifier: "history-no-new-commits", in: tableView)
+
         case .commit(let commit):
             let view = HistoryCommitRow(
                 commit: commit,
@@ -516,6 +555,7 @@ extension HistoryCommitTable.Coordinator {
                 dateFormat: parent.dateFormat,
                 unpushed: history.unpushed.contains(commit.id),
                 unpulled: history.unpulled.contains(commit.id),
+                isParent: history.parentCommits.contains(commit.id),
                 selected: history.selectedIDs.contains(commit.id),
                 signatures: parent.session.signatures,
                 runner: parent.session.runner
@@ -566,6 +606,9 @@ private struct HistoryCommitRow: View {
     /// 未拉取提交显示下箭头与弱化背景。
     let unpulled: Bool
 
+    /// 与基准分支比较时，分叉点及其之下属于基准分支的提交，与未拉取的提交一样置灰。
+    let isParent: Bool
+
     /// 被选中时文本和徽标采用选中配色。
     let selected: Bool
 
@@ -599,9 +642,11 @@ private struct HistoryCommitRow: View {
         .font(.system(size: small ? 11 : 12))
         .padding(.trailing, 8)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .foregroundStyle(selected ? Self.selectedText : (unpulled ? .secondary : .primary))
+        .foregroundStyle(selected ? Self.selectedText : (unpulled || isParent ? .secondary : .primary))
         .background(
-            unpulled && !selected ? AppPalette.color("general_alternate_row_background_color") : .clear
+            (unpulled || isParent) && !selected
+                ? AppPalette.color("general_alternate_row_background_color")
+                : .clear
         )
         .help(commit.id + "\n" + commit.subject)
         .accessibilityElement(children: .combine)

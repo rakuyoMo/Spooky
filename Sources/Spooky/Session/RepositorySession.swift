@@ -25,11 +25,14 @@ enum RepositoryView: String, CaseIterable {
     /// 一个远端的设置与远端分支。
     case remote
 
+    /// 本地分支与基准分支的比较与整理。
+    case branchesReview
+
     /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
     var supportsSearch: Bool {
         switch self {
         case .fileContent, .remote: false
-        case .workingCopy, .history, .stashes, .fileHistory: true
+        case .workingCopy, .history, .stashes, .fileHistory, .branchesReview: true
         }
     }
 }
@@ -88,6 +91,9 @@ final class RepositorySession {
 
     /// 历史详情里两个版本的比较。
     let comparison = RevisionComparisonState()
+
+    /// 分支整理视图的基准、比较与筛选。
+    let branchesReview = BranchesReviewState()
 
     /// 窗口负责呈现导出、保存补丁与比较版本的对话框。
     var onRevisionRequest: ((RevisionRequest) -> Void)? = nil
@@ -221,6 +227,9 @@ final class RepositorySession {
 
     /// 窗口负责呈现改写操作的对话框与确认。
     var onRewriteRequest: ((RewriteRequest) -> Void)? = nil
+
+    /// 打开预选了目标的变基对话框，参数是目标的完整引用名；由窗口呈现 sheet。
+    var onRebaseRequest: ((String) -> Void)? = nil
 
     /// 当前刷新任务，关闭仓库时取消。
     private(set) var refreshTask: Task<Void, Never>? = nil
@@ -475,6 +484,7 @@ extension RepositorySession {
         fileContent.close()
         signatures.reset()
         comparison.close()
+        branchesReview.close()
         fileMonitor?.stop()
         fileMonitor = nil
         fileCache?.removeAll()

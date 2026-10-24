@@ -50,6 +50,10 @@ extension SyncDialog {
             destination = head?.upstreamBranch.map { String($0.dropFirst("refs/heads/".count)) } ?? source
         }
 
+        if let preset {
+            source = preset
+        }
+
         if kind != .rebase, session.history.snapshot?.remotes.isEmpty != false {
             error = AppLocalization.text("sync.noRemotes")
         } else if [.sync, .forcePush].contains(kind), remoteBranches.isEmpty {

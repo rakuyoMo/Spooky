@@ -62,7 +62,7 @@ extension RepositorySidebarView {
                 }
             }
         } header: {
-            groupHeader("sidebar.archived", destination: .archived)
+            ArchivedGroupHeader(session: session, request: request)
         }
     }
 

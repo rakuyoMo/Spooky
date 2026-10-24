@@ -106,7 +106,7 @@ extension RepositoryHistoryState {
 
         if settings.grouping != grouping {
             grouping = settings.grouping
-            rows = HistoryRow.rows(for: commits, grouping: grouping)
+            updateComparisonRows()
         }
     }
 

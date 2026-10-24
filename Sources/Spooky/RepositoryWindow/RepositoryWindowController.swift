@@ -110,6 +110,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 分支、标签与远端管理的对话框与询问同样以窗口的 sheet 呈现
         session.onReferenceRequest = { [weak self] in self?.presentReferenceRequest($0) }
 
+        // 批量归档对话框与自动归档的确认同样以窗口的 sheet 呈现
+        configureBranchesReview()
+
         session.onConfirm = { [weak self] title, message, action, abort in
             guard let window = self?.window, window.attachedSheet == nil else { return }
             let alert = NSAlert()
@@ -395,6 +398,15 @@ extension RepositoryWindowController {
         }
 
         session.activeView = .stashes
+        showsManager = false
+        configureRepositoryView()
+    }
+
+    /// 切换到分支整理，⌘5 与侧边栏使用相同状态。
+    @objc
+    func showBranchesReview() {
+        guard session.repository != nil else { return }
+        session.activeView = .branchesReview
         showsManager = false
         configureRepositoryView()
     }
@@ -791,6 +803,11 @@ extension RepositoryWindowController {
             workingCopySplit = nil
             historySplit = nil
             detail = makeRemoteDetailView()
+
+        case .branchesReview:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeBranchesReviewSplit()
         }
 
         installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repository")
