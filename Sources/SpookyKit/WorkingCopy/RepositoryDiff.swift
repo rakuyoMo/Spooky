@@ -21,8 +21,8 @@ public struct DiffOptions: Sendable, Equatable {
     /// 未设置偏好时的上下文行数。
     public static let defaultContextLines = 3
 
-    /// 显示整个文件时的上下文行数，远大于可显示的文件行数，补丁因此只有一块。
-    static let entireFileContext = 100_000_000
+    /// 显示整个文件时的上下文行数：改动前后 10 万行以内的内容都会显示，不超过这个行数的文件因此只有一块。
+    static let entireFileContext = 100_000
 
     /// 改动前后保留的上下文行数；不足 1 行的补丁无法按块写回，按 1 行处理。
     public var contextLines: Int

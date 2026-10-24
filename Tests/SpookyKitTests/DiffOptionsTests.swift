@@ -63,6 +63,18 @@ struct DiffOptionsTests {
         #expect(try String(contentsOf: file, encoding: .utf8).contains("line 28\n"))
     }
 
+    /// 显示整个文件时上下文取 10 万行，不看上下文行数的偏好；不超过这个行数的文件因此只有一块。
+    @Test("显示整个文件的上下文行数")
+    func entireFileArguments() {
+        #expect(DiffOptions(showsEntireFile: true).arguments == ["--unified=100000"])
+
+        let whitespace = DiffOptions(contextLines: 7, showsEntireFile: true, ignoresWhitespace: true)
+        #expect(whitespace.arguments == ["--unified=100000", "--ignore-all-space"])
+
+        // 关掉显示整个文件时回到偏好的行数
+        #expect(DiffOptions(contextLines: 7).arguments == ["--unified=7"])
+    }
+
     /// 大 Diff 警告按显示的这份补丁的字节数判断：同一处改动在显示整个文件时可能超过阈值，放行后才解析。
     @Test("显示整个文件时的大 Diff 警告")
     func entireFileThreshold() async throws {
