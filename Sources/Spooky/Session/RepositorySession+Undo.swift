@@ -38,9 +38,8 @@ extension RepositorySession {
             return !redo ? history.irreversibleTitle.map(UndoMenuState.irreversible) ?? .empty : .empty
         }
 
-        // 写操作、刷新与合并、变基等进行中的操作都要等它结束
+        // 写操作与合并、变基等进行中的操作都要等它结束
         let busy = isWriting
-            || isRefreshing
             || RepositoryWriteLocks.shared.contains(repository)
             || context?.operation != nil
 
@@ -58,8 +57,9 @@ extension RepositorySession {
         let references = undoComparedReferences
         let stashIDs = stashes.isLoaded ? stashes.entries.map(\.id) : nil
 
+        // 正在刷新时读到的可能还是写入前的状态，对不上时先当作忙碌
         guard let status, expected.resembles(status: status, references: references, stashes: stashIDs) else {
-            return .blocked(entry.title, reason: "undo.reason.changed")
+            return .blocked(entry.title, reason: isRefreshing ? "undo.reason.busy" : "undo.reason.changed")
         }
 
         return .available(entry.title)
