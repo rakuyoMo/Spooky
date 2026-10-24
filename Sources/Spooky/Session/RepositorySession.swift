@@ -819,11 +819,6 @@ extension RepositorySession {
     ) {
         stagingOverrides = [:]
 
-        // 未合并分支的普通删除改为询问是否强制删除，询问里带着失败的说明与 Git 原文
-        if offerForceDeletion(after: error) {
-            return
-        }
-
         let remoteFailure = error as? RemoteConnectionError
 
         // 取消未确认仍须报告；普通取消只回到可刷新状态。
@@ -831,7 +826,11 @@ extension RepositorySession {
             let failure = AppFailure(error: error, opening: false, location: repository, writing: true)
             self.failure = failure
             Self.logger.error("写操作失败：\(title, privacy: .public)，类别 \(failure.kind.rawValue, privacy: .public)")
-            onFailure?(failure)
+
+            // 未合并分支的普通删除改为询问是否强制删除，询问里带着失败的说明与 Git 原文
+            if !offerForceDeletion(after: error) {
+                onFailure?(failure)
+            }
         }
 
         // 结果未知的服务器写入不重试，等待重连核对后再报告。

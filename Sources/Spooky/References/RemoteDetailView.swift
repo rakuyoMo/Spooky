@@ -66,9 +66,9 @@ struct RemoteDetailView: View {
 // MARK: - Layout
 
 extension RemoteDetailView {
-    /// 写入与刷新结束时重新读取；远端名变化时换成新的远端。
-    private var reloadKey: String {
-        (session.selectedRemote ?? "") + "\u{0}" + String(session.isRefreshing) + String(session.isWriting)
+    /// 写入结束、引用变化与换远端时重新读取；服务器的定时轮询不会触发，免得每次轮询都多一次往返。
+    private var reloadKey: ReloadKey {
+        ReloadKey(remote: session.selectedRemote, isWriting: session.isWriting, snapshot: session.history.snapshot)
     }
 
     /// 32 pt 图标、远端名与右侧分段。
@@ -135,6 +135,20 @@ extension RemoteDetailView {
             }
         }
     }
+}
+
+// MARK: - ReloadKey
+
+/// 远端视图重新读取设置的时机。
+private struct ReloadKey: Equatable {
+    /// 所选远端。
+    let remote: String?
+
+    /// 是否有写操作进行中；结束时重新读取。
+    let isWriting: Bool
+
+    /// 引用快照；远端增删改名后随之变化。
+    let snapshot: ReferenceSnapshot?
 }
 
 // MARK: - RemoteGeneralSettings

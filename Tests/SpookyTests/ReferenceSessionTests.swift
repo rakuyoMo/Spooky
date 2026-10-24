@@ -29,7 +29,9 @@ struct ReferenceSessionTests {
         defer { session.close() }
 
         var requests: [ReferenceRequest] = []
+        var failures: [AppFailure] = []
         session.onReferenceRequest = { requests.append($0) }
+        session.onFailure = { failures.append($0) }
         session.display(location)
         session.refresh()
         await session.refreshTask?.value
@@ -46,7 +48,8 @@ struct ReferenceSessionTests {
         #expect(offer.branches == ["refs/heads/topic"])
         #expect(offer.deletingUpstream)
         #expect(failure.details.lowercased().contains("not fully merged"))
-        #expect(session.failure == nil)
+        #expect(failures.isEmpty)
+        #expect(failure.title == AppLocalization.text("branch.error.unmerged"))
 
         session.deleteBranches(offer.branches, force: true, deletingUpstream: offer.deletingUpstream)
         await session.writeTask?.value
