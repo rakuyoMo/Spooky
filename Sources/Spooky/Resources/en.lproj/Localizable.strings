@@ -752,9 +752,7 @@
 "files.untrack" = "Untrack";
 "files.untrack.single" = "Untrack “%@”";
 "files.untrack.multiple" = "Untrack %ld Items";
-"files.untrack.message" = "Stop tracking the following in %2$@? The files stay in your working copy, and the next commit removes them from the repository.\n\n%1$@";
 "files.trash" = "Move to Trash";
-"files.trash.message" = "Move the following in %2$@ to the Trash? You can put them back from the Trash.\n\n%1$@";
 "files.delete" = "Delete";
 "files.delete.remote" = "Permanently delete the following on the server at %2$@? This cannot be undone.\n\n%1$@";
 "files.move.menu" = "Move…";

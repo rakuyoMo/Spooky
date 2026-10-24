@@ -70,7 +70,7 @@ struct WorkingCopyDetailView: View {
                         Button(AppLocalization.text("working.discard")) { session.discard(session.selectedEntries) }
                             .disabled(!session.canDiscard(session.selectedEntries))
 
-                        // 本机移到废纸篓，服务器上永久删除，执行前都会确认
+                        // 本机直接移到废纸篓，服务器上确认后永久删除
                         Button(AppLocalization.text(session.repository?.host == nil ? "files.trash" : "files.delete")) {
                             session.delete(session.selectedEntries)
                         }

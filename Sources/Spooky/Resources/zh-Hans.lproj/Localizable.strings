@@ -752,9 +752,7 @@
 "files.untrack" = "停止跟踪";
 "files.untrack.single" = "停止跟踪 “%@”";
 "files.untrack.multiple" = "停止跟踪 %ld 个项目";
-"files.untrack.message" = "要停止跟踪以下文件吗？仓库：%2$@。文件保留在工作区，下次提交会把它们从版本库中移除。\n\n%1$@";
 "files.trash" = "移到废纸篓";
-"files.trash.message" = "要把以下文件移到废纸篓吗？仓库：%2$@。之后可以从废纸篓放回原处。\n\n%1$@";
 "files.delete" = "删除";
 "files.delete.remote" = "要在服务器上永久删除以下文件吗？仓库：%2$@。此操作无法撤销。\n\n%1$@";
 "files.move.menu" = "移动…";

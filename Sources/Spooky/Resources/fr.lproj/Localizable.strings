@@ -752,9 +752,7 @@
 "files.untrack" = "Ne plus suivre";
 "files.untrack.single" = "Ne plus suivre « %@ »";
 "files.untrack.multiple" = "Ne plus suivre %ld éléments";
-"files.untrack.message" = "Ne plus suivre les fichiers suivants dans %2$@ ? Ils restent dans la copie de travail, et le prochain commit les retire du dépôt.\n\n%1$@";
 "files.trash" = "Placer dans la corbeille";
-"files.trash.message" = "Placer les fichiers suivants de %2$@ dans la corbeille ? Vous pourrez les remettre à leur place depuis la corbeille.\n\n%1$@";
 "files.delete" = "Supprimer";
 "files.delete.remote" = "Supprimer définitivement les fichiers suivants sur le serveur dans %2$@ ? Cette action est irréversible.\n\n%1$@";
 "files.move.menu" = "Déplacer…";

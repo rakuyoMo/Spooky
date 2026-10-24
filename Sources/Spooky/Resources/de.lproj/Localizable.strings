@@ -752,9 +752,7 @@
 "files.untrack" = "Nicht mehr verfolgen";
 "files.untrack.single" = "„%@“ nicht mehr verfolgen";
 "files.untrack.multiple" = "%ld Objekte nicht mehr verfolgen";
-"files.untrack.message" = "Folgende Dateien in %2$@ nicht mehr verfolgen? Die Dateien bleiben in der Arbeitskopie, und der nächste Commit entfernt sie aus dem Repository.\n\n%1$@";
 "files.trash" = "In den Papierkorb legen";
-"files.trash.message" = "Folgende Dateien in %2$@ in den Papierkorb legen? Sie können sie aus dem Papierkorb zurücklegen.\n\n%1$@";
 "files.delete" = "Löschen";
 "files.delete.remote" = "Folgende Dateien auf dem Server unter %2$@ endgültig löschen? Dies kann nicht widerrufen werden.\n\n%1$@";
 "files.move.menu" = "Bewegen …";

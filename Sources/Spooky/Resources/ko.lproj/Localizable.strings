@@ -752,9 +752,7 @@
 "files.untrack" = "추적 중단";
 "files.untrack.single" = "“%@” 추적 중단";
 "files.untrack.multiple" = "항목 %ld개 추적 중단";
-"files.untrack.message" = "다음 파일의 추적을 중단할까요? 저장소: %2$@. 파일은 작업 사본에 남고, 다음 커밋에서 저장소에서 제거됩니다.\n\n%1$@";
 "files.trash" = "휴지통으로 이동";
-"files.trash.message" = "다음 파일을 휴지통으로 이동할까요? 저장소: %2$@. 휴지통에서 되돌려 놓을 수 있습니다.\n\n%1$@";
 "files.delete" = "삭제";
 "files.delete.remote" = "서버에서 다음 파일을 영구적으로 삭제할까요? 저장소: %2$@. 되돌릴 수 없습니다.\n\n%1$@";
 "files.move.menu" = "이동…";

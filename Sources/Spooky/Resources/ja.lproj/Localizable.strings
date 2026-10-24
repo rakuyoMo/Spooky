@@ -752,9 +752,7 @@
 "files.untrack" = "追跡を解除";
 "files.untrack.single" = "「%@」の追跡を解除";
 "files.untrack.multiple" = "%ld 項目の追跡を解除";
-"files.untrack.message" = "次のファイルの追跡を解除しますか？対象：%2$@。ファイルは作業コピーに残り、次のコミットでリポジトリから削除されます。\n\n%1$@";
 "files.trash" = "ゴミ箱に入れる";
-"files.trash.message" = "次のファイルをゴミ箱に入れますか？対象：%2$@。ゴミ箱から元に戻すことができます。\n\n%1$@";
 "files.delete" = "削除";
 "files.delete.remote" = "サーバー上の次のファイルを完全に削除しますか？対象：%2$@。元に戻せません。\n\n%1$@";
 "files.move.menu" = "移動…";

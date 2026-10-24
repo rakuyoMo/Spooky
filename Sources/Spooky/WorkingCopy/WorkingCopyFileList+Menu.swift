@@ -47,7 +47,7 @@ extension WorkingCopyFileList.Coordinator {
         session.stage(stageable, staged: stageable.contains(where: \.hasUnstagedChanges))
     }
 
-    /// ⌘⌫ 删除所选文件，执行前确认；没有可删除的文件时响铃。
+    /// ⌘⌫ 删除所选文件：本机直接移到废纸篓，服务器上确认后永久删除；没有可删除的文件时响铃。
     func deletePressed() {
         let entries = session.selectedEntries
 
