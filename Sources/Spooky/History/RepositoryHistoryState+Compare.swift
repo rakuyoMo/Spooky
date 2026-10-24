@@ -89,7 +89,7 @@ extension RepositoryHistoryState {
         // 换了分支或基准时先清掉旧的分叉点，结果到达前不画分叉点行
         baseComparison = base.map { Self.keep(baseComparison, branch: branch, base: $0) }
         parentComparison = parent.map { Self.keep(parentComparison, branch: branch, base: $0) }
-        updateParentCommits()
+        updateComparisonRows()
 
         let request: (String?, String?, String?) = (branch.id, base?.id, parent?.id)
 
