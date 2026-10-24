@@ -53,7 +53,7 @@ extension OperationWiringTests {
         #expect(requests.first?.preselection == "side")
     }
 
-    /// HEAD 分支的合并与变基以跟踪分支为对象，另有 Rebase Onto；其它分支是把它并入 HEAD 与把 HEAD 变基到它上面。
+    /// HEAD 分支的合并与变基以跟踪分支为对象，另有 Rebase Onto；其它分支只有把它并入 HEAD 的合并，变基到它上面经拖放或变基对话框。
     @Test("分支右键菜单的合并与变基一组")
     func branchIntegrationMenu() async throws {
         let fixture = try await Self.makeFixture()
@@ -73,19 +73,14 @@ extension OperationWiringTests {
         #expect(head.alternates == [false, true, false, true, false])
 
         let other = HostedMenu(BranchIntegrationMenu(session: session, reference: side) { _ in })
-        #expect(other.titles == [
-            AppLocalization.text("sync.merge"),
-            AppLocalization.text("sync.quickMergeInto", "side", "main"),
-            AppLocalization.text("sync.rebaseOnNamed", "side"),
-            AppLocalization.text("sync.quickRebaseOn", "main", "side"),
-        ])
-        #expect(other.alternates == [false, true, false, true])
+        #expect(other.titles == [AppLocalization.text("sync.merge")])
+        #expect(other.alternates == [false])
         #expect(!other.enabled.contains(false))
 
-        // Rebase On “side”… 打开变基对话框并预选 side
+        // 变基对话框按请求预选目标分支；没有预选时用 HEAD 的跟踪分支
         var requests: [SyncDialogRequest] = []
         session.onSyncRequest = { requests.append($0) }
-        other.perform(AppLocalization.text("sync.rebaseOnNamed", "side"))
+        session.requestSyncDialog(.rebase, preselecting: side.id)
         try await FileViewsTests.wait { !requests.isEmpty }
 
         let request = try #require(requests.first)

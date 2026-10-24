@@ -1428,7 +1428,6 @@
 "sync.quickSyncNamed" = "“%1$@”을(를) “%2$@”와(과) 빠른 동기화";
 "sync.quickMergeInto" = "“%1$@”을(를) “%2$@”(으)로 빠른 병합";
 "sync.quickRebaseOn" = "“%1$@”을(를) “%2$@” 위로 빠른 리베이스";
-"sync.rebaseOnNamed" = "“%@” 위로 리베이스…";
 "branch.pushToMenu" = "“%@”을(를) 지정 위치로 푸시…";
 "tag.compareMenu" = "“%@”을(를) 다른 리비전과 비교…";
 

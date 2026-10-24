@@ -1428,7 +1428,6 @@
 "sync.quickSyncNamed" = "快速同步 “%1$@” 与 “%2$@”";
 "sync.quickMergeInto" = "快速把 “%1$@” 合并到 “%2$@”";
 "sync.quickRebaseOn" = "快速把 “%1$@” 变基到 “%2$@”";
-"sync.rebaseOnNamed" = "变基到 “%@”…";
 "branch.pushToMenu" = "把 “%@” 推送到…";
 "tag.compareMenu" = "将 “%@” 与其他版本比较…";
 

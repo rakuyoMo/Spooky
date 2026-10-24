@@ -112,33 +112,13 @@ struct BranchIntegrationMenu: View {
         }
     }
 
-    /// 其它分支：并入 HEAD，或把 HEAD 变基到它上面；分离或未出生时没有快速版本。
+    /// 其它分支：打开预选了它的合并对话框，把它并入 HEAD；变基到它上面经按住 ⌥ 的拖放或 Rebase 对话框。
     @ViewBuilder
     private var otherItems: some View {
-        let head = session.status?.branch.head
-        let canRebase = session.canRebase && session.canMerge(reference)
-
         Button(AppLocalization.text("sync.merge")) {
             request(RepositoryActionRequest(kind: .merge, reference: reference.id))
         }
         .disabled(!session.canMerge(reference))
-        .quickAlternate(
-            head.map { AppLocalization.text("sync.quickMergeInto", reference.name, $0) },
-            enabled: session.canMerge(reference)
-        ) {
-            session.quickMerge(reference)
-        }
-
-        Button(AppLocalization.text("sync.rebaseOnNamed", reference.name)) {
-            session.requestSyncDialog(.rebase, preselecting: reference.id)
-        }
-        .disabled(!canRebase)
-        .quickAlternate(
-            head.map { AppLocalization.text("sync.quickRebaseOn", $0, reference.name) },
-            enabled: canRebase
-        ) {
-            session.quickRebase(onto: reference)
-        }
     }
 
     /// HEAD 分支：选版本合并、选分支变基与变基到别处。

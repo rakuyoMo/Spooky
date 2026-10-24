@@ -1428,7 +1428,6 @@
 "sync.quickSyncNamed" = "「%1$@」を「%2$@」とクイック同期";
 "sync.quickMergeInto" = "「%1$@」を「%2$@」へクイックマージ";
 "sync.quickRebaseOn" = "「%1$@」を「%2$@」の上へクイックリベース";
-"sync.rebaseOnNamed" = "「%@」の上へリベース…";
 "branch.pushToMenu" = "「%@」を指定先にプッシュ…";
 "tag.compareMenu" = "「%@」を別のリビジョンと比較…";
 

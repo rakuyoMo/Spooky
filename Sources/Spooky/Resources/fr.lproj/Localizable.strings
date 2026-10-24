@@ -1428,7 +1428,6 @@
 "sync.quickSyncNamed" = "Synchroniser rapidement « %1$@ » avec « %2$@ »";
 "sync.quickMergeInto" = "Fusionner rapidement « %1$@ » dans « %2$@ »";
 "sync.quickRebaseOn" = "Rebaser rapidement « %1$@ » sur « %2$@ »";
-"sync.rebaseOnNamed" = "Rebaser sur « %@ »…";
 "branch.pushToMenu" = "Pousser « %@ » vers…";
 "tag.compareMenu" = "Comparer « %@ » à une révision…";
 
