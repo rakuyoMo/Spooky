@@ -30,6 +30,9 @@ struct RepositorySidebarView: View {
     /// 置顶分组里的行身份前缀：同一分支在 Branches 分组里还有一行，两行各自高亮。
     static let pinnedRowPrefix = "pinned:"
 
+    /// 远端行的身份前缀：选中远端时主视图显示它的设置。
+    static let remoteRowPrefix = "remote:"
+
     /// 当前窗口会话。
     @Bindable
     var session: RepositorySession
@@ -112,6 +115,11 @@ struct RepositorySidebarView: View {
         if session.activeView == .workingCopy { return ["workingCopy"] }
         if session.activeView == .stashes { return ["stashes"] }
 
+        // 远端设置对应侧边栏里那个远端的行
+        if session.activeView == .remote {
+            return session.selectedRemote.map { [Self.remoteRowPrefix + $0] } ?? []
+        }
+
         // 文件视图不对应侧边栏的任何一项，点 Working Copy 或 History 都能离开
         if [.fileHistory, .fileContent].contains(session.activeView) { return [] }
 
@@ -131,6 +139,14 @@ struct RepositorySidebarView: View {
                 guard !value.isEmpty else { return }
 
                 let added = value.subtracting(selectedItems)
+
+                // 选中远端时主视图换成它的设置；远端不参与引用的多选
+                if let remote = added.first(where: { $0.hasPrefix(Self.remoteRowPrefix) }) {
+                    rowSelection = [remote]
+                    session.showRemote(String(remote.dropFirst(Self.remoteRowPrefix.count)))
+                    return
+                }
+
                 rowSelection = value
                 session.history.showsCommitPage = false
 
@@ -142,6 +158,7 @@ struct RepositorySidebarView: View {
                     // 置顶分组里的行换回分支的完整引用名
                     let references = value
                         .subtracting(["workingCopy", "history", "stashes"])
+                        .filter { !$0.hasPrefix(Self.remoteRowPrefix) }
                         .map(Self.reference(forRow:))
 
                     session.activeView = .history

@@ -66,7 +66,7 @@ extension RepositorySidebarView {
         }
     }
 
-    /// 每个配置远端都有一个可展开的节点，下面是它的远端分支；远端本身不可选中。
+    /// 每个配置远端都有一个可展开的节点，下面是它的远端分支；选中远端时主视图显示它的设置。
     var remoteBranches: some View {
         Section(isExpanded: isExpanded(.remotes)) {
             if session.history.snapshot?.remotes.isEmpty != false {
@@ -78,7 +78,7 @@ extension RepositorySidebarView {
                     remoteBranchRows(remote)
                 } label: {
                     remoteLabel(remote)
-                        .selectionDisabled()
+                        .tag(Self.remoteRowPrefix + remote.name)
                 }
             }
         } header: {

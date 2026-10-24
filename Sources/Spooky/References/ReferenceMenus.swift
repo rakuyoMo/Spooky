@@ -61,6 +61,7 @@ private struct LocalBranchManagementMenu: View {
             Button(AppLocalization.text("branch.parent.remove")) {
                 session.removeParent(of: reference)
             }
+            .disabled(session.history.snapshot?.metadata(for: reference.id).parent == nil)
         }
         .disabled(!session.canManage(reference))
 
