@@ -12,7 +12,7 @@ struct RepositoryUndoTests {
         case commit, createBranch, deleteBranch, checkout, merge, rebase, reset
         case stashSave, stashSaveUntracked, stashApply, stashPop
         case createTag, deleteTag, cherryPick, revert, stage, stageUntracked, unstage, discard
-        case createTrackingBranch, renameBranch, setUpstream, pinBranch
+        case createTrackingBranch, renameBranch, setUpstream, pinBranch, createAndCheckout, renameCurrentBranch
 
         /// Git 要求干净工作区的操作。
         var clean: Bool {
@@ -283,6 +283,8 @@ extension RepositoryUndoTests {
             .renameBranch: ["branch", "-m", "feature", "功能/改名"],
             .setUpstream: ["branch", "-q", "--set-upstream-to=feature", "main"],
             .pinBranch: ["config", "--local", "branch.feature.spooky-pinned", "true"],
+            .createAndCheckout: ["checkout", "-q", "-b", "功能/新"],
+            .renameCurrentBranch: ["branch", "-m", "main", "主干"],
         ]
 
         let arguments = try #require(commands[operation])
