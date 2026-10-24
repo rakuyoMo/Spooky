@@ -289,7 +289,7 @@ extension OperationWiringTests {
         let session = RepositorySession(makeRunner: { _ in runner })
         session.display(location)
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         try await FileViewsTests.wait { session.history.snapshot != nil && !session.history.isLoading }
 
         return Fixture(directory: directory, runner: runner, session: session, ids: ids)

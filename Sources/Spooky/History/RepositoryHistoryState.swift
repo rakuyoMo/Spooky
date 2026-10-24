@@ -144,6 +144,9 @@ final class RepositoryHistoryState {
     /// 引用读取任务，轮询期间合并重复请求。
     private var referenceTask: Task<Void, Never>? = nil
 
+    /// 引用读取进行中时收到的最近一次刷新，读完后补上，读取开始之后的改动不会漏掉。
+    private var pendingRefresh: (status: WorkingCopyStatus, runner: GitRunner, reload: Bool)? = nil
+
     /// 分页任务可由用户或视图切换取消。
     private var pageTask: Task<Void, Never>? = nil
 
@@ -237,7 +240,12 @@ final class RepositoryHistoryState {
     ///
     /// - Parameter reload: 完整刷新时即使引用未变也重读第一页，固定根的分页由核心库缓存复用。
     func refresh(status: WorkingCopyStatus, runner: GitRunner, reload: Bool = false) {
-        guard referenceTask == nil else { return }
+        // 读取进行中时只记下最近一次请求，完整刷新的要求随之保留
+        guard referenceTask == nil else {
+            pendingRefresh = (status, runner, reload || (pendingRefresh?.reload ?? false))
+            return
+        }
+
         self.runner = runner
         needsReload = needsReload || reload
         let request = generation
@@ -258,15 +266,7 @@ final class RepositoryHistoryState {
                 conditions = loadedConditions
 
                 // 恢复的引用已被删除时回到全部历史，并让会话回到 Working Copy。
-                if let restored = restoredReferences {
-                    restoredReferences = nil
-                    let known = Set(snapshot.references.map(\.id)).union(["HEAD"])
-
-                    if !restored.isSubset(of: known) {
-                        selectedReferences = []
-                        onRestoreFailure?()
-                    }
-                }
+                checkRestoredReferences(in: snapshot)
 
                 if changed || needsReload {
                     needsReload = false
@@ -280,6 +280,12 @@ final class RepositoryHistoryState {
 
             guard let self, generation == request else { return }
             referenceTask = nil
+
+            // 读取期间收到的刷新在读完后补上
+            if let pending = pendingRefresh {
+                pendingRefresh = nil
+                refresh(status: pending.status, runner: pending.runner, reload: pending.reload)
+            }
         }
     }
 
@@ -303,6 +309,10 @@ final class RepositoryHistoryState {
         needsReload = true
         referenceTask?.cancel()
         referenceTask = nil
+
+        // 写入结束后的完整刷新会重读引用，读取期间记下的请求作废
+        pendingRefresh = nil
+
         cancelPage()
         countTask?.cancel()
         countTask = nil
@@ -632,6 +642,18 @@ extension RepositoryHistoryState {
 // MARK: - Private
 
 extension RepositoryHistoryState {
+    /// 校验切回仓库时恢复的引用选择，只在恢复后的第一个引用快照里校验一次。
+    private func checkRestoredReferences(in snapshot: ReferenceSnapshot) {
+        guard let restored = restoredReferences else { return }
+        restoredReferences = nil
+        let known = Set(snapshot.references.map(\.id)).union(["HEAD"])
+
+        if !restored.isSubset(of: known) {
+            selectedReferences = []
+            onRestoreFailure?()
+        }
+    }
+
     /// 读取当前查询下的提交数，供窗口副标题使用；数到加载上限为止。
     private func loadCount() {
         countTask?.cancel()

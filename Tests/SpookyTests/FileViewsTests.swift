@@ -224,7 +224,7 @@ struct FileViewsTests {
         session.onActiveViewChange = { switches += 1 }
         session.display(location)
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         session.showFileHistory(decomposed.precomposedStringWithCanonicalMapping)
         #expect(session.activeView == .fileHistory)
@@ -271,7 +271,7 @@ struct FileViewsTests {
 
         session.display(location)
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         session.showFile("a [*].txt", at: nil, mode: .blame)
         #expect(session.activeView == .fileContent)
@@ -283,7 +283,7 @@ struct FileViewsTests {
         try Data("one\ntwo\n".utf8).write(to: file)
         _ = try await runner.run(["commit", "-q", "-a", "-m", "second"])
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         try await Self.wait { session.fileContent.blame?.lines == ["one", "two"] }
         #expect(Set(session.fileContent.blame?.groups.map(\.commitID) ?? []).count == 2)
 

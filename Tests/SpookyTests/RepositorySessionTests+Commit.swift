@@ -37,7 +37,7 @@ extension RepositorySessionTests {
         decision = .remove
         session.commit()
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         await session.commitResetTask?.value
         #expect(try await lastMessage(runner) == "标题\n\n正文")
 
@@ -47,7 +47,7 @@ extension RepositorySessionTests {
         session.commitSubject = "# 只有注释"
         session.commit()
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         #expect(prompts == [false, false, true])
         #expect(try await lastMessage(runner) == "# 只有注释")
     }
@@ -116,7 +116,7 @@ extension RepositorySessionTests {
         session.commitSubject = "#42 修复"
         session.commit()
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         #expect(prompts == 0)
         #expect(try await lastMessage(runner) == "#42 修复")
     }
@@ -175,7 +175,7 @@ extension RepositorySessionTests {
         session.skipHooks = true
         session.commit()
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         #expect(try await lastMessage(runner) == "跳过钩子")
 
         session.close()
@@ -196,10 +196,10 @@ extension RepositorySessionTests {
         session.commitSubject = "修复 登录"
         session.commit()
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         try Data("changed".utf8).write(to: directory.appending(path: "改动 [*].txt"))
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         let empty = NSRange(location: 0, length: 0)
         let commits = await session.completions(for: .commit(query: "", range: empty))
@@ -226,7 +226,7 @@ extension RepositorySessionTests {
         let session = RepositorySession(makeRunner: { _ in runner })
         session.display(location)
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         try await waitForConfiguration(session) { _ in true }
         return (session, runner, directory)
     }
@@ -235,10 +235,10 @@ extension RepositorySessionTests {
     private func stageChange(in session: RepositorySession, directory: URL, content: String) async throws {
         try Data(content.utf8).write(to: directory.appending(path: "file.txt"))
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         session.stageAll(staged: true)
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
     }
 
     /// 等待提交配置读到满足条件的结果。

@@ -97,7 +97,7 @@ extension OperationWiringTests {
 
         _ = try await fixture.runner.run(["branch", "--unset-upstream"])
         fixture.session.refresh(full: true)
-        await fixture.session.refreshTask?.value
+        await fixture.session.waitForRefresh()
         try await FileViewsTests.wait {
             fixture.session.headBranch?.upstream == nil && !fixture.session.history.isLoading
         }

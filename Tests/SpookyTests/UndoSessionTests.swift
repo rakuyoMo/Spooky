@@ -137,7 +137,7 @@ struct UndoSessionTests {
         )
         #expect(session.undoMenuState(redo: false) == .blocked("Branch", reason: "undo.reason.busy"))
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         // 合并停在冲突上
         _ = try await runner.run(["switch", "-q", "topic"])
@@ -165,7 +165,7 @@ struct UndoSessionTests {
         try await fixture.createBranch("topic")
 
         other.refresh(full: true)
-        await other.refreshTask?.value
+        await other.waitForRefresh()
         try await FileViewsTests.wait { Self.hasBranch("topic", in: other) }
         #expect(other.undoHistory === fixture.session.undoHistory)
         #expect(try await Self.settledState(of: other, redo: false) == .available("Branch"))
@@ -193,7 +193,7 @@ struct UndoSessionTests {
         defer { controller.window?.close() }
 
         controller.display(fixture.location)
-        await fixture.session.refreshTask?.value
+        await fixture.session.waitForRefresh()
         let window = try #require(controller.window)
         let item = NSMenuItem(title: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
 
@@ -274,18 +274,15 @@ extension UndoSessionTests {
             session = RepositorySession(makeRunner: { _ in runner })
             session.display(location)
             session.refresh(full: true)
-            await session.refreshTask?.value
+            await session.waitForRefresh()
         }
 
         /// 发起写操作，等它与随后的完整刷新、引用读取都结束。
         func perform(_ start: () -> Void) async throws {
             start()
             await session.writeTask?.value
-            await session.refreshTask?.value
-
-            for task in session.history.activeTasks + session.stashes.activeTasks {
-                await task.value
-            }
+            await session.waitForRefresh()
+            await waitForReads()
         }
 
         /// 经会话的写队列新建分支，声明为可撤销，操作名为 “Branch”。
@@ -302,11 +299,8 @@ extension UndoSessionTests {
         /// 读取一次完整状态，等引用与储藏也读完。
         func refresh() async {
             session.refresh(full: true)
-            await session.refreshTask?.value
-
-            for task in session.history.activeTasks + session.stashes.activeTasks {
-                await task.value
-            }
+            await session.waitForRefresh()
+            await waitForReads()
         }
 
         /// 改写仓库里唯一的文件。
@@ -328,6 +322,19 @@ extension UndoSessionTests {
         func remove() {
             session.close()
             try? FileManager.default.removeItem(at: directory)
+        }
+
+        /// 等引用与储藏的读取结束；读取期间又要求的刷新在读完后另起任务，也一起等完。
+        private func waitForReads() async {
+            var awaited = Set<Task<Void, Never>>()
+
+            while
+                let task = (session.history.activeTasks + session.stashes.activeTasks)
+                    .first(where: { !awaited.contains($0) })
+            {
+                await task.value
+                awaited.insert(task)
+            }
         }
     }
 }

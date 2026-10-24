@@ -6,7 +6,7 @@ import Testing
 
 /// 自动获取的调度与失败记录、同步停在哪一步的说明，以及快速操作缺少跟踪分支时的说明。
 extension RepositorySessionTests {
-    /// 只在前台、到期且仓库可写时获取；设了 skipFetchAll 的远端不获取；间隔为 0 时不再获取。
+    /// 只在前台、到期且仓库可写时获取；设了 skipFetchAll 的远端不获取；间隔为 0 时不获取。
     @Test("自动获取的间隔、前台限制与跳过的远端")
     func autoFetchSchedule() async throws {
         let directory = try temporaryDirectory()
@@ -19,15 +19,15 @@ extension RepositorySessionTests {
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
         defaults.set(300, forKey: RepositoryAutoFetch.intervalKey)
 
-        var foreground = false
-        let scheduler = RepositoryAutoFetch(session: session, defaults: defaults) { foreground }
+        let foreground = ForegroundState()
+        let scheduler = RepositoryAutoFetch(session: session, defaults: defaults) { foreground.isActive }
         let start = Date()
 
         // 打开后先等一会儿；App 不在前台时到期也不获取
         #expect(!scheduler.check(now: start))
         #expect(!scheduler.check(now: start.addingTimeInterval(RepositoryAutoFetch.initialDelay + 1)))
 
-        foreground = true
+        foreground.isActive = true
         let pushed = try await commitAndPush(other, message: "remote")
 
         #expect(scheduler.check(now: start.addingTimeInterval(RepositoryAutoFetch.initialDelay + 1)))
@@ -48,8 +48,14 @@ extension RepositorySessionTests {
         await session.writeTask?.value
         #expect(try await tracking(runner) == pushed)
 
-        defaults.set(0, forKey: RepositoryAutoFetch.intervalKey)
-        #expect(!scheduler.check(now: start.addingTimeInterval(100_000)))
+        // 间隔为 0 时到期也不获取。0 写进另一个偏好域：覆盖同一个域里已有的值时，若进程的偏好缓存在这之前被清掉过，紧接着读到的可能仍是旧值
+        let manual = try #require(UserDefaults(suiteName: directory.appending(path: "manual").path))
+        manual.set(0, forKey: RepositoryAutoFetch.intervalKey)
+        let paused = RepositoryAutoFetch(session: session, defaults: manual) { true }
+
+        // 第一次检查开始计时，第二次时早已到期
+        paused.check(now: start)
+        #expect(!paused.check(now: start.addingTimeInterval(100_000)))
     }
 
     /// 自动获取失败不弹错误，原因记进 Activity。
@@ -110,7 +116,7 @@ extension RepositorySessionTests {
         // 新分支没有跟踪分支，快速推送不开始写入，只说明原因
         _ = try await runner.run(["switch", "-q", "-c", "topic"])
         session.refresh(full: true)
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         try await waitForSession { session.headBranch?.id == "refs/heads/topic" }
 
         session.quickPush()
@@ -161,7 +167,7 @@ extension RepositorySessionTests {
         let session = RepositorySession(makeRunner: { _ in runner })
         session.display(runner.location)
         session.refresh()
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         try await waitForSession { !(session.history.snapshot?.remotes.isEmpty ?? true) }
         return session
     }
@@ -191,4 +197,13 @@ extension RepositorySessionTests {
             try await Task.sleep(for: .milliseconds(50))
         }
     }
+}
+
+// MARK: - ForegroundState
+
+/// 测试里切换 App 是否在前台，自动获取的调度器经闭包读它。
+@MainActor
+private final class ForegroundState {
+    /// App 是否在前台。
+    var isActive = false
 }

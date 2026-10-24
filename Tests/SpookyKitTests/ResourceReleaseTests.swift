@@ -13,13 +13,19 @@ struct ResourceReleaseTests {
         defer { temporary.remove() }
         let lock = temporary.directory.appending(path: "index.lock")
 
-        // 进程组在取消时可能先后收到两次 TERM：清理开始时先忽略 TERM，删除锁文件的 rm 才不会被第二次 TERM 结束
-        let executable = try script(in: temporary, name: "locking-git", body: """
-            lock=\(GitRunner.shellQuoted(lock.path))
-            trap 'trap "" TERM; rm -f "$lock"; exit 143' TERM
-            touch "$lock"
-            printf '%s\\n' "$$"
-            while :; do sleep 0.1; done
+        // 与 Git 一样在信号处理里直接删除锁文件：处理中再启动 rm 这类进程，负载高时可能赶不上宽限期后的 KILL
+        let executable = try script(in: temporary, name: "locking-git", interpreter: "/usr/bin/perl", body: """
+            use File::Basename;
+
+            my $lock = dirname($0) . '/index.lock';
+            $SIG{TERM} = sub { unlink $lock; exit 143 };
+
+            open(my $file, '>', $lock) or die;
+            close($file);
+
+            $| = 1;
+            print "$$\\n";
+            sleep 1 while 1;
             """)
         let runner = temporary.runner(at: "/", executable: executable.path)
         let pid = try await cancelAfterStart(runner)
@@ -116,10 +122,15 @@ struct ResourceReleaseTests {
         }
     }
 
-    /// 写入可执行的测试脚本，只放在本测试的临时目录中。
-    private func script(in temporary: TemporaryRepository, name: String, body: String) throws -> URL {
+    /// 写入可执行的测试脚本，只放在本测试的临时目录中；默认由 `/bin/sh` 解释。
+    private func script(
+        in temporary: TemporaryRepository,
+        name: String,
+        interpreter: String = "/bin/sh",
+        body: String
+    ) throws -> URL {
         let url = temporary.directory.appending(path: name)
-        try Data(("#!/bin/sh\n" + body + "\n").utf8).write(to: url)
+        try Data(("#!" + interpreter + "\n" + body + "\n").utf8).write(to: url)
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: url.path)
         return url
     }

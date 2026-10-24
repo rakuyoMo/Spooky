@@ -319,3 +319,14 @@ private actor ControlledStatusSource {
         pending.removeFirst().resume(with: result)
     }
 }
+
+// MARK: - RepositorySession
+
+extension RepositorySession {
+    /// 等刷新全部结束：本机仓库的文件监听会在写入后另起刷新，其间要求的完整刷新排在它之后，只等当前的任务会读到旧状态。
+    func waitForRefresh() async {
+        while let task = refreshTask {
+            await task.value
+        }
+    }
+}

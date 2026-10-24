@@ -34,11 +34,11 @@ struct ReferenceSessionTests {
         session.onFailure = { failures.append($0) }
         session.display(location)
         session.refresh()
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         #expect(session.deleteBranches(["refs/heads/topic"], force: false, deletingUpstream: true))
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         guard case .forceDelete(let offer, let failure) = try #require(requests.last) else {
             Issue.record("未合并分支的删除应改为询问强制删除")
@@ -53,7 +53,7 @@ struct ReferenceSessionTests {
 
         session.deleteBranches(offer.branches, force: true, deletingUpstream: offer.deletingUpstream)
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         let local = String(decoding: try await runner.run(["for-each-ref", "--format=%(refname)"]), as: UTF8.self)
         let remote = String(decoding: try await Self.runner(at: bare).run(["for-each-ref"]), as: UTF8.self)
@@ -80,7 +80,7 @@ struct ReferenceSessionTests {
 
         session.display(location)
         session.refresh()
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         try await Self.wait { session.history.divergence["refs/heads/behind"] != nil }
 
         let behind = try #require(session.history.branches.first { $0.id == "refs/heads/behind" })
@@ -90,7 +90,7 @@ struct ReferenceSessionTests {
 
         session.fastForward(behind)
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         let references = RepositoryReferences(runner: runner)
         #expect(try await references.resolve("refs/heads/behind") == references.resolve("refs/remotes/origin/behind"))

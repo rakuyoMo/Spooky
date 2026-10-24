@@ -100,7 +100,7 @@ extension OperationWiringTests {
         try Data("D2\n".utf8).write(to: fixture.directory.appending(path: "D.txt"))
         _ = try await fixture.runner.run(["commit", "-q", "-a", "-m", "fixup! D"])
         fixture.session.refresh(full: true)
-        await fixture.session.refreshTask?.value
+        await fixture.session.waitForRefresh()
 
         let history = fixture.session.history
         try await FileViewsTests.wait {

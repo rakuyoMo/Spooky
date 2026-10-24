@@ -42,8 +42,10 @@ struct DiffMenuTests {
         defaults.set(7, forKey: key)
         #expect(DiffPreferences.options(defaults: defaults).contextLines == 7)
 
-        defaults.set(11, forKey: key)
-        #expect(DiffPreferences.options(defaults: defaults).contextLines == DiffOptions.defaultContextLines)
+        // 不在档位中的值写进另一个偏好域：覆盖已有的值后立即读取，可能仍读到旧值
+        let invalid = try #require(UserDefaults(suiteName: directory.appending(path: "invalid").path))
+        invalid.set(11, forKey: key)
+        #expect(DiffPreferences.options(defaults: invalid).contextLines == DiffOptions.defaultContextLines)
 
         defaults.set(true, forKey: DiffPreferences.ignoresWhitespaceKey)
         let options = DiffPreferences.options(showsEntireFile: true, defaults: defaults)

@@ -300,6 +300,8 @@ LICENSE                       GPL-3.0 许可证全文
 - M6 的工作区文件操作、Diff 选项、主题、储藏、冲突向导、文件视图、提交体验与本机 / 服务器端到端流程见 [M6 验收步骤](docs/testing/M6.md)
 - M7 的历史搜索与视图设置、提交详情与导出、侧边栏、引用与远端管理、同步与自动获取、改写操作、Branches Review、Reflog 与撤销，以及本机 / 服务器端到端流程见 [M7 验收步骤](docs/testing/M7.md)
 - 侧边栏的视图设置以 `@AppStorage` 读 `SidebarPreferences` 的键；测试换用独立的偏好域时，视图的 `.defaultAppStorage` 与传给 `SidebarViewSettingsMenu` 的 `UserDefaults` 要一起换
+- 测试里同一个偏好键要换成别的值时，新值写进另一个偏好域，不覆盖已有的值：进程的偏好缓存被清掉后，覆盖写入之后紧接着的读取可能仍得到旧值
+- 会话测试要求刷新后用 `waitForRefresh()` 等刷新全部结束，不只等 `refreshTask`：本机仓库的文件监听会在写入后另起刷新，其间要求的完整刷新排在它之后
 - 解析器的固定输入放在 `Tests/SpookyKitTests/Fixtures/`，由真实 Git 在隔离配置、固定身份与时间的临时仓库中生成
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
 - 本地化新增资源键时同步全部支持语言，并保持格式参数一致；动态拼接的资源键登记在 `LocalizationTests.dynamicKeys`；错误标题和恢复说明本地化，Git 原文保持不变

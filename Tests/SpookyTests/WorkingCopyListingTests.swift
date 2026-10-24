@@ -88,8 +88,10 @@ struct WorkingCopyListingTests {
         WorkingCopyListMode.store(.allFiles, defaults: defaults)
         #expect(WorkingCopyListMode.stored(defaults: defaults) == .allFiles)
 
-        defaults.set(9, forKey: "workingCopyViewMode")
-        #expect(WorkingCopyListMode.stored(defaults: defaults) == .list)
+        // 不认识的值写进另一个偏好域：覆盖已有的值后立即读取，可能仍读到旧值
+        let unknown = try #require(UserDefaults(suiteName: directory.appending(path: "unknown").path))
+        unknown.set(9, forKey: "workingCopyViewMode")
+        #expect(WorkingCopyListMode.stored(defaults: unknown) == .list)
     }
 
     /// 文件操作的可用范围：只有暂存区里的文件能停止跟踪，工作区里已经没有的文件不能删除或打开。

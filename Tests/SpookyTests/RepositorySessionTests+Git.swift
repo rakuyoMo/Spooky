@@ -22,7 +22,7 @@ extension RepositorySessionTests {
         defer { session.close() }
         session.display(location)
         session.refresh()
-        await session.refreshTask?.value
+        await session.waitForRefresh()
 
         // 不调用手动刷新，新增文件必须由真实 FSEvents 进入列表。
         try Data("new\n".utf8).write(to: directory.appending(path: "file"))
@@ -43,14 +43,14 @@ extension RepositorySessionTests {
         #expect(session.stagingOverrides[row] ?? false)
         #expect(session.isWriting)
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         #expect(session.stagingOverrides.isEmpty)
         #expect(session.status?.entries.first?.kind == .untracked)
 
         try FileManager.default.removeItem(at: lock)
         session.stage([entry], staged: true)
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         #expect(session.status?.entries.first?.hasStagedChanges ?? false)
         #expect(session.selectedID?.path == entry.path)
         #expect(session.selectedID?.kind == .tracked)
@@ -64,7 +64,7 @@ extension RepositorySessionTests {
         session.commitBody = "正文"
         session.commit()
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         #expect(session.commitSubject == "标题")
         #expect(session.commitBody == "正文")
         #expect(try await runner.status().branch.oid == nil)
@@ -72,7 +72,7 @@ extension RepositorySessionTests {
         try FileManager.default.removeItem(at: hook)
         session.commit()
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         await session.commitResetTask?.value
         #expect(session.commitSubject.isEmpty && session.commitBody.isEmpty)
         #expect(session.status?.entries.isEmpty ?? false)
@@ -96,7 +96,7 @@ extension RepositorySessionTests {
         defer { session.close() }
         session.display(location)
         session.refresh()
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while session.history.commits.isEmpty, .now < deadline {
@@ -119,7 +119,7 @@ extension RepositorySessionTests {
             title: "Create Branch"
         )
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         let referenceDeadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while
@@ -145,7 +145,7 @@ extension RepositorySessionTests {
             title: "Commit"
         )
         await session.writeTask?.value
-        await session.refreshTask?.value
+        await session.waitForRefresh()
         session.history.selectedReference = "refs/heads/topic"
         let trackingDeadline = ContinuousClock.now.advanced(by: .seconds(300))
 
