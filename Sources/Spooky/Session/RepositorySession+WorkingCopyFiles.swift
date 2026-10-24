@@ -65,12 +65,11 @@ extension RepositorySession {
         return listed + supplementary
     }
 
-    /// 切换显示模式并记住；需要的补充清单随之读取。
+    /// 切换本窗口的显示模式，需要的补充清单随之读取；记住选择由窗口负责。
     func setListMode(_ mode: WorkingCopyListMode) {
-        guard let repository, mode != listMode else { return }
+        guard mode != listMode else { return }
 
         listMode = mode
-        WorkingCopyListMode.store(mode, for: repository)
         loadWorkingTreeFiles()
     }
 

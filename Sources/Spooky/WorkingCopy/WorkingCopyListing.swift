@@ -3,43 +3,35 @@ import SpookyKit
 
 // MARK: - WorkingCopyListMode
 
-/// 工作区文件列表的显示模式，按仓库记住并跨重启保留。
-enum WorkingCopyListMode: String {
+/// 工作区文件列表的显示模式，所有仓库共用一个选择并跨重启保留。
+enum WorkingCopyListMode: Int {
     /// 平铺：每行一个文件，显示仓库内的相对路径。
-    case list
+    case list = 0
 
     /// 树形：按目录组织文件，只显示末级名称。
-    case tree
+    case tree = 1
 
     /// 全部文件：树形里同时显示没有改动的已跟踪文件。
-    case allFiles
+    case allFiles = 2
 
-    /// 按仓库保存显示模式的偏好键，值是以仓库显示路径为键的字典。
-    private static let storageKey = "workingCopyViewModes"
+    /// 保存显示模式的偏好键，值是模式的原始值。
+    private static let storageKey = "workingCopyViewMode"
 
     /// 是否按目录组织。
     var isTree: Bool { self != .list }
 
-    /// 仓库记住的显示模式；还没有记录的仓库沿用全局的平铺 / 树形偏好。
+    /// 所有仓库共用的显示模式；没有记录或记录无法识别时为平铺。
     ///
     /// - Parameter defaults: 保存偏好的位置，测试使用独立的偏好域。
-    static func stored(for location: RepositoryLocation, defaults: UserDefaults = .standard) -> Self {
-        let modes = defaults.dictionary(forKey: storageKey) as? [String: String]
-
-        if let raw = modes?[location.displayPath], let mode = Self(rawValue: raw) {
-            return mode
-        }
-
-        return defaults.integer(forKey: "workingCopyViewMode") == 1 ? .tree : .list
+    static func stored(defaults: UserDefaults = .standard) -> Self {
+        Self(rawValue: defaults.integer(forKey: storageKey)) ?? .list
     }
 
-    /// 记住仓库的显示模式。
+    /// 记住显示模式，之后打开的每个仓库都沿用它。
     ///
     /// - Parameter defaults: 保存偏好的位置，测试使用独立的偏好域。
-    static func store(_ mode: Self, for location: RepositoryLocation, defaults: UserDefaults = .standard) {
-        var modes = defaults.dictionary(forKey: storageKey) as? [String: String] ?? [:]
-        modes[location.displayPath] = mode.rawValue
-        defaults.set(modes, forKey: storageKey)
+    static func store(_ mode: Self, defaults: UserDefaults = .standard) {
+        defaults.set(mode.rawValue, forKey: storageKey)
     }
 }
 
