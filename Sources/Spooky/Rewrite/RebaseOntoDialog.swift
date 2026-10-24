@@ -45,9 +45,7 @@ struct RebaseOntoDialog: View {
         RewriteDialogFrame(
             session: session,
             title: AppLocalization.text("rewrite.rebaseOnto"),
-            help: partial
-                ? AppLocalization.text("rewrite.rebaseOnto.partial.help", commits.count)
-                : AppLocalization.text("rewrite.rebaseOnto.help"),
+            help: help,
             primary: AppLocalization.text("rewrite.rebaseOnto.button"),
             canSubmit: partial ? plan != nil : impact != nil,
             rewritesHistory: true,
@@ -57,7 +55,7 @@ struct RebaseOntoDialog: View {
         ) {
             form
         } options: {
-            if !partial { RewriteOption(key: "sync.skipHooks", isOn: $skipHooks) }
+            RewriteOption(key: "sync.skipHooks", isOn: $skipHooks)
         }
         .task(id: currentBase + "\u{0}" + newBase) { await preview() }
     }
@@ -69,6 +67,15 @@ extension RebaseOntoDialog {
     /// 只移动所选提交。
     private var partial: Bool {
         !commits.isEmpty
+    }
+
+    /// 说明：移动整段时说明基点，只移动所选提交时写出提交数。
+    private var help: String {
+        switch commits.count {
+        case 0: AppLocalization.text("rewrite.rebaseOnto.help")
+        case 1: AppLocalization.text("rewrite.rebaseOnto.partial.help.one")
+        default: AppLocalization.text("rewrite.rebaseOnto.partial.help", commits.count)
+        }
     }
 
     /// 当前基点（只移动所选提交时不需要）、新基点与影响范围。
@@ -176,7 +183,7 @@ extension RebaseOntoDialog {
     private func perform() {
         let started =
             if let plan {
-                session.perform(plan)
+                session.perform(plan, skipHooks: skipHooks)
             } else {
                 session.rebase(onto: newBase, from: currentBase, skipHooks: skipHooks)
             }

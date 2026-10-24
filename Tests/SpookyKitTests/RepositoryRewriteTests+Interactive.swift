@@ -150,7 +150,11 @@ extension RepositoryRewriteTests {
 
         #expect(plan.onto == target)
         #expect(plan.instructions.map(\.command) == [.pick, .drop, .pick])
-        try await rewrite.perform(plan)
+
+        // pre-rebase 钩子拒绝时不改写；跳过钩子后照常执行
+        try installHook("pre-rebase", script: "exit 1", in: repository)
+        await #expect(throws: GitError.self) { try await rewrite.perform(plan) }
+        try await rewrite.perform(plan, skipHooks: true)
 
         #expect(try await subjects(in: repository) == ["乙", "甲", "新基点", "基础"])
         #expect(!exists(file(2), in: repository))

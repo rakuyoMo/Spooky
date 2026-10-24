@@ -45,6 +45,11 @@ extension RewriteConfirmationDialog {
             let folded = plan.instructions.filter { [.squash, .fixup].contains($0.command) }
             let index = plan.instructions.firstIndex { [.squash, .fixup].contains($0.command) } ?? 0
             let into = index > 0 ? plan.instructions[index - 1].subject : ""
+
+            if folded.count == 1, let only = folded.first {
+                return AppLocalization.text(key + ".one", only.subject, into)
+            }
+
             return AppLocalization.text(key, folded.count, into)
 
         case .edit(let commit), .amend(let commit):
@@ -54,6 +59,10 @@ extension RewriteConfirmationDialog {
             return AppLocalization.text("rewrite.reword.help")
 
         case .drop(let commits), .move(let commits, _, _), .rebase(let commits, _):
+            if commits.count == 1, let only = commits.first {
+                return AppLocalization.text(key + ".one", subject(of: only))
+            }
+
             return AppLocalization.text(key, commits.count)
 
         case .autosquash:

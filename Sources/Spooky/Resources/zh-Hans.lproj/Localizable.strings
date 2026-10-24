@@ -868,7 +868,7 @@
 "rewrite.shared" = "已推送或已合并";
 "rewrite.warning.pushed" = "其中一些提交已经在上游分支中。改写之后，本地分支会与上游分叉。";
 "rewrite.warning.merged" = "其中一些提交已经并入其它分支。改写它们会让同样的改动留下两份。";
-"rewrite.affected" = "%ld 个提交会被改写：";
+"rewrite.affected" = "会被改写的提交（%ld）：";
 "rewrite.reflog" = "改写前的提交仍可在 Reflog 中找回。";
 "rewrite.loadingCommits" = "正在读取提交…";
 "rewrite.revert.title.one" = "反转提交";
@@ -899,7 +899,7 @@
 "rewrite.reset.hard" = "Hard";
 "rewrite.reset.hard.help" = "重置暂存区与工作区，未提交的改动与撤下的提交的改动都会丢失。";
 "rewrite.reset.discards" = "工作区有未提交的改动，Hard 重置会永久丢弃它们。";
-"rewrite.reset.leaving" = "%ld 个提交会离开当前分支：";
+"rewrite.reset.leaving" = "会离开当前分支的提交（%ld）：";
 "rewrite.error.revision" = "找不到这个版本。";
 "rewrite.checkout.title" = "检出版本";
 "rewrite.checkout.help" = "输入或选择要检出的版本，HEAD 会移到这个版本。";
@@ -931,4 +931,10 @@
 "rewrite.checkout.menu" = "检出版本…";
 "rewrite.rebaseOnto.menu" = "变基到别处…";
 "rewrite.reset.menu" = "把 HEAD 重置到版本…";
-"conflict.hint.rebase.edit" = "变基停在这个提交上，它的改动已撤回到工作区。提交这些改动后，点按 **继续**。";
+"conflict.hint.rebase.edit" = "提交从这个提交撤回的改动后，点按 **继续**。";
+"rewrite.squash.confirm.one" = "将 “%@” 压缩进 “%@”？它们的提交信息会合并。";
+"rewrite.fixup.confirm.one" = "将 “%@” 并入 “%@”，只保留目标的提交信息？";
+"rewrite.drop.confirm.one" = "从当前分支删除 “%@”？";
+"rewrite.move.confirm.one" = "把 “%@” 移到新的位置？";
+"rewrite.rebaseOnto.confirm.one" = "把 “%@” 变基到新的基点上？";
+"rewrite.rebaseOnto.partial.help.one" = "把所选提交重放到新基点之上。同一段里没有选中的提交会从当前分支移除。";

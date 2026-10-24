@@ -52,8 +52,11 @@ extension RepositoryRewrite {
     }
 
     /// 按计划执行交互式变基；HEAD 在计划之后被移动过，或 Git 给出的提交序列与计划不一致时，不改写任何提交。
+    ///
+    /// - Parameter skipHooks: 跳过 pre-rebase 钩子，变基到别处的对话框提供这个选项。
     public func perform(
         _ plan: RewritePlan,
+        skipHooks: Bool = false,
         onOutput: (@Sendable (GitOutputEvent) -> Void)? = nil
     ) async throws {
         try await runner.writeTransaction {
@@ -76,7 +79,10 @@ extension RepositoryRewrite {
             }
 
             do {
-                _ = try await runner.execute(Self.rebaseArguments(plan, instructions: instructions), onOutput: onOutput)
+                _ = try await runner.execute(
+                    Self.rebaseArguments(plan, instructions: instructions, skipHooks: skipHooks),
+                    onOutput: onOutput
+                )
             } catch {
                 if let fixup { try await restoreIndex(from: fixup, head: plan.head) }
 

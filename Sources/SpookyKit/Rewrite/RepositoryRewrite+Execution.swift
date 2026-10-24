@@ -4,7 +4,7 @@ import Foundation
 
 extension RepositoryRewrite {
     /// 交互式变基的完整参数：内联的序列编辑器与信息编辑器，并固定会改变 todo 形态的配置，不受用户配置影响。
-    static func rebaseArguments(_ plan: RewritePlan, instructions: [RebaseInstruction]) -> [String] {
+    static func rebaseArguments(_ plan: RewritePlan, instructions: [RebaseInstruction], skipHooks: Bool) -> [String] {
         let autosquash = plan.action == .autosquash
 
         // 改信息时编辑器把文件整个换成新信息；其余步骤沿用 Git 准备好的信息，不打开编辑器
@@ -41,6 +41,8 @@ extension RepositoryRewrite {
             autosquash ? "--autosquash" : "--no-autosquash",
             amend ? "--autostash" : "--no-autostash",
         ]
+
+        if skipHooks { arguments.append("--no-verify") }
 
         if let onto = plan.onto { arguments += ["--onto", onto] }
 

@@ -868,7 +868,7 @@
 "rewrite.shared" = "이미 푸시되었거나 병합됨";
 "rewrite.warning.pushed" = "일부 커밋은 이미 업스트림 브랜치에 있습니다. 다시 쓰면 로컬 브랜치와 업스트림이 갈라집니다.";
 "rewrite.warning.merged" = "일부 커밋은 이미 다른 브랜치에 포함되어 있습니다. 다시 쓰면 같은 변경이 두 벌 남습니다.";
-"rewrite.affected" = "%ld개의 커밋이 다시 쓰입니다:";
+"rewrite.affected" = "다시 쓰이는 커밋(%ld):";
 "rewrite.reflog" = "다시 쓰기 전의 커밋은 Reflog에서 되찾을 수 있습니다.";
 "rewrite.loadingCommits" = "커밋을 불러오는 중…";
 "rewrite.revert.title.one" = "커밋 되돌리기";
@@ -899,7 +899,7 @@
 "rewrite.reset.hard" = "Hard";
 "rewrite.reset.hard.help" = "인덱스와 작업 사본을 재설정합니다. 커밋하지 않은 변경과 빠진 커밋의 변경이 사라집니다.";
 "rewrite.reset.discards" = "작업 사본에 커밋하지 않은 변경이 있습니다. Hard 재설정은 이를 영구히 버립니다.";
-"rewrite.reset.leaving" = "%ld개의 커밋이 현재 브랜치에서 빠집니다:";
+"rewrite.reset.leaving" = "현재 브랜치에서 빠지는 커밋(%ld):";
 "rewrite.error.revision" = "이 리비전을 찾을 수 없습니다.";
 "rewrite.checkout.title" = "리비전 체크아웃";
 "rewrite.checkout.help" = "체크아웃할 리비전을 입력하거나 선택하세요. HEAD가 그 리비전으로 이동합니다.";
@@ -931,4 +931,10 @@
 "rewrite.checkout.menu" = "리비전 체크아웃…";
 "rewrite.rebaseOnto.menu" = "다른 곳으로 리베이스…";
 "rewrite.reset.menu" = "HEAD를 리비전으로 재설정…";
-"conflict.hint.rebase.edit" = "리베이스가 이 커밋에서 멈추고 변경을 작업 사본으로 되돌렸습니다. 변경을 커밋한 뒤 **계속**을 클릭하세요.";
+"conflict.hint.rebase.edit" = "이 커밋에서 되돌린 변경을 커밋한 뒤 **계속**을 클릭하세요.";
+"rewrite.squash.confirm.one" = "“%@”을(를) “%@”에 스쿼시할까요? 메시지는 합쳐집니다.";
+"rewrite.fixup.confirm.one" = "“%@”을(를) “%@”에 합치고 대상의 메시지만 남길까요?";
+"rewrite.drop.confirm.one" = "현재 브랜치에서 “%@”을(를) 삭제할까요?";
+"rewrite.move.confirm.one" = "“%@”을(를) 새 위치로 옮길까요?";
+"rewrite.rebaseOnto.confirm.one" = "“%@”을(를) 새 베이스로 리베이스할까요?";
+"rewrite.rebaseOnto.partial.help.one" = "선택한 커밋을 새 베이스 위에 다시 적용합니다. 같은 범위에서 선택하지 않은 커밋은 현재 브랜치에서 제거됩니다.";

@@ -868,7 +868,7 @@
 "rewrite.shared" = "Bereits gepusht oder zusammengeführt";
 "rewrite.warning.pushed" = "Einige dieser Commits sind bereits im Upstream-Branch. Nach dem Umschreiben laufen lokaler Branch und Upstream auseinander.";
 "rewrite.warning.merged" = "Einige dieser Commits sind bereits in anderen Branches enthalten. Umschreiben hinterlässt dieselben Änderungen doppelt.";
-"rewrite.affected" = "%ld Commits werden umgeschrieben:";
+"rewrite.affected" = "Umgeschriebene Commits (%ld):";
 "rewrite.reflog" = "Die vorherigen Commits lassen sich weiterhin über das Reflog wiederherstellen.";
 "rewrite.loadingCommits" = "Commits werden geladen…";
 "rewrite.revert.title.one" = "Commit rückgängig machen";
@@ -899,7 +899,7 @@
 "rewrite.reset.hard" = "Hard";
 "rewrite.reset.hard.help" = "Setzt Index und Arbeitskopie zurück. Nicht committete Änderungen und die Änderungen der entfernten Commits gehen verloren.";
 "rewrite.reset.discards" = "Die Arbeitskopie hat nicht committete Änderungen. Ein Hard-Reset verwirft sie endgültig.";
-"rewrite.reset.leaving" = "%ld Commits verlassen den aktuellen Branch:";
+"rewrite.reset.leaving" = "Commits, die den aktuellen Branch verlassen (%ld):";
 "rewrite.error.revision" = "Diese Revision wurde nicht gefunden.";
 "rewrite.checkout.title" = "Revision auschecken";
 "rewrite.checkout.help" = "Geben Sie die auszucheckende Revision ein oder wählen Sie sie aus. HEAD wird auf diese Revision verschoben.";
@@ -931,4 +931,10 @@
 "rewrite.checkout.menu" = "Revision auschecken…";
 "rewrite.rebaseOnto.menu" = "Rebase auf andere Basis…";
 "rewrite.reset.menu" = "HEAD auf Revision zurücksetzen…";
-"conflict.hint.rebase.edit" = "Der Rebase hat bei diesem Commit angehalten und seine Änderungen in die Arbeitskopie zurückgeholt. Committen Sie sie und klicken Sie dann auf **Fortsetzen**.";
+"conflict.hint.rebase.edit" = "Committen Sie die aus diesem Commit zurückgeholten Änderungen und klicken Sie dann auf **Fortsetzen**.";
+"rewrite.squash.confirm.one" = "„%@“ in „%@“ zusammenfassen? Die Nachrichten werden kombiniert.";
+"rewrite.fixup.confirm.one" = "„%@“ in „%@“ einfügen und nur die Nachricht des Ziels behalten?";
+"rewrite.drop.confirm.one" = "„%@“ aus dem aktuellen Branch löschen?";
+"rewrite.move.confirm.one" = "„%@“ an die neue Position verschieben?";
+"rewrite.rebaseOnto.confirm.one" = "„%@“ auf die neue Basis rebasen?";
+"rewrite.rebaseOnto.partial.help.one" = "Wendet den ausgewählten Commit auf der neuen Basis erneut an. Nicht ausgewählte Commits desselben Bereichs werden aus dem aktuellen Branch entfernt.";

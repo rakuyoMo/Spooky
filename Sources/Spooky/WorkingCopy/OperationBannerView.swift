@@ -152,10 +152,12 @@ extension OperationBannerView {
             Button(AppLocalization.text("working.abort")) { session.finishOperation("abort") }
                 .disabled(!session.canWrite)
 
-            // 停在 edit 上时，改动都提交之后才能继续
+            // 停在 edit 上时，撤回的改动（包括变成未跟踪的新文件）都提交之后才能继续
             if progress.stopsForEdit {
+                let pending = session.status?.entries.contains { [.tracked, .conflicted, .untracked].contains($0.kind) }
+
                 Button(AppLocalization.text("working.continue")) { session.finishOperation("continue") }
-                    .disabled(!session.canWrite || phase != .empty)
+                    .disabled(!session.canWrite || (pending ?? true))
             } else if progress.state != .merge, progress.state != .squash, phase == .empty {
                 Button(AppLocalization.text("working.skip")) { session.finishOperation("skip") }
                     .disabled(!session.canWrite)

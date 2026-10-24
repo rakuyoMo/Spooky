@@ -868,7 +868,7 @@
 "rewrite.shared" = "Already pushed or merged";
 "rewrite.warning.pushed" = "Some of these commits are already on the upstream branch. After rewriting, the local branch and its upstream diverge.";
 "rewrite.warning.merged" = "Some of these commits are already in other branches. Rewriting them leaves two copies of the same changes.";
-"rewrite.affected" = "%ld commits will be rewritten:";
+"rewrite.affected" = "Rewritten commits (%ld):";
 "rewrite.reflog" = "The previous commits can still be recovered from the reflog.";
 "rewrite.loadingCommits" = "Loading commits…";
 "rewrite.revert.title.one" = "Revert Revision";
@@ -899,7 +899,7 @@
 "rewrite.reset.hard" = "Hard";
 "rewrite.reset.hard.help" = "Resets the index and the working copy. Uncommitted changes and the changes of the removed commits are lost.";
 "rewrite.reset.discards" = "The working copy has uncommitted changes. A hard reset discards them permanently.";
-"rewrite.reset.leaving" = "%ld commits will leave the current branch:";
+"rewrite.reset.leaving" = "Commits leaving the current branch (%ld):";
 "rewrite.error.revision" = "This revision could not be found.";
 "rewrite.checkout.title" = "Check Out Revision";
 "rewrite.checkout.help" = "Enter or choose the revision to check out. HEAD moves to that revision.";
@@ -931,4 +931,10 @@
 "rewrite.checkout.menu" = "Checkout Revision…";
 "rewrite.rebaseOnto.menu" = "Rebase Onto…";
 "rewrite.reset.menu" = "Reset HEAD to Revision…";
-"conflict.hint.rebase.edit" = "The rebase stopped at this commit and returned its changes to the working copy. Commit them, then click **Continue**.";
+"conflict.hint.rebase.edit" = "Commit the changes returned from this commit, then click **Continue**.";
+"rewrite.squash.confirm.one" = "Squash “%@” into “%@”? Their messages are combined.";
+"rewrite.fixup.confirm.one" = "Fold “%@” into “%@” and keep only the message of the target?";
+"rewrite.drop.confirm.one" = "Delete “%@” from the current branch?";
+"rewrite.move.confirm.one" = "Move “%@” to the new position?";
+"rewrite.rebaseOnto.confirm.one" = "Rebase “%@” onto the new base?";
+"rewrite.rebaseOnto.partial.help.one" = "Replays the selected commit on top of the new base. Unselected commits in the same range are removed from the current branch.";

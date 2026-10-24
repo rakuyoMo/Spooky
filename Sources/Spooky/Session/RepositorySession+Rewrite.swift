@@ -184,12 +184,16 @@ extension RepositorySession {
     /// 执行已确认的交互式变基计划。
     ///
     /// 并入暂存改动的计划由变基自己储藏其余改动：先储藏会把要并入的暂存改动一起收走，所以不询问自动储藏。
+    ///
+    /// - Parameter skipHooks: 跳过 pre-rebase 钩子。
     @discardableResult
-    func perform(_ plan: RewritePlan) -> Bool {
+    func perform(_ plan: RewritePlan, skipHooks: Bool = false) -> Bool {
         let amends = if case .amend = plan.action { true } else { false }
 
         return performGit(
-            { runner, output in try await RepositoryRewrite(runner: runner).perform(plan, onOutput: output) },
+            { runner, output in
+                try await RepositoryRewrite(runner: runner).perform(plan, skipHooks: skipHooks, onOutput: output)
+            },
             title: AppLocalization.text(Self.titleKey(of: plan.action)),
             offersAutoStash: !amends
         )

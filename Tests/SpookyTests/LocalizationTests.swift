@@ -41,6 +41,8 @@ struct LocalizationTests {
             keys += [".confirm", ".button"].map { "rewrite." + action + $0 }
         }
 
+        keys += ["squash", "fixup", "drop", "move", "rebaseOnto"].map { "rewrite." + $0 + ".confirm.one" }
+
         return keys
     }
 
