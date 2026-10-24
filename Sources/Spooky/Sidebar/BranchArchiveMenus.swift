@@ -3,21 +3,22 @@ import SwiftUI
 
 // MARK: - ArchivedGroupHeader
 
-/// Archived Branches 分组标题：有自动归档后还没看过的分支时，标题右侧多一个强调色圆点，右键可以全部标为已看过。
-struct ArchivedGroupHeader<Title: View>: View {
+/// Archived Branches 分组标题：有自动归档后还没看过的分支时，标题右侧 4 pt 多一个 6 pt 的强调色圆点，右键可以全部标为已看过。
+///
+/// 整行仍是归档拖放的落点。
+struct ArchivedGroupHeader: View {
     /// 当前仓库会话。
     let session: RepositorySession
 
-    /// 分组标题本身。
-    @ViewBuilder
-    let title: () -> Title
+    /// 拖放的参数表单入口。
+    let request: (RepositoryActionRequest) -> Void
 
-    /// 标题与 6 pt 圆点，间距 4 pt。
+    /// 标题、圆点与撑满整行的空白。
     var body: some View {
         let unreviewed = unreviewedBranches
 
         HStack(spacing: 4) {
-            title()
+            Text(AppLocalization.text("sidebar.archived"))
 
             if !unreviewed.isEmpty {
                 Circle()
@@ -26,6 +27,8 @@ struct ArchivedGroupHeader<Title: View>: View {
                     .accessibilityLabel(AppLocalization.text("sidebar.needsReview"))
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .modifier(RepositoryDropTarget(session: session, destination: .archived, request: request))
         .contextMenu {
             if !unreviewed.isEmpty {
                 Button(AppLocalization.text("sidebar.markAllReviewed")) {

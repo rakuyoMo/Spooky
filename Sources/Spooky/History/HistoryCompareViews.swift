@@ -19,6 +19,7 @@ struct HistoryBaseBranchHeader: View {
             HStack(spacing: 6) {
                 Text(AppLocalization.text("history.compareTo"))
                     .lineLimit(1)
+                    .fixedSize()
 
                 baseMenu(comparison)
 
@@ -101,6 +102,7 @@ struct HistoryBadge: View {
         .padding(.horizontal, 6)
         .padding(.vertical, 2)
         .background(AppPalette.color("sidebarBadgeBackgroundColor"), in: Capsule())
+        .fixedSize()
     }
 }
 
@@ -120,8 +122,9 @@ struct CompareBranchesToggle: View {
         Button {
             comparesBranches.toggle()
         } label: {
-            Image(systemName: comparesBranches ? "arrow.triangle.branch.circle.fill" : "arrow.triangle.branch.circle")
-                .font(.system(size: 14))
+            Image(systemName: "arrow.triangle.branch")
+                .font(.system(size: 13))
+                .foregroundStyle(comparesBranches ? Color.accentColor : .secondary)
                 .frame(width: 20, height: 20)
         }
         .buttonStyle(.borderless)

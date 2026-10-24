@@ -123,6 +123,7 @@ private struct BranchesReviewHeader: View {
             Text(AppLocalization.text("review.compareTo"))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+                .fixedSize()
 
             baseMenu
 

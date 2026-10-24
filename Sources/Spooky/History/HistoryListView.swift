@@ -283,7 +283,7 @@ private struct HistoryCommitTable: NSViewRepresentable {
 
             let history = parent.session.history
             let ids = history.rows.map(\.id)
-            let markers = [history.unpushed, history.unpulled]
+            let markers = [history.unpushed, history.unpulled, history.parentCommits]
 
             if
                 displayed != ids || changedStyle || snapshot != history.snapshot
