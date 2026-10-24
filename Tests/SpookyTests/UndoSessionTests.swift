@@ -282,10 +282,7 @@ extension UndoSessionTests {
             start()
             await session.writeTask?.value
             await session.waitForRefresh()
-
-            for task in session.history.activeTasks + session.stashes.activeTasks {
-                await task.value
-            }
+            await waitForReads()
         }
 
         /// 经会话的写队列新建分支，声明为可撤销，操作名为 “Branch”。
@@ -303,10 +300,7 @@ extension UndoSessionTests {
         func refresh() async {
             session.refresh(full: true)
             await session.waitForRefresh()
-
-            for task in session.history.activeTasks + session.stashes.activeTasks {
-                await task.value
-            }
+            await waitForReads()
         }
 
         /// 改写仓库里唯一的文件。
@@ -328,6 +322,19 @@ extension UndoSessionTests {
         func remove() {
             session.close()
             try? FileManager.default.removeItem(at: directory)
+        }
+
+        /// 等引用与储藏的读取结束；读取期间又要求的刷新在读完后另起任务，也一起等完。
+        private func waitForReads() async {
+            var awaited = Set<Task<Void, Never>>()
+
+            while
+                let task = (session.history.activeTasks + session.stashes.activeTasks)
+                    .first(where: { !awaited.contains($0) })
+            {
+                await task.value
+                awaited.insert(task)
+            }
         }
     }
 }
