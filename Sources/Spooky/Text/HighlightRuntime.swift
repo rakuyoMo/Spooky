@@ -3,13 +3,15 @@ import JavaScriptCore
 
 // MARK: - HighlightRuntime
 
-/// 载入了 highlight.js 全部语言的 JavaScript 上下文，负责语言名查找、按内容识别与着色。
+/// 一份载入了 highlight.js 全部语言的 JavaScript 上下文，负责语言名查找、按内容识别与着色。
 ///
-/// 只在 `SyntaxActor` 上创建和使用，同一个上下文不会被多个线程同时使用。
-@SyntaxActor
-final class HighlightRuntime {
+/// 上下文在自己的串行队列上创建，之后也只在这条队列上使用，同一个上下文不会被多个线程同时使用。
+actor HighlightRuntime {
     /// highlight.js 里纯文本的语言名，按它着色没有任何记号。
     static let plaintext = "plaintext"
+
+    /// 执行这份上下文全部脚本的串行队列。
+    private let queue: DispatchSerialQueue
 
     /// 运行脚本的上下文。
     private let context: JSContext
@@ -25,8 +27,15 @@ final class HighlightRuntime {
     /// 全部语言一起比较时，常见代码也常被判成冷门语言，耗时也成倍增加。
     private let detectionCandidates: [String]
 
+    /// actor 的任务都在这份上下文的串行队列上执行。
+    nonisolated var unownedExecutor: UnownedSerialExecutor {
+        queue.asUnownedSerialExecutor()
+    }
+
     /// 依次执行核心脚本与其余各语言的脚本；随应用交付的脚本无法执行时直接终止。
-    init() {
+    ///
+    /// - Parameter queue: 这份上下文专用的串行队列，构造本身也在这条队列上调用。
+    init(queue: DispatchSerialQueue) {
         guard
             let directory = Bundle.module.url(forResource: "HighlightJS", withExtension: nil),
             let context = JSContext()
@@ -48,6 +57,7 @@ final class HighlightRuntime {
             Self.evaluate(file, in: context)
         }
 
+        self.queue = queue
         self.context = context
         self.hljs = hljs
         names = Self.languageNames(of: hljs)
@@ -75,8 +85,13 @@ final class HighlightRuntime {
 
     /// 给整段文本着色，把 highlight.js 输出的 HTML 按行还原成片段。
     ///
-    /// - Returns: 与文本行一一对应的片段；脚本出错时为空。
+    /// - Returns: 与文本行一一对应的片段；排到时所在任务已经取消、或脚本出错时为空。
     func highlight(_ text: String, as language: String) -> [[SyntaxSpan]]? {
+        // 等上下文期间视图已经换掉了内容，不再执行脚本
+        guard !Task.isCancelled else {
+            return nil
+        }
+
         let options: [String: Any] = ["language": language, "ignoreIllegals": true]
         let result = hljs.invokeMethod("highlight", withArguments: [text, options])
 

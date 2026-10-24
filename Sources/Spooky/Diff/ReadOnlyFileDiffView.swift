@@ -138,7 +138,14 @@ struct ReadOnlyFileDiffView: View {
                 return
             }
 
-            syntax = await source.syntax(for: diff)
+            let colored = await source.syntax(for: diff)
+
+            // 着色期间换了内容时任务已取消，结果作废，不套到新的行上
+            guard !Task.isCancelled else {
+                return
+            }
+
+            syntax = colored
         }
     }
 

@@ -318,7 +318,7 @@ extension FileTextView {
         coordinator.syntaxTask = Task { [weak coordinator, weak document] in
             var spans: [[SyntaxSpan]]?
 
-            // 识别与着色在语法着色的串行队列上排队；内容或开关变化时任务取消，尚未开始的着色直接跳过
+            // 识别与着色借用 highlight.js 的上下文完成；内容或开关变化时任务取消，尚未开始的着色直接跳过
             if let language = await SyntaxHighlighter.language(forPath: path, content: text) {
                 spans = await SyntaxHighlighter.highlight(text, as: language)
             }

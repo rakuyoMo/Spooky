@@ -179,6 +179,32 @@ struct SyntaxHighlighterTests {
         #expect(await SyntaxHighlighter.highlight("let x = 1", as: "swift").count == 1)
     }
 
+    /// 一份上下文被长任务占着时，新的着色由另一份上下文接手，不排在它后面；长任务被取消后跑完的结果作废。
+    @Test("长任务不阻塞新的着色")
+    func longTaskDoesNotBlock() async throws {
+        let item = "  {\"id\": 1, \"name\": \"item\", \"tags\": [\"a\", \"b\"], \"ok\": true},\n"
+        let json = "[\n" + String(repeating: item, count: 10_000) + "  {}\n]"
+        let clock = ContinuousClock()
+
+        let long = Task {
+            let lines = await SyntaxHighlighter.highlight(json, as: "json")
+            return (lines, clock.now)
+        }
+
+        // 等长任务借到上下文、开始执行脚本
+        try await Task.sleep(for: .milliseconds(300))
+
+        let short = await SyntaxHighlighter.highlight("let x = 1", as: "swift")
+        let shortEnd = clock.now
+
+        long.cancel()
+        let (lines, longEnd) = await long.value
+
+        #expect(short.count == 1)
+        #expect(shortEnd < longEnd)
+        #expect(lines.isEmpty)
+    }
+
     /// 删除行取旧版的片段，新增与上下文行取新版；旧版的块注释不影响新版的着色。
     @Test("Diff 两侧全文的着色")
     func diffSyntax() async throws {

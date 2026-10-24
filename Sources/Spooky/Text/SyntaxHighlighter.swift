@@ -108,19 +108,11 @@ struct SyntaxSpan: Sendable, Equatable {
 
 // MARK: - SyntaxActor
 
-/// 语法着色专用的全局 actor：highlight.js 的 JavaScript 上下文只在它的串行队列上使用，着色依次在后台执行。
+/// 语法着色的全局 actor，负责 highlight.js 上下文的借还；脚本不在这里执行，每份上下文在自己的串行队列上运行。
 @globalActor
 actor SyntaxActor {
     /// 唯一实例。
     static let shared = SyntaxActor()
-
-    /// 执行全部识别与着色的串行队列。
-    private let queue = DispatchSerialQueue(label: "com.rakuyo.spooky.syntax", qos: .userInitiated)
-
-    /// actor 的任务都在串行队列上执行。
-    nonisolated var unownedExecutor: UnownedSerialExecutor {
-        queue.asUnownedSerialExecutor()
-    }
 }
 
 // MARK: - SyntaxHighlighter
@@ -202,9 +194,20 @@ enum SyntaxHighlighter {
         "dash": "bash",
     ]
 
-    /// 首次识别或着色时才载入的 highlight.js。
+    /// 同时存在的 highlight.js 上下文数目上限：一份被已取消的长任务占着时，新的请求由另一份接手。
+    private static let runtimeLimit = 2
+
+    /// 空闲的上下文。
     @SyntaxActor
-    private static var runtime: HighlightRuntime?
+    private static var idleRuntimes: [HighlightRuntime] = []
+
+    /// 已创建的上下文数目。
+    @SyntaxActor
+    private static var runtimeCount = 0
+
+    /// 上下文都在使用、数目已到上限时等待的请求，先到先得。
+    @SyntaxActor
+    private static var waiters: [CheckedContinuation<HighlightRuntime, Never>] = []
 
     /// 识别文件的语言；识别不了时为空，调用方按纯文本显示。
     ///
@@ -216,7 +219,7 @@ enum SyntaxHighlighter {
     ///   - content: 文件内容；为空或超过 `unknownFileLimit` 时不按内容识别。
     /// - Returns: highlight.js 的语言名，如 `swift`。
     @SyntaxActor
-    static func language(forPath path: String, content: String?) -> String? {
+    static func language(forPath path: String, content: String?) async -> String? {
         let name = path.split(separator: "/").last.map(String.init) ?? path
         let pathExtension = name.lastIndex(of: ".").map { name[name.index(after: $0)...].lowercased() } ?? ""
 
@@ -231,7 +234,7 @@ enum SyntaxHighlighter {
                 return language
             }
 
-            if let language = loadedRuntime().language(named: pathExtension) {
+            if let language = await withRuntime({ await $0.language(named: pathExtension) }) {
                 return language == HighlightRuntime.plaintext ? nil : language
             }
         }
@@ -241,36 +244,72 @@ enum SyntaxHighlighter {
             return nil
         }
 
-        return interpreterLanguage(of: content) ?? loadedRuntime().detectLanguage(in: content)
+        if let language = interpreterLanguage(of: content) {
+            return language
+        }
+
+        return await withRuntime { await $0.detectLanguage(in: content) }
     }
 
     /// 给整段文本着色。
     ///
-    /// 着色在串行队列上排队执行；排到时所在任务已经取消（视图换掉了内容），直接跳过。
+    /// 排到时所在任务已经取消（视图换掉了内容）的着色直接跳过；跑完时任务已经取消的，结果作废。
     ///
     /// - Parameters:
     ///   - text: 以 `\n` 分行的全文。
     ///   - language: `language(forPath:content:)` 识别出的语言。
     /// - Returns: 与文本行一一对应的片段，每行的片段依次覆盖整行；任务已取消或着色失败时为空。
     @SyntaxActor
-    static func highlight(_ text: String, as language: String) -> [[SyntaxSpan]] {
-        guard !Task.isCancelled else {
+    static func highlight(_ text: String, as language: String) async -> [[SyntaxSpan]] {
+        let lines = await withRuntime { await $0.highlight(text, as: language) }
+
+        // 跑完时视图已经换掉了内容，结果作废，不套到新内容上
+        guard !Task.isCancelled, let lines else {
             return []
         }
 
-        return loadedRuntime().highlight(text, as: language) ?? []
+        return lines
     }
 
-    /// 首次使用时载入 highlight.js，之后一直复用同一个上下文。
+    /// 借一份空闲的上下文执行一次识别或着色，用完交给等待中的请求，没有等待的就放回空闲列表。
     @SyntaxActor
-    private static func loadedRuntime() -> HighlightRuntime {
-        if let runtime {
+    private static func withRuntime<Result: Sendable>(
+        _ body: (HighlightRuntime) async -> Result
+    ) async -> Result {
+        let runtime = await checkOutRuntime()
+        let result = await body(runtime)
+
+        // 有请求在等时直接交给它，否则放回空闲列表
+        if waiters.isEmpty {
+            idleRuntimes.append(runtime)
+        } else {
+            waiters.removeFirst().resume(returning: runtime)
+        }
+
+        return result
+    }
+
+    /// 取一份空闲的上下文；没有空闲的就新建一份，数目已到上限时排队等别的请求用完。
+    @SyntaxActor
+    private static func checkOutRuntime() async -> HighlightRuntime {
+        if let runtime = idleRuntimes.popLast() {
             return runtime
         }
 
-        let loaded = HighlightRuntime()
-        runtime = loaded
-        return loaded
+        guard runtimeCount < runtimeLimit else {
+            return await withCheckedContinuation { waiters.append($0) }
+        }
+
+        runtimeCount += 1
+
+        // 上下文在自己的串行队列上创建并载入脚本，之后也只在这条队列上使用
+        let queue = DispatchSerialQueue(label: "com.rakuyo.spooky.syntax", qos: .userInitiated)
+
+        return await withCheckedContinuation { continuation in
+            queue.async {
+                continuation.resume(returning: HighlightRuntime(queue: queue))
+            }
+        }
     }
 
     /// 按首行 `#!` 的解释器识别，`/usr/bin/env python3` 与 `/bin/bash` 都能对应。
