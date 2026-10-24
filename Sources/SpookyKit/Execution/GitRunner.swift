@@ -274,7 +274,9 @@ extension GitRunner {
             return .noUpstream
         }
         if stderr.contains("is not fully merged") { return .branchNotMerged }
-        if stderr.contains("would be overwritten by") { return .localChanges }
+
+        // 变基开始前检查已跟踪的文件，有改动时以 “cannot rebase: You have …” 或 “… Your index …” 拒绝
+        if stderr.contains("would be overwritten by") || stderr.contains("cannot rebase: you") { return .localChanges }
         if
             command == "push",
             stderr.contains("[rejected]") || stderr.contains("[remote rejected]")
