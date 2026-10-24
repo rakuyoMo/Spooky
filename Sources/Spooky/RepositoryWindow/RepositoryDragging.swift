@@ -22,6 +22,9 @@ struct RepositoryDragPayload: Codable, Sendable {
 
         /// 储藏详情中的单个文件，引用为储藏提交的哈希。
         case stashFile
+
+        /// 标签，引用为完整的标签名。
+        case tag
     }
 
     /// Spooky 专用粘贴板类型。
@@ -86,6 +89,12 @@ enum RepositoryDropDestination {
 
     /// HEAD 以外的本地分支，该行不接受拖动。
     case localBranch
+
+    /// Pinned 标题。
+    case pinned
+
+    /// Archived Branches 标题。
+    case archived
 }
 
 // MARK: - RepositoryDropTarget
@@ -151,16 +160,18 @@ private struct ReferenceDropDelegate: DropDelegate {
     /// 本阶段只接受同仓库的单项引用或储藏拖放。
     func validateDrop(info: DropInfo) -> Bool {
         info.itemProviders(for: [RepositoryDragPayload.type]).count == 1
-            && (action() != nil || stashAction() != nil)
+            && (action() != nil || stashAction() != nil || flagAction() != nil)
     }
 
     /// 修饰键变化时同步更新动作提示。
     func dropUpdated(info _: DropInfo) -> DropProposal? {
         let action = action()
         let stash = stashAction()
+        let flag = flagAction()
         label = action.map { AppLocalization.text($0.kind.rawValue) }
             ?? stash.map { AppLocalization.text($0.titleKey) }
-        return DropProposal(operation: action == nil && stash == nil ? .forbidden : .copy)
+            ?? flag.map { AppLocalization.text($0.titleKey) }
+        return DropProposal(operation: action == nil && stash == nil && flag == nil ? .forbidden : .copy)
     }
 
     /// 离开落点后移除提示。
@@ -171,6 +182,7 @@ private struct ReferenceDropDelegate: DropDelegate {
         label = nil
         let action = action()
         let stash = stashAction()
+        let flag = flagAction()
         guard
             validateDrop(info: info),
             let expected = RepositoryDragContext.shared.payload,
@@ -185,8 +197,14 @@ private struct ReferenceDropDelegate: DropDelegate {
             Task { @MainActor in
                 guard session.repository == payload.repository, session.canWrite else { return }
 
-                // 储藏直接交给会话的储藏入口，其余动作打开参数表单
-                if let action { request(action) } else { stash?.perform(in: session) }
+                // 储藏、置顶与归档直接交给会话，其余动作打开参数表单
+                if let action {
+                    request(action)
+                } else if let stash {
+                    stash.perform(in: session)
+                } else {
+                    flag?.perform(in: session)
+                }
             }
         }
         return true
@@ -200,6 +218,16 @@ private struct ReferenceDropDelegate: DropDelegate {
         else { return nil }
 
         return StashDropAction(payload: payload, destination: destination, session: session)
+    }
+
+    /// 本地分支拖到 Pinned 或 Archived Branches 标题时的动作；可用条件与右键菜单相同。
+    private func flagAction() -> BranchFlagDropAction? {
+        guard
+            let payload = RepositoryDragContext.shared.payload,
+            payload.repository == session.repository
+        else { return nil }
+
+        return BranchFlagDropAction(payload: payload, destination: destination, session: session)
     }
 
     /// 每个映射都指向实际可用的业务动作，可用条件与菜单和右键菜单相同。
@@ -220,7 +248,7 @@ private struct ReferenceDropDelegate: DropDelegate {
             guard !alternate, let source, session.canPull(from: source) else { return nil }
             return RepositoryActionRequest(kind: .pull, reference: payload.reference)
 
-        case (.local, .branches), (.commit, .branches):
+        case (.local, .branches), (.commit, .branches), (.tag, .branches):
             guard !alternate, session.canCreateBranchFromReference else { return nil }
             return RepositoryActionRequest(kind: .create, reference: payload.reference)
 
