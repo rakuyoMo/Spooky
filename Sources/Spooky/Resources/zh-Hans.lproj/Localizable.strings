@@ -972,3 +972,4 @@
 "remote.missing.message" = "这个仓库里已经没有远端 “%@”。";
 "remote.error.browser" = "无法在浏览器中打开这个远端。";
 "remote.error.browser.help" = "只有 HTTP(S)、SSH 或 git 协议地址的远端有网页，本机路径与 file 地址没有。";
+"branch.dragTrack" = "跟踪";

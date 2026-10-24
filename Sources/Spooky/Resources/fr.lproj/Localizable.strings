@@ -972,3 +972,4 @@
 "remote.missing.message" = "Le dépôt distant « %@ » n’existe plus dans ce dépôt.";
 "remote.error.browser" = "Le dépôt distant ne peut pas être ouvert dans un navigateur.";
 "remote.error.browser.help" = "Seuls les dépôts distants avec une URL HTTP(S), SSH ou du protocole git ont une page web. Les chemins locaux et les URL file n’en ont pas.";
+"branch.dragTrack" = "Suivre";

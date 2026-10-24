@@ -58,6 +58,7 @@ struct ReferenceDialogLayout<Content: View, Options: View>: View {
             if let options {
                 DisclosureGroup(AppLocalization.text("dialog.options"), isExpanded: $optionsExpanded) {
                     options()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, 12)
                 }
                 .padding(.horizontal, 20)

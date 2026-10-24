@@ -369,6 +369,7 @@ extension RepositoryOperationDialog {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// 跟踪远端分支：远端分支、本地名称与新建后检出的选项。

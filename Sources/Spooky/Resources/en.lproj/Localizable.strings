@@ -972,3 +972,4 @@
 "remote.missing.message" = "The remote “%@” no longer exists in this repository.";
 "remote.error.browser" = "The remote can't be opened in a browser.";
 "remote.error.browser.help" = "Only remotes with an HTTP(S), SSH or git protocol URL have a web page. Local paths and file URLs don't.";
+"branch.dragTrack" = "Track";

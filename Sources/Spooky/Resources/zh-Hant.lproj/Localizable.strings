@@ -972,3 +972,4 @@
 "remote.missing.message" = "這個儲存庫裡已經沒有遠端 “%@”。";
 "remote.error.browser" = "無法在瀏覽器中開啟這個遠端。";
 "remote.error.browser.help" = "只有 HTTP(S)、SSH 或 git 協定位址的遠端有網頁，本機路徑與 file 位址沒有。";
+"branch.dragTrack" = "追蹤";

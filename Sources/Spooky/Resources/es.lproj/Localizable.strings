@@ -972,3 +972,4 @@
 "remote.missing.message" = "El remoto “%@” ya no existe en este repositorio.";
 "remote.error.browser" = "El remoto no se puede abrir en un navegador.";
 "remote.error.browser.help" = "Solo los remotos con una URL HTTP(S), SSH o del protocolo git tienen página web. Las rutas locales y las URL file no.";
+"branch.dragTrack" = "Seguir";

@@ -972,3 +972,4 @@
 "remote.missing.message" = "リモート「%@」はこのリポジトリにもうありません。";
 "remote.error.browser" = "このリモートはブラウザで開けません。";
 "remote.error.browser.help" = "HTTP(S)、SSH、git プロトコルの URL を持つリモートだけに Web ページがあります。ローカルパスや file URL にはありません。";
+"branch.dragTrack" = "追跡";
