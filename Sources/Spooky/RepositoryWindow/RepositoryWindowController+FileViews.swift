@@ -67,10 +67,15 @@ extension RepositoryWindowController {
         return controller
     }
 
-    /// 文件历史里的搜索框按作者、提交人或版本筛选，范围在搜索框左侧的菜单里切换。
+    /// 文件历史里的搜索框按作者、提交人或版本筛选，范围在搜索框左侧的菜单里切换；按作者或提交人筛选时补全姓名。
     func configureFileHistorySearch(_ field: NSSearchField) {
         let scope = session.fileHistory.scope
         let menu = NSMenu()
+
+        // 接受补全后与键入一样写入会话，由文件历史按新内容重读
+        contributorCompletion.attach(to: field, state: session.fileHistory) { [weak self] in
+            self?.session.searchText = $0
+        }
 
         for (index, candidate) in Self.fileHistoryScopes.enumerated() {
             let item = NSMenuItem(

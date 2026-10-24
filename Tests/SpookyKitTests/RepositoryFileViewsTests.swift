@@ -76,6 +76,11 @@ struct RepositoryFileViewsTests {
         #expect(contributors.map(\.name) == ["Alice", "Bob [x]"])
         #expect(contributors.first?.commitCount == 2)
         #expect(contributors.first?.email == "alice@example.invalid")
+
+        // 不给路径时是整个仓库的作者，包括只改过其它文件的人
+        let authors = try await views.contributors(of: nil, at: head)
+        #expect(authors.map(\.name) == ["Alice", "Bob", "Bob [x]"])
+        #expect(authors.first?.commitCount == 2)
     }
 
     /// Blame 的段、提交元信息与原文按 porcelain 协议解析，哈希长度随仓库算法变化。

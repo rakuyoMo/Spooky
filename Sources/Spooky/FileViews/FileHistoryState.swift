@@ -100,6 +100,13 @@ final class FileHistoryState {
     /// 搜索框输入的延迟任务。
     private var searchTask: Task<Void, Never>? = nil
 
+    /// 搜索框补全用的整个仓库的作者：按仓库与 HEAD 读取一次，换文件时沿用。
+    private var authorsLoad: (
+        location: RepositoryLocation,
+        head: String,
+        task: Task<[FileContributor], any Error>
+    )? = nil
+
     /// 当前选中的提交记录。
     var selectedCommit: HistoryCommit? {
         commits.first { $0.id == selectedID }
@@ -156,6 +163,34 @@ final class FileHistoryState {
 
         self.head = head
         reload()
+    }
+
+    /// 整个仓库的作者，供搜索框补全；第一次用到时读取，换仓库或 HEAD 移动后重读，读取失败时下次重试。
+    func authors() async throws -> [FileContributor] {
+        guard let runner, let head else {
+            return []
+        }
+
+        // 同一仓库与 HEAD 的读取共用一次结果，换文件仍沿用
+        if let load = authorsLoad, load.location == runner.location, load.head == head {
+            return try await load.task.value
+        }
+
+        let task = Task {
+            try await RepositoryFileViews(runner: runner).contributors(of: nil, at: head)
+        }
+        authorsLoad = (runner.location, head, task)
+
+        do {
+            return try await task.value
+        } catch {
+            // 失败的读取不留在缓存里，下次输入时重试
+            if authorsLoad?.task == task {
+                authorsLoad = nil
+            }
+
+            throw error
+        }
     }
 
     /// 按当前条件读取第一页与总数，仍在结果中的提交保持选中。

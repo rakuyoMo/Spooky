@@ -98,7 +98,7 @@ public struct FileHistoryFilter: Sendable, Equatable {
 
 // MARK: - FileContributor
 
-/// 修改过某个文件的一位作者及其提交数。
+/// 某个文件或整个仓库的一位作者及其提交数。
 public struct FileContributor: Sendable, Equatable {
     /// 作者姓名，经过仓库的 `.mailmap` 合并。
     public let name: String
@@ -106,7 +106,7 @@ public struct FileContributor: Sendable, Equatable {
     /// 作者邮箱。
     public let email: String
 
-    /// 修改过该文件的提交数。
+    /// 这位作者的提交数。
     public let commitCount: Int
 
     /// 解析 `shortlog -s -e` 的输出：每行形如 “提交数\t姓名 <邮箱>”。
@@ -280,17 +280,21 @@ public struct RepositoryFileViews: Sendable {
         return try FileBlame.parse(output)
     }
 
-    /// 修改过该文件的作者，按提交数从多到少排列。
-    public func contributors(of path: String, at revision: String) async throws -> [FileContributor] {
-        guard GitObjectID.isValid(revision), !path.isEmpty else {
+    /// 指定提交之前修改过该文件的作者，按提交数从多到少排列。
+    ///
+    /// - Parameters:
+    ///   - path: 树中存储的路径；nil 表示整个仓库的作者，供文件历史的搜索框补全。
+    ///   - revision: 起点提交的完整哈希。
+    public func contributors(of path: String?, at revision: String) async throws -> [FileContributor] {
+        guard GitObjectID.isValid(revision), path.map({ !$0.isEmpty }) ?? true else {
             throw RepositoryReadError.invalidQuery
         }
 
         // shortlog 没有起点时会改读标准输入，起点必须显式给出；作者随 `.mailmap` 合并，结果不按哈希复用
         let output = try await runner.run(
-            Self.storedPathOptions + RepositoryHistory.logOptions + [
-                "shortlog", "-n", "-s", "-e", revision, "--", path,
-            ]
+            Self.storedPathOptions + RepositoryHistory.logOptions
+                + ["shortlog", "-n", "-s", "-e", revision]
+                + (path.map { ["--", $0] } ?? [])
         )
 
         return try FileContributor.parse(output)
