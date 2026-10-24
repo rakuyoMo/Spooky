@@ -1361,7 +1361,6 @@
 "review.update.summary" = "「%1$@」を「%2$@」にマージすると %3$ld 件のコミットが取り込まれます。";
 "review.update.merge" = "マージ";
 "review.update.rebase" = "リベース";
-"review.update.noParent" = "親ブランチが設定されていません";
 "review.update.noChanges" = "取り込む変更はありません";
 "review.update.conflicts" = "マージコンフリクトが見つかりました";
 "review.update.clean" = "親ブランチとのコンフリクトはありません";

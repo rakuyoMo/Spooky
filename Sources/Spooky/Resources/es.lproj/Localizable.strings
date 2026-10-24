@@ -1361,7 +1361,6 @@
 "review.update.summary" = "Fusionar “%1$@” en “%2$@” integrará %3$ld commits.";
 "review.update.merge" = "Fusionar";
 "review.update.rebase" = "Rebase";
-"review.update.noParent" = "No hay rama padre definida";
 "review.update.noChanges" = "No hay cambios que integrar";
 "review.update.conflicts" = "Se detectaron conflictos de fusión";
 "review.update.clean" = "Sin conflictos con la rama padre";

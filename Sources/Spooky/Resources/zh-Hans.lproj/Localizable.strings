@@ -1361,7 +1361,6 @@
 "review.update.summary" = "把 “%1$@” 并入 “%2$@” 将带来 %3$ld 个提交。";
 "review.update.merge" = "合并";
 "review.update.rebase" = "变基";
-"review.update.noParent" = "没有设置父分支";
 "review.update.noChanges" = "没有需要并入的改动";
 "review.update.conflicts" = "检测到合并冲突";
 "review.update.clean" = "与父分支没有冲突";

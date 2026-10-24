@@ -232,8 +232,8 @@ struct UpdateBranchPopover: View {
 
 /// Update Branch 的预览状态：一行图标与说明。
 struct UpdateBranchStatus: View {
-    /// 所选分支与父分支的比较；没有父分支时为 nil。
-    let comparison: HistoryBaseComparison?
+    /// 所选分支与父分支的比较。
+    let comparison: HistoryBaseComparison
 
     /// 18 pt 图标加 12 pt 说明。
     var body: some View {
@@ -251,12 +251,8 @@ struct UpdateBranchStatus: View {
         .foregroundStyle(.secondary)
     }
 
-    /// 没有父分支、正在检查、没有可并入的改动、没有冲突、有冲突或无法检查。
+    /// 正在检查、没有可并入的改动、没有冲突、有冲突或无法检查。
     private var status: (String, Color, String) {
-        guard let comparison else {
-            return ("questionmark.circle", .secondary, "review.update.noParent")
-        }
-
         guard let result = comparison.comparison else {
             return ("clock", .secondary, "merge.checking")
         }

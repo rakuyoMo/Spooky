@@ -1361,7 +1361,6 @@
 "review.update.summary" = "Beim Mergen von „%1$@“ in „%2$@“ werden %3$ld Commits übernommen.";
 "review.update.merge" = "Mergen";
 "review.update.rebase" = "Rebase";
-"review.update.noParent" = "Kein übergeordneter Branch festgelegt";
 "review.update.noChanges" = "Keine Änderungen zu übernehmen";
 "review.update.conflicts" = "Merge-Konflikte erkannt";
 "review.update.clean" = "Keine Konflikte mit dem übergeordneten Branch";
