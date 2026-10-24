@@ -189,31 +189,7 @@ struct RepositorySidebarView: View {
     var body: some View {
         VStack(spacing: 0) {
             List(selection: selection) {
-                Section(isExpanded: isExpanded(.workspace)) {
-                    workingCopy
-                        .tag("workingCopy")
-                        .modifier(
-                            RepositoryDropTarget(session: session, destination: .head, request: request)
-                        )
-                    Label(AppLocalization.text("history.title"), systemImage: "clock").tag("history")
-
-                    // 工作区文件拖到这里保存部分储藏
-                    stashes
-                        .tag("stashes")
-                        .modifier(StashesDropTarget(session: session))
-
-                    Label(AppLocalization.text("review.title"), systemImage: "arrow.triangle.pull")
-                        .tag("branchesReview")
-
-                    // 视图设置打开 Show Reflog 时才显示
-                    if showsReflog {
-                        Label(AppLocalization.text("reflog.title"), systemImage: "clock.arrow.circlepath")
-                            .tag("reflog")
-                    }
-                } header: {
-                    Text(AppLocalization.text("workspace.group"))
-                }
-
+                workspace
                 pinnedBranches
                 localBranches
                 archivedBranches
@@ -231,6 +207,34 @@ struct RepositorySidebarView: View {
         }
         .onChange(of: session.repository) {
             resetViewState()
+        }
+    }
+
+    /// Workspace 分组：工作区、历史、储藏、分支整理，以及视图设置打开 Show Reflog 时的 Reflog。
+    private var workspace: some View {
+        Section(isExpanded: isExpanded(.workspace)) {
+            workingCopy
+                .tag("workingCopy")
+                .modifier(
+                    RepositoryDropTarget(session: session, destination: .head, request: request)
+                )
+            Label(AppLocalization.text("history.title"), systemImage: "clock").tag("history")
+
+            // 工作区文件拖到这里保存部分储藏
+            stashes
+                .tag("stashes")
+                .modifier(StashesDropTarget(session: session))
+
+            Label(AppLocalization.text("review.title"), systemImage: "arrow.triangle.pull")
+                .tag("branchesReview")
+
+            // 视图设置打开 Show Reflog 时才显示
+            if showsReflog {
+                Label(AppLocalization.text("reflog.title"), systemImage: "clock.arrow.circlepath")
+                    .tag("reflog")
+            }
+        } header: {
+            Text(AppLocalization.text("workspace.group"))
         }
     }
 

@@ -3,43 +3,6 @@ import Observation
 import os
 import SpookyKit
 
-// MARK: - RepositoryView
-
-/// 当前窗口选中的主视图。
-enum RepositoryView: String, CaseIterable {
-    /// 工作区状态列表。
-    case workingCopy
-
-    /// 分页提交列表与只读提交详情。
-    case history
-
-    /// 储藏列表与只读储藏详情。
-    case stashes
-
-    /// HEAD 或一个本地分支的引用日志，与所选记录的提交详情。
-    case reflog
-
-    /// 一个文件的提交时间线与所选版本的详情。
-    case fileHistory
-
-    /// 某个版本的文件原文与逐行追溯。
-    case fileContent
-
-    /// 一个远端的设置与远端分支。
-    case remote
-
-    /// 本地分支与基准分支的比较与整理。
-    case branchesReview
-
-    /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
-    var supportsSearch: Bool {
-        switch self {
-        case .fileContent, .remote: false
-        case .workingCopy, .history, .stashes, .fileHistory, .branchesReview, .reflog: true
-        }
-    }
-}
-
 // MARK: - StatusRowID
 
 /// 文件行的稳定标识，区分 `rm --cached` 后同路径的已跟踪与未跟踪记录。
