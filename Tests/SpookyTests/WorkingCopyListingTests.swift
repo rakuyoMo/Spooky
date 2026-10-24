@@ -117,6 +117,27 @@ struct WorkingCopyListingTests {
         }
     }
 
+    /// 恢复版本的候选：当前分支排在最前，打开表单时预选它；同名标签仍各占一项，符号引用不列出，分离 HEAD 时保持快照顺序。
+    @Test("恢复版本的候选顺序")
+    func revisionCandidates() {
+        let references = [
+            Self.reference("refs/heads/feature"),
+            Self.reference("refs/heads/main"),
+            Self.reference("refs/remotes/origin/HEAD", symbolicTarget: "refs/remotes/origin/main"),
+            Self.reference("refs/remotes/origin/main"),
+            Self.reference("refs/tags/main"),
+        ]
+
+        #expect(
+            WorkingCopyFileDialog.revisions(in: references, currentBranch: "main")
+                == ["main", "feature", "origin/main", "main"]
+        )
+        #expect(
+            WorkingCopyFileDialog.revisions(in: references, currentBranch: nil)
+                == ["feature", "main", "origin/main", "main"]
+        )
+    }
+
     /// 补丁前像不符与移动目标已存在都属于仓库状态问题；前像不符时列出这些文件。
     @Test("文件操作错误的呈现")
     func failures() {
@@ -140,5 +161,22 @@ struct WorkingCopyListingTests {
         )
         #expect(tool.details.contains("xcode-select: error"))
         #expect(tool.message == AppLocalization.text("files.error.diffToolHelp"))
+    }
+}
+
+// MARK: - Helpers
+
+extension WorkingCopyListingTests {
+    /// 指向同一个提交的引用。
+    private static func reference(_ id: String, symbolicTarget: String? = nil) -> RepositoryReference {
+        RepositoryReference(
+            id: id,
+            objectID: String(repeating: "a", count: 40),
+            objectType: "commit",
+            upstream: nil,
+            upstreamRemote: nil,
+            upstreamBranch: nil,
+            symbolicTarget: symbolicTarget
+        )
     }
 }

@@ -820,3 +820,6 @@
 "files.truncation" = "截斷工作區中過長的檔案名稱：";
 "files.truncation.beginning" = "截斷開頭";
 "files.truncation.middle" = "截斷中間";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "這個儲存庫還沒有任何引用。";

@@ -820,3 +820,6 @@
 "files.truncation" = "Tronquer les noms de fichiers longs dans la copie de travail :";
 "files.truncation.beginning" = "Tronquer le début";
 "files.truncation.middle" = "Tronquer le milieu";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "Ce dépôt n’a encore aucune référence.";

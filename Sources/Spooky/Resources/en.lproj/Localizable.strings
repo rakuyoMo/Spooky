@@ -820,3 +820,6 @@
 "files.truncation" = "Truncate long file names in working copy:";
 "files.truncation.beginning" = "Truncate beginning";
 "files.truncation.middle" = "Truncate middle";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "This repository has no refs yet.";

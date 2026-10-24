@@ -820,3 +820,6 @@
 "files.truncation" = "作業コピーの長いファイル名の省略：";
 "files.truncation.beginning" = "先頭を省略";
 "files.truncation.middle" = "中央を省略";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "このリポジトリにはまだ参照がありません。";

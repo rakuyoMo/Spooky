@@ -820,3 +820,6 @@
 "files.truncation" = "Lange Dateinamen in der Arbeitskopie kürzen:";
 "files.truncation.beginning" = "Anfang kürzen";
 "files.truncation.middle" = "Mitte kürzen";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "Dieses Repository hat noch keine Referenzen.";

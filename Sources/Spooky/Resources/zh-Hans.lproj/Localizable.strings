@@ -820,3 +820,6 @@
 "files.truncation" = "截断工作区中过长的文件名：";
 "files.truncation.beginning" = "截断开头";
 "files.truncation.middle" = "截断中间";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "这个仓库还没有任何引用。";
