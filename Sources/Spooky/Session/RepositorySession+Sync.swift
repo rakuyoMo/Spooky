@@ -155,7 +155,8 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text("sync.autoFetch"),
-            reportsFailure: false
+            reportsFailure: false,
+            undo: .unrecorded
         )
     }
 
@@ -310,7 +311,8 @@ extension RepositorySession {
                 try await RepositorySync(runner: runner).merge(target, options: options, onOutput: output)
             },
             title: AppLocalization.text("sync.quickMerge"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 
@@ -326,7 +328,8 @@ extension RepositorySession {
                 try await RepositorySync(runner: runner).rebase(onto: target, onOutput: output)
             },
             title: AppLocalization.text("sync.quickRebase"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 

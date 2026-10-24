@@ -16,6 +16,9 @@ enum RepositoryView: String, CaseIterable {
     /// 储藏列表与只读储藏详情。
     case stashes
 
+    /// HEAD 或一个本地分支的引用日志，与所选记录的提交详情。
+    case reflog
+
     /// 一个文件的提交时间线与所选版本的详情。
     case fileHistory
 
@@ -32,7 +35,7 @@ enum RepositoryView: String, CaseIterable {
     var supportsSearch: Bool {
         switch self {
         case .fileContent, .remote: false
-        case .workingCopy, .history, .stashes, .fileHistory, .branchesReview: true
+        case .workingCopy, .history, .stashes, .fileHistory, .branchesReview, .reflog: true
         }
     }
 }
@@ -79,6 +82,9 @@ final class RepositorySession {
 
     /// 储藏列表、选择与储藏详情。
     let stashes = RepositoryStashState()
+
+    /// Reflog 的记录、所看的引用、搜索与详情。
+    let reflog = RepositoryReflogState()
 
     /// 文件历史的时间线、筛选与详情。
     let fileHistory = FileHistoryState()
@@ -480,6 +486,7 @@ extension RepositorySession {
         generation += 1
         history.close()
         stashes.close()
+        reflog.close()
         fileHistory.close()
         fileContent.close()
         signatures.reset()
@@ -667,6 +674,7 @@ extension RepositorySession {
     ///   - recordsActivity: 网络与引用操作记入 Activity；工作区的高频写入只用于核对报告。
     ///   - offersAutoStash: 被本地改动挡住时是否按设置询问先储藏，检出、拉取与合并使用。
     ///   - reportsFailure: 失败时是否弹出错误 sheet；自动获取只把失败记进 Activity。
+    ///   - undo: 这次写操作能否撤销；没有声明的写操作按不能撤销处理。
     ///   - failureNote: 失败时补在错误说明前面的一段话，如同步停在了哪一步。
     /// - Returns: 是否已开始执行；仓库不可写时不启动，调用方据此保留未发送的参数。
     @discardableResult
@@ -677,6 +685,7 @@ extension RepositorySession {
         recordsActivity: Bool = true,
         offersAutoStash: Bool = false,
         reportsFailure: Bool = true,
+        undo: UndoRecording = .irreversible,
         success: (() -> Void)? = nil,
         failureNote: (() -> String?)? = nil
     ) -> Bool {
@@ -714,7 +723,7 @@ extension RepositorySession {
             }
 
             let stashing = offersAutoStash && !cancelled
-                && offerAutoStash(after: error, title: title, action: action, failureNote: failureNote)
+                && offerAutoStash(after: error, title: title, action: action, failureNote: failureNote, undo: undo)
 
             if !stashing {
                 reportWriteFailure(
@@ -728,13 +737,16 @@ extension RepositorySession {
             }
         }
 
+        // 按声明在操作前后记下仓库状态，供撤销与重做使用
+        let recorded = recordingUndo(action, title: title, recording: undo)
+
         writeTask = Task { [weak self] in
             let collector = Task { @MainActor in
                 for await output in outputs { activity?.append(output) }
             }
 
             do {
-                try await action(runner) { continuation.yield($0) }
+                try await recorded(runner) { continuation.yield($0) }
                 activity?.state = Task.isCancelled ? "activity.cancelled" : "activity.finished"
                 Self.logger.info("写操作\(Task.isCancelled ? "已取消" : "完成", privacy: .public)：\(title, privacy: .public)")
 

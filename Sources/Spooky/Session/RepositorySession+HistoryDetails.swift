@@ -49,7 +49,8 @@ extension RepositorySession {
                         try await WorkingCopyOperations(runner: runner).restore(paths, to: revision)
                     },
                     title: AppLocalization.text("fileHistory.restoreTitle"),
-                    recordsActivity: false
+                    recordsActivity: false,
+                    undo: .reversible
                 )
             },
             nil

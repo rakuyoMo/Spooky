@@ -25,7 +25,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositoryReferences(runner: runner).setPinned(pinned, branches: ids)
             },
-            title: AppLocalization.text(pinned ? "branch.pin" : "branch.unpin")
+            title: AppLocalization.text(pinned ? "branch.pin" : "branch.unpin"),
+            undo: .reversible
         )
     }
 
@@ -41,7 +42,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositoryReferences(runner: runner).setArchived(archived, branches: ids)
             },
-            title: AppLocalization.text(archived ? "branch.archive" : "branch.unarchive")
+            title: AppLocalization.text(archived ? "branch.archive" : "branch.unarchive"),
+            undo: .reversible
         )
     }
 

@@ -57,9 +57,15 @@ extension SpookyApplicationController {
         addItem("menu.closeWindow", action: #selector(NSWindow.performClose(_:)), key: "w", to: file)
     }
 
-    /// Edit 菜单：系统文本动作、提交信息的段落重排与查找。
+    /// Edit 菜单：撤销与重做、系统文本动作、提交信息的段落重排与查找。
     private func configureEditMenu(in menu: NSMenu) {
         let edit = addMenu("menu.edit", to: menu)
+
+        // 标题与可用性由窗口的撤销管理器在每次打开菜单时给出
+        addItem("menu.undo", action: Selector(("undo:")), key: "z", to: edit)
+        addItem("menu.redo", action: Selector(("redo:")), key: "z", modifiers: [.command, .shift], to: edit)
+
+        edit.addItem(.separator())
         addItem("menu.cut", action: #selector(NSText.cut(_:)), key: "x", to: edit)
         addItem("menu.copy", action: #selector(NSText.copy(_:)), key: "c", to: edit)
         addItem("menu.paste", action: #selector(NSText.paste(_:)), key: "v", to: edit)
@@ -87,7 +93,7 @@ extension SpookyApplicationController {
         find.addItem(search)
     }
 
-    /// View 菜单：仓库管理、工作区、历史与储藏视图，工作区文件列表、历史与 Diff 的显示选项，以及刷新与全屏。
+    /// View 菜单：仓库管理、工作区、历史、储藏与 Reflog 视图，工作区文件列表、历史与 Diff 的显示选项，以及刷新与全屏。
     private func configureViewMenu(in menu: NSMenu) {
         let view = addMenu("menu.view", to: menu)
         addItem(
@@ -107,6 +113,7 @@ extension SpookyApplicationController {
             key: "5",
             to: view
         )
+        addItem("reflog.show", action: #selector(RepositoryWindowController.showReflog), key: "6", to: view)
         addItem(
             "history.showHead",
             action: #selector(RepositoryWindowController.showHeadBranch),

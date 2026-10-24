@@ -173,7 +173,8 @@ extension RepositoryWindowController {
                         session.performGit(
                             action,
                             title: title,
-                            offersAutoStash: [.pull, .merge].contains(request.kind)
+                            offersAutoStash: [.pull, .merge].contains(request.kind),
+                            undo: [.create, .track, .merge].contains(request.kind) ? .reversible : .irreversible
                         )
                     else { return false }
 
@@ -230,6 +231,9 @@ extension RepositoryWindowController {
             return !showsManager && session.repository != nil
 
         case #selector(showWorkingCopy), #selector(showHistory):
+            return session.repository != nil
+
+        case #selector(showReflog):
             return session.repository != nil
 
         case #selector(focusSearch):

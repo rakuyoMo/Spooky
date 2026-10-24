@@ -106,7 +106,8 @@ extension SetParentBranchDialog {
 
         let started = session.performGit(
             { runner, _ in try await RepositoryReferences(runner: runner).setParent(parent, of: branch.id) },
-            title: AppLocalization.text("branch.parent.set")
+            title: AppLocalization.text("branch.parent.set"),
+            undo: .reversible
         )
 
         if started {

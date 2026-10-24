@@ -63,28 +63,38 @@ public struct HistoryCommit: Sendable, Equatable, Identifiable {
 
         return try stride(from: 0, to: fields.count, by: 10)
             .map { start in
-                let values = fields[start ..< (start + 10)].map { String(decoding: $0, as: UTF8.self) }
-                let parents = values[2].split(separator: " ").map(String.init)
-
-                guard
-                    GitObjectID.isValid(values[0]), GitObjectID.isValid(values[1]),
-                    parents.allSatisfy(GitObjectID.isValid),
-                    let authorTime = Int64(values[5]), let commitTime = Int64(values[8])
-                else { throw RepositoryReadError.malformedOutput("log") }
-
-                return Self(
-                    id: values[0],
-                    tree: values[1],
-                    parents: parents,
-                    author: values[3],
-                    authorEmail: values[4],
-                    authorDate: Date(timeIntervalSince1970: Double(authorTime)),
-                    committer: values[6],
-                    committerEmail: values[7],
-                    commitDate: Date(timeIntervalSince1970: Double(commitTime)),
-                    message: values[9]
-                )
+                try Self(fields: fields[start ..< (start + 10)].map { String(decoding: $0, as: UTF8.self) })
             }
+    }
+}
+
+extension HistoryCommit {
+    /// 按 ``format`` 的字段顺序解出一个提交；引用日志在同一条记录前面另加字段时也用它。
+    ///
+    /// - Parameter fields: 恰好十个字段，正文在最后。
+    init(fields values: [String]) throws {
+        guard values.count == 10 else { throw RepositoryReadError.malformedOutput("log") }
+
+        let parents = values[2].split(separator: " ").map(String.init)
+
+        guard
+            GitObjectID.isValid(values[0]), GitObjectID.isValid(values[1]),
+            parents.allSatisfy(GitObjectID.isValid),
+            let authorTime = Int64(values[5]), let commitTime = Int64(values[8])
+        else { throw RepositoryReadError.malformedOutput("log") }
+
+        self.init(
+            id: values[0],
+            tree: values[1],
+            parents: parents,
+            author: values[3],
+            authorEmail: values[4],
+            authorDate: Date(timeIntervalSince1970: Double(authorTime)),
+            committer: values[6],
+            committerEmail: values[7],
+            commitDate: Date(timeIntervalSince1970: Double(commitTime)),
+            message: values[9]
+        )
     }
 }
 

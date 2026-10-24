@@ -62,6 +62,10 @@ struct RepositorySidebarView: View {
     @AppStorage(SidebarPreferences.showStashCountKey)
     var showsStashCount = SidebarPreferences.defaultFlag(SidebarPreferences.showStashCountKey)
 
+    /// Workspace 分组显示 Reflog 入口。
+    @AppStorage(SidebarPreferences.showReflogKey)
+    var showsReflog = SidebarPreferences.defaultFlag(SidebarPreferences.showReflogKey)
+
     /// 引用按 “/” 折叠成文件夹。
     @AppStorage(SidebarPreferences.groupRefsKey)
     var groupsRefs = SidebarPreferences.defaultFlag(SidebarPreferences.groupRefsKey)
@@ -119,6 +123,7 @@ struct RepositorySidebarView: View {
         if session.activeView == .workingCopy { return ["workingCopy"] }
         if session.activeView == .stashes { return ["stashes"] }
         if session.activeView == .branchesReview { return ["branchesReview"] }
+        if session.activeView == .reflog { return ["reflog"] }
 
         // 远端设置对应侧边栏里那个远端的行
         if session.activeView == .remote {
@@ -161,10 +166,12 @@ struct RepositorySidebarView: View {
                     session.activeView = .stashes
                 } else if added.contains("branchesReview") || value == ["branchesReview"] {
                     session.activeView = .branchesReview
+                } else if added.contains("reflog") || value == ["reflog"] {
+                    session.activeView = .reflog
                 } else {
                     // 置顶分组里的行换回分支的完整引用名
                     let references = value
-                        .subtracting(["workingCopy", "history", "stashes", "branchesReview"])
+                        .subtracting(["workingCopy", "history", "stashes", "branchesReview", "reflog"])
                         .filter { !$0.hasPrefix(Self.remoteRowPrefix) }
                         .map(Self.reference(forRow:))
 
@@ -197,6 +204,12 @@ struct RepositorySidebarView: View {
 
                     Label(AppLocalization.text("review.title"), systemImage: "arrow.triangle.pull")
                         .tag("branchesReview")
+
+                    // 视图设置打开 Show Reflog 时才显示
+                    if showsReflog {
+                        Label(AppLocalization.text("reflog.title"), systemImage: "clock.arrow.circlepath")
+                            .tag("reflog")
+                    }
                 } header: {
                     Text(AppLocalization.text("workspace.group"))
                 }
@@ -513,7 +526,8 @@ extension RepositorySidebarView {
                 try await RepositoryReferences(runner: runner).checkout(ref.id)
             },
             title: AppLocalization.text("branch.checkout"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 
@@ -545,7 +559,8 @@ extension RepositorySidebarView {
                     )
             },
             title: AppLocalization.text("branch.checkout"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 

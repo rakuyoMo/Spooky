@@ -30,6 +30,9 @@ struct AutoStashRequest {
 
     /// 原操作失败时补在错误说明前的一段话，储藏后重新执行时沿用。
     var failureNote: (() -> String?)? = nil
+
+    /// 原操作能否撤销；储藏、重新执行与恢复储藏合起来按同一声明记录。
+    var undo = UndoRecording.irreversible
 }
 
 // MARK: - Availability
@@ -105,7 +108,8 @@ extension RepositorySession {
 
                 performGit(
                     { runner, _ in try await RepositoryStashes(runner: runner).drop(selected) },
-                    title: AppLocalization.text(single ? "stash.delete" : "stash.deleteStashes")
+                    title: AppLocalization.text(single ? "stash.delete" : "stash.deleteStashes"),
+                    undo: .reversible
                 )
             },
             nil
@@ -118,7 +122,8 @@ extension RepositorySession {
 
         performGit(
             { runner, _ in try await RepositoryStashes(runner: runner).apply(change, from: stash) },
-            title: AppLocalization.text("stash.applyFile")
+            title: AppLocalization.text("stash.applyFile"),
+            undo: .reversible
         )
     }
 
@@ -141,7 +146,8 @@ extension RepositorySession {
                     try await stashes.save(message: message, includeUntracked: untracked, entries: selection)
                 }
             },
-            title: title
+            title: title,
+            undo: .reversible
         )
     }
 
@@ -154,7 +160,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositoryStashes(runner: runner).apply(stash, restoreIndex: restoreIndex, drop: drop)
             },
-            title: AppLocalization.text("stash.apply")
+            title: AppLocalization.text("stash.apply"),
+            undo: .reversible
         )
     }
 }
@@ -176,13 +183,20 @@ extension RepositorySession {
         after error: any Error,
         title: String,
         action: @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
-        failureNote: (() -> String?)? = nil
+        failureNote: (() -> String?)? = nil,
+        undo: UndoRecording = .irreversible
     ) -> Bool {
         // 设置 “Always offer to stash local changes” 默认开启
         let enabled = UserDefaults.standard.object(forKey: "offerAutoStash") as? Bool ?? true
         guard enabled, Self.isBlockedByLocalChanges(error), let onStashRequest else { return false }
 
-        let request = AutoStashRequest(title: title, error: error, action: action, failureNote: failureNote)
+        let request = AutoStashRequest(
+            title: title,
+            error: error,
+            action: action,
+            failureNote: failureNote,
+            undo: undo
+        )
         onStashRequest(.autoStash(request))
         return true
     }
@@ -202,6 +216,7 @@ extension RepositorySession {
                     }
             },
             title: request.title,
+            undo: request.undo,
             failureNote: request.failureNote
         )
     }

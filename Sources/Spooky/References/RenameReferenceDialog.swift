@@ -178,7 +178,8 @@ extension RenameReferenceDialog {
                 } else {
                     session.performGit(
                         { runner, _ in try await RepositoryReferences(runner: runner).rename(reference.id, to: name) },
-                        title: title
+                        title: title,
+                        undo: .reversible
                     )
                 }
 

@@ -581,6 +581,17 @@ extension RepositoryHistoryState {
         if expanded { for file in changes { loadDiff(file.path) } }
     }
 
+    /// 只显示一个给定的提交，不读引用也不分页；Reflog 的右栏用它复用提交详情。
+    ///
+    /// - Parameters:
+    ///   - commit: 要显示的提交；为 nil 时详情回到未选中。
+    ///   - runner: 读取变更集与补丁的执行器。
+    func show(_ commit: HistoryCommit?, runner: GitRunner) {
+        self.runner = runner
+        revealedCommit = commit
+        selectedIDs = commit.map { [$0.id] } ?? []
+    }
+
     /// 从文件视图回到某个提交：打开它的整页详情，提交不在已加载的分页里也能显示。
     ///
     /// 列表回到全部历史并选中这个提交；它不在已加载的分页里时扩大加载去找，返回列表后滚动到它。

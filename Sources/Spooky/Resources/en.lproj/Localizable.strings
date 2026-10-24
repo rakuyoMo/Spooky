@@ -1436,3 +1436,37 @@
 
 /* 历史列表头下方的自动压缩横幅。 */
 "history.autosquash" = "Some commits on this branch are marked with fixup!, squash! or amend!.";
+/* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
+"menu.undo" = "Undo";
+"menu.redo" = "Redo";
+"undo.cannotUndo" = "Can’t Undo %@";
+"undo.cannotRedo" = "Can’t Redo %@";
+"undo.unavailable" = "%1$@ (%2$@)";
+"undo.reason.busy" = "Operation in Progress";
+"undo.reason.disconnected" = "Not Connected";
+"undo.reason.changed" = "Repository Changed";
+"undo.error.changed" = "The repository has changed";
+"undo.error.changed.help" = "The repository no longer matches the recorded state, so it can’t be restored safely. Nothing was changed.";
+"undo.error.untracked" = "Untracked files are in the way";
+"undo.error.untracked.help" = "Restoring would overwrite or delete untracked files whose content can’t be recovered. Nothing was changed.";
+"undo.error.hidden" = "Some files have hidden changes";
+"undo.error.hidden.help" = "Files marked as assume-unchanged have local changes, or the repository uses skip-worktree. Nothing was changed.";
+"undo.error.inProgress" = "An operation is in progress";
+"undo.error.inProgress.help" = "Finish or abort the merge, rebase, cherry-pick or revert first. Nothing was changed.";
+"undo.error.conflicts" = "The repository has unresolved conflicts";
+"undo.error.conflicts.help" = "Resolve the conflicts first. Nothing was changed.";
+
+/* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
+"reflog.title" = "Reflog";
+"reflog.show" = "Show Reflog";
+"reflog.subtitle" = "Reflog (%@)";
+"reflog.ref" = "Ref:";
+"reflog.loading" = "Loading Reflog entries…";
+"reflog.empty" = "No reflog entries";
+"reflog.search" = "Search for Reflog Message";
+"reflog.reset" = "Reset HEAD to “%@”…";
+"reflog.restore" = "Restore “%1$@” to “%2$@”…";
+"reflog.createBranch" = "Create New Branch from “%@”…";
+"reflog.cherryPick" = "Cherry-Pick “%@”…";
+"reflog.restore.title" = "Restore Branch";
+"reflog.restore.message" = "Move the branch “%1$@” to %2$@ in %3$@? The working copy and the staging area are not changed. Commits that leave the branch can still be found in the reflog.";

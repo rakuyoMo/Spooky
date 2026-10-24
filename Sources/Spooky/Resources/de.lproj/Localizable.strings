@@ -1436,3 +1436,37 @@
 
 /* 历史列表头下方的自动压缩横幅。 */
 "history.autosquash" = "Dieser Branch enthält Commits, die mit fixup!, squash! oder amend! markiert sind.";
+/* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
+"menu.undo" = "Widerrufen";
+"menu.redo" = "Wiederholen";
+"undo.cannotUndo" = "„%@“ kann nicht widerrufen werden";
+"undo.cannotRedo" = "„%@“ kann nicht wiederholt werden";
+"undo.unavailable" = "%1$@ (%2$@)";
+"undo.reason.busy" = "Vorgang läuft";
+"undo.reason.disconnected" = "Nicht verbunden";
+"undo.reason.changed" = "Repository geändert";
+"undo.error.changed" = "Das Repository hat sich geändert";
+"undo.error.changed.help" = "Das Repository entspricht nicht mehr dem aufgezeichneten Zustand und kann nicht sicher wiederhergestellt werden. Es wurde nichts geändert.";
+"undo.error.untracked" = "Nicht verfolgte Dateien sind im Weg";
+"undo.error.untracked.help" = "Das Wiederherstellen würde nicht verfolgte Dateien überschreiben oder löschen, deren Inhalt sich nicht wiederherstellen lässt. Es wurde nichts geändert.";
+"undo.error.hidden" = "Einige Dateien haben verborgene Änderungen";
+"undo.error.hidden.help" = "Als assume-unchanged markierte Dateien haben lokale Änderungen, oder das Repository verwendet skip-worktree. Es wurde nichts geändert.";
+"undo.error.inProgress" = "Ein Vorgang ist im Gange";
+"undo.error.inProgress.help" = "Schließen Sie zuerst den Merge, Rebase, Cherry-Pick oder Revert ab oder brechen Sie ihn ab. Es wurde nichts geändert.";
+"undo.error.conflicts" = "Das Repository hat ungelöste Konflikte";
+"undo.error.conflicts.help" = "Lösen Sie zuerst die Konflikte. Es wurde nichts geändert.";
+
+/* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
+"reflog.title" = "Reflog";
+"reflog.show" = "Reflog anzeigen";
+"reflog.subtitle" = "Reflog (%@)";
+"reflog.ref" = "Referenz:";
+"reflog.loading" = "Reflog-Einträge werden geladen …";
+"reflog.empty" = "Keine Reflog-Einträge";
+"reflog.search" = "Nach Reflog-Beschreibung suchen";
+"reflog.reset" = "HEAD auf „%@“ zurücksetzen …";
+"reflog.restore" = "„%1$@“ auf „%2$@“ wiederherstellen …";
+"reflog.createBranch" = "Neuen Branch aus „%@“ erstellen …";
+"reflog.cherryPick" = "„%@“ per Cherry-Pick übernehmen …";
+"reflog.restore.title" = "Branch wiederherstellen";
+"reflog.restore.message" = "Den Branch „%1$@“ in %3$@ auf %2$@ verschieben? Arbeitskopie und Staging-Bereich bleiben unverändert. Commits, die den Branch verlassen, sind weiterhin im Reflog zu finden.";

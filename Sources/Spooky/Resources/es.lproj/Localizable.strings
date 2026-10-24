@@ -1436,3 +1436,37 @@
 
 /* 历史列表头下方的自动压缩横幅。 */
 "history.autosquash" = "Esta rama tiene commits marcados con fixup!, squash! o amend!.";
+/* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
+"menu.undo" = "Deshacer";
+"menu.redo" = "Rehacer";
+"undo.cannotUndo" = "No se puede deshacer «%@»";
+"undo.cannotRedo" = "No se puede rehacer «%@»";
+"undo.unavailable" = "%1$@ (%2$@)";
+"undo.reason.busy" = "Operación en curso";
+"undo.reason.disconnected" = "Sin conexión";
+"undo.reason.changed" = "Repositorio modificado";
+"undo.error.changed" = "El repositorio ha cambiado";
+"undo.error.changed.help" = "El repositorio ya no coincide con el estado registrado y no se puede restaurar de forma segura. No se ha cambiado nada.";
+"undo.error.untracked" = "Hay archivos sin seguimiento en medio";
+"undo.error.untracked.help" = "La restauración sobrescribiría o eliminaría archivos sin seguimiento cuyo contenido no se puede recuperar. No se ha cambiado nada.";
+"undo.error.hidden" = "Algunos archivos tienen cambios ocultos";
+"undo.error.hidden.help" = "Hay archivos marcados como assume-unchanged con cambios locales, o el repositorio usa skip-worktree. No se ha cambiado nada.";
+"undo.error.inProgress" = "Hay una operación en curso";
+"undo.error.inProgress.help" = "Terminar o cancelar primero la fusión, el rebase, el cherry-pick o el revert. No se ha cambiado nada.";
+"undo.error.conflicts" = "El repositorio tiene conflictos sin resolver";
+"undo.error.conflicts.help" = "Resolver primero los conflictos. No se ha cambiado nada.";
+
+/* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
+"reflog.title" = "Reflog";
+"reflog.show" = "Mostrar reflog";
+"reflog.subtitle" = "Reflog (%@)";
+"reflog.ref" = "Referencia:";
+"reflog.loading" = "Cargando entradas del reflog…";
+"reflog.empty" = "No hay entradas en el reflog";
+"reflog.search" = "Buscar mensaje del reflog";
+"reflog.reset" = "Restablecer HEAD a “%@”…";
+"reflog.restore" = "Restaurar “%1$@” a “%2$@”…";
+"reflog.createBranch" = "Crear rama desde “%@”…";
+"reflog.cherryPick" = "Cherry-pick de “%@”…";
+"reflog.restore.title" = "Restaurar rama";
+"reflog.restore.message" = "¿Mover la rama “%1$@” a %2$@ en %3$@? La copia de trabajo y el área de preparación no cambian. Los commits que salen de la rama se siguen encontrando en el reflog.";

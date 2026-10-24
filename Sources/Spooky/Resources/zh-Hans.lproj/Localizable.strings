@@ -1436,3 +1436,37 @@
 
 /* 历史列表头下方的自动压缩横幅。 */
 "history.autosquash" = "这个分支上有标记为 fixup!、squash! 或 amend! 的提交。";
+/* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
+"menu.undo" = "撤销";
+"menu.redo" = "重做";
+"undo.cannotUndo" = "无法撤销%@";
+"undo.cannotRedo" = "无法重做%@";
+"undo.unavailable" = "%1$@（%2$@）";
+"undo.reason.busy" = "操作进行中";
+"undo.reason.disconnected" = "未连接";
+"undo.reason.changed" = "仓库已变化";
+"undo.error.changed" = "仓库已经变化";
+"undo.error.changed.help" = "仓库与记录的状态不再一致，无法安全恢复。仓库没有任何改动。";
+"undo.error.untracked" = "未跟踪文件挡住了恢复";
+"undo.error.untracked.help" = "恢复会覆盖或删除找不回内容的未跟踪文件。仓库没有任何改动。";
+"undo.error.hidden" = "部分文件有看不到的改动";
+"undo.error.hidden.help" = "标为 assume-unchanged 的文件有本地改动，或仓库使用了 skip-worktree。仓库没有任何改动。";
+"undo.error.inProgress" = "有正在进行的操作";
+"undo.error.inProgress.help" = "请先完成或中止合并、变基、摘取或反转。仓库没有任何改动。";
+"undo.error.conflicts" = "仓库有未解决的冲突";
+"undo.error.conflicts.help" = "请先解决冲突。仓库没有任何改动。";
+
+/* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
+"reflog.title" = "Reflog";
+"reflog.show" = "显示 Reflog";
+"reflog.subtitle" = "Reflog（%@）";
+"reflog.ref" = "引用：";
+"reflog.loading" = "正在读取 Reflog 记录…";
+"reflog.empty" = "没有 Reflog 记录";
+"reflog.search" = "搜索 Reflog 说明";
+"reflog.reset" = "把 HEAD 重置到 “%@”…";
+"reflog.restore" = "把 “%1$@” 恢复到 “%2$@”…";
+"reflog.createBranch" = "从 “%@” 新建分支…";
+"reflog.cherryPick" = "摘取 “%@”…";
+"reflog.restore.title" = "恢复分支";
+"reflog.restore.message" = "把 %3$@ 中的分支 “%1$@” 移到 %2$@ 吗？工作区与暂存区不会改变。离开分支的提交仍能在 Reflog 里找到。";
