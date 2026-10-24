@@ -24,7 +24,7 @@ struct CommitPageDiffView: View {
 
 // MARK: - CommitDetailView
 
-/// 历史右侧的一体滚动详情：元信息、完整信息、变更文件与懒加载 Diff。
+/// 历史右侧的详情：单选时是提交的一体滚动详情或文件树，多选时是选中数与比较入口，比较两个版本时是比较视图。
 struct CommitDetailView: View {
     /// 当前提交和文件读取状态。
     @Bindable
@@ -33,99 +33,110 @@ struct CommitDetailView: View {
     /// 文件右键菜单打开文件视图，并把文件恢复到工作区或导出。
     let session: RepositorySession
 
-    /// 头部和所有文件共享同一个滚动区域。
+    /// 显示文件树；否则显示变更集。切换提交时保持。
+    @State
+    private var showsTree = false
+
+    /// 文件树的逐层读取状态。
+    @State
+    private var tree = CommitTreeState()
+
+    /// 合并提交的 Diff 方式改变时重读变更集。
+    @AppStorage(MergeDiffMode.preferenceKey)
+    private var mergeMode = MergeDiffMode.firstParent.rawValue
+
+    /// 换选提交时结束比较。
     var body: some View {
-        if let commit = history.selectedCommit {
+        content
+            .onChange(of: history.selectedIDs) { session.comparison.close() }
+    }
+
+    /// 按比较、单选、多选与未选中依次选择内容。
+    @ViewBuilder
+    private var content: some View {
+        if session.comparison.isActive {
+            RevisionComparisonView(state: session.comparison, session: session) {
+                session.comparison.close()
+            }
+        } else if let commit = history.selectedCommit {
             VStack(spacing: 0) {
-                HStack {
-                    Text(commit.shortID).font(.system(size: 13, design: .monospaced))
-                    Spacer()
-                    if commit.parents.count > 1 { Text(AppLocalization.text("history.firstParent")) }
-                }
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 20)
-                .frame(height: 40)
-                .background(.bar)
+                CommitDetailBar(commit: commit, showsTree: $showsTree)
                 Divider()
 
-                ScrollView {
-                    scrollContent(commit)
+                if showsTree {
+                    CommitTreeView(tree: tree, session: session, commit: commit)
+                } else {
+                    ScrollView {
+                        scrollContent(commit)
+                    }
                 }
             }
             .reloadsOnDiffPreferenceChange { history.reloadDiffs() }
-        } else {
-            EmptyStateView(
-                title: AppLocalization.text(
-                    history.selectedIDs.isEmpty ? "history.noSelection" : "history.multiple"
-                ),
-                message: "",
-                symbol: "doc.text"
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-
-    /// 全部展开或收起的按钮与变更文件数。
-    private var changesBar: some View {
-        HStack {
-            Button(
-                AppLocalization.text(
-                    history.expandedPaths.isEmpty
-                        ? "history.expandAll"
-                        : "history.collapseAll"
-                )
-            ) {
-                history.expandAll(history.expandedPaths.isEmpty)
+            .onChange(of: mergeMode) { history.loadChanges() }
+            .task(id: commit.id) {
+                // 详情总是校验所选提交的签名，结果与列表共用
+                if let runner = session.runner {
+                    session.signatures.request(commit.id, runner: runner)
+                }
             }
-            .disabled(history.changes.isEmpty)
-
-            Spacer()
-            Text(AppLocalization.text("history.changes", history.changes.count))
+        } else if history.selectedIDs.count > 1 {
+            HistoryMultipleSelectionView(session: session)
+        } else {
+            EmptyStateView(title: AppLocalization.text("history.noSelection"), message: "", symbol: "doc.text")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .font(.system(size: 11))
-        .padding(.horizontal, 8)
-        .frame(height: 32)
     }
 
-    /// 滚动区域的内容：元信息、完整信息、变更文件栏与逐个文件的 Diff。
+    /// 变更集的读取进度、失败、逐个文件与空状态。
+    @ViewBuilder
+    private var changeRows: some View {
+        if history.isLoadingChanges {
+            ProgressView(AppLocalization.text("history.loadingChanges"))
+                .controlSize(.small)
+                .padding(20)
+        }
+
+        if let failure = history.changesFailure {
+            FailureDetailsView(failure: failure) { history.loadChanges() }
+                .padding(20)
+        }
+
+        ForEach(history.changes) { file in
+            fileSection(file)
+            Divider()
+        }
+
+        if
+            history.changes.isEmpty,
+            !history.isLoadingChanges,
+            history.changesFailure == nil
+        {
+            Text(AppLocalization.text("working.noDiff"))
+                .foregroundStyle(.secondary)
+                .padding(20)
+        }
+    }
+
+    /// 滚动区域的内容：元信息、完整信息、变更集摘要与逐个文件的 Diff。
     private func scrollContent(_ commit: HistoryCommit) -> some View {
         LazyVStack(alignment: .leading, spacing: 0) {
-            CommitMetadataView(commit: commit)
+            CommitMetadataView(commit: commit, signature: session.signatures.signatures[commit.id])
 
             Text(commit.message)
                 .font(.system(size: 13))
                 .lineSpacing(3)
                 .textSelection(.enabled)
                 .padding(20)
+
             Divider()
 
-            changesBar
+            ChangesetSummaryBar(
+                changes: history.changes,
+                expanded: !history.expandedPaths.isEmpty,
+                toggle: { history.expandAll(history.expandedPaths.isEmpty) }
+            )
 
-            if history.isLoadingChanges {
-                ProgressView(AppLocalization.text("history.loadingChanges"))
-                    .controlSize(.small)
-                    .padding(20)
-            }
-
-            if let failure = history.changesFailure {
-                FailureDetailsView(failure: failure) { history.loadChanges() }
-                    .padding(20)
-            }
-
-            ForEach(history.changes) { file in
-                fileSection(file)
-                Divider()
-            }
-
-            if
-                history.changes.isEmpty,
-                !history.isLoadingChanges,
-                history.changesFailure == nil
-            {
-                Text(AppLocalization.text("working.noDiff"))
-                    .foregroundStyle(.secondary)
-                    .padding(20)
-            }
+            changeRows
         }
     }
 
@@ -181,9 +192,10 @@ struct CommitFileListView: View {
                 Label(AppLocalization.text("history.back"), systemImage: "chevron.left")
             }
             .padding(8)
+
             if let commit = history.selectedCommit {
-                Text(commit.subject).font(.system(size: 13)).padding(.horizontal, 12)
-                Text(commit.author).font(.system(size: 11)).foregroundStyle(.secondary).padding(12)
+                card(commit)
+
                 HStack {
                     Text(commit.shortID).font(.system(size: 13, design: .monospaced))
                     Spacer()
@@ -193,10 +205,16 @@ struct CommitFileListView: View {
                 .frame(height: 40)
                 .background(.bar)
             }
+
             fileList
+
             if history.isLoadingChanges {
                 ProgressView(AppLocalization.text("history.loadingChanges"))
                     .controlSize(.small)
+                    .padding(12)
+            } else if history.changes.isEmpty, history.changesFailure == nil {
+                Text(AppLocalization.text("working.noDiff"))
+                    .foregroundStyle(.secondary)
                     .padding(12)
             }
         }
@@ -215,12 +233,49 @@ struct CommitFileListView: View {
                 }
         }
     }
+
+    /// 提交卡片：48 pt 头像、可换行的标题、作者与日期一行，以及有效签名的按钮。
+    private func card(_ commit: HistoryCommit) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            InitialsAvatar(name: commit.author, size: 48)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(commit.subject)
+                    .font(.system(size: 13))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(byline(commit))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+
+            Spacer(minLength: 0)
+
+            CommitSignatureButton(store: session.signatures, commit: commit.id, runner: session.runner, small: false)
+        }
+        .padding(.leading, 8)
+        .padding(.trailing, 12)
+        .padding(.vertical, 10)
+    }
+
+    /// 作者与提交日期；提交人不是作者时写出提交人。
+    private func byline(_ commit: HistoryCommit) -> String {
+        let date = commit.commitDate.formatted(date: .abbreviated, time: .shortened)
+
+        guard commit.committer != commit.author else {
+            return AppLocalization.text("history.committedOn", commit.author, date)
+        }
+
+        return AppLocalization.text("history.committedWith", commit.author, commit.committer, date)
+    }
 }
 
 // MARK: - CommitFileLabel
 
-/// 文件状态与重命名路径在两种提交详情中保持一致。
-private struct CommitFileLabel: View {
+/// 文件状态与重命名路径在提交详情、整页详情与版本比较中保持一致。
+struct CommitFileLabel: View {
     /// 当前文件变更。
     let file: CommitFileChange
 
@@ -239,57 +294,6 @@ private struct CommitFileLabel: View {
         }
         .font(.system(size: 11))
         .help(file.path)
-    }
-}
-
-// MARK: - CommitMetadataView
-
-/// 完整元信息展开后包含树与父哈希，不触发额外 Git 查询。
-private struct CommitMetadataView: View {
-    /// 已从列表读取的提交记录。
-    let commit: HistoryCommit
-
-    /// 摘要和全部信息之间切换。
-    @State
-    private var expanded = false
-
-    /// 标签与值两列对齐，值可以复制。
-    var body: some View {
-        HStack(alignment: .top) {
-            Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 4) {
-                row("history.author", commit.author + " <" + commit.authorEmail + ">")
-                row("history.commitDate", commit.commitDate.formatted(date: .abbreviated, time: .standard))
-                row("history.hash", commit.id)
-                if expanded {
-                    row(
-                        "history.authorDate",
-                        commit.authorDate.formatted(date: .abbreviated, time: .standard)
-                    )
-                    row("history.committer", commit.committer + " <" + commit.committerEmail + ">")
-                    row("history.treeHash", commit.tree)
-                    row("history.parents", commit.parents.joined(separator: "\n"))
-                }
-            }
-            Spacer(minLength: 4)
-            Button {
-                expanded.toggle()
-            } label: {
-                Image(systemName: expanded ? "chevron.up" : "chevron.down")
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel(AppLocalization.text("history.metadata"))
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
-        .font(.system(size: 12))
-    }
-
-    /// 每项标签统一使用弱化色，长哈希允许换行。
-    private func row(_ key: String, _ value: String) -> some View {
-        GridRow(alignment: .top) {
-            Text(AppLocalization.text(key)).foregroundStyle(.tertiary)
-            Text(value).foregroundStyle(.secondary).textSelection(.enabled)
-        }
     }
 }
 

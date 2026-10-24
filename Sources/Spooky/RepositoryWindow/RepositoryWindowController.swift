@@ -85,6 +85,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         }
 
         session.onStashRequest = { [weak self] in self?.presentStash($0) }
+        session.onRevisionRequest = { [weak self] in self?.presentRevisionDialog($0) }
 
         session.onViewReset = { [weak self] in
             guard let self, !self.showsManager else { return }

@@ -23,6 +23,10 @@ struct HistoryListView: View {
     @AppStorage("historySmallRows")
     private var smallRows = false
 
+    /// 列表行校验签名并显示签名按钮。
+    @AppStorage(CommitSignatureStore.verifiesKey)
+    private var verifiesSignatures = false
+
     /// 40 pt 表头、24 / 46 pt 列表行和持续可见的取消入口。
     var body: some View {
         VStack(spacing: 0) {
@@ -82,6 +86,7 @@ struct HistoryListView: View {
                     .disabled(!showGraph)
                 Button(AppLocalization.text("history.small")) { smallRows = true }
                     .disabled(!showGraph)
+                Toggle(AppLocalization.text("signature.verify"), isOn: $verifiesSignatures)
             } label: {
                 Image(systemName: "slider.horizontal.3")
             }
@@ -217,7 +222,9 @@ private struct HistoryCommitTable: NSViewRepresentable {
                 small: parent.smallRows,
                 unpushed: history.unpushed.contains(commit.id),
                 unpulled: history.unpulled.contains(commit.id),
-                selected: history.selectedIDs.contains(commit.id)
+                selected: history.selectedIDs.contains(commit.id),
+                signatures: parent.session.signatures,
+                runner: parent.session.runner
             )
             let identifier = NSUserInterfaceItemIdentifier("history-commit")
             let cell =
@@ -285,6 +292,18 @@ private struct HistoryCommitTable: NSViewRepresentable {
             create.target = self
             create.isEnabled = parent.session.canWrite && parent.session.history.selectedCommit != nil
             menu.addItem(create)
+
+            // 保存补丁、导出文件与比较版本，按列表顺序传入选中的提交
+            let history = parent.session.history
+            let selected = history.commits.filter { history.selectedIDs.contains($0.id) }
+
+            for item in HistoryCommitMenu.items(
+                for: selected.isEmpty ? (history.selectedCommit.map { [$0] } ?? []) : selected,
+                session: parent.session
+            ) {
+                menu.addItem(item)
+            }
+
             menu.autoenablesItems = false
         }
 
@@ -397,6 +416,12 @@ private struct HistoryCommitRow: View {
     /// 被选中时文本和徽标采用选中配色。
     let selected: Bool
 
+    /// 窗口的签名结果，开启签名校验时行末显示签名按钮。
+    let signatures: CommitSignatureStore
+
+    /// 校验签名与标签签名用的执行器。
+    let runner: GitRunner?
+
     /// 图在最左侧，标题和元信息按固定行高排列。
     var body: some View {
         HStack(spacing: 8) {
@@ -442,6 +467,7 @@ private struct HistoryCommitRow: View {
             .lineLimit(1)
 
         date
+        CommitSignatureButton(store: signatures, commit: commit.id, runner: runner, small: true)
     }
 
     /// 中号双行：作者首字母在左，右侧上行为作者、徽标与日期，下行为哈希与标题。
@@ -466,6 +492,8 @@ private struct HistoryCommitRow: View {
             HStack(spacing: 8) {
                 hash
                 Text(commit.subject).lineLimit(1)
+                Spacer(minLength: 0)
+                CommitSignatureButton(store: signatures, commit: commit.id, runner: runner, small: false)
             }
         }
     }
@@ -485,13 +513,18 @@ private struct HistoryCommitRow: View {
             .layoutPriority(1)
     }
 
-    /// 引用名只读展示，后续里程碑的标签动作不在此暴露。
+    /// 引用名标记排成一行，放不下时以 “…” 结尾；标签标记可点，弹出标签的签名。
     private var badges: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 4) {
                 if isHead { badge("HEAD", color: "blue") }
                 ForEach(references) { ref in
-                    badge(ref.name, color: ref.isLocal ? "blue" : (ref.isRemote ? "gray" : "yellow"))
+                    // 只有标签标记可点，点击显示标签的签名
+                    if ref.isLocal || ref.isRemote {
+                        badge(ref.name, color: ref.isLocal ? "blue" : "gray")
+                    } else {
+                        TagBadgeButton(reference: ref.id, runner: runner) { badge(ref.name, color: "yellow") }
+                    }
                 }
             }
             if isHead || !references.isEmpty { badge("…", color: "gray") }

@@ -365,7 +365,7 @@ extension WorkingCopyFileDialog {
 // MARK: - RevisionComboBox
 
 /// 可以直接输入、也可以从下拉列表选择的版本框；SwiftUI 没有组合框，由 NSComboBox 承担。
-private struct RevisionComboBox: NSViewRepresentable {
+struct RevisionComboBox: NSViewRepresentable {
     /// 键入与选择都即时写回绑定。
     @MainActor
     final class Coordinator: NSObject, NSComboBoxDelegate {

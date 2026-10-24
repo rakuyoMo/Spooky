@@ -119,7 +119,7 @@ extension GeneralSettingsView {
         }
     }
 
-    /// 历史每页条数与大 Diff 的警告阈值。
+    /// 历史每页条数、合并提交的 Diff 方式与大 Diff 的警告阈值。
     @ViewBuilder
     private var historyRows: some View {
         GridRow {
@@ -133,6 +133,8 @@ extension GeneralSettingsView {
             .frame(width: 278)
             .accessibilityLabel(AppLocalization.text("history.pageSize"))
         }
+
+        MergeDiffModeRow()
 
         GridRow {
             Text(AppLocalization.text("working.diffThreshold"))

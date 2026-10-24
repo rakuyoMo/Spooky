@@ -77,6 +77,15 @@ final class RepositorySession {
     /// 文件原文与逐行追溯。
     let fileContent = FileContentState()
 
+    /// 历史列表与提交详情里校验过的提交签名。
+    let signatures = CommitSignatureStore()
+
+    /// 历史详情里两个版本的比较。
+    let comparison = RevisionComparisonState()
+
+    /// 窗口负责呈现导出、保存补丁与比较版本的对话框。
+    var onRevisionRequest: ((RevisionRequest) -> Void)? = nil
+
     /// 当前工作区身份。
     private(set) var repository: RepositoryLocation? = nil
 
@@ -446,6 +455,8 @@ extension RepositorySession {
         stashes.close()
         fileHistory.close()
         fileContent.close()
+        signatures.reset()
+        comparison.close()
         fileMonitor?.stop()
         fileMonitor = nil
         fileCache?.removeAll()

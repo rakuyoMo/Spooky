@@ -156,7 +156,7 @@ extension SpookyApplicationController {
         )
     }
 
-    /// 历史子菜单：提交图开关与行高。
+    /// 历史子菜单：提交图开关、行高与签名校验。
     private func configureHistoryMenu(in view: NSMenu) {
         let history = addMenu("history.title", to: view)
         addItem(
@@ -172,6 +172,7 @@ extension SpookyApplicationController {
             to: history
         )
         addItem("history.small", action: #selector(RepositoryWindowController.smallHistoryRows), to: history)
+        addItem("signature.verify", action: #selector(RepositoryWindowController.toggleVerifySignatures), to: history)
     }
 
     /// 变更集子菜单：全部展开、全部收起与自动展开阈值。
@@ -229,7 +230,7 @@ extension SpookyApplicationController {
         }
     }
 
-    /// Repository 菜单：获取、拉取、推送、发布与新建分支。
+    /// Repository 菜单：获取、拉取、推送、发布、新建分支，以及导出与比较版本。
     private func configureRepositoryMenu(in menu: NSMenu) {
         let repository = addMenu("menu.repository", to: menu)
         addItem(
@@ -263,6 +264,10 @@ extension SpookyApplicationController {
             key: "b",
             to: repository
         )
+
+        repository.addItem(.separator())
+        addItem("export.menu", action: #selector(RepositoryWindowController.exportRevision), to: repository)
+        addItem("compare.menu", action: #selector(RepositoryWindowController.compareRevisions), to: repository)
     }
 
     /// Working Copy 菜单：检出、合并与应用补丁，储藏，提交与暂存，丢弃改动。
