@@ -209,7 +209,8 @@ extension RepositoryOperationDrop {
         guard let parts = session.remoteParts(of: branch) else {
             session.performGit(
                 { runner, _ in try await RepositoryReferences(runner: runner).rename(branch.id, to: name) },
-                title: AppLocalization.text("branch.rename")
+                title: AppLocalization.text("branch.rename"),
+                undo: .reversible
             )
             return
         }

@@ -32,7 +32,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositoryRewrite(runner: runner).cherryPick(path: path, originalPath: originalPath, from: id)
             },
-            title: AppLocalization.text("files.applyPatch")
+            title: AppLocalization.text("files.applyPatch"),
+            undo: .reversible
         )
     }
 }

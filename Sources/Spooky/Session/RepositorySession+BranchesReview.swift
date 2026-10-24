@@ -59,6 +59,7 @@ extension RepositorySession {
                     .setArchived(true, branches: ids, review: automatic)
             },
             title: AppLocalization.text(automatic ? "review.autoArchive" : "branch.archive"),
+            undo: .reversible,
             success: { review.archivedBranches = ids }
         )
     }
@@ -75,7 +76,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositoryReferences(runner: runner).setArchived(false, branches: ids)
             },
-            title: AppLocalization.text("branch.unarchive")
+            title: AppLocalization.text("branch.unarchive"),
+            undo: .reversible
         )
     }
 
@@ -91,7 +93,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositoryReferences(runner: runner).setSkipsAutoArchive(skips, branches: ids)
             },
-            title: AppLocalization.text("review.skipAutoArchive")
+            title: AppLocalization.text("review.skipAutoArchive"),
+            undo: .reversible
         )
     }
 
@@ -107,7 +110,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositoryReferences(runner: runner).setHidesMergedHint(hides, branches: ids)
             },
-            title: AppLocalization.text("review.hideMergedHint")
+            title: AppLocalization.text("review.hideMergedHint"),
+            undo: .reversible
         )
     }
 
@@ -124,7 +128,8 @@ extension RepositorySession {
                 try await RepositoryReferences(runner: runner).markArchiveReviewed(branches: ids)
             },
             title: AppLocalization.text("review.markReviewed"),
-            recordsActivity: false
+            recordsActivity: false,
+            undo: .reversible
         )
     }
 
@@ -148,7 +153,8 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("review.updateBranch"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 
@@ -172,7 +178,8 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("review.resolveConflicts"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 }
