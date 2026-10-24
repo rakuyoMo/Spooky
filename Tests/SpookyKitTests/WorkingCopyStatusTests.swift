@@ -77,7 +77,15 @@ struct WorkingCopyStatusTests {
                 originalPath: nil,
                 staged: .unmerged,
                 unstaged: .unmerged,
-                conflict: ConflictStages(base: "aaaa", ours: "bbbb", theirs: "cccc", existsInWorktree: true)
+                conflict: ConflictStages(
+                    base: "aaaa",
+                    ours: "bbbb",
+                    theirs: "cccc",
+                    existsInWorktree: true,
+                    baseMode: "100644",
+                    oursMode: "100644",
+                    theirsMode: "100644"
+                )
             ),
             StatusEntry(
                 kind: .untracked,

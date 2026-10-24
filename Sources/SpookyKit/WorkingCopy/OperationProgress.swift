@@ -25,7 +25,7 @@ public struct OperationProgress: Sendable, Equatable {
         "rebase-merge/msgnum", "rebase-merge/end", "rebase-merge/done",
         "rebase-apply/head-name", "rebase-apply/onto", "rebase-apply/orig-head",
         "rebase-apply/next", "rebase-apply/last", "rebase-apply/final-commit",
-        "sequencer/todo", "sequencer/head",
+        "sequencer/todo",
     ]
 
     /// 进行中的操作。
@@ -40,11 +40,11 @@ public struct OperationProgress: Sendable, Equatable {
     /// 正在变基的分支的完整引用名；在分离 HEAD 上变基时为 nil。
     public let branch: String?
 
-    /// 序列中当前一步的序号，从 1 开始；单个提交的操作为 nil。
-    public internal(set) var step: Int?
+    /// 变基当前一步的序号，从 1 开始；摘取与反转不记录已完成的步数，为 nil。
+    public let step: Int?
 
-    /// 序列的总步数；单个提交的操作为 nil。
-    public internal(set) var stepCount: Int?
+    /// 变基的总步数；摘取与反转序列是 todo 里尚未完成的提交数，含正在处理的这一个；单个提交的操作为 nil。
+    public let stepCount: Int?
 
     /// 当前一步的动作。
     public let stepKind: OperationStepKind?
@@ -96,34 +96,15 @@ extension OperationProgress {
         )
     }
 
-    /// 读取进行中操作的完整进度；摘取与反转序列的步数、已解决的冲突需要额外的 Git 查询。
+    /// 读取进行中操作的完整进度；已解决的冲突需要额外读取索引的 resolve-undo 记录。
     ///
     /// - Parameters:
     ///   - files: 相对 Git 目录的状态文件内容。
     ///   - head: 当前 HEAD 提交。
-    ///   - runner: 读取索引与提交计数的执行器。
+    ///   - runner: 读取索引的执行器。
     static func read(files: [String: String], head: String?, runner: GitRunner) async throws -> Self? {
         guard var progress = Self(files: files, head: head) else {
             return nil
-        }
-
-        // 摘取与反转的序列不记录已完成的步数：从序列开始时的 HEAD 数到当前 HEAD
-        #warning("TODO: 用 git cherry-pick A B C 停在第一个提交时执行 --skip，核对横幅显示的步数；被跳过的提交不产生新提交，步数可能少算，只影响跳过之后的摘取与反转序列进度。")
-
-        if
-            let todo = files["sequencer/todo"],
-            let start = files["sequencer/head"]?.trimmingCharacters(in: .whitespacesAndNewlines),
-            let head,
-            GitObjectID.isValid(start),
-            [.cherryPick, .revert].contains(progress.state)
-        {
-            let output = try await runner.immutableRun(["rev-list", "--count", start + ".." + head])
-            let remaining = Self.instructions(todo).count
-
-            if let done = Int(String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)) {
-                progress.step = done + 1
-                progress.stepCount = done + remaining
-            }
         }
 
         progress.resolvedPaths = try parseResolveUndo(try await runner.run(["ls-files", "--resolve-undo", "-z"]))
@@ -279,8 +260,11 @@ extension OperationProgress {
     }
 
     /// 摘取与反转：序列看 sequencer/todo 的第一条指令，单个提交看 CHERRY_PICK_HEAD、REVERT_HEAD。
+    ///
+    /// 序列只记录尚未完成的指令，不记录已完成的步数，所以只有剩余的提交数，没有当前一步的序号。
     private static func sequence(_ value: (String) -> String?, head: String?) -> Self? {
-        let first = value("sequencer/todo").flatMap { instructions($0).first }
+        let todo = value("sequencer/todo").map(instructions) ?? []
+        let first = todo.first
         let reverting = first?.command == "revert" || (first == nil && value("REVERT_HEAD") != nil)
         let picking = ["pick", "p"].contains(first?.command ?? "") || (first == nil && value("CHERRY_PICK_HEAD") != nil)
 
@@ -296,7 +280,7 @@ extension OperationProgress {
             theirs: current,
             branch: nil,
             step: nil,
-            stepCount: nil,
+            stepCount: todo.isEmpty ? nil : todo.count,
             stepKind: reverting ? .reverting : .applying,
             stepSubject: first?.subject
         )

@@ -132,8 +132,8 @@ struct AppFailure: Identifiable {
             exceededOutputLimit = file == .tooLarge
 
         // 冲突向导的写入前提不满足属于仓库状态问题
-        case let conflict as ConflictResolutionError:
-            key = conflict == .fileChanged ? "conflict.error.changed" : "conflict.error.version"
+        case is ConflictResolutionError:
+            key = "conflict.error.version"
             kind = .repository
 
         case is FileViewError:

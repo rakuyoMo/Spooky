@@ -526,9 +526,7 @@
 "stash.error.reapply.help" = "操作已完成，但本機變更未能重新套用，仍保留在儲藏中；準備好後再套用它。";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "套用的修補或儲藏";
-"conflict.backups" = "備份檔案";
 "conflict.binary" = "不顯示二進位內容。";
-"conflict.error.changed" = "檔案在載入後被變更。請重新載入衝突，再重新編輯。";
 "conflict.error.version" = "所選檔案沒有這個版本。";
 "conflict.export" = "匯出來自 “%@” 的版本…";
 "conflict.header.cherryPick" = "正在把 %@ 摘取到 %@";
@@ -545,7 +543,6 @@
 "conflict.hint.sequence.conflicts" = "解決全部衝突後才能繼續。";
 "conflict.hint.sequence.resolved" = "按一下 **繼續** 提交這一步，再處理後面的提交。";
 "conflict.hint.sequence.empty" = "這一步沒有可提交的變更。按一下 **跳過** 略過這個提交，或按一下 **繼續** 保留一個空提交再繼續。";
-"conflict.keepBackups" = "為合併衝突保留備份檔案";
 "conflict.kind.addedByThem" = "對方新增";
 "conflict.kind.addedByUs" = "我方新增";
 "conflict.kind.bothAdded" = "雙方新增";
@@ -561,26 +558,19 @@
 "conflict.missing" = "這個版本刪除了檔案。";
 "conflict.open" = "開啟來自 “%@” 的版本";
 "conflict.reload" = "重新載入";
-"conflict.removeBackups" = "刪除備份檔案";
-"conflict.removeBackups.message" = "將永久刪除 %d 個備份檔案。儲存庫：%@。此操作無法復原。";
-"conflict.removeBackups.remote" = "將在伺服器上永久刪除 %d 個備份檔案。儲存庫：%@。此操作無法復原。";
 "conflict.resolveCurrent" = "採用目前版本解決";
 "conflict.resolvedSuffix" = "%@（已解決 %d 個）";
 "conflict.resolveUsing" = "採用 “%@” 解決";
 "conflict.resolveUsingVersion" = "採用來自 “%@” 的版本解決";
-"conflict.restore.message" = "將用所選版本覆寫 %d 個檔案。儲存庫：%@。這些檔案目前的編輯會遺失。";
-"conflict.restore.remote" = "將在伺服器上用所選版本覆寫 %d 個檔案。儲存庫：%@。這些檔案目前的編輯會遺失。";
 "conflict.restoreAncestor" = "回復共同祖先版本";
 "conflict.restoreUnmerged" = "回復未合併的版本";
 "conflict.restoreUnmerged.many" = "回復 %d 個項目的未合併版本";
 "conflict.restoreUnmerged.one" = "回復 “%@” 的未合併版本";
 "conflict.restoreVersion" = "回復來自 “%@” 的版本";
 "conflict.result" = "手動編輯或合併後的版本";
-"conflict.save" = "儲存";
 "conflict.step" = "第 %d 步，共 %d 步";
 "conflict.step.applying" = "第 %d 步，共 %d 步：正在套用 “%@”";
 "conflict.step.editing" = "第 %d 步，共 %d 步：正在編輯 “%@”";
-"conflict.step.reverting" = "第 %d 步，共 %d 步：正在反轉 “%@”";
 "conflict.title.cherryPick" = "正在把 %d 個提交摘取到 “%@”";
 "conflict.title.cherryPick.one" = "正在把 1 個提交摘取到 “%@”";
 "conflict.title.merge" = "正在把 “%@” 合併到 “%@”";
@@ -592,7 +582,6 @@
 "conflict.unresolved.one" = "1 個未解決衝突";
 "conflict.version" = "來自 “%@” 的版本";
 "conflict.versionMenu" = "來自 “%@” 的版本的操作";
-"conflict.worktreeMissing" = "工作區裡沒有這個檔案。";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "檔案歷史";
 "fileHistory.showCommit" = "顯示提交";
@@ -821,3 +810,13 @@
 /* 储藏视图。 */
 "stash.search" = "搜尋儲藏說明";
 "stash.subtitle" = "儲藏（%ld 個儲藏）";
+
+/* 冲突向导。 */
+"conflict.resolveBoth" = "採用兩側版本解決";
+"conflict.version.applied" = "來自套用的修補或儲藏的版本";
+"conflict.resolveUsing.applied" = "採用套用的修補或儲藏解決";
+"conflict.open.missing" = "開啟";
+"conflict.export.missing" = "匯出…";
+"conflict.toolTip" = "檔案需要合併：%@";
+"conflict.sequence.applying" = "正在套用 “%@”";
+"conflict.sequence.reverting" = "正在反轉 “%@”";

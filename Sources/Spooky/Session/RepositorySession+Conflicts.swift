@@ -4,14 +4,6 @@ import SpookyKit
 // MARK: - Conflicts
 
 extension RepositorySession {
-    /// 保留冲突备份文件的全局偏好：开启后，冲突向导覆盖冲突文件之前先把它另存为同目录的 `.orig` 文件。
-    static let keepsConflictBackupsKey = "keepConflictBackups"
-
-    /// 当前仓库在本窗口中由冲突向导生成、尚未清理的备份文件。
-    var currentConflictBackups: [String] {
-        repository.flatMap { conflictBackups[$0] } ?? []
-    }
-
     /// 进行中的操作里已经解决的冲突数：有 resolve-undo 记录、当前不再是冲突的文件。
     var resolvedConflictCount: Int {
         let conflicted = Set(status?.entries.filter { $0.kind == .conflicted }.map(\.path) ?? [])
@@ -52,7 +44,7 @@ extension RepositorySession {
         }
     }
 
-    /// 进行中操作横幅的标题；摘取与反转按序列的提交数说明。
+    /// 进行中操作横幅的标题；摘取与反转按序列里尚未完成的提交数说明。
     var operationBannerTitle: String? {
         guard let progress = context?.progress else {
             return nil
@@ -106,125 +98,46 @@ extension RepositorySession {
         }
     }
 
-    /// 恢复会覆盖工作区里的文件，确认时写明数量与所在机器，关闭确认后才开始写入。
+    /// 恢复冲突版本直接执行，不经确认：只改工作区，索引里的冲突保持不变。
     ///
     /// - Parameters:
     ///   - entries: 要恢复的文件。
     ///   - version: 恢复到的版本。
-    ///   - title: 已本地化的操作名称，用作确认按钮与中断报告。
+    ///   - title: 已本地化的操作名称，用作中断报告。
     func restoreConflicts(_ entries: [StatusEntry], to version: ConflictVersion, title: String) {
         guard canRestoreConflicts(entries, to: version) else { return }
 
-        let request = generation
-        let backup = conflictBackupRecorder()
-
-        let message = AppLocalization.text(
-            repository?.host == nil ? "conflict.restore.message" : "conflict.restore.remote",
-            entries.count,
-            repository?.displayPath ?? ""
-        )
-
-        onConfirm?(
-            title,
-            message,
-            { [weak self] in
-                guard let self, generation == request else { return }
-
-                performGit(
-                    { runner, _ in
-                        try await WorkingCopyOperations(runner: runner)
-                            .restoreConflicts(entries, to: version, backup: backup)
-                    },
-                    title: title,
-                    recordsActivity: false
-                )
+        performGit(
+            { runner, _ in
+                try await WorkingCopyOperations(runner: runner).restoreConflicts(entries, to: version)
             },
-            nil
+            title: title,
+            recordsActivity: false
         )
     }
 
-    /// 把手动编辑的结果写回冲突文件；文件在载入之后被改动时由核心库拒绝写入。
-    ///
-    /// - Parameters:
-    ///   - text: 编辑后的完整内容，按 UTF-8 写回。
-    ///   - entry: 冲突文件。
-    ///   - expected: 载入时读到的工作区内容。
-    ///   - saved: 写入成功后执行，向导据此重新载入。
-    func saveConflictResolution(
-        _ text: String,
-        for entry: StatusEntry,
-        replacing expected: Data?,
-        saved: @escaping () -> Void
-    ) {
-        let backup = conflictBackupRecorder()
+    /// 两侧都是普通文件的冲突才能采用两侧版本。
+    func canResolveUsingBoth(_ entry: StatusEntry) -> Bool {
+        canResolve([entry]) && (entry.conflict?.hasRegularFilesOnBothSides ?? false)
+    }
+
+    /// 采用两侧版本并标记解决，合并在仓库所在的机器上完成。
+    func resolveUsingBoth(_ entry: StatusEntry) {
+        guard canResolveUsingBoth(entry) else { return }
 
         performGit(
             { runner, _ in
-                try await WorkingCopyOperations(runner: runner)
-                    .saveResolution(Data(text.utf8), for: entry, replacing: expected, backup: backup)
+                try await WorkingCopyOperations(runner: runner).resolveUsingBoth(entry)
             },
-            title: AppLocalization.text("conflict.save"),
-            recordsActivity: false,
-            success: saved
+            title: AppLocalization.text("conflict.resolveBoth"),
+            recordsActivity: false
         )
-    }
-
-    /// 删除向导生成的备份文件是永久删除，确认时写明数量与所在机器。
-    func removeConflictBackups() {
-        let backups = currentConflictBackups
-
-        guard canWrite, let repository, !backups.isEmpty else { return }
-
-        let request = generation
-        let title = AppLocalization.text("conflict.removeBackups")
-
-        let message = AppLocalization.text(
-            repository.host == nil ? "conflict.removeBackups.message" : "conflict.removeBackups.remote",
-            backups.count,
-            repository.displayPath
-        )
-
-        onConfirm?(
-            title,
-            message,
-            { [weak self] in
-                guard let self, generation == request else { return }
-
-                performGit(
-                    { runner, _ in
-                        try await WorkingCopyOperations(runner: runner).removeBackups(backups)
-                    },
-                    title: title,
-                    recordsActivity: false
-                ) { [weak self] in
-                    self?.conflictBackups[repository]?.removeAll { backups.contains($0) }
-                }
-            },
-            nil
-        )
-    }
-
-    /// 偏好开启时返回记录备份路径的回调；备份在写入之前生成，写入失败也会留下记录。
-    func conflictBackupRecorder() -> (@Sendable ([String]) async -> Void)? {
-        guard UserDefaults.standard.bool(forKey: Self.keepsConflictBackupsKey), let repository else {
-            return nil
-        }
-
-        return { [weak self] paths in
-            await self?.recordConflictBackups(paths, in: repository)
-        }
     }
 }
 
 // MARK: - Private
 
 extension RepositorySession {
-    /// 按仓库记下新建的备份；写入期间切换了仓库也记在原仓库名下，切回来仍能看到。
-    private func recordConflictBackups(_ paths: [String], in repository: RepositoryLocation) {
-        guard !paths.isEmpty else { return }
-        conflictBackups[repository, default: []].append(contentsOf: paths)
-    }
-
     /// 提交的显示名：当前分支、指向它的本地分支、远端分支或标签，都没有时用短哈希。
     private func displayName(of commit: String?) -> String {
         guard let commit else {

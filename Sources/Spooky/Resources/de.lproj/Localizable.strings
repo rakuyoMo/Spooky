@@ -526,9 +526,7 @@
 "stash.error.reapply.help" = "Der Vorgang ist abgeschlossen, aber Ihre lokalen Änderungen konnten nicht wieder angewendet werden. Sie bleiben im Stash erhalten; wenden Sie ihn an, wenn Sie bereit sind.";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "Angewendeter Patch oder Stash";
-"conflict.backups" = "Sicherungsdateien";
 "conflict.binary" = "Binäre Inhalte werden nicht angezeigt.";
-"conflict.error.changed" = "Die Datei wurde nach dem Laden geändert. Laden Sie den Konflikt neu und bearbeiten Sie ihn erneut.";
 "conflict.error.version" = "Die ausgewählten Dateien haben diese Version nicht.";
 "conflict.export" = "Version aus „%@“ exportieren …";
 "conflict.header.cherryPick" = "Cherry-Pick von %@ in %@";
@@ -545,7 +543,6 @@
 "conflict.hint.sequence.conflicts" = "Lösen Sie alle Konflikte auf, um fortzufahren.";
 "conflict.hint.sequence.resolved" = "Klicken Sie auf **Fortsetzen**, um diesen Schritt zu committen und mit den übrigen Commits fortzufahren.";
 "conflict.hint.sequence.empty" = "In diesem Schritt sind keine Änderungen übrig. Klicken Sie auf **Überspringen**, um diesen Commit auszulassen, oder auf **Fortsetzen**, um einen leeren Commit zu behalten und fortzufahren.";
-"conflict.keepBackups" = "Sicherungsdateien für Merge-Konflikte behalten";
 "conflict.kind.addedByThem" = "Von der Gegenseite hinzugefügt";
 "conflict.kind.addedByUs" = "Von uns hinzugefügt";
 "conflict.kind.bothAdded" = "Beidseitig hinzugefügt";
@@ -561,26 +558,19 @@
 "conflict.missing" = "Diese Version löscht die Datei.";
 "conflict.open" = "Version aus „%@“ öffnen";
 "conflict.reload" = "Neu laden";
-"conflict.removeBackups" = "Sicherungsdateien löschen";
-"conflict.removeBackups.message" = "%d Sicherungsdateien in %@ werden endgültig gelöscht. Dies kann nicht widerrufen werden.";
-"conflict.removeBackups.remote" = "%d Sicherungsdateien auf dem Server unter %@ werden endgültig gelöscht. Dies kann nicht widerrufen werden.";
 "conflict.resolveCurrent" = "Mit aktueller Version auflösen";
 "conflict.resolvedSuffix" = "%@ (%d aufgelöst)";
 "conflict.resolveUsing" = "Mit „%@“ auflösen";
 "conflict.resolveUsingVersion" = "Mit Version aus „%@“ auflösen";
-"conflict.restore.message" = "%d Dateien in %@ werden mit der ausgewählten Version überschrieben. Aktuelle Bearbeitungen dieser Dateien gehen verloren.";
-"conflict.restore.remote" = "%d Dateien auf dem Server unter %@ werden mit der ausgewählten Version überschrieben. Aktuelle Bearbeitungen dieser Dateien gehen verloren.";
 "conflict.restoreAncestor" = "Version des gemeinsamen Vorfahren wiederherstellen";
 "conflict.restoreUnmerged" = "Nicht zusammengeführte Version wiederherstellen";
 "conflict.restoreUnmerged.many" = "Nicht zusammengeführte Version von %d Objekten wiederherstellen";
 "conflict.restoreUnmerged.one" = "Nicht zusammengeführte Version von „%@“ wiederherstellen";
 "conflict.restoreVersion" = "Version aus „%@“ wiederherstellen";
 "conflict.result" = "Manuell bearbeitete oder zusammengeführte Version";
-"conflict.save" = "Sichern";
 "conflict.step" = "Schritt %d von %d";
 "conflict.step.applying" = "Schritt %d von %d: „%@“ wird angewendet";
 "conflict.step.editing" = "Schritt %d von %d: „%@“ wird bearbeitet";
-"conflict.step.reverting" = "Schritt %d von %d: „%@“ wird zurückgenommen";
 "conflict.title.cherryPick" = "Cherry-Pick von %d Commits auf „%@“";
 "conflict.title.cherryPick.one" = "Cherry-Pick von 1 Commit auf „%@“";
 "conflict.title.merge" = "Merge von „%@“ in „%@“";
@@ -592,7 +582,6 @@
 "conflict.unresolved.one" = "1 nicht aufgelöster Konflikt";
 "conflict.version" = "Version aus „%@“";
 "conflict.versionMenu" = "Aktionen für die Version aus „%@“";
-"conflict.worktreeMissing" = "Die Datei ist nicht in der Arbeitskopie.";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "Dateiverlauf";
 "fileHistory.showCommit" = "Commit anzeigen";
@@ -821,3 +810,13 @@
 /* 储藏视图。 */
 "stash.search" = "Nach Stash-Beschreibung suchen";
 "stash.subtitle" = "Stashes (%ld Stashes)";
+
+/* 冲突向导。 */
+"conflict.resolveBoth" = "Mit beiden Versionen auflösen";
+"conflict.version.applied" = "Version aus angewendetem Patch oder Stash";
+"conflict.resolveUsing.applied" = "Mit angewendetem Patch oder Stash auflösen";
+"conflict.open.missing" = "Öffnen";
+"conflict.export.missing" = "Exportieren …";
+"conflict.toolTip" = "Datei muss zusammengeführt werden: %@";
+"conflict.sequence.applying" = "„%@“ wird angewendet";
+"conflict.sequence.reverting" = "„%@“ wird zurückgenommen";

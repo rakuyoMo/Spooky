@@ -75,10 +75,6 @@ private struct GeneralSettingsView: View {
     @AppStorage("offerAutoStash")
     private var offerAutoStash = true
 
-    /// 冲突向导覆盖冲突文件之前是否先保留备份。
-    @AppStorage(RepositorySession.keepsConflictBackupsKey)
-    private var keepsConflictBackups = false
-
     /// General 表单按功能分组，组间以分隔线隔开；控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
@@ -107,7 +103,7 @@ private struct GeneralSettingsView: View {
 // MARK: - Private
 
 extension GeneralSettingsView {
-    /// 操作相关的三个开关：被本地改动挡住时询问储藏、输入时规范引用名、覆盖冲突文件前保留备份。
+    /// 操作相关的两个开关：被本地改动挡住时询问储藏、输入时规范引用名。
     @ViewBuilder
     private var operationRows: some View {
         GridRow {
@@ -119,12 +115,6 @@ extension GeneralSettingsView {
         GridRow {
             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
             Toggle(AppLocalization.text("branch.cleanNames"), isOn: $cleanRefNames)
-                .frame(width: 278, alignment: .leading)
-        }
-
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-            Toggle(AppLocalization.text("conflict.keepBackups"), isOn: $keepsConflictBackups)
                 .frame(width: 278, alignment: .leading)
         }
     }
