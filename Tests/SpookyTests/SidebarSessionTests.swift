@@ -30,6 +30,23 @@ struct SidebarSessionTests {
         try await waitUntil { session.history.snapshot != nil }
 
         let feature = try #require(session.history.branches.first { $0.id == "refs/heads/feature/一" })
+        let main = try #require(session.history.branches.first { $0.id == "refs/heads/main" })
+
+        // 拖到 Pinned 标题只置顶拖动的分支；拖动的分支在多选中时，拖到 Archived Branches 归档整个选区
+        let payload = RepositoryDragPayload(repository: location, kind: .local, reference: feature.id)
+        let pin = try #require(BranchFlagDropAction(payload: payload, destination: .pinned, session: session))
+        #expect(pin.titleKey == "branch.pin")
+
+        session.history.selectedReferences = [feature.id, main.id]
+        guard case .archive(let selected) = BranchFlagDropAction(payload: payload, destination: .archived, session: session)
+        else {
+            Issue.record("拖到 Archived Branches 应当归档")
+            return
+        }
+
+        #expect(Set(selected.map(\.id)) == [feature.id, main.id])
+        #expect(BranchFlagDropAction(payload: payload, destination: .branches, session: session) == nil)
+        session.history.selectedReferences = []
 
         // 置顶与归档各一次写入，Activity 记下操作名
         session.setPinned(true, branches: [feature])

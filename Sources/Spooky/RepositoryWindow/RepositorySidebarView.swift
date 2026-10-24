@@ -293,6 +293,7 @@ struct RepositorySidebarView: View {
                 Image(systemName: "plus")
             }
             .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
             .fixedSize()
             .accessibilityLabel(AppLocalization.text("branch.create"))
 
