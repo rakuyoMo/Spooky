@@ -228,9 +228,39 @@ extension SpookyApplicationController {
         }
     }
 
-    /// Repository 菜单：获取、拉取、同步、推送（按住 ⌥ 换成快速操作）、安全强推、推送任意版本、发布分支与标签、添加远端、新建分支与标签，以及导出与比较版本。
+    /// Repository 菜单：获取、拉取、同步与推送，发布分支与标签、添加远端、新建分支与标签，以及导出与比较版本。
     private func configureRepositoryMenu(in menu: NSMenu) {
         let repository = addMenu("menu.repository", to: menu)
+        configureSyncItems(in: repository)
+
+        addItem("sync.publish", action: #selector(RepositoryWindowController.publishBranch), to: repository)
+        addItem("tag.publishMainMenu", action: #selector(RepositoryWindowController.publishTag), to: repository)
+
+        repository.addItem(.separator())
+        addItem("remote.addMainMenu", action: #selector(RepositoryWindowController.addRemote), to: repository)
+
+        repository.addItem(.separator())
+        addItem(
+            "branch.create",
+            action: #selector(RepositoryWindowController.createBranch),
+            key: "b",
+            to: repository
+        )
+        addItem(
+            "tag.createMenu",
+            action: #selector(RepositoryWindowController.createTag),
+            key: "t",
+            modifiers: [.shift, .command],
+            to: repository
+        )
+
+        repository.addItem(.separator())
+        addItem("export.menu", action: #selector(RepositoryWindowController.exportRevision), to: repository)
+        addItem("compare.menu", action: #selector(RepositoryWindowController.compareRevisions), to: repository)
+    }
+
+    /// 获取、拉取、同步与推送各项，按住 ⌥ 换成快速操作；后接安全强推与推送任意版本。
+    private func configureSyncItems(in repository: NSMenu) {
         addItem(
             "sync.fetch",
             action: #selector(RepositoryWindowController.fetch),
@@ -296,30 +326,6 @@ extension SpookyApplicationController {
             action: #selector(RepositoryWindowController.pushRevision),
             to: repository
         )
-        addItem("sync.publish", action: #selector(RepositoryWindowController.publishBranch), to: repository)
-        addItem("tag.publishMainMenu", action: #selector(RepositoryWindowController.publishTag), to: repository)
-
-        repository.addItem(.separator())
-        addItem("remote.addMainMenu", action: #selector(RepositoryWindowController.addRemote), to: repository)
-
-        repository.addItem(.separator())
-        addItem(
-            "branch.create",
-            action: #selector(RepositoryWindowController.createBranch),
-            key: "b",
-            to: repository
-        )
-        addItem(
-            "tag.createMenu",
-            action: #selector(RepositoryWindowController.createTag),
-            key: "t",
-            modifiers: [.shift, .command],
-            to: repository
-        )
-
-        repository.addItem(.separator())
-        addItem("export.menu", action: #selector(RepositoryWindowController.exportRevision), to: repository)
-        addItem("compare.menu", action: #selector(RepositoryWindowController.compareRevisions), to: repository)
     }
 
     /// Working Copy 菜单：检出版本、合并与变基（按住 ⌥ 换成快速操作）、变基到别处与应用补丁，储藏，提交与暂存，丢弃改动与重置 HEAD。

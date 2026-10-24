@@ -198,7 +198,11 @@ struct AppFailure: Identifiable {
             ? AppLocalization.text("error.outputLimitHelp") + "\n\n" + recovery
             : recovery
 
-        // 同时保留 stderr 和 stdout；版本校验等失败的原因可能只出现在 stdout。
+        details = Self.details(output: output, diagnostic: diagnostic)
+    }
+
+    /// 可复制的原文：同时保留 stderr 和 stdout，版本校验等失败的原因可能只出现在 stdout；什么都没有时说明没有输出。
+    private static func details(output: GitCommandResult?, diagnostic: String?) -> String {
         let raw = [
             output.map { String(decoding: $0.standardError, as: UTF8.self) },
             output.map { String(decoding: $0.standardOutput, as: UTF8.self) },
@@ -209,7 +213,7 @@ struct AppFailure: Identifiable {
         .filter { !$0.isEmpty }
         .joined(separator: "\n")
 
-        details = raw.isEmpty ? AppLocalization.text("error.noOutput") : raw
+        return raw.isEmpty ? AppLocalization.text("error.noOutput") : raw
     }
 
     /// 服务器连接错误的文案键、类别、恢复说明与原文；写入中途断线的结果未知，统一提示先核对仓库，不能引导用户直接重试。
