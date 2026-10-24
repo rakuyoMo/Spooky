@@ -127,7 +127,7 @@ extension StashListView {
 
 // MARK: - StashRow
 
-/// 52 pt 的储藏行：上行是 “Based on” 来源分支与日期，下行是说明。
+/// 52 pt 的储藏行：上行左边是 “Based on” 与来源分支，日期靠右；下行是说明。
 private struct StashRow: View {
     /// 当前储藏。
     let stash: StashEntry
@@ -141,14 +141,21 @@ private struct StashRow: View {
             HStack(spacing: 8) {
                 Text(AppLocalization.text("stash.basedOn"))
                     .foregroundStyle(.secondary)
+                    .fixedSize()
 
-                if let branch = stash.branch {
-                    badge(branch)
+                // 来源分支标记占据中间的空间，行窄时先截断它
+                Group {
+                    if let branch = stash.branch {
+                        badge(branch)
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
+                // 日期贴着行的右缘，始终完整显示
                 Text(stash.date.formatted(date: .abbreviated, time: .shortened))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .fixedSize()
             }
 
             Text(stash.title)

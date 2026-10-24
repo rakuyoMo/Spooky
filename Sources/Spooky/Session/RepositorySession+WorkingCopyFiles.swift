@@ -65,12 +65,11 @@ extension RepositorySession {
         return listed + supplementary
     }
 
-    /// 切换显示模式并记住；需要的补充清单随之读取。
+    /// 切换本窗口的显示模式，需要的补充清单随之读取；记住选择由窗口负责。
     func setListMode(_ mode: WorkingCopyListMode) {
-        guard let repository, mode != listMode else { return }
+        guard mode != listMode else { return }
 
         listMode = mode
-        WorkingCopyListMode.store(mode, for: repository)
         loadWorkingTreeFiles()
     }
 
@@ -128,55 +127,53 @@ extension RepositorySession {
 // MARK: - File Operations
 
 extension RepositorySession {
-    /// 停止跟踪前写明影响范围：文件留在工作区，下次提交从版本库里移除。
+    /// 停止跟踪所选文件：文件留在工作区，下次提交从版本库里移除。
     func untrack(_ entries: [StatusEntry]) {
         let targets = entries.filter(\.isInIndex)
         guard canWrite, !targets.isEmpty else { return }
 
-        let request = generation
         let paths = targets.map(\.path)
 
-        onConfirm?(
-            AppLocalization.text("files.untrack"),
-            AppLocalization.text("files.untrack.message", scopeDescription(targets), repository?.displayPath ?? ""),
-            { [weak self] in
-                guard let self, generation == request else { return }
-
-                performGit(
-                    { runner, _ in try await WorkingCopyOperations(runner: runner).untrack(paths) },
-                    title: AppLocalization.text("files.untrack"),
-                    recordsActivity: false
-                )
-            },
-            nil
+        performGit(
+            { runner, _ in try await WorkingCopyOperations(runner: runner).untrack(paths) },
+            title: AppLocalization.text("files.untrack"),
+            recordsActivity: false
         )
     }
 
-    /// 删除前写明影响范围：本机移到废纸篓，服务器上明确写出永久删除。
+    /// 删除所选文件：本机移到废纸篓；服务器没有废纸篓，确认后在服务器上永久删除。
     func delete(_ entries: [StatusEntry]) {
         let targets = entries.filter(\.isDeletable)
         guard canWrite, !targets.isEmpty, let repository else { return }
 
-        let request = generation
         let paths = targets.map(\.path)
         let title = AppLocalization.text(repository.host == nil ? "files.trash" : "files.delete")
-        let message = AppLocalization.text(
-            repository.host == nil ? "files.trash.message" : "files.delete.remote",
-            scopeDescription(targets),
-            repository.displayPath
-        )
+
+        // 删除与其它写操作一样经仓库写队列执行
+        let perform = { [weak self] in
+            _ = self?.performGit(
+                { runner, _ in try await WorkingCopyOperations(runner: runner).delete(paths) },
+                title: title,
+                recordsActivity: false
+            )
+        }
+
+        // 本机文件可以从废纸篓放回，不需要确认
+        guard repository.host != nil else {
+            perform()
+            return
+        }
+
+        // 确认期间仓库已切换时不执行
+        let request = generation
 
         onConfirm?(
             title,
-            message,
+            AppLocalization.text("files.delete.remote", scopeDescription(targets), repository.displayPath),
             { [weak self] in
                 guard let self, generation == request else { return }
 
-                performGit(
-                    { runner, _ in try await WorkingCopyOperations(runner: runner).delete(paths) },
-                    title: title,
-                    recordsActivity: false
-                )
+                perform()
             },
             nil
         )

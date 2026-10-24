@@ -12,9 +12,6 @@ enum DiffPreferences {
     /// 忽略空白的偏好键。
     static let ignoresWhitespaceKey = "diffIgnoresWhitespace"
 
-    /// 保存补丁时省略路径前缀的偏好键。
-    static let omitsPatchPrefixesKey = "savePatchOmitsPrefixes"
-
     /// 按当前偏好组成的选项；显示整个文件只属于当前视图，由调用方传入。
     ///
     /// - Parameters:

@@ -652,7 +652,7 @@
 "showFile.searchRevisions" = "リビジョンを検索";
 "showFile.searchFiles" = "ファイルを検索";
 "showFile.error.missing" = "このリビジョンにファイルがありません";
-/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+/* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "空白を無視しているため、選択した行がファイルの変更と一致しません。空白の変更を表示してから選択し直してください。";
 "diff.ignoreWhitespace" = "空白の変更を無視";
 "diff.showEntireFile" = "ファイル全体を表示";
@@ -680,13 +680,6 @@
 "diff.imageSize" = "%ld × %ld ピクセル、%@";
 "diff.imageMode" = "画像の比較方法";
 "diff.imageSide" = "表示するバージョン";
-"diff.savePatch" = "パッチを保存…";
-"diff.exportDiff" = "Diff を書き出す…";
-"diff.savePatch.title" = "パッチを保存";
-"diff.savePatch.message" = "選択した %ld 個のファイルの HEAD からの変更（ステージ済み、未ステージ、未追跡の変更を含む）を、git apply で適用できるパッチファイルとして保存します。";
-"diff.savePatch.submit" = "パッチを保存";
-"diff.omitPrefixes" = "プレフィックスを省略";
-"diff.omitPrefixes.help" = "ソースとデスティネーションのプレフィックスを付けません";
 
 /* 提交体验、身份档案与签名。 */
 "signing.error" = "コミットの署名に失敗しました。署名鍵と署名プログラムを確認してください。";
@@ -752,9 +745,7 @@
 "files.untrack" = "追跡を解除";
 "files.untrack.single" = "「%@」の追跡を解除";
 "files.untrack.multiple" = "%ld 項目の追跡を解除";
-"files.untrack.message" = "次のファイルの追跡を解除しますか？対象：%2$@。ファイルは作業コピーに残り、次のコミットでリポジトリから削除されます。\n\n%1$@";
 "files.trash" = "ゴミ箱に入れる";
-"files.trash.message" = "次のファイルをゴミ箱に入れますか？対象：%2$@。ゴミ箱から元に戻すことができます。\n\n%1$@";
 "files.delete" = "削除";
 "files.delete.remote" = "サーバー上の次のファイルを完全に削除しますか？対象：%2$@。元に戻せません。\n\n%1$@";
 "files.move.menu" = "移動…";
@@ -829,3 +820,10 @@
 "files.truncation" = "作業コピーの長いファイル名の省略：";
 "files.truncation.beginning" = "先頭を省略";
 "files.truncation.middle" = "中央を省略";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "このリポジトリにはまだ参照がありません。";
+
+/* 储藏视图。 */
+"stash.search" = "スタッシュのメッセージを検索";
+"stash.subtitle" = "スタッシュ（%ld 個のスタッシュ）";

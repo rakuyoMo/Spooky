@@ -652,7 +652,7 @@
 "showFile.searchRevisions" = "搜索版本";
 "showFile.searchFiles" = "搜索文件";
 "showFile.error.missing" = "该版本中没有这个文件";
-/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+/* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "忽略空白时，选中的行与文件中的改动对应不上。请显示空白改动后重新选择。";
 "diff.ignoreWhitespace" = "忽略空白改动";
 "diff.showEntireFile" = "显示整个文件";
@@ -680,13 +680,6 @@
 "diff.imageSize" = "%ld × %ld 像素，%@";
 "diff.imageMode" = "图片对照方式";
 "diff.imageSide" = "显示的版本";
-"diff.savePatch" = "保存补丁…";
-"diff.exportDiff" = "导出 Diff…";
-"diff.savePatch.title" = "保存补丁";
-"diff.savePatch.message" = "将所选的 %ld 个文件相对 HEAD 的改动（含已暂存、未暂存与未跟踪的改动）保存为补丁文件，可用 git apply 应用。";
-"diff.savePatch.submit" = "保存补丁";
-"diff.omitPrefixes" = "省略前缀";
-"diff.omitPrefixes.help" = "路径不带来源与目标前缀";
 
 /* 提交体验、身份档案与签名。 */
 "signing.error" = "提交签名失败。请检查签名密钥与签名程序。";
@@ -752,9 +745,7 @@
 "files.untrack" = "停止跟踪";
 "files.untrack.single" = "停止跟踪 “%@”";
 "files.untrack.multiple" = "停止跟踪 %ld 个项目";
-"files.untrack.message" = "要停止跟踪以下文件吗？仓库：%2$@。文件保留在工作区，下次提交会把它们从版本库中移除。\n\n%1$@";
 "files.trash" = "移到废纸篓";
-"files.trash.message" = "要把以下文件移到废纸篓吗？仓库：%2$@。之后可以从废纸篓放回原处。\n\n%1$@";
 "files.delete" = "删除";
 "files.delete.remote" = "要在服务器上永久删除以下文件吗？仓库：%2$@。此操作无法撤销。\n\n%1$@";
 "files.move.menu" = "移动…";
@@ -829,3 +820,10 @@
 "files.truncation" = "截断工作区中过长的文件名：";
 "files.truncation.beginning" = "截断开头";
 "files.truncation.middle" = "截断中间";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "这个仓库还没有任何引用。";
+
+/* 储藏视图。 */
+"stash.search" = "搜索储藏说明";
+"stash.subtitle" = "储藏（%ld 个储藏）";

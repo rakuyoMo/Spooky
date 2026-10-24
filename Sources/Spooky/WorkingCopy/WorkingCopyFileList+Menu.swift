@@ -47,7 +47,7 @@ extension WorkingCopyFileList.Coordinator {
         session.stage(stageable, staged: stageable.contains(where: \.hasUnstagedChanges))
     }
 
-    /// ⌘⌫ 删除所选文件，执行前确认；没有可删除的文件时响铃。
+    /// ⌘⌫ 删除所选文件：本机直接移到废纸篓，服务器上确认后永久删除；没有可删除的文件时响铃。
     func deletePressed() {
         let entries = session.selectedEntries
 
@@ -57,16 +57,6 @@ extension WorkingCopyFileList.Coordinator {
         }
 
         session.delete(entries)
-    }
-
-    /// 回车与双击执行同一个按偏好选择的动作。
-    func openPressed() {
-        guard let entry = session.selectedEntries.first, session.selectedEntries.count == 1 else {
-            NSSound.beep()
-            return
-        }
-
-        session.performDoubleClickAction(entry)
     }
 
     /// 打开或关闭 Quick Look：先让列表成为第一响应者，面板才会向列表索取预览项。

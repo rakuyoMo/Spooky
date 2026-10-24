@@ -58,7 +58,7 @@ extension RepositorySession {
         }
     }
 
-    /// 双击与回车执行同一个动作：按偏好用默认程序打开，或用比较工具对比 HEAD 版本与工作区文件。
+    /// 双击文件的动作：按偏好用默认程序打开，或用比较工具对比 HEAD 版本与工作区文件。
     func performDoubleClickAction(_ entry: StatusEntry) {
         let action = UserDefaults.standard.string(forKey: WorkingCopyPreferences.doubleClickAction)
             .flatMap(WorkingCopyPreferences.DoubleClickAction.init(rawValue:)) ?? .openFile

@@ -3,11 +3,11 @@ import Testing
 
 @testable import SpookyKit
 
-/// 服务器上的 Diff 选项、图片两侧与补丁文件都在 B 上生成；只在显式启用时访问测试专用仓库。
+/// 服务器上的 Diff 选项与图片两侧都在 B 上生成；只在显式启用时访问测试专用仓库。
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteDiffTests {
-    /// 显示整个文件与忽略空白下的按块暂存在 B 上执行，图片新的一侧经 SFTP 读取，补丁文件经 Git 输出取回。
-    @Test("服务器 Diff 选项、图片与补丁文件", .timeLimit(.minutes(2)))
+    /// 显示整个文件与忽略空白下的按块暂存在 B 上执行，图片新的一侧经 SFTP 读取。
+    @Test("服务器 Diff 选项与图片", .timeLimit(.minutes(2)))
     func remoteDiff() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -42,9 +42,6 @@ struct RemoteDiffTests {
                 .contents(of: binary, path: untracked.path, newFromWorkingTree: true)
             #expect(contents.old == nil)
             #expect(contents.new == bytes)
-
-            let patch = try await service.patchFile(for: try await runner.status().entries, omittingPrefixes: false)
-            #expect(String(decoding: patch, as: UTF8.self).contains("GIT binary patch"))
 
             await remote.close()
             try await fixture.remove()

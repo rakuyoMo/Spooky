@@ -652,7 +652,7 @@
 "showFile.searchRevisions" = "Rechercher des révisions";
 "showFile.searchFiles" = "Rechercher des fichiers";
 "showFile.error.missing" = "Fichier absent de cette révision";
-/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+/* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "Les espaces étant ignorés, les lignes sélectionnées ne correspondent pas aux modifications du fichier. Affichez les modifications d’espaces, puis sélectionnez à nouveau les lignes.";
 "diff.ignoreWhitespace" = "Ignorer les modifications d’espaces";
 "diff.showEntireFile" = "Afficher le fichier entier";
@@ -680,13 +680,6 @@
 "diff.imageSize" = "%ld × %ld pixels, %@";
 "diff.imageMode" = "Comparaison d’images";
 "diff.imageSide" = "Version affichée";
-"diff.savePatch" = "Enregistrer le patch…";
-"diff.exportDiff" = "Exporter le diff…";
-"diff.savePatch.title" = "Enregistrer le patch";
-"diff.savePatch.message" = "Les modifications par rapport à HEAD dans les fichiers sélectionnés (%ld), y compris les modifications indexées, non indexées et non suivies, seront enregistrées dans un fichier patch applicable avec git apply.";
-"diff.savePatch.submit" = "Enregistrer le patch";
-"diff.omitPrefixes" = "Omettre les préfixes";
-"diff.omitPrefixes.help" = "N’afficher aucun préfixe de source ou de destination";
 
 /* 提交体验、身份档案与签名。 */
 "signing.error" = "La signature du commit a échoué. Vérifiez la clé de signature et le programme de signature.";
@@ -752,9 +745,7 @@
 "files.untrack" = "Ne plus suivre";
 "files.untrack.single" = "Ne plus suivre « %@ »";
 "files.untrack.multiple" = "Ne plus suivre %ld éléments";
-"files.untrack.message" = "Ne plus suivre les fichiers suivants dans %2$@ ? Ils restent dans la copie de travail, et le prochain commit les retire du dépôt.\n\n%1$@";
 "files.trash" = "Placer dans la corbeille";
-"files.trash.message" = "Placer les fichiers suivants de %2$@ dans la corbeille ? Vous pourrez les remettre à leur place depuis la corbeille.\n\n%1$@";
 "files.delete" = "Supprimer";
 "files.delete.remote" = "Supprimer définitivement les fichiers suivants sur le serveur dans %2$@ ? Cette action est irréversible.\n\n%1$@";
 "files.move.menu" = "Déplacer…";
@@ -829,3 +820,10 @@
 "files.truncation" = "Tronquer les noms de fichiers longs dans la copie de travail :";
 "files.truncation.beginning" = "Tronquer le début";
 "files.truncation.middle" = "Tronquer le milieu";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "Ce dépôt n’a encore aucune référence.";
+
+/* 储藏视图。 */
+"stash.search" = "Rechercher un message de remisage";
+"stash.subtitle" = "Remisages (%ld remisages)";

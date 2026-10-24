@@ -251,7 +251,7 @@ final class RepositorySession {
     @ObservationIgnored
     private(set) var fileCache: RepositoryFileCache? = nil
 
-    /// 工作区列表按仓库记住的显示模式。
+    /// 工作区列表的显示模式，所有仓库共用一个选择。
     var listMode = WorkingCopyListMode.list
 
     /// 显示全部文件、被忽略与 assume-unchanged 文件时补充的清单。
@@ -339,8 +339,8 @@ final class RepositorySession {
         self.repository = repository
         fileCache = RepositoryFileCache(runner: makeRunner(repository))
 
-        // 工作区列表沿用这个仓库上次选择的显示模式
-        listMode = WorkingCopyListMode.stored(for: repository)
+        // 工作区列表沿用所有仓库共用的显示模式
+        listMode = WorkingCopyListMode.stored()
 
         // 正在显示的仓库也计入缓存上限，超出时淘汰最久未使用的仓库。
         let saved = viewStates.state(for: repository)

@@ -652,7 +652,7 @@
 "showFile.searchRevisions" = "Revisionen durchsuchen";
 "showFile.searchFiles" = "Dateien durchsuchen";
 "showFile.error.missing" = "Datei in dieser Revision nicht vorhanden";
-/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+/* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "Bei ignorierten Leerzeichen passen die ausgewählten Zeilen nicht zu den Änderungen in der Datei. Blende Leerzeichenänderungen ein und wähle die Zeilen erneut aus.";
 "diff.ignoreWhitespace" = "Leerzeichenänderungen ignorieren";
 "diff.showEntireFile" = "Gesamte Datei anzeigen";
@@ -680,13 +680,6 @@
 "diff.imageSize" = "%ld × %ld Pixel, %@";
 "diff.imageMode" = "Bildvergleich";
 "diff.imageSide" = "Angezeigte Version";
-"diff.savePatch" = "Patch sichern …";
-"diff.exportDiff" = "Diff exportieren …";
-"diff.savePatch.title" = "Patch sichern";
-"diff.savePatch.message" = "Die Änderungen gegenüber HEAD in den ausgewählten Dateien (%ld), einschließlich vorgemerkter, nicht vorgemerkter und nicht verfolgter Änderungen, werden als Patch-Datei gesichert, die mit git apply angewendet werden kann.";
-"diff.savePatch.submit" = "Patch sichern";
-"diff.omitPrefixes" = "Präfixe weglassen";
-"diff.omitPrefixes.help" = "Keine Quell- oder Zielpräfixe anzeigen";
 
 /* 提交体验、身份档案与签名。 */
 "signing.error" = "Das Signieren des Commits ist fehlgeschlagen. Prüfen Sie den Signaturschlüssel und das Signaturprogramm.";
@@ -752,9 +745,7 @@
 "files.untrack" = "Nicht mehr verfolgen";
 "files.untrack.single" = "„%@“ nicht mehr verfolgen";
 "files.untrack.multiple" = "%ld Objekte nicht mehr verfolgen";
-"files.untrack.message" = "Folgende Dateien in %2$@ nicht mehr verfolgen? Die Dateien bleiben in der Arbeitskopie, und der nächste Commit entfernt sie aus dem Repository.\n\n%1$@";
 "files.trash" = "In den Papierkorb legen";
-"files.trash.message" = "Folgende Dateien in %2$@ in den Papierkorb legen? Sie können sie aus dem Papierkorb zurücklegen.\n\n%1$@";
 "files.delete" = "Löschen";
 "files.delete.remote" = "Folgende Dateien auf dem Server unter %2$@ endgültig löschen? Dies kann nicht widerrufen werden.\n\n%1$@";
 "files.move.menu" = "Bewegen …";
@@ -829,3 +820,10 @@
 "files.truncation" = "Lange Dateinamen in der Arbeitskopie kürzen:";
 "files.truncation.beginning" = "Anfang kürzen";
 "files.truncation.middle" = "Mitte kürzen";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "Dieses Repository hat noch keine Referenzen.";
+
+/* 储藏视图。 */
+"stash.search" = "Nach Stash-Beschreibung suchen";
+"stash.subtitle" = "Stashes (%ld Stashes)";

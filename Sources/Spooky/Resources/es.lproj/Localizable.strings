@@ -652,7 +652,7 @@
 "showFile.searchRevisions" = "Buscar revisiones";
 "showFile.searchFiles" = "Buscar archivos";
 "showFile.error.missing" = "El archivo no existe en esta revisión";
-/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+/* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "Al ignorar los espacios, las líneas seleccionadas no coinciden con los cambios del archivo. Muestra los cambios de espacios y vuelve a seleccionar las líneas.";
 "diff.ignoreWhitespace" = "Ignorar cambios de espacios";
 "diff.showEntireFile" = "Mostrar archivo completo";
@@ -680,13 +680,6 @@
 "diff.imageSize" = "%ld × %ld píxeles, %@";
 "diff.imageMode" = "Comparación de imágenes";
 "diff.imageSide" = "Versión mostrada";
-"diff.savePatch" = "Guardar parche…";
-"diff.exportDiff" = "Exportar diff…";
-"diff.savePatch.title" = "Guardar parche";
-"diff.savePatch.message" = "Los cambios respecto a HEAD en los archivos seleccionados (%ld), incluidos los preparados, no preparados y sin seguimiento, se guardarán como un archivo de parche que se puede aplicar con git apply.";
-"diff.savePatch.submit" = "Guardar parche";
-"diff.omitPrefixes" = "Omitir prefijos";
-"diff.omitPrefixes.help" = "No mostrar prefijos de origen ni de destino";
 
 /* 提交体验、身份档案与签名。 */
 "signing.error" = "No se ha podido firmar el commit. Comprobar la clave de firma y el programa de firma.";
@@ -752,9 +745,7 @@
 "files.untrack" = "Dejar de seguir";
 "files.untrack.single" = "Dejar de seguir “%@”";
 "files.untrack.multiple" = "Dejar de seguir %ld ítems";
-"files.untrack.message" = "¿Dejar de seguir los siguientes archivos en %2$@? Los archivos se quedan en la copia de trabajo, y el próximo commit los elimina del repositorio.\n\n%1$@";
 "files.trash" = "Trasladar a la papelera";
-"files.trash.message" = "¿Trasladar los siguientes archivos de %2$@ a la papelera? Puedes devolverlos a su sitio desde la papelera.\n\n%1$@";
 "files.delete" = "Eliminar";
 "files.delete.remote" = "¿Eliminar permanentemente los siguientes archivos del servidor en %2$@? Esta acción no se puede deshacer.\n\n%1$@";
 "files.move.menu" = "Mover…";
@@ -829,3 +820,10 @@
 "files.truncation" = "Acortar los nombres de archivo largos en la copia de trabajo:";
 "files.truncation.beginning" = "Acortar el principio";
 "files.truncation.middle" = "Acortar la parte central";
+
+/* 恢复到指定版本。 */
+"files.revert.noRefs" = "Este repositorio aún no tiene referencias.";
+
+/* 储藏视图。 */
+"stash.search" = "Buscar mensaje de stash";
+"stash.subtitle" = "Stashes (%ld stashes)";
