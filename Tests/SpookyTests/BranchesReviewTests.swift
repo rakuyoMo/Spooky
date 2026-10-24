@@ -120,8 +120,10 @@ struct BranchesReviewTests {
         session.history.selectedReference = "refs/heads/merged"
         try await waitUntil { session.history.rows.first == .noNewCommits("main") }
 
-        // 关掉比较后恢复普通的表格行
-        defaults.set(false, forKey: RepositoryHistoryState.comparesBranchesKey)
+        // 关掉比较后恢复普通的表格行。关掉的设置写进另一个偏好域：覆盖已有的值后立即读取，可能仍读到旧值
+        let closed = try #require(UserDefaults(suiteName: directory.appending(path: "compare-off").path))
+        closed.set(false, forKey: RepositoryHistoryState.comparesBranchesKey)
+        session.history.preferences = closed
         session.history.loadBaseComparison()
         #expect(session.history.baseComparison == nil)
         #expect(session.history.rows.allSatisfy { $0.commit != nil })
