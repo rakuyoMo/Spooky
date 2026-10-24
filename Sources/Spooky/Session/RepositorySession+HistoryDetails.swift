@@ -62,6 +62,8 @@ extension RepositorySession {
             return
         }
 
+        #warning("TODO: 快速保存补丁跳过选项对话框后仍弹出目录面板是推断，菜单标题没有省略号。核实方式：按住 ⌥ 在历史提交的右键菜单选 Quick Save Patch，看是否询问保存位置、默认存到哪里；只影响快速保存的这一步。")
+
         if quick {
             savePatches(commits, omitsPrefixes: UserDefaults.standard.bool(forKey: Self.omitsPatchPrefixesKey))
         } else {
