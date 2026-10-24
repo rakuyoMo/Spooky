@@ -36,12 +36,6 @@ extension RepositorySession {
         canWrite && context?.operation == nil
     }
 
-    /// 检出需要当前分支以外的本地分支，且没有进行中的操作。
-    var canCheckout: Bool {
-        canWrite && context?.operation == nil
-            && history.branches.contains { $0.isLocal && $0.id != currentBranchID }
-    }
-
     /// 当前分支已附着、已有提交且没有进行中的操作。
     private var hasCurrentBranch: Bool {
         status?.branch.head != nil && status?.branch.oid != nil && context?.operation == nil

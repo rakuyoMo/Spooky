@@ -86,6 +86,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
 
         session.onStashRequest = { [weak self] in self?.presentStash($0) }
         session.onRevisionRequest = { [weak self] in self?.presentRevisionDialog($0) }
+        session.onRewriteRequest = { [weak self] in self?.presentRewrite($0) }
 
         session.onViewReset = { [weak self] in
             guard let self, !self.showsManager else { return }
@@ -702,6 +703,7 @@ extension RepositoryWindowController {
         if
             let operation = session.context?.operation,
             [.rebase, .cherryPick, .revert].contains(operation),
+            !(session.context?.progress?.stopsForEdit ?? false),
             session.canWrite, session.conflictCount == 0
         {
             session.finishOperation("continue")

@@ -213,6 +213,9 @@ final class RepositorySession {
     /// 窗口负责呈现储藏的对话框。
     var onStashRequest: ((StashRequest) -> Void)? = nil
 
+    /// 窗口负责呈现改写操作的对话框与确认。
+    var onRewriteRequest: ((RewriteRequest) -> Void)? = nil
+
     /// 当前刷新任务，关闭仓库时取消。
     private(set) var refreshTask: Task<Void, Never>? = nil
 
