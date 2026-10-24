@@ -33,6 +33,11 @@ extension RepositoryWindowController {
             item.searchField.placeholderString = AppLocalization.text("stash.search")
         }
 
+        // Reflog 按记录的说明搜索
+        if session.activeView == .reflog {
+            item.searchField.placeholderString = AppLocalization.text("reflog.search")
+        }
+
         return item
     }
 

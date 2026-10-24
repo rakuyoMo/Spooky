@@ -782,6 +782,11 @@ extension RepositoryWindowController {
             historySplit = nil
             detail = makeStashSplit()
 
+        case .reflog:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeReflogSplit()
+
         case .fileHistory:
             workingCopySplit = nil
             let split = makeFileHistorySplit()
@@ -813,10 +818,11 @@ extension RepositoryWindowController {
             historySplit.splitView.setPosition(320, ofDividerAt: 0)
         }
 
-        // 首次使用或恢复失败后储藏列表同样宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
+        // 首次使用或恢复失败后储藏与 Reflog 的列表同样宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
         if
-            session.activeView == .stashes, let split = detail as? NSSplitViewController,
-            UserDefaults.standard.object(forKey: "NSSplitView Subview Frames Spooky.Stashes") == nil
+            [.stashes, .reflog].contains(session.activeView), let split = detail as? NSSplitViewController,
+            let name = split.splitView.autosaveName,
+            UserDefaults.standard.object(forKey: "NSSplitView Subview Frames " + name) == nil
         {
             split.splitView.setPosition(320, ofDividerAt: 0)
         }

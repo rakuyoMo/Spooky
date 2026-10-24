@@ -219,6 +219,26 @@
       "alpha": 0.847
     }
   },
+  "red_badge_background_color": {
+    "light": {
+      "hex": "#FF3B30",
+      "alpha": 0.85
+    },
+    "dark": {
+      "hex": "#FF453A",
+      "alpha": 0.85
+    }
+  },
+  "red_badge_text_color": {
+    "light": {
+      "hex": "#FFFFFF",
+      "alpha": 0.9
+    },
+    "dark": {
+      "hex": "#FFFFFF",
+      "alpha": 0.847
+    }
+  },
   "selected_badge_background_color": {
     "light": {
       "hex": "#FFFFFF",

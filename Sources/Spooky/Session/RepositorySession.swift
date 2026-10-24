@@ -16,6 +16,9 @@ enum RepositoryView: String, CaseIterable {
     /// 储藏列表与只读储藏详情。
     case stashes
 
+    /// HEAD 或一个本地分支的引用日志，与所选记录的提交详情。
+    case reflog
+
     /// 一个文件的提交时间线与所选版本的详情。
     case fileHistory
 
@@ -29,7 +32,7 @@ enum RepositoryView: String, CaseIterable {
     var supportsSearch: Bool {
         switch self {
         case .fileContent, .remote: false
-        case .workingCopy, .history, .stashes, .fileHistory: true
+        case .workingCopy, .history, .stashes, .reflog, .fileHistory: true
         }
     }
 }
@@ -76,6 +79,9 @@ final class RepositorySession {
 
     /// 储藏列表、选择与储藏详情。
     let stashes = RepositoryStashState()
+
+    /// Reflog 的记录、所看的引用、搜索与详情。
+    let reflog = RepositoryReflogState()
 
     /// 文件历史的时间线、筛选与详情。
     let fileHistory = FileHistoryState()
@@ -471,6 +477,7 @@ extension RepositorySession {
         generation += 1
         history.close()
         stashes.close()
+        reflog.close()
         fileHistory.close()
         fileContent.close()
         signatures.reset()

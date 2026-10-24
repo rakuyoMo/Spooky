@@ -1341,3 +1341,18 @@
 "undo.error.inProgress.help" = "先にマージ、リベース、チェリーピック、リバートを完了するか中止してください。リポジトリは変更されていません。";
 "undo.error.conflicts" = "未解決の競合があります";
 "undo.error.conflicts.help" = "先に競合を解決してください。リポジトリは変更されていません。";
+
+/* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
+"reflog.title" = "Reflog";
+"reflog.show" = "Reflog を表示";
+"reflog.subtitle" = "Reflog（%@）";
+"reflog.ref" = "参照：";
+"reflog.loading" = "Reflog の記録を読み込み中…";
+"reflog.empty" = "Reflog の記録はありません";
+"reflog.search" = "Reflog のメッセージを検索";
+"reflog.reset" = "HEAD を「%@」へリセット…";
+"reflog.restore" = "「%1$@」を「%2$@」に戻す…";
+"reflog.createBranch" = "「%@」から新しいブランチを作成…";
+"reflog.cherryPick" = "「%@」をチェリーピック…";
+"reflog.restore.title" = "ブランチを戻す";
+"reflog.restore.message" = "%3$@ のブランチ「%1$@」を %2$@ に移動しますか？作業コピーとステージングエリアは変更されません。ブランチから外れるコミットは引き続き Reflog で見つけられます。";

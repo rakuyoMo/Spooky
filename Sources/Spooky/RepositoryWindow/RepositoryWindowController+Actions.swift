@@ -232,6 +232,9 @@ extension RepositoryWindowController {
         case #selector(showWorkingCopy), #selector(showHistory):
             return session.repository != nil
 
+        case #selector(showReflog):
+            return session.repository != nil
+
         case #selector(focusSearch):
             return repositoryView && session.activeView.supportsSearch
 

@@ -1341,3 +1341,18 @@
 "undo.error.inProgress.help" = "먼저 병합, 리베이스, 체리픽 또는 되돌리기를 완료하거나 중단하세요. 저장소는 변경되지 않았습니다.";
 "undo.error.conflicts" = "해결되지 않은 충돌이 있습니다";
 "undo.error.conflicts.help" = "먼저 충돌을 해결하세요. 저장소는 변경되지 않았습니다.";
+
+/* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
+"reflog.title" = "Reflog";
+"reflog.show" = "Reflog 보기";
+"reflog.subtitle" = "Reflog (%@)";
+"reflog.ref" = "참조:";
+"reflog.loading" = "Reflog 기록을 불러오는 중…";
+"reflog.empty" = "Reflog 기록 없음";
+"reflog.search" = "Reflog 메시지 검색";
+"reflog.reset" = "HEAD를 “%@”(으)로 재설정…";
+"reflog.restore" = "“%1$@”을(를) “%2$@”(으)로 복원…";
+"reflog.createBranch" = "“%@”에서 새 브랜치 만들기…";
+"reflog.cherryPick" = "“%@” 체리픽…";
+"reflog.restore.title" = "브랜치 복원";
+"reflog.restore.message" = "%3$@의 브랜치 “%1$@”을(를) %2$@(으)로 옮기시겠습니까? 작업 사본과 스테이징 영역은 바뀌지 않습니다. 브랜치에서 벗어나는 커밋은 Reflog에서 계속 찾을 수 있습니다.";

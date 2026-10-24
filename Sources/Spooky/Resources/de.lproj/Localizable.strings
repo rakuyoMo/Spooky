@@ -1341,3 +1341,18 @@
 "undo.error.inProgress.help" = "Schließen Sie zuerst den Merge, Rebase, Cherry-Pick oder Revert ab oder brechen Sie ihn ab. Es wurde nichts geändert.";
 "undo.error.conflicts" = "Das Repository hat ungelöste Konflikte";
 "undo.error.conflicts.help" = "Lösen Sie zuerst die Konflikte. Es wurde nichts geändert.";
+
+/* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
+"reflog.title" = "Reflog";
+"reflog.show" = "Reflog anzeigen";
+"reflog.subtitle" = "Reflog (%@)";
+"reflog.ref" = "Referenz:";
+"reflog.loading" = "Reflog-Einträge werden geladen …";
+"reflog.empty" = "Keine Reflog-Einträge";
+"reflog.search" = "Nach Reflog-Beschreibung suchen";
+"reflog.reset" = "HEAD auf „%@“ zurücksetzen …";
+"reflog.restore" = "„%1$@“ auf „%2$@“ wiederherstellen …";
+"reflog.createBranch" = "Neuen Branch aus „%@“ erstellen …";
+"reflog.cherryPick" = "„%@“ per Cherry-Pick übernehmen …";
+"reflog.restore.title" = "Branch wiederherstellen";
+"reflog.restore.message" = "Den Branch „%1$@“ in %3$@ auf %2$@ verschieben? Arbeitskopie und Staging-Bereich bleiben unverändert. Commits, die den Branch verlassen, sind weiterhin im Reflog zu finden.";

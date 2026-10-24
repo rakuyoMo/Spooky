@@ -1341,3 +1341,18 @@
 "undo.error.inProgress.help" = "Terminez ou abandonnez d’abord la fusion, le rebase, le cherry-pick ou le revert. Rien n’a été modifié.";
 "undo.error.conflicts" = "Le dépôt a des conflits non résolus";
 "undo.error.conflicts.help" = "Résolvez d’abord les conflits. Rien n’a été modifié.";
+
+/* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
+"reflog.title" = "Reflog";
+"reflog.show" = "Afficher le reflog";
+"reflog.subtitle" = "Reflog (%@)";
+"reflog.ref" = "Référence :";
+"reflog.loading" = "Chargement des entrées du reflog…";
+"reflog.empty" = "Aucune entrée dans le reflog";
+"reflog.search" = "Rechercher un message du reflog";
+"reflog.reset" = "Réinitialiser HEAD à « %@ »…";
+"reflog.restore" = "Restaurer « %1$@ » à « %2$@ »…";
+"reflog.createBranch" = "Créer une branche à partir de « %@ »…";
+"reflog.cherryPick" = "Cherry-pick de « %@ »…";
+"reflog.restore.title" = "Restaurer la branche";
+"reflog.restore.message" = "Déplacer la branche « %1$@ » vers %2$@ dans %3$@ ? La copie de travail et la zone de préparation ne changent pas. Les commits qui quittent la branche restent visibles dans le reflog.";

@@ -62,6 +62,10 @@ struct RepositorySidebarView: View {
     @AppStorage(SidebarPreferences.showStashCountKey)
     var showsStashCount = SidebarPreferences.defaultFlag(SidebarPreferences.showStashCountKey)
 
+    /// Workspace 分组显示 Reflog 入口。
+    @AppStorage(SidebarPreferences.showReflogKey)
+    var showsReflog = SidebarPreferences.defaultFlag(SidebarPreferences.showReflogKey)
+
     /// 引用按 “/” 折叠成文件夹。
     @AppStorage(SidebarPreferences.groupRefsKey)
     var groupsRefs = SidebarPreferences.defaultFlag(SidebarPreferences.groupRefsKey)
@@ -114,6 +118,7 @@ struct RepositorySidebarView: View {
     private var selectedItems: Set<String> {
         if session.activeView == .workingCopy { return ["workingCopy"] }
         if session.activeView == .stashes { return ["stashes"] }
+        if session.activeView == .reflog { return ["reflog"] }
 
         // 远端设置对应侧边栏里那个远端的行
         if session.activeView == .remote {
@@ -154,10 +159,12 @@ struct RepositorySidebarView: View {
                     session.activeView = .workingCopy
                 } else if added.contains("stashes") || value == ["stashes"] {
                     session.activeView = .stashes
+                } else if added.contains("reflog") || value == ["reflog"] {
+                    session.activeView = .reflog
                 } else {
                     // 置顶分组里的行换回分支的完整引用名
                     let references = value
-                        .subtracting(["workingCopy", "history", "stashes"])
+                        .subtracting(["workingCopy", "history", "stashes", "reflog"])
                         .filter { !$0.hasPrefix(Self.remoteRowPrefix) }
                         .map(Self.reference(forRow:))
 
@@ -187,6 +194,11 @@ struct RepositorySidebarView: View {
                     stashes
                         .tag("stashes")
                         .modifier(StashesDropTarget(session: session))
+
+                    // 视图设置打开 Show Reflog 时才显示
+                    if showsReflog {
+                        Label(AppLocalization.text("reflog.title"), systemImage: "clock.arrow.circlepath").tag("reflog")
+                    }
                 } header: {
                     Text(AppLocalization.text("workspace.group"))
                 }

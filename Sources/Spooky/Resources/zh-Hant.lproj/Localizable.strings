@@ -1341,3 +1341,18 @@
 "undo.error.inProgress.help" = "請先完成或中止合併、重定基底、摘取或反轉。儲存庫沒有任何變更。";
 "undo.error.conflicts" = "儲存庫有未解決的衝突";
 "undo.error.conflicts.help" = "請先解決衝突。儲存庫沒有任何變更。";
+
+/* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
+"reflog.title" = "Reflog";
+"reflog.show" = "顯示 Reflog";
+"reflog.subtitle" = "Reflog（%@）";
+"reflog.ref" = "參照：";
+"reflog.loading" = "正在讀取 Reflog 記錄…";
+"reflog.empty" = "沒有 Reflog 記錄";
+"reflog.search" = "搜尋 Reflog 說明";
+"reflog.reset" = "把 HEAD 重設到 “%@”…";
+"reflog.restore" = "把 “%1$@” 還原到 “%2$@”…";
+"reflog.createBranch" = "從 “%@” 新增分支…";
+"reflog.cherryPick" = "摘取 “%@”…";
+"reflog.restore.title" = "還原分支";
+"reflog.restore.message" = "要把 %3$@ 中的分支 “%1$@” 移到 %2$@ 嗎？工作區與暫存區不會變更。離開分支的提交仍能在 Reflog 裡找到。";

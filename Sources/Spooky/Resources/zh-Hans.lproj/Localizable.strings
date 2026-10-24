@@ -1341,3 +1341,18 @@
 "undo.error.inProgress.help" = "请先完成或中止合并、变基、摘取或反转。仓库没有任何改动。";
 "undo.error.conflicts" = "仓库有未解决的冲突";
 "undo.error.conflicts.help" = "请先解决冲突。仓库没有任何改动。";
+
+/* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
+"reflog.title" = "Reflog";
+"reflog.show" = "显示 Reflog";
+"reflog.subtitle" = "Reflog（%@）";
+"reflog.ref" = "引用：";
+"reflog.loading" = "正在读取 Reflog 记录…";
+"reflog.empty" = "没有 Reflog 记录";
+"reflog.search" = "搜索 Reflog 说明";
+"reflog.reset" = "把 HEAD 重置到 “%@”…";
+"reflog.restore" = "把 “%1$@” 恢复到 “%2$@”…";
+"reflog.createBranch" = "从 “%@” 新建分支…";
+"reflog.cherryPick" = "摘取 “%@”…";
+"reflog.restore.title" = "恢复分支";
+"reflog.restore.message" = "把 %3$@ 中的分支 “%1$@” 移到 %2$@ 吗？工作区与暂存区不会改变。离开分支的提交仍能在 Reflog 里找到。";

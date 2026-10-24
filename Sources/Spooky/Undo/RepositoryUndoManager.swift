@@ -79,7 +79,7 @@ extension RepositoryUndoManager {
     private func title(for state: UndoMenuState, redo: Bool) -> String {
         switch state {
         case .empty:
-            redo ? redoMenuTitle(forUndoActionName: "") : undoMenuTitle(forUndoActionName: "")
+            AppLocalization.text(redo ? "menu.redo" : "menu.undo")
 
         case .available(let name):
             redo ? redoMenuTitle(forUndoActionName: name) : undoMenuTitle(forUndoActionName: name)
