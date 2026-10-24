@@ -59,16 +59,6 @@ extension WorkingCopyFileList.Coordinator {
         session.delete(entries)
     }
 
-    /// 回车与双击执行同一个按偏好选择的动作。
-    func openPressed() {
-        guard let entry = session.selectedEntries.first, session.selectedEntries.count == 1 else {
-            NSSound.beep()
-            return
-        }
-
-        session.performDoubleClickAction(entry)
-    }
-
     /// 打开或关闭 Quick Look：先让列表成为第一响应者，面板才会向列表索取预览项。
     func toggleQuickLook(_ entries: [StatusEntry]) {
         outline?.window?.makeFirstResponder(outline)
