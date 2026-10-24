@@ -1358,3 +1358,6 @@
 
 /* 分支拖进 “/” 文件夹时的动作名。 */
 "branch.moveHere" = "Mover aquí";
+
+/* 历史列表头下方的自动压缩横幅。 */
+"history.autosquash" = "Esta rama tiene commits marcados con fixup!, squash! o amend!.";

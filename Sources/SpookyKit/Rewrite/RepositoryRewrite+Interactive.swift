@@ -113,6 +113,30 @@ extension RepositoryRewrite {
         return reference == subject || reference.isEmpty ? nil : reference
     }
 
+    /// 从新到旧排列的提交里，是否有能找到目标的 `fixup!`、`squash!`、`amend!` 提交；与 Autosquash 的判断相同。
+    public static func hasAutosquashCommits(in history: [HistoryCommit]) -> Bool {
+        oldestAutosquashTarget(in: history) != nil
+    }
+
+    /// 带标记的提交各自的目标里最旧的一个在 `history` 里的位置；没有能找到目标的标记提交时为 nil。
+    ///
+    /// 目标是标记提交之前第一个标题相同、标题以引用开头或哈希以引用开头的提交；`history` 从新到旧排列。
+    static func oldestAutosquashTarget(in history: [HistoryCommit]) -> Int? {
+        var oldest: Int? = nil
+
+        for (index, commit) in history.enumerated() {
+            guard let reference = autosquashReference(of: commit.subject) else { continue }
+
+            let target = history[(index + 1)...].firstIndex {
+                $0.subject == reference || $0.subject.hasPrefix(reference) || $0.id.hasPrefix(reference)
+            }
+
+            if let target { oldest = max(oldest ?? target, target) }
+        }
+
+        return oldest
+    }
+
     /// 所给动作的 todo：除 Autosquash 外，范围里的每个提交都有一行，删除的提交写成显式的 drop。
     static func instructions(for action: RewriteAction, in range: [HistoryCommit]) throws -> [RebaseInstruction] {
         let line = { (commit: HistoryCommit, command: RebaseInstruction.Command) in
@@ -214,19 +238,8 @@ extension RepositoryRewrite {
             HistoryCommit.format, "HEAD", "--",
         ])
         let history = try HistoryCommit.parse(output)
-        var oldest: Int?
 
-        for (index, commit) in history.enumerated() {
-            guard let reference = Self.autosquashReference(of: commit.subject) else { continue }
-
-            let target = history[(index + 1)...].firstIndex {
-                $0.subject == reference || $0.subject.hasPrefix(reference) || $0.id.hasPrefix(reference)
-            }
-
-            if let target { oldest = max(oldest ?? target, target) }
-        }
-
-        guard let oldest else {
+        guard let oldest = Self.oldestAutosquashTarget(in: history) else {
             throw RewriteError.nothingToAutosquash
         }
 

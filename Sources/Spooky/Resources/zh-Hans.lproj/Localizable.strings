@@ -1358,3 +1358,6 @@
 
 /* 分支拖进 “/” 文件夹时的动作名。 */
 "branch.moveHere" = "移到这里";
+
+/* 历史列表头下方的自动压缩横幅。 */
+"history.autosquash" = "这个分支上有标记为 fixup!、squash! 或 amend! 的提交。";

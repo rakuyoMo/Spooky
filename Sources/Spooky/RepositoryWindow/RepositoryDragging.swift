@@ -144,13 +144,7 @@ struct RepositoryDropTarget: ViewModifier {
         content
             .overlay(alignment: .trailing) {
                 if let label {
-                    Text(label)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(Color.accentColor)
-                        .padding(.horizontal, 8)
-                        .frame(height: 24)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 4))
-                        .allowsHitTesting(false)
+                    DropActionLabel(text: label)
                 }
             }
             .onDrop(
@@ -162,6 +156,25 @@ struct RepositoryDropTarget: ViewModifier {
                     label: $label
                 )
             )
+    }
+}
+
+// MARK: - DropActionLabel
+
+/// 拖动悬停在落点上时的动作名：白底圆角 4、高 24，13 pt 粗体强调色文字；侧边栏与历史列表的落点共用。
+struct DropActionLabel: View {
+    /// 动作名。
+    let text: String
+
+    /// 不拦截鼠标，拖放事件照常交给落点。
+    var body: some View {
+        Text(text)
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 8)
+            .frame(height: 24)
+            .background(.white, in: RoundedRectangle(cornerRadius: 4))
+            .allowsHitTesting(false)
     }
 }
 

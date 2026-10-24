@@ -1358,3 +1358,6 @@
 
 /* 分支拖进 “/” 文件夹时的动作名。 */
 "branch.moveHere" = "여기로 이동";
+
+/* 历史列表头下方的自动压缩横幅。 */
+"history.autosquash" = "이 브랜치에 fixup!, squash! 또는 amend! 표시가 있는 커밋이 있습니다.";
