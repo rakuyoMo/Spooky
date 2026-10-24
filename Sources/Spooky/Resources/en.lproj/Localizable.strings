@@ -587,12 +587,6 @@
 "fileHistory.showCommit" = "Show Commit";
 "fileHistory.oneCommit" = "1 commit";
 "fileHistory.commits" = "%ld commits";
-"fileHistory.date" = "Date";
-"fileHistory.anyDate" = "Any";
-"fileHistory.after" = "On or After";
-"fileHistory.before" = "On or Before";
-"fileHistory.between" = "Between";
-"fileHistory.to" = "and";
 "fileHistory.submodule" = "Cannot show file history for submodule file types";
 "fileHistory.showAt" = "Show “%@” at Revision “%@”";
 "fileHistory.blameAt" = "Show Blame for “%@” at Revision “%@”";
@@ -629,9 +623,6 @@
 "showFile.noContributors" = "No contributors yet";
 "showFile.oneContributor" = "1 contributor";
 "showFile.contributors" = "%ld contributors";
-"showFile.copy" = "Copy Contents";
-"showFile.export" = "Export…";
-"showFile.open" = "Open";
 "showFile.searchRevisions" = "Search Revisions";
 "showFile.searchFiles" = "Search Files";
 "showFile.error.missing" = "File Not Found at This Revision";
@@ -827,3 +818,8 @@
 "profiles.titleExists" = "A user profile with this title already exists.";
 "profiles.signer" = "Signer:";
 "commit.doNotAskAgain" = "Do not ask again";
+
+/* 文件视图。 */
+"fileHistory.subtitle" = "File History – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";

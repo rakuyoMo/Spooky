@@ -587,12 +587,6 @@
 "fileHistory.showCommit" = "커밋 보기";
 "fileHistory.oneCommit" = "커밋 1개";
 "fileHistory.commits" = "커밋 %ld개";
-"fileHistory.date" = "날짜";
-"fileHistory.anyDate" = "전체";
-"fileHistory.after" = "당일 이후";
-"fileHistory.before" = "당일 이전";
-"fileHistory.between" = "기간";
-"fileHistory.to" = "~";
 "fileHistory.submodule" = "서브모듈 파일의 파일 기록은 표시할 수 없습니다";
 "fileHistory.showAt" = "“%@”의 리비전 “%@” 보기";
 "fileHistory.blameAt" = "“%@”의 리비전 “%@” Blame 보기";
@@ -629,9 +623,6 @@
 "showFile.noContributors" = "아직 기여자가 없습니다";
 "showFile.oneContributor" = "기여자 1명";
 "showFile.contributors" = "기여자 %ld명";
-"showFile.copy" = "내용 복사";
-"showFile.export" = "내보내기…";
-"showFile.open" = "열기";
 "showFile.searchRevisions" = "리비전 검색";
 "showFile.searchFiles" = "파일 검색";
 "showFile.error.missing" = "이 리비전에 파일이 없음";
@@ -827,3 +818,8 @@
 "profiles.titleExists" = "같은 제목의 사용자 프로필이 이미 있습니다.";
 "profiles.signer" = "서명자:";
 "commit.doNotAskAgain" = "다시 묻지 않음";
+
+/* 文件视图。 */
+"fileHistory.subtitle" = "파일 기록 – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";

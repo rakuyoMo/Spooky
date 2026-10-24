@@ -56,7 +56,7 @@ public struct TreeEntry: Sendable, Equatable {
 
 // MARK: - FileHistoryFilter
 
-/// 文件历史的筛选条件：搜索框按范围匹配作者、提交人或版本，日期按提交人日期限定；空条件表示全部历史。
+/// 文件历史的筛选条件：搜索框按范围匹配作者、提交人或版本；空条件表示全部历史。
 public struct FileHistoryFilter: Sendable, Equatable {
     /// 搜索框的匹配范围。
     public enum Scope: String, Sendable, CaseIterable {
@@ -76,48 +76,29 @@ public struct FileHistoryFilter: Sendable, Equatable {
     /// 搜索框的内容，首尾空白不参与匹配。
     public var text: String
 
-    /// 只保留不早于该时刻的提交。
-    public var since: Date?
-
-    /// 只保留不晚于该时刻的提交。
-    public var until: Date?
-
     /// 去掉首尾空白后的搜索内容。
     public var trimmedText: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     /// 交给 log 与 rev-list 的限定参数；版本范围改变的是起点，不在这里表达。
     var arguments: [String] {
-        var arguments: [String] = []
-
         // 贡献者按字面子串匹配并忽略大小写，输入中的正则符号不会被解释
-        if !trimmedText.isEmpty, scope != .revision {
-            arguments += ["-i", "-F", (scope == .author ? "--author=" : "--committer=") + trimmedText]
+        guard !trimmedText.isEmpty, scope != .revision else {
+            return []
         }
 
-        // 日期以 Unix 秒传给 Git，与本机和服务器的时区设置无关
-        if let since {
-            arguments.append("--since=@\(Int64(since.timeIntervalSince1970.rounded(.down)))")
-        }
-
-        if let until {
-            arguments.append("--until=@\(Int64(until.timeIntervalSince1970.rounded(.down)))")
-        }
-
-        return arguments
+        return ["-i", "-F", (scope == .author ? "--author=" : "--committer=") + trimmedText]
     }
 
     /// 创建筛选条件，默认不过滤。
-    public init(scope: Scope = .author, text: String = "", since: Date? = nil, until: Date? = nil) {
+    public init(scope: Scope = .author, text: String = "") {
         self.scope = scope
         self.text = text
-        self.since = since
-        self.until = until
     }
 }
 
 // MARK: - FileContributor
 
-/// 修改过某个文件的一位作者及其提交数。
+/// 某个文件或整个仓库的一位作者及其提交数。
 public struct FileContributor: Sendable, Equatable {
     /// 作者姓名，经过仓库的 `.mailmap` 合并。
     public let name: String
@@ -125,7 +106,7 @@ public struct FileContributor: Sendable, Equatable {
     /// 作者邮箱。
     public let email: String
 
-    /// 修改过该文件的提交数。
+    /// 这位作者的提交数。
     public let commitCount: Int
 
     /// 解析 `shortlog -s -e` 的输出：每行形如 “提交数\t姓名 <邮箱>”。
@@ -187,7 +168,7 @@ public struct RepositoryFileViews: Sendable {
     /// - Parameters:
     ///   - path: 树中存储的相对路径。
     ///   - revision: 起点提交的完整哈希，固定起点使翻页结果不随新提交变化。
-    ///   - filter: 贡献者与日期条件；版本范围由调用方解析成起点。
+    ///   - filter: 贡献者条件；版本范围由调用方解析成起点。
     public func page(
         of path: String,
         from revision: String,
@@ -299,17 +280,21 @@ public struct RepositoryFileViews: Sendable {
         return try FileBlame.parse(output)
     }
 
-    /// 修改过该文件的作者，按提交数从多到少排列。
-    public func contributors(of path: String, at revision: String) async throws -> [FileContributor] {
-        guard GitObjectID.isValid(revision), !path.isEmpty else {
+    /// 指定提交之前修改过该文件的作者，按提交数从多到少排列。
+    ///
+    /// - Parameters:
+    ///   - path: 树中存储的路径；nil 表示整个仓库的作者，供文件历史的搜索框补全。
+    ///   - revision: 起点提交的完整哈希。
+    public func contributors(of path: String?, at revision: String) async throws -> [FileContributor] {
+        guard GitObjectID.isValid(revision), path.map({ !$0.isEmpty }) ?? true else {
             throw RepositoryReadError.invalidQuery
         }
 
         // shortlog 没有起点时会改读标准输入，起点必须显式给出；作者随 `.mailmap` 合并，结果不按哈希复用
         let output = try await runner.run(
-            Self.storedPathOptions + RepositoryHistory.logOptions + [
-                "shortlog", "-n", "-s", "-e", revision, "--", path,
-            ]
+            Self.storedPathOptions + RepositoryHistory.logOptions
+                + ["shortlog", "-n", "-s", "-e", revision]
+                + (path.map { ["--", $0] } ?? [])
         )
 
         return try FileContributor.parse(output)

@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - FileViewAction
 
-/// 文件视图的一个动作，动作条按钮、头部右键菜单与正文右键菜单共用。
+/// 文件视图的一个动作，动作条按钮、头部右键菜单与工作区文件列表的右键菜单共用。
 struct FileViewAction: Identifiable {
     /// 已本地化的标题，同一组动作里各不相同。
     let title: String
@@ -94,7 +94,7 @@ struct FileNoticeView: View {
 
 // MARK: - FileViewMenuItem
 
-/// 执行文件视图动作的 AppKit 菜单项，工作区文件列表与正文的右键菜单使用。
+/// 执行文件视图动作的 AppKit 菜单项，工作区文件列表的右键菜单使用。
 final class FileViewMenuItem: NSMenuItem {
     /// 选中菜单项时执行的动作。
     private let handler: () -> Void

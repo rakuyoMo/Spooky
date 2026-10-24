@@ -77,7 +77,7 @@ struct FileContentView: View {
         .padding(.horizontal, 12)
         .frame(height: 40)
         .background(AppPalette.color("general_header_background_color"))
-        .modifier(FileActionHeader(actions: headerActions, hovering: $hovering))
+        .modifier(FileActionHeader(actions: navigationActions, hovering: $hovering))
     }
 
     /// 版本按钮：显示短哈希或 HEAD，点开版本选择器。
@@ -151,15 +151,6 @@ struct FileContentView: View {
         ]
     }
 
-    /// 头部右键菜单的动作：动作条上的动作，再加复制、导出与用默认程序打开。
-    private var headerActions: [FileViewAction] {
-        let revision = state.resolvedRevision
-        let available = revision != nil && state.content?.data != nil
-
-        return navigationActions
-            + contentActions(path: state.path ?? "", revision: revision, available: available)
-    }
-
     /// 读取完成后才显示的内容：失败、不能显示的说明、原文或逐行追溯。
     @ViewBuilder
     private var content: some View {
@@ -192,37 +183,18 @@ struct FileContentView: View {
         }
     }
 
-    /// 复制、导出与用默认程序打开，二进制文件只能导出或打开。
-    private func contentActions(path: String, revision: String?, available: Bool) -> [FileViewAction] {
-        let text = available && state.content?.unavailable == nil
-
-        return [
-            FileViewAction(title: AppLocalization.text("showFile.copy"), enabled: text) {
-                if let revision { session.copyFile(path, at: revision) }
-            },
-            FileViewAction(title: AppLocalization.text("showFile.export"), enabled: available) {
-                if let revision { session.exportFile(path, at: revision) }
-            },
-            FileViewAction(title: AppLocalization.text("showFile.open"), enabled: available) {
-                if let revision { session.openFile(path, at: revision) }
-            },
-        ]
-    }
-
     /// 原文或逐行追溯的正文；逐行追溯读取完成前显示进度。
     @ViewBuilder
     private func text(_ content: FileRevisionContent) -> some View {
         let theme = TextTheme.current(dark: colorScheme == .dark)
         let identity = content.path + "@" + (state.resolvedRevision ?? "")
-        let menu = contentActions(path: content.path, revision: state.resolvedRevision, available: true)
 
         if state.mode == .raw {
             FileTextView(
                 contentID: identity + "/raw",
                 path: content.path,
                 lines: content.lines,
-                theme: theme,
-                menuActions: menu
+                theme: theme
             )
         } else if let blame = state.blame {
             FileTextView(
@@ -235,7 +207,6 @@ struct FileContentView: View {
                     commits: blame.commits,
                     highlightedCommit: state.highlightedCommit
                 ),
-                menuActions: menu,
                 highlight: { state.highlightedCommit = $0 },
                 openCommit: { session.showCommit(id: $0) }
             )

@@ -587,12 +587,6 @@
 "fileHistory.showCommit" = "Afficher le commit";
 "fileHistory.oneCommit" = "1 commit";
 "fileHistory.commits" = "%ld commits";
-"fileHistory.date" = "Date";
-"fileHistory.anyDate" = "Toutes";
-"fileHistory.after" = "Le ou après le";
-"fileHistory.before" = "Le ou avant le";
-"fileHistory.between" = "Entre";
-"fileHistory.to" = "et";
 "fileHistory.submodule" = "Impossible d’afficher l’historique d’un sous-module";
 "fileHistory.showAt" = "Afficher « %@ » à la révision « %@ »";
 "fileHistory.blameAt" = "Afficher le blame de « %@ » à la révision « %@ »";
@@ -629,9 +623,6 @@
 "showFile.noContributors" = "Aucun contributeur pour l’instant";
 "showFile.oneContributor" = "1 contributeur";
 "showFile.contributors" = "%ld contributeurs";
-"showFile.copy" = "Copier le contenu";
-"showFile.export" = "Exporter…";
-"showFile.open" = "Ouvrir";
 "showFile.searchRevisions" = "Rechercher des révisions";
 "showFile.searchFiles" = "Rechercher des fichiers";
 "showFile.error.missing" = "Fichier absent de cette révision";
@@ -827,3 +818,8 @@
 "profiles.titleExists" = "Un profil utilisateur portant ce titre existe déjà.";
 "profiles.signer" = "Signataire :";
 "commit.doNotAskAgain" = "Ne plus demander";
+
+/* 文件视图。 */
+"fileHistory.subtitle" = "Historique du fichier – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";

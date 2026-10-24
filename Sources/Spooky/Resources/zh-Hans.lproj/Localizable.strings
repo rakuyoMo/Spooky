@@ -587,12 +587,6 @@
 "fileHistory.showCommit" = "显示提交";
 "fileHistory.oneCommit" = "1 个提交";
 "fileHistory.commits" = "%ld 个提交";
-"fileHistory.date" = "日期";
-"fileHistory.anyDate" = "不限";
-"fileHistory.after" = "当天及之后";
-"fileHistory.before" = "当天及之前";
-"fileHistory.between" = "区间";
-"fileHistory.to" = "至";
 "fileHistory.submodule" = "无法显示子模块类型文件的文件历史";
 "fileHistory.showAt" = "显示 “%@” 在版本 “%@” 的内容";
 "fileHistory.blameAt" = "显示 “%@” 在版本 “%@” 的 Blame";
@@ -629,9 +623,6 @@
 "showFile.noContributors" = "还没有贡献者";
 "showFile.oneContributor" = "1 位贡献者";
 "showFile.contributors" = "%ld 位贡献者";
-"showFile.copy" = "复制内容";
-"showFile.export" = "导出…";
-"showFile.open" = "打开";
 "showFile.searchRevisions" = "搜索版本";
 "showFile.searchFiles" = "搜索文件";
 "showFile.error.missing" = "该版本中没有这个文件";
@@ -827,3 +818,8 @@
 "profiles.titleExists" = "已有同样标题的身份档案。";
 "profiles.signer" = "签名人：";
 "commit.doNotAskAgain" = "不再询问";
+
+/* 文件视图。 */
+"fileHistory.subtitle" = "文件历史 – %@";
+"showFile.blob" = "Blob";
+"showFile.subtitle" = "Blob – %@@%@";
