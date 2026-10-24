@@ -15,7 +15,8 @@ extension RepositorySession {
                 try await WorkingCopyOperations(runner: runner).stage(entries, staged: staged)
             },
             title: AppLocalization.text(staged ? "working.stage" : "working.unstage"),
-            recordsActivity: false
+            recordsActivity: false,
+            undo: .reversible
         )
     }
 
@@ -43,7 +44,8 @@ extension RepositorySession {
                         try await WorkingCopyOperations(runner: runner).discard(entries)
                     },
                     title: AppLocalization.text("working.discard"),
-                    recordsActivity: false
+                    recordsActivity: false,
+                    undo: .reversible
                 )
             },
             nil
@@ -74,7 +76,8 @@ extension RepositorySession {
                         )
                 },
                 title: title,
-                recordsActivity: false
+                recordsActivity: false,
+                undo: .reversible
             )
         }
 
@@ -158,7 +161,8 @@ extension RepositorySession {
                         )
                 },
                 title: AppLocalization.text(amend ? "working.amend" : "working.commit"),
-                recordsActivity: false
+                recordsActivity: false,
+                undo: .reversible
             ) { [weak self] in
                 // 提交成功 0.3 秒后才清空信息，其间提交区保持锁定，不会接受新的输入。
                 self?.commitResetTask = Task { [weak self] in

@@ -59,6 +59,23 @@ struct RepositoryStateTests {
         }
     }
 
+    /// 分支名可以含点与斜杠，取第一个点与最后一个点之间；只写键的项没有值；没有分支名的键拒绝。
+    @Test("config --get-regexp：分支段")
+    func parseBranchSettings() throws {
+        let output = "branch.功能/v1.2.remote\norigin\0branch.main.spooky-pinned\0branch.main.description\n第一行\n第二行\0"
+
+        let settings = try RepositoryState.parseBranchSettings(Data(output.utf8))
+        #expect(settings.map(\.branch) == ["功能/v1.2", "main", "main"])
+        #expect(settings.map(\.value) == ["origin", nil, "第一行\n第二行"])
+        #expect(try RepositoryState.parseBranchSettings(Data()).isEmpty)
+
+        for text in ["branch.remote\nx\0", "core.bare\nfalse\0", "branch..remote\nx\0"] {
+            #expect(throws: RepositoryReadError.malformedOutput("branch config")) {
+                try RepositoryState.parseBranchSettings(Data(text.utf8))
+            }
+        }
+    }
+
     /// 粗略比较看 HEAD、文件状态、分支与标签、储藏；上游的领先落后不算仓库内容，获取之后仍一致。
     @Test("与界面已读结果的粗略比较")
     func resembles() {
@@ -69,6 +86,7 @@ struct RepositoryStateTests {
             head: commit,
             references: ["refs/heads/main": commit],
             peeledReferences: ["refs/heads/main": commit],
+            branchSettings: [],
             stashes: [],
             index: commit,
             worktree: commit,

@@ -131,7 +131,8 @@ extension RepositorySession {
                 try await RepositoryRewrite(runner: runner).revert(commits, options: options, onOutput: output)
             },
             title: AppLocalization.text("rewrite.revert"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 
@@ -145,7 +146,8 @@ extension RepositorySession {
                 try await RepositoryRewrite(runner: runner).cherryPick(commits, options: options, onOutput: output)
             },
             title: AppLocalization.text("rewrite.cherryPick"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 
@@ -154,7 +156,8 @@ extension RepositorySession {
     func reset(to revision: String, mode: ResetMode) -> Bool {
         performGit(
             { runner, _ in try await RepositoryRewrite(runner: runner).reset(to: revision, mode: mode) },
-            title: AppLocalization.text("rewrite.reset")
+            title: AppLocalization.text("rewrite.reset"),
+            undo: .reversible
         )
     }
 
@@ -164,7 +167,8 @@ extension RepositorySession {
         performGit(
             { runner, _ in try await RepositoryRewrite(runner: runner).checkout(revision: revision) },
             title: AppLocalization.text("rewrite.checkout"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 
@@ -177,7 +181,8 @@ extension RepositorySession {
                     .rebase(onto: newBase, from: currentBase, skipHooks: skipHooks, onOutput: output)
             },
             title: AppLocalization.text("rewrite.rebaseOnto"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 
@@ -195,7 +200,8 @@ extension RepositorySession {
                 try await RepositoryRewrite(runner: runner).perform(plan, skipHooks: skipHooks, onOutput: output)
             },
             title: AppLocalization.text(Self.titleKey(of: plan.action)),
-            offersAutoStash: !amends
+            offersAutoStash: !amends,
+            undo: .reversible
         )
     }
 

@@ -34,9 +34,23 @@ public struct StashRecord: Sendable, Equatable {
     public let untracked: String?
 }
 
+// MARK: - BranchSetting
+
+/// 仓库配置里 `branch.<名称>` 段的一项：上游、合并方式，以及置顶、归档与父分支。
+public struct BranchSetting: Sendable, Equatable {
+    /// 段所属的分支名。
+    public let branch: String
+
+    /// 完整的配置键，如 `branch.main.remote`。
+    public let key: String
+
+    /// 配置值；只写键不写值时为 nil。
+    public let value: String?
+}
+
 // MARK: - RepositoryState
 
-/// 撤销与重做比较、恢复的仓库状态：分支与标签、HEAD、储藏列表、索引与工作区。
+/// 撤销与重做比较、恢复的仓库状态：分支与标签、HEAD、分支的配置段、储藏列表、索引与工作区。
 ///
 /// 工作区只记已跟踪文件的内容（`stash create` 写出的树）；未跟踪文件只记路径，内容不进快照。
 public struct RepositoryState: Sendable, Equatable {
@@ -51,6 +65,9 @@ public struct RepositoryState: Sendable, Equatable {
 
     /// 同一组引用剥离附注标签后的目标，与界面的引用快照比较时使用。
     public let peeledReferences: [String: String]
+
+    /// 仓库配置里各分支段的全部项，按配置文件中的顺序。
+    public let branchSettings: [BranchSetting]
 
     /// 储藏列表，从新到旧。
     public let stashes: [StashRecord]
@@ -153,6 +170,25 @@ extension RepositoryState {
         }
 
         return (references, peeled, hasStash)
+    }
+
+    /// 解析 `config -z --get-regexp` 读出的分支段：每条是键、换行、值，没有值的键只有键本身。
+    ///
+    /// 键的第一个点与最后一个点之间是分支名，分支名本身可以含点。
+    static func parseBranchSettings(_ data: Data) throws -> [BranchSetting] {
+        try data.split(separator: 0).map { record in
+            let key = String(decoding: record.prefix { $0 != 10 }, as: UTF8.self)
+            let value = record.firstIndex(of: 10).map { String(decoding: record[($0 + 1)...], as: UTF8.self) }
+
+            guard
+                key.hasPrefix("branch."),
+                let last = key.lastIndex(of: "."),
+                last > key.index(key.startIndex, offsetBy: 7)
+            else { throw RepositoryReadError.malformedOutput("branch config") }
+
+            let branch = String(key[key.index(key.startIndex, offsetBy: 7) ..< last])
+            return BranchSetting(branch: branch, key: key, value: value)
+        }
     }
 
     /// 解析 `stash list -z` 按 ``stashFormat`` 的输出，每条三个字段。

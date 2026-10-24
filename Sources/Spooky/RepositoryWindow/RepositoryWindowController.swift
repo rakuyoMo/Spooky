@@ -45,6 +45,12 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 文件历史搜索框的贡献者补全。
     let contributorCompletion = ContributorCompletion()
 
+    /// Edit 菜单撤销与重做的本仓库写操作，栈与同一仓库的其它窗口共用。
+    lazy var repositoryUndoManager = RepositoryUndoManager(session: session)
+
+    /// 文本框与提交信息编辑框自己的文字撤销。
+    let textUndoManager = UndoManager()
+
     /// 本窗口仓库的自动获取：只在窗口显示仓库且 App 处于前台时进行。
     private lazy var autoFetch = RepositoryAutoFetch(session: session) { [weak self] in
         NSApp.isActive && !(self?.showsManager ?? true)

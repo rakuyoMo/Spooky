@@ -1321,3 +1321,23 @@
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "远端设置（%@）";
+
+/* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
+"menu.undo" = "撤销";
+"menu.redo" = "重做";
+"undo.cannotUndo" = "无法撤销%@";
+"undo.cannotRedo" = "无法重做%@";
+"undo.unavailable" = "%1$@（%2$@）";
+"undo.reason.busy" = "操作进行中";
+"undo.reason.disconnected" = "未连接";
+"undo.reason.changed" = "仓库已变化";
+"undo.error.changed" = "仓库已经变化";
+"undo.error.changed.help" = "仓库与记录的状态不再一致，无法安全恢复。仓库没有任何改动。";
+"undo.error.untracked" = "未跟踪文件挡住了恢复";
+"undo.error.untracked.help" = "恢复会覆盖或删除找不回内容的未跟踪文件。仓库没有任何改动。";
+"undo.error.hidden" = "部分文件有看不到的改动";
+"undo.error.hidden.help" = "标为 assume-unchanged 的文件有本地改动，或仓库使用了 skip-worktree。仓库没有任何改动。";
+"undo.error.inProgress" = "有正在进行的操作";
+"undo.error.inProgress.help" = "请先完成或中止合并、变基、摘取或反转。仓库没有任何改动。";
+"undo.error.conflicts" = "仓库有未解决的冲突";
+"undo.error.conflicts.help" = "请先解决冲突。仓库没有任何改动。";

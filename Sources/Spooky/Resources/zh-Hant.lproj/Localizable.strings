@@ -1321,3 +1321,23 @@
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "遠端設定（%@）";
+
+/* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
+"menu.undo" = "還原";
+"menu.redo" = "重做";
+"undo.cannotUndo" = "無法還原%@";
+"undo.cannotRedo" = "無法重做%@";
+"undo.unavailable" = "%1$@（%2$@）";
+"undo.reason.busy" = "操作進行中";
+"undo.reason.disconnected" = "未連線";
+"undo.reason.changed" = "儲存庫已變更";
+"undo.error.changed" = "儲存庫已經變更";
+"undo.error.changed.help" = "儲存庫與記錄的狀態不再一致，無法安全還原。儲存庫沒有任何變更。";
+"undo.error.untracked" = "未追蹤的檔案擋住了還原";
+"undo.error.untracked.help" = "還原會覆寫或刪除找不回內容的未追蹤檔案。儲存庫沒有任何變更。";
+"undo.error.hidden" = "部分檔案有看不到的變更";
+"undo.error.hidden.help" = "標為 assume-unchanged 的檔案有本機變更，或儲存庫使用了 skip-worktree。儲存庫沒有任何變更。";
+"undo.error.inProgress" = "有正在進行的操作";
+"undo.error.inProgress.help" = "請先完成或中止合併、重定基底、摘取或反轉。儲存庫沒有任何變更。";
+"undo.error.conflicts" = "儲存庫有未解決的衝突";
+"undo.error.conflicts.help" = "請先解決衝突。儲存庫沒有任何變更。";

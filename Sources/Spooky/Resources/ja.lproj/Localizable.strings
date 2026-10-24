@@ -1321,3 +1321,23 @@
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "リモート設定（%@）";
+
+/* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
+"menu.undo" = "取り消す";
+"menu.redo" = "やり直す";
+"undo.cannotUndo" = "%@を取り消せません";
+"undo.cannotRedo" = "%@をやり直せません";
+"undo.unavailable" = "%1$@（%2$@）";
+"undo.reason.busy" = "操作の実行中";
+"undo.reason.disconnected" = "未接続";
+"undo.reason.changed" = "リポジトリが変更済み";
+"undo.error.changed" = "リポジトリが変更されています";
+"undo.error.changed.help" = "リポジトリが記録した状態と一致しないため、安全に戻せません。リポジトリは変更されていません。";
+"undo.error.untracked" = "未追跡ファイルが妨げになっています";
+"undo.error.untracked.help" = "戻すと、内容を復元できない未追跡ファイルを上書きまたは削除することになります。リポジトリは変更されていません。";
+"undo.error.hidden" = "見えない変更があるファイルがあります";
+"undo.error.hidden.help" = "assume-unchanged に設定したファイルにローカルの変更があるか、リポジトリで skip-worktree が使われています。リポジトリは変更されていません。";
+"undo.error.inProgress" = "実行中の操作があります";
+"undo.error.inProgress.help" = "先にマージ、リベース、チェリーピック、リバートを完了するか中止してください。リポジトリは変更されていません。";
+"undo.error.conflicts" = "未解決の競合があります";
+"undo.error.conflicts.help" = "先に競合を解決してください。リポジトリは変更されていません。";

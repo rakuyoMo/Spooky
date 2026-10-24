@@ -96,7 +96,8 @@ extension RepositorySession {
             { runner, output in
                 try await RepositoryReferences(runner: runner).fastForward(reference.id, onOutput: output)
             },
-            title: AppLocalization.text("branch.fastForward", reference.name)
+            title: AppLocalization.text("branch.fastForward", reference.name),
+            undo: .reversible
         )
     }
 
@@ -110,7 +111,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositoryReferences(runner: runner).setUpstream(upstream.id, for: branch.id)
             },
-            title: AppLocalization.text("branch.tracking.set")
+            title: AppLocalization.text("branch.tracking.set"),
+            undo: .reversible
         )
     }
 
@@ -124,7 +126,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositoryReferences(runner: runner).unsetUpstream(of: branch.id)
             },
-            title: AppLocalization.text("branch.tracking.remove")
+            title: AppLocalization.text("branch.tracking.remove"),
+            undo: .reversible
         )
     }
 
@@ -138,7 +141,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositoryReferences(runner: runner).setParent(nil, of: branch.id)
             },
-            title: AppLocalization.text("branch.parent.remove")
+            title: AppLocalization.text("branch.parent.remove"),
+            undo: .reversible
         )
     }
 
@@ -168,7 +172,8 @@ extension RepositorySession {
                     throw ForceDeletionOffer(branches: names, deletingUpstream: tracked, failure: error)
                 }
             },
-            title: AppLocalization.text(branches.count == 1 ? "branch.delete" : "branch.deleteMultiple")
+            title: AppLocalization.text(branches.count == 1 ? "branch.delete" : "branch.deleteMultiple"),
+            undo: tracked ? .irreversible : .reversible
         )
     }
 

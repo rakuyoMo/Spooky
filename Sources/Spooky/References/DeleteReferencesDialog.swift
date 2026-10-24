@@ -228,7 +228,8 @@ extension DeleteReferencesDialog {
                         try await tags.deleteRemote(names, on: remote, onOutput: output)
                     }
                 },
-                title: title
+                title: title,
+                undo: remote == nil ? .reversible : .irreversible
             )
 
         case .remotes(let names):

@@ -16,16 +16,23 @@ public struct RepositoryUndo: Sendable {
 
     /// 记下当前状态；有进行中的操作或未解决的冲突时拒绝，这时的状态不能安全恢复。
     public func capture() async throws -> RepositoryState {
-        // 三项读取互不依赖，并发执行
+        // 四项读取互不依赖，并发执行
         async let loadedStatus = runner.status()
         async let loadedReferences = runner.run([
             "for-each-ref", RepositoryState.referenceFormat, "refs/heads", "refs/tags", "refs/stash",
         ])
         async let loadedFiles = WorkingCopyOperations(runner: runner).stateFiles(OperationProgress.stateFiles)
 
+        // 只读仓库自己的配置文件；没有分支段时 config 以 1 退出
+        async let loadedSettings = runner.execute(
+            ["config", "--local", "-z", "--get-regexp", "^branch\\..+\\."],
+            acceptedExitCodes: [0, 1]
+        )
+
         let status = try await loadedStatus
         let parsed = try RepositoryState.parseReferences(await loadedReferences)
         let files = try await loadedFiles
+        let settings = try RepositoryState.parseBranchSettings(await loadedSettings.standardOutput)
 
         guard OperationProgress(files: files, head: status.branch.oid) == nil else {
             throw RepositoryUndoError.operationInProgress
@@ -46,6 +53,7 @@ public struct RepositoryUndo: Sendable {
             head: status.branch.oid,
             references: parsed.references,
             peeledReferences: parsed.peeled,
+            branchSettings: settings,
             stashes: stashes,
             index: index,
             worktree: dirty ? try await worktreeTree(index: index) : index,
@@ -70,9 +78,10 @@ public struct RepositoryUndo: Sendable {
             let plan = try await plan(from: current, to: target)
             try await checkHiddenChanges()
 
-            // 文件最容易失败，先恢复；引用与储藏随后一次更新
+            // 文件最容易失败，先恢复；引用、分支配置与储藏随后更新
             try await restoreFiles(target, plan: plan)
             try await restoreReferences(from: current, to: target, message: message)
+            try await restoreBranchSettings(from: current, to: target)
             try await restoreStashes(from: current, to: target)
         }
     }
@@ -164,6 +173,24 @@ extension RepositoryUndo {
             _ = try await runner.run(["symbolic-ref", "-m", message, "HEAD", branch])
         } else if target.headBranch == nil, let head = target.head, current.headBranch != nil || current.head != head {
             _ = try await runner.run(["update-ref", "--no-deref", "-m", message, "HEAD", head])
+        }
+    }
+
+    /// 内容有变化的分支段整段换掉：先删掉现有的段，再按目标的顺序逐项写回；只改仓库自己的配置文件。
+    ///
+    /// 只写键不写值的项写回为 `true`，Git 对布尔项按同样的意思读取。
+    private func restoreBranchSettings(from current: RepositoryState, to target: RepositoryState) async throws {
+        let now = Dictionary(grouping: current.branchSettings, by: \.branch)
+        let wanted = Dictionary(grouping: target.branchSettings, by: \.branch)
+
+        for branch in Set(now.keys).union(wanted.keys).sorted() where now[branch] != wanted[branch] {
+            if now[branch] != nil {
+                _ = try await runner.run(["config", "--local", "--remove-section", "branch." + branch])
+            }
+
+            for setting in wanted[branch] ?? [] {
+                _ = try await runner.run(["config", "--local", "--add", setting.key, setting.value ?? "true"])
+            }
         }
     }
 

@@ -1321,3 +1321,23 @@
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Ajustes del remoto (%@)";
+
+/* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
+"menu.undo" = "Deshacer";
+"menu.redo" = "Rehacer";
+"undo.cannotUndo" = "No se puede deshacer «%@»";
+"undo.cannotRedo" = "No se puede rehacer «%@»";
+"undo.unavailable" = "%1$@ (%2$@)";
+"undo.reason.busy" = "Operación en curso";
+"undo.reason.disconnected" = "Sin conexión";
+"undo.reason.changed" = "Repositorio modificado";
+"undo.error.changed" = "El repositorio ha cambiado";
+"undo.error.changed.help" = "El repositorio ya no coincide con el estado registrado y no se puede restaurar de forma segura. No se ha cambiado nada.";
+"undo.error.untracked" = "Hay archivos sin seguimiento en medio";
+"undo.error.untracked.help" = "La restauración sobrescribiría o eliminaría archivos sin seguimiento cuyo contenido no se puede recuperar. No se ha cambiado nada.";
+"undo.error.hidden" = "Algunos archivos tienen cambios ocultos";
+"undo.error.hidden.help" = "Hay archivos marcados como assume-unchanged con cambios locales, o el repositorio usa skip-worktree. No se ha cambiado nada.";
+"undo.error.inProgress" = "Hay una operación en curso";
+"undo.error.inProgress.help" = "Terminar o cancelar primero la fusión, el rebase, el cherry-pick o el revert. No se ha cambiado nada.";
+"undo.error.conflicts" = "El repositorio tiene conflictos sin resolver";
+"undo.error.conflicts.help" = "Resolver primero los conflictos. No se ha cambiado nada.";

@@ -1321,3 +1321,23 @@
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Remote-Einstellungen (%@)";
+
+/* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
+"menu.undo" = "Widerrufen";
+"menu.redo" = "Wiederholen";
+"undo.cannotUndo" = "„%@“ kann nicht widerrufen werden";
+"undo.cannotRedo" = "„%@“ kann nicht wiederholt werden";
+"undo.unavailable" = "%1$@ (%2$@)";
+"undo.reason.busy" = "Vorgang läuft";
+"undo.reason.disconnected" = "Nicht verbunden";
+"undo.reason.changed" = "Repository geändert";
+"undo.error.changed" = "Das Repository hat sich geändert";
+"undo.error.changed.help" = "Das Repository entspricht nicht mehr dem aufgezeichneten Zustand und kann nicht sicher wiederhergestellt werden. Es wurde nichts geändert.";
+"undo.error.untracked" = "Nicht verfolgte Dateien sind im Weg";
+"undo.error.untracked.help" = "Das Wiederherstellen würde nicht verfolgte Dateien überschreiben oder löschen, deren Inhalt sich nicht wiederherstellen lässt. Es wurde nichts geändert.";
+"undo.error.hidden" = "Einige Dateien haben verborgene Änderungen";
+"undo.error.hidden.help" = "Als assume-unchanged markierte Dateien haben lokale Änderungen, oder das Repository verwendet skip-worktree. Es wurde nichts geändert.";
+"undo.error.inProgress" = "Ein Vorgang ist im Gange";
+"undo.error.inProgress.help" = "Schließen Sie zuerst den Merge, Rebase, Cherry-Pick oder Revert ab oder brechen Sie ihn ab. Es wurde nichts geändert.";
+"undo.error.conflicts" = "Das Repository hat ungelöste Konflikte";
+"undo.error.conflicts.help" = "Lösen Sie zuerst die Konflikte. Es wurde nichts geändert.";

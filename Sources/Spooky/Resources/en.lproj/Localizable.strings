@@ -1321,3 +1321,23 @@
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Remote Settings (%@)";
+
+/* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
+"menu.undo" = "Undo";
+"menu.redo" = "Redo";
+"undo.cannotUndo" = "Can’t Undo %@";
+"undo.cannotRedo" = "Can’t Redo %@";
+"undo.unavailable" = "%1$@ (%2$@)";
+"undo.reason.busy" = "Operation in Progress";
+"undo.reason.disconnected" = "Not Connected";
+"undo.reason.changed" = "Repository Changed";
+"undo.error.changed" = "The repository has changed";
+"undo.error.changed.help" = "The repository no longer matches the recorded state, so it can’t be restored safely. Nothing was changed.";
+"undo.error.untracked" = "Untracked files are in the way";
+"undo.error.untracked.help" = "Restoring would overwrite or delete untracked files whose content can’t be recovered. Nothing was changed.";
+"undo.error.hidden" = "Some files have hidden changes";
+"undo.error.hidden.help" = "Files marked as assume-unchanged have local changes, or the repository uses skip-worktree. Nothing was changed.";
+"undo.error.inProgress" = "An operation is in progress";
+"undo.error.inProgress.help" = "Finish or abort the merge, rebase, cherry-pick or revert first. Nothing was changed.";
+"undo.error.conflicts" = "The repository has unresolved conflicts";
+"undo.error.conflicts.help" = "Resolve the conflicts first. Nothing was changed.";

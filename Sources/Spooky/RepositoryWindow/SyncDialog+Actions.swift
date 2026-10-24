@@ -153,7 +153,8 @@ extension SyncDialog {
                     .rebase(onto: target, skipHooks: skipHooks, onOutput: output)
             },
             title: AppLocalization.text("sync.rebaseHead"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 

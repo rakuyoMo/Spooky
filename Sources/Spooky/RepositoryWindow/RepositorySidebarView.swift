@@ -493,7 +493,8 @@ extension RepositorySidebarView {
                 try await RepositoryReferences(runner: runner).checkout(ref.id)
             },
             title: AppLocalization.text("branch.checkout"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 
@@ -525,7 +526,8 @@ extension RepositorySidebarView {
                     )
             },
             title: AppLocalization.text("branch.checkout"),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .reversible
         )
     }
 

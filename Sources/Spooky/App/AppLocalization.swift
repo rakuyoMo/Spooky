@@ -136,6 +136,10 @@ struct AppFailure: Identifiable {
         case let offer as ForceDeletionOffer:
             (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: offer.failure)
 
+        case let undo as RepositoryUndoError:
+            kind = .repository
+            (key, recoveryKey) = Self.classification(of: undo)
+
         case let file as RepositoryFileError:
             (key, kind) = Self.classification(of: file)
             exceededOutputLimit = file == .tooLarge

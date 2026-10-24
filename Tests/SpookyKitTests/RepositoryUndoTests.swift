@@ -12,6 +12,7 @@ struct RepositoryUndoTests {
         case commit, createBranch, deleteBranch, checkout, merge, rebase, reset
         case stashSave, stashSaveUntracked, stashApply, stashPop
         case createTag, deleteTag, cherryPick, revert, stage, stageUntracked, unstage, discard
+        case createTrackingBranch, renameBranch, setUpstream, pinBranch
 
         /// Git 要求干净工作区的操作。
         var clean: Bool {
@@ -242,6 +243,9 @@ extension RepositoryUndoTests {
         _ = try await runner.run(["commit", "-q", "-a", "-m", "feature"])
         _ = try await runner.run(["checkout", "-q", "main"])
 
+        // 分支段里的附加信息随删除、改名一起变化，撤销时同样恢复
+        _ = try await runner.run(["config", "--local", "branch.feature.spooky-parent", "refs/heads/main"])
+
         if dirty {
             try write("staged\n", to: "tracked *.txt", in: repository)
             _ = try await runner.run(["--literal-pathspecs", "add", "--", "tracked *.txt"])
@@ -255,29 +259,33 @@ extension RepositoryUndoTests {
     /// 用 Git 命令完成一种写操作。
     func perform(_ operation: Operation, in repository: TemporaryRepository) async throws {
         let literal = ["--literal-pathspecs"]
-        let arguments: [String] =
-            switch operation {
-            case .commit: ["commit", "-q", "-m", "提交 \"quoted\""]
-            case .createBranch: ["branch", "功能/新分支"]
-            case .deleteBranch: ["branch", "-q", "-D", "feature"]
-            case .checkout: ["checkout", "-q", "feature"]
-            case .merge: ["merge", "-q", "--no-ff", "-m", "merge", "feature"]
-            case .rebase: ["rebase", "-q", "feature"]
-            case .reset: ["reset", "-q", "--hard", "HEAD~1"]
-            case .stashSave: ["stash", "push", "-q", "-m", "说明 [x]"]
-            case .stashSaveUntracked: ["stash", "push", "-q", "-u"]
-            case .stashApply: ["stash", "apply", "-q", "--index"]
-            case .stashPop: ["stash", "pop", "-q", "--index"]
-            case .createTag: ["tag", "-a", "v1", "-m", "标签 *"]
-            case .deleteTag: ["tag", "-d", "v0"]
-            case .cherryPick: ["cherry-pick", "feature"]
-            case .revert: ["revert", "--no-edit", "HEAD"]
-            case .stage: literal + ["add", "--", "dir/文件.txt"]
-            case .stageUntracked: literal + ["add", "--", "new [1].txt"]
-            case .unstage: literal + ["reset", "-q", "--", "tracked *.txt"]
-            case .discard: literal + ["checkout", "-q", "--", "dir/文件.txt"]
-            }
+        let commands: [Operation: [String]] = [
+            .commit: ["commit", "-q", "-m", "提交 \"quoted\""],
+            .createBranch: ["branch", "功能/新分支"],
+            .deleteBranch: ["branch", "-q", "-D", "feature"],
+            .checkout: ["checkout", "-q", "feature"],
+            .merge: ["merge", "-q", "--no-ff", "-m", "merge", "feature"],
+            .rebase: ["rebase", "-q", "feature"],
+            .reset: ["reset", "-q", "--hard", "HEAD~1"],
+            .stashSave: ["stash", "push", "-q", "-m", "说明 [x]"],
+            .stashSaveUntracked: ["stash", "push", "-q", "-u"],
+            .stashApply: ["stash", "apply", "-q", "--index"],
+            .stashPop: ["stash", "pop", "-q", "--index"],
+            .createTag: ["tag", "-a", "v1", "-m", "标签 *"],
+            .deleteTag: ["tag", "-d", "v0"],
+            .cherryPick: ["cherry-pick", "feature"],
+            .revert: ["revert", "--no-edit", "HEAD"],
+            .stage: literal + ["add", "--", "dir/文件.txt"],
+            .stageUntracked: literal + ["add", "--", "new [1].txt"],
+            .unstage: literal + ["reset", "-q", "--", "tracked *.txt"],
+            .discard: literal + ["checkout", "-q", "--", "dir/文件.txt"],
+            .createTrackingBranch: ["branch", "-q", "--track", "功能/跟踪", "feature"],
+            .renameBranch: ["branch", "-m", "feature", "功能/改名"],
+            .setUpstream: ["branch", "-q", "--set-upstream-to=feature", "main"],
+            .pinBranch: ["config", "--local", "branch.feature.spooky-pinned", "true"],
+        ]
 
+        let arguments = try #require(commands[operation])
         _ = try await repository.runner.run(arguments)
     }
 
