@@ -1,6 +1,55 @@
 import SpookyKit
 import SwiftUI
 
+// MARK: - Preselection
+
+extension SyncDialog {
+    /// 变基的目标分支：入口预选的分支在候选里时用它，否则取 HEAD 的跟踪分支，再否则取第一个候选。
+    ///
+    /// - Returns: 分支的完整引用名；没有候选时为空字符串。
+    static func rebaseTarget(preselection: String?, in session: RepositorySession) -> String {
+        let head = session.headBranch
+        let candidates = session.history.branches.filter { $0.id != head?.id }
+
+        return candidates.first { $0.id == preselection }?.id
+            ?? candidates.first { $0.id == head?.upstream }?.id
+            ?? candidates.first?.id
+            ?? ""
+    }
+
+    /// 推送任意版本的默认值：来源是预选的分支名或标签名，没有预选时是 HEAD。
+    ///
+    /// 分支推到它跟踪的远端与分支；标签推到同名标签。
+    static func pushRevisionDefaults(
+        preselection: String?,
+        in session: RepositorySession
+    ) -> (source: String, remote: String, destination: String) {
+        let head = session.headBranch
+        let tag = session.tags.first { $0.name == preselection }
+
+        let branch: RepositoryReference? =
+            if let preselection {
+                session.history.branches.first { $0.isLocal && $0.name == preselection }
+            } else {
+                head
+            }
+
+        let source = preselection ?? session.status?.branch.head ?? session.status?.branch.oid ?? ""
+
+        // 标签与没有跟踪关系的分支推到 HEAD 跟踪的远端，再否则推到第一个远端
+        let remote = (branch ?? head)?.upstreamRemote.flatMap { $0 == "." ? nil : $0 }
+            ?? session.history.snapshot?.remotes.first?.name
+            ?? ""
+
+        guard tag == nil else {
+            return (source, remote, "refs/tags/" + source)
+        }
+
+        let destination = branch?.upstreamBranch.map { String($0.dropFirst("refs/heads/".count)) } ?? source
+        return (source, remote, destination)
+    }
+}
+
 // MARK: - Actions
 
 extension SyncDialog {
@@ -23,7 +72,7 @@ extension SyncDialog {
         return options
     }
 
-    /// 默认值取自 HEAD 的跟踪关系；没有远端或远端分支时在表单里说明。
+    /// 默认值取自入口的预选与 HEAD 的跟踪关系；没有远端或远端分支时在表单里说明。
     func prepare() {
         repository = session.repository
         let head = session.headBranch
@@ -34,20 +83,14 @@ extension SyncDialog {
             source = tracked?.id ?? remoteBranches.first?.id ?? ""
 
         case .rebase:
-            source = branches.first { $0.id == head?.upstream }?.id
-                ?? branches.first { $0.id != head?.id }?.id
-                ?? ""
+            source = Self.rebaseTarget(preselection: preselection, in: session)
 
         case .forcePush:
             source = head?.id ?? branches.first(where: \.isLocal)?.id ?? ""
             selectDestination()
 
         case .pushRevision:
-            source = session.status?.branch.head ?? session.status?.branch.oid ?? ""
-            remote = head?.upstreamRemote.flatMap { $0 == "." ? nil : $0 }
-                ?? session.history.snapshot?.remotes.first?.name
-                ?? ""
-            destination = head?.upstreamBranch.map { String($0.dropFirst("refs/heads/".count)) } ?? source
+            (source, remote, destination) = Self.pushRevisionDefaults(preselection: preselection, in: session)
         }
 
         if kind != .rebase, session.history.snapshot?.remotes.isEmpty != false {

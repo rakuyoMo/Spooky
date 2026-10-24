@@ -1343,3 +1343,15 @@
 "history.createBranch" = "「%@」から新しいブランチを作成…";
 "history.createBranchGeneric" = "新しいブランチを作成…";
 "history.rollback" = "ロールバック";
+
+/* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
+"sync.quickFetchNamed" = "「%@」をクイックフェッチ";
+"sync.quickPullNamed" = "「%@」をクイックプル";
+"sync.quickPushNamed" = "「%1$@」を「%2$@」へクイックプッシュ";
+"sync.quickPullInto" = "「%1$@」を「%2$@」へクイックプル";
+"sync.quickSyncNamed" = "「%1$@」を「%2$@」とクイック同期";
+"sync.quickMergeInto" = "「%1$@」を「%2$@」へクイックマージ";
+"sync.quickRebaseOn" = "「%1$@」を「%2$@」の上へクイックリベース";
+"sync.rebaseOnNamed" = "「%@」の上へリベース…";
+"branch.pushToMenu" = "「%@」を指定先にプッシュ…";
+"tag.compareMenu" = "「%@」を別のリビジョンと比較…";

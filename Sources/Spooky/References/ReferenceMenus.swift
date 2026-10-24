@@ -216,7 +216,10 @@ struct TagManagementMenu: View {
     /// 推送到指定位置的入口；由推送对话框提供。
     let pushTo: (RepositoryReference) -> Void
 
-    /// 发布与推送一组，删除单独一组。
+    /// 从标签新建分支的入口；由新建分支对话框提供。
+    let createBranch: (RepositoryReference) -> Void
+
+    /// 发布与推送一组，新建分支与删除一组。
     var body: some View {
         let selected = session.tags.filter { session.history.selectedReferences.contains($0.id) }
         let targets = selected.count > 1 && selected.contains(reference) ? selected : [reference]
@@ -229,9 +232,14 @@ struct TagManagementMenu: View {
         Button(AppLocalization.text("tag.pushToMenu", reference.name)) {
             pushTo(reference)
         }
-        .disabled(!session.canWrite || session.history.snapshot?.remotes.isEmpty != false)
+        .disabled(!session.canPushRevision)
 
         Divider()
+
+        Button(AppLocalization.text("tag.createBranch", reference.name)) {
+            createBranch(reference)
+        }
+        .disabled(!session.canCreateBranchFromReference)
 
         Button(
             targets.count > 1

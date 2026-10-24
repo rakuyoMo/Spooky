@@ -110,6 +110,10 @@ struct RepositorySidebarView: View {
     @State
     var rowSelection: Set<String> = []
 
+    /// 正在显示签名弹窗的标签的完整引用名。
+    @State
+    var signatureTag: String?
+
     /// 系统列表和菜单导航使用同一组选择身份。
     private var selectedItems: Set<String> {
         if session.activeView == .workingCopy { return ["workingCopy"] }
@@ -363,6 +367,9 @@ extension RepositorySidebarView {
                     request(RepositoryActionRequest(kind: .fetch, remote: remote.name))
                 }
                 .disabled(!session.canFetch)
+                .quickAlternate(AppLocalization.text("sync.quickFetchNamed", remote.name), enabled: session.canFetch) {
+                    session.quickFetch(remote: remote.name)
+                }
 
                 Button(AppLocalization.text("sync.prune")) {
                     request(
@@ -434,28 +441,24 @@ extension RepositorySidebarView {
                     request(RepositoryActionRequest(kind: .publish, localBranch: ref.name))
                 }
                 .disabled(!session.canPush(ref))
-                Button(AppLocalization.text("sync.push")) {
-                    request(RepositoryActionRequest(kind: .push, localBranch: ref.name))
-                }
-                .disabled(!session.canPush(ref))
+
+                // 推送、拉取与同步，按住 ⌥ 换成快速操作
+                BranchSyncMenu(session: session, reference: ref, request: request)
             } else {
                 Button(AppLocalization.text("branch.track")) {
                     request(RepositoryActionRequest(kind: .track, reference: ref.id))
                 }
                 .disabled(!session.canTrack(ref))
-                Button(AppLocalization.text("sync.pull")) {
-                    request(RepositoryActionRequest(kind: .pull, reference: ref.id))
-                }
-                .disabled(!session.canPull(from: ref))
+
+                BranchSyncMenu(session: session, reference: ref, request: request)
             }
             Button(AppLocalization.text("branch.create")) {
                 request(RepositoryActionRequest(kind: .create, reference: ref.id))
             }
             .disabled(!session.canCreateBranchFromReference)
-            Button(AppLocalization.text("sync.merge")) {
-                request(RepositoryActionRequest(kind: .merge, reference: ref.id))
-            }
-            .disabled(!session.canMerge(ref))
+
+            // 合并与变基，按住 ⌥ 换成快速操作
+            BranchIntegrationMenu(session: session, reference: ref, request: request)
             if ref.isLocal {
                 Divider()
                 archiveMenuItems([ref])

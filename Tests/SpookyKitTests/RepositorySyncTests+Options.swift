@@ -347,6 +347,15 @@ extension RepositorySyncTests {
         _ = try await sync.push(revision: "HEAD~1", remote: "origin", to: "功能/新分支", skipHooks: true)
         #expect(try await fixture.remoteObject("refs/heads/功能/新分支") == fixture.localObject("HEAD~1"))
 
+        // 附注标签推到标签引用时推的是标签对象，远端得到的仍是附注标签
+        _ = try await fixture.runner.run(["tag", "-a", "-m", "发布", "v1"])
+        _ = try await sync.push(revision: "v1", remote: "origin", to: "refs/tags/v1")
+        let tagObject = String(decoding: try await fixture.runner.run(["rev-parse", "--verify", "refs/tags/v1"]), as: UTF8.self)
+            .trimmingCharacters(in: .newlines)
+
+        #expect(try await fixture.remoteObject("refs/tags/v1") == tagObject)
+        #expect(try await fixture.remoteObject("refs/tags/v1^{commit}") == fixture.localObject("HEAD"))
+
         await #expect(throws: RepositoryReadError.invalidQuery) {
             _ = try await sync.push(revision: "main", remote: "origin", to: "--force")
         }

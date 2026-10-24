@@ -1343,3 +1343,15 @@
 "history.createBranch" = "从 “%@” 新建分支…";
 "history.createBranchGeneric" = "新建分支…";
 "history.rollback" = "回滚";
+
+/* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
+"sync.quickFetchNamed" = "快速获取 “%@”";
+"sync.quickPullNamed" = "快速拉取 “%@”";
+"sync.quickPushNamed" = "快速把 “%1$@” 推送到 “%2$@”";
+"sync.quickPullInto" = "快速把 “%1$@” 拉取到 “%2$@”";
+"sync.quickSyncNamed" = "快速同步 “%1$@” 与 “%2$@”";
+"sync.quickMergeInto" = "快速把 “%1$@” 合并到 “%2$@”";
+"sync.quickRebaseOn" = "快速把 “%1$@” 变基到 “%2$@”";
+"sync.rebaseOnNamed" = "变基到 “%@”…";
+"branch.pushToMenu" = "把 “%@” 推送到…";
+"tag.compareMenu" = "将 “%@” 与其他版本比较…";

@@ -167,7 +167,8 @@ struct OperationWiringTests {
 // MARK: - Fixture
 
 extension OperationWiringTests {
-    /// 一个仓库与显示它的会话：main 上依次是 A、把 side（S）并进来的合并提交 M、B 与 D，上游比本地多一个提交 C。
+    /// 一个仓库与显示它的会话：main 上依次是 A（附注标签 v1）、把 side（S）并进来的合并提交 M、B 与 D，
+    /// 上游 origin/main 比本地多一个提交 C。
     struct Fixture {
         /// 仓库目录。
         let directory: URL
@@ -267,6 +268,7 @@ extension OperationWiringTests {
         }
 
         try await commit("A")
+        _ = try await runner.run(["tag", "-a", "-m", "v1", "v1"])
         _ = try await runner.run(["checkout", "-q", "-b", "side"])
         try await commit("S")
         _ = try await runner.run(["checkout", "-q", "main"])

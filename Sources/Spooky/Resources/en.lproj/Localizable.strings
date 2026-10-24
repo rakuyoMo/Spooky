@@ -1343,3 +1343,15 @@
 "history.createBranch" = "Create New Branch from “%@”…";
 "history.createBranchGeneric" = "Create New Branch…";
 "history.rollback" = "Rollback";
+
+/* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
+"sync.quickFetchNamed" = "Quick Fetch “%@”";
+"sync.quickPullNamed" = "Quick Pull “%@”";
+"sync.quickPushNamed" = "Quick Push “%1$@” to “%2$@”";
+"sync.quickPullInto" = "Quick Pull “%1$@” Into “%2$@”";
+"sync.quickSyncNamed" = "Quick Sync “%1$@” with “%2$@”";
+"sync.quickMergeInto" = "Quick Merge “%1$@” Into “%2$@”";
+"sync.quickRebaseOn" = "Quick Rebase “%1$@” on “%2$@”";
+"sync.rebaseOnNamed" = "Rebase On “%@”…";
+"branch.pushToMenu" = "Push “%@” To…";
+"tag.compareMenu" = "Compare “%@” With Revision…";
