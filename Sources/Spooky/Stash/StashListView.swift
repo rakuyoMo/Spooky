@@ -135,6 +135,10 @@ private struct StashRow: View {
     /// 选中行的标记换用选中配色。
     let selected: Bool
 
+    /// 储藏日期按提交日期的显示格式。
+    @AppStorage(CommitDateFormat.key)
+    private var dateFormat = CommitDateFormat.absolute
+
     /// 两行文字，标记只排一行。
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -152,7 +156,7 @@ private struct StashRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 // 日期贴着行的右缘，始终完整显示
-                Text(stash.date.formatted(date: .abbreviated, time: .shortened))
+                Text(dateFormat.string(from: stash.date))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .fixedSize()

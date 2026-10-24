@@ -28,6 +28,10 @@ struct FileHistoryTimelineView: View {
     @State
     private var choosingFile = false
 
+    /// 分组标题按提交日期的显示格式。
+    @AppStorage(CommitDateFormat.key)
+    private var dateFormat = CommitDateFormat.absolute
+
     /// 按提交人日期把相邻的提交分到同一天。
     private var sections: [DaySection] {
         let calendar = Calendar.current
@@ -133,7 +137,7 @@ struct FileHistoryTimelineView: View {
                                 .onAppear { loadMoreIfLast(commit) }
                         }
                     } header: {
-                        Text(section.day.formatted(date: .long, time: .omitted).uppercased())
+                        Text(dateFormat.dayTitle(section.day).uppercased())
                             .font(.system(size: 11))
                     }
                 }
@@ -197,6 +201,10 @@ private struct FileHistoryCommitRow: View {
     /// 这一行的提交。
     let commit: HistoryCommit
 
+    /// 提交日期的显示格式。
+    @AppStorage(CommitDateFormat.key)
+    private var dateFormat = CommitDateFormat.absolute
+
     /// 39 pt 高的两行布局。
     var body: some View {
         HStack(spacing: 8) {
@@ -219,7 +227,8 @@ private struct FileHistoryCommitRow: View {
 
                     Spacer(minLength: 4)
 
-                    Text(commit.commitDate, format: .dateTime.hour().minute())
+                    Text(dateFormat.string(from: commit.commitDate))
+                        .lineLimit(1)
                         .font(.system(size: 11))
                 }
                 .foregroundStyle(.secondary)

@@ -137,7 +137,8 @@ extension RepositorySession {
         performGit(
             { runner, _ in try await WorkingCopyOperations(runner: runner).untrack(paths) },
             title: AppLocalization.text("files.untrack"),
-            recordsActivity: false
+            recordsActivity: false,
+            undo: .reversible
         )
     }
 
@@ -154,7 +155,8 @@ extension RepositorySession {
             _ = self?.performGit(
                 { runner, _ in try await WorkingCopyOperations(runner: runner).delete(paths) },
                 title: title,
-                recordsActivity: false
+                recordsActivity: false,
+                undo: .reversible
             )
         }
 
@@ -189,7 +191,8 @@ extension RepositorySession {
                 try await WorkingCopyOperations(runner: runner).move(entry.path, to: destination, tracked: tracked)
             },
             title: AppLocalization.text("files.move"),
-            recordsActivity: false
+            recordsActivity: false,
+            undo: .reversible
         )
     }
 
@@ -201,7 +204,8 @@ extension RepositorySession {
         return performGit(
             { runner, _ in try await WorkingCopyOperations(runner: runner).restore(paths, to: revision) },
             title: AppLocalization.text("files.revert"),
-            recordsActivity: false
+            recordsActivity: false,
+            undo: .reversible
         )
     }
 
@@ -239,7 +243,8 @@ extension RepositorySession {
                 try await service.untrack(paths)
             },
             title: AppLocalization.text(file == .gitignore ? "files.ignore" : "files.exclude"),
-            recordsActivity: false
+            recordsActivity: false,
+            undo: file == .gitignore ? .reversible : .irreversible
         )
     }
 
@@ -261,7 +266,8 @@ extension RepositorySession {
         performGit(
             { runner, _ in try await WorkingCopyOperations(runner: runner).applyPatch(patch) },
             title: AppLocalization.text("files.applyPatch"),
-            recordsActivity: false
+            recordsActivity: false,
+            undo: .reversible
         )
     }
 

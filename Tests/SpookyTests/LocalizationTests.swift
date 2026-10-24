@@ -34,6 +34,15 @@ struct LocalizationTests {
                 .map { "files." + file + $0 }
         }
 
+        // 重置的三档，与交互式变基各动作确认 sheet 的问题与按钮
+        keys += ResetMode.allCases.map { "rewrite.reset." + $0.rawValue }
+
+        for action in ["squash", "fixup", "edit", "drop", "move", "amend", "autosquash", "rebaseOnto"] {
+            keys += [".confirm", ".button"].map { "rewrite." + action + $0 }
+        }
+
+        keys += ["squash", "fixup", "drop", "move", "rebaseOnto"].map { "rewrite." + $0 + ".confirm.one" }
+
         return keys
     }
 
@@ -99,7 +108,7 @@ struct LocalizationTests {
 
         let pattern = try NSRegularExpression(
             pattern:
-            #""((?:app|action|menu|repositories|workspace|history|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog|failure|recovery|files|fileHistory|blame|showFile|diff|text|themes|stash|conflict|commit|profiles|editor|signing)\.[A-Za-z.]+)""#
+            #""((?:app|action|menu|repositories|workspace|history|review|loading|branch|status|detail|error|remote|settings|callback|terminal|working|sync|merge|activity|dialog|failure|recovery|files|fileHistory|blame|showFile|diff|text|themes|stash|conflict|commit|profiles|editor|signing|signature|tree|export|patch|compare|revision|sidebar|tag|rewrite|reference|undo|reflog)\.[A-Za-z.]+)""#
         )
         let english = try strings("en")
 

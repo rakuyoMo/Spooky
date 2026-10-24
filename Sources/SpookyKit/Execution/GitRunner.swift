@@ -226,10 +226,10 @@ public struct GitRunner: Sendable {
         acceptedExitCodes: Set<Int32>,
         onOutput: @escaping @Sendable (GitOutputEvent) -> Void
     ) async throws -> GitCommandResult {
-        // 网络命令需要 askpass，本机 SSH 解锁后由系统 agent 保留密钥；会生成提交的命令可能经 ssh-keygen 签名，私钥口令同样经中继询问。
+        // 网络命令需要 askpass，本机 SSH 解锁后由系统 agent 保留密钥；会生成提交与标签的命令可能经 ssh-keygen 签名，私钥口令同样经中继询问。
         if
             let credentialHandler,
-            ["fetch", "push", "ls-remote", "commit", "merge", "rebase", "cherry-pick", "revert"]
+            ["fetch", "push", "ls-remote", "commit", "merge", "rebase", "cherry-pick", "revert", "tag"]
                 .contains(RepositoryOperationQueue.command(in: arguments) ?? "")
         {
             return try await LocalGitAuthentication.execute(
@@ -274,7 +274,9 @@ extension GitRunner {
             return .noUpstream
         }
         if stderr.contains("is not fully merged") { return .branchNotMerged }
-        if stderr.contains("would be overwritten by") { return .localChanges }
+
+        // 变基开始前检查已跟踪的文件，有改动时以 “cannot rebase: You have …” 或 “… Your index …” 拒绝
+        if stderr.contains("would be overwritten by") || stderr.contains("cannot rebase: you") { return .localChanges }
         if
             command == "push",
             stderr.contains("[rejected]") || stderr.contains("[remote rejected]")
@@ -314,9 +316,10 @@ extension GitRunner {
             return .indexLocked
         }
 
-        // OpenPGP 签名失败有固定文案；SSH 签名只转述 ssh-keygen 的输出，随后以无法写入提交对象结束。
+        // OpenPGP 签名失败有固定文案；SSH 签名只转述 ssh-keygen 的输出，随后以无法写入提交对象结束，标签则报无法签名。
         if
             stderr.contains("gpg failed to sign the data")
+            || stderr.contains("unable to sign the tag")
             || stderr.contains("failed to write commit object")
             && [
                 "ssh-keygen", "load key", "public key", "private key", "signingkey", "signing key",

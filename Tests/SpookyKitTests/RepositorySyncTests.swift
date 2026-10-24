@@ -107,7 +107,8 @@ struct RepositorySyncTests {
         do {
             try await refs.delete(["refs/heads/" + name])
             Issue.record("未合并分支不能删除")
-        } catch let error as GitError {
+        } catch ReferenceError.unmergedBranches(let names, let error) {
+            #expect(names == ["refs/heads/" + name])
             #expect(error.category == .branchNotMerged && error.exitCode == 1)
         }
         try Data("main\n".utf8).write(to: file)

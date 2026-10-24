@@ -120,6 +120,13 @@ struct GitOutputFixtureTests {
         #expect(tag.objectType == "commit")
         #expect(tag.objectID == byID["refs/remotes/origin/main"]?.objectID)
 
+        // 附注标签带回打标签的时间与完整说明，轻量标签和分支没有说明，分支的时间是顶端提交的提交时间
+        #expect(tag.date == Date(timeIntervalSince1970: 1_778_051_289))
+        #expect(tag.message == "Release “1.0”\n\n第一行说明\nsecond line")
+        #expect(byID["refs/tags/light"]?.message == nil)
+        #expect(main.message == nil)
+        #expect(main.date == Date(timeIntervalSince1970: 1_775_369_228))
+
         let snapshot = ReferenceSnapshot(references: references, remotes: [RepositoryRemote(name: "origin")])
         #expect(snapshot.defaultBranch(for: RepositoryRemote(name: "origin")) == "refs/remotes/origin/main")
         #expect(snapshot.remote(for: try #require(byID["refs/remotes/origin/side"]))?.name == "origin")

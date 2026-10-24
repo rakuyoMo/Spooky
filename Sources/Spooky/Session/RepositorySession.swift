@@ -3,34 +3,6 @@ import Observation
 import os
 import SpookyKit
 
-// MARK: - RepositoryView
-
-/// 当前窗口选中的主视图。
-enum RepositoryView: String, CaseIterable {
-    /// 工作区状态列表。
-    case workingCopy
-
-    /// 分页提交列表与只读提交详情。
-    case history
-
-    /// 储藏列表与只读储藏详情。
-    case stashes
-
-    /// 一个文件的提交时间线与所选版本的详情。
-    case fileHistory
-
-    /// 某个版本的文件原文与逐行追溯。
-    case fileContent
-
-    /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
-    var supportsSearch: Bool {
-        switch self {
-        case .history, .fileContent: false
-        case .workingCopy, .stashes, .fileHistory: true
-        }
-    }
-}
-
 // MARK: - StatusRowID
 
 /// 文件行的稳定标识，区分 `rm --cached` 后同路径的已跟踪与未跟踪记录。
@@ -54,6 +26,9 @@ struct InterruptedWrite {
 
     /// 中断发生的时间，只采用在此之后完成的核对结果。
     let time: Date
+
+    /// 写入前快照中的远端跟踪分支与提交，核对获取、推送是否已改动它们。
+    var remoteReferences: [String: String] = [:]
 }
 
 // MARK: - RepositorySession
@@ -71,11 +46,26 @@ final class RepositorySession {
     /// 储藏列表、选择与储藏详情。
     let stashes = RepositoryStashState()
 
+    /// Reflog 的记录、所看的引用、搜索与详情。
+    let reflog = RepositoryReflogState()
+
     /// 文件历史的时间线、筛选与详情。
     let fileHistory = FileHistoryState()
 
     /// 文件原文与逐行追溯。
     let fileContent = FileContentState()
+
+    /// 历史列表与提交详情里校验过的提交签名。
+    let signatures = CommitSignatureStore()
+
+    /// 历史详情里两个版本的比较。
+    let comparison = RevisionComparisonState()
+
+    /// 分支整理视图的基准、比较与筛选。
+    let branchesReview = BranchesReviewState()
+
+    /// 窗口负责呈现导出、保存补丁与比较版本的对话框。
+    var onRevisionRequest: ((RevisionRequest) -> Void)? = nil
 
     /// 当前工作区身份。
     private(set) var repository: RepositoryLocation? = nil
@@ -176,7 +166,10 @@ final class RepositorySession {
     /// 当前主视图；切换视图时清空搜索，过滤不会在看不到搜索框内容的视图里生效。
     var activeView = RepositoryView.workingCopy {
         didSet {
-            if activeView != oldValue { searchText = "" }
+            if activeView != oldValue {
+                searchText = ""
+                history.clearSearch()
+            }
         }
     }
 
@@ -200,6 +193,9 @@ final class RepositorySession {
 
     /// 窗口负责呈现储藏的对话框。
     var onStashRequest: ((StashRequest) -> Void)? = nil
+
+    /// 窗口负责呈现改写操作的对话框与确认。
+    var onRewriteRequest: ((RewriteRequest) -> Void)? = nil
 
     /// 当前刷新任务，关闭仓库时取消。
     private(set) var refreshTask: Task<Void, Never>? = nil
@@ -266,6 +262,15 @@ final class RepositorySession {
 
     /// 窗口负责呈现文件操作的参数表单与多按钮询问。
     var onFileRequest: ((WorkingCopyFileRequest) -> Void)? = nil
+
+    /// 窗口负责呈现分支、标签与远端管理的对话框和询问。
+    var onReferenceRequest: ((ReferenceRequest) -> Void)? = nil
+
+    /// 窗口负责呈现同步、变基、安全强推与推送任意版本的对话框。
+    var onSyncRequest: ((SyncDialogRequest) -> Void)? = nil
+
+    /// 远端视图显示的远端名。
+    var selectedRemote: String? = nil
 
     /// 快照读取边界，测试可控制响应顺序和失败。
     private let loadStatus: @Sendable (RepositoryLocation) async throws -> WorkingCopyStatus
@@ -444,8 +449,12 @@ extension RepositorySession {
         generation += 1
         history.close()
         stashes.close()
+        reflog.close()
         fileHistory.close()
         fileContent.close()
+        signatures.reset()
+        comparison.close()
+        branchesReview.close()
         fileMonitor?.stop()
         fileMonitor = nil
         fileCache?.removeAll()
@@ -627,6 +636,9 @@ extension RepositorySession {
     ///   - title: 已本地化的操作名称，用于 Activity 与断线后的核对报告。
     ///   - recordsActivity: 网络与引用操作记入 Activity；工作区的高频写入只用于核对报告。
     ///   - offersAutoStash: 被本地改动挡住时是否按设置询问先储藏，检出、拉取与合并使用。
+    ///   - reportsFailure: 失败时是否弹出错误 sheet；自动获取只把失败记进 Activity。
+    ///   - undo: 这次写操作能否撤销；没有声明的写操作按不能撤销处理。
+    ///   - failureNote: 失败时补在错误说明前面的一段话，如同步停在了哪一步。
     /// - Returns: 是否已开始执行；仓库不可写时不启动，调用方据此保留未发送的参数。
     @discardableResult
     func performGit(
@@ -635,7 +647,10 @@ extension RepositorySession {
         title: String,
         recordsActivity: Bool = true,
         offersAutoStash: Bool = false,
-        success: (() -> Void)? = nil
+        reportsFailure: Bool = true,
+        undo: UndoRecording = .irreversible,
+        success: (() -> Void)? = nil,
+        failureNote: (() -> String?)? = nil
     ) -> Bool {
         guard canWrite, let repository, RepositoryWriteLocks.shared.acquire(repository) else {
             return false
@@ -661,13 +676,40 @@ extension RepositorySession {
         let (outputs, continuation) = AsyncStream<GitOutputEvent>.makeStream()
         Self.logger.info("写操作开始：\(title, privacy: .public)")
 
+        // 后台写入只记进 Activity；被本地改动挡住的检出、拉取与合并改为询问是否先储藏，用户不储藏时再报告失败
+        let reportFailure: (Error, Bool) -> Void = { [weak self] error, cancelled in
+            guard let self else { return }
+
+            guard reportsFailure else {
+                recordQuietFailure(error, cancelled: cancelled, activity: activity, in: repository)
+                return
+            }
+
+            let stashing = offersAutoStash && !cancelled
+                && offerAutoStash(after: error, title: title, action: action, failureNote: failureNote, undo: undo)
+
+            if !stashing {
+                reportWriteFailure(
+                    error,
+                    cancelled: cancelled,
+                    title: title,
+                    note: failureNote?(),
+                    branch: branch,
+                    in: repository
+                )
+            }
+        }
+
+        // 按声明在操作前后记下仓库状态，供撤销与重做使用
+        let recorded = recordingUndo(action, title: title, recording: undo)
+
         writeTask = Task { [weak self] in
             let collector = Task { @MainActor in
                 for await output in outputs { activity?.append(output) }
             }
 
             do {
-                try await action(runner) { continuation.yield($0) }
+                try await recorded(runner) { continuation.yield($0) }
                 activity?.state = Task.isCancelled ? "activity.cancelled" : "activity.finished"
                 Self.logger.info("写操作\(Task.isCancelled ? "已取消" : "完成", privacy: .public)：\(title, privacy: .public)")
 
@@ -681,12 +723,7 @@ extension RepositorySession {
                 // 失败的类别在 reportWriteFailure 归类后记录，这里只记取消
                 if cancelled { Self.logger.info("写操作已取消：\(title, privacy: .public)") }
 
-                // 被本地改动挡住的检出、拉取与合并改为询问是否先储藏，用户不储藏时再报告失败
-                if let self, generation == request {
-                    if !(offersAutoStash && !cancelled && offerAutoStash(after: error, title: title, action: action)) {
-                        reportWriteFailure(error, cancelled: cancelled, title: title, branch: branch, in: repository)
-                    }
-                }
+                if let self, generation == request { reportFailure(error, cancelled) }
             }
 
             continuation.finish()
@@ -796,15 +833,17 @@ extension RepositorySession {
         }
     }
 
-    /// 写入失败时撤回临时勾选并报告错误；服务器写入断线后结果未知，记下中断的写入等待重连核对。
+    /// 写入失败时撤回临时勾选并报告错误，未合并分支的普通删除改为询问强制删除；服务器写入断线后结果未知，记下中断的写入等待重连核对。
     ///
     /// - Parameters:
     ///   - title: 已本地化的操作名称，用于断线后的核对报告。
+    ///   - note: 补在恢复说明前面的一段话。
     ///   - branch: 写入前状态快照中的分支与 HEAD。
     private func reportWriteFailure(
         _ error: Error,
         cancelled: Bool,
         title: String,
+        note: String?,
         branch: BranchStatus?,
         in repository: RepositoryLocation
     ) {
@@ -814,16 +853,58 @@ extension RepositorySession {
 
         // 取消未确认仍须报告；普通取消只回到可刷新状态。
         if !cancelled || remoteFailure?.kind == .cancellationUnconfirmed {
-            let failure = AppFailure(error: error, opening: false, location: repository, writing: true)
+            var failure = AppFailure(error: error, opening: false, location: repository, writing: true)
+
+            if let note {
+                failure.message = note + "\n\n" + failure.message
+            }
+
             self.failure = failure
             Self.logger.error("写操作失败：\(title, privacy: .public)，类别 \(failure.kind.rawValue, privacy: .public)")
-            onFailure?(failure)
+
+            // 未合并分支的普通删除改为询问是否强制删除，询问里带着失败的说明与 Git 原文
+            if !offerForceDeletion(after: error) {
+                onFailure?(failure)
+            }
         }
 
         // 结果未知的服务器写入不重试，等待重连核对后再报告。
         if remoteFailure != nil {
-            interruptedWrite = InterruptedWrite(title: title, branch: branch, time: Date())
+            // 写入期间引用快照不刷新，此时读到的仍是写入前的远端跟踪分支
+            let remotes = history.snapshot?.references.filter(\.isRemote) ?? []
+
+            interruptedWrite = InterruptedWrite(
+                title: title,
+                branch: branch,
+                time: Date(),
+                remoteReferences: Dictionary(uniqueKeysWithValues: remotes.map { ($0.id, $0.objectID) })
+            )
             Self.logger.error("服务器写入在断线中中断，等待重连核对：\(title, privacy: .public)")
+            reconnect()
+        }
+    }
+
+    /// 不弹错误 sheet 的写入失败：错误标题与原因记进 Activity；断线照常重连，结果由重连后的完整刷新核对。
+    private func recordQuietFailure(
+        _ error: Error,
+        cancelled: Bool,
+        activity: RepositoryActivity?,
+        in repository: RepositoryLocation
+    ) {
+        stagingOverrides = [:]
+
+        guard !cancelled else {
+            return
+        }
+
+        let failure = AppFailure(error: error, opening: false, location: repository, writing: true)
+        Self.logger.error("后台写操作失败，类别 \(failure.kind.rawValue, privacy: .public)")
+
+        // Git 的原始输出已经流进日志，其余错误补上说明
+        let details = error is GitError ? "" : "\n" + failure.details
+        activity?.append(.standardError(Data(("\n" + failure.title + details + "\n").utf8)))
+
+        if error is RemoteConnectionError {
             reconnect()
         }
     }
@@ -902,8 +983,8 @@ extension RepositorySession {
     /// 当前仓库的视图状态，切换仓库时存入窗口缓存。
     private func captureViewState() -> RepositoryViewState {
         RepositoryViewState(
-            // 文件视图的目标不随仓库保存，切回时显示它们所属的历史
-            activeView: [.fileHistory, .fileContent].contains(activeView) ? .history : activeView,
+            // 文件视图与远端视图的目标不随仓库保存，切回时显示历史
+            activeView: [.fileHistory, .fileContent, .remote].contains(activeView) ? .history : activeView,
             selectedID: selectedID,
             selectedIDs: selectedIDs,
             diffSide: diffSide,

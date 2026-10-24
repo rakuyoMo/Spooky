@@ -45,6 +45,17 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 文件历史搜索框的贡献者补全。
     let contributorCompletion = ContributorCompletion()
 
+    /// Edit 菜单撤销与重做的本仓库写操作，栈与同一仓库的其它窗口共用。
+    lazy var repositoryUndoManager = RepositoryUndoManager(session: session)
+
+    /// 文本框与提交信息编辑框自己的文字撤销。
+    let textUndoManager = UndoManager()
+
+    /// 本窗口仓库的自动获取：只在窗口显示仓库且 App 处于前台时进行。
+    private lazy var autoFetch = RepositoryAutoFetch(session: session) { [weak self] in
+        NSApp.isActive && !(self?.showsManager ?? true)
+    }
+
     /// 创建原生窗口；标签合并被关闭，显式新窗口始终独立。
     init(coordinator: SpookyApplicationController, session: RepositorySession = RepositorySession()) {
         self.coordinator = coordinator
@@ -85,6 +96,8 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         }
 
         session.onStashRequest = { [weak self] in self?.presentStash($0) }
+        session.onRevisionRequest = { [weak self] in self?.presentRevisionDialog($0) }
+        session.onRewriteRequest = { [weak self] in self?.presentRewrite($0) }
 
         session.onViewReset = { [weak self] in
             guard let self, !self.showsManager else { return }
@@ -99,6 +112,15 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
 
         // 文件操作的参数表单与多按钮询问同样以窗口的 sheet 呈现
         session.onFileRequest = { [weak self] in self?.presentFileRequest($0) }
+
+        // 分支、标签与远端管理的对话框与询问同样以窗口的 sheet 呈现
+        session.onReferenceRequest = { [weak self] in self?.presentReferenceRequest($0) }
+
+        // 批量归档对话框与自动归档的确认同样以窗口的 sheet 呈现
+        configureBranchesReview()
+
+        // 侧边栏与标签菜单预选了分支或版本的同步对话框同样以窗口的 sheet 呈现
+        session.onSyncRequest = { [weak self] in self?.presentSyncDialog($0.kind, preselecting: $0.preselection) }
 
         session.onConfirm = { [weak self] title, message, action, abort in
             guard let window = self?.window, window.attachedSheet == nil else { return }
@@ -121,6 +143,8 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         observeToolbarState()
         observeConnectionState()
         observeSubtitle()
+        observeHistorySearch()
+        autoFetch.start()
     }
 
     /// 窗口由代码构建，不从归档恢复控制器。
@@ -148,7 +172,32 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
             AppLocalization.text(snapshot.merging ? "state.yes" : "state.no"),
             AppLocalization.text(snapshot.rebasing ? "state.yes" : "state.no")
         )
-        return summary + "\n\n" + state
+        return summary + "\n\n" + state + "\n\n" + remoteReferenceChanges(write, snapshot: snapshot)
+    }
+
+    /// 中断前后远端跟踪分支的变化，每个变化的分支一行；获取或推送可能已经部分完成。
+    static func remoteReferenceChanges(_ write: InterruptedWrite, snapshot: RemoteRecoverySnapshot) -> String {
+        let before = write.remoteReferences
+        let after = snapshot.remoteReferences
+
+        // 提交取前 8 位，引用不存在时写 “无”
+        let name: (String?) -> String = { object in
+            object.map { String($0.prefix(8)) } ?? AppLocalization.text("recovery.noReference")
+        }
+
+        let changes = Set(before.keys).union(after.keys)
+            .filter { before[$0] != after[$0] }
+            .sorted()
+            .map { reference in
+                let branch = String(reference.dropFirst("refs/remotes/".count))
+                return branch + "  " + name(before[reference]) + " → " + name(after[reference])
+            }
+
+        guard !changes.isEmpty else {
+            return AppLocalization.text("recovery.remoteUnchanged")
+        }
+
+        return AppLocalization.text("recovery.remoteChanged") + "\n" + changes.joined(separator: "\n")
     }
 
     /// 恢复的窗口位置必须有一半以上落在某个屏幕内，且尺寸不超过该屏幕；否则视为恢复失败。
@@ -264,15 +313,17 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         session.setActive(!showsManager)
     }
 
-    /// 后台窗口降为十秒轮询。
+    /// 后台窗口降为十秒轮询；App 或窗口失去前台时，按住 ⌥ 换出的快速操作复原。
     func windowDidResignKey(_: Notification) {
         session.setActive(false)
+        updateQuickToolbarItems(option: false)
     }
 
     /// 关窗时取消该窗口的工作，并从应用窗口集合中移除。
     func windowWillClose(_: Notification) {
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
         keyMonitor = nil
+        autoFetch.stop()
         coordinator?.cancelOpening(in: self)
         let location = session.repository
         session.close()
@@ -360,6 +411,15 @@ extension RepositoryWindowController {
         configureRepositoryView()
     }
 
+    /// 切换到分支整理，⌘5 与侧边栏使用相同状态。
+    @objc
+    func showBranchesReview() {
+        guard session.repository != nil else { return }
+        session.activeView = .branchesReview
+        showsManager = false
+        configureRepositoryView()
+    }
+
     /// ⌘0 选中当前 HEAD，分离和未出生分支仍可定位。
     @objc
     func showHeadBranch() {
@@ -382,74 +442,6 @@ extension RepositoryWindowController {
     func showActivity() { coordinator?.showActivity() }
 }
 
-// MARK: - Alerts
-
-extension RepositoryWindowController {
-    /// 把错误原文放入可滚动、可复制的附件，恢复操作在 sheet 结束后执行。
-    func showFailure(_ failure: AppFailure) {
-        guard let window else {
-            return
-        }
-
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = failure.title
-        alert.informativeText = failure.message + "\n\n" + failure.context
-        alert.addButton(withTitle: AppLocalization.text("action.close"))
-        alert.addButton(withTitle: AppLocalization.text(
-            failure.isOpeningFailure ? "action.chooseAnother" : "action.refresh"
-        ))
-
-        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 400, height: 175))
-        scroll.hasVerticalScroller = true
-        scroll.borderType = .bezelBorder
-
-        let text = NSTextView(frame: scroll.bounds)
-        text.isEditable = false
-        text.isSelectable = true
-        text.isRichText = false
-        text.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
-        text.textColor = .secondaryLabelColor
-        text.textContainerInset = NSSize(width: 8, height: 8)
-        text.autoresizingMask = [.width]
-        text.textContainer?.widthTracksTextView = true
-        text.string = failure.details
-        text.setAccessibilityLabel(AppLocalization.text("error.details"))
-        scroll.documentView = text
-        alert.accessoryView = scroll
-
-        alert.beginSheetModal(for: window) { [weak self] response in
-            guard let self, response == .alertSecondButtonReturn else {
-                return
-            }
-
-            if failure.isOpeningFailure {
-                if failure.isRemoteFailure { addRemoteRepository() }
-                else { chooseRepository() }
-            } else {
-                refreshRepository()
-            }
-        }
-    }
-
-    /// 重连核对后报告中断写入的结果：HEAD 是否变化与仓库状态；写入没有被重试。
-    func showRecovery(_ write: InterruptedWrite, snapshot: RemoteRecoverySnapshot?) {
-        guard let window else {
-            return
-        }
-
-        let alert = NSAlert()
-        alert.alertStyle = .informational
-        alert.messageText = AppLocalization.text("recovery.title")
-        alert.informativeText = Self.recoveryMessage(write, snapshot: snapshot)
-            + (session.repository.map { "\n\n" + AppLocalization.text("failure.location", $0.displayPath) } ?? "")
-        alert.addButton(withTitle: AppLocalization.text("action.close"))
-
-        // 中断时的错误 sheet 可能仍未关闭，AppKit 会在它结束后依次显示。
-        alert.beginSheetModal(for: window)
-    }
-}
-
 // MARK: - Toolbar
 
 extension RepositoryWindowController {
@@ -468,7 +460,9 @@ extension RepositoryWindowController {
             items.append(.init("host"))
         }
 
-        if !showsManager { items.append(contentsOf: [.init("sync"), .init("merge"), .init("stashes")]) }
+        if !showsManager {
+            items.append(contentsOf: [.init("sync"), .init("synchronize"), .init("merge"), .init("stashes")])
+        }
 
         items += [.init("terminal"), .init("finder"), .init("refresh"), .init("closeRepository")]
 
@@ -487,33 +481,11 @@ extension RepositoryWindowController {
         itemForItemIdentifier identifier: NSToolbarItem.Identifier,
         willBeInsertedIntoToolbar _: Bool
     ) -> NSToolbarItem? {
-        if identifier.rawValue == "sync" {
-            let group = NSToolbarItemGroup(
-                itemIdentifier: identifier,
-                images: ["arrow.down.circle", "arrow.down.to.line", "arrow.up.circle"]
-                    .map {
-                        // 取不到符号时以空图占位，分段数与标签保持一致。
-                        NSImage(systemSymbolName: $0, accessibilityDescription: nil) ?? NSImage()
-                    },
-                selectionMode: .momentary,
-                labels: ["sync.fetch", "sync.pull", "sync.push"].map { AppLocalization.text($0) },
-                target: self,
-                action: nil
-            )
-
-            // 始终以分段控件显示，空间不足时整组进入工具栏的溢出菜单。
-            group.controlRepresentation = .expanded
-
-            // 每段带上自己的动作：点击直接分派到对应动作，工具栏自动校验时也逐段决定可用性。
-            let actions = [#selector(fetch), #selector(pull), #selector(push)]
-
-            for (segment, action) in zip(group.subitems, actions) {
-                segment.target = self
-                segment.action = action
-            }
-
-            return group
+        // Fetch | Pull | Push、Sync 与 Merge | Rebase 随 ⌥ 切换成快速操作
+        if let item = makeSyncToolbarItem(identifier) {
+            return item
         }
+
         if identifier.rawValue == "search" {
             return makeSearchItem(identifier)
         }
@@ -551,9 +523,6 @@ extension RepositoryWindowController {
         let configuration: (String, String, Selector)
 
         switch identifier.rawValue {
-        case "merge":
-            configuration = ("sync.merge", "arrow.triangle.merge", #selector(merge))
-
         case "stageAll":
             configuration = ("working.stageAll", "checkmark.square", #selector(stageAll))
 
@@ -660,7 +629,12 @@ extension RepositoryWindowController {
     private func configureWorkingCopyKeys() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
             let handled = MainActor.assumeIsolated {
-                self?.handleWorkingCopyKey(event) ?? false
+                // 主窗口的同步按钮随 ⌥ 换成快速操作，与当前视图无关
+                if event.type == .flagsChanged, let self, NSApp.keyWindow === self.window {
+                    self.updateQuickToolbarItems(option: event.modifierFlags.contains(.option))
+                }
+
+                return self?.handleWorkingCopyKey(event) ?? false
             }
 
             return handled ? nil : event
@@ -700,6 +674,7 @@ extension RepositoryWindowController {
         if
             let operation = session.context?.operation,
             [.rebase, .cherryPick, .revert].contains(operation),
+            !(session.context?.progress?.stopsForEdit ?? false),
             session.canWrite, session.conflictCount == 0
         {
             session.finishOperation("continue")
@@ -754,6 +729,11 @@ extension RepositoryWindowController {
             historySplit = nil
             detail = makeStashSplit()
 
+        case .reflog:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeReflogSplit()
+
         case .fileHistory:
             workingCopySplit = nil
             let split = makeFileHistorySplit()
@@ -764,6 +744,16 @@ extension RepositoryWindowController {
             workingCopySplit = nil
             historySplit = nil
             detail = makeFileContentView()
+
+        case .remote:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeRemoteDetailView()
+
+        case .branchesReview:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeBranchesReviewSplit()
         }
 
         installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repository")
@@ -780,10 +770,11 @@ extension RepositoryWindowController {
             historySplit.splitView.setPosition(320, ofDividerAt: 0)
         }
 
-        // 首次使用或恢复失败后储藏列表同样宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
+        // 首次使用或恢复失败后储藏与 Reflog 的列表同样宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
         if
-            session.activeView == .stashes, let split = detail as? NSSplitViewController,
-            UserDefaults.standard.object(forKey: "NSSplitView Subview Frames Spooky.Stashes") == nil
+            [.stashes, .reflog].contains(session.activeView), let split = detail as? NSSplitViewController,
+            let name = split.splitView.autosaveName,
+            UserDefaults.standard.object(forKey: "NSSplitView Subview Frames " + name) == nil
         {
             split.splitView.setPosition(320, ofDividerAt: 0)
         }

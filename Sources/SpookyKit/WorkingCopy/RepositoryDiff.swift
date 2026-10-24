@@ -187,7 +187,7 @@ public struct RepositoryDiff: Sendable, Equatable {
         var files: [DiffFile] = []
 
         while cursor < lines.count {
-            guard Self.text(lines[cursor]).hasPrefix("diff --git ") else {
+            guard Self.isFileHeader(lines[cursor]) else {
                 throw WorkingCopyError.malformedDiff
             }
 
@@ -205,13 +205,18 @@ public struct RepositoryDiff: Sendable, Equatable {
                     continue
                 }
 
+                if line.hasPrefix("@@@") {
+                    hunks.append(try Self.combinedHunk(lines, cursor: &cursor, id: hunks.count))
+                    continue
+                }
+
                 guard hunks.isEmpty else { throw WorkingCopyError.malformedDiff }
                 headers.append(line)
                 binary = binary || line.hasPrefix("Binary files ") || line == "GIT binary patch"
                 if line.hasPrefix("new file mode ") { added = String(line.dropFirst(14)) }
                 if line.hasPrefix("deleted file mode ") { deleted = String(line.dropFirst(18)) }
                 cursor += 1
-            } while cursor < lines.count && !Self.text(lines[cursor]).hasPrefix("diff --git ")
+            } while cursor < lines.count && !Self.isFileHeader(lines[cursor])
 
             files.append(DiffFile(
                 id: files.count,
@@ -287,7 +292,7 @@ public struct RepositoryDiff: Sendable, Equatable {
     }
 
     /// 缺省行数为 1，空文件范围允许起点和行数为 0。
-    private static func range(_ value: Substring, prefix: Character) throws -> (Int, Int) {
+    static func range(_ value: Substring, prefix: Character) throws -> (Int, Int) {
         let parts = value.dropFirst().split(separator: ",", omittingEmptySubsequences: false)
         guard
             value.first == prefix,
@@ -300,7 +305,7 @@ public struct RepositoryDiff: Sendable, Equatable {
     }
 
     /// 头部只用于结构判断；正文始终保留 Data。
-    private static func text(_ data: Data) -> String {
+    static func text(_ data: Data) -> String {
         String(decoding: data, as: UTF8.self)
     }
 

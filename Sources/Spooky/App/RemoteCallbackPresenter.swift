@@ -24,6 +24,11 @@ final class RemoteCallbackPresenter {
 
         if request.kind != .editor, let saved = credential(for: request) { return saved }
 
+        // 自动获取等不能询问用户的操作取不到已存凭据时按取消处理，不在后台弹出输入框
+        guard request.isInteractive else {
+            return nil
+        }
+
         return await withTaskCancellationHandler {
             await withCheckedContinuation {
                 pending.append((request, $0))

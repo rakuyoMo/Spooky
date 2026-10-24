@@ -51,8 +51,10 @@ struct FileViewsTests {
     }
 
     /// 等待异步读取完成，超时视为失败。
+    ///
+    /// 本机仓库的 Git 命令在测试进程里共用一组主机槽，整套测试并行时读取要排队，等待上限按整套测试的耗时留足。
     static func wait(_ condition: () -> Bool) async throws {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while !condition() {
             guard .now < deadline else {

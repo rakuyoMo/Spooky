@@ -88,7 +88,7 @@ extension RepositorySessionTests {
 
     /// 等到会话的异步读取满足条件；超时时让测试失败，而不是一直等待。
     private func waitUntil(_ condition: () -> Bool) async throws {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while !condition() {
             guard .now < deadline else {

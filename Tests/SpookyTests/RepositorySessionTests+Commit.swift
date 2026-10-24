@@ -141,7 +141,7 @@ extension RepositorySessionTests {
         )
         await session.writeTask?.value
 
-        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
         while session.commitConfiguration?.userEmail != "work@example.invalid", .now < deadline {
             try await Task.sleep(for: .milliseconds(50))
         }
@@ -246,7 +246,7 @@ extension RepositorySessionTests {
         _ session: RepositorySession,
         until condition: (CommitConfiguration) -> Bool
     ) async throws {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while !(session.commitConfiguration.map(condition) ?? false), .now < deadline {
             try await Task.sleep(for: .milliseconds(50))

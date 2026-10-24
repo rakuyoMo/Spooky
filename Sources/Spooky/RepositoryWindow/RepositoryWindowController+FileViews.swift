@@ -72,10 +72,20 @@ extension RepositoryWindowController {
         let scope = session.fileHistory.scope
         let menu = NSMenu()
 
-        // 接受补全后与键入一样写入会话，由文件历史按新内容重读
-        contributorCompletion.attach(to: field, state: session.fileHistory) { [weak self] in
-            self?.session.searchText = $0
-        }
+        // 作者与提交人范围补全仓库的作者；接受补全后与键入一样写入会话，由文件历史按新内容重读
+        let state = session.fileHistory
+
+        contributorCompletion.attach(
+            to: field,
+            suggestions: { [weak state] query in
+                guard let state, state.scope != .revision else {
+                    return []
+                }
+
+                return ContributorSuggestion.matches(query, in: (try? await state.authors()) ?? [])
+            },
+            apply: { [weak self] in self?.session.searchText = $0 }
+        )
 
         for (index, candidate) in Self.fileHistoryScopes.enumerated() {
             let item = NSMenuItem(

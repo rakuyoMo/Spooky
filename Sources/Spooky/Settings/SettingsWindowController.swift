@@ -75,6 +75,10 @@ private struct GeneralSettingsView: View {
     @AppStorage("offerAutoStash")
     private var offerAutoStash = true
 
+    /// 自动归档已完全合并或陈旧的分支，与侧边栏视图设置同一个偏好。
+    @AppStorage(SidebarPreferences.autoArchiveKey)
+    private var autoArchiveBranches = SidebarPreferences.defaultFlag(SidebarPreferences.autoArchiveKey)
+
     /// General 表单按功能分组，组间以分隔线隔开；控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
@@ -103,9 +107,11 @@ private struct GeneralSettingsView: View {
 // MARK: - Private
 
 extension GeneralSettingsView {
-    /// 操作相关的两个开关：被本地改动挡住时询问储藏、输入时规范引用名。
+    /// 操作相关的设置：自动获取的间隔、被本地改动挡住时询问储藏、输入时规范引用名、自动归档分支。
     @ViewBuilder
     private var operationRows: some View {
+        AutoFetchSettingsRow()
+
         GridRow {
             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
             Toggle(AppLocalization.text("stash.offerAutoStash"), isOn: $offerAutoStash)
@@ -117,9 +123,15 @@ extension GeneralSettingsView {
             Toggle(AppLocalization.text("branch.cleanNames"), isOn: $cleanRefNames)
                 .frame(width: 278, alignment: .leading)
         }
+
+        GridRow {
+            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+            Toggle(AppLocalization.text("settings.autoArchive"), isOn: $autoArchiveBranches)
+                .frame(width: 278, alignment: .leading)
+        }
     }
 
-    /// 历史每页条数与大 Diff 的警告阈值。
+    /// 历史每页条数、提交日期格式、合并提交的 Diff 方式与大 Diff 的警告阈值。
     @ViewBuilder
     private var historyRows: some View {
         GridRow {
@@ -133,6 +145,10 @@ extension GeneralSettingsView {
             .frame(width: 278)
             .accessibilityLabel(AppLocalization.text("history.pageSize"))
         }
+
+        CommitDateFormatRow()
+
+        MergeDiffModeRow()
 
         GridRow {
             Text(AppLocalization.text("working.diffThreshold"))

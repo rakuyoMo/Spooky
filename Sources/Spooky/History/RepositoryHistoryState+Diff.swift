@@ -12,6 +12,6 @@ extension RepositoryHistoryState {
             let file = changes.first(where: { $0.path == path })
         else { return nil }
 
-        return CommitFileDiffSource(runner: runner, commit: commit.id, file: file)
+        return CommitFileDiffSource(runner: runner, commit: commit.id, file: file, mergeMode: .preferred)
     }
 }

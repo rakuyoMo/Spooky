@@ -41,8 +41,8 @@ public struct StashFileChange: Sendable, Equatable, Identifiable {
 
 /// 储藏的读取与写入都在仓库所在的机器上执行；按序号的写入先核对序号与哈希。
 public struct RepositoryStashes: Sendable {
-    /// 生成要套用的单文件补丁：二进制可还原，不使用外部 diff 与文本转换。
-    private static let patchOptions = [
+    /// 生成要套用的单文件补丁：二进制可还原，不使用外部 diff 与文本转换；储藏与提交的单文件套用共用。
+    static let patchOptions = [
         "--binary", "--no-color", "--no-ext-diff", "--no-textconv", "--full-index",
         "--src-prefix=a/", "--dst-prefix=b/",
     ]

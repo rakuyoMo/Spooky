@@ -11,7 +11,10 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
   - 本机与服务器工作区、混合最近记录、连接体检、断线重连与写入核对
   - 工作区的三种显示模式、忽略规则与文件操作；带显示选项、语法着色、行内高亮与图片对照的 Diff；文件 / 块 / 行操作
   - 提交信息编辑、身份档案与提交签名；冲突向导与冲突收尾；储藏与 Auto Stash
-  - 分页历史、文件历史、Blame 与原文、分支、同步、合并预览、Activity
+  - 分页历史的组合搜索、排序分组与视图设置；提交详情的文件树、签名与合并 Diff 方式；版本比较、导出与保存补丁；文件历史、Blame 与原文
+  - 侧边栏的文件夹、过滤、置顶与归档、标签分组与分支状态；分支、标签、远端与父分支的管理
+  - 完整的 Fetch / Pull / Push、Sync、安全强推、Push To 与自动获取；合并预览与 Activity
+  - 反转、摘取、重置、检出版本、变基到别处与交互式变基；Branches Review 与自动归档；Reflog 与按仓库的撤销、重做
   - 文件监听与轮询刷新、按仓库恢复的视图状态、终端程序与文本区主题管理
 - 远端仓库的工作区留在远端机器，客户端经系统 SSH、用 `~/.ssh/config` 中的主机别名访问
 - 纯开源的个人工具，只在 GitHub 分发
@@ -48,13 +51,20 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 | `mise run swift:format` | 按代码规范格式化，并自动修复可修复的问题 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests` | 显式运行 `spooky-test` 远端集成测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests` | 显式运行 M3 的 SFTP 与远端提交测试，以及 M6 的服务器文件缓存测试 |
-| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests` | 显式运行 M4 的服务器历史、同步与取消测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests` | 显式运行 M4 的服务器历史、同步与取消测试，以及 M7 的 Sync、变基、安全强推、Push To 与不询问用户的获取测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyFilesTests` | 显式运行 M6 的服务器文件操作与应用补丁测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteDiffTests` | 显式运行 M6 的服务器 Diff 选项与图片测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteStashTests` | 显式运行 M6 的服务器储藏与 Auto Stash 断线测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConflictTests` | 显式运行 M6 的服务器冲突向导与断线测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteFileViewsTests` | 显式运行 M6 的服务器文件历史、Blame、原文与 NFD 路径测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteCommitSigningTests` | 显式运行 M6 的服务器提交签名测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySearchTests` | 显式运行 M7 的服务器历史搜索、计数与可达性测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistoryDetailsTests` | 显式运行 M7 的服务器合并 Diff、文件树、比较、签名与导出测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteSidebarTests` | 显式运行 M7 的服务器标签说明、分支状态、置顶归档与标签检出测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReferenceManagementTests` | 显式运行 M7 的服务器分支、标签与远端管理测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteRewriteTests` | 显式运行 M7 的服务器反转、摘取、重置与交互式变基测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteBranchesReviewTests` | 显式运行 M7 的服务器分支比较、分叉点、归档标记与 Update Branch 测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReflogUndoTests` | 显式运行 M7 的服务器 Reflog 与撤销、重做测试 |
 | `swift build --product Spooky` | 编译可执行 App product |
 | `swift run Spooky` | 启动 App 的仓库管理窗口 |
 | `./scripts/build-app.sh` | 生成开发用 `.build/Spooky.app` |
@@ -83,7 +93,7 @@ Sources/SpookyKit/            库源码，按功能分目录
     RemoteOutputRedactor.swift 中继凭据的跨输出块脱敏
     SSHConfiguration.swift    SSH 参数及远端环境清洗
   Callback/                   口令、密码、签名口令与编辑器回调
-    CallbackRelay.swift       本机 Unix socket 回调服务
+    CallbackRelay.swift       本机 Unix socket 回调服务，请求标明发起的操作能否询问用户
     LocalGitAuthentication.swift 本机凭据与 SSH 签名口令回调、SSH agent 接入
   Repository/                 仓库位置与文件读写
     RepositoryLocation.swift  本机或 SSH 远端仓库位置
@@ -94,6 +104,7 @@ Sources/SpookyKit/            库源码，按功能分目录
     WorkingCopyStatus.swift   porcelain v2 工作区状态模型与解析
     WorkingTreeFiles.swift    暂存区清单与被忽略文件清单
     RepositoryDiff.swift      Diff 显示选项、按字节解析 Diff 与生成选区补丁
+    RepositoryDiff+Combined.swift 合并提交的组合 Diff 解析，只读显示时折成单列
     InlineDiff.swift          块内修改行的单词级比较，标出成对的删除行与新增行中改动的部分
     DiffImageSource.swift     图片 Diff 两侧的字节
     WorkingCopyOperations.swift 工作区写操作、快照校验、身份与进行中状态
@@ -105,33 +116,66 @@ Sources/SpookyKit/            库源码，按功能分目录
     CommitConfiguration.swift 提交身份、签名、注释字符与钩子的读取，身份档案的写入
     SigningKeys.swift         本机 gpg 钥匙环与 SSH agent 中可用于提交签名的密钥
     CommitMessage.swift       提交信息的拼接、注释行与按字数折行
-  History/                    历史与提交图
-    RepositoryHistory.swift   NUL 历史分页、提交变更集与第一父 Diff
+  History/                    历史、提交详情与引用日志
+    RepositoryHistory.swift   NUL 历史分页、提交变更集与按合并 Diff 方式读取的补丁
+    RepositoryHistory+Query.swift 按查询分页与计数、按哈希前缀查找与可达性判断
+    HistoryQuery.swift        历史搜索的条件、排序方式与第一父
     CommitGraph.swift         与界面解耦的增量提交图
+    MergeDiffMode.swift       合并提交的三种 Diff 方式
+    CommitSignature.swift     提交与标签的签名校验结果
+    SignatureVerification.swift 经包装器的 gpg 入口校验签名，关闭自动取钥与信任库检查
+    RevisionComparison.swift  两个版本之间的提交与改动
+    RevisionExport.swift      导出文件、归档与保存补丁，输出边读边写进本机文件
+    RepositoryReflog.swift    reflog 的分页、按说明搜索与把分支恢复到某条记录
   FileViews/                  文件历史、Blame 与原文
     RepositoryFileViews.swift 文件历史分页与筛选、树条目、Unicode 等价路径、原文、Blame 与贡献者
     FileBlame.swift           blame --porcelain 解析
-  References/                 引用与分支
+  References/                 引用、分支、标签与远端
     RepositoryReferences.swift 引用快照、分支读写与双向计数
+    RepositoryReferences+Branches.swift 快进、上游、改名、删除与远端分支的改名、删除
+    ReferenceNames.swift      分支、标签、远端名、refspec 与远端地址的校验
+    BranchMetadata.swift      写在 branch.<名称> 段的置顶、归档、父分支与分支整理标记
+    BranchCondition.swift     完全合并、陈旧与跟踪错误的判断，以及基准分支名单
+    BranchComparison.swift    分支与基准分支的双向计数与合并预览
+    RepositoryTags.swift      标签的新建、签名、推送与删除
+    RepositoryRemotes.swift   远端的增删改名、地址、refspec、自动获取排除项与网页地址
   Sync/                       同步与合并
     RepositorySync.swift      Fetch、Pull、Push、合并与预览
+    RepositorySync+Push.swift 安全强推的核对与推送任意版本
+    RepositorySync+Rebase.swift Sync 的三个步骤与变基当前分支
+    RepositorySync+UpdateBranch.swift 把父分支的新提交合并或变基进本地分支
+  Rewrite/                    改写历史
+    RepositoryRewrite.swift   反转、摘取、重置、检出版本与变基到别处
+    RepositoryRewrite+Interactive.swift 交互式变基的计划与执行
+    RepositoryRewrite+Execution.swift 交互式变基的内联编辑器参数与已推送、已并入提交的判断
+    RepositoryRewrite+FilePick.swift 只把提交里的一个文件套用到工作区
+    RewritePlan.swift         交互式变基的动作、计划与 todo 指令
+  Undo/                       撤销与重做
+    RepositoryState.swift     撤销记录的仓库状态与拒绝恢复的原因
+    RepositoryUndo.swift      记录状态，核对现状后恢复成另一份记录
+    RepositoryUndo+Files.swift 恢复工作区时对未跟踪文件的处理
   Stash/                      储藏
     StashEntry.swift          储藏记录与 stash list -z 解析
     RepositoryStashes.swift   储藏读写、快照、单文件应用与 Auto Stash
-  Resources/spooky-remote.pl  远端进程组、回调客户端与签名程序入口
+  Resources/spooky-remote.pl  远端进程组、回调客户端与签名、校验程序入口
 Sources/Spooky/               App 入口、窗口协调、会话状态与各内容视图，按功能分目录
-  App/                        入口、窗口与菜单协调、本地化与错误说明、命名色与主题、回调请求呈现
+  App/                        入口、窗口与菜单协调、本地化与错误说明、命名色与主题、提交日期格式、回调请求呈现
     TextTheme.swift           文本区主题模型、资源里的默认主题与 .spookytheme 主题文件格式
     ThemeStore.swift          主题目录、启动时写入默认主题、浅色与深色外观的主题选择与导入
+    CommitDateFormat.swift    提交日期的绝对与相对两种写法，历史、储藏、文件历史、版本比较与 Reflog 共用
   AppIcon/                    Dock 与 ⌘Tab 中的 App 图标随 “图标与小组件样式” 与连接状态切换，以及四份 icns
     AppIcon.icns              默认应用图标，指示灯灭着；与下面三份一样由 scripts/make-icon.swift 生成
     AppIconConnected.icns     指示灯亮着的默认图标，App 连着服务器时换到 Dock 与 ⌘Tab
     AppIconDark.icns          深色应用图标，指示灯灭着；App 运行时按 “图标与小组件样式” 换到 Dock 与 ⌘Tab
     AppIconDarkConnected.icns 指示灯亮着的深色图标
-  Components/                 空状态、错误详情、连接状态与首字母头像等共用视图
+  Components/                 空状态、错误详情、连接状态、头像与版本组合框等共用视图
+    AvatarStore.swift         按邮箱的 SHA-256 向 Gravatar 读取作者头像，只在内存里缓存，取不到时用首字母
   RepositoryManager/          仓库管理窗口、最近记录与添加服务器仓库
-  RepositoryWindow/           仓库窗口与菜单动作、侧边栏、搜索、操作对话框与拖放
-  Session/                    仓库会话、操作可用性、视图状态与文件监听，各功能的会话动作分在扩展文件中
+  RepositoryWindow/           仓库窗口与菜单动作、侧边栏、搜索、操作与同步对话框、导出与比较对话框、拖放
+    SyncDialog.swift          Sync、变基、安全强推与推送任意版本的对话框
+    RepositoryOperationDrop.swift 提交、文件、分支与标签拖到侧边栏时的摘取、反转、变基、新建标签、改名与发布
+  Session/                    仓库会话、操作可用性、视图状态、文件监听与自动获取，各功能的会话动作分在扩展文件中
+    RepositoryAutoFetch.swift 按设置的间隔获取窗口里仓库的全部远端，只在前台进行，不询问凭据
   WorkingCopy/                工作区文件列表与显示模式、文件状态、Quick Look 与拖出、文件操作对话框、冲突向导与进行中操作横幅、提交区的信息编辑器、自动补全与身份菜单
     CommitBodyResizeHandle.swift 提交信息正文的拖柄：改正文高度，并移动工作区列表右侧的分隔线
     CommitCommentsDialog.swift 提交信息含注释行时的询问 sheet
@@ -140,12 +184,19 @@ Sources/Spooky/               App 入口、窗口协调、会话状态与各内�
     SyntaxHighlighter.swift   按路径与内容识别语言，把 highlight.js 的记号映射到主题颜色，并借还 highlight.js 的上下文
     HighlightRuntime.swift    一份载入 highlight.js 的 JavaScriptCore 上下文，只在自己的串行队列上使用
     HighlightMarkup.swift     把 highlight.js 输出的 HTML 还原成每行的语法片段
-  History/                    历史列表、提交详情与历史状态
+  History/                    历史列表与搜索过滤面板、视图设置、提交详情与文件树、签名、版本比较、与基准分支比较与提示条、右键菜单与列表内拖放
+  Sidebar/                    侧边栏的引用树、分支行与徽标、过滤框、视图设置菜单，以及同步与归档的右键菜单
+    SidebarPreferences.swift  侧边栏视图设置的偏好键与默认值，所有仓库窗口共用
+  References/                 分支、标签与远端管理的对话框、右键菜单与远端设置视图
+  Rewrite/                    反转、摘取、重置、检出版本、变基到别处、改信息与交互式变基确认的对话框
+  BranchesReview/             分支整理的列表与详情、批量归档与自动归档
+  Reflog/                     Reflog 视图与它的读取状态
+  Undo/                       按仓库共用的撤销栈，以及交给 Edit 菜单的撤销管理器
   FileViews/                  文件历史、原文与 Blame 的整页视图、行号与注释栏、版本与文件选择器
-    ContributorCompletion.swift 文件历史搜索框的贡献者补全：读取仓库作者，在搜索框下方列出建议
+    ContributorCompletion.swift 文件历史与历史搜索的补全：在输入框下方列出作者或文件路径的建议
   Stash/                      储藏视图、储藏对话框、拖放与状态
   Activity/                   Activity 窗口、操作记录与仓库写锁
-  Settings/                   设置窗口的 General、Text、Editor、Themes 与 User Profiles 页，以及终端程序
+  Settings/                   设置窗口的 General、Text、Editor、Themes 与 User Profiles 页，以及终端程序；General 页含自动获取、自动归档、提交日期格式与合并 Diff 方式
     AddUserProfileDialog.swift 把当前身份存成身份档案的 sheet
   HighlightJS/                随 App 打包的 highlight.js 11.12.0，原样拷入并保持目录结构
     highlight.min.js          核心与常用语言
@@ -156,7 +207,7 @@ Sources/Spooky/               App 入口、窗口协调、会话状态与各内�
   Info.plist                  应用身份和支持语言
 Tests/SpookyKitTests/         单元测试（Swift Testing）
   Fixtures/                   固定的 Git 输出夹具
-Tests/SpookyTests/            会话生命周期、最近记录、错误呈现、本地化、App 图标、主题存储、语法着色与提交补全测试
+Tests/SpookyTests/            会话生命周期、最近记录、错误呈现、本地化、App 图标、主题存储、语法着色与提交补全测试，以及历史、侧边栏、引用、改写、分支整理、Reflog、撤销与操作接线的会话测试
 scripts/build-app.sh          开发 App Bundle 生成脚本
 scripts/bundle.sh             发布 App Bundle 生成脚本，输出到 build/Spooky.app
 scripts/make-icon.swift       应用图标生成脚本，在无窗口的 WebKit 中运行 make-icon.js，为默认与深色图标各合成指示灯灭着、亮着两份 .icns
@@ -169,6 +220,7 @@ docs/testing/M3.md            M3 的工作区、Diff、提交与冲突验收步�
 docs/testing/M4.md            M4 的历史、分支、同步与活动验收步骤
 docs/testing/M5.md            M5 的集成、恢复、性能、可访问性与发布前验收步骤
 docs/testing/M6.md            M6 的工作区、Diff、主题、储藏、冲突向导、文件视图与提交体验验收步骤
+docs/testing/M7.md            M7 的历史、提交详情、侧边栏、引用、同步、改写、分支整理、Reflog 与撤销验收步骤
 README.md                     英文 README：介绍、功能、系统要求、构建、权限、工作原理、开发与贡献说明
 README-ZH.md                  README.md 的简体中文版，与它同步修改
 LICENSE                       GPL-3.0 许可证全文
@@ -201,6 +253,14 @@ LICENSE                       GPL-3.0 许可证全文
 - 身份档案的签名密钥由 `SigningKeys.local` 从 A 的 gpg 钥匙环与 SSH agent 列出，值原样写进仓库配置；服务器仓库在 B 上签名，B 上要有同一把密钥
 - `stash list` 与 `stash show` 是读取，其余 `stash` 子命令（包括不带子命令的 `stash`）按写操作排队；储藏全部改动时不加 `--literal-pathspecs`，它会让 `stash push -u` 把未跟踪文件留在工作区
 - 采用两侧版本在仓库所在的机器上完成：`checkout-index --stage=all` 把三方写成仓库根目录下的临时文件，`merge-file --union` 合并后以 `hash-object --path` 按真实路径写入对象库，临时文件无论成败都删除；只用 Git 2.41 已有的选项
+- `merge-tree --write-tree` 会往对象库写入对象，按写操作排队；`archive`、`format-patch`、`verify-tag` 与 `diff-tree` 已登记为读取
+- 导出、归档与补丁这类可能很大的输出经 `GitRunner.stream(_:to:)` 边读边写进本机文件，不收进内存；失败或取消时删掉写了一半的文件
+- 校验签名一律经 `SignatureVerification.run`：服务器仓库用包装器的 `-gpg` 入口，本机仓库为这次校验临时放一份包装器；包装器给 `--verify` 加上 `--no-auto-key-retrieve --no-auto-check-trustdb`，校验不访问网络
+- 不由用户直接发起的操作（如自动获取）放在 `RemoteCallbackRequest.$allowsInteraction.withValue(false)` 里执行：回调只用钥匙串里已存的凭据，取不到按取消处理，不弹出输入框
+- `fetch --porcelain` 不能与 `--recurse-submodules` 同用：获取一律带 `--no-recurse-submodules`，需要时在之后经 `submodule foreach --recursive` 获取子模块
+- 交互式变基经 `RepositoryRewrite` 执行：提交序列与信息由内联在命令里的编辑器写入，在仓库所在的机器上运行；HEAD 或 Git 给出的 todo 与计划不一致时不改写任何提交
+- 本地分支的置顶、归档、父分支与分支整理标记由 `BranchMetadata` 写在仓库配置的 `branch.<名称>.spooky-*`，改名时随段移动、删除分支时随段清除；布尔标记只写 `true`，取消时删除这个键
+- 写操作经 `RepositorySession.performGit(undo:)` 声明与撤销记录的关系：只改仓库自己的引用、索引、工作区、储藏与 `branch.*` 配置的用 `.reversible`；改动远端、远端跟踪分支或其它配置的保持默认的 `.irreversible`；自动获取这类不由用户直接发起的操作与撤销、重做本身用 `.unrecorded`
 
 ### 文本区
 
@@ -238,6 +298,8 @@ LICENSE                       GPL-3.0 许可证全文
 - M4 的分页历史、分支、同步、合并预览、活动日志与取消见 [M4 验收步骤](docs/testing/M4.md)
 - M5 的跨视图一致性、错误恢复、性能、可访问性与发布检查见 [M5 验收步骤](docs/testing/M5.md)；性能测试默认不跑，通过 `SPOOKY_PERFORMANCE_TESTS=1` 显式开启
 - M6 的工作区文件操作、Diff 选项、主题、储藏、冲突向导、文件视图、提交体验与本机 / 服务器端到端流程见 [M6 验收步骤](docs/testing/M6.md)
+- M7 的历史搜索与视图设置、提交详情与导出、侧边栏、引用与远端管理、同步与自动获取、改写操作、Branches Review、Reflog 与撤销，以及本机 / 服务器端到端流程见 [M7 验收步骤](docs/testing/M7.md)
+- 侧边栏的视图设置以 `@AppStorage` 读 `SidebarPreferences` 的键；测试换用独立的偏好域时，视图的 `.defaultAppStorage` 与传给 `SidebarViewSettingsMenu` 的 `UserDefaults` 要一起换
 - 解析器的固定输入放在 `Tests/SpookyKitTests/Fixtures/`，由真实 Git 在隔离配置、固定身份与时间的临时仓库中生成
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
 - 本地化新增资源键时同步全部支持语言，并保持格式参数一致；动态拼接的资源键登记在 `LocalizationTests.dynamicKeys`；错误标题和恢复说明本地化，Git 原文保持不变

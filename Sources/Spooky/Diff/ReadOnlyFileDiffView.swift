@@ -16,6 +16,12 @@ struct CommitFileDiffSource: Sendable {
     /// 提交里的这个文件。
     let file: CommitFileChange
 
+    /// 比较两个版本时的基准提交，补丁从它到 ``commit``；为空时与提交的父提交比较。
+    var base: String? = nil
+
+    /// 合并提交的 Diff 方式，与显示的补丁一致。
+    var mergeMode = MergeDiffMode.firstParent
+
     /// 开着 Diff 着色时为显示的补丁着色；全文补丁只由提交决定，按哈希复用。
     ///
     /// 全文补丁同样受大 Diff 警告阈值约束，超过阈值或识别不了语言时返回空，按纯文本显示。
@@ -35,12 +41,21 @@ struct CommitFileDiffSource: Sendable {
 
         // 显示的补丁不含两侧全文时，另取显示整个文件的补丁
         if !DiffSyntax.isEntireFile(diff, options: DiffPreferences.options()) {
-            let result = try? await RepositoryHistory(runner: runner).diff(
-                in: commit,
-                file: file,
-                options: DiffOptions(showsEntireFile: true),
-                warningKilobytes: RepositorySession.diffWarningBytes / 1000
-            )
+            let options = DiffOptions(showsEntireFile: true)
+            let threshold = RepositorySession.diffWarningBytes / 1000
+            let result: CommitDiff? =
+                if let base {
+                    try? await RevisionComparison(runner: runner, base: base, target: commit)
+                        .diff(of: file, options: options, warningKilobytes: threshold)
+                } else {
+                    try? await RepositoryHistory(runner: runner).diff(
+                        in: commit,
+                        file: file,
+                        mergeMode: mergeMode,
+                        options: options,
+                        warningKilobytes: threshold
+                    )
+                }
 
             guard let parsed = result?.diff else {
                 return nil

@@ -2,12 +2,12 @@ import Foundation
 
 // MARK: - TreeEntry
 
-/// 某个版本的树中的一个文件条目：普通文件、可执行文件、符号链接或子模块。
+/// 某个版本的树中的一个条目：普通文件、可执行文件、符号链接、子模块或目录。
 public struct TreeEntry: Sendable, Equatable {
-    /// 六位八进制模式，如 `100644`、`120000`、`160000`。
+    /// 六位八进制模式，如 `100644`、`120000`、`160000`、`040000`。
     public let mode: String
 
-    /// 对象类型：文件为 `blob`，子模块为 `commit`。
+    /// 对象类型：文件为 `blob`，子模块为 `commit`，目录为 `tree`。
     public let type: String
 
     /// 对象哈希，长度随仓库的哈希算法变化。
@@ -18,6 +18,9 @@ public struct TreeEntry: Sendable, Equatable {
 
     /// 子模块条目没有可读取的文件内容。
     public var isSubmodule: Bool { type == "commit" }
+
+    /// 目录条目，只在逐层列出树时出现。
+    public var isDirectory: Bool { type == "tree" }
 
     /// 解析 `ls-tree -z` 的输出：每条记录形如 “模式 类型 哈希\t路径”，以 NUL 结尾。
     static func parse(_ data: Data) throws -> [Self] {
@@ -40,11 +43,14 @@ public struct TreeEntry: Sendable, Equatable {
                 .map(String.init)
             let path = String(decoding: record[record.index(after: tab)...], as: UTF8.self)
 
+            // 模式与类型必须对应：目录只能是 040000，子模块只能是 160000，其余模式都是文件
             guard
                 header.count == 3,
                 header[0].count == 6,
                 header[0].allSatisfy({ "01234567".contains($0) }),
-                ["blob", "commit"].contains(header[1]),
+                ["blob", "commit", "tree"].contains(header[1]),
+                (header[0] == "040000") == (header[1] == "tree"),
+                (header[0] == "160000") == (header[1] == "commit"),
                 GitObjectID.isValid(header[2]),
                 !path.isEmpty
             else { throw RepositoryReadError.malformedOutput("ls-tree") }
@@ -242,6 +248,28 @@ public struct RepositoryFileViews: Sendable {
         return try TreeEntry.parse(output)
     }
 
+    /// 一棵树的一层条目，供历史文件树逐层展开；树对象只由哈希决定，按哈希复用。
+    ///
+    /// - Parameters:
+    ///   - tree: 树对象的哈希，根目录是提交的树哈希。
+    ///   - directory: 这棵树在仓库里的路径，拼在条目名前面；根目录为空。
+    public func entries(ofTree tree: String, in directory: String = "") async throws -> [TreeEntry] {
+        guard GitObjectID.isValid(tree) else {
+            throw RepositoryReadError.invalidQuery
+        }
+
+        let output = try await runner.immutableRun(["ls-tree", "-z", tree])
+
+        return try TreeEntry.parse(output).map {
+            TreeEntry(
+                mode: $0.mode,
+                type: $0.type,
+                objectID: $0.objectID,
+                path: directory.isEmpty ? $0.path : directory + "/" + $0.path
+            )
+        }
+    }
+
     /// 按 Unicode 等价查找版本中的条目：工作区与树中同一文件名可能分别是 NFC 与 NFD。
     ///
     /// 先按原样查找；找不到时列出整棵树，取规范等价的路径，返回的条目带有树中存储的形式。
@@ -254,9 +282,9 @@ public struct RepositoryFileViews: Sendable {
         return try await files(in: revision).first { $0.path == path }
     }
 
-    /// 文件条目的原始内容；子模块没有文件内容。
+    /// 文件条目的原始内容；子模块与目录没有文件内容。
     public func contents(of entry: TreeEntry) async throws -> Data {
-        guard !entry.isSubmodule else {
+        guard entry.type == "blob" else {
             throw RepositoryReadError.invalidQuery
         }
 

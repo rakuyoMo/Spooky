@@ -22,7 +22,7 @@ public struct OperationProgress: Sendable, Equatable {
     static let stateFiles = [
         "MERGE_HEAD", "SQUASH_MSG", "CHERRY_PICK_HEAD", "REVERT_HEAD", "MERGE_MSG",
         "rebase-merge/head-name", "rebase-merge/onto", "rebase-merge/orig-head",
-        "rebase-merge/msgnum", "rebase-merge/end", "rebase-merge/done",
+        "rebase-merge/msgnum", "rebase-merge/end", "rebase-merge/done", "rebase-merge/amend",
         "rebase-apply/head-name", "rebase-apply/onto", "rebase-apply/orig-head",
         "rebase-apply/next", "rebase-apply/last", "rebase-apply/final-commit",
         "sequencer/todo",
@@ -54,6 +54,9 @@ public struct OperationProgress: Sendable, Equatable {
 
     /// 这次操作中已经标记解决的冲突文件，来自索引的 resolve-undo 记录。
     public internal(set) var resolvedPaths: Set<String> = []
+
+    /// 交互式变基按 edit 指令停在这一步，等待修改后继续；冲突造成的停顿不算。
+    public internal(set) var stopsForEdit = false
 }
 
 extension OperationProgress {
@@ -179,7 +182,14 @@ extension WorkingCopyOperations {
             return false
         }
 
-        let files = try await stateFiles(["rebase-merge/stopped-sha", "rebase-apply/original-commit", "sequencer/todo"])
+        let files = try await stateFiles([
+            "rebase-merge/stopped-sha", "rebase-merge/amend", "rebase-apply/original-commit", "sequencer/todo",
+        ])
+
+        // 停在 edit 上时暂存区与 HEAD 相同是常态，继续就是让 Git 接着处理后面的指令
+        guard files["rebase-merge/amend"] == nil else {
+            return false
+        }
         let commit = [
             "-c", "i18n.commitencoding=UTF-8", "-c", "commit.verbose=false",
             "commit", "--allow-empty", "--no-verify", "-q",
@@ -247,7 +257,7 @@ extension OperationProgress {
             ? value("rebase-apply/final-commit").flatMap { $0.split(separator: "\n").first.map(String.init) }
             : current?.subject
 
-        return Self(
+        var progress = Self(
             state: .rebase,
             ours: value(backend + "onto"),
             theirs: value(backend + "orig-head"),
@@ -257,6 +267,10 @@ extension OperationProgress {
             stepKind: ["edit", "e"].contains(current?.command ?? "") ? .editing : .applying,
             stepSubject: subject
         )
+
+        // Git 只在 edit 指令主动停下时写 amend，记下要修改的提交
+        progress.stopsForEdit = !apply && value("rebase-merge/amend") != nil
+        return progress
     }
 
     /// 摘取与反转：序列看 sequencer/todo 的第一条指令，单个提交看 CHERRY_PICK_HEAD、REVERT_HEAD。

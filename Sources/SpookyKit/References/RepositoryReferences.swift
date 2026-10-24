@@ -27,6 +27,22 @@ public struct ReferenceDivergence: Sendable, Equatable {
 
 /// 同一次 for-each-ref 快照中的引用。
 public struct RepositoryReference: Sendable, Equatable, Identifiable {
+    /// `snapshot()` 的 for-each-ref 格式；字段以 NUL 结尾，顺序与 `parse(_:)` 一一对应。
+    ///
+    /// 标签说明只对附注标签输出，分支不带回提交说明。
+    static let format = [
+        "%(refname)", "%(objectname)", "%(objecttype)", "%(*objectname)", "%(*objecttype)",
+        "%(upstream)", "%(upstream:remotename)", "%(upstream:remoteref)", "%(symref)",
+        "%(creatordate:unix)",
+        "%(if:equals=tag)%(objecttype)%(then)%(contents:subject)%(end)",
+        "%(if:equals=tag)%(objecttype)%(then)%(contents:body)%(end)",
+    ]
+    .map { $0 + "%00" }
+    .joined()
+
+    /// 每条记录的字段数。
+    private static let fieldCount = 12
+
     /// 完整引用名，操作不使用有歧义的缩写。
     public let id: String
 
@@ -48,11 +64,20 @@ public struct RepositoryReference: Sendable, Equatable, Identifiable {
     /// 符号引用的目标，用于远端 HEAD。
     public let symbolicTarget: String?
 
+    /// 引用指向对象的创建时间：分支是顶端提交的提交时间，附注标签是打标签的时间；读不到时为 nil。
+    public let date: Date?
+
+    /// 附注标签的说明，不含签名；轻量标签与其它引用为 nil。
+    public let message: String?
+
     /// 引用是否为本地分支。
     public var isLocal: Bool { id.hasPrefix("refs/heads/") }
 
     /// 引用是否为远端跟踪分支。
     public var isRemote: Bool { id.hasPrefix("refs/remotes/") }
+
+    /// 引用是否为标签。
+    public var isTag: Bool { id.hasPrefix("refs/tags/") }
 
     /// 供界面展示的名称，保留远端前缀。
     public var name: String {
@@ -62,22 +87,56 @@ public struct RepositoryReference: Sendable, Equatable, Identifiable {
         return id
     }
 
+    /// 创建一条引用；时间与标签说明可省略，供只关心引用关系的调用方使用。
+    init(
+        id: String,
+        objectID: String,
+        objectType: String,
+        upstream: String?,
+        upstreamRemote: String?,
+        upstreamBranch: String?,
+        symbolicTarget: String?,
+        date: Date? = nil,
+        message: String? = nil
+    ) {
+        self.id = id
+        self.objectID = objectID
+        self.objectType = objectType
+        self.upstream = upstream
+        self.upstreamRemote = upstreamRemote
+        self.upstreamBranch = upstreamBranch
+        self.symbolicTarget = symbolicTarget
+        self.date = date
+        self.message = message
+    }
+
     /// 解析固定 NUL 字段，仅移除 Git 在记录间额外插入的一个换行。
     static func parse(_ data: Data) throws -> [Self] {
         guard !data.isEmpty else { return [] }
         let fields = data.split(separator: 0, omittingEmptySubsequences: false)
-        guard fields.count % 9 == 1, fields.last == Data([10]) else {
+        guard fields.count % fieldCount == 1, fields.last == Data([10]) else {
             throw RepositoryReadError.malformedOutput("for-each-ref")
         }
 
-        return try stride(from: 0, to: fields.count - 1, by: 9)
+        return try stride(from: 0, to: fields.count - 1, by: fieldCount)
             .map { start in
-                var values = fields[start ..< (start + 9)].map { String(decoding: $0, as: UTF8.self) }
+                var values = fields[start ..< (start + fieldCount)].map { String(decoding: $0, as: UTF8.self) }
                 if start > 0, values[0].hasPrefix("\n") { values[0].removeFirst() }
                 guard
                     values[0].hasPrefix("refs/"), GitObjectID.isValid(values[1]),
                     values[3].isEmpty || GitObjectID.isValid(values[3])
                 else {
+                    throw RepositoryReadError.malformedOutput("for-each-ref")
+                }
+
+                // 时间是 Unix 秒数；符号引用等读不到时间的记录留空
+                let date: Date?
+
+                if values[9].isEmpty {
+                    date = nil
+                } else if let seconds = Int64(values[9]) {
+                    date = Date(timeIntervalSince1970: TimeInterval(seconds))
+                } else {
                     throw RepositoryReadError.malformedOutput("for-each-ref")
                 }
 
@@ -88,9 +147,22 @@ public struct RepositoryReference: Sendable, Equatable, Identifiable {
                     upstream: values[5].isEmpty ? nil : values[5],
                     upstreamRemote: values[6].isEmpty ? nil : values[6],
                     upstreamBranch: values[7].isEmpty ? nil : values[7],
-                    symbolicTarget: values[8].isEmpty ? nil : values[8]
+                    symbolicTarget: values[8].isEmpty ? nil : values[8],
+                    date: date,
+                    message: tagMessage(subject: values[10], body: values[11])
                 )
             }
+    }
+
+    /// 标题与正文之间按 Git 的写法空一行；两者都空时没有说明。
+    private static func tagMessage(subject: String, body: String) -> String? {
+        let body = body.trimmingCharacters(in: .newlines)
+
+        if body.isEmpty {
+            return subject.isEmpty ? nil : subject
+        }
+
+        return subject + "\n\n" + body
     }
 }
 
@@ -107,13 +179,32 @@ public struct RepositoryRemote: Sendable, Equatable, Identifiable {
 
 // MARK: - ReferenceSnapshot
 
-/// 一致读取的引用与远端名单。
+/// 一致读取的引用、远端名单与本地分支的附加信息。
 public struct ReferenceSnapshot: Sendable, Equatable {
     /// 本地、远端与标签引用；标签用于历史标记。
     public let references: [RepositoryReference]
 
     /// 即使尚未 Fetch，空远端也保留分组。
     public let remotes: [RepositoryRemote]
+
+    /// 本地分支的置顶、归档与父分支，以完整引用名为键；没有任何记录的分支不在表中。
+    public let metadata: [String: BranchMetadata]
+
+    /// 创建快照；附加信息可省略，供只关心引用关系的调用方使用。
+    init(
+        references: [RepositoryReference],
+        remotes: [RepositoryRemote],
+        metadata: [String: BranchMetadata] = [:]
+    ) {
+        self.references = references
+        self.remotes = remotes
+        self.metadata = metadata
+    }
+
+    /// 本地分支的附加信息；没有记录时是默认值：不置顶、不归档、没有父分支。
+    public func metadata(for branch: String) -> BranchMetadata {
+        metadata[branch] ?? BranchMetadata()
+    }
 
     /// 用最长前缀匹配带斜杠的远端名。
     public func remote(for reference: RepositoryReference) -> RepositoryRemote? {
@@ -159,17 +250,18 @@ public struct RepositoryReferences: Sendable {
         return result
     }
 
-    /// 一次读取全部引用，另一次读取远端名字，空仓库也是合法快照。
+    /// 一次读取全部引用，另一次读取远端名字，再一次读取分支的附加信息；三者并发，空仓库也是合法快照。
     public func snapshot() async throws -> ReferenceSnapshot {
         async let refs = runner.run([
             "for-each-ref", "--sort=refname",
-            "--format=%(refname)%00%(objectname)%00%(objecttype)%00%(*objectname)%00%(*objecttype)%00%(upstream)%00%(upstream:remotename)%00%(upstream:remoteref)%00%(symref)%00",
+            "--format=" + RepositoryReference.format,
             "refs/heads", "refs/remotes", "refs/tags",
         ])
         async let config = runner.execute(
             ["config", "-z", "--get-regexp", "^remote\\."],
             acceptedExitCodes: [0, 1]
         )
+        async let branchMetadata = metadata()
         let references = try RepositoryReference.parse(await refs)
         let configuration = try await config.standardOutput
         var names = Set<String>()
@@ -185,9 +277,10 @@ public struct RepositoryReferences: Sendable {
             }
             names.insert(String(key[key.index(key.startIndex, offsetBy: 7) ..< last]))
         }
-        return ReferenceSnapshot(
+        return try await ReferenceSnapshot(
             references: references,
-            remotes: names.sorted().map { RepositoryRemote(name: $0) }
+            remotes: names.sorted().map { RepositoryRemote(name: $0) },
+            metadata: branchMetadata
         )
     }
 
@@ -228,16 +321,28 @@ public struct RepositoryReferences: Sendable {
         }
     }
 
-    /// 以 Git 的分支规则校验，拒绝前一分支快捷写法及选项形式。
+    /// 以 Git 的分支规则校验，拒绝前一分支快捷写法、选项形式、控制字符与和对象哈希混淆的名字。
     public func validate(name: String) async throws {
-        guard !name.isEmpty, !name.hasPrefix("-"), !name.contains("@{") else {
-            throw RepositoryReadError.invalidQuery
+        guard Self.isPlausibleName(name) else {
+            throw ReferenceError.invalidName(name)
         }
-        _ = try await runner.run(["check-ref-format", "--branch", name])
+
+        try await checkFormat(["--branch", name], rejecting: name)
     }
 
-    /// 新建并检出使用同一条 switch，检出失败不会遗留已创建的分支。
-    public func create(name: String, startingAt start: String, track: Bool, checkout: Bool) async throws {
+    /// 新建并检出使用同一条 switch，检出失败不会遗留已创建的分支；置顶与父分支在同一个仓库操作里写入。
+    ///
+    /// - Parameters:
+    ///   - pinned: 是否置顶新分支。
+    ///   - parent: 父分支的完整引用名；为 nil 时不设置。
+    public func create(
+        name: String,
+        startingAt start: String,
+        track: Bool,
+        checkout: Bool,
+        pinned: Bool = false,
+        parent: String? = nil
+    ) async throws {
         try await runner.writeTransaction {
             try await validate(name: name)
             let revision = try await resolve(start)
@@ -247,6 +352,15 @@ public struct RepositoryReferences: Sendable {
             }
             let command = checkout ? ["switch", "-c", name] : ["branch", name]
             _ = try await runner.run(command + [track ? "--track=direct" : "--no-track", target])
+
+            // 分支已经建好，附加信息写在它的配置段里
+            if pinned {
+                try await setPinned(true, branches: ["refs/heads/" + name])
+            }
+
+            if let parent {
+                try await setParent(parent, of: "refs/heads/" + name)
+            }
         }
     }
 
@@ -256,12 +370,22 @@ public struct RepositoryReferences: Sendable {
         _ = try await runner.run(["switch", "--no-guess", "--", String(reference.dropFirst(11))])
     }
 
-    /// 普通删除保留 Git 的未合并保护；失败由调用方展示原始输出。
-    public func delete(_ references: [String]) async throws {
+    /// 普通删除保留 Git 的未合并保护，强制删除用 `-D`；多个分支一条命令删除，Git 删掉能删的。
+    ///
+    /// 普通删除因未合并失败时抛出 ``ReferenceError/unmergedBranches(_:_:)``，带上未合并分支与 Git 原文，供强制删除。
+    public func delete(_ references: [String], force: Bool = false) async throws {
         guard !references.isEmpty, references.allSatisfy({ $0.hasPrefix("refs/heads/") }) else {
             throw RepositoryReadError.invalidQuery
         }
-        _ = try await runner.run(["branch", "-d", "--"] + references.map { String($0.dropFirst(11)) })
+
+        do {
+            _ = try await runner.run(
+                ["branch", force ? "-D" : "-d", "--"] + references.map { String($0.dropFirst(11)) }
+            )
+        } catch let error as GitError where error.category == .branchNotMerged {
+            let unmerged = Self.unmergedBranches(in: error.message)
+            throw ReferenceError.unmergedBranches(unmerged.map { "refs/heads/" + $0 }, error)
+        }
     }
 
     /// 起点解析只接受一个提交，--end-of-options 阻止输入成为 Git 选项。

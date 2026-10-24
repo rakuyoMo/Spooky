@@ -88,10 +88,6 @@ extension RepositoryWindowController {
         presentRepositoryAction(RepositoryActionRequest(kind: .create, reference: revision))
     }
 
-    /// 检出表单只列出本地分支。
-    @objc
-    func checkoutBranch() { presentRepositoryAction(RepositoryActionRequest(kind: .checkout)) }
-
     /// 获取入口收集远端与清理选项。
     @objc
     func fetch() { presentRepositoryAction(RepositoryActionRequest(kind: .fetch)) }
@@ -129,10 +125,7 @@ extension RepositoryWindowController {
     /// 提交图开关同时作用于列表头和主菜单。
     @objc
     func toggleHistoryGraph() {
-        UserDefaults.standard.set(
-            !UserDefaults.standard.bool(forKey: "historyShowGraph"),
-            forKey: "historyShowGraph"
-        )
+        UserDefaults.standard.set(!HistoryViewSettings().showsGraph, forKey: HistoryViewSettings.showGraphKey)
     }
 
     /// 小号行采用 24 pt 高度。
@@ -174,13 +167,14 @@ extension RepositoryWindowController {
                 },
                 submit: { [weak self, weak sheet] title, action in
                     // 只有写操作真正开始才关闭表单；仓库忙碌或断线时保留未发送的参数。
-                    // 检出、拉取与合并被本地改动挡住时按设置询问是否先储藏
+                    // 拉取与合并被本地改动挡住时按设置询问是否先储藏
                     guard
                         let self, let sheet, session.repository == repository,
                         session.performGit(
                             action,
                             title: title,
-                            offersAutoStash: [.checkout, .pull, .merge].contains(request.kind)
+                            offersAutoStash: [.pull, .merge].contains(request.kind),
+                            undo: [.create, .track, .merge].contains(request.kind) ? .reversible : .irreversible
                         )
                     else { return false }
 
@@ -196,15 +190,24 @@ extension RepositoryWindowController {
     func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
         let repositoryView = !showsManager && session.repository != nil
 
-        // 分支与同步、工作区文件、历史显示、储藏与 Diff 各组动作分别判断，组外的窗口级动作在下方判断。
-        let enabled = branchAndSyncAvailability(of: item.action, repositoryView: repositoryView)
-            ?? workingCopyAvailability(of: item.action, repositoryView: repositoryView)
+        // 各组动作分别判断，组与组认领的动作互不重叠；一条链太长会让类型检查超时，按引用、视图与内容分成三段。
+        let references: Bool? = branchAndSyncAvailability(of: item.action, repositoryView: repositoryView)
+            ?? syncAvailability(of: item.action, repositoryView: repositoryView)
+            ?? rewriteAvailability(of: item.action, repositoryView: repositoryView)
+            ?? referenceAvailability(of: item.action, repositoryView: repositoryView)
+
+        let views: Bool? = workingCopyAvailability(of: item.action, repositoryView: repositoryView)
             ?? historyDisplayAvailability(of: item)
-            ?? stashAvailability(of: item.action, repositoryView: repositoryView)
+            ?? historyViewSettingsAvailability(of: item)
+            ?? historyDetailsAvailability(of: item, repositoryView: repositoryView)
+            ?? branchesReviewAvailability(of: item)
+
+        let contents: Bool? = stashAvailability(of: item.action, repositoryView: repositoryView)
             ?? diffAvailability(of: item)
             ?? workingCopyFileAvailability(of: item)
 
-        if let enabled {
+        // 组外的窗口级动作在下方判断
+        if let enabled = references ?? views ?? contents {
             return enabled
         }
 
@@ -228,6 +231,9 @@ extension RepositoryWindowController {
             return !showsManager && session.repository != nil
 
         case #selector(showWorkingCopy), #selector(showHistory):
+            return session.repository != nil
+
+        case #selector(showReflog):
             return session.repository != nil
 
         case #selector(focusSearch):
@@ -258,9 +264,6 @@ extension RepositoryWindowController {
 
         case #selector(createBranch):
             repositoryView && session.canCreateBranch
-
-        case #selector(checkoutBranch):
-            repositoryView && session.canCheckout
 
         default:
             nil
@@ -302,14 +305,14 @@ extension RepositoryWindowController {
     private func historyDisplayAvailability(of item: any NSValidatedUserInterfaceItem) -> Bool? {
         switch item.action {
         case #selector(toggleHistoryGraph):
-            (item as? NSMenuItem)?.state = UserDefaults.standard.bool(forKey: "historyShowGraph") ? .on : .off
+            (item as? NSMenuItem)?.state = HistoryViewSettings().showsGraph ? .on : .off
             return !showsManager && session.activeView == .history
 
         case #selector(smallHistoryRows), #selector(mediumHistoryRows):
             let small = UserDefaults.standard.bool(forKey: "historySmallRows")
             (item as? NSMenuItem)?.state = (item.action == #selector(smallHistoryRows)) == small ? .on : .off
             return !showsManager && session.activeView == .history
-                && UserDefaults.standard.bool(forKey: "historyShowGraph")
+                && HistoryViewSettings().showsGraph
 
         case #selector(expandChanges), #selector(collapseChanges), #selector(setAutoExpand(_:)):
             if item.action == #selector(setAutoExpand(_:)), let item = item as? NSMenuItem {
