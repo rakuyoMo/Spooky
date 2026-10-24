@@ -7,7 +7,7 @@ import SwiftUI
 /// Workspace、置顶、分支、归档、标签与远端各分组，加上活动区与底栏，共用仓库窗口侧边栏。
 struct RepositorySidebarView: View {
     /// 侧边栏的分组；分组标题都可以收起。
-    enum Group: Hashable {
+    enum SidebarGroup: Hashable {
         /// 工作区、历史与储藏入口。
         case workspace
 
@@ -93,7 +93,7 @@ struct RepositorySidebarView: View {
 
     /// 收起的分组；Tags 默认收起。
     @State
-    var collapsedGroups: Set<Group> = [.tags]
+    var collapsedGroups: Set<SidebarGroup> = [.tags]
 
     /// 展开的远端与文件夹；默认只展开名为 origin 的远端。
     @State

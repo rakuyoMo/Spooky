@@ -194,7 +194,7 @@ extension RepositorySidebarView {
     }
 
     /// 分组的展开状态；过滤时固定展开，清空后回到原来的状态。
-    func isExpanded(_ group: Group) -> Binding<Bool> {
+    func isExpanded(_ group: SidebarGroup) -> Binding<Bool> {
         Binding(
             get: { isFiltering || !collapsedGroups.contains(group) },
             set: { expanded in

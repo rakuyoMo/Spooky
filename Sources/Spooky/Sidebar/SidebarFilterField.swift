@@ -22,7 +22,7 @@ struct SidebarFilterField: View {
     var body: some View {
         HStack(spacing: 0) {
             Button(action: expandAndFocus) {
-                Image(systemName: text.isEmpty ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                Image(systemName: symbol)
                     .foregroundStyle(text.isEmpty ? Color.secondary : Color.accentColor)
                     .frame(width: 22, height: 22)
             }
@@ -59,6 +59,11 @@ struct SidebarFilterField: View {
         .onChange(of: isFocused) { _, focused in
             if !focused, text.isEmpty { setExpanded(false) }
         }
+    }
+
+    /// 按钮图标：有过滤文字时换成实心的版本，并用强调色着色。
+    private var symbol: String {
+        text.isEmpty ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill"
     }
 
     /// 点按钮：展开并开始编辑。
