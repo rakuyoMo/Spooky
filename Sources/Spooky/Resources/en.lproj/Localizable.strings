@@ -652,7 +652,7 @@
 "showFile.searchRevisions" = "Search Revisions";
 "showFile.searchFiles" = "Search Files";
 "showFile.error.missing" = "File Not Found at This Revision";
-/* Diff 显示选项、语法着色、图片 Diff、导出 Diff 与保存补丁，以及设置 → Text。 */
+/* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "With whitespace ignored, the selected lines don’t match the changes in the file. Show whitespace changes and select the lines again.";
 "diff.ignoreWhitespace" = "Ignore Whitespace Changes";
 "diff.showEntireFile" = "Show Entire File";
@@ -680,13 +680,6 @@
 "diff.imageSize" = "%ld × %ld pixels, %@";
 "diff.imageMode" = "Image Comparison";
 "diff.imageSide" = "Displayed Version";
-"diff.savePatch" = "Save Patch…";
-"diff.exportDiff" = "Export Diff…";
-"diff.savePatch.title" = "Save Patch";
-"diff.savePatch.message" = "Changes relative to HEAD in the selected files (%ld), including staged, unstaged, and untracked changes, will be saved as a patch file that can be applied with git apply.";
-"diff.savePatch.submit" = "Save Patch";
-"diff.omitPrefixes" = "Omit Prefixes";
-"diff.omitPrefixes.help" = "Don’t show any source or destination prefix";
 
 /* 提交体验、身份档案与签名。 */
 "signing.error" = "Commit signing failed. Check the signing key and the signing program.";
