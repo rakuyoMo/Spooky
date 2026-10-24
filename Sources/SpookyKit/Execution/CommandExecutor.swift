@@ -9,6 +9,10 @@ enum CommandExecutor {
     /// 取消时 TERM 与 KILL 之间的宽限期，与服务器包装器的默认宽限期一致。
     static let cancellationGrace = Duration.seconds(2)
 
+    /// 为 true 时标准输出只交给输出回调，不收集进结果，也不受单次输出上限约束；导出与保存补丁据此边读边写盘。
+    @TaskLocal
+    static var streamsStandardOutput = false
+
     /// 同时排空两条管道；公开结果只包含业务参数，不记录环境和输入。
     static func execute(
         executable: String,
@@ -123,6 +127,9 @@ private actor GitOutputCollector {
     /// 可选的流式输出订阅者。
     private let onOutput: (@Sendable (GitOutputEvent) -> Void)?
 
+    /// 标准输出只转交订阅者，不收集。
+    private let streamsStandardOutput = CommandExecutor.streamsStandardOutput
+
     /// 创建一次命令专用的输出收集器。
     init(onOutput: (@Sendable (GitOutputEvent) -> Void)?) {
         self.onOutput = onOutput
@@ -132,6 +139,12 @@ private actor GitOutputCollector {
     func consume(_ sequence: SubprocessOutputSequence, isError: Bool) async throws {
         for try await buffer in sequence {
             let data = Data(buffer: buffer)
+
+            // 写盘的输出可能远超内存上限，原样转交后不再保留
+            if !isError, streamsStandardOutput {
+                onOutput?(.standardOutput(data))
+                continue
+            }
             let limit = isError ? 1024 * 1024 : 256 * 1024 * 1024
             let count = isError ? standardError.count : standardOutput.count
             let retained = data.prefix(max(0, limit - count))

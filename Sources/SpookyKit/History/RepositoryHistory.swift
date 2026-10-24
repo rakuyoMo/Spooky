@@ -122,87 +122,175 @@ public struct CommitFileChange: Sendable, Equatable, Identifiable {
     public var id: String { path }
 
     /// raw 与 numstat 通过原始路径配对，二进制和重命名不会让后续统计错位。
-    static func parse(_ data: Data) throws -> [Self] {
+    ///
+    /// - Parameter combined: 请求的是组合 Diff。合并提交的记录以 `::` 开头、没有增删行数；
+    ///   同一输出里的 numstat 是与第一父提交比较的结果，对不上单父记录的统计忽略。
+    static func parse(_ data: Data, combined: Bool = false) throws -> [Self] {
         guard !data.isEmpty else { return [] }
         guard data.last == 0 else { throw RepositoryReadError.malformedOutput("changeset") }
+
         let fields = data
             .dropLast()
             .split(separator: 0, omittingEmptySubsequences: false)
             .map { String(decoding: $0, as: UTF8.self) }
-        var files: [Self] = []
-        var indices: [String: Int] = [:]
-        var counted = Set<String>()
+
+        var records: [(file: Self, combined: Bool)] = []
+        var statistics: [ChangeStatistic] = []
         var cursor = 0
 
+        // 组合 Diff 的 numstat 排在 raw 之前，先分别收集两种记录，再按路径配对。
         while cursor < fields.count {
             let field = fields[cursor]
             cursor += 1
 
             if field.hasPrefix(":") {
-                let header = field.dropFirst().split(separator: " ")
-                guard
-                    header.count == 5,
-                    header[0].count == 6, header[1].count == 6,
-                    header[0].allSatisfy({ "01234567".contains($0) }),
-                    header[1].allSatisfy({ "01234567".contains($0) }),
-                    GitObjectID.isValid(String(header[2])), GitObjectID.isValid(String(header[3])),
-                    let status = header[4].first, "ADMCRTU".contains(status),
-                    cursor < fields.count
-                else { throw RepositoryReadError.malformedOutput("changeset") }
-
-                let original = fields[cursor]
-                cursor += 1
-                let renamed = status == "R" || status == "C"
-                guard !renamed || cursor < fields.count else {
-                    throw RepositoryReadError.malformedOutput("changeset")
-                }
-                let path = renamed ? fields[cursor] : original
-                if renamed { cursor += 1 }
-                guard !path.isEmpty, !original.isEmpty, indices[path] == nil else {
-                    throw RepositoryReadError.malformedOutput("changeset")
-                }
-                indices[path] = files.count
-                files.append(
-                    Self(
-                        path: path,
-                        originalPath: renamed ? original : nil,
-                        status: String(status),
-                        additions: nil,
-                        deletions: nil
-                    )
-                )
+                records.append(try record(field, fields: fields, cursor: &cursor))
             } else {
-                let stats = field.split(separator: "\t", maxSplits: 2, omittingEmptySubsequences: false)
-                guard stats.count == 3 else { throw RepositoryReadError.malformedOutput("numstat") }
-                var path = String(stats[2])
-                var original: String?
-
-                // 重命名统计使用空路径字段，随后是两个独立的 NUL 路径。
-                if path.isEmpty {
-                    guard cursor + 1 < fields.count else {
-                        throw RepositoryReadError.malformedOutput("numstat")
-                    }
-                    original = fields[cursor]
-                    path = fields[cursor + 1]
-                    cursor += 2
-                }
-
-                let binary = stats[0] == "-" && stats[1] == "-"
-                let additions = Int(stats[0])
-                let deletions = Int(stats[1])
-                guard
-                    let index = indices[path], !counted.contains(path),
-                    files[index].originalPath == original,
-                    binary || ((additions ?? -1) >= 0 && (deletions ?? -1) >= 0)
-                else { throw RepositoryReadError.malformedOutput("numstat") }
-                files[index].additions = additions
-                files[index].deletions = deletions
-                counted.insert(path)
+                statistics.append(try ChangeStatistic(field, fields: fields, cursor: &cursor))
             }
         }
 
-        guard counted.count == files.count else { throw RepositoryReadError.malformedOutput("numstat") }
+        return try counted(records, statistics: statistics, strict: !combined)
+    }
+
+    /// 解析一条 raw 记录：单父为 “:旧模式 新模式 旧哈希 新哈希 状态”，组合 Diff 的冒号、模式与哈希随父提交数增加。
+    private static func record(
+        _ header: String,
+        fields: [String],
+        cursor: inout Int
+    ) throws -> (file: Self, combined: Bool) {
+        let parents = header.prefix { $0 == ":" }.count
+        let parts = header.dropFirst(parents).split(separator: " ")
+
+        guard
+            parts.count == 2 * (parents + 1) + 1,
+            parts.prefix(parents + 1).allSatisfy({ $0.count == 6 && $0.allSatisfy { "01234567".contains($0) } }),
+            parts.dropFirst(parents + 1).dropLast().allSatisfy({ GitObjectID.isValid(String($0)) }),
+            let letters = parts.last,
+            cursor < fields.count
+        else { throw RepositoryReadError.malformedOutput("changeset") }
+
+        // 单父的状态可带相似度分数，如 R100；组合 Diff 每个父提交一个字母
+        let statuses = parents == 1 ? String(letters.prefix(1)) : String(letters)
+
+        guard
+            statuses.count == parents,
+            statuses.allSatisfy({ "ADMCRTU".contains($0) })
+        else { throw RepositoryReadError.malformedOutput("changeset") }
+
+        let original = fields[cursor]
+        cursor += 1
+
+        // 组合 Diff 只给出合并结果里的路径，重命名的来源路径只出现在单父记录里
+        let renamed = parents == 1 && (statuses == "R" || statuses == "C")
+
+        guard !renamed || cursor < fields.count else {
+            throw RepositoryReadError.malformedOutput("changeset")
+        }
+
+        let path = renamed ? fields[cursor] : original
+        if renamed { cursor += 1 }
+
+        guard !path.isEmpty, !original.isEmpty else { throw RepositoryReadError.malformedOutput("changeset") }
+
+        // 组合 Diff 相对各父提交的状态不同时按修改显示
+        let status = Set(statuses).count == 1 ? String(statuses.prefix(1)) : "M"
+
+        let file = Self(
+            path: path,
+            originalPath: renamed ? original : nil,
+            status: status,
+            additions: nil,
+            deletions: nil
+        )
+
+        return (file, parents > 1)
+    }
+
+    /// 把增删行数填回对应的单父记录；严格模式下每条统计都必须配对，两种模式下每条单父记录都必须有统计。
+    private static func counted(
+        _ records: [(file: Self, combined: Bool)],
+        statistics: [ChangeStatistic],
+        strict: Bool
+    ) throws -> [Self] {
+        var files = records.map(\.file)
+        var indices: [String: Int] = [:]
+
+        for (index, file) in files.enumerated() {
+            guard indices[file.path] == nil else { throw RepositoryReadError.malformedOutput("changeset") }
+            indices[file.path] = index
+        }
+
+        var counted = Set<String>()
+
+        for statistic in statistics {
+            guard
+                let index = indices[statistic.path],
+                !records[index].combined,
+                !counted.contains(statistic.path),
+                files[index].originalPath == statistic.original
+            else {
+                if strict { throw RepositoryReadError.malformedOutput("numstat") }
+                continue
+            }
+
+            files[index].additions = statistic.additions
+            files[index].deletions = statistic.deletions
+            counted.insert(statistic.path)
+        }
+
+        guard counted.count == records.count(where: { !$0.combined }) else {
+            throw RepositoryReadError.malformedOutput("numstat")
+        }
+
         return files
+    }
+}
+
+// MARK: - ChangeStatistic
+
+/// 一条 numstat 记录；二进制文件的增删行数为 nil。
+private struct ChangeStatistic {
+    /// 修改后的路径。
+    let path: String
+
+    /// 重命名或复制的来源路径。
+    let original: String?
+
+    /// 新增行数。
+    let additions: Int?
+
+    /// 删除行数。
+    let deletions: Int?
+
+    /// 解析 “增\t删\t路径”；重命名的路径字段为空，随后是来源与目标两个 NUL 字段。
+    init(_ field: String, fields: [String], cursor: inout Int) throws {
+        let stats = field.split(separator: "\t", maxSplits: 2, omittingEmptySubsequences: false)
+        guard stats.count == 3 else { throw RepositoryReadError.malformedOutput("numstat") }
+
+        var path = String(stats[2])
+        var original: String? = nil
+
+        if path.isEmpty {
+            guard cursor + 1 < fields.count else { throw RepositoryReadError.malformedOutput("numstat") }
+
+            original = fields[cursor]
+            path = fields[cursor + 1]
+            cursor += 2
+        }
+
+        let binary = stats[0] == "-" && stats[1] == "-"
+        let additions = Int(stats[0])
+        let deletions = Int(stats[1])
+
+        guard binary || ((additions ?? -1) >= 0 && (deletions ?? -1) >= 0) else {
+            throw RepositoryReadError.malformedOutput("numstat")
+        }
+
+        self.path = path
+        self.original = original
+        self.additions = additions
+        self.deletions = deletions
     }
 }
 
@@ -257,23 +345,31 @@ public struct RepositoryHistory: Sendable {
         return HistoryPage(commits: Array(commits.prefix(limit)), hasMore: commits.count > limit)
     }
 
-    /// 根提交显式显示全部新增，合并提交统一比较第一父提交；变更集只由提交哈希决定，按哈希复用。
-    public func changes(in commit: String) async throws -> [CommitFileChange] {
+    /// 根提交显式显示全部新增，合并提交按指定方式比较；变更集只由提交哈希与方式决定，按参数复用。
+    public func changes(
+        in commit: String,
+        mergeMode: MergeDiffMode = .firstParent
+    ) async throws -> [CommitFileChange] {
         guard GitObjectID.isValid(commit) else { throw RepositoryReadError.invalidQuery }
+
         let output = try await runner.immutableRun(
-            Self.logOptions + [
-                "show", "--format=", "--root", "--diff-merges=first-parent", "--no-color",
-                "--no-ext-diff", "--no-textconv", "--raw", "--numstat", "--no-abbrev", "-z", "-M", "-C",
-                commit, "--",
-            ]
+            Self.logOptions
+                + ["show", "--format=", "--root"]
+                + mergeMode.arguments
+                + [
+                    "--no-color", "--no-ext-diff", "--no-textconv", "--raw", "--numstat", "--no-abbrev",
+                    "-z", "-M", "-C", commit, "--",
+                ]
         )
-        return try CommitFileChange.parse(output)
+
+        return try CommitFileChange.parse(output, combined: mergeMode == .mergedFilePaths)
     }
 
-    /// 按需加载指定提交的文件补丁，不沿历史搜索更早修改；补丁按提交哈希与路径复用。
+    /// 按需加载指定提交的文件补丁，不沿历史搜索更早修改；补丁按提交哈希、方式与路径复用。
     public func diff(
         in commit: String,
         file: CommitFileChange,
+        mergeMode: MergeDiffMode = .firstParent,
         options: DiffOptions = DiffOptions(),
         warningKilobytes: Int = WorkingCopyOperations.defaultWarningKilobytes,
         showLarge: Bool = false
@@ -281,21 +377,21 @@ public struct RepositoryHistory: Sendable {
         guard GitObjectID.isValid(commit) else { throw RepositoryReadError.invalidQuery }
         let paths = [file.path] + (file.originalPath.map { [$0] } ?? [])
         let patch = try await runner.immutableRun(
-            RepositoryFileViews.storedPathOptions + Self.logOptions + [
-                "show", "--format=", "--root", "--diff-merges=first-parent", "--no-color",
-                "--word-diff=none", "--no-ext-diff", "--no-textconv", "--full-index", "-M", "-C",
-                "--src-prefix=a/", "--dst-prefix=b/",
-            ] + options.arguments + [commit, "--"] + paths
+            RepositoryFileViews.storedPathOptions + Self.logOptions
+                + ["show", "--format=", "--root"]
+                + mergeMode.arguments
+                + [
+                    "--no-color", "--word-diff=none", "--no-ext-diff", "--no-textconv", "--full-index",
+                    "-M", "-C", "--src-prefix=a/", "--dst-prefix=b/",
+                ]
+                + options.arguments + [commit, "--"] + paths
         )
-        let threshold = max(0, min(warningKilobytes, Int.max / 1000)) * 1000
 
-        // Foundation 的 range(of:) 与 contains 结果相同，在数十 MB 的补丁上快数百倍。
-        // swiftlint:disable:next contains_over_range_nil_comparison
-        let binary = patch.range(of: Data("\nBinary files ".utf8)) != nil
-        return CommitDiff(
-            byteCount: patch.count,
-            diff: patch.count <= threshold || showLarge || binary ? try RepositoryDiff(patch: patch) : nil,
-            onlyWhitespaceChanges: options.ignoresWhitespace && patch.isEmpty
+        return try CommitDiff(
+            patch: patch,
+            options: options,
+            warningKilobytes: warningKilobytes,
+            showLarge: showLarge
         )
     }
 
