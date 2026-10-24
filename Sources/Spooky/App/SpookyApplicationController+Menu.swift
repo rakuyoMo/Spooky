@@ -265,12 +265,12 @@ extension SpookyApplicationController {
         )
     }
 
-    /// Working Copy 菜单：检出、合并与应用补丁，储藏，提交与暂存，丢弃改动。
+    /// Working Copy 菜单：检出版本、合并、变基到别处与应用补丁，储藏，提交与暂存，丢弃改动与重置 HEAD。
     private func configureWorkingCopyMenu(in menu: NSMenu) {
         let working = addMenu("workspace.title", to: menu)
         addItem(
-            "branch.checkout",
-            action: #selector(RepositoryWindowController.checkoutBranch),
+            "rewrite.checkout.menu",
+            action: #selector(RepositoryWindowController.checkoutRevision),
             key: "b",
             modifiers: [.shift, .command],
             to: working
@@ -280,6 +280,13 @@ extension SpookyApplicationController {
             action: #selector(RepositoryWindowController.merge),
             key: "m",
             modifiers: [.shift, .command],
+            to: working
+        )
+        addItem(
+            "rewrite.rebaseOnto.menu",
+            action: #selector(RepositoryWindowController.rebaseOnto),
+            key: "r",
+            modifiers: [.control, .shift, .command],
             to: working
         )
         addItem("files.applyPatch.menu", action: #selector(RepositoryWindowController.applyPatch), to: working)
@@ -320,6 +327,7 @@ extension SpookyApplicationController {
             key: "\u{8}", modifiers: [.shift, .command], to: working
         )
         addItem("working.discardAll", action: #selector(RepositoryWindowController.discardAll), to: working)
+        addItem("rewrite.reset.menu", action: #selector(RepositoryWindowController.resetHead), to: working)
     }
 
     /// Window 菜单：Activity 与系统窗口动作，并登记为应用的窗口菜单。

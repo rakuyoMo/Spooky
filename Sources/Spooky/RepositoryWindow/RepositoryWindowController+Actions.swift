@@ -88,10 +88,6 @@ extension RepositoryWindowController {
         presentRepositoryAction(RepositoryActionRequest(kind: .create, reference: revision))
     }
 
-    /// 检出表单只列出本地分支。
-    @objc
-    func checkoutBranch() { presentRepositoryAction(RepositoryActionRequest(kind: .checkout)) }
-
     /// 获取入口收集远端与清理选项。
     @objc
     func fetch() { presentRepositoryAction(RepositoryActionRequest(kind: .fetch)) }
@@ -174,13 +170,13 @@ extension RepositoryWindowController {
                 },
                 submit: { [weak self, weak sheet] title, action in
                     // 只有写操作真正开始才关闭表单；仓库忙碌或断线时保留未发送的参数。
-                    // 检出、拉取与合并被本地改动挡住时按设置询问是否先储藏
+                    // 拉取与合并被本地改动挡住时按设置询问是否先储藏
                     guard
                         let self, let sheet, session.repository == repository,
                         session.performGit(
                             action,
                             title: title,
-                            offersAutoStash: [.checkout, .pull, .merge].contains(request.kind)
+                            offersAutoStash: [.pull, .merge].contains(request.kind)
                         )
                     else { return false }
 
@@ -203,6 +199,7 @@ extension RepositoryWindowController {
             ?? stashAvailability(of: item.action, repositoryView: repositoryView)
             ?? diffAvailability(of: item)
             ?? workingCopyFileAvailability(of: item)
+            ?? rewriteAvailability(of: item.action, repositoryView: repositoryView)
 
         if let enabled {
             return enabled
@@ -258,9 +255,6 @@ extension RepositoryWindowController {
 
         case #selector(createBranch):
             repositoryView && session.canCreateBranch
-
-        case #selector(checkoutBranch):
-            repositoryView && session.canCheckout
 
         default:
             nil

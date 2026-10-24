@@ -13,9 +13,6 @@ struct RepositoryActionRequest {
         /// 新建跟踪远端的本地分支。
         case track = "branch.track"
 
-        /// 选择并检出本地分支。
-        case checkout = "branch.checkout"
-
         /// 获取一个或全部远端。
         case fetch = "sync.fetch"
 
@@ -224,7 +221,6 @@ struct RepositoryOperationDialog: View {
         switch request.kind {
         case .create: return validName && !source.isEmpty
         case .track: return validName && branches.contains { $0.id == source && $0.isRemote }
-        case .checkout: return branches.contains { $0.id == source && $0.isLocal }
         case .fetch:
             return !(session.history.snapshot?.remotes.isEmpty ?? true) && (allRemotes || !remote.isEmpty)
         case .pull, .merge:
@@ -274,9 +270,6 @@ extension RepositoryOperationDialog {
 
             case .track:
                 trackRows
-
-            case .checkout:
-                branchPicker(local: true)
 
             case .fetch:
                 fetchRows
@@ -476,7 +469,7 @@ extension RepositoryOperationDialog {
         .frame(height: 53)
     }
 
-    /// 合并可选两类分支；拉取和跟踪只选远端；检出只选本地。
+    /// 合并可选两类分支；拉取和跟踪只选远端。
     private func branchPicker(local: Bool?) -> some View {
         GridRow {
             Text(AppLocalization.text("branch.target")).gridColumnAlignment(.trailing)
@@ -518,9 +511,6 @@ extension RepositoryOperationDialog {
         case .track:
             source = request.reference ?? branches.first(where: \.isRemote)?.id ?? ""
             name = remoteBranchName(source)
-
-        case .checkout:
-            source = request.reference ?? branches.first(where: { $0.isLocal && $0.id != head?.id })?.id ?? ""
 
         case .fetch:
             if request.remote != nil { allRemotes = false }
@@ -666,8 +656,6 @@ extension RepositoryOperationDialog {
                         track: kind == .track || track,
                         checkout: checkout
                     )
-
-            case .checkout: try await RepositoryReferences(runner: runner).checkout(revision)
 
             case .fetch:
                 _ = try await RepositorySync(runner: runner)

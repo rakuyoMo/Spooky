@@ -320,7 +320,9 @@ extension WorkingCopyCommitView {
     /// 序列继续沿用 Git 已保存的信息，普通提交和合并收尾才编辑输入。
     private var continuesSequence: Bool {
         guard let operation = session.context?.operation else { return false }
-        return [.rebase, .cherryPick, .revert].contains(operation)
+
+        // 停在 edit 上时撤回到工作区的改动要先提交，继续在横幅里
+        return [.rebase, .cherryPick, .revert].contains(operation) && !(session.context?.progress?.stopsForEdit ?? false)
     }
 
     /// 焦点在标题与正文之间移动时不收起：失去焦点后等这一轮事件结束，另一个框没有接过焦点才收起。

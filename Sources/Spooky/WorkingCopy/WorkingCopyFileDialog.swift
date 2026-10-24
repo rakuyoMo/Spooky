@@ -364,8 +364,8 @@ extension WorkingCopyFileDialog {
 
 // MARK: - RevisionComboBox
 
-/// 可以直接输入、也可以从下拉列表选择的版本框；SwiftUI 没有组合框，由 NSComboBox 承担。
-private struct RevisionComboBox: NSViewRepresentable {
+/// 可以直接输入、也可以从下拉列表选择的版本框；SwiftUI 没有组合框，由 NSComboBox 承担。恢复文件、检出版本、重置与变基到别处共用。
+struct RevisionComboBox: NSViewRepresentable {
     /// 键入与选择都即时写回绑定。
     @MainActor
     final class Coordinator: NSObject, NSComboBoxDelegate {
@@ -403,14 +403,21 @@ private struct RevisionComboBox: NSViewRepresentable {
     /// 读屏使用的名称。
     let label: String
 
+    /// 下拉列表一次显示的项数。
+    var visibleItems = 5
+
+    /// 键入时按候选自动补全；检出版本照此补全。
+    var completes = false
+
     /// 键入与选择的桥接。
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    /// 可编辑的组合框：下拉列表一次显示 5 项、行高 18 pt，键入时不自动补全。
+    /// 可编辑的组合框：下拉列表默认一次显示 5 项、行高 18 pt，默认键入时不自动补全。
     func makeNSView(context: Context) -> NSComboBox {
         let box = NSComboBox()
         box.font = .systemFont(ofSize: 13)
-        box.numberOfVisibleItems = 5
+        box.numberOfVisibleItems = visibleItems
+        box.completes = completes
         box.itemHeight = 18
         box.intercellSpacing = NSSize(width: 17, height: 0)
         box.delegate = context.coordinator

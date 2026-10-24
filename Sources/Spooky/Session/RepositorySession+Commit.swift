@@ -85,11 +85,13 @@ extension RepositorySession {
         )
     }
 
-    /// 按注释与折行设置整理当前草稿，确定提交信息后回调；需要用户决定注释行时先询问，取消则不回调。
+    /// 按注释与折行设置整理提交信息，确定后回调；需要用户决定注释行时先询问，取消则不回调。
     ///
     /// 注释行按 Editor 设置询问、删除或保留，去掉注释后为空时只能保留注释提交；随后硬折行时正文按字数上限断行。
-    func prepareCommitMessage(_ completion: @escaping (String) -> Void) {
-        let message = CommitMessage.text(subject: commitSubject, body: commitBody)
+    ///
+    /// - Parameter message: 要整理的信息；为 nil 时整理提交区的当前草稿，改写提交信息时传入编辑后的信息。
+    func prepareCommitMessage(_ message: String? = nil, _ completion: @escaping (String) -> Void) {
+        let message = message ?? CommitMessage.text(subject: commitSubject, body: commitBody)
 
         // 配置尚未读到时按 Git 的默认注释字符；读到 auto 时没有注释行。
         let prefix = commitConfiguration.map(\.commentPrefix) ?? "#"

@@ -110,4 +110,22 @@ public struct RewritePlan: Sendable {
 
     /// 范围里已经并入其它分支的提交。
     public let merged: Set<String>
+
+    /// 改信息的计划换成编辑后的新信息；范围与 todo 不随信息变化，其它动作原样返回。
+    public func rewording(_ message: String) -> Self {
+        guard case .reword(let commit, _) = action else {
+            return self
+        }
+
+        return Self(
+            action: .reword(commit, message: message),
+            head: head,
+            base: base,
+            onto: onto,
+            commits: commits,
+            instructions: instructions,
+            pushed: pushed,
+            merged: merged
+        )
+    }
 }

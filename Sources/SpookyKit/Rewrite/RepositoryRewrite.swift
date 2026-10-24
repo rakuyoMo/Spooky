@@ -22,9 +22,6 @@ public enum RewriteError: Error, Sendable {
     /// 没有带 `fixup!`、`squash!` 或 `amend!` 标记、并能找到目标的提交。
     case nothingToAutosquash
 
-    /// 多选的提交里含合并提交；多个提交的反转与摘取不能指定各自的主线。
-    case multipleWithMerge
-
     /// 所选动作缺少必要的提交，或目标与所选提交重合。
     case invalidSelection
 }
@@ -69,6 +66,20 @@ public enum CheckoutTarget: Sendable, Equatable {
 
     /// 分离 HEAD 所在的提交。
     case detached(String)
+}
+
+// MARK: - RewriteImpact
+
+/// 改写前的影响范围：会被改写的提交，以及其中已推送到上游或已并入其它分支的提交。
+public struct RewriteImpact: Sendable {
+    /// 会被改写的提交，从新到旧。
+    public let commits: [HistoryCommit]
+
+    /// 已在上游分支中的提交。
+    public let pushed: Set<String>
+
+    /// 已并入其它分支的提交。
+    public let merged: Set<String>
 }
 
 // MARK: - RepositoryRewrite
@@ -221,6 +232,15 @@ public struct RepositoryRewrite: Sendable {
 
             _ = try await runner.execute(arguments + ["--onto", onto, upstream], onOutput: onOutput)
         }
+    }
+
+    /// 变基到别处会移动的提交（当前基点之后、HEAD 之前），最多 `limit` 个，并标出已推送与已并入其它分支的。
+    public func rebasePreview(from currentBase: String, limit: Int = 200) async throws -> RewriteImpact {
+        let base = try await resolve(currentBase)
+        let commits = try await commitsLeaving(to: base, limit: limit)
+        let impact = try await impact(of: Array(commits.reversed()), base: base)
+
+        return RewriteImpact(commits: commits, pushed: impact.pushed, merged: impact.merged)
     }
 
     /// 把版本解析成一个提交；`--end-of-options` 阻止输入被当成 Git 选项。

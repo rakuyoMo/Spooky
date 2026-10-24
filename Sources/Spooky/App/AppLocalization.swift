@@ -127,6 +127,9 @@ struct AppFailure: Identifiable {
         case let stash as StashError:
             (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: stash)
 
+        case let rewrite as RewriteError:
+            (key, kind, recoveryKey, output) = Self.classification(of: rewrite)
+
         case let file as RepositoryFileError:
             (key, kind) = Self.classification(of: file)
             exceededOutputLimit = file == .tooLarge

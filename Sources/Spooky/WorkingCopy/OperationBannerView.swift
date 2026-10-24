@@ -79,7 +79,7 @@ extension OperationBannerView {
                         .padding(.top, 4)
                 }
 
-                Text(hint(progress.state))
+                Text(hint(progress))
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .padding(.top, 12)
@@ -152,17 +152,22 @@ extension OperationBannerView {
             Button(AppLocalization.text("working.abort")) { session.finishOperation("abort") }
                 .disabled(!session.canWrite)
 
-            if progress.state != .merge, progress.state != .squash, phase == .empty {
+            // 停在 edit 上时，改动都提交之后才能继续
+            if progress.stopsForEdit {
+                Button(AppLocalization.text("working.continue")) { session.finishOperation("continue") }
+                    .disabled(!session.canWrite || phase != .empty)
+            } else if progress.state != .merge, progress.state != .squash, phase == .empty {
                 Button(AppLocalization.text("working.skip")) { session.finishOperation("skip") }
                     .disabled(!session.canWrite)
             }
         }
     }
 
-    /// 按操作与阶段给出下一步提示；按钮名以粗体标出。
-    private func hint(_ state: RepositoryOperationState) -> AttributedString {
+    /// 按操作与阶段给出下一步提示，停在 edit 上时说明先提交再继续；按钮名以粗体标出。
+    private func hint(_ progress: OperationProgress) -> AttributedString {
         let key =
-            switch (state, phase) {
+            switch (progress.state, phase) {
+            case (_, _) where progress.stopsForEdit: "conflict.hint.rebase.edit"
             case (.merge, .conflicts), (.squash, .conflicts): "conflict.hint.merge.conflicts"
             case (.merge, .resolved), (.squash, .resolved): "conflict.hint.merge.resolved"
             case (.merge, .empty), (.squash, .empty): "conflict.hint.merge.empty"
