@@ -72,29 +72,7 @@ struct HistoryListView: View {
             }
 
             commitList
-
-            if let failure = session.history.failure {
-                FailureDetailsView(failure: failure) { session.history.reloadCommits() }
-                    .padding(12)
-            }
-
-            // 达到加载上限后不再续载，提示用户选择分支缩小范围。
-            if session.history.reachedLimit {
-                Text(AppLocalization.text("history.limit", RepositoryHistoryState.maximumLoadedCommits))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .padding(8)
-            }
-
-            if session.history.isLoading {
-                HStack {
-                    ProgressView().controlSize(.small)
-                    Text(AppLocalization.text("history.loading"))
-                    Button(AppLocalization.text("action.cancel")) { session.history.cancelPage() }
-                }
-                .font(.system(size: 11))
-                .padding(8)
-            }
+            loadingStatus
         }
         .frame(minWidth: 300)
         .onAppear { session.history.applyViewSettings() }
@@ -103,6 +81,33 @@ struct HistoryListView: View {
         }
         .onChange(of: grouping) { session.history.applyViewSettings() }
         .onChange(of: comparesBranches) { session.history.loadBaseComparison() }
+    }
+
+    /// 列表下方的读取状态：失败详情、到达加载上限的提示，以及读取中持续可见的取消入口。
+    @ViewBuilder
+    private var loadingStatus: some View {
+        if let failure = session.history.failure {
+            FailureDetailsView(failure: failure) { session.history.reloadCommits() }
+                .padding(12)
+        }
+
+        // 达到加载上限后不再续载，提示用户选择分支缩小范围。
+        if session.history.reachedLimit {
+            Text(AppLocalization.text("history.limit", RepositoryHistoryState.maximumLoadedCommits))
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .padding(8)
+        }
+
+        if session.history.isLoading {
+            HStack {
+                ProgressView().controlSize(.small)
+                Text(AppLocalization.text("history.loading"))
+                Button(AppLocalization.text("action.cancel")) { session.history.cancelPage() }
+            }
+            .font(.system(size: 11))
+            .padding(8)
+        }
     }
 
     /// 所选引用与它的跟踪分支、所选分支的双向数量与视图设置按钮；与基准分支比较时左侧换成基准分支头。
