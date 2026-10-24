@@ -126,7 +126,7 @@ extension ConflictWizardView {
                 versionCard(.theirs, data: contents.theirs)
             }
 
-            if contents.ours != nil, contents.theirs != nil {
+            if entry.conflict?.hasRegularFilesOnBothSides ?? false {
                 Button(AppLocalization.text("conflict.resolveBoth")) { session.resolveUsingBoth(entry) }
                     .disabled(!canResolveUsingBoth(contents))
                     .frame(maxWidth: .infinity)

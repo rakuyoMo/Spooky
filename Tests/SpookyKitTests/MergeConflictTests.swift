@@ -54,46 +54,6 @@ struct MergeConflictTests {
         #expect(resolved.resolvedPaths == [path])
     }
 
-    /// 采用两侧时冲突块里两侧的行都要保留、我方在前，不冲突的改动照常合并；结果直接标记解决，横幅仍能数出它。
-    @Test("采用两侧版本：按冲突块保留两侧并标记解决")
-    func resolveUsingBoth() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-
-        let path = "日志 [*].txt"
-        let file = repository.directory.appending(path: path)
-
-        _ = try await diverge(
-            repository,
-            base: [path: "one\ntwo\nthree\nfour\nfive\n"],
-            ours: [path: "one\nours\nthree\nfour\nfive\n", "added.txt": "shared\nmine\n"],
-            theirs: [path: "one\ntheirs\nthree\nfour\n5\n", "added.txt": "shared\nyours\n"]
-        )
-
-        _ = try await repository.runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
-
-        let service = WorkingCopyOperations(runner: repository.runner)
-        let entries = Dictionary(uniqueKeysWithValues: try await repository.runner.status().entries.map { ($0.path, $0) })
-
-        try await service.resolveUsingBoth(try #require(entries[path]))
-
-        // 第二行在两侧都改了，按冲突块保留两侧；第五行只有对方改了，照常合并
-        #expect(try Data(contentsOf: file) == Data("one\nours\ntheirs\nthree\nfour\n5\n".utf8))
-
-        // 两侧各自新增的文件没有共同祖先，相同的开头只保留一份
-        try await service.resolveUsingBoth(try #require(entries["added.txt"]))
-
-        let added = repository.directory.appending(path: "added.txt")
-        #expect(try Data(contentsOf: added) == Data("shared\nmine\nyours\n".utf8))
-
-        let status = try await repository.runner.status()
-        #expect(status.entries.allSatisfy { $0.kind != .conflicted })
-
-        let progress = try #require(try await service.context(head: status.branch.oid).progress)
-        #expect(progress.resolvedPaths == [path, "added.txt"])
-    }
-
     /// 恢复只改工作区，文件仍是冲突；恢复成某一侧之外的内容就算手动改过；标记解决后还能重新生成冲突。
     @Test("恢复冲突版本与手动编辑的识别")
     func restoreConflictVersions() async throws {
@@ -328,10 +288,16 @@ struct MergeConflictTests {
 // MARK: - Helpers
 
 extension MergeConflictTests {
+    /// 仓库根目录下 checkout-index 生成的临时文件。
+    func temporaryFiles(in repository: TemporaryRepository) throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: repository.directory.path)
+            .filter { $0.hasPrefix(".merge_file_") }
+    }
+
     /// 从同一个基础提交分出 main 与 side 两侧，各自提交一次；值为 nil 的文件在那一侧被删除。
     ///
     /// - Returns: side 分支的提交，结束时检出 main。
-    private func diverge(
+    func diverge(
         _ repository: TemporaryRepository,
         base: [String: String?],
         ours: [String: String?],
@@ -353,7 +319,7 @@ extension MergeConflictTests {
     /// - Parameters:
     ///   - files: 相对路径与内容；值为 nil 的文件被删除。
     ///   - author: 提交作者的名字，缺省为仓库配置的身份。
-    private func commit(
+    func commit(
         _ repository: TemporaryRepository,
         _ files: [String: String?],
         message: String,

@@ -141,6 +141,33 @@ struct MergeConflictParsingTests {
         }
     }
 
+    /// 采用两侧版本要知道三个 stage 各自的临时文件；缺少的 stage 为 “.”，路径里的空格与制表符不影响切分。
+    @Test("checkout-index 的临时文件清单")
+    func stageFiles() throws {
+        let both = try WorkingCopyOperations.parseStageFiles(
+            output(".merge_file_a .merge_file_b .merge_file_c\t冲突 [*]\tname.txt")
+        )
+
+        #expect(both == [".merge_file_a", ".merge_file_b", ".merge_file_c"])
+
+        let added = try WorkingCopyOperations.parseStageFiles(output(". .merge_file_b .merge_file_c\tadded.txt"))
+        #expect(added == [nil, ".merge_file_b", ".merge_file_c"])
+    }
+
+    /// 字段数不对、缺少分隔符或截断的输出必须报错，否则会合并错误的文件或漏删临时文件。
+    @Test("checkout-index 的临时文件清单损坏", arguments: [
+        ".merge_file_a .merge_file_b\tfile\0",
+        ".merge_file_a .merge_file_b .merge_file_c file\0",
+        ".merge_file_a  .merge_file_c\tfile\0",
+        "../escape .merge_file_b .merge_file_c\tfile\0",
+        ".merge_file_a .merge_file_b .merge_file_c\tfile",
+    ])
+    func malformedStageFiles(output: String) {
+        #expect(throws: RepositoryReadError.self) {
+            try WorkingCopyOperations.parseStageFiles(Data(output.utf8))
+        }
+    }
+
     /// merge 后端的变基从 done 的最后一条取当前一步；新旧两种 Git 的标题写法都要识别。
     @Test("变基进度：merge 后端", arguments: ["# feature two", "feature two"])
     func mergeBackendRebase(subject: String) throws {

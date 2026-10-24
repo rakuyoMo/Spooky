@@ -116,9 +116,9 @@ extension RepositorySession {
         )
     }
 
-    /// 两侧都还在的冲突文件才能采用两侧版本。
+    /// 两侧都是普通文件的冲突才能采用两侧版本。
     func canResolveUsingBoth(_ entry: StatusEntry) -> Bool {
-        canResolve([entry]) && entry.conflict?.ours != nil && entry.conflict?.theirs != nil
+        canResolve([entry]) && (entry.conflict?.hasRegularFilesOnBothSides ?? false)
     }
 
     /// 采用两侧版本并标记解决，合并在仓库所在的机器上完成。
