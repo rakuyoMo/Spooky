@@ -19,15 +19,15 @@ extension RepositorySessionTests {
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
         defaults.set(300, forKey: RepositoryAutoFetch.intervalKey)
 
-        var foreground = false
-        let scheduler = RepositoryAutoFetch(session: session, defaults: defaults) { foreground }
+        let foreground = ForegroundState()
+        let scheduler = RepositoryAutoFetch(session: session, defaults: defaults) { foreground.isActive }
         let start = Date()
 
         // 打开后先等一会儿；App 不在前台时到期也不获取
         #expect(!scheduler.check(now: start))
         #expect(!scheduler.check(now: start.addingTimeInterval(RepositoryAutoFetch.initialDelay + 1)))
 
-        foreground = true
+        foreground.isActive = true
         let pushed = try await commitAndPush(other, message: "remote")
 
         #expect(scheduler.check(now: start.addingTimeInterval(RepositoryAutoFetch.initialDelay + 1)))
@@ -197,4 +197,13 @@ extension RepositorySessionTests {
             try await Task.sleep(for: .milliseconds(50))
         }
     }
+}
+
+// MARK: - ForegroundState
+
+/// 测试里切换 App 是否在前台，自动获取的调度器经闭包读它。
+@MainActor
+private final class ForegroundState {
+    /// App 是否在前台。
+    var isActive = false
 }
