@@ -196,7 +196,6 @@
 "error.terminalHelp" = "設定のターミナル選択と macOS のオートメーション権限を確認してください。";
 "error.exitCode" = "終了コード：%ld";
 "terminal.notInstalled" = "%@ がインストールされていません。";
-"themes.font" = "%@ %@ pt";
 "themes.background" = "背景";
 "themes.added" = "追加";
 "themes.deleted" = "削除";
@@ -437,16 +436,11 @@
 
 /* 主题管理。 */
 "themes.newName" = "新規テーマ";
-"themes.usedInLight" = "選択したテーマはライト表示で使用されます。ダーク表示のテーマを選ぶには、ダーク表示に切り替えてください。";
-"themes.usedInDark" = "選択したテーマはダーク表示で使用されます。ライト表示のテーマを選ぶには、ライト表示に切り替えてください。";
 "themes.change" = "変更…";
 "themes.fontLabel" = "フォント";
 "themes.text" = "テキスト";
 "themes.add" = "テーマを追加";
 "themes.remove" = "テーマを削除";
-"themes.actions" = "読み込みまたは書き出し";
-"themes.import" = "テーマを読み込む…";
-"themes.export" = "テーマを書き出す…";
 "themes.invalidTitle" = "読み込めなかったテーマ";
 "themes.invalid" = "次のテーマファイルは、破損しているか、名前または識別子がほかのテーマで使われているため、読み込めませんでした：";
 "themes.exists" = "テーマはすでに存在します";

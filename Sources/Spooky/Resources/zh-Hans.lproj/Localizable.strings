@@ -196,7 +196,6 @@
 "error.terminalHelp" = "请检查设置中的终端选择及 macOS 自动化权限。";
 "error.exitCode" = "退出码：%ld";
 "terminal.notInstalled" = "未安装 %@。";
-"themes.font" = "%@ %@ pt";
 "themes.background" = "背景";
 "themes.added" = "新增";
 "themes.deleted" = "删除";
@@ -437,16 +436,11 @@
 
 /* 主题管理。 */
 "themes.newName" = "新主题";
-"themes.usedInLight" = "所选主题用于浅色外观。切换到深色外观后，可以为深色外观选择主题。";
-"themes.usedInDark" = "所选主题用于深色外观。切换到浅色外观后，可以为浅色外观选择主题。";
 "themes.change" = "更改…";
 "themes.fontLabel" = "字体";
 "themes.text" = "正文";
 "themes.add" = "添加主题";
 "themes.remove" = "移除主题";
-"themes.actions" = "导入或导出";
-"themes.import" = "导入主题…";
-"themes.export" = "导出主题…";
 "themes.invalidTitle" = "无法载入的主题";
 "themes.invalid" = "以下主题文件已损坏，或者名称、标识已被其他主题使用，因此无法载入：";
 "themes.exists" = "主题已存在";

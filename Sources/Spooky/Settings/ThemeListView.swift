@@ -5,7 +5,7 @@ import SwiftUI
 
 /// 主题列表：不允许空选，选中的主题即当前外观使用的主题。
 ///
-/// 用户主题可以在行内改名；行拖到 Finder 导出成主题文件，主题文件拖进列表即导入。
+/// 主题可以在行内改名；行拖到 Finder 导出成主题文件，主题文件拖进列表即导入。
 struct ThemeListView: NSViewRepresentable {
     /// 回车键开始改名；其它按键交给系统列表。
     final class ThemeTableView: NSTableView {
@@ -101,7 +101,7 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
         self.parent = parent
     }
 
-    /// 名称或顺序变化时重载，再把选区移到当前外观的所选主题。
+    /// 名称或顺序变化时重载，再把选区移到当前外观的所选主题；列表里没有它时不选中任何行。
     func update(_ parent: ThemeListView) {
         self.parent = parent
 
@@ -119,21 +119,25 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
             table.reloadData()
         }
 
-        guard
-            let row = parent.themes.firstIndex(where: { $0.id == parent.selectedID }),
-            table.selectedRow != row
-        else { return }
+        // 当前外观用的是资源里的版本时，它不在列表里，不能让别的行显得被选中。
+        guard let row = parent.themes.firstIndex(where: { $0.id == parent.selectedID }) else {
+            table.selectRowIndexes(IndexSet(), byExtendingSelection: false)
+            return
+        }
+
+        guard table.selectedRow != row else {
+            return
+        }
 
         table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
         table.scrollRowToVisible(row)
     }
 
-    /// 开始改名所选的用户主题；内置主题不能改名。
+    /// 开始改名所选的主题。
     func beginRename() {
         guard
             let table,
-            parent.themes.indices.contains(table.selectedRow),
-            !parent.themes[table.selectedRow].isBuiltin
+            parent.themes.indices.contains(table.selectedRow)
         else { return }
 
         table.editColumn(0, row: table.selectedRow, with: nil, select: true)
@@ -142,7 +146,7 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
     /// 行数即主题数。
     func numberOfRows(in _: NSTableView) -> Int { parent.themes.count }
 
-    /// 每行一个名称文本框，只有用户主题可编辑。
+    /// 每行一个可编辑的名称文本框。
     func tableView(_ tableView: NSTableView, viewFor _: NSTableColumn?, row: Int) -> NSView? {
         guard parent.themes.indices.contains(row) else {
             return nil
@@ -154,7 +158,6 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
             ?? Self.makeCell(identifier)
 
         cell.textField?.stringValue = theme.name
-        cell.textField?.isEditable = !theme.isBuiltin
         cell.textField?.delegate = self
         return cell
     }
@@ -171,6 +174,8 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
     }
 
     /// 结束行内编辑时改名；名称为空、未变或被占用时恢复原名，被占用另行提示。
+    ///
+    /// 改名的是当前外观选中的主题，改名后明确记下这一选择：按名称回退的规则不会因为它改了名而换成别的主题。
     func controlTextDidEndEditing(_ notification: Notification) {
         guard
             let field = notification.object as? NSTextField,
@@ -182,6 +187,7 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
 
         do {
             try parent.store.rename(identifier, to: field.stringValue)
+            parent.store.select(identifier, dark: parent.dark)
         } catch {
             let window = table.window
             Task {
@@ -282,6 +288,7 @@ extension ThemeListCoordinator {
     /// 单元格：一行可编辑的名称，过长时截断末尾。
     private static func makeCell(_ identifier: NSUserInterfaceItemIdentifier) -> NSTableCellView {
         let field = NSTextField(labelWithString: "")
+        field.isEditable = true
         field.lineBreakMode = .byTruncatingTail
         field.translatesAutoresizingMaskIntoConstraints = false
 

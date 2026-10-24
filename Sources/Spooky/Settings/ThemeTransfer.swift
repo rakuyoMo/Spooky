@@ -2,23 +2,9 @@ import AppKit
 
 // MARK: - ThemeTransfer
 
-/// Themes 页的导入、导出与出错提示：同名时询问是否覆盖，提示显示在设置窗口上。
+/// Themes 页的拖放导入、导出与出错提示：同名时询问是否覆盖，提示显示在设置窗口上。
 @MainActor
 enum ThemeTransfer {
-    /// 用打开面板选择主题文件导入，可以多选。
-    static func chooseImport(into store: ThemeStore, window: NSWindow?) async {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [TextTheme.fileType]
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
-
-        guard await run(panel, in: window) == .OK else {
-            return
-        }
-
-        await importThemes(panel.urls, into: store, window: window)
-    }
-
     /// 逐个导入主题文件：同名时询问是否覆盖，无法导入的文件各自报错，不影响其余文件。
     static func importThemes(_ urls: [URL], into store: ThemeStore, window: NSWindow?) async {
         for url in urls {
@@ -37,23 +23,6 @@ enum ThemeTransfer {
             } catch {
                 await report(error, titleKey: "themes.error.import", file: url, window: window)
             }
-        }
-    }
-
-    /// 用存储面板导出主题；目标已有同名文件时由面板自己询问是否替换。
-    static func export(_ theme: TextTheme, window: NSWindow?) async {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [TextTheme.fileType]
-        panel.nameFieldStringValue = TextTheme.fileName(for: theme.name)
-
-        guard await run(panel, in: window) == .OK, let url = panel.url else {
-            return
-        }
-
-        do {
-            try theme.encoded().write(to: url, options: .atomic)
-        } catch {
-            await report(error, titleKey: "themes.error.export", file: nil, window: window)
         }
     }
 
@@ -141,14 +110,5 @@ extension ThemeTransfer {
         }
 
         return await alert.beginSheetModal(for: window)
-    }
-
-    /// 有窗口时以 sheet 显示打开或存储面板，否则以模态窗口显示。
-    private static func run(_ panel: NSSavePanel, in window: NSWindow?) async -> NSApplication.ModalResponse {
-        guard let window else {
-            return panel.runModal()
-        }
-
-        return await panel.beginSheetModal(for: window)
     }
 }

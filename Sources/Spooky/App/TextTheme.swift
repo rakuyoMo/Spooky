@@ -20,7 +20,7 @@ struct TextTheme: Codable, Identifiable, Sendable, Equatable {
     /// 主题文件的类型：扩展名为 `spookytheme` 的 JSON。
     static let fileType = UTType(filenameExtension: fileExtension, conformingTo: .json) ?? .json
 
-    /// 随应用交付的 Default 与 Default (Dark)，只读。
+    /// 资源里的 Default 与 Default (Dark)：App 启动时写入 Themes 目录的来源，也是它们的文件无法加载时的最后回退。
     static let builtin: [Self] = {
         guard
             let url = Bundle.module.url(forResource: "BuiltinThemes", withExtension: "json"),
@@ -30,7 +30,8 @@ struct TextTheme: Codable, Identifiable, Sendable, Equatable {
         return themes
     }()
 
-    /// 主题标识：内置主题是固定字符串，用户主题是新建时生成的 UUID；外观的主题选择按它记录。
+    /// 主题标识：写入目录的 Default 与 Default (Dark) 沿用资源里的固定字符串，已被别的主题占用时换成 UUID；
+    /// 新建的主题是生成的 UUID。外观的主题选择按它记录。
     var id: String
 
     /// 列表里显示、也用作文件名的主题名称。
@@ -45,16 +46,14 @@ struct TextTheme: Codable, Identifiable, Sendable, Equatable {
     /// 正文、背景、选区、不可见字符、增删行及各语法色，键与 `BuiltinThemes.json` 一致。
     var colors: [String: PaletteColor]
 
-    /// 内置主题不能编辑、改名或删除。
-    var isBuiltin: Bool { Self.builtin.contains { $0.id == id } }
-
     /// 文本区使用的字体；字体未安装时用系统等宽字体代替，字号不变。
     var font: NSFont {
         NSFont(name: fontName, size: fontSize) ?? .userFixedPitchFont(ofSize: fontSize)
             ?? .monospacedSystemFont(ofSize: fontSize, weight: .regular)
     }
 
-    /// 按外观取当前主题：所选主题丢失或无法加载时，回退到这一外观对应的内置主题。
+    /// 按外观取当前主题：所选主题丢失或无法加载时，按名称回退到这一外观的 Default 或 Default (Dark)，
+    /// 它们的文件也找不到或无法加载时用资源里的版本。
     ///
     /// 读取的是可观察的主题存储，视图在 `body` 里调用即可随编辑、切换与外观变化刷新。
     ///
@@ -64,8 +63,12 @@ struct TextTheme: Codable, Identifiable, Sendable, Equatable {
     @MainActor
     static func current(dark: Bool, in store: ThemeStore = .shared) -> Self {
         let selected = dark ? store.darkThemeID : store.lightThemeID
+        let fallback = builtin[dark ? 1 : 0]
 
-        return store.themes.first { $0.id == selected } ?? builtin[dark ? 1 : 0]
+        // 先按标识找所选主题，再按名称找启动时写入目录的那份，最后才用资源里的版本。
+        return store.themes.first { $0.id == selected }
+            ?? store.themes.first { $0.name == fallback.name }
+            ?? fallback
     }
 
     /// 解码并校验一份主题文件：名称与标识不能为空，字号为正，内置主题的每种颜色都要有合法的值。

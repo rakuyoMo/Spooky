@@ -196,7 +196,6 @@
 "error.terminalHelp" = "설정에서 터미널 선택과 macOS 자동화 권한을 확인하세요.";
 "error.exitCode" = "종료 코드: %ld";
 "terminal.notInstalled" = "%@이(가) 설치되어 있지 않습니다.";
-"themes.font" = "%@ %@ pt";
 "themes.background" = "배경";
 "themes.added" = "추가";
 "themes.deleted" = "삭제";
@@ -437,16 +436,11 @@
 
 /* 主题管理。 */
 "themes.newName" = "새로운 테마";
-"themes.usedInLight" = "선택한 테마는 밝은 모양에서 사용됩니다. 어두운 모양의 테마를 선택하려면 어두운 모양으로 전환하세요.";
-"themes.usedInDark" = "선택한 테마는 어두운 모양에서 사용됩니다. 밝은 모양의 테마를 선택하려면 밝은 모양으로 전환하세요.";
 "themes.change" = "변경…";
 "themes.fontLabel" = "서체";
 "themes.text" = "텍스트";
 "themes.add" = "테마 추가";
 "themes.remove" = "테마 제거";
-"themes.actions" = "가져오기 또는 내보내기";
-"themes.import" = "테마 가져오기…";
-"themes.export" = "테마 내보내기…";
 "themes.invalidTitle" = "불러올 수 없는 테마";
 "themes.invalid" = "다음 테마 파일은 손상되었거나 이름 또는 식별자를 다른 테마가 이미 사용하고 있어 불러올 수 없습니다.";
 "themes.exists" = "테마가 이미 있음";

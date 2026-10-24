@@ -196,7 +196,6 @@
 "error.terminalHelp" = "請檢查設定中的終端機選擇及 macOS 自動化權限。";
 "error.exitCode" = "結束碼：%ld";
 "terminal.notInstalled" = "尚未安裝 %@。";
-"themes.font" = "%@ %@ pt";
 "themes.background" = "背景";
 "themes.added" = "新增";
 "themes.deleted" = "刪除";
@@ -437,16 +436,11 @@
 
 /* 主题管理。 */
 "themes.newName" = "新主題";
-"themes.usedInLight" = "所選主題用於淺色外觀。切換到深色外觀後，可以為深色外觀選擇主題。";
-"themes.usedInDark" = "所選主題用於深色外觀。切換到淺色外觀後，可以為淺色外觀選擇主題。";
 "themes.change" = "更改…";
 "themes.fontLabel" = "字型";
 "themes.text" = "內文";
 "themes.add" = "加入主題";
 "themes.remove" = "移除主題";
-"themes.actions" = "匯入或匯出";
-"themes.import" = "匯入主題…";
-"themes.export" = "匯出主題…";
 "themes.invalidTitle" = "無法載入的主題";
 "themes.invalid" = "以下主題檔案已損毀，或者名稱、識別碼已被其他主題使用，因此無法載入：";
 "themes.exists" = "主題已存在";
