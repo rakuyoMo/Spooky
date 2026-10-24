@@ -51,6 +51,7 @@ extension RepositoryRewriteTests {
 
         #expect(try await rewrite.checkoutTarget(for: "功能/分支") == .branch("refs/heads/功能/分支"))
         #expect(try await rewrite.checkoutTarget(for: "v1") == .detached(commits[0]))
+        #expect(try await rewrite.checkoutTarget(for: "refs/tags/v1") == .detached(commits[0]))
         #expect(try await rewrite.checkoutTarget(for: "origin/main") == .detached(commits[1]))
 
         try await rewrite.checkout(revision: "功能/分支")

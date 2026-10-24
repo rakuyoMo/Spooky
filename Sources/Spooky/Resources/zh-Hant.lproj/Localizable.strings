@@ -983,8 +983,6 @@
 "remote.tooltip.branch" = "遠端分支 “%@”";
 "tag.tooltip.revision" = "指向版本 “%@”";
 "tag.tooltip.message" = "標籤說明：“%@”";
-"tag.checkout" = "簽出標籤";
-"tag.checkout.confirm" = "簽出標籤 “%@”？儲存庫：%@。HEAD 將直接指向標籤所在的提交，不再位於任何分支上。";
 "tag.checkoutNamed" = "簽出 “%@”…";
 "tag.createBranch" = "從 “%@” 新增分支…";
 "tag.reveal" = "在歷史中顯示";

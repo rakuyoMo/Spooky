@@ -983,8 +983,6 @@
 "remote.tooltip.branch" = "Branche distante « %@ »";
 "tag.tooltip.revision" = "Pointe vers la révision « %@ »";
 "tag.tooltip.message" = "Message du tag : « %@ »";
-"tag.checkout" = "Basculer sur le tag";
-"tag.checkout.confirm" = "Basculer sur le tag « %@ » dans %@ ? HEAD pointera directement vers le commit du tag au lieu d’une branche.";
 "tag.checkoutNamed" = "Basculer sur « %@ »…";
 "tag.createBranch" = "Créer une branche à partir de « %@ »…";
 "tag.reveal" = "Afficher dans l’historique";

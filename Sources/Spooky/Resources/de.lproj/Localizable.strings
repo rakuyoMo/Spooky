@@ -983,8 +983,6 @@
 "remote.tooltip.branch" = "Remote-Branch „%@“";
 "tag.tooltip.revision" = "Zeigt auf Revision „%@“";
 "tag.tooltip.message" = "Tag-Nachricht: „%@“";
-"tag.checkout" = "Tag auschecken";
-"tag.checkout.confirm" = "Tag „%@“ in %@ auschecken? HEAD zeigt dann direkt auf den Commit des Tags statt auf einen Branch.";
 "tag.checkoutNamed" = "„%@“ auschecken …";
 "tag.createBranch" = "Neuen Branch aus „%@“ erstellen …";
 "tag.reveal" = "Im Verlauf zeigen";

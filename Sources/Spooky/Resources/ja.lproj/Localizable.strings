@@ -983,8 +983,6 @@
 "remote.tooltip.branch" = "リモートブランチ「%@」";
 "tag.tooltip.revision" = "リビジョン「%@」を指しています";
 "tag.tooltip.message" = "タグのメッセージ:「%@」";
-"tag.checkout" = "タグをチェックアウト";
-"tag.checkout.confirm" = "タグ「%@」を %@ でチェックアウトしますか？HEAD はブランチではなく、タグのコミットを直接指すようになります。";
 "tag.checkoutNamed" = "「%@」をチェックアウト…";
 "tag.createBranch" = "「%@」から新しいブランチを作成…";
 "tag.reveal" = "履歴で表示";

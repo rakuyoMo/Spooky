@@ -983,8 +983,6 @@
 "remote.tooltip.branch" = "远端分支 “%@”";
 "tag.tooltip.revision" = "指向版本 “%@”";
 "tag.tooltip.message" = "标签说明：“%@”";
-"tag.checkout" = "检出标签";
-"tag.checkout.confirm" = "检出标签 “%@”？仓库：%@。HEAD 将直接指向标签所在的提交，不再位于任何分支上。";
 "tag.checkoutNamed" = "检出 “%@”…";
 "tag.createBranch" = "从 “%@” 新建分支…";
 "tag.reveal" = "在历史中显示";

@@ -68,10 +68,10 @@ struct SidebarSessionTests {
         session.setArchived(false, branches: [feature])
         try await waitUntil { session.history.snapshot?.metadata.isEmpty ?? false }
 
-        // 标签检出之后 HEAD 分离在标签所指的提交上
+        // 双击标签按完整标签名检出，HEAD 分离在标签所指的提交上
         let tag = try #require(session.history.snapshot?.references.first { $0.isTag })
-        #expect(session.canCheckoutTag(tag))
-        session.checkoutTag(tag)
+        #expect(session.canCheckoutRevision)
+        session.checkout(revision: tag.id)
         try await waitUntil { session.status?.branch.head == nil && session.status?.branch.oid == tag.objectID }
     }
 }

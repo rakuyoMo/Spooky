@@ -46,7 +46,11 @@ extension RepositorySidebarView {
             .lineLimit(1)
             .help(SidebarTooltip.tag(ref, host: session.repository?.host))
             .tag(ref.id)
-            .onTapGesture(count: 2) { session.checkoutTag(ref) }
+            .onTapGesture(count: 2) {
+                guard session.canCheckoutRevision else { return }
+
+                session.checkout(revision: ref.id)
+            }
             .onDrag { dragProvider(kind: .tag, reference: ref.id) }
             .contextMenu { tagMenu(ref) }
     }
@@ -57,8 +61,8 @@ extension RepositorySidebarView {
         let selected = session.history.selectedReferences
 
         if selected.count <= 1 || !selected.contains(ref.id) {
-            Button(AppLocalization.text("tag.checkoutNamed", ref.name)) { confirmCheckout(ref) }
-                .disabled(!session.canCheckoutTag(ref))
+            Button(AppLocalization.text("tag.checkoutNamed", ref.name)) { session.requestCheckout(ref.id) }
+                .disabled(!session.canCheckoutRevision)
 
             Divider()
 
@@ -75,20 +79,5 @@ extension RepositorySidebarView {
                 NSPasteboard.general.setString(ref.name, forType: .string)
             }
         }
-    }
-
-    /// 菜单里的检出先说明 HEAD 会脱离分支，确认后与双击一样检出。
-    private func confirmCheckout(_ ref: RepositoryReference) {
-        let repository = session.repository
-
-        session.onConfirm?(
-            AppLocalization.text("tag.checkout"),
-            AppLocalization.text("tag.checkout.confirm", ref.name, repository?.displayPath ?? ""),
-            {
-                guard session.repository == repository else { return }
-                session.checkoutTag(ref)
-            },
-            nil
-        )
     }
 }

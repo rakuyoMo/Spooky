@@ -161,29 +161,6 @@ struct BranchConditionTests {
                 == ["refs/heads/master", "refs/heads/dev", "refs/heads/alpha", "refs/heads/zeta"]
         )
     }
-
-    /// 标签检出成分离 HEAD；不是完整标签名的参数直接拒绝，不交给 Git。
-    @Test("检出标签")
-    func checkoutTag() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        try await fixture.initialize()
-        let runner = fixture.runner
-        let refs = RepositoryReferences(runner: runner)
-        _ = try await runner.run(["commit", "--allow-empty", "-m", "root"])
-        _ = try await runner.run(["tag", "-a", "v1.0", "-m", "Release"])
-        _ = try await runner.run(["commit", "--allow-empty", "-m", "next"])
-
-        try await refs.checkoutTag("refs/tags/v1.0")
-        let status = try await runner.status()
-        let tagged = try await refs.resolve("refs/tags/v1.0")
-        #expect(status.branch.head == nil)
-        #expect(status.branch.oid == tagged)
-
-        await #expect(throws: RepositoryReadError.self) { try await refs.checkoutTag("v1.0") }
-        await #expect(throws: RepositoryReadError.self) { try await refs.checkoutTag("refs/tags/") }
-    }
 }
 
 // MARK: - Helpers

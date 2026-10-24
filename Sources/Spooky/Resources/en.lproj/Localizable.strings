@@ -983,8 +983,6 @@
 "remote.tooltip.branch" = "Remote branch “%@”";
 "tag.tooltip.revision" = "Points at revision “%@”";
 "tag.tooltip.message" = "Tag Message: “%@”";
-"tag.checkout" = "Check Out Tag";
-"tag.checkout.confirm" = "Check out tag “%@” in %@? HEAD will point directly at the tagged commit instead of a branch.";
 "tag.checkoutNamed" = "Check Out “%@”…";
 "tag.createBranch" = "Create New Branch from “%@”…";
 "tag.reveal" = "Reveal in History";

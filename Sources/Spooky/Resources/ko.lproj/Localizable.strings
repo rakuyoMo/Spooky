@@ -983,8 +983,6 @@
 "remote.tooltip.branch" = "원격 브랜치 “%@”";
 "tag.tooltip.revision" = "리비전 “%@”을(를) 가리킴";
 "tag.tooltip.message" = "태그 메시지: “%@”";
-"tag.checkout" = "태그 체크아웃";
-"tag.checkout.confirm" = "태그 “%@”을(를) %@에서 체크아웃할까요? HEAD가 브랜치 대신 태그의 커밋을 직접 가리키게 됩니다.";
 "tag.checkoutNamed" = "“%@” 체크아웃…";
 "tag.createBranch" = "“%@”에서 새 브랜치 만들기…";
 "tag.reveal" = "기록에서 보기";

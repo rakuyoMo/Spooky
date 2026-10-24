@@ -39,8 +39,8 @@ struct RemoteSidebarTests {
             #expect(condition.mergedInto == "refs/heads/main")
             #expect(condition.lastUpdated != nil)
 
-            // 标签检出成分离 HEAD
-            try await refs.checkoutTag("refs/tags/v1.0")
+            // 按完整标签名检出，HEAD 分离在标签所指的提交上
+            try await RepositoryRewrite(runner: runner).checkout(revision: "refs/tags/v1.0")
             let status = try await runner.status()
             #expect(status.branch.head == nil)
 

@@ -983,8 +983,6 @@
 "remote.tooltip.branch" = "Rama remota “%@”";
 "tag.tooltip.revision" = "Apunta a la revisión “%@”";
 "tag.tooltip.message" = "Mensaje de la etiqueta: “%@”";
-"tag.checkout" = "Hacer checkout de la etiqueta";
-"tag.checkout.confirm" = "¿Hacer checkout de la etiqueta “%@” en %@? HEAD apuntará directamente al commit de la etiqueta en lugar de a una rama.";
 "tag.checkoutNamed" = "Hacer checkout de “%@”…";
 "tag.createBranch" = "Crear rama desde “%@”…";
 "tag.reveal" = "Mostrar en el historial";

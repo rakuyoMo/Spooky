@@ -557,7 +557,12 @@ extension RepositoryHistoryState {
     func reveal(_ commit: HistoryCommit) {
         revealedCommit = commit
         showsCommitPage = true
-        lookup = commit.id
+        locate(commit.id)
+    }
+
+    /// 在历史中定位一个提交：列表回到全部历史并选中它；不在已加载的分页里时扩大加载去找，找到后滚动到它。
+    func locate(_ id: String) {
+        lookup = id
         lookupFailure = nil
 
         // 在全部历史里找这个提交，搜索条件不再适用
@@ -573,10 +578,10 @@ extension RepositoryHistoryState {
         }
 
         // 选择没有变化时不会触发重读，这里显式读取变更集
-        if selectedIDs == [commit.id] {
+        if selectedIDs == [id] {
             loadChanges()
         } else {
-            selectedIDs = [commit.id]
+            selectedIDs = [id]
         }
 
         continueLookup()
