@@ -480,13 +480,22 @@ final class FileTextDocumentView: NSTextView {
 
 // MARK: - FileGutterView
 
-/// 行号栏与 Blame 注释栏，随正文纵向滚动，不随横向滚动。
+/// 行号栏与 Blame 注释栏，随正文纵向滚动，不随横向滚动；两栏之间的分隔线可以拖动。
 final class FileGutterView: NSRulerView {
-    /// 注释栏的宽度。
-    static let annotationWidth: CGFloat = 250
+    /// 拖动分隔线时注释栏宽度的范围。
+    static let annotationWidths: ClosedRange<CGFloat> = 175 ... 600
+
+    /// 没有保存过宽度时注释栏的宽度。
+    static let defaultAnnotationWidth: CGFloat = 405
+
+    /// 注释栏宽度在偏好里的键：拖动后保存，所有窗口共用。
+    static let annotationWidthKey = "blameAnnotationWidth"
 
     /// 行号四周的内边距。
     private static let padding: CGFloat = 10
+
+    /// 分隔线两侧各有这么宽的范围可以按住拖动。
+    private static let dividerHitWidth: CGFloat = 3
 
     /// 注释文字的字号。
     private static let annotationFontSize: CGFloat = 11
@@ -506,22 +515,37 @@ final class FileGutterView: NSRulerView {
     /// Blame 的注释；原文为 nil。
     private var annotations: FileTextAnnotations?
 
+    /// 注释栏当前的宽度：取自偏好，限制在可拖动的范围内。
+    private var annotationWidth = FileGutterView.clampedAnnotationWidth(
+        (UserDefaults.standard.object(forKey: FileGutterView.annotationWidthKey) as? CGFloat)
+            ?? FileGutterView.defaultAnnotationWidth
+    )
+
     /// 标尺只画行号与注释，没有刻度与标记区。
     override var requiredThickness: CGFloat { ruleThickness }
 
     /// 正文与标尺使用同样的翻转坐标。
     override var isFlipped: Bool { true }
 
-    /// 行号栏的宽度随行数的位数变化。
+    /// 行号栏的宽度：最大行号的文字宽度加两侧内边距，随行数的位数变化。
     private var lineNumberWidth: CGFloat {
         guard let style = document?.style else {
             return 0
         }
 
-        let digits = CGFloat(max(String(lineCount).count, 2))
-        let digit = NSAttributedString(string: "8", attributes: [.font: style.font]).size().width
+        let largest = NSAttributedString(string: String(lineCount), attributes: [.font: style.font])
 
-        return (digits * digit).rounded(.up) + Self.padding * 2
+        return largest.size().width.rounded(.up) + Self.padding * 2
+    }
+
+    /// 注释栏与行号栏之间可以按住拖动的范围。
+    private var dividerRect: NSRect {
+        NSRect(
+            x: annotationWidth - Self.dividerHitWidth,
+            y: bounds.minY,
+            width: Self.dividerHitWidth * 2,
+            height: bounds.height
+        )
     }
 
     /// 绑定正文；滚动时重绘。
@@ -551,18 +575,36 @@ final class FileGutterView: NSRulerView {
         fatalError("FileGutterView 不从归档恢复")
     }
 
+    /// 把宽度限制在可拖动的范围内。
+    private static func clampedAnnotationWidth(_ width: CGFloat) -> CGFloat {
+        min(max(width, annotationWidths.lowerBound), annotationWidths.upperBound)
+    }
+
     /// 行数或注释变化后重新计算宽度并重绘。
     func update(lineCount: Int, annotations: FileTextAnnotations?) {
         self.lineCount = lineCount
         self.annotations = annotations
 
-        let thickness = (annotations == nil ? 0 : Self.annotationWidth) + lineNumberWidth
+        let thickness = (annotations == nil ? 0 : annotationWidth) + lineNumberWidth
 
         if ruleThickness != thickness {
             ruleThickness = thickness
         }
 
+        // 有没有注释栏决定分隔线的光标区域
+        window?.invalidateCursorRects(for: self)
         needsDisplay = true
+    }
+
+    /// 有注释栏时，分隔线上显示左右调整的光标。
+    override func resetCursorRects() {
+        super.resetCursorRects()
+
+        guard annotations != nil else {
+            return
+        }
+
+        addCursorRect(dividerRect, cursor: .resizeLeftRight)
     }
 
     /// 只画可见范围内的行号与注释。
@@ -574,23 +616,29 @@ final class FileGutterView: NSRulerView {
         style.background.setFill()
         bounds.fill()
 
-        let annotationWidth = annotations == nil ? 0 : Self.annotationWidth
+        let lineNumberX = annotations == nil ? 0 : annotationWidth
         let visible = convert(rect, to: document)
 
         if let annotations {
             drawAnnotations(annotations, in: visible, style: style)
         }
 
-        drawLineNumbers(in: visible, x: annotationWidth, style: style)
+        drawLineNumbers(in: visible, x: lineNumberX, style: style)
     }
 
-    /// 单击注释弹出提交摘要，双击回到对应的提交。
+    /// 按住分隔线拖动注释栏的宽度；单击注释弹出提交摘要，双击回到对应的提交。
     override func mouseDown(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
 
+        if annotations != nil, dividerRect.contains(point) {
+            trackDivider()
+
+            return
+        }
+
         guard
             let document, let style = document.style, style.lineHeight > 0,
-            let annotations, point.x < Self.annotationWidth
+            let annotations, point.x < annotationWidth
         else {
             super.mouseDown(with: event)
 
@@ -618,10 +666,29 @@ final class FileGutterView: NSRulerView {
         needsDisplay = true
     }
 
+    /// 跟随鼠标调整注释栏的宽度，正文随之让出或收回空间；松开后保存到偏好。
+    private func trackDivider() {
+        while let event = window?.nextEvent(matching: [.leftMouseDragged, .leftMouseUp]) {
+            let x = convert(event.locationInWindow, from: nil).x
+            annotationWidth = Self.clampedAnnotationWidth(x)
+            ruleThickness = annotationWidth + lineNumberWidth
+            needsDisplay = true
+
+            guard event.type == .leftMouseUp else {
+                continue
+            }
+
+            UserDefaults.standard.set(Double(annotationWidth), forKey: Self.annotationWidthKey)
+            window?.invalidateCursorRects(for: self)
+
+            return
+        }
+    }
+
     /// 段第一行在注释栏中的矩形。
     private func annotationRect(of group: BlameGroup, style: FileTextStyle) -> NSRect {
         let top = convert(NSPoint(x: 0, y: document?.lineTop(group.firstLine - 1) ?? 0), from: document).y
-        return NSRect(x: 0, y: top, width: Self.annotationWidth, height: style.lineHeight)
+        return NSRect(x: 0, y: top, width: annotationWidth, height: style.lineHeight)
     }
 
     /// 画出可见的段：高亮底色、段之间的分隔线，以及第一行的标题、作者与日期。
@@ -652,7 +719,7 @@ final class FileGutterView: NSRulerView {
 
         // 注释栏与行号栏之间的竖线
         style.separator.setFill()
-        NSRect(x: Self.annotationWidth - 1, y: bounds.minY, width: 1, height: bounds.height).fill()
+        NSRect(x: annotationWidth - 1, y: bounds.minY, width: 1, height: bounds.height).fill()
     }
 
     /// 一行注释：标题靠左并按宽度截断，作者与日期靠右。

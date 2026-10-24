@@ -125,6 +125,49 @@ struct FileViewsTests {
         #expect(annotations.groupIndex(containing: 0) == nil)
     }
 
+    /// 行号栏按最大行号的文字宽度留出位置；Blame 的注释栏取保存的宽度，超出可拖动范围的记录按边界处理。
+    @Test("行号栏与注释栏的宽度")
+    func gutterWidths() throws {
+        let key = FileGutterView.annotationWidthKey
+        let saved = UserDefaults.standard.object(forKey: key)
+        defer { UserDefaults.standard.set(saved, forKey: key) }
+
+        let theme = TextTheme.builtin[0]
+        let style = FileTextStyle(theme: theme)
+        let rendering = TextStyle(theme: theme, tabWidth: 4, showsInvisibles: false)
+        let lines = (1 ... 1234).map(String.init)
+        let annotations = FileTextAnnotations(
+            groups: [BlameGroup(commitID: "aaaa", firstLine: 1, lineCount: lines.count, originalLine: 1)],
+            commits: [:],
+            highlightedCommit: nil
+        )
+
+        // 1234 行时行号栏是 “1234” 的宽度加两侧各 10 pt
+        let digits = NSAttributedString(string: "1234", attributes: [.font: style.font]).size().width
+        let lineNumbers = digits.rounded(.up) + 20
+
+        // 每种保存的宽度都建一个新的标尺，按偏好取初始宽度
+        let thickness: (Any?, FileTextAnnotations?) -> CGFloat = { value, annotations in
+            UserDefaults.standard.set(value, forKey: key)
+
+            let document = FileTextDocumentView.make()
+            let scroll = NSScrollView()
+            scroll.documentView = document
+            document.show(lines, style: style, rendering: rendering, spans: nil)
+
+            let gutter = FileGutterView(scrollView: scroll, document: document)
+            gutter.update(lineCount: lines.count, annotations: annotations)
+
+            return gutter.ruleThickness
+        }
+
+        #expect(thickness(nil, nil) == lineNumbers)
+        #expect(thickness(nil, annotations) == FileGutterView.defaultAnnotationWidth + lineNumbers)
+        #expect(thickness(300.0, annotations) == 300 + lineNumbers)
+        #expect(thickness(1000.0, annotations) == 600 + lineNumbers)
+        #expect(thickness(100.0, annotations) == 175 + lineNumbers)
+    }
+
     /// 回到的提交不在已加载的分页里时，整页详情仍然显示它，重读分页也不会丢掉选择。
     @Test("回到不在已加载分页里的提交")
     func revealUnloadedCommit() {
