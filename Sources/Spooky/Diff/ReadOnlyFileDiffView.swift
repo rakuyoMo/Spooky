@@ -70,7 +70,7 @@ struct CommitFileDiffSource: Sendable {
 
 /// 提交里一个文件的只读补丁：只剩空白改动的说明、文件头、图片对照、二进制提示与只读的块，超过大 Diff 阈值时等待放行。
 ///
-/// 字体、颜色、Tab 宽度、不可见字符与语法着色与工作区的 Diff 相同；提交详情、储藏详情与文件历史共用。
+/// 字体、颜色、Tab 宽度、不可见字符、语法着色与行内高亮都与工作区的 Diff 相同；提交详情、储藏详情与文件历史共用。
 struct ReadOnlyFileDiffView: View {
     /// 已读取的补丁与字节数。
     let result: CommitDiff
@@ -104,6 +104,10 @@ struct ReadOnlyFileDiffView: View {
     /// 两侧全文的语法片段，只由提交内容决定，显示选项改变后仍然适用。
     @State
     private var syntax: DiffSyntax?
+
+    /// 各块的行内高亮，按块元素的身份存放；随显示的补丁重新计算。
+    @State
+    private var highlights: [[Int]: [Int: [Range<Int>]]] = [:]
 
     /// 补丁较长时只排版可见的行。
     var body: some View {
@@ -141,6 +145,16 @@ struct ReadOnlyFileDiffView: View {
             }
 
             syntax = await source.syntax(for: diff)
+        }
+        .task(id: result.diff) {
+            // 换了补丁时先清掉旧的范围，避免套到新的行上
+            highlights = [:]
+
+            guard let diff = result.diff else {
+                return
+            }
+
+            highlights = await DiffSegment.highlights(in: diff)
         }
     }
 
@@ -181,6 +195,7 @@ struct ReadOnlyFileDiffView: View {
                 hunk: hunk,
                 style: style,
                 spans: { syntax?.spans(for: $0) },
+                highlights: highlights[segment.id] ?? [:],
                 staged: false,
                 enabled: false,
                 readOnly: true

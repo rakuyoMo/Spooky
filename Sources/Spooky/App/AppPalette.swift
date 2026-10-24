@@ -49,6 +49,36 @@ extension PaletteColor {
     }
 }
 
+extension PaletteColor {
+    /// 红、绿、蓝三个分量都低于 0.5 时算深色，不看不透明度。
+    var isDark: Bool {
+        let color = nsColor
+
+        return color.redComponent < 0.5
+            && color.greenComponent < 0.5
+            && color.blueComponent < 0.5
+    }
+
+    /// 由这个颜色推出的颜色：红、绿、蓝分量各加上同一个值，夹在 0–1 之间，不透明度不变。
+    func offset(by amount: Double) -> Self {
+        let color = nsColor
+
+        // 先夹到 0–1 再建颜色：超出范围的分量交给 NSColor 时，换算结果并不可靠
+        let components = [color.redComponent, color.greenComponent, color.blueComponent]
+            .map { min(max($0 + amount, 0), 1) }
+
+        let shifted = NSColor(
+            srgbRed: components[0],
+            green: components[1],
+            blue: components[2],
+            alpha: 1
+        )
+
+        // 不透明度直接沿用，不经过两位小数的取整
+        return Self(hex: Self(nsColor: shifted)?.hex ?? hex, alpha: alpha)
+    }
+}
+
 // MARK: - AppPalette
 
 /// 当前界面使用的命名色，外观改变时由 AppKit 自动切换。

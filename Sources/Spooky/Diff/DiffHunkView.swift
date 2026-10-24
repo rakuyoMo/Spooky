@@ -11,6 +11,12 @@ struct DiffHunkView: View {
     /// 行号拖选使用的坐标系，由外层的懒加载栈提供。
     nonisolated static let coordinateSpace = "diff-content"
 
+    /// 新增行里改动部分的高亮底色，分浅色与深色两套，不随文本区主题变化。
+    private static let addedHighlight = AppPalette.color("diff_inline_added_highlight_color")
+
+    /// 删除行里改动部分的高亮底色。
+    private static let deletedHighlight = AppPalette.color("diff_inline_deleted_highlight_color")
+
     /// 带原始字节的块。
     let hunk: DiffHunk
 
@@ -19,6 +25,9 @@ struct DiffHunkView: View {
 
     /// 按行取语法片段；没有着色时为空。
     var spans: (DiffLine) -> [SyntaxSpan]? = { _ in nil }
+
+    /// 各修改行的行内高亮范围，键是块内行序号；在视图外按块算好，排版时只取用。
+    var highlights: [Int: [Range<Int>]] = [:]
 
     /// 暂存侧显示取消暂存按钮。
     let staged: Bool
@@ -103,7 +112,7 @@ struct DiffHunkView: View {
         .background(.bar)
     }
 
-    /// 一行：行号、正文、改动底色，以及连续改动首尾的描边。
+    /// 一行：行号、正文、改动底色与行内高亮，以及连续改动首尾的描边。
     private func row(_ line: DiffLine) -> some View {
         HStack(alignment: .top, spacing: 0) {
             gutter(line)
@@ -112,6 +121,8 @@ struct DiffHunkView: View {
                 TextLineRenderer.attributed(
                     String(decoding: line.content, as: UTF8.self),
                     spans: spans(line),
+                    highlights: highlights[line.id] ?? [],
+                    highlightColor: line.prefix == 43 ? Self.addedHighlight : Self.deletedHighlight,
                     style: style
                 )
             )
@@ -153,7 +164,7 @@ struct DiffHunkView: View {
         .foregroundStyle(
             selected.contains(line.id)
                 ? Color(nsColor: .alternateSelectedControlTextColor)
-                : .secondary
+                : style.lineNumberColor
         )
         .contentShape(Rectangle())
         .onGeometryChange(for: CGRect.self) { proxy in
