@@ -35,17 +35,17 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Stage files, hunks, or lines**: multiple selection and three-state checkboxes. Select lines in a diff to stage or discard just those lines
 
-- **Diff options**: change the number of context lines, show the entire file, ignore whitespace, show invisible characters, and set the tab width. Syntax coloring covers 28 languages, and anything else is shown as plain text. Images are compared side by side or one at a time. Diffs can be saved as patches or exported
+- **Diff options**: change the number of context lines, show the entire file, ignore whitespace, show invisible characters, and set the tab width. Changed words within modified lines are highlighted. Syntax coloring uses highlight.js and covers its 192 languages; files whose language can't be identified are shown as plain text. Images are compared side by side or one at a time
 
 - **Commit messages**: a subject length counter, soft or hard wrapping for the body, handling of comment lines, and completion for recent commits, changed files, and `fixup!` or `squash!` subjects. Amend the most recent commit, sign off, or skip hooks
 
-- **Identities and signing**: switch the committer identity of a repository with user profiles. Sign commits with GPG or SSH; for a server repository, signing happens on the server and passphrase prompts come back to your Mac
+- **Identities and signing**: switch the committer identity of a repository with user profiles, and pick a profile's signing key from the GPG and SSH keys on your Mac. Sign commits with GPG or SSH; for a server repository, signing happens on the server and passphrase prompts come back to your Mac
 
-- **Conflict wizard**: during a merge, rebase, cherry-pick, or revert, see the current step and how many conflicts are left. Compare both versions of each file, use one of them or edit the result, keep backup files if you like, then continue, skip, or abort
+- **Conflict wizard**: during a merge, rebase, cherry-pick, or revert, see how many conflicts are left, and the current step of a rebase. Compare both versions of each file and use one or both of them, or fix the file in another editor and use that version, then continue, skip, or abort
 
 - **Stashes**: save all or only selected changes, take snapshots that leave the working copy as it is, and apply a stash with its staged state or apply a single file from it. When local changes block a checkout, pull, or merge, Spooky offers to stash them first and reapply them afterward
 
-- **File history and blame**: follow a file through history, filtered by author, committer, revision, or date. See who last changed each line, and view, copy, or export any version of a file
+- **File history and blame**: follow a file through history, filtered by author, committer, or revision, with author names suggested as you type. See who last changed each line, view any committed version of a file, and export versions from its history
 
 - **History**: commits load page by page, with a commit graph, ref badges, and ahead and behind counts. Merge commits show their diff against the first parent
 
@@ -57,7 +57,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Open in Terminal**: supports Terminal, iTerm, Warp, Ghostty, WezTerm, Prompt, and Otty. For a server repository, the terminal connects over SSH and opens the remote path
 
-- **Themes**: Default and Default (Dark) are built in. Create, rename, edit, import, and export your own themes for diffs and file contents, and choose one for the light appearance and one for the dark appearance
+- **Themes**: Default and Default (Dark) are saved as regular themes that you can edit, rename, or delete, and are restored the next time Spooky starts if they're missing or damaged. Create your own themes for diffs and file contents, import and export them by drag and drop, and choose one for the light appearance and one for the dark appearance
 
 - **Eight languages**: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish. The app uses your system language, or English if that language isn't supported
 
@@ -146,7 +146,7 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
 On your Mac:
 
 - Settings, user profiles, and recent repositories are stored in the preferences domain `com.rakuyo.spooky`
-- Themes you create are stored in `~/Library/Application Support/Spooky/Themes`, one `.spookytheme` file per theme
+- Themes, including Default and Default (Dark), are stored in `~/Library/Application Support/Spooky/Themes`, one `.spookytheme` file per theme
 - Credentials saved to the Keychain use the service name `com.rakuyo.spooky.remote.<host alias>`
 - Connections and callbacks use private `/tmp/spooky-*` temporary directories, which are removed when the session closes
 - File copies for Quick Look and other apps are kept in private `spooky-files-*` temporary directories, which are removed when the repository closes
@@ -217,3 +217,7 @@ SPOOKY_PERFORMANCE_TESTS=1 swift test -c release -Xswiftc -enable-testing --filt
 ## License
 
 Spooky is licensed under the [GNU General Public License v3.0](LICENSE).
+
+### Third-party software
+
+- [highlight.js](https://highlightjs.org) 11.12.0, used for syntax coloring. Copyright (c) 2006, Ivan Sagalaev. Licensed under the BSD 3-Clause License; the full license is in [`Sources/Spooky/HighlightJS/LICENSE`](Sources/Spooky/HighlightJS/LICENSE) and ships with the app

@@ -9,7 +9,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 - `Spooky` 是可运行的桌面 App；`SpookyKit` 核心库负责在本机或远端执行 Git、读取工作区状态并解析输出
 - 当前 App 支持以下能力，并可打包发布用 App；产品按 M1–M10 逐步完成 `1.0.0`
   - 本机与服务器工作区、混合最近记录、连接体检、断线重连与写入核对
-  - 工作区的三种显示模式、忽略规则与文件操作；带显示选项、语法着色与图片对照的 Diff；文件 / 块 / 行操作
+  - 工作区的三种显示模式、忽略规则与文件操作；带显示选项、语法着色、行内高亮与图片对照的 Diff；文件 / 块 / 行操作
   - 提交信息编辑、身份档案与提交签名；冲突向导与冲突收尾；储藏与 Auto Stash
   - 分页历史、文件历史、Blame 与原文、分支、同步、合并预览、Activity
   - 文件监听与轮询刷新、按仓库恢复的视图状态、终端程序与文本区主题管理
@@ -50,7 +50,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests` | 显式运行 M3 的 SFTP 与远端提交测试，以及 M6 的服务器文件缓存测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests` | 显式运行 M4 的服务器历史、同步与取消测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyFilesTests` | 显式运行 M6 的服务器文件操作与应用补丁测试 |
-| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteDiffTests` | 显式运行 M6 的服务器 Diff 选项、图片与保存补丁测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteDiffTests` | 显式运行 M6 的服务器 Diff 选项与图片测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteStashTests` | 显式运行 M6 的服务器储藏与 Auto Stash 断线测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConflictTests` | 显式运行 M6 的服务器冲突向导与断线测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteFileViewsTests` | 显式运行 M6 的服务器文件历史、Blame、原文与 NFD 路径测试 |
@@ -94,14 +94,16 @@ Sources/SpookyKit/            库源码，按功能分目录
     WorkingCopyStatus.swift   porcelain v2 工作区状态模型与解析
     WorkingTreeFiles.swift    暂存区清单与被忽略文件清单
     RepositoryDiff.swift      Diff 显示选项、按字节解析 Diff 与生成选区补丁
+    InlineDiff.swift          块内修改行的单词级比较，标出成对的删除行与新增行中改动的部分
     DiffImageSource.swift     图片 Diff 两侧的字节
     WorkingCopyOperations.swift 工作区写操作、快照校验、身份与进行中状态
-    WorkingCopyOperations+Diff.swift 按显示选项读取补丁、保存补丁与忽略空白时的写入补丁
+    WorkingCopyOperations+Diff.swift 按显示选项读取补丁与忽略空白时的写入补丁
     WorkingCopyFileOperations.swift 停止跟踪、删除、移动、assume-unchanged、忽略 / 排除规则与应用补丁
     PatchPreimage.swift       补丁文件头的前像读取
-    MergeConflict.swift       冲突的三方内容、恢复、手动编辑写回与备份
+    MergeConflict.swift       冲突的三方内容、恢复、采用两侧与手动编辑的识别
     OperationProgress.swift   进行中操作的两侧、步数、已解决冲突与空步骤继续
     CommitConfiguration.swift 提交身份、签名、注释字符与钩子的读取，身份档案的写入
+    SigningKeys.swift         本机 gpg 钥匙环与 SSH agent 中可用于提交签名的密钥
     CommitMessage.swift       提交信息的拼接、注释行与按字数折行
   History/                    历史与提交图
     RepositoryHistory.swift   NUL 历史分页、提交变更集与第一父 Diff
@@ -119,8 +121,8 @@ Sources/SpookyKit/            库源码，按功能分目录
   Resources/spooky-remote.pl  远端进程组、回调客户端与签名程序入口
 Sources/Spooky/               App 入口、窗口协调、会话状态与各内容视图，按功能分目录
   App/                        入口、窗口与菜单协调、本地化与错误说明、命名色与主题、回调请求呈现
-    TextTheme.swift           文本区主题模型、内置主题与 .spookytheme 主题文件格式
-    ThemeStore.swift          用户主题目录、浅色与深色外观的主题选择与导入
+    TextTheme.swift           文本区主题模型、资源里的默认主题与 .spookytheme 主题文件格式
+    ThemeStore.swift          主题目录、启动时写入默认主题、浅色与深色外观的主题选择与导入
   AppIcon/                    Dock 与 ⌘Tab 中的 App 图标随 “图标与小组件样式” 与连接状态切换，以及四份 icns
     AppIcon.icns              默认应用图标，指示灯灭着；与下面三份一样由 scripts/make-icon.swift 生成
     AppIconConnected.icns     指示灯亮着的默认图标，App 连着服务器时换到 Dock 与 ⌘Tab
@@ -131,15 +133,26 @@ Sources/Spooky/               App 入口、窗口协调、会话状态与各内�
   RepositoryWindow/           仓库窗口与菜单动作、侧边栏、搜索、操作对话框与拖放
   Session/                    仓库会话、操作可用性、视图状态与文件监听，各功能的会话动作分在扩展文件中
   WorkingCopy/                工作区文件列表与显示模式、文件状态、Quick Look 与拖出、文件操作对话框、冲突向导与进行中操作横幅、提交区的信息编辑器、自动补全与身份菜单
-  Diff/                       工作区 Diff、块与行选择、底栏选项、图片对照、语法着色的两侧全文、提交 / 储藏 / 文件历史共用的只读 Diff 与保存补丁对话框
-  Text/                       语法着色的扫描器与语言规则、一行文本的渲染、Settings → Text 的偏好
+    CommitBodyResizeHandle.swift 提交信息正文的拖柄：改正文高度，并移动工作区列表右侧的分隔线
+    CommitCommentsDialog.swift 提交信息含注释行时的询问 sheet
+  Diff/                       工作区 Diff、块与行选择、行内高亮、底栏选项、图片对照、语法着色的两侧全文，以及提交 / 储藏 / 文件历史共用的只读 Diff
+  Text/                       语法着色、一行文本的渲染、Settings → Text 的偏好
+    SyntaxHighlighter.swift   按路径与内容识别语言，把 highlight.js 的记号映射到主题颜色，并借还 highlight.js 的上下文
+    HighlightRuntime.swift    一份载入 highlight.js 的 JavaScriptCore 上下文，只在自己的串行队列上使用
+    HighlightMarkup.swift     把 highlight.js 输出的 HTML 还原成每行的语法片段
   History/                    历史列表、提交详情与历史状态
   FileViews/                  文件历史、原文与 Blame 的整页视图、行号与注释栏、版本与文件选择器
+    ContributorCompletion.swift 文件历史搜索框的贡献者补全：读取仓库作者，在搜索框下方列出建议
   Stash/                      储藏视图、储藏对话框、拖放与状态
   Activity/                   Activity 窗口、操作记录与仓库写锁
   Settings/                   设置窗口的 General、Text、Editor、Themes 与 User Profiles 页，以及终端程序
-  Resources/                  各语言文案、系统权限说明、命名色、内置主题与语法着色规则 JSON
-    SyntaxLanguages.json      语法着色支持的 28 种语言的规则
+    AddUserProfileDialog.swift 把当前身份存成身份档案的 sheet
+  HighlightJS/                随 App 打包的 highlight.js 11.12.0，原样拷入并保持目录结构
+    highlight.min.js          核心与常用语言
+    languages/                其余语言，每种一个 .min.js
+    LICENSE                   highlight.js 的 BSD-3-Clause 许可证
+  Resources/                  各语言文案、系统权限说明、命名色与默认主题
+    BuiltinThemes.json        Default 与 Default (Dark)，启动时写入主题目录，也是主题的最后回退
   Info.plist                  应用身份和支持语言
 Tests/SpookyKitTests/         单元测试（Swift Testing）
   Fixtures/                   固定的 Git 输出夹具
@@ -185,14 +198,23 @@ LICENSE                       GPL-3.0 许可证全文
 - 按路径寻址树中对象的只读查询使用 `RepositoryFileViews.storedPathOptions`，路径先经 `storedEntry(for:in:)` 换成树中存储的形式：macOS 的 Git 会把命令行参数里的路径转成 NFC，树中以 NFD 存储的路径用原样的参数查不到
 - 会生成提交的命令（`commit`、`merge`、`rebase`、`cherry-pick`、`revert`）在本机同样经 `LocalGitAuthentication` 执行：SSH 签名的私钥口令经回调询问，GPG 交给本机的 pinentry
 - 远端的签名经包装器的 `-gpg`、`-ssh-keygen` 入口（`-c gpg.program=…`、`-c gpg.ssh.program=…`）接入中继，仍执行仓库配置的签名程序；gpg 以 loopback 模式运行，只在确实需要口令时询问
+- 身份档案的签名密钥由 `SigningKeys.local` 从 A 的 gpg 钥匙环与 SSH agent 列出，值原样写进仓库配置；服务器仓库在 B 上签名，B 上要有同一把密钥
 - `stash list` 与 `stash show` 是读取，其余 `stash` 子命令（包括不带子命令的 `stash`）按写操作排队；储藏全部改动时不加 `--literal-pathspecs`，它会让 `stash push -u` 把未跟踪文件留在工作区
-- 冲突备份只在偏好 `keepConflictBackups` 打开时写入，依次尝试 `<文件>.orig`、`<文件>.1.orig`…，不覆盖已有文件
+- 采用两侧版本在仓库所在的机器上完成：`checkout-index --stage=all` 把三方写成仓库根目录下的临时文件，`merge-file --union` 合并后以 `hash-object --path` 按真实路径写入对象库，临时文件无论成败都删除；只用 Git 2.41 已有的选项
 
 ### 文本区
 
 - Diff、原文、Blame 与主题示例取主题一律用 `TextTheme.current(dark:)`；在 SwiftUI 的 `body` 里调用，即随主题的编辑、切换与外观变化刷新
-- 用户主题在 `~/Library/Application Support/Spooky/Themes`，一个主题一个 `.spookytheme` JSON；两种外观所选的主题记在偏好 `lightTheme`、`darkTheme`
+- 主题在 `~/Library/Application Support/Spooky/Themes`，一个主题一个 `.spookytheme` JSON
+  - App 启动时由 `ThemeStore.installDefaultThemes()` 从 `BuiltinThemes.json` 写入 Default 与 Default (Dark)：只在文件缺少或无法加载、且名称没被别的主题占用时写，之后它们与其它主题一样可以编辑、改名与删除
+  - 两种外观所选的主题按标识记在偏好 `lightTheme`、`darkTheme`；找不到时按名称回退到 Default 或 Default (Dark)，再退到 `BuiltinThemes.json` 里的版本
 - 语法着色、Tab 宽度与不可见字符的偏好集中在 `TextPreferences`，一行文本按 `TextStyle` 经 `TextLineRenderer` 渲染；提交详情、储藏详情与文件历史的只读 Diff 共用 `ReadOnlyFileDiffView`
+- 语法着色经 `SyntaxHighlighter` 借用 highlight.js 的上下文执行
+  - 最多两份上下文，每份是一个 `HighlightRuntime` actor，只在自己的串行队列上使用，由全局 actor `SyntaxActor` 负责借还；一份被已取消的长任务占着时，新的请求由另一份接手
+  - 调用方 `await` 识别与着色：任务取消时尚未开始的着色跳过、跑完的结果丢弃；写入视图状态前检查 `Task.isCancelled`
+  - highlight.js 的脚本与 `LICENSE` 原样放在 `Sources/Spooky/HighlightJS/`，以 `.copy` 资源保持目录结构；`.process` 会把子目录摊平到资源包根目录
+- Diff 的行号色由 `TextStyle.lineNumberColor` 从主题正文色推出；行内高亮在视图外按整份补丁算一次（`DiffSegment.highlights(in:)`），高亮色是命名色 `diff_inline_added_highlight_color`、`diff_inline_deleted_highlight_color`，不随主题变化
+- Blame 注释栏的宽度存于偏好 `blameAnnotationWidth`（175–600 pt），所有窗口共用
 - Diff 的块是懒加载栈里的分节：文件头与各块经 `DiffSegment` 排成栈里同一层的元素，块内每行连同无换行提示只占一个元素，身份带上块的起点；一个元素展开成多个视图或行的身份在各块间重复时，块头与行会漏显示
 
 ### 日志
