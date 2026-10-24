@@ -75,6 +75,16 @@ extension SpookyApplicationController {
         edit.addItem(.separator())
         let find = addMenu("menu.find", to: edit)
         addItem("action.find", action: #selector(RepositoryWindowController.focusSearch), key: "f", to: find)
+
+        // 按住 ⌥ 时 Find… 换成 Search，同样聚焦工具栏搜索框
+        let search = NSMenuItem(
+            title: AppLocalization.text("action.search"),
+            action: #selector(RepositoryWindowController.focusSearch),
+            keyEquivalent: "f"
+        )
+        search.keyEquivalentModifierMask = [.command, .option]
+        search.isAlternate = true
+        find.addItem(search)
     }
 
     /// View 菜单：仓库管理、工作区、历史与储藏视图，工作区文件列表、历史与 Diff 的显示选项，以及刷新与全屏。
@@ -156,22 +166,10 @@ extension SpookyApplicationController {
         )
     }
 
-    /// 历史子菜单：提交图开关与行高。
+    /// 历史子菜单：与列表头设置按钮相同的提交图、第一父、排序、分组与行高。
     private func configureHistoryMenu(in view: NSMenu) {
         let history = addMenu("history.title", to: view)
-        addItem(
-            "history.showGraph",
-            action: #selector(RepositoryWindowController.toggleHistoryGraph),
-            key: "g",
-            modifiers: [.control, .command],
-            to: history
-        )
-        addItem(
-            "history.medium",
-            action: #selector(RepositoryWindowController.mediumHistoryRows),
-            to: history
-        )
-        addItem("history.small", action: #selector(RepositoryWindowController.smallHistoryRows), to: history)
+        HistoryViewMenu.addItems(to: history, keyEquivalents: true)
     }
 
     /// 变更集子菜单：全部展开、全部收起与自动展开阈值。

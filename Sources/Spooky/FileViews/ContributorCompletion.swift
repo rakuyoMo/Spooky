@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - ContributorSuggestion
 
-/// 文件历史搜索框的一条贡献者建议，选中后整条写进搜索框。
+/// 搜索框的一条补全建议：贡献者或文件路径，选中后整条写进搜索框。
 struct ContributorSuggestion: Identifiable, Equatable {
     /// 写进搜索框的文字：“姓名 <邮箱>”，同名有多个邮箱时另有只写姓名的一条。
     let text: String
@@ -14,6 +14,9 @@ struct ContributorSuggestion: Identifiable, Equatable {
 
     /// 邮箱；只写姓名的一条为 nil。
     let email: String?
+
+    /// 贡献者在行首显示头像，文件路径不显示。
+    var showsAvatar = true
 
     /// 搜索框文字即身份。
     var id: String { text }
@@ -85,11 +88,11 @@ final class ContributorCompletion: NSObject, NSSearchFieldDelegate {
     /// 按需创建的子窗口。
     private var panel: NSPanel? = nil
 
-    /// 当前接管的搜索框。
-    private weak var field: NSSearchField? = nil
+    /// 当前接管的输入框。
+    private weak var field: NSTextField? = nil
 
-    /// 提供仓库作者的文件历史。
-    private weak var state: FileHistoryState? = nil
+    /// 按输入给出建议，由接管输入框的一方提供。
+    private var provider: @MainActor (String) async -> [ContributorSuggestion] = { _ in [] }
 
     /// 接受建议后把搜索框文字交给会话。
     private var apply: (String) -> Void = { _ in }
@@ -100,16 +103,20 @@ final class ContributorCompletion: NSObject, NSSearchFieldDelegate {
     /// 弹窗是否正在显示。
     private var isVisible: Bool { panel?.isVisible ?? false }
 
-    /// 接管文件历史的搜索框：输入时筛选建议，按键先交给弹窗。
+    /// 接管一个输入框：输入时筛选建议，按键先交给弹窗。
     ///
     /// - Parameters:
-    ///   - field: 工具栏里的搜索框，工具栏重建后重新接管。
-    ///   - state: 提供当前范围与仓库的作者。
-    ///   - apply: 接受建议后写入会话的搜索内容。
-    func attach(to field: NSSearchField, state: FileHistoryState, apply: @escaping (String) -> Void) {
+    ///   - field: 工具栏里的搜索框或过滤面板里的输入框，重建后重新接管。
+    ///   - suggestions: 按输入给出建议；当前范围没有补全时返回空。
+    ///   - apply: 接受建议后写入的搜索内容。
+    func attach(
+        to field: NSTextField,
+        suggestions: @escaping @MainActor (String) async -> [ContributorSuggestion],
+        apply: @escaping (String) -> Void
+    ) {
         close()
         self.field = field
-        self.state = state
+        provider = suggestions
         self.apply = apply
         field.delegate = self
     }
@@ -130,7 +137,7 @@ final class ContributorCompletion: NSObject, NSSearchFieldDelegate {
 
     /// 搜索框内容变化后重新筛选；修订版本范围与空输入不显示建议。
     func controlTextDidChange(_ notification: Notification) {
-        guard let field = notification.object as? NSSearchField, field === self.field else {
+        guard let field = notification.object as? NSTextField, field === self.field else {
             return
         }
 
@@ -179,30 +186,32 @@ final class ContributorCompletion: NSObject, NSSearchFieldDelegate {
 // MARK: - Private
 
 extension ContributorCompletion {
-    /// 两个范围都取仓库的作者并筛选；读取期间输入又变了，结果作废。
-    private func update(_ field: NSSearchField) {
+    /// 按输入取建议；空输入不显示，读取期间输入又变了，结果作废。
+    private func update(_ field: NSTextField) {
         task?.cancel()
 
         let query = field.stringValue
 
-        guard let state, state.scope != .revision, !query.trimmingCharacters(in: .whitespaces).isEmpty else {
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
             close()
             return
         }
 
+        let provider = provider
+
         task = Task { [weak self, weak field] in
-            let contributors = (try? await state.authors()) ?? []
+            let items = await provider(query)
 
             guard let self, let field, !Task.isCancelled, field.stringValue == query else {
                 return
             }
 
-            show(ContributorSuggestion.matches(query, in: contributors), below: field)
+            show(items, below: field)
         }
     }
 
     /// 显示或更新建议；没有建议时关闭。
-    private func show(_ items: [ContributorSuggestion], below field: NSSearchField) {
+    private func show(_ items: [ContributorSuggestion], below field: NSTextField) {
         guard !items.isEmpty, let window = field.window else {
             close()
             return
@@ -271,7 +280,7 @@ extension ContributorCompletion {
     }
 
     /// 弹窗与搜索框右缘对齐、放在它的下方，至少与搜索框同宽；下方空间不够时放到上方。
-    private func frame(below field: NSSearchField) -> NSRect {
+    private func frame(below field: NSTextField) -> NSRect {
         let anchor = field.window?.convertToScreen(field.convert(field.bounds, to: nil)) ?? .zero
         let width = max(anchor.width, Self.minimumWidth)
         let height = min(
@@ -335,7 +344,9 @@ private struct ContributorCompletionList: View {
     /// 一行：头像距左 8 pt，与姓名相隔 4 pt；选中行使用强调色底与白字。
     private func row(_ item: ContributorSuggestion, selected: Bool) -> some View {
         HStack(spacing: 4) {
-            InitialsAvatar(name: item.name, size: 18)
+            if item.showsAvatar {
+                InitialsAvatar(name: item.name, email: item.email, size: 18)
+            }
 
             Text(label(item, selected: selected))
                 .lineLimit(1)

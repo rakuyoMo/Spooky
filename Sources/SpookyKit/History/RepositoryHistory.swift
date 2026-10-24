@@ -238,20 +238,34 @@ public struct RepositoryHistory: Sendable {
         self.runner = runner
     }
 
-    /// 读取固定根集合的一页；空集合表示仓库没有可显示的提交。
-    public func page(roots: [String], offset: Int = 0, limit: Int = 100) async throws -> HistoryPage {
+    /// 读取固定根集合按查询筛选、排序后的一页；空集合表示仓库没有可显示的提交。
+    public func page(
+        roots: [String],
+        query: HistoryQuery = HistoryQuery(),
+        offset: Int = 0,
+        limit: Int = 100
+    ) async throws -> HistoryPage {
         guard offset >= 0, (1 ... 1000).contains(limit), roots.allSatisfy(GitObjectID.isValid) else {
             throw RepositoryReadError.invalidQuery
         }
         guard !roots.isEmpty else { return HistoryPage(commits: [], hasMore: false) }
 
-        // 根集合经 stdin 传递，引用数量不会扩大进程参数长度；固定根的分页结果不再变化，可按哈希复用。
+        // 按哈希搜索最多命中几个提交，不经分页
+        if !query.hashPrefixes.isEmpty {
+            let commits = try await commits(matchingHashesIn: query, roots: roots)
+            return HistoryPage(commits: Array(commits.dropFirst(offset).prefix(limit)), hasMore: false)
+        }
+
+        // 根集合经 stdin 传递，引用数量不会扩大进程参数长度；固定根与固定条件的分页结果不再变化，可按哈希复用。
         let output = try await runner.immutableRun(
-            Self.logOptions + [
-                "log", "--no-color", "--no-decorate", "--no-patch", "--topo-order", "-z", HistoryCommit.format,
-                "--max-count=\(limit + 1)", "--skip=\(offset)", "--stdin", "--",
-            ],
-            input: Data((roots.joined(separator: "\n") + "\n").utf8)
+            RepositoryFileViews.storedPathOptions + Self.logOptions + [
+                "log", "--no-color", "--no-decorate", "--no-patch", "-z", HistoryCommit.format,
+            ]
+                + query.orderArguments
+                + query.filterArguments
+                + ["--max-count=\(limit + 1)", "--skip=\(offset)", "--stdin", "--"]
+                + query.paths,
+            input: Self.rootsInput(roots)
         )
         let commits = try HistoryCommit.parse(output)
         return HistoryPage(commits: Array(commits.prefix(limit)), hasMore: commits.count > limit)

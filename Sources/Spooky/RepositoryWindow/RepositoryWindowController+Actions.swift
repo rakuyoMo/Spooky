@@ -129,10 +129,7 @@ extension RepositoryWindowController {
     /// 提交图开关同时作用于列表头和主菜单。
     @objc
     func toggleHistoryGraph() {
-        UserDefaults.standard.set(
-            !UserDefaults.standard.bool(forKey: "historyShowGraph"),
-            forKey: "historyShowGraph"
-        )
+        UserDefaults.standard.set(!HistoryViewSettings().showsGraph, forKey: HistoryViewSettings.showGraphKey)
     }
 
     /// 小号行采用 24 pt 高度。
@@ -200,6 +197,7 @@ extension RepositoryWindowController {
         let enabled = branchAndSyncAvailability(of: item.action, repositoryView: repositoryView)
             ?? workingCopyAvailability(of: item.action, repositoryView: repositoryView)
             ?? historyDisplayAvailability(of: item)
+            ?? historyViewSettingsAvailability(of: item)
             ?? stashAvailability(of: item.action, repositoryView: repositoryView)
             ?? diffAvailability(of: item)
             ?? workingCopyFileAvailability(of: item)
@@ -302,14 +300,14 @@ extension RepositoryWindowController {
     private func historyDisplayAvailability(of item: any NSValidatedUserInterfaceItem) -> Bool? {
         switch item.action {
         case #selector(toggleHistoryGraph):
-            (item as? NSMenuItem)?.state = UserDefaults.standard.bool(forKey: "historyShowGraph") ? .on : .off
+            (item as? NSMenuItem)?.state = HistoryViewSettings().showsGraph ? .on : .off
             return !showsManager && session.activeView == .history
 
         case #selector(smallHistoryRows), #selector(mediumHistoryRows):
             let small = UserDefaults.standard.bool(forKey: "historySmallRows")
             (item as? NSMenuItem)?.state = (item.action == #selector(smallHistoryRows)) == small ? .on : .off
             return !showsManager && session.activeView == .history
-                && UserDefaults.standard.bool(forKey: "historyShowGraph")
+                && HistoryViewSettings().showsGraph
 
         case #selector(expandChanges), #selector(collapseChanges), #selector(setAutoExpand(_:)):
             if item.action == #selector(setAutoExpand(_:)), let item = item as? NSMenuItem {
