@@ -1859,3 +1859,9 @@
 "scan.selectAll" = "Tout sélectionner";
 "scan.searching" = "Recherche de dépôts Git…";
 "scan.found" = "%ld dépôts trouvés";
+
+/* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
+"link.invalid.title" = "Impossible d’ouvrir ce lien";
+"link.invalid.message" = "Spooky ne peut pas ouvrir « %@ ». Le lien n’est pas valide ou n’est pas pris en charge.";
+"settings.github" = "Ouvrir les dépôts de github.com :";
+"settings.github.help" = "Les liens « Open with Desktop » de github.com s’ouvrent dans cette app.";

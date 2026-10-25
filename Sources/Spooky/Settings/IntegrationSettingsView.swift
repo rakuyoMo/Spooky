@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - IntegrationSettingsView
 
-/// Integration 页：Gerrit 推送的开关、本机全局配置里 Issue 追踪的地址模板与编号前缀，以及本机使用的 SSH agent。
+/// Integration 页：github.com 仓库链接由哪个 App 打开、Gerrit 推送的开关、本机全局配置里 Issue 追踪的地址模板与编号前缀，以及本机使用的 SSH agent。
 struct IntegrationSettingsView: View {
     /// 全局配置的读写状态。
     @State
@@ -25,6 +25,11 @@ struct IntegrationSettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+                GitHubLinksSettingsRow()
+
+                Divider()
+                    .gridCellUnsizedAxes(.horizontal)
+
                 GridRow {
                     Text(AppLocalization.text("settings.gerrit"))
                         .gridColumnAlignment(.trailing)

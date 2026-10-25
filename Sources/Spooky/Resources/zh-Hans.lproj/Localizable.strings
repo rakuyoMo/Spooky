@@ -1859,3 +1859,9 @@
 "scan.selectAll" = "全选";
 "scan.searching" = "正在查找 Git 仓库…";
 "scan.found" = "找到 %ld 个仓库";
+
+/* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
+"link.invalid.title" = "无法打开这个链接";
+"link.invalid.message" = "Spooky 无法打开 “%@”。链接无效或不受支持。";
+"settings.github" = "打开来自 github.com 的仓库：";
+"settings.github.help" = "github.com 上 “Open with Desktop” 的链接由这个 App 打开。";

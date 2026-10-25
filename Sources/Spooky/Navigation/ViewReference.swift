@@ -175,7 +175,7 @@ enum RepositoryDestination: Hashable {
     }
 
     /// 从解析出的参数还原视图；视图名无法识别或缺少必需的参数时返回 nil。
-    fileprivate init?(parameters: [String: [String]]) {
+    init?(parameters: [String: [String]]) {
         guard let name = parameters["view"]?.first.flatMap(Name.init(rawValue:)) else {
             return nil
         }

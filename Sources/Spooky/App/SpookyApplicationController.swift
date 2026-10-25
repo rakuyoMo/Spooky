@@ -134,6 +134,31 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         controller.addRemoteRepository()
     }
 
+    /// 打开 `spooky://` 与 github.com 的 “Open with Desktop” 链接：打开仓库与视图，或弹出克隆对话框；
+    /// 不认识或不可信的链接只显示错误。
+    func application(_: NSApplication, open urls: [URL]) {
+        for url in urls {
+            guard let request = SpookyURL(url) else {
+                let alert = NSAlert()
+                alert.alertStyle = .warning
+                alert.messageText = AppLocalization.text("link.invalid.title")
+                alert.informativeText = AppLocalization.text("link.invalid.message", url.absoluteString)
+                alert.runModal()
+                continue
+            }
+
+            switch request {
+            case .open(let location, let destination):
+                openRepository(at: location, from: activeWindow, inNewWindow: false, showing: destination)
+
+            case .clone(let remote):
+                let controller = activeWindow ?? makeWindow()
+                controller.showWindow(nil)
+                controller.presentClone(url: remote)
+            }
+        }
+    }
+
     /// File › Clone Git Repository…：在前台的仓库窗口弹出克隆对话框，没有窗口时先开一个。
     @objc
     func cloneRepository() {

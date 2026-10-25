@@ -1859,3 +1859,9 @@
 "scan.selectAll" = "Select All";
 "scan.searching" = "Searching for Git repositories…";
 "scan.found" = "%ld repositories found";
+
+/* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
+"link.invalid.title" = "Can’t Open This Link";
+"link.invalid.message" = "Spooky can’t open “%@”. The link is invalid or not supported.";
+"settings.github" = "Open repositories from github.com:";
+"settings.github.help" = "The “Open with Desktop” links on github.com open in this app.";

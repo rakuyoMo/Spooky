@@ -1859,3 +1859,9 @@
 "scan.selectAll" = "すべてを選択";
 "scan.searching" = "Git リポジトリを検索中…";
 "scan.found" = "%ld 個のリポジトリが見つかりました";
+
+/* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
+"link.invalid.title" = "このリンクを開けません";
+"link.invalid.message" = "Spooky は「%@」を開けません。リンクが無効か、サポートされていません。";
+"settings.github" = "github.com のリポジトリを開く：";
+"settings.github.help" = "github.com の「Open with Desktop」リンクをこの App で開きます。";

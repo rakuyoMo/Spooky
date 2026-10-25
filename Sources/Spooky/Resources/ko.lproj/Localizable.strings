@@ -1859,3 +1859,9 @@
 "scan.selectAll" = "모두 선택";
 "scan.searching" = "Git 저장소를 찾는 중…";
 "scan.found" = "저장소 %ld개 찾음";
+
+/* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
+"link.invalid.title" = "이 링크를 열 수 없음";
+"link.invalid.message" = "Spooky가 “%@”을(를) 열 수 없습니다. 링크가 유효하지 않거나 지원되지 않습니다.";
+"settings.github" = "github.com 저장소 열기:";
+"settings.github.help" = "github.com의 “Open with Desktop” 링크를 이 앱에서 엽니다.";

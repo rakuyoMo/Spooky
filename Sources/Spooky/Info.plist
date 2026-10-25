@@ -33,6 +33,21 @@
     </array>
     <key>CFBundleAllowMixedLocalizations</key>
     <true/>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.rakuyo.spooky</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>spooky</string>
+                <string>x-github-client</string>
+                <string>github-mac</string>
+            </array>
+        </dict>
+    </array>
     <key>NSAppleEventsUsageDescription</key>
     <string>Spooky opens the selected repository in your terminal application.</string>
     <key>NSPrincipalClass</key>
