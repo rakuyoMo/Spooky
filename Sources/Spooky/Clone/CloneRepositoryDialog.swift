@@ -138,9 +138,10 @@ extension CloneRepositoryDialog {
 
 /// 克隆对话框的目标与校验，放在视图外便于测试。
 enum CloneTarget {
-    /// 目录下以地址里的仓库名命名的新目录；地址取不出仓库名、主机别名为空或目录不是绝对路径时为 nil。
+    /// 目录下以地址里的仓库名命名的新目录；地址不合法、取不出仓库名、主机别名为空或目录不是绝对路径时为 nil。
     static func destination(url: String, parent: RepositoryLocation) -> RepositoryLocation? {
         guard
+            (try? RepositoryReferences.validate(url: url)) != nil,
             let name = RepositoryClone.directoryName(for: url),
             parent.path.hasPrefix("/"),
             parent.host?.isEmpty != true

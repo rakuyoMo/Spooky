@@ -15,7 +15,7 @@ struct CloneActivityTests {
         return (try #require(UserDefaults(suiteName: suite)), suite)
     }
 
-    /// 目标是所选目录下以仓库名命名的新目录；服务器目标沿用主机，主机别名或目录不完整时没有目标。
+    /// 目标是所选目录下以仓库名命名的新目录；服务器目标沿用主机，地址不合法、主机别名或目录不完整时没有目标。
     @Test("克隆目标")
     func destinations() {
         let url = "git@github.com:rakuyoMo/Spooky.git"
@@ -29,6 +29,7 @@ struct CloneActivityTests {
         #expect(CloneTarget.destination(url: url, parent: .remote(host: "", path: "/srv")) == nil)
         #expect(CloneTarget.destination(url: url, parent: .remote(host: "b", path: "srv")) == nil)
         #expect(CloneTarget.destination(url: "https://", parent: .local(path: "/tmp")) == nil)
+        #expect(CloneTarget.destination(url: "-invalid", parent: .local(path: "/tmp")) == nil)
     }
 
     /// 地址不合法时提示；本机目标已是有内容的目录或文件时提示，空目录可以；地址没填时不提示。

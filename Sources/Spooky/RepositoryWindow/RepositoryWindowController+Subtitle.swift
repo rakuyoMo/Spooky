@@ -35,9 +35,9 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 按当前视图写入副标题；仓库管理显示期间副标题为空。
+    /// 按当前视图写入副标题；仓库管理、丢失页与克隆进度页这类没有打开仓库的页面副标题为空。
     func updateSubtitle() {
-        window?.subtitle = showsManager ? "" : repositorySubtitle
+        window?.subtitle = showsManager || session.repository == nil ? "" : repositorySubtitle
     }
 
     /// 副标题依赖的会话状态变化后重新写入。
