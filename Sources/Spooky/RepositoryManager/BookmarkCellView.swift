@@ -1,4 +1,5 @@
 import AppKit
+import SpookyKit
 
 // MARK: - BookmarkOutlineItem
 
@@ -57,7 +58,7 @@ final class BookmarkOutlineView: NSOutlineView {
 
 // MARK: - BookmarkCellView
 
-/// 书签的一行：16 pt 图标、名称与失效标记；服务器仓库在名称前带主机前缀，名称可以原地改。
+/// 书签的一行：16 pt 图标、名称与失效标记或克隆进度；服务器仓库在名称前带主机前缀，名称可以原地改。
 final class BookmarkCellView: NSTableCellView {
     /// 复用单元格的标识。
     static let identifier = NSUserInterfaceItemIdentifier("BookmarkCellView")
@@ -70,6 +71,9 @@ final class BookmarkCellView: NSTableCellView {
 
     /// 仓库失效时的文字说明，失效状态不只靠图标与颜色表达。
     private let warningField = NSTextField(labelWithString: AppLocalization.text("repositories.unavailableShort"))
+
+    /// 克隆中的 16 pt 进度：Git 报告百分比后是确定进度，之前转圈。
+    private let progressView = NSProgressIndicator()
 
     /// 按代码布局创建单元格。
     override init(frame frameRect: NSRect) {
@@ -89,8 +93,11 @@ final class BookmarkCellView: NSTableCellView {
     ///
     /// - Parameters:
     ///   - bookmark: 要显示的书签。
-    ///   - isMissing: 仓库是否已失效。
-    func configure(_ bookmark: Bookmark, isMissing: Bool) {
+    ///   - isMissing: 仓库是否已失效；克隆中不算失效。
+    ///   - clone: 正在克隆到这个书签的活动；没有时为 nil。
+    func configure(_ bookmark: Bookmark, isMissing: Bool, clone: CloneActivity? = nil) {
+        let isMissing = isMissing && clone == nil
+
         imageView?.image = NSImage(systemSymbolName: bookmark.symbolName, accessibilityDescription: nil)
         textField?.stringValue = bookmark.name
 
@@ -104,6 +111,7 @@ final class BookmarkCellView: NSTableCellView {
         hostField.textColor = color
         warningView.isHidden = !isMissing
         warningField.isHidden = !isMissing
+        showProgress(clone?.isRunning ?? false ? clone?.progress : nil, running: clone?.isRunning ?? false)
 
         toolTip = bookmark.location?.displayPath
         setAccessibilityLabel(bookmark.displayName)
@@ -114,6 +122,24 @@ final class BookmarkCellView: NSTableCellView {
 // MARK: - Layout
 
 extension BookmarkCellView {
+    /// 克隆中显示进度：有百分比时是确定进度，没有时转圈；不在克隆时隐藏。
+    private func showProgress(_ progress: CloneProgress?, running: Bool) {
+        progressView.isHidden = !running
+
+        guard running else {
+            progressView.stopAnimation(nil)
+            return
+        }
+
+        if let fraction = progress?.fraction {
+            progressView.isIndeterminate = false
+            progressView.doubleValue = fraction * 100
+        } else {
+            progressView.isIndeterminate = true
+            progressView.startAnimation(nil)
+        }
+    }
+
     /// 图标距左 3 pt，名称在图标右侧 8 pt，失效标记距右 3 pt。
     private func configureViews() {
         let icon = NSImageView()
@@ -144,8 +170,15 @@ extension BookmarkCellView {
         warningField.setContentCompressionResistancePriority(.required, for: .horizontal)
         warningField.setAccessibilityElement(false)
 
-        // 隐藏的前缀与失效标记不占位置，名称占满剩下的宽度
-        let stack = NSStackView(views: [icon, hostField, name, warningView, warningField])
+        progressView.style = .spinning
+        progressView.controlSize = .small
+        progressView.minValue = 0
+        progressView.maxValue = 100
+        progressView.isHidden = true
+        progressView.setAccessibilityLabel(AppLocalization.text("clone.state.running"))
+
+        // 隐藏的前缀、失效标记与进度不占位置，名称占满剩下的宽度
+        let stack = NSStackView(views: [icon, hostField, name, warningView, warningField, progressView])
         stack.orientation = .horizontal
         stack.alignment = .centerY
         stack.spacing = 0
@@ -166,6 +199,8 @@ extension BookmarkCellView {
             icon.heightAnchor.constraint(equalToConstant: 16),
             warningView.widthAnchor.constraint(equalToConstant: 16),
             warningView.heightAnchor.constraint(equalToConstant: 16),
+            progressView.widthAnchor.constraint(equalToConstant: 16),
+            progressView.heightAnchor.constraint(equalToConstant: 16),
         ])
     }
 }

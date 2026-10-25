@@ -90,6 +90,7 @@ final class BookmarkSidebarController: NSViewController {
         restoreSelection()
         observeModel()
         observeSelection()
+        observeClones()
     }
 
     /// 显示后让列表接收键盘。
@@ -218,6 +219,32 @@ extension BookmarkSidebarController {
                 }
 
                 observeModel()
+            }
+        }
+    }
+
+    /// 克隆开始、推进或结束时只重新配置可见的行，不打断改名与选择。
+    private func observeClones() {
+        withObservationTracking {
+            for activity in manager.coordinator?.clones.items ?? [] {
+                _ = activity.state
+            }
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else {
+                    return
+                }
+
+                let visible = outlineView.rows(in: outlineView.visibleRect)
+
+                if outlineView.currentEditor() == nil, visible.length > 0 {
+                    outlineView.reloadData(
+                        forRowIndexes: IndexSet(integersIn: visible.location ..< visible.location + visible.length),
+                        columnIndexes: [0]
+                    )
+                }
+
+                observeClones()
             }
         }
     }

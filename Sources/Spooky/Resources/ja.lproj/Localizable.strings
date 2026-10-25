@@ -1791,3 +1791,71 @@
 "quickActions.setGlobalUser.remote" = "user.name と user.email をサーバー「%@」のグローバルな Git 設定に書き込みます。サーバー上で独自の ID を持たないリポジトリはこの ID でコミットします。";
 "quickActions.applyTheme" = "テーマを適用";
 "quickActions.setAppearance" = "外観を設定";
+
+/* 新建、克隆、扫描与目录浏览时目标机器上的路径与环境问题。 */
+"hostError.absolutePath" = "絶対パスが必要です";
+"hostError.absolutePath.help" = "/ で始まる完全なパスを入力してください。";
+"hostError.missingDirectory" = "フォルダが見つかりません";
+"hostError.missingDirectory.help" = "選択したマシンにこのフォルダがあることを確認してください。";
+"hostError.notDirectory" = "フォルダではありません";
+"hostError.notDirectory.help" = "このパスはファイルを指しています。フォルダを選択してください。";
+"hostError.permission" = "フォルダへのアクセスが拒否されました";
+"hostError.permission.help" = "ログインユーザにはこのフォルダの読み取りと検索の権限が必要です。";
+"hostError.lfsUnavailable" = "Git LFS を使用できません";
+"hostError.lfsUnavailable.help" = "クローンを実行するマシンに Git LFS をインストールして「git lfs install」を実行するか、LFS を使わずにクローンしてください。";
+
+/* 克隆：对话框与目标的机器和目录、服务器目录浏览、克隆进度、最近克隆的气泡与工具栏 Clone 项。 */
+"clone.menu" = "Git リポジトリをクローン…";
+"clone.title" = "リモートリポジトリをクローン";
+"clone.message" = "リモートの Git リポジトリを、この Mac またはサーバ上の新しいフォルダにクローンします。";
+"clone.submit" = "クローン";
+"clone.url" = "リモート URL：";
+"clone.to" = "クローン先：";
+"clone.destination" = "「%@」にクローンします";
+"clone.options" = "オプション";
+"clone.lfs" = "LFS でクローン";
+"clone.submodules" = "サブモジュールを初期化";
+"clone.error.invalidURL" = "リモート URL が無効です";
+"clone.error.exists" = "「%@」はすでに存在し、空のフォルダではありません。";
+"clone.machine.local" = "この Mac";
+"clone.machine.other" = "ほかのサーバ…";
+"clone.directory" = "フォルダ：";
+"clone.directory.prompt" = "サーバ上の絶対パス";
+"clone.browse" = "参照…";
+"clone.progress.title" = "「%@」をクローン中…";
+"clone.cancel" = "クローンを中止";
+"clone.retry" = "再開";
+"clone.remove" = "削除";
+"clone.state.running" = "クローン中";
+"clone.state.cancelled" = "キャンセル済み";
+"clone.state.finished" = "完了";
+"clone.status.starting" = "開始しています…";
+"clone.status.count" = "%1$@：%2$ld";
+"clone.status.percent" = "%1$@：%2$ld%%（%3$ld/%4$ld）";
+"clone.phase.enumerating" = "オブジェクトを列挙";
+"clone.phase.counting" = "オブジェクトを数えています";
+"clone.phase.compressing" = "オブジェクトを圧縮";
+"clone.phase.receiving" = "オブジェクトを受信";
+"clone.phase.resolving" = "差分を解決";
+"clone.phase.checkingOut" = "ファイルを更新";
+"clone.phase.filtering" = "コンテンツをフィルタ";
+"clone.recent.title" = "最近クローンしたリポジトリ";
+"clone.recent.clear" = "消去";
+"toolbar.clone" = "クローン";
+"bookmarks.dropZone.clone" = "クローン";
+"browse.title" = "「%@」のフォルダを選択";
+"browse.up" = "親フォルダ";
+"browse.repository" = "Git リポジトリ";
+"browse.empty" = "フォルダはありません";
+
+/* 在本机或服务器的目录里寻找仓库。 */
+"scan.menu" = "リポジトリを検索…";
+"scan.title" = "リポジトリを検索";
+"scan.message" = "この Mac またはサーバ上で選んだフォルダの中から Git リポジトリを探します。そのフォルダの外は検索しません。";
+"scan.add" = "リポジトリを追加（%ld）";
+"scan.in" = "検索場所：";
+"scan.start" = "検索";
+"scan.stop" = "停止";
+"scan.selectAll" = "すべてを選択";
+"scan.searching" = "Git リポジトリを検索中…";
+"scan.found" = "%ld 個のリポジトリが見つかりました";

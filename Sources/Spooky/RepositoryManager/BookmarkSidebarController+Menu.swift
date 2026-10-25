@@ -4,7 +4,7 @@ import SpookyKit
 // MARK: - Add Menu
 
 extension BookmarkSidebarController {
-    /// 底栏 “+” 的下拉菜单：新建文件夹，添加本机或服务器仓库，新建本机仓库。
+    /// 底栏 “+” 的下拉菜单：新建文件夹；添加本机或服务器仓库、新建仓库；克隆；在目录里寻找仓库。
     func makeAddMenu() -> NSMenu {
         let menu = NSMenu()
 
@@ -18,6 +18,10 @@ extension BookmarkSidebarController {
         menu.addItem(menuItem("bookmarks.add", action: #selector(addRepositories)))
         menu.addItem(menuItem("action.addRemote", action: #selector(addServerRepository)))
         menu.addItem(menuItem("bookmarks.create", action: #selector(createRepository)))
+        menu.addItem(.separator())
+        menu.addItem(menuItem("clone.menu", action: #selector(cloneRepository)))
+        menu.addItem(.separator())
+        menu.addItem(menuItem("scan.menu", action: #selector(scanRepositories)))
         return menu
     }
 
@@ -43,6 +47,18 @@ extension BookmarkSidebarController {
     @objc
     private func createRepository() {
         manager.createRepository()
+    }
+
+    /// 克隆对话框。
+    @objc
+    private func cloneRepository() {
+        manager.cloneRepository()
+    }
+
+    /// 在目录里寻找仓库的对话框。
+    @objc
+    private func scanRepositories() {
+        manager.scanRepositories()
     }
 
     /// 一个目标为侧边栏的菜单项。

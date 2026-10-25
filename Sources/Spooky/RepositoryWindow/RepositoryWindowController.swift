@@ -30,6 +30,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 本窗口的后退 / 前进记录。
     var navigation = NavigationHistory()
 
+    /// 工具栏 Clone 项弹出的最近克隆。
+    var clonePopover: NSPopover?
+
     /// 正在按视图引用切换视图，中途经过的视图不记进后退 / 前进记录。
     var isApplyingReference = false
 
@@ -296,21 +299,6 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     ///   - location: 打不开的仓库。
     ///   - reason: 路径不存在或服务器连不上。
     func showMissingRepository(_ location: RepositoryLocation, reason: MissingRepositoryView.Reason) {
-        let previous = session.repository
-        session.close()
-
-        if let previous {
-            coordinator?.releaseConnection(previous)
-        }
-
-        showsManager = false
-        outerSplit = nil
-        workingCopySplit = nil
-        historySplit = nil
-        window?.title = location.name
-        window?.representedURL = nil
-        updateSubtitle()
-
         let page = NSHostingController(rootView: MissingRepositoryView(
             location: location,
             reason: reason,
@@ -325,6 +313,30 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
             close: { [weak self] in self?.showRepositories() }
         ))
         page.sizingOptions = [.minSize]
+
+        showPage(page, title: location.name)
+    }
+
+    /// 整个窗口换成一页：仓库丢失页或克隆进度页。会话与上一个仓库的连接一并交还，标题换成页面所指的仓库。
+    ///
+    /// - Parameters:
+    ///   - page: 换入的页面。
+    ///   - title: 窗口标题。
+    func showPage(_ page: NSViewController, title: String) {
+        let previous = session.repository
+        session.close()
+
+        if let previous {
+            coordinator?.releaseConnection(previous)
+        }
+
+        showsManager = false
+        outerSplit = nil
+        workingCopySplit = nil
+        historySplit = nil
+        window?.title = title
+        window?.representedURL = nil
+        updateSubtitle()
 
         // 换入的页面先取当前内容尺寸，窗口不随新视图缩放
         if let size = window?.contentView?.frame.size {

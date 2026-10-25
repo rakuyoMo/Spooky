@@ -181,6 +181,18 @@ struct RepositoryCloneTests {
         )
     }
 
+    /// 目标目录的默认名与 Git 自己取的一致：去掉协议、结尾的斜杠与 .git，取最后一段。
+    @Test("从地址取仓库名")
+    func directoryNames() {
+        #expect(RepositoryClone.directoryName(for: "git@github.com:rakuyoMo/Spooky.git") == "Spooky")
+        #expect(RepositoryClone.directoryName(for: "https://example.com/team/app/") == "app")
+        #expect(RepositoryClone.directoryName(for: "ssh://host/srv/仓库 名/.git") == "仓库 名")
+        #expect(RepositoryClone.directoryName(for: "/Users/me/source 源") == "source 源")
+        #expect(RepositoryClone.directoryName(for: "host:repo") == "repo")
+        #expect(RepositoryClone.directoryName(for: "https://") == nil)
+        #expect(RepositoryClone.directoryName(for: "..") == nil)
+    }
+
     /// 在临时目录里建一个有两次提交的源仓库，返回它的路径。
     private func makeSource(in fixture: TemporaryRepository) async throws -> String {
         let source = fixture.directory.path + "/source 源"

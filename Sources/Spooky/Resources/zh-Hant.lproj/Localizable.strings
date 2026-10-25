@@ -1791,3 +1791,71 @@
 "quickActions.setGlobalUser.remote" = "將把 user.name 與 user.email 寫入伺服器 “%@” 上你的全域 Git 設定。伺服器上沒有自己身分的儲存庫都用它提交。";
 "quickActions.applyTheme" = "套用主題";
 "quickActions.setAppearance" = "設定外觀";
+
+/* 新建、克隆、扫描与目录浏览时目标机器上的路径与环境问题。 */
+"hostError.absolutePath" = "需要絕對路徑";
+"hostError.absolutePath.help" = "請輸入以 / 開頭的完整路徑。";
+"hostError.missingDirectory" = "找不到資料夾";
+"hostError.missingDirectory.help" = "請確認所選機器上有這個資料夾。";
+"hostError.notDirectory" = "不是資料夾";
+"hostError.notDirectory.help" = "這個路徑指向一個檔案，請改選資料夾。";
+"hostError.permission" = "無權取用資料夾";
+"hostError.permission.help" = "登入使用者需要這個資料夾的讀取與搜尋權限。";
+"hostError.lfsUnavailable" = "Git LFS 無法使用";
+"hostError.lfsUnavailable.help" = "請在執行複製的機器上安裝 Git LFS 並執行 “git lfs install”，或者不使用 LFS 複製。";
+
+/* 克隆：对话框与目标的机器和目录、服务器目录浏览、克隆进度、最近克隆的气泡与工具栏 Clone 项。 */
+"clone.menu" = "複製 Git 倉庫…";
+"clone.title" = "複製遠端倉庫";
+"clone.message" = "把遠端 Git 倉庫複製到這台 Mac 或伺服器上的新資料夾。";
+"clone.submit" = "複製";
+"clone.url" = "遠端位址：";
+"clone.to" = "複製到：";
+"clone.destination" = "將複製到 “%@”";
+"clone.options" = "選項";
+"clone.lfs" = "使用 LFS 複製";
+"clone.submodules" = "初始化子模組";
+"clone.error.invalidURL" = "遠端位址無效";
+"clone.error.exists" = "“%@” 已存在且不是空資料夾。";
+"clone.machine.local" = "這台 Mac";
+"clone.machine.other" = "其他伺服器…";
+"clone.directory" = "資料夾：";
+"clone.directory.prompt" = "伺服器上的絕對路徑";
+"clone.browse" = "瀏覽…";
+"clone.progress.title" = "正在複製 “%@”…";
+"clone.cancel" = "取消複製";
+"clone.retry" = "重新開始";
+"clone.remove" = "移除";
+"clone.state.running" = "正在複製";
+"clone.state.cancelled" = "已取消";
+"clone.state.finished" = "已完成";
+"clone.status.starting" = "正在開始…";
+"clone.status.count" = "%1$@：%2$ld";
+"clone.status.percent" = "%1$@：%2$ld%%（%3$ld/%4$ld）";
+"clone.phase.enumerating" = "列舉物件";
+"clone.phase.counting" = "清點物件";
+"clone.phase.compressing" = "壓縮物件";
+"clone.phase.receiving" = "接收物件";
+"clone.phase.resolving" = "處理差異";
+"clone.phase.checkingOut" = "更新檔案";
+"clone.phase.filtering" = "過濾內容";
+"clone.recent.title" = "最近複製的倉庫";
+"clone.recent.clear" = "清除";
+"toolbar.clone" = "複製";
+"bookmarks.dropZone.clone" = "複製";
+"browse.title" = "選擇 “%@” 上的資料夾";
+"browse.up" = "上一層資料夾";
+"browse.repository" = "Git 倉庫";
+"browse.empty" = "沒有資料夾";
+
+/* 在本机或服务器的目录里寻找仓库。 */
+"scan.menu" = "尋找倉庫…";
+"scan.title" = "尋找倉庫";
+"scan.message" = "在這台 Mac 或伺服器上你選的資料夾裡尋找 Git 倉庫，不會尋找這個資料夾以外的位置。";
+"scan.add" = "加入倉庫（%ld）";
+"scan.in" = "尋找位置：";
+"scan.start" = "尋找";
+"scan.stop" = "停止";
+"scan.selectAll" = "全選";
+"scan.searching" = "正在尋找 Git 倉庫…";
+"scan.found" = "找到 %ld 個倉庫";

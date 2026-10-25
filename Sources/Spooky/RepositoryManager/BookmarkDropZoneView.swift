@@ -2,9 +2,9 @@ import SwiftUI
 
 // MARK: - BookmarkDropZoneView
 
-/// 没有选中或选中文件夹时的拖放页：虚线框里是图标与两行提示，下面是添加、添加服务器仓库与新建的按钮。
+/// 没有选中或选中文件夹时的拖放页：虚线框里是图标与两行提示，下面是添加、添加服务器仓库、新建与克隆的按钮。
 ///
-/// 只接受本机文件夹；选中文件夹时添加的仓库放进那个文件夹。
+/// 拖进本机文件夹时添加仓库，拖进远端地址时打开克隆对话框；选中文件夹时仓库放进那个文件夹。
 struct BookmarkDropZoneView: View {
     /// 所在窗口的仓库管理。
     let manager: RepositoryManagerController
@@ -27,6 +27,9 @@ struct BookmarkDropZoneView: View {
 
                 Button(AppLocalization.text("bookmarks.dropZone.create"), action: manager.createRepository)
                     .accessibilityIdentifier("create-repository")
+
+                Button(AppLocalization.text("bookmarks.dropZone.clone")) { manager.cloneRepository() }
+                    .accessibilityIdentifier("clone-repository")
             }
         }
         .padding(20)
@@ -36,6 +39,12 @@ struct BookmarkDropZoneView: View {
         .dropDestination(for: URL.self) { urls, _ in
             let folders = urls.filter {
                 $0.isFileURL && ((try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false)
+            }
+
+            // 远端地址只取第一个，在克隆对话框里预填
+            if folders.isEmpty, let remote = urls.first(where: { !$0.isFileURL }) {
+                manager.cloneRepository(url: remote.absoluteString)
+                return true
             }
 
             guard !folders.isEmpty else {

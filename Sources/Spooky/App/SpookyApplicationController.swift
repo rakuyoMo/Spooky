@@ -17,6 +17,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 跨窗口共享的仓库书签。
     let bookmarks: RepositoryBookmarks
 
+    /// 在后台进行的克隆，工具栏的 Clone 项与仓库管理共用。
+    let clones: CloneActivities
+
     /// 应用持有的主窗口控制器。
     private(set) var windows: [RepositoryWindowController] = []
 
@@ -47,6 +50,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 注入持久化的书签，测试与应用使用同一打开规则。
     init(bookmarks: RepositoryBookmarks = RepositoryBookmarks()) {
         self.bookmarks = bookmarks
+        clones = CloneActivities(bookmarks: bookmarks)
         super.init()
     }
 
@@ -128,6 +132,14 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         let controller = activeWindow ?? makeWindow()
         controller.showWindow(nil)
         controller.addRemoteRepository()
+    }
+
+    /// File › Clone Git Repository…：在前台的仓库窗口弹出克隆对话框，没有窗口时先开一个。
+    @objc
+    func cloneRepository() {
+        let controller = activeWindow ?? makeWindow()
+        controller.showWindow(nil)
+        controller.presentClone()
     }
 
     /// ⌘, 始终打开同一个设置窗口。
@@ -297,6 +309,16 @@ extension SpookyApplicationController {
     ) {
         if let source {
             cancelOpening(in: source)
+        }
+
+        // 还没有克隆完的仓库显示克隆进度，完成后由进度页打开
+        if let activity = clones.unfinished(at: location) {
+            let destination = (inNewWindow ? nil : source).flatMap { source in windows.first { $0 === source } }
+                ?? makeWindow()
+
+            destination.showWindow(nil)
+            destination.showCloneProgress(activity)
+            return
         }
 
         let request = UUID()

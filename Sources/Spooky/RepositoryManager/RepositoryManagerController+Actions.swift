@@ -111,6 +111,28 @@ extension RepositoryManagerController {
         window?.addRemoteRepository()
     }
 
+    /// 克隆对话框；克隆的书签放进选中的文件夹。
+    ///
+    /// - Parameter url: 预填的远端地址，如拖进来的 URL。
+    func cloneRepository(url: String = "") {
+        window?.presentClone(url: url, into: selectedFolder)
+    }
+
+    /// 在本机或服务器的目录里寻找仓库；勾选的仓库加入书签，放进选中的文件夹。
+    func scanRepositories() {
+        let folder = selectedFolder
+        let hosts = ServerCloneDirectories.hosts(in: bookmarks)
+        let existing = Set(bookmarks.repositories.compactMap(\.location))
+
+        window?.presentDialog { [weak self] close in
+            ScanRepositoriesDialog(hosts: hosts, existing: existing, close: close) { locations in
+                for location in locations {
+                    self?.bookmarks.add(location, into: folder)
+                }
+            }
+        }
+    }
+
     /// 新建本机仓库的对话框；建好的仓库放进选中的文件夹。
     func createRepository() {
         let folder = selectedFolder

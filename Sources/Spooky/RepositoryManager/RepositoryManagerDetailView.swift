@@ -29,7 +29,20 @@ struct RepositoryManagerDetailView: View {
             BookmarkDropZoneView(manager: manager)
 
         case .repository(let bookmark):
-            BookmarkRepositoryDetailView(manager: manager, bookmark: bookmark)
+            // 还没有克隆完的仓库显示克隆进度，完成后重新读取概况
+            if
+                let location = bookmark.location,
+                let clones = manager.coordinator?.clones,
+                let activity = clones.unfinished(at: location)
+            {
+                CloneProgressView(
+                    activity: activity,
+                    retry: { clones.restart(activity) },
+                    finished: manager.reloadDetail
+                )
+            } else {
+                BookmarkRepositoryDetailView(manager: manager, bookmark: bookmark)
+            }
 
         case .multiple(let count):
             VStack(spacing: 16) {

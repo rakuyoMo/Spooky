@@ -43,6 +43,9 @@ struct LocalizationTests {
 
         keys += ["squash", "fixup", "drop", "move", "rebaseOnto"].map { "rewrite." + $0 + ".confirm.one" }
 
+        // 克隆进度的阶段名
+        keys += CloneProgress.Phase.allCases.map { "clone.phase." + $0.key }
+
         return keys
     }
 

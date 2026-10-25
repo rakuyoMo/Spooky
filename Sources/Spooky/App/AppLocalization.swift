@@ -156,19 +156,9 @@ struct AppFailure: Identifiable {
         case let remote as RemoteConnectionError:
             (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: remote, writing: writing)
 
-        case let terminal as TerminalLaunchError:
-            key = "error.terminal"
-            recoveryKey = "error.terminalHelp"
-            diagnostic = terminal.diagnostic
-
         case let file as WorkingCopyFileError:
             kind = .repository
             (key, recoveryKey, diagnostic) = Self.classification(of: file)
-
-        case let tool as ExternalToolLaunchError:
-            key = "externalTool.error"
-            recoveryKey = "externalTool.error.help"
-            diagnostic = tool.diagnostic
 
         case let git as GitError:
             output = git.result
@@ -189,7 +179,13 @@ struct AppFailure: Identifiable {
             kind = .cancelled
 
         default:
-            diagnostic = String(describing: error)
+            // 启动外部程序与目标机器上的失败另行分类，其余错误只留描述
+            guard let machine = Self.machineClassification(of: error) else {
+                diagnostic = String(describing: error)
+                break
+            }
+
+            (key, kind, recoveryKey, output, diagnostic) = machine
         }
 
         self.kind = kind

@@ -1791,3 +1791,71 @@
 "quickActions.setGlobalUser.remote" = "Schreibt user.name und user.email in die globale Git-Konfiguration auf dem Server „%@“. Repositorys auf dem Server ohne eigene Identität committen damit.";
 "quickActions.applyTheme" = "Thema anwenden";
 "quickActions.setAppearance" = "Erscheinungsbild festlegen";
+
+/* 新建、克隆、扫描与目录浏览时目标机器上的路径与环境问题。 */
+"hostError.absolutePath" = "Absoluter Pfad erforderlich";
+"hostError.absolutePath.help" = "Geben Sie den vollständigen Pfad ein, beginnend mit /.";
+"hostError.missingDirectory" = "Ordner nicht gefunden";
+"hostError.missingDirectory.help" = "Prüfen Sie, ob der Ordner auf dem ausgewählten Rechner existiert.";
+"hostError.notDirectory" = "Kein Ordner";
+"hostError.notDirectory.help" = "Der Pfad verweist auf eine Datei. Wählen Sie stattdessen einen Ordner.";
+"hostError.permission" = "Zugriff auf Ordner verweigert";
+"hostError.permission.help" = "Der Benutzer braucht Lese- und Suchrechte für diesen Ordner.";
+"hostError.lfsUnavailable" = "Git LFS ist nicht verfügbar";
+"hostError.lfsUnavailable.help" = "Installieren Sie Git LFS auf dem Rechner, der das Repository klont, und führen Sie „git lfs install“ aus, oder klonen Sie ohne LFS.";
+
+/* 克隆：对话框与目标的机器和目录、服务器目录浏览、克隆进度、最近克隆的气泡与工具栏 Clone 项。 */
+"clone.menu" = "Git-Repository klonen …";
+"clone.title" = "Entferntes Repository klonen";
+"clone.message" = "Klont ein entferntes Git-Repository in einen neuen Ordner auf diesem Mac oder einem Server.";
+"clone.submit" = "Klonen";
+"clone.url" = "Entfernte URL:";
+"clone.to" = "Klonen nach:";
+"clone.destination" = "Wird nach „%@“ geklont";
+"clone.options" = "Optionen";
+"clone.lfs" = "Mit LFS klonen";
+"clone.submodules" = "Submodule initialisieren";
+"clone.error.invalidURL" = "Ungültige entfernte URL";
+"clone.error.exists" = "„%@“ existiert bereits und ist kein leerer Ordner.";
+"clone.machine.local" = "Dieser Mac";
+"clone.machine.other" = "Anderer Server …";
+"clone.directory" = "Ordner:";
+"clone.directory.prompt" = "Absoluter Pfad auf dem Server";
+"clone.browse" = "Durchsuchen …";
+"clone.progress.title" = "„%@“ wird geklont …";
+"clone.cancel" = "Klonen abbrechen";
+"clone.retry" = "Neu starten";
+"clone.remove" = "Entfernen";
+"clone.state.running" = "Wird geklont";
+"clone.state.cancelled" = "Abgebrochen";
+"clone.state.finished" = "Abgeschlossen";
+"clone.status.starting" = "Wird gestartet …";
+"clone.status.count" = "%1$@: %2$ld";
+"clone.status.percent" = "%1$@: %2$ld %% (%3$ld/%4$ld)";
+"clone.phase.enumerating" = "Objekte aufzählen";
+"clone.phase.counting" = "Objekte zählen";
+"clone.phase.compressing" = "Objekte komprimieren";
+"clone.phase.receiving" = "Objekte empfangen";
+"clone.phase.resolving" = "Deltas auflösen";
+"clone.phase.checkingOut" = "Dateien aktualisieren";
+"clone.phase.filtering" = "Inhalt filtern";
+"clone.recent.title" = "Zuletzt geklonte Repositorys";
+"clone.recent.clear" = "Leeren";
+"toolbar.clone" = "Klonen";
+"bookmarks.dropZone.clone" = "Klonen";
+"browse.title" = "Ordner auf „%@“ wählen";
+"browse.up" = "Übergeordneter Ordner";
+"browse.repository" = "Git-Repository";
+"browse.empty" = "Keine Ordner";
+
+/* 在本机或服务器的目录里寻找仓库。 */
+"scan.menu" = "Repositorys suchen …";
+"scan.title" = "Repositorys suchen";
+"scan.message" = "Sucht Git-Repositorys im gewählten Ordner auf diesem Mac oder einem Server. Außerhalb dieses Ordners wird nicht gesucht.";
+"scan.add" = "Repositorys hinzufügen (%ld)";
+"scan.in" = "Suchen in:";
+"scan.start" = "Suchen";
+"scan.stop" = "Stoppen";
+"scan.selectAll" = "Alle auswählen";
+"scan.searching" = "Git-Repositorys werden gesucht …";
+"scan.found" = "%ld Repositorys gefunden";

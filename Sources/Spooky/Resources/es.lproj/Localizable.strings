@@ -1791,3 +1791,71 @@
 "quickActions.setGlobalUser.remote" = "Escribe user.name y user.email en la configuración global de Git del servidor “%@”. Los repositorios del servidor sin identidad propia la usan para hacer commits.";
 "quickActions.applyTheme" = "Aplicar tema";
 "quickActions.setAppearance" = "Establecer apariencia";
+
+/* 新建、克隆、扫描与目录浏览时目标机器上的路径与环境问题。 */
+"hostError.absolutePath" = "Se necesita una ruta absoluta";
+"hostError.absolutePath.help" = "Escribe la ruta completa, empezando por /.";
+"hostError.missingDirectory" = "No se ha encontrado la carpeta";
+"hostError.missingDirectory.help" = "Comprueba que la carpeta existe en la máquina elegida.";
+"hostError.notDirectory" = "No es una carpeta";
+"hostError.notDirectory.help" = "La ruta apunta a un archivo. Elige una carpeta.";
+"hostError.permission" = "Acceso denegado a la carpeta";
+"hostError.permission.help" = "El usuario necesita permiso de lectura y búsqueda en esta carpeta.";
+"hostError.lfsUnavailable" = "Git LFS no está disponible";
+"hostError.lfsUnavailable.help" = "Instala Git LFS en la máquina que clona el repositorio y ejecuta “git lfs install”, o clona sin LFS.";
+
+/* 克隆：对话框与目标的机器和目录、服务器目录浏览、克隆进度、最近克隆的气泡与工具栏 Clone 项。 */
+"clone.menu" = "Clonar repositorio Git…";
+"clone.title" = "Clonar repositorio remoto";
+"clone.message" = "Clona un repositorio Git remoto en una carpeta nueva de este Mac o de un servidor.";
+"clone.submit" = "Clonar";
+"clone.url" = "URL remota:";
+"clone.to" = "Clonar en:";
+"clone.destination" = "Se clonará en “%@”";
+"clone.options" = "Opciones";
+"clone.lfs" = "Clonar con LFS";
+"clone.submodules" = "Inicializar submódulos";
+"clone.error.invalidURL" = "URL remota no válida";
+"clone.error.exists" = "“%@” ya existe y no es una carpeta vacía.";
+"clone.machine.local" = "Este Mac";
+"clone.machine.other" = "Otro servidor…";
+"clone.directory" = "Carpeta:";
+"clone.directory.prompt" = "Ruta absoluta en el servidor";
+"clone.browse" = "Explorar…";
+"clone.progress.title" = "Clonando “%@”…";
+"clone.cancel" = "Cancelar clonación";
+"clone.retry" = "Reiniciar";
+"clone.remove" = "Quitar";
+"clone.state.running" = "Clonando";
+"clone.state.cancelled" = "Cancelado";
+"clone.state.finished" = "Terminado";
+"clone.status.starting" = "Iniciando…";
+"clone.status.count" = "%1$@: %2$ld";
+"clone.status.percent" = "%1$@: %2$ld%% (%3$ld/%4$ld)";
+"clone.phase.enumerating" = "Enumerando objetos";
+"clone.phase.counting" = "Contando objetos";
+"clone.phase.compressing" = "Comprimiendo objetos";
+"clone.phase.receiving" = "Recibiendo objetos";
+"clone.phase.resolving" = "Resolviendo deltas";
+"clone.phase.checkingOut" = "Actualizando archivos";
+"clone.phase.filtering" = "Filtrando contenido";
+"clone.recent.title" = "Repositorios clonados recientemente";
+"clone.recent.clear" = "Borrar";
+"toolbar.clone" = "Clonar";
+"bookmarks.dropZone.clone" = "Clonar";
+"browse.title" = "Elegir una carpeta en “%@”";
+"browse.up" = "Carpeta superior";
+"browse.repository" = "Repositorio Git";
+"browse.empty" = "No hay carpetas";
+
+/* 在本机或服务器的目录里寻找仓库。 */
+"scan.menu" = "Buscar repositorios…";
+"scan.title" = "Buscar repositorios";
+"scan.message" = "Busca repositorios Git dentro de la carpeta que elijas, en este Mac o en un servidor. No se busca fuera de esa carpeta.";
+"scan.add" = "Añadir repositorios (%ld)";
+"scan.in" = "Buscar en:";
+"scan.start" = "Buscar";
+"scan.stop" = "Detener";
+"scan.selectAll" = "Seleccionar todo";
+"scan.searching" = "Buscando repositorios Git…";
+"scan.found" = "%ld repositorios encontrados";

@@ -1791,3 +1791,71 @@
 "quickActions.setGlobalUser.remote" = "user.name과 user.email을 서버 “%@”의 전역 Git 설정에 씁니다. 서버에서 자체 신원이 없는 저장소는 이 신원으로 커밋합니다.";
 "quickActions.applyTheme" = "테마 적용";
 "quickActions.setAppearance" = "모양 설정";
+
+/* 新建、克隆、扫描与目录浏览时目标机器上的路径与环境问题。 */
+"hostError.absolutePath" = "절대 경로가 필요함";
+"hostError.absolutePath.help" = "/로 시작하는 전체 경로를 입력하세요.";
+"hostError.missingDirectory" = "폴더를 찾을 수 없음";
+"hostError.missingDirectory.help" = "선택한 컴퓨터에 이 폴더가 있는지 확인하세요.";
+"hostError.notDirectory" = "폴더가 아님";
+"hostError.notDirectory.help" = "이 경로는 파일을 가리킵니다. 폴더를 선택하세요.";
+"hostError.permission" = "폴더 접근이 거부됨";
+"hostError.permission.help" = "로그인 사용자에게 이 폴더의 읽기 및 검색 권한이 필요합니다.";
+"hostError.lfsUnavailable" = "Git LFS를 사용할 수 없음";
+"hostError.lfsUnavailable.help" = "복제하는 컴퓨터에 Git LFS를 설치하고 “git lfs install”을 실행하거나 LFS 없이 복제하세요.";
+
+/* 克隆：对话框与目标的机器和目录、服务器目录浏览、克隆进度、最近克隆的气泡与工具栏 Clone 项。 */
+"clone.menu" = "Git 저장소 복제…";
+"clone.title" = "원격 저장소 복제";
+"clone.message" = "원격 Git 저장소를 이 Mac 또는 서버의 새 폴더에 복제합니다.";
+"clone.submit" = "복제";
+"clone.url" = "원격 URL:";
+"clone.to" = "복제할 위치:";
+"clone.destination" = "“%@”에 복제됨";
+"clone.options" = "옵션";
+"clone.lfs" = "LFS로 복제";
+"clone.submodules" = "하위 모듈 초기화";
+"clone.error.invalidURL" = "원격 URL이 유효하지 않음";
+"clone.error.exists" = "“%@”이(가) 이미 있으며 빈 폴더가 아닙니다.";
+"clone.machine.local" = "이 Mac";
+"clone.machine.other" = "다른 서버…";
+"clone.directory" = "폴더:";
+"clone.directory.prompt" = "서버의 절대 경로";
+"clone.browse" = "탐색…";
+"clone.progress.title" = "“%@” 복제 중…";
+"clone.cancel" = "복제 취소";
+"clone.retry" = "다시 시작";
+"clone.remove" = "제거";
+"clone.state.running" = "복제 중";
+"clone.state.cancelled" = "취소됨";
+"clone.state.finished" = "완료됨";
+"clone.status.starting" = "시작하는 중…";
+"clone.status.count" = "%1$@: %2$ld";
+"clone.status.percent" = "%1$@: %2$ld%% (%3$ld/%4$ld)";
+"clone.phase.enumerating" = "객체 나열";
+"clone.phase.counting" = "객체 세기";
+"clone.phase.compressing" = "객체 압축";
+"clone.phase.receiving" = "객체 받기";
+"clone.phase.resolving" = "델타 해석";
+"clone.phase.checkingOut" = "파일 업데이트";
+"clone.phase.filtering" = "콘텐츠 필터링";
+"clone.recent.title" = "최근 복제한 저장소";
+"clone.recent.clear" = "지우기";
+"toolbar.clone" = "복제";
+"bookmarks.dropZone.clone" = "복제";
+"browse.title" = "“%@”의 폴더 선택";
+"browse.up" = "상위 폴더";
+"browse.repository" = "Git 저장소";
+"browse.empty" = "폴더 없음";
+
+/* 在本机或服务器的目录里寻找仓库。 */
+"scan.menu" = "저장소 찾기…";
+"scan.title" = "저장소 찾기";
+"scan.message" = "이 Mac 또는 서버에서 선택한 폴더 안의 Git 저장소를 찾습니다. 그 폴더 밖은 찾지 않습니다.";
+"scan.add" = "저장소 추가(%ld)";
+"scan.in" = "찾을 위치:";
+"scan.start" = "찾기";
+"scan.stop" = "중단";
+"scan.selectAll" = "모두 선택";
+"scan.searching" = "Git 저장소를 찾는 중…";
+"scan.found" = "저장소 %ld개 찾음";

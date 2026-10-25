@@ -8,6 +8,11 @@ enum CloneDirectory {
     /// 偏好键，值为目录的绝对路径。
     static let key = "defaultCloneDirectory"
 
+    /// 当前的默认克隆目录；没有选过时是用户主目录。
+    static var current: String {
+        UserDefaults.standard.string(forKey: key) ?? NSHomeDirectory()
+    }
+
     /// 弹出菜单里的候选目录：用户主目录、存在时的 `~/Development`，以及已选的目录；同一目录只列一次。
     ///
     /// - Parameters:

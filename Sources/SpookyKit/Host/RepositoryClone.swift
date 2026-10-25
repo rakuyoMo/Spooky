@@ -39,6 +39,33 @@ public struct RepositoryClone: Sendable, Hashable {
         self.options = options
     }
 
+    /// 地址里的仓库名，克隆的目标目录默认以它命名：去掉协议、结尾的 `/` 与 `.git`，取最后一个 `/` 或 `:` 之后的部分。
+    ///
+    /// 与 Git 在没有给出目标目录时的取名一致，如 `git@host:team/app.git` 与 `https://host/team/app/` 都取 `app`；取不出时为 nil。
+    public static func directoryName(for url: String) -> String? {
+        var text = Substring(url.trimmingCharacters(in: .whitespaces))
+
+        if let scheme = text.range(of: "://") {
+            text = text[scheme.upperBound...]
+        }
+
+        // 先去掉结尾的斜杠，再去掉 .git 与它前面的斜杠
+        while text.hasSuffix("/") {
+            text.removeLast()
+        }
+
+        if text.hasSuffix(".git") {
+            text.removeLast(4)
+        }
+
+        while text.hasSuffix("/") {
+            text.removeLast()
+        }
+
+        let name = text.split { $0 == "/" || $0 == ":" }.last.map(String.init) ?? ""
+        return name.isEmpty || name == "." || name == ".." ? nil : name
+    }
+
     /// 发起克隆，返回可取消、可观察的操作；取消不算失败，也不会自动重试。
     ///
     /// 执行 `git clone --progress [--recurse-submodules] -- <地址> <目标>`。失败时 ``GitError`` 保留 Git 的原始输出与错误类别；

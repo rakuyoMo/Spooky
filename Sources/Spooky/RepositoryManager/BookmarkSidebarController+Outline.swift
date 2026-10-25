@@ -132,7 +132,11 @@ extension BookmarkSidebarController: NSOutlineViewDelegate {
 
         let cell = outlineView.makeView(withIdentifier: BookmarkCellView.identifier, owner: self) as? BookmarkCellView
             ?? BookmarkCellView()
-        cell.configure(bookmark, isMissing: bookmark.location.map(manager.bookmarks.isMissing) ?? false)
+        cell.configure(
+            bookmark,
+            isMissing: bookmark.location.map(manager.bookmarks.isMissing) ?? false,
+            clone: bookmark.location.flatMap { manager.coordinator?.clones.unfinished(at: $0) }
+        )
         cell.textField?.delegate = self
         return cell
     }

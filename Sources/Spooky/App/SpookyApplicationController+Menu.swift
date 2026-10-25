@@ -48,7 +48,7 @@ extension SpookyApplicationController {
         addItem("menu.quit", action: #selector(NSApplication.terminate(_:)), key: "q", to: application)
     }
 
-    /// File 菜单：新窗口与新标签、打开本机或服务器仓库、最近仓库，以及仓库位置与关闭动作。
+    /// File 菜单：新窗口与新标签、打开本机或服务器仓库、最近仓库、快捷操作、克隆，以及关闭与仓库位置的动作。
     private func configureFileMenu(in menu: NSMenu) {
         let file = addMenu("menu.file", to: menu)
         addItem("menu.newWindow", action: #selector(newWindow), key: "n", target: self, to: file)
@@ -69,12 +69,22 @@ extension SpookyApplicationController {
         )
 
         file.addItem(.separator())
-        addItem("action.openTerminal", action: #selector(RepositoryWindowController.openInTerminal), to: file)
-        addItem("action.revealFinder", action: #selector(RepositoryWindowController.revealInFinder), to: file)
+        addItem(
+            "clone.menu",
+            action: #selector(cloneRepository),
+            key: "c",
+            modifiers: [.control, .command],
+            target: self,
+            to: file
+        )
 
         file.addItem(.separator())
         addItem("action.closeRepository", action: #selector(RepositoryWindowController.closeRepository), to: file)
         addItem("menu.closeWindow", action: #selector(NSWindow.performClose(_:)), key: "w", to: file)
+
+        file.addItem(.separator())
+        addItem("action.revealFinder", action: #selector(RepositoryWindowController.revealInFinder), to: file)
+        addItem("action.openTerminal", action: #selector(RepositoryWindowController.openInTerminal), to: file)
     }
 
     /// Edit 菜单：撤销与重做、系统文本动作、提交信息的段落重排与查找。
