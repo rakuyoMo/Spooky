@@ -73,7 +73,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
         configureMenu()
         appIconController.start()
-        newWindow()
+
+        // 系统恢复了仓库窗口时不另开窗口；否则按偏好显示启动窗口或仓库管理
+        openInitialWindow()
         NSApp.activate(ignoringOtherApps: true)
 
         // 窗口与菜单就绪后启动更新器，按计划检查与手动检查都由它负责
@@ -94,12 +96,15 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         return true
     }
 
-    /// 新窗口始终独立，普通打开仍优先复用发起窗口。
+    /// 新窗口始终独立，不并进已有的标签组；普通打开仍优先复用发起窗口。
     @objc
     func newWindow() {
         let controller = makeWindow()
-        controller.showWindow(nil)
-        controller.window?.makeKeyAndOrderFront(nil)
+
+        showSeparately(controller) {
+            controller.showWindow(nil)
+            controller.window?.makeKeyAndOrderFront(nil)
+        }
     }
 
     /// 应用级 ⌘O 在没有主窗口时也能选择仓库。
@@ -279,10 +284,16 @@ extension SpookyApplicationController {
     }
 
     /// 验证后按规范根路径去重；显式新窗口打开跳过去重。
+    ///
+    /// - Parameters:
+    ///   - destination: 打开后切到的视图；nil 时显示仓库保存的视图状态。
+    ///   - staysInSource: 后退、前进与窗口恢复在发起窗口里打开，不改用已显示这个仓库的其它窗口。
     func openRepository(
         at location: RepositoryLocation,
         from source: RepositoryWindowController?,
-        inNewWindow: Bool
+        inNewWindow: Bool,
+        showing destination: RepositoryDestination? = nil,
+        staysInSource: Bool = false
     ) {
         if let source {
             cancelOpening(in: source)
@@ -310,7 +321,13 @@ extension SpookyApplicationController {
                 let repository = try await Self.verifiedLocation(of: location)
                 try Task.checkCancellation()
 
-                displayRepository(repository, from: source, inNewWindow: inNewWindow)
+                displayRepository(
+                    repository,
+                    from: source,
+                    inNewWindow: inNewWindow,
+                    showing: destination,
+                    staysInSource: staysInSource
+                )
             } catch {
                 guard !Task.isCancelled else {
                     return
@@ -324,21 +341,31 @@ extension SpookyApplicationController {
         }
     }
 
-    /// 已验证的本机和远端仓库共用窗口去重规则。
+    /// 已验证的本机和远端仓库共用窗口去重规则；显式新窗口不并进已有的标签组。
+    ///
+    /// - Parameters:
+    ///   - view: 显示后切到的视图；nil 时显示仓库保存的视图状态。
+    ///   - staysInSource: 在发起窗口里显示，不改用已显示这个仓库的其它窗口。
     func displayRepository(
         _ repository: RepositoryLocation,
         from source: RepositoryWindowController?,
-        inNewWindow: Bool
+        inNewWindow: Bool,
+        showing view: RepositoryDestination? = nil,
+        staysInSource: Bool = false
     ) {
+        let sourceIsOpen = source.map { source in windows.contains { $0 === source } } ?? false
+
         let destination: RepositoryWindowController =
-            if
+            if staysInSource, sourceIsOpen, let source {
+                source
+            } else if
                 !inNewWindow,
                 let existing = windows.first(where: {
                     !$0.showsManager && $0.session.repository == repository
                 })
             {
                 existing
-            } else if !inNewWindow, let source, windows.contains(where: { $0 === source }) {
+            } else if !inNewWindow, sourceIsOpen, let source {
                 source
             } else {
                 makeWindow()
@@ -346,7 +373,14 @@ extension SpookyApplicationController {
 
         recent.remember(repository)
         let previous = destination.session.repository
-        destination.display(repository)
+
+        showSeparately(destination, when: inNewWindow) {
+            if let view {
+                destination.display(repository, showing: view)
+            } else {
+                destination.display(repository)
+            }
+        }
 
         if let previous, previous != repository { releaseConnection(previous) }
         NSApp.activate(ignoringOtherApps: true)
@@ -425,7 +459,7 @@ extension SpookyApplicationController {
     }
 
     /// 创建控制器并纳入应用生命周期。
-    private func makeWindow() -> RepositoryWindowController {
+    func makeWindow() -> RepositoryWindowController {
         let controller = RepositoryWindowController(coordinator: self)
         windows.append(controller)
         return controller

@@ -1482,7 +1482,7 @@
 "settings.windowRestoration.always" = "Toujours";
 "settings.windowRestoration.never" = "Jamais";
 "settings.windowRestoration.system" = "Réglage du système";
-"settings.showLaunchWindow" = "Afficher la fenêtre de démarrage à l’ouverture";
+"settings.showLaunchWindow" = "Afficher la fenêtre de démarrage rapide à l’ouverture";
 "action.ok" = "OK";
 "gitConfig.userName" = "Nom d’utilisateur global :";
 "gitConfig.email" = "E-mail global :";
@@ -1646,3 +1646,23 @@
 "updates.interval.weekly" = "Toutes les semaines";
 "updates.lastCheck" = "Dernière vérification :";
 "updates.never" = "Jamais";
+
+"menu.newTab" = "Nouvel onglet";
+"navigation.back" = "Précédent";
+"navigation.forward" = "Suivant";
+"navigation.back.tip" = "Afficher la vue précédente";
+"navigation.forward.tip" = "Afficher la vue suivante";
+"navigation.title" = "Précédent/Suivant";
+"menu.hideWindowTitle" = "Masquer le titre de la fenêtre";
+"menu.showWindowTitle" = "Afficher le titre de la fenêtre";
+"menu.showToolbar" = "Afficher la barre d’outils";
+"menu.customizeToolbar" = "Personnaliser la barre d’outils…";
+"toolbar.host" = "Serveur";
+"toolbar.createBranch" = "Créer une branche";
+"toolbar.forcePush" = "Pousser de force";
+"toolbar.pushTo" = "Pousser vers";
+"toolbar.finder" = "Finder";
+"toolbar.terminal" = "Terminal";
+"toolbar.gerritPush" = "Push Gerrit";
+"launch.empty" = "Aucun dépôt récent";
+"launch.version" = "Version %@";

@@ -1482,7 +1482,7 @@
 "settings.windowRestoration.always" = "Always";
 "settings.windowRestoration.never" = "Never";
 "settings.windowRestoration.system" = "System Setting";
-"settings.showLaunchWindow" = "Show Launch Window at Startup";
+"settings.showLaunchWindow" = "Show Quick Start Window on Launch";
 "action.ok" = "OK";
 "gitConfig.userName" = "Global user name:";
 "gitConfig.email" = "Global email:";
@@ -1646,3 +1646,23 @@
 "updates.interval.weekly" = "Weekly";
 "updates.lastCheck" = "Last check for updates at:";
 "updates.never" = "Never";
+
+"menu.newTab" = "New Tab";
+"navigation.back" = "Back";
+"navigation.forward" = "Forward";
+"navigation.back.tip" = "Show the previous view";
+"navigation.forward.tip" = "Show the next view";
+"navigation.title" = "Back/Forward";
+"menu.hideWindowTitle" = "Hide Window Title";
+"menu.showWindowTitle" = "Show Window Title";
+"menu.showToolbar" = "Show Toolbar";
+"menu.customizeToolbar" = "Customize Toolbar…";
+"toolbar.host" = "Server";
+"toolbar.createBranch" = "Create Branch";
+"toolbar.forcePush" = "Force Push";
+"toolbar.pushTo" = "Push To";
+"toolbar.finder" = "Finder";
+"toolbar.terminal" = "Terminal";
+"toolbar.gerritPush" = "Gerrit Push";
+"launch.empty" = "No Recent Repositories";
+"launch.version" = "Version %@";

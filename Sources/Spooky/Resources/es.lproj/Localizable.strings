@@ -1482,7 +1482,7 @@
 "settings.windowRestoration.always" = "Siempre";
 "settings.windowRestoration.never" = "Nunca";
 "settings.windowRestoration.system" = "Ajuste del sistema";
-"settings.showLaunchWindow" = "Mostrar la ventana de inicio al abrir";
+"settings.showLaunchWindow" = "Mostrar la ventana de inicio rápido al abrir";
 "action.ok" = "Aceptar";
 "gitConfig.userName" = "Nombre de usuario global:";
 "gitConfig.email" = "Correo global:";
@@ -1646,3 +1646,23 @@
 "updates.interval.weekly" = "Cada semana";
 "updates.lastCheck" = "Última búsqueda de actualizaciones:";
 "updates.never" = "Nunca";
+
+"menu.newTab" = "Nueva pestaña";
+"navigation.back" = "Atrás";
+"navigation.forward" = "Adelante";
+"navigation.back.tip" = "Mostrar la vista anterior";
+"navigation.forward.tip" = "Mostrar la vista siguiente";
+"navigation.title" = "Atrás/Adelante";
+"menu.hideWindowTitle" = "Ocultar título de la ventana";
+"menu.showWindowTitle" = "Mostrar título de la ventana";
+"menu.showToolbar" = "Mostrar barra de herramientas";
+"menu.customizeToolbar" = "Personalizar barra de herramientas…";
+"toolbar.host" = "Servidor";
+"toolbar.createBranch" = "Crear rama";
+"toolbar.forcePush" = "Push forzado";
+"toolbar.pushTo" = "Hacer push a";
+"toolbar.finder" = "Finder";
+"toolbar.terminal" = "Terminal";
+"toolbar.gerritPush" = "Push a Gerrit";
+"launch.empty" = "No hay repositorios recientes";
+"launch.version" = "Versión %@";

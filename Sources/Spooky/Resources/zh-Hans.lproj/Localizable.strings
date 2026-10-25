@@ -1482,7 +1482,7 @@
 "settings.windowRestoration.always" = "总是";
 "settings.windowRestoration.never" = "从不";
 "settings.windowRestoration.system" = "按系统设置";
-"settings.showLaunchWindow" = "启动时显示启动窗口";
+"settings.showLaunchWindow" = "启动时显示快速启动窗口";
 "action.ok" = "好";
 "gitConfig.userName" = "全局用户名：";
 "gitConfig.email" = "全局邮箱：";
@@ -1646,3 +1646,23 @@
 "updates.interval.weekly" = "每周";
 "updates.lastCheck" = "上次检查更新：";
 "updates.never" = "从未";
+
+"menu.newTab" = "新建标签页";
+"navigation.back" = "后退";
+"navigation.forward" = "前进";
+"navigation.back.tip" = "显示上一个视图";
+"navigation.forward.tip" = "显示下一个视图";
+"navigation.title" = "后退/前进";
+"menu.hideWindowTitle" = "隐藏窗口标题";
+"menu.showWindowTitle" = "显示窗口标题";
+"menu.showToolbar" = "显示工具栏";
+"menu.customizeToolbar" = "自定工具栏…";
+"toolbar.host" = "服务器";
+"toolbar.createBranch" = "新建分支";
+"toolbar.forcePush" = "安全强推";
+"toolbar.pushTo" = "推送到";
+"toolbar.finder" = "Finder";
+"toolbar.terminal" = "终端";
+"toolbar.gerritPush" = "Gerrit 推送";
+"launch.empty" = "没有最近的仓库";
+"launch.version" = "版本 %@";

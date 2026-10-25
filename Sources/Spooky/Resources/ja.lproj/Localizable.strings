@@ -1482,7 +1482,7 @@
 "settings.windowRestoration.always" = "常に";
 "settings.windowRestoration.never" = "しない";
 "settings.windowRestoration.system" = "システム設定に従う";
-"settings.showLaunchWindow" = "起動時に起動ウインドウを表示";
+"settings.showLaunchWindow" = "起動時にクイックスタートウインドウを表示";
 "action.ok" = "OK";
 "gitConfig.userName" = "グローバルのユーザ名：";
 "gitConfig.email" = "グローバルのメール：";
@@ -1646,3 +1646,23 @@
 "updates.interval.weekly" = "毎週";
 "updates.lastCheck" = "最後に確認した日時：";
 "updates.never" = "未確認";
+
+"menu.newTab" = "新規タブ";
+"navigation.back" = "戻る";
+"navigation.forward" = "進む";
+"navigation.back.tip" = "前の表示に戻る";
+"navigation.forward.tip" = "次の表示に進む";
+"navigation.title" = "戻る/進む";
+"menu.hideWindowTitle" = "ウインドウタイトルを非表示";
+"menu.showWindowTitle" = "ウインドウタイトルを表示";
+"menu.showToolbar" = "ツールバーを表示";
+"menu.customizeToolbar" = "ツールバーをカスタマイズ…";
+"toolbar.host" = "サーバ";
+"toolbar.createBranch" = "ブランチを作成";
+"toolbar.forcePush" = "強制プッシュ";
+"toolbar.pushTo" = "指定先にプッシュ";
+"toolbar.finder" = "Finder";
+"toolbar.terminal" = "ターミナル";
+"toolbar.gerritPush" = "Gerrit プッシュ";
+"launch.empty" = "最近使ったリポジトリはありません";
+"launch.version" = "バージョン %@";

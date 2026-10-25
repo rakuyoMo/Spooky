@@ -1482,7 +1482,7 @@
 "settings.windowRestoration.always" = "항상";
 "settings.windowRestoration.never" = "안 함";
 "settings.windowRestoration.system" = "시스템 설정 따르기";
-"settings.showLaunchWindow" = "시작할 때 시작 윈도우 표시";
+"settings.showLaunchWindow" = "실행할 때 빠른 시작 윈도우 표시";
 "action.ok" = "확인";
 "gitConfig.userName" = "전역 사용자 이름:";
 "gitConfig.email" = "전역 이메일:";
@@ -1646,3 +1646,23 @@
 "updates.interval.weekly" = "매주";
 "updates.lastCheck" = "마지막 업데이트 확인:";
 "updates.never" = "없음";
+
+"menu.newTab" = "새로운 탭";
+"navigation.back" = "뒤로";
+"navigation.forward" = "앞으로";
+"navigation.back.tip" = "이전 보기 표시";
+"navigation.forward.tip" = "다음 보기 표시";
+"navigation.title" = "뒤로/앞으로";
+"menu.hideWindowTitle" = "윈도우 제목 가리기";
+"menu.showWindowTitle" = "윈도우 제목 보기";
+"menu.showToolbar" = "도구 막대 보기";
+"menu.customizeToolbar" = "도구 막대 사용자화…";
+"toolbar.host" = "서버";
+"toolbar.createBranch" = "브랜치 만들기";
+"toolbar.forcePush" = "강제 푸시";
+"toolbar.pushTo" = "지정 위치로 푸시";
+"toolbar.finder" = "Finder";
+"toolbar.terminal" = "터미널";
+"toolbar.gerritPush" = "Gerrit 푸시";
+"launch.empty" = "최근 저장소 없음";
+"launch.version" = "버전 %@";

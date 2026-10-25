@@ -48,10 +48,13 @@ extension SpookyApplicationController {
         addItem("menu.quit", action: #selector(NSApplication.terminate(_:)), key: "q", to: application)
     }
 
-    /// File 菜单：新窗口、打开本机或服务器仓库、最近仓库，以及仓库位置与关闭动作。
+    /// File 菜单：新窗口与新标签、打开本机或服务器仓库、最近仓库，以及仓库位置与关闭动作。
     private func configureFileMenu(in menu: NSMenu) {
         let file = addMenu("menu.file", to: menu)
         addItem("menu.newWindow", action: #selector(newWindow), key: "n", target: self, to: file)
+
+        // 由前台的仓库窗口加到它的标签组；没有仓库窗口在前台时开新窗口
+        addItem("menu.newTab", action: #selector(NSResponder.newWindowForTab(_:)), key: "t", to: file)
         addItem("action.openLocal", action: #selector(openRepositoryPanel), key: "o", target: self, to: file)
 
         addItem("action.addRemote", action: #selector(addRemoteRepository), target: self, to: file)
@@ -103,7 +106,7 @@ extension SpookyApplicationController {
         find.addItem(search)
     }
 
-    /// View 菜单：仓库管理、工作区、历史、储藏与 Reflog 视图，工作区文件列表、历史与 Diff 的显示选项，以及刷新与全屏。
+    /// View 菜单：仓库管理、工作区、历史、储藏与 Reflog 视图，后退与前进，工作区文件列表、历史与 Diff 的显示选项，刷新，窗口标题与工具栏，以及全屏。
     private func configureViewMenu(in menu: NSMenu) {
         let view = addMenu("menu.view", to: menu)
         addItem(
@@ -114,6 +117,8 @@ extension SpookyApplicationController {
             target: self,
             to: view
         )
+
+        view.addItem(.separator())
         addItem("menu.showWorkingCopy", action: #selector(RepositoryWindowController.showWorkingCopy), key: "1", to: view)
         addItem("menu.showHistory", action: #selector(RepositoryWindowController.showHistory), key: "2", to: view)
         addItem("stash.show", action: #selector(RepositoryWindowController.showStashes), key: "3", to: view)
@@ -131,14 +136,34 @@ extension SpookyApplicationController {
             to: view
         )
 
+        view.addItem(.separator())
+        addItem("navigation.back", action: #selector(RepositoryWindowController.navigateBack), key: "[", to: view)
+        addItem(
+            "navigation.forward",
+            action: #selector(RepositoryWindowController.navigateForward),
+            key: "]",
+            to: view
+        )
+
+        view.addItem(.separator())
         configureWorkingCopyStatusMenu(in: view)
         configureHistoryMenu(in: view)
         configureSidebarMenu(in: view)
+
+        view.addItem(.separator())
         configureHistoryDiffsMenu(in: view)
         configureDiffContextMenu(in: view)
 
         view.addItem(.separator())
         addItem("action.refresh", action: #selector(RepositoryWindowController.refreshRepository), key: "r", to: view)
+
+        // 窗口标题与工具栏：标题的显示偏好所有仓库窗口共用，工具栏的显示与排布由工具栏自动保存
+        view.addItem(.separator())
+        addItem("menu.hideWindowTitle", action: #selector(RepositoryWindowController.toggleWindowTitle), to: view)
+        addItem("menu.showToolbar", action: #selector(NSWindow.toggleToolbarShown(_:)), to: view)
+        addItem("menu.customizeToolbar", action: #selector(NSWindow.runToolbarCustomizationPalette(_:)), to: view)
+
+        view.addItem(.separator())
         addItem(
             "menu.fullscreen",
             action: #selector(NSWindow.toggleFullScreen(_:)),

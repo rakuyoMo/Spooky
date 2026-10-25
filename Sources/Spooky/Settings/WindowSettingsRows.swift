@@ -59,7 +59,7 @@ struct WindowSettingsRows: View {
     private static let domain = Bundle.main.bundleIdentifier ?? ProcessInfo.processInfo.processName
 
     /// 启动时显示启动窗口。
-    @AppStorage("showLaunchWindow")
+    @AppStorage(SpookyApplicationController.showsLaunchWindowKey)
     private var showsLaunchWindow = false
 
     /// 菜单里的窗口恢复方式；打开页面时从偏好读出。

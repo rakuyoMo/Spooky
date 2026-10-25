@@ -1482,7 +1482,7 @@
 "settings.windowRestoration.always" = "總是";
 "settings.windowRestoration.never" = "永不";
 "settings.windowRestoration.system" = "依照系統設定";
-"settings.showLaunchWindow" = "啟動時顯示啟動視窗";
+"settings.showLaunchWindow" = "啟動時顯示快速啟動視窗";
 "action.ok" = "好";
 "gitConfig.userName" = "全域使用者名稱：";
 "gitConfig.email" = "全域電子郵件：";
@@ -1646,3 +1646,23 @@
 "updates.interval.weekly" = "每週";
 "updates.lastCheck" = "上次檢查更新：";
 "updates.never" = "從未";
+
+"menu.newTab" = "新增標籤頁";
+"navigation.back" = "上一頁";
+"navigation.forward" = "下一頁";
+"navigation.back.tip" = "顯示上一個視圖";
+"navigation.forward.tip" = "顯示下一個視圖";
+"navigation.title" = "上一頁/下一頁";
+"menu.hideWindowTitle" = "隱藏視窗標題";
+"menu.showWindowTitle" = "顯示視窗標題";
+"menu.showToolbar" = "顯示工具列";
+"menu.customizeToolbar" = "自訂工具列…";
+"toolbar.host" = "伺服器";
+"toolbar.createBranch" = "新增分支";
+"toolbar.forcePush" = "安全強制推送";
+"toolbar.pushTo" = "推送到";
+"toolbar.finder" = "Finder";
+"toolbar.terminal" = "終端機";
+"toolbar.gerritPush" = "Gerrit 推送";
+"launch.empty" = "沒有最近的儲存庫";
+"launch.version" = "版本 %@";
