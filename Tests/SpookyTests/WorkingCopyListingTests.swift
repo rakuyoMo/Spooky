@@ -157,12 +157,12 @@ struct WorkingCopyListingTests {
         #expect(exists.kind == .repository)
 
         let tool = AppFailure(
-            error: DiffToolLaunchError(diagnostic: "xcode-select: error"),
+            error: ExternalToolLaunchError(diagnostic: "/Applications/Tool.app/Contents/MacOS/tool"),
             opening: false,
             location: nil
         )
-        #expect(tool.details.contains("xcode-select: error"))
-        #expect(tool.message == AppLocalization.text("files.error.diffToolHelp"))
+        #expect(tool.details.contains("/Applications/Tool.app/Contents/MacOS/tool"))
+        #expect(tool.message == AppLocalization.text("externalTool.error.help"))
     }
 }
 

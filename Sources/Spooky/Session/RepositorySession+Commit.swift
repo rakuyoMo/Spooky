@@ -85,6 +85,37 @@ extension RepositorySession {
         )
     }
 
+    /// 把身份档案的姓名与邮箱写进仓库所在机器上的全局 Git 配置；先确认，说明写在哪台机器、影响哪些仓库。
+    func applyGlobalProfile(_ profile: UserProfile) {
+        guard canWrite, let repository else { return }
+
+        #warning(
+            "TODO: 服务器仓库的 Set as Global User 写的是服务器上的全局配置，依据是服务器仓库在服务器上提交；也可能应写本机的全局配置。核实方式：确认服务器仓库的快捷操作里这一项的预期作用范围；只影响服务器仓库的这一个动作。"
+        )
+
+        let request = generation
+        let message = repository.host.map { AppLocalization.text("quickActions.setGlobalUser.remote", $0) }
+            ?? AppLocalization.text("quickActions.setGlobalUser.local")
+
+        onConfirm?(
+            AppLocalization.text("quickActions.setGlobalUser"),
+            message,
+            { [weak self] in
+                guard let self, generation == request else { return }
+
+                performGit(
+                    { runner, _ in
+                        try await WorkingCopyOperations(runner: runner)
+                            .applyGlobalIdentity(name: profile.name, email: profile.email)
+                    },
+                    title: AppLocalization.text("quickActions.setGlobalUser"),
+                    recordsActivity: false
+                )
+            },
+            nil
+        )
+    }
+
     /// 按注释与折行设置整理提交信息，确定后回调；需要用户决定注释行时先询问，取消则不回调。
     ///
     /// 注释行按 Editor 设置询问、删除或保留，去掉注释后为空时只能保留注释提交；随后硬折行时正文按字数上限断行。
@@ -97,7 +128,7 @@ extension RepositorySession {
         let prefix = commitConfiguration.map(\.commentPrefix) ?? "#"
 
         // 折行放在注释处理之后，过长的注释行断开后不会变成正文。
-        let finish = { (text: String) in completion(Self.hardWrappedIfNeeded(text)) }
+        let finish = { [weak self] (text: String) in completion(self?.hardWrappedIfNeeded(text) ?? text) }
 
         guard CommitMessage.hasComments(message, prefix: prefix) else {
             finish(message)
@@ -120,8 +151,8 @@ extension RepositorySession {
 // MARK: - Private
 
 extension RepositorySession {
-    /// 硬折行时把正文按字数上限断行，标题保持不变。
-    private static func hardWrappedIfNeeded(_ message: String) -> String {
+    /// 硬折行时把正文按字数上限断行，标题保持不变；仓库设置了字数上限时用仓库的。
+    private func hardWrappedIfNeeded(_ message: String) -> String {
         #warning(
             "TODO: 硬折行在输入时是否自动插入换行未核实：当前在上限列与视图宽度中较窄处显示折行，提交时按上限把正文断行。核实方式：选 Hard Wrap 后输入超过上限的段落，确认期望在输入时还是提交时换行；影响硬折行模式下提交的正文与编辑区的折行位置。"
         )
@@ -131,7 +162,8 @@ extension RepositorySession {
         }
 
         let parts = CommitMessage.parts(of: message)
-        let body = CommitMessage.hardWrapped(parts.body, limit: CommitEditorSettings.bodyLineLimit)
+        let limit = commitConfiguration?.bodyLineLimit ?? CommitEditorSettings.bodyLineLimit
+        let body = CommitMessage.hardWrapped(parts.body, limit: limit)
         return CommitMessage.text(subject: parts.subject, body: body)
     }
 }

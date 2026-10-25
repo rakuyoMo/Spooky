@@ -48,7 +48,6 @@
 
 "action.open" = "開く";
 
-"action.openNewWindow" = "新しいウインドウで開く";
 
 "action.closeRepository" = "リポジトリを閉じる";
 
@@ -60,15 +59,11 @@
 
 "repositories.title" = "リポジトリ";
 
-"repositories.recent" = "最近使ったリポジトリ";
 
-"repositories.empty.title" = "Git リポジトリを開く";
 
-"repositories.empty.message" = "ローカルの作業ツリーを選択するか、リポジトリのフォルダをここにドロップしてください。";
 
 "repositories.unavailable" = "利用できません。開き直して再試行できます";
 
-"repositories.path" = "場所";
 
 "repositories.panel.message" = "既存の Git 作業ツリーを選択してください。";
 
@@ -149,7 +144,7 @@
 
 "error.parse" = "Git の出力を解析できません";
 
-"error.openHelp" = "アクセスできる Git 作業ツリーを選択してください。/usr/bin/git は 2.41.0 以降が必要です。必要に応じて Xcode または Command Line Tools を更新してください。元の出力を下に表示しています。";
+"error.openHelp" = "アクセスできる Git 作業ツリーを選択してください。Git は 2.41.0 以降が必要です。設定で別の Git プログラムを選択するか、Xcode または Command Line Tools を更新してください。元の出力を下に表示しています。";
 
 "error.refreshHelp" = "更新に失敗しても以前の結果は保持されます。元の出力を確認してから更新を再試行してください。";
 
@@ -222,6 +217,8 @@
 "remoteError.pathUnavailable.help" = "指定したサーバーに絶対パスが存在するか確認してください。";
 "remoteError.pathPermission" = "サーバーのディレクトリにアクセスできません";
 "remoteError.pathPermission.help" = "SSH ユーザーにはディレクトリの読み取りと検索権限が必要です。";
+"remoteError.diskAccess" = "サーバのディレクトリがプライバシー設定で拒否されました";
+"remoteError.diskAccess.help" = "サーバの macOS が SSH セッションによるこのフォルダの読み取りを許可していません。サーバの「共有」→「リモートログイン」でリモートユーザにフルディスクアクセスを許可するか、リポジトリを保護されたフォルダの外に移動してください。";
 "remoteError.notWorkingTree" = "サーバーのパスは Git 作業ツリーではありません";
 "remoteError.notWorkingTree.help" = "サーバーの既存の Git 作業ツリーを選択してください。所有権の制限は Git 出力で確認できます。";
 "remoteError.statusFormat" = "サーバーの状態を読み取れません";
@@ -426,7 +423,6 @@
 "working.refreshFailed" = "更新に失敗しました。最後に成功した結果を表示しています。";
 "history.limit" = "最初の %ld 件のコミットのみを表示しています。ブランチを選択すると範囲を絞り込めます。";
 "history.loadingChanges" = "変更ファイルを読み込み中…";
-"repositories.checking" = "確認中…";
 "repositories.unavailableShort" = "利用不可";
 "activity.truncated" = "以前の出力は省略されました。";
 
@@ -678,7 +674,6 @@
 "profiles.email" = "メール：";
 "profiles.signingKey" = "署名鍵：";
 "profiles.edit" = "編集";
-"profiles.save" = "保存";
 "profiles.menu" = "コミッターの ID";
 "profiles.addCurrent" = "ユーザプロファイル “%@” を追加…";
 "profiles.manage" = "ユーザプロファイルを管理…";
@@ -776,8 +771,6 @@
 "files.error.preimage" = "パッチがファイルと一致しません";
 "files.error.preimageHelp" = "次のファイルはパッチの作成後に変更されているため、パッチは適用されず、作業コピーは変更されていません。現在のファイルからパッチを作り直すか、ファイルをパッチ作成時のバージョンに戻してください。";
 "files.error.destination" = "移動先がすでに存在します";
-"files.error.diffTool" = "比較ツールを開けません";
-"files.error.diffToolHelp" = "比較は Xcode に付属する FileMerge で開きます。Xcode をインストールしてから、もう一度お試しください。ツールの出力は以下のとおりです。";
 "files.doubleClick" = "作業コピーのファイルをダブルクリック：";
 "files.doubleClick.openFile" = "デフォルトのアプリケーションで開く";
 "files.doubleClick.openDiff" = "比較ツールを開く";
@@ -1470,3 +1463,469 @@
 "reflog.cherryPick" = "「%@」をチェリーピック…";
 "reflog.restore.title" = "ブランチを戻す";
 "reflog.restore.message" = "%3$@ のブランチ「%1$@」を %2$@ に移動しますか？作業コピーとステージングエリアは変更されません。ブランチから外れるコミットは引き続き Reflog で見つけられます。";
+
+"appearance.system" = "自動";
+"appearance.light" = "ライト";
+"appearance.dark" = "ダーク";
+"settings.appearance" = "外観";
+"settings.gitConfig" = "Git 設定";
+"settings.integration" = "連携";
+"settings.appearance.label" = "外観：";
+"settings.cloneDirectory" = "クローンしたリポジトリのデフォルトの場所：";
+"settings.cloneDirectory.select" = "選択…";
+"settings.warnDiscardingChunks" = "チャンクの変更を破棄する前に警告";
+"settings.windowRestoration" = "ウインドウの復元：";
+"settings.windowRestoration.always" = "常に";
+"settings.windowRestoration.never" = "しない";
+"settings.windowRestoration.system" = "システム設定に従う";
+"settings.showLaunchWindow" = "起動時にクイックスタートウインドウを表示";
+"action.ok" = "OK";
+"gitConfig.userName" = "グローバルのユーザ名：";
+"gitConfig.email" = "グローバルのメール：";
+"gitConfig.scope" = "%@ に保存され、この Mac のすべてのリポジトリに適用されます。サーバのリポジトリはサーバ上の Git 設定を使います。";
+"gitConfig.sshProgram" = "SSH 署名プログラム：";
+"gitConfig.sshProgram.system" = "ssh-keygen（システム）";
+"gitConfig.sshProgram.onePassword" = "1Password";
+"gitConfig.gpgProgram" = "GPG プログラム：";
+"gitConfig.gpgProgram.none" = "GPG プログラムが選択されていません";
+"gitConfig.gpgProgram.notFound" = "GPG プログラムが見つかりません";
+"gitConfig.gpgProgram.select" = "選択…";
+"gitConfig.signingKey" = "グローバルの署名鍵：";
+"gitConfig.agentKeys" = "SSH 鍵はシステムの SSH エージェントから一覧表示されます。";
+"gitConfig.allowedSigners" = "Allowed signers ファイル：";
+"gitConfig.allowedSigners.none" = "Allowed signers ファイルを使わない";
+"gitConfig.allowedSigners.select" = "Allowed signers ファイルを選択…";
+"gitConfig.signCommits" = "コミットに署名";
+"gitConfig.ensureEmailMatch" = "GPG 鍵のメールがコミッタのメールと一致するか確認";
+"gitConfig.invalidGPG" = "無効な GPG プログラム";
+"gitConfig.invalidGPG.message" = "%@ のプログラムは有効な GnuPG プログラムではありません。";
+"gitConfig.invalidSSH" = "無効な SSH 署名プログラム";
+"gitConfig.invalidSSH.message" = "%@ のプログラムが存在しないか、実行できません。";
+"gitConfig.emailMismatch" = "署名鍵のメールが Git ユーザのメールと一致しません";
+"gitConfig.emailMismatch.message" = "署名鍵のメール “%@” が Git ユーザのメール “%@” と一致しません。異なる場合、署名を検証しないサービスがあります。";
+"gitConfig.error.read" = "グローバルの Git 設定を読み込めません";
+"gitConfig.error.write" = "グローバルの Git 設定を保存できません";
+
+"gerrit.pushTitle" = "Gerrit Code Review にプッシュ";
+"gerrit.pushTitle.help" = "選んだリビジョンを選んだリモートにレビュー用としてプッシュします。プッシュ先は「refs/for/<レビューブランチ>」です。";
+"gerrit.push" = "Gerrit にプッシュ";
+"gerrit.reviewBranch" = "レビューブランチ：";
+"gerrit.pushMenu" = "「%@」を Gerrit にプッシュ…";
+"gerrit.quickPush" = "「%1$@」を Gerrit「%2$@ refs/for/%1$@」にクイックプッシュ";
+"settings.gerrit" = "Gerrit Code Review：";
+"settings.gerrit.enable" = "Gerrit へのかんたんプッシュを有効にする";
+"issueTracking.url" = "Issue トラッカーの URL：";
+"issueTracking.prefix" = "Issue 番号のプレフィックス：";
+"issueTracking.notConfigured" = "未設定";
+"issueTracking.edit" = "編集";
+"issueTracking.invalid" = "Issue トラッカーの URL が無効です";
+"issueTracking.title" = "Issue 番号の検出";
+"issueTracking.title.help" = "Issue トラッカーの URL テンプレートと、コミットメッセージで Issue 番号を示すプレフィックスを入力してください。";
+"issueTracking.save" = "保存";
+"issueTracking.url.help" = "%@ は URL 内で Issue 番号が入る位置を示します。";
+"issueTracking.prefix.help" = "Issue 番号の前に付ける文字。例：#";
+"issueTracking.url.placeholder" = "Issue トラッカーの URL テンプレート";
+"issueTracking.error.prefixLength" = "Issue 番号のプレフィックスは %d 文字以内にしてください。";
+"issueTracking.error.prefixWhitespace" = "Issue 番号のプレフィックスに空白は使えません。";
+"issueTracking.error.templateRequired" = "カスタムのプレフィックスを使うには Issue トラッカーの URL を入力してください。";
+"issueTracking.error.templateWhitespace" = "Issue トラッカーの URL に空白は使えません。";
+"issueTracking.error.placeholders" = "使えるプレースホルダは {ISSUE_NUMBER}、{OWNER}、{REPOSITORY} だけです。";
+"issueTracking.error.template" = "{ISSUE_NUMBER} プレースホルダを含む Web アドレスを入力してください。";
+"profiles.create.title" = "ユーザプロファイルを作成";
+"profiles.create.message" = "入力した内容でユーザプロファイルを作成します。";
+"profiles.create.submit" = "作成";
+"profiles.update.title" = "ユーザプロファイルを更新";
+"profiles.update.message" = "入力した内容でユーザプロファイルを更新します。";
+"profiles.update.submit" = "更新";
+"profiles.delete.title" = "ユーザプロファイルを削除";
+"profiles.delete.message" = "ユーザプロファイル「%@」を削除します。Git の設定は変わりません。";
+"profiles.delete.submit" = "削除";
+
+/* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
+"settings.environment.loginShell" = "ログインシェルから環境変数を自動で読み込む";
+"settings.environment.loginShellFailed" = "ログインシェルの環境変数を読み込めませんでした。";
+"settings.environment.key" = "名前";
+"settings.environment.value" = "値";
+"settings.environment.custom" = "Git コマンドの実行時に使うカスタム環境変数：";
+"settings.environment.add" = "変数を追加";
+"settings.environment.remove" = "変数を削除";
+"settings.environment.localOnly" = "これらの設定は、この Mac で実行する Git コマンドにのみ適用されます。サーバ上のリポジトリはサーバ自身の環境を使います。";
+"settings.environment.server" = "サーバ上で Git が使う非対話環境を確認：";
+"settings.environment.server.hosts" = "サーバ";
+"settings.environment.server.check" = "確認";
+"settings.environment.server.noGit" = "PATH に見つかりません";
+
+/* Settings → Integration 的 SSH Agent 一行。 */
+"settings.sshAgent" = "SSH エージェント：";
+"settings.sshAgent.system" = "システムの SSH エージェント";
+"settings.sshAgent.onePassword" = "1Password の SSH エージェント";
+"settings.sshAgent.description" = "選択した SSH エージェントは SSH 接続と SSH 署名に使われます。";
+"settings.sshAgent.warning" = "SSH エージェントが動作していません";
+"settings.sshAgent.warning.system" = "システムの SSH エージェントを利用できません。Mac を再起動するか、別の SSH エージェントを選択してください。";
+"settings.sshAgent.warning.onePassword" = "1Password の SSH エージェントが動作していません。1Password の設定で SSH エージェントをオンにするか、別の SSH エージェントを選択してください。";
+
+/* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
+"settings.gitProgram" = "Git プログラム：";
+"settings.gitProgram.system" = "%1$@（システム、%2$@）";
+"settings.gitProgram.version" = "%1$@（%2$@）";
+"settings.gitProgram.unavailable" = "%@（利用不可）";
+"settings.gitProgram.choose" = "Git プログラムを選択…";
+"settings.gitProgram.minimum" = "必要な Git の最低バージョンは %@ です";
+"settings.gitProgram.rejected" = "この Git プログラムは使用できません";
+"settings.gitProgram.rejected.notGit" = "「%@」は Git プログラムではありません。";
+"settings.gitProgram.rejected.version" = "「%1$@」は Git %2$@ です。Spooky には Git %3$@ 以降が必要です。";
+"error.gitProgram" = "Git プログラムが見つかりません";
+"error.gitProgramHelp" = "設定で別の Git プログラムを選択してください。実行できなかったパスを下に表示しています。";
+
+"settings.environment" = "環境";
+
+"externalTool.diffTool" = "比較ツール：";
+"externalTool.mergeTool" = "マージツール：";
+"externalTool.directoryDiff" = "ディレクトリ単位で比較";
+"externalTool.keepBackups" = "マージコンフリクトのバックアップファイルを残す";
+"externalTool.noneSelected" = "未選択";
+"externalTool.notInstalled" = "%@、未インストール";
+"externalTool.configureDiff" = "比較ツールを設定";
+"externalTool.configureDiff.message" = "差分の表示に使うアプリケーションを選択してください。";
+"externalTool.configureMerge" = "マージツールを設定";
+"externalTool.configureMerge.message" = "マージコンフリクトの解決に使うアプリケーションを選択してください。";
+"externalTool.select" = "選択";
+"externalTool.error" = "外部ツールを開けません";
+"externalTool.error.help" = "設定で選んだ比較ツールまたはマージツールがインストールされていることを確認してから、もう一度お試しください。詳細は以下のとおりです。";
+"externalTool.fileChanged" = "ファイルがほかの場所で変更されました";
+"externalTool.fileChanged.message" = "%2$@ の「%1$@」は外部アプリケーションに渡したあとで変更されています。編集したバージョンで上書きしますか？";
+"externalTool.overwrite" = "上書き";
+"externalTool.noResult" = "マージ結果がありません";
+"externalTool.noResult.message" = "%2$@ は「%1$@」の結果を保存しなかったため、コンフリクトは未解決のままです。";
+"externalTool.notApplied" = "マージ結果を書き込めませんでした";
+"externalTool.finishMerge" = "%@ でマージを完了";
+"externalTool.finishMerge.message" = "%1$@ でマージ結果を保存してから「完了」を選ぶと、結果を「%2$@」に書き込み、コンフリクトを解決済みにします。";
+"externalTool.done" = "完了";
+"externalTool.openMergeTool" = "マージツールを開く";
+"externalTool.saveCopy" = "「%@」を保存";
+"externalTool.side.workingTree" = "作業ツリー";
+"externalTool.side.index" = "インデックス";
+"externalTool.side.base" = "共通の祖先";
+"externalTool.side.mine" = "自分";
+"externalTool.side.theirs" = "相手";
+"externalTool.side.empty" = "空";
+"externalTool.compare" = "比較";
+"externalTool.compare.workingTreeToBase" = "作業ツリーと HEAD";
+"externalTool.compare.workingTreeToIndex" = "作業ツリーとインデックス";
+"externalTool.compare.indexToBase" = "インデックスと HEAD";
+"externalTool.compare.oursToTheirs" = "自分のバージョンと相手のバージョン";
+"externalTool.compare.oursToBase" = "自分のバージョンと共通の祖先";
+"externalTool.compare.theirsToBase" = "相手のバージョンと共通の祖先";
+"externalTool.openDiffTool" = "比較ツールを開く";
+"externalTool.openDiffAt" = "「%1$@」のリビジョン「%2$@」を比較ツールで開く";
+"externalTool.mergeIn" = "%@ でマージ";
+"externalTool.chooseMergeTool" = "マージツールを選択";
+"files.openWith" = "このアプリケーションで開く";
+"files.openWith.loading" = "読み込み中";
+"files.openWith.default" = "%@（デフォルト）";
+"files.openWith.none" = "<なし>";
+"files.openWith.other" = "その他…";
+"files.openWith.choose" = "ファイルを開くアプリケーションを選択してください。";
+"tree.openAt" = "「%1$@」のリビジョン「%2$@」を開く";
+"tree.openItemsAt" = "%1$ld 項目のリビジョン「%2$@」を開く";
+"tree.openAtWith" = "「%1$@」のリビジョン「%2$@」をこのアプリケーションで開く";
+"tree.openItemsAtWith" = "%1$ld 項目のリビジョン「%2$@」をこのアプリケーションで開く";
+
+/* App 菜单的检查更新与 Settings → Updates：更新通道、自动检查与下载、检查间隔与最近一次检查。 */
+"updates.check" = "アップデートを確認…";
+"settings.updates" = "アップデート";
+"updates.channel" = "リリースチャンネル：";
+"updates.channel.stable" = "安定版";
+"updates.channel.beta" = "ベータ版";
+"updates.channel.development" = "開発版";
+"updates.automaticChecks" = "アップデートを自動的に確認";
+"updates.automaticDownloads" = "アップデートを自動的にダウンロード";
+"updates.interval" = "確認の間隔：";
+"updates.interval.hourly" = "1 時間ごと";
+"updates.interval.daily" = "毎日";
+"updates.interval.weekly" = "毎週";
+"updates.lastCheck" = "最後に確認した日時：";
+"updates.never" = "未確認";
+
+"menu.newTab" = "新規タブ";
+"navigation.back" = "戻る";
+"navigation.forward" = "進む";
+"navigation.back.tip" = "前の表示に戻る";
+"navigation.forward.tip" = "次の表示に進む";
+"navigation.title" = "戻る/進む";
+"menu.hideWindowTitle" = "ウインドウタイトルを非表示";
+"menu.showWindowTitle" = "ウインドウタイトルを表示";
+"menu.showToolbar" = "ツールバーを表示";
+"menu.customizeToolbar" = "ツールバーをカスタマイズ…";
+"toolbar.host" = "サーバ";
+"toolbar.createBranch" = "ブランチを作成";
+"toolbar.forcePush" = "強制プッシュ";
+"toolbar.pushTo" = "指定先にプッシュ";
+"toolbar.finder" = "Finder";
+"toolbar.terminal" = "ターミナル";
+"toolbar.quickActions" = "クイックアクション";
+"toolbar.gerritPush" = "Gerrit プッシュ";
+"launch.empty" = "最近使ったリポジトリはありません";
+"launch.version" = "バージョン %@";
+
+/* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
+"bookmarks.newGroup" = "新規グループ";
+"bookmarks.add" = "リポジトリを追加…";
+"bookmarks.add.prompt" = "追加";
+"bookmarks.addMenu" = "追加";
+"bookmarks.create" = "新規ローカルリポジトリを作成…";
+"bookmarks.open" = "「%@」を開く";
+"bookmarks.openNewWindow" = "「%@」を新規ウインドウで開く";
+"bookmarks.openRepository" = "開く";
+"bookmarks.openRepositoryNewWindow" = "新規ウインドウで開く";
+"bookmarks.rename" = "名前を変更";
+"bookmarks.delete" = "「%@」を削除…";
+"bookmarks.deleteFolder" = "グループを削除…";
+"bookmarks.deleteMultiple" = "%ld 項目を削除…";
+"bookmarks.sortChildren" = "子項目を名前で並べ替え";
+"bookmarks.sortParent" = "親フォルダを名前で並べ替え";
+"bookmarks.delete.title" = "「%@」を削除しますか？";
+"bookmarks.delete.titleMultiple" = "%ld 項目を削除しますか？";
+"bookmarks.delete.message" = "削除されるのはブックマークだけです。リポジトリはディスクやサーバ上に残ります。";
+"bookmarks.delete.submit" = "削除";
+"bookmarks.dropZone.title" = "フォルダや URL をドロップして";
+"bookmarks.dropZone.subtitle" = "Git リポジトリを追加";
+"bookmarks.dropZone.add" = "追加";
+"bookmarks.dropZone.create" = "作成";
+"bookmarks.multiple.title" = "複数の項目を選択中";
+"bookmarks.multiple.message" = "%ld 項目";
+"bookmarks.multiple.delete" = "削除";
+"bookmarks.detail.location" = "場所";
+"bookmarks.detail.branch" = "現在のブランチ";
+"bookmarks.detail.lastCommit" = "最新のコミット";
+"bookmarks.detail.lastOpened" = "最後に開いた日時";
+"bookmarks.detail.identity" = "コミッタの ID";
+"bookmarks.detail.description" = "説明";
+"bookmarks.detail.remotes" = "リモート";
+"bookmarks.detail.viewInBrowser" = "ブラウザで表示";
+"bookmarks.detail.missing" = "リポジトリが存在しません。";
+"bookmarks.detail.loading" = "読み込み中…";
+"bookmarks.detail.neverOpened" = "なし";
+"bookmarks.detail.noCommits" = "コミットはまだありません";
+"bookmarks.detail.noIdentity" = "未設定";
+"bookmarks.detail.noRemotes" = "リモートはありません";
+"bookmarks.detail.edit" = "編集";
+"bookmarks.detail.unset" = "設定を解除";
+"bookmarks.description.edit" = "リポジトリの説明を編集";
+"bookmarks.description.message" = "このリポジトリの説明を入力します。";
+"bookmarks.description.label" = "説明：";
+"bookmarks.identity.edit" = "コミッタの ID を編集";
+"bookmarks.identity.message" = "ここで入力した名前とメールアドレスはこのリポジトリだけに適用されます。全体の値は 設定 → Git Config で設定します。";
+"bookmarks.identity.name" = "名前：";
+"bookmarks.identity.namePrompt" = "氏名";
+"bookmarks.identity.email" = "メール：";
+"bookmarks.identity.emailPrompt" = "メールアドレス";
+"bookmarks.create.title" = "新規ローカルリポジトリを作成";
+"bookmarks.create.message" = "新しいフォルダまたは既存のフォルダに空の Git リポジトリを作成します。";
+"bookmarks.create.submit" = "作成";
+"bookmarks.create.name" = "名前：";
+"bookmarks.create.location" = "場所：";
+"bookmarks.create.choose" = "選択…";
+"bookmarks.create.choosePrompt" = "選択";
+"bookmarks.create.invalidName" = "名前に「/」を含めたり、「.」や「..」にしたりすることはできません。";
+"bookmarks.create.fileExists" = "この場所には同じ名前のファイルがすでにあります。";
+"bookmarks.noRepository.title" = "Git リポジトリが見つかりません";
+"bookmarks.noRepository.message" = "「%@」は Git リポジトリではありません。このフォルダに新しいリポジトリを作成しますか？";
+"bookmarks.noRepository.create" = "リポジトリを作成";
+"missing.title" = "Spooky がリポジトリを見つけられません";
+"missing.message" = "Spooky は「%@」にリポジトリを見つけられません。";
+"missing.unreachable.title" = "「%@」に接続できません";
+"missing.unreachable.message" = "リポジトリ「%@」があるサーバに現在接続できません。";
+
+"quickActions.menu" = "クイックアクション…";
+"quickActions.placeholder" = "クイックアクション";
+"quickActions.noResults" = "結果なし";
+"quickActions.objectHint" = "%@ ↩︎\nその他のアクション ⇥";
+"quickActions.detail" = "%1$@ — %2$@";
+"quickActions.type.navigation" = "ナビゲーション";
+"quickActions.type.branch" = "ブランチ";
+"quickActions.type.worktree" = "ワークツリー";
+"quickActions.type.remote" = "リモート";
+"quickActions.type.submodule" = "サブモジュール";
+"quickActions.type.remoteBranch" = "リモートブランチ";
+"quickActions.type.tag" = "タグ";
+"quickActions.type.stash" = "スタッシュ";
+"quickActions.type.userProfile" = "ユーザプロファイル";
+"quickActions.type.appearance" = "外観";
+"quickActions.type.theme" = "テーマ";
+"quickActions.type.file" = "ファイル";
+"quickActions.type.commit" = "コミット";
+"quickActions.type.action" = "アクション";
+"quickActions.showInApp" = "Spooky で表示";
+"quickActions.revealWorktree" = "ワークツリーを Finder に表示";
+"quickActions.openWorktreeInTerminal" = "ワークツリーをターミナルで開く";
+"quickActions.showBranchHistory" = "ブランチの履歴を表示";
+"quickActions.showRemoteBranchHistory" = "リモートブランチの履歴を表示";
+"quickActions.showTagHistory" = "タグの履歴を表示";
+"quickActions.checkoutRemoteBranch" = "リモートブランチをチェックアウト";
+"quickActions.checkoutTag" = "タグをチェックアウト";
+"quickActions.deleteRemoteBranch" = "リモートブランチを削除";
+"quickActions.copyRemoteBranchName" = "リモートブランチ名をコピー";
+"quickActions.copyTagName" = "タグ名をコピー";
+"quickActions.revealInHistory" = "履歴で表示";
+"quickActions.mergeIntoHead" = "HEAD にマージ";
+"quickActions.rebaseHead" = "HEAD をリベース";
+"quickActions.mergeParent" = "親ブランチの変更をマージ";
+"quickActions.rebaseOnParent" = "親ブランチの変更にリベース";
+"quickActions.publishBranch" = "ブランチを公開";
+"quickActions.pushBranch" = "ブランチをプッシュ";
+"quickActions.fastForward" = "ブランチを早送り";
+"quickActions.updateBranch" = "ブランチを更新";
+"quickActions.skipAutoArchive" = "自動アーカイブしない";
+"quickActions.includeAutoArchive" = "自動アーカイブの対象にする";
+"quickActions.showCommit" = "コミットビューを表示";
+"quickActions.copyCommitHash" = "コミットハッシュをコピー";
+"quickActions.createTag" = "タグを作成";
+"quickActions.editCommit" = "コミットを編集";
+"quickActions.showFile" = "ファイルを表示";
+"quickActions.showFileHistory" = "ファイル履歴を表示";
+"quickActions.showBlame" = "Blame を表示";
+"quickActions.openInEditor" = "外部エディタで開く";
+"quickActions.openSubmodule" = "サブモジュールを開く";
+"quickActions.openWorktree" = "ワークツリーを開く";
+"quickActions.openWorktreeInNewWindow" = "ワークツリーを新規ウインドウで開く";
+"quickActions.showRemoteSettings" = "リモートの設定を表示";
+"quickActions.setCommitter" = "コミッタの ID に設定";
+"quickActions.setGlobalUser" = "グローバルユーザに設定";
+"quickActions.setGlobalUser.local" = "user.name と user.email をこの Mac のグローバルな Git 設定に書き込みます。独自の ID を持たないリポジトリはこの ID でコミットします。";
+"quickActions.setGlobalUser.remote" = "user.name と user.email をサーバー「%@」のグローバルな Git 設定に書き込みます。サーバー上で独自の ID を持たないリポジトリはこの ID でコミットします。";
+"quickActions.applyTheme" = "テーマを適用";
+"quickActions.setAppearance" = "外観を設定";
+
+/* 新建、克隆、扫描与目录浏览时目标机器上的路径与环境问题。 */
+"hostError.absolutePath" = "絶対パスが必要です";
+"hostError.absolutePath.help" = "/ で始まる完全なパスを入力してください。";
+"hostError.missingDirectory" = "フォルダが見つかりません";
+"hostError.missingDirectory.help" = "選択したマシンにこのフォルダがあることを確認してください。";
+"hostError.notDirectory" = "フォルダではありません";
+"hostError.notDirectory.help" = "このパスはファイルを指しています。フォルダを選択してください。";
+"hostError.permission" = "フォルダへのアクセスが拒否されました";
+"hostError.permission.help" = "ログインユーザにはこのフォルダの読み取りと検索の権限が必要です。";
+"hostError.lfsUnavailable" = "Git LFS を使用できません";
+"hostError.lfsUnavailable.help" = "クローンを実行するマシンに Git LFS をインストールして「git lfs install」を実行するか、LFS を使わずにクローンしてください。";
+
+/* 克隆：对话框与目标的机器和目录、服务器目录浏览、克隆进度、最近克隆的气泡与工具栏 Clone 项。 */
+"clone.menu" = "Git リポジトリをクローン…";
+"clone.title" = "リモートリポジトリをクローン";
+"clone.message" = "リモートの Git リポジトリを、この Mac またはサーバ上の新しいフォルダにクローンします。";
+"clone.submit" = "クローン";
+"clone.url" = "リモート URL：";
+"clone.to" = "クローン先：";
+"clone.destination" = "「%@」にクローンします";
+"clone.options" = "オプション";
+"clone.lfs" = "LFS でクローン";
+"clone.submodules" = "サブモジュールを初期化";
+"clone.error.invalidURL" = "リモート URL が無効です";
+"clone.error.exists" = "「%@」はすでに存在し、空のフォルダではありません。";
+"clone.machine.local" = "この Mac";
+"clone.machine.other" = "ほかのサーバ…";
+"clone.directory" = "フォルダ：";
+"clone.directory.prompt" = "サーバ上の絶対パス";
+"clone.browse" = "参照…";
+"clone.progress.title" = "「%@」をクローン中…";
+"clone.cancel" = "クローンを中止";
+"clone.retry" = "再開";
+"clone.remove" = "削除";
+"clone.state.running" = "クローン中";
+"clone.state.cancelled" = "キャンセル済み";
+"clone.state.finished" = "完了";
+"clone.status.starting" = "開始しています…";
+"clone.status.count" = "%1$@：%2$ld";
+"clone.status.percent" = "%1$@：%2$ld%%（%3$ld/%4$ld）";
+"clone.phase.enumerating" = "オブジェクトを列挙";
+"clone.phase.counting" = "オブジェクトを数えています";
+"clone.phase.compressing" = "オブジェクトを圧縮";
+"clone.phase.receiving" = "オブジェクトを受信";
+"clone.phase.resolving" = "差分を解決";
+"clone.phase.checkingOut" = "ファイルを更新";
+"clone.phase.filtering" = "コンテンツをフィルタ";
+"clone.recent.title" = "最近クローンしたリポジトリ";
+"clone.recent.clear" = "消去";
+"toolbar.clone" = "クローン";
+"bookmarks.dropZone.clone" = "クローン";
+"browse.title" = "「%@」のフォルダを選択";
+"browse.up" = "親フォルダ";
+"browse.repository" = "Git リポジトリ";
+"browse.empty" = "フォルダはありません";
+
+/* 在本机或服务器的目录里寻找仓库。 */
+"scan.menu" = "リポジトリを検索…";
+"scan.title" = "リポジトリを検索";
+"scan.message" = "この Mac またはサーバ上で選んだフォルダの中から Git リポジトリを探します。そのフォルダの外は検索しません。";
+"scan.add" = "リポジトリを追加（%ld）";
+"scan.in" = "検索場所：";
+"scan.start" = "検索";
+"scan.stop" = "停止";
+"scan.selectAll" = "すべてを選択";
+"scan.searching" = "Git リポジトリを検索中…";
+"scan.found" = "%ld 個のリポジトリが見つかりました";
+
+/* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
+"link.invalid.title" = "このリンクを開けません";
+"link.invalid.message" = "Spooky は「%@」を開けません。リンクが無効か、サポートされていません。";
+"settings.github" = "github.com のリポジトリを開く：";
+"settings.github.help" = "github.com の「Open with Desktop」リンクをこの App で開きます。";
+
+/* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
+"repositorySettings.title" = "設定";
+"repositorySettings.general" = "一般";
+"repositorySettings.lfs" = "Git LFS";
+"repositorySettings.ignores" = "無視";
+"repositorySettings.excludes" = "除外";
+"repositorySettings.lfs.patterns" = "トラッキングパターン";
+"repositorySettings.ignores.patterns" = "無視パターン";
+"repositorySettings.excludes.patterns" = "除外パターン";
+"repositorySettings.openInEditor" = "エディタで開く";
+"repositorySettings.noPatterns" = "パターンはありません";
+"repositorySettings.name" = "名前";
+"repositorySettings.path" = "パス";
+"repositorySettings.issueTracking" = "Issue トラッキング";
+"repositorySettings.issueTrackerURL" = "Issue トラッカーの URL";
+"repositorySettings.issueNumberPrefix" = "Issue 番号のプレフィックス";
+"repositorySettings.wrapping" = "行の折り返し";
+"repositorySettings.pageGuide" = "ページガイドを表示";
+"repositorySettings.lineLimit" = "1 行の文字数上限";
+"repositorySettings.lineLimit.invalid" = "0 より大きい整数を入力してください。";
+"repositorySettings.signing" = "署名";
+"repositorySettings.signCommits" = "コミットに署名";
+"repositorySettings.signingKey" = "署名鍵";
+"repositorySettings.allowedSigners" = "Allowed Signers ファイル";
+"repositorySettings.write" = "リポジトリの設定を変更";
+"repositorySettings.edit.title" = "%@を編集";
+"repositorySettings.edit.message" = "この値はこのリポジトリのローカル Git 設定に書き込まれます。";
+
+/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+"menu.about" = "Spooky について";
+"about.credits" = "Spooky は GNU General Public License v3.0 で公開されているフリーソフトウェアです。";
+"menu.help" = "ヘルプ";
+"help.help" = "Spooky ヘルプ";
+"help.whatsNew" = "新機能";
+"help.releaseNotes" = "リリースノート";
+"help.support" = "サポート";
+"help.diagnosticReport" = "診断レポートを作成…";
+"help.diagnosticReport.file" = "Spooky 診断レポート.txt";
+"whatsNew.title" = "Spooky %@ の新機能";
+"crash.issueTitle" = "Spooky が予期せず終了しました";
+"crash.title" = "Spooky は前回予期せず終了しました";
+"crash.message" = "GitHub でこの問題を報告しますか？ブラウザでクラッシュの概要を添えた新しい Issue ページが開きます。個人のパス、メールアドレス、ネットワークアドレスは取り除かれ、ご自身で Issue を送信するまで何も送られません。";
+"crash.report" = "GitHub で報告…";
+"crash.dontReport" = "報告しない";
+"settings.crashReports" = "クラッシュレポート：";
+"settings.crashReports.always" = "クラッシュレポートを常に送信";
+
+/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+"remote.environment.title" = "サーバが Git の環境変数を設定しています";
+"remote.environment.message" = "「%1$@」の非対話シェルは %2$@ を設定しています。これらの変数は、Spooky がそこで実行するすべての Git コマンドのリポジトリの探し方と設定の読み方を変えます。Git の動作がおかしい場合は、サーバのシェル起動ファイルから取り除いてください。";
+"untracked.hint" = "%ld 個の追跡されていないファイルのため更新が遅くなっています。ビルド成果物や依存関係の無視ルールを追加するか、サーバ上のステータス読み取りを高速化してください。";
+"untracked.speedUp" = "高速化…";
+"untracked.speedUp.title" = "サーバ上のステータス読み取りを高速化";
+"untracked.speedUp.message" = "Spooky は「%@」上のこのリポジトリで次の設定をオンにできます。確認した後にだけ、サーバ上のこのリポジトリのローカル設定に書き込みます。";
+"untracked.speedUp.apply" = "設定を適用";
+"untracked.speedUp.cache" = "ステータス確認の間で追跡されていないファイルをキャッシュします。";
+"untracked.speedUp.monitor" = "作業ツリー全体を走査する代わりに、Git がファイルシステムを監視します。";
+"untracked.speedUp.graph" = "commit-graph を今すぐ書き出し、フェッチ時に更新して履歴の読み込みを速くします。";

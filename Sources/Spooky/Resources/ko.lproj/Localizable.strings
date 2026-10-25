@@ -48,7 +48,6 @@
 
 "action.open" = "열기";
 
-"action.openNewWindow" = "새 윈도우에서 열기";
 
 "action.closeRepository" = "저장소 닫기";
 
@@ -60,15 +59,11 @@
 
 "repositories.title" = "저장소";
 
-"repositories.recent" = "최근 저장소";
 
-"repositories.empty.title" = "Git 저장소 열기";
 
-"repositories.empty.message" = "로컬 작업 트리를 선택하거나 저장소 폴더를 여기에 놓으세요.";
 
 "repositories.unavailable" = "사용할 수 없습니다. 다시 열어 재시도하세요";
 
-"repositories.path" = "위치";
 
 "repositories.panel.message" = "기존 Git 작업 트리를 선택하세요.";
 
@@ -149,7 +144,7 @@
 
 "error.parse" = "Git 출력을 읽을 수 없습니다";
 
-"error.openHelp" = "접근 가능한 Git 작업 트리를 선택하세요. /usr/bin/git 2.41.0 이상이 필요합니다. 필요한 경우 Xcode 또는 Command Line Tools를 업데이트하세요. 원본 출력은 아래에 표시됩니다.";
+"error.openHelp" = "접근 가능한 Git 작업 트리를 선택하세요. Git 2.41.0 이상이 필요합니다. 설정에서 다른 Git 프로그램을 선택하거나 Xcode 또는 Command Line Tools를 업데이트하세요. 원본 출력은 아래에 표시됩니다.";
 
 "error.refreshHelp" = "새로 고침에 실패해도 기존 결과는 유지됩니다. 원본 출력을 확인한 후 다시 시도하세요.";
 
@@ -222,6 +217,8 @@
 "remoteError.pathUnavailable.help" = "선택한 서버에 절대 경로가 있는지 확인하세요.";
 "remoteError.pathPermission" = "서버 디렉터리 접근 거부";
 "remoteError.pathPermission.help" = "SSH 사용자에게 이 디렉터리의 읽기 및 검색 권한이 필요합니다.";
+"remoteError.diskAccess" = "서버 디렉토리가 개인 정보 보호 설정으로 차단됨";
+"remoteError.diskAccess.help" = "서버의 macOS가 SSH 세션이 이 폴더를 읽지 못하도록 막고 있습니다. 서버의 공유 → 원격 로그인에서 원격 사용자에게 전체 디스크 접근을 허용하거나 저장소를 보호된 폴더 밖으로 옮기세요.";
 "remoteError.notWorkingTree" = "서버 경로가 Git 작업 트리가 아님";
 "remoteError.notWorkingTree.help" = "서버의 기존 Git 작업 트리를 선택하세요. 소유권 제한은 Git 원문을 확인하세요.";
 "remoteError.statusFormat" = "서버 상태를 읽을 수 없음";
@@ -426,7 +423,6 @@
 "working.refreshFailed" = "새로 고침에 실패했습니다. 마지막으로 성공한 결과를 표시합니다.";
 "history.limit" = "처음 %ld개 커밋만 표시합니다. 브랜치를 선택하면 범위를 좁힐 수 있습니다.";
 "history.loadingChanges" = "변경된 파일 불러오는 중…";
-"repositories.checking" = "확인하는 중…";
 "repositories.unavailableShort" = "사용 불가";
 "activity.truncated" = "이전 출력은 생략되었습니다.";
 
@@ -678,7 +674,6 @@
 "profiles.email" = "이메일:";
 "profiles.signingKey" = "서명 키:";
 "profiles.edit" = "편집";
-"profiles.save" = "저장";
 "profiles.menu" = "커미터 신원";
 "profiles.addCurrent" = "사용자 프로필 “%@” 추가…";
 "profiles.manage" = "사용자 프로필 관리…";
@@ -776,8 +771,6 @@
 "files.error.preimage" = "패치가 파일과 일치하지 않음";
 "files.error.preimageHelp" = "다음 파일이 패치를 만든 뒤에 변경되어 패치를 적용하지 않았으며, 작업 사본은 그대로입니다. 현재 파일로 패치를 다시 만들거나, 파일을 패치를 만들 때의 버전으로 되돌리세요.";
 "files.error.destination" = "대상이 이미 있음";
-"files.error.diffTool" = "비교 도구를 열 수 없음";
-"files.error.diffToolHelp" = "비교는 Xcode에 포함된 FileMerge에서 열립니다. Xcode를 설치한 후 다시 시도하세요. 도구의 출력은 아래와 같습니다.";
 "files.doubleClick" = "작업 사본의 파일을 이중 클릭할 때:";
 "files.doubleClick.openFile" = "기본 응용 프로그램으로 열기";
 "files.doubleClick.openDiff" = "비교 도구 열기";
@@ -1470,3 +1463,469 @@
 "reflog.cherryPick" = "“%@” 체리픽…";
 "reflog.restore.title" = "브랜치 복원";
 "reflog.restore.message" = "%3$@의 브랜치 “%1$@”을(를) %2$@(으)로 옮기시겠습니까? 작업 사본과 스테이징 영역은 바뀌지 않습니다. 브랜치에서 벗어나는 커밋은 Reflog에서 계속 찾을 수 있습니다.";
+
+"appearance.system" = "자동";
+"appearance.light" = "라이트";
+"appearance.dark" = "다크";
+"settings.appearance" = "모양";
+"settings.gitConfig" = "Git 구성";
+"settings.integration" = "통합";
+"settings.appearance.label" = "모양:";
+"settings.cloneDirectory" = "복제한 저장소의 기본 디렉터리:";
+"settings.cloneDirectory.select" = "선택…";
+"settings.warnDiscardingChunks" = "청크의 변경 사항을 폐기하기 전에 경고";
+"settings.windowRestoration" = "윈도우 복원:";
+"settings.windowRestoration.always" = "항상";
+"settings.windowRestoration.never" = "안 함";
+"settings.windowRestoration.system" = "시스템 설정 따르기";
+"settings.showLaunchWindow" = "실행할 때 빠른 시작 윈도우 표시";
+"action.ok" = "확인";
+"gitConfig.userName" = "전역 사용자 이름:";
+"gitConfig.email" = "전역 이메일:";
+"gitConfig.scope" = "%@에 저장되며 이 Mac의 모든 저장소에 적용됩니다. 서버 저장소는 서버의 Git 구성을 사용합니다.";
+"gitConfig.sshProgram" = "SSH 서명 프로그램:";
+"gitConfig.sshProgram.system" = "ssh-keygen(시스템)";
+"gitConfig.sshProgram.onePassword" = "1Password";
+"gitConfig.gpgProgram" = "GPG 프로그램:";
+"gitConfig.gpgProgram.none" = "선택한 GPG 프로그램 없음";
+"gitConfig.gpgProgram.notFound" = "GPG 프로그램을 찾을 수 없음";
+"gitConfig.gpgProgram.select" = "선택…";
+"gitConfig.signingKey" = "전역 서명 키:";
+"gitConfig.agentKeys" = "SSH 키는 시스템 SSH 에이전트에서 가져옵니다.";
+"gitConfig.allowedSigners" = "Allowed signers 파일:";
+"gitConfig.allowedSigners.none" = "Allowed signers 파일 없음";
+"gitConfig.allowedSigners.select" = "Allowed signers 파일 선택…";
+"gitConfig.signCommits" = "커밋에 서명";
+"gitConfig.ensureEmailMatch" = "GPG 키 이메일이 커미터 이메일과 같은지 확인";
+"gitConfig.invalidGPG" = "잘못된 GPG 프로그램";
+"gitConfig.invalidGPG.message" = "%@의 프로그램은 올바른 GnuPG 프로그램이 아닙니다.";
+"gitConfig.invalidSSH" = "잘못된 SSH 서명 프로그램";
+"gitConfig.invalidSSH.message" = "%@의 프로그램이 없거나 실행할 수 없습니다.";
+"gitConfig.emailMismatch" = "서명 키 이메일이 Git 사용자 이메일과 다름";
+"gitConfig.emailMismatch.message" = "서명 키의 이메일 “%@”이(가) Git 사용자의 이메일 “%@”과(와) 다릅니다. 두 이메일이 다르면 일부 서비스에서 서명을 확인하지 않습니다.";
+"gitConfig.error.read" = "전역 Git 구성을 읽을 수 없음";
+"gitConfig.error.write" = "전역 Git 구성을 저장할 수 없음";
+
+"gerrit.pushTitle" = "Gerrit Code Review로 푸시";
+"gerrit.pushTitle.help" = "선택한 리비전을 선택한 원격에 리뷰용으로 푸시합니다. 푸시 대상은 “refs/for/<리뷰 브랜치>”입니다.";
+"gerrit.push" = "Gerrit으로 푸시";
+"gerrit.reviewBranch" = "리뷰 브랜치:";
+"gerrit.pushMenu" = "“%@”을(를) Gerrit으로 푸시…";
+"gerrit.quickPush" = "“%1$@”을(를) Gerrit “%2$@ refs/for/%1$@”(으)로 빠른 푸시";
+"settings.gerrit" = "Gerrit Code Review:";
+"settings.gerrit.enable" = "Gerrit 간편 푸시 사용";
+"issueTracking.url" = "이슈 트래커 URL:";
+"issueTracking.prefix" = "이슈 번호 접두사:";
+"issueTracking.notConfigured" = "설정되지 않음";
+"issueTracking.edit" = "편집";
+"issueTracking.invalid" = "유효하지 않은 이슈 트래커 URL";
+"issueTracking.title" = "이슈 번호 감지";
+"issueTracking.title.help" = "이슈 트래커의 URL 템플릿과 커밋 메시지에서 이슈 번호를 나타내는 접두사를 입력하십시오.";
+"issueTracking.save" = "저장";
+"issueTracking.url.help" = "%@은(는) URL에서 이슈 번호가 들어갈 위치를 나타냅니다.";
+"issueTracking.prefix.help" = "이슈 번호 앞에 붙는 문자입니다. 예: #";
+"issueTracking.url.placeholder" = "이슈 트래커 URL 템플릿";
+"issueTracking.error.prefixLength" = "이슈 번호 접두사는 %d자 이하여야 합니다.";
+"issueTracking.error.prefixWhitespace" = "이슈 번호 접두사에는 공백을 넣을 수 없습니다.";
+"issueTracking.error.templateRequired" = "사용자 지정 접두사를 사용하려면 이슈 트래커 URL을 입력하십시오.";
+"issueTracking.error.templateWhitespace" = "이슈 트래커 URL에는 공백을 넣을 수 없습니다.";
+"issueTracking.error.placeholders" = "{ISSUE_NUMBER}, {OWNER}, {REPOSITORY} 자리 표시자만 지원됩니다.";
+"issueTracking.error.template" = "{ISSUE_NUMBER} 자리 표시자가 포함된 웹 주소를 입력하십시오.";
+"profiles.create.title" = "사용자 프로필 생성";
+"profiles.create.message" = "입력한 값으로 사용자 프로필을 생성합니다.";
+"profiles.create.submit" = "생성";
+"profiles.update.title" = "사용자 프로필 업데이트";
+"profiles.update.message" = "입력한 값으로 사용자 프로필을 업데이트합니다.";
+"profiles.update.submit" = "업데이트";
+"profiles.delete.title" = "사용자 프로필 삭제";
+"profiles.delete.message" = "사용자 프로필 “%@”이(가) 삭제됩니다. Git 설정은 바뀌지 않습니다.";
+"profiles.delete.submit" = "삭제";
+
+/* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
+"settings.environment.loginShell" = "로그인 셸에서 환경 변수 자동으로 읽기";
+"settings.environment.loginShellFailed" = "로그인 셸의 환경 변수를 읽을 수 없습니다.";
+"settings.environment.key" = "이름";
+"settings.environment.value" = "값";
+"settings.environment.custom" = "Git 명령을 실행할 때 사용할 사용자 지정 환경 변수:";
+"settings.environment.add" = "변수 추가";
+"settings.environment.remove" = "변수 제거";
+"settings.environment.localOnly" = "이 설정은 이 Mac에서 실행하는 Git 명령에만 적용됩니다. 서버의 저장소는 서버 자체의 환경을 사용합니다.";
+"settings.environment.server" = "서버에서 Git이 사용하는 비대화형 환경 확인:";
+"settings.environment.server.hosts" = "서버";
+"settings.environment.server.check" = "확인";
+"settings.environment.server.noGit" = "PATH에서 찾을 수 없음";
+
+/* Settings → Integration 的 SSH Agent 一行。 */
+"settings.sshAgent" = "SSH 에이전트:";
+"settings.sshAgent.system" = "시스템 SSH 에이전트";
+"settings.sshAgent.onePassword" = "1Password SSH 에이전트";
+"settings.sshAgent.description" = "선택한 SSH 에이전트는 SSH 연결과 SSH 서명에 사용됩니다.";
+"settings.sshAgent.warning" = "SSH 에이전트가 실행 중이 아님";
+"settings.sshAgent.warning.system" = "시스템 SSH 에이전트를 사용할 수 없습니다. Mac을 재시동하거나 다른 SSH 에이전트를 선택하세요.";
+"settings.sshAgent.warning.onePassword" = "1Password SSH 에이전트가 실행 중이 아닙니다. 1Password 설정에서 SSH 에이전트를 켜거나 다른 SSH 에이전트를 선택하세요.";
+
+/* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
+"settings.gitProgram" = "Git 프로그램:";
+"settings.gitProgram.system" = "%1$@ (시스템, %2$@)";
+"settings.gitProgram.version" = "%1$@ (%2$@)";
+"settings.gitProgram.unavailable" = "%@ (사용할 수 없음)";
+"settings.gitProgram.choose" = "Git 프로그램 선택…";
+"settings.gitProgram.minimum" = "필요한 최소 Git 버전은 %@입니다";
+"settings.gitProgram.rejected" = "이 Git 프로그램을 사용할 수 없음";
+"settings.gitProgram.rejected.notGit" = "“%@”은(는) Git 프로그램이 아닙니다.";
+"settings.gitProgram.rejected.version" = "“%1$@”은(는) Git %2$@입니다. Spooky에는 Git %3$@ 이상이 필요합니다.";
+"error.gitProgram" = "Git 프로그램을 찾을 수 없음";
+"error.gitProgramHelp" = "설정에서 다른 Git 프로그램을 선택하세요. 실행할 수 없었던 경로가 아래에 표시됩니다.";
+
+"settings.environment" = "환경";
+
+"externalTool.diffTool" = "비교 도구:";
+"externalTool.mergeTool" = "병합 도구:";
+"externalTool.directoryDiff" = "디렉터리 단위로 비교";
+"externalTool.keepBackups" = "병합 충돌의 백업 파일 남기기";
+"externalTool.noneSelected" = "선택 안 함";
+"externalTool.notInstalled" = "%@, 설치되지 않음";
+"externalTool.configureDiff" = "비교 도구 설정";
+"externalTool.configureDiff.message" = "차이를 볼 때 사용할 응용 프로그램을 선택하세요.";
+"externalTool.configureMerge" = "병합 도구 설정";
+"externalTool.configureMerge.message" = "병합 충돌을 해결할 때 사용할 응용 프로그램을 선택하세요.";
+"externalTool.select" = "선택";
+"externalTool.error" = "외부 도구를 열 수 없음";
+"externalTool.error.help" = "설정에서 선택한 비교 도구나 병합 도구가 설치되어 있는지 확인한 후 다시 시도하세요. 자세한 내용은 아래와 같습니다.";
+"externalTool.fileChanged" = "다른 곳에서 파일이 변경됨";
+"externalTool.fileChanged.message" = "%2$@의 ‘%1$@’이(가) 외부 응용 프로그램에 넘긴 뒤 변경되었습니다. 편집한 버전으로 덮어쓰겠습니까?";
+"externalTool.overwrite" = "덮어쓰기";
+"externalTool.noResult" = "병합 결과 없음";
+"externalTool.noResult.message" = "%2$@이(가) ‘%1$@’의 결과를 저장하지 않아 충돌이 아직 해결되지 않았습니다.";
+"externalTool.notApplied" = "병합 결과를 쓰지 못함";
+"externalTool.finishMerge" = "%@에서 병합 마치기";
+"externalTool.finishMerge.message" = "%1$@에서 병합 결과를 저장한 뒤 ‘완료’를 선택하면 결과를 ‘%2$@’에 쓰고 충돌을 해결됨으로 표시합니다.";
+"externalTool.done" = "완료";
+"externalTool.openMergeTool" = "병합 도구 열기";
+"externalTool.saveCopy" = "‘%@’ 저장";
+"externalTool.side.workingTree" = "작업 트리";
+"externalTool.side.index" = "인덱스";
+"externalTool.side.base" = "공통 조상";
+"externalTool.side.mine" = "내 쪽";
+"externalTool.side.theirs" = "상대 쪽";
+"externalTool.side.empty" = "비어 있음";
+"externalTool.compare" = "비교";
+"externalTool.compare.workingTreeToBase" = "작업 트리와 HEAD";
+"externalTool.compare.workingTreeToIndex" = "작업 트리와 인덱스";
+"externalTool.compare.indexToBase" = "인덱스와 HEAD";
+"externalTool.compare.oursToTheirs" = "내 버전과 상대 버전";
+"externalTool.compare.oursToBase" = "내 버전과 공통 조상";
+"externalTool.compare.theirsToBase" = "상대 버전과 공통 조상";
+"externalTool.openDiffTool" = "비교 도구 열기";
+"externalTool.openDiffAt" = "리비전 ‘%2$@’의 ‘%1$@’을(를) 비교 도구로 열기";
+"externalTool.mergeIn" = "%@에서 병합";
+"externalTool.chooseMergeTool" = "병합 도구 선택";
+"files.openWith" = "다음으로 열기";
+"files.openWith.loading" = "불러오는 중";
+"files.openWith.default" = "%@(기본)";
+"files.openWith.none" = "<없음>";
+"files.openWith.other" = "기타…";
+"files.openWith.choose" = "파일을 열 응용 프로그램을 선택하세요.";
+"tree.openAt" = "리비전 ‘%2$@’의 ‘%1$@’ 열기";
+"tree.openItemsAt" = "리비전 ‘%2$@’의 항목 %1$ld개 열기";
+"tree.openAtWith" = "리비전 ‘%2$@’의 ‘%1$@’을(를) 다음으로 열기";
+"tree.openItemsAtWith" = "리비전 ‘%2$@’의 항목 %1$ld개를 다음으로 열기";
+
+/* App 菜单的检查更新与 Settings → Updates：更新通道、自动检查与下载、检查间隔与最近一次检查。 */
+"updates.check" = "업데이트 확인…";
+"settings.updates" = "업데이트";
+"updates.channel" = "릴리스 채널:";
+"updates.channel.stable" = "안정 버전";
+"updates.channel.beta" = "베타 버전";
+"updates.channel.development" = "개발 버전";
+"updates.automaticChecks" = "자동으로 업데이트 확인";
+"updates.automaticDownloads" = "자동으로 업데이트 다운로드";
+"updates.interval" = "업데이트 확인 주기:";
+"updates.interval.hourly" = "1시간마다";
+"updates.interval.daily" = "매일";
+"updates.interval.weekly" = "매주";
+"updates.lastCheck" = "마지막 업데이트 확인:";
+"updates.never" = "없음";
+
+"menu.newTab" = "새로운 탭";
+"navigation.back" = "뒤로";
+"navigation.forward" = "앞으로";
+"navigation.back.tip" = "이전 보기 표시";
+"navigation.forward.tip" = "다음 보기 표시";
+"navigation.title" = "뒤로/앞으로";
+"menu.hideWindowTitle" = "윈도우 제목 가리기";
+"menu.showWindowTitle" = "윈도우 제목 보기";
+"menu.showToolbar" = "도구 막대 보기";
+"menu.customizeToolbar" = "도구 막대 사용자화…";
+"toolbar.host" = "서버";
+"toolbar.createBranch" = "브랜치 만들기";
+"toolbar.forcePush" = "강제 푸시";
+"toolbar.pushTo" = "지정 위치로 푸시";
+"toolbar.finder" = "Finder";
+"toolbar.terminal" = "터미널";
+"toolbar.quickActions" = "빠른 동작";
+"toolbar.gerritPush" = "Gerrit 푸시";
+"launch.empty" = "최근 저장소 없음";
+"launch.version" = "버전 %@";
+
+/* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
+"bookmarks.newGroup" = "새 그룹";
+"bookmarks.add" = "저장소 추가…";
+"bookmarks.add.prompt" = "추가";
+"bookmarks.addMenu" = "추가";
+"bookmarks.create" = "새 로컬 저장소 만들기…";
+"bookmarks.open" = "“%@” 열기";
+"bookmarks.openNewWindow" = "새 윈도우에서 “%@” 열기";
+"bookmarks.openRepository" = "열기";
+"bookmarks.openRepositoryNewWindow" = "새 윈도우에서 열기";
+"bookmarks.rename" = "이름 변경";
+"bookmarks.delete" = "“%@” 삭제…";
+"bookmarks.deleteFolder" = "그룹 삭제…";
+"bookmarks.deleteMultiple" = "%ld개 항목 삭제…";
+"bookmarks.sortChildren" = "하위 항목을 이름순으로 정렬";
+"bookmarks.sortParent" = "상위 폴더를 이름순으로 정렬";
+"bookmarks.delete.title" = "“%@”을(를) 삭제하겠습니까?";
+"bookmarks.delete.titleMultiple" = "%ld개 항목을 삭제하겠습니까?";
+"bookmarks.delete.message" = "책갈피만 제거됩니다. 저장소는 디스크나 서버에 그대로 남습니다.";
+"bookmarks.delete.submit" = "삭제";
+"bookmarks.dropZone.title" = "폴더나 URL을 놓아";
+"bookmarks.dropZone.subtitle" = "Git 저장소 추가";
+"bookmarks.dropZone.add" = "추가";
+"bookmarks.dropZone.create" = "만들기";
+"bookmarks.multiple.title" = "여러 항목이 선택됨";
+"bookmarks.multiple.message" = "%ld개 항목";
+"bookmarks.multiple.delete" = "삭제";
+"bookmarks.detail.location" = "위치";
+"bookmarks.detail.branch" = "현재 브랜치";
+"bookmarks.detail.lastCommit" = "마지막 커밋";
+"bookmarks.detail.lastOpened" = "마지막으로 연 시간";
+"bookmarks.detail.identity" = "커미터 정보";
+"bookmarks.detail.description" = "설명";
+"bookmarks.detail.remotes" = "리모트";
+"bookmarks.detail.viewInBrowser" = "브라우저에서 보기";
+"bookmarks.detail.missing" = "저장소가 존재하지 않습니다.";
+"bookmarks.detail.loading" = "불러오는 중…";
+"bookmarks.detail.neverOpened" = "없음";
+"bookmarks.detail.noCommits" = "아직 커밋이 없음";
+"bookmarks.detail.noIdentity" = "설정되지 않음";
+"bookmarks.detail.noRemotes" = "리모트 없음";
+"bookmarks.detail.edit" = "편집";
+"bookmarks.detail.unset" = "설정 해제";
+"bookmarks.description.edit" = "저장소 설명 편집";
+"bookmarks.description.message" = "이 저장소의 설명을 입력합니다.";
+"bookmarks.description.label" = "설명:";
+"bookmarks.identity.edit" = "커미터 정보 편집";
+"bookmarks.identity.message" = "여기에 입력한 이름과 이메일은 이 저장소에만 적용됩니다. 전체 값은 설정 → Git Config에서 설정합니다.";
+"bookmarks.identity.name" = "이름:";
+"bookmarks.identity.namePrompt" = "전체 이름";
+"bookmarks.identity.email" = "이메일:";
+"bookmarks.identity.emailPrompt" = "이메일 주소";
+"bookmarks.create.title" = "새 로컬 저장소 만들기";
+"bookmarks.create.message" = "새 폴더나 기존 폴더에 빈 Git 저장소를 만듭니다.";
+"bookmarks.create.submit" = "만들기";
+"bookmarks.create.name" = "이름:";
+"bookmarks.create.location" = "위치:";
+"bookmarks.create.choose" = "선택…";
+"bookmarks.create.choosePrompt" = "선택";
+"bookmarks.create.invalidName" = "이름에 “/”를 넣거나 “.” 또는 “..”로 지을 수 없습니다.";
+"bookmarks.create.fileExists" = "이 위치에 같은 이름의 파일이 이미 있습니다.";
+"bookmarks.noRepository.title" = "Git 저장소를 찾을 수 없음";
+"bookmarks.noRepository.message" = "“%@”은(는) Git 저장소가 아닙니다. 이 폴더에 새 저장소를 만들겠습니까?";
+"bookmarks.noRepository.create" = "저장소 만들기";
+"missing.title" = "Spooky가 저장소를 찾을 수 없음";
+"missing.message" = "Spooky가 “%@”에서 저장소를 찾을 수 없습니다.";
+"missing.unreachable.title" = "“%@”에 연결할 수 없음";
+"missing.unreachable.message" = "저장소 “%@”이(가) 있는 서버에 지금 연결할 수 없습니다.";
+
+"quickActions.menu" = "빠른 동작…";
+"quickActions.placeholder" = "빠른 동작";
+"quickActions.noResults" = "결과 없음";
+"quickActions.objectHint" = "%@ ↩︎\n기타 동작 ⇥";
+"quickActions.detail" = "%1$@ — %2$@";
+"quickActions.type.navigation" = "탐색";
+"quickActions.type.branch" = "브랜치";
+"quickActions.type.worktree" = "작업 트리";
+"quickActions.type.remote" = "원격";
+"quickActions.type.submodule" = "서브모듈";
+"quickActions.type.remoteBranch" = "원격 브랜치";
+"quickActions.type.tag" = "태그";
+"quickActions.type.stash" = "스태시";
+"quickActions.type.userProfile" = "사용자 프로필";
+"quickActions.type.appearance" = "모양";
+"quickActions.type.theme" = "테마";
+"quickActions.type.file" = "파일";
+"quickActions.type.commit" = "커밋";
+"quickActions.type.action" = "동작";
+"quickActions.showInApp" = "Spooky에서 보기";
+"quickActions.revealWorktree" = "Finder에서 작업 트리 보기";
+"quickActions.openWorktreeInTerminal" = "터미널에서 작업 트리 열기";
+"quickActions.showBranchHistory" = "브랜치 기록 보기";
+"quickActions.showRemoteBranchHistory" = "원격 브랜치 기록 보기";
+"quickActions.showTagHistory" = "태그 기록 보기";
+"quickActions.checkoutRemoteBranch" = "원격 브랜치 체크아웃";
+"quickActions.checkoutTag" = "태그 체크아웃";
+"quickActions.deleteRemoteBranch" = "원격 브랜치 삭제";
+"quickActions.copyRemoteBranchName" = "원격 브랜치 이름 복사";
+"quickActions.copyTagName" = "태그 이름 복사";
+"quickActions.revealInHistory" = "기록에서 보기";
+"quickActions.mergeIntoHead" = "HEAD에 병합";
+"quickActions.rebaseHead" = "HEAD 리베이스";
+"quickActions.mergeParent" = "부모 브랜치의 변경 사항 병합";
+"quickActions.rebaseOnParent" = "부모 브랜치의 변경 사항으로 리베이스";
+"quickActions.publishBranch" = "브랜치 게시";
+"quickActions.pushBranch" = "브랜치 푸시";
+"quickActions.fastForward" = "브랜치 빨리 감기";
+"quickActions.updateBranch" = "브랜치 업데이트";
+"quickActions.skipAutoArchive" = "자동 보관 건너뛰기";
+"quickActions.includeAutoArchive" = "자동 보관에 포함";
+"quickActions.showCommit" = "커밋 보기 열기";
+"quickActions.copyCommitHash" = "커밋 해시 복사";
+"quickActions.createTag" = "태그 만들기";
+"quickActions.editCommit" = "커밋 편집";
+"quickActions.showFile" = "파일 보기";
+"quickActions.showFileHistory" = "파일 기록 보기";
+"quickActions.showBlame" = "Blame 보기";
+"quickActions.openInEditor" = "외부 편집기로 열기";
+"quickActions.openSubmodule" = "서브모듈 열기";
+"quickActions.openWorktree" = "작업 트리 열기";
+"quickActions.openWorktreeInNewWindow" = "새 윈도우에서 작업 트리 열기";
+"quickActions.showRemoteSettings" = "원격 설정 보기";
+"quickActions.setCommitter" = "커미터 신원으로 설정";
+"quickActions.setGlobalUser" = "전역 사용자로 설정";
+"quickActions.setGlobalUser.local" = "user.name과 user.email을 이 Mac의 전역 Git 설정에 씁니다. 자체 신원이 없는 저장소는 이 신원으로 커밋합니다.";
+"quickActions.setGlobalUser.remote" = "user.name과 user.email을 서버 “%@”의 전역 Git 설정에 씁니다. 서버에서 자체 신원이 없는 저장소는 이 신원으로 커밋합니다.";
+"quickActions.applyTheme" = "테마 적용";
+"quickActions.setAppearance" = "모양 설정";
+
+/* 新建、克隆、扫描与目录浏览时目标机器上的路径与环境问题。 */
+"hostError.absolutePath" = "절대 경로가 필요함";
+"hostError.absolutePath.help" = "/로 시작하는 전체 경로를 입력하세요.";
+"hostError.missingDirectory" = "폴더를 찾을 수 없음";
+"hostError.missingDirectory.help" = "선택한 컴퓨터에 이 폴더가 있는지 확인하세요.";
+"hostError.notDirectory" = "폴더가 아님";
+"hostError.notDirectory.help" = "이 경로는 파일을 가리킵니다. 폴더를 선택하세요.";
+"hostError.permission" = "폴더 접근이 거부됨";
+"hostError.permission.help" = "로그인 사용자에게 이 폴더의 읽기 및 검색 권한이 필요합니다.";
+"hostError.lfsUnavailable" = "Git LFS를 사용할 수 없음";
+"hostError.lfsUnavailable.help" = "복제하는 컴퓨터에 Git LFS를 설치하고 “git lfs install”을 실행하거나 LFS 없이 복제하세요.";
+
+/* 克隆：对话框与目标的机器和目录、服务器目录浏览、克隆进度、最近克隆的气泡与工具栏 Clone 项。 */
+"clone.menu" = "Git 저장소 복제…";
+"clone.title" = "원격 저장소 복제";
+"clone.message" = "원격 Git 저장소를 이 Mac 또는 서버의 새 폴더에 복제합니다.";
+"clone.submit" = "복제";
+"clone.url" = "원격 URL:";
+"clone.to" = "복제할 위치:";
+"clone.destination" = "“%@”에 복제됨";
+"clone.options" = "옵션";
+"clone.lfs" = "LFS로 복제";
+"clone.submodules" = "하위 모듈 초기화";
+"clone.error.invalidURL" = "원격 URL이 유효하지 않음";
+"clone.error.exists" = "“%@”이(가) 이미 있으며 빈 폴더가 아닙니다.";
+"clone.machine.local" = "이 Mac";
+"clone.machine.other" = "다른 서버…";
+"clone.directory" = "폴더:";
+"clone.directory.prompt" = "서버의 절대 경로";
+"clone.browse" = "탐색…";
+"clone.progress.title" = "“%@” 복제 중…";
+"clone.cancel" = "복제 취소";
+"clone.retry" = "다시 시작";
+"clone.remove" = "제거";
+"clone.state.running" = "복제 중";
+"clone.state.cancelled" = "취소됨";
+"clone.state.finished" = "완료됨";
+"clone.status.starting" = "시작하는 중…";
+"clone.status.count" = "%1$@: %2$ld";
+"clone.status.percent" = "%1$@: %2$ld%% (%3$ld/%4$ld)";
+"clone.phase.enumerating" = "객체 나열";
+"clone.phase.counting" = "객체 세기";
+"clone.phase.compressing" = "객체 압축";
+"clone.phase.receiving" = "객체 받기";
+"clone.phase.resolving" = "델타 해석";
+"clone.phase.checkingOut" = "파일 업데이트";
+"clone.phase.filtering" = "콘텐츠 필터링";
+"clone.recent.title" = "최근 복제한 저장소";
+"clone.recent.clear" = "지우기";
+"toolbar.clone" = "복제";
+"bookmarks.dropZone.clone" = "복제";
+"browse.title" = "“%@”의 폴더 선택";
+"browse.up" = "상위 폴더";
+"browse.repository" = "Git 저장소";
+"browse.empty" = "폴더 없음";
+
+/* 在本机或服务器的目录里寻找仓库。 */
+"scan.menu" = "저장소 찾기…";
+"scan.title" = "저장소 찾기";
+"scan.message" = "이 Mac 또는 서버에서 선택한 폴더 안의 Git 저장소를 찾습니다. 그 폴더 밖은 찾지 않습니다.";
+"scan.add" = "저장소 추가(%ld)";
+"scan.in" = "찾을 위치:";
+"scan.start" = "찾기";
+"scan.stop" = "중단";
+"scan.selectAll" = "모두 선택";
+"scan.searching" = "Git 저장소를 찾는 중…";
+"scan.found" = "저장소 %ld개 찾음";
+
+/* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
+"link.invalid.title" = "이 링크를 열 수 없음";
+"link.invalid.message" = "Spooky가 “%@”을(를) 열 수 없습니다. 링크가 유효하지 않거나 지원되지 않습니다.";
+"settings.github" = "github.com 저장소 열기:";
+"settings.github.help" = "github.com의 “Open with Desktop” 링크를 이 앱에서 엽니다.";
+
+/* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
+"repositorySettings.title" = "설정";
+"repositorySettings.general" = "일반";
+"repositorySettings.lfs" = "Git LFS";
+"repositorySettings.ignores" = "무시";
+"repositorySettings.excludes" = "제외";
+"repositorySettings.lfs.patterns" = "추적 패턴";
+"repositorySettings.ignores.patterns" = "무시 패턴";
+"repositorySettings.excludes.patterns" = "제외 패턴";
+"repositorySettings.openInEditor" = "편집기에서 열기";
+"repositorySettings.noPatterns" = "패턴 없음";
+"repositorySettings.name" = "이름";
+"repositorySettings.path" = "경로";
+"repositorySettings.issueTracking" = "이슈 추적";
+"repositorySettings.issueTrackerURL" = "이슈 추적기 URL";
+"repositorySettings.issueNumberPrefix" = "이슈 번호 접두사";
+"repositorySettings.wrapping" = "줄 바꿈";
+"repositorySettings.pageGuide" = "페이지 안내선 표시";
+"repositorySettings.lineLimit" = "줄당 글자 수 제한";
+"repositorySettings.lineLimit.invalid" = "0보다 큰 정수를 입력하세요.";
+"repositorySettings.signing" = "서명";
+"repositorySettings.signCommits" = "커밋 서명";
+"repositorySettings.signingKey" = "서명 키";
+"repositorySettings.allowedSigners" = "Allowed Signers 파일";
+"repositorySettings.write" = "저장소 설정 변경";
+"repositorySettings.edit.title" = "%@ 편집";
+"repositorySettings.edit.message" = "이 값은 이 저장소의 로컬 Git 설정에 기록됩니다.";
+
+/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+"menu.about" = "Spooky에 관하여";
+"about.credits" = "Spooky는 GNU General Public License v3.0으로 배포되는 자유 소프트웨어입니다.";
+"menu.help" = "도움말";
+"help.help" = "Spooky 도움말";
+"help.whatsNew" = "새로운 기능";
+"help.releaseNotes" = "릴리스 노트";
+"help.support" = "지원";
+"help.diagnosticReport" = "진단 보고서 생성…";
+"help.diagnosticReport.file" = "Spooky 진단 보고서.txt";
+"whatsNew.title" = "Spooky %@의 새로운 기능";
+"crash.issueTitle" = "Spooky가 예기치 않게 종료됨";
+"crash.title" = "Spooky가 지난번에 예기치 않게 종료됨";
+"crash.message" = "GitHub에서 이 문제를 보고하겠습니까? 브라우저에서 충돌 요약이 담긴 새 이슈 페이지가 열립니다. 개인 경로, 이메일 주소와 네트워크 주소는 제거되며, 직접 이슈를 제출하기 전에는 아무것도 전송되지 않습니다.";
+"crash.report" = "GitHub에서 보고…";
+"crash.dontReport" = "보고 안 함";
+"settings.crashReports" = "충돌 보고서:";
+"settings.crashReports.always" = "항상 충돌 보고서 보내기";
+
+/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+"remote.environment.title" = "서버가 Git 환경 변수를 설정함";
+"remote.environment.message" = "“%1$@”의 비대화형 셸이 %2$@을(를) 설정합니다. 이 변수들은 Spooky가 그곳에서 실행하는 모든 Git 명령이 저장소를 찾고 설정을 읽는 방식을 바꿉니다. Git이 이상하게 동작하면 서버의 셸 시작 파일에서 제거하세요.";
+"untracked.hint" = "추적하지 않는 파일 %ld개 때문에 새로 고침이 느립니다. 빌드 결과물과 의존성에 대한 무시 규칙을 추가하거나 서버의 상태 읽기를 빠르게 하세요.";
+"untracked.speedUp" = "빠르게…";
+"untracked.speedUp.title" = "서버의 상태 읽기 빠르게 하기";
+"untracked.speedUp.message" = "Spooky가 “%@”의 이 저장소에서 다음 설정을 켤 수 있습니다. 확인한 후에만 서버에 있는 이 저장소의 로컬 설정에 기록됩니다.";
+"untracked.speedUp.apply" = "설정 적용";
+"untracked.speedUp.cache" = "상태 확인 사이에 추적하지 않는 파일을 캐시합니다.";
+"untracked.speedUp.monitor" = "작업 트리 전체를 훑는 대신 Git이 파일 시스템을 감시합니다.";
+"untracked.speedUp.graph" = "commit-graph를 지금 쓰고 가져올 때 최신으로 유지해 히스토리를 빠르게 읽습니다.";

@@ -31,7 +31,14 @@ extension SyncDialog {
             picker("sync.destination", selection: $destination, references: remoteBranches)
 
         case .pushRevision:
-            revisionRows
+            revisionRow
+            remoteRow
+            refSpecRow
+
+        case .gerritPush:
+            revisionRow
+            remoteRow
+            reviewBranchRow
         }
     }
 
@@ -86,7 +93,7 @@ extension SyncDialog {
         case .forcePush:
             session.canPush && !checkingLease && (lease.map { $0.status != .sameRevision } ?? false)
 
-        case .pushRevision:
+        case .pushRevision, .gerritPush:
             session.canPushRevision
                 && !remote.isEmpty
                 && !source.trimmingCharacters(in: .whitespaces).isEmpty
@@ -94,13 +101,11 @@ extension SyncDialog {
         }
     }
 
-    /// 推送任意版本：版本可输入或从分支与标签里选，远端从配置里选，目标引用可输入或从该远端的分支里选。
-    @ViewBuilder
-    private var revisionRows: some View {
+    /// 推送的版本：可输入，也可从本地分支与标签里补全。
+    private var revisionRow: some View {
         let tags = session.history.snapshot?.references.filter { $0.id.hasPrefix("refs/tags/") } ?? []
-        let owned = remoteBranches.filter { session.history.snapshot?.remote(for: $0)?.name == remote }
 
-        GridRow {
+        return GridRow {
             Text(AppLocalization.text("sync.revision")).gridColumnAlignment(.trailing)
 
             TextField("", text: $source)
@@ -111,7 +116,10 @@ extension SyncDialog {
                 }
                 .accessibilityLabel(AppLocalization.text("sync.revision"))
         }
+    }
 
+    /// 推送到的远端，从配置的远端里选。
+    private var remoteRow: some View {
         GridRow {
             Text(AppLocalization.text("sync.remote")).gridColumnAlignment(.trailing)
 
@@ -121,8 +129,13 @@ extension SyncDialog {
             .labelsHidden()
             .accessibilityLabel(AppLocalization.text("sync.remote"))
         }
+    }
 
-        GridRow {
+    /// 推送任意版本的目标引用：可输入，也可从所选远端的分支里补全。
+    private var refSpecRow: some View {
+        let owned = remoteBranches.filter { session.history.snapshot?.remote(for: $0)?.name == remote }
+
+        return GridRow {
             Text(AppLocalization.text("sync.refSpec")).gridColumnAlignment(.trailing)
 
             TextField("", text: $destination)
@@ -133,6 +146,16 @@ extension SyncDialog {
                     }
                 }
                 .accessibilityLabel(AppLocalization.text("sync.refSpec"))
+        }
+    }
+
+    /// Gerrit 的评审分支，推送时写成 `refs/for/<评审分支>`。
+    private var reviewBranchRow: some View {
+        GridRow {
+            Text(AppLocalization.text("gerrit.reviewBranch")).gridColumnAlignment(.trailing)
+
+            TextField("", text: $destination)
+                .accessibilityLabel(AppLocalization.text("gerrit.reviewBranch"))
         }
     }
 

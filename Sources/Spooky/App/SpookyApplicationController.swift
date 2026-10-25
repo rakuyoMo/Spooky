@@ -14,8 +14,11 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 退出收尾的日志：宽限期先到时说明仍有任务未结束。
     private nonisolated static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "SpookyApplicationController")
 
-    /// 跨窗口共享的最近仓库记录。
-    let recent: RecentRepositories
+    /// 跨窗口共享的仓库书签。
+    let bookmarks: RepositoryBookmarks
+
+    /// 在后台进行的克隆，工具栏的 Clone 项与仓库管理共用。
+    let clones: CloneActivities
 
     /// 应用持有的主窗口控制器。
     private(set) var windows: [RepositoryWindowController] = []
@@ -44,9 +47,10 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             ?? (NSApp.mainWindow?.windowController as? RepositoryWindowController)
     }
 
-    /// 注入持久化记录，测试与应用使用同一打开规则。
-    init(recent: RecentRepositories = RecentRepositories()) {
-        self.recent = recent
+    /// 注入持久化的书签，测试与应用使用同一打开规则。
+    init(bookmarks: RepositoryBookmarks = RepositoryBookmarks()) {
+        self.bookmarks = bookmarks
+        clones = CloneActivities(bookmarks: bookmarks)
         super.init()
     }
 
@@ -65,10 +69,24 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         // 主题目录缺少 Default 或 Default (Dark)、或它们的文件无法加载时从资源写入；写不进去时文本区用资源里的版本。
         try? ThemeStore.shared.installDefaultThemes()
 
+        // 窗口创建前应用保存的外观，第一帧就使用所选的浅色或深色。
+        AppAppearance.current.apply()
+
+        // 打开仓库前交出所选的 Git 程序、自定义变量与 SSH agent；登录 shell 的变量在后台读取。
+        LocalExecutionPreferences.shared.start()
+
         configureMenu()
         appIconController.start()
-        newWindow()
+
+        // 系统恢复了仓库窗口时不另开窗口；否则按偏好显示启动窗口或仓库管理
+        openInitialWindow()
         NSApp.activate(ignoringOtherApps: true)
+
+        // 窗口与菜单就绪后启动更新器，按计划检查与手动检查都由它负责
+        UpdateController.shared.start()
+
+        // 上次运行崩溃过时，按设置询问或直接打开预填的问题页
+        CrashReporter.checkOnLaunch()
     }
 
     /// 关闭仓库或最后一个窗口都不退出应用。
@@ -85,12 +103,15 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         return true
     }
 
-    /// 新窗口始终独立，普通打开仍优先复用发起窗口。
+    /// 新窗口始终独立，不并进已有的标签组；普通打开仍优先复用发起窗口。
     @objc
     func newWindow() {
         let controller = makeWindow()
-        controller.showWindow(nil)
-        controller.window?.makeKeyAndOrderFront(nil)
+
+        showSeparately(controller) {
+            controller.showWindow(nil)
+            controller.window?.makeKeyAndOrderFront(nil)
+        }
     }
 
     /// 应用级 ⌘O 在没有主窗口时也能选择仓库。
@@ -116,6 +137,39 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         controller.addRemoteRepository()
     }
 
+    /// 打开 `spooky://` 与 github.com 的 “Open with Desktop” 链接：打开仓库与视图，或弹出克隆对话框；
+    /// 不认识或不可信的链接只显示错误。
+    func application(_: NSApplication, open urls: [URL]) {
+        for url in urls {
+            guard let request = SpookyURL(url) else {
+                let alert = NSAlert()
+                alert.alertStyle = .warning
+                alert.messageText = AppLocalization.text("link.invalid.title")
+                alert.informativeText = AppLocalization.text("link.invalid.message", url.absoluteString)
+                alert.runModal()
+                continue
+            }
+
+            switch request {
+            case .open(let location, let destination):
+                openRepository(at: location, from: activeWindow, inNewWindow: false, showing: destination)
+
+            case .clone(let remote):
+                let controller = activeWindow ?? makeWindow()
+                controller.showWindow(nil)
+                controller.presentClone(url: remote)
+            }
+        }
+    }
+
+    /// File › Clone Git Repository…：在前台的仓库窗口弹出克隆对话框，没有窗口时先开一个。
+    @objc
+    func cloneRepository() {
+        let controller = activeWindow ?? makeWindow()
+        controller.showWindow(nil)
+        controller.presentClone()
+    }
+
     /// ⌘, 始终打开同一个设置窗口。
     @objc
     func showSettings() {
@@ -137,7 +191,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         guard !isTerminating else { return .terminateNow }
         isTerminating = true
         let pending = Array(openingTasks.values) + Array(addingTasks.values)
-            + [recent.stopValidation()].compactMap { $0 }
+            + [bookmarks.stopValidation()].compactMap { $0 }
         let sessions = windows.map(\.session)
         TerminalLauncher.cleanup()
 
@@ -225,15 +279,15 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         Task { await remote.close() }
     }
 
-    /// 最近菜单每次展开时反映当前记录，失效记录仍可选择重试。
+    /// 最近菜单每次展开时按最近打开时间列出打开过的仓库，失效的仍可选择重试。
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        for path in recent.locations {
+        for path in bookmarks.recentlyOpened.compactMap(\.location) {
             let item = NSMenuItem(title: path.displayPath, action: #selector(openRecent(_:)), keyEquivalent: "")
             item.target = self
             item.representedObject = path
-            item.toolTip = recent.unavailable.contains(path)
+            item.toolTip = bookmarks.isMissing(path)
                 ? AppLocalization.text("repositories.unavailable")
                 : path.displayPath
             menu.addItem(item)
@@ -270,13 +324,29 @@ extension SpookyApplicationController {
     }
 
     /// 验证后按规范根路径去重；显式新窗口打开跳过去重。
+    ///
+    /// - Parameters:
+    ///   - destination: 打开后切到的视图；nil 时显示仓库保存的视图状态。
+    ///   - staysInSource: 后退、前进与窗口恢复在发起窗口里打开，不改用已显示这个仓库的其它窗口。
     func openRepository(
         at location: RepositoryLocation,
         from source: RepositoryWindowController?,
-        inNewWindow: Bool
+        inNewWindow: Bool,
+        showing destination: RepositoryDestination? = nil,
+        staysInSource: Bool = false
     ) {
         if let source {
             cancelOpening(in: source)
+        }
+
+        // 还没有克隆完的仓库显示克隆进度，完成后由进度页打开
+        if let activity = clones.unfinished(at: location) {
+            let destination = (inNewWindow ? nil : source).flatMap { source in windows.first { $0 === source } }
+                ?? makeWindow()
+
+            destination.showWindow(nil)
+            destination.showCloneProgress(activity)
+            return
         }
 
         let request = UUID()
@@ -301,50 +371,85 @@ extension SpookyApplicationController {
                 let repository = try await Self.verifiedLocation(of: location)
                 try Task.checkCancellation()
 
-                displayRepository(repository, from: source, inNewWindow: inNewWindow)
+                // 书签指向子目录或符号链接时改指向工作区根目录，不另建一个书签
+                bookmarks.relocate(location, to: repository)
+
+                displayRepository(
+                    repository,
+                    from: source,
+                    inNewWindow: inNewWindow,
+                    showing: destination,
+                    staysInSource: staysInSource
+                )
             } catch {
                 guard !Task.isCancelled else {
                     return
                 }
 
-                recent.markUnavailable(location)
-                let destination = source ?? makeWindow()
-                destination.showWindow(nil)
-                destination.showFailure(AppFailure(error: error, opening: true, location: location))
+                bookmarks.markMissing(location)
+                showOpeningFailure(error, at: location, from: source, inNewWindow: inNewWindow)
             }
         }
     }
 
-    /// 已验证的本机和远端仓库共用窗口去重规则。
+    /// 已验证的本机和远端仓库共用窗口去重规则；显式新窗口不并进已有的标签组。
+    ///
+    /// - Parameters:
+    ///   - view: 显示后切到的视图；nil 时显示仓库保存的视图状态。
+    ///   - staysInSource: 在发起窗口里显示，不改用已显示这个仓库的其它窗口。
     func displayRepository(
         _ repository: RepositoryLocation,
         from source: RepositoryWindowController?,
-        inNewWindow: Bool
+        inNewWindow: Bool,
+        showing view: RepositoryDestination? = nil,
+        staysInSource: Bool = false
     ) {
+        let sourceIsOpen = source.map { source in windows.contains { $0 === source } } ?? false
+
         let destination: RepositoryWindowController =
-            if
+            if staysInSource, sourceIsOpen, let source {
+                source
+            } else if
                 !inNewWindow,
                 let existing = windows.first(where: {
                     !$0.showsManager && $0.session.repository == repository
                 })
             {
                 existing
-            } else if !inNewWindow, let source, windows.contains(where: { $0 === source }) {
+            } else if !inNewWindow, sourceIsOpen, let source {
                 source
             } else {
                 makeWindow()
             }
 
-        recent.remember(repository)
+        bookmarks.recordOpened(repository)
         let previous = destination.session.repository
-        destination.display(repository)
+
+        showSeparately(destination, when: inNewWindow) {
+            if let view {
+                destination.display(repository, showing: view)
+            } else {
+                destination.display(repository)
+            }
+        }
 
         if let previous, previous != repository { releaseConnection(previous) }
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    /// 拖入文件夹只添加已验证的本机仓库，多个目录依次检查。
-    func addRepositories(_ urls: [URL], from source: RepositoryWindowController) {
+    /// 拖入或选择的文件夹只添加已验证的本机仓库，多个目录依次检查；只加了一个不是仓库的目录时询问是否在那里新建仓库。
+    ///
+    /// - Parameters:
+    ///   - urls: 本机目录。
+    ///   - source: 发起的窗口，询问与错误显示在这里。
+    ///   - folder: 放进的书签文件夹；nil 表示最外层。
+    ///   - index: 在文件夹里的位置；nil 表示放到最后。
+    func addRepositories(
+        _ urls: [URL],
+        from source: RepositoryWindowController,
+        into folder: Bookmark.ID? = nil,
+        at index: Int? = nil
+    ) {
         let request = UUID()
 
         addingTasks[request] = Task { [weak self, weak source] in
@@ -354,21 +459,76 @@ extension SpookyApplicationController {
 
             defer { self.addingTasks[request] = nil }
 
-            for url in urls {
+            for (offset, url) in urls.enumerated() {
                 do {
                     let repository = try await GitRunner(location: .local(path: url.path)).openLocalRepository()
                     try Task.checkCancellation()
-                    recent.remember(repository.location)
+
+                    // 多个目录按拖入的顺序依次排在落点之后
+                    bookmarks.add(repository.location, into: folder, at: index.map { $0 + offset })
+                    bookmarks.markAvailable(repository.location)
                 } catch {
-                    guard !Task.isCancelled else {
+                    guard !Task.isCancelled, let source else {
                         return
                     }
 
-                    source?.showFailure(
-                        AppFailure(error: error, opening: true, location: .local(path: url.path))
-                    )
+                    if urls.count == 1, (error as? GitError)?.category == .notRepository {
+                        source.presentNoRepositoryFound(url) { [weak self, weak source] in
+                            guard let source else {
+                                return
+                            }
+
+                            self?.createRepository(at: url.path, from: source, into: folder, at: index, opening: false)
+                        }
+                        return
+                    }
+
+                    source.showFailure(AppFailure(error: error, opening: true, location: .local(path: url.path)))
                     return
                 }
+            }
+        }
+    }
+
+    /// 在本机新建仓库并加入书签；需要时在发起的窗口打开它。
+    ///
+    /// - Parameters:
+    ///   - path: 新仓库的目录，不存在时连同上级目录一起建出。
+    ///   - source: 发起的窗口，错误显示在这里。
+    ///   - folder: 放进的书签文件夹；nil 表示最外层。
+    ///   - index: 在文件夹里的位置；nil 表示放到最后。
+    ///   - opening: 建好后是否在发起的窗口打开。
+    func createRepository(
+        at path: String,
+        from source: RepositoryWindowController,
+        into folder: Bookmark.ID?,
+        at index: Int? = nil,
+        opening: Bool
+    ) {
+        let request = UUID()
+
+        addingTasks[request] = Task { [weak self, weak source] in
+            guard let self else {
+                return
+            }
+
+            defer { self.addingTasks[request] = nil }
+
+            do {
+                let created = try await RepositoryCreation.initialize(.local(path: path))
+                let repository = try await Self.verifiedLocation(of: created)
+                try Task.checkCancellation()
+                bookmarks.add(repository, into: folder, at: index)
+
+                if opening {
+                    displayRepository(repository, from: source, inNewWindow: false)
+                }
+            } catch {
+                guard !Task.isCancelled else {
+                    return
+                }
+
+                source?.showFailure(AppFailure(error: error, opening: false, location: .local(path: path), writing: true))
             }
         }
     }
@@ -415,8 +575,30 @@ extension SpookyApplicationController {
         openRepository(at: path, from: activeWindow, inNewWindow: false)
     }
 
+    /// 打开失败：路径不存在或服务器连不上时整页显示丢失页，其余失败显示错误 sheet。
+    ///
+    /// 丢失页与打开成功时一样落在发起的窗口；显式新窗口打开时落在新窗口。
+    private func showOpeningFailure(
+        _ error: any Error,
+        at location: RepositoryLocation,
+        from source: RepositoryWindowController?,
+        inNewWindow: Bool
+    ) {
+        let reason = MissingRepositoryView.reason(for: location, error: error)
+        let reusable = reason != nil && inNewWindow ? nil : source
+        let destination = reusable.flatMap { reusable in windows.first { $0 === reusable } } ?? makeWindow()
+        destination.showWindow(nil)
+
+        guard let reason else {
+            destination.showFailure(AppFailure(error: error, opening: true, location: location))
+            return
+        }
+
+        destination.showMissingRepository(location, reason: reason)
+    }
+
     /// 创建控制器并纳入应用生命周期。
-    private func makeWindow() -> RepositoryWindowController {
+    func makeWindow() -> RepositoryWindowController {
         let controller = RepositoryWindowController(coordinator: self)
         windows.append(controller)
         return controller

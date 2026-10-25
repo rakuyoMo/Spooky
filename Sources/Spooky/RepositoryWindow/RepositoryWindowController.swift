@@ -27,8 +27,17 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 当前打开请求，关闭窗口或改选目录时取消。
     var openingRequest: UUID?
 
+    /// 本窗口的后退 / 前进记录。
+    var navigation = NavigationHistory()
+
+    /// 工具栏 Clone 项弹出的最近克隆。
+    var clonePopover: NSPopover?
+
+    /// 正在按视图引用切换视图，中途经过的视图不记进后退 / 前进记录。
+    var isApplyingReference = false
+
     /// 跨窗口的打开与记录管理。
-    private weak var coordinator: SpookyApplicationController?
+    private(set) weak var coordinator: SpookyApplicationController?
 
     /// 外层侧边栏分栏。
     private var outerSplit: NSSplitViewController?
@@ -56,7 +65,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         NSApp.isActive && !(self?.showsManager ?? true)
     }
 
-    /// 创建原生窗口；标签合并被关闭，显式新窗口始终独立。
+    /// 创建原生窗口；窗口按系统偏好参与标签页，并以视图引用参与系统的窗口恢复。
     init(coordinator: SpookyApplicationController, session: RepositorySession = RepositorySession()) {
         self.coordinator = coordinator
         self.session = session
@@ -68,8 +77,13 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
             defer: false
         )
         window.isReleasedWhenClosed = false
-        window.tabbingMode = .disallowed
+        window.tabbingMode = .automatic
         window.collectionBehavior = [.fullScreenPrimary]
+
+        // 重新启动时由恢复类按保存的视图引用重建窗口
+        window.identifier = RepositoryWindowRestoration.identifier
+        window.restorationClass = RepositoryWindowRestoration.self
+        window.isRestorable = true
         super.init(window: window)
 
         window.delegate = self
@@ -139,6 +153,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         }
 
         showRepositories()
+        configureToolbar()
         restoreFrame()
         observeToolbarState()
         observeConnectionState()
@@ -261,51 +276,75 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 管理页显示期间保留仓库会话，但按后台频率轮询。
         session.setActive(false)
 
-        let choose: () -> Void = { [weak self] in
-            guard let self else {
-                return
-            }
+        // 侧边栏与详情区共用本窗口的仓库管理状态
+        let manager = RepositoryManagerController(bookmarks: coordinator.bookmarks, session: session)
+        manager.window = self
+        manager.coordinator = coordinator
 
-            self.coordinator?.chooseRepository(in: self)
-        }
-        let open: (RepositoryLocation, Bool) -> Void = { [weak self] path, newWindow in
-            guard let self else {
-                return
-            }
-
-            self.coordinator?.openRepository(at: path, from: self, inNewWindow: newWindow)
-        }
-        let add: ([URL]) -> Void = { [weak self] in
-            guard let self else {
-                return
-            }
-
-            self.coordinator?.addRepositories($0, from: self)
-        }
-
-        let sidebar = NSHostingController(rootView: RecentRepositoryListView(
-            session: session,
-            recent: coordinator.recent,
-            open: open,
-            choose: choose,
-            addRemote: { [weak self] in self?.addRemoteRepository() },
-            openTerminal: { [weak self] in self?.openLocationInTerminal($0) },
-            addFolders: add
-        ))
-        sidebar.sizingOptions = [.minSize]
-
-        let detail = NSHostingController(rootView: RepositoryManagerView(
-            session: session,
-            recent: coordinator.recent,
-            choose: choose,
-            open: open,
-            addRemote: { [weak self] in self?.addRemoteRepository() },
-            addFolders: add
-        ))
+        let detail = NSHostingController(rootView: RepositoryManagerDetailView(manager: manager))
         detail.sizingOptions = [.minSize]
 
-        installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repositories")
-        coordinator.recent.validate()
+        installOuterSplit(
+            sidebar: BookmarkSidebarController(manager: manager),
+            detail: detail,
+            name: "Spooky.Repositories"
+        )
+        coordinator.bookmarks.validate()
+        didChangeView()
+    }
+
+    /// 打开的仓库找不到或连不上时，整个窗口换成丢失页；会话与上一个仓库的连接一并交还。
+    ///
+    /// - Parameters:
+    ///   - location: 打不开的仓库。
+    ///   - reason: 路径不存在或服务器连不上。
+    func showMissingRepository(_ location: RepositoryLocation, reason: MissingRepositoryView.Reason) {
+        let page = NSHostingController(rootView: MissingRepositoryView(
+            location: location,
+            reason: reason,
+            session: session,
+            refresh: { [weak self] in
+                guard let self else {
+                    return
+                }
+
+                coordinator?.openRepository(at: location, from: self, inNewWindow: false)
+            },
+            close: { [weak self] in self?.showRepositories() }
+        ))
+        page.sizingOptions = [.minSize]
+
+        showPage(page, title: location.name)
+    }
+
+    /// 整个窗口换成一页：仓库丢失页或克隆进度页。会话与上一个仓库的连接一并交还，标题换成页面所指的仓库。
+    ///
+    /// - Parameters:
+    ///   - page: 换入的页面。
+    ///   - title: 窗口标题。
+    func showPage(_ page: NSViewController, title: String) {
+        let previous = session.repository
+        session.close()
+
+        if let previous {
+            coordinator?.releaseConnection(previous)
+        }
+
+        showsManager = false
+        outerSplit = nil
+        workingCopySplit = nil
+        historySplit = nil
+        window?.title = title
+        window?.representedURL = nil
+        updateSubtitle()
+
+        // 换入的页面先取当前内容尺寸，窗口不随新视图缩放
+        if let size = window?.contentView?.frame.size {
+            page.view.setFrameSize(size)
+        }
+
+        window?.contentViewController = page
+        updateToolbarItems()
     }
 
     /// 窗口激活会立即刷新仓库状态；显示管理页时仓库保持后台频率。
@@ -442,125 +481,6 @@ extension RepositoryWindowController {
     func showActivity() { coordinator?.showActivity() }
 }
 
-// MARK: - Toolbar
-
-extension RepositoryWindowController {
-    /// 当前视图需要的工具栏项，工作区额外跟随内层分隔线。
-    func toolbarDefaultItemIdentifiers(_: NSToolbar) -> [NSToolbarItem.Identifier] {
-        var items: [NSToolbarItem.Identifier] = [
-            .init("open"), .init("repositories"), .init("sidebarSeparator"), .flexibleSpace,
-        ]
-
-        if workingCopySplit != nil {
-            items.append(.init("detailSeparator"))
-            items.append(contentsOf: [.init("stageAll"), .init("commit")])
-        }
-
-        if !showsManager, session.repository?.host != nil {
-            items.append(.init("host"))
-        }
-
-        if !showsManager {
-            items.append(contentsOf: [.init("sync"), .init("synchronize"), .init("merge"), .init("stashes")])
-        }
-
-        items += [.init("terminal"), .init("finder"), .init("refresh"), .init("closeRepository")]
-
-        // 搜索框排在最后，空间不足时最后才收进溢出菜单
-        return showsManager ? items : items + [.init("search")]
-    }
-
-    /// 工具栏固定为本里程碑已有动作。
-    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        toolbarDefaultItemIdentifiers(toolbar)
-    }
-
-    /// 使用系统符号创建按钮，并让分隔符跟随对应分栏。
-    func toolbar(
-        _: NSToolbar,
-        itemForItemIdentifier identifier: NSToolbarItem.Identifier,
-        willBeInsertedIntoToolbar _: Bool
-    ) -> NSToolbarItem? {
-        // Fetch | Pull | Push、Sync 与 Merge | Rebase 随 ⌥ 切换成快速操作
-        if let item = makeSyncToolbarItem(identifier) {
-            return item
-        }
-
-        if identifier.rawValue == "search" {
-            return makeSearchItem(identifier)
-        }
-
-        if identifier.rawValue == "stashes" {
-            return makeStashToolbarItem(identifier)
-        }
-
-        if identifier.rawValue == "host", let host = session.repository?.host {
-            let item = NSToolbarItem(itemIdentifier: identifier)
-            item.label = host + ":"
-            let label = NSTextField(labelWithString: item.label)
-            label.font = .systemFont(ofSize: 11)
-            label.setAccessibilityLabel(session.repository?.displayPath)
-            item.view = label
-            return item
-        }
-
-        if identifier.rawValue == "sidebarSeparator", let outerSplit {
-            return NSTrackingSeparatorToolbarItem(
-                identifier: identifier,
-                splitView: outerSplit.splitView,
-                dividerIndex: 0
-            )
-        }
-
-        if identifier.rawValue == "detailSeparator", let workingCopySplit {
-            return NSTrackingSeparatorToolbarItem(
-                identifier: identifier,
-                splitView: workingCopySplit.splitView,
-                dividerIndex: 0
-            )
-        }
-
-        let configuration: (String, String, Selector)
-
-        switch identifier.rawValue {
-        case "stageAll":
-            configuration = ("working.stageAll", "checkmark.square", #selector(stageAll))
-
-        case "commit":
-            configuration = ("working.commit", "checkmark.circle", #selector(composeCommit))
-
-        case "open":
-            configuration = ("action.openLocal", "folder.badge.plus", #selector(chooseRepository))
-
-        case "repositories":
-            configuration = ("repositories.title", "externaldrive", #selector(showRepositories))
-
-        case "terminal":
-            configuration = ("action.openTerminal", "apple.terminal", #selector(openInTerminal))
-
-        case "finder":
-            configuration = ("action.revealFinder", "finder", #selector(revealInFinder))
-
-        case "refresh":
-            configuration = ("action.refresh", "arrow.clockwise", #selector(refreshRepository))
-
-        case "closeRepository":
-            configuration = ("action.closeRepository", "xmark.circle", #selector(closeRepository))
-
-        default:
-            return nil
-        }
-
-        let item = NSToolbarItem(itemIdentifier: identifier)
-        item.label = AppLocalization.text(configuration.0)
-        item.toolTip = session.repository?.host.map { $0 + ": " + item.label } ?? item.label
-        item.image = NSImage(systemSymbolName: configuration.1, accessibilityDescription: item.label)
-        item.target = self
-        item.action = configuration.2
-        return item
-    }
-}
-
 // MARK: - Private
 
 extension RepositoryWindowController {
@@ -597,9 +517,11 @@ extension RepositoryWindowController {
     private func observeToolbarState() {
         withObservationTracking {
             for action in [
-                #selector(fetch), #selector(pull), #selector(push), #selector(merge),
-                #selector(stageAll), #selector(refreshRepository), #selector(closeRepository),
-                #selector(applyStash), #selector(saveStash),
+                #selector(fetch), #selector(pull), #selector(push), #selector(sync),
+                #selector(merge), #selector(rebase), #selector(refreshRepository), #selector(closeRepository),
+                #selector(applyStash), #selector(saveStash), #selector(createBranch),
+                #selector(forcePushWithLease), #selector(pushRevision), #selector(pushToGerritRemote),
+                #selector(stageAll), #selector(composeCommit),
             ] {
                 _ = validateUserInterfaceItem(NSMenuItem(title: "", action: action, keyEquivalent: ""))
             }
@@ -629,9 +551,16 @@ extension RepositoryWindowController {
     private func configureWorkingCopyKeys() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
             let handled = MainActor.assumeIsolated {
-                // 主窗口的同步按钮随 ⌥ 换成快速操作，与当前视图无关
+                // 主窗口的同步按钮随 ⌥ 换成快速操作，全部暂存换成全部取消暂存，与当前视图无关
                 if event.type == .flagsChanged, let self, NSApp.keyWindow === self.window {
-                    self.updateQuickToolbarItems(option: event.modifierFlags.contains(.option))
+                    let option = event.modifierFlags.contains(.option)
+                    let stageAll = self.window?.toolbar?.items.first { $0.itemIdentifier == RepositoryToolbar.stageAll }
+
+                    if let stageAll {
+                        self.updateStageAllItem(stageAll, option: option)
+                    }
+
+                    self.updateQuickToolbarItems(option: option)
                 }
 
                 return self?.handleWorkingCopyKey(event) ?? false
@@ -641,26 +570,16 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 工作区处于前台时处理按键：修饰键变化时切换全部暂存按钮的文案，回车键提交或继续进行中的操作；返回事件是否已处理。
+    /// 工作区处于前台时处理按键：回车键提交或继续进行中的操作；返回事件是否已处理。
     private func handleWorkingCopyKey(_ event: NSEvent) -> Bool {
         guard
+            event.type == .keyDown,
             NSApp.keyWindow === window, !showsManager,
             session.activeView == .workingCopy,
             window?.attachedSheet == nil
         else { return false }
 
         let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
-
-        // 按住 ⌥ 且有已暂存改动时，全部暂存按钮改为全部取消暂存。
-        if event.type == .flagsChanged {
-            let unstage = flags.contains(.option)
-                && (session.status?.entries.contains(where: \.hasStagedChanges) ?? false)
-            let item = window?.toolbar?.items.first { $0.itemIdentifier.rawValue == "stageAll" }
-            item?.label = AppLocalization.text(unstage ? "working.unstageAll" : "working.stageAll")
-            item?.toolTip = item?.label
-            window?.toolbar?.validateVisibleItems()
-            return false
-        }
 
         // 主键盘回车需要 ⌘ 或 ⌘⌥，小键盘回车不带修饰键；只在编辑提交信息或按住 ⌥ 时生效。
         let enter = event.keyCode == 36 && (flags == .command || flags == [.command, .option])
@@ -754,6 +673,11 @@ extension RepositoryWindowController {
             workingCopySplit = nil
             historySplit = nil
             detail = makeBranchesReviewSplit()
+
+        case .settings:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeRepositorySettingsView()
         }
 
         installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repository")
@@ -778,6 +702,8 @@ extension RepositoryWindowController {
         {
             split.splitView.setPosition(320, ofDividerAt: 0)
         }
+
+        didChangeView()
     }
 
     /// 工作区的文件列表与 Diff 详情分栏，宽度按工作区单独保存。
@@ -911,10 +837,7 @@ extension RepositoryWindowController {
             split.splitView.setPosition(Self.defaultSidebarWidth, ofDividerAt: 0)
         }
 
-        let toolbar = NSToolbar(identifier: "Spooky.MainToolbar")
-        toolbar.displayMode = .iconOnly
-        toolbar.allowsUserCustomization = false
-        toolbar.delegate = self
-        window?.toolbar = toolbar
+        // 换了外层分栏后，工具栏的侧边栏分隔符改跟新的分隔线
+        trackSidebar(of: split)
     }
 }

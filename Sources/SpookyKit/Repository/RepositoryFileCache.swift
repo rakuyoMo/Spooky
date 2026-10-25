@@ -8,8 +8,8 @@ import Synchronization
 /// 本机工作区文件直接使用原路径；服务器文件经 SFTP 取到本缓存，历史版本等内容写成缓存文件。
 /// 缓存目录权限为 0700，副本保留原文件名，系统据此选择预览与打开方式。
 public final class RepositoryFileCache: Sendable {
-    /// 文件访问与 Git 使用相同的仓库和 SSH 会话。
-    private let runner: GitRunner
+    /// 文件访问与 Git 使用相同的仓库和 SSH 会话；外部工具与编辑器副本经它读写仓库所在机器上的文件。
+    let runner: GitRunner
 
     /// 首次写入时创建的缓存根目录。
     private let root = Mutex<URL?>(nil)
@@ -49,6 +49,21 @@ public final class RepositoryFileCache: Sendable {
         let destination = try slot(named: name)
         try data.write(to: destination)
         return destination
+    }
+
+    /// 新建一个空目录，供目录对比放入多个文件；目录名只取最后一段。
+    ///
+    /// - Parameter name: 目录名，如版本的短哈希。
+    public func directory(named name: String) throws -> URL {
+        let directory = try slot(named: name)
+
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+
+        return directory
     }
 
     /// 删除本缓存创建的全部副本；之后仍可继续使用，目录按需重建。

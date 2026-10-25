@@ -79,9 +79,33 @@ actor RepositoryOperationQueue {
         guard let command = command(in: arguments) else { return false }
         if command == "config" {
             guard let index = arguments.firstIndex(of: "config") else { return false }
-            let options = arguments.dropFirst(index + 1)
-            return options.prefix(2).elementsEqual(["-z", "--get-regexp"])
-                && options.count == 3
+            var options = arguments.dropFirst(index + 1)
+
+            // 读全局配置时先写作用域与 --includes，其后的查询与读仓库配置相同。
+            if options.starts(with: ["--global", "--includes"]) {
+                options = options.dropFirst(2)
+            }
+
+            // 读取 .gitmodules 里登记的子模块同样只是查询
+            let submodules = options.count == 5
+                && options.prefix(4).elementsEqual(["-z", "--file", ".gitmodules", "--get-regexp"])
+
+            // 合并后的配置与只看仓库本地配置的两种按正则读取
+            return submodules
+                || (options.prefix(2).elementsEqual(["-z", "--get-regexp"]) && options.count == 3)
+                || (options.prefix(3).elementsEqual(["-z", "--local", "--get-regexp"]) && options.count == 4)
+        }
+
+        // 只读出当前分支名；其余 branch 用法会新建、改名或删除分支。
+        if command == "branch" {
+            guard let index = arguments.firstIndex(of: "branch") else { return false }
+            return arguments.dropFirst(index + 1).elementsEqual(["--show-current"])
+        }
+
+        // 只有列出工作树是读取，其余 worktree 子命令都会改动仓库
+        if command == "worktree" {
+            guard let index = arguments.firstIndex(of: "worktree"), index + 1 < arguments.count else { return false }
+            return arguments[index + 1] == "list"
         }
 
         // 只计算对象哈希不写入对象库；带 -w 的写入仍走写队列。

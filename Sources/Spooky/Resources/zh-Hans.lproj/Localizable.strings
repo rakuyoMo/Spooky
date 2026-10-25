@@ -48,7 +48,6 @@
 
 "action.open" = "打开";
 
-"action.openNewWindow" = "在新窗口打开";
 
 "action.closeRepository" = "关闭当前仓库";
 
@@ -60,15 +59,11 @@
 
 "repositories.title" = "仓库管理";
 
-"repositories.recent" = "最近打开的仓库";
 
-"repositories.empty.title" = "打开 Git 仓库";
 
-"repositories.empty.message" = "选择本机工作区，或将仓库文件夹拖到这里。";
 
 "repositories.unavailable" = "路径失效或不可访问，可重新打开";
 
-"repositories.path" = "绝对路径";
 
 "repositories.panel.message" = "选择已有 Git 仓库的工作区目录。";
 
@@ -149,7 +144,7 @@
 
 "error.parse" = "无法解析 Git 输出";
 
-"error.openHelp" = "请选择可访问的 Git 工作区。Spooky 要求 /usr/bin/git 不低于 2.41.0；版本不足时请更新 Xcode 或命令行工具。下方保留原始输出。";
+"error.openHelp" = "请选择可访问的 Git 工作区。Spooky 要求 Git 不低于 2.41.0；版本不足时请在设置中换用其它 Git 程序，或更新 Xcode 或命令行工具。下方保留原始输出。";
 
 "error.refreshHelp" = "刷新失败时保留已有结果。请查看原始输出，处理问题后刷新重试。";
 
@@ -222,6 +217,8 @@
 "remoteError.pathUnavailable.help" = "请检查绝对路径是否存在于所选服务器。";
 "remoteError.pathPermission" = "无权访问服务器目录";
 "remoteError.pathPermission.help" = "SSH 登录用户需要该目录的读取和搜索权限。";
+"remoteError.diskAccess" = "服务器目录被隐私设置阻止";
+"remoteError.diskAccess.help" = "服务器上的 macOS 不允许 SSH 会话读取这个文件夹。请在服务器的 共享 → 远程登录 中允许远程用户完全磁盘访问，或把仓库移出受保护的文件夹。";
 "remoteError.notWorkingTree" = "服务器路径不是 Git 工作区";
 "remoteError.notWorkingTree.help" = "请选择服务器上已有的 Git 工作区，并查看 Git 原文中的所有权限制。";
 "remoteError.statusFormat" = "无法读取服务器状态";
@@ -426,7 +423,6 @@
 "working.refreshFailed" = "刷新失败，正在显示上一次成功的结果。";
 "history.limit" = "仅显示前 %ld 个提交。选择分支可以缩小历史范围。";
 "history.loadingChanges" = "正在读取变更文件…";
-"repositories.checking" = "正在检查…";
 "repositories.unavailableShort" = "不可用";
 "activity.truncated" = "较早的输出已省略。";
 
@@ -678,7 +674,6 @@
 "profiles.email" = "邮箱：";
 "profiles.signingKey" = "签名密钥：";
 "profiles.edit" = "编辑";
-"profiles.save" = "存储";
 "profiles.menu" = "提交人身份";
 "profiles.addCurrent" = "添加身份档案 “%@”…";
 "profiles.manage" = "管理身份档案…";
@@ -776,8 +771,6 @@
 "files.error.preimage" = "补丁与文件不符";
 "files.error.preimageHelp" = "下列文件在补丁生成之后有过改动，因此没有应用补丁，工作区保持原样。请用当前的文件重新生成补丁，或先把这些文件恢复到补丁生成时的版本。";
 "files.error.destination" = "目标位置已存在";
-"files.error.diffTool" = "无法打开比较工具";
-"files.error.diffToolHelp" = "比较会在 Xcode 附带的 FileMerge 中打开。请安装 Xcode 后重试。工具的输出见下方。";
 "files.doubleClick" = "双击工作区中的文件：";
 "files.doubleClick.openFile" = "用默认应用程序打开";
 "files.doubleClick.openDiff" = "打开比较工具";
@@ -1470,3 +1463,469 @@
 "reflog.cherryPick" = "摘取 “%@”…";
 "reflog.restore.title" = "恢复分支";
 "reflog.restore.message" = "把 %3$@ 中的分支 “%1$@” 移到 %2$@ 吗？工作区与暂存区不会改变。离开分支的提交仍能在 Reflog 里找到。";
+
+"appearance.system" = "自动";
+"appearance.light" = "浅色";
+"appearance.dark" = "深色";
+"settings.appearance" = "外观";
+"settings.gitConfig" = "Git 配置";
+"settings.integration" = "集成";
+"settings.appearance.label" = "外观：";
+"settings.cloneDirectory" = "克隆仓库的默认目录：";
+"settings.cloneDirectory.select" = "选择…";
+"settings.warnDiscardingChunks" = "丢弃块中的改动前发出警告";
+"settings.windowRestoration" = "窗口恢复：";
+"settings.windowRestoration.always" = "总是";
+"settings.windowRestoration.never" = "从不";
+"settings.windowRestoration.system" = "按系统设置";
+"settings.showLaunchWindow" = "启动时显示快速启动窗口";
+"action.ok" = "好";
+"gitConfig.userName" = "全局用户名：";
+"gitConfig.email" = "全局邮箱：";
+"gitConfig.scope" = "保存在 %@，影响这台 Mac 上的所有仓库；服务器仓库使用服务器上的 Git 配置。";
+"gitConfig.sshProgram" = "SSH 签名程序：";
+"gitConfig.sshProgram.system" = "ssh-keygen（系统）";
+"gitConfig.sshProgram.onePassword" = "1Password";
+"gitConfig.gpgProgram" = "GPG 程序：";
+"gitConfig.gpgProgram.none" = "未选择 GPG 程序";
+"gitConfig.gpgProgram.notFound" = "未找到 GPG 程序";
+"gitConfig.gpgProgram.select" = "选择…";
+"gitConfig.signingKey" = "全局签名密钥：";
+"gitConfig.agentKeys" = "SSH 密钥取自系统的 SSH agent。";
+"gitConfig.allowedSigners" = "Allowed signers 文件：";
+"gitConfig.allowedSigners.none" = "不使用 Allowed signers 文件";
+"gitConfig.allowedSigners.select" = "选择 Allowed signers 文件…";
+"gitConfig.signCommits" = "为提交签名";
+"gitConfig.ensureEmailMatch" = "确认 GPG 密钥的邮箱与提交人邮箱一致";
+"gitConfig.invalidGPG" = "GPG 程序无效";
+"gitConfig.invalidGPG.message" = "%@ 处的程序不是可用的 GnuPG 程序。";
+"gitConfig.invalidSSH" = "SSH 签名程序无效";
+"gitConfig.invalidSSH.message" = "%@ 处的程序不存在或无法运行。";
+"gitConfig.emailMismatch" = "签名密钥的邮箱与 Git 用户邮箱不一致";
+"gitConfig.emailMismatch.message" = "签名密钥的邮箱 “%@” 与 Git 用户的邮箱 “%@” 不一致。两者不同时，部分服务不会验证签名。";
+"gitConfig.error.read" = "无法读取全局 Git 配置";
+"gitConfig.error.write" = "无法保存全局 Git 配置";
+
+"gerrit.pushTitle" = "推送到 Gerrit Code Review";
+"gerrit.pushTitle.help" = "把所选版本推到所选远端等待评审，推送的目标是 “refs/for/<评审分支>”。";
+"gerrit.push" = "推送到 Gerrit";
+"gerrit.reviewBranch" = "评审分支：";
+"gerrit.pushMenu" = "把 “%@” 推送到 Gerrit…";
+"gerrit.quickPush" = "快速把 “%1$@” 推送到 Gerrit “%2$@ refs/for/%1$@”";
+"settings.gerrit" = "Gerrit Code Review：";
+"settings.gerrit.enable" = "提供推送到 Gerrit 的快捷操作";
+"issueTracking.url" = "Issue 追踪地址：";
+"issueTracking.prefix" = "Issue 编号前缀：";
+"issueTracking.notConfigured" = "未配置";
+"issueTracking.edit" = "编辑";
+"issueTracking.invalid" = "Issue 追踪地址无效";
+"issueTracking.title" = "识别 Issue 编号";
+"issueTracking.title.help" = "填写 Issue 追踪的地址模板，以及提交信息里标出 Issue 编号的前缀。";
+"issueTracking.save" = "存储";
+"issueTracking.url.help" = "%@ 标出编号在地址里的位置。";
+"issueTracking.prefix.help" = "写在 Issue 编号前面的文字，如 #。";
+"issueTracking.url.placeholder" = "Issue 追踪的地址模板";
+"issueTracking.error.prefixLength" = "Issue 编号前缀不能超过 %d 个字符。";
+"issueTracking.error.prefixWhitespace" = "Issue 编号前缀不能包含空格。";
+"issueTracking.error.templateRequired" = "使用自定义前缀时需要填写 Issue 追踪地址。";
+"issueTracking.error.templateWhitespace" = "Issue 追踪地址不能包含空格。";
+"issueTracking.error.placeholders" = "只支持 {ISSUE_NUMBER}、{OWNER} 与 {REPOSITORY} 三个占位符。";
+"issueTracking.error.template" = "请填写包含 {ISSUE_NUMBER} 占位符的网页地址。";
+"profiles.create.title" = "新建身份档案";
+"profiles.create.message" = "用填写的内容新建一个身份档案。";
+"profiles.create.submit" = "新建";
+"profiles.update.title" = "更新身份档案";
+"profiles.update.message" = "用填写的内容更新这个身份档案。";
+"profiles.update.submit" = "更新";
+"profiles.delete.title" = "删除身份档案";
+"profiles.delete.message" = "将删除身份档案 “%@”。Git 配置不受影响。";
+"profiles.delete.submit" = "删除";
+
+/* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
+"settings.environment.loginShell" = "自动从登录 shell 读取环境变量";
+"settings.environment.loginShellFailed" = "无法读取登录 shell 的环境变量。";
+"settings.environment.key" = "名称";
+"settings.environment.value" = "值";
+"settings.environment.custom" = "执行 Git 命令时使用的自定义环境变量：";
+"settings.environment.add" = "添加变量";
+"settings.environment.remove" = "移除变量";
+"settings.environment.localOnly" = "这些设置只作用于在这台 Mac 上执行的 Git 命令；服务器上的仓库使用服务器自己的环境。";
+"settings.environment.server" = "检查服务器上 Git 使用的非交互环境：";
+"settings.environment.server.hosts" = "服务器";
+"settings.environment.server.check" = "检查";
+"settings.environment.server.noGit" = "PATH 里没有找到";
+
+/* Settings → Integration 的 SSH Agent 一行。 */
+"settings.sshAgent" = "SSH Agent：";
+"settings.sshAgent.system" = "系统 SSH Agent";
+"settings.sshAgent.onePassword" = "1Password SSH Agent";
+"settings.sshAgent.description" = "所选的 SSH agent 用于 SSH 连接与 SSH 签名。";
+"settings.sshAgent.warning" = "SSH Agent 未运行";
+"settings.sshAgent.warning.system" = "系统 SSH agent 不可用。请重新启动 Mac，或选择其它 SSH agent。";
+"settings.sshAgent.warning.onePassword" = "1Password 的 SSH agent 未运行。请在 1Password 的设置中开启 SSH agent，或选择其它 SSH agent。";
+
+/* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
+"settings.gitProgram" = "Git 程序：";
+"settings.gitProgram.system" = "%1$@（系统；%2$@）";
+"settings.gitProgram.version" = "%1$@（%2$@）";
+"settings.gitProgram.unavailable" = "%@（不可用）";
+"settings.gitProgram.choose" = "选择 Git 程序…";
+"settings.gitProgram.minimum" = "最低要求的 Git 版本为 %@";
+"settings.gitProgram.rejected" = "无法使用这个 Git 程序";
+"settings.gitProgram.rejected.notGit" = "“%@” 不是 Git 程序。";
+"settings.gitProgram.rejected.version" = "“%1$@” 是 Git %2$@。Spooky 要求 Git %3$@ 或更高版本。";
+"error.gitProgram" = "找不到 Git 程序";
+"error.gitProgramHelp" = "请在设置中选择其它 Git 程序。下方是无法运行的路径。";
+
+"settings.environment" = "环境";
+
+"externalTool.diffTool" = "比较工具：";
+"externalTool.mergeTool" = "合并工具：";
+"externalTool.directoryDiff" = "比较整个目录";
+"externalTool.keepBackups" = "保留合并冲突的备份文件";
+"externalTool.noneSelected" = "未选择";
+"externalTool.notInstalled" = "%@，未安装";
+"externalTool.configureDiff" = "设置比较工具";
+"externalTool.configureDiff.message" = "选择用来查看 Diff 的应用程序。";
+"externalTool.configureMerge" = "设置合并工具";
+"externalTool.configureMerge.message" = "选择用来解决合并冲突的应用程序。";
+"externalTool.select" = "选择";
+"externalTool.error" = "无法打开外部工具";
+"externalTool.error.help" = "请确认 “设置” 中选择的比较或合并工具已经安装，然后重试。详细信息见下方。";
+"externalTool.fileChanged" = "文件已在别处更改";
+"externalTool.fileChanged.message" = "%2$@ 中的 “%1$@” 在交给外部应用程序之后已被更改。要用编辑后的版本覆盖它吗？";
+"externalTool.overwrite" = "覆盖";
+"externalTool.noResult" = "没有合并结果";
+"externalTool.noResult.message" = "%2$@ 没有为 “%1$@” 保存结果，冲突仍未解决。";
+"externalTool.notApplied" = "合并结果没有写入";
+"externalTool.finishMerge" = "在 %@ 中完成合并";
+"externalTool.finishMerge.message" = "请在 %1$@ 中保存合并结果，然后选择 “完成”，把结果写入 “%2$@” 并标记冲突已解决。";
+"externalTool.done" = "完成";
+"externalTool.openMergeTool" = "打开合并工具";
+"externalTool.saveCopy" = "保存 “%@”";
+"externalTool.side.workingTree" = "工作区";
+"externalTool.side.index" = "暂存区";
+"externalTool.side.base" = "共同祖先";
+"externalTool.side.mine" = "我方";
+"externalTool.side.theirs" = "对方";
+"externalTool.side.empty" = "空";
+"externalTool.compare" = "比较";
+"externalTool.compare.workingTreeToBase" = "工作区与 HEAD";
+"externalTool.compare.workingTreeToIndex" = "工作区与暂存区";
+"externalTool.compare.indexToBase" = "暂存区与 HEAD";
+"externalTool.compare.oursToTheirs" = "我方版本与对方版本";
+"externalTool.compare.oursToBase" = "我方版本与共同祖先";
+"externalTool.compare.theirsToBase" = "对方版本与共同祖先";
+"externalTool.openDiffTool" = "打开比较工具";
+"externalTool.openDiffAt" = "用比较工具查看 “%1$@” 在版本 “%2$@” 的改动";
+"externalTool.mergeIn" = "在 %@ 中合并";
+"externalTool.chooseMergeTool" = "选择合并工具";
+"files.openWith" = "打开方式";
+"files.openWith.loading" = "正在载入";
+"files.openWith.default" = "%@（默认）";
+"files.openWith.none" = "<无>";
+"files.openWith.other" = "其他…";
+"files.openWith.choose" = "选择用来打开文件的应用程序。";
+"tree.openAt" = "打开 “%1$@” 在版本 “%2$@” 的内容";
+"tree.openItemsAt" = "打开 %1$ld 项在版本 “%2$@” 的内容";
+"tree.openAtWith" = "用其他程序打开 “%1$@” 在版本 “%2$@” 的内容";
+"tree.openItemsAtWith" = "用其他程序打开 %1$ld 项在版本 “%2$@” 的内容";
+
+/* App 菜单的检查更新与 Settings → Updates：更新通道、自动检查与下载、检查间隔与最近一次检查。 */
+"updates.check" = "检查更新…";
+"settings.updates" = "更新";
+"updates.channel" = "更新通道：";
+"updates.channel.stable" = "稳定版";
+"updates.channel.beta" = "测试版";
+"updates.channel.development" = "开发版";
+"updates.automaticChecks" = "自动检查更新";
+"updates.automaticDownloads" = "自动下载更新";
+"updates.interval" = "检查间隔：";
+"updates.interval.hourly" = "每小时";
+"updates.interval.daily" = "每天";
+"updates.interval.weekly" = "每周";
+"updates.lastCheck" = "上次检查更新：";
+"updates.never" = "从未";
+
+"menu.newTab" = "新建标签页";
+"navigation.back" = "后退";
+"navigation.forward" = "前进";
+"navigation.back.tip" = "显示上一个视图";
+"navigation.forward.tip" = "显示下一个视图";
+"navigation.title" = "后退/前进";
+"menu.hideWindowTitle" = "隐藏窗口标题";
+"menu.showWindowTitle" = "显示窗口标题";
+"menu.showToolbar" = "显示工具栏";
+"menu.customizeToolbar" = "自定工具栏…";
+"toolbar.host" = "服务器";
+"toolbar.createBranch" = "新建分支";
+"toolbar.forcePush" = "安全强推";
+"toolbar.pushTo" = "推送到";
+"toolbar.finder" = "Finder";
+"toolbar.terminal" = "终端";
+"toolbar.quickActions" = "快捷操作";
+"toolbar.gerritPush" = "Gerrit 推送";
+"launch.empty" = "没有最近的仓库";
+"launch.version" = "版本 %@";
+
+/* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
+"bookmarks.newGroup" = "新建分组";
+"bookmarks.add" = "添加仓库…";
+"bookmarks.add.prompt" = "添加";
+"bookmarks.addMenu" = "添加";
+"bookmarks.create" = "新建本机仓库…";
+"bookmarks.open" = "打开 “%@”";
+"bookmarks.openNewWindow" = "在新窗口中打开 “%@”";
+"bookmarks.openRepository" = "打开";
+"bookmarks.openRepositoryNewWindow" = "在新窗口中打开";
+"bookmarks.rename" = "重命名";
+"bookmarks.delete" = "删除 “%@”…";
+"bookmarks.deleteFolder" = "删除分组…";
+"bookmarks.deleteMultiple" = "删除 %ld 项…";
+"bookmarks.sortChildren" = "按名称排序子项";
+"bookmarks.sortParent" = "按名称排序所在分组";
+"bookmarks.delete.title" = "删除 “%@”？";
+"bookmarks.delete.titleMultiple" = "删除 %ld 项？";
+"bookmarks.delete.message" = "只移除书签，仓库仍保留在磁盘或服务器上。";
+"bookmarks.delete.submit" = "删除";
+"bookmarks.dropZone.title" = "拖入文件夹或地址";
+"bookmarks.dropZone.subtitle" = "以添加 Git 仓库";
+"bookmarks.dropZone.add" = "添加";
+"bookmarks.dropZone.create" = "新建";
+"bookmarks.multiple.title" = "已选择多项";
+"bookmarks.multiple.message" = "%ld 项";
+"bookmarks.multiple.delete" = "删除";
+"bookmarks.detail.location" = "位置";
+"bookmarks.detail.branch" = "当前分支";
+"bookmarks.detail.lastCommit" = "最后提交";
+"bookmarks.detail.lastOpened" = "最近打开";
+"bookmarks.detail.identity" = "提交人身份";
+"bookmarks.detail.description" = "描述";
+"bookmarks.detail.remotes" = "远端";
+"bookmarks.detail.viewInBrowser" = "在浏览器中查看";
+"bookmarks.detail.missing" = "仓库不存在。";
+"bookmarks.detail.loading" = "正在读取…";
+"bookmarks.detail.neverOpened" = "从未";
+"bookmarks.detail.noCommits" = "还没有提交";
+"bookmarks.detail.noIdentity" = "未设置";
+"bookmarks.detail.noRemotes" = "没有远端";
+"bookmarks.detail.edit" = "编辑";
+"bookmarks.detail.unset" = "取消设置";
+"bookmarks.description.edit" = "编辑仓库描述";
+"bookmarks.description.message" = "输入这个仓库的描述。";
+"bookmarks.description.label" = "描述：";
+"bookmarks.identity.edit" = "编辑提交人身份";
+"bookmarks.identity.message" = "这里的姓名与邮箱只对这个仓库生效；全局的值在 设置 → Git Config 中设置。";
+"bookmarks.identity.name" = "姓名：";
+"bookmarks.identity.namePrompt" = "姓名";
+"bookmarks.identity.email" = "邮箱：";
+"bookmarks.identity.emailPrompt" = "邮箱地址";
+"bookmarks.create.title" = "新建本机仓库";
+"bookmarks.create.message" = "在新的或已有的文件夹中新建一个空的 Git 仓库。";
+"bookmarks.create.submit" = "新建";
+"bookmarks.create.name" = "名称：";
+"bookmarks.create.location" = "位置：";
+"bookmarks.create.choose" = "选择…";
+"bookmarks.create.choosePrompt" = "选择";
+"bookmarks.create.invalidName" = "名称不能包含 “/”，也不能是 “.” 或 “..”。";
+"bookmarks.create.fileExists" = "这个位置已有同名的文件。";
+"bookmarks.noRepository.title" = "没有找到 Git 仓库";
+"bookmarks.noRepository.message" = "“%@” 不是 Git 仓库。要在这个文件夹中新建仓库吗？";
+"bookmarks.noRepository.create" = "新建仓库";
+"missing.title" = "Spooky 找不到这个仓库";
+"missing.message" = "Spooky 在 “%@” 找不到仓库。";
+"missing.unreachable.title" = "无法连接 “%@”";
+"missing.unreachable.message" = "仓库 “%@” 所在的服务器现在连不上。";
+
+"quickActions.menu" = "快捷操作…";
+"quickActions.placeholder" = "快捷操作";
+"quickActions.noResults" = "无结果";
+"quickActions.objectHint" = "%@ ↩︎\n更多操作 ⇥";
+"quickActions.detail" = "%1$@ — %2$@";
+"quickActions.type.navigation" = "导航";
+"quickActions.type.branch" = "分支";
+"quickActions.type.worktree" = "工作树";
+"quickActions.type.remote" = "远端";
+"quickActions.type.submodule" = "子模块";
+"quickActions.type.remoteBranch" = "远端分支";
+"quickActions.type.tag" = "标签";
+"quickActions.type.stash" = "储藏";
+"quickActions.type.userProfile" = "身份档案";
+"quickActions.type.appearance" = "外观";
+"quickActions.type.theme" = "主题";
+"quickActions.type.file" = "文件";
+"quickActions.type.commit" = "提交";
+"quickActions.type.action" = "操作";
+"quickActions.showInApp" = "在 Spooky 中显示";
+"quickActions.revealWorktree" = "在 Finder 中显示工作树";
+"quickActions.openWorktreeInTerminal" = "在终端中打开工作树";
+"quickActions.showBranchHistory" = "显示分支历史";
+"quickActions.showRemoteBranchHistory" = "显示远端分支历史";
+"quickActions.showTagHistory" = "显示标签历史";
+"quickActions.checkoutRemoteBranch" = "检出远端分支";
+"quickActions.checkoutTag" = "检出标签";
+"quickActions.deleteRemoteBranch" = "删除远端分支";
+"quickActions.copyRemoteBranchName" = "复制远端分支名";
+"quickActions.copyTagName" = "复制标签名";
+"quickActions.revealInHistory" = "在历史中显示";
+"quickActions.mergeIntoHead" = "合并到 HEAD";
+"quickActions.rebaseHead" = "变基 HEAD";
+"quickActions.mergeParent" = "合并父分支的改动";
+"quickActions.rebaseOnParent" = "变基到父分支的改动上";
+"quickActions.publishBranch" = "发布分支";
+"quickActions.pushBranch" = "推送分支";
+"quickActions.fastForward" = "快进分支";
+"quickActions.updateBranch" = "更新分支";
+"quickActions.skipAutoArchive" = "自动归档时跳过";
+"quickActions.includeAutoArchive" = "参与自动归档";
+"quickActions.showCommit" = "显示提交视图";
+"quickActions.copyCommitHash" = "复制提交哈希";
+"quickActions.createTag" = "新建标签";
+"quickActions.editCommit" = "编辑提交";
+"quickActions.showFile" = "显示文件";
+"quickActions.showFileHistory" = "显示文件历史";
+"quickActions.showBlame" = "显示 Blame";
+"quickActions.openInEditor" = "用外部编辑器打开";
+"quickActions.openSubmodule" = "打开子模块";
+"quickActions.openWorktree" = "打开工作树";
+"quickActions.openWorktreeInNewWindow" = "在新窗口中打开工作树";
+"quickActions.showRemoteSettings" = "显示远端设置";
+"quickActions.setCommitter" = "设为提交人身份";
+"quickActions.setGlobalUser" = "设为全局用户";
+"quickActions.setGlobalUser.local" = "将把 user.name 与 user.email 写入这台 Mac 上你的全局 Git 配置。没有自己身份的仓库都用它提交。";
+"quickActions.setGlobalUser.remote" = "将把 user.name 与 user.email 写入服务器 “%@” 上你的全局 Git 配置。服务器上没有自己身份的仓库都用它提交。";
+"quickActions.applyTheme" = "应用主题";
+"quickActions.setAppearance" = "设置外观";
+
+/* 新建、克隆、扫描与目录浏览时目标机器上的路径与环境问题。 */
+"hostError.absolutePath" = "需要绝对路径";
+"hostError.absolutePath.help" = "请输入以 / 开头的完整路径。";
+"hostError.missingDirectory" = "找不到文件夹";
+"hostError.missingDirectory.help" = "请确认所选机器上有这个文件夹。";
+"hostError.notDirectory" = "不是文件夹";
+"hostError.notDirectory.help" = "这个路径指向一个文件，请改选文件夹。";
+"hostError.permission" = "无权访问文件夹";
+"hostError.permission.help" = "登录用户需要这个文件夹的读取与搜索权限。";
+"hostError.lfsUnavailable" = "Git LFS 不可用";
+"hostError.lfsUnavailable.help" = "请在执行克隆的机器上安装 Git LFS 并运行 “git lfs install”，或者不使用 LFS 克隆。";
+
+/* 克隆：对话框与目标的机器和目录、服务器目录浏览、克隆进度、最近克隆的气泡与工具栏 Clone 项。 */
+"clone.menu" = "克隆 Git 仓库…";
+"clone.title" = "克隆远端仓库";
+"clone.message" = "把远端 Git 仓库克隆到这台 Mac 或服务器上的新文件夹。";
+"clone.submit" = "克隆";
+"clone.url" = "远端地址：";
+"clone.to" = "克隆到：";
+"clone.destination" = "将克隆到 “%@”";
+"clone.options" = "选项";
+"clone.lfs" = "使用 LFS 克隆";
+"clone.submodules" = "初始化子模块";
+"clone.error.invalidURL" = "远端地址无效";
+"clone.error.exists" = "“%@” 已存在且不是空文件夹。";
+"clone.machine.local" = "这台 Mac";
+"clone.machine.other" = "其他服务器…";
+"clone.directory" = "文件夹：";
+"clone.directory.prompt" = "服务器上的绝对路径";
+"clone.browse" = "浏览…";
+"clone.progress.title" = "正在克隆 “%@”…";
+"clone.cancel" = "取消克隆";
+"clone.retry" = "重新开始";
+"clone.remove" = "移除";
+"clone.state.running" = "正在克隆";
+"clone.state.cancelled" = "已取消";
+"clone.state.finished" = "已完成";
+"clone.status.starting" = "正在开始…";
+"clone.status.count" = "%1$@：%2$ld";
+"clone.status.percent" = "%1$@：%2$ld%%（%3$ld/%4$ld）";
+"clone.phase.enumerating" = "列举对象";
+"clone.phase.counting" = "清点对象";
+"clone.phase.compressing" = "压缩对象";
+"clone.phase.receiving" = "接收对象";
+"clone.phase.resolving" = "处理差异";
+"clone.phase.checkingOut" = "更新文件";
+"clone.phase.filtering" = "过滤内容";
+"clone.recent.title" = "最近克隆的仓库";
+"clone.recent.clear" = "清除";
+"toolbar.clone" = "克隆";
+"bookmarks.dropZone.clone" = "克隆";
+"browse.title" = "选择 “%@” 上的文件夹";
+"browse.up" = "上一级文件夹";
+"browse.repository" = "Git 仓库";
+"browse.empty" = "没有文件夹";
+
+/* 在本机或服务器的目录里寻找仓库。 */
+"scan.menu" = "查找仓库…";
+"scan.title" = "查找仓库";
+"scan.message" = "在这台 Mac 或服务器上你选的文件夹里查找 Git 仓库，不会查找这个文件夹以外的位置。";
+"scan.add" = "添加仓库（%ld）";
+"scan.in" = "查找位置：";
+"scan.start" = "查找";
+"scan.stop" = "停止";
+"scan.selectAll" = "全选";
+"scan.searching" = "正在查找 Git 仓库…";
+"scan.found" = "找到 %ld 个仓库";
+
+/* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
+"link.invalid.title" = "无法打开这个链接";
+"link.invalid.message" = "Spooky 无法打开 “%@”。链接无效或不受支持。";
+"settings.github" = "打开来自 github.com 的仓库：";
+"settings.github.help" = "github.com 上 “Open with Desktop” 的链接由这个 App 打开。";
+
+/* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
+"repositorySettings.title" = "设置";
+"repositorySettings.general" = "通用";
+"repositorySettings.lfs" = "Git LFS";
+"repositorySettings.ignores" = "忽略";
+"repositorySettings.excludes" = "排除";
+"repositorySettings.lfs.patterns" = "跟踪规则";
+"repositorySettings.ignores.patterns" = "忽略规则";
+"repositorySettings.excludes.patterns" = "排除规则";
+"repositorySettings.openInEditor" = "在编辑器中打开";
+"repositorySettings.noPatterns" = "没有规则";
+"repositorySettings.name" = "名称";
+"repositorySettings.path" = "路径";
+"repositorySettings.issueTracking" = "Issue 追踪";
+"repositorySettings.issueTrackerURL" = "Issue 追踪地址";
+"repositorySettings.issueNumberPrefix" = "Issue 编号前缀";
+"repositorySettings.wrapping" = "折行";
+"repositorySettings.pageGuide" = "显示参考线";
+"repositorySettings.lineLimit" = "每行字数上限";
+"repositorySettings.lineLimit.invalid" = "请输入大于 0 的整数。";
+"repositorySettings.signing" = "签名";
+"repositorySettings.signCommits" = "签名提交";
+"repositorySettings.signingKey" = "签名密钥";
+"repositorySettings.allowedSigners" = "Allowed Signers 文件";
+"repositorySettings.write" = "修改仓库设置";
+"repositorySettings.edit.title" = "编辑%@";
+"repositorySettings.edit.message" = "这个值会写进这个仓库的本地 Git 配置。";
+
+/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+"menu.about" = "关于 Spooky";
+"about.credits" = "Spooky 是以 GNU 通用公共许可证 v3.0 发布的自由软件。";
+"menu.help" = "帮助";
+"help.help" = "Spooky 帮助";
+"help.whatsNew" = "新功能";
+"help.releaseNotes" = "发行说明";
+"help.support" = "支持";
+"help.diagnosticReport" = "生成诊断报告…";
+"help.diagnosticReport.file" = "Spooky 诊断报告.txt";
+"whatsNew.title" = "Spooky %@ 的新功能";
+"crash.issueTitle" = "Spooky 意外退出";
+"crash.title" = "Spooky 上次意外退出";
+"crash.message" = "要在 GitHub 上报告这个问题吗？浏览器会打开新问题页，附上崩溃的摘要。个人路径、邮箱与网络地址已经去掉，在你自己提交问题之前不会发送任何内容。";
+"crash.report" = "在 GitHub 上报告…";
+"crash.dontReport" = "不报告";
+"settings.crashReports" = "崩溃报告：";
+"settings.crashReports.always" = "总是发送崩溃报告";
+
+/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+"remote.environment.title" = "服务器设置了 Git 环境变量";
+"remote.environment.message" = "“%1$@” 的非交互 shell 设置了 %2$@。这些变量会改变 Spooky 在那里执行的每条 Git 命令查找仓库与读取配置的方式。如果 Git 表现异常，请从服务器的 shell 启动文件里去掉它们。";
+"untracked.hint" = "%ld 个未跟踪文件让刷新变慢。请为构建产物和依赖补充忽略规则，或加快服务器上的状态读取。";
+"untracked.speedUp" = "加快…";
+"untracked.speedUp.title" = "加快服务器上的状态读取";
+"untracked.speedUp.message" = "Spooky 可以在 “%@” 上的这个仓库里打开下面几项设置。只有在你确认后，它们才会写进服务器上这个仓库的本地配置。";
+"untracked.speedUp.apply" = "应用设置";
+"untracked.speedUp.cache" = "在两次状态读取之间缓存未跟踪文件。";
+"untracked.speedUp.monitor" = "让 Git 监听文件变化，不必每次扫描整个工作区。";
+"untracked.speedUp.graph" = "现在写出 commit-graph，并在获取时保持更新，加快历史读取。";

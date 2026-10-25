@@ -1,0 +1,19 @@
+<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
+IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
+--><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Spooky</title>
+        <item>
+            <title>0.11.0</title>
+            <link>https://github.com/rakuyoMo/Spooky/releases</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/rakuyoMo/Spooky/releases</sparkle:fullReleaseNotesLink>
+            <sparkle:version>6</sparkle:version>
+            <sparkle:shortVersionString>0.11.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/rakuyoMo/Spooky/releases/download/v0.11.0/Spooky-0.11.0.zip" length="100" type="application/octet-stream" sparkle:edSignature="bmV3"></enclosure>
+        </item>
+    </channel>
+</rss><!-- sparkle-signatures:
+edSignature: Z2VuZXJhdGVk
+length: 100
+-->

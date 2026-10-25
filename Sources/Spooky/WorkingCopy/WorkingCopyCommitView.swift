@@ -172,6 +172,11 @@ extension WorkingCopyCommitView {
         .overlay(RoundedRectangle(cornerRadius: 5).stroke(.separator))
     }
 
+    /// 正文每行的字数上限：仓库设置里有时用仓库的，否则用 Editor 设置页的。
+    private var effectiveBodyLineLimit: Int {
+        session.commitConfiguration?.bodyLineLimit ?? max(1, bodyLineLimit)
+    }
+
     /// 正文框连同底部的钉住与折行按钮，下沿与右下角可拖动；其下是提交选项与提交人。
     private var details: some View {
         VStack(spacing: 12) {
@@ -182,10 +187,10 @@ extension WorkingCopyCommitView {
                     placeholder: AppLocalization.text("working.body") + "\n\n" + AppLocalization.text("commit.quickAmendHint"),
                     isEditable: isEditable,
                     monospaced: hardWrap,
-                    characterLimit: hardWrap ? nil : max(1, bodyLineLimit),
-                    reformatLimit: max(1, bodyLineLimit),
-                    wrapColumn: hardWrap ? max(1, bodyLineLimit) : nil,
-                    showsGuide: showsGuide,
+                    characterLimit: hardWrap ? nil : effectiveBodyLineLimit,
+                    reformatLimit: effectiveBodyLineLimit,
+                    wrapColumn: hardWrap ? effectiveBodyLineLimit : nil,
+                    showsGuide: session.commitConfiguration?.showsBodyGuide ?? showsGuide,
                     focusRequest: bodyFocusRequest,
                     onFocusChange: { focusChanged(.body, focused: $0) },
                     onSubmit: { },

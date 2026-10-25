@@ -1,41 +1,43 @@
 import AppKit
-import SpookyKit
 import SwiftUI
 
 // MARK: - SettingsWindowController
 
-/// 设置窗口采用原生工具栏式页签，单例入口为 ⌘,。
+/// 设置窗口采用原生工具栏式页签，单例入口为 ⌘,；窗口标题随所选页签变化。
 @MainActor
 final class SettingsWindowController: NSWindowController {
     /// 页签选择变化时同步窗口标题。
     private var selectionObservation: NSKeyValueObservation?
 
-    /// 创建仅含本里程碑设置的窗口，外观继承系统。
+    /// 按 ``SettingsPage/all`` 的顺序建立页签，窗口先按第一页的大小显示。
     init() {
-        let tabs = NSTabViewController()
+        let tabs = SettingsTabViewController()
         tabs.tabStyle = .toolbar
+        tabs.transitionOptions = []
 
-        for (key, symbol, view) in [
-            ("settings.general", "gearshape", AnyView(GeneralSettingsView())),
-            ("settings.text", "character.cursor.ibeam", AnyView(TextSettingsView())),
-            ("settings.editor", "square.and.pencil", AnyView(EditorSettingsView())),
-            ("settings.themes", "paintbrush", AnyView(ThemesSettingsView())),
-            ("settings.profiles", "rectangle.stack.person.crop", AnyView(UserProfilesSettingsView())),
-        ] {
-            let controller = NSHostingController(rootView: view)
-            let tab = NSTabViewItem(viewController: controller)
-            tab.label = AppLocalization.text(key)
-            tab.image = NSImage(systemSymbolName: symbol, accessibilityDescription: tab.label)
+        for page in SettingsPage.all {
+            let content = NSHostingController(rootView: page.content())
+
+            // 页面内容的高度会变，如出现读写失败的说明；变化经页签控制器传给窗口。
+            content.sizingOptions = .preferredContentSize
+
+            let tab = NSTabViewItem(viewController: content)
+            tab.identifier = page.key
+            tab.label = AppLocalization.text(page.key)
+            tab.image = NSImage(systemSymbolName: page.symbol, accessibilityDescription: tab.label)
             tabs.addTabViewItem(tab)
         }
 
         let window = NSWindow(contentViewController: tabs)
-        window.title = AppLocalization.text("settings.title")
         window.styleMask = [.titled, .closable]
         window.toolbarStyle = .preference
         window.tabbingMode = .disallowed
         window.isReleasedWhenClosed = false
-        window.setContentSize(NSSize(width: 900, height: 450))
+
+        if let first = tabs.tabViewItems.first?.viewController {
+            window.setContentSize(first.view.fittingSize)
+        }
+
         window.center()
         super.init(window: window)
 
@@ -49,141 +51,91 @@ final class SettingsWindowController: NSWindowController {
 
     /// 设置窗口只由代码构建。
     required init?(coder _: NSCoder) { nil }
-}
 
-// MARK: - GeneralSettingsView
+    /// 打开设置窗口并切到指定的页，供其它界面直接跳到某一页，如身份菜单的 “Manage User Profiles…”。
+    ///
+    /// - Parameter page: 要显示的页。
+    static func show(_ page: SettingsPage) {
+        (NSApp.delegate as? SpookyApplicationController)?.showSettings()
 
-/// 通用设置立即生效，候选仅显示本机已安装的受支持终端。
-private struct GeneralSettingsView: View {
-    /// 偏好只保存终端 Bundle Identifier。
-    @AppStorage("terminalApplication")
-    private var terminal = TerminalApplication.terminal.rawValue
+        let controller = NSApp.windows
+            .lazy
+            .compactMap { $0.windowController as? Self }
+            .first
 
-    /// 单次补丁的警告阈值，单位为 1000 字节。
-    @AppStorage("diffWarningKilobytes")
-    private var diffWarning = WorkingCopyOperations.defaultWarningKilobytes
+        controller?.select(page)
+    }
 
-    /// 历史每页条数固定为四个档位。
-    @AppStorage("historyPageSize")
-    private var historyPageSize = 100
+    /// 切到指定的页；页签已经是它时不动。
+    ///
+    /// - Parameter page: 要显示的页。
+    func select(_ page: SettingsPage) {
+        let tabs = window?.contentViewController as? NSTabViewController
+        let index = tabs?.tabViewItems.firstIndex { $0.identifier as? String == page.key }
 
-    /// 创建和发布分支时实时规范引用名。
-    @AppStorage("cleanRefNames")
-    private var cleanRefNames = true
-
-    /// 检出、拉取与合并被本地改动挡住时询问是否先储藏。
-    @AppStorage("offerAutoStash")
-    private var offerAutoStash = true
-
-    /// 自动归档已完全合并或陈旧的分支，与侧边栏视图设置同一个偏好。
-    @AppStorage(SidebarPreferences.autoArchiveKey)
-    private var autoArchiveBranches = SidebarPreferences.defaultFlag(SidebarPreferences.autoArchiveKey)
-
-    /// General 表单按功能分组，组间以分隔线隔开；控件列固定为 278 pt。
-    var body: some View {
-        Grid(horizontalSpacing: 8, verticalSpacing: 8) {
-            terminalRow
-
-            Divider()
-                .gridCellUnsizedAxes(.horizontal)
-
-            operationRows
-
-            Divider()
-                .gridCellUnsizedAxes(.horizontal)
-
-            historyRows
-
-            Divider()
-                .gridCellUnsizedAxes(.horizontal)
-
-            WorkingCopySettingsRows()
+        guard let tabs, let index, tabs.selectedTabViewItemIndex != index else {
+            return
         }
-        .padding(40)
-        .frame(width: 900, height: 480, alignment: .top)
+
+        tabs.selectedTabViewItemIndex = index
     }
 }
 
-// MARK: - Private
+// MARK: - SettingsTabViewController
 
-extension GeneralSettingsView {
-    /// 操作相关的设置：自动获取的间隔、被本地改动挡住时询问储藏、输入时规范引用名、自动归档分支。
-    @ViewBuilder
-    private var operationRows: some View {
-        AutoFetchSettingsRow()
+/// 切页时先隐藏内容，窗口以 0.2 s 的动画改成新页的大小并保持左上角不动，动画结束再显示新页。
+private final class SettingsTabViewController: NSTabViewController {
+    /// 在窗口改变大小的动画里换页；还没有窗口时直接换页。
+    override func transition(
+        from fromViewController: NSViewController,
+        to toViewController: NSViewController,
+        options: NSViewController.TransitionOptions = [],
+        completionHandler completion: (@Sendable () -> Void)? = nil
+    ) {
+        guard let window = view.window else {
+            super.transition(from: fromViewController, to: toViewController, options: options, completionHandler: completion)
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-            Toggle(AppLocalization.text("stash.offerAutoStash"), isOn: $offerAutoStash)
-                .frame(width: 278, alignment: .leading)
+            return
         }
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-            Toggle(AppLocalization.text("branch.cleanNames"), isOn: $cleanRefNames)
-                .frame(width: 278, alignment: .leading)
-        }
+        view.isHidden = true
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-            Toggle(AppLocalization.text("settings.autoArchive"), isOn: $autoArchiveBranches)
-                .frame(width: 278, alignment: .leading)
-        }
-    }
-
-    /// 历史每页条数、提交日期格式、合并提交的 Diff 方式与大 Diff 的警告阈值。
-    @ViewBuilder
-    private var historyRows: some View {
-        GridRow {
-            Text(AppLocalization.text("history.pageSize"))
-            Picker("", selection: $historyPageSize) {
-                ForEach([100, 200, 500, 1000], id: \.self) {
-                    Text(AppLocalization.text("history.commitCount", $0)).tag($0)
-                }
-            }
-            .labelsHidden()
-            .frame(width: 278)
-            .accessibilityLabel(AppLocalization.text("history.pageSize"))
-        }
-
-        CommitDateFormatRow()
-
-        MergeDiffModeRow()
-
-        GridRow {
-            Text(AppLocalization.text("working.diffThreshold"))
-                .gridColumnAlignment(.trailing)
-            TextField("", value: $diffWarning, format: .number.grouping(.never))
-                .frame(width: 100, alignment: .leading)
-                .accessibilityLabel(AppLocalization.text("working.diffThreshold"))
-                .onChange(of: diffWarning) { diffWarning = max(0, min(diffWarning, 268_435)) }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            window.animator().setFrame(frame(of: window, fitting: toViewController.view.fittingSize), display: true)
+            super.transition(from: fromViewController, to: toViewController, options: options, completionHandler: completion)
+        } completionHandler: { [weak self] in
+            MainActor.assumeIsolated { self?.view.isHidden = false }
         }
     }
 
-    /// 终端选择行，每个候选显示应用图标与名称。
-    private var terminalRow: some View {
-        GridRow {
-            Text(AppLocalization.text("settings.terminal"))
-                .gridColumnAlignment(.trailing)
+    /// 当前页的内容大小变化时，窗口以同样的动画跟着改。
+    override func preferredContentSizeDidChange(for viewController: NSViewController) {
+        super.preferredContentSizeDidChange(for: viewController)
 
-            Picker(AppLocalization.text("settings.terminal"), selection: $terminal) {
-                ForEach(TerminalApplication.allCases.filter { $0.applicationURL != nil }) { application in
-                    HStack(spacing: 8) {
-                        if let url = application.applicationURL {
-                            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                                .resizable()
-                                .frame(width: 16, height: 16)
-                                .accessibilityHidden(true)
-                        }
+        let selected = tabViewItems.indices.contains(selectedTabViewItemIndex)
+            ? tabViewItems[selectedTabViewItemIndex].viewController
+            : nil
 
-                        Text(application.displayName)
-                    }
-                    .tag(application.rawValue)
-                }
-            }
-            .labelsHidden()
-            .frame(width: 278)
-            .accessibilityIdentifier("terminal-application")
+        guard let window = view.window, selected === viewController else {
+            return
         }
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            window.animator().setFrame(frame(of: window, fitting: viewController.preferredContentSize), display: true)
+        }
+    }
+
+    /// 内容大小换算成窗口外框；原点按窗口原来的上边缘倒推，左上角保持不动。
+    private func frame(of window: NSWindow, fitting content: NSSize) -> NSRect {
+        let size = window.frameRect(forContentRect: NSRect(origin: .zero, size: content)).size
+
+        return NSRect(
+            x: window.frame.minX,
+            y: window.frame.maxY - size.height,
+            width: size.width,
+            height: size.height
+        )
     }
 }

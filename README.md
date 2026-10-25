@@ -21,7 +21,13 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 ## Features
 
-- **Local and server repositories**: both kinds share the same interface, and recent repositories appear in one list. Server repositories show the host in their title, recent entry, and copied path
+- **Local and server repositories**: both kinds share the same interface. Server repositories show the host in their title, bookmark, and copied path
+
+- **Repository bookmarks**: organize local and server repositories in folders, sort them by hand or by name, and rename them. See each repository's location, current branch, last commit, committer identity, description, and remotes, and edit the description and identity. Repositories that can't be found are marked instead of removed
+
+- **Create, clone, and find repositories**: create repositories on your Mac or on a server, and clone in the background with LFS and submodule options while the bookmark shows the progress. Search a folder on your Mac or on a server for existing repositories; server searches run on the server, and server folders can be typed in or browsed
+
+- **Windows and navigation**: tabs, window restoration, a quick start window, back and forward between views, Quick Actions to find views, branches, tags, commits, files, stashes, and more and act on them, and a customizable toolbar
 
 - **Connection checks and recovery**: before adding a server repository, Spooky checks the connection, the Git version, and the server environment. If the connection drops, the last snapshot stays on screen while Spooky reconnects in the background. Writes are disabled until the connection recovers
 
@@ -65,6 +71,14 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Open in Terminal**: supports Terminal, iTerm, Warp, Ghostty, WezTerm, Prompt, and Otty. For a server repository, the terminal connects over SSH and opens the remote path
 
+- **External tools**: compare and merge with external diff and merge tools, and open files with other apps. Server files are copied to your Mac for these tools, and merge results and edited files are written back only after Spooky checks that the server's version hasn't changed. VS Code opens server files directly over Remote - SSH
+
+- **Links**: `spooky://` links open a repository, a view, a branch, or a commit, or start a clone, for local and server repositories alike. The “Open with Desktop” links on github.com can open in Spooky
+
+- **Settings**: appearance, global Git identity and signing, the Git program, external tools, Gerrit pushes, issue tracker links, the SSH agent, and environment variables. Repository settings cover the description, issue tracking, committer identity, line wrapping, signing, LFS tracking patterns, ignores, and excludes
+
+- **Updates and diagnostics**: Spooky checks for signed updates on the stable, beta, or development channel. Help can export a diagnostic report with personal details removed, and after a crash Spooky can open a pre-filled GitHub issue that you submit yourself
+
 - **Themes**: Default and Default (Dark) are saved as regular themes that you can edit, rename, or delete, and are restored the next time Spooky starts if they're missing or damaged. Create your own themes for diffs and file contents, import and export them by drag and drop, and choose one for the light appearance and one for the dark appearance
 
 - **Eight languages**: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish. The app uses your system language, or English if that language isn't supported
@@ -73,7 +87,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - macOS 26 or later
 - Git `2.41.0` or later on both your Mac and your servers, as Spooky uses `git fetch --porcelain`
-  - Local repositories use `/usr/bin/git`. If it's too old, Spooky asks you to update Xcode or the Command Line Tools
+  - Local repositories use `/usr/bin/git` unless you choose another Git program in Settings. If it's too old, Spooky asks you to update Xcode or the Command Line Tools
   - Server repositories use the Git on that host
 - Servers also need:
   - OpenSSH with reverse Unix socket forwarding
@@ -105,7 +119,7 @@ You can also build a development app that opens from Finder:
 open .build/Spooky.app
 ```
 
-The release app uses a release build, includes the app icon, and is ad-hoc signed:
+The release app uses a release build, includes the app icon and the update framework, and is ad-hoc signed:
 
 ```sh
 # Build build/Spooky.app
@@ -158,13 +172,15 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
 
 On your Mac:
 
-- Settings, user profiles, and recent repositories are stored in the preferences domain `com.rakuyo.spooky`
+- Settings, user profiles, and repository bookmarks are stored in the preferences domain `com.rakuyo.spooky`
 - Themes, including Default and Default (Dark), are stored in `~/Library/Application Support/Spooky/Themes`, one `.spookytheme` file per theme
 - Credentials saved to the Keychain use the service name `com.rakuyo.spooky.remote.<host alias>`
 - Connections and callbacks use private `/tmp/spooky-*` temporary directories, which are removed when the session closes. Signature checks in local repositories use one of these directories as well, removed as soon as the check finishes
 - Author pictures are requested from Gravatar with a SHA-256 hash of each author's email address, and are kept in memory only while Spooky is running
 - File copies for Quick Look and other apps are kept in private `spooky-files-*` temporary directories, which are removed when the repository closes
 - Opening a server repository in Warp writes `Spooky-*.yaml` to `~/.warp/launch_configurations/`, and opening it in Prompt uses a temporary `.command` file. When Spooky quits, it removes only the files it created
+- At launch, Spooky reads its own crash reports in `~/Library/Logs/DiagnosticReports/` to offer a GitHub issue. Nothing is uploaded automatically
+- Updates are checked against `appcast.xml` on GitHub Releases, and downloaded updates are verified with an EdDSA signature before they're installed
 
 On the server:
 
@@ -174,6 +190,8 @@ On the server:
 In your repositories:
 
 - Pins, archives, parent branches, and branch review marks are stored in the repository's own Git configuration, as `branch.<name>.spooky-*`. They move with a branch when it's renamed and are removed when it's deleted
+- Repository settings are written to the repository's own Git configuration. Line wrapping and issue tracking use the keys `spooky.commitbodylimit`, `spooky.commitshowsguide`, `spooky.issuetrackertemplate`, and `spooky.issuenumberprefix`
+- When a server repository has many untracked files, Spooky can turn on `core.untrackedCache`, `core.fsmonitor`, and the commit-graph in that repository on the server, only after you confirm
 
 ## Development
 
@@ -228,6 +246,9 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteBranchesReviewTests
 
 # Reflog, undo, and redo
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReflogUndoTests
+
+# Listing folders, creating, searching, and cloning on the server
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHostOperationsTests
 ```
 
 Each run creates and removes its own subdirectory there, and doesn't change the SSH configuration, `known_hosts`, or global Git configuration on either machine.
@@ -251,4 +272,5 @@ Spooky is licensed under the [GNU General Public License v3.0](LICENSE).
 
 ### Third-party software
 
+- [Sparkle](https://sparkle-project.org) 2.10.0, used for updates. Licensed under the MIT License; the license ships with the app as `Contents/Resources/Sparkle-LICENSE.txt`
 - [highlight.js](https://highlightjs.org) 11.12.0, used for syntax coloring. Copyright (c) 2006, Ivan Sagalaev. Licensed under the BSD 3-Clause License; the full license is in [`Sources/Spooky/HighlightJS/LICENSE`](Sources/Spooky/HighlightJS/LICENSE) and ships with the app

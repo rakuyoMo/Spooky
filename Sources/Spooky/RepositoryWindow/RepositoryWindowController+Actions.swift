@@ -201,10 +201,12 @@ extension RepositoryWindowController {
             ?? historyViewSettingsAvailability(of: item)
             ?? historyDetailsAvailability(of: item, repositoryView: repositoryView)
             ?? branchesReviewAvailability(of: item)
+            ?? navigationAvailability(of: item)
 
         let contents: Bool? = stashAvailability(of: item.action, repositoryView: repositoryView)
             ?? diffAvailability(of: item)
             ?? workingCopyFileAvailability(of: item)
+            ?? externalToolAvailability(of: item.action, repositoryView: repositoryView)
 
         // 组外的窗口级动作在下方判断
         if let enabled = references ?? views ?? contents {
@@ -238,6 +240,10 @@ extension RepositoryWindowController {
 
         case #selector(focusSearch):
             return repositoryView && session.activeView.supportsSearch
+
+        // 快捷操作只在窗口显示仓库时可用
+        case #selector(showQuickActions):
+            return repositoryView
 
         default:
             return true

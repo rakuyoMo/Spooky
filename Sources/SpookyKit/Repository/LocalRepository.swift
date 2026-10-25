@@ -69,6 +69,9 @@ public enum RepositoryOpenError: Error, Sendable {
     /// 本机工作区必须由绝对路径标识。
     case requiresLocalAbsolutePath
 
+    /// 所选的本机 Git 程序不存在或不可执行。
+    case gitUnavailable(path: String)
+
     /// Git 的版本输出无法解析。
     case invalidGitVersion(GitCommandResult)
 
@@ -80,7 +83,7 @@ public enum RepositoryOpenError: Error, Sendable {
 }
 
 extension GitRunner {
-    /// 先校验系统 Git 版本，再识别工作区；子目录和符号链接统一到同一根目录。
+    /// 先校验所选 Git 程序的版本，再识别工作区；子目录和符号链接统一到同一根目录。
     public func openLocalRepository() async throws -> LocalRepository {
         let version = try await versionResult()
 

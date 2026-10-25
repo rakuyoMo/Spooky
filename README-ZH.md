@@ -21,7 +21,13 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 ## 功能
 
-- **本机与服务器仓库**：两种仓库共用同一套界面，最近记录混合显示。服务器仓库的标题、记录和复制的路径都带主机前缀
+- **本机与服务器仓库**：两种仓库共用同一套界面。服务器仓库的标题、书签和复制的路径都带主机前缀
+
+- **仓库书签**：用文件夹整理本机与服务器仓库，可以手动或按名称排序、改名。查看每个仓库的位置、当前分支、最后一次提交、提交人身份、描述和远端，并修改描述与身份。找不到的仓库只做标记，不会被移除
+
+- **新建、克隆与查找仓库**：在本机或服务器上新建仓库；在后台克隆，可以选择 LFS 与子模块，书签上显示进度。在本机或服务器的文件夹里查找已有的仓库，服务器上的查找在服务器上进行；服务器上的文件夹可以手填，也可以浏览选择
+
+- **窗口与导航**：标签页、窗口恢复、快速启动窗口、在视图之间后退与前进，用快捷操作查找视图、分支、标签、提交、文件、储藏等并直接执行动作，工具栏可以自定义
 
 - **连接检查与断线恢复**：添加服务器仓库时，先检查连接、Git 版本和运行环境。断线后保留上次读取的状态并在后台重连，恢复前禁止写入
 
@@ -65,6 +71,14 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **在终端中打开**：支持 Terminal、iTerm、Warp、Ghostty、WezTerm、Prompt 和 Otty。服务器仓库会在终端里经 SSH 进入远端路径
 
+- **外部工具**：用外部的比较与合并工具查看改动、解决冲突，用其它程序打开文件。服务器上的文件先复制到本机交给这些工具，合并结果与编辑过的文件要先核对服务器上的版本没有变化才会写回。VS Code 经 Remote - SSH 直接打开服务器上的文件
+
+- **链接**：`spooky://` 链接可以打开仓库、视图、分支或提交，或发起克隆，本机与服务器仓库都适用。github.com 上 “Open with Desktop” 的链接可以交给 Spooky 打开
+
+- **设置**：外观、全局的 Git 身份与签名、Git 程序、外部工具、Gerrit 推送、Issue 追踪链接、SSH agent 与环境变量。仓库设置包括描述、Issue 追踪、提交人身份、折行、签名、LFS 跟踪规则、忽略与排除规则
+
+- **更新与诊断**：Spooky 按稳定、测试或开发通道检查签名的更新。帮助菜单可以导出去掉了个人信息的诊断报告；崩溃之后，Spooky 可以打开预填好的 GitHub 问题页，由你自己决定是否提交
+
 - **主题**：Default 与 Default (Dark) 存为普通的主题文件，可以编辑、改名或删除；文件缺少或损坏时，下次启动 Spooky 会重新写入。可以新建自己的 Diff 与文件内容主题，经拖放导入和导出，并为浅色、深色外观各选一套
 
 - **支持八种语言**：英文、简体中文、繁体中文、日文、韩文、德文、法文和西班牙文，自动跟随系统语言。其它语言环境下显示英文
@@ -73,7 +87,7 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - macOS 26 或更高版本
 - 本机和服务器上的 Git 都需要 `2.41.0` 或更高版本，这个要求来自 Spooky 使用的 `git fetch --porcelain`
-  - 本机仓库使用 `/usr/bin/git`，版本不足时，Spooky 会提示更新 Xcode 或命令行工具
+  - 本机仓库使用 `/usr/bin/git`，也可以在设置里换成别的 Git 程序；版本不足时，Spooky 会提示更新 Xcode 或命令行工具
   - 服务器仓库使用该主机上的 Git
 - 服务器还需要：
   - 支持反向 Unix socket 转发的 OpenSSH
@@ -105,7 +119,7 @@ swift run Spooky
 open .build/Spooky.app
 ```
 
-发布版 App 使用 release 构建，带应用图标，并做 ad-hoc 签名：
+发布版 App 使用 release 构建，带应用图标与更新框架，并做 ad-hoc 签名：
 
 ```sh
 # 生成 build/Spooky.app
@@ -158,13 +172,15 @@ open .build/Spooky.app
 
 本机：
 
-- 设置、身份档案和最近记录保存在偏好设置域 `com.rakuyo.spooky`
+- 设置、身份档案和仓库书签保存在偏好设置域 `com.rakuyo.spooky`
 - 主题（包括 Default 与 Default (Dark)）保存在 `~/Library/Application Support/Spooky/Themes`，一个主题一个 `.spookytheme` 文件
 - 存入钥匙串的凭据，服务名为 `com.rakuyo.spooky.remote.<主机别名>`
 - 连接和回调使用私有的 `/tmp/spooky-*` 临时目录，关闭会话后清理。本机仓库校验签名时同样使用这样一个目录，校验结束即删除
 - 作者头像以作者邮箱的 SHA-256 哈希向 Gravatar 请求，只在 Spooky 运行期间保存在内存里
 - 交给 Quick Look 和其它程序的文件副本放在私有的 `spooky-files-*` 临时目录，关闭仓库后清理
 - 用 Warp 打开服务器仓库时，会在 `~/.warp/launch_configurations/` 写入 `Spooky-*.yaml`；用 Prompt 打开时使用临时的 `.command` 文件。退出 Spooky 时只清理它自己创建的这些文件
+- 启动时读取 `~/Library/Logs/DiagnosticReports/` 里 Spooky 自己的崩溃报告，用来询问是否在 GitHub 上报告；不会自动上传任何内容
+- 更新从 GitHub Releases 上的 `appcast.xml` 检查，下载的更新先校验 EdDSA 签名再安装
 
 服务器：
 
@@ -174,6 +190,8 @@ open .build/Spooky.app
 仓库里：
 
 - 分支的置顶、归档、父分支与分支整理标记保存在仓库自己的 Git 配置里，键为 `branch.<名称>.spooky-*`；分支改名时随之移动，删除分支时一并清除
+- 仓库设置写进仓库自己的 Git 配置；折行与 Issue 追踪使用键 `spooky.commitbodylimit`、`spooky.commitshowsguide`、`spooky.issuetrackertemplate` 与 `spooky.issuenumberprefix`
+- 服务器仓库的未跟踪文件很多时，Spooky 可以在服务器上的这个仓库里打开 `core.untrackedCache`、`core.fsmonitor` 与 commit-graph，只在你确认后进行
 
 ## 开发
 
@@ -228,6 +246,9 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteBranchesReviewTests
 
 # Reflog、撤销与重做
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReflogUndoTests
+
+# 服务器上的列目录、新建、查找与克隆
+SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHostOperationsTests
 ```
 
 每次运行只在这个目录下新建并清理独立的子目录，不修改双方的 SSH 配置、`known_hosts` 或全局 Git 配置。
@@ -251,4 +272,5 @@ Spooky 以 [GNU General Public License v3.0](LICENSE) 许可证发布。
 
 ### 第三方软件
 
+- [Sparkle](https://sparkle-project.org) 2.10.0，用于更新，以 MIT 许可证发布；许可证随 App 附在 `Contents/Resources/Sparkle-LICENSE.txt`
 - [highlight.js](https://highlightjs.org) 11.12.0，用于语法着色。Copyright (c) 2006, Ivan Sagalaev，以 BSD 3-Clause 许可证发布；许可证全文见 [`Sources/Spooky/HighlightJS/LICENSE`](Sources/Spooky/HighlightJS/LICENSE)，并随 App 一同分发

@@ -3,6 +3,8 @@ import CryptoKit
 import Security
 import SpookyKit
 
+// MARK: - RemoteCallbackPresenter
+
 /// 在 A 上串行呈现远端凭据与编辑器请求，取消或超时立即结束输入。
 @MainActor
 final class RemoteCallbackPresenter {
@@ -169,5 +171,18 @@ final class RemoteCallbackPresenter {
         if result == errSecItemNotFound {
             SecItemAdd(query.merging(attributes) { _, new in new } as CFDictionary, nil)
         }
+    }
+}
+
+// MARK: - Host Connections
+
+extension RemoteConnection {
+    /// 新建、克隆、扫描与目录浏览用的主机连接：凭据与口令经界面询问，处理器在第一次连接前装上。
+    ///
+    /// - Parameter alias: `~/.ssh/config` 里的主机别名。
+    static func presentingHost(_ alias: String) async -> RemoteConnection {
+        let connection = RemoteConnection.host(alias)
+        await connection.setCallbackHandler { await RemoteCallbackPresenter.shared.respond(to: $0) }
+        return connection
     }
 }

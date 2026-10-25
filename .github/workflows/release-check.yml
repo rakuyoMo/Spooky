@@ -1,0 +1,49 @@
+# 标题以 `release:` 开头的 PR，合并前用发布检查脚本核对标题、版本号、构建号、更新说明与远端标签
+# PR 改名为 release PR 时同样检查，不必等到合并后发布才暴露
+
+name: 发布检查
+
+on:
+  pull_request:
+    branches:
+      - main
+
+    # 默认的触发类型不含 edited：已通过 CI 的 PR 只改标题、不推新提交时，也要检查
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+
+permissions:
+  contents: read
+
+# 同一 PR 的新推送与改标题取消旧运行
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: 发布检查
+
+    # 与 release.yml 一样按标题前缀识别 release PR，`startsWith` 不区分大小写
+    if: startsWith(github.event.pull_request.title, 'release:')
+
+    # 读 Info.plist 要用 macOS 自带的 PlistBuddy
+    runs-on: macos-26
+
+    # PR 标题由用户填写，只经环境变量交给脚本，不直接展开进 shell
+    env:
+      PR_TITLE: ${{ github.event.pull_request.title }}
+
+    steps:
+      # 检出的是 PR 与 main 的试合并提交，第一父提交是合并前的 main
+      - name: 检出代码
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: 发布检查
+        run: ./scripts/check-release.sh --title "$PR_TITLE" --base HEAD^

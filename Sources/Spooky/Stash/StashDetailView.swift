@@ -142,7 +142,7 @@ extension StashDetailView {
         }
     }
 
-    /// 单个文件的折叠组，展开时才读取 Diff；文件行可以拖到工作区，只应用这个文件。
+    /// 单个文件的折叠组，展开时才读取 Diff；文件行可以拖到工作区，只应用这个文件；右键用比较工具比较它与储藏的基准。
     private func fileSection(_ change: StashFileChange, in stash: StashEntry) -> some View {
         let stashes = session.stashes
 
@@ -163,6 +163,17 @@ extension StashDetailView {
         } label: {
             StashFileLabel(change: change)
                 .frame(height: 30)
+                .contextMenu {
+                    Button(
+                        AppLocalization.text(
+                            "externalTool.openDiffAt",
+                            RepositorySession.fileName(change.file.path),
+                            String(stash.id.prefix(8))
+                        )
+                    ) {
+                        session.openDiffTool(for: stash, changes: [change])
+                    }
+                }
                 .onDrag { dragProvider(change, in: stash) }
         }
         .padding(.horizontal, 8)

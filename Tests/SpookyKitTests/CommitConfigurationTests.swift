@@ -50,6 +50,21 @@ struct CommitConfigurationTests {
         #expect(string.commentPrefix == "//")
     }
 
+    /// 仓库设置的正文折行覆盖 Editor 设置页的值：字数上限只认正整数，参考线按 Git 的布尔写法。
+    @Test("仓库设置的正文折行")
+    func bodyWrapping() throws {
+        let configured = try CommitConfiguration.parse(
+            Data("spooky.commitbodylimit\n80\0spooky.commitshowsguide\nno\0".utf8),
+            hasCommitHooks: false
+        )
+        #expect(configured.bodyLineLimit == 80)
+        #expect(configured.showsBodyGuide == Optional(false))
+
+        let invalid = try CommitConfiguration.parse(Data("spooky.commitbodylimit\n0\0".utf8), hasCommitHooks: false)
+        #expect(invalid.bodyLineLimit == nil)
+        #expect(invalid.showsBodyGuide == nil)
+    }
+
     /// 截断或错位的输出不能被当成 “未配置签名”。
     @Test("格式错误的配置输出被拒绝")
     func rejectsMalformedOutput() {

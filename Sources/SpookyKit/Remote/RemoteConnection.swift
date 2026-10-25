@@ -5,64 +5,6 @@ import Subprocess
 import Synchronization
 import System
 
-// MARK: - RemoteConnectionState
-
-/// 仓库的 SSH 连接状态，断线不清空上次成功的工作区快照。
-public enum RemoteConnectionState: String, Sendable, CaseIterable {
-    /// 正在完成首次体检与部署。
-    case connecting
-
-    /// 主连接和回调通道可用。
-    case connected
-
-    /// 正在重新建立主连接。
-    case reconnecting
-
-    /// 当前不可用，保留诊断供重试。
-    case unavailable
-}
-
-// MARK: - RemoteRecoverySnapshot
-
-/// 写操作中断后重新读取的仓库事实，不推测原命令是否成功。
-public struct RemoteRecoverySnapshot: Sendable {
-    /// 当前分支及工作区的完整状态。
-    public let status: WorkingCopyStatus
-
-    /// 外部进程是否仍持有暂存区锁。
-    public let indexLocked: Bool
-
-    /// 是否有合并尚未结束。
-    public let merging: Bool
-
-    /// 是否有变基尚未结束。
-    public let rebasing: Bool
-
-    /// 完成核对的时间，界面只采用晚于写入中断的核对结果。
-    public let checkedAt: Date
-
-    /// 远端跟踪分支的完整引用名与提交，用来核对获取与推送是否已经改动它们。
-    public var remoteReferences: [String: String] = [:]
-
-    /// 解析 `for-each-ref --format=%(refname)%00%(objectname)` 的输出：每行一个引用名、NUL、对象标识。
-    static func parseReferences(_ data: Data) throws -> [String: String] {
-        var references: [String: String] = [:]
-
-        for line in data.split(separator: 10) {
-            let fields = line.split(separator: 0, omittingEmptySubsequences: false)
-            let object = fields.count == 2 ? String(decoding: fields[1], as: UTF8.self) : ""
-
-            guard fields.count == 2, !fields[0].isEmpty, GitObjectID.isValid(object) else {
-                throw RepositoryReadError.malformedOutput("for-each-ref")
-            }
-
-            references[String(decoding: fields[0], as: UTF8.self)] = object
-        }
-
-        return references
-    }
-}
-
 // MARK: - RemoteConnection
 
 /// 每个服务器工作区的专属主连接、体检、回调与远端进程生命周期。
@@ -88,6 +30,9 @@ public actor RemoteConnection {
     /// 用户指定的绝对路径，体检成功后使用规范根路径。
     public nonisolated let requestedPath: String
 
+    /// 为 true 时连接整台主机而不是某个工作区：新建、克隆、扫描与目录浏览在仓库存在之前使用。
+    public nonisolated let isHostScoped: Bool
+
     /// 当前连接状态。
     public private(set) var state = RemoteConnectionState.unavailable
 
@@ -100,6 +45,9 @@ public actor RemoteConnection {
     /// 写操作断线后取得的核对结果。
     public private(set) var recovery: RemoteRecoverySnapshot? = nil
 
+    /// 最近一次体检读到的 B 端环境，体检失败时同样保留，供界面给出修复方向。
+    public internal(set) var environment: RemoteHostEnvironment? = nil
+
     /// 同一主机的每条连接使用独立控制目录。
     private var localDirectory: URL? = nil
 
@@ -107,7 +55,7 @@ public actor RemoteConnection {
     private var remoteDirectory: String? = nil
 
     /// 已原子部署的版本化包装器。
-    private var wrapper: String? = nil
+    private(set) var wrapper: String? = nil
 
     /// 从子目录打开时复用已登记的工作区根会话。
     private var canonical: RemoteConnection? = nil
@@ -119,7 +67,7 @@ public actor RemoteConnection {
     private var monitor: Task<Void, Never>? = nil
 
     /// 合并同时发起的连接请求。
-    private var connecting: Task<RemoteRepository, Error>? = nil
+    private var connecting: Task<Void, Error>? = nil
 
     /// 关闭流程合并执行，重新打开必须等待旧会话清理完毕。
     private var closing: Task<Void, Never>? = nil
@@ -128,7 +76,7 @@ public actor RemoteConnection {
     private var observers: [UUID: AsyncStream<RemoteConnectionState>.Continuation] = [:]
 
     /// 写操作断线或取消未确认时阻止继续写入。
-    private var requiresReconciliation = false
+    var requiresReconciliation = false
 
     /// 最近一条命令结束的单调时间，心跳不延长空闲期限。
     private var lastCommand = ContinuousClock.now
@@ -137,15 +85,23 @@ public actor RemoteConnection {
     private var activeChannels = 0
 
     /// 系统 SSH 参数与隔离测试选项。
-    private let configuration: SSHConfiguration
+    let configuration: SSHConfiguration
 
     /// 应用提供的凭据及编辑器交互入口。
     private var callbackHandler: RemoteCallbackHandler? = nil
 
     /// 创建会话不产生网络访问，首次 open 或 execute 才建立连接。
-    init(host: String, path: String, configuration: SSHConfiguration = SSHConfiguration()) {
+    ///
+    /// - Parameter hostScoped: 是否连接整台主机；主机连接不检查工作区，`path` 不使用。
+    init(
+        host: String,
+        path: String,
+        hostScoped: Bool = false,
+        configuration: SSHConfiguration = SSHConfiguration()
+    ) {
         self.host = host
         requestedPath = path
+        isHostScoped = hostScoped
         self.configuration = configuration
     }
 
@@ -164,6 +120,9 @@ public actor RemoteConnection {
         }
 
         for connection in existing { await connection.close() }
+
+        // 主机连接另行登记，同样只关闭自己创建的
+        await closeHosts()
     }
 
     /// 为现有 GitRunner API 提供按仓库共享的远端执行服务。
@@ -198,22 +157,41 @@ public actor RemoteConnection {
 
     /// 按规定顺序完成 SSH、Git、路径、工作区与状态格式检查。
     public func open() async throws -> RemoteRepository {
+        try await connect()
+
+        // 从子目录打开时，规范会话的仓库身份在共享会话时已经记下
+        guard let repository else { throw RemoteConnectionError(.unavailable) }
+        return repository
+    }
+
+    /// 建立或复用主连接：工作区连接按顺序体检后部署包装器，主机连接只体检 Git 与 B 端环境。
+    func connect() async throws {
         try Task.checkCancellation()
-        if let canonical { return try await canonical.open() }
+
+        if let canonical {
+            try await canonical.connect()
+            return
+        }
+
         if let closing { await closing.value }
-        if state == .connected, let repository { return repository }
-        if let connecting { return try await connecting.value }
+        if state == .connected, isHostScoped || repository != nil { return }
+
+        if let connecting {
+            try await connecting.value
+            return
+        }
+
         try validateLocation()
-        updateState(repository == nil ? .connecting : .reconnecting)
+        let established = isHostScoped ? environment != nil : repository != nil
+        updateState(established ? .reconnecting : .connecting)
 
         let task = Task { try await self.establish() }
         connecting = task
 
         return try await withTaskCancellationHandler {
             do {
-                let repository = try await task.value
+                try await task.value
                 connecting = nil
-                return repository
             } catch {
                 connecting = nil
                 if let closing { await closing.value }
@@ -483,7 +461,9 @@ extension RemoteConnection {
                 executable: command.executable,
                 processArguments: command.arguments,
                 arguments: ["sftp"],
-                environment: .inherit.updating(["LC_ALL": "en_US.UTF-8"]),
+                environment: .inherit
+                    .updating(LocalExecutionSettings.current.sshOverrides)
+                    .updating(["LC_ALL": "en_US.UTF-8"]),
                 input: input
             )
         } catch {
@@ -518,13 +498,16 @@ extension RemoteConnection {
             !host.utf8.contains(0)
         else { throw RemoteConnectionError(.invalidHost) }
 
+        // 主机连接没有工作区路径
+        guard !isHostScoped else { return }
+
         guard requestedPath.hasPrefix("/"), !requestedPath.utf8.contains(0) else {
             throw RemoteConnectionError(.absolutePathRequired)
         }
     }
 
     /// 建立无命令主连接，体检成功后才部署包装器并允许仓库进入列表。
-    private func establish() async throws -> RemoteRepository {
+    private func establish() async throws {
         let directory = URL(fileURLWithPath: "/tmp/spooky-" + UUID().uuidString.lowercased())
         try FileManager.default.createDirectory(
             at: directory,
@@ -539,6 +522,17 @@ extension RemoteConnection {
         ], arguments: ["connection-open"])
         guard master.exitCode == 0 else { throw RemoteConnectionError.ssh(master) }
         try await check()
+
+        // 主机连接没有工作区：体检 Git 与 B 端环境后直接部署包装器
+        if isHostScoped {
+            try await verifyHost()
+            try await deployRelay(in: directory)
+            try Task.checkCancellation()
+            failure = nil
+            updateState(.connected)
+            startMonitoring()
+            return
+        }
 
         let repository = try await verifyRepository()
         let existing = Self.connections.withLock { connections -> RemoteConnection? in
@@ -560,7 +554,7 @@ extension RemoteConnection {
             self.repository = repository
             updateState(await existing.state)
             mirrorState(from: existing)
-            return repository
+            return
         }
 
         try await deployRelay(in: directory)
@@ -571,7 +565,6 @@ extension RemoteConnection {
         if requiresReconciliation { recovery = try await reconcile() }
         updateState(.connected)
         startMonitoring()
-        return repository
     }
 
     /// 包装器按内容哈希版本化，安装与回调状态均位于仓库之外。
@@ -594,10 +587,14 @@ extension RemoteConnection {
         self.wrapper = wrapper
         Self.logger.info("远端包装器已就绪：\(filename, privacy: .public)")
 
+        // 处理器在请求到达时才取：主机连接为多种操作共用，连接建立后才安装的处理器同样生效
         let relay = try CallbackRelay(
             path: directory.appending(path: "relay.sock").path,
             host: host,
-            handler: callbackHandler ?? { _ in nil }
+            handler: { [weak self] request in
+                let handler = await self?.callbackHandler
+                return await handler?(request) ?? nil
+            }
         )
         try relay.start()
         self.relay = relay
@@ -621,11 +618,40 @@ extension RemoteConnection {
         _ = try await probe([wrapper, "watch", remoteDirectory], kind: .deployment)
     }
 
-    /// 远端输出携带操作专属的结束标记，Git 返回 255 时仍保留 Git 错误身份。
-    private func runWrapped(
+    /// 在本工作区执行 Git：带上全局选项与回调配置，交给包装器在独立进程组里运行。
+    func runWrapped(
         _ arguments: [String],
         input: Data?,
         acceptedExitCodes: Set<Int32>,
+        writing: Bool,
+        onOutput: @escaping @Sendable (GitOutputEvent) -> Void
+    ) async throws -> GitCommandResult {
+        guard let wrapper else { throw RemoteConnectionError(.unavailable) }
+
+        return try await runOperation(
+            ["git", "-C", repository?.path ?? requestedPath]
+                + GitRunner.globalOptions
+                + Self.callbackOptions(wrapper: wrapper)
+                + arguments,
+            arguments: arguments,
+            input: input,
+            acceptedExitCodes: acceptedExitCodes,
+            writing: writing,
+            onOutput: onOutput
+        )
+    }
+
+    /// 远端输出携带操作专属的结束标记，Git 返回 255 时仍保留 Git 错误身份。
+    ///
+    /// - Parameters:
+    ///   - command: 在 B 上执行的完整命令，由包装器放进独立进程组。
+    ///   - arguments: 记进结果与错误的业务参数。
+    ///   - writing: 中断后是否要求重连核对；主机级命令没有可核对的仓库，传 false。
+    func runOperation(
+        _ command: [String],
+        arguments: [String],
+        input: Data? = nil,
+        acceptedExitCodes: Set<Int32> = [0],
         writing: Bool,
         onOutput: @escaping @Sendable (GitOutputEvent) -> Void
     ) async throws -> GitCommandResult {
@@ -638,8 +664,7 @@ extension RemoteConnection {
         defer { relay.unregister(operation) }
         let command = [
             wrapper, "run", remoteDirectory, operation, String(configuration.cancellationGrace),
-            "git", "-C", repository?.path ?? requestedPath,
-        ] + GitRunner.globalOptions + Self.callbackOptions(wrapper: wrapper) + arguments
+        ] + command
         let redactor = RemoteOutputRedactor(
             values: { relay.sensitiveValues(for: operation) },
             output: onOutput
@@ -726,53 +751,8 @@ extension RemoteConnection {
         return confirmed
     }
 
-    /// 重连后的核对由 Git 定位元数据，只检查锁与进行中操作的存在性。
-    private func reconcile() async throws -> RemoteRecoverySnapshot {
-        let rawStatus = try await runWrapped(
-            ["status", "--porcelain=v2", "-z", "--branch", "--untracked-files=all"],
-            input: nil,
-            acceptedExitCodes: [0],
-            writing: false,
-            onOutput: { _ in }
-        )
-        let names = ["index.lock", "MERGE_HEAD", "rebase-merge", "rebase-apply"]
-        var paths: [String] = []
-
-        for name in names {
-            let result = try await runWrapped(
-                ["rev-parse", "--path-format=absolute", "--git-path", name],
-                input: nil,
-                acceptedExitCodes: [0],
-                writing: false,
-                onOutput: { _ in }
-            )
-            paths.append(String(decoding: result.standardOutput.dropLast(), as: UTF8.self))
-        }
-
-        // 获取与推送中断时，远端跟踪分支是否已被改动要另行核对
-        let references = try await runWrapped(
-            ["for-each-ref", "--format=%(refname)%00%(objectname)", "refs/remotes"],
-            input: nil,
-            acceptedExitCodes: [0],
-            writing: false,
-            onOutput: { _ in }
-        )
-
-        let flags = try await inspectFlags(paths)
-        let snapshot = RemoteRecoverySnapshot(
-            status: try WorkingCopyStatus(porcelainV2: rawStatus.standardOutput),
-            indexLocked: flags[0],
-            merging: flags[1],
-            rebasing: flags[2] || flags[3],
-            checkedAt: Date(),
-            remoteReferences: try RemoteRecoverySnapshot.parseReferences(references.standardOutput)
-        )
-        requiresReconciliation = false
-        return snapshot
-    }
-
     /// 包装器逐行返回存在标记，行数必须与输入路径一一对应，只检查存在性、不读内容。
-    private func inspectFlags(_ paths: [String]) async throws -> [Bool] {
+    func inspectFlags(_ paths: [String]) async throws -> [Bool] {
         guard let wrapper else {
             throw RemoteConnectionError(.unavailable)
         }
@@ -788,7 +768,7 @@ extension RemoteConnection {
     }
 
     /// 每个远端参数独立转义，主连接失效时禁止回退到新连接执行写操作。
-    private func commandChannel(
+    func commandChannel(
         _ command: [String],
         input: Data? = nil,
         arguments: [String],
@@ -829,7 +809,9 @@ extension RemoteConnection {
             let result = try await Subprocess.run(
                 .path(FilePath("/usr/bin/ssh")),
                 arguments: Arguments(["-E", log.path] + processArguments),
-                environment: .inherit.updating(["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]),
+                environment: .inherit
+                    .updating(LocalExecutionSettings.current.sshOverrides)
+                    .updating(["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]),
                 input: .none,
                 output: .discarded,
                 error: .discarded
@@ -853,7 +835,9 @@ extension RemoteConnection {
             executable: "/usr/bin/ssh",
             processArguments: processArguments,
             arguments: arguments,
-            environment: .inherit.updating(["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]),
+            environment: .inherit
+                .updating(LocalExecutionSettings.current.sshOverrides)
+                .updating(["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]),
             input: input,
             acceptedExitCodes: Set(0 ... 255),
             onOutput: onOutput

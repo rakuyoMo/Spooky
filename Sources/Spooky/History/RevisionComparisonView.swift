@@ -126,7 +126,7 @@ struct RevisionComparisonView: View {
         }
     }
 
-    /// 单个文件的折叠组，展开时才读取补丁。
+    /// 单个文件的折叠组，展开时才读取补丁；右键用比较工具比较这个文件在两侧的版本。
     private func fileSection(_ file: CommitFileChange) -> some View {
         DisclosureGroup(
             isExpanded: Binding(
@@ -145,6 +145,20 @@ struct RevisionComparisonView: View {
         } label: {
             CommitFileLabel(file: file)
                 .frame(height: 30)
+                .contextMenu {
+                    if let base = state.base, let target = state.target {
+                        Button(
+                            AppLocalization.text("externalTool.openDiffAt", RepositorySession.fileName(file.path), target.title)
+                        ) {
+                            session.openDiffTool(
+                                [ComparedFile(path: file.path, originalPath: file.originalPath)],
+                                left: .commit(base.id),
+                                right: .commit(target.id),
+                                names: (base.title, target.title)
+                            )
+                        }
+                    }
+                }
         }
         .padding(.horizontal, 8)
     }

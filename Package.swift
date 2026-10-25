@@ -37,6 +37,12 @@ let package = Package(
             url: "https://github.com/RakuyoKit/swift.git",
             exact: "1.4.0"
         ),
+
+        // 更新的检查、签名校验与安装
+        .package(
+            url: "https://github.com/sparkle-project/Sparkle.git",
+            exact: "2.10.0"
+        ),
     ],
     targets: [
         .target(
@@ -48,7 +54,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "Spooky",
-            dependencies: ["SpookyKit"],
+            dependencies: [
+                "SpookyKit",
+                .product(name: "Sparkle", package: "Sparkle"),
+            ],
             exclude: [
                 "Info.plist",
                 "AppIcon/AppIcon.icns",
@@ -68,6 +77,10 @@ let package = Package(
                     "-Xlinker", "__TEXT",
                     "-Xlinker", "__info_plist",
                     "-Xlinker", appInfoPlist,
+
+                    // App Bundle 从自身的 Frameworks 目录加载更新框架
+                    "-Xlinker", "-rpath",
+                    "-Xlinker", "@executable_path/../Frameworks",
                 ]),
             ]
         ),
@@ -79,6 +92,15 @@ let package = Package(
         .testTarget(
             name: "SpookyTests",
             dependencies: ["Spooky", "SpookyKit"]
+        ),
+
+        // 发布脚本的检查与更新清单的合成，在临时仓库与临时目录里运行 scripts/ 下的脚本
+        .testTarget(
+            name: "ReleaseTests",
+            dependencies: [
+                .product(name: "Subprocess", package: "swift-subprocess"),
+            ],
+            exclude: ["Fixtures"]
         ),
     ]
 )

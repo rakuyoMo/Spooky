@@ -3,7 +3,7 @@ import AppKit
 // MARK: - Subtitle
 
 extension RepositoryWindowController {
-    /// 仓库视图的窗口副标题：工作区写出分支与改动数，历史写出所选引用与提交数，储藏视图显示储藏的数量，Reflog 写出所看的引用，文件历史与文件原文写出所看的文件，远端设置写出远端名。
+    /// 仓库视图的窗口副标题：工作区写出分支与改动数，历史写出所选引用与提交数，储藏视图显示储藏的数量，Reflog 写出所看的引用，文件历史与文件原文写出所看的文件，远端设置写出远端名，仓库设置写 Settings。
     var repositorySubtitle: String {
         switch session.activeView {
         case .workingCopy:
@@ -29,12 +29,15 @@ extension RepositoryWindowController {
 
         case .branchesReview:
             AppLocalization.text("review.title")
+
+        case .settings:
+            AppLocalization.text("repositorySettings.title")
         }
     }
 
-    /// 按当前视图写入副标题；仓库管理显示期间副标题为空。
+    /// 按当前视图写入副标题；仓库管理、丢失页与克隆进度页这类没有打开仓库的页面副标题为空。
     func updateSubtitle() {
-        window?.subtitle = showsManager ? "" : repositorySubtitle
+        window?.subtitle = showsManager || session.repository == nil ? "" : repositorySubtitle
     }
 
     /// 副标题依赖的会话状态变化后重新写入。

@@ -7,15 +7,31 @@ extension RepositoryWindowController {
     /// 历史搜索框范围菜单的顺序，菜单项的 tag 是这里的序号。
     private static let historyScopes: [HistorySearchCondition.Kind] = [.message, .author, .committer, .file, .hash]
 
-    /// 工具栏搜索框：输入即时写入会话，由当前主视图过滤自己的列表；不支持过滤的视图中禁用。
+    /// 工具栏搜索框：输入即时写入会话，由当前主视图过滤自己的列表。
     func makeSearchItem(_ identifier: NSToolbarItem.Identifier) -> NSToolbarItem {
         let item = NSSearchToolbarItem(itemIdentifier: identifier)
         item.label = AppLocalization.text("action.search")
         item.visibilityPriority = .high
-        item.searchField.stringValue = session.searchText
-        item.searchField.isEnabled = session.activeView.supportsSearch
         item.searchField.target = self
         item.searchField.action = #selector(searchChanged(_:))
+        configureSearchItem(item)
+        return item
+    }
+
+    /// 按当前视图设置搜索框：文字、范围菜单、占位文字与补全；仓库管理与不支持过滤的视图中禁用。
+    func configureSearchItem(_ item: NSSearchToolbarItem) {
+        item.searchField.stringValue = session.searchText
+        item.searchField.isEnabled = !showsManager && session.activeView.supportsSearch
+
+        // 先清掉上一个视图的范围菜单、占位文字与补全
+        item.searchField.searchMenuTemplate = nil
+        item.searchField.placeholderString = nil
+        item.searchField.delegate = nil
+        contributorCompletion.close()
+
+        guard !showsManager else {
+            return
+        }
 
         // 历史的搜索框带范围菜单，写入第一个文字条件
         if session.activeView == .history {
@@ -37,8 +53,6 @@ extension RepositoryWindowController {
         if session.activeView == .reflog {
             item.searchField.placeholderString = AppLocalization.text("reflog.search")
         }
-
-        return item
     }
 
     /// ⌘F 与 ⌥⌘F 把焦点交给工具栏搜索框，空间不足而收起时先展开。

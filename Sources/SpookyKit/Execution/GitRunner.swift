@@ -47,10 +47,10 @@ public struct GitRunner: Sendable {
     /// 本机网络操作的口令输入入口；服务器沿用连接上的回调处理器。
     public var credentialHandler: RemoteCallbackHandler?
 
-    /// 本机 Git 程序路径；测试可使用临时程序验证启动和取消边界。
-    private let executablePath: String
+    /// 本机执行使用的 Git 程序与环境设置；为 nil 时每条命令启动时取 ``LocalExecutionSettings/current``，设置变化后对已打开的仓库同样生效。
+    private let settings: LocalExecutionSettings?
 
-    /// 子进程的环境覆盖项，不写入结果或错误。
+    /// 子进程继承的基础环境，测试用它隔离用户的全局 Git 配置；不写入结果或错误。
     private let environment: Environment
 
     /// 创建在指定仓库上执行 git 的实例
@@ -59,28 +59,41 @@ public struct GitRunner: Sendable {
     public init(location: RepositoryLocation) {
         self.location = location
         remote = RemoteConnection.forLocation(location)
-        executablePath = "/usr/bin/git"
-        environment = .inherit.updating(Self.environmentOverrides)
+        settings = nil
+        environment = .inherit
     }
 
-    /// 用隔离环境执行测试，避免读取用户全局 Git 配置。
+    /// 用隔离环境执行测试，避免读取用户全局 Git 配置；测试可使用临时程序验证启动和取消边界。
     init(
         location: RepositoryLocation,
         executablePath: String = "/usr/bin/git",
         environment: Environment
     ) {
+        self.init(
+            location: location,
+            settings: LocalExecutionSettings(gitExecutable: executablePath),
+            environment: environment
+        )
+    }
+
+    /// 用固定的设置执行测试，验证所选程序与环境变量的覆盖顺序，不读写全局设置。
+    init(
+        location: RepositoryLocation,
+        settings: LocalExecutionSettings,
+        environment: Environment = .inherit
+    ) {
         self.location = location
         remote = RemoteConnection.forLocation(location)
-        self.executablePath = executablePath
-        self.environment = environment.updating(Self.environmentOverrides)
+        self.settings = settings
+        self.environment = environment
     }
 
     /// 在集成测试中沿用专用认证配置对应的已建立连接。
     init(location: RepositoryLocation, remote: RemoteConnection) {
         self.location = location
         self.remote = remote
-        executablePath = "/usr/bin/git"
-        environment = .inherit.updating(Self.environmentOverrides)
+        settings = nil
+        environment = .inherit
     }
 
     /// 按 POSIX shell 的规则给参数加单引号，参数里的单引号写成 `'\''`
@@ -209,10 +222,19 @@ public struct GitRunner: Sendable {
     }
 
     /// 版本检查在文件系统根目录进行，避免失效的仓库路径掩盖 Git 版本问题。
+    ///
+    /// - Throws: 所选的 Git 程序不存在或不可执行时抛出 ``RepositoryOpenError/gitUnavailable(path:)``。
     func versionResult() async throws -> GitCommandResult {
+        let settings = settings ?? .current
+
+        // 先确认程序还在：所选的程序被删除或移动后，报出它的路径，而不是笼统的启动失败。
+        guard FileManager.default.isExecutableFile(atPath: settings.gitExecutable) else {
+            throw RepositoryOpenError.gitUnavailable(path: settings.gitExecutable)
+        }
+
         let runner = Self(
             location: .local(path: "/"),
-            executablePath: executablePath,
+            settings: settings,
             environment: environment
         )
 
@@ -226,17 +248,19 @@ public struct GitRunner: Sendable {
         acceptedExitCodes: Set<Int32>,
         onOutput: @escaping @Sendable (GitOutputEvent) -> Void
     ) async throws -> GitCommandResult {
+        let process = localProcess()
+
         // 网络命令需要 askpass，本机 SSH 解锁后由系统 agent 保留密钥；会生成提交与标签的命令可能经 ssh-keygen 签名，私钥口令同样经中继询问。
         if
             let credentialHandler,
-            ["fetch", "push", "ls-remote", "commit", "merge", "rebase", "cherry-pick", "revert", "tag"]
+            ["fetch", "push", "ls-remote", "clone", "commit", "merge", "rebase", "cherry-pick", "revert", "tag"]
                 .contains(RepositoryOperationQueue.command(in: arguments) ?? "")
         {
             return try await LocalGitAuthentication.execute(
-                executable: executablePath,
+                executable: process.executable,
                 location: location,
                 arguments: arguments,
-                environment: environment,
+                environment: process.environment,
                 input: input,
                 acceptedExitCodes: acceptedExitCodes,
                 handler: credentialHandler,
@@ -245,16 +269,27 @@ public struct GitRunner: Sendable {
         }
 
         return try await CommandExecutor.execute(
-            executable: executablePath,
+            executable: process.executable,
             processArguments: ["-C", location.path] + Self.globalOptions + arguments,
             arguments: arguments,
-            environment: environment,
+            environment: process.environment,
             input: input,
             acceptedExitCodes: acceptedExitCodes,
             onOutput: onOutput
         )
     }
 
+    /// 本机这条命令的程序与环境：继承的环境之上依次叠加设置里的变量与 SSH agent，最后固定语言与仓库定位相关的变量。
+    private func localProcess() -> (executable: String, environment: Environment) {
+        let settings = settings ?? .current
+        let inheritedPath = ProcessInfo.processInfo.environment["PATH"]
+
+        let environment = environment
+            .updating(settings.gitOverrides(inheritedPath: inheritedPath))
+            .updating(Self.environmentOverrides)
+
+        return (settings.gitExecutable, environment)
+    }
 }
 
 // MARK: - Error Category

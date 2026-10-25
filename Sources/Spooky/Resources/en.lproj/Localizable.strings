@@ -48,7 +48,6 @@
 
 "action.open" = "Open";
 
-"action.openNewWindow" = "Open in New Window";
 
 "action.closeRepository" = "Close Repository";
 
@@ -60,15 +59,11 @@
 
 "repositories.title" = "Repositories";
 
-"repositories.recent" = "Recent Repositories";
 
-"repositories.empty.title" = "Open a Git Repository";
 
-"repositories.empty.message" = "Choose a local working tree, or drop a repository folder here.";
 
 "repositories.unavailable" = "Unavailable — open to retry";
 
-"repositories.path" = "Location";
 
 "repositories.panel.message" = "Select an existing Git working tree.";
 
@@ -149,7 +144,7 @@
 
 "error.parse" = "Git Output Could Not Be Read";
 
-"error.openHelp" = "Choose an accessible Git working tree. Spooky requires /usr/bin/git 2.41.0 or later; update Xcode or Command Line Tools if needed. Original output is shown below.";
+"error.openHelp" = "Choose an accessible Git working tree. Spooky requires Git 2.41.0 or later; choose another Git binary in Settings, or update Xcode or Command Line Tools. Original output is shown below.";
 
 "error.refreshHelp" = "Any previous result is kept when a refresh fails. Check the original output, then refresh to try again.";
 
@@ -222,6 +217,8 @@
 "remoteError.pathUnavailable.help" = "Check that the absolute path exists on the selected server.";
 "remoteError.pathPermission" = "Server Directory Access Denied";
 "remoteError.pathPermission.help" = "The SSH user needs read and search permission for this directory.";
+"remoteError.diskAccess" = "Server Directory Blocked by Privacy Settings";
+"remoteError.diskAccess.help" = "macOS on the server blocks SSH sessions from reading this folder. On the server, allow full disk access for remote users in Sharing → Remote Login, or move the repository out of protected folders.";
 "remoteError.notWorkingTree" = "Server Path Is Not a Git Working Tree";
 "remoteError.notWorkingTree.help" = "Select an existing Git working tree on the server. Check the original Git output for ownership restrictions.";
 "remoteError.statusFormat" = "Could Not Read Server Status";
@@ -426,7 +423,6 @@
 "working.refreshFailed" = "Refresh failed. Showing the last successful result.";
 "history.limit" = "Showing the first %ld commits. Select a branch to narrow the history.";
 "history.loadingChanges" = "Loading changed files…";
-"repositories.checking" = "Checking…";
 "repositories.unavailableShort" = "Unavailable";
 "activity.truncated" = "Earlier output was omitted.";
 
@@ -678,7 +674,6 @@
 "profiles.email" = "Email:";
 "profiles.signingKey" = "Signing Key:";
 "profiles.edit" = "Edit";
-"profiles.save" = "Save";
 "profiles.menu" = "Committer Identity";
 "profiles.addCurrent" = "Add User Profile “%@”…";
 "profiles.manage" = "Manage User Profiles…";
@@ -776,8 +771,6 @@
 "files.error.preimage" = "The Patch Doesn’t Match the Files";
 "files.error.preimageHelp" = "The files below changed after the patch was made, so the patch wasn’t applied and the working copy is unchanged. Create the patch again from the current files, or restore the files to the version the patch was made from.";
 "files.error.destination" = "The Destination Already Exists";
-"files.error.diffTool" = "Can’t Open the Diff Tool";
-"files.error.diffToolHelp" = "The comparison opens in FileMerge, which comes with Xcode. Install Xcode, then try again. The tool’s output is shown below.";
 "files.doubleClick" = "Double-click on file in working copy:";
 "files.doubleClick.openFile" = "Open with default application";
 "files.doubleClick.openDiff" = "Open Diff tool";
@@ -1470,3 +1463,469 @@
 "reflog.cherryPick" = "Cherry-Pick “%@”…";
 "reflog.restore.title" = "Restore Branch";
 "reflog.restore.message" = "Move the branch “%1$@” to %2$@ in %3$@? The working copy and the staging area are not changed. Commits that leave the branch can still be found in the reflog.";
+
+"appearance.system" = "Automatic";
+"appearance.light" = "Light";
+"appearance.dark" = "Dark";
+"settings.appearance" = "Appearance";
+"settings.gitConfig" = "Git Config";
+"settings.integration" = "Integration";
+"settings.appearance.label" = "Appearance:";
+"settings.cloneDirectory" = "Default directory for cloned repositories:";
+"settings.cloneDirectory.select" = "Select…";
+"settings.warnDiscardingChunks" = "Warn when discarding changes in a chunk";
+"settings.windowRestoration" = "Window Restoration:";
+"settings.windowRestoration.always" = "Always";
+"settings.windowRestoration.never" = "Never";
+"settings.windowRestoration.system" = "System Setting";
+"settings.showLaunchWindow" = "Show Quick Start Window on Launch";
+"action.ok" = "OK";
+"gitConfig.userName" = "Global user name:";
+"gitConfig.email" = "Global email:";
+"gitConfig.scope" = "Saved in %@. Applies to all repositories on this Mac; server repositories use the Git configuration on the server.";
+"gitConfig.sshProgram" = "SSH signing program:";
+"gitConfig.sshProgram.system" = "ssh-keygen (System)";
+"gitConfig.sshProgram.onePassword" = "1Password";
+"gitConfig.gpgProgram" = "GPG program:";
+"gitConfig.gpgProgram.none" = "No GPG Program Selected";
+"gitConfig.gpgProgram.notFound" = "No GPG Program Found";
+"gitConfig.gpgProgram.select" = "Select…";
+"gitConfig.signingKey" = "Global signing key:";
+"gitConfig.agentKeys" = "SSH keys are listed from the system SSH agent.";
+"gitConfig.allowedSigners" = "Allowed signers file:";
+"gitConfig.allowedSigners.none" = "No Allowed Signers File";
+"gitConfig.allowedSigners.select" = "Select Allowed Signers File…";
+"gitConfig.signCommits" = "Sign commits";
+"gitConfig.ensureEmailMatch" = "Ensure GPG key email matches committer email";
+"gitConfig.invalidGPG" = "Invalid GPG Program";
+"gitConfig.invalidGPG.message" = "The program at %@ is not a valid GnuPG program.";
+"gitConfig.invalidSSH" = "Invalid SSH Signing Program";
+"gitConfig.invalidSSH.message" = "The program at %@ doesn’t exist or can’t be run.";
+"gitConfig.emailMismatch" = "Signing Key Email Doesn’t Match Git User Email";
+"gitConfig.emailMismatch.message" = "The signing key’s email “%@” doesn’t match the Git user’s email “%@”. Some services don’t verify the signature when these emails differ.";
+"gitConfig.error.read" = "Couldn’t Read the Global Git Configuration";
+"gitConfig.error.write" = "Couldn’t Save the Global Git Configuration";
+
+"gerrit.pushTitle" = "Push to Gerrit Code Review";
+"gerrit.pushTitle.help" = "Pushes the chosen revision to the selected remote for review, as “refs/for/<review branch>”.";
+"gerrit.push" = "Push to Gerrit";
+"gerrit.reviewBranch" = "Review Branch:";
+"gerrit.pushMenu" = "Push “%@” to Gerrit…";
+"gerrit.quickPush" = "Quick Push “%1$@” to Gerrit “%2$@ refs/for/%1$@”";
+"settings.gerrit" = "Gerrit Code Review:";
+"settings.gerrit.enable" = "Enable easy push action for Gerrit";
+"issueTracking.url" = "Issue Tracker URL:";
+"issueTracking.prefix" = "Issue Number Prefix:";
+"issueTracking.notConfigured" = "Not configured";
+"issueTracking.edit" = "Edit";
+"issueTracking.invalid" = "Invalid Issue Tracker URL";
+"issueTracking.title" = "Issue Number Detection";
+"issueTracking.title.help" = "Enter the URL template of your issue tracker and the prefix that marks issue numbers in commit messages.";
+"issueTracking.save" = "Save";
+"issueTracking.url.help" = "%@ marks where the issue number goes in the URL.";
+"issueTracking.prefix.help" = "The text in front of an issue number, such as #.";
+"issueTracking.url.placeholder" = "Issue Tracker URL Template";
+"issueTracking.error.prefixLength" = "The issue number prefix must be %d characters or less.";
+"issueTracking.error.prefixWhitespace" = "The issue number prefix must not contain spaces.";
+"issueTracking.error.templateRequired" = "Enter an issue tracker URL to use a custom prefix.";
+"issueTracking.error.templateWhitespace" = "The issue tracker URL must not contain spaces.";
+"issueTracking.error.placeholders" = "Only the {ISSUE_NUMBER}, {OWNER} and {REPOSITORY} placeholders are supported.";
+"issueTracking.error.template" = "Enter a web address that includes the {ISSUE_NUMBER} placeholder.";
+"profiles.create.title" = "Create User Profile";
+"profiles.create.message" = "Creates a user profile with the values you enter.";
+"profiles.create.submit" = "Create";
+"profiles.update.title" = "Update User Profile";
+"profiles.update.message" = "Updates the user profile with the values you enter.";
+"profiles.update.submit" = "Update";
+"profiles.delete.title" = "Delete User Profile";
+"profiles.delete.message" = "The user profile “%@” will be deleted. Your Git configuration is not changed.";
+"profiles.delete.submit" = "Delete";
+
+/* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
+"settings.environment.loginShell" = "Automatically read environment variables from the login shell";
+"settings.environment.loginShellFailed" = "The login shell’s environment variables couldn’t be read.";
+"settings.environment.key" = "Key";
+"settings.environment.value" = "Value";
+"settings.environment.custom" = "Custom environment variables used when running Git commands:";
+"settings.environment.add" = "Add Variable";
+"settings.environment.remove" = "Remove Variable";
+"settings.environment.localOnly" = "These settings apply only to Git commands run on this Mac. Repositories on servers use the server’s own environment.";
+"settings.environment.server" = "Check the non-interactive environment that Git uses on a server:";
+"settings.environment.server.hosts" = "Servers";
+"settings.environment.server.check" = "Check";
+"settings.environment.server.noGit" = "Not found in PATH";
+
+/* Settings → Integration 的 SSH Agent 一行。 */
+"settings.sshAgent" = "SSH Agent:";
+"settings.sshAgent.system" = "System SSH Agent";
+"settings.sshAgent.onePassword" = "1Password SSH Agent";
+"settings.sshAgent.description" = "The selected SSH agent is used for SSH connections and SSH signing.";
+"settings.sshAgent.warning" = "SSH Agent Not Running";
+"settings.sshAgent.warning.system" = "The system SSH agent isn’t available. Restart your Mac, or choose another SSH agent.";
+"settings.sshAgent.warning.onePassword" = "The 1Password SSH agent isn’t running. Turn on the SSH agent in 1Password’s settings, or choose another SSH agent.";
+
+/* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
+"settings.gitProgram" = "Git binary:";
+"settings.gitProgram.system" = "%1$@ (System; %2$@)";
+"settings.gitProgram.version" = "%1$@ (%2$@)";
+"settings.gitProgram.unavailable" = "%@ (Unavailable)";
+"settings.gitProgram.choose" = "Select Git Binary…";
+"settings.gitProgram.minimum" = "Minimum required Git version is %@";
+"settings.gitProgram.rejected" = "Git Binary Can’t Be Used";
+"settings.gitProgram.rejected.notGit" = "“%@” isn’t a Git binary.";
+"settings.gitProgram.rejected.version" = "“%1$@” is Git %2$@. Spooky requires Git %3$@ or later.";
+"error.gitProgram" = "Git Binary Not Found";
+"error.gitProgramHelp" = "Choose another Git binary in Settings. The path that couldn’t be run is shown below.";
+
+"settings.environment" = "Environment";
+
+"externalTool.diffTool" = "Diff tool:";
+"externalTool.mergeTool" = "Merge tool:";
+"externalTool.directoryDiff" = "Perform directory diff";
+"externalTool.keepBackups" = "Keep backup files for merge conflicts";
+"externalTool.noneSelected" = "None selected";
+"externalTool.notInstalled" = "%@, not installed";
+"externalTool.configureDiff" = "Configure Diff Tool";
+"externalTool.configureDiff.message" = "Choose the application to use for viewing diffs.";
+"externalTool.configureMerge" = "Configure Merge Tool";
+"externalTool.configureMerge.message" = "Choose the application to use for resolving merge conflicts.";
+"externalTool.select" = "Select";
+"externalTool.error" = "Can’t Open the External Tool";
+"externalTool.error.help" = "Make sure the diff or merge tool chosen in Settings is installed, then try again. The details are shown below.";
+"externalTool.fileChanged" = "File Changed Elsewhere";
+"externalTool.fileChanged.message" = "“%1$@” in %2$@ has changed since it was handed to the external application. Overwrite it with the edited version?";
+"externalTool.overwrite" = "Overwrite";
+"externalTool.noResult" = "No Merge Result";
+"externalTool.noResult.message" = "%2$@ didn’t save a result for “%1$@”, so the conflict is still unresolved.";
+"externalTool.notApplied" = "Merge Result Not Written";
+"externalTool.finishMerge" = "Finish Merging in %@";
+"externalTool.finishMerge.message" = "Save the merged result in %1$@, then choose Done to write it to “%2$@” and mark the conflict as resolved.";
+"externalTool.done" = "Done";
+"externalTool.openMergeTool" = "Open Merge Tool";
+"externalTool.saveCopy" = "Save “%@”";
+"externalTool.side.workingTree" = "Working Tree";
+"externalTool.side.index" = "Index";
+"externalTool.side.base" = "Base";
+"externalTool.side.mine" = "Mine";
+"externalTool.side.theirs" = "Theirs";
+"externalTool.side.empty" = "Empty";
+"externalTool.compare" = "Compare";
+"externalTool.compare.workingTreeToBase" = "Working Tree to Base";
+"externalTool.compare.workingTreeToIndex" = "Working Tree to Index";
+"externalTool.compare.indexToBase" = "Index to Base";
+"externalTool.compare.oursToTheirs" = "My Version to Their Version";
+"externalTool.compare.oursToBase" = "My Version to Merge Base";
+"externalTool.compare.theirsToBase" = "Their Version to Merge Base";
+"externalTool.openDiffTool" = "Open Diff Tool";
+"externalTool.openDiffAt" = "Open Diff Tool for “%1$@” at Revision “%2$@”";
+"externalTool.mergeIn" = "Merge in %@";
+"externalTool.chooseMergeTool" = "Choose Merge Tool";
+"files.openWith" = "Open With";
+"files.openWith.loading" = "Loading";
+"files.openWith.default" = "%@ (Default)";
+"files.openWith.none" = "<None>";
+"files.openWith.other" = "Other…";
+"files.openWith.choose" = "Choose an application to open the file.";
+"tree.openAt" = "Open “%1$@” at Revision “%2$@”";
+"tree.openItemsAt" = "Open %1$ld Items at Revision “%2$@”";
+"tree.openAtWith" = "Open “%1$@” at Revision “%2$@” With";
+"tree.openItemsAtWith" = "Open %1$ld Items at Revision “%2$@” With";
+
+/* App 菜单的检查更新与 Settings → Updates：更新通道、自动检查与下载、检查间隔与最近一次检查。 */
+"updates.check" = "Check for Updates…";
+"settings.updates" = "Updates";
+"updates.channel" = "Release channel:";
+"updates.channel.stable" = "Stable";
+"updates.channel.beta" = "Beta";
+"updates.channel.development" = "Development";
+"updates.automaticChecks" = "Automatically check for updates";
+"updates.automaticDownloads" = "Automatically download updates";
+"updates.interval" = "Update interval:";
+"updates.interval.hourly" = "Hourly";
+"updates.interval.daily" = "Daily";
+"updates.interval.weekly" = "Weekly";
+"updates.lastCheck" = "Last check for updates at:";
+"updates.never" = "Never";
+
+"menu.newTab" = "New Tab";
+"navigation.back" = "Back";
+"navigation.forward" = "Forward";
+"navigation.back.tip" = "Show the previous view";
+"navigation.forward.tip" = "Show the next view";
+"navigation.title" = "Back/Forward";
+"menu.hideWindowTitle" = "Hide Window Title";
+"menu.showWindowTitle" = "Show Window Title";
+"menu.showToolbar" = "Show Toolbar";
+"menu.customizeToolbar" = "Customize Toolbar…";
+"toolbar.host" = "Server";
+"toolbar.createBranch" = "Create Branch";
+"toolbar.forcePush" = "Force Push";
+"toolbar.pushTo" = "Push To";
+"toolbar.finder" = "Finder";
+"toolbar.terminal" = "Terminal";
+"toolbar.quickActions" = "Quick Actions";
+"toolbar.gerritPush" = "Gerrit Push";
+"launch.empty" = "No Recent Repositories";
+"launch.version" = "Version %@";
+
+/* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
+"bookmarks.newGroup" = "New Group";
+"bookmarks.add" = "Add Repository…";
+"bookmarks.add.prompt" = "Add";
+"bookmarks.addMenu" = "Add";
+"bookmarks.create" = "Create New Local Repository…";
+"bookmarks.open" = "Open “%@”";
+"bookmarks.openNewWindow" = "Open “%@” in New Window";
+"bookmarks.openRepository" = "Open";
+"bookmarks.openRepositoryNewWindow" = "Open in New Window";
+"bookmarks.rename" = "Rename";
+"bookmarks.delete" = "Delete “%@”…";
+"bookmarks.deleteFolder" = "Delete Group…";
+"bookmarks.deleteMultiple" = "Delete %ld Items…";
+"bookmarks.sortChildren" = "Sort Child Items by Name";
+"bookmarks.sortParent" = "Sort Parent Folder by Name";
+"bookmarks.delete.title" = "Delete “%@”?";
+"bookmarks.delete.titleMultiple" = "Delete %ld Items?";
+"bookmarks.delete.message" = "Only the bookmarks are removed. The repositories stay on disk or on the server.";
+"bookmarks.delete.submit" = "Delete";
+"bookmarks.dropZone.title" = "Drop Folder or URL";
+"bookmarks.dropZone.subtitle" = "to Add Git Repository";
+"bookmarks.dropZone.add" = "Add";
+"bookmarks.dropZone.create" = "Create";
+"bookmarks.multiple.title" = "Multiple items selected";
+"bookmarks.multiple.message" = "%ld items";
+"bookmarks.multiple.delete" = "Delete";
+"bookmarks.detail.location" = "Location";
+"bookmarks.detail.branch" = "Current Branch";
+"bookmarks.detail.lastCommit" = "Last Commit";
+"bookmarks.detail.lastOpened" = "Last Opened";
+"bookmarks.detail.identity" = "Committer Identity";
+"bookmarks.detail.description" = "User Description";
+"bookmarks.detail.remotes" = "Remotes";
+"bookmarks.detail.viewInBrowser" = "View in Browser";
+"bookmarks.detail.missing" = "Repository does not exist.";
+"bookmarks.detail.loading" = "Loading…";
+"bookmarks.detail.neverOpened" = "Never";
+"bookmarks.detail.noCommits" = "No commits yet";
+"bookmarks.detail.noIdentity" = "Not set";
+"bookmarks.detail.noRemotes" = "No remotes";
+"bookmarks.detail.edit" = "Edit";
+"bookmarks.detail.unset" = "Unset";
+"bookmarks.description.edit" = "Edit Repository Description";
+"bookmarks.description.message" = "Enter a description for this repository.";
+"bookmarks.description.label" = "Description:";
+"bookmarks.identity.edit" = "Edit Committer Identity";
+"bookmarks.identity.message" = "This name and email apply to this repository only. Set the global values in Settings → Git Config.";
+"bookmarks.identity.name" = "Name:";
+"bookmarks.identity.namePrompt" = "Full name";
+"bookmarks.identity.email" = "Email:";
+"bookmarks.identity.emailPrompt" = "Email address";
+"bookmarks.create.title" = "Create New Local Repository";
+"bookmarks.create.message" = "Creates an empty Git repository in a new or existing folder.";
+"bookmarks.create.submit" = "Create";
+"bookmarks.create.name" = "Name:";
+"bookmarks.create.location" = "Location:";
+"bookmarks.create.choose" = "Choose…";
+"bookmarks.create.choosePrompt" = "Choose";
+"bookmarks.create.invalidName" = "The name can’t contain “/” or be “.” or “..”.";
+"bookmarks.create.fileExists" = "A file with this name already exists in this location.";
+"bookmarks.noRepository.title" = "No Git Repository Found";
+"bookmarks.noRepository.message" = "“%@” isn’t a Git repository. Do you want to create a new repository in this folder?";
+"bookmarks.noRepository.create" = "Create Repository";
+"missing.title" = "Spooky Can’t Find the Repository";
+"missing.message" = "Spooky can’t find the repository at “%@”.";
+"missing.unreachable.title" = "Can’t Connect to “%@”";
+"missing.unreachable.message" = "The server of the repository at “%@” can’t be reached right now.";
+
+"quickActions.menu" = "Quick Actions…";
+"quickActions.placeholder" = "Quick Actions";
+"quickActions.noResults" = "No Results";
+"quickActions.objectHint" = "%@ ↩︎\nMore Actions ⇥";
+"quickActions.detail" = "%1$@ — %2$@";
+"quickActions.type.navigation" = "Navigation";
+"quickActions.type.branch" = "Branch";
+"quickActions.type.worktree" = "Worktree";
+"quickActions.type.remote" = "Remote";
+"quickActions.type.submodule" = "Submodule";
+"quickActions.type.remoteBranch" = "Remote Branch";
+"quickActions.type.tag" = "Tag";
+"quickActions.type.stash" = "Stash";
+"quickActions.type.userProfile" = "User Profile";
+"quickActions.type.appearance" = "Appearance";
+"quickActions.type.theme" = "Theme";
+"quickActions.type.file" = "File";
+"quickActions.type.commit" = "Commit";
+"quickActions.type.action" = "Action";
+"quickActions.showInApp" = "Show in Spooky";
+"quickActions.revealWorktree" = "Reveal Worktree in Finder";
+"quickActions.openWorktreeInTerminal" = "Open Worktree in Terminal";
+"quickActions.showBranchHistory" = "Show Branch History";
+"quickActions.showRemoteBranchHistory" = "Show Remote Branch History";
+"quickActions.showTagHistory" = "Show Tag History";
+"quickActions.checkoutRemoteBranch" = "Check Out Remote Branch";
+"quickActions.checkoutTag" = "Check Out Tag";
+"quickActions.deleteRemoteBranch" = "Delete Remote Branch";
+"quickActions.copyRemoteBranchName" = "Copy Remote Branch Name";
+"quickActions.copyTagName" = "Copy Tag Name";
+"quickActions.revealInHistory" = "Reveal in History";
+"quickActions.mergeIntoHead" = "Merge into HEAD";
+"quickActions.rebaseHead" = "Rebase HEAD";
+"quickActions.mergeParent" = "Merge Changes from Parent";
+"quickActions.rebaseOnParent" = "Rebase on Changes from Parent";
+"quickActions.publishBranch" = "Publish Branch";
+"quickActions.pushBranch" = "Push Branch";
+"quickActions.fastForward" = "Fast-Forward Branch";
+"quickActions.updateBranch" = "Update Branch";
+"quickActions.skipAutoArchive" = "Skip Auto-Archiving";
+"quickActions.includeAutoArchive" = "Include in Auto-Archiving";
+"quickActions.showCommit" = "Show Commit View";
+"quickActions.copyCommitHash" = "Copy Commit Hash";
+"quickActions.createTag" = "Create Tag";
+"quickActions.editCommit" = "Edit Commit";
+"quickActions.showFile" = "Show File";
+"quickActions.showFileHistory" = "Show File History";
+"quickActions.showBlame" = "Show Blame";
+"quickActions.openInEditor" = "Open with External Editor";
+"quickActions.openSubmodule" = "Open Submodule";
+"quickActions.openWorktree" = "Open Worktree";
+"quickActions.openWorktreeInNewWindow" = "Open Worktree in New Window";
+"quickActions.showRemoteSettings" = "Show Remote Settings";
+"quickActions.setCommitter" = "Set as Committer Identity";
+"quickActions.setGlobalUser" = "Set as Global User";
+"quickActions.setGlobalUser.local" = "This writes user.name and user.email to your global Git configuration on this Mac. Repositories without their own identity commit with it.";
+"quickActions.setGlobalUser.remote" = "This writes user.name and user.email to your global Git configuration on the server “%@”. Repositories on the server without their own identity commit with it.";
+"quickActions.applyTheme" = "Apply Theme";
+"quickActions.setAppearance" = "Set Appearance";
+
+/* 新建、克隆、扫描与目录浏览时目标机器上的路径与环境问题。 */
+"hostError.absolutePath" = "Absolute Path Required";
+"hostError.absolutePath.help" = "Enter the full path, starting with /.";
+"hostError.missingDirectory" = "Folder Not Found";
+"hostError.missingDirectory.help" = "Check that the folder exists on the selected machine.";
+"hostError.notDirectory" = "Not a Folder";
+"hostError.notDirectory.help" = "The path points to a file. Choose a folder instead.";
+"hostError.permission" = "Folder Access Denied";
+"hostError.permission.help" = "The user needs read and search permission for this folder.";
+"hostError.lfsUnavailable" = "Git LFS Is Unavailable";
+"hostError.lfsUnavailable.help" = "Install Git LFS on the machine that clones the repository and run “git lfs install”, or clone without LFS.";
+
+/* 克隆：对话框与目标的机器和目录、服务器目录浏览、克隆进度、最近克隆的气泡与工具栏 Clone 项。 */
+"clone.menu" = "Clone Git Repository…";
+"clone.title" = "Clone Remote Repository";
+"clone.message" = "Clones a remote Git repository into a new folder on this Mac or on a server.";
+"clone.submit" = "Clone";
+"clone.url" = "Remote URL:";
+"clone.to" = "Clone To:";
+"clone.destination" = "Clones into “%@”";
+"clone.options" = "Options";
+"clone.lfs" = "Use LFS Clone";
+"clone.submodules" = "Initialize Submodules";
+"clone.error.invalidURL" = "Invalid remote URL";
+"clone.error.exists" = "“%@” already exists and isn’t an empty folder.";
+"clone.machine.local" = "This Mac";
+"clone.machine.other" = "Other Server…";
+"clone.directory" = "Folder:";
+"clone.directory.prompt" = "Absolute path on the server";
+"clone.browse" = "Browse…";
+"clone.progress.title" = "Cloning “%@”…";
+"clone.cancel" = "Cancel Clone";
+"clone.retry" = "Restart";
+"clone.remove" = "Remove";
+"clone.state.running" = "Cloning";
+"clone.state.cancelled" = "Cancelled";
+"clone.state.finished" = "Finished";
+"clone.status.starting" = "Starting…";
+"clone.status.count" = "%1$@: %2$ld";
+"clone.status.percent" = "%1$@: %2$ld%% (%3$ld/%4$ld)";
+"clone.phase.enumerating" = "Enumerating objects";
+"clone.phase.counting" = "Counting objects";
+"clone.phase.compressing" = "Compressing objects";
+"clone.phase.receiving" = "Receiving objects";
+"clone.phase.resolving" = "Resolving deltas";
+"clone.phase.checkingOut" = "Updating files";
+"clone.phase.filtering" = "Filtering content";
+"clone.recent.title" = "Recently Cloned Repositories";
+"clone.recent.clear" = "Clear";
+"toolbar.clone" = "Clone";
+"bookmarks.dropZone.clone" = "Clone";
+"browse.title" = "Choose a Folder on “%@”";
+"browse.up" = "Enclosing Folder";
+"browse.repository" = "Git repository";
+"browse.empty" = "No Folders";
+
+/* 在本机或服务器的目录里寻找仓库。 */
+"scan.menu" = "Search for Repositories…";
+"scan.title" = "Search for Repositories";
+"scan.message" = "Finds Git repositories inside the folder you choose, on this Mac or on a server. Nothing outside that folder is searched.";
+"scan.add" = "Add Repositories (%ld)";
+"scan.in" = "Search In:";
+"scan.start" = "Search";
+"scan.stop" = "Stop";
+"scan.selectAll" = "Select All";
+"scan.searching" = "Searching for Git repositories…";
+"scan.found" = "%ld repositories found";
+
+/* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
+"link.invalid.title" = "Can’t Open This Link";
+"link.invalid.message" = "Spooky can’t open “%@”. The link is invalid or not supported.";
+"settings.github" = "Open repositories from github.com:";
+"settings.github.help" = "The “Open with Desktop” links on github.com open in this app.";
+
+/* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
+"repositorySettings.title" = "Settings";
+"repositorySettings.general" = "General";
+"repositorySettings.lfs" = "Git LFS";
+"repositorySettings.ignores" = "Ignores";
+"repositorySettings.excludes" = "Excludes";
+"repositorySettings.lfs.patterns" = "Tracking Patterns";
+"repositorySettings.ignores.patterns" = "Ignore Patterns";
+"repositorySettings.excludes.patterns" = "Exclude Patterns";
+"repositorySettings.openInEditor" = "Open in Editor";
+"repositorySettings.noPatterns" = "No patterns";
+"repositorySettings.name" = "Name";
+"repositorySettings.path" = "Path";
+"repositorySettings.issueTracking" = "Issue Tracking";
+"repositorySettings.issueTrackerURL" = "Issue Tracker URL";
+"repositorySettings.issueNumberPrefix" = "Issue Number Prefix";
+"repositorySettings.wrapping" = "Line Wrapping";
+"repositorySettings.pageGuide" = "Show Page Guide";
+"repositorySettings.lineLimit" = "Line Character Limit";
+"repositorySettings.lineLimit.invalid" = "Enter a whole number greater than 0.";
+"repositorySettings.signing" = "Signing";
+"repositorySettings.signCommits" = "Sign Commits";
+"repositorySettings.signingKey" = "Signing Key";
+"repositorySettings.allowedSigners" = "Allowed Signers File";
+"repositorySettings.write" = "Change Repository Settings";
+"repositorySettings.edit.title" = "Edit %@";
+"repositorySettings.edit.message" = "This value is written to this repository’s local Git configuration.";
+
+/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+"menu.about" = "About Spooky";
+"about.credits" = "Spooky is free software released under the GNU General Public License v3.0.";
+"menu.help" = "Help";
+"help.help" = "Spooky Help";
+"help.whatsNew" = "What’s New";
+"help.releaseNotes" = "Release Notes";
+"help.support" = "Support";
+"help.diagnosticReport" = "Create Diagnostic Report…";
+"help.diagnosticReport.file" = "Spooky Diagnostic Report.txt";
+"whatsNew.title" = "What’s New in Spooky %@";
+"crash.issueTitle" = "Spooky quit unexpectedly";
+"crash.title" = "Spooky Quit Unexpectedly Last Time";
+"crash.message" = "Do you want to report the problem on GitHub? A new issue page opens in your browser with a summary of the crash. Personal paths, email addresses and addresses are removed, and nothing is sent until you submit the issue yourself.";
+"crash.report" = "Report on GitHub…";
+"crash.dontReport" = "Don’t Report";
+"settings.crashReports" = "Crash Reports:";
+"settings.crashReports.always" = "Always send crash reports";
+
+/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+"remote.environment.title" = "The Server Sets Git Environment Variables";
+"remote.environment.message" = "The non-interactive shell on “%1$@” sets %2$@. These variables change how Git finds repositories and reads its configuration for every command Spooky runs there. Remove them from the shell startup files on the server if Git behaves unexpectedly.";
+"untracked.hint" = "%ld untracked files make refreshing slow. Add ignore rules for build output and dependencies, or speed up status on the server.";
+"untracked.speedUp" = "Speed Up…";
+"untracked.speedUp.title" = "Speed Up Status on the Server";
+"untracked.speedUp.message" = "Spooky can turn on these settings in this repository on “%@”. They are written to the repository’s local configuration on the server only after you confirm.";
+"untracked.speedUp.apply" = "Apply Settings";
+"untracked.speedUp.cache" = "Caches untracked files between status checks.";
+"untracked.speedUp.monitor" = "Lets Git watch the file system instead of scanning the whole working tree.";
+"untracked.speedUp.graph" = "Writes the commit-graph now and keeps it up to date when fetching, which speeds up history.";

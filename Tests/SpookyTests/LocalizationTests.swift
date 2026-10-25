@@ -43,6 +43,9 @@ struct LocalizationTests {
 
         keys += ["squash", "fixup", "drop", "move", "rebaseOnto"].map { "rewrite." + $0 + ".confirm.one" }
 
+        // 克隆进度的阶段名
+        keys += CloneProgress.Phase.allCases.map { "clone.phase." + $0.key }
+
         return keys
     }
 
@@ -71,7 +74,7 @@ struct LocalizationTests {
     /// 空状态、仓库标签和错误提示在每种语言里都有各不相同的实际译文。
     @Test("主要界面文案有对应译文")
     func translatedSurfaces() throws {
-        for key in ["repositories.empty.title", "workspace.title", "error.notRepository"] {
+        for key in ["bookmarks.noRepository.title", "workspace.title", "error.notRepository"] {
             let values = try AppLocalization.languages.map { try #require(strings($0)[key]) }
             #expect(Set(values).count == AppLocalization.languages.count)
         }

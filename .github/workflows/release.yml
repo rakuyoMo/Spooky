@@ -1,0 +1,99 @@
+# 标题为 `release: X.Y.Z`（测试与开发版本带上 ` (beta)` 或 ` (development)`）的 PR 合并进 main 后，打包并发布 GitHub Release
+
+name: 发布
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions: {}
+
+jobs:
+  release:
+    name: 发布新版本
+
+    # `startsWith` 不区分大小写，标题的完整格式由发布检查脚本严格检查
+    if: >-
+      github.event.pull_request.merged == true
+      && startsWith(github.event.pull_request.title, 'release:')
+
+    runs-on: macos-26
+
+    permissions:
+      contents: write
+
+    # PR 标题由用户填写，只经环境变量交给脚本，不直接展开进 shell
+    env:
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+
+    steps:
+      # 打包与打标签都基于 PR 合并进 main 后产生的提交；第一父提交是合并前的 main
+      - name: 检出合并提交
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      # 与本机发版、release PR 共用一份检查：标题、版本号、构建号、更新说明与远端标签；通过后记下版本号与通道
+      - name: 发布检查
+        run: ./scripts/check-release.sh --title "$PR_TITLE" --base "${MERGE_COMMIT_SHA}^" >> "$GITHUB_ENV"
+
+      - name: 安装 mise
+        uses: jdx/mise-action@v4
+
+      # 缺少签名密钥时不发布不能自动安装的版本
+      - name: 检查更新签名配置
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          if [[ -z "$SPARKLE_PRIVATE_KEY" ]]; then
+            echo "::error::请配置 SPARKLE_PRIVATE_KEY 仓库 secret"
+            exit 1
+          fi
+
+      - name: 打包
+        run: mise run bundle
+
+      # 测试与开发版本的清单要带上更稳定的通道里最新的条目，从最新的 Release 取上一份清单；还没有 Release 时不取
+      - name: 取上一份更新清单
+        if: env.CHANNEL != 'stable'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count="$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --limit 1 --json tagName --jq length)"
+
+          if [[ "$count" -gt 0 ]]; then
+            gh release download --repo "$GITHUB_REPOSITORY" --pattern appcast.xml --dir build/previous
+            echo "PREVIOUS_FEED=build/previous/appcast.xml" >> "$GITHUB_ENV"
+          fi
+
+      - name: 压缩并签名更新清单
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: mise run appcast "$CHANNEL" ${PREVIOUS_FEED:+"$PREVIOUS_FEED"}
+
+      # 一步完成打标签、创建 Release、上传 zip 与更新清单；标签打在合并提交上，正文是这一版的英文更新说明
+      # App 从标为 latest 的 Release 读取更新清单，测试与开发版本同样标为 latest
+      - name: 创建 Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="v$VERSION"
+
+          if [[ "$CHANNEL" != "stable" ]]; then
+            title+=" ($CHANNEL)"
+          fi
+
+          gh release create "v$VERSION" \
+            "build/updates/Spooky-$VERSION.zip" \
+            "build/updates/appcast.xml" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$MERGE_COMMIT_SHA" \
+            --title "$title" \
+            --notes-file "docs/release-notes/$VERSION/en.md" \
+            --latest

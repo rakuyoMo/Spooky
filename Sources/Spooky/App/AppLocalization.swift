@@ -156,19 +156,9 @@ struct AppFailure: Identifiable {
         case let remote as RemoteConnectionError:
             (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: remote, writing: writing)
 
-        case let terminal as TerminalLaunchError:
-            key = "error.terminal"
-            recoveryKey = "error.terminalHelp"
-            diagnostic = terminal.diagnostic
-
         case let file as WorkingCopyFileError:
             kind = .repository
             (key, recoveryKey, diagnostic) = Self.classification(of: file)
-
-        case let tool as DiffToolLaunchError:
-            key = "files.error.diffTool"
-            recoveryKey = "files.error.diffToolHelp"
-            diagnostic = tool.diagnostic
 
         case let git as GitError:
             output = git.result
@@ -177,7 +167,7 @@ struct AppFailure: Identifiable {
             exceededOutputLimit = git.category == .outputLimitExceeded
 
         case let problem as RepositoryOpenError:
-            (key, kind, output) = Self.classification(of: problem)
+            (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: problem)
 
         case let parse as StatusParseError:
             key = "error.parse"
@@ -189,7 +179,13 @@ struct AppFailure: Identifiable {
             kind = .cancelled
 
         default:
-            diagnostic = String(describing: error)
+            // 启动外部程序与目标机器上的失败另行分类，其余错误只留描述
+            guard let machine = Self.machineClassification(of: error) else {
+                diagnostic = String(describing: error)
+                break
+            }
+
+            (key, kind, recoveryKey, output, diagnostic) = machine
         }
 
         self.kind = kind
@@ -280,7 +276,7 @@ struct AppFailure: Identifiable {
         case .gitVersion:
             .version
 
-        case .invalidHost, .absolutePathRequired, .pathUnavailable, .pathPermission, .notWorkingTree:
+        case .invalidHost, .absolutePathRequired, .pathUnavailable, .pathPermission, .diskAccess, .notWorkingTree:
             .repository
 
         case .statusFormat:
@@ -321,19 +317,23 @@ struct AppFailure: Identifiable {
         }
     }
 
-    /// 打开工作区前置校验失败的文案键与类别，版本与工作区根目录的校验失败同时带回 Git 的原始结果。
+    /// 打开工作区前置校验失败的文案键、类别与恢复说明，版本与工作区根目录的校验失败同时带回 Git 的原始结果；
+    /// 所选的 Git 程序不在时，原文是它的路径，恢复说明引导到设置里换一个程序。
     private static func classification(
         of problem: RepositoryOpenError
-    ) -> (key: String, kind: FailureKind, output: GitCommandResult?) {
+    ) -> (key: String, kind: FailureKind, recoveryKey: String?, output: GitCommandResult?, diagnostic: String?) {
         switch problem {
         case .requiresLocalAbsolutePath:
-            ("error.path", .repository, nil)
+            ("error.path", .repository, nil, nil, nil)
+
+        case .gitUnavailable(let path):
+            ("error.gitProgram", .environment, "error.gitProgramHelp", nil, path)
 
         case .invalidGitVersion(let result), .unsupportedGitVersion(let result):
-            ("error.version", .version, result)
+            ("error.version", .version, nil, result, nil)
 
         case .invalidWorktreeResponse(let result):
-            ("error.notWorkingTree", .repository, result)
+            ("error.notWorkingTree", .repository, nil, result, nil)
         }
     }
 }

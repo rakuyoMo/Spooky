@@ -131,10 +131,13 @@ struct ChangesetFileMenu: View {
     /// 变更集里的文件路径，重命名时是新路径。
     let path: String
 
+    /// 重命名前的路径；没有重命名时为 nil。
+    var originalPath: String? = nil
+
     /// 文件所在的提交。
     let commit: HistoryCommit
 
-    /// 查看组与恢复、导出组之间有分隔线。
+    /// 查看组、比较工具与恢复、导出组之间有分隔线。
     var body: some View {
         let name = RepositorySession.fileName(path)
 
@@ -148,6 +151,13 @@ struct ChangesetFileMenu: View {
 
         Button(AppLocalization.text("fileHistory.showHistoryOf", name)) {
             session.showFileHistory(path)
+        }
+
+        Divider()
+
+        // 与提交的第一个父提交比较
+        Button(AppLocalization.text("externalTool.openDiffAt", name, commit.shortID)) {
+            session.openDiffTool(for: commit, files: [ComparedFile(path: path, originalPath: originalPath)])
         }
 
         Divider()

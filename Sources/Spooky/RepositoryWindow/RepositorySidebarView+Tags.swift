@@ -108,7 +108,7 @@ extension RepositorySidebarView {
 
             Divider()
 
-            Button(AppLocalization.text("tag.reveal")) { session.revealInHistory(ref) }
+            Button(AppLocalization.text("tag.reveal")) { session.revealInHistory(ref.objectID) }
             Button(AppLocalization.text("tag.copyName")) {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(ref.name, forType: .string)

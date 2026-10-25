@@ -17,6 +17,10 @@ struct BranchSyncMenu: View {
     /// 打开推送、拉取等参数对话框。
     let request: (RepositoryActionRequest) -> Void
 
+    /// Integration 设置里打开了 Gerrit 推送时，本地分支另有推送到 Gerrit 的一项。
+    @AppStorage(GerritPush.key)
+    private var enablesGerrit = false
+
     /// 按分支种类选择一组菜单项。
     var body: some View {
         if reference.isRemote {
@@ -32,6 +36,7 @@ struct BranchSyncMenu: View {
             }
         } else if reference.name == session.status?.branch.head {
             headItems
+            gerritItem
         } else {
             push
 
@@ -39,6 +44,27 @@ struct BranchSyncMenu: View {
                 session.requestSyncDialog(.pushRevision, preselecting: reference.name)
             }
             .disabled(!session.canPushRevision)
+
+            gerritItem
+        }
+    }
+
+    /// 打开预选了这个分支的 Gerrit 推送对话框；按住 ⌥ 时直接推到它跟踪的远端的 `refs/for/<分支>`。
+    @ViewBuilder
+    private var gerritItem: some View {
+        if enablesGerrit {
+            let remote = session.gerritRemote(of: reference)
+
+            Button(AppLocalization.text("gerrit.pushMenu", reference.name)) {
+                session.requestSyncDialog(.gerritPush, preselecting: reference.name)
+            }
+            .disabled(!session.canPushToGerrit)
+            .quickAlternate(
+                remote.map { AppLocalization.text("gerrit.quickPush", reference.name, $0) },
+                enabled: session.canQuickPushToGerrit(reference)
+            ) {
+                session.quickPushToGerrit(reference)
+            }
         }
     }
 
