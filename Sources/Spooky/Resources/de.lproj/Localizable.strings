@@ -217,6 +217,8 @@
 "remoteError.pathUnavailable.help" = "Prüfen Sie, ob der absolute Pfad auf dem ausgewählten Server existiert.";
 "remoteError.pathPermission" = "Zugriff auf Serververzeichnis verweigert";
 "remoteError.pathPermission.help" = "Der SSH-Benutzer benötigt Lese- und Suchberechtigung für dieses Verzeichnis.";
+"remoteError.diskAccess" = "Serververzeichnis durch Datenschutzeinstellungen blockiert";
+"remoteError.diskAccess.help" = "macOS auf dem Server verhindert, dass SSH-Sitzungen diesen Ordner lesen. Erlauben Sie auf dem Server unter „Freigaben“ → „Entfernte Anmeldung“ den vollständigen Festplattenzugriff für entfernte Benutzer oder verschieben Sie das Repository aus geschützten Ordnern.";
 "remoteError.notWorkingTree" = "Serverpfad ist kein Git-Arbeitsverzeichnis";
 "remoteError.notWorkingTree.help" = "Wählen Sie ein vorhandenes Git-Arbeitsverzeichnis auf dem Server aus. Prüfen Sie die Originalausgabe von Git auf Einschränkungen durch die Eigentümerschaft.";
 "remoteError.statusFormat" = "Serverstatus konnte nicht gelesen werden";

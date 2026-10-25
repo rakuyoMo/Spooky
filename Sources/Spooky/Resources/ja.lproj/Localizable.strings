@@ -217,6 +217,8 @@
 "remoteError.pathUnavailable.help" = "指定したサーバーに絶対パスが存在するか確認してください。";
 "remoteError.pathPermission" = "サーバーのディレクトリにアクセスできません";
 "remoteError.pathPermission.help" = "SSH ユーザーにはディレクトリの読み取りと検索権限が必要です。";
+"remoteError.diskAccess" = "サーバのディレクトリがプライバシー設定で拒否されました";
+"remoteError.diskAccess.help" = "サーバの macOS が SSH セッションによるこのフォルダの読み取りを許可していません。サーバの「共有」→「リモートログイン」でリモートユーザにフルディスクアクセスを許可するか、リポジトリを保護されたフォルダの外に移動してください。";
 "remoteError.notWorkingTree" = "サーバーのパスは Git 作業ツリーではありません";
 "remoteError.notWorkingTree.help" = "サーバーの既存の Git 作業ツリーを選択してください。所有権の制限は Git 出力で確認できます。";
 "remoteError.statusFormat" = "サーバーの状態を読み取れません";

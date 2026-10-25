@@ -217,6 +217,8 @@
 "remoteError.pathUnavailable.help" = "선택한 서버에 절대 경로가 있는지 확인하세요.";
 "remoteError.pathPermission" = "서버 디렉터리 접근 거부";
 "remoteError.pathPermission.help" = "SSH 사용자에게 이 디렉터리의 읽기 및 검색 권한이 필요합니다.";
+"remoteError.diskAccess" = "서버 디렉토리가 개인 정보 보호 설정으로 차단됨";
+"remoteError.diskAccess.help" = "서버의 macOS가 SSH 세션이 이 폴더를 읽지 못하도록 막고 있습니다. 서버의 공유 → 원격 로그인에서 원격 사용자에게 전체 디스크 접근을 허용하거나 저장소를 보호된 폴더 밖으로 옮기세요.";
 "remoteError.notWorkingTree" = "서버 경로가 Git 작업 트리가 아님";
 "remoteError.notWorkingTree.help" = "서버의 기존 Git 작업 트리를 선택하세요. 소유권 제한은 Git 원문을 확인하세요.";
 "remoteError.statusFormat" = "서버 상태를 읽을 수 없음";

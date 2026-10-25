@@ -465,12 +465,13 @@ extension SpookyApplicationController {
             defer { self.addingTasks[request] = nil }
 
             do {
-                let repository = try await GitRunner(location: .local(path: path)).initializeRepository()
+                let created = try await RepositoryCreation.initialize(.local(path: path))
+                let repository = try await Self.verifiedLocation(of: created)
                 try Task.checkCancellation()
-                bookmarks.add(repository.location, into: folder, at: index)
+                bookmarks.add(repository, into: folder, at: index)
 
                 if opening {
-                    displayRepository(repository.location, from: source, inNewWindow: false)
+                    displayRepository(repository, from: source, inNewWindow: false)
                 }
             } catch {
                 guard !Task.isCancelled else {

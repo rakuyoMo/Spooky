@@ -217,6 +217,8 @@
 "remoteError.pathUnavailable.help" = "請檢查絕對路徑是否存在於所選伺服器。";
 "remoteError.pathPermission" = "無權存取伺服器目錄";
 "remoteError.pathPermission.help" = "SSH 登入使用者需要該目錄的讀取與搜尋權限。";
+"remoteError.diskAccess" = "伺服器目錄被隱私設定阻擋";
+"remoteError.diskAccess.help" = "伺服器上的 macOS 不允許 SSH 工作階段讀取這個資料夾。請在伺服器的 共享 → 遠端登入 中允許遠端使用者完整磁碟取用權限，或把倉庫移出受保護的資料夾。";
 "remoteError.notWorkingTree" = "伺服器路徑不是 Git 工作目錄";
 "remoteError.notWorkingTree.help" = "請選擇伺服器上現有的 Git 工作目錄，並查看 Git 原文中的擁有權限制。";
 "remoteError.statusFormat" = "無法讀取伺服器狀態";

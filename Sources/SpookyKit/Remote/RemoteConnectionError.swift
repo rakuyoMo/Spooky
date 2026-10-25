@@ -36,6 +36,9 @@ public struct RemoteConnectionError: Error, Sendable {
         /// 当前登录用户不能读取或搜索目录。
         case pathPermission
 
+        /// B 的系统隐私保护拒绝 SSH 会话读取目录（Operation not permitted），与文件权限无关。
+        case diskAccess
+
         /// Git 未识别到工作区。
         case notWorkingTree
 

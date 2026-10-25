@@ -280,7 +280,7 @@ struct AppFailure: Identifiable {
         case .gitVersion:
             .version
 
-        case .invalidHost, .absolutePathRequired, .pathUnavailable, .pathPermission, .notWorkingTree:
+        case .invalidHost, .absolutePathRequired, .pathUnavailable, .pathPermission, .diskAccess, .notWorkingTree:
             .repository
 
         case .statusFormat:

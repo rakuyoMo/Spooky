@@ -217,6 +217,8 @@
 "remoteError.pathUnavailable.help" = "Comprobar que la ruta absoluta existe en el servidor seleccionado.";
 "remoteError.pathPermission" = "Acceso denegado al directorio del servidor";
 "remoteError.pathPermission.help" = "El usuario de SSH necesita permisos de lectura y búsqueda en este directorio.";
+"remoteError.diskAccess" = "Carpeta del servidor bloqueada por la privacidad";
+"remoteError.diskAccess.help" = "macOS en el servidor impide que las sesiones SSH lean esta carpeta. En el servidor, permite el acceso total al disco para usuarios remotos en Compartir → Sesión remota, o mueve el repositorio fuera de las carpetas protegidas.";
 "remoteError.notWorkingTree" = "La ruta del servidor no es un árbol de trabajo de Git";
 "remoteError.notWorkingTree.help" = "Seleccionar un árbol de trabajo de Git existente en el servidor. Revisar la salida original de Git por si hay restricciones de propiedad.";
 "remoteError.statusFormat" = "No se ha podido leer el estado del servidor";

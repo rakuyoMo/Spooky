@@ -80,40 +80,6 @@ struct RepositorySummaryTests {
         #expect(String(decoding: signing, as: UTF8.self) == "false\n")
     }
 
-    /// 新建仓库会连同不存在的上级目录一起建出，并返回工作区根目录。
-    @Test("在本机新建仓库")
-    func initializeRepository() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
-
-        let target = temporary.directory.appending(path: "上级 目录/新 仓库 'a'")
-        let repository = try await temporary.runner(at: target.path).initializeRepository()
-
-        #expect(
-            URL(fileURLWithPath: repository.path).resolvingSymlinksInPath()
-                == target.resolvingSymlinksInPath()
-        )
-        #expect(FileManager.default.fileExists(atPath: target.appending(path: ".git").path))
-    }
-
-    /// 位置是文件时不初始化；服务器位置不在这里新建。
-    @Test("新建仓库的位置不合法")
-    func initializeRejectsInvalidLocations() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
-
-        let file = temporary.directory.appending(path: "文件")
-        try Data("x".utf8).write(to: file)
-
-        await #expect(throws: (any Error).self) {
-            try await temporary.runner(at: file.path).initializeRepository()
-        }
-
-        await #expect(throws: RepositoryOpenError.self) {
-            try await GitRunner(location: .remote(host: "test", path: "/tmp/repository")).initializeRepository()
-        }
-    }
-
     /// 解析失败的提交记录抛错，身份里的姓名可以带空格与引号。
     @Test("解析最后一次提交与提交人")
     func parsing() throws {

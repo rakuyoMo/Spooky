@@ -217,6 +217,8 @@
 "remoteError.pathUnavailable.help" = "请检查绝对路径是否存在于所选服务器。";
 "remoteError.pathPermission" = "无权访问服务器目录";
 "remoteError.pathPermission.help" = "SSH 登录用户需要该目录的读取和搜索权限。";
+"remoteError.diskAccess" = "服务器目录被隐私设置阻止";
+"remoteError.diskAccess.help" = "服务器上的 macOS 不允许 SSH 会话读取这个文件夹。请在服务器的 共享 → 远程登录 中允许远程用户完全磁盘访问，或把仓库移出受保护的文件夹。";
 "remoteError.notWorkingTree" = "服务器路径不是 Git 工作区";
 "remoteError.notWorkingTree.help" = "请选择服务器上已有的 Git 工作区，并查看 Git 原文中的所有权限制。";
 "remoteError.statusFormat" = "无法读取服务器状态";

@@ -118,19 +118,4 @@ extension GitRunner {
         let root = String(response.dropFirst(5).dropLast())
         return LocalRepository(path: root)
     }
-
-    /// 在本机位置新建空仓库，再按打开仓库的规则识别它；目录不存在时连同上级目录一起建出来。
-    ///
-    /// 初始分支名由 Git 的 `init.defaultBranch` 决定；位置已是仓库时 Git 只重新初始化，不改动已有内容。
-    public func initializeRepository() async throws -> LocalRepository {
-        guard case .local(let path) = location, path.hasPrefix("/") else {
-            throw RepositoryOpenError.requiresLocalAbsolutePath
-        }
-
-        // 位置是已有的文件时这里抛出文件系统错误，不会执行 git init。
-        try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true)
-
-        _ = try await run(["init", "--quiet"])
-        return try await openLocalRepository()
-    }
 }

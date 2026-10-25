@@ -253,7 +253,7 @@ public struct GitRunner: Sendable {
         // 网络命令需要 askpass，本机 SSH 解锁后由系统 agent 保留密钥；会生成提交与标签的命令可能经 ssh-keygen 签名，私钥口令同样经中继询问。
         if
             let credentialHandler,
-            ["fetch", "push", "ls-remote", "commit", "merge", "rebase", "cherry-pick", "revert", "tag"]
+            ["fetch", "push", "ls-remote", "clone", "commit", "merge", "rebase", "cherry-pick", "revert", "tag"]
                 .contains(RepositoryOperationQueue.command(in: arguments) ?? "")
         {
             return try await LocalGitAuthentication.execute(

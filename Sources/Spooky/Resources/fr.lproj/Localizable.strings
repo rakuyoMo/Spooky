@@ -217,6 +217,8 @@
 "remoteError.pathUnavailable.help" = "Vérifiez que le chemin absolu existe sur le serveur sélectionné.";
 "remoteError.pathPermission" = "Accès refusé au répertoire du serveur";
 "remoteError.pathPermission.help" = "L’utilisateur SSH doit disposer des autorisations de lecture et de recherche sur ce répertoire.";
+"remoteError.diskAccess" = "Dossier du serveur bloqué par les réglages de confidentialité";
+"remoteError.diskAccess.help" = "macOS sur le serveur empêche les sessions SSH de lire ce dossier. Sur le serveur, autorisez l’accès complet au disque pour les utilisateurs distants dans Partage → Session à distance, ou déplacez le dépôt hors des dossiers protégés.";
 "remoteError.notWorkingTree" = "Le chemin du serveur n’est pas un arbre de travail Git";
 "remoteError.notWorkingTree.help" = "Sélectionnez un arbre de travail Git existant sur le serveur. Vérifiez dans la sortie d’origine de Git s’il existe des restrictions liées au propriétaire.";
 "remoteError.statusFormat" = "Impossible de lire l’état du serveur";

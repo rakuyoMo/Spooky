@@ -217,6 +217,8 @@
 "remoteError.pathUnavailable.help" = "Check that the absolute path exists on the selected server.";
 "remoteError.pathPermission" = "Server Directory Access Denied";
 "remoteError.pathPermission.help" = "The SSH user needs read and search permission for this directory.";
+"remoteError.diskAccess" = "Server Directory Blocked by Privacy Settings";
+"remoteError.diskAccess.help" = "macOS on the server blocks SSH sessions from reading this folder. On the server, allow full disk access for remote users in Sharing → Remote Login, or move the repository out of protected folders.";
 "remoteError.notWorkingTree" = "Server Path Is Not a Git Working Tree";
 "remoteError.notWorkingTree.help" = "Select an existing Git working tree on the server. Check the original Git output for ownership restrictions.";
 "remoteError.statusFormat" = "Could Not Read Server Status";
