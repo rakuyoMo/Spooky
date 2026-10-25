@@ -98,6 +98,8 @@ private struct AppearanceThumbnail: View {
 // MARK: - WindowSketch
 
 /// 缩略图里的一个场景：渐变的桌面，左上方露出一扇带红绿灯、侧边栏与几行内容的窗口。
+///
+/// 各部分都用系统的语义色，按这张缩略图自己的外观解析，与 App 当前的外观无关。
 private struct WindowSketch: View {
     /// 画深色外观。
     let dark: Bool
@@ -111,13 +113,12 @@ private struct WindowSketch: View {
                 .frame(width: 90, height: 56)
                 .offset(x: 12, y: 10)
         }
+        .environment(\.colorScheme, dark ? .dark : .light)
     }
 
     /// 桌面渐变的两端。
     private var desktop: [Color] {
-        dark
-            ? [Color(red: 0.16, green: 0.20, blue: 0.33), Color(red: 0.05, green: 0.06, blue: 0.12)]
-            : [Color(red: 0.55, green: 0.75, blue: 0.96), Color(red: 0.86, green: 0.92, blue: 0.99)]
+        dark ? [.indigo, .black] : [.blue, .cyan]
     }
 
     /// 标题栏与红绿灯、侧边栏和内容区的几行文字。
@@ -135,13 +136,13 @@ private struct WindowSketch: View {
 
             HStack(spacing: 0) {
                 Rectangle()
-                    .fill(dark ? Color(white: 0.22) : Color(white: 0.90))
+                    .fill(Color(nsColor: .windowBackgroundColor))
                     .frame(width: 20)
 
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach([40.0, 28, 34, 22], id: \.self) { width in
                         Capsule()
-                            .fill(dark ? Color(white: 0.42) : Color(white: 0.78))
+                            .fill(Color(nsColor: .tertiaryLabelColor))
                             .frame(width: width, height: 3)
                     }
                 }
@@ -149,7 +150,7 @@ private struct WindowSketch: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(dark ? Color(white: 0.15) : Color.white)
+        .background(Color(nsColor: .textBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
     }
