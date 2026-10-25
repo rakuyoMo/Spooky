@@ -1865,3 +1865,31 @@
 "link.invalid.message" = "Spooky 无法打开 “%@”。链接无效或不受支持。";
 "settings.github" = "打开来自 github.com 的仓库：";
 "settings.github.help" = "github.com 上 “Open with Desktop” 的链接由这个 App 打开。";
+
+/* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
+"repositorySettings.title" = "设置";
+"repositorySettings.general" = "通用";
+"repositorySettings.lfs" = "Git LFS";
+"repositorySettings.ignores" = "忽略";
+"repositorySettings.excludes" = "排除";
+"repositorySettings.lfs.patterns" = "跟踪规则";
+"repositorySettings.ignores.patterns" = "忽略规则";
+"repositorySettings.excludes.patterns" = "排除规则";
+"repositorySettings.openInEditor" = "在编辑器中打开";
+"repositorySettings.noPatterns" = "没有规则";
+"repositorySettings.name" = "名称";
+"repositorySettings.path" = "路径";
+"repositorySettings.issueTracking" = "Issue 追踪";
+"repositorySettings.issueTrackerURL" = "Issue 追踪地址";
+"repositorySettings.issueNumberPrefix" = "Issue 编号前缀";
+"repositorySettings.wrapping" = "折行";
+"repositorySettings.pageGuide" = "显示参考线";
+"repositorySettings.lineLimit" = "每行字数上限";
+"repositorySettings.lineLimit.invalid" = "请输入大于 0 的整数。";
+"repositorySettings.signing" = "签名";
+"repositorySettings.signCommits" = "签名提交";
+"repositorySettings.signingKey" = "签名密钥";
+"repositorySettings.allowedSigners" = "Allowed Signers 文件";
+"repositorySettings.write" = "修改仓库设置";
+"repositorySettings.edit.title" = "编辑%@";
+"repositorySettings.edit.message" = "这个值会写进这个仓库的本地 Git 配置。";

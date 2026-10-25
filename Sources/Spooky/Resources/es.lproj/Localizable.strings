@@ -1865,3 +1865,31 @@
 "link.invalid.message" = "Spooky no puede abrir “%@”. El enlace no es válido o no es compatible.";
 "settings.github" = "Abrir repositorios de github.com:";
 "settings.github.help" = "Los enlaces “Open with Desktop” de github.com se abren en esta app.";
+
+/* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
+"repositorySettings.title" = "Ajustes";
+"repositorySettings.general" = "General";
+"repositorySettings.lfs" = "Git LFS";
+"repositorySettings.ignores" = "Ignorados";
+"repositorySettings.excludes" = "Exclusiones";
+"repositorySettings.lfs.patterns" = "Patrones de seguimiento";
+"repositorySettings.ignores.patterns" = "Patrones ignorados";
+"repositorySettings.excludes.patterns" = "Patrones excluidos";
+"repositorySettings.openInEditor" = "Abrir en el editor";
+"repositorySettings.noPatterns" = "No hay patrones";
+"repositorySettings.name" = "Nombre";
+"repositorySettings.path" = "Ruta";
+"repositorySettings.issueTracking" = "Seguimiento de incidencias";
+"repositorySettings.issueTrackerURL" = "URL del gestor de incidencias";
+"repositorySettings.issueNumberPrefix" = "Prefijo de número de incidencia";
+"repositorySettings.wrapping" = "Ajuste de línea";
+"repositorySettings.pageGuide" = "Mostrar guía";
+"repositorySettings.lineLimit" = "Caracteres por línea";
+"repositorySettings.lineLimit.invalid" = "Escribe un número entero mayor que 0.";
+"repositorySettings.signing" = "Firma";
+"repositorySettings.signCommits" = "Firmar commits";
+"repositorySettings.signingKey" = "Clave de firma";
+"repositorySettings.allowedSigners" = "Archivo Allowed Signers";
+"repositorySettings.write" = "Cambiar los ajustes del repositorio";
+"repositorySettings.edit.title" = "Editar %@";
+"repositorySettings.edit.message" = "Este valor se escribe en la configuración Git local de este repositorio.";

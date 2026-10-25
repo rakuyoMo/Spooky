@@ -58,6 +58,7 @@ extension RepositoryWindowController {
         case (.show, .stashes): showStashes()
         case (.show, .branchesReview): showBranchesReview()
         case (.show, .reflog): showReflog()
+        case (.show, .settings): showRepositorySettings()
         case (.revealInFinder, _): revealInFinder()
         case (.openInTerminal, _): openInTerminal()
         case (.copyPath, _): copyPath()

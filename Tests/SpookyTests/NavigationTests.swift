@@ -48,7 +48,7 @@ struct NavigationTests {
         #expect(history.goBack() == nil)
     }
 
-    /// 每种视图引用写成文字再解析回来不变：窗口恢复与之后的 URL Scheme 都靠它还原到同一个视图。
+    /// 每种视图引用写成文字再解析回来不变：窗口恢复与链接都靠它还原到同一个视图。
     @Test("视图引用的文字形式往返不变")
     func referenceRoundTrip() throws {
         let remote = RepositoryLocation.remote(host: "b", path: "/srv/git/app & co")
@@ -65,6 +65,7 @@ struct NavigationTests {
             .repository(Self.local, .stashes),
             .repository(Self.local, .reflog),
             .repository(Self.local, .branchesReview),
+            .repository(remote, .settings),
             .repository(remote, .remote("origin")),
             .repository(Self.local, .fileHistory(path: path)),
             .repository(remote, .file(path: path, revision: nil, mode: .raw)),

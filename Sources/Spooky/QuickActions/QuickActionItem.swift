@@ -89,6 +89,9 @@ enum QuickActionDestination: CaseIterable {
     /// 引用日志。
     case reflog
 
+    /// 仓库设置。
+    case settings
+
     /// 侧边栏里的名称。
     var title: String {
         switch self {
@@ -97,6 +100,7 @@ enum QuickActionDestination: CaseIterable {
         case .stashes: AppLocalization.text("stash.title")
         case .branchesReview: AppLocalization.text("review.title")
         case .reflog: AppLocalization.text("reflog.title")
+        case .settings: AppLocalization.text("repositorySettings.title")
         }
     }
 
@@ -108,6 +112,7 @@ enum QuickActionDestination: CaseIterable {
         case .stashes: "tray.full"
         case .branchesReview: "arrow.triangle.pull"
         case .reflog: "clock.arrow.circlepath"
+        case .settings: "gearshape"
         }
     }
 }

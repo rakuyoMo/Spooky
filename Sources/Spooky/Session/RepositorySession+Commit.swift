@@ -128,7 +128,7 @@ extension RepositorySession {
         let prefix = commitConfiguration.map(\.commentPrefix) ?? "#"
 
         // 折行放在注释处理之后，过长的注释行断开后不会变成正文。
-        let finish = { (text: String) in completion(Self.hardWrappedIfNeeded(text)) }
+        let finish = { [weak self] (text: String) in completion(self?.hardWrappedIfNeeded(text) ?? text) }
 
         guard CommitMessage.hasComments(message, prefix: prefix) else {
             finish(message)
@@ -151,8 +151,8 @@ extension RepositorySession {
 // MARK: - Private
 
 extension RepositorySession {
-    /// 硬折行时把正文按字数上限断行，标题保持不变。
-    private static func hardWrappedIfNeeded(_ message: String) -> String {
+    /// 硬折行时把正文按字数上限断行，标题保持不变；仓库设置了字数上限时用仓库的。
+    private func hardWrappedIfNeeded(_ message: String) -> String {
         #warning(
             "TODO: 硬折行在输入时是否自动插入换行未核实：当前在上限列与视图宽度中较窄处显示折行，提交时按上限把正文断行。核实方式：选 Hard Wrap 后输入超过上限的段落，确认期望在输入时还是提交时换行；影响硬折行模式下提交的正文与编辑区的折行位置。"
         )
@@ -162,7 +162,8 @@ extension RepositorySession {
         }
 
         let parts = CommitMessage.parts(of: message)
-        let body = CommitMessage.hardWrapped(parts.body, limit: CommitEditorSettings.bodyLineLimit)
+        let limit = commitConfiguration?.bodyLineLimit ?? CommitEditorSettings.bodyLineLimit
+        let body = CommitMessage.hardWrapped(parts.body, limit: limit)
         return CommitMessage.text(subject: parts.subject, body: body)
     }
 }

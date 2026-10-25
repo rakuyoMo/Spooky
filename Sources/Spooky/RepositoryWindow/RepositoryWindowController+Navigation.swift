@@ -171,6 +171,9 @@ extension RepositoryWindowController {
         case .branchesReview:
             return .branchesReview
 
+        case .settings:
+            return .settings
+
         case .remote:
             return session.selectedRemote.map { .remote($0) } ?? .workingCopy
 
@@ -215,6 +218,9 @@ extension RepositoryWindowController {
 
         case .branchesReview:
             showBranchesReview()
+
+        case .settings:
+            showRepositorySettings()
 
         case .remote(let name):
             session.showRemote(name)

@@ -26,11 +26,11 @@ public enum SigningFormat: String, Sendable, CaseIterable {
 
 // MARK: - CommitConfiguration
 
-/// 提交区需要的生效配置：身份、签名、注释字符与提交钩子，都取自仓库所在机器。
+/// 提交区需要的生效配置：身份、签名、注释字符、提交钩子与正文折行，都取自仓库所在机器。
 public struct CommitConfiguration: Sendable, Equatable {
     /// 读取的配置键；`--get-regexp` 匹配的是 Git 规范化后的小写键名。
-    static let pattern =
-        "^(user\\.(name|email|signingkey)|commit\\.gpgsign|gpg\\.format|core\\.(commentchar|commentstring))$"
+    static let pattern = "^(user\\.(name|email|signingkey)|commit\\.gpgsign|gpg\\.format|core\\.(commentchar|commentstring)"
+        + "|spooky\\.(commitbodylimit|commitshowsguide))$"
 
     /// `--no-verify` 跳过的两个钩子。
     static let hooks = ["pre-commit", "commit-msg"]
@@ -56,6 +56,12 @@ public struct CommitConfiguration: Sendable, Equatable {
     /// 仓库启用了 pre-commit 或 commit-msg 钩子时才提供跳过钩子的选项。
     public let hasCommitHooks: Bool
 
+    /// 仓库设置的正文每行字数上限；没有设置时为 nil，沿用 Editor 设置页的值。
+    public let bodyLineLimit: Int?
+
+    /// 仓库设置的是否显示正文参考线；没有设置时为 nil，沿用 Editor 设置页的值。
+    public let showsBodyGuide: Bool?
+
     /// 创建配置快照。
     public init(
         userName: String? = nil,
@@ -64,7 +70,9 @@ public struct CommitConfiguration: Sendable, Equatable {
         signingFormat: SigningFormat = .openpgp,
         signsCommits: Bool = false,
         commentPrefix: String? = "#",
-        hasCommitHooks: Bool = false
+        hasCommitHooks: Bool = false,
+        bodyLineLimit: Int? = nil,
+        showsBodyGuide: Bool? = nil
     ) {
         self.userName = userName
         self.userEmail = userEmail
@@ -73,6 +81,8 @@ public struct CommitConfiguration: Sendable, Equatable {
         self.signsCommits = signsCommits
         self.commentPrefix = commentPrefix
         self.hasCommitHooks = hasCommitHooks
+        self.bodyLineLimit = bodyLineLimit
+        self.showsBodyGuide = showsBodyGuide
     }
 
     /// 解析 `config -z --get-regexp` 的输出；同一键出现多次时与 Git 一样以最后一个为准。
@@ -90,7 +100,11 @@ public struct CommitConfiguration: Sendable, Equatable {
             signingFormat: format ?? .openpgp,
             signsCommits: values["commit.gpgsign"].map(ConfigRecords.boolean) ?? false,
             commentPrefix: comment.lowercased() == "auto" || comment.isEmpty ? nil : comment,
-            hasCommitHooks: hasCommitHooks
+            hasCommitHooks: hasCommitHooks,
+            bodyLineLimit: ConfigRecords.nonEmpty(values["spooky.commitbodylimit"])
+                .flatMap { Int($0) }
+                .flatMap { $0 > 0 ? $0 : nil },
+            showsBodyGuide: values["spooky.commitshowsguide"].map(ConfigRecords.boolean)
         )
     }
 }

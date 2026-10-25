@@ -1865,3 +1865,31 @@
 "link.invalid.message" = "Spooky가 “%@”을(를) 열 수 없습니다. 링크가 유효하지 않거나 지원되지 않습니다.";
 "settings.github" = "github.com 저장소 열기:";
 "settings.github.help" = "github.com의 “Open with Desktop” 링크를 이 앱에서 엽니다.";
+
+/* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
+"repositorySettings.title" = "설정";
+"repositorySettings.general" = "일반";
+"repositorySettings.lfs" = "Git LFS";
+"repositorySettings.ignores" = "무시";
+"repositorySettings.excludes" = "제외";
+"repositorySettings.lfs.patterns" = "추적 패턴";
+"repositorySettings.ignores.patterns" = "무시 패턴";
+"repositorySettings.excludes.patterns" = "제외 패턴";
+"repositorySettings.openInEditor" = "편집기에서 열기";
+"repositorySettings.noPatterns" = "패턴 없음";
+"repositorySettings.name" = "이름";
+"repositorySettings.path" = "경로";
+"repositorySettings.issueTracking" = "이슈 추적";
+"repositorySettings.issueTrackerURL" = "이슈 추적기 URL";
+"repositorySettings.issueNumberPrefix" = "이슈 번호 접두사";
+"repositorySettings.wrapping" = "줄 바꿈";
+"repositorySettings.pageGuide" = "페이지 안내선 표시";
+"repositorySettings.lineLimit" = "줄당 글자 수 제한";
+"repositorySettings.lineLimit.invalid" = "0보다 큰 정수를 입력하세요.";
+"repositorySettings.signing" = "서명";
+"repositorySettings.signCommits" = "커밋 서명";
+"repositorySettings.signingKey" = "서명 키";
+"repositorySettings.allowedSigners" = "Allowed Signers 파일";
+"repositorySettings.write" = "저장소 설정 변경";
+"repositorySettings.edit.title" = "%@ 편집";
+"repositorySettings.edit.message" = "이 값은 이 저장소의 로컬 Git 설정에 기록됩니다.";

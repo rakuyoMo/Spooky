@@ -124,6 +124,7 @@ struct RepositorySidebarView: View {
         if session.activeView == .stashes { return ["stashes"] }
         if session.activeView == .branchesReview { return ["branchesReview"] }
         if session.activeView == .reflog { return ["reflog"] }
+        if session.activeView == .settings { return ["settings"] }
 
         // 远端设置对应侧边栏里那个远端的行
         if session.activeView == .remote {
@@ -168,10 +169,12 @@ struct RepositorySidebarView: View {
                     session.activeView = .branchesReview
                 } else if added.contains("reflog") || value == ["reflog"] {
                     session.activeView = .reflog
+                } else if added.contains("settings") || value == ["settings"] {
+                    session.activeView = .settings
                 } else {
                     // 置顶分组里的行换回分支的完整引用名
                     let references = value
-                        .subtracting(["workingCopy", "history", "stashes", "branchesReview", "reflog"])
+                        .subtracting(["workingCopy", "history", "stashes", "branchesReview", "reflog", "settings"])
                         .filter { !$0.hasPrefix(Self.remoteRowPrefix) }
                         .map(Self.reference(forRow:))
 
@@ -210,7 +213,7 @@ struct RepositorySidebarView: View {
         }
     }
 
-    /// Workspace 分组：工作区、历史、储藏、分支整理，以及视图设置打开 Show Reflog 时的 Reflog。
+    /// Workspace 分组：工作区、历史、储藏、分支整理，视图设置打开 Show Reflog 时的 Reflog，以及仓库设置。
     private var workspace: some View {
         Section(isExpanded: isExpanded(.workspace)) {
             workingCopy
@@ -233,6 +236,9 @@ struct RepositorySidebarView: View {
                 Label(AppLocalization.text("reflog.title"), systemImage: "clock.arrow.circlepath")
                     .tag("reflog")
             }
+
+            Label(AppLocalization.text("repositorySettings.title"), systemImage: "gearshape")
+                .tag("settings")
         } header: {
             Text(AppLocalization.text("workspace.group"))
         }

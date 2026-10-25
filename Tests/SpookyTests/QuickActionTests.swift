@@ -60,6 +60,9 @@ struct QuickActionTests {
         session.refresh(full: true)
         await session.waitForRefresh()
 
+        // 引用快照在历史读取里另行更新，等它带上新分支
+        try await FileViewsTests.wait { session.history.branches.contains { $0.name == "topic" } }
+
         let catalog = QuickActionCatalog(session: session)
         let objects = catalog.immediateObjects()
         let branches = objects.compactMap { object -> RepositoryReference? in
@@ -67,7 +70,8 @@ struct QuickActionTests {
             return reference
         }
 
-        #expect(objects.prefix(5).map(\.title) == QuickActionDestination.allCases.map(\.title))
+        let destinations = QuickActionDestination.allCases.map(\.title)
+        #expect(objects.prefix(destinations.count).map(\.title) == destinations)
         #expect(branches.map(\.name) == ["main", "topic"])
 
         let head = try #require(branches.first)
@@ -122,5 +126,10 @@ struct QuickActionTests {
         controller.performQuickAction(.showFileHistory, on: .file("a.txt"))
         #expect(controller.session.activeView == .fileHistory)
         #expect(controller.session.fileHistory.path == "a.txt")
+
+        // 仓库设置同样是导航对象，当前视图引用随之换成它
+        controller.performQuickAction(.show, on: .navigation(.settings))
+        #expect(controller.session.activeView == .settings)
+        #expect(controller.currentReference == .repository(fixture.location, .settings))
     }
 }

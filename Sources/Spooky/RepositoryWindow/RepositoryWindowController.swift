@@ -673,6 +673,11 @@ extension RepositoryWindowController {
             workingCopySplit = nil
             historySplit = nil
             detail = makeBranchesReviewSplit()
+
+        case .settings:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeRepositorySettingsView()
         }
 
         installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repository")

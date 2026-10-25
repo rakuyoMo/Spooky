@@ -1865,3 +1865,31 @@
 "link.invalid.message" = "Spooky 無法打開 “%@”。連結無效或不受支援。";
 "settings.github" = "打開來自 github.com 的倉庫：";
 "settings.github.help" = "github.com 上 “Open with Desktop” 的連結由這個 App 打開。";
+
+/* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
+"repositorySettings.title" = "設定";
+"repositorySettings.general" = "一般";
+"repositorySettings.lfs" = "Git LFS";
+"repositorySettings.ignores" = "忽略";
+"repositorySettings.excludes" = "排除";
+"repositorySettings.lfs.patterns" = "追蹤規則";
+"repositorySettings.ignores.patterns" = "忽略規則";
+"repositorySettings.excludes.patterns" = "排除規則";
+"repositorySettings.openInEditor" = "在編輯器中打開";
+"repositorySettings.noPatterns" = "沒有規則";
+"repositorySettings.name" = "名稱";
+"repositorySettings.path" = "路徑";
+"repositorySettings.issueTracking" = "Issue 追蹤";
+"repositorySettings.issueTrackerURL" = "Issue 追蹤位址";
+"repositorySettings.issueNumberPrefix" = "Issue 編號前綴";
+"repositorySettings.wrapping" = "換行";
+"repositorySettings.pageGuide" = "顯示參考線";
+"repositorySettings.lineLimit" = "每行字數上限";
+"repositorySettings.lineLimit.invalid" = "請輸入大於 0 的整數。";
+"repositorySettings.signing" = "簽署";
+"repositorySettings.signCommits" = "簽署提交";
+"repositorySettings.signingKey" = "簽署金鑰";
+"repositorySettings.allowedSigners" = "Allowed Signers 檔案";
+"repositorySettings.write" = "修改倉庫設定";
+"repositorySettings.edit.title" = "編輯%@";
+"repositorySettings.edit.message" = "這個值會寫進這個倉庫的本機 Git 設定。";

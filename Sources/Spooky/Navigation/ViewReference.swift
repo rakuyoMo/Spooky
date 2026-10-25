@@ -101,6 +101,9 @@ enum RepositoryDestination: Hashable {
     /// 分支整理。
     case branchesReview
 
+    /// 仓库设置。
+    case settings
+
     /// 一个远端的设置与远端分支。
     case remote(String)
 
@@ -129,6 +132,9 @@ enum RepositoryDestination: Hashable {
 
         /// 分支整理。
         case branchesReview
+
+        /// 仓库设置。
+        case settings
 
         /// 远端设置。
         case remote
@@ -160,6 +166,9 @@ enum RepositoryDestination: Hashable {
 
         case .branchesReview:
             [("view", Name.branchesReview.rawValue)]
+
+        case .settings:
+            [("view", Name.settings.rawValue)]
 
         case .remote(let name):
             [("view", Name.remote.rawValue), ("remote", name)]
@@ -203,6 +212,9 @@ enum RepositoryDestination: Hashable {
 
         case .branchesReview:
             self = .branchesReview
+
+        case .settings:
+            self = .settings
 
         case .remote:
             guard let remote = value("remote") else { return nil }

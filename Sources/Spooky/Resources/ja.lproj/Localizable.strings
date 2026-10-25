@@ -1865,3 +1865,31 @@
 "link.invalid.message" = "Spooky は「%@」を開けません。リンクが無効か、サポートされていません。";
 "settings.github" = "github.com のリポジトリを開く：";
 "settings.github.help" = "github.com の「Open with Desktop」リンクをこの App で開きます。";
+
+/* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
+"repositorySettings.title" = "設定";
+"repositorySettings.general" = "一般";
+"repositorySettings.lfs" = "Git LFS";
+"repositorySettings.ignores" = "無視";
+"repositorySettings.excludes" = "除外";
+"repositorySettings.lfs.patterns" = "トラッキングパターン";
+"repositorySettings.ignores.patterns" = "無視パターン";
+"repositorySettings.excludes.patterns" = "除外パターン";
+"repositorySettings.openInEditor" = "エディタで開く";
+"repositorySettings.noPatterns" = "パターンはありません";
+"repositorySettings.name" = "名前";
+"repositorySettings.path" = "パス";
+"repositorySettings.issueTracking" = "Issue トラッキング";
+"repositorySettings.issueTrackerURL" = "Issue トラッカーの URL";
+"repositorySettings.issueNumberPrefix" = "Issue 番号のプレフィックス";
+"repositorySettings.wrapping" = "行の折り返し";
+"repositorySettings.pageGuide" = "ページガイドを表示";
+"repositorySettings.lineLimit" = "1 行の文字数上限";
+"repositorySettings.lineLimit.invalid" = "0 より大きい整数を入力してください。";
+"repositorySettings.signing" = "署名";
+"repositorySettings.signCommits" = "コミットに署名";
+"repositorySettings.signingKey" = "署名鍵";
+"repositorySettings.allowedSigners" = "Allowed Signers ファイル";
+"repositorySettings.write" = "リポジトリの設定を変更";
+"repositorySettings.edit.title" = "%@を編集";
+"repositorySettings.edit.message" = "この値はこのリポジトリのローカル Git 設定に書き込まれます。";
