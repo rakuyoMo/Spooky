@@ -1630,3 +1630,19 @@
 "tree.openItemsAt" = "Abrir %1$ld ítems en la revisión “%2$@”";
 "tree.openAtWith" = "Abrir “%1$@” en la revisión “%2$@” con";
 "tree.openItemsAtWith" = "Abrir %1$ld ítems en la revisión “%2$@” con";
+
+/* App 菜单的检查更新与 Settings → Updates：更新通道、自动检查与下载、检查间隔与最近一次检查。 */
+"updates.check" = "Buscar actualizaciones…";
+"settings.updates" = "Actualizaciones";
+"updates.channel" = "Canal de versiones:";
+"updates.channel.stable" = "Estable";
+"updates.channel.beta" = "Beta";
+"updates.channel.development" = "Desarrollo";
+"updates.automaticChecks" = "Buscar actualizaciones automáticamente";
+"updates.automaticDownloads" = "Descargar actualizaciones automáticamente";
+"updates.interval" = "Intervalo de búsqueda:";
+"updates.interval.hourly" = "Cada hora";
+"updates.interval.daily" = "Cada día";
+"updates.interval.weekly" = "Cada semana";
+"updates.lastCheck" = "Última búsqueda de actualizaciones:";
+"updates.never" = "Nunca";

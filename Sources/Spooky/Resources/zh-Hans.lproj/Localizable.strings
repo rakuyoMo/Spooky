@@ -1630,3 +1630,19 @@
 "tree.openItemsAt" = "打开 %1$ld 项在版本 “%2$@” 的内容";
 "tree.openAtWith" = "用其他程序打开 “%1$@” 在版本 “%2$@” 的内容";
 "tree.openItemsAtWith" = "用其他程序打开 %1$ld 项在版本 “%2$@” 的内容";
+
+/* App 菜单的检查更新与 Settings → Updates：更新通道、自动检查与下载、检查间隔与最近一次检查。 */
+"updates.check" = "检查更新…";
+"settings.updates" = "更新";
+"updates.channel" = "更新通道：";
+"updates.channel.stable" = "稳定版";
+"updates.channel.beta" = "测试版";
+"updates.channel.development" = "开发版";
+"updates.automaticChecks" = "自动检查更新";
+"updates.automaticDownloads" = "自动下载更新";
+"updates.interval" = "检查间隔：";
+"updates.interval.hourly" = "每小时";
+"updates.interval.daily" = "每天";
+"updates.interval.weekly" = "每周";
+"updates.lastCheck" = "上次检查更新：";
+"updates.never" = "从未";

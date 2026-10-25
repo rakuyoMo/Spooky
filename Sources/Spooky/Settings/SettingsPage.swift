@@ -31,6 +31,7 @@ extension SettingsPage {
         .userProfiles,
         .integration,
         .environment,
+        .updates,
     ]
 
     /// 克隆目录、终端、自动获取、历史、工作区列表与窗口恢复等通用设置。
@@ -76,5 +77,10 @@ extension SettingsPage {
     /// 本机执行 Git 时附加的环境变量。
     static let environment = SettingsPage(key: "settings.environment", symbol: "apple.terminal") {
         AnyView(EnvironmentSettingsView())
+    }
+
+    /// 更新通道、自动检查与下载、检查间隔与最近一次检查。
+    static let updates = SettingsPage(key: "settings.updates", symbol: "arrow.down.circle") {
+        AnyView(UpdatesSettingsView())
     }
 }

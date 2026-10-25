@@ -75,6 +75,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         appIconController.start()
         newWindow()
         NSApp.activate(ignoringOtherApps: true)
+
+        // 窗口与菜单就绪后启动更新器，按计划检查与手动检查都由它负责
+        UpdateController.shared.start()
     }
 
     /// 关闭仓库或最后一个窗口都不退出应用。

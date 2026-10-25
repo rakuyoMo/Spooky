@@ -19,3 +19,11 @@ run = "swift package --allow-writing-to-package-directory format --paths Sources
 [tasks."swift:lint"]
 description = "检查 Swift 代码规范"
 run = "mise run swift:format --lint"
+
+[tasks.release]
+description = "为新版本开 release PR，用法：mise run release X.Y.Z [stable|beta|development]"
+run = "./scripts/release.sh"
+
+[tasks.appcast]
+description = "把 build/Spooky.app 压缩成更新包并生成签名的更新清单，用法：mise run appcast <通道> [<上一份更新清单>]"
+run = "./scripts/appcast.sh"

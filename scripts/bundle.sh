@@ -31,7 +31,25 @@ for locale in en zh-Hans zh-Hant ja ko de fr es; do
         "$app_directory/Contents/Resources/$locale.lproj/InfoPlist.strings"
 done
 
-# ad-hoc 签名只保证 Bundle 内容完整、不代表开发者身份；签名后立即校验。
+# 更新框架连同符号链接、辅助程序与 XPC 服务原样放进 Contents/Frameworks，下载与安装更新时都要用到。
+sparkle_framework="$app_directory/Contents/Frameworks/Sparkle.framework"
+mkdir -p "$app_directory/Contents/Frameworks"
+ditto "$binary_directory/Sparkle.framework" "$sparkle_framework"
+
+# Sparkle 以 MIT 许可证发布，随 App 附上它的版权与许可声明。
+cp .build/artifacts/sparkle/Sparkle/LICENSE "$app_directory/Contents/Resources/Sparkle-LICENSE.txt"
+
+# 嵌套代码由内向外签名：先是 XPC 服务与辅助程序，再是框架；XPC 服务保留各自的 entitlements。
+for service in Downloader Installer; do
+    codesign --force --sign - --timestamp=none --preserve-metadata=entitlements \
+        "$sparkle_framework/Versions/B/XPCServices/$service.xpc"
+done
+
+codesign --force --sign - --timestamp=none "$sparkle_framework/Versions/B/Autoupdate"
+codesign --force --sign - --timestamp=none "$sparkle_framework/Versions/B/Updater.app"
+codesign --force --sign - --timestamp=none "$sparkle_framework"
+
+# ad-hoc 签名只保证 Bundle 内容完整、不代表开发者身份；最后签整个 App，签名后立即校验。
 codesign --force --sign - --timestamp=none "$app_directory"
 codesign --verify --strict --deep "$app_directory"
 

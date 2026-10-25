@@ -1,0 +1,36 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Spooky</title>
+        <item>
+            <title>0.10.1</title>
+            <sparkle:channel>development</sparkle:channel>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>0.10.1</sparkle:shortVersionString>
+            <enclosure url="https://github.com/rakuyoMo/Spooky/releases/download/v0.10.1/Spooky-0.10.1.zip" length="100" type="application/octet-stream" sparkle:edSignature="ZGV2ZWxvcG1lbnQ="></enclosure>
+        </item>
+        <item>
+            <title>0.10.0</title>
+            <sparkle:channel>beta</sparkle:channel>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>0.10.0</sparkle:shortVersionString>
+            <enclosure url="https://github.com/rakuyoMo/Spooky/releases/download/v0.10.0/Spooky-0.10.0.zip" length="100" type="application/octet-stream" sparkle:edSignature="YmV0YQ=="></enclosure>
+        </item>
+        <item>
+            <title>0.9.0</title>
+            <sparkle:version>3</sparkle:version>
+            <sparkle:shortVersionString>0.9.0</sparkle:shortVersionString>
+            <enclosure url="https://github.com/rakuyoMo/Spooky/releases/download/v0.9.0/Spooky-0.9.0.zip" length="100" type="application/octet-stream" sparkle:edSignature="c3RhYmxl"></enclosure>
+        </item>
+        <item>
+            <title>0.8.0</title>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>0.8.0</sparkle:shortVersionString>
+            <enclosure url="https://github.com/rakuyoMo/Spooky/releases/download/v0.8.0/Spooky-0.8.0.zip" length="100" type="application/octet-stream" sparkle:edSignature="b2xkLXN0YWJsZQ=="></enclosure>
+        </item>
+    </channel>
+</rss>
+<!-- sparkle-signatures:
+edSignature: cHJldmlvdXM=
+length: 100
+-->

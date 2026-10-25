@@ -1630,3 +1630,19 @@
 "tree.openItemsAt" = "%1$ld 項目のリビジョン「%2$@」を開く";
 "tree.openAtWith" = "「%1$@」のリビジョン「%2$@」をこのアプリケーションで開く";
 "tree.openItemsAtWith" = "%1$ld 項目のリビジョン「%2$@」をこのアプリケーションで開く";
+
+/* App 菜单的检查更新与 Settings → Updates：更新通道、自动检查与下载、检查间隔与最近一次检查。 */
+"updates.check" = "アップデートを確認…";
+"settings.updates" = "アップデート";
+"updates.channel" = "リリースチャンネル：";
+"updates.channel.stable" = "安定版";
+"updates.channel.beta" = "ベータ版";
+"updates.channel.development" = "開発版";
+"updates.automaticChecks" = "アップデートを自動的に確認";
+"updates.automaticDownloads" = "アップデートを自動的にダウンロード";
+"updates.interval" = "確認の間隔：";
+"updates.interval.hourly" = "1 時間ごと";
+"updates.interval.daily" = "毎日";
+"updates.interval.weekly" = "毎週";
+"updates.lastCheck" = "最後に確認した日時：";
+"updates.never" = "未確認";

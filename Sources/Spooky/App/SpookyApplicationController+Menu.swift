@@ -18,9 +18,19 @@ extension SpookyApplicationController {
         configureWindowMenu(in: menu)
     }
 
-    /// 应用菜单：设置、隐藏与退出。
+    /// 应用菜单：检查更新、设置、隐藏与退出。
     private func configureApplicationMenu(in menu: NSMenu) {
         let application = addMenu("app.name", to: menu)
+
+        // 检查与下载进行中时由更新器禁用这一项
+        addItem(
+            "updates.check",
+            action: #selector(UpdateController.checkForUpdates(_:)),
+            target: UpdateController.shared,
+            to: application
+        )
+
+        application.addItem(.separator())
         addItem("settings.title", action: #selector(showSettings), key: ",", target: self, to: application)
 
         application.addItem(.separator())

@@ -23,6 +23,11 @@ ditto "$binary_directory/Spooky_Spooky.bundle" "$app_directory/Contents/Resource
 
 ditto "$binary_directory/Spooky_SpookyKit.bundle" "$app_directory/Contents/Resources/Spooky_SpookyKit.bundle"
 
+# 可执行文件从 Contents/Frameworks 加载更新框架；先删掉旧的一份，框架内的符号链接与文件不残留上次的版本。
+rm -rf "$app_directory/Contents/Frameworks/Sparkle.framework"
+mkdir -p "$app_directory/Contents/Frameworks"
+ditto "$binary_directory/Sparkle.framework" "$app_directory/Contents/Frameworks/Sparkle.framework"
+
 # 系统权限弹窗从 App 自身的资源目录读取用途说明。
 for locale in en zh-Hans zh-Hant ja ko de fr es; do
     mkdir -p "$app_directory/Contents/Resources/$locale.lproj"
