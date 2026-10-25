@@ -7,7 +7,7 @@ extension RemoteConnection {
         environment = try await readEnvironment()
 
         // B 的非交互环境必须能找到 Git，且版本满足最低要求。
-        _ = try await probe(["/bin/sh", "-c", "command -v git"], kind: .gitUnavailable)
+        try await verifyGitAvailable()
         try await verifyGitVersion()
 
         // 存在、读取和搜索权限分别检查，路径只作为位置参数进入固定脚本。
@@ -76,8 +76,18 @@ extension RemoteConnection {
             throw RemoteConnectionError(.deployment, diagnostic: "environment probe failed")
         }
 
-        _ = try await probe(["/bin/sh", "-c", "command -v git"], kind: .gitUnavailable)
+        try await verifyGitAvailable()
         try await verifyGitVersion()
+    }
+
+    /// 确认非交互环境能找到 Git；找不到时把这个环境的 PATH 写进诊断，修复方向一目了然。
+    private func verifyGitAvailable() async throws {
+        do {
+            _ = try await probe(["/bin/sh", "-c", "command -v git"], kind: .gitUnavailable)
+        } catch let error as RemoteConnectionError where error.kind == .gitUnavailable {
+            let path = environment.map { "PATH=" + $0.searchPath.joined(separator: ":") }
+            throw RemoteConnectionError(.gitUnavailable, result: error.result, diagnostic: path)
+        }
     }
 
     /// 读取 `git --version` 并记进环境；低于最低版本时抛出版本错误。

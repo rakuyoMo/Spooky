@@ -177,7 +177,7 @@ extension QuickActionCatalog {
             [.showReferenceHistory, .revealInHistory, .checkout, .delete, .createBranch, .copyName]
 
         case .commit:
-            [.showCommit, .copyHash, .revealInHistory, .createTag, .createBranch, .editCommit, .editMessage]
+            [.showCommit, .copyHash, .revealInHistory, .createTag, .createBranch, .editCommit, .editMessage, .openDiffTool]
 
         default:
             otherCandidates(for: object)
@@ -188,7 +188,7 @@ extension QuickActionCatalog {
     private func otherCandidates(for object: QuickActionObject) -> [QuickAction] {
         switch object {
         case .stash: [.applyStash, .deleteStash]
-        case .file: [.showFile, .showFileHistory, .showBlame, .revealInFinder, .copyPath]
+        case .file: [.showFile, .showFileHistory, .showBlame, .openInEditor, .revealInFinder, .copyPath]
         case .submodule: [.openSubmodule]
         case .worktree: [.openWorktree, .openWorktreeInNewWindow, .revealInFinder, .openInTerminal]
         case .remote: [.showRemoteSettings, .fetch, .editConnection]
@@ -268,7 +268,7 @@ extension QuickActionCatalog {
     /// 提交：与历史列表右键菜单的规则相同，改写类动作只对 HEAD 可达的提交出现。
     private func isAvailable(_ action: QuickAction, commitOnHead onHead: Bool) -> Bool {
         switch action {
-        case .showCommit, .copyHash, .revealInHistory: true
+        case .showCommit, .copyHash, .revealInHistory, .openDiffTool: true
         case .createTag: session.canCreateTag
         case .createBranch: session.canCreateBranchFromReference
         case .editCommit, .editMessage: onHead && session.canRewrite
@@ -300,7 +300,7 @@ extension QuickActionCatalog {
         switch action {
         case .revealInFinder: !isRemote
         case .createSnapshot: session.canSaveStash
-        case .showFile, .showFileHistory, .showBlame: session.runner != nil
+        case .showFile, .showFileHistory, .showBlame, .openInEditor: session.runner != nil
         default: true
         }
     }

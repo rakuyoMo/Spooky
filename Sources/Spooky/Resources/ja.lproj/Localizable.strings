@@ -1781,6 +1781,7 @@
 "quickActions.showFile" = "ファイルを表示";
 "quickActions.showFileHistory" = "ファイル履歴を表示";
 "quickActions.showBlame" = "Blame を表示";
+"quickActions.openInEditor" = "外部エディタで開く";
 "quickActions.openSubmodule" = "サブモジュールを開く";
 "quickActions.openWorktree" = "ワークツリーを開く";
 "quickActions.openWorktreeInNewWindow" = "ワークツリーを新規ウインドウで開く";
@@ -1912,3 +1913,15 @@
 "crash.dontReport" = "報告しない";
 "settings.crashReports" = "クラッシュレポート：";
 "settings.crashReports.always" = "クラッシュレポートを常に送信";
+
+/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+"remote.environment.title" = "サーバが Git の環境変数を設定しています";
+"remote.environment.message" = "「%1$@」の非対話シェルは %2$@ を設定しています。これらの変数は、Spooky がそこで実行するすべての Git コマンドのリポジトリの探し方と設定の読み方を変えます。Git の動作がおかしい場合は、サーバのシェル起動ファイルから取り除いてください。";
+"untracked.hint" = "%ld 個の追跡されていないファイルのため更新が遅くなっています。ビルド成果物や依存関係の無視ルールを追加するか、サーバ上のステータス読み取りを高速化してください。";
+"untracked.speedUp" = "高速化…";
+"untracked.speedUp.title" = "サーバ上のステータス読み取りを高速化";
+"untracked.speedUp.message" = "Spooky は「%@」上のこのリポジトリで次の設定をオンにできます。確認した後にだけ、サーバ上のこのリポジトリのローカル設定に書き込みます。";
+"untracked.speedUp.apply" = "設定を適用";
+"untracked.speedUp.cache" = "ステータス確認の間で追跡されていないファイルをキャッシュします。";
+"untracked.speedUp.monitor" = "作業ツリー全体を走査する代わりに、Git がファイルシステムを監視します。";
+"untracked.speedUp.graph" = "commit-graph を今すぐ書き出し、フェッチ時に更新して履歴の読み込みを速くします。";

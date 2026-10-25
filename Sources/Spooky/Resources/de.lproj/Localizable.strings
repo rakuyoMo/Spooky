@@ -1781,6 +1781,7 @@
 "quickActions.showFile" = "Datei zeigen";
 "quickActions.showFileHistory" = "Dateiverlauf zeigen";
 "quickActions.showBlame" = "Blame zeigen";
+"quickActions.openInEditor" = "Mit externem Editor öffnen";
 "quickActions.openSubmodule" = "Submodul öffnen";
 "quickActions.openWorktree" = "Worktree öffnen";
 "quickActions.openWorktreeInNewWindow" = "Worktree in neuem Fenster öffnen";
@@ -1912,3 +1913,15 @@
 "crash.dontReport" = "Nicht melden";
 "settings.crashReports" = "Absturzberichte:";
 "settings.crashReports.always" = "Absturzberichte immer senden";
+
+/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+"remote.environment.title" = "Der Server setzt Git-Umgebungsvariablen";
+"remote.environment.message" = "Die nicht interaktive Shell auf „%1$@“ setzt %2$@. Diese Variablen ändern, wie Git bei jedem Befehl, den Spooky dort ausführt, Repositorys findet und seine Konfiguration liest. Entfernen Sie sie aus den Startdateien der Shell auf dem Server, wenn sich Git unerwartet verhält.";
+"untracked.hint" = "%ld nicht verfolgte Dateien verlangsamen das Aktualisieren. Fügen Sie Ignorierregeln für Build-Ausgaben und Abhängigkeiten hinzu oder beschleunigen Sie den Status auf dem Server.";
+"untracked.speedUp" = "Beschleunigen …";
+"untracked.speedUp.title" = "Status auf dem Server beschleunigen";
+"untracked.speedUp.message" = "Spooky kann diese Einstellungen für dieses Repository auf „%@“ aktivieren. Sie werden erst nach Ihrer Bestätigung in die lokale Konfiguration des Repositorys auf dem Server geschrieben.";
+"untracked.speedUp.apply" = "Einstellungen anwenden";
+"untracked.speedUp.cache" = "Speichert nicht verfolgte Dateien zwischen Statusabfragen.";
+"untracked.speedUp.monitor" = "Lässt Git das Dateisystem beobachten, statt die ganze Arbeitskopie zu durchsuchen.";
+"untracked.speedUp.graph" = "Schreibt den Commit-Graph jetzt und hält ihn beim Abrufen aktuell, was den Verlauf beschleunigt.";

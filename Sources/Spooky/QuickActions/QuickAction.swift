@@ -110,6 +110,9 @@ enum QuickAction: Equatable {
     /// 改写提交信息的对话框。
     case editMessage
 
+    /// 用外部比较工具查看提交的全部改动。
+    case openDiffTool
+
     // MARK: 储藏
 
     /// 预选了这个储藏的应用对话框。
@@ -128,6 +131,9 @@ enum QuickAction: Equatable {
 
     /// HEAD 版本的逐行追溯。
     case showBlame
+
+    /// 用编辑器打开工作区里的文件；服务器文件经临时副本写回。
+    case openInEditor
 
     // MARK: 子模块与工作树
 
@@ -214,6 +220,7 @@ extension QuickAction {
         case .createTag: AppLocalization.text("quickActions.createTag")
         case .editCommit: AppLocalization.text("quickActions.editCommit")
         case .editMessage: AppLocalization.text("rewrite.reword")
+        case .openDiffTool: AppLocalization.text("externalTool.openDiffTool")
         case .applyStash: AppLocalization.text("stash.apply")
         default: AppLocalization.text("stash.delete")
         }
@@ -225,6 +232,7 @@ extension QuickAction {
         case .showFile: AppLocalization.text("quickActions.showFile")
         case .showFileHistory: AppLocalization.text("quickActions.showFileHistory")
         case .showBlame: AppLocalization.text("quickActions.showBlame")
+        case .openInEditor: AppLocalization.text("quickActions.openInEditor")
         case .openSubmodule: AppLocalization.text("quickActions.openSubmodule")
         case .openWorktree: AppLocalization.text("quickActions.openWorktree")
         case .openWorktreeInNewWindow: AppLocalization.text("quickActions.openWorktreeInNewWindow")
@@ -251,7 +259,7 @@ extension QuickAction {
             branchTitle
         case .archive, .unarchive, .skipAutoArchive, .includeInAutoArchive:
             archiveTitle
-        case .showCommit, .copyHash, .createTag, .editCommit, .editMessage, .applyStash, .deleteStash:
+        case .showCommit, .copyHash, .createTag, .editCommit, .editMessage, .openDiffTool, .applyStash, .deleteStash:
             commitTitle
         default:
             otherTitle

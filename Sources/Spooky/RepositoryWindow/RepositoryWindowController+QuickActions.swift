@@ -139,6 +139,7 @@ extension RepositoryWindowController {
         case .createBranch: presentRepositoryAction(RepositoryActionRequest(kind: .create, reference: commit.id))
         case .editCommit: session.requestRewrite(.edit(commit.id))
         case .editMessage: session.requestReword(commit.id)
+        case .openDiffTool: openDiffTool(for: commit)
         default: break
         }
     }
@@ -151,6 +152,8 @@ extension RepositoryWindowController {
         case .showFileHistory: session.showFileHistory(path)
 
         case .showBlame: session.showFile(path, at: nil, mode: .blame)
+
+        case .openInEditor: session.edit(path)
 
         case .revealInFinder:
             if let root = session.repository?.localURL {
@@ -216,6 +219,24 @@ extension RepositoryWindowController {
     private static func copy(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
+    }
+
+    /// 读出提交的变更集后用外部比较工具查看；读取失败时显示错误。
+    private func openDiffTool(for commit: HistoryCommit) {
+        guard let runner = session.runner else {
+            return
+        }
+
+        Task { [weak self] in
+            do {
+                let changes = try await RepositoryHistory(runner: runner).changes(in: commit.id)
+
+                guard let self else { return }
+                session.openDiffTool(for: commit, files: RepositorySession.comparedFiles(changes))
+            } catch {
+                self?.showFailure(AppFailure(error: error, opening: false, location: runner.location))
+            }
+        }
     }
 
     /// 子模块与工作树在仓库所在机器上的位置：相对路径接在仓库根目录后，服务器仓库沿用同一个主机。

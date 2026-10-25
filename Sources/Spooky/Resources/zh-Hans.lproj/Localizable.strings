@@ -1781,6 +1781,7 @@
 "quickActions.showFile" = "显示文件";
 "quickActions.showFileHistory" = "显示文件历史";
 "quickActions.showBlame" = "显示 Blame";
+"quickActions.openInEditor" = "用外部编辑器打开";
 "quickActions.openSubmodule" = "打开子模块";
 "quickActions.openWorktree" = "打开工作树";
 "quickActions.openWorktreeInNewWindow" = "在新窗口中打开工作树";
@@ -1912,3 +1913,15 @@
 "crash.dontReport" = "不报告";
 "settings.crashReports" = "崩溃报告：";
 "settings.crashReports.always" = "总是发送崩溃报告";
+
+/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+"remote.environment.title" = "服务器设置了 Git 环境变量";
+"remote.environment.message" = "“%1$@” 的非交互 shell 设置了 %2$@。这些变量会改变 Spooky 在那里执行的每条 Git 命令查找仓库与读取配置的方式。如果 Git 表现异常，请从服务器的 shell 启动文件里去掉它们。";
+"untracked.hint" = "%ld 个未跟踪文件让刷新变慢。请为构建产物和依赖补充忽略规则，或加快服务器上的状态读取。";
+"untracked.speedUp" = "加快…";
+"untracked.speedUp.title" = "加快服务器上的状态读取";
+"untracked.speedUp.message" = "Spooky 可以在 “%@” 上的这个仓库里打开下面几项设置。只有在你确认后，它们才会写进服务器上这个仓库的本地配置。";
+"untracked.speedUp.apply" = "应用设置";
+"untracked.speedUp.cache" = "在两次状态读取之间缓存未跟踪文件。";
+"untracked.speedUp.monitor" = "让 Git 监听文件变化，不必每次扫描整个工作区。";
+"untracked.speedUp.graph" = "现在写出 commit-graph，并在获取时保持更新，加快历史读取。";

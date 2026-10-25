@@ -1,3 +1,4 @@
+import AppKit
 import SpookyKit
 import SwiftUI
 
@@ -139,6 +140,19 @@ struct AddRemoteRepositoryView: View {
         }
     }
 
+    /// 提示 B 的非交互环境设置了 GIT_ 变量：它们会改变 Spooky 在 B 上执行的每条 Git 命令查找仓库与读取配置的方式。
+    private static func warnAbout(_ variables: [String], on host: String) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = AppLocalization.text("remote.environment.title")
+        alert.informativeText = AppLocalization.text(
+            "remote.environment.message",
+            host,
+            variables.formatted(.list(type: .and))
+        )
+        alert.runModal()
+    }
+
     /// 体检通过才加入最近记录；取消和失败会关闭本次连接。
     private func submit() {
         failure = nil
@@ -155,8 +169,15 @@ struct AddRemoteRepositoryView: View {
 
             do {
                 let repository = try await remote.open()
+                let variables = await remote.environment?.gitVariables ?? []
                 try Task.checkCancellation()
                 task = nil
+
+                // 第一次连接时提示 B 的非交互环境里会改变 Git 行为的变量
+                if !variables.isEmpty {
+                    Self.warnAbout(variables, on: host)
+                }
+
                 opened(repository.location)
             } catch {
                 await remote.close()
