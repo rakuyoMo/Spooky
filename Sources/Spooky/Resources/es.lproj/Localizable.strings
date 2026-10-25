@@ -1550,6 +1550,10 @@
 "settings.environment.add" = "Añadir variable";
 "settings.environment.remove" = "Eliminar variable";
 "settings.environment.localOnly" = "Estos ajustes solo se aplican a los comandos de Git que se ejecutan en este Mac. Los repositorios en servidores usan el entorno del propio servidor.";
+"settings.environment.server" = "Comprobar el entorno no interactivo que usa Git en un servidor:";
+"settings.environment.server.hosts" = "Servidores";
+"settings.environment.server.check" = "Comprobar";
+"settings.environment.server.noGit" = "No se encuentra en el PATH";
 
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "Agente SSH:";

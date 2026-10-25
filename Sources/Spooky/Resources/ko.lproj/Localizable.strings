@@ -1550,6 +1550,10 @@
 "settings.environment.add" = "변수 추가";
 "settings.environment.remove" = "변수 제거";
 "settings.environment.localOnly" = "이 설정은 이 Mac에서 실행하는 Git 명령에만 적용됩니다. 서버의 저장소는 서버 자체의 환경을 사용합니다.";
+"settings.environment.server" = "서버에서 Git이 사용하는 비대화형 환경 확인:";
+"settings.environment.server.hosts" = "서버";
+"settings.environment.server.check" = "확인";
+"settings.environment.server.noGit" = "PATH에서 찾을 수 없음";
 
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH 에이전트:";

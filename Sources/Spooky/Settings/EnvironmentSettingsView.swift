@@ -5,7 +5,8 @@ import SwiftUI
 
 /// Settings → Environment：从登录 shell 读到的环境变量，以及在本机执行 Git 时附加的自定义变量。
 ///
-/// 纵向排列、间距 8 pt：复选框、只读的变量表（只在开启时显示）、自定义变量表与底部的 + / − 操作条，最后说明这些设置只作用于本机。
+/// 纵向排列、间距 8 pt：复选框、只读的变量表（只在开启时显示）、自定义变量表与底部的 + / − 操作条，说明这些设置只作用于本机，
+/// 最后是检查服务器非交互环境的一栏。
 struct EnvironmentSettingsView: View {
     /// 正在编辑的格子；离开一个格子即保存整张表。
     private enum Field: Hashable {
@@ -43,7 +44,7 @@ struct EnvironmentSettingsView: View {
     @FocusState
     private var focus: Field?
 
-    /// 自上而下的四部分，页面宽 900 pt。
+    /// 自上而下的五部分，页面宽 900 pt。
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Toggle(
@@ -65,9 +66,14 @@ struct EnvironmentSettingsView: View {
             Text(AppLocalization.text("settings.environment.localOnly"))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
+
+            Divider()
+                .padding(.vertical, 4)
+
+            ServerEnvironmentCheck()
         }
         .padding(20)
-        .frame(width: 900, height: 500, alignment: .topLeading)
+        .frame(width: 900, height: 660, alignment: .topLeading)
         .onAppear { rows = preferences.customVariables }
         .onDisappear(perform: save)
     }

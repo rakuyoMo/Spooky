@@ -1550,6 +1550,10 @@
 "settings.environment.add" = "加入變數";
 "settings.environment.remove" = "移除變數";
 "settings.environment.localOnly" = "這些設定只作用於在這台 Mac 上執行的 Git 指令；伺服器上的儲存庫使用伺服器自己的環境。";
+"settings.environment.server" = "檢查伺服器上 Git 使用的非互動環境：";
+"settings.environment.server.hosts" = "伺服器";
+"settings.environment.server.check" = "檢查";
+"settings.environment.server.noGit" = "PATH 裡找不到";
 
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH Agent：";

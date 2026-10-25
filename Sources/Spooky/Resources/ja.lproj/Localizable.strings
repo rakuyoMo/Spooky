@@ -1550,6 +1550,10 @@
 "settings.environment.add" = "変数を追加";
 "settings.environment.remove" = "変数を削除";
 "settings.environment.localOnly" = "これらの設定は、この Mac で実行する Git コマンドにのみ適用されます。サーバ上のリポジトリはサーバ自身の環境を使います。";
+"settings.environment.server" = "サーバ上で Git が使う非対話環境を確認：";
+"settings.environment.server.hosts" = "サーバ";
+"settings.environment.server.check" = "確認";
+"settings.environment.server.noGit" = "PATH に見つかりません";
 
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH エージェント：";
