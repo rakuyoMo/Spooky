@@ -8,7 +8,9 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 
 - `Spooky` 是可运行的桌面 App；`SpookyKit` 核心库负责在本机或远端执行 Git、读取工作区状态并解析输出
 - 当前 App 支持以下能力，并可打包发布用 App；产品按 M1–M10 逐步完成 `1.0.0`
-  - 本机与服务器工作区、混合最近记录、连接体检、断线重连与写入核对
+  - 本机与服务器工作区、连接体检与环境提示、断线重连与写入核对
+  - 仓库书签的文件夹、排序与详情；本机与服务器上的新建、后台克隆与最近克隆、目录扫描与服务器目录浏览
+  - 标签页、窗口恢复、启动窗口、后退 / 前进、快捷操作面板与工具栏自定义
   - 工作区的三种显示模式、忽略规则与文件操作；带显示选项、语法着色、行内高亮与图片对照的 Diff；文件 / 块 / 行操作
   - 提交信息编辑、身份档案与提交签名；冲突向导与冲突收尾；储藏与 Auto Stash
   - 分页历史的组合搜索、排序分组与视图设置；提交详情的文件树、签名与合并 Diff 方式；版本比较、导出与保存补丁；文件历史、Blame 与原文
@@ -16,6 +18,8 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
   - 完整的 Fetch / Pull / Push、Sync、安全强推、Push To 与自动获取；合并预览与 Activity
   - 反转、摘取、重置、检出版本、变基到别处与交互式变基；Branches Review 与自动归档；Reflog 与按仓库的撤销、重做
   - 文件监听与轮询刷新、按仓库恢复的视图状态、终端程序与文本区主题管理
+  - 外部比较与合并工具、Open With 与编辑器副本回写；`spooky://` 链接与 github.com 仓库链接
+  - 完整的设置页与仓库设置；Help 菜单、诊断报告与崩溃报告；Sparkle 自动更新与发布流程
 - 远端仓库的工作区留在远端机器，客户端经系统 SSH、用 `~/.ssh/config` 中的主机别名访问
 - 纯开源的个人工具，只在 GitHub 分发
 - 许可证为 [GPL-3.0](LICENSE)
@@ -66,6 +70,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteRewriteTests` | 显式运行 M7 的服务器反转、摘取、重置与交互式变基测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteBranchesReviewTests` | 显式运行 M7 的服务器分支比较、分叉点、归档标记与 Update Branch 测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReflogUndoTests` | 显式运行 M7 的服务器 Reflog 与撤销、重做测试 |
+| `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHostOperationsTests` | 显式运行 M8 的服务器列目录、新建、扫描与克隆测试 |
 | `swift build --product Spooky` | 编译可执行 App product |
 | `swift run Spooky` | 启动 App 的仓库管理窗口 |
 | `./scripts/build-app.sh` | 生成开发用 `.build/Spooky.app` |
@@ -95,6 +100,31 @@ Sources/SpookyKit/            库源码，按功能分目录
     RemoteOutputFilter.swift  远端完成帧与退出状态解析
     RemoteOutputRedactor.swift 中继凭据的跨输出块脱敏
     SSHConfiguration.swift    SSH 参数及远端环境清洗
+    RemoteConnection+Host.swift 不绑定仓库的主机连接，新建、克隆、扫描与目录浏览在仓库存在之前使用
+    RemoteConnection+Recovery.swift 写入中断后重连时核对仓库的事实
+    RemoteConnectionState.swift 连接状态
+    RemoteHostEnvironment.swift 体检读到的 B 端非交互环境：主目录、PATH、Git 与 GIT_ 变量名
+  Host/                       仓库还不存在时在目标机器上的操作，本机与服务器执行同一份脚本
+    HostDirectories.swift     列出子目录与检查目标路径，服务器经主机连接在 B 上执行
+    HostExecution.swift       在目标机器上执行 Git 以外的程序
+    HostOperationError.swift  目标路径与环境不能使用的原因
+    RepositoryCreation.swift  在本机或服务器上 git init
+    RepositoryClone.swift     后台克隆、LFS 与子模块选项，以及从地址取仓库名
+    CloneProgress.swift       从 stderr 解析的克隆进度
+    RepositoryScan.swift      只在选定目录里用 find 寻找仓库，结果流式返回
+  Configuration/              全局与仓库本地配置
+    GlobalGitConfiguration.swift 本机全局配置里的身份、签名与 Issue 追踪
+    RepositorySettings.swift  仓库设置读写的本地配置，以及忽略、排除与 LFS 跟踪规则
+    ConfigRecords.swift       config -z --get-regexp 输出的解析
+  Environment/                本机执行 Git 时的程序与环境
+    LocalExecutionSettings.swift 所选的 Git 程序、登录 shell 与自定义变量、SSH agent，作用于本机的每条 Git 调用
+    LoginShellEnvironment.swift 从登录 shell 读出环境变量
+    SSHAgent.swift            系统与 1Password 的 SSH agent
+    GitProgram.swift          本机可选的 Git 程序
+  ExternalTools/              交给本机外部工具的文件
+    ExternalToolFiles.swift   比较两侧的文件：工作区、暂存区、提交与对象
+    MergeToolFiles.swift      合并工具的三方文件与结果写回
+    EditingCopy.swift         服务器文件的编辑器副本与写回前的版本核对
   Callback/                   口令、密码、签名口令与编辑器回调
     CallbackRelay.swift       本机 Unix socket 回调服务，请求标明发起的操作能否询问用户
     LocalGitAuthentication.swift 本机凭据与 SSH 签名口令回调、SSH agent 接入
@@ -103,6 +133,8 @@ Sources/SpookyKit/            库源码，按功能分目录
     LocalRepository.swift     Git 最低版本检查与本机工作区识别
     RepositoryFiles.swift     本机文件访问与复用主连接的 SFTP 传输
     RepositoryFileCache.swift 交给本机程序的文件副本，位于会话专属的 0700 缓存目录，关闭仓库时删除
+    RepositorySummary.swift   仓库管理详情的概况：分支、最后提交、提交人、描述与远端
+    LinkedRepositories.swift  子模块与工作树的清单
   WorkingCopy/                工作区状态、Diff、文件操作、冲突与提交
     WorkingCopyStatus.swift   porcelain v2 工作区状态模型与解析
     WorkingTreeFiles.swift    暂存区清单与被忽略文件清单
@@ -163,6 +195,8 @@ Sources/SpookyKit/            库源码，按功能分目录
   Resources/spooky-remote.pl  远端进程组、回调客户端与签名、校验程序入口
 Sources/Spooky/               App 入口、窗口协调、会话状态与各内容视图，按功能分目录
   App/                        入口、窗口与菜单协调、本地化与错误说明、命名色与主题、提交日期格式、回调请求呈现
+    SpookyURL.swift           spooky:// 链接与 github.com 仓库链接的解析
+    AppAppearance.swift       App 的浅色、深色或跟随系统外观
     TextTheme.swift           文本区主题模型、资源里的默认主题与 .spookytheme 主题文件格式
     ThemeStore.swift          主题目录、启动时写入默认主题、浅色与深色外观的主题选择与导入
     CommitDateFormat.swift    提交日期的绝对与相对两种写法，历史、储藏、文件历史、版本比较与 Reflog 共用
@@ -173,7 +207,16 @@ Sources/Spooky/               App 入口、窗口协调、会话状态与各内�
     AppIconDarkConnected.icns 指示灯亮着的深色图标
   Components/                 空状态、错误详情、连接状态、头像与版本组合框等共用视图
     AvatarStore.swift         按邮箱的 SHA-256 向 Gravatar 读取作者头像，只在内存里缓存，取不到时用首字母
-  RepositoryManager/          仓库管理窗口、最近记录与添加服务器仓库
+  RepositoryManager/          仓库管理：书签树与文件夹、详情、拖放页，新建本机仓库、添加服务器仓库与它们的对话框
+    RepositoryBookmarks.swift 全部窗口共用的书签、最近打开时间与失效标记，从旧版本的最近记录迁移
+  Launch/                     启动窗口：最近打开的仓库与打开入口
+  Navigation/                 后退 / 前进记录、视图引用与窗口恢复
+    ViewReference.swift       窗口里一个可以回到的视图，后退 / 前进、窗口恢复与 spooky:// 链接共用
+  Clone/                      克隆对话框、后台克隆与最近克隆、克隆进度、目录扫描，以及选择本机或服务器目录、浏览服务器目录
+  QuickActions/               快捷操作面板：对象与动作、模糊匹配与执行
+  ExternalTools/              外部比较与合并工具、Open With 菜单与远程编辑
+  RepositorySettings/         仓库设置的 General、Git LFS、Ignores 与 Excludes 四段
+  Help/                       Help 菜单的链接、What's New 窗口、诊断报告、崩溃报告与它们共用的脱敏
   RepositoryWindow/           仓库窗口与菜单动作、侧边栏、搜索、操作与同步对话框、导出与比较对话框、拖放
     SyncDialog.swift          Sync、变基、安全强推与推送任意版本的对话框
     RepositoryOperationDrop.swift 提交、文件、分支与标签拖到侧边栏时的摘取、反转、变基、新建标签、改名与发布
@@ -200,7 +243,8 @@ Sources/Spooky/               App 入口、窗口协调、会话状态与各内�
   Stash/                      储藏视图、储藏对话框、拖放与状态
   Activity/                   Activity 窗口、操作记录与仓库写锁
   Updates/                    Sparkle 更新器、更新通道与 Settings → Updates 页；更新失败时显示原始错误
-  Settings/                   设置窗口的 General、Text、Editor、Themes 与 User Profiles 页，以及终端程序；General 页含自动获取、自动归档、提交日期格式与合并 Diff 方式
+  Settings/                   设置窗口的 General、Appearance、Git Config、Text、Editor、Themes、User Profiles、Integration 与 Environment 页，以及终端程序与本机执行偏好
+    SettingsPage.swift        页签与顺序
     AddUserProfileDialog.swift 把当前身份存成身份档案的 sheet
   HighlightJS/                随 App 打包的 highlight.js 11.12.0，原样拷入并保持目录结构
     highlight.min.js          核心与常用语言
@@ -211,7 +255,7 @@ Sources/Spooky/               App 入口、窗口协调、会话状态与各内�
   Info.plist                  应用身份和支持语言
 Tests/SpookyKitTests/         单元测试（Swift Testing）
   Fixtures/                   固定的 Git 输出夹具
-Tests/SpookyTests/            会话生命周期、最近记录、错误呈现、本地化、App 图标、主题存储、语法着色与提交补全测试，以及历史、侧边栏、引用、改写、分支整理、Reflog、撤销与操作接线的会话测试
+Tests/SpookyTests/            会话生命周期、书签、错误呈现、本地化、App 图标、主题存储、语法着色与提交补全测试，历史、侧边栏、引用、改写、分支整理、Reflog、撤销与操作接线的会话测试，以及窗口、导航、快捷操作、克隆、链接、设置与帮助的测试
 Tests/ReleaseTests/           发布检查、发版脚本与更新清单合成的测试，在临时仓库与临时目录里运行 scripts/ 下的脚本
 scripts/build-app.sh          开发 App Bundle 生成脚本
 scripts/bundle.sh             发布 App Bundle 生成脚本，输出到 build/Spooky.app；Sparkle 框架放进 Contents/Frameworks 并附上它的许可证
@@ -233,6 +277,7 @@ docs/testing/M4.md            M4 的历史、分支、同步与活动验收步�
 docs/testing/M5.md            M5 的集成、恢复、性能、可访问性与发布前验收步骤
 docs/testing/M6.md            M6 的工作区、Diff、主题、储藏、冲突向导、文件视图与提交体验验收步骤
 docs/testing/M7.md            M7 的历史、提交详情、侧边栏、引用、同步、改写、分支整理、Reflog 与撤销验收步骤
+docs/testing/M8.md            M8 的仓库管理、窗口与导航、外部工具、链接、设置、帮助与发布更新验收步骤
 README.md                     英文 README：介绍、功能、系统要求、构建、权限、工作原理、开发与贡献说明
 README-ZH.md                  README.md 的简体中文版，与它同步修改
 LICENSE                       GPL-3.0 许可证全文
@@ -243,7 +288,7 @@ LICENSE                       GPL-3.0 许可证全文
 ### 本机与远端仓库
 
 - git 调用一律经 `GitRunner` 执行：`run(_:input:)` 保持只返回 stdout 的 API，`execute(_:input:acceptedExitCodes:onOutput:)` 返回完整结果并提供流式数据块；`operation` 提供有界进度事件流、完整结果和主动取消
-- 本机调用 `/usr/bin/git`；`openLocalRepository()` 先检查最低版本 `2.41.0`，再通过 Git 识别工作区根目录；UI 不组装进程参数
+- 本机调用 Git Config 页所选的 Git 程序，默认 `/usr/bin/git`；`openLocalRepository()` 先检查最低版本 `2.41.0`，再通过 Git 识别工作区根目录；UI 不组装进程参数
 - 远端调用 `/usr/bin/ssh`，由系统 SSH 处理连接、认证、主机指纹与复用
 - `GitRunner` 给每条调用带上 `--no-pager`、`--no-optional-locks`、`color.ui=never`、`core.quotepath=off`，子命令里不必重复；要解析输出的子命令能用 `-z` 就用
 - 远端仓库只通过 `~/.ssh/config` 中的主机别名访问，不把主机名、用户、路径或网络地址写死在库代码里
@@ -273,6 +318,19 @@ LICENSE                       GPL-3.0 许可证全文
 - 交互式变基经 `RepositoryRewrite` 执行：提交序列与信息由内联在命令里的编辑器写入，在仓库所在的机器上运行；HEAD 或 Git 给出的 todo 与计划不一致时不改写任何提交
 - 本地分支的置顶、归档、父分支与分支整理标记由 `BranchMetadata` 写在仓库配置的 `branch.<名称>.spooky-*`，改名时随段移动、删除分支时随段清除；布尔标记只写 `true`，取消时删除这个键
 - 写操作经 `RepositorySession.performGit(undo:)` 声明与撤销记录的关系：只改仓库自己的引用、索引、工作区、储藏与 `branch.*` 配置的用 `.reversible`；改动远端、远端跟踪分支或其它配置的保持默认的 `.irreversible`；自动获取这类不由用户直接发起的操作与撤销、重做本身用 `.unrecorded`
+
+### 仓库管理与系统集成
+
+- 仓库书签由 `RepositoryBookmarks` 存在偏好 `repositoryBookmarks`：文件夹、手动顺序与最近打开时间，全部窗口共用；打开成功的仓库自动加入书签，失效只做标记，从不自动删除
+- 新建、克隆、扫描与目录浏览在仓库存在之前进行：服务器经 `RemoteConnection.host(_:)` 的主机连接在 B 上执行，App 用 `RemoteConnection.presentingHost(_:)` 先装上询问凭据的处理器；本机与服务器执行同一份脚本，扫描只在用户选定的目录里进行
+- 克隆在后台进行：`CloneActivities` 在开始时加入书签，移除没有完成的克隆时连书签一起移除；打开还没克隆完的书签显示克隆进度页，完成后打开仓库
+- 服务器仓库不在 B 上运行 difftool / mergetool：两侧内容经 `ExternalToolFiles` 取到会话缓存目录，在 A 上启动工具；合并结果经 SFTP 写回后再 `git add`；编辑器副本写回前核对 B 上的版本，不一致时询问是否覆盖
+- 视图引用 `ViewReference` 同时用于后退 / 前进、窗口恢复与 `spooky://` 链接；新增主视图时三处一起覆盖
+- 链接：`spooky://open?repository=<位置>` 可带 `view`、`branch` 或 `commit`，`spooky://clone?url=<地址>`；服务器仓库写 `<主机别名>:<远端路径>`；github.com 的 “Open with Desktop” 链接只接受 github.com 的 https 仓库网址；解析不了的链接只显示错误，不执行任何动作
+- 仓库设置只写仓库本地配置（`GitRunner.setLocalConfig`）；`spooky.commitbodylimit`、`spooky.commitshowsguide` 覆盖 Editor 设置页的正文折行
+- 本机执行 Git 的程序与环境集中在 `LocalExecutionSettings.current`：Git Config 页的 Git 程序、Environment 页的登录 shell 与自定义变量、Integration 页的 SSH agent；服务器仓库用 B 自己的环境，Environment 页只能检查
+- 诊断报告与崩溃报告离开本机前经 `DiagnosticRedactor` 脱敏；崩溃报告只打开预填的 GitHub 新问题页，由用户自己提交
+- `UpdateController` 按 Settings → Updates 的通道接收更新清单里的条目，只接受 EdDSA 签名的清单与更新包；`swift run` 时更新器不启动
 
 ### 文本区
 
@@ -311,6 +369,7 @@ LICENSE                       GPL-3.0 许可证全文
 - M5 的跨视图一致性、错误恢复、性能、可访问性与发布检查见 [M5 验收步骤](docs/testing/M5.md)；性能测试默认不跑，通过 `SPOOKY_PERFORMANCE_TESTS=1` 显式开启
 - M6 的工作区文件操作、Diff 选项、主题、储藏、冲突向导、文件视图、提交体验与本机 / 服务器端到端流程见 [M6 验收步骤](docs/testing/M6.md)
 - M7 的历史搜索与视图设置、提交详情与导出、侧边栏、引用与远端管理、同步与自动获取、改写操作、Branches Review、Reflog 与撤销，以及本机 / 服务器端到端流程见 [M7 验收步骤](docs/testing/M7.md)
+- M8 的书签与仓库详情、新建、克隆与扫描、窗口与导航、快捷操作、外部工具、链接、设置与仓库设置、帮助与崩溃报告、发布与更新，以及本机 / 服务器端到端流程见 [M8 验收步骤](docs/testing/M8.md)
 - 侧边栏的视图设置以 `@AppStorage` 读 `SidebarPreferences` 的键；测试换用独立的偏好域时，视图的 `.defaultAppStorage` 与传给 `SidebarViewSettingsMenu` 的 `UserDefaults` 要一起换
 - 测试里同一个偏好键要换成别的值时，新值写进另一个偏好域，不覆盖已有的值：进程的偏好缓存被清掉后，覆盖写入之后紧接着的读取可能仍得到旧值
 - 会话测试要求刷新后用 `waitForRefresh()` 等刷新全部结束，不只等 `refreshTask`：本机仓库的文件监听会在写入后另起刷新，其间要求的完整刷新排在它之后
