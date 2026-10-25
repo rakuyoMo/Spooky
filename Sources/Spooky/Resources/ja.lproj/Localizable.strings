@@ -1893,3 +1893,22 @@
 "repositorySettings.write" = "リポジトリの設定を変更";
 "repositorySettings.edit.title" = "%@を編集";
 "repositorySettings.edit.message" = "この値はこのリポジトリのローカル Git 設定に書き込まれます。";
+
+/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+"menu.about" = "Spooky について";
+"about.credits" = "Spooky は GNU General Public License v3.0 で公開されているフリーソフトウェアです。";
+"menu.help" = "ヘルプ";
+"help.help" = "Spooky ヘルプ";
+"help.whatsNew" = "新機能";
+"help.releaseNotes" = "リリースノート";
+"help.support" = "サポート";
+"help.diagnosticReport" = "診断レポートを作成…";
+"help.diagnosticReport.file" = "Spooky 診断レポート.txt";
+"whatsNew.title" = "Spooky %@ の新機能";
+"crash.issueTitle" = "Spooky が予期せず終了しました";
+"crash.title" = "Spooky は前回予期せず終了しました";
+"crash.message" = "GitHub でこの問題を報告しますか？ブラウザでクラッシュの概要を添えた新しい Issue ページが開きます。個人のパス、メールアドレス、ネットワークアドレスは取り除かれ、ご自身で Issue を送信するまで何も送られません。";
+"crash.report" = "GitHub で報告…";
+"crash.dontReport" = "報告しない";
+"settings.crashReports" = "クラッシュレポート：";
+"settings.crashReports.always" = "クラッシュレポートを常に送信";

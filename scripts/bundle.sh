@@ -31,6 +31,13 @@ for locale in en zh-Hans zh-Hant ja ko de fr es; do
         "$app_directory/Contents/Resources/$locale.lproj/InfoPlist.strings"
 done
 
+# 这一版的更新说明供 Help › What's New 显示；还没有写更新说明的版本不放，菜单项随之不可用。
+version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Sources/Spooky/Info.plist)"
+
+if [[ -d "docs/release-notes/$version" ]]; then
+    ditto "docs/release-notes/$version" "$app_directory/Contents/Resources/ReleaseNotes"
+fi
+
 # 更新框架连同符号链接、辅助程序与 XPC 服务原样放进 Contents/Frameworks，下载与安装更新时都要用到。
 sparkle_framework="$app_directory/Contents/Frameworks/Sparkle.framework"
 mkdir -p "$app_directory/Contents/Frameworks"

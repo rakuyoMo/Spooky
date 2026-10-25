@@ -1893,3 +1893,22 @@
 "repositorySettings.write" = "修改仓库设置";
 "repositorySettings.edit.title" = "编辑%@";
 "repositorySettings.edit.message" = "这个值会写进这个仓库的本地 Git 配置。";
+
+/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+"menu.about" = "关于 Spooky";
+"about.credits" = "Spooky 是以 GNU 通用公共许可证 v3.0 发布的自由软件。";
+"menu.help" = "帮助";
+"help.help" = "Spooky 帮助";
+"help.whatsNew" = "新功能";
+"help.releaseNotes" = "发行说明";
+"help.support" = "支持";
+"help.diagnosticReport" = "生成诊断报告…";
+"help.diagnosticReport.file" = "Spooky 诊断报告.txt";
+"whatsNew.title" = "Spooky %@ 的新功能";
+"crash.issueTitle" = "Spooky 意外退出";
+"crash.title" = "Spooky 上次意外退出";
+"crash.message" = "要在 GitHub 上报告这个问题吗？浏览器会打开新问题页，附上崩溃的摘要。个人路径、邮箱与网络地址已经去掉，在你自己提交问题之前不会发送任何内容。";
+"crash.report" = "在 GitHub 上报告…";
+"crash.dontReport" = "不报告";
+"settings.crashReports" = "崩溃报告：";
+"settings.crashReports.always" = "总是发送崩溃报告";

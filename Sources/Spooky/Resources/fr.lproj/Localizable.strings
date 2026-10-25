@@ -1893,3 +1893,22 @@
 "repositorySettings.write" = "Modifier les réglages du dépôt";
 "repositorySettings.edit.title" = "Modifier « %@ »";
 "repositorySettings.edit.message" = "Cette valeur est écrite dans la configuration Git locale de ce dépôt.";
+
+/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+"menu.about" = "À propos de Spooky";
+"about.credits" = "Spooky est un logiciel libre publié sous la licence publique générale GNU v3.0.";
+"menu.help" = "Aide";
+"help.help" = "Aide de Spooky";
+"help.whatsNew" = "Nouveautés";
+"help.releaseNotes" = "Notes de version";
+"help.support" = "Assistance";
+"help.diagnosticReport" = "Créer un rapport de diagnostic…";
+"help.diagnosticReport.file" = "Rapport de diagnostic Spooky.txt";
+"whatsNew.title" = "Nouveautés de Spooky %@";
+"crash.issueTitle" = "Spooky s’est fermé de manière inattendue";
+"crash.title" = "Spooky s’est fermé de manière inattendue la dernière fois";
+"crash.message" = "Voulez-vous signaler le problème sur GitHub ? Une nouvelle page de ticket s’ouvre dans votre navigateur avec un résumé du plantage. Les chemins personnels, adresses e-mail et adresses réseau sont retirés, et rien n’est envoyé tant que vous ne soumettez pas le ticket vous-même.";
+"crash.report" = "Signaler sur GitHub…";
+"crash.dontReport" = "Ne pas signaler";
+"settings.crashReports" = "Rapports de plantage :";
+"settings.crashReports.always" = "Toujours envoyer les rapports de plantage";

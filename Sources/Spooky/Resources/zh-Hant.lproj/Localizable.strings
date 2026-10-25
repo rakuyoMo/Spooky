@@ -1893,3 +1893,22 @@
 "repositorySettings.write" = "修改倉庫設定";
 "repositorySettings.edit.title" = "編輯%@";
 "repositorySettings.edit.message" = "這個值會寫進這個倉庫的本機 Git 設定。";
+
+/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+"menu.about" = "關於 Spooky";
+"about.credits" = "Spooky 是以 GNU 通用公共授權條款 v3.0 發佈的自由軟體。";
+"menu.help" = "輔助說明";
+"help.help" = "Spooky 輔助說明";
+"help.whatsNew" = "新功能";
+"help.releaseNotes" = "版本說明";
+"help.support" = "支援";
+"help.diagnosticReport" = "製作診斷報告…";
+"help.diagnosticReport.file" = "Spooky 診斷報告.txt";
+"whatsNew.title" = "Spooky %@ 的新功能";
+"crash.issueTitle" = "Spooky 意外結束";
+"crash.title" = "Spooky 上次意外結束";
+"crash.message" = "要在 GitHub 上回報這個問題嗎？瀏覽器會打開新問題頁，附上當機的摘要。個人路徑、電子郵件與網路位址已經移除，在你自己提交問題之前不會傳送任何內容。";
+"crash.report" = "在 GitHub 上回報…";
+"crash.dontReport" = "不回報";
+"settings.crashReports" = "當機報告：";
+"settings.crashReports.always" = "一律傳送當機報告";

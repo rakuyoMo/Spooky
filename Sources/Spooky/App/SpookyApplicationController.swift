@@ -84,6 +84,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
         // 窗口与菜单就绪后启动更新器，按计划检查与手动检查都由它负责
         UpdateController.shared.start()
+
+        // 上次运行崩溃过时，按设置询问或直接打开预填的问题页
+        CrashReporter.checkOnLaunch()
     }
 
     /// 关闭仓库或最后一个窗口都不退出应用。

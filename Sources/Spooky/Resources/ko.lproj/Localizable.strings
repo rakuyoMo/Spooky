@@ -1893,3 +1893,22 @@
 "repositorySettings.write" = "저장소 설정 변경";
 "repositorySettings.edit.title" = "%@ 편집";
 "repositorySettings.edit.message" = "이 값은 이 저장소의 로컬 Git 설정에 기록됩니다.";
+
+/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+"menu.about" = "Spooky에 관하여";
+"about.credits" = "Spooky는 GNU General Public License v3.0으로 배포되는 자유 소프트웨어입니다.";
+"menu.help" = "도움말";
+"help.help" = "Spooky 도움말";
+"help.whatsNew" = "새로운 기능";
+"help.releaseNotes" = "릴리스 노트";
+"help.support" = "지원";
+"help.diagnosticReport" = "진단 보고서 생성…";
+"help.diagnosticReport.file" = "Spooky 진단 보고서.txt";
+"whatsNew.title" = "Spooky %@의 새로운 기능";
+"crash.issueTitle" = "Spooky가 예기치 않게 종료됨";
+"crash.title" = "Spooky가 지난번에 예기치 않게 종료됨";
+"crash.message" = "GitHub에서 이 문제를 보고하겠습니까? 브라우저에서 충돌 요약이 담긴 새 이슈 페이지가 열립니다. 개인 경로, 이메일 주소와 네트워크 주소는 제거되며, 직접 이슈를 제출하기 전에는 아무것도 전송되지 않습니다.";
+"crash.report" = "GitHub에서 보고…";
+"crash.dontReport" = "보고 안 함";
+"settings.crashReports" = "충돌 보고서:";
+"settings.crashReports.always" = "항상 충돌 보고서 보내기";

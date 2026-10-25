@@ -16,11 +16,13 @@ extension SpookyApplicationController {
         configureRepositoryMenu(in: menu)
         configureWorkingCopyMenu(in: menu)
         configureWindowMenu(in: menu)
+        configureHelpMenu(in: menu)
     }
 
-    /// 应用菜单：检查更新、设置、隐藏与退出。
+    /// 应用菜单：关于、检查更新、设置、隐藏与退出。
     private func configureApplicationMenu(in menu: NSMenu) {
         let application = addMenu("app.name", to: menu)
+        addItem("menu.about", action: #selector(showAbout), target: self, to: application)
 
         // 检查与下载进行中时由更新器禁用这一项
         addItem(
@@ -531,7 +533,7 @@ extension SpookyApplicationController {
     }
 
     /// 创建带本地化标题的子菜单。
-    private func addMenu(_ key: String, to parent: NSMenu) -> NSMenu {
+    func addMenu(_ key: String, to parent: NSMenu) -> NSMenu {
         let item = NSMenuItem(title: AppLocalization.text(key), action: nil, keyEquivalent: "")
         let submenu = NSMenu(title: item.title)
         item.submenu = submenu
@@ -546,7 +548,7 @@ extension SpookyApplicationController {
     }
 
     /// 统一菜单文案、快捷键和响应链目标。
-    private func addItem(
+    func addItem(
         _ key: String,
         action: Selector,
         key shortcut: String = "",

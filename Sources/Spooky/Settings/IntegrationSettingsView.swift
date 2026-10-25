@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - IntegrationSettingsView
 
-/// Integration 页：github.com 仓库链接由哪个 App 打开、Gerrit 推送的开关、本机全局配置里 Issue 追踪的地址模板与编号前缀，以及本机使用的 SSH agent。
+/// Integration 页：github.com 仓库链接由哪个 App 打开、Gerrit 推送的开关、本机全局配置里 Issue 追踪的地址模板与编号前缀、本机使用的 SSH agent，以及崩溃报告是否直接打开问题页。
 struct IntegrationSettingsView: View {
     /// 全局配置的读写状态。
     @State
@@ -12,6 +12,10 @@ struct IntegrationSettingsView: View {
     /// 分支右键菜单与工具栏提供推送到 Gerrit 的入口。
     @AppStorage(GerritPush.key)
     private var enablesGerrit = false
+
+    /// 上次运行崩溃时不再询问，直接打开预填的问题页。
+    @AppStorage(CrashReporter.alwaysSendKey)
+    private var alwaysSendsCrashReports = false
 
     /// 正在编辑 Issue 追踪。
     @State
@@ -47,6 +51,17 @@ struct IntegrationSettingsView: View {
                     .gridCellUnsizedAxes(.horizontal)
 
                 SSHAgentSettingsRow()
+
+                Divider()
+                    .gridCellUnsizedAxes(.horizontal)
+
+                GridRow {
+                    Text(AppLocalization.text("settings.crashReports"))
+                        .gridColumnAlignment(.trailing)
+
+                    Toggle(AppLocalization.text("settings.crashReports.always"), isOn: $alwaysSendsCrashReports)
+                        .frame(width: 278, alignment: .leading)
+                }
             }
 
             if let failure = model.failure {

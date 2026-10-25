@@ -1893,3 +1893,22 @@
 "repositorySettings.write" = "Change Repository Settings";
 "repositorySettings.edit.title" = "Edit %@";
 "repositorySettings.edit.message" = "This value is written to this repository’s local Git configuration.";
+
+/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+"menu.about" = "About Spooky";
+"about.credits" = "Spooky is free software released under the GNU General Public License v3.0.";
+"menu.help" = "Help";
+"help.help" = "Spooky Help";
+"help.whatsNew" = "What’s New";
+"help.releaseNotes" = "Release Notes";
+"help.support" = "Support";
+"help.diagnosticReport" = "Create Diagnostic Report…";
+"help.diagnosticReport.file" = "Spooky Diagnostic Report.txt";
+"whatsNew.title" = "What’s New in Spooky %@";
+"crash.issueTitle" = "Spooky quit unexpectedly";
+"crash.title" = "Spooky Quit Unexpectedly Last Time";
+"crash.message" = "Do you want to report the problem on GitHub? A new issue page opens in your browser with a summary of the crash. Personal paths, email addresses and addresses are removed, and nothing is sent until you submit the issue yourself.";
+"crash.report" = "Report on GitHub…";
+"crash.dontReport" = "Don’t Report";
+"settings.crashReports" = "Crash Reports:";
+"settings.crashReports.always" = "Always send crash reports";
