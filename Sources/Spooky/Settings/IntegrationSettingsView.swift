@@ -39,6 +39,7 @@ struct IntegrationSettingsView: View {
                         .gridColumnAlignment(.trailing)
 
                     Toggle(AppLocalization.text("settings.gerrit.enable"), isOn: $enablesGerrit)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(width: 278, alignment: .leading)
                 }
 
@@ -60,6 +61,7 @@ struct IntegrationSettingsView: View {
                         .gridColumnAlignment(.trailing)
 
                     Toggle(AppLocalization.text("settings.crashReports.always"), isOn: $alwaysSendsCrashReports)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(width: 278, alignment: .leading)
                 }
             }

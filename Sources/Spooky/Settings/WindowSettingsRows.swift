@@ -87,6 +87,7 @@ struct WindowSettingsRows: View {
             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
 
             Toggle(AppLocalization.text("settings.showLaunchWindow"), isOn: $showsLaunchWindow)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(width: 278, alignment: .leading)
         }
     }

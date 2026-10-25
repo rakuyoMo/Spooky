@@ -277,6 +277,7 @@ extension BookmarkSidebarController {
         let button = NSPopUpButton(frame: .zero, pullsDown: true)
         button.bezelStyle = .accessoryBar
         button.isBordered = false
+        button.imagePosition = .imageOnly
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setAccessibilityLabel(AppLocalization.text("bookmarks.addMenu"))
         button.toolTip = AppLocalization.text("bookmarks.addMenu")

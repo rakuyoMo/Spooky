@@ -13,10 +13,11 @@ struct BookmarkDropZoneView: View {
     @State
     private var isTargeted = false
 
-    /// 368 pt 宽的区域在详情区居中。
+    /// 328 pt 宽的虚线框与按钮行在详情区居中；按钮行按各按钮文字的宽度排开，不截断。
     var body: some View {
         VStack(spacing: 20) {
             dropZone
+                .frame(width: 328)
 
             HStack(spacing: 8) {
                 Button(AppLocalization.text("bookmarks.dropZone.add"), action: manager.addRepositories)
@@ -31,9 +32,9 @@ struct BookmarkDropZoneView: View {
                 Button(AppLocalization.text("bookmarks.dropZone.clone")) { manager.cloneRepository() }
                     .accessibilityIdentifier("clone-repository")
             }
+            .fixedSize()
         }
         .padding(20)
-        .frame(width: 368)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppPalette.color("general_background_color"))
         .dropDestination(for: URL.self) { urls, _ in

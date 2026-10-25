@@ -99,7 +99,7 @@ extension RepositoryGeneralSettings {
         RemoteSettingRow(
             label: AppLocalization.text("repositorySettings.issueTrackerURL"),
             value: settings.issueTrackerTemplate ?? AppLocalization.text("issueTracking.notConfigured"),
-            small: true,
+            small: settings.issueTrackerTemplate != nil,
             secondary: settings.issueTrackerTemplate == nil
         )
 

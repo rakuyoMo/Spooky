@@ -113,6 +113,7 @@ struct AddRemoteRepositoryView: View {
 
                 Text(AppLocalization.text("remote.form.help"))
                     .font(.system(size: 13))
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

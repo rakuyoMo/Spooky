@@ -145,6 +145,7 @@ extension GeneralSettingsView {
             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
 
             Toggle(AppLocalization.text(key), isOn: isOn)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(width: 278, alignment: .leading)
         }
     }

@@ -38,6 +38,7 @@ struct ExternalToolSettingsRows: View {
             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
 
             Toggle(AppLocalization.text("externalTool.directoryDiff"), isOn: $compareDirectory)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(width: 278, alignment: .leading)
         }
 
@@ -53,6 +54,7 @@ struct ExternalToolSettingsRows: View {
             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
 
             Toggle(AppLocalization.text("externalTool.keepBackups"), isOn: $keepBackups)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(width: 278, alignment: .leading)
         }
     }

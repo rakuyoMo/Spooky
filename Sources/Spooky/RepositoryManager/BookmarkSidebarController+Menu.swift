@@ -9,7 +9,7 @@ extension BookmarkSidebarController {
         let menu = NSMenu()
 
         // 下拉按钮的第一项只作按钮外观
-        let title = NSMenuItem()
+        let title = NSMenuItem(title: "", action: nil, keyEquivalent: "")
         title.image = NSImage(named: NSImage.touchBarAddDetailTemplateName)
         menu.addItem(title)
 

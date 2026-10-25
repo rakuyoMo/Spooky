@@ -104,6 +104,7 @@ struct GitSigningRows: View {
             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
 
             Toggle(AppLocalization.text("gitConfig.signCommits"), isOn: signsCommits)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(width: 278, alignment: .leading)
         }
 
@@ -111,6 +112,7 @@ struct GitSigningRows: View {
             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
 
             Toggle(AppLocalization.text("gitConfig.ensureEmailMatch"), isOn: $ensuresEmailMatch)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(width: 278, alignment: .leading)
         }
         .alert(
