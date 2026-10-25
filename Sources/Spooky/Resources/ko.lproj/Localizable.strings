@@ -48,7 +48,6 @@
 
 "action.open" = "열기";
 
-"action.openNewWindow" = "새 윈도우에서 열기";
 
 "action.closeRepository" = "저장소 닫기";
 
@@ -60,15 +59,11 @@
 
 "repositories.title" = "저장소";
 
-"repositories.recent" = "최근 저장소";
 
-"repositories.empty.title" = "Git 저장소 열기";
 
-"repositories.empty.message" = "로컬 작업 트리를 선택하거나 저장소 폴더를 여기에 놓으세요.";
 
 "repositories.unavailable" = "사용할 수 없습니다. 다시 열어 재시도하세요";
 
-"repositories.path" = "위치";
 
 "repositories.panel.message" = "기존 Git 작업 트리를 선택하세요.";
 
@@ -426,7 +421,6 @@
 "working.refreshFailed" = "새로 고침에 실패했습니다. 마지막으로 성공한 결과를 표시합니다.";
 "history.limit" = "처음 %ld개 커밋만 표시합니다. 브랜치를 선택하면 범위를 좁힐 수 있습니다.";
 "history.loadingChanges" = "변경된 파일 불러오는 중…";
-"repositories.checking" = "확인하는 중…";
 "repositories.unavailableShort" = "사용 불가";
 "activity.truncated" = "이전 출력은 생략되었습니다.";
 
@@ -1666,3 +1660,72 @@
 "toolbar.gerritPush" = "Gerrit 푸시";
 "launch.empty" = "최근 저장소 없음";
 "launch.version" = "버전 %@";
+
+/* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
+"bookmarks.newGroup" = "새 그룹";
+"bookmarks.add" = "저장소 추가…";
+"bookmarks.add.prompt" = "추가";
+"bookmarks.addMenu" = "추가";
+"bookmarks.create" = "새 로컬 저장소 만들기…";
+"bookmarks.open" = "“%@” 열기";
+"bookmarks.openNewWindow" = "새 윈도우에서 “%@” 열기";
+"bookmarks.openRepository" = "열기";
+"bookmarks.openRepositoryNewWindow" = "새 윈도우에서 열기";
+"bookmarks.rename" = "이름 변경";
+"bookmarks.delete" = "“%@” 삭제…";
+"bookmarks.deleteFolder" = "그룹 삭제…";
+"bookmarks.deleteMultiple" = "%ld개 항목 삭제…";
+"bookmarks.sortChildren" = "하위 항목을 이름순으로 정렬";
+"bookmarks.sortParent" = "상위 폴더를 이름순으로 정렬";
+"bookmarks.delete.title" = "“%@”을(를) 삭제하겠습니까?";
+"bookmarks.delete.titleMultiple" = "%ld개 항목을 삭제하겠습니까?";
+"bookmarks.delete.message" = "책갈피만 제거됩니다. 저장소는 디스크나 서버에 그대로 남습니다.";
+"bookmarks.delete.submit" = "삭제";
+"bookmarks.dropZone.title" = "폴더나 URL을 놓아";
+"bookmarks.dropZone.subtitle" = "Git 저장소 추가";
+"bookmarks.dropZone.add" = "추가";
+"bookmarks.dropZone.create" = "만들기";
+"bookmarks.multiple.title" = "여러 항목이 선택됨";
+"bookmarks.multiple.message" = "%ld개 항목";
+"bookmarks.multiple.delete" = "삭제";
+"bookmarks.detail.location" = "위치";
+"bookmarks.detail.branch" = "현재 브랜치";
+"bookmarks.detail.lastCommit" = "마지막 커밋";
+"bookmarks.detail.lastOpened" = "마지막으로 연 시간";
+"bookmarks.detail.identity" = "커미터 정보";
+"bookmarks.detail.description" = "설명";
+"bookmarks.detail.remotes" = "리모트";
+"bookmarks.detail.viewInBrowser" = "브라우저에서 보기";
+"bookmarks.detail.missing" = "저장소가 존재하지 않습니다.";
+"bookmarks.detail.loading" = "불러오는 중…";
+"bookmarks.detail.neverOpened" = "없음";
+"bookmarks.detail.noCommits" = "아직 커밋이 없음";
+"bookmarks.detail.noIdentity" = "설정되지 않음";
+"bookmarks.detail.noRemotes" = "리모트 없음";
+"bookmarks.detail.edit" = "편집";
+"bookmarks.detail.unset" = "설정 해제";
+"bookmarks.description.edit" = "저장소 설명 편집";
+"bookmarks.description.message" = "이 저장소의 설명을 입력합니다.";
+"bookmarks.description.label" = "설명:";
+"bookmarks.identity.edit" = "커미터 정보 편집";
+"bookmarks.identity.message" = "여기에 입력한 이름과 이메일은 이 저장소에만 적용됩니다. 전체 값은 설정 → Git Config에서 설정합니다.";
+"bookmarks.identity.name" = "이름:";
+"bookmarks.identity.namePrompt" = "전체 이름";
+"bookmarks.identity.email" = "이메일:";
+"bookmarks.identity.emailPrompt" = "이메일 주소";
+"bookmarks.create.title" = "새 로컬 저장소 만들기";
+"bookmarks.create.message" = "새 폴더나 기존 폴더에 빈 Git 저장소를 만듭니다.";
+"bookmarks.create.submit" = "만들기";
+"bookmarks.create.name" = "이름:";
+"bookmarks.create.location" = "위치:";
+"bookmarks.create.choose" = "선택…";
+"bookmarks.create.choosePrompt" = "선택";
+"bookmarks.create.invalidName" = "이름에 “/”를 넣거나 “.” 또는 “..”로 지을 수 없습니다.";
+"bookmarks.create.fileExists" = "이 위치에 같은 이름의 파일이 이미 있습니다.";
+"bookmarks.noRepository.title" = "Git 저장소를 찾을 수 없음";
+"bookmarks.noRepository.message" = "“%@”은(는) Git 저장소가 아닙니다. 이 폴더에 새 저장소를 만들겠습니까?";
+"bookmarks.noRepository.create" = "저장소 만들기";
+"missing.title" = "Spooky가 저장소를 찾을 수 없음";
+"missing.message" = "Spooky가 “%@”에서 저장소를 찾을 수 없습니다.";
+"missing.unreachable.title" = "“%@”에 연결할 수 없음";
+"missing.unreachable.message" = "저장소 “%@”이(가) 있는 서버에 지금 연결할 수 없습니다.";

@@ -48,7 +48,6 @@
 
 "action.open" = "打开";
 
-"action.openNewWindow" = "在新窗口打开";
 
 "action.closeRepository" = "关闭当前仓库";
 
@@ -60,15 +59,11 @@
 
 "repositories.title" = "仓库管理";
 
-"repositories.recent" = "最近打开的仓库";
 
-"repositories.empty.title" = "打开 Git 仓库";
 
-"repositories.empty.message" = "选择本机工作区，或将仓库文件夹拖到这里。";
 
 "repositories.unavailable" = "路径失效或不可访问，可重新打开";
 
-"repositories.path" = "绝对路径";
 
 "repositories.panel.message" = "选择已有 Git 仓库的工作区目录。";
 
@@ -426,7 +421,6 @@
 "working.refreshFailed" = "刷新失败，正在显示上一次成功的结果。";
 "history.limit" = "仅显示前 %ld 个提交。选择分支可以缩小历史范围。";
 "history.loadingChanges" = "正在读取变更文件…";
-"repositories.checking" = "正在检查…";
 "repositories.unavailableShort" = "不可用";
 "activity.truncated" = "较早的输出已省略。";
 
@@ -1666,3 +1660,72 @@
 "toolbar.gerritPush" = "Gerrit 推送";
 "launch.empty" = "没有最近的仓库";
 "launch.version" = "版本 %@";
+
+/* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
+"bookmarks.newGroup" = "新建分组";
+"bookmarks.add" = "添加仓库…";
+"bookmarks.add.prompt" = "添加";
+"bookmarks.addMenu" = "添加";
+"bookmarks.create" = "新建本机仓库…";
+"bookmarks.open" = "打开 “%@”";
+"bookmarks.openNewWindow" = "在新窗口中打开 “%@”";
+"bookmarks.openRepository" = "打开";
+"bookmarks.openRepositoryNewWindow" = "在新窗口中打开";
+"bookmarks.rename" = "重命名";
+"bookmarks.delete" = "删除 “%@”…";
+"bookmarks.deleteFolder" = "删除分组…";
+"bookmarks.deleteMultiple" = "删除 %ld 项…";
+"bookmarks.sortChildren" = "按名称排序子项";
+"bookmarks.sortParent" = "按名称排序所在分组";
+"bookmarks.delete.title" = "删除 “%@”？";
+"bookmarks.delete.titleMultiple" = "删除 %ld 项？";
+"bookmarks.delete.message" = "只移除书签，仓库仍保留在磁盘或服务器上。";
+"bookmarks.delete.submit" = "删除";
+"bookmarks.dropZone.title" = "拖入文件夹或地址";
+"bookmarks.dropZone.subtitle" = "以添加 Git 仓库";
+"bookmarks.dropZone.add" = "添加";
+"bookmarks.dropZone.create" = "新建";
+"bookmarks.multiple.title" = "已选择多项";
+"bookmarks.multiple.message" = "%ld 项";
+"bookmarks.multiple.delete" = "删除";
+"bookmarks.detail.location" = "位置";
+"bookmarks.detail.branch" = "当前分支";
+"bookmarks.detail.lastCommit" = "最后提交";
+"bookmarks.detail.lastOpened" = "最近打开";
+"bookmarks.detail.identity" = "提交人身份";
+"bookmarks.detail.description" = "描述";
+"bookmarks.detail.remotes" = "远端";
+"bookmarks.detail.viewInBrowser" = "在浏览器中查看";
+"bookmarks.detail.missing" = "仓库不存在。";
+"bookmarks.detail.loading" = "正在读取…";
+"bookmarks.detail.neverOpened" = "从未";
+"bookmarks.detail.noCommits" = "还没有提交";
+"bookmarks.detail.noIdentity" = "未设置";
+"bookmarks.detail.noRemotes" = "没有远端";
+"bookmarks.detail.edit" = "编辑";
+"bookmarks.detail.unset" = "取消设置";
+"bookmarks.description.edit" = "编辑仓库描述";
+"bookmarks.description.message" = "输入这个仓库的描述。";
+"bookmarks.description.label" = "描述：";
+"bookmarks.identity.edit" = "编辑提交人身份";
+"bookmarks.identity.message" = "这里的姓名与邮箱只对这个仓库生效；全局的值在 设置 → Git Config 中设置。";
+"bookmarks.identity.name" = "姓名：";
+"bookmarks.identity.namePrompt" = "姓名";
+"bookmarks.identity.email" = "邮箱：";
+"bookmarks.identity.emailPrompt" = "邮箱地址";
+"bookmarks.create.title" = "新建本机仓库";
+"bookmarks.create.message" = "在新的或已有的文件夹中新建一个空的 Git 仓库。";
+"bookmarks.create.submit" = "新建";
+"bookmarks.create.name" = "名称：";
+"bookmarks.create.location" = "位置：";
+"bookmarks.create.choose" = "选择…";
+"bookmarks.create.choosePrompt" = "选择";
+"bookmarks.create.invalidName" = "名称不能包含 “/”，也不能是 “.” 或 “..”。";
+"bookmarks.create.fileExists" = "这个位置已有同名的文件。";
+"bookmarks.noRepository.title" = "没有找到 Git 仓库";
+"bookmarks.noRepository.message" = "“%@” 不是 Git 仓库。要在这个文件夹中新建仓库吗？";
+"bookmarks.noRepository.create" = "新建仓库";
+"missing.title" = "Spooky 找不到这个仓库";
+"missing.message" = "Spooky 在 “%@” 找不到仓库。";
+"missing.unreachable.title" = "无法连接 “%@”";
+"missing.unreachable.message" = "仓库 “%@” 所在的服务器现在连不上。";

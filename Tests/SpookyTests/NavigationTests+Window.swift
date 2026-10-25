@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SwiftUI
 import Testing
 
 @testable import Spooky
@@ -52,7 +53,7 @@ extension NavigationTests {
 
         let suite = "spooky-navigation-" + UUID().uuidString
         let defaults = try #require(UserDefaults(suiteName: suite))
-        let coordinator = SpookyApplicationController(recent: RecentRepositories(defaults: defaults))
+        let coordinator = SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
         let controller = RepositoryWindowController(
             coordinator: coordinator,
             session: RepositorySession(makeRunner: { _ in runner })
@@ -176,8 +177,8 @@ extension NavigationTests {
         #expect(restored.currentReference == .repository(root, .history(references: ["refs/heads/main"])))
     }
 
-    /// 读不出视图引用或仓库已不存在时不崩溃：窗口留在仓库管理，打开失败显示错误并把记录标为失效。
-    @Test("恢复失败回到仓库管理")
+    /// 读不出视图引用时窗口留在仓库管理；仓库已不存在时窗口换成丢失页，书签标为失效。
+    @Test("恢复失败时显示仓库管理或丢失页")
     func restoreFailure() async throws {
         let fixture = try await Self.makeWindow()
         defer { fixture.close() }
@@ -193,9 +194,9 @@ extension NavigationTests {
         #expect(manager.showsManager)
         #expect(manager.currentReference == .repositories)
 
-        // 最近记录里有这个仓库，打开失败后才有记录可以标为失效
+        // 书签里有这个仓库，打开失败后才有书签可以标为失效
         let missing = RepositoryLocation.local(path: fixture.directory.appending(path: "missing").path)
-        coordinator.recent.remember(missing)
+        coordinator.bookmarks.add(missing)
 
         let gone = NSKeyedArchiver(requiringSecureCoding: true)
         gone.encode(ViewReference.repository(missing, .workingCopy).string, forKey: RepositoryWindowController.viewReferenceKey)
@@ -204,8 +205,12 @@ extension NavigationTests {
         let failed = try coordinator.restoreWindow(from: NSKeyedUnarchiver(forReadingFrom: gone.encodedData))
         let controller = try #require(failed?.windowController as? RepositoryWindowController)
 
-        try await FileViewsTests.wait { coordinator.recent.unavailable.contains(missing) }
-        #expect(controller.showsManager)
-        try await FileViewsTests.wait { controller.window?.attachedSheet != nil }
+        // 仓库管理的后台检查也会标记失效，以丢失页出现为准
+        try await FileViewsTests.wait {
+            controller.window?.contentViewController is NSHostingController<MissingRepositoryView>
+        }
+
+        #expect(!controller.showsManager)
+        #expect(coordinator.bookmarks.isMissing(missing))
     }
 }

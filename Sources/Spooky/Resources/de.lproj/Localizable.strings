@@ -48,7 +48,6 @@
 
 "action.open" = "Öffnen";
 
-"action.openNewWindow" = "In neuem Fenster öffnen";
 
 "action.closeRepository" = "Repository schließen";
 
@@ -60,15 +59,11 @@
 
 "repositories.title" = "Repositorys";
 
-"repositories.recent" = "Zuletzt benutzte Repositorys";
 
-"repositories.empty.title" = "Git-Repository öffnen";
 
-"repositories.empty.message" = "Wählen Sie ein lokales Arbeitsverzeichnis aus oder legen Sie einen Repository-Ordner hier ab.";
 
 "repositories.unavailable" = "Nicht verfügbar – zum erneuten Versuch öffnen";
 
-"repositories.path" = "Ort";
 
 "repositories.panel.message" = "Wählen Sie ein vorhandenes Git-Arbeitsverzeichnis aus.";
 
@@ -426,7 +421,6 @@
 "working.refreshFailed" = "Aktualisierung fehlgeschlagen. Das letzte erfolgreiche Ergebnis wird angezeigt.";
 "history.limit" = "Die ersten %ld Commits werden angezeigt. Wählen Sie einen Branch aus, um den Verlauf einzugrenzen.";
 "history.loadingChanges" = "Geänderte Dateien werden geladen …";
-"repositories.checking" = "Wird geprüft …";
 "repositories.unavailableShort" = "Nicht verfügbar";
 "activity.truncated" = "Frühere Ausgabe wurde ausgelassen.";
 
@@ -1666,3 +1660,72 @@
 "toolbar.gerritPush" = "Gerrit-Push";
 "launch.empty" = "Keine zuletzt benutzten Repositorys";
 "launch.version" = "Version %@";
+
+/* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
+"bookmarks.newGroup" = "Neue Gruppe";
+"bookmarks.add" = "Repository hinzufügen …";
+"bookmarks.add.prompt" = "Hinzufügen";
+"bookmarks.addMenu" = "Hinzufügen";
+"bookmarks.create" = "Neues lokales Repository erstellen …";
+"bookmarks.open" = "„%@“ öffnen";
+"bookmarks.openNewWindow" = "„%@“ in neuem Fenster öffnen";
+"bookmarks.openRepository" = "Öffnen";
+"bookmarks.openRepositoryNewWindow" = "In neuem Fenster öffnen";
+"bookmarks.rename" = "Umbenennen";
+"bookmarks.delete" = "„%@“ löschen …";
+"bookmarks.deleteFolder" = "Gruppe löschen …";
+"bookmarks.deleteMultiple" = "%ld Objekte löschen …";
+"bookmarks.sortChildren" = "Unterobjekte nach Name sortieren";
+"bookmarks.sortParent" = "Übergeordneten Ordner nach Name sortieren";
+"bookmarks.delete.title" = "„%@“ löschen?";
+"bookmarks.delete.titleMultiple" = "%ld Objekte löschen?";
+"bookmarks.delete.message" = "Nur die Lesezeichen werden entfernt. Die Repositorys bleiben auf dem Datenträger oder dem Server.";
+"bookmarks.delete.submit" = "Löschen";
+"bookmarks.dropZone.title" = "Ordner oder URL hierher ziehen,";
+"bookmarks.dropZone.subtitle" = "um ein Git-Repository hinzuzufügen";
+"bookmarks.dropZone.add" = "Hinzufügen";
+"bookmarks.dropZone.create" = "Erstellen";
+"bookmarks.multiple.title" = "Mehrere Objekte ausgewählt";
+"bookmarks.multiple.message" = "%ld Objekte";
+"bookmarks.multiple.delete" = "Löschen";
+"bookmarks.detail.location" = "Ort";
+"bookmarks.detail.branch" = "Aktueller Branch";
+"bookmarks.detail.lastCommit" = "Letzter Commit";
+"bookmarks.detail.lastOpened" = "Zuletzt geöffnet";
+"bookmarks.detail.identity" = "Committer-Identität";
+"bookmarks.detail.description" = "Beschreibung";
+"bookmarks.detail.remotes" = "Remotes";
+"bookmarks.detail.viewInBrowser" = "Im Browser anzeigen";
+"bookmarks.detail.missing" = "Repository existiert nicht.";
+"bookmarks.detail.loading" = "Wird geladen …";
+"bookmarks.detail.neverOpened" = "Nie";
+"bookmarks.detail.noCommits" = "Noch keine Commits";
+"bookmarks.detail.noIdentity" = "Nicht festgelegt";
+"bookmarks.detail.noRemotes" = "Keine Remotes";
+"bookmarks.detail.edit" = "Bearbeiten";
+"bookmarks.detail.unset" = "Entfernen";
+"bookmarks.description.edit" = "Repository-Beschreibung bearbeiten";
+"bookmarks.description.message" = "Geben Sie eine Beschreibung für dieses Repository ein.";
+"bookmarks.description.label" = "Beschreibung:";
+"bookmarks.identity.edit" = "Committer-Identität bearbeiten";
+"bookmarks.identity.message" = "Name und E-Mail gelten nur für dieses Repository. Die globalen Werte legen Sie unter Einstellungen → Git Config fest.";
+"bookmarks.identity.name" = "Name:";
+"bookmarks.identity.namePrompt" = "Vollständiger Name";
+"bookmarks.identity.email" = "E-Mail:";
+"bookmarks.identity.emailPrompt" = "E-Mail-Adresse";
+"bookmarks.create.title" = "Neues lokales Repository erstellen";
+"bookmarks.create.message" = "Erstellt ein leeres Git-Repository in einem neuen oder vorhandenen Ordner.";
+"bookmarks.create.submit" = "Erstellen";
+"bookmarks.create.name" = "Name:";
+"bookmarks.create.location" = "Ort:";
+"bookmarks.create.choose" = "Auswählen …";
+"bookmarks.create.choosePrompt" = "Auswählen";
+"bookmarks.create.invalidName" = "Der Name darf kein „/“ enthalten und nicht „.“ oder „..“ lauten.";
+"bookmarks.create.fileExists" = "An diesem Ort gibt es bereits eine Datei mit diesem Namen.";
+"bookmarks.noRepository.title" = "Kein Git-Repository gefunden";
+"bookmarks.noRepository.message" = "„%@“ ist kein Git-Repository. Möchten Sie in diesem Ordner ein neues Repository erstellen?";
+"bookmarks.noRepository.create" = "Repository erstellen";
+"missing.title" = "Spooky findet das Repository nicht";
+"missing.message" = "Spooky findet das Repository unter „%@“ nicht.";
+"missing.unreachable.title" = "Keine Verbindung zu „%@“";
+"missing.unreachable.message" = "Der Server des Repositorys „%@“ ist zurzeit nicht erreichbar.";

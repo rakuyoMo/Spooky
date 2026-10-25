@@ -4,15 +4,15 @@ import SwiftUI
 
 // MARK: - LaunchView
 
-/// 启动窗口的内容：左栏是 App 名称、版本与打开仓库的入口，右栏列出最近的仓库，双击或回车打开所选。
+/// 启动窗口的内容：左栏是 App 名称、版本与打开仓库的入口，右栏列出最近打开的仓库书签，双击或回车打开所选。
 struct LaunchView: View {
     /// App 的对外版本号。
     private static var version: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
     }
 
-    /// 可以打开的仓库。
-    let recent: RecentRepositories
+    /// 仓库书签，列出其中打开过的仓库。
+    let bookmarks: RepositoryBookmarks
 
     /// 打开所选仓库。
     let open: (RepositoryLocation) -> Void
@@ -23,9 +23,9 @@ struct LaunchView: View {
     /// 添加服务器仓库。
     let addRemote: () -> Void
 
-    /// 列表里选中的仓库。
+    /// 列表里选中的书签。
     @State
-    private var selection: RepositoryLocation?
+    private var selection: Bookmark.ID?
 
     /// 左右两栏铺在系统的玻璃材质上，整块可以拖动窗口。
     var body: some View {
@@ -73,39 +73,43 @@ struct LaunchView: View {
         .padding(24)
     }
 
-    /// 右栏：最近的仓库；没有记录时显示空状态。
+    /// 右栏：最近打开的仓库，最近的在前；还没有打开过仓库时显示空状态。
     @ViewBuilder
     private var repositoryList: some View {
-        if recent.locations.isEmpty {
+        let recent = bookmarks.recentlyOpened
+
+        if recent.isEmpty {
             Text(AppLocalization.text("launch.empty"))
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
         } else {
-            List(recent.locations, id: \.self, selection: $selection) { location in
-                repositoryRow(location)
+            List(recent, selection: $selection) { bookmark in
+                if let location = bookmark.location {
+                    repositoryRow(bookmark, at: location)
+                }
             }
             .scrollContentBackground(.hidden)
             .onKeyPress(.return) {
-                guard let selection else {
+                guard let location = selection.flatMap({ bookmarks.bookmark($0)?.location }) else {
                     return .ignored
                 }
 
-                open(selection)
+                open(location)
                 return .handled
             }
         }
     }
 
-    /// 一行仓库：位置图标、名称与带主机前缀的路径；失效的记录变淡，双击打开。
-    private func repositoryRow(_ location: RepositoryLocation) -> some View {
+    /// 一行仓库：位置图标、书签名与带主机前缀的路径；失效的书签变淡，双击打开。
+    private func repositoryRow(_ bookmark: Bookmark, at location: RepositoryLocation) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: location.host == nil ? "folder" : "server.rack")
+            Image(systemName: bookmark.symbolName)
                 .font(.system(size: 16))
                 .frame(width: 24)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(location.name)
+                Text(bookmark.displayName)
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
 
@@ -117,8 +121,8 @@ struct LaunchView: View {
             }
         }
         .padding(.vertical, 4)
-        .foregroundStyle(recent.unavailable.contains(location) ? .secondary : .primary)
-        .tag(location)
+        .foregroundStyle(bookmarks.isMissing(location) ? .secondary : .primary)
+        .tag(bookmark.id)
         .help(location.displayPath)
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { open(location) }

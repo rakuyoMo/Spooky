@@ -73,7 +73,7 @@ extension CommitIdentityView {
         #warning("TODO: 档案菜单项括号内显示档案标题是推断，也可能是签名密钥。核实方式：建两个带不同签名密钥的同名身份档案后打开身份菜单比对；只影响菜单项文字。")
         ForEach(profiles) { profile in
             Toggle(
-                profile.name + " <" + profile.email + "> (" + profile.title + ")",
+                profile.menuTitle,
                 isOn: Binding(get: { profile == current }, set: { _ in session.applyProfile(profile) })
             )
             .disabled(!session.canWrite || profile == current)

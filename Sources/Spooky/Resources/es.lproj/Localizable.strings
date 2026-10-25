@@ -48,7 +48,6 @@
 
 "action.open" = "Abrir";
 
-"action.openNewWindow" = "Abrir en una ventana nueva";
 
 "action.closeRepository" = "Cerrar repositorio";
 
@@ -60,15 +59,11 @@
 
 "repositories.title" = "Repositorios";
 
-"repositories.recent" = "Repositorios recientes";
 
-"repositories.empty.title" = "Abrir un repositorio de Git";
 
-"repositories.empty.message" = "Seleccionar un árbol de trabajo local o soltar aquí la carpeta de un repositorio.";
 
 "repositories.unavailable" = "No disponible — abrir para reintentar";
 
-"repositories.path" = "Ubicación";
 
 "repositories.panel.message" = "Seleccionar un árbol de trabajo de Git existente.";
 
@@ -426,7 +421,6 @@
 "working.refreshFailed" = "Error al actualizar. Se muestra el último resultado correcto.";
 "history.limit" = "Se muestran los primeros %ld commits. Seleccionar una rama para acotar el historial.";
 "history.loadingChanges" = "Cargando archivos modificados…";
-"repositories.checking" = "Comprobando…";
 "repositories.unavailableShort" = "No disponible";
 "activity.truncated" = "Se ha omitido la salida anterior.";
 
@@ -1666,3 +1660,72 @@
 "toolbar.gerritPush" = "Push a Gerrit";
 "launch.empty" = "No hay repositorios recientes";
 "launch.version" = "Versión %@";
+
+/* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
+"bookmarks.newGroup" = "Nuevo grupo";
+"bookmarks.add" = "Añadir repositorio…";
+"bookmarks.add.prompt" = "Añadir";
+"bookmarks.addMenu" = "Añadir";
+"bookmarks.create" = "Crear repositorio local…";
+"bookmarks.open" = "Abrir “%@”";
+"bookmarks.openNewWindow" = "Abrir “%@” en una ventana nueva";
+"bookmarks.openRepository" = "Abrir";
+"bookmarks.openRepositoryNewWindow" = "Abrir en una ventana nueva";
+"bookmarks.rename" = "Renombrar";
+"bookmarks.delete" = "Eliminar “%@”…";
+"bookmarks.deleteFolder" = "Eliminar grupo…";
+"bookmarks.deleteMultiple" = "Eliminar %ld elementos…";
+"bookmarks.sortChildren" = "Ordenar elementos hijos por nombre";
+"bookmarks.sortParent" = "Ordenar la carpeta superior por nombre";
+"bookmarks.delete.title" = "¿Eliminar “%@”?";
+"bookmarks.delete.titleMultiple" = "¿Eliminar %ld elementos?";
+"bookmarks.delete.message" = "Solo se eliminan los marcadores. Los repositorios siguen en el disco o en el servidor.";
+"bookmarks.delete.submit" = "Eliminar";
+"bookmarks.dropZone.title" = "Suelta una carpeta o una URL";
+"bookmarks.dropZone.subtitle" = "para añadir un repositorio Git";
+"bookmarks.dropZone.add" = "Añadir";
+"bookmarks.dropZone.create" = "Crear";
+"bookmarks.multiple.title" = "Varios elementos seleccionados";
+"bookmarks.multiple.message" = "%ld elementos";
+"bookmarks.multiple.delete" = "Eliminar";
+"bookmarks.detail.location" = "Ubicación";
+"bookmarks.detail.branch" = "Rama actual";
+"bookmarks.detail.lastCommit" = "Último commit";
+"bookmarks.detail.lastOpened" = "Última apertura";
+"bookmarks.detail.identity" = "Identidad del autor del commit";
+"bookmarks.detail.description" = "Descripción";
+"bookmarks.detail.remotes" = "Remotos";
+"bookmarks.detail.viewInBrowser" = "Ver en el navegador";
+"bookmarks.detail.missing" = "El repositorio no existe.";
+"bookmarks.detail.loading" = "Cargando…";
+"bookmarks.detail.neverOpened" = "Nunca";
+"bookmarks.detail.noCommits" = "Todavía no hay commits";
+"bookmarks.detail.noIdentity" = "Sin definir";
+"bookmarks.detail.noRemotes" = "No hay remotos";
+"bookmarks.detail.edit" = "Editar";
+"bookmarks.detail.unset" = "Quitar";
+"bookmarks.description.edit" = "Editar la descripción del repositorio";
+"bookmarks.description.message" = "Escribe una descripción para este repositorio.";
+"bookmarks.description.label" = "Descripción:";
+"bookmarks.identity.edit" = "Editar la identidad del autor del commit";
+"bookmarks.identity.message" = "Este nombre y este correo solo se aplican a este repositorio. Los valores globales se definen en Ajustes → Git Config.";
+"bookmarks.identity.name" = "Nombre:";
+"bookmarks.identity.namePrompt" = "Nombre completo";
+"bookmarks.identity.email" = "Correo:";
+"bookmarks.identity.emailPrompt" = "Dirección de correo";
+"bookmarks.create.title" = "Crear repositorio local";
+"bookmarks.create.message" = "Crea un repositorio Git vacío en una carpeta nueva o existente.";
+"bookmarks.create.submit" = "Crear";
+"bookmarks.create.name" = "Nombre:";
+"bookmarks.create.location" = "Ubicación:";
+"bookmarks.create.choose" = "Elegir…";
+"bookmarks.create.choosePrompt" = "Elegir";
+"bookmarks.create.invalidName" = "El nombre no puede contener “/” ni ser “.” o “..”.";
+"bookmarks.create.fileExists" = "Ya existe un archivo con este nombre en esta ubicación.";
+"bookmarks.noRepository.title" = "No se ha encontrado ningún repositorio Git";
+"bookmarks.noRepository.message" = "“%@” no es un repositorio Git. ¿Quieres crear un repositorio en esta carpeta?";
+"bookmarks.noRepository.create" = "Crear repositorio";
+"missing.title" = "Spooky no encuentra el repositorio";
+"missing.message" = "Spooky no encuentra el repositorio en “%@”.";
+"missing.unreachable.title" = "No se puede conectar con “%@”";
+"missing.unreachable.message" = "No se puede acceder ahora al servidor del repositorio “%@”.";

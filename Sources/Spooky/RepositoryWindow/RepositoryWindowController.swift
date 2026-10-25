@@ -273,52 +273,66 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 管理页显示期间保留仓库会话，但按后台频率轮询。
         session.setActive(false)
 
-        let choose: () -> Void = { [weak self] in
-            guard let self else {
-                return
-            }
+        // 侧边栏与详情区共用本窗口的仓库管理状态
+        let manager = RepositoryManagerController(bookmarks: coordinator.bookmarks, session: session)
+        manager.window = self
+        manager.coordinator = coordinator
 
-            self.coordinator?.chooseRepository(in: self)
-        }
-        let open: (RepositoryLocation, Bool) -> Void = { [weak self] path, newWindow in
-            guard let self else {
-                return
-            }
-
-            self.coordinator?.openRepository(at: path, from: self, inNewWindow: newWindow)
-        }
-        let add: ([URL]) -> Void = { [weak self] in
-            guard let self else {
-                return
-            }
-
-            self.coordinator?.addRepositories($0, from: self)
-        }
-
-        let sidebar = NSHostingController(rootView: RecentRepositoryListView(
-            session: session,
-            recent: coordinator.recent,
-            open: open,
-            choose: choose,
-            addRemote: { [weak self] in self?.addRemoteRepository() },
-            openTerminal: { [weak self] in self?.openLocationInTerminal($0) },
-            addFolders: add
-        ))
-        sidebar.sizingOptions = [.minSize]
-
-        let detail = NSHostingController(rootView: RepositoryManagerView(
-            session: session,
-            recent: coordinator.recent,
-            choose: choose,
-            open: open,
-            addRemote: { [weak self] in self?.addRemoteRepository() },
-            addFolders: add
-        ))
+        let detail = NSHostingController(rootView: RepositoryManagerDetailView(manager: manager))
         detail.sizingOptions = [.minSize]
 
-        installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repositories")
-        coordinator.recent.validate()
+        installOuterSplit(
+            sidebar: BookmarkSidebarController(manager: manager),
+            detail: detail,
+            name: "Spooky.Repositories"
+        )
+        coordinator.bookmarks.validate()
         didChangeView()
+    }
+
+    /// 打开的仓库找不到或连不上时，整个窗口换成丢失页；会话与上一个仓库的连接一并交还。
+    ///
+    /// - Parameters:
+    ///   - location: 打不开的仓库。
+    ///   - reason: 路径不存在或服务器连不上。
+    func showMissingRepository(_ location: RepositoryLocation, reason: MissingRepositoryView.Reason) {
+        let previous = session.repository
+        session.close()
+
+        if let previous {
+            coordinator?.releaseConnection(previous)
+        }
+
+        showsManager = false
+        outerSplit = nil
+        workingCopySplit = nil
+        historySplit = nil
+        window?.title = location.name
+        window?.representedURL = nil
+        updateSubtitle()
+
+        let page = NSHostingController(rootView: MissingRepositoryView(
+            location: location,
+            reason: reason,
+            session: session,
+            refresh: { [weak self] in
+                guard let self else {
+                    return
+                }
+
+                coordinator?.openRepository(at: location, from: self, inNewWindow: false)
+            },
+            close: { [weak self] in self?.showRepositories() }
+        ))
+        page.sizingOptions = [.minSize]
+
+        // 换入的页面先取当前内容尺寸，窗口不随新视图缩放
+        if let size = window?.contentView?.frame.size {
+            page.view.setFrameSize(size)
+        }
+
+        window?.contentViewController = page
+        updateToolbarItems()
     }
 
     /// 窗口激活会立即刷新仓库状态；显示管理页时仓库保持后台频率。

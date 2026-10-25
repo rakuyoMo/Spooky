@@ -48,7 +48,6 @@
 
 "action.open" = "開く";
 
-"action.openNewWindow" = "新しいウインドウで開く";
 
 "action.closeRepository" = "リポジトリを閉じる";
 
@@ -60,15 +59,11 @@
 
 "repositories.title" = "リポジトリ";
 
-"repositories.recent" = "最近使ったリポジトリ";
 
-"repositories.empty.title" = "Git リポジトリを開く";
 
-"repositories.empty.message" = "ローカルの作業ツリーを選択するか、リポジトリのフォルダをここにドロップしてください。";
 
 "repositories.unavailable" = "利用できません。開き直して再試行できます";
 
-"repositories.path" = "場所";
 
 "repositories.panel.message" = "既存の Git 作業ツリーを選択してください。";
 
@@ -426,7 +421,6 @@
 "working.refreshFailed" = "更新に失敗しました。最後に成功した結果を表示しています。";
 "history.limit" = "最初の %ld 件のコミットのみを表示しています。ブランチを選択すると範囲を絞り込めます。";
 "history.loadingChanges" = "変更ファイルを読み込み中…";
-"repositories.checking" = "確認中…";
 "repositories.unavailableShort" = "利用不可";
 "activity.truncated" = "以前の出力は省略されました。";
 
@@ -1666,3 +1660,72 @@
 "toolbar.gerritPush" = "Gerrit プッシュ";
 "launch.empty" = "最近使ったリポジトリはありません";
 "launch.version" = "バージョン %@";
+
+/* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
+"bookmarks.newGroup" = "新規グループ";
+"bookmarks.add" = "リポジトリを追加…";
+"bookmarks.add.prompt" = "追加";
+"bookmarks.addMenu" = "追加";
+"bookmarks.create" = "新規ローカルリポジトリを作成…";
+"bookmarks.open" = "「%@」を開く";
+"bookmarks.openNewWindow" = "「%@」を新規ウインドウで開く";
+"bookmarks.openRepository" = "開く";
+"bookmarks.openRepositoryNewWindow" = "新規ウインドウで開く";
+"bookmarks.rename" = "名前を変更";
+"bookmarks.delete" = "「%@」を削除…";
+"bookmarks.deleteFolder" = "グループを削除…";
+"bookmarks.deleteMultiple" = "%ld 項目を削除…";
+"bookmarks.sortChildren" = "子項目を名前で並べ替え";
+"bookmarks.sortParent" = "親フォルダを名前で並べ替え";
+"bookmarks.delete.title" = "「%@」を削除しますか？";
+"bookmarks.delete.titleMultiple" = "%ld 項目を削除しますか？";
+"bookmarks.delete.message" = "削除されるのはブックマークだけです。リポジトリはディスクやサーバ上に残ります。";
+"bookmarks.delete.submit" = "削除";
+"bookmarks.dropZone.title" = "フォルダや URL をドロップして";
+"bookmarks.dropZone.subtitle" = "Git リポジトリを追加";
+"bookmarks.dropZone.add" = "追加";
+"bookmarks.dropZone.create" = "作成";
+"bookmarks.multiple.title" = "複数の項目を選択中";
+"bookmarks.multiple.message" = "%ld 項目";
+"bookmarks.multiple.delete" = "削除";
+"bookmarks.detail.location" = "場所";
+"bookmarks.detail.branch" = "現在のブランチ";
+"bookmarks.detail.lastCommit" = "最新のコミット";
+"bookmarks.detail.lastOpened" = "最後に開いた日時";
+"bookmarks.detail.identity" = "コミッタの ID";
+"bookmarks.detail.description" = "説明";
+"bookmarks.detail.remotes" = "リモート";
+"bookmarks.detail.viewInBrowser" = "ブラウザで表示";
+"bookmarks.detail.missing" = "リポジトリが存在しません。";
+"bookmarks.detail.loading" = "読み込み中…";
+"bookmarks.detail.neverOpened" = "なし";
+"bookmarks.detail.noCommits" = "コミットはまだありません";
+"bookmarks.detail.noIdentity" = "未設定";
+"bookmarks.detail.noRemotes" = "リモートはありません";
+"bookmarks.detail.edit" = "編集";
+"bookmarks.detail.unset" = "設定を解除";
+"bookmarks.description.edit" = "リポジトリの説明を編集";
+"bookmarks.description.message" = "このリポジトリの説明を入力します。";
+"bookmarks.description.label" = "説明：";
+"bookmarks.identity.edit" = "コミッタの ID を編集";
+"bookmarks.identity.message" = "ここで入力した名前とメールアドレスはこのリポジトリだけに適用されます。全体の値は 設定 → Git Config で設定します。";
+"bookmarks.identity.name" = "名前：";
+"bookmarks.identity.namePrompt" = "氏名";
+"bookmarks.identity.email" = "メール：";
+"bookmarks.identity.emailPrompt" = "メールアドレス";
+"bookmarks.create.title" = "新規ローカルリポジトリを作成";
+"bookmarks.create.message" = "新しいフォルダまたは既存のフォルダに空の Git リポジトリを作成します。";
+"bookmarks.create.submit" = "作成";
+"bookmarks.create.name" = "名前：";
+"bookmarks.create.location" = "場所：";
+"bookmarks.create.choose" = "選択…";
+"bookmarks.create.choosePrompt" = "選択";
+"bookmarks.create.invalidName" = "名前に「/」を含めたり、「.」や「..」にしたりすることはできません。";
+"bookmarks.create.fileExists" = "この場所には同じ名前のファイルがすでにあります。";
+"bookmarks.noRepository.title" = "Git リポジトリが見つかりません";
+"bookmarks.noRepository.message" = "「%@」は Git リポジトリではありません。このフォルダに新しいリポジトリを作成しますか？";
+"bookmarks.noRepository.create" = "リポジトリを作成";
+"missing.title" = "Spooky がリポジトリを見つけられません";
+"missing.message" = "Spooky は「%@」にリポジトリを見つけられません。";
+"missing.unreachable.title" = "「%@」に接続できません";
+"missing.unreachable.message" = "リポジトリ「%@」があるサーバに現在接続できません。";

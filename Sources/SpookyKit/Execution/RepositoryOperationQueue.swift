@@ -86,8 +86,15 @@ actor RepositoryOperationQueue {
                 options = options.dropFirst(2)
             }
 
-            return options.prefix(2).elementsEqual(["-z", "--get-regexp"])
-                && options.count == 3
+            // 合并后的配置与只看仓库本地配置的两种按正则读取
+            return (options.prefix(2).elementsEqual(["-z", "--get-regexp"]) && options.count == 3)
+                || (options.prefix(3).elementsEqual(["-z", "--local", "--get-regexp"]) && options.count == 4)
+        }
+
+        // 只读出当前分支名；其余 branch 用法会新建、改名或删除分支。
+        if command == "branch" {
+            guard let index = arguments.firstIndex(of: "branch") else { return false }
+            return arguments.dropFirst(index + 1).elementsEqual(["--show-current"])
         }
 
         // 只计算对象哈希不写入对象库；带 -w 的写入仍走写队列。

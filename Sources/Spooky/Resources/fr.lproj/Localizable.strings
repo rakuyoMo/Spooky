@@ -48,7 +48,6 @@
 
 "action.open" = "Ouvrir";
 
-"action.openNewWindow" = "Ouvrir dans une nouvelle fenêtre";
 
 "action.closeRepository" = "Fermer le dépôt";
 
@@ -60,15 +59,11 @@
 
 "repositories.title" = "Dépôts";
 
-"repositories.recent" = "Dépôts récents";
 
-"repositories.empty.title" = "Ouvrir un dépôt Git";
 
-"repositories.empty.message" = "Choisissez un arbre de travail local ou déposez ici un dossier de dépôt.";
 
 "repositories.unavailable" = "Indisponible — ouvrez-le pour réessayer";
 
-"repositories.path" = "Emplacement";
 
 "repositories.panel.message" = "Sélectionnez un arbre de travail Git existant.";
 
@@ -426,7 +421,6 @@
 "working.refreshFailed" = "Échec de l’actualisation. Affichage du dernier résultat obtenu avec succès.";
 "history.limit" = "Affichage des %ld premiers commits. Sélectionnez une branche pour restreindre l’historique.";
 "history.loadingChanges" = "Chargement des fichiers modifiés…";
-"repositories.checking" = "Vérification…";
 "repositories.unavailableShort" = "Indisponible";
 "activity.truncated" = "La sortie antérieure a été omise.";
 
@@ -1666,3 +1660,72 @@
 "toolbar.gerritPush" = "Push Gerrit";
 "launch.empty" = "Aucun dépôt récent";
 "launch.version" = "Version %@";
+
+/* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
+"bookmarks.newGroup" = "Nouveau groupe";
+"bookmarks.add" = "Ajouter un dépôt…";
+"bookmarks.add.prompt" = "Ajouter";
+"bookmarks.addMenu" = "Ajouter";
+"bookmarks.create" = "Créer un dépôt local…";
+"bookmarks.open" = "Ouvrir « %@ »";
+"bookmarks.openNewWindow" = "Ouvrir « %@ » dans une nouvelle fenêtre";
+"bookmarks.openRepository" = "Ouvrir";
+"bookmarks.openRepositoryNewWindow" = "Ouvrir dans une nouvelle fenêtre";
+"bookmarks.rename" = "Renommer";
+"bookmarks.delete" = "Supprimer « %@ »…";
+"bookmarks.deleteFolder" = "Supprimer le groupe…";
+"bookmarks.deleteMultiple" = "Supprimer %ld éléments…";
+"bookmarks.sortChildren" = "Trier les éléments enfants par nom";
+"bookmarks.sortParent" = "Trier le dossier parent par nom";
+"bookmarks.delete.title" = "Supprimer « %@ » ?";
+"bookmarks.delete.titleMultiple" = "Supprimer %ld éléments ?";
+"bookmarks.delete.message" = "Seuls les signets sont supprimés. Les dépôts restent sur le disque ou sur le serveur.";
+"bookmarks.delete.submit" = "Supprimer";
+"bookmarks.dropZone.title" = "Déposez un dossier ou une URL";
+"bookmarks.dropZone.subtitle" = "pour ajouter un dépôt Git";
+"bookmarks.dropZone.add" = "Ajouter";
+"bookmarks.dropZone.create" = "Créer";
+"bookmarks.multiple.title" = "Plusieurs éléments sélectionnés";
+"bookmarks.multiple.message" = "%ld éléments";
+"bookmarks.multiple.delete" = "Supprimer";
+"bookmarks.detail.location" = "Emplacement";
+"bookmarks.detail.branch" = "Branche actuelle";
+"bookmarks.detail.lastCommit" = "Dernier commit";
+"bookmarks.detail.lastOpened" = "Dernière ouverture";
+"bookmarks.detail.identity" = "Identité du committer";
+"bookmarks.detail.description" = "Description";
+"bookmarks.detail.remotes" = "Remotes";
+"bookmarks.detail.viewInBrowser" = "Afficher dans le navigateur";
+"bookmarks.detail.missing" = "Le dépôt n’existe pas.";
+"bookmarks.detail.loading" = "Chargement…";
+"bookmarks.detail.neverOpened" = "Jamais";
+"bookmarks.detail.noCommits" = "Aucun commit pour l’instant";
+"bookmarks.detail.noIdentity" = "Non défini";
+"bookmarks.detail.noRemotes" = "Aucun remote";
+"bookmarks.detail.edit" = "Modifier";
+"bookmarks.detail.unset" = "Retirer";
+"bookmarks.description.edit" = "Modifier la description du dépôt";
+"bookmarks.description.message" = "Saisissez une description pour ce dépôt.";
+"bookmarks.description.label" = "Description :";
+"bookmarks.identity.edit" = "Modifier l’identité du committer";
+"bookmarks.identity.message" = "Ce nom et cette adresse ne s’appliquent qu’à ce dépôt. Les valeurs globales se règlent dans Réglages → Git Config.";
+"bookmarks.identity.name" = "Nom :";
+"bookmarks.identity.namePrompt" = "Nom complet";
+"bookmarks.identity.email" = "E-mail :";
+"bookmarks.identity.emailPrompt" = "Adresse e-mail";
+"bookmarks.create.title" = "Créer un dépôt local";
+"bookmarks.create.message" = "Crée un dépôt Git vide dans un dossier nouveau ou existant.";
+"bookmarks.create.submit" = "Créer";
+"bookmarks.create.name" = "Nom :";
+"bookmarks.create.location" = "Emplacement :";
+"bookmarks.create.choose" = "Choisir…";
+"bookmarks.create.choosePrompt" = "Choisir";
+"bookmarks.create.invalidName" = "Le nom ne peut pas contenir « / » ni être « . » ou « .. ».";
+"bookmarks.create.fileExists" = "Un fichier portant ce nom existe déjà à cet emplacement.";
+"bookmarks.noRepository.title" = "Aucun dépôt Git trouvé";
+"bookmarks.noRepository.message" = "« %@ » n’est pas un dépôt Git. Voulez-vous créer un dépôt dans ce dossier ?";
+"bookmarks.noRepository.create" = "Créer le dépôt";
+"missing.title" = "Spooky ne trouve pas le dépôt";
+"missing.message" = "Spooky ne trouve pas le dépôt à l’emplacement « %@ ».";
+"missing.unreachable.title" = "Impossible de se connecter à « %@ »";
+"missing.unreachable.message" = "Le serveur du dépôt « %@ » est injoignable pour le moment.";

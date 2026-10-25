@@ -33,7 +33,7 @@ final class LaunchWindowController: NSWindowController, NSWindowDelegate {
         window.title = AppLocalization.text("app.name")
         window.contentViewController = NSHostingController(
             rootView: LaunchView(
-                recent: coordinator.recent,
+                bookmarks: coordinator.bookmarks,
                 open: { [weak coordinator] in coordinator?.openRepository(at: $0, from: nil, inNewWindow: false) },
                 openLocal: { [weak coordinator] in coordinator?.openRepositoryPanel() },
                 addRemote: { [weak coordinator] in coordinator?.addRemoteRepository() }

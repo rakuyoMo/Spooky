@@ -252,7 +252,7 @@ extension HistoryListTests {
         let defaults = try temporaryDefaults()
         let session = RepositorySession(makeRunner: { _ in runner })
         let controller = RepositoryWindowController(
-            coordinator: SpookyApplicationController(recent: RecentRepositories(defaults: defaults)),
+            coordinator: SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults)),
             session: session
         )
 

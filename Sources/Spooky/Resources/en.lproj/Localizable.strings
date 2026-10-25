@@ -48,7 +48,6 @@
 
 "action.open" = "Open";
 
-"action.openNewWindow" = "Open in New Window";
 
 "action.closeRepository" = "Close Repository";
 
@@ -60,15 +59,11 @@
 
 "repositories.title" = "Repositories";
 
-"repositories.recent" = "Recent Repositories";
 
-"repositories.empty.title" = "Open a Git Repository";
 
-"repositories.empty.message" = "Choose a local working tree, or drop a repository folder here.";
 
 "repositories.unavailable" = "Unavailable — open to retry";
 
-"repositories.path" = "Location";
 
 "repositories.panel.message" = "Select an existing Git working tree.";
 
@@ -426,7 +421,6 @@
 "working.refreshFailed" = "Refresh failed. Showing the last successful result.";
 "history.limit" = "Showing the first %ld commits. Select a branch to narrow the history.";
 "history.loadingChanges" = "Loading changed files…";
-"repositories.checking" = "Checking…";
 "repositories.unavailableShort" = "Unavailable";
 "activity.truncated" = "Earlier output was omitted.";
 
@@ -1666,3 +1660,72 @@
 "toolbar.gerritPush" = "Gerrit Push";
 "launch.empty" = "No Recent Repositories";
 "launch.version" = "Version %@";
+
+/* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
+"bookmarks.newGroup" = "New Group";
+"bookmarks.add" = "Add Repository…";
+"bookmarks.add.prompt" = "Add";
+"bookmarks.addMenu" = "Add";
+"bookmarks.create" = "Create New Local Repository…";
+"bookmarks.open" = "Open “%@”";
+"bookmarks.openNewWindow" = "Open “%@” in New Window";
+"bookmarks.openRepository" = "Open";
+"bookmarks.openRepositoryNewWindow" = "Open in New Window";
+"bookmarks.rename" = "Rename";
+"bookmarks.delete" = "Delete “%@”…";
+"bookmarks.deleteFolder" = "Delete Group…";
+"bookmarks.deleteMultiple" = "Delete %ld Items…";
+"bookmarks.sortChildren" = "Sort Child Items by Name";
+"bookmarks.sortParent" = "Sort Parent Folder by Name";
+"bookmarks.delete.title" = "Delete “%@”?";
+"bookmarks.delete.titleMultiple" = "Delete %ld Items?";
+"bookmarks.delete.message" = "Only the bookmarks are removed. The repositories stay on disk or on the server.";
+"bookmarks.delete.submit" = "Delete";
+"bookmarks.dropZone.title" = "Drop Folder or URL";
+"bookmarks.dropZone.subtitle" = "to Add Git Repository";
+"bookmarks.dropZone.add" = "Add";
+"bookmarks.dropZone.create" = "Create";
+"bookmarks.multiple.title" = "Multiple items selected";
+"bookmarks.multiple.message" = "%ld items";
+"bookmarks.multiple.delete" = "Delete";
+"bookmarks.detail.location" = "Location";
+"bookmarks.detail.branch" = "Current Branch";
+"bookmarks.detail.lastCommit" = "Last Commit";
+"bookmarks.detail.lastOpened" = "Last Opened";
+"bookmarks.detail.identity" = "Committer Identity";
+"bookmarks.detail.description" = "User Description";
+"bookmarks.detail.remotes" = "Remotes";
+"bookmarks.detail.viewInBrowser" = "View in Browser";
+"bookmarks.detail.missing" = "Repository does not exist.";
+"bookmarks.detail.loading" = "Loading…";
+"bookmarks.detail.neverOpened" = "Never";
+"bookmarks.detail.noCommits" = "No commits yet";
+"bookmarks.detail.noIdentity" = "Not set";
+"bookmarks.detail.noRemotes" = "No remotes";
+"bookmarks.detail.edit" = "Edit";
+"bookmarks.detail.unset" = "Unset";
+"bookmarks.description.edit" = "Edit Repository Description";
+"bookmarks.description.message" = "Enter a description for this repository.";
+"bookmarks.description.label" = "Description:";
+"bookmarks.identity.edit" = "Edit Committer Identity";
+"bookmarks.identity.message" = "This name and email apply to this repository only. Set the global values in Settings → Git Config.";
+"bookmarks.identity.name" = "Name:";
+"bookmarks.identity.namePrompt" = "Full name";
+"bookmarks.identity.email" = "Email:";
+"bookmarks.identity.emailPrompt" = "Email address";
+"bookmarks.create.title" = "Create New Local Repository";
+"bookmarks.create.message" = "Creates an empty Git repository in a new or existing folder.";
+"bookmarks.create.submit" = "Create";
+"bookmarks.create.name" = "Name:";
+"bookmarks.create.location" = "Location:";
+"bookmarks.create.choose" = "Choose…";
+"bookmarks.create.choosePrompt" = "Choose";
+"bookmarks.create.invalidName" = "The name can’t contain “/” or be “.” or “..”.";
+"bookmarks.create.fileExists" = "A file with this name already exists in this location.";
+"bookmarks.noRepository.title" = "No Git Repository Found";
+"bookmarks.noRepository.message" = "“%@” isn’t a Git repository. Do you want to create a new repository in this folder?";
+"bookmarks.noRepository.create" = "Create Repository";
+"missing.title" = "Spooky Can’t Find the Repository";
+"missing.message" = "Spooky can’t find the repository at “%@”.";
+"missing.unreachable.title" = "Can’t Connect to “%@”";
+"missing.unreachable.message" = "The server of the repository at “%@” can’t be reached right now.";

@@ -20,6 +20,11 @@ struct UserProfile: Codable, Identifiable, Equatable {
 
     /// 写入 `user.signingkey` 的签名密钥；为 nil 时套用档案不改动签名配置。
     var signingKey: String?
+
+    /// 身份菜单里的一项：姓名、尖括号里的邮箱与圆括号里的档案标题。
+    var menuTitle: String {
+        "\(name) <\(email)> (\(title))"
+    }
 }
 
 // MARK: - UserProfiles

@@ -14,8 +14,8 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 退出收尾的日志：宽限期先到时说明仍有任务未结束。
     private nonisolated static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "SpookyApplicationController")
 
-    /// 跨窗口共享的最近仓库记录。
-    let recent: RecentRepositories
+    /// 跨窗口共享的仓库书签。
+    let bookmarks: RepositoryBookmarks
 
     /// 应用持有的主窗口控制器。
     private(set) var windows: [RepositoryWindowController] = []
@@ -44,9 +44,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             ?? (NSApp.mainWindow?.windowController as? RepositoryWindowController)
     }
 
-    /// 注入持久化记录，测试与应用使用同一打开规则。
-    init(recent: RecentRepositories = RecentRepositories()) {
-        self.recent = recent
+    /// 注入持久化的书签，测试与应用使用同一打开规则。
+    init(bookmarks: RepositoryBookmarks = RepositoryBookmarks()) {
+        self.bookmarks = bookmarks
         super.init()
     }
 
@@ -151,7 +151,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         guard !isTerminating else { return .terminateNow }
         isTerminating = true
         let pending = Array(openingTasks.values) + Array(addingTasks.values)
-            + [recent.stopValidation()].compactMap { $0 }
+            + [bookmarks.stopValidation()].compactMap { $0 }
         let sessions = windows.map(\.session)
         TerminalLauncher.cleanup()
 
@@ -239,15 +239,15 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         Task { await remote.close() }
     }
 
-    /// 最近菜单每次展开时反映当前记录，失效记录仍可选择重试。
+    /// 最近菜单每次展开时按最近打开时间列出打开过的仓库，失效的仍可选择重试。
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        for path in recent.locations {
+        for path in bookmarks.recentlyOpened.compactMap(\.location) {
             let item = NSMenuItem(title: path.displayPath, action: #selector(openRecent(_:)), keyEquivalent: "")
             item.target = self
             item.representedObject = path
-            item.toolTip = recent.unavailable.contains(path)
+            item.toolTip = bookmarks.isMissing(path)
                 ? AppLocalization.text("repositories.unavailable")
                 : path.displayPath
             menu.addItem(item)
@@ -321,6 +321,9 @@ extension SpookyApplicationController {
                 let repository = try await Self.verifiedLocation(of: location)
                 try Task.checkCancellation()
 
+                // 书签指向子目录或符号链接时改指向工作区根目录，不另建一个书签
+                bookmarks.relocate(location, to: repository)
+
                 displayRepository(
                     repository,
                     from: source,
@@ -333,10 +336,8 @@ extension SpookyApplicationController {
                     return
                 }
 
-                recent.markUnavailable(location)
-                let destination = source ?? makeWindow()
-                destination.showWindow(nil)
-                destination.showFailure(AppFailure(error: error, opening: true, location: location))
+                bookmarks.markMissing(location)
+                showOpeningFailure(error, at: location, from: source, inNewWindow: inNewWindow)
             }
         }
     }
@@ -371,7 +372,7 @@ extension SpookyApplicationController {
                 makeWindow()
             }
 
-        recent.remember(repository)
+        bookmarks.recordOpened(repository)
         let previous = destination.session.repository
 
         showSeparately(destination, when: inNewWindow) {
@@ -386,8 +387,19 @@ extension SpookyApplicationController {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    /// 拖入文件夹只添加已验证的本机仓库，多个目录依次检查。
-    func addRepositories(_ urls: [URL], from source: RepositoryWindowController) {
+    /// 拖入或选择的文件夹只添加已验证的本机仓库，多个目录依次检查；只加了一个不是仓库的目录时询问是否在那里新建仓库。
+    ///
+    /// - Parameters:
+    ///   - urls: 本机目录。
+    ///   - source: 发起的窗口，询问与错误显示在这里。
+    ///   - folder: 放进的书签文件夹；nil 表示最外层。
+    ///   - index: 在文件夹里的位置；nil 表示放到最后。
+    func addRepositories(
+        _ urls: [URL],
+        from source: RepositoryWindowController,
+        into folder: Bookmark.ID? = nil,
+        at index: Int? = nil
+    ) {
         let request = UUID()
 
         addingTasks[request] = Task { [weak self, weak source] in
@@ -397,21 +409,75 @@ extension SpookyApplicationController {
 
             defer { self.addingTasks[request] = nil }
 
-            for url in urls {
+            for (offset, url) in urls.enumerated() {
                 do {
                     let repository = try await GitRunner(location: .local(path: url.path)).openLocalRepository()
                     try Task.checkCancellation()
-                    recent.remember(repository.location)
+
+                    // 多个目录按拖入的顺序依次排在落点之后
+                    bookmarks.add(repository.location, into: folder, at: index.map { $0 + offset })
+                    bookmarks.markAvailable(repository.location)
                 } catch {
-                    guard !Task.isCancelled else {
+                    guard !Task.isCancelled, let source else {
                         return
                     }
 
-                    source?.showFailure(
-                        AppFailure(error: error, opening: true, location: .local(path: url.path))
-                    )
+                    if urls.count == 1, (error as? GitError)?.category == .notRepository {
+                        source.presentNoRepositoryFound(url) { [weak self, weak source] in
+                            guard let source else {
+                                return
+                            }
+
+                            self?.createRepository(at: url.path, from: source, into: folder, at: index, opening: false)
+                        }
+                        return
+                    }
+
+                    source.showFailure(AppFailure(error: error, opening: true, location: .local(path: url.path)))
                     return
                 }
+            }
+        }
+    }
+
+    /// 在本机新建仓库并加入书签；需要时在发起的窗口打开它。
+    ///
+    /// - Parameters:
+    ///   - path: 新仓库的目录，不存在时连同上级目录一起建出。
+    ///   - source: 发起的窗口，错误显示在这里。
+    ///   - folder: 放进的书签文件夹；nil 表示最外层。
+    ///   - index: 在文件夹里的位置；nil 表示放到最后。
+    ///   - opening: 建好后是否在发起的窗口打开。
+    func createRepository(
+        at path: String,
+        from source: RepositoryWindowController,
+        into folder: Bookmark.ID?,
+        at index: Int? = nil,
+        opening: Bool
+    ) {
+        let request = UUID()
+
+        addingTasks[request] = Task { [weak self, weak source] in
+            guard let self else {
+                return
+            }
+
+            defer { self.addingTasks[request] = nil }
+
+            do {
+                let repository = try await GitRunner(location: .local(path: path)).initializeRepository()
+                try Task.checkCancellation()
+                bookmarks.add(repository.location, into: folder, at: index)
+
+                if opening {
+                    displayRepository(repository.location, from: source, inNewWindow: false)
+                }
+            } catch {
+                guard !Task.isCancelled else {
+                    return
+                }
+
+                source?.showFailure(AppFailure(error: error, opening: false, location: .local(path: path), writing: true))
             }
         }
     }
@@ -456,6 +522,28 @@ extension SpookyApplicationController {
         }
 
         openRepository(at: path, from: activeWindow, inNewWindow: false)
+    }
+
+    /// 打开失败：路径不存在或服务器连不上时整页显示丢失页，其余失败显示错误 sheet。
+    ///
+    /// 丢失页与打开成功时一样落在发起的窗口；显式新窗口打开时落在新窗口。
+    private func showOpeningFailure(
+        _ error: any Error,
+        at location: RepositoryLocation,
+        from source: RepositoryWindowController?,
+        inNewWindow: Bool
+    ) {
+        let reason = MissingRepositoryView.reason(for: location, error: error)
+        let reusable = reason != nil && inNewWindow ? nil : source
+        let destination = reusable.flatMap { reusable in windows.first { $0 === reusable } } ?? makeWindow()
+        destination.showWindow(nil)
+
+        guard let reason else {
+            destination.showFailure(AppFailure(error: error, opening: true, location: location))
+            return
+        }
+
+        destination.showMissingRepository(location, reason: reason)
     }
 
     /// 创建控制器并纳入应用生命周期。

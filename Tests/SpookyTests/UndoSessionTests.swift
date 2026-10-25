@@ -187,7 +187,7 @@ struct UndoSessionTests {
         defer { fixture.remove() }
         let defaults = try #require(UserDefaults(suiteName: fixture.directory.appending(path: "defaults").path))
         let controller = RepositoryWindowController(
-            coordinator: SpookyApplicationController(recent: RecentRepositories(defaults: defaults)),
+            coordinator: SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults)),
             session: fixture.session
         )
         defer { controller.window?.close() }
