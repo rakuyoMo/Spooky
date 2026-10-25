@@ -1,14 +1,6 @@
 import AppKit
 import SpookyKit
 
-// MARK: - DiffToolLaunchError
-
-/// 比较工具不存在或启动失败，保留工具的原始输出。
-struct DiffToolLaunchError: Error {
-    /// 工具的标准输出与标准错误，或启动失败的系统说明。
-    let diagnostic: String
-}
-
 // MARK: - Open Files
 
 extension RepositorySession {
@@ -40,25 +32,80 @@ extension RepositorySession {
         return generation == request ? urls : []
     }
 
-    /// 用默认程序打开所选文件。
-    func open(_ entries: [StatusEntry]) {
+    /// 用默认程序或指定的程序打开所选文件。
+    ///
+    /// 本机仓库直接打开工作区文件；服务器文件交给编辑器：支持远程编辑的编辑器直接远程打开，
+    /// 其余经 SFTP 取到临时副本，保存后核对服务器上的版本再写回。
+    ///
+    /// - Parameters:
+    ///   - entries: 所选条目，目录与工作区里没有的文件跳过。
+    ///   - application: 打开文件的程序；nil 表示各文件的默认程序。
+    func open(_ entries: [StatusEntry], with application: URL? = nil) {
         guard let repository else { return }
 
-        Task { [weak self] in
-            guard let self else { return }
+        let paths = entries.filter(\.isOpenable).map(\.path)
 
-            for url in await localFiles(entries) {
-                do {
-                    _ = try await NSWorkspace.shared.open(url, configuration: NSWorkspace.OpenConfiguration())
-                } catch {
-                    reportOpenFailure(error, in: repository)
-                    return
-                }
+        guard repository.host == nil else {
+            for path in paths { edit(path, with: application) }
+            return
+        }
+
+        let root = URL(fileURLWithPath: repository.path)
+
+        Task { [weak self] in
+            do {
+                try await Self.open(paths.map { root.appending(path: $0) }, with: application)
+            } catch {
+                self?.reportOpenFailure(error, in: repository)
             }
         }
     }
 
-    /// 双击文件的动作：按偏好用默认程序打开，或用比较工具对比 HEAD 版本与工作区文件。
+    /// Open With ▸ Other…：在 “应用程序” 里选一个程序打开所选文件。
+    func openWithOtherApplication(_ entries: [StatusEntry]) {
+        Self.chooseApplication { [weak self] application in
+            self?.open(entries, with: application)
+        }
+    }
+
+    /// 打开某个版本里的文件：内容经 Git 取到会话缓存，再交给默认程序或指定的程序；副本在关闭仓库时删除。
+    ///
+    /// - Parameters:
+    ///   - paths: 文件在仓库内的路径。
+    ///   - revision: 提交的完整哈希。
+    ///   - application: 打开文件的程序；nil 表示各文件的默认程序。
+    func open(_ paths: [String], at revision: String, with application: URL? = nil) {
+        guard let fileCache, let repository, !paths.isEmpty else { return }
+
+        let request = generation
+
+        Task { [weak self] in
+            do {
+                let files = ExternalToolFiles(cache: fileCache)
+                var urls: [URL] = []
+
+                for path in paths {
+                    try await urls.append(files.file(path, at: .commit(revision)))
+                }
+
+                guard let self, generation == request else { return }
+
+                try await Self.open(urls, with: application)
+            } catch {
+                guard let self, generation == request else { return }
+                reportOpenFailure(error, in: repository)
+            }
+        }
+    }
+
+    /// 某个版本里的文件的 Open With ▸ Other…：在 “应用程序” 里选一个程序打开它们。
+    func openWithOtherApplication(_ paths: [String], at revision: String) {
+        Self.chooseApplication { [weak self] application in
+            self?.open(paths, at: revision, with: application)
+        }
+    }
+
+    /// 双击文件的动作：按偏好用默认程序打开，或用所选的比较工具对比 HEAD 版本与工作区文件。
     func performDoubleClickAction(_ entry: StatusEntry) {
         let action = UserDefaults.standard.string(forKey: WorkingCopyPreferences.doubleClickAction)
             .flatMap(WorkingCopyPreferences.DoubleClickAction.init(rawValue:)) ?? .openFile
@@ -68,71 +115,12 @@ extension RepositorySession {
             open([entry])
 
         case .openDiff:
-            openDiffTool(entry)
+            compare([entry], .workingTreeToBase)
         }
     }
 
-    /// 用比较工具对比 HEAD 版本与工作区文件：HEAD 版本写成缓存副本，服务器上的工作区文件同样取到缓存。
-    func openDiffTool(_ entry: StatusEntry) {
-        guard let runner, let fileCache, let repository, !entry.path.hasSuffix("/") else { return }
-
-        Task { [weak self] in
-            do {
-                // 重命名的文件在 HEAD 里是原路径；HEAD 里没有的文件与已删除的文件以空内容比较
-                let base = try await Self.headContent(of: entry.originalPath ?? entry.path, runner: runner)
-                let left = try fileCache.store(base, named: entry.path)
-                let right = entry.isOpenable
-                    ? try await fileCache.workingTreeFile(entry.path)
-                    : try fileCache.store(Data(), named: entry.path)
-
-                try await Self.launchDiffTool(left, right)
-            } catch {
-                self?.reportOpenFailure(error, in: repository)
-            }
-        }
-    }
-
-}
-
-// MARK: - Private
-
-extension RepositorySession {
-    /// 文件在 HEAD 里的内容；HEAD 里没有这个文件或仓库还没有提交时为空。
-    private static func headContent(of path: String, runner: GitRunner) async throws -> Data {
-        let result = try await runner.execute(["cat-file", "blob", "HEAD:" + path], acceptedExitCodes: [0, 128])
-        return result.exitCode == 0 ? result.standardOutput : Data()
-    }
-
-    /// 在后台启动 FileMerge 的命令行入口并等待它结束；启动失败或非零退出时带回原始输出。
-    private static func launchDiffTool(_ left: URL, _ right: URL) async throws {
-        #warning("TODO: 比较工具固定为 /usr/bin/opendiff（FileMerge，随 Xcode 安装），核实没有安装 Xcode 时的提示是否足够；只影响双击偏好为 Open Diff tool 时的比较")
-        try await Task.detached {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/opendiff")
-            process.arguments = [left.path, right.path]
-            process.standardInput = FileHandle.nullDevice
-
-            let output = Pipe()
-            process.standardOutput = output
-            process.standardError = output
-
-            do {
-                try process.run()
-            } catch {
-                throw DiffToolLaunchError(diagnostic: error.localizedDescription)
-            }
-
-            let data = output.fileHandleForReading.readDataToEndOfFile()
-            process.waitUntilExit()
-
-            guard process.terminationStatus == 0 else {
-                throw DiffToolLaunchError(diagnostic: String(decoding: data, as: UTF8.self))
-            }
-        }.value
-    }
-
-    /// 打开文件失败：断线交给重连，其余错误交给窗口呈现。
-    private func reportOpenFailure(_ error: Error, in repository: RepositoryLocation) {
+    /// 打开文件或启动外部工具失败：断线交给重连，取消不报告，其余错误交给窗口呈现。
+    func reportOpenFailure(_ error: Error, in repository: RepositoryLocation) {
         guard !(error is CancellationError), (error as? GitError)?.isCancelled != true else {
             return
         }
@@ -141,6 +129,50 @@ extension RepositorySession {
             reconnect()
         } else {
             onFailure?(AppFailure(error: error, opening: false, location: repository))
+        }
+    }
+}
+
+// MARK: - Opening
+
+extension RepositorySession {
+    /// 用指定程序一起打开多个本机文件；没有指定程序时逐个交给各自的默认程序。
+    static func open(_ urls: [URL], with application: URL?) async throws {
+        guard let application else {
+            for url in urls {
+                _ = try await NSWorkspace.shared.open(url, configuration: NSWorkspace.OpenConfiguration())
+            }
+
+            return
+        }
+
+        guard !urls.isEmpty else { return }
+
+        _ = try await NSWorkspace.shared.open(urls, withApplicationAt: application, configuration: .init())
+    }
+
+    /// 让用户从 “应用程序” 文件夹里选一个程序。
+    ///
+    /// - Parameter chosen: 选好程序后的动作；取消时不调用。
+    static func chooseApplication(_ chosen: @escaping (URL) -> Void) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = AppLocalization.text("action.open")
+        panel.message = AppLocalization.text("files.openWith.choose")
+
+        let finish: (NSApplication.ModalResponse) -> Void = { response in
+            guard response == .OK, let url = panel.url else { return }
+            chosen(url)
+        }
+
+        // 从本窗口发起的动作，面板附在本窗口上
+        if let window = NSApp.keyWindow {
+            panel.beginSheetModal(for: window, completionHandler: finish)
+        } else {
+            panel.begin(completionHandler: finish)
         }
     }
 }

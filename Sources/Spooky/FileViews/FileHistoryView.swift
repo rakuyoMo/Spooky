@@ -156,7 +156,7 @@ struct FileHistoryTimelineView: View {
         }
     }
 
-    /// 时间线的右键菜单：查看这个版本、回到提交、恢复与导出。
+    /// 时间线的右键菜单：查看这个版本、回到提交、用比较工具比较、恢复与导出。
     @ViewBuilder
     private func menu(for commit: HistoryCommit) -> some View {
         let path = state.path ?? ""
@@ -172,6 +172,13 @@ struct FileHistoryTimelineView: View {
 
         Button(AppLocalization.text("fileHistory.showCommitFor", commit.shortID)) {
             session.showCommit(commit)
+        }
+
+        Divider()
+
+        // 这个版本的文件与它在提交的第一个父提交里的版本比较
+        Button(AppLocalization.text("externalTool.openDiffAt", name, commit.shortID)) {
+            session.openDiffTool(for: commit, files: [ComparedFile(path: path)])
         }
 
         Divider()

@@ -165,9 +165,9 @@ struct AppFailure: Identifiable {
             kind = .repository
             (key, recoveryKey, diagnostic) = Self.classification(of: file)
 
-        case let tool as DiffToolLaunchError:
-            key = "files.error.diffTool"
-            recoveryKey = "files.error.diffToolHelp"
+        case let tool as ExternalToolLaunchError:
+            key = "externalTool.error"
+            recoveryKey = "externalTool.error.help"
             diagnostic = tool.diagnostic
 
         case let git as GitError:

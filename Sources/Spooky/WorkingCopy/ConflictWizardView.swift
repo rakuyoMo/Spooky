@@ -43,6 +43,10 @@ struct ConflictWizardView: View {
     @State
     private var reloads = 0
 
+    /// 设置里选的合并工具，决定合并按钮的标题。
+    @AppStorage(ExternalTool.mergeToolKey)
+    private var mergeTool = ""
+
     /// 载入中、失败或向导内容。
     ///
     /// 写入结束、重新连上服务器与切回本程序时自动重新载入：文件可能已在外部编辑器里改过。
@@ -77,6 +81,15 @@ extension ConflictWizardView {
     /// 没有进行中的操作时，冲突来自应用补丁或储藏，对方卡片用专门的标题。
     private var isAppliedChange: Bool {
         session.context?.progress == nil
+    }
+
+    /// 合并按钮：选过合并工具时写出它的名字，还没有选时先选工具。
+    private var mergeToolTitle: String {
+        guard let tool = ExternalTool(rawValue: mergeTool), tool.supportsMerge else {
+            return AppLocalization.text("externalTool.chooseMergeTool")
+        }
+
+        return AppLocalization.text("externalTool.mergeIn", tool.displayName)
     }
 
     /// 卡片底色。
@@ -127,9 +140,14 @@ extension ConflictWizardView {
             }
 
             if entry.conflict?.hasRegularFilesOnBothSides ?? false {
-                Button(AppLocalization.text("conflict.resolveBoth")) { session.resolveUsingBoth(entry) }
-                    .disabled(!canResolveUsingBoth(contents))
-                    .frame(maxWidth: .infinity)
+                HStack(spacing: 8) {
+                    Button(AppLocalization.text("conflict.resolveBoth")) { session.resolveUsingBoth(entry) }
+                        .disabled(!canResolveUsingBoth(contents))
+
+                    Button(mergeToolTitle) { session.openMergeTool(entry) }
+                        .disabled(!session.canOpenMergeTool([entry]))
+                }
+                .frame(maxWidth: .infinity)
             }
 
             if contents.isManuallyEdited {

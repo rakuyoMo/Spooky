@@ -241,7 +241,7 @@ extension SpookyApplicationController {
         }
     }
 
-    /// Repository 菜单：获取、拉取、同步与推送，发布分支与标签、添加远端、新建分支与标签，以及导出与比较版本。
+    /// Repository 菜单：获取、拉取、同步与推送，发布分支与标签、添加远端、新建分支与标签，导出与比较版本，以及打开比较工具。
     private func configureRepositoryMenu(in menu: NSMenu) {
         let repository = addMenu("menu.repository", to: menu)
         configureSyncItems(in: repository)
@@ -270,6 +270,15 @@ extension SpookyApplicationController {
         repository.addItem(.separator())
         addItem("export.menu", action: #selector(RepositoryWindowController.exportRevision), to: repository)
         addItem("compare.menu", action: #selector(RepositoryWindowController.compareRevisions), to: repository)
+
+        repository.addItem(.separator())
+        addItem(
+            "externalTool.openDiffTool",
+            action: #selector(RepositoryWindowController.openDiffTool),
+            key: "d",
+            modifiers: [.shift, .command],
+            to: repository
+        )
     }
 
     /// 获取、拉取、同步与推送各项，按住 ⌥ 换成快速操作；后接安全强推与推送任意版本。
@@ -341,7 +350,7 @@ extension SpookyApplicationController {
         )
     }
 
-    /// Working Copy 菜单：检出版本、合并与变基（按住 ⌥ 换成快速操作）、变基到别处与应用补丁，储藏，提交与暂存，丢弃改动与重置 HEAD。
+    /// Working Copy 菜单：检出版本、合并与变基（按住 ⌥ 换成快速操作）、变基到别处与应用补丁，储藏，提交与暂存，丢弃改动与重置 HEAD，以及用比较工具比较。
     private func configureWorkingCopyMenu(in menu: NSMenu) {
         let working = addMenu("workspace.title", to: menu)
         addItem(
@@ -423,6 +432,32 @@ extension SpookyApplicationController {
         )
         addItem("working.discardAll", action: #selector(RepositoryWindowController.discardAll), to: working)
         addItem("rewrite.reset.menu", action: #selector(RepositoryWindowController.resetHead), to: working)
+
+        configureCompareMenu(in: working)
+    }
+
+    /// Working Copy 菜单末尾的 Compare 子菜单：用比较工具比较所选文件的工作区、暂存区与 HEAD 版本。
+    private func configureCompareMenu(in working: NSMenu) {
+        working.addItem(.separator())
+
+        let compare = addMenu("externalTool.compare", to: working)
+        addItem(
+            "externalTool.compare.workingTreeToBase",
+            action: #selector(RepositoryWindowController.compareWorkingTreeToBase),
+            key: "d",
+            modifiers: [.control, .shift, .command],
+            to: compare
+        )
+        addItem(
+            "externalTool.compare.workingTreeToIndex",
+            action: #selector(RepositoryWindowController.compareWorkingTreeToIndex),
+            to: compare
+        )
+        addItem(
+            "externalTool.compare.indexToBase",
+            action: #selector(RepositoryWindowController.compareIndexToBase),
+            to: compare
+        )
     }
 
     /// Window 菜单：Activity 与系统窗口动作，并登记为应用的窗口菜单。

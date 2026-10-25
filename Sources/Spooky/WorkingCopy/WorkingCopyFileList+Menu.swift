@@ -84,10 +84,26 @@ extension WorkingCopyFileList.Coordinator {
 // MARK: - Menu Groups
 
 extension WorkingCopyFileList.Coordinator {
-    /// 打开：用默认程序打开文件。
+    /// 打开：用默认程序打开文件，或在 Open With ▸ 里选程序；程序列表在第一次展开时按所选文件读取。
     private func addOpenItems(to menu: NSMenu) {
         beginGroup(in: menu)
         add("files.open", action: #selector(openMenu), enabled: session.canOpen(menuEntries), to: menu)
+
+        let entries = menuEntries
+        let names = entries.filter(\.isOpenable).map(\.path)
+        let root = session.repository?.localURL
+
+        // 本机文件按实际文件判断能打开它的程序，服务器文件只能按文件名判断
+        let openWith = OpenWithMenu(
+            load: {
+                root.map { root in OpenWithApplications.load(for: names.map { root.appending(path: $0) }) }
+                    ?? OpenWithApplications.load(forNames: names)
+            },
+            open: { [session] application in session.open(entries, with: application) },
+            other: { [session] in session.openWithOtherApplication(entries) }
+        )
+
+        menu.addItem(openWith.item(enabled: session.canOpen(entries)))
     }
 
     /// 路径：复制带主机前缀的完整路径与仓库内的相对路径。
@@ -138,10 +154,16 @@ extension WorkingCopyFileList.Coordinator {
         add("files.move.menu", action: #selector(moveMenu), enabled: session.canMove(menuEntries), to: menu)
     }
 
-    /// 冲突：解决合并冲突与恢复合并冲突版本两个子菜单，可用性按所选文件逐项判断。
+    /// 冲突：解决合并冲突与恢复合并冲突版本两个子菜单，以及用合并工具解决单个冲突文件；可用性按所选文件逐项判断。
     private func addConflictItems(to menu: NSMenu) {
         beginGroup(in: menu)
         ConflictMenu.add(to: menu, entries: menuEntries, session: session)
+        add(
+            "externalTool.openMergeTool",
+            action: #selector(mergeToolMenu),
+            enabled: session.canOpenMergeTool(menuEntries),
+            to: menu
+        )
     }
 
     /// 丢弃与储藏：丢弃改动、储藏与快照所选文件、恢复到指定版本；覆盖工作区的操作执行前确认。
@@ -181,6 +203,24 @@ extension WorkingCopyFileList.Coordinator {
             enabled: session.canMarkAssumeUnchanged(menuEntries, false),
             to: mark
         )
+
+        addCompareMenu(to: menu)
+    }
+
+    /// Compare ▸：用比较工具比较工作区、暂存区与 HEAD；单个冲突文件另有我方、对方与共同祖先之间的三种比较。
+    private func addCompareMenu(to menu: NSMenu) {
+        let compare = submenu("externalTool.compare", in: menu)
+        let conflicted = menuEntries.count == 1 && menuEntries.first?.conflict != nil
+
+        for comparison in WorkingCopyComparison.allCases where comparison.isConflictComparison == conflicted {
+            let item = add(
+                title: AppLocalization.text(comparison.titleKey),
+                action: #selector(compareMenu(_:)),
+                enabled: session.canCompare(menuEntries, comparison),
+                to: compare
+            )
+            item.representedObject = comparison
+        }
     }
 
     /// 忽略或排除子菜单：只匹配所选项、同名项、同类型文件，或输入自定义规则。
@@ -226,6 +266,20 @@ extension WorkingCopyFileList.Coordinator {
     /// 打开或关闭 Quick Look 面板。
     @objc
     private func quickLookMenu() { toggleQuickLook(menuEntries) }
+
+    /// 用合并工具解决所选的冲突文件。
+    @objc
+    private func mergeToolMenu() {
+        guard let entry = menuEntries.first else { return }
+        session.openMergeTool(entry)
+    }
+
+    /// 用比较工具按菜单项对应的方式比较所选文件。
+    @objc
+    private func compareMenu(_ sender: NSMenuItem) {
+        guard let comparison = sender.representedObject as? WorkingCopyComparison else { return }
+        session.compare(menuEntries, comparison)
+    }
 
     /// 菜单暂存所选条目。
     @objc

@@ -172,7 +172,7 @@ struct CommitDetailView: View {
                 .frame(height: 30)
                 .contextMenu {
                     if let commit = history.selectedCommit {
-                        ChangesetFileMenu(session: session, path: file.path, commit: commit)
+                        ChangesetFileMenu(session: session, path: file.path, originalPath: file.originalPath, commit: commit)
                     }
                 }
                 .onDrag { CommitFileDragging.provider(file, session: session) }
@@ -240,7 +240,7 @@ struct CommitFileListView: View {
                 .tag(file.path)
                 .contextMenu {
                     if let commit = history.selectedCommit {
-                        ChangesetFileMenu(session: session, path: file.path, commit: commit)
+                        ChangesetFileMenu(session: session, path: file.path, originalPath: file.originalPath, commit: commit)
                     }
                 }
                 .onDrag { CommitFileDragging.provider(file, session: session) }

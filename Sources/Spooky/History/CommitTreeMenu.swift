@@ -23,10 +23,21 @@ struct CommitTreeMenu: View {
         }
     }
 
-    /// 多个条目：恢复、导出与归档。
+    /// 多个条目：打开其中的文件，恢复、导出与归档。
     @ViewBuilder
     private var multiple: some View {
         let paths = entries.map(\.path)
+        let files = entries.filter { $0.type == "blob" }.map(\.path)
+
+        Button(AppLocalization.text("tree.openItemsAt", entries.count, commit.shortID)) {
+            session.open(files, at: commit.id)
+        }
+        .disabled(files.count != entries.count)
+
+        openWithMenu(AppLocalization.text("tree.openItemsAtWith", entries.count, commit.shortID), files: files)
+            .disabled(files.count != entries.count)
+
+        Divider()
 
         Button(AppLocalization.text("tree.restoreItems", entries.count, commit.shortID)) {
             session.restoreItems(paths, at: commit.id)
@@ -42,11 +53,21 @@ struct CommitTreeMenu: View {
         }
     }
 
-    /// 单个条目：原文、Blame 与文件历史只对文件可用；导出单个文件直接存成文件。
+    /// 单个条目：打开、原文、Blame 与文件历史只对文件可用；导出单个文件直接存成文件。
     @ViewBuilder
     private func single(_ entry: TreeEntry) -> some View {
         let name = RepositorySession.fileName(entry.path)
         let file = entry.type == "blob"
+
+        Button(AppLocalization.text("tree.openAt", name, commit.shortID)) {
+            session.open([entry.path], at: commit.id)
+        }
+        .disabled(!file)
+
+        openWithMenu(AppLocalization.text("tree.openAtWith", name, commit.shortID), files: [entry.path])
+            .disabled(!file)
+
+        Divider()
 
         Button(AppLocalization.text("fileHistory.showAt", name, commit.shortID)) {
             session.showFile(entry.path, at: commit.id, mode: .raw)
@@ -80,6 +101,17 @@ struct CommitTreeMenu: View {
 
         Button(AppLocalization.text("tree.archiveAt", name, commit.shortID)) {
             session.onRevisionRequest?(.export(revision: commit.id, paths: [entry.path], archive: true))
+        }
+    }
+
+    /// 用指定程序打开这个版本里的文件的子菜单：程序按文件名判断，最后是 Other…。
+    private func openWithMenu(_ title: String, files: [String]) -> some View {
+        Menu(title) {
+            OpenWithMenuItems(
+                names: files,
+                open: { session.open(files, at: commit.id, with: $0) },
+                other: { session.openWithOtherApplication(files, at: commit.id) }
+            )
         }
     }
 }

@@ -205,6 +205,7 @@ extension RepositoryWindowController {
         let contents: Bool? = stashAvailability(of: item.action, repositoryView: repositoryView)
             ?? diffAvailability(of: item)
             ?? workingCopyFileAvailability(of: item)
+            ?? externalToolAvailability(of: item.action, repositoryView: repositoryView)
 
         // 组外的窗口级动作在下方判断
         if let enabled = references ?? views ?? contents {
