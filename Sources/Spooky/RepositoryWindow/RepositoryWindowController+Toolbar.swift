@@ -16,6 +16,9 @@ enum RepositoryToolbar {
     /// 后退 | 前进。
     static let navigation = NSToolbarItem.Identifier("navigation")
 
+    /// 快捷操作面板。
+    static let quickActions = NSToolbarItem.Identifier("quickActions")
+
     /// 服务器仓库的主机前缀，本机仓库与仓库管理中隐藏。
     static let host = NSToolbarItem.Identifier("host")
 
@@ -64,15 +67,15 @@ enum RepositoryToolbar {
     /// 在终端中打开。
     static let terminal = NSToolbarItem.Identifier("terminal")
 
-    /// 默认排布：侧边栏上方是仓库管理入口，主视图上方依次是后退 / 前进、主机前缀、同步与合并、储藏、刷新、关闭仓库与搜索框。
+    /// 默认排布：侧边栏上方是仓库管理入口，主视图上方依次是后退 / 前进、快捷操作、主机前缀、同步与合并、储藏、刷新、关闭仓库与搜索框。
     static let defaultItems: [NSToolbarItem.Identifier] = [
         .flexibleSpace, repositories, sidebarSeparator, navigation, .flexibleSpace,
-        host, sync, synchronize, merge, stashes, refresh, closeRepository, search,
+        quickActions, host, sync, synchronize, merge, stashes, refresh, closeRepository, search,
     ]
 
     /// 自定义面板里可选的项：默认项之外另有新建分支、安全强推、推送任意版本、Finder、终端、全部暂存与提交，以及系统的空白。
     static let allowedItems: [NSToolbarItem.Identifier] = [
-        repositories, sidebarSeparator, navigation, host, sync, synchronize, merge, stashes,
+        repositories, sidebarSeparator, navigation, quickActions, host, sync, synchronize, merge, stashes,
         refresh, closeRepository, search, createBranch, forcePush, pushTo, finder, terminal,
         stageAll, commit, .space, .flexibleSpace,
     ]
@@ -86,6 +89,9 @@ enum RepositoryToolbar {
 extension RepositoryWindowController {
     /// 仓库窗口里仓库动作按钮的标签键、符号与动作。
     private static let buttons: [NSToolbarItem.Identifier: (label: String, palette: String, symbol: String, action: Selector)] = [
+        RepositoryToolbar.quickActions: (
+            "toolbar.quickActions", "toolbar.quickActions", "wand.and.stars", #selector(showQuickActions)
+        ),
         RepositoryToolbar.refresh: ("action.refresh", "action.refresh", "arrow.clockwise", #selector(refreshRepository)),
         RepositoryToolbar.closeRepository: (
             "action.closeRepository", "action.closeRepository", "xmark.circle", #selector(closeRepository)

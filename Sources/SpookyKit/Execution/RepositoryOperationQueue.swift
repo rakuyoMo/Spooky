@@ -86,8 +86,13 @@ actor RepositoryOperationQueue {
                 options = options.dropFirst(2)
             }
 
+            // 读取 .gitmodules 里登记的子模块同样只是查询
+            let submodules = options.count == 5
+                && options.prefix(4).elementsEqual(["-z", "--file", ".gitmodules", "--get-regexp"])
+
             // 合并后的配置与只看仓库本地配置的两种按正则读取
-            return (options.prefix(2).elementsEqual(["-z", "--get-regexp"]) && options.count == 3)
+            return submodules
+                || (options.prefix(2).elementsEqual(["-z", "--get-regexp"]) && options.count == 3)
                 || (options.prefix(3).elementsEqual(["-z", "--local", "--get-regexp"]) && options.count == 4)
         }
 
@@ -95,6 +100,12 @@ actor RepositoryOperationQueue {
         if command == "branch" {
             guard let index = arguments.firstIndex(of: "branch") else { return false }
             return arguments.dropFirst(index + 1).elementsEqual(["--show-current"])
+        }
+
+        // 只有列出工作树是读取，其余 worktree 子命令都会改动仓库
+        if command == "worktree" {
+            guard let index = arguments.firstIndex(of: "worktree"), index + 1 < arguments.count else { return false }
+            return arguments[index + 1] == "list"
         }
 
         // 只计算对象哈希不写入对象库；带 -w 的写入仍走写队列。

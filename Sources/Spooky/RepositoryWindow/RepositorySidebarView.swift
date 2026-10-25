@@ -373,7 +373,7 @@ extension RepositorySidebarView {
                 branchRow(ref, name: node.name)
                     .tag(ref.id)
                     .onTapGesture(count: 2) {
-                        checkoutRemote(ref)
+                        session.checkoutBranch(ref, request: request)
                     }
                     .onDrag { dragProvider(kind: .remote, reference: ref.id) }
                     .contextMenu { branchMenu(ref) }
@@ -463,7 +463,7 @@ extension RepositorySidebarView {
                 .disabled(!session.canDelete(selected))
         } else {
             if ref.isLocal {
-                Button(AppLocalization.text("branch.checkout")) { checkout(ref) }
+                Button(AppLocalization.text("branch.checkout")) { session.checkoutBranch(ref, request: request) }
                     .disabled(!session.canCheckout(ref))
                 Divider()
                 pinMenuItems([ref])
@@ -522,52 +522,6 @@ extension RepositorySidebarView {
 // MARK: - Actions
 
 extension RepositorySidebarView {
-    /// 双击检出保留 Git 对本地修改的覆盖保护。
-    func checkout(_ ref: RepositoryReference) {
-        guard session.canCheckout(ref) else { return }
-        session.performGit(
-            { runner, _ in
-                try await RepositoryReferences(runner: runner).checkout(ref.id)
-            },
-            title: AppLocalization.text("branch.checkout"),
-            offersAutoStash: true,
-            undo: .reversible
-        )
-    }
-
-    /// 双击远端分支检出已有跟踪分支，或原子创建并检出同名跟踪分支。
-    private func checkoutRemote(_ ref: RepositoryReference) {
-        guard
-            session.canCheckout(ref), let snapshot = session.history.snapshot,
-            let remote = snapshot.remote(for: ref)
-        else { return }
-        if let existing = snapshot.references.first(where: { $0.isLocal && $0.upstream == ref.id }) {
-            checkout(existing)
-            return
-        }
-        let name = String(ref.id.dropFirst(("refs/remotes/" + remote.name + "/").count))
-
-        // 同名本地分支可能有不同含义，保留它并让用户在跟踪表单中指定名称。
-        if snapshot.references.contains(where: { $0.id == "refs/heads/" + name }) {
-            request(RepositoryActionRequest(kind: .track, reference: ref.id))
-            return
-        }
-        session.performGit(
-            { runner, _ in
-                try await RepositoryReferences(runner: runner)
-                    .create(
-                        name: name,
-                        startingAt: ref.id,
-                        track: true,
-                        checkout: true
-                    )
-            },
-            title: AppLocalization.text("branch.checkout"),
-            offersAutoStash: true,
-            undo: .reversible
-        )
-    }
-
     /// 删除前在对话框里确认，可选同时删除跟踪的远端分支与强制删除。
     private func delete(_ references: [RepositoryReference]) {
         session.requestReference(.deleteBranches(references))

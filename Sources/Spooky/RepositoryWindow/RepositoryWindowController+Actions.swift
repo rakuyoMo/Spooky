@@ -241,6 +241,10 @@ extension RepositoryWindowController {
         case #selector(focusSearch):
             return repositoryView && session.activeView.supportsSearch
 
+        // 快捷操作只在窗口显示仓库时可用
+        case #selector(showQuickActions):
+            return repositoryView
+
         default:
             return true
         }

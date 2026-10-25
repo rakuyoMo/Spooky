@@ -85,6 +85,37 @@ extension RepositorySession {
         )
     }
 
+    /// 把身份档案的姓名与邮箱写进仓库所在机器上的全局 Git 配置；先确认，说明写在哪台机器、影响哪些仓库。
+    func applyGlobalProfile(_ profile: UserProfile) {
+        guard canWrite, let repository else { return }
+
+        #warning(
+            "TODO: 服务器仓库的 Set as Global User 写的是服务器上的全局配置，依据是服务器仓库在服务器上提交；也可能应写本机的全局配置。核实方式：确认服务器仓库的快捷操作里这一项的预期作用范围；只影响服务器仓库的这一个动作。"
+        )
+
+        let request = generation
+        let message = repository.host.map { AppLocalization.text("quickActions.setGlobalUser.remote", $0) }
+            ?? AppLocalization.text("quickActions.setGlobalUser.local")
+
+        onConfirm?(
+            AppLocalization.text("quickActions.setGlobalUser"),
+            message,
+            { [weak self] in
+                guard let self, generation == request else { return }
+
+                performGit(
+                    { runner, _ in
+                        try await WorkingCopyOperations(runner: runner)
+                            .applyGlobalIdentity(name: profile.name, email: profile.email)
+                    },
+                    title: AppLocalization.text("quickActions.setGlobalUser"),
+                    recordsActivity: false
+                )
+            },
+            nil
+        )
+    }
+
     /// 按注释与折行设置整理提交信息，确定后回调；需要用户决定注释行时先询问，取消则不回调。
     ///
     /// 注释行按 Editor 设置询问、删除或保留，去掉注释后为空时只能保留注释提交；随后硬折行时正文按字数上限断行。

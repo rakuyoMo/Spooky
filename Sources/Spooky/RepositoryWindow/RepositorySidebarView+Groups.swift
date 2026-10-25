@@ -120,7 +120,7 @@ extension RepositorySidebarView {
     func localBranchRow(_ ref: RepositoryReference, name: String, tag: String) -> some View {
         branchRow(ref, name: name)
             .tag(tag)
-            .onTapGesture(count: 2) { checkout(ref) }
+            .onTapGesture(count: 2) { session.checkoutBranch(ref, request: request) }
             .onDrag { dragProvider(kind: .local, reference: ref.id) }
             .contextMenu { branchMenu(ref) }
             .modifier(

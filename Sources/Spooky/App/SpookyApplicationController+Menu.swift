@@ -60,6 +60,13 @@ extension SpookyApplicationController {
         addItem("action.addRemote", action: #selector(addRemoteRepository), target: self, to: file)
         let recentMenu = addMenu("menu.openRecent", to: file)
         recentMenu.delegate = self
+        addItem(
+            "quickActions.menu",
+            action: #selector(RepositoryWindowController.showQuickActions),
+            key: "a",
+            modifiers: [.command, .shift],
+            to: file
+        )
 
         file.addItem(.separator())
         addItem("action.openTerminal", action: #selector(RepositoryWindowController.openInTerminal), to: file)
