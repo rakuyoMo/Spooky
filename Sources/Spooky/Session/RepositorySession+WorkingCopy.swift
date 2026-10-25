@@ -81,7 +81,10 @@ extension RepositorySession {
             )
         }
 
-        if discard {
+        // 丢弃块或行默认先确认；General 设置里关掉警告后直接丢弃。
+        let warns = UserDefaults.standard.object(forKey: WorkingCopyPreferences.warnsDiscardingChunks) as? Bool ?? true
+
+        if discard, warns {
             onConfirm?(
                 AppLocalization.text("working.discard"),
                 AppLocalization.text(

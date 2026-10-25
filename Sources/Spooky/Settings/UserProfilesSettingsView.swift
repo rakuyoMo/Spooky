@@ -97,6 +97,10 @@ struct UserProfilesSettingsView: View {
     @State
     private var keys: [SigningKey] = []
 
+    /// 等待确认删除的档案。
+    @State
+    private var deleting: UserProfile?
+
     /// 250 pt 列表、8 pt 间距与带边框的详情，底部是说明文字。
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -115,7 +119,22 @@ struct UserProfilesSettingsView: View {
         .padding(20)
         .frame(width: 900, height: 381)
         .sheet(item: $editing) { profile in
-            UserProfileEditor(profile: profile, keys: keys) { save($0) }
+            UserProfileEditor(
+                profile: profile,
+                isNew: !profiles.contains { $0.id == profile.id },
+                otherTitles: Set(profiles.filter { $0.id != profile.id }.map(\.title)),
+                keys: keys
+            ) { save($0) }
+        }
+        .alert(
+            AppLocalization.text("profiles.delete.title"),
+            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+            presenting: deleting
+        ) { profile in
+            Button(AppLocalization.text("profiles.delete.submit"), role: .destructive) { delete(profile) }
+            Button(AppLocalization.text("action.cancel"), role: .cancel) { deleting = nil }
+        } message: { profile in
+            Text(AppLocalization.text("profiles.delete.message", profile.title))
         }
         .task(id: editing == nil) {
             // 打开页面与每次打开、关闭编辑框时重新列出密钥，agent 里的密钥可能随时增减。
@@ -164,8 +183,7 @@ extension UserProfilesSettingsView {
             .accessibilityLabel(AppLocalization.text("profiles.add"))
 
             Button {
-                storage = UserProfiles.encode(profiles.filter { $0.id != selection })
-                selection = nil
+                deleting = profiles.first { $0.id == selection }
             } label: {
                 Image(systemName: "minus").frame(width: 24, height: 20)
             }
@@ -243,6 +261,17 @@ extension UserProfilesSettingsView {
     }
 
     /// 已有档案原位替换，新档案追加到末尾并选中。
+    /// 确认后删除档案；删除只改档案列表，不动任何 Git 配置。
+    private func delete(_ profile: UserProfile) {
+        storage = UserProfiles.encode(profiles.filter { $0.id != profile.id })
+        deleting = nil
+
+        if selection == profile.id {
+            selection = nil
+        }
+    }
+
+    /// 新建的档案追加到列表末尾，已有的档案原位更新，并选中它。
     private func save(_ profile: UserProfile) {
         var current = profiles
 
@@ -259,11 +288,19 @@ extension UserProfilesSettingsView {
 
 // MARK: - UserProfileEditor
 
-/// 编辑档案的对话框：标题、姓名、邮箱与签名密钥；签名密钥从本机的密钥里选，或不带密钥。
+/// 新建或更新档案的对话框：标题、姓名、邮箱与签名密钥；签名密钥从本机的密钥里选，或不带密钥。
+///
+/// 标题、姓名与邮箱都不能为空，标题不能与其它档案重名。
 private struct UserProfileEditor: View {
     /// 编辑中的副本。
     @State
     private var profile: UserProfile
+
+    /// 新建档案；否则是更新已有的档案。
+    let isNew: Bool
+
+    /// 其它档案的标题，用来检查重名。
+    let otherTitles: Set<String>
 
     /// 本机可用的签名密钥。
     let keys: [SigningKey]
@@ -278,39 +315,47 @@ private struct UserProfileEditor: View {
     @Environment(\.dismiss)
     private var dismiss
 
-    /// 标签右对齐的四行表单，底部取消与保存。
+    /// 对话框骨架里放标签右对齐的四行表单。
     var body: some View {
-        VStack(alignment: .trailing, spacing: 20) {
+        DialogLayout(
+            title: AppLocalization.text(isNew ? "profiles.create.title" : "profiles.update.title"),
+            message: AppLocalization.text(isNew ? "profiles.create.message" : "profiles.update.message"),
+            submitTitle: AppLocalization.text(isNew ? "profiles.create.submit" : "profiles.update.submit"),
+            error: titleExists ? AppLocalization.text("profiles.titleExists") : nil,
+            canSubmit: !titleExists
+                && ![profile.title, profile.name, profile.email]
+                .contains { $0.trimmingCharacters(in: .whitespaces).isEmpty },
+            cancel: { dismiss() },
+            submit: {
+                var saved = profile
+                saved.title = profile.title.trimmingCharacters(in: .whitespaces)
+                saved.signingKey = selectedKey.wrappedValue
+                onSave(saved)
+                dismiss()
+            }
+        ) {
             Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 8) {
                 field("profiles.title", text: $profile.title)
                 field("profiles.userName", text: $profile.name)
                 field("profiles.email", text: $profile.email)
                 signingKeyRow
             }
-
-            HStack {
-                Button(AppLocalization.text("action.cancel"), role: .cancel) { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-
-                Button(AppLocalization.text("profiles.save")) {
-                    var saved = profile
-                    saved.signingKey = selectedKey.wrappedValue
-                    onSave(saved)
-                    dismiss()
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(
-                    [profile.title, profile.name, profile.email]
-                        .contains { $0.trimmingCharacters(in: .whitespaces).isEmpty }
-                )
-            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 20)
         }
-        .padding(20)
     }
 
     /// 以档案的副本创建编辑框。
-    init(profile: UserProfile, keys: [SigningKey], onSave: @escaping (UserProfile) -> Void) {
+    init(
+        profile: UserProfile,
+        isNew: Bool,
+        otherTitles: Set<String>,
+        keys: [SigningKey],
+        onSave: @escaping (UserProfile) -> Void
+    ) {
         _profile = State(initialValue: profile)
+        self.isNew = isNew
+        self.otherTitles = otherTitles
         self.keys = keys
         self.onSave = onSave
         configuredKey = profile.signingKey
@@ -320,6 +365,11 @@ private struct UserProfileEditor: View {
 // MARK: - UserProfileEditor Private
 
 extension UserProfileEditor {
+    /// 去掉首尾空格后的标题与其它档案重名。
+    private var titleExists: Bool {
+        otherTitles.contains(profile.title.trimmingCharacters(in: .whitespaces))
+    }
+
     /// 本机找不到的已配置密钥，菜单里显示为不可选的一项。
     private var unknownKey: String? {
         configuredKey.flatMap { value in keys.contains { $0.matches(value) } ? nil : value }
@@ -357,13 +407,13 @@ extension UserProfileEditor {
                     .tag(String?.none)
             }
             .labelsHidden()
-            .frame(width: 328)
+            .frame(maxWidth: .infinity)
             .disabled(keys.isEmpty)
             .accessibilityLabel(AppLocalization.text("profiles.signingKey"))
         }
     }
 
-    /// 一行不折行的标签与 328 pt 输入框；标签列按最长的标签加宽。
+    /// 一行不折行的标签与占满余下宽度的输入框；标签列按最长的标签加宽。
     private func field(_ label: String, text: Binding<String>) -> some View {
         GridRow {
             Text(AppLocalization.text(label))
@@ -371,26 +421,8 @@ extension UserProfileEditor {
                 .gridColumnAlignment(.trailing)
 
             TextField("", text: text)
-                .frame(width: 328)
+                .frame(maxWidth: .infinity)
                 .accessibilityLabel(AppLocalization.text(label))
-        }
-    }
-}
-
-// MARK: - SettingsWindowController
-
-extension SettingsWindowController {
-    /// 打开设置窗口并切到 User Profiles 页，供身份菜单的 “Manage User Profiles…” 使用。
-    static func showUserProfiles() {
-        (NSApp.delegate as? SpookyApplicationController)?.showSettings()
-
-        let tabs = NSApp.windows
-            .first { $0.windowController is SettingsWindowController }?
-            .contentViewController as? NSTabViewController
-        let label = AppLocalization.text("settings.profiles")
-
-        if let index = tabs?.tabViewItems.firstIndex(where: { $0.label == label }) {
-            tabs?.selectedTabViewItemIndex = index
         }
     }
 }

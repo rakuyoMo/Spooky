@@ -79,7 +79,13 @@ actor RepositoryOperationQueue {
         guard let command = command(in: arguments) else { return false }
         if command == "config" {
             guard let index = arguments.firstIndex(of: "config") else { return false }
-            let options = arguments.dropFirst(index + 1)
+            var options = arguments.dropFirst(index + 1)
+
+            // 读全局配置时先写作用域与 --includes，其后的查询与读仓库配置相同。
+            if options.starts(with: ["--global", "--includes"]) {
+                options = options.dropFirst(2)
+            }
+
             return options.prefix(2).elementsEqual(["-z", "--get-regexp"])
                 && options.count == 3
         }

@@ -107,7 +107,7 @@ extension CommitIdentityView {
             }
         }
 
-        Button(AppLocalization.text("profiles.manage")) { SettingsWindowController.showUserProfiles() }
+        Button(AppLocalization.text("profiles.manage")) { SettingsWindowController.show(.userProfiles) }
     }
 
     /// 提交时会不会签名，以及使用的密钥与格式。

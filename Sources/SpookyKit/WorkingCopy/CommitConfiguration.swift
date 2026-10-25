@@ -76,38 +76,19 @@ public struct CommitConfiguration: Sendable, Equatable {
     }
 
     /// 解析 `config -z --get-regexp` 的输出；同一键出现多次时与 Git 一样以最后一个为准。
-    ///
-    /// 每条记录是 “键、换行、值、NUL”，没有值的布尔键只有 “键、NUL”。
     static func parse(_ data: Data, hasCommitHooks: Bool) throws -> Self {
-        guard data.isEmpty || data.last == 0 else {
-            throw RepositoryReadError.malformedOutput("commit config")
-        }
-
-        var values: [String: String?] = [:]
-
-        for record in data.split(separator: 0, omittingEmptySubsequences: false).dropLast() {
-            let text = String(decoding: record, as: UTF8.self)
-            let parts = text.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false)
-            let key = String(parts[0])
-
-            // 查询只会返回请求的键，出现别的键说明输出已错位。
-            guard key.range(of: pattern, options: .regularExpression) != nil else {
-                throw RepositoryReadError.malformedOutput("commit config")
-            }
-
-            values.updateValue(parts.count > 1 ? String(parts[1]) : nil, forKey: key)
-        }
+        let values = try ConfigRecords.parse(data, pattern: pattern, context: "commit config")
 
         // commentString 与 commentChar 互为别名，后读到的生效；Git 的读取顺序就是输出顺序。
         let comment = Self.lastComment(in: data) ?? "#"
         let format = values["gpg.format"].flatMap { $0 }.flatMap(SigningFormat.init(rawValue:))
 
         return Self(
-            userName: Self.nonEmpty(values["user.name"]),
-            userEmail: Self.nonEmpty(values["user.email"]),
-            signingKey: Self.nonEmpty(values["user.signingkey"]),
+            userName: ConfigRecords.nonEmpty(values["user.name"]),
+            userEmail: ConfigRecords.nonEmpty(values["user.email"]),
+            signingKey: ConfigRecords.nonEmpty(values["user.signingkey"]),
             signingFormat: format ?? .openpgp,
-            signsCommits: values["commit.gpgsign"].map(Self.boolean) ?? false,
+            signsCommits: values["commit.gpgsign"].map(ConfigRecords.boolean) ?? false,
             commentPrefix: comment.lowercased() == "auto" || comment.isEmpty ? nil : comment,
             hasCommitHooks: hasCommitHooks
         )
@@ -174,28 +155,6 @@ extension WorkingCopyOperations {
 // MARK: - Private
 
 extension CommitConfiguration {
-    /// 空字符串与缺失同样表示未配置。
-    private static func nonEmpty(_ value: String??) -> String? {
-        guard let value = value ?? nil, !value.isEmpty else {
-            return nil
-        }
-
-        return value
-    }
-
-    /// 按 Git 的布尔写法解析；没有值的键表示 true，数字按是否非零判断。
-    private static func boolean(_ value: String?) -> Bool {
-        guard let value else {
-            return true
-        }
-
-        switch value.lowercased() {
-        case "true", "yes", "on": return true
-        case "false", "no", "off", "": return false
-        default: return (Int(value) ?? 0) != 0
-        }
-    }
-
     /// 注释前缀的两个别名中最后出现的那个值。
     private static func lastComment(in data: Data) -> String? {
         data.split(separator: 0)

@@ -102,6 +102,9 @@ enum WorkingCopyPreferences {
 
     /// 长文件名的截断位置，取值见 ``Truncation``。
     static let truncation = "workingCopyTruncation"
+
+    /// 丢弃块或行之前是否先确认；没有记录时确认。
+    static let warnsDiscardingChunks = "workingCopyWarnDiscardingChunks"
 }
 
 // MARK: - WorkingTreeFileListing
