@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - GitConfigSettingsView
 
-/// Git Config 页：本机全局配置里的提交人身份与提交签名，两组之间以分隔线隔开；修改立即写进全局配置。
+/// Git Config 页：本机全局配置里的提交人身份、本机使用的 Git 程序与提交签名，组间以分隔线隔开；修改立即生效。
 struct GitConfigSettingsView: View {
     /// 全局配置的读写状态。
     @State
@@ -14,6 +14,11 @@ struct GitConfigSettingsView: View {
         VStack(alignment: .leading, spacing: 16) {
             Grid(horizontalSpacing: 8, verticalSpacing: 8) {
                 GitIdentityRows(model: model)
+
+                Divider()
+                    .gridCellUnsizedAxes(.horizontal)
+
+                GitProgramSettingsRow()
 
                 Divider()
                     .gridCellUnsizedAxes(.horizontal)

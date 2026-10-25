@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - IntegrationSettingsView
 
-/// Integration 页：Gerrit 推送的开关，以及本机全局配置里 Issue 追踪的地址模板与编号前缀。
+/// Integration 页：Gerrit 推送的开关、本机全局配置里 Issue 追踪的地址模板与编号前缀，以及本机使用的 SSH agent。
 struct IntegrationSettingsView: View {
     /// 全局配置的读写状态。
     @State
@@ -37,6 +37,11 @@ struct IntegrationSettingsView: View {
                     .gridCellUnsizedAxes(.horizontal)
 
                 issueTrackingRows
+
+                Divider()
+                    .gridCellUnsizedAxes(.horizontal)
+
+                SSHAgentSettingsRow()
             }
 
             if let failure = model.failure {

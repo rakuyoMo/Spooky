@@ -68,6 +68,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         // 窗口创建前应用保存的外观，第一帧就使用所选的浅色或深色。
         AppAppearance.current.apply()
 
+        // 打开仓库前交出所选的 Git 程序、自定义变量与 SSH agent；登录 shell 的变量在后台读取。
+        LocalExecutionPreferences.shared.start()
+
         configureMenu()
         appIconController.start()
         newWindow()

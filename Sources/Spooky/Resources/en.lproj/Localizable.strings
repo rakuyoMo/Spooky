@@ -149,7 +149,7 @@
 
 "error.parse" = "Git Output Could Not Be Read";
 
-"error.openHelp" = "Choose an accessible Git working tree. Spooky requires /usr/bin/git 2.41.0 or later; update Xcode or Command Line Tools if needed. Original output is shown below.";
+"error.openHelp" = "Choose an accessible Git working tree. Spooky requires Git 2.41.0 or later; choose another Git binary in Settings, or update Xcode or Command Line Tools. Original output is shown below.";
 
 "error.refreshHelp" = "Any previous result is kept when a refresh fails. Check the original output, then refresh to try again.";
 
@@ -1546,3 +1546,37 @@
 "profiles.delete.title" = "Delete User Profile";
 "profiles.delete.message" = "The user profile “%@” will be deleted. Your Git configuration is not changed.";
 "profiles.delete.submit" = "Delete";
+
+/* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
+"settings.environment.loginShell" = "Automatically read environment variables from the login shell";
+"settings.environment.loginShellFailed" = "The login shell’s environment variables couldn’t be read.";
+"settings.environment.key" = "Key";
+"settings.environment.value" = "Value";
+"settings.environment.custom" = "Custom environment variables used when running Git commands:";
+"settings.environment.add" = "Add Variable";
+"settings.environment.remove" = "Remove Variable";
+"settings.environment.localOnly" = "These settings apply only to Git commands run on this Mac. Repositories on servers use the server’s own environment.";
+
+/* Settings → Integration 的 SSH Agent 一行。 */
+"settings.sshAgent" = "SSH Agent:";
+"settings.sshAgent.system" = "System SSH Agent";
+"settings.sshAgent.onePassword" = "1Password SSH Agent";
+"settings.sshAgent.description" = "The selected SSH agent is used for SSH connections and SSH signing.";
+"settings.sshAgent.warning" = "SSH Agent Not Running";
+"settings.sshAgent.warning.system" = "The system SSH agent isn’t available. Restart your Mac, or choose another SSH agent.";
+"settings.sshAgent.warning.onePassword" = "The 1Password SSH agent isn’t running. Turn on the SSH agent in 1Password’s settings, or choose another SSH agent.";
+
+/* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
+"settings.gitProgram" = "Git binary:";
+"settings.gitProgram.system" = "%1$@ (System; %2$@)";
+"settings.gitProgram.version" = "%1$@ (%2$@)";
+"settings.gitProgram.unavailable" = "%@ (Unavailable)";
+"settings.gitProgram.choose" = "Select Git Binary…";
+"settings.gitProgram.minimum" = "Minimum required Git version is %@";
+"settings.gitProgram.rejected" = "Git Binary Can’t Be Used";
+"settings.gitProgram.rejected.notGit" = "“%@” isn’t a Git binary.";
+"settings.gitProgram.rejected.version" = "“%1$@” is Git %2$@. Spooky requires Git %3$@ or later.";
+"error.gitProgram" = "Git Binary Not Found";
+"error.gitProgramHelp" = "Choose another Git binary in Settings. The path that couldn’t be run is shown below.";
+
+"settings.environment" = "Environment";

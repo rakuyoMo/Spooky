@@ -149,7 +149,7 @@
 
 "error.parse" = "Git の出力を解析できません";
 
-"error.openHelp" = "アクセスできる Git 作業ツリーを選択してください。/usr/bin/git は 2.41.0 以降が必要です。必要に応じて Xcode または Command Line Tools を更新してください。元の出力を下に表示しています。";
+"error.openHelp" = "アクセスできる Git 作業ツリーを選択してください。Git は 2.41.0 以降が必要です。設定で別の Git プログラムを選択するか、Xcode または Command Line Tools を更新してください。元の出力を下に表示しています。";
 
 "error.refreshHelp" = "更新に失敗しても以前の結果は保持されます。元の出力を確認してから更新を再試行してください。";
 
@@ -1546,3 +1546,37 @@
 "profiles.delete.title" = "ユーザプロファイルを削除";
 "profiles.delete.message" = "ユーザプロファイル「%@」を削除します。Git の設定は変わりません。";
 "profiles.delete.submit" = "削除";
+
+/* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
+"settings.environment.loginShell" = "ログインシェルから環境変数を自動で読み込む";
+"settings.environment.loginShellFailed" = "ログインシェルの環境変数を読み込めませんでした。";
+"settings.environment.key" = "名前";
+"settings.environment.value" = "値";
+"settings.environment.custom" = "Git コマンドの実行時に使うカスタム環境変数：";
+"settings.environment.add" = "変数を追加";
+"settings.environment.remove" = "変数を削除";
+"settings.environment.localOnly" = "これらの設定は、この Mac で実行する Git コマンドにのみ適用されます。サーバ上のリポジトリはサーバ自身の環境を使います。";
+
+/* Settings → Integration 的 SSH Agent 一行。 */
+"settings.sshAgent" = "SSH エージェント：";
+"settings.sshAgent.system" = "システムの SSH エージェント";
+"settings.sshAgent.onePassword" = "1Password の SSH エージェント";
+"settings.sshAgent.description" = "選択した SSH エージェントは SSH 接続と SSH 署名に使われます。";
+"settings.sshAgent.warning" = "SSH エージェントが動作していません";
+"settings.sshAgent.warning.system" = "システムの SSH エージェントを利用できません。Mac を再起動するか、別の SSH エージェントを選択してください。";
+"settings.sshAgent.warning.onePassword" = "1Password の SSH エージェントが動作していません。1Password の設定で SSH エージェントをオンにするか、別の SSH エージェントを選択してください。";
+
+/* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
+"settings.gitProgram" = "Git プログラム：";
+"settings.gitProgram.system" = "%1$@（システム、%2$@）";
+"settings.gitProgram.version" = "%1$@（%2$@）";
+"settings.gitProgram.unavailable" = "%@（利用不可）";
+"settings.gitProgram.choose" = "Git プログラムを選択…";
+"settings.gitProgram.minimum" = "必要な Git の最低バージョンは %@ です";
+"settings.gitProgram.rejected" = "この Git プログラムは使用できません";
+"settings.gitProgram.rejected.notGit" = "「%@」は Git プログラムではありません。";
+"settings.gitProgram.rejected.version" = "「%1$@」は Git %2$@ です。Spooky には Git %3$@ 以降が必要です。";
+"error.gitProgram" = "Git プログラムが見つかりません";
+"error.gitProgramHelp" = "設定で別の Git プログラムを選択してください。実行できなかったパスを下に表示しています。";
+
+"settings.environment" = "環境";

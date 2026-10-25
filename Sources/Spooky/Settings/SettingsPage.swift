@@ -30,6 +30,7 @@ extension SettingsPage {
         .themes,
         .userProfiles,
         .integration,
+        .environment,
     ]
 
     /// 克隆目录、终端、自动获取、历史、工作区列表与窗口恢复等通用设置。
@@ -67,8 +68,13 @@ extension SettingsPage {
         AnyView(UserProfilesSettingsView())
     }
 
-    /// Gerrit 推送与 Issue 追踪等与外部服务的集成。
+    /// Gerrit 推送、Issue 追踪与 SSH agent 等与外部服务和工具的集成。
     static let integration = SettingsPage(key: "settings.integration", symbol: "gearshape.2") {
         AnyView(IntegrationSettingsView())
+    }
+
+    /// 本机执行 Git 时附加的环境变量。
+    static let environment = SettingsPage(key: "settings.environment", symbol: "apple.terminal") {
+        AnyView(EnvironmentSettingsView())
     }
 }

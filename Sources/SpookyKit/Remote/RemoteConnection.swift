@@ -483,7 +483,9 @@ extension RemoteConnection {
                 executable: command.executable,
                 processArguments: command.arguments,
                 arguments: ["sftp"],
-                environment: .inherit.updating(["LC_ALL": "en_US.UTF-8"]),
+                environment: .inherit
+                    .updating(LocalExecutionSettings.current.sshOverrides)
+                    .updating(["LC_ALL": "en_US.UTF-8"]),
                 input: input
             )
         } catch {
@@ -829,7 +831,9 @@ extension RemoteConnection {
             let result = try await Subprocess.run(
                 .path(FilePath("/usr/bin/ssh")),
                 arguments: Arguments(["-E", log.path] + processArguments),
-                environment: .inherit.updating(["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]),
+                environment: .inherit
+                    .updating(LocalExecutionSettings.current.sshOverrides)
+                    .updating(["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]),
                 input: .none,
                 output: .discarded,
                 error: .discarded
@@ -853,7 +857,9 @@ extension RemoteConnection {
             executable: "/usr/bin/ssh",
             processArguments: processArguments,
             arguments: arguments,
-            environment: .inherit.updating(["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]),
+            environment: .inherit
+                .updating(LocalExecutionSettings.current.sshOverrides)
+                .updating(["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]),
             input: input,
             acceptedExitCodes: Set(0 ... 255),
             onOutput: onOutput

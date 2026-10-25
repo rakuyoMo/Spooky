@@ -226,12 +226,13 @@ extension SigningKeys {
         return result.map { parseSecretKeys($0.standardOutput) } ?? []
     }
 
-    /// 列出 SSH agent 里的公钥；agent 没有密钥时 ssh-add 以 1 退出，连不上 agent 时以 2 退出，都视为没有。
+    /// 列出所选 SSH agent 里的公钥；agent 没有密钥时 ssh-add 以 1 退出，连不上 agent 时以 2 退出，都视为没有。
     private static func agentKeys() async -> [SigningKey] {
         let result = try? await CommandExecutor.execute(
             executable: "/usr/bin/ssh-add",
             processArguments: ["-L"],
             arguments: ["ssh-add", "-L"],
+            environment: .inherit.updating(LocalExecutionSettings.current.sshOverrides),
             acceptedExitCodes: [0, 1]
         )
 

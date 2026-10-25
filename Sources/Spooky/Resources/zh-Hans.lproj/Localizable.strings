@@ -149,7 +149,7 @@
 
 "error.parse" = "无法解析 Git 输出";
 
-"error.openHelp" = "请选择可访问的 Git 工作区。Spooky 要求 /usr/bin/git 不低于 2.41.0；版本不足时请更新 Xcode 或命令行工具。下方保留原始输出。";
+"error.openHelp" = "请选择可访问的 Git 工作区。Spooky 要求 Git 不低于 2.41.0；版本不足时请在设置中换用其它 Git 程序，或更新 Xcode 或命令行工具。下方保留原始输出。";
 
 "error.refreshHelp" = "刷新失败时保留已有结果。请查看原始输出，处理问题后刷新重试。";
 
@@ -1546,3 +1546,37 @@
 "profiles.delete.title" = "删除身份档案";
 "profiles.delete.message" = "将删除身份档案 “%@”。Git 配置不受影响。";
 "profiles.delete.submit" = "删除";
+
+/* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
+"settings.environment.loginShell" = "自动从登录 shell 读取环境变量";
+"settings.environment.loginShellFailed" = "无法读取登录 shell 的环境变量。";
+"settings.environment.key" = "名称";
+"settings.environment.value" = "值";
+"settings.environment.custom" = "执行 Git 命令时使用的自定义环境变量：";
+"settings.environment.add" = "添加变量";
+"settings.environment.remove" = "移除变量";
+"settings.environment.localOnly" = "这些设置只作用于在这台 Mac 上执行的 Git 命令；服务器上的仓库使用服务器自己的环境。";
+
+/* Settings → Integration 的 SSH Agent 一行。 */
+"settings.sshAgent" = "SSH Agent：";
+"settings.sshAgent.system" = "系统 SSH Agent";
+"settings.sshAgent.onePassword" = "1Password SSH Agent";
+"settings.sshAgent.description" = "所选的 SSH agent 用于 SSH 连接与 SSH 签名。";
+"settings.sshAgent.warning" = "SSH Agent 未运行";
+"settings.sshAgent.warning.system" = "系统 SSH agent 不可用。请重新启动 Mac，或选择其它 SSH agent。";
+"settings.sshAgent.warning.onePassword" = "1Password 的 SSH agent 未运行。请在 1Password 的设置中开启 SSH agent，或选择其它 SSH agent。";
+
+/* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
+"settings.gitProgram" = "Git 程序：";
+"settings.gitProgram.system" = "%1$@（系统；%2$@）";
+"settings.gitProgram.version" = "%1$@（%2$@）";
+"settings.gitProgram.unavailable" = "%@（不可用）";
+"settings.gitProgram.choose" = "选择 Git 程序…";
+"settings.gitProgram.minimum" = "最低要求的 Git 版本为 %@";
+"settings.gitProgram.rejected" = "无法使用这个 Git 程序";
+"settings.gitProgram.rejected.notGit" = "“%@” 不是 Git 程序。";
+"settings.gitProgram.rejected.version" = "“%1$@” 是 Git %2$@。Spooky 要求 Git %3$@ 或更高版本。";
+"error.gitProgram" = "找不到 Git 程序";
+"error.gitProgramHelp" = "请在设置中选择其它 Git 程序。下方是无法运行的路径。";
+
+"settings.environment" = "环境";
