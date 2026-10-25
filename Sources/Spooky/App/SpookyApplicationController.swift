@@ -65,6 +65,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         // 主题目录缺少 Default 或 Default (Dark)、或它们的文件无法加载时从资源写入；写不进去时文本区用资源里的版本。
         try? ThemeStore.shared.installDefaultThemes()
 
+        // 窗口创建前应用保存的外观，第一帧就使用所选的浅色或深色。
+        AppAppearance.current.apply()
+
         configureMenu()
         appIconController.start()
         newWindow()

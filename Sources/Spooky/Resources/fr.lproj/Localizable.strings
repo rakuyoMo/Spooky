@@ -1470,3 +1470,7 @@
 "reflog.cherryPick" = "Cherry-pick de « %@ »…";
 "reflog.restore.title" = "Restaurer la branche";
 "reflog.restore.message" = "Déplacer la branche « %1$@ » vers %2$@ dans %3$@ ? La copie de travail et la zone de préparation ne changent pas. Les commits qui quittent la branche restent visibles dans le reflog.";
+
+"appearance.system" = "Automatique";
+"appearance.light" = "Clair";
+"appearance.dark" = "Sombre";

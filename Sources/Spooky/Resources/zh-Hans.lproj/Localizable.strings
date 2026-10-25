@@ -1470,3 +1470,7 @@
 "reflog.cherryPick" = "摘取 “%@”…";
 "reflog.restore.title" = "恢复分支";
 "reflog.restore.message" = "把 %3$@ 中的分支 “%1$@” 移到 %2$@ 吗？工作区与暂存区不会改变。离开分支的提交仍能在 Reflog 里找到。";
+
+"appearance.system" = "自动";
+"appearance.light" = "浅色";
+"appearance.dark" = "深色";

@@ -1470,3 +1470,7 @@
 "reflog.cherryPick" = "「%@」をチェリーピック…";
 "reflog.restore.title" = "ブランチを戻す";
 "reflog.restore.message" = "%3$@ のブランチ「%1$@」を %2$@ に移動しますか？作業コピーとステージングエリアは変更されません。ブランチから外れるコミットは引き続き Reflog で見つけられます。";
+
+"appearance.system" = "自動";
+"appearance.light" = "ライト";
+"appearance.dark" = "ダーク";

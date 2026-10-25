@@ -1470,3 +1470,7 @@
 "reflog.cherryPick" = "Cherry-pick de “%@”…";
 "reflog.restore.title" = "Restaurar rama";
 "reflog.restore.message" = "¿Mover la rama “%1$@” a %2$@ en %3$@? La copia de trabajo y el área de preparación no cambian. Los commits que salen de la rama se siguen encontrando en el reflog.";
+
+"appearance.system" = "Automático";
+"appearance.light" = "Claro";
+"appearance.dark" = "Oscuro";

@@ -1470,3 +1470,7 @@
 "reflog.cherryPick" = "„%@“ per Cherry-Pick übernehmen …";
 "reflog.restore.title" = "Branch wiederherstellen";
 "reflog.restore.message" = "Den Branch „%1$@“ in %3$@ auf %2$@ verschieben? Arbeitskopie und Staging-Bereich bleiben unverändert. Commits, die den Branch verlassen, sind weiterhin im Reflog zu finden.";
+
+"appearance.system" = "Automatisch";
+"appearance.light" = "Hell";
+"appearance.dark" = "Dunkel";

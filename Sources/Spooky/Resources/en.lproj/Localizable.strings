@@ -1470,3 +1470,7 @@
 "reflog.cherryPick" = "Cherry-Pick “%@”…";
 "reflog.restore.title" = "Restore Branch";
 "reflog.restore.message" = "Move the branch “%1$@” to %2$@ in %3$@? The working copy and the staging area are not changed. Commits that leave the branch can still be found in the reflog.";
+
+"appearance.system" = "Automatic";
+"appearance.light" = "Light";
+"appearance.dark" = "Dark";
