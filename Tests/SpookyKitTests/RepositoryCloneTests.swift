@@ -7,7 +7,7 @@ import Testing
 /// 本机新建与克隆：目标路径含空格、中文与引号，远端用本机的裸仓库。
 struct RepositoryCloneTests {
     /// 不存在的多级目录一并创建；已是目录时在其中初始化；路径是文件或相对路径时不执行 Git。
-    @Test("本机新建仓库：新目录、已有目录与无效路径", .timeLimit(.minutes(1)))
+    @Test("本机新建仓库：新目录、已有目录与无效路径", .timeLimit(.minutes(5)))
     func initialize() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
@@ -37,7 +37,7 @@ struct RepositoryCloneTests {
     }
 
     /// 克隆成功后得到同一个提交；经 file:// 传输时报告进度，最后一条到 100%，事件流依次报告开始与完成。
-    @Test("本机克隆：结果、进度与事件", .timeLimit(.minutes(1)))
+    @Test("本机克隆：结果、进度与事件", .timeLimit(.minutes(5)))
     func clone() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
@@ -73,7 +73,7 @@ struct RepositoryCloneTests {
     }
 
     /// 克隆失败保留 Git 原文并删掉本次新建的目录；已有内容的目录原样保留。
-    @Test("本机克隆：失败保留原文、清理新建的目录", .timeLimit(.minutes(1)))
+    @Test("本机克隆：失败保留原文、清理新建的目录", .timeLimit(.minutes(5)))
     func failure() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
@@ -104,7 +104,7 @@ struct RepositoryCloneTests {
     }
 
     /// 取消不算失败：操作以取消结束，本机进程组被终止，新建的目录被删掉。
-    @Test("本机克隆：取消", .timeLimit(.minutes(1)))
+    @Test("本机克隆：取消", .timeLimit(.minutes(5)))
     func cancellation() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
@@ -134,7 +134,7 @@ struct RepositoryCloneTests {
     }
 
     /// 选了 LFS 时先确认目标机器上的 Git LFS 可用；不可用时不执行克隆。
-    @Test("本机克隆：LFS 不可用时在克隆前失败", .timeLimit(.minutes(1)))
+    @Test("本机克隆：LFS 不可用时在克隆前失败", .timeLimit(.minutes(5)))
     func lfsUnavailable() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }

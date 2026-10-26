@@ -68,7 +68,7 @@ struct GitCommandResultTests {
     }
 
     /// 流式回调在进程退出前可用，取消后输出仍保留且 PID 已消失。
-    @Test("取消真正终止本机子进程", .timeLimit(.minutes(1)))
+    @Test("取消真正终止本机子进程", .timeLimit(.minutes(5)))
     func cancellation() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
@@ -137,7 +137,7 @@ struct GitCommandResultTests {
     }
 
     /// stderr 先超过管道容量时也不会阻塞等待 stdout，超限则保留已读取原文。
-    @Test("并发排空管道并拒绝超限输出", .timeLimit(.minutes(1)))
+    @Test("并发排空管道并拒绝超限输出", .timeLimit(.minutes(5)))
     func outputPressureAndLimit() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }

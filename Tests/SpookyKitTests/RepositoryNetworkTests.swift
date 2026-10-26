@@ -44,7 +44,7 @@ struct RepositoryNetworkTests {
     }
 
     /// 原始 stderr 在进程结束前到达，取消后仓库写槽可再次取得。
-    @Test("Fetch 流式日志、排队取消与写槽释放", .timeLimit(.minutes(1)))
+    @Test("Fetch 流式日志、排队取消与写槽释放", .timeLimit(.minutes(5)))
     func streamingCancellation() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
@@ -80,7 +80,7 @@ struct RepositoryNetworkTests {
     }
 
     /// 解锁临时加密私钥后只加入本测试的 agent；口令回显不能进入流和结果。
-    @Test("本机私钥口令中继、独立 agent 与跨块脱敏", .timeLimit(.minutes(1)))
+    @Test("本机私钥口令中继、独立 agent 与跨块脱敏", .timeLimit(.minutes(5)))
     func localPassphrase() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }

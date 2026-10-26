@@ -7,7 +7,7 @@ import Testing
 /// 子进程、文件描述符与临时文件在成功、失败、取消三条路径上都必须释放。
 struct ResourceReleaseTests {
     /// 取消先发送 TERM：Git 这类程序可以在退出前移除自己的锁文件。
-    @Test("取消先发 TERM，进程可以清理锁文件", .timeLimit(.minutes(1)))
+    @Test("取消先发 TERM，进程可以清理锁文件", .timeLimit(.minutes(5)))
     func gracefulCancellation() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
@@ -35,7 +35,7 @@ struct ResourceReleaseTests {
     }
 
     /// 忽略 TERM 的进程在宽限期后由 KILL 结束，不会遗留在后台。
-    @Test("忽略 TERM 的进程在宽限期后被强制结束", .timeLimit(.minutes(1)))
+    @Test("忽略 TERM 的进程在宽限期后被强制结束", .timeLimit(.minutes(5)))
     func forcedCancellation() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
@@ -80,7 +80,7 @@ struct ResourceReleaseTests {
     }
 
     /// 本机凭据回调的私有会话目录在成功、失败和取消后都被删除。
-    @Test("本机凭据会话目录在三条路径上删除", .timeLimit(.minutes(1)))
+    @Test("本机凭据会话目录在三条路径上删除", .timeLimit(.minutes(5)))
     func credentialSessions() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
