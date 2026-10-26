@@ -4,7 +4,7 @@ import SpookyKit
 // MARK: - Machine
 
 extension AppFailure {
-    /// 本机启动终端与外部工具、目标机器上新建、克隆、扫描与目录浏览，以及仓库所在机器上 Git LFS 的失败：文案键、类别、恢复说明与原文。
+    /// 本机启动终端与外部工具、目标机器上新建、克隆、扫描与目录浏览、仓库所在机器上 Git LFS，以及托管服务 API 与账号的失败：文案键、类别、恢复说明与原文。
     ///
     /// 不属于这几类的错误返回 nil。
     ///
@@ -27,6 +27,12 @@ extension AppFailure {
 
         case let lfs as LFSError:
             classification(of: lfs, remote: remote)
+
+        case let hosting as HostingError:
+            classification(of: hosting)
+
+        case let account as HostingAccountError:
+            classification(of: account)
 
         default:
             nil

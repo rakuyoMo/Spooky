@@ -29,6 +29,7 @@ extension SettingsPage {
         .editor,
         .themes,
         .userProfiles,
+        .accounts,
         .integration,
         .environment,
         .updates,
@@ -67,6 +68,11 @@ extension SettingsPage {
     /// 身份档案。
     static let userProfiles = SettingsPage(key: "settings.profiles", symbol: "rectangle.stack.person.crop") {
         AnyView(UserProfilesSettingsView())
+    }
+
+    /// github.com、GitLab.com 与私有部署 GitLab 的账号。
+    static let accounts = SettingsPage(key: "settings.accounts", symbol: "person.crop.circle") {
+        AnyView(AccountsSettingsView())
     }
 
     /// Gerrit 推送、Issue 追踪与 SSH agent 等与外部服务和工具的集成。

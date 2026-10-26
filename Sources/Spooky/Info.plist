@@ -70,5 +70,7 @@
     <false/>
     <key>SUScheduledCheckInterval</key>
     <integer>86400</integer>
+    <key>SpookyGitHubClientID</key>
+    <string>Ov23liMkZicKtgDk5XnB</string>
 </dict>
 </plist>
