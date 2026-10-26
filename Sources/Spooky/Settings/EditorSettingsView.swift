@@ -38,6 +38,9 @@ enum CommitEditorSettings {
     /// Sign Off 勾选状态的偏好键，所有仓库共用。
     static let signOffKey = "commitSignOff"
 
+    /// 是否在提交信息里补全托管服务上的 Issue 编号的偏好键。
+    static let completesIssuesKey = "commitCompletesIssues"
+
     /// 正文区是否钉住保持展开的偏好键。
     static let pinnedKey = "commitBodyPinned"
 
@@ -84,6 +87,11 @@ enum CommitEditorSettings {
         UserDefaults.standard.bool(forKey: signOffKey)
     }
 
+    /// 是否补全 `#` 之后的 Issue 编号。
+    static var completesIssues: Bool {
+        UserDefaults.standard.object(forKey: completesIssuesKey) as? Bool ?? true
+    }
+
     /// 读取正整数上限；未设置或不是正数时为 nil。
     static func limit(_ key: String) -> Int? {
         (UserDefaults.standard.object(forKey: key) as? Int).flatMap { $0 > 0 ? $0 : nil }
@@ -92,7 +100,7 @@ enum CommitEditorSettings {
 
 // MARK: - EditorSettingsView
 
-/// Editor 设置页：标题字数、正文折行与注释行处理，修改立即生效。
+/// Editor 设置页：标题字数、正文折行、注释行处理与 Issue 编号补全，修改立即生效。
 struct EditorSettingsView: View {
     /// 是否显示标题剩余字数。
     @AppStorage(CommitEditorSettings.showsSubjectCounterKey)
@@ -121,6 +129,10 @@ struct EditorSettingsView: View {
     /// 总是删除注释行。
     @AppStorage(CommitEditorSettings.stripsCommentsKey)
     private var stripsComments = false
+
+    /// 补全 `#` 之后的 Issue 编号。
+    @AppStorage(CommitEditorSettings.completesIssuesKey)
+    private var completesIssues = true
 
     /// 标签列右对齐，控件列左对齐。
     var body: some View {
@@ -154,9 +166,11 @@ struct EditorSettingsView: View {
             }
 
             commentRows
+
+            issueRow
         }
         .padding(40)
-        .frame(width: 900, height: 300, alignment: .top)
+        .frame(width: 900, height: 360, alignment: .top)
     }
 }
 
@@ -181,6 +195,23 @@ extension EditorSettingsView {
             Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
             Toggle(AppLocalization.text("editor.stripsComments"), isOn: $stripsComments)
                 .disabled(warnsComments)
+        }
+    }
+
+    /// Issue 编号补全的勾选框与 11 pt 说明。
+    private var issueRow: some View {
+        GridRow {
+            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle(AppLocalization.text("editor.completesIssues"), isOn: $completesIssues)
+
+                Text(AppLocalization.text("editor.completesIssues.help"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 12)
         }
     }
 

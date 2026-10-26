@@ -23,6 +23,9 @@ enum PullRequestRequest {
 
     /// 把远端手动关联到账号与项目。
     case associate(remote: String, url: String)
+
+    /// 在托管服务上新建仓库并发布到那里。
+    case publish
 }
 
 // MARK: - RepositoryPullRequestState
@@ -93,6 +96,12 @@ final class RepositoryPullRequestState {
     /// 详情显示的一段。
     var page = Page.conversation
 
+    /// 分支整理用的各分支对应的请求：源分支名到同一项目里最近的一个请求，任何状态都算；还没读到或远端对应不上账号时为 nil。
+    private(set) var branchRequests: [String: PullRequest]? = nil
+
+    /// 读取分支对应的请求的失败。
+    private(set) var branchRequestsFailure: AppFailure? = nil
+
     /// 提交与改动两段共用的比较。
     let comparison = RevisionComparisonState()
 
@@ -115,6 +124,14 @@ final class RepositoryPullRequestState {
     /// 关闭仓库或重新读取时递增，丢弃迟到的结果。
     @ObservationIgnored
     private var generation = 0
+
+    /// 上次为 `#` 补全读到的 Issue：项目、结果与读取的时刻。
+    @ObservationIgnored
+    private var issueCache: (project: String, issues: [HostingIssue], date: Date)? = nil
+
+    /// 上次读取分支对应的请求的时刻。
+    @ObservationIgnored
+    private var branchRequestsDate: Date? = nil
 
     /// 选中远端对应的账号；对应不上时为 nil。
     var account: HostingAccount? {
@@ -217,9 +234,77 @@ final class RepositoryPullRequestState {
         reloadDetail(of: selectedID, runner: runner)
     }
 
+    /// 提交信息 `#` 补全用的打开着的 Issue；远端对应不上账号时没有；一分钟内复用上次的结果。
+    ///
+    /// - Parameters:
+    ///   - runner: 仓库的执行器，读取远端地址。
+    ///   - upstreamRemote: HEAD 跟踪的远端。
+    func openIssues(runner: GitRunner, upstreamRemote: String?) async -> [HostingIssue] {
+        guard let (_, project, client) = await mainTarget(runner: runner, upstreamRemote: upstreamRemote) else {
+            return []
+        }
+
+        if let cache = issueCache, cache.project == project, Date().timeIntervalSince(cache.date) < 60 {
+            return cache.issues
+        }
+
+        guard let issues = try? await client.openIssues(in: project) else {
+            return []
+        }
+
+        issueCache = (project, issues, Date())
+        return issues
+    }
+
+    /// 读取分支整理用的各分支对应的请求：最近的三页，同一项目里每个源分支取最近的一个；一分钟内不重复读取。
+    ///
+    /// - Parameters:
+    ///   - runner: 仓库的执行器，读取远端地址。
+    ///   - upstreamRemote: HEAD 跟踪的远端。
+    func loadBranchRequests(runner: GitRunner, upstreamRemote: String?) async {
+        if let date = branchRequestsDate, Date().timeIntervalSince(date) < 60 {
+            return
+        }
+
+        branchRequestsDate = Date()
+
+        guard let (_, project, client) = await mainTarget(runner: runner, upstreamRemote: upstreamRemote) else {
+            branchRequests = nil
+            branchRequestsFailure = nil
+            return
+        }
+
+        do {
+            var requests: [String: PullRequest] = [:]
+            var page: Int? = 1
+
+            while let current = page, current <= 3 {
+                let result = try await client.pullRequests(in: project, page: current, includesClosed: true)
+
+                // 列表从新到旧，同一分支只留最近的一个
+                for request in result.items where request.source.project == project && requests[request.source.branch] == nil {
+                    requests[request.source.branch] = request
+                }
+
+                page = result.nextPage
+            }
+
+            branchRequests = requests
+            branchRequestsFailure = nil
+        } catch {
+            branchRequests = nil
+            branchRequestsFailure = AppFailure(error: error, opening: false, location: runner.location)
+            markRejectedToken(error)
+        }
+    }
+
     /// 关闭仓库时清空并取消全部读取。
     func close() {
         generation += 1
+        issueCache = nil
+        branchRequests = nil
+        branchRequestsFailure = nil
+        branchRequestsDate = nil
         listTask?.cancel()
         listTask = nil
         remotes = []
@@ -355,6 +440,25 @@ extension RepositoryPullRequestState {
         isLoading = false
         isLoaded = true
         markRejectedToken(error)
+    }
+
+    /// 补全与分支整理用的远端对应的账号、项目与客户端：远端按选中的、HEAD 跟踪的、origin、第一个的顺序取。
+    private func mainTarget(runner: GitRunner, upstreamRemote: String?) async -> (HostingAccount, String, HostingClient)? {
+        guard let remotes = try? await RepositoryRemotes(runner: runner).configurations() else {
+            return nil
+        }
+
+        let names = [remote, upstreamRemote, "origin", remotes.first?.name].compactMap { $0 }
+        let url = names.lazy.compactMap { name in remotes.first { $0.name == name }?.url }.first
+        let target = url.map {
+            PullRequestTarget.resolve(remoteURL: $0, accounts: accounts.items, associations: PullRequestAssociations.load())
+        }
+
+        guard case .resolved(let account, let project) = target, let client = accounts.client(for: account) else {
+            return nil
+        }
+
+        return (account, project, client)
     }
 
     /// 托管服务拒绝令牌时标记账号。

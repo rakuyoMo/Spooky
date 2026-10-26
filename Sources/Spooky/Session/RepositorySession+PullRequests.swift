@@ -156,21 +156,23 @@ extension RepositorySession {
     }
 }
 
-// MARK: - Private
+// MARK: - Hosting Writes
 
 extension RepositorySession {
-    /// 在托管服务上执行一次写操作：记进 Activity，原文写进日志；完成后重新读取，失败时弹出错误。
+    /// 在托管服务上执行一次写操作：记进 Activity，原文写进日志；完成后重新读取请求，失败时弹出错误。
     ///
     /// - Parameters:
     ///   - title: Activity 的标题。
+    ///   - client: 账号的客户端；省略时用选中远端对应的账号。
     ///   - action: 用账号的客户端执行写操作，返回要写进日志的服务端结果。
-    /// - Returns: 是否已开始执行；选中远端没有可用的账号时为 false。
+    /// - Returns: 是否已开始执行；没有可用的账号时为 false。
     @discardableResult
-    private func performHosting(
+    func performHosting(
         title: String,
+        client: HostingClient? = nil,
         _ action: @escaping @Sendable (HostingClient) async throws -> String?
     ) -> Bool {
-        guard let client = pullRequests.client, let repository else {
+        guard let client = client ?? pullRequests.client, let repository else {
             return false
         }
 

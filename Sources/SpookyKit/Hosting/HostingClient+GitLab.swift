@@ -3,13 +3,19 @@ import Foundation
 // MARK: - GitLab
 
 extension HostingClient {
-    /// 一页打开着的 Merge Request；来自 Fork 的源项目路径另外读取，同一页里只读一次。
-    func gitlabMergeRequests(in project: String, page: Int) async throws -> (items: [PullRequest], nextPage: Int?) {
+    /// 一页 Merge Request；来自 Fork 的源项目路径另外读取，同一页里只读一次。
+    ///
+    /// - Parameter state: `opened` 或 `all`。
+    func gitlabMergeRequests(
+        in project: String,
+        page: Int,
+        state: String
+    ) async throws -> (items: [PullRequest], nextPage: Int?) {
         let response: HostingResponse<[GitLabMergeRequest]> = try await send(
             "GET",
             Self.gitlabProject(project) + "/merge_requests",
             query: [
-                URLQueryItem(name: "state", value: "opened"),
+                URLQueryItem(name: "state", value: state),
                 URLQueryItem(name: "per_page", value: "50"),
                 URLQueryItem(name: "page", value: String(page)),
             ]

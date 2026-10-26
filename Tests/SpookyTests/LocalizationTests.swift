@@ -52,9 +52,12 @@ struct LocalizationTests {
                 "title", "show.menu", "create.menu", "create.title", "create.message", "edit.title", "edit.message",
                 "accept.title", "accept.message", "close.title", "close.message", "comment.message", "checkout.title",
                 "checkout.message", "empty.title", "empty.message", "noSelection", "noAccount.message", "fetchHead.title",
-                "forBranch.create", "forBranch.show",
+                "forBranch.create", "forBranch.show", "filter.with", "filter.without",
             ].map { prefix + $0 }
         }
+
+        // 新仓库的可见性
+        keys += HostingVisibility.allCases.map { "publish.visibility." + $0.rawValue }
 
         // 合并方式与 GitLab 项目的合并策略
         keys += PullRequestMergeMethod.allCases.map { "pullRequests.method." + $0.rawValue }

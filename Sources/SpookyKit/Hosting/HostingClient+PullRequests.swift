@@ -3,16 +3,21 @@ import Foundation
 // MARK: - Pull Requests
 
 extension HostingClient {
-    /// 一页打开着的请求：GitHub 的 Pull Request 或 GitLab 的 Merge Request，按创建时间从新到旧。
+    /// 一页请求：GitHub 的 Pull Request 或 GitLab 的 Merge Request，按创建时间从新到旧。
     ///
     /// - Parameters:
     ///   - project: 目标项目的路径。
     ///   - page: 页码，从 1 开始。
+    ///   - includesClosed: 连同已关闭与已合并的一起列出；否则只列打开着的。
     /// - Returns: 这一页的请求与下一页的页码。
-    public func pullRequests(in project: String, page: Int = 1) async throws -> (items: [PullRequest], nextPage: Int?) {
+    public func pullRequests(
+        in project: String,
+        page: Int = 1,
+        includesClosed: Bool = false
+    ) async throws -> (items: [PullRequest], nextPage: Int?) {
         switch instance.service {
-        case .github: try await githubPullRequests(in: project, page: page)
-        case .gitlab: try await gitlabMergeRequests(in: project, page: page)
+        case .github: try await githubPullRequests(in: project, page: page, state: includesClosed ? "all" : "open")
+        case .gitlab: try await gitlabMergeRequests(in: project, page: page, state: includesClosed ? "all" : "opened")
         }
     }
 

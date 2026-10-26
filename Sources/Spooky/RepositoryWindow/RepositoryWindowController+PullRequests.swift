@@ -32,6 +32,12 @@ extension RepositoryWindowController {
         session.requestPullRequest(.create(sourceBranch: nil))
     }
 
+    /// Repository › Publish Repository…：用托管账号新建远端仓库，添加为远端并推送当前分支。
+    @objc
+    func publishRepository() {
+        presentPullRequestRequest(.publish)
+    }
+
     /// 请求动作的可用性，并按选中远端的服务把菜单项换成 Pull Request 或 Merge Request 的叫法；动作不属于本组时为 nil。
     func pullRequestAvailability(of item: any NSValidatedUserInterfaceItem, repositoryView: Bool) -> Bool? {
         switch item.action {
@@ -42,6 +48,9 @@ extension RepositoryWindowController {
         case #selector(createPullRequest):
             (item as? NSMenuItem)?.title = session.pullRequestText("create.menu")
             return repositoryView
+
+        case #selector(publishRepository):
+            return repositoryView && session.canWrite
 
         default:
             return nil
@@ -113,6 +122,9 @@ extension RepositoryWindowController {
 
             case .associate(let remote, let url):
                 AnyView(AssociateRemoteDialog(session: session, remote: remote, url: url, close: close))
+
+            case .publish:
+                AnyView(PublishRepositoryDialog(session: session, close: close))
             }
 
         sheet.contentViewController = NSHostingController(rootView: dialog)

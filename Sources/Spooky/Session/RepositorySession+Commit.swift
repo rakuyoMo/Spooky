@@ -42,16 +42,28 @@ extension RepositorySession {
         skipHooks = false
     }
 
-    /// 补全的候选：提交取自 HEAD 起的最近历史，文件取自当前工作区状态；读取失败时没有候选。
+    /// 补全的候选：提交取自 HEAD 起的最近历史，文件取自当前工作区状态，Issue 取自远端对应账号的托管服务；读取失败或没有账号时没有候选。
     func completions(for trigger: CompletionTrigger) async -> [CommitCompletion] {
-        let wantsCommits = if case .file = trigger { false } else { true }
-        var commits: [HistoryCommit] = []
-
-        if wantsCommits, let runner, let head = status?.branch.oid {
-            commits = (try? await RepositoryHistory(runner: runner).page(roots: [head], limit: 100).commits) ?? []
+        guard let runner else {
+            return []
         }
 
-        return CommitCompletion.matches(for: trigger, commits: commits, paths: status?.entries.map(\.path) ?? [])
+        switch trigger {
+        case .issue:
+            let issues = await pullRequests.openIssues(runner: runner, upstreamRemote: headBranch?.upstreamRemote)
+            return CommitCompletion.matches(for: trigger, commits: [], paths: [], issues: issues)
+
+        case .file:
+            return CommitCompletion.matches(for: trigger, commits: [], paths: status?.entries.map(\.path) ?? [])
+
+        case .commit, .fixup:
+            guard let head = status?.branch.oid else {
+                return []
+            }
+
+            let commits = (try? await RepositoryHistory(runner: runner).page(roots: [head], limit: 100).commits) ?? []
+            return CommitCompletion.matches(for: trigger, commits: commits, paths: [])
+        }
     }
 
     /// 选用身份档案：先说明会改写哪台机器上哪个仓库的哪些配置，确认后写入仓库的本地配置。

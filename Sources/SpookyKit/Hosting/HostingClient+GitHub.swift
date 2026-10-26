@@ -3,13 +3,15 @@ import Foundation
 // MARK: - GitHub
 
 extension HostingClient {
-    /// 一页打开着的 Pull Request。
-    func githubPullRequests(in project: String, page: Int) async throws -> (items: [PullRequest], nextPage: Int?) {
+    /// 一页 Pull Request。
+    ///
+    /// - Parameter state: `open` 或 `all`。
+    func githubPullRequests(in project: String, page: Int, state: String) async throws -> (items: [PullRequest], nextPage: Int?) {
         let response: HostingResponse<[GitHubPullRequest]> = try await send(
             "GET",
             Self.githubRepository(project) + "/pulls",
             query: [
-                URLQueryItem(name: "state", value: "open"),
+                URLQueryItem(name: "state", value: state),
                 URLQueryItem(name: "per_page", value: "50"),
                 URLQueryItem(name: "page", value: String(page)),
             ]
