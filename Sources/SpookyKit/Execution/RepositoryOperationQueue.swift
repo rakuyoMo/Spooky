@@ -112,6 +112,11 @@ actor RepositoryOperationQueue {
             return options.first == "status"
         }
 
+        // 只有读出 Git LFS 的版本是查询，其余 lfs 子命令会改配置、钩子、.gitattributes 或对象
+        if command == "lfs" {
+            return options.elementsEqual(["version"])
+        }
+
         // 只计算对象哈希不写入对象库；带 -w 的写入仍走写队列。
         if command == "hash-object" {
             return !options.contains("-w")

@@ -209,7 +209,7 @@ private struct SubmoduleGeneralSettings: View {
     @ViewBuilder
     private var warnings: some View {
         if submodule.state == .uninitialized {
-            SubmoduleWarningRow(
+            SettingWarningRow(
                 text: AppLocalization.text("submodule.warning.uninitialized"),
                 action: RemoteSettingAction(
                     title: AppLocalization.text("submodule.update.submit"),
@@ -219,7 +219,7 @@ private struct SubmoduleGeneralSettings: View {
         }
 
         if submodule.needsSynchronizing {
-            SubmoduleWarningRow(
+            SettingWarningRow(
                 text: AppLocalization.text("submodule.warning.synchronize"),
                 action: RemoteSettingAction(
                     title: AppLocalization.text("submodule.synchronize.submit"),
@@ -337,37 +337,6 @@ private struct SubmoduleConfigurationSettings: View {
     /// 仓库可写时可用的按钮。
     private func action(_ key: String, perform: @escaping () -> Void) -> RemoteSettingAction {
         RemoteSettingAction(title: AppLocalization.text(key), isEnabled: session.canModify(submodule), perform: perform)
-    }
-}
-
-// MARK: - SubmoduleWarningRow
-
-/// 状态提示行：缩进 20 pt 的提示文字与常显的按钮，铺警告底色。
-private struct SubmoduleWarningRow: View {
-    /// 提示文字。
-    let text: String
-
-    /// 行尾的按钮。
-    let action: RemoteSettingAction
-
-    /// 文字与按钮横向排列。
-    var body: some View {
-        HStack(spacing: 8) {
-            Text(text)
-                .font(.system(size: 13))
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: 8)
-
-            Button(action.title, action: action.perform)
-                .controlSize(.small)
-                .disabled(!action.isEnabled)
-        }
-        .padding(.leading, 40)
-        .padding(.trailing, 20)
-        .padding(.vertical, 6)
-        .frame(minHeight: 30)
-        .background(AppPalette.color("general_warning_bg_color"))
     }
 }
 

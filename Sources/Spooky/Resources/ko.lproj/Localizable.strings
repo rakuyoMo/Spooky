@@ -2143,3 +2143,36 @@
 "worktree.tooltip.path" = "체크아웃 위치: “%@”";
 
 "worktree.branchInUse" = "“%@”은(는) 이미 작업 트리에 체크아웃되어 있습니다. 만들려면 “HEAD 분리”나 “강제”를 선택하세요.";
+
+"lfs.menu" = "LFS";
+"lfs.menu.update" = "업데이트";
+"lfs.menu.fetch" = "가져오기…";
+"lfs.menu.pull" = "풀…";
+"lfs.menu.push" = "푸시…";
+"lfs.menu.track" = "추적…";
+"lfs.fetch" = "LFS 객체 가져오기";
+"lfs.pull" = "LFS 객체 풀";
+"lfs.push" = "LFS 객체 푸시";
+"lfs.fetch.message" = "현재 체크아웃에 필요한 Git LFS 객체를 원격에서 내려받습니다. 작업 사본은 바꾸지 않습니다.";
+"lfs.pull.message" = "현재 체크아웃에 필요한 Git LFS 객체를 원격에서 내려받고, 작업 사본의 포인터 파일을 실제 내용으로 바꿉니다.";
+"lfs.push.message" = "로컬 브랜치와 태그가 사용하는 Git LFS 객체 중 원격에 아직 없는 것을 업로드합니다.";
+"lfs.enable" = "Git LFS 사용";
+"lfs.update" = "Git LFS 훅 업데이트";
+"lfs.track" = "Git LFS로 추적";
+"lfs.remove" = "제거";
+"lfs.remove.title" = "추적 패턴 제거";
+"lfs.remove.message" = "“%@”을(를) .gitattributes에서 제거합니다. 이미 Git LFS에 저장된 파일은 그대로 유지됩니다.";
+"lfs.createPattern" = "추적 패턴 만들기";
+"lfs.createPattern.menu" = "추적 패턴 만들기…";
+"lfs.pattern.title" = "추적 패턴 만들기";
+"lfs.pattern.message" = "패턴과 일치하는 파일은 Git LFS에 저장됩니다. 패턴은 저장소 루트의 .gitattributes에 추가되며, 저장소를 사용하는 모든 사람과 공유됩니다.";
+"lfs.trackFile" = "이 파일 추적";
+"lfs.trackFiles" = "파일 %ld개 추적";
+"lfs.trackType.single" = "유형이 “.%@”인 모든 파일 추적";
+"lfs.trackType" = "같은 유형의 모든 파일 추적";
+"lfs.version" = "버전";
+"lfs.version.missing" = "찾을 수 없음";
+"lfs.unavailable.local" = "Spooky를 사용하려면 이 Mac에 Git LFS 2.9.0 이상이 필요합니다. 설치하거나 업데이트하세요. 이미 설치되어 있다면 설정 → 환경에서 해당 폴더를 PATH에 추가하세요. 로그인 셸에서 환경 변수를 읽거나 PATH를 사용자 지정 변수로 추가하면 됩니다.";
+"lfs.unavailable.remote" = "Spooky를 사용하려면 서버에 Git LFS 2.9.0 이상이 필요합니다. 서버에 설치하거나 업데이트하고, 해당 폴더를 비대화형 SSH 세션의 PATH에 추가하세요(예: ~/.zshenv). 설정 → 환경에서 서버의 PATH를 확인할 수 있습니다.";
+"lfs.patternsRemain" = "패턴을 제거하지 못함";
+"lfs.patternsRemain.help" = "Git LFS가 이 패턴을 .gitattributes에서 제거하지 못했습니다. 저장소 설정의 “편집기에서 열기”로 직접 제거하세요.";

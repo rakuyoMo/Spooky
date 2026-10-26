@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - WorkingCopyFileDialog
 
-/// 工作区文件操作的参数表单：恢复到指定版本、移动、自定义忽略规则与应用补丁；提交后表单立即关闭，进度与失败由仓库窗口承接。
+/// 工作区文件操作的参数表单：恢复到指定版本、移动、自定义忽略规则、LFS 跟踪规则与应用补丁；提交后表单立即关闭，进度与失败由仓库窗口承接。
 struct WorkingCopyFileDialog: View {
     /// 发起操作的窗口会话。
     let session: RepositorySession
@@ -104,7 +104,7 @@ extension WorkingCopyFileDialog {
             case .move:
                 textRow("files.move.destination")
 
-            case .pattern:
+            case .pattern, .lfsPattern:
                 textRow("files.pattern")
 
             case .applyPatch:
@@ -197,6 +197,9 @@ extension WorkingCopyFileDialog {
         case .pattern(let file, _):
             AppLocalization.text(file == .gitignore ? "files.ignore.custom.title" : "files.exclude.custom.title")
 
+        case .lfsPattern:
+            AppLocalization.text("lfs.pattern.title")
+
         case .applyPatch:
             AppLocalization.text("files.applyPatch")
         }
@@ -221,6 +224,9 @@ extension WorkingCopyFileDialog {
         case .pattern(let file, _):
             return AppLocalization.text(file == .gitignore ? "files.ignore.custom.message" : "files.exclude.custom.message")
 
+        case .lfsPattern:
+            return AppLocalization.text("lfs.pattern.message")
+
         case .applyPatch:
             return AppLocalization.text(remote ? "files.applyPatch.remote" : "files.applyPatch.message", location)
         }
@@ -231,7 +237,7 @@ extension WorkingCopyFileDialog {
         switch form {
         case .revert: AppLocalization.text("files.revert.button")
         case .move: AppLocalization.text("files.move")
-        case .pattern: AppLocalization.text("files.pattern.save")
+        case .pattern, .lfsPattern: AppLocalization.text("files.pattern.save")
         case .applyPatch: AppLocalization.text("files.applyPatch")
         }
     }
@@ -249,7 +255,7 @@ extension WorkingCopyFileDialog {
         guard session.canWrite else { return false }
 
         switch form {
-        case .revert, .pattern: return !text.trimmingCharacters(in: .whitespaces).isEmpty
+        case .revert, .pattern, .lfsPattern: return !text.trimmingCharacters(in: .whitespaces).isEmpty
         case .move(let entry): return Self.destination(text, from: entry.path) != nil
         case .applyPatch: return patchFile != nil
         }
@@ -288,7 +294,7 @@ extension WorkingCopyFileDialog {
 // MARK: - Actions
 
 extension WorkingCopyFileDialog {
-    /// 预填输入：移动预填原路径，自定义规则预填只匹配第一个所选文件的规则，恢复版本预选第一个候选引用。
+    /// 预填输入：移动预填原路径，自定义规则预填只匹配第一个所选文件的规则，LFS 规则预填第一个所选文件的路径，恢复版本预选第一个候选引用。
     private func prepare() {
         switch form {
         case .move(let entry):
@@ -296,6 +302,9 @@ extension WorkingCopyFileDialog {
 
         case .pattern(_, let entries):
             text = WorkingCopyOperations.ignorePatterns(for: entries.prefix(1).map(\.path), scope: .items).first ?? ""
+
+        case .lfsPattern(let entries):
+            text = entries.first?.path ?? ""
 
         case .revert:
             // 预选第一个候选；仓库还没有引用时说明原因，仍可直接输入版本
@@ -343,6 +352,9 @@ extension WorkingCopyFileDialog {
             // 先关闭表单，需要询问是否停止跟踪时窗口才能呈现询问
             close()
             session.addPatterns([text], for: entries, in: file)
+
+        case .lfsPattern:
+            if session.trackLFS([text.trimmingCharacters(in: .whitespaces)]) { close() }
 
         case .applyPatch:
             applyPatchFile()

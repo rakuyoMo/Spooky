@@ -107,3 +107,36 @@ struct RemoteSettingsGroup: View {
             .accessibilityAddTraits(.isHeader)
     }
 }
+
+// MARK: - SettingWarningRow
+
+/// 状态提示行：缩进 20 pt 的提示文字与可选的常显按钮，铺警告底色。
+struct SettingWarningRow: View {
+    /// 提示文字。
+    let text: String
+
+    /// 行尾的按钮；为 nil 时只有文字。
+    var action: RemoteSettingAction?
+
+    /// 文字与按钮横向排列。
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(text)
+                .font(.system(size: 13))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 8)
+
+            if let action {
+                Button(action.title, action: action.perform)
+                    .controlSize(.small)
+                    .disabled(!action.isEnabled)
+            }
+        }
+        .padding(.leading, 40)
+        .padding(.trailing, 20)
+        .padding(.vertical, 6)
+        .frame(minHeight: 30)
+        .background(AppPalette.color("general_warning_bg_color"))
+    }
+}

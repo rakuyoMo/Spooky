@@ -183,7 +183,7 @@ struct AppFailure: Identifiable {
 
         default:
             // 启动外部程序与目标机器上的失败另行分类，其余错误只留描述
-            guard let machine = Self.machineClassification(of: error) else {
+            guard let machine = Self.machineClassification(of: error, remote: location?.host != nil) else {
                 diagnostic = String(describing: error)
                 break
             }

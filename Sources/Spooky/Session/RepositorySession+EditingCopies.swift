@@ -55,6 +55,23 @@ extension RepositorySession {
             }
         }
     }
+
+    /// 用编辑器打开仓库设置里的规则文件；文件还不存在时先建一个空文件。
+    func edit(_ file: RuleFile) {
+        guard !file.exists else {
+            edit(file.path)
+            return
+        }
+
+        let path = file.path
+
+        performGit(
+            { runner, _ in try await RepositoryFiles(runner: runner).write(Data(), to: path) },
+            title: AppLocalization.text("repositorySettings.openInEditor"),
+            recordsActivity: false,
+            success: { [weak self] in self?.edit(path) }
+        )
+    }
 }
 
 // MARK: - Private

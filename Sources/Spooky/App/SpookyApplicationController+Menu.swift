@@ -295,7 +295,7 @@ extension SpookyApplicationController {
         }
     }
 
-    /// Repository 菜单：获取、拉取、同步与推送，发布分支与标签，获取与更新子模块，添加远端、子模块与工作树，新建分支与标签，导出与比较版本，以及打开比较工具。
+    /// Repository 菜单：获取、拉取、同步与推送，发布分支与标签，获取与更新子模块，添加远端、子模块与工作树，新建分支与标签，导出与比较版本，LFS，以及打开比较工具。
     private func configureRepositoryMenu(in menu: NSMenu) {
         let repository = addMenu("menu.repository", to: menu)
         configureSyncItems(in: repository)
@@ -334,6 +334,9 @@ extension SpookyApplicationController {
         addItem("compare.menu", action: #selector(RepositoryWindowController.compareRevisions), to: repository)
 
         repository.addItem(.separator())
+        configureLFSMenu(in: repository)
+
+        repository.addItem(.separator())
         addItem(
             "externalTool.openDiffTool",
             action: #selector(RepositoryWindowController.openDiffTool),
@@ -341,6 +344,20 @@ extension SpookyApplicationController {
             modifiers: [.shift, .command],
             to: repository
         )
+    }
+
+    /// LFS 子菜单：更新钩子，LFS 对象的获取、拉取与推送，以及新建跟踪规则。
+    private func configureLFSMenu(in repository: NSMenu) {
+        let lfs = addMenu("lfs.menu", to: repository)
+        addItem("lfs.menu.update", action: #selector(RepositoryWindowController.updateLFS), to: lfs)
+
+        lfs.addItem(.separator())
+        addItem("lfs.menu.fetch", action: #selector(RepositoryWindowController.fetchLFS), to: lfs)
+        addItem("lfs.menu.pull", action: #selector(RepositoryWindowController.pullLFS), to: lfs)
+        addItem("lfs.menu.push", action: #selector(RepositoryWindowController.pushLFS), to: lfs)
+
+        lfs.addItem(.separator())
+        addItem("lfs.menu.track", action: #selector(RepositoryWindowController.trackLFS), to: lfs)
     }
 
     /// 获取、拉取、同步与推送各项，按住 ⌥ 换成快速操作；后接安全强推与推送任意版本。

@@ -2143,3 +2143,36 @@
 "worktree.tooltip.path" = "チェックアウト先：「%@」";
 
 "worktree.branchInUse" = "「%@」はすでにワークツリーでチェックアウトされています。作成するには「HEAD を分離」か「強制」を選んでください。";
+
+"lfs.menu" = "LFS";
+"lfs.menu.update" = "更新";
+"lfs.menu.fetch" = "フェッチ…";
+"lfs.menu.pull" = "プル…";
+"lfs.menu.push" = "プッシュ…";
+"lfs.menu.track" = "追跡…";
+"lfs.fetch" = "LFS オブジェクトをフェッチ";
+"lfs.pull" = "LFS オブジェクトをプル";
+"lfs.push" = "LFS オブジェクトをプッシュ";
+"lfs.fetch.message" = "現在のチェックアウトに必要な Git LFS オブジェクトをリモートからダウンロードします。作業コピーは変更しません。";
+"lfs.pull.message" = "現在のチェックアウトに必要な Git LFS オブジェクトをリモートからダウンロードし、作業コピーのポインタファイルを実際の内容に置き換えます。";
+"lfs.push.message" = "ローカルのブランチとタグが使う Git LFS オブジェクトのうち、リモートにまだないものをアップロードします。";
+"lfs.enable" = "Git LFS を有効にする";
+"lfs.update" = "Git LFS のフックを更新";
+"lfs.track" = "Git LFS で追跡";
+"lfs.remove" = "削除";
+"lfs.remove.title" = "トラッキングパターンを削除";
+"lfs.remove.message" = "「%@」を .gitattributes から削除します。すでに Git LFS に保存されたファイルはそのままです。";
+"lfs.createPattern" = "トラッキングパターンを作成";
+"lfs.createPattern.menu" = "トラッキングパターンを作成…";
+"lfs.pattern.title" = "トラッキングパターンを作成";
+"lfs.pattern.message" = "パターンに一致するファイルは Git LFS に保存されます。パターンはリポジトリのルートにある .gitattributes に追加され、リポジトリを使うすべての人と共有されます。";
+"lfs.trackFile" = "このファイルを追跡";
+"lfs.trackFiles" = "%ld 個のファイルを追跡";
+"lfs.trackType.single" = "種類が「.%@」のファイルをすべて追跡";
+"lfs.trackType" = "同じ種類のファイルをすべて追跡";
+"lfs.version" = "バージョン";
+"lfs.version.missing" = "見つかりません";
+"lfs.unavailable.local" = "Spooky にはこの Mac 上の Git LFS 2.9.0 以降が必要です。インストールまたはアップデートしてください。インストール済みの場合は、「設定」→「環境」でそのフォルダを PATH に加えてください。ログインシェルから環境変数を読み込むか、PATH をカスタム変数として追加します。";
+"lfs.unavailable.remote" = "Spooky にはサーバ上の Git LFS 2.9.0 以降が必要です。サーバにインストールまたはアップデートし、そのフォルダを非対話 SSH セッションの PATH に加えてください（例：~/.zshenv）。「設定」→「環境」でサーバの PATH を確認できます。";
+"lfs.patternsRemain" = "パターンを削除できませんでした";
+"lfs.patternsRemain.help" = "Git LFS はこれらのパターンを .gitattributes から削除できませんでした。リポジトリの設定の「エディタで開く」から削除してください。";

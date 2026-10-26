@@ -25,6 +25,9 @@ enum WorkingCopyFileForm {
     /// 输入自定义的忽略或排除规则，预填所选文件的规则。
     case pattern(IgnoreFile, [StatusEntry])
 
+    /// 输入交给 Git LFS 跟踪的规则，预填第一个所选文件的路径；没有所选文件时为空。
+    case lfsPattern([StatusEntry])
+
     /// 选择本机的补丁文件并应用到工作区。
     case applyPatch
 }

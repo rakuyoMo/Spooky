@@ -47,6 +47,10 @@ struct RepositorySettingsView: View {
     @State
     private var summary: RepositorySummary?
 
+    /// 仓库所在机器上 Git LFS 的版本与仓库是否启用了它；读取前为 nil。
+    @State
+    private var lfs: LFSStatus?
+
     /// 读取失败的说明与原文。
     @State
     private var failure: AppFailure?
@@ -63,8 +67,8 @@ struct RepositorySettingsView: View {
                     if let failure {
                         FailureDetailsView(failure: failure)
                             .padding(20)
-                    } else if let settings, let summary {
-                        content(settings, summary: summary)
+                    } else if let settings, let summary, let lfs {
+                        content(settings, summary: summary, lfs: lfs)
                     }
                 }
                 .padding(.vertical, 12)
@@ -119,13 +123,13 @@ extension RepositorySettingsView {
 
     /// 当前分段的内容。
     @ViewBuilder
-    private func content(_ settings: RepositorySettings, summary: RepositorySummary) -> some View {
+    private func content(_ settings: RepositorySettings, summary: RepositorySummary, lfs: LFSStatus) -> some View {
         switch page {
         case .general:
             RepositoryGeneralSettings(session: session, settings: settings, summary: summary)
 
         case .lfs:
-            RepositoryRuleList(session: session, title: "repositorySettings.lfs.patterns", file: settings.lfs)
+            RepositoryLFSSettings(session: session, file: settings.lfs, status: lfs)
 
         case .ignores:
             RepositoryRuleList(session: session, title: "repositorySettings.ignores.patterns", file: settings.ignore)
@@ -135,7 +139,7 @@ extension RepositorySettingsView {
         }
     }
 
-    /// 读取本地配置、规则文件与概况；写入进行中时等它结束后再读。
+    /// 读取本地配置、规则文件、概况与 Git LFS 的情况；写入进行中时等它结束后再读。
     private func load() async {
         guard let runner = session.runner, !session.isWriting else {
             return
@@ -144,10 +148,11 @@ extension RepositorySettingsView {
         do {
             async let settings = runner.repositorySettings()
             async let summary = runner.repositorySummary()
-            let loaded = try await (settings, summary)
+            async let lfs = RepositoryLFS(runner: runner).status()
+            let loaded = try await (settings, summary, lfs)
 
             try Task.checkCancellation()
-            (self.settings, self.summary) = loaded
+            (self.settings, self.summary, self.lfs) = loaded
             failure = nil
         } catch {
             guard !Task.isCancelled else { return }
@@ -158,7 +163,7 @@ extension RepositorySettingsView {
 
 // MARK: - RepositoryRuleList
 
-/// Git LFS、Ignores 与 Excludes 三段：分组标题带 “Open in Editor”，下面每条规则一行，用等宽字体。
+/// Ignores 与 Excludes 两段：分组标题带 “Open in Editor”，下面每条规则一行，用等宽字体。
 private struct RepositoryRuleList: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -177,7 +182,7 @@ private struct RepositoryRuleList: View {
                 RemoteSettingAction(
                     title: AppLocalization.text("repositorySettings.openInEditor"),
                     isEnabled: session.repository != nil,
-                    perform: open
+                    perform: { session.edit(file) }
                 ),
             ]
         )
@@ -190,22 +195,5 @@ private struct RepositoryRuleList: View {
             RemoteSettingRow(label: "", value: pattern)
                 .monospaced()
         }
-    }
-
-    /// 用编辑器打开规则文件；文件还不存在时先建一个空文件。
-    private func open() {
-        guard !file.exists else {
-            session.edit(file.path)
-            return
-        }
-
-        let path = file.path
-
-        session.performGit(
-            { runner, _ in try await RepositoryFiles(runner: runner).write(Data(), to: path) },
-            title: AppLocalization.text("repositorySettings.openInEditor"),
-            recordsActivity: false,
-            success: { [weak session] in session?.edit(path) }
-        )
     }
 }

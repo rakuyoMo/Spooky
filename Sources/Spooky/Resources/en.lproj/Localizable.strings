@@ -2143,3 +2143,36 @@
 "worktree.tooltip.path" = "Checked out at: “%@”";
 
 "worktree.branchInUse" = "“%@” is already checked out in a worktree. Choose Detach or Force to create the worktree anyway.";
+
+"lfs.menu" = "LFS";
+"lfs.menu.update" = "Update";
+"lfs.menu.fetch" = "Fetch…";
+"lfs.menu.pull" = "Pull…";
+"lfs.menu.push" = "Push…";
+"lfs.menu.track" = "Track…";
+"lfs.fetch" = "Fetch LFS Objects";
+"lfs.pull" = "Pull LFS Objects";
+"lfs.push" = "Push LFS Objects";
+"lfs.fetch.message" = "Downloads the Git LFS objects that the current checkout needs from the remote. The working copy isn’t changed.";
+"lfs.pull.message" = "Downloads the Git LFS objects that the current checkout needs from the remote and replaces their pointer files in the working copy with the actual content.";
+"lfs.push.message" = "Uploads the Git LFS objects used by local branches and tags that the remote doesn’t have yet.";
+"lfs.enable" = "Enable Git LFS";
+"lfs.update" = "Update Git LFS Hooks";
+"lfs.track" = "Track with Git LFS";
+"lfs.remove" = "Remove";
+"lfs.remove.title" = "Remove Tracked File Pattern";
+"lfs.remove.message" = "“%@” will be removed from .gitattributes. Files already stored with Git LFS stay as they are.";
+"lfs.createPattern" = "Create Tracking Pattern";
+"lfs.createPattern.menu" = "Create Tracked File Pattern…";
+"lfs.pattern.title" = "Create Tracked File Pattern";
+"lfs.pattern.message" = "Files that match the pattern are stored with Git LFS. The pattern is added to .gitattributes at the repository root and is shared with everyone who uses the repository.";
+"lfs.trackFile" = "Track This File";
+"lfs.trackFiles" = "Track %ld Files";
+"lfs.trackType.single" = "Track All Files with Type “.%@”";
+"lfs.trackType" = "Track All Files with Type";
+"lfs.version" = "Version";
+"lfs.version.missing" = "Not found";
+"lfs.unavailable.local" = "Spooky needs Git LFS 2.9.0 or later on this Mac. Install or update it. If it’s already installed, add its folder to PATH in Settings → Environment: read the login shell’s environment variables, or add PATH as a custom variable.";
+"lfs.unavailable.remote" = "Spooky needs Git LFS 2.9.0 or later on the server. Install or update it there, and add its folder to the PATH of non-interactive SSH sessions, for example in ~/.zshenv. Settings → Environment shows the server’s PATH.";
+"lfs.patternsRemain" = "Patterns Weren’t Removed";
+"lfs.patternsRemain.help" = "Git LFS couldn’t remove these patterns from .gitattributes. Remove them with “Open in Editor” in the repository settings.";

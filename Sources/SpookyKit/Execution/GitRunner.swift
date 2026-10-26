@@ -11,11 +11,13 @@ public struct GitRunner: Sendable {
     /// - `--no-pager`、`color.ui=never`：输出交给程序解析，不要分页，也不要颜色
     /// - `--no-optional-locks`：读状态时不顺手回写 index，免得和终端里、对方机器上 agent 的 git 操作抢锁
     /// - `core.quotepath=off`：中文等非 ASCII 路径原样输出，不转成八进制转义
+    /// - `lfs.forceprogress=true`：输出不是终端时 Git LFS 也写出传输进度，检出、拉取与推送的 LFS 进度留在 Activity 里
     static let globalOptions = [
         "--no-pager",
         "--no-optional-locks",
         "-c", "color.ui=never",
         "-c", "core.quotepath=off",
+        "-c", "lfs.forceprogress=true",
     ]
 
     /// 固定错误输出语言，并清除会让 Git 越过 `-C` 访问其它仓库的环境变量。
@@ -251,12 +253,12 @@ public struct GitRunner: Sendable {
         let process = localProcess()
 
         // 网络命令需要 askpass，本机 SSH 解锁后由系统 agent 保留密钥；会生成提交与标签的命令可能经 ssh-keygen 签名，私钥口令同样经中继询问。
-        // 添加与更新子模块会克隆或获取子模块仓库，读取子模块状态以外的 submodule 子命令同样经中继执行。
+        // 添加与更新子模块会克隆或获取子模块仓库，Git LFS 的传输要向 LFS 服务器认证，读取以外的 submodule 与 lfs 子命令同样经中继执行。
         let command = RepositoryOperationQueue.command(in: arguments) ?? ""
         let authenticates =
             ["fetch", "push", "ls-remote", "clone", "commit", "merge", "rebase", "cherry-pick", "revert", "tag"]
                 .contains(command)
-                || (command == "submodule" && !RepositoryOperationQueue.isReadOnly(arguments))
+                || (["submodule", "lfs"].contains(command) && !RepositoryOperationQueue.isReadOnly(arguments))
 
         if let credentialHandler, authenticates {
             return try await LocalGitAuthentication.execute(
