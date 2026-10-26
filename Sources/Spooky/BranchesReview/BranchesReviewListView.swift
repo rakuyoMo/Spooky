@@ -45,7 +45,8 @@ struct BranchesReviewListView: View {
             ),
             staleMonths: SidebarPreferences.isValid(staleInterval, for: SidebarPreferences.staleIntervalKey)
                 ? staleInterval
-                : SidebarPreferences.defaultNumber(SidebarPreferences.staleIntervalKey)
+                : SidebarPreferences.defaultNumber(SidebarPreferences.staleIntervalKey),
+            pullRequests: session.pullRequests.branchRequests
         )
 
         VStack(spacing: 0) {
@@ -59,6 +60,11 @@ struct BranchesReviewListView: View {
                     .padding(12)
             }
 
+            // 按请求筛选却读不到请求状态时说明原因，不把未知当成没有请求
+            if BranchesReviewFilter(rawValue: filter)?.isPullRequestFilter ?? false, session.pullRequests.branchRequests == nil {
+                pullRequestNotice
+            }
+
             list(items)
         }
         .frame(minWidth: 300)
@@ -68,6 +74,26 @@ struct BranchesReviewListView: View {
                 head: session.status?.branch.head,
                 runner: session.runner
             )
+
+            // 托管服务上的请求状态一分钟内不重复读取
+            if let runner = session.runner {
+                await session.pullRequests.loadBranchRequests(runner: runner, upstreamRemote: session.headBranch?.upstreamRemote)
+            }
+        }
+    }
+
+    /// 读不到请求状态的说明：读取失败时写出原文，没有账号时说明要先登录。
+    @ViewBuilder
+    private var pullRequestNotice: some View {
+        if let failure = session.pullRequests.branchRequestsFailure {
+            FailureDetailsView(failure: failure)
+                .padding(12)
+        } else {
+            Text(AppLocalization.text("review.pullRequestsUnavailable"))
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -172,7 +198,7 @@ private struct BranchesReviewHeader: View {
         Menu {
             ForEach(BranchesReviewFilter.allCases, id: \.self) { item in
                 Toggle(
-                    AppLocalization.text(item.titleKey),
+                    item.isPullRequestFilter ? session.pullRequestText(item.titleKey) : AppLocalization.text(item.titleKey),
                     isOn: Binding(get: { filter == item.rawValue }, set: { _ in filter = item.rawValue })
                 )
             }
@@ -248,6 +274,10 @@ struct BranchesReviewRow: View {
                         .truncationMode(.middle)
 
                     counts
+
+                    if let request = item.pullRequest {
+                        pullRequestBadge(request)
+                    }
                 }
 
                 HStack(spacing: 4) {
@@ -363,6 +393,22 @@ struct BranchesReviewRow: View {
         formatter.dateTimeStyle = .named
         formatter.unitsStyle = .full
         return formatter.localizedString(for: date, relativeTo: now)
+    }
+
+    /// 分支在托管服务上最近的请求：编号与状态色，提示里写出状态。
+    private func pullRequestBadge(_ request: PullRequest) -> some View {
+        let state: (key: String, color: Color) =
+            switch request.state {
+            case .open: ("pullRequests.state.open", Color(nsColor: .systemGreen))
+            case .merged: ("pullRequests.state.merged", Color(nsColor: .systemPurple))
+            case .closed: ("pullRequests.state.closed", Color(nsColor: .systemRed))
+            }
+
+        return Text(request.id.reference)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(state.color)
+            .help(AppLocalization.text(state.key))
+            .accessibilityLabel(request.id.reference + " " + AppLocalization.text(state.key))
     }
 
     /// 14 pt 的状态图标与提示。

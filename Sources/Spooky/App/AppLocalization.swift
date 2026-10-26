@@ -13,6 +13,11 @@ enum AppLocalization {
 
     /// 读取并格式化当前语言的文案，不以键名作为回退文本。
     static func text(_ key: String, _ arguments: CVarArg...) -> String {
+        text(key, arguments: arguments)
+    }
+
+    /// 与 ``text(_:_:)`` 相同，格式参数以数组传入，供转发可变参数的调用方使用。
+    static func text(_ key: String, arguments: [CVarArg]) -> String {
         let localized = bundle.localizedString(forKey: key, value: nil, table: nil)
         let format: String =
 
@@ -136,6 +141,9 @@ struct AppFailure: Identifiable {
         case let offer as ForceDeletionOffer:
             (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: offer.failure)
 
+        case let submodule as SubmoduleError:
+            (key, kind, recoveryKey) = Self.classification(of: submodule)
+
         case let undo as RepositoryUndoError:
             kind = .repository
             (key, recoveryKey) = Self.classification(of: undo)
@@ -180,7 +188,7 @@ struct AppFailure: Identifiable {
 
         default:
             // 启动外部程序与目标机器上的失败另行分类，其余错误只留描述
-            guard let machine = Self.machineClassification(of: error) else {
+            guard let machine = Self.machineClassification(of: error, remote: location?.host != nil) else {
                 diagnostic = String(describing: error)
                 break
             }

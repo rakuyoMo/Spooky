@@ -130,6 +130,17 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 分支、标签与远端管理的对话框与询问同样以窗口的 sheet 呈现
         session.onReferenceRequest = { [weak self] in self?.presentReferenceRequest($0) }
 
+        // 子模块与工作树的对话框与询问同样以窗口的 sheet 呈现
+        session.submodules.onRequest = { [weak self] in self?.presentSubmoduleRequest($0) }
+        session.worktrees.onRequest = { [weak self] in self?.presentWorktreeRequest($0) }
+
+        // 请求视图的对话框同样以窗口的 sheet 呈现
+        session.pullRequests.onRequest = { [weak self] in self?.presentPullRequestRequest($0) }
+
+        // 子模块、父仓库与工作树在本窗口、新标签或新窗口打开
+        session.onOpenRepository = { [weak self] location, target in self?.openRepository(at: location, in: target) }
+        session.onOpenInTerminal = { [weak self] in self?.openLocationInTerminal($0) }
+
         // 批量归档对话框与自动归档的确认同样以窗口的 sheet 呈现
         configureBranchesReview()
 
@@ -628,57 +639,7 @@ extension RepositoryWindowController {
         ))
         sidebar.sizingOptions = [.minSize]
 
-        let detail: NSViewController
-
-        switch session.activeView {
-        case .workingCopy:
-            historySplit = nil
-            let split = makeWorkingCopySplit()
-            workingCopySplit = split
-            detail = split
-
-        case .history:
-            workingCopySplit = nil
-            let split = makeHistorySplit()
-            historySplit = split
-            detail = split
-
-        case .stashes:
-            workingCopySplit = nil
-            historySplit = nil
-            detail = makeStashSplit()
-
-        case .reflog:
-            workingCopySplit = nil
-            historySplit = nil
-            detail = makeReflogSplit()
-
-        case .fileHistory:
-            workingCopySplit = nil
-            let split = makeFileHistorySplit()
-            historySplit = split
-            detail = split
-
-        case .fileContent:
-            workingCopySplit = nil
-            historySplit = nil
-            detail = makeFileContentView()
-
-        case .remote:
-            workingCopySplit = nil
-            historySplit = nil
-            detail = makeRemoteDetailView()
-
-        case .branchesReview:
-            workingCopySplit = nil
-            historySplit = nil
-            detail = makeBranchesReviewSplit()
-
-        case .settings:
-            workingCopySplit = nil
-            historySplit = nil
-            detail = makeRepositorySettingsView()
-        }
+        let detail = makeDetailView()
 
         installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repository")
 
@@ -704,6 +665,74 @@ extension RepositoryWindowController {
         }
 
         didChangeView()
+    }
+
+    /// 当前主视图的内容：工作区、历史与文件历史记下各自的内层分栏，其余视图清掉它们。
+    private func makeDetailView() -> NSViewController {
+        switch session.activeView {
+        case .workingCopy:
+            historySplit = nil
+            let split = makeWorkingCopySplit()
+            workingCopySplit = split
+            return split
+
+        case .history:
+            workingCopySplit = nil
+            let split = makeHistorySplit()
+            historySplit = split
+            return split
+
+        case .stashes:
+            workingCopySplit = nil
+            historySplit = nil
+            return makeStashSplit()
+
+        case .reflog:
+            workingCopySplit = nil
+            historySplit = nil
+            return makeReflogSplit()
+
+        case .fileHistory:
+            workingCopySplit = nil
+            let split = makeFileHistorySplit()
+            historySplit = split
+            return split
+
+        case .fileContent:
+            workingCopySplit = nil
+            historySplit = nil
+            return makeFileContentView()
+
+        case .remote:
+            workingCopySplit = nil
+            historySplit = nil
+            return makeRemoteDetailView()
+
+        case .branchesReview:
+            workingCopySplit = nil
+            historySplit = nil
+            return makeBranchesReviewSplit()
+
+        case .pullRequests:
+            workingCopySplit = nil
+            historySplit = nil
+            return makePullRequestsSplit()
+
+        case .settings:
+            workingCopySplit = nil
+            historySplit = nil
+            return makeRepositorySettingsView()
+
+        case .submodule:
+            workingCopySplit = nil
+            historySplit = nil
+            return makeSubmoduleDetailView()
+
+        case .worktree:
+            workingCopySplit = nil
+            historySplit = nil
+            return makeWorktreeDetailView()
+        }
     }
 
     /// 工作区的文件列表与 Diff 详情分栏，宽度按工作区单独保存。

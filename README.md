@@ -43,7 +43,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Diff options**: change the number of context lines, show the entire file, ignore whitespace, show invisible characters, and set the tab width. Changed words within modified lines are highlighted. Syntax coloring uses highlight.js and covers its 192 languages; files whose language can't be identified are shown as plain text. Images are compared side by side or one at a time
 
-- **Commit messages**: a subject length counter, soft or hard wrapping for the body, handling of comment lines, and completion for recent commits, changed files, and `fixup!` or `squash!` subjects. Amend the most recent commit, sign off, or skip hooks
+- **Commit messages**: a subject length counter, soft or hard wrapping for the body, handling of comment lines, and completion for recent commits, changed files, `fixup!` or `squash!` subjects, and issue numbers from GitHub or GitLab after “#”. Amend the most recent commit, sign off, or skip hooks
 
 - **Identities and signing**: switch the committer identity of a repository with user profiles, and pick a profile's signing key from the GPG and SSH keys on your Mac. Sign commits with GPG or SSH; for a server repository, signing happens on the server and passphrase prompts come back to your Mac
 
@@ -63,7 +63,17 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Rewriting history**: revert, cherry-pick, reset with a soft, mixed, or hard mode, check out any revision, and rebase onto a new base. Rebase interactively to squash, fixup, edit, reword, delete, or reorder commits, add staged changes to an older commit, or autosquash. Before rewriting, Spooky lists the affected commits and warns about those that were already pushed or merged
 
-- **Branches review**: compare local branches with a base branch to see whether they're merged, can be merged cleanly, or would conflict. Update a branch from its parent branch by merging or rebasing, and archive obsolete branches in bulk or automatically, after you confirm the list
+- **Branches review**: compare local branches with a base branch to see whether they're merged, can be merged cleanly, or would conflict. See each branch's pull request or merge request, including branches merged with squash or rebase, and filter by it. Update a branch from its parent branch by merging or rebasing, and archive obsolete branches in bulk or automatically, after you confirm the list; the Activity window records why each branch was archived
+
+- **Hosting accounts**: sign in to github.com in the browser or with a personal access token, and to GitLab.com and self-managed GitLab instances with a personal access token. Several accounts can be used per service, and tokens are stored only in your Keychain
+
+- **Pull requests and merge requests**: list the pull requests of a GitHub repository or the merge requests of a GitLab project for each remote, and read the conversation, commits, and changes. Create them from branches of the same project or a fork, edit them, comment on them, close them, merge them with the methods the project allows, and check them out. Remotes behind SSH aliases can be associated with an account and project by hand, and a repository can be published to GitHub or GitLab
+
+- **Submodules**: add, initialize, update, synchronize, fetch, move, rename, and delete submodules, keeping their files if you want, change their URLs and options, and check out other revisions. Incomplete submodules can be repaired, and a submodule opens in Spooky with a button to go back to its parent repository
+
+- **Worktrees**: create, open, move, repair, and delete worktrees. Branches checked out in another worktree are marked, and worktrees on a server are created by browsing the server's folders
+
+- **Git LFS**: enable Git LFS, track files and patterns, and fetch, pull, and push LFS objects with their progress. Spooky checks that Git LFS is installed on the machine of the repository and explains how to make it available
 
 - **Reflog and undo**: browse and search the reflog of HEAD or any branch, and restore a branch or create a new one from any entry. Undo and redo Git operations in each repository; Spooky checks the repository before restoring it, and tells you when an operation can't be undone
 
@@ -75,7 +85,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Links**: `spooky://` links open a repository, a view, a branch, or a commit, or start a clone, for local and server repositories alike. The “Open with Desktop” links on github.com can open in Spooky
 
-- **Settings**: appearance, global Git identity and signing, the Git program, external tools, Gerrit pushes, issue tracker links, the SSH agent, and environment variables. Repository settings cover the description, issue tracking, committer identity, line wrapping, signing, LFS tracking patterns, ignores, and excludes
+- **Settings**: appearance, global Git identity and signing, the Git program, external tools, hosting accounts, Gerrit pushes, issue tracker links, the SSH agent, and environment variables. Repository settings cover the description, issue tracking, committer identity, line wrapping, signing, Git LFS, ignores, and excludes
 
 - **Updates and diagnostics**: Spooky checks for signed updates on the stable, beta, or development channel. Help can export a diagnostic report with personal details removed, and after a crash Spooky can open a pre-filled GitHub issue that you submit yourself
 
@@ -94,6 +104,8 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
   - `/usr/bin/perl` with the core modules `IO::Socket::UNIX`, `JSON::PP`, and `POSIX`
   - OpenSSH `8.4` or later, to enter SSH private key passphrases for Git on the server
   - No root access or background services are needed
+- Pull requests and merge requests need an account on github.com, GitLab.com, or a self-managed GitLab `15.7` or later that your Mac can reach
+- Repositories that use Git LFS need Git LFS `2.9.0` or later on the machine where the repository is, in the `PATH` that Git uses there
 
 ## Building from source
 
@@ -148,6 +160,11 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
 - Exports, archives, and patches of a server repository are produced by Git on the server and streamed to your Mac over the same master connection. Nothing is written on the server
 - Interactive rebases run entirely on the server: the commit sequence and messages are written by an editor built into the command, so no editor opens on your Mac
 
+### Hosting services
+
+- Requests to GitHub and GitLab are made from your Mac. Tokens are sent only in request headers, never in URLs, logs, or error messages
+- Git steps that belong to a pull request or merge request, such as checking it out, fetching after a merge, and pushing a published repository, run where the repository is: on the server for a server repository
+
 ### Writes and disconnections
 
 - Writes to the same repository run one at a time. Only one window can start a write to a repository at a time, and every window showing the repository refreshes when the write finishes
@@ -175,6 +192,7 @@ On your Mac:
 - Settings, user profiles, and repository bookmarks are stored in the preferences domain `com.rakuyo.spooky`
 - Themes, including Default and Default (Dark), are stored in `~/Library/Application Support/Spooky/Themes`, one `.spookytheme` file per theme
 - Credentials saved to the Keychain use the service name `com.rakuyo.spooky.remote.<host alias>`
+- Hosting account tokens are stored in the Keychain with the service name `com.rakuyo.spooky.hosting.<instance address>`. The account list and the remotes you associated with an account are stored in the preferences, without tokens
 - Connections and callbacks use private `/tmp/spooky-*` temporary directories, which are removed when the session closes. Signature checks in local repositories use one of these directories as well, removed as soon as the check finishes
 - Author pictures are requested from Gravatar with a SHA-256 hash of each author's email address, and are kept in memory only while Spooky is running
 - File copies for Quick Look and other apps are kept in private `spooky-files-*` temporary directories, which are removed when the repository closes
@@ -192,6 +210,7 @@ In your repositories:
 - Pins, archives, parent branches, and branch review marks are stored in the repository's own Git configuration, as `branch.<name>.spooky-*`. They move with a branch when it's renamed and are removed when it's deleted
 - Repository settings are written to the repository's own Git configuration. Line wrapping and issue tracking use the keys `spooky.commitbodylimit`, `spooky.commitshowsguide`, `spooky.issuetrackertemplate`, and `spooky.issuenumberprefix`
 - When a server repository has many untracked files, Spooky can turn on `core.untrackedCache`, `core.fsmonitor`, and the commit-graph in that repository on the server, only after you confirm
+- Enabling Git LFS registers its filter and hooks only in the repository's own configuration, and tracking patterns are written to `.gitattributes` at the repository root
 
 ## Development
 
@@ -252,6 +271,14 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHostOperationsTests
 ```
 
 Each run creates and removes its own subdirectory there, and doesn't change the SSH configuration, `known_hosts`, or global Git configuration on either machine.
+
+Git LFS tests run only when `git-lfs` is found in the `PATH` or in Homebrew's folders, and are skipped otherwise.
+
+GitHub tests are skipped by default as well. They push temporary branches to a test repository, then create, comment on, edit, check out, merge, and close pull requests, and remove the branches afterward:
+
+```sh
+SPOOKY_GITHUB_TESTS=1 SPOOKY_GITHUB_TOKEN=<token> SPOOKY_GITHUB_REPOSITORY=<owner/repo> swift test --filter GitHubLiveTests
+```
 
 Performance tests for large repositories are also skipped by default. They generate a temporary repository with 100,000 files and 50,000 commits, and check how long the first status takes to load and how much memory is used:
 

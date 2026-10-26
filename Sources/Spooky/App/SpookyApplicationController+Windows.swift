@@ -56,6 +56,24 @@ extension SpookyApplicationController {
         tab.makeKeyAndOrderFront(nil)
     }
 
+    /// 在发起窗口所在标签组的末尾加一个标签，在里面打开仓库；系统不支持窗口标签页时改在新窗口里打开。
+    func openRepositoryInNewTab(at location: RepositoryLocation, after source: RepositoryWindowController) {
+        guard NSWindow.allowsAutomaticWindowTabbing, let window = source.window else {
+            openRepository(at: location, from: source, inNewWindow: true)
+            return
+        }
+
+        let controller = makeWindow()
+
+        guard let tab = controller.window else {
+            return
+        }
+
+        (window.tabGroup?.windows.last ?? window).addTabbedWindow(tab, ordered: .above)
+        tab.makeKeyAndOrderFront(nil)
+        openRepository(at: location, from: controller, inNewWindow: false, staysInSource: true)
+    }
+
     /// 没有仓库窗口在前台时的 File › New Tab：打开一个新窗口。
     @objc
     func newWindowForTab(_: Any?) {

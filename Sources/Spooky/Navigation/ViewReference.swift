@@ -98,6 +98,9 @@ enum RepositoryDestination: Hashable {
     /// 引用日志。
     case reflog
 
+    /// 托管服务上的 Pull Request 或 Merge Request。
+    case pullRequests
+
     /// 分支整理。
     case branchesReview
 
@@ -106,6 +109,12 @@ enum RepositoryDestination: Hashable {
 
     /// 一个远端的设置与远端分支。
     case remote(String)
+
+    /// 一个子模块的状态与配置，`path` 是它在仓库里的相对路径。
+    case submodule(path: String)
+
+    /// 一个工作树的详情，`path` 是它在仓库所在机器上的绝对路径。
+    case worktree(path: String)
 
     /// 一个文件的历史。
     case fileHistory(path: String)
@@ -130,6 +139,9 @@ enum RepositoryDestination: Hashable {
         /// 引用日志。
         case reflog
 
+        /// Pull Request 或 Merge Request。
+        case pullRequests
+
         /// 分支整理。
         case branchesReview
 
@@ -138,6 +150,12 @@ enum RepositoryDestination: Hashable {
 
         /// 远端设置。
         case remote
+
+        /// 子模块。
+        case submodule
+
+        /// 工作树。
+        case worktree
 
         /// 文件历史。
         case fileHistory
@@ -164,6 +182,9 @@ enum RepositoryDestination: Hashable {
         case .reflog:
             [("view", Name.reflog.rawValue)]
 
+        case .pullRequests:
+            [("view", Name.pullRequests.rawValue)]
+
         case .branchesReview:
             [("view", Name.branchesReview.rawValue)]
 
@@ -172,6 +193,12 @@ enum RepositoryDestination: Hashable {
 
         case .remote(let name):
             [("view", Name.remote.rawValue), ("remote", name)]
+
+        case .submodule(let path):
+            [("view", Name.submodule.rawValue), ("path", path)]
+
+        case .worktree(let path):
+            [("view", Name.worktree.rawValue), ("path", path)]
 
         case .fileHistory(let path):
             [("view", Name.fileHistory.rawValue), ("path", path)]
@@ -210,6 +237,9 @@ enum RepositoryDestination: Hashable {
         case .reflog:
             self = .reflog
 
+        case .pullRequests:
+            self = .pullRequests
+
         case .branchesReview:
             self = .branchesReview
 
@@ -219,6 +249,14 @@ enum RepositoryDestination: Hashable {
         case .remote:
             guard let remote = value("remote") else { return nil }
             self = .remote(remote)
+
+        case .submodule:
+            guard let path = value("path") else { return nil }
+            self = .submodule(path: path)
+
+        case .worktree:
+            guard let path = value("path") else { return nil }
+            self = .worktree(path: path)
 
         case .fileHistory:
             guard let path = value("path") else { return nil }

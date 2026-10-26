@@ -140,11 +140,29 @@ enum QuickAction: Equatable {
     /// 在当前窗口打开子模块。
     case openSubmodule
 
+    /// 在主视图显示子模块的状态与配置。
+    case showSubmoduleSettings
+
+    /// 以这个分支新建工作树的对话框。
+    case addWorktree
+
     /// 在当前窗口打开工作树。
     case openWorktree
 
+    /// 在新标签里打开工作树。
+    case openWorktreeInNewTab
+
     /// 在新窗口打开工作树。
     case openWorktreeInNewWindow
+
+    /// 删除工作树的对话框。
+    case removeWorktree
+
+    /// 修复失效工作树的对话框。
+    case repairWorktree
+
+    /// 移动工作树的对话框。
+    case moveWorktree
 
     // MARK: 远端
 
@@ -234,8 +252,14 @@ extension QuickAction {
         case .showBlame: AppLocalization.text("quickActions.showBlame")
         case .openInEditor: AppLocalization.text("quickActions.openInEditor")
         case .openSubmodule: AppLocalization.text("quickActions.openSubmodule")
+        case .showSubmoduleSettings: AppLocalization.text("quickActions.showSubmoduleSettings")
+        case .addWorktree: AppLocalization.text("quickActions.addWorktree")
         case .openWorktree: AppLocalization.text("quickActions.openWorktree")
+        case .openWorktreeInNewTab: AppLocalization.text("quickActions.openWorktreeInNewTab")
         case .openWorktreeInNewWindow: AppLocalization.text("quickActions.openWorktreeInNewWindow")
+        case .removeWorktree: AppLocalization.text("quickActions.removeWorktree")
+        case .repairWorktree: AppLocalization.text("quickActions.repairWorktree")
+        case .moveWorktree: AppLocalization.text("quickActions.moveWorktree")
         case .showRemoteSettings: AppLocalization.text("quickActions.showRemoteSettings")
         case .fetch: AppLocalization.text("sync.fetch")
         case .editConnection: AppLocalization.text("remote.editConnection")

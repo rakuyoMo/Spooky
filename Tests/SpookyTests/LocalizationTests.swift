@@ -46,6 +46,23 @@ struct LocalizationTests {
         // 克隆进度的阶段名
         keys += CloneProgress.Phase.allCases.map { "clone.phase." + $0.key }
 
+        // 请求视图按选中远端的服务在 pr. 与 mr. 两组叫法之间选
+        for prefix in ["pr.", "mr."] {
+            keys += [
+                "title", "show.menu", "create.menu", "create.title", "create.message", "edit.title", "edit.message",
+                "accept.title", "accept.message", "close.title", "close.message", "comment.message", "checkout.title",
+                "checkout.message", "empty.title", "empty.message", "noSelection", "noAccount.message", "fetchHead.title",
+                "forBranch.create", "forBranch.show", "filter.with", "filter.without",
+            ].map { prefix + $0 }
+        }
+
+        // 新仓库的可见性
+        keys += HostingVisibility.allCases.map { "publish.visibility." + $0.rawValue }
+
+        // 合并方式与 GitLab 项目的合并策略
+        keys += PullRequestMergeMethod.allCases.map { "pullRequests.method." + $0.rawValue }
+        keys += ["merge", "rebase_merge", "ff"].map { "pullRequests.strategy." + $0 }
+
         return keys
     }
 

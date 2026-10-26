@@ -73,4 +73,19 @@ struct CommitCompletionTests {
         )
         #expect(files.map(\.insertion) == ["docs/café.md"])
     }
+
+    /// 打开 Editor 设置页的开关时识别 `#`，按编号前缀或标题筛选 Issue，插入 `#编号`。
+    @Test("Issue 编号补全")
+    func issues() throws {
+        #expect(CompletionTrigger.detect(in: "修复 #1", caret: 5, subject: true) == nil)
+
+        let trigger = try #require(CompletionTrigger.detect(in: "修复 #1", caret: 5, subject: true, issues: true))
+        #expect(trigger == .issue(query: "1", range: NSRange(location: 3, length: 2)))
+
+        let issues = [HostingIssue(number: 12, title: "崩溃"), HostingIssue(number: 3, title: "文档")]
+        #expect(CommitCompletion.matches(for: trigger, commits: [], paths: [], issues: issues).map(\.insertion) == ["#12"])
+
+        let byTitle = CompletionTrigger.issue(query: "文档", range: NSRange(location: 0, length: 3))
+        #expect(CommitCompletion.matches(for: byTitle, commits: [], paths: [], issues: issues).map(\.insertion) == ["#3"])
+    }
 }

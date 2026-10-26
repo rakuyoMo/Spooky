@@ -4,11 +4,16 @@ import SpookyKit
 // MARK: - Machine
 
 extension AppFailure {
-    /// 本机启动终端与外部工具、目标机器上新建、克隆、扫描与目录浏览的失败：文案键、类别、恢复说明与原文。
+    /// 本机启动终端与外部工具、目标机器上新建、克隆、扫描与目录浏览、仓库所在机器上 Git LFS，以及托管服务 API、账号与检出请求的失败：文案键、类别、恢复说明与原文。
     ///
     /// 不属于这几类的错误返回 nil。
+    ///
+    /// - Parameters:
+    ///   - error: 核心库或界面层抛出的错误。
+    ///   - remote: 出错的仓库是否在服务器上，决定 Git LFS 的修复方向。
     static func machineClassification(
-        of error: any Error
+        of error: any Error,
+        remote: Bool
     ) -> (key: String, kind: FailureKind, recoveryKey: String, output: GitCommandResult?, diagnostic: String?)? {
         switch error {
         case let terminal as TerminalLaunchError:
@@ -19,6 +24,18 @@ extension AppFailure {
 
         case let host as HostOperationError:
             classification(of: host)
+
+        case let lfs as LFSError:
+            classification(of: lfs, remote: remote)
+
+        case let hosting as HostingError:
+            classification(of: hosting)
+
+        case let account as HostingAccountError:
+            classification(of: account)
+
+        case let checkout as PullRequestCheckoutError:
+            classification(of: checkout)
 
         default:
             nil

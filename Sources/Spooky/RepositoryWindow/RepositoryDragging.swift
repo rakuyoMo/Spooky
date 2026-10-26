@@ -120,6 +120,9 @@ enum RepositoryDropDestination {
 
     /// 一个远端下远端分支的 “/” 文件夹：远端名，以及文件夹在远端分支名里的路径。
     case remoteBranchFolder(String, String)
+
+    /// Worktrees 标题。
+    case worktrees
 }
 
 // MARK: - RepositoryDropTarget

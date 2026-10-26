@@ -20,6 +20,8 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
   - 文件监听与轮询刷新、按仓库恢复的视图状态、终端程序与文本区主题管理
   - 外部比较与合并工具、Open With 与编辑器副本回写；`spooky://` 链接与 github.com 仓库链接
   - 完整的设置页与仓库设置；Help 菜单、诊断报告与崩溃报告；Sparkle 自动更新与发布流程
+  - github.com、GitLab.com 与私有部署 GitLab 的托管账号；Pull Request 与 Merge Request 的列表、详情、新建、修改、评论、关闭、合并与检出；发布仓库；提交信息的 Issue 编号补全；分支整理的请求状态与服务端合并识别
+  - 子模块的增删改移、更新与修复；工作树的新建、打开、移动、修复与删除；Git LFS 的启用、跟踪规则与对象传输
 - 远端仓库的工作区留在远端机器，客户端经系统 SSH、用 `~/.ssh/config` 中的主机别名访问
 - 纯开源的个人工具，只在 GitHub 分发
 - 许可证为 [GPL-3.0](LICENSE)
@@ -71,6 +73,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteBranchesReviewTests` | 显式运行 M7 的服务器分支比较、分叉点、归档标记与 Update Branch 测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReflogUndoTests` | 显式运行 M7 的服务器 Reflog 与撤销、重做测试 |
 | `SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHostOperationsTests` | 显式运行 M8 的服务器列目录、新建、扫描与克隆测试 |
+| `SPOOKY_GITHUB_TESTS=1 SPOOKY_GITHUB_TOKEN=<令牌> SPOOKY_GITHUB_REPOSITORY=<owner/repo> swift test --filter GitHubLiveTests` | 显式运行 M9 在 github.com 测试仓库上的 Pull Request 新建、评论、修改、检出、合并与关闭测试 |
 | `swift build --product Spooky` | 编译可执行 App product |
 | `swift run Spooky` | 启动 App 的仓库管理窗口 |
 | `./scripts/build-app.sh` | 生成开发用 `.build/Spooky.app` |
@@ -134,7 +137,30 @@ Sources/SpookyKit/            库源码，按功能分目录
     RepositoryFiles.swift     本机文件访问与复用主连接的 SFTP 传输
     RepositoryFileCache.swift 交给本机程序的文件副本，位于会话专属的 0700 缓存目录，关闭仓库时删除
     RepositorySummary.swift   仓库管理详情的概况：分支、最后提交、提交人、描述与远端
-    LinkedRepositories.swift  子模块与工作树的清单
+  Submodules/                 子模块
+    Submodule.swift           子模块模型：路径、名称、两处配置、指针、检出的版本与问题
+    RepositorySubmodules.swift 子模块清单的并发读取与本地改动数
+    RepositorySubmodules+Parsing.swift .gitmodules、本地配置、gitlink 与 submodule status 的解析，相对地址的换算
+    RepositorySubmodules+Operations.swift 添加、初始化、更新、同步、获取、检出版本、改地址与选项
+    RepositorySubmodules+Structure.swift 移动、改名、删除与修复配置不完整的子模块
+  Worktrees/                  工作树
+    Worktree.swift            工作树模型与 worktree list --porcelain -z 的解析
+    RepositoryWorktrees.swift 清单、新建、移动、修复与删除
+  LFS/                        Git LFS
+    RepositoryLFS.swift       可用性与版本、仓库本地启用、跟踪规则、LFS 对象的获取、拉取与推送
+  Hosting/                    托管服务：账号、接口与请求
+    HostingInstance.swift     github.com、GitLab.com 与私有部署 GitLab 的实例，远端地址到项目路径的对应
+    HostingAccount.swift      托管账号、认证方式与令牌对应的用户
+    HostingClient.swift       REST 接口的请求、分页与失败分类，令牌只放在请求头
+    HostingClient+PullRequests.swift Pull Request 与 Merge Request 的列表、详情、评论、新建、修改、关闭、合并选项与合并
+    HostingClient+GitHub.swift github.com 的接口与响应
+    HostingClient+GitLab.swift GitLab 的接口与响应
+    HostingClient+Repositories.swift 发布仓库用到的所有者、是否已存在与新建仓库
+    HostingClient+Issues.swift 提交信息补全用到的打开着的 Issue
+    HostingError.swift        托管服务失败的分类
+    GitHubDeviceFlow.swift    github.com 的设备授权
+    PullRequest.swift         请求、评论、合并方式、合并选项与不能合并的原因
+    RepositoryPullRequests.swift 请求在仓库所在机器上的 Git 动作：取回源分支提交、比较基准与检出
   WorkingCopy/                工作区状态、Diff、文件操作、冲突与提交
     WorkingCopyStatus.swift   porcelain v2 工作区状态模型与解析
     WorkingTreeFiles.swift    暂存区清单与被忽略文件清单
@@ -216,6 +242,11 @@ Sources/Spooky/               App 入口、窗口协调、会话状态与各内�
   QuickActions/               快捷操作面板：对象与动作、模糊匹配与执行
   ExternalTools/              外部比较与合并工具、Open With 菜单与远程编辑
   RepositorySettings/         仓库设置的 General、Git LFS、Ignores 与 Excludes 四段
+  Accounts/                   Settings → Accounts 页、添加与重新认证账号的对话框、账号列表与钥匙串里的令牌
+  PullRequests/               请求视图的列表、详情、讨论与对话框，远端到账号与项目的对应与手动关联，发布仓库的对话框
+  Submodules/                 子模块详情、对话框与请求，以及它的状态
+  Worktrees/                  工作树详情、对话框与请求，以及它的状态
+  LFS/                        LFS 对象获取、拉取与推送的对话框
   Help/                       Help 菜单的链接、What's New 窗口、诊断报告、崩溃报告与它们共用的脱敏
   RepositoryWindow/           仓库窗口与菜单动作、侧边栏、搜索、操作与同步对话框、导出与比较对话框、拖放
     SyncDialog.swift          Sync、变基、安全强推与推送任意版本的对话框
@@ -243,7 +274,7 @@ Sources/Spooky/               App 入口、窗口协调、会话状态与各内�
   Stash/                      储藏视图、储藏对话框、拖放与状态
   Activity/                   Activity 窗口、操作记录与仓库写锁
   Updates/                    Sparkle 更新器、更新通道与 Settings → Updates 页；更新失败时显示原始错误
-  Settings/                   设置窗口的 General、Appearance、Git Config、Text、Editor、Themes、User Profiles、Integration 与 Environment 页，以及终端程序与本机执行偏好
+  Settings/                   设置窗口的 General、Appearance、Git Config、Text、Editor、Themes、User Profiles、Accounts、Integration 与 Environment 页，以及终端程序与本机执行偏好
     SettingsPage.swift        页签与顺序
     AddUserProfileDialog.swift 把当前身份存成身份档案的 sheet
   HighlightJS/                随 App 打包的 highlight.js 11.12.0，原样拷入并保持目录结构
@@ -278,6 +309,7 @@ docs/testing/M5.md            M5 的集成、恢复、性能、可访问性与�
 docs/testing/M6.md            M6 的工作区、Diff、主题、储藏、冲突向导、文件视图与提交体验验收步骤
 docs/testing/M7.md            M7 的历史、提交详情、侧边栏、引用、同步、改写、分支整理、Reflog 与撤销验收步骤
 docs/testing/M8.md            M8 的仓库管理、窗口与导航、外部工具、链接、设置、帮助与发布更新验收步骤
+docs/testing/M9.md            M9 的托管账号、Pull Request 与 Merge Request、发布仓库、Issue 补全、分支整理协作状态、子模块、工作树与 Git LFS 验收步骤
 README.md                     英文 README：介绍、功能、系统要求、构建、权限、工作原理、开发与贡献说明
 README-ZH.md                  README.md 的简体中文版，与它同步修改
 LICENSE                       GPL-3.0 许可证全文
@@ -332,6 +364,17 @@ LICENSE                       GPL-3.0 许可证全文
 - 诊断报告与崩溃报告离开本机前经 `DiagnosticRedactor` 脱敏；崩溃报告只打开预填的 GitHub 新问题页，由用户自己提交
 - `UpdateController` 按 Settings → Updates 的通道接收更新清单里的条目，只接受 EdDSA 签名的清单与更新包；`swift run` 时更新器不启动
 
+### 托管服务与仓库扩展
+
+- 托管服务的接口一律经 `HostingClient` 从 A 发起：令牌只放在请求头（GitHub 用 `Authorization: Bearer`，GitLab 用 `PRIVATE-TOKEN`），请求不用 URLCache 里的旧响应；失败按 `HostingError` 分类并保留服务端原文
+- 令牌只存在钥匙串，服务名 `com.rakuyo.spooky.hosting.<实例网页地址>`、账户名是账号 UUID；账号列表存在偏好 `hostingAccounts`，远端的手动关联与选定的账号存在 `hostingAssociations`，键是远端地址；`HostingAccounts` 的令牌存放处可以换成内存，测试不写钥匙串
+- GitLab 最低 15.7：Merge Request 的 `diffs` 接口与 `detailed_merge_status` 从这一版起都有；添加与重新认证账号时经 `/version` 检查
+- 请求的提交与改动在仓库所在的机器上比较：源分支提交不在仓库里时，从目标远端的 `refs/pull/<编号>/head`（GitLab 是 `refs/merge-requests/<编号>/head`）取到 FETCH_HEAD；合并时带上源分支提交让服务端核对，合并后在仓库所在的机器上获取目标远端
+- 请求界面按选中远端的服务在 Pull Request 与 Merge Request 两套文案之间选：资源键分别以 `pr.`、`mr.` 开头，经 `RepositorySession.pullRequestText` 取，两组都登记在 `LocalizationTests.dynamicKeys`
+- 子模块：`submodule status` 遇到没有 `.gitmodules` 映射的 gitlink 时整体失败，清单另经 `ls-files -s -z` 取 gitlink；`git rm` 删不掉缺配置的 gitlink，改用 `rm --cached` 再清理目录；改名时移动 `.git/modules/<名称>`，写相对的 gitfile，并经 `config --file` 设置 `core.worktree`
+- 工作树：清单用 `worktree list --porcelain -z`；在子模块里 Git 会把 gitdir 报成主工作树，当前工作树按 `rev-parse --git-dir`、`--git-common-dir` 与 `--show-toplevel` 判断
+- Git LFS：`lfs version` 已登记为读取，其余 `lfs` 子命令按写操作排队；每个写操作先确认 Git LFS 可用且不低于 2.9.0；`GitRunner.globalOptions` 带 `lfs.forceprogress=true`，输出不是终端时也写出传输进度；`lfs untrack` 认不出转义了方括号的规则，去掉后读回 `.gitattributes` 核对；git-lfs 3.8 在仓库路径含 `*`、`?` 或 `\[` 时扫描引用会失败
+
 ### 文本区
 
 - Diff、原文、Blame 与主题示例取主题一律用 `TextTheme.current(dark:)`；在 SwiftUI 的 `body` 里调用，即随主题的编辑、切换与外观变化刷新
@@ -370,6 +413,7 @@ LICENSE                       GPL-3.0 许可证全文
 - M6 的工作区文件操作、Diff 选项、主题、储藏、冲突向导、文件视图、提交体验与本机 / 服务器端到端流程见 [M6 验收步骤](docs/testing/M6.md)
 - M7 的历史搜索与视图设置、提交详情与导出、侧边栏、引用与远端管理、同步与自动获取、改写操作、Branches Review、Reflog 与撤销，以及本机 / 服务器端到端流程见 [M7 验收步骤](docs/testing/M7.md)
 - M8 的书签与仓库详情、新建、克隆与扫描、窗口与导航、快捷操作、外部工具、链接、设置与仓库设置、帮助与崩溃报告、发布与更新，以及本机 / 服务器端到端流程见 [M8 验收步骤](docs/testing/M8.md)
+- M9 的托管账号、Pull Request 与 Merge Request、发布仓库、Issue 补全、分支整理协作状态、子模块、工作树与 Git LFS 见 [M9 验收步骤](docs/testing/M9.md)；github.com 的实测默认不跑，必须通过 `SPOOKY_GITHUB_TESTS=1` 并给出令牌与测试仓库显式开启；Git LFS 的测试在找不到 `git-lfs` 时跳过
 - 侧边栏的视图设置以 `@AppStorage` 读 `SidebarPreferences` 的键；测试换用独立的偏好域时，视图的 `.defaultAppStorage` 与传给 `SidebarViewSettingsMenu` 的 `UserDefaults` 要一起换
 - 测试里同一个偏好键要换成别的值时，新值写进另一个偏好域，不覆盖已有的值：进程的偏好缓存被清掉后，覆盖写入之后紧接着的读取可能仍得到旧值
 - 会话测试要求刷新后用 `waitForRefresh()` 等刷新全部结束，不只等 `refreshTask`：本机仓库的文件监听会在写入后另起刷新，其间要求的完整刷新排在它之后

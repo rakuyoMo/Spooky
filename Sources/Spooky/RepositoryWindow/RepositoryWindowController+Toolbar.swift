@@ -14,6 +14,9 @@ enum RepositoryToolbar {
     /// 跟随侧边栏分隔线的分隔符。
     static let sidebarSeparator = NSToolbarItem.Identifier("sidebarSeparator")
 
+    /// 回到父仓库；本仓库不是子模块时隐藏。
+    static let parentRepository = NSToolbarItem.Identifier("parentRepository")
+
     /// 后退 | 前进。
     static let navigation = NSToolbarItem.Identifier("navigation")
 
@@ -71,21 +74,21 @@ enum RepositoryToolbar {
     /// 在终端中打开。
     static let terminal = NSToolbarItem.Identifier("terminal")
 
-    /// 默认排布：侧边栏上方是仓库管理入口，主视图上方依次是后退 / 前进、快捷操作、主机前缀、同步与合并、储藏、刷新、关闭仓库与搜索框。
+    /// 默认排布：侧边栏上方是仓库管理入口，主视图上方依次是父仓库、后退 / 前进、快捷操作、主机前缀、同步与合并、储藏、刷新、关闭仓库与搜索框。
     static let defaultItems: [NSToolbarItem.Identifier] = [
-        .flexibleSpace, repositories, sidebarSeparator, navigation, .flexibleSpace,
+        .flexibleSpace, repositories, sidebarSeparator, parentRepository, navigation, .flexibleSpace,
         quickActions, host, sync, synchronize, merge, stashes, refresh, clone, closeRepository, search,
     ]
 
     /// 自定义面板里可选的项：默认项之外另有新建分支、安全强推、推送任意版本、Finder、终端、全部暂存与提交，以及系统的空白。
     static let allowedItems: [NSToolbarItem.Identifier] = [
-        repositories, sidebarSeparator, navigation, quickActions, host, sync, synchronize, merge, stashes,
-        refresh, clone, closeRepository, search, createBranch, forcePush, pushTo, finder, terminal,
+        repositories, sidebarSeparator, parentRepository, navigation, quickActions, host, sync, synchronize, merge,
+        stashes, refresh, clone, closeRepository, search, createBranch, forcePush, pushTo, finder, terminal,
         stageAll, commit, .space, .flexibleSpace,
     ]
 
-    /// 不能移除或移动的项：主机前缀标明服务器仓库，Clone 在有克隆时出现，不显示时都隐藏而不移除。
-    static let immovableItems: Set<NSToolbarItem.Identifier> = [host, clone]
+    /// 不能移除或移动的项：父仓库在仓库是子模块时出现，主机前缀标明服务器仓库，Clone 在有克隆时出现，不显示时都隐藏而不移除。
+    static let immovableItems: Set<NSToolbarItem.Identifier> = [parentRepository, host, clone]
 }
 
 // MARK: - Toolbar
@@ -126,8 +129,16 @@ extension RepositoryWindowController {
         // 先设好默认显示方式，再读入保存的配置覆盖它
         toolbar.autosavesConfiguration = true
         window?.toolbar = toolbar
+
+        // 父仓库项不能移除；之前保存的配置里没有它时补在后退 / 前进之前
+        if !toolbar.items.contains(where: { $0.itemIdentifier == RepositoryToolbar.parentRepository }) {
+            let index = toolbar.items.firstIndex { $0.itemIdentifier == RepositoryToolbar.navigation } ?? 0
+            toolbar.insertItem(withItemIdentifier: RepositoryToolbar.parentRepository, at: index)
+        }
+
         updateToolbarItems()
         observeClones()
+        observeSuperproject()
     }
 
     /// 工具栏 Clone 项：开关最近克隆的气泡，点气泡外面关闭。
@@ -195,6 +206,9 @@ extension RepositoryWindowController {
         case RepositoryToolbar.navigation:
             return makeNavigationItem()
 
+        case RepositoryToolbar.parentRepository:
+            return makeParentRepositoryItem()
+
         case RepositoryToolbar.host:
             return makeHostItem()
 
@@ -233,6 +247,9 @@ extension RepositoryWindowController {
 
             case RepositoryToolbar.clone:
                 item.isHidden = coordinator?.clones.isEmpty ?? true
+
+            case RepositoryToolbar.parentRepository:
+                item.isHidden = showsManager || session.superprojectLocation == nil
 
             case RepositoryToolbar.search:
                 if let item = item as? NSSearchToolbarItem {
@@ -320,6 +337,38 @@ extension RepositoryWindowController {
                 let item = window?.toolbar?.items.first { $0.itemIdentifier == RepositoryToolbar.clone }
                 item?.isHidden = coordinator?.clones.isEmpty ?? true
                 observeClones()
+            }
+        }
+    }
+
+    /// 父仓库：排在标题之前，本仓库不是子模块时隐藏。
+    private func makeParentRepositoryItem() -> NSToolbarItem {
+        let item = NSToolbarItem(itemIdentifier: RepositoryToolbar.parentRepository)
+        item.label = AppLocalization.text("toolbar.parentRepository")
+        item.paletteLabel = item.label
+        item.toolTip = AppLocalization.text("toolbar.parentRepository.tip")
+        item.image = NSImage(systemSymbolName: "arrow.turn.left.up", accessibilityDescription: item.label)
+        item.isNavigational = true
+        item.target = self
+        item.action = #selector(showParentRepository)
+        item.isHidden = showsManager || session.superprojectLocation == nil
+        return item
+    }
+
+    /// 读到父仓库或换了仓库后，父仓库项随之出现或隐藏。
+    private func observeSuperproject() {
+        withObservationTracking {
+            _ = session.submodules.superproject
+            _ = session.repository
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else {
+                    return
+                }
+
+                let item = window?.toolbar?.items.first { $0.itemIdentifier == RepositoryToolbar.parentRepository }
+                item?.isHidden = showsManager || session.superprojectLocation == nil
+                observeSuperproject()
             }
         }
     }

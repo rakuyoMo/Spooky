@@ -4,7 +4,7 @@ import SpookyKit
 // MARK: - Context Menu
 
 extension WorkingCopyFileList.Coordinator {
-    /// 右键点击已选行时作用于整个选区，否则只处理该行；菜单按打开、路径、系统、文件、冲突、丢弃与储藏、查看、规则分组。
+    /// 右键点击已选行时作用于整个选区，否则只处理该行；菜单按打开、路径、系统、文件、冲突、丢弃与储藏、查看、规则、LFS 与比较分组。
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         menu.autoenablesItems = false
@@ -23,6 +23,8 @@ extension WorkingCopyFileList.Coordinator {
         addDiscardItems(to: menu)
         addViewItems(to: menu)
         addRuleItems(to: menu)
+        addLFSMenu(to: menu)
+        addCompareMenu(to: menu)
     }
 
     /// 空格按偏好切换暂存或打开 Quick Look；没有选中文件时响铃。
@@ -203,12 +205,39 @@ extension WorkingCopyFileList.Coordinator {
             enabled: session.canMarkAssumeUnchanged(menuEntries, false),
             to: mark
         )
+    }
 
-        addCompareMenu(to: menu)
+    /// LFS ▸：逐个跟踪所选文件、跟踪同类型的全部文件，或输入自定义规则；执行时才检查 Git LFS 是否可用。
+    private func addLFSMenu(to menu: NSMenu) {
+        beginGroup(in: menu)
+
+        let lfs = submenu("lfs.menu", in: menu)
+        let single = menuEntries.count == 1
+        let types = session.lfsTypePatterns(for: menuEntries)
+
+        add(
+            title: single ? AppLocalization.text("lfs.trackFile") : AppLocalization.text("lfs.trackFiles", menuEntries.count),
+            action: #selector(trackLFSFiles),
+            enabled: session.canTrackLFS(menuEntries),
+            to: lfs
+        )
+
+        // 一个文件时写出它的扩展名，多个文件时按各自的扩展名跟踪
+        let suffix = single ? types.first.map { String($0.dropFirst("*.".count)) } : nil
+
+        add(
+            title: suffix.map { AppLocalization.text("lfs.trackType.single", $0) } ?? AppLocalization.text("lfs.trackType"),
+            action: #selector(trackLFSTypes),
+            enabled: session.canWrite && !types.isEmpty,
+            to: lfs
+        )
+        add("lfs.createPattern.menu", action: #selector(createLFSPattern), enabled: session.canWrite, to: lfs)
     }
 
     /// Compare ▸：用比较工具比较工作区、暂存区与 HEAD；单个冲突文件另有我方、对方与共同祖先之间的三种比较。
     private func addCompareMenu(to menu: NSMenu) {
+        beginGroup(in: menu)
+
         let compare = submenu("externalTool.compare", in: menu)
         let conflicted = menuEntries.count == 1 && menuEntries.first?.conflict != nil
 
@@ -327,6 +356,18 @@ extension WorkingCopyFileList.Coordinator {
     /// 清除 assume-unchanged 标记。
     @objc
     private func unsetAssumeUnchanged() { session.setAssumeUnchanged(menuEntries, false) }
+
+    /// 逐个跟踪所选文件。
+    @objc
+    private func trackLFSFiles() { session.trackLFS(menuEntries) }
+
+    /// 跟踪与所选文件同类型的全部文件。
+    @objc
+    private func trackLFSTypes() { session.trackLFS(session.lfsTypePatterns(for: menuEntries)) }
+
+    /// 自定义规则表单由窗口呈现，预填第一个所选文件的路径。
+    @objc
+    private func createLFSPattern() { session.onFileRequest?(.form(.lfsPattern(menuEntries))) }
 
     /// 复制远端路径时保留主机前缀。
     @objc

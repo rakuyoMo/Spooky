@@ -22,8 +22,20 @@ extension RepositorySession {
             conditions: history.conditions,
             head: status?.branch.head,
             staleMonths: months ?? staleMonths,
-            automatic: automatic
+            automatic: automatic,
+            mergedOnServer: Set(snapshot.references.filter { mergedPullRequest(of: $0) != nil }.map(\.id))
         )
+    }
+
+    /// 本地分支已在托管服务上合并、此后没有新提交的请求；没有或不知道时为 nil。
+    func mergedPullRequest(of reference: RepositoryReference) -> PullRequest? {
+        let name = BranchesReviewState.remoteBranchName(of: reference, in: history.snapshot)
+
+        guard reference.isLocal, let request = pullRequests.branchRequests?[name] else {
+            return nil
+        }
+
+        return request.state == .merged && request.source.sha == reference.objectID ? request : nil
     }
 
     /// 本地分支设置的父分支；父分支已删除或没有设置时为 nil。
@@ -52,9 +64,13 @@ extension RepositorySession {
 
         let ids = branches.map(\.id)
         let review = branchesReview
+        let audit = branches.map(archiveReason).joined(separator: "\n") + "\n"
 
         performGit(
-            { runner, _ in
+            { runner, output in
+                // 每个分支为什么被归档写进 Activity 的日志，留作审计
+                output(.standardOutput(Data(audit.utf8)))
+
                 try await RepositoryReferences(runner: runner)
                     .setArchived(true, branches: ids, review: automatic)
             },
@@ -62,6 +78,30 @@ extension RepositorySession {
             undo: .reversible,
             success: { review.archivedBranches = ids }
         )
+    }
+
+    /// 一个分支被归档的原因：并入了哪个基准分支、哪个请求已合并、多久没有更新，或是手动归档。
+    private func archiveReason(_ reference: RepositoryReference) -> String {
+        let condition = history.conditions[reference.id]
+
+        if let base = condition?.mergedInto {
+            return AppLocalization.text("review.audit.merged", reference.name, BranchesReviewRow.shortName(base))
+        }
+
+        if let request = mergedPullRequest(of: reference) {
+            return AppLocalization.text(
+                "review.audit.pullRequest",
+                reference.name,
+                request.id.reference,
+                request.id.instance.displayName
+            )
+        }
+
+        if condition?.isStale(months: staleMonths) ?? false, let date = condition?.lastUpdated {
+            return AppLocalization.text("review.audit.stale", reference.name, date.formatted(date: .abbreviated, time: .omitted))
+        }
+
+        return AppLocalization.text("review.audit.manual", reference.name)
     }
 
     /// 撤销刚才的归档：把这批分支恢复到 Branches 分组。
@@ -72,8 +112,12 @@ extension RepositorySession {
 
         branchesReview.archivedBranches = nil
 
+        let audit = ids.map { AppLocalization.text("review.audit.restored", BranchesReviewRow.shortName($0)) }
+            .joined(separator: "\n") + "\n"
+
         performGit(
-            { runner, _ in
+            { runner, output in
+                output(.standardOutput(Data(audit.utf8)))
                 try await RepositoryReferences(runner: runner).setArchived(false, branches: ids)
             },
             title: AppLocalization.text("branch.unarchive"),

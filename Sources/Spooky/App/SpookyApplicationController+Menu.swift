@@ -141,6 +141,7 @@ extension SpookyApplicationController {
         addItem("menu.showWorkingCopy", action: #selector(RepositoryWindowController.showWorkingCopy), key: "1", to: view)
         addItem("menu.showHistory", action: #selector(RepositoryWindowController.showHistory), key: "2", to: view)
         addItem("stash.show", action: #selector(RepositoryWindowController.showStashes), key: "3", to: view)
+        addItem("pr.show.menu", action: #selector(RepositoryWindowController.showPullRequests), key: "4", to: view)
         addItem(
             "review.show",
             action: #selector(RepositoryWindowController.showBranchesReview),
@@ -295,16 +296,25 @@ extension SpookyApplicationController {
         }
     }
 
-    /// Repository 菜单：获取、拉取、同步与推送，发布分支与标签、添加远端、新建分支与标签，导出与比较版本，以及打开比较工具。
+    /// Repository 菜单：获取、拉取、同步与推送，发布分支、标签与仓库，获取与更新子模块，添加远端、子模块与工作树，新建分支、标签与请求，导出与比较版本，LFS，以及打开比较工具。
     private func configureRepositoryMenu(in menu: NSMenu) {
         let repository = addMenu("menu.repository", to: menu)
         configureSyncItems(in: repository)
 
         addItem("sync.publish", action: #selector(RepositoryWindowController.publishBranch), to: repository)
         addItem("tag.publishMainMenu", action: #selector(RepositoryWindowController.publishTag), to: repository)
+        addItem("publish.menu", action: #selector(RepositoryWindowController.publishRepository), to: repository)
+
+        repository.addItem(.separator())
+        addItem("menu.fetchSubmodule", action: #selector(RepositoryWindowController.fetchSubmodule), to: repository)
+        addItem("menu.fetchAllSubmodules", action: #selector(RepositoryWindowController.fetchAllSubmodules), to: repository)
+        addItem("menu.updateSubmodule", action: #selector(RepositoryWindowController.updateSubmodule), to: repository)
+        addItem("menu.updateAllSubmodules", action: #selector(RepositoryWindowController.updateAllSubmodules), to: repository)
 
         repository.addItem(.separator())
         addItem("remote.addMainMenu", action: #selector(RepositoryWindowController.addRemote), to: repository)
+        addItem("menu.addSubmodule", action: #selector(RepositoryWindowController.addSubmodule), to: repository)
+        addItem("menu.addWorktree", action: #selector(RepositoryWindowController.addWorktree), to: repository)
 
         repository.addItem(.separator())
         addItem(
@@ -322,8 +332,20 @@ extension SpookyApplicationController {
         )
 
         repository.addItem(.separator())
+        addItem(
+            "pr.create.menu",
+            action: #selector(RepositoryWindowController.createPullRequest),
+            key: "p",
+            modifiers: [.control, .command],
+            to: repository
+        )
+
+        repository.addItem(.separator())
         addItem("export.menu", action: #selector(RepositoryWindowController.exportRevision), to: repository)
         addItem("compare.menu", action: #selector(RepositoryWindowController.compareRevisions), to: repository)
+
+        repository.addItem(.separator())
+        configureLFSMenu(in: repository)
 
         repository.addItem(.separator())
         addItem(
@@ -333,6 +355,20 @@ extension SpookyApplicationController {
             modifiers: [.shift, .command],
             to: repository
         )
+    }
+
+    /// LFS 子菜单：更新钩子，LFS 对象的获取、拉取与推送，以及新建跟踪规则。
+    private func configureLFSMenu(in repository: NSMenu) {
+        let lfs = addMenu("lfs.menu", to: repository)
+        addItem("lfs.menu.update", action: #selector(RepositoryWindowController.updateLFS), to: lfs)
+
+        lfs.addItem(.separator())
+        addItem("lfs.menu.fetch", action: #selector(RepositoryWindowController.fetchLFS), to: lfs)
+        addItem("lfs.menu.pull", action: #selector(RepositoryWindowController.pullLFS), to: lfs)
+        addItem("lfs.menu.push", action: #selector(RepositoryWindowController.pushLFS), to: lfs)
+
+        lfs.addItem(.separator())
+        addItem("lfs.menu.track", action: #selector(RepositoryWindowController.trackLFS), to: lfs)
     }
 
     /// 获取、拉取、同步与推送各项，按住 ⌥ 换成快速操作；后接安全强推与推送任意版本。

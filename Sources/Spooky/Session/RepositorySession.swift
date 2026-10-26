@@ -14,23 +14,6 @@ struct StatusRowID: Hashable {
     let kind: StatusEntry.Kind
 }
 
-// MARK: - InterruptedWrite
-
-/// 因断线而结果未知的写操作；重连核对后据此告诉用户 HEAD 是否变化。
-struct InterruptedWrite {
-    /// 已本地化的操作名称。
-    let title: String
-
-    /// 写入前状态快照中的分支与 HEAD。
-    let branch: BranchStatus?
-
-    /// 中断发生的时间，只采用在此之后完成的核对结果。
-    let time: Date
-
-    /// 写入前快照中的远端跟踪分支与提交，核对获取、推送是否已改动它们。
-    var remoteReferences: [String: String] = [:]
-}
-
 // MARK: - RepositorySession
 
 /// 一个窗口的仓库读取状态，异步刷新失败时保留完整的上一份快照。
@@ -63,6 +46,15 @@ final class RepositorySession {
 
     /// 分支整理视图的基准、比较与筛选。
     let branchesReview = BranchesReviewState()
+
+    /// 子模块清单、工作区概况与父仓库位置。
+    let submodules = RepositorySubmoduleState()
+
+    /// 工作树清单。
+    let worktrees = RepositoryWorktreeState()
+
+    /// 托管服务上的请求列表与所选请求的详情。
+    let pullRequests = RepositoryPullRequestState()
 
     /// 窗口负责呈现导出、保存补丁与比较版本的对话框。
     var onRevisionRequest: ((RevisionRequest) -> Void)? = nil
@@ -265,6 +257,11 @@ final class RepositorySession {
 
     /// 窗口负责呈现分支、标签与远端管理的对话框和询问。
     var onReferenceRequest: ((ReferenceRequest) -> Void)? = nil
+    /// 打开另一个仓库，如子模块、父仓库或工作树；验证与窗口复用规则和打开其它仓库相同。
+    var onOpenRepository: ((RepositoryLocation, RepositoryOpenTarget) -> Void)? = nil
+
+    /// 在所选的终端程序里打开另一个位置，如工作树；服务器位置经 ssh 打开。
+    var onOpenInTerminal: ((RepositoryLocation) -> Void)? = nil
 
     /// 窗口负责呈现同步、变基、安全强推与推送任意版本的对话框。
     var onSyncRequest: ((SyncDialogRequest) -> Void)? = nil
@@ -449,6 +446,9 @@ extension RepositorySession {
         generation += 1
         history.close()
         stashes.close()
+        submodules.close()
+        worktrees.close()
+        pullRequests.close()
         reflog.close()
         fileHistory.close()
         fileContent.close()
@@ -664,6 +664,8 @@ extension RepositorySession {
         diffTask?.cancel()
         history.suspend()
         stashes.suspend()
+        submodules.suspend()
+        worktrees.suspend()
         isRefreshing = false
         pendingFullRefresh = false
         isWriting = true
@@ -700,8 +702,9 @@ extension RepositorySession {
             }
         }
 
-        // 按声明在操作前后记下仓库状态，供撤销与重做使用
-        let recorded = recordingUndo(action, title: title, recording: undo)
+        // 已初始化子模块的指针被改动时随后更新或询问；按声明在操作前后记下仓库状态，供撤销与重做使用
+        let checked = updatingSubmodules(after: action, tracked: submodules.initialized)
+        let recorded = recordingUndo(checked, title: title, recording: undo)
 
         writeTask = Task { [weak self] in
             let collector = Task { @MainActor in
@@ -736,6 +739,7 @@ extension RepositorySession {
             isWriting = false
             writeTask = nil
             refresh(full: true)
+            offerSubmoduleUpdate()
         }
 
         let task = writeTask
@@ -794,6 +798,8 @@ extension RepositorySession {
             loadCommitConfiguration()
             history.refresh(status: status, runner: makeRunner(repository), reload: full)
             stashes.refresh(runner: makeRunner(repository))
+            submodules.refresh(runner: makeRunner(repository))
+            worktrees.refresh(runner: makeRunner(repository))
             loadWorkingTreeFiles()
         }
 
@@ -862,8 +868,8 @@ extension RepositorySession {
             self.failure = failure
             Self.logger.error("写操作失败：\(title, privacy: .public)，类别 \(failure.kind.rawValue, privacy: .public)")
 
-            // 未合并分支的普通删除改为询问是否强制删除，询问里带着失败的说明与 Git 原文
-            if !offerForceDeletion(after: error) {
+            // 未合并分支的普通删除改为询问是否强制删除，询问里带着失败的说明与 Git 原文；子模块的删除与添加同样改为询问
+            if !offerForceDeletion(after: error), !offerSubmoduleRecovery(after: error) {
                 onFailure?(failure)
             }
         }

@@ -32,7 +32,8 @@ extension RepositoryWindowController {
         case .commit(let commit, _): perform(action, commit: commit)
         case .stash(let stash): action == .applyStash ? session.requestApplyStash(stash) : session.deleteStashes([stash])
         case .file(let path): perform(action, file: path)
-        case .submodule(let submodule): openLinkedRepository(at: submodule.path, inNewWindow: false)
+        case .submodule(let submodule):
+            action == .showSubmoduleSettings ? session.showSubmodule(submodule.path) : session.open(submodule)
         case .worktree(let worktree): perform(action, worktree: worktree)
         case .remote(let name): perform(action, remote: name)
         case .userProfile(let profile): perform(action, profile: profile)
@@ -56,6 +57,7 @@ extension RepositoryWindowController {
         case (.show, .workingCopy): showWorkingCopy()
         case (.show, .history): showHistory()
         case (.show, .stashes): showStashes()
+        case (.show, .pullRequests): showPullRequests()
         case (.show, .branchesReview): showBranchesReview()
         case (.show, .reflog): showReflog()
         case (.show, .settings): showRepositorySettings()
@@ -85,6 +87,7 @@ extension RepositoryWindowController {
             session.requestReference(branch.isRemote ? .deleteRemoteBranches([branch]) : .deleteBranches([branch]))
         case .rename: session.requestReference(.renameBranch(branch))
         case .copyName: Self.copy(branch.name)
+        case .addWorktree: presentWorktreeRequest(.add(revision: branch.name))
         default: performFlag(action, on: branch)
         }
     }
@@ -169,22 +172,31 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 工作树：在当前窗口或新窗口打开，在 Finder 或终端中打开；服务器上的工作树复制带主机前缀的路径。
-    private func perform(_ action: QuickAction, worktree: WorktreeEntry) {
+    /// 工作树：在当前窗口、新标签或新窗口打开，删除、修复与移动，在 Finder 或终端中打开；服务器上的工作树复制带主机前缀的路径。
+    private func perform(_ action: QuickAction, worktree: Worktree) {
         switch action {
-        case .openWorktree, .openWorktreeInNewWindow:
-            openLinkedRepository(at: worktree.path, inNewWindow: action == .openWorktreeInNewWindow)
+        case .openWorktree: session.open(worktree, in: .currentWindow)
+
+        case .openWorktreeInNewTab: session.open(worktree, in: .newTab)
+
+        case .openWorktreeInNewWindow: session.open(worktree, in: .newWindow)
+
+        case .removeWorktree: presentWorktreeRequest(.remove(worktree))
+
+        case .repairWorktree: presentWorktreeRequest(.repair(worktree))
+
+        case .moveWorktree: presentWorktreeRequest(.move(worktree))
 
         case .revealInFinder:
             NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: worktree.path)])
 
         case .openInTerminal:
-            if let location = linkedLocation(worktree.path) {
+            if let location = session.location(of: worktree) {
                 openLocationInTerminal(location)
             }
 
         case .copyPath:
-            if let location = linkedLocation(worktree.path) {
+            if let location = session.location(of: worktree) {
                 Self.copy(location.displayPath)
             }
 
@@ -238,28 +250,4 @@ extension RepositoryWindowController {
             }
         }
     }
-
-    /// 子模块与工作树在仓库所在机器上的位置：相对路径接在仓库根目录后，服务器仓库沿用同一个主机。
-    private func linkedLocation(_ path: String) -> RepositoryLocation? {
-        guard let repository = session.repository else {
-            return nil
-        }
-
-        let absolute = path.hasPrefix("/") ? path : repository.path + "/" + path
-
-        switch repository {
-        case .local: return .local(path: absolute)
-        case .remote(let host, _): return .remote(host: host, path: absolute)
-        }
-    }
-
-    /// 打开子模块或工作树，验证与窗口复用规则和打开其它仓库相同。
-    private func openLinkedRepository(at path: String, inNewWindow: Bool) {
-        guard let location = linkedLocation(path) else {
-            return
-        }
-
-        coordinator?.openRepository(at: location, from: self, inNewWindow: inNewWindow)
-    }
-
 }

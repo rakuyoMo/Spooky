@@ -2,13 +2,17 @@ import SwiftUI
 
 // MARK: - WorkingCopySettingsRows
 
-/// General 页里工作区文件列表的四行设置：双击与空格的动作、字号与长文件名的截断位置。
+/// General 页里工作区文件列表的设置：双击的动作与双击子模块时打开它、空格的动作、字号与长文件名的截断位置。
 struct WorkingCopySettingsRows: View {
     #warning("TODO: 核实字号与截断方式的默认值，目前为 Regular 与 Truncate middle；只影响还没有改过这两项设置时的列表外观")
 
     /// 双击文件的动作。
     @AppStorage(WorkingCopyPreferences.doubleClickAction)
     private var doubleClick = WorkingCopyPreferences.DoubleClickAction.openFile
+
+    /// 双击子模块时在 Spooky 里打开它。
+    @AppStorage(WorkingCopyPreferences.doubleClickOpensSubmodules)
+    private var opensSubmodules = true
 
     /// 空格键的动作。
     @AppStorage(WorkingCopyPreferences.spacebarAction)
@@ -32,6 +36,14 @@ struct WorkingCopySettingsRows: View {
                 case .openDiff: AppLocalization.text("files.doubleClick.openDiff")
                 }
             }
+        }
+
+        // 紧跟在双击动作下方，标签列留空
+        GridRow {
+            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+
+            Toggle(AppLocalization.text("files.openSubmodules"), isOn: $opensSubmodules)
+                .frame(width: 278, alignment: .leading)
         }
 
         GridRow {

@@ -21,7 +21,8 @@ struct QuickActionCatalog {
     /// 主题与两种外观的主题选择。
     var themes = ThemeStore.shared
 
-    /// 不需要执行 Git 的对象，按种类与各自的自然顺序：导航、分支（HEAD 在前）、远端、远端分支、标签、储藏、身份档案、外观与主题。
+    /// 不需要执行 Git 的对象，按种类与各自的自然顺序：导航、分支（HEAD 在前）、远端、远端分支、标签、储藏、身份档案、外观与主题，
+    /// 以及会话已经读到的子模块与本窗口仓库之外的工作树。
     func immediateObjects() -> [QuickActionObject] {
         let head = session.status?.branch.head.map { "refs/heads/" + $0 }
         let branches = session.history.branches
@@ -40,19 +41,8 @@ struct QuickActionCatalog {
             + profiles.map(QuickActionObject.userProfile)
             + AppAppearance.allCases.map(QuickActionObject.appearance)
             + themes.themes.map { QuickActionObject.theme(id: $0.id, name: $0.name) }
-    }
-
-    /// 子模块与工作树，各执行一条只读的 Git 命令。
-    func linkedObjects() async throws -> [QuickActionObject] {
-        guard let runner = session.runner else {
-            return []
-        }
-
-        let linked = LinkedRepositories(runner: runner)
-        let submodules = try await linked.submodules()
-        let worktrees = try await linked.worktrees()
-
-        return submodules.map(QuickActionObject.submodule) + worktrees.map(QuickActionObject.worktree)
+            + session.submodules.items.map(QuickActionObject.submodule)
+            + session.worktrees.others.map(QuickActionObject.worktree)
     }
 
     /// HEAD 树中的全部文件；结果只由 HEAD 的哈希决定，调用方按哈希复用。HEAD 未出生时为 nil。
@@ -141,7 +131,9 @@ extension QuickActionCatalog {
         case .stash(let stash): action == .applyStash ? session.canApply(stash) : session.canDelete([stash])
         case .remote: isAvailable(remoteAction: action)
         case .userProfile(let profile): isAvailable(action, profile: profile)
-        case .navigation, .file, .worktree, .submodule: isAvailable(locationAction: action)
+        case .submodule(let submodule): action != .openSubmodule || submodule.isPopulated
+        case .worktree(let worktree): isAvailable(action, worktree: worktree)
+        case .navigation, .file: isAvailable(locationAction: action)
         case .appearance, .theme: true
         }
     }
@@ -164,7 +156,7 @@ extension QuickActionCatalog {
                 .showReferenceHistory, .revealInHistory, .checkout, .mergeIntoHead, .rebaseHead,
                 .mergeParent, .rebaseOnParent, .createBranch, .publish, .push, .fastForward,
                 .delete, .rename, .pin, .unpin, .removeParent, .setParent, .copyName, .updateBranch,
-                .archive, .unarchive, .skipAutoArchive, .includeInAutoArchive,
+                .addWorktree, .archive, .unarchive, .skipAutoArchive, .includeInAutoArchive,
             ]
 
         case .remoteBranch:
@@ -188,12 +180,23 @@ extension QuickActionCatalog {
     private func otherCandidates(for object: QuickActionObject) -> [QuickAction] {
         switch object {
         case .stash: [.applyStash, .deleteStash]
+
         case .file: [.showFile, .showFileHistory, .showBlame, .openInEditor, .revealInFinder, .copyPath]
-        case .submodule: [.openSubmodule]
-        case .worktree: [.openWorktree, .openWorktreeInNewWindow, .revealInFinder, .openInTerminal]
+
+        case .submodule: [.openSubmodule, .showSubmoduleSettings]
+
+        case .worktree:
+            [
+                .openWorktree, .openWorktreeInNewTab, .openWorktreeInNewWindow, .removeWorktree, .repairWorktree,
+                .moveWorktree, .revealInFinder, .openInTerminal,
+            ]
+
         case .remote: [.showRemoteSettings, .fetch, .editConnection]
+
         case .userProfile: [.setCommitter, .setGlobalUser]
+
         case .theme: [.applyTheme]
+
         default: [.setAppearance]
         }
     }
@@ -233,6 +236,7 @@ extension QuickActionCatalog {
         case .removeParent: return session.canManage(branch) && metadata.parent != nil
         case .pin, .unpin: return session.canSetPinned([branch]) && metadata.isPinned == (action == .unpin)
         case .updateBranch: return session.canUpdateBranch(branch)
+        case .addWorktree: return session.canWrite && session.worktrees.branchWorktrees[branch.id] == nil
         case .archive, .unarchive: return session.canSetArchived([branch]) && metadata.isArchived == (action == .unarchive)
         case .skipAutoArchive, .includeInAutoArchive:
             return session.canSetArchived([branch]) && metadata.skipsAutoArchive == (action == .includeInAutoArchive)
@@ -296,6 +300,23 @@ extension QuickActionCatalog {
     }
 
     /// 导航、文件、子模块与工作树：Finder 只用于本机仓库，读取文件视图需要执行器，储藏快照沿用储藏的规则。
+    /// 工作树的动作：打开类要求工作树有效，移动与删除不能用于主工作树，修复只用于失效的工作树。
+    private func isAvailable(_ action: QuickAction, worktree: Worktree) -> Bool {
+        switch action {
+        case .openWorktree, .openWorktreeInNewTab, .openWorktreeInNewWindow, .revealInFinder, .openInTerminal, .copyPath:
+            worktree.isValid && isAvailable(locationAction: action)
+
+        case .removeWorktree, .moveWorktree:
+            session.canModify(worktree)
+
+        case .repairWorktree:
+            session.canRepair(worktree)
+
+        default:
+            false
+        }
+    }
+
     private func isAvailable(locationAction action: QuickAction) -> Bool {
         switch action {
         case .revealInFinder: !isRemote

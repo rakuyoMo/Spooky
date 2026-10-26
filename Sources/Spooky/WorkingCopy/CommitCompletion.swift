@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 
 // MARK: - CompletionTrigger
 
-/// 光标处正在输入的补全：`c:` 引用提交，`\` 引用改动文件，标题以 `fixup!` / `squash!` 开头时选择目标提交。
+/// 光标处正在输入的补全：`c:` 引用提交，`\` 引用改动文件，`#` 引用托管服务上的 Issue，标题以 `fixup!` / `squash!` 开头时选择目标提交。
 enum CompletionTrigger: Equatable {
     /// `c:` 之后的查询，选中后替换为短哈希。
     case commit(query: String, range: NSRange)
@@ -16,10 +16,13 @@ enum CompletionTrigger: Equatable {
     /// 前缀之后的查询，选中后把标题余下部分替换为目标提交的标题。
     case fixup(query: String, range: NSRange)
 
+    /// `#` 之后的查询，选中后替换为 Issue 编号。
+    case issue(query: String, range: NSRange)
+
     /// 选中后被替换的文字范围，以 UTF-16 计。
     var range: NSRange {
         switch self {
-        case .commit(_, let range), .file(_, let range), .fixup(_, let range): range
+        case .commit(_, let range), .file(_, let range), .fixup(_, let range), .issue(_, let range): range
         }
     }
 
@@ -29,7 +32,8 @@ enum CompletionTrigger: Equatable {
     ///   - text: 标题或正文的全文。
     ///   - caret: 光标的 UTF-16 位置。
     ///   - subject: 是否为标题；只有标题识别 fixup / squash 前缀。
-    static func detect(in text: String, caret: Int, subject: Bool) -> Self? {
+    ///   - issues: 是否识别 `#` 开头的 Issue 补全，Editor 设置页的开关。
+    static func detect(in text: String, caret: Int, subject: Bool, issues: Bool = false) -> Self? {
         guard (0 ... text.utf16.count).contains(caret) else { return nil }
 
         let end = String.Index(utf16Offset: caret, in: text)
@@ -56,6 +60,10 @@ enum CompletionTrigger: Equatable {
             return .file(query: String(token.dropFirst()), range: range)
         }
 
+        if issues, token.hasPrefix("#") {
+            return .issue(query: String(token.dropFirst()), range: range)
+        }
+
         return nil
     }
 }
@@ -71,6 +79,9 @@ struct CommitCompletion: Identifiable, Equatable {
 
         /// 工作区里有改动的文件。
         case file(String)
+
+        /// 托管服务上打开着的 Issue。
+        case issue(HostingIssue)
     }
 
     /// 列表内的稳定标识。
@@ -82,13 +93,19 @@ struct CommitCompletion: Identifiable, Equatable {
     /// 选中后插入的文字，已规范为 NFC。
     let insertion: String
 
-    /// 按触发方式筛选候选：提交按哈希前缀或标题、作者匹配，文件按路径匹配，查询都不区分大小写。
+    /// 按触发方式筛选候选：提交按哈希前缀或标题、作者匹配，文件按路径匹配，Issue 按编号前缀或标题匹配，查询都不区分大小写。
     ///
     /// - Parameters:
     ///   - trigger: 当前的补全。
     ///   - commits: 最近的提交，按历史顺序排列。
     ///   - paths: 改动文件的路径。
-    static func matches(for trigger: CompletionTrigger, commits: [HistoryCommit], paths: [String]) -> [Self] {
+    ///   - issues: 打开着的 Issue。
+    static func matches(
+        for trigger: CompletionTrigger,
+        commits: [HistoryCommit],
+        paths: [String],
+        issues: [HostingIssue] = []
+    ) -> [Self] {
         switch trigger {
         case .commit(let query, _), .fixup(let query, _):
             let fixup = if case .fixup = trigger { true } else { false }
@@ -110,6 +127,12 @@ struct CommitCompletion: Identifiable, Equatable {
             return paths
                 .filter { query.isEmpty || $0.localizedCaseInsensitiveContains(query) }
                 .map { Self(id: $0, content: .file($0), insertion: $0.precomposedStringWithCanonicalMapping) }
+
+        case .issue(let query, _):
+            return issues
+                .filter { query.isEmpty || String($0.number).hasPrefix(query) || $0.title.localizedCaseInsensitiveContains(query)
+                }
+                .map { Self(id: "#" + String($0.number), content: .issue($0), insertion: "#" + String($0.number)) }
         }
     }
 }
@@ -343,6 +366,7 @@ extension CommitCompletionList {
             switch item.content {
             case .commit(let commit): commitRow(commit)
             case .file(let path): fileRow(path)
+            case .issue(let issue): issueRow(issue)
             }
         }
         .font(.system(size: 12))
@@ -381,6 +405,21 @@ extension CommitCompletionList {
                 .frame(width: 16, height: 16)
                 .accessibilityHidden(true)
             Text(path).lineLimit(1).truncationMode(.middle)
+            Spacer(minLength: 0)
+        }
+    }
+
+    /// Issue 行：等宽的编号与标题。
+    private func issueRow(_ issue: HostingIssue) -> some View {
+        HStack(spacing: 6) {
+            Text("#" + String(issue.number))
+                .monospaced()
+                .foregroundStyle(.secondary)
+
+            Text(issue.title)
+                .lineLimit(1)
+                .truncationMode(.tail)
+
             Spacer(minLength: 0)
         }
     }

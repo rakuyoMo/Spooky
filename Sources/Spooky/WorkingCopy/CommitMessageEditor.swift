@@ -484,7 +484,8 @@ extension CommitMessageEditor.Coordinator {
         let detected = CompletionTrigger.detect(
             in: textView.string,
             caret: textView.selectedRange().location,
-            subject: parent.role == .subject
+            subject: parent.role == .subject,
+            issues: CommitEditorSettings.completesIssues
         )
         trigger = detected
         generation += 1

@@ -43,7 +43,7 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **Diff 选项**：可以调整上下文行数、显示整个文件、忽略空白、显示不可见字符和设置 Tab 宽度。修改行中改动的单词会高亮显示。语法着色基于 highlight.js，支持它的 192 种语言，识别不了语言的文件显示为纯文本。图片可以并排对照，也可以逐张切换
 
-- **提交信息**：标题字数提示、正文软折行或硬折行、注释行处理，以及最近提交、改动文件和 `fixup!` / `squash!` 标题的自动补全。支持修补最近一次提交、Sign Off 和跳过钩子
+- **提交信息**：标题字数提示、正文软折行或硬折行、注释行处理，以及最近提交、改动文件、`fixup!` / `squash!` 标题和 “#” 之后 GitHub / GitLab Issue 编号的自动补全。支持修补最近一次提交、Sign Off 和跳过钩子
 
 - **身份与签名**：用身份档案切换仓库的提交人身份，档案的签名密钥可以从本机的 GPG / SSH 密钥中选择。支持 GPG / SSH 提交签名；服务器仓库在服务器上签名，口令询问回到本机
 
@@ -63,7 +63,17 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **改写历史**：反转、摘取、以 soft、mixed 或 hard 方式重置、检出任意版本，以及变基到新的基点。交互式变基可以压缩、fixup、编辑、改信息、删除或调整提交顺序，把暂存的改动并入较早的提交，或自动压缩。改写之前，Spooky 会列出受影响的提交，并提示其中已经推送或已并入其它分支的提交
 
-- **分支整理**：把本地分支与基准分支比较，看它是否已经合并、能否干净合并或会不会冲突。可以用合并或变基把父分支的新提交并入分支，批量或自动归档过时的分支，自动归档前先由你确认列表
+- **分支整理**：把本地分支与基准分支比较，看它是否已经合并、能否干净合并或会不会冲突。显示每个分支的 Pull Request 或 Merge Request，压缩或变基合并的分支同样认得出，并可以按它筛选。可以用合并或变基把父分支的新提交并入分支，批量或自动归档过时的分支，自动归档前先由你确认列表；“活动” 窗口记下每个分支被归档的原因
+
+- **托管账号**：github.com 可以在浏览器里登录或填个人访问令牌，GitLab.com 与私有部署的 GitLab 填个人访问令牌。同一服务可以有多个账号，令牌只保存在钥匙串里
+
+- **Pull Request 与 Merge Request**：按远端列出 GitHub 仓库的 Pull Request 或 GitLab 项目的 Merge Request，查看讨论、提交与改动。可以从同一项目或 Fork 的分支新建，修改、评论、关闭，按项目允许的方式合并，以及检出。经 SSH 别名的远端可以手动关联到账号与项目，仓库也可以发布到 GitHub 或 GitLab
+
+- **子模块**：添加、初始化、更新、同步、获取、移动、改名和删除子模块，删除时可以保留文件；修改地址与选项，检出其它版本。配置不完整的子模块可以修复；子模块可以在 Spooky 里打开，并一键回到父仓库
+
+- **工作树**：新建、打开、移动、修复和删除工作树。已在其它工作树检出的分支会标出来，服务器上的工作树可以浏览服务器上的文件夹来新建
+
+- **Git LFS**：启用 Git LFS，跟踪文件与路径规则，获取、拉取和推送 LFS 对象并显示进度。Spooky 会检查仓库所在的机器上有没有装 Git LFS，并说明怎样让它可用
 
 - **Reflog 与撤销**：浏览并搜索 HEAD 或任一分支的 Reflog，从任一记录恢复分支或新建分支。每个仓库的 Git 操作都可以撤销与重做；恢复前 Spooky 会先核对仓库，不能撤销时说明原因
 
@@ -75,7 +85,7 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **链接**：`spooky://` 链接可以打开仓库、视图、分支或提交，或发起克隆，本机与服务器仓库都适用。github.com 上 “Open with Desktop” 的链接可以交给 Spooky 打开
 
-- **设置**：外观、全局的 Git 身份与签名、Git 程序、外部工具、Gerrit 推送、Issue 追踪链接、SSH agent 与环境变量。仓库设置包括描述、Issue 追踪、提交人身份、折行、签名、LFS 跟踪规则、忽略与排除规则
+- **设置**：外观、全局的 Git 身份与签名、Git 程序、外部工具、托管账号、Gerrit 推送、Issue 追踪链接、SSH agent 与环境变量。仓库设置包括描述、Issue 追踪、提交人身份、折行、签名、Git LFS、忽略与排除规则
 
 - **更新与诊断**：Spooky 按稳定、测试或开发通道检查签名的更新。帮助菜单可以导出去掉了个人信息的诊断报告；崩溃之后，Spooky 可以打开预填好的 GitHub 问题页，由你自己决定是否提交
 
@@ -94,6 +104,8 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
   - `/usr/bin/perl`，以及核心模块 `IO::Socket::UNIX`、`JSON::PP`、`POSIX`
   - 在服务器上输入 SSH 私钥口令时，OpenSSH 需要 `8.4` 或更高版本
   - 不需要 root 权限，也不安装常驻服务
+- Pull Request 与 Merge Request 需要 github.com、GitLab.com 或私有部署 GitLab `15.7` 及以上版本的账号，本机要能访问到它
+- 使用 Git LFS 的仓库，需要仓库所在的机器上有 Git LFS `2.9.0` 或更高版本，并在那里 Git 使用的 `PATH` 里
 
 ## 从源码构建
 
@@ -148,6 +160,11 @@ open .build/Spooky.app
 - 服务器仓库的导出、归档和补丁由服务器上的 Git 生成，经同一个主连接流回本机存盘，不在服务器上写文件
 - 交互式变基完全在服务器上进行：提交序列与提交信息由内置在命令里的编辑器写入，本机不会打开编辑器
 
+### 托管服务
+
+- 对 GitHub 与 GitLab 的请求都从本机发出。令牌只放在请求头里，不进地址、日志与错误信息
+- 属于 Pull Request 或 Merge Request 的 Git 步骤，如检出、合并后的获取与发布仓库时的推送，都在仓库所在的机器上执行：服务器仓库就在服务器上执行
+
 ### 写操作与断线
 
 - 同一仓库的写操作排队依次执行；同一时间只有一个窗口能对它发起写操作，完成后显示这个仓库的窗口都会刷新
@@ -175,6 +192,7 @@ open .build/Spooky.app
 - 设置、身份档案和仓库书签保存在偏好设置域 `com.rakuyo.spooky`
 - 主题（包括 Default 与 Default (Dark)）保存在 `~/Library/Application Support/Spooky/Themes`，一个主题一个 `.spookytheme` 文件
 - 存入钥匙串的凭据，服务名为 `com.rakuyo.spooky.remote.<主机别名>`
+- 托管账号的令牌存在钥匙串里，服务名为 `com.rakuyo.spooky.hosting.<实例地址>`；账号列表与手动关联到账号的远端存在偏好里，不含令牌
 - 连接和回调使用私有的 `/tmp/spooky-*` 临时目录，关闭会话后清理。本机仓库校验签名时同样使用这样一个目录，校验结束即删除
 - 作者头像以作者邮箱的 SHA-256 哈希向 Gravatar 请求，只在 Spooky 运行期间保存在内存里
 - 交给 Quick Look 和其它程序的文件副本放在私有的 `spooky-files-*` 临时目录，关闭仓库后清理
@@ -192,6 +210,7 @@ open .build/Spooky.app
 - 分支的置顶、归档、父分支与分支整理标记保存在仓库自己的 Git 配置里，键为 `branch.<名称>.spooky-*`；分支改名时随之移动，删除分支时一并清除
 - 仓库设置写进仓库自己的 Git 配置；折行与 Issue 追踪使用键 `spooky.commitbodylimit`、`spooky.commitshowsguide`、`spooky.issuetrackertemplate` 与 `spooky.issuenumberprefix`
 - 服务器仓库的未跟踪文件很多时，Spooky 可以在服务器上的这个仓库里打开 `core.untrackedCache`、`core.fsmonitor` 与 commit-graph，只在你确认后进行
+- 启用 Git LFS 只在仓库自己的配置里登记它的过滤器与钩子，跟踪规则写进仓库根目录的 `.gitattributes`
 
 ## 开发
 
@@ -252,6 +271,14 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHostOperationsTests
 ```
 
 每次运行只在这个目录下新建并清理独立的子目录，不修改双方的 SSH 配置、`known_hosts` 或全局 Git 配置。
+
+Git LFS 的测试只在 `PATH` 或 Homebrew 的目录里找得到 `git-lfs` 时运行，找不到时跳过。
+
+GitHub 的测试同样默认跳过。它会在测试仓库里推送临时分支，新建、评论、修改、检出、合并与关闭 Pull Request，结束后删掉这些分支：
+
+```sh
+SPOOKY_GITHUB_TESTS=1 SPOOKY_GITHUB_TOKEN=<令牌> SPOOKY_GITHUB_REPOSITORY=<owner/repo> swift test --filter GitHubLiveTests
+```
 
 大仓库的性能测试同样默认跳过。它会生成一个包含 10 万个文件、5 万个提交的临时仓库，检查首屏状态的读取时间与内存占用：
 

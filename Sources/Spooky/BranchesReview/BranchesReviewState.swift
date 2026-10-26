@@ -27,7 +27,13 @@ enum BranchesReviewFilter: Int, CaseIterable {
     /// 并入基准会冲突的分支。
     case mergeConflicts = 6
 
-    /// 菜单项的资源键。
+    /// 有打开着的 Pull Request 或 Merge Request 的分支。
+    case withPullRequest = 7
+
+    /// 没有打开着的 Pull Request 或 Merge Request 的分支。
+    case withoutPullRequest = 8
+
+    /// 菜单项的资源键；按服务叫法变化的两项是 `pr.` 与 `mr.` 两组里的键。
     var titleKey: String {
         switch self {
         case .all: "review.filter.none"
@@ -37,7 +43,14 @@ enum BranchesReviewFilter: Int, CaseIterable {
         case .fullyMerged: "review.filter.fullyMerged"
         case .mergeable: "review.filter.mergeable"
         case .mergeConflicts: "review.filter.conflicts"
+        case .withPullRequest: "filter.with"
+        case .withoutPullRequest: "filter.without"
         }
+    }
+
+    /// 按请求状态筛选的两项：标题随选中远端的服务叫 Pull Request 或 Merge Request。
+    var isPullRequestFilter: Bool {
+        self == .withPullRequest || self == .withoutPullRequest
     }
 }
 
@@ -79,8 +92,16 @@ struct BranchesReviewItem: Identifiable, Equatable {
     /// 跟踪错误与最后更新时间所在的整理状态。
     let condition: BranchCondition?
 
+    /// 分支在托管服务上最近的请求；没有或不知道时为 nil。
+    var pullRequest: PullRequest? = nil
+
     /// 分支的完整引用名。
     var id: String { reference.id }
+
+    /// 请求已在托管服务上合并、且分支此后没有新提交：压缩或变基合并后 Git 认不出的已合并也算。
+    var isMergedOnServer: Bool {
+        pullRequest?.state == .merged && pullRequest?.source.sha == reference.objectID
+    }
 }
 
 // MARK: - BranchesReviewState
@@ -169,12 +190,13 @@ final class BranchesReviewState {
         comparison.showsChangeset = true
     }
 
-    /// 一行是否满足筛选项；还在比较或无法检查的分支不算已合并、能合并或有冲突。
+    /// 一行是否满足筛选项；还在比较或无法检查的分支不算已合并、能合并或有冲突，不知道请求状态时两项请求筛选都不满足。
     static func matches(
         _ item: BranchesReviewItem,
         filter: BranchesReviewFilter,
         staleMonths: Int,
-        now: Date
+        now: Date,
+        knowsPullRequests: Bool = false
     ) -> Bool {
         let stale = item.condition?.isStale(months: staleMonths, now: now) ?? false
 
@@ -192,7 +214,7 @@ final class BranchesReviewState {
             return item.condition?.hasTrackingError ?? false
 
         case .fullyMerged:
-            return item.comparison?.merge == .unchanged
+            return item.comparison?.merge == .unchanged || item.isMergedOnServer
 
         case .mergeable:
             return item.comparison?.merge == .clean
@@ -200,6 +222,12 @@ final class BranchesReviewState {
         case .mergeConflicts:
             guard case .conflicts = item.comparison?.merge else { return false }
             return true
+
+        case .withPullRequest:
+            return knowsPullRequests && item.pullRequest?.state == .open
+
+        case .withoutPullRequest:
+            return knowsPullRequests && item.pullRequest?.state != .open
         }
     }
 
@@ -274,12 +302,14 @@ final class BranchesReviewState {
     ///   - search: 工具栏搜索框的文字，按分支名不区分大小写地匹配。
     ///   - order: 筛选项与排序。
     ///   - staleMonths: 陈旧阈值的月数。
+    ///   - pullRequests: 源分支名到最近的请求；不知道时为 nil。
     ///   - now: 判断陈旧的时刻。
     func items(
         conditions: [String: BranchCondition],
         search: String,
         order: BranchesReviewOrder,
         staleMonths: Int,
+        pullRequests: [String: PullRequest]? = nil,
         now: Date = Date()
     ) -> [BranchesReviewItem] {
         let baseID = base?.id
@@ -291,10 +321,13 @@ final class BranchesReviewState {
                 BranchesReviewItem(
                     reference: reference,
                     comparison: comparisons[reference.id],
-                    condition: conditions[reference.id]
+                    condition: conditions[reference.id],
+                    pullRequest: pullRequests?[Self.remoteBranchName(of: reference, in: snapshot)]
                 )
             }
-            .filter { Self.matches($0, filter: order.filter, staleMonths: staleMonths, now: now) }
+            .filter {
+                Self.matches($0, filter: order.filter, staleMonths: staleMonths, now: now, knowsPullRequests: pullRequests != nil)
+            }
 
         return Self.sorted(items, by: order)
     }
@@ -304,6 +337,19 @@ final class BranchesReviewState {
 // MARK: - Private
 
 extension BranchesReviewState {
+    /// 分支在远端上的名字：有上游时取上游去掉远端名的部分，否则用本地分支名。
+    static func remoteBranchName(of reference: RepositoryReference, in snapshot: ReferenceSnapshot?) -> String {
+        guard let upstream = reference.upstream, upstream.hasPrefix("refs/remotes/") else {
+            return reference.name
+        }
+
+        let remote = snapshot?.remotes
+            .filter { upstream.hasPrefix("refs/remotes/" + $0.name + "/") }
+            .max { $0.name.count < $1.name.count }
+
+        return remote.map { String(upstream.dropFirst(("refs/remotes/" + $0.name + "/").count)) } ?? reference.name
+    }
+
     /// 按排序属性与方向排列；同名或同时间时按引用名排列，结果稳定。
     private static func sorted(
         _ items: [BranchesReviewItem],

@@ -233,6 +233,84 @@ struct BranchesReviewTests {
         #expect(!BranchesReviewState.matches(pending, filter: .active, staleMonths: 3, now: now))
         #expect(BranchesReviewState.matches(pending, filter: .active, staleMonths: 12, now: now))
     }
+
+    /// 托管服务上已合并、此后没有新提交的分支算已合并，压缩或变基合并也一样；不知道请求状态时两项请求筛选都不满足。
+    @Test("请求状态的筛选与服务端合并")
+    func pullRequestStatus() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let branch = reference("refs/heads/topic", date: now)
+        let open = Self.request(state: .open, sha: branch.objectID)
+        let merged = Self.request(state: .merged, sha: branch.objectID)
+        let mergedEarlier = Self.request(state: .merged, sha: String(repeating: "b", count: 40))
+
+        let item = { (request: PullRequest?) in
+            BranchesReviewItem(reference: branch, comparison: nil, condition: nil, pullRequest: request)
+        }
+
+        #expect(BranchesReviewState.matches(item(merged), filter: .fullyMerged, staleMonths: 3, now: now))
+        #expect(!BranchesReviewState.matches(item(mergedEarlier), filter: .fullyMerged, staleMonths: 3, now: now))
+
+        #expect(BranchesReviewState.matches(
+            item(open),
+            filter: .withPullRequest,
+            staleMonths: 3,
+            now: now,
+            knowsPullRequests: true
+        ))
+        #expect(BranchesReviewState.matches(
+            item(nil),
+            filter: .withoutPullRequest,
+            staleMonths: 3,
+            now: now,
+            knowsPullRequests: true
+        ))
+        #expect(BranchesReviewState.matches(
+            item(merged),
+            filter: .withoutPullRequest,
+            staleMonths: 3,
+            now: now,
+            knowsPullRequests: true
+        ))
+
+        // 没有账号时不能把未知当成有或没有请求
+        #expect(!BranchesReviewState.matches(item(nil), filter: .withoutPullRequest, staleMonths: 3, now: now))
+        #expect(!BranchesReviewState.matches(item(open), filter: .withPullRequest, staleMonths: 3, now: now))
+    }
+
+    /// 托管服务上已合并的分支进入归档建议，与 Git 判断的已合并同样处理。
+    @Test("服务端合并的分支可以归档")
+    func serverMergedCandidates() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let references = ["main", "squashed"].map { reference("refs/heads/" + $0, date: now) }
+        let snapshot = ReferenceSnapshot(references: references, remotes: [])
+        let conditions = Dictionary(uniqueKeysWithValues: references.map { reference in
+            (
+                reference.id,
+                BranchCondition(
+                    reference: reference.id,
+                    lastUpdated: now,
+                    missingUpstream: nil,
+                    mergedInto: nil,
+                    isBase: reference.name == "main"
+                )
+            )
+        })
+
+        let candidates = { (merged: Set<String>) in
+            BranchArchiving.candidates(
+                in: snapshot,
+                conditions: conditions,
+                head: nil,
+                staleMonths: 3,
+                automatic: true,
+                mergedOnServer: merged,
+                now: now
+            )
+        }
+
+        #expect(candidates([]).isEmpty)
+        #expect(candidates(["refs/heads/squashed"]).map(\.name) == ["squashed"])
+    }
 }
 
 // MARK: - Steps
@@ -336,5 +414,25 @@ extension BranchesReviewTests {
 
             try await Task.sleep(for: .milliseconds(50))
         }
+    }
+}
+
+// MARK: - Fixtures
+
+extension BranchesReviewTests {
+    /// 源分支为 topic 的请求。
+    fileprivate static func request(state: PullRequestState, sha: String) -> PullRequest {
+        PullRequest(
+            id: PullRequestID(instance: .github, project: "o/r", number: 12),
+            title: "t",
+            body: "",
+            state: state,
+            isDraft: false,
+            author: "a",
+            createdAt: Date(),
+            updatedAt: Date(),
+            source: PullRequestBranch(project: "o/r", branch: "topic", sha: sha),
+            target: PullRequestBranch(project: "o/r", branch: "main", sha: "")
+        )
     }
 }

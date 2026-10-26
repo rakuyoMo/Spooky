@@ -65,12 +65,18 @@ extension RepositorySession {
         onActiveViewChange?()
     }
 
-    /// 检出分支，保留 Git 对本地修改的覆盖保护：本地分支直接检出；远端分支检出已有的跟踪分支，或原子创建并检出同名跟踪分支。
+    /// 检出分支，保留 Git 对本地修改的覆盖保护：本地分支直接检出，已在别的工作树检出时打开那个工作树；远端分支检出已有的跟踪分支，或原子创建并检出同名跟踪分支。
     ///
     /// - Parameters:
     ///   - reference: 要检出的本地或远端分支。
     ///   - request: 打开分支操作表单；同名本地分支已存在却不跟踪这个远端分支时，在跟踪表单里让用户指定名称。
     func checkoutBranch(_ reference: RepositoryReference, request: (RepositoryActionRequest) -> Void) {
+        // 已在别的工作树检出的本地分支不能再检出，改为打开那个工作树
+        if let worktree = worktrees.branchWorktrees[reference.id] {
+            open(worktree, in: .currentWindow)
+            return
+        }
+
         guard canCheckout(reference) else {
             return
         }
