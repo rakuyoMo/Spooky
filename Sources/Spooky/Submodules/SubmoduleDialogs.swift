@@ -44,9 +44,11 @@ struct AddSubmoduleDialog: View {
             ReferenceDialogRows.row(AppLocalization.text("submodule.path")) {
                 HStack(spacing: 8) {
                     TextField("", text: $path, prompt: Text(AppLocalization.text("submodule.path.placeholder")))
+                        .frame(minWidth: 200)
                         .accessibilityIdentifier("submodule-path")
 
                     Button(AppLocalization.text("submodule.path.select"), action: selectDestination)
+                        .fixedSize()
                 }
             }
         }
@@ -328,7 +330,11 @@ extension SubmoduleOperationDialog {
             guard !all else { return AppLocalization.text("submodule.update.message.all") }
 
             if let selected, selected.state == .updated, let checkedOut = selected.checkedOut, let pointer = selected.pointer {
-                return AppLocalization.text("submodule.update.message.updated", checkedOut, pointer)
+                return AppLocalization.text(
+                    "submodule.update.message.updated",
+                    String(checkedOut.prefix(8)),
+                    String(pointer.prefix(8))
+                )
             }
 
             return AppLocalization.text("submodule.update.message")

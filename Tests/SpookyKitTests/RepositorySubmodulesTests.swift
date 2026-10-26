@@ -277,7 +277,7 @@ struct RepositorySubmodulesTests {
         #expect(try await submodules.list().first?.state == .clean)
     }
 
-    /// 本仓库作为子模块时读出父仓库的工作区，不是子模块时为 nil。
+    /// 本仓库作为子模块时读出父仓库的工作区，不是子模块时为 nil；子模块自己的工作树清单认得出它自己。
     @Test("父仓库")
     func superproject() async throws {
         let temporary = try TemporaryRepository()
@@ -287,13 +287,15 @@ struct RepositorySubmodulesTests {
         try await RepositorySubmodules(runner: repositories.parent)
             .add(url: repositories.upstreamPath, path: "lib", reusesGitDirectory: false)
 
-        let child = RepositorySubmodules(
-            runner: temporary
-                .submoduleRunner(at: repositories.parentURL.appending(path: "lib").path)
-        )
-        let parent = try #require(try await child.superproject())
+        let childRunner = temporary.submoduleRunner(at: repositories.parentURL.appending(path: "lib").path)
+        let parent = try #require(try await RepositorySubmodules(runner: childRunner).superproject())
         #expect(parent.hasSuffix("/父 仓库"))
         #expect(try await RepositorySubmodules(runner: repositories.parent).superproject() == nil)
+
+        // 子模块里 Git 把主工作树写成 Git 目录，清单换成工作区根目录并认作当前工作树
+        let worktrees = try await RepositoryWorktrees(runner: childRunner).list()
+        #expect(worktrees.count == 1)
+        #expect(worktrees[0].isCurrent && worktrees[0].path.hasSuffix("/父 仓库/lib"))
     }
 }
 

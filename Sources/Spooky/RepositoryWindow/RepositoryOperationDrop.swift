@@ -11,6 +11,7 @@ import SpookyKit
 /// - 提交或本地分支拖到 Tags 标题或标签文件夹：新建标签
 /// - 本地分支拖进分支文件夹、远端分支拖进同一远端的文件夹：改名为 “文件夹/原名末段”
 /// - 标签拖到远端：发布到这个远端
+/// - 本地分支拖到 Worktrees 标题：以它新建工作树
 enum RepositoryOperationDrop {
     /// 摘取这些提交，按列表顺序。
     case cherryPick([String])
@@ -33,6 +34,9 @@ enum RepositoryOperationDrop {
     /// 把这个标签发布到这个远端。
     case publishTag(String, remote: String)
 
+    /// 以这个分支新建工作树，值是分支名。
+    case createWorktree(String)
+
     /// 悬停时显示的动作名。
     var titleKey: String {
         switch self {
@@ -43,6 +47,7 @@ enum RepositoryOperationDrop {
         case .createTag: "tag.create.submit"
         case .moveBranch: "branch.moveHere"
         case .publishTag: "tag.publish"
+        case .createWorktree: "worktree.create"
         }
     }
 
@@ -108,12 +113,21 @@ enum RepositoryOperationDrop {
 
             self = .publishTag(tag.name, remote: remote)
 
+        case (.local, .worktrees):
+            guard
+                !alternate,
+                session.canWrite,
+                let branch = session.history.branches.first(where: { $0.id == first.reference })
+            else { return nil }
+
+            self = .createWorktree(branch.name)
+
         default:
             return nil
         }
     }
 
-    /// 摘取、反转、变基与新建标签打开各自的对话框；单个文件、改名直接执行；发布打开预选了远端的发布对话框。
+    /// 摘取、反转、变基、新建标签与新建工作树打开各自的对话框；单个文件、改名直接执行；发布打开预选了远端的发布对话框。
     @MainActor
     func perform(in session: RepositorySession) {
         switch self {
@@ -137,6 +151,9 @@ enum RepositoryOperationDrop {
 
         case .publishTag(let tag, let remote):
             session.requestReference(.publishTag(tag, remote: remote))
+
+        case .createWorktree(let branch):
+            session.requestWorktree(.add(revision: branch))
         }
     }
 }

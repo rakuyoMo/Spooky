@@ -128,7 +128,7 @@ enum QuickActionObject: Equatable {
     case branch(RepositoryReference)
 
     /// 工作树。
-    case worktree(WorktreeEntry)
+    case worktree(Worktree)
 
     /// 远端名。
     case remote(String)

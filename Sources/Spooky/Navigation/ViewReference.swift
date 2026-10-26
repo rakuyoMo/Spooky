@@ -110,6 +110,9 @@ enum RepositoryDestination: Hashable {
     /// 一个子模块的状态与配置，`path` 是它在仓库里的相对路径。
     case submodule(path: String)
 
+    /// 一个工作树的详情，`path` 是它在仓库所在机器上的绝对路径。
+    case worktree(path: String)
+
     /// 一个文件的历史。
     case fileHistory(path: String)
 
@@ -144,6 +147,9 @@ enum RepositoryDestination: Hashable {
 
         /// 子模块。
         case submodule
+
+        /// 工作树。
+        case worktree
 
         /// 文件历史。
         case fileHistory
@@ -181,6 +187,9 @@ enum RepositoryDestination: Hashable {
 
         case .submodule(let path):
             [("view", Name.submodule.rawValue), ("path", path)]
+
+        case .worktree(let path):
+            [("view", Name.worktree.rawValue), ("path", path)]
 
         case .fileHistory(let path):
             [("view", Name.fileHistory.rawValue), ("path", path)]
@@ -232,6 +241,10 @@ enum RepositoryDestination: Hashable {
         case .submodule:
             guard let path = value("path") else { return nil }
             self = .submodule(path: path)
+
+        case .worktree:
+            guard let path = value("path") else { return nil }
+            self = .worktree(path: path)
 
         case .fileHistory:
             guard let path = value("path") else { return nil }

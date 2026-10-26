@@ -99,12 +99,12 @@ extension RepositorySession {
             return
         }
 
-        onOpenRepository(location)
+        onOpenRepository(location, .currentWindow)
     }
 
     /// 交给窗口呈现子模块的对话框或询问。
     func requestSubmodule(_ request: SubmoduleRequest) {
-        onSubmoduleRequest?(request)
+        submodules.onRequest?(request)
     }
 
     /// 写入失败是子模块删除遇到本地改动或添加遇到已有 Git 目录时，改为询问；返回是否已经接手。

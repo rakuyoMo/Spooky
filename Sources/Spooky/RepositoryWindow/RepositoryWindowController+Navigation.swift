@@ -146,7 +146,7 @@ extension RepositoryWindowController {
 // MARK: - Private
 
 extension RepositoryWindowController {
-    /// 仓库里当前的主视图与选择；文件、远端与子模块视图缺少所看的对象时按工作区记。
+    /// 仓库里当前的主视图与选择；文件、远端、子模块与工作树视图缺少所看的对象时按工作区记。
     private var currentDestination: RepositoryDestination {
         let history = session.history
 
@@ -180,6 +180,9 @@ extension RepositoryWindowController {
         case .submodule:
             return session.submodules.selectedPath.map { .submodule(path: $0) } ?? .workingCopy
 
+        case .worktree:
+            return session.worktrees.selectedPath.map { .worktree(path: $0) } ?? .workingCopy
+
         case .fileHistory:
             return session.fileHistory.path.map { .fileHistory(path: $0) } ?? .workingCopy
 
@@ -196,7 +199,7 @@ extension RepositoryWindowController {
         window?.invalidateRestorableState()
     }
 
-    /// 在已显示的仓库里切到指定视图；引用、文件、远端或子模块已不存在时，由各视图按自己的规则显示空状态或回到工作区。
+    /// 在已显示的仓库里切到指定视图；引用、文件、远端、子模块或工作树已不存在时，由各视图按自己的规则显示空状态或回到工作区。
     private func apply(_ destination: RepositoryDestination) {
         switch destination {
         case .workingCopy:
@@ -230,6 +233,9 @@ extension RepositoryWindowController {
 
         case .submodule(let path):
             session.showSubmodule(path)
+
+        case .worktree(let path):
+            session.showWorktree(path)
 
         case .fileHistory(let path):
             session.showFileHistory(path)

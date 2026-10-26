@@ -208,6 +208,7 @@ extension RepositoryWindowController {
             ?? workingCopyFileAvailability(of: item)
             ?? externalToolAvailability(of: item.action, repositoryView: repositoryView)
             ?? submoduleAvailability(of: item.action, repositoryView: repositoryView)
+            ?? worktreeAvailability(of: item.action, repositoryView: repositoryView)
 
         // 组外的窗口级动作在下方判断
         if let enabled = references ?? views ?? contents {

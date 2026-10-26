@@ -259,7 +259,7 @@ struct AddReferenceMenu: View {
     /// 所在窗口的会话。
     let session: RepositorySession
 
-    /// 新建标签在新建分支之后，添加远端与子模块单独一组。
+    /// 新建标签在新建分支之后，添加远端、子模块与工作树单独一组。
     var body: some View {
         Button(AppLocalization.text("tag.createMenu")) {
             session.requestReference(.createTag(revision: nil))
@@ -275,6 +275,11 @@ struct AddReferenceMenu: View {
 
         Button(AppLocalization.text("submodule.add.menu")) {
             session.requestSubmodule(.add)
+        }
+        .disabled(!session.canWrite)
+
+        Button(AppLocalization.text("worktree.add.menu")) {
+            session.requestWorktree(.add(revision: nil))
         }
         .disabled(!session.canWrite)
     }

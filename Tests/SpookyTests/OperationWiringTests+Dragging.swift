@@ -63,6 +63,28 @@ extension OperationWiringTests {
         }
     }
 
+    /// 本地分支拖到 Worktrees 标题是以它新建工作树，打开预选了这个分支的对话框；提交与按住 ⌥ 时不接受。
+    @Test("分支拖到 Worktrees：新建工作树")
+    func dropWorktree() async throws {
+        let fixture = try await Self.makeFixture()
+        defer { fixture.close() }
+
+        let d = fixture.ids["D"] ?? ""
+
+        #expect(fixture.drop([.local("refs/heads/side")], on: .worktrees) == "createWorktree:side")
+        #expect(fixture.drop([.local("refs/heads/side")], on: .worktrees, alternate: true) == nil)
+        #expect(fixture.drop([.commit(d)], on: .worktrees) == nil)
+
+        var requests: [WorktreeRequest] = []
+        fixture.session.worktrees.onRequest = { requests.append($0) }
+        fixture.action([.local("refs/heads/side")], on: .worktrees)?.perform(in: fixture.session)
+
+        guard case .add(revision: "side") = try #require(requests.first) else {
+            Issue.record("应打开预选了这个分支的新建工作树对话框")
+            return
+        }
+    }
+
     /// 本地分支拖进分支文件夹、远端分支拖进同一远端的文件夹是改名为 “文件夹/原名末段”；名字不变或拖到别的远端时不接受。
     @Test("拖进文件夹改名")
     func dropMoveHere() async throws {
@@ -180,6 +202,7 @@ extension OperationWiringTests.Fixture {
         case .createTag(let revision): return "createTag:" + revision
         case .moveBranch(let branch, let name): return "move:" + branch.id + "→" + name
         case .publishTag(let tag, let remote): return "publishTag:" + tag + "@" + remote
+        case .createWorktree(let branch): return "createWorktree:" + branch
         }
     }
 

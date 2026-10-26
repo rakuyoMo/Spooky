@@ -53,9 +53,6 @@ final class QuickActionController {
     /// 进入动作模式前的输入与选中行。
     private var savedState: (query: String, selection: String?)? = nil
 
-    /// 子模块与工作树；每次显示面板时读一次，与输入无关。
-    private var linked: [QuickActionObject] = []
-
     /// HEAD 树中的文件，按 HEAD 的哈希复用。
     private var files: (head: String, paths: [String])? = nil
 
@@ -64,9 +61,6 @@ final class QuickActionController {
 
     /// 当前输入匹配的提交。
     private var commitMatches: [QuickActionObject] = []
-
-    /// 读取子模块与工作树的任务。
-    private var linkedTask: Task<Void, Never>? = nil
 
     /// 等待停止输入并查询文件与提交的任务。
     private var searchTask: Task<Void, Never>? = nil
@@ -86,33 +80,14 @@ final class QuickActionController {
         self.catalog = catalog
     }
 
-    /// 面板显示时读取子模块与工作树，并按保留的输入重新列出结果。
+    /// 面板显示时按保留的输入重新列出结果。
     func start() {
-        linkedTask?.cancel()
-
-        linkedTask = Task { [weak self] in
-            guard let self else {
-                return
-            }
-
-            // 读取失败时不列出子模块与工作树，其余对象照常
-            let linked = (try? await catalog.linkedObjects()) ?? []
-
-            guard !Task.isCancelled else {
-                return
-            }
-
-            self.linked = linked
-            rebuild()
-        }
-
         rebuild()
         scheduleSearch()
     }
 
     /// 面板关闭时取消还在进行的查询。
     func stop() {
-        linkedTask?.cancel()
         searchTask?.cancel()
         isSearching = false
     }
@@ -345,7 +320,7 @@ extension QuickActionController {
                 .map { QuickActionItem(object: activeObject, action: $0) }
                 .filter { QuickActionMatcher.score($0.title, query: query) != nil }
         } else {
-            let objects = QuickActionMatcher.rank(catalog.immediateObjects() + linked, query: query)
+            let objects = QuickActionMatcher.rank(catalog.immediateObjects(), query: query)
                 + fileMatches
                 + commitMatches
 

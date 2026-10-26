@@ -263,8 +263,15 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
     /// 一个窗口完成写入后，显示同一仓库的其它窗口完整刷新，避免各窗口状态不一致。
     func repositoryChanged(_ location: RepositoryLocation, by source: RepositoryWindowController) {
-        for controller in windows where controller !== source && controller.session.repository == location {
-            controller.session.refresh(full: true)
+        // 同一仓库的工作树共用引用、储藏与配置，一个写入后显示其它工作树的窗口同样刷新
+        let worktrees = Set(source.session.worktrees.items.map(\.path))
+
+        for controller in windows where controller !== source {
+            guard let repository = controller.session.repository else { continue }
+
+            if repository == location || (repository.host == location.host && worktrees.contains(repository.path)) {
+                controller.session.refresh(full: true)
+            }
         }
     }
 

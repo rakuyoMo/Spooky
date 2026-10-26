@@ -33,6 +33,10 @@ final class RepositorySubmoduleState {
     @ObservationIgnored
     var outdated: [Submodule]? = nil
 
+    /// 子模块的对话框与询问由窗口呈现。
+    @ObservationIgnored
+    var onRequest: ((SubmoduleRequest) -> Void)? = nil
+
     /// 清单与概况的读取任务。
     private var task: Task<Void, Never>? = nil
 

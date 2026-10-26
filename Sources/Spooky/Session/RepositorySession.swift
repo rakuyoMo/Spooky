@@ -67,6 +67,9 @@ final class RepositorySession {
     /// 子模块清单、工作区概况与父仓库位置。
     let submodules = RepositorySubmoduleState()
 
+    /// 工作树清单。
+    let worktrees = RepositoryWorktreeState()
+
     /// 窗口负责呈现导出、保存补丁与比较版本的对话框。
     var onRevisionRequest: ((RevisionRequest) -> Void)? = nil
 
@@ -268,12 +271,11 @@ final class RepositorySession {
 
     /// 窗口负责呈现分支、标签与远端管理的对话框和询问。
     var onReferenceRequest: ((ReferenceRequest) -> Void)? = nil
+    /// 打开另一个仓库，如子模块、父仓库或工作树；验证与窗口复用规则和打开其它仓库相同。
+    var onOpenRepository: ((RepositoryLocation, RepositoryOpenTarget) -> Void)? = nil
 
-    /// 子模块的对话框与询问由窗口呈现。
-    var onSubmoduleRequest: ((SubmoduleRequest) -> Void)? = nil
-
-    /// 在本窗口打开另一个仓库，如子模块或父仓库；验证与窗口复用规则和打开其它仓库相同。
-    var onOpenRepository: ((RepositoryLocation) -> Void)? = nil
+    /// 在所选的终端程序里打开另一个位置，如工作树；服务器位置经 ssh 打开。
+    var onOpenInTerminal: ((RepositoryLocation) -> Void)? = nil
 
     /// 窗口负责呈现同步、变基、安全强推与推送任意版本的对话框。
     var onSyncRequest: ((SyncDialogRequest) -> Void)? = nil
@@ -459,6 +461,7 @@ extension RepositorySession {
         history.close()
         stashes.close()
         submodules.close()
+        worktrees.close()
         reflog.close()
         fileHistory.close()
         fileContent.close()
@@ -675,6 +678,7 @@ extension RepositorySession {
         history.suspend()
         stashes.suspend()
         submodules.suspend()
+        worktrees.suspend()
         isRefreshing = false
         pendingFullRefresh = false
         isWriting = true
@@ -711,12 +715,9 @@ extension RepositorySession {
             }
         }
 
-        // 按声明在操作前后记下仓库状态，供撤销与重做使用；已初始化子模块的指针被改动时随后更新或询问
-        let recorded = recordingUndo(
-            updatingSubmodules(after: action, tracked: submodules.initialized),
-            title: title,
-            recording: undo
-        )
+        // 已初始化子模块的指针被改动时随后更新或询问；按声明在操作前后记下仓库状态，供撤销与重做使用
+        let checked = updatingSubmodules(after: action, tracked: submodules.initialized)
+        let recorded = recordingUndo(checked, title: title, recording: undo)
 
         writeTask = Task { [weak self] in
             let collector = Task { @MainActor in
@@ -811,6 +812,7 @@ extension RepositorySession {
             history.refresh(status: status, runner: makeRunner(repository), reload: full)
             stashes.refresh(runner: makeRunner(repository))
             submodules.refresh(runner: makeRunner(repository))
+            worktrees.refresh(runner: makeRunner(repository))
             loadWorkingTreeFiles()
         }
 

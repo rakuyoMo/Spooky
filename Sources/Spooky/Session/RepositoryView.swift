@@ -32,10 +32,13 @@ enum RepositoryView: String, CaseIterable {
     /// 一个子模块的状态与两处配置。
     case submodule
 
+    /// 一个工作树的详情。
+    case worktree
+
     /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
     var supportsSearch: Bool {
         switch self {
-        case .fileContent, .remote, .settings, .submodule: false
+        case .fileContent, .remote, .settings, .submodule, .worktree: false
         case .workingCopy, .history, .stashes, .fileHistory, .branchesReview, .reflog: true
         }
     }
