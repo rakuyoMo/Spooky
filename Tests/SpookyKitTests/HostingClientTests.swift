@@ -25,6 +25,9 @@ struct HostingClientTests {
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token")
         #expect(request.value(forHTTPHeaderField: "X-GitHub-Api-Version") == "2022-11-28")
         #expect(!(request.url?.absoluteString.contains("secret-token") ?? true))
+
+        // 列表与详情随时在变，不能用缓存里的旧响应
+        #expect(request.cachePolicy == .reloadIgnoringLocalCacheData)
     }
 
     /// 私有部署的 GitLab：先查版本再读用户，令牌放在 PRIVATE-TOKEN 头里，地址带端口与部署路径。

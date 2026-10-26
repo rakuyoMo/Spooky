@@ -173,7 +173,8 @@ extension HostingClient {
             throw HostingError.incompatible(instance.displayName)
         }
 
-        var request = URLRequest(url: url)
+        // 列表与详情随时在变，不用 URLCache 里按 Cache-Control 留下的旧响应
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
         request.httpMethod = method
         request.httpBody = body
         request.setValue("application/json", forHTTPHeaderField: "Accept")
