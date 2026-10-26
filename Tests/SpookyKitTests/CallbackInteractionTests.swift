@@ -7,7 +7,7 @@ import Testing
 /// 自动获取这类不是用户直接发起的操作，回调请求要标明不能询问用户，界面据此只用已存的凭据。
 struct CallbackInteractionTests {
     /// 同一个凭据请求，在不允许询问的任务里发起时 `isInteractive` 为 false，平常为 true。
-    @Test("回调请求标明能否询问用户", .timeLimit(.minutes(1)))
+    @Test("回调请求标明能否询问用户", .timeLimit(.minutes(5)))
     func interactionFlag() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }

@@ -251,7 +251,7 @@ struct RepositorySessionTests {
     }
 
     /// 退出时取消并等待写入结束，写锁随之释放，不遗留后台任务。
-    @Test("退出等待任务结束并释放写锁", .timeLimit(.minutes(1)))
+    @Test("退出等待任务结束并释放写锁", .timeLimit(.minutes(5)))
     func shutdown() async throws {
         let status = try snapshot("file")
         let session = RepositorySession(loadStatus: { _ in status })

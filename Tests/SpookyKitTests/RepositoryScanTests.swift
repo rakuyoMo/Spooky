@@ -6,7 +6,7 @@ import Testing
 /// 扫描在选定目录下找仓库：不跟随符号链接、跳过隐藏与不能读取的目录，仓库内部不再报告。
 struct RepositoryScanTests {
     /// 路径含空格、中文与引号；嵌套仓库、隐藏目录、不能读取的目录与指向外部的链接都不出现在结果里。
-    @Test("本机扫描：结果、跳过规则与特殊路径", .timeLimit(.minutes(1)))
+    @Test("本机扫描：结果、跳过规则与特殊路径", .timeLimit(.minutes(5)))
     func scan() async throws {
         let fixture = try TemporaryRepository()
         let outside = try TemporaryRepository()
@@ -55,7 +55,7 @@ struct RepositoryScanTests {
     }
 
     /// 选定目录本身就是仓库时只报告它自己；根目录不存在或不能读取时以错误结束。
-    @Test("本机扫描：根目录是仓库、不存在与不能读取", .timeLimit(.minutes(1)))
+    @Test("本机扫描：根目录是仓库、不存在与不能读取", .timeLimit(.minutes(5)))
     func rootCases() async throws {
         let fixture = try TemporaryRepository()
         let locked = fixture.directory.appending(path: "locked")
@@ -99,7 +99,7 @@ struct RepositoryScanTests {
     }
 
     /// 取得第一个结果后停止迭代即取消扫描，之后同一主机的命令照常执行。
-    @Test("本机扫描：提前结束迭代即取消", .timeLimit(.minutes(1)))
+    @Test("本机扫描：提前结束迭代即取消", .timeLimit(.minutes(5)))
     func cancellation() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }

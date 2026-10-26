@@ -373,7 +373,7 @@ LICENSE                       GPL-3.0 许可证全文
 - 请求界面按选中远端的服务在 Pull Request 与 Merge Request 两套文案之间选：资源键分别以 `pr.`、`mr.` 开头，经 `RepositorySession.pullRequestText` 取，两组都登记在 `LocalizationTests.dynamicKeys`
 - 子模块：`submodule status` 遇到没有 `.gitmodules` 映射的 gitlink 时整体失败，清单另经 `ls-files -s -z` 取 gitlink；`git rm` 删不掉缺配置的 gitlink，改用 `rm --cached` 再清理目录；改名时移动 `.git/modules/<名称>`，写相对的 gitfile，并经 `config --file` 设置 `core.worktree`
 - 工作树：清单用 `worktree list --porcelain -z`；在子模块里 Git 会把 gitdir 报成主工作树，当前工作树按 `rev-parse --git-dir`、`--git-common-dir` 与 `--show-toplevel` 判断
-- Git LFS：`lfs version` 已登记为读取，其余 `lfs` 子命令按写操作排队；每个写操作先确认 Git LFS 可用且不低于 2.9.0；`GitRunner.globalOptions` 带 `lfs.forceprogress=true`，输出不是终端时也写出传输进度；`lfs untrack` 认不出转义了方括号的规则，去掉后读回 `.gitattributes` 核对；git-lfs 3.8 在仓库路径含 `*`、`?` 或 `\[` 时扫描引用会失败
+- Git LFS：`lfs version` 已登记为读取，其余 `lfs` 子命令按写操作排队；每个写操作先确认 Git LFS 可用且不低于 2.9.0；`GitRunner.globalOptions` 带 `lfs.forceprogress=true`，输出不是终端时也写出传输进度；`lfs untrack` 认不出转义了方括号的规则，去掉后读回 `.gitattributes` 核对；git-lfs 3.8 在仓库路径含 `*`、`?` 或 `\[` 时扫描引用会失败；同一次 `lfs track` 传入的几个模式写进 `.gitattributes` 的先后不固定
 
 ### 文本区
 
@@ -417,6 +417,7 @@ LICENSE                       GPL-3.0 许可证全文
 - 侧边栏的视图设置以 `@AppStorage` 读 `SidebarPreferences` 的键；测试换用独立的偏好域时，视图的 `.defaultAppStorage` 与传给 `SidebarViewSettingsMenu` 的 `UserDefaults` 要一起换
 - 测试里同一个偏好键要换成别的值时，新值写进另一个偏好域，不覆盖已有的值：进程的偏好缓存被清掉后，覆盖写入之后紧接着的读取可能仍得到旧值
 - 会话测试要求刷新后用 `waitForRefresh()` 等刷新全部结束，不只等 `refreshTask`：本机仓库的文件监听会在写入后另起刷新，其间要求的完整刷新排在它之后
+- 本机测试的 `.timeLimit` 不短于 5 分钟：CI 上全部测试在同一进程里并发运行，单个测试常要 30–60 秒，本机单独运行时只要几秒
 - 解析器的固定输入放在 `Tests/SpookyKitTests/Fixtures/`，由真实 Git 在隔离配置、固定身份与时间的临时仓库中生成
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
 - 本地化新增资源键时同步全部支持语言，并保持格式参数一致；动态拼接的资源键登记在 `LocalizationTests.dynamicKeys`；错误标题和恢复说明本地化，Git 原文保持不变

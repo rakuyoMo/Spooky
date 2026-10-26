@@ -100,7 +100,10 @@ struct RepositoryLFSTests {
         try await lfs.track(files: ["图 [1].bin"])
 
         let literal = #"图[[:space:]]\[1\].bin"#
-        #expect(try attributes(in: root) == ["*.psd", "设计[[:space:]]稿/*.sketch", literal])
+        let tracked = try attributes(in: root)
+
+        // 同一次 track 传入的几个模式，Git LFS 写进文件的先后不固定，排序后比较
+        #expect(tracked.sorted() == ["*.psd", "设计[[:space:]]稿/*.sketch", literal].sorted())
 
         // 列表里显示的就是文件里写着的模式，去掉它们即可停止跟踪
         try await lfs.untrack(["*.psd", "设计[[:space:]]稿/*.sketch"])
