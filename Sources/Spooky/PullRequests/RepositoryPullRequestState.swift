@@ -182,11 +182,13 @@ final class RepositoryPullRequestState {
         }
     }
 
-    /// 换一个远端并重新读取。
+    /// 换一个远端并重新读取；上一个远端的列表不留到新远端下。
     func select(remote name: String, runner: GitRunner) {
         guard name != remote else { return }
 
         remote = name
+        items = []
+        nextPage = nil
         selectedID = nil
         clearDetail()
         load(runner: runner)

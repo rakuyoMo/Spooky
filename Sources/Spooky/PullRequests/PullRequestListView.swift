@@ -131,15 +131,15 @@ extension PullRequestListView {
                 action: AppLocalization.text("accounts.reauthenticate")
             ) { SettingsWindowController.show(.accounts) }
         } else if let failure = state.failure {
-            VStack(alignment: .leading, spacing: 12) {
-                FailureDetailsView(failure: failure)
+            // 读取失败时说明原因，已经读到的列表留在下面
+            VStack(spacing: 0) {
+                failureNotice(failure)
 
-                // 令牌被拒绝时提供重新认证的入口
-                if case .unauthorized = state.failureError {
-                    Button(AppLocalization.text("accounts.reauthenticate")) { SettingsWindowController.show(.accounts) }
+                if !state.items.isEmpty {
+                    Divider()
+                    list
                 }
             }
-            .padding(20)
             .frame(maxHeight: .infinity, alignment: .top)
         } else if state.isLoaded, state.items.isEmpty {
             EmptyStateView(
@@ -151,6 +151,22 @@ extension PullRequestListView {
         } else {
             list
         }
+    }
+
+    /// 读取失败的说明；令牌被拒绝或权限不足时提供重新认证的入口。
+    private func failureNotice(_ failure: AppFailure) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            FailureDetailsView(failure: failure)
+
+            switch state.failureError {
+            case .unauthorized, .forbidden:
+                Button(AppLocalization.text("accounts.reauthenticate")) { SettingsWindowController.show(.accounts) }
+
+            default:
+                EmptyView()
+            }
+        }
+        .padding(20)
     }
 
     /// 居中的标题、说明与一个按钮。
