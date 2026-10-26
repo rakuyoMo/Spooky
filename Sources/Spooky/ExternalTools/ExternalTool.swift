@@ -38,14 +38,8 @@ enum ExternalTool: String, CaseIterable, Identifiable {
     /// BBEdit。
     case bbEdit = "bbedit"
 
-    /// Changes。
-    case changes
-
     /// DeltaWalker。
     case deltaWalker = "deltawalker"
-
-    /// DiffMerge。
-    case diffMerge = "diffmerge"
 
     /// FileMerge，随 Xcode 安装，经 `opendiff` 启动。
     case fileMerge = "filemerge"
@@ -58,12 +52,6 @@ enum ExternalTool: String, CaseIterable, Identifiable {
 
     /// TextMate。
     case textMate = "textmate"
-
-    /// TextWrangler。
-    case textWrangler = "textwrangler"
-
-    /// DiffFork。
-    case diffFork = "difffork"
 
     /// 偏好：比较工具的标识。
     static let diffToolKey = "diffToolIdentifier"
@@ -87,15 +75,11 @@ enum ExternalTool: String, CaseIterable, Identifiable {
         case .araxisMerge: "Araxis Merge"
         case .beyondCompare: "Beyond Compare"
         case .bbEdit: "BBEdit"
-        case .changes: "Changes"
         case .deltaWalker: "DeltaWalker"
-        case .diffMerge: "DiffMerge"
         case .fileMerge: "FileMerge"
         case .kaleidoscope: "Kaleidoscope"
         case .p4Merge: "P4Merge"
         case .textMate: "TextMate"
-        case .textWrangler: "TextWrangler"
-        case .diffFork: "DiffFork"
         }
     }
 
@@ -103,10 +87,10 @@ enum ExternalTool: String, CaseIterable, Identifiable {
     var supportsMerge: Bool {
         switch self {
         case .visualStudioCode, .araxisMerge, .beyondCompare, .deltaWalker,
-             .diffMerge, .fileMerge, .kaleidoscope, .p4Merge:
+             .fileMerge, .kaleidoscope, .p4Merge:
             true
 
-        case .bbEdit, .changes, .textMate, .textWrangler, .diffFork:
+        case .bbEdit, .textMate:
             false
         }
     }
@@ -182,15 +166,11 @@ extension ExternalTool {
         case .araxisMerge: ["com.araxis.merge"]
         case .beyondCompare: ["com.ScooterSoftware.BeyondCompare"]
         case .bbEdit: ["com.barebones.bbedit"]
-        case .changes: ["com.skorpiostech.Changes"]
         case .deltaWalker: ["com.deltopia.deltawalker"]
-        case .diffMerge: ["com.sourcegear.DiffMerge"]
         case .fileMerge: ["com.apple.FileMerge"]
         case .kaleidoscope: ["app.kaleidoscope.v4", "com.blackpixel.kaleidoscope"]
         case .p4Merge: ["com.perforce.p4merge"]
         case .textMate: ["com.macromates.TextMate", "com.macromates.textmate"]
-        case .textWrangler: ["com.barebones.textwrangler"]
-        case .diffFork: ["com.dotfork.DiffFork"]
         }
     }
 
@@ -217,14 +197,8 @@ extension ExternalTool {
             case .bbEdit:
                 (Self.executable(application, "Contents/Helpers/bbdiff"), ["--wait", "--resume", left, right])
 
-            case .changes:
-                (Self.executable(application, "Contents/Resources/chdiff"), [left, right])
-
             case .deltaWalker:
                 (Self.executable(application, "Contents/MacOS/DeltaWalker"), [left, right, "-nosplash", "-mi"])
-
-            case .diffMerge:
-                (Self.executable(application, "Contents/MacOS/DiffMerge"), ["-nosplash", left, right])
 
             case .fileMerge:
                 (URL(fileURLWithPath: "/usr/bin/opendiff"), [left, right])
@@ -245,12 +219,6 @@ extension ExternalTool {
                         Self.executable(application, "Contents/SharedSupport/Support/bin/mate").path,
                     ]
                 )
-
-            case .textWrangler:
-                (Self.executable(application, "Contents/Helpers/twdiff"), ["--wait", "--resume", left, right])
-
-            case .diffFork:
-                (Self.executable(application, "Contents/SharedSupport/Support/bin/difffork"), [left, right, "-w"])
             }
 
         return ExternalToolInvocation(executable: executable, arguments: arguments)
@@ -285,12 +253,6 @@ extension ExternalTool {
                     [local, remote, base, "-merged=" + merged, "-nosplash", "-mi"]
                 )
 
-            case .diffMerge:
-                (
-                    Self.executable(application, "Contents/MacOS/DiffMerge"),
-                    ["-nosplash", "-merge", "-result=" + merged, local, base, remote]
-                )
-
             case .fileMerge:
                 // 没有共同祖先时不传 -ancestor，FileMerge 按两方比较
                 (
@@ -307,7 +269,7 @@ extension ExternalTool {
             case .p4Merge:
                 (Self.executable(application, "Contents/MacOS/p4merge"), [base, local, remote, merged])
 
-            case .bbEdit, .changes, .textMate, .textWrangler, .diffFork:
+            case .bbEdit, .textMate:
                 nil
             }
 
