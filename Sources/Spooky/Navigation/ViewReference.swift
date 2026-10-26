@@ -107,6 +107,9 @@ enum RepositoryDestination: Hashable {
     /// 一个远端的设置与远端分支。
     case remote(String)
 
+    /// 一个子模块的状态与配置，`path` 是它在仓库里的相对路径。
+    case submodule(path: String)
+
     /// 一个文件的历史。
     case fileHistory(path: String)
 
@@ -138,6 +141,9 @@ enum RepositoryDestination: Hashable {
 
         /// 远端设置。
         case remote
+
+        /// 子模块。
+        case submodule
 
         /// 文件历史。
         case fileHistory
@@ -172,6 +178,9 @@ enum RepositoryDestination: Hashable {
 
         case .remote(let name):
             [("view", Name.remote.rawValue), ("remote", name)]
+
+        case .submodule(let path):
+            [("view", Name.submodule.rawValue), ("path", path)]
 
         case .fileHistory(let path):
             [("view", Name.fileHistory.rawValue), ("path", path)]
@@ -219,6 +228,10 @@ enum RepositoryDestination: Hashable {
         case .remote:
             guard let remote = value("remote") else { return nil }
             self = .remote(remote)
+
+        case .submodule:
+            guard let path = value("path") else { return nil }
+            self = .submodule(path: path)
 
         case .fileHistory:
             guard let path = value("path") else { return nil }

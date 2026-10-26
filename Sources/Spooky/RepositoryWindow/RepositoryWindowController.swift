@@ -130,6 +130,15 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 分支、标签与远端管理的对话框与询问同样以窗口的 sheet 呈现
         session.onReferenceRequest = { [weak self] in self?.presentReferenceRequest($0) }
 
+        // 子模块的对话框与询问同样以窗口的 sheet 呈现
+        session.onSubmoduleRequest = { [weak self] in self?.presentSubmoduleRequest($0) }
+
+        // 子模块与父仓库在本窗口打开
+        session.onOpenRepository = { [weak self] location in
+            guard let self else { return }
+            self.coordinator?.openRepository(at: location, from: self, inNewWindow: false)
+        }
+
         // 批量归档对话框与自动归档的确认同样以窗口的 sheet 呈现
         configureBranchesReview()
 
@@ -678,6 +687,11 @@ extension RepositoryWindowController {
             workingCopySplit = nil
             historySplit = nil
             detail = makeRepositorySettingsView()
+
+        case .submodule:
+            workingCopySplit = nil
+            historySplit = nil
+            detail = makeSubmoduleDetailView()
         }
 
         installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repository")

@@ -1,16 +1,5 @@
 import Foundation
 
-// MARK: - SubmoduleEntry
-
-/// `.gitmodules` 里登记的一个子模块。
-public struct SubmoduleEntry: Sendable, Equatable {
-    /// `submodule.<名称>` 段的名称。
-    public let name: String
-
-    /// 子模块在仓库里的相对路径。
-    public let path: String
-}
-
 // MARK: - WorktreeEntry
 
 /// `git worktree list` 列出的一个工作树。
@@ -29,7 +18,7 @@ public struct WorktreeEntry: Sendable, Equatable {
 
 // MARK: - LinkedRepositories
 
-/// 仓库的子模块与工作树清单；只读，在仓库所在的机器上执行。
+/// 仓库的工作树清单；只读，在仓库所在的机器上执行。
 public struct LinkedRepositories: Sendable {
     /// 共享的本机或服务器执行器。
     public let runner: GitRunner
@@ -37,21 +26,6 @@ public struct LinkedRepositories: Sendable {
     /// 创建只读的清单服务。
     public init(runner: GitRunner) {
         self.runner = runner
-    }
-
-    /// 工作区根目录下 `.gitmodules` 登记的子模块，按登记顺序；没有这个文件或其中没有子模块时为空。
-    public func submodules() async throws -> [SubmoduleEntry] {
-        // 没有匹配的键或文件不存在时 git config 以 1 退出
-        let result = try await runner.execute(
-            ["config", "-z", "--file", ".gitmodules", "--get-regexp", #"^submodule\..*\.path$"#],
-            acceptedExitCodes: [0, 1]
-        )
-
-        guard result.exitCode == 0 else {
-            return []
-        }
-
-        return try Self.parseSubmodules(result.standardOutput)
     }
 
     /// 仓库的全部工作树，第一个是主工作树；裸仓库与目录已不存在的工作树不列出。
@@ -65,38 +39,6 @@ public struct LinkedRepositories: Sendable {
 // MARK: - Parsing
 
 extension LinkedRepositories {
-    /// 解析 `config -z --get-regexp` 的输出：每条记录是 “键\n值”，以 NUL 结尾；键形如 `submodule.<名称>.path`。
-    static func parseSubmodules(_ data: Data) throws -> [SubmoduleEntry] {
-        guard !data.isEmpty else {
-            return []
-        }
-
-        guard data.last == 0 else {
-            throw RepositoryReadError.malformedOutput("config")
-        }
-
-        return try data.dropLast().split(separator: 0, omittingEmptySubsequences: false).map { record in
-            // 名称本身可以含有句点，只去掉固定的前缀与后缀
-            guard let newline = record.firstIndex(of: 10) else {
-                throw RepositoryReadError.malformedOutput("config")
-            }
-
-            let key = String(decoding: record[record.startIndex ..< newline], as: UTF8.self)
-            let path = String(decoding: record[record.index(after: newline)...], as: UTF8.self)
-
-            guard
-                key.hasPrefix("submodule."),
-                key.hasSuffix(".path"),
-                key.count > "submodule..path".count,
-                !path.isEmpty
-            else { throw RepositoryReadError.malformedOutput("config") }
-
-            let name = String(key.dropFirst("submodule.".count).dropLast(".path".count))
-
-            return SubmoduleEntry(name: name, path: path)
-        }
-    }
-
     /// 解析 `worktree list --porcelain -z` 的输出：属性以 NUL 分隔，每个工作树以一个空属性结束。
     static func parseWorktrees(_ data: Data) throws -> [WorktreeEntry] {
         guard !data.isEmpty else {

@@ -216,7 +216,9 @@ public struct RepositoryFiles: Sendable {
         }
     }
 
-    /// 确保目录存在：本机逐级创建；服务器经 SFTP 创建最后一级，已存在时不算失败。
+    /// 确保目录存在：本机与服务器都逐级创建，已存在的各级目录不算失败。
+    ///
+    /// - Parameter path: 目录的绝对路径。
     func createDirectory(_ path: String) async throws {
         guard runner.remote != nil else {
             try FileManager.default.createDirectory(
@@ -226,8 +228,31 @@ public struct RepositoryFiles: Sendable {
             return
         }
 
-        // 批处理里带 “-” 前缀的命令失败时不中断，目录已存在属于这种情况
-        _ = try await transfer(["-mkdir " + (try Self.quoted(path))], writing: true)
+        // SFTP 的 mkdir 只建最后一级，从根目录起逐级发出；带 “-” 前缀的命令失败时不中断，目录已存在属于这种情况
+        let components = path.split(separator: "/")
+        let levels = components.indices.map { "/" + components[...$0].joined(separator: "/") }
+
+        _ = try await transfer(try levels.map { "-mkdir " + (try Self.quoted($0)) }, writing: true)
+    }
+
+    /// 删掉工作区所在机器上的一个目录及其全部内容，目录不存在时什么也不做。
+    ///
+    /// SFTP 不能递归删除，服务器经主机连接在 B 上执行 `rm -rf`。
+    ///
+    /// - Parameter path: 目录的绝对路径。
+    func removeTree(_ path: String) async throws {
+        guard let remote = runner.remote else {
+            if FileManager.default.fileExists(atPath: path) {
+                try FileManager.default.removeItem(atPath: path)
+            }
+            return
+        }
+
+        _ = try await HostExecution.run(
+            ["/bin/rm", "-rf", "--", path],
+            at: .remote(host: remote.host, path: path),
+            writing: true
+        )
     }
 
     /// 执行一批 SFTP 命令；取消会直接结束本批子进程，SSH 主连接保留。

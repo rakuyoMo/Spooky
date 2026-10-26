@@ -42,15 +42,14 @@ struct QuickActionCatalog {
             + themes.themes.map { QuickActionObject.theme(id: $0.id, name: $0.name) }
     }
 
-    /// 子模块与工作树，各执行一条只读的 Git 命令。
+    /// 子模块与工作树：子模块取会话已经读到的清单，工作树执行一条只读的 Git 命令。
     func linkedObjects() async throws -> [QuickActionObject] {
         guard let runner = session.runner else {
             return []
         }
 
-        let linked = LinkedRepositories(runner: runner)
-        let submodules = try await linked.submodules()
-        let worktrees = try await linked.worktrees()
+        let submodules = session.submodules.items
+        let worktrees = try await LinkedRepositories(runner: runner).worktrees()
 
         return submodules.map(QuickActionObject.submodule) + worktrees.map(QuickActionObject.worktree)
     }
@@ -141,7 +140,8 @@ extension QuickActionCatalog {
         case .stash(let stash): action == .applyStash ? session.canApply(stash) : session.canDelete([stash])
         case .remote: isAvailable(remoteAction: action)
         case .userProfile(let profile): isAvailable(action, profile: profile)
-        case .navigation, .file, .worktree, .submodule: isAvailable(locationAction: action)
+        case .submodule(let submodule): action != .openSubmodule || submodule.isPopulated
+        case .navigation, .file, .worktree: isAvailable(locationAction: action)
         case .appearance, .theme: true
         }
     }
@@ -189,7 +189,7 @@ extension QuickActionCatalog {
         switch object {
         case .stash: [.applyStash, .deleteStash]
         case .file: [.showFile, .showFileHistory, .showBlame, .openInEditor, .revealInFinder, .copyPath]
-        case .submodule: [.openSubmodule]
+        case .submodule: [.openSubmodule, .showSubmoduleSettings]
         case .worktree: [.openWorktree, .openWorktreeInNewWindow, .revealInFinder, .openInTerminal]
         case .remote: [.showRemoteSettings, .fetch, .editConnection]
         case .userProfile: [.setCommitter, .setGlobalUser]

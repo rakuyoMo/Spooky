@@ -140,6 +140,9 @@ enum QuickAction: Equatable {
     /// 在当前窗口打开子模块。
     case openSubmodule
 
+    /// 在主视图显示子模块的状态与配置。
+    case showSubmoduleSettings
+
     /// 在当前窗口打开工作树。
     case openWorktree
 
@@ -234,6 +237,7 @@ extension QuickAction {
         case .showBlame: AppLocalization.text("quickActions.showBlame")
         case .openInEditor: AppLocalization.text("quickActions.openInEditor")
         case .openSubmodule: AppLocalization.text("quickActions.openSubmodule")
+        case .showSubmoduleSettings: AppLocalization.text("quickActions.showSubmoduleSettings")
         case .openWorktree: AppLocalization.text("quickActions.openWorktree")
         case .openWorktreeInNewWindow: AppLocalization.text("quickActions.openWorktreeInNewWindow")
         case .showRemoteSettings: AppLocalization.text("quickActions.showRemoteSettings")

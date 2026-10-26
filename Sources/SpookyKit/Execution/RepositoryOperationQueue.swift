@@ -76,11 +76,12 @@ actor RepositoryOperationQueue {
 
     /// 只读查询可越过写队列；merge-tree 会创建对象，仍按写操作调度。
     nonisolated static func isReadOnly(_ arguments: [String]) -> Bool {
-        guard let command = command(in: arguments) else { return false }
-        if command == "config" {
-            guard let index = arguments.firstIndex(of: "config") else { return false }
-            var options = arguments.dropFirst(index + 1)
+        guard let index = commandIndex(in: arguments) else { return false }
 
+        let command = arguments[index]
+        var options = arguments.dropFirst(index + 1)
+
+        if command == "config" {
             // 读全局配置时先写作用域与 --includes，其后的查询与读仓库配置相同。
             if options.starts(with: ["--global", "--includes"]) {
                 options = options.dropFirst(2)
@@ -98,25 +99,27 @@ actor RepositoryOperationQueue {
 
         // 只读出当前分支名；其余 branch 用法会新建、改名或删除分支。
         if command == "branch" {
-            guard let index = arguments.firstIndex(of: "branch") else { return false }
-            return arguments.dropFirst(index + 1).elementsEqual(["--show-current"])
+            return options.elementsEqual(["--show-current"])
         }
 
         // 只有列出工作树是读取，其余 worktree 子命令都会改动仓库
         if command == "worktree" {
-            guard let index = arguments.firstIndex(of: "worktree"), index + 1 < arguments.count else { return false }
-            return arguments[index + 1] == "list"
+            return options.first == "list"
+        }
+
+        // 只有读取子模块状态是查询，其余 submodule 子命令会克隆、检出或改配置
+        if command == "submodule" {
+            return options.first == "status"
         }
 
         // 只计算对象哈希不写入对象库；带 -w 的写入仍走写队列。
         if command == "hash-object" {
-            return !arguments.contains("-w")
+            return !options.contains("-w")
         }
 
         // 只有列出与查看储藏是读取；不带子命令的 stash 等同 push，与其余子命令一样会写入。
         if command == "stash" {
-            guard let index = arguments.firstIndex(of: "stash"), index + 1 < arguments.count else { return false }
-            return ["list", "show"].contains(arguments[index + 1])
+            return options.first.map { ["list", "show"].contains($0) } ?? false
         }
 
         return [
@@ -129,19 +132,25 @@ actor RepositoryOperationQueue {
 
     /// 跳过受支持的全局参数，供调度和认证判断真正的子命令。
     nonisolated static func command(in arguments: [String]) -> String? {
+        commandIndex(in: arguments).map { arguments[$0] }
+    }
+
+    /// 真正的子命令所在的位置；全局参数只有 `--literal-pathspecs`、`-c <键=值>` 与在子模块里执行的 `-C <路径>`。
+    private nonisolated static func commandIndex(in arguments: [String]) -> Int? {
         var index = 0
 
-        // 全局配置只改变查询方式，读写属性由真正的子命令决定。
+        // 全局配置与工作目录只改变查询方式，读写属性由真正的子命令决定。
         while index < arguments.count {
             if arguments[index] == "--literal-pathspecs" {
                 index += 1
-            } else if arguments[index] == "-c", index + 1 < arguments.count {
+            } else if ["-c", "-C"].contains(arguments[index]), index + 1 < arguments.count {
                 index += 2
             } else {
                 break
             }
         }
-        return index < arguments.count ? arguments[index] : nil
+
+        return index < arguments.count ? index : nil
     }
 
     /// 取得共享门闩，所有写入路径都必须持有对应仓库的槽。

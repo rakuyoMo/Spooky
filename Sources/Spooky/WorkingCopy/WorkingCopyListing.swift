@@ -94,6 +94,9 @@ enum WorkingCopyPreferences {
     /// 双击文件的动作，取值见 ``DoubleClickAction``。
     static let doubleClickAction = "workingCopyDoubleClickAction"
 
+    /// 双击子模块时在 Spooky 里把它当仓库打开，而不是执行双击文件的动作；默认开。
+    static let doubleClickOpensSubmodules = "workingCopyDoubleClickOpensSubmodules"
+
     /// 空格键的动作，取值见 ``SpacebarAction``。
     static let spacebarAction = "workingCopySpacebarAction"
 

@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - RepositorySidebarView
 
-/// Workspace、置顶、分支、归档、标签与远端各分组，加上活动区与底栏，共用仓库窗口侧边栏。
+/// Workspace、置顶、分支、归档、标签、远端与子模块各分组，加上活动区与底栏，共用仓库窗口侧边栏。
 struct RepositorySidebarView: View {
     /// 侧边栏的分组；分组标题都可以收起。
     enum SidebarGroup: Hashable {
@@ -25,6 +25,9 @@ struct RepositorySidebarView: View {
 
         /// 远端与远端分支。
         case remotes
+
+        /// 子模块。
+        case submodules
     }
 
     /// 置顶分组里的行身份前缀：同一分支在 Branches 分组里还有一行，两行各自高亮。
@@ -118,77 +121,7 @@ struct RepositorySidebarView: View {
     @State
     var signatureTag: String?
 
-    /// 系统列表和菜单导航使用同一组选择身份。
-    private var selectedItems: Set<String> {
-        if session.activeView == .workingCopy { return ["workingCopy"] }
-        if session.activeView == .stashes { return ["stashes"] }
-        if session.activeView == .branchesReview { return ["branchesReview"] }
-        if session.activeView == .reflog { return ["reflog"] }
-        if session.activeView == .settings { return ["settings"] }
-
-        // 远端设置对应侧边栏里那个远端的行
-        if session.activeView == .remote {
-            return session.selectedRemote.map { [Self.remoteRowPrefix + $0] } ?? []
-        }
-
-        // 文件视图不对应侧边栏的任何一项，点 Working Copy 或 History 都能离开
-        if [.fileHistory, .fileContent].contains(session.activeView) { return [] }
-
-        let references = session.history.selectedReferences
-
-        if references.isEmpty { return ["history"] }
-
-        // 选择来自点选时沿用点中的行；从菜单或其它视图改变选择时用分支在主分组里的行
-        return Set(rowSelection.map(Self.reference(forRow:))) == references ? rowSelection : references
-    }
-
-    /// 选择存入会话，快捷键与点击保持一致。
-    private var selection: Binding<Set<String>> {
-        Binding(
-            get: { selectedItems },
-            set: { value in
-                guard !value.isEmpty else { return }
-
-                let added = value.subtracting(selectedItems)
-
-                // 选中远端时主视图换成它的设置；远端不参与引用的多选
-                if let remote = added.first(where: { $0.hasPrefix(Self.remoteRowPrefix) }) {
-                    rowSelection = [remote]
-                    session.showRemote(String(remote.dropFirst(Self.remoteRowPrefix.count)))
-                    return
-                }
-
-                rowSelection = value
-                session.history.showsCommitPage = false
-
-                if added.contains("workingCopy") || value == ["workingCopy"] {
-                    session.activeView = .workingCopy
-                } else if added.contains("stashes") || value == ["stashes"] {
-                    session.activeView = .stashes
-                } else if added.contains("branchesReview") || value == ["branchesReview"] {
-                    session.activeView = .branchesReview
-                } else if added.contains("reflog") || value == ["reflog"] {
-                    session.activeView = .reflog
-                } else if added.contains("settings") || value == ["settings"] {
-                    session.activeView = .settings
-                } else {
-                    // 置顶分组里的行换回分支的完整引用名
-                    let references = value
-                        .subtracting(["workingCopy", "history", "stashes", "branchesReview", "reflog", "settings"])
-                        .filter { !$0.hasPrefix(Self.remoteRowPrefix) }
-                        .map(Self.reference(forRow:))
-
-                    session.activeView = .history
-                    session.history.selectedReferences =
-                        added.contains("history") || value == ["history"] ? [] : Set(references)
-                }
-
-                selectionChanged()
-            }
-        )
-    }
-
-    /// 分组顺序固定：Workspace、Pinned、Branches、Archived Branches、Tags、Remotes。
+    /// 分组顺序固定：Workspace、Pinned、Branches、Archived Branches、Tags、Remotes、Submodules。
     var body: some View {
         VStack(spacing: 0) {
             List(selection: selection) {
@@ -198,6 +131,7 @@ struct RepositorySidebarView: View {
                 archivedBranches
                 tags
                 remoteBranches
+                submoduleGroup
             }
             .listStyle(.sidebar)
 
@@ -359,6 +293,97 @@ struct RepositorySidebarView: View {
         }
         .padding(.horizontal, 4)
         .frame(height: 40)
+    }
+}
+
+// MARK: - Selection
+
+extension RepositorySidebarView {
+    /// 系统列表和菜单导航使用同一组选择身份。
+    private var selectedItems: Set<String> {
+        if session.activeView == .workingCopy { return ["workingCopy"] }
+        if session.activeView == .stashes { return ["stashes"] }
+        if session.activeView == .branchesReview { return ["branchesReview"] }
+        if session.activeView == .reflog { return ["reflog"] }
+        if session.activeView == .settings { return ["settings"] }
+
+        // 远端设置对应侧边栏里那个远端的行，子模块视图对应那个子模块的行
+        if session.activeView == .remote {
+            return session.selectedRemote.map { [Self.remoteRowPrefix + $0] } ?? []
+        }
+
+        if session.activeView == .submodule {
+            return session.submodules.selectedPath.map { [Self.submoduleRowPrefix + $0] } ?? []
+        }
+
+        // 文件视图不对应侧边栏的任何一项，点 Working Copy 或 History 都能离开
+        if [.fileHistory, .fileContent].contains(session.activeView) { return [] }
+
+        let references = session.history.selectedReferences
+
+        if references.isEmpty { return ["history"] }
+
+        // 选择来自点选时沿用点中的行；从菜单或其它视图改变选择时用分支在主分组里的行
+        return Set(rowSelection.map(Self.reference(forRow:))) == references ? rowSelection : references
+    }
+
+    /// 选择存入会话，快捷键与点击保持一致。
+    private var selection: Binding<Set<String>> {
+        Binding(
+            get: { selectedItems },
+            set: { value in
+                guard !value.isEmpty else { return }
+
+                let added = value.subtracting(selectedItems)
+
+                // 远端与子模块的行各自换成设置视图，不参与引用的多选
+                guard !selectSettingsRow(in: added) else { return }
+
+                rowSelection = value
+                session.history.showsCommitPage = false
+
+                if added.contains("workingCopy") || value == ["workingCopy"] {
+                    session.activeView = .workingCopy
+                } else if added.contains("stashes") || value == ["stashes"] {
+                    session.activeView = .stashes
+                } else if added.contains("branchesReview") || value == ["branchesReview"] {
+                    session.activeView = .branchesReview
+                } else if added.contains("reflog") || value == ["reflog"] {
+                    session.activeView = .reflog
+                } else if added.contains("settings") || value == ["settings"] {
+                    session.activeView = .settings
+                } else {
+                    // 置顶分组里的行换回分支的完整引用名
+                    let references = value
+                        .subtracting(["workingCopy", "history", "stashes", "branchesReview", "reflog", "settings"])
+                        .filter { !$0.hasPrefix(Self.remoteRowPrefix) && !$0.hasPrefix(Self.submoduleRowPrefix) }
+                        .map(Self.reference(forRow:))
+
+                    session.activeView = .history
+                    session.history.selectedReferences =
+                        added.contains("history") || value == ["history"] ? [] : Set(references)
+                }
+
+                selectionChanged()
+            }
+        )
+    }
+
+    /// 选中远端或子模块的行：主视图换成远端的设置或子模块的状态与配置；返回是否已处理。
+    private func selectSettingsRow(in added: Set<String>) -> Bool {
+        if let remote = added.first(where: { $0.hasPrefix(Self.remoteRowPrefix) }) {
+            rowSelection = [remote]
+            session.showRemote(String(remote.dropFirst(Self.remoteRowPrefix.count)))
+            return true
+        }
+
+        if let submodule = added.first(where: { $0.hasPrefix(Self.submoduleRowPrefix) }) {
+            rowSelection = [submodule]
+            session.showSubmodule(String(submodule.dropFirst(Self.submoduleRowPrefix.count)))
+            return true
+        }
+
+        return false
     }
 }
 

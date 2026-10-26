@@ -251,11 +251,14 @@ public struct GitRunner: Sendable {
         let process = localProcess()
 
         // 网络命令需要 askpass，本机 SSH 解锁后由系统 agent 保留密钥；会生成提交与标签的命令可能经 ssh-keygen 签名，私钥口令同样经中继询问。
-        if
-            let credentialHandler,
+        // 添加与更新子模块会克隆或获取子模块仓库，读取子模块状态以外的 submodule 子命令同样经中继执行。
+        let command = RepositoryOperationQueue.command(in: arguments) ?? ""
+        let authenticates =
             ["fetch", "push", "ls-remote", "clone", "commit", "merge", "rebase", "cherry-pick", "revert", "tag"]
-                .contains(RepositoryOperationQueue.command(in: arguments) ?? "")
-        {
+                .contains(command)
+                || (command == "submodule" && !RepositoryOperationQueue.isReadOnly(arguments))
+
+        if let credentialHandler, authenticates {
             return try await LocalGitAuthentication.execute(
                 executable: process.executable,
                 location: location,

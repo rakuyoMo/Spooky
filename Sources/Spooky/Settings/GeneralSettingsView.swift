@@ -34,6 +34,10 @@ struct GeneralSettingsView: View {
     @AppStorage(SidebarPreferences.autoArchiveKey)
     private var autoArchiveBranches = SidebarPreferences.defaultFlag(SidebarPreferences.autoArchiveKey)
 
+    /// 操作改动了已初始化子模块的指针后直接更新它们，不再询问。
+    @AppStorage(SubmodulePreferences.alwaysUpdate)
+    private var alwaysUpdateSubmodules = false
+
     /// General 表单按功能分为五组，组间以分隔线隔开；控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
@@ -69,10 +73,12 @@ struct GeneralSettingsView: View {
 // MARK: - Private
 
 extension GeneralSettingsView {
-    /// 操作相关的设置：自动获取的间隔、被本地改动挡住时询问储藏、丢弃块前确认、输入时规范引用名、自动归档分支。
+    /// 操作相关的设置：自动获取的间隔、自动更新子模块、被本地改动挡住时询问储藏、丢弃块前确认、输入时规范引用名、自动归档分支。
     @ViewBuilder
     private var operationRows: some View {
         AutoFetchSettingsRow()
+
+        toggleRow("settings.autoUpdateSubmodules", isOn: $alwaysUpdateSubmodules)
 
         toggleRow("stash.offerAutoStash", isOn: $offerAutoStash)
 

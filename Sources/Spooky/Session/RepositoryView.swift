@@ -29,10 +29,13 @@ enum RepositoryView: String, CaseIterable {
     /// 仓库设置：描述、Issue 追踪、提交人身份、折行与签名，以及 LFS、忽略与排除规则。
     case settings
 
+    /// 一个子模块的状态与两处配置。
+    case submodule
+
     /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
     var supportsSearch: Bool {
         switch self {
-        case .fileContent, .remote, .settings: false
+        case .fileContent, .remote, .settings, .submodule: false
         case .workingCopy, .history, .stashes, .fileHistory, .branchesReview, .reflog: true
         }
     }

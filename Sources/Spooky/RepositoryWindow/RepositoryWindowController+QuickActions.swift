@@ -32,7 +32,8 @@ extension RepositoryWindowController {
         case .commit(let commit, _): perform(action, commit: commit)
         case .stash(let stash): action == .applyStash ? session.requestApplyStash(stash) : session.deleteStashes([stash])
         case .file(let path): perform(action, file: path)
-        case .submodule(let submodule): openLinkedRepository(at: submodule.path, inNewWindow: false)
+        case .submodule(let submodule):
+            action == .showSubmoduleSettings ? session.showSubmodule(submodule.path) : session.open(submodule)
         case .worktree(let worktree): perform(action, worktree: worktree)
         case .remote(let name): perform(action, remote: name)
         case .userProfile(let profile): perform(action, profile: profile)

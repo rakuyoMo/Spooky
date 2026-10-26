@@ -136,6 +136,9 @@ struct AppFailure: Identifiable {
         case let offer as ForceDeletionOffer:
             (key, kind, recoveryKey, output, diagnostic) = Self.classification(of: offer.failure)
 
+        case let submodule as SubmoduleError:
+            (key, kind, recoveryKey) = Self.classification(of: submodule)
+
         case let undo as RepositoryUndoError:
             kind = .repository
             (key, recoveryKey) = Self.classification(of: undo)

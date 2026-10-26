@@ -105,8 +105,17 @@ extension RepositorySession {
         }
     }
 
-    /// 双击文件的动作：按偏好用默认程序打开，或用所选的比较工具对比 HEAD 版本与工作区文件。
+    /// 双击文件的动作：已检出的子模块按偏好当仓库打开；其余按偏好用默认程序打开，或用所选的比较工具对比 HEAD 版本与工作区文件。
     func performDoubleClickAction(_ entry: StatusEntry) {
+        // 双击已检出的子模块时按设置在本窗口把它当仓库打开
+        let opensSubmodules = UserDefaults.standard.object(forKey: WorkingCopyPreferences.doubleClickOpensSubmodules)
+            as? Bool ?? true
+
+        if opensSubmodules, let submodule = submodules.items.first(where: { $0.path == entry.path }), submodule.isPopulated {
+            open(submodule)
+            return
+        }
+
         let action = UserDefaults.standard.string(forKey: WorkingCopyPreferences.doubleClickAction)
             .flatMap(WorkingCopyPreferences.DoubleClickAction.init(rawValue:)) ?? .openFile
 

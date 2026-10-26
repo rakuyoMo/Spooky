@@ -134,7 +134,7 @@ enum QuickActionObject: Equatable {
     case remote(String)
 
     /// 子模块。
-    case submodule(SubmoduleEntry)
+    case submodule(Submodule)
 
     /// 远端分支。
     case remoteBranch(RepositoryReference)
@@ -203,7 +203,7 @@ enum QuickActionObject: Equatable {
         case .branch(let reference), .remoteBranch(let reference), .tag(let reference): reference.name
         case .worktree(let worktree): worktree.name
         case .remote(let name): name
-        case .submodule(let submodule): submodule.path
+        case .submodule(let submodule): submodule.name
         case .stash(let stash): stash.title
         case .userProfile(let profile): profile.title
         case .appearance(let appearance): appearance.title

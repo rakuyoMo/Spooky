@@ -295,7 +295,7 @@ extension SpookyApplicationController {
         }
     }
 
-    /// Repository 菜单：获取、拉取、同步与推送，发布分支与标签、添加远端、新建分支与标签，导出与比较版本，以及打开比较工具。
+    /// Repository 菜单：获取、拉取、同步与推送，发布分支与标签，获取与更新子模块，添加远端与子模块，新建分支与标签，导出与比较版本，以及打开比较工具。
     private func configureRepositoryMenu(in menu: NSMenu) {
         let repository = addMenu("menu.repository", to: menu)
         configureSyncItems(in: repository)
@@ -304,7 +304,14 @@ extension SpookyApplicationController {
         addItem("tag.publishMainMenu", action: #selector(RepositoryWindowController.publishTag), to: repository)
 
         repository.addItem(.separator())
+        addItem("menu.fetchSubmodule", action: #selector(RepositoryWindowController.fetchSubmodule), to: repository)
+        addItem("menu.fetchAllSubmodules", action: #selector(RepositoryWindowController.fetchAllSubmodules), to: repository)
+        addItem("menu.updateSubmodule", action: #selector(RepositoryWindowController.updateSubmodule), to: repository)
+        addItem("menu.updateAllSubmodules", action: #selector(RepositoryWindowController.updateAllSubmodules), to: repository)
+
+        repository.addItem(.separator())
         addItem("remote.addMainMenu", action: #selector(RepositoryWindowController.addRemote), to: repository)
+        addItem("menu.addSubmodule", action: #selector(RepositoryWindowController.addSubmodule), to: repository)
 
         repository.addItem(.separator())
         addItem(

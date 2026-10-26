@@ -255,16 +255,18 @@ struct ReferenceOption: View {
     @Environment(\.isEnabled)
     private var isEnabled
 
-    /// 说明左缘对齐勾选框的标题文字。
+    /// 说明左缘对齐勾选框的标题文字；没有说明时只有勾选框。
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Toggle(title, isOn: $isOn)
 
-            Text(help)
-                .font(.system(size: 11))
-                .foregroundStyle(isEnabled ? Color.primary : Color.secondary)
-                .padding(.leading, 19)
-                .fixedSize(horizontal: false, vertical: true)
+            if !help.isEmpty {
+                Text(help)
+                    .font(.system(size: 11))
+                    .foregroundStyle(isEnabled ? Color.primary : Color.secondary)
+                    .padding(.leading, 19)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 }
