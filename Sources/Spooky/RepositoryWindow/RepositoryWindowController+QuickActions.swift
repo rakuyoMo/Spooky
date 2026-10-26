@@ -57,6 +57,7 @@ extension RepositoryWindowController {
         case (.show, .workingCopy): showWorkingCopy()
         case (.show, .history): showHistory()
         case (.show, .stashes): showStashes()
+        case (.show, .pullRequests): showPullRequests()
         case (.show, .branchesReview): showBranchesReview()
         case (.show, .reflog): showReflog()
         case (.show, .settings): showRepositorySettings()

@@ -13,6 +13,11 @@ enum AppLocalization {
 
     /// 读取并格式化当前语言的文案，不以键名作为回退文本。
     static func text(_ key: String, _ arguments: CVarArg...) -> String {
+        text(key, arguments: arguments)
+    }
+
+    /// 与 ``text(_:_:)`` 相同，格式参数以数组传入，供转发可变参数的调用方使用。
+    static func text(_ key: String, arguments: [CVarArg]) -> String {
         let localized = bundle.localizedString(forKey: key, value: nil, table: nil)
         let format: String =
 

@@ -71,4 +71,14 @@ extension AppFailure {
             )
         }
     }
+
+    /// 检出请求时同名分支指向别处：原文是分支名。
+    static func classification(
+        of checkout: PullRequestCheckoutError
+    ) -> (key: String, kind: FailureKind, recoveryKey: String, output: GitCommandResult?, diagnostic: String?) {
+        switch checkout {
+        case .branchMismatch(let name):
+            ("pullRequests.error.branchMismatch", .repository, "pullRequests.error.branchMismatch.help", nil, name)
+        }
+    }
 }

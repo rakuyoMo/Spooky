@@ -151,7 +151,7 @@ struct RepositorySidebarView: View {
         }
     }
 
-    /// Workspace 分组：工作区、历史、储藏、分支整理，视图设置打开 Show Reflog 时的 Reflog，以及仓库设置。
+    /// Workspace 分组：工作区、历史、储藏、请求、分支整理，视图设置打开 Show Reflog 时的 Reflog，以及仓库设置。
     private var workspace: some View {
         Section(isExpanded: isExpanded(.workspace)) {
             workingCopy
@@ -165,6 +165,10 @@ struct RepositorySidebarView: View {
             stashes
                 .tag("stashes")
                 .modifier(StashesDropTarget(session: session))
+
+            // 选中远端对应 GitLab 时叫 Merge Requests
+            Label(session.pullRequestText("title"), systemImage: "arrow.triangle.merge")
+                .tag("pullRequests")
 
             Label(AppLocalization.text("review.title"), systemImage: "arrow.triangle.pull")
                 .tag("branchesReview")
@@ -307,6 +311,7 @@ extension RepositorySidebarView {
     private var selectedItems: Set<String> {
         if session.activeView == .workingCopy { return ["workingCopy"] }
         if session.activeView == .stashes { return ["stashes"] }
+        if session.activeView == .pullRequests { return ["pullRequests"] }
         if session.activeView == .branchesReview { return ["branchesReview"] }
         if session.activeView == .reflog { return ["reflog"] }
         if session.activeView == .settings { return ["settings"] }
@@ -350,20 +355,17 @@ extension RepositorySidebarView {
                 rowSelection = value
                 session.history.showsCommitPage = false
 
-                if added.contains("workingCopy") || value == ["workingCopy"] {
-                    session.activeView = .workingCopy
-                } else if added.contains("stashes") || value == ["stashes"] {
-                    session.activeView = .stashes
-                } else if added.contains("branchesReview") || value == ["branchesReview"] {
-                    session.activeView = .branchesReview
-                } else if added.contains("reflog") || value == ["reflog"] {
-                    session.activeView = .reflog
-                } else if added.contains("settings") || value == ["settings"] {
-                    session.activeView = .settings
+                if let view = Self.workspaceView(added: added, value: value) {
+                    session.activeView = view
+
+                    // 请求视图第一次显示时读取
+                    if view == .pullRequests, !session.pullRequests.isLoaded {
+                        session.reloadPullRequests()
+                    }
                 } else {
                     // 置顶分组里的行换回分支的完整引用名
                     let references = value
-                        .subtracting(["workingCopy", "history", "stashes", "branchesReview", "reflog", "settings"])
+                        .subtracting(Self.workspaceRows.map(\.row) + ["history"])
                         .filter { row in
                             ![Self.remoteRowPrefix, Self.submoduleRowPrefix, Self.worktreeRowPrefix]
                                 .contains { row.hasPrefix($0) }
@@ -547,6 +549,9 @@ extension RepositorySidebarView {
             }
             .disabled(!session.canCreateBranchFromReference)
 
+            // 已有打开着的请求时换成显示它
+            PullRequestBranchMenuItem(session: session, reference: ref)
+
             // 合并与变基，按住 ⌥ 换成快速操作
             BranchIntegrationMenu(session: session, reference: ref, request: request)
 
@@ -584,5 +589,24 @@ extension RepositorySidebarView {
     /// 删除前在对话框里确认，可选同时删除跟踪的远端分支与强制删除。
     private func delete(_ references: [RepositoryReference]) {
         session.requestReference(.deleteBranches(references))
+    }
+}
+
+// MARK: - Workspace Rows
+
+extension RepositorySidebarView {
+    /// Workspace 分组里换主视图的行与对应的视图，按判断的先后排列；History 另行处理。
+    fileprivate static let workspaceRows: [(row: String, view: RepositoryView)] = [
+        ("workingCopy", .workingCopy),
+        ("stashes", .stashes),
+        ("pullRequests", .pullRequests),
+        ("branchesReview", .branchesReview),
+        ("reflog", .reflog),
+        ("settings", .settings),
+    ]
+
+    /// 新选中的 Workspace 行对应的视图；选的是 History 或引用时为 nil。
+    fileprivate static func workspaceView(added: Set<String>, value: Set<String>) -> RepositoryView? {
+        workspaceRows.first { added.contains($0.row) || value == [$0.row] }?.view
     }
 }

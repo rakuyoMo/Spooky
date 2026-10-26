@@ -168,6 +168,9 @@ extension RepositoryWindowController {
         case .reflog:
             return .reflog
 
+        case .pullRequests:
+            return .pullRequests
+
         case .branchesReview:
             return .branchesReview
 
@@ -221,6 +224,9 @@ extension RepositoryWindowController {
 
         case .reflog:
             showReflog()
+
+        case .pullRequests:
+            showPullRequests()
 
         case .branchesReview:
             showBranchesReview()

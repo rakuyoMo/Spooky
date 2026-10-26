@@ -83,6 +83,9 @@ enum QuickActionDestination: CaseIterable {
     /// 储藏列表。
     case stashes
 
+    /// Pull Request 或 Merge Request。
+    case pullRequests
+
     /// 分支整理。
     case branchesReview
 
@@ -98,6 +101,7 @@ enum QuickActionDestination: CaseIterable {
         case .workingCopy: AppLocalization.text("workspace.title")
         case .history: AppLocalization.text("history.title")
         case .stashes: AppLocalization.text("stash.title")
+        case .pullRequests: AppLocalization.text("pr.title")
         case .branchesReview: AppLocalization.text("review.title")
         case .reflog: AppLocalization.text("reflog.title")
         case .settings: AppLocalization.text("repositorySettings.title")
@@ -110,6 +114,7 @@ enum QuickActionDestination: CaseIterable {
         case .workingCopy: "folder"
         case .history: "clock"
         case .stashes: "tray.full"
+        case .pullRequests: "arrow.triangle.merge"
         case .branchesReview: "arrow.triangle.pull"
         case .reflog: "clock.arrow.circlepath"
         case .settings: "gearshape"

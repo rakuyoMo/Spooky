@@ -134,6 +134,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         session.submodules.onRequest = { [weak self] in self?.presentSubmoduleRequest($0) }
         session.worktrees.onRequest = { [weak self] in self?.presentWorktreeRequest($0) }
 
+        // 请求视图的对话框同样以窗口的 sheet 呈现
+        session.pullRequests.onRequest = { [weak self] in self?.presentPullRequestRequest($0) }
+
         // 子模块、父仓库与工作树在本窗口、新标签或新窗口打开
         session.onOpenRepository = { [weak self] location, target in self?.openRepository(at: location, in: target) }
         session.onOpenInTerminal = { [weak self] in self?.openLocationInTerminal($0) }
@@ -709,6 +712,11 @@ extension RepositoryWindowController {
             workingCopySplit = nil
             historySplit = nil
             return makeBranchesReviewSplit()
+
+        case .pullRequests:
+            workingCopySplit = nil
+            historySplit = nil
+            return makePullRequestsSplit()
 
         case .settings:
             workingCopySplit = nil

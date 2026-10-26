@@ -3,7 +3,7 @@ import AppKit
 // MARK: - Subtitle
 
 extension RepositoryWindowController {
-    /// 仓库视图的窗口副标题：工作区写出分支与改动数，历史写出所选引用与提交数，储藏视图显示储藏的数量，Reflog 写出所看的引用，文件历史与文件原文写出所看的文件，远端设置写出远端名，仓库设置写 Settings，子模块与工作树写出各自的名称。
+    /// 仓库视图的窗口副标题：工作区写出分支与改动数，历史写出所选引用与提交数，储藏视图显示储藏的数量，Reflog 写出所看的引用，请求视图写出所选远端，文件历史与文件原文写出所看的文件，远端设置写出远端名，仓库设置写 Settings，子模块与工作树写出各自的名称。
     var repositorySubtitle: String {
         switch session.activeView {
         case .workingCopy:
@@ -26,6 +26,9 @@ extension RepositoryWindowController {
 
         case .remote:
             AppLocalization.text("remote.subtitle", session.selectedRemote ?? "")
+
+        case .pullRequests:
+            session.pullRequestText("title") + (session.pullRequests.remote.map { " · " + $0 } ?? "")
 
         case .branchesReview:
             AppLocalization.text("review.title")

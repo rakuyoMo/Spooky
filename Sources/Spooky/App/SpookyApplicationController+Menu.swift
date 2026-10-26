@@ -141,6 +141,7 @@ extension SpookyApplicationController {
         addItem("menu.showWorkingCopy", action: #selector(RepositoryWindowController.showWorkingCopy), key: "1", to: view)
         addItem("menu.showHistory", action: #selector(RepositoryWindowController.showHistory), key: "2", to: view)
         addItem("stash.show", action: #selector(RepositoryWindowController.showStashes), key: "3", to: view)
+        addItem("pr.show.menu", action: #selector(RepositoryWindowController.showPullRequests), key: "4", to: view)
         addItem(
             "review.show",
             action: #selector(RepositoryWindowController.showBranchesReview),
@@ -295,7 +296,7 @@ extension SpookyApplicationController {
         }
     }
 
-    /// Repository 菜单：获取、拉取、同步与推送，发布分支与标签，获取与更新子模块，添加远端、子模块与工作树，新建分支与标签，导出与比较版本，LFS，以及打开比较工具。
+    /// Repository 菜单：获取、拉取、同步与推送，发布分支与标签，获取与更新子模块，添加远端、子模块与工作树，新建分支、标签与请求，导出与比较版本，LFS，以及打开比较工具。
     private func configureRepositoryMenu(in menu: NSMenu) {
         let repository = addMenu("menu.repository", to: menu)
         configureSyncItems(in: repository)
@@ -326,6 +327,15 @@ extension SpookyApplicationController {
             action: #selector(RepositoryWindowController.createTag),
             key: "t",
             modifiers: [.shift, .command],
+            to: repository
+        )
+
+        repository.addItem(.separator())
+        addItem(
+            "pr.create.menu",
+            action: #selector(RepositoryWindowController.createPullRequest),
+            key: "p",
+            modifiers: [.control, .command],
             to: repository
         )
 

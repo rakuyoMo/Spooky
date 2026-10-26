@@ -98,6 +98,9 @@ enum RepositoryDestination: Hashable {
     /// 引用日志。
     case reflog
 
+    /// 托管服务上的 Pull Request 或 Merge Request。
+    case pullRequests
+
     /// 分支整理。
     case branchesReview
 
@@ -135,6 +138,9 @@ enum RepositoryDestination: Hashable {
 
         /// 引用日志。
         case reflog
+
+        /// Pull Request 或 Merge Request。
+        case pullRequests
 
         /// 分支整理。
         case branchesReview
@@ -175,6 +181,9 @@ enum RepositoryDestination: Hashable {
 
         case .reflog:
             [("view", Name.reflog.rawValue)]
+
+        case .pullRequests:
+            [("view", Name.pullRequests.rawValue)]
 
         case .branchesReview:
             [("view", Name.branchesReview.rawValue)]
@@ -227,6 +236,9 @@ enum RepositoryDestination: Hashable {
 
         case .reflog:
             self = .reflog
+
+        case .pullRequests:
+            self = .pullRequests
 
         case .branchesReview:
             self = .branchesReview

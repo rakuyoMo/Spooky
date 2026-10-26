@@ -23,6 +23,9 @@ enum RepositoryView: String, CaseIterable {
     /// 一个远端的设置与远端分支。
     case remote
 
+    /// 托管服务上打开着的 Pull Request 或 Merge Request，与所选请求的详情。
+    case pullRequests
+
     /// 本地分支与基准分支的比较与整理。
     case branchesReview
 
@@ -38,7 +41,7 @@ enum RepositoryView: String, CaseIterable {
     /// 工具栏搜索框只作用于提供列表过滤的视图，其余视图中禁用。
     var supportsSearch: Bool {
         switch self {
-        case .fileContent, .remote, .settings, .submodule, .worktree: false
+        case .fileContent, .remote, .settings, .submodule, .worktree, .pullRequests: false
         case .workingCopy, .history, .stashes, .fileHistory, .branchesReview, .reflog: true
         }
     }
