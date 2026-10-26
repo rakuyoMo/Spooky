@@ -59,7 +59,7 @@
     <key>SUFeedURL</key>
     <string>https://github.com/rakuyoMo/Spooky/releases/latest/download/appcast.xml</string>
     <key>SUPublicEDKey</key>
-    <string>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</string>
+    <string>TegnyY+TsXen5rEvj+DnxaqLsH51l9ufC9midIf1tuw=</string>
     <key>SURequireSignedFeed</key>
     <true/>
     <key>SUVerifyUpdateBeforeExtraction</key>
