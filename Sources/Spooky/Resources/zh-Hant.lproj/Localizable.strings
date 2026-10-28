@@ -238,12 +238,9 @@
 "working.unstageAll" = "全部取消暫存";
 "working.commit" = "提交";
 "working.amend" = "修補最近提交";
-"working.amend.confirm" = "這會改寫最近一次提交，是否繼續？";
 "working.subject" = "提交標題";
 "working.body" = "詳細說明";
-"working.identityLoading" = "正在讀取提交人…";
 "working.staging" = "暫存狀態：%@";
-"working.writing" = "正在更新工作區…";
 "working.list" = "平鋪顯示";
 "working.tree" = "樹狀顯示";
 "working.viewMode" = "工作區顯示模式";
@@ -271,8 +268,9 @@
 "working.discardLines" = "捨棄所選行";
 "working.discard" = "捨棄變更";
 "working.discardAll" = "捨棄全部變更…";
-"working.discard.message" = "將永久捨棄 %d 個檔案的變更（含暫存變更和未追蹤檔案）。儲存庫：%@。此操作無法復原。";
-"working.discard.remote" = "將在伺服器上永久刪除或覆寫 %d 個檔案（含暫存變更）。儲存庫：%@。此操作無法復原。";
+"working.discard.message" = "將捨棄 %d 個檔案的變更：已追蹤的檔案恢復到最後一次提交（含暫存變更），未追蹤檔案丟到垃圾桶。儲存庫：%@。";
+"working.discard.remote" = "將在伺服器上捨棄 %d 個檔案的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案丟到伺服器的垃圾桶。儲存庫：%@。";
+"working.discard.remotePermanent" = "將在伺服器上捨棄 %d 個檔案的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案在伺服器上永久刪除。儲存庫：%@。此操作無法復原。";
 "working.discard.lines" = "將永久捨棄 %@ 中所選行的變更，無法復原。";
 "working.discard.remoteLines" = "將在伺服器 %@ 上永久覆寫所選內容，無法復原。";
 "working.resolved" = "標記已解決";
@@ -396,6 +394,7 @@
 "activity.cancelled" = "已取消";
 "activity.failed" = "失敗";
 "dialog.options" = "選項";
+"dialog.doNotAskAgain" = "不再詢問";
 "menu.repository" = "儲存庫";
 "callback.privateKey" = "解鎖 SSH 私密金鑰";
 "callback.privateKey.help" = "解鎖後的私密金鑰將加入 SSH agent。";
@@ -420,7 +419,6 @@
 "recovery.unborn" = "尚無提交";
 "dialog.blocked" = "此儲存庫有其他操作正在進行，或伺服器已中斷連線。已填寫的設定會保留，請在儲存庫可用後重試。";
 "working.clean" = "沒有本機變更";
-"working.refreshFailed" = "重新整理失敗，正在顯示上一次成功的結果。";
 "history.limit" = "僅顯示前 %ld 個提交。選擇分支可以縮小歷史範圍。";
 "history.loadingChanges" = "正在讀取變更檔案…";
 "repositories.unavailableShort" = "無法使用";
@@ -521,11 +519,6 @@
 "conflict.binary" = "不顯示二進位內容。";
 "conflict.error.version" = "所選檔案沒有這個版本。";
 "conflict.export" = "匯出來自 “%@” 的版本…";
-"conflict.header.cherryPick" = "正在把 %@ 摘取到 %@";
-"conflict.header.merge" = "正在把 %@ 合併到 %@";
-"conflict.header.rebase" = "正在把 %@ 變基到 %@";
-"conflict.header.revert" = "正在反轉 %@，位於 %@ 上";
-"conflict.header.squash" = "正在 %@ 上壓縮提交";
 "conflict.hint.merge.conflicts" = "解決全部衝突後才能完成合併。";
 "conflict.hint.merge.resolved" = "檢查提交訊息，然後按一下 **提交** 完成合併。";
 "conflict.hint.merge.empty" = "沒有可提交的變更。按一下 **中止** 取消合併，或按一下 **提交** 建立空的合併提交。";
@@ -771,6 +764,8 @@
 "files.error.preimage" = "修補檔與檔案不符";
 "files.error.preimageHelp" = "下列檔案在修補檔產生之後有過變更，因此沒有套用修補檔，工作區保持原樣。請以目前的檔案重新產生修補檔，或先將這些檔案還原到修補檔產生時的版本。";
 "files.error.destination" = "目標位置已存在";
+"files.error.trashUnavailable" = "伺服器上沒有可用的垃圾桶";
+"files.error.trashedItems" = "無法從垃圾桶移回檔案";
 "files.doubleClick" = "按兩下工作區中的檔案：";
 "files.doubleClick.openFile" = "以預設應用程式開啟";
 "files.doubleClick.openDiff" = "開啟比較工具";
@@ -792,7 +787,6 @@
 "stash.subtitle" = "儲藏（%ld 個儲藏）";
 
 /* 冲突向导。 */
-"conflict.resolveBoth" = "採用兩側版本解決";
 "conflict.version.applied" = "來自套用的修補或儲藏的版本";
 "conflict.resolveUsing.applied" = "採用套用的修補或儲藏解決";
 "conflict.open.missing" = "開啟";
@@ -1448,6 +1442,8 @@
 "undo.error.inProgress.help" = "請先完成或中止合併、重定基底、摘取或反轉。儲存庫沒有任何變更。";
 "undo.error.conflicts" = "儲存庫有未解決的衝突";
 "undo.error.conflicts.help" = "請先解決衝突。儲存庫沒有任何變更。";
+"undo.error.trash" = "無法從垃圾桶移回檔案";
+"undo.error.trash.help" = "有的檔案已不在垃圾桶裡，或原位置已有其他檔案。儲存庫沒有任何變更。";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
 "reflog.title" = "Reflog";
@@ -1474,6 +1470,9 @@
 "settings.cloneDirectory" = "複製儲存庫的預設目錄：";
 "settings.cloneDirectory.select" = "選擇⋯";
 "settings.warnDiscardingChunks" = "捨棄區塊中的變更前發出警告";
+"settings.warnDiscardingOnServer" = "捨棄伺服器儲存庫中的變更前發出警告";
+"settings.warnDeletingOnServer" = "永久刪除伺服器儲存庫中的檔案前發出警告";
+"settings.warnRestoringOnServer" = "還原伺服器儲存庫中的檔案前發出警告";
 "settings.windowRestoration" = "視窗回復：";
 "settings.windowRestoration.always" = "總是";
 "settings.windowRestoration.never" = "永不";
@@ -1918,17 +1917,9 @@
 "settings.crashReports" = "當機報告：";
 "settings.crashReports.always" = "一律傳送當機報告";
 
-/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+/* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "伺服器設定了 Git 環境變數";
 "remote.environment.message" = "“%1$@” 的非互動 shell 設定了 %2$@。這些變數會改變 Spooky 在那裡執行的每條 Git 命令尋找倉庫與讀取設定的方式。如果 Git 表現異常，請從伺服器的 shell 啟動檔案裡移除它們。";
-"untracked.hint" = "%ld 個未追蹤檔案讓重新整理變慢。請為建置產物與相依項目補充忽略規則，或加快伺服器上的狀態讀取。";
-"untracked.speedUp" = "加快…";
-"untracked.speedUp.title" = "加快伺服器上的狀態讀取";
-"untracked.speedUp.message" = "Spooky 可以在 “%@” 上的這個倉庫裡開啟下面幾項設定。只有在你確認後，它們才會寫進伺服器上這個倉庫的本機設定。";
-"untracked.speedUp.apply" = "套用設定";
-"untracked.speedUp.cache" = "在兩次狀態讀取之間快取未追蹤檔案。";
-"untracked.speedUp.monitor" = "讓 Git 監看檔案變化，不必每次掃描整個工作區。";
-"untracked.speedUp.graph" = "現在寫出 commit-graph，並在擷取時保持更新，加快歷史讀取。";
 
 "files.openSubmodules" = "總是在 Spooky 中開啟子模組";
 "menu.addSubmodule" = "加入新子模組…";

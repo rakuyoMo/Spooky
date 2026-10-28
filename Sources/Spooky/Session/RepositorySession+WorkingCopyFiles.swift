@@ -130,6 +130,11 @@ extension RepositorySession {
 // MARK: - File Operations
 
 extension RepositorySession {
+    /// 删除文件与丢弃未跟踪文件的方式：本机与有废纸篓的服务器移进废纸篓，否则永久删除。
+    var fileRemoval: FileRemoval {
+        repository?.host == nil || serverHasTrash ? .trash : .permanent
+    }
+
     /// 停止跟踪所选文件：文件留在工作区，下次提交从版本库里移除。
     func untrack(_ entries: [StatusEntry]) {
         let targets = entries.filter(\.isInIndex)
@@ -145,26 +150,27 @@ extension RepositorySession {
         )
     }
 
-    /// 删除所选文件：本机移到废纸篓；服务器没有废纸篓，确认后在服务器上永久删除。
+    /// 删除所选文件：移进工作区所在机器的废纸篓；服务器上没有可用的废纸篓时，确认后永久删除。
     func delete(_ entries: [StatusEntry]) {
         let targets = entries.filter(\.isDeletable)
         guard canWrite, !targets.isEmpty, let repository else { return }
 
         let paths = targets.map(\.path)
-        let title = AppLocalization.text(repository.host == nil ? "files.trash" : "files.delete")
+        let removal = fileRemoval
+        let title = AppLocalization.text(removal == .trash ? "files.trash" : "files.delete")
 
         // 删除与其它写操作一样经仓库写队列执行
         let perform = { [weak self] in
             _ = self?.performGit(
-                { runner, _ in try await WorkingCopyOperations(runner: runner).delete(paths) },
+                { runner, _ in try await WorkingCopyOperations(runner: runner).delete(paths, removal: removal) },
                 title: title,
                 recordsActivity: false,
                 undo: .reversible
             )
         }
 
-        // 本机文件可以从废纸篓放回，不需要确认
-        guard repository.host != nil else {
+        // 移进废纸篓的文件可以放回，不需要确认
+        guard removal == .permanent else {
             perform()
             return
         }
@@ -172,16 +178,15 @@ extension RepositorySession {
         // 确认期间仓库已切换时不执行
         let request = generation
 
-        onConfirm?(
-            title,
-            AppLocalization.text("files.delete.remote", scopeDescription(targets), repository.displayPath),
-            { [weak self] in
-                guard let self, generation == request else { return }
+        confirmOnServer(
+            .deletePermanently,
+            title: title,
+            message: AppLocalization.text("files.delete.remote", scopeDescription(targets), repository.displayPath)
+        ) { [weak self] in
+            guard let self, generation == request else { return }
 
-                perform()
-            },
-            nil
-        )
+            perform()
+        }
     }
 
     /// 移动一个文件；目标路径已由表单校验，Git 与文件层仍会拒绝覆盖。

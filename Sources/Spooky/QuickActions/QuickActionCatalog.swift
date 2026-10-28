@@ -296,7 +296,7 @@ extension QuickActionCatalog {
             return false
         }
 
-        return action == .setGlobalUser || session.context?.committer != profile.name + " <" + profile.email + ">"
+        return action == .setGlobalUser || session.committer != (profile.name, profile.email)
     }
 
     /// 导航、文件、子模块与工作树：Finder 只用于本机仓库，读取文件视图需要执行器，储藏快照沿用储藏的规则。

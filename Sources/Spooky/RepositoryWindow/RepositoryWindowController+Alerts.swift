@@ -51,6 +51,47 @@ extension RepositoryWindowController {
         }
     }
 
+    /// 确认框，确认按钮与标题相同；服务器仓库的确认可以勾选 “Do not ask me again”，勾选并确认后关掉这项确认。
+    ///
+    /// - Parameters:
+    ///   - title: 确认框与确认按钮的标题。
+    ///   - message: 写明影响范围的说明。
+    ///   - confirmation: 服务器仓库的确认种类；为 nil 时没有勾选框。
+    ///   - action: 确认后执行，sheet 已经结束。
+    ///   - abort: 第二个按钮改为中止时执行的操作；为 nil 时第二个按钮是取消。
+    func showConfirmation(
+        title: String,
+        message: String,
+        confirmation: ServerConfirmation?,
+        action: @escaping () -> Void,
+        abort: (() -> Void)?
+    ) {
+        guard let window, window.attachedSheet == nil else { return }
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = title
+        alert.informativeText = message
+        alert.addButton(withTitle: title)
+        alert.addButton(withTitle: AppLocalization.text(abort == nil ? "action.cancel" : "working.abort"))
+
+        if confirmation != nil {
+            alert.showsSuppressionButton = true
+            alert.suppressionButton?.title = AppLocalization.text("dialog.doNotAskAgain")
+        }
+
+        // Sheet 已结束后才开始写入，错误与进度由仓库视图承接；取消时勾选不生效。
+        alert.beginSheetModal(for: window) { response in
+            if response == .alertFirstButtonReturn {
+                if alert.suppressionButton?.state == .on { confirmation?.isEnabled = false }
+
+                action()
+            } else if response == .alertSecondButtonReturn {
+                abort?()
+            }
+        }
+    }
+
     /// 重连核对后报告中断写入的结果：HEAD 是否变化与仓库状态；写入没有被重试。
     func showRecovery(_ write: InterruptedWrite, snapshot: RemoteRecoverySnapshot?) {
         guard let window else {

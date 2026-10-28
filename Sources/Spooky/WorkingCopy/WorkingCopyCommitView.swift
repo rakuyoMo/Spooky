@@ -135,7 +135,7 @@ extension WorkingCopyCommitView {
         max(1, subjectLimit) - session.commitSubject.count
     }
 
-    /// 硬折行时使用等宽字体、参考线与上限列折行。
+    /// 硬折行只改显示：等宽字体、正文不折行，参考线右侧变浅，超长的行整行标出。
     private var hardWrap: Bool {
         wrapping == CommitEditorSettings.Wrapping.hard.rawValue
     }
@@ -150,7 +150,7 @@ extension WorkingCopyCommitView {
             monospaced: hardWrap,
             characterLimit: max(1, subjectLimit),
             reformatLimit: nil,
-            wrapColumn: nil,
+            hardWrap: false,
             showsGuide: false,
             focusRequest: session.commitFocusRequest,
             onFocusChange: { focusChanged(.subject, focused: $0) },
@@ -187,9 +187,9 @@ extension WorkingCopyCommitView {
                     placeholder: AppLocalization.text("working.body") + "\n\n" + AppLocalization.text("commit.quickAmendHint"),
                     isEditable: isEditable,
                     monospaced: hardWrap,
-                    characterLimit: hardWrap ? nil : effectiveBodyLineLimit,
+                    characterLimit: effectiveBodyLineLimit,
                     reformatLimit: effectiveBodyLineLimit,
-                    wrapColumn: hardWrap ? effectiveBodyLineLimit : nil,
+                    hardWrap: hardWrap,
                     showsGuide: session.commitConfiguration?.showsBodyGuide ?? showsGuide,
                     focusRequest: bodyFocusRequest,
                     onFocusChange: { focusChanged(.body, focused: $0) },

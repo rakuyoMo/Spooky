@@ -20,13 +20,24 @@ extension RepositoryUndo {
     /// 规划未跟踪文件的处理：会被覆盖或删除的磁盘文件，内容必须能从两份快照或储藏里找回；要补回的未跟踪文件必须找得到内容。
     ///
     /// `stash create` 的树也包含从索引删掉、仍留在磁盘上的 HEAD 文件，这些未跟踪文件的内容同样在快照里。
-    func plan(from current: RepositoryState, to target: RepositoryState) async throws -> UntrackedPlan {
+    ///
+    /// - Parameter trashed: 经废纸篓移回或重新移进废纸篓的项；它们以及目录里的文件不按快照处理。
+    func plan(
+        from current: RepositoryState,
+        to target: RepositoryState,
+        trashed: [TrashedItem] = []
+    ) async throws -> UntrackedPlan {
         let untrackedNow = Set(current.untracked)
         let untrackedThen = Set(target.untracked)
 
+        // 废纸篓里的项按仓库内的相对路径比较，目录覆盖其中的全部文件
+        let root = runner.location.path + "/"
+        let viaTrash = trashed.map(\.path).filter { $0.hasPrefix(root) }.map { String($0.dropFirst(root.count)) }
+        let handled = { (path: String) in viaTrash.contains { path == $0 || path.hasPrefix($0 + "/") } }
+
         // 恢复后成为未跟踪文件的路径，与恢复后不再是未跟踪文件的路径
-        let arriving = untrackedThen.subtracting(untrackedNow).sorted()
-        let leaving = untrackedNow.subtracting(untrackedThen).sorted()
+        let arriving = untrackedThen.subtracting(untrackedNow).filter { !handled($0) }.sorted()
+        let leaving = untrackedNow.subtracting(untrackedThen).filter { !handled($0) }.sorted()
 
         // 目标的已跟踪内容里新出现的路径会写到磁盘上，那里可能已有未跟踪或被忽略的文件
         let added = try await addedPaths(from: current.worktree, to: target.worktree)

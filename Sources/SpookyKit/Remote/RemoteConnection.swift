@@ -58,7 +58,7 @@ public actor RemoteConnection {
     private(set) var wrapper: String? = nil
 
     /// 从子目录打开时复用已登记的工作区根会话。
-    private var canonical: RemoteConnection? = nil
+    private(set) var canonical: RemoteConnection? = nil
 
     /// 本机回调服务，凭据只通过此对象在内存中流转。
     private var relay: CallbackRelay? = nil

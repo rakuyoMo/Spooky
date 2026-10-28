@@ -238,12 +238,9 @@
 "working.unstageAll" = "Unstage All";
 "working.commit" = "Commit";
 "working.amend" = "Amend";
-"working.amend.confirm" = "This replaces the most recent commit. Continue?";
 "working.subject" = "Commit Subject";
 "working.body" = "Detailed Description";
-"working.identityLoading" = "Loading committer…";
 "working.staging" = "Staging status: %@";
-"working.writing" = "Updating working copy…";
 "working.list" = "View as List";
 "working.tree" = "View as Tree";
 "working.viewMode" = "Working copy display";
@@ -271,8 +268,9 @@
 "working.discardLines" = "Discard Lines";
 "working.discard" = "Discard Changes";
 "working.discardAll" = "Discard All Changes…";
-"working.discard.message" = "Permanently discard changes in %d files in %@, including staged changes and untracked files. This cannot be undone.";
-"working.discard.remote" = "Permanently delete or overwrite %d files on the server at %@. Staged changes are also discarded. This cannot be undone.";
+"working.discard.message" = "Discard changes in %d files in %@. Tracked files are restored to the last commit, including staged changes, and untracked files are moved to the Trash.";
+"working.discard.remote" = "Discard changes in %d files on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are moved to the Trash on the server.";
+"working.discard.remotePermanent" = "Discard changes in %d files on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are permanently deleted on the server. This cannot be undone.";
 "working.discard.lines" = "Permanently discard the selected lines in %@. This cannot be undone.";
 "working.discard.remoteLines" = "Permanently overwrite the selected content on the server at %@. This cannot be undone.";
 "working.resolved" = "Mark as Resolved";
@@ -396,6 +394,7 @@
 "activity.cancelled" = "Cancelled";
 "activity.failed" = "Failed";
 "dialog.options" = "Options";
+"dialog.doNotAskAgain" = "Do not ask me again";
 "menu.repository" = "Repository";
 "callback.privateKey" = "Unlock Private SSH Key";
 "callback.privateKey.help" = "The unlocked key will be added to the SSH agent.";
@@ -420,7 +419,6 @@
 "recovery.unborn" = "no commits";
 "dialog.blocked" = "Another operation is running on this repository, or the server is disconnected. Your settings are kept; try again when the repository is available.";
 "working.clean" = "No local changes";
-"working.refreshFailed" = "Refresh failed. Showing the last successful result.";
 "history.limit" = "Showing the first %ld commits. Select a branch to narrow the history.";
 "history.loadingChanges" = "Loading changed files…";
 "repositories.unavailableShort" = "Unavailable";
@@ -521,11 +519,6 @@
 "conflict.binary" = "Binary content isn’t shown.";
 "conflict.error.version" = "The selected files don’t have this version.";
 "conflict.export" = "Export Version from “%@”…";
-"conflict.header.cherryPick" = "Cherry-Picking %@ into %@";
-"conflict.header.merge" = "Merging %@ into %@";
-"conflict.header.rebase" = "Rebasing %@ onto %@";
-"conflict.header.revert" = "Reverting %@ on %@";
-"conflict.header.squash" = "Squashing commits on %@";
 "conflict.hint.merge.conflicts" = "Resolve all conflicts to complete the merge.";
 "conflict.hint.merge.resolved" = "Review the commit message, then click **Commit** to complete the merge.";
 "conflict.hint.merge.empty" = "No changes are left to commit. Click **Abort** to cancel the merge, or **Commit** to create an empty merge commit.";
@@ -771,6 +764,8 @@
 "files.error.preimage" = "The Patch Doesn’t Match the Files";
 "files.error.preimageHelp" = "The files below changed after the patch was made, so the patch wasn’t applied and the working copy is unchanged. Create the patch again from the current files, or restore the files to the version the patch was made from.";
 "files.error.destination" = "The Destination Already Exists";
+"files.error.trashUnavailable" = "No Trash Is Available on the Server";
+"files.error.trashedItems" = "The Files Can’t Be Put Back from the Trash";
 "files.doubleClick" = "Double-click on file in working copy:";
 "files.doubleClick.openFile" = "Open with default application";
 "files.doubleClick.openDiff" = "Open Diff tool";
@@ -792,7 +787,6 @@
 "stash.subtitle" = "Stashes (%ld Stashes)";
 
 /* 冲突向导。 */
-"conflict.resolveBoth" = "Resolve Using Both Versions";
 "conflict.version.applied" = "Version from Applied Patch or Stash";
 "conflict.resolveUsing.applied" = "Resolve Using Applied Patch or Stash";
 "conflict.open.missing" = "Open";
@@ -1448,6 +1442,8 @@
 "undo.error.inProgress.help" = "Finish or abort the merge, rebase, cherry-pick or revert first. Nothing was changed.";
 "undo.error.conflicts" = "The repository has unresolved conflicts";
 "undo.error.conflicts.help" = "Resolve the conflicts first. Nothing was changed.";
+"undo.error.trash" = "Files can’t be put back from the Trash";
+"undo.error.trash.help" = "Some files that were moved to the Trash are no longer there, or other files are now at their original locations. Nothing was changed.";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
 "reflog.title" = "Reflog";
@@ -1474,6 +1470,9 @@
 "settings.cloneDirectory" = "Default directory for cloned repositories:";
 "settings.cloneDirectory.select" = "Select…";
 "settings.warnDiscardingChunks" = "Warn when discarding changes in a chunk";
+"settings.warnDiscardingOnServer" = "Warn when discarding changes in a server repository";
+"settings.warnDeletingOnServer" = "Warn when permanently deleting files in a server repository";
+"settings.warnRestoringOnServer" = "Warn when restoring files in a server repository";
 "settings.windowRestoration" = "Window Restoration:";
 "settings.windowRestoration.always" = "Always";
 "settings.windowRestoration.never" = "Never";
@@ -1918,17 +1917,9 @@
 "settings.crashReports" = "Crash Reports:";
 "settings.crashReports.always" = "Always send crash reports";
 
-/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+/* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "The Server Sets Git Environment Variables";
 "remote.environment.message" = "The non-interactive shell on “%1$@” sets %2$@. These variables change how Git finds repositories and reads its configuration for every command Spooky runs there. Remove them from the shell startup files on the server if Git behaves unexpectedly.";
-"untracked.hint" = "%ld untracked files make refreshing slow. Add ignore rules for build output and dependencies, or speed up status on the server.";
-"untracked.speedUp" = "Speed Up…";
-"untracked.speedUp.title" = "Speed Up Status on the Server";
-"untracked.speedUp.message" = "Spooky can turn on these settings in this repository on “%@”. They are written to the repository’s local configuration on the server only after you confirm.";
-"untracked.speedUp.apply" = "Apply Settings";
-"untracked.speedUp.cache" = "Caches untracked files between status checks.";
-"untracked.speedUp.monitor" = "Lets Git watch the file system instead of scanning the whole working tree.";
-"untracked.speedUp.graph" = "Writes the commit-graph now and keeps it up to date when fetching, which speeds up history.";
 
 "files.openSubmodules" = "Always open submodules in Spooky";
 "menu.addSubmodule" = "Add New Submodule…";

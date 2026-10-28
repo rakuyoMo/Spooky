@@ -23,11 +23,8 @@ public enum RepositoryOperationState: String, Sendable {
 
 // MARK: - WorkingCopyContext
 
-/// 提交区需要的身份、最近提交与进行中状态。
+/// 提交区需要的最近提交与进行中状态。
 public struct WorkingCopyContext: Sendable {
-    /// 实际提交人的姓名与邮箱，由 Git var 返回。
-    public let committer: String
-
     /// 最近一次提交信息，Amend 直接使用。
     public let lastMessage: String
 
@@ -202,14 +199,20 @@ public struct WorkingCopyOperations: Sendable {
         }
     }
 
-    /// 丢弃选中文件的暂存与工作区改动，调用方必须先获得用户确认。
-    public func discard(_ entries: [StatusEntry]) async throws {
-        guard !entries.isEmpty else { return }
+    /// 丢弃选中文件的暂存与工作区改动：已跟踪的文件恢复到最后一次提交，未跟踪文件移进废纸篓；调用方必须先获得用户确认。
+    ///
+    /// - Parameters:
+    ///   - entries: 要丢弃的文件。
+    ///   - removal: 未跟踪文件的删除方式；服务器没有可用的废纸篓、用户确认后才永久删除。
+    /// - Returns: 移进废纸篓的未跟踪文件；永久删除时为空。
+    @discardableResult
+    public func discard(_ entries: [StatusEntry], removal: FileRemoval = .trash) async throws -> [TrashedItem] {
+        guard !entries.isEmpty else { return [] }
         guard entries.allSatisfy({ !$0.path.hasSuffix("/") }) else {
             throw WorkingCopyError.unsupportedFile
         }
 
-        try await runner.writeTransaction {
+        return try await runner.writeTransaction {
             let current = try await runner.status()
             let selected = Set(entries.map { $0.path.precomposedStringWithCanonicalMapping })
             let targets = current.entries.filter { selected.contains($0.path.precomposedStringWithCanonicalMapping) }
@@ -234,10 +237,19 @@ public struct WorkingCopyOperations: Sendable {
                 )
             }
 
-            // SFTP 与本机文件 API 分开，远端绝对路径不会进入 A 的文件系统。
+            // 本机与服务器的文件操作分开，远端绝对路径不会进入 A 的文件系统。
             let trackedPaths = Set(tracked.map(\.path))
-            let deletions = untracked.filter { !trackedPaths.contains($0.path) }
-            try await RepositoryFiles(runner: runner).remove(deletions.map { runner.location.path + "/" + $0.path })
+            let deletions = untracked.filter { !trackedPaths.contains($0.path) }.map { runner.location.path + "/" + $0.path }
+            let files = RepositoryFiles(runner: runner)
+
+            switch removal {
+            case .trash:
+                return try await files.moveToTrash(deletions)
+
+            case .permanent:
+                try await files.remove(deletions)
+                return []
+            }
         }
     }
 
@@ -353,14 +365,10 @@ public struct WorkingCopyOperations: Sendable {
             throw RepositoryReadError.invalidQuery
         }
 
-        // 三项读取互不依赖，并发执行；服务器上只占一次往返的等待时间。
-        async let identity = runner.execute(["var", "GIT_COMMITTER_IDENT"], acceptedExitCodes: [0, 128])
+        // 两项读取互不依赖，并发执行；服务器上只占一次往返的等待时间。
         async let message = lastMessage(of: head)
         async let state = stateFiles(OperationProgress.stateFiles)
 
-        let rawIdentity = String(decoding: try await identity.standardOutput, as: UTF8.self)
-        let committer = rawIdentity.lastIndex(of: ">")
-            .map { String(rawIdentity[...$0]) } ?? ""
         let lastMessage = try await message
         let files = try await state
 
@@ -374,7 +382,6 @@ public struct WorkingCopyOperations: Sendable {
             .joined(separator: "\n")
             .trimmingCharacters(in: .newlines)
         return WorkingCopyContext(
-            committer: committer,
             lastMessage: lastMessage,
             operation: progress?.state,
             progress: progress,

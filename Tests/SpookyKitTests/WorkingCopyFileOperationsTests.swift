@@ -34,10 +34,10 @@ struct WorkingCopyFileOperationsTests {
         let service = try await committedRepository(repository, files: [Self.special])
 
         let trashed = try await service.delete([Self.special])
-        defer { for item in trashed { try? FileManager.default.removeItem(at: item) } }
+        defer { for location in trashed.compactMap(\.location) { try? FileManager.default.removeItem(atPath: location) } }
 
         #expect(trashed.count == 1)
-        #expect(trashed.allSatisfy { FileManager.default.fileExists(atPath: $0.path) })
+        #expect(trashed.allSatisfy { $0.location.map(FileManager.default.fileExists(atPath:)) ?? false })
         #expect(!FileManager.default.fileExists(atPath: repository.directory.appending(path: Self.special).path))
         #expect(try await repository.runner.status().entries.first?.unstaged == .deleted)
     }

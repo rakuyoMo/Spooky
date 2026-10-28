@@ -5,11 +5,11 @@ import Testing
 
 // MARK: - RemoteConflictTests
 
-/// 服务器上的冲突向导仅在显式启用时访问测试专用仓库：三方内容、恢复与采用两侧都在 B 上完成。
+/// 服务器上的冲突向导仅在显式启用时访问测试专用仓库：三方内容、恢复与采用一侧都在 B 上完成。
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteConflictTests {
-    /// 冲突文件的读取、恢复祖先与采用两侧都经主连接在 B 上完成；断线后的写入不会被当作已执行。
-    @Test("服务器冲突向导：三方内容、恢复、采用两侧与断线", .timeLimit(.minutes(3)))
+    /// 冲突文件的读取、恢复祖先与采用一侧都经主连接在 B 上完成；断线后的写入不会被当作已执行。
+    @Test("服务器冲突向导：三方内容、恢复、采用一侧与断线", .timeLimit(.minutes(3)))
     func conflictWizard() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -62,9 +62,9 @@ struct RemoteConflictTests {
             #expect(try await runner.status().entries.first { $0.path == path }?.kind == .conflicted)
             #expect(try await service.context(head: status.branch.oid).progress?.state == .merge)
 
-            // 采用两侧在 B 上合并并标记解决，冲突块里两侧的行都保留
-            try await service.resolveUsingBoth(entry)
-            #expect(try await files.read([absolute])[absolute] == Data("ours\ntheirs\n".utf8))
+            // 重连后采用对方版本，在 B 上写入并标记解决
+            try await service.resolve([entry], theirs: true)
+            #expect(try await files.read([absolute])[absolute] == Data("theirs\n".utf8))
             #expect(try await runner.status().entries.allSatisfy { $0.kind != .conflicted })
 
             await remote.close()

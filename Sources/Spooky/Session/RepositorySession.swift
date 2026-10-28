@@ -68,6 +68,9 @@ final class RepositorySession {
     /// 服务器连接状态，本机仓库为 nil。
     private(set) var connectionState: RemoteConnectionState? = nil
 
+    /// 服务器上有可用的废纸篓，由连接体检找到；本机仓库不用这一项。
+    private(set) var serverHasTrash = false
+
     /// 写操作断线后的仓库核对结果。
     private(set) var recovery: RemoteRecoverySnapshot? = nil
 
@@ -142,6 +145,9 @@ final class RepositorySession {
 
     /// 窗口负责确认并在 sheet 关闭后执行操作。
     var onConfirm: ((String, String, @escaping () -> Void, (() -> Void)?) -> Void)? = nil
+
+    /// 窗口负责服务器仓库的确认，确认框里可以勾选不再提醒；勾选并确认后由窗口关掉这项确认。
+    var onServerConfirm: ((ServerConfirmation, String, String, @escaping () -> Void) -> Void)? = nil
 
     /// 窗口在重连核对完成后向用户报告中断写入的结果；没有新的核对时表示写入没有开始。
     var onRecovery: ((InterruptedWrite, RemoteRecoverySnapshot?) -> Void)? = nil
@@ -296,20 +302,6 @@ final class RepositorySession {
             diffSide = (selectedEntry?.hasUnstagedChanges ?? false) ? .unstaged : .staged
             loadDiff()
         }
-    }
-
-    /// 未解决冲突期间不允许提交或修补。
-    var conflictCount: Int { status?.entries.filter { $0.kind == .conflicted }.count ?? 0 }
-
-    /// 有标题、有暂存改动或可修补的 HEAD 时允许提交；合并可产生空树差异。
-    var canCommit: Bool {
-        canWrite && commitResetTask == nil && conflictCount == 0
-            && !commitSubject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && (
-                amend
-                    || context?.operation == .merge
-                    || (status?.entries.contains(where: \.hasStagedChanges) ?? false)
-            )
     }
 
     /// 对话框可读取同一执行器，保持本机凭据与测试隔离环境一致。
@@ -494,6 +486,7 @@ extension RepositorySession {
         connectionTask = nil
         reconnectTask = nil
         connectionState = nil
+        serverHasTrash = false
         recovery = nil
         interruptedWrite = nil
         refreshTask?.cancel()
@@ -1033,6 +1026,15 @@ extension RepositorySession {
                 guard let self, generation == request, !Task.isCancelled else { return }
                 let previous = connectionState
                 connectionState = state
+
+                // 每次连上时的体检都重新找过废纸篓程序
+                if state == .connected {
+                    let hasTrash = await remote.environment?.trash != nil
+
+                    guard generation == request else { return }
+
+                    serverHasTrash = hasTrash
+                }
 
                 if state == .unavailable {
                     if let error = await remote.failure {

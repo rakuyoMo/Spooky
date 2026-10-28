@@ -11,14 +11,19 @@ final class CommitMessageTextView: NSTextView {
         didSet { needsDisplay = true }
     }
 
-    /// 每行的字数上限，超出部分铺警告底色；nil 表示不检查。
+    /// 每行的字数上限：超出部分铺警告底色，硬折行时超长的行整行铺底色、参考线画在这一列；nil 表示不检查。
     var characterLimit: Int? {
         didSet { updateHighlights() }
     }
 
-    /// 硬折行的列数：文字在这一列折行，列外铺页外底色并画参考线；nil 表示按视图宽度折行。
-    var wrapColumn: Int? {
-        didSet { updateContainerWidth() }
+    /// 硬折行只改显示：文字不折行、可以横向滚动，超长的行整行铺警告底色；关闭时按视图宽度折行。
+    var hardWrap = false {
+        didSet {
+            guard hardWrap != oldValue else { return }
+
+            updateWrapping()
+            updateHighlights()
+        }
     }
 
     /// 硬折行时是否画参考线与页外底色。
@@ -58,11 +63,11 @@ final class CommitMessageTextView: NSTextView {
         return accepted
     }
 
-    /// 视图宽度变化时重新计算硬折行的文字区宽度。
+    /// 视图宽度变化时，硬折行的文字区仍至少铺满可见区域。
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
 
-        updateContainerWidth()
+        updateMinimumWidth()
     }
 
     /// 文字改变后重新标出超出字数的部分。
@@ -149,30 +154,39 @@ extension CommitMessageTextView {
         return NSAttributedString(string: "0", attributes: [.font: font]).size().width
     }
 
-    /// 参考线的横坐标。
+    /// 硬折行时参考线的横坐标。
     private var guideX: CGFloat? {
-        guard let wrapColumn else { return nil }
+        guard hardWrap, let characterLimit else { return nil }
 
-        return textContainerOrigin.x + (textContainer?.lineFragmentPadding ?? 0) + CGFloat(wrapColumn) * columnWidth
+        return textContainerOrigin.x + (textContainer?.lineFragmentPadding ?? 0) + CGFloat(characterLimit) * columnWidth
     }
 
-    /// 硬折行时文字区取上限列宽与视图宽度中较窄的一个；软折行时跟随视图宽度。
-    private func updateContainerWidth() {
+    /// 硬折行时文字区不折行、可以横向滚动；软折行时回到可见宽度，跟随视图宽度折行。只作用于正文。
+    private func updateWrapping() {
         guard let textContainer, isVerticallyResizable else { return }
 
-        guard let wrapColumn else {
-            textContainer.widthTracksTextView = true
-            return
+        let visible = enclosingScrollView?.contentSize.width ?? bounds.width
+
+        isHorizontallyResizable = hardWrap
+        enclosingScrollView?.hasHorizontalScroller = hardWrap
+        textContainer.widthTracksTextView = !hardWrap
+        textContainer.size = NSSize(width: hardWrap ? .greatestFiniteMagnitude : visible, height: .greatestFiniteMagnitude)
+
+        if !hardWrap {
+            setFrameSize(NSSize(width: visible, height: frame.height))
         }
 
-        let padding = textContainer.lineFragmentPadding * 2
-        let available = bounds.width - textContainerInset.width * 2
-        textContainer.widthTracksTextView = false
-        textContainer.size = NSSize(
-            width: min(padding + CGFloat(wrapColumn) * columnWidth, available),
-            height: .greatestFiniteMagnitude
-        )
+        updateMinimumWidth()
         needsDisplay = true
+    }
+
+    /// 硬折行时文字区至少与可见区域一样宽，参考线右侧的底色铺满可见区域。
+    private func updateMinimumWidth() {
+        let width = hardWrap ? enclosingScrollView?.contentSize.width ?? 0 : 0
+
+        if minSize.width != width {
+            minSize = NSSize(width: width, height: minSize.height)
+        }
     }
 
     /// 重新标注每行超出字数上限的部分与提交哈希；用临时属性，不进入撤销记录与内容。
@@ -204,15 +218,16 @@ extension CommitMessageTextView {
         needsDisplay = true
     }
 
-    /// 每行超出字数上限的部分铺警告底色；上限按字符计，换算成文本视图使用的 UTF-16 范围再标注。
+    /// 每行超出字数上限的部分铺警告底色，硬折行时超长的行整行铺底色；上限按字符计，换算成文本视图使用的 UTF-16 范围再标注。
     private func markExcess(in text: String, limit: Int, layoutManager: NSLayoutManager) {
         let color = AppPalette.nsColor("text_view_warning_background_color")
+        let wholeLine = hardWrap
 
         text.enumerateSubstrings(in: text.startIndex..., options: .byLines) { line, lines, _, _ in
             guard let line, line.count > limit else { return }
 
-            let excess = text.index(lines.lowerBound, offsetBy: limit) ..< lines.upperBound
-            layoutManager.addTemporaryAttribute(.backgroundColor, value: color, forCharacterRange: NSRange(excess, in: text))
+            let marked = wholeLine ? lines : text.index(lines.lowerBound, offsetBy: limit) ..< lines.upperBound
+            layoutManager.addTemporaryAttribute(.backgroundColor, value: color, forCharacterRange: NSRange(marked, in: text))
         }
     }
 
@@ -271,10 +286,10 @@ struct CommitMessageEditor: NSViewRepresentable {
     /// Reformat Paragraph 使用的字数上限；nil 表示不提供重排。
     let reformatLimit: Int?
 
-    /// 硬折行的列数，只用于正文。
-    let wrapColumn: Int?
+    /// 硬折行：只改显示，文字不折行，超长的行整行铺警告底色；只用于正文。
+    let hardWrap: Bool
 
-    /// 是否画参考线。
+    /// 硬折行时是否画参考线。
     let showsGuide: Bool
 
     /// 数值变化时让本编辑器获得焦点。
@@ -362,8 +377,8 @@ struct CommitMessageEditor: NSViewRepresentable {
         textView.textColor = isEditable ? .textColor : .disabledControlTextColor
         textView.placeholder = placeholder
         textView.characterLimit = characterLimit
-        textView.wrapColumn = wrapColumn
-        textView.showsGuide = showsGuide && wrapColumn != nil
+        textView.hardWrap = hardWrap
+        textView.showsGuide = showsGuide && hardWrap
         textView.reformatLimit = reformatLimit
 
         if coordinator.focusRequest != focusRequest {

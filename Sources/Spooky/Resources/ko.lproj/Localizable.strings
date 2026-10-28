@@ -238,12 +238,9 @@
 "working.unstageAll" = "모두 스테이지 해제";
 "working.commit" = "커밋";
 "working.amend" = "최근 커밋 수정";
-"working.amend.confirm" = "가장 최근 커밋을 다시 작성합니다. 계속하시겠습니까?";
 "working.subject" = "커밋 제목";
 "working.body" = "상세 설명";
-"working.identityLoading" = "커미터 읽는 중…";
 "working.staging" = "스테이지 상태: %@";
-"working.writing" = "작업 복사본 업데이트 중…";
 "working.list" = "목록으로 보기";
 "working.tree" = "트리로 보기";
 "working.viewMode" = "작업 복사본 표시";
@@ -271,8 +268,9 @@
 "working.discardLines" = "선택한 줄 버리기";
 "working.discard" = "변경 사항 버리기";
 "working.discardAll" = "모든 변경 사항 버리기…";
-"working.discard.message" = "파일 %d 개의 변경을 영구적으로 버립니다. 저장소: %@. 스테이지된 변경과 추적되지 않은 파일도 포함되며 되돌릴 수 없습니다.";
-"working.discard.remote" = "서버의 파일 %d 개를 영구적으로 삭제하거나 덮어씁니다. 저장소: %@. 스테이지된 변경도 버려지며 되돌릴 수 없습니다.";
+"working.discard.message" = "파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 되돌리고, 추적되지 않은 파일은 휴지통으로 이동합니다.";
+"working.discard.remote" = "서버의 파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 덮어쓰고, 추적되지 않은 파일은 서버의 휴지통으로 이동합니다.";
+"working.discard.remotePermanent" = "서버의 파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 덮어쓰고, 추적되지 않은 파일은 서버에서 영구적으로 삭제합니다. 되돌릴 수 없습니다.";
 "working.discard.lines" = "%@ 의 선택한 줄 변경을 영구적으로 버립니다. 되돌릴 수 없습니다.";
 "working.discard.remoteLines" = "서버 %@ 의 선택한 내용을 영구적으로 덮어씁니다. 되돌릴 수 없습니다.";
 "working.resolved" = "해결됨으로 표시";
@@ -396,6 +394,7 @@
 "activity.cancelled" = "취소됨";
 "activity.failed" = "실패";
 "dialog.options" = "옵션";
+"dialog.doNotAskAgain" = "다시 묻지 않음";
 "menu.repository" = "저장소";
 "callback.privateKey" = "SSH 개인 키 잠금 해제";
 "callback.privateKey.help" = "잠금 해제한 키를 SSH 에이전트에 추가합니다.";
@@ -420,7 +419,6 @@
 "recovery.unborn" = "커밋 없음";
 "dialog.blocked" = "이 저장소에서 다른 작업이 진행 중이거나 서버 연결이 끊겼습니다. 입력한 설정은 유지되며, 저장소를 사용할 수 있게 되면 다시 시도하세요.";
 "working.clean" = "로컬 변경 사항 없음";
-"working.refreshFailed" = "새로 고침에 실패했습니다. 마지막으로 성공한 결과를 표시합니다.";
 "history.limit" = "처음 %ld개 커밋만 표시합니다. 브랜치를 선택하면 범위를 좁힐 수 있습니다.";
 "history.loadingChanges" = "변경된 파일 불러오는 중…";
 "repositories.unavailableShort" = "사용 불가";
@@ -521,11 +519,6 @@
 "conflict.binary" = "바이너리 내용은 표시하지 않습니다.";
 "conflict.error.version" = "선택한 파일에 이 버전이 없습니다.";
 "conflict.export" = "“%@”의 버전 내보내기…";
-"conflict.header.cherryPick" = "%@을(를) %@에 체리픽하는 중";
-"conflict.header.merge" = "%@을(를) %@에 병합하는 중";
-"conflict.header.rebase" = "%@을(를) %@ 위로 리베이스하는 중";
-"conflict.header.revert" = "%@을(를) %@에서 되돌리는 중";
-"conflict.header.squash" = "%@에서 커밋을 스쿼시하는 중";
 "conflict.hint.merge.conflicts" = "병합을 완료하려면 모든 충돌을 해결하세요.";
 "conflict.hint.merge.resolved" = "커밋 메시지를 확인한 후 **커밋**을 클릭해 병합을 완료하세요.";
 "conflict.hint.merge.empty" = "커밋할 변경이 남아 있지 않습니다. **중단**을 클릭해 병합을 취소하거나 **커밋**을 클릭해 빈 병합 커밋을 만드세요.";
@@ -771,6 +764,8 @@
 "files.error.preimage" = "패치가 파일과 일치하지 않음";
 "files.error.preimageHelp" = "다음 파일이 패치를 만든 뒤에 변경되어 패치를 적용하지 않았으며, 작업 사본은 그대로입니다. 현재 파일로 패치를 다시 만들거나, 파일을 패치를 만들 때의 버전으로 되돌리세요.";
 "files.error.destination" = "대상이 이미 있음";
+"files.error.trashUnavailable" = "서버에서 사용할 수 있는 휴지통이 없음";
+"files.error.trashedItems" = "휴지통에서 파일을 되돌릴 수 없음";
 "files.doubleClick" = "작업 사본의 파일을 이중 클릭할 때:";
 "files.doubleClick.openFile" = "기본 응용 프로그램으로 열기";
 "files.doubleClick.openDiff" = "비교 도구 열기";
@@ -792,7 +787,6 @@
 "stash.subtitle" = "스태시 (스태시 %ld개)";
 
 /* 冲突向导。 */
-"conflict.resolveBoth" = "양쪽 버전으로 해결";
 "conflict.version.applied" = "적용한 패치 또는 스태시의 버전";
 "conflict.resolveUsing.applied" = "적용한 패치 또는 스태시로 해결";
 "conflict.open.missing" = "열기";
@@ -1448,6 +1442,8 @@
 "undo.error.inProgress.help" = "먼저 병합, 리베이스, 체리픽 또는 되돌리기를 완료하거나 중단하세요. 저장소는 변경되지 않았습니다.";
 "undo.error.conflicts" = "해결되지 않은 충돌이 있습니다";
 "undo.error.conflicts.help" = "먼저 충돌을 해결하세요. 저장소는 변경되지 않았습니다.";
+"undo.error.trash" = "휴지통에서 파일을 되돌릴 수 없습니다";
+"undo.error.trash.help" = "휴지통으로 이동한 파일 일부가 더 이상 휴지통에 없거나, 원래 위치에 다른 파일이 있습니다. 저장소는 변경되지 않았습니다.";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
 "reflog.title" = "Reflog";
@@ -1474,6 +1470,9 @@
 "settings.cloneDirectory" = "복제한 저장소의 기본 디렉터리:";
 "settings.cloneDirectory.select" = "선택…";
 "settings.warnDiscardingChunks" = "청크의 변경 사항을 폐기하기 전에 경고";
+"settings.warnDiscardingOnServer" = "서버 저장소의 변경 사항을 폐기하기 전에 경고";
+"settings.warnDeletingOnServer" = "서버 저장소의 파일을 영구적으로 삭제하기 전에 경고";
+"settings.warnRestoringOnServer" = "서버 저장소의 파일을 복원하기 전에 경고";
 "settings.windowRestoration" = "윈도우 복원:";
 "settings.windowRestoration.always" = "항상";
 "settings.windowRestoration.never" = "안 함";
@@ -1918,17 +1917,9 @@
 "settings.crashReports" = "충돌 보고서:";
 "settings.crashReports.always" = "항상 충돌 보고서 보내기";
 
-/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+/* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "서버가 Git 환경 변수를 설정함";
 "remote.environment.message" = "“%1$@”의 비대화형 셸이 %2$@을(를) 설정합니다. 이 변수들은 Spooky가 그곳에서 실행하는 모든 Git 명령이 저장소를 찾고 설정을 읽는 방식을 바꿉니다. Git이 이상하게 동작하면 서버의 셸 시작 파일에서 제거하세요.";
-"untracked.hint" = "추적하지 않는 파일 %ld개 때문에 새로 고침이 느립니다. 빌드 결과물과 의존성에 대한 무시 규칙을 추가하거나 서버의 상태 읽기를 빠르게 하세요.";
-"untracked.speedUp" = "빠르게…";
-"untracked.speedUp.title" = "서버의 상태 읽기 빠르게 하기";
-"untracked.speedUp.message" = "Spooky가 “%@”의 이 저장소에서 다음 설정을 켤 수 있습니다. 확인한 후에만 서버에 있는 이 저장소의 로컬 설정에 기록됩니다.";
-"untracked.speedUp.apply" = "설정 적용";
-"untracked.speedUp.cache" = "상태 확인 사이에 추적하지 않는 파일을 캐시합니다.";
-"untracked.speedUp.monitor" = "작업 트리 전체를 훑는 대신 Git이 파일 시스템을 감시합니다.";
-"untracked.speedUp.graph" = "commit-graph를 지금 쓰고 가져올 때 최신으로 유지해 히스토리를 빠르게 읽습니다.";
 
 "files.openSubmodules" = "하위 모듈을 항상 Spooky에서 열기";
 "menu.addSubmodule" = "새 하위 모듈 추가…";

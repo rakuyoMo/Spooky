@@ -49,7 +49,7 @@ extension WorkingCopyFileList.Coordinator {
         session.stage(stageable, staged: stageable.contains(where: \.hasUnstagedChanges))
     }
 
-    /// ⌘⌫ 删除所选文件：本机直接移到废纸篓，服务器上确认后永久删除；没有可删除的文件时响铃。
+    /// ⌘⌫ 删除所选文件：直接移进废纸篓，服务器上没有可用的废纸篓时确认后永久删除；没有可删除的文件时响铃。
     func deletePressed() {
         let entries = session.selectedEntries
 
@@ -148,7 +148,7 @@ extension WorkingCopyFileList.Coordinator {
             to: menu
         )
         add(
-            session.repository?.host == nil ? "files.trash" : "files.delete",
+            session.fileRemoval == .trash ? "files.trash" : "files.delete",
             action: #selector(deleteMenu),
             enabled: session.canDelete(menuEntries),
             to: menu

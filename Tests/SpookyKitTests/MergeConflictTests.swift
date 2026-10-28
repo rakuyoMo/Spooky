@@ -288,12 +288,6 @@ struct MergeConflictTests {
 // MARK: - Helpers
 
 extension MergeConflictTests {
-    /// 仓库根目录下 checkout-index 生成的临时文件。
-    func temporaryFiles(in repository: TemporaryRepository) throws -> [String] {
-        try FileManager.default.contentsOfDirectory(atPath: repository.directory.path)
-            .filter { $0.hasPrefix(".merge_file_") }
-    }
-
     /// 从同一个基础提交分出 main 与 side 两侧，各自提交一次；值为 nil 的文件在那一侧被删除。
     ///
     /// - Returns: side 分支的提交，结束时检出 main。

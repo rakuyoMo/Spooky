@@ -25,31 +25,46 @@ extension RepositorySession {
         stage(status?.entries.filter { staged ? $0.hasUnstagedChanges : $0.hasStagedChanges } ?? [], staged: staged)
     }
 
-    /// 丢弃确认点名目标机器，关闭 sheet 后才开始 Git 操作。
+    /// 丢弃先确认，关闭 sheet 后才开始 Git 操作：已跟踪的改动恢复到最后一次提交，未跟踪文件移进废纸篓。
+    ///
+    /// 服务器仓库的确认写明在服务器上覆盖，没有可用的废纸篓时写明永久删除未跟踪文件，并可以勾选不再提醒。
     func discard(_ entries: [StatusEntry]) {
-        guard canWrite, !entries.isEmpty else { return }
+        guard canWrite, !entries.isEmpty, let repository else { return }
+
         let request = generation
+        let removal = fileRemoval
+        let title = AppLocalization.text("working.discard")
+
+        let perform = { [weak self] in
+            guard let self, generation == request else { return }
+
+            performGit(
+                { runner, _ in
+                    try await WorkingCopyOperations(runner: runner).discard(entries, removal: removal)
+                },
+                title: title,
+                recordsActivity: false,
+                undo: .reversible
+            )
+        }
+
+        guard repository.host != nil else {
+            onConfirm?(
+                title,
+                AppLocalization.text("working.discard.message", entries.count, repository.displayPath),
+                perform,
+                nil
+            )
+            return
+        }
+
         let message = AppLocalization.text(
-            repository?.host == nil ? "working.discard.message" : "working.discard.remote",
+            removal == .trash ? "working.discard.remote" : "working.discard.remotePermanent",
             entries.count,
-            repository?.displayPath ?? ""
+            repository.displayPath
         )
-        onConfirm?(
-            AppLocalization.text("working.discard"),
-            message,
-            { [weak self] in
-                guard let self, generation == request else { return }
-                performGit(
-                    { runner, _ in
-                        try await WorkingCopyOperations(runner: runner).discard(entries)
-                    },
-                    title: AppLocalization.text("working.discard"),
-                    recordsActivity: false,
-                    undo: .reversible
-                )
-            },
-            nil
-        )
+
+        confirmOnServer(.discardChanges, title: title, message: message, action: perform)
     }
 
     /// 暂存与丢弃使用正在显示的快照，确认期间的变化由核心库拒绝。
@@ -81,22 +96,21 @@ extension RepositorySession {
             )
         }
 
-        // 丢弃块或行默认先确认；General 设置里关掉警告后直接丢弃。
-        let warns = UserDefaults.standard.object(forKey: WorkingCopyPreferences.warnsDiscardingChunks) as? Bool ?? true
-
-        if discard, warns {
-            onConfirm?(
-                AppLocalization.text("working.discard"),
-                AppLocalization.text(
-                    repository?.host == nil ? "working.discard.lines" : "working.discard.remoteLines",
-                    repository?.displayPath ?? ""
-                ),
-                perform,
-                nil
-            )
-        } else {
+        // 丢弃块或行默认先确认；General 设置里关掉警告后直接丢弃，服务器仓库的确认框里也可以勾选不再提醒。
+        guard discard, ServerConfirmation.discardChunks.isEnabled, let repository else {
             perform()
+            return
         }
+
+        let prompt = AppLocalization.text("working.discard")
+
+        guard repository.host != nil else {
+            onConfirm?(prompt, AppLocalization.text("working.discard.lines", repository.displayPath), perform, nil)
+            return
+        }
+
+        let message = AppLocalization.text("working.discard.remoteLines", repository.displayPath)
+        confirmOnServer(.discardChunks, title: prompt, message: message, action: perform)
     }
 
     /// 修补载入最近信息，退出修补时恢复普通提交草稿。
@@ -116,7 +130,7 @@ extension RepositorySession {
         amend = enabled
     }
 
-    /// 提交失败保留草稿，修补必须先明确确认改写最近提交；注释行先按 Editor 设置询问或删除。
+    /// 提交失败保留草稿；注释行先按 Editor 设置询问或删除。
     func commit() {
         guard canCommit else { return }
         let amend = amend
@@ -124,7 +138,7 @@ extension RepositorySession {
         let skipHooks = skipHooks
         let request = generation
 
-        // 询问注释行与确认修补都使用此刻的选项，⌥ 快速修补松开后也不会改变这次提交。
+        // 询问注释行时使用此刻的选项，⌥ 快速修补松开后也不会改变这次提交。
         prepareCommitMessage { [weak self] message in
             guard let self, generation == request else { return }
             confirmCommit(
@@ -136,10 +150,10 @@ extension RepositorySession {
         }
     }
 
-    /// 确认修补或空合并后提交整理好的信息。
+    /// 提交整理好的信息；合并没有暂存的改动时先确认建空合并提交。
     ///
     /// - Parameters:
-    ///   - message: 已按折行与注释设置整理的标题与正文。
+    ///   - message: 已按注释设置整理的标题与正文。
     ///   - amend: 改写最近一次提交。
     ///   - signOff: 追加 Signed-off-by 尾注。
     ///   - skipHooks: 跳过 pre-commit 与 commit-msg 钩子。
@@ -181,14 +195,7 @@ extension RepositorySession {
             }
         }
 
-        if amend {
-            onConfirm?(
-                AppLocalization.text("working.amend"),
-                AppLocalization.text("working.amend.confirm"),
-                action,
-                nil
-            )
-        } else if context?.operation == .merge, status?.entries.contains(where: \.hasStagedChanges) != true {
+        if context?.operation == .merge, status?.entries.contains(where: \.hasStagedChanges) != true {
             onConfirm?(
                 AppLocalization.text("working.emptyMerge"),
                 AppLocalization.text("working.emptyMerge.message"),

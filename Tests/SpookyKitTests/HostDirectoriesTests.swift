@@ -124,24 +124,26 @@ struct HostDirectoriesTests {
         #expect(HostDirectories.parseStatus(Data("110112\n".utf8)) == nil)
     }
 
-    /// 环境探测的输出：GIT_ 变量只留 Spooky 没有设置的，找不到 Git 时为 nil。
-    @Test("B 端环境：主目录、PATH、Git 与变量名")
+    /// 环境探测的输出：GIT_ 变量只留 Spooky 没有设置的，找不到 Git 或废纸篓程序时为 nil。
+    @Test("B 端环境：主目录、PATH、Git、废纸篓与变量名")
     func environment() {
-        let output =
-            "/Users/b\u{0}/usr/bin:/opt/homebrew/bin\u{0}/opt/homebrew/bin/git\n\u{0}GIT_CONFIG_GLOBAL\u{0}GIT_TERMINAL_PROMPT\u{0}GIT_TRACE\u{0}"
+        let output = "/Users/b\u{0}/usr/bin:/opt/homebrew/bin\u{0}/opt/homebrew/bin/git\n\u{0}trash:/usr/bin/trash\u{0}"
+            + "GIT_CONFIG_GLOBAL\u{0}GIT_TERMINAL_PROMPT\u{0}GIT_TRACE\u{0}"
         let environment = RemoteHostEnvironment(output: Data(output.utf8), excluding: ["GIT_TERMINAL_PROMPT"])
 
         #expect(environment?.homeDirectory == "/Users/b")
         #expect(environment?.searchPath == ["/usr/bin", "/opt/homebrew/bin"])
         #expect(environment?.gitPath == "/opt/homebrew/bin/git")
+        #expect(environment?.trash == .macOS)
         #expect(environment?.gitVariables == ["GIT_CONFIG_GLOBAL", "GIT_TRACE"])
 
-        let missing = RemoteHostEnvironment(output: Data("/Users/b\u{0}/usr/bin\u{0}\u{0}".utf8), excluding: [])
+        let missing = RemoteHostEnvironment(output: Data("/Users/b\u{0}/usr/bin\u{0}\u{0}\u{0}".utf8), excluding: [])
         #expect(missing?.gitPath == nil)
+        #expect(missing?.trash == nil)
         #expect(missing?.gitVariables.isEmpty ?? false)
 
-        #expect(RemoteHostEnvironment(output: Data("relative\u{0}/usr/bin\u{0}\u{0}".utf8), excluding: []) == nil)
-        #expect(RemoteHostEnvironment(output: Data("/Users/b\u{0}".utf8), excluding: []) == nil)
+        #expect(RemoteHostEnvironment(output: Data("relative\u{0}/usr/bin\u{0}\u{0}\u{0}".utf8), excluding: []) == nil)
+        #expect(RemoteHostEnvironment(output: Data("/Users/b\u{0}/usr/bin\u{0}\u{0}".utf8), excluding: []) == nil)
     }
 
     /// 是否为 “不是目录” 的错误。

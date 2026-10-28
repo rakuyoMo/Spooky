@@ -5,7 +5,7 @@ import Testing
 
 // MARK: - RemoteWorkingCopyFilesTests
 
-/// 服务器 M6 工作区文件操作仅在显式启用时访问测试专用仓库：规则文件经 SFTP 读写，删除在 B 上永久生效，补丁经标准输入交给 B 上的 git apply。
+/// 服务器 M6 工作区文件操作仅在显式启用时访问测试专用仓库：规则文件经 SFTP 读写，确认后的删除在 B 上永久生效，补丁经标准输入交给 B 上的 git apply。
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteWorkingCopyFilesTests {
     /// 忽略与排除规则写进 B 上的文件，info 目录不存在时经 SFTP 创建；停止跟踪、移动与删除都在 B 上执行。
@@ -51,8 +51,8 @@ struct RemoteWorkingCopyFilesTests {
             }
             try await service.move("keep.txt", to: "moved.txt", tracked: false)
 
-            // 服务器上的删除是永久删除，没有可找回的位置
-            #expect(try await service.delete(["moved.txt", "out.o"]).isEmpty)
+            // 确认后的永久删除没有可找回的位置
+            #expect(try await service.delete(["moved.txt", "out.o"], removal: .permanent).isEmpty)
             let removed = [fixture.repository + "/moved.txt", fixture.repository + "/out.o"]
             #expect(try await files.read(removed).isEmpty)
 

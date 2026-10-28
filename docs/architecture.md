@@ -85,6 +85,7 @@ Spooky 由两个 target 组成：
   - `.irreversible`（默认）：改动远端、远端跟踪分支或其它配置
   - `.unrecorded`：自动获取这类不由用户直接发起的操作，以及撤销、重做本身
 - 撤销的快照建在仓库所在的机器上，写进仓库自己的对象库；恢复前核对仓库仍与记录一致
+- 移进废纸篓的文件不进快照：写操作期间由 `TrashLog` 记下它们在废纸篓里的位置，撤销时移回原处，重做时重新移进废纸篓；废纸篓程序不报告位置时这次操作不能撤销
 
 ## 服务器仓库
 
@@ -96,6 +97,8 @@ Spooky 由两个 target 组成：
   - 负责远端进程组、回调客户端与签名、校验程序的入口
   - 依赖 B 的系统 Perl 核心模块，不安装常驻服务
 - 文件读写经 `RepositoryFiles`；SFTP 经 `RemoteConnection.sftpCommand()` 接入同一主连接，读、写分别遵循主机并发与仓库写队列
+- 删除文件与丢弃未跟踪文件移进 B 的废纸篓：连接体检找出 B 上的程序，macOS 用系统自带的 `/usr/bin/trash`，Linux 依次找 `gio` 与 `trash-put`；都找不到时界面先确认，再永久删除
+- 服务器仓库里删除或覆盖文件前的确认都可以勾选不再提醒，Settings → General 逐项列出
 - 刷新：
   - 服务器仓库按 `RemoteConnection` 的常量轮询，前台 2 秒、后台 10 秒；只读 status 与所选文件的内容哈希，有变化才读取身份、引用、历史与 Diff
   - 本机仓库由 `RepositoryFileMonitor` 的递归 FSEvents 触发刷新

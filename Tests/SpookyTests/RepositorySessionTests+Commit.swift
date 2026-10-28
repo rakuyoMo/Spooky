@@ -214,6 +214,62 @@ extension RepositorySessionTests {
         #expect(fixups.map(\.insertion) == ["修复 登录"])
         #expect(files.map(\.insertion) == ["改动 [*].txt"])
     }
+
+    /// 硬折行只改显示，超过上限的正文原样提交；修补不弹确认，直接改写最近一次提交。
+    @Test("硬折行不断行，修补不确认")
+    func hardWrapAndAmend() async throws {
+        let (session, runner, directory) = try await commitSession()
+        defer {
+            session.close()
+            try? FileManager.default.removeItem(at: directory)
+        }
+
+        session.onConfirm = { title, _, _, _ in Issue.record("不应弹出确认：\(title)") }
+
+        let key = CommitEditorSettings.wrappingKey
+        let saved = UserDefaults.standard.object(forKey: key)
+        defer { UserDefaults.standard.set(saved, forKey: key) }
+        UserDefaults.standard.set(CommitEditorSettings.Wrapping.hard.rawValue, forKey: key)
+
+        let body = String(repeating: "超长的一行 ", count: 30)
+        try await stageChange(in: session, directory: directory, content: "wrap")
+        session.commitSubject = "硬折行"
+        session.commitBody = body
+        session.commit()
+        await session.writeTask?.value
+        await session.waitForRefresh()
+        await session.commitResetTask?.value
+        #expect(try await lastMessage(runner) == "硬折行\n\n" + body.trimmingCharacters(in: .whitespaces))
+
+        // 勾选修补后直接提交：提交数不变，信息换成新的标题
+        try await stageChange(in: session, directory: directory, content: "amend")
+        session.setAmend(true)
+        session.commitSubject = "修补"
+        session.commit()
+        await session.writeTask?.value
+        await session.waitForRefresh()
+        #expect(try await lastMessage(runner).hasPrefix("修补\n\n"))
+        #expect(try await runner.run(["rev-list", "--count", "HEAD"]) == Data("1\n".utf8))
+    }
+
+    /// 提交区的提交人取仓库所在机器上生效的 user.name 与 user.email，没有配置时留空。
+    @Test("提交人来自 user.name 与 user.email")
+    func committerFromConfiguration() async throws {
+        let (session, runner, directory) = try await commitSession()
+        defer {
+            session.close()
+            try? FileManager.default.removeItem(at: directory)
+        }
+
+        #expect(session.committer == ("Spooky Test", "spooky@example.invalid"))
+
+        _ = try await runner.run(["config", "--local", "--unset", "user.name"])
+        _ = try await runner.run(["config", "--local", "--unset", "user.email"])
+        try await stageChange(in: session, directory: directory, content: "identity")
+        try await waitForConfiguration(session) { $0.userName == nil && $0.userEmail == nil }
+
+        #expect(session.committer == ("", ""))
+    }
 }
 
 // MARK: - Helpers

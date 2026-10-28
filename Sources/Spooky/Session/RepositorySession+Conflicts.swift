@@ -29,21 +29,6 @@ extension RepositorySession {
         return displayName(of: progress.theirs)
     }
 
-    /// 工作区状态头在进行中操作时的文字，如 “Merging side into main”；没有进行中的操作时为 nil。
-    var operationHeaderTitle: String? {
-        guard let progress = context?.progress else {
-            return nil
-        }
-
-        switch progress.state {
-        case .merge: return AppLocalization.text("conflict.header.merge", theirsName, oursName)
-        case .squash: return AppLocalization.text("conflict.header.squash", oursName)
-        case .rebase: return AppLocalization.text("conflict.header.rebase", theirsName, oursName)
-        case .cherryPick: return AppLocalization.text("conflict.header.cherryPick", theirsName, oursName)
-        case .revert: return AppLocalization.text("conflict.header.revert", theirsName, oursName)
-        }
-    }
-
     /// 进行中操作横幅的标题；摘取与反转按序列里尚未完成的提交数说明。
     var operationBannerTitle: String? {
         guard let progress = context?.progress else {
@@ -112,24 +97,6 @@ extension RepositorySession {
                 try await WorkingCopyOperations(runner: runner).restoreConflicts(entries, to: version)
             },
             title: title,
-            recordsActivity: false
-        )
-    }
-
-    /// 两侧都是普通文件的冲突才能采用两侧版本。
-    func canResolveUsingBoth(_ entry: StatusEntry) -> Bool {
-        canResolve([entry]) && (entry.conflict?.hasRegularFilesOnBothSides ?? false)
-    }
-
-    /// 采用两侧版本并标记解决，合并在仓库所在的机器上完成。
-    func resolveUsingBoth(_ entry: StatusEntry) {
-        guard canResolveUsingBoth(entry) else { return }
-
-        performGit(
-            { runner, _ in
-                try await WorkingCopyOperations(runner: runner).resolveUsingBoth(entry)
-            },
-            title: AppLocalization.text("conflict.resolveBoth"),
             recordsActivity: false
         )
     }

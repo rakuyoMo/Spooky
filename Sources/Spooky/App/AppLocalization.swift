@@ -270,11 +270,13 @@ struct AppFailure: Identifiable {
         }
     }
 
-    /// 文件访问失败的文案键与类别：路径不受支持属于仓库问题，超过读取上限属于输出问题。
+    /// 文件访问失败的文案键与类别：路径不受支持与废纸篓的问题属于仓库问题，超过读取上限属于输出问题。
     private static func classification(of file: RepositoryFileError) -> (key: String, kind: FailureKind) {
         switch file {
         case .unsupportedPath: ("working.error.path", .repository)
         case .tooLarge: ("error.outputLimit", .output)
+        case .trashUnavailable: ("files.error.trashUnavailable", .repository)
+        case .trashedItemsUnavailable: ("files.error.trashedItems", .repository)
         }
     }
 

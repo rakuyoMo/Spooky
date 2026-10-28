@@ -238,12 +238,9 @@
 "working.unstageAll" = "全部取消暂存";
 "working.commit" = "提交";
 "working.amend" = "修补最近提交";
-"working.amend.confirm" = "这会改写最近一次提交，是否继续？";
 "working.subject" = "提交标题";
 "working.body" = "详细说明";
-"working.identityLoading" = "正在读取提交人…";
 "working.staging" = "暂存状态：%@";
-"working.writing" = "正在更新工作区…";
 "working.list" = "平铺显示";
 "working.tree" = "树形显示";
 "working.viewMode" = "工作区显示模式";
@@ -271,8 +268,9 @@
 "working.discardLines" = "丢弃所选行";
 "working.discard" = "丢弃改动";
 "working.discardAll" = "丢弃全部改动…";
-"working.discard.message" = "将永久丢弃 %d 个文件的改动（含暂存改动和未跟踪文件）。仓库：%@。此操作无法撤销。";
-"working.discard.remote" = "将在服务器上永久删除或覆盖 %d 个文件（含暂存改动）。仓库：%@。此操作无法撤销。";
+"working.discard.message" = "将丢弃 %d 个文件的改动：已跟踪的文件恢复到最后一次提交（含暂存改动），未跟踪文件移到废纸篓。仓库：%@。";
+"working.discard.remote" = "将在服务器上丢弃 %d 个文件的改动：已跟踪的文件被最后一次提交覆盖（含暂存改动），未跟踪文件移到服务器的废纸篓。仓库：%@。";
+"working.discard.remotePermanent" = "将在服务器上丢弃 %d 个文件的改动：已跟踪的文件被最后一次提交覆盖（含暂存改动），未跟踪文件在服务器上永久删除。仓库：%@。此操作无法撤销。";
 "working.discard.lines" = "将永久丢弃 %@ 中所选行的改动，无法撤销。";
 "working.discard.remoteLines" = "将在服务器 %@ 上永久覆盖所选内容，无法撤销。";
 "working.resolved" = "标记已解决";
@@ -396,6 +394,7 @@
 "activity.cancelled" = "已取消";
 "activity.failed" = "失败";
 "dialog.options" = "选项";
+"dialog.doNotAskAgain" = "不再询问";
 "menu.repository" = "仓库";
 "callback.privateKey" = "解锁 SSH 私钥";
 "callback.privateKey.help" = "解锁后的私钥将加入 SSH agent。";
@@ -420,7 +419,6 @@
 "recovery.unborn" = "尚无提交";
 "dialog.blocked" = "此仓库有其它操作正在进行，或服务器已断开。已填写的设置会保留，请在仓库可用后重试。";
 "working.clean" = "没有本地改动";
-"working.refreshFailed" = "刷新失败，正在显示上一次成功的结果。";
 "history.limit" = "仅显示前 %ld 个提交。选择分支可以缩小历史范围。";
 "history.loadingChanges" = "正在读取变更文件…";
 "repositories.unavailableShort" = "不可用";
@@ -521,11 +519,6 @@
 "conflict.binary" = "不显示二进制内容。";
 "conflict.error.version" = "所选文件没有这个版本。";
 "conflict.export" = "导出来自 “%@” 的版本…";
-"conflict.header.cherryPick" = "正在把 %@ 摘取到 %@";
-"conflict.header.merge" = "正在把 %@ 合并到 %@";
-"conflict.header.rebase" = "正在把 %@ 变基到 %@";
-"conflict.header.revert" = "正在反转 %@，位于 %@ 上";
-"conflict.header.squash" = "正在 %@ 上压缩提交";
 "conflict.hint.merge.conflicts" = "解决全部冲突后才能完成合并。";
 "conflict.hint.merge.resolved" = "检查提交信息，然后点按 **提交** 完成合并。";
 "conflict.hint.merge.empty" = "没有可提交的改动。点按 **中止** 取消合并，或点按 **提交** 创建空的合并提交。";
@@ -771,6 +764,8 @@
 "files.error.preimage" = "补丁与文件不符";
 "files.error.preimageHelp" = "下列文件在补丁生成之后有过改动，因此没有应用补丁，工作区保持原样。请用当前的文件重新生成补丁，或先把这些文件恢复到补丁生成时的版本。";
 "files.error.destination" = "目标位置已存在";
+"files.error.trashUnavailable" = "服务器上没有可用的废纸篓";
+"files.error.trashedItems" = "无法从废纸篓移回文件";
 "files.doubleClick" = "双击工作区中的文件：";
 "files.doubleClick.openFile" = "用默认应用程序打开";
 "files.doubleClick.openDiff" = "打开比较工具";
@@ -792,7 +787,6 @@
 "stash.subtitle" = "储藏（%ld 个储藏）";
 
 /* 冲突向导。 */
-"conflict.resolveBoth" = "采用两侧版本解决";
 "conflict.version.applied" = "来自应用的补丁或储藏的版本";
 "conflict.resolveUsing.applied" = "采用应用的补丁或储藏解决";
 "conflict.open.missing" = "打开";
@@ -1448,6 +1442,8 @@
 "undo.error.inProgress.help" = "请先完成或中止合并、变基、摘取或反转。仓库没有任何改动。";
 "undo.error.conflicts" = "仓库有未解决的冲突";
 "undo.error.conflicts.help" = "请先解决冲突。仓库没有任何改动。";
+"undo.error.trash" = "无法从废纸篓移回文件";
+"undo.error.trash.help" = "有的文件已不在废纸篓里，或原位置已有别的文件。仓库没有任何改动。";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
 "reflog.title" = "Reflog";
@@ -1474,6 +1470,9 @@
 "settings.cloneDirectory" = "克隆仓库的默认目录：";
 "settings.cloneDirectory.select" = "选择…";
 "settings.warnDiscardingChunks" = "丢弃块中的改动前发出警告";
+"settings.warnDiscardingOnServer" = "丢弃服务器仓库中的改动前发出警告";
+"settings.warnDeletingOnServer" = "永久删除服务器仓库中的文件前发出警告";
+"settings.warnRestoringOnServer" = "恢复服务器仓库中的文件前发出警告";
 "settings.windowRestoration" = "窗口恢复：";
 "settings.windowRestoration.always" = "总是";
 "settings.windowRestoration.never" = "从不";
@@ -1918,17 +1917,9 @@
 "settings.crashReports" = "崩溃报告：";
 "settings.crashReports.always" = "总是发送崩溃报告";
 
-/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+/* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "服务器设置了 Git 环境变量";
 "remote.environment.message" = "“%1$@” 的非交互 shell 设置了 %2$@。这些变量会改变 Spooky 在那里执行的每条 Git 命令查找仓库与读取配置的方式。如果 Git 表现异常，请从服务器的 shell 启动文件里去掉它们。";
-"untracked.hint" = "%ld 个未跟踪文件让刷新变慢。请为构建产物和依赖补充忽略规则，或加快服务器上的状态读取。";
-"untracked.speedUp" = "加快…";
-"untracked.speedUp.title" = "加快服务器上的状态读取";
-"untracked.speedUp.message" = "Spooky 可以在 “%@” 上的这个仓库里打开下面几项设置。只有在你确认后，它们才会写进服务器上这个仓库的本地配置。";
-"untracked.speedUp.apply" = "应用设置";
-"untracked.speedUp.cache" = "在两次状态读取之间缓存未跟踪文件。";
-"untracked.speedUp.monitor" = "让 Git 监听文件变化，不必每次扫描整个工作区。";
-"untracked.speedUp.graph" = "现在写出 commit-graph，并在获取时保持更新，加快历史读取。";
 
 "files.openSubmodules" = "总是在 Spooky 中打开子模块";
 "menu.addSubmodule" = "添加新子模块…";

@@ -63,11 +63,21 @@ public struct RepositoryUndo: Sendable {
 
     /// 把仓库从 `expected` 恢复成 `target`：先完整核对现状仍是 `expected`，不一致时不做任何改动。
     ///
+    /// 操作移进废纸篓的文件不靠快照恢复：撤销时从废纸篓移回原处，重做时重新移进废纸篓，新的位置记进当前的 ``TrashLog``。
+    ///
     /// - Parameters:
     ///   - target: 要回到的状态。
     ///   - expected: 记录时仓库应处的状态，即撤销时的操作后状态、重做时的操作前状态。
     ///   - message: 写进引用日志的说明。
-    public func restore(_ target: RepositoryState, expecting expected: RepositoryState, message: String) async throws {
+    ///   - puttingBack: 撤销时要从废纸篓移回原处的项。
+    ///   - trashing: 重做时要重新移进废纸篓的项，取它们原来的位置。
+    public func restore(
+        _ target: RepositoryState,
+        expecting expected: RepositoryState,
+        message: String,
+        puttingBack: [TrashedItem] = [],
+        trashing: [TrashedItem] = []
+    ) async throws {
         try await runner.writeTransaction {
             let current = try await capture()
 
@@ -75,8 +85,19 @@ public struct RepositoryUndo: Sendable {
                 throw RepositoryUndoError.repositoryChanged
             }
 
-            let plan = try await plan(from: current, to: target)
+            let plan = try await plan(from: current, to: target, trashed: puttingBack + trashing)
             try await checkHiddenChanges()
+
+            // 废纸篓里的文件先移回原处，要重新移进废纸篓的先移走，其余文件再按快照恢复
+            let files = RepositoryFiles(runner: runner)
+
+            do {
+                try await files.putBack(puttingBack)
+            } catch RepositoryFileError.trashedItemsUnavailable {
+                throw RepositoryUndoError.trashedItemsUnavailable
+            }
+
+            try await files.moveToTrash(trashing.map(\.path))
 
             // 文件最容易失败，先恢复；引用、分支配置与储藏随后更新
             try await restoreFiles(target, plan: plan)
@@ -87,9 +108,15 @@ public struct RepositoryUndo: Sendable {
     }
 
     /// 只判断能否从 `current` 恢复到 `target`，不改动仓库；未跟踪文件找不回内容时返回 false。
-    public func canRestore(_ target: RepositoryState, from current: RepositoryState) async throws -> Bool {
+    ///
+    /// - Parameter trashed: 操作移进废纸篓的项；它们从废纸篓移回，不需要快照里的内容。
+    public func canRestore(
+        _ target: RepositoryState,
+        from current: RepositoryState,
+        trashed: [TrashedItem] = []
+    ) async throws -> Bool {
         do {
-            _ = try await plan(from: current, to: target)
+            _ = try await plan(from: current, to: target, trashed: trashed)
             return true
         } catch RepositoryUndoError.untrackedFiles {
             return false

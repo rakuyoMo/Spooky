@@ -37,7 +37,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Clear errors**: errors show their category, the repository, and the original Git or SSH output, which you can select and copy
 
-- **Working copy**: view changes as a list or a tree, or browse every file in the repository. Show ignored and assume-unchanged files, and filter by path. Untrack, delete, move, ignore, or exclude files, restore them to a revision, and apply patch files. Preview files with Quick Look, drag them out, or open them in their default app
+- **Working copy**: view changes as a list or a tree, or browse every file in the repository. Show ignored and assume-unchanged files, and filter by path. Untrack, delete, move, ignore, or exclude files, restore them to a revision, and apply patch files. Deleted files and discarded untracked files go to the Trash, also on a server that has one. Preview files with Quick Look, drag them out, or open them in their default app
 
 - **Stage files, hunks, or lines**: multiple selection and three-state checkboxes. Select lines in a diff to stage or discard just those lines
 
@@ -47,7 +47,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Identities and signing**: switch the committer identity of a repository with user profiles, and pick a profile's signing key from the GPG and SSH keys on your Mac. Sign commits with GPG or SSH; for a server repository, signing happens on the server and passphrase prompts come back to your Mac
 
-- **Conflict wizard**: during a merge, rebase, cherry-pick, or revert, see how many conflicts are left, and the current step of a rebase. Compare both versions of each file and use one or both of them, or fix the file in another editor and use that version, then continue, skip, or abort
+- **Conflict wizard**: during a merge, rebase, cherry-pick, or revert, see how many conflicts are left, and the current step of a rebase. Compare both versions of each file and use one of them, combine both in your merge tool, or fix the file in another editor and use that version, then continue, skip, or abort
 
 - **Stashes**: save all or only selected changes, take snapshots that leave the working copy as it is, and apply a stash with its staged state or apply a single file from it. When local changes block a checkout, pull, or merge, Spooky offers to stash them first and reapply them afterward
 
@@ -202,7 +202,6 @@ In your repositories:
 
 - Pins, archives, parent branches, and branch review marks are stored in the repository's own Git configuration, as `branch.<name>.spooky-*`. They move with a branch when it's renamed and are removed when it's deleted
 - Repository settings are written to the repository's own Git configuration. Line wrapping and issue tracking use the keys `spooky.commitbodylimit`, `spooky.commitshowsguide`, `spooky.issuetrackertemplate`, and `spooky.issuenumberprefix`
-- When a server repository has many untracked files, Spooky can turn on `core.untrackedCache`, `core.fsmonitor`, and the commit-graph in that repository on the server, only after you confirm
 - Enabling Git LFS registers its filter and hooks only in the repository's own configuration, and tracking patterns are written to `.gitattributes` at the repository root
 
 ## Development

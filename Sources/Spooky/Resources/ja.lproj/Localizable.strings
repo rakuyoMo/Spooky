@@ -238,12 +238,9 @@
 "working.unstageAll" = "すべてステージ解除";
 "working.commit" = "コミット";
 "working.amend" = "直前のコミットを修正";
-"working.amend.confirm" = "直前のコミットを書き換えます。続行しますか？";
 "working.subject" = "コミットの件名";
 "working.body" = "詳細な説明";
-"working.identityLoading" = "コミッターを読み込み中…";
 "working.staging" = "ステージ状態：%@";
-"working.writing" = "作業コピーを更新中…";
 "working.list" = "リスト表示";
 "working.tree" = "ツリー表示";
 "working.viewMode" = "作業コピーの表示";
@@ -271,8 +268,9 @@
 "working.discardLines" = "選択行を破棄";
 "working.discard" = "変更を破棄";
 "working.discardAll" = "すべての変更を破棄…";
-"working.discard.message" = "%d ファイルの変更を永久に破棄します。対象：%@。ステージ済みの変更と未追跡ファイルも対象です。元に戻せません。";
-"working.discard.remote" = "サーバー上の %d ファイルを永久に削除または上書きします。対象：%@。ステージ済みの変更も破棄され、元に戻せません。";
+"working.discard.message" = "%d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットに戻し、未追跡ファイルはゴミ箱に入れます。";
+"working.discard.remote" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバーのゴミ箱に入れます。";
+"working.discard.remotePermanent" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバー上で完全に削除します。元に戻せません。";
 "working.discard.lines" = "%@ の選択行の変更を永久に破棄します。元に戻せません。";
 "working.discard.remoteLines" = "サーバー %@ 上の選択内容を永久に上書きします。元に戻せません。";
 "working.resolved" = "解決済みにする";
@@ -396,6 +394,7 @@
 "activity.cancelled" = "キャンセル済み";
 "activity.failed" = "失敗";
 "dialog.options" = "オプション";
+"dialog.doNotAskAgain" = "今後確認しない";
 "menu.repository" = "リポジトリ";
 "callback.privateKey" = "SSH 秘密鍵を解除";
 "callback.privateKey.help" = "解除した鍵を SSH エージェントに追加します。";
@@ -420,7 +419,6 @@
 "recovery.unborn" = "コミットなし";
 "dialog.blocked" = "このリポジトリで別の操作が実行中か、サーバーとの接続が切れています。入力した設定は保持されます。リポジトリが利用可能になってから再試行してください。";
 "working.clean" = "ローカルの変更はありません";
-"working.refreshFailed" = "更新に失敗しました。最後に成功した結果を表示しています。";
 "history.limit" = "最初の %ld 件のコミットのみを表示しています。ブランチを選択すると範囲を絞り込めます。";
 "history.loadingChanges" = "変更ファイルを読み込み中…";
 "repositories.unavailableShort" = "利用不可";
@@ -521,11 +519,6 @@
 "conflict.binary" = "バイナリの内容は表示しません。";
 "conflict.error.version" = "選択したファイルにはこのバージョンがありません。";
 "conflict.export" = "「%@」のバージョンを書き出す…";
-"conflict.header.cherryPick" = "%@ を %@ にチェリーピック中";
-"conflict.header.merge" = "%@ を %@ にマージ中";
-"conflict.header.rebase" = "%@ を %@ にリベース中";
-"conflict.header.revert" = "%@ を %@ 上でリバート中";
-"conflict.header.squash" = "%@ 上でコミットをスカッシュ中";
 "conflict.hint.merge.conflicts" = "マージを完了するには、すべての競合を解決してください。";
 "conflict.hint.merge.resolved" = "コミットメッセージを確認し、**コミット** をクリックしてマージを完了してください。";
 "conflict.hint.merge.empty" = "コミットできる変更が残っていません。**中止** でマージを取り消すか、**コミット** で空のマージコミットを作成してください。";
@@ -771,6 +764,8 @@
 "files.error.preimage" = "パッチがファイルと一致しません";
 "files.error.preimageHelp" = "次のファイルはパッチの作成後に変更されているため、パッチは適用されず、作業コピーは変更されていません。現在のファイルからパッチを作り直すか、ファイルをパッチ作成時のバージョンに戻してください。";
 "files.error.destination" = "移動先がすでに存在します";
+"files.error.trashUnavailable" = "サーバーで使えるゴミ箱がありません";
+"files.error.trashedItems" = "ゴミ箱からファイルを戻せません";
 "files.doubleClick" = "作業コピーのファイルをダブルクリック：";
 "files.doubleClick.openFile" = "デフォルトのアプリケーションで開く";
 "files.doubleClick.openDiff" = "比較ツールを開く";
@@ -792,7 +787,6 @@
 "stash.subtitle" = "スタッシュ（%ld 個のスタッシュ）";
 
 /* 冲突向导。 */
-"conflict.resolveBoth" = "両方のバージョンで解決";
 "conflict.version.applied" = "適用したパッチまたはスタッシュのバージョン";
 "conflict.resolveUsing.applied" = "適用したパッチまたはスタッシュで解決";
 "conflict.open.missing" = "開く";
@@ -1448,6 +1442,8 @@
 "undo.error.inProgress.help" = "先にマージ、リベース、チェリーピック、リバートを完了するか中止してください。リポジトリは変更されていません。";
 "undo.error.conflicts" = "未解決の競合があります";
 "undo.error.conflicts.help" = "先に競合を解決してください。リポジトリは変更されていません。";
+"undo.error.trash" = "ゴミ箱からファイルを戻せません";
+"undo.error.trash.help" = "ゴミ箱に入れたファイルの一部がゴミ箱にないか、元の場所に別のファイルがあります。リポジトリは変更されていません。";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
 "reflog.title" = "Reflog";
@@ -1474,6 +1470,9 @@
 "settings.cloneDirectory" = "クローンしたリポジトリのデフォルトの場所：";
 "settings.cloneDirectory.select" = "選択…";
 "settings.warnDiscardingChunks" = "チャンクの変更を破棄する前に警告";
+"settings.warnDiscardingOnServer" = "サーバーリポジトリの変更を破棄する前に警告";
+"settings.warnDeletingOnServer" = "サーバーリポジトリのファイルを完全に削除する前に警告";
+"settings.warnRestoringOnServer" = "サーバーリポジトリのファイルを復元する前に警告";
 "settings.windowRestoration" = "ウインドウの復元：";
 "settings.windowRestoration.always" = "常に";
 "settings.windowRestoration.never" = "しない";
@@ -1918,17 +1917,9 @@
 "settings.crashReports" = "クラッシュレポート：";
 "settings.crashReports.always" = "クラッシュレポートを常に送信";
 
-/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+/* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "サーバが Git の環境変数を設定しています";
 "remote.environment.message" = "「%1$@」の非対話シェルは %2$@ を設定しています。これらの変数は、Spooky がそこで実行するすべての Git コマンドのリポジトリの探し方と設定の読み方を変えます。Git の動作がおかしい場合は、サーバのシェル起動ファイルから取り除いてください。";
-"untracked.hint" = "%ld 個の追跡されていないファイルのため更新が遅くなっています。ビルド成果物や依存関係の無視ルールを追加するか、サーバ上のステータス読み取りを高速化してください。";
-"untracked.speedUp" = "高速化…";
-"untracked.speedUp.title" = "サーバ上のステータス読み取りを高速化";
-"untracked.speedUp.message" = "Spooky は「%@」上のこのリポジトリで次の設定をオンにできます。確認した後にだけ、サーバ上のこのリポジトリのローカル設定に書き込みます。";
-"untracked.speedUp.apply" = "設定を適用";
-"untracked.speedUp.cache" = "ステータス確認の間で追跡されていないファイルをキャッシュします。";
-"untracked.speedUp.monitor" = "作業ツリー全体を走査する代わりに、Git がファイルシステムを監視します。";
-"untracked.speedUp.graph" = "commit-graph を今すぐ書き出し、フェッチ時に更新して履歴の読み込みを速くします。";
 
 "files.openSubmodules" = "サブモジュールを常に Spooky で開く";
 "menu.addSubmodule" = "新しいサブモジュールを追加…";

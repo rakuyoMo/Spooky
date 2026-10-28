@@ -238,12 +238,9 @@
 "working.unstageAll" = "Quitar todo del stage";
 "working.commit" = "Hacer commit";
 "working.amend" = "Enmendar";
-"working.amend.confirm" = "Esta acción reemplaza el commit más reciente. ¿Continuar?";
 "working.subject" = "Asunto del commit";
 "working.body" = "Descripción detallada";
-"working.identityLoading" = "Cargando el committer…";
 "working.staging" = "Estado en el stage: %@";
-"working.writing" = "Actualizando la copia de trabajo…";
 "working.list" = "Ver como lista";
 "working.tree" = "Ver como árbol";
 "working.viewMode" = "Visualización de la copia de trabajo";
@@ -271,8 +268,9 @@
 "working.discardLines" = "Descartar líneas";
 "working.discard" = "Descartar cambios";
 "working.discardAll" = "Descartar todos los cambios…";
-"working.discard.message" = "Descartar permanentemente los cambios de %d archivos en %@, incluidos los cambios en el stage y los archivos sin seguimiento. Esta acción no se puede deshacer.";
-"working.discard.remote" = "Eliminar o sobrescribir permanentemente %d archivos del servidor en %@. También se descartan los cambios en el stage. Esta acción no se puede deshacer.";
+"working.discard.message" = "Descartar los cambios de %d archivos en %@: los archivos con seguimiento vuelven al último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera.";
+"working.discard.remote" = "Descartar los cambios de %d archivos del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera del servidor.";
+"working.discard.remotePermanent" = "Descartar los cambios de %d archivos del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se eliminan permanentemente del servidor. Esta acción no se puede deshacer.";
 "working.discard.lines" = "Descartar permanentemente las líneas seleccionadas en %@. Esta acción no se puede deshacer.";
 "working.discard.remoteLines" = "Sobrescribir permanentemente el contenido seleccionado del servidor en %@. Esta acción no se puede deshacer.";
 "working.resolved" = "Marcar como resuelto";
@@ -396,6 +394,7 @@
 "activity.cancelled" = "Cancelada";
 "activity.failed" = "Fallida";
 "dialog.options" = "Opciones";
+"dialog.doNotAskAgain" = "No volver a preguntarme";
 "menu.repository" = "Repositorio";
 "callback.privateKey" = "Desbloquear clave privada SSH";
 "callback.privateKey.help" = "La clave desbloqueada se añadirá al agente SSH.";
@@ -420,7 +419,6 @@
 "recovery.unborn" = "ningún commit";
 "dialog.blocked" = "Hay otra operación en curso en este repositorio o el servidor está desconectado. Se conserva la configuración indicada; volver a intentarlo cuando el repositorio esté disponible.";
 "working.clean" = "No hay cambios locales";
-"working.refreshFailed" = "Error al actualizar. Se muestra el último resultado correcto.";
 "history.limit" = "Se muestran los primeros %ld commits. Seleccionar una rama para acotar el historial.";
 "history.loadingChanges" = "Cargando archivos modificados…";
 "repositories.unavailableShort" = "No disponible";
@@ -521,11 +519,6 @@
 "conflict.binary" = "El contenido binario no se muestra.";
 "conflict.error.version" = "Los archivos seleccionados no tienen esta versión.";
 "conflict.export" = "Exportar la versión de “%@”…";
-"conflict.header.cherryPick" = "Haciendo cherry-pick de %@ en %@";
-"conflict.header.merge" = "Fusionando %@ en %@";
-"conflict.header.rebase" = "Haciendo rebase de %@ sobre %@";
-"conflict.header.revert" = "Revirtiendo %@ en %@";
-"conflict.header.squash" = "Haciendo squash de commits en %@";
 "conflict.hint.merge.conflicts" = "Resolver todos los conflictos para completar la fusión.";
 "conflict.hint.merge.resolved" = "Revisar el mensaje del commit y, después, hacer clic en **Hacer commit** para completar la fusión.";
 "conflict.hint.merge.empty" = "No quedan cambios para hacer commit. Hacer clic en **Abortar** para cancelar la fusión o en **Hacer commit** para crear un commit de fusión vacío.";
@@ -771,6 +764,8 @@
 "files.error.preimage" = "El parche no coincide con los archivos";
 "files.error.preimageHelp" = "Los siguientes archivos cambiaron después de crear el parche, así que no se ha aplicado y la copia de trabajo no ha cambiado. Vuelve a crear el parche a partir de los archivos actuales, o revierte los archivos a la versión a partir de la que se creó el parche.";
 "files.error.destination" = "El destino ya existe";
+"files.error.trashUnavailable" = "No hay ninguna papelera disponible en el servidor";
+"files.error.trashedItems" = "No se pueden devolver los archivos desde la papelera";
 "files.doubleClick" = "Doble clic en un archivo de la copia de trabajo:";
 "files.doubleClick.openFile" = "Abrir con la aplicación por omisión";
 "files.doubleClick.openDiff" = "Abrir herramienta de comparación";
@@ -792,7 +787,6 @@
 "stash.subtitle" = "Stashes (%ld stashes)";
 
 /* 冲突向导。 */
-"conflict.resolveBoth" = "Resolver con ambas versiones";
 "conflict.version.applied" = "Versión del parche o stash aplicado";
 "conflict.resolveUsing.applied" = "Resolver con el parche o stash aplicado";
 "conflict.open.missing" = "Abrir";
@@ -1448,6 +1442,8 @@
 "undo.error.inProgress.help" = "Terminar o cancelar primero la fusión, el rebase, el cherry-pick o el revert. No se ha cambiado nada.";
 "undo.error.conflicts" = "El repositorio tiene conflictos sin resolver";
 "undo.error.conflicts.help" = "Resolver primero los conflictos. No se ha cambiado nada.";
+"undo.error.trash" = "No se pueden devolver los archivos desde la papelera";
+"undo.error.trash.help" = "Algunos archivos trasladados a la papelera ya no están allí, o ahora hay otros archivos en su ubicación original. No se ha cambiado nada.";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
 "reflog.title" = "Reflog";
@@ -1474,6 +1470,9 @@
 "settings.cloneDirectory" = "Carpeta predeterminada para repositorios clonados:";
 "settings.cloneDirectory.select" = "Seleccionar…";
 "settings.warnDiscardingChunks" = "Avisar antes de descartar cambios de un bloque";
+"settings.warnDiscardingOnServer" = "Avisar antes de descartar cambios en un repositorio de servidor";
+"settings.warnDeletingOnServer" = "Avisar antes de eliminar permanentemente archivos en un repositorio de servidor";
+"settings.warnRestoringOnServer" = "Avisar antes de restaurar archivos en un repositorio de servidor";
 "settings.windowRestoration" = "Restauración de ventanas:";
 "settings.windowRestoration.always" = "Siempre";
 "settings.windowRestoration.never" = "Nunca";
@@ -1918,17 +1917,9 @@
 "settings.crashReports" = "Informes de fallos:";
 "settings.crashReports.always" = "Enviar siempre informes de fallos";
 
-/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+/* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "El servidor define variables de entorno de Git";
 "remote.environment.message" = "El shell no interactivo de “%1$@” define %2$@. Estas variables cambian cómo Git encuentra los repositorios y lee su configuración en cada comando que Spooky ejecuta allí. Quítalas de los archivos de inicio del shell del servidor si Git se comporta de forma inesperada.";
-"untracked.hint" = "%ld archivos sin seguimiento hacen lenta la actualización. Añade reglas para ignorar los resultados de compilación y las dependencias, o acelera el estado en el servidor.";
-"untracked.speedUp" = "Acelerar…";
-"untracked.speedUp.title" = "Acelerar el estado en el servidor";
-"untracked.speedUp.message" = "Spooky puede activar estos ajustes en este repositorio de “%@”. Solo se escriben en la configuración local del repositorio en el servidor después de que lo confirmes.";
-"untracked.speedUp.apply" = "Aplicar ajustes";
-"untracked.speedUp.cache" = "Guarda en caché los archivos sin seguimiento entre comprobaciones de estado.";
-"untracked.speedUp.monitor" = "Permite que Git vigile el sistema de archivos en lugar de recorrer toda la copia de trabajo.";
-"untracked.speedUp.graph" = "Escribe ahora el commit-graph y lo mantiene al día al recuperar, lo que acelera el historial.";
 
 "files.openSubmodules" = "Abrir siempre los submódulos en Spooky";
 "menu.addSubmodule" = "Añadir nuevo submódulo…";

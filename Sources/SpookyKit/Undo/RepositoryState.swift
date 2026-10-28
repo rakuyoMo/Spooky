@@ -10,6 +10,9 @@ public enum RepositoryUndoError: Error, Sendable, Equatable {
     /// 索引里有未解决的冲突，写不出树。
     case unresolvedConflicts
 
+    /// 操作移进废纸篓的项已不在废纸篓里、位置不明，或原位置已被占用，不能移回。
+    case trashedItemsUnavailable
+
     /// 仓库现状已不是记录时的状态。
     case repositoryChanged
 

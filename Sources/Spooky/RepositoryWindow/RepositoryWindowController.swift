@@ -148,19 +148,12 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         session.onSyncRequest = { [weak self] in self?.presentSyncDialog($0.kind, preselecting: $0.preselection) }
 
         session.onConfirm = { [weak self] title, message, action, abort in
-            guard let window = self?.window, window.attachedSheet == nil else { return }
-            let alert = NSAlert()
-            alert.alertStyle = .warning
-            alert.messageText = title
-            alert.informativeText = message
-            alert.addButton(withTitle: title)
-            alert.addButton(withTitle: AppLocalization.text(abort == nil ? "action.cancel" : "working.abort"))
+            self?.showConfirmation(title: title, message: message, confirmation: nil, action: action, abort: abort)
+        }
 
-            // Sheet 已结束后才开始写入，错误与进度由仓库视图承接。
-            alert.beginSheetModal(for: window) { response in
-                if response == .alertFirstButtonReturn { action() }
-                else if response == .alertSecondButtonReturn { abort?() }
-            }
+        // 服务器仓库的确认多一个 “Do not ask me again”
+        session.onServerConfirm = { [weak self] confirmation, title, message, action in
+            self?.showConfirmation(title: title, message: message, confirmation: confirmation, action: action, abort: nil)
         }
 
         showRepositories()

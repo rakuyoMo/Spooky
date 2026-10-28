@@ -9,6 +9,12 @@ public enum RepositoryFileError: Error, Sendable {
 
     /// 文件超过当前内容读取上限。
     case tooLarge
+
+    /// 服务器上没有可用的废纸篓。
+    case trashUnavailable
+
+    /// 要从废纸篓移回的项位置不明、已不在废纸篓里，或原位置已被占用。
+    case trashedItemsUnavailable
 }
 
 // MARK: - RepositoryFiles
@@ -156,7 +162,7 @@ public struct RepositoryFiles: Sendable {
         )
     }
 
-    /// 丢弃未跟踪文件只删除明确选中的文件，不递归进入嵌套仓库。
+    /// 永久删除明确选中的文件，不递归进入嵌套仓库。
     func remove(_ paths: [String]) async throws {
         guard !paths.isEmpty else { return }
 
@@ -169,20 +175,6 @@ public struct RepositoryFiles: Sendable {
         }
 
         _ = try await transfer(try paths.map { "rm " + (try Self.quoted($0)) }, writing: true)
-    }
-
-    /// 把本机文件或目录移到废纸篓，用户可以从废纸篓找回；服务器文件不经过这里。
-    ///
-    /// - Returns: 各项在废纸篓里的位置。
-    func moveToTrash(_ paths: [String]) throws -> [URL] {
-        try paths.compactMap { path in
-            // trashItem 只接受 NSURL 的输出参数
-            // swiftlint:disable:next legacy_objc_type
-            var trashed: NSURL?
-            try FileManager.default.trashItem(at: URL(fileURLWithPath: path), resultingItemURL: &trashed)
-
-            return trashed as URL?
-        }
     }
 
     /// 把工作区所在机器上的文件移到新位置，目标已存在时不覆盖。

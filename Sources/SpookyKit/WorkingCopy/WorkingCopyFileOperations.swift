@@ -53,23 +53,27 @@ extension WorkingCopyOperations {
         )
     }
 
-    /// 删除工作区里的文件与目录：本机移到废纸篓，服务器上永久删除；调用方必须先获得用户确认
+    /// 删除工作区里的文件与目录：移进工作区所在机器的废纸篓；服务器没有可用的废纸篓时，用户确认后永久删除
     ///
     /// 只改动工作区，已跟踪文件的删除留待暂存，与在 Finder 或终端里删除文件的结果相同。
     ///
-    /// - Parameter paths: 仓库内的相对路径；以 `/` 结尾的是整个未跟踪或被忽略的目录。
-    /// - Returns: 本机文件在废纸篓里的位置；服务器文件永久删除，没有可找回的位置。
+    /// - Parameters:
+    ///   - paths: 仓库内的相对路径；以 `/` 结尾的是整个未跟踪或被忽略的目录。
+    ///   - removal: 删除方式。
+    /// - Returns: 移进废纸篓的各项；永久删除时为空。
     @discardableResult
-    public func delete(_ paths: [String]) async throws -> [URL] {
+    public func delete(_ paths: [String], removal: FileRemoval = .trash) async throws -> [TrashedItem] {
         guard !paths.isEmpty else { return [] }
 
         let files = RepositoryFiles(runner: runner)
         let root = runner.location.path
 
         return try await runner.writeTransaction {
-            guard runner.remote != nil else {
-                #warning("TODO: 核实删除已跟踪文件后是否同时暂存删除，目前只把文件移到废纸篓、删除留待暂存；只影响本机删除之后的暂存状态")
-                return try files.moveToTrash(paths.map { root + "/" + $0 })
+            guard removal == .permanent else {
+                #warning("TODO: 核实删除已跟踪文件后是否同时暂存删除，目前只把文件移到废纸篓、删除留待暂存；只影响删除之后的暂存状态")
+
+                // 目录去掉末尾的 “/”，整个移进废纸篓
+                return try await files.moveToTrash(paths.map { root + "/" + ($0.hasSuffix("/") ? String($0.dropLast()) : $0) })
             }
 
             // SFTP 的 rm 只删除文件；整个目录交给 git clean，嵌套的仓库会被 git 跳过
