@@ -5,7 +5,7 @@ import SwiftUI
 
 /// 同一个 Git 动作的菜单、工具栏、右键和拖放共享参数入口。
 struct RepositoryActionRequest {
-    /// 本里程碑有实际行为的操作种类。
+    /// 这个入口支持的操作种类，原始值兼作标题、说明与按钮文字的本地化键。
     enum Kind: String {
         /// 新建本地分支。
         case create = "branch.create"
@@ -283,7 +283,7 @@ extension RepositoryOperationDialog {
         .padding(.bottom, 12)
     }
 
-    /// 按功能呈现实际可用字段，不加入后续里程碑的选项。
+    /// 按操作种类呈现各自的字段。
     @ViewBuilder
     private var form: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 10) {

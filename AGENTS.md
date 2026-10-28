@@ -8,7 +8,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 
 - `Spooky` 是可运行的桌面 App；`SpookyKit` 核心库负责在本机或远端执行 Git、读取工作区状态并解析输出
 - 远端仓库的工作区留在远端机器，客户端经系统 SSH、用 `~/.ssh/config` 中的主机别名访问
-- 产品按里程碑 M1–M10 逐步完成 `1.0.0`，已有的功能见 [README](README.md)
+- 已有的功能见 [README](README.md)
 - 纯开源的个人工具，只在 GitHub 分发
 - 许可证为 [GPL-3.0](LICENSE)
   - 引入外部代码前先确认许可证与 GPL-3.0 兼容，并保留所需的版权与许可声明
