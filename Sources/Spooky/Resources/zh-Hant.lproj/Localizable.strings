@@ -271,8 +271,8 @@
 "working.discard.message" = "將捨棄 %d 個檔案的變更：已追蹤的檔案恢復到最後一次提交（含暫存變更），未追蹤檔案丟到垃圾桶。儲存庫：%@。";
 "working.discard.remote" = "將在伺服器上捨棄 %d 個檔案的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案丟到伺服器的垃圾桶。儲存庫：%@。";
 "working.discard.remotePermanent" = "將在伺服器上捨棄 %d 個檔案的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案在伺服器上永久刪除。儲存庫：%@。此操作無法復原。";
-"working.discard.lines" = "將永久捨棄 %@ 中所選行的變更，無法復原。";
-"working.discard.remoteLines" = "將在伺服器 %@ 上永久覆寫所選內容，無法復原。";
+"working.discard.lines" = "將捨棄 %@ 中所選行的變更。";
+"working.discard.remoteLines" = "將在伺服器 %@ 上覆寫所選內容。";
 "working.resolved" = "標記已解決";
 "working.copyRelative" = "複製相對檔案路徑";
 "working.conflicts" = "%d 個未解決衝突";

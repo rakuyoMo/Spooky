@@ -271,8 +271,8 @@
 "working.discard.message" = "%d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットに戻し、未追跡ファイルはゴミ箱に入れます。";
 "working.discard.remote" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバーのゴミ箱に入れます。";
 "working.discard.remotePermanent" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバー上で完全に削除します。元に戻せません。";
-"working.discard.lines" = "%@ の選択行の変更を永久に破棄します。元に戻せません。";
-"working.discard.remoteLines" = "サーバー %@ 上の選択内容を永久に上書きします。元に戻せません。";
+"working.discard.lines" = "%@ の選択行の変更を破棄します。";
+"working.discard.remoteLines" = "サーバー %@ 上の選択内容を上書きします。";
 "working.resolved" = "解決済みにする";
 "working.copyRelative" = "相対ファイルパスをコピー";
 "working.conflicts" = "未解決の競合：%d 件";

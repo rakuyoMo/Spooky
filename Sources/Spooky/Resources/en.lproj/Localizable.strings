@@ -271,8 +271,8 @@
 "working.discard.message" = "Discard changes in %d files in %@. Tracked files are restored to the last commit, including staged changes, and untracked files are moved to the Trash.";
 "working.discard.remote" = "Discard changes in %d files on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are moved to the Trash on the server.";
 "working.discard.remotePermanent" = "Discard changes in %d files on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are permanently deleted on the server. This cannot be undone.";
-"working.discard.lines" = "Permanently discard the selected lines in %@. This cannot be undone.";
-"working.discard.remoteLines" = "Permanently overwrite the selected content on the server at %@. This cannot be undone.";
+"working.discard.lines" = "Discard the selected lines in %@.";
+"working.discard.remoteLines" = "Overwrite the selected content on the server at %@.";
 "working.resolved" = "Mark as Resolved";
 "working.copyRelative" = "Copy Relative File Path";
 "working.conflicts" = "%d unresolved conflicts";

@@ -271,8 +271,8 @@
 "working.discard.message" = "Les modifications de %d fichiers dans %@ seront abandonnées : les fichiers suivis reviennent au dernier commit, modifications indexées comprises, et les fichiers non suivis sont placés dans la corbeille.";
 "working.discard.remote" = "Les modifications de %d fichiers seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont placés dans la corbeille du serveur.";
 "working.discard.remotePermanent" = "Les modifications de %d fichiers seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont définitivement supprimés sur le serveur. Cette action est irréversible.";
-"working.discard.lines" = "Les modifications des lignes sélectionnées dans %@ seront définitivement abandonnées. Cette action est irréversible.";
-"working.discard.remoteLines" = "Le contenu sélectionné sera définitivement écrasé sur le serveur dans %@. Cette action est irréversible.";
+"working.discard.lines" = "Les modifications des lignes sélectionnées dans %@ seront abandonnées.";
+"working.discard.remoteLines" = "Le contenu sélectionné sera écrasé sur le serveur dans %@.";
 "working.resolved" = "Marquer comme résolu";
 "working.copyRelative" = "Copier le chemin relatif du fichier";
 "working.conflicts" = "%d conflits non résolus";
