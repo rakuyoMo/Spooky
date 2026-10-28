@@ -172,6 +172,40 @@ extension HistoryListTests {
         #expect(try #require(history.commits.last).parents.isEmpty)
     }
 
+    /// 从侧边栏回到排在询问的阈值之后的提交：询问框结束后窗口完整刷新、列表从第一页重读，同意后仍选中它，找到后读出它的变更。
+    @Test("同意询问后列表重读，仍选中要回到的提交")
+    func revealKeepsSelectionAfterReload() async throws {
+        let total = RepositoryHistoryState.slowLookupThreshold + 50
+        let fixture = try await Self.makeSession(commits: (0 ..< total).map { "commit \($0)" })
+        defer { fixture.close() }
+
+        let session = fixture.session
+        let history = session.history
+        try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
+
+        let head = try await RepositoryReferences(runner: fixture.runner).resolve("HEAD")
+        let page = try await RepositoryHistory(runner: fixture.runner).page(
+            roots: [head],
+            offset: RepositoryHistoryState.slowLookupThreshold + 20,
+            limit: 1
+        )
+        let target = try #require(page.commits.first)
+
+        // 同意后窗口重新成为主窗口，完整刷新从第一页重读列表
+        session.onConfirm = { _, _, action, _ in
+            action()
+            history.reloadCommits()
+        }
+
+        session.revealInHistory(target.id)
+        try await FileViewsTests.wait { history.scrollTarget == target.id && !history.isLoading }
+        try await FileViewsTests.wait { !history.isLoadingChanges }
+
+        #expect(history.selectedIDs == [target.id])
+        #expect(history.selectedCommit == target)
+        #expect(history.changes.map(\.path) == ["file.txt"])
+    }
+
     /// 工作区写出分支与改动数，分离 HEAD 时不写分支；历史写出所选引用与提交数，数到上限时写 “or more”。
     @Test("工作区与历史的窗口副标题")
     func subtitles() async throws {

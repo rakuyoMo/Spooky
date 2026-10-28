@@ -487,6 +487,17 @@ extension RepositoryHistoryState {
         if commits.contains(where: { $0.id == lookup }) {
             self.lookup = nil
             scrollTarget = lookup
+
+            // 选中它时它还不在列表里，当时读不到变更集，找到后补读
+            if
+                selectedIDs == [lookup],
+                changes.isEmpty,
+                !isLoadingChanges,
+                changesFailure == nil
+            {
+                loadChanges()
+            }
+
             return
         }
 
@@ -817,8 +828,10 @@ extension RepositoryHistoryState {
 
         guard replacing else { return }
 
-        // 回到的提交可以不在已加载的分页里，选择仍然保留
-        let loaded = Set(commits.map(\.id)).union(revealedCommit.map { [$0.id] } ?? [])
+        // 回到的提交与正在查找的提交可以不在已加载的分页里，选择仍然保留
+        let loaded = Set(commits.map(\.id))
+            .union(revealedCommit.map { [$0.id] } ?? [])
+            .union(lookup.map { [$0] } ?? [])
         let selected = selectedIDs.intersection(loaded)
 
         if selected == selectedIDs {
