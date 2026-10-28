@@ -2331,7 +2331,7 @@
 
 "publish.menu" = "Repository veröffentlichen…";
 "publish.title" = "Repository veröffentlichen";
-"publish.message" = "Erstellt mit dem ausgewählten Account ein neues, leeres Repository, fügt es diesem Repository als Remote hinzu und pusht den aktuellen Branch dorthin.";
+"publish.message" = "Erstellt mit dem ausgewählten Account ein neues, leeres Repository, fügt es diesem Repository als Remote hinzu und pusht alle lokalen Branches und Tags dorthin.";
 "publish.owner" = "Eigentümer:";
 "publish.name" = "Name:";
 "publish.visibility" = "Sichtbarkeit:";
@@ -2340,8 +2340,8 @@
 "publish.visibility.public" = "Öffentlich";
 "publish.remote" = "Remote-Name:";
 "publish.target" = "Remote-URL:";
-"publish.push" = "Pusht „%1$@“ nach „%2$@“ und verfolgt ihn.";
-"publish.noBranch" = "Es ist kein Branch ausgecheckt, daher wird nur das Remote hinzugefügt.";
+"publish.push" = "Pusht alle lokalen Branches und Tags nach „%@“. Branches ohne Upstream verfolgen ihren neuen Remote-Branch.";
+"publish.noBranch" = "Dieses Repository hat noch keine Branches oder Tags, daher wird nur das Remote hinzugefügt.";
 "publish.exists" = "„%1$@“ existiert auf %2$@ bereits. Wählen Sie einen anderen Namen; vorhandene Repositorys werden nicht überschrieben.";
 "publish.remoteExists" = "Dieses Repository hat bereits ein Remote namens „%@“. Wählen Sie einen anderen Namen; vorhandene Remotes werden nicht ersetzt.";
 "publish.push.title" = "Remote hinzufügen und pushen";

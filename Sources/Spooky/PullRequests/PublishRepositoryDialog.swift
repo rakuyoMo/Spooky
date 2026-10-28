@@ -185,11 +185,11 @@ extension PublishRepositoryDialog {
         let path = owner.path + "/" + name + ".git"
         let url = usesSSH ? "git@" + host + ":" + path : account.instance.webURL.absoluteString + "/" + path
 
-        guard let branch = session.status?.branch.head else {
+        guard session.hasBranchesOrTags else {
             return url + "\n" + AppLocalization.text("publish.noBranch")
         }
 
-        return url + "\n" + AppLocalization.text("publish.push", branch, remote)
+        return url + "\n" + AppLocalization.text("publish.push", remote)
     }
 
     /// 覆盖风险或读取失败的说明。

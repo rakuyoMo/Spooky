@@ -3,6 +3,8 @@ import Testing
 
 @testable import SpookyKit
 
+// MARK: - RepositorySyncTests
+
 /// 同步测试的远端只指向测试目录中的裸仓库。
 struct RepositorySyncTests {
     /// 发布后由第二个工作区更新，再完成 Fetch、Pull 和 Push。
@@ -172,5 +174,59 @@ struct RepositorySyncTests {
             return
         }
         #expect(message.contains("unknown option"))
+    }
+}
+
+// MARK: - Publish
+
+extension RepositorySyncTests {
+    /// 发布仓库推上全部本地分支与标签，别的远端的跟踪分支不跟着推；原来没有上游的分支跟踪新远端，已有的上游不被换掉。
+    @Test("推送全部分支与标签，只给没有上游的分支设上游")
+    func pushBranchesAndTags() async throws {
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+
+        try await fixture.initialize()
+        let runner = fixture.runner
+        let old = fixture.directory.appendingPathComponent("old.git").path
+        let new = fixture.directory.appendingPathComponent("new.git").path
+
+        // 两个裸远端放在工作区目录里，排除后不影响工作区状态
+        try FileManager.default.createDirectory(
+            at: fixture.directory.appendingPathComponent(".git/info"),
+            withIntermediateDirectories: true
+        )
+        try Data("old.git/\nnew.git/\n".utf8)
+            .write(to: fixture.directory.appendingPathComponent(".git/info/exclude"))
+
+        _ = try await runner.run(["init", "-q", "--bare", old])
+        _ = try await runner.run(["init", "-q", "--bare", new])
+        _ = try await runner.run(["commit", "--allow-empty", "-m", "root"])
+        _ = try await runner.run(["tag", "-a", "-m", "发布", "v1"])
+
+        // feature/中文 跟踪 old 上的同名分支；old 还有一个只在本地的跟踪分支 x
+        _ = try await runner.run(["remote", "add", "old", old])
+        _ = try await runner.run(["branch", "feature/中文"])
+        _ = try await runner.run(["push", "-q", "-u", "old", "feature/中文"])
+        _ = try await runner.run(["update-ref", "refs/remotes/old/x", "HEAD"])
+        _ = try await runner.run(["remote", "add", "new", new])
+
+        let sync = RepositorySync(runner: runner)
+        let pushed: Set<String> = ["refs/heads/main", "refs/heads/feature/中文", "refs/tags/v1"]
+        let updates = try await sync.pushBranchesAndTags(to: "new")
+        #expect(Set(updates.map(\.reference)) == pushed)
+
+        // 新远端上只有本地分支与标签，没有任何远端跟踪分支
+        let remoteReferences = try await fixture.runner(at: new).run(["for-each-ref", "--format=%(refname)"])
+        let names = String(decoding: remoteReferences, as: UTF8.self).split(separator: "\n").map(String.init)
+        #expect(Set(names) == pushed)
+
+        let branches = try await RepositoryReferences(runner: runner).snapshot().references
+        #expect(branches.first { $0.id == "refs/heads/main" }?.upstream == "refs/remotes/new/main")
+        #expect(branches.first { $0.id == "refs/heads/feature/中文" }?.upstream == "refs/remotes/old/feature/中文")
+
+        await #expect(throws: RepositorySyncError.missingRemote) {
+            _ = try await sync.pushBranchesAndTags(to: "missing")
+        }
     }
 }

@@ -2331,7 +2331,7 @@
 
 "publish.menu" = "發佈儲存庫…";
 "publish.title" = "發佈儲存庫";
-"publish.message" = "用所選帳號新增一個空儲存庫，把它加入為這個儲存庫的遠端，並把目前分支推送過去。";
+"publish.message" = "用所選帳號新增一個空儲存庫，把它加入為這個儲存庫的遠端，並把所有本機分支與標籤推送過去。";
 "publish.owner" = "擁有者：";
 "publish.name" = "名稱：";
 "publish.visibility" = "可見性：";
@@ -2340,8 +2340,8 @@
 "publish.visibility.public" = "公開";
 "publish.remote" = "遠端名稱：";
 "publish.target" = "遠端位址：";
-"publish.push" = "把 “%1$@” 推送到 “%2$@” 並追蹤它。";
-"publish.noBranch" = "沒有簽出分支，只加入遠端。";
+"publish.push" = "把所有本機分支與標籤推送到 “%@”。沒有上游的分支追蹤新遠端上的同名分支。";
+"publish.noBranch" = "這個儲存庫還沒有分支或標籤，只加入遠端。";
 "publish.exists" = "%2$@ 上已經有 “%1$@”。請換一個名稱，已有的儲存庫不會被覆蓋。";
 "publish.remoteExists" = "這個儲存庫已經有名為 “%@” 的遠端。請換一個名稱，已有的遠端不會被取代。";
 "publish.push.title" = "加入遠端並推送";

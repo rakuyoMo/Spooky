@@ -2331,7 +2331,7 @@
 
 "publish.menu" = "Publier le dépôt…";
 "publish.title" = "Publier le dépôt";
-"publish.message" = "Crée un dépôt vide avec le compte sélectionné, l’ajoute comme dépôt distant de ce dépôt et y pousse la branche actuelle.";
+"publish.message" = "Crée un dépôt vide avec le compte sélectionné, l’ajoute comme dépôt distant de ce dépôt et y pousse toutes les branches locales et étiquettes.";
 "publish.owner" = "Propriétaire :";
 "publish.name" = "Nom :";
 "publish.visibility" = "Visibilité :";
@@ -2340,8 +2340,8 @@
 "publish.visibility.public" = "Public";
 "publish.remote" = "Nom du dépôt distant :";
 "publish.target" = "URL distante :";
-"publish.push" = "Pousse « %1$@ » vers « %2$@ » et la suit.";
-"publish.noBranch" = "Aucune branche n’est extraite : seul le dépôt distant est ajouté.";
+"publish.push" = "Pousse toutes les branches locales et étiquettes vers « %@ ». Les branches sans branche amont suivent leur nouvelle branche distante.";
+"publish.noBranch" = "Ce dépôt n’a encore ni branche ni étiquette : seul le dépôt distant est ajouté.";
 "publish.exists" = "« %1$@ » existe déjà sur %2$@. Choisissez un autre nom ; les dépôts existants ne sont pas écrasés.";
 "publish.remoteExists" = "Ce dépôt a déjà un dépôt distant nommé « %@ ». Choisissez un autre nom ; les dépôts distants existants ne sont pas remplacés.";
 "publish.push.title" = "Ajouter le dépôt distant et pousser";
