@@ -581,8 +581,8 @@
 "fileHistory.restoreInWorkingCopy" = "„%@“ in der Arbeitskopie auf Revision „%@“ wiederherstellen …";
 "fileHistory.showHistoryOf" = "Dateiverlauf von „%@“ anzeigen";
 "fileHistory.restoreTitle" = "Dateien in der Arbeitskopie wiederherstellen";
-"fileHistory.restore.message" = "„%@“ wird auf Revision %@ zurückgesetzt (in %@). Gestagte und nicht gestagte Änderungen dieser Datei werden verworfen; existiert die Datei in dieser Revision nicht, wird sie gelöscht. Dies kann nicht widerrufen werden.";
-"fileHistory.restore.remote" = "„%@“ wird auf dem Server mit Revision %@ überschrieben (unter %@). Gestagte und nicht gestagte Änderungen dieser Datei werden endgültig verworfen; existiert die Datei in dieser Revision nicht, wird sie auf dem Server endgültig gelöscht. Dies kann nicht widerrufen werden.";
+"fileHistory.restore.message" = "„%@“ wird auf Revision %@ zurückgesetzt (in %@). Gestagte und nicht gestagte Änderungen dieser Datei werden verworfen; existiert die Datei in dieser Revision nicht, wird sie gelöscht.";
+"fileHistory.restore.remote" = "„%@“ wird auf dem Server mit Revision %@ überschrieben (unter %@). Gestagte und nicht gestagte Änderungen dieser Datei werden verworfen; existiert die Datei in dieser Revision nicht, wird sie auf dem Server gelöscht.";
 "fileHistory.scope.author" = "Autor";
 "fileHistory.scope.committer" = "Committer";
 "fileHistory.scope.revision" = "Revision";
@@ -716,7 +716,7 @@
 "files.revert.button" = "Zurücksetzen";
 "files.revert.revision" = "Revision:";
 "files.revert.message" = "Geben Sie die Revision ein, auf die folgende Dateien zurückgesetzt werden sollen, oder wählen Sie sie aus. Ihre lokalen Änderungen werden verworfen, und Dateien, die es in dieser Revision nicht gibt, werden gelöscht.\n\n%1$@";
-"files.revert.remote" = "Geben Sie die Revision ein, auf die folgende Dateien auf dem Server unter %2$@ zurückgesetzt werden sollen, oder wählen Sie sie aus. Die Dateien werden dort endgültig überschrieben, und Dateien, die es in dieser Revision nicht gibt, werden auf dem Server endgültig gelöscht.\n\n%1$@";
+"files.revert.remote" = "Geben Sie die Revision ein, auf die folgende Dateien auf dem Server unter %2$@ zurückgesetzt werden sollen, oder wählen Sie sie aus. Die Dateien werden dort überschrieben, und Dateien, die es in dieser Revision nicht gibt, werden auf dem Server gelöscht.\n\n%1$@";
 "files.ignore" = "Ignorieren";
 "files.ignore.item" = "Dieses Objekt ignorieren";
 "files.ignore.items" = "%ld Objekte ignorieren";
@@ -876,8 +876,8 @@
 "tree.exportItems" = "%1$ld Objekte in Revision „%2$@“ exportieren …";
 "tree.archiveItems" = "%1$ld Objekte in Revision „%2$@“ archivieren …";
 "tree.archiveAt" = "„%1$@“ in Revision „%2$@“ archivieren …";
-"tree.restore.message" = "%1$ld Objekte werden auf Revision %2$@ zurückgesetzt (in %3$@). Gestagte und nicht gestagte Änderungen dieser Objekte werden verworfen; Dateien, die in dieser Revision nicht existieren, werden gelöscht. Dies kann nicht widerrufen werden.";
-"tree.restore.remote" = "%1$ld Objekte werden auf dem Server mit Revision %2$@ überschrieben (in %3$@). Gestagte und nicht gestagte Änderungen dieser Objekte werden endgültig verworfen; Dateien, die in dieser Revision nicht existieren, werden auf dem Server endgültig gelöscht. Dies kann nicht widerrufen werden.";
+"tree.restore.message" = "%1$ld Objekte werden auf Revision %2$@ zurückgesetzt (in %3$@). Gestagte und nicht gestagte Änderungen dieser Objekte werden verworfen; Dateien, die in dieser Revision nicht existieren, werden gelöscht.";
+"tree.restore.remote" = "%1$ld Objekte werden auf dem Server mit Revision %2$@ überschrieben (in %3$@). Gestagte und nicht gestagte Änderungen dieser Objekte werden verworfen; Dateien, die in dieser Revision nicht existieren, werden auf dem Server gelöscht.";
 "export.title" = "Dateien aus Revision exportieren";
 "export.message" = "Exportiert den vollständigen Dateibaum einer Revision in einen Ordner oder ein ZIP-Archiv auf diesem Mac.";
 "export.itemsTitle" = "%1$ld Objekte aus Revision %2$@ exportieren";
@@ -1048,7 +1048,7 @@
 "rewrite.reset.mixed.help" = "Setzt den Index zurück und behält die Arbeitskopie. Änderungen der entfernten Commits sind danach nicht gestagt.";
 "rewrite.reset.hard" = "Hard";
 "rewrite.reset.hard.help" = "Setzt Index und Arbeitskopie zurück. Nicht committete Änderungen und die Änderungen der entfernten Commits gehen verloren.";
-"rewrite.reset.discards" = "Die Arbeitskopie hat nicht committete Änderungen. Ein Hard-Reset verwirft sie endgültig.";
+"rewrite.reset.discards" = "Die Arbeitskopie hat nicht committete Änderungen. Ein Hard-Reset verwirft sie.";
 "rewrite.reset.leaving" = "Commits, die den aktuellen Branch verlassen (%ld):";
 "rewrite.error.revision" = "Diese Revision wurde nicht gefunden.";
 "rewrite.checkout.title" = "Revision auschecken";

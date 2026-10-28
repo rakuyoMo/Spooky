@@ -581,8 +581,8 @@
 "fileHistory.restoreInWorkingCopy" = "在工作区中将 “%@” 恢复到版本 “%@”…";
 "fileHistory.showHistoryOf" = "显示 “%@” 的文件历史";
 "fileHistory.restoreTitle" = "在工作区中恢复文件";
-"fileHistory.restore.message" = "将 “%@” 恢复到版本 %@。仓库：%@。这个文件已暂存和未暂存的改动都会被丢弃；该版本中没有这个文件时会将其删除。此操作无法撤销。";
-"fileHistory.restore.remote" = "将在服务器上覆盖 “%@”，改为版本 %@ 的内容。仓库：%@。这个文件已暂存和未暂存的改动都会被永久丢弃；该版本中没有这个文件时，会在服务器上将其永久删除。此操作无法撤销。";
+"fileHistory.restore.message" = "将 “%@” 恢复到版本 %@。仓库：%@。这个文件已暂存和未暂存的改动都会被丢弃；该版本中没有这个文件时会将其删除。";
+"fileHistory.restore.remote" = "将在服务器上覆盖 “%@”，改为版本 %@ 的内容。仓库：%@。这个文件已暂存和未暂存的改动都会被丢弃；该版本中没有这个文件时，会在服务器上将其删除。";
 "fileHistory.scope.author" = "作者";
 "fileHistory.scope.committer" = "提交人";
 "fileHistory.scope.revision" = "版本";
@@ -716,7 +716,7 @@
 "files.revert.button" = "恢复";
 "files.revert.revision" = "版本：";
 "files.revert.message" = "输入或选择要把以下文件恢复到的版本。这些文件的本地改动会被丢弃，该版本里没有的文件会被删除。\n\n%1$@";
-"files.revert.remote" = "输入或选择要把以下文件恢复到的版本。仓库：%2$@。服务器上的这些文件会被永久覆盖，该版本里没有的文件会在服务器上被永久删除。\n\n%1$@";
+"files.revert.remote" = "输入或选择要把以下文件恢复到的版本。仓库：%2$@。服务器上的这些文件会被覆盖，该版本里没有的文件会在服务器上被删除。\n\n%1$@";
 "files.ignore" = "忽略";
 "files.ignore.item" = "忽略此项目";
 "files.ignore.items" = "忽略 %ld 个项目";
@@ -876,8 +876,8 @@
 "tree.exportItems" = "导出 %1$ld 项在版本 “%2$@” 的内容…";
 "tree.archiveItems" = "归档 %1$ld 项在版本 “%2$@” 的内容…";
 "tree.archiveAt" = "归档 “%1$@” 在版本 “%2$@” 的内容…";
-"tree.restore.message" = "将 %1$ld 项恢复到版本 %2$@。仓库：%3$@。这些项已暂存与未暂存的改动都会被丢弃；该版本中没有的文件会被删除。此操作无法撤销。";
-"tree.restore.remote" = "用版本 %2$@ 覆盖服务器上的 %1$ld 项。仓库：%3$@。这些项已暂存与未暂存的改动会被永久丢弃；该版本中没有的文件会在服务器上被永久删除。此操作无法撤销。";
+"tree.restore.message" = "将 %1$ld 项恢复到版本 %2$@。仓库：%3$@。这些项已暂存与未暂存的改动都会被丢弃；该版本中没有的文件会被删除。";
+"tree.restore.remote" = "用版本 %2$@ 覆盖服务器上的 %1$ld 项。仓库：%3$@。这些项已暂存与未暂存的改动会被丢弃；该版本中没有的文件会在服务器上被删除。";
 "export.title" = "从版本导出文件";
 "export.message" = "把一个版本的完整文件树导出到本机的文件夹或 zip 归档。";
 "export.itemsTitle" = "导出版本 %2$@ 中的 %1$ld 项";
@@ -1048,7 +1048,7 @@
 "rewrite.reset.mixed.help" = "重置暂存区，保留工作区，撤下的提交的改动变为未暂存。";
 "rewrite.reset.hard" = "Hard";
 "rewrite.reset.hard.help" = "重置暂存区与工作区，未提交的改动与撤下的提交的改动都会丢失。";
-"rewrite.reset.discards" = "工作区有未提交的改动，Hard 重置会永久丢弃它们。";
+"rewrite.reset.discards" = "工作区有未提交的改动，Hard 重置会丢弃它们。";
 "rewrite.reset.leaving" = "会离开当前分支的提交（%ld）：";
 "rewrite.error.revision" = "找不到这个版本。";
 "rewrite.checkout.title" = "检出版本";
