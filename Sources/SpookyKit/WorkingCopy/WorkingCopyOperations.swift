@@ -3,7 +3,7 @@ import Foundation
 
 // MARK: - RepositoryOperationState
 
-/// 正在进行的 Git 操作，启动入口由对应里程碑提供。
+/// 仓库里进行到一半、等待提交或继续的 Git 操作。
 public enum RepositoryOperationState: String, Sendable {
     /// 普通合并等待提交。
     case merge
