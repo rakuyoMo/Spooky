@@ -43,4 +43,7 @@ for locale in en zh-Hans zh-Hant ja ko de fr es; do
         "$app_directory/Contents/Resources/$locale.lproj/InfoPlist.strings"
 done
 
+# Dock 按包目录的修改时间缓存图标；只替换包里的文件不会改这个时间，换了图标后 Dock 仍显示旧的一版。
+touch "$app_directory"
+
 printf '%s\n' "$app_directory"
