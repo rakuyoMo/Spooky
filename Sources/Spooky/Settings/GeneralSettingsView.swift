@@ -26,10 +26,6 @@ struct GeneralSettingsView: View {
     @AppStorage("offerAutoStash")
     private var offerAutoStash = true
 
-    /// 丢弃块或行之前先确认。
-    @AppStorage(WorkingCopyPreferences.warnsDiscardingChunks)
-    private var warnsDiscardingChunks = true
-
     /// 自动归档已完全合并或陈旧的分支，与侧边栏视图设置同一个偏好。
     @AppStorage(SidebarPreferences.autoArchiveKey)
     private var autoArchiveBranches = SidebarPreferences.defaultFlag(SidebarPreferences.autoArchiveKey)
@@ -38,7 +34,7 @@ struct GeneralSettingsView: View {
     @AppStorage(SubmodulePreferences.alwaysUpdate)
     private var alwaysUpdateSubmodules = false
 
-    /// General 表单按功能分为五组，组间以分隔线隔开；控件列固定为 278 pt。
+    /// General 表单按功能分为六组，组间以分隔线隔开；控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
             CloneDirectoryRow()
@@ -49,6 +45,12 @@ struct GeneralSettingsView: View {
                 .gridCellUnsizedAxes(.horizontal)
 
             operationRows
+
+            Divider()
+                .gridCellUnsizedAxes(.horizontal)
+
+            // 丢弃块的警告与服务器仓库的删除、覆盖确认列在一组，逐项打开或关闭
+            ForEach(ServerConfirmation.allCases, id: \.self) { ConfirmationRow(confirmation: $0) }
 
             Divider()
                 .gridCellUnsizedAxes(.horizontal)
@@ -73,7 +75,7 @@ struct GeneralSettingsView: View {
 // MARK: - Private
 
 extension GeneralSettingsView {
-    /// 操作相关的设置：自动获取的间隔、自动更新子模块、被本地改动挡住时询问储藏、丢弃块前确认、输入时规范引用名、自动归档分支。
+    /// 操作相关的设置：自动获取的间隔、自动更新子模块、被本地改动挡住时询问储藏、输入时规范引用名、自动归档分支。
     @ViewBuilder
     private var operationRows: some View {
         AutoFetchSettingsRow()
@@ -81,8 +83,6 @@ extension GeneralSettingsView {
         toggleRow("settings.autoUpdateSubmodules", isOn: $alwaysUpdateSubmodules)
 
         toggleRow("stash.offerAutoStash", isOn: $offerAutoStash)
-
-        toggleRow("settings.warnDiscardingChunks", isOn: $warnsDiscardingChunks)
 
         toggleRow("branch.cleanNames", isOn: $cleanRefNames)
 
@@ -154,5 +154,34 @@ extension GeneralSettingsView {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(width: 278, alignment: .leading)
         }
+    }
+}
+
+// MARK: - ConfirmationRow
+
+/// 一项可以关掉的确认：与确认框里的 “Do not ask me again” 读写同一个偏好，勾选后重新确认。
+private struct ConfirmationRow: View {
+    /// 这一项对应的确认。
+    let confirmation: ServerConfirmation
+
+    /// 确认是否打开，没有设置时打开。
+    @AppStorage
+    private var isOn: Bool
+
+    /// 标签列留空，控件列放勾选框。
+    var body: some View {
+        GridRow {
+            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+
+            Toggle(AppLocalization.text(confirmation.titleKey), isOn: $isOn)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: 278, alignment: .leading)
+        }
+    }
+
+    /// 按确认的偏好键读写。
+    init(confirmation: ServerConfirmation) {
+        self.confirmation = confirmation
+        _isOn = AppStorage(wrappedValue: true, confirmation.key)
     }
 }

@@ -30,7 +30,6 @@ extension RepositorySession {
             return
         }
 
-        let request = generation
         let message = AppLocalization.text(
             repository.host == nil ? "tree.restore.message" : "tree.restore.remote",
             paths.count,
@@ -38,23 +37,7 @@ extension RepositorySession {
             repository.displayPath
         )
 
-        onConfirm?(
-            AppLocalization.text("fileHistory.restoreTitle"),
-            message,
-            { [weak self] in
-                guard let self, generation == request else { return }
-
-                performGit(
-                    { runner, _ in
-                        try await WorkingCopyOperations(runner: runner).restore(paths, to: revision)
-                    },
-                    title: AppLocalization.text("fileHistory.restoreTitle"),
-                    recordsActivity: false,
-                    undo: .reversible
-                )
-            },
-            nil
-        )
+        confirmRestore(paths, at: revision, message: message)
     }
 
     /// 保存补丁：按住 ⌥ 的快速保存跳过选项对话框，沿用记住的去前缀选项，直接选择保存位置。

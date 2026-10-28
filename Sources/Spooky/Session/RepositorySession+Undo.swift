@@ -65,7 +65,7 @@ extension RepositorySession {
         return .available(entry.title)
     }
 
-    /// 撤销最近一次操作：核对仓库仍是操作后的状态，再恢复成操作前；经写队列执行并记进 Activity。
+    /// 撤销最近一次操作：核对仓库仍是操作后的状态，再恢复成操作前，移进废纸篓的项移回原处；经写队列执行并记进 Activity。
     func undoLastOperation() {
         guard
             case .available = undoMenuState(redo: false),
@@ -75,7 +75,8 @@ extension RepositorySession {
 
         performGit(
             { runner, _ in
-                try await RepositoryUndo(runner: runner).restore(entry.before, expecting: entry.after, message: "undo")
+                try await RepositoryUndo(runner: runner)
+                    .restore(entry.before, expecting: entry.after, message: "undo", puttingBack: entry.trashed)
             },
             title: UndoManager().undoMenuTitle(forUndoActionName: entry.title),
             undo: .unrecorded
@@ -84,7 +85,7 @@ extension RepositorySession {
         }
     }
 
-    /// 重做最近撤销的操作：核对仓库仍是操作前的状态，再恢复成操作后。
+    /// 重做最近撤销的操作：核对仓库仍是操作前的状态，再恢复成操作后，操作移进废纸篓的项重新移进废纸篓。
     func redoLastOperation() {
         guard
             case .available = undoMenuState(redo: true),
@@ -92,20 +93,27 @@ extension RepositorySession {
             let entry = history.redoEntries.last
         else { return }
 
+        // 重新移进废纸篓的新位置经记录收集，下次撤销据此移回
+        let log = TrashLog()
+
         performGit(
             { runner, _ in
-                try await RepositoryUndo(runner: runner).restore(entry.after, expecting: entry.before, message: "redo")
+                try await TrashLog.$current.withValue(log) {
+                    try await RepositoryUndo(runner: runner)
+                        .restore(entry.after, expecting: entry.before, message: "redo", trashing: entry.trashed)
+                }
             },
             title: UndoManager().redoMenuTitle(forUndoActionName: entry.title),
             undo: .unrecorded
         ) {
-            history.finishRedo(entry)
+            history.finishRedo(entry, trashed: log.items)
         }
     }
 
-    /// 按声明包装写操作：可撤销的操作前后各记一次状态，成功改动仓库后登记；不能撤销的操作成功后清空撤销栈。
+    /// 按声明包装写操作：可撤销的操作前后各记一次状态，连同移进废纸篓的项成功改动仓库后登记；不能撤销的操作成功后清空撤销栈。
     ///
-    /// 操作前有进行中的操作或冲突、操作后停在进行中的状态、或删掉的未跟踪文件找不回内容时，都按不能撤销处理。
+    /// 操作前有进行中的操作或冲突、操作后停在进行中的状态、删掉的未跟踪文件找不回内容，
+    /// 或移进废纸篓的项不知道位置时，都按不能撤销处理。
     func recordingUndo(
         _ action: @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
@@ -125,7 +133,8 @@ extension RepositorySession {
         return { runner, output in
             let undo = RepositoryUndo(runner: runner)
             let before = try? await undo.capture()
-            try await action(runner, output)
+            let log = TrashLog()
+            try await TrashLog.$current.withValue(log) { try await action(runner, output) }
 
             guard let before, let after = try? await undo.capture() else {
                 await history.recordIrreversible(title)
@@ -135,10 +144,18 @@ extension RepositorySession {
             // 没有改动仓库的操作不占撤销栈
             guard after != before else { return }
 
-            let restorable = (try? await undo.canRestore(before, from: after)) ?? false
+            // 废纸篓命令没有报告位置的项移不回来
+            let trashed = log.items
+
+            guard trashed.allSatisfy({ $0.location != nil }) else {
+                await history.recordIrreversible(title)
+                return
+            }
+
+            let restorable = (try? await undo.canRestore(before, from: after, trashed: trashed)) ?? false
 
             if restorable {
-                await history.record(RepositoryUndoEntry(title: title, before: before, after: after))
+                await history.record(RepositoryUndoEntry(title: title, before: before, after: after, trashed: trashed))
             } else {
                 await history.recordIrreversible(title)
             }

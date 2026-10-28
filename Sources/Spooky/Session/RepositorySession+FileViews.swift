@@ -74,13 +74,12 @@ extension RepositorySession {
         }
     }
 
-    /// 把文件的暂存区与工作区恢复到指定版本；确认里写明影响范围，服务器仓库写明在服务器上覆盖。
+    /// 把文件的暂存区与工作区恢复到指定版本；确认里写明影响范围，服务器仓库写明在服务器上覆盖，并可以勾选不再提醒。
     func restoreFile(_ path: String, at revision: String) {
         guard canWrite, let repository else {
             return
         }
 
-        let request = generation
         let message = AppLocalization.text(
             repository.host == nil ? "fileHistory.restore.message" : "fileHistory.restore.remote",
             path,
@@ -88,23 +87,38 @@ extension RepositorySession {
             repository.displayPath
         )
 
-        onConfirm?(
-            AppLocalization.text("fileHistory.restoreTitle"),
-            message,
-            { [weak self] in
-                guard let self, generation == request else { return }
+        confirmRestore([path], at: revision, message: message)
+    }
 
-                performGit(
-                    { runner, _ in
-                        try await WorkingCopyOperations(runner: runner).restore([path], to: revision)
-                    },
-                    title: AppLocalization.text("fileHistory.restoreTitle"),
-                    recordsActivity: false,
-                    undo: .reversible
-                )
-            },
-            nil
-        )
+    /// 确认后把文件恢复到指定版本：本机仓库每次确认，服务器仓库的这项确认可以关掉。
+    ///
+    /// - Parameters:
+    ///   - paths: 仓库内的相对路径。
+    ///   - revision: 恢复到的版本。
+    ///   - message: 写明影响范围的说明。
+    func confirmRestore(_ paths: [String], at revision: String, message: String) {
+        let request = generation
+        let title = AppLocalization.text("fileHistory.restoreTitle")
+
+        let perform = { [weak self] in
+            guard let self, generation == request else { return }
+
+            performGit(
+                { runner, _ in
+                    try await WorkingCopyOperations(runner: runner).restore(paths, to: revision)
+                },
+                title: title,
+                recordsActivity: false,
+                undo: .reversible
+            )
+        }
+
+        guard repository?.host != nil else {
+            onConfirm?(title, message, perform, nil)
+            return
+        }
+
+        confirmOnServer(.restoreFiles, title: title, message: message, action: perform)
     }
 
     /// 把某个版本的文件导出到本机：保存面板在本机，内容取自仓库所在机器上的 Git 输出。

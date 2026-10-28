@@ -18,7 +18,7 @@ enum UndoRecording {
 
 // MARK: - RepositoryUndoEntry
 
-/// 一次可撤销的写操作：名称与操作前后的仓库状态。
+/// 一次可撤销的写操作：名称、操作前后的仓库状态与移进废纸篓的项。
 struct RepositoryUndoEntry: Identifiable, Sendable {
     /// 在撤销栈与重做栈之间移动时用来找回同一项。
     let id = UUID()
@@ -31,6 +31,9 @@ struct RepositoryUndoEntry: Identifiable, Sendable {
 
     /// 操作后的状态，重做回到这里。
     let after: RepositoryState
+
+    /// 操作移进废纸篓的项：撤销时移回原处，重做时重新移进废纸篓。
+    let trashed: [TrashedItem]
 }
 
 // MARK: - RepositoryUndoHistory
@@ -82,9 +85,15 @@ final class RepositoryUndoHistory {
         redoEntries.append(undoEntries.remove(at: index))
     }
 
-    /// 重做完成：这一项回到撤销栈。
-    func finishRedo(_ entry: RepositoryUndoEntry) {
+    /// 重做完成：这一项回到撤销栈，记下重新移进废纸篓后的位置。
+    ///
+    /// - Parameter trashed: 重做时重新移进废纸篓的项。
+    func finishRedo(_ entry: RepositoryUndoEntry, trashed: [TrashedItem]) {
         guard let index = redoEntries.lastIndex(where: { $0.id == entry.id }) else { return }
-        undoEntries.append(redoEntries.remove(at: index))
+
+        let redone = redoEntries.remove(at: index)
+        undoEntries.append(
+            RepositoryUndoEntry(title: redone.title, before: redone.before, after: redone.after, trashed: trashed)
+        )
     }
 }

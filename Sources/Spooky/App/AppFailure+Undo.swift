@@ -12,6 +12,7 @@ extension AppFailure {
         case .hiddenChanges: ("undo.error.hidden", "undo.error.hidden.help")
         case .operationInProgress: ("undo.error.inProgress", "undo.error.inProgress.help")
         case .unresolvedConflicts: ("undo.error.conflicts", "undo.error.conflicts.help")
+        case .trashedItemsUnavailable: ("undo.error.trash", "undo.error.trash.help")
         }
     }
 }

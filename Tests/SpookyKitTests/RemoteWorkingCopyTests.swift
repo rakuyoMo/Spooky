@@ -36,7 +36,7 @@ struct RemoteWorkingCopyTests {
             try await files.write(Data("discard\n".utf8), to: absolute)
             let untracked = fixture.repository + "/delete [*].txt"
             try await files.write(Data("untracked\n".utf8), to: untracked)
-            try await service.discard(try await runner.status().entries)
+            try await service.discard(try await runner.status().entries, removal: .permanent)
             #expect(try await runner.status().entries.isEmpty)
             #expect(try await files.read([absolute])[absolute] == Data("first\nsecond\nthird".utf8))
             #expect(try await files.read([untracked]).isEmpty)

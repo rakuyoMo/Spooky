@@ -271,8 +271,9 @@
 "working.discardLines" = "Abandonner les lignes";
 "working.discard" = "Abandonner les modifications";
 "working.discardAll" = "Abandonner toutes les modifications…";
-"working.discard.message" = "Les modifications de %d fichiers dans %@ seront définitivement abandonnées, y compris les modifications indexées et les fichiers non suivis. Cette action est irréversible.";
-"working.discard.remote" = "%d fichiers seront définitivement supprimés ou écrasés sur le serveur dans %@. Les modifications indexées seront également abandonnées. Cette action est irréversible.";
+"working.discard.message" = "Les modifications de %d fichiers dans %@ seront abandonnées : les fichiers suivis reviennent au dernier commit, modifications indexées comprises, et les fichiers non suivis sont placés dans la corbeille.";
+"working.discard.remote" = "Les modifications de %d fichiers seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont placés dans la corbeille du serveur.";
+"working.discard.remotePermanent" = "Les modifications de %d fichiers seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont définitivement supprimés sur le serveur. Cette action est irréversible.";
 "working.discard.lines" = "Les modifications des lignes sélectionnées dans %@ seront définitivement abandonnées. Cette action est irréversible.";
 "working.discard.remoteLines" = "Le contenu sélectionné sera définitivement écrasé sur le serveur dans %@. Cette action est irréversible.";
 "working.resolved" = "Marquer comme résolu";
@@ -396,6 +397,7 @@
 "activity.cancelled" = "Annulé";
 "activity.failed" = "Échec";
 "dialog.options" = "Options";
+"dialog.doNotAskAgain" = "Ne plus me demander";
 "menu.repository" = "Dépôt";
 "callback.privateKey" = "Déverrouiller la clé SSH privée";
 "callback.privateKey.help" = "La clé déverrouillée sera ajoutée à l’agent SSH.";
@@ -771,6 +773,8 @@
 "files.error.preimage" = "Le patch ne correspond pas aux fichiers";
 "files.error.preimageHelp" = "Les fichiers ci-dessous ont été modifiés après la création du patch : le patch n’a donc pas été appliqué et la copie de travail est inchangée. Recréez le patch à partir des fichiers actuels, ou rétablissez les fichiers dans la version à partir de laquelle le patch a été créé.";
 "files.error.destination" = "La destination existe déjà";
+"files.error.trashUnavailable" = "Aucune corbeille n’est disponible sur le serveur";
+"files.error.trashedItems" = "Impossible de remettre les fichiers depuis la corbeille";
 "files.doubleClick" = "Double-clic sur un fichier de la copie de travail :";
 "files.doubleClick.openFile" = "Ouvrir avec l’application par défaut";
 "files.doubleClick.openDiff" = "Ouvrir l’outil de comparaison";
@@ -1448,6 +1452,8 @@
 "undo.error.inProgress.help" = "Terminez ou abandonnez d’abord la fusion, le rebase, le cherry-pick ou le revert. Rien n’a été modifié.";
 "undo.error.conflicts" = "Le dépôt a des conflits non résolus";
 "undo.error.conflicts.help" = "Résolvez d’abord les conflits. Rien n’a été modifié.";
+"undo.error.trash" = "Impossible de remettre les fichiers depuis la corbeille";
+"undo.error.trash.help" = "Certains fichiers placés dans la corbeille n’y sont plus, ou d’autres fichiers occupent maintenant leur emplacement d’origine. Rien n’a été modifié.";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
 "reflog.title" = "Reflog";
@@ -1474,6 +1480,9 @@
 "settings.cloneDirectory" = "Dossier par défaut des dépôts clonés :";
 "settings.cloneDirectory.select" = "Choisir…";
 "settings.warnDiscardingChunks" = "Avertir avant d’abandonner les modifications d’un bloc";
+"settings.warnDiscardingOnServer" = "Avertir avant d’abandonner des modifications dans un dépôt sur un serveur";
+"settings.warnDeletingOnServer" = "Avertir avant de supprimer définitivement des fichiers dans un dépôt sur un serveur";
+"settings.warnRestoringOnServer" = "Avertir avant de restaurer des fichiers dans un dépôt sur un serveur";
 "settings.windowRestoration" = "Restauration des fenêtres :";
 "settings.windowRestoration.always" = "Toujours";
 "settings.windowRestoration.never" = "Jamais";

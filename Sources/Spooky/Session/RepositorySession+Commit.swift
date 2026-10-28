@@ -15,6 +15,20 @@ enum CommentHandling {
 // MARK: - Commit Experience
 
 extension RepositorySession {
+    /// 未解决冲突期间不允许提交或修补。
+    var conflictCount: Int { status?.entries.filter { $0.kind == .conflicted }.count ?? 0 }
+
+    /// 有标题、有暂存改动或可修补的 HEAD 时允许提交；合并可产生空树差异。
+    var canCommit: Bool {
+        canWrite && commitResetTask == nil && conflictCount == 0
+            && !commitSubject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && (
+                amend
+                    || context?.operation == .merge
+                    || (status?.entries.contains(where: \.hasStagedChanges) ?? false)
+            )
+    }
+
     /// 读取提交配置；读取失败时保留上一次的结果，断线与身份错误由同一次刷新的身份读取报告。
     func loadCommitConfiguration() {
         guard configurationTask == nil, let runner else { return }

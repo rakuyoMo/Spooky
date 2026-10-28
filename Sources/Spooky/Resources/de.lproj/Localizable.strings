@@ -271,8 +271,9 @@
 "working.discardLines" = "Zeilen verwerfen";
 "working.discard" = "Änderungen verwerfen";
 "working.discardAll" = "Alle Änderungen verwerfen …";
-"working.discard.message" = "Die Änderungen an %d Dateien in %@ werden endgültig verworfen, einschließlich gestagter Änderungen und unversionierter Dateien. Dies kann nicht widerrufen werden.";
-"working.discard.remote" = "%d Dateien auf dem Server unter %@ werden endgültig gelöscht oder überschrieben. Gestagte Änderungen werden ebenfalls verworfen. Dies kann nicht widerrufen werden.";
+"working.discard.message" = "Die Änderungen an %d Dateien in %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen auf den letzten Commit zurückgesetzt, unversionierte Dateien werden in den Papierkorb gelegt.";
+"working.discard.remote" = "Die Änderungen an %d Dateien auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden in den Papierkorb des Servers gelegt.";
+"working.discard.remotePermanent" = "Die Änderungen an %d Dateien auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden auf dem Server endgültig gelöscht. Dies kann nicht widerrufen werden.";
 "working.discard.lines" = "Die ausgewählten Zeilen in %@ werden endgültig verworfen. Dies kann nicht widerrufen werden.";
 "working.discard.remoteLines" = "Der ausgewählte Inhalt auf dem Server unter %@ wird endgültig überschrieben. Dies kann nicht widerrufen werden.";
 "working.resolved" = "Als aufgelöst markieren";
@@ -396,6 +397,7 @@
 "activity.cancelled" = "Abgebrochen";
 "activity.failed" = "Fehlgeschlagen";
 "dialog.options" = "Optionen";
+"dialog.doNotAskAgain" = "Nicht mehr fragen";
 "menu.repository" = "Repository";
 "callback.privateKey" = "Privaten SSH-Schlüssel entsperren";
 "callback.privateKey.help" = "Der entsperrte Schlüssel wird zum SSH-Agenten hinzugefügt.";
@@ -771,6 +773,8 @@
 "files.error.preimage" = "Der Patch passt nicht zu den Dateien";
 "files.error.preimageHelp" = "Die folgenden Dateien wurden nach dem Erstellen des Patches geändert. Der Patch wurde daher nicht angewendet, die Arbeitskopie ist unverändert. Erstellen Sie den Patch aus den aktuellen Dateien neu oder setzen Sie die Dateien auf die Version zurück, aus der der Patch erstellt wurde.";
 "files.error.destination" = "Das Ziel existiert bereits";
+"files.error.trashUnavailable" = "Auf dem Server ist kein Papierkorb verfügbar";
+"files.error.trashedItems" = "Die Dateien können nicht aus dem Papierkorb zurückgelegt werden";
 "files.doubleClick" = "Doppelklick auf Datei in der Arbeitskopie:";
 "files.doubleClick.openFile" = "Mit Standardprogramm öffnen";
 "files.doubleClick.openDiff" = "Vergleichswerkzeug öffnen";
@@ -1448,6 +1452,8 @@
 "undo.error.inProgress.help" = "Schließen Sie zuerst den Merge, Rebase, Cherry-Pick oder Revert ab oder brechen Sie ihn ab. Es wurde nichts geändert.";
 "undo.error.conflicts" = "Das Repository hat ungelöste Konflikte";
 "undo.error.conflicts.help" = "Lösen Sie zuerst die Konflikte. Es wurde nichts geändert.";
+"undo.error.trash" = "Die Dateien können nicht aus dem Papierkorb zurückgelegt werden";
+"undo.error.trash.help" = "Einige in den Papierkorb gelegte Dateien sind dort nicht mehr vorhanden, oder an ihrem ursprünglichen Ort liegen jetzt andere Dateien. Es wurde nichts geändert.";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
 "reflog.title" = "Reflog";
@@ -1474,6 +1480,9 @@
 "settings.cloneDirectory" = "Standardordner für geklonte Repositorys:";
 "settings.cloneDirectory.select" = "Auswählen …";
 "settings.warnDiscardingChunks" = "Vor dem Verwerfen von Änderungen in einem Block warnen";
+"settings.warnDiscardingOnServer" = "Vor dem Verwerfen von Änderungen in einem Server-Repository warnen";
+"settings.warnDeletingOnServer" = "Vor dem endgültigen Löschen von Dateien in einem Server-Repository warnen";
+"settings.warnRestoringOnServer" = "Vor dem Wiederherstellen von Dateien in einem Server-Repository warnen";
 "settings.windowRestoration" = "Fenster wiederherstellen:";
 "settings.windowRestoration.always" = "Immer";
 "settings.windowRestoration.never" = "Nie";

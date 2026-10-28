@@ -271,8 +271,9 @@
 "working.discardLines" = "選択行を破棄";
 "working.discard" = "変更を破棄";
 "working.discardAll" = "すべての変更を破棄…";
-"working.discard.message" = "%d ファイルの変更を永久に破棄します。対象：%@。ステージ済みの変更と未追跡ファイルも対象です。元に戻せません。";
-"working.discard.remote" = "サーバー上の %d ファイルを永久に削除または上書きします。対象：%@。ステージ済みの変更も破棄され、元に戻せません。";
+"working.discard.message" = "%d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットに戻し、未追跡ファイルはゴミ箱に入れます。";
+"working.discard.remote" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバーのゴミ箱に入れます。";
+"working.discard.remotePermanent" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバー上で完全に削除します。元に戻せません。";
 "working.discard.lines" = "%@ の選択行の変更を永久に破棄します。元に戻せません。";
 "working.discard.remoteLines" = "サーバー %@ 上の選択内容を永久に上書きします。元に戻せません。";
 "working.resolved" = "解決済みにする";
@@ -396,6 +397,7 @@
 "activity.cancelled" = "キャンセル済み";
 "activity.failed" = "失敗";
 "dialog.options" = "オプション";
+"dialog.doNotAskAgain" = "今後確認しない";
 "menu.repository" = "リポジトリ";
 "callback.privateKey" = "SSH 秘密鍵を解除";
 "callback.privateKey.help" = "解除した鍵を SSH エージェントに追加します。";
@@ -771,6 +773,8 @@
 "files.error.preimage" = "パッチがファイルと一致しません";
 "files.error.preimageHelp" = "次のファイルはパッチの作成後に変更されているため、パッチは適用されず、作業コピーは変更されていません。現在のファイルからパッチを作り直すか、ファイルをパッチ作成時のバージョンに戻してください。";
 "files.error.destination" = "移動先がすでに存在します";
+"files.error.trashUnavailable" = "サーバーで使えるゴミ箱がありません";
+"files.error.trashedItems" = "ゴミ箱からファイルを戻せません";
 "files.doubleClick" = "作業コピーのファイルをダブルクリック：";
 "files.doubleClick.openFile" = "デフォルトのアプリケーションで開く";
 "files.doubleClick.openDiff" = "比較ツールを開く";
@@ -1448,6 +1452,8 @@
 "undo.error.inProgress.help" = "先にマージ、リベース、チェリーピック、リバートを完了するか中止してください。リポジトリは変更されていません。";
 "undo.error.conflicts" = "未解決の競合があります";
 "undo.error.conflicts.help" = "先に競合を解決してください。リポジトリは変更されていません。";
+"undo.error.trash" = "ゴミ箱からファイルを戻せません";
+"undo.error.trash.help" = "ゴミ箱に入れたファイルの一部がゴミ箱にないか、元の場所に別のファイルがあります。リポジトリは変更されていません。";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
 "reflog.title" = "Reflog";
@@ -1474,6 +1480,9 @@
 "settings.cloneDirectory" = "クローンしたリポジトリのデフォルトの場所：";
 "settings.cloneDirectory.select" = "選択…";
 "settings.warnDiscardingChunks" = "チャンクの変更を破棄する前に警告";
+"settings.warnDiscardingOnServer" = "サーバーリポジトリの変更を破棄する前に警告";
+"settings.warnDeletingOnServer" = "サーバーリポジトリのファイルを完全に削除する前に警告";
+"settings.warnRestoringOnServer" = "サーバーリポジトリのファイルを復元する前に警告";
 "settings.windowRestoration" = "ウインドウの復元：";
 "settings.windowRestoration.always" = "常に";
 "settings.windowRestoration.never" = "しない";
