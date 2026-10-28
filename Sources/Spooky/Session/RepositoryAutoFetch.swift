@@ -5,7 +5,7 @@ import SpookyKit
 
 /// 自动获取的调度：按 Settings → General 选的间隔，获取窗口里当前仓库的全部远端。
 ///
-/// 只在窗口显示仓库、App 处于前台、仓库可写时获取；条件不满足时暂停，条件恢复后已经到期的获取随即进行。
+/// 只在窗口显示仓库、仓库可写时获取，App 在后台也照常进行；条件不满足时暂停，条件恢复后已经到期的获取随即进行。
 @MainActor
 final class RepositoryAutoFetch {
     /// 设置里可选的间隔，单位秒；0 表示只手动获取。
@@ -31,8 +31,8 @@ final class RepositoryAutoFetch {
     /// 读取间隔的偏好域，测试使用临时域。
     private let defaults: UserDefaults
 
-    /// 窗口是否正显示仓库且 App 处于前台。
-    private let isForeground: @MainActor () -> Bool
+    /// 窗口是否正显示仓库。
+    private let showsRepository: @MainActor () -> Bool
 
     /// 当前仓库、打开它的时间与上一次自动获取的时间；换了仓库就重新计时。
     private var schedule: (repository: RepositoryLocation, opened: Date, lastFetch: Date?)? = nil
@@ -50,11 +50,11 @@ final class RepositoryAutoFetch {
     init(
         session: RepositorySession,
         defaults: UserDefaults = .standard,
-        isForeground: @escaping @MainActor () -> Bool
+        showsRepository: @escaping @MainActor () -> Bool
     ) {
         self.session = session
         self.defaults = defaults
-        self.isForeground = isForeground
+        self.showsRepository = showsRepository
     }
 
     /// 开始周期检查；窗口关闭时调用 `stop()`。
@@ -77,7 +77,7 @@ final class RepositoryAutoFetch {
         task = nil
     }
 
-    /// 一次检查：换了仓库就重新计时；到期且仓库在前台、可获取时开始一次自动获取。
+    /// 一次检查：换了仓库就重新计时；到期、窗口正显示仓库且可获取时开始一次自动获取。
     ///
     /// - Returns: 本次是否开始了自动获取。
     @discardableResult
@@ -95,7 +95,7 @@ final class RepositoryAutoFetch {
             let schedule,
             interval > 0,
             now >= due(schedule),
-            isForeground(),
+            showsRepository(),
             session.canFetch,
             session.autoFetch()
         else {

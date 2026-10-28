@@ -60,9 +60,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 文本框与提交信息编辑框自己的文字撤销。
     let textUndoManager = UndoManager()
 
-    /// 本窗口仓库的自动获取：只在窗口显示仓库且 App 处于前台时进行。
+    /// 本窗口仓库的自动获取：只在窗口显示仓库时进行，App 在后台也照常。
     private lazy var autoFetch = RepositoryAutoFetch(session: session) { [weak self] in
-        NSApp.isActive && !(self?.showsManager ?? true)
+        !(self?.showsManager ?? true)
     }
 
     /// 创建原生窗口；窗口按系统偏好参与标签页，并以视图引用参与系统的窗口恢复。

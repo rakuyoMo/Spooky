@@ -4,10 +4,10 @@ import Testing
 @testable import Spooky
 @testable import SpookyKit
 
-/// 自动获取的调度与失败记录、同步停在哪一步的说明，以及快速操作缺少跟踪分支时的说明。
+/// 自动获取的调度与失败记录、同步停在哪一步的说明、快速操作缺少跟踪分支时的说明，以及 Push 改开 Publish Branch 的条件。
 extension RepositorySessionTests {
-    /// 只在前台、到期且仓库可写时获取；设了 skipFetchAll 的远端不获取；间隔为 0 时不获取。
-    @Test("自动获取的间隔、前台限制与跳过的远端")
+    /// 只在窗口显示仓库、到期且仓库可写时获取；设了 skipFetchAll 的远端不获取；间隔为 0 时不获取。
+    @Test("自动获取的间隔、窗口显示仓库的条件与跳过的远端")
     func autoFetchSchedule() async throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -19,15 +19,15 @@ extension RepositorySessionTests {
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
         defaults.set(300, forKey: RepositoryAutoFetch.intervalKey)
 
-        let foreground = ForegroundState()
-        let scheduler = RepositoryAutoFetch(session: session, defaults: defaults) { foreground.isActive }
+        let window = RepositoryViewState()
+        let scheduler = RepositoryAutoFetch(session: session, defaults: defaults) { window.showsRepository }
         let start = Date()
 
-        // 打开后先等一会儿；App 不在前台时到期也不获取
+        // 打开后先等一会儿；窗口不显示仓库时到期也不获取
         #expect(!scheduler.check(now: start))
         #expect(!scheduler.check(now: start.addingTimeInterval(RepositoryAutoFetch.initialDelay + 1)))
 
-        foreground.isActive = true
+        window.showsRepository = true
         let pushed = try await commitAndPush(other, message: "remote")
 
         #expect(scheduler.check(now: start.addingTimeInterval(RepositoryAutoFetch.initialDelay + 1)))
@@ -124,6 +124,36 @@ extension RepositorySessionTests {
         #expect(failures.last?.title == AppLocalization.text("sync.error.upstream"))
     }
 
+    /// HEAD 没有上游时，推送 HEAD 分支改开发布分支；有上游、指定了目标远端分支或推的是别的分支时仍是推送。
+    @Test("HEAD 没有上游时 Push 改开 Publish Branch")
+    func pushWithoutUpstreamPublishes() {
+        let untracked = BranchStatus(head: "feature/一", oid: "abc", upstream: nil)
+        let tracked = BranchStatus(head: "feature/一", oid: "abc", upstream: "origin/feature/一")
+
+        // 菜单、工具栏与右键 HEAD 分支的推送都改开发布，远端与本地分支原样带上
+        let menu = RepositoryActionRequest(kind: .push).resolved(for: untracked)
+        #expect(menu.kind == .publish)
+        #expect(menu.localBranch == nil)
+
+        let head = RepositoryActionRequest(kind: .push, remote: "origin", localBranch: "feature/一")
+            .resolved(for: untracked)
+        #expect(head.kind == .publish)
+        #expect(head.remote == "origin")
+        #expect(head.localBranch == "feature/一")
+
+        // 有上游、拖到远端分支指定了目标、推的是别的本地分支，以及读不到状态时仍是推送
+        #expect(RepositoryActionRequest(kind: .push).resolved(for: tracked).kind == .push)
+        #expect(
+            RepositoryActionRequest(kind: .push, reference: "refs/remotes/origin/main", localBranch: "feature/一")
+                .resolved(for: untracked).kind == .push
+        )
+        #expect(RepositoryActionRequest(kind: .push, localBranch: "main").resolved(for: untracked).kind == .push)
+        #expect(RepositoryActionRequest(kind: .push).resolved(for: nil).kind == .push)
+
+        // 别的动作不受影响
+        #expect(RepositoryActionRequest(kind: .pull).resolved(for: untracked).kind == .pull)
+    }
+
     // MARK: 辅助
 
     /// 本测试专用的临时目录。
@@ -199,11 +229,11 @@ extension RepositorySessionTests {
     }
 }
 
-// MARK: - ForegroundState
+// MARK: - RepositoryViewState
 
-/// 测试里切换 App 是否在前台，自动获取的调度器经闭包读它。
+/// 测试里切换窗口是否正显示仓库，自动获取的调度器经闭包读它。
 @MainActor
-private final class ForegroundState {
-    /// App 是否在前台。
-    var isActive = false
+private final class RepositoryViewState {
+    /// 窗口是否正显示仓库。
+    var showsRepository = false
 }

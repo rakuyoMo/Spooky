@@ -43,6 +43,24 @@ struct RepositoryActionRequest {
 
     /// 清理右键预设的选项。
     var prune = false
+
+    /// 实际打开的请求：推送 HEAD 分支、没有指定目标远端分支而 HEAD 还没有上游时，改为发布这个分支；其它请求原样返回。
+    ///
+    /// - Parameter head: 当前分支的状态；读不到状态时为 nil。
+    func resolved(for head: BranchStatus?) -> Self {
+        guard
+            kind == .push,
+            reference == nil,
+            let head,
+            let name = head.head,
+            (localBranch ?? name) == name,
+            head.upstream == nil
+        else {
+            return self
+        }
+
+        return Self(kind: .publish, remote: remote, localBranch: localBranch)
+    }
 }
 
 // MARK: - RepositoryOperationDialog
@@ -93,7 +111,7 @@ struct RepositoryOperationDialog: View {
     @State
     private var parent = ""
 
-    /// 发布后设置 upstream。
+    /// 发布分支后跟踪推上去的远端分支，默认勾上；推送不设置上游。
     @State
     private var upstream = true
 
@@ -435,7 +453,7 @@ extension RepositoryOperationDialog {
         }
     }
 
-    /// 推送与发布：本地分支、远端、远端分支名与设置 upstream 的选项。
+    /// 推送与发布：本地分支、远端与远端分支名；只有发布有跟踪远端分支的选项。
     @ViewBuilder
     private var pushRows: some View {
         GridRow {
@@ -450,9 +468,11 @@ extension RepositoryOperationDialog {
         remotePicker
         nameRow
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-            option("sync.setUpstream", value: $upstream)
+        if request.kind == .publish {
+            GridRow {
+                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                option("sync.setUpstream", value: $upstream)
+            }
         }
     }
 
@@ -607,7 +627,6 @@ extension RepositoryOperationDialog {
                     ?? selected?.upstreamBranch.map { String($0.dropFirst("refs/heads/".count)) }
                     ?? localBranch
             }
-            upstream = request.kind == .publish || selected?.upstream == nil
         }
 
         if
@@ -758,7 +777,7 @@ extension RepositoryOperationDialog {
                         branch: localBranch,
                         remote: remote,
                         destination: name,
-                        setUpstream: upstream,
+                        setUpstream: kind == .publish && upstream,
                         options: push.options,
                         lease: push.lease,
                         onOutput: output
