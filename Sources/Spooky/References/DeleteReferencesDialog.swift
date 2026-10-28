@@ -213,7 +213,8 @@ extension DeleteReferencesDialog {
                             .deleteRemoteBranches(branches, on: remote, onOutput: output)
                     }
                 },
-                title: title
+                title: title,
+                activityKind: .remote
             )
 
         case .tags(let names):
@@ -229,6 +230,7 @@ extension DeleteReferencesDialog {
                     }
                 },
                 title: title,
+                activityKind: remote == nil ? .repository : .remote,
                 undo: remote == nil ? .reversible : .irreversible
             )
 

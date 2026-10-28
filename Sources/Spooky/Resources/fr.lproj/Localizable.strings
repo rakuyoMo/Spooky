@@ -386,13 +386,19 @@
 "merge.conflicts" = "Conflits de fusion détectés dans %d fichiers";
 "merge.unavailable" = "Impossible de prévisualiser cette fusion";
 "activity.title" = "Activité";
-"activity.clear" = "Effacer les activités terminées";
+"activity.clear" = "Tout effacer";
 "activity.search" = "Rechercher dans les activités";
 "activity.empty" = "Sélectionnez une activité pour afficher son journal.";
 "activity.running" = "En cours";
 "activity.finished" = "Terminé";
 "activity.cancelled" = "Annulé";
 "activity.failed" = "Échec";
+"activity.remote" = "Distant";
+"activity.remote.help" = "Afficher les activités distantes";
+"activity.repository" = "Dépôt";
+"activity.repository.help" = "Afficher les activités des dépôts";
+"activity.service" = "Service";
+"activity.service.help" = "Afficher les activités des services";
 "dialog.options" = "Options";
 "dialog.doNotAskAgain" = "Ne plus me demander";
 "menu.repository" = "Dépôt";
@@ -419,10 +425,8 @@
 "recovery.unborn" = "aucun commit";
 "dialog.blocked" = "Une autre opération est en cours sur ce dépôt, ou le serveur est déconnecté. Vos paramètres sont conservés ; réessayez lorsque le dépôt sera disponible.";
 "working.clean" = "Aucune modification locale";
-"history.limit" = "Affichage des %ld premiers commits. Sélectionnez une branche pour restreindre l’historique.";
 "history.loadingChanges" = "Chargement des fichiers modifiés…";
 "repositories.unavailableShort" = "Indisponible";
-"activity.truncated" = "La sortie antérieure a été omise.";
 
 /* 主题管理。 */
 "themes.newName" = "Nouveau thème";
@@ -838,7 +842,8 @@
 "history.search.range" = "est entre";
 "history.search.to" = "et";
 "history.reveal.notFound" = "Le commit %@ n’est pas dans cet historique.";
-"history.reveal.beyondLimit" = "Le commit %@ ne figure pas parmi les %ld premiers commits de cet historique.";
+"history.reveal.slow" = "Charger plus de commits";
+"history.reveal.slow.message" = "Le commit %1$@ se trouve après les %2$ld premiers commits de cet historique. Charger l’historique jusqu’à ce commit peut prendre un moment.";
 "history.subtitle" = "%@ (%ld commits)";
 "history.subtitle.more" = "%@ (%ld commits ou plus)";
 "working.subtitle" = "Copie de travail (%ld fichiers modifiés)";
@@ -928,7 +933,6 @@
 "sidebar.showStashCount" = "Afficher le nombre de remisages";
 "sidebar.groupRefs" = "Grouper les références dans la barre latérale";
 "sidebar.groupedRefsOnTop" = "Groupes en premier";
-"sidebar.showMergedBadge" = "Afficher le badge de fusion complète";
 "sidebar.showStaleInfo" = "Afficher les informations d’ancienneté";
 "sidebar.staleInterval" = "Délai d’ancienneté des branches";
 "sidebar.month" = "1 mois";
@@ -941,7 +945,6 @@
 "sidebar.nameDescending" = "Nom décroissant";
 "sidebar.showNewest" = "Afficher les plus récents";
 "sidebar.all" = "Tous";
-"branch.merged" = "Fusionnée";
 "branch.staleFor" = "Non mise à jour depuis %@";
 "branch.trackingError" = "La branche suivie n’existe plus";
 "branch.pin" = "Épingler la branche";
@@ -962,7 +965,6 @@
 "branch.tooltip.tracksLocal" = "- suit la branche locale « %@ »";
 "branch.tooltip.divergence" = "- a %ld commits d’avance et %ld commits de retard sur la branche « %@ »";
 "branch.tooltip.archived" = "- est archivée";
-"branch.tooltip.merged" = "- est entièrement fusionnée";
 "branch.tooltip.stale" = "- est ancienne (%@)";
 "branch.tooltip.missingUpstream" = "- la branche suivie « %@ » n’existe plus";
 "remote.tooltip.branch" = "Branche distante « %@ »";
@@ -1318,7 +1320,6 @@
 "review.filter.stale" = "Obsolètes";
 "review.filter.active" = "Actives";
 "review.filter.trackingError" = "Erreur de suivi";
-"review.filter.fullyMerged" = "Entièrement fusionnées";
 "review.filter.mergeable" = "Fusionnables";
 "review.filter.conflicts" = "Conflits de fusion";
 "review.viewSettings" = "Réglages d’affichage";
@@ -1327,7 +1328,6 @@
 "review.sort.ascending" = "Croissant";
 "review.sort.descending" = "Décroissant";
 "review.empty" = "Aucune branche à passer en revue";
-"review.status.merged" = "Entièrement fusionnée dans la branche de base choisie";
 "review.status.mergeable" = "Peut être fusionnée dans la branche de base choisie";
 "review.status.conflicts" = "La fusion dans la branche de base choisie provoque des conflits";
 "review.counts" = "%1$ld commits d’avance, %2$ld commits de retard";
@@ -1341,7 +1341,6 @@
 "review.resolveConflicts" = "Résoudre les conflits de fusion";
 "review.autoArchive" = "Archiver les branches automatiquement";
 "review.skipAutoArchive" = "Ignorer lors de l’archivage automatique";
-"review.hideMergedHint" = "Masquer l’indication de fusion complète";
 "review.markReviewed" = "Marquer comme vue";
 "review.updateBranch" = "Mettre à jour la branche";
 "review.update.summary" = "La fusion de « %1$@ » dans « %2$@ » intégrera %3$ld commits.";
@@ -1352,10 +1351,10 @@
 "review.update.clean" = "Aucun conflit avec la branche parente";
 "review.archive.title" = "Archiver des branches";
 "review.archive.help" = "Sélectionnez les branches à masquer de la liste. Les branches archivées passent dans « Branches archivées » dans la barre latérale et y restent disponibles.";
-"review.archive.automaticHelp" = "Ces branches sont entièrement fusionnées ou n’ont pas été mises à jour récemment et vont être archivées automatiquement. Décochez celles à conserver.";
+"review.archive.automaticHelp" = "Ces branches n’ont pas été mises à jour récemment ou leur pull request ou merge request a été fusionnée, et vont être archivées automatiquement. Décochez celles à conserver.";
 "review.archive.submit" = "Archiver";
 "review.archive.empty" = "Aucune branche à archiver";
-"review.archive.emptyHelp" = "Seules les branches entièrement fusionnées ou non mises à jour récemment sont proposées à l’archivage.";
+"review.archive.emptyHelp" = "Seules les branches non mises à jour récemment ou dont la pull request ou merge request a été fusionnée sont proposées à l’archivage.";
 "review.archive.auto" = "Archiver automatiquement les branches";
 "review.archive.autoHelp" = "Une fois par jour, les branches obsolètes sont listées pour confirmation avant d’être archivées.";
 "review.archive.count" = "%ld branches peuvent être archivées";
@@ -1369,21 +1368,15 @@
 "history.forkPoint" = "Point de bifurcation de la branche parente « %@ »";
 "history.noNewCommits" = "Aucun nouveau commit sur cette branche";
 "history.identicalToParent" = "Cette branche est identique à sa branche parente « %@ ».";
-"history.hint.merged" = "Cette branche a été entièrement fusionnée";
-"history.hint.mergedMessage" = "Toutes ses modifications sont déjà incluses dans d’autres branches.";
 "history.hint.stale" = "La branche semble obsolète";
 "history.hint.staleMessage" = "Cette branche n’a pas été mise à jour depuis plus de %ld mois. Envisagez de l’archiver ou de la supprimer.";
-"history.hint.details" = "Détails";
-"history.hint.mergedInto" = "Entièrement fusionnée dans « %@ »";
-"history.hint.dontShow" = "Ne plus afficher pour « %@ »";
-"history.hint.dismiss" = "Fermer l’indication";
 "sidebar.needsReview" = "Archivage automatique à vérifier";
 "sidebar.markAllReviewed" = "Tout marquer comme vu";
 "branch.mergeWith" = "Fusionner avec « %@ »…";
 "branch.quickMergeInto" = "Fusion rapide de « %1$@ » dans « %2$@ »";
 "branch.rebaseOn" = "Rebaser sur « %@ »…";
 "branch.quickRebaseOn" = "Rebase rapide de « %1$@ » sur « %2$@ »";
-"settings.autoArchive" = "Archiver automatiquement les branches obsolètes et entièrement fusionnées";
+"settings.autoArchive" = "Archiver automatiquement les branches obsolètes";
 /* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
 "rewrite.menu.checkout" = "Extraire « %@ »";
 "rewrite.menu.checkoutGeneric" = "Extraire une révision…";
@@ -2343,7 +2336,7 @@
 
 "publish.menu" = "Publier le dépôt…";
 "publish.title" = "Publier le dépôt";
-"publish.message" = "Crée un dépôt vide avec le compte sélectionné, l’ajoute comme dépôt distant de ce dépôt et y pousse la branche actuelle.";
+"publish.message" = "Crée un dépôt vide avec le compte sélectionné, l’ajoute comme dépôt distant de ce dépôt et y pousse toutes les branches locales et étiquettes.";
 "publish.owner" = "Propriétaire :";
 "publish.name" = "Nom :";
 "publish.visibility" = "Visibilité :";
@@ -2352,8 +2345,8 @@
 "publish.visibility.public" = "Public";
 "publish.remote" = "Nom du dépôt distant :";
 "publish.target" = "URL distante :";
-"publish.push" = "Pousse « %1$@ » vers « %2$@ » et la suit.";
-"publish.noBranch" = "Aucune branche n’est extraite : seul le dépôt distant est ajouté.";
+"publish.push" = "Pousse toutes les branches locales et étiquettes vers « %@ ». Les branches sans branche amont suivent leur nouvelle branche distante.";
+"publish.noBranch" = "Ce dépôt n’a encore ni branche ni étiquette : seul le dépôt distant est ajouté.";
 "publish.exists" = "« %1$@ » existe déjà sur %2$@. Choisissez un autre nom ; les dépôts existants ne sont pas écrasés.";
 "publish.remoteExists" = "Ce dépôt a déjà un dépôt distant nommé « %@ ». Choisissez un autre nom ; les dépôts distants existants ne sont pas remplacés.";
 "publish.push.title" = "Ajouter le dépôt distant et pousser";
@@ -2364,7 +2357,6 @@
 "pr.filter.without" = "Sans pull request";
 "mr.filter.without" = "Sans merge request";
 "review.pullRequestsUnavailable" = "L’état des pull requests et merge requests n’est pas disponible. Ajoutez un compte pour le dépôt distant de ce dépôt dans Réglages → Comptes.";
-"review.audit.merged" = "%1$@ : fusionnée dans %2$@";
 "review.audit.pullRequest" = "%1$@ : %2$@ a été fusionnée sur %3$@";
 "review.audit.stale" = "%1$@ : dernière mise à jour le %2$@";
 "review.audit.manual" = "%@ : archivée manuellement";

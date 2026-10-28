@@ -80,13 +80,9 @@ extension RepositorySession {
         )
     }
 
-    /// 一个分支被归档的原因：并入了哪个基准分支、哪个请求已合并、多久没有更新，或是手动归档。
+    /// 一个分支被归档的原因：哪个请求已合并、多久没有更新，或是手动归档。
     private func archiveReason(_ reference: RepositoryReference) -> String {
         let condition = history.conditions[reference.id]
-
-        if let base = condition?.mergedInto {
-            return AppLocalization.text("review.audit.merged", reference.name, BranchesReviewRow.shortName(base))
-        }
 
         if let request = mergedPullRequest(of: reference) {
             return AppLocalization.text(
@@ -138,23 +134,6 @@ extension RepositorySession {
                 try await RepositoryReferences(runner: runner).setSkipsAutoArchive(skips, branches: ids)
             },
             title: AppLocalization.text("review.skipAutoArchive"),
-            undo: .reversible
-        )
-    }
-
-    /// 设置或取消 “隐藏完全合并提示”。
-    func setHidesMergedHint(_ hides: Bool, branches: [RepositoryReference]) {
-        guard canSetArchived(branches) else {
-            return
-        }
-
-        let ids = branches.map(\.id)
-
-        performGit(
-            { runner, _ in
-                try await RepositoryReferences(runner: runner).setHidesMergedHint(hides, branches: ids)
-            },
-            title: AppLocalization.text("review.hideMergedHint"),
             undo: .reversible
         )
     }

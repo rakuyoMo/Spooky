@@ -164,7 +164,7 @@ struct SyncDialog: View {
 // MARK: - Layout
 
 extension SyncDialog {
-    /// 头部：图标、标题、仓库路径与说明。
+    /// 头部：图标、标题、服务器仓库的位置与说明。
     private var header: some View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: "point.3.connected.trianglepath.dotted")
@@ -176,10 +176,13 @@ extension SyncDialog {
                 Text(AppLocalization.text(kind.titleKey))
                     .font(.system(size: 14, weight: .bold))
 
-                Text(session.repository?.displayPath ?? "")
-                    .font(.system(size: 13))
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
+                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
+                if let repository = session.repository, repository.host != nil {
+                    Text(repository.displayPath)
+                        .font(.system(size: 13))
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 Text(help)
                     .font(.system(size: 13))

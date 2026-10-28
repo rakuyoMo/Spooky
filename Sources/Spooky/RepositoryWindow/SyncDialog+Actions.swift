@@ -248,7 +248,8 @@ extension SyncDialog {
                         onOutput: output
                     )
             },
-            title: AppLocalization.text("sync.forcePush")
+            title: AppLocalization.text("sync.forcePush"),
+            activityKind: .remote
         )
     }
 
@@ -270,7 +271,8 @@ extension SyncDialog {
                         onOutput: output
                     )
             },
-            title: AppLocalization.text("sync.pushRevision")
+            title: AppLocalization.text("sync.pushRevision"),
+            activityKind: .remote
         )
     }
 
@@ -292,7 +294,8 @@ extension SyncDialog {
                         onOutput: output
                     )
             },
-            title: AppLocalization.text("gerrit.push")
+            title: AppLocalization.text("gerrit.push"),
+            activityKind: .remote
         )
     }
 }

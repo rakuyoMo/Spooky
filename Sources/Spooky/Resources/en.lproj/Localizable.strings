@@ -386,13 +386,19 @@
 "merge.conflicts" = "Merge conflicts detected in %d files";
 "merge.unavailable" = "Could not preview this merge";
 "activity.title" = "Activity";
-"activity.clear" = "Clear Completed";
+"activity.clear" = "Clear All";
 "activity.search" = "Search Activities";
 "activity.empty" = "Select an activity to view its log.";
 "activity.running" = "Running";
 "activity.finished" = "Finished";
 "activity.cancelled" = "Cancelled";
 "activity.failed" = "Failed";
+"activity.remote" = "Remote";
+"activity.remote.help" = "Shows Remote Activities";
+"activity.repository" = "Repository";
+"activity.repository.help" = "Shows Repository Activities";
+"activity.service" = "Service";
+"activity.service.help" = "Shows Service Activities";
 "dialog.options" = "Options";
 "dialog.doNotAskAgain" = "Do not ask me again";
 "menu.repository" = "Repository";
@@ -419,10 +425,8 @@
 "recovery.unborn" = "no commits";
 "dialog.blocked" = "Another operation is running on this repository, or the server is disconnected. Your settings are kept; try again when the repository is available.";
 "working.clean" = "No local changes";
-"history.limit" = "Showing the first %ld commits. Select a branch to narrow the history.";
 "history.loadingChanges" = "Loading changed files…";
 "repositories.unavailableShort" = "Unavailable";
-"activity.truncated" = "Earlier output was omitted.";
 
 /* 主题管理。 */
 "themes.newName" = "New Theme";
@@ -838,7 +842,8 @@
 "history.search.range" = "is in range";
 "history.search.to" = "to";
 "history.reveal.notFound" = "Commit %@ isn't in this history.";
-"history.reveal.beyondLimit" = "Commit %@ isn't among the first %ld commits of this history.";
+"history.reveal.slow" = "Load More Commits";
+"history.reveal.slow.message" = "Commit %1$@ comes after the first %2$ld commits of this history. Loading the history up to it may take a while.";
 "history.subtitle" = "%@ (%ld Commits)";
 "history.subtitle.more" = "%@ (%ld Commits or more)";
 "working.subtitle" = "Working Copy (%ld Changed Files)";
@@ -928,7 +933,6 @@
 "sidebar.showStashCount" = "Show Number of Stashes";
 "sidebar.groupRefs" = "Group Refs in Sidebar";
 "sidebar.groupedRefsOnTop" = "Grouped Refs on Top";
-"sidebar.showMergedBadge" = "Show Fully Merged Badge in Sidebar";
 "sidebar.showStaleInfo" = "Show Stale Info in Sidebar";
 "sidebar.staleInterval" = "Stale Branch Time Interval";
 "sidebar.month" = "1 Month";
@@ -941,7 +945,6 @@
 "sidebar.nameDescending" = "Name Descending";
 "sidebar.showNewest" = "Show Newest";
 "sidebar.all" = "All";
-"branch.merged" = "Merged";
 "branch.staleFor" = "Not updated for %@";
 "branch.trackingError" = "Tracked branch no longer exists";
 "branch.pin" = "Pin Branch";
@@ -962,7 +965,6 @@
 "branch.tooltip.tracksLocal" = "- tracks local branch “%@”";
 "branch.tooltip.divergence" = "- is %ld commits ahead and %ld commits behind branch “%@”";
 "branch.tooltip.archived" = "- is archived";
-"branch.tooltip.merged" = "- is fully merged";
 "branch.tooltip.stale" = "- is stale (%@)";
 "branch.tooltip.missingUpstream" = "- tracked branch “%@” no longer exists";
 "remote.tooltip.branch" = "Remote branch “%@”";
@@ -1318,7 +1320,6 @@
 "review.filter.stale" = "Stale";
 "review.filter.active" = "Active";
 "review.filter.trackingError" = "Tracking Error";
-"review.filter.fullyMerged" = "Fully Merged";
 "review.filter.mergeable" = "Mergeable";
 "review.filter.conflicts" = "Merge Conflicts";
 "review.viewSettings" = "View Settings";
@@ -1327,7 +1328,6 @@
 "review.sort.ascending" = "Ascending";
 "review.sort.descending" = "Descending";
 "review.empty" = "No Branches to Review";
-"review.status.merged" = "Fully merged into the selected base branch";
 "review.status.mergeable" = "Can be merged into the selected base branch";
 "review.status.conflicts" = "Merging into the selected base branch leads to conflicts";
 "review.counts" = "%1$ld commits ahead, %2$ld commits behind";
@@ -1341,7 +1341,6 @@
 "review.resolveConflicts" = "Resolve Merge Conflicts";
 "review.autoArchive" = "Archive Branches Automatically";
 "review.skipAutoArchive" = "Skips Auto-Archiving";
-"review.hideMergedHint" = "Hides Fully Merged Hint";
 "review.markReviewed" = "Mark as Reviewed";
 "review.updateBranch" = "Update Branch";
 "review.update.summary" = "Merging “%1$@” into “%2$@” will integrate %3$ld commits.";
@@ -1352,10 +1351,10 @@
 "review.update.clean" = "No conflicts with parent branch";
 "review.archive.title" = "Archive Branches";
 "review.archive.help" = "Select branches to hide from the main branch list. Archived branches move to Archived Branches in the sidebar and stay available there.";
-"review.archive.automaticHelp" = "These branches are fully merged or haven't been updated recently and are about to be archived automatically. Uncheck any branch you want to keep.";
+"review.archive.automaticHelp" = "These branches haven't been updated recently or their pull request or merge request has been merged, and are about to be archived automatically. Uncheck any branch you want to keep.";
 "review.archive.submit" = "Archive";
 "review.archive.empty" = "No Branches to Archive";
-"review.archive.emptyHelp" = "Branches are only suggested for archiving when they're fully merged or haven't been updated recently.";
+"review.archive.emptyHelp" = "Branches are only suggested for archiving when they haven't been updated recently or their pull request or merge request has been merged.";
 "review.archive.auto" = "Automatically archive branches";
 "review.archive.autoHelp" = "Once a day, obsolete branches are listed for you to confirm before they're archived.";
 "review.archive.count" = "%ld branches can be archived";
@@ -1369,21 +1368,15 @@
 "history.forkPoint" = "Fork point of parent branch “%@”";
 "history.noNewCommits" = "No new commits on this branch";
 "history.identicalToParent" = "This branch is identical to its parent “%@”.";
-"history.hint.merged" = "This Branch Has Been Fully Merged";
-"history.hint.mergedMessage" = "All of its changes are already included in other branches.";
 "history.hint.stale" = "Branch Appears Stale";
 "history.hint.staleMessage" = "This branch hasn't been updated in over %ld months. Consider archiving or removing it.";
-"history.hint.details" = "Details";
-"history.hint.mergedInto" = "Fully merged into “%@”";
-"history.hint.dontShow" = "Don't Show Again for “%@”";
-"history.hint.dismiss" = "Dismiss Hint";
 "sidebar.needsReview" = "Needs auto archive review";
 "sidebar.markAllReviewed" = "Mark All as Reviewed";
 "branch.mergeWith" = "Merge With “%@”…";
 "branch.quickMergeInto" = "Quick Merge “%1$@” Into “%2$@”";
 "branch.rebaseOn" = "Rebase On “%@”…";
 "branch.quickRebaseOn" = "Quick Rebase “%1$@” on “%2$@”";
-"settings.autoArchive" = "Automatically archive stale and fully merged branches";
+"settings.autoArchive" = "Automatically archive obsolete branches";
 /* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
 "rewrite.menu.checkout" = "Check Out “%@”";
 "rewrite.menu.checkoutGeneric" = "Check Out Revision…";
@@ -2343,7 +2336,7 @@
 
 "publish.menu" = "Publish Repository…";
 "publish.title" = "Publish Repository";
-"publish.message" = "Creates a new, empty repository with the selected account, adds it to this repository as a remote and pushes the current branch to it.";
+"publish.message" = "Creates a new, empty repository with the selected account, adds it to this repository as a remote and pushes all local branches and tags to it.";
 "publish.owner" = "Owner:";
 "publish.name" = "Name:";
 "publish.visibility" = "Visibility:";
@@ -2352,8 +2345,8 @@
 "publish.visibility.public" = "Public";
 "publish.remote" = "Remote Name:";
 "publish.target" = "Remote URL:";
-"publish.push" = "Pushes “%1$@” to “%2$@” and tracks it.";
-"publish.noBranch" = "No branch is checked out, so only the remote is added.";
+"publish.push" = "Pushes all local branches and tags to “%@”. Branches without an upstream track their new remote branch.";
+"publish.noBranch" = "This repository has no branches or tags yet, so only the remote is added.";
 "publish.exists" = "“%1$@” already exists on %2$@. Choose another name; existing repositories aren’t overwritten.";
 "publish.remoteExists" = "This repository already has a remote named “%@”. Choose another name; existing remotes aren’t replaced.";
 "publish.push.title" = "Add Remote and Push";
@@ -2364,7 +2357,6 @@
 "pr.filter.without" = "Without Pull Request";
 "mr.filter.without" = "Without Merge Request";
 "review.pullRequestsUnavailable" = "Pull request and merge request status isn’t available. Add an account for this repository’s remote in Settings → Accounts.";
-"review.audit.merged" = "%1$@: merged into %2$@";
 "review.audit.pullRequest" = "%1$@: %2$@ was merged on %3$@";
 "review.audit.stale" = "%1$@: last updated %2$@";
 "review.audit.manual" = "%@: archived manually";

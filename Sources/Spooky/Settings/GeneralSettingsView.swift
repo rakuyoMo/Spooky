@@ -26,7 +26,7 @@ struct GeneralSettingsView: View {
     @AppStorage("offerAutoStash")
     private var offerAutoStash = true
 
-    /// 自动归档已完全合并或陈旧的分支，与侧边栏视图设置同一个偏好。
+    /// 自动归档陈旧或请求已合并的分支，与侧边栏视图设置同一个偏好。
     @AppStorage(SidebarPreferences.autoArchiveKey)
     private var autoArchiveBranches = SidebarPreferences.defaultFlag(SidebarPreferences.autoArchiveKey)
 

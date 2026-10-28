@@ -12,10 +12,10 @@ enum BranchArchiving {
     static let interval: TimeInterval = 24 * 60 * 60
 
     #warning(
-        "TODO: 置顶分支与当前 HEAD 分支不在归档建议里是推断的；核实方式：让一个置顶分支和当前分支都满足完全合并或陈旧，打开批量归档对话框看它们是否出现；影响归档建议、底栏的可归档数量与自动归档"
+        "TODO: 置顶分支与当前 HEAD 分支不在归档建议里是推断的；核实方式：让一个置顶分支和当前分支都满足请求已合并或陈旧，打开批量归档对话框看它们是否出现；影响归档建议、底栏的可归档数量与自动归档"
     )
 
-    /// 建议归档的本地分支：已完全并入基准分支、请求已在托管服务上合并或陈旧，且不是基准分支、当前分支、置顶或已归档的分支。
+    /// 建议归档的本地分支：请求已在托管服务上合并或陈旧，且不是基准分支、当前分支、置顶或已归档的分支。
     ///
     /// - Parameters:
     ///   - snapshot: 引用快照，提供分支与附加信息。
@@ -23,7 +23,7 @@ enum BranchArchiving {
     ///   - head: 当前分支名；分离或未出生时为 nil。
     ///   - staleMonths: 陈旧阈值的月数。
     ///   - automatic: 自动归档时还要跳过勾了 “自动归档时跳过” 的分支。
-    ///   - mergedOnServer: 请求已在托管服务上合并、此后没有新提交的分支，压缩或变基合并的同样算已合并。
+    ///   - mergedOnServer: 请求已在托管服务上合并、此后没有新提交的分支。
     ///   - now: 判断陈旧的时刻。
     /// - Returns: 按引用名排列。
     static func candidates(
@@ -51,8 +51,7 @@ enum BranchArchiving {
                     return false
                 }
 
-                return condition.isFullyMerged || mergedOnServer.contains(reference.id)
-                    || condition.isStale(months: staleMonths, now: now)
+                return mergedOnServer.contains(reference.id) || condition.isStale(months: staleMonths, now: now)
             }
             .sorted { $0.id < $1.id }
     }

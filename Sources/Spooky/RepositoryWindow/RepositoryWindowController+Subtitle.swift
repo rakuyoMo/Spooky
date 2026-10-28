@@ -90,7 +90,7 @@ extension RepositoryWindowController {
             return name
         }
 
-        let key = count >= RepositoryHistoryState.maximumLoadedCommits ? "history.subtitle.more" : "history.subtitle"
+        let key = count >= RepositoryHistoryState.countLimit ? "history.subtitle.more" : "history.subtitle"
         return AppLocalization.text(key, name, count)
     }
 

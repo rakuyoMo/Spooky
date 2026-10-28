@@ -55,7 +55,7 @@ struct HistoryListView: View {
             header
             Divider()
 
-            // 选中已完全合并或陈旧的分支时表头下方是提示条
+            // 选中陈旧的分支时表头下方是提示条
             HistoryBranchHint(session: session)
 
             // 有搜索条件时表头下方是过滤面板
@@ -83,20 +83,12 @@ struct HistoryListView: View {
         .onChange(of: comparesBranches) { session.history.loadBaseComparison() }
     }
 
-    /// 列表下方的读取状态：失败详情、到达加载上限的提示，以及读取中持续可见的取消入口。
+    /// 列表下方的读取状态：失败详情，以及读取中持续可见的取消入口。
     @ViewBuilder
     private var loadingStatus: some View {
         if let failure = session.history.failure {
             FailureDetailsView(failure: failure) { session.history.reloadCommits() }
                 .padding(12)
-        }
-
-        // 达到加载上限后不再续载，提示用户选择分支缩小范围。
-        if session.history.reachedLimit {
-            Text(AppLocalization.text("history.limit", RepositoryHistoryState.maximumLoadedCommits))
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .padding(8)
         }
 
         if session.history.isLoading {
@@ -110,7 +102,7 @@ struct HistoryListView: View {
         }
     }
 
-    /// 所选引用与它的跟踪分支、所选分支的双向数量与视图设置按钮；与基准分支比较时左侧换成基准分支头。
+    /// 所选引用与它的跟踪分支，以及视图设置按钮；与基准分支比较时左侧换成基准分支头。
     private var header: some View {
         HStack(spacing: 8) {
             if session.history.baseComparison != nil {
@@ -136,8 +128,7 @@ struct HistoryListView: View {
         .background(.bar)
     }
 
-    /// 所选引用与它的跟踪分支，以及所选分支相对上游的双向数量。
-    @ViewBuilder
+    /// 所选引用与它的跟踪分支。
     private var referenceTitle: some View {
         HStack(spacing: 2) {
             Text(session.history.title)
@@ -154,14 +145,6 @@ struct HistoryListView: View {
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
             }
-        }
-
-        if
-            let id = session.history.selectedReference,
-            let counts = session.history.divergence[id]
-        {
-            Text("↑ \(counts.ahead) ↓ \(counts.behind)")
-                .font(.system(size: 11))
         }
     }
 

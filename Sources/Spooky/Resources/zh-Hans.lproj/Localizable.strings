@@ -386,13 +386,19 @@
 "merge.conflicts" = "预览发现 %d 个文件冲突";
 "merge.unavailable" = "无法预览此次合并";
 "activity.title" = "活动";
-"activity.clear" = "清除已完成活动";
+"activity.clear" = "全部清除";
 "activity.search" = "搜索活动";
 "activity.empty" = "选择活动以查看日志。";
 "activity.running" = "进行中";
 "activity.finished" = "已完成";
 "activity.cancelled" = "已取消";
 "activity.failed" = "失败";
+"activity.remote" = "远端";
+"activity.remote.help" = "显示远端活动";
+"activity.repository" = "仓库";
+"activity.repository.help" = "显示仓库活动";
+"activity.service" = "服务";
+"activity.service.help" = "显示服务活动";
 "dialog.options" = "选项";
 "dialog.doNotAskAgain" = "不再询问";
 "menu.repository" = "仓库";
@@ -419,10 +425,8 @@
 "recovery.unborn" = "尚无提交";
 "dialog.blocked" = "此仓库有其它操作正在进行，或服务器已断开。已填写的设置会保留，请在仓库可用后重试。";
 "working.clean" = "没有本地改动";
-"history.limit" = "仅显示前 %ld 个提交。选择分支可以缩小历史范围。";
 "history.loadingChanges" = "正在读取变更文件…";
 "repositories.unavailableShort" = "不可用";
-"activity.truncated" = "较早的输出已省略。";
 
 /* 主题管理。 */
 "themes.newName" = "新主题";
@@ -838,7 +842,8 @@
 "history.search.range" = "介于";
 "history.search.to" = "至";
 "history.reveal.notFound" = "提交 %@ 不在这段历史中。";
-"history.reveal.beyondLimit" = "提交 %@ 不在这段历史的前 %ld 个提交中。";
+"history.reveal.slow" = "加载更多提交";
+"history.reveal.slow.message" = "提交 %1$@ 排在这段历史的前 %2$ld 个提交之后。加载到它为止可能需要一些时间。";
 "history.subtitle" = "%@（%ld 个提交）";
 "history.subtitle.more" = "%@（%ld 个或更多提交）";
 "working.subtitle" = "工作区（%ld 个改动的文件）";
@@ -928,7 +933,6 @@
 "sidebar.showStashCount" = "显示储藏个数";
 "sidebar.groupRefs" = "在侧边栏中分组引用";
 "sidebar.groupedRefsOnTop" = "分组排在前面";
-"sidebar.showMergedBadge" = "在侧边栏中显示完全合并徽标";
 "sidebar.showStaleInfo" = "在侧边栏中显示陈旧信息";
 "sidebar.staleInterval" = "陈旧分支的时间间隔";
 "sidebar.month" = "1 个月";
@@ -941,7 +945,6 @@
 "sidebar.nameDescending" = "名称降序";
 "sidebar.showNewest" = "显示最新";
 "sidebar.all" = "全部";
-"branch.merged" = "已合并";
 "branch.staleFor" = "已 %@ 未更新";
 "branch.trackingError" = "跟踪的分支已不存在";
 "branch.pin" = "置顶分支";
@@ -962,7 +965,6 @@
 "branch.tooltip.tracksLocal" = "- 跟踪本地分支 “%@”";
 "branch.tooltip.divergence" = "- 领先 %ld 个提交、落后 %ld 个提交（相对分支 “%@”）";
 "branch.tooltip.archived" = "- 已归档";
-"branch.tooltip.merged" = "- 已完全合并";
 "branch.tooltip.stale" = "- 已陈旧（%@）";
 "branch.tooltip.missingUpstream" = "- 跟踪的分支 “%@” 已不存在";
 "remote.tooltip.branch" = "远端分支 “%@”";
@@ -1318,7 +1320,6 @@
 "review.filter.stale" = "陈旧";
 "review.filter.active" = "活跃";
 "review.filter.trackingError" = "跟踪错误";
-"review.filter.fullyMerged" = "已完全合并";
 "review.filter.mergeable" = "可以合并";
 "review.filter.conflicts" = "合并冲突";
 "review.viewSettings" = "视图设置";
@@ -1327,7 +1328,6 @@
 "review.sort.ascending" = "升序";
 "review.sort.descending" = "降序";
 "review.empty" = "没有可整理的分支";
-"review.status.merged" = "已完全并入所选的基准分支";
 "review.status.mergeable" = "可以并入所选的基准分支";
 "review.status.conflicts" = "并入所选的基准分支会产生冲突";
 "review.counts" = "领先 %1$ld 个提交，落后 %2$ld 个提交";
@@ -1341,7 +1341,6 @@
 "review.resolveConflicts" = "解决合并冲突";
 "review.autoArchive" = "自动归档分支";
 "review.skipAutoArchive" = "自动归档时跳过";
-"review.hideMergedHint" = "隐藏完全合并提示";
 "review.markReviewed" = "标为已查看";
 "review.updateBranch" = "更新分支";
 "review.update.summary" = "把 “%1$@” 并入 “%2$@” 将带来 %3$ld 个提交。";
@@ -1352,10 +1351,10 @@
 "review.update.clean" = "与父分支没有冲突";
 "review.archive.title" = "归档分支";
 "review.archive.help" = "选择要从分支列表中隐藏的分支。归档的分支移到侧边栏的 “已归档分支”，仍可在那里使用。";
-"review.archive.automaticHelp" = "这些分支已完全合并或长期没有更新，即将自动归档。取消勾选要保留的分支。";
+"review.archive.automaticHelp" = "这些分支长期没有更新，或者 Pull Request 或 Merge Request 已合并，即将自动归档。取消勾选要保留的分支。";
 "review.archive.submit" = "归档";
 "review.archive.empty" = "没有可归档的分支";
-"review.archive.emptyHelp" = "只建议归档已完全合并或长期没有更新的分支。";
+"review.archive.emptyHelp" = "只建议归档长期没有更新，或者 Pull Request 或 Merge Request 已合并的分支。";
 "review.archive.auto" = "自动归档分支";
 "review.archive.autoHelp" = "每天一次列出过时的分支，经你确认后再归档。";
 "review.archive.count" = "%ld 个分支可以归档";
@@ -1369,21 +1368,15 @@
 "history.forkPoint" = "父分支 “%@” 的分叉点";
 "history.noNewCommits" = "这个分支没有新提交";
 "history.identicalToParent" = "这个分支与父分支 “%@” 相同。";
-"history.hint.merged" = "这个分支已完全合并";
-"history.hint.mergedMessage" = "它的全部改动都已包含在其它分支里。";
 "history.hint.stale" = "分支似乎已陈旧";
 "history.hint.staleMessage" = "这个分支已超过 %ld 个月没有更新，可以考虑归档或删除。";
-"history.hint.details" = "详情";
-"history.hint.mergedInto" = "已完全并入 “%@”";
-"history.hint.dontShow" = "不再为 “%@” 显示";
-"history.hint.dismiss" = "关闭提示";
 "sidebar.needsReview" = "有待查看的自动归档分支";
 "sidebar.markAllReviewed" = "全部标为已查看";
 "branch.mergeWith" = "与 “%@” 合并…";
 "branch.quickMergeInto" = "快速把 “%1$@” 合并到 “%2$@”";
 "branch.rebaseOn" = "变基到 “%@”…";
 "branch.quickRebaseOn" = "快速把 “%1$@” 变基到 “%2$@”";
-"settings.autoArchive" = "自动归档陈旧与已完全合并的分支";
+"settings.autoArchive" = "自动归档过时的分支";
 /* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
 "rewrite.menu.checkout" = "检出 “%@”";
 "rewrite.menu.checkoutGeneric" = "检出版本…";
@@ -2343,7 +2336,7 @@
 
 "publish.menu" = "发布仓库…";
 "publish.title" = "发布仓库";
-"publish.message" = "用所选账号新建一个空仓库，把它添加为这个仓库的远端，并把当前分支推送过去。";
+"publish.message" = "用所选账号新建一个空仓库，把它添加为这个仓库的远端，并把全部本地分支与标签推送过去。";
 "publish.owner" = "所有者：";
 "publish.name" = "名称：";
 "publish.visibility" = "可见性：";
@@ -2352,8 +2345,8 @@
 "publish.visibility.public" = "公开";
 "publish.remote" = "远端名：";
 "publish.target" = "远端地址：";
-"publish.push" = "把 “%1$@” 推送到 “%2$@” 并跟踪它。";
-"publish.noBranch" = "没有检出分支，只添加远端。";
+"publish.push" = "把全部本地分支与标签推送到 “%@”。没有上游的分支跟踪新远端上的同名分支。";
+"publish.noBranch" = "这个仓库还没有分支或标签，只添加远端。";
 "publish.exists" = "%2$@ 上已经有 “%1$@”。请换一个名字，已有的仓库不会被覆盖。";
 "publish.remoteExists" = "这个仓库已经有名为 “%@” 的远端。请换一个名字，已有的远端不会被替换。";
 "publish.push.title" = "添加远端并推送";
@@ -2364,7 +2357,6 @@
 "pr.filter.without" = "没有 Pull Request";
 "mr.filter.without" = "没有 Merge Request";
 "review.pullRequestsUnavailable" = "无法获得 Pull Request 与 Merge Request 的状态。请在 设置 → 账号 中添加这个仓库远端对应的账号。";
-"review.audit.merged" = "%1$@：已并入 %2$@";
 "review.audit.pullRequest" = "%1$@：%2$@ 已在 %3$@ 上合并";
 "review.audit.stale" = "%1$@：最后更新于 %2$@";
 "review.audit.manual" = "%@：手动归档";

@@ -195,6 +195,10 @@ struct CommitFileListView: View {
     /// 返回历史只退出详情子视图。
     let back: () -> Void
 
+    /// 版本选择器是否打开。
+    @State
+    private var choosingRevision = false
+
     /// 提交卡片、文件数与原生选择列表。
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -209,7 +213,7 @@ struct CommitFileListView: View {
                 card(commit)
 
                 HStack {
-                    Text(commit.shortID).font(.system(size: 13, design: .monospaced))
+                    revisionButton(commit)
                     Spacer()
                     Text(AppLocalization.text("history.changes", history.changes.count))
                 }
@@ -244,6 +248,22 @@ struct CommitFileListView: View {
                     }
                 }
                 .onDrag { CommitFileDragging.provider(file, session: session) }
+        }
+    }
+
+    /// 短哈希按钮：点开版本选择器，双击其中一个提交换成它的整页详情。
+    private func revisionButton(_ commit: HistoryCommit) -> some View {
+        Button(commit.shortID) {
+            choosingRevision = true
+        }
+        .buttonStyle(.accessoryBar)
+        .font(.custom("Menlo", size: 13))
+        .accessibilityLabel(AppLocalization.text("showFile.revision"))
+        .popover(isPresented: $choosingRevision, arrowEdge: .bottom) {
+            CommitSelectorView(session: session) {
+                choosingRevision = false
+                session.showCommit($0)
+            }
         }
     }
 

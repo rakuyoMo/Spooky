@@ -119,32 +119,6 @@ extension RepositoryHistoryState {
     func row(of id: String) -> Int? {
         rows.firstIndex { $0.commit?.id == id }
     }
-
-    /// 回到历史时查找要选中的提交：已加载就滚动到它，还有下一页就按 1000 条续载，否则说明找不到的原因。
-    func continueLookup() {
-        guard let lookup, !isLoading, snapshot != nil else {
-            return
-        }
-
-        if commits.contains(where: { $0.id == lookup }) {
-            self.lookup = nil
-            scrollTarget = lookup
-            return
-        }
-
-        if hasMore, !reachedLimit {
-            loadNextPage(pageSize: 1000)
-            return
-        }
-
-        self.lookup = nil
-
-        let hash = String(lookup.prefix(8))
-        lookupFailure =
-            reachedLimit
-                ? AppLocalization.text("history.reveal.beyondLimit", hash, Self.maximumLoadedCommits)
-                : AppLocalization.text("history.reveal.notFound", hash)
-    }
 }
 
 // MARK: - Private

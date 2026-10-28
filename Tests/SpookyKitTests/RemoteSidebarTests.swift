@@ -33,10 +33,10 @@ struct RemoteSidebarTests {
             #expect(snapshot.metadata(for: branch) == BranchMetadata(isPinned: true, isArchived: true))
             #expect(snapshot.references.first { $0.id == "refs/tags/v1.0" }?.message == "Release “1.0”")
 
-            // 没有新提交的分支并入 main，时间来自顶端提交
-            let conditions = try await refs.conditions(in: snapshot)
+            // 时间来自顶端提交
+            let conditions = RepositoryReferences.conditions(in: snapshot)
             let condition = try #require(conditions[branch])
-            #expect(condition.mergedInto == "refs/heads/main")
+            #expect(!condition.isBase)
             #expect(condition.lastUpdated != nil)
 
             // 按完整标签名检出，HEAD 分离在标签所指的提交上

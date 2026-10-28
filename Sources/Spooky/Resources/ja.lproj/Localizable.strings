@@ -386,13 +386,19 @@
 "merge.conflicts" = "%d 個のファイルに競合があります";
 "merge.unavailable" = "マージをプレビューできません";
 "activity.title" = "アクティビティ";
-"activity.clear" = "完了済みを消去";
+"activity.clear" = "すべて消去";
 "activity.search" = "アクティビティを検索";
 "activity.empty" = "ログを表示するアクティビティを選択してください。";
 "activity.running" = "実行中";
 "activity.finished" = "完了";
 "activity.cancelled" = "キャンセル済み";
 "activity.failed" = "失敗";
+"activity.remote" = "リモート";
+"activity.remote.help" = "リモートのアクティビティを表示";
+"activity.repository" = "リポジトリ";
+"activity.repository.help" = "リポジトリのアクティビティを表示";
+"activity.service" = "サービス";
+"activity.service.help" = "サービスのアクティビティを表示";
 "dialog.options" = "オプション";
 "dialog.doNotAskAgain" = "今後確認しない";
 "menu.repository" = "リポジトリ";
@@ -419,10 +425,8 @@
 "recovery.unborn" = "コミットなし";
 "dialog.blocked" = "このリポジトリで別の操作が実行中か、サーバーとの接続が切れています。入力した設定は保持されます。リポジトリが利用可能になってから再試行してください。";
 "working.clean" = "ローカルの変更はありません";
-"history.limit" = "最初の %ld 件のコミットのみを表示しています。ブランチを選択すると範囲を絞り込めます。";
 "history.loadingChanges" = "変更ファイルを読み込み中…";
 "repositories.unavailableShort" = "利用不可";
-"activity.truncated" = "以前の出力は省略されました。";
 
 /* 主题管理。 */
 "themes.newName" = "新規テーマ";
@@ -838,7 +842,8 @@
 "history.search.range" = "の範囲内";
 "history.search.to" = "〜";
 "history.reveal.notFound" = "コミット %@ はこの履歴にありません。";
-"history.reveal.beyondLimit" = "コミット %@ はこの履歴の最初の %ld 件のコミットにありません。";
+"history.reveal.slow" = "さらにコミットを読み込む";
+"history.reveal.slow.message" = "コミット %1$@ はこの履歴の最初の %2$ld 件のコミットより後にあります。そこまで読み込むには時間がかかることがあります。";
 "history.subtitle" = "%@（%ld 件のコミット）";
 "history.subtitle.more" = "%@（%ld 件以上のコミット）";
 "working.subtitle" = "作業コピー（変更されたファイル %ld 件）";
@@ -928,7 +933,6 @@
 "sidebar.showStashCount" = "スタッシュの数を表示";
 "sidebar.groupRefs" = "サイドバーで参照をグループ化";
 "sidebar.groupedRefsOnTop" = "グループを先頭に表示";
-"sidebar.showMergedBadge" = "サイドバーに完全マージのバッジを表示";
 "sidebar.showStaleInfo" = "サイドバーに古いブランチの情報を表示";
 "sidebar.staleInterval" = "古いブランチとみなす期間";
 "sidebar.month" = "1 か月";
@@ -941,7 +945,6 @@
 "sidebar.nameDescending" = "名前の降順";
 "sidebar.showNewest" = "最新のみ表示";
 "sidebar.all" = "すべて";
-"branch.merged" = "マージ済み";
 "branch.staleFor" = "%@ 更新なし";
 "branch.trackingError" = "追跡ブランチが存在しません";
 "branch.pin" = "ブランチをピン留め";
@@ -962,7 +965,6 @@
 "branch.tooltip.tracksLocal" = "- ローカルブランチ「%@」を追跡";
 "branch.tooltip.divergence" = "- %ld 個のコミットが進み、%ld 個のコミットが遅れています（ブランチ「%@」に対して）";
 "branch.tooltip.archived" = "- アーカイブ済み";
-"branch.tooltip.merged" = "- 完全にマージ済み";
 "branch.tooltip.stale" = "- 古いブランチ（%@）";
 "branch.tooltip.missingUpstream" = "- 追跡ブランチ「%@」が存在しません";
 "remote.tooltip.branch" = "リモートブランチ「%@」";
@@ -1318,7 +1320,6 @@
 "review.filter.stale" = "古い";
 "review.filter.active" = "アクティブ";
 "review.filter.trackingError" = "追跡エラー";
-"review.filter.fullyMerged" = "完全にマージ済み";
 "review.filter.mergeable" = "マージ可能";
 "review.filter.conflicts" = "マージコンフリクト";
 "review.viewSettings" = "表示設定";
@@ -1327,7 +1328,6 @@
 "review.sort.ascending" = "昇順";
 "review.sort.descending" = "降順";
 "review.empty" = "整理するブランチはありません";
-"review.status.merged" = "選択したベースブランチに完全にマージ済み";
 "review.status.mergeable" = "選択したベースブランチにマージできます";
 "review.status.conflicts" = "選択したベースブランチにマージするとコンフリクトが発生します";
 "review.counts" = "%1$ld 件先行、%2$ld 件遅れ";
@@ -1341,7 +1341,6 @@
 "review.resolveConflicts" = "マージコンフリクトを解決";
 "review.autoArchive" = "ブランチを自動アーカイブ";
 "review.skipAutoArchive" = "自動アーカイブしない";
-"review.hideMergedHint" = "完全マージのヒントを隠す";
 "review.markReviewed" = "確認済みにする";
 "review.updateBranch" = "ブランチを更新";
 "review.update.summary" = "「%1$@」を「%2$@」にマージすると %3$ld 件のコミットが取り込まれます。";
@@ -1352,10 +1351,10 @@
 "review.update.clean" = "親ブランチとのコンフリクトはありません";
 "review.archive.title" = "ブランチをアーカイブ";
 "review.archive.help" = "ブランチ一覧から隠すブランチを選択します。アーカイブしたブランチはサイドバーの「アーカイブ済みブランチ」に移り、そこから引き続き使えます。";
-"review.archive.automaticHelp" = "これらのブランチは完全にマージ済みか、しばらく更新されていないため、自動でアーカイブされます。残したいブランチのチェックを外してください。";
+"review.archive.automaticHelp" = "これらのブランチはしばらく更新されていないか、プルリクエストまたはマージリクエストがマージ済みのため、自動でアーカイブされます。残したいブランチのチェックを外してください。";
 "review.archive.submit" = "アーカイブ";
 "review.archive.empty" = "アーカイブするブランチはありません";
-"review.archive.emptyHelp" = "アーカイブを勧めるのは、完全にマージ済みか、しばらく更新されていないブランチだけです。";
+"review.archive.emptyHelp" = "アーカイブを勧めるのは、しばらく更新されていないか、プルリクエストまたはマージリクエストがマージ済みのブランチだけです。";
 "review.archive.auto" = "ブランチを自動でアーカイブ";
 "review.archive.autoHelp" = "1 日 1 回、不要になったブランチを一覧表示し、確認してからアーカイブします。";
 "review.archive.count" = "%ld 個のブランチをアーカイブできます";
@@ -1369,21 +1368,15 @@
 "history.forkPoint" = "親ブランチ「%@」の分岐点";
 "history.noNewCommits" = "このブランチに新しいコミットはありません";
 "history.identicalToParent" = "このブランチは親ブランチ「%@」と同じです。";
-"history.hint.merged" = "このブランチは完全にマージ済みです";
-"history.hint.mergedMessage" = "すべての変更がすでに他のブランチに含まれています。";
 "history.hint.stale" = "古いブランチのようです";
 "history.hint.staleMessage" = "このブランチは %ld か月以上更新されていません。アーカイブか削除を検討してください。";
-"history.hint.details" = "詳細";
-"history.hint.mergedInto" = "「%@」に完全にマージ済み";
-"history.hint.dontShow" = "「%@」では今後表示しない";
-"history.hint.dismiss" = "ヒントを閉じる";
 "sidebar.needsReview" = "自動アーカイブの確認待ち";
 "sidebar.markAllReviewed" = "すべて確認済みにする";
 "branch.mergeWith" = "「%@」とマージ…";
 "branch.quickMergeInto" = "「%1$@」を「%2$@」にクイックマージ";
 "branch.rebaseOn" = "「%@」にリベース…";
 "branch.quickRebaseOn" = "「%1$@」を「%2$@」にクイックリベース";
-"settings.autoArchive" = "古いブランチと完全にマージ済みのブランチを自動でアーカイブ";
+"settings.autoArchive" = "不要になったブランチを自動でアーカイブ";
 /* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
 "rewrite.menu.checkout" = "「%@」をチェックアウト";
 "rewrite.menu.checkoutGeneric" = "リビジョンをチェックアウト…";
@@ -2343,7 +2336,7 @@
 
 "publish.menu" = "リポジトリを公開…";
 "publish.title" = "リポジトリを公開";
-"publish.message" = "選択したアカウントで新しい空のリポジトリを作成し、このリポジトリのリモートとして追加して現在のブランチをプッシュします。";
+"publish.message" = "選択したアカウントで新しい空のリポジトリを作成し、このリポジトリのリモートとして追加して、すべてのローカルブランチとタグをプッシュします。";
 "publish.owner" = "所有者：";
 "publish.name" = "名前：";
 "publish.visibility" = "公開範囲：";
@@ -2352,8 +2345,8 @@
 "publish.visibility.public" = "公開";
 "publish.remote" = "リモート名：";
 "publish.target" = "リモート URL：";
-"publish.push" = "「%1$@」を「%2$@」にプッシュして追跡します。";
-"publish.noBranch" = "ブランチがチェックアウトされていないため、リモートだけを追加します。";
+"publish.push" = "すべてのローカルブランチとタグを「%@」にプッシュします。追跡先のないブランチは、新しいリモートの同名ブランチを追跡します。";
+"publish.noBranch" = "このリポジトリにはまだブランチもタグもないため、リモートだけを追加します。";
 "publish.exists" = "%2$@ に「%1$@」はすでに存在します。別の名前を選んでください。既存のリポジトリは上書きされません。";
 "publish.remoteExists" = "このリポジトリにはすでに「%@」というリモートがあります。別の名前を選んでください。既存のリモートは置き換えられません。";
 "publish.push.title" = "リモートを追加してプッシュ";
@@ -2364,7 +2357,6 @@
 "pr.filter.without" = "プルリクエストなし";
 "mr.filter.without" = "マージリクエストなし";
 "review.pullRequestsUnavailable" = "プルリクエストとマージリクエストの状態を取得できません。「設定」→「アカウント」でこのリポジトリのリモートに対応するアカウントを追加してください。";
-"review.audit.merged" = "%1$@：%2$@ にマージ済み";
 "review.audit.pullRequest" = "%1$@：%2$@ は %3$@ でマージ済み";
 "review.audit.stale" = "%1$@：最終更新 %2$@";
 "review.audit.manual" = "%@：手動でアーカイブ";

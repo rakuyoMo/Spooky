@@ -237,7 +237,8 @@ extension RepositoryOperationDrop {
                 try await RepositoryReferences(runner: runner)
                     .renameRemoteBranch(parts.branch, on: parts.remote, to: name, onOutput: output)
             },
-            title: AppLocalization.text("branch.renameRemote")
+            title: AppLocalization.text("branch.renameRemote"),
+            activityKind: .remote
         )
     }
 }

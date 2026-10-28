@@ -60,8 +60,9 @@ struct SidebarSessionTests {
         try await waitUntil { session.history.snapshot?.metadata(for: feature.id).isArchived ?? false }
         #expect(session.history.snapshot?.metadata(for: feature.id) == BranchMetadata(isPinned: true, isArchived: true))
 
-        // feature 停在 main 的祖先上，算完全合并
-        #expect(session.history.conditions[feature.id]?.mergedInto == "refs/heads/main")
+        // 整理状态随引用一起读入：main 是基准分支，feature 不是
+        #expect(try #require(session.history.conditions[main.id]).isBase)
+        #expect(try !#require(session.history.conditions[feature.id]).isBase)
 
         session.setPinned(false, branches: [feature])
         try await waitUntil { !(session.history.snapshot?.metadata(for: feature.id).isPinned ?? true) }

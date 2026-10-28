@@ -181,6 +181,42 @@ extension RepositorySync {
         }
     }
 
+    /// 把全部本地分支与标签推到远端；推送前没有上游的本地分支随后跟踪远端上的同名分支，已有上游的不改。
+    ///
+    /// refspec 只写 `refs/heads/*` 与 `refs/tags/*`，别的远端的跟踪分支不会被推上去。
+    /// 上游逐个设置而不用 `--set-upstream`：后者会把已有上游的分支也改成跟踪这个远端。
+    ///
+    /// - Parameter remote: 远端名；远端跟踪分支按它默认的 fetch refspec 随推送更新，上游指向 `refs/remotes/<远端>/<分支>`。
+    public func pushBranchesAndTags(
+        to remote: String,
+        onOutput: (@Sendable (GitOutputEvent) -> Void)? = nil
+    ) async throws -> [RemoteReferenceUpdate] {
+        try await runner.writeTransaction {
+            let references = RepositoryReferences(runner: runner)
+            let snapshot = try await references.snapshot()
+
+            guard snapshot.remotes.contains(where: { $0.name == remote }) else {
+                throw RepositorySyncError.missingRemote
+            }
+
+            let arguments = pushPrefix(remote: remote) + ["--no-force"] + pushArguments(PushOptions())
+                + ["--", remote, "refs/heads/*:refs/heads/*", "refs/tags/*:refs/tags/*"]
+
+            let result = try await runner.execute(arguments, onOutput: onOutput)
+            let updates = try RemoteReferenceUpdate.parsePush(result.standardOutput)
+
+            // 推送前没有上游的本地分支，设为跟踪远端上的同名分支
+            let untracked = snapshot.references.filter { $0.isLocal && $0.upstream == nil }
+
+            for branch in untracked {
+                let name = branch.id.dropFirst("refs/heads/".count)
+                try await references.setUpstream("refs/remotes/" + remote + "/" + name, for: branch.id)
+            }
+
+            return updates
+        }
+    }
+
     /// 推送任意版本时交给 refspec 的对象：推到标签时保留标签对象，附注标签在远端仍是附注标签；推到其它引用时是提交。
     private func pushedObject(_ revision: String, to target: String) async throws -> String {
         guard target.hasPrefix("refs/tags/") else {

@@ -112,7 +112,8 @@ extension PublishTagDialog {
             { runner, output in
                 try await RepositoryTags(runner: runner).publish(tag, to: remote, skipHooks: skipHooks, onOutput: output)
             },
-            title: AppLocalization.text("tag.publish")
+            title: AppLocalization.text("tag.publish"),
+            activityKind: .remote
         )
 
         if started {

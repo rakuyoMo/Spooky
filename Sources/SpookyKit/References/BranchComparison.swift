@@ -11,9 +11,6 @@ public struct BranchComparison: Sendable, Equatable {
 
     /// 分支并入基准的预览：`unchanged` 表示分支已完全并入基准，`clean` 表示能干净合并。
     public let merge: MergePreview
-
-    /// 分支是否已完全并入基准。
-    public var isMerged: Bool { merge == .unchanged }
 }
 
 // MARK: - MergeTreeBatchResult

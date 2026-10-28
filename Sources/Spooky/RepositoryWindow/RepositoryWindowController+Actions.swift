@@ -102,7 +102,8 @@ extension RepositoryWindowController {
                 _ = try await RepositorySync(runner: runner)
                     .fetch(prune: prune, allTags: tags, onOutput: output)
             },
-            title: AppLocalization.text("sync.fetch")
+            title: AppLocalization.text("sync.fetch"),
+            activityKind: .remote
         )
     }
 
@@ -154,6 +155,10 @@ extension RepositoryWindowController {
     /// 对话框关闭之后才启动写入，保存发起仓库身份以拒绝迟到提交。
     func presentRepositoryAction(_ request: RepositoryActionRequest) {
         guard session.canWrite, let window, window.attachedSheet == nil else { return }
+
+        // HEAD 还没有上游时，推送 HEAD 分支改为打开发布分支的对话框
+        let request = request.resolved(for: session.status?.branch)
+
         let repository = session.repository
         let sheet = NSWindow()
         sheet.styleMask = [.titled]
@@ -173,6 +178,7 @@ extension RepositoryWindowController {
                         session.performGit(
                             action,
                             title: title,
+                            activityKind: request.kind.activityKind,
                             offersAutoStash: [.pull, .merge].contains(request.kind),
                             undo: [.create, .track, .merge].contains(request.kind) ? .reversible : .irreversible
                         )

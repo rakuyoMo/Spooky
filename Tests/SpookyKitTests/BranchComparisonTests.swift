@@ -60,7 +60,7 @@ struct BranchComparisonTests {
         #expect(Set(result.keys) == Set(branches.keys))
 
         let merged = try #require(result["refs/heads/merged"])
-        #expect(merged.isMerged)
+        #expect(merged.merge == .unchanged)
         #expect(merged.divergence == ReferenceDivergence(ahead: 0, behind: 1))
 
         #expect(result["refs/heads/ahead"]?.merge == .clean)
@@ -199,7 +199,7 @@ struct BranchComparisonTests {
         }
     }
 
-    /// 自动归档写入待审阅标记，取消归档一并清除；跳过与隐藏提示各自独立，随快照读回。
+    /// 自动归档写入待审阅标记，取消归档一并清除；跳过自动归档与归档各自独立，随快照读回。
     @Test("分支整理的标记")
     func metadataFlags() async throws {
         let fixture = try TemporaryRepository()
@@ -215,11 +215,10 @@ struct BranchComparisonTests {
 
         try await refs.setArchived(true, branches: [branch], review: true)
         try await refs.setSkipsAutoArchive(true, branches: [branch])
-        try await refs.setHidesMergedHint(true, branches: [branch])
 
         var metadata = try await refs.snapshot().metadata(for: branch)
         #expect(metadata.isArchived && metadata.needsArchiveReview)
-        #expect(metadata.skipsAutoArchive && metadata.hidesMergedHint)
+        #expect(metadata.skipsAutoArchive)
 
         try await refs.markArchiveReviewed(branches: [branch])
         metadata = try await refs.snapshot().metadata(for: branch)
@@ -237,7 +236,7 @@ struct BranchComparisonTests {
             [
                 "branch.a.spooky-archive-review",
                 "branch.a.spooky-skip-auto-archive\nno",
-                "branch.a.spooky-hide-merged-hint\nyes",
+                "branch.a.spooky-archived\nyes",
             ]
             .map { $0 + "\0" }
             .joined()
@@ -246,7 +245,7 @@ struct BranchComparisonTests {
         let flags = try #require(parsed["refs/heads/a"])
         #expect(flags.needsArchiveReview)
         #expect(!flags.skipsAutoArchive)
-        #expect(flags.hidesMergedHint)
+        #expect(flags.isArchived)
     }
 }
 

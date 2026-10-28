@@ -34,7 +34,7 @@ struct RemoteBranchesReviewTests {
             )
             let base = try #require(tips["refs/heads/main"])
             let result = try await refs.compare(tips.filter { $0.key != "refs/heads/main" }, toBase: base)
-            #expect(try #require(result["refs/heads/merged"]).isMerged)
+            #expect(result["refs/heads/merged"]?.merge == .unchanged)
             #expect(result["refs/heads/feature/合并"]?.merge == .clean)
             #expect(result["refs/heads/feature/合并"]?.divergence == ReferenceDivergence(ahead: 1, behind: 1))
 

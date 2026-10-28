@@ -4,7 +4,7 @@ import Testing
 
 @testable import SpookyKit
 
-/// 大仓库验收：本机 2 秒、服务器 5 秒内读出首屏状态，历史分页到界面上限时内存仍在 512 MB 以内。
+/// 大仓库验收：本机 2 秒、服务器 5 秒内读出首屏状态，历史逐页读到根提交时内存仍在 512 MB 以内。
 ///
 /// 生成代表性仓库需要数十秒，默认跳过；以 `SPOOKY_PERFORMANCE_TESTS=1` 显式开启，
 /// 服务器场景另需 `SPOOKY_REMOTE_TESTS=1`。发布构建的测量方法见 docs/testing/M5.md。
@@ -13,8 +13,8 @@ struct PerformanceTests {
     /// 工作区中的文件数。
     static let files = 100_000
 
-    /// 历史中的提交数，与界面的分页加载上限相同。
-    static let commits = 50_000
+    /// 历史中的提交数：超过 5 万，逐页读到根提交。
+    static let commits = 60_000
 
     /// 已修改的跟踪文件数。
     static let modified = 2000

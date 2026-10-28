@@ -23,7 +23,7 @@ struct SidebarSettingsTests {
         let titles = menu.items.map { $0.isSeparatorItem ? "|" : $0.title }
         let expected = [
             "sidebar.showReflog", "sidebar.showStashCount", "|", "sidebar.groupRefs", "sidebar.groupedRefsOnTop", "|",
-            "sidebar.showMergedBadge", "sidebar.showStaleInfo", "sidebar.staleInterval", "sidebar.autoArchive", "|",
+            "sidebar.showStaleInfo", "sidebar.staleInterval", "sidebar.autoArchive", "|",
             "sidebar.remoteFilter", "sidebar.tagsFilter",
         ]
         .map { $0 == "|" ? "|" : AppLocalization.text($0) }
@@ -113,7 +113,7 @@ struct SidebarSettingsTests {
         #expect(sidebar.delegate === SidebarViewSettingsMenu.shared)
     }
 
-    /// 基准分支不显示已合并与陈旧；关闭对应设置后不显示；跟踪错误总是显示。
+    /// 陈旧的分支名称变灰，关闭陈旧信息后既不显示也不变灰；跟踪错误总是显示。
     @Test("分支行的标记随设置变化")
     func branchStatus() throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
@@ -122,25 +122,24 @@ struct SidebarSettingsTests {
             reference: "refs/heads/topic",
             lastUpdated: old,
             missingUpstream: "refs/remotes/origin/topic",
-            mergedInto: "refs/heads/main",
             isBase: false
         )
 
-        let shown = SidebarBranchStatus(condition: condition, showsMerged: true, staleMonths: 6, now: now)
-        #expect(shown.isFullyMerged && shown.isDimmed)
+        let shown = SidebarBranchStatus(condition: condition, staleMonths: 6, now: now)
+        #expect(shown.isDimmed)
         #expect(shown.staleDuration == SidebarTooltip.duration(since: old, now: now))
         #expect(shown.missingUpstream == "refs/remotes/origin/topic")
 
-        let hidden = SidebarBranchStatus(condition: condition, showsMerged: false, staleMonths: nil, now: now)
-        #expect(!hidden.isFullyMerged && !hidden.isDimmed)
+        let hidden = SidebarBranchStatus(condition: condition, staleMonths: nil, now: now)
+        #expect(!hidden.isDimmed)
         #expect(hidden.staleDuration == nil)
         #expect(hidden.missingUpstream != nil)
 
-        let fresher = SidebarBranchStatus(condition: condition, showsMerged: false, staleMonths: 9, now: now)
+        let fresher = SidebarBranchStatus(condition: condition, staleMonths: 9, now: now)
         #expect(fresher.staleDuration == nil)
     }
 
-    /// 悬停提示逐行写出分支名、跟踪关系、计数、归档、合并、陈旧与跟踪错误，服务器仓库带主机前缀。
+    /// 悬停提示逐行写出分支名、跟踪关系、计数、归档、陈旧与跟踪错误，服务器仓库带主机前缀。
     @Test("悬停提示")
     func tooltips() throws {
         let branch = RepositoryReference(
@@ -152,8 +151,7 @@ struct SidebarSettingsTests {
             upstreamBranch: "refs/heads/feature/登录",
             symbolicTarget: nil
         )
-        var status = SidebarBranchStatus(condition: nil, showsMerged: false, staleMonths: nil)
-        status.isFullyMerged = true
+        var status = SidebarBranchStatus(condition: nil, staleMonths: nil)
         status.staleDuration = "3 months"
 
         let text = SidebarTooltip.branch(
@@ -169,13 +167,12 @@ struct SidebarSettingsTests {
                 AppLocalization.text("branch.tooltip.tracksRemote", "origin/feature/登录"),
                 AppLocalization.text("branch.tooltip.divergence", 2, 1, "origin/feature/登录"),
                 AppLocalization.text("branch.tooltip.archived"),
-                AppLocalization.text("branch.tooltip.merged"),
                 AppLocalization.text("branch.tooltip.stale", "3 months"),
             ]
         )
 
         // 计数为零时不写计数行；跟踪错误单独一行
-        status = SidebarBranchStatus(condition: nil, showsMerged: false, staleMonths: nil)
+        status = SidebarBranchStatus(condition: nil, staleMonths: nil)
         status.missingUpstream = "refs/remotes/origin/feature/登录"
         let gone = SidebarTooltip.branch(
             branch,

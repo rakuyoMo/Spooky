@@ -27,6 +27,14 @@ struct RepositoryActionRequest {
 
         /// 合并到当前分支。
         case merge = "sync.merge"
+
+        /// 记在 Activity 的哪一页：要连接远端传输对象或引用的获取、拉取、推送与发布记在 Remote。
+        var activityKind: ActivityKind {
+            switch self {
+            case .fetch, .pull, .push, .publish: .remote
+            case .create, .track, .merge: .repository
+            }
+        }
     }
 
     /// 对话框类型。
@@ -43,6 +51,24 @@ struct RepositoryActionRequest {
 
     /// 清理右键预设的选项。
     var prune = false
+
+    /// 实际打开的请求：推送 HEAD 分支、没有指定目标远端分支而 HEAD 还没有上游时，改为发布这个分支；其它请求原样返回。
+    ///
+    /// - Parameter head: 当前分支的状态；读不到状态时为 nil。
+    func resolved(for head: BranchStatus?) -> Self {
+        guard
+            kind == .push,
+            reference == nil,
+            let head,
+            let name = head.head,
+            (localBranch ?? name) == name,
+            head.upstream == nil
+        else {
+            return self
+        }
+
+        return Self(kind: .publish, remote: remote, localBranch: localBranch)
+    }
 }
 
 // MARK: - RepositoryOperationDialog
@@ -93,7 +119,7 @@ struct RepositoryOperationDialog: View {
     @State
     private var parent = ""
 
-    /// 发布后设置 upstream。
+    /// 发布分支后跟踪推上去的远端分支，默认勾上；推送不设置上游。
     @State
     private var upstream = true
 
@@ -257,7 +283,7 @@ struct RepositoryOperationDialog: View {
 // MARK: - Layout
 
 extension RepositoryOperationDialog {
-    /// 头部：图标、动作名、仓库路径与动作说明。
+    /// 头部：图标、动作名、服务器仓库的位置与动作说明。
     private var header: some View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: "point.3.connected.trianglepath.dotted")
@@ -269,10 +295,13 @@ extension RepositoryOperationDialog {
                 Text(AppLocalization.text(request.kind.rawValue))
                     .font(.system(size: 14, weight: .bold))
 
-                Text(session.repository?.displayPath ?? "")
-                    .font(.system(size: 13))
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
+                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
+                if let repository = session.repository, repository.host != nil {
+                    Text(repository.displayPath)
+                        .font(.system(size: 13))
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 Text(AppLocalization.text(request.kind.rawValue + ".help"))
                     .font(.system(size: 13))
@@ -432,7 +461,7 @@ extension RepositoryOperationDialog {
         }
     }
 
-    /// 推送与发布：本地分支、远端、远端分支名与设置 upstream 的选项。
+    /// 推送与发布：本地分支、远端与远端分支名；只有发布有跟踪远端分支的选项。
     @ViewBuilder
     private var pushRows: some View {
         GridRow {
@@ -447,9 +476,11 @@ extension RepositoryOperationDialog {
         remotePicker
         nameRow
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-            option("sync.setUpstream", value: $upstream)
+        if request.kind == .publish {
+            GridRow {
+                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                option("sync.setUpstream", value: $upstream)
+            }
         }
     }
 
@@ -604,7 +635,6 @@ extension RepositoryOperationDialog {
                     ?? selected?.upstreamBranch.map { String($0.dropFirst("refs/heads/".count)) }
                     ?? localBranch
             }
-            upstream = request.kind == .publish || selected?.upstream == nil
         }
 
         if
@@ -755,7 +785,7 @@ extension RepositoryOperationDialog {
                         branch: localBranch,
                         remote: remote,
                         destination: name,
-                        setUpstream: upstream,
+                        setUpstream: kind == .publish && upstream,
                         options: push.options,
                         lease: push.lease,
                         onOutput: output

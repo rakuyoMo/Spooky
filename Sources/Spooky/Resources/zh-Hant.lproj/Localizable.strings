@@ -386,13 +386,19 @@
 "merge.conflicts" = "預覽發現 %d 個檔案衝突";
 "merge.unavailable" = "無法預覽此次合併";
 "activity.title" = "活動";
-"activity.clear" = "清除已完成活動";
+"activity.clear" = "全部清除";
 "activity.search" = "搜尋活動";
 "activity.empty" = "選取活動以檢視記錄。";
 "activity.running" = "進行中";
 "activity.finished" = "已完成";
 "activity.cancelled" = "已取消";
 "activity.failed" = "失敗";
+"activity.remote" = "遠端";
+"activity.remote.help" = "顯示遠端活動";
+"activity.repository" = "儲存庫";
+"activity.repository.help" = "顯示儲存庫活動";
+"activity.service" = "服務";
+"activity.service.help" = "顯示服務活動";
 "dialog.options" = "選項";
 "dialog.doNotAskAgain" = "不再詢問";
 "menu.repository" = "儲存庫";
@@ -419,10 +425,8 @@
 "recovery.unborn" = "尚無提交";
 "dialog.blocked" = "此儲存庫有其他操作正在進行，或伺服器已中斷連線。已填寫的設定會保留，請在儲存庫可用後重試。";
 "working.clean" = "沒有本機變更";
-"history.limit" = "僅顯示前 %ld 個提交。選擇分支可以縮小歷史範圍。";
 "history.loadingChanges" = "正在讀取變更檔案…";
 "repositories.unavailableShort" = "無法使用";
-"activity.truncated" = "較早的輸出已省略。";
 
 /* 主题管理。 */
 "themes.newName" = "新主題";
@@ -838,7 +842,8 @@
 "history.search.range" = "介於";
 "history.search.to" = "至";
 "history.reveal.notFound" = "提交 %@ 不在這段歷史中。";
-"history.reveal.beyondLimit" = "提交 %@ 不在這段歷史的前 %ld 個提交中。";
+"history.reveal.slow" = "載入更多提交";
+"history.reveal.slow.message" = "提交 %1$@ 排在這段歷史的前 %2$ld 個提交之後。載入到它為止可能需要一些時間。";
 "history.subtitle" = "%@（%ld 個提交）";
 "history.subtitle.more" = "%@（%ld 個或更多提交）";
 "working.subtitle" = "工作區（%ld 個變更的檔案）";
@@ -928,7 +933,6 @@
 "sidebar.showStashCount" = "顯示儲藏數量";
 "sidebar.groupRefs" = "在側邊欄中分組參照";
 "sidebar.groupedRefsOnTop" = "分組排在前面";
-"sidebar.showMergedBadge" = "在側邊欄中顯示完全合併徽章";
 "sidebar.showStaleInfo" = "在側邊欄中顯示陳舊資訊";
 "sidebar.staleInterval" = "陳舊分支的時間間隔";
 "sidebar.month" = "1 個月";
@@ -941,7 +945,6 @@
 "sidebar.nameDescending" = "名稱遞減";
 "sidebar.showNewest" = "顯示最新";
 "sidebar.all" = "全部";
-"branch.merged" = "已合併";
 "branch.staleFor" = "已 %@ 未更新";
 "branch.trackingError" = "追蹤的分支已不存在";
 "branch.pin" = "釘選分支";
@@ -962,7 +965,6 @@
 "branch.tooltip.tracksLocal" = "- 追蹤本機分支 “%@”";
 "branch.tooltip.divergence" = "- 領先 %ld 個提交、落後 %ld 個提交（相對分支 “%@”）";
 "branch.tooltip.archived" = "- 已封存";
-"branch.tooltip.merged" = "- 已完全合併";
 "branch.tooltip.stale" = "- 已陳舊（%@）";
 "branch.tooltip.missingUpstream" = "- 追蹤的分支 “%@” 已不存在";
 "remote.tooltip.branch" = "遠端分支 “%@”";
@@ -1318,7 +1320,6 @@
 "review.filter.stale" = "陳舊";
 "review.filter.active" = "活躍";
 "review.filter.trackingError" = "追蹤錯誤";
-"review.filter.fullyMerged" = "已完全合併";
 "review.filter.mergeable" = "可以合併";
 "review.filter.conflicts" = "合併衝突";
 "review.viewSettings" = "顯示設定";
@@ -1327,7 +1328,6 @@
 "review.sort.ascending" = "遞增";
 "review.sort.descending" = "遞減";
 "review.empty" = "沒有可整理的分支";
-"review.status.merged" = "已完全併入所選的基準分支";
 "review.status.mergeable" = "可以併入所選的基準分支";
 "review.status.conflicts" = "併入所選的基準分支會產生衝突";
 "review.counts" = "領先 %1$ld 個提交，落後 %2$ld 個提交";
@@ -1341,7 +1341,6 @@
 "review.resolveConflicts" = "解決合併衝突";
 "review.autoArchive" = "自動封存分支";
 "review.skipAutoArchive" = "自動封存時略過";
-"review.hideMergedHint" = "隱藏完全合併提示";
 "review.markReviewed" = "標為已檢視";
 "review.updateBranch" = "更新分支";
 "review.update.summary" = "把 “%1$@” 併入 “%2$@” 將帶來 %3$ld 個提交。";
@@ -1352,10 +1351,10 @@
 "review.update.clean" = "與父分支沒有衝突";
 "review.archive.title" = "封存分支";
 "review.archive.help" = "選擇要從分支列表中隱藏的分支。封存的分支移到側邊欄的 “已封存分支”，仍可在那裡使用。";
-"review.archive.automaticHelp" = "這些分支已完全合併或長期沒有更新，即將自動封存。取消勾選要保留的分支。";
+"review.archive.automaticHelp" = "這些分支長期沒有更新，或者 Pull Request 或 Merge Request 已合併，即將自動封存。取消勾選要保留的分支。";
 "review.archive.submit" = "封存";
 "review.archive.empty" = "沒有可封存的分支";
-"review.archive.emptyHelp" = "只建議封存已完全合併或長期沒有更新的分支。";
+"review.archive.emptyHelp" = "只建議封存長期沒有更新，或者 Pull Request 或 Merge Request 已合併的分支。";
 "review.archive.auto" = "自動封存分支";
 "review.archive.autoHelp" = "每天一次列出過時的分支，經你確認後再封存。";
 "review.archive.count" = "%ld 個分支可以封存";
@@ -1369,21 +1368,15 @@
 "history.forkPoint" = "父分支 “%@” 的分岔點";
 "history.noNewCommits" = "這個分支沒有新提交";
 "history.identicalToParent" = "這個分支與父分支 “%@” 相同。";
-"history.hint.merged" = "這個分支已完全合併";
-"history.hint.mergedMessage" = "它的全部變更都已包含在其他分支裡。";
 "history.hint.stale" = "分支似乎已陳舊";
 "history.hint.staleMessage" = "這個分支已超過 %ld 個月沒有更新，可以考慮封存或刪除。";
-"history.hint.details" = "詳細資訊";
-"history.hint.mergedInto" = "已完全併入 “%@”";
-"history.hint.dontShow" = "不再為 “%@” 顯示";
-"history.hint.dismiss" = "關閉提示";
 "sidebar.needsReview" = "有待檢視的自動封存分支";
 "sidebar.markAllReviewed" = "全部標為已檢視";
 "branch.mergeWith" = "與 “%@” 合併…";
 "branch.quickMergeInto" = "快速把 “%1$@” 合併到 “%2$@”";
 "branch.rebaseOn" = "重定基底到 “%@” …";
 "branch.quickRebaseOn" = "快速把 “%1$@” 重定基底到 “%2$@”";
-"settings.autoArchive" = "自動封存陳舊與已完全合併的分支";
+"settings.autoArchive" = "自動封存過時的分支";
 /* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
 "rewrite.menu.checkout" = "檢出 “%@”";
 "rewrite.menu.checkoutGeneric" = "檢出版本…";
@@ -2343,7 +2336,7 @@
 
 "publish.menu" = "發佈儲存庫…";
 "publish.title" = "發佈儲存庫";
-"publish.message" = "用所選帳號新增一個空儲存庫，把它加入為這個儲存庫的遠端，並把目前分支推送過去。";
+"publish.message" = "用所選帳號新增一個空儲存庫，把它加入為這個儲存庫的遠端，並把所有本機分支與標籤推送過去。";
 "publish.owner" = "擁有者：";
 "publish.name" = "名稱：";
 "publish.visibility" = "可見性：";
@@ -2352,8 +2345,8 @@
 "publish.visibility.public" = "公開";
 "publish.remote" = "遠端名稱：";
 "publish.target" = "遠端位址：";
-"publish.push" = "把 “%1$@” 推送到 “%2$@” 並追蹤它。";
-"publish.noBranch" = "沒有簽出分支，只加入遠端。";
+"publish.push" = "把所有本機分支與標籤推送到 “%@”。沒有上游的分支追蹤新遠端上的同名分支。";
+"publish.noBranch" = "這個儲存庫還沒有分支或標籤，只加入遠端。";
 "publish.exists" = "%2$@ 上已經有 “%1$@”。請換一個名稱，已有的儲存庫不會被覆蓋。";
 "publish.remoteExists" = "這個儲存庫已經有名為 “%@” 的遠端。請換一個名稱，已有的遠端不會被取代。";
 "publish.push.title" = "加入遠端並推送";
@@ -2364,7 +2357,6 @@
 "pr.filter.without" = "沒有 Pull Request";
 "mr.filter.without" = "沒有 Merge Request";
 "review.pullRequestsUnavailable" = "無法取得 Pull Request 與 Merge Request 的狀態。請在 設定 → 帳號 中加入這個儲存庫遠端對應的帳號。";
-"review.audit.merged" = "%1$@：已併入 %2$@";
 "review.audit.pullRequest" = "%1$@：%2$@ 已在 %3$@ 上合併";
 "review.audit.stale" = "%1$@：最後更新於 %2$@";
 "review.audit.manual" = "%@：手動封存";

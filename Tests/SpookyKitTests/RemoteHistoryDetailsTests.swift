@@ -5,10 +5,10 @@ import Testing
 
 // MARK: - RemoteHistoryDetailsTests
 
-/// 提交详情的服务器验收：合并 Diff 方式、文件树、比较、签名查询，以及归档与补丁经标准输出流回本机存盘。
+/// 提交详情的服务器验收：合并 Diff 方式、文件树、比较、签名查询，归档与补丁经标准输出流回本机存盘，以及补丁写进服务器上的仓库根目录。
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteHistoryDetailsTests {
-    /// 查询与导出都由 B 上的 Git 执行，写出的文件在本机的临时目录里。
+    /// 查询与导出都由 B 上的 Git 执行，写出的文件在本机的临时目录里；存进仓库根目录的补丁留在 B 上。
     @Test("服务器的合并 Diff、文件树、比较、签名与导出", .timeLimit(.minutes(3)))
     func historyDetails() async throws {
         let fixture = try await RemoteFixture.create()
@@ -59,6 +59,14 @@ struct RemoteHistoryDetailsTests {
             #expect(try Data(contentsOf: output.appending(path: "files/" + path)) == Data("one\n".utf8))
             let patches = try await export.savePatches([base, merge], omitsPrefixes: true, to: output)
             #expect(patches.map(\.lastPathComponent) == ["0001-.patch"])
+
+            // 存进仓库根目录的补丁由 B 上的 Git 写在 B 上，本机没有
+            let saved = try await export.savePatchesToRepositoryRoot([base, merge], omitsPrefixes: true)
+            #expect(saved == [location.path + "/0001-.patch"])
+
+            let expected = try await runner.run(["format-patch", "--stdout", "-1", "--no-prefix", base])
+            #expect(try await files.read(saved)[saved[0]] == expected)
+            #expect(!FileManager.default.fileExists(atPath: saved[0]))
 
             try? FileManager.default.removeItem(at: output)
             await remote.close()

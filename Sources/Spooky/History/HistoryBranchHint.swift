@@ -1,40 +1,14 @@
 import SpookyKit
 import SwiftUI
 
-// MARK: - HistoryHintKind
-
-/// 历史提示条的种类。
-private enum HistoryHintKind {
-    /// 已完全并入参数里的基准分支。
-    case merged(String)
-
-    /// 超过阈值没有更新。
-    case stale(Int)
-
-    /// 已完全合并时的基准分支名。
-    var mergedBase: String? {
-        guard case .merged(let base) = self else { return nil }
-        return base
-    }
-
-    /// 完全合并是绿色，陈旧是黄色。
-    var tint: Color {
-        mergedBase == nil ? Color(nsColor: .systemYellow) : Color(nsColor: .systemGreen)
-    }
-}
-
 // MARK: - HistoryBranchHint
 
-/// 选中已完全合并或陈旧的分支时，历史列表顶部的提示条；单个分支可以不再显示。
+/// 选中陈旧的分支时，历史列表顶部的提示条。
 ///
 /// 选中自动归档后还没看过的分支停留片刻后，清除它的待审阅标记。
 struct HistoryBranchHint: View {
     /// 当前仓库会话。
     let session: RepositorySession
-
-    /// 完全合并提示的展开状态，所有窗口共用。
-    @AppStorage("branchFullyMergedHintExpanded")
-    private var expanded = true
 
     /// 陈旧阈值，与侧边栏视图设置共用。
     @AppStorage(SidebarPreferences.staleIntervalKey)
@@ -45,8 +19,8 @@ struct HistoryBranchHint: View {
         let branch = session.history.selectedLocalBranch
 
         Group {
-            if let branch, let kind = kind(of: branch) {
-                hint(kind, branch: branch)
+            if let branch, let months = staleMonths(of: branch) {
+                hint(months)
                 Divider()
             }
         }
@@ -55,20 +29,10 @@ struct HistoryBranchHint: View {
         }
     }
 
-    /// 基准分支、勾了隐藏提示的分支与普通分支没有提示条；完全合并优先于陈旧。
-    private func kind(of branch: RepositoryReference) -> HistoryHintKind? {
-        let metadata = session.history.snapshot?.metadata(for: branch.id) ?? BranchMetadata()
-
-        guard
-            let condition = session.history.conditions[branch.id],
-            !condition.isBase,
-            !metadata.hidesMergedHint
-        else {
+    /// 分支陈旧时返回陈旧阈值的月数；基准分支与普通分支没有提示条。
+    private func staleMonths(of branch: RepositoryReference) -> Int? {
+        guard let condition = session.history.conditions[branch.id] else {
             return nil
-        }
-
-        if let base = condition.mergedInto {
-            return .merged(BranchesReviewRow.shortName(base))
         }
 
         let months =
@@ -76,76 +40,33 @@ struct HistoryBranchHint: View {
                 ? staleInterval
                 : SidebarPreferences.defaultNumber(SidebarPreferences.staleIntervalKey)
 
-        return condition.isStale(months: months) ? .stale(months) : nil
+        return condition.isStale(months: months) ? months : nil
     }
 
-    /// 图标、标题、说明与关闭菜单；完全合并时可以展开看合并到了哪里。
-    private func hint(_ kind: HistoryHintKind, branch: RepositoryReference) -> some View {
+    /// 黄色底的图标、标题与说明。
+    private func hint(_ months: Int) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            Image(
-                systemName: kind.mergedBase == nil
-                    ? "clock.badge.exclamationmark"
-                    : "checkmark.circle.fill"
-            )
-            .font(.system(size: 16))
-            .foregroundStyle(kind.tint)
-            .accessibilityHidden(true)
+            Image(systemName: "clock.badge.exclamationmark")
+                .font(.system(size: 16))
+                .foregroundStyle(Color(nsColor: .systemYellow))
+                .accessibilityHidden(true)
 
-            text(kind)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(AppLocalization.text("history.hint.stale"))
+                    .font(.system(size: 13, weight: .semibold))
 
-            Spacer(minLength: 4)
+                Text(AppLocalization.text("history.hint.staleMessage", months))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .font(.system(size: 12))
 
-            dismissMenu(branch)
+            // 撑满整行，底色铺到右边缘
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(kind.tint.opacity(0.15))
-    }
-
-    /// 标题、说明，以及完全合并时可展开的 “合并到了哪里”。
-    private func text(_ kind: HistoryHintKind) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(AppLocalization.text(kind.mergedBase == nil ? "history.hint.stale" : "history.hint.merged"))
-                .font(.system(size: 13, weight: .semibold))
-
-            Text(message(kind))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if let base = kind.mergedBase {
-                DisclosureGroup(isExpanded: $expanded) {
-                    Text(AppLocalization.text("history.hint.mergedInto", base))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                } label: {
-                    Text(AppLocalization.text("history.hint.details"))
-                }
-            }
-        }
-        .font(.system(size: 12))
-    }
-
-    /// 关闭菜单：这个分支以后不再显示提示条。
-    private func dismissMenu(_ branch: RepositoryReference) -> some View {
-        Menu {
-            Button(AppLocalization.text("history.hint.dontShow", branch.name)) {
-                session.setHidesMergedHint(true, branches: [branch])
-            }
-            .disabled(!session.canSetArchived([branch]))
-        } label: {
-            Image(systemName: "xmark")
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .accessibilityLabel(AppLocalization.text("history.hint.dismiss"))
-    }
-
-    /// 提示条的说明。
-    private func message(_ kind: HistoryHintKind) -> String {
-        switch kind {
-        case .merged: AppLocalization.text("history.hint.mergedMessage")
-        case .stale(let months): AppLocalization.text("history.hint.staleMessage", months)
-        }
+        .background(Color(nsColor: .systemYellow).opacity(0.15))
     }
 
     /// 选中自动归档后还没看过的分支 1.5 秒后清除它的待审阅标记；期间换了选择则不清除。

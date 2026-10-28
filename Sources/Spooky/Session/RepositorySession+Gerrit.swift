@@ -52,7 +52,8 @@ extension RepositorySession {
                 _ = try await RepositorySync(runner: runner)
                     .push(revision: name, remote: remote, to: target, skipHooks: false, onOutput: output)
             },
-            title: AppLocalization.text("gerrit.push")
+            title: AppLocalization.text("gerrit.push"),
+            activityKind: .remote
         )
     }
 

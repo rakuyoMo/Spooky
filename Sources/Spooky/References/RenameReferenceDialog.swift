@@ -173,7 +173,8 @@ extension RenameReferenceDialog {
                             try await RepositoryReferences(runner: runner)
                                 .renameRemoteBranch(parts.branch, on: parts.remote, to: name, onOutput: output)
                         },
-                        title: title
+                        title: title,
+                        activityKind: .remote
                     )
                 } else {
                     session.performGit(
