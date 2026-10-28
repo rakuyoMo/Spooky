@@ -38,7 +38,7 @@ allowed-tools:
 
 ## 2. 准备更新说明
 
-这一版的更新说明是 `docs/release-notes/<版本号>/` 下每种语言一份的 Markdown，写法见 `AGENTS.md` 的 “更新说明” 一节。先运行发布检查：
+这一版的更新说明是 `docs/release-notes/<版本号>/` 下每种语言一份的 Markdown，写法见 `docs/releasing.md` 的 “更新说明” 一节。先运行发布检查：
 
 ```bash
 ./scripts/check-release.sh <版本号> <通道>
@@ -76,7 +76,7 @@ gh pr view <PR 编号> --json title,body
 
 然后：
 
-- 按 `AGENTS.md` 的写法写出八份文件，不提交
+- 按 `docs/releasing.md` 的写法写出八份文件，不提交
 - 把 `zh-Hans.md` 的内容给用户看，并说明另外七份的位置
 - 用户确认后再进入下一步；用户提出修改时，同步改到八份文件里
   - 用户一开始就说了 “不用问” 之类的话，就不问

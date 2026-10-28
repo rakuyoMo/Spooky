@@ -154,11 +154,7 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
 - SSH agent forwarding is off by default. If a host key is unknown or has changed, verify it in a trusted terminal first
 - After the first successful connection check, Spooky installs a small helper program, named after a digest of its contents, in `~/.spooky/bin/` on the server with your user permissions. It manages remote processes and callbacks, relies on the server's Perl, and doesn't keep running in the background
 - Files are read and written with the system's SFTP over the same master connection
-  - The system SFTP batch mode can't represent paths that contain CR or LF, so file operations on such paths fail with a clear error
 - Quick Look, other apps, and files you drag out never receive a server path. They get a copy of the file in a private temporary directory on your Mac, which is removed when the repository closes
-- Polling reads only the status and the selected file's content hash, and reads everything else only when something changed. History pages and commit details, which depend only on commit hashes, are cached to save round trips
-- Exports, archives, and patches of a server repository are produced by Git on the server and streamed to your Mac over the same master connection. Nothing is written on the server
-- Interactive rebases run entirely on the server: the commit sequence and messages are written by an editor built into the command, so no editor opens on your Mac
 
 ### Hosting services
 
@@ -170,14 +166,11 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
 - Writes to the same repository run one at a time. Only one window can start a write to a repository at a time, and every window showing the repository refreshes when the write finishes
 - If the connection drops during a write, Spooky doesn't retry it. After reconnecting, it checks the branch, working copy, index lock, remote-tracking branches, and any merge or rebase in progress, tells you whether HEAD and the remote-tracking branches changed, and only then allows writes again
 - Undo records HEAD, branches, tags, branch settings, the stash list, the index, and the content of tracked files before and after each operation. The snapshots are written to the object database of the repository, on your Mac or on the server, and Spooky checks that the repository still matches the record before restoring it
-- To cancel an operation on a server, Spooky closes the command channel, then ends the remote process group: it sends TERM, waits 2 seconds, sends KILL, and confirms that the processes have exited
-  - If it can't confirm this, Spooky says so and blocks writes until a reconnection check
+- Cancelling an operation on a server ends its processes there. If Spooky can't confirm that they've exited, it says so and blocks writes until a reconnection check
 
 ### Credentials
 
 - When Git on the server needs a password, an SSH private key passphrase, a signing key passphrase, or an editor, the request comes back to your Mac through a reverse Unix socket on the current master connection, and Spooky shows a dialog
-  - Each request carries a random session token, can be answered only once, and times out after 120 seconds
-  - Commits on a server are signed there by the signing program the repository is configured with. GPG is asked for a passphrase only when it actually needs one
 - Network operations in local repositories also ask for credentials through a private Unix socket callback. After an SSH private key is unlocked, OpenSSH adds it to the current SSH agent
 - Local commits, merges, rebases, cherry-picks, and reverts ask for SSH signing key passphrases the same way. GPG passphrases are handled by your Mac's own pinentry
 - Credentials stay in memory by default. They're written to your Mac's Keychain only when you select **Save in this Mac’s Keychain**
@@ -214,77 +207,15 @@ In your repositories:
 
 ## Development
 
-### Tests
-
 ```sh
 swift test
 ```
 
 - Tests use Swift Testing
 - Tests that use Git run in temporary repositories and ignore the system and user Git configuration
+- Tests that need a test server, a GitHub test repository, or a large generated repository are skipped by default. See [Testing](docs/testing/README.md) (in Chinese) for how to enable them
 
-Server tests are skipped by default. Running them requires a dedicated test server:
-
-- A host alias `spooky-test` in `~/.ssh/config`
-- Authentication with the key `~/.ssh/spooky-test_ed25519`
-- Read and write access to `/Users/wgy/spooky-test/` on the server
-
-Once it's set up, enable them explicitly:
-
-```sh
-# Connections, connection checks, recovery, and callbacks
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
-
-# SFTP, the local file cache, and server commits
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests
-
-# Server history, sync, force pushes, and cancellation
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests
-
-# File operations, patches, and diff options
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyFilesTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteDiffTests
-
-# Stashes and the conflict wizard
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteStashTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConflictTests
-
-# File history, blame, and commit signing
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteFileViewsTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteCommitSigningTests
-
-# History search, commit details, and the sidebar
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySearchTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistoryDetailsTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteSidebarTests
-
-# Branch, tag, and remote management, rewriting history, and branches review
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReferenceManagementTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteRewriteTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteBranchesReviewTests
-
-# Reflog, undo, and redo
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReflogUndoTests
-
-# Listing folders, creating, searching, and cloning on the server
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHostOperationsTests
-```
-
-Each run creates and removes its own subdirectory there, and doesn't change the SSH configuration, `known_hosts`, or global Git configuration on either machine.
-
-Git LFS tests run only when `git-lfs` is found in the `PATH` or in Homebrew's folders, and are skipped otherwise.
-
-GitHub tests are skipped by default as well. They push temporary branches to a test repository, then create, comment on, edit, check out, merge, and close pull requests, and remove the branches afterward:
-
-```sh
-SPOOKY_GITHUB_TESTS=1 SPOOKY_GITHUB_TOKEN=<token> SPOOKY_GITHUB_REPOSITORY=<owner/repo> swift test --filter GitHubLiveTests
-```
-
-Performance tests for large repositories are also skipped by default. They generate a temporary repository with 100,000 files and 50,000 commits, and check how long the first status takes to load and how much memory is used:
-
-```sh
-SPOOKY_PERFORMANCE_TESTS=1 swift test -c release -Xswiftc -enable-testing --filter PerformanceTests
-```
+See [Architecture](docs/architecture.md) for the module layout and design, and [Releasing](docs/releasing.md) for versions and releases. Both are in Chinese.
 
 ## Contributing
 
