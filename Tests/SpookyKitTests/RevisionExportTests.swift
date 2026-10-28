@@ -63,7 +63,7 @@ struct RevisionExportTests {
         #expect(String(decoding: listing.standardOutput, as: UTF8.self) == "[*].txt\n")
     }
 
-    /// 文件名与 format-patch 写进目录时相同；去掉前缀、跳过合并提交，同名文件被替换。
+    /// 文件名与 format-patch 写进目录时相同；去掉前缀、跳过合并提交，同名文件被替换；仓库配了封面信也只写补丁本身。
     @Test("保存补丁", arguments: ["sha1", "sha256"])
     func patches(objectFormat: String) async throws {
         let fixture = try TemporaryRepository()
@@ -95,6 +95,20 @@ struct RevisionExportTests {
         let omitted = try await export.savePatches([first], omitsPrefixes: true, to: directory)
         #expect(String(decoding: try Data(contentsOf: omitted[0]), as: UTF8.self).contains("+++ one.txt\n"))
         #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).count == 2)
+
+        // 仓库配了封面信后再存一次，文件与配置前逐字节相同
+        let plain = try Data(contentsOf: saved[1])
+        _ = try await runner.run(["config", "--local", "format.coverLetter", "true"])
+        #expect(try await export.savePatches([first, second], omitsPrefixes: false, to: directory) == saved)
+
+        let covered = try Data(contentsOf: saved[1])
+        #expect(covered == plain)
+
+        // 文件里只有这个提交的一封补丁，没有封面信
+        let coveredText = String(decoding: covered, as: UTF8.self)
+        #expect(coveredText.hasPrefix("From \(second) "))
+        #expect(coveredText.components(separatedBy: "From \(second) ").count == 2)
+        #expect(coveredText.contains("\nSubject: [PATCH] second: two\n"))
 
         // 合并提交没有补丁
         _ = try await runner.run(["switch", "-q", "-c", "side", first])

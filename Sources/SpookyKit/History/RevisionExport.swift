@@ -104,11 +104,13 @@ public struct RevisionExport: Sendable {
 
             let destination = directory.appendingPathComponent(Self.patchName(index + 1, subject: detail.subject))
 
+            // 封面信写死不生成：仓库配了 format.coverLetter 时，标准输出在补丁之前还有一封封面信
+            let arguments = ["format-patch", "--stdout", "--no-cover-letter", "-1"]
+                + (omitsPrefixes ? ["--no-prefix"] : [])
+                + [commit]
+
             try await Self.replacing(destination) { temporary in
-                try await runner.stream(
-                    ["format-patch", "--stdout", "-1"] + (omitsPrefixes ? ["--no-prefix"] : []) + [commit],
-                    to: temporary
-                )
+                try await runner.stream(arguments, to: temporary)
             }
 
             saved.append(destination)
