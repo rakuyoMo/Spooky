@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - ConflictWizardView
 
-/// 选中冲突文件时的右栏：我方、对方两张版本卡片与采用两侧；文件已在别处改过时，多一张手动编辑结果的卡片。
+/// 选中冲突文件时的右栏：我方、对方两张版本卡片与合并工具，两侧都要保留时交给合并工具；文件已在别处改过时，多一张手动编辑结果的卡片。
 struct ConflictWizardView: View {
     /// 触发载入的请求：文件的三方版本变化或用户要求重新载入时重新读取。
     private struct LoadRequest: Equatable {
@@ -127,9 +127,9 @@ extension ConflictWizardView {
         return String(data: data, encoding: .utf8)
     }
 
-    /// 冲突类型与重新载入、两张版本卡片、采用两侧，以及手动编辑结果的卡片。
+    /// 冲突类型与重新载入、两张版本卡片、合并工具，以及手动编辑结果的卡片。
     private func wizard(_ contents: ConflictContents) -> some View {
-        #warning("TODO: 制造冲突后打开向导核对：版本卡片是否显示原文，“Resolve Using Both Versions” 位于卡片下方还是两张卡片之间；只影响冲突向导右栏的卡片内容与按钮位置")
+        #warning("TODO: 制造冲突后打开向导核对：版本卡片是否显示原文，合并工具按钮位于卡片下方还是两张卡片之间；只影响冲突向导右栏的卡片内容与按钮位置")
 
         return VStack(alignment: .leading, spacing: 16) {
             header
@@ -140,14 +140,9 @@ extension ConflictWizardView {
             }
 
             if entry.conflict?.hasRegularFilesOnBothSides ?? false {
-                HStack(spacing: 8) {
-                    Button(AppLocalization.text("conflict.resolveBoth")) { session.resolveUsingBoth(entry) }
-                        .disabled(!canResolveUsingBoth(contents))
-
-                    Button(mergeToolTitle) { session.openMergeTool(entry) }
-                        .disabled(!session.canOpenMergeTool([entry]))
-                }
-                .frame(maxWidth: .infinity)
+                Button(mergeToolTitle) { session.openMergeTool(entry) }
+                    .disabled(!session.canOpenMergeTool([entry]))
+                    .frame(maxWidth: .infinity)
             }
 
             if contents.isManuallyEdited {
@@ -251,15 +246,6 @@ extension ConflictWizardView {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(innerTile)
         }
-    }
-
-    /// 两侧都是文本时才能按冲突块合并；二进制内容交给 Git 会直接失败。
-    private func canResolveUsingBoth(_ contents: ConflictContents) -> Bool {
-        guard let ours = contents.ours, let theirs = contents.theirs else {
-            return false
-        }
-
-        return session.canResolveUsingBoth(entry) && !ours.contains(0) && !theirs.contains(0)
     }
 
     /// 读取三方内容；被新的请求取代的结果直接丢弃。

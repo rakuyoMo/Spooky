@@ -787,7 +787,6 @@
 "stash.subtitle" = "Remisages (%ld remisages)";
 
 /* 冲突向导。 */
-"conflict.resolveBoth" = "Résoudre avec les deux versions";
 "conflict.version.applied" = "Version du patch ou remisage appliqué";
 "conflict.resolveUsing.applied" = "Résoudre avec le patch ou remisage appliqué";
 "conflict.open.missing" = "Ouvrir";

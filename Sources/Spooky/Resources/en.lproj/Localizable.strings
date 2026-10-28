@@ -787,7 +787,6 @@
 "stash.subtitle" = "Stashes (%ld Stashes)";
 
 /* 冲突向导。 */
-"conflict.resolveBoth" = "Resolve Using Both Versions";
 "conflict.version.applied" = "Version from Applied Patch or Stash";
 "conflict.resolveUsing.applied" = "Resolve Using Applied Patch or Stash";
 "conflict.open.missing" = "Open";

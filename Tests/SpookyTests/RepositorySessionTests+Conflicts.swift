@@ -4,10 +4,10 @@ import Testing
 @testable import Spooky
 @testable import SpookyKit
 
-/// 以真实的合并冲突验证横幅的文字、已解决计数，以及恢复冲突版本与采用两侧版本。
+/// 以真实的合并冲突验证横幅的文字、已解决计数与恢复冲突版本。
 extension RepositorySessionTests {
     /// 两侧要用引用名说明；解决一个冲突后计数要能追溯；恢复冲突版本只改工作区，不经确认直接执行。
-    @Test("合并冲突的标题、已解决计数、恢复冲突与采用两侧")
+    @Test("合并冲突的标题、已解决计数与恢复冲突")
     func conflictSession() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(
             path: "spooky-conflict-" + UUID().uuidString
@@ -49,16 +49,6 @@ extension RepositorySessionTests {
         await session.writeTask?.value
 
         try await waitUntil { session.conflictCount == 2 }
-
-        // 采用两侧：两侧的内容都留在文件里，文件随即标记解决
-        let second = try #require(session.status?.entries.first { $0.path == "b.txt" })
-        #expect(session.canResolveUsingBoth(second))
-
-        session.resolveUsingBoth(second)
-        await session.writeTask?.value
-
-        try await waitUntil { session.conflictCount == 1 }
-        #expect(try Data(contentsOf: directory.appending(path: "b.txt")) == Data("main\nside\n".utf8))
     }
 }
 

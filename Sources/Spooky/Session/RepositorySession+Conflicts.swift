@@ -100,24 +100,6 @@ extension RepositorySession {
             recordsActivity: false
         )
     }
-
-    /// 两侧都是普通文件的冲突才能采用两侧版本。
-    func canResolveUsingBoth(_ entry: StatusEntry) -> Bool {
-        canResolve([entry]) && (entry.conflict?.hasRegularFilesOnBothSides ?? false)
-    }
-
-    /// 采用两侧版本并标记解决，合并在仓库所在的机器上完成。
-    func resolveUsingBoth(_ entry: StatusEntry) {
-        guard canResolveUsingBoth(entry) else { return }
-
-        performGit(
-            { runner, _ in
-                try await WorkingCopyOperations(runner: runner).resolveUsingBoth(entry)
-            },
-            title: AppLocalization.text("conflict.resolveBoth"),
-            recordsActivity: false
-        )
-    }
 }
 
 // MARK: - Private

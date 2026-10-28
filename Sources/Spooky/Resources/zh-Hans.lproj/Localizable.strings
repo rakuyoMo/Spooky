@@ -787,7 +787,6 @@
 "stash.subtitle" = "储藏（%ld 个储藏）";
 
 /* 冲突向导。 */
-"conflict.resolveBoth" = "采用两侧版本解决";
 "conflict.version.applied" = "来自应用的补丁或储藏的版本";
 "conflict.resolveUsing.applied" = "采用应用的补丁或储藏解决";
 "conflict.open.missing" = "打开";

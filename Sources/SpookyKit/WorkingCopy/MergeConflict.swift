@@ -239,63 +239,6 @@ extension WorkingCopyOperations {
             _ = try await runner.run(arguments, input: Self.pathInput(paths))
         }
     }
-
-    /// 采用两侧版本并标记解决：在仓库所在的机器上逐个冲突块保留两侧的行，我方在前；结果写入索引后再检出到工作区。
-    ///
-    /// 两侧中有一方不是普通文件时抛出 ``ConflictResolutionError/versionUnavailable``。
-    public func resolveUsingBoth(_ entry: StatusEntry) async throws {
-        try await runner.writeTransaction {
-            let current = try await runner.status().entries.first {
-                $0.kind == .conflicted && $0.path == entry.path
-            }
-
-            guard
-                let stages = current?.conflict,
-                stages.hasRegularFilesOnBothSides,
-                let oursMode = stages.oursMode,
-                let theirsMode = stages.theirsMode
-            else {
-                throw ConflictResolutionError.versionUnavailable
-            }
-
-            let object = try await unionMerge(of: entry.path)
-
-            // 文件模式按三方取：我方没有改动模式时沿用对方的
-            let mode = oursMode == stages.baseMode ? theirsMode : oursMode
-
-            // stage 0 的条目替换三个冲突 stage，Git 同时留下 resolve-undo 记录；路径经 stdin 原样传递
-            _ = try await runner.run(
-                ["update-index", "-z", "--index-info"],
-                input: Data("\(mode) \(object)\t\(entry.path)".utf8) + [0]
-            )
-
-            // 由索引检出到工作区，照常经过过滤与换行转换
-            _ = try await runner.run(["checkout-index", "-f", "-z", "--stdin"], input: Self.pathInput([entry.path]))
-        }
-    }
-}
-
-// MARK: - Stage Files
-
-extension WorkingCopyOperations {
-    /// 解析 `checkout-index --stage=all -z` 的输出：`<s1> <s2> <s3>\t<路径>\0`，缺少的 stage 为 `.`。
-    ///
-    /// - Returns: 共同祖先、我方与对方的临时文件名，相对仓库根目录；缺少的一侧为 nil。
-    static func parseStageFiles(_ output: Data) throws -> [String?] {
-        guard output.last == 0, let tab = output.firstIndex(of: 9) else {
-            throw RepositoryReadError.malformedOutput("checkout-index")
-        }
-
-        let names = String(decoding: output[..<tab], as: UTF8.self)
-            .split(separator: " ", omittingEmptySubsequences: false)
-            .map(String.init)
-
-        guard names.count == 3, names.allSatisfy({ !$0.isEmpty && !$0.contains("/") }) else {
-            throw RepositoryReadError.malformedOutput("checkout-index")
-        }
-
-        return names.map { $0 == "." ? nil : $0 }
-    }
 }
 
 // MARK: - Batch Output
@@ -350,52 +293,6 @@ extension WorkingCopyOperations {
 
         let input = Data(hashes.map { $0 + "\n" }.joined().utf8)
         return try Self.parseBatch(try await runner.immutableRun(["cat-file", "--batch"], input: input))
-    }
-
-    /// 两侧版本按冲突块合并后的对象哈希：三方版本先检出成仓库根目录下的临时文件，union 合并写回我方那份，
-    /// 再按文件在仓库里的路径过滤后写入对象库；临时文件无论成败都删除。
-    ///
-    /// - Parameter path: 冲突文件在仓库内的路径。
-    private func unionMerge(of path: String) async throws -> String {
-        #warning("TODO: 对两侧都修改的文件选 “Resolve Using Both Versions”，核对结果是逐个冲突块保留两侧、我方在前，还是整份拼接两侧；只影响这个动作写入的内容")
-
-        let output = try await runner.run(["checkout-index", "--stage=all", "-z", "--stdin"], input: Self.pathInput([path]))
-        let names = try Self.parseStageFiles(output)
-        let created = names.compactMap { $0 }.map { runner.location.path + "/" + $0 }
-        let files = RepositoryFiles(runner: runner)
-
-        do {
-            let object = try await mergeStageFiles(names, path: path)
-            try await files.remove(created)
-            return object
-        } catch {
-            // 失败时先清掉临时文件，再报告原来的错误
-            try? await files.remove(created)
-            throw error
-        }
-    }
-
-    /// 把对方的临时文件按冲突块并入我方的临时文件，没有共同祖先时以空文件作祖先，再写入对象库。
-    ///
-    /// - Parameters:
-    ///   - names: 共同祖先、我方与对方的临时文件名。
-    ///   - path: 冲突文件在仓库内的路径，决定写入对象库时的过滤与换行转换。
-    private func mergeStageFiles(_ names: [String?], path: String) async throws -> String {
-        guard let ours = names[1], let theirs = names[2] else {
-            throw ConflictResolutionError.versionUnavailable
-        }
-
-        _ = try await runner.run(["merge-file", "--union", ours, names[0] ?? "/dev/null", theirs])
-
-        // 临时文件是检出后的工作区形式，按真实路径做与 git add 相同的过滤
-        let output = try await runner.run(["hash-object", "-w", "--path=" + path, "--", ours])
-        let object = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard GitObjectID.isValid(object) else {
-            throw RepositoryReadError.malformedOutput("hash-object")
-        }
-
-        return object
     }
 
     /// 当前状态中可以恢复到指定版本的冲突文件路径。

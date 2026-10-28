@@ -787,7 +787,6 @@
 "stash.subtitle" = "스태시 (스태시 %ld개)";
 
 /* 冲突向导。 */
-"conflict.resolveBoth" = "양쪽 버전으로 해결";
 "conflict.version.applied" = "적용한 패치 또는 스태시의 버전";
 "conflict.resolveUsing.applied" = "적용한 패치 또는 스태시로 해결";
 "conflict.open.missing" = "열기";

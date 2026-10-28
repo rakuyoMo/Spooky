@@ -787,7 +787,6 @@
 "stash.subtitle" = "スタッシュ（%ld 個のスタッシュ）";
 
 /* 冲突向导。 */
-"conflict.resolveBoth" = "両方のバージョンで解決";
 "conflict.version.applied" = "適用したパッチまたはスタッシュのバージョン";
 "conflict.resolveUsing.applied" = "適用したパッチまたはスタッシュで解決";
 "conflict.open.missing" = "開く";
