@@ -257,7 +257,7 @@ struct RepositoryOperationDialog: View {
 // MARK: - Layout
 
 extension RepositoryOperationDialog {
-    /// 头部：图标、动作名、仓库路径与动作说明。
+    /// 头部：图标、动作名、服务器仓库的位置与动作说明。
     private var header: some View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: "point.3.connected.trianglepath.dotted")
@@ -269,10 +269,13 @@ extension RepositoryOperationDialog {
                 Text(AppLocalization.text(request.kind.rawValue))
                     .font(.system(size: 14, weight: .bold))
 
-                Text(session.repository?.displayPath ?? "")
-                    .font(.system(size: 13))
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
+                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
+                if let repository = session.repository, repository.host != nil {
+                    Text(repository.displayPath)
+                        .font(.system(size: 13))
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 Text(AppLocalization.text(request.kind.rawValue + ".help"))
                     .font(.system(size: 13))
