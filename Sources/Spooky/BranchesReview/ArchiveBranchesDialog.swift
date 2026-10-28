@@ -110,12 +110,8 @@ struct ArchiveBranchesDialog: View {
         )
     }
 
-    /// 建议归档的原因：已完全合并，或多久没有更新。
+    /// 建议归档的原因：多久没有更新。
     private func reason(for branch: RepositoryReference) -> String {
-        if session.history.conditions[branch.id]?.isFullyMerged ?? false {
-            return AppLocalization.text("branch.merged")
-        }
-
         guard let date = branch.date, let duration = SidebarTooltip.duration(since: date) else {
             return ""
         }

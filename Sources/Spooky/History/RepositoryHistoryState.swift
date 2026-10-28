@@ -23,7 +23,7 @@ final class RepositoryHistoryState {
     /// 分支相对上游的结构化计数。
     private(set) var divergence: [String: ReferenceDivergence] = [:]
 
-    /// 本地分支的完全合并、最后更新时间与跟踪错误，以完整引用名为键；每次读完引用都会写入，随后通知窗口。
+    /// 本地分支的最后更新时间、跟踪错误与是否为基准分支，以完整引用名为键；每次读完引用都会写入，随后通知窗口。
     private(set) var conditions: [String: BranchCondition] = [:] {
         didSet { onReferencesLoaded?() }
     }
@@ -259,17 +259,16 @@ final class RepositoryHistoryState {
             do {
                 let service = RepositoryReferences(runner: runner)
                 let snapshot = try await service.snapshot()
-
-                // 完全合并以存在的标准名分支与各分支的父分支为基准，与上游计数并发读取；已删除的上游仍保留跟踪名称。
-                async let branchConditions = service.conditions(in: snapshot)
-                let (counts, loadedConditions) = try await (service.divergences(in: snapshot), branchConditions)
+                let counts = try await service.divergences(in: snapshot)
 
                 guard let self, generation == request, !Task.isCancelled else { return }
                 let changed = self.snapshot != snapshot || branch?.oid != status.branch.oid
                 self.snapshot = snapshot
                 branch = status.branch
                 divergence = counts
-                conditions = loadedConditions
+
+                // 整理状态由快照直接得出，已删除的上游仍保留跟踪名称
+                conditions = RepositoryReferences.conditions(in: snapshot)
 
                 // 恢复的引用已被删除时回到全部历史，并让会话回到 Working Copy。
                 checkRestoredReferences(in: snapshot)

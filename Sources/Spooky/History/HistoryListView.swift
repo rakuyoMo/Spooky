@@ -55,7 +55,7 @@ struct HistoryListView: View {
             header
             Divider()
 
-            // 选中已完全合并或陈旧的分支时表头下方是提示条
+            // 选中陈旧的分支时表头下方是提示条
             HistoryBranchHint(session: session)
 
             // 有搜索条件时表头下方是过滤面板

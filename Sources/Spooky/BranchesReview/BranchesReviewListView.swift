@@ -299,13 +299,10 @@ struct BranchesReviewRow: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// 合并状态的图标与提示；还在比较时不显示。
+    /// 合并状态的图标与提示；还在比较时，以及并入基准不带来变化时不显示。
     @ViewBuilder
     private var statusIcon: some View {
         switch item.comparison?.merge {
-        case .unchanged:
-            icon("checkmark.circle.fill", color: Color(nsColor: .systemGray), help: "review.status.merged")
-
         case .clean:
             icon(
                 "checkmark.circle.fill",
@@ -324,7 +321,7 @@ struct BranchesReviewRow: View {
             icon("questionmark.circle", color: .secondary, help: "merge.unavailable")
                 .help(details)
 
-        case nil:
+        case .unchanged, nil:
             Color.clear
         }
     }

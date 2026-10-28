@@ -3,33 +3,28 @@ import SwiftUI
 
 // MARK: - SidebarBranchStatus
 
-/// 按视图设置筛过的分支状态：侧边栏实际显示的完全合并、陈旧与跟踪错误。
+/// 按视图设置筛过的分支状态：侧边栏实际显示的陈旧与跟踪错误。
 struct SidebarBranchStatus: Equatable {
-    /// 显示 Merged 徽标。
-    var isFullyMerged = false
-
     /// 陈旧时距上次更新的时长。
     var staleDuration: String? = nil
 
     /// 已不存在的上游的完整引用名。
     var missingUpstream: String? = nil
 
-    /// 已合并或陈旧的分支名称变灰。
-    var isDimmed: Bool { isFullyMerged || staleDuration != nil }
+    /// 陈旧的分支名称变灰。
+    var isDimmed: Bool { staleDuration != nil }
 
-    /// 由整理状态与视图设置得出；基准分支不显示已合并与陈旧，跟踪错误总是显示。
+    /// 由整理状态与视图设置得出；基准分支不显示陈旧，跟踪错误总是显示。
     ///
     /// - Parameters:
     ///   - condition: 分支的整理状态；还没读到时为 nil。
-    ///   - showsMerged: 视图设置是否显示 Merged 徽标。
     ///   - staleMonths: 陈旧阈值的月数；视图设置不显示陈旧信息时为 nil。
     ///   - now: 判断陈旧的时刻。
-    init(condition: BranchCondition?, showsMerged: Bool, staleMonths: Int?, now: Date = Date()) {
+    init(condition: BranchCondition?, staleMonths: Int?, now: Date = Date()) {
         guard let condition else {
             return
         }
 
-        isFullyMerged = showsMerged && condition.isFullyMerged
         missingUpstream = condition.missingUpstream
 
         if
@@ -44,13 +39,10 @@ struct SidebarBranchStatus: Equatable {
 
 // MARK: - SidebarBadgeSegment
 
-/// 分支行右侧胶囊徽标里的一段，按 HEAD、Merged、超前、落后的顺序排列。
+/// 分支行右侧胶囊徽标里的一段，按 HEAD、超前、落后的顺序排列。
 enum SidebarBadgeSegment: Hashable {
     /// 当前分支。
     case head
-
-    /// 已完全合并。
-    case merged
 
     /// 本地独有的提交数。
     case ahead(Int)
@@ -62,7 +54,6 @@ enum SidebarBadgeSegment: Hashable {
     var accessibilityText: String {
         switch self {
         case .head: "HEAD"
-        case .merged: AppLocalization.text("branch.merged")
         case .ahead(let count): AppLocalization.text("branch.ahead", count)
         case .behind(let count): AppLocalization.text("branch.behind", count)
         }
@@ -110,15 +101,12 @@ struct SidebarBadge: View {
         )
     }
 
-    /// 一段的内容：HEAD 与 Merged 是文字，超前落后是箭头加数字，两者之间不留空。
+    /// 一段的内容：HEAD 是文字，超前落后是箭头加数字，两者之间不留空。
     @ViewBuilder
     private func content(_ segment: SidebarBadgeSegment) -> some View {
         switch segment {
         case .head:
             Text("HEAD").fontWeight(.semibold)
-
-        case .merged:
-            Text(AppLocalization.text("branch.merged"))
 
         case .ahead(let count):
             HStack(spacing: 0) {
@@ -149,7 +137,7 @@ struct SidebarBranchRow: View {
     var badge: [SidebarBadgeSegment] = []
 
     /// 名称后的注记与名称颜色。
-    var status = SidebarBranchStatus(condition: nil, showsMerged: false, staleMonths: nil)
+    var status = SidebarBranchStatus(condition: nil, staleMonths: nil)
 
     /// 远端的默认分支。
     var isDefault = false

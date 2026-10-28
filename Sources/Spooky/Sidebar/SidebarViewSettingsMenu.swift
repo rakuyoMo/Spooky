@@ -43,7 +43,6 @@ final class SidebarViewSettingsMenu: NSObject, NSMenuDelegate {
             toggle("sidebar.groupRefs", key: SidebarPreferences.groupRefsKey),
             toggle("sidebar.groupedRefsOnTop", key: SidebarPreferences.groupedRefsOnTopKey, enabled: groupsRefs),
             .separator(),
-            toggle("sidebar.showMergedBadge", key: SidebarPreferences.showMergedBadgeKey),
             toggle("sidebar.showStaleInfo", key: SidebarPreferences.showStaleInfoKey),
             staleIntervalItem(enabled: showsStale),
             toggle("sidebar.autoArchive", key: SidebarPreferences.autoArchiveKey),

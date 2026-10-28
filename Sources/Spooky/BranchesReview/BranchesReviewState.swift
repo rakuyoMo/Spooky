@@ -18,9 +18,6 @@ enum BranchesReviewFilter: Int, CaseIterable {
     /// 上游已不存在的分支。
     case trackingError = 3
 
-    /// 已完全并入基准的分支。
-    case fullyMerged = 4
-
     /// 能干净并入基准的分支。
     case mergeable = 5
 
@@ -40,7 +37,6 @@ enum BranchesReviewFilter: Int, CaseIterable {
         case .stale: "review.filter.stale"
         case .active: "review.filter.active"
         case .trackingError: "review.filter.trackingError"
-        case .fullyMerged: "review.filter.fullyMerged"
         case .mergeable: "review.filter.mergeable"
         case .mergeConflicts: "review.filter.conflicts"
         case .withPullRequest: "filter.with"
@@ -97,11 +93,6 @@ struct BranchesReviewItem: Identifiable, Equatable {
 
     /// 分支的完整引用名。
     var id: String { reference.id }
-
-    /// 请求已在托管服务上合并、且分支此后没有新提交：压缩或变基合并后 Git 认不出的已合并也算。
-    var isMergedOnServer: Bool {
-        pullRequest?.state == .merged && pullRequest?.source.sha == reference.objectID
-    }
 }
 
 // MARK: - BranchesReviewState
@@ -212,9 +203,6 @@ final class BranchesReviewState {
 
         case .trackingError:
             return item.condition?.hasTrackingError ?? false
-
-        case .fullyMerged:
-            return item.comparison?.merge == .unchanged || item.isMergedOnServer
 
         case .mergeable:
             return item.comparison?.merge == .clean

@@ -80,10 +80,6 @@ struct RepositorySidebarView: View {
     @AppStorage(SidebarPreferences.groupedRefsOnTopKey)
     var groupedRefsOnTop = SidebarPreferences.defaultFlag(SidebarPreferences.groupedRefsOnTopKey)
 
-    /// 显示 Merged 徽标。
-    @AppStorage(SidebarPreferences.showMergedBadgeKey)
-    var showsMergedBadge = SidebarPreferences.defaultFlag(SidebarPreferences.showMergedBadgeKey)
-
     /// 显示陈旧注记。
     @AppStorage(SidebarPreferences.showStaleInfoKey)
     var showsStaleInfo = SidebarPreferences.defaultFlag(SidebarPreferences.showStaleInfoKey)
@@ -494,7 +490,7 @@ extension RepositorySidebarView {
         return SidebarBranchRow(
             name: name,
             symbol: symbol,
-            badge: badge(ref, status: status),
+            badge: badge(ref),
             status: status,
             help: SidebarTooltip.branch(
                 ref,

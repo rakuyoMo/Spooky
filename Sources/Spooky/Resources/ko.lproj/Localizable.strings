@@ -928,7 +928,6 @@
 "sidebar.showStashCount" = "스태시 개수 보기";
 "sidebar.groupRefs" = "사이드바에서 참조 그룹화";
 "sidebar.groupedRefsOnTop" = "그룹을 위에 표시";
-"sidebar.showMergedBadge" = "사이드바에 완전 병합 배지 보기";
 "sidebar.showStaleInfo" = "사이드바에 오래된 브랜치 정보 보기";
 "sidebar.staleInterval" = "오래된 브랜치 기준 기간";
 "sidebar.month" = "1개월";
@@ -941,7 +940,6 @@
 "sidebar.nameDescending" = "이름 내림차순";
 "sidebar.showNewest" = "최신 항목만 보기";
 "sidebar.all" = "전체";
-"branch.merged" = "병합됨";
 "branch.staleFor" = "%@ 동안 업데이트 없음";
 "branch.trackingError" = "추적 중인 브랜치가 더 이상 없음";
 "branch.pin" = "브랜치 고정";
@@ -962,7 +960,6 @@
 "branch.tooltip.tracksLocal" = "- 로컬 브랜치 “%@” 추적";
 "branch.tooltip.divergence" = "- 커밋 %ld개 앞섬, 커밋 %ld개 뒤처짐(브랜치 “%@” 기준)";
 "branch.tooltip.archived" = "- 보관됨";
-"branch.tooltip.merged" = "- 완전히 병합됨";
 "branch.tooltip.stale" = "- 오래됨(%@)";
 "branch.tooltip.missingUpstream" = "- 추적 중인 브랜치 “%@”이(가) 더 이상 없음";
 "remote.tooltip.branch" = "원격 브랜치 “%@”";
@@ -1318,7 +1315,6 @@
 "review.filter.stale" = "오래됨";
 "review.filter.active" = "활성";
 "review.filter.trackingError" = "추적 오류";
-"review.filter.fullyMerged" = "완전히 병합됨";
 "review.filter.mergeable" = "병합 가능";
 "review.filter.conflicts" = "병합 충돌";
 "review.viewSettings" = "보기 설정";
@@ -1327,7 +1323,6 @@
 "review.sort.ascending" = "오름차순";
 "review.sort.descending" = "내림차순";
 "review.empty" = "검토할 브랜치 없음";
-"review.status.merged" = "선택한 기준 브랜치에 완전히 병합됨";
 "review.status.mergeable" = "선택한 기준 브랜치에 병합할 수 있음";
 "review.status.conflicts" = "선택한 기준 브랜치에 병합하면 충돌이 발생함";
 "review.counts" = "%1$ld개 앞섬, %2$ld개 뒤처짐";
@@ -1341,7 +1336,6 @@
 "review.resolveConflicts" = "병합 충돌 해결";
 "review.autoArchive" = "브랜치 자동 보관";
 "review.skipAutoArchive" = "자동 보관 건너뛰기";
-"review.hideMergedHint" = "완전 병합 안내 숨기기";
 "review.markReviewed" = "검토함으로 표시";
 "review.updateBranch" = "브랜치 업데이트";
 "review.update.summary" = "“%1$@”을(를) “%2$@”에 병합하면 커밋 %3$ld개가 통합됩니다.";
@@ -1352,10 +1346,10 @@
 "review.update.clean" = "상위 브랜치와 충돌 없음";
 "review.archive.title" = "브랜치 보관";
 "review.archive.help" = "브랜치 목록에서 숨길 브랜치를 선택합니다. 보관한 브랜치는 사이드바의 “보관된 브랜치”로 이동하며 계속 사용할 수 있습니다.";
-"review.archive.automaticHelp" = "이 브랜치들은 완전히 병합되었거나 오랫동안 업데이트되지 않아 자동으로 보관됩니다. 유지할 브랜치는 선택을 해제하십시오.";
+"review.archive.automaticHelp" = "이 브랜치들은 오랫동안 업데이트되지 않았거나 풀 리퀘스트 또는 머지 리퀘스트가 병합되어 자동으로 보관됩니다. 유지할 브랜치는 선택을 해제하십시오.";
 "review.archive.submit" = "보관";
 "review.archive.empty" = "보관할 브랜치 없음";
-"review.archive.emptyHelp" = "완전히 병합되었거나 오랫동안 업데이트되지 않은 브랜치만 보관을 권장합니다.";
+"review.archive.emptyHelp" = "오랫동안 업데이트되지 않았거나 풀 리퀘스트 또는 머지 리퀘스트가 병합된 브랜치만 보관을 권장합니다.";
 "review.archive.auto" = "브랜치 자동 보관";
 "review.archive.autoHelp" = "하루에 한 번 오래된 브랜치를 나열하고 확인을 받은 뒤 보관합니다.";
 "review.archive.count" = "보관할 수 있는 브랜치 %ld개";
@@ -1369,21 +1363,15 @@
 "history.forkPoint" = "상위 브랜치 “%@”의 분기점";
 "history.noNewCommits" = "이 브랜치에 새 커밋 없음";
 "history.identicalToParent" = "이 브랜치는 상위 브랜치 “%@”와 같습니다.";
-"history.hint.merged" = "이 브랜치는 완전히 병합되었습니다";
-"history.hint.mergedMessage" = "모든 변경 사항이 이미 다른 브랜치에 포함되어 있습니다.";
 "history.hint.stale" = "오래된 브랜치로 보입니다";
 "history.hint.staleMessage" = "이 브랜치는 %ld개월 넘게 업데이트되지 않았습니다. 보관하거나 삭제하는 것을 고려하십시오.";
-"history.hint.details" = "세부 사항";
-"history.hint.mergedInto" = "“%@”에 완전히 병합됨";
-"history.hint.dontShow" = "“%@”에 대해 다시 표시 안 함";
-"history.hint.dismiss" = "안내 닫기";
 "sidebar.needsReview" = "자동 보관 검토 필요";
 "sidebar.markAllReviewed" = "모두 검토함으로 표시";
 "branch.mergeWith" = "“%@”와 병합…";
 "branch.quickMergeInto" = "“%1$@”을(를) “%2$@”에 빠른 병합";
 "branch.rebaseOn" = "“%@” 위로 리베이스…";
 "branch.quickRebaseOn" = "“%1$@”을(를) “%2$@” 위로 빠른 리베이스";
-"settings.autoArchive" = "오래되거나 완전히 병합된 브랜치 자동 보관";
+"settings.autoArchive" = "오래된 브랜치 자동 보관";
 /* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
 "rewrite.menu.checkout" = "“%@” 체크아웃";
 "rewrite.menu.checkoutGeneric" = "리비전 체크아웃…";
@@ -2364,7 +2352,6 @@
 "pr.filter.without" = "풀 리퀘스트 없음";
 "mr.filter.without" = "머지 리퀘스트 없음";
 "review.pullRequestsUnavailable" = "풀 리퀘스트와 머지 리퀘스트 상태를 가져올 수 없습니다. 설정 → 계정에서 이 저장소의 원격에 대한 계정을 추가하세요.";
-"review.audit.merged" = "%1$@: %2$@에 병합됨";
 "review.audit.pullRequest" = "%1$@: %2$@이(가) %3$@에서 병합됨";
 "review.audit.stale" = "%1$@: 마지막 업데이트 %2$@";
 "review.audit.manual" = "%@: 수동으로 보관";

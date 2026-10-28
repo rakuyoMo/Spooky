@@ -928,7 +928,6 @@
 "sidebar.showStashCount" = "Mostrar número de stashes";
 "sidebar.groupRefs" = "Agrupar referencias en la barra lateral";
 "sidebar.groupedRefsOnTop" = "Grupos arriba";
-"sidebar.showMergedBadge" = "Mostrar distintivo de fusión completa";
 "sidebar.showStaleInfo" = "Mostrar información de antigüedad";
 "sidebar.staleInterval" = "Intervalo de rama antigua";
 "sidebar.month" = "1 mes";
@@ -941,7 +940,6 @@
 "sidebar.nameDescending" = "Nombre descendente";
 "sidebar.showNewest" = "Mostrar las más recientes";
 "sidebar.all" = "Todas";
-"branch.merged" = "Fusionada";
 "branch.staleFor" = "Sin actualizar desde hace %@";
 "branch.trackingError" = "La rama seguida ya no existe";
 "branch.pin" = "Fijar rama";
@@ -962,7 +960,6 @@
 "branch.tooltip.tracksLocal" = "- sigue la rama local “%@”";
 "branch.tooltip.divergence" = "- va %ld commits por delante y %ld commits por detrás de la rama “%@”";
 "branch.tooltip.archived" = "- está archivada";
-"branch.tooltip.merged" = "- está totalmente fusionada";
 "branch.tooltip.stale" = "- está antigua (%@)";
 "branch.tooltip.missingUpstream" = "- la rama seguida “%@” ya no existe";
 "remote.tooltip.branch" = "Rama remota “%@”";
@@ -1318,7 +1315,6 @@
 "review.filter.stale" = "Obsoletas";
 "review.filter.active" = "Activas";
 "review.filter.trackingError" = "Error de seguimiento";
-"review.filter.fullyMerged" = "Fusionadas por completo";
 "review.filter.mergeable" = "Fusionables";
 "review.filter.conflicts" = "Conflictos de fusión";
 "review.viewSettings" = "Ajustes de visualización";
@@ -1327,7 +1323,6 @@
 "review.sort.ascending" = "Ascendente";
 "review.sort.descending" = "Descendente";
 "review.empty" = "No hay ramas que revisar";
-"review.status.merged" = "Fusionada por completo en la rama base seleccionada";
 "review.status.mergeable" = "Se puede fusionar en la rama base seleccionada";
 "review.status.conflicts" = "Fusionar en la rama base seleccionada produce conflictos";
 "review.counts" = "%1$ld commits por delante, %2$ld commits por detrás";
@@ -1341,7 +1336,6 @@
 "review.resolveConflicts" = "Resolver conflictos de fusión";
 "review.autoArchive" = "Archivar ramas automáticamente";
 "review.skipAutoArchive" = "Omitir en el archivado automático";
-"review.hideMergedHint" = "Ocultar aviso de fusión completa";
 "review.markReviewed" = "Marcar como revisada";
 "review.updateBranch" = "Actualizar rama";
 "review.update.summary" = "Fusionar “%1$@” en “%2$@” integrará %3$ld commits.";
@@ -1352,10 +1346,10 @@
 "review.update.clean" = "Sin conflictos con la rama padre";
 "review.archive.title" = "Archivar ramas";
 "review.archive.help" = "Selecciona las ramas que quieres ocultar de la lista. Las ramas archivadas pasan a “Ramas archivadas” en la barra lateral y siguen disponibles allí.";
-"review.archive.automaticHelp" = "Estas ramas están fusionadas por completo o no se han actualizado recientemente y se archivarán automáticamente. Desmarca las que quieras conservar.";
+"review.archive.automaticHelp" = "Estas ramas no se han actualizado recientemente o su pull request o merge request ya se fusionó, y se archivarán automáticamente. Desmarca las que quieras conservar.";
 "review.archive.submit" = "Archivar";
 "review.archive.empty" = "No hay ramas que archivar";
-"review.archive.emptyHelp" = "Solo se sugiere archivar las ramas fusionadas por completo o que no se han actualizado recientemente.";
+"review.archive.emptyHelp" = "Solo se sugiere archivar las ramas que no se han actualizado recientemente o cuya pull request o merge request ya se fusionó.";
 "review.archive.auto" = "Archivar ramas automáticamente";
 "review.archive.autoHelp" = "Una vez al día se muestran las ramas obsoletas para que confirmes antes de archivarlas.";
 "review.archive.count" = "Se pueden archivar %ld ramas";
@@ -1369,21 +1363,15 @@
 "history.forkPoint" = "Punto de bifurcación de la rama padre “%@”";
 "history.noNewCommits" = "No hay commits nuevos en esta rama";
 "history.identicalToParent" = "Esta rama es idéntica a su rama padre “%@”.";
-"history.hint.merged" = "Esta rama se ha fusionado por completo";
-"history.hint.mergedMessage" = "Todos sus cambios ya están incluidos en otras ramas.";
 "history.hint.stale" = "La rama parece obsoleta";
 "history.hint.staleMessage" = "Esta rama no se ha actualizado en más de %ld meses. Considera archivarla o eliminarla.";
-"history.hint.details" = "Detalles";
-"history.hint.mergedInto" = "Fusionada por completo en “%@”";
-"history.hint.dontShow" = "No volver a mostrar para “%@”";
-"history.hint.dismiss" = "Cerrar aviso";
 "sidebar.needsReview" = "Archivado automático pendiente de revisión";
 "sidebar.markAllReviewed" = "Marcar todo como revisado";
 "branch.mergeWith" = "Fusionar con “%@”…";
 "branch.quickMergeInto" = "Fusión rápida de “%1$@” en “%2$@”";
 "branch.rebaseOn" = "Hacer rebase sobre “%@”…";
 "branch.quickRebaseOn" = "Rebase rápido de “%1$@” sobre “%2$@”";
-"settings.autoArchive" = "Archivar automáticamente las ramas obsoletas y fusionadas por completo";
+"settings.autoArchive" = "Archivar automáticamente las ramas obsoletas";
 /* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
 "rewrite.menu.checkout" = "Hacer checkout de “%@”";
 "rewrite.menu.checkoutGeneric" = "Hacer checkout de una revisión…";
@@ -2364,7 +2352,6 @@
 "pr.filter.without" = "Sin pull request";
 "mr.filter.without" = "Sin merge request";
 "review.pullRequestsUnavailable" = "El estado de las pull requests y merge requests no está disponible. Añade una cuenta para el remoto de este repositorio en Ajustes → Cuentas.";
-"review.audit.merged" = "%1$@: fusionada en %2$@";
 "review.audit.pullRequest" = "%1$@: %2$@ se fusionó en %3$@";
 "review.audit.stale" = "%1$@: última actualización el %2$@";
 "review.audit.manual" = "%@: archivada manualmente";

@@ -145,16 +145,12 @@ extension RepositorySidebarView {
             .modifier(RepositoryDropTarget(session: session, destination: destination, request: request))
     }
 
-    /// 胶囊徽标的各段：HEAD、Merged、超前、落后，有才显示。
-    func badge(_ ref: RepositoryReference, status: SidebarBranchStatus) -> [SidebarBadgeSegment] {
+    /// 胶囊徽标的各段：HEAD、超前、落后，有才显示。
+    func badge(_ ref: RepositoryReference) -> [SidebarBadgeSegment] {
         var segments: [SidebarBadgeSegment] = []
 
         if ref.name == session.status?.branch.head {
             segments.append(.head)
-        }
-
-        if status.isFullyMerged {
-            segments.append(.merged)
         }
 
         if let counts = session.history.divergence[ref.id] {
@@ -165,7 +161,7 @@ extension RepositorySidebarView {
         return segments
     }
 
-    /// 按视图设置筛过的完全合并、陈旧与跟踪错误。
+    /// 按视图设置筛过的陈旧与跟踪错误。
     func branchStatus(_ ref: RepositoryReference) -> SidebarBranchStatus {
         let months =
             SidebarPreferences.isValid(staleInterval, for: SidebarPreferences.staleIntervalKey)
@@ -174,7 +170,6 @@ extension RepositorySidebarView {
 
         return SidebarBranchStatus(
             condition: session.history.conditions[ref.id],
-            showsMerged: showsMergedBadge,
             staleMonths: showsStaleInfo ? months : nil
         )
     }

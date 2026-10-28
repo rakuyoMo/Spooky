@@ -27,11 +27,11 @@ struct BranchesReviewTests {
         session.refresh()
         try await waitUntil { session.history.snapshot != nil && !session.history.conditions.isEmpty }
 
-        // 基准默认是 main；比较完成前没有结论，不算已合并
+        // 基准默认是 main；比较完成前没有结论，不算能合并
         let review = session.branchesReview
         review.update(snapshot: session.history.snapshot, head: session.status?.branch.head, runner: runner)
         #expect(review.base?.id == "refs/heads/main")
-        #expect(review.items(conditions: [:], search: "", order: order(.fullyMerged), staleMonths: 3).isEmpty)
+        #expect(review.items(conditions: [:], search: "", order: order(.mergeable), staleMonths: 3).isEmpty)
 
         try await waitUntil { review.comparisons.count == 3 }
 
@@ -45,7 +45,6 @@ struct BranchesReviewTests {
             .map(\.id)
         }
 
-        #expect(ids(.fullyMerged) == ["refs/heads/merged"])
         #expect(ids(.mergeable) == ["refs/heads/feature/改名'x'"])
         #expect(ids(.mergeConflicts) == ["refs/heads/conflict"])
         #expect(ids(.trackingError).isEmpty)
@@ -129,13 +128,13 @@ struct BranchesReviewTests {
         #expect(session.history.rows.allSatisfy { $0.commit != nil })
     }
 
-    /// 归档建议排除基准分支、当前分支、置顶与已归档的分支；自动归档还排除勾了跳过的分支；每天只检查一次。
+    /// 归档建议只收陈旧与请求已合并的分支，排除基准分支、当前分支、置顶与已归档的分支；自动归档还排除勾了跳过的分支；每天只检查一次。
     @Test("归档建议与每日检查")
     func archiveCandidates() throws {
         let date = Date(timeIntervalSince1970: 1_700_000_000)
         let old = date.addingTimeInterval(-400 * 24 * 60 * 60)
-        let references = ["main", "head", "merged", "stale", "pinned", "skipped", "archived", "active"].map {
-            reference("refs/heads/" + $0, date: $0 == "active" ? date : old)
+        let references = ["main", "head", "requested", "stale", "pinned", "skipped", "archived", "active"].map {
+            reference("refs/heads/" + $0, date: $0 == "active" || $0 == "requested" ? date : old)
         }
 
         let snapshot = ReferenceSnapshot(
@@ -159,7 +158,6 @@ struct BranchesReviewTests {
                 reference: reference.id,
                 lastUpdated: reference.date,
                 missingUpstream: nil,
-                mergedInto: reference.name == "merged" ? "refs/heads/main" : nil,
                 isBase: reference.name == "main"
             )
         }
@@ -170,9 +168,10 @@ struct BranchesReviewTests {
             head: "head",
             staleMonths: 3,
             automatic: false,
+            mergedOnServer: ["refs/heads/requested"],
             now: date
         )
-        #expect(manual.map(\.name) == ["merged", "skipped", "stale"])
+        #expect(manual.map(\.name) == ["requested", "skipped", "stale"])
 
         let automatic = BranchArchiving.candidates(
             in: snapshot,
@@ -180,9 +179,10 @@ struct BranchesReviewTests {
             head: "head",
             staleMonths: 3,
             automatic: true,
+            mergedOnServer: ["refs/heads/requested"],
             now: date
         )
-        #expect(automatic.map(\.name) == ["merged", "stale"])
+        #expect(automatic.map(\.name) == ["requested", "stale"])
 
         // 每个仓库各自记录检查时刻，满一天才再检查
         let suite = "spooky-archive-" + UUID().uuidString
@@ -199,8 +199,8 @@ struct BranchesReviewTests {
         #expect(BranchArchiving.isDue(for: .local(path: "/other"), defaults: defaults, now: date))
     }
 
-    /// 还在比较或无法检查的分支不算已合并、能合并或有冲突；陈旧与活跃按阈值互补。
-    @Test("筛选不把未知状态当作已合并")
+    /// 还在比较或无法检查的分支不算能合并或有冲突；陈旧与活跃按阈值互补。
+    @Test("筛选不把未知状态当作能合并")
     func unknownStatus() {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let branch = reference("refs/heads/topic", date: now.addingTimeInterval(-200 * 24 * 60 * 60))
@@ -208,7 +208,6 @@ struct BranchesReviewTests {
             reference: branch.id,
             lastUpdated: branch.date,
             missingUpstream: "refs/remotes/origin/topic",
-            mergedInto: nil,
             isBase: false
         )
 
@@ -223,7 +222,7 @@ struct BranchesReviewTests {
         )
 
         for item in [pending, unavailable] {
-            for filter in [BranchesReviewFilter.fullyMerged, .mergeable, .mergeConflicts] {
+            for filter in [BranchesReviewFilter.mergeable, .mergeConflicts] {
                 #expect(!BranchesReviewState.matches(item, filter: filter, staleMonths: 3, now: now))
             }
         }
@@ -234,21 +233,17 @@ struct BranchesReviewTests {
         #expect(BranchesReviewState.matches(pending, filter: .active, staleMonths: 12, now: now))
     }
 
-    /// 托管服务上已合并、此后没有新提交的分支算已合并，压缩或变基合并也一样；不知道请求状态时两项请求筛选都不满足。
-    @Test("请求状态的筛选与服务端合并")
+    /// 打开着的请求才算有请求；不知道请求状态时两项请求筛选都不满足。
+    @Test("请求状态的筛选")
     func pullRequestStatus() {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let branch = reference("refs/heads/topic", date: now)
         let open = Self.request(state: .open, sha: branch.objectID)
         let merged = Self.request(state: .merged, sha: branch.objectID)
-        let mergedEarlier = Self.request(state: .merged, sha: String(repeating: "b", count: 40))
 
         let item = { (request: PullRequest?) in
             BranchesReviewItem(reference: branch, comparison: nil, condition: nil, pullRequest: request)
         }
-
-        #expect(BranchesReviewState.matches(item(merged), filter: .fullyMerged, staleMonths: 3, now: now))
-        #expect(!BranchesReviewState.matches(item(mergedEarlier), filter: .fullyMerged, staleMonths: 3, now: now))
 
         #expect(BranchesReviewState.matches(
             item(open),
@@ -277,7 +272,7 @@ struct BranchesReviewTests {
         #expect(!BranchesReviewState.matches(item(open), filter: .withPullRequest, staleMonths: 3, now: now))
     }
 
-    /// 托管服务上已合并的分支进入归档建议，与 Git 判断的已合并同样处理。
+    /// 托管服务上请求已合并的分支进入归档建议，即使它不陈旧。
     @Test("服务端合并的分支可以归档")
     func serverMergedCandidates() {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
@@ -290,7 +285,6 @@ struct BranchesReviewTests {
                     reference: reference.id,
                     lastUpdated: now,
                     missingUpstream: nil,
-                    mergedInto: nil,
                     isBase: reference.name == "main"
                 )
             )
@@ -318,21 +312,52 @@ struct BranchesReviewTests {
 extension BranchesReviewTests {
     /// 自动归档写入待审阅标记，撤销后分支回到 Branches 分组并清除标记。
     private func archiveAndUndo(session: RepositorySession) async throws {
-        let merged = try #require(session.history.branches.first { $0.id == "refs/heads/merged" })
+        // 已并入 main、但不陈旧也没有已合并请求的分支不是归档建议
+        #expect(session.archiveCandidates(automatic: true, staleMonths: 3).isEmpty)
 
-        // 建议归档的分支：merged 已完全合并；基准与当前分支不在其中
-        #expect(session.archiveCandidates(automatic: true).map(\.id) == [merged.id])
+        let stale = try await addStaleBranch(session: session)
 
-        session.archive([merged], automatic: true)
-        try await waitUntil { session.history.snapshot?.metadata(for: merged.id).needsArchiveReview ?? false }
-        #expect(session.branchesReview.archivedBranches == [merged.id])
-        #expect(session.archiveCandidates(automatic: true).isEmpty)
+        // 建议归档的只有陈旧的分支；基准与当前分支不在其中
+        #expect(session.archiveCandidates(automatic: true, staleMonths: 3).map(\.id) == [stale.id])
+
+        session.archive([stale], automatic: true)
+        try await waitUntil { session.history.snapshot?.metadata(for: stale.id).needsArchiveReview ?? false }
+        #expect(session.branchesReview.archivedBranches == [stale.id])
+        #expect(session.archiveCandidates(automatic: true, staleMonths: 3).isEmpty)
 
         try await waitUntil { session.canWrite }
         session.undoArchive()
-        try await waitUntil { !(session.history.snapshot?.metadata(for: merged.id).isArchived ?? true) }
-        #expect(!(session.history.snapshot?.metadata(for: merged.id).needsArchiveReview ?? true))
+        try await waitUntil { !(session.history.snapshot?.metadata(for: stale.id).isArchived ?? true) }
+        #expect(!(session.history.snapshot?.metadata(for: stale.id).needsArchiveReview ?? true))
         #expect(session.branchesReview.archivedBranches == nil)
+    }
+
+    /// 在 main 上补一个提交时间为 2000 年的分支 `stale`，刷新后返回它。
+    private func addStaleBranch(session: RepositorySession) async throws -> RepositoryReference {
+        let runner = try #require(session.runner)
+
+        // 提交时间固定在 2000 年，按顶端提交的时间判断一定陈旧
+        let date = "2000-01-01T00:00:00Z"
+        let dated = GitRunner(
+            location: runner.location,
+            environment: .inherit.updating([
+                "GIT_CONFIG_GLOBAL": "/dev/null",
+                "GIT_CONFIG_SYSTEM": "/dev/null",
+                "GIT_CONFIG_NOSYSTEM": "1",
+                "GIT_AUTHOR_DATE": date,
+                "GIT_COMMITTER_DATE": date,
+            ])
+        )
+
+        // 不动 HEAD 与工作区，直接在 main 的树上建提交
+        let output = try await dated.run(["commit-tree", "-p", "main", "-m", "stale", "main^{tree}"])
+        let commit = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        _ = try await dated.run(["branch", "stale", commit])
+
+        session.refresh(full: true)
+        try await waitUntil { session.history.conditions["refs/heads/stale"] != nil }
+
+        return try #require(session.history.branches.first { $0.id == "refs/heads/stale" })
     }
 
     /// 设了父分支的分支可以用父分支更新：合并后 HEAD 切到它，父分支的提交并入。

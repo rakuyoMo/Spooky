@@ -928,7 +928,6 @@
 "sidebar.showStashCount" = "Anzahl der Stashes anzeigen";
 "sidebar.groupRefs" = "Refs in der Seitenleiste gruppieren";
 "sidebar.groupedRefsOnTop" = "Gruppen zuoberst";
-"sidebar.showMergedBadge" = "Badge für vollständig gemergte Branches anzeigen";
 "sidebar.showStaleInfo" = "Hinweis auf veraltete Branches anzeigen";
 "sidebar.staleInterval" = "Zeitraum für veraltete Branches";
 "sidebar.month" = "1 Monat";
@@ -941,7 +940,6 @@
 "sidebar.nameDescending" = "Name absteigend";
 "sidebar.showNewest" = "Neueste anzeigen";
 "sidebar.all" = "Alle";
-"branch.merged" = "Gemergt";
 "branch.staleFor" = "Seit %@ nicht aktualisiert";
 "branch.trackingError" = "Verfolgter Branch existiert nicht mehr";
 "branch.pin" = "Branch anheften";
@@ -962,7 +960,6 @@
 "branch.tooltip.tracksLocal" = "- verfolgt lokalen Branch „%@“";
 "branch.tooltip.divergence" = "- ist %ld Commits voraus und %ld Commits hinter Branch „%@“";
 "branch.tooltip.archived" = "- ist archiviert";
-"branch.tooltip.merged" = "- ist vollständig gemergt";
 "branch.tooltip.stale" = "- ist veraltet (%@)";
 "branch.tooltip.missingUpstream" = "- verfolgter Branch „%@“ existiert nicht mehr";
 "remote.tooltip.branch" = "Remote-Branch „%@“";
@@ -1318,7 +1315,6 @@
 "review.filter.stale" = "Veraltet";
 "review.filter.active" = "Aktiv";
 "review.filter.trackingError" = "Tracking-Fehler";
-"review.filter.fullyMerged" = "Vollständig gemergt";
 "review.filter.mergeable" = "Mergebar";
 "review.filter.conflicts" = "Merge-Konflikte";
 "review.viewSettings" = "Darstellung";
@@ -1327,7 +1323,6 @@
 "review.sort.ascending" = "Aufsteigend";
 "review.sort.descending" = "Absteigend";
 "review.empty" = "Keine Branches zu prüfen";
-"review.status.merged" = "Vollständig in den gewählten Basis-Branch gemergt";
 "review.status.mergeable" = "Kann in den gewählten Basis-Branch gemergt werden";
 "review.status.conflicts" = "Mergen in den gewählten Basis-Branch führt zu Konflikten";
 "review.counts" = "%1$ld Commits voraus, %2$ld Commits zurück";
@@ -1341,7 +1336,6 @@
 "review.resolveConflicts" = "Merge-Konflikte lösen";
 "review.autoArchive" = "Branches automatisch archivieren";
 "review.skipAutoArchive" = "Beim automatischen Archivieren auslassen";
-"review.hideMergedHint" = "Hinweis „Vollständig gemergt“ ausblenden";
 "review.markReviewed" = "Als gesehen markieren";
 "review.updateBranch" = "Branch aktualisieren";
 "review.update.summary" = "Beim Mergen von „%1$@“ in „%2$@“ werden %3$ld Commits übernommen.";
@@ -1352,10 +1346,10 @@
 "review.update.clean" = "Keine Konflikte mit dem übergeordneten Branch";
 "review.archive.title" = "Branches archivieren";
 "review.archive.help" = "Wähle Branches, die in der Branch-Liste ausgeblendet werden. Archivierte Branches stehen in der Seitenleiste unter „Archivierte Branches“ weiter zur Verfügung.";
-"review.archive.automaticHelp" = "Diese Branches sind vollständig gemergt oder wurden länger nicht aktualisiert und werden automatisch archiviert. Entferne das Häkchen bei Branches, die du behalten möchtest.";
+"review.archive.automaticHelp" = "Diese Branches wurden länger nicht aktualisiert oder ihr Pull Request bzw. Merge Request wurde gemergt; sie werden automatisch archiviert. Entferne das Häkchen bei Branches, die du behalten möchtest.";
 "review.archive.submit" = "Archivieren";
 "review.archive.empty" = "Keine Branches zum Archivieren";
-"review.archive.emptyHelp" = "Zum Archivieren werden nur vollständig gemergte oder länger nicht aktualisierte Branches vorgeschlagen.";
+"review.archive.emptyHelp" = "Zum Archivieren werden nur Branches vorgeschlagen, die länger nicht aktualisiert wurden oder deren Pull Request bzw. Merge Request gemergt wurde.";
 "review.archive.auto" = "Branches automatisch archivieren";
 "review.archive.autoHelp" = "Einmal täglich werden veraltete Branches zur Bestätigung aufgelistet, bevor sie archiviert werden.";
 "review.archive.count" = "%ld Branches können archiviert werden";
@@ -1369,21 +1363,15 @@
 "history.forkPoint" = "Abzweigpunkt des übergeordneten Branches „%@“";
 "history.noNewCommits" = "Keine neuen Commits auf diesem Branch";
 "history.identicalToParent" = "Dieser Branch ist identisch mit seinem übergeordneten Branch „%@“.";
-"history.hint.merged" = "Dieser Branch wurde vollständig gemergt";
-"history.hint.mergedMessage" = "Alle Änderungen sind bereits in anderen Branches enthalten.";
 "history.hint.stale" = "Branch scheint veraltet";
 "history.hint.staleMessage" = "Dieser Branch wurde seit über %ld Monaten nicht aktualisiert. Erwäge, ihn zu archivieren oder zu löschen.";
-"history.hint.details" = "Details";
-"history.hint.mergedInto" = "Vollständig in „%@“ gemergt";
-"history.hint.dontShow" = "Für „%@“ nicht mehr anzeigen";
-"history.hint.dismiss" = "Hinweis schließen";
 "sidebar.needsReview" = "Automatisch archivierte Branches ansehen";
 "sidebar.markAllReviewed" = "Alle als gesehen markieren";
 "branch.mergeWith" = "Mit „%@“ mergen…";
 "branch.quickMergeInto" = "„%1$@“ schnell in „%2$@“ mergen";
 "branch.rebaseOn" = "Auf „%@“ rebasen…";
 "branch.quickRebaseOn" = "„%1$@“ schnell auf „%2$@“ rebasen";
-"settings.autoArchive" = "Veraltete und vollständig gemergte Branches automatisch archivieren";
+"settings.autoArchive" = "Veraltete Branches automatisch archivieren";
 /* 历史右键菜单的检出、重置、反转、摘取、改写与新建各项，以及提交详情的操作按钮。 */
 "rewrite.menu.checkout" = "„%@“ auschecken";
 "rewrite.menu.checkoutGeneric" = "Revision auschecken…";
@@ -2364,7 +2352,6 @@
 "pr.filter.without" = "Ohne Pull Request";
 "mr.filter.without" = "Ohne Merge Request";
 "review.pullRequestsUnavailable" = "Der Status von Pull Requests und Merge Requests ist nicht verfügbar. Fügen Sie unter „Einstellungen“ → „Accounts“ einen Account für das Remote dieses Repositorys hinzu.";
-"review.audit.merged" = "%1$@: in %2$@ gemergt";
 "review.audit.pullRequest" = "%1$@: %2$@ wurde auf %3$@ gemergt";
 "review.audit.stale" = "%1$@: zuletzt aktualisiert am %2$@";
 "review.audit.manual" = "%@: manuell archiviert";

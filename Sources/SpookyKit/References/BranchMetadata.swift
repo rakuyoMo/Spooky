@@ -18,14 +18,11 @@ public struct BranchMetadata: Sendable, Equatable {
     /// 自动归档时跳过的配置变量名。
     static let skipAutoArchiveKey = "spooky-skip-auto-archive"
 
-    /// 隐藏完全合并提示的配置变量名。
-    static let hideMergedHintKey = "spooky-hide-merged-hint"
-
     /// 自动归档后待审阅的配置变量名。
     static let archiveReviewKey = "spooky-archive-review"
 
     /// 全部附加信息的配置变量名，一次读出。
-    static let keys = [pinnedKey, archivedKey, parentKey, skipAutoArchiveKey, hideMergedHintKey, archiveReviewKey]
+    static let keys = [pinnedKey, archivedKey, parentKey, skipAutoArchiveKey, archiveReviewKey]
 
     /// 是否置顶在侧边栏的 Pinned 分组。
     public var isPinned: Bool
@@ -38,9 +35,6 @@ public struct BranchMetadata: Sendable, Equatable {
 
     /// 自动归档时跳过这个分支。
     public var skipsAutoArchive = false
-
-    /// 选中这个分支时不显示完全合并与陈旧的提示条。
-    public var hidesMergedHint = false
 
     /// 由自动归档归入、还没有看过；Archived Branches 分组标题据此显示圆点。
     public var needsArchiveReview = false
@@ -87,9 +81,6 @@ public struct BranchMetadata: Sendable, Equatable {
 
             case skipAutoArchiveKey:
                 metadata.skipsAutoArchive = isTrue(value)
-
-            case hideMergedHintKey:
-                metadata.hidesMergedHint = isTrue(value)
 
             case archiveReviewKey:
                 metadata.needsArchiveReview = isTrue(value)
@@ -157,11 +148,6 @@ extension RepositoryReferences {
     /// 设置或取消若干本地分支的 “自动归档时跳过”。
     public func setSkipsAutoArchive(_ skips: Bool, branches: [String]) async throws {
         try await setFlag(BranchMetadata.skipAutoArchiveKey, to: skips, branches: branches)
-    }
-
-    /// 设置或取消若干本地分支的 “隐藏完全合并提示”。
-    public func setHidesMergedHint(_ hides: Bool, branches: [String]) async throws {
-        try await setFlag(BranchMetadata.hideMergedHintKey, to: hides, branches: branches)
     }
 
     /// 清除若干自动归档分支的待审阅标记。

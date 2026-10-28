@@ -54,7 +54,7 @@ struct ArchivedGroupHeader: View {
 
 // MARK: - BranchArchiveOptions
 
-/// 归档菜单项下的两个勾选项：自动归档时跳过这个分支、不再显示它的完全合并提示。
+/// 归档菜单项下的勾选项：自动归档时跳过这个分支。
 struct BranchArchiveOptions: View {
     /// 当前仓库会话。
     let session: RepositorySession
@@ -65,22 +65,13 @@ struct BranchArchiveOptions: View {
     /// 分支的附加信息。
     let metadata: BranchMetadata
 
-    /// 两个勾选项，状态取自仓库配置。
+    /// 勾选项，状态取自仓库配置。
     var body: some View {
         Toggle(
             AppLocalization.text("review.skipAutoArchive"),
             isOn: Binding(
                 get: { metadata.skipsAutoArchive },
                 set: { session.setSkipsAutoArchive($0, branches: [branch]) }
-            )
-        )
-        .disabled(!session.canSetArchived([branch]))
-
-        Toggle(
-            AppLocalization.text("review.hideMergedHint"),
-            isOn: Binding(
-                get: { metadata.hidesMergedHint },
-                set: { session.setHidesMergedHint($0, branches: [branch]) }
             )
         )
         .disabled(!session.canSetArchived([branch]))

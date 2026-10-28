@@ -25,9 +25,6 @@ enum SidebarPreferences {
     /// 同一级里文件夹排在引用前面，只在折叠开启时生效。
     static let groupedRefsOnTopKey = "groupedRefsOnTop"
 
-    /// 已完全合并的分支显示 Merged 徽标。
-    static let showMergedBadgeKey = "showFullyMergedBadgeInSidebar"
-
     /// 陈旧的分支在名称后注明多久没有更新。
     static let showStaleInfoKey = "showStaleInfoInSidebar"
 
@@ -54,14 +51,13 @@ enum SidebarPreferences {
 
     /// 开关没有记录时的取值。
     #warning(
-        "TODO: 除 Group Refs in Sidebar 默认开启、数量默认全部外，其余默认值是选定的：显示储藏个数、文件夹置前、Merged 徽标与陈旧信息开启，陈旧阈值 3 个月，Reflog 与自动归档关闭，标签按名称升序；核实方式：在全新的偏好里打开视图设置菜单比对勾选状态；影响首次打开时侧边栏显示哪些信息"
+        "TODO: 除 Group Refs in Sidebar 默认开启、数量默认全部外，其余默认值是选定的：显示储藏个数、文件夹置前与陈旧信息开启，陈旧阈值 3 个月，Reflog 与自动归档关闭，标签按名称升序；核实方式：在全新的偏好里打开视图设置菜单比对勾选状态；影响首次打开时侧边栏显示哪些信息"
     )
     static let defaultFlags: [String: Bool] = [
         showReflogKey: false,
         showStashCountKey: true,
         groupRefsKey: true,
         groupedRefsOnTopKey: true,
-        showMergedBadgeKey: true,
         showStaleInfoKey: true,
         autoArchiveKey: false,
     ]
