@@ -52,7 +52,7 @@ extension RepositorySessionTests {
         #expect(try await lastMessage(runner) == "# 只有注释")
     }
 
-    /// 提交成功后信息先保留 0.3 秒、期间不能再提交，随后与修补和跳过钩子一起清空；关闭仓库时不等待，已提交的信息不存进视图状态。
+    /// 提交成功后信息先保留 `commitResetDelay`、期间不能再提交，随后与修补和跳过钩子一起清空；关闭仓库时不等待，已提交的信息不存进视图状态。
     @Test("提交成功后延迟清空信息")
     func delayedMessageReset() async throws {
         let (session, _, directory) = try await commitSession()
@@ -61,7 +61,20 @@ extension RepositorySessionTests {
             try? FileManager.default.removeItem(at: directory)
         }
 
-        // 写操作收尾时提交已经成功，信息仍在，提交区处于锁定
+        // 保留时长到了以后，信息与跳过钩子一起清空，提交区解除锁定
+        try await stageChange(in: session, directory: directory, content: "delay")
+        session.commitSubject = "延迟清空"
+        session.skipHooks = true
+        session.commit()
+        await session.writeTask?.value
+        await session.commitResetTask?.value
+        #expect(session.commitResetTask == nil)
+        #expect(session.commitSubject.isEmpty)
+        #expect(!session.skipHooks)
+
+        // 保留时长改长，写操作收尾时一定还在等待：提交已经成功，信息仍在，提交区处于锁定
+        session.commitResetDelay = .seconds(3600)
+
         var atFinish: (subject: String, canCommit: Bool, waiting: Bool)? = nil
         session.onWriteFinished = { [weak session] _ in
             guard let session else { return }
@@ -69,28 +82,18 @@ extension RepositorySessionTests {
             atFinish = (session.commitSubject, session.canCommit, session.commitResetTask != nil)
         }
 
-        try await stageChange(in: session, directory: directory, content: "delay")
-        session.commitSubject = "延迟清空"
-        session.skipHooks = true
-        session.commit()
-        await session.writeTask?.value
-
-        let finished = try #require(atFinish)
-        #expect(finished.subject == "延迟清空")
-        #expect(!finished.canCommit)
-        #expect(finished.waiting)
-
-        await session.commitResetTask?.value
-        #expect(session.commitResetTask == nil)
-        #expect(session.commitSubject.isEmpty)
-        #expect(!session.skipHooks)
-
-        // 等待期间关闭仓库：立即清空，切回时不会恢复已提交的信息
-        let location = try #require(session.repository)
         try await stageChange(in: session, directory: directory, content: "close")
         session.commitSubject = "关闭前提交"
         session.commit()
         await session.writeTask?.value
+
+        let finished = try #require(atFinish)
+        #expect(finished.subject == "关闭前提交")
+        #expect(!finished.canCommit)
+        #expect(finished.waiting)
+
+        // 等待期间关闭仓库：立即清空，切回时不会恢复已提交的信息
+        let location = try #require(session.repository)
         session.close()
         #expect(session.commitResetTask == nil)
 
