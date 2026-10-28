@@ -167,9 +167,12 @@ extension RepositorySession {
                 recordsActivity: false,
                 undo: .reversible
             ) { [weak self] in
-                // 提交成功 0.3 秒后才清空信息，其间提交区保持锁定，不会接受新的输入。
-                self?.commitResetTask = Task { [weak self] in
-                    try? await Task.sleep(for: .milliseconds(300))
+                guard let self else { return }
+
+                // 提交成功后过了 commitResetDelay 才清空信息，其间提交区保持锁定，不会接受新的输入。
+                let delay = commitResetDelay
+                commitResetTask = Task { [weak self] in
+                    try? await Task.sleep(for: delay)
 
                     guard !Task.isCancelled else { return }
 

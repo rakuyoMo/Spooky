@@ -134,6 +134,9 @@ final class RepositorySession {
     /// 提交成功后等待清空提交信息的任务；存在期间提交区保持锁定。
     var commitResetTask: Task<Void, Never>? = nil
 
+    /// 提交成功后保留提交信息的时长；测试把它改长，在写操作收尾时稳定地看到等待中的状态。
+    var commitResetDelay = Duration.milliseconds(300)
+
     /// 窗口询问注释行的处理方式；参数为去掉注释后信息是否为空，用户取消时不回调。
     var onCommentPrompt: ((Bool, @escaping (CommentHandling) -> Void) -> Void)? = nil
 

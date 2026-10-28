@@ -154,11 +154,7 @@ open .build/Spooky.app
 - 默认不转发 SSH agent。主机指纹未知或发生变化时，需要先在可信的终端里核实
 - 首次连接检查通过后，Spooky 以当前用户的权限，在服务器的 `~/.spooky/bin/` 里安装一个按内容摘要命名的小程序，用来管理远端进程和回调。它依赖服务器自带的 Perl，不常驻运行
 - 文件读写使用系统 SFTP，复用同一个主连接
-  - 系统 SFTP 的批处理无法表示含 CR / LF 的路径，涉及这类路径的文件操作会明确报错
 - Quick Look、其它程序和拖出的文件都拿不到服务器上的路径，拿到的是本机私有临时目录里的文件副本；关闭仓库后这个目录会被删除
-- 轮询只读取状态和所选文件的内容哈希，有变化时才读取其它内容；只由提交哈希决定的历史分页和提交详情会缓存起来，减少往返
-- 服务器仓库的导出、归档和补丁由服务器上的 Git 生成，经同一个主连接流回本机存盘，不在服务器上写文件
-- 交互式变基完全在服务器上进行：提交序列与提交信息由内置在命令里的编辑器写入，本机不会打开编辑器
 
 ### 托管服务
 
@@ -170,14 +166,11 @@ open .build/Spooky.app
 - 同一仓库的写操作排队依次执行；同一时间只有一个窗口能对它发起写操作，完成后显示这个仓库的窗口都会刷新
 - 写操作中途断线时不会自动重试。重新连接后，Spooky 会先核对分支、工作区、暂存区锁、远端跟踪分支，以及是否有进行中的合并或变基，说明 HEAD 与远端跟踪分支是否已经变化，再允许写入
 - 撤销会在每次操作前后记下 HEAD、分支、标签、分支设置、储藏列表、暂存区和已跟踪文件的内容。快照写进仓库自己的对象库，本机或服务器都一样；恢复前 Spooky 会先核对仓库是否仍与记录一致
-- 取消服务器上的操作时，Spooky 先关闭命令通道，再结束远端的整组进程：先发 TERM，2 秒后发 KILL，并确认进程已退出
-  - 无法确认时会明确提示，重新连接核对之前不能继续写入
+- 取消服务器上的操作时，Spooky 会结束它在服务器上的进程；无法确认进程已退出时会明确提示，重新连接核对之前不能继续写入
 
 ### 凭据
 
 - 服务器上的 Git 需要密码、SSH 私钥口令、签名密钥口令或编辑器时，请求经当前主连接上的反向 Unix socket 回到本机，由 Spooky 弹窗处理
-  - 每个请求都带随机的会话令牌，只能应答一次，120 秒后超时
-  - 服务器仓库的提交在服务器上由仓库配置的签名程序签名；GPG 只在确实需要口令时才询问
 - 本机仓库的网络操作同样通过私有的 Unix socket 回调输入凭据；SSH 私钥解锁后，由 OpenSSH 加入当前的 SSH agent
 - 本机的提交、合并、变基、摘取和反转也以同样的方式询问 SSH 签名密钥的口令；GPG 的口令交给本机自己的 pinentry 处理
 - 凭据默认只保存在内存中，勾选 “存入这台 Mac 的钥匙串” 后才写入本机钥匙串
@@ -214,77 +207,15 @@ open .build/Spooky.app
 
 ## 开发
 
-### 测试
-
 ```sh
 swift test
 ```
 
 - 测试使用 Swift Testing
 - 涉及 Git 的测试在临时仓库中运行，不读取系统和用户的全局 Git 配置
+- 需要测试服务器、GitHub 测试仓库或生成大仓库的测试默认跳过，开启方式见 [测试](docs/testing/README.md)
 
-服务器测试默认跳过，运行它们需要一台测试专用的服务器：
-
-- `~/.ssh/config` 中配置了主机别名 `spooky-test`
-- 使用密钥 `~/.ssh/spooky-test_ed25519` 认证
-- 可以读写服务器上的 `/Users/wgy/spooky-test/`
-
-准备好后，可以显式开启：
-
-```sh
-# 连接、连接检查、断线恢复与回调
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
-
-# SFTP、本机文件缓存与服务器提交
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyTests
-
-# 服务器历史、同步、强推与取消
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySyncTests
-
-# 文件操作、补丁与 Diff 选项
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteWorkingCopyFilesTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteDiffTests
-
-# 储藏与冲突向导
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteStashTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConflictTests
-
-# 文件历史、Blame 与提交签名
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteFileViewsTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteCommitSigningTests
-
-# 历史搜索、提交详情与侧边栏
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistorySearchTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHistoryDetailsTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteSidebarTests
-
-# 分支、标签与远端管理，改写历史与分支整理
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReferenceManagementTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteRewriteTests
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteBranchesReviewTests
-
-# Reflog、撤销与重做
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteReflogUndoTests
-
-# 服务器上的列目录、新建、查找与克隆
-SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteHostOperationsTests
-```
-
-每次运行只在这个目录下新建并清理独立的子目录，不修改双方的 SSH 配置、`known_hosts` 或全局 Git 配置。
-
-Git LFS 的测试只在 `PATH` 或 Homebrew 的目录里找得到 `git-lfs` 时运行，找不到时跳过。
-
-GitHub 的测试同样默认跳过。它会在测试仓库里推送临时分支，新建、评论、修改、检出、合并与关闭 Pull Request，结束后删掉这些分支：
-
-```sh
-SPOOKY_GITHUB_TESTS=1 SPOOKY_GITHUB_TOKEN=<令牌> SPOOKY_GITHUB_REPOSITORY=<owner/repo> swift test --filter GitHubLiveTests
-```
-
-大仓库的性能测试同样默认跳过。它会生成一个包含 10 万个文件、5 万个提交的临时仓库，检查首屏状态的读取时间与内存占用：
-
-```sh
-SPOOKY_PERFORMANCE_TESTS=1 swift test -c release -Xswiftc -enable-testing --filter PerformanceTests
-```
+模块划分与设计见 [架构](docs/architecture.md)，版本号与发布流程见 [发布](docs/releasing.md)。
 
 ## 参与贡献
 
