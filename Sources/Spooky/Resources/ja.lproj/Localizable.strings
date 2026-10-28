@@ -270,7 +270,7 @@
 "working.discardAll" = "すべての変更を破棄…";
 "working.discard.message" = "%d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットに戻し、未追跡ファイルはゴミ箱に入れます。";
 "working.discard.remote" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバーのゴミ箱に入れます。";
-"working.discard.remotePermanent" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバー上で完全に削除します。元に戻せません。";
+"working.discard.remotePermanent" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバー上で完全に削除します。";
 "working.discard.lines" = "%@ の選択行の変更を破棄します。";
 "working.discard.remoteLines" = "サーバー %@ 上の選択内容を上書きします。";
 "working.resolved" = "解決済みにする";
@@ -471,9 +471,9 @@
 "stash.deleteNamed" = "スタッシュ「%@」を削除…";
 "stash.deleteMultiple" = "%ld 個のスタッシュを削除…";
 "stash.delete" = "スタッシュを削除";
-"stash.delete.confirm" = "スタッシュ「%@」を削除しますか？含まれる変更はすべて失われます。";
+"stash.delete.confirm" = "スタッシュ「%@」を削除しますか？";
 "stash.deleteStashes" = "選択したスタッシュを削除";
-"stash.deleteStashes.confirm" = "選択した %ld 個のスタッシュを削除しますか？含まれる変更はすべて失われます。";
+"stash.deleteStashes.confirm" = "選択した %ld 個のスタッシュを削除しますか？";
 "stash.applyButton" = "適用…";
 "stash.deleteButton" = "削除…";
 "stash.basedOn" = "ベース";
@@ -705,7 +705,7 @@
 "files.untrack.multiple" = "%ld 項目の追跡を解除";
 "files.trash" = "ゴミ箱に入れる";
 "files.delete" = "削除";
-"files.delete.remote" = "サーバー上の次のファイルを完全に削除しますか？対象：%2$@。元に戻せません。\n\n%1$@";
+"files.delete.remote" = "サーバー上の次のファイルを完全に削除しますか？対象：%2$@。\n\n%1$@";
 "files.move.menu" = "移動…";
 "files.move" = "移動";
 "files.move.title" = "「%@」を移動";
@@ -1047,7 +1047,7 @@
 "rewrite.reset.mixed" = "Mixed";
 "rewrite.reset.mixed.help" = "インデックスをリセットし、作業コピーを残します。外したコミットの変更は未ステージになります。";
 "rewrite.reset.hard" = "Hard";
-"rewrite.reset.hard.help" = "インデックスと作業コピーをリセットします。コミットしていない変更と外したコミットの変更は失われます。";
+"rewrite.reset.hard.help" = "インデックスと作業コピーをリセットします。コミットしていない変更と外したコミットの変更は破棄されます。";
 "rewrite.reset.discards" = "作業コピーにコミットしていない変更があります。Hard リセットでは破棄されます。";
 "rewrite.reset.leaving" = "現在のブランチから外れるコミット（%ld）：";
 "rewrite.error.revision" = "このリビジョンが見つかりません。";
@@ -1200,7 +1200,7 @@
 "branch.deleteUpstream.help" = "リモート上の追跡中のブランチ「%@」も削除します。";
 "branch.forceDelete" = "強制削除";
 "branch.forceDelete.help" = "完全にマージされていなくてもブランチを削除します。";
-"branch.forceDelete.ask" = "次のブランチは完全にマージされていません：%@。それでも削除すると、他のどのブランチにも含まれないコミットが失われることがあります。";
+"branch.forceDelete.ask" = "次のブランチは完全にマージされていません：%@。それでも削除しますか？";
 "branch.forceDelete.submit" = "強制削除";
 "branch.deleteRemote" = "リモートブランチを削除";
 "branch.deleteRemote.message" = "リモート上のブランチ「%@」を削除します。";

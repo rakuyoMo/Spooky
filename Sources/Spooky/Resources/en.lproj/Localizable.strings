@@ -270,7 +270,7 @@
 "working.discardAll" = "Discard All Changes…";
 "working.discard.message" = "Discard changes in %d files in %@. Tracked files are restored to the last commit, including staged changes, and untracked files are moved to the Trash.";
 "working.discard.remote" = "Discard changes in %d files on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are moved to the Trash on the server.";
-"working.discard.remotePermanent" = "Discard changes in %d files on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are permanently deleted on the server. This cannot be undone.";
+"working.discard.remotePermanent" = "Discard changes in %d files on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are permanently deleted on the server.";
 "working.discard.lines" = "Discard the selected lines in %@.";
 "working.discard.remoteLines" = "Overwrite the selected content on the server at %@.";
 "working.resolved" = "Mark as Resolved";
@@ -471,9 +471,9 @@
 "stash.deleteNamed" = "Delete Stash “%@”…";
 "stash.deleteMultiple" = "Delete %ld Stashes…";
 "stash.delete" = "Delete Stash";
-"stash.delete.confirm" = "Do you really want to delete the stash “%@”? All of its changes will be lost.";
+"stash.delete.confirm" = "Do you really want to delete the stash “%@”?";
 "stash.deleteStashes" = "Delete Stashes";
-"stash.deleteStashes.confirm" = "Do you really want to delete the %ld selected stashes? All of their changes will be lost.";
+"stash.deleteStashes.confirm" = "Do you really want to delete the %ld selected stashes?";
 "stash.applyButton" = "Apply…";
 "stash.deleteButton" = "Delete…";
 "stash.basedOn" = "Based on";
@@ -705,7 +705,7 @@
 "files.untrack.multiple" = "Untrack %ld Items";
 "files.trash" = "Move to Trash";
 "files.delete" = "Delete";
-"files.delete.remote" = "Permanently delete the following on the server at %2$@? This cannot be undone.\n\n%1$@";
+"files.delete.remote" = "Permanently delete the following on the server at %2$@?\n\n%1$@";
 "files.move.menu" = "Move…";
 "files.move" = "Move";
 "files.move.title" = "Move “%@”";
@@ -1047,7 +1047,7 @@
 "rewrite.reset.mixed" = "Mixed";
 "rewrite.reset.mixed.help" = "Resets the index and keeps the working copy. Changes of the removed commits become unstaged.";
 "rewrite.reset.hard" = "Hard";
-"rewrite.reset.hard.help" = "Resets the index and the working copy. Uncommitted changes and the changes of the removed commits are lost.";
+"rewrite.reset.hard.help" = "Resets the index and the working copy. Uncommitted changes and the changes of the removed commits are discarded.";
 "rewrite.reset.discards" = "The working copy has uncommitted changes. A hard reset discards them.";
 "rewrite.reset.leaving" = "Commits leaving the current branch (%ld):";
 "rewrite.error.revision" = "This revision could not be found.";
@@ -1200,7 +1200,7 @@
 "branch.deleteUpstream.help" = "Also deletes the tracked branch “%@” on its remote.";
 "branch.forceDelete" = "Force Deletion";
 "branch.forceDelete.help" = "Deletes the branch even if it is not fully merged.";
-"branch.forceDelete.ask" = "These branches are not fully merged: %@. Deleting them anyway can lose commits that no other branch contains.";
+"branch.forceDelete.ask" = "These branches are not fully merged: %@. Delete them anyway?";
 "branch.forceDelete.submit" = "Force Delete";
 "branch.deleteRemote" = "Delete Remote Branch";
 "branch.deleteRemote.message" = "Deletes the branch “%@” on its remote.";

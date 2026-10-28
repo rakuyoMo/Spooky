@@ -270,7 +270,7 @@
 "working.discardAll" = "Alle Änderungen verwerfen …";
 "working.discard.message" = "Die Änderungen an %d Dateien in %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen auf den letzten Commit zurückgesetzt, unversionierte Dateien werden in den Papierkorb gelegt.";
 "working.discard.remote" = "Die Änderungen an %d Dateien auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden in den Papierkorb des Servers gelegt.";
-"working.discard.remotePermanent" = "Die Änderungen an %d Dateien auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden auf dem Server endgültig gelöscht. Dies kann nicht widerrufen werden.";
+"working.discard.remotePermanent" = "Die Änderungen an %d Dateien auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden auf dem Server endgültig gelöscht.";
 "working.discard.lines" = "Die ausgewählten Zeilen in %@ werden verworfen.";
 "working.discard.remoteLines" = "Der ausgewählte Inhalt auf dem Server unter %@ wird überschrieben.";
 "working.resolved" = "Als aufgelöst markieren";
@@ -471,9 +471,9 @@
 "stash.deleteNamed" = "Stash „%@“ löschen …";
 "stash.deleteMultiple" = "%ld Stashes löschen …";
 "stash.delete" = "Stash löschen";
-"stash.delete.confirm" = "Möchten Sie den Stash „%@“ wirklich löschen? Alle seine Änderungen gehen verloren.";
+"stash.delete.confirm" = "Möchten Sie den Stash „%@“ wirklich löschen?";
 "stash.deleteStashes" = "Stashes löschen";
-"stash.deleteStashes.confirm" = "Möchten Sie die %ld ausgewählten Stashes wirklich löschen? Alle ihre Änderungen gehen verloren.";
+"stash.deleteStashes.confirm" = "Möchten Sie die %ld ausgewählten Stashes wirklich löschen?";
 "stash.applyButton" = "Anwenden …";
 "stash.deleteButton" = "Löschen …";
 "stash.basedOn" = "Basiert auf";
@@ -705,7 +705,7 @@
 "files.untrack.multiple" = "%ld Objekte nicht mehr verfolgen";
 "files.trash" = "In den Papierkorb legen";
 "files.delete" = "Löschen";
-"files.delete.remote" = "Folgende Dateien auf dem Server unter %2$@ endgültig löschen? Dies kann nicht widerrufen werden.\n\n%1$@";
+"files.delete.remote" = "Folgende Dateien auf dem Server unter %2$@ endgültig löschen?\n\n%1$@";
 "files.move.menu" = "Bewegen …";
 "files.move" = "Bewegen";
 "files.move.title" = "„%@“ bewegen";
@@ -1047,7 +1047,7 @@
 "rewrite.reset.mixed" = "Mixed";
 "rewrite.reset.mixed.help" = "Setzt den Index zurück und behält die Arbeitskopie. Änderungen der entfernten Commits sind danach nicht gestagt.";
 "rewrite.reset.hard" = "Hard";
-"rewrite.reset.hard.help" = "Setzt Index und Arbeitskopie zurück. Nicht committete Änderungen und die Änderungen der entfernten Commits gehen verloren.";
+"rewrite.reset.hard.help" = "Setzt Index und Arbeitskopie zurück. Nicht committete Änderungen und die Änderungen der entfernten Commits werden verworfen.";
 "rewrite.reset.discards" = "Die Arbeitskopie hat nicht committete Änderungen. Ein Hard-Reset verwirft sie.";
 "rewrite.reset.leaving" = "Commits, die den aktuellen Branch verlassen (%ld):";
 "rewrite.error.revision" = "Diese Revision wurde nicht gefunden.";
@@ -1200,7 +1200,7 @@
 "branch.deleteUpstream.help" = "Löscht auch den verfolgten Branch „%@“ auf seinem Remote.";
 "branch.forceDelete" = "Löschen erzwingen";
 "branch.forceDelete.help" = "Löscht den Branch, auch wenn er nicht vollständig gemergt ist.";
-"branch.forceDelete.ask" = "Diese Branches sind nicht vollständig gemergt: %@. Wenn du sie trotzdem löschst, können Commits verloren gehen, die kein anderer Branch enthält.";
+"branch.forceDelete.ask" = "Diese Branches sind nicht vollständig gemergt: %@. Trotzdem löschen?";
 "branch.forceDelete.submit" = "Löschen erzwingen";
 "branch.deleteRemote" = "Remote-Branch löschen";
 "branch.deleteRemote.message" = "Löscht den Branch „%@“ auf seinem Remote.";

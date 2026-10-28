@@ -92,7 +92,7 @@ extension RepositorySession {
         onStashRequest?(.apply(stash))
     }
 
-    /// 删除始终确认，确认说明写明改动会丢失。
+    /// 删除始终确认。
     func deleteStashes(_ selected: [StashEntry]) {
         guard canDelete(selected), let first = selected.first else { return }
         let repository = repository

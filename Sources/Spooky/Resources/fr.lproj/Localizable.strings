@@ -270,7 +270,7 @@
 "working.discardAll" = "Abandonner toutes les modifications…";
 "working.discard.message" = "Les modifications de %d fichiers dans %@ seront abandonnées : les fichiers suivis reviennent au dernier commit, modifications indexées comprises, et les fichiers non suivis sont placés dans la corbeille.";
 "working.discard.remote" = "Les modifications de %d fichiers seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont placés dans la corbeille du serveur.";
-"working.discard.remotePermanent" = "Les modifications de %d fichiers seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont définitivement supprimés sur le serveur. Cette action est irréversible.";
+"working.discard.remotePermanent" = "Les modifications de %d fichiers seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont définitivement supprimés sur le serveur.";
 "working.discard.lines" = "Les modifications des lignes sélectionnées dans %@ seront abandonnées.";
 "working.discard.remoteLines" = "Le contenu sélectionné sera écrasé sur le serveur dans %@.";
 "working.resolved" = "Marquer comme résolu";
@@ -471,9 +471,9 @@
 "stash.deleteNamed" = "Supprimer le remisage « %@ »…";
 "stash.deleteMultiple" = "Supprimer %ld remisages…";
 "stash.delete" = "Supprimer le remisage";
-"stash.delete.confirm" = "Voulez-vous vraiment supprimer le remisage « %@ » ? Toutes ses modifications seront perdues.";
+"stash.delete.confirm" = "Voulez-vous vraiment supprimer le remisage « %@ » ?";
 "stash.deleteStashes" = "Supprimer les remisages";
-"stash.deleteStashes.confirm" = "Voulez-vous vraiment supprimer les %ld remisages sélectionnés ? Toutes leurs modifications seront perdues.";
+"stash.deleteStashes.confirm" = "Voulez-vous vraiment supprimer les %ld remisages sélectionnés ?";
 "stash.applyButton" = "Appliquer…";
 "stash.deleteButton" = "Supprimer…";
 "stash.basedOn" = "Basé sur";
@@ -705,7 +705,7 @@
 "files.untrack.multiple" = "Ne plus suivre %ld éléments";
 "files.trash" = "Placer dans la corbeille";
 "files.delete" = "Supprimer";
-"files.delete.remote" = "Supprimer définitivement les fichiers suivants sur le serveur dans %2$@ ? Cette action est irréversible.\n\n%1$@";
+"files.delete.remote" = "Supprimer définitivement les fichiers suivants sur le serveur dans %2$@ ?\n\n%1$@";
 "files.move.menu" = "Déplacer…";
 "files.move" = "Déplacer";
 "files.move.title" = "Déplacer « %@ »";
@@ -1047,7 +1047,7 @@
 "rewrite.reset.mixed" = "Mixed";
 "rewrite.reset.mixed.help" = "Réinitialise l’index et conserve la copie de travail. Les modifications des commits retirés ne sont plus indexées.";
 "rewrite.reset.hard" = "Hard";
-"rewrite.reset.hard.help" = "Réinitialise l’index et la copie de travail. Les modifications non validées et celles des commits retirés sont perdues.";
+"rewrite.reset.hard.help" = "Réinitialise l’index et la copie de travail. Les modifications non validées et celles des commits retirés sont abandonnées.";
 "rewrite.reset.discards" = "La copie de travail contient des modifications non validées. Une réinitialisation Hard les supprime.";
 "rewrite.reset.leaving" = "Commits qui quittent la branche courante (%ld) :";
 "rewrite.error.revision" = "Cette révision est introuvable.";
@@ -1200,7 +1200,7 @@
 "branch.deleteUpstream.help" = "Supprime aussi la branche suivie « %@ » sur son dépôt distant.";
 "branch.forceDelete" = "Forcer la suppression";
 "branch.forceDelete.help" = "Supprime la branche même si elle n’est pas entièrement fusionnée.";
-"branch.forceDelete.ask" = "Ces branches ne sont pas entièrement fusionnées : %@. Les supprimer quand même peut faire perdre des commits qu’aucune autre branche ne contient.";
+"branch.forceDelete.ask" = "Ces branches ne sont pas entièrement fusionnées : %@. Les supprimer quand même ?";
 "branch.forceDelete.submit" = "Forcer la suppression";
 "branch.deleteRemote" = "Supprimer la branche distante";
 "branch.deleteRemote.message" = "Supprime la branche « %@ » sur son dépôt distant.";

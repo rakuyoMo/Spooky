@@ -119,6 +119,41 @@ struct UndoSessionTests {
         #expect(try fixture.read() == "changed\n")
     }
 
+    /// 删除储藏与强制删除没合并的分支都可以撤销：撤销后储藏与分支都回来，里面的改动与提交还在。
+    @Test("删除储藏与强制删除分支的撤销")
+    func deletionsRoundTrip() async throws {
+        let fixture = try await Fixture()
+        defer { fixture.remove() }
+        let session = fixture.session
+
+        session.onConfirm = { _, _, action, _ in action() }
+
+        // 储藏一份改动后删掉这个储藏
+        try fixture.write("stashed\n")
+        _ = try await fixture.runner.run(["stash", "push", "-q", "-m", "储藏 [x]"])
+        await fixture.refresh()
+
+        let stash = try #require(session.stashes.entries.first)
+        try await fixture.perform { session.deleteStashes([stash]) }
+        #expect(session.stashes.entries.isEmpty)
+
+        try await fixture.perform { session.undoLastOperation() }
+        #expect(session.stashes.entries.map(\.id) == [stash.id])
+
+        // 分支上有 main 没有的提交，强制删除
+        _ = try await fixture.runner.run(["switch", "-q", "-c", "topic"])
+        try fixture.write("topic\n")
+        _ = try await fixture.runner.run(["commit", "-q", "-am", "topic"])
+        _ = try await fixture.runner.run(["switch", "-q", "main"])
+        await fixture.refresh()
+
+        try await fixture.perform { session.deleteBranches(["refs/heads/topic"], force: true, deletingUpstream: false) }
+        #expect(!Self.hasBranch("topic", in: session))
+
+        try await fixture.perform { session.undoLastOperation() }
+        #expect(Self.hasBranch("topic", in: session))
+    }
+
     /// 不能撤销的写操作清空撤销栈，菜单写明上一个操作不能撤销；自动获取这类不登记的操作不改动撤销栈。
     @Test("不能撤销的操作不入栈")
     func irreversibleOperations() async throws {

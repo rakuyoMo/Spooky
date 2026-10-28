@@ -270,7 +270,7 @@
 "working.discardAll" = "모든 변경 사항 버리기…";
 "working.discard.message" = "파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 되돌리고, 추적되지 않은 파일은 휴지통으로 이동합니다.";
 "working.discard.remote" = "서버의 파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 덮어쓰고, 추적되지 않은 파일은 서버의 휴지통으로 이동합니다.";
-"working.discard.remotePermanent" = "서버의 파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 덮어쓰고, 추적되지 않은 파일은 서버에서 영구적으로 삭제합니다. 되돌릴 수 없습니다.";
+"working.discard.remotePermanent" = "서버의 파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 덮어쓰고, 추적되지 않은 파일은 서버에서 영구적으로 삭제합니다.";
 "working.discard.lines" = "%@ 의 선택한 줄 변경을 버립니다.";
 "working.discard.remoteLines" = "서버 %@ 의 선택한 내용을 덮어씁니다.";
 "working.resolved" = "해결됨으로 표시";
@@ -471,9 +471,9 @@
 "stash.deleteNamed" = "스태시 “%@” 삭제…";
 "stash.deleteMultiple" = "스태시 %ld개 삭제…";
 "stash.delete" = "스태시 삭제";
-"stash.delete.confirm" = "스태시 “%@”을(를) 삭제할까요? 포함된 변경 사항은 모두 사라집니다.";
+"stash.delete.confirm" = "스태시 “%@”을(를) 삭제할까요?";
 "stash.deleteStashes" = "선택한 스태시 삭제";
-"stash.deleteStashes.confirm" = "선택한 스태시 %ld개를 삭제할까요? 포함된 변경 사항은 모두 사라집니다.";
+"stash.deleteStashes.confirm" = "선택한 스태시 %ld개를 삭제할까요?";
 "stash.applyButton" = "적용…";
 "stash.deleteButton" = "삭제…";
 "stash.basedOn" = "기준";
@@ -705,7 +705,7 @@
 "files.untrack.multiple" = "항목 %ld개 추적 중단";
 "files.trash" = "휴지통으로 이동";
 "files.delete" = "삭제";
-"files.delete.remote" = "서버에서 다음 파일을 영구적으로 삭제할까요? 저장소: %2$@. 되돌릴 수 없습니다.\n\n%1$@";
+"files.delete.remote" = "서버에서 다음 파일을 영구적으로 삭제할까요? 저장소: %2$@.\n\n%1$@";
 "files.move.menu" = "이동…";
 "files.move" = "이동";
 "files.move.title" = "“%@” 이동";
@@ -1047,7 +1047,7 @@
 "rewrite.reset.mixed" = "Mixed";
 "rewrite.reset.mixed.help" = "인덱스를 재설정하고 작업 사본은 유지합니다. 빠진 커밋의 변경은 스테이지되지 않은 상태가 됩니다.";
 "rewrite.reset.hard" = "Hard";
-"rewrite.reset.hard.help" = "인덱스와 작업 사본을 재설정합니다. 커밋하지 않은 변경과 빠진 커밋의 변경이 사라집니다.";
+"rewrite.reset.hard.help" = "인덱스와 작업 사본을 재설정합니다. 커밋하지 않은 변경과 빠진 커밋의 변경은 버려집니다.";
 "rewrite.reset.discards" = "작업 사본에 커밋하지 않은 변경이 있습니다. Hard 재설정은 이를 버립니다.";
 "rewrite.reset.leaving" = "현재 브랜치에서 빠지는 커밋(%ld):";
 "rewrite.error.revision" = "이 리비전을 찾을 수 없습니다.";
@@ -1200,7 +1200,7 @@
 "branch.deleteUpstream.help" = "원격에서 추적 중인 브랜치 “%@”도 삭제합니다.";
 "branch.forceDelete" = "강제 삭제";
 "branch.forceDelete.help" = "완전히 병합되지 않았어도 브랜치를 삭제합니다.";
-"branch.forceDelete.ask" = "다음 브랜치는 완전히 병합되지 않았습니다: %@. 그래도 삭제하면 다른 어떤 브랜치에도 없는 커밋을 잃을 수 있습니다.";
+"branch.forceDelete.ask" = "다음 브랜치는 완전히 병합되지 않았습니다: %@. 그래도 삭제할까요?";
 "branch.forceDelete.submit" = "강제 삭제";
 "branch.deleteRemote" = "원격 브랜치 삭제";
 "branch.deleteRemote.message" = "원격에서 브랜치 “%@”을(를) 삭제합니다.";
