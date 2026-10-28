@@ -49,6 +49,40 @@ struct UndoSessionTests {
         #expect(titles.contains(UndoManager().undoMenuTitle(forUndoActionName: commit)))
     }
 
+    /// 丢弃所选的行可以撤销，误丢的改动能找回：撤销后文件回到丢弃前，重做再丢弃一次。
+    @Test("丢弃行的撤销与重做")
+    func discardLinesRoundTrip() async throws {
+        let fixture = try await Fixture()
+        defer { fixture.remove() }
+        let session = fixture.session
+
+        session.onConfirm = { _, _, action, _ in action() }
+
+        try fixture.write("base\nadded\n")
+        await fixture.refresh()
+
+        // 选中文件，等工作区一侧的 Diff 读完
+        let entry = try #require(session.status?.entries.first)
+        let row = StatusRowID(path: entry.path, kind: entry.kind)
+        session.selectedID = row
+        session.selectedIDs = [row]
+        try await FileViewsTests.wait { session.diffSnapshot?.diff != nil }
+
+        let file = try #require(session.diffSnapshot?.diff?.files.first)
+        let hunk = try #require(file.hunks.first)
+        let changes = hunk.lines.filter(\.isChange)
+        let line = try #require(changes.first)
+
+        try await fixture.perform { session.apply(file: file.id, hunk: hunk.id, lines: [line.id], discard: true) }
+        #expect(try fixture.read() == "base\n")
+
+        try await fixture.perform { session.undoLastOperation() }
+        #expect(try fixture.read() == "base\nadded\n")
+
+        try await fixture.perform { session.redoLastOperation() }
+        #expect(try fixture.read() == "base\n")
+    }
+
     /// 不能撤销的写操作清空撤销栈，菜单写明上一个操作不能撤销；自动获取这类不登记的操作不改动撤销栈。
     @Test("不能撤销的操作不入栈")
     func irreversibleOperations() async throws {

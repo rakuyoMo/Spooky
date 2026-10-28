@@ -271,8 +271,8 @@
 "working.discard.message" = "파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 되돌리고, 추적되지 않은 파일은 휴지통으로 이동합니다.";
 "working.discard.remote" = "서버의 파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 덮어쓰고, 추적되지 않은 파일은 서버의 휴지통으로 이동합니다.";
 "working.discard.remotePermanent" = "서버의 파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 덮어쓰고, 추적되지 않은 파일은 서버에서 영구적으로 삭제합니다. 되돌릴 수 없습니다.";
-"working.discard.lines" = "%@ 의 선택한 줄 변경을 영구적으로 버립니다. 되돌릴 수 없습니다.";
-"working.discard.remoteLines" = "서버 %@ 의 선택한 내용을 영구적으로 덮어씁니다. 되돌릴 수 없습니다.";
+"working.discard.lines" = "%@ 의 선택한 줄 변경을 버립니다.";
+"working.discard.remoteLines" = "서버 %@ 의 선택한 내용을 덮어씁니다.";
 "working.resolved" = "해결됨으로 표시";
 "working.copyRelative" = "상대 파일 경로 복사";
 "working.conflicts" = "해결되지 않은 충돌 %d 개";

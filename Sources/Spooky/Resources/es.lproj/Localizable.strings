@@ -271,8 +271,8 @@
 "working.discard.message" = "Descartar los cambios de %d archivos en %@: los archivos con seguimiento vuelven al último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera.";
 "working.discard.remote" = "Descartar los cambios de %d archivos del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera del servidor.";
 "working.discard.remotePermanent" = "Descartar los cambios de %d archivos del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se eliminan permanentemente del servidor. Esta acción no se puede deshacer.";
-"working.discard.lines" = "Descartar permanentemente las líneas seleccionadas en %@. Esta acción no se puede deshacer.";
-"working.discard.remoteLines" = "Sobrescribir permanentemente el contenido seleccionado del servidor en %@. Esta acción no se puede deshacer.";
+"working.discard.lines" = "Descartar las líneas seleccionadas en %@.";
+"working.discard.remoteLines" = "Sobrescribir el contenido seleccionado del servidor en %@.";
 "working.resolved" = "Marcar como resuelto";
 "working.copyRelative" = "Copiar ruta relativa del archivo";
 "working.conflicts" = "%d conflictos sin resolver";

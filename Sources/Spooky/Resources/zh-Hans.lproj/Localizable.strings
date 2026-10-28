@@ -271,8 +271,8 @@
 "working.discard.message" = "将丢弃 %d 个文件的改动：已跟踪的文件恢复到最后一次提交（含暂存改动），未跟踪文件移到废纸篓。仓库：%@。";
 "working.discard.remote" = "将在服务器上丢弃 %d 个文件的改动：已跟踪的文件被最后一次提交覆盖（含暂存改动），未跟踪文件移到服务器的废纸篓。仓库：%@。";
 "working.discard.remotePermanent" = "将在服务器上丢弃 %d 个文件的改动：已跟踪的文件被最后一次提交覆盖（含暂存改动），未跟踪文件在服务器上永久删除。仓库：%@。此操作无法撤销。";
-"working.discard.lines" = "将永久丢弃 %@ 中所选行的改动，无法撤销。";
-"working.discard.remoteLines" = "将在服务器 %@ 上永久覆盖所选内容，无法撤销。";
+"working.discard.lines" = "将丢弃 %@ 中所选行的改动。";
+"working.discard.remoteLines" = "将在服务器 %@ 上覆盖所选内容。";
 "working.resolved" = "标记已解决";
 "working.copyRelative" = "复制相对文件路径";
 "working.conflicts" = "%d 个未解决冲突";

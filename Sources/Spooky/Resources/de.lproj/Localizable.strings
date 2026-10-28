@@ -271,8 +271,8 @@
 "working.discard.message" = "Die Änderungen an %d Dateien in %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen auf den letzten Commit zurückgesetzt, unversionierte Dateien werden in den Papierkorb gelegt.";
 "working.discard.remote" = "Die Änderungen an %d Dateien auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden in den Papierkorb des Servers gelegt.";
 "working.discard.remotePermanent" = "Die Änderungen an %d Dateien auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden auf dem Server endgültig gelöscht. Dies kann nicht widerrufen werden.";
-"working.discard.lines" = "Die ausgewählten Zeilen in %@ werden endgültig verworfen. Dies kann nicht widerrufen werden.";
-"working.discard.remoteLines" = "Der ausgewählte Inhalt auf dem Server unter %@ wird endgültig überschrieben. Dies kann nicht widerrufen werden.";
+"working.discard.lines" = "Die ausgewählten Zeilen in %@ werden verworfen.";
+"working.discard.remoteLines" = "Der ausgewählte Inhalt auf dem Server unter %@ wird überschrieben.";
 "working.resolved" = "Als aufgelöst markieren";
 "working.copyRelative" = "Relativen Dateipfad kopieren";
 "working.conflicts" = "%d nicht aufgelöste Konflikte";
