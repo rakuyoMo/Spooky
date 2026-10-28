@@ -6,6 +6,7 @@ import Synchronization
 /// 把某个版本的文件导出、打成归档或存成补丁，写到本机；服务器仓库的输出由服务器上的 Git 流回本机。
 ///
 /// 输出边读边写进目标所在卷上的临时位置，完成后再替换目标；失败或取消时删除写了一半的内容。
+/// 存进仓库根目录的补丁是例外：由仓库所在机器上的 Git 直接写出，服务器仓库的补丁留在服务器上。
 public struct RevisionExport: Sendable {
     /// 归档格式。
     public enum ArchiveFormat: String, Sendable {
@@ -111,6 +112,49 @@ public struct RevisionExport: Sendable {
             }
 
             saved.append(destination)
+        }
+
+        return saved
+    }
+
+    /// 每个提交存成一个补丁文件，由仓库所在机器上的 Git 直接写进仓库根目录；服务器仓库的补丁写在服务器上。
+    ///
+    /// 文件名由 Git 生成，是四位序号加整理过的标题，同名文件被覆盖；合并提交不写文件，序号仍按传入的位置计。
+    ///
+    /// - Parameters:
+    ///   - commits: 提交的完整哈希，按传入顺序编号；调用方按从旧到新传入。
+    ///   - omitsPrefixes: 补丁里的路径不带 `a/`、`b/` 前缀。
+    /// - Returns: 实际写入的补丁文件在仓库所在机器上的路径。
+    public func savePatchesToRepositoryRoot(_ commits: [String], omitsPrefixes: Bool) async throws -> [String] {
+        guard !commits.isEmpty, commits.allSatisfy(GitObjectID.isValid) else {
+            throw RepositoryReadError.invalidQuery
+        }
+
+        let details = try await patchDetails(of: commits)
+        var saved: [String] = []
+
+        // format-patch 遇到合并提交会跳过它、改取更早的提交，合并提交在这里先排除
+        for (index, commit) in commits.enumerated() {
+            guard let detail = details[commit], !detail.isMerge else {
+                continue
+            }
+
+            // 后缀与封面信写死，仓库配置的 format.suffix、format.coverLetter 不改变文件名与个数
+            let arguments = [
+                "format-patch",
+                "-o", runner.location.path,
+                "--start-number=\(index + 1)",
+                "--suffix=.patch",
+                "--no-cover-letter",
+                "-1",
+            ]
+
+            // Git 写完文件后在标准输出逐行打出它的路径
+            let output = try await runner.run(arguments + (omitsPrefixes ? ["--no-prefix"] : []) + [commit])
+
+            saved += String(decoding: output, as: UTF8.self)
+                .split(separator: "\n")
+                .map(String.init)
         }
 
         return saved

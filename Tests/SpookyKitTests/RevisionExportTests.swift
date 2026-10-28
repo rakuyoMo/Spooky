@@ -6,7 +6,7 @@ import Testing
 
 // MARK: - RevisionExportTests
 
-/// 导出文件、归档与保存补丁都写到本机，输出边读边写；失败与取消不留下写了一半的文件。
+/// 导出文件、归档与保存补丁都写到本机，输出边读边写；失败与取消不留下写了一半的文件。存进仓库根目录的补丁由 Git 直接写出。
 struct RevisionExportTests {
     /// 导出成目录保留仓库里的目录结构、特殊字符路径与二进制内容；只导出所选路径时其余文件不出现。
     @Test("导出版本里的文件", arguments: ["sha1", "sha256"])
@@ -103,6 +103,60 @@ struct RevisionExportTests {
         _ = try await runner.run(["merge", "-q", "--no-ff", "-m", "merge", "side"])
         let merge = try await RepositoryReferences(runner: runner).resolve("HEAD")
         #expect(try await export.savePatches([side, merge], omitsPrefixes: false, to: directory).count == 1)
+    }
+
+    /// 补丁由 Git 直接写进仓库根目录，内容与输出到标准输出时相同；仓库的后缀与封面信配置不改变文件名与个数。
+    @Test("补丁存进仓库根目录", arguments: ["sha1", "sha256"])
+    func patchesInRepositoryRoot(objectFormat: String) async throws {
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+
+        try await fixture.initialize(objectFormat: objectFormat)
+        let runner = fixture.runner
+        let root = runner.location.path
+
+        // 先建好全部提交，之后写进根目录的补丁不会被提交进去
+        let first = try await Self.commit(fixture, files: ["one.txt": Data("one\n".utf8)], message: "first: one")
+        let second = try await Self.commit(fixture, files: ["two.bin": Data([0, 1])], message: "second two")
+        _ = try await runner.run(["switch", "-q", "-c", "side", first])
+        let side = try await Self.commit(fixture, files: ["side.txt": Data("s\n".utf8)], message: "side")
+        _ = try await runner.run(["switch", "-q", "main"])
+        _ = try await runner.run(["merge", "-q", "--no-ff", "-m", "merge", "side"])
+        let merge = try await RepositoryReferences(runner: runner).resolve("HEAD")
+
+        let export = RevisionExport(runner: runner)
+        let saved = try await export.savePatchesToRepositoryRoot([first, second], omitsPrefixes: false)
+        #expect(saved == [root + "/0001-first-one.patch", root + "/0002-second-two.patch"])
+
+        for (path, commit) in zip(saved, [first, second]) {
+            let expected = try await runner.run(["format-patch", "--stdout", "-1", commit])
+            #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == expected)
+        }
+
+        // 去掉前缀再存一次，同名文件被覆盖
+        let omitted = try await export.savePatchesToRepositoryRoot([first], omitsPrefixes: true)
+        #expect(omitted == [saved[0]])
+        #expect(String(decoding: try Data(contentsOf: URL(fileURLWithPath: omitted[0])), as: UTF8.self).contains("+++ one.txt\n"))
+
+        // 合并提交不写文件，序号仍按传入的位置计
+        #expect(try await export.savePatchesToRepositoryRoot([merge, side], omitsPrefixes: false) == [root + "/0002-side.patch"])
+
+        _ = try await runner.run(["config", "--local", "format.suffix", ".diff"])
+        _ = try await runner.run(["config", "--local", "format.coverLetter", "true"])
+        #expect(try await export.savePatchesToRepositoryRoot([second], omitsPrefixes: false) == [root + "/0001-second-two.patch"])
+
+        // 根目录里只有这几个补丁，没有封面信，也没有 .diff 文件
+        let patches = try FileManager.default.contentsOfDirectory(atPath: root).filter { $0.hasPrefix("000") }.sorted()
+        #expect(patches == ["0001-first-one.patch", "0001-second-two.patch", "0002-second-two.patch", "0002-side.patch"])
+
+        // 写文件的 format-patch 与其它写操作一样排队，只输出到标准输出的仍是读取
+        #expect(RepositoryOperationQueue.isReadOnly(["format-patch", "--stdout", "-1", first]))
+        #expect(!RepositoryOperationQueue.isReadOnly(["format-patch", "-o", root, "-1", first]))
+
+        // 没有提交时不执行 Git
+        await #expect(throws: RepositoryReadError.self) {
+            try await export.savePatchesToRepositoryRoot([], omitsPrefixes: false)
+        }
     }
 
     /// 输出流式交给回调，不收集进结果；失败或取消时目标与临时文件都不存在。

@@ -40,18 +40,26 @@ extension RepositorySession {
         confirmRestore(paths, at: revision, message: message)
     }
 
-    /// 保存补丁：按住 ⌥ 的快速保存跳过选项对话框，沿用记住的去前缀选项，直接选择保存位置。
+    /// 保存补丁：按住 ⌥ 的快速保存不弹选项对话框、不询问保存位置，沿用记住的去前缀选项，直接存进仓库根目录。
+    ///
+    /// 快速保存的补丁由仓库所在机器上的 Git 写出，服务器仓库的补丁留在服务器上。
     func requestSavePatch(_ commits: [HistoryCommit], quick: Bool) {
         guard !commits.isEmpty else {
             return
         }
 
-        #warning("TODO: 快速保存补丁跳过选项对话框后仍弹出目录面板是推断，菜单标题没有省略号。核实方式：按住 ⌥ 在历史提交的右键菜单选 Quick Save Patch，看是否询问保存位置、默认存到哪里；只影响快速保存的这一步。")
-
-        if quick {
-            savePatches(commits, omitsPrefixes: UserDefaults.standard.bool(forKey: Self.omitsPatchPrefixesKey))
-        } else {
+        guard quick else {
             onRevisionRequest?(.savePatch(commits))
+            return
+        }
+
+        let omitsPrefixes = UserDefaults.standard.bool(forKey: Self.omitsPatchPrefixesKey)
+
+        // 列表从新到旧排列，补丁编号从最早的提交开始
+        let ids = Array(commits.map(\.id).reversed())
+
+        runExport(AppLocalization.text("patch.title")) { runner in
+            _ = try await RevisionExport(runner: runner).savePatchesToRepositoryRoot(ids, omitsPrefixes: omitsPrefixes)
         }
     }
 
@@ -159,7 +167,7 @@ extension RepositorySession {
         }
     }
 
-    /// 导出与保存补丁只读仓库，不占用写锁；记入 Activity 并提供取消，失败显示错误详情。
+    /// 导出与保存补丁不改动 Git 的引用与暂存区，不占用应用内的写锁；记入 Activity 并提供取消，失败显示错误详情。
     private func runExport(_ title: String, operation: @escaping @Sendable (GitRunner) async throws -> Void) {
         guard let runner, let repository else {
             return

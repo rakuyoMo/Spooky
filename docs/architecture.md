@@ -66,6 +66,7 @@ Spooky 由两个 target 组成：
 - Git 调用一律经 `GitRunner`，本机与服务器仓库共用一套接口：
   - `run(_:input:)` 只返回 stdout；`execute(_:input:acceptedExitCodes:onOutput:)` 返回完整结果并提供流式数据块；`operation` 提供有界的进度事件流、完整结果与主动取消
   - `stream(_:to:)` 把导出、归档与补丁这类可能很大的输出边读边写进本机文件，不收进内存；失败或取消时删掉写了一半的文件
+    - 例外是快速保存补丁：在仓库所在的机器上用 `git format-patch -o` 直接写进仓库根目录，服务器仓库写在服务器上
   - `immutableRun` 缓存只由对象哈希决定的读取，如历史分页、提交变更集与补丁、双向计数、指定提交的信息
   - 每条调用都带上 `--no-pager`、`--no-optional-locks`、`color.ui=never` 与 `core.quotepath=off`
 - 本机执行 Settings → Git Config 所选的 Git 程序，默认 `/usr/bin/git`
