@@ -636,6 +636,7 @@ extension RepositorySession {
     /// - Parameters:
     ///   - title: 已本地化的操作名称，用于 Activity 与断线后的核对报告。
     ///   - recordsActivity: 网络与引用操作记入 Activity；工作区的高频写入只用于核对报告。
+    ///   - activityKind: 记在 Activity 的哪一页；要连接远端传输对象或引用的操作记在 Remote。
     ///   - offersAutoStash: 被本地改动挡住时是否按设置询问先储藏，检出、拉取与合并使用。
     ///   - reportsFailure: 失败时是否弹出错误 sheet；自动获取只把失败记进 Activity。
     ///   - undo: 这次写操作能否撤销；没有声明的写操作按不能撤销处理。
@@ -647,6 +648,7 @@ extension RepositorySession {
         @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
         recordsActivity: Bool = true,
+        activityKind: ActivityKind = .repository,
         offersAutoStash: Bool = false,
         reportsFailure: Bool = true,
         undo: UndoRecording = .irreversible,
@@ -674,7 +676,7 @@ extension RepositorySession {
         let runner = makeRunner(repository)
         let branch = status?.branch
         let finished = onWriteFinished
-        let activity = recordsActivity ? RepositoryActivity(repository: repository, title: title) : nil
+        let activity = recordsActivity ? RepositoryActivity(kind: activityKind, repository: repository, title: title) : nil
         if let activity { RepositoryActivities.shared.insert(activity) }
         let (outputs, continuation) = AsyncStream<GitOutputEvent>.makeStream()
         Self.logger.info("写操作开始：\(title, privacy: .public)")
@@ -732,7 +734,10 @@ extension RepositorySession {
 
             continuation.finish()
             await collector.value
-            activity?.cancel = nil
+
+            // 输出收完才结束记录，Remote 记录这时写进本机
+            if let activity { RepositoryActivities.shared.finish(activity) }
+
             RepositoryWriteLocks.shared.release(repository)
             finished?(repository)
 

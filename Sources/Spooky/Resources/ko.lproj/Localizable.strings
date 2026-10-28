@@ -421,7 +421,6 @@
 "working.clean" = "로컬 변경 사항 없음";
 "history.loadingChanges" = "변경된 파일 불러오는 중…";
 "repositories.unavailableShort" = "사용 불가";
-"activity.truncated" = "이전 출력은 생략되었습니다.";
 
 /* 主题管理。 */
 "themes.newName" = "새로운 테마";

@@ -184,6 +184,7 @@ open .build/Spooky.app
 
 - 设置、身份档案和仓库书签保存在偏好设置域 `com.rakuyo.spooky`
 - 主题（包括 Default 与 Default (Dark)）保存在 `~/Library/Application Support/Spooky/Themes`，一个主题一个 `.spookytheme` 文件
+- “活动” 窗口里获取、拉取、推送等远程操作的记录保存在 `~/Library/Application Support/Spooky/Activity`，一条记录一个文件，7 天后删除；其余记录只在 Spooky 运行期间保存在内存里
 - 存入钥匙串的凭据，服务名为 `com.rakuyo.spooky.remote.<主机别名>`
 - 托管账号的令牌存在钥匙串里，服务名为 `com.rakuyo.spooky.hosting.<实例地址>`；账号列表与手动关联到账号的远端存在偏好里，不含令牌
 - 连接和回调使用私有的 `/tmp/spooky-*` 临时目录，关闭会话后清理。本机仓库校验签名时同样使用这样一个目录，校验结束即删除

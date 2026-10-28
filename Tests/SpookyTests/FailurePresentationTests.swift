@@ -166,32 +166,76 @@ struct FailurePresentationTests {
         #expect(!RepositoryWindowController.isUsable(splitFrames: []))
     }
 
-    /// 单个活动只保留最近的输出，活动列表超过上限时先淘汰已完成的记录。
-    @Test("Activity 输出与数量上限")
+    /// 输出整段保留不截断；进度里的回车让后面的字符覆盖当前行，刷新多少次都只留最后一次，输出不会越积越多。
+    @Test("Activity 输出不截断，回车覆盖当前行")
+    func activityOutput() {
+        let location = RepositoryLocation.local(path: "/temporary/activity-" + UUID().uuidString)
+
+        // 超过 512 KiB 的输出整段保留
+        let long = RepositoryActivity(kind: .remote, repository: location, title: "Fetch")
+        long.append(.standardOutput(Data(repeating: 65, count: 600 * 1024)))
+        long.append(.standardOutput(Data("tail\n".utf8)))
+        #expect(long.log == String(repeating: "A", count: 600 * 1024) + "tail\n")
+
+        // 回车换行保留整行；回车恰好落在数据块末尾时，下一块开头的字符仍覆盖当前行
+        let progress = RepositoryActivity(kind: .remote, repository: location, title: "Push")
+        progress.append(.standardError(Data("start\r\n接收 10%\r接收 20%\r".utf8)))
+        progress.append(.standardError(Data("接收 30%\n".utf8)))
+
+        // 多字节字符被数据块切开也不会乱码
+        let done = Data("完成\n".utf8)
+        progress.append(.standardError(done.prefix(2)))
+        progress.append(.standardError(done.dropFirst(2)))
+
+        #expect(progress.log == "start\n接收 30%\n完成\n")
+
+        // 同一行刷新三次只剩最后一次
+        let refreshing = RepositoryActivity(kind: .remote, repository: location, title: "Fetch")
+        refreshing.append(.standardError(Data("10%\r20%\r30%\n".utf8)))
+        #expect(refreshing.log == "30%\n")
+    }
+
+    /// Repository 页超过 100 条时删最早的已结束记录，进行中的保留；Remote 与 Service 不限条数，也不挤占 Repository 页。
+    @Test("Activity 各页的条数上限")
     func activityLimits() {
         let location = RepositoryLocation.local(path: "/temporary/activity-" + UUID().uuidString)
-        let activity = RepositoryActivity(repository: location, title: "Fetch")
-        activity.append(.standardError(Data(repeating: 65, count: RepositoryActivity.streamLimit)))
-        activity.append(.standardError(Data("tail\n".utf8)))
-        #expect(activity.truncated)
-        #expect(activity.log.hasSuffix("tail\n"))
-        #expect(activity.log.hasPrefix(AppLocalization.text("activity.truncated")))
-
         let activities = RepositoryActivities()
-        let running = RepositoryActivity(repository: location, title: "Push")
-        running.cancel = { }
+
+        // 最早的一条仍在进行中，之后再插 104 条已结束的记录
+        let running = RepositoryActivity(kind: .repository, repository: location, title: "Rebase")
         activities.insert(running)
 
-        for _ in 0 ..< (RepositoryActivities.limit + 5) {
-            activities.insert(RepositoryActivity(repository: location, title: "Fetch"))
+        let fillers = (0 ..< 104).map { _ in finished(.repository, in: location) }
+        fillers.forEach(activities.insert)
+
+        let repository = activities.items.filter { $0.kind == .repository }
+        #expect(repository.count == RepositoryActivities.repositoryLimit)
+        #expect(repository.contains { $0 === running })
+        #expect(repository.first === fillers.last)
+        #expect(!repository.contains { $0 === fillers[4] })
+        #expect(repository.contains { $0 === fillers[5] })
+
+        // Remote 与 Service 各插 150 条全部保留
+        for kind in [ActivityKind.remote, .service] {
+            for _ in 0 ..< 150 {
+                activities.insert(finished(kind, in: location))
+            }
         }
 
-        #expect(activities.items.count == RepositoryActivities.limit)
-        #expect(activities.items.contains { $0 === running })
+        #expect(activities.items.count(where: { $0.kind == .remote }) == 150)
+        #expect(activities.items.count(where: { $0.kind == .service }) == 150)
+        #expect(activities.items.count(where: { $0.kind == .repository }) == RepositoryActivities.repositoryLimit)
     }
 
     /// 经生产解析器构造只含分支头的状态快照。
     private func status(oid: String) throws -> WorkingCopyStatus {
         try WorkingCopyStatus(porcelainV2: Data("# branch.oid \(oid)\0# branch.head main\0".utf8))
+    }
+
+    /// 一条已完成的记录。
+    private func finished(_ kind: ActivityKind, in location: RepositoryLocation) -> RepositoryActivity {
+        let activity = RepositoryActivity(kind: kind, repository: location, title: "Done")
+        activity.state = "activity.finished"
+        return activity
     }
 }

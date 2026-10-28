@@ -155,6 +155,7 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text("sync.autoFetch"),
+            activityKind: .remote,
             reportsFailure: false,
             undo: .unrecorded
         )
@@ -182,6 +183,7 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("sync.sync"),
+            activityKind: .remote,
             offersAutoStash: true,
             failureNote: { progress.failureNote }
         )
@@ -205,7 +207,8 @@ extension RepositorySession {
                         onOutput: output
                     )
             },
-            title: AppLocalization.text("sync.quickFetch")
+            title: AppLocalization.text("sync.quickFetch"),
+            activityKind: .remote
         )
     }
 
@@ -242,6 +245,7 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("sync.quickPull"),
+            activityKind: .remote,
             offersAutoStash: true
         )
     }
@@ -273,7 +277,8 @@ extension RepositorySession {
                         onOutput: output
                     )
             },
-            title: AppLocalization.text("sync.quickPush")
+            title: AppLocalization.text("sync.quickPush"),
+            activityKind: .remote
         )
     }
 

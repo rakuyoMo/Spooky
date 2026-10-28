@@ -214,7 +214,8 @@ extension RepositorySession {
                     throw SubmoduleAdditionOffer(url: url, path: path)
                 }
             },
-            title: AppLocalization.text("submodule.add")
+            title: AppLocalization.text("submodule.add"),
+            activityKind: .remote
         )
     }
 
@@ -234,7 +235,8 @@ extension RepositorySession {
                     try await submodules.fetch(submodule, prunes: prunes, onOutput: output)
                 }
             },
-            title: AppLocalization.text(targets.count == 1 ? "submodule.fetch" : "submodule.fetchAll")
+            title: AppLocalization.text(targets.count == 1 ? "submodule.fetch" : "submodule.fetchAll"),
+            activityKind: .remote
         )
     }
 
@@ -250,7 +252,8 @@ extension RepositorySession {
             { runner, output in
                 try await RepositorySubmodules(runner: runner).update(targets, recursive: recursive, onOutput: output)
             },
-            title: AppLocalization.text(targets?.count == 1 ? "submodule.update" : "submodule.updateAll")
+            title: AppLocalization.text(targets?.count == 1 ? "submodule.update" : "submodule.updateAll"),
+            activityKind: .remote
         )
     }
 

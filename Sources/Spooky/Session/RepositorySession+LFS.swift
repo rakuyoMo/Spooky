@@ -121,7 +121,8 @@ extension RepositorySession {
                 case .push: try await lfs.push(to: remote, onOutput: output)
                 }
             },
-            title: transfer.title
+            title: transfer.title,
+            activityKind: .remote
         )
     }
 }

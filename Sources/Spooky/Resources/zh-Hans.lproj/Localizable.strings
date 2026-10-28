@@ -421,7 +421,6 @@
 "working.clean" = "没有本地改动";
 "history.loadingChanges" = "正在读取变更文件…";
 "repositories.unavailableShort" = "不可用";
-"activity.truncated" = "较早的输出已省略。";
 
 /* 主题管理。 */
 "themes.newName" = "新主题";

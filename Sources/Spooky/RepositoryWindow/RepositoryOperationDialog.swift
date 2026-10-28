@@ -27,6 +27,14 @@ struct RepositoryActionRequest {
 
         /// 合并到当前分支。
         case merge = "sync.merge"
+
+        /// 记在 Activity 的哪一页：要连接远端传输对象或引用的获取、拉取、推送与发布记在 Remote。
+        var activityKind: ActivityKind {
+            switch self {
+            case .fetch, .pull, .push, .publish: .remote
+            case .create, .track, .merge: .repository
+            }
+        }
     }
 
     /// 对话框类型。

@@ -421,7 +421,6 @@
 "working.clean" = "Aucune modification locale";
 "history.loadingChanges" = "Chargement des fichiers modifiés…";
 "repositories.unavailableShort" = "Indisponible";
-"activity.truncated" = "La sortie antérieure a été omise.";
 
 /* 主题管理。 */
 "themes.newName" = "Nouveau thème";

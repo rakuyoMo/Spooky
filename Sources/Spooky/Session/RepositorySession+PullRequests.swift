@@ -133,6 +133,7 @@ extension RepositorySession {
                 try await RepositoryPullRequests(runner: runner).fetchHead(of: request.id, from: remote, onOutput: output)
             },
             title: pullRequestText("fetchHead.title", request.id.reference),
+            activityKind: .remote,
             success: { [weak self] in
                 guard let self, let runner else { return }
                 pullRequests.reloadDetail(runner: runner)
@@ -150,6 +151,7 @@ extension RepositorySession {
                 try await RepositoryPullRequests(runner: runner).checkout(request, remote: remote, as: name, onOutput: output)
             },
             title: pullRequestText("checkout.title"),
+            activityKind: .remote,
             offersAutoStash: true,
             undo: .reversible
         )
@@ -159,7 +161,7 @@ extension RepositorySession {
 // MARK: - Hosting Writes
 
 extension RepositorySession {
-    /// 在托管服务上执行一次写操作：记进 Activity，原文写进日志；完成后重新读取请求，失败时弹出错误。
+    /// 在托管服务上执行一次写操作：记进 Activity 的 Service 页，原文写进日志；完成后重新读取请求，失败时弹出错误。
     ///
     /// - Parameters:
     ///   - title: Activity 的标题。
@@ -176,7 +178,11 @@ extension RepositorySession {
             return false
         }
 
-        let activity = RepositoryActivity(repository: repository, title: title)
+        #warning(
+            "TODO: Service 页只记由用户发起的托管服务写操作（发布仓库，请求的新建、编辑、评论、关闭与合并），不记读取请求列表与详情，这是推断；核实方式：打开 Pull Requests 视图刷新并查看一个请求，再看 Activity 的 Service 页是否列出这些读取。影响 Service 页列出哪些请求。"
+        )
+
+        let activity = RepositoryActivity(kind: .service, repository: repository, title: title)
         RepositoryActivities.shared.insert(activity)
 
         Task { [weak self] in
@@ -193,6 +199,7 @@ extension RepositorySession {
                 self?.onFailure?(failure)
             }
 
+            RepositoryActivities.shared.finish(activity)
             self?.reloadPullRequests()
         }
 

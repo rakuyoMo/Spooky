@@ -421,7 +421,6 @@
 "working.clean" = "No local changes";
 "history.loadingChanges" = "Loading changed files…";
 "repositories.unavailableShort" = "Unavailable";
-"activity.truncated" = "Earlier output was omitted.";
 
 /* 主题管理。 */
 "themes.newName" = "New Theme";

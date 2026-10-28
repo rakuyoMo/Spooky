@@ -73,7 +73,8 @@ extension RepositorySession {
 
                 _ = try await RepositorySync(runner: runner).pushBranchesAndTags(to: remote, onOutput: output)
             },
-            title: AppLocalization.text("publish.push.title")
+            title: AppLocalization.text("publish.push.title"),
+            activityKind: pushes ? .remote : .repository
         )
     }
 }

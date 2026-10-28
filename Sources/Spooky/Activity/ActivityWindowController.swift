@@ -54,7 +54,12 @@ private struct ActivityView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button(AppLocalization.text("activity.clear")) { activities.clearCompleted() }
+                Button(AppLocalization.text("activity.clear")) {
+                    for kind in ActivityKind.allCases {
+                        activities.clearEnded(kind)
+                    }
+                }
+
                 TextField(AppLocalization.text("activity.search"), text: $query)
             }
             .padding(8)

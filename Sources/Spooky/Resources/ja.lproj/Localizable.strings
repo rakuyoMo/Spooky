@@ -421,7 +421,6 @@
 "working.clean" = "ローカルの変更はありません";
 "history.loadingChanges" = "変更ファイルを読み込み中…";
 "repositories.unavailableShort" = "利用不可";
-"activity.truncated" = "以前の出力は省略されました。";
 
 /* 主题管理。 */
 "themes.newName" = "新規テーマ";

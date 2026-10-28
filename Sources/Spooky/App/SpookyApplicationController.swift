@@ -75,6 +75,11 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         // 打开仓库前交出所选的 Git 程序、自定义变量与 SSH agent；登录 shell 的变量在后台读取。
         LocalExecutionPreferences.shared.start()
 
+        // Activity 的 Remote 记录存在 Application Support 下：在后台读回上次运行留下的记录，之后定时删掉 7 天前的
+        RepositoryActivities.shared.startSaving(
+            in: URL.applicationSupportDirectory.appending(path: "Spooky/Activity", directoryHint: .isDirectory)
+        )
+
         configureMenu()
         appIconController.start()
 

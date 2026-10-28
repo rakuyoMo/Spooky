@@ -4,7 +4,7 @@ import Testing
 @testable import Spooky
 @testable import SpookyKit
 
-/// 自动获取的调度与失败记录、同步停在哪一步的说明、快速操作缺少跟踪分支时的说明，以及 Push 改开 Publish Branch 的条件。
+/// 自动获取的调度与失败记录、同步停在哪一步的说明、快速操作缺少跟踪分支时的说明、Push 改开 Publish Branch 的条件，以及操作记在 Activity 的哪一页。
 extension RepositorySessionTests {
     /// 只在窗口显示仓库、到期且仓库可写时获取；设了 skipFetchAll 的远端不获取；间隔为 0 时不获取。
     @Test("自动获取的间隔、窗口显示仓库的条件与跳过的远端")
@@ -37,6 +37,7 @@ extension RepositorySessionTests {
         let activity = RepositoryActivities.shared.items.first { $0.repository == runner.location }
         #expect(activity?.title == AppLocalization.text("sync.autoFetch"))
         #expect(activity?.state == "activity.finished")
+        #expect(activity?.kind == .remote)
 
         // 间隔未到不获取；跳过的远端到期后也不获取
         #expect(!scheduler.check(now: start.addingTimeInterval(100)))
@@ -152,6 +153,24 @@ extension RepositorySessionTests {
 
         // 别的动作不受影响
         #expect(RepositoryActionRequest(kind: .pull).resolved(for: untracked).kind == .pull)
+    }
+
+    /// 获取、拉取、推送与发布要连接远端，记在 Activity 的 Remote 页；建分支、跟踪远端分支与合并只改本仓库，记在 Repository 页。
+    @Test("操作对话框的动作记在 Activity 的哪一页")
+    func actionActivityKinds() {
+        let kinds: [(RepositoryActionRequest.Kind, ActivityKind)] = [
+            (.fetch, .remote),
+            (.pull, .remote),
+            (.push, .remote),
+            (.publish, .remote),
+            (.create, .repository),
+            (.track, .repository),
+            (.merge, .repository),
+        ]
+
+        for (action, kind) in kinds {
+            #expect(action.activityKind == kind)
+        }
     }
 
     // MARK: 辅助

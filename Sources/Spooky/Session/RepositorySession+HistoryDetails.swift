@@ -167,13 +167,13 @@ extension RepositorySession {
         }
     }
 
-    /// 导出与保存补丁不改动 Git 的引用与暂存区，不占用应用内的写锁；记入 Activity 并提供取消，失败显示错误详情。
+    /// 导出与保存补丁不改动 Git 的引用与暂存区，不占用应用内的写锁；记入 Activity 的 Repository 页并提供取消，失败显示错误详情。
     private func runExport(_ title: String, operation: @escaping @Sendable (GitRunner) async throws -> Void) {
         guard let runner, let repository else {
             return
         }
 
-        let activity = RepositoryActivity(repository: repository, title: title)
+        let activity = RepositoryActivity(kind: .repository, repository: repository, title: title)
         RepositoryActivities.shared.insert(activity)
 
         let task = Task { [weak self] in
@@ -192,7 +192,7 @@ extension RepositorySession {
                 }
             }
 
-            activity.cancel = nil
+            RepositoryActivities.shared.finish(activity)
         }
 
         activity.cancel = { task.cancel() }
