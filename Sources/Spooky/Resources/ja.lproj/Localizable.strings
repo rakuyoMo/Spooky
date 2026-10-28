@@ -238,7 +238,6 @@
 "working.unstageAll" = "すべてステージ解除";
 "working.commit" = "コミット";
 "working.amend" = "直前のコミットを修正";
-"working.amend.confirm" = "直前のコミットを書き換えます。続行しますか？";
 "working.subject" = "コミットの件名";
 "working.body" = "詳細な説明";
 "working.staging" = "ステージ状態：%@";

@@ -238,7 +238,6 @@
 "working.unstageAll" = "모두 스테이지 해제";
 "working.commit" = "커밋";
 "working.amend" = "최근 커밋 수정";
-"working.amend.confirm" = "가장 최근 커밋을 다시 작성합니다. 계속하시겠습니까?";
 "working.subject" = "커밋 제목";
 "working.body" = "상세 설명";
 "working.staging" = "스테이지 상태: %@";

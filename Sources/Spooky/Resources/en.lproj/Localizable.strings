@@ -238,7 +238,6 @@
 "working.unstageAll" = "Unstage All";
 "working.commit" = "Commit";
 "working.amend" = "Amend";
-"working.amend.confirm" = "This replaces the most recent commit. Continue?";
 "working.subject" = "Commit Subject";
 "working.body" = "Detailed Description";
 "working.staging" = "Staging status: %@";

@@ -238,7 +238,6 @@
 "working.unstageAll" = "Quitar todo del stage";
 "working.commit" = "Hacer commit";
 "working.amend" = "Enmendar";
-"working.amend.confirm" = "Esta acción reemplaza el commit más reciente. ¿Continuar?";
 "working.subject" = "Asunto del commit";
 "working.body" = "Descripción detallada";
 "working.staging" = "Estado en el stage: %@";

@@ -238,7 +238,6 @@
 "working.unstageAll" = "Alle unstagen";
 "working.commit" = "Committen";
 "working.amend" = "Letzten Commit ändern";
-"working.amend.confirm" = "Dadurch wird der letzte Commit ersetzt. Fortfahren?";
 "working.subject" = "Commit-Betreff";
 "working.body" = "Ausführliche Beschreibung";
 "working.staging" = "Staging-Status: %@";

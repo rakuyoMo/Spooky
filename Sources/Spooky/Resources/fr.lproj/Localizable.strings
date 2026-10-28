@@ -238,7 +238,6 @@
 "working.unstageAll" = "Tout désindexer";
 "working.commit" = "Valider";
 "working.amend" = "Corriger le dernier commit";
-"working.amend.confirm" = "Cette action remplace le commit le plus récent. Continuer ?";
 "working.subject" = "Objet du commit";
 "working.body" = "Description détaillée";
 "working.staging" = "État d’indexation : %@";

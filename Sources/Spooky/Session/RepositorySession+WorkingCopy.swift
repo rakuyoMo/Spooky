@@ -130,7 +130,7 @@ extension RepositorySession {
         amend = enabled
     }
 
-    /// 提交失败保留草稿，修补必须先明确确认改写最近提交；注释行先按 Editor 设置询问或删除。
+    /// 提交失败保留草稿；注释行先按 Editor 设置询问或删除。
     func commit() {
         guard canCommit else { return }
         let amend = amend
@@ -138,7 +138,7 @@ extension RepositorySession {
         let skipHooks = skipHooks
         let request = generation
 
-        // 询问注释行与确认修补都使用此刻的选项，⌥ 快速修补松开后也不会改变这次提交。
+        // 询问注释行时使用此刻的选项，⌥ 快速修补松开后也不会改变这次提交。
         prepareCommitMessage { [weak self] message in
             guard let self, generation == request else { return }
             confirmCommit(
@@ -150,10 +150,10 @@ extension RepositorySession {
         }
     }
 
-    /// 确认修补或空合并后提交整理好的信息。
+    /// 提交整理好的信息；合并没有暂存的改动时先确认建空合并提交。
     ///
     /// - Parameters:
-    ///   - message: 已按折行与注释设置整理的标题与正文。
+    ///   - message: 已按注释设置整理的标题与正文。
     ///   - amend: 改写最近一次提交。
     ///   - signOff: 追加 Signed-off-by 尾注。
     ///   - skipHooks: 跳过 pre-commit 与 commit-msg 钩子。
@@ -195,14 +195,7 @@ extension RepositorySession {
             }
         }
 
-        if amend {
-            onConfirm?(
-                AppLocalization.text("working.amend"),
-                AppLocalization.text("working.amend.confirm"),
-                action,
-                nil
-            )
-        } else if context?.operation == .merge, status?.entries.contains(where: \.hasStagedChanges) != true {
+        if context?.operation == .merge, status?.entries.contains(where: \.hasStagedChanges) != true {
             onConfirm?(
                 AppLocalization.text("working.emptyMerge"),
                 AppLocalization.text("working.emptyMerge.message"),

@@ -238,7 +238,6 @@
 "working.unstageAll" = "全部取消暫存";
 "working.commit" = "提交";
 "working.amend" = "修補最近提交";
-"working.amend.confirm" = "這會改寫最近一次提交，是否繼續？";
 "working.subject" = "提交標題";
 "working.body" = "詳細說明";
 "working.staging" = "暫存狀態：%@";

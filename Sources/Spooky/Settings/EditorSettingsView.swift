@@ -10,7 +10,7 @@ enum CommitEditorSettings {
         /// 按视图宽度显示折行，提交原文不变。
         case soft
 
-        /// 等宽显示并在字数上限处折行，提交时把这些折行写成换行。
+        /// 只改显示：等宽、不折行，参考线右侧变浅，超过字数上限的行整行标出；提交原文不变。
         case hard
     }
 
@@ -62,16 +62,6 @@ enum CommitEditorSettings {
     /// 正文每行字数上限组合框里的候选值。
     static let bodyLineLimitChoices = [70, 72, 80, 90, 100]
 
-    /// 提交时使用的正文折行方式。
-    static var wrapping: Wrapping {
-        UserDefaults.standard.string(forKey: wrappingKey).flatMap(Wrapping.init(rawValue:)) ?? .soft
-    }
-
-    /// 提交时使用的正文每行字数上限。
-    static var bodyLineLimit: Int {
-        limit(bodyLineLimitKey) ?? defaultBodyLineLimit
-    }
-
     /// 提交时是否提示注释行。
     static var warnsComments: Bool {
         UserDefaults.standard.object(forKey: warnsCommentsKey) as? Bool ?? true
@@ -90,11 +80,6 @@ enum CommitEditorSettings {
     /// 是否补全 `#` 之后的 Issue 编号。
     static var completesIssues: Bool {
         UserDefaults.standard.object(forKey: completesIssuesKey) as? Bool ?? true
-    }
-
-    /// 读取正整数上限；未设置或不是正数时为 nil。
-    static func limit(_ key: String) -> Int? {
-        (UserDefaults.standard.object(forKey: key) as? Int).flatMap { $0 > 0 ? $0 : nil }
     }
 }
 
