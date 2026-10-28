@@ -1919,17 +1919,9 @@
 "settings.crashReports" = "當機報告：";
 "settings.crashReports.always" = "一律傳送當機報告";
 
-/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+/* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "伺服器設定了 Git 環境變數";
 "remote.environment.message" = "“%1$@” 的非互動 shell 設定了 %2$@。這些變數會改變 Spooky 在那裡執行的每條 Git 命令尋找倉庫與讀取設定的方式。如果 Git 表現異常，請從伺服器的 shell 啟動檔案裡移除它們。";
-"untracked.hint" = "%ld 個未追蹤檔案讓重新整理變慢。請為建置產物與相依項目補充忽略規則，或加快伺服器上的狀態讀取。";
-"untracked.speedUp" = "加快…";
-"untracked.speedUp.title" = "加快伺服器上的狀態讀取";
-"untracked.speedUp.message" = "Spooky 可以在 “%@” 上的這個倉庫裡開啟下面幾項設定。只有在你確認後，它們才會寫進伺服器上這個倉庫的本機設定。";
-"untracked.speedUp.apply" = "套用設定";
-"untracked.speedUp.cache" = "在兩次狀態讀取之間快取未追蹤檔案。";
-"untracked.speedUp.monitor" = "讓 Git 監看檔案變化，不必每次掃描整個工作區。";
-"untracked.speedUp.graph" = "現在寫出 commit-graph，並在擷取時保持更新，加快歷史讀取。";
 
 "files.openSubmodules" = "總是在 Spooky 中開啟子模組";
 "menu.addSubmodule" = "加入新子模組…";

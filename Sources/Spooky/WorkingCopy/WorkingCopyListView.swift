@@ -30,9 +30,6 @@ struct WorkingCopyListView: View {
 
             Divider()
 
-            // 服务器仓库的未跟踪文件过多时提示补充忽略规则或加快状态读取
-            UntrackedFilesHint(session: session)
-
             WorkingCopyFileList(session: session)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay { emptyListMessage }

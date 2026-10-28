@@ -1919,17 +1919,9 @@
 "settings.crashReports" = "Crash Reports:";
 "settings.crashReports.always" = "Always send crash reports";
 
-/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+/* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "The Server Sets Git Environment Variables";
 "remote.environment.message" = "The non-interactive shell on “%1$@” sets %2$@. These variables change how Git finds repositories and reads its configuration for every command Spooky runs there. Remove them from the shell startup files on the server if Git behaves unexpectedly.";
-"untracked.hint" = "%ld untracked files make refreshing slow. Add ignore rules for build output and dependencies, or speed up status on the server.";
-"untracked.speedUp" = "Speed Up…";
-"untracked.speedUp.title" = "Speed Up Status on the Server";
-"untracked.speedUp.message" = "Spooky can turn on these settings in this repository on “%@”. They are written to the repository’s local configuration on the server only after you confirm.";
-"untracked.speedUp.apply" = "Apply Settings";
-"untracked.speedUp.cache" = "Caches untracked files between status checks.";
-"untracked.speedUp.monitor" = "Lets Git watch the file system instead of scanning the whole working tree.";
-"untracked.speedUp.graph" = "Writes the commit-graph now and keeps it up to date when fetching, which speeds up history.";
 
 "files.openSubmodules" = "Always open submodules in Spooky";
 "menu.addSubmodule" = "Add New Submodule…";

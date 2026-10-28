@@ -1919,17 +1919,9 @@
 "settings.crashReports" = "Rapports de plantage :";
 "settings.crashReports.always" = "Toujours envoyer les rapports de plantage";
 
-/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+/* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "Le serveur définit des variables d’environnement Git";
 "remote.environment.message" = "Le shell non interactif de « %1$@ » définit %2$@. Ces variables changent la façon dont Git trouve les dépôts et lit sa configuration pour chaque commande que Spooky y exécute. Retirez-les des fichiers de démarrage du shell sur le serveur si Git se comporte de façon inattendue.";
-"untracked.hint" = "%ld fichiers non suivis ralentissent l’actualisation. Ajoutez des règles d’exclusion pour les fichiers de compilation et les dépendances, ou accélérez l’état sur le serveur.";
-"untracked.speedUp" = "Accélérer…";
-"untracked.speedUp.title" = "Accélérer l’état sur le serveur";
-"untracked.speedUp.message" = "Spooky peut activer ces réglages pour ce dépôt sur « %@ ». Ils ne sont écrits dans la configuration locale du dépôt sur le serveur qu’après votre confirmation.";
-"untracked.speedUp.apply" = "Appliquer les réglages";
-"untracked.speedUp.cache" = "Met en cache les fichiers non suivis entre deux vérifications de l’état.";
-"untracked.speedUp.monitor" = "Laisse Git surveiller le système de fichiers au lieu de parcourir toute la copie de travail.";
-"untracked.speedUp.graph" = "Écrit le commit-graph maintenant et le garde à jour lors des récupérations, ce qui accélère l’historique.";
 
 "files.openSubmodules" = "Toujours ouvrir les sous-modules dans Spooky";
 "menu.addSubmodule" = "Ajouter un nouveau sous-module…";

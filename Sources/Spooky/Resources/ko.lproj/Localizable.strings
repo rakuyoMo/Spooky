@@ -1919,17 +1919,9 @@
 "settings.crashReports" = "충돌 보고서:";
 "settings.crashReports.always" = "항상 충돌 보고서 보내기";
 
-/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+/* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "서버가 Git 환경 변수를 설정함";
 "remote.environment.message" = "“%1$@”의 비대화형 셸이 %2$@을(를) 설정합니다. 이 변수들은 Spooky가 그곳에서 실행하는 모든 Git 명령이 저장소를 찾고 설정을 읽는 방식을 바꿉니다. Git이 이상하게 동작하면 서버의 셸 시작 파일에서 제거하세요.";
-"untracked.hint" = "추적하지 않는 파일 %ld개 때문에 새로 고침이 느립니다. 빌드 결과물과 의존성에 대한 무시 규칙을 추가하거나 서버의 상태 읽기를 빠르게 하세요.";
-"untracked.speedUp" = "빠르게…";
-"untracked.speedUp.title" = "서버의 상태 읽기 빠르게 하기";
-"untracked.speedUp.message" = "Spooky가 “%@”의 이 저장소에서 다음 설정을 켤 수 있습니다. 확인한 후에만 서버에 있는 이 저장소의 로컬 설정에 기록됩니다.";
-"untracked.speedUp.apply" = "설정 적용";
-"untracked.speedUp.cache" = "상태 확인 사이에 추적하지 않는 파일을 캐시합니다.";
-"untracked.speedUp.monitor" = "작업 트리 전체를 훑는 대신 Git이 파일 시스템을 감시합니다.";
-"untracked.speedUp.graph" = "commit-graph를 지금 쓰고 가져올 때 최신으로 유지해 히스토리를 빠르게 읽습니다.";
 
 "files.openSubmodules" = "하위 모듈을 항상 Spooky에서 열기";
 "menu.addSubmodule" = "새 하위 모듈 추가…";

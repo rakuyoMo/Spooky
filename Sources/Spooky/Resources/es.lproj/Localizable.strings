@@ -1919,17 +1919,9 @@
 "settings.crashReports" = "Informes de fallos:";
 "settings.crashReports.always" = "Enviar siempre informes de fallos";
 
-/* 第一次连接服务器时的环境变量提示，以及服务器仓库的未跟踪文件过多时的提示与加快状态读取。 */
+/* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "El servidor define variables de entorno de Git";
 "remote.environment.message" = "El shell no interactivo de “%1$@” define %2$@. Estas variables cambian cómo Git encuentra los repositorios y lee su configuración en cada comando que Spooky ejecuta allí. Quítalas de los archivos de inicio del shell del servidor si Git se comporta de forma inesperada.";
-"untracked.hint" = "%ld archivos sin seguimiento hacen lenta la actualización. Añade reglas para ignorar los resultados de compilación y las dependencias, o acelera el estado en el servidor.";
-"untracked.speedUp" = "Acelerar…";
-"untracked.speedUp.title" = "Acelerar el estado en el servidor";
-"untracked.speedUp.message" = "Spooky puede activar estos ajustes en este repositorio de “%@”. Solo se escriben en la configuración local del repositorio en el servidor después de que lo confirmes.";
-"untracked.speedUp.apply" = "Aplicar ajustes";
-"untracked.speedUp.cache" = "Guarda en caché los archivos sin seguimiento entre comprobaciones de estado.";
-"untracked.speedUp.monitor" = "Permite que Git vigile el sistema de archivos en lugar de recorrer toda la copia de trabajo.";
-"untracked.speedUp.graph" = "Escribe ahora el commit-graph y lo mantiene al día al recuperar, lo que acelera el historial.";
 
 "files.openSubmodules" = "Abrir siempre los submódulos en Spooky";
 "menu.addSubmodule" = "Añadir nuevo submódulo…";
