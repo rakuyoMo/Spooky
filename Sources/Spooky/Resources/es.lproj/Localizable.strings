@@ -581,8 +581,8 @@
 "fileHistory.restoreInWorkingCopy" = "Restaurar “%@” a la revisión “%@” en la copia de trabajo…";
 "fileHistory.showHistoryOf" = "Mostrar el historial de “%@”";
 "fileHistory.restoreTitle" = "Restaurar archivos en la copia de trabajo";
-"fileHistory.restore.message" = "“%@” se restaurará a la revisión %@ en %@. Se descartarán los cambios de este archivo, estén o no en el stage; si no existe en esa revisión, se eliminará. Esta acción no se puede deshacer.";
-"fileHistory.restore.remote" = "“%@” se sobrescribirá con la revisión %@ en el servidor en %@. Se descartarán permanentemente los cambios de este archivo, estén o no en el stage; si no existe en esa revisión, se eliminará permanentemente del servidor. Esta acción no se puede deshacer.";
+"fileHistory.restore.message" = "“%@” se restaurará a la revisión %@ en %@. Se descartarán los cambios de este archivo, estén o no en el stage; si no existe en esa revisión, se eliminará.";
+"fileHistory.restore.remote" = "“%@” se sobrescribirá con la revisión %@ en el servidor en %@. Se descartarán los cambios de este archivo, estén o no en el stage; si no existe en esa revisión, se eliminará del servidor.";
 "fileHistory.scope.author" = "Autor";
 "fileHistory.scope.committer" = "Committer";
 "fileHistory.scope.revision" = "Revisión";
@@ -716,7 +716,7 @@
 "files.revert.button" = "Revertir";
 "files.revert.revision" = "Revisión:";
 "files.revert.message" = "Introduce o elige la revisión a la que revertir los siguientes archivos. Se descartan sus cambios locales, y se eliminan los archivos que no existen en esa revisión.\n\n%1$@";
-"files.revert.remote" = "Introduce o elige la revisión a la que revertir los siguientes archivos del servidor en %2$@. Allí se sobrescriben permanentemente, y los archivos que no existen en esa revisión se eliminan permanentemente del servidor.\n\n%1$@";
+"files.revert.remote" = "Introduce o elige la revisión a la que revertir los siguientes archivos del servidor en %2$@. Allí se sobrescriben, y los archivos que no existen en esa revisión se eliminan del servidor.\n\n%1$@";
 "files.ignore" = "Ignorar";
 "files.ignore.item" = "Ignorar este ítem";
 "files.ignore.items" = "Ignorar %ld ítems";
@@ -876,8 +876,8 @@
 "tree.exportItems" = "Exportar %1$ld elementos en la revisión “%2$@”…";
 "tree.archiveItems" = "Archivar %1$ld elementos en la revisión “%2$@”…";
 "tree.archiveAt" = "Archivar “%1$@” en la revisión “%2$@”…";
-"tree.restore.message" = "%1$ld elementos se restaurarán a la revisión %2$@ en %3$@. Se descartarán los cambios de estos elementos, estén o no en el stage; los archivos que no existan en esa revisión se eliminarán. Esta acción no se puede deshacer.";
-"tree.restore.remote" = "%1$ld elementos se sobrescribirán con la revisión %2$@ en el servidor, en %3$@. Los cambios de estos elementos, estén o no en el stage, se descartarán definitivamente; los archivos que no existan en esa revisión se eliminarán definitivamente del servidor. Esta acción no se puede deshacer.";
+"tree.restore.message" = "%1$ld elementos se restaurarán a la revisión %2$@ en %3$@. Se descartarán los cambios de estos elementos, estén o no en el stage; los archivos que no existan en esa revisión se eliminarán.";
+"tree.restore.remote" = "%1$ld elementos se sobrescribirán con la revisión %2$@ en el servidor, en %3$@. Los cambios de estos elementos, estén o no en el stage, se descartarán; los archivos que no existan en esa revisión se eliminarán del servidor.";
 "export.title" = "Exportar archivos de una revisión";
 "export.message" = "Exporta el árbol completo de archivos de una revisión a una carpeta o un archivo zip en este Mac.";
 "export.itemsTitle" = "Exportar %1$ld elementos de la revisión %2$@";
@@ -1048,7 +1048,7 @@
 "rewrite.reset.mixed.help" = "Restablece el índice y conserva la copia de trabajo. Los cambios de los commits quitados quedan fuera del stage.";
 "rewrite.reset.hard" = "Hard";
 "rewrite.reset.hard.help" = "Restablece el índice y la copia de trabajo. Se pierden los cambios sin commit y los de los commits quitados.";
-"rewrite.reset.discards" = "La copia de trabajo tiene cambios sin commit. Un restablecimiento Hard los descarta para siempre.";
+"rewrite.reset.discards" = "La copia de trabajo tiene cambios sin commit. Un restablecimiento Hard los descarta.";
 "rewrite.reset.leaving" = "Commits que salen de la rama actual (%ld):";
 "rewrite.error.revision" = "No se encontró esta revisión.";
 "rewrite.checkout.title" = "Hacer checkout de una revisión";

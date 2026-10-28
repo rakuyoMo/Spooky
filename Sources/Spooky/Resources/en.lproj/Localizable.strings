@@ -581,8 +581,8 @@
 "fileHistory.restoreInWorkingCopy" = "Restore “%@” at Revision “%@” in Working Copy…";
 "fileHistory.showHistoryOf" = "Show File History of “%@”";
 "fileHistory.restoreTitle" = "Restore Files in Working Copy";
-"fileHistory.restore.message" = "Restore “%@” to revision %@ in %@. Staged and unstaged changes in this file will be discarded, and the file is deleted if it does not exist at that revision. This cannot be undone.";
-"fileHistory.restore.remote" = "Overwrite “%@” with revision %@ on the server at %@. Staged and unstaged changes in this file are permanently discarded, and the file is permanently deleted on the server if it does not exist at that revision. This cannot be undone.";
+"fileHistory.restore.message" = "Restore “%@” to revision %@ in %@. Staged and unstaged changes in this file will be discarded, and the file is deleted if it does not exist at that revision.";
+"fileHistory.restore.remote" = "Overwrite “%@” with revision %@ on the server at %@. Staged and unstaged changes in this file are discarded, and the file is deleted on the server if it does not exist at that revision.";
 "fileHistory.scope.author" = "Author";
 "fileHistory.scope.committer" = "Committer";
 "fileHistory.scope.revision" = "Revision";
@@ -716,7 +716,7 @@
 "files.revert.button" = "Revert";
 "files.revert.revision" = "Revision:";
 "files.revert.message" = "Enter or choose the revision to restore the following files to. Their local changes are discarded, and files that don’t exist in that revision are deleted.\n\n%1$@";
-"files.revert.remote" = "Enter or choose the revision to restore the following files to on the server at %2$@. They are permanently overwritten there, and files that don’t exist in that revision are permanently deleted.\n\n%1$@";
+"files.revert.remote" = "Enter or choose the revision to restore the following files to on the server at %2$@. They are overwritten there, and files that don’t exist in that revision are deleted.\n\n%1$@";
 "files.ignore" = "Ignore";
 "files.ignore.item" = "Ignore This Item";
 "files.ignore.items" = "Ignore %ld Items";
@@ -876,8 +876,8 @@
 "tree.exportItems" = "Export %1$ld Items at Revision “%2$@”…";
 "tree.archiveItems" = "Archive %1$ld Items at Revision “%2$@”…";
 "tree.archiveAt" = "Archive “%1$@” at Revision “%2$@”…";
-"tree.restore.message" = "Restore %1$ld items to revision %2$@ in %3$@. Staged and unstaged changes in these items will be discarded, and files that do not exist at that revision are deleted. This cannot be undone.";
-"tree.restore.remote" = "Overwrite %1$ld items with revision %2$@ on the server at %3$@. Staged and unstaged changes in these items are permanently discarded, and files that do not exist at that revision are permanently deleted on the server. This cannot be undone.";
+"tree.restore.message" = "Restore %1$ld items to revision %2$@ in %3$@. Staged and unstaged changes in these items will be discarded, and files that do not exist at that revision are deleted.";
+"tree.restore.remote" = "Overwrite %1$ld items with revision %2$@ on the server at %3$@. Staged and unstaged changes in these items are discarded, and files that do not exist at that revision are deleted on the server.";
 "export.title" = "Export Files from Revision";
 "export.message" = "Exports the complete file tree of a revision to a folder or a zip archive on this Mac.";
 "export.itemsTitle" = "Export %1$ld Items at Revision %2$@";
@@ -1048,7 +1048,7 @@
 "rewrite.reset.mixed.help" = "Resets the index and keeps the working copy. Changes of the removed commits become unstaged.";
 "rewrite.reset.hard" = "Hard";
 "rewrite.reset.hard.help" = "Resets the index and the working copy. Uncommitted changes and the changes of the removed commits are lost.";
-"rewrite.reset.discards" = "The working copy has uncommitted changes. A hard reset discards them permanently.";
+"rewrite.reset.discards" = "The working copy has uncommitted changes. A hard reset discards them.";
 "rewrite.reset.leaving" = "Commits leaving the current branch (%ld):";
 "rewrite.error.revision" = "This revision could not be found.";
 "rewrite.checkout.title" = "Check Out Revision";

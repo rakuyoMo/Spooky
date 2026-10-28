@@ -581,8 +581,8 @@
 "fileHistory.restoreInWorkingCopy" = "Restaurer « %@ » à la révision « %@ » dans la copie de travail…";
 "fileHistory.showHistoryOf" = "Afficher l’historique de « %@ »";
 "fileHistory.restoreTitle" = "Restaurer des fichiers dans la copie de travail";
-"fileHistory.restore.message" = "« %@ » sera restauré à la révision %@ dans %@. Les modifications indexées et non indexées de ce fichier seront abandonnées ; s’il n’existe pas dans cette révision, il sera supprimé. Cette action est irréversible.";
-"fileHistory.restore.remote" = "« %@ » sera écrasé par la révision %@ sur le serveur dans %@. Les modifications indexées et non indexées de ce fichier seront définitivement abandonnées ; s’il n’existe pas dans cette révision, il sera définitivement supprimé du serveur. Cette action est irréversible.";
+"fileHistory.restore.message" = "« %@ » sera restauré à la révision %@ dans %@. Les modifications indexées et non indexées de ce fichier seront abandonnées ; s’il n’existe pas dans cette révision, il sera supprimé.";
+"fileHistory.restore.remote" = "« %@ » sera écrasé par la révision %@ sur le serveur dans %@. Les modifications indexées et non indexées de ce fichier seront abandonnées ; s’il n’existe pas dans cette révision, il sera supprimé du serveur.";
 "fileHistory.scope.author" = "Auteur";
 "fileHistory.scope.committer" = "Validateur";
 "fileHistory.scope.revision" = "Révision";
@@ -716,7 +716,7 @@
 "files.revert.button" = "Rétablir";
 "files.revert.revision" = "Révision :";
 "files.revert.message" = "Saisissez ou choisissez la révision à rétablir pour les fichiers suivants. Leurs modifications locales sont abandonnées, et les fichiers absents de cette révision sont supprimés.\n\n%1$@";
-"files.revert.remote" = "Saisissez ou choisissez la révision à rétablir pour les fichiers suivants sur le serveur dans %2$@. Ils y seront définitivement écrasés, et les fichiers absents de cette révision seront définitivement supprimés du serveur.\n\n%1$@";
+"files.revert.remote" = "Saisissez ou choisissez la révision à rétablir pour les fichiers suivants sur le serveur dans %2$@. Ils y seront écrasés, et les fichiers absents de cette révision seront supprimés du serveur.\n\n%1$@";
 "files.ignore" = "Ignorer";
 "files.ignore.item" = "Ignorer cet élément";
 "files.ignore.items" = "Ignorer %ld éléments";
@@ -876,8 +876,8 @@
 "tree.exportItems" = "Exporter %1$ld éléments à la révision « %2$@ »…";
 "tree.archiveItems" = "Archiver %1$ld éléments à la révision « %2$@ »…";
 "tree.archiveAt" = "Archiver « %1$@ » à la révision « %2$@ »…";
-"tree.restore.message" = "%1$ld éléments seront restaurés à la révision %2$@ dans %3$@. Les modifications indexées et non indexées de ces éléments seront abandonnées ; les fichiers absents de cette révision seront supprimés. Cette action est irréversible.";
-"tree.restore.remote" = "%1$ld éléments seront remplacés par la révision %2$@ sur le serveur dans %3$@. Les modifications indexées et non indexées de ces éléments seront définitivement abandonnées ; les fichiers absents de cette révision seront définitivement supprimés sur le serveur. Cette action est irréversible.";
+"tree.restore.message" = "%1$ld éléments seront restaurés à la révision %2$@ dans %3$@. Les modifications indexées et non indexées de ces éléments seront abandonnées ; les fichiers absents de cette révision seront supprimés.";
+"tree.restore.remote" = "%1$ld éléments seront remplacés par la révision %2$@ sur le serveur dans %3$@. Les modifications indexées et non indexées de ces éléments seront abandonnées ; les fichiers absents de cette révision seront supprimés sur le serveur.";
 "export.title" = "Exporter les fichiers d’une révision";
 "export.message" = "Exporte l’arborescence complète d’une révision dans un dossier ou une archive zip sur ce Mac.";
 "export.itemsTitle" = "Exporter %1$ld éléments de la révision %2$@";
@@ -1048,7 +1048,7 @@
 "rewrite.reset.mixed.help" = "Réinitialise l’index et conserve la copie de travail. Les modifications des commits retirés ne sont plus indexées.";
 "rewrite.reset.hard" = "Hard";
 "rewrite.reset.hard.help" = "Réinitialise l’index et la copie de travail. Les modifications non validées et celles des commits retirés sont perdues.";
-"rewrite.reset.discards" = "La copie de travail contient des modifications non validées. Une réinitialisation Hard les supprime définitivement.";
+"rewrite.reset.discards" = "La copie de travail contient des modifications non validées. Une réinitialisation Hard les supprime.";
 "rewrite.reset.leaving" = "Commits qui quittent la branche courante (%ld) :";
 "rewrite.error.revision" = "Cette révision est introuvable.";
 "rewrite.checkout.title" = "Extraire une révision";

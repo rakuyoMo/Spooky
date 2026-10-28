@@ -83,6 +83,42 @@ struct UndoSessionTests {
         #expect(try fixture.read() == "base\n")
     }
 
+    /// 把文件恢复到某个版本、Revert to Revision 与硬重置都会丢掉本地改动，撤销后改动回来。
+    @Test("恢复到某个版本与硬重置的撤销")
+    func restoreAndResetRoundTrip() async throws {
+        let fixture = try await Fixture()
+        defer { fixture.remove() }
+        let session = fixture.session
+        let root = try await fixture.head()
+
+        session.onConfirm = { _, _, action, _ in action() }
+
+        try fixture.write("changed\n")
+        await fixture.refresh()
+
+        // Restore…：确认后文件回到那个版本
+        try await fixture.perform { session.restoreFile("a b.txt", at: root) }
+        #expect(try fixture.read() == "base\n")
+
+        try await fixture.perform { session.undoLastOperation() }
+        #expect(try fixture.read() == "changed\n")
+
+        // Revert to Revision…
+        let entries = session.status?.entries ?? []
+        try await fixture.perform { session.revert(entries, to: root) }
+        #expect(try fixture.read() == "base\n")
+
+        try await fixture.perform { session.undoLastOperation() }
+        #expect(try fixture.read() == "changed\n")
+
+        // 硬重置
+        try await fixture.perform { session.reset(to: root, mode: .hard) }
+        #expect(try fixture.read() == "base\n")
+
+        try await fixture.perform { session.undoLastOperation() }
+        #expect(try fixture.read() == "changed\n")
+    }
+
     /// 不能撤销的写操作清空撤销栈，菜单写明上一个操作不能撤销；自动获取这类不登记的操作不改动撤销栈。
     @Test("不能撤销的操作不入栈")
     func irreversibleOperations() async throws {

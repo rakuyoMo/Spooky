@@ -581,8 +581,8 @@
 "fileHistory.restoreInWorkingCopy" = "在工作區中將 “%@” 還原到版本 “%@”…";
 "fileHistory.showHistoryOf" = "顯示 “%@” 的檔案歷史";
 "fileHistory.restoreTitle" = "在工作區中還原檔案";
-"fileHistory.restore.message" = "將 “%@” 還原到版本 %@。儲存庫：%@。這個檔案已暫存與未暫存的變更都會被捨棄；該版本中沒有這個檔案時會將其刪除。此操作無法復原。";
-"fileHistory.restore.remote" = "將在伺服器上覆寫 “%@”，改為版本 %@ 的內容。儲存庫：%@。這個檔案已暫存與未暫存的變更都會被永久捨棄；該版本中沒有這個檔案時，會在伺服器上將其永久刪除。此操作無法復原。";
+"fileHistory.restore.message" = "將 “%@” 還原到版本 %@。儲存庫：%@。這個檔案已暫存與未暫存的變更都會被捨棄；該版本中沒有這個檔案時會將其刪除。";
+"fileHistory.restore.remote" = "將在伺服器上覆寫 “%@”，改為版本 %@ 的內容。儲存庫：%@。這個檔案已暫存與未暫存的變更都會被捨棄；該版本中沒有這個檔案時，會在伺服器上將其刪除。";
 "fileHistory.scope.author" = "作者";
 "fileHistory.scope.committer" = "提交者";
 "fileHistory.scope.revision" = "版本";
@@ -716,7 +716,7 @@
 "files.revert.button" = "還原";
 "files.revert.revision" = "版本：";
 "files.revert.message" = "輸入或選擇要將以下檔案還原到的版本。這些檔案的本機變更會被捨棄，該版本中沒有的檔案會被刪除。\n\n%1$@";
-"files.revert.remote" = "輸入或選擇要將以下檔案還原到的版本。儲存庫：%2$@。伺服器上的這些檔案會被永久覆寫，該版本中沒有的檔案會在伺服器上被永久刪除。\n\n%1$@";
+"files.revert.remote" = "輸入或選擇要將以下檔案還原到的版本。儲存庫：%2$@。伺服器上的這些檔案會被覆寫，該版本中沒有的檔案會在伺服器上被刪除。\n\n%1$@";
 "files.ignore" = "忽略";
 "files.ignore.item" = "忽略此項目";
 "files.ignore.items" = "忽略 %ld 個項目";
@@ -876,8 +876,8 @@
 "tree.exportItems" = "匯出 %1$ld 個項目在版本 “%2$@” 的內容…";
 "tree.archiveItems" = "封存 %1$ld 個項目在版本 “%2$@” 的內容…";
 "tree.archiveAt" = "封存 “%1$@” 在版本 “%2$@” 的內容…";
-"tree.restore.message" = "將 %1$ld 個項目還原到版本 %2$@。儲存庫：%3$@。這些項目已暫存與未暫存的變更都會被捨棄；該版本中沒有的檔案會被刪除。此操作無法復原。";
-"tree.restore.remote" = "用版本 %2$@ 覆寫伺服器上的 %1$ld 個項目。儲存庫：%3$@。這些項目已暫存與未暫存的變更會被永久捨棄；該版本中沒有的檔案會在伺服器上被永久刪除。此操作無法復原。";
+"tree.restore.message" = "將 %1$ld 個項目還原到版本 %2$@。儲存庫：%3$@。這些項目已暫存與未暫存的變更都會被捨棄；該版本中沒有的檔案會被刪除。";
+"tree.restore.remote" = "用版本 %2$@ 覆寫伺服器上的 %1$ld 個項目。儲存庫：%3$@。這些項目已暫存與未暫存的變更會被捨棄；該版本中沒有的檔案會在伺服器上被刪除。";
 "export.title" = "從版本匯出檔案";
 "export.message" = "將一個版本的完整檔案樹匯出到本機的檔案夾或 zip 封存檔。";
 "export.itemsTitle" = "匯出版本 %2$@ 中的 %1$ld 個項目";
@@ -1048,7 +1048,7 @@
 "rewrite.reset.mixed.help" = "重設暫存區，保留工作區，撤下的提交的變更變為未暫存。";
 "rewrite.reset.hard" = "Hard";
 "rewrite.reset.hard.help" = "重設暫存區與工作區，未提交的變更與撤下的提交的變更都會遺失。";
-"rewrite.reset.discards" = "工作區有未提交的變更，Hard 重設會永久捨棄它們。";
+"rewrite.reset.discards" = "工作區有未提交的變更，Hard 重設會捨棄它們。";
 "rewrite.reset.leaving" = "會離開目前分支的提交（%ld）：";
 "rewrite.error.revision" = "找不到這個版本。";
 "rewrite.checkout.title" = "檢出版本";
