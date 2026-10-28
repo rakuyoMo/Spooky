@@ -419,7 +419,6 @@
 "recovery.unborn" = "尚无提交";
 "dialog.blocked" = "此仓库有其它操作正在进行，或服务器已断开。已填写的设置会保留，请在仓库可用后重试。";
 "working.clean" = "没有本地改动";
-"history.limit" = "仅显示前 %ld 个提交。选择分支可以缩小历史范围。";
 "history.loadingChanges" = "正在读取变更文件…";
 "repositories.unavailableShort" = "不可用";
 "activity.truncated" = "较早的输出已省略。";
@@ -838,7 +837,8 @@
 "history.search.range" = "介于";
 "history.search.to" = "至";
 "history.reveal.notFound" = "提交 %@ 不在这段历史中。";
-"history.reveal.beyondLimit" = "提交 %@ 不在这段历史的前 %ld 个提交中。";
+"history.reveal.slow" = "加载更多提交";
+"history.reveal.slow.message" = "提交 %1$@ 排在这段历史的前 %2$ld 个提交之后。加载到它为止可能需要一些时间。";
 "history.subtitle" = "%@（%ld 个提交）";
 "history.subtitle.more" = "%@（%ld 个或更多提交）";
 "working.subtitle" = "工作区（%ld 个改动的文件）";

@@ -419,7 +419,6 @@
 "recovery.unborn" = "no commits";
 "dialog.blocked" = "Another operation is running on this repository, or the server is disconnected. Your settings are kept; try again when the repository is available.";
 "working.clean" = "No local changes";
-"history.limit" = "Showing the first %ld commits. Select a branch to narrow the history.";
 "history.loadingChanges" = "Loading changed files…";
 "repositories.unavailableShort" = "Unavailable";
 "activity.truncated" = "Earlier output was omitted.";
@@ -838,7 +837,8 @@
 "history.search.range" = "is in range";
 "history.search.to" = "to";
 "history.reveal.notFound" = "Commit %@ isn't in this history.";
-"history.reveal.beyondLimit" = "Commit %@ isn't among the first %ld commits of this history.";
+"history.reveal.slow" = "Load More Commits";
+"history.reveal.slow.message" = "Commit %1$@ comes after the first %2$ld commits of this history. Loading the history up to it may take a while.";
 "history.subtitle" = "%@ (%ld Commits)";
 "history.subtitle.more" = "%@ (%ld Commits or more)";
 "working.subtitle" = "Working Copy (%ld Changed Files)";

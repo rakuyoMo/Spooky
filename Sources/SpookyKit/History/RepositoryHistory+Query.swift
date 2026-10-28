@@ -8,6 +8,19 @@ extension RepositoryHistory {
         Data((roots.joined(separator: "\n") + "\n").utf8)
     }
 
+    /// 从 rev-list 每行一个哈希的输出里找出提交的下标；不在其中时为 nil，有一行不是哈希时报告格式错误。
+    static func position(of commit: String, in output: Data) throws -> Int? {
+        let lines = String(decoding: output, as: UTF8.self)
+            .split(separator: "\n")
+            .map(String.init)
+
+        guard lines.allSatisfy(GitObjectID.isValid) else {
+            throw RepositoryReadError.malformedOutput("rev-list")
+        }
+
+        return lines.firstIndex(of: commit)
+    }
+
     /// 按查询数出固定根集合里的提交，最多数到 `limit`；数到上限时调用方按 “或更多” 显示。
     public func count(roots: [String], query: HistoryQuery = HistoryQuery(), limit: Int) async throws -> Int {
         guard limit > 0, roots.allSatisfy(GitObjectID.isValid) else {
@@ -39,6 +52,42 @@ extension RepositoryHistory {
         }
 
         return count
+    }
+
+    /// 提交在固定根集合按查询排序、筛选后的历史里的下标（0 起），只看前 `limit` 个；不在其中时为 nil。
+    ///
+    /// 顺序与 ``page(roots:query:offset:limit:)`` 相同，回到历史时据此判断要找的提交排在多后面；不支持哈希条件。
+    public func position(
+        of commit: String,
+        roots: [String],
+        query: HistoryQuery = HistoryQuery(),
+        limit: Int
+    ) async throws -> Int? {
+        guard
+            limit > 0,
+            GitObjectID.isValid(commit),
+            roots.allSatisfy(GitObjectID.isValid),
+            query.hashPrefixes.isEmpty
+        else {
+            throw RepositoryReadError.invalidQuery
+        }
+
+        guard !roots.isEmpty else {
+            return nil
+        }
+
+        // 与分页相同的排序与筛选，只列出哈希
+        let output = try await runner.immutableRun(
+            RepositoryFileViews.storedPathOptions
+                + ["rev-list"]
+                + query.orderArguments
+                + query.filterArguments
+                + ["--max-count=\(limit)", "--stdin", "--"]
+                + query.paths,
+            input: Self.rootsInput(roots)
+        )
+
+        return try Self.position(of: commit, in: output)
     }
 
     /// 提交是否能从固定根集合中的某一个沿父提交到达。

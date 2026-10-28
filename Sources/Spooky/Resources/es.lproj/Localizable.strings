@@ -419,7 +419,6 @@
 "recovery.unborn" = "ningún commit";
 "dialog.blocked" = "Hay otra operación en curso en este repositorio o el servidor está desconectado. Se conserva la configuración indicada; volver a intentarlo cuando el repositorio esté disponible.";
 "working.clean" = "No hay cambios locales";
-"history.limit" = "Se muestran los primeros %ld commits. Seleccionar una rama para acotar el historial.";
 "history.loadingChanges" = "Cargando archivos modificados…";
 "repositories.unavailableShort" = "No disponible";
 "activity.truncated" = "Se ha omitido la salida anterior.";
@@ -838,7 +837,8 @@
 "history.search.range" = "está entre";
 "history.search.to" = "y";
 "history.reveal.notFound" = "El commit %@ no está en este historial.";
-"history.reveal.beyondLimit" = "El commit %@ no está entre los primeros %ld commits de este historial.";
+"history.reveal.slow" = "Cargar más commits";
+"history.reveal.slow.message" = "El commit %1$@ está después de los primeros %2$ld commits de este historial. Cargar el historial hasta ese commit puede tardar un poco.";
 "history.subtitle" = "%@ (%ld commits)";
 "history.subtitle.more" = "%@ (%ld commits o más)";
 "working.subtitle" = "Copia de trabajo (%ld archivos modificados)";

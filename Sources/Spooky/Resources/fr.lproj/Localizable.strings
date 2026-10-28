@@ -419,7 +419,6 @@
 "recovery.unborn" = "aucun commit";
 "dialog.blocked" = "Une autre opération est en cours sur ce dépôt, ou le serveur est déconnecté. Vos paramètres sont conservés ; réessayez lorsque le dépôt sera disponible.";
 "working.clean" = "Aucune modification locale";
-"history.limit" = "Affichage des %ld premiers commits. Sélectionnez une branche pour restreindre l’historique.";
 "history.loadingChanges" = "Chargement des fichiers modifiés…";
 "repositories.unavailableShort" = "Indisponible";
 "activity.truncated" = "La sortie antérieure a été omise.";
@@ -838,7 +837,8 @@
 "history.search.range" = "est entre";
 "history.search.to" = "et";
 "history.reveal.notFound" = "Le commit %@ n’est pas dans cet historique.";
-"history.reveal.beyondLimit" = "Le commit %@ ne figure pas parmi les %ld premiers commits de cet historique.";
+"history.reveal.slow" = "Charger plus de commits";
+"history.reveal.slow.message" = "Le commit %1$@ se trouve après les %2$ld premiers commits de cet historique. Charger l’historique jusqu’à ce commit peut prendre un moment.";
 "history.subtitle" = "%@ (%ld commits)";
 "history.subtitle.more" = "%@ (%ld commits ou plus)";
 "working.subtitle" = "Copie de travail (%ld fichiers modifiés)";

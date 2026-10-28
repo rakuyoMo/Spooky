@@ -53,7 +53,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **File history and blame**: follow a file through history, filtered by author, committer, or revision, with author names suggested as you type. See who last changed each line, view any committed version of a file, and export versions from its history
 
-- **History**: commits load page by page, with a commit graph, ref badges, and ahead and behind counts. Search by message, author, committer, file, commit hash, and date, and combine several conditions. Sort by date or topology, group commits by day, week, or month, or follow only first parents. Dates can be shown in full or relative to now, and authors appear with their Gravatar picture or their initials
+- **History**: commits load page by page, with a commit graph, ref badges, and markers for unpushed and unpulled commits. Search by message, author, committer, file, commit hash, and date, and combine several conditions. Sort by date or topology, group commits by day, week, or month, or follow only first parents. Dates can be shown in full or relative to now, and authors appear with their Gravatar picture or their initials
 
 - **Commit details**: browse the full file tree of a commit and check GPG and SSH signatures. Merge commits can be shown against their first parent, as only the files that were actually merged, or without a diff. Compare any two revisions, export the files of a revision as a folder or a zip archive, and save commits as patch files
 

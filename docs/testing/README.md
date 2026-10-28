@@ -60,7 +60,7 @@ SPOOKY_GITHUB_TESTS=1 SPOOKY_GITHUB_TOKEN=<令牌> SPOOKY_GITHUB_REPOSITORY=<own
 
 ### 性能
 
-生成一个包含 10 万个文件、5 万个提交的临时仓库，检查首屏、历史分页的耗时与内存占用；服务器上的场景另需 `SPOOKY_REMOTE_TESTS=1`：
+生成一个包含 10 万个文件、6 万个提交的临时仓库，检查首屏、历史分页的耗时与内存占用；服务器上的场景另需 `SPOOKY_REMOTE_TESTS=1`：
 
 ```sh
 SPOOKY_PERFORMANCE_TESTS=1 swift test -c release -Xswiftc -enable-testing --filter PerformanceTests

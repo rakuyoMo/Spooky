@@ -419,7 +419,6 @@
 "recovery.unborn" = "keine Commits";
 "dialog.blocked" = "In diesem Repository läuft ein anderer Vorgang oder die Verbindung zum Server ist getrennt. Ihre Einstellungen bleiben erhalten; versuchen Sie es erneut, sobald das Repository verfügbar ist.";
 "working.clean" = "Keine lokalen Änderungen";
-"history.limit" = "Die ersten %ld Commits werden angezeigt. Wählen Sie einen Branch aus, um den Verlauf einzugrenzen.";
 "history.loadingChanges" = "Geänderte Dateien werden geladen …";
 "repositories.unavailableShort" = "Nicht verfügbar";
 "activity.truncated" = "Frühere Ausgabe wurde ausgelassen.";
@@ -838,7 +837,8 @@
 "history.search.range" = "liegt zwischen";
 "history.search.to" = "und";
 "history.reveal.notFound" = "Commit %@ ist nicht in diesem Verlauf.";
-"history.reveal.beyondLimit" = "Commit %@ ist nicht unter den ersten %ld Commits dieses Verlaufs.";
+"history.reveal.slow" = "Weitere Commits laden";
+"history.reveal.slow.message" = "Commit %1$@ liegt nach den ersten %2$ld Commits dieses Verlaufs. Das Laden des Verlaufs bis zu diesem Commit kann eine Weile dauern.";
 "history.subtitle" = "%@ (%ld Commits)";
 "history.subtitle.more" = "%@ (%ld Commits oder mehr)";
 "working.subtitle" = "Arbeitskopie (%ld geänderte Dateien)";

@@ -419,7 +419,6 @@
 "recovery.unborn" = "尚無提交";
 "dialog.blocked" = "此儲存庫有其他操作正在進行，或伺服器已中斷連線。已填寫的設定會保留，請在儲存庫可用後重試。";
 "working.clean" = "沒有本機變更";
-"history.limit" = "僅顯示前 %ld 個提交。選擇分支可以縮小歷史範圍。";
 "history.loadingChanges" = "正在讀取變更檔案…";
 "repositories.unavailableShort" = "無法使用";
 "activity.truncated" = "較早的輸出已省略。";
@@ -838,7 +837,8 @@
 "history.search.range" = "介於";
 "history.search.to" = "至";
 "history.reveal.notFound" = "提交 %@ 不在這段歷史中。";
-"history.reveal.beyondLimit" = "提交 %@ 不在這段歷史的前 %ld 個提交中。";
+"history.reveal.slow" = "載入更多提交";
+"history.reveal.slow.message" = "提交 %1$@ 排在這段歷史的前 %2$ld 個提交之後。載入到它為止可能需要一些時間。";
 "history.subtitle" = "%@（%ld 個提交）";
 "history.subtitle.more" = "%@（%ld 個或更多提交）";
 "working.subtitle" = "工作區（%ld 個變更的檔案）";

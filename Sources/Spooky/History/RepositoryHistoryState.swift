@@ -8,8 +8,11 @@ import SpookyKit
 @MainActor
 @Observable
 final class RepositoryHistoryState {
-    /// 单个列表最多加载的提交数，限制长时间滚动后的内存占用。
-    static let maximumLoadedCommits = 50_000
+    /// 窗口副标题的提交数最多数到这里，数到时写 “or more”。
+    static let countLimit = 50_000
+
+    /// 回到历史时，要找的提交排在这个数之后就先询问，同意后才续载到它。
+    static let slowLookupThreshold = 10_000
 
     /// 最新成功的引用快照，读取失败时仍保留。
     private(set) var snapshot: ReferenceSnapshot? = nil
@@ -47,7 +50,7 @@ final class RepositoryHistoryState {
     /// 当前列表使用的查询；视图设置或搜索条件改变读出的提交时重读。
     var query = HistoryQuery()
 
-    /// 当前查询下的提交数，最多数到加载上限；读到之前为 nil。
+    /// 当前查询下的提交数，最多数到计数上限；读到之前为 nil。
     var commitCount: Int? = nil
 
     /// 搜索条件，按界面中的顺序；工具栏搜索框对应第一个文字条件。
@@ -64,6 +67,9 @@ final class RepositoryHistoryState {
 
     /// 回到的提交在当前历史里找不到的原因。
     var lookupFailure: String? = nil
+
+    /// 这次回到历史不用再询问：提交排在询问的阈值以内，或用户已同意续载；开始新的查找时清掉。
+    private var lookupConfirmed = false
 
     /// 视图设置所在的偏好域，测试注入临时域。
     var preferences = UserDefaults.standard
@@ -88,9 +94,6 @@ final class RepositoryHistoryState {
 
     /// 还有下一页时滚动到底自动读取。
     private(set) var hasMore = false
-
-    /// 已加载的提交达到上限，提示用户选择分支缩小范围，不再继续累积。
-    private(set) var reachedLimit = false
 
     /// 列表加载状态。
     private(set) var isLoading = false
@@ -138,6 +141,9 @@ final class RepositoryHistoryState {
     /// 恢复的引用在新快照中已不存在时通知会话回退视图。
     var onRestoreFailure: (() -> Void)? = nil
 
+    /// 回到的提交排在询问的阈值之后时交给窗口询问；参数是标题兼确认按钮文字、说明与同意后的操作，取消时不回调。
+    var onSlowLookup: ((String, String, @escaping () -> Void) -> Void)? = nil
+
     /// 当前窗口的执行器，测试可以注入隔离环境。
     private(set) var runner: GitRunner? = nil
 
@@ -147,7 +153,7 @@ final class RepositoryHistoryState {
     /// 引用读取进行中时收到的最近一次刷新，读完后补上，读取开始之后的改动不会漏掉。
     private var pendingRefresh: (status: WorkingCopyStatus, runner: GitRunner, reload: Bool)? = nil
 
-    /// 分页任务可由用户或视图切换取消。
+    /// 分页与回到历史时核对提交位置的读取，可由用户或视图切换取消。
     private var pageTask: Task<Void, Never>? = nil
 
     /// 选中提交变化时取消旧变更集。
@@ -363,7 +369,6 @@ final class RepositoryHistoryState {
         failure = nil
         roots = []
         hasMore = false
-        reachedLimit = false
         restoredReferences = nil
     }
 }
@@ -422,7 +427,6 @@ extension RepositoryHistoryState {
 
         graph = CommitGraph()
         hasMore = !roots.isEmpty
-        reachedLimit = false
 
         if roots.isEmpty {
             commits = []
@@ -440,11 +444,11 @@ extension RepositoryHistoryState {
         loadCount()
     }
 
-    /// 表格请求最后一行时续载，单次最多使用设置中规定的 1000 条；累计达到上限后停止续载。
+    /// 表格请求最后一行时续载，每页条数取设置，最多 1000 条；Git 返回的一页不满或到了根提交才停。
     ///
     /// - Parameter pageSize: 回到历史查找提交时按 1000 条扩大加载；nil 时用设置中的条数。
     func loadNextPage(replacing: Bool = false, pageSize: Int? = nil) {
-        guard !isLoading, hasMore, replacing || !reachedLimit, let runner else { return }
+        guard !isLoading, hasMore, let runner else { return }
         let request = generation
         let roots = roots
         let query = query
@@ -473,6 +477,32 @@ extension RepositoryHistoryState {
             // 回到历史时要选中的提交还没出现在已加载的分页里，继续扩大加载
             continueLookup()
         }
+    }
+
+    /// 回到历史时查找要选中的提交：已加载就滚动到它；还有下一页就按 1000 条续载，排在询问的阈值之后先询问；没有下一页时说明找不到。
+    func continueLookup() {
+        guard let lookup, !isLoading, snapshot != nil else {
+            return
+        }
+
+        if commits.contains(where: { $0.id == lookup }) {
+            self.lookup = nil
+            scrollTarget = lookup
+            return
+        }
+
+        guard hasMore else {
+            reportMissingLookup(lookup)
+            return
+        }
+
+        // 位置已经核对过或用户已同意，一直续载到找到为止
+        if lookupConfirmed {
+            loadNextPage(pageSize: 1000)
+            return
+        }
+
+        checkLookupPosition(lookup)
     }
 }
 
@@ -615,6 +645,7 @@ extension RepositoryHistoryState {
     func locate(_ id: String) {
         lookup = id
         lookupFailure = nil
+        lookupConfirmed = false
 
         // 在全部历史里找这个提交，搜索条件不再适用
         let searching = !searchConditions.isEmpty
@@ -654,7 +685,93 @@ extension RepositoryHistoryState {
         }
     }
 
-    /// 读取当前查询下的提交数，供窗口副标题使用；数到加载上限为止。
+    /// 核对要找的提交在当前历史里排第几个：在询问的阈值以内就续载；排在之后先询问；不在历史里就说明找不到。
+    private func checkLookupPosition(_ id: String) {
+        guard let runner else {
+            return
+        }
+
+        let request = generation
+        let roots = roots
+        let query = query
+
+        isLoading = true
+
+        pageTask = Task { [weak self] in
+            do {
+                let history = RepositoryHistory(runner: runner)
+                let position = try await history.position(
+                    of: id,
+                    roots: roots,
+                    query: query,
+                    limit: Self.slowLookupThreshold
+                )
+
+                // 不在前面这些提交里时，再看它是否在这段历史里
+                let reachable =
+                    if position != nil {
+                        true
+                    } else {
+                        try await history.contains(id, roots: roots)
+                    }
+
+                guard let self, generation == request, !Task.isCancelled else { return }
+
+                isLoading = false
+                pageTask = nil
+                resolveLookup(id, isWithinThreshold: position != nil, isReachable: reachable)
+            } catch {
+                guard let self, generation == request, !Task.isCancelled else { return }
+
+                failure = AppFailure(error: error, opening: false, location: runner.location)
+                lookup = nil
+                isLoading = false
+                pageTask = nil
+            }
+        }
+    }
+
+    /// 按核对的结果继续查找：排在阈值以内就续载；在历史里但排在之后先询问，同意后续载；不在历史里说明找不到。
+    private func resolveLookup(_ id: String, isWithinThreshold: Bool, isReachable: Bool) {
+        guard isReachable else {
+            reportMissingLookup(id)
+            return
+        }
+
+        if isWithinThreshold {
+            lookupConfirmed = true
+            continueLookup()
+            return
+        }
+
+        // 询问期间不再查找；取消时不回调，列表保持原样
+        lookup = nil
+
+        let location = runner?.location
+        let title = AppLocalization.text("history.reveal.slow")
+        let message = AppLocalization.text(
+            "history.reveal.slow.message",
+            String(id.prefix(8)),
+            Self.slowLookupThreshold
+        )
+
+        onSlowLookup?(title, message) { [weak self] in
+            // 询问期间换了仓库或开始了别的查找时，这次同意不再生效
+            guard let self, lookup == nil, runner?.location == location else { return }
+
+            lookup = id
+            lookupConfirmed = true
+            continueLookup()
+        }
+    }
+
+    /// 说明要找的提交不在当前历史里，并结束这次查找。
+    private func reportMissingLookup(_ id: String) {
+        lookup = nil
+        lookupFailure = AppLocalization.text("history.reveal.notFound", String(id.prefix(8)))
+    }
+
+    /// 读取当前查询下的提交数，供窗口副标题使用；数到计数上限为止。
     private func loadCount() {
         countTask?.cancel()
         countTask = nil
@@ -671,7 +788,7 @@ extension RepositoryHistoryState {
         countTask = Task { [weak self] in
             // 计数失败只让副标题不显示数量，不影响列表
             let count = try? await RepositoryHistory(runner: runner)
-                .count(roots: roots, query: query, limit: Self.maximumLoadedCommits)
+                .count(roots: roots, query: query, limit: Self.countLimit)
 
             guard let self, generation == request, !Task.isCancelled else { return }
 
@@ -698,7 +815,6 @@ extension RepositoryHistoryState {
         updateTrackingMarkers()
         updateComparisonRows()
         hasMore = page.hasMore
-        reachedLimit = page.hasMore && commits.count >= Self.maximumLoadedCommits
 
         guard replacing else { return }
 

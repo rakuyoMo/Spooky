@@ -208,6 +208,82 @@ struct HistoryQueryTests {
     }
 }
 
+// MARK: - Position
+
+extension HistoryQueryTests {
+    /// 回到历史时按提交的下标决定是否询问，下标必须与列表分页的顺序一致，否则会多载或少载。
+    @Test("提交在历史中的位置与分页顺序一致", arguments: ["sha1", "sha256"])
+    func position(objectFormat: String) async throws {
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+
+        let commits = try await Self.makeHistory(in: fixture, objectFormat: objectFormat)
+        let history = RepositoryHistory(runner: fixture.runner)
+        let roots = [commits.merge]
+
+        // 各种排序、只沿第一父与带特殊字符的文件条件下，下标都等于分页里的次序
+        let queries = [
+            HistoryQuery(order: .topological),
+            HistoryQuery(order: .date),
+            HistoryQuery(order: .default, firstParentOnly: true),
+            HistoryQuery(conditions: [.init(kind: .file, text: Self.bracketPath)]),
+            HistoryQuery(conditions: [.init(kind: .file, text: Self.weirdPath)]),
+        ]
+
+        for query in queries {
+            let order = try await history.page(roots: roots, query: query).commits.map(\.id)
+
+            for (index, id) in order.enumerated() {
+                #expect(try await history.position(of: id, roots: roots, query: query, limit: 100) == index)
+            }
+        }
+
+        // 只看前 limit 个；只沿第一父时合并进来的提交、文件条件之外的提交都不在其中
+        #expect(try await history.position(of: commits.initial, roots: roots, limit: 2) == nil)
+        #expect(
+            try await history.position(
+                of: commits.side,
+                roots: roots,
+                query: HistoryQuery(firstParentOnly: true),
+                limit: 100
+            ) == nil
+        )
+        #expect(try await history.position(of: commits.fix, roots: roots, query: queries[3], limit: 100) == nil)
+        #expect(try await history.position(of: commits.merge, roots: [], limit: 100) == nil)
+
+        // 不是哈希的提交、哈希条件与非正的上限都拒绝
+        let hashQuery = HistoryQuery(conditions: [.init(kind: .hash, text: String(commits.fix.prefix(7)))])
+
+        await #expect(throws: RepositoryReadError.invalidQuery) {
+            try await history.position(of: "HEAD", roots: roots, limit: 100)
+        }
+
+        await #expect(throws: RepositoryReadError.invalidQuery) {
+            try await history.position(of: commits.fix, roots: roots, query: hashQuery, limit: 100)
+        }
+
+        await #expect(throws: RepositoryReadError.invalidQuery) {
+            try await history.position(of: commits.fix, roots: roots, limit: 0)
+        }
+    }
+
+    /// rev-list 每行一个哈希；空输出里没有位置，夹杂别的文字时拒绝，不把它当成找不到。
+    @Test("解析提交位置的输出")
+    func parsePosition() throws {
+        let first = String(repeating: "a", count: 40)
+        let second = String(repeating: "b", count: 64)
+        let output = Data("\(first)\n\(second)\n".utf8)
+
+        #expect(try RepositoryHistory.position(of: second, in: output) == 1)
+        #expect(try RepositoryHistory.position(of: String(repeating: "c", count: 40), in: output) == nil)
+        #expect(try RepositoryHistory.position(of: first, in: Data()) == nil)
+
+        #expect(throws: RepositoryReadError.malformedOutput("rev-list")) {
+            try RepositoryHistory.position(of: first, in: Data("\(first)\nwarning: refname is ambiguous\n".utf8))
+        }
+    }
+}
+
 // MARK: - Helpers
 
 extension HistoryQueryTests {

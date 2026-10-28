@@ -325,6 +325,11 @@ final class RepositorySession {
             self?.activeView = .workingCopy
             self?.onViewReset?()
         }
+
+        // 回到的提交排得很靠后时，由窗口询问是否继续加载
+        history.onSlowLookup = { [weak self] title, message, action in
+            self?.onConfirm?(title, message, action, nil)
+        }
     }
 
     /// 切换工作区；同一仓库保留选区和视图，切回打开过的仓库时恢复它的视图状态。

@@ -54,7 +54,7 @@ extension HistoryListTests {
         try await FileViewsTests.wait { !history.query.isSearching && !history.isLoading && history.commits.count == 3 }
     }
 
-    /// 回到的提交不在已加载的分页里时按 1000 条续载直到找到；找不到时说明原因。
+    /// 回到的提交不在已加载的分页里时按 1000 条续载直到找到，排在询问的阈值以内不询问；找不到时说明原因。
     @Test("回到历史时扩大加载并选中提交")
     func revealExpandsLoading() async throws {
         let fixture = try await Self.makeSession(commits: (0 ..< 250).map { "commit \($0)" })
@@ -63,6 +63,10 @@ extension HistoryListTests {
         let history = fixture.session.history
         try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
         #expect(history.commits.count < 250)
+
+        // 记下所有询问，不回调
+        var prompts: [String] = []
+        fixture.session.onConfirm = { title, _, _, _ in prompts.append(title) }
 
         // 第 200 个提交不在第一页里
         let head = try await RepositoryReferences(runner: fixture.runner).resolve("HEAD")
@@ -77,19 +81,95 @@ extension HistoryListTests {
         #expect(history.selectedIDs == [target.id])
         #expect(history.showsCommitPage)
         #expect(history.lookupFailure == nil)
+        #expect(prompts.isEmpty)
 
         // 没有引用指向的提交不在任何历史里
-        let tree = try await fixture.runner.run(["rev-parse", "HEAD^{tree}"])
-        let dangling = try await fixture.runner.run(
-            ["commit-tree", String(decoding: tree, as: UTF8.self).trimmingCharacters(in: .newlines), "-m", "dangling"]
-        )
-        let id = String(decoding: dangling, as: UTF8.self).trimmingCharacters(in: .newlines)
-        let orphan = try #require(try await RepositoryHistory(runner: fixture.runner).page(roots: [id], limit: 1).commits.first)
+        let orphan = try await Self.makeOrphan(in: fixture)
 
         fixture.session.showCommit(orphan)
         try await FileViewsTests.wait { history.lookupFailure != nil }
-        #expect(history.lookupFailure == AppLocalization.text("history.reveal.notFound", String(id.prefix(8))))
+        #expect(
+            history.lookupFailure
+                == AppLocalization.text("history.reveal.notFound", String(orphan.id.prefix(8)))
+        )
         #expect(history.selectedCommit == orphan)
+        #expect(prompts.isEmpty)
+    }
+
+    /// 排在询问的阈值之后的提交要续载很多页，先询问：取消时列表不变，同意后续载到它为止；不在历史里的提交直接说明找不到。
+    @Test("回到排在很后面的提交先询问")
+    func revealAsksBeyondThreshold() async throws {
+        let total = RepositoryHistoryState.slowLookupThreshold + 50
+        let fixture = try await Self.makeSession(commits: (0 ..< total).map { "commit \($0)" })
+        defer { fixture.close() }
+
+        let session = fixture.session
+        let history = session.history
+        try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
+        let loaded = history.commits.count
+
+        // 取消询问时不回调，只记下询问的标题与说明
+        var prompts: [(title: String, message: String)] = []
+        session.onConfirm = { title, message, _, _ in prompts.append((title, message)) }
+
+        // 没有引用指向的提交不在这段历史里，不询问
+        let orphan = try await Self.makeOrphan(in: fixture)
+
+        session.showCommit(orphan)
+        try await FileViewsTests.wait { history.lookupFailure != nil && !history.isLoading }
+        #expect(
+            history.lookupFailure
+                == AppLocalization.text("history.reveal.notFound", String(orphan.id.prefix(8)))
+        )
+        #expect(prompts.isEmpty)
+
+        // 排在第 10,000 个之后的提交先询问，取消后不加载、不说明
+        let head = try await RepositoryReferences(runner: fixture.runner).resolve("HEAD")
+        let offset = RepositoryHistoryState.slowLookupThreshold + 20
+        let page = try await RepositoryHistory(runner: fixture.runner).page(
+            roots: [head],
+            offset: offset,
+            limit: 1
+        )
+        let target = try #require(page.commits.first)
+
+        session.showCommit(target)
+        try await FileViewsTests.wait { prompts.count == 1 && !history.isLoading }
+        #expect(prompts.first?.title == AppLocalization.text("history.reveal.slow"))
+        #expect(
+            prompts.first?.message
+                == AppLocalization.text(
+                    "history.reveal.slow.message",
+                    String(target.id.prefix(8)),
+                    RepositoryHistoryState.slowLookupThreshold
+                )
+        )
+        #expect(history.lookup == nil)
+        #expect(history.lookupFailure == nil)
+        #expect(history.commits.count == loaded)
+
+        // 同意后续载到它为止，选中并滚动到它
+        session.onConfirm = { title, message, action, _ in
+            prompts.append((title, message))
+            action()
+        }
+
+        session.showCommit(target)
+        try await FileViewsTests.wait { history.scrollTarget == target.id && !history.isLoading }
+        #expect(prompts.count == 2)
+        #expect(history.commits.contains(target))
+        #expect(history.selectedIDs == [target.id])
+        #expect(history.lookup == nil)
+        #expect(history.lookupFailure == nil)
+
+        // 列表一直续载到根提交，不设总数上限
+        while history.hasMore {
+            history.loadNextPage(pageSize: 1000)
+            try await FileViewsTests.wait { !history.isLoading }
+        }
+
+        #expect(history.commits.count == total)
+        #expect(try #require(history.commits.last).parents.isEmpty)
     }
 
     /// 工作区写出分支与改动数，分离 HEAD 时不写分支；历史写出所选引用与提交数，数到上限时写 “or more”。
@@ -125,10 +205,10 @@ extension HistoryListTests {
         try await FileViewsTests.wait { session.history.commitCount == 2 }
         #expect(controller.repositorySubtitle == AppLocalization.text("history.subtitle", "main, topic", 2))
 
-        session.history.commitCount = RepositoryHistoryState.maximumLoadedCommits
+        session.history.commitCount = RepositoryHistoryState.countLimit
         #expect(
             controller.repositorySubtitle
-                == AppLocalization.text("history.subtitle.more", "main, topic", RepositoryHistoryState.maximumLoadedCommits)
+                == AppLocalization.text("history.subtitle.more", "main, topic", RepositoryHistoryState.countLimit)
         )
 
         // 分离 HEAD 时工作区不写分支
@@ -261,5 +341,17 @@ extension HistoryListTests {
         await session.waitForRefresh()
 
         return SessionFixture(directory: directory, runner: runner, session: session, controller: controller)
+    }
+
+    /// 用 HEAD 的树另建一个没有引用指向的提交，它不在仓库的任何历史里。
+    static func makeOrphan(in fixture: SessionFixture) async throws -> HistoryCommit {
+        let tree = try await fixture.runner.run(["rev-parse", "HEAD^{tree}"])
+        let dangling = try await fixture.runner.run(
+            ["commit-tree", String(decoding: tree, as: UTF8.self).trimmingCharacters(in: .newlines), "-m", "dangling"]
+        )
+        let id = String(decoding: dangling, as: UTF8.self).trimmingCharacters(in: .newlines)
+        let page = try await RepositoryHistory(runner: fixture.runner).page(roots: [id], limit: 1)
+
+        return try #require(page.commits.first)
     }
 }
