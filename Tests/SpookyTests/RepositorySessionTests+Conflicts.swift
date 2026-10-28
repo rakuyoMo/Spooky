@@ -4,7 +4,7 @@ import Testing
 @testable import Spooky
 @testable import SpookyKit
 
-/// 以真实的合并冲突验证横幅与状态头的文字、已解决计数，以及恢复冲突版本与采用两侧版本。
+/// 以真实的合并冲突验证横幅的文字、已解决计数，以及恢复冲突版本与采用两侧版本。
 extension RepositorySessionTests {
     /// 两侧要用引用名说明；解决一个冲突后计数要能追溯；恢复冲突版本只改工作区，不经确认直接执行。
     @Test("合并冲突的标题、已解决计数、恢复冲突与采用两侧")
@@ -29,7 +29,6 @@ extension RepositorySessionTests {
 
         try await waitUntil { session.context?.progress != nil && session.history.snapshot != nil }
 
-        #expect(session.operationHeaderTitle == AppLocalization.text("conflict.header.merge", "side", "main"))
         #expect(session.operationBannerTitle == AppLocalization.text("conflict.title.merge", "side", "main"))
         #expect(session.conflictCount == 2)
 

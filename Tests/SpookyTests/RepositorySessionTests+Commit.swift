@@ -214,6 +214,25 @@ extension RepositorySessionTests {
         #expect(fixups.map(\.insertion) == ["修复 登录"])
         #expect(files.map(\.insertion) == ["改动 [*].txt"])
     }
+
+    /// 提交区的提交人取仓库所在机器上生效的 user.name 与 user.email，没有配置时留空。
+    @Test("提交人来自 user.name 与 user.email")
+    func committerFromConfiguration() async throws {
+        let (session, runner, directory) = try await commitSession()
+        defer {
+            session.close()
+            try? FileManager.default.removeItem(at: directory)
+        }
+
+        #expect(session.committer == ("Spooky Test", "spooky@example.invalid"))
+
+        _ = try await runner.run(["config", "--local", "--unset", "user.name"])
+        _ = try await runner.run(["config", "--local", "--unset", "user.email"])
+        try await stageChange(in: session, directory: directory, content: "identity")
+        try await waitForConfiguration(session) { $0.userName == nil && $0.userEmail == nil }
+
+        #expect(session.committer == ("", ""))
+    }
 }
 
 // MARK: - Helpers

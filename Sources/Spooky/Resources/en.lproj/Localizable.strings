@@ -241,9 +241,7 @@
 "working.amend.confirm" = "This replaces the most recent commit. Continue?";
 "working.subject" = "Commit Subject";
 "working.body" = "Detailed Description";
-"working.identityLoading" = "Loading committer…";
 "working.staging" = "Staging status: %@";
-"working.writing" = "Updating working copy…";
 "working.list" = "View as List";
 "working.tree" = "View as Tree";
 "working.viewMode" = "Working copy display";
@@ -422,7 +420,6 @@
 "recovery.unborn" = "no commits";
 "dialog.blocked" = "Another operation is running on this repository, or the server is disconnected. Your settings are kept; try again when the repository is available.";
 "working.clean" = "No local changes";
-"working.refreshFailed" = "Refresh failed. Showing the last successful result.";
 "history.limit" = "Showing the first %ld commits. Select a branch to narrow the history.";
 "history.loadingChanges" = "Loading changed files…";
 "repositories.unavailableShort" = "Unavailable";
@@ -523,11 +520,6 @@
 "conflict.binary" = "Binary content isn’t shown.";
 "conflict.error.version" = "The selected files don’t have this version.";
 "conflict.export" = "Export Version from “%@”…";
-"conflict.header.cherryPick" = "Cherry-Picking %@ into %@";
-"conflict.header.merge" = "Merging %@ into %@";
-"conflict.header.rebase" = "Rebasing %@ onto %@";
-"conflict.header.revert" = "Reverting %@ on %@";
-"conflict.header.squash" = "Squashing commits on %@";
 "conflict.hint.merge.conflicts" = "Resolve all conflicts to complete the merge.";
 "conflict.hint.merge.resolved" = "Review the commit message, then click **Commit** to complete the merge.";
 "conflict.hint.merge.empty" = "No changes are left to commit. Click **Abort** to cancel the merge, or **Commit** to create an empty merge commit.";

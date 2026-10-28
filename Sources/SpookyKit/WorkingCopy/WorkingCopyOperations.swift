@@ -23,11 +23,8 @@ public enum RepositoryOperationState: String, Sendable {
 
 // MARK: - WorkingCopyContext
 
-/// 提交区需要的身份、最近提交与进行中状态。
+/// 提交区需要的最近提交与进行中状态。
 public struct WorkingCopyContext: Sendable {
-    /// 实际提交人的姓名与邮箱，由 Git var 返回。
-    public let committer: String
-
     /// 最近一次提交信息，Amend 直接使用。
     public let lastMessage: String
 
@@ -368,14 +365,10 @@ public struct WorkingCopyOperations: Sendable {
             throw RepositoryReadError.invalidQuery
         }
 
-        // 三项读取互不依赖，并发执行；服务器上只占一次往返的等待时间。
-        async let identity = runner.execute(["var", "GIT_COMMITTER_IDENT"], acceptedExitCodes: [0, 128])
+        // 两项读取互不依赖，并发执行；服务器上只占一次往返的等待时间。
         async let message = lastMessage(of: head)
         async let state = stateFiles(OperationProgress.stateFiles)
 
-        let rawIdentity = String(decoding: try await identity.standardOutput, as: UTF8.self)
-        let committer = rawIdentity.lastIndex(of: ">")
-            .map { String(rawIdentity[...$0]) } ?? ""
         let lastMessage = try await message
         let files = try await state
 
@@ -389,7 +382,6 @@ public struct WorkingCopyOperations: Sendable {
             .joined(separator: "\n")
             .trimmingCharacters(in: .newlines)
         return WorkingCopyContext(
-            committer: committer,
             lastMessage: lastMessage,
             operation: progress?.state,
             progress: progress,

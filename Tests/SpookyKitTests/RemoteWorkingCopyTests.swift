@@ -28,7 +28,7 @@ struct RemoteWorkingCopyTests {
             try await service.commit(subject: "远端 cafe\u{301} ' $HOME", body: "第一行\n第二行")
             let context = try await service.context(head: try await runner.status().branch.oid)
             #expect(context.lastMessage == "远端 café ' $HOME\n\n第一行\n第二行")
-            #expect(context.committer.contains("spooky@example.invalid"))
+            #expect(try await service.commitConfiguration().userEmail == "spooky@example.invalid")
             try await service.stageAll(staged: true)
             try await service.commit(subject: "complete", body: "正文", amend: true)
             #expect(try await runner.status().entries.isEmpty)

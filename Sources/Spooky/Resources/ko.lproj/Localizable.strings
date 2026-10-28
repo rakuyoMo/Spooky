@@ -241,9 +241,7 @@
 "working.amend.confirm" = "가장 최근 커밋을 다시 작성합니다. 계속하시겠습니까?";
 "working.subject" = "커밋 제목";
 "working.body" = "상세 설명";
-"working.identityLoading" = "커미터 읽는 중…";
 "working.staging" = "스테이지 상태: %@";
-"working.writing" = "작업 복사본 업데이트 중…";
 "working.list" = "목록으로 보기";
 "working.tree" = "트리로 보기";
 "working.viewMode" = "작업 복사본 표시";
@@ -422,7 +420,6 @@
 "recovery.unborn" = "커밋 없음";
 "dialog.blocked" = "이 저장소에서 다른 작업이 진행 중이거나 서버 연결이 끊겼습니다. 입력한 설정은 유지되며, 저장소를 사용할 수 있게 되면 다시 시도하세요.";
 "working.clean" = "로컬 변경 사항 없음";
-"working.refreshFailed" = "새로 고침에 실패했습니다. 마지막으로 성공한 결과를 표시합니다.";
 "history.limit" = "처음 %ld개 커밋만 표시합니다. 브랜치를 선택하면 범위를 좁힐 수 있습니다.";
 "history.loadingChanges" = "변경된 파일 불러오는 중…";
 "repositories.unavailableShort" = "사용 불가";
@@ -523,11 +520,6 @@
 "conflict.binary" = "바이너리 내용은 표시하지 않습니다.";
 "conflict.error.version" = "선택한 파일에 이 버전이 없습니다.";
 "conflict.export" = "“%@”의 버전 내보내기…";
-"conflict.header.cherryPick" = "%@을(를) %@에 체리픽하는 중";
-"conflict.header.merge" = "%@을(를) %@에 병합하는 중";
-"conflict.header.rebase" = "%@을(를) %@ 위로 리베이스하는 중";
-"conflict.header.revert" = "%@을(를) %@에서 되돌리는 중";
-"conflict.header.squash" = "%@에서 커밋을 스쿼시하는 중";
 "conflict.hint.merge.conflicts" = "병합을 완료하려면 모든 충돌을 해결하세요.";
 "conflict.hint.merge.resolved" = "커밋 메시지를 확인한 후 **커밋**을 클릭해 병합을 완료하세요.";
 "conflict.hint.merge.empty" = "커밋할 변경이 남아 있지 않습니다. **중단**을 클릭해 병합을 취소하거나 **커밋**을 클릭해 빈 병합 커밋을 만드세요.";

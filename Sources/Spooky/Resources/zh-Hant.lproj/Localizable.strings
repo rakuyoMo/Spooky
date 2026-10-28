@@ -241,9 +241,7 @@
 "working.amend.confirm" = "這會改寫最近一次提交，是否繼續？";
 "working.subject" = "提交標題";
 "working.body" = "詳細說明";
-"working.identityLoading" = "正在讀取提交人…";
 "working.staging" = "暫存狀態：%@";
-"working.writing" = "正在更新工作區…";
 "working.list" = "平鋪顯示";
 "working.tree" = "樹狀顯示";
 "working.viewMode" = "工作區顯示模式";
@@ -422,7 +420,6 @@
 "recovery.unborn" = "尚無提交";
 "dialog.blocked" = "此儲存庫有其他操作正在進行，或伺服器已中斷連線。已填寫的設定會保留，請在儲存庫可用後重試。";
 "working.clean" = "沒有本機變更";
-"working.refreshFailed" = "重新整理失敗，正在顯示上一次成功的結果。";
 "history.limit" = "僅顯示前 %ld 個提交。選擇分支可以縮小歷史範圍。";
 "history.loadingChanges" = "正在讀取變更檔案…";
 "repositories.unavailableShort" = "無法使用";
@@ -523,11 +520,6 @@
 "conflict.binary" = "不顯示二進位內容。";
 "conflict.error.version" = "所選檔案沒有這個版本。";
 "conflict.export" = "匯出來自 “%@” 的版本…";
-"conflict.header.cherryPick" = "正在把 %@ 摘取到 %@";
-"conflict.header.merge" = "正在把 %@ 合併到 %@";
-"conflict.header.rebase" = "正在把 %@ 變基到 %@";
-"conflict.header.revert" = "正在反轉 %@，位於 %@ 上";
-"conflict.header.squash" = "正在 %@ 上壓縮提交";
 "conflict.hint.merge.conflicts" = "解決全部衝突後才能完成合併。";
 "conflict.hint.merge.resolved" = "檢查提交訊息，然後按一下 **提交** 完成合併。";
 "conflict.hint.merge.empty" = "沒有可提交的變更。按一下 **中止** 取消合併，或按一下 **提交** 建立空的合併提交。";

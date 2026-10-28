@@ -241,9 +241,7 @@
 "working.amend.confirm" = "Esta acción reemplaza el commit más reciente. ¿Continuar?";
 "working.subject" = "Asunto del commit";
 "working.body" = "Descripción detallada";
-"working.identityLoading" = "Cargando el committer…";
 "working.staging" = "Estado en el stage: %@";
-"working.writing" = "Actualizando la copia de trabajo…";
 "working.list" = "Ver como lista";
 "working.tree" = "Ver como árbol";
 "working.viewMode" = "Visualización de la copia de trabajo";
@@ -422,7 +420,6 @@
 "recovery.unborn" = "ningún commit";
 "dialog.blocked" = "Hay otra operación en curso en este repositorio o el servidor está desconectado. Se conserva la configuración indicada; volver a intentarlo cuando el repositorio esté disponible.";
 "working.clean" = "No hay cambios locales";
-"working.refreshFailed" = "Error al actualizar. Se muestra el último resultado correcto.";
 "history.limit" = "Se muestran los primeros %ld commits. Seleccionar una rama para acotar el historial.";
 "history.loadingChanges" = "Cargando archivos modificados…";
 "repositories.unavailableShort" = "No disponible";
@@ -523,11 +520,6 @@
 "conflict.binary" = "El contenido binario no se muestra.";
 "conflict.error.version" = "Los archivos seleccionados no tienen esta versión.";
 "conflict.export" = "Exportar la versión de “%@”…";
-"conflict.header.cherryPick" = "Haciendo cherry-pick de %@ en %@";
-"conflict.header.merge" = "Fusionando %@ en %@";
-"conflict.header.rebase" = "Haciendo rebase de %@ sobre %@";
-"conflict.header.revert" = "Revirtiendo %@ en %@";
-"conflict.header.squash" = "Haciendo squash de commits en %@";
 "conflict.hint.merge.conflicts" = "Resolver todos los conflictos para completar la fusión.";
 "conflict.hint.merge.resolved" = "Revisar el mensaje del commit y, después, hacer clic en **Hacer commit** para completar la fusión.";
 "conflict.hint.merge.empty" = "No quedan cambios para hacer commit. Hacer clic en **Abortar** para cancelar la fusión o en **Hacer commit** para crear un commit de fusión vacío.";

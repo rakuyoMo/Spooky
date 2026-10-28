@@ -120,7 +120,6 @@ struct CoreWorkflowTests {
 
         let context = try await working.context(head: nil)
         #expect(context.lastMessage.isEmpty)
-        #expect(context.committer == "Spooky Test <spooky@example.invalid>")
         await #expect(throws: RepositoryReadError.self) { try await working.context(head: "--all") }
     }
 }

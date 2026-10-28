@@ -29,7 +29,12 @@ extension RepositorySession {
             )
     }
 
-    /// 读取提交配置；读取失败时保留上一次的结果，断线与身份错误由同一次刷新的身份读取报告。
+    /// 提交区显示的提交人：仓库所在机器上生效的 `user.name` 与 `user.email`；没有配置或还没读到时为空。
+    var committer: (name: String, email: String) {
+        (commitConfiguration?.userName ?? "", commitConfiguration?.userEmail ?? "")
+    }
+
+    /// 读取提交配置；读取失败时保留上一次的结果，断线由同一次刷新的其它读取报告。
     func loadCommitConfiguration() {
         guard configurationTask == nil, let runner else { return }
 

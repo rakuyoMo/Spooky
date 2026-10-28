@@ -241,9 +241,7 @@
 "working.amend.confirm" = "Dadurch wird der letzte Commit ersetzt. Fortfahren?";
 "working.subject" = "Commit-Betreff";
 "working.body" = "Ausführliche Beschreibung";
-"working.identityLoading" = "Committer wird geladen …";
 "working.staging" = "Staging-Status: %@";
-"working.writing" = "Arbeitskopie wird aktualisiert …";
 "working.list" = "Als Liste anzeigen";
 "working.tree" = "Als Baum anzeigen";
 "working.viewMode" = "Darstellung der Arbeitskopie";
@@ -422,7 +420,6 @@
 "recovery.unborn" = "keine Commits";
 "dialog.blocked" = "In diesem Repository läuft ein anderer Vorgang oder die Verbindung zum Server ist getrennt. Ihre Einstellungen bleiben erhalten; versuchen Sie es erneut, sobald das Repository verfügbar ist.";
 "working.clean" = "Keine lokalen Änderungen";
-"working.refreshFailed" = "Aktualisierung fehlgeschlagen. Das letzte erfolgreiche Ergebnis wird angezeigt.";
 "history.limit" = "Die ersten %ld Commits werden angezeigt. Wählen Sie einen Branch aus, um den Verlauf einzugrenzen.";
 "history.loadingChanges" = "Geänderte Dateien werden geladen …";
 "repositories.unavailableShort" = "Nicht verfügbar";
@@ -523,11 +520,6 @@
 "conflict.binary" = "Binäre Inhalte werden nicht angezeigt.";
 "conflict.error.version" = "Die ausgewählten Dateien haben diese Version nicht.";
 "conflict.export" = "Version aus „%@“ exportieren …";
-"conflict.header.cherryPick" = "Cherry-Pick von %@ in %@";
-"conflict.header.merge" = "Merge von %@ in %@";
-"conflict.header.rebase" = "Rebase von %@ auf %@";
-"conflict.header.revert" = "Revert von %@ auf %@";
-"conflict.header.squash" = "Squash von Commits auf %@";
 "conflict.hint.merge.conflicts" = "Lösen Sie alle Konflikte auf, um den Merge abzuschließen.";
 "conflict.hint.merge.resolved" = "Prüfen Sie die Commit-Nachricht und klicken Sie dann auf **Committen**, um den Merge abzuschließen.";
 "conflict.hint.merge.empty" = "Es sind keine Änderungen zum Committen übrig. Klicken Sie auf **Vorgang abbrechen**, um den Merge abzubrechen, oder auf **Committen**, um einen leeren Merge-Commit zu erstellen.";

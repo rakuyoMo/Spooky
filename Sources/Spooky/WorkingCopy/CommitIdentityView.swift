@@ -17,8 +17,8 @@ struct CommitIdentityView: View {
     var body: some View {
         HStack(spacing: 8) {
             VStack(alignment: .trailing, spacing: 4) {
-                Text(session.context == nil ? AppLocalization.text("working.identityLoading") : identity.name)
-                Text(identity.email)
+                Text(session.committer.name)
+                Text(session.committer.email)
             }
             .font(.system(size: 13))
             .foregroundStyle(.secondary)
@@ -31,7 +31,7 @@ struct CommitIdentityView: View {
             Menu {
                 menuItems
             } label: {
-                InitialsAvatar(name: identity.name, size: 45)
+                InitialsAvatar(name: session.committer.name, size: 45)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -46,25 +46,12 @@ struct CommitIdentityView: View {
 // MARK: - Private
 
 extension CommitIdentityView {
-    /// `git var` 给出的实际提交人，拆成姓名与邮箱。
-    private var identity: (name: String, email: String) {
-        let committer = session.context?.committer ?? ""
-
-        guard let open = committer.lastIndex(of: "<") else {
-            return (committer, "")
-        }
-
-        let name = committer[..<open].trimmingCharacters(in: .whitespaces)
-        let email = committer[committer.index(after: open)...].trimmingCharacters(in: CharacterSet(charactersIn: ">"))
-        return (name, email)
-    }
-
     /// 解码后的档案。
     private var profiles: [UserProfile] { UserProfiles.decode(storage) }
 
     /// 当前身份对应的档案。
     private var current: UserProfile? {
-        profiles.first { $0.name == identity.name && $0.email == identity.email }
+        profiles.first { $0.name == session.committer.name && $0.email == session.committer.email }
     }
 
     /// 档案逐项列出并勾选当前身份；没有对应档案时列出当前身份，随后是签名状态与档案管理入口。
@@ -83,8 +70,8 @@ extension CommitIdentityView {
             )
         }
 
-        if current == nil, !identity.name.isEmpty {
-            Toggle(identity.name + " <" + identity.email + ">", isOn: .constant(true))
+        if current == nil, !session.committer.name.isEmpty {
+            Toggle(session.committer.name + " <" + session.committer.email + ">", isOn: .constant(true))
                 .disabled(true)
         }
 
@@ -94,13 +81,13 @@ extension CommitIdentityView {
 
         Divider()
 
-        if current == nil, !identity.name.isEmpty {
-            Button(AppLocalization.text("profiles.addCurrent", identity.email)) {
+        if current == nil, !session.committer.name.isEmpty {
+            Button(AppLocalization.text("profiles.addCurrent", session.committer.email)) {
                 guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
 
                 UserProfiles.add(
-                    name: identity.name,
-                    email: identity.email,
+                    name: session.committer.name,
+                    email: session.committer.email,
                     signingKey: session.commitConfiguration?.signingKey,
                     in: window
                 )

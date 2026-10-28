@@ -241,9 +241,7 @@
 "working.amend.confirm" = "直前のコミットを書き換えます。続行しますか？";
 "working.subject" = "コミットの件名";
 "working.body" = "詳細な説明";
-"working.identityLoading" = "コミッターを読み込み中…";
 "working.staging" = "ステージ状態：%@";
-"working.writing" = "作業コピーを更新中…";
 "working.list" = "リスト表示";
 "working.tree" = "ツリー表示";
 "working.viewMode" = "作業コピーの表示";
@@ -422,7 +420,6 @@
 "recovery.unborn" = "コミットなし";
 "dialog.blocked" = "このリポジトリで別の操作が実行中か、サーバーとの接続が切れています。入力した設定は保持されます。リポジトリが利用可能になってから再試行してください。";
 "working.clean" = "ローカルの変更はありません";
-"working.refreshFailed" = "更新に失敗しました。最後に成功した結果を表示しています。";
 "history.limit" = "最初の %ld 件のコミットのみを表示しています。ブランチを選択すると範囲を絞り込めます。";
 "history.loadingChanges" = "変更ファイルを読み込み中…";
 "repositories.unavailableShort" = "利用不可";
@@ -523,11 +520,6 @@
 "conflict.binary" = "バイナリの内容は表示しません。";
 "conflict.error.version" = "選択したファイルにはこのバージョンがありません。";
 "conflict.export" = "「%@」のバージョンを書き出す…";
-"conflict.header.cherryPick" = "%@ を %@ にチェリーピック中";
-"conflict.header.merge" = "%@ を %@ にマージ中";
-"conflict.header.rebase" = "%@ を %@ にリベース中";
-"conflict.header.revert" = "%@ を %@ 上でリバート中";
-"conflict.header.squash" = "%@ 上でコミットをスカッシュ中";
 "conflict.hint.merge.conflicts" = "マージを完了するには、すべての競合を解決してください。";
 "conflict.hint.merge.resolved" = "コミットメッセージを確認し、**コミット** をクリックしてマージを完了してください。";
 "conflict.hint.merge.empty" = "コミットできる変更が残っていません。**中止** でマージを取り消すか、**コミット** で空のマージコミットを作成してください。";

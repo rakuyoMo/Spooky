@@ -241,9 +241,7 @@
 "working.amend.confirm" = "这会改写最近一次提交，是否继续？";
 "working.subject" = "提交标题";
 "working.body" = "详细说明";
-"working.identityLoading" = "正在读取提交人…";
 "working.staging" = "暂存状态：%@";
-"working.writing" = "正在更新工作区…";
 "working.list" = "平铺显示";
 "working.tree" = "树形显示";
 "working.viewMode" = "工作区显示模式";
@@ -422,7 +420,6 @@
 "recovery.unborn" = "尚无提交";
 "dialog.blocked" = "此仓库有其它操作正在进行，或服务器已断开。已填写的设置会保留，请在仓库可用后重试。";
 "working.clean" = "没有本地改动";
-"working.refreshFailed" = "刷新失败，正在显示上一次成功的结果。";
 "history.limit" = "仅显示前 %ld 个提交。选择分支可以缩小历史范围。";
 "history.loadingChanges" = "正在读取变更文件…";
 "repositories.unavailableShort" = "不可用";
@@ -523,11 +520,6 @@
 "conflict.binary" = "不显示二进制内容。";
 "conflict.error.version" = "所选文件没有这个版本。";
 "conflict.export" = "导出来自 “%@” 的版本…";
-"conflict.header.cherryPick" = "正在把 %@ 摘取到 %@";
-"conflict.header.merge" = "正在把 %@ 合并到 %@";
-"conflict.header.rebase" = "正在把 %@ 变基到 %@";
-"conflict.header.revert" = "正在反转 %@，位于 %@ 上";
-"conflict.header.squash" = "正在 %@ 上压缩提交";
 "conflict.hint.merge.conflicts" = "解决全部冲突后才能完成合并。";
 "conflict.hint.merge.resolved" = "检查提交信息，然后点按 **提交** 完成合并。";
 "conflict.hint.merge.empty" = "没有可提交的改动。点按 **中止** 取消合并，或点按 **提交** 创建空的合并提交。";
