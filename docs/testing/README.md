@@ -80,3 +80,4 @@ SPOOKY_PERFORMANCE_TESTS=1 swift test -c release -Xswiftc -enable-testing --filt
 | [M8](M8.md) | 仓库管理、窗口与导航、外部工具、链接、设置、帮助与发布更新 |
 | [M9](M9.md) | 托管账号、Pull Request 与 Merge Request、发布仓库、Issue 补全、分支整理的协作状态、子模块、工作树与 Git LFS |
 | [M10](M10.md) | 工作区状态头与提交人、丢弃与删除进废纸篓及撤销、服务器仓库的确认、修补、硬折行与冲突向导 |
+| [M11](M11.md) | 历史续载与回到很靠后的提交、版本选择器、补丁、去掉完全合并、推送与发布、后台自动获取、对话框头部与 Activity 的分页 |
