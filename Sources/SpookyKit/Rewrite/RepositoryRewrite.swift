@@ -53,7 +53,7 @@ public enum ResetMode: String, Sendable, CaseIterable {
     /// 移动 HEAD 并重置暂存区，改动留在工作区。
     case mixed
 
-    /// 移动 HEAD 并让暂存区、工作区都回到目标版本，未提交的改动会丢失。
+    /// 移动 HEAD 并让暂存区、工作区都回到目标版本，未提交的改动会被丢弃。
     case hard
 }
 

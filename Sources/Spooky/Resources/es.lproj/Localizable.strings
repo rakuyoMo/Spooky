@@ -270,7 +270,7 @@
 "working.discardAll" = "Descartar todos los cambios…";
 "working.discard.message" = "Descartar los cambios de %d archivos en %@: los archivos con seguimiento vuelven al último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera.";
 "working.discard.remote" = "Descartar los cambios de %d archivos del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera del servidor.";
-"working.discard.remotePermanent" = "Descartar los cambios de %d archivos del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se eliminan permanentemente del servidor. Esta acción no se puede deshacer.";
+"working.discard.remotePermanent" = "Descartar los cambios de %d archivos del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se eliminan permanentemente del servidor.";
 "working.discard.lines" = "Descartar las líneas seleccionadas en %@.";
 "working.discard.remoteLines" = "Sobrescribir el contenido seleccionado del servidor en %@.";
 "working.resolved" = "Marcar como resuelto";
@@ -471,9 +471,9 @@
 "stash.deleteNamed" = "Eliminar stash “%@”…";
 "stash.deleteMultiple" = "Eliminar %ld stashes…";
 "stash.delete" = "Eliminar stash";
-"stash.delete.confirm" = "¿Eliminar el stash “%@”? Se perderán todos sus cambios.";
+"stash.delete.confirm" = "¿Eliminar el stash “%@”?";
 "stash.deleteStashes" = "Eliminar stashes";
-"stash.deleteStashes.confirm" = "¿Eliminar los %ld stashes seleccionados? Se perderán todos sus cambios.";
+"stash.deleteStashes.confirm" = "¿Eliminar los %ld stashes seleccionados?";
 "stash.applyButton" = "Aplicar…";
 "stash.deleteButton" = "Eliminar…";
 "stash.basedOn" = "Basado en";
@@ -705,7 +705,7 @@
 "files.untrack.multiple" = "Dejar de seguir %ld ítems";
 "files.trash" = "Trasladar a la papelera";
 "files.delete" = "Eliminar";
-"files.delete.remote" = "¿Eliminar permanentemente los siguientes archivos del servidor en %2$@? Esta acción no se puede deshacer.\n\n%1$@";
+"files.delete.remote" = "¿Eliminar permanentemente los siguientes archivos del servidor en %2$@?\n\n%1$@";
 "files.move.menu" = "Mover…";
 "files.move" = "Mover";
 "files.move.title" = "Mover “%@”";
@@ -1047,7 +1047,7 @@
 "rewrite.reset.mixed" = "Mixed";
 "rewrite.reset.mixed.help" = "Restablece el índice y conserva la copia de trabajo. Los cambios de los commits quitados quedan fuera del stage.";
 "rewrite.reset.hard" = "Hard";
-"rewrite.reset.hard.help" = "Restablece el índice y la copia de trabajo. Se pierden los cambios sin commit y los de los commits quitados.";
+"rewrite.reset.hard.help" = "Restablece el índice y la copia de trabajo. Se descartan los cambios sin commit y los de los commits quitados.";
 "rewrite.reset.discards" = "La copia de trabajo tiene cambios sin commit. Un restablecimiento Hard los descarta.";
 "rewrite.reset.leaving" = "Commits que salen de la rama actual (%ld):";
 "rewrite.error.revision" = "No se encontró esta revisión.";
@@ -1200,7 +1200,7 @@
 "branch.deleteUpstream.help" = "Elimina también la rama seguida “%@” en su remoto.";
 "branch.forceDelete" = "Forzar eliminación";
 "branch.forceDelete.help" = "Elimina la rama aunque no esté completamente fusionada.";
-"branch.forceDelete.ask" = "Estas ramas no están completamente fusionadas: %@. Eliminarlas de todos modos puede perder commits que ninguna otra rama contiene.";
+"branch.forceDelete.ask" = "Estas ramas no están completamente fusionadas: %@. ¿Eliminarlas de todos modos?";
 "branch.forceDelete.submit" = "Forzar eliminación";
 "branch.deleteRemote" = "Eliminar rama remota";
 "branch.deleteRemote.message" = "Elimina la rama “%@” en su remoto.";

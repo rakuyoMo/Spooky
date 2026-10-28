@@ -270,7 +270,7 @@
 "working.discardAll" = "捨棄全部變更…";
 "working.discard.message" = "將捨棄 %d 個檔案的變更：已追蹤的檔案恢復到最後一次提交（含暫存變更），未追蹤檔案丟到垃圾桶。儲存庫：%@。";
 "working.discard.remote" = "將在伺服器上捨棄 %d 個檔案的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案丟到伺服器的垃圾桶。儲存庫：%@。";
-"working.discard.remotePermanent" = "將在伺服器上捨棄 %d 個檔案的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案在伺服器上永久刪除。儲存庫：%@。此操作無法復原。";
+"working.discard.remotePermanent" = "將在伺服器上捨棄 %d 個檔案的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案在伺服器上永久刪除。儲存庫：%@。";
 "working.discard.lines" = "將捨棄 %@ 中所選行的變更。";
 "working.discard.remoteLines" = "將在伺服器 %@ 上覆寫所選內容。";
 "working.resolved" = "標記已解決";
@@ -471,9 +471,9 @@
 "stash.deleteNamed" = "刪除儲藏 “%@”…";
 "stash.deleteMultiple" = "刪除 %ld 個儲藏…";
 "stash.delete" = "刪除儲藏";
-"stash.delete.confirm" = "確定要刪除儲藏 “%@” 嗎？其中的變更將全部遺失。";
+"stash.delete.confirm" = "確定要刪除儲藏 “%@” 嗎？";
 "stash.deleteStashes" = "刪除所選儲藏";
-"stash.deleteStashes.confirm" = "確定要刪除所選的 %ld 個儲藏嗎？其中的變更將全部遺失。";
+"stash.deleteStashes.confirm" = "確定要刪除所選的 %ld 個儲藏嗎？";
 "stash.applyButton" = "套用…";
 "stash.deleteButton" = "刪除…";
 "stash.basedOn" = "基於";
@@ -705,7 +705,7 @@
 "files.untrack.multiple" = "停止追蹤 %ld 個項目";
 "files.trash" = "丟到垃圾桶";
 "files.delete" = "刪除";
-"files.delete.remote" = "要在伺服器上永久刪除以下檔案嗎？儲存庫：%2$@。此操作無法復原。\n\n%1$@";
+"files.delete.remote" = "要在伺服器上永久刪除以下檔案嗎？儲存庫：%2$@。\n\n%1$@";
 "files.move.menu" = "移動…";
 "files.move" = "移動";
 "files.move.title" = "移動 “%@”";
@@ -1047,7 +1047,7 @@
 "rewrite.reset.mixed" = "Mixed";
 "rewrite.reset.mixed.help" = "重設暫存區，保留工作區，撤下的提交的變更變為未暫存。";
 "rewrite.reset.hard" = "Hard";
-"rewrite.reset.hard.help" = "重設暫存區與工作區，未提交的變更與撤下的提交的變更都會遺失。";
+"rewrite.reset.hard.help" = "重設暫存區與工作區，未提交的變更與撤下的提交的變更都會被捨棄。";
 "rewrite.reset.discards" = "工作區有未提交的變更，Hard 重設會捨棄它們。";
 "rewrite.reset.leaving" = "會離開目前分支的提交（%ld）：";
 "rewrite.error.revision" = "找不到這個版本。";
@@ -1200,7 +1200,7 @@
 "branch.deleteUpstream.help" = "同時在遠端刪除追蹤的分支 “%@”。";
 "branch.forceDelete" = "強制刪除";
 "branch.forceDelete.help" = "即使分支沒有完全合併也刪除。";
-"branch.forceDelete.ask" = "這些分支沒有完全合併：%@。仍然刪除可能遺失其他分支都不包含的提交。";
+"branch.forceDelete.ask" = "這些分支沒有完全合併：%@。仍然刪除嗎？";
 "branch.forceDelete.submit" = "強制刪除";
 "branch.deleteRemote" = "刪除遠端分支";
 "branch.deleteRemote.message" = "在遠端刪除分支 “%@”。";
