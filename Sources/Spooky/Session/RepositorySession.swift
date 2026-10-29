@@ -98,6 +98,10 @@ final class RepositorySession {
     /// 当前显示哪一侧改动。
     var diffSide = DiffSide.unstaged
 
+    /// 最近一次读取的 Diff 是哪一侧；读取时按改动换了暂存侧的，这一侧已经在读，不必再读一次。
+    @ObservationIgnored
+    private(set) var loadedDiffSide: DiffSide? = nil
+
     /// 大 Diff 放行只对当前文件有效。
     var showsLargeDiff = false
 
@@ -613,12 +617,14 @@ extension RepositorySession {
         guard loadsRepositoryDetails, let repository, let entry = selectedEntry, entry.hasWorkingCopyDiff else {
             diffSnapshot = nil
             isLoadingDiff = false
+            loadedDiffSide = nil
             return
         }
 
         if diffSide == .staged, !entry.hasStagedChanges { diffSide = .unstaged }
         if diffSide == .unstaged, !entry.hasUnstagedChanges { diffSide = .staged }
         let side = diffSide
+        loadedDiffSide = side
         let request = generation
         let showLarge = showsLargeDiff
 
@@ -800,15 +806,6 @@ extension RepositorySession {
 // MARK: - Private
 
 extension RepositorySession {
-    /// 轮询时的所选文件内容哈希；没有可比较的文件或读取失败时为 nil。
-    private static func contentHash(of entry: StatusEntry?, service: WorkingCopyOperations) async -> String? {
-        guard let entry else {
-            return nil
-        }
-
-        return try? await service.worktreeHash(of: entry)
-    }
-
     /// 刷新成功后一次性替换快照；仍存在的文件继续选中。
     private func replaceStatus(_ status: WorkingCopyStatus) {
         self.status = status

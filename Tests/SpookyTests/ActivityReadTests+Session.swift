@@ -20,8 +20,8 @@ extension ActivityReadTests {
         "activity.read.commitCount",
     ]
 
-    /// 完整刷新记下工作区、引用、储藏、子模块、工作树与历史的读取，每条写耗时；文件变化这类不记录的刷新不新增记录，也不动基准；
-    /// 同一仓库的两个会话共用基准。
+    /// 完整刷新记下工作区、引用、储藏、子模块、工作树与历史的读取，每条写耗时；选中文件读一侧的 Diff，记一条；
+    /// 文件变化这类不记录的刷新不新增记录，也不动基准，随之换了暂存侧的 Diff 不再读第二次；同一仓库的两个会话共用基准。
     @Test("刷新的读取记进 Repository 页", .timeLimit(.minutes(5)))
     func refreshRecords() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-读取 " + UUID().uuidString)
@@ -61,12 +61,22 @@ extension ActivityReadTests {
         #expect(activities.items.allSatisfy { $0.kind == .repository && $0.state == "activity.finished" })
         #expect(activities.items.allSatisfy { $0.elapsed != nil })
 
-        // 不记录的刷新：读到新分支也不记录，基准不变
+        // 选中有未暂存改动的文件，读这一侧的 Diff
+        session.selectedID = StatusRowID(path: "a.txt", kind: .tracked)
+        try await waitUntil { results("activity.read.unstagedDiff", in: activities).count == 1 }
+        try await waitUntil { !session.isLoadingDiff }
+
+        // 不记录的刷新：读到新分支也不记录，基准不变；文件只剩暂存的改动，Diff 换到暂存的一侧，暂存侧变化后不再读一次
         _ = try await runner.run(["branch", "extra"])
+        _ = try await runner.run(["add", "a.txt"])
         let recorded = activities.items.count
         session.refresh()
         await session.waitForRefresh()
         await waitForReads(of: session)
+        try await waitUntil { session.diffSide == .staged && !session.isLoadingDiff }
+
+        session.diffSideChanged()
+        #expect(!session.isLoadingDiff)
         #expect(activities.items.count == recorded)
 
         // 另一个会话的完整刷新与同一份基准比较，只多出这个分支
