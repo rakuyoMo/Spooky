@@ -231,7 +231,13 @@ extension PublishRepositoryDialog {
         }
 
         do {
-            owners = try await client.owners()
+            owners = try await RepositoryActivities.shared.recordHosting(
+                title: AppLocalization.text("publish.loadOwners.title"),
+                repository: session.repository
+            ) {
+                try await client.owners()
+            }
+
             ownerID = owners.first?.id ?? ""
             failure = ""
         } catch {
@@ -250,7 +256,13 @@ extension PublishRepositoryDialog {
 
         do {
             try await Task.sleep(for: .milliseconds(400))
-            exists = try await client.repositoryExists(owner.path + "/" + name)
+
+            exists = try await RepositoryActivities.shared.recordHosting(
+                title: AppLocalization.text("publish.checkName.title"),
+                repository: session.repository
+            ) {
+                try await client.repositoryExists(owner.path + "/" + name)
+            }
         } catch {
             guard !Task.isCancelled else { return }
             failure = AppFailure(error: error, opening: false, location: nil).details

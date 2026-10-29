@@ -11,7 +11,7 @@ import Testing
 /// 每个测试使用自己的临时目录与 `RepositoryActivities` 实例，不碰 Application Support 与共享的活动列表。
 @MainActor
 struct ActivityArchiveTests {
-    /// 结束的 Remote 记录写成文件，换一个实例读回后标题、状态与日志都相同；进行中的、Repository 与 Service 的记录不写。
+    /// 结束的 Remote 记录写成文件，换一个实例读回后标题、状态与日志都相同，并带读回标记；进行中的、Repository 与 Service 的记录不写。
     @Test("Remote 记录结束时保存，重新启动后读回")
     func saveAndRestore() async throws {
         let directory = try FileViewsTests.temporaryDirectory()
@@ -42,6 +42,7 @@ struct ActivityArchiveTests {
 
         let files = try FileManager.default.contentsOfDirectory(atPath: directory.path)
         #expect(files == [fetch.id.uuidString + ".json"])
+        #expect(!fetch.isRestored)
 
         // 新的实例读回同一条记录
         let restored = RepositoryActivities()
@@ -57,6 +58,9 @@ struct ActivityArchiveTests {
         #expect(item.state == "activity.failed")
         #expect(item.log == "From spooky-test\n\n接收对象：100%\n")
         #expect(item.log == fetch.log)
+
+        // 读回的记录不是本次运行里发生的，侧边栏底部据此不列它
+        #expect(item.isRestored)
     }
 
     /// 开始于 7 天前的记录读回时连文件删掉，读不了的文件跳过；运行期间按传入的当前时间删过期记录。

@@ -2195,6 +2195,7 @@
 "accounts.openGitHub" = "Copier le code et ouvrir GitHub";
 "accounts.validating" = "Vérification…";
 "accounts.authorizing" = "En attente d’autorisation…";
+"accounts.verify.title" = "Vérifier le compte";
 "accounts.message.oauth" = "Spooky affiche un code à usage unique, le copie et ouvre GitHub dans votre navigateur. Saisissez-y le code et autorisez Spooky.";
 "accounts.message.githubToken" = "Saisissez un jeton d’accès personnel avec les portées « repo » et « read:org ».";
 "accounts.message.gitlab" = "Saisissez un jeton d’accès personnel avec la portée « api ».";
@@ -2269,6 +2270,10 @@
 "mr.forBranch.create" = "Créer une merge request à partir de « %@ »…";
 "pr.forBranch.show" = "Afficher la pull request de « %@ »";
 "mr.forBranch.show" = "Afficher la merge request de « %@ »";
+"pr.load.title" = "Charger les pull requests";
+"mr.load.title" = "Charger les merge requests";
+"pr.loadDetail.title" = "Charger la pull request";
+"mr.loadDetail.title" = "Charger la merge request";
 "pullRequests.account" = "Compte :";
 "pullRequests.addComment" = "Ajouter un commentaire…";
 "pullRequests.assignees" = "Responsables : %@";
@@ -2302,6 +2307,8 @@
 "pullRequests.fetch" = "Récupérer";
 "pullRequests.fetch.title" = "Commits non récupérés";
 "pullRequests.fetch.message" = "Les commits de %1$@ ne sont pas encore dans ce dépôt. Récupérez-les depuis « %2$@ » pour voir ses commits et modifications.";
+"pullRequests.loadIssues.title" = "Charger les tickets";
+"pullRequests.loadMergeOptions.title" = "Charger les options de fusion";
 "pullRequests.merge" = "Fusionner";
 "pullRequests.mergeStrategy" = "Stratégie de fusion :";
 "pullRequests.mergeType" = "Type de fusion :";
@@ -2349,6 +2356,8 @@
 "publish.exists" = "« %1$@ » existe déjà sur %2$@. Choisissez un autre nom ; les dépôts existants ne sont pas écrasés.";
 "publish.remoteExists" = "Ce dépôt a déjà un dépôt distant nommé « %@ ». Choisissez un autre nom ; les dépôts distants existants ne sont pas remplacés.";
 "publish.push.title" = "Ajouter le dépôt distant et pousser";
+"publish.loadOwners.title" = "Charger les propriétaires";
+"publish.checkName.title" = "Vérifier le nom du dépôt";
 "editor.completesIssues" = "Activer les modules d’intégration des services";
 "editor.completesIssues.help" = "Complète les numéros de ticket après « # » dans les messages de commit. Le dépôt distant du dépôt doit avoir un compte dans Réglages → Comptes.";
 "pr.filter.with" = "Avec pull request";

@@ -2195,6 +2195,7 @@
 "accounts.openGitHub" = "Copy Code and Open GitHub";
 "accounts.validating" = "Validating…";
 "accounts.authorizing" = "Authorizing…";
+"accounts.verify.title" = "Verify Account";
 "accounts.message.oauth" = "Spooky shows a one-time code, copies it and opens GitHub in your browser. Enter the code there and authorize Spooky.";
 "accounts.message.githubToken" = "Enter a personal access token with the “repo” and “read:org” scopes.";
 "accounts.message.gitlab" = "Enter a personal access token with the “api” scope.";
@@ -2269,6 +2270,10 @@
 "mr.forBranch.create" = "Create New Merge Request from “%@”…";
 "pr.forBranch.show" = "Show Pull Request for “%@”";
 "mr.forBranch.show" = "Show Merge Request for “%@”";
+"pr.load.title" = "Load Pull Requests";
+"mr.load.title" = "Load Merge Requests";
+"pr.loadDetail.title" = "Load Pull Request";
+"mr.loadDetail.title" = "Load Merge Request";
 "pullRequests.account" = "Account:";
 "pullRequests.addComment" = "Add Comment…";
 "pullRequests.assignees" = "Assignees: %@";
@@ -2302,6 +2307,8 @@
 "pullRequests.fetch" = "Fetch";
 "pullRequests.fetch.title" = "Commits Not Fetched";
 "pullRequests.fetch.message" = "The commits of %1$@ aren’t in this repository yet. Fetch them from “%2$@” to see its commits and changes.";
+"pullRequests.loadIssues.title" = "Load Issues";
+"pullRequests.loadMergeOptions.title" = "Load Merge Options";
 "pullRequests.merge" = "Merge";
 "pullRequests.mergeStrategy" = "Merge Strategy:";
 "pullRequests.mergeType" = "Merge Type:";
@@ -2349,6 +2356,8 @@
 "publish.exists" = "“%1$@” already exists on %2$@. Choose another name; existing repositories aren’t overwritten.";
 "publish.remoteExists" = "This repository already has a remote named “%@”. Choose another name; existing remotes aren’t replaced.";
 "publish.push.title" = "Add Remote and Push";
+"publish.loadOwners.title" = "Load Owners";
+"publish.checkName.title" = "Check Repository Name";
 "editor.completesIssues" = "Enable service integration plugins";
 "editor.completesIssues.help" = "Completes issue numbers after “#” in commit messages. The repository’s remote needs an account in Settings → Accounts.";
 "pr.filter.with" = "With Pull Request";

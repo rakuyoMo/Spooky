@@ -307,9 +307,14 @@ extension AccountDialog {
         return try await flow.token(for: authorization)
     }
 
-    /// 校验令牌对应的用户后保存；重新认证时用户必须相同。
+    /// 校验令牌对应的用户后保存；重新认证时用户必须相同。校验记进 Activity 的 Service 页，不属于任何仓库。
     private func save(_ token: String, on instance: HostingInstance, authentication: HostingAuthentication) async throws {
-        let user = try await HostingClient(instance: instance, token: token).currentUser()
+        let user = try await RepositoryActivities.shared.recordHosting(
+            title: AppLocalization.text("accounts.verify.title"),
+            repository: nil
+        ) {
+            try await HostingClient(instance: instance, token: token).currentUser()
+        }
 
         if case .reauthenticate(let account) = purpose, account.username != user.username {
             throw HostingError.differentUser(user.username)

@@ -338,7 +338,13 @@ extension MergePullRequestDialog {
         }
 
         do {
-            let options = try await client.mergeOptions(for: request)
+            let options = try await RepositoryActivities.shared.recordHosting(
+                title: AppLocalization.text("pullRequests.loadMergeOptions.title"),
+                repository: session.repository
+            ) {
+                try await client.mergeOptions(for: request)
+            }
+
             self.options = options
             method = options.methods.first ?? .merge
             squash = options.squashesByDefault

@@ -2195,6 +2195,7 @@
 "accounts.openGitHub" = "Copiar código y abrir GitHub";
 "accounts.validating" = "Comprobando…";
 "accounts.authorizing" = "Esperando autorización…";
+"accounts.verify.title" = "Comprobar la cuenta";
 "accounts.message.oauth" = "Spooky muestra un código de un solo uso, lo copia y abre GitHub en tu navegador. Introduce allí el código y autoriza a Spooky.";
 "accounts.message.githubToken" = "Introduce un token de acceso personal con los permisos “repo” y “read:org”.";
 "accounts.message.gitlab" = "Introduce un token de acceso personal con el permiso “api”.";
@@ -2269,6 +2270,10 @@
 "mr.forBranch.create" = "Crear merge request desde “%@”…";
 "pr.forBranch.show" = "Mostrar la pull request de “%@”";
 "mr.forBranch.show" = "Mostrar la merge request de “%@”";
+"pr.load.title" = "Cargar pull requests";
+"mr.load.title" = "Cargar merge requests";
+"pr.loadDetail.title" = "Cargar la pull request";
+"mr.loadDetail.title" = "Cargar la merge request";
 "pullRequests.account" = "Cuenta:";
 "pullRequests.addComment" = "Añadir comentario…";
 "pullRequests.assignees" = "Asignados: %@";
@@ -2302,6 +2307,8 @@
 "pullRequests.fetch" = "Hacer fetch";
 "pullRequests.fetch.title" = "Commits sin obtener";
 "pullRequests.fetch.message" = "Los commits de %1$@ aún no están en este repositorio. Haz fetch desde “%2$@” para ver sus commits y cambios.";
+"pullRequests.loadIssues.title" = "Cargar incidencias";
+"pullRequests.loadMergeOptions.title" = "Cargar opciones de fusión";
 "pullRequests.merge" = "Fusionar";
 "pullRequests.mergeStrategy" = "Estrategia de fusión:";
 "pullRequests.mergeType" = "Tipo de fusión:";
@@ -2349,6 +2356,8 @@
 "publish.exists" = "“%1$@” ya existe en %2$@. Elige otro nombre; los repositorios existentes no se sobrescriben.";
 "publish.remoteExists" = "Este repositorio ya tiene un remoto llamado “%@”. Elige otro nombre; los remotos existentes no se sustituyen.";
 "publish.push.title" = "Añadir remoto y hacer push";
+"publish.loadOwners.title" = "Cargar propietarios";
+"publish.checkName.title" = "Comprobar el nombre del repositorio";
 "editor.completesIssues" = "Activar los complementos de integración de servicios";
 "editor.completesIssues.help" = "Completa los números de incidencia después de “#” en los mensajes de commit. El remoto del repositorio necesita una cuenta en Ajustes → Cuentas.";
 "pr.filter.with" = "Con pull request";

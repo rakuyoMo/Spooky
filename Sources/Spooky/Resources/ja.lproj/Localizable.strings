@@ -2195,6 +2195,7 @@
 "accounts.openGitHub" = "コードをコピーして GitHub を開く";
 "accounts.validating" = "確認中…";
 "accounts.authorizing" = "認可を待っています…";
+"accounts.verify.title" = "アカウントを確認";
 "accounts.message.oauth" = "Spooky がワンタイムコードを表示してコピーし、ブラウザで GitHub を開きます。そこでコードを入力して Spooky を認可してください。";
 "accounts.message.githubToken" = "「repo」と「read:org」のスコープを持つ個人アクセストークンを入力してください。";
 "accounts.message.gitlab" = "「api」スコープを持つ個人アクセストークンを入力してください。";
@@ -2269,6 +2270,10 @@
 "mr.forBranch.create" = "「%@」から新しいマージリクエストを作成…";
 "pr.forBranch.show" = "「%@」のプルリクエストを表示";
 "mr.forBranch.show" = "「%@」のマージリクエストを表示";
+"pr.load.title" = "プルリクエスト一覧を読み込む";
+"mr.load.title" = "マージリクエスト一覧を読み込む";
+"pr.loadDetail.title" = "プルリクエストを読み込む";
+"mr.loadDetail.title" = "マージリクエストを読み込む";
 "pullRequests.account" = "アカウント：";
 "pullRequests.addComment" = "コメントを追加…";
 "pullRequests.assignees" = "担当者：%@";
@@ -2302,6 +2307,8 @@
 "pullRequests.fetch" = "フェッチ";
 "pullRequests.fetch.title" = "コミットがまだフェッチされていません";
 "pullRequests.fetch.message" = "%1$@ のコミットはまだこのリポジトリにありません。コミットと変更内容を見るには「%2$@」からフェッチしてください。";
+"pullRequests.loadIssues.title" = "Issue を読み込む";
+"pullRequests.loadMergeOptions.title" = "マージオプションを読み込む";
 "pullRequests.merge" = "マージ";
 "pullRequests.mergeStrategy" = "マージ方法：";
 "pullRequests.mergeType" = "マージの種類：";
@@ -2349,6 +2356,8 @@
 "publish.exists" = "%2$@ に「%1$@」はすでに存在します。別の名前を選んでください。既存のリポジトリは上書きされません。";
 "publish.remoteExists" = "このリポジトリにはすでに「%@」というリモートがあります。別の名前を選んでください。既存のリモートは置き換えられません。";
 "publish.push.title" = "リモートを追加してプッシュ";
+"publish.loadOwners.title" = "所有者を読み込む";
+"publish.checkName.title" = "リポジトリ名を確認";
 "editor.completesIssues" = "サービス連携プラグインを有効にする";
 "editor.completesIssues.help" = "コミットメッセージの「#」のあとに Issue 番号を補完します。リポジトリのリモートに対応するアカウントが「設定」→「アカウント」に必要です。";
 "pr.filter.with" = "プルリクエストあり";

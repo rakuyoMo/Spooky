@@ -62,7 +62,7 @@ final class ActivityWindowState {
     /// 工具栏搜索框里的文字。
     var query = ""
 
-    /// 当前页里仓库名或日志含有搜索词的记录，忽略大小写；搜索词为空时列出整页。
+    /// 当前页里仓库名或日志含有搜索词的记录，忽略大小写；搜索词为空时列出整页。没有仓库的记录只按日志匹配。
     ///
     /// - Parameter items: 全部记录，最新的在前。
     /// - Returns: 保持原有顺序的当前页记录。
@@ -76,8 +76,9 @@ final class ActivityWindowState {
                 return true
             }
 
-            return activity.repository.name.localizedCaseInsensitiveContains(query)
-                || activity.log.localizedCaseInsensitiveContains(query)
+            let matchesName = activity.repository?.name.localizedCaseInsensitiveContains(query) ?? false
+
+            return matchesName || activity.log.localizedCaseInsensitiveContains(query)
         }
     }
 }
@@ -122,7 +123,10 @@ private struct ActivityView: View {
         List(visible, selection: $selected) { activity in
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(activity.repository.name)
+                    if let repository = activity.repository {
+                        Text(repository.name)
+                    }
+
                     Spacer()
                     Text(activity.started, style: .time)
                 }
@@ -147,14 +151,16 @@ private struct ActivityView: View {
         .frame(minWidth: 200, idealWidth: 220)
     }
 
-    /// 右栏显示所选活动的仓库路径与原始日志，未选时显示空状态。
+    /// 右栏显示所选活动的仓库路径与原始日志，未选时显示空状态；没有仓库的记录只有日志。
     @ViewBuilder
     private var logPane: some View {
         if let activity = visible.first(where: { $0.id == selected }) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(activity.repository.displayPath)
-                    .font(.system(size: 11))
-                    .textSelection(.enabled)
+                if let repository = activity.repository {
+                    Text(repository.displayPath)
+                        .font(.system(size: 11))
+                        .textSelection(.enabled)
+                }
 
                 ScrollView {
                     Text(activity.log)

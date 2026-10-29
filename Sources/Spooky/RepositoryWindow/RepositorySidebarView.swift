@@ -239,9 +239,14 @@ struct RepositorySidebarView: View {
         }
     }
 
-    /// 最近三个活动显示持续进度和取消，点击打开完整日志。
+    /// 本仓库本次运行里最近三个远程操作，显示持续进度和取消，点击打开完整日志；从本机读回的记录不列。
     private var activityRows: some View {
-        let items = RepositoryActivities.shared.items.filter { $0.repository == session.repository }
+        let items = RepositoryActivities.shared.items.filter { activity in
+            activity.kind == .remote
+                && !activity.isRestored
+                && activity.repository == session.repository
+        }
+
         return VStack(spacing: 0) {
             ForEach(Array(items.prefix(3))) { activity in
                 HStack {

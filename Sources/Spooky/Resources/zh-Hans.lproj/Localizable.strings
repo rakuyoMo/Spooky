@@ -2195,6 +2195,7 @@
 "accounts.openGitHub" = "复制验证码并打开 GitHub";
 "accounts.validating" = "正在校验…";
 "accounts.authorizing" = "正在等待授权…";
+"accounts.verify.title" = "校验账号";
 "accounts.message.oauth" = "Spooky 会显示一次性验证码，复制它并在浏览器中打开 GitHub。在那里输入验证码并授权 Spooky。";
 "accounts.message.githubToken" = "请输入带 “repo” 与 “read:org” 权限的个人访问令牌。";
 "accounts.message.gitlab" = "请输入带 “api” 权限的个人访问令牌。";
@@ -2269,6 +2270,10 @@
 "mr.forBranch.create" = "从 “%@” 新建 Merge Request…";
 "pr.forBranch.show" = "显示 “%@” 的 Pull Request";
 "mr.forBranch.show" = "显示 “%@” 的 Merge Request";
+"pr.load.title" = "加载 Pull Request 列表";
+"mr.load.title" = "加载 Merge Request 列表";
+"pr.loadDetail.title" = "加载 Pull Request";
+"mr.loadDetail.title" = "加载 Merge Request";
 "pullRequests.account" = "账号：";
 "pullRequests.addComment" = "添加评论…";
 "pullRequests.assignees" = "指派：%@";
@@ -2302,6 +2307,8 @@
 "pullRequests.fetch" = "获取";
 "pullRequests.fetch.title" = "提交还没有获取";
 "pullRequests.fetch.message" = "%1$@ 的提交还不在这个仓库里。从 “%2$@” 获取后才能查看它的提交与改动。";
+"pullRequests.loadIssues.title" = "加载 Issue";
+"pullRequests.loadMergeOptions.title" = "加载合并选项";
 "pullRequests.merge" = "合并";
 "pullRequests.mergeStrategy" = "合并策略：";
 "pullRequests.mergeType" = "合并方式：";
@@ -2349,6 +2356,8 @@
 "publish.exists" = "%2$@ 上已经有 “%1$@”。请换一个名字，已有的仓库不会被覆盖。";
 "publish.remoteExists" = "这个仓库已经有名为 “%@” 的远端。请换一个名字，已有的远端不会被替换。";
 "publish.push.title" = "添加远端并推送";
+"publish.loadOwners.title" = "加载所有者";
+"publish.checkName.title" = "检查仓库名称";
 "editor.completesIssues" = "启用托管服务集成插件";
 "editor.completesIssues.help" = "在提交信息里 “#” 之后补全 Issue 编号。仓库的远端需要在 设置 → 账号 中有对应的账号。";
 "pr.filter.with" = "有 Pull Request";

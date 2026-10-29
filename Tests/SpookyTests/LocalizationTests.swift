@@ -52,7 +52,7 @@ struct LocalizationTests {
                 "title", "show.menu", "create.menu", "create.title", "create.message", "edit.title", "edit.message",
                 "accept.title", "accept.message", "close.title", "close.message", "comment.message", "checkout.title",
                 "checkout.message", "empty.title", "empty.message", "noSelection", "noAccount.message", "fetchHead.title",
-                "forBranch.create", "forBranch.show", "filter.with", "filter.without",
+                "forBranch.create", "forBranch.show", "filter.with", "filter.without", "load.title", "loadDetail.title",
             ].map { prefix + $0 }
         }
 

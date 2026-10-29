@@ -2195,6 +2195,7 @@
 "accounts.openGitHub" = "拷貝驗證碼並打開 GitHub";
 "accounts.validating" = "正在驗證…";
 "accounts.authorizing" = "正在等待授權…";
+"accounts.verify.title" = "驗證帳號";
 "accounts.message.oauth" = "Spooky 會顯示一次性驗證碼，拷貝它並在瀏覽器中打開 GitHub。在那裡輸入驗證碼並授權 Spooky。";
 "accounts.message.githubToken" = "請輸入帶 “repo” 與 “read:org” 權限的個人存取權杖。";
 "accounts.message.gitlab" = "請輸入帶 “api” 權限的個人存取權杖。";
@@ -2269,6 +2270,10 @@
 "mr.forBranch.create" = "從 “%@” 新增 Merge Request…";
 "pr.forBranch.show" = "顯示 “%@” 的 Pull Request";
 "mr.forBranch.show" = "顯示 “%@” 的 Merge Request";
+"pr.load.title" = "載入 Pull Request 列表";
+"mr.load.title" = "載入 Merge Request 列表";
+"pr.loadDetail.title" = "載入 Pull Request";
+"mr.loadDetail.title" = "載入 Merge Request";
 "pullRequests.account" = "帳號：";
 "pullRequests.addComment" = "加入留言…";
 "pullRequests.assignees" = "指派：%@";
@@ -2302,6 +2307,8 @@
 "pullRequests.fetch" = "擷取";
 "pullRequests.fetch.title" = "提交還沒有擷取";
 "pullRequests.fetch.message" = "%1$@ 的提交還不在這個儲存庫裡。從 “%2$@” 擷取後才能查看它的提交與變更。";
+"pullRequests.loadIssues.title" = "載入 Issue";
+"pullRequests.loadMergeOptions.title" = "載入合併選項";
 "pullRequests.merge" = "合併";
 "pullRequests.mergeStrategy" = "合併策略：";
 "pullRequests.mergeType" = "合併方式：";
@@ -2349,6 +2356,8 @@
 "publish.exists" = "%2$@ 上已經有 “%1$@”。請換一個名稱，已有的儲存庫不會被覆蓋。";
 "publish.remoteExists" = "這個儲存庫已經有名為 “%@” 的遠端。請換一個名稱，已有的遠端不會被取代。";
 "publish.push.title" = "加入遠端並推送";
+"publish.loadOwners.title" = "載入擁有者";
+"publish.checkName.title" = "檢查儲存庫名稱";
 "editor.completesIssues" = "啟用託管服務整合外掛";
 "editor.completesIssues.help" = "在提交訊息裡 “#” 之後補全 Issue 編號。儲存庫的遠端需要在 設定 → 帳號 中有對應的帳號。";
 "pr.filter.with" = "有 Pull Request";

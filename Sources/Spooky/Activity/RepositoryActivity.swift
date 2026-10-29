@@ -28,8 +28,11 @@ final class RepositoryActivity: Identifiable {
     /// 记录所在的页。
     let kind: ActivityKind
 
-    /// 带主机前缀的仓库身份。
-    let repository: RepositoryLocation
+    /// 带主机前缀的仓库身份；校验账号这类不属于仓库的托管服务请求为 nil。
+    let repository: RepositoryLocation?
+
+    /// 从本机读回的记录，不是本次运行里发生的。
+    let isRestored: Bool
 
     /// 已本地化的操作名称。
     let title: String
@@ -64,9 +67,13 @@ final class RepositoryActivity: Identifiable {
         .joined(separator: "\n")
     }
 
-    /// 保存到本机的内容。
-    var record: ActivityRecord {
-        ActivityRecord(
+    /// 保存到本机的内容；没有仓库的记录不保存。
+    var record: ActivityRecord? {
+        guard let repository else {
+            return nil
+        }
+
+        return ActivityRecord(
             id: id,
             kind: kind,
             repository: repository,
@@ -79,10 +86,16 @@ final class RepositoryActivity: Identifiable {
     }
 
     /// 建立一个进行中的记录。
-    init(kind: ActivityKind, repository: RepositoryLocation, title: String) {
+    ///
+    /// - Parameters:
+    ///   - kind: 记录所在的页。
+    ///   - repository: 带主机前缀的仓库身份；不属于仓库的托管服务请求为 nil。
+    ///   - title: 已本地化的操作名称。
+    init(kind: ActivityKind, repository: RepositoryLocation?, title: String) {
         id = UUID()
         self.kind = kind
         self.repository = repository
+        isRestored = false
         self.title = title
         started = Date()
     }
@@ -92,6 +105,7 @@ final class RepositoryActivity: Identifiable {
         id = record.id
         kind = record.kind
         repository = record.repository
+        isRestored = true
         title = record.title
         started = record.started
         state = record.state
@@ -155,11 +169,62 @@ final class RepositoryActivities {
     func finish(_ activity: RepositoryActivity) {
         activity.cancel = nil
 
-        guard activity.kind == .remote, let archive else {
+        guard
+            activity.kind == .remote,
+            let archive,
+            let record = activity.record
+        else {
             return
         }
 
-        archive.save(activity.record)
+        archive.save(record)
+    }
+
+    /// 把一次托管服务请求记进 Service 页：开始时插入进行中的记录，结束时按结果写状态与日志。
+    ///
+    /// 成功写 Finished，日志只有 `log` 给出的服务端结果；失败写 Failed，日志是错误说明；任务被取消时写 Cancelled。
+    /// 错误照常抛给调用方，由调用方显示。
+    ///
+    /// - Parameters:
+    ///   - title: 记录的标题。
+    ///   - repository: 请求所属的仓库；校验账号这类不属于仓库的请求为 nil。
+    ///   - log: 成功时要写进日志的服务端结果；读取不写响应内容。
+    ///   - request: 经账号的客户端发出的请求。
+    /// - Returns: 请求的结果。
+    func recordHosting<Value>(
+        title: String,
+        repository: RepositoryLocation?,
+        log: (Value) -> String? = { _ in nil },
+        _ request: () async throws -> Value
+    ) async throws -> Value {
+        let activity = RepositoryActivity(kind: .service, repository: repository, title: title)
+        insert(activity)
+
+        // 成功、失败与取消都在返回之前结束记录
+        defer { finish(activity) }
+
+        do {
+            let value = try await request()
+
+            if let message = log(value), !message.isEmpty {
+                activity.append(.standardOutput(Data(message.utf8)))
+            }
+
+            activity.state = "activity.finished"
+            return value
+        } catch {
+            // 换远端、关仓库或关对话框取消的请求不算失败，日志不写错误说明
+            if Task.isCancelled || error is CancellationError {
+                activity.state = "activity.cancelled"
+                throw error
+            }
+
+            // 日志写错误的原文，与界面上显示的相同
+            let failure = AppFailure(error: error, opening: false, location: repository)
+            activity.append(.standardError(Data(failure.details.utf8)))
+            activity.state = "activity.failed"
+            throw error
+        }
     }
 
     /// 清除一页里已结束的记录，进行中的保留；Remote 记录同时删掉保存的文件。

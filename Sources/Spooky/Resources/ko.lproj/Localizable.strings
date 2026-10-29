@@ -2195,6 +2195,7 @@
 "accounts.openGitHub" = "코드 복사 후 GitHub 열기";
 "accounts.validating" = "확인 중…";
 "accounts.authorizing" = "승인 대기 중…";
+"accounts.verify.title" = "계정 확인";
 "accounts.message.oauth" = "Spooky가 일회용 코드를 표시하고 복사한 뒤 브라우저에서 GitHub를 엽니다. 그곳에서 코드를 입력하고 Spooky를 승인하세요.";
 "accounts.message.githubToken" = "“repo”와 “read:org” 범위가 있는 개인 액세스 토큰을 입력하세요.";
 "accounts.message.gitlab" = "“api” 범위가 있는 개인 액세스 토큰을 입력하세요.";
@@ -2269,6 +2270,10 @@
 "mr.forBranch.create" = "“%@”에서 새 머지 리퀘스트 만들기…";
 "pr.forBranch.show" = "“%@”의 풀 리퀘스트 보기";
 "mr.forBranch.show" = "“%@”의 머지 리퀘스트 보기";
+"pr.load.title" = "풀 리퀘스트 목록 불러오기";
+"mr.load.title" = "머지 리퀘스트 목록 불러오기";
+"pr.loadDetail.title" = "풀 리퀘스트 불러오기";
+"mr.loadDetail.title" = "머지 리퀘스트 불러오기";
 "pullRequests.account" = "계정:";
 "pullRequests.addComment" = "댓글 추가…";
 "pullRequests.assignees" = "담당자: %@";
@@ -2302,6 +2307,8 @@
 "pullRequests.fetch" = "가져오기";
 "pullRequests.fetch.title" = "커밋을 아직 가져오지 않음";
 "pullRequests.fetch.message" = "%1$@의 커밋이 아직 이 저장소에 없습니다. 커밋과 변경 사항을 보려면 “%2$@”에서 가져오세요.";
+"pullRequests.loadIssues.title" = "이슈 불러오기";
+"pullRequests.loadMergeOptions.title" = "병합 옵션 불러오기";
 "pullRequests.merge" = "병합";
 "pullRequests.mergeStrategy" = "병합 전략:";
 "pullRequests.mergeType" = "병합 방식:";
@@ -2349,6 +2356,8 @@
 "publish.exists" = "%2$@에 “%1$@”이(가) 이미 있습니다. 다른 이름을 선택하세요. 기존 저장소는 덮어쓰지 않습니다.";
 "publish.remoteExists" = "이 저장소에는 이미 “%@” 원격이 있습니다. 다른 이름을 선택하세요. 기존 원격은 바꾸지 않습니다.";
 "publish.push.title" = "원격 추가 후 푸시";
+"publish.loadOwners.title" = "소유자 불러오기";
+"publish.checkName.title" = "저장소 이름 확인";
 "editor.completesIssues" = "서비스 연동 플러그인 사용";
 "editor.completesIssues.help" = "커밋 메시지에서 “#” 뒤에 이슈 번호를 자동 완성합니다. 저장소의 원격에 대한 계정이 설정 → 계정에 있어야 합니다.";
 "pr.filter.with" = "풀 리퀘스트 있음";

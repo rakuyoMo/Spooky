@@ -79,7 +79,7 @@ struct ActivityWindowTests {
         }
     }
 
-    /// 列表只列当前页；搜索按仓库名与日志内容匹配，忽略大小写，路径的其它部分不算。
+    /// 列表只列当前页；搜索按仓库名与日志内容匹配，忽略大小写，路径的其它部分不算；没有仓库的记录只按日志匹配。
     @Test("当前页的过滤")
     func filter() {
         let fetch = activity(.remote, path: "/tmp/项目 Projects/Alpha", log: "From origin\n")
@@ -89,7 +89,8 @@ struct ActivityWindowTests {
             location: .remote(host: "spooky-test", path: "/Users/wgy/spooky-test/Gamma"),
             log: ""
         )
-        let items = [request, branch, fetch]
+        let verify = activity(.service, location: nil, log: "Gamma account\n")
+        let items = [verify, request, branch, fetch]
         let state = ActivityWindowState()
 
         // 不搜索时各页只列自己的记录
@@ -99,11 +100,15 @@ struct ActivityWindowTests {
         #expect(state.visibleItems(in: items).map(\.id) == [branch.id])
 
         state.kind = .service
-        #expect(state.visibleItems(in: items).map(\.id) == [request.id])
+        #expect(state.visibleItems(in: items).map(\.id) == [verify.id, request.id])
 
-        // 服务器仓库的仓库名带主机前缀
+        // 服务器仓库的仓库名带主机前缀；没有仓库的记录不按仓库名命中
         state.query = "SPOOKY-TEST:gamma"
         #expect(state.visibleItems(in: items).map(\.id) == [request.id])
+
+        // 没有仓库的记录按日志命中
+        state.query = "ACCOUNT"
+        #expect(state.visibleItems(in: items).map(\.id) == [verify.id])
 
         // 仓库名与日志内容都能命中，忽略大小写
         state.kind = .remote
@@ -165,10 +170,10 @@ struct ActivityWindowTests {
         activity(kind, location: .local(path: path), log: log, ended: ended)
     }
 
-    /// 一条带日志的记录；`ended` 为真时记为已完成。
+    /// 一条带日志的记录；`location` 为 nil 时不属于任何仓库，`ended` 为真时记为已完成。
     private func activity(
         _ kind: ActivityKind,
-        location: RepositoryLocation,
+        location: RepositoryLocation?,
         log: String,
         ended: Bool = true
     ) -> RepositoryActivity {
