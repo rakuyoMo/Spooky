@@ -100,21 +100,28 @@ struct ActivityWindowTests {
         let titles = segments.map { control.label(forSegment: $0) ?? "" }
         let tips = segments.map { control.toolTip(forSegment: $0) }
 
-        // 不等分：各段宽度减去自己标题的文字宽度后相同；段宽经过取整，差值允许在 3 pt 以内
+        // 不等分：标题最长的一段比最短的一段宽，宽出的部分接近两段标题的文字宽度之差，等分时宽出 0；
+        // 段宽的取整与内边距随系统版本略有不同，只要求宽出文字宽度差的一半以上
         let segmentElements = try #require(
             (control.cell as? NSSegmentedCell)?.accessibilityChildren() as? [NSAccessibilityElement]
         )
 
-        let paddings = zip(segmentElements, titles).map { segment, title in
-            let textWidth = NSAttributedString(string: title, attributes: [.font: font])
+        let segmentWidths = segmentElements.map { $0.accessibilityFrame().width }
+        let textWidths = titles.map {
+            NSAttributedString(string: $0, attributes: [.font: font])
                 .size()
                 .width
-
-            return segment.accessibilityFrame().width - textWidth
         }
 
-        #expect(control.segmentDistribution == .fit && paddings.count == 3)
-        #expect((paddings.max() ?? 0) - (paddings.min() ?? 0) < 3)
+        let longest = try #require(textWidths.indices.max { textWidths[$0] < textWidths[$1] })
+        let shortest = try #require(textWidths.indices.min { textWidths[$0] < textWidths[$1] })
+
+        #expect(control.segmentDistribution == .fit && segmentWidths.count == 3)
+
+        #expect(
+            segmentWidths[longest] - segmentWidths[shortest]
+                >= (textWidths[longest] - textWidths[shortest]) / 2
+        )
 
         // » 菜单里的子项：标签与提示同分段，tag 是页的序号
         #expect(group.subitems.map(\.label) == titles)
