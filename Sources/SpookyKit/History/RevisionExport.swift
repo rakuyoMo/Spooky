@@ -17,6 +17,9 @@ public struct RevisionExport: Sendable {
         case tar
     }
 
+    /// `format-patch` 写进目录时封面信的文件名；后缀与补丁一样写死成 `.patch`。
+    static let coverLetterName = "0000-cover-letter.patch"
+
     /// 共享的本机或服务器执行器。
     public let runner: GitRunner
 
@@ -78,12 +81,14 @@ public struct RevisionExport: Sendable {
     /// 每个提交存成一个补丁文件，文件名与 `format-patch` 写进目录时相同：四位序号加整理过的标题。
     ///
     /// 合并提交没有补丁，不写文件，序号仍按传入的位置计。
+    /// 仓库的 `format.coverLetter` 为真时，另写一封 `0000-cover-letter.patch`，补丁标题随之编号；
+    /// 每个提交都重写它，留下的是最后一个提交生成的。
     ///
     /// - Parameters:
     ///   - commits: 提交的完整哈希，按传入顺序编号；调用方按从旧到新传入。
     ///   - omitsPrefixes: 补丁里的路径不带 `a/`、`b/` 前缀。
     ///   - directory: 本机上的目标目录，同名文件被替换。
-    /// - Returns: 实际写入的补丁文件。
+    /// - Returns: 实际写入的文件；写了封面信时它只出现一次，排在最前。
     public func savePatches(
         _ commits: [String],
         omitsPrefixes: Bool,
@@ -94,6 +99,10 @@ public struct RevisionExport: Sendable {
         }
 
         let details = try await patchDetails(of: commits)
+        let coverLetter = try await writesCoverLetter()
+            ? directory.appendingPathComponent(Self.coverLetterName)
+            : nil
+
         var saved: [URL] = []
 
         // format-patch 遇到合并提交会跳过它、改取更早的提交，合并提交在这里先排除
@@ -104,13 +113,21 @@ public struct RevisionExport: Sendable {
 
             let destination = directory.appendingPathComponent(Self.patchName(index + 1, subject: detail.subject))
 
-            // 封面信写死不生成：仓库配了 format.coverLetter 时，标准输出在补丁之前还有一封封面信
-            let arguments = ["format-patch", "--stdout", "--no-cover-letter", "-1"]
+            // 编号与快速保存相同；配了封面信时补丁标题按它写成 [PATCH k/k]
+            let arguments = ["format-patch", "--stdout", "--start-number=\(index + 1)", "-1"]
                 + (omitsPrefixes ? ["--no-prefix"] : [])
                 + [commit]
 
-            try await Self.replacing(destination) { temporary in
-                try await runner.stream(arguments, to: temporary)
+            let written = try await savePatch(
+                arguments,
+                of: commit,
+                to: destination,
+                coverLetter: coverLetter
+            )
+
+            // 每个提交都重写同一封封面信，只记一次，排在最前
+            if let written, !saved.contains(written) {
+                saved.insert(written, at: 0)
             }
 
             saved.append(destination)
@@ -122,11 +139,13 @@ public struct RevisionExport: Sendable {
     /// 每个提交存成一个补丁文件，由仓库所在机器上的 Git 直接写进仓库根目录；服务器仓库的补丁写在服务器上。
     ///
     /// 文件名由 Git 生成，是四位序号加整理过的标题，同名文件被覆盖；合并提交不写文件，序号仍按传入的位置计。
+    /// 仓库的 `format.coverLetter` 为真时，Git 另写一封 `0000-cover-letter.patch`，补丁标题随之编号；
+    /// 每个提交都重写它，留下的是最后一个提交生成的。
     ///
     /// - Parameters:
     ///   - commits: 提交的完整哈希，按传入顺序编号；调用方按从旧到新传入。
     ///   - omitsPrefixes: 补丁里的路径不带 `a/`、`b/` 前缀。
-    /// - Returns: 实际写入的补丁文件在仓库所在机器上的路径。
+    /// - Returns: 实际写入的文件在仓库所在机器上的路径；写了封面信时它只出现一次，排在最前。
     public func savePatchesToRepositoryRoot(_ commits: [String], omitsPrefixes: Bool) async throws -> [String] {
         guard !commits.isEmpty, commits.allSatisfy(GitObjectID.isValid) else {
             throw RepositoryReadError.invalidQuery
@@ -141,22 +160,26 @@ public struct RevisionExport: Sendable {
                 continue
             }
 
-            // 后缀与封面信写死，仓库配置的 format.suffix、format.coverLetter 不改变文件名与个数
+            // 后缀写死，仓库配置的 format.suffix 不改变文件名；封面信随仓库的 format.coverLetter
             let arguments = [
                 "format-patch",
                 "-o", runner.location.path,
                 "--start-number=\(index + 1)",
                 "--suffix=.patch",
-                "--no-cover-letter",
                 "-1",
             ]
 
-            // Git 写完文件后在标准输出逐行打出它的路径
+            // Git 写完文件后在标准输出逐行打出它的路径，封面信排在补丁之前
             let output = try await runner.run(arguments + (omitsPrefixes ? ["--no-prefix"] : []) + [commit])
 
-            saved += String(decoding: output, as: UTF8.self)
+            let paths = String(decoding: output, as: UTF8.self)
                 .split(separator: "\n")
                 .map(String.init)
+
+            // 每个提交都重写同一封封面信，路径只留第一次的
+            for path in paths where !saved.contains(path) {
+                saved.append(path)
+            }
         }
 
         return saved
@@ -186,6 +209,85 @@ extension RevisionExport {
         } else {
             try FileManager.default.moveItem(at: item, to: destination)
         }
+    }
+
+    /// 把两封邮件在第二封的 `From <哈希> Mon Sep 17 00:00:00 2001` 一行拆开：之前的替换封面信，其余写进补丁。
+    ///
+    /// 两封的这一行都写这个提交的哈希，第一封从文件开头开始；文件按映射读取，不整段载入内存。
+    ///
+    /// - Returns: 写了封面信时是它；找不到第二封时整段移作补丁，返回 nil。
+    private static func splitCoverLetter(
+        _ mail: URL,
+        of commit: String,
+        coverLetter: URL,
+        patch: URL
+    ) async throws -> URL? {
+        let content = try Data(contentsOf: mail, options: .alwaysMapped)
+        let boundary = Data("\nFrom \(commit) Mon Sep 17 00:00:00 2001\n".utf8)
+
+        guard let separator = content.range(of: boundary) else {
+            try FileManager.default.moveItem(at: mail, to: patch)
+            return nil
+        }
+
+        // 分界的换行属于封面信
+        let start = separator.lowerBound + 1
+
+        try await replacing(coverLetter) { temporary in
+            try content[..<start].write(to: temporary)
+        }
+
+        try content[start...].write(to: patch)
+        return coverLetter
+    }
+
+    /// 把一个提交的 `format-patch --stdout` 写成补丁文件，失败或取消时不留下写了一半的文件。
+    ///
+    /// 给了封面信的位置时，标准输出是封面信在前、补丁在后的两封邮件，先写进同一临时目录，再拆成两个文件。
+    ///
+    /// - Returns: 写了封面信时是它，否则为 nil。
+    private func savePatch(
+        _ arguments: [String],
+        of commit: String,
+        to destination: URL,
+        coverLetter: URL?
+    ) async throws -> URL? {
+        var written: URL? = nil
+
+        try await Self.replacing(destination) { temporary in
+            guard let coverLetter else {
+                try await runner.stream(arguments, to: temporary)
+                return
+            }
+
+            // 两封邮件先整段写在补丁旁边，随临时目录一起删除
+            let mail = temporary.appendingPathExtension("mbox")
+            try await runner.stream(arguments, to: mail)
+
+            written = try await Self.splitCoverLetter(
+                mail,
+                of: commit,
+                coverLetter: coverLetter,
+                patch: temporary
+            )
+        }
+
+        return written
+    }
+
+    /// 仓库生效的配置是否让 `format-patch` 写封面信。
+    ///
+    /// 按 Git 的布尔写法判断；`auto` 不是布尔写法，判为假，与 Git 只存一个提交时不写封面信相同。
+    private func writesCoverLetter() async throws -> Bool {
+        let pattern = "^format\\.coverletter$"
+
+        let result = try await runner.execute(
+            ["config", "-z", "--get-regexp", pattern],
+            acceptedExitCodes: [0, 1]
+        )
+        let values = try ConfigRecords.parse(result.standardOutput, pattern: pattern, context: "format config")
+
+        return values["format.coverletter"].map(ConfigRecords.boolean) ?? false
     }
 
     /// 归档参数：路径按字面匹配并保留树中存储的 Unicode 形式，读取工作区里的 `.gitattributes`。

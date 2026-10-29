@@ -63,7 +63,7 @@ struct RevisionExportTests {
         #expect(String(decoding: listing.standardOutput, as: UTF8.self) == "[*].txt\n")
     }
 
-    /// 文件名与 format-patch 写进目录时相同；去掉前缀、跳过合并提交，同名文件被替换；仓库配了封面信也只写补丁本身。
+    /// 文件名与 format-patch 写进目录时相同；去掉前缀、跳过合并提交，同名文件被替换；封面信没配或配成 auto 时只写补丁本身。
     @Test("保存补丁", arguments: ["sha1", "sha256"])
     func patches(objectFormat: String) async throws {
         let fixture = try TemporaryRepository()
@@ -92,23 +92,20 @@ struct RevisionExportTests {
         let patch = String(decoding: try Data(contentsOf: saved[0]), as: UTF8.self)
         #expect(patch.contains("--- /dev/null\n+++ b/one.txt\n"))
 
+        // 没配封面信时，与 Git 只输出这一个提交的补丁逐字节相同
+        let plain = try Data(contentsOf: saved[1])
+        #expect(try await runner.run(["format-patch", "--stdout", "-1", second]) == plain)
+
         let omitted = try await export.savePatches([first], omitsPrefixes: true, to: directory)
         #expect(String(decoding: try Data(contentsOf: omitted[0]), as: UTF8.self).contains("+++ one.txt\n"))
         #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).count == 2)
 
-        // 仓库配了封面信后再存一次，文件与配置前逐字节相同
-        let plain = try Data(contentsOf: saved[1])
-        _ = try await runner.run(["config", "--local", "format.coverLetter", "true"])
+        // 封面信配成 auto 时，每次只存一个提交，Git 不写封面信，文件与配置前逐字节相同
+        _ = try await runner.run(["config", "--local", "format.coverLetter", "auto"])
         #expect(try await export.savePatches([first, second], omitsPrefixes: false, to: directory) == saved)
-
-        let covered = try Data(contentsOf: saved[1])
-        #expect(covered == plain)
-
-        // 文件里只有这个提交的一封补丁，没有封面信
-        let coveredText = String(decoding: covered, as: UTF8.self)
-        #expect(coveredText.hasPrefix("From \(second) "))
-        #expect(coveredText.components(separatedBy: "From \(second) ").count == 2)
-        #expect(coveredText.contains("\nSubject: [PATCH] second: two\n"))
+        #expect(try Data(contentsOf: saved[1]) == plain)
+        #expect(String(decoding: plain, as: UTF8.self).contains("\nSubject: [PATCH] second: two\n"))
+        #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).count == 2)
 
         // 合并提交没有补丁
         _ = try await runner.run(["switch", "-q", "-c", "side", first])
@@ -119,7 +116,7 @@ struct RevisionExportTests {
         #expect(try await export.savePatches([side, merge], omitsPrefixes: false, to: directory).count == 1)
     }
 
-    /// 补丁由 Git 直接写进仓库根目录，内容与输出到标准输出时相同；仓库的后缀与封面信配置不改变文件名与个数。
+    /// 补丁由 Git 直接写进仓库根目录，内容与输出到标准输出时相同；仓库的后缀配置不改变文件名，封面信配成 auto 时不写。
     @Test("补丁存进仓库根目录", arguments: ["sha1", "sha256"])
     func patchesInRepositoryRoot(objectFormat: String) async throws {
         let fixture = try TemporaryRepository()
@@ -156,7 +153,7 @@ struct RevisionExportTests {
         #expect(try await export.savePatchesToRepositoryRoot([merge, side], omitsPrefixes: false) == [root + "/0002-side.patch"])
 
         _ = try await runner.run(["config", "--local", "format.suffix", ".diff"])
-        _ = try await runner.run(["config", "--local", "format.coverLetter", "true"])
+        _ = try await runner.run(["config", "--local", "format.coverLetter", "auto"])
         #expect(try await export.savePatchesToRepositoryRoot([second], omitsPrefixes: false) == [root + "/0001-second-two.patch"])
 
         // 根目录里只有这几个补丁，没有封面信，也没有 .diff 文件
@@ -171,6 +168,66 @@ struct RevisionExportTests {
         await #expect(throws: RepositoryReadError.self) {
             try await export.savePatchesToRepositoryRoot([], omitsPrefixes: false)
         }
+    }
+
+    /// 仓库配了封面信时，两种保存都在补丁旁边另写一封，补丁标题随之编号；补丁文件里只有一封邮件，不混进封面信。
+    @Test("配了封面信时另写一个文件", arguments: ["sha1", "sha256"])
+    func coverLetters(objectFormat: String) async throws {
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+
+        try await fixture.initialize(objectFormat: objectFormat)
+        let runner = fixture.runner
+        let first = try await Self.commit(fixture, files: ["one.txt": Data("one\n".utf8)], message: "first one")
+        let second = try await Self.commit(fixture, files: ["two.txt": Data("two\n".utf8)], message: "second two")
+        _ = try await runner.run(["config", "--local", "format.coverLetter", "true"])
+
+        let output = try Self.outputDirectory()
+        defer { try? FileManager.default.removeItem(at: output) }
+
+        let export = RevisionExport(runner: runner)
+        let cover = output.appending(path: "0000-cover-letter.patch")
+
+        // 存一个提交：封面信与补丁各一个文件
+        let single = try await export.savePatches([first], omitsPrefixes: false, to: output)
+        #expect(single == [cover, output.appending(path: "0001-first-one.patch")])
+
+        let firstLetter = try String(contentsOf: cover, encoding: .utf8)
+        #expect(firstLetter.contains("\nSubject: [PATCH 0/1] *** SUBJECT HERE ***\n"))
+
+        let patch = try String(contentsOf: single[1], encoding: .utf8)
+        #expect(patch.hasPrefix("From \(first) "))
+        #expect(patch.components(separatedBy: "From \(first) ").count == 2)
+        #expect(patch.contains("\nSubject: [PATCH 1/1] first one\n"))
+
+        // 存两个提交：封面信只返回一次，留下的是较新的提交生成的
+        let saved = try await export.savePatches([first, second], omitsPrefixes: false, to: output)
+        #expect(saved == [cover, single[1], output.appending(path: "0002-second-two.patch")])
+
+        let secondPatch = try String(contentsOf: saved[2], encoding: .utf8)
+        #expect(secondPatch.contains("\nSubject: [PATCH 2/2] second two\n"))
+
+        let letter = try String(contentsOf: cover, encoding: .utf8)
+        #expect(letter.hasPrefix("From \(second) "))
+        #expect(letter.contains("\nSubject: [PATCH 0/2] *** SUBJECT HERE ***\n"))
+        #expect(letter.contains("\n  second two\n"))
+        #expect(!letter.contains("first one"))
+
+        // 快速保存写出同名的文件：补丁逐字节相同，封面信只有 Date 一行可能不同
+        let quick = try await export.savePatchesToRepositoryRoot([first, second], omitsPrefixes: false)
+        #expect(quick == saved.map { runner.location.path + "/" + $0.lastPathComponent })
+
+        for (path, file) in zip(quick, saved).dropFirst() {
+            #expect(try Data(contentsOf: URL(filePath: path)) == Data(contentsOf: file))
+        }
+
+        let undated = { (url: URL) in
+            try String(contentsOf: url, encoding: .utf8)
+                .split(separator: "\n", omittingEmptySubsequences: false)
+                .filter { !$0.hasPrefix("Date: ") }
+        }
+
+        #expect(try undated(URL(filePath: quick[0])) == undated(cover))
     }
 
     /// 输出流式交给回调，不收集进结果；失败或取消时目标与临时文件都不存在。
