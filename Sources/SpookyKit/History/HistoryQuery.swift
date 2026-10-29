@@ -4,17 +4,18 @@ import Foundation
 
 /// 历史搜索的一个条件：按提交信息、作者、提交人、文件、哈希或日期筛选。
 ///
-/// 同类条件之间是 “或”，不同类条件之间是 “且”；文字条件忽略大小写、按字面匹配，空条件不参与筛选。
+/// 同类条件之间是 “或”，不同类条件之间是 “且”；说明、作者与提交人按 Git 的基本正则匹配、忽略大小写，
+/// 文件按字面匹配，空条件不参与筛选。
 public struct HistorySearchCondition: Sendable, Equatable, Identifiable {
     /// 条件的种类。
     public enum Kind: String, Sendable, CaseIterable {
-        /// 提交信息的子串。
+        /// 匹配提交信息的基本正则。
         case message
 
-        /// 作者的姓名或邮箱的子串。
+        /// 匹配作者姓名或邮箱的基本正则。
         case author
 
-        /// 提交人的姓名或邮箱的子串。
+        /// 匹配提交人姓名或邮箱的基本正则。
         case committer
 
         /// 仓库内的路径，按字面匹配文件或目录。
@@ -142,7 +143,8 @@ public struct HistoryQuery: Sendable, Equatable {
         let active = conditions.filter(\.isActive)
         var arguments = firstParentOnly ? ["--first-parent"] : []
 
-        // 文字条件按字面子串匹配并忽略大小写，输入中的正则符号不会被解释
+        // 说明、作者与提交人按基本正则匹配并忽略大小写；
+        // 显式写出 --basic-regexp，log 才不受仓库与用户配置的 grep.patternType 影响，与 rev-list 的结果一致
         let patterns = active.compactMap { condition -> String? in
             switch condition.kind {
             case .message: "--grep=" + condition.trimmedText
@@ -153,7 +155,7 @@ public struct HistoryQuery: Sendable, Equatable {
         }
 
         if !patterns.isEmpty {
-            arguments += ["-i", "-F"] + patterns
+            arguments += ["-i", "--basic-regexp"] + patterns
         }
 
         // 多个日期条件取交集：下限取最晚的，上限取最早的
@@ -168,6 +170,26 @@ public struct HistoryQuery: Sendable, Equatable {
         }
 
         return arguments
+    }
+
+    /// 说明、作者或提交人条件里有 Git 编译不了的正则；这时不执行 Git，结果为空。
+    ///
+    /// 在本机按 Git 编译这几类条件的选项试编译；服务器上的 Git 判断不同时，照常报出 Git 的错误。
+    var hasInvalidPattern: Bool {
+        conditions.contains { condition in
+            guard condition.isActive, [.message, .author, .committer].contains(condition.kind) else {
+                return false
+            }
+
+            var regex = regex_t()
+
+            guard regcomp(&regex, condition.trimmedText, REG_NEWLINE | REG_ICASE | REG_NOSUB) == 0 else {
+                return true
+            }
+
+            regfree(&regex)
+            return false
+        }
     }
 
     /// 排序参数；两项都要求时 Git 以后出现的 `--date-order` 为准。

@@ -62,4 +62,49 @@ extension HistoryListTests {
         #expect(selector.commits.isEmpty)
         #expect(selector.highlightedID == nil)
     }
+
+    /// ↑ ↓ 逐行移动高亮，到两端停住；搜索框的内容按基本正则匹配说明，编译不了时列表为空、不报错。
+    @Test("版本选择器的高亮移动与正则搜索")
+    func commitSelectorKeyboardAndRegex() async throws {
+        let fixture = try await Self.makeSession(commits: (0 ..< 120).map { "commit \($0)" })
+        defer { fixture.close() }
+
+        let head = try #require(fixture.session.status?.branch.oid)
+        let selector = CommitSelectorState()
+        selector.open(runner: fixture.runner, head: head)
+        try await FileViewsTests.wait { !selector.isLoading && !selector.commits.isEmpty }
+
+        // 第一行再往上不动，往下逐行移动
+        selector.moveHighlight(by: -1)
+        #expect(selector.highlightedID == head)
+
+        selector.moveHighlight(by: 1)
+        selector.moveHighlight(by: 1)
+        #expect(selector.highlightedID == selector.commits[2].id)
+
+        // 移到已读到的最后一行后停住
+        for _ in 0 ..< CommitSelectorState.pageSize {
+            selector.moveHighlight(by: 1)
+        }
+
+        #expect(selector.highlightedID == selector.commits.last?.id)
+
+        // 点号匹配任一字符：只剩 commit 119 与 commit 109
+        selector.search("COMMIT 1.9")
+        try await FileViewsTests.wait { !selector.isLoading && selector.commits.count == 2 }
+        #expect(selector.commits.map(\.subject) == ["commit 119", "commit 109"])
+        #expect(selector.highlightedID == selector.commits.first?.id)
+
+        // 编译不了的正则：列表为空，没有失败，也没有可移动的高亮
+        selector.search("x[")
+        try await FileViewsTests.wait { !selector.isLoading && selector.commits.isEmpty }
+        #expect(selector.failure == nil)
+        #expect(!selector.hasMore)
+        #expect(selector.highlightedID == nil)
+
+        selector.moveHighlight(by: 1)
+        #expect(selector.highlightedID == nil)
+
+        selector.close()
+    }
 }

@@ -21,13 +21,13 @@ extension RepositoryHistory {
         return lines.firstIndex(of: commit)
     }
 
-    /// 按查询数出固定根集合里的提交，最多数到 `limit`；数到上限时调用方按 “或更多” 显示。
+    /// 按查询数出固定根集合里的提交，最多数到 `limit`；数到上限时调用方按 “或更多” 显示，正则编译不了时为 0。
     public func count(roots: [String], query: HistoryQuery = HistoryQuery(), limit: Int) async throws -> Int {
         guard limit > 0, roots.allSatisfy(GitObjectID.isValid) else {
             throw RepositoryReadError.invalidQuery
         }
 
-        guard !roots.isEmpty else {
+        guard !roots.isEmpty, !query.hasInvalidPattern else {
             return 0
         }
 
@@ -54,7 +54,7 @@ extension RepositoryHistory {
         return count
     }
 
-    /// 提交在固定根集合按查询排序、筛选后的历史里的下标（0 起），只看前 `limit` 个；不在其中时为 nil。
+    /// 提交在固定根集合按查询排序、筛选后的历史里的下标（0 起），只看前 `limit` 个；不在其中或正则编译不了时为 nil。
     ///
     /// 顺序与 ``page(roots:query:offset:limit:)`` 相同，回到历史时据此判断要找的提交排在多后面；不支持哈希条件。
     public func position(
@@ -72,7 +72,7 @@ extension RepositoryHistory {
             throw RepositoryReadError.invalidQuery
         }
 
-        guard !roots.isEmpty else {
+        guard !roots.isEmpty, !query.hasInvalidPattern else {
             return nil
         }
 

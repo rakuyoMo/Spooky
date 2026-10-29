@@ -29,7 +29,8 @@ struct RemoteHistorySearchTests {
             let history = RepositoryHistory(runner: runner)
             let head = try await RepositoryReferences(runner: runner).resolve("HEAD")
 
-            let message = HistoryQuery(conditions: [.init(kind: .message, text: "FIX *STAR*")])
+            // 说明按基本正则匹配，反斜杠与星号原样传到 B 上
+            let message = HistoryQuery(conditions: [.init(kind: .message, text: "FIX \\*STAR\\*")])
             let found = try await history.page(roots: [head], query: message)
             #expect(found.commits.map(\.subject) == ["服务器 fix *star*"])
             #expect(try await history.count(roots: [head], query: message, limit: 100) == 1)
