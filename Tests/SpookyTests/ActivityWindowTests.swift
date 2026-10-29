@@ -38,13 +38,17 @@ struct ActivityWindowTests {
         #expect(button.title == title && button.bezelStyle == .toolbar)
         #expect(clear.label == title && clear.paletteLabel == title && clear.toolTip == title)
 
-        // 三段依次是 Remote、Repository、Service，单选，第一次打开选中 Remote
+        // 分组的视图是单选的分段，三段依次是 Remote、Repository、Service，第一次打开选中 Remote
         let group = try #require(toolbar.items[2] as? NSToolbarItemGroup)
+        let control = try #require(group.view as? NSSegmentedControl)
         let keys = ["activity.remote", "activity.repository", "activity.service"]
-        #expect(group.selectionMode == .selectOne)
-        #expect(group.subitems.map(\.label) == keys.map { AppLocalization.text($0) })
-        #expect(group.subitems.map(\.toolTip) == keys.map { AppLocalization.text($0 + ".help") })
-        #expect(group.selectedIndex == 0)
+        let titles = keys.map { AppLocalization.text($0) }
+        let tips = keys.map { AppLocalization.text($0 + ".help") }
+        let segments = 0 ..< control.segmentCount
+        #expect(control.trackingMode == .selectOne && control.segmentStyle == .texturedRounded)
+        #expect(segments.map { control.label(forSegment: $0) } == titles)
+        #expect(segments.map { control.toolTip(forSegment: $0) } == tips)
+        #expect(control.selectedSegment == 0)
         #expect(controller.state.kind == .remote)
 
         // 英文的标题与提示
@@ -72,10 +76,56 @@ struct ActivityWindowTests {
         controller.searchChanged(search.searchField)
         #expect(controller.state.query == "origin")
 
-        // 每个按钮与分段的动作都由窗口响应
-        for item in [clear] + group.subitems {
-            let action = try #require(item.action)
+        // 每个按钮、分段与子项的动作都由窗口响应
+        for action in [clear.action, control.action] + group.subitems.map(\.action) {
+            let action = try #require(action)
             #expect(controller.responds(to: action))
+        }
+    }
+
+    /// 分段每段宽度随文字；窗口窄时整组移进 » 菜单，菜单里的子项与分段同名同提示；从哪一处换页，分段都选中当前页。
+    @Test("分段的宽度、» 菜单的子项与换页")
+    func kindsItem() throws {
+        let controller = ActivityWindowController(activities: RepositoryActivities())
+        defer { controller.close() }
+
+        let group = try #require(
+            controller.window?.toolbar?.items.first { $0.itemIdentifier == ActivityToolbar.kinds } as? NSToolbarItemGroup
+        )
+        let control = try #require(group.view as? NSSegmentedControl)
+        let font = try #require(control.font)
+        let segments = 0 ..< control.segmentCount
+        let titles = segments.map { control.label(forSegment: $0) ?? "" }
+        let tips = segments.map { control.toolTip(forSegment: $0) }
+
+        // 不等分：各段宽度减去自己标题的文字宽度后相同；段宽经过取整，差值允许在 3 pt 以内
+        let segmentElements = try #require(
+            (control.cell as? NSSegmentedCell)?.accessibilityChildren() as? [NSAccessibilityElement]
+        )
+        let paddings = zip(segmentElements, titles).map { segment, title in
+            let textWidth = NSAttributedString(string: title, attributes: [.font: font]).size().width
+
+            return segment.accessibilityFrame().width - textWidth
+        }
+        #expect(control.segmentDistribution == .fit && paddings.count == 3)
+        #expect((paddings.max() ?? 0) - (paddings.min() ?? 0) < 3)
+
+        // » 菜单里的子项：标签与提示同分段，tag 是页的序号
+        #expect(group.subitems.map(\.label) == titles)
+        #expect(group.subitems.map(\.toolTip) == tips)
+        #expect(group.subitems.map(\.tag) == [0, 1, 2])
+
+        // 点分段换页
+        control.selectedSegment = 2
+        #expect(control.sendAction(control.action, to: control.target))
+        #expect(controller.state.kind == .service)
+
+        // 从 » 菜单的子项换页，分段的选中跟着变
+        for (index, item) in group.subitems.enumerated() {
+            let action = try #require(item.action)
+            #expect(NSApplication.shared.sendAction(action, to: item.target, from: item))
+            #expect(controller.state.kind == ActivityKind.allCases[index])
+            #expect(control.selectedSegment == index)
         }
     }
 

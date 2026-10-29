@@ -85,16 +85,23 @@ extension ActivityWindowController {
         activities.clearEnded(state.kind)
     }
 
-    /// 分段换页；每段的 tag 是它在 `ActivityKind.allCases` 里的序号。
+    /// 换页：点分段时取选中的段，从 » 菜单选子项时取它的 tag，两者都是页在 `ActivityKind.allCases` 里的序号；换页后分段选中同一页。
     @objc
-    func selectKind(_ sender: NSToolbarItem) {
+    func selectKind(_ sender: Any?) {
         let kinds = ActivityKind.allCases
 
-        guard kinds.indices.contains(sender.tag) else {
+        let index = (sender as? NSSegmentedControl)?.selectedSegment
+            ?? (sender as? NSValidatedUserInterfaceItem)?.tag
+
+        guard let index, kinds.indices.contains(index) else {
             return
         }
 
-        state.kind = kinds[sender.tag]
+        state.kind = kinds[index]
+
+        // » 菜单换页时分段不在工具栏上，同样改它的选中，拉宽窗口后显示的是当前页
+        let group = window?.toolbar?.items.first { $0.itemIdentifier == ActivityToolbar.kinds }
+        (group?.view as? NSSegmentedControl)?.selectedSegment = index
     }
 
     /// 搜索框的文字即时写入窗口状态，列表随之过滤。
@@ -125,32 +132,46 @@ extension ActivityWindowController {
         return item
     }
 
-    /// Remote | Repository | Service：单选的文字分段，选中当前页。
+    /// Remote | Repository | Service：自建的单选分段，每段宽度随文字；窗口窄时整组移进 » 菜单，菜单里是三个子项。
     private func makeKindsItem() -> NSToolbarItem {
         let kinds = ActivityKind.allCases
-        let titles = kinds.map { AppLocalization.text(ActivityToolbar.titleKey(of: $0)) }
 
-        let group = NSToolbarItemGroup(
-            itemIdentifier: ActivityToolbar.kinds,
-            titles: titles,
-            selectionMode: .selectOne,
-            labels: titles,
-            target: self,
-            action: nil
-        )
+        let control = NSSegmentedControl()
+        control.segmentCount = kinds.count
+        control.trackingMode = .selectOne
+        control.segmentStyle = .texturedRounded
+        control.segmentDistribution = .fit
+        control.target = self
+        control.action = #selector(selectKind(_:))
+
+        let group = NSToolbarItemGroup(itemIdentifier: ActivityToolbar.kinds)
         group.paletteLabel = AppLocalization.text("activity.title")
+        group.subitems = kinds.map(makeKindItem(_:))
 
-        // 每段带上自己的序号与提示，换页时据序号取页
-        for (index, segment) in group.subitems.enumerated() {
-            segment.tag = index
-            segment.target = self
-            segment.action = #selector(selectKind(_:))
-            segment.toolTip = AppLocalization.text(ActivityToolbar.titleKey(of: kinds[index]) + ".help")
+        // 每段的标题与提示取自同序号的子项
+        for (index, item) in group.subitems.enumerated() {
+            control.setLabel(item.label, forSegment: index)
+            control.setToolTip(item.toolTip, forSegment: index)
         }
 
-        group.selectedIndex = kinds.firstIndex(of: state.kind) ?? 0
+        control.selectedSegment = kinds.firstIndex(of: state.kind) ?? 0
+        group.view = control
 
         return group
+    }
+
+    /// 一页的子项：» 菜单里显示它的标签，tag 是页的序号，提示供分段的同一段使用。
+    private func makeKindItem(_ kind: ActivityKind) -> NSToolbarItem {
+        let key = ActivityToolbar.titleKey(of: kind)
+
+        let item = NSToolbarItem(itemIdentifier: NSToolbarItem.Identifier(key))
+        item.label = AppLocalization.text(key)
+        item.toolTip = AppLocalization.text(key + ".help")
+        item.tag = ActivityKind.allCases.firstIndex(of: kind) ?? 0
+        item.target = self
+        item.action = #selector(selectKind(_:))
+
+        return item
     }
 
     /// 搜索框：按仓库名与日志内容过滤当前页，提示与标签相同。
