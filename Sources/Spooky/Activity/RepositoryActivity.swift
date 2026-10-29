@@ -40,6 +40,12 @@ final class RepositoryActivity: Identifiable {
     /// 开始时间。
     let started: Date
 
+    /// 结束时间，由 `RepositoryActivities.finish` 写入；进行中与从本机读回的记录为 nil。
+    var ended: Date? = nil
+
+    /// 读取成功时的一行结果，如读到的条数或增减计数；没有结果的记录为 nil。
+    var result: String? = nil
+
     /// 完成、失败或取消的本地化状态键。
     var state = "activity.running"
 
@@ -55,6 +61,11 @@ final class RepositoryActivity: Identifiable {
     /// 已完成、失败或取消；进行中的同步把状态换成了步骤名，仍算进行中。
     var isEnded: Bool {
         ["activity.finished", "activity.failed", "activity.cancelled"].contains(state)
+    }
+
+    /// 从开始到结束的秒数；还没结束或从本机读回的记录为 nil。
+    var elapsed: TimeInterval? {
+        ended.map { $0.timeIntervalSince(started) }
     }
 
     /// 两路输出整段拼成的日志，进度里的 `\r` 已覆盖当前行。
@@ -91,13 +102,14 @@ final class RepositoryActivity: Identifiable {
     ///   - kind: 记录所在的页。
     ///   - repository: 带主机前缀的仓库身份；不属于仓库的托管服务请求为 nil。
     ///   - title: 已本地化的操作名称。
-    init(kind: ActivityKind, repository: RepositoryLocation?, title: String) {
+    ///   - started: 开始时间；读取结束后才插入的记录传入读取开始的时刻。
+    init(kind: ActivityKind, repository: RepositoryLocation?, title: String, started: Date = Date()) {
         id = UUID()
         self.kind = kind
         self.repository = repository
         isRestored = false
         self.title = title
-        started = Date()
+        self.started = started
     }
 
     /// 用保存在本机的内容还原一条已结束的记录。
@@ -146,6 +158,10 @@ final class RepositoryActivities {
     /// 最新活动排在最前面。
     var items: [RepositoryActivity] = []
 
+    /// 读取增减计数的基准：按仓库、按类保存上一次记录读取时的清单，每项是 “身份 → 比较值的摘要”。
+    @ObservationIgnored
+    var baselines: [RepositoryLocation: [ActivityInventory: [String: String]]] = [:]
+
     /// Remote 记录的保存位置；没有设置时只在内存里。
     private var archive: ActivityArchive? = nil
 
@@ -165,8 +181,9 @@ final class RepositoryActivities {
         }
     }
 
-    /// 记录结束：清掉取消入口；设了保存位置时把 Remote 记录写进去。
+    /// 记录结束：记下结束时间、清掉取消入口；设了保存位置时把 Remote 记录写进去。
     func finish(_ activity: RepositoryActivity) {
+        activity.ended = Date()
         activity.cancel = nil
 
         guard

@@ -30,6 +30,10 @@ final class RepositoryWorktreeState {
     /// 请求代数，写入或关闭后递增，旧请求的结果被丢弃。
     private var generation = 0
 
+    /// 清单的读取记进的 Activity 列表，由会话设成它自己的列表。
+    @ObservationIgnored
+    var activities = RepositoryActivities.shared
+
     /// 除本窗口仓库之外的工作树，按名称排序；侧边栏与快捷操作列出这些。
     var others: [Worktree] {
         items
@@ -51,14 +55,24 @@ final class RepositoryWorktreeState {
     }
 
     /// 读取工作树清单；正在读取时不重复发起。
-    func refresh(runner: GitRunner) {
+    ///
+    /// - Parameter records: 是否记进 Activity；自动刷新引起的重读不记。
+    func refresh(runner: GitRunner, records: Bool = true) {
         guard task == nil else { return }
 
         let request = generation
+        let activities = activities
 
         task = Task { [weak self] in
             do {
-                let worktrees = try await RepositoryWorktrees(runner: runner).list()
+                let worktrees = try await activities.recordRead(
+                    [AppLocalization.text("activity.read.worktrees")],
+                    in: runner.location,
+                    records: records
+                ) {
+                    try await RepositoryWorktrees(runner: runner).list()
+                }
+
                 guard let self, generation == request, !Task.isCancelled else { return }
 
                 items = worktrees

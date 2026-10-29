@@ -199,7 +199,8 @@ extension RepositorySession {
         }
 
         let activity = RepositoryActivity(kind: .repository, repository: repository, title: title)
-        RepositoryActivities.shared.insert(activity)
+        let activities = activities
+        activities.insert(activity)
 
         let task = Task { [weak self] in
             do {
@@ -217,7 +218,7 @@ extension RepositorySession {
                 }
             }
 
-            RepositoryActivities.shared.finish(activity)
+            activities.finish(activity)
         }
 
         activity.cancel = { task.cancel() }

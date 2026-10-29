@@ -215,6 +215,44 @@ struct ActivityWindowTests {
         #expect(activities.items.map(\.id) == [endedRequest.id, runningMerge.id, runningPush.id])
     }
 
+    /// Repository 页已结束的行在右上角写耗时、第三行写一行结果；没有结果的写状态；进行中的与 Remote 页的行写开始的时刻。
+    @Test("行的耗时与结果")
+    func rowTexts() throws {
+        let location = RepositoryLocation.local(path: "/tmp/Beta")
+        let started = Date(timeIntervalSince1970: 1_700_000_000)
+
+        // 两位小数，按系统地区的数字格式
+        let read = RepositoryActivity(kind: .repository, repository: location, title: "Update Branches", started: started)
+        read.state = "activity.finished"
+        read.result = "0 updated, 1 added, 0 deleted"
+        read.ended = started.addingTimeInterval(0.034)
+
+        let seconds = 0.034.formatted(.number.precision(.fractionLength(2)))
+        #expect(ActivityRow(activity: read).elapsed == AppLocalization.text("activity.elapsed", seconds))
+        #expect(ActivityRow(activity: read).status == "0 updated, 1 added, 0 deleted")
+
+        let english = try #require(
+            AppLocalization.bundle.url(forResource: "en", withExtension: "lproj").flatMap(Bundle.init(url:))
+        )
+        #expect(english.localizedString(forKey: "activity.elapsed", value: nil, table: nil) == "%@ sec")
+
+        // 没有一行结果的写状态
+        let tags = RepositoryActivity(kind: .repository, repository: location, title: "Update Tags", started: started)
+        tags.state = "activity.finished"
+        tags.ended = started
+        #expect(ActivityRow(activity: tags).elapsed != nil)
+        #expect(ActivityRow(activity: tags).status == AppLocalization.text("activity.finished"))
+
+        // 进行中的与 Remote 页的行写开始的时刻
+        let running = RepositoryActivity(kind: .repository, repository: location, title: "Merge")
+        #expect(ActivityRow(activity: running).elapsed == nil)
+        #expect(ActivityRow(activity: running).status == AppLocalization.text("activity.running"))
+
+        let fetch = activity(.remote, path: "/tmp/Alpha", log: "")
+        fetch.ended = Date()
+        #expect(ActivityRow(activity: fetch).elapsed == nil)
+    }
+
     /// 一条本机仓库的记录。
     private func activity(_ kind: ActivityKind, path: String, log: String, ended: Bool = true) -> RepositoryActivity {
         activity(kind, location: .local(path: path), log: log, ended: ended)

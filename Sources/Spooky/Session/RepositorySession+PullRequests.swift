@@ -178,9 +178,11 @@ extension RepositorySession {
             return false
         }
 
+        let activities = activities
+
         Task { [weak self] in
             do {
-                _ = try await RepositoryActivities.shared.recordHosting(
+                _ = try await activities.recordHosting(
                     title: title,
                     repository: repository,
                     log: { $0 }
