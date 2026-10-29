@@ -110,13 +110,11 @@ struct ArchiveBranchesDialog: View {
         )
     }
 
-    /// 建议归档的原因：多久没有更新。
+    /// 建议归档的原因：请求已合并，或分支陈旧；两者都满足时写请求已合并。
     private func reason(for branch: RepositoryReference) -> String {
-        guard let date = branch.date, let duration = SidebarTooltip.duration(since: date) else {
-            return ""
-        }
+        let merged = session.mergedPullRequest(of: branch) != nil
 
-        return AppLocalization.text("branch.staleFor", duration)
+        return AppLocalization.text(merged ? "pullRequests.state.merged" : "review.filter.stale")
     }
 
     /// 归档勾选的分支后关闭。

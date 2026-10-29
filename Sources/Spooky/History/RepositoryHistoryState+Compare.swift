@@ -44,7 +44,7 @@ extension RepositoryHistoryState {
         return snapshot?.references.first { $0.id == id && $0.isLocal && $0.objectType == "commit" }
     }
 
-    /// 所选分支的默认基准：父分支仍存在时用它，否则依次取标准名的基准分支、当前分支与第一个其它本地分支。
+    /// 所选分支的默认基准：父分支仍存在时用它，否则依次取标准名的基准分支与引用名排第一的其它本地分支。
     func defaultBase(for branch: RepositoryReference) -> RepositoryReference? {
         let locals = (snapshot?.references ?? []).filter { $0.isLocal && $0.id != branch.id }
 
@@ -57,8 +57,8 @@ extension RepositoryHistoryState {
 
         let standard = RepositoryReferences.standardBaseBranchNames.map { "refs/heads/" + $0 }
 
+        // 快照按引用名排序，没有标准名的分支时 locals.first 就是引用名排第一的
         return standard.lazy.compactMap { name in locals.first { $0.id == name } }.first
-            ?? locals.first { $0.name == self.branch?.head }
             ?? locals.first
     }
 
