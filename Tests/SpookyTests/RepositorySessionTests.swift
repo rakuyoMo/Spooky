@@ -143,6 +143,7 @@ struct RepositorySessionTests {
         #expect(!session.isWriting)
         #expect(session.canWrite)
         #expect(session.failure == nil)
+
         // 写入结束后的完整刷新另记读取，按标题找到写操作的记录
         let activity = try #require(session.activities.items.first { $0.title == "Fetch" })
         #expect(activity.state == "activity.cancelled")
