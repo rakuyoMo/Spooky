@@ -42,7 +42,7 @@ extension RepositorySession {
 
     /// 保存补丁：按住 ⌥ 的快速保存不弹选项对话框、不询问保存位置，沿用记住的去前缀选项，直接存进仓库根目录。
     ///
-    /// 快速保存的补丁由仓库所在机器上的 Git 写出，服务器仓库的补丁留在服务器上。
+    /// 快速保存的补丁由仓库所在机器上的 Git 写出，服务器仓库的补丁留在服务器上；本机仓库保存后在 Finder 里选中这些补丁。
     func requestSavePatch(_ commits: [HistoryCommit], quick: Bool) {
         guard !commits.isEmpty else {
             return
@@ -59,11 +59,21 @@ extension RepositorySession {
         let ids = Array(commits.map(\.id).reversed())
 
         runExport(AppLocalization.text("patch.title")) { runner in
-            _ = try await RevisionExport(runner: runner).savePatchesToRepositoryRoot(ids, omitsPrefixes: omitsPrefixes)
+            let paths = try await RevisionExport(runner: runner).savePatchesToRepositoryRoot(
+                ids,
+                omitsPrefixes: omitsPrefixes
+            )
+
+            // 服务器仓库的补丁写在服务器上，本机没有这些文件可以选中
+            guard runner.location.localURL != nil else {
+                return
+            }
+
+            await Self.revealPatches(paths.map { URL(filePath: $0) })
         }
     }
 
-    /// 选择本机目录后，把每个提交存成一个补丁文件；编号按提交从旧到新排列。
+    /// 选择本机目录后，把每个提交存成一个补丁文件；编号按提交从旧到新排列，保存后在 Finder 里选中这些补丁。
     func savePatches(_ commits: [HistoryCommit], omitsPrefixes: Bool) {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
@@ -76,7 +86,13 @@ extension RepositorySession {
 
         present(panel) { [weak self] directory in
             self?.runExport(AppLocalization.text("patch.title")) { runner in
-                _ = try await RevisionExport(runner: runner).savePatches(Array(ids), omitsPrefixes: omitsPrefixes, to: directory)
+                let files = try await RevisionExport(runner: runner).savePatches(
+                    Array(ids),
+                    omitsPrefixes: omitsPrefixes,
+                    to: directory
+                )
+
+                await Self.revealPatches(files)
             }
         }
     }
@@ -153,6 +169,15 @@ extension RepositorySession {
 // MARK: - Private
 
 extension RepositorySession {
+    /// 保存补丁成功后让 Finder 来到前台，打开补丁所在的目录并选中写出的全部文件；一个文件都没写或已取消时不打开。
+    private static func revealPatches(_ files: [URL]) {
+        guard !files.isEmpty, !Task.isCancelled else {
+            return
+        }
+
+        NSWorkspace.shared.activateFileViewerSelecting(files)
+    }
+
     /// 面板附在当前窗口上；用户选好位置后才执行。
     private func present(_ panel: NSSavePanel, then action: @escaping (URL) -> Void) {
         let completion: (NSApplication.ModalResponse) -> Void = { response in
