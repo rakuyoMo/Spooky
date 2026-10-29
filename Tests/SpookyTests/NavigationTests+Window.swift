@@ -42,14 +42,21 @@ extension NavigationTests {
         }
     }
 
-    /// 建立有一个提交的临时仓库，用窗口打开它并读完第一次刷新。
-    static func makeWindow() async throws -> WindowFixture {
+    /// 建立临时仓库，用窗口打开它并读完第一次刷新。
+    ///
+    /// - Parameter commits: 按顺序写入 main 的提交信息；nil 时只有一个添加 a.txt 的提交。
+    static func makeWindow(commits: [String]? = nil) async throws -> WindowFixture {
         let directory = try FileViewsTests.temporaryDirectory()
         let location = RepositoryLocation.local(path: directory.path)
         let runner = try await FileViewsTests.initializeRepository(at: location)
-        try Data("one\n".utf8).write(to: directory.appending(path: "a.txt"))
-        _ = try await runner.run(["add", "--all"])
-        _ = try await runner.run(["commit", "-q", "-m", "first"])
+
+        if let commits {
+            try await HistoryListTests.importCommits(commits, with: runner)
+        } else {
+            try Data("one\n".utf8).write(to: directory.appending(path: "a.txt"))
+            _ = try await runner.run(["add", "--all"])
+            _ = try await runner.run(["commit", "-q", "-m", "first"])
+        }
 
         let suite = "spooky-navigation-" + UUID().uuidString
         let defaults = try #require(UserDefaults(suiteName: suite))
@@ -132,9 +139,10 @@ extension NavigationTests {
         #expect(session.history.selectedReferences == ["refs/heads/main"])
         #expect(controller.currentReference == history)
 
+        // 列表只看 main 时先核对提交的位置，核对完才切到整页详情
         let commit = ViewReference.repository(location, .commit(head))
         controller.show(commit)
-        #expect(session.history.showsCommitPage)
+        try await FileViewsTests.wait { session.history.showsCommitPage }
         #expect(controller.currentReference == commit)
 
         let blame = ViewReference.repository(location, .file(path: "a.txt", revision: head, mode: .blame))
@@ -145,7 +153,102 @@ extension NavigationTests {
 
         // 中途经过的视图不进记录，后退一步就回到提交整页
         controller.navigateBack()
-        #expect(controller.currentReference == commit)
+        try await FileViewsTests.wait { controller.currentReference == commit }
+    }
+
+    /// 经链接、后退或前进回到排在询问的阈值之后的提交：询问时还没切换，取消后视图与后退 / 前进的位置、记录都不变；同意后才切到整页详情。
+    @Test("回到很靠后的提交先询问，取消时窗口不变")
+    func slowCommitReference() async throws {
+        let total = RepositoryHistoryState.slowLookupThreshold + 50
+        let fixture = try await Self.makeWindow(commits: (0 ..< total).map { "commit \($0)" })
+        defer { fixture.close() }
+
+        let controller = fixture.controller
+        let session = controller.session
+        let history = session.history
+        let runner = try #require(session.runner)
+        try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
+
+        let far = try await HistoryListTests.commit(
+            at: RepositoryHistoryState.slowLookupThreshold + 20,
+            with: runner
+        )
+
+        let working = ViewReference.repository(fixture.location, .workingCopy)
+        let page = ViewReference.repository(fixture.location, .commit(far.id))
+
+        // 记下询问的次数，按开关决定同意还是取消
+        var prompts = 0
+        var agrees = false
+
+        session.onConfirm = { _, _, action, _ in
+            prompts += 1
+            if agrees { action() }
+        }
+
+        // 链接：询问时窗口仍在 Working Copy，取消后视图与记录都不变
+        let entries = controller.navigation.entries
+        controller.show(page)
+        try await FileViewsTests.wait { prompts == 1 }
+
+        #expect(controller.currentReference == working)
+        #expect(controller.navigation.entries == entries)
+
+        // 同意后切到整页详情，续载到它并记进后退 / 前进
+        agrees = true
+        controller.show(page)
+        try await FileViewsTests.wait {
+            history.commits.contains(far) && history.lookup == nil && !history.isLoading
+        }
+
+        #expect(prompts == 2)
+        #expect(controller.currentReference == page)
+        #expect(controller.navigation.entries == entries + [page])
+
+        // 去 Stashes，并让列表只看 main，回到这个提交又要核对位置
+        controller.showStashes()
+        let stashes = controller.currentReference
+        history.selectedReferences = ["refs/heads/main"]
+
+        // 后退：取消时位置与视图都不变
+        agrees = false
+        controller.navigateBack()
+        try await FileViewsTests.wait { prompts == 3 }
+
+        #expect(controller.currentReference == stashes)
+        #expect(controller.navigation.current == stashes)
+        #expect(!controller.navigation.canGoForward)
+
+        // 同意后才后退到整页详情
+        agrees = true
+        controller.navigateBack()
+        try await FileViewsTests.wait {
+            controller.currentReference == page && history.lookup == nil && !history.isLoading
+        }
+
+        #expect(prompts == 4)
+        #expect(controller.navigation.current == page)
+        #expect(controller.navigation.next == stashes)
+
+        // 再退到 Working Copy 不用询问；列表只看 main 后前进，取消时同样不动
+        controller.navigateBack()
+        #expect(controller.currentReference == working)
+
+        history.selectedReferences = ["refs/heads/main"]
+        agrees = false
+        controller.navigateForward()
+        try await FileViewsTests.wait { prompts == 5 }
+
+        #expect(controller.currentReference == working)
+        #expect(controller.navigation.current == working)
+
+        // 同意后才前进到整页详情
+        agrees = true
+        controller.navigateForward()
+        try await FileViewsTests.wait { controller.currentReference == page }
+
+        #expect(prompts == 6)
+        #expect(controller.navigation.current == page)
     }
 
     /// 窗口恢复写下当前视图引用，重新启动后按它重新打开同一个仓库与视图。

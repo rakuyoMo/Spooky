@@ -8,6 +8,9 @@ extension RepositorySession {
     /// 保存补丁时不带 `a/`、`b/` 前缀的偏好键，对话框与快速保存共用。
     static let omitsPatchPrefixesKey = "savePatchOmitPrefixes"
 
+    /// 让 Finder 来到前台并选中这些文件；测试换成不打开 Finder 的。
+    static var revealInFinder: ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) }
+
     /// 历史里选中的两个提交，按列表顺序从新到旧；不是恰好两个时为空。
     var comparedCommits: (newer: HistoryCommit, older: HistoryCommit)? {
         let selected = history.commits.filter { history.selectedIDs.contains($0.id) }
@@ -42,7 +45,7 @@ extension RepositorySession {
 
     /// 保存补丁：按住 ⌥ 的快速保存不弹选项对话框、不询问保存位置，沿用记住的去前缀选项，直接存进仓库根目录。
     ///
-    /// 快速保存的补丁由仓库所在机器上的 Git 写出，服务器仓库的补丁留在服务器上。
+    /// 快速保存的补丁由仓库所在机器上的 Git 写出，服务器仓库的补丁留在服务器上；本机仓库保存后在 Finder 里选中这些补丁。
     func requestSavePatch(_ commits: [HistoryCommit], quick: Bool) {
         guard !commits.isEmpty else {
             return
@@ -58,12 +61,23 @@ extension RepositorySession {
         // 列表从新到旧排列，补丁编号从最早的提交开始
         let ids = Array(commits.map(\.id).reversed())
 
-        runExport(AppLocalization.text("patch.title")) { runner in
-            _ = try await RevisionExport(runner: runner).savePatchesToRepositoryRoot(ids, omitsPrefixes: omitsPrefixes)
+        runPatchSave { runner, formatting in
+            let paths = try await RevisionExport(runner: runner).savePatchesToRepositoryRoot(
+                ids,
+                omitsPrefixes: omitsPrefixes,
+                formatting: formatting
+            )
+
+            // 服务器仓库的补丁写在服务器上，本机没有这些文件可以选中
+            guard runner.location.localURL != nil else {
+                return
+            }
+
+            await Self.revealPatches(paths.map { URL(filePath: $0) })
         }
     }
 
-    /// 选择本机目录后，把每个提交存成一个补丁文件；编号按提交从旧到新排列。
+    /// 选择本机目录后，把每个提交存成一个补丁文件；编号按提交从旧到新排列，保存后在 Finder 里选中这些补丁。
     func savePatches(_ commits: [HistoryCommit], omitsPrefixes: Bool) {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
@@ -75,8 +89,15 @@ extension RepositorySession {
         let ids = commits.map(\.id).reversed()
 
         present(panel) { [weak self] directory in
-            self?.runExport(AppLocalization.text("patch.title")) { runner in
-                _ = try await RevisionExport(runner: runner).savePatches(Array(ids), omitsPrefixes: omitsPrefixes, to: directory)
+            self?.runPatchSave { runner, formatting in
+                let files = try await RevisionExport(runner: runner).savePatches(
+                    Array(ids),
+                    omitsPrefixes: omitsPrefixes,
+                    to: directory,
+                    formatting: formatting
+                )
+
+                await Self.revealPatches(files)
             }
         }
     }
@@ -153,6 +174,22 @@ extension RepositorySession {
 // MARK: - Private
 
 extension RepositorySession {
+    /// 保存补丁成功后让 Finder 来到前台，打开补丁所在的目录并选中写出的全部文件；一个文件都没写或已取消时不打开。
+    private static func revealPatches(_ files: [URL]) {
+        guard !files.isEmpty, !Task.isCancelled else {
+            return
+        }
+
+        revealInFinder(files)
+    }
+
+    /// 任务已取消，或者错误本身是取消；取消不算失败。
+    private static func isCancellation(_ error: (any Error)?) -> Bool {
+        Task.isCancelled
+            || error is CancellationError
+            || ((error as? GitError)?.isCancelled ?? false)
+    }
+
     /// 面板附在当前窗口上；用户选好位置后才执行。
     private func present(_ panel: NSSavePanel, then action: @escaping (URL) -> Void) {
         let completion: (NSApplication.ModalResponse) -> Void = { response in
@@ -167,24 +204,22 @@ extension RepositorySession {
         }
     }
 
-    /// 导出与保存补丁不改动 Git 的引用与暂存区，不占用应用内的写锁；记入 Activity 的 Repository 页并提供取消，失败显示错误详情。
+    /// 导出不改动 Git 的引用与暂存区，不占用应用内的写锁；整次导出记一条进 Activity 的 Repository 页并提供取消，失败显示错误详情。
     private func runExport(_ title: String, operation: @escaping @Sendable (GitRunner) async throws -> Void) {
         guard let runner, let repository else {
             return
         }
 
         let activity = RepositoryActivity(kind: .repository, repository: repository, title: title)
-        RepositoryActivities.shared.insert(activity)
+        let activities = activities
+        activities.insert(activity)
 
         let task = Task { [weak self] in
             do {
                 try await operation(runner)
                 activity.state = Task.isCancelled ? "activity.cancelled" : "activity.finished"
             } catch {
-                let cancelled = Task.isCancelled
-                    || error is CancellationError
-                    || ((error as? GitError)?.isCancelled ?? false)
-
+                let cancelled = Self.isCancellation(error)
                 activity.state = cancelled ? "activity.cancelled" : "activity.failed"
 
                 if !cancelled {
@@ -192,9 +227,72 @@ extension RepositorySession {
                 }
             }
 
-            RepositoryActivities.shared.finish(activity)
+            activities.finish(activity)
         }
 
         activity.cancel = { task.cancel() }
+    }
+
+    /// 保存补丁不改动 Git 的引用与暂存区，不占用应用内的写锁；每个提交那一次 `format-patch` 在 Activity 的 Repository 页记一条，
+    /// 记录的取消按钮取消整次保存，后面的提交不再执行。失败显示错误详情，取消不提示。
+    ///
+    /// - Parameter operation: 保存本身；收到的闭包原样交给 `RevisionExport`，由它包住每个提交那一次执行。
+    private func runPatchSave(
+        _ operation: @escaping @Sendable (GitRunner, RevisionExport.PatchFormatting) async throws -> Void
+    ) {
+        guard let runner, let repository else {
+            return
+        }
+
+        let activities = activities
+        var task: Task<Void, Never>? = nil
+
+        // 一个提交开始执行时插入进行中的记录
+        let start: @MainActor () -> RepositoryActivity = {
+            let activity = RepositoryActivity(
+                kind: .repository,
+                repository: repository,
+                title: AppLocalization.text("patch.formatPatch")
+            )
+
+            activity.cancel = { task?.cancel() }
+            activities.insert(activity)
+            return activity
+        }
+
+        // 这个提交执行完时写状态并结束记录：成功写 Finished，取消写 Cancelled，失败写 Failed
+        let end: @MainActor (RepositoryActivity, (any Error)?) -> Void = { activity, error in
+            if Self.isCancellation(error) {
+                activity.state = "activity.cancelled"
+            } else {
+                activity.state = error == nil ? "activity.finished" : "activity.failed"
+            }
+
+            activities.finish(activity)
+        }
+
+        task = Task { [weak self] in
+            do {
+                // 每个提交执行前插入记录，执行完按结果结束它；执行抛出的错误照常抛出，后面的提交不再执行
+                try await operation(runner) { _, format in
+                    let activity = await start()
+
+                    do {
+                        try await format()
+                        await end(activity, nil)
+                    } catch {
+                        await end(activity, error)
+                        throw error
+                    }
+                }
+            } catch {
+                // 取消不提示，失败显示错误详情
+                guard !Self.isCancellation(error) else {
+                    return
+                }
+
+                self?.onFailure?(AppFailure(error: error, opening: false, location: repository))
+            }
+        }
     }
 }

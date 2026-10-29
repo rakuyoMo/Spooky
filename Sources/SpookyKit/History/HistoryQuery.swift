@@ -4,17 +4,18 @@ import Foundation
 
 /// 历史搜索的一个条件：按提交信息、作者、提交人、文件、哈希或日期筛选。
 ///
-/// 同类条件之间是 “或”，不同类条件之间是 “且”；文字条件忽略大小写、按字面匹配，空条件不参与筛选。
+/// 同类条件之间是 “或”，不同类条件之间是 “且”；说明、作者与提交人按仓库配置的写法匹配、忽略大小写，
+/// 文件按字面匹配，空条件不参与筛选。
 public struct HistorySearchCondition: Sendable, Equatable, Identifiable {
     /// 条件的种类。
     public enum Kind: String, Sendable, CaseIterable {
-        /// 提交信息的子串。
+        /// 匹配提交信息的正则。
         case message
 
-        /// 作者的姓名或邮箱的子串。
+        /// 匹配作者姓名或邮箱的正则。
         case author
 
-        /// 提交人的姓名或邮箱的子串。
+        /// 匹配提交人姓名或邮箱的正则。
         case committer
 
         /// 仓库内的路径，按字面匹配文件或目录。
@@ -122,6 +123,31 @@ public struct HistoryQuery: Sendable, Equatable {
         case date
     }
 
+    /// 说明、作者与提交人条件的写法，原始值是 Git 配置 `grep.patternType` 的取值。
+    enum PatternType: String, Sendable, Equatable {
+        /// 基本正则。
+        case basic
+
+        /// 扩展正则。
+        case extended
+
+        /// 按字面匹配。
+        case fixed
+
+        /// Perl 正则，要求 Git 编译时带上 PCRE。
+        case perl
+
+        /// 交给 Git 的参数。
+        var argument: String {
+            switch self {
+            case .basic: "--basic-regexp"
+            case .extended: "--extended-regexp"
+            case .fixed: "--fixed-strings"
+            case .perl: "--perl-regexp"
+            }
+        }
+    }
+
     /// 排列方式。
     public var order: Order
 
@@ -134,6 +160,9 @@ public struct HistoryQuery: Sendable, Equatable {
     /// 换算日期条件所用的日历。
     public var calendar: Calendar
 
+    /// 说明、作者与提交人条件的写法，由历史读取按仓库生效的配置填写。
+    var patternType = PatternType.basic
+
     /// 是否有生效的搜索条件。
     public var isSearching: Bool { conditions.contains(where: \.isActive) }
 
@@ -142,7 +171,8 @@ public struct HistoryQuery: Sendable, Equatable {
         let active = conditions.filter(\.isActive)
         var arguments = firstParentOnly ? ["--first-parent"] : []
 
-        // 文字条件按字面子串匹配并忽略大小写，输入中的正则符号不会被解释
+        // 说明、作者与提交人按 patternType 的写法匹配并忽略大小写；
+        // 写法显式交给 Git：log 会读 grep.patternType 而 rev-list 不读，不写明时两者的结果对不上
         let patterns = active.compactMap { condition -> String? in
             switch condition.kind {
             case .message: "--grep=" + condition.trimmedText
@@ -153,7 +183,7 @@ public struct HistoryQuery: Sendable, Equatable {
         }
 
         if !patterns.isEmpty {
-            arguments += ["-i", "-F"] + patterns
+            arguments += ["-i", patternType.argument] + patterns
         }
 
         // 多个日期条件取交集：下限取最晚的，上限取最早的
@@ -168,6 +198,35 @@ public struct HistoryQuery: Sendable, Equatable {
         }
 
         return arguments
+    }
+
+    /// 生效的说明、作者与提交人条件，按 patternType 的写法交给 Git；有它们时才需要按仓库的配置定下写法。
+    var patternConditions: [HistorySearchCondition] {
+        conditions.filter { $0.isActive && [.message, .author, .committer].contains($0.kind) }
+    }
+
+    /// 基本或扩展正则的条件里有 Git 编译不了的；按字面匹配的总能编译，Perl 正则由历史读取交给 Git 判断。
+    ///
+    /// 在本机按 Git 编译这两种正则的选项试编译；服务器上的 Git 判断不同时，照常报出 Git 的错误。
+    var hasInvalidPattern: Bool {
+        let flags: Int32
+
+        switch patternType {
+        case .basic: flags = REG_NEWLINE | REG_ICASE | REG_NOSUB
+        case .extended: flags = REG_EXTENDED | REG_NEWLINE | REG_ICASE | REG_NOSUB
+        case .fixed, .perl: return false
+        }
+
+        return patternConditions.contains { condition in
+            var regex = regex_t()
+
+            guard regcomp(&regex, condition.trimmedText, flags) == 0 else {
+                return true
+            }
+
+            regfree(&regex)
+            return false
+        }
     }
 
     /// 排序参数；两项都要求时 Git 以后出现的 `--date-order` 为准。

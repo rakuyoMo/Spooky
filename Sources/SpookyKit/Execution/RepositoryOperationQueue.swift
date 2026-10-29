@@ -91,8 +91,13 @@ actor RepositoryOperationQueue {
             let submodules = options.count == 5
                 && options.prefix(4).elementsEqual(["-z", "--file", ".gitmodules", "--get-regexp"])
 
+            // 把布尔值规范成 true 或 false 的按正则读取
+            let normalizedBooleans = options.count == 4
+                && options.prefix(3).elementsEqual(["-z", "--type=bool-or-str", "--get-regexp"])
+
             // 合并后的配置与只看仓库本地配置的两种按正则读取
             return submodules
+                || normalizedBooleans
                 || (options.prefix(2).elementsEqual(["-z", "--get-regexp"]) && options.count == 3)
                 || (options.prefix(3).elementsEqual(["-z", "--local", "--get-regexp"]) && options.count == 4)
         }

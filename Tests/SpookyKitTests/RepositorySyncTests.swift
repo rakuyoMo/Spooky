@@ -229,4 +229,32 @@ extension RepositorySyncTests {
             _ = try await sync.pushBranchesAndTags(to: "missing")
         }
     }
+
+    /// 仓库还没有分支与标签时，发布仓库照样推送；Git 报出的失败原样交给调用方，也不会给任何分支设上游。
+    @Test("没有分支与标签时推送失败，Git 原文不变")
+    func pushBranchesAndTagsWithoutReferences() async throws {
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+
+        try await fixture.initialize()
+        let runner = fixture.runner
+        let new = fixture.directory.appendingPathComponent("new.git").path
+
+        _ = try await runner.run(["init", "-q", "--bare", new])
+        _ = try await runner.run(["remote", "add", "new", new])
+
+        do {
+            _ = try await RepositorySync(runner: runner).pushBranchesAndTags(to: "new")
+            Issue.record("没有分支与标签的推送应失败")
+        } catch let error as GitError {
+            #expect(error.exitCode == 1)
+            #expect(error.message.contains("No refs in common"))
+        }
+
+        // 远端仍在，本地配置里没有任何分支的上游
+        let config = try await runner.run(["config", "--local", "--list"])
+        let entries = String(decoding: config, as: UTF8.self).split(separator: "\n")
+        #expect(entries.contains("remote.new.url=" + new))
+        #expect(!entries.contains { $0.hasPrefix("branch.") })
+    }
 }

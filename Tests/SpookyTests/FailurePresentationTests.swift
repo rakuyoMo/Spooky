@@ -5,7 +5,7 @@ import Testing
 @testable import Spooky
 @testable import SpookyKit
 
-/// 错误类别、断线核对报告、窗口恢复校验与 Activity 上限的呈现规则。
+/// 错误类别、断线核对报告、窗口恢复校验、Activity 的上限与托管服务请求记录的呈现规则。
 @MainActor
 struct FailurePresentationTests {
     /// 连接断开、Git 退出失败、输出解析失败、用户取消和版本不支持分别归入不同类别。
@@ -225,6 +225,69 @@ struct FailurePresentationTests {
         #expect(activities.items.count(where: { $0.kind == .remote }) == 150)
         #expect(activities.items.count(where: { $0.kind == .service }) == 150)
         #expect(activities.items.count(where: { $0.kind == .repository }) == RepositoryActivities.repositoryLimit)
+    }
+
+    /// 托管服务请求都记在 Service 页：读取成功只记状态，不写响应内容；写操作的结果写进日志；
+    /// 失败写错误原文并把错误照常交给调用方；取消不算失败；校验账号这类请求没有仓库，也不生成保存到本机的内容。
+    @Test("托管服务请求记进 Service 页")
+    func hostingRecords() async throws {
+        let location = RepositoryLocation.remote(host: "spooky-test", path: "/Users/wgy/spooky-test/仓库 [1]")
+        let activities = RepositoryActivities()
+
+        // 读取成功：结果原样返回，日志为空
+        let count = try await activities.recordHosting(title: "Load", repository: location) { 3 }
+        let load = try #require(activities.items.first)
+
+        #expect(count == 3)
+        #expect(load.kind == .service)
+        #expect(load.repository == location)
+        #expect(load.title == "Load")
+        #expect(load.state == "activity.finished")
+        #expect(load.log.isEmpty)
+        #expect(load.cancel == nil)
+
+        // 写操作成功：服务端结果写进日志
+        _ = try await activities.recordHosting(title: "Create", repository: location, log: { $0 }) {
+            "https://example.com/project/pull/1"
+        }
+
+        #expect(activities.items.first?.log == "https://example.com/project/pull/1")
+
+        // 失败：日志是错误原文，错误照常抛出
+        let error = HostingError.notFound("Not Found")
+
+        await #expect(throws: HostingError.self) {
+            try await activities.recordHosting(title: "Merge", repository: location) { () throws -> Int in
+                throw error
+            }
+        }
+
+        let failed = try #require(activities.items.first)
+        #expect(failed.state == "activity.failed")
+        #expect(failed.log == AppFailure(error: error, opening: false, location: location).details)
+
+        // 取消：不算失败，日志为空
+        let task = Task {
+            try await activities.recordHosting(title: "Load", repository: location) {
+                try await Task.sleep(for: .seconds(60))
+            }
+        }
+
+        task.cancel()
+        _ = await task.result
+
+        let cancelled = try #require(activities.items.first)
+        #expect(cancelled.state == "activity.cancelled")
+        #expect(cancelled.log.isEmpty)
+
+        // 没有仓库：照样记录，不生成保存的内容
+        _ = try await activities.recordHosting(title: "Verify", repository: nil) { "user" }
+
+        let verify = try #require(activities.items.first)
+        #expect(verify.repository == nil)
+        #expect(verify.state == "activity.finished")
+        #expect(verify.record == nil)
+        #expect(activities.items.map(\.kind) == Array(repeating: .service, count: 5))
     }
 
     /// 经生产解析器构造只含分支头的状态快照。

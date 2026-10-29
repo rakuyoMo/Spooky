@@ -19,6 +19,16 @@ struct NavigationHistory {
     /// 当前位置之后还有视图。
     var canGoForward: Bool { index < entries.count - 1 }
 
+    /// 后退会到达的视图，不移动位置；已在最前面时为 nil。
+    var previous: ViewReference? {
+        canGoBack ? entries[index - 1] : nil
+    }
+
+    /// 前进会到达的视图，不移动位置；已在最后面时为 nil。
+    var next: ViewReference? {
+        canGoForward ? entries[index + 1] : nil
+    }
+
     /// 记下新到达的视图：与当前视图相同时不记；从中间位置到达新视图时，截掉当前位置之后的记录。
     mutating func record(_ reference: ViewReference) {
         guard reference != current else {

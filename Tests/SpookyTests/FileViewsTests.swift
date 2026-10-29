@@ -234,10 +234,10 @@ struct FileViewsTests {
         #expect(session.fileHistory.commits.map(\.subject) == ["添加"])
         #expect(Array((session.fileHistory.path ?? "").utf8) == Array(decomposed.utf8))
 
-        // 双击回到提交：切到历史并打开整页详情
+        // 双击回到提交：核对它在历史里的位置后切到历史并打开整页详情
         let commit = try #require(session.fileHistory.commits.first)
         session.showCommit(commit)
-        #expect(session.activeView == .history)
+        try await Self.wait { session.activeView == .history }
         #expect(session.history.showsCommitPage)
         #expect(session.history.selectedCommit?.id == commit.id)
 

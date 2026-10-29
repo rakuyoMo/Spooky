@@ -48,6 +48,28 @@ struct NavigationTests {
         #expect(history.goBack() == nil)
     }
 
+    /// 后退 / 前进先拿目标去核对，读上一项与下一项不能移动位置，否则取消后位置已经变了。
+    @Test("读上一项与下一项不移动位置")
+    func neighbors() {
+        var history = NavigationHistory()
+        let working = ViewReference.repository(Self.local, .workingCopy)
+        let log = ViewReference.repository(Self.local, .history(references: []))
+
+        #expect(history.previous == nil)
+        #expect(history.next == nil)
+
+        history.record(working)
+        history.record(log)
+        #expect(history.previous == working)
+        #expect(history.next == nil)
+        #expect(history.current == log)
+
+        #expect(history.goBack() == working)
+        #expect(history.previous == nil)
+        #expect(history.next == log)
+        #expect(history.current == working)
+    }
+
     /// 每种视图引用写成文字再解析回来不变：窗口恢复与链接都靠它还原到同一个视图。
     @Test("视图引用的文字形式往返不变")
     func referenceRoundTrip() throws {

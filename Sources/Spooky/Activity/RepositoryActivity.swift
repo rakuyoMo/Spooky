@@ -28,14 +28,23 @@ final class RepositoryActivity: Identifiable {
     /// 记录所在的页。
     let kind: ActivityKind
 
-    /// 带主机前缀的仓库身份。
-    let repository: RepositoryLocation
+    /// 带主机前缀的仓库身份；校验账号这类不属于仓库的托管服务请求为 nil。
+    let repository: RepositoryLocation?
+
+    /// 从本机读回的记录，不是本次运行里发生的。
+    let isRestored: Bool
 
     /// 已本地化的操作名称。
     let title: String
 
     /// 开始时间。
     let started: Date
+
+    /// 结束时间，由 `RepositoryActivities.finish` 写入；进行中与从本机读回的记录为 nil。
+    var ended: Date? = nil
+
+    /// 读取成功时的一行结果，如读到的条数或增减计数；没有结果的记录为 nil。
+    var result: String? = nil
 
     /// 完成、失败或取消的本地化状态键。
     var state = "activity.running"
@@ -54,6 +63,11 @@ final class RepositoryActivity: Identifiable {
         ["activity.finished", "activity.failed", "activity.cancelled"].contains(state)
     }
 
+    /// 从开始到结束的秒数；还没结束或从本机读回的记录为 nil。
+    var elapsed: TimeInterval? {
+        ended.map { $0.timeIntervalSince(started) }
+    }
+
     /// 两路输出整段拼成的日志，进度里的 `\r` 已覆盖当前行。
     var log: String {
         [
@@ -64,9 +78,13 @@ final class RepositoryActivity: Identifiable {
         .joined(separator: "\n")
     }
 
-    /// 保存到本机的内容。
-    var record: ActivityRecord {
-        ActivityRecord(
+    /// 保存到本机的内容；没有仓库的记录不保存。
+    var record: ActivityRecord? {
+        guard let repository else {
+            return nil
+        }
+
+        return ActivityRecord(
             id: id,
             kind: kind,
             repository: repository,
@@ -79,12 +97,24 @@ final class RepositoryActivity: Identifiable {
     }
 
     /// 建立一个进行中的记录。
-    init(kind: ActivityKind, repository: RepositoryLocation, title: String) {
+    ///
+    /// - Parameters:
+    ///   - kind: 记录所在的页。
+    ///   - repository: 带主机前缀的仓库身份；不属于仓库的托管服务请求为 nil。
+    ///   - title: 已本地化的操作名称。
+    ///   - started: 开始时间；读取结束后才插入的记录传入读取开始的时刻。
+    init(
+        kind: ActivityKind,
+        repository: RepositoryLocation?,
+        title: String,
+        started: Date = Date()
+    ) {
         id = UUID()
         self.kind = kind
         self.repository = repository
+        isRestored = false
         self.title = title
-        started = Date()
+        self.started = started
     }
 
     /// 用保存在本机的内容还原一条已结束的记录。
@@ -92,6 +122,7 @@ final class RepositoryActivity: Identifiable {
         id = record.id
         kind = record.kind
         repository = record.repository
+        isRestored = true
         title = record.title
         started = record.started
         state = record.state
@@ -113,7 +144,8 @@ final class RepositoryActivity: Identifiable {
 
 // MARK: - RepositoryActivities
 
-/// Activity 跨窗口保留记录，关闭一个仓库不会抹掉已完成日志；设了保存位置后，Remote 记录另存到本机，重新启动后读回。
+/// Activity 跨窗口保留记录，关闭一个仓库不会抹掉已完成日志；设了保存位置后，Remote 记录与读取增减计数的基准另存到本机，
+/// 重新启动后读回。
 @MainActor
 @Observable
 final class RepositoryActivities {
@@ -131,6 +163,20 @@ final class RepositoryActivities {
 
     /// 最新活动排在最前面。
     var items: [RepositoryActivity] = []
+
+    /// 读取增减计数的基准：按仓库、按类保存上一次记录读取时的清单，每项是 “身份 → 比较值的摘要”。
+    ///
+    /// 还没有某个仓库的项时，第一次用到它的基准前先从本机读回。
+    @ObservationIgnored
+    var baselines: [RepositoryLocation: [ActivityInventory: [String: String]]] = [:]
+
+    /// 基准在本机的保存位置；没有设置时基准只在内存里。
+    @ObservationIgnored
+    var baselineArchive: ActivityBaselineArchive? = nil
+
+    /// 最近一次把基准写回本机的任务；后一次写入等前一次写完，文件里总是较新的基准。
+    @ObservationIgnored
+    var baselineWrite: Task<Void, Never>? = nil
 
     /// Remote 记录的保存位置；没有设置时只在内存里。
     private var archive: ActivityArchive? = nil
@@ -151,15 +197,67 @@ final class RepositoryActivities {
         }
     }
 
-    /// 记录结束：清掉取消入口；设了保存位置时把 Remote 记录写进去。
+    /// 记录结束：记下结束时间、清掉取消入口；设了保存位置时把 Remote 记录写进去。
     func finish(_ activity: RepositoryActivity) {
+        activity.ended = Date()
         activity.cancel = nil
 
-        guard activity.kind == .remote, let archive else {
+        guard
+            activity.kind == .remote,
+            let archive,
+            let record = activity.record
+        else {
             return
         }
 
-        archive.save(activity.record)
+        archive.save(record)
+    }
+
+    /// 把一次托管服务请求记进 Service 页：开始时插入进行中的记录，结束时按结果写状态与日志。
+    ///
+    /// 成功写 Finished，日志只有 `log` 给出的服务端结果；失败写 Failed，日志是错误说明；任务被取消时写 Cancelled。
+    /// 错误照常抛给调用方，由调用方显示。
+    ///
+    /// - Parameters:
+    ///   - title: 记录的标题。
+    ///   - repository: 请求所属的仓库；校验账号这类不属于仓库的请求为 nil。
+    ///   - log: 成功时要写进日志的服务端结果；读取不写响应内容。
+    ///   - request: 经账号的客户端发出的请求。
+    /// - Returns: 请求的结果。
+    func recordHosting<Value>(
+        title: String,
+        repository: RepositoryLocation?,
+        log: (Value) -> String? = { _ in nil },
+        _ request: () async throws -> Value
+    ) async throws -> Value {
+        let activity = RepositoryActivity(kind: .service, repository: repository, title: title)
+        insert(activity)
+
+        // 成功、失败与取消都在返回之前结束记录
+        defer { finish(activity) }
+
+        do {
+            let value = try await request()
+
+            if let message = log(value), !message.isEmpty {
+                activity.append(.standardOutput(Data(message.utf8)))
+            }
+
+            activity.state = "activity.finished"
+            return value
+        } catch {
+            // 换远端、关仓库或关对话框取消的请求不算失败，日志不写错误说明
+            if Task.isCancelled || error is CancellationError {
+                activity.state = "activity.cancelled"
+                throw error
+            }
+
+            // 日志写错误的原文，与界面上显示的相同
+            let failure = AppFailure(error: error, opening: false, location: repository)
+            activity.append(.standardError(Data(failure.details.utf8)))
+            activity.state = "activity.failed"
+            throw error
+        }
     }
 
     /// 清除一页里已结束的记录，进行中的保留；Remote 记录同时删掉保存的文件。

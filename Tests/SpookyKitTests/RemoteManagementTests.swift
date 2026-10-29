@@ -108,4 +108,33 @@ struct RemoteManagementTests {
         origin = try #require(try await remotes.configurations().first)
         #expect(!origin.skipsFetchAll)
     }
+
+    /// 引用快照按远端名给出全部设置的摘要：名字可含点与非 ASCII 字符；只改一个远端的设置只换它的摘要；摘要里不出现地址。
+    @Test("快照里远端设置的摘要")
+    func settingsDigests() async throws {
+        let (fixture, bare) = try await BranchManagementTests.repository(objectFormat: "sha1")
+        defer { fixture.remove() }
+
+        let runner = fixture.runner
+        let refs = RepositoryReferences(runner: runner)
+        _ = try await runner.run(["remote", "add", "up.stream/上游", bare])
+
+        let before = try await refs.snapshot().remoteSettingsDigests
+        #expect(Set(before.keys) == ["origin", "up.stream/上游"])
+        #expect(before.values.allSatisfy { $0.count == 64 && !$0.contains("/") })
+        #expect(try await refs.snapshot().remoteSettingsDigests == before)
+
+        // 只加一条推送地址：这个远端的摘要变了，另一个不变
+        _ = try await runner.run([
+            "remote",
+            "set-url",
+            "--push",
+            "up.stream/上游",
+            "https://example.invalid/x.git",
+        ])
+
+        let after = try await refs.snapshot().remoteSettingsDigests
+        #expect(after["up.stream/上游"] != before["up.stream/上游"])
+        #expect(after["origin"] == before["origin"])
+    }
 }

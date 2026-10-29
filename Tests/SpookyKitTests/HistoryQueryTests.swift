@@ -39,7 +39,7 @@ struct HistoryQueryTests {
         return calendar
     }()
 
-    /// 每类条件单独筛选，同类取并集、不同类取交集；输入中的正则符号与大小写都不影响匹配。
+    /// 每类条件单独筛选，同类取并集、不同类取交集；没有配置时说明、作者与提交人按基本正则匹配、忽略大小写，文件按字面匹配。
     @Test("按信息、作者、提交人与文件组合搜索", arguments: ["sha1", "sha256"])
     func textConditions(objectFormat: String) async throws {
         let fixture = try TemporaryRepository()
@@ -48,9 +48,26 @@ struct HistoryQueryTests {
         let commits = try await Self.makeHistory(in: fixture, objectFormat: objectFormat)
         let history = RepositoryHistory(runner: fixture.runner)
 
-        // 忽略大小写的字面匹配，星号不按正则解释
-        #expect(try await Self.subjects(history, commits, [.init(kind: .message, text: "fix BUG")]) == ["Fix bug *star*"])
-        #expect(try await Self.subjects(history, commits, [.init(kind: .message, text: "*star*")]) == ["Fix bug *star*"])
+        // 忽略大小写的基本正则：转义的星号按字面匹配，`.*` 与行首、行尾按正则解释
+        #expect(
+            try await Self.subjects(history, commits, [.init(kind: .message, text: "fix BUG")]) ==
+                ["Fix bug *star*"]
+        )
+
+        #expect(
+            try await Self.subjects(history, commits, [.init(kind: .message, text: "bug \\*STAR\\*")]) ==
+                ["Fix bug *star*"]
+        )
+
+        #expect(
+            try await Self.subjects(history, commits, [.init(kind: .message, text: "^fix.*\\*$")]) ==
+                ["Fix bug *star*"]
+        )
+
+        #expect(
+            Set(try await Self.subjects(history, commits, [.init(kind: .message, text: "work$")])) ==
+                ["side work", "main work"]
+        )
 
         // Unicode 作者与提交人
         #expect(try await Self.subjects(history, commits, [.init(kind: .author, text: "李 café")]) == ["Fix bug *star*"])
@@ -341,7 +358,7 @@ extension HistoryQueryTests {
     }
 
     /// 写入一个文件并提交，返回新提交的哈希。
-    private static func commit(
+    static func commit(
         in fixture: TemporaryRepository,
         file: String,
         message: String,

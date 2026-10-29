@@ -19,9 +19,6 @@ enum FileHistoryDetailMode: Hashable {
 @MainActor
 @Observable
 final class FileHistoryState {
-    /// 搜索框输入停顿这么久之后才重新读取。
-    private static let searchDelay = Duration.milliseconds(300)
-
     /// 当前查看的文件，使用树中存储的形式；没有打开文件时为 nil。
     private(set) var path: String? = nil
 
@@ -77,13 +74,13 @@ final class FileHistoryState {
     private(set) var detailFailure: AppFailure? = nil
 
     /// 停顿后生效的搜索框内容。
-    private var searchText = ""
+    var searchText = ""
 
     /// 当前仓库的执行器。
-    private var runner: GitRunner? = nil
+    private(set) var runner: GitRunner? = nil
 
     /// 时间线固定的起点；HEAD 移动后才重读。
-    private var head: String? = nil
+    private(set) var head: String? = nil
 
     /// 打开文件后是否已按 HEAD 确定了树中存储的路径形式。
     private var resolvedPath = false
@@ -98,14 +95,18 @@ final class FileHistoryState {
     private var detailTask: Task<Void, Never>? = nil
 
     /// 搜索框输入的延迟任务。
-    private var searchTask: Task<Void, Never>? = nil
+    var searchTask: Task<Void, Never>? = nil
 
     /// 搜索框补全用的整个仓库的作者：按仓库与 HEAD 读取一次，换文件时沿用。
-    private var authorsLoad: (
+    var authorsLoad: (
         location: RepositoryLocation,
         head: String,
         task: Task<[FileContributor], any Error>
     )? = nil
+
+    /// 时间线与详情的读取记进的 Activity 列表，由会话设成它自己的列表。
+    @ObservationIgnored
+    var activities = RepositoryActivities.shared
 
     /// 当前选中的提交记录。
     var selectedCommit: HistoryCommit? {
@@ -135,66 +136,22 @@ final class FileHistoryState {
         reload()
     }
 
-    /// 搜索框内容变化，停顿片刻后按新条件重读。
-    func search(_ text: String) {
-        searchTask?.cancel()
-
-        guard text != searchText else {
-            return
-        }
-
-        searchTask = Task { [weak self] in
-            do {
-                try await Task.sleep(for: Self.searchDelay)
-            } catch {
-                return
-            }
-
-            self?.searchText = text
-            self?.reload()
-        }
-    }
-
     /// 刷新后的 HEAD 与时间线的起点不同时重读，轮询不打断翻页或选择。
-    func update(head: String?) {
+    ///
+    /// - Parameter records: 重读的时间线与详情是否记进 Activity，与引起它的刷新相同。
+    func update(head: String?, records: Bool = true) {
         guard path != nil, head != self.head else {
             return
         }
 
         self.head = head
-        reload()
-    }
-
-    /// 整个仓库的作者，供搜索框补全；第一次用到时读取，换仓库或 HEAD 移动后重读，读取失败时下次重试。
-    func authors() async throws -> [FileContributor] {
-        guard let runner, let head else {
-            return []
-        }
-
-        // 同一仓库与 HEAD 的读取共用一次结果，换文件仍沿用
-        if let load = authorsLoad, load.location == runner.location, load.head == head {
-            return try await load.task.value
-        }
-
-        let task = Task {
-            try await RepositoryFileViews(runner: runner).contributors(of: nil, at: head)
-        }
-        authorsLoad = (runner.location, head, task)
-
-        do {
-            return try await task.value
-        } catch {
-            // 失败的读取不留在缓存里，下次输入时重试
-            if authorsLoad?.task == task {
-                authorsLoad = nil
-            }
-
-            throw error
-        }
+        reload(records: records)
     }
 
     /// 按当前条件读取第一页与总数，仍在结果中的提交保持选中。
-    func reload() {
+    ///
+    /// - Parameter records: 第一页、总数与随后重读的详情是否记进 Activity；自动刷新引起的重读不记。
+    func reload(records: Bool = true) {
         cancelTasks()
         failure = nil
         commits = []
@@ -216,6 +173,7 @@ final class FileHistoryState {
         let request = generation
         let filter = filter
         let resolve = !resolvedPath
+        let activities = activities
         isLoading = true
 
         pageTask = Task { [weak self] in
@@ -224,13 +182,20 @@ final class FileHistoryState {
                 let entry = resolve ? try await views.storedEntry(for: path, in: head) : nil
                 let path = entry?.path ?? path
                 let root = try await Self.root(for: filter, head: head, runner: runner)
-                let result = try await Self.firstPage(of: path, from: root, filter: filter, views: views)
+                let result = try await Self.firstPage(
+                    of: path,
+                    from: root,
+                    filter: filter,
+                    views: views,
+                    activities: activities,
+                    records: records
+                )
 
                 guard let self, generation == request, !Task.isCancelled else {
                     return
                 }
 
-                apply(result, path: path, submodule: entry?.isSubmodule)
+                apply(result, path: path, submodule: entry?.isSubmodule, records: records)
             } catch {
                 guard let self, generation == request, !Task.isCancelled else {
                     return
@@ -258,12 +223,24 @@ final class FileHistoryState {
         let request = generation
         let filter = filter
         let offset = commits.count
+        let activities = activities
         isLoading = true
 
         pageTask = Task { [weak self] in
             do {
-                let page = try await RepositoryFileViews(runner: runner)
-                    .page(of: path, from: head, filter: filter, offset: offset, limit: Self.pageSize)
+                let page = try await Self.recordPage(
+                    in: runner.location,
+                    activities: activities,
+                    records: true
+                ) {
+                    try await RepositoryFileViews(runner: runner).page(
+                        of: path,
+                        from: head,
+                        filter: filter,
+                        offset: offset,
+                        limit: Self.pageSize
+                    )
+                }
 
                 guard let self, generation == request, !Task.isCancelled else {
                     return
@@ -288,7 +265,9 @@ final class FileHistoryState {
     }
 
     /// 读取所选提交的补丁或原文；放行大 Diff 只作用于这一次读取。
-    func loadDetail(showLarge: Bool = false) {
+    ///
+    /// - Parameter records: 是否记进 Activity；自动刷新引起的重读不记。
+    func loadDetail(showLarge: Bool = false, records: Bool = true) {
         detailTask?.cancel()
         diff = nil
         content = nil
@@ -306,13 +285,17 @@ final class FileHistoryState {
 
         // 与工作区和提交详情使用同样的上下文行数与忽略空白偏好
         let options = DiffPreferences.options()
-        isLoadingDetail = true
+        let activities = activities
 
-        detailTask = Task { [weak self] in
-            do {
+        // 原文与补丁分别读取，切换显示方式时才读另一种；补丁记为 Load Commit Diffs，原文记为 Load Blob
+        let title = AppLocalization.text(
+            mode == .diff ? "activity.read.commitDiffs" : "activity.read.blob"
+        )
+
+        let read: @MainActor () async throws -> (CommitDiff?, FileRevisionContent?) = {
+            try await activities.recordRead([title], in: runner.location, records: records) {
                 let views = RepositoryFileViews(runner: runner)
 
-                // 原文与补丁分别读取，切换显示方式时才读另一种
                 let diff = mode == .diff
                     ? try await views.diff(
                         of: path,
@@ -322,9 +305,20 @@ final class FileHistoryState {
                         showLarge: showLarge
                     )
                     : nil
+
                 let content = mode == .raw
                     ? try await FileRevisionContent.load(path, at: commit.id, views: views)
                     : nil
+
+                return (diff, content)
+            }
+        }
+
+        isLoadingDetail = true
+
+        detailTask = Task { [weak self] in
+            do {
+                let (diff, content) = try await read()
 
                 guard let self, generation == request, selectedID == commit.id, !Task.isCancelled else {
                     return
@@ -416,32 +410,84 @@ extension FileHistoryState {
     }
 
     /// 读取第一页与总数；按版本范围筛选时只取该版本上最近一次修改这个文件的提交。
+    ///
+    /// - Parameters:
+    ///   - activities: 读取记进的 Activity 列表；第一页记为 Load Commits，总数记为 Load Commit Count。
+    ///   - records: 是否记进 Activity。
     private static func firstPage(
         of path: String,
         from root: String?,
         filter: FileHistoryFilter,
-        views: RepositoryFileViews
+        views: RepositoryFileViews,
+        activities: RepositoryActivities,
+        records: Bool
     ) async throws -> FirstPage {
         guard let root else {
             return FirstPage(commits: [], hasMore: false, count: 0)
         }
 
+        // 按版本范围筛选时只读一页，不读总数
         if filter.scope == .revision, !filter.trimmedText.isEmpty {
-            let page = try await views.page(of: path, from: root, filter: filter, limit: 1)
-            return FirstPage(commits: page.commits, hasMore: false, count: page.commits.count)
+            let latest = try await recordPage(
+                in: views.runner.location,
+                activities: activities,
+                records: records
+            ) {
+                try await views.page(of: path, from: root, filter: filter, limit: 1)
+            }
+
+            return FirstPage(commits: latest.commits, hasMore: false, count: latest.commits.count)
         }
 
         // 第一页与计数互不依赖，服务器上只占一次往返的等待时间
-        async let page = views.page(of: path, from: root, filter: filter, limit: pageSize)
-        async let count = views.count(of: path, from: root, filter: filter)
+        async let page = recordPage(
+            in: views.runner.location,
+            activities: activities,
+            records: records
+        ) {
+            try await views.page(of: path, from: root, filter: filter, limit: pageSize)
+        }
+
+        async let count = activities.recordRead(
+            [AppLocalization.text("activity.read.commitCount")],
+            in: views.runner.location,
+            records: records
+        ) {
+            try await views.count(of: path, from: root, filter: filter)
+        }
 
         let (first, total) = try await (page, count)
 
         return FirstPage(commits: first.commits, hasMore: first.hasMore, count: total)
     }
 
+    /// 把读取修改过这个文件的一页提交记为 Load Commits，一行结果写出读到的提交数。
+    ///
+    /// - Parameters:
+    ///   - location: 读取所属的仓库。
+    ///   - activities: 读取记进的 Activity 列表。
+    ///   - records: 是否记进 Activity。
+    ///   - read: 读取这一页。
+    /// - Returns: 读到的一页。
+    private static func recordPage(
+        in location: RepositoryLocation,
+        activities: RepositoryActivities,
+        records: Bool,
+        _ read: () async throws -> HistoryPage
+    ) async throws -> HistoryPage {
+        try await activities.recordRead(
+            [AppLocalization.text("activity.read.commits")],
+            in: location,
+            records: records,
+            results: { [AppLocalization.text("activity.result.commits", $0.commits.count)] },
+            read
+        )
+    }
+
     /// 写入第一页的结果；仍在结果中的提交保持选中，否则清除选择。
-    private func apply(_ result: FirstPage, path: String, submodule: Bool?) {
+    ///
+    /// - Parameter records: 重读的详情是否记进 Activity，与第一页相同。
+    private func apply(_ result: FirstPage, path: String, submodule: Bool?, records: Bool) {
         self.path = path
         resolvedPath = true
 
@@ -456,7 +502,7 @@ extension FileHistoryState {
         if let selectedID, !commits.contains(where: { $0.id == selectedID }) {
             self.selectedID = nil
         } else {
-            loadDetail()
+            loadDetail(records: records)
         }
     }
 

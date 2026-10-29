@@ -62,7 +62,7 @@ final class ActivityWindowState {
     /// 工具栏搜索框里的文字。
     var query = ""
 
-    /// 当前页里仓库名或日志含有搜索词的记录，忽略大小写；搜索词为空时列出整页。
+    /// 当前页里仓库名或日志含有搜索词的记录，忽略大小写；搜索词为空时列出整页。没有仓库的记录只按日志匹配。
     ///
     /// - Parameter items: 全部记录，最新的在前。
     /// - Returns: 保持原有顺序的当前页记录。
@@ -76,8 +76,68 @@ final class ActivityWindowState {
                 return true
             }
 
-            return activity.repository.name.localizedCaseInsensitiveContains(query)
-                || activity.log.localizedCaseInsensitiveContains(query)
+            let matchesName = activity.repository?.name.localizedCaseInsensitiveContains(query) ?? false
+
+            return matchesName || activity.log.localizedCaseInsensitiveContains(query)
+        }
+    }
+}
+
+// MARK: - ActivityRow
+
+/// 活动列表的一行：仓库名与时刻、标题、一行结果或状态，进行中的带取消按钮。
+struct ActivityRow: View {
+    /// 这一行的记录。
+    let activity: RepositoryActivity
+
+    /// Repository 页已结束的记录在右上角写耗时，两位小数、按系统地区的数字格式；其余记录为 nil，写开始的时刻。
+    var elapsed: String? {
+        guard activity.kind == .repository, let seconds = activity.elapsed else {
+            return nil
+        }
+
+        let number = seconds.formatted(.number.precision(.fractionLength(2)))
+
+        return AppLocalization.text("activity.elapsed", number)
+    }
+
+    /// 第三行：有一行结果时写结果，否则写状态。
+    var status: String {
+        activity.result ?? AppLocalization.text(activity.state)
+    }
+
+    /// 第一行是仓库名与时刻，第二行是标题，第三行是结果或状态与取消按钮。
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                if let repository = activity.repository {
+                    Text(repository.name)
+                }
+
+                Spacer()
+
+                if let elapsed {
+                    Text(elapsed)
+                } else {
+                    Text(activity.started, style: .time)
+                }
+            }
+            .font(.system(size: 10))
+            .foregroundStyle(.secondary)
+
+            Text(activity.title).font(.system(size: 12, weight: .semibold))
+
+            HStack {
+                Text(status).font(.system(size: 11))
+
+                Spacer()
+
+                if let cancel = activity.cancel {
+                    Button(action: cancel) { Image(systemName: "stop.circle") }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel(AppLocalization.text("action.cancel"))
+                }
+            }
         }
     }
 }
@@ -120,41 +180,23 @@ private struct ActivityView: View {
     /// 左栏活动列表。
     private var activityList: some View {
         List(visible, selection: $selected) { activity in
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(activity.repository.name)
-                    Spacer()
-                    Text(activity.started, style: .time)
-                }
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
-
-                Text(activity.title).font(.system(size: 12, weight: .semibold))
-
-                HStack {
-                    Text(AppLocalization.text(activity.state)).font(.system(size: 11))
-                    Spacer()
-                    if let cancel = activity.cancel {
-                        Button(action: cancel) { Image(systemName: "stop.circle") }
-                            .buttonStyle(.borderless)
-                            .accessibilityLabel(AppLocalization.text("action.cancel"))
-                    }
-                }
-            }
-            .frame(minHeight: 59)
-            .tag(activity.id)
+            ActivityRow(activity: activity)
+                .frame(minHeight: 59)
+                .tag(activity.id)
         }
         .frame(minWidth: 200, idealWidth: 220)
     }
 
-    /// 右栏显示所选活动的仓库路径与原始日志，未选时显示空状态。
+    /// 右栏显示所选活动的仓库路径与原始日志，未选时显示空状态；没有仓库的记录只有日志。
     @ViewBuilder
     private var logPane: some View {
         if let activity = visible.first(where: { $0.id == selected }) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(activity.repository.displayPath)
-                    .font(.system(size: 11))
-                    .textSelection(.enabled)
+                if let repository = activity.repository {
+                    Text(repository.displayPath)
+                        .font(.system(size: 11))
+                        .textSelection(.enabled)
+                }
 
                 ScrollView {
                     Text(activity.log)

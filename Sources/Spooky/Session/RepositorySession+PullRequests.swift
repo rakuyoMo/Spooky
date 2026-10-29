@@ -178,28 +178,21 @@ extension RepositorySession {
             return false
         }
 
-        #warning(
-            "TODO: Service 页只记由用户发起的托管服务写操作（发布仓库，请求的新建、编辑、评论、关闭与合并），不记读取请求列表与详情，这是推断；核实方式：打开 Pull Requests 视图刷新并查看一个请求，再看 Activity 的 Service 页是否列出这些读取。影响 Service 页列出哪些请求。"
-        )
-
-        let activity = RepositoryActivity(kind: .service, repository: repository, title: title)
-        RepositoryActivities.shared.insert(activity)
+        let activities = activities
 
         Task { [weak self] in
             do {
-                if let message = try await action(client), !message.isEmpty {
-                    activity.append(.standardOutput(Data(message.utf8)))
+                _ = try await activities.recordHosting(
+                    title: title,
+                    repository: repository,
+                    log: { $0 }
+                ) {
+                    try await action(client)
                 }
-
-                activity.state = "activity.finished"
             } catch {
-                let failure = AppFailure(error: error, opening: false, location: repository)
-                activity.append(.standardError(Data(failure.details.utf8)))
-                activity.state = "activity.failed"
-                self?.onFailure?(failure)
+                self?.onFailure?(AppFailure(error: error, opening: false, location: repository))
             }
 
-            RepositoryActivities.shared.finish(activity)
             self?.reloadPullRequests()
         }
 

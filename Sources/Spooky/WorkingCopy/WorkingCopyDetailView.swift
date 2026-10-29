@@ -53,7 +53,7 @@ struct WorkingCopyDetailView: View {
                 content(entry)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .onChange(of: session.diffSide) { session.loadDiff() }
+            .onChange(of: session.diffSide) { session.diffSideChanged() }
             .reloadsOnDiffPreferenceChange { session.loadDiff() }
         } else if let directory = session.selectedDirectory {
             unchangedView(AppLocalization.text(directoryMessage(directory)), symbol: "folder")

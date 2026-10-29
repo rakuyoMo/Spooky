@@ -112,6 +112,9 @@ final class BranchesReviewState {
     /// 升序的偏好键。
     static let ascendingKey = "branchesReviewSortAscending"
 
+    /// 用户没选基准时默认取的分支名，按优先顺序排列。
+    private static let defaultBaseNames = ["next", "develop", "dev", "main", "master"]
+
     /// 用户选的基准分支；为 nil 时按默认规则选。
     var selectedBase: String? = nil
 
@@ -158,7 +161,7 @@ final class BranchesReviewState {
     /// 过期结果不能写回。
     private var generation = 0
 
-    /// 实际使用的基准分支：用户选的仍然存在时用它，否则依次取标准名的基准分支、当前分支与第一个本地分支。
+    /// 实际使用的基准分支：用户选的仍然存在时用它，否则依次取默认基准名单里第一个存在的分支、当前分支与第一个本地分支。
     var base: RepositoryReference? {
         let locals = snapshot?.references.filter(\.isLocal) ?? []
 
@@ -166,9 +169,9 @@ final class BranchesReviewState {
             return chosen
         }
 
-        let standard = RepositoryReferences.standardBaseBranchNames.map { "refs/heads/" + $0 }
+        let preferred = Self.defaultBaseNames.map { "refs/heads/" + $0 }
 
-        return standard.lazy.compactMap { name in locals.first { $0.id == name } }.first
+        return preferred.lazy.compactMap { name in locals.first { $0.id == name } }.first
             ?? locals.first { $0.name == head }
             ?? locals.first
     }

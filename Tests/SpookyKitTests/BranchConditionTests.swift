@@ -125,11 +125,24 @@ struct BranchConditionTests {
         #expect(!condition(lastUpdated: nil).isStale(months: 1, now: now, calendar: calendar))
     }
 
-    /// 基准名单只收快照里存在的分支；父分支去重并排在标准名之后。
+    /// 基准名单只收快照里存在的分支：标准名按 main、master、trunk、dev、develop、next 的顺序在前，父分支去重后排在其后。
     @Test("基准分支名单")
     func baseBranches() {
+        #expect(
+            RepositoryReferences.standardBaseBranchNames
+                == ["main", "master", "trunk", "dev", "develop", "next"]
+        )
+
+        let names = [
+            "refs/heads/master",
+            "refs/heads/dev",
+            "refs/heads/trunk",
+            "refs/heads/zeta",
+            "refs/heads/alpha",
+        ]
+
         let snapshot = ReferenceSnapshot(
-            references: ["refs/heads/master", "refs/heads/dev", "refs/heads/zeta", "refs/heads/alpha"].map(reference),
+            references: names.map { reference($0) },
             remotes: [],
             metadata: [
                 "refs/heads/a": BranchMetadata(parent: "refs/heads/zeta"),
@@ -141,9 +154,34 @@ struct BranchConditionTests {
         )
 
         #expect(
-            RepositoryReferences.baseBranches(in: snapshot)
-                == ["refs/heads/master", "refs/heads/dev", "refs/heads/alpha", "refs/heads/zeta"]
+            RepositoryReferences.baseBranches(in: snapshot) == [
+                "refs/heads/master",
+                "refs/heads/trunk",
+                "refs/heads/dev",
+                "refs/heads/alpha",
+                "refs/heads/zeta",
+            ]
         )
+    }
+
+    /// trunk 按名称是基准分支：最后更新在 2000 年也不陈旧，同样久没更新的普通分支陈旧。
+    @Test("trunk 不显示陈旧")
+    func trunkIsBase() throws {
+        let old = try #require(ISO8601DateFormatter().date(from: "2000-01-01T00:00:00Z"))
+        let snapshot = ReferenceSnapshot(
+            references: [
+                reference("refs/heads/topic", date: old),
+                reference("refs/heads/trunk", date: old),
+            ],
+            remotes: []
+        )
+
+        let conditions = RepositoryReferences.conditions(in: snapshot)
+        let trunk = try #require(conditions["refs/heads/trunk"])
+        let topic = try #require(conditions["refs/heads/topic"])
+
+        #expect(trunk.isBase && !trunk.isStale(months: 3))
+        #expect(!topic.isBase && topic.isStale(months: 3))
     }
 }
 
@@ -160,8 +198,8 @@ extension BranchConditionTests {
         )
     }
 
-    /// 指向同一个提交的本地分支。
-    private func reference(_ id: String) -> RepositoryReference {
+    /// 指向同一个提交的本地分支；`date` 是顶端提交的时间。
+    private func reference(_ id: String, date: Date? = nil) -> RepositoryReference {
         RepositoryReference(
             id: id,
             objectID: String(repeating: "a", count: 40),
@@ -169,7 +207,8 @@ extension BranchConditionTests {
             upstream: nil,
             upstreamRemote: nil,
             upstreamBranch: nil,
-            symbolicTarget: nil
+            symbolicTarget: nil,
+            date: date
         )
     }
 }

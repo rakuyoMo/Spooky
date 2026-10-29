@@ -133,6 +133,10 @@ final class RepositoryPullRequestState {
     @ObservationIgnored
     private var branchRequestsDate: Date? = nil
 
+    /// 列表所属的仓库，读取下一页时记进 Activity；关闭仓库时清掉。
+    @ObservationIgnored
+    private var location: RepositoryLocation? = nil
+
     /// 选中远端对应的账号；对应不上时为 nil。
     var account: HostingAccount? {
         guard case .resolved(let account, _) = target else { return nil }
@@ -163,6 +167,7 @@ final class RepositoryPullRequestState {
         listTask?.cancel()
 
         let request = generation
+        location = runner.location
         isLoading = true
 
         listTask = Task { [weak self] in
@@ -203,9 +208,18 @@ final class RepositoryPullRequestState {
         let request = generation
         isLoading = true
 
+        let title = Self.loadingTitle("load.title", service: client.instance.service)
+        let location = location
+
         listTask = Task { [weak self] in
             do {
-                let result = try await client.pullRequests(in: project, page: page)
+                let result = try await RepositoryActivities.shared.recordHosting(
+                    title: title,
+                    repository: location
+                ) {
+                    try await client.pullRequests(in: project, page: page)
+                }
+
                 guard let self, generation == request else { return }
 
                 items += result.items.filter { item in !items.contains { $0.id == item.id } }
@@ -250,7 +264,14 @@ final class RepositoryPullRequestState {
             return cache.issues
         }
 
-        guard let issues = try? await client.openIssues(in: project) else {
+        let issues = try? await RepositoryActivities.shared.recordHosting(
+            title: AppLocalization.text("pullRequests.loadIssues.title"),
+            repository: runner.location
+        ) {
+            try await client.openIssues(in: project)
+        }
+
+        guard let issues else {
             return []
         }
 
@@ -277,21 +298,34 @@ final class RepositoryPullRequestState {
         }
 
         do {
-            var requests: [String: PullRequest] = [:]
-            var page: Int? = 1
+            // 三页合成 Activity 里的一条记录
+            branchRequests = try await RepositoryActivities.shared.recordHosting(
+                title: Self.loadingTitle("load.title", service: client.instance.service),
+                repository: runner.location
+            ) {
+                var requests: [String: PullRequest] = [:]
+                var page: Int? = 1
 
-            while let current = page, current <= 3 {
-                let result = try await client.pullRequests(in: project, page: current, includesClosed: true)
+                while let current = page, current <= 3 {
+                    let result = try await client.pullRequests(
+                        in: project,
+                        page: current,
+                        includesClosed: true
+                    )
 
-                // 列表从新到旧，同一分支只留最近的一个
-                for request in result.items where request.source.project == project && requests[request.source.branch] == nil {
-                    requests[request.source.branch] = request
+                    // 列表从新到旧，同一分支只留最近的一个
+                    for request in result.items
+                        where request.source.project == project && requests[request.source.branch] == nil
+                    {
+                        requests[request.source.branch] = request
+                    }
+
+                    page = result.nextPage
                 }
 
-                page = result.nextPage
+                return requests
             }
 
-            branchRequests = requests
             branchRequestsFailure = nil
         } catch {
             branchRequests = nil
@@ -307,6 +341,7 @@ final class RepositoryPullRequestState {
         branchRequests = nil
         branchRequestsFailure = nil
         branchRequestsDate = nil
+        location = nil
         listTask?.cancel()
         listTask = nil
         remotes = []
@@ -326,6 +361,15 @@ final class RepositoryPullRequestState {
 // MARK: - Loading
 
 extension RepositoryPullRequestState {
+    /// Activity 里读取请求的标题：GitLab 叫 Merge Request，其余叫 Pull Request，资源键分别以 `mr.` 与 `pr.` 开头。
+    ///
+    /// - Parameters:
+    ///   - key: `pr.` 之后的资源键。
+    ///   - service: 发出请求的账号所在的服务。
+    private static func loadingTitle(_ key: String, service: HostingService) -> String {
+        AppLocalization.text((service == .gitlab ? "mr." : "pr.") + key)
+    }
+
     /// 选中远端对应账号与项目后读第一页。
     private func loadList(request: Int) async {
         let associations = PullRequestAssociations.load()
@@ -344,7 +388,13 @@ extension RepositoryPullRequestState {
         }
 
         do {
-            let result = try await client.pullRequests(in: project)
+            let result = try await RepositoryActivities.shared.recordHosting(
+                title: Self.loadingTitle("load.title", service: client.instance.service),
+                repository: location
+            ) {
+                try await client.pullRequests(in: project)
+            }
+
             guard generation == request else { return }
 
             items = result.items
@@ -373,16 +423,23 @@ extension RepositoryPullRequestState {
         isLoadingDetail = true
 
         let request = generation
+        let title = Self.loadingTitle("loadDetail.title", service: client.instance.service)
 
         detailTask = Task { [weak self] in
             do {
-                async let detail = client.pullRequest(id)
-                async let comments = client.comments(on: id)
-                let loaded = try await (detail, comments)
+                // 详情与评论合成 Activity 里的一条记录
+                let loaded = try await RepositoryActivities.shared.recordHosting(
+                    title: title,
+                    repository: runner.location
+                ) {
+                    async let detail = client.pullRequest(id)
+                    async let comments = client.comments(on: id)
+                    return try await (detail, comments)
+                }
 
                 guard let self, generation == request, selectedID == id else { return }
 
-                (self.detail, self.comments) = loaded
+                (detail, comments) = loaded
                 detailFailure = nil
 
                 try await openComparison(loaded.0, runner: runner)

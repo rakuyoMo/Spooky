@@ -23,7 +23,7 @@ struct SidebarSessionTests {
         _ = try await runner.run(["tag", "-a", "v1.0", "-m", "Release"])
         _ = try await runner.run(["commit", "--allow-empty", "-m", "next"])
 
-        let session = RepositorySession(makeRunner: { _ in runner })
+        let session = RepositorySession(makeRunner: { _ in runner }, activities: RepositoryActivities())
         defer { session.close() }
         session.display(location)
         session.refresh()
@@ -52,7 +52,7 @@ struct SidebarSessionTests {
         session.setPinned(true, branches: [feature])
         try await waitUntil { session.history.snapshot?.metadata(for: feature.id).isPinned ?? false }
         #expect(
-            RepositoryActivities.shared.items
+            session.activities.items
                 .contains { $0.repository == location && $0.title == AppLocalization.text("branch.pin") }
         )
 

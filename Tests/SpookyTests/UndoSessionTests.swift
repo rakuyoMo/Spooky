@@ -43,7 +43,7 @@ struct UndoSessionTests {
         #expect(try await Self.settledState(of: session, redo: true) == .empty)
 
         // 撤销与重做记进 Activity，名称由撤销管理器生成
-        let titles = RepositoryActivities.shared.items
+        let titles = session.activities.items
             .filter { $0.repository == fixture.location }
             .map(\.title)
         #expect(titles.contains(UndoManager().undoMenuTitle(forUndoActionName: commit)))
@@ -376,7 +376,7 @@ extension UndoSessionTests {
             _ = try await runner.run(["commit", "-q", "-m", "root"])
 
             let runner = runner
-            session = RepositorySession(makeRunner: { _ in runner })
+            session = RepositorySession(makeRunner: { _ in runner }, activities: RepositoryActivities())
             session.display(location)
             session.refresh(full: true)
             await session.waitForRefresh()

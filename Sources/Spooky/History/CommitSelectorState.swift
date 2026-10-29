@@ -108,6 +108,16 @@ final class CommitSelectorState {
         load(offset: commits.count)
     }
 
+    /// ↑ ↓ 把高亮移到上一行或下一行，到第一行或最后一行时停住。
+    func moveHighlight(by offset: Int) {
+        guard let index = commits.firstIndex(where: { $0.id == highlightedID }) else {
+            return
+        }
+
+        let target = min(max(index + offset, 0), commits.count - 1)
+        highlightedID = commits[target].id
+    }
+
     /// 弹出框关闭时停止读取并清除全部结果。
     func close() {
         cancelTask()
@@ -135,7 +145,7 @@ extension CommitSelectorState {
 
         let request = generation
 
-        // 搜索框的内容只作为提交说明的条件，忽略大小写、按字面匹配
+        // 搜索框的内容只作为提交说明的条件，按仓库配置的正则写法匹配、忽略大小写
         let query = HistoryQuery(
             conditions: searchText.isEmpty ? [] : [HistorySearchCondition(kind: .message, text: searchText)]
         )

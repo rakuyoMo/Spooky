@@ -46,7 +46,7 @@ public struct BranchCondition: Sendable, Equatable {
 
 extension RepositoryReferences {
     /// 按名称认作基准分支的本地分支名，按优先顺序排列。
-    public static let standardBaseBranchNames = ["main", "master", "develop", "dev", "next"]
+    public static let standardBaseBranchNames = ["main", "master", "trunk", "dev", "develop", "next"]
 
     /// 快照里的基准分支：存在的标准名本地分支在前，再加上各分支设置的、仍然存在的父分支，按引用名排序。
     public static func baseBranches(in snapshot: ReferenceSnapshot) -> [String] {

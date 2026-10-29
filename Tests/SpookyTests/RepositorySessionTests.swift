@@ -120,7 +120,7 @@ struct RepositorySessionTests {
     @Test("同步取消恢复可写状态并保留活动记录")
     func cancelSync() async throws {
         let status = try snapshot("file")
-        let session = RepositorySession(loadStatus: { _ in status })
+        let session = RepositorySession(loadStatus: { _ in status }, activities: RepositoryActivities())
         let location = RepositoryLocation.local(path: "/temporary/cancel-" + UUID().uuidString)
         session.display(location)
         defer { session.close() }
@@ -143,11 +143,12 @@ struct RepositorySessionTests {
         #expect(!session.isWriting)
         #expect(session.canWrite)
         #expect(session.failure == nil)
-        let activity = try #require(RepositoryActivities.shared.items.first { $0.repository == location })
+
+        // 写入结束后的完整刷新另记读取，按标题找到写操作的记录
+        let activity = try #require(session.activities.items.first { $0.title == "Fetch" })
         #expect(activity.state == "activity.cancelled")
         #expect(activity.log.contains("transferring"))
         #expect(activity.cancel == nil)
-        RepositoryActivities.shared.items.removeAll { $0.repository == location }
     }
 
     /// 同一仓库只允许一个明确的写操作：重复点击与另一个窗口都不能再启动写入，结束后统一恢复。
@@ -254,10 +255,9 @@ struct RepositorySessionTests {
     @Test("退出等待任务结束并释放写锁", .timeLimit(.minutes(5)))
     func shutdown() async throws {
         let status = try snapshot("file")
-        let session = RepositorySession(loadStatus: { _ in status })
+        let session = RepositorySession(loadStatus: { _ in status }, activities: RepositoryActivities())
         let location = RepositoryLocation.local(path: "/temporary/shutdown-" + UUID().uuidString)
         session.display(location)
-        defer { RepositoryActivities.shared.items.removeAll { $0.repository == location } }
 
         let (started, signal) = AsyncStream<Void>.makeStream()
         session.performGit(
@@ -274,7 +274,7 @@ struct RepositorySessionTests {
         #expect(start.duration(to: .now) < .seconds(5))
         #expect(session.repository == nil && session.writeTask == nil)
         #expect(!RepositoryWriteLocks.shared.contains(location))
-        #expect(RepositoryActivities.shared.items.first { $0.repository == location }?.state == "activity.cancelled")
+        #expect(session.activities.items.first { $0.title == "Fetch" }?.state == "activity.cancelled")
     }
 }
 

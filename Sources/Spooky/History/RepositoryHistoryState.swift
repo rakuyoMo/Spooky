@@ -71,8 +71,24 @@ final class RepositoryHistoryState {
     /// 这次回到历史不用再询问：提交排在询问的阈值以内，或用户已同意续载；开始新的查找时清掉。
     private var lookupConfirmed = false
 
+    /// 回到提交之前核对它在全部历史里的位置的读取。
+    var lookupCheckTask: Task<Void, Never>? = nil
+
+    /// 核对的序号：又要回到别的提交或关闭仓库时加一，之前的询问随之作废。
+    var lookupCheckRequest = 0
+
+    /// 刚打开的仓库还没读到引用时要核对的提交与放行后的步骤，读到引用后接着核对。
+    var pendingLookupCheck: (id: String, proceed: () -> Void)? = nil
+
+    /// 正在放行的提交，只在执行放行的步骤期间有值；步骤里的 `locate` 见到它就不再核对与询问。
+    var releasedLookup: String? = nil
+
     /// 视图设置所在的偏好域，测试注入临时域。
     var preferences = UserDefaults.standard
+
+    /// 引用、历史分页与提交数的读取记进的 Activity 列表，由会话设成它自己的列表。
+    @ObservationIgnored
+    var activities = RepositoryActivities.shared
 
     /// 作者与文件补全的数据，同一 HEAD 只读取一次。
     let suggestions = HistorySearchSuggestions()
@@ -151,7 +167,12 @@ final class RepositoryHistoryState {
     private var referenceTask: Task<Void, Never>? = nil
 
     /// 引用读取进行中时收到的最近一次刷新，读完后补上，读取开始之后的改动不会漏掉。
-    private var pendingRefresh: (status: WorkingCopyStatus, runner: GitRunner, reload: Bool)? = nil
+    private var pendingRefresh: (
+        status: WorkingCopyStatus,
+        runner: GitRunner,
+        reload: Bool,
+        records: Bool
+    )? = nil
 
     /// 分页与回到历史时核对提交位置的读取，可由用户或视图切换取消。
     private var pageTask: Task<Void, Never>? = nil
@@ -224,6 +245,19 @@ final class RepositoryHistoryState {
         snapshot?.references.filter { $0.isLocal || ($0.isRemote && $0.symbolicTarget == nil) } ?? []
     }
 
+    /// 全部历史的起点：指向提交的引用与 HEAD 所指的提交，去重后排序。
+    var allHistoryRoots: [String] {
+        let references = snapshot?.references ?? []
+
+        return Array(
+            Set(
+                references.filter { $0.objectType == "commit" }.map(\.objectID)
+                    + (branch?.oid.map { [$0] } ?? [])
+            )
+        )
+        .sorted()
+    }
+
     /// 历史表头当前引用，没有选择时展示全部引用语义。
     var title: String {
         if selectedReferences.count > 1 {
@@ -239,44 +273,55 @@ final class RepositoryHistoryState {
 
     /// 正在运行的读取任务，退出前等待它们结束。
     var activeTasks: [Task<Void, Never>] {
-        [referenceTask, pageTask, changeTask, countTask, searchTask].compactMap { $0 } + Array(diffTasks.values)
+        [
+            referenceTask,
+            pageTask,
+            lookupCheckTask,
+            changeTask,
+            countTask,
+            searchTask,
+        ]
+        .compactMap { $0 } + Array(diffTasks.values)
     }
 
     /// 刷新引用后只在根变化时重载列表，轮询不打断翻页或选择。
     ///
-    /// - Parameter reload: 完整刷新时即使引用未变也重读第一页，固定根的分页由核心库缓存复用。
-    func refresh(status: WorkingCopyStatus, runner: GitRunner, reload: Bool = false) {
-        // 读取进行中时只记下最近一次请求，完整刷新的要求随之保留
+    /// - Parameters:
+    ///   - reload: 完整刷新时即使引用未变也重读第一页，固定根的分页由核心库缓存复用。
+    ///   - records: 引用的读取与随之重读的第一页、提交数是否记进 Activity；自动刷新引起的不记。
+    func refresh(
+        status: WorkingCopyStatus,
+        runner: GitRunner,
+        reload: Bool = false,
+        records: Bool = true
+    ) {
+        // 读取进行中时只记下最近一次请求，完整刷新与记录的要求随之保留
         guard referenceTask == nil else {
-            pendingRefresh = (status, runner, reload || (pendingRefresh?.reload ?? false))
+            pendingRefresh = (
+                status,
+                runner,
+                reload || (pendingRefresh?.reload ?? false),
+                records || (pendingRefresh?.records ?? false)
+            )
             return
         }
 
         self.runner = runner
         needsReload = needsReload || reload
         let request = generation
+        let activities = activities
+
         referenceTask = Task { [weak self] in
             do {
-                let service = RepositoryReferences(runner: runner)
-                let snapshot = try await service.snapshot()
-                let counts = try await service.divergences(in: snapshot)
+                let (snapshot, counts) = try await Self.loadReferences(
+                    runner: runner,
+                    activities: activities,
+                    records: records
+                )
 
                 guard let self, generation == request, !Task.isCancelled else { return }
-                let changed = self.snapshot != snapshot || branch?.oid != status.branch.oid
-                self.snapshot = snapshot
-                branch = status.branch
-                divergence = counts
 
-                // 整理状态由快照直接得出，已删除的上游仍保留跟踪名称
-                conditions = RepositoryReferences.conditions(in: snapshot)
-
-                // 恢复的引用已被删除时回到全部历史，并让会话回到 Working Copy。
-                checkRestoredReferences(in: snapshot)
-
-                if changed || needsReload {
-                    needsReload = false
-                    reloadCommits()
-                }
+                apply(snapshot, divergence: counts, status: status, records: records)
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
                 failure = AppFailure(error: error, opening: false, location: runner.location)
@@ -289,7 +334,12 @@ final class RepositoryHistoryState {
             // 读取期间收到的刷新在读完后补上
             if let pending = pendingRefresh {
                 pendingRefresh = nil
-                refresh(status: pending.status, runner: pending.runner, reload: pending.reload)
+                refresh(
+                    status: pending.status,
+                    runner: pending.runner,
+                    reload: pending.reload,
+                    records: pending.records
+                )
             }
         }
     }
@@ -336,6 +386,7 @@ final class RepositoryHistoryState {
     /// 关闭仓库时清除全部快照和选区。
     func close() {
         suspend()
+        cancelLookupCheck()
         runner = nil
         snapshot = nil
         branch = nil
@@ -376,7 +427,9 @@ final class RepositoryHistoryState {
 
 extension RepositoryHistoryState {
     /// 固定当前引用哈希与视图设置、搜索条件，清空图状态后读取第一页与总数。
-    func reloadCommits() {
+    ///
+    /// - Parameter records: 第一页与提交数的读取是否记进 Activity；自动刷新引起的重载不记。
+    func reloadCommits(records: Bool = true) {
         cancelPage()
         countTask?.cancel()
         countTask = nil
@@ -410,13 +463,7 @@ extension RepositoryHistoryState {
         } else if selectedReference == "HEAD" {
             roots = branch?.oid.map { [$0] } ?? []
         } else {
-            roots = Array(
-                Set(
-                    references.filter { $0.objectType == "commit" }.map(\.objectID)
-                        + (branch?.oid.map { [$0] } ?? [])
-                )
-            )
-            .sorted()
+            roots = allHistoryRoots
         }
 
         // 搜索结果不连续，图与推拉标记都依赖完整的父链，搜索时不计算
@@ -439,14 +486,16 @@ extension RepositoryHistoryState {
             return
         }
 
-        loadNextPage(replacing: true)
-        loadCount()
+        loadNextPage(replacing: true, records: records)
+        loadCount(records: records)
     }
 
     /// 表格请求最后一行时续载，每页条数取设置，最多 1000 条；Git 返回的一页不满或到了根提交才停。
     ///
-    /// - Parameter pageSize: 回到历史查找提交时按 1000 条扩大加载；nil 时用设置中的条数。
-    func loadNextPage(replacing: Bool = false, pageSize: Int? = nil) {
+    /// - Parameters:
+    ///   - pageSize: 回到历史查找提交时按 1000 条扩大加载；nil 时用设置中的条数。
+    ///   - records: 是否记进 Activity；自动刷新引起的重载不记。
+    func loadNextPage(replacing: Bool = false, pageSize: Int? = nil, records: Bool = true) {
         guard !isLoading, hasMore, let runner else { return }
         let request = generation
         let roots = roots
@@ -454,11 +503,20 @@ extension RepositoryHistoryState {
         let offset = replacing ? 0 : commits.count
         let configured = UserDefaults.standard.integer(forKey: "historyPageSize")
         let limit = pageSize ?? ([100, 200, 500, 1000].contains(configured) ? configured : 100)
+        let activities = activities
         isLoading = true
         pageTask = Task { [weak self] in
             do {
-                let page = try await RepositoryHistory(runner: runner)
-                    .page(roots: roots, query: query, offset: offset, limit: limit)
+                let page = try await activities.recordRead(
+                    [AppLocalization.text("activity.read.commits")],
+                    in: runner.location,
+                    records: records,
+                    results: { [AppLocalization.text("activity.result.commits", $0.commits.count)] }
+                ) {
+                    try await RepositoryHistory(runner: runner)
+                        .page(roots: roots, query: query, offset: offset, limit: limit)
+                }
+
                 guard let self, generation == request, !Task.isCancelled else { return }
 
                 append(page, replacing: replacing)
@@ -655,7 +713,9 @@ extension RepositoryHistoryState {
     func locate(_ id: String) {
         lookup = id
         lookupFailure = nil
-        lookupConfirmed = false
+
+        // 放行前已经核对过位置的提交不再核对与询问
+        lookupConfirmed = releasedLookup == id
 
         // 在全部历史里找这个提交，搜索条件不再适用
         let searching = !searchConditions.isEmpty
@@ -683,6 +743,86 @@ extension RepositoryHistoryState {
 // MARK: - Private
 
 extension RepositoryHistoryState {
+    /// 读取引用快照与各本地分支的领先落后数；记录时按分支、远端、标签各记一条，分支与远端写出与上一次记录相比的增减。
+    ///
+    /// - Parameters:
+    ///   - activities: 读取记进的 Activity 列表。
+    ///   - records: 是否记进 Activity。
+    /// - Returns: 引用快照与以完整引用名为键的领先落后数。
+    private static func loadReferences(
+        runner: GitRunner,
+        activities: RepositoryActivities,
+        records: Bool
+    ) async throws -> (ReferenceSnapshot, [String: ReferenceDivergence]) {
+        let location = runner.location
+        let service = RepositoryReferences(runner: runner)
+
+        return try await activities.recordRead(
+            [
+                AppLocalization.text("activity.read.branches"),
+                AppLocalization.text("activity.read.remotes"),
+                AppLocalization.text("activity.read.tags"),
+            ],
+            in: location,
+            records: records,
+            results: { snapshot, counts in
+                [
+                    await activities.changes(
+                        of: .branches,
+                        items: ActivityInventory.branches(in: snapshot, divergence: counts),
+                        in: location
+                    ),
+                    await activities.changes(
+                        of: .remotes,
+                        items: ActivityInventory.remotes(in: snapshot),
+                        in: location
+                    ),
+                    nil,
+                ]
+            }
+        ) {
+            // 分支的比较值要用到领先落后数，两者算作同一次读取
+            let snapshot = try await service.snapshot()
+
+            return (snapshot, try await service.divergences(in: snapshot))
+        }
+    }
+
+    /// 换上读到的引用快照：引用或 HEAD 变了、或要求重读时重载列表，再接着做等着引用的核对。
+    ///
+    /// - Parameters:
+    ///   - divergence: 各本地分支相对上游的计数。
+    ///   - status: 与快照一起使用的工作区状态。
+    ///   - records: 重载的第一页与提交数是否记进 Activity。
+    private func apply(
+        _ snapshot: ReferenceSnapshot,
+        divergence: [String: ReferenceDivergence],
+        status: WorkingCopyStatus,
+        records: Bool
+    ) {
+        let changed = self.snapshot != snapshot || branch?.oid != status.branch.oid
+        self.snapshot = snapshot
+        branch = status.branch
+        self.divergence = divergence
+
+        // 整理状态由快照直接得出，已删除的上游仍保留跟踪名称
+        conditions = RepositoryReferences.conditions(in: snapshot)
+
+        // 恢复的引用已被删除时回到全部历史，并让会话回到 Working Copy。
+        checkRestoredReferences(in: snapshot)
+
+        if changed || needsReload {
+            needsReload = false
+            reloadCommits(records: records)
+        }
+
+        // 刚打开仓库时等着引用的核对，读到引用后接着做
+        if let pending = pendingLookupCheck {
+            pendingLookupCheck = nil
+            confirmLookup(pending.id, then: pending.proceed)
+        }
+    }
+
     /// 校验切回仓库时恢复的引用选择，只在恢复后的第一个引用快照里校验一次。
     private func checkRestoredReferences(in snapshot: ReferenceSnapshot) {
         guard let restored = restoredReferences else { return }
@@ -709,27 +849,22 @@ extension RepositoryHistoryState {
 
         pageTask = Task { [weak self] in
             do {
-                let history = RepositoryHistory(runner: runner)
-                let position = try await history.position(
+                let position = try await Self.lookupPosition(
                     of: id,
                     roots: roots,
                     query: query,
-                    limit: Self.slowLookupThreshold
+                    runner: runner
                 )
-
-                // 不在前面这些提交里时，再看它是否在这段历史里
-                let reachable =
-                    if position != nil {
-                        true
-                    } else {
-                        try await history.contains(id, roots: roots)
-                    }
 
                 guard let self, generation == request, !Task.isCancelled else { return }
 
                 isLoading = false
                 pageTask = nil
-                resolveLookup(id, isWithinThreshold: position != nil, isReachable: reachable)
+                resolveLookup(
+                    id,
+                    isWithinThreshold: position.isWithinThreshold,
+                    isReachable: position.isReachable
+                )
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
 
@@ -758,14 +893,8 @@ extension RepositoryHistoryState {
         lookup = nil
 
         let location = runner?.location
-        let title = AppLocalization.text("history.reveal.slow")
-        let message = AppLocalization.text(
-            "history.reveal.slow.message",
-            String(id.prefix(8)),
-            Self.slowLookupThreshold
-        )
 
-        onSlowLookup?(title, message) { [weak self] in
+        askSlowLookup(id) { [weak self] in
             // 询问期间换了仓库或开始了别的查找时，这次同意不再生效
             guard let self, lookup == nil, runner?.location == location else { return }
 
@@ -782,7 +911,9 @@ extension RepositoryHistoryState {
     }
 
     /// 读取当前查询下的提交数，供窗口副标题使用；数到计数上限为止。
-    private func loadCount() {
+    ///
+    /// - Parameter records: 是否记进 Activity；自动刷新引起的重载不记。
+    private func loadCount(records: Bool) {
         countTask?.cancel()
         countTask = nil
         commitCount = nil
@@ -794,11 +925,18 @@ extension RepositoryHistoryState {
         let request = generation
         let roots = roots
         let query = query
+        let activities = activities
 
         countTask = Task { [weak self] in
             // 计数失败只让副标题不显示数量，不影响列表
-            let count = try? await RepositoryHistory(runner: runner)
-                .count(roots: roots, query: query, limit: Self.countLimit)
+            let count = try? await activities.recordRead(
+                [AppLocalization.text("activity.read.commitCount")],
+                in: runner.location,
+                records: records
+            ) {
+                try await RepositoryHistory(runner: runner)
+                    .count(roots: roots, query: query, limit: Self.countLimit)
+            }
 
             guard let self, generation == request, !Task.isCancelled else { return }
 

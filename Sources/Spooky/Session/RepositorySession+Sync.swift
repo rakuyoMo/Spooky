@@ -64,6 +64,9 @@ final class SyncProgress {
     /// 同步所在的仓库，用来找到它正在运行的 Activity。
     private let repository: RepositoryLocation?
 
+    /// 同步记进的 Activity 列表。
+    private let activities: RepositoryActivities
+
     /// 停在哪一步、哪些步骤已完成的说明；还没开始任何步骤时为 nil。
     var failureNote: String? {
         guard let step else {
@@ -84,8 +87,13 @@ final class SyncProgress {
     }
 
     /// 为指定仓库的一次同步记录进度。
-    init(repository: RepositoryLocation?) {
+    ///
+    /// - Parameters:
+    ///   - repository: 同步所在的仓库。
+    ///   - activities: 同步记进的 Activity 列表。
+    init(repository: RepositoryLocation?, activities: RepositoryActivities) {
         self.repository = repository
+        self.activities = activities
     }
 
     /// 步骤的显示名称。
@@ -108,7 +116,7 @@ final class SyncProgress {
             case .push: "sync.step.push"
             }
 
-        RepositoryActivities.shared.items
+        activities.items
             .first { $0.repository == repository && $0.cancel != nil }?
             .state = state
     }
@@ -169,7 +177,7 @@ extension RepositorySession {
     /// - Returns: 是否已开始执行。
     @discardableResult
     func sync(remote: String, branch: String, options: SyncOptions) -> Bool {
-        let progress = SyncProgress(repository: repository)
+        let progress = SyncProgress(repository: repository, activities: activities)
 
         return performGit(
             { runner, output in

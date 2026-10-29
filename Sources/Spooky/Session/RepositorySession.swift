@@ -98,6 +98,10 @@ final class RepositorySession {
     /// 当前显示哪一侧改动。
     var diffSide = DiffSide.unstaged
 
+    /// 最近一次读取的 Diff 是哪一侧；暂存侧变化时据此判断这一侧是否已经在读。
+    @ObservationIgnored
+    private(set) var loadedDiffSide: DiffSide? = nil
+
     /// 大 Diff 放行只对当前文件有效。
     var showsLargeDiff = false
 
@@ -238,7 +242,7 @@ final class RepositorySession {
     private var refreshID = UUID()
 
     /// 已显示 Diff 对应的工作区内容哈希，服务器轮询据此判断文件内容是否变化。
-    private var contentHash: (id: StatusRowID, hash: String?)? = nil
+    private(set) var contentHash: (id: StatusRowID, hash: String?)? = nil
 
     /// 本窗口打开过的仓库视图状态，切换回仓库时恢复。
     @ObservationIgnored
@@ -281,6 +285,9 @@ final class RepositorySession {
     /// 快照读取边界，测试可控制响应顺序和失败。
     private let loadStatus: @Sendable (RepositoryLocation) async throws -> WorkingCopyStatus
 
+    /// 写操作与读取记进的 Activity 列表；测试注入自己的列表，不碰 App 内共享的那一份。
+    let activities: RepositoryActivities
+
     /// 请求代数，阻止已取消的旧请求覆盖新仓库。
     private(set) var generation = 0
 
@@ -308,17 +315,29 @@ final class RepositorySession {
     var runner: GitRunner? { repository.map(makeRunner) }
 
     /// 创建窗口状态；生产环境的所有 Git 读取都经过核心命令层。
+    ///
+    /// - Parameter activities: 写操作与读取记进的 Activity 列表，默认是 App 内唯一的活动列表。
     init(
         makeRunner: @escaping @Sendable (RepositoryLocation) -> GitRunner = {
             var runner = GitRunner(location: $0)
             runner.credentialHandler = { await RemoteCallbackPresenter.shared.respond(to: $0) }
             return runner
         },
-        loadStatus: (@Sendable (RepositoryLocation) async throws -> WorkingCopyStatus)? = nil
+        loadStatus: (@Sendable (RepositoryLocation) async throws -> WorkingCopyStatus)? = nil,
+        activities: RepositoryActivities = .shared
     ) {
         self.makeRunner = makeRunner
         self.loadStatus = loadStatus ?? { try await makeRunner($0).status() }
+        self.activities = activities
         loadsRepositoryDetails = loadStatus == nil
+
+        // 各视图的读取与本窗口记进同一份 Activity 列表
+        history.activities = activities
+        stashes.activities = activities
+        submodules.activities = activities
+        worktrees.activities = activities
+        fileHistory.activities = activities
+        fileContent.activities = activities
 
         // 恢复的引用已不存在时，回到安全的 Working Copy 视图。
         history.onRestoreFailure = { [weak self] in
@@ -363,7 +382,7 @@ final class RepositorySession {
 
     /// 读取状态；本机仓库与完整刷新重读全部视图数据，服务器轮询只在状态或所选文件内容变化时连带读取。
     ///
-    /// - Parameter full: 是否重读身份、引用、历史与 Diff；写入完成、重连、重新激活和手动刷新使用完整刷新。
+    /// - Parameter full: 是否重读身份、引用、历史与 Diff；写入完成、重连、重新激活和手动刷新使用完整刷新，只有它的读取记进 Activity。
     func refresh(full: Bool = false) {
         guard let repository, !isWriting else {
             return
@@ -375,14 +394,27 @@ final class RepositorySession {
             return
         }
 
+        // 只有完整刷新记进 Activity；文件变化、服务器轮询与外部工具结束后的刷新，连同它引起的重读都不记
+        let records = full
         let full = full || repository.host == nil
         isRefreshing = true
         failure = nil
         let request = generation
         let id = UUID()
         refreshID = id
-        let load = loadStatus
         let previous = status
+
+        // 读取工作区状态，记录时写出读到的条数，未跟踪的文件也算在内
+        let load: @MainActor () async throws -> WorkingCopyStatus = { [activities, loadStatus] in
+            try await activities.recordRead(
+                [AppLocalization.text("activity.read.status")],
+                in: repository,
+                records: records,
+                results: { [AppLocalization.text("activity.result.entries", $0.entries.count)] }
+            ) {
+                try await loadStatus(repository)
+            }
+        }
 
         // 轮询时顺带读取所选文件的内容哈希，与状态并发，服务器上只占一次往返的等待时间。
         let probe = full || !loadsRepositoryDetails ? nil : selectedEntry.flatMap { $0.hasWorkingCopyDiff ? $0 : nil }
@@ -390,9 +422,8 @@ final class RepositorySession {
 
         refreshTask = Task { [weak self] in
             do {
-                async let loaded = load(repository)
                 async let probed = Self.contentHash(of: probe, service: service)
-                let status = try await loaded
+                let status = try await load()
                 let hash = await probed
 
                 guard let self, generation == request, !Task.isCancelled else {
@@ -400,7 +431,7 @@ final class RepositorySession {
                 }
 
                 let statusChanged = status != previous
-                replaceStatus(status)
+                replaceStatus(status, records: records)
 
                 // 状态没有变化的轮询不再重复读取身份、引用、补充清单和 Diff，减少服务器往返。
                 if loadsRepositoryDetails {
@@ -408,6 +439,7 @@ final class RepositorySession {
                         of: status,
                         in: repository,
                         full: full,
+                        records: records,
                         statusChanged: statusChanged,
                         contentChanged: contentChanged(probe, hash: hash)
                     )
@@ -579,18 +611,22 @@ extension RepositorySession {
 
 extension RepositorySession {
     /// 选区或暂存侧变化后取消旧 Diff，较晚完成的旧请求不会覆盖新选择。
-    func loadDiff() {
+    ///
+    /// - Parameter records: 是否记进 Activity；自动刷新引起的重读不记。
+    func loadDiff(records: Bool = true) {
         diffTask?.cancel()
         diffFailure = nil
         guard loadsRepositoryDetails, let repository, let entry = selectedEntry, entry.hasWorkingCopyDiff else {
             diffSnapshot = nil
             isLoadingDiff = false
+            loadedDiffSide = nil
             return
         }
 
         if diffSide == .staged, !entry.hasStagedChanges { diffSide = .unstaged }
         if diffSide == .unstaged, !entry.hasUnstagedChanges { diffSide = .staged }
         let side = diffSide
+        loadedDiffSide = side
         let request = generation
         let showLarge = showsLargeDiff
 
@@ -601,18 +637,34 @@ extension RepositorySession {
             ?? WorkingCopyOperations.defaultWarningKilobytes
         let service = WorkingCopyOperations(runner: makeRunner(repository))
         let remote = repository.host != nil
+        let activities = activities
+
+        // 只读显示的那一侧，记一条
+        let title = AppLocalization.text(
+            side == .staged ? "activity.read.stagedDiff" : "activity.read.unstagedDiff"
+        )
+
         isLoadingDiff = true
         diffTask = Task { [weak self] in
             do {
-                // 服务器先记下内容哈希再读补丁：之后的修改一定使哈希不同，轮询不会漏掉。
-                let hash = remote ? try await service.worktreeHash(of: entry) : nil
-                let snapshot = try await service.diff(
-                    for: entry,
-                    side: side,
-                    options: options,
-                    warningKilobytes: threshold,
-                    showLarge: showLarge
-                )
+                let (hash, snapshot) = try await activities.recordRead(
+                    [title],
+                    in: repository,
+                    records: records
+                ) {
+                    // 服务器先记下内容哈希再读补丁：之后的修改一定使哈希不同，轮询不会漏掉。
+                    let hash = remote ? try await service.worktreeHash(of: entry) : nil
+                    let snapshot = try await service.diff(
+                        for: entry,
+                        side: side,
+                        options: options,
+                        warningKilobytes: threshold,
+                        showLarge: showLarge
+                    )
+
+                    return (hash, snapshot)
+                }
+
                 guard let self, generation == request, !Task.isCancelled else { return }
                 diffSnapshot = snapshot
                 contentHash = (StatusRowID(path: entry.path, kind: entry.kind), hash)
@@ -676,8 +728,9 @@ extension RepositorySession {
         let runner = makeRunner(repository)
         let branch = status?.branch
         let finished = onWriteFinished
+        let activities = activities
         let activity = recordsActivity ? RepositoryActivity(kind: activityKind, repository: repository, title: title) : nil
-        if let activity { RepositoryActivities.shared.insert(activity) }
+        if let activity { activities.insert(activity) }
         let (outputs, continuation) = AsyncStream<GitOutputEvent>.makeStream()
         Self.logger.info("写操作开始：\(title, privacy: .public)")
 
@@ -736,7 +789,7 @@ extension RepositorySession {
             await collector.value
 
             // 输出收完才结束记录，Remote 记录这时写进本机
-            if let activity { RepositoryActivities.shared.finish(activity) }
+            if let activity { activities.finish(activity) }
 
             RepositoryWriteLocks.shared.release(repository)
             finished?(repository)
@@ -757,22 +810,15 @@ extension RepositorySession {
 // MARK: - Private
 
 extension RepositorySession {
-    /// 轮询时的所选文件内容哈希；没有可比较的文件或读取失败时为 nil。
-    private static func contentHash(of entry: StatusEntry?, service: WorkingCopyOperations) async -> String? {
-        guard let entry else {
-            return nil
-        }
-
-        return try? await service.worktreeHash(of: entry)
-    }
-
     /// 刷新成功后一次性替换快照；仍存在的文件继续选中。
-    private func replaceStatus(_ status: WorkingCopyStatus) {
+    ///
+    /// - Parameter records: 文件视图因 HEAD 移动而重读时是否记进 Activity，与引起它的刷新相同。
+    private func replaceStatus(_ status: WorkingCopyStatus, records: Bool) {
         self.status = status
 
         // 跟随 HEAD 的文件视图只在 HEAD 移动后重读
-        fileHistory.update(head: status.branch.oid)
-        fileContent.update(head: status.branch.oid)
+        fileHistory.update(head: status.branch.oid, records: records)
+        fileContent.update(head: status.branch.oid, records: records)
 
         if !status.entries.contains(where: { $0.kind == .conflicted }) { onlyConflicts = false }
         stagingOverrides = [:]
@@ -792,25 +838,34 @@ extension RepositorySession {
     }
 
     /// 刷新成功后按需重读其余视图数据：状态变化或完整刷新时重读身份、提交配置、引用、储藏与补充清单，所选文件内容变化时另外重读 Diff。
+    ///
+    /// - Parameter records: 重读的引用、历史、储藏、子模块、工作树与 Diff 是否记进 Activity，与引起它的刷新相同。
     private func loadDetails(
         of status: WorkingCopyStatus,
         in repository: RepositoryLocation,
         full: Bool,
+        records: Bool,
         statusChanged: Bool,
         contentChanged: Bool
     ) {
         if full || statusChanged {
             loadContext()
             loadCommitConfiguration()
-            history.refresh(status: status, runner: makeRunner(repository), reload: full)
-            stashes.refresh(runner: makeRunner(repository))
-            submodules.refresh(runner: makeRunner(repository))
-            worktrees.refresh(runner: makeRunner(repository))
+            history.refresh(
+                status: status,
+                runner: makeRunner(repository),
+                reload: full,
+                records: records
+            )
+
+            stashes.refresh(runner: makeRunner(repository), records: records)
+            submodules.refresh(runner: makeRunner(repository), records: records)
+            worktrees.refresh(runner: makeRunner(repository), records: records)
             loadWorkingTreeFiles()
         }
 
         if full || statusChanged || contentChanged {
-            loadDiff()
+            loadDiff(records: records)
         }
     }
 
@@ -921,16 +976,6 @@ extension RepositorySession {
         }
     }
 
-    /// 所选文件与已显示 Diff 的记录一致、但内容哈希不同，说明需要重读 Diff。
-    private func contentChanged(_ entry: StatusEntry?, hash: String?) -> Bool {
-        guard
-            let entry, let contentHash,
-            contentHash.id == StatusRowID(path: entry.path, kind: entry.kind)
-        else { return false }
-
-        return contentHash.hash != hash
-    }
-
     /// 重连成功后丢弃断线前的推断状态，报告中断写入的核对结果并完整刷新。
     private func connectionRestored(_ remote: RemoteConnection, request: Int) async {
         let recovery = await remote.recovery
@@ -990,40 +1035,6 @@ extension RepositorySession {
             guard let self, generation == request else { return }
             contextTask = nil
         }
-    }
-
-    /// 当前仓库的视图状态，切换仓库时存入窗口缓存。
-    private func captureViewState() -> RepositoryViewState {
-        RepositoryViewState(
-            // 文件视图与远端视图的目标不随仓库保存，切回时显示历史
-            activeView: [.fileHistory, .fileContent, .remote].contains(activeView) ? .history : activeView,
-            selectedID: selectedID,
-            selectedIDs: selectedIDs,
-            diffSide: diffSide,
-            commitSubject: commitSubject,
-            commitBody: commitBody,
-            amend: amend,
-            originalDraft: originalDraft,
-            onlyConflicts: onlyConflicts,
-            historyReferences: history.selectedReferences,
-            historyCommits: history.selectedIDs
-        )
-    }
-
-    /// 切回仓库时恢复视图状态；数据随后重新读取，失效的选区由刷新结果过滤。
-    private func restore(_ state: RepositoryViewState) {
-        activeView = state.activeView
-        commitSubject = state.commitSubject
-        commitBody = state.commitBody
-        amend = state.amend
-        originalDraft = state.originalDraft
-        onlyConflicts = state.onlyConflicts
-        selectedIDs = state.selectedIDs
-
-        // 先恢复选中行再恢复暂存侧，选中行的变更回调会重置暂存侧。
-        selectedID = state.selectedID
-        diffSide = state.diffSide
-        history.restore(references: state.historyReferences, commits: state.historyCommits)
     }
 
     /// 状态事件由主连接检测产生，即使没有手动刷新也能观察断线与其它窗口发起的重连。

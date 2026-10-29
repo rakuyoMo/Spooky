@@ -35,23 +35,45 @@ extension RepositoryWindowController {
     /// View › Back 与工具栏的后退：回到上一个视图。
     @objc
     func navigateBack() {
-        guard let reference = navigation.goBack() else {
+        guard let target = navigation.previous else {
             NSSound.beep()
             return
         }
 
-        show(reference)
+        confirmNavigation(to: target) { [weak self] in
+            // 核对期间去了别的视图时，这次后退不再生效
+            guard
+                let self,
+                navigation.previous == target,
+                let reference = navigation.goBack()
+            else {
+                return
+            }
+
+            show(reference)
+        }
     }
 
     /// View › Forward 与工具栏的前进：回到下一个视图。
     @objc
     func navigateForward() {
-        guard let reference = navigation.goForward() else {
+        guard let target = navigation.next else {
             NSSound.beep()
             return
         }
 
-        show(reference)
+        confirmNavigation(to: target) { [weak self] in
+            // 核对期间去了别的视图时，这次前进不再生效
+            guard
+                let self,
+                navigation.next == target,
+                let reference = navigation.goForward()
+            else {
+                return
+            }
+
+            show(reference)
+        }
     }
 
     /// 在本窗口显示一个视图引用：仓库管理直接显示；正在显示的仓库只切换视图；
@@ -213,11 +235,10 @@ extension RepositoryWindowController {
             session.history.selectedReferences = Set(references)
 
         case .commit(let commit):
-            // 回到全部历史并选中这个提交，再换成整页详情；提交不在已加载的分页里时继续加载去找
-            showHistory()
-            session.history.showsCommitPage = true
-            session.history.locate(commit)
-            session.onActiveViewChange?()
+            // 先核对它在历史里的位置，排得很靠后时询问；取消时视图与历史都不变
+            session.history.confirmLookup(commit) { [weak self] in
+                self?.showCommitPage(commit)
+            }
 
         case .stashes:
             showStashes()
@@ -249,5 +270,44 @@ extension RepositoryWindowController {
         case .file(let path, let revision, let mode):
             session.showFile(path, at: revision, mode: mode)
         }
+    }
+
+    /// 回到全部历史并选中这个提交，再换成整页详情；提交不在已加载的分页里时继续加载去找。
+    ///
+    /// 中途经过的列表不记进后退 / 前进记录，只记最终到达的整页详情。
+    private func showCommitPage(_ commit: String) {
+        let applying = isApplyingReference
+        isApplyingReference = true
+
+        showHistory()
+        session.history.showsCommitPage = true
+        session.history.locate(commit)
+        session.onActiveViewChange?()
+
+        isApplyingReference = applying
+
+        // 显示视图引用的流程会在结束时统一记录；核对后才切换的，那个流程早已结束，由这里记录
+        guard !applying else {
+            return
+        }
+
+        recordNavigation()
+    }
+
+    /// 后退 / 前进的目标是正在显示的仓库里的提交时，先核对它在历史里的位置，排得很靠后时询问；其余目标直接放行。
+    ///
+    /// - Parameters:
+    ///   - target: 后退或前进会到达的视图。
+    ///   - proceed: 放行后移动位置并显示目标的步骤。
+    private func confirmNavigation(to target: ViewReference, then proceed: @escaping () -> Void) {
+        guard
+            case .repository(let location, .commit(let commit)) = target,
+            location == session.repository
+        else {
+            proceed()
+            return
+        }
+
+        session.history.confirmLookup(commit, then: proceed)
     }
 }

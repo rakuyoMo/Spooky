@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 // MARK: - ReferenceDivergence
@@ -190,15 +191,20 @@ public struct ReferenceSnapshot: Sendable, Equatable {
     /// 本地分支的置顶、归档与父分支，以完整引用名为键；没有任何记录的分支不在表中。
     public let metadata: [String: BranchMetadata]
 
-    /// 创建快照；附加信息可省略，供只关心引用关系的调用方使用。
+    /// 各远端全部 `remote.<名字>.*` 配置的 SHA-256 摘要，以远端名为键，供比较远端设置是否变化；地址可能带凭据，只留摘要。
+    public let remoteSettingsDigests: [String: String]
+
+    /// 创建快照；附加信息与远端设置的摘要可省略，供只关心引用关系的调用方使用。
     init(
         references: [RepositoryReference],
         remotes: [RepositoryRemote],
-        metadata: [String: BranchMetadata] = [:]
+        metadata: [String: BranchMetadata] = [:],
+        remoteSettingsDigests: [String: String] = [:]
     ) {
         self.references = references
         self.remotes = remotes
         self.metadata = metadata
+        self.remoteSettingsDigests = remoteSettingsDigests
     }
 
     /// 本地分支的附加信息；没有记录时是默认值：不置顶、不归档、没有父分支。
@@ -264,7 +270,7 @@ public struct RepositoryReferences: Sendable {
         async let branchMetadata = metadata()
         let references = try RepositoryReference.parse(await refs)
         let configuration = try await config.standardOutput
-        var names = Set<String>()
+        var settings: [String: SHA256] = [:]
 
         // 配置键的第一和最后一个点包住远端名，名字本身可含点。
         for record in configuration.split(separator: 0) {
@@ -275,12 +281,19 @@ public struct RepositoryReferences: Sendable {
             else {
                 throw RepositoryReadError.malformedOutput("remote config")
             }
-            names.insert(String(key[key.index(key.startIndex, offsetBy: 7) ..< last]))
+
+            // 每条配置连同结尾的分隔一起计入所属远端的摘要，相邻两条的边界不会混淆
+            let name = String(key[key.index(key.startIndex, offsetBy: 7) ..< last])
+            settings[name, default: SHA256()].update(data: record + [0])
         }
+
         return try await ReferenceSnapshot(
             references: references,
-            remotes: names.sorted().map { RepositoryRemote(name: $0) },
-            metadata: branchMetadata
+            remotes: settings.keys.sorted().map { RepositoryRemote(name: $0) },
+            metadata: branchMetadata,
+            remoteSettingsDigests: settings.mapValues { hash in
+                hash.finalize().map { String(format: "%02x", $0) }.joined()
+            }
         )
     }
 

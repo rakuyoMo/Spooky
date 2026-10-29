@@ -65,6 +65,10 @@ final class FileContentState {
     /// 当前的读取任务。
     private var task: Task<Void, Never>? = nil
 
+    /// 原文与逐行追溯的读取记进的 Activity 列表，由会话设成它自己的列表。
+    @ObservationIgnored
+    var activities = RepositoryActivities.shared
+
     /// 实际读取的提交：选定的版本或当前 HEAD。
     var resolvedRevision: String? { revision ?? head }
 
@@ -106,7 +110,9 @@ final class FileContentState {
     }
 
     /// 刷新后的 HEAD 变化时，跟随 HEAD 的视图重读。
-    func update(head: String?) {
+    ///
+    /// - Parameter records: 重读是否记进 Activity，与引起它的刷新相同。
+    func update(head: String?, records: Bool = true) {
         guard path != nil, head != self.head else {
             return
         }
@@ -114,12 +120,14 @@ final class FileContentState {
         self.head = head
 
         if revision == nil {
-            load()
+            load(records: records)
         }
     }
 
     /// 读取原文、贡献者，以及 Blame 模式下的逐行追溯。
-    func load() {
+    ///
+    /// - Parameter records: 原文与逐行追溯是否记进 Activity；自动刷新引起的重读不记。
+    func load(records: Bool = true) {
         task?.cancel()
         generation += 1
         failure = nil
@@ -142,29 +150,29 @@ final class FileContentState {
 
         let request = generation
         let mode = mode
+        let activities = activities
         isLoading = true
 
         task = Task { [weak self] in
             do {
-                let views = RepositoryFileViews(runner: runner)
-                let content = try await FileRevisionContent.load(path, at: revision, views: views)
-
-                // 贡献者与逐行追溯互不依赖，服务器上只占一次往返的等待时间
-                async let contributors = views.contributors(of: content.path, at: revision)
-                let blame = mode == .blame && content.unavailable == nil
-                    ? try await views.blame(content.path, at: revision)
-                    : nil
-                let people = try await contributors
+                let result = try await Self.read(
+                    path,
+                    at: revision,
+                    mode: mode,
+                    runner: runner,
+                    activities: activities,
+                    records: records
+                )
 
                 guard let self, generation == request, !Task.isCancelled else {
                     return
                 }
 
-                self.path = content.path
-                self.content = content
-                self.blame = blame
-                blameLines = blame?.lines.map(FileRevisionContent.displayLine) ?? []
-                self.contributors = people
+                self.path = result.content.path
+                content = result.content
+                blame = result.blame
+                blameLines = result.blame?.lines.map(FileRevisionContent.displayLine) ?? []
+                contributors = result.contributors
             } catch {
                 guard let self, generation == request, !Task.isCancelled else {
                     return
@@ -197,5 +205,56 @@ final class FileContentState {
         isLoading = false
         failure = nil
         highlightedCommit = nil
+    }
+}
+
+// MARK: - Private
+
+extension FileContentState {
+    /// 读取原文、贡献者，以及 Blame 模式下的逐行追溯；原文记为 Load Blob，逐行追溯记为 Load Blame，贡献者不记。
+    ///
+    /// - Parameters:
+    ///   - revision: 读取的提交。
+    ///   - mode: Blame 模式下才读逐行追溯。
+    ///   - activities: 读取记进的 Activity 列表。
+    ///   - records: 是否记进 Activity。
+    /// - Returns: 原文、逐行追溯与修改过这个文件的作者。
+    private static func read(
+        _ path: String,
+        at revision: String,
+        mode: FileContentMode,
+        runner: GitRunner,
+        activities: RepositoryActivities,
+        records: Bool
+    ) async throws -> (
+        content: FileRevisionContent,
+        blame: FileBlame?,
+        contributors: [FileContributor]
+    ) {
+        let views = RepositoryFileViews(runner: runner)
+
+        let content = try await activities.recordRead(
+            [AppLocalization.text("activity.read.blob")],
+            in: runner.location,
+            records: records
+        ) {
+            try await FileRevisionContent.load(path, at: revision, views: views)
+        }
+
+        // 贡献者与逐行追溯互不依赖，服务器上只占一次往返的等待时间
+        async let contributors = views.contributors(of: content.path, at: revision)
+        var blame: FileBlame? = nil
+
+        if mode == .blame, content.unavailable == nil {
+            blame = try await activities.recordRead(
+                [AppLocalization.text("activity.read.blame")],
+                in: runner.location,
+                records: records
+            ) {
+                try await views.blame(content.path, at: revision)
+            }
+        }
+
+        return (content, blame, try await contributors)
     }
 }

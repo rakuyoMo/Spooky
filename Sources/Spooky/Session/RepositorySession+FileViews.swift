@@ -40,10 +40,18 @@ extension RepositorySession {
     }
 
     /// 回到历史，打开这个提交的整页详情；提交不在已加载的分页里也能显示。
+    ///
+    /// 先核对它在历史里的位置，排得很靠后时询问；取消时视图与历史都不变。
     func showCommit(_ commit: HistoryCommit) {
-        activeView = .history
-        history.reveal(commit)
-        onActiveViewChange?()
+        history.confirmLookup(commit.id) { [weak self] in
+            guard let self else {
+                return
+            }
+
+            activeView = .history
+            history.reveal(commit)
+            onActiveViewChange?()
+        }
     }
 
     /// 按哈希回到提交：先读取它的元信息，再打开整页详情。

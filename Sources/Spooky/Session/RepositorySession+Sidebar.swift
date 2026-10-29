@@ -49,12 +49,20 @@ extension RepositorySession {
 
     /// 在历史中显示标签、分支或提交：切到全部历史并选中这个提交，提交不在已加载的分页里时继续加载去找。
     ///
+    /// 先核对它在历史里的位置，排得很靠后时询问；取消时视图、所选的引用、列表与选中的提交都不变。
+    ///
     /// - Parameter objectID: 提交的完整哈希，引用传它所指的对象。
     func revealInHistory(_ objectID: String) {
-        history.showsCommitPage = false
-        history.locate(objectID)
-        activeView = .history
-        onActiveViewChange?()
+        history.confirmLookup(objectID) { [weak self] in
+            guard let self else {
+                return
+            }
+
+            history.showsCommitPage = false
+            history.locate(objectID)
+            activeView = .history
+            onActiveViewChange?()
+        }
     }
 
     /// 在历史里只看一个引用，与侧边栏单击分支或标签相同。

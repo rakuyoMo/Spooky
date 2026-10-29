@@ -414,7 +414,7 @@ extension BranchesReviewTests {
     }
 
     /// 指向同一个提交、带指定时间的本地分支。
-    private func reference(_ id: String, date: Date?) -> RepositoryReference {
+    func reference(_ id: String, date: Date?) -> RepositoryReference {
         RepositoryReference(
             id: id,
             objectID: String(repeating: "a", count: 40),
@@ -428,7 +428,7 @@ extension BranchesReviewTests {
     }
 
     /// 等待写入与随后的刷新落定，最多 5 分钟。
-    private func waitUntil(_ condition: () -> Bool) async throws {
+    func waitUntil(_ condition: () -> Bool) async throws {
         let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while !condition() {

@@ -348,6 +348,11 @@ public struct RepositoryHistory: Sendable {
         }
         guard !roots.isEmpty else { return HistoryPage(commits: [], hasMore: false) }
 
+        // 条件编译不了时没有结果，不执行 Git
+        guard let query = try await resolved(query) else {
+            return HistoryPage(commits: [], hasMore: false)
+        }
+
         // 按哈希搜索最多命中几个提交，不经分页
         if !query.hashPrefixes.isEmpty {
             let commits = try await commits(matchingHashesIn: query, roots: roots)
