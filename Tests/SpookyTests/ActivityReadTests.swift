@@ -86,18 +86,54 @@ struct ActivityReadTests {
 
     /// 没有基准时全算新增；之后新增、删除与比较值变化分别计数；各仓库、各类的基准分开。
     @Test("增减计数与基准")
-    func changeCounts() {
+    func changeCounts() async {
         let location = RepositoryLocation.local(path: "/temporary/计数-" + UUID().uuidString)
         let other = RepositoryLocation.remote(host: "spooky-test", path: "/Users/wgy/spooky-test/计数")
         let activities = RepositoryActivities()
 
-        #expect(activities.changes(of: .branches, items: ["a": "1", "b": "1"], in: location) == changes(0, 2, 0))
-        #expect(activities.changes(of: .branches, items: ["a": "2", "c": "1"], in: location) == changes(1, 1, 1))
-        #expect(activities.changes(of: .branches, items: ["a": "2", "c": "1"], in: location) == changes(0, 0, 0))
+        #expect(await activities.changes(of: .branches, items: ["a": "1", "b": "1"], in: location) == changes(0, 2, 0))
+        #expect(await activities.changes(of: .branches, items: ["a": "2", "c": "1"], in: location) == changes(1, 1, 1))
+        #expect(await activities.changes(of: .branches, items: ["a": "2", "c": "1"], in: location) == changes(0, 0, 0))
 
         // 别的类与别的仓库还没有基准
-        #expect(activities.changes(of: .stashes, items: ["a": "2"], in: location) == changes(0, 1, 0))
-        #expect(activities.changes(of: .branches, items: ["a": "2"], in: other) == changes(0, 1, 0))
+        #expect(await activities.changes(of: .stashes, items: ["a": "2"], in: location) == changes(0, 1, 0))
+        #expect(await activities.changes(of: .branches, items: ["a": "2"], in: other) == changes(0, 1, 0))
+    }
+
+    /// 设了保存位置时，换上的基准写回本机；新的实例第一次用到这个仓库的基准时读回，同时完成的两类读取都与读回的比较，
+    /// 写回的文件里两类都是新的。
+    @Test("基准第一次用到时读回，换上后写回")
+    func savedBaselines() async throws {
+        let directory = try FileViewsTests.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let location = RepositoryLocation.local(path: "/temporary/基准-" + UUID().uuidString)
+        let archive = ActivityBaselineArchive(directory: directory)
+
+        // 上一次运行：两类基准写进本机
+        let first = RepositoryActivities()
+        first.baselineArchive = archive
+        _ = await first.changes(of: .branches, items: ["main": "1"], in: location)
+        _ = await first.changes(of: .stashes, items: ["stash": "0"], in: location)
+        await first.baselineWrite?.value
+
+        // 重新启动：同一仓库的两类读取同时第一次用到基准
+        let second = RepositoryActivities()
+        second.baselineArchive = archive
+
+        async let branches = second.changes(of: .branches, items: ["main": "1", "extra": "1"], in: location)
+        async let stashes = second.changes(of: .stashes, items: ["stash": "1"], in: location)
+
+        #expect(await branches == changes(0, 1, 0))
+        #expect(await stashes == changes(1, 0, 0))
+
+        // 写入依次进行，最后落在文件里的是两类都换上之后的基准
+        await second.baselineWrite?.value
+
+        #expect(archive.load(location) == [
+            .branches: ["main": "1", "extra": "1"],
+            .stashes: ["stash": "1"],
+        ])
     }
 
     /// 本地分支只算本地的：顶端、上游与领先落后数变了算更新；远端分支的移动与远端设置的变化算在远端上。

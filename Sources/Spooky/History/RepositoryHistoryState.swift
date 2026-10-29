@@ -762,12 +762,12 @@ extension RepositoryHistoryState {
             records: records,
             results: { snapshot, counts in
                 [
-                    activities.changes(
+                    await activities.changes(
                         of: .branches,
                         items: ActivityInventory.branches(in: snapshot, divergence: counts),
                         in: location
                     ),
-                    activities.changes(
+                    await activities.changes(
                         of: .remotes,
                         items: ActivityInventory.remotes(in: snapshot),
                         in: location

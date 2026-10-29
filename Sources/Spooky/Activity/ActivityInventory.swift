@@ -7,7 +7,8 @@ import SpookyKit
 /// Repository 页写增减计数的四类清单；每类按身份对齐，与上一次记录读取时的清单比较。
 ///
 /// 清单的每一项是 “身份 → 比较值的摘要”：比较值里有远端与子模块的地址，可能带凭据，只留 SHA-256 摘要。
-enum ActivityInventory: String, Sendable {
+/// 以名字作为 JSON 对象的键保存到本机。
+enum ActivityInventory: String, Codable, CodingKeyRepresentable, Sendable {
     /// 本地分支；远端分支的变化算在所属的远端上。
     case branches
 

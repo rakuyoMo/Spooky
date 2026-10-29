@@ -106,7 +106,7 @@ final class RepositoryStashState {
                     results: { stashes in
                         let items = ActivityInventory.stashes(stashes)
 
-                        return [activities.changes(of: .stashes, items: items, in: location)]
+                        return [await activities.changes(of: .stashes, items: items, in: location)]
                     }
                 ) {
                     try await RepositoryStashes(runner: runner).list()

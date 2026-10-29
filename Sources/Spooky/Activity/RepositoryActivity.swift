@@ -139,7 +139,8 @@ final class RepositoryActivity: Identifiable {
 
 // MARK: - RepositoryActivities
 
-/// Activity 跨窗口保留记录，关闭一个仓库不会抹掉已完成日志；设了保存位置后，Remote 记录另存到本机，重新启动后读回。
+/// Activity 跨窗口保留记录，关闭一个仓库不会抹掉已完成日志；设了保存位置后，Remote 记录与读取增减计数的基准另存到本机，
+/// 重新启动后读回。
 @MainActor
 @Observable
 final class RepositoryActivities {
@@ -159,8 +160,18 @@ final class RepositoryActivities {
     var items: [RepositoryActivity] = []
 
     /// 读取增减计数的基准：按仓库、按类保存上一次记录读取时的清单，每项是 “身份 → 比较值的摘要”。
+    ///
+    /// 还没有某个仓库的项时，第一次用到它的基准前先从本机读回。
     @ObservationIgnored
     var baselines: [RepositoryLocation: [ActivityInventory: [String: String]]] = [:]
+
+    /// 基准在本机的保存位置；没有设置时基准只在内存里。
+    @ObservationIgnored
+    var baselineArchive: ActivityBaselineArchive? = nil
+
+    /// 最近一次把基准写回本机的任务；后一次写入等前一次写完，文件里总是较新的基准。
+    @ObservationIgnored
+    var baselineWrite: Task<Void, Never>? = nil
 
     /// Remote 记录的保存位置；没有设置时只在内存里。
     private var archive: ActivityArchive? = nil

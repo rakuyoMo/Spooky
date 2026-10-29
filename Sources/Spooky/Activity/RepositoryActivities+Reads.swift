@@ -20,7 +20,7 @@ extension RepositoryActivities {
         _ titles: [String],
         in repository: RepositoryLocation,
         records: Bool = true,
-        results: (Value) -> [String?] = { _ in [] },
+        results: (Value) async -> [String?] = { _ in [] },
         _ read: () async throws -> Value
     ) async throws -> Value {
         guard records else {
@@ -38,7 +38,14 @@ extension RepositoryActivities {
                 return value
             }
 
-            insertReads(titles, in: repository, started: started, state: "activity.finished", results: results(value))
+            insertReads(
+                titles,
+                in: repository,
+                started: started,
+                state: "activity.finished",
+                results: await results(value)
+            )
+
             return value
         } catch {
             let cancelled = Task.isCancelled
@@ -68,6 +75,7 @@ extension RepositoryActivities {
     /// 与这个仓库这一类的基准比较，写出更新、新增与删除的个数，并把基准换成这次的清单。
     ///
     /// 新出现的身份算新增，消失的算删除，身份相同而比较值不同算更新；没有基准时全算新增。
+    /// 设了保存位置时，第一次用到这个仓库的基准前先从本机读回，换上新基准后写回本机。
     ///
     /// - Parameters:
     ///   - inventory: 清单的种类。
@@ -78,9 +86,13 @@ extension RepositoryActivities {
         of inventory: ActivityInventory,
         items: [String: String],
         in repository: RepositoryLocation
-    ) -> String {
+    ) async -> String {
+        // 上次运行留下的基准要在比较之前读回
+        await loadBaselines(of: repository)
+
         let previous = baselines[repository]?[inventory] ?? [:]
         baselines[repository, default: [:]][inventory] = items
+        saveBaselines(of: repository)
 
         let updated = items.count { identity, value in
             previous[identity].map { $0 != value } ?? false
@@ -90,6 +102,34 @@ extension RepositoryActivities {
         let deleted = previous.keys.count { items[$0] == nil }
 
         return AppLocalization.text("activity.result.changes", updated, added, deleted)
+    }
+
+    /// 还没有这个仓库的基准时，从本机读回；没有文件或读不了时按没有基准算。
+    private func loadBaselines(of repository: RepositoryLocation) async {
+        guard baselines[repository] == nil, let archive = baselineArchive else {
+            return
+        }
+
+        // 读文件不占主线程
+        let saved = await Task.detached { archive.load(repository) }.value
+
+        // 读文件期间，同一仓库同时完成的读取可能已换上这次的基准，保留它们
+        baselines[repository, default: [:]].merge(saved) { current, _ in current }
+    }
+
+    /// 在后台把这个仓库的全部基准写回本机。
+    private func saveBaselines(of repository: RepositoryLocation) {
+        guard let archive = baselineArchive, let inventories = baselines[repository] else {
+            return
+        }
+
+        // 接在上一次写入之后执行，较早的基准不会盖掉较新的
+        let previous = baselineWrite
+
+        baselineWrite = Task.detached {
+            await previous?.value
+            archive.save(inventories, of: repository)
+        }
     }
 
     /// 按标题各插入一条已结束的读取记录。

@@ -109,7 +109,7 @@ final class RepositorySubmoduleState {
                     summaries: loaded.details.compactMapValues(\.summary)
                 )
 
-                return [activities.changes(of: .submodules, items: items, in: location)]
+                return [await activities.changes(of: .submodules, items: items, in: location)]
             }
         ) {
             async let listed = service.list()

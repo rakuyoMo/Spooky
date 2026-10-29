@@ -51,7 +51,7 @@ Spooky 由两个 target 组成：
 | `History/`、`FileViews/` | 历史与提交详情、文件历史、Blame 与原文 |
 | `Sidebar/`、`References/`、`BranchesReview/` | 侧边栏、分支 / 标签 / 远端的管理、分支整理 |
 | `Rewrite/`、`Reflog/`、`Undo/`、`Stash/` | 改写历史、Reflog、撤销与重做、储藏 |
-| `Activity/` | Activity 窗口、按 Remote / Repository / Service 分页的操作与读取记录、读取的增减计数、Remote 记录的本机保存，以及仓库写锁 |
+| `Activity/` | Activity 窗口、按 Remote / Repository / Service 分页的操作与读取记录、读取的增减计数与它的基准、Remote 记录与增减基准的本机保存，以及仓库写锁 |
 | `ExternalTools/` | 外部比较与合并工具、Open With 与远程编辑 |
 | `Settings/`、`RepositorySettings/` | 设置窗口与仓库设置 |
 | `Accounts/`、`PullRequests/` | 托管账号、Pull Request 与 Merge Request |

@@ -92,6 +92,64 @@ extension ActivityReadTests {
         #expect(Self.refreshTitles.allSatisfy { results($0, in: activities).count == 2 })
     }
 
+    /// 设了保存位置时，完整刷新换上的基准写进本机；退出再打开，即换一个用同一目录的活动列表，
+    /// 与读回的基准比较：没变的储藏不算增减，退出期间多出的分支算新增。
+    @Test("基准存到本机，重新打开后接着比", .timeLimit(.minutes(5)))
+    func savedBaselineRecords() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-基准 " + UUID().uuidString)
+        let repository = directory.appending(path: "仓库")
+        try FileManager.default.createDirectory(at: repository, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        // 一个提交与一个储藏
+        let location = RepositoryLocation.local(path: repository.path)
+        let runner = try await FileViewsTests.initializeRepository(at: location)
+        let file = repository.appending(path: "a.txt")
+        try Data("one\n".utf8).write(to: file)
+        _ = try await runner.run(["add", "--all"])
+        _ = try await runner.run(["commit", "-q", "-m", "root"])
+        try Data("two\n".utf8).write(to: file)
+        _ = try await runner.run(["stash", "push", "-q"])
+
+        // 第一次打开：四类基准都写进本机
+        let archive = ActivityBaselineArchive(directory: directory.appending(path: "Baselines"))
+        let first = RepositoryActivities()
+        first.baselineArchive = archive
+        try await refreshFully(location, runner: runner, activities: first)
+        await first.baselineWrite?.value
+
+        #expect(archive.load(location).keys.sorted(by: { $0.rawValue < $1.rawValue }) == [
+            .branches,
+            .remotes,
+            .stashes,
+            .submodules,
+        ])
+
+        // 退出期间在终端新建一个分支，再用同一目录打开
+        _ = try await runner.run(["branch", "extra"])
+
+        let second = RepositoryActivities()
+        second.baselineArchive = archive
+        try await refreshFully(location, runner: runner, activities: second)
+
+        #expect(results("activity.read.branches", in: second) == [changes(0, 1, 0)])
+        #expect(results("activity.read.stashes", in: second) == [changes(0, 0, 0)])
+    }
+
+    /// 打开仓库做一次完整刷新，等刷新的读取都记下后关掉会话。
+    private func refreshFully(
+        _ location: RepositoryLocation,
+        runner: GitRunner,
+        activities: RepositoryActivities
+    ) async throws {
+        let session = RepositorySession(makeRunner: { _ in runner }, activities: activities)
+        defer { session.close() }
+
+        session.display(location)
+        session.refresh(full: true)
+        try await waitUntil { Self.refreshTitles.allSatisfy { results($0, in: activities).count == 1 } }
+    }
+
     /// 标题为这个键的记录的一行结果，最新的在前。
     private func results(_ key: String, in activities: RepositoryActivities) -> [String?] {
         activities.items
