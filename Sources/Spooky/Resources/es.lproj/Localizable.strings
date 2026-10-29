@@ -410,6 +410,9 @@
 "activity.read.commitCount" = "Cargar el número de commits";
 "activity.read.unstagedDiff" = "Cargar el diff del árbol de trabajo y el índice";
 "activity.read.stagedDiff" = "Cargar el diff del índice y HEAD";
+"activity.read.commitDiffs" = "Cargar los diffs del commit";
+"activity.read.blob" = "Cargar el contenido del archivo";
+"activity.read.blame" = "Cargar el blame";
 "activity.result.entries" = "%ld entradas del árbol de trabajo cargadas";
 "activity.result.changes" = "%1$ld actualizados, %2$ld añadidos, %3$ld eliminados";
 "activity.result.commits" = "%ld commits de Git cargados";

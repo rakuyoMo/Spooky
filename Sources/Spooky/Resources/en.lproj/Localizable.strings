@@ -410,6 +410,9 @@
 "activity.read.commitCount" = "Load Commit Count";
 "activity.read.unstagedDiff" = "Load Working Tree to Index Diff";
 "activity.read.stagedDiff" = "Load Index to Base Diff";
+"activity.read.commitDiffs" = "Load Commit Diffs";
+"activity.read.blob" = "Load Blob";
+"activity.read.blame" = "Load Blame";
 "activity.result.entries" = "Loaded %ld working tree entries";
 "activity.result.changes" = "%1$ld updated, %2$ld added, %3$ld deleted";
 "activity.result.commits" = "Loaded %ld Git commits";

@@ -410,6 +410,9 @@
 "activity.read.commitCount" = "加载提交数";
 "activity.read.unstagedDiff" = "加载工作区与暂存区的 Diff";
 "activity.read.stagedDiff" = "加载暂存区与 HEAD 的 Diff";
+"activity.read.commitDiffs" = "加载提交的 Diff";
+"activity.read.blob" = "加载文件内容";
+"activity.read.blame" = "加载 Blame";
 "activity.result.entries" = "已加载 %ld 个工作区条目";
 "activity.result.changes" = "更新 %1$ld 个，新增 %2$ld 个，删除 %3$ld 个";
 "activity.result.commits" = "已加载 %ld 个 Git 提交";

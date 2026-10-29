@@ -410,6 +410,9 @@
 "activity.read.commitCount" = "Anzahl der Commits laden";
 "activity.read.unstagedDiff" = "Diff von Arbeitsverzeichnis und Index laden";
 "activity.read.stagedDiff" = "Diff von Index und HEAD laden";
+"activity.read.commitDiffs" = "Diffs des Commits laden";
+"activity.read.blob" = "Dateiinhalt laden";
+"activity.read.blame" = "Blame laden";
 "activity.result.entries" = "%ld Einträge des Arbeitsverzeichnisses geladen";
 "activity.result.changes" = "%1$ld aktualisiert, %2$ld hinzugefügt, %3$ld gelöscht";
 "activity.result.commits" = "%ld Git-Commits geladen";

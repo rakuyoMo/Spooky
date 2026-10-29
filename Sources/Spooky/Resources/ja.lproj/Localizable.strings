@@ -410,6 +410,9 @@
 "activity.read.commitCount" = "コミット数を読み込む";
 "activity.read.unstagedDiff" = "作業ツリーとインデックスの Diff を読み込む";
 "activity.read.stagedDiff" = "インデックスと HEAD の Diff を読み込む";
+"activity.read.commitDiffs" = "コミットの Diff を読み込む";
+"activity.read.blob" = "ファイルの内容を読み込む";
+"activity.read.blame" = "Blame を読み込む";
 "activity.result.entries" = "作業ツリーの項目を %ld 件読み込みました";
 "activity.result.changes" = "%1$ld 件更新、%2$ld 件追加、%3$ld 件削除";
 "activity.result.commits" = "Git コミットを %ld 件読み込みました";

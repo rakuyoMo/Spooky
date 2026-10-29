@@ -242,7 +242,7 @@ final class RepositorySession {
     private var refreshID = UUID()
 
     /// 已显示 Diff 对应的工作区内容哈希，服务器轮询据此判断文件内容是否变化。
-    private var contentHash: (id: StatusRowID, hash: String?)? = nil
+    private(set) var contentHash: (id: StatusRowID, hash: String?)? = nil
 
     /// 本窗口打开过的仓库视图状态，切换回仓库时恢复。
     @ObservationIgnored
@@ -336,6 +336,8 @@ final class RepositorySession {
         stashes.activities = activities
         submodules.activities = activities
         worktrees.activities = activities
+        fileHistory.activities = activities
+        fileContent.activities = activities
 
         // 恢复的引用已不存在时，回到安全的 Working Copy 视图。
         history.onRestoreFailure = { [weak self] in
@@ -429,7 +431,7 @@ final class RepositorySession {
                 }
 
                 let statusChanged = status != previous
-                replaceStatus(status)
+                replaceStatus(status, records: records)
 
                 // 状态没有变化的轮询不再重复读取身份、引用、补充清单和 Diff，减少服务器往返。
                 if loadsRepositoryDetails {
@@ -807,12 +809,14 @@ extension RepositorySession {
 
 extension RepositorySession {
     /// 刷新成功后一次性替换快照；仍存在的文件继续选中。
-    private func replaceStatus(_ status: WorkingCopyStatus) {
+    ///
+    /// - Parameter records: 文件视图因 HEAD 移动而重读时是否记进 Activity，与引起它的刷新相同。
+    private func replaceStatus(_ status: WorkingCopyStatus, records: Bool) {
         self.status = status
 
         // 跟随 HEAD 的文件视图只在 HEAD 移动后重读
-        fileHistory.update(head: status.branch.oid)
-        fileContent.update(head: status.branch.oid)
+        fileHistory.update(head: status.branch.oid, records: records)
+        fileContent.update(head: status.branch.oid, records: records)
 
         if !status.entries.contains(where: { $0.kind == .conflicted }) { onlyConflicts = false }
         stagingOverrides = [:]
@@ -962,16 +966,6 @@ extension RepositorySession {
         if error is RemoteConnectionError {
             reconnect()
         }
-    }
-
-    /// 所选文件与已显示 Diff 的记录一致、但内容哈希不同，说明需要重读 Diff。
-    private func contentChanged(_ entry: StatusEntry?, hash: String?) -> Bool {
-        guard
-            let entry, let contentHash,
-            contentHash.id == StatusRowID(path: entry.path, kind: entry.kind)
-        else { return false }
-
-        return contentHash.hash != hash
     }
 
     /// 重连成功后丢弃断线前的推断状态，报告中断写入的核对结果并完整刷新。

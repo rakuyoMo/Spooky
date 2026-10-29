@@ -21,6 +21,16 @@ extension RepositorySession {
         return try? await service.worktreeHash(of: entry)
     }
 
+    /// 所选文件与已显示 Diff 的记录一致、但内容哈希不同，说明需要重读 Diff。
+    func contentChanged(_ entry: StatusEntry?, hash: String?) -> Bool {
+        guard
+            let entry, let contentHash,
+            contentHash.id == StatusRowID(path: entry.path, kind: entry.kind)
+        else { return false }
+
+        return contentHash.hash != hash
+    }
+
     /// 暂存侧变化后重读 Diff；读取时按改动换到的那一侧、选中别的文件时换到的那一侧已经在读，不再读第二次。
     func diffSideChanged() {
         guard loadedDiffSide != diffSide else {

@@ -410,6 +410,9 @@
 "activity.read.commitCount" = "커밋 수 불러오기";
 "activity.read.unstagedDiff" = "작업 트리와 인덱스의 Diff 불러오기";
 "activity.read.stagedDiff" = "인덱스와 HEAD의 Diff 불러오기";
+"activity.read.commitDiffs" = "커밋 Diff 불러오기";
+"activity.read.blob" = "파일 내용 불러오기";
+"activity.read.blame" = "Blame 불러오기";
 "activity.result.entries" = "작업 트리 항목 %ld개를 불러옴";
 "activity.result.changes" = "%1$ld개 업데이트, %2$ld개 추가, %3$ld개 삭제";
 "activity.result.commits" = "Git 커밋 %ld개를 불러옴";
