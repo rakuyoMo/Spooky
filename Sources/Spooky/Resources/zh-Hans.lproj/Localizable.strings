@@ -2346,7 +2346,6 @@
 "publish.remote" = "远端名：";
 "publish.target" = "远端地址：";
 "publish.push" = "把全部本地分支与标签推送到 “%@”。没有上游的分支跟踪新远端上的同名分支。";
-"publish.noBranch" = "这个仓库还没有分支或标签，只添加远端。";
 "publish.exists" = "%2$@ 上已经有 “%1$@”。请换一个名字，已有的仓库不会被覆盖。";
 "publish.remoteExists" = "这个仓库已经有名为 “%@” 的远端。请换一个名字，已有的远端不会被替换。";
 "publish.push.title" = "添加远端并推送";

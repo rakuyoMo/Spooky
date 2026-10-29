@@ -2346,7 +2346,6 @@
 "publish.remote" = "Nombre del remoto:";
 "publish.target" = "URL del remoto:";
 "publish.push" = "Hace push de todas las ramas locales y etiquetas a “%@”. Las ramas sin upstream siguen su nueva rama remota.";
-"publish.noBranch" = "Este repositorio aún no tiene ramas ni etiquetas, así que solo se añade el remoto.";
 "publish.exists" = "“%1$@” ya existe en %2$@. Elige otro nombre; los repositorios existentes no se sobrescriben.";
 "publish.remoteExists" = "Este repositorio ya tiene un remoto llamado “%@”. Elige otro nombre; los remotos existentes no se sustituyen.";
 "publish.push.title" = "Añadir remoto y hacer push";

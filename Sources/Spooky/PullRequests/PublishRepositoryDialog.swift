@@ -185,10 +185,6 @@ extension PublishRepositoryDialog {
         let path = owner.path + "/" + name + ".git"
         let url = usesSSH ? "git@" + host + ":" + path : account.instance.webURL.absoluteString + "/" + path
 
-        guard session.hasBranchesOrTags else {
-            return url + "\n" + AppLocalization.text("publish.noBranch")
-        }
-
         return url + "\n" + AppLocalization.text("publish.push", remote)
     }
 

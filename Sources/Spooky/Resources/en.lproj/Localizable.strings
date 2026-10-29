@@ -2346,7 +2346,6 @@
 "publish.remote" = "Remote Name:";
 "publish.target" = "Remote URL:";
 "publish.push" = "Pushes all local branches and tags to “%@”. Branches without an upstream track their new remote branch.";
-"publish.noBranch" = "This repository has no branches or tags yet, so only the remote is added.";
 "publish.exists" = "“%1$@” already exists on %2$@. Choose another name; existing repositories aren’t overwritten.";
 "publish.remoteExists" = "This repository already has a remote named “%@”. Choose another name; existing remotes aren’t replaced.";
 "publish.push.title" = "Add Remote and Push";
