@@ -925,6 +925,7 @@
 "patch.quickMenu" = "「%@」のパッチをすぐに保存";
 "patch.menuMany" = "%ld 個のリビジョンのパッチを保存…";
 "patch.quickMenuMany" = "%ld 個のリビジョンのパッチをすぐに保存";
+"patch.formatPatch" = "パッチを生成";
 "compare.title" = "リビジョンを比較";
 "compare.message" = "2 つのリビジョン間のコミットと変更を表示します。最初のリビジョンが比較の基準です。";
 "compare.base" = "比較するリビジョン：";

@@ -925,6 +925,7 @@
 "patch.quickMenu" = "快速為 “%@” 儲存修補檔";
 "patch.menuMany" = "為 %ld 個版本儲存修補檔…";
 "patch.quickMenuMany" = "快速為 %ld 個版本儲存修補檔";
+"patch.formatPatch" = "產生修補檔";
 "compare.title" = "比較版本";
 "compare.message" = "顯示兩個版本之間的提交與變更，第一個版本是比較的基準。";
 "compare.base" = "比較版本：";

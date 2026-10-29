@@ -8,6 +8,12 @@ import Synchronization
 /// 输出边读边写进目标所在卷上的临时位置，完成后再替换目标；失败或取消时删除写了一半的内容。
 /// 存进仓库根目录的补丁是例外：由仓库所在机器上的 Git 直接写出，服务器仓库的补丁留在服务器上。
 public struct RevisionExport: Sendable {
+    /// 包住一个提交那一次 `format-patch` 的执行，供调用方在前后记录；参数是提交的完整哈希与这次执行，执行要调用一次。
+    public typealias PatchFormatting = @Sendable (
+        _ commit: String,
+        _ format: () async throws -> Void
+    ) async throws -> Void
+
     /// 归档格式。
     public enum ArchiveFormat: String, Sendable {
         /// zip 归档，访达可以直接打开。
@@ -88,11 +94,13 @@ public struct RevisionExport: Sendable {
     ///   - commits: 提交的完整哈希，按传入顺序编号；调用方按从旧到新传入。
     ///   - omitsPrefixes: 补丁里的路径不带 `a/`、`b/` 前缀。
     ///   - directory: 本机上的目标目录，同名文件被替换。
+    ///   - formatting: 包住每个提交那一次 `format-patch`；合并提交不执行，也不经过它。默认直接执行。
     /// - Returns: 实际写入的文件；写了封面信时它只出现一次，排在最前。
     public func savePatches(
         _ commits: [String],
         omitsPrefixes: Bool,
-        to directory: URL
+        to directory: URL,
+        formatting: PatchFormatting = { _, format in try await format() }
     ) async throws -> [URL] {
         guard !commits.isEmpty, commits.allSatisfy(GitObjectID.isValid) else {
             throw RepositoryReadError.invalidQuery
@@ -111,6 +119,9 @@ public struct RevisionExport: Sendable {
                 continue
             }
 
+            // 取消后不再执行后面的提交，已写好的补丁保留
+            try Task.checkCancellation()
+
             let destination = directory.appendingPathComponent(Self.patchName(index + 1, subject: detail.subject))
 
             // 编号与快速保存相同；配了封面信时补丁标题按它写成 [PATCH k/k]
@@ -118,12 +129,16 @@ public struct RevisionExport: Sendable {
                 + (omitsPrefixes ? ["--no-prefix"] : [])
                 + [commit]
 
-            let written = try await savePatch(
-                arguments,
-                of: commit,
-                to: destination,
-                coverLetter: coverLetter
-            )
+            var written: URL? = nil
+
+            try await formatting(commit) {
+                written = try await savePatch(
+                    arguments,
+                    of: commit,
+                    to: destination,
+                    coverLetter: coverLetter
+                )
+            }
 
             // 每个提交都重写同一封封面信，只记一次，排在最前
             if let written, !saved.contains(written) {
@@ -145,8 +160,13 @@ public struct RevisionExport: Sendable {
     /// - Parameters:
     ///   - commits: 提交的完整哈希，按传入顺序编号；调用方按从旧到新传入。
     ///   - omitsPrefixes: 补丁里的路径不带 `a/`、`b/` 前缀。
+    ///   - formatting: 包住每个提交那一次 `format-patch`；合并提交不执行，也不经过它。默认直接执行。
     /// - Returns: 实际写入的文件在仓库所在机器上的路径；写了封面信时它只出现一次，排在最前。
-    public func savePatchesToRepositoryRoot(_ commits: [String], omitsPrefixes: Bool) async throws -> [String] {
+    public func savePatchesToRepositoryRoot(
+        _ commits: [String],
+        omitsPrefixes: Bool,
+        formatting: PatchFormatting = { _, format in try await format() }
+    ) async throws -> [String] {
         guard !commits.isEmpty, commits.allSatisfy(GitObjectID.isValid) else {
             throw RepositoryReadError.invalidQuery
         }
@@ -160,6 +180,9 @@ public struct RevisionExport: Sendable {
                 continue
             }
 
+            // 取消后不再执行后面的提交，已写好的补丁保留
+            try Task.checkCancellation()
+
             // 后缀写死，仓库配置的 format.suffix 不改变文件名；封面信随仓库的 format.coverLetter
             let arguments = [
                 "format-patch",
@@ -169,8 +192,12 @@ public struct RevisionExport: Sendable {
                 "-1",
             ]
 
+            var output = Data()
+
             // Git 写完文件后在标准输出逐行打出它的路径，封面信排在补丁之前
-            let output = try await runner.run(arguments + (omitsPrefixes ? ["--no-prefix"] : []) + [commit])
+            try await formatting(commit) {
+                output = try await runner.run(arguments + (omitsPrefixes ? ["--no-prefix"] : []) + [commit])
+            }
 
             let paths = String(decoding: output, as: UTF8.self)
                 .split(separator: "\n")

@@ -925,6 +925,7 @@
 "patch.quickMenu" = "快速为 “%@” 保存补丁";
 "patch.menuMany" = "为 %ld 个版本保存补丁…";
 "patch.quickMenuMany" = "快速为 %ld 个版本保存补丁";
+"patch.formatPatch" = "生成补丁";
 "compare.title" = "比较版本";
 "compare.message" = "显示两个版本之间的提交与改动，第一个版本是比较的基准。";
 "compare.base" = "比较版本：";

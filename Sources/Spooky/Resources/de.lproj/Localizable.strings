@@ -925,6 +925,7 @@
 "patch.quickMenu" = "Patch für „%@“ sofort speichern";
 "patch.menuMany" = "Patch für %ld Revisionen speichern …";
 "patch.quickMenuMany" = "Patch für %ld Revisionen sofort speichern";
+"patch.formatPatch" = "Patch erzeugen";
 "compare.title" = "Revisionen vergleichen";
 "compare.message" = "Zeigt die Commits und Änderungen zwischen zwei Revisionen. Die erste Revision ist die Basis des Vergleichs.";
 "compare.base" = "Revision vergleichen:";

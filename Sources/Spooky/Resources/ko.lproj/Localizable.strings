@@ -925,6 +925,7 @@
 "patch.quickMenu" = "“%@”의 패치 빠르게 저장";
 "patch.menuMany" = "리비전 %ld개의 패치 저장…";
 "patch.quickMenuMany" = "리비전 %ld개의 패치 빠르게 저장";
+"patch.formatPatch" = "패치 생성";
 "compare.title" = "리비전 비교";
 "compare.message" = "두 리비전 사이의 커밋과 변경을 보여 줍니다. 첫 번째 리비전이 비교의 기준입니다.";
 "compare.base" = "비교할 리비전:";

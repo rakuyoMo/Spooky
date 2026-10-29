@@ -925,6 +925,7 @@
 "patch.quickMenu" = "Quick Save Patch for “%@”";
 "patch.menuMany" = "Save Patch for %ld Revisions…";
 "patch.quickMenuMany" = "Quick Save Patch for %ld Revisions";
+"patch.formatPatch" = "Format Patch";
 "compare.title" = "Compare Revisions";
 "compare.message" = "Shows the commits and changes between two revisions. The first revision is the base of the comparison.";
 "compare.base" = "Compare Revision:";

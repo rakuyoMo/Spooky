@@ -925,6 +925,7 @@
 "patch.quickMenu" = "Guardar al instante el parche de “%@”";
 "patch.menuMany" = "Guardar parche de %ld revisiones…";
 "patch.quickMenuMany" = "Guardar al instante el parche de %ld revisiones";
+"patch.formatPatch" = "Generar parche";
 "compare.title" = "Comparar revisiones";
 "compare.message" = "Muestra los commits y los cambios entre dos revisiones. La primera revisión es la base de la comparación.";
 "compare.base" = "Comparar revisión:";
