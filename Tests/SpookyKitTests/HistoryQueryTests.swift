@@ -49,9 +49,21 @@ struct HistoryQueryTests {
         let history = RepositoryHistory(runner: fixture.runner)
 
         // 忽略大小写的基本正则：转义的星号按字面匹配，`.*` 与行首、行尾按正则解释
-        #expect(try await Self.subjects(history, commits, [.init(kind: .message, text: "fix BUG")]) == ["Fix bug *star*"])
-        #expect(try await Self.subjects(history, commits, [.init(kind: .message, text: "bug \\*STAR\\*")]) == ["Fix bug *star*"])
-        #expect(try await Self.subjects(history, commits, [.init(kind: .message, text: "^fix.*\\*$")]) == ["Fix bug *star*"])
+        #expect(
+            try await Self.subjects(history, commits, [.init(kind: .message, text: "fix BUG")]) ==
+                ["Fix bug *star*"]
+        )
+
+        #expect(
+            try await Self.subjects(history, commits, [.init(kind: .message, text: "bug \\*STAR\\*")]) ==
+                ["Fix bug *star*"]
+        )
+
+        #expect(
+            try await Self.subjects(history, commits, [.init(kind: .message, text: "^fix.*\\*$")]) ==
+                ["Fix bug *star*"]
+        )
+
         #expect(
             Set(try await Self.subjects(history, commits, [.init(kind: .message, text: "work$")])) ==
                 ["side work", "main work"]

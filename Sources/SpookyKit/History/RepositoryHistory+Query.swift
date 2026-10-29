@@ -142,9 +142,17 @@ extension RepositoryHistory {
             ["config", "-z", "--type=bool-or-str", "--get-regexp", pattern],
             acceptedExitCodes: [0, 1]
         )
-        let values = try ConfigRecords.parse(result.standardOutput, pattern: pattern, context: "grep config")
 
-        if let type = values["grep.patterntype"].flatMap({ $0 }).flatMap(HistoryQuery.PatternType.init(rawValue:)) {
+        let values = try ConfigRecords.parse(
+            result.standardOutput,
+            pattern: pattern,
+            context: "grep config"
+        )
+
+        if
+            let configured = values["grep.patterntype"] ?? nil,
+            let type = HistoryQuery.PatternType(rawValue: configured)
+        {
             return type
         }
 

@@ -89,9 +89,11 @@ struct ActivityWindowTests {
         let controller = ActivityWindowController(activities: RepositoryActivities())
         defer { controller.close() }
 
+        let items = controller.window?.toolbar?.items ?? []
         let group = try #require(
-            controller.window?.toolbar?.items.first { $0.itemIdentifier == ActivityToolbar.kinds } as? NSToolbarItemGroup
+            items.first { $0.itemIdentifier == ActivityToolbar.kinds } as? NSToolbarItemGroup
         )
+
         let control = try #require(group.view as? NSSegmentedControl)
         let font = try #require(control.font)
         let segments = 0 ..< control.segmentCount
@@ -102,11 +104,15 @@ struct ActivityWindowTests {
         let segmentElements = try #require(
             (control.cell as? NSSegmentedCell)?.accessibilityChildren() as? [NSAccessibilityElement]
         )
+
         let paddings = zip(segmentElements, titles).map { segment, title in
-            let textWidth = NSAttributedString(string: title, attributes: [.font: font]).size().width
+            let textWidth = NSAttributedString(string: title, attributes: [.font: font])
+                .size()
+                .width
 
             return segment.accessibilityFrame().width - textWidth
         }
+
         #expect(control.segmentDistribution == .fit && paddings.count == 3)
         #expect((paddings.max() ?? 0) - (paddings.min() ?? 0) < 3)
 
@@ -139,6 +145,7 @@ struct ActivityWindowTests {
             location: .remote(host: "spooky-test", path: "/Users/wgy/spooky-test/Gamma"),
             log: ""
         )
+
         let verify = activity(.service, location: nil, log: "Gamma account\n")
         let items = [verify, request, branch, fetch]
         let state = ActivityWindowState()
@@ -222,7 +229,13 @@ struct ActivityWindowTests {
         let started = Date(timeIntervalSince1970: 1_700_000_000)
 
         // 两位小数，按系统地区的数字格式
-        let read = RepositoryActivity(kind: .repository, repository: location, title: "Update Branches", started: started)
+        let read = RepositoryActivity(
+            kind: .repository,
+            repository: location,
+            title: "Update Branches",
+            started: started
+        )
+
         read.state = "activity.finished"
         read.result = "0 updated, 1 added, 0 deleted"
         read.ended = started.addingTimeInterval(0.034)
@@ -232,12 +245,21 @@ struct ActivityWindowTests {
         #expect(ActivityRow(activity: read).status == "0 updated, 1 added, 0 deleted")
 
         let english = try #require(
-            AppLocalization.bundle.url(forResource: "en", withExtension: "lproj").flatMap(Bundle.init(url:))
+            AppLocalization.bundle
+                .url(forResource: "en", withExtension: "lproj")
+                .flatMap(Bundle.init(url:))
         )
+
         #expect(english.localizedString(forKey: "activity.elapsed", value: nil, table: nil) == "%@ sec")
 
         // 没有一行结果的写状态
-        let tags = RepositoryActivity(kind: .repository, repository: location, title: "Update Tags", started: started)
+        let tags = RepositoryActivity(
+            kind: .repository,
+            repository: location,
+            title: "Update Tags",
+            started: started
+        )
+
         tags.state = "activity.finished"
         tags.ended = started
         #expect(ActivityRow(activity: tags).elapsed != nil)

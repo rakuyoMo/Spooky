@@ -103,7 +103,12 @@ final class RepositoryActivity: Identifiable {
     ///   - repository: 带主机前缀的仓库身份；不属于仓库的托管服务请求为 nil。
     ///   - title: 已本地化的操作名称。
     ///   - started: 开始时间；读取结束后才插入的记录传入读取开始的时刻。
-    init(kind: ActivityKind, repository: RepositoryLocation?, title: String, started: Date = Date()) {
+    init(
+        kind: ActivityKind,
+        repository: RepositoryLocation?,
+        title: String,
+        started: Date = Date()
+    ) {
         id = UUID()
         self.kind = kind
         self.repository = repository

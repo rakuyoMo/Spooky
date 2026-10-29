@@ -196,7 +196,9 @@ public struct RevisionExport: Sendable {
 
             // Git 写完文件后在标准输出逐行打出它的路径，封面信排在补丁之前
             try await formatting(commit) {
-                output = try await runner.run(arguments + (omitsPrefixes ? ["--no-prefix"] : []) + [commit])
+                output = try await runner.run(
+                    arguments + (omitsPrefixes ? ["--no-prefix"] : []) + [commit]
+                )
             }
 
             let paths = String(decoding: output, as: UTF8.self)
@@ -312,7 +314,12 @@ extension RevisionExport {
             ["config", "-z", "--get-regexp", pattern],
             acceptedExitCodes: [0, 1]
         )
-        let values = try ConfigRecords.parse(result.standardOutput, pattern: pattern, context: "format config")
+
+        let values = try ConfigRecords.parse(
+            result.standardOutput,
+            pattern: pattern,
+            context: "format config"
+        )
 
         return values["format.coverletter"].map(ConfigRecords.boolean) ?? false
     }

@@ -46,6 +46,7 @@ struct ActivityBaselineArchiveTests {
         let directory = URL(filePath: "/temporary/baselines", directoryHint: .isDirectory)
         let local = RepositoryLocation.local(path: "/Users/wgy/spooky-test/仓库")
         let remote = RepositoryLocation.remote(host: "spooky-test", path: "/Users/wgy/spooky-test/仓库")
+        let other = RepositoryLocation.local(path: "/Users/wgy/spooky-test/其它")
 
         let url = ActivityBaselineArchive(directory: directory).url(of: local)
         #expect(url == ActivityBaselineArchive(directory: directory).url(of: local))
@@ -53,6 +54,6 @@ struct ActivityBaselineArchiveTests {
         #expect(url.lastPathComponent.count == 64 + ".json".count)
 
         #expect(url != ActivityBaselineArchive(directory: directory).url(of: remote))
-        #expect(url != ActivityBaselineArchive(directory: directory).url(of: .local(path: "/Users/wgy/spooky-test/其它")))
+        #expect(url != ActivityBaselineArchive(directory: directory).url(of: other))
     }
 }

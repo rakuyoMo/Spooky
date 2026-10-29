@@ -125,7 +125,13 @@ struct RemoteManagementTests {
         #expect(try await refs.snapshot().remoteSettingsDigests == before)
 
         // 只加一条推送地址：这个远端的摘要变了，另一个不变
-        _ = try await runner.run(["remote", "set-url", "--push", "up.stream/上游", "https://example.invalid/x.git"])
+        _ = try await runner.run([
+            "remote",
+            "set-url",
+            "--push",
+            "up.stream/上游",
+            "https://example.invalid/x.git",
+        ])
 
         let after = try await refs.snapshot().remoteSettingsDigests
         #expect(after["up.stream/上游"] != before["up.stream/上游"])

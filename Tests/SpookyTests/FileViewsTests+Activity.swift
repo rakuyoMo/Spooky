@@ -44,6 +44,7 @@ extension FileViewsTests {
             results("activity.read.commits", in: activities)
                 == [AppLocalization.text("activity.result.commits", 1)]
         )
+
         #expect(results("activity.read.commitCount", in: activities) == [nil])
 
         // 所选提交的补丁与原文各记一条
@@ -86,6 +87,7 @@ extension FileViewsTests {
             results("activity.read.commits", in: activities).first
                 == AppLocalization.text("activity.result.commits", 3)
         )
+
         #expect(results("activity.read.commitCount", in: activities).count == 2)
         #expect(results("activity.read.blob", in: activities).count == 4)
         #expect(results("activity.read.blame", in: activities).count == 2)

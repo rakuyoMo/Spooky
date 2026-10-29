@@ -19,7 +19,11 @@ struct ActivityReadTests {
         let before = Date()
 
         // 成功：一行结果同时是日志，没有取消入口；读取的结果原样返回
-        let value = try await activities.recordRead(["Load"], in: location, results: { (count: Int) in ["Loaded \(count)"] }) {
+        let value = try await activities.recordRead(
+            ["Load"],
+            in: location,
+            results: { (count: Int) in ["Loaded \(count)"] }
+        ) {
             try await Task.sleep(for: .milliseconds(50))
 
             return 3
@@ -27,14 +31,25 @@ struct ActivityReadTests {
 
         let finished = try #require(activities.items.first)
         #expect(value == 3)
-        #expect(finished.kind == .repository && finished.repository == location && finished.title == "Load")
+
+        #expect(
+            finished.kind == .repository
+                && finished.repository == location
+                && finished.title == "Load"
+        )
+
         #expect(finished.state == "activity.finished" && finished.cancel == nil)
         #expect(finished.result == "Loaded 3" && finished.log == "Loaded 3")
         #expect(finished.started >= before)
         #expect((finished.elapsed ?? 0) >= 0.05)
 
-        // 一次读取按标题各记一条，结果按位置对应，缺的一条没有结果，状态照旧写在行上
-        _ = try await activities.recordRead(["A", "B", "C"], in: location, results: { _ in ["1", nil] }) { 0 }
+        // 一次读取按标题各记一条，结果按位置对应，缺的一条没有结果，行上写状态
+        _ = try await activities.recordRead(
+            ["A", "B", "C"],
+            in: location,
+            results: { _ in ["1", nil] }
+        ) { 0 }
+
         #expect(activities.items.prefix(3).map(\.title) == ["C", "B", "A"])
         #expect(activities.items.prefix(3).map(\.result) == [nil, nil, "1"])
 
@@ -66,7 +81,11 @@ struct ActivityReadTests {
 
         // 读取完成时任务已被取消、结果不再使用的，同样记为取消，结果仍交给调用方
         let superseded = Task {
-            try await activities.recordRead(["Load"], in: location, results: { (count: Int) in ["Loaded \(count)"] }) {
+            try await activities.recordRead(
+                ["Load"],
+                in: location,
+                results: { (count: Int) in ["Loaded \(count)"] }
+            ) {
                 try? await Task.sleep(for: .seconds(60))
 
                 return 5
@@ -91,13 +110,31 @@ struct ActivityReadTests {
         let other = RepositoryLocation.remote(host: "spooky-test", path: "/Users/wgy/spooky-test/计数")
         let activities = RepositoryActivities()
 
-        #expect(await activities.changes(of: .branches, items: ["a": "1", "b": "1"], in: location) == changes(0, 2, 0))
-        #expect(await activities.changes(of: .branches, items: ["a": "2", "c": "1"], in: location) == changes(1, 1, 1))
-        #expect(await activities.changes(of: .branches, items: ["a": "2", "c": "1"], in: location) == changes(0, 0, 0))
+        #expect(
+            await activities.changes(of: .branches, items: ["a": "1", "b": "1"], in: location)
+                == changes(0, 2, 0)
+        )
+
+        #expect(
+            await activities.changes(of: .branches, items: ["a": "2", "c": "1"], in: location)
+                == changes(1, 1, 1)
+        )
+
+        #expect(
+            await activities.changes(of: .branches, items: ["a": "2", "c": "1"], in: location)
+                == changes(0, 0, 0)
+        )
 
         // 别的类与别的仓库还没有基准
-        #expect(await activities.changes(of: .stashes, items: ["a": "2"], in: location) == changes(0, 1, 0))
-        #expect(await activities.changes(of: .branches, items: ["a": "2"], in: other) == changes(0, 1, 0))
+        #expect(
+            await activities.changes(of: .stashes, items: ["a": "2"], in: location)
+                == changes(0, 1, 0)
+        )
+
+        #expect(
+            await activities.changes(of: .branches, items: ["a": "2"], in: other)
+                == changes(0, 1, 0)
+        )
     }
 
     /// 设了保存位置时，换上的基准写回本机；新的实例第一次用到这个仓库的基准时读回，同时完成的两类读取都与读回的比较，
@@ -121,7 +158,12 @@ struct ActivityReadTests {
         let second = RepositoryActivities()
         second.baselineArchive = archive
 
-        async let branches = second.changes(of: .branches, items: ["main": "1", "extra": "1"], in: location)
+        async let branches = second.changes(
+            of: .branches,
+            items: ["main": "1", "extra": "1"],
+            in: location
+        )
+
         async let stashes = second.changes(of: .stashes, items: ["stash": "1"], in: location)
 
         #expect(await branches == changes(0, 1, 0))
@@ -182,8 +224,21 @@ struct ActivityReadTests {
     @Test("储藏与子模块的清单")
     func stashAndSubmoduleInventories() {
         let date = Date(timeIntervalSince1970: 1_700_000_000)
-        let first = StashEntry(index: 0, id: "a", parents: ["p"], date: date, subject: "On main: one")
-        let second = StashEntry(index: 1, id: "a", parents: ["p"], date: date, subject: "On main: one")
+        let first = StashEntry(
+            index: 0,
+            id: "a",
+            parents: ["p"],
+            date: date,
+            subject: "On main: one"
+        )
+
+        let second = StashEntry(
+            index: 1,
+            id: "a",
+            parents: ["p"],
+            date: date,
+            subject: "On main: one"
+        )
 
         #expect(Array(ActivityInventory.stashes([first]).keys) == ["a"])
         #expect(ActivityInventory.stashes([first]) != ActivityInventory.stashes([second]))

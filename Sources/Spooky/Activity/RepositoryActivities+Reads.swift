@@ -149,7 +149,13 @@ extension RepositoryActivities {
         failure: String? = nil
     ) {
         for (index, title) in titles.enumerated() {
-            let activity = RepositoryActivity(kind: .repository, repository: repository, title: title, started: started)
+            let activity = RepositoryActivity(
+                kind: .repository,
+                repository: repository,
+                title: title,
+                started: started
+            )
+
             let result = results.indices.contains(index) ? results[index] : nil
 
             activity.state = state

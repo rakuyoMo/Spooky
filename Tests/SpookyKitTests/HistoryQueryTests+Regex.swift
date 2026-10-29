@@ -16,17 +16,37 @@ extension HistoryQueryTests {
         let history = RepositoryHistory(runner: fixture.runner)
 
         // 点号匹配任一字符，转义后只匹配点号本身
-        let dot = try await Self.subjects(history, head: head, [.init(kind: .message, text: "A.C")])
+        let dot = try await Self.subjects(
+            history,
+            head: head,
+            [.init(kind: .message, text: "A.C")]
+        )
+
         #expect(Set(dot) == ["abc search target", "axc other", "a.c literal target"])
 
-        let escaped = try await Self.subjects(history, head: head, [.init(kind: .message, text: "a\\.c")])
+        let escaped = try await Self.subjects(
+            history,
+            head: head,
+            [.init(kind: .message, text: "a\\.c")]
+        )
+
         #expect(escaped == ["a.c literal target"])
 
         // 作者与提交人同样按正则匹配，行首从姓名开始
-        let author = try await Self.subjects(history, head: head, [.init(kind: .author, text: "^C.ROL")])
+        let author = try await Self.subjects(
+            history,
+            head: head,
+            [.init(kind: .author, text: "^C.ROL")]
+        )
+
         #expect(author == ["call(x) done"])
 
-        let committer = try await Self.subjects(history, head: head, [.init(kind: .committer, text: "^bob <.*>$")])
+        let committer = try await Self.subjects(
+            history,
+            head: head,
+            [.init(kind: .committer, text: "^bob <.*>$")]
+        )
+
         #expect(committer == ["axc other"])
 
         // 交给 Git 的参数写明正则的写法并忽略大小写
@@ -63,10 +83,14 @@ extension HistoryQueryTests {
             // 点号与竖线在几种写法下的含义各不相同，两者都与 git log 一致
             for pattern in ["a.c", "abc|axc"] {
                 let query = HistoryQuery(conditions: [.init(kind: .message, text: pattern)])
-                let listed = try await history.page(roots: [head], query: query).commits.map(\.subject)
+                let listed = try await history.page(roots: [head], query: query)
+                    .commits
+                    .map(\.subject)
 
                 #expect(listed == (try await Self.logSubjects(pattern, head: head, in: fixture)))
-                #expect(try await history.count(roots: [head], query: query, limit: 100) == listed.count)
+                #expect(
+                    try await history.count(roots: [head], query: query, limit: 100) == listed.count
+                )
             }
         }
 
@@ -106,7 +130,9 @@ extension HistoryQueryTests {
 
             #expect(try await history.page(roots: [head], query: query).commits.isEmpty)
             #expect(try await history.count(roots: [head], query: query, limit: 10) == 0)
-            #expect(try await history.position(of: head, roots: [head], query: query, limit: 10) == nil)
+            #expect(
+                try await history.position(of: head, roots: [head], query: query, limit: 10) == nil
+            )
         }
     }
 
@@ -177,7 +203,9 @@ extension HistoryQueryTests {
             #expect(page.commits.isEmpty)
             #expect(!page.hasMore)
             #expect(try await history.count(roots: [head], query: query, limit: 100) == 0)
-            #expect(try await history.position(of: head, roots: [head], query: query, limit: 100) == nil)
+            #expect(
+                try await history.position(of: head, roots: [head], query: query, limit: 100) == nil
+            )
         }
 
         // 与哈希条件同时使用时同样没有结果
@@ -230,7 +258,13 @@ extension HistoryQueryTests {
     /// 读搜索写法的配置只是查询，越过写队列。
     @Test("读搜索写法的配置登记为只读命令")
     func patternTypeReadIsReadOnly() {
-        let read = ["config", "-z", "--type=bool-or-str", "--get-regexp", "^grep\\.(patterntype|extendedregexp)$"]
+        let read = [
+            "config",
+            "-z",
+            "--type=bool-or-str",
+            "--get-regexp",
+            "^grep\\.(patterntype|extendedregexp)$",
+        ]
 
         #expect(RepositoryOperationQueue.isReadOnly(read))
         #expect(!RepositoryOperationQueue.isReadOnly(["config", "--local", "grep.patternType", "perl"]))
@@ -262,17 +296,29 @@ extension HistoryQueryTests {
         head: String,
         _ conditions: [HistorySearchCondition]
     ) async throws -> [String] {
-        try await history.page(roots: [head], query: HistoryQuery(conditions: conditions)).commits.map(\.subject)
+        try await history.page(roots: [head], query: HistoryQuery(conditions: conditions))
+            .commits
+            .map(\.subject)
     }
 
     /// 不写明正则写法、直接按说明搜索时 git log 列出的标题，即仓库配置下 Git 自己的结果。
-    private static func logSubjects(_ pattern: String, head: String, in fixture: TemporaryRepository) async throws -> [String] {
+    private static func logSubjects(
+        _ pattern: String,
+        head: String,
+        in fixture: TemporaryRepository
+    ) async throws -> [String] {
         let output = try await fixture.runner.run(["log", "-i", "--grep=" + pattern, "--format=%s", head])
-        return String(decoding: output, as: UTF8.self).split(separator: "\n").map(String.init)
+
+        return String(decoding: output, as: UTF8.self)
+            .split(separator: "\n")
+            .map(String.init)
     }
 
     /// Git 按这个查询的筛选参数编译条件时是否报错退出。
-    private static func gitRejects(_ query: HistoryQuery, in fixture: TemporaryRepository) async throws -> Bool {
+    private static func gitRejects(
+        _ query: HistoryQuery,
+        in fixture: TemporaryRepository
+    ) async throws -> Bool {
         let result = try await fixture.runner.execute(
             ["log", "--format=%H"] + query.filterArguments,
             acceptedExitCodes: [0, 128]
@@ -282,9 +328,15 @@ extension HistoryQueryTests {
     }
 
     /// 清掉仓库本地的两项 grep 配置后依次写入；同一个键可以写多次。
-    private static func configureGrep(_ entries: [(String, String)], in fixture: TemporaryRepository) async throws {
+    private static func configureGrep(
+        _ entries: [(String, String)],
+        in fixture: TemporaryRepository
+    ) async throws {
         for key in ["grep.patternType", "grep.extendedRegexp"] {
-            _ = try await fixture.runner.execute(["config", "--local", "--unset-all", key], acceptedExitCodes: [0, 5])
+            _ = try await fixture.runner.execute(
+                ["config", "--local", "--unset-all", key],
+                acceptedExitCodes: [0, 5]
+            )
         }
 
         for (key, value) in entries {
@@ -293,10 +345,14 @@ extension HistoryQueryTests {
     }
 
     /// 建立说明含 abc、axc 与 a.c 的一条历史，返回最新的提交；axc 的提交人是 Bob，最新的提交由 Carol 写。
-    private static func makeRegexHistory(in fixture: TemporaryRepository, objectFormat: String) async throws -> String {
+    private static func makeRegexHistory(
+        in fixture: TemporaryRepository,
+        objectFormat: String
+    ) async throws -> String {
         try await fixture.initialize(objectFormat: objectFormat)
 
         _ = try await commit(in: fixture, file: "1.txt", message: "abc search target", day: 1)
+
         _ = try await commit(
             in: fixture,
             file: "2.txt",
@@ -304,6 +360,7 @@ extension HistoryQueryTests {
             committer: ("Bob", "bob@example.invalid"),
             day: 2
         )
+
         _ = try await commit(in: fixture, file: "3.txt", message: "a.c literal target", day: 3)
 
         return try await commit(

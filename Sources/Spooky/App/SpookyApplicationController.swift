@@ -82,7 +82,10 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
         // Repository 页增减计数的基准存在同一处，每个仓库一个文件，退出再打开后接着比
         RepositoryActivities.shared.baselineArchive = ActivityBaselineArchive(
-            directory: URL.applicationSupportDirectory.appending(path: "Spooky/Baselines", directoryHint: .isDirectory)
+            directory: URL.applicationSupportDirectory.appending(
+                path: "Spooky/Baselines",
+                directoryHint: .isDirectory
+            )
         )
 
         configureMenu()

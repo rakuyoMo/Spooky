@@ -42,7 +42,11 @@ extension RepositoryWindowController {
 
         confirmNavigation(to: target) { [weak self] in
             // 核对期间去了别的视图时，这次后退不再生效
-            guard let self, navigation.previous == target, let reference = navigation.goBack() else {
+            guard
+                let self,
+                navigation.previous == target,
+                let reference = navigation.goBack()
+            else {
                 return
             }
 
@@ -60,7 +64,11 @@ extension RepositoryWindowController {
 
         confirmNavigation(to: target) { [weak self] in
             // 核对期间去了别的视图时，这次前进不再生效
-            guard let self, navigation.next == target, let reference = navigation.goForward() else {
+            guard
+                let self,
+                navigation.next == target,
+                let reference = navigation.goForward()
+            else {
                 return
             }
 

@@ -147,6 +147,7 @@ extension HistoryListTests {
                     RepositoryHistoryState.slowLookupThreshold
                 )
         )
+
         #expect(session.activeView == .workingCopy)
         #expect(!history.showsCommitPage)
         #expect(history.selectedReferences == ["refs/heads/main"])
@@ -185,6 +186,7 @@ extension HistoryListTests {
             history.lookupFailure
                 == AppLocalization.text("history.reveal.notFound", String(orphan.id.prefix(8)))
         )
+
         #expect(prompts.count == 2)
 
         // 列表一直续载到根提交，不设总数上限
@@ -256,7 +258,10 @@ extension HistoryListTests {
         #expect(history.lookupCheckTask != nil)
         #expect(session.activeView == .workingCopy)
 
-        try await FileViewsTests.wait { history.showsCommitPage && history.lookup == nil && !history.isLoading }
+        try await FileViewsTests.wait {
+            history.showsCommitPage && history.lookup == nil && !history.isLoading
+        }
+
         #expect(session.activeView == .history)
         #expect(history.selectedReferences.isEmpty)
         #expect(history.selectedIDs == [first.id])
@@ -291,6 +296,7 @@ extension HistoryListTests {
             at: RepositoryHistoryState.slowLookupThreshold + 10,
             with: fixture.runner
         )
+
         let later = try await Self.commit(
             at: RepositoryHistoryState.slowLookupThreshold + 30,
             with: fixture.runner
@@ -310,6 +316,7 @@ extension HistoryListTests {
                     ),
                 ]
         )
+
         #expect(session.activeView == .workingCopy)
     }
 

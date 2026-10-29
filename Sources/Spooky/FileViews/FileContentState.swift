@@ -226,7 +226,11 @@ extension FileContentState {
         runner: GitRunner,
         activities: RepositoryActivities,
         records: Bool
-    ) async throws -> (content: FileRevisionContent, blame: FileBlame?, contributors: [FileContributor]) {
+    ) async throws -> (
+        content: FileRevisionContent,
+        blame: FileBlame?,
+        contributors: [FileContributor]
+    ) {
         let views = RepositoryFileViews(runner: runner)
 
         let content = try await activities.recordRead(

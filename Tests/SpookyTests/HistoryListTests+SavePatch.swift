@@ -7,7 +7,7 @@ import Testing
 // MARK: - Save Patch
 
 extension HistoryListTests {
-    /// 快速保存每个提交记一条 Format Patch，写耗时、没有一行结果，不再记整次的保存；保存后在 Finder 里选中补丁。
+    /// 快速保存每个提交记一条 Format Patch，写耗时、没有一行结果，没有整次保存的记录；保存后在 Finder 里选中补丁。
     /// 第一个提交执行中取消时只有这一条记为 Cancelled，后面的提交不执行，也不打开 Finder、不提示失败。
     @Test("保存补丁按提交记进 Repository 页", .timeLimit(.minutes(5)))
     func savePatchRecords() async throws {
@@ -45,7 +45,12 @@ extension HistoryListTests {
 
         let saved = formatPatches(in: activities)
         #expect(saved.count == 2)
-        #expect(saved.allSatisfy { $0.state == "activity.finished" && $0.elapsed != nil && $0.result == nil })
+        #expect(saved.allSatisfy { activity in
+            activity.state == "activity.finished"
+                && activity.elapsed != nil
+                && activity.result == nil
+        })
+
         #expect(!activities.items.contains { $0.title == AppLocalization.text("patch.title") })
         #expect(revealed == [["0001-first.patch", "0002-second.patch"]])
 

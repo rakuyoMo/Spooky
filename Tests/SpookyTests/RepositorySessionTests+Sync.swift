@@ -35,7 +35,10 @@ extension RepositorySessionTests {
         #expect(try await tracking(runner) == pushed)
 
         // 写入结束后的完整刷新另在 Repository 页记读取，只看 Remote 页
-        let activity = RepositoryActivities.shared.items.first { $0.repository == runner.location && $0.kind == .remote }
+        let activity = RepositoryActivities.shared.items.first {
+            $0.repository == runner.location && $0.kind == .remote
+        }
+
         #expect(activity?.title == AppLocalization.text("sync.autoFetch"))
         #expect(activity?.state == "activity.finished")
 
@@ -77,7 +80,10 @@ extension RepositorySessionTests {
         #expect(session.autoFetch())
         await session.writeTask?.value
 
-        let activity = RepositoryActivities.shared.items.first { $0.repository == runner.location && $0.kind == .remote }
+        let activity = RepositoryActivities.shared.items.first {
+            $0.repository == runner.location && $0.kind == .remote
+        }
+
         #expect(failures.isEmpty)
         #expect(activity?.state == "activity.failed")
         #expect(activity?.log.contains("does not appear to be a git repository") ?? false)

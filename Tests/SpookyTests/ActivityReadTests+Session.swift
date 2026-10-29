@@ -24,7 +24,9 @@ extension ActivityReadTests {
     /// 文件变化这类不记录的刷新不新增记录，也不动基准，随之换了暂存侧的 Diff 不再读第二次；同一仓库的两个会话共用基准。
     @Test("刷新的读取记进 Repository 页", .timeLimit(.minutes(5)))
     func refreshRecords() async throws {
-        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-读取 " + UUID().uuidString)
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-读取 " + UUID().uuidString)
+
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -49,14 +51,17 @@ extension ActivityReadTests {
         try await waitUntil { Self.refreshTitles.allSatisfy { results($0, in: activities).count == 1 } }
 
         // 读取并发，不核对顺序；没有基准时全算新增
-        #expect(results("activity.read.status", in: activities) == [AppLocalization.text("activity.result.entries", 2)])
+        let entries = AppLocalization.text("activity.result.entries", 2)
+        let commits = AppLocalization.text("activity.result.commits", 1)
+
+        #expect(results("activity.read.status", in: activities) == [entries])
         #expect(results("activity.read.branches", in: activities) == [changes(0, 1, 0)])
         #expect(results("activity.read.remotes", in: activities) == [changes(0, 0, 0)])
         #expect(results("activity.read.tags", in: activities) == [nil])
         #expect(results("activity.read.stashes", in: activities) == [changes(0, 1, 0)])
         #expect(results("activity.read.submodules", in: activities) == [changes(0, 0, 0)])
         #expect(results("activity.read.worktrees", in: activities) == [nil])
-        #expect(results("activity.read.commits", in: activities) == [AppLocalization.text("activity.result.commits", 1)])
+        #expect(results("activity.read.commits", in: activities) == [commits])
         #expect(results("activity.read.commitCount", in: activities) == [nil])
         #expect(activities.items.allSatisfy { $0.kind == .repository && $0.state == "activity.finished" })
         #expect(activities.items.allSatisfy { $0.elapsed != nil })
@@ -96,7 +101,9 @@ extension ActivityReadTests {
     /// 与读回的基准比较：没变的储藏不算增减，退出期间多出的分支算新增。
     @Test("基准存到本机，重新打开后接着比", .timeLimit(.minutes(5)))
     func savedBaselineRecords() async throws {
-        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-基准 " + UUID().uuidString)
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-基准 " + UUID().uuidString)
+
         let repository = directory.appending(path: "仓库")
         try FileManager.default.createDirectory(at: repository, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }

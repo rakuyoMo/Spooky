@@ -128,9 +128,19 @@ struct BranchConditionTests {
     /// 基准名单只收快照里存在的分支：标准名按 main、master、trunk、dev、develop、next 的顺序在前，父分支去重后排在其后。
     @Test("基准分支名单")
     func baseBranches() {
-        #expect(RepositoryReferences.standardBaseBranchNames == ["main", "master", "trunk", "dev", "develop", "next"])
+        #expect(
+            RepositoryReferences.standardBaseBranchNames
+                == ["main", "master", "trunk", "dev", "develop", "next"]
+        )
 
-        let names = ["refs/heads/master", "refs/heads/dev", "refs/heads/trunk", "refs/heads/zeta", "refs/heads/alpha"]
+        let names = [
+            "refs/heads/master",
+            "refs/heads/dev",
+            "refs/heads/trunk",
+            "refs/heads/zeta",
+            "refs/heads/alpha",
+        ]
+
         let snapshot = ReferenceSnapshot(
             references: names.map { reference($0) },
             remotes: [],
@@ -144,8 +154,13 @@ struct BranchConditionTests {
         )
 
         #expect(
-            RepositoryReferences.baseBranches(in: snapshot)
-                == ["refs/heads/master", "refs/heads/trunk", "refs/heads/dev", "refs/heads/alpha", "refs/heads/zeta"]
+            RepositoryReferences.baseBranches(in: snapshot) == [
+                "refs/heads/master",
+                "refs/heads/trunk",
+                "refs/heads/dev",
+                "refs/heads/alpha",
+                "refs/heads/zeta",
+            ]
         )
     }
 
@@ -154,7 +169,10 @@ struct BranchConditionTests {
     func trunkIsBase() throws {
         let old = try #require(ISO8601DateFormatter().date(from: "2000-01-01T00:00:00Z"))
         let snapshot = ReferenceSnapshot(
-            references: [reference("refs/heads/topic", date: old), reference("refs/heads/trunk", date: old)],
+            references: [
+                reference("refs/heads/topic", date: old),
+                reference("refs/heads/trunk", date: old),
+            ],
             remotes: []
         )
 

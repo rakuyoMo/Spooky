@@ -167,7 +167,12 @@ final class RepositoryHistoryState {
     private var referenceTask: Task<Void, Never>? = nil
 
     /// 引用读取进行中时收到的最近一次刷新，读完后补上，读取开始之后的改动不会漏掉。
-    private var pendingRefresh: (status: WorkingCopyStatus, runner: GitRunner, reload: Bool, records: Bool)? = nil
+    private var pendingRefresh: (
+        status: WorkingCopyStatus,
+        runner: GitRunner,
+        reload: Bool,
+        records: Bool
+    )? = nil
 
     /// 分页与回到历史时核对提交位置的读取，可由用户或视图切换取消。
     private var pageTask: Task<Void, Never>? = nil

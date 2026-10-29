@@ -173,6 +173,7 @@ extension NavigationTests {
             at: RepositoryHistoryState.slowLookupThreshold + 20,
             with: runner
         )
+
         let working = ViewReference.repository(fixture.location, .workingCopy)
         let page = ViewReference.repository(fixture.location, .commit(far.id))
 

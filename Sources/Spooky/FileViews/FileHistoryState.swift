@@ -228,9 +228,18 @@ final class FileHistoryState {
 
         pageTask = Task { [weak self] in
             do {
-                let page = try await Self.recordPage(in: runner.location, activities: activities, records: true) {
-                    try await RepositoryFileViews(runner: runner)
-                        .page(of: path, from: head, filter: filter, offset: offset, limit: Self.pageSize)
+                let page = try await Self.recordPage(
+                    in: runner.location,
+                    activities: activities,
+                    records: true
+                ) {
+                    try await RepositoryFileViews(runner: runner).page(
+                        of: path,
+                        from: head,
+                        filter: filter,
+                        offset: offset,
+                        limit: Self.pageSize
+                    )
                 }
 
                 guard let self, generation == request, !Task.isCancelled else {
@@ -279,7 +288,9 @@ final class FileHistoryState {
         let activities = activities
 
         // 原文与补丁分别读取，切换显示方式时才读另一种；补丁记为 Load Commit Diffs，原文记为 Load Blob
-        let title = AppLocalization.text(mode == .diff ? "activity.read.commitDiffs" : "activity.read.blob")
+        let title = AppLocalization.text(
+            mode == .diff ? "activity.read.commitDiffs" : "activity.read.blob"
+        )
 
         let read: @MainActor () async throws -> (CommitDiff?, FileRevisionContent?) = {
             try await activities.recordRead([title], in: runner.location, records: records) {
@@ -417,7 +428,11 @@ extension FileHistoryState {
 
         // 按版本范围筛选时只读一页，不读总数
         if filter.scope == .revision, !filter.trimmedText.isEmpty {
-            let latest = try await recordPage(in: views.runner.location, activities: activities, records: records) {
+            let latest = try await recordPage(
+                in: views.runner.location,
+                activities: activities,
+                records: records
+            ) {
                 try await views.page(of: path, from: root, filter: filter, limit: 1)
             }
 
@@ -425,7 +440,11 @@ extension FileHistoryState {
         }
 
         // 第一页与计数互不依赖，服务器上只占一次往返的等待时间
-        async let page = recordPage(in: views.runner.location, activities: activities, records: records) {
+        async let page = recordPage(
+            in: views.runner.location,
+            activities: activities,
+            records: records
+        ) {
             try await views.page(of: path, from: root, filter: filter, limit: pageSize)
         }
 

@@ -98,7 +98,7 @@ final class RepositorySession {
     /// 当前显示哪一侧改动。
     var diffSide = DiffSide.unstaged
 
-    /// 最近一次读取的 Diff 是哪一侧；读取时按改动换了暂存侧的，这一侧已经在读，不必再读一次。
+    /// 最近一次读取的 Diff 是哪一侧；暂存侧变化时据此判断这一侧是否已经在读。
     @ObservationIgnored
     private(set) var loadedDiffSide: DiffSide? = nil
 
@@ -640,7 +640,9 @@ extension RepositorySession {
         let activities = activities
 
         // 只读显示的那一侧，记一条
-        let title = AppLocalization.text(side == .staged ? "activity.read.stagedDiff" : "activity.read.unstagedDiff")
+        let title = AppLocalization.text(
+            side == .staged ? "activity.read.stagedDiff" : "activity.read.unstagedDiff"
+        )
 
         isLoadingDiff = true
         diffTask = Task { [weak self] in
@@ -849,7 +851,13 @@ extension RepositorySession {
         if full || statusChanged {
             loadContext()
             loadCommitConfiguration()
-            history.refresh(status: status, runner: makeRunner(repository), reload: full, records: records)
+            history.refresh(
+                status: status,
+                runner: makeRunner(repository),
+                reload: full,
+                records: records
+            )
+
             stashes.refresh(runner: makeRunner(repository), records: records)
             submodules.refresh(runner: makeRunner(repository), records: records)
             worktrees.refresh(runner: makeRunner(repository), records: records)

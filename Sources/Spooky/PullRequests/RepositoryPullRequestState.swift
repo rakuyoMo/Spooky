@@ -213,7 +213,10 @@ final class RepositoryPullRequestState {
 
         listTask = Task { [weak self] in
             do {
-                let result = try await RepositoryActivities.shared.recordHosting(title: title, repository: location) {
+                let result = try await RepositoryActivities.shared.recordHosting(
+                    title: title,
+                    repository: location
+                ) {
                     try await client.pullRequests(in: project, page: page)
                 }
 
@@ -304,7 +307,11 @@ final class RepositoryPullRequestState {
                 var page: Int? = 1
 
                 while let current = page, current <= 3 {
-                    let result = try await client.pullRequests(in: project, page: current, includesClosed: true)
+                    let result = try await client.pullRequests(
+                        in: project,
+                        page: current,
+                        includesClosed: true
+                    )
 
                     // 列表从新到旧，同一分支只留最近的一个
                     for request in result.items
@@ -421,7 +428,10 @@ extension RepositoryPullRequestState {
         detailTask = Task { [weak self] in
             do {
                 // 详情与评论合成 Activity 里的一条记录
-                let loaded = try await RepositoryActivities.shared.recordHosting(title: title, repository: runner.location) {
+                let loaded = try await RepositoryActivities.shared.recordHosting(
+                    title: title,
+                    repository: runner.location
+                ) {
                     async let detail = client.pullRequest(id)
                     async let comments = client.comments(on: id)
                     return try await (detail, comments)
