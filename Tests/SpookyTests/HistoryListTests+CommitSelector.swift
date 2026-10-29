@@ -63,7 +63,7 @@ extension HistoryListTests {
         #expect(selector.highlightedID == nil)
     }
 
-    /// ↑ ↓ 逐行移动高亮，到两端停住；搜索框的内容按基本正则匹配说明，编译不了时列表为空、不报错。
+    /// ↑ ↓ 逐行移动高亮，到两端停住；搜索框的内容按正则匹配说明，编译不了时列表为空、不报错。
     @Test("版本选择器的高亮移动与正则搜索")
     func commitSelectorKeyboardAndRegex() async throws {
         let fixture = try await Self.makeSession(commits: (0 ..< 120).map { "commit \($0)" })

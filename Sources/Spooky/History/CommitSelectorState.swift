@@ -145,7 +145,7 @@ extension CommitSelectorState {
 
         let request = generation
 
-        // 搜索框的内容只作为提交说明的条件，按基本正则匹配、忽略大小写
+        // 搜索框的内容只作为提交说明的条件，按仓库配置的正则写法匹配、忽略大小写
         let query = HistoryQuery(
             conditions: searchText.isEmpty ? [] : [HistorySearchCondition(kind: .message, text: searchText)]
         )

@@ -348,8 +348,8 @@ public struct RepositoryHistory: Sendable {
         }
         guard !roots.isEmpty else { return HistoryPage(commits: [], hasMore: false) }
 
-        // 正则编译不了时没有结果，不执行 Git
-        guard !query.hasInvalidPattern else {
+        // 条件编译不了时没有结果，不执行 Git
+        guard let query = try await resolved(query) else {
             return HistoryPage(commits: [], hasMore: false)
         }
 
