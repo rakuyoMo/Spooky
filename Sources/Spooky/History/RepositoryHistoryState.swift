@@ -71,6 +71,18 @@ final class RepositoryHistoryState {
     /// 这次回到历史不用再询问：提交排在询问的阈值以内，或用户已同意续载；开始新的查找时清掉。
     private var lookupConfirmed = false
 
+    /// 回到提交之前核对它在全部历史里的位置的读取。
+    var lookupCheckTask: Task<Void, Never>? = nil
+
+    /// 核对的序号：又要回到别的提交或关闭仓库时加一，之前的询问随之作废。
+    var lookupCheckRequest = 0
+
+    /// 刚打开的仓库还没读到引用时要核对的提交与放行后的步骤，读到引用后接着核对。
+    var pendingLookupCheck: (id: String, proceed: () -> Void)? = nil
+
+    /// 正在放行的提交，只在执行放行的步骤期间有值；步骤里的 `locate` 见到它就不再核对与询问。
+    var releasedLookup: String? = nil
+
     /// 视图设置所在的偏好域，测试注入临时域。
     var preferences = UserDefaults.standard
 
@@ -224,6 +236,19 @@ final class RepositoryHistoryState {
         snapshot?.references.filter { $0.isLocal || ($0.isRemote && $0.symbolicTarget == nil) } ?? []
     }
 
+    /// 全部历史的起点：指向提交的引用与 HEAD 所指的提交，去重后排序。
+    var allHistoryRoots: [String] {
+        let references = snapshot?.references ?? []
+
+        return Array(
+            Set(
+                references.filter { $0.objectType == "commit" }.map(\.objectID)
+                    + (branch?.oid.map { [$0] } ?? [])
+            )
+        )
+        .sorted()
+    }
+
     /// 历史表头当前引用，没有选择时展示全部引用语义。
     var title: String {
         if selectedReferences.count > 1 {
@@ -239,7 +264,15 @@ final class RepositoryHistoryState {
 
     /// 正在运行的读取任务，退出前等待它们结束。
     var activeTasks: [Task<Void, Never>] {
-        [referenceTask, pageTask, changeTask, countTask, searchTask].compactMap { $0 } + Array(diffTasks.values)
+        [
+            referenceTask,
+            pageTask,
+            lookupCheckTask,
+            changeTask,
+            countTask,
+            searchTask,
+        ]
+        .compactMap { $0 } + Array(diffTasks.values)
     }
 
     /// 刷新引用后只在根变化时重载列表，轮询不打断翻页或选择。
@@ -276,6 +309,12 @@ final class RepositoryHistoryState {
                 if changed || needsReload {
                     needsReload = false
                     reloadCommits()
+                }
+
+                // 刚打开仓库时等着引用的核对，读到引用后接着做
+                if let pending = pendingLookupCheck {
+                    pendingLookupCheck = nil
+                    confirmLookup(pending.id, then: pending.proceed)
                 }
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
@@ -336,6 +375,7 @@ final class RepositoryHistoryState {
     /// 关闭仓库时清除全部快照和选区。
     func close() {
         suspend()
+        cancelLookupCheck()
         runner = nil
         snapshot = nil
         branch = nil
@@ -410,13 +450,7 @@ extension RepositoryHistoryState {
         } else if selectedReference == "HEAD" {
             roots = branch?.oid.map { [$0] } ?? []
         } else {
-            roots = Array(
-                Set(
-                    references.filter { $0.objectType == "commit" }.map(\.objectID)
-                        + (branch?.oid.map { [$0] } ?? [])
-                )
-            )
-            .sorted()
+            roots = allHistoryRoots
         }
 
         // 搜索结果不连续，图与推拉标记都依赖完整的父链，搜索时不计算
@@ -655,7 +689,9 @@ extension RepositoryHistoryState {
     func locate(_ id: String) {
         lookup = id
         lookupFailure = nil
-        lookupConfirmed = false
+
+        // 放行前已经核对过位置的提交不再核对与询问
+        lookupConfirmed = releasedLookup == id
 
         // 在全部历史里找这个提交，搜索条件不再适用
         let searching = !searchConditions.isEmpty
@@ -709,27 +745,22 @@ extension RepositoryHistoryState {
 
         pageTask = Task { [weak self] in
             do {
-                let history = RepositoryHistory(runner: runner)
-                let position = try await history.position(
+                let position = try await Self.lookupPosition(
                     of: id,
                     roots: roots,
                     query: query,
-                    limit: Self.slowLookupThreshold
+                    runner: runner
                 )
-
-                // 不在前面这些提交里时，再看它是否在这段历史里
-                let reachable =
-                    if position != nil {
-                        true
-                    } else {
-                        try await history.contains(id, roots: roots)
-                    }
 
                 guard let self, generation == request, !Task.isCancelled else { return }
 
                 isLoading = false
                 pageTask = nil
-                resolveLookup(id, isWithinThreshold: position != nil, isReachable: reachable)
+                resolveLookup(
+                    id,
+                    isWithinThreshold: position.isWithinThreshold,
+                    isReachable: position.isReachable
+                )
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
 
@@ -758,14 +789,8 @@ extension RepositoryHistoryState {
         lookup = nil
 
         let location = runner?.location
-        let title = AppLocalization.text("history.reveal.slow")
-        let message = AppLocalization.text(
-            "history.reveal.slow.message",
-            String(id.prefix(8)),
-            Self.slowLookupThreshold
-        )
 
-        onSlowLookup?(title, message) { [weak self] in
+        askSlowLookup(id) { [weak self] in
             // 询问期间换了仓库或开始了别的查找时，这次同意不再生效
             guard let self, lookup == nil, runner?.location == location else { return }
 

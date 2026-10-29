@@ -75,7 +75,10 @@ extension HistoryListTests {
         #expect(!history.commits.contains(target))
 
         fixture.session.showCommit(target)
-        try await FileViewsTests.wait { history.lookup == nil && !history.isLoading }
+        try await FileViewsTests.wait {
+            history.selectedIDs == [target.id] && history.lookup == nil && !history.isLoading
+        }
+
         #expect(history.commits.contains(target))
         #expect(history.scrollTarget == target.id)
         #expect(history.selectedIDs == [target.id])
@@ -96,7 +99,8 @@ extension HistoryListTests {
         #expect(prompts.isEmpty)
     }
 
-    /// 排在询问的阈值之后的提交要续载很多页，先询问：取消时列表不变，同意后续载到它为止；不在历史里的提交直接说明找不到。
+    /// 排在询问的阈值之后的提交要续载很多页，先核对位置再询问：询问期间与取消后，视图、所选的引用、搜索条件、列表与选中的提交都不变；
+    /// 同意后才切到整页详情并续载到它为止；不在历史里的提交不询问，直接说明找不到。
     @Test("回到排在很后面的提交先询问")
     func revealAsksBeyondThreshold() async throws {
         let total = RepositoryHistoryState.slowLookupThreshold + 50
@@ -106,35 +110,34 @@ extension HistoryListTests {
         let session = fixture.session
         let history = session.history
         try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
-        let loaded = history.commits.count
+
+        // 停在 Working Copy；历史只看 main、搜着 “commit 1”，并选中一个已加载的提交
+        history.selectedReferences = ["refs/heads/main"]
+        history.setSearchText("commit 1")
+        try await FileViewsTests.wait {
+            history.searchTask == nil && history.query.isSearching && !history.isLoading
+        }
+
+        let selected = try #require(history.commits.dropFirst().first).id
+        history.selectedIDs = [selected]
+
+        let commits = history.commits
+        let conditions = history.searchConditions
+        #expect(session.activeView == .workingCopy)
 
         // 取消询问时不回调，只记下询问的标题与说明
         var prompts: [(title: String, message: String)] = []
         session.onConfirm = { title, message, _, _ in prompts.append((title, message)) }
 
-        // 没有引用指向的提交不在这段历史里，不询问
-        let orphan = try await Self.makeOrphan(in: fixture)
-
-        session.showCommit(orphan)
-        try await FileViewsTests.wait { history.lookupFailure != nil && !history.isLoading }
-        #expect(
-            history.lookupFailure
-                == AppLocalization.text("history.reveal.notFound", String(orphan.id.prefix(8)))
+        // 排在第 10,000 个之后的提交先询问；询问时还没切换，取消后什么都不变
+        let target = try await Self.commit(
+            at: RepositoryHistoryState.slowLookupThreshold + 20,
+            with: fixture.runner
         )
-        #expect(prompts.isEmpty)
-
-        // 排在第 10,000 个之后的提交先询问，取消后不加载、不说明
-        let head = try await RepositoryReferences(runner: fixture.runner).resolve("HEAD")
-        let offset = RepositoryHistoryState.slowLookupThreshold + 20
-        let page = try await RepositoryHistory(runner: fixture.runner).page(
-            roots: [head],
-            offset: offset,
-            limit: 1
-        )
-        let target = try #require(page.commits.first)
 
         session.showCommit(target)
-        try await FileViewsTests.wait { prompts.count == 1 && !history.isLoading }
+        try await FileViewsTests.wait { prompts.count == 1 }
+
         #expect(prompts.first?.title == AppLocalization.text("history.reveal.slow"))
         #expect(
             prompts.first?.message
@@ -144,11 +147,16 @@ extension HistoryListTests {
                     RepositoryHistoryState.slowLookupThreshold
                 )
         )
+        #expect(session.activeView == .workingCopy)
+        #expect(!history.showsCommitPage)
+        #expect(history.selectedReferences == ["refs/heads/main"])
+        #expect(history.searchConditions == conditions)
+        #expect(history.commits == commits)
+        #expect(history.selectedIDs == [selected])
         #expect(history.lookup == nil)
-        #expect(history.lookupFailure == nil)
-        #expect(history.commits.count == loaded)
+        #expect(!history.isLoading)
 
-        // 同意后续载到它为止，选中并滚动到它
+        // 同意后切到整页详情，续载到它为止并选中，不再询问第二次
         session.onConfirm = { title, message, action, _ in
             prompts.append((title, message))
             action()
@@ -156,11 +164,28 @@ extension HistoryListTests {
 
         session.showCommit(target)
         try await FileViewsTests.wait { history.scrollTarget == target.id && !history.isLoading }
+
         #expect(prompts.count == 2)
+        #expect(session.activeView == .history)
+        #expect(history.showsCommitPage)
+        #expect(history.selectedReferences.isEmpty)
+        #expect(history.searchConditions.isEmpty)
         #expect(history.commits.contains(target))
         #expect(history.selectedIDs == [target.id])
         #expect(history.lookup == nil)
         #expect(history.lookupFailure == nil)
+
+        // 没有引用指向的提交不在历史里，不询问，直接说明找不到
+        let orphan = try await Self.makeOrphan(in: fixture)
+
+        session.showCommit(orphan)
+        try await FileViewsTests.wait { history.lookupFailure != nil && !history.isLoading }
+
+        #expect(
+            history.lookupFailure
+                == AppLocalization.text("history.reveal.notFound", String(orphan.id.prefix(8)))
+        )
+        #expect(prompts.count == 2)
 
         // 列表一直续载到根提交，不设总数上限
         while history.hasMore {
@@ -170,6 +195,122 @@ extension HistoryListTests {
 
         #expect(history.commits.count == total)
         #expect(try #require(history.commits.last).parents.isEmpty)
+    }
+
+    /// 在历史里从侧边栏回到排在询问的阈值之后的提交，取消询问时所选的引用、列表与选中的提交都不变。
+    @Test("在历史里回到很靠后的提交，取消时列表不变")
+    func revealInHistoryKeepsListOnCancel() async throws {
+        let total = RepositoryHistoryState.slowLookupThreshold + 50
+        let fixture = try await Self.makeSession(commits: (0 ..< total).map { "commit \($0)" })
+        defer { fixture.close() }
+
+        let session = fixture.session
+        let history = session.history
+
+        // 在历史里只看 main，并选中一个已加载的提交
+        session.activeView = .history
+        history.selectedReferences = ["refs/heads/main"]
+        try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
+
+        let selected = try #require(history.commits.dropFirst().first).id
+        history.selectedIDs = [selected]
+        let commits = history.commits
+
+        // 取消询问时不回调
+        var prompts = 0
+        session.onConfirm = { _, _, _, _ in prompts += 1 }
+
+        let target = try await Self.commit(
+            at: RepositoryHistoryState.slowLookupThreshold + 20,
+            with: fixture.runner
+        )
+
+        session.revealInHistory(target.id)
+        try await FileViewsTests.wait { prompts == 1 }
+
+        #expect(session.activeView == .history)
+        #expect(!history.showsCommitPage)
+        #expect(history.selectedReferences == ["refs/heads/main"])
+        #expect(history.commits == commits)
+        #expect(history.selectedIDs == [selected])
+        #expect(history.lookup == nil)
+        #expect(!history.isLoading)
+    }
+
+    /// 列表已是全部历史并加载了要回到的提交时直接回到，不读取位置；列表只看一个引用时先核对位置再回到。
+    @Test("已加载在全部历史里的提交直接回到")
+    func revealLoadedCommit() async throws {
+        let fixture = try await Self.makeSession(commits: ["first", "second", "third"])
+        defer { fixture.close() }
+
+        let session = fixture.session
+        let history = session.history
+
+        // 只看 main 时列表不是全部历史，即使已加载也先核对，核对完才切换
+        history.selectedReferences = ["refs/heads/main"]
+        try await FileViewsTests.wait { history.commits.count == 3 && !history.isLoading }
+
+        let first = try #require(history.commits.last)
+
+        session.showCommit(first)
+        #expect(history.lookupCheckTask != nil)
+        #expect(session.activeView == .workingCopy)
+
+        try await FileViewsTests.wait { history.showsCommitPage && history.lookup == nil && !history.isLoading }
+        #expect(session.activeView == .history)
+        #expect(history.selectedReferences.isEmpty)
+        #expect(history.selectedIDs == [first.id])
+
+        // 回到全部历史后它已加载，再回到别的已加载的提交时直接切过去
+        try await FileViewsTests.wait { history.commits.count == 3 }
+        let second = try #require(history.commits.dropFirst().first)
+        session.activeView = .workingCopy
+
+        session.showCommit(second)
+        #expect(history.lookupCheckTask == nil)
+        #expect(session.activeView == .history)
+        #expect(history.selectedIDs == [second.id])
+    }
+
+    /// 核对位置期间又要回到另一个提交时，前一个核对作废：只询问后一个。
+    @Test("核对期间又回到别的提交，前一个不询问")
+    func supersededLookupCheck() async throws {
+        let total = RepositoryHistoryState.slowLookupThreshold + 50
+        let fixture = try await Self.makeSession(commits: (0 ..< total).map { "commit \($0)" })
+        defer { fixture.close() }
+
+        let session = fixture.session
+        let history = session.history
+        try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
+
+        // 记下所有询问的说明，不回调
+        var prompts: [String] = []
+        session.onConfirm = { _, message, _, _ in prompts.append(message) }
+
+        let earlier = try await Self.commit(
+            at: RepositoryHistoryState.slowLookupThreshold + 10,
+            with: fixture.runner
+        )
+        let later = try await Self.commit(
+            at: RepositoryHistoryState.slowLookupThreshold + 30,
+            with: fixture.runner
+        )
+
+        session.showCommit(earlier)
+        session.showCommit(later)
+        try await FileViewsTests.wait { !prompts.isEmpty && history.lookupCheckTask == nil }
+
+        #expect(
+            prompts
+                == [
+                    AppLocalization.text(
+                        "history.reveal.slow.message",
+                        String(later.id.prefix(8)),
+                        RepositoryHistoryState.slowLookupThreshold
+                    ),
+                ]
+        )
+        #expect(session.activeView == .workingCopy)
     }
 
     /// 从侧边栏回到排在询问的阈值之后的提交：询问框结束后窗口完整刷新、列表从第一页重读，同意后仍选中它，找到后读出它的变更。
@@ -344,21 +485,7 @@ extension HistoryListTests {
         let directory = try FileViewsTests.temporaryDirectory()
         let location = RepositoryLocation.local(path: directory.path)
         let runner = try await FileViewsTests.initializeRepository(at: location)
-
-        // 一次 fast-import 写入全部提交，提交人日期逐个递增
-        var stream = ""
-
-        for (index, message) in commits.enumerated() {
-            let content = "\(index)\n"
-            stream += "commit refs/heads/main\nmark :\(index + 1)\n"
-            stream += "committer Spooky Test <spooky@example.invalid> \(1_700_000_000 + index * 60) +0000\n"
-            stream += "data \(message.utf8.count)\n\(message)\n"
-            stream += index == 0 ? "" : "from :\(index)\n"
-            stream += "M 100644 inline file.txt\ndata \(content.utf8.count)\n\(content)\n"
-        }
-
-        _ = try await runner.run(["fast-import", "--quiet"], input: Data(stream.utf8))
-        _ = try await runner.run(["reset", "-q", "--hard"])
+        try await importCommits(commits, with: runner)
 
         // 列表里的头像不联网，全部显示首字母
         AvatarStore.shared.fetch = { _ in nil }
@@ -375,6 +502,36 @@ extension HistoryListTests {
         await session.waitForRefresh()
 
         return SessionFixture(directory: directory, runner: runner, session: session, controller: controller)
+    }
+
+    /// 在空仓库的 main 上按顺序写入提交，每个提交改动 file.txt，提交人日期逐个递增。
+    static func importCommits(_ messages: [String], with runner: GitRunner) async throws {
+        // 一次 fast-import 写入全部提交
+        var stream = ""
+
+        for (index, message) in messages.enumerated() {
+            let content = "\(index)\n"
+            stream += "commit refs/heads/main\nmark :\(index + 1)\n"
+            stream += "committer Spooky Test <spooky@example.invalid> \(1_700_000_000 + index * 60) +0000\n"
+            stream += "data \(message.utf8.count)\n\(message)\n"
+            stream += index == 0 ? "" : "from :\(index)\n"
+            stream += "M 100644 inline file.txt\ndata \(content.utf8.count)\n\(content)\n"
+        }
+
+        _ = try await runner.run(["fast-import", "--quiet"], input: Data(stream.utf8))
+        _ = try await runner.run(["reset", "-q", "--hard"])
+    }
+
+    /// 从 HEAD 沿历史往回数的第 `offset` 个提交，HEAD 是第 0 个。
+    static func commit(at offset: Int, with runner: GitRunner) async throws -> HistoryCommit {
+        let head = try await RepositoryReferences(runner: runner).resolve("HEAD")
+        let page = try await RepositoryHistory(runner: runner).page(
+            roots: [head],
+            offset: offset,
+            limit: 1
+        )
+
+        return try #require(page.commits.first)
     }
 
     /// 用 HEAD 的树另建一个没有引用指向的提交，它不在仓库的任何历史里。
