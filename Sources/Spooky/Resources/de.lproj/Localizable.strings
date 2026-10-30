@@ -2011,6 +2011,7 @@
 "submodule.delete.menu" = "„%@“ löschen…";
 "submodule.delete.message" = "Entfernt das Submodul „%@“ aus diesem Repository.";
 "submodule.delete.submit" = "Löschen";
+"submodule.deleteSubmodules" = "Submodule löschen";
 "submodule.editURL" = "Submodul-URL bearbeiten";
 "submodule.editURL.message" = "Gib die URL des Submodul-Repositorys ein.";
 "submodule.editURL.submit" = "Ändern";
@@ -2099,7 +2100,9 @@
 "submodule.repair" = "Submodul reparieren";
 "submodule.repair.message" = "Versucht, das Submodul wieder gültig zu machen, indem die fehlende Konfiguration und das Arbeitsverzeichnis wiederhergestellt werden.";
 "submodule.repair.submit" = "Reparieren";
-"submodule.setting" = "Submodul-Einstellung ändern";
+"submodule.setFetchMode" = "Abrufmodus des Submoduls festlegen";
+"submodule.setIgnoreMode" = "Ignoriermodus des Submoduls festlegen";
+"submodule.setUpdateStrategy" = "Aktualisierungsstrategie des Submoduls festlegen";
 "submodule.state.clean" = "Sauber";
 "submodule.state.uninitialized" = "Nicht initialisiert";
 "submodule.state.unknown" = "Unbekannt";
@@ -2112,6 +2115,9 @@
 "submodule.synchronize.submit" = "Synchronisieren";
 "submodule.tooltip" = "Submodul „%@“";
 "submodule.tooltip.url" = "- URL: „%@“";
+"submodule.unsetFetchMode" = "Abrufmodus des Submoduls zurücksetzen";
+"submodule.unsetIgnoreMode" = "Ignoriermodus des Submoduls zurücksetzen";
+"submodule.unsetUpdateStrategy" = "Aktualisierungsstrategie des Submoduls zurücksetzen";
 "submodule.update" = "Submodul aktualisieren";
 "submodule.update.menu" = "„%@“ aktualisieren…";
 "submodule.update.message" = "Checkt das Submodul in der Revision aus, die im Index dieses Repositorys eingetragen ist.";

@@ -2011,6 +2011,7 @@
 "submodule.delete.menu" = "“%@” 삭제…";
 "submodule.delete.message" = "이 저장소에서 하위 모듈 “%@”을(를) 삭제합니다.";
 "submodule.delete.submit" = "삭제";
+"submodule.deleteSubmodules" = "하위 모듈 삭제";
 "submodule.editURL" = "하위 모듈 URL 편집";
 "submodule.editURL.message" = "하위 모듈 저장소의 URL을 입력합니다.";
 "submodule.editURL.submit" = "변경";
@@ -2099,7 +2100,9 @@
 "submodule.repair" = "하위 모듈 복구";
 "submodule.repair.message" = "누락된 설정과 작업 트리를 복원해 하위 모듈을 다시 유효한 상태로 만듭니다.";
 "submodule.repair.submit" = "복구";
-"submodule.setting" = "하위 모듈 설정 변경";
+"submodule.setFetchMode" = "하위 모듈 가져오기 방식 설정";
+"submodule.setIgnoreMode" = "하위 모듈 무시 방식 설정";
+"submodule.setUpdateStrategy" = "하위 모듈 업데이트 방식 설정";
 "submodule.state.clean" = "깨끗함";
 "submodule.state.uninitialized" = "초기화 안 됨";
 "submodule.state.unknown" = "알 수 없음";
@@ -2112,6 +2115,9 @@
 "submodule.synchronize.submit" = "동기화";
 "submodule.tooltip" = "하위 모듈 “%@”";
 "submodule.tooltip.url" = "- URL: “%@”";
+"submodule.unsetFetchMode" = "하위 모듈 가져오기 방식 설정 해제";
+"submodule.unsetIgnoreMode" = "하위 모듈 무시 방식 설정 해제";
+"submodule.unsetUpdateStrategy" = "하위 모듈 업데이트 방식 설정 해제";
 "submodule.update" = "하위 모듈 업데이트";
 "submodule.update.menu" = "“%@” 업데이트…";
 "submodule.update.message" = "이 저장소의 인덱스에 기록된 리비전으로 하위 모듈을 체크아웃합니다.";

@@ -2011,6 +2011,7 @@
 "submodule.delete.menu" = "删除 “%@”…";
 "submodule.delete.message" = "从这个仓库删除子模块 “%@”。";
 "submodule.delete.submit" = "删除";
+"submodule.deleteSubmodules" = "删除子模块";
 "submodule.editURL" = "编辑子模块地址";
 "submodule.editURL.message" = "输入子模块仓库的地址。";
 "submodule.editURL.submit" = "修改";
@@ -2099,7 +2100,9 @@
 "submodule.repair" = "修复子模块";
 "submodule.repair.message" = "补回缺失的配置与工作区，尝试让子模块恢复有效。";
 "submodule.repair.submit" = "修复";
-"submodule.setting" = "修改子模块设置";
+"submodule.setFetchMode" = "设置子模块的获取方式";
+"submodule.setIgnoreMode" = "设置子模块的忽略方式";
+"submodule.setUpdateStrategy" = "设置子模块的更新方式";
 "submodule.state.clean" = "干净";
 "submodule.state.uninitialized" = "未初始化";
 "submodule.state.unknown" = "未知";
@@ -2112,6 +2115,9 @@
 "submodule.synchronize.submit" = "同步";
 "submodule.tooltip" = "子模块 “%@”";
 "submodule.tooltip.url" = "- 地址：“%@”";
+"submodule.unsetFetchMode" = "取消子模块的获取方式";
+"submodule.unsetIgnoreMode" = "取消子模块的忽略方式";
+"submodule.unsetUpdateStrategy" = "取消子模块的更新方式";
 "submodule.update" = "更新子模块";
 "submodule.update.menu" = "更新 “%@”…";
 "submodule.update.message" = "按本仓库暂存区里登记的版本检出子模块。";

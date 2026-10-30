@@ -47,7 +47,8 @@ extension UndoSessionTests {
         #expect(try await Self.submodules(in: fixture).isEmpty)
     }
 
-    /// 移动（同时改名）、改名、本地配置里的地址与忽略模式、`.gitmodules` 里的忽略模式各自撤销后回到操作前，重做后回到操作后。
+    /// 移动（同时改名）、改名、本地配置里的地址、忽略模式与更新策略、`.gitmodules` 里的忽略模式各自撤销后回到操作前，
+    /// 重做后回到操作后；撤销菜单写的是各自的操作名，选项按设置还是删除区分。
     @Test("子模块的移动、改名与设置的撤销与重做")
     func submoduleChangesRoundTrip() async throws {
         let fixture = try await Fixture(allowsFileSubmodules: true)
@@ -56,19 +57,40 @@ extension UndoSessionTests {
         let submodule = try await Self.addCommittedSubmodule(in: fixture)
         defer { try? FileManager.default.removeItem(at: submodule.upstream) }
 
-        let operations: [() -> Void] = [
-            { _ = session.moveSubmodule(submodule.value, to: "外层/新 位置", renaming: true) },
-            { _ = session.renameSubmodule(submodule.value, to: "新名") },
-            { _ = session.setSubmoduleURL("https://example.com/lib.git", for: submodule.value, in: .local) },
-            { session.setSubmoduleOption(.ignore, to: "all", for: submodule.value, in: .local) },
-            { session.setSubmoduleOption(.ignore, to: "dirty", for: submodule.value, in: .shared) },
+        // 本地配置里原来有更新策略，供删除选项的一项使用
+        _ = try await fixture.runner.run(["config", "--local", "submodule.lib.update", "rebase"])
+        await fixture.refresh()
+
+        let operations: [(title: String, start: () -> Void)] = [
+            ("submodule.move", { _ = session.moveSubmodule(submodule.value, to: "外层/新 位置", renaming: true) }),
+            ("submodule.rename", { _ = session.renameSubmodule(submodule.value, to: "新名") }),
+            (
+                "submodule.editURL",
+                { _ = session.setSubmoduleURL("https://example.com/lib.git", for: submodule.value, in: .local) }
+            ),
+            (
+                "submodule.setIgnoreMode",
+                { session.setSubmoduleOption(.ignore, to: "all", for: submodule.value, in: .local) }
+            ),
+            (
+                "submodule.unsetUpdateStrategy",
+                { session.setSubmoduleOption(.update, to: nil, for: submodule.value, in: .local) }
+            ),
+            (
+                "submodule.setIgnoreMode",
+                { session.setSubmoduleOption(.ignore, to: "dirty", for: submodule.value, in: .shared) }
+            ),
         ]
 
         for operation in operations {
             let before = try await Self.submoduleState(in: fixture)
-            try await fixture.perform(operation)
+            try await fixture.perform(operation.start)
             let after = try await Self.submoduleState(in: fixture)
             #expect(after != before)
+
+            // 撤销菜单写的是这次操作的名称
+            let title = AppLocalization.text(operation.title)
+            #expect(try await Self.settledState(of: session, redo: false) == .available(title))
 
             try await fixture.perform { session.undoLastOperation() }
             #expect(try await Self.submoduleState(in: fixture) == before)
@@ -97,7 +119,7 @@ extension UndoSessionTests {
         try await fixture.perform { _ = session.deleteSubmodule(submodule.value, keepsWorkingTree: false, force: true) }
         #expect(try await Self.submodules(in: fixture).isEmpty)
 
-        let title = AppLocalization.text("submodule.delete")
+        let title = AppLocalization.text("submodule.deleteSubmodules")
         #expect(try await Self.settledState(of: session, redo: false) == .irreversible(title))
         #expect(session.undoHistory?.undoEntries.isEmpty ?? false)
     }

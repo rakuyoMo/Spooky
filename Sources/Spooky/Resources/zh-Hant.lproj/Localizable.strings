@@ -2011,6 +2011,7 @@
 "submodule.delete.menu" = "刪除 “%@”…";
 "submodule.delete.message" = "從這個儲存庫刪除子模組 “%@”。";
 "submodule.delete.submit" = "刪除";
+"submodule.deleteSubmodules" = "刪除子模組";
 "submodule.editURL" = "編輯子模組位址";
 "submodule.editURL.message" = "輸入子模組儲存庫的位址。";
 "submodule.editURL.submit" = "修改";
@@ -2099,7 +2100,9 @@
 "submodule.repair" = "修復子模組";
 "submodule.repair.message" = "補回缺失的設定與工作區，嘗試讓子模組恢復有效。";
 "submodule.repair.submit" = "修復";
-"submodule.setting" = "修改子模組設定";
+"submodule.setFetchMode" = "設定子模組的擷取方式";
+"submodule.setIgnoreMode" = "設定子模組的忽略方式";
+"submodule.setUpdateStrategy" = "設定子模組的更新方式";
 "submodule.state.clean" = "乾淨";
 "submodule.state.uninitialized" = "未初始化";
 "submodule.state.unknown" = "未知";
@@ -2112,6 +2115,9 @@
 "submodule.synchronize.submit" = "同步";
 "submodule.tooltip" = "子模組 “%@”";
 "submodule.tooltip.url" = "- 位址：“%@”";
+"submodule.unsetFetchMode" = "取消子模組的擷取方式";
+"submodule.unsetIgnoreMode" = "取消子模組的忽略方式";
+"submodule.unsetUpdateStrategy" = "取消子模組的更新方式";
 "submodule.update" = "更新子模組";
 "submodule.update.menu" = "更新 “%@”…";
 "submodule.update.message" = "按本儲存庫暫存區裡登記的版本簽出子模組。";

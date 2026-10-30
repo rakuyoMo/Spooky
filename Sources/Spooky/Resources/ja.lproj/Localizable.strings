@@ -2011,6 +2011,7 @@
 "submodule.delete.menu" = "「%@」を削除…";
 "submodule.delete.message" = "このリポジトリからサブモジュール「%@」を削除します。";
 "submodule.delete.submit" = "削除";
+"submodule.deleteSubmodules" = "サブモジュールを削除";
 "submodule.editURL" = "サブモジュールの URL を編集";
 "submodule.editURL.message" = "サブモジュールのリポジトリの URL を入力します。";
 "submodule.editURL.submit" = "変更";
@@ -2099,7 +2100,9 @@
 "submodule.repair" = "サブモジュールを修復";
 "submodule.repair.message" = "欠けている設定と作業ツリーを復元し、サブモジュールを有効な状態に戻します。";
 "submodule.repair.submit" = "修復";
-"submodule.setting" = "サブモジュールの設定を変更";
+"submodule.setFetchMode" = "サブモジュールのフェッチ方法を設定";
+"submodule.setIgnoreMode" = "サブモジュールの無視の方法を設定";
+"submodule.setUpdateStrategy" = "サブモジュールの更新方法を設定";
 "submodule.state.clean" = "クリーン";
 "submodule.state.uninitialized" = "未初期化";
 "submodule.state.unknown" = "不明";
@@ -2112,6 +2115,9 @@
 "submodule.synchronize.submit" = "同期";
 "submodule.tooltip" = "サブモジュール「%@」";
 "submodule.tooltip.url" = "- URL：「%@」";
+"submodule.unsetFetchMode" = "サブモジュールのフェッチ方法の設定を解除";
+"submodule.unsetIgnoreMode" = "サブモジュールの無視の方法の設定を解除";
+"submodule.unsetUpdateStrategy" = "サブモジュールの更新方法の設定を解除";
 "submodule.update" = "サブモジュールを更新";
 "submodule.update.menu" = "「%@」を更新…";
 "submodule.update.message" = "このリポジトリのインデックスに記録されたリビジョンでサブモジュールをチェックアウトします。";

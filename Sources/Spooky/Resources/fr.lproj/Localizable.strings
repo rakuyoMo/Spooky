@@ -2011,6 +2011,7 @@
 "submodule.delete.menu" = "Supprimer « %@ »…";
 "submodule.delete.message" = "Supprime le sous-module « %@ » de ce dépôt.";
 "submodule.delete.submit" = "Supprimer";
+"submodule.deleteSubmodules" = "Supprimer les sous-modules";
 "submodule.editURL" = "Modifier l’URL du sous-module";
 "submodule.editURL.message" = "Saisissez l’URL du dépôt du sous-module.";
 "submodule.editURL.submit" = "Modifier";
@@ -2099,7 +2100,9 @@
 "submodule.repair" = "Réparer le sous-module";
 "submodule.repair.message" = "Tente de rendre le sous-module à nouveau valide en restaurant sa configuration et son arbre de travail manquants.";
 "submodule.repair.submit" = "Réparer";
-"submodule.setting" = "Modifier un réglage du sous-module";
+"submodule.setFetchMode" = "Définir le mode de récupération du sous-module";
+"submodule.setIgnoreMode" = "Définir le mode d’ignorance du sous-module";
+"submodule.setUpdateStrategy" = "Définir la stratégie de mise à jour du sous-module";
 "submodule.state.clean" = "Propre";
 "submodule.state.uninitialized" = "Non initialisé";
 "submodule.state.unknown" = "Inconnu";
@@ -2112,6 +2115,9 @@
 "submodule.synchronize.submit" = "Synchroniser";
 "submodule.tooltip" = "Sous-module « %@ »";
 "submodule.tooltip.url" = "- URL : « %@ »";
+"submodule.unsetFetchMode" = "Retirer le mode de récupération du sous-module";
+"submodule.unsetIgnoreMode" = "Retirer le mode d’ignorance du sous-module";
+"submodule.unsetUpdateStrategy" = "Retirer la stratégie de mise à jour du sous-module";
 "submodule.update" = "Mettre à jour le sous-module";
 "submodule.update.menu" = "Mettre à jour « %@ »…";
 "submodule.update.message" = "Extrait le sous-module à la révision enregistrée dans l’index de ce dépôt.";

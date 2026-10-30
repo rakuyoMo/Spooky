@@ -2011,6 +2011,7 @@
 "submodule.delete.menu" = "Eliminar “%@”…";
 "submodule.delete.message" = "Elimina el submódulo “%@” de este repositorio.";
 "submodule.delete.submit" = "Eliminar";
+"submodule.deleteSubmodules" = "Eliminar submódulos";
 "submodule.editURL" = "Editar URL del submódulo";
 "submodule.editURL.message" = "Introduce la URL del repositorio del submódulo.";
 "submodule.editURL.submit" = "Cambiar";
@@ -2099,7 +2100,9 @@
 "submodule.repair" = "Reparar submódulo";
 "submodule.repair.message" = "Intenta que el submódulo vuelva a ser válido restaurando la configuración y el árbol de trabajo que faltan.";
 "submodule.repair.submit" = "Reparar";
-"submodule.setting" = "Cambiar ajuste del submódulo";
+"submodule.setFetchMode" = "Establecer el modo de fetch del submódulo";
+"submodule.setIgnoreMode" = "Establecer el modo de ignorar del submódulo";
+"submodule.setUpdateStrategy" = "Establecer la estrategia de actualización del submódulo";
 "submodule.state.clean" = "Limpio";
 "submodule.state.uninitialized" = "Sin inicializar";
 "submodule.state.unknown" = "Desconocido";
@@ -2112,6 +2115,9 @@
 "submodule.synchronize.submit" = "Sincronizar";
 "submodule.tooltip" = "Submódulo “%@”";
 "submodule.tooltip.url" = "- URL: “%@”";
+"submodule.unsetFetchMode" = "Quitar el modo de fetch del submódulo";
+"submodule.unsetIgnoreMode" = "Quitar el modo de ignorar del submódulo";
+"submodule.unsetUpdateStrategy" = "Quitar la estrategia de actualización del submódulo";
 "submodule.update" = "Actualizar submódulo";
 "submodule.update.menu" = "Actualizar “%@”…";
 "submodule.update.message" = "Hace checkout del submódulo en la revisión registrada en el índice de este repositorio.";

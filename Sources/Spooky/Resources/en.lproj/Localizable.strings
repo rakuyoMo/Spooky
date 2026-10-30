@@ -2011,6 +2011,7 @@
 "submodule.delete.menu" = "Delete “%@”…";
 "submodule.delete.message" = "Removes the submodule “%@” from this repository.";
 "submodule.delete.submit" = "Delete";
+"submodule.deleteSubmodules" = "Delete Submodules";
 "submodule.editURL" = "Edit Submodule URL";
 "submodule.editURL.message" = "Enter the URL of the submodule’s repository.";
 "submodule.editURL.submit" = "Change";
@@ -2099,7 +2100,9 @@
 "submodule.repair" = "Repair Submodule";
 "submodule.repair.message" = "Tries to make the submodule valid again by restoring its missing configuration and working tree.";
 "submodule.repair.submit" = "Repair";
-"submodule.setting" = "Change Submodule Setting";
+"submodule.setFetchMode" = "Set Recurses Submodules Option";
+"submodule.setIgnoreMode" = "Set Submodule Ignore Mode";
+"submodule.setUpdateStrategy" = "Set Submodule Update Strategy";
 "submodule.state.clean" = "Clean";
 "submodule.state.uninitialized" = "Uninitialized";
 "submodule.state.unknown" = "Unknown";
@@ -2112,6 +2115,9 @@
 "submodule.synchronize.submit" = "Synchronize";
 "submodule.tooltip" = "Submodule “%@”";
 "submodule.tooltip.url" = "- URL: “%@”";
+"submodule.unsetFetchMode" = "Unset Recurses Submodules Option";
+"submodule.unsetIgnoreMode" = "Unset Submodule Ignore Mode";
+"submodule.unsetUpdateStrategy" = "Unset Submodule Update Strategy";
 "submodule.update" = "Update Submodule";
 "submodule.update.menu" = "Update “%@”…";
 "submodule.update.message" = "Checks out the submodule at the revision recorded in this repository’s index.";

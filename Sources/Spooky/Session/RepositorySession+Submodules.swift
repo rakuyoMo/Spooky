@@ -299,11 +299,19 @@ extension RepositorySession {
         for submodule: Submodule,
         in scope: SubmoduleConfigurationScope
     ) {
+        // 操作名分选项与设置还是删除，Activity 与撤销菜单都用它
+        let title: String =
+            switch option {
+            case .fetchRecurseSubmodules: value == nil ? "submodule.unsetFetchMode" : "submodule.setFetchMode"
+            case .ignore: value == nil ? "submodule.unsetIgnoreMode" : "submodule.setIgnoreMode"
+            case .update: value == nil ? "submodule.unsetUpdateStrategy" : "submodule.setUpdateStrategy"
+            }
+
         performGit(
             { runner, _ in
                 try await RepositorySubmodules(runner: runner).set(option, to: value, for: submodule, in: scope)
             },
-            title: AppLocalization.text("submodule.setting"),
+            title: AppLocalization.text(title),
             undo: .changingSubmoduleOption(option, to: value, of: submodule, in: scope)
         )
     }
@@ -350,7 +358,7 @@ extension RepositorySession {
                     throw SubmoduleDeletionOffer(submodule: submodule, keepsWorkingTree: keepsWorkingTree)
                 }
             },
-            title: AppLocalization.text("submodule.delete"),
+            title: AppLocalization.text("submodule.deleteSubmodules"),
             undo: .deletingSubmodule(submodule, keepsWorkingTree: keepsWorkingTree)
         )
     }
