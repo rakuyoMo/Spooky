@@ -28,9 +28,35 @@ enum ActivityTransfer: String, CaseIterable, Codable, Sendable {
 
     /// 推送，包括发布、删除与重命名远端的引用。
     case push
+}
 
-    /// 同步：依次获取、拉取与推送。
-    case sync
+// MARK: - ActivityTarget
+
+/// Remote 页记录连接的对象：传输方向、远端名与传给 git 的 refspec，决定行首的图标与标题。
+struct ActivityTarget: Codable, Equatable, Sendable {
+    /// 传输方向。
+    let transfer: ActivityTransfer
+
+    /// 远端名；同时连接几个远端、连接的不是本仓库的远端时为 nil。
+    let remote: String?
+
+    /// 拉取与推送分支时传给 git 的 refspec，如 `refs/heads/main`、`refs/heads/main:refs/heads/main`；其余操作为 nil。
+    let refspec: String?
+
+    /// 获取一个远端；获取全部远端时传 nil。
+    static func fetch(_ remote: String?) -> Self {
+        Self(transfer: .fetch, remote: remote, refspec: nil)
+    }
+
+    /// 从远端拉取。
+    static func pull(_ remote: String?, refspec: String? = nil) -> Self {
+        Self(transfer: .pull, remote: remote, refspec: refspec)
+    }
+
+    /// 推送到远端。
+    static func push(_ remote: String?, refspec: String? = nil) -> Self {
+        Self(transfer: .push, remote: remote, refspec: refspec)
+    }
 }
 
 // MARK: - RepositoryActivity
@@ -57,11 +83,10 @@ final class RepositoryActivity: Identifiable {
     /// 开始时间。
     let started: Date
 
-    /// Remote 页记录的传输方向；其余两页的记录与较早保存的 Remote 记录为 nil。
-    let transfer: ActivityTransfer?
-
-    /// Remote 页记录连接的远端名；同时连接几个远端、连接的不是本仓库的远端，以及较早保存的记录为 nil。
-    let remote: String?
+    /// Remote 页记录连接的对象；其余两页的记录与较早保存的 Remote 记录为 nil。
+    ///
+    /// 获取全部远端的记录开始时还没有远端名，开始获取第一个远端时由 `WriteActivity` 补上。
+    var target: ActivityTarget?
 
     /// 结束时间，由 `RepositoryActivities.finish` 写入；进行中与从本机读回的记录为 nil。
     var ended: Date? = nil
@@ -118,8 +143,7 @@ final class RepositoryActivity: Identifiable {
         return ActivityRecord(
             id: id,
             kind: kind,
-            transfer: transfer,
-            remote: remote,
+            target: target,
             repository: repository,
             title: title,
             started: started,
@@ -136,15 +160,13 @@ final class RepositoryActivity: Identifiable {
     ///   - repository: 带主机前缀的仓库身份；不属于仓库的托管服务请求为 nil。
     ///   - title: 已本地化的操作名称。
     ///   - started: 开始时间；读取结束后才插入的记录传入读取开始的时刻。
-    ///   - transfer: Remote 页记录的传输方向；其余两页为 nil。
-    ///   - remote: Remote 页记录连接的远端名；没有单一的远端时为 nil。
+    ///   - target: Remote 页记录连接的对象；其余两页为 nil。
     init(
         kind: ActivityKind,
         repository: RepositoryLocation?,
         title: String,
         started: Date = Date(),
-        transfer: ActivityTransfer? = nil,
-        remote: String? = nil
+        target: ActivityTarget? = nil
     ) {
         id = UUID()
         self.kind = kind
@@ -152,29 +174,21 @@ final class RepositoryActivity: Identifiable {
         isRestored = false
         self.title = title
         self.started = started
-        self.transfer = transfer
-        self.remote = remote
+        self.target = target
     }
 
-    /// 建立一条进行中的写操作记录：有传输方向的记在 Remote 页，没有的记在 Repository 页。
+    /// 建立一条进行中的写操作记录：连接远端的记在 Remote 页，其余的记在 Repository 页。
     ///
     /// - Parameters:
     ///   - repository: 带主机前缀的仓库身份。
     ///   - title: 已本地化的操作名称。
-    ///   - transfer: 传输方向；不连接远端的写操作为 nil。
-    ///   - remote: 连接的远端名；没有单一的远端时为 nil。
-    convenience init(
-        repository: RepositoryLocation,
-        title: String,
-        transfer: ActivityTransfer?,
-        remote: String?
-    ) {
+    ///   - target: 连接的对象；不连接远端的写操作为 nil。
+    convenience init(repository: RepositoryLocation, title: String, target: ActivityTarget?) {
         self.init(
-            kind: transfer == nil ? .repository : .remote,
+            kind: target == nil ? .repository : .remote,
             repository: repository,
             title: title,
-            transfer: transfer,
-            remote: remote
+            target: target
         )
     }
 
@@ -186,8 +200,7 @@ final class RepositoryActivity: Identifiable {
         isRestored = true
         title = record.title
         started = record.started
-        transfer = record.transfer
-        remote = record.remote
+        target = record.target
         state = record.state
         stdout = ActivityOutput(data: record.stdout)
         stderr = ActivityOutput(data: record.stderr)
@@ -230,7 +243,7 @@ extension RepositoryActivity {
     ///
     /// - Parameter text: 这一块输出改写过的部分，从追加前的当前行起。
     private func updateProgress(with text: String) {
-        let stages = transfer == .push ? Self.pushStages : Self.receiveStages
+        let stages = target?.transfer == .push ? Self.pushStages : Self.receiveStages
         var matched = false
 
         for line in text.split(separator: "\n") {

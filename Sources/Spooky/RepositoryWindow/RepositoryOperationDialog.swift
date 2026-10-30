@@ -86,11 +86,11 @@ struct RepositoryOperationDialog: View {
     /// 取消只关闭表单。
     let cancel: () -> Void
 
-    /// 提交交付操作名称、Activity 记录连接的远端名与显式参数对应的业务操作；返回 false 表示仓库暂不可写，表单保持打开。
+    /// 提交交付操作名称、Activity 记录连接的对象与显式参数对应的业务操作；返回 false 表示仓库暂不可写，表单保持打开。
     let submit:
         (
             String,
-            String?,
+            ActivityTarget?,
             @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
         ) -> Bool
 
@@ -712,6 +712,31 @@ extension RepositoryOperationDialog {
         return options
     }
 
+    /// Activity 记录连接的对象：获取写所选的远端，获取全部远端时由获取逐个补上；拉取写远端分支；
+    /// 推送与发布写传给 git 的 refspec；不连接远端的动作没有。
+    ///
+    /// - Parameters:
+    ///   - pullRemote: 拉取来源所属的远端。
+    ///   - pullBranch: 拉取来源在远端上的完整分支引用名。
+    private func activityTarget(pullRemote: String?, pullBranch: String?) -> ActivityTarget? {
+        request.kind.transfer.map { transfer in
+            switch transfer {
+            case .fetch:
+                ActivityTarget(transfer: transfer, remote: allRemotes ? nil : remote, refspec: nil)
+
+            case .pull:
+                ActivityTarget(transfer: transfer, remote: pullRemote, refspec: pullBranch)
+
+            case .push:
+                ActivityTarget(
+                    transfer: transfer,
+                    remote: remote,
+                    refspec: "refs/heads/" + localBranch + ":refs/heads/" + name
+                )
+            }
+        }
+    }
+
     /// 远端分支短名按所属远端切除前缀，兼容远端名中的斜杠。
     private func remoteBranchName(_ reference: String) -> String {
         guard
@@ -773,6 +798,7 @@ extension RepositoryOperationDialog {
                         prune: prune,
                         allTags: allTags,
                         submodules: submodules,
+                        onRemote: ActivityRecording.fetching,
                         onOutput: output
                     )
 
@@ -804,16 +830,9 @@ extension RepositoryOperationDialog {
             }
         }
 
-        // Activity 记录连接的远端：获取全部远端时没有单一的远端，不连接远端的动作没有
-        let activityRemote: String? =
-            switch kind {
-            case .fetch: allRemotes ? nil : remote
-            case .pull: pullRemote?.name
-            case .push, .publish: remote
-            case .create, .track, .merge: nil
-            }
+        let target = activityTarget(pullRemote: pullRemote?.name, pullBranch: pullBranch)
 
         // 仓库在点击瞬间变为不可写时表单不关闭，原因显示在表单内，已填写的参数原样保留。
-        _ = submit(AppLocalization.text(kind.rawValue), activityRemote, run)
+        _ = submit(AppLocalization.text(kind.rawValue), target, run)
     }
 }

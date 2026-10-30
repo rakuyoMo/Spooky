@@ -26,8 +26,7 @@ struct ActivityArchiveTests {
             kind: .remote,
             repository: location,
             title: "Fetch",
-            transfer: .fetch,
-            remote: "origin"
+            target: .pull("origin", refspec: "refs/heads/main")
         )
         activities.insert(fetch)
         fetch.append(.standardOutput(Data("From spooky-test\n".utf8)))
@@ -58,8 +57,7 @@ struct ActivityArchiveTests {
         #expect(restored.items.count == 1)
         #expect(item.id == fetch.id)
         #expect(item.kind == .remote)
-        #expect(item.transfer == .fetch)
-        #expect(item.remote == "origin")
+        #expect(item.target == .pull("origin", refspec: "refs/heads/main"))
         #expect(item.repository == location)
         #expect(item.title == "Fetch")
         #expect(item.started == fetch.started)
@@ -111,7 +109,7 @@ struct ActivityArchiveTests {
         let activities = RepositoryActivities()
         await activities.restore(from: directory)
 
-        let fetch = RepositoryActivity(kind: .remote, repository: location, title: "Fetch", transfer: .fetch)
+        let fetch = RepositoryActivity(kind: .remote, repository: location, title: "Fetch", target: .fetch("origin"))
         activities.insert(fetch)
         fetch.state = "activity.finished"
         activities.finish(fetch)
@@ -133,21 +131,18 @@ struct ActivityArchiveTests {
         #expect(!exists(file))
     }
 
-    /// 较早保存的记录没有传输方向与远端名这两项，读回时为 nil，其余内容照常读回。
-    @Test("没有传输方向与远端名的旧记录照常读回")
-    func restoreWithoutTransfer() throws {
+    /// 较早保存的记录没有连接对象这一项，读回时为 nil，其余内容照常读回。
+    @Test("没有连接对象的旧记录照常读回")
+    func restoreWithoutTarget() throws {
         let data = try JSONEncoder().encode(record(started: Date()))
         var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        #expect(object["transfer"] as? String == "fetch")
-        #expect(object["remote"] as? String == "origin")
+        #expect(object["target"] != nil)
 
-        object.removeValue(forKey: "transfer")
-        object.removeValue(forKey: "remote")
+        object.removeValue(forKey: "target")
         let old = try JSONSerialization.data(withJSONObject: object)
         let decoded = try JSONDecoder().decode(ActivityRecord.self, from: old)
 
-        #expect(decoded.transfer == nil)
-        #expect(decoded.remote == nil)
+        #expect(decoded.target == nil)
         #expect(decoded.title == "Fetch")
         #expect(decoded.state == "activity.finished")
     }
@@ -157,8 +152,7 @@ struct ActivityArchiveTests {
         ActivityRecord(
             id: UUID(),
             kind: .remote,
-            transfer: .fetch,
-            remote: "origin",
+            target: .fetch("origin"),
             repository: .local(path: "/temporary/activity"),
             title: "Fetch",
             started: started,

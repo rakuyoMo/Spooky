@@ -131,8 +131,7 @@ extension RepositorySession {
                 }
             },
             title: transfer.title,
-            transfer: transfer.activityTransfer,
-            remote: remote
+            target: ActivityTarget(transfer: transfer.activityTransfer, remote: remote, refspec: nil)
         )
     }
 }

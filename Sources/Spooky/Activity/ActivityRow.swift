@@ -17,18 +17,21 @@ struct ActivityRow: View {
     /// 这一行被选中；选中时不换灰底，露出列表的选中底色。
     var isSelected = false
 
-    /// 标题：Remote 页按传输方向与状态写动词，后接远端名，如 “Fetching origin” “Pushed origin”；
+    /// 标题：Remote 页按传输方向与状态写动词，后接远端名与 refspec，如 “Fetched origin” “Pulling origin refs/heads/main”；
     /// 失败与取消在进行时的写法后面接 failed、cancelled。较早保存、没有方向的 Remote 记录与其余两页写操作名称。
     var title: String {
-        guard activity.kind == .remote, let transfer = activity.transfer else {
+        guard activity.kind == .remote, let target = activity.target else {
             return activity.title
         }
 
         // 完成的用过去时，其余用进行时，如 “activity.fetched” “activity.fetching”；有远端名时用带名字的 “…Named”
         let tense = activity.state == "activity.finished" ? "ed" : "ing"
-        let key = "activity." + transfer.rawValue + tense
-        let action = activity.remote.map { AppLocalization.text(key + "Named", $0) }
-            ?? AppLocalization.text(key)
+        let key = "activity." + target.transfer.rawValue + tense
+        // 远端名后接 refspec，如 “origin refs/heads/main”
+        let name = target.remote.map { remote in
+            [remote, target.refspec].compactMap(\.self).joined(separator: " ")
+        }
+        let action = name.map { AppLocalization.text(key + "Named", $0) } ?? AppLocalization.text(key)
 
         switch activity.state {
         case "activity.failed": return AppLocalization.text("activity.titleFailed", action)
@@ -52,11 +55,11 @@ struct ActivityRow: View {
                 return warning
             }
 
-            // 同步与较早保存、没有方向的记录与拉取同用一个图标
-            switch activity.transfer {
+            // 较早保存、没有方向的记录与拉取同用一个图标
+            switch activity.target?.transfer {
             case .fetch: return "arrow.down.circle"
             case .push: return "arrow.up.circle"
-            case .pull, .sync, nil: return "arrow.down.to.line"
+            case .pull, nil: return "arrow.down.to.line"
             }
 
         case .repository:

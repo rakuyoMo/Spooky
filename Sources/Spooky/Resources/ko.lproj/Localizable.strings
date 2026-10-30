@@ -437,10 +437,6 @@
 "activity.pushingNamed" = "%@에 푸시 중";
 "activity.pushed" = "푸시 완료";
 "activity.pushedNamed" = "%@에 푸시 완료";
-"activity.syncing" = "동기화 중";
-"activity.syncingNamed" = "%@ 동기화 중";
-"activity.synced" = "동기화 완료";
-"activity.syncedNamed" = "%@ 동기화 완료";
 "activity.titleFailed" = "%@ (실패)";
 "activity.titleCancelled" = "%@ (취소됨)";
 "dialog.options" = "옵션";

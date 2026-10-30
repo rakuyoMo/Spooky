@@ -176,8 +176,7 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text(branches.count == 1 ? "branch.delete" : "branch.deleteMultiple"),
-            transfer: tracked ? .push : nil,
-            remote: upstream,
+            target: tracked ? .push(upstream) : nil,
             undo: tracked ? .irreversible : .reversible
         )
     }
@@ -212,8 +211,7 @@ extension RepositorySession {
                 try await RepositoryTags(runner: runner).pushAll(to: remote, onOutput: output)
             },
             title: AppLocalization.text("tag.pushAll", remote),
-            transfer: .push,
-            remote: remote
+            target: .push(remote)
         )
     }
 

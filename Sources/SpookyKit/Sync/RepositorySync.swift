@@ -204,11 +204,13 @@ public struct RepositorySync: Sendable {
     ///   - prune: 清理远端已删除的跟踪引用。
     ///   - allTags: 在默认 refspec 之外获取全部标签。
     ///   - submodules: 同时获取全部已检出子模块的新提交。
+    ///   - onRemote: 每个远端开始获取前调用，参数是远端名；子模块的获取接在最后一个远端之后。
     public func fetch(
         remote: String? = nil,
         prune: Bool = false,
         allTags: Bool = false,
         submodules: Bool = false,
+        onRemote: (@Sendable (String) -> Void)? = nil,
         onOutput: (@Sendable (GitOutputEvent) -> Void)? = nil
     ) async throws -> [RemoteReferenceUpdate] {
         try await runner.writeTransaction {
@@ -217,6 +219,7 @@ public struct RepositorySync: Sendable {
 
             for name in selected {
                 try Task.checkCancellation()
+                onRemote?(name)
 
                 var arguments = [
                     "fetch", "--porcelain", "--progress", "--no-recurse-submodules", "--no-auto-maintenance",

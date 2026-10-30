@@ -437,10 +437,6 @@
 "activity.pushingNamed" = "Poussée vers %@";
 "activity.pushed" = "Poussé";
 "activity.pushedNamed" = "Poussé vers %@";
-"activity.syncing" = "Synchronisation";
-"activity.syncingNamed" = "Synchronisation avec %@";
-"activity.synced" = "Synchronisé";
-"activity.syncedNamed" = "Synchronisé avec %@";
 "activity.titleFailed" = "%@ : échec";
 "activity.titleCancelled" = "%@ : annulé";
 "dialog.options" = "Options";

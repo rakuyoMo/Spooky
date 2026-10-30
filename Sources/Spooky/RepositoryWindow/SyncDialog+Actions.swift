@@ -233,8 +233,7 @@ extension SyncDialog {
                     )
             },
             title: AppLocalization.text("sync.forcePush"),
-            transfer: .push,
-            remote: remote
+            target: .push(remote, refspec: "refs/heads/" + local.name + ":refs/heads/" + name)
         )
     }
 
@@ -257,8 +256,7 @@ extension SyncDialog {
                     )
             },
             title: AppLocalization.text("sync.pushRevision"),
-            transfer: .push,
-            remote: remote
+            target: .push(remote)
         )
     }
 }

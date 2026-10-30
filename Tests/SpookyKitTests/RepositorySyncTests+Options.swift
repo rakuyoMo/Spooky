@@ -147,8 +147,9 @@ extension RepositorySyncTests {
         }
     }
 
-    /// 获取全部远端时跳过设了 skipFetchAll 的远端，明确选中它时照常获取；清理与标签按选项写入。
-    @Test("Fetch 跳过远端、清理已删除分支与获取标签")
+    /// 获取全部远端时跳过设了 skipFetchAll 的远端，明确选中它时照常获取，每个远端开始前报出它的名字，
+    /// Activity 据此每个远端记一条；清理与标签按选项写入。
+    @Test("Fetch 跳过远端、逐个报出远端、清理已删除分支与获取标签")
     func fetchSkipsAndPrunes() async throws {
         let fixture = try await SyncFixture.make()
         defer { fixture.repository.remove() }
@@ -161,11 +162,26 @@ extension RepositorySyncTests {
         _ = try await fixture.other.run(["tag", "v1"])
         _ = try await fixture.other.run(["push", "-q", "origin", "v1"])
 
-        let all = try await sync.fetch(submodules: true)
+        _ = try await runner.run(["remote", "add", "second", fixture.bare])
+
+        let names = Mutex<[String]>([])
+        let all = try await sync.fetch(
+            submodules: true,
+            onRemote: { name in names.withLock { $0.append(name) } }
+        )
         #expect(all.allSatisfy { !$0.reference.hasPrefix("refs/remotes/mirror.backup/") })
         #expect(all.contains { $0.reference == "refs/remotes/origin/gone" })
+        #expect(all.contains { $0.reference == "refs/remotes/second/gone" })
+        #expect(names.withLock { $0 } == ["origin", "second"])
 
-        let explicit = try await sync.fetch(remote: "mirror.backup", allTags: true)
+        // 明确选中的远端同样报出
+        names.withLock { $0.removeAll() }
+        let explicit = try await sync.fetch(
+            remote: "mirror.backup",
+            allTags: true,
+            onRemote: { name in names.withLock { $0.append(name) } }
+        )
+        #expect(names.withLock { $0 } == ["mirror.backup"])
         #expect(explicit.contains { $0.reference == "refs/remotes/mirror.backup/main" })
         _ = try await fixture.localObject("refs/tags/v1")
 

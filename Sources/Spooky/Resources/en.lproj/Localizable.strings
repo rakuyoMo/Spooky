@@ -437,10 +437,6 @@
 "activity.pushingNamed" = "Pushing %@";
 "activity.pushed" = "Pushed";
 "activity.pushedNamed" = "Pushed %@";
-"activity.syncing" = "Syncing";
-"activity.syncingNamed" = "Syncing %@";
-"activity.synced" = "Synced";
-"activity.syncedNamed" = "Synced %@";
 "activity.titleFailed" = "%@ failed";
 "activity.titleCancelled" = "%@ cancelled";
 "dialog.options" = "Options";

@@ -11,11 +11,8 @@ struct ActivityRecord: Codable, Sendable {
     /// 记录所在的页。
     let kind: ActivityKind
 
-    /// Remote 记录的传输方向；较早保存、没有这一项的记录读回为 nil。
-    let transfer: ActivityTransfer?
-
-    /// Remote 记录连接的远端名；没有单一的远端，以及较早保存、没有这一项的记录读回为 nil。
-    let remote: String?
+    /// Remote 记录连接的对象；较早保存、没有这一项的记录读回为 nil。
+    let target: ActivityTarget?
 
     /// 带主机前缀的仓库身份。
     let repository: RepositoryLocation

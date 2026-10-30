@@ -55,17 +55,14 @@ enum SyncPreferences {
 
 // MARK: - SyncProgress
 
-/// 一次同步走到了哪一步：每步开始时更新 Activity 的状态，失败时据此说明停在哪一步、哪些步骤已完成。
+/// 一次同步走到了哪一步：每步开始时更新 Activity 记录的状态，推送另起一条记录；失败时据此说明停在哪一步、哪些步骤已完成。
 @MainActor
 final class SyncProgress {
     /// 正在执行的步骤。
     private(set) var step: SyncStep? = nil
 
-    /// 同步所在的仓库，用来找到它正在运行的 Activity。
-    private let repository: RepositoryLocation?
-
-    /// 同步记进的 Activity 列表。
-    private let activities: RepositoryActivities
+    /// 推送那一步另起的记录连接的对象。
+    private let push: ActivityTarget
 
     /// 停在哪一步、哪些步骤已完成的说明；还没开始任何步骤时为 nil。
     var failureNote: String? {
@@ -86,14 +83,11 @@ final class SyncProgress {
         )
     }
 
-    /// 为指定仓库的一次同步记录进度。
+    /// 为一次同步记录进度。
     ///
-    /// - Parameters:
-    ///   - repository: 同步所在的仓库。
-    ///   - activities: 同步记进的 Activity 列表。
-    init(repository: RepositoryLocation?, activities: RepositoryActivities) {
-        self.repository = repository
-        self.activities = activities
+    /// - Parameter push: 推送那一步另起的记录连接的对象。
+    init(push: ActivityTarget) {
+        self.push = push
     }
 
     /// 步骤的显示名称。
@@ -105,7 +99,9 @@ final class SyncProgress {
         }
     }
 
-    /// 记下开始的步骤，并把仓库正在运行的 Activity 状态换成这一步。
+    /// 记下开始的步骤，把正在写入的 Activity 记录的状态换成这一步。
+    ///
+    /// 获取与拉取写在同步开始时的拉取记录里，推送另起一条推送记录。
     func begin(_ step: SyncStep) {
         self.step = step
 
@@ -116,9 +112,11 @@ final class SyncProgress {
             case .push: "sync.step.push"
             }
 
-        activities.items
-            .first { $0.repository == repository && $0.cancel != nil }?
-            .state = state
+        if step == .push {
+            ActivityRecording.send?(.next(push))
+        }
+
+        ActivityRecording.send?(.state(state))
     }
 }
 
@@ -159,11 +157,17 @@ extension RepositorySession {
                 // 后台获取不能弹出输入框，只用已存的凭据
                 try await RemoteCallbackRequest.$allowsInteraction.withValue(false) {
                     _ = try await RepositorySync(runner: runner)
-                        .fetch(prune: prune, allTags: tags, submodules: submodules, onOutput: output)
+                        .fetch(
+                            prune: prune,
+                            allTags: tags,
+                            submodules: submodules,
+                            onRemote: ActivityRecording.fetching,
+                            onOutput: output
+                        )
                 }
             },
             title: AppLocalization.text("sync.autoFetch"),
-            transfer: .fetch,
+            target: .fetch(nil),
             reportsFailure: false,
             undo: .unrecorded
         )
@@ -177,7 +181,9 @@ extension RepositorySession {
     /// - Returns: 是否已开始执行。
     @discardableResult
     func sync(remote: String, branch: String, options: SyncOptions) -> Bool {
-        let progress = SyncProgress(repository: repository, activities: activities)
+        // 拉取与推送各记一条：推送的 refspec 与核心库传给 git 的相同，本地是当前分支
+        let pushed = status?.branch.head.map { "refs/heads/" + $0 + ":" + branch }
+        let progress = SyncProgress(push: .push(remote, refspec: pushed))
 
         return performGit(
             { runner, output in
@@ -191,8 +197,7 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("sync.sync"),
-            transfer: .sync,
-            remote: remote,
+            target: .pull(remote, refspec: branch),
             offersAutoStash: true,
             failureNote: { progress.failureNote }
         )
@@ -213,12 +218,12 @@ extension RepositorySession {
                         prune: prune,
                         allTags: tags,
                         submodules: submodules,
+                        onRemote: ActivityRecording.fetching,
                         onOutput: output
                     )
             },
             title: AppLocalization.text("sync.quickFetch"),
-            transfer: .fetch,
-            remote: target
+            target: .fetch(target)
         )
     }
 
@@ -243,8 +248,9 @@ extension RepositorySession {
         let rebase = SyncPreferences.pullRebase
         let verify = SyncPreferences.pullVerifySignatures
 
-        // 没有指定时拉取 HEAD 跟踪的远端；跟踪的是本地分支时远端名是 “.”，记录的标题不写它
+        // 没有指定时拉取 HEAD 跟踪的远端分支；跟踪的是本地分支时远端名是 “.”，记录的标题不写它
         let source = remote ?? headBranch?.upstreamRemote.flatMap { $0 == "." ? nil : $0 }
+        let refspec = branch ?? headBranch?.upstreamBranch
 
         performGit(
             { [remote, branch] runner, output in
@@ -258,8 +264,7 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("sync.quickPull"),
-            transfer: .pull,
-            remote: source,
+            target: .pull(source, refspec: refspec),
             offersAutoStash: true
         )
     }
@@ -292,8 +297,7 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("sync.quickPush"),
-            transfer: .push,
-            remote: remote
+            target: .push(remote, refspec: "refs/heads/" + local.name + ":" + upstream)
         )
     }
 

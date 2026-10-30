@@ -437,10 +437,6 @@
 "activity.pushingNamed" = "正在推送 %@";
 "activity.pushed" = "已推送";
 "activity.pushedNamed" = "已推送 %@";
-"activity.syncing" = "正在同步";
-"activity.syncingNamed" = "正在同步 %@";
-"activity.synced" = "已同步";
-"activity.syncedNamed" = "已同步 %@";
 "activity.titleFailed" = "%@（失敗）";
 "activity.titleCancelled" = "%@（已取消）";
 "dialog.options" = "選項";

@@ -678,8 +678,8 @@ extension RepositorySession {
     /// - Parameters:
     ///   - title: 已本地化的操作名称，用于 Activity 与断线后的核对报告。
     ///   - recordsActivity: 网络与引用操作记入 Activity；工作区的高频写入只用于核对报告。
-    ///   - transfer: 要连接远端传输对象或引用的操作传入传输方向，记在 Activity 的 Remote 页；不传时记在 Repository 页。
-    ///   - remote: Remote 页记录连接的远端名，写进记录的标题；同时连接几个远端或连接的不是本仓库的远端时不传。
+    ///   - target: 要连接远端传输对象或引用的操作传入连接的对象，记在 Activity 的 Remote 页，写进记录的图标与标题；
+    ///     不传时记在 Repository 页。动作里经 `ActivityRecording` 另起的记录接在后面。
     ///   - offersAutoStash: 被本地改动挡住时是否按设置询问先储藏，检出、拉取与合并使用。
     ///   - reportsFailure: 失败时是否弹出错误 sheet；自动获取只把失败记进 Activity。
     ///   - undo: 这次写操作能否撤销；没有声明的写操作按不能撤销处理。
@@ -691,8 +691,7 @@ extension RepositorySession {
         @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
         recordsActivity: Bool = true,
-        transfer: ActivityTransfer? = nil,
-        remote: String? = nil,
+        target: ActivityTarget? = nil,
         offersAutoStash: Bool = false,
         reportsFailure: Bool = true,
         undo: UndoRecording = .irreversible,
@@ -721,11 +720,10 @@ extension RepositorySession {
         let branch = status?.branch
         let finished = onWriteFinished
         let activities = activities
-        let activity = recordsActivity
-            ? RepositoryActivity(repository: repository, title: title, transfer: transfer, remote: remote)
+        let record = recordsActivity
+            ? WriteActivity(activities: activities, repository: repository, title: title, target: target)
             : nil
-        if let activity { activities.insert(activity) }
-        let (outputs, continuation) = AsyncStream<GitOutputEvent>.makeStream()
+        let (events, continuation) = AsyncStream<ActivityEvent>.makeStream()
         Self.logger.info("写操作开始：\(title, privacy: .public)")
 
         // 后台写入只记进 Activity；被本地改动挡住的检出、拉取与合并改为询问是否先储藏，用户不储藏时再报告失败
@@ -733,7 +731,7 @@ extension RepositorySession {
             guard let self else { return }
 
             guard reportsFailure else {
-                recordQuietFailure(error, cancelled: cancelled, activity: activity, in: repository)
+                recordQuietFailure(error, cancelled: cancelled, in: repository) { continuation.yield(.output($0)) }
                 return
             }
 
@@ -758,12 +756,15 @@ extension RepositorySession {
 
         writeTask = Task { [weak self] in
             let collector = Task { @MainActor in
-                for await output in outputs { activity?.append(output) }
+                for await event in events { record?.receive(event) }
             }
 
+            // 状态与失败说明同样经流送出，落在最后一条记录上
             do {
-                try await recorded(runner) { continuation.yield($0) }
-                activity?.state = Task.isCancelled ? "activity.cancelled" : "activity.finished"
+                try await ActivityRecording.$send.withValue({ continuation.yield($0) }) {
+                    try await recorded(runner) { continuation.yield(.output($0)) }
+                }
+                continuation.yield(.state(Task.isCancelled ? "activity.cancelled" : "activity.finished"))
                 Self.logger.info("写操作\(Task.isCancelled ? "已取消" : "完成", privacy: .public)：\(title, privacy: .public)")
 
                 if let self, generation == request, !Task.isCancelled { success?() }
@@ -771,7 +772,7 @@ extension RepositorySession {
                 let cancelled =
                     Task.isCancelled || error is CancellationError
                         || ((error as? GitError)?.isCancelled ?? false)
-                activity?.state = cancelled ? "activity.cancelled" : "activity.failed"
+                continuation.yield(.state(cancelled ? "activity.cancelled" : "activity.failed"))
 
                 // 失败的类别在 reportWriteFailure 归类后记录，这里只记取消
                 if cancelled { Self.logger.info("写操作已取消：\(title, privacy: .public)") }
@@ -783,7 +784,7 @@ extension RepositorySession {
             await collector.value
 
             // 输出收完才结束记录，Remote 记录这时写进本机
-            if let activity { activities.finish(activity) }
+            record?.finish()
 
             RepositoryWriteLocks.shared.release(repository)
             finished?(repository)
@@ -796,7 +797,7 @@ extension RepositorySession {
         }
 
         let task = writeTask
-        activity?.cancel = { task?.cancel() }
+        record?.cancel = { task?.cancel() }
         return true
     }
 }
@@ -945,12 +946,12 @@ extension RepositorySession {
         }
     }
 
-    /// 不弹错误 sheet 的写入失败：错误标题与原因记进 Activity；断线照常重连，结果由重连后的完整刷新核对。
+    /// 不弹错误 sheet 的写入失败：错误标题与原因经 `output` 追加到 Activity 的记录；断线照常重连，结果由重连后的完整刷新核对。
     private func recordQuietFailure(
         _ error: Error,
         cancelled: Bool,
-        activity: RepositoryActivity?,
-        in repository: RepositoryLocation
+        in repository: RepositoryLocation,
+        output: (GitOutputEvent) -> Void
     ) {
         stagingOverrides = [:]
 
@@ -963,7 +964,7 @@ extension RepositorySession {
 
         // Git 的原始输出已经流进日志，其余错误补上说明
         let details = error is GitError ? "" : "\n" + failure.details
-        activity?.append(.standardError(Data(("\n" + failure.title + details + "\n").utf8)))
+        output(.standardError(Data(("\n" + failure.title + details + "\n").utf8)))
 
         if error is RemoteConnectionError {
             reconnect()

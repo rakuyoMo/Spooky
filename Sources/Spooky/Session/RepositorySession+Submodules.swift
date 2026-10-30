@@ -215,7 +215,7 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text("submodule.add"),
-            transfer: .pull
+            target: .pull(nil)
         )
     }
 
@@ -236,7 +236,7 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text(targets.count == 1 ? "submodule.fetch" : "submodule.fetchAll"),
-            transfer: .fetch
+            target: .fetch(nil)
         )
     }
 
@@ -253,7 +253,7 @@ extension RepositorySession {
                 try await RepositorySubmodules(runner: runner).update(targets, recursive: recursive, onOutput: output)
             },
             title: AppLocalization.text(targets?.count == 1 ? "submodule.update" : "submodule.updateAll"),
-            transfer: .pull
+            target: .pull(nil)
         )
     }
 

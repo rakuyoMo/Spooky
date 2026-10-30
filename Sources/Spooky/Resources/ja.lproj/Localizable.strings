@@ -437,10 +437,6 @@
 "activity.pushingNamed" = "%@ にプッシュ中";
 "activity.pushed" = "プッシュ完了";
 "activity.pushedNamed" = "%@ にプッシュ完了";
-"activity.syncing" = "同期中";
-"activity.syncingNamed" = "%@ と同期中";
-"activity.synced" = "同期完了";
-"activity.syncedNamed" = "%@ と同期完了";
 "activity.titleFailed" = "%@（失敗）";
 "activity.titleCancelled" = "%@（キャンセル済み）";
 "dialog.options" = "オプション";
