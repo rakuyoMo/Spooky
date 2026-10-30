@@ -27,7 +27,7 @@ extension SpookyApplicationController {
         return menu
     }
 
-    /// 启动后的第一个窗口：系统已恢复仓库窗口时不另开；否则按偏好显示启动窗口，或打开显示仓库管理的窗口。
+    /// 启动后的第一个窗口：系统已恢复仓库窗口，或启动时交来的链接与文件已经开出窗口时不另开；否则按偏好显示启动窗口，或打开显示仓库管理的窗口。
     func openInitialWindow() {
         guard windows.isEmpty else {
             return

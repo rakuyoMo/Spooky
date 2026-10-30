@@ -1,14 +1,16 @@
 import AppKit
 import Foundation
 import SpookyKit
-import SwiftUI
 import Testing
 
 @testable import Spooky
 
 // MARK: - OpenFilesTests
 
-/// 从 Finder 打开或拖到 Dock 图标上的文件：Info.plist 的文稿类型决定系统交不交给 App，交来的文件夹按仓库与否分别处理。
+/// 从 Finder 打开或拖到 Dock 图标上的文件：Info.plist 的文稿类型决定系统交不交给 App，交来的仓库文件夹在窗口里打开，
+/// 经链接或文件启动时只开出需要的窗口。
+///
+/// 不是仓库的文件夹弹出的是模态对话框，不在这里测：测试进程里结束模态循环会让测试进程直接退出，之后的测试都不再运行。
 @MainActor
 struct OpenFilesTests {
     /// 主题文件归 App 所有、双击即打开；文件夹只接收拖放，不抢 Finder 的默认打开方式；扩展名与主题文件一致。
@@ -55,11 +57,44 @@ struct OpenFilesTests {
         }
     }
 
-    /// 不是仓库的文件夹不报错，而是与拖进仓库管理时一样询问是否在这里新建仓库。
-    @Test("打开不是仓库的文件夹时询问是否新建")
-    func openPlainFolder() async throws {
+    /// 经链接启动时，链接的仓库显示在唯一的窗口里，不另开仓库管理窗口。
+    @Test("经链接启动只开一个窗口")
+    func launchWithLink() async throws {
         let fixture = try await NavigationTests.makeWindow()
-        let folder = try FileViewsTests.temporaryDirectory()
+        defer { fixture.close() }
+
+        let coordinator = fixture.coordinator
+        let path = try #require(fixture.directory.path.addingPercentEncoding(withAllowedCharacters: .alphanumerics))
+        let url = try #require(URL(string: "spooky://open?repository=" + path))
+
+        // 启动中交来的链接先存下，启动收尾时才处理
+        Self.beginLaunching(coordinator)
+        coordinator.application(NSApplication.shared, open: [url])
+        #expect(coordinator.windows.isEmpty)
+
+        coordinator.finishLaunchOpenings()
+        try await Self.waitForSingleRepositoryWindow(coordinator)
+    }
+
+    /// 经仓库文件夹启动时，仓库显示在唯一的窗口里，不另开仓库管理窗口。
+    @Test("经仓库文件夹启动只开一个窗口")
+    func launchWithRepositoryFolder() async throws {
+        let fixture = try await NavigationTests.makeWindow()
+        defer { fixture.close() }
+
+        let coordinator = fixture.coordinator
+
+        Self.beginLaunching(coordinator)
+        coordinator.application(NSApplication.shared, open: [fixture.directory])
+        coordinator.finishLaunchOpenings()
+
+        try await Self.waitForSingleRepositoryWindow(coordinator)
+    }
+
+    /// 经克隆链接启动时，克隆对话框显示在唯一的窗口上，不另开仓库管理窗口。
+    @Test("经克隆链接启动只开一个窗口")
+    func launchWithCloneLink() async throws {
+        let fixture = try await NavigationTests.makeWindow()
 
         defer {
             for window in fixture.coordinator.windows.compactMap(\.window) {
@@ -69,19 +104,36 @@ struct OpenFilesTests {
             }
 
             fixture.close()
-            try? FileManager.default.removeItem(at: folder)
         }
 
         let coordinator = fixture.coordinator
-        coordinator.application(NSApplication.shared, open: [folder])
+        let url = try #require(URL(string: "spooky://clone?url=https://github.com/rakuyoMo/Spooky"))
 
+        Self.beginLaunching(coordinator)
+        coordinator.application(NSApplication.shared, open: [url])
+        coordinator.finishLaunchOpenings()
+
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(coordinator.windows.count == 1)
+        #expect(coordinator.windows.first?.window?.attachedSheet != nil)
+    }
+}
+
+// MARK: - Helpers
+
+extension OpenFilesTests {
+    /// 让协调者进入启动中：之后交来的链接与文件先存下，由 `finishLaunchOpenings()` 处理。
+    private static func beginLaunching(_ coordinator: SpookyApplicationController) {
+        coordinator.applicationWillFinishLaunching(Notification(name: NSApplication.willFinishLaunchingNotification))
+    }
+
+    /// 等到窗口显示出仓库，再稍等启动收尾的处理结束，核对只有这一个窗口。
+    private static func waitForSingleRepositoryWindow(_ coordinator: SpookyApplicationController) async throws {
         try await FileViewsTests.wait {
-            coordinator.windows.contains { $0.window?.attachedSheet != nil }
+            coordinator.windows.contains { !$0.showsManager }
         }
 
-        // 弹出的是新建仓库的询问，不是错误 sheet；窗口仍显示仓库管理
-        let sheet = coordinator.windows.compactMap { $0.window?.attachedSheet }.first
-        #expect(sheet?.contentViewController is NSHostingController<NoRepositoryFoundDialog>)
-        #expect(!coordinator.windows.contains { !$0.showsManager })
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(coordinator.windows.count == 1)
     }
 }
