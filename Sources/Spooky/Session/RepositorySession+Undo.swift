@@ -107,7 +107,7 @@ extension RepositorySession {
     }
 
     /// 重做最近撤销的操作：快照记录核对仓库仍是操作前的状态，再恢复成操作后，操作移进废纸篓的项重新移进废纸篓；
-    /// 反向操作记录再执行一次准备与原操作。
+    /// 反向操作记录再执行一次准备与原操作，反向操作带着专门的重做时用它代替原操作。
     func redoLastOperation() {
         guard
             case .available = undoMenuState(redo: true),
@@ -135,12 +135,15 @@ extension RepositorySession {
                 history.finishRedo(entry, change: .snapshot(before: before, after: after, trashed: log.items))
             }
 
-        case .inverse(let prepare, let action, let target, _):
+        case .inverse(let prepare, let action, let target, let inverse):
+            // 反向操作带着专门的重做时用它代替原操作
+            let redo = inverse.redo ?? action
+
             // 新的反向操作在原操作之前读出，原操作成功后换上；重做与原操作记在 Activity 的同一页
             performGit(
                 { runner, output in
                     let prepared = await PreparedInverse(prepare, runner: runner)
-                    try await action(runner, output)
+                    try await redo(runner, output)
 
                     switch prepared {
                     case .inverse(let inverse):

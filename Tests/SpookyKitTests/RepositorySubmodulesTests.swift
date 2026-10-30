@@ -388,7 +388,7 @@ extension RepositorySubmodulesTests {
 // MARK: - SubmoduleRepositories
 
 /// 一个有两个提交的上游仓库与一个有一个提交的父仓库，都在同一个临时目录里。
-private struct SubmoduleRepositories {
+struct SubmoduleRepositories {
     /// 上游仓库的绝对路径。
     let upstreamPath: String
 

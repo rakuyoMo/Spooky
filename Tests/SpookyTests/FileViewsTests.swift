@@ -16,13 +16,21 @@ struct FileViewsTests {
     }
 
     /// 忽略系统与用户的全局配置，提交身份只写入仓库本地配置。
-    static func initializeRepository(at location: RepositoryLocation) async throws -> GitRunner {
+    ///
+    /// - Parameter allowsFileSubmodules: 允许子模块经 file 协议克隆本机路径；Git 默认不许，只能经命令级的配置打开。
+    static func initializeRepository(
+        at location: RepositoryLocation,
+        allowsFileSubmodules: Bool = false
+    ) async throws -> GitRunner {
         let runner = GitRunner(
             location: location,
             environment: .inherit.updating([
                 "GIT_CONFIG_GLOBAL": "/dev/null",
                 "GIT_CONFIG_SYSTEM": "/dev/null",
                 "GIT_CONFIG_NOSYSTEM": "1",
+                "GIT_CONFIG_COUNT": allowsFileSubmodules ? "1" : nil,
+                "GIT_CONFIG_KEY_0": allowsFileSubmodules ? "protocol.file.allow" : nil,
+                "GIT_CONFIG_VALUE_0": allowsFileSubmodules ? "always" : nil,
             ])
         )
 

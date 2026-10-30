@@ -159,7 +159,7 @@ extension RepositorySubmodules {
     }
 
     /// 从索引读取子模块指针；路径为空时不执行命令。
-    private func pointers(_ paths: [String]) async throws -> [String: String?] {
+    func pointers(_ paths: [String]) async throws -> [String: String?] {
         guard !paths.isEmpty else {
             return [:]
         }

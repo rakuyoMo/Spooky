@@ -89,6 +89,93 @@ extension UndoRecording {
     }
 }
 
+// MARK: - Submodules
+
+extension UndoRecording {
+    /// 添加子模块：撤销时删掉它、`.gitmodules` 换回添加之前，子模块的 Git 目录留在仓库里；重做时复用这个 Git 目录重新添加，不再克隆。
+    ///
+    /// - Parameters:
+    ///   - url: 子模块仓库的地址。
+    ///   - path: 工作区里的相对路径。
+    static func addingSubmodule(url: String, path: String) -> Self {
+        .inverse { runner in
+            let addition = try await RepositorySubmodules(runner: runner).additionRecord(at: path)
+
+            return UndoInverse { runner, _ in
+                try await RepositorySubmodules(runner: runner).undoAdd(addition)
+            } redo: { runner, output in
+                try await RepositorySubmodules(runner: runner)
+                    .add(url: url, path: path, reusesGitDirectory: true, onOutput: output)
+            }
+        }
+    }
+
+    /// 删除子模块：删除前记下指针、`.gitmodules`、本地配置里的段与要删掉的工作区，撤销时恢复；
+    /// 要删掉的工作区里有找不回的内容时不能撤销。
+    static func deletingSubmodule(_ submodule: Submodule, keepsWorkingTree: Bool) -> Self {
+        .inverse { runner in
+            let removal = try await RepositorySubmodules(runner: runner)
+                .removalRecord(of: submodule, keepsWorkingTree: keepsWorkingTree)
+
+            return UndoInverse { runner, _ in try await RepositorySubmodules(runner: runner).undoDelete(removal) }
+        }
+    }
+
+    /// 移动子模块：撤销时移回原路径，同时改了名称的再改回原名。
+    static func movingSubmodule(_ submodule: Submodule, to path: String, renaming: Bool) -> Self {
+        .inverse { _ in
+            UndoInverse { runner, _ in
+                try await RepositorySubmodules(runner: runner).undoMove(submodule, to: path, renamesSubmodule: renaming)
+            }
+        }
+    }
+
+    /// 修改子模块名称：撤销时改回原名。
+    static func renamingSubmodule(_ submodule: Submodule, to name: String) -> Self {
+        .inverse { _ in
+            UndoInverse { runner, _ in try await RepositorySubmodules(runner: runner).undoRename(submodule, to: name) }
+        }
+    }
+
+    /// 修改子模块的地址：写进 `.gitmodules` 的改动留在工作区，按快照撤销；写进本地配置的撤销时写回原值，原来没有的删掉。
+    static func changingSubmoduleURL(
+        _ url: String,
+        of submodule: Submodule,
+        in scope: SubmoduleConfigurationScope
+    ) -> Self {
+        guard scope == .local else {
+            return .reversible
+        }
+
+        return .inverse { runner in
+            try await RepositorySubmodules(runner: runner).localURLChange(of: submodule, to: url).map(Self.settingInverse)
+        }
+    }
+
+    /// 修改或删除子模块的选项：写进 `.gitmodules` 的改动留在工作区，按快照撤销；写进本地配置的撤销时写回原值，原来没有的删掉。
+    static func changingSubmoduleOption(
+        _ option: SubmoduleOption,
+        to value: String?,
+        of submodule: Submodule,
+        in scope: SubmoduleConfigurationScope
+    ) -> Self {
+        guard scope == .local else {
+            return .reversible
+        }
+
+        return .inverse { runner in
+            try await RepositorySubmodules(runner: runner)
+                .localOptionChange(option, of: submodule, to: value)
+                .map(Self.settingInverse)
+        }
+    }
+
+    /// 写回本地配置里子模块一项设置的反向操作。
+    private static func settingInverse(_ change: SubmoduleSettingChange) -> UndoInverse {
+        UndoInverse { runner, _ in try await RepositorySubmodules(runner: runner).undoSettingChange(change) }
+    }
+}
+
 // MARK: - Working Copy
 
 extension UndoRecording {

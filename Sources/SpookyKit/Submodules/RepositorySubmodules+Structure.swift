@@ -142,7 +142,7 @@ extension RepositorySubmodules {
     ///
     /// 子模块的 Git 目录在父仓库的 `modules/<旧名称>` 下时搬到新名称下；已检出时按 Git 的写法以相对路径
     /// 重写子模块的 `.git` 文件与 `core.worktree`，最后改 `.gitmodules` 与本地配置里的段名。
-    private func rename(name: String, path: String, to newName: String, toplevel: String) async throws {
+    func rename(name: String, path: String, to newName: String, toplevel: String) async throws {
         let shared = try await runner.execute(
             ["config", "-z", "--file", ".gitmodules", "--get-regexp", Self.settingsPattern],
             acceptedExitCodes: [0, 1]
@@ -201,7 +201,7 @@ extension RepositorySubmodules {
     }
 
     /// 路径上是不是一个独立仓库的工作区根目录；不是时在那里执行的 Git 会找到父仓库，不能用来读取子模块。
-    private func isRepositoryRoot(_ path: String, toplevel: String) async throws -> Bool {
+    func isRepositoryRoot(_ path: String, toplevel: String) async throws -> Bool {
         let result = try await runner.execute(["-C", path, "rev-parse", "--show-toplevel"], acceptedExitCodes: [0, 128])
         let root = String(decoding: result.standardOutput, as: UTF8.self).trimmingCharacters(in: .newlines)
 
@@ -209,7 +209,7 @@ extension RepositorySubmodules {
     }
 
     /// 路径上的独立仓库里有没有改动或未跟踪的文件；路径上没有仓库时没有。
-    private func hasLocalModifications(at path: String, toplevel: String) async throws -> Bool {
+    func hasLocalModifications(at path: String, toplevel: String) async throws -> Bool {
         guard try await isRepositoryRoot(path, toplevel: toplevel) else {
             return false
         }
@@ -218,7 +218,7 @@ extension RepositorySubmodules {
     }
 
     /// 父仓库工作区根目录的绝对路径。
-    private func toplevel() async throws -> String {
+    func toplevel() async throws -> String {
         let output = try await runner.run(["rev-parse", "--show-toplevel"])
         let path = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)
 
@@ -230,7 +230,7 @@ extension RepositorySubmodules {
     }
 
     /// 仓库所在机器上的路径是否存在。
-    private func exists(_ path: String) async throws -> Bool {
+    func exists(_ path: String) async throws -> Bool {
         guard let remote = runner.remote else {
             return FileManager.default.fileExists(atPath: path)
         }

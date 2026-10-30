@@ -215,7 +215,8 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text("submodule.add"),
-            target: .pull(nil)
+            target: .pull(nil),
+            undo: .addingSubmodule(url: url, path: path)
         )
     }
 
@@ -280,7 +281,8 @@ extension RepositorySession {
     func setSubmoduleURL(_ url: String, for submodule: Submodule, in scope: SubmoduleConfigurationScope) -> Bool {
         performGit(
             { runner, _ in try await RepositorySubmodules(runner: runner).setURL(url, for: submodule, in: scope) },
-            title: AppLocalization.text("submodule.editURL")
+            title: AppLocalization.text("submodule.editURL"),
+            undo: .changingSubmoduleURL(url, of: submodule, in: scope)
         )
     }
 
@@ -301,7 +303,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositorySubmodules(runner: runner).set(option, to: value, for: submodule, in: scope)
             },
-            title: AppLocalization.text("submodule.setting")
+            title: AppLocalization.text("submodule.setting"),
+            undo: .changingSubmoduleOption(option, to: value, of: submodule, in: scope)
         )
     }
 
@@ -320,7 +323,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositorySubmodules(runner: runner).move(submodule, to: path, renamesSubmodule: renaming)
             },
-            title: AppLocalization.text("submodule.move")
+            title: AppLocalization.text("submodule.move"),
+            undo: .movingSubmodule(submodule, to: path, renaming: renaming)
         )
     }
 
@@ -329,7 +333,8 @@ extension RepositorySession {
     func renameSubmodule(_ submodule: Submodule, to name: String) -> Bool {
         performGit(
             { runner, _ in try await RepositorySubmodules(runner: runner).rename(submodule, to: name) },
-            title: AppLocalization.text("submodule.rename")
+            title: AppLocalization.text("submodule.rename"),
+            undo: .renamingSubmodule(submodule, to: name)
         )
     }
 
@@ -345,7 +350,8 @@ extension RepositorySession {
                     throw SubmoduleDeletionOffer(submodule: submodule, keepsWorkingTree: keepsWorkingTree)
                 }
             },
-            title: AppLocalization.text("submodule.delete")
+            title: AppLocalization.text("submodule.delete"),
+            undo: .deletingSubmodule(submodule, keepsWorkingTree: keepsWorkingTree)
         )
     }
 
