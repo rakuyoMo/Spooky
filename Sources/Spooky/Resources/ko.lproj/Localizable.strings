@@ -1933,6 +1933,22 @@
 "settings.crashReports" = "충돌 보고서:";
 "settings.crashReports.always" = "항상 충돌 보고서 보내기";
 
+/* Developer 菜单与 General 页显示它的勾选框；菜单是开发者用的，各语言都用英文。 */
+"settings.showDeveloperMenu" = "Developer 메뉴 표시";
+"menu.developer" = "Developer";
+"developer.userDefaults" = "User Defaults";
+"developer.logUserDefaults" = "Log User Defaults";
+"developer.resetUserDefaults" = "Reset User Defaults";
+"developer.clearUserDefaults" = "Clear User Defaults";
+"developer.testCrashReporting" = "Test Crash Reporting";
+"developer.crashWithException" = "Crash With Fake Exception";
+"developer.crashWithBadAccess" = "Crash With Bad Access";
+"developer.autoArchive" = "Auto-Archive Branches";
+"developer.runAutoArchive" = "Run Auto-Archive";
+"developer.resetAutoArchiveDates" = "Reset Auto-Archive Dates";
+"developer.showWhatsNewCard" = "Show What’s New Card";
+"developer.autoReload" = "Auto-Reload Repository";
+
 /* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "서버가 Git 환경 변수를 설정함";
 "remote.environment.message" = "“%1$@”의 비대화형 셸이 %2$@을(를) 설정합니다. 이 변수들은 Spooky가 그곳에서 실행하는 모든 Git 명령이 저장소를 찾고 설정을 읽는 방식을 바꿉니다. Git이 이상하게 동작하면 서버의 셸 시작 파일에서 제거하세요.";

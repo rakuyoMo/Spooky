@@ -12,8 +12,14 @@ extension RepositoryWindowController {
         }
 
         session.history.onReferencesLoaded = { [weak self] in
-            self?.offerAutoArchiveIfDue()
+            self?.offerAutoArchive()
         }
+    }
+
+    /// Developer › Auto-Archive Branches › Run Auto-Archive：不看一天的间隔，立即检查一次自动归档。
+    @objc
+    func runAutoArchive() {
+        offerAutoArchive(checksInterval: false)
     }
 
     /// Compare Branches 的开关，所有窗口共用；历史列表头的按钮是同一个偏好。
@@ -28,6 +34,9 @@ extension RepositoryWindowController {
         switch item.action {
         case #selector(showBranchesReview):
             return session.repository != nil
+
+        case #selector(runAutoArchive):
+            return !showsManager && session.repository != nil
 
         case #selector(toggleCompareBranches):
             (item as? NSMenuItem)?.state = session.history.comparesBranches ? .on : .off
@@ -100,7 +109,9 @@ extension RepositoryWindowController {
     }
 
     /// 自动归档开着、距上次检查满一天且窗口在前台时，列出待归档的分支请用户确认；没有待归档的分支时只记下检查时刻。
-    private func offerAutoArchiveIfDue() {
+    ///
+    /// - Parameter checksInterval: 是否要求距上次检查满一天；Run Auto-Archive 传 false，立即检查。
+    private func offerAutoArchive(checksInterval: Bool = true) {
         guard
             SidebarPreferences.isOn(SidebarPreferences.autoArchiveKey),
             let repository = session.repository,
@@ -108,7 +119,7 @@ extension RepositoryWindowController {
             window?.isKeyWindow ?? false,
             window?.attachedSheet == nil,
             session.canWrite,
-            BranchArchiving.isDue(for: repository)
+            !checksInterval || BranchArchiving.isDue(for: repository)
         else {
             return
         }

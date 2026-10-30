@@ -1933,6 +1933,22 @@
 "settings.crashReports" = "Informes de fallos:";
 "settings.crashReports.always" = "Enviar siempre informes de fallos";
 
+/* Developer 菜单与 General 页显示它的勾选框；菜单是开发者用的，各语言都用英文。 */
+"settings.showDeveloperMenu" = "Mostrar el menú Developer";
+"menu.developer" = "Developer";
+"developer.userDefaults" = "User Defaults";
+"developer.logUserDefaults" = "Log User Defaults";
+"developer.resetUserDefaults" = "Reset User Defaults";
+"developer.clearUserDefaults" = "Clear User Defaults";
+"developer.testCrashReporting" = "Test Crash Reporting";
+"developer.crashWithException" = "Crash With Fake Exception";
+"developer.crashWithBadAccess" = "Crash With Bad Access";
+"developer.autoArchive" = "Auto-Archive Branches";
+"developer.runAutoArchive" = "Run Auto-Archive";
+"developer.resetAutoArchiveDates" = "Reset Auto-Archive Dates";
+"developer.showWhatsNewCard" = "Show What’s New Card";
+"developer.autoReload" = "Auto-Reload Repository";
+
 /* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "El servidor define variables de entorno de Git";
 "remote.environment.message" = "El shell no interactivo de “%1$@” define %2$@. Estas variables cambian cómo Git encuentra los repositorios y lee su configuración en cada comando que Spooky ejecuta allí. Quítalas de los archivos de inicio del shell del servidor si Git se comporta de forma inesperada.";

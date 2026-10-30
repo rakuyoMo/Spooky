@@ -92,8 +92,22 @@ extension SpookyApplicationController {
 // MARK: - SpookyApplicationController + NSMenuItemValidation
 
 extension SpookyApplicationController: NSMenuItemValidation {
-    /// 这个构建没有打包任何版本的更新说明时 What's New 不可用；其余菜单项总是可用。
+    /// 这个构建没有打包任何版本的更新说明时 What's New 不可用，没有当前版本的说明时 Show What's New Card 不可用；
+    /// Auto-Reload Repository 同时标出开关状态；其余菜单项总是可用。
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
-        item.action != #selector(showWhatsNew) || !WhatsNewState.shared.entries.isEmpty
+        switch item.action {
+        case #selector(showWhatsNew):
+            return !WhatsNewState.shared.entries.isEmpty
+
+        case #selector(showWhatsNewCard):
+            return WhatsNewState.shared.hasCurrentNotes
+
+        case #selector(toggleAutoReload):
+            item.state = DeveloperPreferences.autoReloads() ? .on : .off
+            return true
+
+        default:
+            return true
+        }
     }
 }

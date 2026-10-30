@@ -376,7 +376,7 @@ final class RepositorySession {
             observeConnection(repository)
             startPolling()
         } else if loadsRepositoryDetails {
-            fileMonitor = RepositoryFileMonitor(path: repository.path) { [weak self] in self?.refresh() }
+            fileMonitor = RepositoryFileMonitor(path: repository.path) { [weak self] in self?.autoReload() }
         }
     }
 
@@ -1086,7 +1086,7 @@ extension RepositorySession {
                 catch { return }
 
                 guard let self, repository?.host != nil else { return }
-                if connectionState == .connected { refresh() }
+                if connectionState == .connected { autoReload() }
             }
         }
     }

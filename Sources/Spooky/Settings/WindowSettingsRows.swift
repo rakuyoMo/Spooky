@@ -53,18 +53,15 @@ enum WindowRestoration: CaseIterable, Hashable {
 
 // MARK: - WindowSettingsRows
 
-/// General 页最后一组：窗口恢复方式与启动时是否显示启动窗口。
+/// General 页的窗口一组：窗口恢复方式与启动时是否显示启动窗口。
 struct WindowSettingsRows: View {
-    /// App 的偏好域名；没有 Bundle Identifier 时是进程名，与 `UserDefaults.standard` 使用的域一致。
-    private static let domain = Bundle.main.bundleIdentifier ?? ProcessInfo.processInfo.processName
-
     /// 启动时显示启动窗口。
     @AppStorage(SpookyApplicationController.showsLaunchWindowKey)
     private var showsLaunchWindow = false
 
     /// 菜单里的窗口恢复方式；打开页面时从偏好读出。
     @State
-    private var restoration = WindowRestoration.current(in: .standard, domain: domain)
+    private var restoration = WindowRestoration.current(in: .standard, domain: UserDefaults.appDomain)
 
     /// 右对齐的标签与 278 pt 宽的弹出菜单，下面是启动窗口的勾选框。
     var body: some View {

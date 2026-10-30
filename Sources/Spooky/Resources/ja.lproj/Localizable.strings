@@ -1933,6 +1933,22 @@
 "settings.crashReports" = "クラッシュレポート：";
 "settings.crashReports.always" = "クラッシュレポートを常に送信";
 
+/* Developer 菜单与 General 页显示它的勾选框；菜单是开发者用的，各语言都用英文。 */
+"settings.showDeveloperMenu" = "Developer メニューを表示";
+"menu.developer" = "Developer";
+"developer.userDefaults" = "User Defaults";
+"developer.logUserDefaults" = "Log User Defaults";
+"developer.resetUserDefaults" = "Reset User Defaults";
+"developer.clearUserDefaults" = "Clear User Defaults";
+"developer.testCrashReporting" = "Test Crash Reporting";
+"developer.crashWithException" = "Crash With Fake Exception";
+"developer.crashWithBadAccess" = "Crash With Bad Access";
+"developer.autoArchive" = "Auto-Archive Branches";
+"developer.runAutoArchive" = "Run Auto-Archive";
+"developer.resetAutoArchiveDates" = "Reset Auto-Archive Dates";
+"developer.showWhatsNewCard" = "Show What’s New Card";
+"developer.autoReload" = "Auto-Reload Repository";
+
 /* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "サーバが Git の環境変数を設定しています";
 "remote.environment.message" = "「%1$@」の非対話シェルは %2$@ を設定しています。これらの変数は、Spooky がそこで実行するすべての Git コマンドのリポジトリの探し方と設定の読み方を変えます。Git の動作がおかしい場合は、サーバのシェル起動ファイルから取り除いてください。";

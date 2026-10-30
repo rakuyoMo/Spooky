@@ -98,6 +98,11 @@ final class WhatsNewState {
     /// 仓库窗口的侧边栏底部是否显示新功能卡片。
     private(set) var showsCard = false
 
+    /// 这个构建打包了当前版本的更新说明；没有时不显示新功能卡片。
+    var hasCurrentNotes: Bool {
+        entries.contains { $0.version == currentVersion }
+    }
+
     /// 存已读记录与卡片版本的偏好域，测试使用独立的域。
     @ObservationIgnored
     private let defaults: UserDefaults
@@ -126,7 +131,7 @@ final class WhatsNewState {
         }
 
         guard
-            entries.contains(where: { $0.version == currentVersion }),
+            hasCurrentNotes,
             defaults.string(forKey: Self.cardVersionKey) != currentVersion
         else {
             return
@@ -150,6 +155,12 @@ final class WhatsNewState {
     /// 卡片的 ×：卡片消失，不记已读。
     func dismissCard() {
         showsCard = false
+    }
+
+    /// Developer 菜单的 Show What's New Card：清掉显示过卡片的版本记录，按启动时的条件重新显示卡片。
+    func showCardAgain() {
+        defaults.removeObject(forKey: Self.cardVersionKey)
+        start()
     }
 
     /// 把一个版本记为已读并写进偏好；已经读过时不动。

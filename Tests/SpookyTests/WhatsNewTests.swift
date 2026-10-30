@@ -134,6 +134,29 @@ struct WhatsNewTests {
         #expect(close.isUnread(Self.entries[0]))
         #expect(closeDefaults.stringArray(forKey: WhatsNewState.readVersionsKey) == ["0.10.0", "0.9.0"])
     }
+
+    /// Developer 菜单的 Show What's New Card：已经关掉、按记录不会再出现的卡片重新出现；没有当前版本的说明时仍不出现。
+    @Test("重新显示新功能卡片")
+    func showCardAgain() throws {
+        let (defaults, domain) = try Self.defaults()
+        defer { defaults.removePersistentDomain(forName: domain) }
+
+        let state = WhatsNewState(entries: Self.entries, currentVersion: "0.12.0", defaults: defaults)
+        state.start()
+        state.dismissCard()
+        #expect(state.hasCurrentNotes)
+
+        state.showCardAgain()
+        #expect(state.showsCard)
+        #expect(defaults.string(forKey: WhatsNewState.cardVersionKey) == "0.12.0")
+
+        // 没有当前版本的说明：菜单项禁用，直接调用也不显示
+        let missing = WhatsNewState(entries: Self.entries, currentVersion: "0.13.0", defaults: defaults)
+        #expect(!missing.hasCurrentNotes)
+
+        missing.showCardAgain()
+        #expect(!missing.showsCard)
+    }
 }
 
 // MARK: - Helpers
