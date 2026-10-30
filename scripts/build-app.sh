@@ -36,7 +36,7 @@ if [[ -d "docs/release-notes/$version" ]]; then
     ditto "docs/release-notes/$version" "$app_directory/Contents/Resources/ReleaseNotes"
 fi
 
-# 系统权限弹窗从 App 自身的资源目录读取用途说明。
+# 系统权限弹窗与 Finder 从 App 自身的资源目录读取用途说明与文稿类型的名称。
 for locale in en zh-Hans zh-Hant ja ko de fr es; do
     mkdir -p "$app_directory/Contents/Resources/$locale.lproj"
     cp "Sources/Spooky/Resources/$locale.lproj/InfoPlist.strings" \

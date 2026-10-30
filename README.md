@@ -27,7 +27,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Create, clone, and find repositories**: create repositories on your Mac or on a server, and clone in the background with LFS and submodule options while the bookmark shows the progress. Search a folder on your Mac or on a server for existing repositories; server searches run on the server, and server folders can be typed in or browsed
 
-- **Windows and navigation**: tabs, window restoration, a quick start window, back and forward between views, Quick Actions to find views, branches, tags, commits, files, stashes, and more and act on them, and a customizable toolbar
+- **Windows and navigation**: tabs, window restoration, a quick start window, New Window in the Dock menu, folders dropped on the Dock icon opened as repositories, back and forward between views, Quick Actions to find views, branches, tags, commits, files, stashes, and more and act on them, and a customizable toolbar
 
 - **Connection checks and recovery**: before adding a server repository, Spooky checks the connection, the Git version, and the server environment. If the connection drops, the last snapshot stays on screen while Spooky reconnects in the background. Writes are disabled until the connection recovers
 
@@ -89,7 +89,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Updates and diagnostics**: Spooky checks for signed updates on the stable, beta, or development channel. Help can export a diagnostic report with personal details removed, and after a crash Spooky can open a pre-filled GitHub issue that you submit yourself
 
-- **Themes**: Default and Default (Dark) are saved as regular themes that you can edit but not rename or delete, and are restored the next time Spooky starts if they're missing or damaged. Create your own themes for diffs and file contents, change the color of each syntax category, import and export them by drag and drop, and choose one for the light appearance and one for the dark appearance
+- **Themes**: Default and Default (Dark) are saved as regular themes that you can edit but not rename or delete, and are restored the next time Spooky starts if they're missing or damaged. Create your own themes for diffs and file contents, change the color of each syntax category, import and export them by drag and drop, import theme files opened in the Finder or dropped on the Dock icon, and choose one for the light appearance and one for the dark appearance
 
 - **Eight languages**: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish. The app uses your system language, or English if that language isn't supported
 

@@ -48,6 +48,55 @@
             </array>
         </dict>
     </array>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Spooky Theme</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.rakuyo.spooky.theme</string>
+            </array>
+            <key>LSTypeIsPackage</key>
+            <false/>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Folder</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>None</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.folder</string>
+            </array>
+        </dict>
+    </array>
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.rakuyo.spooky.theme</string>
+            <key>UTTypeDescription</key>
+            <string>Spooky Theme</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.json</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>spookytheme</string>
+                </array>
+            </dict>
+        </dict>
+    </array>
     <key>NSAppleEventsUsageDescription</key>
     <string>Spooky opens the selected repository in your terminal application.</string>
     <key>NSPrincipalClass</key>

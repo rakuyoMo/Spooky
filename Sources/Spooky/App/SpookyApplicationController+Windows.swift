@@ -12,6 +12,21 @@ extension SpookyApplicationController {
         true
     }
 
+    /// Dock 图标右键菜单里 App 自己的部分：只有 New Window。
+    func applicationDockMenu(_: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+
+        let item = NSMenuItem(
+            title: AppLocalization.text("menu.newWindow"),
+            action: #selector(newWindow),
+            keyEquivalent: ""
+        )
+        item.target = self
+        menu.addItem(item)
+
+        return menu
+    }
+
     /// 启动后的第一个窗口：系统已恢复仓库窗口时不另开；否则按偏好显示启动窗口，或打开显示仓库管理的窗口。
     func openInitialWindow() {
         guard windows.isEmpty else {

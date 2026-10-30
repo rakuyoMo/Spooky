@@ -24,7 +24,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     private(set) var windows: [RepositoryWindowController] = []
 
     /// 单例设置窗口。
-    private var settingsWindow: SettingsWindowController?
+    private(set) var settingsWindow: SettingsWindowController?
 
     /// 跨仓库共用的 Activity 窗口。
     private var activityWindow: ActivityWindowController?
@@ -38,11 +38,11 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 每个打开动作独立取消，避免旧目录的检查覆盖新选择。
     private var openingTasks: [UUID: Task<Void, Never>] = [:]
 
-    /// 仓库管理的拖入验证任务。
-    private var addingTasks: [UUID: Task<Void, Never>] = [:]
+    /// 仓库管理的拖入验证任务，以及从 Finder 或 Dock 打开文件夹时的仓库检查。
+    var addingTasks: [UUID: Task<Void, Never>] = [:]
 
     /// 当前响应菜单动作的仓库窗口。
-    private var activeWindow: RepositoryWindowController? {
+    var activeWindow: RepositoryWindowController? {
         (NSApp.keyWindow?.windowController as? RepositoryWindowController)
             ?? (NSApp.mainWindow?.windowController as? RepositoryWindowController)
     }
@@ -151,9 +151,15 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     }
 
     /// 打开 `spooky://` 与 github.com 的 “Open with Desktop” 链接：打开仓库与视图，或弹出克隆对话框；
-    /// 不认识或不可信的链接只显示错误。
+    /// 不认识或不可信的链接只显示错误。从 Finder 打开或拖到 Dock 图标上的本机文件交给 `openFiles(_:)`。
     func application(_: NSApplication, open urls: [URL]) {
-        for url in urls {
+        let files = urls.filter(\.isFileURL)
+
+        if !files.isEmpty {
+            openFiles(files)
+        }
+
+        for url in urls where !url.isFileURL {
             guard let request = SpookyURL(url) else {
                 let alert = NSAlert()
                 alert.alertStyle = .warning
