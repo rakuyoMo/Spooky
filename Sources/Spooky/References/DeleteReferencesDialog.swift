@@ -242,6 +242,7 @@ extension DeleteReferencesDialog {
                     }
                 },
                 title: title,
+                undo: .removingRemotes(names),
                 success: { [session] in
                     if let selected = session.selectedRemote, names.contains(selected) {
                         session.activeView = .history

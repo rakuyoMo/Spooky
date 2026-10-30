@@ -64,7 +64,8 @@ extension RepositorySession {
     func enableLFS() {
         performGit(
             { runner, _ in try await RepositoryLFS(runner: runner).install() },
-            title: AppLocalization.text("lfs.enable")
+            title: AppLocalization.text("lfs.enable"),
+            undo: .enablingLFS
         )
     }
 

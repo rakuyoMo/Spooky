@@ -9,31 +9,52 @@ enum UndoRecording {
     /// 记下操作前后的仓库状态；操作改动了仓库、又能安全恢复时可以撤销与重做。
     case reversible
 
-    /// 不能撤销，如改动服务器、远端设置或提交身份的操作：成功后清空本仓库的撤销记录，菜单说明上一个操作不能撤销。
+    /// 由操作自己给出反向操作，用于快照记不住的内容，如远端设置、assume-unchanged 标记与 Git LFS 的启用。
+    ///
+    /// 闭包在操作之前执行，读出撤销要用的内容：返回反向操作时，操作成功后记一条；
+    /// 返回 nil 表示这次操作不改动要撤销的内容，不碰撤销记录；抛出表示这次操作撤销不了，成功后按 ``irreversible`` 处理。
+    case inverse(@Sendable (GitRunner) async throws -> UndoInverse?)
+
+    /// 不能撤销，如改动服务器或提交身份的操作：成功后清空本仓库的撤销记录，菜单说明上一个操作不能撤销。
     case irreversible
 
     /// 不碰撤销记录：自动获取这类不由用户直接发起、也不改动记录所含状态的操作，以及撤销与重做本身。
     case unrecorded
 }
 
+// MARK: - UndoInverse
+
+/// 操作自己给出的反向操作。
+struct UndoInverse: Sendable {
+    /// 撤销时执行：先核对前提，仓库已不是操作后的样子时抛出 ``RepositoryUndoError/repositoryChanged``，不做任何改动。
+    let undo: @Sendable (GitRunner) async throws -> Void
+}
+
 // MARK: - RepositoryUndoEntry
 
-/// 一次可撤销的写操作：名称、操作前后的仓库状态与移进废纸篓的项。
+/// 一次可撤销的写操作：名称与撤销、重做的办法。
 struct RepositoryUndoEntry: Identifiable, Sendable {
+    /// 撤销与重做的办法。
+    enum Change: Sendable {
+        /// 操作前后的仓库状态与操作移进废纸篓的项：撤销回到操作前，重做回到操作后；废纸篓里的项撤销时移回原处，重做时重新移进废纸篓。
+        case snapshot(before: RepositoryState, after: RepositoryState, trashed: [TrashedItem])
+
+        /// 操作自己给出的反向操作：撤销时执行它；重做时再执行一次准备与原操作，换上新读出的反向操作。
+        case inverse(
+            prepare: @Sendable (GitRunner) async throws -> UndoInverse?,
+            action: @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
+            inverse: UndoInverse
+        )
+    }
+
     /// 在撤销栈与重做栈之间移动时用来找回同一项。
     let id = UUID()
 
     /// 已本地化的操作名称，菜单显示为 “Undo <名称>”。
     let title: String
 
-    /// 操作前的状态，撤销回到这里。
-    let before: RepositoryState
-
-    /// 操作后的状态，重做回到这里。
-    let after: RepositoryState
-
-    /// 操作移进废纸篓的项：撤销时移回原处，重做时重新移进废纸篓。
-    let trashed: [TrashedItem]
+    /// 撤销与重做的办法。
+    let change: Change
 }
 
 // MARK: - RepositoryUndoHistory
@@ -85,15 +106,16 @@ final class RepositoryUndoHistory {
         redoEntries.append(undoEntries.remove(at: index))
     }
 
-    /// 重做完成：这一项回到撤销栈，记下重新移进废纸篓后的位置。
+    /// 重做完成：这一项带着重做后的撤销办法回到撤销栈，如重新移进废纸篓后的位置、新读出的反向操作。
     ///
-    /// - Parameter trashed: 重做时重新移进废纸篓的项。
-    func finishRedo(_ entry: RepositoryUndoEntry, trashed: [TrashedItem]) {
+    /// - Parameter change: 重做后的撤销办法；为 nil 时这次重做没有改动要撤销的内容，这一项不再回到撤销栈。
+    func finishRedo(_ entry: RepositoryUndoEntry, change: RepositoryUndoEntry.Change?) {
         guard let index = redoEntries.lastIndex(where: { $0.id == entry.id }) else { return }
 
         let redone = redoEntries.remove(at: index)
-        undoEntries.append(
-            RepositoryUndoEntry(title: redone.title, before: redone.before, after: redone.after, trashed: trashed)
-        )
+
+        if let change {
+            undoEntries.append(RepositoryUndoEntry(title: redone.title, change: change))
+        }
     }
 }

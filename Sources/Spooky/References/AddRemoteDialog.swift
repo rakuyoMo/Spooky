@@ -117,7 +117,8 @@ extension AddRemoteDialog {
             { runner, output in
                 try await RepositoryRemotes(runner: runner).add(name: name, url: url, onOutput: output)
             },
-            title: AppLocalization.text("remote.add")
+            title: AppLocalization.text("remote.add"),
+            undo: .addingRemote(name)
         )
 
         if started {

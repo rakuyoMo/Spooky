@@ -188,6 +188,7 @@ extension RenameReferenceDialog {
                 session.performGit(
                     { runner, _ in try await RepositoryRemotes(runner: runner).rename(remote, to: name) },
                     title: title,
+                    undo: .renamingRemote(remote, to: name),
                     success: { [session] in
                         if session.selectedRemote == remote { session.selectedRemote = name }
                     }

@@ -221,7 +221,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositoryRemotes(runner: runner).setSkipsFetchAll(skips, for: remote)
             },
-            title: AppLocalization.text("remote.skipFetchAll.title")
+            title: AppLocalization.text("remote.skipFetchAll.title"),
+            undo: .changingRemote(remote)
         )
     }
 
@@ -237,7 +238,8 @@ extension RepositorySession {
 
                 performGit(
                     { runner, _ in try await RepositoryRemotes(runner: runner).unsetPushURL(of: remote) },
-                    title: AppLocalization.text("remote.pushURL.unset")
+                    title: AppLocalization.text("remote.pushURL.unset"),
+                    undo: .changingRemote(remote)
                 )
             },
             nil
@@ -259,7 +261,8 @@ extension RepositorySession {
                     { runner, _ in
                         try await RepositoryRemotes(runner: runner).removeRefspec(refspec, from: remote, push: push)
                     },
-                    title: title
+                    title: title,
+                    undo: .changingRemote(remote)
                 )
             },
             nil

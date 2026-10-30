@@ -112,6 +112,27 @@ struct RepositoryLFSTests {
         await #expect(throws: LFSError.patternsRemain([literal])) { try await lfs.untrack([literal]) }
     }
 
+    /// 撤销启用去掉本地配置里的过滤器与 LFS 的钩子，仓库回到没有启用的样子；过滤器已经不在时拒绝，不做改动。
+    @Test("撤销启用", .enabled(if: LFSProgram.directory != nil, "需要 git-lfs"))
+    func undoInstall() async throws {
+        let temporary = try TemporaryRepository()
+        defer { temporary.remove() }
+
+        try await temporary.initialize()
+        let root = temporary.directory.path
+        let lfs = RepositoryLFS(runner: lfsRunner(at: root))
+
+        try await lfs.install()
+        #expect(try await lfs.isInstalledLocally())
+
+        try await lfs.undoInstall()
+        #expect(try await !lfs.isInstalledLocally())
+        #expect(try await !lfs.status().isEnabled)
+        #expect(!FileManager.default.fileExists(atPath: root + "/.git/hooks/pre-push"))
+
+        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await lfs.undoInstall() }
+    }
+
     /// 推送只上传 LFS 对象；克隆得到指针文件后，获取只下载对象，拉取把指针换成内容；传输进度留在输出里。
     @Test("推送、获取与拉取", .enabled(if: LFSProgram.directory != nil, "需要 git-lfs"))
     func transfer() async throws {

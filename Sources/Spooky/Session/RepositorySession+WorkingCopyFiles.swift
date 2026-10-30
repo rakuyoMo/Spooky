@@ -264,7 +264,8 @@ extension RepositorySession {
         performGit(
             { runner, _ in try await WorkingCopyOperations(runner: runner).setAssumeUnchanged(paths, assumeUnchanged) },
             title: AppLocalization.text(assumeUnchanged ? "files.assumeUnchanged.set" : "files.assumeUnchanged.unset"),
-            recordsActivity: false
+            recordsActivity: false,
+            undo: .settingAssumeUnchanged(paths, assumeUnchanged)
         )
     }
 

@@ -72,7 +72,8 @@ struct WorkingCopyFileOperationsTests {
         #expect(try Data(contentsOf: repository.directory.appending(path: Self.special)) == Data("\(Self.special)\n".utf8))
     }
 
-    /// assume-unchanged 让 Git 不再报告文件的改动，清除后改动重新出现；索引清单标出被标记的文件。
+    /// assume-unchanged 让 Git 不再报告文件的改动，清除后改动重新出现；索引清单标出被标记的文件，
+    /// 按路径读标记时路径按字面值匹配，不在暂存区里的路径不出现。
     @Test("设置与清除 assume-unchanged")
     func assumeUnchanged() async throws {
         let repository = try TemporaryRepository()
@@ -88,8 +89,10 @@ struct WorkingCopyFileOperationsTests {
                 IndexFile(path: Self.special, assumeUnchanged: true),
             ]
         )
+        #expect(try await service.assumedUnchanged([Self.special, "other.txt", "missing.txt"]) == [Self.special])
 
         try await service.setAssumeUnchanged([Self.special], false)
+        #expect(try await service.assumedUnchanged([Self.special]).isEmpty)
         #expect(try await repository.runner.status().entries.first?.path == Self.special)
 
         // 不在暂存区里的路径让整批失败，已在暂存区里的文件也不会被改动

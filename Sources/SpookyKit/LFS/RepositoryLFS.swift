@@ -101,6 +101,27 @@ public struct RepositoryLFS: Sendable {
         try await run(["lfs", "install", "--local"])
     }
 
+    /// 仓库自己的配置文件里是否登记了 LFS 过滤器；全局配置里的不算。
+    public func isInstalledLocally() async throws -> Bool {
+        let filters = try await runner.execute(
+            ["config", "-z", "--local", "--get-regexp", #"^filter\.lfs\."#],
+            acceptedExitCodes: [0, 1]
+        )
+
+        return filters.exitCode == 0 && !filters.standardOutput.isEmpty
+    }
+
+    /// 撤销在仓库本地启用 Git LFS：去掉本地配置里的过滤器与 LFS 装上的钩子；前提是本地配置里还登记着过滤器。
+    public func undoInstall() async throws {
+        try await runner.writeTransaction {
+            guard try await isInstalledLocally() else {
+                throw RepositoryUndoError.repositoryChanged
+            }
+
+            try await run(["lfs", "uninstall", "--local"])
+        }
+    }
+
     /// 按当前版本的 Git LFS 更新仓库里 LFS 的钩子。
     public func update() async throws {
         try await run(["lfs", "update"])

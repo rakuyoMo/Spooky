@@ -171,7 +171,7 @@ If you declined, you can turn them on again in **System Settings › Notificatio
 
 - Writes to the same repository run one at a time. Only one window can start a write to a repository at a time, and every window showing the repository refreshes when the write finishes
 - If the connection drops during a write, Spooky doesn't retry it. After reconnecting, it checks the branch, working copy, index lock, remote-tracking branches, and any merge or rebase in progress, tells you whether HEAD and the remote-tracking branches changed, and only then allows writes again
-- Undo records HEAD, branches, tags, branch settings, the stash list, the index, and the content of tracked files before and after each operation. The snapshots are written to the object database of the repository, on your Mac or on the server, and Spooky checks that the repository still matches the record before restoring it
+- Undo records HEAD, branches, tags, branch settings, the stash list, the index, and the content of tracked files before and after each operation. The snapshots are written to the object database of the repository, on your Mac or on the server, and Spooky checks that the repository still matches the record before restoring it. Changes to remote settings, assume-unchanged flags, and enabling Git LFS aren't in the snapshots; Spooky undoes them by running the reverse operation
 - Cancelling an operation on a server ends its processes there. If Spooky can't confirm that they've exited, it says so and blocks writes until a reconnection check
 
 ### Credentials
