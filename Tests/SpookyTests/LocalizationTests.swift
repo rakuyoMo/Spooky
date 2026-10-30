@@ -22,7 +22,8 @@ struct LocalizationTests {
 
         keys += RemoteConnectionState.allCases.map { "connection." + $0.rawValue }
         keys += FailureKind.allCases.map { "failure.kind." + $0.rawValue }
-        keys += ["background", "selection", "added", "deleted"].map { "themes." + $0 }
+        keys += ThemesSettingsView.colorWellKeys.map { "themes." + $0 }
+        keys += ThemeTokenList.keys.map { "themes.token." + $0 }
 
         for action in ["stage", "unstage", "discard"] {
             keys += ["Chunk", "Line", "Lines"].map { "working." + action + $0 }

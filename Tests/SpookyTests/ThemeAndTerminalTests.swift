@@ -1,8 +1,11 @@
 import AppKit
 import SpookyKit
+import SwiftUI
 import Testing
 
 @testable import Spooky
+
+// MARK: - ThemeAndTerminalTests
 
 /// 默认主题、命名色和终端参数的产品约定。
 struct ThemeAndTerminalTests {
@@ -129,6 +132,69 @@ struct ThemeAndTerminalTests {
         #expect(ThemesSettingsView.fontDescription(theme) == "Missing-Font 12.5")
     }
 
+    /// 主题的每种颜色在 Themes 页都有且只有一处可改：记号类别列表的 20 行与 Font Color 之后的四个色块。
+    @Test("记号类别列表与色块覆盖主题的全部颜色")
+    @MainActor
+    func themeTokenKeys() {
+        let tokens = ThemeTokenList.keys
+        let wells = ThemesSettingsView.colorWellKeys
+
+        #expect(tokens.count == 20)
+        #expect(Set(tokens).count == tokens.count)
+        #expect(Set(tokens).isDisjoint(with: wells))
+
+        // 两套内置主题的颜色键相同，主题文件也必须含有这些键。
+        for theme in TextTheme.builtin {
+            #expect(Set(tokens + wells) == Set(theme.colors.keys))
+        }
+    }
+
+    /// Font Color 色块编辑记号类别列表里选中的那种颜色：选中 Keyword 后调色写进 `keyword`，正文色不变。
+    @Test("选中的记号类别决定 Font Color 写回的颜色")
+    @MainActor
+    func tokenSelectionDrivesFontColor() async throws {
+        let root = try ThemeStoreTests.makeRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let store = try ThemeStoreTests.store(in: root)
+        let theme = try store.create(named: "Paper", dark: false)
+        let window = Self.host(ThemesSettingsView(store: store).environment(\.colorScheme, .light))
+        let hosting = try #require(window.contentView)
+
+        let tokens = try #require(
+            Self.subviews(NSTableView.self, in: hosting).first { $0.delegate is ThemeTokenListCoordinator }
+        )
+
+        let fontColor = try #require(
+            Self.subviews(NSColorWell.self, in: hosting).first {
+                $0.accessibilityLabel() == AppLocalization.text("themes.text")
+            }
+        )
+
+        // 打开页面时选中 Plain Text，Font Color 是正文色。
+        #expect(tokens.selectedRow == 0)
+        #expect(PaletteColor(nsColor: fontColor.color) == theme.colors["text"])
+
+        // 用户选中 Keyword 后，Font Color 换成 keyword 的颜色。
+        let keyword = try #require(theme.colors["keyword"])
+        let row = try #require(ThemeTokenList.keys.firstIndex(of: "keyword"))
+        tokens.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+
+        try await FileViewsTests.wait {
+            hosting.layoutSubtreeIfNeeded()
+            return PaletteColor(nsColor: fontColor.color) == keyword
+        }
+
+        // 颜色面板调出的颜色经色块的动作写回主题。
+        let picked = PaletteColor(hex: "#123456", alpha: 0.5)
+        fontColor.color = picked.nsColor
+        _ = (fontColor.target as? NSObject)?.perform(fontColor.action, with: fontColor)
+
+        let saved = try #require(store.themes.first { $0.id == theme.id })
+        #expect(saved.colors["keyword"] == picked)
+        #expect(saved.colors["text"] == theme.colors["text"])
+    }
+
     /// 终端候选固定为六个程序，靠 Bundle Identifier 认出；路径与主机别名里的引号不能逃出转义。
     @Test("终端候选和双层命令转义")
     @MainActor
@@ -143,5 +209,35 @@ struct ThemeAndTerminalTests {
         #expect(remote.terminalCommand.contains("'--' 'alias'\\''quoted'"))
         #expect(remote.localURL == nil)
         #expect(TerminalLauncher.appleString("quoted\"\\\n") == "\"quoted\\\"\\\\\\n\"")
+    }
+}
+
+// MARK: - Helpers
+
+extension ThemeAndTerminalTests {
+    /// 把页面放进不显示的窗口并完成一次布局，原生控件随之建立；窗口由调用方持有到测试结束。
+    @MainActor
+    private static func host(_ view: some View) -> NSWindow {
+        let hosting = NSHostingView(rootView: view)
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 600),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+
+        window.isReleasedWhenClosed = false
+        window.contentView = hosting
+        hosting.layoutSubtreeIfNeeded()
+        return window
+    }
+
+    /// 视图层级里给定类型的全部视图，按深度优先的顺序。
+    @MainActor
+    private static func subviews<Element: NSView>(_: Element.Type, in root: NSView) -> [Element] {
+        root.subviews.flatMap { child in
+            [child as? Element].compactMap(\.self) + subviews(Element.self, in: child)
+        }
     }
 }

@@ -8,6 +8,9 @@ import SwiftUI
 ///
 /// 列表里选中的主题就是当前外观使用的主题，浅色、深色外观各自记住一套。
 struct ThemesSettingsView: View {
+    /// 色块行里 Font Color 之后的四个色块编辑的颜色，从左到右。
+    nonisolated static let colorWellKeys = ["background", "selection", "added", "deleted"]
+
     /// 主题与外观选择。
     private let store: ThemeStore
 
@@ -18,6 +21,10 @@ struct ThemesSettingsView: View {
     /// 刚新建、要立即进入改名的主题。
     @State
     private var renameRequest: String?
+
+    /// 记号类别列表里选中行的颜色键，Font Color 色块编辑这种颜色；打开页面时是 Plain Text，换主题时不变。
+    @State
+    private var selectedToken = "text"
 
     /// 宽 900 pt、高按右栏内容的页面：200 pt 的主题列表，相隔 8 pt 是 652 pt 的右栏，四周留 20 pt。
     var body: some View {
@@ -139,10 +146,16 @@ extension ThemesSettingsView {
 // MARK: - 编辑
 
 extension ThemesSettingsView {
-    /// 右栏从上到下：字体框、色块行、横线与 Diff 预览；用的是资源里的版本时没有文件可写，控件全部禁用。
+    /// 右栏从上到下：字体框、记号类别列表、色块行、横线与 Diff 预览；用的是资源里的版本时没有文件可写，控件全部禁用。
     private func editor(_ theme: TextTheme) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             fontField(theme)
+
+            // 652 × 222 的记号类别列表，一次显示 9 行，其余滚动。
+            ThemeTokenList(theme: theme, selection: $selectedToken)
+                .frame(height: 222)
+                .overlay(Rectangle().strokeBorder(AppPalette.color("general_border_color")))
+                .padding(.top, 8)
 
             colorWells(theme)
                 .padding(.top, 8)
@@ -189,16 +202,16 @@ extension ThemesSettingsView {
         .accessibilityValue(description)
     }
 
-    /// 色块行：Font Color ｜ Background、Selection、Added、Deleted，列与列相隔 8 pt。
+    /// 色块行：Font Color ｜ Background、Selection、Added、Deleted，列与列相隔 8 pt；Font Color 编辑记号类别列表里选中的那种颜色。
     private func colorWells(_ theme: TextTheme) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            colorColumn("text", label: AppLocalization.text("themes.text"), theme: theme)
+            colorColumn(selectedToken, label: AppLocalization.text("themes.text"), theme: theme)
 
             // Font Color 后面的竖线，两侧各 8 pt，上下从色块顶边到标签底边。
             Color(nsColor: .separatorColor)
                 .frame(width: 1)
 
-            ForEach(["background", "selection", "added", "deleted"], id: \.self) { key in
+            ForEach(Self.colorWellKeys, id: \.self) { key in
                 colorColumn(key, label: AppLocalization.text("themes." + key), theme: theme)
             }
         }

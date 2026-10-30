@@ -89,7 +89,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Updates and diagnostics**: Spooky checks for signed updates on the stable, beta, or development channel. Help can export a diagnostic report with personal details removed, and after a crash Spooky can open a pre-filled GitHub issue that you submit yourself
 
-- **Themes**: Default and Default (Dark) are saved as regular themes that you can edit but not rename or delete, and are restored the next time Spooky starts if they're missing or damaged. Create your own themes for diffs and file contents, import and export them by drag and drop, and choose one for the light appearance and one for the dark appearance
+- **Themes**: Default and Default (Dark) are saved as regular themes that you can edit but not rename or delete, and are restored the next time Spooky starts if they're missing or damaged. Create your own themes for diffs and file contents, change the color of each syntax category, import and export them by drag and drop, and choose one for the light appearance and one for the dark appearance
 
 - **Eight languages**: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish. The app uses your system language, or English if that language isn't supported
 
