@@ -99,9 +99,11 @@ extension RepositoryGeneralSettings {
             actions: [action("bookmarks.detail.edit") { editor = .identity }]
         ) {
             IdentityProfileMenu(
-                session: session,
                 name: summary.committer?.name ?? "",
-                email: summary.committer?.email ?? ""
+                email: summary.committer?.email ?? "",
+                signingKey: summary.signingKey,
+                canApply: session.canWrite,
+                apply: session.applyProfile
             )
         }
     }

@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - CommitIdentityView
 
-/// 提交人的姓名、邮箱与头像；点头像弹出身份菜单：档案、签名状态、把当前身份存为档案与管理档案。
+/// 提交人的姓名、邮箱与头像；点头像弹出身份档案菜单，头像的提示写明提交时的签名状态。
 struct CommitIdentityView: View {
     /// 当前仓库会话。
     let session: RepositorySession
@@ -25,10 +25,11 @@ struct CommitIdentityView: View {
 
             Menu {
                 IdentityProfileMenu(
-                    session: session,
                     name: session.committer.name,
                     email: session.committer.email,
-                    note: signingStatus
+                    signingKey: session.commitConfiguration?.signingKey,
+                    canApply: session.canWrite,
+                    apply: session.applyProfile
                 )
             } label: {
                 InitialsAvatar(name: session.committer.name, size: 45)

@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - RepositorySummary
 
-/// 仓库管理详情区显示的仓库概况：当前分支、最后一次提交、提交人、描述与远端。
+/// 仓库管理详情区显示的仓库概况：当前分支、最后一次提交、提交人与签名密钥、描述与远端。
 public struct RepositorySummary: Sendable, Equatable {
     /// 一个提交人：姓名与邮箱。
     public struct Identity: Sendable, Equatable {
@@ -34,6 +34,9 @@ public struct RepositorySummary: Sendable, Equatable {
     /// 仓库本地配置里是否写了 `user.name` 或 `user.email`。
     public let hasRepositoryIdentity: Bool
 
+    /// 提交时生效的 `user.signingkey`，把当前身份存为档案时一并带上；没有配置时为 nil。
+    public let signingKey: String?
+
     /// `description` 文件的内容；文件不存在时为 nil。
     public let description: String?
 
@@ -57,18 +60,23 @@ extension GitRunner {
             ["config", "-z", "--local", "--get-regexp", "^user\\.(name|email)$"],
             acceptedExitCodes: [0, 1]
         )
+
+        // 没有配置签名密钥时 git config 以 1 退出，输出为空。
+        async let signingKey = execute(["config", "-z", "--get", "user.signingkey"], acceptedExitCodes: [0, 1])
         async let description = repositoryDescription()
         async let remotes = RepositoryRemotes(runner: self).configurations()
 
         let name = String(decoding: try await branch.standardOutput, as: UTF8.self)
             .trimmingCharacters(in: .newlines)
         let ident = try await committer
+        let key = try await signingKey.standardOutput.split(separator: 0).first
 
         return RepositorySummary(
             branch: name.isEmpty ? nil : name,
             lastCommit: try RepositorySummary.commit(from: await commit.standardOutput),
             committer: ident.exitCode == 0 ? RepositorySummary.identity(from: ident.standardOutput) : nil,
             hasRepositoryIdentity: try await !local.standardOutput.isEmpty,
+            signingKey: key.map { String(decoding: $0, as: UTF8.self) },
             description: try await description,
             remotes: try await remotes
         )

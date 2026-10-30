@@ -13,10 +13,6 @@ struct BookmarkIdentityRow: View {
     /// 读到的仓库概况。
     let summary: RepositorySummary
 
-    /// 全部身份档案的 JSON。
-    @AppStorage(UserProfiles.key)
-    private var storage = Data()
-
     /// 设置表格样式的提交人一行；不能编辑详情时头像菜单禁用。
     var body: some View {
         IdentitySettingRow(
@@ -24,7 +20,13 @@ struct BookmarkIdentityRow: View {
             isMenuEnabled: manager.canEditDetail,
             actions: actions
         ) {
-            profileItems
+            IdentityProfileMenu(
+                name: summary.committer?.name ?? "",
+                email: summary.committer?.email ?? "",
+                signingKey: summary.signingKey,
+                canApply: manager.canEditDetail,
+                apply: manager.applyProfile
+            )
         }
     }
 }
@@ -50,33 +52,5 @@ extension BookmarkIdentityRow {
             perform: manager.clearIdentity
         )
         return [edit, unset]
-    }
-
-    /// 档案逐项列出并勾选与当前提交人一致的那个，最后是管理档案的入口。
-    @ViewBuilder
-    private var profileItems: some View {
-        let profiles = UserProfiles.decode(storage)
-
-        ForEach(profiles) { profile in
-            Toggle(
-                profile.menuTitle,
-                isOn: Binding(
-                    get: { isCurrent(profile) },
-                    set: { _ in manager.applyProfile(profile) }
-                )
-            )
-            .disabled(isCurrent(profile))
-        }
-
-        if !profiles.isEmpty {
-            Divider()
-        }
-
-        Button(AppLocalization.text("profiles.manage")) { SettingsWindowController.show(.userProfiles) }
-    }
-
-    /// 档案的姓名与邮箱是否就是当前提交人。
-    private func isCurrent(_ profile: UserProfile) -> Bool {
-        profile.name == summary.committer?.name && profile.email == summary.committer?.email
     }
 }

@@ -80,6 +80,21 @@ struct RepositorySummaryTests {
         #expect(String(decoding: signing, as: UTF8.self) == "false\n")
     }
 
+    /// 把当前身份存为档案时要带上生效的签名密钥：没有配置时为 nil，字面 SSH 公钥里的空格原样保留。
+    @Test("读取签名密钥")
+    func signingKey() async throws {
+        let temporary = try TemporaryRepository()
+        defer { temporary.remove() }
+        try await temporary.initialize()
+
+        #expect(try await temporary.runner.repositorySummary().signingKey == nil)
+
+        let key = "key::ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH8 user@example.invalid"
+        _ = try await temporary.runner.run(["config", "--local", "user.signingkey", key])
+
+        #expect(try await temporary.runner.repositorySummary().signingKey == key)
+    }
+
     /// 解析失败的提交记录抛错，身份里的姓名可以带空格与引号。
     @Test("解析最后一次提交与提交人")
     func parsing() throws {
