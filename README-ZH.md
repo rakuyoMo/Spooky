@@ -142,7 +142,7 @@ open .build/Spooky.app
 
 ### 自动化
 
-终端程序选的是 Terminal 或 iTerm 时，Spooky 会通过 AppleScript 让它打开仓库。第一次使用时，macOS 会询问是否允许 Spooky 控制这个程序。
+终端程序选的是 Terminal 或 iTerm 时，Spooky 会通过 AppleScript 让它打开仓库；比较或合并工具选的是 BBEdit 或 Araxis Merge 时，它们的命令行会经 Apple 事件控制各自的程序。第一次使用时，macOS 会询问是否允许 Spooky 控制这个程序。
 
 如果当时拒绝了，可以在 “系统设置 › 隐私与安全性 › 自动化” 里重新开启。
 

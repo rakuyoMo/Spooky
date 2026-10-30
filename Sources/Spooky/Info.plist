@@ -98,7 +98,7 @@
         </dict>
     </array>
     <key>NSAppleEventsUsageDescription</key>
-    <string>Spooky opens the selected repository in your terminal application.</string>
+    <string>Spooky opens the selected repository in your terminal application and shows comparisons in your diff tool.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>LSMinimumSystemVersion</key>

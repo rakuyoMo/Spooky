@@ -1,4 +1,4 @@
-"NSAppleEventsUsageDescription" = "Spooky 使用所選終端機程式開啟儲存庫。";
+"NSAppleEventsUsageDescription" = "Spooky 使用所選終端機程式開啟儲存庫，並在所選比較工具中顯示比較。";
 
 "Spooky Theme" = "Spooky 主題";
 "Folder" = "檔案夾";

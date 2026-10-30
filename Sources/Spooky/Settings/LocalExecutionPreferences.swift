@@ -55,7 +55,7 @@ final class LocalExecutionPreferences {
     /// App 使用的偏好与核心库的全局设置。
     static let shared = LocalExecutionPreferences(defaults: .standard)
 
-    /// 是否读取登录 shell 环境。
+    /// 是否读取登录 shell 环境；没有改过这项设置时为真。
     private(set) var usesLoginShell: Bool
 
     /// 最近一次从登录 shell 读到的变量。
@@ -117,15 +117,12 @@ final class LocalExecutionPreferences {
         readLoginShell: @escaping @Sendable () async throws -> [String: String] = { try await LoginShellEnvironment.read() },
         apply: @escaping @MainActor (LocalExecutionSettings) -> Void = { LocalExecutionSettings.current = $0 }
     ) {
-        #warning(
-            "TODO: 读取登录 shell 环境默认关闭是推断。核实方式：在全新的偏好下打开 Environment 页看复选框是否勾选；只影响没有改过这项设置时本机 Git 是否带上登录 shell 的变量。"
-        )
-
         self.defaults = defaults
         self.readLoginShell = readLoginShell
         self.apply = apply
 
-        usesLoginShell = defaults.bool(forKey: Self.loginShellKey)
+        // 没有改过这项设置时默认读取登录 shell 环境
+        usesLoginShell = defaults.object(forKey: Self.loginShellKey) as? Bool ?? true
         sshAgent = defaults.string(forKey: Self.sshAgentKey).flatMap(SSHAgent.init(rawValue:)) ?? .system
         gitExecutable = defaults.string(forKey: Self.gitExecutableKey) ?? LocalExecutionSettings.defaultGitExecutable
 

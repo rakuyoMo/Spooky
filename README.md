@@ -142,7 +142,7 @@ The release app uses a release build, includes the app icon and the update frame
 
 ### Automation
 
-When your terminal application is Terminal or iTerm, Spooky uses AppleScript to have it open the repository. The first time, macOS asks whether to allow Spooky to control that application.
+When your terminal application is Terminal or iTerm, Spooky uses AppleScript to have it open the repository. When BBEdit or Araxis Merge is your diff or merge tool, its command-line tool controls the application through Apple events. The first time, macOS asks whether to allow Spooky to control that application.
 
 If you declined, you can turn it on again in **System Settings › Privacy & Security › Automation**.
 

@@ -210,6 +210,28 @@ struct ThemeAndTerminalTests {
         #expect(remote.localURL == nil)
         #expect(TerminalLauncher.appleString("quoted\"\\\n") == "\"quoted\\\"\\\\\\n\"")
     }
+
+    /// 在终端里打开仓库时尽量用已有的窗口：Terminal 有两个以上窗口时在最前面的窗口里执行，
+    /// iTerm 已在运行且有窗口时在第一个窗口里新建标签页；命令经转义后才进入脚本。
+    @Test("Terminal 与 iTerm 按已有的窗口决定在哪里执行")
+    @MainActor
+    func terminalScripts() {
+        let command = "cd -- '/tmp/仓 库\"'"
+        let quoted = TerminalLauncher.appleString(command)
+
+        let terminal = TerminalLauncher.terminalScript(command)
+        #expect(terminal.contains("if (count of windows) > 1 and (exists front window) then"))
+        #expect(terminal.contains("do script \(quoted) in front window\n"))
+        #expect(terminal.contains("else\n        do script \(quoted)\n"))
+        #expect(!terminal.contains(command))
+
+        let iTerm = TerminalLauncher.iTermScript(command)
+        #expect(iTerm.hasPrefix("set wasRunning to application id \"com.googlecode.iterm2\" is running\n"))
+        #expect(iTerm.contains("if (count of windows) is 0 then\n        create window with default profile"))
+        #expect(iTerm.contains("if wasRunning then\n            tell first window to create tab with default profile"))
+        #expect(iTerm.contains("delay 1\n    tell current session of first window to write text \(quoted)"))
+        #expect(!iTerm.contains(command))
+    }
 }
 
 // MARK: - Helpers

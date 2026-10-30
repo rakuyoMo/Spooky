@@ -75,30 +75,13 @@ enum TerminalLauncher {
         case .terminal:
             try await launch(
                 URL(fileURLWithPath: "/usr/bin/osascript"),
-                arguments: [
-                    "-e",
-                    """
-                    tell application id "com.apple.Terminal"
-                        activate
-                        do script \(appleString(command))
-                    end tell
-                    """,
-                ]
+                arguments: ["-e", terminalScript(command)]
             )
 
         case .iTerm:
             try await launch(
                 URL(fileURLWithPath: "/usr/bin/osascript"),
-                arguments: [
-                    "-e",
-                    """
-                    tell application id "com.googlecode.iterm2"
-                        activate
-                        set spookyWindow to (create window with default profile)
-                        tell current session of spookyWindow to write text \(appleString(command))
-                    end tell
-                    """,
-                ]
+                arguments: ["-e", iTermScript(command)]
             )
 
         case .otty:
@@ -141,6 +124,52 @@ enum TerminalLauncher {
     static func cleanup() {
         for file in temporaryFiles { try? FileManager.default.removeItem(at: file) }
         temporaryFiles.removeAll()
+    }
+
+    /// 让 Terminal 执行命令的 AppleScript：已经开着至少两个窗口时，在最前面窗口的当前标签页里执行，否则新开窗口。
+    ///
+    /// - Parameter command: 要执行的 shell 命令。
+    static func terminalScript(_ command: String) -> String {
+        """
+        tell application id "com.apple.Terminal"
+            if (count of windows) > 1 and (exists front window) then
+                do script \(appleString(command)) in front window
+            else
+                do script \(appleString(command))
+            end if
+
+            activate
+        end tell
+        """
+    }
+
+    /// 让 iTerm 执行命令的 AppleScript：已在运行且有窗口时，在第一个窗口里新建标签页；已在运行而没有窗口时新开窗口；
+    /// 没有运行时启动它，在它打开的窗口里执行，它没有打开窗口时新开一个。
+    ///
+    /// 新的标签页或窗口要等一会儿才能接受输入，写入命令前先等 1 秒。
+    ///
+    /// - Parameter command: 要执行的 shell 命令。
+    static func iTermScript(_ command: String) -> String {
+        """
+        set wasRunning to application id "com.googlecode.iterm2" is running
+
+        tell application id "com.googlecode.iterm2"
+            activate
+
+            if (count of windows) is 0 then
+                create window with default profile
+            else
+                select first window
+
+                if wasRunning then
+                    tell first window to create tab with default profile
+                end if
+            end if
+
+            delay 1
+            tell current session of first window to write text \(appleString(command))
+        end tell
+        """
     }
 
     /// AppleScript 字符串与 shell 参数分别转义，路径不能成为脚本源码。

@@ -6,7 +6,8 @@ import Testing
 
 // MARK: - SettingsPreferencesTests
 
-/// 设置页写入的偏好：窗口恢复交还系统设置时必须删掉键，克隆目录的候选不重复，本机执行设置立即交给核心库并能读回。
+/// 设置页写入的偏好：窗口恢复交还系统设置时必须删掉键，克隆目录的候选不重复，本机执行设置立即交给核心库并能读回，
+/// 登录 shell 环境默认读取。
 @MainActor
 struct SettingsPreferencesTests {
     /// 三种窗口恢复方式写进 App 自己的偏好域；交给系统设置时删除键，读出时不受全局域影响。
@@ -82,5 +83,21 @@ struct SettingsPreferencesTests {
 
         preferences.setUsesLoginShell(false)
         #expect(applied.last?.loginShellVariables.isEmpty ?? false)
+    }
+
+    /// 没有改过设置时读取登录 shell 的变量，本机 Git 才能找到 shell 配置里补进 PATH 的工具；存过关闭的不被默认值覆盖。
+    @Test("登录 shell 环境默认读取")
+    func loginShellDefault() throws {
+        let domain = "com.rakuyo.spooky.tests.loginShell." + UUID().uuidString
+        let defaults = try #require(UserDefaults(suiteName: domain))
+        defer { defaults.removePersistentDomain(forName: domain) }
+
+        let fresh = LocalExecutionPreferences(defaults: defaults, readLoginShell: { [:] }, apply: { _ in })
+        #expect(fresh.usesLoginShell)
+
+        defaults.set(false, forKey: LocalExecutionPreferences.loginShellKey)
+
+        let saved = LocalExecutionPreferences(defaults: defaults, readLoginShell: { [:] }, apply: { _ in })
+        #expect(!saved.usesLoginShell)
     }
 }
