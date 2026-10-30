@@ -137,4 +137,17 @@ struct RemoteManagementTests {
         #expect(after["up.stream/上游"] != before["up.stream/上游"])
         #expect(after["origin"] == before["origin"])
     }
+
+    /// `remote.pushDefault` 这类不属于某个远端的键常见于用户配置，读远端设置与引用快照时都不能因它失败，也不能多出远端。
+    @Test("不属于某个远端的键")
+    func remoteSectionKeys() async throws {
+        let (fixture, _) = try await BranchManagementTests.repository(objectFormat: "sha1")
+        defer { fixture.remove() }
+
+        let runner = fixture.runner
+        _ = try await runner.run(["config", "--local", "remote.pushDefault", "origin"])
+
+        #expect(try await RepositoryRemotes(runner: runner).configurations().map(\.name) == ["origin"])
+        #expect(try await RepositoryReferences(runner: runner).snapshot().remotes.map(\.name) == ["origin"])
+    }
 }

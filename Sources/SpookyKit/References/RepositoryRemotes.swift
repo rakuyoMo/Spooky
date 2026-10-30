@@ -39,6 +39,21 @@ public struct RemoteConfiguration: Sendable, Equatable, Identifiable {
         self.name = name
     }
 
+    /// 配置键 `remote.<远端名>.<变量>` 里的远端名：第一个点与最后一个点之间的部分，远端名本身可以含点。
+    ///
+    /// `remote.pushDefault` 这类只有一个点、不属于某个远端的键返回 nil。
+    static func remoteName(inKey key: String) -> String? {
+        guard
+            key.hasPrefix("remote."),
+            let last = key.lastIndex(of: "."),
+            last > key.index(key.startIndex, offsetBy: 6)
+        else {
+            return nil
+        }
+
+        return String(key[key.index(key.startIndex, offsetBy: 7) ..< last])
+    }
+
     /// 解析 `config -z --get-regexp ^remote\.` 的记录：每条是键、换行、值，没有值的键只有键本身。
     ///
     /// 键的第一个点与最后一个点之间是远端名，远端名本身可以含点；结果按远端名排序。
@@ -49,15 +64,13 @@ public struct RemoteConfiguration: Sendable, Equatable, Identifiable {
             let key = String(decoding: record.prefix { $0 != 10 }, as: UTF8.self)
             let value = record.firstIndex(of: 10).map { String(decoding: record[($0 + 1)...], as: UTF8.self) }
 
-            guard
-                key.hasPrefix("remote."),
-                let last = key.lastIndex(of: "."),
-                last > key.index(key.startIndex, offsetBy: 6)
-            else {
+            guard key.hasPrefix("remote.") else {
                 throw RepositoryReadError.malformedOutput("remote config")
             }
 
-            let name = String(key[key.index(key.startIndex, offsetBy: 7) ..< last])
+            // `remote.pushDefault` 这类不属于某个远端的键不产生远端
+            guard let name = remoteName(inKey: key), let last = key.lastIndex(of: ".") else { continue }
+
             var remote = result[name] ?? Self(name: name)
 
             // 变量名不分大小写，Git 输出时已转成小写；不认识的变量只保留远端名
