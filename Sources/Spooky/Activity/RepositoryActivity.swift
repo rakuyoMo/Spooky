@@ -40,7 +40,8 @@ struct ActivityTarget: Codable, Equatable, Sendable {
     /// 远端名；同时连接几个远端、连接的不是本仓库的远端时为 nil。
     let remote: String?
 
-    /// 拉取与推送分支时传给 git 的 refspec，如 `refs/heads/main`、`refs/heads/main:refs/heads/main`；其余操作为 nil。
+    /// 拉取与推送分支时写在标题里远端名后面的引用：拉取与同步里的推送写远端分支，如 `refs/heads/main`；
+    /// 其余推送写传给 git 的 refspec，如 `refs/heads/main:refs/heads/main`。其余操作为 nil。
     let refspec: String?
 
     /// 获取一个远端；获取全部远端时传 nil。

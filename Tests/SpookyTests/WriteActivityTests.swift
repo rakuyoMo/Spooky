@@ -70,12 +70,12 @@ struct WriteActivityTests {
         sync.receive(.next(pull))
         #expect(activities.items.count == 1)
 
-        sync.receive(.next(.push("origin", refspec: "refs/heads/main:refs/heads/main")))
+        sync.receive(.next(.push("origin", refspec: "refs/heads/main")))
         sync.receive(.state("sync.step.push"))
         #expect(activities.items.count == 2)
         #expect(activities.items.last?.target == pull)
         #expect(activities.items.last?.state == "activity.finished")
-        #expect(sync.current.target == .push("origin", refspec: "refs/heads/main:refs/heads/main"))
+        #expect(sync.current.target == .push("origin", refspec: "refs/heads/main"))
         #expect(sync.current.state == "sync.step.push")
 
         // 储藏后重试的同步没有连接对象，记在 Repository 页

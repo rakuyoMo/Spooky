@@ -181,9 +181,8 @@ extension RepositorySession {
     /// - Returns: 是否已开始执行。
     @discardableResult
     func sync(remote: String, branch: String, options: SyncOptions) -> Bool {
-        // 拉取与推送各记一条：推送的 refspec 与核心库传给 git 的相同，本地是当前分支
-        let pushed = status?.branch.head.map { "refs/heads/" + $0 + ":" + branch }
-        let progress = SyncProgress(push: .push(remote, refspec: pushed))
+        // 拉取与推送各记一条，标题都只写远端分支；当前分支与它不同名时，传给 git 的仍是从当前分支推过去的 refspec
+        let progress = SyncProgress(push: .push(remote, refspec: branch))
 
         return performGit(
             { runner, output in

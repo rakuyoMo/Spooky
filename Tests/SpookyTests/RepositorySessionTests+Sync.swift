@@ -90,6 +90,38 @@ extension RepositorySessionTests {
         #expect(activity?.log.contains("does not appear to be a git repository") ?? false)
     }
 
+    /// 同步里的推送记录只写远端分支：当前分支与远端分支不同名时也是，推上去的仍是当前分支的提交。
+    @Test("同步推送的标题只写远端分支")
+    func syncPushTitleUsesRemoteBranch() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let (runner, _) = try await makeSyncRepository(in: directory)
+        _ = try await runner.run(["switch", "-q", "-c", "topic"])
+        _ = try await runner.run(["commit", "--allow-empty", "-m", "topic"])
+
+        let session = try await openSession(runner)
+        defer { session.close() }
+
+        #expect(session.sync(remote: "origin", branch: "refs/heads/main", options: SyncOptions()))
+        await session.writeTask?.value
+
+        let records = RepositoryActivities.shared.items.filter {
+            $0.repository == runner.location && $0.kind == .remote
+        }
+
+        #expect(records.map(\.target) == [
+            .push("origin", refspec: "refs/heads/main"),
+            .pull("origin", refspec: "refs/heads/main"),
+        ])
+        #expect(records.allSatisfy { $0.state == "activity.finished" })
+
+        // 远端的 main 是 topic 的提交
+        let pushed = try await runner.run(["rev-parse", "--verify", "refs/remotes/origin/main"])
+        let topic = try await runner.run(["rev-parse", "--verify", "refs/heads/topic"])
+        #expect(pushed == topic)
+    }
+
     /// 获取全部远端时每个远端记一条 Remote 记录，标题各写自己的远端；只是记录分条，仍是一次写操作。
     @Test("获取全部远端每个远端记一条")
     func fetchAllRecordsEachRemote() async throws {
@@ -154,7 +186,7 @@ extension RepositorySessionTests {
         }
 
         #expect(records.map(\.target) == [
-            .push("origin", refspec: "refs/heads/main:refs/heads/main"),
+            .push("origin", refspec: "refs/heads/main"),
             .pull("origin", refspec: "refs/heads/main"),
         ])
         #expect(records.map(\.state) == ["activity.failed", "activity.finished"])
