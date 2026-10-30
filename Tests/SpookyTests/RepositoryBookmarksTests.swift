@@ -114,7 +114,7 @@ struct RepositoryBookmarksTests {
         #expect(bookmarks.missing.isEmpty)
     }
 
-    /// 失效的书签只靠灰色名称与警告图标标出，“Unavailable” 留给 VoiceOver；丢失页说明里的本机路径缩写主目录。
+    /// 失效的书签只靠灰色名称与警告图标标出，VoiceOver 把警告图标读作 “Unavailable”；丢失页说明里的本机路径缩写主目录。
     @Test("失效书签的行与丢失页的说明")
     func missingPresentation() throws {
         let (defaults, suite) = try Self.defaults()
@@ -131,10 +131,10 @@ struct RepositoryBookmarksTests {
 
         #expect(!Self.texts(in: cell).contains(unavailable))
         #expect(cell.textField?.textColor == .disabledControlTextColor)
-        #expect(cell.accessibilityValue() as? String == unavailable)
+        #expect(Self.visibleImageDescriptions(in: cell).contains(unavailable))
 
         cell.configure(bookmark, isMissing: false)
-        #expect(cell.accessibilityValue() == nil)
+        #expect(!Self.visibleImageDescriptions(in: cell).contains(unavailable))
 
         // 本机仓库写 “~/…”；服务器仓库写 “<别名>:<路径>”，服务器路径不缩写
         let session = RepositorySession()
@@ -194,5 +194,15 @@ extension RepositoryBookmarksTests {
     private static func texts(in view: NSView) -> [String] {
         let own = (view as? NSTextField).map { [$0.stringValue] } ?? []
         return own + view.subviews.flatMap { texts(in: $0) }
+    }
+
+    /// 视图及其全部子视图里没有隐藏的图片的辅助功能描述，即 VoiceOver 读出的图片名称。
+    private static func visibleImageDescriptions(in view: NSView) -> [String] {
+        guard !view.isHidden else {
+            return []
+        }
+
+        let own = (view as? NSImageView)?.image?.accessibilityDescription.map { [$0] } ?? []
+        return own + view.subviews.flatMap { visibleImageDescriptions(in: $0) }
     }
 }

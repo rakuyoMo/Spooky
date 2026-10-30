@@ -66,7 +66,7 @@ final class BookmarkCellView: NSTableCellView {
     /// 服务器仓库的主机前缀，不随改名编辑。
     private let hostField = NSTextField(labelWithString: "")
 
-    /// 仓库失效时的警告图标。
+    /// 仓库失效时的警告图标，VoiceOver 读作 “Unavailable”：失效状态不只靠图标与颜色表达。
     private let warningView = NSImageView()
 
     /// 克隆中的 16 pt 进度：Git 报告百分比后是确定进度，之前转圈。
@@ -111,9 +111,6 @@ final class BookmarkCellView: NSTableCellView {
 
         toolTip = bookmark.location?.displayPath
         setAccessibilityLabel(bookmark.displayName)
-
-        // 失效状态不只靠图标与颜色表达，VoiceOver 读出 “Unavailable”
-        setAccessibilityValue(isMissing ? AppLocalization.text("repositories.unavailableShort") : nil)
     }
 }
 
@@ -158,9 +155,12 @@ extension BookmarkCellView {
         hostField.setContentHuggingPriority(.required, for: .horizontal)
         hostField.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-        warningView.image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: nil)
+        // 表格单元格不向辅助功能提供值，失效状态由警告图标的描述读出
+        warningView.image = NSImage(
+            systemSymbolName: "exclamationmark.triangle.fill",
+            accessibilityDescription: AppLocalization.text("repositories.unavailableShort")
+        )
         warningView.contentTintColor = .systemYellow
-        warningView.setAccessibilityElement(false)
 
         progressView.style = .spinning
         progressView.controlSize = .small
