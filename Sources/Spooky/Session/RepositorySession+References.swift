@@ -156,6 +156,9 @@ extension RepositorySession {
     @discardableResult
     func deleteBranches(_ branches: [String], force: Bool, deletingUpstream: Bool) -> Bool {
         let tracked = deletingUpstream && branches.count == 1
+        let upstream = tracked
+            ? history.branches.first { $0.id == branches.first }?.upstreamRemote
+            : nil
 
         return performGit(
             { runner, output in
@@ -174,6 +177,7 @@ extension RepositorySession {
             },
             title: AppLocalization.text(branches.count == 1 ? "branch.delete" : "branch.deleteMultiple"),
             transfer: tracked ? .push : nil,
+            remote: upstream,
             undo: tracked ? .irreversible : .reversible
         )
     }
@@ -208,7 +212,8 @@ extension RepositorySession {
                 try await RepositoryTags(runner: runner).pushAll(to: remote, onOutput: output)
             },
             title: AppLocalization.text("tag.pushAll", remote),
-            transfer: .push
+            transfer: .push,
+            remote: remote
         )
     }
 

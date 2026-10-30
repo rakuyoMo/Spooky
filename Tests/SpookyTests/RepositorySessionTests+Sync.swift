@@ -62,7 +62,7 @@ extension RepositorySessionTests {
         #expect(!paused.check(now: start.addingTimeInterval(100_000)))
     }
 
-    /// 自动获取失败不弹错误，原因记进 Activity。
+    /// 自动获取失败不弹错误，原因记进 Activity；获取的是全部远端，记录没有单一的远端名。
     @Test("自动获取失败只记进 Activity")
     func autoFetchFailure() async throws {
         let directory = try temporaryDirectory()
@@ -85,11 +85,13 @@ extension RepositorySessionTests {
         }
 
         #expect(failures.isEmpty)
+        #expect(activity?.transfer == .fetch)
+        #expect(activity?.remote == nil)
         #expect(activity?.state == "activity.failed")
         #expect(activity?.log.contains("does not appear to be a git repository") ?? false)
     }
 
-    /// 推送被拒时错误说明写明停在推送、获取与拉取已完成；没有跟踪分支的快速推送说明原因。
+    /// 推送被拒时错误说明写明停在推送、获取与拉取已完成，Activity 记录写明是与哪个远端的同步；没有跟踪分支的快速推送说明原因。
     @Test("同步停下的步骤与快速推送缺少跟踪分支")
     func syncFailureNote() async throws {
         let directory = try temporaryDirectory()
@@ -119,6 +121,14 @@ extension RepositorySessionTests {
         let note = AppLocalization.text("sync.stopped", SyncProgress.name(.push), completed)
         #expect(failures.count == 1)
         #expect(failures.first?.message.hasPrefix(note) ?? false)
+
+        // 同步记在 Remote 页，带上所选的远端名
+        let activity = RepositoryActivities.shared.items.first {
+            $0.repository == runner.location && $0.kind == .remote
+        }
+
+        #expect(activity?.transfer == .sync)
+        #expect(activity?.remote == "origin")
 
         // 新分支没有跟踪分支，快速推送不开始写入，只说明原因
         _ = try await runner.run(["switch", "-q", "-c", "topic"])

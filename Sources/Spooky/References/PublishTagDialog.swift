@@ -113,7 +113,8 @@ extension PublishTagDialog {
                 try await RepositoryTags(runner: runner).publish(tag, to: remote, skipHooks: skipHooks, onOutput: output)
             },
             title: AppLocalization.text("tag.publish"),
-            transfer: .push
+            transfer: .push,
+            remote: remote
         )
 
         if started {

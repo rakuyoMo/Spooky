@@ -18,8 +18,8 @@ enum ActivityKind: String, CaseIterable, Codable, Sendable {
 
 // MARK: - ActivityTransfer
 
-/// Remote 页记录的传输方向，决定行首的图标。
-enum ActivityTransfer: String, Codable, Sendable {
+/// Remote 页记录的传输方向，决定行首的图标、标题的动词与进度按哪几个阶段算。
+enum ActivityTransfer: String, CaseIterable, Codable, Sendable {
     /// 获取。
     case fetch
 
@@ -28,6 +28,9 @@ enum ActivityTransfer: String, Codable, Sendable {
 
     /// 推送，包括发布、删除与重命名远端的引用。
     case push
+
+    /// 同步：依次获取、拉取与推送。
+    case sync
 }
 
 // MARK: - RepositoryActivity
@@ -57,14 +60,20 @@ final class RepositoryActivity: Identifiable {
     /// Remote 页记录的传输方向；其余两页的记录与较早保存的 Remote 记录为 nil。
     let transfer: ActivityTransfer?
 
+    /// Remote 页记录连接的远端名；同时连接几个远端、连接的不是本仓库的远端，以及较早保存的记录为 nil。
+    let remote: String?
+
     /// 结束时间，由 `RepositoryActivities.finish` 写入；进行中与从本机读回的记录为 nil。
     var ended: Date? = nil
 
     /// 完成、失败或取消的本地化状态键。
     var state = "activity.running"
 
-    /// 当前阶段的完成比例，0–1，取自 stderr 最新的带百分比的进度行；还没有这样的行时为 nil。
+    /// 整体的完成比例，0–1：按传输方向取几个阶段，各阶段最新的百分比求平均，没出现过的阶段算 0；还没出现任何阶段时为 nil。
     private(set) var progress: Double? = nil
+
+    /// 各阶段最新的百分比，以阶段名为键。
+    private var stagePercents: [String: Int] = [:]
 
     /// 正在运行时提供取消入口，结束后清空。
     var cancel: (() -> Void)?
@@ -110,6 +119,7 @@ final class RepositoryActivity: Identifiable {
             id: id,
             kind: kind,
             transfer: transfer,
+            remote: remote,
             repository: repository,
             title: title,
             started: started,
@@ -127,12 +137,14 @@ final class RepositoryActivity: Identifiable {
     ///   - title: 已本地化的操作名称。
     ///   - started: 开始时间；读取结束后才插入的记录传入读取开始的时刻。
     ///   - transfer: Remote 页记录的传输方向；其余两页为 nil。
+    ///   - remote: Remote 页记录连接的远端名；没有单一的远端时为 nil。
     init(
         kind: ActivityKind,
         repository: RepositoryLocation?,
         title: String,
         started: Date = Date(),
-        transfer: ActivityTransfer? = nil
+        transfer: ActivityTransfer? = nil,
+        remote: String? = nil
     ) {
         id = UUID()
         self.kind = kind
@@ -141,6 +153,29 @@ final class RepositoryActivity: Identifiable {
         self.title = title
         self.started = started
         self.transfer = transfer
+        self.remote = remote
+    }
+
+    /// 建立一条进行中的写操作记录：有传输方向的记在 Remote 页，没有的记在 Repository 页。
+    ///
+    /// - Parameters:
+    ///   - repository: 带主机前缀的仓库身份。
+    ///   - title: 已本地化的操作名称。
+    ///   - transfer: 传输方向；不连接远端的写操作为 nil。
+    ///   - remote: 连接的远端名；没有单一的远端时为 nil。
+    convenience init(
+        repository: RepositoryLocation,
+        title: String,
+        transfer: ActivityTransfer?,
+        remote: String?
+    ) {
+        self.init(
+            kind: transfer == nil ? .repository : .remote,
+            repository: repository,
+            title: title,
+            transfer: transfer,
+            remote: remote
+        )
     }
 
     /// 用保存在本机的内容还原一条已结束的记录。
@@ -152,30 +187,72 @@ final class RepositoryActivity: Identifiable {
         title = record.title
         started = record.started
         transfer = record.transfer
+        remote = record.remote
         state = record.state
         stdout = ActivityOutput(data: record.stdout)
         stderr = ActivityOutput(data: record.stderr)
     }
 
-    /// 执行器已经脱敏，此处只按管道追加原始数据，整段保留；stderr 的最后一行是带百分比的进度行时更新进度。
+    /// 执行器已经脱敏，此处只按管道追加原始数据，整段保留；stderr 改写过的行里有进度阶段时更新进度。
     func append(_ output: GitOutputEvent) {
         switch output {
         case .standardOutput(let data):
             stdout.append(data)
 
         case .standardError(let data):
-            stderr.append(data)
-
-            // 带百分比的进度行，如 “Receiving objects:  45% (555/1234)”；按当前阶段显示，不是进度行的输出保留上一次的值
-            let percentLine = /^(?:remote: )?[A-Za-z ]+: +(\d+)% \(/
-
-            guard
-                let match = stderr.lastLine?.firstMatch(of: percentLine),
-                let percent = Int(match.1)
-            else { return }
-
-            progress = Double(min(percent, 100)) / 100
+            updateProgress(with: stderr.append(data))
         }
+    }
+}
+
+// MARK: - Progress
+
+extension RepositoryActivity {
+    /// 推送算进度的阶段。
+    private static let pushStages = [
+        "Compressing objects",
+        "Writing objects",
+        "Unpacking objects",
+    ]
+
+    /// 推送以外的操作算进度的阶段。
+    private static let receiveStages = [
+        "Compressing objects",
+        "Receiving objects",
+        "Resolving deltas",
+        "Unpacking objects",
+    ]
+
+    /// 从 stderr 改写过的文字里记下各阶段最新的百分比，再按本记录的阶段求平均。
+    ///
+    /// 阶段行如 “remote: Compressing objects:  45% (5/11)” “Receiving objects:  45% (555/1234)”；
+    /// 不是这些阶段的输出不改动已有的值。
+    ///
+    /// - Parameter text: 这一块输出改写过的部分，从追加前的当前行起。
+    private func updateProgress(with text: String) {
+        let stages = transfer == .push ? Self.pushStages : Self.receiveStages
+        var matched = false
+
+        for line in text.split(separator: "\n") {
+            for stage in stages {
+                guard
+                    let range = line.range(of: stage + ":"),
+                    let match = line[range.upperBound...].firstMatch(of: /^ +(\d+)%/),
+                    let percent = Int(match.1)
+                else { continue }
+
+                stagePercents[stage] = percent
+                matched = true
+            }
+        }
+
+        guard matched else {
+            return
+        }
+
+        // 没出现过的阶段算 0，平均值封顶 100%
+        let total = stages.reduce(0) { $0 + (stagePercents[$1] ?? 0) }
+        progress = min(Double(total) / Double(stages.count), 100) / 100
     }
 }
 
@@ -426,7 +503,12 @@ private struct ActivityOutput {
     }
 
     /// 追加一块原始输出。UTF-8 的多字节字符里没有换行与回车的字节，按字节切分不会切坏字符。
-    mutating func append(_ chunk: Data) {
+    ///
+    /// - Parameter chunk: 一块原始输出。
+    /// - Returns: 这一块改写过的部分，从追加前的当前行起到末尾；跨块的行由此拼成整行。
+    @discardableResult
+    mutating func append(_ chunk: Data) -> String {
+        let touched = lineStart
         var start = chunk.startIndex
 
         for index in chunk.indices where chunk[index] == Self.newline || chunk[index] == Self.carriageReturn {
@@ -445,6 +527,8 @@ private struct ActivityOutput {
         }
 
         write(chunk[start...])
+
+        return String(decoding: data[touched...], as: UTF8.self)
     }
 
     /// 写入一段不含换行与回车的字节；上一个字节是回车时先删掉当前行。

@@ -174,7 +174,8 @@ extension RenameReferenceDialog {
                                 .renameRemoteBranch(parts.branch, on: parts.remote, to: name, onOutput: output)
                         },
                         title: title,
-                        transfer: .push
+                        transfer: .push,
+                        remote: parts.remote
                     )
                 } else {
                     session.performGit(

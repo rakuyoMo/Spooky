@@ -131,7 +131,8 @@ extension RepositorySession {
                 }
             },
             title: transfer.title,
-            transfer: transfer.activityTransfer
+            transfer: transfer.activityTransfer,
+            remote: remote
         )
     }
 }

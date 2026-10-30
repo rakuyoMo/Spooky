@@ -65,6 +65,14 @@ struct LocalizationTests {
         keys += PullRequestMergeMethod.allCases.map { "pullRequests.method." + $0.rawValue }
         keys += ["merge", "rebase_merge", "ff"].map { "pullRequests.strategy." + $0 }
 
+        // Activity 里 Remote 行的标题：传输方向加进行时或过去时，各有不带与带远端名的两种
+        for transfer in ActivityTransfer.allCases {
+            for tense in ["ing", "ed"] {
+                let key = "activity." + transfer.rawValue + tense
+                keys += [key, key + "Named"]
+            }
+        }
+
         return keys
     }
 

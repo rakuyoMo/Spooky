@@ -17,6 +17,26 @@ struct ActivityRow: View {
     /// 这一行被选中；选中时不换灰底，露出列表的选中底色。
     var isSelected = false
 
+    /// 标题：Remote 页按传输方向与状态写动词，后接远端名，如 “Fetching origin” “Pushed origin”；
+    /// 失败与取消在进行时的写法后面接 failed、cancelled。较早保存、没有方向的 Remote 记录与其余两页写操作名称。
+    var title: String {
+        guard activity.kind == .remote, let transfer = activity.transfer else {
+            return activity.title
+        }
+
+        // 完成的用过去时，其余用进行时，如 “activity.fetched” “activity.fetching”；有远端名时用带名字的 “…Named”
+        let tense = activity.state == "activity.finished" ? "ed" : "ing"
+        let key = "activity." + transfer.rawValue + tense
+        let action = activity.remote.map { AppLocalization.text(key + "Named", $0) }
+            ?? AppLocalization.text(key)
+
+        switch activity.state {
+        case "activity.failed": return AppLocalization.text("activity.titleFailed", action)
+        case "activity.cancelled": return AppLocalization.text("activity.titleCancelled", action)
+        default: return action
+        }
+    }
+
     /// 最后一行文字：日志的最后一个非空行；没有日志时写状态，同步进行中是步骤名。Remote 页进行中的行把它当作进度摘要。
     var status: String {
         activity.lastLine ?? AppLocalization.text(activity.state)
@@ -32,11 +52,11 @@ struct ActivityRow: View {
                 return warning
             }
 
-            // 较早保存、没有方向的记录与拉取同用一个图标
+            // 同步与较早保存、没有方向的记录与拉取同用一个图标
             switch activity.transfer {
             case .fetch: return "arrow.down.circle"
             case .push: return "arrow.up.circle"
-            case .pull, nil: return "arrow.down.to.line"
+            case .pull, .sync, nil: return "arrow.down.to.line"
             }
 
         case .repository:
@@ -125,7 +145,7 @@ extension ActivityRow {
             VStack(alignment: .leading, spacing: 4) {
                 header(size: isRunningRemote ? 10 : 11)
 
-                title(offset: 0)
+                titleLine(offset: 0)
 
                 if isRunningRemote {
                     progressLine
@@ -147,7 +167,7 @@ extension ActivityRow {
             VStack(alignment: .leading, spacing: 4) {
                 header(size: 11)
 
-                title(offset: 1.5)
+                titleLine(offset: 1.5)
 
                 statusLine
             }
@@ -212,8 +232,8 @@ extension ActivityRow {
     /// 第二行：12 pt 粗体的标题。
     ///
     /// - Parameter offset: 标题的中心比图标中心低多少。
-    private func title(offset: CGFloat) -> some View {
-        Text(activity.title)
+    private func titleLine(offset: CGFloat) -> some View {
+        Text(title)
             .font(.system(size: 12, weight: .bold))
             .lineLimit(1)
             .alignmentGuide(.titleCenter) { $0[VerticalAlignment.center] - offset }

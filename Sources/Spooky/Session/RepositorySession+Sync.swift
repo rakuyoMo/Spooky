@@ -191,7 +191,8 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("sync.sync"),
-            transfer: .pull,
+            transfer: .sync,
+            remote: remote,
             offersAutoStash: true,
             failureNote: { progress.failureNote }
         )
@@ -216,7 +217,8 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("sync.quickFetch"),
-            transfer: .fetch
+            transfer: .fetch,
+            remote: target
         )
     }
 
@@ -241,6 +243,9 @@ extension RepositorySession {
         let rebase = SyncPreferences.pullRebase
         let verify = SyncPreferences.pullVerifySignatures
 
+        // 没有指定时拉取 HEAD 跟踪的远端；跟踪的是本地分支时远端名是 “.”，记录的标题不写它
+        let source = remote ?? headBranch?.upstreamRemote.flatMap { $0 == "." ? nil : $0 }
+
         performGit(
             { [remote, branch] runner, output in
                 try await RepositorySync(runner: runner)
@@ -254,6 +259,7 @@ extension RepositorySession {
             },
             title: AppLocalization.text("sync.quickPull"),
             transfer: .pull,
+            remote: source,
             offersAutoStash: true
         )
     }
@@ -286,7 +292,8 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("sync.quickPush"),
-            transfer: .push
+            transfer: .push,
+            remote: remote
         )
     }
 

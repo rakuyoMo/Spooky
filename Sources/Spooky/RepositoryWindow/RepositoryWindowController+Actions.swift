@@ -166,7 +166,7 @@ extension RepositoryWindowController {
                 cancel: { [weak sheet] in
                     if let sheet { window.endSheet(sheet) }
                 },
-                submit: { [weak self, weak sheet] title, action in
+                submit: { [weak self, weak sheet] title, remote, action in
                     // 只有写操作真正开始才关闭表单；仓库忙碌或断线时保留未发送的参数。
                     // 拉取与合并被本地改动挡住时按设置询问是否先储藏
                     guard
@@ -175,6 +175,7 @@ extension RepositoryWindowController {
                             action,
                             title: title,
                             transfer: request.kind.transfer,
+                            remote: remote,
                             offersAutoStash: [.pull, .merge].contains(request.kind),
                             undo: [.create, .track, .merge].contains(request.kind) ? .reversible : .irreversible
                         )

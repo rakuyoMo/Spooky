@@ -22,7 +22,13 @@ struct ActivityArchiveTests {
         await activities.restore(from: directory)
 
         // 一条结束的 Remote 记录，带回车刷新的进度
-        let fetch = RepositoryActivity(kind: .remote, repository: location, title: "Fetch", transfer: .fetch)
+        let fetch = RepositoryActivity(
+            kind: .remote,
+            repository: location,
+            title: "Fetch",
+            transfer: .fetch,
+            remote: "origin"
+        )
         activities.insert(fetch)
         fetch.append(.standardOutput(Data("From spooky-test\n".utf8)))
         fetch.append(.standardError(Data("接收对象：50%\r接收对象：100%\n".utf8)))
@@ -53,6 +59,7 @@ struct ActivityArchiveTests {
         #expect(item.id == fetch.id)
         #expect(item.kind == .remote)
         #expect(item.transfer == .fetch)
+        #expect(item.remote == "origin")
         #expect(item.repository == location)
         #expect(item.title == "Fetch")
         #expect(item.started == fetch.started)
@@ -126,18 +133,21 @@ struct ActivityArchiveTests {
         #expect(!exists(file))
     }
 
-    /// 较早保存的记录没有传输方向这一项，读回时为 nil，其余内容照常读回。
-    @Test("没有传输方向的旧记录照常读回")
+    /// 较早保存的记录没有传输方向与远端名这两项，读回时为 nil，其余内容照常读回。
+    @Test("没有传输方向与远端名的旧记录照常读回")
     func restoreWithoutTransfer() throws {
         let data = try JSONEncoder().encode(record(started: Date()))
         var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
         #expect(object["transfer"] as? String == "fetch")
+        #expect(object["remote"] as? String == "origin")
 
         object.removeValue(forKey: "transfer")
+        object.removeValue(forKey: "remote")
         let old = try JSONSerialization.data(withJSONObject: object)
         let decoded = try JSONDecoder().decode(ActivityRecord.self, from: old)
 
         #expect(decoded.transfer == nil)
+        #expect(decoded.remote == nil)
         #expect(decoded.title == "Fetch")
         #expect(decoded.state == "activity.finished")
     }
@@ -148,6 +158,7 @@ struct ActivityArchiveTests {
             id: UUID(),
             kind: .remote,
             transfer: .fetch,
+            remote: "origin",
             repository: .local(path: "/temporary/activity"),
             title: "Fetch",
             started: started,

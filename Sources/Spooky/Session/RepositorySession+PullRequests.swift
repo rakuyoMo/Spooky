@@ -134,6 +134,7 @@ extension RepositorySession {
             },
             title: pullRequestText("fetchHead.title", request.id.reference),
             transfer: .fetch,
+            remote: remote,
             success: { [weak self] in
                 guard let self, let runner else { return }
                 pullRequests.reloadDetail(runner: runner)
@@ -152,6 +153,7 @@ extension RepositorySession {
             },
             title: pullRequestText("checkout.title"),
             transfer: .pull,
+            remote: remote,
             offersAutoStash: true,
             undo: .reversible
         )

@@ -86,10 +86,11 @@ struct RepositoryOperationDialog: View {
     /// 取消只关闭表单。
     let cancel: () -> Void
 
-    /// 提交交付显式参数对应的业务操作；返回 false 表示仓库暂不可写，表单保持打开。
+    /// 提交交付操作名称、Activity 记录连接的远端名与显式参数对应的业务操作；返回 false 表示仓库暂不可写，表单保持打开。
     let submit:
         (
             String,
+            String?,
             @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
         ) -> Bool
 
@@ -700,6 +701,17 @@ extension RepositoryOperationDialog {
         return (options, forcePush ? tracking?.objectID ?? "" : nil)
     }
 
+    /// 合并的选项：压缩、总是新建合并提交、随即提交、签名校验与跳过钩子都照表单。
+    private func mergeConfiguration() -> MergeOptions {
+        var options = MergeOptions()
+        options.squash = squash
+        options.alwaysCreateCommit = alwaysCommit
+        options.commit = alwaysCommit && !squash ? autoCommit : true
+        options.verifySignatures = mergeVerify
+        options.skipHooks = skipHooks
+        return options
+    }
+
     /// 远端分支短名按所属远端切除前缀，兼容远端名中的斜杠。
     private func remoteBranchName(_ reference: String) -> String {
         guard
@@ -727,19 +739,13 @@ extension RepositoryOperationDialog {
         let allTags = allTags
         let submodules = fetchSubmodules
         let rebase = rebase
-        let verify = request.kind == .pull ? pullVerify : mergeVerify
+        let verify = pullVerify
         let skipHooks = skipHooks
         let kind = request.kind
         let selected = branches.first { $0.id == revision }
         let pullRemote = selected.flatMap { session.history.snapshot?.remote(for: $0) }
         let pullBranch = selected.map { "refs/heads/" + remoteBranchName($0.id) }
-        var mergeOptions = MergeOptions()
-        mergeOptions.squash = squash
-        mergeOptions.alwaysCreateCommit = alwaysCommit
-        mergeOptions.commit = alwaysCommit && !squash ? autoCommit : true
-        mergeOptions.verifySignatures = verify
-        mergeOptions.skipHooks = skipHooks
-        let options = mergeOptions
+        let options = mergeConfiguration()
         let push = pushConfiguration()
 
         /// 按动作种类调用核心库，只读取上面复制的表单值。
@@ -798,7 +804,16 @@ extension RepositoryOperationDialog {
             }
         }
 
+        // Activity 记录连接的远端：获取全部远端时没有单一的远端，不连接远端的动作没有
+        let activityRemote: String? =
+            switch kind {
+            case .fetch: allRemotes ? nil : remote
+            case .pull: pullRemote?.name
+            case .push, .publish: remote
+            case .create, .track, .merge: nil
+            }
+
         // 仓库在点击瞬间变为不可写时表单不关闭，原因显示在表单内，已填写的参数原样保留。
-        _ = submit(AppLocalization.text(kind.rawValue), run)
+        _ = submit(AppLocalization.text(kind.rawValue), activityRemote, run)
     }
 }
