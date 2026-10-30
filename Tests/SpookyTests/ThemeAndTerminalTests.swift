@@ -96,12 +96,11 @@ struct ThemeAndTerminalTests {
         #expect(AppPalette.colors["blue_file_status_background_color"]?.dark.alpha == 0.70)
     }
 
-    /// 终端候选不能误把 Prompt 的标识映射为 Otty。
+    /// 终端候选固定为六个程序，靠 Bundle Identifier 认出；路径与主机别名里的引号不能逃出转义。
     @Test("终端候选和双层命令转义")
     @MainActor
     func terminalCommands() {
-        #expect(TerminalApplication.allCases.count == 7)
-        #expect(TerminalApplication.prompt.rawValue == "com.panic.prompt.3")
+        #expect(TerminalApplication.allCases.count == 6)
         #expect(TerminalApplication.otty.rawValue == "io.appmakes.otty")
         let local = RepositoryLocation.local(path: "/tmp/仓 库'\"$HOME")
         #expect(local.terminalCommand == "cd -- '/tmp/仓 库'\\''\"$HOME'")

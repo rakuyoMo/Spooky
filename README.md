@@ -59,7 +59,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Branches, tags, and remotes**: the sidebar groups refs into folders by “/” and can be filtered. Pin and archive branches, and see which ones are stale or tracking a branch that no longer exists. Fast-forward, rename, and delete local and remote branches, set upstream and parent branches, create lightweight, annotated, or signed tags, and manage remotes with their URLs and refspecs. Branch names are converted into valid ref names as you type
 
-- **Sync and merge**: fetch, pull, push, and sync, with options for pruning, all tags, submodules, and hooks. Force pushes only overwrite the version you last saw, and any revision can be pushed to any ref, such as a Gerrit review. Remotes can be fetched automatically whenever a window shows the repository, even while Spooky is in the background, without asking for credentials. Merges are previewed for conflicts first. Every operation is logged in the **Activity** window, on separate pages for remote operations, repository operations, and hosting service requests, and running operations can be cancelled
+- **Sync and merge**: fetch, pull, push, and sync, with options for pruning, all tags, submodules, and hooks. Force pushes only overwrite the version you last saw, and any revision can be pushed to any ref. Remotes can be fetched automatically whenever a window shows the repository, even while Spooky is in the background, without asking for credentials. Merges are previewed for conflicts first. Every operation is logged in the **Activity** window, on separate pages for remote operations, repository operations, and hosting service requests, and running operations can be cancelled
 
 - **Rewriting history**: revert, cherry-pick, reset with a soft, mixed, or hard mode, check out any revision, and rebase onto a new base. Rebase interactively to squash, fixup, edit, reword, delete, or reorder commits, add staged changes to an older commit, or autosquash. Before rewriting, Spooky lists the affected commits and warns about those that were already pushed or merged
 
@@ -79,13 +79,13 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Drag and drop**: drag branches, commits, and tags in the sidebar to create branches and tags, merge, rebase, cherry-pick, revert, pull, publish, push, pin, archive, or rename. Drag commits within the history to squash, fixup, or move them
 
-- **Open in Terminal**: supports Terminal, iTerm, Warp, Ghostty, WezTerm, Prompt, and Otty. For a server repository, the terminal connects over SSH and opens the remote path
+- **Open in Terminal**: supports Terminal, iTerm, Warp, Ghostty, WezTerm, and Otty. For a server repository, the terminal connects over SSH and opens the remote path
 
 - **External tools**: compare and merge with external diff and merge tools, and open files with other apps. Server files are copied to your Mac for these tools, and merge results and edited files are written back only after Spooky checks that the server's version hasn't changed. VS Code opens server files directly over Remote - SSH
 
 - **Links**: `spooky://` links open a repository, a view, a branch, or a commit, or start a clone, for local and server repositories alike. The “Open with Desktop” links on github.com can open in Spooky
 
-- **Settings**: appearance, global Git identity and signing, the Git program, external tools, hosting accounts, Gerrit pushes, issue tracker links, the SSH agent, and environment variables. Repository settings cover the description, issue tracking, committer identity, line wrapping, signing, Git LFS, ignores, and excludes
+- **Settings**: appearance, global Git identity and signing, the Git program, external tools, hosting accounts, the SSH agent, and environment variables. Repository settings cover the description, committer identity, line wrapping, signing, Git LFS, ignores, and excludes
 
 - **Updates and diagnostics**: Spooky checks for signed updates on the stable, beta, or development channel. Help can export a diagnostic report with personal details removed, and after a crash Spooky can open a pre-filled GitHub issue that you submit yourself
 
@@ -191,7 +191,7 @@ On your Mac:
 - Connections and callbacks use private `/tmp/spooky-*` temporary directories, which are removed when the session closes. Signature checks in local repositories use one of these directories as well, removed as soon as the check finishes
 - Author pictures are requested from Gravatar with a SHA-256 hash of each author's email address, and are kept in memory only while Spooky is running
 - File copies for Quick Look and other apps are kept in private `spooky-files-*` temporary directories, which are removed when the repository closes
-- Opening a server repository in Warp writes `Spooky-*.yaml` to `~/.warp/launch_configurations/`, and opening it in Prompt uses a temporary `.command` file. When Spooky quits, it removes only the files it created
+- Opening a server repository in Warp writes `Spooky-*.yaml` to `~/.warp/launch_configurations/`. When Spooky quits, it removes only the files it created
 - At launch, Spooky reads its own crash reports in `~/Library/Logs/DiagnosticReports/` to offer a GitHub issue. Nothing is uploaded automatically
 - Updates are checked against `appcast.xml` on GitHub Releases, and downloaded updates are verified with an EdDSA signature before they're installed
 
@@ -203,7 +203,7 @@ On the server:
 In your repositories:
 
 - Pins, archives, parent branches, and branch review marks are stored in the repository's own Git configuration, as `branch.<name>.spooky-*`. They move with a branch when it's renamed and are removed when it's deleted
-- Repository settings are written to the repository's own Git configuration. Line wrapping and issue tracking use the keys `spooky.commitbodylimit`, `spooky.commitshowsguide`, `spooky.issuetrackertemplate`, and `spooky.issuenumberprefix`
+- Repository settings are written to the repository's own Git configuration. Line wrapping uses the keys `spooky.commitbodylimit` and `spooky.commitshowsguide`
 - Enabling Git LFS registers its filter and hooks only in the repository's own configuration, and tracking patterns are written to `.gitattributes` at the repository root
 
 ## Development

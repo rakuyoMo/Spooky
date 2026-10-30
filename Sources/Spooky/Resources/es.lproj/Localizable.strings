@@ -1517,31 +1517,6 @@
 "gitConfig.error.read" = "No se puede leer la configuración global de Git";
 "gitConfig.error.write" = "No se puede guardar la configuración global de Git";
 
-"gerrit.pushTitle" = "Hacer push a Gerrit Code Review";
-"gerrit.pushTitle.help" = "Hace push de la revisión elegida al remoto seleccionado para su revisión, como “refs/for/<rama de revisión>”.";
-"gerrit.push" = "Hacer push a Gerrit";
-"gerrit.reviewBranch" = "Rama de revisión:";
-"gerrit.pushMenu" = "Hacer push de “%@” a Gerrit…";
-"gerrit.quickPush" = "Push rápido de “%1$@” a Gerrit “%2$@ refs/for/%1$@”";
-"settings.gerrit" = "Gerrit Code Review:";
-"settings.gerrit.enable" = "Activar el push sencillo a Gerrit";
-"issueTracking.url" = "URL del gestor de incidencias:";
-"issueTracking.prefix" = "Prefijo de los números de incidencia:";
-"issueTracking.notConfigured" = "Sin configurar";
-"issueTracking.edit" = "Editar";
-"issueTracking.invalid" = "URL del gestor de incidencias no válida";
-"issueTracking.title" = "Detección de números de incidencia";
-"issueTracking.title.help" = "Introduce la plantilla de URL de tu gestor de incidencias y el prefijo que marca los números de incidencia en los mensajes de commit.";
-"issueTracking.save" = "Guardar";
-"issueTracking.url.help" = "%@ indica dónde va el número de incidencia en la URL.";
-"issueTracking.prefix.help" = "El texto delante de un número de incidencia, por ejemplo #.";
-"issueTracking.url.placeholder" = "Plantilla de URL del gestor de incidencias";
-"issueTracking.error.prefixLength" = "El prefijo de los números de incidencia no puede tener más de %d caracteres.";
-"issueTracking.error.prefixWhitespace" = "El prefijo de los números de incidencia no puede contener espacios.";
-"issueTracking.error.templateRequired" = "Introduce una URL del gestor de incidencias para usar un prefijo personalizado.";
-"issueTracking.error.templateWhitespace" = "La URL del gestor de incidencias no puede contener espacios.";
-"issueTracking.error.placeholders" = "Solo se admiten los marcadores {ISSUE_NUMBER}, {OWNER} y {REPOSITORY}.";
-"issueTracking.error.template" = "Introduce una dirección web que incluya el marcador {ISSUE_NUMBER}.";
 "profiles.create.title" = "Crear perfil de usuario";
 "profiles.create.message" = "Crea un perfil de usuario con los valores introducidos.";
 "profiles.create.submit" = "Crear";
@@ -1569,11 +1544,9 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "Agente SSH:";
 "settings.sshAgent.system" = "Agente SSH del sistema";
-"settings.sshAgent.onePassword" = "Agente SSH de 1Password";
 "settings.sshAgent.description" = "El agente SSH seleccionado se usa para las conexiones SSH y las firmas SSH.";
 "settings.sshAgent.warning" = "El agente SSH no está en ejecución";
-"settings.sshAgent.warning.system" = "El agente SSH del sistema no está disponible. Reiniciar el Mac o elegir otro agente SSH.";
-"settings.sshAgent.warning.onePassword" = "El agente SSH de 1Password no está en ejecución. Activar el agente SSH en los ajustes de 1Password o elegir otro agente SSH.";
+"settings.sshAgent.warning.system" = "El agente SSH del sistema no está disponible. Reiniciar el Mac.";
 
 /* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
 "settings.gitProgram" = "Binario de Git:";
@@ -1675,7 +1648,6 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "Terminal";
 "toolbar.quickActions" = "Acciones rápidas";
-"toolbar.gerritPush" = "Push a Gerrit";
 "launch.empty" = "No hay repositorios recientes";
 "launch.version" = "Versión %@";
 
@@ -1895,9 +1867,6 @@
 "repositorySettings.noPatterns" = "No hay patrones";
 "repositorySettings.name" = "Nombre";
 "repositorySettings.path" = "Ruta";
-"repositorySettings.issueTracking" = "Seguimiento de incidencias";
-"repositorySettings.issueTrackerURL" = "URL del gestor de incidencias";
-"repositorySettings.issueNumberPrefix" = "Prefijo de número de incidencia";
 "repositorySettings.wrapping" = "Ajuste de línea";
 "repositorySettings.pageGuide" = "Mostrar guía";
 "repositorySettings.lineLimit" = "Caracteres por línea";

@@ -88,7 +88,6 @@ extension SSHAgentSettingsRow {
     private static func title(_ agent: SSHAgent) -> String {
         switch agent {
         case .system: AppLocalization.text("settings.sshAgent.system")
-        case .onePassword: AppLocalization.text("settings.sshAgent.onePassword")
         }
     }
 
@@ -96,7 +95,6 @@ extension SSHAgentSettingsRow {
     private static func warning(_ agent: SSHAgent) -> String {
         switch agent {
         case .system: AppLocalization.text("settings.sshAgent.warning.system")
-        case .onePassword: AppLocalization.text("settings.sshAgent.warning.onePassword")
         }
     }
 }

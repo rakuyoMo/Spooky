@@ -1517,31 +1517,6 @@
 "gitConfig.error.read" = "Impossible de lire la configuration Git globale";
 "gitConfig.error.write" = "Impossible d’enregistrer la configuration Git globale";
 
-"gerrit.pushTitle" = "Pousser vers Gerrit Code Review";
-"gerrit.pushTitle.help" = "Pousse la révision choisie vers le dépôt distant sélectionné pour révision, sous « refs/for/<branche de révision> ».";
-"gerrit.push" = "Pousser vers Gerrit";
-"gerrit.reviewBranch" = "Branche de révision :";
-"gerrit.pushMenu" = "Pousser « %@ » vers Gerrit…";
-"gerrit.quickPush" = "Pousser rapidement « %1$@ » vers Gerrit « %2$@ refs/for/%1$@ »";
-"settings.gerrit" = "Gerrit Code Review :";
-"settings.gerrit.enable" = "Activer l’envoi simplifié vers Gerrit";
-"issueTracking.url" = "URL du suivi des tickets :";
-"issueTracking.prefix" = "Préfixe des numéros de ticket :";
-"issueTracking.notConfigured" = "Non configuré";
-"issueTracking.edit" = "Modifier";
-"issueTracking.invalid" = "URL du suivi des tickets non valide";
-"issueTracking.title" = "Détection des numéros de ticket";
-"issueTracking.title.help" = "Saisissez le modèle d’URL de votre suivi des tickets et le préfixe qui signale les numéros de ticket dans les messages de commit.";
-"issueTracking.save" = "Enregistrer";
-"issueTracking.url.help" = "%@ indique l’emplacement du numéro de ticket dans l’URL.";
-"issueTracking.prefix.help" = "Le texte placé devant un numéro de ticket, par exemple #.";
-"issueTracking.url.placeholder" = "Modèle d’URL du suivi des tickets";
-"issueTracking.error.prefixLength" = "Le préfixe des numéros de ticket ne doit pas dépasser %d caractères.";
-"issueTracking.error.prefixWhitespace" = "Le préfixe des numéros de ticket ne doit pas contenir d’espaces.";
-"issueTracking.error.templateRequired" = "Saisissez une URL de suivi des tickets pour utiliser un préfixe personnalisé.";
-"issueTracking.error.templateWhitespace" = "L’URL du suivi des tickets ne doit pas contenir d’espaces.";
-"issueTracking.error.placeholders" = "Seuls les marqueurs {ISSUE_NUMBER}, {OWNER} et {REPOSITORY} sont pris en charge.";
-"issueTracking.error.template" = "Saisissez une adresse web contenant le marqueur {ISSUE_NUMBER}.";
 "profiles.create.title" = "Créer un profil utilisateur";
 "profiles.create.message" = "Crée un profil utilisateur avec les valeurs saisies.";
 "profiles.create.submit" = "Créer";
@@ -1569,11 +1544,9 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "Agent SSH :";
 "settings.sshAgent.system" = "Agent SSH du système";
-"settings.sshAgent.onePassword" = "Agent SSH de 1Password";
 "settings.sshAgent.description" = "L’agent SSH sélectionné est utilisé pour les connexions SSH et les signatures SSH.";
 "settings.sshAgent.warning" = "L’agent SSH n’est pas actif";
-"settings.sshAgent.warning.system" = "L’agent SSH du système n’est pas disponible. Redémarrez le Mac ou choisissez un autre agent SSH.";
-"settings.sshAgent.warning.onePassword" = "L’agent SSH de 1Password n’est pas actif. Activez l’agent SSH dans les réglages de 1Password ou choisissez un autre agent SSH.";
+"settings.sshAgent.warning.system" = "L’agent SSH du système n’est pas disponible. Redémarrez le Mac.";
 
 /* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
 "settings.gitProgram" = "Binaire Git :";
@@ -1675,7 +1648,6 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "Terminal";
 "toolbar.quickActions" = "Actions rapides";
-"toolbar.gerritPush" = "Push Gerrit";
 "launch.empty" = "Aucun dépôt récent";
 "launch.version" = "Version %@";
 
@@ -1895,9 +1867,6 @@
 "repositorySettings.noPatterns" = "Aucun motif";
 "repositorySettings.name" = "Nom";
 "repositorySettings.path" = "Chemin";
-"repositorySettings.issueTracking" = "Suivi des tickets";
-"repositorySettings.issueTrackerURL" = "URL du gestionnaire de tickets";
-"repositorySettings.issueNumberPrefix" = "Préfixe des numéros de ticket";
 "repositorySettings.wrapping" = "Retour à la ligne";
 "repositorySettings.pageGuide" = "Afficher le repère";
 "repositorySettings.lineLimit" = "Caractères par ligne";

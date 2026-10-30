@@ -6,7 +6,7 @@ import Testing
 
 // MARK: - SettingsPreferencesTests
 
-/// 设置页写入的偏好与校验规则：窗口恢复交还系统设置时必须删掉键，Issue 追踪的模板与前缀不合法时不能保存。
+/// 设置页写入的偏好：窗口恢复交还系统设置时必须删掉键，克隆目录的候选不重复，本机执行设置立即交给核心库并能读回。
 @MainActor
 struct SettingsPreferencesTests {
     /// 三种窗口恢复方式写进 App 自己的偏好域；交给系统设置时删除键，读出时不受全局域影响。
@@ -46,31 +46,6 @@ struct SettingsPreferencesTests {
         )
     }
 
-    /// 都不填表示不使用 Issue 追踪；默认的 # 可以单独使用，自定义前缀必须配上模板。
-    @Test("Issue 追踪的前缀规则")
-    func issuePrefix() {
-        #expect(IssueTracking.problem(template: "", prefix: "") == nil)
-        #expect(IssueTracking.problem(template: "", prefix: "#") == nil)
-        #expect(IssueTracking.problem(template: "", prefix: "JIRA-") != nil)
-        let template = "https://example.invalid/{ISSUE_NUMBER}"
-
-        #expect(IssueTracking.problem(template: template, prefix: "JIRA-") == nil)
-        #expect(IssueTracking.problem(template: template, prefix: "A B") != nil)
-        #expect(IssueTracking.problem(template: template, prefix: String(repeating: "x", count: 21)) != nil)
-    }
-
-    /// 模板必须是带主机名的网页地址、带编号占位符，只用支持的占位符，不含空白。
-    @Test("Issue 追踪的地址模板规则")
-    func issueTemplate() {
-        #expect(IssueTracking.templateProblem("https://example.invalid/{OWNER}/{REPOSITORY}/issues/{ISSUE_NUMBER}") == nil)
-        #expect(IssueTracking.templateProblem("http://tracker.invalid/browse/{ISSUE_NUMBER}") == nil)
-        #expect(IssueTracking.templateProblem("https://example.invalid/issues/") != nil)
-        #expect(IssueTracking.templateProblem("https://example.invalid/{TICKET}/{ISSUE_NUMBER}") != nil)
-        #expect(IssueTracking.templateProblem("https://example.invalid/my issues/{ISSUE_NUMBER}") != nil)
-        #expect(IssueTracking.templateProblem("ftp://example.invalid/{ISSUE_NUMBER}") != nil)
-        #expect(IssueTracking.templateProblem("{ISSUE_NUMBER}") != nil)
-    }
-
     /// 环境设置写进偏好并立即交给核心库；登录 shell 的变量只在开启时带上，重新创建时读回保存的值。
     @Test("本机执行设置的持久化")
     func localExecutionPreferences() async throws {
@@ -86,7 +61,6 @@ struct SettingsPreferencesTests {
         )
 
         preferences.saveCustomVariables([CustomEnvironmentVariable(name: "TOKEN", value: "值")])
-        preferences.selectSSHAgent(.onePassword)
         preferences.selectGitExecutable("/opt/homebrew/bin/git")
         preferences.setUsesLoginShell(true)
 
@@ -99,22 +73,14 @@ struct SettingsPreferencesTests {
         #expect(last.customVariables == ["TOKEN": "值"])
         #expect(last.gitExecutable == "/opt/homebrew/bin/git")
         #expect(last.loginShellVariables == ["EDITOR": "nano"])
-        #expect(last.sshAuthSocket?.hasSuffix("2BUA8C4S2C.com.1password/t/agent.sock") ?? false)
+        #expect(last.sshAuthSocket == SSHAgent.system.socket())
 
         let reloaded = LocalExecutionPreferences(defaults: defaults, readLoginShell: { [:] }, apply: { _ in })
         #expect(reloaded.customVariables.map(\.name) == ["TOKEN"])
-        #expect(reloaded.sshAgent == .onePassword)
         #expect(reloaded.gitExecutable == "/opt/homebrew/bin/git")
         #expect(reloaded.usesLoginShell)
 
         preferences.setUsesLoginShell(false)
         #expect(applied.last?.loginShellVariables.isEmpty ?? false)
-    }
-
-    /// Gerrit 为评审分支收取变更的引用写在 refs/for/ 之下。
-    @Test("Gerrit 的评审引用")
-    func gerritReviewReference() {
-        #expect(GerritPush.reviewReference("main") == "refs/for/main")
-        #expect(GerritPush.reviewReference("feature/登录") == "refs/for/feature/登录")
     }
 }

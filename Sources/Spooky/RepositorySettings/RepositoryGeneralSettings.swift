@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - RepositoryGeneralSettings
 
-/// 仓库设置的 General 段：名称、路径与描述，Issue 追踪，提交人身份，正文折行，以及提交签名。
+/// 仓库设置的 General 段：名称、路径与描述，提交人身份，正文折行，以及提交签名。
 ///
 /// 配置只写进这个仓库的本地配置；没有在本仓库设置的项显示 “–”，沿用全局设置。
 struct RepositoryGeneralSettings: View {
@@ -11,9 +11,6 @@ struct RepositoryGeneralSettings: View {
     private enum Editor: String, Identifiable {
         /// 仓库描述。
         case description
-
-        /// Issue 追踪的地址模板与编号前缀。
-        case issueTracking
 
         /// 提交人身份。
         case identity
@@ -48,11 +45,9 @@ struct RepositoryGeneralSettings: View {
     @State
     private var editor: Editor?
 
-    /// 五组设置依次排列。
+    /// 四组设置依次排列。
     var body: some View {
         generalRows
-
-        issueTrackingRows
 
         identityRows
 
@@ -85,28 +80,6 @@ extension RepositoryGeneralSettings {
             label: AppLocalization.text("bookmarks.detail.description"),
             value: summary.description?.trimmingCharacters(in: .newlines) ?? "",
             actions: [action("bookmarks.detail.edit") { editor = .description }]
-        )
-    }
-
-    /// Issue 追踪的地址模板与编号前缀；没有设置时写明。
-    @ViewBuilder
-    private var issueTrackingRows: some View {
-        RemoteSettingsGroup(
-            title: AppLocalization.text("repositorySettings.issueTracking"),
-            actions: [action("bookmarks.detail.edit") { editor = .issueTracking }]
-        )
-
-        RemoteSettingRow(
-            label: AppLocalization.text("repositorySettings.issueTrackerURL"),
-            value: settings.issueTrackerTemplate ?? AppLocalization.text("issueTracking.notConfigured"),
-            small: settings.issueTrackerTemplate != nil,
-            secondary: settings.issueTrackerTemplate == nil
-        )
-
-        RemoteSettingRow(
-            label: AppLocalization.text("repositorySettings.issueNumberPrefix"),
-            value: settings.issueNumberPrefix ?? AppLocalization.text("issueTracking.notConfigured"),
-            secondary: settings.issueNumberPrefix == nil
         )
     }
 
@@ -193,14 +166,6 @@ extension RepositoryGeneralSettings {
                 write("repositorySettings.write") { try await $0.setRepositoryDescription(text) }
             }
 
-        case .issueTracking:
-            IssueTrackingDialog(
-                template: settings.issueTrackerTemplate ?? "",
-                prefix: settings.issueNumberPrefix ?? "",
-                save: saveIssueTracking,
-                close: close
-            )
-
         case .identity:
             EditIdentityDialog(
                 name: summary.committer?.name ?? "",
@@ -269,14 +234,6 @@ extension RepositoryGeneralSettings {
     /// 写入或删除本地配置的一项。
     private func setConfig(_ key: String, to value: String?) {
         write("repositorySettings.write") { try await $0.setLocalConfig(key, to: value) }
-    }
-
-    /// 保存 Issue 追踪：空的一项从本地配置里删除。
-    private func saveIssueTracking(template: String, prefix: String) {
-        write("repositorySettings.write") { runner in
-            try await runner.setLocalConfig(RepositorySettings.Key.issueTrackerTemplate, to: template.isEmpty ? nil : template)
-            try await runner.setLocalConfig(RepositorySettings.Key.issueNumberPrefix, to: prefix.isEmpty ? nil : prefix)
-        }
     }
 
     /// 在仓库写队列里执行一次写入；结束后会话完整刷新，设置页随之重新读取。

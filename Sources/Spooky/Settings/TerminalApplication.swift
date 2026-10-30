@@ -20,9 +20,6 @@ enum TerminalApplication: String, CaseIterable, Identifiable {
     /// WezTerm。
     case wezTerm = "com.github.wez.wezterm"
 
-    /// Prompt 3。
-    case prompt = "com.panic.prompt.3"
-
     /// Otty。
     case otty = "io.appmakes.otty"
 
@@ -37,7 +34,6 @@ enum TerminalApplication: String, CaseIterable, Identifiable {
         case .warp: "Warp"
         case .ghostty: "Ghostty"
         case .wezTerm: "WezTerm"
-        case .prompt: "Prompt"
         case .otty: "Otty"
         }
     }
@@ -62,7 +58,7 @@ struct TerminalLaunchError: Error {
 /// 把统一的仓库终端命令交给用户选择的程序。
 @MainActor
 enum TerminalLauncher {
-    /// Warp 启动配置和 Prompt 命令文件只保留到本次 App 会话结束。
+    /// Warp 启动配置只保留到本次 App 会话结束。
     private static var temporaryFiles: [URL] = []
 
     /// 本机进入目录，服务器在所选终端运行系统 SSH。
@@ -137,20 +133,6 @@ enum TerminalLauncher {
                 _ = try await NSWorkspace.shared.open([directory], withApplicationAt: application, configuration: .init())
             } else {
                 try await openWarp(command: command, application: application)
-            }
-
-        case .prompt:
-            if let directory = location.localURL {
-                _ = try await NSWorkspace.shared.open([directory], withApplicationAt: application, configuration: .init())
-            } else {
-                #warning("TODO: 在安装 Prompt 3 与 Local Terminal 的 Mac 上打开服务器仓库，核实 .command 的远端命令入口；只影响终端程序选 Prompt 时打开服务器仓库。")
-
-                let file = FileManager.default.temporaryDirectory
-                    .appending(path: "Spooky-" + UUID().uuidString + ".command")
-                try Data(("#!/bin/sh\n" + command + "\n").utf8).write(to: file, options: .atomic)
-                try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: file.path)
-                temporaryFiles.append(file)
-                _ = try await NSWorkspace.shared.open([file], withApplicationAt: application, configuration: .init())
             }
         }
     }

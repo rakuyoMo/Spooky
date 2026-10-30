@@ -1517,31 +1517,6 @@
 "gitConfig.error.read" = "グローバルの Git 設定を読み込めません";
 "gitConfig.error.write" = "グローバルの Git 設定を保存できません";
 
-"gerrit.pushTitle" = "Gerrit Code Review にプッシュ";
-"gerrit.pushTitle.help" = "選んだリビジョンを選んだリモートにレビュー用としてプッシュします。プッシュ先は「refs/for/<レビューブランチ>」です。";
-"gerrit.push" = "Gerrit にプッシュ";
-"gerrit.reviewBranch" = "レビューブランチ：";
-"gerrit.pushMenu" = "「%@」を Gerrit にプッシュ…";
-"gerrit.quickPush" = "「%1$@」を Gerrit「%2$@ refs/for/%1$@」にクイックプッシュ";
-"settings.gerrit" = "Gerrit Code Review：";
-"settings.gerrit.enable" = "Gerrit へのかんたんプッシュを有効にする";
-"issueTracking.url" = "Issue トラッカーの URL：";
-"issueTracking.prefix" = "Issue 番号のプレフィックス：";
-"issueTracking.notConfigured" = "未設定";
-"issueTracking.edit" = "編集";
-"issueTracking.invalid" = "Issue トラッカーの URL が無効です";
-"issueTracking.title" = "Issue 番号の検出";
-"issueTracking.title.help" = "Issue トラッカーの URL テンプレートと、コミットメッセージで Issue 番号を示すプレフィックスを入力してください。";
-"issueTracking.save" = "保存";
-"issueTracking.url.help" = "%@ は URL 内で Issue 番号が入る位置を示します。";
-"issueTracking.prefix.help" = "Issue 番号の前に付ける文字。例：#";
-"issueTracking.url.placeholder" = "Issue トラッカーの URL テンプレート";
-"issueTracking.error.prefixLength" = "Issue 番号のプレフィックスは %d 文字以内にしてください。";
-"issueTracking.error.prefixWhitespace" = "Issue 番号のプレフィックスに空白は使えません。";
-"issueTracking.error.templateRequired" = "カスタムのプレフィックスを使うには Issue トラッカーの URL を入力してください。";
-"issueTracking.error.templateWhitespace" = "Issue トラッカーの URL に空白は使えません。";
-"issueTracking.error.placeholders" = "使えるプレースホルダは {ISSUE_NUMBER}、{OWNER}、{REPOSITORY} だけです。";
-"issueTracking.error.template" = "{ISSUE_NUMBER} プレースホルダを含む Web アドレスを入力してください。";
 "profiles.create.title" = "ユーザプロファイルを作成";
 "profiles.create.message" = "入力した内容でユーザプロファイルを作成します。";
 "profiles.create.submit" = "作成";
@@ -1569,11 +1544,9 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH エージェント：";
 "settings.sshAgent.system" = "システムの SSH エージェント";
-"settings.sshAgent.onePassword" = "1Password の SSH エージェント";
 "settings.sshAgent.description" = "選択した SSH エージェントは SSH 接続と SSH 署名に使われます。";
 "settings.sshAgent.warning" = "SSH エージェントが動作していません";
-"settings.sshAgent.warning.system" = "システムの SSH エージェントを利用できません。Mac を再起動するか、別の SSH エージェントを選択してください。";
-"settings.sshAgent.warning.onePassword" = "1Password の SSH エージェントが動作していません。1Password の設定で SSH エージェントをオンにするか、別の SSH エージェントを選択してください。";
+"settings.sshAgent.warning.system" = "システムの SSH エージェントを利用できません。Mac を再起動してください。";
 
 /* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
 "settings.gitProgram" = "Git プログラム：";
@@ -1675,7 +1648,6 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "ターミナル";
 "toolbar.quickActions" = "クイックアクション";
-"toolbar.gerritPush" = "Gerrit プッシュ";
 "launch.empty" = "最近使ったリポジトリはありません";
 "launch.version" = "バージョン %@";
 
@@ -1895,9 +1867,6 @@
 "repositorySettings.noPatterns" = "パターンはありません";
 "repositorySettings.name" = "名前";
 "repositorySettings.path" = "パス";
-"repositorySettings.issueTracking" = "Issue トラッキング";
-"repositorySettings.issueTrackerURL" = "Issue トラッカーの URL";
-"repositorySettings.issueNumberPrefix" = "Issue 番号のプレフィックス";
 "repositorySettings.wrapping" = "行の折り返し";
 "repositorySettings.pageGuide" = "ページガイドを表示";
 "repositorySettings.lineLimit" = "1 行の文字数上限";

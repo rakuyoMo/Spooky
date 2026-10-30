@@ -16,18 +16,12 @@ public struct RuleFile: Sendable, Equatable {
 
 // MARK: - RepositorySettings
 
-/// 仓库设置页读取的内容：仓库本地配置里的 Issue 追踪、提交信息折行与签名，以及忽略、排除与 LFS 跟踪规则。
+/// 仓库设置页读取的内容：仓库本地配置里的提交信息折行与签名，以及忽略、排除与 LFS 跟踪规则。
 ///
 /// 配置值只取仓库本地配置（`--local`），没有写在本仓库的为 nil，表示沿用全局设置。
 public struct RepositorySettings: Sendable, Equatable {
     /// 仓库本地配置里的键。
     public enum Key {
-        /// Issue 追踪的地址模板。
-        public static let issueTrackerTemplate = GlobalGitConfiguration.Key.issueTrackerTemplate
-
-        /// Issue 编号前缀。
-        public static let issueNumberPrefix = GlobalGitConfiguration.Key.issueNumberPrefix
-
         /// 提交信息正文每行的字数上限，覆盖 Editor 设置页的值。
         public static let bodyLineLimit = "spooky.commitbodylimit"
 
@@ -44,15 +38,9 @@ public struct RepositorySettings: Sendable, Equatable {
         public static let allowedSignersFile = "gpg.ssh.allowedsignersfile"
 
         /// 读取的键名正则；`--get-regexp` 匹配的是 Git 规范化后的小写键名。
-        static let pattern = "^(spooky\\.(issuetrackertemplate|issuenumberprefix|commitbodylimit|commitshowsguide)"
+        static let pattern = "^(spooky\\.(commitbodylimit|commitshowsguide)"
             + "|commit\\.gpgsign|user\\.signingkey|gpg\\.ssh\\.allowedsignersfile)$"
     }
-
-    /// 本仓库的 Issue 追踪地址模板。
-    public var issueTrackerTemplate: String?
-
-    /// 本仓库的 Issue 编号前缀。
-    public var issueNumberPrefix: String?
 
     /// 本仓库的正文每行字数上限；不是正整数时视为没有设置。
     public var bodyLineLimit: Int?
@@ -151,8 +139,6 @@ extension GitRunner {
         let values = try RepositorySettings.configuration(await config.standardOutput)
 
         return RepositorySettings(
-            issueTrackerTemplate: ConfigRecords.nonEmpty(values[RepositorySettings.Key.issueTrackerTemplate]),
-            issueNumberPrefix: ConfigRecords.nonEmpty(values[RepositorySettings.Key.issueNumberPrefix]),
             bodyLineLimit: ConfigRecords.nonEmpty(values[RepositorySettings.Key.bodyLineLimit])
                 .flatMap { Int($0) }
                 .flatMap { $0 > 0 ? $0 : nil },

@@ -1517,31 +1517,6 @@
 "gitConfig.error.read" = "Couldn’t Read the Global Git Configuration";
 "gitConfig.error.write" = "Couldn’t Save the Global Git Configuration";
 
-"gerrit.pushTitle" = "Push to Gerrit Code Review";
-"gerrit.pushTitle.help" = "Pushes the chosen revision to the selected remote for review, as “refs/for/<review branch>”.";
-"gerrit.push" = "Push to Gerrit";
-"gerrit.reviewBranch" = "Review Branch:";
-"gerrit.pushMenu" = "Push “%@” to Gerrit…";
-"gerrit.quickPush" = "Quick Push “%1$@” to Gerrit “%2$@ refs/for/%1$@”";
-"settings.gerrit" = "Gerrit Code Review:";
-"settings.gerrit.enable" = "Enable easy push action for Gerrit";
-"issueTracking.url" = "Issue Tracker URL:";
-"issueTracking.prefix" = "Issue Number Prefix:";
-"issueTracking.notConfigured" = "Not configured";
-"issueTracking.edit" = "Edit";
-"issueTracking.invalid" = "Invalid Issue Tracker URL";
-"issueTracking.title" = "Issue Number Detection";
-"issueTracking.title.help" = "Enter the URL template of your issue tracker and the prefix that marks issue numbers in commit messages.";
-"issueTracking.save" = "Save";
-"issueTracking.url.help" = "%@ marks where the issue number goes in the URL.";
-"issueTracking.prefix.help" = "The text in front of an issue number, such as #.";
-"issueTracking.url.placeholder" = "Issue Tracker URL Template";
-"issueTracking.error.prefixLength" = "The issue number prefix must be %d characters or less.";
-"issueTracking.error.prefixWhitespace" = "The issue number prefix must not contain spaces.";
-"issueTracking.error.templateRequired" = "Enter an issue tracker URL to use a custom prefix.";
-"issueTracking.error.templateWhitespace" = "The issue tracker URL must not contain spaces.";
-"issueTracking.error.placeholders" = "Only the {ISSUE_NUMBER}, {OWNER} and {REPOSITORY} placeholders are supported.";
-"issueTracking.error.template" = "Enter a web address that includes the {ISSUE_NUMBER} placeholder.";
 "profiles.create.title" = "Create User Profile";
 "profiles.create.message" = "Creates a user profile with the values you enter.";
 "profiles.create.submit" = "Create";
@@ -1569,11 +1544,9 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH Agent:";
 "settings.sshAgent.system" = "System SSH Agent";
-"settings.sshAgent.onePassword" = "1Password SSH Agent";
 "settings.sshAgent.description" = "The selected SSH agent is used for SSH connections and SSH signing.";
 "settings.sshAgent.warning" = "SSH Agent Not Running";
-"settings.sshAgent.warning.system" = "The system SSH agent isn’t available. Restart your Mac, or choose another SSH agent.";
-"settings.sshAgent.warning.onePassword" = "The 1Password SSH agent isn’t running. Turn on the SSH agent in 1Password’s settings, or choose another SSH agent.";
+"settings.sshAgent.warning.system" = "The system SSH agent isn’t available. Restart your Mac.";
 
 /* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
 "settings.gitProgram" = "Git binary:";
@@ -1675,7 +1648,6 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "Terminal";
 "toolbar.quickActions" = "Quick Actions";
-"toolbar.gerritPush" = "Gerrit Push";
 "launch.empty" = "No Recent Repositories";
 "launch.version" = "Version %@";
 
@@ -1895,9 +1867,6 @@
 "repositorySettings.noPatterns" = "No patterns";
 "repositorySettings.name" = "Name";
 "repositorySettings.path" = "Path";
-"repositorySettings.issueTracking" = "Issue Tracking";
-"repositorySettings.issueTrackerURL" = "Issue Tracker URL";
-"repositorySettings.issueNumberPrefix" = "Issue Number Prefix";
 "repositorySettings.wrapping" = "Line Wrapping";
 "repositorySettings.pageGuide" = "Show Page Guide";
 "repositorySettings.lineLimit" = "Line Character Limit";

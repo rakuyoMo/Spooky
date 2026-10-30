@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - GlobalGitConfiguration
 
-/// 本机全局 Git 配置里设置窗口读写的几项：提交人身份、提交签名与 Issue 追踪。
+/// 本机全局 Git 配置里设置窗口读写的几项：提交人身份与提交签名。
 public struct GlobalGitConfiguration: Sendable, Equatable {
     /// 配置键，都是 Git 规范化后的小写写法。
     public enum Key {
@@ -29,17 +29,11 @@ public struct GlobalGitConfiguration: Sendable, Equatable {
 
         /// 校验 SSH 签名用的 allowed signers 文件。
         public static let allowedSignersFile = "gpg.ssh.allowedsignersfile"
-
-        /// Issue 链接的地址模板。
-        public static let issueTrackerTemplate = "spooky.issuetrackertemplate"
-
-        /// 提交信息里 Issue 编号的前缀。
-        public static let issueNumberPrefix = "spooky.issuenumberprefix"
     }
 
     /// 读取的键；`--get-regexp` 匹配的是 Git 规范化后的小写键名。
     static let pattern = "^(user\\.(name|email|signingkey)|commit\\.gpgsign|gpg\\.(format|program)"
-        + "|gpg\\.ssh\\.(program|allowedsignersfile)|spooky\\.(issuetrackertemplate|issuenumberprefix))$"
+        + "|gpg\\.ssh\\.(program|allowedsignersfile))$"
 
     /// `user.name`；未配置时为 nil。
     public var userName: String?
@@ -65,12 +59,6 @@ public struct GlobalGitConfiguration: Sendable, Equatable {
     /// `gpg.ssh.allowedSignersFile`。
     public var allowedSignersFile: String?
 
-    /// Issue 链接的地址模板，`{ISSUE_NUMBER}` 处换成编号。
-    public var issueTrackerTemplate: String?
-
-    /// 提交信息里 Issue 编号的前缀，如 `#`。
-    public var issueNumberPrefix: String?
-
     /// 创建配置快照；不传的项都是未配置。
     public init(
         userName: String? = nil,
@@ -80,9 +68,7 @@ public struct GlobalGitConfiguration: Sendable, Equatable {
         signsCommits: Bool = false,
         gpgProgram: String? = nil,
         sshProgram: String? = nil,
-        allowedSignersFile: String? = nil,
-        issueTrackerTemplate: String? = nil,
-        issueNumberPrefix: String? = nil
+        allowedSignersFile: String? = nil
     ) {
         self.userName = userName
         self.userEmail = userEmail
@@ -92,8 +78,6 @@ public struct GlobalGitConfiguration: Sendable, Equatable {
         self.gpgProgram = gpgProgram
         self.sshProgram = sshProgram
         self.allowedSignersFile = allowedSignersFile
-        self.issueTrackerTemplate = issueTrackerTemplate
-        self.issueNumberPrefix = issueNumberPrefix
     }
 
     /// 解析 `config -z --get-regexp` 的输出；同一键出现多次时与 Git 一样以最后一个为准。
@@ -108,9 +92,7 @@ public struct GlobalGitConfiguration: Sendable, Equatable {
             signsCommits: values[Key.signsCommits].map(ConfigRecords.boolean) ?? false,
             gpgProgram: ConfigRecords.nonEmpty(values[Key.gpgProgram]),
             sshProgram: ConfigRecords.nonEmpty(values[Key.sshProgram]),
-            allowedSignersFile: ConfigRecords.nonEmpty(values[Key.allowedSignersFile]),
-            issueTrackerTemplate: ConfigRecords.nonEmpty(values[Key.issueTrackerTemplate]),
-            issueNumberPrefix: ConfigRecords.nonEmpty(values[Key.issueNumberPrefix])
+            allowedSignersFile: ConfigRecords.nonEmpty(values[Key.allowedSignersFile])
         )
     }
 }

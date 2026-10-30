@@ -21,16 +21,6 @@ extension RepositoryWindowController {
     @objc
     func pushRevision() { presentSyncDialog(.pushRevision) }
 
-    /// 推送到 Gerrit 评审的对话框；历史里选中的是本地分支时预选它，否则预选 HEAD。
-    @objc
-    func pushToGerritRemote() {
-        let selected = session.history.selectedReference.flatMap { reference in
-            reference.hasPrefix("refs/heads/") ? String(reference.dropFirst("refs/heads/".count)) : nil
-        }
-
-        presentSyncDialog(.gerritPush, preselecting: selected)
-    }
-
     /// 跳过对话框获取远端，选项沿用获取对话框的记忆。
     @objc
     func quickFetch() { session.quickFetch() }
@@ -99,9 +89,6 @@ extension RepositoryWindowController {
 
         case #selector(pushRevision):
             repositoryView && session.canPushRevision
-
-        case #selector(pushToGerritRemote):
-            repositoryView && session.canPushToGerrit
 
         default:
             nil

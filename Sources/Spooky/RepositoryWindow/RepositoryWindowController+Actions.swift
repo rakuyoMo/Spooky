@@ -46,20 +46,16 @@ extension RepositoryWindowController {
         session.refresh(full: true)
     }
 
-    /// 提交菜单与工具栏聚焦已有的工作区标题框。
+    /// 提交菜单聚焦已有的工作区标题框。
     @objc
     func composeCommit() {
         if session.activeView != .workingCopy { showWorkingCopy() }
         session.commitFocusRequest += 1
     }
 
-    /// 全部暂存的工具栏入口支持 ⌥ 切换到全部取消暂存。
+    /// 主菜单的全部暂存动作。
     @objc
-    func stageAll() {
-        let unstage = NSEvent.modifierFlags.contains(.option)
-            && (session.status?.entries.contains(where: \.hasStagedChanges) ?? false)
-        session.stageAll(staged: !unstage)
-    }
+    func stageAll() { session.stageAll(staged: true) }
 
     /// 主菜单的独立取消暂存动作。
     @objc
@@ -286,34 +282,32 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 工作区文件动作的可用性，按住 ⌥ 时全部暂存按全部取消暂存判断；动作不属于本组时为 nil。
+    /// 工作区文件动作的可用性；动作不属于本组时为 nil。
     private func workingCopyAvailability(of action: Selector?, repositoryView: Bool) -> Bool? {
         switch action {
         case #selector(composeCommit):
-            return repositoryView
+            repositoryView
 
         case #selector(stageAll):
-            let entries = session.status?.entries ?? []
-            let unstage = NSEvent.modifierFlags.contains(.option) && entries.contains(where: \.hasStagedChanges)
-            return repositoryView && (unstage ? session.canUnstage(entries) : session.canStage(entries))
+            repositoryView && session.canStage(session.status?.entries ?? [])
 
         case #selector(unstageAll):
-            return repositoryView && session.canUnstage(session.status?.entries ?? [])
+            repositoryView && session.canUnstage(session.status?.entries ?? [])
 
         case #selector(stageSelected):
-            return repositoryView && session.canStage(session.selectedEntries)
+            repositoryView && session.canStage(session.selectedEntries)
 
         case #selector(unstageSelected):
-            return repositoryView && session.canUnstage(session.selectedEntries)
+            repositoryView && session.canUnstage(session.selectedEntries)
 
         case #selector(discardSelected):
-            return repositoryView && session.canDiscard(session.selectedEntries)
+            repositoryView && session.canDiscard(session.selectedEntries)
 
         case #selector(discardAll):
-            return repositoryView && session.canDiscard(session.status?.entries ?? [])
+            repositoryView && session.canDiscard(session.status?.entries ?? [])
 
         default:
-            return nil
+            nil
         }
     }
 

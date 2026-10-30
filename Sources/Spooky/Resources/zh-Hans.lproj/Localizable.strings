@@ -1517,31 +1517,6 @@
 "gitConfig.error.read" = "无法读取全局 Git 配置";
 "gitConfig.error.write" = "无法保存全局 Git 配置";
 
-"gerrit.pushTitle" = "推送到 Gerrit Code Review";
-"gerrit.pushTitle.help" = "把所选版本推到所选远端等待评审，推送的目标是 “refs/for/<评审分支>”。";
-"gerrit.push" = "推送到 Gerrit";
-"gerrit.reviewBranch" = "评审分支：";
-"gerrit.pushMenu" = "把 “%@” 推送到 Gerrit…";
-"gerrit.quickPush" = "快速把 “%1$@” 推送到 Gerrit “%2$@ refs/for/%1$@”";
-"settings.gerrit" = "Gerrit Code Review：";
-"settings.gerrit.enable" = "提供推送到 Gerrit 的快捷操作";
-"issueTracking.url" = "Issue 追踪地址：";
-"issueTracking.prefix" = "Issue 编号前缀：";
-"issueTracking.notConfigured" = "未配置";
-"issueTracking.edit" = "编辑";
-"issueTracking.invalid" = "Issue 追踪地址无效";
-"issueTracking.title" = "识别 Issue 编号";
-"issueTracking.title.help" = "填写 Issue 追踪的地址模板，以及提交信息里标出 Issue 编号的前缀。";
-"issueTracking.save" = "存储";
-"issueTracking.url.help" = "%@ 标出编号在地址里的位置。";
-"issueTracking.prefix.help" = "写在 Issue 编号前面的文字，如 #。";
-"issueTracking.url.placeholder" = "Issue 追踪的地址模板";
-"issueTracking.error.prefixLength" = "Issue 编号前缀不能超过 %d 个字符。";
-"issueTracking.error.prefixWhitespace" = "Issue 编号前缀不能包含空格。";
-"issueTracking.error.templateRequired" = "使用自定义前缀时需要填写 Issue 追踪地址。";
-"issueTracking.error.templateWhitespace" = "Issue 追踪地址不能包含空格。";
-"issueTracking.error.placeholders" = "只支持 {ISSUE_NUMBER}、{OWNER} 与 {REPOSITORY} 三个占位符。";
-"issueTracking.error.template" = "请填写包含 {ISSUE_NUMBER} 占位符的网页地址。";
 "profiles.create.title" = "新建身份档案";
 "profiles.create.message" = "用填写的内容新建一个身份档案。";
 "profiles.create.submit" = "新建";
@@ -1569,11 +1544,9 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH Agent：";
 "settings.sshAgent.system" = "系统 SSH Agent";
-"settings.sshAgent.onePassword" = "1Password SSH Agent";
 "settings.sshAgent.description" = "所选的 SSH agent 用于 SSH 连接与 SSH 签名。";
 "settings.sshAgent.warning" = "SSH Agent 未运行";
-"settings.sshAgent.warning.system" = "系统 SSH agent 不可用。请重新启动 Mac，或选择其它 SSH agent。";
-"settings.sshAgent.warning.onePassword" = "1Password 的 SSH agent 未运行。请在 1Password 的设置中开启 SSH agent，或选择其它 SSH agent。";
+"settings.sshAgent.warning.system" = "系统 SSH agent 不可用。请重新启动 Mac。";
 
 /* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
 "settings.gitProgram" = "Git 程序：";
@@ -1675,7 +1648,6 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "终端";
 "toolbar.quickActions" = "快捷操作";
-"toolbar.gerritPush" = "Gerrit 推送";
 "launch.empty" = "没有最近的仓库";
 "launch.version" = "版本 %@";
 
@@ -1895,9 +1867,6 @@
 "repositorySettings.noPatterns" = "没有规则";
 "repositorySettings.name" = "名称";
 "repositorySettings.path" = "路径";
-"repositorySettings.issueTracking" = "Issue 追踪";
-"repositorySettings.issueTrackerURL" = "Issue 追踪地址";
-"repositorySettings.issueNumberPrefix" = "Issue 编号前缀";
 "repositorySettings.wrapping" = "折行";
 "repositorySettings.pageGuide" = "显示参考线";
 "repositorySettings.lineLimit" = "每行字数上限";
