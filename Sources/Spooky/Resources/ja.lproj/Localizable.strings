@@ -1949,7 +1949,7 @@
 "developer.logUserDefaults" = "Log User Defaults";
 "developer.resetUserDefaults" = "Reset User Defaults";
 "developer.resetUserDefaults.title" = "環境設定をリセットしますか？";
-"developer.resetUserDefaults.message" = "すべての設定がデフォルトに戻ります。ブックマーク、ユーザプロファイル、アカウントは残ります。一部の設定は Spooky を再起動したあとに変わります。";
+"developer.resetUserDefaults.message" = "すべての設定がデフォルトに戻ります。ブックマーク、ユーザプロファイル、アカウント、サーバーリポジトリに指定したこの Mac 上のフォルダは残ります。一部の設定は Spooky を再起動したあとに変わります。";
 "developer.resetUserDefaults.confirm" = "リセット";
 "developer.clearUserDefaults" = "Clear User Defaults";
 "developer.testCrashReporting" = "Test Crash Reporting";

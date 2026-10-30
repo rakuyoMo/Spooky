@@ -1949,7 +1949,7 @@
 "developer.logUserDefaults" = "Log User Defaults";
 "developer.resetUserDefaults" = "Reset User Defaults";
 "developer.resetUserDefaults.title" = "Reset User Defaults?";
-"developer.resetUserDefaults.message" = "All settings return to their defaults. Bookmarks, user profiles and accounts are kept. Some settings change only after Spooky restarts.";
+"developer.resetUserDefaults.message" = "All settings return to their defaults. Bookmarks, user profiles, accounts and the local folders chosen for server repositories are kept. Some settings change only after Spooky restarts.";
 "developer.resetUserDefaults.confirm" = "Reset";
 "developer.clearUserDefaults" = "Clear User Defaults";
 "developer.testCrashReporting" = "Test Crash Reporting";

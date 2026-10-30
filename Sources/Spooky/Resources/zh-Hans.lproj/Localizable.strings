@@ -1949,7 +1949,7 @@
 "developer.logUserDefaults" = "Log User Defaults";
 "developer.resetUserDefaults" = "Reset User Defaults";
 "developer.resetUserDefaults.title" = "重置偏好设置？";
-"developer.resetUserDefaults.message" = "所有设置都会恢复为默认值，书签、身份档案与账号保留。部分设置要在重新启动 Spooky 后才改变。";
+"developer.resetUserDefaults.message" = "所有设置都会恢复为默认值，书签、身份档案、账号与服务器仓库手动指定的本机文件夹保留。部分设置要在重新启动 Spooky 后才改变。";
 "developer.resetUserDefaults.confirm" = "重置";
 "developer.clearUserDefaults" = "Clear User Defaults";
 "developer.testCrashReporting" = "Test Crash Reporting";

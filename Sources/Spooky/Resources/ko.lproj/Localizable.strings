@@ -1949,7 +1949,7 @@
 "developer.logUserDefaults" = "Log User Defaults";
 "developer.resetUserDefaults" = "Reset User Defaults";
 "developer.resetUserDefaults.title" = "환경설정을 재설정하겠습니까?";
-"developer.resetUserDefaults.message" = "모든 설정이 기본값으로 돌아갑니다. 책갈피, 사용자 프로필과 계정은 유지됩니다. 일부 설정은 Spooky를 다시 시작한 후에 바뀝니다.";
+"developer.resetUserDefaults.message" = "모든 설정이 기본값으로 돌아갑니다. 책갈피, 사용자 프로필, 계정과 서버 저장소에 지정한 이 Mac의 폴더는 유지됩니다. 일부 설정은 Spooky를 다시 시작한 후에 바뀝니다.";
 "developer.resetUserDefaults.confirm" = "재설정";
 "developer.clearUserDefaults" = "Clear User Defaults";
 "developer.testCrashReporting" = "Test Crash Reporting";
