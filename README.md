@@ -146,6 +146,12 @@ When your terminal application is Terminal or iTerm, Spooky uses AppleScript to 
 
 If you declined, you can turn it on again in **System Settings › Privacy & Security › Automation**.
 
+### Notifications
+
+Spooky posts a notification when a clone finishes and after branches are archived automatically. The first time, macOS asks whether to allow Spooky to send notifications.
+
+If you declined, you can turn them on again in **System Settings › Notifications › Spooky**.
+
 ## How it works
 
 ### Server connections

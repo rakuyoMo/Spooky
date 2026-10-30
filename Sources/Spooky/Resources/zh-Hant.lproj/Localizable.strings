@@ -1401,6 +1401,7 @@
 "review.archived.one" = "已封存 1 個分支";
 "review.archived.many" = "已封存 %ld 個分支";
 "review.archived.undo" = "還原";
+"review.archived.notification" = "分支已自動清理";
 "history.compareTo" = "比較對象：";
 "history.behindBase" = "“%1$@” 落後 “%3$@” %2$ld 個提交";
 "history.compareBranches" = "比較分支";
@@ -1850,6 +1851,8 @@
 "clone.phase.filtering" = "過濾內容";
 "clone.recent.title" = "最近複製的倉庫";
 "clone.recent.clear" = "清除";
+"clone.notification.title" = "複製完成";
+"clone.notification.body" = "已複製到 “%@”。";
 "toolbar.clone" = "複製";
 "bookmarks.dropZone.clone" = "複製";
 "browse.title" = "選擇 “%@” 上的資料夾";

@@ -1401,6 +1401,7 @@
 "review.archived.one" = "1 rama archivada";
 "review.archived.many" = "%ld ramas archivadas";
 "review.archived.undo" = "Deshacer";
+"review.archived.notification" = "Ramas limpiadas automáticamente";
 "history.compareTo" = "Comparar con:";
 "history.behindBase" = "“%1$@” está %2$ld commits por detrás de “%3$@”";
 "history.compareBranches" = "Comparar ramas";
@@ -1850,6 +1851,8 @@
 "clone.phase.filtering" = "Filtrando contenido";
 "clone.recent.title" = "Repositorios clonados recientemente";
 "clone.recent.clear" = "Borrar";
+"clone.notification.title" = "Clonación terminada";
+"clone.notification.body" = "Clonado en “%@”.";
 "toolbar.clone" = "Clonar";
 "bookmarks.dropZone.clone" = "Clonar";
 "browse.title" = "Elegir una carpeta en “%@”";

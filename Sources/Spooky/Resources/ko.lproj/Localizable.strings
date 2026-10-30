@@ -1401,6 +1401,7 @@
 "review.archived.one" = "브랜치 1개 보관함";
 "review.archived.many" = "브랜치 %ld개 보관함";
 "review.archived.undo" = "실행 취소";
+"review.archived.notification" = "브랜치를 자동으로 정리함";
 "history.compareTo" = "비교 대상:";
 "history.behindBase" = "“%1$@”은(는) “%3$@”보다 커밋 %2$ld개 뒤처짐";
 "history.compareBranches" = "브랜치 비교";
@@ -1850,6 +1851,8 @@
 "clone.phase.filtering" = "콘텐츠 필터링";
 "clone.recent.title" = "최근 복제한 저장소";
 "clone.recent.clear" = "지우기";
+"clone.notification.title" = "복제 완료";
+"clone.notification.body" = "“%@”에 복제했습니다.";
 "toolbar.clone" = "복제";
 "bookmarks.dropZone.clone" = "복제";
 "browse.title" = "“%@”의 폴더 선택";

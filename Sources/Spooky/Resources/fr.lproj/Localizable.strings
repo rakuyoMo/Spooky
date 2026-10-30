@@ -1401,6 +1401,7 @@
 "review.archived.one" = "1 branche archivée";
 "review.archived.many" = "%ld branches archivées";
 "review.archived.undo" = "Annuler";
+"review.archived.notification" = "Branches nettoyées automatiquement";
 "history.compareTo" = "Comparer à :";
 "history.behindBase" = "« %1$@ » a %2$ld commits de retard sur « %3$@ »";
 "history.compareBranches" = "Comparer les branches";
@@ -1850,6 +1851,8 @@
 "clone.phase.filtering" = "Filtrage du contenu";
 "clone.recent.title" = "Dépôts clonés récemment";
 "clone.recent.clear" = "Effacer";
+"clone.notification.title" = "Clonage terminé";
+"clone.notification.body" = "Cloné dans « %@ ».";
 "toolbar.clone" = "Cloner";
 "bookmarks.dropZone.clone" = "Cloner";
 "browse.title" = "Choisir un dossier sur « %@ »";

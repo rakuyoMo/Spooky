@@ -56,7 +56,7 @@ extension RepositorySession {
     ///
     /// - Parameters:
     ///   - branches: 要归档的本地分支。
-    ///   - automatic: 自动归档：分支记上待审阅标记，Activity 用自动归档的名称。
+    ///   - automatic: 自动归档：分支记上待审阅标记，Activity 用自动归档的名称，完成后另发系统通知。
     func archive(_ branches: [RepositoryReference], automatic: Bool) {
         guard canSetArchived(branches) else {
             return
@@ -76,7 +76,13 @@ extension RepositorySession {
             },
             title: AppLocalization.text(automatic ? "review.autoArchive" : "branch.archive"),
             undo: .reversible,
-            success: { review.archivedBranches = ids }
+            success: {
+                review.archivedBranches = ids
+
+                if automatic {
+                    SystemNotifications.shared.postBranchesArchived(count: ids.count)
+                }
+            }
         )
     }
 

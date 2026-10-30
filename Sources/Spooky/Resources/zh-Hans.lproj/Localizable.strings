@@ -1401,6 +1401,7 @@
 "review.archived.one" = "已归档 1 个分支";
 "review.archived.many" = "已归档 %ld 个分支";
 "review.archived.undo" = "撤销";
+"review.archived.notification" = "分支已自动清理";
 "history.compareTo" = "比较对象：";
 "history.behindBase" = "“%1$@” 落后 “%3$@” %2$ld 个提交";
 "history.compareBranches" = "比较分支";
@@ -1850,6 +1851,8 @@
 "clone.phase.filtering" = "过滤内容";
 "clone.recent.title" = "最近克隆的仓库";
 "clone.recent.clear" = "清除";
+"clone.notification.title" = "克隆完成";
+"clone.notification.body" = "已克隆到 “%@”。";
 "toolbar.clone" = "克隆";
 "bookmarks.dropZone.clone" = "克隆";
 "browse.title" = "选择 “%@” 上的文件夹";

@@ -1401,6 +1401,7 @@
 "review.archived.one" = "1 branch archived";
 "review.archived.many" = "%ld branches archived";
 "review.archived.undo" = "Undo";
+"review.archived.notification" = "Branches Automatically Cleaned Up";
 "history.compareTo" = "Compare to:";
 "history.behindBase" = "“%1$@” is %2$ld commits behind “%3$@”";
 "history.compareBranches" = "Compare Branches";
@@ -1850,6 +1851,8 @@
 "clone.phase.filtering" = "Filtering content";
 "clone.recent.title" = "Recently Cloned Repositories";
 "clone.recent.clear" = "Clear";
+"clone.notification.title" = "Clone Finished";
+"clone.notification.body" = "Cloned to “%@”.";
 "toolbar.clone" = "Clone";
 "bookmarks.dropZone.clone" = "Clone";
 "browse.title" = "Choose a Folder on “%@”";

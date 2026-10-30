@@ -1401,6 +1401,7 @@
 "review.archived.one" = "1 個のブランチをアーカイブしました";
 "review.archived.many" = "%ld 個のブランチをアーカイブしました";
 "review.archived.undo" = "取り消す";
+"review.archived.notification" = "ブランチを自動で整理しました";
 "history.compareTo" = "比較先：";
 "history.behindBase" = "「%1$@」は「%3$@」より %2$ld 件遅れています";
 "history.compareBranches" = "ブランチを比較";
@@ -1850,6 +1851,8 @@
 "clone.phase.filtering" = "コンテンツをフィルタ";
 "clone.recent.title" = "最近クローンしたリポジトリ";
 "clone.recent.clear" = "消去";
+"clone.notification.title" = "クローン完了";
+"clone.notification.body" = "「%@」にクローンしました。";
 "toolbar.clone" = "クローン";
 "bookmarks.dropZone.clone" = "クローン";
 "browse.title" = "「%@」のフォルダを選択";

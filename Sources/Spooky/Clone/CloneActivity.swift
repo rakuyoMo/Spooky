@@ -188,12 +188,15 @@ final class CloneActivities {
         }
     }
 
-    /// 开始克隆；完成后书签去掉失效标记。
+    /// 开始克隆；完成后书签去掉失效标记，并发出系统通知，失败与取消都不发。
     private func run(_ activity: CloneActivity) {
         activity.start { [weak self] activity in
-            if case .finished = activity.state {
-                self?.bookmarks.markAvailable(activity.clone.destination)
+            guard case .finished = activity.state else {
+                return
             }
+
+            self?.bookmarks.markAvailable(activity.clone.destination)
+            SystemNotifications.shared.postCloneFinished(activity.clone)
         }
     }
 }
