@@ -1173,7 +1173,7 @@
 "sync.forcePush" = "Push forzado";
 "sync.forcePush.help" = "Sobrescribe la rama remota cuando no se puede avanzar rápido. El push se rechaza si la rama remota cambió desde el último fetch.";
 "sync.pushRevision" = "Hacer push de la revisión";
-"sync.pushRevision.help" = "Hace push de la revisión elegida a un remoto. Introduce un nombre de rama nuevo o existente, o una referencia completa como refs/for/main para una revisión de Gerrit.";
+"sync.pushRevision.help" = "Hace push de la revisión elegida a un remoto. Introduce un nombre de rama nuevo o existente, o una referencia completa como refs/tags/v1.0.";
 "sync.remoteBranch" = "Rama remota:";
 "sync.destination" = "Destino:";
 "sync.revision" = "Revisión:";

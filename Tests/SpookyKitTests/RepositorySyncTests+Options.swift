@@ -330,19 +330,19 @@ extension RepositorySyncTests {
 // MARK: - Push To
 
 extension RepositorySyncTests {
-    /// 任意版本推到分支名或完整引用，Gerrit 评审引用原样写入；非法目标在执行前被拒绝。
-    @Test("Push To 分支名、Gerrit 评审引用与非法目标")
+    /// 任意版本推到分支名或完整引用，`refs/for/` 下的引用原样写入；非法目标在执行前被拒绝。
+    @Test("Push To 分支名、refs/for/ 下的完整引用与非法目标")
     func pushToReference() async throws {
         let fixture = try await SyncFixture.make()
         defer { fixture.repository.remove() }
         let sync = fixture.sync
-        let review = "refs/for/主分支%topic=测试"
+        let fullReference = "refs/for/主分支"
 
-        _ = try await fixture.runner.run(["commit", "--allow-empty", "-m", "review"])
+        _ = try await fixture.runner.run(["commit", "--allow-empty", "-m", "full reference"])
 
-        let updates = try await sync.push(revision: "main", remote: "origin", to: review)
-        #expect(updates.contains { $0.reference == review })
-        #expect(try await fixture.remoteObject(review) == fixture.localObject("HEAD"))
+        let updates = try await sync.push(revision: "main", remote: "origin", to: fullReference)
+        #expect(updates.contains { $0.reference == fullReference })
+        #expect(try await fixture.remoteObject(fullReference) == fixture.localObject("HEAD"))
 
         _ = try await sync.push(revision: "HEAD~1", remote: "origin", to: "功能/新分支", skipHooks: true)
         #expect(try await fixture.remoteObject("refs/heads/功能/新分支") == fixture.localObject("HEAD~1"))

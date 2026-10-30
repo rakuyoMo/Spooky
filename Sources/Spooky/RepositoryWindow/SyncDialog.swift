@@ -14,7 +14,7 @@ enum SyncDialogKind {
     /// 带明确期望值的强推（Force Push with Lease…）。
     case forcePush
 
-    /// 把任意版本推到远端的指定引用，包括 Gerrit 评审引用（Push To…）。
+    /// 把任意版本推到远端的指定引用（Push To…）。
     case pushRevision
 
     /// 对话框标题的资源键。

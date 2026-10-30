@@ -1173,7 +1173,7 @@
 "sync.forcePush" = "Force Push";
 "sync.forcePush.help" = "Overwrite the remote branch when it can’t be fast-forwarded. The push is refused if the remote branch changed since it was last fetched.";
 "sync.pushRevision" = "Push Revision";
-"sync.pushRevision.help" = "Push the chosen revision to a remote. Enter a new or existing branch name, or a full reference such as refs/for/main for a Gerrit review.";
+"sync.pushRevision.help" = "Push the chosen revision to a remote. Enter a new or existing branch name, or a full reference such as refs/tags/v1.0.";
 "sync.remoteBranch" = "Remote Branch:";
 "sync.destination" = "Destination:";
 "sync.revision" = "Revision:";

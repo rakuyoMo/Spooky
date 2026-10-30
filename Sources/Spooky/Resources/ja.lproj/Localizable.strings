@@ -1173,7 +1173,7 @@
 "sync.forcePush" = "強制プッシュ";
 "sync.forcePush.help" = "早送りできない場合にリモートブランチを上書きします。前回のフェッチ以降にリモートブランチが変わっていればプッシュは拒否されます。";
 "sync.pushRevision" = "リビジョンをプッシュ";
-"sync.pushRevision.help" = "選択したリビジョンをリモートにプッシュします。新規または既存のブランチ名、あるいは Gerrit レビュー用の refs/for/main のような完全な参照を入力します。";
+"sync.pushRevision.help" = "選択したリビジョンをリモートにプッシュします。新規または既存のブランチ名、あるいは refs/tags/v1.0 のような完全な参照を入力します。";
 "sync.remoteBranch" = "リモートブランチ：";
 "sync.destination" = "宛先：";
 "sync.revision" = "リビジョン：";

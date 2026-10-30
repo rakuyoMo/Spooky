@@ -1173,7 +1173,7 @@
 "sync.forcePush" = "强推";
 "sync.forcePush.help" = "无法快进时覆盖远端分支；远端分支在上次获取之后有变化时拒绝推送。";
 "sync.pushRevision" = "推送版本";
-"sync.pushRevision.help" = "把所选版本推送到远端。目标可以填新的或已有的分支名，也可以填完整引用，如 Gerrit 评审用的 refs/for/main。";
+"sync.pushRevision.help" = "把所选版本推送到远端。目标可以填新的或已有的分支名，也可以填完整引用，如 refs/tags/v1.0。";
 "sync.remoteBranch" = "远端分支：";
 "sync.destination" = "目标：";
 "sync.revision" = "版本：";

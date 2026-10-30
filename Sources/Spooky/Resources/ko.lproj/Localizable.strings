@@ -1173,7 +1173,7 @@
 "sync.forcePush" = "강제 푸시";
 "sync.forcePush.help" = "빨리 감기할 수 없을 때 원격 브랜치를 덮어씁니다. 마지막으로 가져온 뒤 원격 브랜치가 바뀌었으면 푸시를 거부합니다.";
 "sync.pushRevision" = "리비전 푸시";
-"sync.pushRevision.help" = "선택한 리비전을 원격으로 푸시합니다. 새 브랜치 이름이나 기존 브랜치 이름, 또는 Gerrit 리뷰용 refs/for/main 같은 전체 참조를 입력하세요.";
+"sync.pushRevision.help" = "선택한 리비전을 원격으로 푸시합니다. 새 브랜치 이름이나 기존 브랜치 이름, 또는 refs/tags/v1.0 같은 전체 참조를 입력하세요.";
 "sync.remoteBranch" = "원격 브랜치:";
 "sync.destination" = "대상:";
 "sync.revision" = "리비전:";

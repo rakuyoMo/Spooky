@@ -67,7 +67,7 @@ extension RemoteHistorySyncTests {
                 lease: lease.destination
             )
 
-            // Push To 写入 Gerrit 形式的评审引用；变基到另一个分支
+            // Push To 写入 `refs/for/` 下的完整引用；变基到另一个分支
             _ = try await sync.push(revision: "HEAD", remote: "origin", to: "refs/for/main")
             _ = try await runner.run(["branch", "base", "HEAD~1"])
             _ = try await runner.run(["switch", "-q", "-c", "topic", "HEAD~1"])

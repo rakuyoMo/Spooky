@@ -1173,7 +1173,7 @@
 "sync.forcePush" = "Force-Push";
 "sync.forcePush.help" = "Den Remote-Branch überschreiben, wenn kein Fast-Forward möglich ist. Der Push wird abgelehnt, wenn sich der Remote-Branch seit dem letzten Abrufen geändert hat.";
 "sync.pushRevision" = "Revision pushen";
-"sync.pushRevision.help" = "Die gewählte Revision zu einem Remote pushen. Geben Sie einen neuen oder vorhandenen Branch-Namen ein oder eine vollständige Referenz wie refs/for/main für ein Gerrit-Review.";
+"sync.pushRevision.help" = "Die gewählte Revision zu einem Remote pushen. Geben Sie einen neuen oder vorhandenen Branch-Namen ein oder eine vollständige Referenz wie refs/tags/v1.0.";
 "sync.remoteBranch" = "Remote-Branch:";
 "sync.destination" = "Ziel:";
 "sync.revision" = "Revision:";

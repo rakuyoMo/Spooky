@@ -145,7 +145,7 @@ extension RepositorySync {
     /// - Parameters:
     ///   - revision: 要推送的分支、标签或提交，推送它指向的提交；推到标签时推送标签对象本身。
     ///   - remote: 远端名。
-    ///   - destination: 远端引用；不以 `refs/` 开头时视为分支名，如 Gerrit 评审写 `refs/for/<分支>`。
+    ///   - destination: 远端引用；不以 `refs/` 开头时视为分支名。
     ///   - skipHooks: 跳过 pre-push 钩子。
     public func push(
         revision: String,

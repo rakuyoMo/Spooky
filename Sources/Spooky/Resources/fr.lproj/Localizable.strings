@@ -1173,7 +1173,7 @@
 "sync.forcePush" = "Pousser de force";
 "sync.forcePush.help" = "Écrase la branche distante quand l’avance rapide est impossible. La poussée est refusée si la branche distante a changé depuis la dernière récupération.";
 "sync.pushRevision" = "Pousser la révision";
-"sync.pushRevision.help" = "Pousse la révision choisie vers un dépôt distant. Saisissez un nom de branche nouveau ou existant, ou une référence complète comme refs/for/main pour une revue Gerrit.";
+"sync.pushRevision.help" = "Pousse la révision choisie vers un dépôt distant. Saisissez un nom de branche nouveau ou existant, ou une référence complète comme refs/tags/v1.0.";
 "sync.remoteBranch" = "Branche distante :";
 "sync.destination" = "Destination :";
 "sync.revision" = "Révision :";
