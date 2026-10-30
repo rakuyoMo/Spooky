@@ -115,7 +115,7 @@ extension WorkingCopyFileList.Coordinator {
         add("working.copyRelative", action: #selector(copyRelative), enabled: true, to: menu)
     }
 
-    /// 系统：Quick Look、Finder 与终端；Finder 只能显示本机文件。
+    /// 系统：Quick Look、Finder 与终端；服务器仓库的文件在 Finder 中按挂载位置显示，没有挂载时提示原因。
     private func addSystemItems(to menu: NSMenu) {
         beginGroup(in: menu)
 
@@ -127,12 +127,15 @@ extension WorkingCopyFileList.Coordinator {
             }
 
         add(title: title, action: #selector(quickLookMenu), enabled: session.canOpen(menuEntries), to: menu)
-        add(
-            "action.revealFinder",
+
+        let revealItem = add(
+            title: AppLocalization.text("action.revealFinder"),
             action: #selector(reveal),
-            enabled: session.repository?.localURL != nil,
+            enabled: session.canShowInFinder,
             to: menu
         )
+        revealItem.toolTip = session.finderUnavailableTip
+
         add("action.openTerminal", action: #selector(terminal), enabled: true, to: menu)
     }
 
@@ -388,12 +391,14 @@ extension WorkingCopyFileList.Coordinator {
         NSPasteboard.general.setString(menuEntries.map(\.path).joined(separator: "\n"), forType: .string)
     }
 
-    /// 只有本机条目才交给 Finder。
+    /// 交给 Finder 的是条目在这台 Mac 上的路径；服务器仓库按挂载位置换算。
     @objc
     private func reveal() {
-        guard let root = session.repository?.localURL else { return }
+        let urls = menuEntries.compactMap { session.finderURL($0.path) }
 
-        NSWorkspace.shared.activateFileViewerSelecting(menuEntries.map { root.appending(path: $0.path) })
+        guard !urls.isEmpty else { return }
+
+        NSWorkspace.shared.activateFileViewerSelecting(urls)
     }
 
     /// 终端沿用当前仓库已实现的应用选择。

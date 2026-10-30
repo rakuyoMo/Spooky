@@ -119,16 +119,20 @@ struct WorktreeMenu: View {
         systemItems
     }
 
-    /// 本机工作树在 Finder 中显示，服务器上的复制带主机前缀的路径；都可以在终端中打开。
+    /// 工作树在 Finder 中显示，服务器上的按挂载位置打开，另有复制带主机前缀的路径；都可以在终端中打开。
     @ViewBuilder
     private var systemItems: some View {
         let location = session.location(of: worktree)
 
-        if location?.localURL != nil {
-            Button(title("worktree.reveal", "worktree.branch.reveal")) {
-                NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: worktree.path)])
+        Button(title("worktree.reveal", "worktree.branch.reveal")) {
+            if let url = session.finderURL(of: worktree) {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
             }
-        } else {
+        }
+        .disabled(!session.canShowInFinder(worktree))
+        .help(session.finderUnavailableTip(of: worktree) ?? "")
+
+        if session.repository?.host != nil {
             Button(AppLocalization.text("action.copyPath")) {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(location?.displayPath ?? worktree.path, forType: .string)

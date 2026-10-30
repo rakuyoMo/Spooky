@@ -24,6 +24,10 @@ final class RepositoryWorktreeState {
     @ObservationIgnored
     var onRequest: ((WorktreeRequest) -> Void)? = nil
 
+    /// 每次读到清单后调用，会话据此查找服务器仓库与工作树在这台 Mac 上的挂载位置；读到清单说明这时连得上 B。
+    @ObservationIgnored
+    var onLoad: (() -> Void)? = nil
+
     /// 清单读取任务。
     private var task: Task<Void, Never>? = nil
 
@@ -77,6 +81,7 @@ final class RepositoryWorktreeState {
 
                 items = worktrees
                 failure = nil
+                onLoad?()
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
                 failure = AppFailure(error: error, opening: false, location: runner.location)

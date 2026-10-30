@@ -158,6 +158,8 @@
 "action.addRemote" = "加入伺服器儲存庫…";
 "action.openTerminal" = "在終端機中開啟";
 "action.revealFinder" = "在 Finder 中顯示";
+"action.revealFinder.notMounted" = "“%@” 沒有掛載到這台 Mac。可以在儲存庫設定裡手動指定它在本機的資料夾。";
+"action.revealFinder.worktreeNotMounted" = "“%@” 沒有掛載到這台 Mac。";
 "action.copyPath" = "拷貝路徑";
 "action.reconnect" = "重新連線";
 "action.cancel" = "取消";

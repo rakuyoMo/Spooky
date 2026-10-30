@@ -256,6 +256,17 @@ extension RepositoryWindowController {
         let item = window?.toolbar?.items.first { $0.itemIdentifier == RepositoryToolbar.sidebarSeparator }
         (item as? NSTrackingSeparatorToolbarItem)?.splitView = split.splitView
     }
+
+    /// 仓库动作按钮的提示：服务器仓库带主机前缀，分不清是哪台机器上的仓库时不至于点错。
+    func updateButtonTip(_ item: NSToolbarItem) {
+        guard let button = Self.buttons[item.itemIdentifier] else {
+            return
+        }
+
+        let tip = AppLocalization.text(button.palette)
+        let host = showsManager ? nil : session.repository?.host
+        item.toolTip = host.map { $0 + ": " + tip } ?? tip
+    }
 }
 
 // MARK: - Private
@@ -416,16 +427,5 @@ extension RepositoryWindowController {
         item.action = button.action
         updateButtonTip(item)
         return item
-    }
-
-    /// 仓库动作按钮的提示：服务器仓库带主机前缀，分不清是哪台机器上的仓库时不至于点错。
-    private func updateButtonTip(_ item: NSToolbarItem) {
-        guard let button = Self.buttons[item.itemIdentifier] else {
-            return
-        }
-
-        let tip = AppLocalization.text(button.palette)
-        let host = showsManager ? nil : session.repository?.host
-        item.toolTip = host.map { $0 + ": " + tip } ?? tip
     }
 }

@@ -3,17 +3,6 @@ import Observation
 import os
 import SpookyKit
 
-// MARK: - StatusRowID
-
-/// 文件行的稳定标识，区分 `rm --cached` 后同路径的已跟踪与未跟踪记录。
-struct StatusRowID: Hashable {
-    /// Git 给出的相对路径。
-    let path: String
-
-    /// 同一路径可以同时拥有已跟踪和未跟踪状态。
-    let kind: StatusEntry.Kind
-}
-
 // MARK: - RepositorySession
 
 /// 一个窗口的仓库读取状态，异步刷新失败时保留完整的上一份快照。
@@ -55,6 +44,9 @@ final class RepositorySession {
 
     /// 托管服务上的请求列表与所选请求的详情。
     let pullRequests = RepositoryPullRequestState()
+
+    /// 服务器仓库与工作树在这台 Mac 上的挂载位置。
+    let mounts = RepositoryMountState()
 
     /// 窗口负责呈现导出、保存补丁与比较版本的对话框。
     var onRevisionRequest: ((RevisionRequest) -> Void)? = nil
@@ -339,6 +331,9 @@ final class RepositorySession {
         fileHistory.activities = activities
         fileContent.activities = activities
 
+        // 服务器仓库读完工作树清单后，查找仓库目录与新出现的工作树在这台 Mac 上的挂载
+        worktrees.onLoad = { [weak self] in self?.locateMounts() }
+
         // 恢复的引用已不存在时，回到安全的 Working Copy 视图。
         history.onRestoreFailure = { [weak self] in
             self?.activeView = .workingCopy
@@ -480,6 +475,7 @@ extension RepositorySession {
         stashes.close()
         submodules.close()
         worktrees.close()
+        mounts.reset()
         pullRequests.close()
         reflog.close()
         fileHistory.close()

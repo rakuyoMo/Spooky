@@ -49,7 +49,7 @@ struct RepositorySidebarView: View {
     /// 终端入口。
     let openTerminal: () -> Void
 
-    /// 本机 Finder 入口。
+    /// Finder 入口；服务器仓库打开它在这台 Mac 上的挂载位置。
     let revealFinder: () -> Void
 
     /// 复制带主机前缀的路径。
@@ -220,7 +220,8 @@ struct RepositorySidebarView: View {
             Divider()
             Button(AppLocalization.text("action.openTerminal"), action: openTerminal)
             Button(AppLocalization.text("action.revealFinder"), action: revealFinder)
-                .disabled(session.repository?.localURL == nil)
+                .disabled(!session.canShowInFinder)
+                .help(session.finderUnavailableTip ?? "")
             Button(AppLocalization.text("action.copyPath"), action: copyPath)
         }
     }

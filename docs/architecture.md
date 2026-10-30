@@ -16,7 +16,7 @@ Spooky 由两个 target 组成：
 | 目录 | 职责 |
 |---|---|
 | `Execution/` | Git 命令执行、异步子进程与取消、命令结果与错误分类、仓库写队列、只读结果缓存 |
-| `Remote/` | SSH 主连接、连接体检、断线重连与写入核对、远端取消、包装器安装、远端输出的解析与脱敏 |
+| `Remote/` | SSH 主连接、连接体检、断线重连与写入核对、远端取消、包装器安装、远端输出的解析与脱敏、服务器目录在本机的挂载位置 |
 | `Host/` | 仓库还不存在时在目标机器上的操作：列目录、检查目标路径、新建、克隆与扫描 |
 | `Callback/` | 口令、密码、签名口令与编辑器的回调服务，以及本机 Git 的凭据回调 |
 | `Environment/` | 本机执行 Git 时的程序与环境：Git 程序、登录 shell 的环境变量、SSH agent |
@@ -100,6 +100,11 @@ Spooky 由两个 target 组成：
 - 文件读写经 `RepositoryFiles`；SFTP 经 `RemoteConnection.sftpCommand()` 接入同一主连接，读、写分别遵循主机并发与仓库写队列
 - 删除文件与丢弃未跟踪文件移进 B 的废纸篓：连接体检找出 B 上的程序，macOS 用系统自带的 `/usr/bin/trash`，Linux 依次找 `gio` 与 `trash-put`；都找不到时界面先确认，再永久删除
 - 服务器仓库里删除或覆盖文件前的确认都可以勾选不再提醒，Settings → General 逐项列出
+- Show in Finder：B 的目录经 SMB、NFS、AFP、WebDAV 或 sshfs 挂载到这台 Mac 时，`RemoteMountLocator` 找出它在本机的位置
+  - 找卷：比较 `ssh -G <别名>` 得到的主机与网络卷重新挂载地址里的主机解析出的地址
+  - 找目录：按远端路径从最长的后缀试起，在卷里找带 `.git` 的目录
+  - 核对：经 SSH 在 B 的 Git 目录里临时写一个随机命名的空文件，本机看得到才算同一个目录，随后删掉
+  - `RepositoryMountState` 按 B 上的目录缓存结果：仓库目录以外的工作树各自查找，读到工作树清单、这台 Mac 挂载或卸载卷时查找，结果只在本次运行里保留
 - 刷新：
   - 服务器仓库按 `RemoteConnection` 的常量轮询，前台 2 秒、后台 10 秒；只读 status 与所选文件的内容哈希，有变化才读取身份、引用、历史与 Diff
   - 本机仓库由 `RepositoryFileMonitor` 的递归 FSEvents 触发刷新

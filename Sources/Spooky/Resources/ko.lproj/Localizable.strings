@@ -158,6 +158,8 @@
 "action.addRemote" = "서버 저장소 추가…";
 "action.openTerminal" = "터미널에서 열기";
 "action.revealFinder" = "Finder에서 보기";
+"action.revealFinder.notMounted" = "“%@”이(가) 이 Mac에 마운트되어 있지 않습니다. 저장소 설정에서 이 Mac의 폴더를 직접 지정할 수 있습니다.";
+"action.revealFinder.worktreeNotMounted" = "“%@”이(가) 이 Mac에 마운트되어 있지 않습니다.";
 "action.copyPath" = "경로 복사";
 "action.reconnect" = "다시 연결";
 "action.cancel" = "취소";

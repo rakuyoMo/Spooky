@@ -158,6 +158,8 @@
 "action.addRemote" = "添加服务器仓库…";
 "action.openTerminal" = "在终端中打开";
 "action.revealFinder" = "在 Finder 中显示";
+"action.revealFinder.notMounted" = "“%@” 没有挂载到这台 Mac。可以在仓库设置里手动指定它在本机的文件夹。";
+"action.revealFinder.worktreeNotMounted" = "“%@” 没有挂载到这台 Mac。";
 "action.copyPath" = "复制路径";
 "action.reconnect" = "重新连接";
 "action.cancel" = "取消";

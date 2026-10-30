@@ -205,6 +205,7 @@ open .build/Spooky.app
 
 - `~/.spooky/bin/`：远端程序及其 askpass、GPG 与 ssh-keygen 入口，权限为 `0700`，会话结束后保留，供下次连接使用
 - `/tmp/spooky-*`：会话期间的私有运行时目录，关闭会话后清理
+- 为 “在 Finder 中显示” 核对服务器仓库与这台 Mac 上挂载的文件夹时，在仓库的 Git 目录里临时写一个随机命名的空文件，核对完立即删除
 
 仓库里：
 

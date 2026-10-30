@@ -106,19 +106,9 @@ extension QuickActionCatalog {
         }
     }
 
-    /// 对象当前可以执行的全部动作，默认动作在前；服务器仓库没有 Finder 类动作，换成复制带主机前缀的路径。
+    /// 对象当前可以执行的全部动作，默认动作在前。
     func actions(for object: QuickActionObject) -> [QuickAction] {
-        var actions: [QuickAction] = []
-
-        for action in candidates(for: object) {
-            let available = isRemote && action == .revealInFinder ? .copyPath : action
-
-            if !actions.contains(available), isAvailable(available, for: object) {
-                actions.append(available)
-            }
-        }
-
-        return actions
+        candidates(for: object).filter { isAvailable($0, for: object) }
     }
 
     /// 动作现在能否执行；规则与菜单、右键菜单里同一个动作的禁用条件相同。
@@ -185,11 +175,14 @@ extension QuickActionCatalog {
 
         case .submodule: [.openSubmodule, .showSubmoduleSettings]
 
+        // 服务器上的工作树另有复制带主机前缀的路径，与侧边栏的工作树菜单相同
         case .worktree:
             [
                 .openWorktree, .openWorktreeInNewTab, .openWorktreeInNewWindow, .removeWorktree, .repairWorktree,
-                .moveWorktree, .revealInFinder, .openInTerminal,
+                .moveWorktree, .revealInFinder,
             ]
+                + (isRemote ? [.copyPath] : [])
+                + [.openInTerminal]
 
         case .remote: [.showRemoteSettings, .fetch, .editConnection]
 
@@ -205,7 +198,7 @@ extension QuickActionCatalog {
 // MARK: - Availability
 
 extension QuickActionCatalog {
-    /// 服务器仓库的路径在另一台机器上，不能交给 Finder。
+    /// 服务器仓库的路径在另一台机器上，复制时带主机前缀。
     private var isRemote: Bool {
         session.repository?.host != nil
     }
@@ -299,11 +292,14 @@ extension QuickActionCatalog {
         return action == .setGlobalUser || session.committer != (profile.name, profile.email)
     }
 
-    /// 导航、文件、子模块与工作树：Finder 只用于本机仓库，读取文件视图需要执行器，储藏快照沿用储藏的规则。
+    /// 导航、文件、子模块与工作树：Finder 沿用会话的规则，服务器仓库要找到挂载位置；读取文件视图需要执行器，储藏快照沿用储藏的规则。
     /// 工作树的动作：打开类要求工作树有效，移动与删除不能用于主工作树，修复只用于失效的工作树。
     private func isAvailable(_ action: QuickAction, worktree: Worktree) -> Bool {
         switch action {
-        case .openWorktree, .openWorktreeInNewTab, .openWorktreeInNewWindow, .revealInFinder, .openInTerminal, .copyPath:
+        case .revealInFinder:
+            session.canShowInFinder(worktree)
+
+        case .openWorktree, .openWorktreeInNewTab, .openWorktreeInNewWindow, .openInTerminal, .copyPath:
             worktree.isValid && isAvailable(locationAction: action)
 
         case .removeWorktree, .moveWorktree:
@@ -319,7 +315,7 @@ extension QuickActionCatalog {
 
     private func isAvailable(locationAction action: QuickAction) -> Bool {
         switch action {
-        case .revealInFinder: !isRemote
+        case .revealInFinder: session.canShowInFinder
         case .createSnapshot: session.canSaveStash
         case .showFile, .showFileHistory, .showBlame, .openInEditor: session.runner != nil
         default: true

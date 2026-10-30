@@ -18,13 +18,13 @@ extension RepositoryWindowController {
         }
     }
 
-    /// Finder 只能显示本机路径。
+    /// Finder 只能显示本机路径：仓库视图里的服务器仓库按查到的挂载换算，管理页里的服务器记录没有打开的会话，不能显示。
     @objc
     func revealInFinder() {
-        guard
-            let location = showsManager ? session.selectedRecentLocation : session.repository,
-            let url = location.localURL
-        else { return }
+        guard let url = showsManager ? session.selectedRecentLocation?.localURL : session.finderURL() else {
+            return
+        }
+
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
@@ -227,7 +227,7 @@ extension RepositoryWindowController {
             return (showsManager ? session.selectedRecentLocation : session.repository) != nil
 
         case #selector(revealInFinder):
-            return (showsManager ? session.selectedRecentLocation : session.repository)?.localURL != nil
+            return finderAvailability(of: item)
 
         case #selector(refreshRepository):
             return !showsManager
@@ -334,5 +334,23 @@ extension RepositoryWindowController {
         default:
             return nil
         }
+    }
+
+    /// Show in Finder 的可用性；服务器仓库没有挂载到这台 Mac 时，菜单项与工具栏项的提示写明原因。
+    private func finderAvailability(of item: any NSValidatedUserInterfaceItem) -> Bool {
+        let tip = showsManager ? nil : session.finderUnavailableTip
+
+        if let menuItem = item as? NSMenuItem {
+            menuItem.toolTip = tip
+        } else if let toolbarItem = item as? NSToolbarItem {
+            updateButtonTip(toolbarItem)
+
+            // 不能显示时提示原因，代替平时的名称
+            if let tip {
+                toolbarItem.toolTip = tip
+            }
+        }
+
+        return showsManager ? session.selectedRecentLocation?.localURL != nil : session.canShowInFinder
     }
 }

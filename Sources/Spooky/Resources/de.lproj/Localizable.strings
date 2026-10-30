@@ -158,6 +158,8 @@
 "action.addRemote" = "Server-Repository hinzufügen …";
 "action.openTerminal" = "Im Terminal öffnen";
 "action.revealFinder" = "Im Finder zeigen";
+"action.revealFinder.notMounted" = "„%@“ ist auf diesem Mac nicht eingebunden. Sie können den lokalen Ordner in den Repository-Einstellungen festlegen.";
+"action.revealFinder.worktreeNotMounted" = "„%@“ ist auf diesem Mac nicht eingebunden.";
 "action.copyPath" = "Pfad kopieren";
 "action.reconnect" = "Erneut verbinden";
 "action.cancel" = "Abbrechen";

@@ -205,6 +205,7 @@ On the server:
 
 - `~/.spooky/bin/`: the remote helper and its askpass, GPG, and ssh-keygen entry points, with `0700` permissions. They stay after the session ends so later connections can use them
 - `/tmp/spooky-*`: a private runtime directory for the session, removed when the session closes
+- To match a server repository with a folder mounted on your Mac for **Show in Finder**, Spooky briefly writes an empty, randomly named file into the repository's Git directory and removes it right after the check
 
 In your repositories:
 

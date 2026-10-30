@@ -158,6 +158,8 @@
 "action.addRemote" = "Añadir repositorio de servidor…";
 "action.openTerminal" = "Abrir en el terminal";
 "action.revealFinder" = "Mostrar en el Finder";
+"action.revealFinder.notMounted" = "“%@” no está montado en este Mac. Puedes elegir su carpeta local en los ajustes del repositorio.";
+"action.revealFinder.worktreeNotMounted" = "“%@” no está montado en este Mac.";
 "action.copyPath" = "Copiar ruta";
 "action.reconnect" = "Volver a conectar";
 "action.cancel" = "Cancelar";

@@ -158,6 +158,8 @@
 "action.addRemote" = "Ajouter un dépôt sur un serveur…";
 "action.openTerminal" = "Ouvrir dans le terminal";
 "action.revealFinder" = "Afficher dans le Finder";
+"action.revealFinder.notMounted" = "« %@ » n’est pas monté sur ce Mac. Vous pouvez choisir son dossier local dans les réglages du dépôt.";
+"action.revealFinder.worktreeNotMounted" = "« %@ » n’est pas monté sur ce Mac.";
 "action.copyPath" = "Copier le chemin";
 "action.reconnect" = "Se reconnecter";
 "action.cancel" = "Annuler";

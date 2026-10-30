@@ -157,7 +157,9 @@
 "error.outputLimitHelp" = "The command exceeded the 256 MiB standard output limit or the 1 MiB standard error limit. The oversized result was not loaded.";
 "action.addRemote" = "Add Server Repository…";
 "action.openTerminal" = "Open in Terminal";
-"action.revealFinder" = "Reveal in Finder";
+"action.revealFinder" = "Show in Finder";
+"action.revealFinder.notMounted" = "“%@” isn’t mounted on this Mac. You can choose its local folder in the repository settings.";
+"action.revealFinder.worktreeNotMounted" = "“%@” isn’t mounted on this Mac.";
 "action.copyPath" = "Copy Path";
 "action.reconnect" = "Reconnect";
 "action.cancel" = "Cancel";
@@ -1762,7 +1764,7 @@
 "quickActions.type.commit" = "Commit";
 "quickActions.type.action" = "Action";
 "quickActions.showInApp" = "Show in Spooky";
-"quickActions.revealWorktree" = "Reveal Worktree in Finder";
+"quickActions.revealWorktree" = "Show Worktree in Finder";
 "quickActions.openWorktreeInTerminal" = "Open Worktree in Terminal";
 "quickActions.showBranchHistory" = "Show Branch History";
 "quickActions.showRemoteBranchHistory" = "Show Remote Branch History";
@@ -2118,7 +2120,7 @@
 "worktree.branch.openNewTab" = "Open Worktree for “%@” in New Tab";
 "worktree.branch.openNewWindow" = "Open Worktree for “%@” in New Window";
 "worktree.branch.remove" = "Remove Worktree for “%@”…";
-"worktree.branch.reveal" = "Reveal Worktree for “%@” in Finder";
+"worktree.branch.reveal" = "Show Worktree for “%@” in Finder";
 "worktree.branch.terminal" = "Open Worktree for “%@” in Terminal";
 "worktree.checkoutBranch" = "Check Out “%@” in New Worktree…";
 "worktree.create" = "Create Worktree";
@@ -2160,7 +2162,7 @@
 "worktree.remove.submit" = "Remove";
 "worktree.repair" = "Repair Worktree";
 "worktree.repair.menu" = "Repair Worktree…";
-"worktree.reveal" = "Reveal Worktree in Finder";
+"worktree.reveal" = "Show Worktree in Finder";
 "worktree.revision" = "Revision:";
 "worktree.subtitle" = "Worktree (%@)";
 "worktree.terminal" = "Open Worktree in Terminal";

@@ -147,7 +147,7 @@ extension RepositoryWindowController {
         }
     }
 
-    /// HEAD 树中的文件：原文、文件历史与逐行追溯跟随 HEAD；Finder 只用于本机仓库，复制的路径带服务器的主机前缀。
+    /// HEAD 树中的文件：原文、文件历史与逐行追溯跟随 HEAD；服务器仓库的文件在 Finder 中按挂载位置显示，复制的路径带服务器的主机前缀。
     private func perform(_ action: QuickAction, file path: String) {
         switch action {
         case .showFile: session.showFile(path, at: nil, mode: .raw)
@@ -159,8 +159,8 @@ extension RepositoryWindowController {
         case .openInEditor: session.edit(path)
 
         case .revealInFinder:
-            if let root = session.repository?.localURL {
-                NSWorkspace.shared.activateFileViewerSelecting([root.appending(path: path)])
+            if let url = session.finderURL(path) {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
             }
 
         case .copyPath:
@@ -172,7 +172,7 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 工作树：在当前窗口、新标签或新窗口打开，删除、修复与移动，在 Finder 或终端中打开；服务器上的工作树复制带主机前缀的路径。
+    /// 工作树：在当前窗口、新标签或新窗口打开，删除、修复与移动，在 Finder 或终端中打开；服务器上的工作树按挂载位置在 Finder 中显示，另可复制带主机前缀的路径。
     private func perform(_ action: QuickAction, worktree: Worktree) {
         switch action {
         case .openWorktree: session.open(worktree, in: .currentWindow)
@@ -188,7 +188,9 @@ extension RepositoryWindowController {
         case .moveWorktree: presentWorktreeRequest(.move(worktree))
 
         case .revealInFinder:
-            NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: worktree.path)])
+            if let url = session.finderURL(of: worktree) {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
 
         case .openInTerminal:
             if let location = session.location(of: worktree) {

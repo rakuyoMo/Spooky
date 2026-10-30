@@ -158,6 +158,8 @@
 "action.addRemote" = "サーバーリポジトリを追加…";
 "action.openTerminal" = "ターミナルで開く";
 "action.revealFinder" = "Finder に表示";
+"action.revealFinder.notMounted" = "「%@」はこの Mac にマウントされていません。リポジトリの設定で、この Mac 上のフォルダを指定できます。";
+"action.revealFinder.worktreeNotMounted" = "「%@」はこの Mac にマウントされていません。";
 "action.copyPath" = "パスをコピー";
 "action.reconnect" = "再接続";
 "action.cancel" = "キャンセル";
