@@ -1,13 +1,9 @@
-import AppKit
 import SpookyKit
 import SwiftUI
 
 // MARK: - Pickers
 
 extension GitSigningRows {
-    /// 弹出菜单里 “选择文件” 一项的标记，不是任何路径。
-    private static let chooseTag = "\u{0}choose"
-
     /// SSH 签名程序：系统的 ssh-keygen（不写配置）、装了 1Password 时它的签名程序，以及配置里的其它程序。
     var sshProgramPicker: some View {
         let configured = model.configuration.sshProgram
@@ -53,7 +49,7 @@ extension GitSigningRows {
             Divider()
 
             Text(AppLocalization.text("gitConfig.gpgProgram.select"))
-                .tag(Self.chooseTag)
+                .tag(SigningPrograms.chooseTag)
         }
         .labelsHidden()
         .frame(width: 278)
@@ -107,14 +103,7 @@ extension GitSigningRows {
     /// allowed signers 文件：不使用、`~/.ssh/allowed_signers`、配置里的其它文件，最后是选择文件。
     var allowedSignersPicker: some View {
         let configured = model.configuration.allowedSignersFile
-        let files = [SigningPrograms.defaultAllowedSigners, configured].compactMap(\.self)
-            .reduce(into: [String]()) { result, path in
-                let known = result.contains { HomePath.expanded($0) == HomePath.expanded(path) }
-
-                if !known {
-                    result.append(path)
-                }
-            }
+        let files = SigningPrograms.allowedSignersFiles(configured: configured)
 
         return Picker("", selection: choosingBinding(GlobalGitConfiguration.Key.allowedSignersFile, value: configured)) {
             Text(AppLocalization.text("gitConfig.allowedSigners.none"))
@@ -128,7 +117,7 @@ extension GitSigningRows {
             Divider()
 
             Text(AppLocalization.text("gitConfig.allowedSigners.select"))
-                .tag(Self.chooseTag)
+                .tag(SigningPrograms.chooseTag)
         }
         .labelsHidden()
         .frame(width: 278)
@@ -161,39 +150,13 @@ extension GitSigningRows {
         return Binding(
             get: { binding.wrappedValue },
             set: { selected in
-                guard selected == Self.chooseTag else {
+                guard selected == SigningPrograms.chooseTag else {
                     binding.wrappedValue = selected
                     return
                 }
 
-                chooseFile { binding.wrappedValue = $0 }
+                SigningPrograms.chooseFile { binding.wrappedValue = $0 }
             }
         )
-    }
-
-    /// 在设置窗口上以 sheet 打开文件选择面板，只能选文件。
-    ///
-    /// - Parameter choose: 选好后以文件路径回调。
-    private func chooseFile(_ choose: @escaping (String) -> Void) {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-        panel.resolvesAliases = true
-
-        let finish: (NSApplication.ModalResponse) -> Void = { response in
-            guard response == .OK, let url = panel.url else {
-                return
-            }
-
-            choose(url.path)
-        }
-
-        guard let window = NSApp.keyWindow else {
-            finish(panel.runModal())
-            return
-        }
-
-        panel.beginSheetModal(for: window, completionHandler: finish)
     }
 }

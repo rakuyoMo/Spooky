@@ -1,4 +1,3 @@
-import AppKit
 import SpookyKit
 import SwiftUI
 
@@ -8,10 +7,6 @@ import SwiftUI
 struct CommitIdentityView: View {
     /// 当前仓库会话。
     let session: RepositorySession
-
-    /// 全部身份档案的 JSON。
-    @AppStorage(UserProfiles.key)
-    private var storage = Data()
 
     /// 姓名与邮箱右对齐叠放在 45 pt 头像左侧，提示显示签名状态。
     var body: some View {
@@ -29,7 +24,12 @@ struct CommitIdentityView: View {
             .help(session.repository?.displayPath ?? "")
 
             Menu {
-                menuItems
+                IdentityProfileMenu(
+                    session: session,
+                    name: session.committer.name,
+                    email: session.committer.email,
+                    note: signingStatus
+                )
             } label: {
                 InitialsAvatar(name: session.committer.name, size: 45)
             }
@@ -46,57 +46,6 @@ struct CommitIdentityView: View {
 // MARK: - Private
 
 extension CommitIdentityView {
-    /// 解码后的档案。
-    private var profiles: [UserProfile] { UserProfiles.decode(storage) }
-
-    /// 当前身份对应的档案。
-    private var current: UserProfile? {
-        profiles.first { $0.name == session.committer.name && $0.email == session.committer.email }
-    }
-
-    /// 档案逐项列出并勾选当前身份；没有对应档案时列出当前身份，随后是签名状态与档案管理入口。
-    @ViewBuilder
-    private var menuItems: some View {
-        #warning("TODO: 档案菜单项括号内显示档案标题是推断，也可能是签名密钥。核实方式：建两个带不同签名密钥的同名身份档案后打开身份菜单比对；只影响菜单项文字。")
-        ForEach(profiles) { profile in
-            Toggle(
-                profile.menuTitle,
-                isOn: Binding(get: { profile == current }, set: { _ in session.applyProfile(profile) })
-            )
-            .disabled(!session.canWrite || profile == current)
-            .help(
-                profile.signingKey.map { AppLocalization.text("signing.key", $0, SigningFormat(key: $0).displayName) }
-                    ?? AppLocalization.text("signing.none")
-            )
-        }
-
-        if current == nil, !session.committer.name.isEmpty {
-            Toggle(session.committer.name + " <" + session.committer.email + ">", isOn: .constant(true))
-                .disabled(true)
-        }
-
-        if !signingStatus.isEmpty {
-            Text(signingStatus)
-        }
-
-        Divider()
-
-        if current == nil, !session.committer.name.isEmpty {
-            Button(AppLocalization.text("profiles.addCurrent", session.committer.email)) {
-                guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
-
-                UserProfiles.add(
-                    name: session.committer.name,
-                    email: session.committer.email,
-                    signingKey: session.commitConfiguration?.signingKey,
-                    in: window
-                )
-            }
-        }
-
-        Button(AppLocalization.text("profiles.manage")) { SettingsWindowController.show(.userProfiles) }
-    }
-
     /// 提交时会不会签名，以及使用的密钥与格式。
     private var signingStatus: String {
         guard let configuration = session.commitConfiguration else {

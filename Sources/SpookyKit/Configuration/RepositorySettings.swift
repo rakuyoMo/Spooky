@@ -34,6 +34,9 @@ public struct RepositorySettings: Sendable, Equatable {
         /// 签名密钥。
         public static let signingKey = "user.signingkey"
 
+        /// 签名格式，选签名密钥时随之写入；设置页不读取它。
+        public static let signingFormat = "gpg.format"
+
         /// SSH 签名校验用的 allowed signers 文件。
         public static let allowedSignersFile = "gpg.ssh.allowedsignersfile"
 

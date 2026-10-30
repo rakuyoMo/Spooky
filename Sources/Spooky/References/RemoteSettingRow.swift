@@ -1,3 +1,4 @@
+import SpookyKit
 import SwiftUI
 
 // MARK: - RemoteSettingAction
@@ -89,6 +90,80 @@ struct RemoteSettingRow: View {
     }
 }
 
+// MARK: - IdentitySettingRow
+
+/// 设置表格的提交人一行：标签、带身份档案菜单的 40 pt 头像、上下两行的姓名与邮箱，以及悬停或获得键盘焦点时出现的操作按钮。
+///
+/// 仓库管理的详情与仓库设置共用；VoiceOver 把整行读作一个元素，操作经辅助功能动作执行。
+struct IdentitySettingRow<ProfileMenu: View>: View {
+    /// 提交人；身份无法确定时为 nil，姓名一行写明未设置。
+    let identity: RepositorySummary.Identity?
+
+    /// 头像菜单是否可用。
+    let isMenuEnabled: Bool
+
+    /// 行尾的操作按钮。
+    let actions: [RemoteSettingAction]
+
+    /// 头像弹出的身份档案菜单。
+    @ViewBuilder
+    let menu: () -> ProfileMenu
+
+    /// 鼠标是否在行内。
+    @State
+    private var isHovering = false
+
+    /// 获得键盘焦点的操作按钮。
+    @FocusState
+    private var focusedAction: String?
+
+    /// 标签、头像菜单、姓名与邮箱、操作按钮横向排列。
+    var body: some View {
+        HStack(spacing: 0) {
+            Text(AppLocalization.text("bookmarks.detail.identity"))
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .frame(width: 240, alignment: .leading)
+
+            Menu(content: menu) {
+                InitialsAvatar(name: name, email: identity?.email, size: 40)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .disabled(!isMenuEnabled)
+            .accessibilityLabel(AppLocalization.text("profiles.menu"))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name)
+                Text(identity?.email ?? "")
+            }
+            .font(.system(size: 13))
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .textSelection(.enabled)
+            .padding(.leading, 6)
+
+            Spacer(minLength: 8)
+
+            actionButtons
+        }
+        .padding(.horizontal, 20)
+        .frame(minHeight: 56)
+        .contentShape(Rectangle())
+        .onHover { isHovering = $0 }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(AppLocalization.text("bookmarks.detail.identity"))
+        .accessibilityValue(name + " " + (identity?.email ?? ""))
+        .accessibilityActions {
+            ForEach(actions.filter(\.isEnabled)) { action in
+                Button(action.title, action: action.perform)
+            }
+        }
+    }
+}
+
 // MARK: - RemoteSettingsGroup
 
 /// 设置表格的分组标题：大写的组名，以及悬停或获得键盘焦点时出现的操作按钮。
@@ -138,5 +213,28 @@ struct SettingWarningRow: View {
         .padding(.vertical, 6)
         .frame(minHeight: 30)
         .background(AppPalette.color("general_warning_bg_color"))
+    }
+}
+
+// MARK: - Private
+
+extension IdentitySettingRow {
+    /// 提交人的姓名；身份无法确定时写明未设置。
+    private var name: String {
+        identity?.name ?? AppLocalization.text("bookmarks.detail.noIdentity")
+    }
+
+    /// 悬停或获得焦点时淡入的按钮；淡出时仍在原处，Tab 可以移到它们上面。
+    private var actionButtons: some View {
+        HStack(spacing: 4) {
+            ForEach(actions) { action in
+                Button(action.title, action: action.perform)
+                    .controlSize(.small)
+                    .disabled(!action.isEnabled)
+                    .focused($focusedAction, equals: action.id)
+            }
+        }
+        .opacity(isHovering || focusedAction != nil ? 1 : 0)
+        .animation(.easeInOut(duration: 0.2), value: isHovering)
     }
 }

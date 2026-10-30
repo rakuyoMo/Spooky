@@ -78,7 +78,7 @@ public enum SigningKeys {
     /// - Parameter searchPaths: 依次查找 gpg 的目录。
     public static func local(searchPaths: [String] = searchPaths) async -> [SigningKey] {
         #warning(
-            "TODO: 列出的密钥范围是推断：OpenPGP 只列能签名、未过期未吊销的私钥，SSH 只列 agent 里现有的密钥。核实方式：在钥匙环里放一把过期密钥、一把只能加密的密钥，并让 agent 卸下档案正在用的 SSH 密钥，再打开编辑档案的签名密钥菜单比对；只影响菜单列出哪些密钥。"
+            "TODO: SSH 只列 agent 里现有的密钥是推断。核实方式：让 agent 卸下档案正在用的 SSH 密钥，再打开编辑档案的签名密钥菜单比对；只影响菜单列出哪些密钥。"
         )
 
         async let openPGP = secretKeys(searchPaths: searchPaths)
