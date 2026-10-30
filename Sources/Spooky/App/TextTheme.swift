@@ -20,7 +20,7 @@ struct TextTheme: Codable, Identifiable, Sendable, Equatable {
     /// 主题文件的类型：扩展名为 `spookytheme` 的 JSON。
     static let fileType = UTType(filenameExtension: fileExtension, conformingTo: .json) ?? .json
 
-    /// 资源里的 Default 与 Default (Dark)：App 启动时写入 Themes 目录的来源，也是它们的文件无法加载时的最后回退。
+    /// 资源里的 Default 与 Default (Dark)：App 启动时写入 Themes 目录、替换旧默认配色的来源，也是它们的文件无法加载时的最后回退。
     static let builtin: [Self] = {
         guard
             let url = Bundle.module.url(forResource: "BuiltinThemes", withExtension: "json"),

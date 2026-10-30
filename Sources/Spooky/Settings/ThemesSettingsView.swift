@@ -99,10 +99,11 @@ extension ThemesSettingsView {
                 }
             }
 
+            // 内置主题不能删除；没有文件可删时页面显示的资源里的版本同样是内置主题。
             barButton("minus", label: "themes.remove") {
                 perform("themes.error.delete") { try store.delete(theme.id) }
             }
-            .disabled(!isStored(theme))
+            .disabled(ThemeStore.isBuiltin(theme))
 
             Spacer(minLength: 0)
 

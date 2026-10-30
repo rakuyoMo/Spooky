@@ -76,22 +76,25 @@ struct ThemeAndTerminalTests {
         #expect(light.fontName == "Menlo-Regular" && dark.fontSize == 11)
         #expect(Set(light.colors.keys) == Set(dark.colors.keys))
         #expect(Set(["text", "background", "added", "deleted"]).isSubset(of: Set(light.colors.keys)))
-        #expect(light.colors["deleted"]?.hex == "#FF3030")
-        #expect(light.colors["deleted"]?.alpha == 0.18)
-        #expect(dark.colors["deleted"]?.hex == "#FF453A")
-        #expect(dark.colors["deleted"]?.alpha == 0.20)
+
+        // 浅色的增删底色与不可见字符。
+        #expect(light.colors["added"] == PaletteColor(hex: "#28CD41", alpha: 0.12))
+        #expect(light.colors["deleted"] == PaletteColor(hex: "#FF3030", alpha: 0.12))
+        #expect(light.colors["invisible"] == PaletteColor(hex: "#000000", alpha: 0.3))
+
+        // 深色的背景、选区与增删底色。
+        #expect(dark.colors["background"] == PaletteColor(hex: "#161819", alpha: 1))
+        #expect(dark.colors["selection"] == PaletteColor(hex: "#515B70", alpha: 1))
+        #expect(dark.colors["added"] == PaletteColor(hex: "#32D74B", alpha: 0.10))
+        #expect(dark.colors["deleted"] == PaletteColor(hex: "#FF453A", alpha: 0.10))
+
         let lightBackground = try #require(light.colors["background"]?.nsColor.usingColorSpace(.sRGB))
-        let darkBackground = try #require(dark.colors["background"]?.nsColor.usingColorSpace(.sRGB))
         #expect(
             lightBackground.redComponent == 1
                 && lightBackground.greenComponent == 1
                 && lightBackground.blueComponent == 1
         )
-        #expect(
-            darkBackground.redComponent == 0
-                && darkBackground.greenComponent == 0
-                && darkBackground.blueComponent == 0
-        )
+
         #expect(AppPalette.colors["general_background_color"]?.dark.hex == "#323437")
         #expect(AppPalette.colors["blue_file_status_background_color"]?.dark.alpha == 0.70)
     }

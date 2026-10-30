@@ -1,0 +1,34 @@
+{
+  "default": {
+    "invisible": {
+      "hex": "#000000",
+      "alpha": 1
+    },
+    "added": {
+      "hex": "#28CD41",
+      "alpha": 0.18
+    },
+    "deleted": {
+      "hex": "#FF3030",
+      "alpha": 0.18
+    }
+  },
+  "default-dark": {
+    "background": {
+      "hex": "#000000",
+      "alpha": 1
+    },
+    "selection": {
+      "hex": "#FBD1AD",
+      "alpha": 1
+    },
+    "added": {
+      "hex": "#32D74B",
+      "alpha": 0.18
+    },
+    "deleted": {
+      "hex": "#FF453A",
+      "alpha": 0.2
+    }
+  }
+}

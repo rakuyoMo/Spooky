@@ -5,7 +5,7 @@ import SwiftUI
 
 /// 主题列表：不允许空选，选中的主题即当前外观使用的主题。
 ///
-/// 主题可以在行内改名；行拖到 Finder 导出成主题文件，主题文件拖进列表即导入。
+/// Default 与 Default (Dark) 以外的主题可以在行内改名；行拖到 Finder 导出成主题文件，主题文件拖进列表即导入。
 struct ThemeListView: NSViewRepresentable {
     /// 回车键开始改名；其它按键交给系统列表。
     final class ThemeTableView: NSTableView {
@@ -133,11 +133,12 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
         table.scrollRowToVisible(row)
     }
 
-    /// 开始改名所选的主题。
+    /// 开始改名所选的主题；内置主题不能改名，不进入编辑。
     func beginRename() {
         guard
             let table,
-            parent.themes.indices.contains(table.selectedRow)
+            parent.themes.indices.contains(table.selectedRow),
+            !ThemeStore.isBuiltin(parent.themes[table.selectedRow])
         else { return }
 
         table.editColumn(0, row: table.selectedRow, with: nil, select: true)
@@ -146,7 +147,7 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
     /// 行数即主题数。
     func numberOfRows(in _: NSTableView) -> Int { parent.themes.count }
 
-    /// 每行一个可编辑的名称文本框。
+    /// 每行一个名称文本框，内置主题的不可编辑。
     func tableView(_ tableView: NSTableView, viewFor _: NSTableColumn?, row: Int) -> NSView? {
         guard parent.themes.indices.contains(row) else {
             return nil
@@ -158,7 +159,13 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
             ?? Self.makeCell(identifier)
 
         cell.textField?.stringValue = theme.name
+
+        // 内置主题不能改名，点名称不进入编辑；复用的单元格可能来自可改名的行，可选中与可编辑一起设。
+        let renamable = !ThemeStore.isBuiltin(theme)
+        cell.textField?.isEditable = renamable
+        cell.textField?.isSelectable = renamable
         cell.textField?.delegate = self
+
         return cell
     }
 
@@ -285,10 +292,9 @@ extension ThemeListCoordinator {
             .filter { $0.isFileURL && $0.pathExtension.lowercased() == TextTheme.fileExtension }
     }
 
-    /// 单元格：一行可编辑的名称，过长时截断末尾。
+    /// 单元格：一行名称，过长时截断末尾；能否编辑由显示的主题决定。
     private static func makeCell(_ identifier: NSUserInterfaceItemIdentifier) -> NSTableCellView {
         let field = NSTextField(labelWithString: "")
-        field.isEditable = true
         field.lineBreakMode = .byTruncatingTail
         field.translatesAutoresizingMaskIntoConstraints = false
 
