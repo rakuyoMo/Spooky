@@ -4,12 +4,8 @@ import SwiftUI
 
 // MARK: - AddWorktreeDialog
 
-/// 新建工作树：版本与目标目录，可以分离 HEAD、强制创建与创建后打开；目标目录默认放在仓库旁边，以仓库名与版本命名。
+/// 新建工作树：版本与目标目录，可以分离 HEAD 与强制创建；目标目录默认放在仓库旁边，以仓库名与版本命名。
 struct AddWorktreeDialog: View {
-    #warning(
-        "TODO: 创建后打开的勾选项与它默认勾选、在新标签里打开，以及默认目录名里把版本的 “/” 换成 “-”，都是推断；核实方式：从 feature/x 新建工作树，确认对话框是否应有这一项、创建后是否应自动打开及在哪里打开、默认目录名应怎样推出；影响新建工作树后的打开方式与默认目标目录"
-    )
-
     /// 发起动作的窗口会话。
     let session: RepositorySession
 
@@ -36,10 +32,6 @@ struct AddWorktreeDialog: View {
     @State
     private var force = false
 
-    /// 创建后在新标签里打开。
-    @AppStorage(WorktreePreferences.opensAfterCreation)
-    private var opens = true
-
     /// 目标位置已有文件或非空目录。
     @State
     private var destinationTaken = false
@@ -48,7 +40,7 @@ struct AddWorktreeDialog: View {
     @State
     private var isBrowsing = false
 
-    /// “Revision:” 与 “Destination:” 两行，以及三个勾选项。
+    /// “Revision:” 与 “Destination:” 两行，以及两个勾选项。
     var body: some View {
         ReferenceDialogLayout(
             session: session,
@@ -90,8 +82,6 @@ struct AddWorktreeDialog: View {
                 help: AppLocalization.text("worktree.force.help"),
                 isOn: $force
             )
-
-            ReferenceDialogRows.option(AppLocalization.text("worktree.open"), help: "", isOn: $opens)
         }
         .sheet(isPresented: $isBrowsing) {
             if let host = session.repository?.host {
@@ -218,7 +208,7 @@ extension AddWorktreeDialog {
 
     /// 捕获表单值后开始创建；仓库忙碌时表单保持打开。
     private func submit() {
-        if session.addWorktree(at: destination, revision: revision, detach: detach, force: force, opens: opens) {
+        if session.addWorktree(at: destination, revision: revision, detach: detach, force: force) {
             close()
         }
     }

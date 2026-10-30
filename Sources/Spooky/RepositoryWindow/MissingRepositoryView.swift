@@ -113,14 +113,19 @@ extension MissingRepositoryView {
     }
 
     /// 写出仓库位置的说明。
-    private var message: String {
+    var message: String {
         switch reason {
         case .notFound:
-            AppLocalization.text("missing.message", location.displayPath)
+            AppLocalization.text("missing.message", messagePath)
 
         case .unreachable:
-            AppLocalization.text("missing.unreachable.message", location.displayPath)
+            AppLocalization.text("missing.unreachable.message", messagePath)
         }
+    }
+
+    /// 说明里的仓库位置：本机仓库把主目录缩写成 `~`；服务器仓库写 “<别名>:<路径>”，不缩写，`~` 只代表这台 Mac 的主目录。
+    private var messagePath: String {
+        location.host == nil ? HomePath.abbreviated(location.path) : location.displayPath
     }
 
     /// 路径不存在用带问号的文件夹，连不上用断开的网络。

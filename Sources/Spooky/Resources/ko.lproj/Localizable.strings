@@ -2144,7 +2144,6 @@
 "worktree.move.message" = "작업 트리 “%@”을(를) 현재 상태 그대로 다른 위치로 옮깁니다.";
 "worktree.move.submit" = "이동";
 "worktree.noRefs" = "이 저장소에는 아직 커밋이 없습니다.";
-"worktree.open" = "만든 후 열기";
 "worktree.open.current" = "작업 트리 열기";
 "worktree.open.newTab" = "새 탭에서 작업 트리 열기";
 "worktree.open.newWindow" = "새 윈도우에서 작업 트리 열기";

@@ -6,7 +6,7 @@ import Testing
 
 // MARK: - SidebarSessionTests
 
-/// 侧边栏的写入经会话的写队列执行，完成后的完整刷新把新状态读回快照。
+/// 侧边栏的写入经会话的写队列执行，完成后的完整刷新把新状态读回快照；新建工作树之后窗口不变。
 @MainActor
 struct SidebarSessionTests {
     /// 置顶、归档与取消都写进分支配置并读回；没有新提交的分支并入 main；标签检出成分离 HEAD。
@@ -74,6 +74,38 @@ struct SidebarSessionTests {
         #expect(session.canCheckoutRevision)
         session.checkout(revision: tag.id)
         try await waitUntil { session.status?.branch.head == nil && session.status?.branch.oid == tag.objectID }
+    }
+
+    /// 新建的工作树只出现在 Worktrees 分组里，不另开标签或窗口，当前窗口仍显示原来的仓库。
+    @Test("新建工作树之后不打开它")
+    func addWorktreeKeepsWindow() async throws {
+        let parent = FileManager.default.temporaryDirectory.appending(path: "spooky-worktree-" + UUID().uuidString)
+        let directory = parent.appending(path: "repo")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: parent) }
+
+        let location = RepositoryLocation.local(path: directory.path)
+        let runner = try await FileViewsTests.initializeRepository(at: location)
+        _ = try await runner.run(["commit", "--allow-empty", "-m", "root"])
+        _ = try await runner.run(["branch", "side"])
+
+        let session = RepositorySession(makeRunner: { _ in runner }, activities: RepositoryActivities())
+        defer { session.close() }
+
+        var opened: [RepositoryLocation] = []
+        session.onOpenRepository = { target, _ in opened.append(target) }
+
+        session.display(location)
+        session.refresh()
+        try await waitUntil { session.worktrees.isLoaded }
+
+        // 写入后的完整刷新读回新工作树，再确认没有打开它
+        let destination = parent.appending(path: "repo-side").path
+        #expect(session.addWorktree(at: destination, revision: "side", detach: false, force: false))
+        try await waitUntil { session.worktrees.others.contains { $0.branch == "refs/heads/side" } }
+
+        #expect(opened.isEmpty)
+        #expect(session.repository == location)
     }
 }
 

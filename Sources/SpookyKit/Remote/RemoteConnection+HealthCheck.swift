@@ -28,9 +28,6 @@ extension RemoteConnection {
         ], kind: .pathPermission)
 
         // 权限位允许时，B 的隐私保护仍可能在读取目录内容时拒绝 SSH 会话
-        #warning(
-            "TODO: 未在 B 的隐私保护目录上实测；核实方式：在 B 的远程登录设置里关闭 “允许远程用户完全磁盘访问”，添加 ~/Documents 下的仓库，确认拒绝发生在这一步且 stderr 为 “Operation not permitted”；影响体检能否给出磁盘访问权限的修复方向"
-        )
         _ = try await probeAccess([
             "/usr/bin/perl", "-e",
             "opendir(my $directory, $ARGV[0]) or do { print STDERR \"$!\\n\"; exit 3 }",

@@ -81,7 +81,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Open in Terminal**: supports Terminal, iTerm, Warp, Ghostty, WezTerm, and Otty. For a server repository, the terminal connects over SSH and opens the remote path
 
-- **External tools**: compare and merge with external diff and merge tools, and open files with other apps. Server files are copied to your Mac for these tools, and merge results and edited files are written back only after Spooky checks that the server's version hasn't changed. VS Code opens server files directly over Remote - SSH
+- **External tools**: compare and merge with external diff and merge tools, and open files with other apps. Server files are copied to your Mac for these tools, and merge results and edited files are written back only after Spooky checks that the server's version hasn't changed. VS Code, VS Code Insiders, and Cursor open server files directly through their Remote SSH extensions
 
 - **Links**: `spooky://` links open a repository, a view, a branch, or a commit, or start a clone, for local and server repositories alike. The “Open with Desktop” links on github.com can open in Spooky
 

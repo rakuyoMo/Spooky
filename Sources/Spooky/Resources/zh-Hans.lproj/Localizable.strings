@@ -2144,7 +2144,6 @@
 "worktree.move.message" = "把工作树 “%@” 移到别的位置，保留它现在的状态。";
 "worktree.move.submit" = "移动";
 "worktree.noRefs" = "这个仓库还没有提交。";
-"worktree.open" = "创建后打开";
 "worktree.open.current" = "打开工作树";
 "worktree.open.newTab" = "在新标签页中打开工作树";
 "worktree.open.newWindow" = "在新窗口中打开工作树";

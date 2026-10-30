@@ -2144,7 +2144,6 @@
 "worktree.move.message" = "把工作樹 “%@” 移到別的位置，保留它現在的狀態。";
 "worktree.move.submit" = "移動";
 "worktree.noRefs" = "這個儲存庫還沒有提交。";
-"worktree.open" = "建立後開啟";
 "worktree.open.current" = "開啟工作樹";
 "worktree.open.newTab" = "在新標籤頁中開啟工作樹";
 "worktree.open.newWindow" = "在新視窗中開啟工作樹";

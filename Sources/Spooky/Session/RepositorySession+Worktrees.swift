@@ -1,14 +1,6 @@
 import AppKit
 import SpookyKit
 
-// MARK: - WorktreePreferences
-
-/// 工作树相关的偏好键。
-enum WorktreePreferences {
-    /// 新建工作树后在新标签里打开它。
-    static let opensAfterCreation = "worktreeOpenAfterCreation"
-}
-
 // MARK: - Availability
 
 extension RepositorySession {
@@ -65,29 +57,22 @@ extension RepositorySession {
 // MARK: - Actions
 
 extension RepositorySession {
-    /// 新建工作树，成功后按选项在新标签里打开它。
+    /// 新建工作树；建完窗口不变。
     ///
     /// - Parameters:
     ///   - path: 新工作树的绝对路径。
     ///   - revision: 检出的分支或版本。
     ///   - detach: 以分离 HEAD 检出。
     ///   - force: 分支已在别的工作树检出时仍然创建。
-    ///   - opens: 成功后在新标签里打开。
     /// - Returns: 是否已开始执行。
     @discardableResult
-    func addWorktree(at path: String, revision: String, detach: Bool, force: Bool, opens: Bool) -> Bool {
-        let host = repository?.host
-
-        return performGit(
+    func addWorktree(at path: String, revision: String, detach: Bool, force: Bool) -> Bool {
+        performGit(
             { runner, output in
                 try await RepositoryWorktrees(runner: runner)
                     .add(at: path, revision: revision, detach: detach, force: force, onOutput: output)
             },
-            title: AppLocalization.text("worktree.add"),
-            success: { [weak self] in
-                guard opens else { return }
-                self?.onOpenRepository?(host.map { .remote(host: $0, path: path) } ?? .local(path: path), .newTab)
-            }
+            title: AppLocalization.text("worktree.add")
         )
     }
 

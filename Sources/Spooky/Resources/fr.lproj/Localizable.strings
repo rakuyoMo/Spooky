@@ -2144,7 +2144,6 @@
 "worktree.move.message" = "Déplace le worktree « %@ » vers un autre emplacement en conservant son état actuel.";
 "worktree.move.submit" = "Déplacer";
 "worktree.noRefs" = "Ce dépôt n’a pas encore de commits.";
-"worktree.open" = "Ouvrir après la création";
 "worktree.open.current" = "Ouvrir le worktree";
 "worktree.open.newTab" = "Ouvrir le worktree dans un nouvel onglet";
 "worktree.open.newWindow" = "Ouvrir le worktree dans une nouvelle fenêtre";

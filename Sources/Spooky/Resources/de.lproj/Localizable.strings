@@ -2144,7 +2144,6 @@
 "worktree.move.message" = "Verschiebt den Worktree „%@“ an einen anderen Ort und behält seinen aktuellen Zustand.";
 "worktree.move.submit" = "Verschieben";
 "worktree.noRefs" = "Dieses Repository hat noch keine Commits.";
-"worktree.open" = "Nach dem Erstellen öffnen";
 "worktree.open.current" = "Worktree öffnen";
 "worktree.open.newTab" = "Worktree in neuem Tab öffnen";
 "worktree.open.newWindow" = "Worktree in neuem Fenster öffnen";

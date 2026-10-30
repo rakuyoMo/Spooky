@@ -2144,7 +2144,6 @@
 "worktree.move.message" = "ワークツリー「%@」を現在の状態のまま別の場所へ移動します。";
 "worktree.move.submit" = "移動";
 "worktree.noRefs" = "このリポジトリにはまだコミットがありません。";
-"worktree.open" = "作成後に開く";
 "worktree.open.current" = "ワークツリーを開く";
 "worktree.open.newTab" = "ワークツリーを新規タブで開く";
 "worktree.open.newWindow" = "ワークツリーを新規ウインドウで開く";
