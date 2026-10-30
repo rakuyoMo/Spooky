@@ -33,7 +33,7 @@ struct WhatsNewCard: View {
                     .strokeBorder(Color.accentColor.opacity(0.16), lineWidth: 1)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.vertical, 5)
         }
     }
 

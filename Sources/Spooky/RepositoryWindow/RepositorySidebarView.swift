@@ -143,7 +143,6 @@ struct RepositorySidebarView: View {
             // 新版本第一次启动时的新功能卡片
             WhatsNewCard(state: .shared)
 
-            Divider()
             bottomBar
         }
         .onChange(of: session.repository) {
