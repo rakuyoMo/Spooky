@@ -1933,12 +1933,15 @@
 "settings.crashReports" = "當機報告：";
 "settings.crashReports.always" = "一律傳送當機報告";
 
-/* Developer 菜单与 General 页显示它的勾选框；菜单是开发者用的，各语言都用英文。 */
+/* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
 "settings.showDeveloperMenu" = "顯示 Developer 選單";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";
 "developer.logUserDefaults" = "Log User Defaults";
 "developer.resetUserDefaults" = "Reset User Defaults";
+"developer.resetUserDefaults.title" = "重置偏好設定？";
+"developer.resetUserDefaults.message" = "所有設定都會回復為預設值，書籤、身分設定檔與帳號會保留。部分設定要在重新啟動 Spooky 後才會改變。";
+"developer.resetUserDefaults.confirm" = "重置";
 "developer.clearUserDefaults" = "Clear User Defaults";
 "developer.testCrashReporting" = "Test Crash Reporting";
 "developer.crashWithException" = "Crash With Fake Exception";

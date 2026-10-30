@@ -54,13 +54,19 @@ extension SpookyApplicationController {
         FileHandle.standardOutput.write(Data(lines.joined().utf8))
     }
 
-    /// Developer › User Defaults › Reset User Defaults：删掉偏好域里的设置，保留书签、身份档案与托管账号。
+    /// Developer › User Defaults › Reset User Defaults：先询问，确认后删掉偏好域里的设置，保留书签、身份档案与托管账号。
     @objc
     func resetUserDefaults() {
-        DeveloperPreferences.removeValues(in: UserDefaults.appDomain, of: .standard, keepingData: true)
+        Task {
+            guard await Self.confirmResetUserDefaults(in: NSApp.keyWindow ?? NSApp.mainWindow) else {
+                return
+            }
+
+            DeveloperPreferences.removeValues(in: UserDefaults.appDomain, of: .standard, keepingData: true)
+        }
     }
 
-    /// Developer › User Defaults › Clear User Defaults：删掉整个偏好域。
+    /// Developer › User Defaults › Clear User Defaults：不询问，直接删掉整个偏好域。
     @objc
     func clearUserDefaults() {
         DeveloperPreferences.removeValues(in: UserDefaults.appDomain, of: .standard, keepingData: false)
@@ -97,5 +103,28 @@ extension SpookyApplicationController {
     @objc
     func toggleAutoReload() {
         UserDefaults.standard.set(!DeveloperPreferences.autoReloads(), forKey: DeveloperPreferences.autoReloadKey)
+    }
+}
+
+// MARK: - Helpers
+
+extension SpookyApplicationController {
+    /// Reset User Defaults 的确认：Reset 是默认按钮；有窗口时以 sheet 显示，否则以模态窗口显示。
+    ///
+    /// - Parameter window: 显示 sheet 的窗口。
+    /// - Returns: 用户选了 Reset。
+    static func confirmResetUserDefaults(in window: NSWindow?) async -> Bool {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = AppLocalization.text("developer.resetUserDefaults.title")
+        alert.informativeText = AppLocalization.text("developer.resetUserDefaults.message")
+        alert.addButton(withTitle: AppLocalization.text("developer.resetUserDefaults.confirm"))
+        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
+
+        guard let window else {
+            return alert.runModal() == .alertFirstButtonReturn
+        }
+
+        return await alert.beginSheetModal(for: window) == .alertFirstButtonReturn
     }
 }

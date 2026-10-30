@@ -1933,12 +1933,15 @@
 "settings.crashReports" = "충돌 보고서:";
 "settings.crashReports.always" = "항상 충돌 보고서 보내기";
 
-/* Developer 菜单与 General 页显示它的勾选框；菜单是开发者用的，各语言都用英文。 */
+/* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
 "settings.showDeveloperMenu" = "Developer 메뉴 표시";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";
 "developer.logUserDefaults" = "Log User Defaults";
 "developer.resetUserDefaults" = "Reset User Defaults";
+"developer.resetUserDefaults.title" = "환경설정을 재설정하겠습니까?";
+"developer.resetUserDefaults.message" = "모든 설정이 기본값으로 돌아갑니다. 책갈피, 사용자 프로필과 계정은 유지됩니다. 일부 설정은 Spooky를 다시 시작한 후에 바뀝니다.";
+"developer.resetUserDefaults.confirm" = "재설정";
 "developer.clearUserDefaults" = "Clear User Defaults";
 "developer.testCrashReporting" = "Test Crash Reporting";
 "developer.crashWithException" = "Crash With Fake Exception";

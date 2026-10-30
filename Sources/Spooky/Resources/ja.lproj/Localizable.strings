@@ -1933,12 +1933,15 @@
 "settings.crashReports" = "クラッシュレポート：";
 "settings.crashReports.always" = "クラッシュレポートを常に送信";
 
-/* Developer 菜单与 General 页显示它的勾选框；菜单是开发者用的，各语言都用英文。 */
+/* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
 "settings.showDeveloperMenu" = "Developer メニューを表示";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";
 "developer.logUserDefaults" = "Log User Defaults";
 "developer.resetUserDefaults" = "Reset User Defaults";
+"developer.resetUserDefaults.title" = "環境設定をリセットしますか？";
+"developer.resetUserDefaults.message" = "すべての設定がデフォルトに戻ります。ブックマーク、ユーザプロファイル、アカウントは残ります。一部の設定は Spooky を再起動したあとに変わります。";
+"developer.resetUserDefaults.confirm" = "リセット";
 "developer.clearUserDefaults" = "Clear User Defaults";
 "developer.testCrashReporting" = "Test Crash Reporting";
 "developer.crashWithException" = "Crash With Fake Exception";

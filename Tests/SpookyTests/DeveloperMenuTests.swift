@@ -7,7 +7,7 @@ import Testing
 
 // MARK: - DeveloperMenuTests
 
-/// Developer 菜单：General 页的勾选决定它是否出现在主菜单；Reset 只删设置、保留用户的数据，Clear 什么都不留；
+/// Developer 菜单：General 页的勾选决定它是否出现在主菜单；Reset 先询问、只删设置并保留用户的数据，Clear 什么都不留；
 /// 关掉 Auto-Reload Repository 后文件监听与轮询不再刷新仓库。
 @MainActor
 struct DeveloperMenuTests {
@@ -70,6 +70,41 @@ struct DeveloperMenuTests {
         #expect(DeveloperPreferences.dataKeys.allSatisfy { defaults.object(forKey: $0) == nil })
     }
 
+    /// Reset User Defaults 先询问：说明保留哪些数据，Reset 是默认按钮；选 Cancel 不执行，选 Reset 才执行。
+    @Test("Reset 先询问，Cancel 时不执行")
+    func resetConfirmation() async throws {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+
+        let reset = AppLocalization.text("developer.resetUserDefaults.confirm")
+        let cancel = AppLocalization.text("action.cancel")
+
+        for (choice, confirmed) in [(cancel, false), (reset, true)] {
+            let answer = Task { await SpookyApplicationController.confirmResetUserDefaults(in: window) }
+            let sheet = try await Self.attachedSheet(of: window)
+            let content = try #require(sheet.contentView)
+
+            // 标题与说明来自资源，Reset 是默认按钮
+            let texts = Self.subviews(NSTextField.self, in: content).map(\.stringValue)
+            #expect(texts.contains(AppLocalization.text("developer.resetUserDefaults.title")))
+            #expect(texts.contains(AppLocalization.text("developer.resetUserDefaults.message")))
+
+            #expect(sheet.defaultButtonCell?.title == reset)
+
+            // 按下这一轮选的按钮：Cancel 不执行，Reset 才执行
+            let buttons = Self.subviews(NSButton.self, in: content)
+            try #require(buttons.first { $0.title == choice }).performClick(nil)
+            #expect(await answer.value == confirmed)
+        }
+    }
+
     /// 关掉 Auto-Reload Repository 后，文件监听与轮询共用的刷新入口不读取状态；没有记录或打开时照常刷新。
     @Test("关掉自动刷新后文件监听与轮询不刷新")
     func autoReload() async throws {
@@ -96,5 +131,27 @@ struct DeveloperMenuTests {
 
         await session.refreshTask?.value
         #expect(session.status == status)
+    }
+}
+
+// MARK: - Helpers
+
+extension DeveloperMenuTests {
+    /// 等窗口挂上 sheet，最多等 5 秒。
+    private static func attachedSheet(of window: NSWindow) async throws -> NSWindow {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+
+        while window.attachedSheet == nil, .now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+
+        return try #require(window.attachedSheet)
+    }
+
+    /// 视图层级里给定类型的全部视图，按深度优先的顺序。
+    private static func subviews<Element: NSView>(_: Element.Type, in root: NSView) -> [Element] {
+        root.subviews.flatMap { child in
+            [child as? Element].compactMap(\.self) + subviews(Element.self, in: child)
+        }
     }
 }
