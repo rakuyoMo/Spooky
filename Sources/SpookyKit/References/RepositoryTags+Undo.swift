@@ -3,30 +3,18 @@ import Foundation
 // MARK: - Undo
 
 extension RepositoryTags {
-    /// 发布标签之前读出撤销时的租约：本地标签指向的对象，附注标签是标签对象本身。
+    /// 发布标签之前读出撤销时的租约：本地标签指向的对象，附注标签是标签对象本身；只读本机，不连接远端。
     ///
-    /// 远端已有同名标签时为 nil：这时发布没有新建标签，撤销不能删掉它。
+    /// 推送是否新建了远端标签由这次推送的逐条结果判断，见 ``PushLog``。
     ///
-    /// - Parameters:
-    ///   - name: 标签短名。
-    ///   - remote: 要发布到的远端名。
-    public func publicationLease(of name: String, on remote: String) async throws -> String? {
+    /// - Parameter name: 标签短名。
+    public func publicationLease(of name: String) async throws -> String {
         guard !name.isEmpty else {
             throw RepositoryReadError.invalidQuery
         }
 
-        // 远端名先核对是登记过的远端，不让 ls-remote 把它当成地址或路径
-        guard try await !RepositoryRemotes(runner: runner).settings(of: remote).isEmpty else {
-            throw RepositorySyncError.missingRemote
-        }
-
-        let reference = "refs/tags/" + name
-
-        guard try await !RepositoryReferences(runner: runner).remoteContains(reference, on: remote) else {
-            return nil
-        }
-
-        return try await RepositoryUndo(runner: runner).objectID(["rev-parse", "--verify", "--end-of-options", reference])
+        return try await RepositoryUndo(runner: runner)
+            .objectID(["rev-parse", "--verify", "--end-of-options", "refs/tags/" + name])
     }
 
     /// 撤销发布标签：在远端删掉它，远端标签必须仍指向发布时的对象，被别人改过时推送被拒绝，原样报错。
@@ -36,7 +24,7 @@ extension RepositoryTags {
     /// - Parameters:
     ///   - name: 标签短名。
     ///   - remote: 发布到的远端名。
-    ///   - object: 由 ``publicationLease(of:on:)`` 读出的对象。
+    ///   - object: 由 ``publicationLease(of:)`` 读出的对象。
     public func undoPublish(
         _ name: String,
         on remote: String,

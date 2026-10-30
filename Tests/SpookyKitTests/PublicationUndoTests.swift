@@ -5,7 +5,7 @@ import Testing
 
 // MARK: - PublicationUndoTests
 
-/// 远端引用的撤销：发布的分支与标签在远端删掉，改名的远端分支改回原名；远端原来就有时不记，
+/// 远端引用的撤销：发布的分支与标签在远端删掉，改名的远端分支改回原名；发布时推送的结果记进写操作的记录，
 /// 远端被别人改过时租约拒绝，本机的前提不符时不连接远端。
 struct PublicationUndoTests {
     /// 撤销发布分支：远端没有这个分支，本机的远端跟踪分支随之删掉；发布前跟踪本地分支、另有一项设置的分支段原样换回。
@@ -23,9 +23,7 @@ struct PublicationUndoTests {
         _ = try await runner.run(["config", "--local", "branch." + branch + ".rebase", "true"])
         let settings = try await RepositoryUndo(runner: runner).branchSettings()
 
-        let publication = try #require(
-            try await sync.publication(of: branch, to: "origin", as: branch, setsUpstream: true)
-        )
+        let publication = try await sync.publication(of: branch, to: "origin", as: branch, setsUpstream: true)
         _ = try await sync.push(branch: branch, remote: "origin", destination: branch, setUpstream: true)
         #expect(try await Self.references(in: remote).contains("refs/heads/" + branch))
         #expect(try await RepositoryUndo(runner: runner).branchSettings() != settings)
@@ -36,30 +34,46 @@ struct PublicationUndoTests {
         #expect(try await BranchManagementTests.reference("refs/remotes/origin/" + branch, in: .init(runner: runner)) == nil)
     }
 
-    /// 远端原来就有同名的分支或标签时，发布不新建引用，撤销不能删掉它，准备时不给出撤销内容。
-    @Test("远端已有同名引用时不记")
-    func existingOnRemote() async throws {
-        let (fixture, bare) = try await BranchManagementTests.repository(objectFormat: "sha1")
+    /// 发布分支与标签时推送的逐条结果记进当前写操作的记录：远端原来没有时是新建，已有且快进是更新，已指向同一对象是已是最新。
+    @Test("推送的结果记进写操作的记录")
+    func pushResults() async throws {
+        let (fixture, _) = try await BranchManagementTests.repository(objectFormat: "sha1")
         defer { fixture.remove() }
 
         let runner = fixture.runner
-        let remote = fixture.runner(at: bare)
-
-        // 远端另有名字更长、结尾相同的引用，列远端时会一起列出，不能当作同名
-        _ = try await runner.run(["tag", "v1"])
-        _ = try await runner.run([
-            "push", "-q", "origin", "main:refs/heads/x/refs/heads/feature", "v1:refs/tags/x/refs/tags/v1",
-        ])
-
         let sync = RepositorySync(runner: runner)
         let tags = RepositoryTags(runner: runner)
-        #expect(try await sync.publication(of: "main", to: "origin", as: "main", setsUpstream: false) == nil)
-        #expect(try await sync.publication(of: "main", to: "origin", as: "feature", setsUpstream: false) != nil)
-        #expect(try await tags.publicationLease(of: "v1", on: "origin") != nil)
+        let log = PushLog()
 
-        _ = try await runner.run(["push", "-q", "origin", "v1"])
-        #expect(try await tags.publicationLease(of: "v1", on: "origin") == nil)
-        #expect(try await Self.references(in: remote).count == 4)
+        _ = try await runner.run(["branch", "-q", "功能/发布"])
+        _ = try await runner.run(["tag", "v1"])
+
+        try await PushLog.$current.withValue(log) {
+            _ = try await sync.push(branch: "功能/发布", remote: "origin", destination: "功能/发布", setUpstream: true)
+            try await tags.publish("v1", to: "origin")
+        }
+
+        #expect(log.result(of: "refs/heads/功能/发布", on: "origin") == .created)
+        #expect(log.result(of: "refs/tags/v1", on: "origin") == .created)
+        #expect(log.result(of: "refs/heads/功能/发布", on: "fork") == nil)
+
+        // 再推一次已是最新；提交之后再推是快进，同一个引用取最近一次推送的结果
+        try await PushLog.$current.withValue(log) {
+            _ = try await sync.push(branch: "功能/发布", remote: "origin", destination: "功能/发布", setUpstream: false)
+            try await tags.publish("v1", to: "origin")
+        }
+
+        #expect(log.result(of: "refs/heads/功能/发布", on: "origin") == .upToDate)
+        #expect(log.result(of: "refs/tags/v1", on: "origin") == .upToDate)
+
+        _ = try await runner.run(["commit", "-q", "--allow-empty", "-m", "其它"])
+        _ = try await runner.run(["branch", "-q", "-f", "功能/发布", "main"])
+
+        try await PushLog.$current.withValue(log) {
+            _ = try await sync.push(branch: "功能/发布", remote: "origin", destination: "功能/发布", setUpstream: false)
+        }
+
+        #expect(log.result(of: "refs/heads/功能/发布", on: "origin") == .updated)
     }
 
     /// 另一个克隆把发布的分支推进一个提交之后，撤销被租约拒绝：远端分支与本机的跟踪设置都不变。
@@ -73,9 +87,7 @@ struct PublicationUndoTests {
         let sync = RepositorySync(runner: runner)
 
         _ = try await runner.run(["branch", "-q", "feature"])
-        let publication = try #require(
-            try await sync.publication(of: "feature", to: "origin", as: "feature", setsUpstream: true)
-        )
+        let publication = try await sync.publication(of: "feature", to: "origin", as: "feature", setsUpstream: true)
         _ = try await sync.push(branch: "feature", remote: "origin", destination: "feature", setUpstream: true)
 
         // 另一个克隆在 feature 上提交并推送
@@ -107,7 +119,7 @@ struct PublicationUndoTests {
         let tags = RepositoryTags(runner: runner)
 
         try await tags.create(name: "发布/v1", revision: "main", message: "说明", sign: false)
-        let object = try #require(try await tags.publicationLease(of: "发布/v1", on: "origin"))
+        let object = try await tags.publicationLease(of: "发布/v1")
         #expect(try await Self.object("refs/tags/发布/v1", in: remote) == nil)
 
         try await tags.publish("发布/v1", to: "origin")
@@ -154,9 +166,7 @@ struct PublicationUndoTests {
         let sync = RepositorySync(runner: runner)
 
         _ = try await runner.run(["branch", "-q", "feature"])
-        let publication = try #require(
-            try await sync.publication(of: "feature", to: "origin", as: "feature", setsUpstream: true)
-        )
+        let publication = try await sync.publication(of: "feature", to: "origin", as: "feature", setsUpstream: true)
         _ = try await sync.push(branch: "feature", remote: "origin", destination: "feature", setUpstream: true)
 
         // 发布后又给 feature 加了一项设置
@@ -176,20 +186,6 @@ struct PublicationUndoTests {
             try await RepositoryTags(runner: runner).undoPublish("v1", on: "origin", object: publication.commit)
         }
         #expect(try await Self.references(in: remote).contains("refs/heads/feature"))
-    }
-
-    /// `ls-remote` 的每一行都要是对象哈希、制表符与完整引用名，否则按格式错误抛出。
-    @Test("远端引用列表的格式错误")
-    func malformedListing() throws {
-        let line = String(repeating: "a", count: 40) + "\trefs/heads/功能 分支\n"
-        #expect(try RepositoryReferences.listedReferences(in: Data(line.utf8)) == ["refs/heads/功能 分支"])
-        #expect(try RepositoryReferences.listedReferences(in: Data()).isEmpty)
-
-        for output in ["refs/heads/main\n", String(repeating: "a", count: 40) + " refs/heads/main\n", "zz\trefs/heads/main\n"] {
-            #expect(throws: RepositoryReadError.malformedOutput("ls-remote")) {
-                try RepositoryReferences.listedReferences(in: Data(output.utf8))
-            }
-        }
     }
 }
 

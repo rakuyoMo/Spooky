@@ -40,10 +40,9 @@ public struct BranchPublication: Sendable, Equatable {
 // MARK: - Undo
 
 extension RepositorySync {
-    /// 发布分支之前读出撤销要用的内容。
+    /// 发布分支之前读出撤销要用的内容：要推的提交与本地分支的配置段，只读本机，不连接远端。
     ///
-    /// 远端已有这个分支时为 nil：这时推送是更新已有的分支，撤销不能删掉它。
-    /// 对话框只拒绝本机知道的同名远端分支，这里再连接远端确认一次，本机的记录可能已经过期。
+    /// 推送是否新建了远端分支由这次推送的逐条结果判断，见 ``PushLog``。
     ///
     /// - Parameters:
     ///   - branch: 本地分支的短名。
@@ -55,25 +54,12 @@ extension RepositorySync {
         to remote: String,
         as destination: String,
         setsUpstream: Bool
-    ) async throws -> BranchPublication? {
-        let references = RepositoryReferences(runner: runner)
-        try await references.validate(name: branch)
-        try await references.validate(name: destination)
-
-        // 远端名先核对是登记过的远端，不让 ls-remote 把它当成地址或路径
-        guard try await !RepositoryRemotes(runner: runner).settings(of: remote).isEmpty else {
-            throw RepositorySyncError.missingRemote
-        }
-
-        guard try await !references.remoteContains("refs/heads/" + destination, on: remote) else {
-            return nil
-        }
-
-        return BranchPublication(
+    ) async throws -> BranchPublication {
+        BranchPublication(
             branch: branch,
             remote: remote,
             destination: destination,
-            commit: try await references.resolve("refs/heads/" + branch),
+            commit: try await RepositoryReferences(runner: runner).resolve("refs/heads/" + branch),
             setsUpstream: setsUpstream,
             branchSettings: try await RepositoryUndo(runner: runner).branchSettings().filter { $0.branch == branch }
         )

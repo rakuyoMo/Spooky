@@ -156,6 +156,28 @@ struct GitOutputFixtureTests {
         #expect(updates[2].summary == "[rejected] (non-fast-forward)")
     }
 
+    /// Push porcelain 每行的标志对应推送结果：新建、快进与已是最新，删除没有结果；中文引用名原样保留。
+    @Test("push 夹具：新建、快进与已是最新的结果")
+    func pushResults() throws {
+        let updates = try RemoteReferenceUpdate.parsePush(try fixture("push-results.txt"))
+        let results = Dictionary(uniqueKeysWithValues: updates.map { ($0.reference, $0.pushResult) })
+
+        #expect(updates.count == 6)
+        #expect(results["refs/heads/功能/发布"] == .created)
+        #expect(results["refs/tags/v2"] == .created)
+        #expect(results["refs/heads/main"] == .updated)
+        #expect(results["refs/heads/same"] == .upToDate)
+        #expect(results["refs/tags/v1"] == .upToDate)
+        #expect(results["refs/heads/old"] == .some(nil))
+
+        // 标志不认识、或少了 refspec 一栏时按格式错误抛出
+        for line in ["?\trefs/heads/main:refs/heads/main\t[x]", "*\t[new branch]"] {
+            #expect(throws: RepositoryReadError.malformedOutput("push --porcelain")) {
+                try RemoteReferenceUpdate.parsePush(Data(line.utf8))
+            }
+        }
+    }
+
     /// 读取随测试目标打包的夹具原始字节。
     private func fixture(_ name: String) throws -> Data {
         let url = try #require(Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures"))

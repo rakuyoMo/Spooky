@@ -139,13 +139,14 @@ extension RepositorySession {
             // 反向操作带着专门的重做时用它代替原操作
             let redo = inverse.redo ?? action
 
-            // 新的反向操作在原操作之前读出，原操作成功后换上；重做与原操作记在 Activity 的同一页
+            // 新的反向操作在原操作之前读出，原操作成功后按推送结果核对再换上；重做与原操作记在 Activity 的同一页
             performGit(
                 { runner, output in
                     let prepared = await PreparedInverse(prepare, runner: runner)
-                    try await redo(runner, output)
+                    let log = PushLog()
+                    try await PushLog.$current.withValue(log) { try await redo(runner, output) }
 
-                    switch prepared {
+                    switch prepared.confirmed(by: log) {
                     case .inverse(let inverse):
                         await history.finishRedo(
                             entry,
@@ -167,7 +168,7 @@ extension RepositorySession {
     }
 
     /// 按声明包装写操作：可撤销的操作前后各记一次状态，连同移进废纸篓的项成功改动仓库后登记；
-    /// 给出反向操作的在操作之前准备，成功后登记；不能撤销的操作成功后清空撤销栈。
+    /// 给出反向操作的在操作之前准备，成功后按推送结果核对再登记；不能撤销的操作成功后清空撤销栈。
     ///
     /// 操作前有进行中的操作或冲突、操作后停在进行中的状态、删掉的未跟踪文件找不回内容，
     /// 或移进废纸篓的项不知道位置时，都按不能撤销处理。
@@ -194,12 +195,13 @@ extension RepositorySession {
             }
 
         case .inverse(let prepare):
-            // 准备在操作之前读出撤销要用的内容，操作成功后按结果登记
+            // 准备在操作之前读出撤销要用的内容，操作成功后按准备与推送的结果登记
             return { runner, output in
                 let prepared = await PreparedInverse(prepare, runner: runner)
-                try await action(runner, output)
+                let log = PushLog()
+                try await PushLog.$current.withValue(log) { try await action(runner, output) }
 
-                switch prepared {
+                switch prepared.confirmed(by: log) {
                 case .inverse(let inverse):
                     await history.record(
                         RepositoryUndoEntry(
@@ -295,6 +297,20 @@ private enum PreparedInverse {
             self = try await prepare(runner).map(Self.inverse) ?? .unchanged
         } catch {
             self = .unavailable
+        }
+    }
+
+    /// 原操作结束后按推送的逐条结果核对：反向操作要撤销的是推送新建的引用时，推送确实新建了它才保留，
+    /// 已是最新算作没有改动，更新了远端已有的引用或没有推送它都撤销不了。
+    func confirmed(by log: PushLog) -> Self {
+        guard case .inverse(let inverse) = self, let pushed = inverse.pushedReference else {
+            return self
+        }
+
+        switch log.result(of: pushed.reference, on: pushed.remote) {
+        case .created: return self
+        case .upToDate: return .unchanged
+        case .updated, nil: return .unavailable
         }
     }
 }

@@ -43,6 +43,33 @@ extension UndoSessionTests {
         #expect(redo?.target == target)
     }
 
+    /// 远端原来就有这个分支时发布不新建分支：已是最新时撤销栈不动；快进了远端分支与推送一样不能撤销，撤销栈清空。
+    @Test("远端已有同名分支时的发布")
+    func publishExistingBranch() async throws {
+        let fixture = try await Fixture()
+        defer { fixture.remove() }
+        let session = fixture.session
+        let bare = try await Self.makeRemote(for: fixture)
+        defer { try? FileManager.default.removeItem(atPath: bare) }
+        let publish = AppLocalization.text("sync.publish")
+        let target = ActivityTarget.push("origin", refspec: "refs/heads/main:refs/heads/main")
+
+        _ = try await fixture.runner.run(["remote", "add", "origin", bare])
+        _ = try await fixture.runner.run(["push", "-q", "origin", "main"])
+        try await fixture.createBranch("其它")
+
+        try await fixture.perform { Self.publishMain(in: session, target: target) }
+        #expect(session.undoHistory?.undoEntries.count == 1)
+        #expect(session.undoHistory?.irreversibleTitle == nil)
+
+        _ = try await fixture.runner.run(["commit", "-q", "--allow-empty", "-m", "快进"])
+        await fixture.refresh()
+
+        try await fixture.perform { Self.publishMain(in: session, target: target) }
+        #expect(session.undoHistory?.undoEntries.isEmpty ?? false)
+        #expect(session.undoHistory?.irreversibleTitle == publish)
+    }
+
     /// 另一个克隆把发布的分支推进一个提交后撤销：租约拒绝，远端分支不变，记录留在撤销栈。
     @Test("发布的分支被推进后撤销失败")
     func publishBranchLeaseRejected() async throws {

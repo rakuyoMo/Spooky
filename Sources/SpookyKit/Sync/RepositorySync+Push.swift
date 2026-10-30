@@ -44,7 +44,7 @@ extension RepositorySync {
     /// 从本地分支的 reflog 里找改写历史前的版本时，最多检查的不同提交个数。
     static let reflogCandidateLimit = 20
 
-    /// 显式 refspec 防止 push.default、followTags 或 mirror 改变推送范围。
+    /// 显式 refspec 防止 push.default、followTags 或 mirror 改变推送范围；逐条结果记进当前写操作的 ``PushLog``。
     ///
     /// - Parameters:
     ///   - branch: 本地分支的短名。
@@ -93,7 +93,11 @@ extension RepositorySync {
             arguments += ["--", remote, "refs/heads/" + branch + ":refs/heads/" + destination]
 
             let result = try await runner.execute(arguments, onOutput: onOutput)
-            return try RemoteReferenceUpdate.parsePush(result.standardOutput)
+            let updates = try RemoteReferenceUpdate.parsePush(result.standardOutput)
+
+            // 撤销发布分支据此判断推送是否新建了远端分支
+            PushLog.current?.append(updates, on: remote)
+            return updates
         }
     }
 

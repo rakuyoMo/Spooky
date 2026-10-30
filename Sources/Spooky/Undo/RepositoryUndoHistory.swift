@@ -30,6 +30,10 @@ struct UndoInverse: Sendable {
     /// 撤销要连接远端时记在 Activity 的 Remote 页的对象；为 nil 时记在 Repository 页。
     var target: ActivityTarget? = nil
 
+    /// 原操作推送新建的远端引用，如发布的分支与标签：原操作结束后按 ``PushLog`` 里这个引用的结果登记，
+    /// 新建了它才记一条，已是最新时不碰撤销记录，更新了远端已有的引用时按不能撤销处理。为 nil 时照常登记。
+    var pushedReference: (remote: String, reference: String)? = nil
+
     /// 撤销时执行，输出经第二个参数送进 Activity：先核对前提，仓库已不是操作后的样子时抛出
     /// ``RepositoryUndoError/repositoryChanged``，不做任何改动。
     let undo: @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void

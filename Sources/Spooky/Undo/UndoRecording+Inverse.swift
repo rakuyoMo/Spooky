@@ -40,7 +40,8 @@ extension UndoRecording {
 // MARK: - Publishing
 
 extension UndoRecording {
-    /// 发布分支：撤销时在远端删掉它，远端分支被别人推进过时拒绝；发布时建立的跟踪随之换回发布前。远端原来就有这个分支时不记。
+    /// 发布分支：撤销时在远端删掉它，远端分支被别人推进过时拒绝；发布时建立的跟踪随之换回发布前。
+    /// 推送没有新建远端分支时不记：已是最新不碰撤销记录，快进了远端已有的分支按不能撤销处理。
     ///
     /// - Parameters:
     ///   - branch: 本地分支的短名。
@@ -57,23 +58,19 @@ extension UndoRecording {
             let publication = try await RepositorySync(runner: runner)
                 .publication(of: branch, to: remote, as: destination, setsUpstream: setsUpstream)
 
-            return publication.map { publication in
-                UndoInverse(target: .push(remote)) {
-                    try await RepositorySync(runner: $0).undoPublish(publication, onOutput: $1)
-                }
+            return UndoInverse(target: .push(remote), pushedReference: (remote, "refs/heads/" + destination)) {
+                try await RepositorySync(runner: $0).undoPublish(publication, onOutput: $1)
             }
         }
     }
 
-    /// 发布标签：撤销时在远端删掉它，远端标签被别人改过时拒绝。远端原来就有同名标签时不记。
+    /// 发布标签：撤销时在远端删掉它，远端标签被别人改过时拒绝。远端原来就有同名标签、推送已是最新时不记。
     static func publishingTag(_ name: String, to remote: String) -> Self {
         .inverse { runner in
-            let object = try await RepositoryTags(runner: runner).publicationLease(of: name, on: remote)
+            let object = try await RepositoryTags(runner: runner).publicationLease(of: name)
 
-            return object.map { object in
-                UndoInverse(target: .push(remote)) {
-                    try await RepositoryTags(runner: $0).undoPublish(name, on: remote, object: object, onOutput: $1)
-                }
+            return UndoInverse(target: .push(remote), pushedReference: (remote, "refs/tags/" + name)) {
+                try await RepositoryTags(runner: $0).undoPublish(name, on: remote, object: object, onOutput: $1)
             }
         }
     }

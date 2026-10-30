@@ -78,7 +78,7 @@ public struct RepositoryTags: Sendable {
         try await push(names.map { ":refs/tags/" + $0 }, to: remote, onOutput: onOutput)
     }
 
-    /// 把一个本地标签推送到远端的同名标签。
+    /// 把一个本地标签推送到远端的同名标签；逐条结果记进当前写操作的 ``PushLog``，撤销发布据此判断推送是否新建了远端标签。
     public func publish(
         _ name: String,
         to remote: String,
@@ -89,12 +89,14 @@ public struct RepositoryTags: Sendable {
             throw RepositoryReadError.invalidQuery
         }
 
-        try await push(
+        let output = try await push(
             ["refs/tags/" + name + ":refs/tags/" + name],
             options: skipHooks ? ["--no-verify"] : [],
             to: remote,
             onOutput: onOutput
         )
+
+        PushLog.current?.append(try RemoteReferenceUpdate.parsePush(output), on: remote)
     }
 
     /// 把全部本地标签推送到远端，不推送分支。
@@ -110,19 +112,22 @@ public struct RepositoryTags: Sendable {
     /// - Parameters:
     ///   - refspecs: 要推送的 refspec。
     ///   - options: 放在远端名之前的推送选项，如 `--tags`、`--no-verify`。
+    /// - Returns: 推送的 porcelain 输出。
+    @discardableResult
     private func push(
         _ refspecs: [String],
         options: [String] = [],
         to remote: String,
         onOutput: (@Sendable (GitOutputEvent) -> Void)?
-    ) async throws {
+    ) async throws -> Data {
         try await runner.writeTransaction {
             try await RepositoryReferences(runner: runner).validate(remote: remote)
 
-            _ = try await runner.execute(
+            return try await runner.execute(
                 RepositoryReferences.pushCommand(remote: remote) + options + ["--", remote] + refspecs,
                 onOutput: onOutput
             )
+            .standardOutput
         }
     }
 }
