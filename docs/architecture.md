@@ -56,7 +56,7 @@ Spooky 由两个 target 组成：
 | `Settings/`、`RepositorySettings/` | 设置窗口与仓库设置 |
 | `Accounts/`、`PullRequests/` | 托管账号、Pull Request 与 Merge Request |
 | `Submodules/`、`Worktrees/`、`LFS/` | 子模块、工作树与 Git LFS 的视图与对话框 |
-| `Help/` | Help 菜单、What's New、诊断报告与崩溃报告 |
+| `Help/` | Help 菜单、What's New 与新功能卡片、诊断报告与崩溃报告 |
 | `Updates/` | Sparkle 更新器与更新通道 |
 | `HighlightJS/` | 随 App 打包的 highlight.js 与它的许可证 |
 | `Resources/` | 各语言文案、系统权限说明、命名色与内置主题 |

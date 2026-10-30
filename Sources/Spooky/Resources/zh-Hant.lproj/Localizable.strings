@@ -1903,7 +1903,7 @@
 "repositorySettings.edit.title" = "編輯%@";
 "repositorySettings.edit.message" = "這個值會寫進這個倉庫的本機 Git 設定。";
 
-/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+/* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "關於 Spooky";
 "about.credits" = "Spooky 是以 GNU 通用公共授權條款 v3.0 發佈的自由軟體。";
 "menu.help" = "輔助說明";
@@ -1913,7 +1913,18 @@
 "help.support" = "支援";
 "help.diagnosticReport" = "製作診斷報告…";
 "help.diagnosticReport.file" = "Spooky 診斷報告.txt";
-"whatsNew.title" = "Spooky %@ 的新功能";
+"whatsNew.previous" = "上一篇";
+"whatsNew.previous.tip" = "顯示上一篇版本說明";
+"whatsNew.next" = "下一篇";
+"whatsNew.next.tip" = "顯示下一篇版本說明";
+"whatsNew.entry.title" = "Spooky %@ 版本說明";
+"whatsNew.entry.subtitle" = "檢視完整的版本說明";
+"whatsNew.unread" = "未讀";
+"whatsNew.detail.title" = "版本說明 – 版本 %@";
+"whatsNew.empty" = "選取版本以檢視版本說明。";
+"whatsNew.card.title" = "Spooky 的新功能";
+"whatsNew.card.message" = "查看版本 %@ 的變更。";
+"whatsNew.card.learnMore" = "瞭解更多…";
 "crash.issueTitle" = "Spooky 意外結束";
 "crash.title" = "Spooky 上次意外結束";
 "crash.message" = "要在 GitHub 上回報這個問題嗎？瀏覽器會打開新問題頁，附上當機的摘要。個人路徑、電子郵件與網路位址已經移除，在你自己提交問題之前不會傳送任何內容。";

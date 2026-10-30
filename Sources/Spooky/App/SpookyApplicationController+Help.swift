@@ -46,7 +46,7 @@ extension SpookyApplicationController {
         HelpLinks.website.map { _ = NSWorkspace.shared.open($0) }
     }
 
-    /// Help › What's New：本版本的更新说明。
+    /// Help › What's New：历次版本的更新说明。
     @objc
     func showWhatsNew() {
         WhatsNewWindowController.show()
@@ -92,8 +92,8 @@ extension SpookyApplicationController {
 // MARK: - SpookyApplicationController + NSMenuItemValidation
 
 extension SpookyApplicationController: NSMenuItemValidation {
-    /// 这个构建没有打包更新说明时 What's New 不可用；其余菜单项总是可用。
+    /// 这个构建没有打包任何版本的更新说明时 What's New 不可用；其余菜单项总是可用。
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
-        item.action != #selector(showWhatsNew) || WhatsNewWindowController.notes() != nil
+        item.action != #selector(showWhatsNew) || !WhatsNewState.shared.entries.isEmpty
     }
 }

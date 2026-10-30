@@ -51,6 +51,7 @@
 每个版本的更新说明放在 `docs/release-notes/X.Y.Z/`，每种语言一份：`en.md` `zh-Hans.md` `zh-Hant.md` `ja.md` `ko.md` `de.md` `fr.md` `es.md`，与 `Sources/Spooky/Resources/` 下的 `.lproj` 同名。
 
 - `mise run appcast` 把每份说明嵌进签名的更新清单，App 的更新窗口按用户的语言显示其中一份
+- 打包时 `docs/release-notes/` 下各版本的说明都放进 App，Help › What's New 按版本从新到旧列出，所以发过的版本的说明一直留在仓库里
 - `en.md` 同时是 GitHub Release 的正文
 - `scripts/check-release.sh` 检查每份都存在且有内容：发版脚本、“发布检查” 与 “发布” 两个 workflow 都调用它
 
@@ -59,7 +60,7 @@
 - 写给用户看：只写用户能感知的改动
   - 不写 PR 编号与链接
   - 不写文档、CI、测试、重构这类与 App 行为无关的改动
-- 不写顶层标题：更新窗口与 GitHub 都会显示版本号
+- 不写顶层标题：更新窗口、What's New 与 GitHub 都会显示版本号
 - 按类别分节，节标题用 `###`，取下表中该语言的叫法，只保留有内容的节；每条列表项写一个改动
 - Markdown 只用 `###` 标题、无序列表、粗体、链接
 - 界面上的叫法与该语言的 `Localizable.strings` 一致

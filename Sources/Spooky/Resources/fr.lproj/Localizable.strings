@@ -1903,7 +1903,7 @@
 "repositorySettings.edit.title" = "Modifier « %@ »";
 "repositorySettings.edit.message" = "Cette valeur est écrite dans la configuration Git locale de ce dépôt.";
 
-/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+/* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "À propos de Spooky";
 "about.credits" = "Spooky est un logiciel libre publié sous la licence publique générale GNU v3.0.";
 "menu.help" = "Aide";
@@ -1913,7 +1913,18 @@
 "help.support" = "Assistance";
 "help.diagnosticReport" = "Créer un rapport de diagnostic…";
 "help.diagnosticReport.file" = "Rapport de diagnostic Spooky.txt";
-"whatsNew.title" = "Nouveautés de Spooky %@";
+"whatsNew.previous" = "Précédent";
+"whatsNew.previous.tip" = "Afficher les notes de version précédentes";
+"whatsNew.next" = "Suivant";
+"whatsNew.next.tip" = "Afficher les notes de version suivantes";
+"whatsNew.entry.title" = "Notes de version de Spooky %@";
+"whatsNew.entry.subtitle" = "Voir les notes de version complètes";
+"whatsNew.unread" = "Non lu";
+"whatsNew.detail.title" = "Notes de version – Version %@";
+"whatsNew.empty" = "Sélectionnez une version pour afficher ses notes de version.";
+"whatsNew.card.title" = "Nouveautés de Spooky";
+"whatsNew.card.message" = "Découvrez les changements de la version %@.";
+"whatsNew.card.learnMore" = "En savoir plus…";
 "crash.issueTitle" = "Spooky s’est fermé de manière inattendue";
 "crash.title" = "Spooky s’est fermé de manière inattendue la dernière fois";
 "crash.message" = "Voulez-vous signaler le problème sur GitHub ? Une nouvelle page de ticket s’ouvre dans votre navigateur avec un résumé du plantage. Les chemins personnels, adresses e-mail et adresses réseau sont retirés, et rien n’est envoyé tant que vous ne soumettez pas le ticket vous-même.";

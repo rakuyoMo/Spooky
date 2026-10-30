@@ -99,6 +99,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         configureMenu()
         appIconController.start()
 
+        // 补上 What's New 的已读记录，决定这次启动是否在侧边栏显示新功能卡片
+        WhatsNewState.shared.start()
+
         // 先处理启动时交来的链接与文件，再按偏好显示启动窗口或仓库管理
         finishLaunchOpenings()
         NSApp.activate(ignoringOtherApps: true)

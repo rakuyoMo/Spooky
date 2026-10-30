@@ -1903,7 +1903,7 @@
 "repositorySettings.edit.title" = "%@を編集";
 "repositorySettings.edit.message" = "この値はこのリポジトリのローカル Git 設定に書き込まれます。";
 
-/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+/* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "Spooky について";
 "about.credits" = "Spooky は GNU General Public License v3.0 で公開されているフリーソフトウェアです。";
 "menu.help" = "ヘルプ";
@@ -1913,7 +1913,18 @@
 "help.support" = "サポート";
 "help.diagnosticReport" = "診断レポートを作成…";
 "help.diagnosticReport.file" = "Spooky 診断レポート.txt";
-"whatsNew.title" = "Spooky %@ の新機能";
+"whatsNew.previous" = "前へ";
+"whatsNew.previous.tip" = "前のリリースノートを表示";
+"whatsNew.next" = "次へ";
+"whatsNew.next.tip" = "次のリリースノートを表示";
+"whatsNew.entry.title" = "Spooky %@ リリースノート";
+"whatsNew.entry.subtitle" = "リリースノートの全文を表示";
+"whatsNew.unread" = "未読";
+"whatsNew.detail.title" = "リリースノート – バージョン %@";
+"whatsNew.empty" = "リリースノートを表示するバージョンを選択してください。";
+"whatsNew.card.title" = "Spooky の新機能";
+"whatsNew.card.message" = "バージョン %@ の変更点をご覧ください。";
+"whatsNew.card.learnMore" = "詳しく見る…";
 "crash.issueTitle" = "Spooky が予期せず終了しました";
 "crash.title" = "Spooky は前回予期せず終了しました";
 "crash.message" = "GitHub でこの問題を報告しますか？ブラウザでクラッシュの概要を添えた新しい Issue ページが開きます。個人のパス、メールアドレス、ネットワークアドレスは取り除かれ、ご自身で Issue を送信するまで何も送られません。";

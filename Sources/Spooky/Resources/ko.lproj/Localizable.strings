@@ -1903,7 +1903,7 @@
 "repositorySettings.edit.title" = "%@ 편집";
 "repositorySettings.edit.message" = "이 값은 이 저장소의 로컬 Git 설정에 기록됩니다.";
 
-/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+/* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "Spooky에 관하여";
 "about.credits" = "Spooky는 GNU General Public License v3.0으로 배포되는 자유 소프트웨어입니다.";
 "menu.help" = "도움말";
@@ -1913,7 +1913,18 @@
 "help.support" = "지원";
 "help.diagnosticReport" = "진단 보고서 생성…";
 "help.diagnosticReport.file" = "Spooky 진단 보고서.txt";
-"whatsNew.title" = "Spooky %@의 새로운 기능";
+"whatsNew.previous" = "이전";
+"whatsNew.previous.tip" = "이전 릴리스 노트 표시";
+"whatsNew.next" = "다음";
+"whatsNew.next.tip" = "다음 릴리스 노트 표시";
+"whatsNew.entry.title" = "Spooky %@ 릴리스 노트";
+"whatsNew.entry.subtitle" = "전체 릴리스 노트 보기";
+"whatsNew.unread" = "읽지 않음";
+"whatsNew.detail.title" = "릴리스 노트 – 버전 %@";
+"whatsNew.empty" = "릴리스 노트를 보려면 버전을 선택하세요.";
+"whatsNew.card.title" = "Spooky의 새로운 기능";
+"whatsNew.card.message" = "버전 %@의 변경 사항을 확인하세요.";
+"whatsNew.card.learnMore" = "더 알아보기…";
 "crash.issueTitle" = "Spooky가 예기치 않게 종료됨";
 "crash.title" = "Spooky가 지난번에 예기치 않게 종료됨";
 "crash.message" = "GitHub에서 이 문제를 보고하겠습니까? 브라우저에서 충돌 요약이 담긴 새 이슈 페이지가 열립니다. 개인 경로, 이메일 주소와 네트워크 주소는 제거되며, 직접 이슈를 제출하기 전에는 아무것도 전송되지 않습니다.";
