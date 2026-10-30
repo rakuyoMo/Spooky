@@ -2004,6 +2004,7 @@
 "submodule.autoUpdate.skip" = "更新しない";
 "submodule.autoUpdate.update" = "更新";
 "submodule.checkoutRevision" = "リビジョンをチェックアウト";
+"submodule.checkoutSubmoduleRevision" = "サブモジュールのリビジョンをチェックアウト";
 "submodule.default" = "%@（デフォルト）";
 "submodule.delete" = "サブモジュールを削除";
 "submodule.delete.keepWorkingTree" = "作業ツリーを残す";

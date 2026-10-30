@@ -6,8 +6,8 @@ import Testing
 
 // MARK: - Submodules
 
-/// 子模块的添加、删除、移动、改名与本地设置靠反向操作撤销：撤销后回到操作前，重做时再执行一次，添加的重做复用留下的 Git 目录；
-/// 写进 `.gitmodules` 的设置按快照撤销，强制删除丢掉的改动找不回，不能撤销。
+/// 子模块的添加、删除、移动、改名、本地设置与检出别的版本靠反向操作撤销：撤销后回到操作前，重做时再执行一次，
+/// 添加的重做复用留下的 Git 目录；写进 `.gitmodules` 的设置按快照撤销，强制删除丢掉的改动找不回，不能撤销。
 extension UndoSessionTests {
     /// 添加后撤销，子模块与 `.gitmodules` 都不在了，上游改名后重做仍能加回来；删除后撤销，子模块回来且是干净的，重做再删掉。
     @Test("子模块的添加与删除的撤销与重做")
@@ -101,6 +101,37 @@ extension UndoSessionTests {
             // 回到操作前，下一个操作仍用同一个子模块
             try await fixture.perform { session.undoLastOperation() }
         }
+    }
+
+    /// 在子模块里检出别的分支后撤销回到原来的分支，重做再检出一次；撤销菜单写这次操作的名称。
+    @Test("在子模块里检出别的版本的撤销与重做")
+    func submoduleRevisionCheckout() async throws {
+        let fixture = try await Fixture(allowsFileSubmodules: true)
+        defer { fixture.remove() }
+        let session = fixture.session
+        let submodule = try await Self.addCommittedSubmodule(in: fixture)
+        defer { try? FileManager.default.removeItem(at: submodule.upstream) }
+
+        _ = try await fixture.runner.run(["-C", "lib", "branch", "特性"])
+        await fixture.refresh()
+
+        let currentBranch = {
+            let output = try await fixture.runner.run(["-C", "lib", "branch", "--show-current"])
+            return String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)
+        }
+
+        let revision = SubmoduleRevision(reference: "refs/heads/特性", isCurrent: false)
+        try await fixture.perform { session.checkoutSubmoduleRevision(revision, in: submodule.value) }
+        #expect(try await currentBranch() == "特性")
+
+        let title = AppLocalization.text("submodule.checkoutSubmoduleRevision")
+        #expect(try await Self.settledState(of: session, redo: false) == .available(title))
+
+        try await fixture.perform { session.undoLastOperation() }
+        #expect(try await currentBranch() == "main")
+
+        try await fixture.perform { session.redoLastOperation() }
+        #expect(try await currentBranch() == "特性")
     }
 
     /// 子模块里有改动时强制删除：改动找不回，这次删除不能撤销，之前的撤销记录也一并清空。

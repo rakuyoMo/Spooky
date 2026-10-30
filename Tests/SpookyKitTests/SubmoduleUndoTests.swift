@@ -5,8 +5,8 @@ import Testing
 
 // MARK: - SubmoduleUndoTests
 
-/// 子模块的结构与本地设置不在撤销快照里，靠操作前记下的内容与反向操作撤销：撤销后仓库的状态、`.gitmodules` 的原文、
-/// 本地配置与子模块里的分支都回到操作前；要删掉的内容找不回、或仓库已经变了时不撤销。
+/// 子模块的结构、本地设置与子模块里检出的版本不在撤销快照里，靠操作前记下的内容与反向操作撤销：撤销后仓库的状态、
+/// `.gitmodules` 的原文、本地配置与子模块里的分支都回到操作前；要删掉的内容找不回、或仓库已经变了时不撤销。
 struct SubmoduleUndoTests {
     /// 原来没有 `.gitmodules` 时添加再撤销：子模块与 `.gitmodules` 都不在了；重做复用留下的 Git 目录，上游不在了也能完成。
     @Test("添加的撤销与重做")
@@ -214,6 +214,75 @@ struct SubmoduleUndoTests {
         await #expect(throws: RepositoryUndoError.repositoryChanged) { try await submodules.undoSettingChange(change) }
     }
 
+    /// 在子模块里检出分支或附注标签再撤销：回到原来的分支；原来是分离 HEAD 的，以分离 HEAD 回到原来的提交。
+    @Test("检出版本的撤销")
+    func revisionCheckout() async throws {
+        let temporary = try TemporaryRepository()
+        defer { temporary.remove() }
+
+        let repositories = try await SubmoduleRepositories(temporary)
+        let (submodules, submodule) = try await Self.submoduleWithRevisions(repositories)
+        let branch = SubmoduleRevision(reference: "refs/heads/特性", isCurrent: false)
+        let tag = SubmoduleRevision(reference: "refs/tags/v1", isCurrent: false)
+
+        // 从 main 检出分支与标签
+        let onBranch = try await SubmoduleSnapshot(repositories)
+
+        for revision in [branch, tag] {
+            let record = try await submodules.checkoutRecord(of: revision, in: submodule)
+            try await submodules.checkout(revision, in: submodule)
+            #expect(try await SubmoduleSnapshot(repositories) != onBranch)
+
+            try await submodules.undoCheckout(record)
+            #expect(try await SubmoduleSnapshot(repositories) == onBranch)
+        }
+
+        // 从分离 HEAD 检出分支
+        _ = try await repositories.parent.run(["-C", submodule.path, "checkout", "-q", "--detach", "main"])
+        let detached = try await SubmoduleSnapshot(repositories)
+
+        let record = try await submodules.checkoutRecord(of: branch, in: submodule)
+        try await submodules.checkout(branch, in: submodule)
+        try await submodules.undoCheckout(record)
+
+        #expect(try await SubmoduleSnapshot(repositories) == detached)
+        #expect(detached.branch?.isEmpty ?? false)
+    }
+
+    /// 子模块在别处换过版本时撤销报仓库已改变；子模块里的改动与原来的版本冲突时 Git 拒绝检出，子模块与改动都不变。
+    @Test("撤销检出版本时前提不符或改动冲突")
+    func blockedRevisionUndo() async throws {
+        let temporary = try TemporaryRepository()
+        defer { temporary.remove() }
+
+        let repositories = try await SubmoduleRepositories(temporary)
+        let (submodules, submodule) = try await Self.submoduleWithRevisions(repositories)
+        let branch = SubmoduleRevision(reference: "refs/heads/特性", isCurrent: false)
+
+        let switched = try await submodules.checkoutRecord(of: branch, in: submodule)
+        try await submodules.checkout(branch, in: submodule)
+        _ = try await repositories.parent.run(["-C", submodule.path, "checkout", "-q", "main"])
+
+        let elsewhere = try await SubmoduleSnapshot(repositories)
+        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await submodules.undoCheckout(switched) }
+        #expect(try await SubmoduleSnapshot(repositories) == elsewhere)
+
+        // a.txt 在两个版本里不同，改过之后检出回 main 会覆盖这处改动
+        let record = try await submodules.checkoutRecord(of: branch, in: submodule)
+        try await submodules.checkout(branch, in: submodule)
+
+        let file = repositories.parentURL.appending(path: submodule.path).appending(path: "a.txt")
+        try Data("改动\n".utf8).write(to: file)
+
+        let modified = try await SubmoduleSnapshot(repositories)
+        let error = await #expect(throws: GitError.self) { try await submodules.undoCheckout(record) }
+
+        #expect(error?.exitCode == 1)
+        #expect(error?.message.contains("would be overwritten by checkout") ?? false)
+        #expect(try await SubmoduleSnapshot(repositories) == modified)
+        #expect(try String(contentsOf: file, encoding: .utf8) == "改动\n")
+    }
+
     /// `ls-files -s -z` 的一条记录取出模式与对象；格式不对时报格式错误，冲突中的文件不能写回。
     @Test("暂存记录的解析")
     func stagedRecordParsing() throws {
@@ -232,6 +301,31 @@ struct SubmoduleUndoTests {
     }
 }
 
+// MARK: - Helpers
+
+extension SubmoduleUndoTests {
+    /// 添加并提交一个子模块，在它里面建出指向第一个提交的分支 `特性` 与附注标签 `v1`。
+    fileprivate static func submoduleWithRevisions(
+        _ repositories: SubmoduleRepositories
+    ) async throws -> (RepositorySubmodules, Submodule) {
+        let submodules = RepositorySubmodules(runner: repositories.parent)
+        let path = "依赖/my lib"
+
+        try await submodules.add(url: repositories.upstreamPath, path: path, reusesGitDirectory: false)
+        _ = try await repositories.parent.run(["commit", "-q", "-m", "子模块"])
+        _ = try await repositories.parent.run(["-C", path, "branch", "特性", "HEAD~1"])
+
+        // 子模块的克隆里没有提交身份，附注标签的身份经 -c 传入
+        _ = try await repositories.parent.run([
+            "-c", "user.name=Spooky Test",
+            "-c", "user.email=spooky@example.invalid",
+            "-C", path, "tag", "-a", "-m", "标签", "v1", "HEAD~1",
+        ])
+
+        return (submodules, try #require(try await submodules.list().first))
+    }
+}
+
 // MARK: - SubmoduleSnapshot
 
 /// 撤销要复原的全部内容：撤销快照记下的仓库状态，以及快照不含的 `.gitmodules` 原文、本地配置里的子模块段
@@ -246,7 +340,7 @@ private struct SubmoduleSnapshot: Equatable {
     /// 本地配置里子模块各段的原样输出。
     let settings: Data
 
-    /// 第一个检出的子模块里当前的分支；没有检出的子模块时为 nil。
+    /// 第一个检出的子模块里当前的分支，分离 HEAD 时为空；没有检出的子模块时为 nil。
     let branch: String?
 
     /// 读出父仓库现在的样子。

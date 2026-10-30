@@ -2004,6 +2004,7 @@
 "submodule.autoUpdate.skip" = "Do Not Update";
 "submodule.autoUpdate.update" = "Update";
 "submodule.checkoutRevision" = "Checkout Revision";
+"submodule.checkoutSubmoduleRevision" = "Checkout Submodule Revision";
 "submodule.default" = "%@ (Default)";
 "submodule.delete" = "Delete Submodule";
 "submodule.delete.keepWorkingTree" = "Keep Working Tree";

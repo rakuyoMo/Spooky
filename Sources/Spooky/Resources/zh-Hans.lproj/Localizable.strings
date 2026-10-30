@@ -2004,6 +2004,7 @@
 "submodule.autoUpdate.skip" = "不更新";
 "submodule.autoUpdate.update" = "更新";
 "submodule.checkoutRevision" = "检出版本";
+"submodule.checkoutSubmoduleRevision" = "检出子模块版本";
 "submodule.default" = "%@（默认）";
 "submodule.delete" = "删除子模块";
 "submodule.delete.keepWorkingTree" = "保留工作区";

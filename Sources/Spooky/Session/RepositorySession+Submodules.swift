@@ -320,7 +320,8 @@ extension RepositorySession {
     func checkoutSubmoduleRevision(_ revision: SubmoduleRevision, in submodule: Submodule) {
         performGit(
             { runner, _ in try await RepositorySubmodules(runner: runner).checkout(revision, in: submodule) },
-            title: AppLocalization.text("submodule.checkoutRevision")
+            title: AppLocalization.text("submodule.checkoutSubmoduleRevision"),
+            undo: .checkingOutSubmoduleRevision(revision, in: submodule)
         )
     }
 

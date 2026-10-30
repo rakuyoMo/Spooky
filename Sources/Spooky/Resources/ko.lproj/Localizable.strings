@@ -2004,6 +2004,7 @@
 "submodule.autoUpdate.skip" = "업데이트 안 함";
 "submodule.autoUpdate.update" = "업데이트";
 "submodule.checkoutRevision" = "리비전 체크아웃";
+"submodule.checkoutSubmoduleRevision" = "하위 모듈 리비전 체크아웃";
 "submodule.default" = "%@ (기본값)";
 "submodule.delete" = "하위 모듈 삭제";
 "submodule.delete.keepWorkingTree" = "작업 트리 유지";

@@ -2004,6 +2004,7 @@
 "submodule.autoUpdate.skip" = "No actualizar";
 "submodule.autoUpdate.update" = "Actualizar";
 "submodule.checkoutRevision" = "Hacer checkout de una revisión";
+"submodule.checkoutSubmoduleRevision" = "Hacer checkout de una revisión del submódulo";
 "submodule.default" = "%@ (predeterminado)";
 "submodule.delete" = "Eliminar submódulo";
 "submodule.delete.keepWorkingTree" = "Conservar el árbol de trabajo";

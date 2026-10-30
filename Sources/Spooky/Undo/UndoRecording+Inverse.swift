@@ -134,6 +134,16 @@ extension UndoRecording {
         }
     }
 
+    /// 在子模块里检出别的版本：撤销时检出回原来的分支或提交，子模块里的改动与检出时一样交给 Git 处理。
+    static func checkingOutSubmoduleRevision(_ revision: SubmoduleRevision, in submodule: Submodule) -> Self {
+        .inverse { runner in
+            let checkout = try await RepositorySubmodules(runner: runner)
+                .checkoutRecord(of: revision, in: submodule)
+
+            return UndoInverse { runner, _ in try await RepositorySubmodules(runner: runner).undoCheckout(checkout) }
+        }
+    }
+
     /// 修改子模块的地址：写进 `.gitmodules` 的改动留在工作区，按快照撤销；写进本地配置的撤销时写回原值，原来没有的删掉。
     static func changingSubmoduleURL(
         _ url: String,

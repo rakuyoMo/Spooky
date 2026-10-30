@@ -76,6 +76,29 @@ public struct SubmoduleSettingChange: Sendable, Equatable {
     let current: String?
 }
 
+// MARK: - SubmoduleCheckout
+
+/// 在子模块里检出别的版本之前记下的内容，撤销时据此检出回去。
+public struct SubmoduleCheckout: Sendable, Equatable {
+    /// 子模块的 HEAD。
+    enum Head: Sendable, Equatable {
+        /// 停在分支上，值是分支的短名。
+        case branch(String)
+
+        /// 分离 HEAD，值是检出的提交。
+        case detached(String)
+    }
+
+    /// 子模块在工作区里的相对路径。
+    let path: String
+
+    /// 检出之前的 HEAD。
+    let previous: Head
+
+    /// 检出之后应有的 HEAD；撤销前据此核对子模块没有在别处换过版本。
+    let current: Head
+}
+
 // MARK: - Structure Undo
 
 extension RepositorySubmodules {
@@ -265,6 +288,51 @@ extension RepositorySubmodules {
             }
 
             _ = try await runner.run(["config", "--local", change.key, previous])
+        }
+    }
+}
+
+// MARK: - Revision Undo
+
+extension RepositorySubmodules {
+    /// 在子模块里检出别的版本之前记下子模块的 HEAD，以及检出之后应有的 HEAD。
+    ///
+    /// - Parameters:
+    ///   - revision: 要检出的分支或标签。
+    ///   - submodule: 已检出的子模块。
+    public func checkoutRecord(
+        of revision: SubmoduleRevision,
+        in submodule: Submodule
+    ) async throws -> SubmoduleCheckout {
+        let previous = try await head(of: submodule.path)
+
+        guard revision.isTag else {
+            return SubmoduleCheckout(path: submodule.path, previous: previous, current: .branch(revision.name))
+        }
+
+        // 检出标签会以分离 HEAD 停在它所指的提交上
+        let tagged = try await commit(of: revision.reference, in: submodule.path)
+
+        return SubmoduleCheckout(path: submodule.path, previous: previous, current: .detached(tagged))
+    }
+
+    /// 撤销在子模块里检出别的版本：检出回原来的分支，原来是分离 HEAD 的以分离 HEAD 检出原来的提交。
+    ///
+    /// 前提是子模块的 HEAD 仍是检出之后的样子。子模块里的改动与检出时一样交给 Git：不冲突的带到原来的版本上，
+    /// 冲突时 Git 拒绝检出、子模块不变。
+    public func undoCheckout(_ checkout: SubmoduleCheckout) async throws {
+        try await runner.writeTransaction {
+            guard try await head(of: checkout.path) == checkout.current else {
+                throw RepositoryUndoError.repositoryChanged
+            }
+
+            let target: [String] =
+                switch checkout.previous {
+                case .branch(let name): [name]
+                case .detached(let commit): ["--detach", commit]
+                }
+
+            _ = try await runner.run(["-C", checkout.path, "checkout"] + target + ["--"])
         }
     }
 }
@@ -478,5 +546,31 @@ extension RepositorySubmodules {
         )
 
         return ConfigEntry.parse(result.standardOutput)
+    }
+
+    /// 子模块现在的 HEAD：停在分支上时是分支的短名，否则是检出的提交。
+    private func head(of path: String) async throws -> SubmoduleCheckout.Head {
+        let output = try await runner.run(["-C", path, "branch", "--show-current"])
+        let branch = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)
+
+        guard branch.isEmpty else {
+            return .branch(branch)
+        }
+
+        return .detached(try await commit(of: "HEAD", in: path))
+    }
+
+    /// 子模块里一个版本所指的提交；附注标签剥到它所指的提交。
+    private func commit(of revision: String, in path: String) async throws -> String {
+        let output = try await runner.run(
+            ["-C", path, "rev-parse", "--verify", "--end-of-options", revision + "^{commit}"]
+        )
+        let commit = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)
+
+        guard GitObjectID.isValid(commit) else {
+            throw RepositoryReadError.malformedOutput("rev-parse")
+        }
+
+        return commit
     }
 }

@@ -2004,6 +2004,7 @@
 "submodule.autoUpdate.skip" = "Nicht aktualisieren";
 "submodule.autoUpdate.update" = "Aktualisieren";
 "submodule.checkoutRevision" = "Revision auschecken";
+"submodule.checkoutSubmoduleRevision" = "Submodul-Revision auschecken";
 "submodule.default" = "%@ (Standard)";
 "submodule.delete" = "Submodul löschen";
 "submodule.delete.keepWorkingTree" = "Arbeitsverzeichnis behalten";
