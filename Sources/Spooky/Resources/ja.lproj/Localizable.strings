@@ -192,11 +192,12 @@
 "error.exitCode" = "終了コード：%ld";
 "terminal.notInstalled" = "%@ がインストールされていません。";
 "themes.background" = "背景";
+"themes.selection" = "選択範囲";
 "themes.added" = "追加";
 "themes.deleted" = "削除";
-"themes.preview.context" = "  変更のないテキスト";
-"themes.preview.added" = "+ 追加されたテキスト";
-"themes.preview.deleted" = "− 削除されたテキスト";
+"themes.preview.context" = "変更のないテキスト";
+"themes.preview.added" = "追加されたテキスト";
+"themes.preview.deleted" = "削除されたテキスト";
 "remoteError.invalidHost" = "SSH ホスト名が無効です";
 "remoteError.invalidHost.help" = "~/.ssh/config のホスト名を入力してください。ユーザー名やポートは含めません。";
 "remoteError.absolutePathRequired" = "絶対パスが必要です";
@@ -448,13 +449,13 @@
 
 /* 主题管理。 */
 "themes.newName" = "新規テーマ";
-"themes.change" = "変更…";
 "themes.fontLabel" = "フォント";
-"themes.text" = "テキスト";
+"themes.text" = "フォントカラー";
 "themes.add" = "テーマを追加";
 "themes.remove" = "テーマを削除";
-"themes.invalidTitle" = "読み込めなかったテーマ";
-"themes.invalid" = "次のテーマファイルは、破損しているか、名前または識別子がほかのテーマで使われているため、読み込めませんでした：";
+"themes.delete.title" = "テーマを削除しますか？";
+"themes.delete.message" = "選択したテーマを削除します。この操作は取り消せません。";
+"themes.delete.confirm" = "削除";
 "themes.exists" = "テーマはすでに存在します";
 "themes.exists.message" = "「%@」にはすでにテーマがあります。置き換えますか？";
 "themes.replace" = "置き換える";

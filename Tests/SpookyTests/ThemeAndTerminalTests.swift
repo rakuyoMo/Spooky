@@ -99,6 +99,36 @@ struct ThemeAndTerminalTests {
         #expect(AppPalette.colors["blue_file_status_background_color"]?.dark.alpha == 0.70)
     }
 
+    /// Themes 页的 Diff 预览是一段固定补丁的唯一一块：上下文、删除、新增、上下文，删除与新增两行配对显示行内高亮。
+    @Test("Diff 预览的补丁解析成一块四行")
+    @MainActor
+    func themePreviewHunk() throws {
+        let hunk = try #require(ThemesSettingsView.previewHunk())
+
+        #expect(hunk.lines.map(\.prefix) == [32, 45, 43, 32])
+        #expect(hunk.lines.map(\.oldNumber) == [1, 2, nil, 3])
+        #expect(hunk.lines.map(\.newNumber) == [1, nil, 2, 3])
+
+        // 两行上下文是同一段文字，删除与新增两行的文字取各自的资源。
+        let texts = hunk.lines.map { String(decoding: $0.content, as: UTF8.self) }
+        #expect(texts[0] == texts[3])
+        #expect(texts[1] == AppLocalization.text("themes.preview.deleted"))
+        #expect(texts[2] == AppLocalization.text("themes.preview.added"))
+        #expect(InlineDiff.ranges(in: hunk).keys.sorted() == [1, 2])
+    }
+
+    /// 字体框写 PostScript 名与一位小数的字号，字体没有安装时同样照写。
+    @Test("字体框的字体名与字号")
+    @MainActor
+    func themeFontDescription() {
+        var theme = TextTheme.builtin[0]
+        #expect(ThemesSettingsView.fontDescription(theme) == "Menlo-Regular 11.0")
+
+        theme.fontName = "Missing-Font"
+        theme.fontSize = 12.5
+        #expect(ThemesSettingsView.fontDescription(theme) == "Missing-Font 12.5")
+    }
+
     /// 终端候选固定为六个程序，靠 Bundle Identifier 认出；路径与主机别名里的引号不能逃出转义。
     @Test("终端候选和双层命令转义")
     @MainActor

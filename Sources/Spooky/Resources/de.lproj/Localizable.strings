@@ -192,11 +192,12 @@
 "error.exitCode" = "Exit-Status: %ld";
 "terminal.notInstalled" = "%@ ist nicht installiert.";
 "themes.background" = "Hintergrund";
+"themes.selection" = "Auswahl";
 "themes.added" = "Hinzugefügt";
 "themes.deleted" = "Gelöscht";
-"themes.preview.context" = "  Unveränderter Text";
-"themes.preview.added" = "+ Hinzugefügter Text";
-"themes.preview.deleted" = "− Gelöschter Text";
+"themes.preview.context" = "Unveränderter Text";
+"themes.preview.added" = "Hinzugefügter Text";
+"themes.preview.deleted" = "Gelöschter Text";
 "remoteError.invalidHost" = "Ungültiger SSH-Host-Alias";
 "remoteError.invalidHost.help" = "Geben Sie einen einzelnen Host-Alias aus ~/.ssh/config ein, ohne Benutzernamen oder Port.";
 "remoteError.absolutePathRequired" = "Absoluter Pfad erforderlich";
@@ -448,13 +449,13 @@
 
 /* 主题管理。 */
 "themes.newName" = "Neues Thema";
-"themes.change" = "Ändern …";
 "themes.fontLabel" = "Schrift";
-"themes.text" = "Text";
+"themes.text" = "Schriftfarbe";
 "themes.add" = "Thema hinzufügen";
 "themes.remove" = "Thema entfernen";
-"themes.invalidTitle" = "Nicht geladene Themen";
-"themes.invalid" = "Diese Themendateien konnten nicht geladen werden, weil sie beschädigt sind oder ihr Name bzw. ihre Kennung bereits von einem anderen Thema verwendet wird:";
+"themes.delete.title" = "Thema löschen?";
+"themes.delete.message" = "Das ausgewählte Thema wird gelöscht. Dieser Vorgang kann nicht widerrufen werden.";
+"themes.delete.confirm" = "Löschen";
 "themes.exists" = "Thema existiert bereits";
 "themes.exists.message" = "Unter „%@“ existiert bereits ein Thema. Möchten Sie es ersetzen?";
 "themes.replace" = "Ersetzen";

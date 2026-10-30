@@ -192,11 +192,12 @@
 "error.exitCode" = "Exit status: %ld";
 "terminal.notInstalled" = "%@ is not installed.";
 "themes.background" = "Background";
+"themes.selection" = "Selection";
 "themes.added" = "Added";
 "themes.deleted" = "Deleted";
-"themes.preview.context" = "  Unchanged text";
-"themes.preview.added" = "+ Added text";
-"themes.preview.deleted" = "− Deleted text";
+"themes.preview.context" = "Unchanged text";
+"themes.preview.added" = "Added text";
+"themes.preview.deleted" = "Deleted text";
 "remoteError.invalidHost" = "Invalid SSH Host Alias";
 "remoteError.invalidHost.help" = "Enter one host alias from ~/.ssh/config, without a user name or port.";
 "remoteError.absolutePathRequired" = "Absolute Path Required";
@@ -448,13 +449,13 @@
 
 /* 主题管理。 */
 "themes.newName" = "New Theme";
-"themes.change" = "Change…";
 "themes.fontLabel" = "Font";
-"themes.text" = "Text";
+"themes.text" = "Font Color";
 "themes.add" = "Add Theme";
 "themes.remove" = "Remove Theme";
-"themes.invalidTitle" = "Themes That Couldn’t Be Loaded";
-"themes.invalid" = "These theme files couldn’t be loaded because they are damaged, or their name or identifier is already used by another theme:";
+"themes.delete.title" = "Delete Theme?";
+"themes.delete.message" = "This will delete the selected theme. This action cannot be undone.";
+"themes.delete.confirm" = "Delete";
 "themes.exists" = "Theme Already Exists";
 "themes.exists.message" = "A theme already exists at “%@”. Do you want to replace it?";
 "themes.replace" = "Replace";

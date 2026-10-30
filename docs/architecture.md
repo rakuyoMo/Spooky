@@ -160,7 +160,7 @@ Spooky 由两个 target 组成：
     - 同名的主题仍是旧的默认配色时换成 `BuiltinThemes.json` 的配色，旧配色与它不同的几种颜色记在 `LegacyBuiltinThemeColors.json`
   - Default 与 Default (Dark) 按名称认出，可以编辑，不能改名、删除
   - 浅色与深色外观各选一个主题；找不到时按名称回退到 Default 或 Default (Dark)，再退到 `BuiltinThemes.json` 里的版本
-  - Diff、原文、Blame 与主题示例取主题一律用 `TextTheme.current(dark:)`；在 SwiftUI 的 `body` 里调用，即随主题的编辑、切换与外观变化刷新
+  - Diff、原文、Blame 与 Themes 页的 Diff 预览取主题一律用 `TextTheme.current(dark:)`；在 SwiftUI 的 `body` 里调用，即随主题的编辑、切换与外观变化刷新
 - 语法着色、Tab 宽度与不可见字符的偏好集中在 `TextPreferences`；一行文本按 `TextStyle` 经 `TextLineRenderer` 渲染
 - 提交详情、储藏详情与文件历史的只读 Diff 共用 `ReadOnlyFileDiffView`
 - 语法着色经 `SyntaxHighlighter` 借用 highlight.js 的上下文执行

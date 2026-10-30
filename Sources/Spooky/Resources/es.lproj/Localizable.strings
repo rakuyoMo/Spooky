@@ -192,11 +192,12 @@
 "error.exitCode" = "Estado de salida: %ld";
 "terminal.notInstalled" = "%@ no está instalado.";
 "themes.background" = "Fondo";
+"themes.selection" = "Selección";
 "themes.added" = "Añadido";
 "themes.deleted" = "Eliminado";
-"themes.preview.context" = "  Texto sin cambios";
-"themes.preview.added" = "+ Texto añadido";
-"themes.preview.deleted" = "− Texto eliminado";
+"themes.preview.context" = "Texto sin cambios";
+"themes.preview.added" = "Texto añadido";
+"themes.preview.deleted" = "Texto eliminado";
 "remoteError.invalidHost" = "Alias de host SSH no válido";
 "remoteError.invalidHost.help" = "Introducir un único alias de host de ~/.ssh/config, sin nombre de usuario ni puerto.";
 "remoteError.absolutePathRequired" = "Se necesita una ruta absoluta";
@@ -448,13 +449,13 @@
 
 /* 主题管理。 */
 "themes.newName" = "Tema nuevo";
-"themes.change" = "Cambiar…";
 "themes.fontLabel" = "Tipo de letra";
-"themes.text" = "Texto";
+"themes.text" = "Color de letra";
 "themes.add" = "Añadir tema";
 "themes.remove" = "Eliminar tema";
-"themes.invalidTitle" = "Temas que no se han podido cargar";
-"themes.invalid" = "Estos archivos de tema no se han podido cargar porque están dañados o porque otro tema ya usa su nombre o su identificador:";
+"themes.delete.title" = "¿Eliminar el tema?";
+"themes.delete.message" = "Se eliminará el tema seleccionado. Esta acción no se puede deshacer.";
+"themes.delete.confirm" = "Eliminar";
 "themes.exists" = "El tema ya existe";
 "themes.exists.message" = "Ya hay un tema en “%@”. ¿Reemplazarlo?";
 "themes.replace" = "Reemplazar";

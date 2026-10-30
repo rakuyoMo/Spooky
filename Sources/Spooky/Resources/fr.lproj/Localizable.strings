@@ -192,11 +192,12 @@
 "error.exitCode" = "Code de sortie : %ld";
 "terminal.notInstalled" = "%@ n’est pas installé.";
 "themes.background" = "Arrière-plan";
+"themes.selection" = "Sélection";
 "themes.added" = "Ajouts";
 "themes.deleted" = "Suppressions";
-"themes.preview.context" = "  Texte inchangé";
-"themes.preview.added" = "+ Texte ajouté";
-"themes.preview.deleted" = "− Texte supprimé";
+"themes.preview.context" = "Texte inchangé";
+"themes.preview.added" = "Texte ajouté";
+"themes.preview.deleted" = "Texte supprimé";
 "remoteError.invalidHost" = "Alias d’hôte SSH non valide";
 "remoteError.invalidHost.help" = "Saisissez un seul alias d’hôte figurant dans ~/.ssh/config, sans nom d’utilisateur ni port.";
 "remoteError.absolutePathRequired" = "Chemin absolu requis";
@@ -448,13 +449,13 @@
 
 /* 主题管理。 */
 "themes.newName" = "Nouveau thème";
-"themes.change" = "Modifier…";
 "themes.fontLabel" = "Police";
-"themes.text" = "Texte";
+"themes.text" = "Couleur de police";
 "themes.add" = "Ajouter un thème";
 "themes.remove" = "Supprimer le thème";
-"themes.invalidTitle" = "Thèmes impossibles à charger";
-"themes.invalid" = "Impossible de charger ces fichiers de thème : ils sont endommagés, ou leur nom ou leur identifiant est déjà utilisé par un autre thème.";
+"themes.delete.title" = "Supprimer le thème ?";
+"themes.delete.message" = "Le thème sélectionné sera supprimé. Cette action est irréversible.";
+"themes.delete.confirm" = "Supprimer";
 "themes.exists" = "Le thème existe déjà";
 "themes.exists.message" = "Un thème existe déjà à l’emplacement « %@ ». Voulez-vous le remplacer ?";
 "themes.replace" = "Remplacer";

@@ -171,7 +171,7 @@ extension ThemeStoreTests {
         #expect(store.themes.allSatisfy { ThemeStore.isBuiltin($0) })
 
         try store.rename(TextTheme.builtin[0].id, to: "Mine")
-        try store.delete(night.id)
+        try store.delete(night.id, dark: true)
 
         #expect(try Self.themeFiles(root) == files)
         #expect(Set(store.themes.map(\.name)) == ["Default", "Default (Dark)"])
@@ -189,7 +189,7 @@ extension ThemeStoreTests {
         try store.rename(custom.id, to: "Ours")
         #expect(store.themes.contains { $0.name == "Ours" })
 
-        try store.delete(custom.id)
+        try store.delete(custom.id, dark: false)
         #expect(try Self.themeFiles(root) == files)
     }
 

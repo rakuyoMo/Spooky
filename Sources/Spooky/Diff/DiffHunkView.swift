@@ -38,6 +38,9 @@ struct DiffHunkView: View {
     /// 历史复用相同主题和行布局，只读补丁不出现工作区写按钮。
     var readOnly = false
 
+    /// 是否显示块头；Themes 页的 Diff 预览只显示各行。
+    var showsHeader = true
+
     /// 把选区交给会话，确认和命令均在视图外执行。
     let apply: (Set<Int>, Bool) -> Void
 
@@ -75,7 +78,9 @@ struct DiffHunkView: View {
                 }
             }
         } header: {
-            header
+            if showsHeader {
+                header
+            }
         }
     }
 

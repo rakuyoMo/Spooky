@@ -215,8 +215,14 @@ final class ThemeStore {
         files[identifier] = destination
     }
 
-    /// 删除主题的文件；选用它的外观按名称回到 Default 或 Default (Dark)。内置主题不做改动。
-    func delete(_ identifier: String) throws {
+    /// 删除主题的文件，删除时所在的外观改选列表的第一个主题；内置主题不做改动。
+    ///
+    /// 另一种外观选的也是它时，按名称回到 Default 或 Default (Dark)；列表删空时两种外观都按名称回退。
+    ///
+    /// - Parameters:
+    ///   - identifier: 要删除的主题。
+    ///   - dark: 删除时所在的外观。
+    func delete(_ identifier: String, dark: Bool) throws {
         guard
             let url = files[identifier],
             let theme = themes.first(where: { $0.id == identifier }),
@@ -236,6 +242,11 @@ final class ThemeStore {
         if darkThemeID == identifier {
             darkThemeID = nil
             defaults.removeObject(forKey: Self.darkKey)
+        }
+
+        // 列表里选中的行被删掉后，所在外观改选第一行。
+        if let first = themes.first {
+            select(first.id, dark: dark)
         }
     }
 

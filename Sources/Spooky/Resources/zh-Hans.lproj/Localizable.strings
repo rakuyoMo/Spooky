@@ -192,11 +192,12 @@
 "error.exitCode" = "退出码：%ld";
 "terminal.notInstalled" = "未安装 %@。";
 "themes.background" = "背景";
+"themes.selection" = "选区";
 "themes.added" = "新增";
 "themes.deleted" = "删除";
-"themes.preview.context" = "  未改动的文本";
-"themes.preview.added" = "+ 新增的文本";
-"themes.preview.deleted" = "− 删除的文本";
+"themes.preview.context" = "未改动的文本";
+"themes.preview.added" = "新增的文本";
+"themes.preview.deleted" = "删除的文本";
 "remoteError.invalidHost" = "SSH 主机别名无效";
 "remoteError.invalidHost.help" = "请输入 ~/.ssh/config 中的一个主机别名，不包含用户名或端口。";
 "remoteError.absolutePathRequired" = "需要绝对路径";
@@ -448,13 +449,13 @@
 
 /* 主题管理。 */
 "themes.newName" = "新主题";
-"themes.change" = "更改…";
 "themes.fontLabel" = "字体";
-"themes.text" = "正文";
+"themes.text" = "字体颜色";
 "themes.add" = "添加主题";
 "themes.remove" = "移除主题";
-"themes.invalidTitle" = "无法载入的主题";
-"themes.invalid" = "以下主题文件已损坏，或者名称、标识已被其他主题使用，因此无法载入：";
+"themes.delete.title" = "删除主题？";
+"themes.delete.message" = "将删除所选主题。此操作无法撤销。";
+"themes.delete.confirm" = "删除";
 "themes.exists" = "主题已存在";
 "themes.exists.message" = "“%@” 处已有主题。要替换它吗？";
 "themes.replace" = "替换";
