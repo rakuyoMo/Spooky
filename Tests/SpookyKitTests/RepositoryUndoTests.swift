@@ -194,6 +194,27 @@ struct RepositoryUndoTests {
         #expect(try read("other.txt", in: repository) == "hidden\n")
     }
 
+    /// 恢复时整段重写的分支段会移到配置文件末尾：改动排在前面的分支段后撤销，再重做仍能通过核对。
+    @Test("改动排在前面的分支段后撤销与重做")
+    func earlierBranchSection() async throws {
+        let repository = try await makeRepository(dirty: false)
+        defer { repository.remove() }
+        let undo = RepositoryUndo(runner: repository.runner)
+
+        // feature 的分支段在 main 的前面
+        _ = try await repository.runner.run(["branch", "-q", "--set-upstream-to=feature", "main"])
+
+        let before = try await undo.capture()
+        _ = try await repository.runner.run(["config", "--local", "branch.feature.spooky-pinned", "true"])
+        let after = try await undo.capture()
+
+        try await undo.restore(before, expecting: after, message: "undo")
+        #expect(try await undo.capture() == before)
+
+        try await undo.restore(after, expecting: before, message: "redo")
+        #expect(try await undo.capture() == after)
+    }
+
     /// SHA-256 仓库：哈希长度不同，提交与带未跟踪文件的储藏同样能撤销和重做。
     @Test("SHA-256 仓库的撤销与重做")
     func sha256() async throws {

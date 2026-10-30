@@ -22,17 +22,12 @@ public struct RepositoryUndo: Sendable {
             "for-each-ref", RepositoryState.referenceFormat, "refs/heads", "refs/tags", "refs/stash",
         ])
         async let loadedFiles = WorkingCopyOperations(runner: runner).stateFiles(OperationProgress.stateFiles)
-
-        // 只读仓库自己的配置文件；没有分支段时 config 以 1 退出
-        async let loadedSettings = runner.execute(
-            ["config", "--local", "-z", "--get-regexp", "^branch\\..+\\."],
-            acceptedExitCodes: [0, 1]
-        )
+        async let loadedSettings = branchSettings()
 
         let status = try await loadedStatus
         let parsed = try RepositoryState.parseReferences(await loadedReferences)
         let files = try await loadedFiles
-        let settings = try RepositoryState.parseBranchSettings(await loadedSettings.standardOutput)
+        let settings = try await loadedSettings
 
         guard OperationProgress(files: files, head: status.branch.oid) == nil else {
             throw RepositoryUndoError.operationInProgress
@@ -102,7 +97,7 @@ public struct RepositoryUndo: Sendable {
             // 文件最容易失败，先恢复；引用、分支配置与储藏随后更新
             try await restoreFiles(target, plan: plan)
             try await restoreReferences(from: current, to: target, message: message)
-            try await restoreBranchSettings(from: current, to: target)
+            try await restoreBranchSettings(from: current.branchSettings, to: target.branchSettings)
             try await restoreStashes(from: current, to: target)
         }
     }
@@ -153,6 +148,20 @@ extension RepositoryUndo {
         }
 
         return try await objectID(["rev-parse", "--verify", "-q", commit + "^{tree}"])
+    }
+
+    /// 仓库配置里各分支段的全部项：按分支名排列，同一分支的项按配置文件中的顺序。
+    ///
+    /// 恢复时整段重写的分支段会移到配置文件末尾，所以分支段之间的先后不算状态的一部分。
+    func branchSettings() async throws -> [BranchSetting] {
+        // 只读仓库自己的配置文件；没有分支段时 config 以 1 退出
+        let output = try await runner.execute(
+            ["config", "-z", "--local", "--get-regexp", "^branch\\..+\\."],
+            acceptedExitCodes: [0, 1]
+        )
+
+        let sections = Dictionary(grouping: try RepositoryState.parseBranchSettings(output.standardOutput), by: \.branch)
+        return sections.keys.sorted().flatMap { sections[$0] ?? [] }
     }
 
     /// 执行只输出一个对象哈希的命令。
@@ -206,9 +215,13 @@ extension RepositoryUndo {
     /// 内容有变化的分支段整段换掉：先删掉现有的段，再按目标的顺序逐项写回；只改仓库自己的配置文件。
     ///
     /// 只写键不写值的项写回为 `true`，Git 对布尔项按同样的意思读取。
-    private func restoreBranchSettings(from current: RepositoryState, to target: RepositoryState) async throws {
-        let now = Dictionary(grouping: current.branchSettings, by: \.branch)
-        let wanted = Dictionary(grouping: target.branchSettings, by: \.branch)
+    ///
+    /// - Parameters:
+    ///   - current: 现在的分支段，只需包含要比较的分支。
+    ///   - target: 要回到的分支段；两边都没有的分支不动。
+    func restoreBranchSettings(from current: [BranchSetting], to target: [BranchSetting]) async throws {
+        let now = Dictionary(grouping: current, by: \.branch)
+        let wanted = Dictionary(grouping: target, by: \.branch)
 
         for branch in Set(now.keys).union(wanted.keys).sorted() where now[branch] != wanted[branch] {
             if now[branch] != nil {
