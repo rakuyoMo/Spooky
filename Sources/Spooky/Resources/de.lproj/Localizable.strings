@@ -160,6 +160,7 @@
 "action.revealFinder" = "Im Finder zeigen";
 "action.revealFinder.notMounted" = "„%@“ ist auf diesem Mac nicht eingebunden. Sie können den lokalen Ordner in den Repository-Einstellungen festlegen.";
 "action.revealFinder.worktreeNotMounted" = "„%@“ ist auf diesem Mac nicht eingebunden.";
+"action.revealFinder.folderMissing" = "Der in den Repository-Einstellungen festgelegte lokale Ordner „%@“ wurde nicht gefunden.";
 "action.copyPath" = "Pfad kopieren";
 "action.reconnect" = "Erneut verbinden";
 "action.cancel" = "Abbrechen";
@@ -1893,6 +1894,12 @@
 "repositorySettings.noPatterns" = "Keine Muster";
 "repositorySettings.name" = "Name";
 "repositorySettings.path" = "Pfad";
+"repositorySettings.localFolder" = "Lokaler Ordner";
+"repositorySettings.localFolder.none" = "Nicht festgelegt";
+"repositorySettings.localFolder.choose" = "Auswählen …";
+"repositorySettings.localFolder.clear" = "Entfernen";
+"repositorySettings.localFolder.rejected" = "Ordner kann nicht verwendet werden";
+"repositorySettings.localFolder.rejected.message" = "„%1$@“ ist nicht das Repository „%2$@“.";
 "repositorySettings.wrapping" = "Zeilenumbruch";
 "repositorySettings.pageGuide" = "Hilfslinie anzeigen";
 "repositorySettings.lineLimit" = "Zeichen pro Zeile";

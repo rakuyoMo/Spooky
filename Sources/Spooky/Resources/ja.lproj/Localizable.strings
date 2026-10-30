@@ -160,6 +160,7 @@
 "action.revealFinder" = "Finder に表示";
 "action.revealFinder.notMounted" = "「%@」はこの Mac にマウントされていません。リポジトリの設定で、この Mac 上のフォルダを指定できます。";
 "action.revealFinder.worktreeNotMounted" = "「%@」はこの Mac にマウントされていません。";
+"action.revealFinder.folderMissing" = "リポジトリの設定で指定したこの Mac 上のフォルダ「%@」が見つかりません。";
 "action.copyPath" = "パスをコピー";
 "action.reconnect" = "再接続";
 "action.cancel" = "キャンセル";
@@ -1893,6 +1894,12 @@
 "repositorySettings.noPatterns" = "パターンはありません";
 "repositorySettings.name" = "名前";
 "repositorySettings.path" = "パス";
+"repositorySettings.localFolder" = "この Mac 上のフォルダ";
+"repositorySettings.localFolder.none" = "未設定";
+"repositorySettings.localFolder.choose" = "選択…";
+"repositorySettings.localFolder.clear" = "消去";
+"repositorySettings.localFolder.rejected" = "このフォルダは使用できません";
+"repositorySettings.localFolder.rejected.message" = "「%1$@」は「%2$@」のリポジトリではありません。";
 "repositorySettings.wrapping" = "行の折り返し";
 "repositorySettings.pageGuide" = "ページガイドを表示";
 "repositorySettings.lineLimit" = "1 行の文字数上限";

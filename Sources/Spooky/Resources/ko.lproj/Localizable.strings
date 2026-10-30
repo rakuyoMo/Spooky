@@ -160,6 +160,7 @@
 "action.revealFinder" = "Finder에서 보기";
 "action.revealFinder.notMounted" = "“%@”이(가) 이 Mac에 마운트되어 있지 않습니다. 저장소 설정에서 이 Mac의 폴더를 직접 지정할 수 있습니다.";
 "action.revealFinder.worktreeNotMounted" = "“%@”이(가) 이 Mac에 마운트되어 있지 않습니다.";
+"action.revealFinder.folderMissing" = "저장소 설정에서 지정한 이 Mac의 폴더 “%@”을(를) 찾을 수 없습니다.";
 "action.copyPath" = "경로 복사";
 "action.reconnect" = "다시 연결";
 "action.cancel" = "취소";
@@ -1893,6 +1894,12 @@
 "repositorySettings.noPatterns" = "패턴 없음";
 "repositorySettings.name" = "이름";
 "repositorySettings.path" = "경로";
+"repositorySettings.localFolder" = "이 Mac의 폴더";
+"repositorySettings.localFolder.none" = "설정되지 않음";
+"repositorySettings.localFolder.choose" = "선택…";
+"repositorySettings.localFolder.clear" = "지우기";
+"repositorySettings.localFolder.rejected" = "이 폴더를 사용할 수 없음";
+"repositorySettings.localFolder.rejected.message" = "“%1$@”은(는) “%2$@” 저장소가 아닙니다.";
 "repositorySettings.wrapping" = "줄 바꿈";
 "repositorySettings.pageGuide" = "페이지 안내선 표시";
 "repositorySettings.lineLimit" = "줄당 글자 수 제한";

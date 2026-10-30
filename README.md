@@ -188,7 +188,7 @@ If you declined, you can turn them on again in **System Settings › Notificatio
 
 On your Mac:
 
-- Settings, user profiles, and repository bookmarks are stored in the preferences domain `com.rakuyo.spooky`
+- Settings, user profiles, repository bookmarks, and the local folders chosen for server repositories in the repository settings are stored in the preferences domain `com.rakuyo.spooky`
 - Themes, including Default and Default (Dark), are stored in `~/Library/Application Support/Spooky/Themes`, one `.spookytheme` file per theme
 - Remote operations recorded in the **Activity** window, such as fetches, pulls, and pushes, are stored in `~/Library/Application Support/Spooky/Activity`, one file per record, and deleted after 7 days. Other Activity records are kept in memory only while Spooky is running
 - The previous lists of branches, remotes, stashes, and submodules that the **Activity** window compares against to count updated, added, and deleted items are stored in `~/Library/Application Support/Spooky/Baselines`, one file per repository

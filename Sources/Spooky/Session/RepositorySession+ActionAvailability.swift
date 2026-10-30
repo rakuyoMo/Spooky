@@ -1,6 +1,15 @@
 import SpookyKit
 
 extension RepositorySession {
+    /// 连接可用、本窗口没有写操作，且应用内没有同一仓库的写操作时才允许写入。
+    var canWrite: Bool {
+        guard let repository, !isWriting, !RepositoryWriteLocks.shared.contains(repository) else {
+            return false
+        }
+
+        return repository.host == nil || connectionState == .connected
+    }
+
     /// 菜单、工具栏、右键菜单与拖放共用的获取条件：需要已配置远端。
     var canFetch: Bool {
         canWrite && hasRemotes

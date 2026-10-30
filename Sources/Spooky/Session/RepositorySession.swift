@@ -283,15 +283,6 @@ final class RepositorySession {
     /// 请求代数，阻止已取消的旧请求覆盖新仓库。
     private(set) var generation = 0
 
-    /// 连接可用、本窗口没有写操作，且应用内没有同一仓库的写操作时才允许写入。
-    var canWrite: Bool {
-        guard let repository, !isWriting, !RepositoryWriteLocks.shared.contains(repository) else {
-            return false
-        }
-
-        return repository.host == nil || connectionState == .connected
-    }
-
     /// 当前选中的文件行。
     var selectedID: StatusRowID? = nil {
         didSet {
@@ -370,6 +361,9 @@ final class RepositorySession {
         if repository.host != nil {
             observeConnection(repository)
             startPolling()
+
+            // 仓库设置里手动指定的本机目录记在这台 Mac 的偏好里，设了就不再自动查找仓库目录的挂载
+            mounts.designate(ServerLocalFolders.folder(for: repository), for: repository.path)
         } else if loadsRepositoryDetails {
             fileMonitor = RepositoryFileMonitor(path: repository.path) { [weak self] in self?.autoReload() }
         }

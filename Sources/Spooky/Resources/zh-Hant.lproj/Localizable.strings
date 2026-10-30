@@ -160,6 +160,7 @@
 "action.revealFinder" = "在 Finder 中顯示";
 "action.revealFinder.notMounted" = "“%@” 沒有掛載到這台 Mac。可以在儲存庫設定裡手動指定它在本機的資料夾。";
 "action.revealFinder.worktreeNotMounted" = "“%@” 沒有掛載到這台 Mac。";
+"action.revealFinder.folderMissing" = "找不到儲存庫設定裡指定的本機資料夾 “%@”。";
 "action.copyPath" = "拷貝路徑";
 "action.reconnect" = "重新連線";
 "action.cancel" = "取消";
@@ -1893,6 +1894,12 @@
 "repositorySettings.noPatterns" = "沒有規則";
 "repositorySettings.name" = "名稱";
 "repositorySettings.path" = "路徑";
+"repositorySettings.localFolder" = "本機資料夾";
+"repositorySettings.localFolder.none" = "未設定";
+"repositorySettings.localFolder.choose" = "選擇…";
+"repositorySettings.localFolder.clear" = "清除";
+"repositorySettings.localFolder.rejected" = "無法使用這個資料夾";
+"repositorySettings.localFolder.rejected.message" = "“%1$@” 不是 “%2$@” 這個儲存庫。";
 "repositorySettings.wrapping" = "換行";
 "repositorySettings.pageGuide" = "顯示參考線";
 "repositorySettings.lineLimit" = "每行字數上限";

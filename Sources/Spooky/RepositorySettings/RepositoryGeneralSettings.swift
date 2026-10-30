@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - RepositoryGeneralSettings
 
-/// 仓库设置的 General 段：名称、路径与描述，提交人身份，正文折行，以及提交签名。
+/// 仓库设置的 General 段：名称、路径、服务器仓库的本机目录与描述，提交人身份，正文折行，以及提交签名。
 ///
 /// 配置只写进这个仓库的本地配置；没有在本仓库设置的项显示 “–”，沿用全局设置。
 struct RepositoryGeneralSettings: View {
@@ -63,7 +63,7 @@ struct RepositoryGeneralSettings: View {
 // MARK: - Rows
 
 extension RepositoryGeneralSettings {
-    /// 名称、带主机前缀的路径与描述。
+    /// 名称、带主机前缀的路径、服务器仓库在这台 Mac 上的本机目录与描述。
     @ViewBuilder
     private var generalRows: some View {
         RemoteSettingsGroup(title: AppLocalization.text("repositorySettings.general"))
@@ -75,6 +75,10 @@ extension RepositoryGeneralSettings {
             value: session.repository?.displayPath ?? "",
             small: true
         )
+
+        if session.repository?.host != nil {
+            RepositoryLocalFolderRow(session: session)
+        }
 
         RemoteSettingRow(
             label: AppLocalization.text("bookmarks.detail.description"),

@@ -160,6 +160,7 @@
 "action.revealFinder" = "在 Finder 中显示";
 "action.revealFinder.notMounted" = "“%@” 没有挂载到这台 Mac。可以在仓库设置里手动指定它在本机的文件夹。";
 "action.revealFinder.worktreeNotMounted" = "“%@” 没有挂载到这台 Mac。";
+"action.revealFinder.folderMissing" = "找不到仓库设置里指定的本机文件夹 “%@”。";
 "action.copyPath" = "复制路径";
 "action.reconnect" = "重新连接";
 "action.cancel" = "取消";
@@ -1893,6 +1894,12 @@
 "repositorySettings.noPatterns" = "没有规则";
 "repositorySettings.name" = "名称";
 "repositorySettings.path" = "路径";
+"repositorySettings.localFolder" = "本机文件夹";
+"repositorySettings.localFolder.none" = "未设置";
+"repositorySettings.localFolder.choose" = "选择…";
+"repositorySettings.localFolder.clear" = "清除";
+"repositorySettings.localFolder.rejected" = "无法使用这个文件夹";
+"repositorySettings.localFolder.rejected.message" = "“%1$@” 不是 “%2$@” 这个仓库。";
 "repositorySettings.wrapping" = "折行";
 "repositorySettings.pageGuide" = "显示参考线";
 "repositorySettings.lineLimit" = "每行字数上限";

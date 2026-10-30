@@ -160,6 +160,7 @@
 "action.revealFinder" = "Show in Finder";
 "action.revealFinder.notMounted" = "“%@” isn’t mounted on this Mac. You can choose its local folder in the repository settings.";
 "action.revealFinder.worktreeNotMounted" = "“%@” isn’t mounted on this Mac.";
+"action.revealFinder.folderMissing" = "The local folder “%@” chosen in the repository settings can’t be found.";
 "action.copyPath" = "Copy Path";
 "action.reconnect" = "Reconnect";
 "action.cancel" = "Cancel";
@@ -1893,6 +1894,12 @@
 "repositorySettings.noPatterns" = "No patterns";
 "repositorySettings.name" = "Name";
 "repositorySettings.path" = "Path";
+"repositorySettings.localFolder" = "Local Folder";
+"repositorySettings.localFolder.none" = "Not set";
+"repositorySettings.localFolder.choose" = "Choose…";
+"repositorySettings.localFolder.clear" = "Clear";
+"repositorySettings.localFolder.rejected" = "Folder Can’t Be Used";
+"repositorySettings.localFolder.rejected.message" = "“%1$@” isn’t the repository “%2$@”.";
 "repositorySettings.wrapping" = "Line Wrapping";
 "repositorySettings.pageGuide" = "Show Page Guide";
 "repositorySettings.lineLimit" = "Line Character Limit";

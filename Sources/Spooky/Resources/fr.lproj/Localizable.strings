@@ -160,6 +160,7 @@
 "action.revealFinder" = "Afficher dans le Finder";
 "action.revealFinder.notMounted" = "« %@ » n’est pas monté sur ce Mac. Vous pouvez choisir son dossier local dans les réglages du dépôt.";
 "action.revealFinder.worktreeNotMounted" = "« %@ » n’est pas monté sur ce Mac.";
+"action.revealFinder.folderMissing" = "Le dossier local « %@ » choisi dans les réglages du dépôt est introuvable.";
 "action.copyPath" = "Copier le chemin";
 "action.reconnect" = "Se reconnecter";
 "action.cancel" = "Annuler";
@@ -1893,6 +1894,12 @@
 "repositorySettings.noPatterns" = "Aucun motif";
 "repositorySettings.name" = "Nom";
 "repositorySettings.path" = "Chemin";
+"repositorySettings.localFolder" = "Dossier local";
+"repositorySettings.localFolder.none" = "Non défini";
+"repositorySettings.localFolder.choose" = "Choisir…";
+"repositorySettings.localFolder.clear" = "Effacer";
+"repositorySettings.localFolder.rejected" = "Impossible d’utiliser ce dossier";
+"repositorySettings.localFolder.rejected.message" = "« %1$@ » n’est pas le dépôt « %2$@ ».";
 "repositorySettings.wrapping" = "Retour à la ligne";
 "repositorySettings.pageGuide" = "Afficher le repère";
 "repositorySettings.lineLimit" = "Caractères par ligne";
