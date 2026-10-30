@@ -752,7 +752,7 @@ extension RepositorySession {
 
         // 已初始化子模块的指针被改动时随后更新或询问；按声明在操作前后记下仓库状态，供撤销与重做使用
         let checked = updatingSubmodules(after: action, tracked: submodules.initialized)
-        let recorded = recordingUndo(checked, title: title, recording: undo)
+        let recorded = recordingUndo(checked, title: title, target: target, recording: undo)
 
         writeTask = Task { [weak self] in
             let collector = Task { @MainActor in

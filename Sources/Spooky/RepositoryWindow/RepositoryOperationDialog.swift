@@ -86,11 +86,13 @@ struct RepositoryOperationDialog: View {
     /// 取消只关闭表单。
     let cancel: () -> Void
 
-    /// 提交交付操作名称、Activity 记录连接的对象与显式参数对应的业务操作；返回 false 表示仓库暂不可写，表单保持打开。
+    /// 提交交付操作名称、Activity 记录连接的对象、与撤销记录的关系和显式参数对应的业务操作；
+    /// 返回 false 表示仓库暂不可写，表单保持打开。
     let submit:
         (
             String,
             ActivityTarget?,
+            UndoRecording,
             @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
         ) -> Bool
 
@@ -737,6 +739,15 @@ extension RepositoryOperationDialog {
         }
     }
 
+    /// 与撤销记录的关系：新建分支与合并靠快照撤销，发布分支靠反向操作撤销，获取、拉取与推送不能撤销。
+    private func undoRecording() -> UndoRecording {
+        switch request.kind {
+        case .create, .track, .merge: .reversible
+        case .publish: .publishingBranch(localBranch, to: remote, as: name, setsUpstream: upstream)
+        case .fetch, .pull, .push: .irreversible
+        }
+    }
+
     /// 远端分支短名按所属远端切除前缀，兼容远端名中的斜杠。
     private func remoteBranchName(_ reference: String) -> String {
         guard
@@ -833,6 +844,6 @@ extension RepositoryOperationDialog {
         let target = activityTarget(pullRemote: pullRemote?.name, pullBranch: pullBranch)
 
         // 仓库在点击瞬间变为不可写时表单不关闭，原因显示在表单内，已填写的参数原样保留。
-        _ = submit(AppLocalization.text(kind.rawValue), target, run)
+        _ = submit(AppLocalization.text(kind.rawValue), target, undoRecording(), run)
     }
 }

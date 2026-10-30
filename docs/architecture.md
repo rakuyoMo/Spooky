@@ -83,8 +83,8 @@ Spooky 由两个 target 组成：
 - App 内同一仓库同时只允许一个写操作（`RepositoryWriteLocks`）；菜单、工具栏、右键菜单与拖放统一使用 `RepositorySession` 的 `can…` 可用性规则
 - 写操作经 `RepositorySession.performGit(undo:)` 声明与撤销记录的关系：
   - `.reversible`：只改仓库自己的引用、索引、工作区、储藏与 `branch.*` 配置
-  - `.inverse`：快照记不住的改动，如远端设置、assume-unchanged 标记与 Git LFS 的启用；操作前读出撤销要用的内容，撤销时执行反向操作、先核对前提，重做时再执行一次原操作
-  - `.irreversible`（默认）：改动服务器、提交身份、exclude 规则或其它配置
+  - `.inverse`：快照记不住的改动，如远端设置、assume-unchanged 标记、Git LFS 的启用，以及发布的分支与标签、重命名的远端分支；操作前读出撤销要用的内容，撤销时执行反向操作、先核对前提，重做时再执行一次原操作；要推送的撤销与重做记在 Activity 的 Remote 页
+  - `.irreversible`（默认）：推送、删除远端引用这类其余改动服务器的操作，以及提交身份、exclude 规则或其它配置
   - `.unrecorded`：自动获取这类不由用户直接发起的操作，以及撤销、重做本身
 - 撤销的快照建在仓库所在的机器上，写进仓库自己的对象库；恢复前核对仓库仍与记录一致
 - 移进废纸篓的文件不进快照：写操作期间由 `TrashLog` 记下它们在废纸篓里的位置，撤销时移回原处，重做时重新移进废纸篓；废纸篓程序不报告位置时这次操作不能撤销

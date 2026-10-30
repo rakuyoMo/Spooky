@@ -72,7 +72,7 @@ extension RepositorySession {
 
     /// 撤销最近一次操作：快照记录核对仓库仍是操作后的状态，再恢复成操作前，移进废纸篓的项移回原处；反向操作记录执行反向操作。
     ///
-    /// 经写队列执行并记进 Activity。
+    /// 经写队列执行并记进 Activity；要连接远端的反向操作记在 Remote 页。
     func undoLastOperation() {
         guard
             case .available = undoMenuState(redo: false),
@@ -80,18 +80,26 @@ extension RepositorySession {
             let entry = history.undoEntries.last
         else { return }
 
+        // 只有反向操作会连接远端
+        let target: ActivityTarget? =
+            switch entry.change {
+            case .snapshot: nil
+            case .inverse(_, _, _, let inverse): inverse.target
+            }
+
         performGit(
-            { runner, _ in
+            { runner, output in
                 switch entry.change {
                 case .snapshot(let before, let after, let trashed):
                     try await RepositoryUndo(runner: runner)
                         .restore(before, expecting: after, message: "undo", puttingBack: trashed)
 
-                case .inverse(_, _, let inverse):
-                    try await inverse.undo(runner)
+                case .inverse(_, _, _, let inverse):
+                    try await inverse.undo(runner, output)
                 }
             },
             title: UndoManager().undoMenuTitle(forUndoActionName: entry.title),
+            target: target,
             undo: .unrecorded
         ) {
             history.finishUndo(entry)
@@ -127,8 +135,8 @@ extension RepositorySession {
                 history.finishRedo(entry, change: .snapshot(before: before, after: after, trashed: log.items))
             }
 
-        case .inverse(let prepare, let action, _):
-            // 新的反向操作在原操作之前读出，原操作成功后换上
+        case .inverse(let prepare, let action, let target, _):
+            // 新的反向操作在原操作之前读出，原操作成功后换上；重做与原操作记在 Activity 的同一页
             performGit(
                 { runner, output in
                     let prepared = await PreparedInverse(prepare, runner: runner)
@@ -136,7 +144,10 @@ extension RepositorySession {
 
                     switch prepared {
                     case .inverse(let inverse):
-                        await history.finishRedo(entry, change: .inverse(prepare: prepare, action: action, inverse: inverse))
+                        await history.finishRedo(
+                            entry,
+                            change: .inverse(prepare: prepare, action: action, target: target, inverse: inverse)
+                        )
 
                     case .unchanged:
                         await history.finishRedo(entry, change: nil)
@@ -146,6 +157,7 @@ extension RepositorySession {
                     }
                 },
                 title: title,
+                target: target,
                 undo: .unrecorded
             )
         }
@@ -156,9 +168,12 @@ extension RepositorySession {
     ///
     /// 操作前有进行中的操作或冲突、操作后停在进行中的状态、删掉的未跟踪文件找不回内容，
     /// 或移进废纸篓的项不知道位置时，都按不能撤销处理。
+    ///
+    /// - Parameter target: 操作记在 Activity 的 Remote 页的对象，随反向操作记录保存，重做时记在同一页。
     func recordingUndo(
         _ action: @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
+        target: ActivityTarget?,
         recording: UndoRecording
     ) -> @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void {
         guard let history = undoHistory else {
@@ -184,7 +199,10 @@ extension RepositorySession {
                 switch prepared {
                 case .inverse(let inverse):
                     await history.record(
-                        RepositoryUndoEntry(title: title, change: .inverse(prepare: prepare, action: action, inverse: inverse))
+                        RepositoryUndoEntry(
+                            title: title,
+                            change: .inverse(prepare: prepare, action: action, target: target, inverse: inverse)
+                        )
                     )
 
                 case .unchanged:

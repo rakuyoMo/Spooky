@@ -7,14 +7,14 @@ extension UndoRecording {
     /// 添加远端：撤销时删掉它；重做时再添加一次，连通检查也再做一次。
     static func addingRemote(_ name: String) -> Self {
         .inverse { _ in
-            UndoInverse { try await RepositoryRemotes(runner: $0).undoAdd(name) }
+            UndoInverse { runner, _ in try await RepositoryRemotes(runner: runner).undoAdd(name) }
         }
     }
 
     /// 把远端 `name` 改名为 `newName`：撤销时改回原名，远端跟踪分支与跟踪设置随之改回。
     static func renamingRemote(_ name: String, to newName: String) -> Self {
         .inverse { _ in
-            UndoInverse { try await RepositoryRemotes(runner: $0).undoRename(name, to: newName) }
+            UndoInverse { runner, _ in try await RepositoryRemotes(runner: runner).undoRename(name, to: newName) }
         }
     }
 
@@ -22,7 +22,7 @@ extension UndoRecording {
     static func removingRemotes(_ names: [String]) -> Self {
         .inverse { runner in
             let record = try await RepositoryRemotes(runner: runner).removalRecord(of: names)
-            return UndoInverse { try await RepositoryRemotes(runner: $0).undoRemove(record) }
+            return UndoInverse { runner, _ in try await RepositoryRemotes(runner: runner).undoRemove(record) }
         }
     }
 
@@ -30,7 +30,61 @@ extension UndoRecording {
     static func changingRemote(_ name: String) -> Self {
         .inverse { runner in
             let settings = try await RepositoryRemotes(runner: runner).settings(of: name)
-            return UndoInverse { try await RepositoryRemotes(runner: $0).restoreSettings(settings, of: name) }
+            return UndoInverse { runner, _ in
+                try await RepositoryRemotes(runner: runner).restoreSettings(settings, of: name)
+            }
+        }
+    }
+}
+
+// MARK: - Publishing
+
+extension UndoRecording {
+    /// 发布分支：撤销时在远端删掉它，远端分支被别人推进过时拒绝；发布时建立的跟踪随之换回发布前。远端原来就有这个分支时不记。
+    ///
+    /// - Parameters:
+    ///   - branch: 本地分支的短名。
+    ///   - remote: 远端名。
+    ///   - destination: 远端上的分支短名。
+    ///   - setsUpstream: 发布后是否让本地分支跟踪推上去的远端分支。
+    static func publishingBranch(
+        _ branch: String,
+        to remote: String,
+        as destination: String,
+        setsUpstream: Bool
+    ) -> Self {
+        .inverse { runner in
+            let publication = try await RepositorySync(runner: runner)
+                .publication(of: branch, to: remote, as: destination, setsUpstream: setsUpstream)
+
+            return publication.map { publication in
+                UndoInverse(target: .push(remote)) {
+                    try await RepositorySync(runner: $0).undoPublish(publication, onOutput: $1)
+                }
+            }
+        }
+    }
+
+    /// 发布标签：撤销时在远端删掉它，远端标签被别人改过时拒绝。远端原来就有同名标签时不记。
+    static func publishingTag(_ name: String, to remote: String) -> Self {
+        .inverse { runner in
+            let object = try await RepositoryTags(runner: runner).publicationLease(of: name, on: remote)
+
+            return object.map { object in
+                UndoInverse(target: .push(remote)) {
+                    try await RepositoryTags(runner: $0).undoPublish(name, on: remote, object: object, onOutput: $1)
+                }
+            }
+        }
+    }
+
+    /// 把远端分支 `name` 改名为 `newName`：撤销时再改回原名。
+    static func renamingRemoteBranch(_ name: String, on remote: String, to newName: String) -> Self {
+        .inverse { _ in
+            UndoInverse(target: .push(remote)) {
+                try await RepositoryReferences(runner: $0)
+                    .undoRenameRemoteBranch(name, on: remote, to: newName, onOutput: $1)
+            }
         }
     }
 }
@@ -46,7 +100,9 @@ extension UndoRecording {
 
             guard !changed.isEmpty else { return nil }
 
-            return UndoInverse { try await WorkingCopyOperations(runner: $0).setAssumeUnchanged(changed, !assumeUnchanged) }
+            return UndoInverse { runner, _ in
+                try await WorkingCopyOperations(runner: runner).setAssumeUnchanged(changed, !assumeUnchanged)
+            }
         }
     }
 }
@@ -59,7 +115,7 @@ extension UndoRecording {
         .inverse { runner in
             guard try await !RepositoryLFS(runner: runner).isInstalledLocally() else { return nil }
 
-            return UndoInverse { try await RepositoryLFS(runner: $0).undoInstall() }
+            return UndoInverse { runner, _ in try await RepositoryLFS(runner: runner).undoInstall() }
         }
     }
 }

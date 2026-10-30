@@ -9,13 +9,13 @@ enum UndoRecording {
     /// 记下操作前后的仓库状态；操作改动了仓库、又能安全恢复时可以撤销与重做。
     case reversible
 
-    /// 由操作自己给出反向操作，用于快照记不住的内容，如远端设置、assume-unchanged 标记与 Git LFS 的启用。
+    /// 由操作自己给出反向操作，用于快照记不住的内容，如远端设置、assume-unchanged 标记、Git LFS 的启用，以及远端上发布与改名的引用。
     ///
     /// 闭包在操作之前执行，读出撤销要用的内容：返回反向操作时，操作成功后记一条；
     /// 返回 nil 表示这次操作不改动要撤销的内容，不碰撤销记录；抛出表示这次操作撤销不了，成功后按 ``irreversible`` 处理。
     case inverse(@Sendable (GitRunner) async throws -> UndoInverse?)
 
-    /// 不能撤销，如改动服务器或提交身份的操作：成功后清空本仓库的撤销记录，菜单说明上一个操作不能撤销。
+    /// 不能撤销，如推送或改动提交身份的操作：成功后清空本仓库的撤销记录，菜单说明上一个操作不能撤销。
     case irreversible
 
     /// 不碰撤销记录：自动获取这类不由用户直接发起、也不改动记录所含状态的操作，以及撤销与重做本身。
@@ -26,8 +26,12 @@ enum UndoRecording {
 
 /// 操作自己给出的反向操作。
 struct UndoInverse: Sendable {
-    /// 撤销时执行：先核对前提，仓库已不是操作后的样子时抛出 ``RepositoryUndoError/repositoryChanged``，不做任何改动。
-    let undo: @Sendable (GitRunner) async throws -> Void
+    /// 撤销要连接远端时记在 Activity 的 Remote 页的对象；为 nil 时记在 Repository 页。
+    var target: ActivityTarget? = nil
+
+    /// 撤销时执行，输出经第二个参数送进 Activity：先核对前提，仓库已不是操作后的样子时抛出
+    /// ``RepositoryUndoError/repositoryChanged``，不做任何改动。
+    let undo: @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
 }
 
 // MARK: - RepositoryUndoEntry
@@ -40,9 +44,12 @@ struct RepositoryUndoEntry: Identifiable, Sendable {
         case snapshot(before: RepositoryState, after: RepositoryState, trashed: [TrashedItem])
 
         /// 操作自己给出的反向操作：撤销时执行它；重做时再执行一次准备与原操作，换上新读出的反向操作。
+        ///
+        /// `target` 是原操作记在 Activity 的 Remote 页的对象，重做时同样记在那里；为 nil 时记在 Repository 页。
         case inverse(
             prepare: @Sendable (GitRunner) async throws -> UndoInverse?,
             action: @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
+            target: ActivityTarget?,
             inverse: UndoInverse
         )
     }
