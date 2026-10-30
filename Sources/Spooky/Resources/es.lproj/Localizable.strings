@@ -331,6 +331,7 @@
 "branch.track" = "Seguir rama remota";
 "branch.track.help" = "Crea una rama local que sigue la rama remota seleccionada.";
 "branch.checkout" = "Hacer checkout de la rama";
+"branch.checkoutNamed" = "Hacer checkout de “%@”";
 "branch.delete" = "Eliminar rama";
 "branch.copyName" = "Copiar nombre de la rama";
 "branch.start" = "Punto de partida:";
@@ -421,6 +422,9 @@
 "activity.result.changes" = "%1$ld actualizados, %2$ld añadidos, %3$ld eliminados";
 "activity.result.commits" = "%ld commits de Git cargados";
 "activity.elapsed" = "%@ s";
+"activity.inProgress" = "En curso…";
+"activity.log.loading" = "Cargando…";
+"activity.log.error" = "Error";
 "dialog.options" = "Opciones";
 "dialog.doNotAskAgain" = "No volver a preguntarme";
 "menu.repository" = "Repositorio";

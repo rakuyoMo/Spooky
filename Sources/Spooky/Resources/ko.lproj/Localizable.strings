@@ -331,6 +331,7 @@
 "branch.track" = "원격 브랜치 추적";
 "branch.track.help" = "선택한 원격 브랜치를 추적하는 로컬 브랜치를 만듭니다.";
 "branch.checkout" = "브랜치 체크아웃";
+"branch.checkoutNamed" = "“%@” 체크아웃";
 "branch.delete" = "브랜치 삭제";
 "branch.copyName" = "브랜치 이름 복사";
 "branch.start" = "시작점:";
@@ -421,6 +422,9 @@
 "activity.result.changes" = "%1$ld개 업데이트, %2$ld개 추가, %3$ld개 삭제";
 "activity.result.commits" = "Git 커밋 %ld개를 불러옴";
 "activity.elapsed" = "%@초";
+"activity.inProgress" = "진행 중…";
+"activity.log.loading" = "불러오는 중…";
+"activity.log.error" = "오류";
 "dialog.options" = "옵션";
 "dialog.doNotAskAgain" = "다시 묻지 않음";
 "menu.repository" = "저장소";

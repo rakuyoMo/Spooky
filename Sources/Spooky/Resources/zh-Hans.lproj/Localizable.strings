@@ -331,6 +331,7 @@
 "branch.track" = "跟踪远端分支";
 "branch.track.help" = "新建跟踪所选远端分支的本地分支。";
 "branch.checkout" = "检出分支";
+"branch.checkoutNamed" = "检出 “%@”";
 "branch.delete" = "删除分支";
 "branch.copyName" = "复制分支名";
 "branch.start" = "起点：";
@@ -421,6 +422,9 @@
 "activity.result.changes" = "更新 %1$ld 个，新增 %2$ld 个，删除 %3$ld 个";
 "activity.result.commits" = "已加载 %ld 个 Git 提交";
 "activity.elapsed" = "%@ 秒";
+"activity.inProgress" = "进行中…";
+"activity.log.loading" = "正在加载…";
+"activity.log.error" = "错误";
 "dialog.options" = "选项";
 "dialog.doNotAskAgain" = "不再询问";
 "menu.repository" = "仓库";

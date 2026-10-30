@@ -161,21 +161,22 @@ extension RepositorySessionTests {
         #expect(RepositoryActionRequest(kind: .pull).resolved(for: untracked).kind == .pull)
     }
 
-    /// 获取、拉取、推送与发布要连接远端，记在 Activity 的 Remote 页；建分支、跟踪远端分支与合并只改本仓库，记在 Repository 页。
-    @Test("操作对话框的动作记在 Activity 的哪一页")
-    func actionActivityKinds() {
-        let kinds: [(RepositoryActionRequest.Kind, ActivityKind)] = [
-            (.fetch, .remote),
-            (.pull, .remote),
-            (.push, .remote),
-            (.publish, .remote),
-            (.create, .repository),
-            (.track, .repository),
-            (.merge, .repository),
+    /// 获取、拉取、推送与发布要连接远端，带传输方向记在 Activity 的 Remote 页，行首据此显示图标；
+    /// 建分支、跟踪远端分支与合并只改本仓库，没有方向，记在 Repository 页。
+    @Test("操作对话框的动作记在 Activity 的哪一页与传输方向")
+    func actionActivityTransfers() {
+        let transfers: [(RepositoryActionRequest.Kind, ActivityTransfer?)] = [
+            (.fetch, .fetch),
+            (.pull, .pull),
+            (.push, .push),
+            (.publish, .push),
+            (.create, nil),
+            (.track, nil),
+            (.merge, nil),
         ]
 
-        for (action, kind) in kinds {
-            #expect(action.activityKind == kind)
+        for (action, transfer) in transfers {
+            #expect(action.transfer == transfer)
         }
     }
 

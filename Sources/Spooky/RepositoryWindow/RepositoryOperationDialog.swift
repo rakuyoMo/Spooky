@@ -28,11 +28,13 @@ struct RepositoryActionRequest {
         /// 合并到当前分支。
         case merge = "sync.merge"
 
-        /// 记在 Activity 的哪一页：要连接远端传输对象或引用的获取、拉取、推送与发布记在 Remote。
-        var activityKind: ActivityKind {
+        /// Activity 记录的传输方向：要连接远端的获取、拉取、推送与发布有方向，记在 Remote 页；其余为 nil，记在 Repository 页。
+        var transfer: ActivityTransfer? {
             switch self {
-            case .fetch, .pull, .push, .publish: .remote
-            case .create, .track, .merge: .repository
+            case .fetch: .fetch
+            case .pull: .pull
+            case .push, .publish: .push
+            case .create, .track, .merge: nil
             }
         }
     }

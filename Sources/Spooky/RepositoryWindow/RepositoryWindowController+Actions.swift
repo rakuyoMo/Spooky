@@ -99,7 +99,7 @@ extension RepositoryWindowController {
                     .fetch(prune: prune, allTags: tags, onOutput: output)
             },
             title: AppLocalization.text("sync.fetch"),
-            activityKind: .remote
+            transfer: .fetch
         )
     }
 
@@ -174,7 +174,7 @@ extension RepositoryWindowController {
                         session.performGit(
                             action,
                             title: title,
-                            activityKind: request.kind.activityKind,
+                            transfer: request.kind.transfer,
                             offersAutoStash: [.pull, .merge].contains(request.kind),
                             undo: [.create, .track, .merge].contains(request.kind) ? .reversible : .irreversible
                         )

@@ -133,7 +133,7 @@ extension RepositorySession {
                 try await RepositoryPullRequests(runner: runner).fetchHead(of: request.id, from: remote, onOutput: output)
             },
             title: pullRequestText("fetchHead.title", request.id.reference),
-            activityKind: .remote,
+            transfer: .fetch,
             success: { [weak self] in
                 guard let self, let runner else { return }
                 pullRequests.reloadDetail(runner: runner)
@@ -151,7 +151,7 @@ extension RepositorySession {
                 try await RepositoryPullRequests(runner: runner).checkout(request, remote: remote, as: name, onOutput: output)
             },
             title: pullRequestText("checkout.title"),
-            activityKind: .remote,
+            transfer: .pull,
             offersAutoStash: true,
             undo: .reversible
         )

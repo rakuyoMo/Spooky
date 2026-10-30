@@ -48,7 +48,7 @@ extension HistoryListTests {
         #expect(saved.allSatisfy { activity in
             activity.state == "activity.finished"
                 && activity.elapsed != nil
-                && activity.result == nil
+                && activity.log.isEmpty
         })
 
         #expect(!activities.items.contains { $0.title == AppLocalization.text("patch.title") })

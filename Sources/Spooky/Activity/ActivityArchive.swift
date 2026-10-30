@@ -11,6 +11,9 @@ struct ActivityRecord: Codable, Sendable {
     /// 记录所在的页。
     let kind: ActivityKind
 
+    /// Remote 记录的传输方向；较早保存、没有这一项的记录读回为 nil。
+    let transfer: ActivityTransfer?
+
     /// 带主机前缀的仓库身份。
     let repository: RepositoryLocation
 

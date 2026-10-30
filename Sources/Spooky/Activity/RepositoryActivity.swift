@@ -16,6 +16,20 @@ enum ActivityKind: String, CaseIterable, Codable, Sendable {
     case service
 }
 
+// MARK: - ActivityTransfer
+
+/// Remote 页记录的传输方向，决定行首的图标。
+enum ActivityTransfer: String, Codable, Sendable {
+    /// 获取。
+    case fetch
+
+    /// 拉取，以及子模块、Pull Request 检出等其余要连接远端的操作。
+    case pull
+
+    /// 推送，包括发布、删除与重命名远端的引用。
+    case push
+}
+
 // MARK: - RepositoryActivity
 
 /// 一次 Git 操作或托管服务请求的日志和状态，完成后仍可在 Activity 查看。
@@ -40,14 +54,17 @@ final class RepositoryActivity: Identifiable {
     /// 开始时间。
     let started: Date
 
+    /// Remote 页记录的传输方向；其余两页的记录与较早保存的 Remote 记录为 nil。
+    let transfer: ActivityTransfer?
+
     /// 结束时间，由 `RepositoryActivities.finish` 写入；进行中与从本机读回的记录为 nil。
     var ended: Date? = nil
 
-    /// 读取成功时的一行结果，如读到的条数或增减计数；没有结果的记录为 nil。
-    var result: String? = nil
-
     /// 完成、失败或取消的本地化状态键。
     var state = "activity.running"
+
+    /// 当前阶段的完成比例，0–1，取自 stderr 最新的带百分比的进度行；还没有这样的行时为 nil。
+    private(set) var progress: Double? = nil
 
     /// 正在运行时提供取消入口，结束后清空。
     var cancel: (() -> Void)?
@@ -66,6 +83,11 @@ final class RepositoryActivity: Identifiable {
     /// 从开始到结束的秒数；还没结束或从本机读回的记录为 nil。
     var elapsed: TimeInterval? {
         ended.map { $0.timeIntervalSince(started) }
+    }
+
+    /// 日志的最后一个非空行，原样保留行首的空白；与 `log` 的拼法一致，stderr 有内容时取它的，否则取 stdout 的。没有输出时为 nil。
+    var lastLine: String? {
+        stderr.lastLine ?? stdout.lastLine
     }
 
     /// 两路输出整段拼成的日志，进度里的 `\r` 已覆盖当前行。
@@ -87,6 +109,7 @@ final class RepositoryActivity: Identifiable {
         return ActivityRecord(
             id: id,
             kind: kind,
+            transfer: transfer,
             repository: repository,
             title: title,
             started: started,
@@ -103,11 +126,13 @@ final class RepositoryActivity: Identifiable {
     ///   - repository: 带主机前缀的仓库身份；不属于仓库的托管服务请求为 nil。
     ///   - title: 已本地化的操作名称。
     ///   - started: 开始时间；读取结束后才插入的记录传入读取开始的时刻。
+    ///   - transfer: Remote 页记录的传输方向；其余两页为 nil。
     init(
         kind: ActivityKind,
         repository: RepositoryLocation?,
         title: String,
-        started: Date = Date()
+        started: Date = Date(),
+        transfer: ActivityTransfer? = nil
     ) {
         id = UUID()
         self.kind = kind
@@ -115,6 +140,7 @@ final class RepositoryActivity: Identifiable {
         isRestored = false
         self.title = title
         self.started = started
+        self.transfer = transfer
     }
 
     /// 用保存在本机的内容还原一条已结束的记录。
@@ -125,12 +151,13 @@ final class RepositoryActivity: Identifiable {
         isRestored = true
         title = record.title
         started = record.started
+        transfer = record.transfer
         state = record.state
         stdout = ActivityOutput(data: record.stdout)
         stderr = ActivityOutput(data: record.stderr)
     }
 
-    /// 执行器已经脱敏，此处只按管道追加原始数据，整段保留。
+    /// 执行器已经脱敏，此处只按管道追加原始数据，整段保留；stderr 的最后一行是带百分比的进度行时更新进度。
     func append(_ output: GitOutputEvent) {
         switch output {
         case .standardOutput(let data):
@@ -138,6 +165,16 @@ final class RepositoryActivity: Identifiable {
 
         case .standardError(let data):
             stderr.append(data)
+
+            // 带百分比的进度行，如 “Receiving objects:  45% (555/1234)”；按当前阶段显示，不是进度行的输出保留上一次的值
+            let percentLine = /^(?:remote: )?[A-Za-z ]+: +(\d+)% \(/
+
+            guard
+                let match = stderr.lastLine?.firstMatch(of: percentLine),
+                let percent = Int(match.1)
+            else { return }
+
+            progress = Double(min(percent, 100)) / 100
         }
     }
 }
@@ -362,6 +399,25 @@ private struct ActivityOutput {
 
     /// 上一个字节是回车；跨数据块保留，回车恰好落在块末尾时下一块仍会覆盖当前行。
     private var returned = false
+
+    /// 最后一个不只有空白的行，原样返回；没有这样的行时为 nil。
+    var lastLine: String? {
+        var end = data.endIndex
+
+        // 从末尾逐行向前找，只解码扫过的行
+        while end > data.startIndex {
+            let start = data[..<end].lastIndex(of: Self.newline).map { $0 + 1 } ?? data.startIndex
+            let line = String(decoding: data[start ..< end], as: UTF8.self)
+
+            if !line.trimmingCharacters(in: .whitespaces).isEmpty {
+                return line
+            }
+
+            end = max(start - 1, data.startIndex)
+        }
+
+        return nil
+    }
 
     /// 从已整理好的字节接着写，当前行从最后一个换行之后开始。
     init(data: Data = Data()) {

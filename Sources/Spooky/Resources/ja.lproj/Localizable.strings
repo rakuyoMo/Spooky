@@ -331,6 +331,7 @@
 "branch.track" = "リモートブランチを追跡";
 "branch.track.help" = "選択したリモートブランチを追跡するローカルブランチを作成します。";
 "branch.checkout" = "ブランチをチェックアウト";
+"branch.checkoutNamed" = "「%@」をチェックアウト";
 "branch.delete" = "ブランチを削除";
 "branch.copyName" = "ブランチ名をコピー";
 "branch.start" = "開始点：";
@@ -421,6 +422,9 @@
 "activity.result.changes" = "%1$ld 件更新、%2$ld 件追加、%3$ld 件削除";
 "activity.result.commits" = "Git コミットを %ld 件読み込みました";
 "activity.elapsed" = "%@ 秒";
+"activity.inProgress" = "進行中…";
+"activity.log.loading" = "読み込み中…";
+"activity.log.error" = "エラー";
 "dialog.options" = "オプション";
 "dialog.doNotAskAgain" = "今後確認しない";
 "menu.repository" = "リポジトリ";

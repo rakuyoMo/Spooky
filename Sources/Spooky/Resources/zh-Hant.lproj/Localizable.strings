@@ -331,6 +331,7 @@
 "branch.track" = "追蹤遠端分支";
 "branch.track.help" = "建立追蹤所選遠端分支的本機分支。";
 "branch.checkout" = "簽出分支";
+"branch.checkoutNamed" = "簽出 “%@”";
 "branch.delete" = "刪除分支";
 "branch.copyName" = "複製分支名稱";
 "branch.start" = "起點：";
@@ -421,6 +422,9 @@
 "activity.result.changes" = "更新 %1$ld 個，新增 %2$ld 個，刪除 %3$ld 個";
 "activity.result.commits" = "已載入 %ld 個 Git 提交";
 "activity.elapsed" = "%@ 秒";
+"activity.inProgress" = "進行中…";
+"activity.log.loading" = "正在載入…";
+"activity.log.error" = "錯誤";
 "dialog.options" = "選項";
 "dialog.doNotAskAgain" = "不再詢問";
 "menu.repository" = "儲存庫";

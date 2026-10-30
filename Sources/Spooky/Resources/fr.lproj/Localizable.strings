@@ -331,6 +331,7 @@
 "branch.track" = "Suivre la branche distante";
 "branch.track.help" = "Créer une branche locale qui suit la branche distante sélectionnée.";
 "branch.checkout" = "Basculer sur la branche";
+"branch.checkoutNamed" = "Basculer sur « %@ »";
 "branch.delete" = "Supprimer la branche";
 "branch.copyName" = "Copier le nom de la branche";
 "branch.start" = "Point de départ :";
@@ -421,6 +422,9 @@
 "activity.result.changes" = "%1$ld mis à jour, %2$ld ajoutés, %3$ld supprimés";
 "activity.result.commits" = "%ld commits Git chargés";
 "activity.elapsed" = "%@ s";
+"activity.inProgress" = "En cours…";
+"activity.log.loading" = "Chargement…";
+"activity.log.error" = "Erreur";
 "dialog.options" = "Options";
 "dialog.doNotAskAgain" = "Ne plus me demander";
 "menu.repository" = "Dépôt";

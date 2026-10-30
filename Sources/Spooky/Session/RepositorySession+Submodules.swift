@@ -215,7 +215,7 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text("submodule.add"),
-            activityKind: .remote
+            transfer: .pull
         )
     }
 
@@ -236,7 +236,7 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text(targets.count == 1 ? "submodule.fetch" : "submodule.fetchAll"),
-            activityKind: .remote
+            transfer: .fetch
         )
     }
 
@@ -253,7 +253,7 @@ extension RepositorySession {
                 try await RepositorySubmodules(runner: runner).update(targets, recursive: recursive, onOutput: output)
             },
             title: AppLocalization.text(targets?.count == 1 ? "submodule.update" : "submodule.updateAll"),
-            activityKind: .remote
+            transfer: .pull
         )
     }
 

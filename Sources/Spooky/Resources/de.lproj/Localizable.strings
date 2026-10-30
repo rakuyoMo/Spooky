@@ -331,6 +331,7 @@
 "branch.track" = "Remote-Branch verfolgen";
 "branch.track.help" = "Erstellt einen lokalen Branch, der den ausgewählten Remote-Branch verfolgt.";
 "branch.checkout" = "Branch auschecken";
+"branch.checkoutNamed" = "„%@“ auschecken";
 "branch.delete" = "Branch löschen";
 "branch.copyName" = "Branch-Namen kopieren";
 "branch.start" = "Ausgangspunkt:";
@@ -421,6 +422,9 @@
 "activity.result.changes" = "%1$ld aktualisiert, %2$ld hinzugefügt, %3$ld gelöscht";
 "activity.result.commits" = "%ld Git-Commits geladen";
 "activity.elapsed" = "%@ s";
+"activity.inProgress" = "In Bearbeitung …";
+"activity.log.loading" = "Wird geladen …";
+"activity.log.error" = "Fehler";
 "dialog.options" = "Optionen";
 "dialog.doNotAskAgain" = "Nicht mehr fragen";
 "menu.repository" = "Repository";

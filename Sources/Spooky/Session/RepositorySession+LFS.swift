@@ -22,6 +22,15 @@ enum LFSTransfer {
         case .push: AppLocalization.text("lfs.push")
         }
     }
+
+    /// Activity 记录的传输方向。
+    var activityTransfer: ActivityTransfer {
+        switch self {
+        case .fetch: .fetch
+        case .pull: .pull
+        case .push: .push
+        }
+    }
 }
 
 // MARK: - Availability
@@ -122,7 +131,7 @@ extension RepositorySession {
                 }
             },
             title: transfer.title,
-            activityKind: .remote
+            transfer: transfer.activityTransfer
         )
     }
 }

@@ -159,7 +159,6 @@ extension RepositoryActivities {
             let result = results.indices.contains(index) ? results[index] : nil
 
             activity.state = state
-            activity.result = result
 
             // 成功时一行结果就是日志，失败时日志是错误说明
             if let result {

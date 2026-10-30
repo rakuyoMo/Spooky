@@ -214,7 +214,7 @@ extension DeleteReferencesDialog {
                     }
                 },
                 title: title,
-                activityKind: .remote
+                transfer: .push
             )
 
         case .tags(let names):
@@ -230,7 +230,7 @@ extension DeleteReferencesDialog {
                     }
                 },
                 title: title,
-                activityKind: remote == nil ? .repository : .remote,
+                transfer: remote == nil ? nil : .push,
                 undo: remote == nil ? .reversible : .irreversible
             )
 

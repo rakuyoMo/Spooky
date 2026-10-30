@@ -109,7 +109,7 @@ extension FileViewsTests {
     private func results(_ key: String, in activities: RepositoryActivities) -> [String?] {
         activities.items
             .filter { $0.title == AppLocalization.text(key) }
-            .map(\.result)
+            .map(\.lastLine)
     }
 
     /// 等 HEAD 移动后文件历史、所选提交的原文与跟随 HEAD 的 Blame 都重读完。

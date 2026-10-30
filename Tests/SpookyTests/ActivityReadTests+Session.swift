@@ -161,7 +161,7 @@ extension ActivityReadTests {
     private func results(_ key: String, in activities: RepositoryActivities) -> [String?] {
         activities.items
             .filter { $0.title == AppLocalization.text(key) }
-            .map(\.result)
+            .map(\.lastLine)
     }
 
     /// 等引用、历史与储藏的读取结束；读取期间又要求的刷新在读完后另起任务，也一起等完。

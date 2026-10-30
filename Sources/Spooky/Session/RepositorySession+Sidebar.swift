@@ -94,7 +94,7 @@ extension RepositorySession {
                 { runner, _ in
                     try await RepositoryReferences(runner: runner).checkout(reference.id)
                 },
-                title: AppLocalization.text("branch.checkout"),
+                title: AppLocalization.text("branch.checkoutNamed", reference.name),
                 offersAutoStash: true,
                 undo: .reversible
             )
@@ -128,7 +128,7 @@ extension RepositorySession {
                         checkout: true
                     )
             },
-            title: AppLocalization.text("branch.checkout"),
+            title: AppLocalization.text("branch.checkoutNamed", reference.name),
             offersAutoStash: true,
             undo: .reversible
         )

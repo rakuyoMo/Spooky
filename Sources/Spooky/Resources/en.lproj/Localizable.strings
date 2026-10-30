@@ -331,6 +331,7 @@
 "branch.track" = "Track Remote Branch";
 "branch.track.help" = "Create a local branch that tracks the selected remote branch.";
 "branch.checkout" = "Check Out Branch";
+"branch.checkoutNamed" = "Check Out “%@”";
 "branch.delete" = "Delete Branch";
 "branch.copyName" = "Copy Branch Name";
 "branch.start" = "Starting Point:";
@@ -421,6 +422,9 @@
 "activity.result.changes" = "%1$ld updated, %2$ld added, %3$ld deleted";
 "activity.result.commits" = "Loaded %ld Git commits";
 "activity.elapsed" = "%@ sec";
+"activity.inProgress" = "In Progress…";
+"activity.log.loading" = "Loading…";
+"activity.log.error" = "Error";
 "dialog.options" = "Options";
 "dialog.doNotAskAgain" = "Do not ask me again";
 "menu.repository" = "Repository";
