@@ -211,6 +211,30 @@ struct RepositorySessionTests {
         #expect(session.selectedID?.path == "file")
     }
 
+    /// 子模块与工作树视图的目标不随仓库保存：切回仓库时显示历史，不留下没有选中项的空视图。
+    @Test("子模块与工作树视图切回仓库时显示历史")
+    func targetViewsFallBackToHistory() {
+        let session = RepositorySession(loadStatus: { _ in try snapshot("file") })
+        let first = RepositoryLocation.local(path: "/temporary/first-" + UUID().uuidString)
+        let second = RepositoryLocation.local(path: "/temporary/second-" + UUID().uuidString)
+        defer { session.close() }
+
+        session.display(first)
+        session.showSubmodule("lib")
+        session.display(second)
+        session.display(first)
+
+        #expect(session.activeView == .history)
+        #expect(session.submodules.selectedPath == nil)
+
+        session.showWorktree("/temporary/worktree")
+        session.display(second)
+        session.display(first)
+
+        #expect(session.activeView == .history)
+        #expect(session.worktrees.selectedPath == nil)
+    }
+
     /// 每个窗口最多 15 个仓库状态，超出时淘汰最久未使用的仓库。
     @Test("视图状态缓存淘汰最久未使用的仓库")
     func viewStateEviction() {
