@@ -1,4 +1,3 @@
-import AppKit
 import SpookyKit
 import SwiftUI
 
@@ -29,11 +28,10 @@ extension RepositorySidebarView {
         SubmoduleSidebarRow(
             submodule: submodule,
             summary: session.submodules.summaries[submodule.path]
-        ) {
-            SubmoduleMenu.menu(session: session, submodule: submodule)
-        }
+        )
         .tag(Self.submoduleRowPrefix + submodule.path)
         .onTapGesture(count: 2) { session.open(submodule) }
+        .appKitContextMenu { SubmoduleMenu.menu(session: session, submodule: submodule) }
     }
 }
 
@@ -46,9 +44,6 @@ private struct SubmoduleSidebarRow: View {
 
     /// 工作区概况；没有检出或读不到时为 nil。
     let summary: SubmoduleSummary?
-
-    /// 生成右键菜单；接右键的透明视图要挂在悬停提示里面，提示才能盖住它。
-    let menu: @MainActor () -> NSMenu
 
     /// 名称在左、徽标在右。
     var body: some View {
@@ -77,7 +72,6 @@ private struct SubmoduleSidebarRow: View {
                 SidebarBadge(segments: segments)
             }
         }
-        .appKitContextMenu(menu)
         .help(tooltip)
     }
 
