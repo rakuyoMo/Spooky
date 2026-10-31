@@ -120,9 +120,15 @@ struct RepositorySidebarView: View {
     @State
     var signatureTag: String?
 
+    /// 列表有键盘焦点。
+    @FocusState
+    var listFocused: Bool
+
     /// 分组顺序固定：Workspace、Pinned、Branches、Archived Branches、Tags、Remotes、Submodules、Worktrees。
     var body: some View {
         VStack(spacing: 0) {
+            // 列表按仓库区分身份，换了仓库就整个重建：列表显示过可展开的行（远端、文件夹）后，
+            // 行首一直留着展开箭头的位置，换成没有这类行的仓库也不收回；重建后与新开窗口的排版相同
             List(selection: selection) {
                 workspace
                 pinnedBranches
@@ -134,6 +140,8 @@ struct RepositorySidebarView: View {
                 worktreeGroup
             }
             .listStyle(.sidebar)
+            .focused($listFocused)
+            .id(session.repository)
 
             // 刚归档的分支数与撤销
             ArchiveNoticeView(session: session)
@@ -147,6 +155,7 @@ struct RepositorySidebarView: View {
         }
         .onChange(of: session.repository) {
             resetViewState()
+            restoreListFocus()
         }
     }
 
