@@ -44,6 +44,11 @@ final class AppIconController {
         "NSWorkspaceIconAppearanceConfigurationDidChangeNotification"
     )
 
+    /// `NSWorkspace` 读取当前图标样式配置的方法，不在公开头文件里。
+    private static let iconAppearanceConfigurationSelector = NSSelectorFromString(
+        "currentIconAppearanceConfiguration"
+    )
+
     /// 是否有服务器仓库连着：连着时 App 图标上的指示灯亮起。
     var isConnected = false {
         didSet {
@@ -97,6 +102,11 @@ final class AppIconController {
     /// 按当前样式与连接状态设一次图标，此后在样式或系统深浅变化时重新设置。
     func start() {
         updateIcon()
+
+        // AppKit 读过一次当前的样式配置之后，才在样式变化时发出下面这条通知（macOS 27 实测）。
+        if NSWorkspace.shared.responds(to: Self.iconAppearanceConfigurationSelector) {
+            _ = NSWorkspace.shared.perform(Self.iconAppearanceConfigurationSelector)
+        }
 
         // 样式变化时 AppKit 发出这条通知。
         iconStyleObservation = NSWorkspace.shared.notificationCenter.addObserver(
