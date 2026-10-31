@@ -118,7 +118,7 @@ struct SubmoduleMenu: View {
         Divider()
 
         Menu(AppLocalization.text("submodule.checkoutRevision")) {
-            revisionItems
+            SubmoduleRevisionMenu(session: session, submodule: submodule)
         }
         .disabled(!session.canCheckoutRevision(in: submodule))
 
@@ -160,36 +160,5 @@ struct SubmoduleMenu: View {
 
         Button(AppLocalization.text("submodule.delete.menu", name)) { session.requestSubmodule(.delete(submodule)) }
             .disabled(!session.canWrite)
-    }
-
-    /// Checkout Revision 子菜单：分支在前、标签在后，当前分支打勾且不可选。
-    @ViewBuilder
-    private var revisionItems: some View {
-        let revisions = session.submodules.revisions[submodule.path] ?? []
-        let branches = revisions.filter { !$0.isTag }
-        let tags = revisions.filter(\.isTag)
-
-        ForEach(branches) { revision in
-            Toggle(revision.name, isOn: checkoutBinding(revision))
-                .disabled(revision.isCurrent)
-        }
-
-        if !branches.isEmpty, !tags.isEmpty {
-            Divider()
-        }
-
-        ForEach(tags) { revision in
-            Button(revision.name) { session.checkoutSubmoduleRevision(revision, in: submodule) }
-        }
-    }
-
-    /// 分支项的勾选：当前分支打勾，选中别的分支即检出它。
-    private func checkoutBinding(_ revision: SubmoduleRevision) -> Binding<Bool> {
-        Binding(
-            get: { revision.isCurrent },
-            set: { checked in
-                if checked { session.checkoutSubmoduleRevision(revision, in: submodule) }
-            }
-        )
     }
 }

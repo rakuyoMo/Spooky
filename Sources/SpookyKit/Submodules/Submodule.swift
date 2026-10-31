@@ -256,7 +256,7 @@ public struct SubmoduleRevision: Sendable, Hashable, Identifiable {
     /// 完整引用名，如 `refs/heads/main`、`refs/tags/v1.0`。
     public let reference: String
 
-    /// 是子模块当前检出的分支。
+    /// 是子模块当前检出的版本：HEAD 停在的分支，或分离 HEAD 所在的标签。
     public let isCurrent: Bool
 
     /// 是标签：检出标签会分离 HEAD。

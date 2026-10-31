@@ -2077,6 +2077,7 @@
 "submodule.newName" = "새 이름:";
 "submodule.newName.placeholder" = "새 하위 모듈 이름";
 "submodule.newPath" = "새 경로:";
+"submodule.noRevisions" = "리비전 없음";
 "submodule.none" = "이 저장소에는 아직 하위 모듈이 없습니다.";
 "submodule.notAvailable" = "사용할 수 없음";
 "submodule.notInitialized" = "초기화되지 않음";

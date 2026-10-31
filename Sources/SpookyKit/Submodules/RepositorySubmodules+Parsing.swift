@@ -144,18 +144,45 @@ extension RepositorySubmodules {
         return records
     }
 
-    /// 解析 `for-each-ref --format=%(refname)%00%(HEAD)` 的输出，分支在前，各自按名称排序。
-    static func parseRevisions(_ data: Data) throws -> [SubmoduleRevision] {
-        let revisions = try data.split(separator: 10).map { line in
-            let fields = line.split(separator: 0, omittingEmptySubsequences: false)
+    /// 解析 `for-each-ref --format=%(refname)%00%(HEAD)%00%(objectname)%00%(*objectname)` 的输出，分支在前，各自按名称排序。
+    ///
+    /// HEAD 停在某个分支上时这个分支是当前版本；分离 HEAD 时，所指提交等于检出的提交的标签是当前版本，附注标签按它所指的对象比较。
+    ///
+    /// - Parameters:
+    ///   - data: 每行一个引用：引用名、HEAD 标记、对象与附注标签所指的对象，以 NUL 分隔。
+    ///   - checkedOut: 子模块里检出的提交。
+    static func parseRevisions(_ data: Data, checkedOut: String?) throws -> [SubmoduleRevision] {
+        let records = try data.split(separator: 10).map { line in
+            let fields = line.split(separator: 0, omittingEmptySubsequences: false).map {
+                String(decoding: $0, as: UTF8.self)
+            }
 
-            guard fields.count == 2, !fields[0].isEmpty else {
+            guard
+                fields.count == 4,
+                !fields[0].isEmpty,
+                GitObjectID.isValid(fields[2]),
+                fields[3].isEmpty || GitObjectID.isValid(fields[3])
+            else {
                 throw RepositoryReadError.malformedOutput("for-each-ref")
             }
 
+            // 只有附注标签有第四栏，取它所指的对象
+            return (
+                reference: fields[0],
+                isHead: fields[1] == "*",
+                commit: fields[3].isEmpty ? fields[2] : fields[3]
+            )
+        }
+
+        // 没有分支带 HEAD 标记就是分离 HEAD
+        let isDetached = !records.contains(where: \.isHead)
+
+        let revisions = records.map { record in
+            let isTag = record.reference.hasPrefix("refs/tags/")
+
             return SubmoduleRevision(
-                reference: String(decoding: fields[0], as: UTF8.self),
-                isCurrent: fields[1].elementsEqual([UInt8(ascii: "*")])
+                reference: record.reference,
+                isCurrent: isTag ? isDetached && record.commit == checkedOut : record.isHead
             )
         }
 

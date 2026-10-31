@@ -2077,6 +2077,7 @@
 "submodule.newName" = "新名称：";
 "submodule.newName.placeholder" = "新的子模块名称";
 "submodule.newPath" = "新路径：";
+"submodule.noRevisions" = "没有版本";
 "submodule.none" = "这个仓库还没有子模块。";
 "submodule.notAvailable" = "不可用";
 "submodule.notInitialized" = "未初始化";

@@ -2077,6 +2077,7 @@
 "submodule.newName" = "新しい名前：";
 "submodule.newName.placeholder" = "新しいサブモジュール名";
 "submodule.newPath" = "新しいパス：";
+"submodule.noRevisions" = "リビジョンがありません";
 "submodule.none" = "このリポジトリにはまだサブモジュールがありません。";
 "submodule.notAvailable" = "利用できません";
 "submodule.notInitialized" = "未初期化";

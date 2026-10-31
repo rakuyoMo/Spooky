@@ -2077,6 +2077,7 @@
 "submodule.newName" = "Nouveau nom :";
 "submodule.newName.placeholder" = "Nouveau nom du sous-module";
 "submodule.newPath" = "Nouveau chemin :";
+"submodule.noRevisions" = "Aucune révision";
 "submodule.none" = "Ce dépôt n’a pas encore de sous-modules.";
 "submodule.notAvailable" = "Non disponible";
 "submodule.notInitialized" = "Non initialisé";

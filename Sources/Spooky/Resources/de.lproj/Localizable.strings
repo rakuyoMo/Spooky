@@ -2077,6 +2077,7 @@
 "submodule.newName" = "Neuer Name:";
 "submodule.newName.placeholder" = "Neuer Submodulname";
 "submodule.newPath" = "Neuer Pfad:";
+"submodule.noRevisions" = "Keine Revisionen";
 "submodule.none" = "Dieses Repository hat noch keine Submodule.";
 "submodule.notAvailable" = "Nicht verfügbar";
 "submodule.notInitialized" = "Nicht initialisiert";

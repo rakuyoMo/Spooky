@@ -126,15 +126,17 @@ public struct RepositorySubmodules: Sendable {
             ?? values.keys.sorted().lazy.compactMap { ConfigRecords.nonEmpty(values[$0]) }.first
     }
 
-    /// 子模块里可以检出的本地分支与标签，分支在前，各自按名称排序。
+    /// 子模块里可以检出的本地分支与标签，分支在前，各自按名称排序；当前版本是 HEAD 停在的分支，或分离 HEAD 所在的标签。
     ///
     /// - Parameter submodule: 已检出的子模块。
     public func revisions(of submodule: Submodule) async throws -> [SubmoduleRevision] {
-        let output = try await runner.run(
-            ["-C", submodule.path, "for-each-ref", "--format=%(refname)%00%(HEAD)", "refs/heads", "refs/tags"]
-        )
+        let output = try await runner.run([
+            "-C", submodule.path, "for-each-ref",
+            "--format=%(refname)%00%(HEAD)%00%(objectname)%00%(*objectname)",
+            "refs/heads", "refs/tags",
+        ])
 
-        return try Self.parseRevisions(output)
+        return try Self.parseRevisions(output, checkedOut: submodule.checkedOut)
     }
 
     /// 本仓库作为子模块时父仓库工作区的绝对路径；不是子模块时为 nil。
