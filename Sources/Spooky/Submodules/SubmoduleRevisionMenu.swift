@@ -1,11 +1,12 @@
+import AppKit
 import SpookyKit
-import SwiftUI
 
 // MARK: - SubmoduleRevisionMenu
 
-/// 子模块右键菜单里的 Checkout Revision 子菜单：分离 HEAD 时最上面是检出的提交，再是 Branches 与 Tags 两组；
-/// 当前版本打勾且不可选，选中别的版本即在子模块里检出它。
-struct SubmoduleRevisionMenu: View {
+/// 子模块右键菜单里的 Checkout Revision 子菜单：分离 HEAD 时最上面是检出的提交，再是 Branches 与 Tags 两组，
+/// 组下的分支与标签缩进一级；当前版本打勾且不可选，选中别的版本即在子模块里检出它。
+@MainActor
+enum SubmoduleRevisionMenu {
     /// 子菜单里的一项。
     enum Item: Equatable {
         /// 分离 HEAD 且不在任何标签上时检出的提交，打勾且不可选。
@@ -27,19 +28,21 @@ struct SubmoduleRevisionMenu: View {
         case empty
     }
 
-    /// 所在窗口的会话。
-    let session: RepositorySession
+    /// 按 `items(revisions:checkedOut:)` 的顺序生成子菜单。
+    static func menu(session: RepositorySession, submodule: Submodule) -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
 
-    /// 子模块。
-    let submodule: Submodule
+        let items = items(
+            revisions: session.submodules.revisions[submodule.path],
+            checkedOut: submodule.checkedOut
+        )
 
-    /// 按 `items(revisions:checkedOut:)` 的顺序列出各项。
-    var body: some View {
-        let items = Self.items(revisions: session.submodules.revisions[submodule.path], checkedOut: submodule.checkedOut)
-
-        ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-            view(for: item)
+        for item in items {
+            menu.addItem(menuItem(for: item, session: session, submodule: submodule))
         }
+
+        return menu
     }
 
     /// 子菜单的各项：分离 HEAD 的提交、Branches 组、Tags 组依次排列，没有内容的组整组不列；前面有项目时才加分隔线。
@@ -78,38 +81,44 @@ struct SubmoduleRevisionMenu: View {
 
 extension SubmoduleRevisionMenu {
     /// 一项对应的菜单项。
-    @ViewBuilder
-    private func view(for item: Item) -> some View {
+    private static func menuItem(
+        for item: Item,
+        session: RepositorySession,
+        submodule: Submodule
+    ) -> NSMenuItem {
         switch item {
         case .detached(let commit):
-            Toggle(String(commit.prefix(8)), isOn: .constant(true))
-                .disabled(true)
+            return label(String(commit.prefix(8)), checked: true)
 
         case .separator:
-            Divider()
+            return .separator()
 
         case .branchesHeader:
-            Text(AppLocalization.text("branch.group"))
+            return label(AppLocalization.text("branch.group"))
 
         case .tagsHeader:
-            Text(AppLocalization.text("sidebar.tags"))
+            return label(AppLocalization.text("sidebar.tags"))
 
         case .revision(let revision):
-            Toggle(revision.name, isOn: checkoutBinding(revision))
-                .disabled(revision.isCurrent)
+            let action = FileViewAction(title: revision.name, enabled: !revision.isCurrent) {
+                session.checkoutSubmoduleRevision(revision, in: submodule)
+            }
+
+            let menuItem = FileViewMenuItem(action)
+            menuItem.state = revision.isCurrent ? .on : .off
+            menuItem.indentationLevel = 1
+            return menuItem
 
         case .empty:
-            Text(AppLocalization.text("submodule.noRevisions"))
+            return label(AppLocalization.text("submodule.noRevisions"))
         }
     }
 
-    /// 版本项的勾选：当前版本打勾，选中别的版本即检出它。
-    private func checkoutBinding(_ revision: SubmoduleRevision) -> Binding<Bool> {
-        Binding(
-            get: { revision.isCurrent },
-            set: { checked in
-                if checked { session.checkoutSubmoduleRevision(revision, in: submodule) }
-            }
-        )
+    /// 不可选的一项，组名与分离 HEAD 的提交都用它。
+    private static func label(_ title: String, checked: Bool = false) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        item.state = checked ? .on : .off
+        return item
     }
 }

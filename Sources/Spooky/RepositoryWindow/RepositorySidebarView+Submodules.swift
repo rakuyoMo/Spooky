@@ -1,3 +1,4 @@
+import AppKit
 import SpookyKit
 import SwiftUI
 
@@ -25,10 +26,14 @@ extension RepositorySidebarView {
 
     /// 子模块行：单击显示详情，双击当仓库打开，右键是子模块的操作。
     private func submoduleRow(_ submodule: Submodule) -> some View {
-        SubmoduleSidebarRow(submodule: submodule, summary: session.submodules.summaries[submodule.path])
-            .tag(Self.submoduleRowPrefix + submodule.path)
-            .onTapGesture(count: 2) { session.open(submodule) }
-            .contextMenu { SubmoduleMenu(session: session, submodule: submodule) }
+        SubmoduleSidebarRow(
+            submodule: submodule,
+            summary: session.submodules.summaries[submodule.path]
+        ) {
+            SubmoduleMenu.menu(session: session, submodule: submodule)
+        }
+        .tag(Self.submoduleRowPrefix + submodule.path)
+        .onTapGesture(count: 2) { session.open(submodule) }
     }
 }
 
@@ -41,6 +46,9 @@ private struct SubmoduleSidebarRow: View {
 
     /// 工作区概况；没有检出或读不到时为 nil。
     let summary: SubmoduleSummary?
+
+    /// 生成右键菜单；接右键的透明视图要挂在悬停提示里面，提示才能盖住它。
+    let menu: @MainActor () -> NSMenu
 
     /// 名称在左、徽标在右。
     var body: some View {
@@ -69,6 +77,7 @@ private struct SubmoduleSidebarRow: View {
                 SidebarBadge(segments: segments)
             }
         }
+        .appKitContextMenu(menu)
         .help(tooltip)
     }
 
@@ -95,70 +104,5 @@ private struct SubmoduleSidebarRow: View {
         }
 
         return name + "\n" + AppLocalization.text("submodule.tooltip.url", url)
-    }
-}
-
-// MARK: - SubmoduleMenu
-
-/// 子模块的右键菜单：打开、检出版本、获取与更新（按住 ⌥ 跳过对话框）、初始化、同步、移动、改名与删除。
-struct SubmoduleMenu: View {
-    /// 所在窗口的会话。
-    let session: RepositorySession
-
-    /// 子模块。
-    let submodule: Submodule
-
-    /// 分三组排列，组间以分隔线隔开。
-    var body: some View {
-        let name = submodule.name
-
-        Button(AppLocalization.text("submodule.open", name)) { session.open(submodule) }
-            .disabled(!submodule.isPopulated)
-
-        Divider()
-
-        Menu(AppLocalization.text("submodule.checkoutRevision")) {
-            SubmoduleRevisionMenu(session: session, submodule: submodule)
-        }
-        .disabled(!session.canCheckoutRevision(in: submodule))
-
-        Divider()
-
-        Button(AppLocalization.text("submodule.fetch.menu", name)) { session.requestSubmodule(.fetch(submodule)) }
-            .disabled(!session.canFetch(submodule))
-            .quickAlternate(AppLocalization.text("submodule.quickFetch", name), enabled: session.canFetch(submodule)) {
-                session.fetchSubmodules(
-                    [submodule],
-                    prunes: UserDefaults.standard.bool(forKey: SubmodulePreferences.fetchPrune)
-                )
-            }
-
-        Button(AppLocalization.text("submodule.update.menu", name)) { session.requestSubmodule(.update(submodule)) }
-            .disabled(!session.canModify(submodule))
-            .quickAlternate(AppLocalization.text("submodule.quickUpdate", name), enabled: session.canModify(submodule)) {
-                session.updateSubmodules(
-                    [submodule],
-                    recursive: UserDefaults.standard.bool(forKey: SubmodulePreferences.updateRecursive)
-                )
-            }
-
-        Button(AppLocalization.text("submodule.initialize.menu", name)) { session.requestSubmodule(.initialize(submodule)) }
-            .disabled(!session.canModify(submodule))
-
-        Button(AppLocalization.text("submodule.synchronize.menu", name)) {
-            session.requestSubmodule(.synchronize(submodule))
-        }
-        .disabled(!session.canSynchronize(submodule))
-
-        Divider()
-
-        Button(AppLocalization.text("submodule.move.menu", name)) { session.requestSubmodule(.move(submodule)) }
-            .disabled(!session.canModify(submodule))
-
-        Button(AppLocalization.text("submodule.rename.menu", name)) { session.requestSubmodule(.rename(submodule)) }
-            .disabled(!session.canModify(submodule))
-
-        Button(AppLocalization.text("submodule.delete.menu", name)) { session.requestSubmodule(.delete(submodule)) }
-            .disabled(!session.canWrite)
     }
 }
