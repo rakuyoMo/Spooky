@@ -20,24 +20,10 @@ extension SpookyApplicationController {
         addItem("help.diagnosticReport", action: #selector(createDiagnosticReport), target: self, to: help)
     }
 
-    /// App 菜单的关于窗口：图标、名称、版本与构建号，以及项目网站与许可证。
+    /// App 菜单的关于窗口：图标、名称、版本与 Release Notes，说明、版权与 Acknowledgements、License。
     @objc
     func showAbout() {
-        let credits = NSMutableAttributedString(
-            string: AppLocalization.text("about.credits"),
-            attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor]
-        )
-
-        if let website = HelpLinks.website {
-            credits.append(NSAttributedString(string: "\n"))
-            credits.append(NSAttributedString(
-                string: website.absoluteString,
-                attributes: [.font: NSFont.systemFont(ofSize: 11), .link: website]
-            ))
-        }
-
-        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
-        NSApp.activate(ignoringOtherApps: true)
+        AboutWindowController.show()
     }
 
     /// Help › Spooky Help：在浏览器里打开项目网站上的使用说明。

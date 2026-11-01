@@ -240,3 +240,4 @@ Spooky is licensed under the [GNU General Public License v3.0](LICENSE).
 
 - [Sparkle](https://sparkle-project.org) 2.10.0, used for updates. Licensed under the MIT License; the license ships with the app as `Contents/Resources/Sparkle-LICENSE.txt`
 - [highlight.js](https://highlightjs.org) 11.12.0, used for syntax coloring. Copyright (c) 2006, Ivan Sagalaev. Licensed under the BSD 3-Clause License; the full license is in [`Sources/Spooky/HighlightJS/LICENSE`](Sources/Spooky/HighlightJS/LICENSE) and ships with the app
+- [swift-subprocess](https://github.com/swiftlang/swift-subprocess) 1.0.1, used to launch Git and other subprocesses. Licensed under the Apache License 2.0; the license ships with the app as `Contents/Resources/Subprocess-LICENSE.txt`

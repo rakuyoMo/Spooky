@@ -240,3 +240,4 @@ Spooky 以 [GNU General Public License v3.0](LICENSE) 许可证发布。
 
 - [Sparkle](https://sparkle-project.org) 2.10.0，用于更新，以 MIT 许可证发布；许可证随 App 附在 `Contents/Resources/Sparkle-LICENSE.txt`
 - [highlight.js](https://highlightjs.org) 11.12.0，用于语法着色。Copyright (c) 2006, Ivan Sagalaev，以 BSD 3-Clause 许可证发布；许可证全文见 [`Sources/Spooky/HighlightJS/LICENSE`](Sources/Spooky/HighlightJS/LICENSE)，并随 App 一同分发
+- [swift-subprocess](https://github.com/swiftlang/swift-subprocess) 1.0.1，用于启动 Git 等子进程，以 Apache License 2.0 发布；许可证随 App 附在 `Contents/Resources/Subprocess-LICENSE.txt`

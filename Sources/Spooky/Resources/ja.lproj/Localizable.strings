@@ -1933,6 +1933,10 @@
 /* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "Spooky について";
 "about.credits" = "Spooky は GNU General Public License v3.0 で公開されているフリーソフトウェアです。";
+"about.title" = "このアプリケーションについて";
+"about.version" = "バージョン %1$@ (%2$@)";
+"about.acknowledgements" = "謝辞";
+"about.license" = "ライセンス";
 "menu.help" = "ヘルプ";
 "help.help" = "Spooky ヘルプ";
 "help.whatsNew" = "新機能";

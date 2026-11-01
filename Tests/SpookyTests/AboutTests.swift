@@ -1,0 +1,190 @@
+import AppKit
+import Testing
+
+@testable import Spooky
+
+// MARK: - AboutTests
+
+/// 关于窗口：固定尺寸的面板只建一个；Acknowledgements 按顺序列出三个库并接上各自的许可证；许可证的折行接回段落；文档 sheet 按 Esc 关闭。
+@MainActor
+struct AboutTests {
+    /// 面板内容 470 × 277、只能关闭，标题栏透明且不显示标题；Release Notes 与 Help 菜单是同一个动作；关掉后再打开仍是同一个窗口。
+    @Test("关于窗口")
+    func panel() throws {
+        AboutWindowController.show()
+        let window = try #require(AboutWindowController.shared?.window)
+        defer { window.close() }
+
+        #expect(window.contentRect(forFrameRect: window.frame).size == AboutWindowController.size)
+        #expect(window.styleMask == [.titled, .closable, .fullSizeContentView])
+        #expect(window.titlebarAppearsTransparent)
+        #expect(window.titleVisibility == .hidden)
+        #expect(!window.isMovableByWindowBackground)
+
+        let releaseNotes = try #require(Self.buttons(in: window.contentView).first {
+            $0.title == AppLocalization.text("help.releaseNotes")
+        })
+
+        #expect(releaseNotes.action == #selector(SpookyApplicationController.openReleaseNotes))
+        #expect(releaseNotes.target == nil)
+
+        // 再次打开只带到前面；关掉之后再打开沿用同一个窗口
+        AboutWindowController.show()
+        #expect(AboutWindowController.shared?.window === window)
+
+        window.close()
+        AboutWindowController.show()
+        #expect(AboutWindowController.shared?.window === window)
+        #expect(window.isVisible)
+    }
+
+    /// 版本行写出短版本号，构建号跟在后面的括号里。
+    @Test("版本行")
+    func versionLine() {
+        let line = AboutViewController.versionLine(info: ["CFBundleShortVersionString": "0.12.0", "CFBundleVersion": "7"])
+
+        #expect(line.contains("0.12.0 (7)"))
+    }
+
+    /// 许可证文件都在时，三个库按顺序出现，每个库的名称与版本、主页、许可证名称后面接着它的许可证全文；主页可以点开。
+    @Test("Acknowledgements 接上各库的许可证")
+    func acknowledgements() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-about-" + UUID().uuidString)
+        let highlightJS = directory.appending(path: "HighlightJS")
+        try FileManager.default.createDirectory(at: highlightJS, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        try Data("Sparkle license text".utf8).write(to: directory.appending(path: "Sparkle-LICENSE.txt"))
+        try Data("highlight.js license text".utf8).write(to: highlightJS.appending(path: "LICENSE"))
+        try Data("Subprocess license text".utf8).write(to: directory.appending(path: "Subprocess-LICENSE.txt"))
+
+        let document = AboutDocument.acknowledgements(AboutLibrary.bundled(resources: directory, highlightJS: highlightJS))
+        let text = document.string
+
+        let order = try [
+            "Sparkle 2.10.0\nhttps://sparkle-project.org\nMIT License\n\nSparkle license text\n",
+            "highlight.js 11.12.0\nhttps://highlightjs.org\nBSD 3-Clause License\n\nhighlight.js license text\n",
+            "swift-subprocess 1.0.1\nhttps://github.com/swiftlang/swift-subprocess\nApache License 2.0\n\nSubprocess license text\n",
+        ].map { try #require(text.range(of: $0)).lowerBound }
+
+        #expect(text.hasPrefix(AppLocalization.text("about.acknowledgements") + "\n"))
+        #expect(order == order.sorted())
+
+        let homepage = try #require(text.range(of: "https://highlightjs.org"))
+        let link = document.attribute(.link, at: NSRange(homepage, in: text).location, effectiveRange: nil) as? URL
+
+        #expect(link == URL(string: "https://highlightjs.org"))
+    }
+
+    /// 许可证文件不在时（`swift run` 没有 App 包），每个库只列名称与版本、主页与许可证名称。
+    @Test("缺少许可证文件时只列库的信息")
+    func acknowledgementsWithoutLicenses() {
+        let missing = FileManager.default.temporaryDirectory.appending(path: "spooky-about-missing-" + UUID().uuidString)
+        let document = AboutDocument.acknowledgements(AboutLibrary.bundled(resources: missing, highlightJS: nil))
+
+        #expect(document.string == """
+            \(AppLocalization.text("about.acknowledgements"))
+
+            Sparkle 2.10.0
+            https://sparkle-project.org
+            MIT License
+
+            highlight.js 11.12.0
+            https://highlightjs.org
+            BSD 3-Clause License
+
+            swift-subprocess 1.0.1
+            https://github.com/swiftlang/swift-subprocess
+            Apache License 2.0
+
+            """)
+    }
+
+    /// 手动折断的长行接回段落，缩进去掉；标题、版权行这些短行与列表项各自成行，空行仍然分段。
+    @Test("许可证的折行接回段落")
+    func reflow() {
+        let text = """
+                                GNU GENERAL PUBLIC LICENSE
+                               Version 3, 29 June 2007
+
+            Copyright (c) 2006 Example Author.
+            All rights reserved.
+
+            Redistribution and use in source and binary forms, with or without
+            modification, are permitted provided that the following conditions
+            are met:
+            1. Redistributions of source code must retain the above copyright
+               notice, this list of conditions and the following disclaimer.
+            2. Redistributions in binary form must reproduce the above copyright
+               notice, this list of conditions and the following disclaimer.
+
+            """
+
+        #expect(AboutDocument.reflow(text) == """
+            GNU GENERAL PUBLIC LICENSE
+            Version 3, 29 June 2007
+
+            Copyright (c) 2006 Example Author.
+            All rights reserved.
+
+            Redistribution and use in source and binary forms, with or without \
+            modification, are permitted provided that the following conditions are met:
+            1. Redistributions of source code must retain the above copyright \
+            notice, this list of conditions and the following disclaimer.
+            2. Redistributions in binary form must reproduce the above copyright \
+            notice, this list of conditions and the following disclaimer.
+            """)
+    }
+
+    /// License 显示重排后的许可证全文；文件读不到时没有文档。
+    @Test("License 的文档")
+    func license() throws {
+        let file = FileManager.default.temporaryDirectory.appending(path: "spooky-license-" + UUID().uuidString + ".txt")
+        try Data("GNU GENERAL PUBLIC LICENSE\n   Version 3\n".utf8).write(to: file)
+        defer { try? FileManager.default.removeItem(at: file) }
+
+        #expect(AboutDocument.license(at: file)?.string == "GNU GENERAL PUBLIC LICENSE\nVersion 3\n")
+        #expect(AboutDocument.license(at: file.appending(path: "missing")) == nil)
+    }
+
+    /// 文档 sheet 360 × 460，文本只读、可以选中；在关于窗口上打开后按 Esc 关闭。
+    @Test("文档 sheet")
+    func documentSheet() async throws {
+        AboutWindowController.show()
+        let window = try #require(AboutWindowController.shared?.window)
+        defer { window.close() }
+
+        let about = try #require(window.contentViewController)
+        let sheet = AboutDocumentViewController(document: NSAttributedString(string: "Document"))
+        about.presentAsSheet(sheet)
+
+        #expect(sheet.view.frame.size == AboutDocumentViewController.size)
+
+        let textView = try #require(Self.textView(in: sheet.view))
+        #expect(!textView.isEditable)
+        #expect(textView.isSelectable)
+        #expect(textView.string == "Document")
+
+        sheet.cancelOperation(nil)
+        try await FileViewsTests.wait { about.presentedViewControllers?.isEmpty ?? true }
+        #expect(window.attachedSheet == nil)
+    }
+}
+
+// MARK: - Helpers
+
+extension AboutTests {
+    /// 视图层级里的全部按钮。
+    private static func buttons(in view: NSView?) -> [NSButton] {
+        guard let view else {
+            return []
+        }
+
+        return (view as? NSButton).map { [$0] } ?? view.subviews.flatMap { buttons(in: $0) }
+    }
+
+    /// 视图层级里的第一个文本视图。
+    private static func textView(in view: NSView) -> NSTextView? {
+        (view as? NSTextView) ?? view.subviews.lazy.compactMap { textView(in: $0) }.first
+    }
+}

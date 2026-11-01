@@ -41,8 +41,11 @@ sparkle_framework="$app_directory/Contents/Frameworks/Sparkle.framework"
 mkdir -p "$app_directory/Contents/Frameworks"
 ditto "$binary_directory/Sparkle.framework" "$sparkle_framework"
 
-# Sparkle 以 MIT 许可证发布，随 App 附上它的版权与许可声明。
+# 关于窗口的 License 显示 Spooky 的许可证，Acknowledgements 列出 Sparkle（MIT）与 swift-subprocess（Apache 2.0）的许可证；
+# 两个库的版权与许可声明也随 App 一同分发。
+cp LICENSE "$app_directory/Contents/Resources/LICENSE.txt"
 cp .build/artifacts/sparkle/Sparkle/LICENSE "$app_directory/Contents/Resources/Sparkle-LICENSE.txt"
+cp .build/checkouts/swift-subprocess/LICENSE "$app_directory/Contents/Resources/Subprocess-LICENSE.txt"
 
 # 嵌套代码由内向外签名：先是 XPC 服务与辅助程序，再是框架；XPC 服务保留各自的 entitlements。
 for service in Downloader Installer; do

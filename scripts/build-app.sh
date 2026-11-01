@@ -28,6 +28,12 @@ rm -rf "$app_directory/Contents/Frameworks/Sparkle.framework"
 mkdir -p "$app_directory/Contents/Frameworks"
 ditto "$binary_directory/Sparkle.framework" "$app_directory/Contents/Frameworks/Sparkle.framework"
 
+# 关于窗口的 License 与 Acknowledgements 从 App 的资源目录读取 Spooky、Sparkle 与 swift-subprocess 的许可证。
+# swift-subprocess 的检出是只读的，拷出来的文件也只读；`-f` 让重新生成时能覆盖上一次的一份。
+cp -f LICENSE "$app_directory/Contents/Resources/LICENSE.txt"
+cp -f .build/artifacts/sparkle/Sparkle/LICENSE "$app_directory/Contents/Resources/Sparkle-LICENSE.txt"
+cp -f .build/checkouts/swift-subprocess/LICENSE "$app_directory/Contents/Resources/Subprocess-LICENSE.txt"
+
 # 各版本的更新说明供 Help › What's New 按版本列出；先删掉旧的一份，不残留已经删掉的说明。
 rm -rf "$app_directory/Contents/Resources/ReleaseNotes"
 
