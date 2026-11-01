@@ -39,7 +39,7 @@ struct ActivityReadTests {
         )
 
         #expect(finished.state == "activity.finished" && finished.cancel == nil)
-        #expect(finished.result == "Loaded 3" && finished.log == "Loaded 3")
+        #expect(finished.log == "Loaded 3")
         #expect(finished.started >= before)
         #expect((finished.elapsed ?? 0) >= 0.05)
 
@@ -51,7 +51,7 @@ struct ActivityReadTests {
         ) { 0 }
 
         #expect(activities.items.prefix(3).map(\.title) == ["C", "B", "A"])
-        #expect(activities.items.prefix(3).map(\.result) == [nil, nil, "1"])
+        #expect(activities.items.prefix(3).map(\.log) == ["", "", "1"])
 
         // 失败：日志是错误说明，错误照常抛出
         let error = RepositoryReadError.invalidQuery
@@ -63,7 +63,7 @@ struct ActivityReadTests {
         }
 
         let failed = try #require(activities.items.first)
-        #expect(failed.state == "activity.failed" && failed.result == nil)
+        #expect(failed.state == "activity.failed")
         #expect(failed.log == AppFailure(error: error, opening: false, location: location).details)
 
         // 取消：没有结果，日志为空
@@ -95,7 +95,7 @@ struct ActivityReadTests {
         superseded.cancel()
         #expect(try await superseded.value == 5)
         #expect(activities.items.first?.state == "activity.cancelled")
-        #expect(activities.items.first?.result == nil)
+        #expect(activities.items.first?.log.isEmpty ?? false)
 
         // 不记录时只执行读取
         let count = activities.items.count

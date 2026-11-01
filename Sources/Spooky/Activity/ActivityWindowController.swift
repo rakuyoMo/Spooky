@@ -12,7 +12,7 @@ final class ActivityWindowController: NSWindowController, NSToolbarDelegate {
     /// 当前页与搜索词，工具栏与内容共用。
     let state: ActivityWindowState
 
-    /// 551 × 299 pt 的初始内容分为活动列表与日志两栏，清除、分页与搜索放在工具栏。
+    /// 551 × 299 pt 的初始内容分为活动列表与日志两栏，清除、分页与搜索放在工具栏；列表与日志延伸到工具栏下面滚动。
     ///
     /// - Parameter activities: 窗口列出的记录，默认是 App 内唯一的活动列表。
     init(activities: RepositoryActivities = .shared) {
@@ -22,7 +22,7 @@ final class ActivityWindowController: NSWindowController, NSToolbarDelegate {
 
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 551, height: 299),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -83,65 +83,6 @@ final class ActivityWindowState {
     }
 }
 
-// MARK: - ActivityRow
-
-/// 活动列表的一行：仓库名与时刻、标题、一行结果或状态，进行中的带取消按钮。
-struct ActivityRow: View {
-    /// 这一行的记录。
-    let activity: RepositoryActivity
-
-    /// Repository 页已结束的记录在右上角写耗时，两位小数、按系统地区的数字格式；其余记录为 nil，写开始的时刻。
-    var elapsed: String? {
-        guard activity.kind == .repository, let seconds = activity.elapsed else {
-            return nil
-        }
-
-        let number = seconds.formatted(.number.precision(.fractionLength(2)))
-
-        return AppLocalization.text("activity.elapsed", number)
-    }
-
-    /// 第三行：有一行结果时写结果，否则写状态。
-    var status: String {
-        activity.result ?? AppLocalization.text(activity.state)
-    }
-
-    /// 第一行是仓库名与时刻，第二行是标题，第三行是结果或状态与取消按钮。
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                if let repository = activity.repository {
-                    Text(repository.name)
-                }
-
-                Spacer()
-
-                if let elapsed {
-                    Text(elapsed)
-                } else {
-                    Text(activity.started, style: .time)
-                }
-            }
-            .font(.system(size: 10))
-            .foregroundStyle(.secondary)
-
-            Text(activity.title).font(.system(size: 12, weight: .semibold))
-
-            HStack {
-                Text(status).font(.system(size: 11))
-
-                Spacer()
-
-                if let cancel = activity.cancel {
-                    Button(action: cancel) { Image(systemName: "stop.circle") }
-                        .buttonStyle(.borderless)
-                        .accessibilityLabel(AppLocalization.text("action.cancel"))
-                }
-            }
-        }
-    }
-}
-
 // MARK: - ActivityView
 
 /// 当前页的记录列表与所选记录的日志，日志可选择复制。
@@ -177,37 +118,25 @@ private struct ActivityView: View {
         }
     }
 
-    /// 左栏活动列表。
+    /// 左栏活动列表：行之间是命名色 `general_border_color` 的横线，行内的边距由行自己留出。
     private var activityList: some View {
         List(visible, selection: $selected) { activity in
-            ActivityRow(activity: activity)
-                .frame(minHeight: 59)
+            ActivityRow(activity: activity, isSelected: activity.id == selected)
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.visible)
+                .listRowSeparatorTint(AppPalette.color("general_border_color"))
                 .tag(activity.id)
         }
         .frame(minWidth: 200, idealWidth: 220)
     }
 
-    /// 右栏显示所选活动的仓库路径与原始日志，未选时显示空状态；没有仓库的记录只有日志。
+    /// 右栏显示所选活动的原始日志，未选时显示空状态；换一条记录时重建日志区，回到顶部。
     @ViewBuilder
     private var logPane: some View {
         if let activity = visible.first(where: { $0.id == selected }) {
-            VStack(alignment: .leading, spacing: 8) {
-                if let repository = activity.repository {
-                    Text(repository.displayPath)
-                        .font(.system(size: 11))
-                        .textSelection(.enabled)
-                }
-
-                ScrollView {
-                    Text(activity.log)
-                        .font(.system(size: 11, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .defaultScrollAnchor(.bottom)
-            }
-            .padding(20)
-            .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)
+            ActivityLogView(activity: activity)
+                .id(activity.id)
+                .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)
         } else {
             Text(AppLocalization.text("activity.empty"))
                 .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)

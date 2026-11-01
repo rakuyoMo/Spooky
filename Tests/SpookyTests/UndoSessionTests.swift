@@ -365,11 +365,16 @@ extension UndoSessionTests {
         let session: RepositorySession
 
         /// 建好仓库并读取一次完整状态。
-        init() async throws {
+        ///
+        /// - Parameter allowsFileSubmodules: 允许子模块经 file 协议克隆本机路径。
+        init(allowsFileSubmodules: Bool = false) async throws {
             directory = FileManager.default.temporaryDirectory.appending(path: "spooky-undo 撤销-" + UUID().uuidString)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
             location = RepositoryLocation.local(path: directory.path)
-            runner = try await FileViewsTests.initializeRepository(at: location)
+            runner = try await FileViewsTests.initializeRepository(
+                at: location,
+                allowsFileSubmodules: allowsFileSubmodules
+            )
 
             try Data("base\n".utf8).write(to: directory.appending(path: "a b.txt"))
             _ = try await runner.run(["add", "--all"])

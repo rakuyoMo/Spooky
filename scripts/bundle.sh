@@ -24,18 +24,16 @@ cp Sources/Spooky/AppIcon/*.icns "$app_directory/Contents/Resources/"
 ditto "$binary_directory/Spooky_Spooky.bundle" "$app_directory/Contents/Resources/Spooky_Spooky.bundle"
 ditto "$binary_directory/Spooky_SpookyKit.bundle" "$app_directory/Contents/Resources/Spooky_SpookyKit.bundle"
 
-# 系统权限弹窗从 App 自身的资源目录读取用途说明。
+# 系统权限弹窗与 Finder 从 App 自身的资源目录读取用途说明与文稿类型的名称。
 for locale in en zh-Hans zh-Hant ja ko de fr es; do
     mkdir -p "$app_directory/Contents/Resources/$locale.lproj"
     cp "Sources/Spooky/Resources/$locale.lproj/InfoPlist.strings" \
         "$app_directory/Contents/Resources/$locale.lproj/InfoPlist.strings"
 done
 
-# 这一版的更新说明供 Help › What's New 显示；还没有写更新说明的版本不放，菜单项随之不可用。
-version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Sources/Spooky/Info.plist)"
-
-if [[ -d "docs/release-notes/$version" ]]; then
-    ditto "docs/release-notes/$version" "$app_directory/Contents/Resources/ReleaseNotes"
+# 各版本的更新说明供 Help › What's New 按版本列出；一份说明都没有时不放，菜单项随之不可用。
+if [[ -d docs/release-notes ]]; then
+    ditto docs/release-notes "$app_directory/Contents/Resources/ReleaseNotes"
 fi
 
 # 更新框架连同符号链接、辅助程序与 XPC 服务原样放进 Contents/Frameworks，下载与安装更新时都要用到。
@@ -43,8 +41,11 @@ sparkle_framework="$app_directory/Contents/Frameworks/Sparkle.framework"
 mkdir -p "$app_directory/Contents/Frameworks"
 ditto "$binary_directory/Sparkle.framework" "$sparkle_framework"
 
-# Sparkle 以 MIT 许可证发布，随 App 附上它的版权与许可声明。
+# 关于窗口的 License 显示 Spooky 的许可证，Acknowledgements 列出 Sparkle（MIT）与 swift-subprocess（Apache 2.0）的许可证；
+# 两个库的版权与许可声明也随 App 一同分发。
+cp LICENSE "$app_directory/Contents/Resources/LICENSE.txt"
 cp .build/artifacts/sparkle/Sparkle/LICENSE "$app_directory/Contents/Resources/Sparkle-LICENSE.txt"
+cp .build/checkouts/swift-subprocess/LICENSE "$app_directory/Contents/Resources/Subprocess-LICENSE.txt"
 
 # 嵌套代码由内向外签名：先是 XPC 服务与辅助程序，再是框架；XPC 服务保留各自的 entitlements。
 for service in Downloader Installer; do

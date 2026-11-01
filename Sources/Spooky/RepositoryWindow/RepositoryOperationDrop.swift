@@ -238,7 +238,8 @@ extension RepositoryOperationDrop {
                     .renameRemoteBranch(parts.branch, on: parts.remote, to: name, onOutput: output)
             },
             title: AppLocalization.text("branch.renameRemote"),
-            activityKind: .remote
+            target: .push(parts.remote),
+            undo: .renamingRemoteBranch(parts.branch, on: parts.remote, to: name)
         )
     }
 }

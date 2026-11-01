@@ -156,6 +156,9 @@ extension RepositorySession {
     @discardableResult
     func deleteBranches(_ branches: [String], force: Bool, deletingUpstream: Bool) -> Bool {
         let tracked = deletingUpstream && branches.count == 1
+        let upstream = tracked
+            ? history.branches.first { $0.id == branches.first }?.upstreamRemote
+            : nil
 
         return performGit(
             { runner, output in
@@ -173,7 +176,7 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text(branches.count == 1 ? "branch.delete" : "branch.deleteMultiple"),
-            activityKind: tracked ? .remote : .repository,
+            target: tracked ? .push(upstream) : nil,
             undo: tracked ? .irreversible : .reversible
         )
     }
@@ -208,7 +211,7 @@ extension RepositorySession {
                 try await RepositoryTags(runner: runner).pushAll(to: remote, onOutput: output)
             },
             title: AppLocalization.text("tag.pushAll", remote),
-            activityKind: .remote
+            target: .push(remote)
         )
     }
 
@@ -218,7 +221,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositoryRemotes(runner: runner).setSkipsFetchAll(skips, for: remote)
             },
-            title: AppLocalization.text("remote.skipFetchAll.title")
+            title: AppLocalization.text("remote.skipFetchAll.title"),
+            undo: .changingRemote(remote)
         )
     }
 
@@ -234,7 +238,8 @@ extension RepositorySession {
 
                 performGit(
                     { runner, _ in try await RepositoryRemotes(runner: runner).unsetPushURL(of: remote) },
-                    title: AppLocalization.text("remote.pushURL.unset")
+                    title: AppLocalization.text("remote.pushURL.unset"),
+                    undo: .changingRemote(remote)
                 )
             },
             nil
@@ -256,7 +261,8 @@ extension RepositorySession {
                     { runner, _ in
                         try await RepositoryRemotes(runner: runner).removeRefspec(refspec, from: remote, push: push)
                     },
-                    title: title
+                    title: title,
+                    undo: .changingRemote(remote)
                 )
             },
             nil

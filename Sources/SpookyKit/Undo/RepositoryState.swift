@@ -69,7 +69,7 @@ public struct RepositoryState: Sendable, Equatable {
     /// 同一组引用剥离附注标签后的目标，与界面的引用快照比较时使用。
     public let peeledReferences: [String: String]
 
-    /// 仓库配置里各分支段的全部项，按配置文件中的顺序。
+    /// 仓库配置里各分支段的全部项：按分支名排列，同一分支的项按配置文件中的顺序。
     public let branchSettings: [BranchSetting]
 
     /// 储藏列表，从新到旧。

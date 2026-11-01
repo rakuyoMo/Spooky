@@ -42,9 +42,15 @@ struct RepositorySubmodulesTests {
         #expect(updated.checkedOut != repositories.upstreamHead)
         #expect(try await submodules.summary(of: updated) == SubmoduleSummary(changes: 1, ahead: 0, behind: 1))
 
-        // 分离 HEAD 时没有当前分支
+        // 分离 HEAD 时没有当前分支，所指提交就是检出的提交的标签是当前版本
+        _ = try await repositories.parent.run(["-C", "依赖/my lib", "tag", "旧版"])
         let revisions = try await submodules.revisions(of: updated)
-        #expect(revisions == [SubmoduleRevision(reference: "refs/heads/main", isCurrent: false)])
+        #expect(
+            revisions == [
+                SubmoduleRevision(reference: "refs/heads/main", isCurrent: false),
+                SubmoduleRevision(reference: "refs/tags/旧版", isCurrent: true),
+            ]
+        )
 
         try await submodules.checkout(try #require(revisions.first), in: updated)
         #expect(try await submodules.list().first?.state == .clean)
@@ -357,6 +363,45 @@ extension RepositorySubmodulesTests {
         }
     }
 
+    /// 分支在前、按名称排序；停在分支上时只有它是当前版本，分离 HEAD 时所指提交等于检出的提交的标签是当前版本，
+    /// 附注标签按它所指的对象比较；少一栏或对象不是哈希时报格式错误。
+    @Test("解析子模块里的版本")
+    func parseRevisions() throws {
+        let (head, other, tagObject) = (
+            String(repeating: "a", count: 40),
+            String(repeating: "b", count: 40),
+            String(repeating: "c", count: 40)
+        )
+
+        let output = { (marker: String) in
+            let lines = [
+                "refs/tags/v1.0\0\0\(tagObject)\0\(head)",
+                "refs/heads/特性/新版\0\0\(other)\0",
+                "refs/tags/v2\0\0\(head)\0",
+                "refs/heads/main\0\(marker)\0\(head)\0",
+                "refs/tags/轻量\0\0\(other)\0",
+            ]
+
+            return Data(lines.map { $0 + "\n" }.joined().utf8)
+        }
+
+        let onBranch = try RepositorySubmodules.parseRevisions(output("*"), checkedOut: head)
+        #expect(onBranch.map(\.name) == ["main", "特性/新版", "v1.0", "v2", "轻量"])
+        #expect(onBranch.filter(\.isCurrent).map(\.name) == ["main"])
+
+        // 没有分支带 HEAD 标记就是分离 HEAD
+        let detached = try RepositorySubmodules.parseRevisions(output(""), checkedOut: head)
+        #expect(detached.filter(\.isCurrent).map(\.name) == ["v1.0", "v2"])
+
+        #expect(try RepositorySubmodules.parseRevisions(Data(), checkedOut: head).isEmpty)
+
+        for malformed in ["refs/heads/main\0*\0\(head)\n", "refs/heads/main\0\0abc\0\n", "\0\0\(head)\0\n"] {
+            #expect(throws: RepositoryReadError.malformedOutput("for-each-ref")) {
+                try RepositorySubmodules.parseRevisions(Data(malformed.utf8), checkedOut: head)
+            }
+        }
+    }
+
     /// 相对地址按 Git 的规则逐级换算：网址与路径按 “/” 去掉一级，scp 写法去到主机时以 “:” 连接。
     @Test("换算相对地址")
     func resolvedURL() {
@@ -388,7 +433,7 @@ extension RepositorySubmodulesTests {
 // MARK: - SubmoduleRepositories
 
 /// 一个有两个提交的上游仓库与一个有一个提交的父仓库，都在同一个临时目录里。
-private struct SubmoduleRepositories {
+struct SubmoduleRepositories {
     /// 上游仓库的绝对路径。
     let upstreamPath: String
 

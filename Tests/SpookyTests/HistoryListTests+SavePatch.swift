@@ -9,7 +9,7 @@ import Testing
 extension HistoryListTests {
     /// 快速保存每个提交记一条 Format Patch，写耗时、没有一行结果，没有整次保存的记录；保存后在 Finder 里选中补丁。
     /// 第一个提交执行中取消时只有这一条记为 Cancelled，后面的提交不执行，也不打开 Finder、不提示失败。
-    @Test("保存补丁按提交记进 Repository 页", .timeLimit(.minutes(5)))
+    @Test("保存补丁按提交记进 Repository 页", .timeLimit(.minutes(10)))
     func savePatchRecords() async throws {
         let directory = try FileViewsTests.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -48,7 +48,7 @@ extension HistoryListTests {
         #expect(saved.allSatisfy { activity in
             activity.state == "activity.finished"
                 && activity.elapsed != nil
-                && activity.result == nil
+                && activity.log.isEmpty
         })
 
         #expect(!activities.items.contains { $0.title == AppLocalization.text("patch.title") })

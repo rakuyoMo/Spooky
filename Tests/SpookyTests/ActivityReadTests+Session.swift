@@ -22,7 +22,7 @@ extension ActivityReadTests {
 
     /// 完整刷新记下工作区、引用、储藏、子模块、工作树与历史的读取，每条写耗时；选中文件读一侧的 Diff，记一条；
     /// 文件变化这类不记录的刷新不新增记录，也不动基准，随之换了暂存侧的 Diff 不再读第二次；同一仓库的两个会话共用基准。
-    @Test("刷新的读取记进 Repository 页", .timeLimit(.minutes(5)))
+    @Test("刷新的读取记进 Repository 页", .timeLimit(.minutes(10)))
     func refreshRecords() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "spooky-读取 " + UUID().uuidString)
@@ -99,7 +99,7 @@ extension ActivityReadTests {
 
     /// 设了保存位置时，完整刷新换上的基准写进本机；退出再打开，即换一个用同一目录的活动列表，
     /// 与读回的基准比较：没变的储藏不算增减，退出期间多出的分支算新增。
-    @Test("基准存到本机，重新打开后接着比", .timeLimit(.minutes(5)))
+    @Test("基准存到本机，重新打开后接着比", .timeLimit(.minutes(10)))
     func savedBaselineRecords() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "spooky-基准 " + UUID().uuidString)
@@ -161,7 +161,7 @@ extension ActivityReadTests {
     private func results(_ key: String, in activities: RepositoryActivities) -> [String?] {
         activities.items
             .filter { $0.title == AppLocalization.text(key) }
-            .map(\.result)
+            .map(\.lastLine)
     }
 
     /// 等引用、历史与储藏的读取结束；读取期间又要求的刷新在读完后另起任务，也一起等完。

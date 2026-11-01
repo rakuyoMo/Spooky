@@ -1,1 +1,4 @@
-"NSAppleEventsUsageDescription" = "Spooky 使用所选终端程序打开仓库。";
+"NSAppleEventsUsageDescription" = "Spooky 使用所选终端程序打开仓库，并在所选比较工具中显示比较。";
+
+"Spooky Theme" = "Spooky 主题";
+"Folder" = "文件夹";

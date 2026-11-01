@@ -59,26 +59,26 @@ enum UserProfiles {
         return value.suffix(16).uppercased()
     }
 
-    /// 签名密钥菜单里一把密钥的名称：OpenPGP 是签名人与短指纹，SSH 是注释与指纹。
+    /// 签名密钥菜单里一把密钥的名称，各处的签名密钥菜单共用。
     ///
-    /// SSH 的注释是现有文件的路径时把家目录缩写成 `~`，没有注释时用密钥类型。
-    static func title(of key: SigningKey) -> String {
-        #warning(
-            "TODO: 签名密钥菜单项的写法是推断：OpenPGP 为 “签名人 (指纹末 16 位)”，SSH 为 “注释 (SHA256 指纹)”。核实方式：在编辑档案的对话框里打开签名密钥菜单，对照 GPG 与 SSH 密钥各一项的文字；只影响菜单项文字。"
-        )
+    /// GPG 写 `GPG: <签名人> (<指纹末 8 位>)`；SSH 的注释是现有文件时写 `SSH: <路径> (<指纹末 8 位>)`，路径的家目录缩写成 `~`，
+    /// 否则写 `SSH: (<指纹末 8 位>)`。SSH 的指纹末 8 位取 `SHA256:` 指纹字符串的最后 8 个字符。
+    ///
+    /// - Parameters:
+    ///   - key: 本机的一把签名密钥。
+    ///   - home: 用户主目录。
+    static func title(of key: SigningKey, home: String = NSHomeDirectory()) -> String {
+        let fingerprint = "(" + key.fingerprint.suffix(8) + ")"
 
         guard key.format == .ssh else {
-            return (key.signer.map { $0 + " " } ?? "") + "(" + keyDescription(key.value) + ")"
+            return "GPG: " + (key.signer.map { $0 + " " } ?? "") + fingerprint
         }
 
-        let type = key.value.dropFirst("key::".count).split(separator: " ").first.map(String.init) ?? ""
-        let comment = key.comment ?? ""
-        let home = FileManager.default.homeDirectoryForCurrentUser.path + "/"
-        let name = FileManager.default.fileExists(atPath: comment) && comment.hasPrefix(home)
-            ? "~/" + comment.dropFirst(home.count)
-            : comment
+        guard let comment = key.comment, FileManager.default.fileExists(atPath: comment) else {
+            return "SSH: " + fingerprint
+        }
 
-        return (name.isEmpty ? type : name) + " (" + key.fingerprint + ")"
+        return "SSH: " + HomePath.abbreviated(comment, home: home) + " " + fingerprint
     }
 }
 

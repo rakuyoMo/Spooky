@@ -275,15 +275,15 @@ public struct RepositoryReferences: Sendable {
         // 配置键的第一和最后一个点包住远端名，名字本身可含点。
         for record in configuration.split(separator: 0) {
             let key = String(decoding: record.prefix { $0 != 10 }, as: UTF8.self)
-            guard
-                key.hasPrefix("remote."), let last = key.lastIndex(of: "."),
-                last > key.index(key.startIndex, offsetBy: 6)
-            else {
+
+            guard key.hasPrefix("remote.") else {
                 throw RepositoryReadError.malformedOutput("remote config")
             }
 
+            // `remote.pushDefault` 这类不属于某个远端的键不产生远端
+            guard let name = RemoteConfiguration.remoteName(inKey: key) else { continue }
+
             // 每条配置连同结尾的分隔一起计入所属远端的摘要，相邻两条的边界不会混淆
-            let name = String(key[key.index(key.startIndex, offsetBy: 7) ..< last])
             settings[name, default: SHA256()].update(data: record + [0])
         }
 

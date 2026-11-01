@@ -33,7 +33,7 @@ extension UndoSessionTests {
         #expect(try fixture.read() == "base\n")
         #expect(!FileManager.default.fileExists(atPath: untracked.path))
 
-        let location = try #require(session.undoHistory?.undoEntries.last?.trashed.first?.location)
+        let location = try #require(Self.trashed(in: session.undoHistory?.undoEntries.last).first?.location)
         #expect(FileManager.default.fileExists(atPath: location))
         #expect(
             try await Self.settledState(of: session, redo: false) == .available(AppLocalization.text("working.discard"))
@@ -50,7 +50,7 @@ extension UndoSessionTests {
         #expect(try fixture.read() == "base\n")
         #expect(!FileManager.default.fileExists(atPath: untracked.path))
 
-        let again = try #require(session.undoHistory?.undoEntries.last?.trashed.first?.location)
+        let again = try #require(Self.trashed(in: session.undoHistory?.undoEntries.last).first?.location)
         #expect(FileManager.default.fileExists(atPath: again))
     }
 
@@ -66,7 +66,7 @@ extension UndoSessionTests {
 
         try await fixture.perform { session.delete([StatusEntry(kind: .unchanged, path: "a b.txt")]) }
         #expect(!FileManager.default.fileExists(atPath: fixture.directory.appending(path: "a b.txt").path))
-        #expect(session.undoHistory?.undoEntries.last?.trashed.count == 1)
+        #expect(Self.trashed(in: session.undoHistory?.undoEntries.last).count == 1)
 
         try await fixture.perform { session.undoLastOperation() }
         #expect(try fixture.read() == "base\n")
@@ -80,8 +80,14 @@ extension UndoSessionTests {
     static func emptyTrash(of session: RepositorySession) {
         let entries = (session.undoHistory?.undoEntries ?? []) + (session.undoHistory?.redoEntries ?? [])
 
-        for location in entries.flatMap(\.trashed).compactMap(\.location) {
+        for location in entries.flatMap({ trashed(in: $0) }).compactMap(\.location) {
             try? FileManager.default.removeItem(atPath: location)
         }
+    }
+
+    /// 快照记录里移进废纸篓的项；没有记录或是反向操作的记录时为空。
+    static func trashed(in entry: RepositoryUndoEntry?) -> [TrashedItem] {
+        guard case .snapshot(_, _, let trashed) = entry?.change else { return [] }
+        return trashed
     }
 }

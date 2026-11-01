@@ -125,6 +125,18 @@ extension WorkingCopyOperations {
         )
     }
 
+    /// 这几个路径里已标为 assume-unchanged 的，撤销设置或清除标记时据此只改回这次改了的路径。
+    ///
+    /// 不在暂存区里的路径不会出现在结果里。
+    ///
+    /// - Parameter paths: 仓库内的相对路径，按字面值匹配。
+    public func assumedUnchanged(_ paths: [String]) async throws -> Set<String> {
+        guard !paths.isEmpty else { return [] }
+
+        let output = try await runner.run(["--literal-pathspecs", "ls-files", "-z", "-v", "--"] + paths)
+        return Set(try IndexFile.parse(lsFilesVerbose: output).filter(\.assumeUnchanged).map(\.path))
+    }
+
     /// 把规则追加到忽略文件末尾，已有的同一条规则不重复写入；文件不存在时新建
     ///
     /// - Parameters:

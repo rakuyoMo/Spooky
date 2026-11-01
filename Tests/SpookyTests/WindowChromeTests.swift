@@ -25,8 +25,7 @@ struct WindowChromeTests {
         // 自定义面板里的每一项都能创建，每个按钮或分段的动作都由窗口响应
         let system: Set<NSToolbarItem.Identifier> = [.space, .flexibleSpace]
 
-        // Gerrit Push 只在开启 Gerrit 推送后出现在面板里，同样要能创建
-        for identifier in RepositoryToolbar.allowedItems + [RepositoryToolbar.gerritPush] where !system.contains(identifier) {
+        for identifier in RepositoryToolbar.allowedItems where !system.contains(identifier) {
             let item = try #require(
                 controller.toolbar(toolbar, itemForItemIdentifier: identifier, willBeInsertedIntoToolbar: false),
                 "无法创建工具栏项：\(identifier.rawValue)"
@@ -39,6 +38,15 @@ struct WindowChromeTests {
 
                 #expect(controller.responds(to: action), "没有响应者：\(identifier.rawValue)")
             }
+        }
+
+        // 全部暂存与提交只在主菜单里；以前保存的配置里留着这两个标识时创建不出项，由系统跳过
+        for identifier in [NSToolbarItem.Identifier("stageAll"), NSToolbarItem.Identifier("commit")] {
+            #expect(!RepositoryToolbar.allowedItems.contains(identifier))
+
+            #expect(
+                controller.toolbar(toolbar, itemForItemIdentifier: identifier, willBeInsertedIntoToolbar: false) == nil
+            )
         }
 
         // 本机仓库隐藏主机前缀，仓库管理入口只在显示仓库管理时选中

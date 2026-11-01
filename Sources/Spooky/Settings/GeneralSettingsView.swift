@@ -34,7 +34,11 @@ struct GeneralSettingsView: View {
     @AppStorage(SubmodulePreferences.alwaysUpdate)
     private var alwaysUpdateSubmodules = false
 
-    /// General 表单按功能分为六组，组间以分隔线隔开；控件列固定为 278 pt。
+    /// 在主菜单显示 Developer 菜单。
+    @AppStorage(DeveloperPreferences.showsMenuKey)
+    private var showsDeveloperMenu = false
+
+    /// General 表单按功能分为七组，组间以分隔线隔开；控件列固定为 278 pt。
     var body: some View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
             CloneDirectoryRow()
@@ -66,6 +70,11 @@ struct GeneralSettingsView: View {
                 .gridCellUnsizedAxes(.horizontal)
 
             WindowSettingsRows()
+
+            Divider()
+                .gridCellUnsizedAxes(.horizontal)
+
+            toggleRow("settings.showDeveloperMenu", isOn: $showsDeveloperMenu)
         }
         .padding(40)
         .frame(width: 900, alignment: .top)

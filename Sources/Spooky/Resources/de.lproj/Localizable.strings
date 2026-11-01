@@ -158,6 +158,9 @@
 "action.addRemote" = "Server-Repository hinzufügen …";
 "action.openTerminal" = "Im Terminal öffnen";
 "action.revealFinder" = "Im Finder zeigen";
+"action.revealFinder.notMounted" = "„%@“ ist auf diesem Mac nicht eingebunden. Sie können den lokalen Ordner in den Repository-Einstellungen festlegen.";
+"action.revealFinder.worktreeNotMounted" = "„%@“ ist auf diesem Mac nicht eingebunden.";
+"action.revealFinder.folderMissing" = "Der in den Repository-Einstellungen festgelegte lokale Ordner „%@“ wurde nicht gefunden.";
 "action.copyPath" = "Pfad kopieren";
 "action.reconnect" = "Erneut verbinden";
 "action.cancel" = "Abbrechen";
@@ -192,11 +195,12 @@
 "error.exitCode" = "Exit-Status: %ld";
 "terminal.notInstalled" = "%@ ist nicht installiert.";
 "themes.background" = "Hintergrund";
+"themes.selection" = "Auswahl";
 "themes.added" = "Hinzugefügt";
 "themes.deleted" = "Gelöscht";
-"themes.preview.context" = "  Unveränderter Text";
-"themes.preview.added" = "+ Hinzugefügter Text";
-"themes.preview.deleted" = "− Gelöschter Text";
+"themes.preview.context" = "Unveränderter Text";
+"themes.preview.added" = "Hinzugefügter Text";
+"themes.preview.deleted" = "Gelöschter Text";
 "remoteError.invalidHost" = "Ungültiger SSH-Host-Alias";
 "remoteError.invalidHost.help" = "Geben Sie einen einzelnen Host-Alias aus ~/.ssh/config ein, ohne Benutzernamen oder Port.";
 "remoteError.absolutePathRequired" = "Absoluter Pfad erforderlich";
@@ -327,6 +331,7 @@
 "branch.track" = "Remote-Branch verfolgen";
 "branch.track.help" = "Erstellt einen lokalen Branch, der den ausgewählten Remote-Branch verfolgt.";
 "branch.checkout" = "Branch auschecken";
+"branch.checkoutNamed" = "„%@“ auschecken";
 "branch.delete" = "Branch löschen";
 "branch.copyName" = "Branch-Namen kopieren";
 "branch.start" = "Ausgangspunkt:";
@@ -417,6 +422,23 @@
 "activity.result.changes" = "%1$ld aktualisiert, %2$ld hinzugefügt, %3$ld gelöscht";
 "activity.result.commits" = "%ld Git-Commits geladen";
 "activity.elapsed" = "%@ s";
+"activity.inProgress" = "In Bearbeitung …";
+"activity.log.loading" = "Wird geladen …";
+"activity.log.error" = "Fehler";
+"activity.fetching" = "Abrufen";
+"activity.fetchingNamed" = "Abrufen von %@";
+"activity.fetched" = "Abgerufen";
+"activity.fetchedNamed" = "Von %@ abgerufen";
+"activity.pulling" = "Pullen";
+"activity.pullingNamed" = "Pullen von %@";
+"activity.pulled" = "Gepullt";
+"activity.pulledNamed" = "Von %@ gepullt";
+"activity.pushing" = "Pushen";
+"activity.pushingNamed" = "Pushen nach %@";
+"activity.pushed" = "Gepusht";
+"activity.pushedNamed" = "Nach %@ gepusht";
+"activity.titleFailed" = "%@ fehlgeschlagen";
+"activity.titleCancelled" = "%@ abgebrochen";
 "dialog.options" = "Optionen";
 "dialog.doNotAskAgain" = "Nicht mehr fragen";
 "menu.repository" = "Repository";
@@ -448,13 +470,33 @@
 
 /* 主题管理。 */
 "themes.newName" = "Neues Thema";
-"themes.change" = "Ändern …";
 "themes.fontLabel" = "Schrift";
-"themes.text" = "Text";
+"themes.text" = "Schriftfarbe";
+"themes.token.text" = "Normaler Text";
+"themes.token.invisible" = "Unsichtbares Zeichen";
+"themes.token.keyword" = "Schlüsselwort";
+"themes.token.identifier" = "Bezeichner";
+"themes.token.function" = "Funktion";
+"themes.token.number" = "Zahl";
+"themes.token.string" = "Zeichenkette";
+"themes.token.symbol" = "Symbol";
+"themes.token.comment" = "Kommentar";
+"themes.token.preprocessor" = "Präprozessoranweisung";
+"themes.token.xmlTag" = "XML-Tag";
+"themes.token.attributeName" = "Attributname";
+"themes.token.attributeValue" = "Attributwert";
+"themes.token.cssSelector" = "CSS-Selektor";
+"themes.token.heading" = "Überschrift (Markdown)";
+"themes.token.codeBlock" = "Codeblock (Markdown)";
+"themes.token.delimiter" = "Trennzeichen (Markdown)";
+"themes.token.emphasized" = "Hervorgehoben";
+"themes.token.stronglyEmphasized" = "Stark hervorgehoben";
+"themes.token.url" = "URL (Markdown)";
 "themes.add" = "Thema hinzufügen";
 "themes.remove" = "Thema entfernen";
-"themes.invalidTitle" = "Nicht geladene Themen";
-"themes.invalid" = "Diese Themendateien konnten nicht geladen werden, weil sie beschädigt sind oder ihr Name bzw. ihre Kennung bereits von einem anderen Thema verwendet wird:";
+"themes.delete.title" = "Thema löschen?";
+"themes.delete.message" = "Das ausgewählte Thema wird gelöscht. Dieser Vorgang kann nicht widerrufen werden.";
+"themes.delete.confirm" = "Löschen";
 "themes.exists" = "Thema existiert bereits";
 "themes.exists.message" = "Unter „%@“ existiert bereits ein Thema. Möchten Sie es ersetzen?";
 "themes.replace" = "Ersetzen";
@@ -1152,7 +1194,7 @@
 "sync.forcePush" = "Force-Push";
 "sync.forcePush.help" = "Den Remote-Branch überschreiben, wenn kein Fast-Forward möglich ist. Der Push wird abgelehnt, wenn sich der Remote-Branch seit dem letzten Abrufen geändert hat.";
 "sync.pushRevision" = "Revision pushen";
-"sync.pushRevision.help" = "Die gewählte Revision zu einem Remote pushen. Geben Sie einen neuen oder vorhandenen Branch-Namen ein oder eine vollständige Referenz wie refs/for/main für ein Gerrit-Review.";
+"sync.pushRevision.help" = "Die gewählte Revision zu einem Remote pushen. Geben Sie einen neuen oder vorhandenen Branch-Namen ein oder eine vollständige Referenz wie refs/tags/v1.0.";
 "sync.remoteBranch" = "Remote-Branch:";
 "sync.destination" = "Ziel:";
 "sync.revision" = "Revision:";
@@ -1380,6 +1422,7 @@
 "review.archived.one" = "1 Branch archiviert";
 "review.archived.many" = "%ld Branches archiviert";
 "review.archived.undo" = "Widerrufen";
+"review.archived.notification" = "Branches automatisch aufgeräumt";
 "history.compareTo" = "Vergleichen mit:";
 "history.behindBase" = "„%1$@“ ist %2$ld Commits hinter „%3$@“";
 "history.compareBranches" = "Branches vergleichen";
@@ -1517,31 +1560,6 @@
 "gitConfig.error.read" = "Globale Git-Konfiguration kann nicht gelesen werden";
 "gitConfig.error.write" = "Globale Git-Konfiguration kann nicht gesichert werden";
 
-"gerrit.pushTitle" = "Zu Gerrit Code Review pushen";
-"gerrit.pushTitle.help" = "Pusht die gewählte Revision zur Prüfung in das gewählte Remote, als „refs/for/<Prüfungszweig>“.";
-"gerrit.push" = "Zu Gerrit pushen";
-"gerrit.reviewBranch" = "Prüfungszweig:";
-"gerrit.pushMenu" = "„%@“ zu Gerrit pushen…";
-"gerrit.quickPush" = "„%1$@“ schnell zu Gerrit pushen („%2$@ refs/for/%1$@“)";
-"settings.gerrit" = "Gerrit Code Review:";
-"settings.gerrit.enable" = "Einfaches Pushen zu Gerrit aktivieren";
-"issueTracking.url" = "Issue-Tracker-URL:";
-"issueTracking.prefix" = "Präfix für Issue-Nummern:";
-"issueTracking.notConfigured" = "Nicht konfiguriert";
-"issueTracking.edit" = "Bearbeiten";
-"issueTracking.invalid" = "Ungültige Issue-Tracker-URL";
-"issueTracking.title" = "Issue-Nummern erkennen";
-"issueTracking.title.help" = "Gib die URL-Vorlage deines Issue-Trackers und das Präfix ein, das in Commit-Nachrichten Issue-Nummern kennzeichnet.";
-"issueTracking.save" = "Sichern";
-"issueTracking.url.help" = "%@ markiert die Stelle der Issue-Nummer in der URL.";
-"issueTracking.prefix.help" = "Der Text vor einer Issue-Nummer, zum Beispiel #.";
-"issueTracking.url.placeholder" = "URL-Vorlage des Issue-Trackers";
-"issueTracking.error.prefixLength" = "Das Präfix für Issue-Nummern darf höchstens %d Zeichen lang sein.";
-"issueTracking.error.prefixWhitespace" = "Das Präfix für Issue-Nummern darf keine Leerzeichen enthalten.";
-"issueTracking.error.templateRequired" = "Gib eine Issue-Tracker-URL ein, um ein eigenes Präfix zu verwenden.";
-"issueTracking.error.templateWhitespace" = "Die Issue-Tracker-URL darf keine Leerzeichen enthalten.";
-"issueTracking.error.placeholders" = "Nur die Platzhalter {ISSUE_NUMBER}, {OWNER} und {REPOSITORY} werden unterstützt.";
-"issueTracking.error.template" = "Gib eine Webadresse mit dem Platzhalter {ISSUE_NUMBER} ein.";
 "profiles.create.title" = "Benutzerprofil erstellen";
 "profiles.create.message" = "Erstellt ein Benutzerprofil mit den eingegebenen Werten.";
 "profiles.create.submit" = "Erstellen";
@@ -1569,11 +1587,9 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH-Agent:";
 "settings.sshAgent.system" = "System-SSH-Agent";
-"settings.sshAgent.onePassword" = "1Password-SSH-Agent";
 "settings.sshAgent.description" = "Der ausgewählte SSH-Agent wird für SSH-Verbindungen und SSH-Signaturen verwendet.";
 "settings.sshAgent.warning" = "SSH-Agent läuft nicht";
-"settings.sshAgent.warning.system" = "Der System-SSH-Agent ist nicht verfügbar. Starten Sie den Mac neu oder wählen Sie einen anderen SSH-Agent.";
-"settings.sshAgent.warning.onePassword" = "Der 1Password-SSH-Agent läuft nicht. Aktivieren Sie den SSH-Agent in den Einstellungen von 1Password oder wählen Sie einen anderen SSH-Agent.";
+"settings.sshAgent.warning.system" = "Der System-SSH-Agent ist nicht verfügbar. Starten Sie den Mac neu.";
 
 /* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
 "settings.gitProgram" = "Git-Programm:";
@@ -1675,7 +1691,6 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "Terminal";
 "toolbar.quickActions" = "Schnellaktionen";
-"toolbar.gerritPush" = "Gerrit-Push";
 "launch.empty" = "Keine zuletzt benutzten Repositorys";
 "launch.version" = "Version %@";
 
@@ -1857,6 +1872,8 @@
 "clone.phase.filtering" = "Inhalt filtern";
 "clone.recent.title" = "Zuletzt geklonte Repositorys";
 "clone.recent.clear" = "Leeren";
+"clone.notification.title" = "Klonen abgeschlossen";
+"clone.notification.body" = "Nach „%@“ geklont.";
 "toolbar.clone" = "Klonen";
 "bookmarks.dropZone.clone" = "Klonen";
 "browse.title" = "Ordner auf „%@“ wählen";
@@ -1895,9 +1912,12 @@
 "repositorySettings.noPatterns" = "Keine Muster";
 "repositorySettings.name" = "Name";
 "repositorySettings.path" = "Pfad";
-"repositorySettings.issueTracking" = "Issue-Tracking";
-"repositorySettings.issueTrackerURL" = "Issue-Tracker-URL";
-"repositorySettings.issueNumberPrefix" = "Präfix für Issue-Nummern";
+"repositorySettings.localFolder" = "Lokaler Ordner";
+"repositorySettings.localFolder.none" = "Nicht festgelegt";
+"repositorySettings.localFolder.choose" = "Auswählen …";
+"repositorySettings.localFolder.clear" = "Entfernen";
+"repositorySettings.localFolder.rejected" = "Ordner kann nicht verwendet werden";
+"repositorySettings.localFolder.rejected.message" = "„%1$@“ ist nicht das Repository „%2$@“.";
 "repositorySettings.wrapping" = "Zeilenumbruch";
 "repositorySettings.pageGuide" = "Hilfslinie anzeigen";
 "repositorySettings.lineLimit" = "Zeichen pro Zeile";
@@ -1910,9 +1930,13 @@
 "repositorySettings.edit.title" = "%@ bearbeiten";
 "repositorySettings.edit.message" = "Dieser Wert wird in die lokale Git-Konfiguration dieses Repositorys geschrieben.";
 
-/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+/* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "Über Spooky";
 "about.credits" = "Spooky ist freie Software unter der GNU General Public License v3.0.";
+"about.title" = "Über";
+"about.version" = "Version %1$@ (%2$@)";
+"about.acknowledgements" = "Danksagungen";
+"about.license" = "Lizenz";
 "menu.help" = "Hilfe";
 "help.help" = "Spooky-Hilfe";
 "help.whatsNew" = "Neue Funktionen";
@@ -1920,7 +1944,18 @@
 "help.support" = "Support";
 "help.diagnosticReport" = "Diagnosebericht erstellen …";
 "help.diagnosticReport.file" = "Spooky-Diagnosebericht.txt";
-"whatsNew.title" = "Neu in Spooky %@";
+"whatsNew.previous" = "Vorherige";
+"whatsNew.previous.tip" = "Vorherige Versionshinweise zeigen";
+"whatsNew.next" = "Nächste";
+"whatsNew.next.tip" = "Nächste Versionshinweise zeigen";
+"whatsNew.entry.title" = "Versionshinweise zu Spooky %@";
+"whatsNew.entry.subtitle" = "Vollständige Versionshinweise ansehen";
+"whatsNew.unread" = "Ungelesen";
+"whatsNew.detail.title" = "Versionshinweise – Version %@";
+"whatsNew.empty" = "Wählen Sie eine Version aus, um ihre Versionshinweise anzuzeigen.";
+"whatsNew.card.title" = "Neu in Spooky";
+"whatsNew.card.message" = "Sehen Sie, was sich in Version %@ geändert hat.";
+"whatsNew.card.learnMore" = "Mehr erfahren …";
 "crash.issueTitle" = "Spooky wurde unerwartet beendet";
 "crash.title" = "Spooky wurde zuletzt unerwartet beendet";
 "crash.message" = "Möchten Sie das Problem auf GitHub melden? Im Browser öffnet sich eine neue Issue-Seite mit einer Zusammenfassung des Absturzes. Persönliche Pfade, E-Mail-Adressen und Netzwerkadressen sind entfernt, und es wird nichts gesendet, bevor Sie das Issue selbst absenden.";
@@ -1928,6 +1963,25 @@
 "crash.dontReport" = "Nicht melden";
 "settings.crashReports" = "Absturzberichte:";
 "settings.crashReports.always" = "Absturzberichte immer senden";
+
+/* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showDeveloperMenu" = "Menü „Developer“ anzeigen";
+"menu.developer" = "Developer";
+"developer.userDefaults" = "User Defaults";
+"developer.logUserDefaults" = "Log User Defaults";
+"developer.resetUserDefaults" = "Reset User Defaults";
+"developer.resetUserDefaults.title" = "Einstellungen zurücksetzen?";
+"developer.resetUserDefaults.message" = "Alle Einstellungen werden auf die Standardwerte zurückgesetzt. Lesezeichen, Benutzerprofile, Accounts und die für Server-Repositorys festgelegten lokalen Ordner bleiben erhalten. Einige Einstellungen ändern sich erst nach einem Neustart von Spooky.";
+"developer.resetUserDefaults.confirm" = "Zurücksetzen";
+"developer.clearUserDefaults" = "Clear User Defaults";
+"developer.testCrashReporting" = "Test Crash Reporting";
+"developer.crashWithException" = "Crash With Fake Exception";
+"developer.crashWithBadAccess" = "Crash With Bad Access";
+"developer.autoArchive" = "Auto-Archive Branches";
+"developer.runAutoArchive" = "Run Auto-Archive";
+"developer.resetAutoArchiveDates" = "Reset Auto-Archive Dates";
+"developer.showWhatsNewCard" = "Show What’s New Card";
+"developer.autoReload" = "Auto-Reload Repository";
 
 /* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "Der Server setzt Git-Umgebungsvariablen";
@@ -1954,6 +2008,7 @@
 "submodule.autoUpdate.skip" = "Nicht aktualisieren";
 "submodule.autoUpdate.update" = "Aktualisieren";
 "submodule.checkoutRevision" = "Revision auschecken";
+"submodule.checkoutSubmoduleRevision" = "Submodul-Revision auschecken";
 "submodule.default" = "%@ (Standard)";
 "submodule.delete" = "Submodul löschen";
 "submodule.delete.keepWorkingTree" = "Arbeitsverzeichnis behalten";
@@ -1961,6 +2016,7 @@
 "submodule.delete.menu" = "„%@“ löschen…";
 "submodule.delete.message" = "Entfernt das Submodul „%@“ aus diesem Repository.";
 "submodule.delete.submit" = "Löschen";
+"submodule.deleteSubmodules" = "Submodule löschen";
 "submodule.editURL" = "Submodul-URL bearbeiten";
 "submodule.editURL.message" = "Gib die URL des Submodul-Repositorys ein.";
 "submodule.editURL.submit" = "Ändern";
@@ -2025,6 +2081,7 @@
 "submodule.newName" = "Neuer Name:";
 "submodule.newName.placeholder" = "Neuer Submodulname";
 "submodule.newPath" = "Neuer Pfad:";
+"submodule.noRevisions" = "Keine Revisionen";
 "submodule.none" = "Dieses Repository hat noch keine Submodule.";
 "submodule.notAvailable" = "Nicht verfügbar";
 "submodule.notInitialized" = "Nicht initialisiert";
@@ -2049,7 +2106,9 @@
 "submodule.repair" = "Submodul reparieren";
 "submodule.repair.message" = "Versucht, das Submodul wieder gültig zu machen, indem die fehlende Konfiguration und das Arbeitsverzeichnis wiederhergestellt werden.";
 "submodule.repair.submit" = "Reparieren";
-"submodule.setting" = "Submodul-Einstellung ändern";
+"submodule.setFetchMode" = "Abrufmodus des Submoduls festlegen";
+"submodule.setIgnoreMode" = "Ignoriermodus des Submoduls festlegen";
+"submodule.setUpdateStrategy" = "Aktualisierungsstrategie des Submoduls festlegen";
 "submodule.state.clean" = "Sauber";
 "submodule.state.uninitialized" = "Nicht initialisiert";
 "submodule.state.unknown" = "Unbekannt";
@@ -2062,6 +2121,9 @@
 "submodule.synchronize.submit" = "Synchronisieren";
 "submodule.tooltip" = "Submodul „%@“";
 "submodule.tooltip.url" = "- URL: „%@“";
+"submodule.unsetFetchMode" = "Abrufmodus des Submoduls zurücksetzen";
+"submodule.unsetIgnoreMode" = "Ignoriermodus des Submoduls zurücksetzen";
+"submodule.unsetUpdateStrategy" = "Aktualisierungsstrategie des Submoduls zurücksetzen";
 "submodule.update" = "Submodul aktualisieren";
 "submodule.update.menu" = "„%@“ aktualisieren…";
 "submodule.update.message" = "Checkt das Submodul in der Revision aus, die im Index dieses Repositorys eingetragen ist.";
@@ -2121,7 +2183,6 @@
 "worktree.move.message" = "Verschiebt den Worktree „%@“ an einen anderen Ort und behält seinen aktuellen Zustand.";
 "worktree.move.submit" = "Verschieben";
 "worktree.noRefs" = "Dieses Repository hat noch keine Commits.";
-"worktree.open" = "Nach dem Erstellen öffnen";
 "worktree.open.current" = "Worktree öffnen";
 "worktree.open.newTab" = "Worktree in neuem Tab öffnen";
 "worktree.open.newWindow" = "Worktree in neuem Fenster öffnen";

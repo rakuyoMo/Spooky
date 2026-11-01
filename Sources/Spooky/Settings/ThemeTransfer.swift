@@ -2,7 +2,7 @@ import AppKit
 
 // MARK: - ThemeTransfer
 
-/// Themes 页的拖放导入、导出与出错提示：同名时询问是否覆盖，提示显示在设置窗口上。
+/// Themes 页的拖放导入、导出、删除确认与出错提示：同名时询问是否覆盖，提示显示在设置窗口上。
 @MainActor
 enum ThemeTransfer {
     /// 逐个导入主题文件：同名时询问是否覆盖，无法导入的文件各自报错，不影响其余文件。
@@ -26,18 +26,10 @@ enum ThemeTransfer {
         }
     }
 
-    /// 拖到 Finder 时写出主题文件；目标已有同名文件时先询问，不覆盖就当作用户取消。
+    /// 拖到 Finder 时把主题文件写到 Finder 给的路径；目标文件夹已有同名文件时，Finder 交来的已是改过名的路径。
     ///
-    /// 文件承诺在拖放结束后才要求写入，此时可以弹出模态提示。
+    /// 文件承诺在拖放结束后才要求写入，写入失败时可以弹出提示。
     static func writePromise(_ theme: TextTheme, to url: URL) -> Error? {
-        #warning("TODO: 把主题拖到已有同名文件的 Finder 文件夹，核实是弹出覆盖确认还是由 Finder 改名、确认框开着时 Finder 是否超时；只影响拖出导出的同名处理。")
-
-        let exists = FileManager.default.fileExists(atPath: url.path)
-
-        if exists, replaceAlert(url).runModal() != .alertFirstButtonReturn {
-            return CocoaError(.userCancelled)
-        }
-
         do {
             try theme.encoded().write(to: url, options: .atomic)
             return nil
@@ -52,6 +44,18 @@ enum ThemeTransfer {
     /// 询问是否覆盖已有的主题文件。
     static func confirmReplace(_ url: URL, window: NSWindow?) async -> Bool {
         await run(replaceAlert(url), in: window) == .alertFirstButtonReturn
+    }
+
+    /// 删除所选主题前询问：删除不能撤销，Delete 是默认按钮。
+    static func confirmDelete(window: NSWindow?) async -> Bool {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = AppLocalization.text("themes.delete.title")
+        alert.informativeText = AppLocalization.text("themes.delete.message")
+        alert.addButton(withTitle: AppLocalization.text("themes.delete.confirm"))
+        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
+
+        return await run(alert, in: window) == .alertFirstButtonReturn
     }
 
     /// 显示一次失败：标题说明是哪个操作，正文说明原因。

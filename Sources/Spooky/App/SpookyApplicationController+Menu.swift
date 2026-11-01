@@ -16,6 +16,7 @@ extension SpookyApplicationController {
         configureRepositoryMenu(in: menu)
         configureWorkingCopyMenu(in: menu)
         configureWindowMenu(in: menu)
+        configureDeveloperMenu(in: menu)
         configureHelpMenu(in: menu)
     }
 

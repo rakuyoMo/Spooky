@@ -1,1 +1,4 @@
-"NSAppleEventsUsageDescription" = "Spooky는 선택한 터미널 앱에서 저장소를 엽니다。";
+"NSAppleEventsUsageDescription" = "Spooky는 선택한 터미널 앱에서 저장소를 열고, 선택한 비교 도구에서 비교를 표시합니다.";
+
+"Spooky Theme" = "Spooky 테마";
+"Folder" = "폴더";

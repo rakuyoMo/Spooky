@@ -34,11 +34,6 @@ extension SyncDialog {
             revisionRow
             remoteRow
             refSpecRow
-
-        case .gerritPush:
-            revisionRow
-            remoteRow
-            reviewBranchRow
         }
     }
 
@@ -93,7 +88,7 @@ extension SyncDialog {
         case .forcePush:
             session.canPush && !checkingLease && (lease.map { $0.status != .sameRevision } ?? false)
 
-        case .pushRevision, .gerritPush:
+        case .pushRevision:
             session.canPushRevision
                 && !remote.isEmpty
                 && !source.trimmingCharacters(in: .whitespaces).isEmpty
@@ -146,16 +141,6 @@ extension SyncDialog {
                     }
                 }
                 .accessibilityLabel(AppLocalization.text("sync.refSpec"))
-        }
-    }
-
-    /// Gerrit 的评审分支，推送时写成 `refs/for/<评审分支>`。
-    private var reviewBranchRow: some View {
-        GridRow {
-            Text(AppLocalization.text("gerrit.reviewBranch")).gridColumnAlignment(.trailing)
-
-            TextField("", text: $destination)
-                .accessibilityLabel(AppLocalization.text("gerrit.reviewBranch"))
         }
     }
 

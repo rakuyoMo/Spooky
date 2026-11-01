@@ -18,13 +18,13 @@ extension RepositoryWindowController {
         }
     }
 
-    /// Finder 只能显示本机路径。
+    /// Finder 只能显示本机路径：仓库视图里的服务器仓库按查到的挂载换算，管理页里的服务器记录没有打开的会话，不能显示。
     @objc
     func revealInFinder() {
-        guard
-            let location = showsManager ? session.selectedRecentLocation : session.repository,
-            let url = location.localURL
-        else { return }
+        guard let url = showsManager ? session.selectedRecentLocation?.localURL : session.finderURL() else {
+            return
+        }
+
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
@@ -46,20 +46,16 @@ extension RepositoryWindowController {
         session.refresh(full: true)
     }
 
-    /// 提交菜单与工具栏聚焦已有的工作区标题框。
+    /// 提交菜单聚焦已有的工作区标题框。
     @objc
     func composeCommit() {
         if session.activeView != .workingCopy { showWorkingCopy() }
         session.commitFocusRequest += 1
     }
 
-    /// 全部暂存的工具栏入口支持 ⌥ 切换到全部取消暂存。
+    /// 主菜单的全部暂存动作。
     @objc
-    func stageAll() {
-        let unstage = NSEvent.modifierFlags.contains(.option)
-            && (session.status?.entries.contains(where: \.hasStagedChanges) ?? false)
-        session.stageAll(staged: !unstage)
-    }
+    func stageAll() { session.stageAll(staged: true) }
 
     /// 主菜单的独立取消暂存动作。
     @objc
@@ -100,10 +96,10 @@ extension RepositoryWindowController {
         session.performGit(
             { runner, output in
                 _ = try await RepositorySync(runner: runner)
-                    .fetch(prune: prune, allTags: tags, onOutput: output)
+                    .fetch(prune: prune, allTags: tags, onRemote: ActivityRecording.fetching, onOutput: output)
             },
             title: AppLocalization.text("sync.fetch"),
-            activityKind: .remote
+            target: .fetch(nil)
         )
     }
 
@@ -170,7 +166,7 @@ extension RepositoryWindowController {
                 cancel: { [weak sheet] in
                     if let sheet { window.endSheet(sheet) }
                 },
-                submit: { [weak self, weak sheet] title, action in
+                submit: { [weak self, weak sheet] title, target, undo, action in
                     // 只有写操作真正开始才关闭表单；仓库忙碌或断线时保留未发送的参数。
                     // 拉取与合并被本地改动挡住时按设置询问是否先储藏
                     guard
@@ -178,9 +174,9 @@ extension RepositoryWindowController {
                         session.performGit(
                             action,
                             title: title,
-                            activityKind: request.kind.activityKind,
+                            target: target,
                             offersAutoStash: [.pull, .merge].contains(request.kind),
-                            undo: [.create, .track, .merge].contains(request.kind) ? .reversible : .irreversible
+                            undo: undo
                         )
                     else { return false }
 
@@ -231,7 +227,7 @@ extension RepositoryWindowController {
             return (showsManager ? session.selectedRecentLocation : session.repository) != nil
 
         case #selector(revealInFinder):
-            return (showsManager ? session.selectedRecentLocation : session.repository)?.localURL != nil
+            return finderAvailability(of: item)
 
         case #selector(refreshRepository):
             return !showsManager
@@ -286,34 +282,32 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 工作区文件动作的可用性，按住 ⌥ 时全部暂存按全部取消暂存判断；动作不属于本组时为 nil。
+    /// 工作区文件动作的可用性；动作不属于本组时为 nil。
     private func workingCopyAvailability(of action: Selector?, repositoryView: Bool) -> Bool? {
         switch action {
         case #selector(composeCommit):
-            return repositoryView
+            repositoryView
 
         case #selector(stageAll):
-            let entries = session.status?.entries ?? []
-            let unstage = NSEvent.modifierFlags.contains(.option) && entries.contains(where: \.hasStagedChanges)
-            return repositoryView && (unstage ? session.canUnstage(entries) : session.canStage(entries))
+            repositoryView && session.canStage(session.status?.entries ?? [])
 
         case #selector(unstageAll):
-            return repositoryView && session.canUnstage(session.status?.entries ?? [])
+            repositoryView && session.canUnstage(session.status?.entries ?? [])
 
         case #selector(stageSelected):
-            return repositoryView && session.canStage(session.selectedEntries)
+            repositoryView && session.canStage(session.selectedEntries)
 
         case #selector(unstageSelected):
-            return repositoryView && session.canUnstage(session.selectedEntries)
+            repositoryView && session.canUnstage(session.selectedEntries)
 
         case #selector(discardSelected):
-            return repositoryView && session.canDiscard(session.selectedEntries)
+            repositoryView && session.canDiscard(session.selectedEntries)
 
         case #selector(discardAll):
-            return repositoryView && session.canDiscard(session.status?.entries ?? [])
+            repositoryView && session.canDiscard(session.status?.entries ?? [])
 
         default:
-            return nil
+            nil
         }
     }
 
@@ -340,5 +334,23 @@ extension RepositoryWindowController {
         default:
             return nil
         }
+    }
+
+    /// Show in Finder 的可用性；服务器仓库没有挂载到这台 Mac 时，菜单项与工具栏项的提示写明原因。
+    private func finderAvailability(of item: any NSValidatedUserInterfaceItem) -> Bool {
+        let tip = showsManager ? nil : session.finderUnavailableTip
+
+        if let menuItem = item as? NSMenuItem {
+            menuItem.toolTip = tip
+        } else if let toolbarItem = item as? NSToolbarItem {
+            updateButtonTip(toolbarItem)
+
+            // 不能显示时提示原因，代替平时的名称
+            if let tip {
+                toolbarItem.toolTip = tip
+            }
+        }
+
+        return showsManager ? session.selectedRecentLocation?.localURL != nil : session.canShowInFinder
     }
 }

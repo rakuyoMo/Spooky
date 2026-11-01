@@ -75,7 +75,7 @@ extension SettingsPage {
         AnyView(AccountsSettingsView())
     }
 
-    /// Gerrit 推送、Issue 追踪与 SSH agent 等与外部服务和工具的集成。
+    /// github.com 链接、SSH agent 与崩溃报告等与外部服务和工具的集成。
     static let integration = SettingsPage(key: "settings.integration", symbol: "gearshape.2") {
         AnyView(IntegrationSettingsView())
     }

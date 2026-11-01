@@ -79,6 +79,7 @@ extension StashListView {
         List(selection: Bindable(session.stashes).selectedIDs) {
             ForEach(visible) { stash in
                 StashRow(stash: stash, selected: session.stashes.selectedIDs.contains(stash.id))
+                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                     .tag(stash.id)
                     .onDrag { dragProvider(stash) }
             }
@@ -127,7 +128,7 @@ extension StashListView {
 
 // MARK: - StashRow
 
-/// 52 pt 的储藏行：上行左边是 “Based on” 与来源分支，日期靠右；下行是说明。
+/// 52 pt 的储藏行，文字距行的左右两边 20 pt：上行左边是 “Based on” 与来源分支，日期靠右；下行是说明。
 private struct StashRow: View {
     /// 当前储藏。
     let stash: StashEntry

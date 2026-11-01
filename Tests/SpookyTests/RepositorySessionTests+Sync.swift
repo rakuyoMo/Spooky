@@ -62,7 +62,7 @@ extension RepositorySessionTests {
         #expect(!paused.check(now: start.addingTimeInterval(100_000)))
     }
 
-    /// 自动获取失败不弹错误，原因记进 Activity。
+    /// 自动获取失败不弹错误，原因记进 Activity；获取全部远端时记录写上正在获取的远端。
     @Test("自动获取失败只记进 Activity")
     func autoFetchFailure() async throws {
         let directory = try temporaryDirectory()
@@ -85,11 +85,71 @@ extension RepositorySessionTests {
         }
 
         #expect(failures.isEmpty)
+        #expect(activity?.target == .fetch("origin"))
         #expect(activity?.state == "activity.failed")
         #expect(activity?.log.contains("does not appear to be a git repository") ?? false)
     }
 
-    /// 推送被拒时错误说明写明停在推送、获取与拉取已完成；没有跟踪分支的快速推送说明原因。
+    /// 同步里的推送记录只写远端分支：当前分支与远端分支不同名时也是，推上去的仍是当前分支的提交。
+    @Test("同步推送的标题只写远端分支")
+    func syncPushTitleUsesRemoteBranch() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let (runner, _) = try await makeSyncRepository(in: directory)
+        _ = try await runner.run(["switch", "-q", "-c", "topic"])
+        _ = try await runner.run(["commit", "--allow-empty", "-m", "topic"])
+
+        let session = try await openSession(runner)
+        defer { session.close() }
+
+        #expect(session.sync(remote: "origin", branch: "refs/heads/main", options: SyncOptions()))
+        await session.writeTask?.value
+
+        let records = RepositoryActivities.shared.items.filter {
+            $0.repository == runner.location && $0.kind == .remote
+        }
+
+        #expect(records.map(\.target) == [
+            .push("origin", refspec: "refs/heads/main"),
+            .pull("origin", refspec: "refs/heads/main"),
+        ])
+        #expect(records.allSatisfy { $0.state == "activity.finished" })
+
+        // 远端的 main 是 topic 的提交
+        let pushed = try await runner.run(["rev-parse", "--verify", "refs/remotes/origin/main"])
+        let topic = try await runner.run(["rev-parse", "--verify", "refs/heads/topic"])
+        #expect(pushed == topic)
+    }
+
+    /// 获取全部远端时每个远端记一条 Remote 记录，标题各写自己的远端；只是记录分条，仍是一次写操作。
+    @Test("获取全部远端每个远端记一条")
+    func fetchAllRecordsEachRemote() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let (runner, _) = try await makeSyncRepository(in: directory)
+        let session = try await openSession(runner)
+        defer { session.close() }
+
+        _ = try await runner.run(["remote", "add", "second", directory.appending(path: "remote.git").path])
+
+        #expect(session.autoFetch())
+        await session.writeTask?.value
+
+        let records = RepositoryActivities.shared.items.filter {
+            $0.repository == runner.location && $0.kind == .remote
+        }
+
+        let targets = records.compactMap(\.target).sorted { ($0.remote ?? "") < ($1.remote ?? "") }
+        #expect(targets == [.fetch("origin"), .fetch("second")])
+        #expect(records.count == 2)
+        #expect(records.allSatisfy { $0.state == "activity.finished" && $0.ended != nil })
+        #expect(records.allSatisfy { $0.title == AppLocalization.text("sync.autoFetch") })
+    }
+
+    /// 推送被拒时错误说明写明停在推送、获取与拉取已完成；Activity 把同步记成拉取与推送两条，拉取完成、推送失败，
+    /// 标题写上远端与 refspec。没有跟踪分支的快速推送说明原因。
     @Test("同步停下的步骤与快速推送缺少跟踪分支")
     func syncFailureNote() async throws {
         let directory = try temporaryDirectory()
@@ -119,6 +179,18 @@ extension RepositorySessionTests {
         let note = AppLocalization.text("sync.stopped", SyncProgress.name(.push), completed)
         #expect(failures.count == 1)
         #expect(failures.first?.message.hasPrefix(note) ?? false)
+
+        // 新的在前：推送记录在拉取记录之前
+        let records = RepositoryActivities.shared.items.filter {
+            $0.repository == runner.location && $0.kind == .remote
+        }
+
+        #expect(records.map(\.target) == [
+            .push("origin", refspec: "refs/heads/main"),
+            .pull("origin", refspec: "refs/heads/main"),
+        ])
+        #expect(records.map(\.state) == ["activity.failed", "activity.finished"])
+        #expect(records.first?.log.contains("pre-receive hook declined") ?? false)
 
         // 新分支没有跟踪分支，快速推送不开始写入，只说明原因
         _ = try await runner.run(["switch", "-q", "-c", "topic"])
@@ -161,21 +233,22 @@ extension RepositorySessionTests {
         #expect(RepositoryActionRequest(kind: .pull).resolved(for: untracked).kind == .pull)
     }
 
-    /// 获取、拉取、推送与发布要连接远端，记在 Activity 的 Remote 页；建分支、跟踪远端分支与合并只改本仓库，记在 Repository 页。
-    @Test("操作对话框的动作记在 Activity 的哪一页")
-    func actionActivityKinds() {
-        let kinds: [(RepositoryActionRequest.Kind, ActivityKind)] = [
-            (.fetch, .remote),
-            (.pull, .remote),
-            (.push, .remote),
-            (.publish, .remote),
-            (.create, .repository),
-            (.track, .repository),
-            (.merge, .repository),
+    /// 获取、拉取、推送与发布要连接远端，带传输方向记在 Activity 的 Remote 页，行首据此显示图标；
+    /// 建分支、跟踪远端分支与合并只改本仓库，没有方向，记在 Repository 页。
+    @Test("操作对话框的动作记在 Activity 的哪一页与传输方向")
+    func actionActivityTransfers() {
+        let transfers: [(RepositoryActionRequest.Kind, ActivityTransfer?)] = [
+            (.fetch, .fetch),
+            (.pull, .pull),
+            (.push, .push),
+            (.publish, .push),
+            (.create, nil),
+            (.track, nil),
+            (.merge, nil),
         ]
 
-        for (action, kind) in kinds {
-            #expect(action.activityKind == kind)
+        for (action, transfer) in transfers {
+            #expect(action.transfer == transfer)
         }
     }
 

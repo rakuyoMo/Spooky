@@ -19,15 +19,15 @@
       },
       "invisible": {
         "hex": "#000000",
-        "alpha": 1
+        "alpha": 0.3
       },
       "added": {
         "hex": "#28CD41",
-        "alpha": 0.18
+        "alpha": 0.12
       },
       "deleted": {
         "hex": "#FF3030",
-        "alpha": 0.18
+        "alpha": 0.12
       },
       "keyword": {
         "hex": "#9A2392",
@@ -114,11 +114,11 @@
         "alpha": 0.85
       },
       "background": {
-        "hex": "#000000",
+        "hex": "#161819",
         "alpha": 1
       },
       "selection": {
-        "hex": "#FBD1AD",
+        "hex": "#515B70",
         "alpha": 1
       },
       "invisible": {
@@ -127,11 +127,11 @@
       },
       "added": {
         "hex": "#32D74B",
-        "alpha": 0.18
+        "alpha": 0.1
       },
       "deleted": {
         "hex": "#FF453A",
-        "alpha": 0.2
+        "alpha": 0.1
       },
       "keyword": {
         "hex": "#FC5FA2",

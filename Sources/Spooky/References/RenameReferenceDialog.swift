@@ -174,7 +174,8 @@ extension RenameReferenceDialog {
                                 .renameRemoteBranch(parts.branch, on: parts.remote, to: name, onOutput: output)
                         },
                         title: title,
-                        activityKind: .remote
+                        target: .push(parts.remote),
+                        undo: .renamingRemoteBranch(parts.branch, on: parts.remote, to: name)
                     )
                 } else {
                     session.performGit(
@@ -188,6 +189,7 @@ extension RenameReferenceDialog {
                 session.performGit(
                     { runner, _ in try await RepositoryRemotes(runner: runner).rename(remote, to: name) },
                     title: title,
+                    undo: .renamingRemote(remote, to: name),
                     success: { [session] in
                         if session.selectedRemote == remote { session.selectedRemote = name }
                     }

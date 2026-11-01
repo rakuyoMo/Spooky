@@ -49,7 +49,7 @@ struct RepositorySidebarView: View {
     /// 终端入口。
     let openTerminal: () -> Void
 
-    /// 本机 Finder 入口。
+    /// Finder 入口；服务器仓库打开它在这台 Mac 上的挂载位置。
     let revealFinder: () -> Void
 
     /// 复制带主机前缀的路径。
@@ -120,9 +120,15 @@ struct RepositorySidebarView: View {
     @State
     var signatureTag: String?
 
+    /// 列表有键盘焦点。
+    @FocusState
+    var listFocused: Bool
+
     /// 分组顺序固定：Workspace、Pinned、Branches、Archived Branches、Tags、Remotes、Submodules、Worktrees。
     var body: some View {
         VStack(spacing: 0) {
+            // 列表按仓库区分身份，换了仓库就整个重建：列表显示过可展开的行（远端、文件夹）后，
+            // 行首一直留着展开箭头的位置，换成没有这类行的仓库也不收回；重建后与新开窗口的排版相同
             List(selection: selection) {
                 workspace
                 pinnedBranches
@@ -134,16 +140,22 @@ struct RepositorySidebarView: View {
                 worktreeGroup
             }
             .listStyle(.sidebar)
+            .focused($listFocused)
+            .id(session.repository)
 
             // 刚归档的分支数与撤销
             ArchiveNoticeView(session: session)
 
             activityRows
-            Divider()
+
+            // 新版本第一次启动时的新功能卡片
+            WhatsNewCard(state: .shared)
+
             bottomBar
         }
         .onChange(of: session.repository) {
             resetViewState()
+            restoreListFocus()
         }
     }
 
@@ -217,7 +229,8 @@ struct RepositorySidebarView: View {
             Divider()
             Button(AppLocalization.text("action.openTerminal"), action: openTerminal)
             Button(AppLocalization.text("action.revealFinder"), action: revealFinder)
-                .disabled(session.repository?.localURL == nil)
+                .disabled(!session.canShowInFinder)
+                .help(session.finderUnavailableTip ?? "")
             Button(AppLocalization.text("action.copyPath"), action: copyPath)
         }
     }

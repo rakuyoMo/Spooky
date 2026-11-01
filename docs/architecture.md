@@ -16,7 +16,7 @@ Spooky 由两个 target 组成：
 | 目录 | 职责 |
 |---|---|
 | `Execution/` | Git 命令执行、异步子进程与取消、命令结果与错误分类、仓库写队列、只读结果缓存 |
-| `Remote/` | SSH 主连接、连接体检、断线重连与写入核对、远端取消、包装器安装、远端输出的解析与脱敏 |
+| `Remote/` | SSH 主连接、连接体检、断线重连与写入核对、远端取消、包装器安装、远端输出的解析与脱敏、服务器目录在本机的挂载位置 |
 | `Host/` | 仓库还不存在时在目标机器上的操作：列目录、检查目标路径、新建、克隆与扫描 |
 | `Callback/` | 口令、密码、签名口令与编辑器的回调服务，以及本机 Git 的凭据回调 |
 | `Environment/` | 本机执行 Git 时的程序与环境：Git 程序、登录 shell 的环境变量、SSH agent |
@@ -39,7 +39,7 @@ Spooky 由两个 target 组成：
 
 | 目录 | 职责 |
 |---|---|
-| `App/` | 入口、窗口与菜单协调、本地化与错误说明、外观、命名色与文本区主题、链接解析 |
+| `App/` | 入口、窗口与菜单协调、本地化与错误说明、外观、命名色与文本区主题、链接解析、系统通知 |
 | `AppIcon/` | App 图标，随图标样式与连接状态切换 |
 | `Components/` | 空状态、错误详情、连接状态、头像等共用视图 |
 | `RepositoryManager/`、`Launch/`、`Clone/` | 仓库管理与书签、启动窗口，新建、克隆与扫描 |
@@ -56,7 +56,7 @@ Spooky 由两个 target 组成：
 | `Settings/`、`RepositorySettings/` | 设置窗口与仓库设置 |
 | `Accounts/`、`PullRequests/` | 托管账号、Pull Request 与 Merge Request |
 | `Submodules/`、`Worktrees/`、`LFS/` | 子模块、工作树与 Git LFS 的视图与对话框 |
-| `Help/` | Help 菜单、What's New、诊断报告与崩溃报告 |
+| `Help/` | 关于窗口、Help 菜单、What's New 与新功能卡片、诊断报告与崩溃报告 |
 | `Updates/` | Sparkle 更新器与更新通道 |
 | `HighlightJS/` | 随 App 打包的 highlight.js 与它的许可证 |
 | `Resources/` | 各语言文案、系统权限说明、命名色与内置主题 |
@@ -81,12 +81,17 @@ Spooky 由两个 target 组成：
 - 组合操作用 `GitRunner.writeTransaction` 持有仓库锁
 - 工作区的写入经 `WorkingCopyOperations` 发起：补丁以原始字节生成并核对快照，路径列表经字面 NUL 输入传递
 - App 内同一仓库同时只允许一个写操作（`RepositoryWriteLocks`）；菜单、工具栏、右键菜单与拖放统一使用 `RepositorySession` 的 `can…` 可用性规则
+- 写操作经 `RepositorySession.performGit(target:)` 声明记在 Activity 的哪一页：传了连接的对象（`ActivityTarget`：传输方向、远端名与 refspec）就记在 Remote 页，记录的标题与图标由它写出；没传的记在 Repository 页
+  - 一次写操作连接几个对象时分成几条记录，如获取全部远端时每个远端一条，同步的拉取与推送各一条：动作里经 task-local 的 `ActivityRecording` 另起记录，这些事件与 Git 输出走同一个流，先后不乱
+  - 核心库不知道 Activity，只报出分界：`RepositorySync.fetch` 获取全部远端时在每个远端开始前经 `onRemote` 报出远端名，`RepositorySync.sync` 在每一步开始前经 `onStep` 报出步骤；App 据此为每个远端、为同步的推送另起记录
 - 写操作经 `RepositorySession.performGit(undo:)` 声明与撤销记录的关系：
   - `.reversible`：只改仓库自己的引用、索引、工作区、储藏与 `branch.*` 配置
-  - `.irreversible`（默认）：改动远端、远端跟踪分支或其它配置
+  - `.inverse`：快照记不住的改动，如远端设置、assume-unchanged 标记、Git LFS 的启用，发布的分支与标签、重命名的远端分支，以及子模块的增删、移动、改名、本地设置与子模块里检出的版本；操作前读出撤销要用的内容，撤销时执行反向操作、先核对前提，重做时再执行一次原操作（添加子模块的重做复用撤销时留下的 Git 目录）；要推送的撤销与重做记在 Activity 的 Remote 页
+  - `.irreversible`（默认）：推送、删除远端引用这类其余改动服务器的操作，以及提交身份、exclude 规则或其它配置
   - `.unrecorded`：自动获取这类不由用户直接发起的操作，以及撤销、重做本身
 - 撤销的快照建在仓库所在的机器上，写进仓库自己的对象库；恢复前核对仓库仍与记录一致
 - 移进废纸篓的文件不进快照：写操作期间由 `TrashLog` 记下它们在废纸篓里的位置，撤销时移回原处，重做时重新移进废纸篓；废纸篓程序不报告位置时这次操作不能撤销
+- 发布分支与标签只连接一次远端：写操作期间由 `PushLog` 记下 `push --porcelain` 的逐条结果，新建了远端引用才登记撤销，已是最新时不碰撤销记录，快进了远端已有的分支与推送一样不能撤销
 
 ## 服务器仓库
 
@@ -100,6 +105,12 @@ Spooky 由两个 target 组成：
 - 文件读写经 `RepositoryFiles`；SFTP 经 `RemoteConnection.sftpCommand()` 接入同一主连接，读、写分别遵循主机并发与仓库写队列
 - 删除文件与丢弃未跟踪文件移进 B 的废纸篓：连接体检找出 B 上的程序，macOS 用系统自带的 `/usr/bin/trash`，Linux 依次找 `gio` 与 `trash-put`；都找不到时界面先确认，再永久删除
 - 服务器仓库里删除或覆盖文件前的确认都可以勾选不再提醒，Settings → General 逐项列出
+- Show in Finder：B 的目录经 SMB、NFS、AFP、WebDAV 或 sshfs 挂载到这台 Mac 时，`RemoteMountLocator` 找出它在本机的位置
+  - 找卷：比较 `ssh -G <别名>` 得到的主机与网络卷重新挂载地址里的主机解析出的地址
+  - 找目录：按远端路径从最长的后缀试起，在卷里找带 `.git` 的目录
+  - 核对：经 SSH 在 B 的 Git 目录里临时写一个随机命名的空文件，本机看得到才算同一个目录，随后删掉
+  - `RepositoryMountState` 按 B 上的目录缓存结果：仓库目录以外的工作树各自查找，读到工作树清单、这台 Mac 挂载或卸载卷时查找，结果只在本次运行里保留
+  - 仓库设置里可以为仓库目录手动指定本机目录：选定时按上面的办法核对一次，通过才记进这台 Mac 的偏好（`ServerLocalFolders`）；指定了就不再自动查找仓库目录，仓库目录以外的工作树照旧查找
 - 刷新：
   - 服务器仓库按 `RemoteConnection` 的常量轮询，前台 2 秒、后台 10 秒；只读 status 与所选文件的内容哈希，有变化才读取身份、引用、历史与 Diff
   - 本机仓库由 `RepositoryFileMonitor` 的递归 FSEvents 触发刷新
@@ -157,8 +168,10 @@ Spooky 由两个 target 组成：
 - 主题：
   - 一个主题一个 `.spookytheme` JSON，放在 `~/Library/Application Support/Spooky/Themes`
   - App 启动时由 `ThemeStore.installDefaultThemes()` 从 `BuiltinThemes.json` 写入 Default 与 Default (Dark)：只在文件缺少或无法加载、且名称没被别的主题占用时写
+    - 同名的主题仍是旧的默认配色时换成 `BuiltinThemes.json` 的配色，旧配色与它不同的几种颜色记在 `LegacyBuiltinThemeColors.json`
+  - Default 与 Default (Dark) 按名称认出，可以编辑，不能改名、删除
   - 浅色与深色外观各选一个主题；找不到时按名称回退到 Default 或 Default (Dark)，再退到 `BuiltinThemes.json` 里的版本
-  - Diff、原文、Blame 与主题示例取主题一律用 `TextTheme.current(dark:)`；在 SwiftUI 的 `body` 里调用，即随主题的编辑、切换与外观变化刷新
+  - Diff、原文、Blame 与 Themes 页的 Diff 预览取主题一律用 `TextTheme.current(dark:)`；在 SwiftUI 的 `body` 里调用，即随主题的编辑、切换与外观变化刷新
 - 语法着色、Tab 宽度与不可见字符的偏好集中在 `TextPreferences`；一行文本按 `TextStyle` 经 `TextLineRenderer` 渲染
 - 提交详情、储藏详情与文件历史的只读 Diff 共用 `ReadOnlyFileDiffView`
 - 语法着色经 `SyntaxHighlighter` 借用 highlight.js 的上下文执行

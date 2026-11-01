@@ -24,7 +24,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     private(set) var windows: [RepositoryWindowController] = []
 
     /// 单例设置窗口。
-    private var settingsWindow: SettingsWindowController?
+    private(set) var settingsWindow: SettingsWindowController?
 
     /// 跨仓库共用的 Activity 窗口。
     private var activityWindow: ActivityWindowController?
@@ -35,14 +35,17 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 正在退出时先回收自己的 SSH 主连接。
     private var isTerminating = false
 
+    /// 启动中交来的链接与文件：`applicationWillFinishLaunching` 起收集，启动收尾时处理；nil 表示不在启动中。
+    private var launchURLs: [URL]?
+
     /// 每个打开动作独立取消，避免旧目录的检查覆盖新选择。
     private var openingTasks: [UUID: Task<Void, Never>] = [:]
 
-    /// 仓库管理的拖入验证任务。
-    private var addingTasks: [UUID: Task<Void, Never>] = [:]
+    /// 仓库管理的拖入验证任务，以及从 Finder 或 Dock 打开文件夹时的仓库检查。
+    var addingTasks: [UUID: Task<Void, Never>] = [:]
 
     /// 当前响应菜单动作的仓库窗口。
-    private var activeWindow: RepositoryWindowController? {
+    var activeWindow: RepositoryWindowController? {
         (NSApp.keyWindow?.windowController as? RepositoryWindowController)
             ?? (NSApp.mainWindow?.windowController as? RepositoryWindowController)
     }
@@ -52,6 +55,11 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         self.bookmarks = bookmarks
         clones = CloneActivities(bookmarks: bookmarks)
         super.init()
+    }
+
+    /// 经链接或文件启动时，系统在启动完成之前交来它们；先存下，等外观、Git 程序与菜单都就绪后再处理。
+    func applicationWillFinishLaunching(_: Notification) {
+        launchURLs = []
     }
 
     /// 启动总是进入仓库管理，不以 shell 当前目录作为仓库。
@@ -91,8 +99,11 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         configureMenu()
         appIconController.start()
 
-        // 系统恢复了仓库窗口时不另开窗口；否则按偏好显示启动窗口或仓库管理
-        openInitialWindow()
+        // 补上 What's New 的已读记录，决定这次启动是否在侧边栏显示新功能卡片
+        WhatsNewState.shared.start()
+
+        // 先处理启动时交来的链接与文件，再按偏好显示启动窗口或仓库管理
+        finishLaunchOpenings()
         NSApp.activate(ignoringOtherApps: true)
 
         // 窗口与菜单就绪后启动更新器，按计划检查与手动检查都由它负责
@@ -150,10 +161,51 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         controller.addRemoteRepository()
     }
 
-    /// 打开 `spooky://` 与 github.com 的 “Open with Desktop” 链接：打开仓库与视图，或弹出克隆对话框；
-    /// 不认识或不可信的链接只显示错误。
+    /// 系统交来的链接与本机文件；启动中交来的先存下，由 `finishLaunchOpenings()` 处理。
     func application(_: NSApplication, open urls: [URL]) {
-        for url in urls {
+        guard launchURLs == nil else {
+            launchURLs?.append(contentsOf: urls)
+            return
+        }
+
+        openURLs(urls)
+    }
+
+    /// 处理启动中交来的链接与文件，再显示第一个窗口：系统已恢复窗口，或链接与文件已经开出窗口时不另开。
+    ///
+    /// 文件的处理可能先询问（主题同名、文件夹不是仓库），等询问与打开结束后再决定。
+    func finishLaunchOpenings() {
+        let openings = openURLs(launchURLs ?? [])
+        launchURLs = nil
+
+        guard !openings.isEmpty else {
+            openInitialWindow()
+            return
+        }
+
+        Task {
+            for opening in openings {
+                await opening.value
+            }
+
+            guard !isTerminating else {
+                return
+            }
+
+            openInitialWindow()
+        }
+    }
+
+    /// 打开 `spooky://` 与 github.com 的 “Open with Desktop” 链接：打开仓库与视图，或弹出克隆对话框；
+    /// 不认识或不可信的链接只显示错误。从 Finder 打开或拖到 Dock 图标上的本机文件交给 `openFiles(_:)`。
+    ///
+    /// - Returns: 打开文件的任务；它们结束前可能还没有开出窗口。
+    @discardableResult
+    func openURLs(_ urls: [URL]) -> [Task<Void, Never>] {
+        let files = urls.filter(\.isFileURL)
+        let openings = files.isEmpty ? [] : openFiles(files)
+
+        for url in urls where !url.isFileURL {
             guard let request = SpookyURL(url) else {
                 let alert = NSAlert()
                 alert.alertStyle = .warning
@@ -165,7 +217,11 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
             switch request {
             case .open(let location, let destination):
-                openRepository(at: location, from: activeWindow, inNewWindow: false, showing: destination)
+                // 一个窗口都没有时先开一个，打开中的状态与服务器的询问显示在里面，打开后仓库也显示在这里
+                let source = activeWindow ?? (windows.isEmpty ? makeWindow() : nil)
+                source?.showWindow(nil)
+
+                openRepository(at: location, from: source, inNewWindow: false, showing: destination)
 
             case .clone(let remote):
                 let controller = activeWindow ?? makeWindow()
@@ -173,6 +229,8 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
                 controller.presentClone(url: remote)
             }
         }
+
+        return openings
     }
 
     /// File › Clone Git Repository…：在前台的仓库窗口弹出克隆对话框，没有窗口时先开一个。
@@ -348,13 +406,15 @@ extension SpookyApplicationController {
     /// - Parameters:
     ///   - destination: 打开后切到的视图；nil 时显示仓库保存的视图状态。
     ///   - staysInSource: 后退、前进与窗口恢复在发起窗口里打开，不改用已显示这个仓库的其它窗口。
+    /// - Returns: 验证与打开的任务，结束时仓库或打开失败的说明已经显示；仓库还在克隆、直接显示进度时为 nil。
+    @discardableResult
     func openRepository(
         at location: RepositoryLocation,
         from source: RepositoryWindowController?,
         inNewWindow: Bool,
         showing destination: RepositoryDestination? = nil,
         staysInSource: Bool = false
-    ) {
+    ) -> Task<Void, Never>? {
         if let source {
             cancelOpening(in: source)
         }
@@ -366,14 +426,14 @@ extension SpookyApplicationController {
 
             destination.showWindow(nil)
             destination.showCloneProgress(activity)
-            return
+            return nil
         }
 
         let request = UUID()
         source?.openingRequest = request
         source?.session.isOpening = true
 
-        openingTasks[request] = Task { [weak self, weak source] in
+        let task = Task { [weak self, weak source] in
             guard let self else {
                 return
             }
@@ -410,6 +470,9 @@ extension SpookyApplicationController {
                 showOpeningFailure(error, at: location, from: source, inNewWindow: inNewWindow)
             }
         }
+
+        openingTasks[request] = task
+        return task
     }
 
     /// 已验证的本机和远端仓库共用窗口去重规则；显式新窗口不并进已有的标签组。

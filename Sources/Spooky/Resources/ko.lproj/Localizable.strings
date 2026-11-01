@@ -158,6 +158,9 @@
 "action.addRemote" = "서버 저장소 추가…";
 "action.openTerminal" = "터미널에서 열기";
 "action.revealFinder" = "Finder에서 보기";
+"action.revealFinder.notMounted" = "“%@”이(가) 이 Mac에 마운트되어 있지 않습니다. 저장소 설정에서 이 Mac의 폴더를 직접 지정할 수 있습니다.";
+"action.revealFinder.worktreeNotMounted" = "“%@”이(가) 이 Mac에 마운트되어 있지 않습니다.";
+"action.revealFinder.folderMissing" = "저장소 설정에서 지정한 이 Mac의 폴더 “%@”을(를) 찾을 수 없습니다.";
 "action.copyPath" = "경로 복사";
 "action.reconnect" = "다시 연결";
 "action.cancel" = "취소";
@@ -192,11 +195,12 @@
 "error.exitCode" = "종료 코드: %ld";
 "terminal.notInstalled" = "%@이(가) 설치되어 있지 않습니다.";
 "themes.background" = "배경";
+"themes.selection" = "선택 영역";
 "themes.added" = "추가";
 "themes.deleted" = "삭제";
-"themes.preview.context" = "  변경되지 않은 텍스트";
-"themes.preview.added" = "+ 추가된 텍스트";
-"themes.preview.deleted" = "− 삭제된 텍스트";
+"themes.preview.context" = "변경되지 않은 텍스트";
+"themes.preview.added" = "추가된 텍스트";
+"themes.preview.deleted" = "삭제된 텍스트";
 "remoteError.invalidHost" = "잘못된 SSH 호스트 별칭";
 "remoteError.invalidHost.help" = "~/.ssh/config의 호스트 별칭을 입력하세요. 사용자 이름이나 포트는 포함하지 마세요.";
 "remoteError.absolutePathRequired" = "절대 경로 필요";
@@ -327,6 +331,7 @@
 "branch.track" = "원격 브랜치 추적";
 "branch.track.help" = "선택한 원격 브랜치를 추적하는 로컬 브랜치를 만듭니다.";
 "branch.checkout" = "브랜치 체크아웃";
+"branch.checkoutNamed" = "“%@” 체크아웃";
 "branch.delete" = "브랜치 삭제";
 "branch.copyName" = "브랜치 이름 복사";
 "branch.start" = "시작점:";
@@ -417,6 +422,23 @@
 "activity.result.changes" = "%1$ld개 업데이트, %2$ld개 추가, %3$ld개 삭제";
 "activity.result.commits" = "Git 커밋 %ld개를 불러옴";
 "activity.elapsed" = "%@초";
+"activity.inProgress" = "진행 중…";
+"activity.log.loading" = "불러오는 중…";
+"activity.log.error" = "오류";
+"activity.fetching" = "가져오는 중";
+"activity.fetchingNamed" = "%@에서 가져오는 중";
+"activity.fetched" = "가져오기 완료";
+"activity.fetchedNamed" = "%@에서 가져오기 완료";
+"activity.pulling" = "풀 중";
+"activity.pullingNamed" = "%@에서 풀 중";
+"activity.pulled" = "풀 완료";
+"activity.pulledNamed" = "%@에서 풀 완료";
+"activity.pushing" = "푸시 중";
+"activity.pushingNamed" = "%@에 푸시 중";
+"activity.pushed" = "푸시 완료";
+"activity.pushedNamed" = "%@에 푸시 완료";
+"activity.titleFailed" = "%@ (실패)";
+"activity.titleCancelled" = "%@ (취소됨)";
 "dialog.options" = "옵션";
 "dialog.doNotAskAgain" = "다시 묻지 않음";
 "menu.repository" = "저장소";
@@ -448,13 +470,33 @@
 
 /* 主题管理。 */
 "themes.newName" = "새로운 테마";
-"themes.change" = "변경…";
 "themes.fontLabel" = "서체";
-"themes.text" = "텍스트";
+"themes.text" = "서체 색상";
+"themes.token.text" = "일반 텍스트";
+"themes.token.invisible" = "보이지 않는 문자";
+"themes.token.keyword" = "키워드";
+"themes.token.identifier" = "식별자";
+"themes.token.function" = "함수";
+"themes.token.number" = "숫자";
+"themes.token.string" = "문자열";
+"themes.token.symbol" = "기호";
+"themes.token.comment" = "주석";
+"themes.token.preprocessor" = "전처리기 문";
+"themes.token.xmlTag" = "XML 태그";
+"themes.token.attributeName" = "속성 이름";
+"themes.token.attributeValue" = "속성 값";
+"themes.token.cssSelector" = "CSS 선택자";
+"themes.token.heading" = "제목 (Markdown)";
+"themes.token.codeBlock" = "코드 블록 (Markdown)";
+"themes.token.delimiter" = "구분 기호 (Markdown)";
+"themes.token.emphasized" = "강조";
+"themes.token.stronglyEmphasized" = "강한 강조";
+"themes.token.url" = "URL (Markdown)";
 "themes.add" = "테마 추가";
 "themes.remove" = "테마 제거";
-"themes.invalidTitle" = "불러올 수 없는 테마";
-"themes.invalid" = "다음 테마 파일은 손상되었거나 이름 또는 식별자를 다른 테마가 이미 사용하고 있어 불러올 수 없습니다.";
+"themes.delete.title" = "테마를 삭제하겠습니까?";
+"themes.delete.message" = "선택한 테마를 삭제합니다. 이 작업은 실행 취소할 수 없습니다.";
+"themes.delete.confirm" = "삭제";
 "themes.exists" = "테마가 이미 있음";
 "themes.exists.message" = "“%@”에 이미 테마가 있습니다. 대치하시겠습니까?";
 "themes.replace" = "대치";
@@ -1152,7 +1194,7 @@
 "sync.forcePush" = "강제 푸시";
 "sync.forcePush.help" = "빨리 감기할 수 없을 때 원격 브랜치를 덮어씁니다. 마지막으로 가져온 뒤 원격 브랜치가 바뀌었으면 푸시를 거부합니다.";
 "sync.pushRevision" = "리비전 푸시";
-"sync.pushRevision.help" = "선택한 리비전을 원격으로 푸시합니다. 새 브랜치 이름이나 기존 브랜치 이름, 또는 Gerrit 리뷰용 refs/for/main 같은 전체 참조를 입력하세요.";
+"sync.pushRevision.help" = "선택한 리비전을 원격으로 푸시합니다. 새 브랜치 이름이나 기존 브랜치 이름, 또는 refs/tags/v1.0 같은 전체 참조를 입력하세요.";
 "sync.remoteBranch" = "원격 브랜치:";
 "sync.destination" = "대상:";
 "sync.revision" = "리비전:";
@@ -1380,6 +1422,7 @@
 "review.archived.one" = "브랜치 1개 보관함";
 "review.archived.many" = "브랜치 %ld개 보관함";
 "review.archived.undo" = "실행 취소";
+"review.archived.notification" = "브랜치를 자동으로 정리함";
 "history.compareTo" = "비교 대상:";
 "history.behindBase" = "“%1$@”은(는) “%3$@”보다 커밋 %2$ld개 뒤처짐";
 "history.compareBranches" = "브랜치 비교";
@@ -1517,31 +1560,6 @@
 "gitConfig.error.read" = "전역 Git 구성을 읽을 수 없음";
 "gitConfig.error.write" = "전역 Git 구성을 저장할 수 없음";
 
-"gerrit.pushTitle" = "Gerrit Code Review로 푸시";
-"gerrit.pushTitle.help" = "선택한 리비전을 선택한 원격에 리뷰용으로 푸시합니다. 푸시 대상은 “refs/for/<리뷰 브랜치>”입니다.";
-"gerrit.push" = "Gerrit으로 푸시";
-"gerrit.reviewBranch" = "리뷰 브랜치:";
-"gerrit.pushMenu" = "“%@”을(를) Gerrit으로 푸시…";
-"gerrit.quickPush" = "“%1$@”을(를) Gerrit “%2$@ refs/for/%1$@”(으)로 빠른 푸시";
-"settings.gerrit" = "Gerrit Code Review:";
-"settings.gerrit.enable" = "Gerrit 간편 푸시 사용";
-"issueTracking.url" = "이슈 트래커 URL:";
-"issueTracking.prefix" = "이슈 번호 접두사:";
-"issueTracking.notConfigured" = "설정되지 않음";
-"issueTracking.edit" = "편집";
-"issueTracking.invalid" = "유효하지 않은 이슈 트래커 URL";
-"issueTracking.title" = "이슈 번호 감지";
-"issueTracking.title.help" = "이슈 트래커의 URL 템플릿과 커밋 메시지에서 이슈 번호를 나타내는 접두사를 입력하십시오.";
-"issueTracking.save" = "저장";
-"issueTracking.url.help" = "%@은(는) URL에서 이슈 번호가 들어갈 위치를 나타냅니다.";
-"issueTracking.prefix.help" = "이슈 번호 앞에 붙는 문자입니다. 예: #";
-"issueTracking.url.placeholder" = "이슈 트래커 URL 템플릿";
-"issueTracking.error.prefixLength" = "이슈 번호 접두사는 %d자 이하여야 합니다.";
-"issueTracking.error.prefixWhitespace" = "이슈 번호 접두사에는 공백을 넣을 수 없습니다.";
-"issueTracking.error.templateRequired" = "사용자 지정 접두사를 사용하려면 이슈 트래커 URL을 입력하십시오.";
-"issueTracking.error.templateWhitespace" = "이슈 트래커 URL에는 공백을 넣을 수 없습니다.";
-"issueTracking.error.placeholders" = "{ISSUE_NUMBER}, {OWNER}, {REPOSITORY} 자리 표시자만 지원됩니다.";
-"issueTracking.error.template" = "{ISSUE_NUMBER} 자리 표시자가 포함된 웹 주소를 입력하십시오.";
 "profiles.create.title" = "사용자 프로필 생성";
 "profiles.create.message" = "입력한 값으로 사용자 프로필을 생성합니다.";
 "profiles.create.submit" = "생성";
@@ -1569,11 +1587,9 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH 에이전트:";
 "settings.sshAgent.system" = "시스템 SSH 에이전트";
-"settings.sshAgent.onePassword" = "1Password SSH 에이전트";
 "settings.sshAgent.description" = "선택한 SSH 에이전트는 SSH 연결과 SSH 서명에 사용됩니다.";
 "settings.sshAgent.warning" = "SSH 에이전트가 실행 중이 아님";
-"settings.sshAgent.warning.system" = "시스템 SSH 에이전트를 사용할 수 없습니다. Mac을 재시동하거나 다른 SSH 에이전트를 선택하세요.";
-"settings.sshAgent.warning.onePassword" = "1Password SSH 에이전트가 실행 중이 아닙니다. 1Password 설정에서 SSH 에이전트를 켜거나 다른 SSH 에이전트를 선택하세요.";
+"settings.sshAgent.warning.system" = "시스템 SSH 에이전트를 사용할 수 없습니다. Mac을 재시동하세요.";
 
 /* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
 "settings.gitProgram" = "Git 프로그램:";
@@ -1675,7 +1691,6 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "터미널";
 "toolbar.quickActions" = "빠른 동작";
-"toolbar.gerritPush" = "Gerrit 푸시";
 "launch.empty" = "최근 저장소 없음";
 "launch.version" = "버전 %@";
 
@@ -1857,6 +1872,8 @@
 "clone.phase.filtering" = "콘텐츠 필터링";
 "clone.recent.title" = "최근 복제한 저장소";
 "clone.recent.clear" = "지우기";
+"clone.notification.title" = "복제 완료";
+"clone.notification.body" = "“%@”에 복제했습니다.";
 "toolbar.clone" = "복제";
 "bookmarks.dropZone.clone" = "복제";
 "browse.title" = "“%@”의 폴더 선택";
@@ -1895,9 +1912,12 @@
 "repositorySettings.noPatterns" = "패턴 없음";
 "repositorySettings.name" = "이름";
 "repositorySettings.path" = "경로";
-"repositorySettings.issueTracking" = "이슈 추적";
-"repositorySettings.issueTrackerURL" = "이슈 추적기 URL";
-"repositorySettings.issueNumberPrefix" = "이슈 번호 접두사";
+"repositorySettings.localFolder" = "이 Mac의 폴더";
+"repositorySettings.localFolder.none" = "설정되지 않음";
+"repositorySettings.localFolder.choose" = "선택…";
+"repositorySettings.localFolder.clear" = "지우기";
+"repositorySettings.localFolder.rejected" = "이 폴더를 사용할 수 없음";
+"repositorySettings.localFolder.rejected.message" = "“%1$@”은(는) “%2$@” 저장소가 아닙니다.";
 "repositorySettings.wrapping" = "줄 바꿈";
 "repositorySettings.pageGuide" = "페이지 안내선 표시";
 "repositorySettings.lineLimit" = "줄당 글자 수 제한";
@@ -1910,9 +1930,13 @@
 "repositorySettings.edit.title" = "%@ 편집";
 "repositorySettings.edit.message" = "이 값은 이 저장소의 로컬 Git 설정에 기록됩니다.";
 
-/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+/* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "Spooky에 관하여";
 "about.credits" = "Spooky는 GNU General Public License v3.0으로 배포되는 자유 소프트웨어입니다.";
+"about.title" = "정보";
+"about.version" = "버전 %1$@ (%2$@)";
+"about.acknowledgements" = "감사의 말";
+"about.license" = "라이선스";
 "menu.help" = "도움말";
 "help.help" = "Spooky 도움말";
 "help.whatsNew" = "새로운 기능";
@@ -1920,7 +1944,18 @@
 "help.support" = "지원";
 "help.diagnosticReport" = "진단 보고서 생성…";
 "help.diagnosticReport.file" = "Spooky 진단 보고서.txt";
-"whatsNew.title" = "Spooky %@의 새로운 기능";
+"whatsNew.previous" = "이전";
+"whatsNew.previous.tip" = "이전 릴리스 노트 표시";
+"whatsNew.next" = "다음";
+"whatsNew.next.tip" = "다음 릴리스 노트 표시";
+"whatsNew.entry.title" = "Spooky %@ 릴리스 노트";
+"whatsNew.entry.subtitle" = "전체 릴리스 노트 보기";
+"whatsNew.unread" = "읽지 않음";
+"whatsNew.detail.title" = "릴리스 노트 – 버전 %@";
+"whatsNew.empty" = "릴리스 노트를 보려면 버전을 선택하세요.";
+"whatsNew.card.title" = "Spooky의 새로운 기능";
+"whatsNew.card.message" = "버전 %@의 변경 사항을 확인하세요.";
+"whatsNew.card.learnMore" = "더 알아보기…";
 "crash.issueTitle" = "Spooky가 예기치 않게 종료됨";
 "crash.title" = "Spooky가 지난번에 예기치 않게 종료됨";
 "crash.message" = "GitHub에서 이 문제를 보고하겠습니까? 브라우저에서 충돌 요약이 담긴 새 이슈 페이지가 열립니다. 개인 경로, 이메일 주소와 네트워크 주소는 제거되며, 직접 이슈를 제출하기 전에는 아무것도 전송되지 않습니다.";
@@ -1928,6 +1963,25 @@
 "crash.dontReport" = "보고 안 함";
 "settings.crashReports" = "충돌 보고서:";
 "settings.crashReports.always" = "항상 충돌 보고서 보내기";
+
+/* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showDeveloperMenu" = "Developer 메뉴 표시";
+"menu.developer" = "Developer";
+"developer.userDefaults" = "User Defaults";
+"developer.logUserDefaults" = "Log User Defaults";
+"developer.resetUserDefaults" = "Reset User Defaults";
+"developer.resetUserDefaults.title" = "환경설정을 재설정하겠습니까?";
+"developer.resetUserDefaults.message" = "모든 설정이 기본값으로 돌아갑니다. 책갈피, 사용자 프로필, 계정과 서버 저장소에 지정한 이 Mac의 폴더는 유지됩니다. 일부 설정은 Spooky를 다시 시작한 후에 바뀝니다.";
+"developer.resetUserDefaults.confirm" = "재설정";
+"developer.clearUserDefaults" = "Clear User Defaults";
+"developer.testCrashReporting" = "Test Crash Reporting";
+"developer.crashWithException" = "Crash With Fake Exception";
+"developer.crashWithBadAccess" = "Crash With Bad Access";
+"developer.autoArchive" = "Auto-Archive Branches";
+"developer.runAutoArchive" = "Run Auto-Archive";
+"developer.resetAutoArchiveDates" = "Reset Auto-Archive Dates";
+"developer.showWhatsNewCard" = "Show What’s New Card";
+"developer.autoReload" = "Auto-Reload Repository";
 
 /* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "서버가 Git 환경 변수를 설정함";
@@ -1954,6 +2008,7 @@
 "submodule.autoUpdate.skip" = "업데이트 안 함";
 "submodule.autoUpdate.update" = "업데이트";
 "submodule.checkoutRevision" = "리비전 체크아웃";
+"submodule.checkoutSubmoduleRevision" = "하위 모듈 리비전 체크아웃";
 "submodule.default" = "%@ (기본값)";
 "submodule.delete" = "하위 모듈 삭제";
 "submodule.delete.keepWorkingTree" = "작업 트리 유지";
@@ -1961,6 +2016,7 @@
 "submodule.delete.menu" = "“%@” 삭제…";
 "submodule.delete.message" = "이 저장소에서 하위 모듈 “%@”을(를) 삭제합니다.";
 "submodule.delete.submit" = "삭제";
+"submodule.deleteSubmodules" = "하위 모듈 삭제";
 "submodule.editURL" = "하위 모듈 URL 편집";
 "submodule.editURL.message" = "하위 모듈 저장소의 URL을 입력합니다.";
 "submodule.editURL.submit" = "변경";
@@ -2025,6 +2081,7 @@
 "submodule.newName" = "새 이름:";
 "submodule.newName.placeholder" = "새 하위 모듈 이름";
 "submodule.newPath" = "새 경로:";
+"submodule.noRevisions" = "리비전 없음";
 "submodule.none" = "이 저장소에는 아직 하위 모듈이 없습니다.";
 "submodule.notAvailable" = "사용할 수 없음";
 "submodule.notInitialized" = "초기화되지 않음";
@@ -2049,7 +2106,9 @@
 "submodule.repair" = "하위 모듈 복구";
 "submodule.repair.message" = "누락된 설정과 작업 트리를 복원해 하위 모듈을 다시 유효한 상태로 만듭니다.";
 "submodule.repair.submit" = "복구";
-"submodule.setting" = "하위 모듈 설정 변경";
+"submodule.setFetchMode" = "하위 모듈 가져오기 방식 설정";
+"submodule.setIgnoreMode" = "하위 모듈 무시 방식 설정";
+"submodule.setUpdateStrategy" = "하위 모듈 업데이트 방식 설정";
 "submodule.state.clean" = "깨끗함";
 "submodule.state.uninitialized" = "초기화 안 됨";
 "submodule.state.unknown" = "알 수 없음";
@@ -2062,6 +2121,9 @@
 "submodule.synchronize.submit" = "동기화";
 "submodule.tooltip" = "하위 모듈 “%@”";
 "submodule.tooltip.url" = "- URL: “%@”";
+"submodule.unsetFetchMode" = "하위 모듈 가져오기 방식 설정 해제";
+"submodule.unsetIgnoreMode" = "하위 모듈 무시 방식 설정 해제";
+"submodule.unsetUpdateStrategy" = "하위 모듈 업데이트 방식 설정 해제";
 "submodule.update" = "하위 모듈 업데이트";
 "submodule.update.menu" = "“%@” 업데이트…";
 "submodule.update.message" = "이 저장소의 인덱스에 기록된 리비전으로 하위 모듈을 체크아웃합니다.";
@@ -2121,7 +2183,6 @@
 "worktree.move.message" = "작업 트리 “%@”을(를) 현재 상태 그대로 다른 위치로 옮깁니다.";
 "worktree.move.submit" = "이동";
 "worktree.noRefs" = "이 저장소에는 아직 커밋이 없습니다.";
-"worktree.open" = "만든 후 열기";
 "worktree.open.current" = "작업 트리 열기";
 "worktree.open.newTab" = "새 탭에서 작업 트리 열기";
 "worktree.open.newWindow" = "새 윈도우에서 작업 트리 열기";

@@ -158,6 +158,9 @@
 "action.addRemote" = "加入伺服器儲存庫…";
 "action.openTerminal" = "在終端機中開啟";
 "action.revealFinder" = "在 Finder 中顯示";
+"action.revealFinder.notMounted" = "“%@” 沒有掛載到這台 Mac。可以在儲存庫設定裡手動指定它在本機的資料夾。";
+"action.revealFinder.worktreeNotMounted" = "“%@” 沒有掛載到這台 Mac。";
+"action.revealFinder.folderMissing" = "找不到儲存庫設定裡指定的本機資料夾 “%@”。";
 "action.copyPath" = "拷貝路徑";
 "action.reconnect" = "重新連線";
 "action.cancel" = "取消";
@@ -192,11 +195,12 @@
 "error.exitCode" = "結束碼：%ld";
 "terminal.notInstalled" = "尚未安裝 %@。";
 "themes.background" = "背景";
+"themes.selection" = "選取範圍";
 "themes.added" = "新增";
 "themes.deleted" = "刪除";
-"themes.preview.context" = "  未變更的文字";
-"themes.preview.added" = "+ 新增的文字";
-"themes.preview.deleted" = "− 刪除的文字";
+"themes.preview.context" = "未變更的文字";
+"themes.preview.added" = "新增的文字";
+"themes.preview.deleted" = "刪除的文字";
 "remoteError.invalidHost" = "SSH 主機別名無效";
 "remoteError.invalidHost.help" = "請輸入 ~/.ssh/config 中的一個主機別名，不包含使用者名稱或連接埠。";
 "remoteError.absolutePathRequired" = "需要絕對路徑";
@@ -327,6 +331,7 @@
 "branch.track" = "追蹤遠端分支";
 "branch.track.help" = "建立追蹤所選遠端分支的本機分支。";
 "branch.checkout" = "簽出分支";
+"branch.checkoutNamed" = "簽出 “%@”";
 "branch.delete" = "刪除分支";
 "branch.copyName" = "複製分支名稱";
 "branch.start" = "起點：";
@@ -417,6 +422,23 @@
 "activity.result.changes" = "更新 %1$ld 個，新增 %2$ld 個，刪除 %3$ld 個";
 "activity.result.commits" = "已載入 %ld 個 Git 提交";
 "activity.elapsed" = "%@ 秒";
+"activity.inProgress" = "進行中…";
+"activity.log.loading" = "正在載入…";
+"activity.log.error" = "錯誤";
+"activity.fetching" = "正在擷取";
+"activity.fetchingNamed" = "正在擷取 %@";
+"activity.fetched" = "已擷取";
+"activity.fetchedNamed" = "已擷取 %@";
+"activity.pulling" = "正在拉取";
+"activity.pullingNamed" = "正在拉取 %@";
+"activity.pulled" = "已拉取";
+"activity.pulledNamed" = "已拉取 %@";
+"activity.pushing" = "正在推送";
+"activity.pushingNamed" = "正在推送 %@";
+"activity.pushed" = "已推送";
+"activity.pushedNamed" = "已推送 %@";
+"activity.titleFailed" = "%@（失敗）";
+"activity.titleCancelled" = "%@（已取消）";
 "dialog.options" = "選項";
 "dialog.doNotAskAgain" = "不再詢問";
 "menu.repository" = "儲存庫";
@@ -448,13 +470,33 @@
 
 /* 主题管理。 */
 "themes.newName" = "新主題";
-"themes.change" = "更改…";
 "themes.fontLabel" = "字型";
-"themes.text" = "內文";
+"themes.text" = "字型顏色";
+"themes.token.text" = "純文字";
+"themes.token.invisible" = "不可見字元";
+"themes.token.keyword" = "關鍵字";
+"themes.token.identifier" = "識別字";
+"themes.token.function" = "函式";
+"themes.token.number" = "數字";
+"themes.token.string" = "字串";
+"themes.token.symbol" = "符號";
+"themes.token.comment" = "註解";
+"themes.token.preprocessor" = "前置處理陳述式";
+"themes.token.xmlTag" = "XML 標籤";
+"themes.token.attributeName" = "屬性名稱";
+"themes.token.attributeValue" = "屬性值";
+"themes.token.cssSelector" = "CSS 選擇器";
+"themes.token.heading" = "標題（Markdown）";
+"themes.token.codeBlock" = "程式碼區塊（Markdown）";
+"themes.token.delimiter" = "分隔符號（Markdown）";
+"themes.token.emphasized" = "強調";
+"themes.token.stronglyEmphasized" = "加重強調";
+"themes.token.url" = "URL（Markdown）";
 "themes.add" = "加入主題";
 "themes.remove" = "移除主題";
-"themes.invalidTitle" = "無法載入的主題";
-"themes.invalid" = "以下主題檔案已損毀，或者名稱、識別碼已被其他主題使用，因此無法載入：";
+"themes.delete.title" = "刪除主題？";
+"themes.delete.message" = "將刪除所選主題。此動作無法還原。";
+"themes.delete.confirm" = "刪除";
 "themes.exists" = "主題已存在";
 "themes.exists.message" = "“%@” 已有主題。要取代它嗎？";
 "themes.replace" = "取代";
@@ -1152,7 +1194,7 @@
 "sync.forcePush" = "強制推送";
 "sync.forcePush.help" = "無法快轉時覆寫遠端分支；遠端分支在上次擷取之後有變更時拒絕推送。";
 "sync.pushRevision" = "推送版本";
-"sync.pushRevision.help" = "把所選版本推送到遠端。目標可以填新的或既有的分支名稱，也可以填完整參照，例如 Gerrit 審查用的 refs/for/main。";
+"sync.pushRevision.help" = "把所選版本推送到遠端。目標可以填新的或既有的分支名稱，也可以填完整參照，例如 refs/tags/v1.0。";
 "sync.remoteBranch" = "遠端分支：";
 "sync.destination" = "目標：";
 "sync.revision" = "版本：";
@@ -1380,6 +1422,7 @@
 "review.archived.one" = "已封存 1 個分支";
 "review.archived.many" = "已封存 %ld 個分支";
 "review.archived.undo" = "還原";
+"review.archived.notification" = "分支已自動清理";
 "history.compareTo" = "比較對象：";
 "history.behindBase" = "“%1$@” 落後 “%3$@” %2$ld 個提交";
 "history.compareBranches" = "比較分支";
@@ -1517,31 +1560,6 @@
 "gitConfig.error.read" = "無法讀取全域 Git 設定";
 "gitConfig.error.write" = "無法儲存全域 Git 設定";
 
-"gerrit.pushTitle" = "推送到 Gerrit Code Review";
-"gerrit.pushTitle.help" = "把所選版本推到所選遠端等待審閱，推送的目標是 “refs/for/<審閱分支>”。";
-"gerrit.push" = "推送到 Gerrit";
-"gerrit.reviewBranch" = "審閱分支：";
-"gerrit.pushMenu" = "把 “%@” 推送到 Gerrit…";
-"gerrit.quickPush" = "快速把 “%1$@” 推送到 Gerrit “%2$@ refs/for/%1$@”";
-"settings.gerrit" = "Gerrit Code Review：";
-"settings.gerrit.enable" = "提供推送到 Gerrit 的快速操作";
-"issueTracking.url" = "Issue 追蹤位址：";
-"issueTracking.prefix" = "Issue 編號前綴：";
-"issueTracking.notConfigured" = "未設定";
-"issueTracking.edit" = "編輯";
-"issueTracking.invalid" = "Issue 追蹤位址無效";
-"issueTracking.title" = "辨識 Issue 編號";
-"issueTracking.title.help" = "填寫 Issue 追蹤的位址範本，以及提交訊息裡標出 Issue 編號的前綴。";
-"issueTracking.save" = "儲存";
-"issueTracking.url.help" = "%@ 標出編號在位址裡的位置。";
-"issueTracking.prefix.help" = "寫在 Issue 編號前面的文字，如 #。";
-"issueTracking.url.placeholder" = "Issue 追蹤的位址範本";
-"issueTracking.error.prefixLength" = "Issue 編號前綴不能超過 %d 個字元。";
-"issueTracking.error.prefixWhitespace" = "Issue 編號前綴不能包含空格。";
-"issueTracking.error.templateRequired" = "使用自訂前綴時需要填寫 Issue 追蹤位址。";
-"issueTracking.error.templateWhitespace" = "Issue 追蹤位址不能包含空格。";
-"issueTracking.error.placeholders" = "只支援 {ISSUE_NUMBER}、{OWNER} 與 {REPOSITORY} 三個佔位符。";
-"issueTracking.error.template" = "請填寫包含 {ISSUE_NUMBER} 佔位符的網頁位址。";
 "profiles.create.title" = "新增身分設定檔";
 "profiles.create.message" = "用填寫的內容新增一個身分設定檔。";
 "profiles.create.submit" = "新增";
@@ -1569,11 +1587,9 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH Agent：";
 "settings.sshAgent.system" = "系統 SSH Agent";
-"settings.sshAgent.onePassword" = "1Password SSH Agent";
 "settings.sshAgent.description" = "所選的 SSH agent 用於 SSH 連線與 SSH 簽署。";
 "settings.sshAgent.warning" = "SSH Agent 未執行";
-"settings.sshAgent.warning.system" = "系統 SSH agent 無法使用。請重新啟動 Mac，或選擇其他 SSH agent。";
-"settings.sshAgent.warning.onePassword" = "1Password 的 SSH agent 未執行。請在 1Password 的設定中開啟 SSH agent，或選擇其他 SSH agent。";
+"settings.sshAgent.warning.system" = "系統 SSH agent 無法使用。請重新啟動 Mac。";
 
 /* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
 "settings.gitProgram" = "Git 程式：";
@@ -1675,7 +1691,6 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "終端機";
 "toolbar.quickActions" = "快速操作";
-"toolbar.gerritPush" = "Gerrit 推送";
 "launch.empty" = "沒有最近的儲存庫";
 "launch.version" = "版本 %@";
 
@@ -1857,6 +1872,8 @@
 "clone.phase.filtering" = "過濾內容";
 "clone.recent.title" = "最近複製的倉庫";
 "clone.recent.clear" = "清除";
+"clone.notification.title" = "複製完成";
+"clone.notification.body" = "已複製到 “%@”。";
 "toolbar.clone" = "複製";
 "bookmarks.dropZone.clone" = "複製";
 "browse.title" = "選擇 “%@” 上的資料夾";
@@ -1895,9 +1912,12 @@
 "repositorySettings.noPatterns" = "沒有規則";
 "repositorySettings.name" = "名稱";
 "repositorySettings.path" = "路徑";
-"repositorySettings.issueTracking" = "Issue 追蹤";
-"repositorySettings.issueTrackerURL" = "Issue 追蹤位址";
-"repositorySettings.issueNumberPrefix" = "Issue 編號前綴";
+"repositorySettings.localFolder" = "本機資料夾";
+"repositorySettings.localFolder.none" = "未設定";
+"repositorySettings.localFolder.choose" = "選擇…";
+"repositorySettings.localFolder.clear" = "清除";
+"repositorySettings.localFolder.rejected" = "無法使用這個資料夾";
+"repositorySettings.localFolder.rejected.message" = "“%1$@” 不是 “%2$@” 這個儲存庫。";
 "repositorySettings.wrapping" = "換行";
 "repositorySettings.pageGuide" = "顯示參考線";
 "repositorySettings.lineLimit" = "每行字數上限";
@@ -1910,9 +1930,13 @@
 "repositorySettings.edit.title" = "編輯%@";
 "repositorySettings.edit.message" = "這個值會寫進這個倉庫的本機 Git 設定。";
 
-/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+/* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "關於 Spooky";
 "about.credits" = "Spooky 是以 GNU 通用公共授權條款 v3.0 發佈的自由軟體。";
+"about.title" = "關於";
+"about.version" = "版本 %1$@ (%2$@)";
+"about.acknowledgements" = "致謝";
+"about.license" = "授權條款";
 "menu.help" = "輔助說明";
 "help.help" = "Spooky 輔助說明";
 "help.whatsNew" = "新功能";
@@ -1920,7 +1944,18 @@
 "help.support" = "支援";
 "help.diagnosticReport" = "製作診斷報告…";
 "help.diagnosticReport.file" = "Spooky 診斷報告.txt";
-"whatsNew.title" = "Spooky %@ 的新功能";
+"whatsNew.previous" = "上一篇";
+"whatsNew.previous.tip" = "顯示上一篇版本說明";
+"whatsNew.next" = "下一篇";
+"whatsNew.next.tip" = "顯示下一篇版本說明";
+"whatsNew.entry.title" = "Spooky %@ 版本說明";
+"whatsNew.entry.subtitle" = "檢視完整的版本說明";
+"whatsNew.unread" = "未讀";
+"whatsNew.detail.title" = "版本說明 – 版本 %@";
+"whatsNew.empty" = "選取版本以檢視版本說明。";
+"whatsNew.card.title" = "Spooky 的新功能";
+"whatsNew.card.message" = "查看版本 %@ 的變更。";
+"whatsNew.card.learnMore" = "瞭解更多…";
 "crash.issueTitle" = "Spooky 意外結束";
 "crash.title" = "Spooky 上次意外結束";
 "crash.message" = "要在 GitHub 上回報這個問題嗎？瀏覽器會打開新問題頁，附上當機的摘要。個人路徑、電子郵件與網路位址已經移除，在你自己提交問題之前不會傳送任何內容。";
@@ -1928,6 +1963,25 @@
 "crash.dontReport" = "不回報";
 "settings.crashReports" = "當機報告：";
 "settings.crashReports.always" = "一律傳送當機報告";
+
+/* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showDeveloperMenu" = "顯示 Developer 選單";
+"menu.developer" = "Developer";
+"developer.userDefaults" = "User Defaults";
+"developer.logUserDefaults" = "Log User Defaults";
+"developer.resetUserDefaults" = "Reset User Defaults";
+"developer.resetUserDefaults.title" = "重置偏好設定？";
+"developer.resetUserDefaults.message" = "所有設定都會回復為預設值，書籤、身分設定檔、帳號與伺服器儲存庫手動指定的本機資料夾會保留。部分設定要在重新啟動 Spooky 後才會改變。";
+"developer.resetUserDefaults.confirm" = "重置";
+"developer.clearUserDefaults" = "Clear User Defaults";
+"developer.testCrashReporting" = "Test Crash Reporting";
+"developer.crashWithException" = "Crash With Fake Exception";
+"developer.crashWithBadAccess" = "Crash With Bad Access";
+"developer.autoArchive" = "Auto-Archive Branches";
+"developer.runAutoArchive" = "Run Auto-Archive";
+"developer.resetAutoArchiveDates" = "Reset Auto-Archive Dates";
+"developer.showWhatsNewCard" = "Show What’s New Card";
+"developer.autoReload" = "Auto-Reload Repository";
 
 /* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "伺服器設定了 Git 環境變數";
@@ -1954,6 +2008,7 @@
 "submodule.autoUpdate.skip" = "不更新";
 "submodule.autoUpdate.update" = "更新";
 "submodule.checkoutRevision" = "簽出版本";
+"submodule.checkoutSubmoduleRevision" = "簽出子模組版本";
 "submodule.default" = "%@（預設）";
 "submodule.delete" = "刪除子模組";
 "submodule.delete.keepWorkingTree" = "保留工作區";
@@ -1961,6 +2016,7 @@
 "submodule.delete.menu" = "刪除 “%@”…";
 "submodule.delete.message" = "從這個儲存庫刪除子模組 “%@”。";
 "submodule.delete.submit" = "刪除";
+"submodule.deleteSubmodules" = "刪除子模組";
 "submodule.editURL" = "編輯子模組位址";
 "submodule.editURL.message" = "輸入子模組儲存庫的位址。";
 "submodule.editURL.submit" = "修改";
@@ -2025,6 +2081,7 @@
 "submodule.newName" = "新名稱：";
 "submodule.newName.placeholder" = "新的子模組名稱";
 "submodule.newPath" = "新路徑：";
+"submodule.noRevisions" = "沒有版本";
 "submodule.none" = "這個儲存庫還沒有子模組。";
 "submodule.notAvailable" = "不可用";
 "submodule.notInitialized" = "未初始化";
@@ -2049,7 +2106,9 @@
 "submodule.repair" = "修復子模組";
 "submodule.repair.message" = "補回缺失的設定與工作區，嘗試讓子模組恢復有效。";
 "submodule.repair.submit" = "修復";
-"submodule.setting" = "修改子模組設定";
+"submodule.setFetchMode" = "設定子模組的擷取方式";
+"submodule.setIgnoreMode" = "設定子模組的忽略方式";
+"submodule.setUpdateStrategy" = "設定子模組的更新方式";
 "submodule.state.clean" = "乾淨";
 "submodule.state.uninitialized" = "未初始化";
 "submodule.state.unknown" = "未知";
@@ -2062,6 +2121,9 @@
 "submodule.synchronize.submit" = "同步";
 "submodule.tooltip" = "子模組 “%@”";
 "submodule.tooltip.url" = "- 位址：“%@”";
+"submodule.unsetFetchMode" = "取消子模組的擷取方式";
+"submodule.unsetIgnoreMode" = "取消子模組的忽略方式";
+"submodule.unsetUpdateStrategy" = "取消子模組的更新方式";
 "submodule.update" = "更新子模組";
 "submodule.update.menu" = "更新 “%@”…";
 "submodule.update.message" = "按本儲存庫暫存區裡登記的版本簽出子模組。";
@@ -2121,7 +2183,6 @@
 "worktree.move.message" = "把工作樹 “%@” 移到別的位置，保留它現在的狀態。";
 "worktree.move.submit" = "移動";
 "worktree.noRefs" = "這個儲存庫還沒有提交。";
-"worktree.open" = "建立後開啟";
 "worktree.open.current" = "開啟工作樹";
 "worktree.open.newTab" = "在新標籤頁中開啟工作樹";
 "worktree.open.newWindow" = "在新視窗中開啟工作樹";

@@ -1,0 +1,8 @@
+To ../remote.git
+=	refs/heads/same:refs/heads/same	[up to date]
+=	refs/tags/v1:refs/tags/v1	[up to date]
+ 	refs/heads/main:refs/heads/main	e809a01..2387cf7
+-	:refs/heads/old	[deleted]
+*	refs/heads/功能/发布:refs/heads/功能/发布	[new branch]
+*	refs/tags/v2:refs/tags/v2	[new tag]
+Done

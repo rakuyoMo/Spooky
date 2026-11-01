@@ -281,6 +281,21 @@ extension RepositorySidebarView {
         filterText = ""
         rowSelection = []
     }
+
+    /// 换了仓库重建列表后，原来有键盘焦点的话把焦点还给新的列表。
+    ///
+    /// 旧列表移出窗口时焦点随之丢失，`listFocused` 却仍是 true；先置为 false，下一轮再设回 true，焦点才会落到新的列表上。
+    func restoreListFocus() {
+        guard listFocused else {
+            return
+        }
+
+        listFocused = false
+
+        Task { @MainActor in
+            listFocused = true
+        }
+    }
 }
 
 // MARK: - RepositoryRemote

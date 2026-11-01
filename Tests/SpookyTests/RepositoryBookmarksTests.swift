@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SpookyKit
 import Testing
@@ -6,7 +7,7 @@ import Testing
 
 // MARK: - RepositoryBookmarksTests
 
-/// 仓库书签：旧记录的迁移、去重与打开时间、文件夹与手动顺序、改名与删除、失效标记，以及改指向工作区根目录。
+/// 仓库书签：旧记录的迁移、去重与打开时间、文件夹与手动顺序、改名与删除、失效标记与失效时的写法，以及改指向工作区根目录。
 @MainActor
 struct RepositoryBookmarksTests {
     /// 每个用例独立的偏好域。
@@ -113,6 +114,51 @@ struct RepositoryBookmarksTests {
         #expect(bookmarks.missing.isEmpty)
     }
 
+    /// 失效的书签只靠灰色名称与警告图标标出，VoiceOver 把警告图标读作 “Unavailable”；丢失页说明里的本机路径缩写主目录。
+    @Test("失效书签的行与丢失页的说明")
+    func missingPresentation() throws {
+        let (defaults, suite) = try Self.defaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let bookmarks = RepositoryBookmarks(defaults: defaults)
+        let home = NSHomeDirectory()
+        let gone = RepositoryLocation.local(path: home + "/Projects/gone")
+        let bookmark = try #require(bookmarks.bookmark(bookmarks.add(gone)))
+        let unavailable = AppLocalization.text("repositories.unavailableShort")
+
+        let cell = BookmarkCellView(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
+        cell.configure(bookmark, isMissing: true)
+
+        #expect(!Self.texts(in: cell).contains(unavailable))
+        #expect(cell.textField?.textColor == .disabledControlTextColor)
+        #expect(Self.visibleImageDescriptions(in: cell).contains(unavailable))
+
+        cell.configure(bookmark, isMissing: false)
+        #expect(!Self.visibleImageDescriptions(in: cell).contains(unavailable))
+
+        // 本机仓库写 “~/…”；服务器仓库写 “<别名>:<路径>”，服务器路径不缩写
+        let session = RepositorySession()
+
+        let local = MissingRepositoryView(
+            location: gone,
+            reason: .notFound,
+            session: session,
+            refresh: { },
+            close: { }
+        )
+
+        let remote = MissingRepositoryView(
+            location: .remote(host: "spooky-test", path: home + "/repo"),
+            reason: .notFound,
+            session: session,
+            refresh: { },
+            close: { }
+        )
+
+        #expect(local.message == AppLocalization.text("missing.message", "~/Projects/gone"))
+        #expect(remote.message == AppLocalization.text("missing.message", "spooky-test:" + home + "/repo"))
+    }
+
     /// 书签指向子目录时改指向工作区根目录：没改过的名字随之更新，改过的保留；根目录已有书签时不动。
     @Test("书签改指向工作区根目录")
     func relocatesToWorkingTreeRoot() throws {
@@ -138,5 +184,25 @@ struct RepositoryBookmarksTests {
         let other = bookmarks.add(.local(path: "/tmp/app/Tests"))
         bookmarks.relocate(.local(path: "/tmp/app/Tests"), to: root)
         #expect(bookmarks.bookmark(other)?.location == .local(path: "/tmp/app/Tests"))
+    }
+}
+
+// MARK: - Helpers
+
+extension RepositoryBookmarksTests {
+    /// 视图及其全部子视图里文本框显示的文字。
+    private static func texts(in view: NSView) -> [String] {
+        let own = (view as? NSTextField).map { [$0.stringValue] } ?? []
+        return own + view.subviews.flatMap { texts(in: $0) }
+    }
+
+    /// 视图及其全部子视图里没有隐藏的图片的辅助功能描述，即 VoiceOver 读出的图片名称。
+    private static func visibleImageDescriptions(in view: NSView) -> [String] {
+        guard !view.isHidden else {
+            return []
+        }
+
+        let own = (view as? NSImageView)?.image?.accessibilityDescription.map { [$0] } ?? []
+        return own + view.subviews.flatMap { visibleImageDescriptions(in: $0) }
     }
 }

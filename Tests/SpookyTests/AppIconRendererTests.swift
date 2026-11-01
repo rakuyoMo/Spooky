@@ -5,20 +5,20 @@ import Testing
 
 // MARK: - AppIconRendererTests
 
-/// 运行时 App 图标的逐像素处理。
+/// 运行时 App 图标的合成。
 ///
-/// “透明 · 深色” “色调 · 深色”：去色后不带色彩，着色后只带色调颜色，明暗顺序与透明度不变；
-/// 深色图标处理后仍比默认图标暗，Dock 上才是与系统图标一致的深底。
-/// 点亮指示灯：只有灯所在的像素变化，灯的颜色与系统处理过的其余部分一致，连上服务器时图标才只有指示灯在变。
+/// Dock 画包内图标时用系统处理过的样子，画运行时图标时原样画出、而且画小一圈：
+/// 合成结果要以系统图标为底、按 `dockScale` 放大、保留比白色还亮的亮边且不被压暗，只在目标与包内图标不同的地方改动，
+/// Dock 里的运行时图标才与包内图标一致，连上服务器时只有指示灯变化。
 struct AppIconRendererTests {
-    /// 要处理的两种样式：透明、色调。
-    private static let processedStyles: [AppIconStyle] = [.clear, .tinted]
+    /// 合成用的位图边长：放大后边缘移动几个像素，足够看出位置。
+    private static let side = 800
 
-    /// 8 位量化带来的误差上限。
-    private static let tolerance = 2.0 / 255
+    /// 居中方块的半边长：放大后是 320 × 1.0125 = 324，左边缘由 80 移到 76。
+    private static let squareHalfSide = 320
 
-    /// 按亮度拟合系统的处理时，8 位量化累积出的误差上限。
-    private static let fittingTolerance = 3.0 / 255
+    /// 8 位量化与缩放插值带来的误差上限。
+    private static let tolerance: Float = 2 / 255
 
     /// 图标的 icns 所在的目录：本文件位于 `Tests/SpookyTests/` 下，向上三级是仓库根目录。
     private static let iconsURL = URL(fileURLWithPath: #filePath)
@@ -39,144 +39,112 @@ struct AppIconRendererTests {
         (unlit: "AppIconDark", lit: "AppIconDarkConnected"),
     ]
 
-    /// 着色用的色调颜色：固定的 sRGB 颜色，不随外观变化。
-    private static var tintColor: NSColor {
-        NSColor(srgbRed: 0.2, green: 0.6, blue: 0.9, alpha: 1)
-    }
+    /// 运行时图标的像素尺寸与系统图标相同：Dock 按同样的尺寸缩放，放大只发生在图标内部。
+    @Test("像素尺寸与系统图标相同")
+    func keepsSystemIconSize() throws {
+        let image = try Self.image(color: (0.5, 0.5, 0.5))
 
-    /// 各种色彩鲜明的像素，包括默认图标底板顶部的夜色紫。
-    private static var colorfulPixels: [Pixel] {
-        [
-            (1, 0, 0, 1),
-            (0, 1, 0, 1),
-            (0, 0, 1, 1),
-            (1, 0.6, 0.1, 1),
-            (0.17, 0.14, 0.44, 1),
-        ]
-    }
-
-    /// 包内默认图标的替身：从黑到白的灰阶，后面跟两盏灭着的灯。
-    private static var unlitPixels: [Pixel] {
-        (0 ... 100).map { step in
-            let gray = Double(step) / 100
-            return (gray, gray, gray, 1)
-        } + [
-            (0.08, 0.06, 0.2, 1),
-            (0.08, 0.06, 0.2, 1),
-        ]
-    }
-
-    /// 亮灯版的替身：与 `unlitPixels` 只差最后两盏灯，一绿一青。
-    private static var litPixels: [Pixel] {
-        unlitPixels.dropLast(2) + [
-            (0.27, 0.88, 0.54, 1),
-            (0.31, 0.84, 1, 1),
-        ]
-    }
-
-    /// 去色后每个像素的红、绿、蓝相等：透明样式不带任何色彩。
-    @Test("去色后不带色彩")
-    func clearRemovesColor() throws {
-        let output = try Self.pixels(
-            of: Self.render(Self.image(of: Self.colorfulPixels), as: .clear)
-        )
-
-        for pixel in output {
-            #expect(abs(pixel.red - pixel.green) <= Self.tolerance)
-            #expect(abs(pixel.green - pixel.blue) <= Self.tolerance)
-        }
-    }
-
-    /// 着色后亮部的色相与色调颜色一致：色调样式的图案是色调颜色。
-    @Test("着色后亮部是色调颜色的色相")
-    func tintedTakesTintHue() throws {
-        let output = try Self.pixels(
-            of: Self.render(
-                Self.image(of: [(1, 1, 1, 1), (0.6, 0.6, 0.6, 1)]),
-                as: .tinted
+        let output = try #require(
+            AppIconRenderer.runtimeIcon(
+                system: image,
+                bundled: image,
+                target: image
             )
         )
 
-        for pixel in output {
-            let color = NSColor(
-                srgbRed: pixel.red,
-                green: pixel.green,
-                blue: pixel.blue,
-                alpha: 1
+        #expect(output.width == Self.side)
+        #expect(output.height == Self.side)
+    }
+
+    /// 内容以中心为准按 `dockScale` 放大：方块的中心不动，左边缘向外移出原来的位置。
+    @Test("内容以中心为准放大")
+    func scalesAroundCenter() throws {
+        let system = try Self.squareImage(color: (1, 1, 1), halfSide: Self.squareHalfSide)
+        let empty = try Self.squareImage(color: (0, 0, 0), halfSide: 0)
+        let input = try Self.pixels(of: system)
+        let center = Self.side / 2
+
+        let output = try Self.pixels(
+            of: #require(
+                AppIconRenderer.runtimeIcon(
+                    system: system,
+                    bundled: empty,
+                    target: empty
+                )
             )
-
-            #expect(abs(color.hueComponent - Self.tintColor.hueComponent) < 0.01)
-            #expect(color.saturationComponent > 0.3)
-        }
-    }
-
-    /// 黑色变成不带色彩的深色：两种样式的底色都是中性的深色，与色调颜色无关。
-    @Test("黑色变成中性的深色", arguments: processedStyles)
-    func blackBecomesNeutralDark(style: AppIconStyle) throws {
-        let output = try Self.pixels(
-            of: Self.render(Self.image(of: [(0, 0, 0, 1)]), as: style)
         )
 
-        let pixel = try #require(output.first)
-
-        #expect(abs(pixel.red - pixel.green) <= Self.tolerance)
-        #expect(abs(pixel.green - pixel.blue) <= Self.tolerance)
-        #expect(pixel.red < 0.1)
+        // 放大前方块从 80 开始，放大后从 76 开始：78 列由透明变成不透明，74 列仍然透明。
+        #expect(input[Self.offset(x: 78, y: center) + 3] == 0)
+        #expect(output[Self.offset(x: 78, y: center) + 3] > 1 - Self.tolerance)
+        #expect(output[Self.offset(x: 74, y: center) + 3] < Self.tolerance)
+        #expect(output[Self.offset(x: center, y: center) + 3] > 1 - Self.tolerance)
     }
 
-    /// 原图越亮，处理后越亮：明暗层次保留下来，图案才认得出。
-    @Test("明暗顺序不变", arguments: processedStyles)
-    func brightnessOrderIsPreserved(style: AppIconStyle) throws {
-        let grays: [Pixel] = [0, 0.25, 0.5, 0.75, 1].map { ($0, $0, $0, 1) }
-
-        let lumas = try Self.pixels(
-            of: Self.render(Self.image(of: grays), as: style)
-        )
-        .map(Self.luma)
-
-        for (darker, brighter) in zip(lumas, lumas.dropFirst()) {
-            #expect(darker < brighter)
-        }
-    }
-
-    /// 透明度不变：图标四周的透明边仍然透明，半透明的边缘仍然半透明。
-    @Test("透明度不变", arguments: processedStyles)
-    func alphaIsPreserved(style: AppIconStyle) throws {
-        let input: [Pixel] = [
-            (0.5, 0.5, 0.5, 0),
-            (0.8, 0.4, 0.2, 0.5),
-            (0.8, 0.4, 0.2, 1),
-        ]
+    /// 系统图标带着高于白色的亮度余量：白色仍是 1，比白色还亮的亮边原样保留，不被整体压暗。
+    @Test("系统图标的白色不被压暗，亮边保留")
+    func keepsSystemBrightness() throws {
+        let system = try Self.highDynamicRangeImage()
+        let black = try Self.image(color: (0, 0, 0))
+        let center = Self.side / 2
 
         let output = try Self.pixels(
-            of: Self.render(Self.image(of: input), as: style)
+            of: #require(
+                AppIconRenderer.runtimeIcon(
+                    system: system,
+                    bundled: black,
+                    target: black
+                )
+            )
         )
 
-        for (source, result) in zip(input, output) {
-            #expect(abs(source.alpha - result.alpha) <= Self.tolerance)
+        // 中间一条是亮边，其余是白色。
+        let white = Self.offset(x: center, y: center / 2)
+        let edge = Self.offset(x: center, y: center)
+
+        for channel in 0 ..< 3 {
+            #expect(abs(output[white + channel] - 1) < Self.tolerance)
+            #expect(abs(output[edge + channel] - Self.edgeBrightness) < Self.tolerance)
         }
     }
 
-    /// 深色图标处理后整体比默认图标暗，且是深底（平均亮度低于一半）：这正是深色子变体要换成深色图标的原因。
-    @Test("深色图标处理后比默认图标暗", arguments: processedStyles)
-    func processedDarkIconIsDarkerThanDefault(style: AppIconStyle) throws {
-        let darkLuma = try Self.meanLuma(
-            of: Self.render(Self.icon(named: "AppIconDark", side: 64), as: style)
+    /// 目标图标与包内图标不同的地方叠上两者的差别，相同的地方保持系统图标，比白色还亮的结果不截断。
+    @Test("只在目标与包内图标不同的地方改动")
+    func addsTargetDifference() throws {
+        let system = try Self.image(color: (0.5, 0.5, 0.5))
+        let bundled = try Self.image(color: (0, 0, 0))
+        let target = try Self.image(color: (0, 0, 0), square: (1, 0, 0), squareHalfSide: 100)
+        let gray = Float(128) / 255
+        let center = Self.side / 2
+
+        let output = try Self.pixels(
+            of: #require(
+                AppIconRenderer.runtimeIcon(
+                    system: system,
+                    bundled: bundled,
+                    target: target
+                )
+            )
         )
 
-        let defaultLuma = try Self.meanLuma(
-            of: Self.render(Self.icon(named: "AppIcon", side: 64), as: style)
-        )
+        // 中间的方块里红色加上 1，方块外与系统图标相同。
+        let changed = Self.offset(x: center, y: center)
+        let unchanged = Self.offset(x: center / 4, y: center / 4)
 
-        #expect(darkLuma < defaultLuma)
-        #expect(darkLuma < 0.5)
+        #expect(abs(output[changed] - (gray + 1)) < Self.tolerance)
+        #expect(abs(output[changed + 1] - gray) < Self.tolerance)
+        #expect(abs(output[changed + 2] - gray) < Self.tolerance)
+
+        for channel in 0 ..< 3 {
+            #expect(abs(output[unchanged + channel] - gray) < Self.tolerance)
+        }
     }
 
-    /// 亮灯版与灭灯版只在四盏指示灯处不同：点亮指示灯时按两者的差别换像素，别处不同就会把别的改动也换上去。
+    /// 亮灯版与灭灯版只在四盏指示灯处不同：运行时图标叠上的是两者的差别，别处不同就会把别的改动也带上去。
     @Test("亮灯版与灭灯版只差指示灯", arguments: iconPairs)
     func litIconDiffersOnlyAtLights(unlit: String, lit: String) throws {
-        let unlitPixels = try Self.bytes(of: Self.icon(named: unlit, side: 1024))
-        let litPixels = try Self.bytes(of: Self.icon(named: lit, side: 1024))
+        let unlitPixels = try Self.bytes(of: Self.icon(named: unlit))
+        let litPixels = try Self.bytes(of: Self.icon(named: lit))
         var changed = 0
 
         for index in 0 ..< 1024 * 1024 where unlitPixels[index] != litPixels[index] {
@@ -194,174 +162,106 @@ struct AppIconRendererTests {
         // 灯真的有变化：亮灯版不能与灭灯版相同。
         #expect(changed > 0)
     }
-
-    /// 灯以外的像素逐字节保持系统的处理结果：连上服务器时，系统给图标做的处理一点不变。
-    @Test("灯以外保持系统的处理结果", arguments: [false, true])
-    func pixelsOutsideLightsKeepSystemStyle(recolorsLights: Bool) throws {
-        let styled = try Self.image(of: Self.unlitPixels.map(Self.systemStyle))
-
-        let output = try #require(
-            AppIconRenderer.lightUp(
-                styled,
-                unlit: Self.image(of: Self.unlitPixels),
-                lit: Self.image(of: Self.litPixels),
-                recolorsLights: recolorsLights
-            )
-        )
-
-        let expected = try Self.bytes(of: styled)
-        let actual = try Self.bytes(of: output)
-
-        for index in 0 ..< Self.unlitPixels.count - 2 {
-            #expect(actual[index] == expected[index])
-        }
-    }
-
-    /// 原样显示的样式下，亮着的灯就是亮灯版的颜色：系统在这类样式下不改颜色。
-    @Test("原样显示时灯是亮灯版的颜色")
-    func regularStyleLightsTakeLitColors() throws {
-        let output = try #require(
-            AppIconRenderer.lightUp(
-                Self.image(of: Self.unlitPixels),
-                unlit: Self.image(of: Self.unlitPixels),
-                lit: Self.image(of: Self.litPixels),
-                recolorsLights: false
-            )
-        )
-
-        let lights = try Self.pixels(of: output).suffix(2)
-
-        for (light, expected) in zip(lights, Self.litPixels.suffix(2)) {
-            #expect(abs(light.red - expected.red) <= Self.tolerance)
-            #expect(abs(light.green - expected.green) <= Self.tolerance)
-            #expect(abs(light.blue - expected.blue) <= Self.tolerance)
-        }
-    }
-
-    /// 透明、色调样式下，亮着的灯按系统的处理上色；系统在边缘加的描边不是亮度的函数，不能把灯的颜色带偏。
-    @Test("透明、色调样式下灯按系统的处理上色", arguments: [false, true])
-    func processedStyleLightsFollowSystemStyle(hasEdgeHighlight: Bool) throws {
-        var unlit = Self.unlitPixels
-        var styled = Self.unlitPixels.map(Self.systemStyle)
-
-        // 描边：一圈中灰的像素被系统额外提亮，处理结果不在亮度的直线上。
-        if hasEdgeHighlight {
-            let edge = [Pixel](repeating: (0.5, 0.5, 0.5, 1), count: 12)
-            let highlighted: [Pixel] = edge.map(Self.systemStyle).map {
-                (min($0.red + 0.2, 1), min($0.green + 0.2, 1), min($0.blue + 0.2, 1), 1)
-            }
-
-            unlit.insert(contentsOf: edge, at: 0)
-            styled.insert(contentsOf: highlighted, at: 0)
-        }
-
-        let lit = Array(unlit.dropLast(2)) + Self.litPixels.suffix(2)
-
-        let output = try #require(
-            AppIconRenderer.lightUp(
-                Self.image(of: styled),
-                unlit: Self.image(of: unlit),
-                lit: Self.image(of: lit),
-                recolorsLights: true
-            )
-        )
-
-        let lights = try Self.pixels(of: output).suffix(2)
-
-        for (light, source) in zip(lights, Self.litPixels.suffix(2)) {
-            let expected = Self.systemStyle(source)
-
-            #expect(abs(light.red - expected.red) <= Self.fittingTolerance)
-            #expect(abs(light.green - expected.green) <= Self.fittingTolerance)
-            #expect(abs(light.blue - expected.blue) <= Self.fittingTolerance)
-        }
-    }
 }
 
 // MARK: - Private
 
 extension AppIconRendererTests {
-    /// 未预乘透明度的 sRGB 像素，各分量 0–1。
-    private typealias Pixel = (red: Double, green: Double, blue: Double, alpha: Double)
+    /// 高动态范围替身里亮边的亮度：比白色亮一成。
+    private static let edgeBrightness: Float = 1.1
 
-    /// 按样式处理图像；原样显示的样式不经处理。
+    /// 高动态范围替身的亮度余量，与系统给出的 App 图标相同。
+    private static let headroom: Float = 1.2
+
+    /// 一张 `side` 边长的 8 位 sRGB 图：整张不透明的底色，可以在中间画一个不透明的方块。
     /// - Parameters:
-    ///   - image: 要处理的图像
-    ///   - style: 要处理成的样式
-    private static func render(
-        _ image: CGImage,
-        as style: AppIconStyle
+    ///   - color: 底色
+    ///   - square: 中间方块的颜色，nil 时与底色相同
+    ///   - squareHalfSide: 中间方块的半边长
+    private static func image(
+        color: (Double, Double, Double),
+        square: (Double, Double, Double)? = nil,
+        squareHalfSide: Int = 0
     ) throws -> CGImage {
-        switch style {
-        case .regular:
-            image
+        let context = try bitmapContext(width: side, height: side)
+        let squareColor = square ?? color
 
-        case .clear:
-            try #require(AppIconRenderer.clear(image))
+        context.setFillColor(CGColor(srgbRed: color.0, green: color.1, blue: color.2, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: side, height: side))
 
-        case .tinted:
-            try #require(AppIconRenderer.tinted(image, tintColor: tintColor))
-        }
-    }
-
-    /// 替身的系统处理：各通道是亮度的线性函数，红色在暗部被夹到 0、蓝色在亮部被夹到 1，与 “色调 · 浅色” 下的蓝色相仿。
-    private static func systemStyle(_ pixel: Pixel) -> Pixel {
-        let brightness = luma(pixel)
-        let clamp = { (value: Double) in min(max(value, 0), 1) }
-
-        return (
-            red: clamp(-0.2 + 0.9 * brightness),
-            green: clamp(0.53 + 0.42 * brightness),
-            blue: clamp(0.98 + 0.05 * brightness),
-            alpha: pixel.alpha
-        )
-    }
-
-    /// 把一排像素做成一行高的 sRGB 图像。
-    /// - Parameter pixels: 从左到右的像素
-    private static func image(of pixels: [Pixel]) throws -> CGImage {
-        let context = try bitmapContext(width: pixels.count, height: 1)
-        let data = try #require(context.data)
-            .bindMemory(to: UInt8.self, capacity: pixels.count * 4)
-
-        // 位图预乘透明度，写入前把颜色乘上透明度。
-        for (index, pixel) in pixels.enumerated() {
-            let components = [
-                pixel.red * pixel.alpha,
-                pixel.green * pixel.alpha,
-                pixel.blue * pixel.alpha,
-                pixel.alpha,
-            ]
-
-            for (offset, component) in components.enumerated() {
-                data[index * 4 + offset] = UInt8((component * 255).rounded())
-            }
-        }
+        context.setFillColor(CGColor(srgbRed: squareColor.0, green: squareColor.1, blue: squareColor.2, alpha: 1))
+        context.fill(squareRect(halfSide: squareHalfSide))
 
         return try #require(context.makeImage())
     }
 
-    /// 读出图像的全部像素，除掉透明度还原成未预乘的颜色；全透明的像素颜色记为 0。
-    private static func pixels(of image: CGImage) throws -> [Pixel] {
-        let context = try bitmapContext(width: image.width, height: image.height)
+    /// 一张 `side` 边长的 8 位 sRGB 图：只有中间的方块不透明，其余全透明。
+    /// - Parameters:
+    ///   - color: 方块的颜色
+    ///   - halfSide: 方块的半边长，0 时整张透明
+    private static func squareImage(
+        color: (Double, Double, Double),
+        halfSide: Int
+    ) throws -> CGImage {
+        let context = try bitmapContext(width: side, height: side)
+
+        context.setFillColor(CGColor(srgbRed: color.0, green: color.1, blue: color.2, alpha: 1))
+        context.fill(squareRect(halfSide: halfSide))
+
+        return try #require(context.makeImage())
+    }
+
+    /// 系统图标的替身：白色的底、中间一条比白色还亮的亮边，带着与系统图标相同的亮度余量。
+    private static func highDynamicRangeImage() throws -> CGImage {
+        let colorSpace = try #require(CGColorSpace(name: CGColorSpace.extendedSRGB))
+        let context = try floatContext(width: side, height: side)
+        let edge = CGFloat(edgeBrightness)
+        let center = side / 2
+        let band = 20
+
+        context.setFillColor(try #require(CGColor(colorSpace: colorSpace, components: [1, 1, 1, 1])))
+        context.fill(CGRect(x: 0, y: 0, width: side, height: side))
+
+        // 扩展 sRGB 的颜色才能比 1 大。
+        context.setFillColor(try #require(CGColor(colorSpace: colorSpace, components: [edge, edge, edge, 1])))
+        context.fill(CGRect(x: 0, y: center - band, width: side, height: band * 2))
+
+        let image = try #require(context.makeImage())
+        return try #require(CGImageCreateCopyWithContentHeadroom(headroom, image))
+    }
+
+    /// 以位图中心为中心、给定半边长的方块。
+    private static func squareRect(halfSide: Int) -> CGRect {
+        CGRect(
+            x: side / 2 - halfSide,
+            y: side / 2 - halfSide,
+            width: halfSide * 2,
+            height: halfSide * 2
+        )
+    }
+
+    /// 读出图像的全部分量：扩展 sRGB 的 32 位浮点，预乘透明度，按行自上而下、每个像素依次是红、绿、蓝、透明度。
+    private static func pixels(of image: CGImage) throws -> [Float] {
+        let context = try floatContext(width: image.width, height: image.height)
 
         context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
 
-        let count = image.width * image.height
+        let count = image.width * image.height * 4
         let data = try #require(context.data)
-            .bindMemory(to: UInt8.self, capacity: count * 4)
+            .bindMemory(to: Float.self, capacity: count)
 
-        return (0 ..< count).map { index in
-            let alpha = Double(data[index * 4 + 3]) / 255
-            let scale = alpha > 0 ? 1 / (255 * alpha) : 0
+        return Array(UnsafeBufferPointer(start: data, count: count))
+    }
 
-            return (
-                red: Double(data[index * 4]) * scale,
-                green: Double(data[index * 4 + 1]) * scale,
-                blue: Double(data[index * 4 + 2]) * scale,
-                alpha: alpha
-            )
-        }
+    /// 像素在 `pixels(of:)` 结果里的下标。
+    /// - Parameters:
+    ///   - x: 列
+    ///   - y: 行，自上而下
+    private static func offset(
+        x: Int,
+        y: Int
+    ) -> Int {
+        (y * side + x) * 4
     }
 
     /// 读出图像每个像素的 8 位 RGBA（预乘透明度），按行自上而下，一个像素合成一个整数，便于逐字节比较。
@@ -377,41 +277,35 @@ extension AppIconRendererTests {
         return Array(UnsafeBufferPointer(start: data, count: count))
     }
 
-    /// 仓库里的 icns 画成给定边长的图像：比较明暗时缩小以加快测试，逐像素比较时取原尺寸。
-    /// - Parameters:
-    ///   - name: icns 的文件名，不含扩展名
-    ///   - side: 图像的边长
-    private static func icon(
-        named name: String,
-        side: Int
-    ) throws -> CGImage {
+    /// 仓库里的 icns 中 1024 px 的一张，原尺寸画出时逐像素不变。
+    /// - Parameter name: icns 的文件名，不含扩展名
+    private static func icon(named name: String) throws -> CGImage {
         let icon = try #require(NSImage(contentsOf: iconsURL.appending(path: "\(name).icns")))
 
-        // 取 icns 里 1024 px 的一张，原尺寸画出时逐像素不变。
         var rect = CGRect(x: 0, y: 0, width: 1024, height: 1024)
-        let largest = icon.cgImage(forProposedRect: &rect, context: nil, hints: nil)
-        let source = try #require(largest)
-
-        let context = try bitmapContext(width: side, height: side)
-
-        context.interpolationQuality = .high
-        context.draw(source, in: CGRect(x: 0, y: 0, width: side, height: side))
-
-        return try #require(context.makeImage())
+        return try #require(icon.cgImage(forProposedRect: &rect, context: nil, hints: nil))
     }
 
-    /// 不透明部分的平均亮度，0–1；只数完全不透明的像素，四周的透明边与投影不计入。
-    private static func meanLuma(of image: CGImage) throws -> Double {
-        let lumas = try pixels(of: image)
-            .filter { $0.alpha == 1 }
-            .map(luma)
+    /// 32 位浮点、预乘透明度的扩展 sRGB 位图上下文：分量可以大于 1。
+    private static func floatContext(
+        width: Int,
+        height: Int
+    ) throws -> CGContext {
+        let colorSpace = try #require(CGColorSpace(name: CGColorSpace.extendedSRGB))
 
-        return lumas.reduce(0, +) / Double(max(lumas.count, 1))
-    }
-
-    /// 像素的 Rec. 709 亮度（在 sRGB 编码值上计算）。
-    private static func luma(_ pixel: Pixel) -> Double {
-        0.2126 * pixel.red + 0.7152 * pixel.green + 0.0722 * pixel.blue
+        return try #require(
+            CGContext(
+                data: nil,
+                width: width,
+                height: height,
+                bitsPerComponent: 32,
+                bytesPerRow: width * 16,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+                    | CGBitmapInfo.floatComponents.rawValue
+                    | CGImageByteOrderInfo.order32Little.rawValue
+            )
+        )
     }
 
     /// 8 位 RGBA、预乘透明度的 sRGB 位图上下文。

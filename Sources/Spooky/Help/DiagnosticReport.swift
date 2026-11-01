@@ -13,8 +13,7 @@ enum DiagnosticReport {
     private static let preferenceKeys = [
         AppAppearance.key, UpdateChannel.key, WindowRestoration.key, SpookyApplicationController.showsLaunchWindowKey,
         "terminalApplication", ExternalTool.diffToolKey, ExternalTool.mergeToolKey, LocalExecutionPreferences.sshAgentKey,
-        LocalExecutionPreferences.gitExecutableKey, LocalExecutionPreferences.loginShellKey, GerritPush.key,
-        CrashReporter.alwaysSendKey,
+        LocalExecutionPreferences.gitExecutableKey, LocalExecutionPreferences.loginShellKey, CrashReporter.alwaysSendKey,
     ]
 
     /// 生成报告的全文。

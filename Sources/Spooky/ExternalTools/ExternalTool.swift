@@ -95,9 +95,9 @@ enum ExternalTool: String, CaseIterable, Identifiable {
         }
     }
 
-    /// 能比较两个目录。
+    /// 能比较两个目录：只有 Kaleidoscope 的命令行能打开目录对比。
     var supportsDirectoryDiff: Bool {
-        [.visualStudioCode, .kaleidoscope, .p4Merge].contains(self)
+        self == .kaleidoscope
     }
 
     /// 命令行入口在合并窗口关闭之前就退出：`opendiff` 打开 FileMerge 的窗口后即退出，
@@ -135,8 +135,6 @@ enum ExternalTool: String, CaseIterable, Identifiable {
     ///   - request: 比较或合并的文件。
     ///   - application: 工具的应用包位置，命令行入口在包内。
     func invocation(_ request: ExternalToolRequest, application: URL) -> ExternalToolInvocation? {
-        #warning("TODO: 只在装有 FileMerge 的 Mac 上实际启动过；其余工具的命令行按各自的命令行约定组装，需在装有对应工具的 Mac 上逐个核对比较、合并与目录对比；只影响选了这些工具时的启动")
-
         switch request {
         case .diff(let left, let right):
             return diffInvocation(left.path, right.path, application: application)
@@ -216,7 +214,7 @@ extension ExternalTool {
                     [
                         "-c", "/usr/bin/diff -u \"$1\" \"$2\" | \"$3\" -a",
                         "sh", left, right,
-                        Self.executable(application, "Contents/SharedSupport/Support/bin/mate").path,
+                        Self.executable(application, "Contents/MacOS/mate").path,
                     ]
                 )
             }

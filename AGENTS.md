@@ -106,6 +106,7 @@ docs/                    架构、测试与发布的文档
 - 不由用户直接发起的操作放在 `RemoteCallbackRequest.$allowsInteraction.withValue(false)` 里执行
 - 托管服务的接口一律经 `HostingClient` 发起
 - 新增主视图时，`ViewReference` 的后退 / 前进、窗口恢复与 `spooky://` 链接三处一起覆盖
+- 新增保存用户数据的偏好键时，登记进 `DeveloperPreferences.dataKeys`，否则 Reset User Defaults 会把它删掉
 - 文本区取主题用 `TextTheme.current(dark:)`，在 SwiftUI 的 `body` 里调用
 - 本地化新增资源键时同步全部支持语言，并保持格式参数一致；动态拼接的资源键登记在 `LocalizationTests.dynamicKeys`；错误标题和恢复说明本地化，Git 原文保持不变
 

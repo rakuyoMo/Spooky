@@ -158,6 +158,9 @@
 "action.addRemote" = "サーバーリポジトリを追加…";
 "action.openTerminal" = "ターミナルで開く";
 "action.revealFinder" = "Finder に表示";
+"action.revealFinder.notMounted" = "「%@」はこの Mac にマウントされていません。リポジトリの設定で、この Mac 上のフォルダを指定できます。";
+"action.revealFinder.worktreeNotMounted" = "「%@」はこの Mac にマウントされていません。";
+"action.revealFinder.folderMissing" = "リポジトリの設定で指定したこの Mac 上のフォルダ「%@」が見つかりません。";
 "action.copyPath" = "パスをコピー";
 "action.reconnect" = "再接続";
 "action.cancel" = "キャンセル";
@@ -192,11 +195,12 @@
 "error.exitCode" = "終了コード：%ld";
 "terminal.notInstalled" = "%@ がインストールされていません。";
 "themes.background" = "背景";
+"themes.selection" = "選択範囲";
 "themes.added" = "追加";
 "themes.deleted" = "削除";
-"themes.preview.context" = "  変更のないテキスト";
-"themes.preview.added" = "+ 追加されたテキスト";
-"themes.preview.deleted" = "− 削除されたテキスト";
+"themes.preview.context" = "変更のないテキスト";
+"themes.preview.added" = "追加されたテキスト";
+"themes.preview.deleted" = "削除されたテキスト";
 "remoteError.invalidHost" = "SSH ホスト名が無効です";
 "remoteError.invalidHost.help" = "~/.ssh/config のホスト名を入力してください。ユーザー名やポートは含めません。";
 "remoteError.absolutePathRequired" = "絶対パスが必要です";
@@ -327,6 +331,7 @@
 "branch.track" = "リモートブランチを追跡";
 "branch.track.help" = "選択したリモートブランチを追跡するローカルブランチを作成します。";
 "branch.checkout" = "ブランチをチェックアウト";
+"branch.checkoutNamed" = "「%@」をチェックアウト";
 "branch.delete" = "ブランチを削除";
 "branch.copyName" = "ブランチ名をコピー";
 "branch.start" = "開始点：";
@@ -417,6 +422,23 @@
 "activity.result.changes" = "%1$ld 件更新、%2$ld 件追加、%3$ld 件削除";
 "activity.result.commits" = "Git コミットを %ld 件読み込みました";
 "activity.elapsed" = "%@ 秒";
+"activity.inProgress" = "進行中…";
+"activity.log.loading" = "読み込み中…";
+"activity.log.error" = "エラー";
+"activity.fetching" = "フェッチ中";
+"activity.fetchingNamed" = "%@ からフェッチ中";
+"activity.fetched" = "フェッチ完了";
+"activity.fetchedNamed" = "%@ からフェッチ完了";
+"activity.pulling" = "プル中";
+"activity.pullingNamed" = "%@ からプル中";
+"activity.pulled" = "プル完了";
+"activity.pulledNamed" = "%@ からプル完了";
+"activity.pushing" = "プッシュ中";
+"activity.pushingNamed" = "%@ にプッシュ中";
+"activity.pushed" = "プッシュ完了";
+"activity.pushedNamed" = "%@ にプッシュ完了";
+"activity.titleFailed" = "%@（失敗）";
+"activity.titleCancelled" = "%@（キャンセル済み）";
 "dialog.options" = "オプション";
 "dialog.doNotAskAgain" = "今後確認しない";
 "menu.repository" = "リポジトリ";
@@ -448,13 +470,33 @@
 
 /* 主题管理。 */
 "themes.newName" = "新規テーマ";
-"themes.change" = "変更…";
 "themes.fontLabel" = "フォント";
-"themes.text" = "テキスト";
+"themes.text" = "フォントカラー";
+"themes.token.text" = "プレーンテキスト";
+"themes.token.invisible" = "不可視文字";
+"themes.token.keyword" = "キーワード";
+"themes.token.identifier" = "識別子";
+"themes.token.function" = "関数";
+"themes.token.number" = "数値";
+"themes.token.string" = "文字列";
+"themes.token.symbol" = "シンボル";
+"themes.token.comment" = "コメント";
+"themes.token.preprocessor" = "プリプロセッサ文";
+"themes.token.xmlTag" = "XML タグ";
+"themes.token.attributeName" = "属性名";
+"themes.token.attributeValue" = "属性値";
+"themes.token.cssSelector" = "CSS セレクタ";
+"themes.token.heading" = "見出し（Markdown）";
+"themes.token.codeBlock" = "コードブロック（Markdown）";
+"themes.token.delimiter" = "区切り文字（Markdown）";
+"themes.token.emphasized" = "強調";
+"themes.token.stronglyEmphasized" = "強い強調";
+"themes.token.url" = "URL（Markdown）";
 "themes.add" = "テーマを追加";
 "themes.remove" = "テーマを削除";
-"themes.invalidTitle" = "読み込めなかったテーマ";
-"themes.invalid" = "次のテーマファイルは、破損しているか、名前または識別子がほかのテーマで使われているため、読み込めませんでした：";
+"themes.delete.title" = "テーマを削除しますか？";
+"themes.delete.message" = "選択したテーマを削除します。この操作は取り消せません。";
+"themes.delete.confirm" = "削除";
 "themes.exists" = "テーマはすでに存在します";
 "themes.exists.message" = "「%@」にはすでにテーマがあります。置き換えますか？";
 "themes.replace" = "置き換える";
@@ -1152,7 +1194,7 @@
 "sync.forcePush" = "強制プッシュ";
 "sync.forcePush.help" = "早送りできない場合にリモートブランチを上書きします。前回のフェッチ以降にリモートブランチが変わっていればプッシュは拒否されます。";
 "sync.pushRevision" = "リビジョンをプッシュ";
-"sync.pushRevision.help" = "選択したリビジョンをリモートにプッシュします。新規または既存のブランチ名、あるいは Gerrit レビュー用の refs/for/main のような完全な参照を入力します。";
+"sync.pushRevision.help" = "選択したリビジョンをリモートにプッシュします。新規または既存のブランチ名、あるいは refs/tags/v1.0 のような完全な参照を入力します。";
 "sync.remoteBranch" = "リモートブランチ：";
 "sync.destination" = "宛先：";
 "sync.revision" = "リビジョン：";
@@ -1380,6 +1422,7 @@
 "review.archived.one" = "1 個のブランチをアーカイブしました";
 "review.archived.many" = "%ld 個のブランチをアーカイブしました";
 "review.archived.undo" = "取り消す";
+"review.archived.notification" = "ブランチを自動で整理しました";
 "history.compareTo" = "比較先：";
 "history.behindBase" = "「%1$@」は「%3$@」より %2$ld 件遅れています";
 "history.compareBranches" = "ブランチを比較";
@@ -1517,31 +1560,6 @@
 "gitConfig.error.read" = "グローバルの Git 設定を読み込めません";
 "gitConfig.error.write" = "グローバルの Git 設定を保存できません";
 
-"gerrit.pushTitle" = "Gerrit Code Review にプッシュ";
-"gerrit.pushTitle.help" = "選んだリビジョンを選んだリモートにレビュー用としてプッシュします。プッシュ先は「refs/for/<レビューブランチ>」です。";
-"gerrit.push" = "Gerrit にプッシュ";
-"gerrit.reviewBranch" = "レビューブランチ：";
-"gerrit.pushMenu" = "「%@」を Gerrit にプッシュ…";
-"gerrit.quickPush" = "「%1$@」を Gerrit「%2$@ refs/for/%1$@」にクイックプッシュ";
-"settings.gerrit" = "Gerrit Code Review：";
-"settings.gerrit.enable" = "Gerrit へのかんたんプッシュを有効にする";
-"issueTracking.url" = "Issue トラッカーの URL：";
-"issueTracking.prefix" = "Issue 番号のプレフィックス：";
-"issueTracking.notConfigured" = "未設定";
-"issueTracking.edit" = "編集";
-"issueTracking.invalid" = "Issue トラッカーの URL が無効です";
-"issueTracking.title" = "Issue 番号の検出";
-"issueTracking.title.help" = "Issue トラッカーの URL テンプレートと、コミットメッセージで Issue 番号を示すプレフィックスを入力してください。";
-"issueTracking.save" = "保存";
-"issueTracking.url.help" = "%@ は URL 内で Issue 番号が入る位置を示します。";
-"issueTracking.prefix.help" = "Issue 番号の前に付ける文字。例：#";
-"issueTracking.url.placeholder" = "Issue トラッカーの URL テンプレート";
-"issueTracking.error.prefixLength" = "Issue 番号のプレフィックスは %d 文字以内にしてください。";
-"issueTracking.error.prefixWhitespace" = "Issue 番号のプレフィックスに空白は使えません。";
-"issueTracking.error.templateRequired" = "カスタムのプレフィックスを使うには Issue トラッカーの URL を入力してください。";
-"issueTracking.error.templateWhitespace" = "Issue トラッカーの URL に空白は使えません。";
-"issueTracking.error.placeholders" = "使えるプレースホルダは {ISSUE_NUMBER}、{OWNER}、{REPOSITORY} だけです。";
-"issueTracking.error.template" = "{ISSUE_NUMBER} プレースホルダを含む Web アドレスを入力してください。";
 "profiles.create.title" = "ユーザプロファイルを作成";
 "profiles.create.message" = "入力した内容でユーザプロファイルを作成します。";
 "profiles.create.submit" = "作成";
@@ -1569,11 +1587,9 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH エージェント：";
 "settings.sshAgent.system" = "システムの SSH エージェント";
-"settings.sshAgent.onePassword" = "1Password の SSH エージェント";
 "settings.sshAgent.description" = "選択した SSH エージェントは SSH 接続と SSH 署名に使われます。";
 "settings.sshAgent.warning" = "SSH エージェントが動作していません";
-"settings.sshAgent.warning.system" = "システムの SSH エージェントを利用できません。Mac を再起動するか、別の SSH エージェントを選択してください。";
-"settings.sshAgent.warning.onePassword" = "1Password の SSH エージェントが動作していません。1Password の設定で SSH エージェントをオンにするか、別の SSH エージェントを選択してください。";
+"settings.sshAgent.warning.system" = "システムの SSH エージェントを利用できません。Mac を再起動してください。";
 
 /* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
 "settings.gitProgram" = "Git プログラム：";
@@ -1675,7 +1691,6 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "ターミナル";
 "toolbar.quickActions" = "クイックアクション";
-"toolbar.gerritPush" = "Gerrit プッシュ";
 "launch.empty" = "最近使ったリポジトリはありません";
 "launch.version" = "バージョン %@";
 
@@ -1857,6 +1872,8 @@
 "clone.phase.filtering" = "コンテンツをフィルタ";
 "clone.recent.title" = "最近クローンしたリポジトリ";
 "clone.recent.clear" = "消去";
+"clone.notification.title" = "クローン完了";
+"clone.notification.body" = "「%@」にクローンしました。";
 "toolbar.clone" = "クローン";
 "bookmarks.dropZone.clone" = "クローン";
 "browse.title" = "「%@」のフォルダを選択";
@@ -1895,9 +1912,12 @@
 "repositorySettings.noPatterns" = "パターンはありません";
 "repositorySettings.name" = "名前";
 "repositorySettings.path" = "パス";
-"repositorySettings.issueTracking" = "Issue トラッキング";
-"repositorySettings.issueTrackerURL" = "Issue トラッカーの URL";
-"repositorySettings.issueNumberPrefix" = "Issue 番号のプレフィックス";
+"repositorySettings.localFolder" = "この Mac 上のフォルダ";
+"repositorySettings.localFolder.none" = "未設定";
+"repositorySettings.localFolder.choose" = "選択…";
+"repositorySettings.localFolder.clear" = "消去";
+"repositorySettings.localFolder.rejected" = "このフォルダは使用できません";
+"repositorySettings.localFolder.rejected.message" = "「%1$@」は「%2$@」のリポジトリではありません。";
 "repositorySettings.wrapping" = "行の折り返し";
 "repositorySettings.pageGuide" = "ページガイドを表示";
 "repositorySettings.lineLimit" = "1 行の文字数上限";
@@ -1910,9 +1930,13 @@
 "repositorySettings.edit.title" = "%@を編集";
 "repositorySettings.edit.message" = "この値はこのリポジトリのローカル Git 設定に書き込まれます。";
 
-/* 关于窗口、Help 菜单、What’s New 窗口、诊断报告与崩溃报告。 */
+/* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "Spooky について";
 "about.credits" = "Spooky は GNU General Public License v3.0 で公開されているフリーソフトウェアです。";
+"about.title" = "このアプリケーションについて";
+"about.version" = "バージョン %1$@ (%2$@)";
+"about.acknowledgements" = "謝辞";
+"about.license" = "ライセンス";
 "menu.help" = "ヘルプ";
 "help.help" = "Spooky ヘルプ";
 "help.whatsNew" = "新機能";
@@ -1920,7 +1944,18 @@
 "help.support" = "サポート";
 "help.diagnosticReport" = "診断レポートを作成…";
 "help.diagnosticReport.file" = "Spooky 診断レポート.txt";
-"whatsNew.title" = "Spooky %@ の新機能";
+"whatsNew.previous" = "前へ";
+"whatsNew.previous.tip" = "前のリリースノートを表示";
+"whatsNew.next" = "次へ";
+"whatsNew.next.tip" = "次のリリースノートを表示";
+"whatsNew.entry.title" = "Spooky %@ リリースノート";
+"whatsNew.entry.subtitle" = "リリースノートの全文を表示";
+"whatsNew.unread" = "未読";
+"whatsNew.detail.title" = "リリースノート – バージョン %@";
+"whatsNew.empty" = "リリースノートを表示するバージョンを選択してください。";
+"whatsNew.card.title" = "Spooky の新機能";
+"whatsNew.card.message" = "バージョン %@ の変更点をご覧ください。";
+"whatsNew.card.learnMore" = "詳しく見る…";
 "crash.issueTitle" = "Spooky が予期せず終了しました";
 "crash.title" = "Spooky は前回予期せず終了しました";
 "crash.message" = "GitHub でこの問題を報告しますか？ブラウザでクラッシュの概要を添えた新しい Issue ページが開きます。個人のパス、メールアドレス、ネットワークアドレスは取り除かれ、ご自身で Issue を送信するまで何も送られません。";
@@ -1928,6 +1963,25 @@
 "crash.dontReport" = "報告しない";
 "settings.crashReports" = "クラッシュレポート：";
 "settings.crashReports.always" = "クラッシュレポートを常に送信";
+
+/* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showDeveloperMenu" = "Developer メニューを表示";
+"menu.developer" = "Developer";
+"developer.userDefaults" = "User Defaults";
+"developer.logUserDefaults" = "Log User Defaults";
+"developer.resetUserDefaults" = "Reset User Defaults";
+"developer.resetUserDefaults.title" = "環境設定をリセットしますか？";
+"developer.resetUserDefaults.message" = "すべての設定がデフォルトに戻ります。ブックマーク、ユーザプロファイル、アカウント、サーバーリポジトリに指定したこの Mac 上のフォルダは残ります。一部の設定は Spooky を再起動したあとに変わります。";
+"developer.resetUserDefaults.confirm" = "リセット";
+"developer.clearUserDefaults" = "Clear User Defaults";
+"developer.testCrashReporting" = "Test Crash Reporting";
+"developer.crashWithException" = "Crash With Fake Exception";
+"developer.crashWithBadAccess" = "Crash With Bad Access";
+"developer.autoArchive" = "Auto-Archive Branches";
+"developer.runAutoArchive" = "Run Auto-Archive";
+"developer.resetAutoArchiveDates" = "Reset Auto-Archive Dates";
+"developer.showWhatsNewCard" = "Show What’s New Card";
+"developer.autoReload" = "Auto-Reload Repository";
 
 /* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "サーバが Git の環境変数を設定しています";
@@ -1954,6 +2008,7 @@
 "submodule.autoUpdate.skip" = "更新しない";
 "submodule.autoUpdate.update" = "更新";
 "submodule.checkoutRevision" = "リビジョンをチェックアウト";
+"submodule.checkoutSubmoduleRevision" = "サブモジュールのリビジョンをチェックアウト";
 "submodule.default" = "%@（デフォルト）";
 "submodule.delete" = "サブモジュールを削除";
 "submodule.delete.keepWorkingTree" = "作業ツリーを残す";
@@ -1961,6 +2016,7 @@
 "submodule.delete.menu" = "「%@」を削除…";
 "submodule.delete.message" = "このリポジトリからサブモジュール「%@」を削除します。";
 "submodule.delete.submit" = "削除";
+"submodule.deleteSubmodules" = "サブモジュールを削除";
 "submodule.editURL" = "サブモジュールの URL を編集";
 "submodule.editURL.message" = "サブモジュールのリポジトリの URL を入力します。";
 "submodule.editURL.submit" = "変更";
@@ -2025,6 +2081,7 @@
 "submodule.newName" = "新しい名前：";
 "submodule.newName.placeholder" = "新しいサブモジュール名";
 "submodule.newPath" = "新しいパス：";
+"submodule.noRevisions" = "リビジョンがありません";
 "submodule.none" = "このリポジトリにはまだサブモジュールがありません。";
 "submodule.notAvailable" = "利用できません";
 "submodule.notInitialized" = "未初期化";
@@ -2049,7 +2106,9 @@
 "submodule.repair" = "サブモジュールを修復";
 "submodule.repair.message" = "欠けている設定と作業ツリーを復元し、サブモジュールを有効な状態に戻します。";
 "submodule.repair.submit" = "修復";
-"submodule.setting" = "サブモジュールの設定を変更";
+"submodule.setFetchMode" = "サブモジュールのフェッチ方法を設定";
+"submodule.setIgnoreMode" = "サブモジュールの無視の方法を設定";
+"submodule.setUpdateStrategy" = "サブモジュールの更新方法を設定";
 "submodule.state.clean" = "クリーン";
 "submodule.state.uninitialized" = "未初期化";
 "submodule.state.unknown" = "不明";
@@ -2062,6 +2121,9 @@
 "submodule.synchronize.submit" = "同期";
 "submodule.tooltip" = "サブモジュール「%@」";
 "submodule.tooltip.url" = "- URL：「%@」";
+"submodule.unsetFetchMode" = "サブモジュールのフェッチ方法の設定を解除";
+"submodule.unsetIgnoreMode" = "サブモジュールの無視の方法の設定を解除";
+"submodule.unsetUpdateStrategy" = "サブモジュールの更新方法の設定を解除";
 "submodule.update" = "サブモジュールを更新";
 "submodule.update.menu" = "「%@」を更新…";
 "submodule.update.message" = "このリポジトリのインデックスに記録されたリビジョンでサブモジュールをチェックアウトします。";
@@ -2121,7 +2183,6 @@
 "worktree.move.message" = "ワークツリー「%@」を現在の状態のまま別の場所へ移動します。";
 "worktree.move.submit" = "移動";
 "worktree.noRefs" = "このリポジトリにはまだコミットがありません。";
-"worktree.open" = "作成後に開く";
 "worktree.open.current" = "ワークツリーを開く";
 "worktree.open.newTab" = "ワークツリーを新規タブで開く";
 "worktree.open.newWindow" = "ワークツリーを新規ウインドウで開く";

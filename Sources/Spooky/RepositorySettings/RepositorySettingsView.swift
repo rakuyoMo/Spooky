@@ -9,7 +9,7 @@ import SwiftUI
 struct RepositorySettingsView: View {
     /// 四个分段。
     enum Page: CaseIterable, Hashable {
-        /// 描述、Issue 追踪、提交人身份、折行与签名。
+        /// 名称、路径、描述、提交人身份、折行与签名。
         case general
 
         /// `.gitattributes` 里交给 Git LFS 的规则。

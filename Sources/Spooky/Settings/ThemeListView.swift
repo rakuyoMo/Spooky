@@ -5,7 +5,7 @@ import SwiftUI
 
 /// 主题列表：不允许空选，选中的主题即当前外观使用的主题。
 ///
-/// 主题可以在行内改名；行拖到 Finder 导出成主题文件，主题文件拖进列表即导入。
+/// Default 与 Default (Dark) 以外的主题可以在行内改名；行拖到 Finder 导出成主题文件，主题文件拖进列表即导入。
 struct ThemeListView: NSViewRepresentable {
     /// 回车键开始改名；其它按键交给系统列表。
     final class ThemeTableView: NSTableView {
@@ -27,6 +27,32 @@ struct ThemeListView: NSViewRepresentable {
         }
     }
 
+    /// 主题列表的行：与下一行之间画一条从左边 18 pt 起的分隔线，最后一行下面不画。
+    final class ThemeRowView: NSTableRowView {
+        /// 是否在底边画分隔线。
+        var drawsSeparator = false
+
+        /// 先画系统的行背景，再画分隔线。
+        override func drawBackground(in dirtyRect: NSRect) {
+            super.drawBackground(in: dirtyRect)
+
+            guard drawsSeparator else {
+                return
+            }
+
+            NSColor.separatorColor.setFill()
+
+            // 分隔线是半透明的系统色，叠在行背景上画。
+            NSRect(
+                x: 18,
+                y: isFlipped ? bounds.maxY - 1 : bounds.minY,
+                width: bounds.width - 18,
+                height: 1
+            )
+            .fill(using: .sourceOver)
+        }
+    }
+
     /// 主题存储。
     let store: ThemeStore
 
@@ -39,6 +65,10 @@ struct ThemeListView: NSViewRepresentable {
     /// 是否为深色外观：选中的行写入这一外观的主题选择。
     let dark: Bool
 
+    /// 刚新建、要立即进入改名的主题；进入改名后清空。
+    @Binding
+    var renameRequest: String?
+
     /// 建立表格委托。
     func makeCoordinator() -> ThemeListCoordinator { ThemeListCoordinator(self) }
 
@@ -49,6 +79,11 @@ struct ThemeListView: NSViewRepresentable {
         table.addTableColumn(NSTableColumn(identifier: .init("name")))
         table.headerView = nil
         table.style = .fullWidth
+
+        // 每行 24 pt，行与行之间不留间隙，分隔线由行自己画。
+        table.rowSizeStyle = .custom
+        table.rowHeight = 24
+        table.intercellSpacing = .zero
 
         // 始终选中一行：选中的就是当前外观的主题。
         table.allowsEmptySelection = false
@@ -96,12 +131,17 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
     /// 程序同步选区时忽略表格的选择通知，避免写回外观选择。
     private var isUpdating = false
 
+    /// 已经开始改名的新建请求，清空请求之前再次同步时不重复进入改名。
+    private var handledRename: String?
+
     /// 建立与 SwiftUI 输入的绑定。
     init(_ parent: ThemeListView) {
         self.parent = parent
     }
 
     /// 名称或顺序变化时重载，再把选区移到当前外观的所选主题；列表里没有它时不选中任何行。
+    ///
+    /// 选中的是刚新建的主题时，接着进入改名。
     func update(_ parent: ThemeListView) {
         self.parent = parent
 
@@ -125,19 +165,32 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
             return
         }
 
-        guard table.selectedRow != row else {
-            return
+        if table.selectedRow != row {
+            table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+            table.scrollRowToVisible(row)
         }
 
-        table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-        table.scrollRowToVisible(row)
+        // 新建的主题选中后立即进入改名；请求在视图更新之外清空，期间再次同步时不重复处理。
+        if
+            let request = parent.renameRequest,
+            request == parent.selectedID,
+            request != handledRename
+        {
+            handledRename = request
+
+            Task { @MainActor [weak self] in
+                parent.renameRequest = nil
+                self?.beginRename()
+            }
+        }
     }
 
-    /// 开始改名所选的主题。
+    /// 开始改名所选的主题；内置主题不能改名，不进入编辑。
     func beginRename() {
         guard
             let table,
-            parent.themes.indices.contains(table.selectedRow)
+            parent.themes.indices.contains(table.selectedRow),
+            !ThemeStore.isBuiltin(parent.themes[table.selectedRow])
         else { return }
 
         table.editColumn(0, row: table.selectedRow, with: nil, select: true)
@@ -146,7 +199,14 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
     /// 行数即主题数。
     func numberOfRows(in _: NSTableView) -> Int { parent.themes.count }
 
-    /// 每行一个可编辑的名称文本框。
+    /// 最后一行以外的行在底边画分隔线。
+    func tableView(_: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
+        let view = ThemeListView.ThemeRowView()
+        view.drawsSeparator = row < parent.themes.count - 1
+        return view
+    }
+
+    /// 每行一个名称文本框，内置主题的不可编辑。
     func tableView(_ tableView: NSTableView, viewFor _: NSTableColumn?, row: Int) -> NSView? {
         guard parent.themes.indices.contains(row) else {
             return nil
@@ -158,7 +218,13 @@ final class ThemeListCoordinator: NSObject, NSTableViewDataSource, NSTableViewDe
             ?? Self.makeCell(identifier)
 
         cell.textField?.stringValue = theme.name
+
+        // 内置主题不能改名，点名称不进入编辑；复用的单元格可能来自可改名的行，可选中与可编辑一起设。
+        let renamable = !ThemeStore.isBuiltin(theme)
+        cell.textField?.isEditable = renamable
+        cell.textField?.isSelectable = renamable
         cell.textField?.delegate = self
+
         return cell
     }
 
@@ -253,10 +319,10 @@ extension ThemeListCoordinator: NSFilePromiseProviderDelegate {
         (provider.userInfo as? TextTheme).map { TextTheme.fileName(for: $0.name) } ?? ""
     }
 
-    /// 在主队列写出文件，目标已有同名文件时可以弹出覆盖确认。
+    /// 在主队列写出文件，写入失败时可以直接弹出提示。
     nonisolated func operationQueue(for _: NSFilePromiseProvider) -> OperationQueue { .main }
 
-    /// 写出拖出的主题；不覆盖已有文件时以用户取消结束。
+    /// 把拖出的主题写到 Finder 给的路径。
     nonisolated func filePromiseProvider(
         _ provider: NSFilePromiseProvider,
         writePromiseTo url: URL,
@@ -285,10 +351,10 @@ extension ThemeListCoordinator {
             .filter { $0.isFileURL && $0.pathExtension.lowercased() == TextTheme.fileExtension }
     }
 
-    /// 单元格：一行可编辑的名称，过长时截断末尾。
+    /// 单元格：一行系统字体 13 pt 的名称，距列表左边 15 pt，过长时截断末尾；能否编辑由显示的主题决定。
     private static func makeCell(_ identifier: NSUserInterfaceItemIdentifier) -> NSTableCellView {
         let field = NSTextField(labelWithString: "")
-        field.isEditable = true
+        field.font = .systemFont(ofSize: 13)
         field.lineBreakMode = .byTruncatingTail
         field.translatesAutoresizingMaskIntoConstraints = false
 
@@ -298,7 +364,8 @@ extension ThemeListCoordinator {
         cell.addSubview(field)
 
         NSLayoutConstraint.activate([
-            field.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
+            // 单元格本身距行的左边 6 pt，名称距列表左边 15 pt。
+            field.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 9),
             field.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
             field.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
         ])

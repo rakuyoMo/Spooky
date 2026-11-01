@@ -27,7 +27,7 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **新建、克隆与查找仓库**：在本机或服务器上新建仓库；在后台克隆，可以选择 LFS 与子模块，书签上显示进度。在本机或服务器的文件夹里查找已有的仓库，服务器上的查找在服务器上进行；服务器上的文件夹可以手填，也可以浏览选择
 
-- **窗口与导航**：标签页、窗口恢复、快速启动窗口、在视图之间后退与前进，用快捷操作查找视图、分支、标签、提交、文件、储藏等并直接执行动作，工具栏可以自定义
+- **窗口与导航**：标签页、窗口恢复、快速启动窗口、Dock 菜单里的新建窗口、把拖到 Dock 图标上的文件夹作为仓库打开、在视图之间后退与前进，用快捷操作查找视图、分支、标签、提交、文件、储藏等并直接执行动作，工具栏可以自定义
 
 - **连接检查与断线恢复**：添加服务器仓库时，先检查连接、Git 版本和运行环境。断线后保留上次读取的状态并在后台重连，恢复前禁止写入
 
@@ -59,7 +59,7 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **分支、标签与远端**：侧边栏按 “/” 把引用折叠成文件夹，并可以过滤。分支可以置顶和归档，并标出陈旧或跟踪的分支已不存在。支持快进、重命名和删除本地与远端分支，设置上游和父分支，新建轻量、附注或签名标签，管理远端及其地址与 refspec。输入分支名时自动规范成有效的引用名
 
-- **同步与合并**：获取、拉取、推送和同步，可以选择清理已删除的分支、获取全部标签、处理子模块和跳过钩子。强推只覆盖你上次看到的版本，任意版本都可以推到任意引用，例如 Gerrit 评审。窗口显示仓库时可以自动获取远端，Spooky 在后台也照常进行，不会询问凭据。合并前先预览是否会冲突。所有操作的日志集中在 “活动” 窗口里，按远程操作、仓库操作与托管服务请求分页，进行中的操作可以取消
+- **同步与合并**：获取、拉取、推送和同步，可以选择清理已删除的分支、获取全部标签、处理子模块和跳过钩子。强推只覆盖你上次看到的版本，任意版本都可以推到任意引用。窗口显示仓库时可以自动获取远端，Spooky 在后台也照常进行，不会询问凭据。合并前先预览是否会冲突。所有操作的日志集中在 “活动” 窗口里，按远程操作、仓库操作与托管服务请求分页，进行中的操作可以取消
 
 - **改写历史**：反转、摘取、以 soft、mixed 或 hard 方式重置、检出任意版本，以及变基到新的基点。交互式变基可以压缩、fixup、编辑、改信息、删除或调整提交顺序，把暂存的改动并入较早的提交，或自动压缩。改写之前，Spooky 会列出受影响的提交，并提示其中已经推送或已并入其它分支的提交
 
@@ -79,17 +79,17 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **拖放操作**：把分支、提交和标签拖到侧边栏，就能新建分支与标签、合并、变基、摘取、反转、拉取、发布、推送、置顶、归档或改名；在历史里拖动提交，可以压缩、fixup 或移动它们
 
-- **在终端中打开**：支持 Terminal、iTerm、Warp、Ghostty、WezTerm、Prompt 和 Otty。服务器仓库会在终端里经 SSH 进入远端路径
+- **在终端中打开**：支持 Terminal、iTerm、Warp、Ghostty、WezTerm 和 Otty。服务器仓库会在终端里经 SSH 进入远端路径
 
-- **外部工具**：用外部的比较与合并工具查看改动、解决冲突，用其它程序打开文件。服务器上的文件先复制到本机交给这些工具，合并结果与编辑过的文件要先核对服务器上的版本没有变化才会写回。VS Code 经 Remote - SSH 直接打开服务器上的文件
+- **外部工具**：用外部的比较与合并工具查看改动、解决冲突，用其它程序打开文件。服务器上的文件先复制到本机交给这些工具，合并结果与编辑过的文件要先核对服务器上的版本没有变化才会写回。VS Code、VS Code Insiders 与 Cursor 经各自的 Remote SSH 扩展直接打开服务器上的文件
 
 - **链接**：`spooky://` 链接可以打开仓库、视图、分支或提交，或发起克隆，本机与服务器仓库都适用。github.com 上 “Open with Desktop” 的链接可以交给 Spooky 打开
 
-- **设置**：外观、全局的 Git 身份与签名、Git 程序、外部工具、托管账号、Gerrit 推送、Issue 追踪链接、SSH agent 与环境变量。仓库设置包括描述、Issue 追踪、提交人身份、折行、签名、Git LFS、忽略与排除规则
+- **设置**：外观、全局的 Git 身份与签名、Git 程序、外部工具、托管账号、SSH agent 与环境变量。仓库设置包括描述、提交人身份、折行、签名、Git LFS、忽略与排除规则
 
 - **更新与诊断**：Spooky 按稳定、测试或开发通道检查签名的更新。帮助菜单可以导出去掉了个人信息的诊断报告；崩溃之后，Spooky 可以打开预填好的 GitHub 问题页，由你自己决定是否提交
 
-- **主题**：Default 与 Default (Dark) 存为普通的主题文件，可以编辑、改名或删除；文件缺少或损坏时，下次启动 Spooky 会重新写入。可以新建自己的 Diff 与文件内容主题，经拖放导入和导出，并为浅色、深色外观各选一套
+- **主题**：Default 与 Default (Dark) 存为普通的主题文件，可以编辑，不能改名或删除；文件缺少或损坏时，下次启动 Spooky 会重新写入。可以新建自己的 Diff 与文件内容主题，逐类修改语法颜色，经拖放导入和导出，在 Finder 里打开或拖到 Dock 图标上的主题文件同样导入，并为浅色、深色外观各选一套
 
 - **支持八种语言**：英文、简体中文、繁体中文、日文、韩文、德文、法文和西班牙文，自动跟随系统语言。其它语言环境下显示英文
 
@@ -142,9 +142,15 @@ open .build/Spooky.app
 
 ### 自动化
 
-终端程序选的是 Terminal 或 iTerm 时，Spooky 会通过 AppleScript 让它打开仓库。第一次使用时，macOS 会询问是否允许 Spooky 控制这个程序。
+终端程序选的是 Terminal 或 iTerm 时，Spooky 会通过 AppleScript 让它打开仓库；比较或合并工具选的是 BBEdit 或 Araxis Merge 时，它们的命令行会经 Apple 事件控制各自的程序。第一次使用时，macOS 会询问是否允许 Spooky 控制这个程序。
 
 如果当时拒绝了，可以在 “系统设置 › 隐私与安全性 › 自动化” 里重新开启。
+
+### 通知
+
+克隆完成与自动归档分支之后，Spooky 会发出系统通知。第一次发通知时，macOS 会询问是否允许 Spooky 发送通知。
+
+如果当时拒绝了，可以在 “系统设置 › 通知 › Spooky” 里重新开启。
 
 ## 工作原理
 
@@ -165,7 +171,7 @@ open .build/Spooky.app
 
 - 同一仓库的写操作排队依次执行；同一时间只有一个窗口能对它发起写操作，完成后显示这个仓库的窗口都会刷新
 - 写操作中途断线时不会自动重试。重新连接后，Spooky 会先核对分支、工作区、暂存区锁、远端跟踪分支，以及是否有进行中的合并或变基，说明 HEAD 与远端跟踪分支是否已经变化，再允许写入
-- 撤销会在每次操作前后记下 HEAD、分支、标签、分支设置、储藏列表、暂存区和已跟踪文件的内容。快照写进仓库自己的对象库，本机或服务器都一样；恢复前 Spooky 会先核对仓库是否仍与记录一致
+- 撤销会在每次操作前后记下 HEAD、分支、标签、分支设置、储藏列表、暂存区和已跟踪文件的内容。快照写进仓库自己的对象库，本机或服务器都一样；恢复前 Spooky 会先核对仓库是否仍与记录一致。远端设置、assume-unchanged 标记、Git LFS 的启用、发布的分支与标签、重命名的远端分支，以及子模块的增删、移动、改名、本地设置与子模块里检出的版本不在快照里，撤销时执行反向操作
 - 取消服务器上的操作时，Spooky 会结束它在服务器上的进程；无法确认进程已退出时会明确提示，重新连接核对之前不能继续写入
 
 ### 凭据
@@ -182,7 +188,7 @@ open .build/Spooky.app
 
 本机：
 
-- 设置、身份档案和仓库书签保存在偏好设置域 `com.rakuyo.spooky`
+- 设置、身份档案、仓库书签和在仓库设置里为服务器仓库指定的本机文件夹保存在偏好设置域 `com.rakuyo.spooky`
 - 主题（包括 Default 与 Default (Dark)）保存在 `~/Library/Application Support/Spooky/Themes`，一个主题一个 `.spookytheme` 文件
 - “活动” 窗口里获取、拉取、推送等远程操作的记录保存在 `~/Library/Application Support/Spooky/Activity`，一条记录一个文件，7 天后删除；其余记录只在 Spooky 运行期间保存在内存里
 - “活动” 窗口用来计算分支、远端、储藏与子模块增减的上一次清单保存在 `~/Library/Application Support/Spooky/Baselines`，每个仓库一个文件
@@ -191,7 +197,7 @@ open .build/Spooky.app
 - 连接和回调使用私有的 `/tmp/spooky-*` 临时目录，关闭会话后清理。本机仓库校验签名时同样使用这样一个目录，校验结束即删除
 - 作者头像以作者邮箱的 SHA-256 哈希向 Gravatar 请求，只在 Spooky 运行期间保存在内存里
 - 交给 Quick Look 和其它程序的文件副本放在私有的 `spooky-files-*` 临时目录，关闭仓库后清理
-- 用 Warp 打开服务器仓库时，会在 `~/.warp/launch_configurations/` 写入 `Spooky-*.yaml`；用 Prompt 打开时使用临时的 `.command` 文件。退出 Spooky 时只清理它自己创建的这些文件
+- 用 Warp 打开服务器仓库时，会在 `~/.warp/launch_configurations/` 写入 `Spooky-*.yaml`；退出 Spooky 时只清理它自己创建的这些文件
 - 启动时读取 `~/Library/Logs/DiagnosticReports/` 里 Spooky 自己的崩溃报告，用来询问是否在 GitHub 上报告；不会自动上传任何内容
 - 更新从 GitHub Releases 上的 `appcast.xml` 检查，下载的更新先校验 EdDSA 签名再安装
 
@@ -199,11 +205,12 @@ open .build/Spooky.app
 
 - `~/.spooky/bin/`：远端程序及其 askpass、GPG 与 ssh-keygen 入口，权限为 `0700`，会话结束后保留，供下次连接使用
 - `/tmp/spooky-*`：会话期间的私有运行时目录，关闭会话后清理
+- 为 “在 Finder 中显示” 核对服务器仓库与这台 Mac 上挂载的文件夹时，在仓库的 Git 目录里临时写一个随机命名的空文件，核对完立即删除
 
 仓库里：
 
 - 分支的置顶、归档、父分支与分支整理标记保存在仓库自己的 Git 配置里，键为 `branch.<名称>.spooky-*`；分支改名时随之移动，删除分支时一并清除
-- 仓库设置写进仓库自己的 Git 配置；折行与 Issue 追踪使用键 `spooky.commitbodylimit`、`spooky.commitshowsguide`、`spooky.issuetrackertemplate` 与 `spooky.issuenumberprefix`
+- 仓库设置写进仓库自己的 Git 配置；折行使用键 `spooky.commitbodylimit` 与 `spooky.commitshowsguide`
 - 启用 Git LFS 只在仓库自己的配置里登记它的过滤器与钩子，跟踪规则写进仓库根目录的 `.gitattributes`
 
 ## 开发
@@ -233,3 +240,4 @@ Spooky 以 [GNU General Public License v3.0](LICENSE) 许可证发布。
 
 - [Sparkle](https://sparkle-project.org) 2.10.0，用于更新，以 MIT 许可证发布；许可证随 App 附在 `Contents/Resources/Sparkle-LICENSE.txt`
 - [highlight.js](https://highlightjs.org) 11.12.0，用于语法着色。Copyright (c) 2006, Ivan Sagalaev，以 BSD 3-Clause 许可证发布；许可证全文见 [`Sources/Spooky/HighlightJS/LICENSE`](Sources/Spooky/HighlightJS/LICENSE)，并随 App 一同分发
+- [swift-subprocess](https://github.com/swiftlang/swift-subprocess) 1.0.1，用于启动 Git 等子进程，以 Apache License 2.0 发布；许可证随 App 附在 `Contents/Resources/Subprocess-LICENSE.txt`

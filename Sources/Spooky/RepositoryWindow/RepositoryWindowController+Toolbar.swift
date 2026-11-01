@@ -59,15 +59,6 @@ enum RepositoryToolbar {
     /// 推送任意版本。
     static let pushTo = NSToolbarItem.Identifier("pushTo")
 
-    /// 推送到 Gerrit 评审；只在 Integration 里开启 Gerrit 推送后出现在自定义面板里。
-    static let gerritPush = NSToolbarItem.Identifier("gerritPush")
-
-    /// 全部暂存，按住 ⌥ 且有已暂存的改动时换成全部取消暂存。
-    static let stageAll = NSToolbarItem.Identifier("stageAll")
-
-    /// 聚焦提交信息的标题。
-    static let commit = NSToolbarItem.Identifier("commit")
-
     /// 在 Finder 中显示。
     static let finder = NSToolbarItem.Identifier("finder")
 
@@ -80,11 +71,11 @@ enum RepositoryToolbar {
         quickActions, host, sync, synchronize, merge, stashes, refresh, clone, closeRepository, search,
     ]
 
-    /// 自定义面板里可选的项：默认项之外另有新建分支、安全强推、推送任意版本、Finder、终端、全部暂存与提交，以及系统的空白。
+    /// 自定义面板里可选的项：默认项之外另有新建分支、安全强推、推送任意版本、Finder 与终端，以及系统的空白。
     static let allowedItems: [NSToolbarItem.Identifier] = [
         repositories, sidebarSeparator, parentRepository, navigation, quickActions, host, sync, synchronize, merge,
         stashes, refresh, clone, closeRepository, search, createBranch, forcePush, pushTo, finder, terminal,
-        stageAll, commit, .space, .flexibleSpace,
+        .space, .flexibleSpace,
     ]
 
     /// 不能移除或移动的项：父仓库在仓库是子模块时出现，主机前缀标明服务器仓库，Clone 在有克隆时出现，不显示时都隐藏而不移除。
@@ -110,11 +101,6 @@ extension RepositoryWindowController {
             "toolbar.forcePush", "toolbar.forcePush", "arrow.up.circle.fill", #selector(forcePushWithLease)
         ),
         RepositoryToolbar.pushTo: ("toolbar.pushTo", "toolbar.pushTo", "arrow.up.right.circle", #selector(pushRevision)),
-        RepositoryToolbar.gerritPush: (
-            "toolbar.gerritPush", "toolbar.gerritPush", "arrow.up.circle", #selector(pushToGerritRemote)
-        ),
-        RepositoryToolbar.stageAll: ("working.stageAll", "working.stageAll", "checkmark.square", #selector(stageAll)),
-        RepositoryToolbar.commit: ("working.commit", "working.commit", "checkmark.circle", #selector(composeCommit)),
         RepositoryToolbar.finder: ("toolbar.finder", "action.revealFinder", "finder", #selector(revealInFinder)),
         RepositoryToolbar.terminal: ("toolbar.terminal", "action.openTerminal", "apple.terminal", #selector(openInTerminal)),
     ]
@@ -178,9 +164,9 @@ extension RepositoryWindowController {
         RepositoryToolbar.defaultItems
     }
 
-    /// 自定义面板里可选的项；开启 Gerrit 推送后另有 Gerrit Push。
+    /// 自定义面板里可选的项。
     func toolbarAllowedItemIdentifiers(_: NSToolbar) -> [NSToolbarItem.Identifier] {
-        RepositoryToolbar.allowedItems + (GerritPush.isEnabled ? [RepositoryToolbar.gerritPush] : [])
+        RepositoryToolbar.allowedItems
     }
 
     /// 不能移除或移动的项。
@@ -256,9 +242,6 @@ extension RepositoryWindowController {
                     configureSearchItem(item)
                 }
 
-            case RepositoryToolbar.stageAll:
-                updateStageAllItem(item, option: NSApp.keyWindow === window && NSEvent.modifierFlags.contains(.option))
-
             default:
                 updateButtonTip(item)
             }
@@ -268,20 +251,21 @@ extension RepositoryWindowController {
         updateQuickToolbarItems(option: NSApp.keyWindow === window && NSEvent.modifierFlags.contains(.option))
     }
 
-    /// 按住 ⌥ 且有已暂存的改动时，全部暂存按钮换成全部取消暂存；标题与提示一起换。
-    func updateStageAllItem(_ item: NSToolbarItem, option: Bool) {
-        let unstage = option && (session.status?.entries.contains(where: \.hasStagedChanges) ?? false)
-        let title = AppLocalization.text(unstage ? "working.unstageAll" : "working.stageAll")
-        let host = showsManager ? nil : session.repository?.host
-
-        item.label = title
-        item.toolTip = host.map { $0 + ": " + title } ?? title
-    }
-
     /// 让侧边栏分隔符跟随新的外层分栏。
     func trackSidebar(of split: NSSplitViewController) {
         let item = window?.toolbar?.items.first { $0.itemIdentifier == RepositoryToolbar.sidebarSeparator }
         (item as? NSTrackingSeparatorToolbarItem)?.splitView = split.splitView
+    }
+
+    /// 仓库动作按钮的提示：服务器仓库带主机前缀，分不清是哪台机器上的仓库时不至于点错。
+    func updateButtonTip(_ item: NSToolbarItem) {
+        guard let button = Self.buttons[item.itemIdentifier] else {
+            return
+        }
+
+        let tip = AppLocalization.text(button.palette)
+        let host = showsManager ? nil : session.repository?.host
+        item.toolTip = host.map { $0 + ": " + tip } ?? tip
     }
 }
 
@@ -443,16 +427,5 @@ extension RepositoryWindowController {
         item.action = button.action
         updateButtonTip(item)
         return item
-    }
-
-    /// 仓库动作按钮的提示：服务器仓库带主机前缀，分不清是哪台机器上的仓库时不至于点错。
-    private func updateButtonTip(_ item: NSToolbarItem) {
-        guard let button = Self.buttons[item.itemIdentifier] else {
-            return
-        }
-
-        let tip = AppLocalization.text(button.palette)
-        let host = showsManager ? nil : session.repository?.host
-        item.toolTip = host.map { $0 + ": " + tip } ?? tip
     }
 }

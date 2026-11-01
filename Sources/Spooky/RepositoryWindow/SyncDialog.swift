@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - SyncDialogKind
 
-/// 同步、变基、安全强推、推送任意版本与推送到 Gerrit 评审这五个对话框。
+/// 同步、变基、安全强推与推送任意版本这四个对话框。
 enum SyncDialogKind {
     /// 依次获取、拉取、推送当前分支（Sync…）。
     case sync
@@ -14,11 +14,8 @@ enum SyncDialogKind {
     /// 带明确期望值的强推（Force Push with Lease…）。
     case forcePush
 
-    /// 把任意版本推到远端的指定引用，包括 Gerrit 评审引用（Push To…）。
+    /// 把任意版本推到远端的指定引用（Push To…）。
     case pushRevision
-
-    /// 把任意版本推到远端的 `refs/for/<评审分支>`，交给 Gerrit 评审；Integration 设置里打开后才有入口。
-    case gerritPush
 
     /// 对话框标题的资源键。
     var titleKey: String {
@@ -27,7 +24,6 @@ enum SyncDialogKind {
         case .rebase: "sync.rebaseHead"
         case .forcePush: "sync.forcePushLease"
         case .pushRevision: "sync.pushRevision"
-        case .gerritPush: "gerrit.pushTitle"
         }
     }
 
@@ -38,7 +34,6 @@ enum SyncDialogKind {
         case .rebase: "sync.rebaseHead"
         case .forcePush: "sync.forcePush"
         case .pushRevision: "sync.pushRevision"
-        case .gerritPush: "gerrit.push"
         }
     }
 }

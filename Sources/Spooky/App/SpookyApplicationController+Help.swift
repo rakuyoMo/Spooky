@@ -20,24 +20,10 @@ extension SpookyApplicationController {
         addItem("help.diagnosticReport", action: #selector(createDiagnosticReport), target: self, to: help)
     }
 
-    /// App 菜单的关于窗口：图标、名称、版本与构建号，以及项目网站与许可证。
+    /// App 菜单的关于窗口：图标、名称、版本与 Release Notes，说明、版权与 Acknowledgements、License。
     @objc
     func showAbout() {
-        let credits = NSMutableAttributedString(
-            string: AppLocalization.text("about.credits"),
-            attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor]
-        )
-
-        if let website = HelpLinks.website {
-            credits.append(NSAttributedString(string: "\n"))
-            credits.append(NSAttributedString(
-                string: website.absoluteString,
-                attributes: [.font: NSFont.systemFont(ofSize: 11), .link: website]
-            ))
-        }
-
-        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
-        NSApp.activate(ignoringOtherApps: true)
+        AboutWindowController.show()
     }
 
     /// Help › Spooky Help：在浏览器里打开项目网站上的使用说明。
@@ -46,7 +32,7 @@ extension SpookyApplicationController {
         HelpLinks.website.map { _ = NSWorkspace.shared.open($0) }
     }
 
-    /// Help › What's New：本版本的更新说明。
+    /// Help › What's New：历次版本的更新说明。
     @objc
     func showWhatsNew() {
         WhatsNewWindowController.show()
@@ -92,8 +78,22 @@ extension SpookyApplicationController {
 // MARK: - SpookyApplicationController + NSMenuItemValidation
 
 extension SpookyApplicationController: NSMenuItemValidation {
-    /// 这个构建没有打包更新说明时 What's New 不可用；其余菜单项总是可用。
+    /// 这个构建没有打包任何版本的更新说明时 What's New 不可用，没有当前版本的说明时 Show What's New Card 不可用；
+    /// Auto-Reload Repository 同时标出开关状态；其余菜单项总是可用。
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
-        item.action != #selector(showWhatsNew) || WhatsNewWindowController.notes() != nil
+        switch item.action {
+        case #selector(showWhatsNew):
+            return !WhatsNewState.shared.entries.isEmpty
+
+        case #selector(showWhatsNewCard):
+            return WhatsNewState.shared.hasCurrentNotes
+
+        case #selector(toggleAutoReload):
+            item.state = DeveloperPreferences.autoReloads() ? .on : .off
+            return true
+
+        default:
+            return true
+        }
     }
 }

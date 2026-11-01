@@ -22,6 +22,15 @@ enum LFSTransfer {
         case .push: AppLocalization.text("lfs.push")
         }
     }
+
+    /// Activity 记录的传输方向。
+    var activityTransfer: ActivityTransfer {
+        switch self {
+        case .fetch: .fetch
+        case .pull: .pull
+        case .push: .push
+        }
+    }
 }
 
 // MARK: - Availability
@@ -55,7 +64,8 @@ extension RepositorySession {
     func enableLFS() {
         performGit(
             { runner, _ in try await RepositoryLFS(runner: runner).install() },
-            title: AppLocalization.text("lfs.enable")
+            title: AppLocalization.text("lfs.enable"),
+            undo: .enablingLFS
         )
     }
 
@@ -122,7 +132,7 @@ extension RepositorySession {
                 }
             },
             title: transfer.title,
-            activityKind: .remote
+            target: ActivityTarget(transfer: transfer.activityTransfer, remote: remote, refspec: nil)
         )
     }
 }

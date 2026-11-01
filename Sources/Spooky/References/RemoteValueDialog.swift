@@ -172,7 +172,8 @@ extension RemoteValueDialog {
                     { runner, output in
                         try await RepositoryRemotes(runner: runner).setURL(value, of: remote, push: push, onOutput: output)
                     },
-                    title: title
+                    title: title,
+                    undo: .changingRemote(remote)
                 )
 
             case .refspec(let remote, let push, let original):
@@ -186,7 +187,8 @@ extension RemoteValueDialog {
                             try await remotes.addRefspec(value, to: remote, push: push)
                         }
                     },
-                    title: title
+                    title: title,
+                    undo: .changingRemote(remote)
                 )
             }
 

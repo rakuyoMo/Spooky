@@ -48,18 +48,6 @@ extension SyncDialog {
         let destination = branch?.upstreamBranch.map { String($0.dropFirst("refs/heads/".count)) } ?? source
         return (source, remote, destination)
     }
-
-    /// 推送到 Gerrit 的默认值：版本是预选的分支，没有预选时是 HEAD 分支，分离时是 HEAD 的提交；
-    /// 远端取第一个，评审分支与版本同名。
-    static func gerritPushDefaults(
-        preselection: String?,
-        in session: RepositorySession
-    ) -> (source: String, remote: String, destination: String) {
-        let source = preselection ?? session.status?.branch.head ?? session.status?.branch.oid ?? ""
-        let remote = session.history.snapshot?.remotes.first?.name ?? ""
-
-        return (source, remote, source)
-    }
 }
 
 // MARK: - Actions
@@ -103,9 +91,6 @@ extension SyncDialog {
 
         case .pushRevision:
             (source, remote, destination) = Self.pushRevisionDefaults(preselection: preselection, in: session)
-
-        case .gerritPush:
-            (source, remote, destination) = Self.gerritPushDefaults(preselection: preselection, in: session)
         }
 
         if kind != .rebase, session.history.snapshot?.remotes.isEmpty != false {
@@ -175,7 +160,6 @@ extension SyncDialog {
             case .rebase: startRebase()
             case .forcePush: startForcePush()
             case .pushRevision: startPushRevision()
-            case .gerritPush: startGerritPush()
             }
 
         if started {
@@ -249,7 +233,7 @@ extension SyncDialog {
                     )
             },
             title: AppLocalization.text("sync.forcePush"),
-            activityKind: .remote
+            target: .push(remote, refspec: "refs/heads/" + local.name + ":refs/heads/" + name)
         )
     }
 
@@ -272,30 +256,7 @@ extension SyncDialog {
                     )
             },
             title: AppLocalization.text("sync.pushRevision"),
-            activityKind: .remote
-        )
-    }
-
-    /// 把所填版本推到所选远端的 `refs/for/<评审分支>`。
-    private func startGerritPush() -> Bool {
-        let revision = source.trimmingCharacters(in: .whitespaces)
-        let target = GerritPush.reviewReference(destination.trimmingCharacters(in: .whitespaces))
-        let remote = remote
-        let skipHooks = skipHooks
-
-        return session.performGit(
-            { runner, output in
-                _ = try await RepositorySync(runner: runner)
-                    .push(
-                        revision: revision,
-                        remote: remote,
-                        to: target,
-                        skipHooks: skipHooks,
-                        onOutput: output
-                    )
-            },
-            title: AppLocalization.text("gerrit.push"),
-            activityKind: .remote
+            target: .push(remote)
         )
     }
 }

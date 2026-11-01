@@ -1,1 +1,4 @@
-"NSAppleEventsUsageDescription" = "Spooky öffnet das ausgewählte Repository in Ihrer Terminal-App.";
+"NSAppleEventsUsageDescription" = "Spooky öffnet das ausgewählte Repository in Ihrer Terminal-App und zeigt Vergleiche in Ihrem Vergleichswerkzeug an.";
+
+"Spooky Theme" = "Spooky-Thema";
+"Folder" = "Ordner";

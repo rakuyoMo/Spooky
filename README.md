@@ -27,7 +27,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Create, clone, and find repositories**: create repositories on your Mac or on a server, and clone in the background with LFS and submodule options while the bookmark shows the progress. Search a folder on your Mac or on a server for existing repositories; server searches run on the server, and server folders can be typed in or browsed
 
-- **Windows and navigation**: tabs, window restoration, a quick start window, back and forward between views, Quick Actions to find views, branches, tags, commits, files, stashes, and more and act on them, and a customizable toolbar
+- **Windows and navigation**: tabs, window restoration, a quick start window, New Window in the Dock menu, folders dropped on the Dock icon opened as repositories, back and forward between views, Quick Actions to find views, branches, tags, commits, files, stashes, and more and act on them, and a customizable toolbar
 
 - **Connection checks and recovery**: before adding a server repository, Spooky checks the connection, the Git version, and the server environment. If the connection drops, the last snapshot stays on screen while Spooky reconnects in the background. Writes are disabled until the connection recovers
 
@@ -59,7 +59,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Branches, tags, and remotes**: the sidebar groups refs into folders by “/” and can be filtered. Pin and archive branches, and see which ones are stale or tracking a branch that no longer exists. Fast-forward, rename, and delete local and remote branches, set upstream and parent branches, create lightweight, annotated, or signed tags, and manage remotes with their URLs and refspecs. Branch names are converted into valid ref names as you type
 
-- **Sync and merge**: fetch, pull, push, and sync, with options for pruning, all tags, submodules, and hooks. Force pushes only overwrite the version you last saw, and any revision can be pushed to any ref, such as a Gerrit review. Remotes can be fetched automatically whenever a window shows the repository, even while Spooky is in the background, without asking for credentials. Merges are previewed for conflicts first. Every operation is logged in the **Activity** window, on separate pages for remote operations, repository operations, and hosting service requests, and running operations can be cancelled
+- **Sync and merge**: fetch, pull, push, and sync, with options for pruning, all tags, submodules, and hooks. Force pushes only overwrite the version you last saw, and any revision can be pushed to any ref. Remotes can be fetched automatically whenever a window shows the repository, even while Spooky is in the background, without asking for credentials. Merges are previewed for conflicts first. Every operation is logged in the **Activity** window, on separate pages for remote operations, repository operations, and hosting service requests, and running operations can be cancelled
 
 - **Rewriting history**: revert, cherry-pick, reset with a soft, mixed, or hard mode, check out any revision, and rebase onto a new base. Rebase interactively to squash, fixup, edit, reword, delete, or reorder commits, add staged changes to an older commit, or autosquash. Before rewriting, Spooky lists the affected commits and warns about those that were already pushed or merged
 
@@ -79,17 +79,17 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Drag and drop**: drag branches, commits, and tags in the sidebar to create branches and tags, merge, rebase, cherry-pick, revert, pull, publish, push, pin, archive, or rename. Drag commits within the history to squash, fixup, or move them
 
-- **Open in Terminal**: supports Terminal, iTerm, Warp, Ghostty, WezTerm, Prompt, and Otty. For a server repository, the terminal connects over SSH and opens the remote path
+- **Open in Terminal**: supports Terminal, iTerm, Warp, Ghostty, WezTerm, and Otty. For a server repository, the terminal connects over SSH and opens the remote path
 
-- **External tools**: compare and merge with external diff and merge tools, and open files with other apps. Server files are copied to your Mac for these tools, and merge results and edited files are written back only after Spooky checks that the server's version hasn't changed. VS Code opens server files directly over Remote - SSH
+- **External tools**: compare and merge with external diff and merge tools, and open files with other apps. Server files are copied to your Mac for these tools, and merge results and edited files are written back only after Spooky checks that the server's version hasn't changed. VS Code, VS Code Insiders, and Cursor open server files directly through their Remote SSH extensions
 
 - **Links**: `spooky://` links open a repository, a view, a branch, or a commit, or start a clone, for local and server repositories alike. The “Open with Desktop” links on github.com can open in Spooky
 
-- **Settings**: appearance, global Git identity and signing, the Git program, external tools, hosting accounts, Gerrit pushes, issue tracker links, the SSH agent, and environment variables. Repository settings cover the description, issue tracking, committer identity, line wrapping, signing, Git LFS, ignores, and excludes
+- **Settings**: appearance, global Git identity and signing, the Git program, external tools, hosting accounts, the SSH agent, and environment variables. Repository settings cover the description, committer identity, line wrapping, signing, Git LFS, ignores, and excludes
 
 - **Updates and diagnostics**: Spooky checks for signed updates on the stable, beta, or development channel. Help can export a diagnostic report with personal details removed, and after a crash Spooky can open a pre-filled GitHub issue that you submit yourself
 
-- **Themes**: Default and Default (Dark) are saved as regular themes that you can edit, rename, or delete, and are restored the next time Spooky starts if they're missing or damaged. Create your own themes for diffs and file contents, import and export them by drag and drop, and choose one for the light appearance and one for the dark appearance
+- **Themes**: Default and Default (Dark) are saved as regular themes that you can edit but not rename or delete, and are restored the next time Spooky starts if they're missing or damaged. Create your own themes for diffs and file contents, change the color of each syntax category, import and export them by drag and drop, import theme files opened in the Finder or dropped on the Dock icon, and choose one for the light appearance and one for the dark appearance
 
 - **Eight languages**: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish. The app uses your system language, or English if that language isn't supported
 
@@ -142,9 +142,15 @@ The release app uses a release build, includes the app icon and the update frame
 
 ### Automation
 
-When your terminal application is Terminal or iTerm, Spooky uses AppleScript to have it open the repository. The first time, macOS asks whether to allow Spooky to control that application.
+When your terminal application is Terminal or iTerm, Spooky uses AppleScript to have it open the repository. When BBEdit or Araxis Merge is your diff or merge tool, its command-line tool controls the application through Apple events. The first time, macOS asks whether to allow Spooky to control that application.
 
 If you declined, you can turn it on again in **System Settings › Privacy & Security › Automation**.
+
+### Notifications
+
+Spooky posts a notification when a clone finishes and after branches are archived automatically. The first time, macOS asks whether to allow Spooky to send notifications.
+
+If you declined, you can turn them on again in **System Settings › Notifications › Spooky**.
 
 ## How it works
 
@@ -165,7 +171,7 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
 
 - Writes to the same repository run one at a time. Only one window can start a write to a repository at a time, and every window showing the repository refreshes when the write finishes
 - If the connection drops during a write, Spooky doesn't retry it. After reconnecting, it checks the branch, working copy, index lock, remote-tracking branches, and any merge or rebase in progress, tells you whether HEAD and the remote-tracking branches changed, and only then allows writes again
-- Undo records HEAD, branches, tags, branch settings, the stash list, the index, and the content of tracked files before and after each operation. The snapshots are written to the object database of the repository, on your Mac or on the server, and Spooky checks that the repository still matches the record before restoring it
+- Undo records HEAD, branches, tags, branch settings, the stash list, the index, and the content of tracked files before and after each operation. The snapshots are written to the object database of the repository, on your Mac or on the server, and Spooky checks that the repository still matches the record before restoring it. Changes to remote settings, assume-unchanged flags, enabling Git LFS, publishing a branch or tag, renaming a remote branch, and adding, deleting, moving, or renaming a submodule, changing its local settings, or checking out another revision in it aren't in the snapshots; Spooky undoes them by running the reverse operation
 - Cancelling an operation on a server ends its processes there. If Spooky can't confirm that they've exited, it says so and blocks writes until a reconnection check
 
 ### Credentials
@@ -182,7 +188,7 @@ If you declined, you can turn it on again in **System Settings › Privacy & Sec
 
 On your Mac:
 
-- Settings, user profiles, and repository bookmarks are stored in the preferences domain `com.rakuyo.spooky`
+- Settings, user profiles, repository bookmarks, and the local folders chosen for server repositories in the repository settings are stored in the preferences domain `com.rakuyo.spooky`
 - Themes, including Default and Default (Dark), are stored in `~/Library/Application Support/Spooky/Themes`, one `.spookytheme` file per theme
 - Remote operations recorded in the **Activity** window, such as fetches, pulls, and pushes, are stored in `~/Library/Application Support/Spooky/Activity`, one file per record, and deleted after 7 days. Other Activity records are kept in memory only while Spooky is running
 - The previous lists of branches, remotes, stashes, and submodules that the **Activity** window compares against to count updated, added, and deleted items are stored in `~/Library/Application Support/Spooky/Baselines`, one file per repository
@@ -191,7 +197,7 @@ On your Mac:
 - Connections and callbacks use private `/tmp/spooky-*` temporary directories, which are removed when the session closes. Signature checks in local repositories use one of these directories as well, removed as soon as the check finishes
 - Author pictures are requested from Gravatar with a SHA-256 hash of each author's email address, and are kept in memory only while Spooky is running
 - File copies for Quick Look and other apps are kept in private `spooky-files-*` temporary directories, which are removed when the repository closes
-- Opening a server repository in Warp writes `Spooky-*.yaml` to `~/.warp/launch_configurations/`, and opening it in Prompt uses a temporary `.command` file. When Spooky quits, it removes only the files it created
+- Opening a server repository in Warp writes `Spooky-*.yaml` to `~/.warp/launch_configurations/`. When Spooky quits, it removes only the files it created
 - At launch, Spooky reads its own crash reports in `~/Library/Logs/DiagnosticReports/` to offer a GitHub issue. Nothing is uploaded automatically
 - Updates are checked against `appcast.xml` on GitHub Releases, and downloaded updates are verified with an EdDSA signature before they're installed
 
@@ -199,11 +205,12 @@ On the server:
 
 - `~/.spooky/bin/`: the remote helper and its askpass, GPG, and ssh-keygen entry points, with `0700` permissions. They stay after the session ends so later connections can use them
 - `/tmp/spooky-*`: a private runtime directory for the session, removed when the session closes
+- To match a server repository with a folder mounted on your Mac for **Show in Finder**, Spooky briefly writes an empty, randomly named file into the repository's Git directory and removes it right after the check
 
 In your repositories:
 
 - Pins, archives, parent branches, and branch review marks are stored in the repository's own Git configuration, as `branch.<name>.spooky-*`. They move with a branch when it's renamed and are removed when it's deleted
-- Repository settings are written to the repository's own Git configuration. Line wrapping and issue tracking use the keys `spooky.commitbodylimit`, `spooky.commitshowsguide`, `spooky.issuetrackertemplate`, and `spooky.issuenumberprefix`
+- Repository settings are written to the repository's own Git configuration. Line wrapping uses the keys `spooky.commitbodylimit` and `spooky.commitshowsguide`
 - Enabling Git LFS registers its filter and hooks only in the repository's own configuration, and tracking patterns are written to `.gitattributes` at the repository root
 
 ## Development
@@ -233,3 +240,4 @@ Spooky is licensed under the [GNU General Public License v3.0](LICENSE).
 
 - [Sparkle](https://sparkle-project.org) 2.10.0, used for updates. Licensed under the MIT License; the license ships with the app as `Contents/Resources/Sparkle-LICENSE.txt`
 - [highlight.js](https://highlightjs.org) 11.12.0, used for syntax coloring. Copyright (c) 2006, Ivan Sagalaev. Licensed under the BSD 3-Clause License; the full license is in [`Sources/Spooky/HighlightJS/LICENSE`](Sources/Spooky/HighlightJS/LICENSE) and ships with the app
+- [swift-subprocess](https://github.com/swiftlang/swift-subprocess) 1.0.1, used to launch Git and other subprocesses. Licensed under the Apache License 2.0; the license ships with the app as `Contents/Resources/Subprocess-LICENSE.txt`

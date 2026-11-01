@@ -20,7 +20,7 @@ enum ThemeStoreError: Error, Equatable {
 /// Themes 目录里的主题与两种外观的主题选择。
 ///
 /// 一个主题一个文件，文件名取主题名称；浅色、深色外观分别记住所选主题的标识。
-/// Default 与 Default (Dark) 在 App 启动时从资源写入，之后与其它主题一样可以编辑、改名和删除。
+/// Default 与 Default (Dark) 在 App 启动时从资源写入，之后与其它主题一样可以编辑，但不能改名和删除。
 @MainActor
 @Observable
 final class ThemeStore {
@@ -66,6 +66,11 @@ final class ThemeStore {
         reload()
     }
 
+    /// 主题是否为 Default 或 Default (Dark)：按名称认出，不看标识；这两套可以编辑，不能改名、删除。
+    static func isBuiltin(_ theme: TextTheme) -> Bool {
+        TextTheme.builtin.contains { nameKey($0.name) == nameKey(theme.name) }
+    }
+
     /// 重新读取 Themes 目录；名称或标识与先读到的主题重复的文件列为无法加载。
     func reload() {
         let urls =
@@ -109,22 +114,28 @@ final class ThemeStore {
 
     /// 把资源里的 Default 与 Default (Dark) 写进 Themes 目录，App 启动时调用。
     ///
-    /// 这个名称的文件缺少，或者读不出、解码失败时，用资源里的内容写入原位置；能加载的文件（包括编辑过的）不动。
-    /// 名称已被另一个文件里的主题占用时跳过；删除或改名后，下次启动重新写入。
+    /// 这个名称的文件缺少，或者读不出、解码失败时，用资源里的内容写入原位置。
+    /// 已有这个名称的主题时不另写一份：内容仍是旧的默认配色就换成资源里的配色，用户改过的不动。
+    /// 文件名被一份能加载、名称不同的主题占着时跳过；文件在 Finder 里被删掉后，下次启动重新写入。
     func installDefaultThemes() throws {
         for var theme in TextTheme.builtin {
+            // 已有这个名称的主题时只核对它的配色，不另写一份。
+            if let existing = themes.first(where: { Self.nameKey($0.name) == Self.nameKey(theme.name) }) {
+                try replaceLegacyColors(of: existing, with: theme)
+                continue
+            }
+
             let standard = directory.appending(path: TextTheme.fileName(for: theme.name))
 
             // 无法加载的同名文件沿用它原来的文件名覆盖，文件名只差大小写时也不另起一份。
             let url = invalidFiles.first { Self.sameFile($0, standard) } ?? standard
             let loadable = (try? Data(contentsOf: url)).flatMap { try? TextTheme.decode($0) } != nil
-            let named = themes.contains { Self.nameKey($0.name) == Self.nameKey(theme.name) }
 
-            guard !loadable, !named else {
+            guard !loadable else {
                 continue
             }
 
-            // 改了名的那一份仍用着资源里的标识时，新写入的这份换一个标识，两份文件不共用标识。
+            // 目录里另一个主题仍用着资源里的标识时，新写入的这份换一个标识，两份文件不共用标识。
             if themes.contains(where: { $0.id == theme.id }) {
                 theme.id = UUID().uuidString
             }
@@ -172,13 +183,14 @@ final class ThemeStore {
         try write(theme, to: url)
     }
 
-    /// 改名并把文件移到新名称；名称为空或未变时不做改动。
+    /// 改名并把文件移到新名称；内置主题、名称为空或未变时不做改动。
     func rename(_ identifier: String, to newName: String) throws {
         let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard
             let index = themes.firstIndex(where: { $0.id == identifier }),
             let url = files[identifier],
+            !Self.isBuiltin(themes[index]),
             !name.isEmpty,
             name != themes[index].name
         else { return }
@@ -203,11 +215,19 @@ final class ThemeStore {
         files[identifier] = destination
     }
 
-    /// 删除主题的文件；选用它的外观按名称回到 Default 或 Default (Dark)。
-    func delete(_ identifier: String) throws {
-        guard let url = files[identifier] else {
-            return
-        }
+    /// 删除主题的文件，删除时所在的外观改选列表的第一个主题；内置主题不做改动。
+    ///
+    /// 另一种外观选的也是它时，按名称回到 Default 或 Default (Dark)；列表删空时两种外观都按名称回退。
+    ///
+    /// - Parameters:
+    ///   - identifier: 要删除的主题。
+    ///   - dark: 删除时所在的外观。
+    func delete(_ identifier: String, dark: Bool) throws {
+        guard
+            let url = files[identifier],
+            let theme = themes.first(where: { $0.id == identifier }),
+            !Self.isBuiltin(theme)
+        else { return }
 
         try FileManager.default.removeItem(at: url)
         files[identifier] = nil
@@ -222,6 +242,11 @@ final class ThemeStore {
         if darkThemeID == identifier {
             darkThemeID = nil
             defaults.removeObject(forKey: Self.darkKey)
+        }
+
+        // 列表里选中的行被删掉后，所在外观改选第一行。
+        if let first = themes.first {
+            select(first.id, dark: dark)
         }
     }
 
@@ -257,6 +282,33 @@ final class ThemeStore {
 
         try write(theme, to: destination)
         return theme
+    }
+
+    /// 内置主题的内容仍是旧的默认配色时，换成资源里的配色写回原文件；标识、名称、文件名与外观选择不变。
+    ///
+    /// 字体、字号与全部颜色都等于旧配色才换，有任何一项不同就是用户改过，不动。
+    ///
+    /// - Parameters:
+    ///   - theme: 目录里与内置主题同名的主题。
+    ///   - builtin: 资源里的这一套内置主题。
+    private func replaceLegacyColors(of theme: TextTheme, with builtin: TextTheme) throws {
+        guard
+            let changed = Self.legacyColors[builtin.id],
+            let url = files[theme.id]
+        else { return }
+
+        // 旧配色只记了与资源不同的几种颜色，其余取资源里的值拼出完整的旧配色。
+        let legacy = builtin.colors.merging(changed) { $1 }
+
+        guard
+            theme.fontName == builtin.fontName,
+            theme.fontSize == builtin.fontSize,
+            theme.colors == legacy
+        else { return }
+
+        var replaced = theme
+        replaced.colors = builtin.colors
+        try write(replaced, to: url)
     }
 
     /// 写入主题文件并更新列表；目录不存在时先创建。
@@ -302,6 +354,17 @@ extension ThemeStore {
 
     /// 深色外观所选主题的偏好键。
     private static let darkKey = "darkTheme"
+
+    /// 换用现在的默认配色之前写进 Themes 目录的内置主题里，与资源不同的那几种颜色，按内置主题的标识分组。
+    private static let legacyColors: [String: [String: PaletteColor]] = {
+        guard
+            let url = Bundle.module.url(forResource: "LegacyBuiltinThemeColors", withExtension: "json"),
+            let data = try? Data(contentsOf: url),
+            let colors = try? JSONDecoder().decode([String: [String: PaletteColor]].self, from: data)
+        else { preconditionFailure("内置主题的旧配色资源无法读取") }
+
+        return colors
+    }()
 
     /// 主题按名称的自然顺序排列。
     private static func sorted(_ themes: [TextTheme]) -> [TextTheme] {

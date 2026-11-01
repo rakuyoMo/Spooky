@@ -19,13 +19,11 @@ struct RepositorySettingsTests {
         try await runner.setLocalConfig(RepositorySettings.Key.bodyLineLimit, to: "80")
         try await runner.setLocalConfig(RepositorySettings.Key.showsBodyGuide, to: "false")
         try await runner.setLocalConfig(RepositorySettings.Key.signingKey, to: "~/.ssh/id 签名.pub")
-        try await runner.setLocalConfig(RepositorySettings.Key.issueTrackerTemplate, to: "https://example.invalid/{ISSUE_NUMBER}")
 
         var settings = try await runner.repositorySettings()
         #expect(settings.bodyLineLimit == 80)
         #expect(settings.showsBodyGuide == Optional(false))
         #expect(settings.signingKey == "~/.ssh/id 签名.pub")
-        #expect(settings.issueTrackerTemplate == "https://example.invalid/{ISSUE_NUMBER}")
         #expect(settings.allowedSignersFile == nil)
 
         // 删除写过的键与没有写过的键都不报错

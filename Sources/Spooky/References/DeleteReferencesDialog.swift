@@ -214,7 +214,7 @@ extension DeleteReferencesDialog {
                     }
                 },
                 title: title,
-                activityKind: .remote
+                target: .push(groups.count == 1 ? groups.keys.first : nil)
             )
 
         case .tags(let names):
@@ -230,7 +230,7 @@ extension DeleteReferencesDialog {
                     }
                 },
                 title: title,
-                activityKind: remote == nil ? .repository : .remote,
+                target: remote.map { .push($0) },
                 undo: remote == nil ? .reversible : .irreversible
             )
 
@@ -242,6 +242,7 @@ extension DeleteReferencesDialog {
                     }
                 },
                 title: title,
+                undo: .removingRemotes(names),
                 success: { [session] in
                     if let selected = session.selectedRemote, names.contains(selected) {
                         session.activeView = .history

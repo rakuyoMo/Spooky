@@ -52,8 +52,13 @@ extension RepositorySession {
             return .blocked(entry.title, reason: "undo.reason.disconnected")
         }
 
+        // 反向操作的前提在执行时核对
+        guard case .snapshot(let before, let after, _) = entry.change else {
+            return .available(entry.title)
+        }
+
         // 仓库应处的状态：撤销时是操作后，重做时是操作前
-        let expected = redo ? entry.before : entry.after
+        let expected = redo ? before : after
         let references = undoComparedReferences
         let stashIDs = stashes.isLoaded ? stashes.entries.map(\.id) : nil
 
@@ -65,7 +70,9 @@ extension RepositorySession {
         return .available(entry.title)
     }
 
-    /// 撤销最近一次操作：核对仓库仍是操作后的状态，再恢复成操作前，移进废纸篓的项移回原处；经写队列执行并记进 Activity。
+    /// 撤销最近一次操作：快照记录核对仓库仍是操作后的状态，再恢复成操作前，移进废纸篓的项移回原处；反向操作记录执行反向操作。
+    ///
+    /// 经写队列执行并记进 Activity；要连接远端的反向操作记在 Remote 页。
     func undoLastOperation() {
         guard
             case .available = undoMenuState(redo: false),
@@ -73,19 +80,34 @@ extension RepositorySession {
             let entry = history.undoEntries.last
         else { return }
 
+        // 只有反向操作会连接远端
+        let target: ActivityTarget? =
+            switch entry.change {
+            case .snapshot: nil
+            case .inverse(_, _, _, let inverse): inverse.target
+            }
+
         performGit(
-            { runner, _ in
-                try await RepositoryUndo(runner: runner)
-                    .restore(entry.before, expecting: entry.after, message: "undo", puttingBack: entry.trashed)
+            { runner, output in
+                switch entry.change {
+                case .snapshot(let before, let after, let trashed):
+                    try await RepositoryUndo(runner: runner)
+                        .restore(before, expecting: after, message: "undo", puttingBack: trashed)
+
+                case .inverse(_, _, _, let inverse):
+                    try await inverse.undo(runner, output)
+                }
             },
             title: UndoManager().undoMenuTitle(forUndoActionName: entry.title),
+            target: target,
             undo: .unrecorded
         ) {
             history.finishUndo(entry)
         }
     }
 
-    /// 重做最近撤销的操作：核对仓库仍是操作前的状态，再恢复成操作后，操作移进废纸篓的项重新移进废纸篓。
+    /// 重做最近撤销的操作：快照记录核对仓库仍是操作前的状态，再恢复成操作后，操作移进废纸篓的项重新移进废纸篓；
+    /// 反向操作记录再执行一次准备与原操作，反向操作带着专门的重做时用它代替原操作。
     func redoLastOperation() {
         guard
             case .available = undoMenuState(redo: true),
@@ -93,44 +115,135 @@ extension RepositorySession {
             let entry = history.redoEntries.last
         else { return }
 
-        // 重新移进废纸篓的新位置经记录收集，下次撤销据此移回
-        let log = TrashLog()
+        let title = UndoManager().redoMenuTitle(forUndoActionName: entry.title)
 
-        performGit(
-            { runner, _ in
-                try await TrashLog.$current.withValue(log) {
-                    try await RepositoryUndo(runner: runner)
-                        .restore(entry.after, expecting: entry.before, message: "redo", trashing: entry.trashed)
-                }
-            },
-            title: UndoManager().redoMenuTitle(forUndoActionName: entry.title),
-            undo: .unrecorded
-        ) {
-            history.finishRedo(entry, trashed: log.items)
+        switch entry.change {
+        case .snapshot(let before, let after, let trashed):
+            // 重新移进废纸篓的新位置经记录收集，下次撤销据此移回
+            let log = TrashLog()
+
+            performGit(
+                { runner, _ in
+                    try await TrashLog.$current.withValue(log) {
+                        try await RepositoryUndo(runner: runner)
+                            .restore(after, expecting: before, message: "redo", trashing: trashed)
+                    }
+                },
+                title: title,
+                undo: .unrecorded
+            ) {
+                history.finishRedo(entry, change: .snapshot(before: before, after: after, trashed: log.items))
+            }
+
+        case .inverse(let prepare, let action, let target, let inverse):
+            // 反向操作带着专门的重做时用它代替原操作
+            let redo = inverse.redo ?? action
+
+            // 新的反向操作在原操作之前读出，原操作成功后按推送结果核对再换上；重做与原操作记在 Activity 的同一页
+            performGit(
+                { runner, output in
+                    let prepared = await PreparedInverse(prepare, runner: runner)
+                    let log = PushLog()
+                    try await PushLog.$current.withValue(log) { try await redo(runner, output) }
+
+                    switch prepared.confirmed(by: log) {
+                    case .inverse(let inverse):
+                        await history.finishRedo(
+                            entry,
+                            change: .inverse(prepare: prepare, action: action, target: target, inverse: inverse)
+                        )
+
+                    case .unchanged:
+                        await history.finishRedo(entry, change: nil)
+
+                    case .unavailable:
+                        await history.recordIrreversible(entry.title)
+                    }
+                },
+                title: title,
+                target: target,
+                undo: .unrecorded
+            )
         }
     }
 
-    /// 按声明包装写操作：可撤销的操作前后各记一次状态，连同移进废纸篓的项成功改动仓库后登记；不能撤销的操作成功后清空撤销栈。
+    /// 按声明包装写操作：可撤销的操作前后各记一次状态，连同移进废纸篓的项成功改动仓库后登记；
+    /// 给出反向操作的在操作之前准备，成功后按推送结果核对再登记；不能撤销的操作成功后清空撤销栈。
     ///
     /// 操作前有进行中的操作或冲突、操作后停在进行中的状态、删掉的未跟踪文件找不回内容，
     /// 或移进废纸篓的项不知道位置时，都按不能撤销处理。
+    ///
+    /// - Parameter target: 操作记在 Activity 的 Remote 页的对象，随反向操作记录保存，重做时记在同一页。
     func recordingUndo(
         _ action: @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
+        target: ActivityTarget?,
         recording: UndoRecording
     ) -> @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void {
-        guard let history = undoHistory, recording != .unrecorded else {
+        guard let history = undoHistory else {
             return action
         }
 
-        guard recording == .reversible else {
+        switch recording {
+        case .unrecorded:
+            return action
+
+        case .irreversible:
             return { runner, output in
                 try await action(runner, output)
                 await history.recordIrreversible(title)
             }
-        }
 
-        return { runner, output in
+        case .inverse(let prepare):
+            // 准备在操作之前读出撤销要用的内容，操作成功后按准备与推送的结果登记
+            return { runner, output in
+                let prepared = await PreparedInverse(prepare, runner: runner)
+                let log = PushLog()
+                try await PushLog.$current.withValue(log) { try await action(runner, output) }
+
+                switch prepared.confirmed(by: log) {
+                case .inverse(let inverse):
+                    await history.record(
+                        RepositoryUndoEntry(
+                            title: title,
+                            change: .inverse(prepare: prepare, action: action, target: target, inverse: inverse)
+                        )
+                    )
+
+                case .unchanged:
+                    break
+
+                case .unavailable:
+                    await history.recordIrreversible(title)
+                }
+            }
+
+        case .reversible:
+            return recordingSnapshots(action, title: title, history: history)
+        }
+    }
+}
+
+// MARK: - Private
+
+extension RepositorySession {
+    /// 粗略核对用的分支与标签：引用快照里剥离附注标签后的目标；还没读到快照时不比较。
+    private var undoComparedReferences: [String: String]? {
+        history.snapshot.map { snapshot in
+            Dictionary(
+                snapshot.references.filter { $0.isLocal || $0.isTag }.map { ($0.id, $0.objectID) },
+                uniquingKeysWith: { first, _ in first }
+            )
+        }
+    }
+
+    /// 可撤销的操作前后各记一次状态，连同移进废纸篓的项成功改动仓库后登记。
+    private func recordingSnapshots(
+        _ action: @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
+        title: String,
+        history: RepositoryUndoHistory
+    ) -> @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void {
+        { runner, output in
             let undo = RepositoryUndo(runner: runner)
             let before = try? await undo.capture()
             let log = TrashLog()
@@ -155,7 +268,9 @@ extension RepositorySession {
             let restorable = (try? await undo.canRestore(before, from: after, trashed: trashed)) ?? false
 
             if restorable {
-                await history.record(RepositoryUndoEntry(title: title, before: before, after: after, trashed: trashed))
+                await history.record(
+                    RepositoryUndoEntry(title: title, change: .snapshot(before: before, after: after, trashed: trashed))
+                )
             } else {
                 await history.recordIrreversible(title)
             }
@@ -163,16 +278,39 @@ extension RepositorySession {
     }
 }
 
-// MARK: - Private
+// MARK: - PreparedInverse
 
-extension RepositorySession {
-    /// 粗略核对用的分支与标签：引用快照里剥离附注标签后的目标；还没读到快照时不比较。
-    private var undoComparedReferences: [String: String]? {
-        history.snapshot.map { snapshot in
-            Dictionary(
-                snapshot.references.filter { $0.isLocal || $0.isTag }.map { ($0.id, $0.objectID) },
-                uniquingKeysWith: { first, _ in first }
-            )
+/// 在原操作之前执行准备闭包的结果，原操作成功后据此登记。
+private enum PreparedInverse {
+    /// 读出了反向操作。
+    case inverse(UndoInverse)
+
+    /// 这次操作不改动要撤销的内容。
+    case unchanged
+
+    /// 准备失败，这次操作撤销不了。
+    case unavailable
+
+    /// 执行准备闭包；失败不抛出，原操作照常执行。
+    init(_ prepare: @Sendable (GitRunner) async throws -> UndoInverse?, runner: GitRunner) async {
+        do {
+            self = try await prepare(runner).map(Self.inverse) ?? .unchanged
+        } catch {
+            self = .unavailable
+        }
+    }
+
+    /// 原操作结束后按推送的逐条结果核对：反向操作要撤销的是推送新建的引用时，推送确实新建了它才保留，
+    /// 已是最新算作没有改动，更新了远端已有的引用或没有推送它都撤销不了。
+    func confirmed(by log: PushLog) -> Self {
+        guard case .inverse(let inverse) = self, let pushed = inverse.pushedReference else {
+            return self
+        }
+
+        switch log.result(of: pushed.reference, on: pushed.remote) {
+        case .created: return self
+        case .upToDate: return .unchanged
+        case .updated, nil: return .unavailable
         }
     }
 }

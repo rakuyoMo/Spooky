@@ -102,26 +102,35 @@ struct ThemeStoreTests {
         #expect(reopened.themes.map(\.id).contains(theme.id))
     }
 
-    /// 删除所选主题后，这一外观按名称回到目录里的 Default (Dark)，用的是它编辑过的内容。
-    @Test("删除所选主题后按名称回到 Default (Dark)")
-    func deleteFallsBack() throws {
+    /// 列表里删掉所选主题后，删除时所在的外观改选列表第一行；另一外观选的也是它时，按名称回到目录里编辑过的 Default。
+    @Test("删除后所在外观选中第一行，另一外观按名称回退")
+    func deleteSelectsFirstRow() throws {
         let root = try Self.makeRoot()
         defer { try? FileManager.default.removeItem(at: root) }
 
         let store = try Self.store(in: root)
         try store.installDefaultThemes()
-        let night = try #require(store.themes.first { $0.name == "Default (Dark)" })
-        try store.update(night.id) { $0.fontSize = 15 }
+        let day = try #require(store.themes.first { $0.name == "Default" })
+        try store.update(day.id) { $0.fontSize = 15 }
 
-        let theme = try store.create(named: "Dusk", dark: true)
-        #expect(TextTheme.current(dark: true, in: store) == theme)
+        // Aurora 排在列表第一行，Dusk 同时是两种外观的所选主题。
+        let aurora = try store.create(named: "Aurora", dark: false)
+        let dusk = try store.create(named: "Dusk", dark: true)
+        store.select(dusk.id, dark: false)
 
-        try store.delete(theme.id)
+        try store.delete(dusk.id, dark: true)
 
         #expect(!(try Self.themeFiles(root).contains("Dusk.spookytheme")))
-        #expect(TextTheme.current(dark: true, in: store).id == night.id)
-        #expect(TextTheme.current(dark: true, in: store).fontSize == 15)
-        #expect(TextTheme.current(dark: true, in: try Self.store(in: root)).fontSize == 15)
+
+        // 深色外观改选第一行的 Aurora，重新启动后仍然有效。
+        #expect(store.themes.first?.id == aurora.id)
+        #expect(TextTheme.current(dark: true, in: store) == aurora)
+        #expect(TextTheme.current(dark: true, in: try Self.store(in: root)) == aurora)
+
+        // 浅色外观按名称回到目录里编辑过的 Default。
+        #expect(TextTheme.current(dark: false, in: store).id == day.id)
+        #expect(TextTheme.current(dark: false, in: store).fontSize == 15)
+        #expect(TextTheme.current(dark: false, in: try Self.store(in: root)).fontSize == 15)
     }
 
     /// 浅色、深色外观各选一套，Default 与 Default (Dark) 也可以跨外观选用，选择互不影响。

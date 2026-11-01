@@ -524,8 +524,7 @@ extension RepositoryWindowController {
                 #selector(fetch), #selector(pull), #selector(push), #selector(sync),
                 #selector(merge), #selector(rebase), #selector(refreshRepository), #selector(closeRepository),
                 #selector(applyStash), #selector(saveStash), #selector(createBranch),
-                #selector(forcePushWithLease), #selector(pushRevision), #selector(pushToGerritRemote),
-                #selector(stageAll), #selector(composeCommit),
+                #selector(forcePushWithLease), #selector(pushRevision),
             ] {
                 _ = validateUserInterfaceItem(NSMenuItem(title: "", action: action, keyEquivalent: ""))
             }
@@ -555,16 +554,9 @@ extension RepositoryWindowController {
     private func configureWorkingCopyKeys() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
             let handled = MainActor.assumeIsolated {
-                // 主窗口的同步按钮随 ⌥ 换成快速操作，全部暂存换成全部取消暂存，与当前视图无关
+                // 主窗口的同步按钮随 ⌥ 换成快速操作，与当前视图无关
                 if event.type == .flagsChanged, let self, NSApp.keyWindow === self.window {
-                    let option = event.modifierFlags.contains(.option)
-                    let stageAll = self.window?.toolbar?.items.first { $0.itemIdentifier == RepositoryToolbar.stageAll }
-
-                    if let stageAll {
-                        self.updateStageAllItem(stageAll, option: option)
-                    }
-
-                    self.updateQuickToolbarItems(option: option)
+                    self.updateQuickToolbarItems(option: event.modifierFlags.contains(.option))
                 }
 
                 return self?.handleWorkingCopyKey(event) ?? false

@@ -215,7 +215,8 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text("submodule.add"),
-            activityKind: .remote
+            target: .pull(nil),
+            undo: .addingSubmodule(url: url, path: path)
         )
     }
 
@@ -236,7 +237,7 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text(targets.count == 1 ? "submodule.fetch" : "submodule.fetchAll"),
-            activityKind: .remote
+            target: .fetch(nil)
         )
     }
 
@@ -253,7 +254,7 @@ extension RepositorySession {
                 try await RepositorySubmodules(runner: runner).update(targets, recursive: recursive, onOutput: output)
             },
             title: AppLocalization.text(targets?.count == 1 ? "submodule.update" : "submodule.updateAll"),
-            activityKind: .remote
+            target: .pull(nil)
         )
     }
 
@@ -280,7 +281,8 @@ extension RepositorySession {
     func setSubmoduleURL(_ url: String, for submodule: Submodule, in scope: SubmoduleConfigurationScope) -> Bool {
         performGit(
             { runner, _ in try await RepositorySubmodules(runner: runner).setURL(url, for: submodule, in: scope) },
-            title: AppLocalization.text("submodule.editURL")
+            title: AppLocalization.text("submodule.editURL"),
+            undo: .changingSubmoduleURL(url, of: submodule, in: scope)
         )
     }
 
@@ -297,11 +299,20 @@ extension RepositorySession {
         for submodule: Submodule,
         in scope: SubmoduleConfigurationScope
     ) {
+        // 操作名分选项与设置还是删除，Activity 与撤销菜单都用它
+        let title: String =
+            switch option {
+            case .fetchRecurseSubmodules: value == nil ? "submodule.unsetFetchMode" : "submodule.setFetchMode"
+            case .ignore: value == nil ? "submodule.unsetIgnoreMode" : "submodule.setIgnoreMode"
+            case .update: value == nil ? "submodule.unsetUpdateStrategy" : "submodule.setUpdateStrategy"
+            }
+
         performGit(
             { runner, _ in
                 try await RepositorySubmodules(runner: runner).set(option, to: value, for: submodule, in: scope)
             },
-            title: AppLocalization.text("submodule.setting")
+            title: AppLocalization.text(title),
+            undo: .changingSubmoduleOption(option, to: value, of: submodule, in: scope)
         )
     }
 
@@ -309,7 +320,8 @@ extension RepositorySession {
     func checkoutSubmoduleRevision(_ revision: SubmoduleRevision, in submodule: Submodule) {
         performGit(
             { runner, _ in try await RepositorySubmodules(runner: runner).checkout(revision, in: submodule) },
-            title: AppLocalization.text("submodule.checkoutRevision")
+            title: AppLocalization.text("submodule.checkoutSubmoduleRevision"),
+            undo: .checkingOutSubmoduleRevision(revision, in: submodule)
         )
     }
 
@@ -320,7 +332,8 @@ extension RepositorySession {
             { runner, _ in
                 try await RepositorySubmodules(runner: runner).move(submodule, to: path, renamesSubmodule: renaming)
             },
-            title: AppLocalization.text("submodule.move")
+            title: AppLocalization.text("submodule.move"),
+            undo: .movingSubmodule(submodule, to: path, renaming: renaming)
         )
     }
 
@@ -329,7 +342,8 @@ extension RepositorySession {
     func renameSubmodule(_ submodule: Submodule, to name: String) -> Bool {
         performGit(
             { runner, _ in try await RepositorySubmodules(runner: runner).rename(submodule, to: name) },
-            title: AppLocalization.text("submodule.rename")
+            title: AppLocalization.text("submodule.rename"),
+            undo: .renamingSubmodule(submodule, to: name)
         )
     }
 
@@ -345,7 +359,8 @@ extension RepositorySession {
                     throw SubmoduleDeletionOffer(submodule: submodule, keepsWorkingTree: keepsWorkingTree)
                 }
             },
-            title: AppLocalization.text("submodule.delete")
+            title: AppLocalization.text("submodule.deleteSubmodules"),
+            undo: .deletingSubmodule(submodule, keepsWorkingTree: keepsWorkingTree)
         )
     }
 

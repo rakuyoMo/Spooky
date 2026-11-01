@@ -22,7 +22,8 @@ struct LocalizationTests {
 
         keys += RemoteConnectionState.allCases.map { "connection." + $0.rawValue }
         keys += FailureKind.allCases.map { "failure.kind." + $0.rawValue }
-        keys += ["background", "added", "deleted"].map { "themes." + $0 }
+        keys += ThemesSettingsView.colorWellKeys.map { "themes." + $0 }
+        keys += ThemeTokenList.keys.map { "themes.token." + $0 }
 
         for action in ["stage", "unstage", "discard"] {
             keys += ["Chunk", "Line", "Lines"].map { "working." + action + $0 }
@@ -64,7 +65,21 @@ struct LocalizationTests {
         keys += PullRequestMergeMethod.allCases.map { "pullRequests.method." + $0.rawValue }
         keys += ["merge", "rebase_merge", "ff"].map { "pullRequests.strategy." + $0 }
 
+        // Activity 里 Remote 行的标题：传输方向加进行时或过去时，各有不带与带远端名的两种
+        for transfer in ActivityTransfer.allCases {
+            for tense in ["ing", "ed"] {
+                let key = "activity." + transfer.rawValue + tense
+                keys += [key, key + "Named"]
+            }
+        }
+
         return keys
+    }
+
+    /// 读取 App 的 Info.plist 源文件。
+    static func infoPlist() throws -> [String: Any] {
+        let data = try Data(contentsOf: Self.package.appending(path: "Sources/Spooky/Info.plist"))
+        return try #require(PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any])
     }
 
     /// 任一语言缺少键、空译文或格式参数变化都会失败。
@@ -171,10 +186,21 @@ struct LocalizationTests {
         }
     }
 
-    /// 权限弹窗读取各语言的 InfoPlist.strings：每种语言都要覆盖 Info.plist 里的全部用途说明，且不多出键。
-    @Test("权限说明覆盖全部支持语言", arguments: AppLocalization.languages)
-    func usageDescriptions(language: String) throws {
-        let usageKeys = try Set(infoPlist().keys.filter { $0.hasSuffix("UsageDescription") })
+    /// 权限弹窗与 Finder 读取各语言的 InfoPlist.strings：每种语言都要覆盖 Info.plist 里的全部用途说明、
+    /// 文稿类型与导出类型的名称，且不多出键。
+    @Test("权限说明与文稿类型名称覆盖全部支持语言", arguments: AppLocalization.languages)
+    func infoPlistStrings(language: String) throws {
+        let plist = try Self.infoPlist()
+        let usageKeys = Set(plist.keys.filter { $0.hasSuffix("UsageDescription") })
+
+        // 文稿类型与导出类型的名称以英文原文作键
+        let documentTypes = plist["CFBundleDocumentTypes"] as? [[String: Any]] ?? []
+        let exportedTypes = plist["UTExportedTypeDeclarations"] as? [[String: Any]] ?? []
+        let typeNames = Set(
+            documentTypes.compactMap { $0["CFBundleTypeName"] as? String }
+                + exportedTypes.compactMap { $0["UTTypeDescription"] as? String }
+        )
+
         let url = Self.package.appending(path: "Sources/Spooky/Resources/\(language).lproj/InfoPlist.strings")
         let data = try Data(contentsOf: url)
         let values = try #require(
@@ -182,14 +208,15 @@ struct LocalizationTests {
         )
 
         #expect(!usageKeys.isEmpty)
-        #expect(Set(values.keys) == usageKeys)
+        #expect(!typeNames.isEmpty)
+        #expect(Set(values.keys) == usageKeys.union(typeNames))
         #expect(values.values.allSatisfy { !$0.isEmpty })
     }
 
     /// 支持语言在 Info.plist 与两个打包脚本里各写了一份，必须与 `AppLocalization.languages` 一致。
     @Test("支持语言列表在 Info.plist 与打包脚本中一致")
     func languageLists() throws {
-        let declared = try #require(infoPlist()["CFBundleLocalizations"] as? [String])
+        let declared = try #require(Self.infoPlist()["CFBundleLocalizations"] as? [String])
         #expect(Set(declared) == Set(AppLocalization.languages))
 
         let pattern = try NSRegularExpression(pattern: "^for locale in (.+); do$", options: .anchorsMatchLines)
@@ -203,12 +230,6 @@ struct LocalizationTests {
 
             #expect(Set(locales) == Set(AppLocalization.languages), "语言列表不一致：\(script)")
         }
-    }
-
-    /// 读取 App 的 Info.plist 源文件。
-    private func infoPlist() throws -> [String: Any] {
-        let data = try Data(contentsOf: Self.package.appending(path: "Sources/Spooky/Info.plist"))
-        return try #require(PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any])
     }
 
     /// App 源码中的全部字符串字面量，用来判断资源键是否被引用。

@@ -6,8 +6,10 @@ extension RepositorySession {
     /// 当前仓库的视图状态，切换仓库时存入窗口缓存。
     func captureViewState() -> RepositoryViewState {
         RepositoryViewState(
-            // 文件视图与远端视图的目标不随仓库保存，切回时显示历史
-            activeView: [.fileHistory, .fileContent, .remote].contains(activeView) ? .history : activeView,
+            // 文件视图、远端视图、子模块视图与工作树视图的目标不随仓库保存，切回时显示历史
+            activeView: [.fileHistory, .fileContent, .remote, .submodule, .worktree].contains(activeView)
+                ? .history
+                : activeView,
             selectedID: selectedID,
             selectedIDs: selectedIDs,
             diffSide: diffSide,

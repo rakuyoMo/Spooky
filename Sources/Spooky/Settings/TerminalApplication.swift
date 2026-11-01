@@ -20,9 +20,6 @@ enum TerminalApplication: String, CaseIterable, Identifiable {
     /// WezTerm。
     case wezTerm = "com.github.wez.wezterm"
 
-    /// Prompt 3。
-    case prompt = "com.panic.prompt.3"
-
     /// Otty。
     case otty = "io.appmakes.otty"
 
@@ -37,7 +34,6 @@ enum TerminalApplication: String, CaseIterable, Identifiable {
         case .warp: "Warp"
         case .ghostty: "Ghostty"
         case .wezTerm: "WezTerm"
-        case .prompt: "Prompt"
         case .otty: "Otty"
         }
     }
@@ -62,7 +58,7 @@ struct TerminalLaunchError: Error {
 /// 把统一的仓库终端命令交给用户选择的程序。
 @MainActor
 enum TerminalLauncher {
-    /// Warp 启动配置和 Prompt 命令文件只保留到本次 App 会话结束。
+    /// Warp 启动配置只保留到本次 App 会话结束。
     private static var temporaryFiles: [URL] = []
 
     /// 本机进入目录，服务器在所选终端运行系统 SSH。
@@ -79,30 +75,13 @@ enum TerminalLauncher {
         case .terminal:
             try await launch(
                 URL(fileURLWithPath: "/usr/bin/osascript"),
-                arguments: [
-                    "-e",
-                    """
-                    tell application id "com.apple.Terminal"
-                        activate
-                        do script \(appleString(command))
-                    end tell
-                    """,
-                ]
+                arguments: ["-e", terminalScript(command)]
             )
 
         case .iTerm:
             try await launch(
                 URL(fileURLWithPath: "/usr/bin/osascript"),
-                arguments: [
-                    "-e",
-                    """
-                    tell application id "com.googlecode.iterm2"
-                        activate
-                        set spookyWindow to (create window with default profile)
-                        tell current session of spookyWindow to write text \(appleString(command))
-                    end tell
-                    """,
-                ]
+                arguments: ["-e", iTermScript(command)]
             )
 
         case .otty:
@@ -138,20 +117,6 @@ enum TerminalLauncher {
             } else {
                 try await openWarp(command: command, application: application)
             }
-
-        case .prompt:
-            if let directory = location.localURL {
-                _ = try await NSWorkspace.shared.open([directory], withApplicationAt: application, configuration: .init())
-            } else {
-                #warning("TODO: 在安装 Prompt 3 与 Local Terminal 的 Mac 上打开服务器仓库，核实 .command 的远端命令入口；只影响终端程序选 Prompt 时打开服务器仓库。")
-
-                let file = FileManager.default.temporaryDirectory
-                    .appending(path: "Spooky-" + UUID().uuidString + ".command")
-                try Data(("#!/bin/sh\n" + command + "\n").utf8).write(to: file, options: .atomic)
-                try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: file.path)
-                temporaryFiles.append(file)
-                _ = try await NSWorkspace.shared.open([file], withApplicationAt: application, configuration: .init())
-            }
         }
     }
 
@@ -159,6 +124,52 @@ enum TerminalLauncher {
     static func cleanup() {
         for file in temporaryFiles { try? FileManager.default.removeItem(at: file) }
         temporaryFiles.removeAll()
+    }
+
+    /// 让 Terminal 执行命令的 AppleScript：已经开着至少两个窗口时，在最前面窗口的当前标签页里执行，否则新开窗口。
+    ///
+    /// - Parameter command: 要执行的 shell 命令。
+    static func terminalScript(_ command: String) -> String {
+        """
+        tell application id "com.apple.Terminal"
+            if (count of windows) > 1 and (exists front window) then
+                do script \(appleString(command)) in front window
+            else
+                do script \(appleString(command))
+            end if
+
+            activate
+        end tell
+        """
+    }
+
+    /// 让 iTerm 执行命令的 AppleScript：已在运行且有窗口时，在第一个窗口里新建标签页；已在运行而没有窗口时新开窗口；
+    /// 没有运行时启动它，在它打开的窗口里执行，它没有打开窗口时新开一个。
+    ///
+    /// 新的标签页或窗口要等一会儿才能接受输入，写入命令前先等 1 秒。
+    ///
+    /// - Parameter command: 要执行的 shell 命令。
+    static func iTermScript(_ command: String) -> String {
+        """
+        set wasRunning to application id "com.googlecode.iterm2" is running
+
+        tell application id "com.googlecode.iterm2"
+            activate
+
+            if (count of windows) is 0 then
+                create window with default profile
+            else
+                select first window
+
+                if wasRunning then
+                    tell first window to create tab with default profile
+                end if
+            end if
+
+            delay 1
+            tell current session of first window to write text \(appleString(command))
+        end tell
+        """
     }
 
     /// AppleScript 字符串与 shell 参数分别转义，路径不能成为脚本源码。

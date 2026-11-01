@@ -28,11 +28,13 @@ struct RepositoryActionRequest {
         /// 合并到当前分支。
         case merge = "sync.merge"
 
-        /// 记在 Activity 的哪一页：要连接远端传输对象或引用的获取、拉取、推送与发布记在 Remote。
-        var activityKind: ActivityKind {
+        /// Activity 记录的传输方向：要连接远端的获取、拉取、推送与发布有方向，记在 Remote 页；其余为 nil，记在 Repository 页。
+        var transfer: ActivityTransfer? {
             switch self {
-            case .fetch, .pull, .push, .publish: .remote
-            case .create, .track, .merge: .repository
+            case .fetch: .fetch
+            case .pull: .pull
+            case .push, .publish: .push
+            case .create, .track, .merge: nil
             }
         }
     }
@@ -84,10 +86,13 @@ struct RepositoryOperationDialog: View {
     /// 取消只关闭表单。
     let cancel: () -> Void
 
-    /// 提交交付显式参数对应的业务操作；返回 false 表示仓库暂不可写，表单保持打开。
+    /// 提交交付操作名称、Activity 记录连接的对象、与撤销记录的关系和显式参数对应的业务操作；
+    /// 返回 false 表示仓库暂不可写，表单保持打开。
     let submit:
         (
             String,
+            ActivityTarget?,
+            UndoRecording,
             @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
         ) -> Bool
 
@@ -698,6 +703,51 @@ extension RepositoryOperationDialog {
         return (options, forcePush ? tracking?.objectID ?? "" : nil)
     }
 
+    /// 合并的选项：压缩、总是新建合并提交、随即提交、签名校验与跳过钩子都照表单。
+    private func mergeConfiguration() -> MergeOptions {
+        var options = MergeOptions()
+        options.squash = squash
+        options.alwaysCreateCommit = alwaysCommit
+        options.commit = alwaysCommit && !squash ? autoCommit : true
+        options.verifySignatures = mergeVerify
+        options.skipHooks = skipHooks
+        return options
+    }
+
+    /// Activity 记录连接的对象：获取写所选的远端，获取全部远端时由获取逐个补上；拉取写远端分支；
+    /// 推送与发布写传给 git 的 refspec；不连接远端的动作没有。
+    ///
+    /// - Parameters:
+    ///   - pullRemote: 拉取来源所属的远端。
+    ///   - pullBranch: 拉取来源在远端上的完整分支引用名。
+    private func activityTarget(pullRemote: String?, pullBranch: String?) -> ActivityTarget? {
+        request.kind.transfer.map { transfer in
+            switch transfer {
+            case .fetch:
+                ActivityTarget(transfer: transfer, remote: allRemotes ? nil : remote, refspec: nil)
+
+            case .pull:
+                ActivityTarget(transfer: transfer, remote: pullRemote, refspec: pullBranch)
+
+            case .push:
+                ActivityTarget(
+                    transfer: transfer,
+                    remote: remote,
+                    refspec: "refs/heads/" + localBranch + ":refs/heads/" + name
+                )
+            }
+        }
+    }
+
+    /// 与撤销记录的关系：新建分支与合并靠快照撤销，发布分支靠反向操作撤销，获取、拉取与推送不能撤销。
+    private func undoRecording() -> UndoRecording {
+        switch request.kind {
+        case .create, .track, .merge: .reversible
+        case .publish: .publishingBranch(localBranch, to: remote, as: name, setsUpstream: upstream)
+        case .fetch, .pull, .push: .irreversible
+        }
+    }
+
     /// 远端分支短名按所属远端切除前缀，兼容远端名中的斜杠。
     private func remoteBranchName(_ reference: String) -> String {
         guard
@@ -725,19 +775,13 @@ extension RepositoryOperationDialog {
         let allTags = allTags
         let submodules = fetchSubmodules
         let rebase = rebase
-        let verify = request.kind == .pull ? pullVerify : mergeVerify
+        let verify = pullVerify
         let skipHooks = skipHooks
         let kind = request.kind
         let selected = branches.first { $0.id == revision }
         let pullRemote = selected.flatMap { session.history.snapshot?.remote(for: $0) }
         let pullBranch = selected.map { "refs/heads/" + remoteBranchName($0.id) }
-        var mergeOptions = MergeOptions()
-        mergeOptions.squash = squash
-        mergeOptions.alwaysCreateCommit = alwaysCommit
-        mergeOptions.commit = alwaysCommit && !squash ? autoCommit : true
-        mergeOptions.verifySignatures = verify
-        mergeOptions.skipHooks = skipHooks
-        let options = mergeOptions
+        let options = mergeConfiguration()
         let push = pushConfiguration()
 
         /// 按动作种类调用核心库，只读取上面复制的表单值。
@@ -765,6 +809,7 @@ extension RepositoryOperationDialog {
                         prune: prune,
                         allTags: allTags,
                         submodules: submodules,
+                        onRemote: ActivityRecording.fetching,
                         onOutput: output
                     )
 
@@ -796,7 +841,9 @@ extension RepositoryOperationDialog {
             }
         }
 
+        let target = activityTarget(pullRemote: pullRemote?.name, pullBranch: pullBranch)
+
         // 仓库在点击瞬间变为不可写时表单不关闭，原因显示在表单内，已填写的参数原样保留。
-        _ = submit(AppLocalization.text(kind.rawValue), run)
+        _ = submit(AppLocalization.text(kind.rawValue), target, undoRecording(), run)
     }
 }

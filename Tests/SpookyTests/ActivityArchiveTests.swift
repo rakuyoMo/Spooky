@@ -11,7 +11,7 @@ import Testing
 /// 每个测试使用自己的临时目录与 `RepositoryActivities` 实例，不碰 Application Support 与共享的活动列表。
 @MainActor
 struct ActivityArchiveTests {
-    /// 结束的 Remote 记录写成文件，换一个实例读回后标题、状态与日志都相同，并带读回标记；进行中的、Repository 与 Service 的记录不写。
+    /// 结束的 Remote 记录写成文件，换一个实例读回后标题、传输方向、状态与日志都相同，并带读回标记；进行中的、Repository 与 Service 的记录不写。
     @Test("Remote 记录结束时保存，重新启动后读回")
     func saveAndRestore() async throws {
         let directory = try FileViewsTests.temporaryDirectory()
@@ -22,7 +22,12 @@ struct ActivityArchiveTests {
         await activities.restore(from: directory)
 
         // 一条结束的 Remote 记录，带回车刷新的进度
-        let fetch = RepositoryActivity(kind: .remote, repository: location, title: "Fetch")
+        let fetch = RepositoryActivity(
+            kind: .remote,
+            repository: location,
+            title: "Fetch",
+            target: .pull("origin", refspec: "refs/heads/main")
+        )
         activities.insert(fetch)
         fetch.append(.standardOutput(Data("From spooky-test\n".utf8)))
         fetch.append(.standardError(Data("接收对象：50%\r接收对象：100%\n".utf8)))
@@ -52,6 +57,7 @@ struct ActivityArchiveTests {
         #expect(restored.items.count == 1)
         #expect(item.id == fetch.id)
         #expect(item.kind == .remote)
+        #expect(item.target == .pull("origin", refspec: "refs/heads/main"))
         #expect(item.repository == location)
         #expect(item.title == "Fetch")
         #expect(item.started == fetch.started)
@@ -103,7 +109,7 @@ struct ActivityArchiveTests {
         let activities = RepositoryActivities()
         await activities.restore(from: directory)
 
-        let fetch = RepositoryActivity(kind: .remote, repository: location, title: "Fetch")
+        let fetch = RepositoryActivity(kind: .remote, repository: location, title: "Fetch", target: .fetch("origin"))
         activities.insert(fetch)
         fetch.state = "activity.finished"
         activities.finish(fetch)
@@ -125,11 +131,28 @@ struct ActivityArchiveTests {
         #expect(!exists(file))
     }
 
+    /// 较早保存的记录没有连接对象这一项，读回时为 nil，其余内容照常读回。
+    @Test("没有连接对象的旧记录照常读回")
+    func restoreWithoutTarget() throws {
+        let data = try JSONEncoder().encode(record(started: Date()))
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(object["target"] != nil)
+
+        object.removeValue(forKey: "target")
+        let old = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(ActivityRecord.self, from: old)
+
+        #expect(decoded.target == nil)
+        #expect(decoded.title == "Fetch")
+        #expect(decoded.state == "activity.finished")
+    }
+
     /// 一条已完成的 Remote 记录。
     private func record(started: Date) -> ActivityRecord {
         ActivityRecord(
             id: UUID(),
             kind: .remote,
+            target: .fetch("origin"),
             repository: .local(path: "/temporary/activity"),
             title: "Fetch",
             started: started,

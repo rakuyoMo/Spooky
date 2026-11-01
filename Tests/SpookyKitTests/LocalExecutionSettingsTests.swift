@@ -75,18 +75,14 @@ struct LocalExecutionSettingsTests {
         #expect(named(shell.gitOverrides(inheritedPath: "/usr/bin"))["PATH"] == "/opt/homebrew/bin:/usr/bin")
     }
 
-    /// 系统 agent 取继承的 SSH_AUTH_SOCK，空值视为没有；1Password 的 socket 在用户主目录的群组容器里。
+    /// SSH Agent 只有系统 agent 一项；它取继承的 SSH_AUTH_SOCK，空值视为没有。
     @Test("SSH agent 的 socket")
     func agentSockets() {
-        let home = URL(fileURLWithPath: "/Users/某人")
+        #expect(SSHAgent.allCases == [.system])
 
-        #expect(SSHAgent.system.socket(environment: ["SSH_AUTH_SOCK": "/tmp/launchd.sock"], home: home) == "/tmp/launchd.sock")
-        #expect(SSHAgent.system.socket(environment: ["SSH_AUTH_SOCK": ""], home: home) == nil)
-        #expect(SSHAgent.system.socket(environment: [:], home: home) == nil)
-        #expect(
-            SSHAgent.onePassword.socket(environment: [:], home: home)
-                == "/Users/某人/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
-        )
+        #expect(SSHAgent.system.socket(environment: ["SSH_AUTH_SOCK": "/tmp/launchd.sock"]) == "/tmp/launchd.sock")
+        #expect(SSHAgent.system.socket(environment: ["SSH_AUTH_SOCK": ""]) == nil)
+        #expect(SSHAgent.system.socket(environment: [:]) == nil)
     }
 
     /// 所选的 Git 程序不存在时，打开仓库报出它的路径，而不是笼统的启动失败。

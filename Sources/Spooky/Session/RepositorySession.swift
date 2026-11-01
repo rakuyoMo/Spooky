@@ -3,17 +3,6 @@ import Observation
 import os
 import SpookyKit
 
-// MARK: - StatusRowID
-
-/// 文件行的稳定标识，区分 `rm --cached` 后同路径的已跟踪与未跟踪记录。
-struct StatusRowID: Hashable {
-    /// Git 给出的相对路径。
-    let path: String
-
-    /// 同一路径可以同时拥有已跟踪和未跟踪状态。
-    let kind: StatusEntry.Kind
-}
-
 // MARK: - RepositorySession
 
 /// 一个窗口的仓库读取状态，异步刷新失败时保留完整的上一份快照。
@@ -55,6 +44,9 @@ final class RepositorySession {
 
     /// 托管服务上的请求列表与所选请求的详情。
     let pullRequests = RepositoryPullRequestState()
+
+    /// 服务器仓库与工作树在这台 Mac 上的挂载位置。
+    let mounts = RepositoryMountState()
 
     /// 窗口负责呈现导出、保存补丁与比较版本的对话框。
     var onRevisionRequest: ((RevisionRequest) -> Void)? = nil
@@ -291,15 +283,6 @@ final class RepositorySession {
     /// 请求代数，阻止已取消的旧请求覆盖新仓库。
     private(set) var generation = 0
 
-    /// 连接可用、本窗口没有写操作，且应用内没有同一仓库的写操作时才允许写入。
-    var canWrite: Bool {
-        guard let repository, !isWriting, !RepositoryWriteLocks.shared.contains(repository) else {
-            return false
-        }
-
-        return repository.host == nil || connectionState == .connected
-    }
-
     /// 当前选中的文件行。
     var selectedID: StatusRowID? = nil {
         didSet {
@@ -339,6 +322,9 @@ final class RepositorySession {
         fileHistory.activities = activities
         fileContent.activities = activities
 
+        // 服务器仓库读完工作树清单后，查找仓库目录与新出现的工作树在这台 Mac 上的挂载
+        worktrees.onLoad = { [weak self] in self?.locateMounts() }
+
         // 恢复的引用已不存在时，回到安全的 Working Copy 视图。
         history.onRestoreFailure = { [weak self] in
             self?.activeView = .workingCopy
@@ -375,8 +361,11 @@ final class RepositorySession {
         if repository.host != nil {
             observeConnection(repository)
             startPolling()
+
+            // 仓库设置里手动指定的本机目录记在这台 Mac 的偏好里，设了就不再自动查找仓库目录的挂载
+            mounts.designate(ServerLocalFolders.folder(for: repository), for: repository.path)
         } else if loadsRepositoryDetails {
-            fileMonitor = RepositoryFileMonitor(path: repository.path) { [weak self] in self?.refresh() }
+            fileMonitor = RepositoryFileMonitor(path: repository.path) { [weak self] in self?.autoReload() }
         }
     }
 
@@ -480,6 +469,7 @@ extension RepositorySession {
         stashes.close()
         submodules.close()
         worktrees.close()
+        mounts.reset()
         pullRequests.close()
         reflog.close()
         fileHistory.close()
@@ -688,7 +678,8 @@ extension RepositorySession {
     /// - Parameters:
     ///   - title: 已本地化的操作名称，用于 Activity 与断线后的核对报告。
     ///   - recordsActivity: 网络与引用操作记入 Activity；工作区的高频写入只用于核对报告。
-    ///   - activityKind: 记在 Activity 的哪一页；要连接远端传输对象或引用的操作记在 Remote。
+    ///   - target: 要连接远端传输对象或引用的操作传入连接的对象，记在 Activity 的 Remote 页，写进记录的图标与标题；
+    ///     不传时记在 Repository 页。动作里经 `ActivityRecording` 另起的记录接在后面。
     ///   - offersAutoStash: 被本地改动挡住时是否按设置询问先储藏，检出、拉取与合并使用。
     ///   - reportsFailure: 失败时是否弹出错误 sheet；自动获取只把失败记进 Activity。
     ///   - undo: 这次写操作能否撤销；没有声明的写操作按不能撤销处理。
@@ -700,7 +691,7 @@ extension RepositorySession {
         @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
         recordsActivity: Bool = true,
-        activityKind: ActivityKind = .repository,
+        target: ActivityTarget? = nil,
         offersAutoStash: Bool = false,
         reportsFailure: Bool = true,
         undo: UndoRecording = .irreversible,
@@ -729,9 +720,10 @@ extension RepositorySession {
         let branch = status?.branch
         let finished = onWriteFinished
         let activities = activities
-        let activity = recordsActivity ? RepositoryActivity(kind: activityKind, repository: repository, title: title) : nil
-        if let activity { activities.insert(activity) }
-        let (outputs, continuation) = AsyncStream<GitOutputEvent>.makeStream()
+        let record = recordsActivity
+            ? WriteActivity(activities: activities, repository: repository, title: title, target: target)
+            : nil
+        let (events, continuation) = AsyncStream<ActivityEvent>.makeStream()
         Self.logger.info("写操作开始：\(title, privacy: .public)")
 
         // 后台写入只记进 Activity；被本地改动挡住的检出、拉取与合并改为询问是否先储藏，用户不储藏时再报告失败
@@ -739,7 +731,7 @@ extension RepositorySession {
             guard let self else { return }
 
             guard reportsFailure else {
-                recordQuietFailure(error, cancelled: cancelled, activity: activity, in: repository)
+                recordQuietFailure(error, cancelled: cancelled, in: repository) { continuation.yield(.output($0)) }
                 return
             }
 
@@ -760,16 +752,19 @@ extension RepositorySession {
 
         // 已初始化子模块的指针被改动时随后更新或询问；按声明在操作前后记下仓库状态，供撤销与重做使用
         let checked = updatingSubmodules(after: action, tracked: submodules.initialized)
-        let recorded = recordingUndo(checked, title: title, recording: undo)
+        let recorded = recordingUndo(checked, title: title, target: target, recording: undo)
 
         writeTask = Task { [weak self] in
             let collector = Task { @MainActor in
-                for await output in outputs { activity?.append(output) }
+                for await event in events { record?.receive(event) }
             }
 
+            // 状态与失败说明同样经流送出，落在最后一条记录上
             do {
-                try await recorded(runner) { continuation.yield($0) }
-                activity?.state = Task.isCancelled ? "activity.cancelled" : "activity.finished"
+                try await ActivityRecording.$send.withValue({ continuation.yield($0) }) {
+                    try await recorded(runner) { continuation.yield(.output($0)) }
+                }
+                continuation.yield(.state(Task.isCancelled ? "activity.cancelled" : "activity.finished"))
                 Self.logger.info("写操作\(Task.isCancelled ? "已取消" : "完成", privacy: .public)：\(title, privacy: .public)")
 
                 if let self, generation == request, !Task.isCancelled { success?() }
@@ -777,7 +772,7 @@ extension RepositorySession {
                 let cancelled =
                     Task.isCancelled || error is CancellationError
                         || ((error as? GitError)?.isCancelled ?? false)
-                activity?.state = cancelled ? "activity.cancelled" : "activity.failed"
+                continuation.yield(.state(cancelled ? "activity.cancelled" : "activity.failed"))
 
                 // 失败的类别在 reportWriteFailure 归类后记录，这里只记取消
                 if cancelled { Self.logger.info("写操作已取消：\(title, privacy: .public)") }
@@ -789,7 +784,7 @@ extension RepositorySession {
             await collector.value
 
             // 输出收完才结束记录，Remote 记录这时写进本机
-            if let activity { activities.finish(activity) }
+            record?.finish()
 
             RepositoryWriteLocks.shared.release(repository)
             finished?(repository)
@@ -802,7 +797,7 @@ extension RepositorySession {
         }
 
         let task = writeTask
-        activity?.cancel = { task?.cancel() }
+        record?.cancel = { task?.cancel() }
         return true
     }
 }
@@ -951,12 +946,12 @@ extension RepositorySession {
         }
     }
 
-    /// 不弹错误 sheet 的写入失败：错误标题与原因记进 Activity；断线照常重连，结果由重连后的完整刷新核对。
+    /// 不弹错误 sheet 的写入失败：错误标题与原因经 `output` 追加到 Activity 的记录；断线照常重连，结果由重连后的完整刷新核对。
     private func recordQuietFailure(
         _ error: Error,
         cancelled: Bool,
-        activity: RepositoryActivity?,
-        in repository: RepositoryLocation
+        in repository: RepositoryLocation,
+        output: (GitOutputEvent) -> Void
     ) {
         stagingOverrides = [:]
 
@@ -969,7 +964,7 @@ extension RepositorySession {
 
         // Git 的原始输出已经流进日志，其余错误补上说明
         let details = error is GitError ? "" : "\n" + failure.details
-        activity?.append(.standardError(Data(("\n" + failure.title + details + "\n").utf8)))
+        output(.standardError(Data(("\n" + failure.title + details + "\n").utf8)))
 
         if error is RemoteConnectionError {
             reconnect()
@@ -1086,7 +1081,7 @@ extension RepositorySession {
                 catch { return }
 
                 guard let self, repository?.host != nil else { return }
-                if connectionState == .connected { refresh() }
+                if connectionState == .connected { autoReload() }
             }
         }
     }

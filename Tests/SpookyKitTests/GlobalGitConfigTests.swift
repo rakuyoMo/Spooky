@@ -5,7 +5,7 @@ import Testing
 
 // MARK: - GlobalGitConfigTests
 
-/// Settings → Git Config 与 Integration 读写本机全局配置；读写必须落在 Git 实际使用的文件上，失败时保留 Git 的原文。
+/// Settings → Git Config 读写本机全局配置；读写必须落在 Git 实际使用的文件上，失败时保留 Git 的原文。
 struct GlobalGitConfigTests {
     /// 同一键以最后一个为准，无值布尔键为真，未知格式名不当作任何格式。
     @Test("解析全局配置")
@@ -20,8 +20,6 @@ struct GlobalGitConfigTests {
             "gpg.program\n/opt/homebrew/bin/gpg",
             "gpg.ssh.program\n/Applications/签 名",
             "gpg.ssh.allowedsignersfile\n~/.ssh/allowed_signers",
-            "spooky.issuetrackertemplate\nhttps://example.invalid/{ISSUE_NUMBER}",
-            "spooky.issuenumberprefix\n#",
         ]
         let output = Data(records.map { $0 + "\0" }.joined().utf8)
         let configuration = try GlobalGitConfiguration.parse(output)
@@ -34,8 +32,6 @@ struct GlobalGitConfigTests {
         #expect(configuration.gpgProgram == "/opt/homebrew/bin/gpg")
         #expect(configuration.sshProgram == "/Applications/签 名")
         #expect(configuration.allowedSignersFile == "~/.ssh/allowed_signers")
-        #expect(configuration.issueTrackerTemplate == "https://example.invalid/{ISSUE_NUMBER}")
-        #expect(configuration.issueNumberPrefix == "#")
 
         let unknown = try GlobalGitConfiguration.parse(Data("gpg.format\nsomething\0commit.gpgsign\nfalse\0".utf8))
         #expect(unknown.signingFormat == nil)
@@ -98,7 +94,6 @@ struct GlobalGitConfigTests {
             (GlobalGitConfiguration.Key.signingKey, "key::ssh-ed25519 AAAA test"),
             (GlobalGitConfiguration.Key.signingFormat, "ssh"),
             (GlobalGitConfiguration.Key.signsCommits, "true"),
-            (GlobalGitConfiguration.Key.issueTrackerTemplate, "https://example.invalid/issues/{ISSUE_NUMBER}"),
         ])
 
         var read = try await config.read()
@@ -107,7 +102,6 @@ struct GlobalGitConfigTests {
         #expect(read.signingKey == "key::ssh-ed25519 AAAA test")
         #expect(read.signingFormat == SigningFormat.ssh)
         #expect(read.signsCommits)
-        #expect(read.issueTrackerTemplate == "https://example.invalid/issues/{ISSUE_NUMBER}")
         #expect(FileManager.default.fileExists(atPath: home.directory.appending(path: ".gitconfig").path))
 
         // 删除已有的键与本来就没有的键

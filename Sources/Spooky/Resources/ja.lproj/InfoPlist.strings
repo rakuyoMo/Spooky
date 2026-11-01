@@ -1,1 +1,4 @@
-"NSAppleEventsUsageDescription" = "Spooky は選択したターミナルアプリでリポジトリを開きます。";
+"NSAppleEventsUsageDescription" = "Spooky は選択したターミナルアプリでリポジトリを開き、選択した比較ツールで比較を表示します。";
+
+"Spooky Theme" = "Spooky テーマ";
+"Folder" = "フォルダ";
