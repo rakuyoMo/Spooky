@@ -81,6 +81,9 @@ Spooky 由两个 target 组成：
 - 组合操作用 `GitRunner.writeTransaction` 持有仓库锁
 - 工作区的写入经 `WorkingCopyOperations` 发起：补丁以原始字节生成并核对快照，路径列表经字面 NUL 输入传递
 - App 内同一仓库同时只允许一个写操作（`RepositoryWriteLocks`）；菜单、工具栏、右键菜单与拖放统一使用 `RepositorySession` 的 `can…` 可用性规则
+- 写操作经 `RepositorySession.performGit(target:)` 声明记在 Activity 的哪一页：传了连接的对象（`ActivityTarget`：传输方向、远端名与 refspec）就记在 Remote 页，记录的标题与图标由它写出；没传的记在 Repository 页
+  - 一次写操作连接几个对象时分成几条记录，如获取全部远端时每个远端一条，同步的拉取与推送各一条：动作里经 task-local 的 `ActivityRecording` 另起记录，这些事件与 Git 输出走同一个流，先后不乱
+  - 核心库不知道 Activity，只报出分界：`RepositorySync.fetch` 获取全部远端时在每个远端开始前经 `onRemote` 报出远端名，`RepositorySync.sync` 在每一步开始前经 `onStep` 报出步骤；App 据此为每个远端、为同步的推送另起记录
 - 写操作经 `RepositorySession.performGit(undo:)` 声明与撤销记录的关系：
   - `.reversible`：只改仓库自己的引用、索引、工作区、储藏与 `branch.*` 配置
   - `.inverse`：快照记不住的改动，如远端设置、assume-unchanged 标记、Git LFS 的启用，发布的分支与标签、重命名的远端分支，以及子模块的增删、移动、改名、本地设置与子模块里检出的版本；操作前读出撤销要用的内容，撤销时执行反向操作、先核对前提，重做时再执行一次原操作（添加子模块的重做复用撤销时留下的 Git 目录）；要推送的撤销与重做记在 Activity 的 Remote 页
