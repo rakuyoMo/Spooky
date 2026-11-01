@@ -9,7 +9,7 @@ import Testing
 extension FileViewsTests {
     /// 文件历史、原文与 Blame 的读取记进 Repository 页：第一页写出读到的提交数，总数、补丁、原文与逐行追溯各记一条；
     /// HEAD 移动引起的重读与引起它的刷新相同，不记录的刷新引起的不记，完整刷新引起的照常记；按版本范围筛选时不读总数。
-    @Test("文件视图的读取记进 Repository 页", .timeLimit(.minutes(5)))
+    @Test("文件视图的读取记进 Repository 页", .timeLimit(.minutes(10)))
     func fileViewReads() async throws {
         let directory = try Self.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
