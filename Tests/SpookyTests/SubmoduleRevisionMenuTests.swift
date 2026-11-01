@@ -32,7 +32,7 @@ struct SubmoduleRevisionMenuTests {
         )
     }
 
-    /// 分离 HEAD 且不在标签上时，检出的提交排在最上面，与下面的分支组隔开；停在标签上时这个标签是当前版本，不再单列提交。
+    /// 分离 HEAD 且不在标签上时，检出的提交排在最上面，与下面的分支组隔开；停在标签上时这个标签是当前版本，不单列提交。
     @Test("分离 HEAD")
     func detachedHead() {
         let branch = SubmoduleRevision(reference: "refs/heads/main", isCurrent: false)

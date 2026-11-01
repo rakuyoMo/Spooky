@@ -14,7 +14,7 @@ struct IdentityProfileMenuTests {
     /// 同名的个人档案，只有邮箱与工作档案不同。
     private let home = UserProfile(title: "Home", name: "Ada Lovelace", email: "ada@home.example")
 
-    /// 当前身份对应某个档案时只勾选它，不再单列身份，也不提供存为档案。
+    /// 当前身份对应某个档案时只勾选它，不单列身份，也不提供存为档案。
     @Test("当前身份有对应的档案")
     func matchingProfile() {
         let items = IdentityProfileMenu.items(profiles: [work, home], name: "Ada Lovelace", email: "ada@home.example")
