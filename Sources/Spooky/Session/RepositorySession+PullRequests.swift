@@ -57,9 +57,11 @@ extension RepositorySession {
 // MARK: - Hosting Actions
 
 extension RepositorySession {
-    /// 在托管服务上新建请求，成功后重新读取并选中它。
+    /// 在托管服务上新建请求，成功后重新读取并选中它；Activity 的标题与新建对话框的标题相同。
     func createPullRequest(_ draft: PullRequestDraft) -> Bool {
-        performHosting(title: pullRequestText("create.title")) { [weak self] client in
+        let service = pullRequests.account.map { AccountsSettingsView.serviceTitle($0.instance) } ?? ""
+
+        return performHosting(title: pullRequestText("create.title", service)) { [weak self] client in
             let created = try await client.createPullRequest(draft)
 
             await MainActor.run {
@@ -71,9 +73,11 @@ extension RepositorySession {
         }
     }
 
-    /// 修改标题、描述与目标分支。
+    /// 修改标题、描述与目标分支；Activity 的标题与修改对话框的标题相同。
     func updatePullRequest(_ request: PullRequest, title: String, body: String, targetBranch: String) -> Bool {
-        performHosting(title: pullRequestText("edit.title")) { client in
+        let service = AccountsSettingsView.serviceTitle(request.id.instance)
+
+        return performHosting(title: pullRequestText("edit.title", service, request.id.reference)) { client in
             try await client.updatePullRequest(request.id, title: title, body: body, targetBranch: targetBranch)
             return nil
         }

@@ -123,11 +123,11 @@ extension PullRequestDetailView {
         }
     }
 
-    /// 40 pt 底栏：检出、关闭与合并；请求不再打开时后两项不可用。
+    /// 40 pt 底栏：检出、关闭与合并；检出与请求列表的右键菜单共用一条规则，请求不再打开时后两项不可用。
     private func actions(_ request: PullRequest) -> some View {
         HStack(spacing: 8) {
             Button(AppLocalization.text("pullRequests.checkout")) { session.requestPullRequest(.checkout(request)) }
-                .disabled(!session.canWrite)
+                .disabled(!session.canCheckOutPullRequest(request))
 
             Spacer(minLength: 8)
 

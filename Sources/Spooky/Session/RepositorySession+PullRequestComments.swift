@@ -30,6 +30,50 @@ extension RepositorySession {
     }
 }
 
+// MARK: - Request Availability
+
+extension RepositorySession {
+    /// 能修改请求的标题、描述与目标分支：请求的作者是当前账号，且源分支所在的项目还在。
+    ///
+    /// 请求列表的右键菜单与双击共用这条规则。
+    func canEditPullRequest(_ request: PullRequest) -> Bool {
+        guard let account = discussionAccount, request.source.project != nil else {
+            return false
+        }
+
+        return Self.isAccount(account, request.author)
+    }
+
+    /// 能检出请求：有选中的远端且仓库可写；跟踪源分支的本地分支有未推送的提交，或它就是当前分支且已在请求的提交上时不能。
+    ///
+    /// 请求列表的右键菜单与详情底栏共用这条规则。来自 Fork 的请求检出时不设上游，只看前两条。
+    func canCheckOutPullRequest(_ request: PullRequest) -> Bool {
+        guard canWrite, let remote = pullRequests.remote else {
+            return false
+        }
+
+        // 检出同一项目的请求时，新建的分支跟踪的就是这个远端分支
+        let tracking = "refs/remotes/" + remote + "/" + request.source.branch
+
+        guard
+            !request.isFromFork,
+            let branch = history.branches.first(where: { $0.isLocal && $0.upstream == tracking })
+        else {
+            return true
+        }
+
+        if let divergence = history.divergence[branch.id], divergence.ahead > 0 {
+            return false
+        }
+
+        // 源分支提交未知时不算已在请求的提交上
+        let source = request.source.sha.lowercased()
+        let isCurrent = status?.branch.head == branch.name
+
+        return !(isCurrent && !source.isEmpty && branch.objectID.lowercased() == source)
+    }
+}
+
 // MARK: - Comment Actions
 
 extension RepositorySession {
@@ -71,7 +115,7 @@ extension RepositorySession {
 // MARK: - Private
 
 extension RepositorySession {
-    /// 讨论里写操作所用的账号：选中远端对应的账号，有接口客户端且不需要重新认证；否则为 nil。
+    /// 讨论与修改请求所用的账号：选中远端对应的账号，有接口客户端且不需要重新认证；否则为 nil。
     private var discussionAccount: HostingAccount? {
         guard
             let account = pullRequests.account,

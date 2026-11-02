@@ -111,6 +111,15 @@ extension PullRequestTextDialog {
         return request.author.username + ":" + request.source.branch
     }
 
+    /// 检出时预填的本地分支名：同一项目的请求是源分支名，来自 Fork 时是 `pullrequests/<作者>/<源分支>`。
+    static func checkoutBranchName(for request: PullRequest) -> String {
+        guard request.isFromFork else {
+            return request.source.branch
+        }
+
+        return "pullrequests/" + request.author.username + "/" + request.source.branch
+    }
+
     /// 检出时分支名的问题：按 Git 的分支规则不合法时带原因，同名的本地分支指向别的提交时是提醒；没有问题时为 nil。
     ///
     /// - Parameters:
@@ -244,12 +253,12 @@ extension PullRequestTextDialog {
             .padding(20)
     }
 
-    /// 修改评论与描述预填原文，检出预填源分支名。
+    /// 修改评论与描述预填原文，检出预填本地分支名。
     private func prefill() {
         switch kind {
         case .editComment(let comment): text = comment.body
         case .editDescription: text = request.body
-        case .checkout: text = request.source.branch
+        case .checkout: text = Self.checkoutBranchName(for: request)
         default: break
         }
     }

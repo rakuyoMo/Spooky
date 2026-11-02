@@ -1,3 +1,4 @@
+import AppKit
 import SpookyKit
 import SwiftUI
 
@@ -104,12 +105,14 @@ extension PullRequestListView {
         }
     }
 
-    /// 请求列表；滚到最后一行时读取下一页。
+    /// 请求列表；滚到最后一行时读取下一页。双击请求打开修改对话框，回车不打开；右键菜单只作用于所点的请求。
     private var list: some View {
         List(selection: Binding(get: { state.selectedID }, set: { select($0) })) {
             ForEach(state.items) { request in
                 PullRequestRow(request: request)
                     .tag(request.id)
+                    .onTapGesture(count: 2) { edit(request) }
+                    .contextMenu { menu(for: request) }
                     .onAppear {
                         if request.id == state.items.last?.id {
                             state.loadMore()
@@ -199,6 +202,30 @@ extension PullRequestListView {
     private func associate() {
         guard let remote = state.remote, let url = state.remoteURL else { return }
         session.requestPullRequest(.associate(remote: remote, url: url))
+    }
+
+    /// 一个请求的右键菜单：修改请求与检出，各按自己的规则启用，两项之间没有分隔线。
+    @ViewBuilder
+    private func menu(for request: PullRequest) -> some View {
+        Button(session.pullRequestText("edit.menu", request.id.reference)) {
+            session.requestPullRequest(.edit(request))
+        }
+        .disabled(!session.canEditPullRequest(request))
+
+        Button(session.pullRequestText("checkout.menu", request.id.reference)) {
+            session.requestPullRequest(.checkout(request))
+        }
+        .disabled(!session.canCheckOutPullRequest(request))
+    }
+
+    /// 双击请求：能修改时打开修改对话框，否则提示音。
+    private func edit(_ request: PullRequest) {
+        guard session.canEditPullRequest(request) else {
+            NSSound.beep()
+            return
+        }
+
+        session.requestPullRequest(.edit(request))
     }
 }
 

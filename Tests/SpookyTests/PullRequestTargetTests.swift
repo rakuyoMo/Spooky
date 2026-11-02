@@ -80,7 +80,7 @@ struct PullRequestTargetTests {
         let session = RepositorySession()
 
         #expect(!session.usesMergeRequests)
-        #expect(session.pullRequestText("create.message", "github.com").contains("github.com"))
+        #expect(session.pullRequestText("create.message", "GitHub", "o/r").contains("“o/r”"))
         #expect(session.pullRequestText("close.message", "#7", "github.com").contains("#7"))
     }
 }

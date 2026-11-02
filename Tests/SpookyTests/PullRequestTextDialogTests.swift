@@ -76,6 +76,16 @@ struct PullRequestTextDialogTests {
         #expect(await problem("feature", sha: head) == nil)
         #expect(await problem("", sha: head) == nil)
     }
+
+    /// 同一项目的请求预填源分支名；来自 Fork 的预填 `pullrequests/<作者>/<源分支>`，不与本地同名分支撞上。
+    @Test("检出预填的分支名")
+    func checkoutBranchName() {
+        #expect(PullRequestTextDialog.checkoutBranchName(for: Self.request(branch: "fix/login")) == "fix/login")
+        #expect(
+            PullRequestTextDialog.checkoutBranchName(for: Self.request(branch: "main", fork: true))
+                == "pullrequests/me/main"
+        )
+    }
 }
 
 // MARK: - Helpers

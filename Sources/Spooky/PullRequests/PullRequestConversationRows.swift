@@ -47,12 +47,11 @@ struct PullRequestConversationTextRow: View {
                         }
                     }
 
-                    if case .description = item {
+                    // 描述上的 Edit 只在能修改描述时出现，打开修改描述的对话框
+                    if case .description = item, session.canEditDescription(of: request) {
                         Button(AppLocalization.text("pullRequests.edit")) {
-                            session.requestPullRequest(.edit(request))
+                            session.requestPullRequest(.editDescription(request))
                         }
-                        .controlSize(.small)
-                        .disabled(session.pullRequests.client == nil)
                     }
                 }
                 .frame(height: 26, alignment: .topLeading)
