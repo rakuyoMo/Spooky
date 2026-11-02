@@ -154,10 +154,16 @@ struct DialogForm<Rows: View>: View {
 
 // MARK: - DialogFormRow
 
-/// 表单的一行：右对齐的标签与它右侧的输入控件；VoiceOver 以去掉冒号的标签读出控件。
+/// 表单的一行：右对齐的标签与它右侧的输入控件。
+///
+/// 标签在辅助功能里是控件的标题，VoiceOver 读控件时读出标签；控件是只读的文字时，标签与文字本身都读得出，
+/// 一组控件时各自保留自己的名称。
 struct DialogFormRow<Field: View>: View {
     /// 标签，带冒号。
     let label: String
+
+    /// 标签列的最小宽度；默认让输入列正好从对齐线开始。
+    var labelWidth = DialogMetrics.labelWidth
 
     /// 标签与控件的竖直对齐；为 nil 时沿用表单的首行基线对齐，多行的文字区用 `.top` 让标签与它的顶边对齐。
     var alignment: VerticalAlignment? = nil
@@ -166,15 +172,20 @@ struct DialogFormRow<Field: View>: View {
     @ViewBuilder
     let field: () -> Field
 
-    /// 标签列至少宽到让输入列从对齐线开始。
+    /// 把标签与控件配成一对的辅助功能命名空间。
+    @Namespace
+    private var accessibility
+
+    /// 标签列至少宽到 `labelWidth`。
     var body: some View {
         GridRow(alignment: alignment) {
             Text(label)
-                .frame(minWidth: DialogMetrics.labelWidth, alignment: .trailing)
+                .frame(minWidth: labelWidth, alignment: .trailing)
                 .gridColumnAlignment(.trailing)
+                .accessibilityLabeledPair(role: .label, id: 0, in: accessibility)
 
             field()
-                .accessibilityLabel(label.trimmingCharacters(in: CharacterSet(charactersIn: ":：")))
+                .accessibilityLabeledPair(role: .content, id: 0, in: accessibility)
         }
     }
 }

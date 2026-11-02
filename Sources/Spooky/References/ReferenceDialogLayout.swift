@@ -201,14 +201,12 @@ extension ReferenceDialogLayout {
 /// 引用管理对话框里重复出现的表格行。
 @MainActor
 enum ReferenceDialogRows {
-    /// 标签列右对齐、输入列占满的一行。
+    /// 标签列右对齐、输入列占满的一行；标签列不设最小宽度，辅助功能里标签与控件的配对同 `DialogFormRow`。
     static func row(_ label: String, @ViewBuilder field: () -> some View) -> some View {
-        GridRow {
-            Text(label)
-                .gridColumnAlignment(.trailing)
+        let content = field()
 
-            field()
-                .accessibilityLabel(label.trimmingCharacters(in: CharacterSet(charactersIn: ":：")))
+        return DialogFormRow(label: label, labelWidth: 0) {
+            content
         }
     }
 
