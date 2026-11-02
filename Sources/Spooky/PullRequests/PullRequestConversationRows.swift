@@ -7,7 +7,7 @@ import SwiftUI
 /// 讨论里高度随正文变化的行：描述与评论，行高按列宽量出。
 ///
 /// 位置从单元格左缘算：40 × 40 的作者头像左 0、上 20；标题一行左 60、与头像顶对齐；
-/// 正文左 60、上 46、右 20、下 20，头像下至少留 20。正文按 Markdown 的行内格式显示。
+/// 正文左 60、上 46、右 20、下 20，头像下至少留 20。正文按完整的 Markdown 显示。
 struct PullRequestConversationTextRow: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -114,24 +114,18 @@ extension PullRequestConversationTextRow {
             Text(AppLocalization.text("pullRequests.noDescription"))
 
         case .description:
-            Text(Self.markdown(request.body))
+            PullRequestMarkdownView(text: request.body)
 
         case .comment(let comment) where comment.body.isEmpty:
             Text(AppLocalization.text("pullRequests.comment.deleted"))
                 .foregroundStyle(.secondary)
 
         case .comment(let comment):
-            Text(Self.markdown(comment.body))
+            PullRequestMarkdownView(text: comment.body)
 
         default:
             EmptyView()
         }
-    }
-
-    /// 按 Markdown 的行内格式解析，保留原有的换行；解析不了时原样显示。
-    private static func markdown(_ text: String) -> AttributedString {
-        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
-            ?? AttributedString(text)
     }
 
     /// 评论上的动作：能修改时是 Edit 与 Delete，能回复时再加 Reply；都不能时为空。
