@@ -86,7 +86,13 @@ extension PullRequestDetailView {
     private func content(_ request: PullRequest) -> some View {
         switch state.page {
         case .conversation:
-            PullRequestConversationView(session: session, request: request)
+            PullRequestConversationView(
+                session: session,
+                request: request,
+                comments: state.comments,
+                commits: state.conversation.commits,
+                canComment: state.client != nil
+            )
 
         case .commits, .changeset:
             if state.needsFetch {

@@ -143,7 +143,7 @@ public struct PullRequest: Sendable, Hashable, Identifiable {
 
 // MARK: - PullRequestComment
 
-/// 请求下的一条评论；GitLab 的系统记录（如推送了新提交）同样列出并标出。
+/// 请求下的一条评论。
 public struct PullRequestComment: Sendable, Hashable, Identifiable {
     /// 托管服务上的评论编号。
     public let id: Int
@@ -157,16 +157,12 @@ public struct PullRequestComment: Sendable, Hashable, Identifiable {
     /// 发表的时间。
     public let createdAt: Date
 
-    /// 是托管服务自动写下的记录。
-    public let isSystem: Bool
-
     /// 创建评论；解析与测试使用。
-    public init(id: Int, author: String, body: String, createdAt: Date, isSystem: Bool = false) {
+    public init(id: Int, author: String, body: String, createdAt: Date) {
         self.id = id
         self.author = author
         self.body = body
         self.createdAt = createdAt
-        self.isSystem = isSystem
     }
 }
 

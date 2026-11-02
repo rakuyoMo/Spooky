@@ -1,128 +1,118 @@
+import AppKit
 import SpookyKit
 import SwiftUI
 
 // MARK: - PullRequestConversationView
 
-/// Conversation 段：标题、谁想把哪个分支合并进哪个分支、指派，描述与修改入口，评论与发表评论的入口。
+/// Conversation 段：头部、描述、评论与提交组排成一列，末尾是发表评论。
 ///
-/// 描述与评论按 Markdown 的行内格式显示；GitLab 的系统记录用次级色写成一行。
-struct PullRequestConversationView: View {
+/// 原生大纲列表提供讨论的选中色、⌘ / ⇧ 多选、提交组的折叠、右键菜单、双击与回车；
+/// 选择与折叠按请求记在内存里，切换请求再回来或重新读取后恢复。
+struct PullRequestConversationView: NSViewRepresentable {
     /// 所在窗口的会话。
     let session: RepositorySession
 
     /// 显示的请求。
     let request: PullRequest
 
-    /// Settings → General 选的日期格式。
-    @AppStorage(CommitDateFormat.key)
-    private var dateFormat = CommitDateFormat.absolute
+    /// 请求的评论。
+    let comments: [PullRequestComment]
 
-    /// 头部、描述、评论与发表评论的按钮依次排列。
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                summary
+    /// 比较范围里的提交，按拓扑序从新到旧；还没读完、需要获取或比较没打开时为 nil。
+    let commits: [HistoryCommit]?
 
-                entry(
-                    author: request.author,
-                    date: request.createdAt,
-                    body: request.body.isEmpty ? nil : request.body,
-                    action: (AppLocalization.text("pullRequests.edit"), { session.requestPullRequest(.edit(request)) })
-                )
+    /// 有接口客户端，可以发表评论。
+    let canComment: Bool
 
-                ForEach(session.pullRequests.comments) { comment in
-                    if comment.isSystem {
-                        systemNote(comment)
-                    } else {
-                        entry(author: comment.author, date: comment.createdAt, body: comment.body, action: nil)
-                    }
-                }
+    /// 建立列表与会话之间的桥接。
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-                Button(AppLocalization.text("pullRequests.addComment")) { session.requestPullRequest(.comment(request)) }
-                    .disabled(session.pullRequests.client == nil)
-            }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
+    /// 单列的大纲列表：没有表头，底色是列表的底色，可以多选。
+    func makeNSView(context: Context) -> NSScrollView {
+        let outline = ConversationOutlineView()
+        outline.style = .plain
+        outline.headerView = nil
+        outline.intercellSpacing = .zero
+        outline.backgroundColor = AppPalette.nsColor("general_background_color")
+        outline.allowsMultipleSelection = true
+        outline.indentationPerLevel = ConversationOutlineView.indentation
+        outline.autoresizesOutlineColumn = false
+        outline.columnAutoresizingStyle = .uniformColumnAutoresizingStyle
+        outline.setAccessibilityIdentifier("pull-request-conversation")
+
+        let column = NSTableColumn(identifier: .init("conversation"))
+        column.resizingMask = .autoresizingMask
+        outline.addTableColumn(column)
+        outline.outlineTableColumn = column
+
+        // 双击与回车走同一个动作，菜单在打开时按作用的行现拼
+        outline.delegate = context.coordinator
+        outline.dataSource = context.coordinator
+        outline.target = context.coordinator
+        outline.doubleAction = #selector(Coordinator.doubleClicked(_:))
+        outline.openSelection = { context.coordinator.openSelection() }
+
+        let menu = NSMenu()
+        menu.delegate = context.coordinator
+        outline.menu = menu
+        context.coordinator.outline = outline
+
+        let scroll = NSScrollView()
+        scroll.hasVerticalScroller = true
+        scroll.backgroundColor = outline.backgroundColor
+        scroll.documentView = outline
+        return scroll
+    }
+
+    /// 输入变化时由桥接器决定是否重建行。
+    func updateNSView(_: NSScrollView, context: Context) {
+        context.coordinator.update(self)
     }
 }
 
-// MARK: - Layout
+// MARK: PullRequestConversationView.ConversationOutlineView
 
 extension PullRequestConversationView {
-    /// 标题、合并方向与指派。
-    private var summary: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(request.title)
-                .font(.system(size: 18, weight: .semibold))
-                .textSelection(.enabled)
+    /// 每层缩进 16：展开三角在本层的 16 里，单元格从左缘 16 × (层级 + 1) 起；回车与双击一样打开作用的行。
+    final class ConversationOutlineView: NSOutlineView {
+        /// 每层的缩进，也是展开三角所占的宽度。
+        static let indentation: CGFloat = 16
 
-            Text(
-                AppLocalization.text(
-                    "pullRequests.summary",
-                    request.author,
-                    PullRequestText.source(of: request),
-                    request.target.branch
-                )
-            )
-            .font(.system(size: 12))
-            .foregroundStyle(.secondary)
-            .textSelection(.enabled)
+        /// 回车打开所选的行。
+        var openSelection: (() -> Void)?
 
-            if !request.assignees.isEmpty {
-                Text(AppLocalization.text("pullRequests.assignees", request.assignees.joined(separator: ", ")))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
+        /// 回车（keyCode 36）交给打开动作，其它按键交给系统列表。
+        override func keyDown(with event: NSEvent) {
+            guard event.keyCode == 36 else {
+                super.keyDown(with: event)
 
-    /// 描述或一条评论：作者与时间、内容；描述没有内容时写出没有描述。
-    private func entry(author: String, date: Date, body: String?, action: (String, () -> Void)?) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Text(author)
-                    .font(.system(size: 12, weight: .semibold))
-
-                Text(dateFormat.string(from: date))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-
-                Spacer(minLength: 8)
-
-                if let action {
-                    Button(action.0, action: action.1)
-                        .controlSize(.small)
-                        .disabled(session.pullRequests.client == nil)
-                }
+                return
             }
 
-            Text(Self.markdown(body ?? AppLocalization.text("pullRequests.noDescription")))
-                .font(.system(size: 13))
-                .foregroundStyle(body == nil ? .secondary : .primary)
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
+            openSelection?()
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 6).fill(AppPalette.color("general_secondary_background_color")))
-    }
 
-    /// GitLab 的系统记录：作者、内容与时间写成一行。
-    private func systemNote(_ comment: PullRequestComment) -> some View {
-        Text(comment.author + " " + comment.body + " · " + dateFormat.string(from: comment.createdAt))
-            .font(.system(size: 11))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 12)
-    }
-}
+        /// 展开三角在本层的 16 里。
+        override func frameOfOutlineCell(atRow row: Int) -> NSRect {
+            var frame = super.frameOfOutlineCell(atRow: row)
 
-// MARK: - Markdown
+            guard !frame.isEmpty else {
+                return frame
+            }
 
-extension PullRequestConversationView {
-    /// 按 Markdown 的行内格式解析，保留原有的换行；解析不了时原样显示。
-    fileprivate static func markdown(_ text: String) -> AttributedString {
-        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
-            ?? AttributedString(text)
+            frame.origin.x = Self.indentation * CGFloat(level(forRow: row))
+            frame.size.width = Self.indentation
+            return frame
+        }
+
+        /// 单元格从左缘 16 × (层级 + 1) 起，右缘不变。
+        override func frameOfCell(atColumn column: Int, row: Int) -> NSRect {
+            var frame = super.frameOfCell(atColumn: column, row: row)
+            let x = Self.indentation * CGFloat(level(forRow: row) + 1)
+
+            frame.size.width = max(0, frame.maxX - x)
+            frame.origin.x = x
+            return frame
+        }
     }
 }

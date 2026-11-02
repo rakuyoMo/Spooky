@@ -2371,7 +2371,7 @@
 "pr.loadDetail.title" = "プルリクエストを読み込む";
 "mr.loadDetail.title" = "マージリクエストを読み込む";
 "pullRequests.account" = "アカウント：";
-"pullRequests.addComment" = "コメントを追加…";
+"pullRequests.addComment" = "コメントを追加";
 "pullRequests.assignees" = "担当者：%@";
 "pullRequests.associate" = "関連付け…";
 "pullRequests.associate.title" = "リモートを関連付け";
@@ -2394,6 +2394,10 @@
 "pullRequests.comment.title" = "コメントを追加";
 "pullRequests.comment" = "コメント：";
 "pullRequests.commits" = "コミット";
+"pullRequests.commitGroup" = "%2$@ に %1$ld 件のコミットを追加";
+"pullRequests.commitGroup.one" = "%@ に 1 件のコミットを追加";
+"pullRequests.copyCommitHash" = "コミットハッシュをコピー";
+"pullRequests.copyCommitHashes" = "%ld 件のコミットハッシュをコピー";
 "pullRequests.conversation" = "会話";
 "pullRequests.deleteBranch" = "マージ後にソースブランチを削除";
 "pullRequests.description" = "説明：";
@@ -2421,6 +2425,7 @@
 "pullRequests.openAccounts" = "アカウント設定を開く";
 "pullRequests.project" = "プロジェクト：";
 "pullRequests.save" = "変更を保存";
+"pullRequests.showCommit" = "コミット「%@」を表示";
 "pullRequests.source" = "ソース：";
 "pullRequests.squash" = "コミットをスカッシュ";
 "pullRequests.state.closed" = "クローズ";

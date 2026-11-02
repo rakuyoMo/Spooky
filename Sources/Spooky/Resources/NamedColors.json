@@ -449,6 +449,16 @@
       "alpha": 0.06
     }
   },
+  "repository_pullrequests_conversation_selection_color": {
+    "light": {
+      "hex": "#E6E6E6",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#3C3E41",
+      "alpha": 1.0
+    }
+  },
   "repository_diff_image_checkerboard_background_color": {
     "light": {
       "hex": "#FFFFFF",

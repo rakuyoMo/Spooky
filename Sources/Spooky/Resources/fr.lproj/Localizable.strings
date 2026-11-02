@@ -2371,7 +2371,7 @@
 "pr.loadDetail.title" = "Charger la pull request";
 "mr.loadDetail.title" = "Charger la merge request";
 "pullRequests.account" = "Compte :";
-"pullRequests.addComment" = "Ajouter un commentaire…";
+"pullRequests.addComment" = "Ajouter un commentaire";
 "pullRequests.assignees" = "Responsables : %@";
 "pullRequests.associate" = "Associer…";
 "pullRequests.associate.title" = "Associer le dépôt distant";
@@ -2394,6 +2394,10 @@
 "pullRequests.comment.title" = "Ajouter un commentaire";
 "pullRequests.comment" = "Commentaire :";
 "pullRequests.commits" = "Commits";
+"pullRequests.commitGroup" = "%1$ld commits ajoutés le %2$@";
+"pullRequests.commitGroup.one" = "1 commit ajouté le %@";
+"pullRequests.copyCommitHash" = "Copier le hash du commit";
+"pullRequests.copyCommitHashes" = "Copier les hashs de %ld commits";
 "pullRequests.conversation" = "Conversation";
 "pullRequests.deleteBranch" = "Supprimer la branche source après la fusion";
 "pullRequests.description" = "Description :";
@@ -2421,6 +2425,7 @@
 "pullRequests.openAccounts" = "Ouvrir les comptes";
 "pullRequests.project" = "Projet :";
 "pullRequests.save" = "Enregistrer les modifications";
+"pullRequests.showCommit" = "Afficher le commit « %@ »";
 "pullRequests.source" = "Source :";
 "pullRequests.squash" = "Compresser les commits";
 "pullRequests.state.closed" = "Fermée";

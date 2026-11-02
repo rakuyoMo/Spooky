@@ -105,6 +105,9 @@ final class RepositoryPullRequestState {
     /// 提交与改动两段共用的比较。
     let comparison = RevisionComparisonState()
 
+    /// 讨论列出的提交，以及讨论里的选择与折叠。
+    let conversation = PullRequestConversationState()
+
     /// 对话框由窗口呈现。
     @ObservationIgnored
     var onRequest: ((PullRequestRequest) -> Void)? = nil
@@ -454,7 +457,7 @@ extension RepositoryPullRequestState {
         }
     }
 
-    /// 源分支提交在仓库里时比较合并基准与源分支，否则标出需要获取。
+    /// 源分支提交在仓库里时比较合并基准与源分支、读出讨论列出的提交，否则标出需要获取。
     private func openComparison(_ request: PullRequest, runner: GitRunner) async throws {
         let pulls = RepositoryPullRequests(runner: runner)
 
@@ -464,6 +467,7 @@ extension RepositoryPullRequestState {
         else {
             needsFetch = true
             comparison.close()
+            conversation.close()
             return
         }
 
@@ -473,9 +477,12 @@ extension RepositoryPullRequestState {
             target: RevisionComparisonState.Side(id: request.source.sha, title: request.source.branch),
             runner: runner
         )
+
+        // 讨论在同一个比较范围里列出全部提交
+        conversation.load(base: base, target: request.source.sha, runner: runner)
     }
 
-    /// 清掉详情与比较。
+    /// 清掉详情、比较与讨论列出的提交。
     private func clearDetail() {
         detailTask?.cancel()
         detailTask = nil
@@ -485,6 +492,7 @@ extension RepositoryPullRequestState {
         detailFailure = nil
         needsFetch = false
         comparison.close()
+        conversation.close()
     }
 
     /// 列表读取结束。

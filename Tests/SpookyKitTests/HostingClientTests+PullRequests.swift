@@ -147,6 +147,7 @@ extension HostingClientTests {
     }
 
     /// GitLab 合并选项：项目要求压缩时只能压缩；当前账号不能合并或项目规则不满足时说明原因。
+    /// 评论里不列出系统记录。
     @Test("GitLab 的合并选项与评论")
     func gitlabOptionsAndNotes() async throws {
         let request = try #require(
@@ -177,9 +178,10 @@ extension HostingClientTests {
             return (200, [:], Data(notes.utf8))
         }
 
+        // 推送了新提交这类系统记录不出现在讨论里
         let notes = try await client.comments(on: request.id)
-        #expect(notes.map(\.author) == ["bob", "alice"])
-        #expect(notes.map(\.isSystem) == [false, true])
+        #expect(notes.map(\.id) == [1])
+        #expect(notes.map(\.author) == ["bob"])
     }
 }
 

@@ -539,21 +539,6 @@ extension HistoryCommitTable.Coordinator {
         table.scroll(NSPoint(x: visible.minX, y: max(0, rect.midY - visible.height / 2)))
     }
 
-    /// 取出可复用的行视图并换上新内容。
-    private static func reuse<Content: View>(
-        _ content: Content,
-        identifier: String,
-        in tableView: NSTableView
-    ) -> NSView {
-        let identifier = NSUserInterfaceItemIdentifier(identifier)
-        let cell =
-            tableView.makeView(withIdentifier: identifier, owner: nil) as? NSHostingView<Content>
-                ?? NSHostingView(rootView: content)
-        cell.rootView = content
-        cell.identifier = identifier
-        return cell
-    }
-
     /// 行数来自当前已完成的页与日期分组。
     func numberOfRows(in _: NSTableView) -> Int { parent.session.history.rows.count }
 
@@ -601,7 +586,7 @@ extension HistoryCommitTable.Coordinator {
                 title: history.grouping.title(of: start, format: parent.dateFormat)
             )
 
-            return Self.reuse(view, identifier: "history-group", in: tableView)
+            return tableView.hostingView(view, identifier: "history-group")
 
         case .forkPoint(let base):
             // 分叉点行同样画出穿到分叉点提交的线
@@ -611,10 +596,10 @@ extension HistoryCommitTable.Coordinator {
                 graph: parent.showGraph && next != nil ? HistoryGraphView(passingInto: next) : nil
             )
 
-            return Self.reuse(view, identifier: "history-fork-point", in: tableView)
+            return tableView.hostingView(view, identifier: "history-fork-point")
 
         case .noNewCommits(let base):
-            return Self.reuse(HistoryNoNewCommitsRow(base: base), identifier: "history-no-new-commits", in: tableView)
+            return tableView.hostingView(HistoryNoNewCommitsRow(base: base), identifier: "history-no-new-commits")
 
         case .commit(let commit):
             let view = HistoryCommitRow(
@@ -632,7 +617,7 @@ extension HistoryCommitTable.Coordinator {
                 runner: parent.session.runner
             )
 
-            return Self.reuse(view, identifier: "history-commit", in: tableView)
+            return tableView.hostingView(view, identifier: "history-commit")
         }
     }
 

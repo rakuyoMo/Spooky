@@ -57,7 +57,7 @@ extension HostingClient {
         return payload.request(on: instance, project: id.project, sourceProject: source)
     }
 
-    /// Merge Request 的评论与系统记录，逐页读完。
+    /// Merge Request 的评论，逐页读完；系统记录（如推送了新提交）不列出。
     func gitlabNotes(on id: PullRequestID) async throws -> [PullRequestComment] {
         var notes: [PullRequestComment] = []
         var page: Int? = 1
@@ -74,15 +74,17 @@ extension HostingClient {
                 ]
             )
 
-            notes += response.value.map {
-                PullRequestComment(
-                    id: $0.id,
-                    author: $0.author?.username ?? "",
-                    body: $0.body,
-                    createdAt: $0.createdAt,
-                    isSystem: $0.system ?? false
-                )
-            }
+            notes += response.value
+                .filter { $0.system != true }
+                .map {
+                    PullRequestComment(
+                        id: $0.id,
+                        author: $0.author?.username ?? "",
+                        body: $0.body,
+                        createdAt: $0.createdAt
+                    )
+                }
+
             page = response.nextPage
         }
 

@@ -2371,7 +2371,7 @@
 "pr.loadDetail.title" = "Pull Request laden";
 "mr.loadDetail.title" = "Merge Request laden";
 "pullRequests.account" = "Account:";
-"pullRequests.addComment" = "Kommentar hinzufügen…";
+"pullRequests.addComment" = "Kommentar hinzufügen";
 "pullRequests.assignees" = "Zugewiesen: %@";
 "pullRequests.associate" = "Zuordnen…";
 "pullRequests.associate.title" = "Remote zuordnen";
@@ -2394,6 +2394,10 @@
 "pullRequests.comment.title" = "Kommentar hinzufügen";
 "pullRequests.comment" = "Kommentar:";
 "pullRequests.commits" = "Commits";
+"pullRequests.commitGroup" = "%1$ld Commits hinzugefügt am %2$@";
+"pullRequests.commitGroup.one" = "1 Commit hinzugefügt am %@";
+"pullRequests.copyCommitHash" = "Commit-Hash kopieren";
+"pullRequests.copyCommitHashes" = "%ld Commit-Hashes kopieren";
 "pullRequests.conversation" = "Unterhaltung";
 "pullRequests.deleteBranch" = "Quell-Branch nach dem Merge löschen";
 "pullRequests.description" = "Beschreibung:";
@@ -2421,6 +2425,7 @@
 "pullRequests.openAccounts" = "Accounts öffnen";
 "pullRequests.project" = "Projekt:";
 "pullRequests.save" = "Änderungen sichern";
+"pullRequests.showCommit" = "Commit „%@“ anzeigen";
 "pullRequests.source" = "Quelle:";
 "pullRequests.squash" = "Commits zusammenfassen";
 "pullRequests.state.closed" = "Geschlossen";

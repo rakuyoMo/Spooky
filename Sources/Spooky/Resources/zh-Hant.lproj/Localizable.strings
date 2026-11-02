@@ -2371,7 +2371,7 @@
 "pr.loadDetail.title" = "載入 Pull Request";
 "mr.loadDetail.title" = "載入 Merge Request";
 "pullRequests.account" = "帳號：";
-"pullRequests.addComment" = "加入留言…";
+"pullRequests.addComment" = "加入留言";
 "pullRequests.assignees" = "指派：%@";
 "pullRequests.associate" = "關聯…";
 "pullRequests.associate.title" = "關聯遠端";
@@ -2394,6 +2394,10 @@
 "pullRequests.comment.title" = "加入留言";
 "pullRequests.comment" = "留言：";
 "pullRequests.commits" = "提交";
+"pullRequests.commitGroup" = "%2$@ 加入了 %1$ld 個提交";
+"pullRequests.commitGroup.one" = "%@ 加入了 1 個提交";
+"pullRequests.copyCommitHash" = "複製提交雜湊";
+"pullRequests.copyCommitHashes" = "複製 %ld 個提交雜湊";
 "pullRequests.conversation" = "討論";
 "pullRequests.deleteBranch" = "合併後刪除來源分支";
 "pullRequests.description" = "描述：";
@@ -2421,6 +2425,7 @@
 "pullRequests.openAccounts" = "打開帳號設定";
 "pullRequests.project" = "專案：";
 "pullRequests.save" = "儲存變更";
+"pullRequests.showCommit" = "顯示提交 “%@”";
 "pullRequests.source" = "來源：";
 "pullRequests.squash" = "壓縮提交";
 "pullRequests.state.closed" = "已關閉";

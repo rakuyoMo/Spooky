@@ -2371,7 +2371,7 @@
 "pr.loadDetail.title" = "Load Pull Request";
 "mr.loadDetail.title" = "Load Merge Request";
 "pullRequests.account" = "Account:";
-"pullRequests.addComment" = "Add Comment…";
+"pullRequests.addComment" = "Add Comment";
 "pullRequests.assignees" = "Assignees: %@";
 "pullRequests.associate" = "Associate…";
 "pullRequests.associate.title" = "Associate Remote";
@@ -2394,6 +2394,10 @@
 "pullRequests.comment.title" = "Add Comment";
 "pullRequests.comment" = "Comment:";
 "pullRequests.commits" = "Commits";
+"pullRequests.commitGroup" = "%1$ld commits added on %2$@";
+"pullRequests.commitGroup.one" = "1 commit added on %@";
+"pullRequests.copyCommitHash" = "Copy Commit Hash to Clipboard";
+"pullRequests.copyCommitHashes" = "Copy %ld Commit Hashes to Clipboard";
 "pullRequests.conversation" = "Conversation";
 "pullRequests.deleteBranch" = "Delete Source Branch after Merge";
 "pullRequests.description" = "Description:";
@@ -2421,6 +2425,7 @@
 "pullRequests.openAccounts" = "Open Accounts";
 "pullRequests.project" = "Project:";
 "pullRequests.save" = "Save Changes";
+"pullRequests.showCommit" = "Show Commit “%@”";
 "pullRequests.source" = "Source:";
 "pullRequests.squash" = "Squash Commits";
 "pullRequests.state.closed" = "Closed";

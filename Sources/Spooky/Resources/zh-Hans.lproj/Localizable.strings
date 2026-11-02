@@ -2371,7 +2371,7 @@
 "pr.loadDetail.title" = "加载 Pull Request";
 "mr.loadDetail.title" = "加载 Merge Request";
 "pullRequests.account" = "账号：";
-"pullRequests.addComment" = "添加评论…";
+"pullRequests.addComment" = "添加评论";
 "pullRequests.assignees" = "指派：%@";
 "pullRequests.associate" = "关联…";
 "pullRequests.associate.title" = "关联远端";
@@ -2394,6 +2394,10 @@
 "pullRequests.comment.title" = "添加评论";
 "pullRequests.comment" = "评论：";
 "pullRequests.commits" = "提交";
+"pullRequests.commitGroup" = "%2$@ 添加了 %1$ld 个提交";
+"pullRequests.commitGroup.one" = "%@ 添加了 1 个提交";
+"pullRequests.copyCommitHash" = "复制提交哈希";
+"pullRequests.copyCommitHashes" = "复制 %ld 个提交哈希";
 "pullRequests.conversation" = "讨论";
 "pullRequests.deleteBranch" = "合并后删除源分支";
 "pullRequests.description" = "描述：";
@@ -2421,6 +2425,7 @@
 "pullRequests.openAccounts" = "打开账号设置";
 "pullRequests.project" = "项目：";
 "pullRequests.save" = "保存更改";
+"pullRequests.showCommit" = "显示提交 “%@”";
 "pullRequests.source" = "源：";
 "pullRequests.squash" = "压缩提交";
 "pullRequests.state.closed" = "已关闭";

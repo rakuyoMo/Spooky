@@ -2371,7 +2371,7 @@
 "pr.loadDetail.title" = "풀 리퀘스트 불러오기";
 "mr.loadDetail.title" = "머지 리퀘스트 불러오기";
 "pullRequests.account" = "계정:";
-"pullRequests.addComment" = "댓글 추가…";
+"pullRequests.addComment" = "댓글 추가";
 "pullRequests.assignees" = "담당자: %@";
 "pullRequests.associate" = "연결…";
 "pullRequests.associate.title" = "원격 연결";
@@ -2394,6 +2394,10 @@
 "pullRequests.comment.title" = "댓글 추가";
 "pullRequests.comment" = "댓글:";
 "pullRequests.commits" = "커밋";
+"pullRequests.commitGroup" = "%2$@에 커밋 %1$ld 개 추가됨";
+"pullRequests.commitGroup.one" = "%@에 커밋 1 개 추가됨";
+"pullRequests.copyCommitHash" = "커밋 해시 복사";
+"pullRequests.copyCommitHashes" = "커밋 해시 %ld 개 복사";
 "pullRequests.conversation" = "대화";
 "pullRequests.deleteBranch" = "병합 후 소스 브랜치 삭제";
 "pullRequests.description" = "설명:";
@@ -2421,6 +2425,7 @@
 "pullRequests.openAccounts" = "계정 설정 열기";
 "pullRequests.project" = "프로젝트:";
 "pullRequests.save" = "변경 사항 저장";
+"pullRequests.showCommit" = "커밋 “%@” 보기";
 "pullRequests.source" = "소스:";
 "pullRequests.squash" = "커밋 스쿼시";
 "pullRequests.state.closed" = "닫힘";
