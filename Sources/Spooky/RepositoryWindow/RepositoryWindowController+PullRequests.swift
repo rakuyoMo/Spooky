@@ -183,4 +183,22 @@ extension RepositoryWindowController {
             }
         }
     }
+
+    /// 仓库里添加、移除远端或改了远端的设置后，请求视图随之更新。
+    ///
+    /// - Parameter previous: 上次看到的各远端设置的摘要；还没读到引用时为 nil。
+    func observeRemotes(previous: [String: String]?) {
+        let history = session.history
+
+        withObservationTracking {
+            _ = history.snapshot
+        } onChange: { [weak self] in
+            // 变更通知早于新值写入，下一轮主线程再比较并重新订阅。
+            Task { @MainActor in
+                let current = history.snapshot?.remoteSettingsDigests
+                self?.session.remotesDidChange(from: previous, to: current)
+                self?.observeRemotes(previous: current)
+            }
+        }
+    }
 }

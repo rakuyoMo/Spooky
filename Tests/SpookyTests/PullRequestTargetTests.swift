@@ -106,4 +106,40 @@ struct PullRequestTargetTests {
         #expect(!reloads([me], [renamed]))
         #expect(!reloads([me, bot], [me, bot]))
     }
+
+    /// 请求视图读过之后，仓库里加了远端、刷新读到新的引用时，请求视图随即重新读出远端。
+    @Test("远端变化后重新读取请求")
+    func remotesChange() async throws {
+        let fixture = try await HistoryListTests.makeSession(commits: ["first"])
+        defer { fixture.close() }
+
+        let session = fixture.session
+        _ = try await fixture.runner.run(["remote", "add", "origin", "http://127.0.0.1:9/group/project.git"])
+        session.refresh(full: true)
+        await session.waitForRefresh()
+
+        // 账号列表只在内存里，不碰本机的账号
+        let suite = "spooky-remotes-change-" + UUID().uuidString
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+
+        session.pullRequests.accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials())
+        session.reloadPullRequests()
+
+        for _ in 0 ..< 1000 where !session.pullRequests.isLoaded {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        #expect(session.pullRequests.remotes.map(\.name) == ["origin"])
+
+        _ = try await fixture.runner.run(["remote", "add", "mirror", "myhost:group/project.git"])
+        session.refresh(full: true)
+        await session.waitForRefresh()
+
+        for _ in 0 ..< 1000 where session.pullRequests.remotes.count < 2 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        #expect(Set(session.pullRequests.remotes.map(\.name)) == ["mirror", "origin"])
+    }
 }

@@ -92,6 +92,23 @@ extension RepositorySession {
     }
 }
 
+// MARK: - Remotes
+
+extension RepositorySession {
+    /// 远端加入、移除或设置变了之后，已读过的请求视图重新读出远端并读取请求；还没读到引用时不比较。
+    ///
+    /// - Parameters:
+    ///   - previous: 变化前各远端设置的摘要，以远端名为键。
+    ///   - current: 变化后各远端设置的摘要，以远端名为键。
+    func remotesDidChange(from previous: [String: String]?, to current: [String: String]?) {
+        guard pullRequests.isLoaded, let previous, let current, previous != current else {
+            return
+        }
+
+        reloadPullRequests()
+    }
+}
+
 // MARK: - Hosting Actions
 
 extension RepositorySession {
