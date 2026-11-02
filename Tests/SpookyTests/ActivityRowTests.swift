@@ -38,17 +38,17 @@ struct ActivityRowTests {
             title: "Quick Fetch",
             target: .fetch("origin")
         )
-        #expect(ActivityRow(activity: fetch).title == AppLocalization.text("activity.fetchingNamed", "origin"))
+        #expect(fetch.displayTitle == AppLocalization.text("activity.fetchingNamed", "origin"))
         #expect(text("activity.fetchingNamed", "origin") == "Fetching origin")
 
         fetch.state = "activity.finished"
-        #expect(ActivityRow(activity: fetch).title == AppLocalization.text("activity.fetchedNamed", "origin"))
+        #expect(fetch.displayTitle == AppLocalization.text("activity.fetchedNamed", "origin"))
         #expect(text("activity.fetchedNamed", "origin") == "Fetched origin")
 
         // 失败与取消接在进行时的写法后面
         fetch.state = "activity.failed"
         let fetching = AppLocalization.text("activity.fetchingNamed", "origin")
-        #expect(ActivityRow(activity: fetch).title == AppLocalization.text("activity.titleFailed", fetching))
+        #expect(fetch.displayTitle == AppLocalization.text("activity.titleFailed", fetching))
         #expect(text("activity.titleFailed", text("activity.fetchingNamed", "origin")) == "Fetching origin failed")
 
         let push = RepositoryActivity(
@@ -59,7 +59,7 @@ struct ActivityRowTests {
         )
         push.state = "activity.cancelled"
         let pushing = AppLocalization.text("activity.pushingNamed", "fork refs/heads/main:refs/heads/main")
-        #expect(ActivityRow(activity: push).title == AppLocalization.text("activity.titleCancelled", pushing))
+        #expect(push.displayTitle == AppLocalization.text("activity.titleCancelled", pushing))
         #expect(
             text("activity.titleCancelled", text("activity.pushingNamed", "fork refs/heads/main:refs/heads/main"))
                 == "Pushing fork refs/heads/main:refs/heads/main cancelled"
@@ -74,21 +74,21 @@ struct ActivityRowTests {
         )
         sync.state = "sync.step.fetch"
         let pulling = AppLocalization.text("activity.pullingNamed", "origin refs/heads/main")
-        #expect(ActivityRow(activity: sync).title == pulling)
+        #expect(sync.displayTitle == pulling)
         #expect(text("activity.pullingNamed", "origin refs/heads/main") == "Pulling origin refs/heads/main")
 
         // 获取全部远端时没有单一的远端名，只写动词
         let all = RepositoryActivity(kind: .remote, repository: location, title: "Auto Fetch", target: .fetch(nil))
         all.state = "activity.finished"
-        #expect(ActivityRow(activity: all).title == AppLocalization.text("activity.fetched"))
+        #expect(all.displayTitle == AppLocalization.text("activity.fetched"))
         #expect(text("activity.fetched") == "Fetched")
 
         // 没有方向的旧 Remote 记录与 Repository 页写操作名称
         let old = RepositoryActivity(kind: .remote, repository: location, title: "Fetch")
-        #expect(ActivityRow(activity: old).title == "Fetch")
+        #expect(old.displayTitle == "Fetch")
 
         let checkout = RepositoryActivity(kind: .repository, repository: location, title: "Check Out “main”")
-        #expect(ActivityRow(activity: checkout).title == "Check Out “main”")
+        #expect(checkout.displayTitle == "Check Out “main”")
     }
 
     /// Remote 页进行中的行写 In Progress…，结束后换成开始的日期，今天与昨天写作相对的说法、更早的写完整日期，都不写时间；
@@ -178,6 +178,7 @@ struct ActivityRowTests {
     }
 
     /// Remote 页按传输方向显示图标，失败或取消的用警告图标；Repository 与 Service 页是文件夹与账号，只有失败的用警告图标。
+    /// 侧边栏底部的活动区共用按方向取的图标，失败与取消不换，结束的行仍看得出是哪种传输。
     @Test("行首图标")
     func symbols() {
         let warning = "exclamationmark.triangle.fill"
@@ -194,12 +195,16 @@ struct ActivityRowTests {
             let target = transfer.map { ActivityTarget(transfer: $0, remote: "origin", refspec: nil) }
             let activity = RepositoryActivity(kind: .remote, repository: location, title: "Remote", target: target)
             #expect(ActivityRow(activity: activity).symbol == symbol)
+            #expect(activity.transferSymbol == symbol)
 
             activity.state = "activity.cancelled"
             #expect(ActivityRow(activity: activity).symbol == warning)
 
             activity.state = "activity.failed"
             #expect(ActivityRow(activity: activity).symbol == warning)
+
+            // 侧边栏底部的活动区按方向取图标，失败与取消不换
+            #expect(activity.transferSymbol == symbol)
         }
 
         for (kind, symbol) in [(ActivityKind.repository, "folder"), (.service, "person.crop.circle")] {

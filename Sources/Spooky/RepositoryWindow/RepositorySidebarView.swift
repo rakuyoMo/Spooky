@@ -146,7 +146,8 @@ struct RepositorySidebarView: View {
             // 刚归档的分支数与撤销
             ArchiveNoticeView(session: session)
 
-            activityRows
+            // 本仓库进行中与刚结束的远程操作
+            SidebarActivityView(session: session, showActivity: showActivity)
 
             // 新版本第一次启动时的新功能卡片
             WhatsNewCard(state: .shared)
@@ -248,40 +249,6 @@ struct RepositorySidebarView: View {
                     .padding(.vertical, 2)
                     .background(AppPalette.color("sidebarBadgeBackgroundColor"), in: Capsule())
                     .accessibilityLabel(AppLocalization.text("stash.count", session.stashes.entries.count))
-            }
-        }
-    }
-
-    /// 本仓库本次运行里最近三个远程操作，显示持续进度和取消，点击打开完整日志；从本机读回的记录不列。
-    private var activityRows: some View {
-        let items = RepositoryActivities.shared.items.filter { activity in
-            activity.kind == .remote
-                && !activity.isRestored
-                && activity.repository == session.repository
-        }
-
-        return VStack(spacing: 0) {
-            ForEach(Array(items.prefix(3))) { activity in
-                HStack {
-                    Button(action: showActivity) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(activity.title).font(.system(size: 11, weight: .semibold))
-                            Text(AppLocalization.text(activity.state)).font(.system(size: 11))
-                                .foregroundStyle(.secondary)
-                            if activity.cancel != nil { ProgressView().controlSize(.mini) }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .buttonStyle(.plain)
-                    if let cancel = activity.cancel {
-                        Button(action: cancel) { Image(systemName: "stop.circle") }
-                            .buttonStyle(.borderless)
-                            .accessibilityLabel(AppLocalization.text("action.cancel"))
-                    }
-                }
-                .padding(.horizontal, 8)
-                .frame(height: 65)
-                Divider()
             }
         }
     }
