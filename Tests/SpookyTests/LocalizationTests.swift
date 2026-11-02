@@ -51,8 +51,8 @@ struct LocalizationTests {
         for prefix in ["pr.", "mr."] {
             keys += [
                 "title", "show.menu", "create.menu", "create.title", "create.message", "create.submit", "edit.title",
-                "edit.message", "edit.submit", "edit.menu", "accept.title", "accept.message", "close.title",
-                "close.message", "comment.message", "checkout.title", "checkout.menu",
+                "edit.message", "edit.submit", "edit.menu", "accept.title", "accept.message", "accept.submit",
+                "close.title", "close.message", "close.submit", "comment.message", "checkout.title", "checkout.menu",
                 "empty.title", "empty.message", "noSelection", "noAccount.message", "fetchHead.title",
                 "forBranch.create", "forBranch.show", "filter.with", "filter.without",
                 "load.title", "loadDetail.title", "description.title", "comment.title", "editComment.title",

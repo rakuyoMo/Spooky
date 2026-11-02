@@ -131,7 +131,7 @@ extension PullRequestDetailView {
 
             Spacer(minLength: 8)
 
-            Button(AppLocalization.text("pullRequests.close")) { session.closePullRequest(request) }
+            Button(AppLocalization.text("pullRequests.close")) { session.requestPullRequest(.close(request)) }
                 .disabled(request.state != .open)
 
             Button(AppLocalization.text("pullRequests.merge")) { session.requestPullRequest(.merge(request)) }

@@ -114,6 +114,9 @@ extension RepositoryWindowController {
             case .merge(let request):
                 AnyView(MergePullRequestDialog(session: session, request: request, close: close))
 
+            case .close(let request):
+                AnyView(PullRequestTextDialog(session: session, request: request, kind: .close, close: close))
+
             case .comment(let request):
                 AnyView(PullRequestTextDialog(session: session, request: request, kind: .comment, close: close))
 

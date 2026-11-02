@@ -7,7 +7,8 @@ import Testing
 
 // MARK: - PullRequestTextDialogTests
 
-/// 请求的文字对话框用 480 宽的对话框骨架：评论与描述的文字区占满宽度、没有标签列，检出的分支名从对齐线开始，删除评论没有内容区。
+/// 请求的文字对话框用 480 宽的对话框骨架：评论与描述的文字区占满宽度、没有标签列，检出的分支名从对齐线开始，
+/// 删除评论与关闭请求没有内容区。
 @MainActor
 struct PullRequestTextDialogTests {
     /// 发表、修改、回复评论与修改描述：文字区距左右各 20，宽 440、高 300。
@@ -77,6 +78,49 @@ struct PullRequestTextDialogTests {
         #expect(await problem("", sha: head) == nil)
     }
 
+    /// 关闭请求只有头部与底栏，标题写出服务名，说明写出编号与服务名；关闭只在托管服务上进行，仓库暂不可写时仍可关闭。
+    @Test("关闭请求的确认")
+    func closeRequest() async throws {
+        let hosting = Self.host(.close)
+        #expect(hosting.frame.width == 480)
+        #expect(Self.subviews(NSTextView.self, in: hosting).isEmpty)
+        #expect(Self.subviews(NSTextField.self, in: hosting).allSatisfy { !$0.isEditable })
+
+        // 没有打开仓库的会话不可写：关闭不受影响，发表评论被挡住
+        let unwritable = RepositorySession()
+        let github = PullRequestTextDialog(
+            session: unwritable,
+            request: Self.request(instance: .github),
+            kind: .close,
+            close: { }
+        )
+
+        #expect(github.title == AppLocalization.text("pr.close.title", "GitHub"))
+        #expect(github.message == AppLocalization.text("pr.close.message", "#4", "GitHub"))
+        #expect(github.submitTitle == AppLocalization.text("pr.close.submit"))
+        #expect(!github.isBlocked)
+
+        let comment = PullRequestTextDialog(session: unwritable, request: Self.request(), kind: .comment, close: { })
+        #expect(comment.isBlocked)
+
+        // 远端对应私有部署 GitLab 的账号时改叫 Merge Request，服务名写 GitLab Self-Managed
+        let fixture = try await PullRequestCommentRulesTests.Fixture.make()
+        defer { fixture.close() }
+
+        let service = AppLocalization.text("accounts.kind.gitlabSelfManaged")
+        let gitlab = PullRequestTextDialog(
+            session: fixture.session,
+            request: try PullRequestCommentRulesTests.request(author: "bob"),
+            kind: .close,
+            close: { }
+        )
+
+        #expect(gitlab.title == AppLocalization.text("mr.close.title", service))
+        #expect(gitlab.message == AppLocalization.text("mr.close.message", "!4", service))
+        #expect(gitlab.submitTitle == AppLocalization.text("mr.close.submit"))
+        #expect(!gitlab.isBlocked)
+    }
+
     /// 同一项目的请求预填源分支名；来自 Fork 的预填 `pullrequests/<作者>/<源分支>`，不与本地同名分支撞上。
     @Test("检出预填的分支名")
     func checkoutBranchName() {
@@ -99,10 +143,15 @@ extension PullRequestTextDialogTests {
         createdAt: Date(timeIntervalSince1970: 0)
     )
 
-    /// `me` 发起的请求；来自 Fork 时源分支在另一个项目里。
-    private static func request(branch: String = "feature", sha: String = "", fork: Bool = false) -> PullRequest {
+    /// `me` 在 `group/project` 发起的请求 `4`，默认在 GitLab.com 上；来自 Fork 时源分支在另一个项目里。
+    private static func request(
+        branch: String = "feature",
+        sha: String = "",
+        fork: Bool = false,
+        instance: HostingInstance = .gitlabCom
+    ) -> PullRequest {
         PullRequest(
-            id: PullRequestID(instance: .gitlabCom, project: "group/project", number: 4),
+            id: PullRequestID(instance: instance, project: "group/project", number: 4),
             title: "t",
             body: "描述",
             state: .open,

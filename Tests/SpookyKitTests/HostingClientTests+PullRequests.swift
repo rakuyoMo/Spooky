@@ -46,7 +46,8 @@ extension HostingClientTests {
         #expect(url == "https://api.github.com/repos/o/r/pulls?state=open&per_page=50&page=1")
     }
 
-    /// GitHub 合并选项：仓库不允许的方式不列出，没有写权限或有冲突时说明原因；合并带上源分支提交，再删除同仓库的源分支。
+    /// GitHub 合并选项：按 Merge、Rebase、Squash 的顺序列出，仓库不允许的方式不列出，没有写权限或有冲突时说明原因；
+    /// 合并带上源分支提交，再删除同仓库的源分支。
     @Test("GitHub 的合并选项与合并")
     func githubMerge() async throws {
         let request = Self.githubRequest(fork: false)
@@ -72,7 +73,11 @@ extension HostingClientTests {
                 ? (200, [:], Data(#"{"permissions":{"push":false}}"#.utf8))
                 : (200, [:], Data(Self.githubDetail(mergeable: "true", state: "clean").utf8))
         }
-        #expect(try await client.mergeOptions(for: request).block == .permission)
+
+        // 仓库没有给出设置时三种方式都列出
+        let readOnly = try await client.mergeOptions(for: request)
+        #expect(readOnly.methods == [.merge, .rebase, .squash])
+        #expect(readOnly.block == .permission)
 
         let requests = HostingStub.respond { request in
             request.httpMethod == "PUT"

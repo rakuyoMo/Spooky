@@ -92,11 +92,11 @@ extension HostingClient {
         let repository = try await repositoryResponse.value
         let detail = try await detailResponse.value
 
-        // 仓库没有给出设置时按 GitHub 的默认值，三种方式都允许
+        // 仓库没有给出设置时按 GitHub 的默认值，三种方式都允许；列出的顺序是 Merge、Rebase、Squash
         let allowed: [(PullRequestMergeMethod, Bool?)] = [
             (.merge, repository.allowMergeCommit),
-            (.squash, repository.allowSquashMerge),
             (.rebase, repository.allowRebaseMerge),
+            (.squash, repository.allowSquashMerge),
         ]
 
         return PullRequestMergeOptions(

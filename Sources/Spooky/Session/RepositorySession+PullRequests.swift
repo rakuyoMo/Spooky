@@ -131,28 +131,22 @@ extension RepositorySession {
         }
     }
 
-    /// 确认后关闭请求。
-    func closePullRequest(_ request: PullRequest) {
-        let site = request.id.instance.displayName
+    /// 关闭请求；Activity 的标题与关闭对话框的标题相同。
+    func closePullRequest(_ request: PullRequest) -> Bool {
+        let service = AccountsSettingsView.serviceTitle(request.id.instance)
 
-        onConfirm?(
-            pullRequestText("close.title"),
-            pullRequestText("close.message", request.id.reference, site),
-            { [weak self] in
-                self?.performHosting(title: self?.pullRequestText("close.title") ?? "") { client in
-                    try await client.closePullRequest(request.id)
-                    return nil
-                }
-            },
-            nil
-        )
+        return performHosting(title: pullRequestText("close.title", service)) { client in
+            try await client.closePullRequest(request.id)
+            return nil
+        }
     }
 
-    /// 在托管服务上合并，成功后在仓库所在的机器上获取目标远端，让远端分支跟上合并结果。
+    /// 在托管服务上合并，成功后在仓库所在的机器上获取目标远端，让远端分支跟上合并结果；Activity 的标题与合并对话框的标题相同。
     func mergePullRequest(_ request: PullRequest, method: PullRequestMergeMethod, deletesSourceBranch: Bool) -> Bool {
         let remote = pullRequests.remote
+        let service = AccountsSettingsView.serviceTitle(request.id.instance)
 
-        return performHosting(title: pullRequestText("accept.title")) { [weak self] client in
+        return performHosting(title: pullRequestText("accept.title", service)) { [weak self] client in
             let result = try await client.merge(request, method: method, deletesSourceBranch: deletesSourceBranch)
 
             await MainActor.run {

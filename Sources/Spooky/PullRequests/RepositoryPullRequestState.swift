@@ -15,6 +15,9 @@ enum PullRequestRequest {
     /// 在托管服务上合并。
     case merge(PullRequest)
 
+    /// 确认后在托管服务上关闭。
+    case close(PullRequest)
+
     /// 发表评论。
     case comment(PullRequest)
 

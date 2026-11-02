@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - PullRequestTextDialog
 
-/// 至多一个输入的对话框：发表、修改、回复与删除评论，只改描述，或检出时填本地分支名。
+/// 至多一个输入的对话框：发表、修改、回复与删除评论，只改描述，检出时填本地分支名，或确认关闭请求。
 struct PullRequestTextDialog: View {
     /// 对话框的用途。
     enum Kind {
@@ -24,6 +24,9 @@ struct PullRequestTextDialog: View {
 
         /// 检出成本地分支。
         case checkout
+
+        /// 关闭请求，没有输入。
+        case close
     }
 
     /// 检出时分支名的问题。
@@ -63,9 +66,9 @@ struct PullRequestTextDialog: View {
     @State
     private var nameProblem: BranchNameProblem? = nil
 
-    /// 评论与描述是占满宽度、高 300 的多行输入，检出是从对齐线开始的分支名，删除评论没有内容区。
+    /// 评论与描述是占满宽度、高 300 的多行输入，检出是从对齐线开始的分支名，删除评论与关闭请求没有内容区。
     ///
-    /// 仓库暂不可写时主按钮禁用，错误区写出原因。
+    /// 仓库暂不可写时主按钮禁用，错误区写出原因；关闭请求不看仓库是否可写。
     var body: some View {
         DialogLayout(
             title: title,
@@ -90,7 +93,7 @@ struct PullRequestTextDialog: View {
                     }
                 }
 
-            case .deleteComment:
+            case .deleteComment, .close:
                 EmptyView()
             }
         }
@@ -156,11 +159,24 @@ extension PullRequestTextDialog {
     }
 }
 
+// MARK: - Availability
+
+extension PullRequestTextDialog {
+    /// 仓库暂不可写而挡住提交；关闭请求不看仓库是否可写。
+    var isBlocked: Bool {
+        if case .close = kind {
+            return false
+        }
+
+        return !session.canWrite
+    }
+}
+
 // MARK: - Text
 
 extension PullRequestTextDialog {
-    /// 标题；发表与删除评论写出账号所在的服务。
-    private var title: String {
+    /// 标题；发表与删除评论、关闭请求写出账号所在的服务。
+    var title: String {
         let service = AccountsSettingsView.serviceTitle(request.id.instance)
 
         return switch kind {
@@ -170,11 +186,12 @@ extension PullRequestTextDialog {
         case .deleteComment: session.pullRequestText("deleteComment.title", service)
         case .editDescription: session.pullRequestText("editDescription.title")
         case .checkout: session.pullRequestText("checkout.title")
+        case .close: session.pullRequestText("close.title", service)
         }
     }
 
     /// 标题下的说明。
-    private var message: String {
+    var message: String {
         switch kind {
         case .comment:
             session.pullRequestText(
@@ -193,6 +210,25 @@ extension PullRequestTextDialog {
 
         case .checkout:
             AppLocalization.text("pullRequests.checkout.message", Self.checkoutSource(of: request))
+
+        case .close:
+            session.pullRequestText(
+                "close.message",
+                request.id.reference,
+                AccountsSettingsView.serviceTitle(request.id.instance)
+            )
+        }
+    }
+
+    /// 主按钮的标题。
+    var submitTitle: String {
+        switch kind {
+        case .comment: AppLocalization.text("pullRequests.addComment")
+        case .editComment, .editDescription: AppLocalization.text("pullRequests.save")
+        case .reply: AppLocalization.text("pullRequests.replyComment.submit")
+        case .deleteComment: AppLocalization.text("pullRequests.deleteComment.submit")
+        case .checkout: AppLocalization.text("pullRequests.checkout")
+        case .close: session.pullRequestText("close.submit")
         }
     }
 
@@ -200,39 +236,28 @@ extension PullRequestTextDialog {
     private var error: String? {
         let messages = [
             nameProblem?.message,
-            session.canWrite ? nil : AppLocalization.text("dialog.blocked"),
+            isBlocked ? AppLocalization.text("dialog.blocked") : nil,
         ]
 
         let text = messages.compactMap(\.self).joined(separator: "\n")
         return text.isEmpty ? nil : text
-    }
-
-    /// 主按钮的标题。
-    private var submitTitle: String {
-        switch kind {
-        case .comment: AppLocalization.text("pullRequests.addComment")
-        case .editComment, .editDescription: AppLocalization.text("pullRequests.save")
-        case .reply: AppLocalization.text("pullRequests.replyComment.submit")
-        case .deleteComment: AppLocalization.text("pullRequests.deleteComment.submit")
-        case .checkout: AppLocalization.text("pullRequests.checkout")
-        }
     }
 }
 
 // MARK: - Private
 
 extension PullRequestTextDialog {
-    /// 描述可以清空，删除没有输入；其余要有不全是空白的内容。
+    /// 描述可以清空，删除评论与关闭请求没有输入；其余要有不全是空白的内容。
     private var isValid: Bool {
         switch kind {
-        case .editDescription, .deleteComment: true
+        case .editDescription, .deleteComment, .close: true
         default: !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
 
-    /// 内容有效、仓库可写，且分支名没有不合法时才能提交；同名分支指向别的提交只是提醒，不挡提交。
+    /// 内容有效、没有因仓库暂不可写而挡住，且分支名没有不合法时才能提交；同名分支指向别的提交只是提醒，不挡提交。
     private var canSubmit: Bool {
-        guard isValid, session.canWrite else {
+        guard isValid, !isBlocked else {
             return false
         }
 
@@ -298,6 +323,7 @@ extension PullRequestTextDialog {
             case .deleteComment(let comment): session.deleteComment(comment, on: request)
             case .editDescription: session.updateDescription(text, of: request)
             case .checkout: session.checkoutPullRequest(request, as: text.trimmingCharacters(in: .whitespaces))
+            case .close: session.closePullRequest(request)
             }
 
         if started { close() }
