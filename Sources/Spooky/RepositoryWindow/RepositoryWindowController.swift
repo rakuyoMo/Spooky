@@ -161,6 +161,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         restoreFrame()
         observeToolbarState()
         observeConnectionState()
+        observeHostingAccounts(previous: session.pullRequests.accounts.items)
         observeSubtitle()
         observeHistorySearch()
         autoFetch.start()

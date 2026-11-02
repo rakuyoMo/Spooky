@@ -162,4 +162,22 @@ extension RepositoryWindowController {
         sheet.contentViewController = NSHostingController(rootView: dialog)
         window.beginSheet(sheet)
     }
+
+    /// 在 Settings › Accounts 里添加、移除或重新认证账号后，请求视图随之更新。
+    ///
+    /// - Parameter previous: 上次看到的账号。
+    func observeHostingAccounts(previous: [HostingAccount]) {
+        let accounts = session.pullRequests.accounts
+
+        withObservationTracking {
+            _ = accounts.items
+        } onChange: { [weak self] in
+            // 变更通知早于新值写入，下一轮主线程再比较并重新订阅。
+            Task { @MainActor in
+                let current = accounts.items
+                self?.session.accountsDidChange(from: previous, to: current)
+                self?.observeHostingAccounts(previous: current)
+            }
+        }
+    }
 }

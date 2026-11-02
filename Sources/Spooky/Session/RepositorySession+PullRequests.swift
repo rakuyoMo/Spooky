@@ -54,6 +54,44 @@ extension RepositorySession {
     }
 }
 
+// MARK: - Accounts
+
+extension RepositorySession {
+    /// 账号的变化是否要重新读取请求：有账号加入或移除，或者有账号的重新认证标记被清掉。
+    ///
+    /// - Parameters:
+    ///   - previous: 变化前的账号。
+    ///   - current: 变化后的账号。
+    static func accountsChangeReloadsPullRequests(
+        from previous: [HostingAccount],
+        to current: [HostingAccount]
+    ) -> Bool {
+        guard Set(previous.map(\.id)) == Set(current.map(\.id)) else {
+            return true
+        }
+
+        return current.contains { account in
+            !account.needsReauthentication
+                && previous.contains { $0.id == account.id && $0.needsReauthentication }
+        }
+    }
+
+    /// 账号变化后，已读过的请求视图重新找远端对应的账号并读取。
+    ///
+    /// 只在添加、移除或重新认证账号时读取；令牌被拒时自动加上的重新认证标记不触发，以免同一个失败再读一次。
+    ///
+    /// - Parameters:
+    ///   - previous: 变化前的账号。
+    ///   - current: 变化后的账号。
+    func accountsDidChange(from previous: [HostingAccount], to current: [HostingAccount]) {
+        guard pullRequests.isLoaded, Self.accountsChangeReloadsPullRequests(from: previous, to: current) else {
+            return
+        }
+
+        reloadPullRequests()
+    }
+}
+
 // MARK: - Hosting Actions
 
 extension RepositorySession {

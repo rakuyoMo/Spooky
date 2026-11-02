@@ -83,4 +83,27 @@ struct PullRequestTargetTests {
         #expect(session.pullRequestText("create.message", "GitHub", "o/r").contains("“o/r”"))
         #expect(session.pullRequestText("close.message", "#7", "github.com").contains("#7"))
     }
+
+    /// 添加、移除与重新认证账号后请求视图重新找对应的账号；令牌被拒时自动加上的标记不再读一次。
+    @Test("账号变化后是否重新读取请求")
+    func accountsChange() {
+        let me = HostingAccount(instance: .gitlabCom, username: "me", authentication: .personalAccessToken)
+        let bot = HostingAccount(instance: .github, username: "bot", authentication: .oauth)
+
+        var rejected = me
+        rejected.needsReauthentication = true
+
+        var renamed = me
+        renamed.name = "Me"
+
+        let reloads = RepositorySession.accountsChangeReloadsPullRequests
+
+        #expect(reloads([me], [me, bot]))
+        #expect(reloads([me, bot], [bot]))
+        #expect(reloads([rejected], [me]))
+
+        #expect(!reloads([me], [rejected]))
+        #expect(!reloads([me], [renamed]))
+        #expect(!reloads([me, bot], [me, bot]))
+    }
 }
