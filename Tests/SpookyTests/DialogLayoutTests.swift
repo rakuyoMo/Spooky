@@ -7,9 +7,9 @@ import Testing
 
 // MARK: - DialogLayoutTests
 
-/// 对话框骨架的底栏：等待中的步骤写在左侧，前面是小号转圈；不在等待时左侧是空的。
+/// 对话框骨架：头部与错误文字对齐内容区的输入列；底栏左侧写等待中的步骤，前面是小号转圈。
 ///
-/// 文字的位置经辅助功能接口读取，进程没有辅助功能权限时跳过这一项。
+/// 文字的位置经辅助功能接口读取，进程没有辅助功能权限时跳过这几项。
 @MainActor
 struct DialogLayoutTests {
     /// 有进度文字时底栏左侧距左 20 是转圈；没有时没有转圈。
@@ -49,6 +49,33 @@ struct DialogLayoutTests {
         #expect(!idle.contains { $0.role == "AXBusyIndicator" })
         #expect(!idle.contains { $0.value == "Validating…" })
     }
+
+    /// 标签比标签列的最小宽度长时输入列右移，标题、说明与错误文字跟着它；没有表单时对齐 120 的对齐线。
+    @Test("头部与错误文字对齐输入列", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    func alignment() throws {
+        let form = AccessibilityProbe.elements(until: { elements in elements.contains { $0.role == "AXTextField" } }) {
+            Self.layout(error: "Error") {
+                DialogForm {
+                    DialogFormRow(label: "Personal Access Token:") {
+                        TextField("", text: .constant(""))
+                    }
+                }
+            }
+        }
+
+        let field = try #require(form.first { $0.role == "AXTextField" })
+
+        #expect(field.frame.minX > DialogMetrics.alignment + 1)
+        try Self.expectTexts(in: form, startingAt: field.frame.minX)
+
+        let empty = AccessibilityProbe.elements(until: Self.hasButtons) {
+            Self.layout(error: "Error") {
+                EmptyView()
+            }
+        }
+
+        try Self.expectTexts(in: empty, startingAt: DialogMetrics.alignment)
+    }
 }
 
 // MARK: - Helpers
@@ -67,6 +94,28 @@ extension DialogLayoutTests {
             submit: { }
         ) {
             EmptyView()
+        }
+    }
+
+    /// 带错误区与内容区的对话框。
+    private static func layout(error: String, @ViewBuilder content: @escaping () -> some View) -> some View {
+        DialogLayout(
+            title: "Title",
+            message: "Message",
+            submitTitle: "Submit",
+            error: error,
+            canSubmit: true,
+            cancel: { },
+            submit: { },
+            content: content
+        )
+    }
+
+    /// 标题、说明与错误文字的左缘都在这个位置。
+    private static func expectTexts(in elements: [AccessibilityProbe.Element], startingAt x: CGFloat) throws {
+        for text in ["Title", "Message", "Error"] {
+            let element = try #require(elements.first { $0.role == "AXStaticText" && $0.value == text })
+            #expect(abs(element.frame.minX - x) <= 1, "\(text)")
         }
     }
 

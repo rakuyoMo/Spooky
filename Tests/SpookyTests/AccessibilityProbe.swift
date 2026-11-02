@@ -32,9 +32,11 @@ enum AccessibilityProbe {
     /// 本进程的请求在发出请求的线程上应答，SwiftUI 的下拉等控件只能在主线程读，所以不另开线程。
     ///
     /// - Parameters:
+    ///   - width: 窗口内容的宽度。
     ///   - isComplete: 要等的控件都读到了；控件的元素在窗口排版之后才陆续建出，没到齐时转动 run loop 再读，最多读 100 次。
-    ///   - content: 窗口的内容，宽 480。
+    ///   - content: 窗口的内容。
     static func elements(
+        width: CGFloat = 480,
         until isComplete: ([Element]) -> Bool,
         @ViewBuilder of content: () -> some View
     ) -> [Element] {
@@ -43,7 +45,7 @@ enum AccessibilityProbe {
 
         let title = "spooky-accessibility-" + UUID().uuidString
         let window = NSWindow(
-            contentRect: NSRect(x: -3000, y: -3000, width: 480, height: 300),
+            contentRect: NSRect(x: -3000, y: -3000, width: width, height: 300),
             styleMask: [.titled],
             backing: .buffered,
             defer: false
@@ -51,7 +53,7 @@ enum AccessibilityProbe {
 
         window.title = title
         window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: content().frame(width: 480))
+        window.contentView = NSHostingView(rootView: content().frame(width: width))
         window.orderFront(nil)
         defer { window.close() }
 

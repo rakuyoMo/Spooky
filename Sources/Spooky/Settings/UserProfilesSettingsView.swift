@@ -418,16 +418,11 @@ extension UserProfileEditor {
         }
     }
 
-    /// 一行不折行的标签与占满余下宽度的输入框；标签列按最长的标签加宽。
+    /// 一行标签与占满余下宽度的输入框；输入列至少从对齐线开始，标签长时随之右移，头部文字跟着它。
     private func field(_ label: String, text: Binding<String>) -> some View {
-        GridRow {
-            Text(AppLocalization.text(label))
-                .fixedSize()
-                .gridColumnAlignment(.trailing)
-
+        DialogFormRow(label: AppLocalization.text(label)) {
             TextField("", text: text)
                 .frame(maxWidth: .infinity)
-                .accessibilityLabel(AppLocalization.text(label))
         }
     }
 }

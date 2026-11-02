@@ -5,8 +5,8 @@ import SwiftUI
 
 /// 对话框骨架：64 pt 应用图标与标题、说明，内容区，错误区与底栏，宽 480。
 ///
-/// 头部文字与错误文字对齐 `DialogMetrics.alignment`，应用图标挂在左侧；内容区的边距由内容自己决定，
-/// 表单可以用 `DialogForm` 与 `DialogFormRow` 让输入列也从对齐线开始。
+/// 头部文字与错误文字对齐内容区的输入列，应用图标挂在头部文字左侧；内容区的边距由内容自己决定。
+/// 输入列由 `DialogFormRow` 报上来，标签长时随之右移；内容区没有输入列时对齐 `DialogMetrics.alignment`。
 /// 用于身份档案、Issue 追踪设置、仓库管理，以及请求的新建、修改、评论、描述与检出；要随仓库可写状态禁用的，由调用方给出主按钮与错误区。
 /// 等待中的步骤写在底栏左侧，前面是小号转圈。
 struct DialogLayout<Content: View>: View {
@@ -38,6 +38,10 @@ struct DialogLayout<Content: View>: View {
     @ViewBuilder
     let content: () -> Content
 
+    /// 内容区输入列的左缘；内容区没有输入列时为 nil。
+    @State
+    private var inputColumn: CGFloat?
+
     /// 头部、内容、错误区与底栏依次排列。
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -53,15 +57,22 @@ struct DialogLayout<Content: View>: View {
             footer
         }
         .frame(width: 480)
+        .coordinateSpace(.named(DialogMetrics.coordinateSpace))
+        .onPreferenceChange(DialogInputColumnKey.self) { inputColumn = $0 }
     }
 }
 
 // MARK: - Private
 
 extension DialogLayout {
-    /// 64 pt 应用图标与右侧的标题、说明，文字列宽 340 pt。
+    /// 头部文字与错误文字的左缘。
+    private var alignment: CGFloat {
+        DialogMetrics.textLeading(for: inputColumn)
+    }
+
+    /// 64 pt 应用图标与右侧的标题、说明：文字从对齐线开始，图标在文字左侧 16 pt，右边距 20。
     private var header: some View {
-        HStack(alignment: .top, spacing: DialogMetrics.alignment - 32 - 64) {
+        HStack(alignment: .top, spacing: DialogMetrics.iconSpacing) {
             Image(nsImage: NSApp.applicationIconImage)
                 .resizable()
                 .frame(width: 64, height: 64)
@@ -76,9 +87,9 @@ extension DialogLayout {
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(idealWidth: 340, maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.leading, 32)
+        .padding(.leading, alignment - DialogMetrics.iconSpacing - 64)
         .padding(.trailing, 20)
         .padding(.top, 20)
         .padding(.bottom, 12)
@@ -129,7 +140,7 @@ extension DialogLayout {
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.leading, DialogMetrics.alignment - 4 - 18)
+        .padding(.leading, alignment - 4 - 18)
         .padding(.trailing, 20)
         .padding(.bottom, 12)
     }
@@ -139,11 +150,22 @@ extension DialogLayout {
 
 /// 对话框骨架的度量：头部文字、表单输入列与错误文字共用一条左对齐线。
 enum DialogMetrics {
-    /// 距对话框左缘 120 pt 的对齐线。
+    /// 距对话框左缘 120 pt 的对齐线：表单标签都不长时输入列从这里开始，内容区没有输入列时头部与错误文字对齐它。
     static let alignment: CGFloat = 120
+
+    /// 头部图标与文字的间距。
+    static let iconSpacing: CGFloat = 16
+
+    /// 对话框骨架的坐标空间，`dialogInputColumn()` 在其中量出输入列的位置。
+    static let coordinateSpace = "DialogLayout"
 
     /// 表单标签列的最小宽度：表单左边距 20 pt，标签右缘与输入列相隔 8 pt，输入列正好从对齐线开始。
     static let labelWidth: CGFloat = alignment - 20 - 8
+
+    /// 头部文字与错误文字的左缘：内容区的输入列，没有输入列时是 `alignment`；不小于图标距左 32 时文字的位置。
+    static func textLeading(for inputColumn: CGFloat?) -> CGFloat {
+        max(inputColumn ?? alignment, 32 + 64 + iconSpacing)
+    }
 }
 
 // MARK: - DialogForm
@@ -168,14 +190,12 @@ struct DialogForm<Rows: View>: View {
 
 /// 表单的一行：右对齐的标签与它右侧的输入控件。
 ///
+/// 标签列至少宽到让输入列从对齐线开始，标签长时输入列随之右移，并报给外层的对话框骨架。
 /// 标签在辅助功能里是控件的标题，VoiceOver 读控件时读出标签；控件是只读的文字时，标签与文字本身都读得出，
 /// 一组控件时各自保留自己的名称。
 struct DialogFormRow<Field: View>: View {
     /// 标签，带冒号。
     let label: String
-
-    /// 标签列的最小宽度；默认让输入列正好从对齐线开始。
-    var labelWidth = DialogMetrics.labelWidth
 
     /// 标签与控件的竖直对齐；为 nil 时沿用表单的首行基线对齐，多行的文字区用 `.top` 让标签与它的顶边对齐。
     var alignment: VerticalAlignment? = nil
@@ -188,16 +208,50 @@ struct DialogFormRow<Field: View>: View {
     @Namespace
     private var accessibility
 
-    /// 标签列至少宽到 `labelWidth`。
+    /// 标签列至少宽到 `DialogMetrics.labelWidth`。
     var body: some View {
         GridRow(alignment: alignment) {
             Text(label)
-                .frame(minWidth: labelWidth, alignment: .trailing)
+                .frame(minWidth: DialogMetrics.labelWidth, alignment: .trailing)
                 .gridColumnAlignment(.trailing)
                 .accessibilityLabeledPair(role: .label, id: 0, in: accessibility)
 
             field()
                 .accessibilityLabeledPair(role: .content, id: 0, in: accessibility)
+                .dialogInputColumn()
         }
+    }
+}
+
+// MARK: - View + DialogInputColumn
+
+extension View {
+    /// 把这个视图的左缘报给外层的对话框骨架，作为输入列：头部与错误文字对齐它。
+    func dialogInputColumn() -> some View {
+        background {
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: DialogInputColumnKey.self,
+                    value: proxy.frame(in: .named(DialogMetrics.coordinateSpace)).minX
+                )
+            }
+        }
+    }
+}
+
+// MARK: - DialogInputColumnKey
+
+/// 表单输入列的左缘，由 `dialogInputColumn()` 报给外层的对话框骨架，头部与错误文字据此对齐；几行时取最靠左的。
+struct DialogInputColumnKey: PreferenceKey {
+    /// 没有表单行时为 nil。
+    static let defaultValue: CGFloat? = nil
+
+    /// 合并几行报上来的位置。
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
+        guard let next = nextValue() else {
+            return
+        }
+
+        value = min(value ?? next, next)
     }
 }
