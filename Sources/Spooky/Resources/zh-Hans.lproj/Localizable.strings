@@ -2269,8 +2269,12 @@
 "accounts.authentication" = "认证方式：";
 "accounts.authentication.oauth" = "OAuth 访问令牌";
 "accounts.authentication.token" = "个人访问令牌";
+"accounts.authentication.password" = "用户名与密码";
 "accounts.host" = "地址：";
 "accounts.token" = "个人访问令牌：";
+"accounts.username.label" = "用户名：";
+"accounts.password.label" = "密码：";
+"accounts.password" = "密码";
 "accounts.code" = "验证码：";
 "accounts.openGitHub" = "复制验证码并打开 GitHub";
 "accounts.validating" = "正在校验…";
@@ -2280,6 +2284,7 @@
 "accounts.message.githubToken" = "请输入带 “repo” 与 “read:org” 权限的个人访问令牌。";
 "accounts.message.gitlab" = "请输入带 “api” 权限的个人访问令牌。";
 "accounts.message.gitlabSelfManaged" = "请输入 GitLab 服务器的地址（有端口与部署路径时一并写上），以及带 “api” 权限的个人访问令牌。";
+"accounts.message.gitlabPassword" = "请输入 GitLab 服务器的地址（有端口与部署路径时一并写上），以及用户名与密码。密码只用来换取令牌，不会保存。需要 GitLab 18.11 或更早版本，服务器不要求 OAuth 应用凭据、允许经 HTTPS 用密码访问 Git，账号有 GitLab 或 LDAP 密码且没有开启双重验证。";
 "hosting.error.unauthorized" = "令牌被拒绝";
 "hosting.error.unauthorized.help" = "令牌无效、已过期或已被撤销。请在 设置 → 账号 中重新认证这个账号。";
 "hosting.error.forbidden" = "权限不足";
@@ -2309,6 +2314,12 @@
 "hosting.error.denied.help" = "浏览器中没有授权 Spooky。请重新开始并授权 Spooky，才能添加账号。";
 "hosting.error.differentUser" = "令牌属于另一个用户";
 "hosting.error.differentUser.help" = "这个令牌属于下方显示的用户。要以该用户登录，请改为添加新账号。";
+"hosting.error.passwordRejected" = "用户名或密码被拒绝";
+"hosting.error.passwordRejected.help" = "可能是密码不对、账号开启了双重验证或只能经单点登录登录，或服务器关闭了密码登录。请改用个人访问令牌。";
+"hosting.error.clientCredentialsRequired" = "服务器要求 OAuth 应用凭据";
+"hosting.error.clientCredentialsRequired.help" = "这台 GitLab 服务器只给已注册的 OAuth 应用发放令牌：GitLab 13.9 是这样，17.8 及以后的版本也可以这样设置。Spooky 不接受应用凭据，请改用个人访问令牌。";
+"hosting.error.passwordGrantUnsupported" = "不支持用密码登录";
+"hosting.error.passwordGrantUnsupported.help" = "GitLab 19.0 及以后的版本不再用用户名与密码换取令牌。请改用个人访问令牌。";
 "hosting.error.keychain" = "无法保存令牌";
 "hosting.error.keychain.help" = "钥匙串没有接受这个令牌。请确认登录钥匙串已解锁，然后再试。";
 

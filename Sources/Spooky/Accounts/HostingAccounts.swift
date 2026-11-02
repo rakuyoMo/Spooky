@@ -101,14 +101,30 @@ final class HostingAccounts {
     @ObservationIgnored
     private let credentials: any HostingCredentialStore
 
+    /// 用刷新令牌换新的令牌；测试换成不联网的实现。
+    @ObservationIgnored
+    private let renewToken: @Sendable (HostingInstance, String) async throws -> GitLabOAuthToken
+
+    /// 进行中的续期，按账号标识存放；同一账号同时只有一个续期，其它取令牌的调用等它的结果。
+    @ObservationIgnored
+    private var renewals: [UUID: Task<GitLabOAuthToken, any Error>] = [:]
+
     /// 读出偏好里的账号；内容损坏时视为没有账号。
     ///
     /// - Parameters:
     ///   - defaults: 存放账号列表的偏好。
     ///   - credentials: 存放令牌的地方。
-    init(defaults: UserDefaults = .standard, credentials: any HostingCredentialStore = KeychainHostingCredentials()) {
+    ///   - renewToken: 用刷新令牌换新的令牌。
+    init(
+        defaults: UserDefaults = .standard,
+        credentials: any HostingCredentialStore = KeychainHostingCredentials(),
+        renewToken: @escaping @Sendable (HostingInstance, String) async throws -> GitLabOAuthToken = {
+            try await GitLabPasswordGrant(instance: $0).refresh($1)
+        }
+    ) {
         self.defaults = defaults
         self.credentials = credentials
+        self.renewToken = renewToken
         items = defaults.data(forKey: Self.key).flatMap { try? JSONDecoder().decode([HostingAccount].self, from: $0) } ?? []
     }
 
@@ -118,8 +134,25 @@ final class HostingAccounts {
     }
 
     /// 账号的 API 客户端；令牌不在钥匙串里时为 nil。
+    ///
+    /// 用户名与密码登录的账号每次请求前经 ``token(for:)`` 取令牌，到期前先续期。
     func client(for account: HostingAccount) -> HostingClient? {
-        credentials.token(for: account).map { HostingClient(instance: account.instance, token: $0) }
+        guard let stored = credentials.token(for: account) else {
+            return nil
+        }
+
+        guard account.authentication == .password else {
+            return HostingClient(instance: account.instance, token: stored)
+        }
+
+        return HostingClient(instance: account.instance, authentication: .password) { [self] in
+            // 请求之间账号被移除时，钥匙串里已经没有令牌
+            guard let accessToken = try await token(for: account) else {
+                throw HostingError.unauthorized("")
+            }
+
+            return accessToken
+        }
     }
 
     /// 保存校验过的令牌：同一实例上已有同名账号时换上新令牌并清除重新认证的标记，否则加入新账号。
@@ -160,6 +193,18 @@ final class HostingAccounts {
         return account
     }
 
+    /// 保存用户名与密码换来、校验过的令牌：钥匙串里存访问令牌、刷新令牌与到期时间的 JSON，不存密码。
+    ///
+    /// - Parameters:
+    ///   - user: 令牌对应的用户。
+    ///   - instance: 账号所在的私有部署 GitLab。
+    ///   - token: 换来的令牌。
+    /// - Returns: 保存后的账号。
+    @discardableResult
+    func save(_ user: HostingUser, on instance: HostingInstance, token: GitLabOAuthToken) throws -> HostingAccount {
+        try save(user, on: instance, authentication: .password, token: Self.encode(token))
+    }
+
     /// 移除账号并删除它的令牌。
     func remove(_ account: HostingAccount) {
         credentials.removeToken(for: account)
@@ -180,5 +225,64 @@ final class HostingAccounts {
     /// 把账号列表写回偏好。
     private func persist() {
         defaults.set(try? JSONEncoder().encode(items), forKey: Self.key)
+    }
+}
+
+// MARK: - Token
+
+extension HostingAccounts {
+    /// 账号当前可用的令牌；用户名与密码登录的账号距到期不到 60 秒时先续期，同一账号的续期串行进行。
+    ///
+    /// 刷新令牌被拒时把账号标为需要重新认证，再报 ``HostingError/unauthorized(_:)``；网络等其它失败只报错，不标记。
+    ///
+    /// - Returns: 令牌不在钥匙串里，或存的内容读不出时为 nil。
+    func token(for account: HostingAccount) async throws -> String? {
+        // 同一账号已有续期在跑：等它的结果，不再发第二次
+        if let renewal = renewals[account.id] {
+            return try await renewal.value.accessToken
+        }
+
+        guard let stored = credentials.token(for: account) else {
+            return nil
+        }
+
+        guard account.authentication == .password else {
+            return stored
+        }
+
+        guard let token = try? JSONDecoder().decode(GitLabOAuthToken.self, from: Data(stored.utf8)) else {
+            return nil
+        }
+
+        guard token.needsRefresh(), let refreshToken = token.refreshToken else {
+            return token.accessToken
+        }
+
+        let renewal = Task { try await renew(account, refreshToken: refreshToken) }
+        renewals[account.id] = renewal
+        defer { renewals[account.id] = nil }
+
+        return try await renewal.value.accessToken
+    }
+
+    /// 续期并把新令牌写回钥匙串；刷新令牌被拒时把账号标为需要重新认证。
+    private func renew(_ account: HostingAccount, refreshToken: String) async throws -> GitLabOAuthToken {
+        do {
+            let renewed = try await renewToken(account.instance, refreshToken)
+            try credentials.setToken(Self.encode(renewed), for: account)
+            return renewed
+        } catch HostingError.unauthorized(let message) {
+            markNeedsReauthentication(account)
+            throw HostingError.unauthorized(message)
+        }
+    }
+}
+
+// MARK: - Helpers
+
+extension HostingAccounts {
+    /// 钥匙串里存的令牌 JSON。
+    private static func encode(_ token: GitLabOAuthToken) throws -> String {
+        String(decoding: try JSONEncoder().encode(token), as: UTF8.self)
     }
 }

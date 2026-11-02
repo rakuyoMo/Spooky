@@ -103,6 +103,103 @@ struct HostingAccountsTests {
         }
         #expect(accounts.items.isEmpty)
     }
+
+    /// 用户名与密码登录的账号：钥匙串存令牌的 JSON；离到期还远时直接用访问令牌，没有到期时间时从不续期。
+    @Test("用户名与密码登录的令牌")
+    func passwordToken() async throws {
+        let (defaults, suite) = try Self.defaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let credentials = MemoryCredentials()
+        let renewals = Mutex<[String]>([])
+        let accounts = HostingAccounts(defaults: defaults, credentials: credentials) { _, refreshToken in
+            renewals.withLock { $0.append(refreshToken) }
+            throw HostingError.unreachable("offline")
+        }
+        let instance = try #require(HostingInstance.gitlab(address: "https://git.example.com/gitlab"))
+        let user = HostingUser(username: "me", name: nil)
+
+        let account = try accounts.save(
+            user,
+            on: instance,
+            token: GitLabOAuthToken(accessToken: "at", refreshToken: "rt", expiresAt: Date().addingTimeInterval(3600))
+        )
+        #expect(account.authentication == .password)
+        #expect(try await accounts.token(for: account) == "at")
+        #expect(accounts.client(for: account) != nil)
+
+        let stored = try #require(credentials.token(for: account))
+        let decoded = try JSONDecoder().decode(GitLabOAuthToken.self, from: Data(stored.utf8))
+        #expect(decoded.accessToken == "at" && decoded.refreshToken == "rt")
+
+        try accounts.save(user, on: instance, token: GitLabOAuthToken(accessToken: "forever", refreshToken: "rt", expiresAt: nil))
+        #expect(try await accounts.token(for: account) == "forever")
+        #expect(renewals.withLock { $0 }.isEmpty)
+    }
+
+    /// 距到期不到 60 秒先续期并写回；同时取两次令牌只续期一次。
+    @Test("到期前串行续期")
+    func renewBeforeExpiry() async throws {
+        let (defaults, suite) = try Self.defaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let credentials = MemoryCredentials()
+        let renewals = Mutex<[String]>([])
+        let accounts = HostingAccounts(defaults: defaults, credentials: credentials) { _, refreshToken in
+            renewals.withLock { $0.append(refreshToken) }
+
+            // 续期还没回来时，另一次取令牌已经开始等待
+            try await Task.sleep(for: .milliseconds(100))
+            return GitLabOAuthToken(accessToken: "at2", refreshToken: "rt2", expiresAt: Date().addingTimeInterval(7200))
+        }
+        let instance = try #require(HostingInstance.gitlab(address: "https://git.example.com/gitlab"))
+
+        let account = try accounts.save(
+            HostingUser(username: "me", name: nil),
+            on: instance,
+            token: GitLabOAuthToken(accessToken: "at", refreshToken: "rt", expiresAt: Date().addingTimeInterval(30))
+        )
+
+        async let first = accounts.token(for: account)
+        async let second = accounts.token(for: account)
+        let tokens = try await [first, second]
+
+        #expect(tokens == ["at2", "at2"])
+        #expect(renewals.withLock { $0 } == ["rt"])
+
+        let stored = try #require(credentials.token(for: account))
+        let renewed = try JSONDecoder().decode(GitLabOAuthToken.self, from: Data(stored.utf8))
+        #expect(renewed.accessToken == "at2" && renewed.refreshToken == "rt2")
+    }
+
+    /// 刷新令牌被拒时账号标为需要重新认证；网络失败只报错不标记；重新认证换到新令牌后标记清除。
+    @Test("刷新令牌被拒")
+    func renewRejected() async throws {
+        let (defaults, suite) = try Self.defaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let failure = Mutex<HostingError>(.unreachable("offline"))
+        let accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials()) { _, _ in
+            throw failure.withLock { $0 }
+        }
+        let instance = try #require(HostingInstance.gitlab(address: "https://git.example.com/gitlab"))
+        let user = HostingUser(username: "me", name: nil)
+        let expiring = GitLabOAuthToken(accessToken: "at", refreshToken: "rt", expiresAt: Date())
+
+        let account = try accounts.save(user, on: instance, token: expiring)
+
+        await #expect(throws: HostingError.unreachable("offline")) { try await accounts.token(for: account) }
+        #expect(!(accounts.items.first?.needsReauthentication ?? true))
+
+        failure.withLock { $0 = .unauthorized("invalid_grant") }
+        await #expect(throws: HostingError.unauthorized("invalid_grant")) { try await accounts.token(for: account) }
+        #expect(accounts.items.first?.needsReauthentication ?? false)
+
+        let fresh = GitLabOAuthToken(accessToken: "new", refreshToken: "rt2", expiresAt: Date().addingTimeInterval(7200))
+        try accounts.save(user, on: instance, token: fresh)
+        #expect(!(accounts.items.first?.needsReauthentication ?? true))
+        #expect(try await accounts.token(for: account) == "new")
+    }
 }
 
 // MARK: - Helpers

@@ -45,4 +45,13 @@ public enum HostingError: Error, Sendable, Equatable {
 
     /// 令牌属于另一个用户，重新认证时不能替换成它。
     case differentUser(String)
+
+    /// 用密码换令牌被拒（`invalid_grant`）：密码不对、账号开了双重验证、只能经单点登录登录，或实例关了密码认证；带服务端原文。
+    case passwordRejected(String)
+
+    /// 实例要求 OAuth 应用凭据才能换令牌（`invalid_client`）；带服务端原文。
+    case clientCredentialsRequired(String)
+
+    /// 实例不支持用密码换令牌（`unsupported_grant_type`）；带服务端原文。
+    case passwordGrantUnsupported(String)
 }

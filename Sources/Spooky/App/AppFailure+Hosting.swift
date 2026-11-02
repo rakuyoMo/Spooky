@@ -59,6 +59,21 @@ extension AppFailure {
 
         case .differentUser(let username):
             ("hosting.error.differentUser", .repository, "hosting.error.differentUser.help", nil, username)
+
+        case .passwordRejected(let message):
+            ("hosting.error.passwordRejected", .environment, "hosting.error.passwordRejected.help", nil, message)
+
+        case .clientCredentialsRequired(let message):
+            (
+                "hosting.error.clientCredentialsRequired",
+                .environment,
+                "hosting.error.clientCredentialsRequired.help",
+                nil,
+                message
+            )
+
+        case .passwordGrantUnsupported(let message):
+            ("hosting.error.passwordGrantUnsupported", .version, "hosting.error.passwordGrantUnsupported.help", nil, message)
         }
     }
 

@@ -65,7 +65,7 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **分支整理**：把本地分支与基准分支比较，看它能否干净合并或会不会冲突。显示每个分支的 Pull Request 或 Merge Request，压缩或变基合并的分支同样认得出，并可以按它筛选。可以用合并或变基把父分支的新提交并入分支，批量或自动归档过时的分支，自动归档前先由你确认列表；“活动” 窗口记下每个分支被归档的原因
 
-- **托管账号**：github.com 可以在浏览器里登录或填个人访问令牌，GitLab.com 与私有部署的 GitLab 填个人访问令牌。同一服务可以有多个账号，令牌只保存在钥匙串里
+- **托管账号**：github.com 可以在浏览器里登录或填个人访问令牌，GitLab.com 填个人访问令牌，私有部署的 GitLab 可以填个人访问令牌或用户名与密码。同一服务可以有多个账号，令牌只保存在钥匙串里
 
 - **Pull Request 与 Merge Request**：按远端列出 GitHub 仓库的 Pull Request 或 GitLab 项目的 Merge Request，查看讨论、提交与改动。可以从同一项目或 Fork 的分支新建，修改、评论、关闭，按项目允许的方式合并，以及检出。经 SSH 别名的远端可以手动关联到账号与项目，仓库也可以发布到 GitHub 或 GitLab
 
@@ -193,7 +193,7 @@ open .build/Spooky.app
 - “活动” 窗口里获取、拉取、推送等远程操作的记录保存在 `~/Library/Application Support/Spooky/Activity`，一条记录一个文件，7 天后删除；其余记录只在 Spooky 运行期间保存在内存里
 - “活动” 窗口用来计算分支、远端、储藏与子模块增减的上一次清单保存在 `~/Library/Application Support/Spooky/Baselines`，每个仓库一个文件
 - 存入钥匙串的凭据，服务名为 `com.rakuyo.spooky.remote.<主机别名>`
-- 托管账号的令牌存在钥匙串里，服务名为 `com.rakuyo.spooky.hosting.<实例地址>`；账号列表与手动关联到账号的远端存在偏好里，不含令牌
+- 托管账号的令牌存在钥匙串里，服务名为 `com.rakuyo.spooky.hosting.<实例地址>`；私有部署 GitLab 用用户名与密码登录的账号，这里存访问令牌、刷新令牌与到期时间，不存密码。账号列表与手动关联到账号的远端存在偏好里，不含令牌
 - 连接和回调使用私有的 `/tmp/spooky-*` 临时目录，关闭会话后清理。本机仓库校验签名时同样使用这样一个目录，校验结束即删除
 - 作者头像以作者邮箱的 SHA-256 哈希向 Gravatar 请求，只在 Spooky 运行期间保存在内存里
 - 交给 Quick Look 和其它程序的文件副本放在私有的 `spooky-files-*` 临时目录，关闭仓库后清理

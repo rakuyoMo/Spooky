@@ -2269,8 +2269,12 @@
 "accounts.authentication" = "Authentification :";
 "accounts.authentication.oauth" = "Jeton d’accès OAuth";
 "accounts.authentication.token" = "Jeton d’accès personnel";
+"accounts.authentication.password" = "Nom d’utilisateur et mot de passe";
 "accounts.host" = "Hôte :";
 "accounts.token" = "Jeton d’accès personnel :";
+"accounts.username.label" = "Nom d’utilisateur :";
+"accounts.password.label" = "Mot de passe :";
+"accounts.password" = "Mot de passe";
 "accounts.code" = "Code :";
 "accounts.openGitHub" = "Copier le code et ouvrir GitHub";
 "accounts.validating" = "Vérification…";
@@ -2280,6 +2284,7 @@
 "accounts.message.githubToken" = "Saisissez un jeton d’accès personnel avec les portées « repo » et « read:org ».";
 "accounts.message.gitlab" = "Saisissez un jeton d’accès personnel avec la portée « api ».";
 "accounts.message.gitlabSelfManaged" = "Saisissez l’adresse de votre serveur GitLab, avec son port et son chemin s’il en a, et un jeton d’accès personnel avec la portée « api ».";
+"accounts.message.gitlabPassword" = "Saisissez l’adresse de votre serveur GitLab, avec son port et son chemin s’il en a, ainsi que votre nom d’utilisateur et votre mot de passe. Spooky n’utilise le mot de passe que pour obtenir un jeton et ne l’enregistre pas. Il faut GitLab 18.11 ou antérieur, un serveur qui n’exige pas d’identifiants d’application OAuth et autorise Git via HTTPS avec un mot de passe, et un compte doté d’un mot de passe GitLab ou LDAP sans authentification à deux facteurs.";
 "hosting.error.unauthorized" = "Le jeton a été refusé";
 "hosting.error.unauthorized.help" = "Le jeton est invalide, a expiré ou a été révoqué. Réauthentifiez le compte dans Réglages → Comptes.";
 "hosting.error.forbidden" = "Autorisation refusée";
@@ -2309,6 +2314,12 @@
 "hosting.error.denied.help" = "Spooky n’a pas été autorisé dans le navigateur. Recommencez et autorisez Spooky pour ajouter le compte.";
 "hosting.error.differentUser" = "Le jeton appartient à un autre utilisateur";
 "hosting.error.differentUser.help" = "Le jeton appartient à l’utilisateur indiqué ci-dessous. Pour vous connecter avec cet utilisateur, ajoutez plutôt un nouveau compte.";
+"hosting.error.passwordRejected" = "Le nom d’utilisateur ou le mot de passe a été refusé";
+"hosting.error.passwordRejected.help" = "Le mot de passe est peut-être incorrect, le compte utilise peut-être l’authentification à deux facteurs ou ne peut se connecter que par authentification unique, ou le serveur n’autorise pas la connexion par mot de passe. Utilisez plutôt un jeton d’accès personnel.";
+"hosting.error.clientCredentialsRequired" = "Le serveur exige des identifiants d’application OAuth";
+"hosting.error.clientCredentialsRequired.help" = "Ce serveur GitLab ne délivre des jetons qu’aux applications OAuth enregistrées, comme GitLab 13.9 et, selon sa configuration, GitLab 17.8 ou ultérieur. Spooky n’accepte pas d’identifiants d’application. Utilisez plutôt un jeton d’accès personnel.";
+"hosting.error.passwordGrantUnsupported" = "La connexion par mot de passe n’est pas prise en charge";
+"hosting.error.passwordGrantUnsupported.help" = "À partir de GitLab 19.0, un nom d’utilisateur et un mot de passe ne peuvent plus être échangés contre un jeton. Utilisez plutôt un jeton d’accès personnel.";
 "hosting.error.keychain" = "Impossible d’enregistrer le jeton";
 "hosting.error.keychain.help" = "Le trousseau n’a pas accepté le jeton. Vérifiez que votre trousseau de session est déverrouillé, puis réessayez.";
 

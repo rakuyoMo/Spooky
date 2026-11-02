@@ -144,9 +144,12 @@ Spooky 由两个 target 组成：
 ## 托管服务
 
 - 接口一律经 `HostingClient` 从 A 发起
-  - 令牌只放在请求头：GitHub 用 `Authorization: Bearer`，GitLab 用 `PRIVATE-TOKEN`
+  - 令牌只放在请求头：GitHub 与用户名和密码登录的 GitLab 账号用 `Authorization: Bearer`，其余 GitLab 账号用 `PRIVATE-TOKEN`
   - 请求不用 URLCache 里的旧响应；失败按 `HostingError` 分类并保留服务端原文
 - 令牌只存在钥匙串，服务名 `com.rakuyo.spooky.hosting.<实例网页地址>`，账户名是账号 UUID
+  - 个人访问令牌与浏览器授权的令牌存原文
+  - 私有部署 GitLab 的用户名与密码经 `GitLabPasswordGrant` 换成 OAuth 令牌，钥匙串存访问令牌、刷新令牌与到期时间的 JSON，密码不保存
+  - 这种账号的客户端在每次请求前经 `HostingAccounts.token(for:)` 取令牌：距到期不到 60 秒时先用刷新令牌续期，同一账号的续期串行进行；刷新令牌被拒时账号标为需要重新认证
 - 请求的提交与改动在仓库所在的机器上比较：源分支提交不在仓库里时，从目标远端的 `refs/pull/<编号>/head`（GitLab 是 `refs/merge-requests/<编号>/head`）取到 `FETCH_HEAD`；合并时带上源分支提交让服务端核对，合并后在仓库所在的机器上获取目标远端
 
 ## 仓库管理与系统集成

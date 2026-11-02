@@ -2269,8 +2269,12 @@
 "accounts.authentication" = "認證方式：";
 "accounts.authentication.oauth" = "OAuth 存取權杖";
 "accounts.authentication.token" = "個人存取權杖";
+"accounts.authentication.password" = "使用者名稱與密碼";
 "accounts.host" = "位址：";
 "accounts.token" = "個人存取權杖：";
+"accounts.username.label" = "使用者名稱：";
+"accounts.password.label" = "密碼：";
+"accounts.password" = "密碼";
 "accounts.code" = "驗證碼：";
 "accounts.openGitHub" = "拷貝驗證碼並打開 GitHub";
 "accounts.validating" = "正在驗證…";
@@ -2280,6 +2284,7 @@
 "accounts.message.githubToken" = "請輸入帶 “repo” 與 “read:org” 權限的個人存取權杖。";
 "accounts.message.gitlab" = "請輸入帶 “api” 權限的個人存取權杖。";
 "accounts.message.gitlabSelfManaged" = "請輸入 GitLab 伺服器的位址（有連接埠與部署路徑時一併寫上），以及帶 “api” 權限的個人存取權杖。";
+"accounts.message.gitlabPassword" = "請輸入 GitLab 伺服器的位址（有連接埠與部署路徑時一併寫上），以及使用者名稱與密碼。密碼只用來換取權杖，不會儲存。需要 GitLab 18.11 或更早版本，伺服器不要求 OAuth 應用程式憑證、允許經 HTTPS 用密碼存取 Git，帳號有 GitLab 或 LDAP 密碼且沒有開啟雙重驗證。";
 "hosting.error.unauthorized" = "權杖被拒絕";
 "hosting.error.unauthorized.help" = "權杖無效、已過期或已被撤銷。請在 設定 → 帳號 中重新認證這個帳號。";
 "hosting.error.forbidden" = "權限不足";
@@ -2309,6 +2314,12 @@
 "hosting.error.denied.help" = "瀏覽器中沒有授權 Spooky。請重新開始並授權 Spooky，才能加入帳號。";
 "hosting.error.differentUser" = "權杖屬於另一個使用者";
 "hosting.error.differentUser.help" = "這個權杖屬於下方顯示的使用者。要以該使用者登入，請改為加入新帳號。";
+"hosting.error.passwordRejected" = "使用者名稱或密碼被拒絕";
+"hosting.error.passwordRejected.help" = "可能是密碼不對、帳號開啟了雙重驗證或只能經單一登入登入，或伺服器關閉了密碼登入。請改用個人存取權杖。";
+"hosting.error.clientCredentialsRequired" = "伺服器要求 OAuth 應用程式憑證";
+"hosting.error.clientCredentialsRequired.help" = "這台 GitLab 伺服器只給已註冊的 OAuth 應用程式發放權杖：GitLab 13.9 是這樣，17.8 及以後的版本也可以這樣設定。Spooky 不接受應用程式憑證，請改用個人存取權杖。";
+"hosting.error.passwordGrantUnsupported" = "不支援用密碼登入";
+"hosting.error.passwordGrantUnsupported.help" = "GitLab 19.0 及以後的版本不再用使用者名稱與密碼換取權杖。請改用個人存取權杖。";
 "hosting.error.keychain" = "無法儲存權杖";
 "hosting.error.keychain.help" = "鑰匙圈沒有接受這個權杖。請確認登入鑰匙圈已解鎖，然後再試。";
 

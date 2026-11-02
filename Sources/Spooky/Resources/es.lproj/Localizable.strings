@@ -2269,8 +2269,12 @@
 "accounts.authentication" = "Autenticación:";
 "accounts.authentication.oauth" = "Token de acceso OAuth";
 "accounts.authentication.token" = "Token de acceso personal";
+"accounts.authentication.password" = "Nombre de usuario y contraseña";
 "accounts.host" = "Host:";
 "accounts.token" = "Token de acceso personal:";
+"accounts.username.label" = "Nombre de usuario:";
+"accounts.password.label" = "Contraseña:";
+"accounts.password" = "Contraseña";
 "accounts.code" = "Código:";
 "accounts.openGitHub" = "Copiar código y abrir GitHub";
 "accounts.validating" = "Comprobando…";
@@ -2280,6 +2284,7 @@
 "accounts.message.githubToken" = "Introduce un token de acceso personal con los permisos “repo” y “read:org”.";
 "accounts.message.gitlab" = "Introduce un token de acceso personal con el permiso “api”.";
 "accounts.message.gitlabSelfManaged" = "Introduce la dirección de tu servidor de GitLab, con su puerto y su ruta si los tiene, y un token de acceso personal con el permiso “api”.";
+"accounts.message.gitlabPassword" = "Introduce la dirección de tu servidor de GitLab, con su puerto y su ruta si los tiene, y tu nombre de usuario y contraseña. Spooky solo usa la contraseña para obtener un token y no la guarda. Hace falta GitLab 18.11 o anterior, un servidor que no exija credenciales de aplicación OAuth y permita Git por HTTPS con contraseña, y una cuenta con contraseña de GitLab o LDAP y sin autenticación de dos factores.";
 "hosting.error.unauthorized" = "El token fue rechazado";
 "hosting.error.unauthorized.help" = "El token no es válido, ha caducado o se ha revocado. Vuelve a autenticar la cuenta en Ajustes → Cuentas.";
 "hosting.error.forbidden" = "Permiso denegado";
@@ -2309,6 +2314,12 @@
 "hosting.error.denied.help" = "Spooky no se autorizó en el navegador. Vuelve a empezar y autoriza a Spooky para añadir la cuenta.";
 "hosting.error.differentUser" = "El token pertenece a otro usuario";
 "hosting.error.differentUser.help" = "El token es del usuario que se muestra abajo. Para iniciar sesión con ese usuario, añade una cuenta nueva.";
+"hosting.error.passwordRejected" = "Se rechazó el nombre de usuario o la contraseña";
+"hosting.error.passwordRejected.help" = "Puede que la contraseña sea incorrecta, que la cuenta use autenticación de dos factores o solo pueda iniciar sesión mediante inicio de sesión único, o que el servidor no permita iniciar sesión con contraseña. Usa un token de acceso personal en su lugar.";
+"hosting.error.clientCredentialsRequired" = "El servidor exige credenciales de aplicación OAuth";
+"hosting.error.clientCredentialsRequired.help" = "Este servidor de GitLab solo emite tokens para aplicaciones OAuth registradas, como hace GitLab 13.9 y, según su configuración, GitLab 17.8 o posterior. Spooky no admite credenciales de aplicación. Usa un token de acceso personal en su lugar.";
+"hosting.error.passwordGrantUnsupported" = "No se admite iniciar sesión con contraseña";
+"hosting.error.passwordGrantUnsupported.help" = "A partir de GitLab 19.0 ya no se puede cambiar un nombre de usuario y una contraseña por un token. Usa un token de acceso personal en su lugar.";
 "hosting.error.keychain" = "No se pudo guardar el token";
 "hosting.error.keychain.help" = "El llavero no aceptó el token. Asegúrate de que tu llavero de inicio de sesión esté desbloqueado y vuelve a intentarlo.";
 

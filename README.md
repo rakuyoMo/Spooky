@@ -65,7 +65,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Branches review**: compare local branches with a base branch to see whether they can be merged cleanly or would conflict. See each branch's pull request or merge request, including branches merged with squash or rebase, and filter by it. Update a branch from its parent branch by merging or rebasing, and archive obsolete branches in bulk or automatically, after you confirm the list; the Activity window records why each branch was archived
 
-- **Hosting accounts**: sign in to github.com in the browser or with a personal access token, and to GitLab.com and self-managed GitLab instances with a personal access token. Several accounts can be used per service, and tokens are stored only in your Keychain
+- **Hosting accounts**: sign in to github.com in the browser or with a personal access token, to GitLab.com with a personal access token, and to self-managed GitLab instances with a personal access token or a username and password. Several accounts can be used per service, and tokens are stored only in your Keychain
 
 - **Pull requests and merge requests**: list the pull requests of a GitHub repository or the merge requests of a GitLab project for each remote, and read the conversation, commits, and changes. Create them from branches of the same project or a fork, edit them, comment on them, close them, merge them with the methods the project allows, and check them out. Remotes behind SSH aliases can be associated with an account and project by hand, and a repository can be published to GitHub or GitLab
 
@@ -193,7 +193,7 @@ On your Mac:
 - Remote operations recorded in the **Activity** window, such as fetches, pulls, and pushes, are stored in `~/Library/Application Support/Spooky/Activity`, one file per record, and deleted after 7 days. Other Activity records are kept in memory only while Spooky is running
 - The previous lists of branches, remotes, stashes, and submodules that the **Activity** window compares against to count updated, added, and deleted items are stored in `~/Library/Application Support/Spooky/Baselines`, one file per repository
 - Credentials saved to the Keychain use the service name `com.rakuyo.spooky.remote.<host alias>`
-- Hosting account tokens are stored in the Keychain with the service name `com.rakuyo.spooky.hosting.<instance address>`. The account list and the remotes you associated with an account are stored in the preferences, without tokens
+- Hosting account tokens are stored in the Keychain with the service name `com.rakuyo.spooky.hosting.<instance address>`. For a self-managed GitLab account that signs in with a username and password, the access token, the refresh token, and the expiry time are stored there; the password isn't stored. The account list and the remotes you associated with an account are stored in the preferences, without tokens
 - Connections and callbacks use private `/tmp/spooky-*` temporary directories, which are removed when the session closes. Signature checks in local repositories use one of these directories as well, removed as soon as the check finishes
 - Author pictures are requested from Gravatar with a SHA-256 hash of each author's email address, and are kept in memory only while Spooky is running
 - File copies for Quick Look and other apps are kept in private `spooky-files-*` temporary directories, which are removed when the repository closes

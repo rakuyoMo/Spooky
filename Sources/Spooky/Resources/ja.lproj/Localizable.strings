@@ -2269,8 +2269,12 @@
 "accounts.authentication" = "認証方法：";
 "accounts.authentication.oauth" = "OAuth アクセストークン";
 "accounts.authentication.token" = "個人アクセストークン";
+"accounts.authentication.password" = "ユーザ名とパスワード";
 "accounts.host" = "ホスト：";
 "accounts.token" = "個人アクセストークン：";
+"accounts.username.label" = "ユーザ名：";
+"accounts.password.label" = "パスワード：";
+"accounts.password" = "パスワード";
 "accounts.code" = "コード：";
 "accounts.openGitHub" = "コードをコピーして GitHub を開く";
 "accounts.validating" = "確認中…";
@@ -2280,6 +2284,7 @@
 "accounts.message.githubToken" = "「repo」と「read:org」のスコープを持つ個人アクセストークンを入力してください。";
 "accounts.message.gitlab" = "「api」スコープを持つ個人アクセストークンを入力してください。";
 "accounts.message.gitlabSelfManaged" = "GitLab サーバのアドレス（ポートやパスがあればそれも含めて）と、「api」スコープを持つ個人アクセストークンを入力してください。";
+"accounts.message.gitlabPassword" = "GitLab サーバのアドレス（ポートやパスがあればそれも含めて）と、ユーザ名とパスワードを入力してください。パスワードはトークンの取得にのみ使い、保存しません。GitLab 18.11 以前で、サーバが OAuth アプリケーションの資格情報を必要とせず、パスワードによる HTTPS 経由の Git アクセスを許可していること、アカウントに GitLab または LDAP のパスワードがあり、2 要素認証を有効にしていないことが必要です。";
 "hosting.error.unauthorized" = "トークンが拒否されました";
 "hosting.error.unauthorized.help" = "トークンが無効、期限切れ、または取り消されています。「設定」→「アカウント」でアカウントを再認証してください。";
 "hosting.error.forbidden" = "権限がありません";
@@ -2309,6 +2314,12 @@
 "hosting.error.denied.help" = "ブラウザで Spooky が認可されませんでした。最初からやり直し、Spooky を認可してアカウントを追加してください。";
 "hosting.error.differentUser" = "トークンは別のユーザのものです";
 "hosting.error.differentUser.help" = "このトークンは下に示すユーザのものです。そのユーザでサインインするには、新しいアカウントとして追加してください。";
+"hosting.error.passwordRejected" = "ユーザ名またはパスワードが拒否されました";
+"hosting.error.passwordRejected.help" = "パスワードが間違っているか、アカウントで 2 要素認証が有効になっているかシングルサインオンでしかサインインできないか、サーバでパスワードによるサインインが無効になっています。代わりに個人アクセストークンを使ってください。";
+"hosting.error.clientCredentialsRequired" = "サーバが OAuth アプリケーションの資格情報を必要としています";
+"hosting.error.clientCredentialsRequired.help" = "この GitLab サーバは登録済みの OAuth アプリケーションにのみトークンを発行します（GitLab 13.9、および設定によっては 17.8 以降）。Spooky はアプリケーションの資格情報を受け付けません。代わりに個人アクセストークンを使ってください。";
+"hosting.error.passwordGrantUnsupported" = "パスワードによるサインインはサポートされていません";
+"hosting.error.passwordGrantUnsupported.help" = "GitLab 19.0 以降では、ユーザ名とパスワードでトークンを取得できなくなりました。代わりに個人アクセストークンを使ってください。";
 "hosting.error.keychain" = "トークンを保存できませんでした";
 "hosting.error.keychain.help" = "キーチェーンがトークンを受け付けませんでした。ログインキーチェーンのロックが解除されていることを確認して、もう一度お試しください。";
 

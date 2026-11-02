@@ -9,6 +9,9 @@ public enum HostingAuthentication: String, Codable, Sendable {
 
     /// 用户在托管服务上创建的个人访问令牌。
     case personalAccessToken
+
+    /// 用用户名与密码换来的 OAuth 令牌，只用于私有部署的 GitLab；钥匙串里存访问令牌、刷新令牌与到期时间。
+    case password
 }
 
 // MARK: - HostingAccount

@@ -2269,8 +2269,12 @@
 "accounts.authentication" = "Authentication:";
 "accounts.authentication.oauth" = "OAuth Access Token";
 "accounts.authentication.token" = "Personal Access Token";
+"accounts.authentication.password" = "Username and Password";
 "accounts.host" = "Host:";
 "accounts.token" = "Personal Access Token:";
+"accounts.username.label" = "Username:";
+"accounts.password.label" = "Password:";
+"accounts.password" = "Password";
 "accounts.code" = "Code:";
 "accounts.openGitHub" = "Copy Code and Open GitHub";
 "accounts.validating" = "Validating…";
@@ -2280,6 +2284,7 @@
 "accounts.message.githubToken" = "Enter a personal access token with the “repo” and “read:org” scopes.";
 "accounts.message.gitlab" = "Enter a personal access token with the “api” scope.";
 "accounts.message.gitlabSelfManaged" = "Enter the address of your GitLab server, with its port and path if it has them, and a personal access token with the “api” scope.";
+"accounts.message.gitlabPassword" = "Enter the address of your GitLab server, with its port and path if it has them, and your username and password. Spooky uses the password only to get a token and doesn’t save it. This works with GitLab 18.11 or earlier when the server doesn’t require OAuth application credentials and allows Git over HTTPS with a password, and your account has a GitLab or LDAP password and doesn’t use two-factor authentication.";
 "hosting.error.unauthorized" = "The Token Was Rejected";
 "hosting.error.unauthorized.help" = "The token is invalid, has expired or was revoked. Re-authenticate the account in Settings → Accounts.";
 "hosting.error.forbidden" = "Permission Denied";
@@ -2309,6 +2314,12 @@
 "hosting.error.denied.help" = "Spooky wasn’t authorized in the browser. Start again and authorize Spooky to add the account.";
 "hosting.error.differentUser" = "The Token Belongs to Another User";
 "hosting.error.differentUser.help" = "The token is for the user shown below. To sign in as that user, add a new account instead.";
+"hosting.error.passwordRejected" = "The Username or Password Was Rejected";
+"hosting.error.passwordRejected.help" = "The password may be wrong, the account may use two-factor authentication or sign in only through single sign-on, or the server may not allow password sign-in. Use a personal access token instead.";
+"hosting.error.clientCredentialsRequired" = "The Server Requires OAuth Application Credentials";
+"hosting.error.clientCredentialsRequired.help" = "This GitLab server issues tokens only to registered OAuth applications, as GitLab 13.9 does and as GitLab 17.8 or later can be set to do. Spooky doesn’t take application credentials. Use a personal access token instead.";
+"hosting.error.passwordGrantUnsupported" = "Password Sign-In Isn’t Supported";
+"hosting.error.passwordGrantUnsupported.help" = "GitLab 19.0 and later no longer exchange a username and password for a token. Use a personal access token instead.";
 "hosting.error.keychain" = "Couldn’t Save the Token";
 "hosting.error.keychain.help" = "The keychain didn’t accept the token. Make sure your login keychain is unlocked, then try again.";
 

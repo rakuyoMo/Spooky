@@ -24,20 +24,40 @@ public struct HostingClient: Sendable {
     /// 账号所在的实例。
     public let instance: HostingInstance
 
-    /// 账号的令牌。
-    private let token: String
+    /// 账号的认证方式，决定 GitLab 的令牌放进哪个请求头。
+    private let authentication: HostingAuthentication
+
+    /// 每次请求前取令牌；会到期的令牌在这里先续期。
+    private let token: @Sendable () async throws -> String
 
     /// 发请求用的会话；测试换成返回固定响应的会话。
     private let session: URLSession
 
-    /// 创建客户端，不立即发请求。
+    /// 用固定的令牌创建客户端，不立即发请求；GitLab 的令牌按个人访问令牌放进 `PRIVATE-TOKEN` 头。
     ///
     /// - Parameters:
     ///   - instance: 账号所在的实例。
-    ///   - token: OAuth 令牌或个人访问令牌。
+    ///   - token: github.com 的 OAuth 令牌或个人访问令牌。
     ///   - session: 发请求用的会话。
     public init(instance: HostingInstance, token: String, session: URLSession = .shared) {
+        self.init(instance: instance, authentication: .personalAccessToken, session: session) { token }
+    }
+
+    /// 创建每次请求前取令牌的客户端，不立即发请求。
+    ///
+    /// - Parameters:
+    ///   - instance: 账号所在的实例。
+    ///   - authentication: 账号的认证方式；用户名与密码登录的 GitLab 账号用 `Authorization: Bearer` 头。
+    ///   - session: 发请求用的会话。
+    ///   - token: 取令牌；失败时这次请求以它的错误失败。
+    public init(
+        instance: HostingInstance,
+        authentication: HostingAuthentication,
+        session: URLSession = .shared,
+        token: @escaping @Sendable () async throws -> String
+    ) {
         self.instance = instance
+        self.authentication = authentication
         self.token = token
         self.session = session
     }
@@ -117,6 +137,17 @@ extension HostingClient {
         text.addingPercentEncoding(withAllowedCharacters: unreserved) ?? text
     }
 
+    /// 表单请求体：字段按键排序，键与值除字母、数字与 `-._~` 外都转义。
+    static func formBody(_ fields: [String: String]) -> Data {
+        Data(
+            fields
+                .sorted { $0.key < $1.key }
+                .map { encodedSegment($0.key) + "=" + encodedSegment($0.value) }
+                .joined(separator: "&")
+                .utf8
+        )
+    }
+
     /// 解析 ISO 8601 时间，带不带小数秒都可以。
     static func date(from text: String) -> Date? {
         let fractional = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
@@ -153,7 +184,7 @@ extension HostingClient {
         query: [URLQueryItem],
         body: Data?
     ) async throws -> (Data, HTTPURLResponse) {
-        let request = try makeRequest(method, path, query: query, body: body)
+        let request = try makeRequest(method, path, query: query, body: body, token: try await token())
         let data: Data
         let response: URLResponse
 
@@ -176,8 +207,14 @@ extension HostingClient {
         return (data, http)
     }
 
-    /// 组装请求：认证头按服务取，GitHub 固定 API 版本。
-    private func makeRequest(_ method: String, _ path: String, query: [URLQueryItem], body: Data?) throws -> URLRequest {
+    /// 组装请求：认证头按服务与认证方式取，GitHub 固定 API 版本。
+    private func makeRequest(
+        _ method: String,
+        _ path: String,
+        query: [URLQueryItem],
+        body: Data?,
+        token: String
+    ) throws -> URLRequest {
         guard var components = URLComponents(url: instance.apiURL, resolvingAgainstBaseURL: false) else {
             throw HostingError.incompatible(instance.displayName)
         }
@@ -211,6 +248,10 @@ extension HostingClient {
             request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
             request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
             request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+
+        // 用户名与密码换来的是 OAuth 令牌，按 Bearer 的写法交给 GitLab
+        case .gitlab where authentication == .password:
+            request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
 
         case .gitlab:
             request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
