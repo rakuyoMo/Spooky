@@ -8,28 +8,6 @@ import AppKit
 /// 代码块与引用块是 `NSTextBlock`，表格是 `NSTextTable`，列表每层缩进 8；HTML 与分隔线不显示。
 /// 代码块、表格之后，以及最外层的列表结束时空一行；正文末尾不留空行。
 enum PullRequestMarkdown {
-    /// 转换结果按正文缓存：列宽变化时只重新排版，不重新解析。
-    ///
-    /// `NSCache` 的键只能是对象，正文按 Objective-C 字符串作键。
-    @MainActor
-    // swiftlint:disable:next legacy_objc_type
-    private static let cache = NSCache<NSString, NSAttributedString>()
-
-    /// 正文转成带格式的文字；同一段正文只转换一次。
-    @MainActor
-    static func attributedString(_ text: String) -> NSAttributedString {
-        // swiftlint:disable:next legacy_objc_type
-        let key = text as NSString
-
-        if let cached = cache.object(forKey: key) {
-            return cached
-        }
-
-        let string = convert(text)
-        cache.setObject(string, forKey: key)
-        return string
-    }
-
     /// 解析并转换；解析失败时按纯文字显示。
     static func convert(_ text: String) -> NSAttributedString {
         let options = AttributedString.MarkdownParsingOptions(
@@ -66,6 +44,31 @@ enum PullRequestMarkdown {
         layoutManager.ensureLayout(for: container)
 
         return ceil(layoutManager.usedRect(for: container).height)
+    }
+}
+
+// MARK: - Cache
+
+@MainActor
+extension PullRequestMarkdown {
+    /// 转换结果按正文缓存：列宽变化时只重新排版，不重新解析。
+    ///
+    /// `NSCache` 的键只能是对象，正文按 Objective-C 字符串作键。
+    // swiftlint:disable:next legacy_objc_type
+    private static let cache = NSCache<NSString, NSAttributedString>()
+
+    /// 正文转成带格式的文字；同一段正文只转换一次。
+    static func attributedString(_ text: String) -> NSAttributedString {
+        // swiftlint:disable:next legacy_objc_type
+        let key = text as NSString
+
+        if let cached = cache.object(forKey: key) {
+            return cached
+        }
+
+        let string = convert(text)
+        cache.setObject(string, forKey: key)
+        return string
     }
 }
 

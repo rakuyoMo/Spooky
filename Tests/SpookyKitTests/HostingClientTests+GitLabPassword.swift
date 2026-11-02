@@ -41,7 +41,7 @@ extension HostingClientTests {
         #expect(requests.withLock { $0.count } == 1)
     }
 
-    /// 续期用刷新令牌；响应没有 `expires_in` 时当作不过期，不再续期。
+    /// 续期用刷新令牌；响应没有 `expires_in` 时当作不过期，之后不续期。
     @Test("用刷新令牌续期")
     func refreshGrant() async throws {
         let instance = try #require(HostingInstance.gitlab(address: "http://10.0.0.5:8080"))

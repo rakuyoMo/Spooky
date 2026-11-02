@@ -2455,7 +2455,7 @@
 "pullRequests.fetch.title" = "커밋을 아직 가져오지 않음";
 "pullRequests.fetch.message" = "%1$@의 커밋이 아직 이 저장소에 없습니다. 커밋과 변경 사항을 보려면 “%2$@”에서 가져오세요.";
 "pullRequests.header.info" = "%1$@ 님이 %4$@의 %2$@을(를) %3$@에 병합하려고 합니다";
-"pullRequests.header.infoWithoutCommits" = "%1$@ 님이 %3$@을(를) %2$@에 병합하려고 합니다";
+"pullRequests.header.direction" = "%1$@ 님이 %3$@을(를) %2$@에 병합하려고 합니다";
 "pullRequests.header.commits" = "커밋 %ld 개";
 "pullRequests.header.commits.one" = "커밋 1 개";
 "pullRequests.header.assignees" = "담당자";

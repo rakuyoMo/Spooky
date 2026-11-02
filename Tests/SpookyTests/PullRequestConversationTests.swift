@@ -172,7 +172,7 @@ struct PullRequestConversationTests {
 
         #expect(
             String(unknown.characters)
-                == AppLocalization.text("pullRequests.header.infoWithoutCommits", "alice", "main_**", "feat/*bold*_x_")
+                == AppLocalization.text("pullRequests.header.direction", "alice", "main_**", "feat/*bold*_x_")
         )
 
         #expect(emphasized(unknown) == ["alice", "main_**", "feat/*bold*_x_"])

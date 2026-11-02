@@ -2455,7 +2455,7 @@
 "pullRequests.fetch.title" = "コミットがまだフェッチされていません";
 "pullRequests.fetch.message" = "%1$@ のコミットはまだこのリポジトリにありません。コミットと変更内容を見るには「%2$@」からフェッチしてください。";
 "pullRequests.header.info" = "%1$@ が %4$@ の %2$@ を %3$@ にマージしようとしています";
-"pullRequests.header.infoWithoutCommits" = "%1$@ が %3$@ を %2$@ にマージしようとしています";
+"pullRequests.header.direction" = "%1$@ が %3$@ を %2$@ にマージしようとしています";
 "pullRequests.header.commits" = "%ld 件のコミット";
 "pullRequests.header.commits.one" = "1 件のコミット";
 "pullRequests.header.assignees" = "担当者";

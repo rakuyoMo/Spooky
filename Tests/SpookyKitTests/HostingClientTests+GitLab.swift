@@ -87,7 +87,7 @@ extension HostingClientTests {
         }
     }
 
-    /// 有 `detailed_merge_status` 时照它判断，`broken_status` 是冲突，不再调审批接口。
+    /// 有 `detailed_merge_status` 时照它判断，`broken_status` 是冲突，不另调审批接口。
     @Test("GitLab 的 broken_status")
     func brokenStatus() async throws {
         let fields = Self.legacyRequest(["detailed_merge_status": "broken_status", "has_conflicts": false])
@@ -148,7 +148,7 @@ extension HostingClientTests {
         #expect(both.assignees.map(\.username) == ["bob", "carol"])
     }
 
-    /// 10.3 以前不认 `sort` 与 `order_by`：读完全部页后按发表时间排，时间相同的按编号；参数照旧带上。
+    /// 10.3 以前不认 `sort` 与 `order_by`：读完全部页后按发表时间排，时间相同的按编号；请求里仍带着这两个参数。
     @Test("旧版 GitLab 的评论顺序")
     func legacyNotesOrder() async throws {
         let first =
@@ -219,7 +219,7 @@ extension HostingClientTests {
 // MARK: - Merge
 
 extension HostingClientTests {
-    /// 合并接口回 200 而请求还开着时是合并失败，带 `merge_error`，没有时为空；405、406、422 都是冲突，409 照旧。
+    /// 合并接口回 200 而请求还开着时是合并失败，带 `merge_error`，没有时为空；405、406、422 都是冲突，409 按一般的拒绝分类。
     @Test("GitLab 合并失败与冲突")
     func gitlabMergeFailures() async throws {
         let request = try Self.decodeLegacy(Self.legacyRequest())

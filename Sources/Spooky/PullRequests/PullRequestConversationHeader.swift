@@ -57,7 +57,7 @@ struct PullRequestConversationHeader: View {
         let source = PullRequestText.source(of: request)
 
         guard let commitCount else {
-            return emphasized(AppLocalization.format("pullRequests.header.infoWithoutCommits"), [author, target, source])
+            return emphasized(AppLocalization.format("pullRequests.header.direction"), [author, target, source])
         }
 
         let commits =

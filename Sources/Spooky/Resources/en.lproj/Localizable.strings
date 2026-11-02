@@ -2455,7 +2455,7 @@
 "pullRequests.fetch.title" = "Commits Not Fetched";
 "pullRequests.fetch.message" = "The commits of %1$@ aren’t in this repository yet. Fetch them from “%2$@” to see its commits and changes.";
 "pullRequests.header.info" = "%1$@ wants to merge %2$@ into %3$@ from %4$@";
-"pullRequests.header.infoWithoutCommits" = "%1$@ wants to merge into %2$@ from %3$@";
+"pullRequests.header.direction" = "%1$@ wants to merge into %2$@ from %3$@";
 "pullRequests.header.commits" = "%ld commits";
 "pullRequests.header.commits.one" = "1 commit";
 "pullRequests.header.assignees" = "Assignees";

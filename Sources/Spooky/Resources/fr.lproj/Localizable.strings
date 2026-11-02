@@ -2455,7 +2455,7 @@
 "pullRequests.fetch.title" = "Commits non récupérés";
 "pullRequests.fetch.message" = "Les commits de %1$@ ne sont pas encore dans ce dépôt. Récupérez-les depuis « %2$@ » pour voir ses commits et modifications.";
 "pullRequests.header.info" = "%1$@ souhaite fusionner %2$@ dans %3$@ depuis %4$@";
-"pullRequests.header.infoWithoutCommits" = "%1$@ souhaite fusionner dans %2$@ depuis %3$@";
+"pullRequests.header.direction" = "%1$@ souhaite fusionner dans %2$@ depuis %3$@";
 "pullRequests.header.commits" = "%ld commits";
 "pullRequests.header.commits.one" = "1 commit";
 "pullRequests.header.assignees" = "Responsables";

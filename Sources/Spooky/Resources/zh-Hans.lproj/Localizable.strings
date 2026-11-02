@@ -2455,7 +2455,7 @@
 "pullRequests.fetch.title" = "提交还没有获取";
 "pullRequests.fetch.message" = "%1$@ 的提交还不在这个仓库里。从 “%2$@” 获取后才能查看它的提交与改动。";
 "pullRequests.header.info" = "%1$@ 想把 %4$@ 上的 %2$@ 合并进 %3$@";
-"pullRequests.header.infoWithoutCommits" = "%1$@ 想把 %3$@ 合并进 %2$@";
+"pullRequests.header.direction" = "%1$@ 想把 %3$@ 合并进 %2$@";
 "pullRequests.header.commits" = "%ld 个提交";
 "pullRequests.header.commits.one" = "1 个提交";
 "pullRequests.header.assignees" = "指派";

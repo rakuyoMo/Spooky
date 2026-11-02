@@ -8,7 +8,7 @@ import SwiftUI
 /// 头部文字与错误文字对齐内容区的输入列，应用图标挂在头部文字左侧；内容区的边距由内容自己决定。
 /// 输入列由 `DialogFormRow` 报上来，标签长时随之右移；内容区没有输入列时对齐 `DialogMetrics.alignment`。
 /// 内容区里要按输入列定宽或缩进的部分，用 `DialogInputColumnReader` 读到它。
-/// 用于身份档案、Issue 追踪设置、仓库管理，以及请求的新建、修改、评论、描述与检出；要随仓库可写状态禁用的，由调用方给出主按钮与错误区。
+/// 要随仓库可写状态禁用的对话框，由调用方给出主按钮与错误区。
 /// 等待中的步骤写在底栏左侧，前面是小号转圈。
 struct DialogLayout<Content: View>: View {
     /// 对话框标题，也是 VoiceOver 读出的名称。

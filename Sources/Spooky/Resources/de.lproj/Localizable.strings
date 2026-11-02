@@ -2455,7 +2455,7 @@
 "pullRequests.fetch.title" = "Commits nicht abgerufen";
 "pullRequests.fetch.message" = "Die Commits von %1$@ sind noch nicht in diesem Repository. Rufen Sie sie von „%2$@“ ab, um Commits und Änderungen zu sehen.";
 "pullRequests.header.info" = "%1$@ möchte %2$@ aus %4$@ in %3$@ mergen";
-"pullRequests.header.infoWithoutCommits" = "%1$@ möchte aus %3$@ in %2$@ mergen";
+"pullRequests.header.direction" = "%1$@ möchte aus %3$@ in %2$@ mergen";
 "pullRequests.header.commits" = "%ld Commits";
 "pullRequests.header.commits.one" = "1 Commit";
 "pullRequests.header.assignees" = "Zugewiesen";

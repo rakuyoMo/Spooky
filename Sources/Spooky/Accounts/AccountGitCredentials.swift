@@ -65,7 +65,7 @@ final class AccountGitCredentials {
             .filter { association in items.contains { $0.id == association.value.account } }
             .keys
             .sorted()
-            .compactMap(Self.withoutCredentials)
+            .compactMap(Self.scopePrefix)
 
         var seen = Set<String>()
         return (instances + remotes).filter { Self.isHTTPS($0) && seen.insert($0).inserted }
@@ -199,8 +199,8 @@ extension AccountGitCredentials {
         address.lowercased().hasPrefix("https://")
     }
 
-    /// 去掉地址里的用户名与口令；解析不了时为 nil。
-    private static func withoutCredentials(_ address: String) -> String? {
+    /// 关联远端在作用域里的前缀：地址去掉用户名与口令；解析不了时为 nil。
+    private static func scopePrefix(_ address: String) -> String? {
         guard var components = URLComponents(string: address) else {
             return nil
         }

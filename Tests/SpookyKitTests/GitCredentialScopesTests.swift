@@ -11,7 +11,7 @@ import Testing
 /// 前缀是进程级的全局设置，本组测试串行执行，结束时清空。
 @Suite(.serialized)
 struct GitCredentialScopesTests {
-    /// 作用域内只问 Spooky 的助手，助手拿到路径，它的回答成为凭据；作用域外仍问原来的助手。
+    /// 作用域内只问 Spooky 的助手，助手拿到路径，它的回答成为凭据；作用域外问仓库配的助手。
     @Test("作用域内外的凭据助手")
     func scopedHelpers() async throws {
         let fixture = try TemporaryRepository()
@@ -46,7 +46,7 @@ struct GitCredentialScopesTests {
 
         try FileManager.default.removeItem(at: spooky.log)
 
-        // 别的主机不在作用域内，照旧问仓库配的助手
+        // 别的主机不在作用域内，仍问仓库配的助手
         let outside = try await Self.fill(
             fixture,
             options: options,
