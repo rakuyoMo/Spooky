@@ -31,9 +31,11 @@ public struct PullRequestID: Sendable, Hashable, Codable {
 /// 请求的状态。
 public enum PullRequestState: String, Sendable, Hashable {
     /// 打开着，可以合并或关闭。
-    case /// 已关闭，没有合并。
-        open
+    ///
+    /// 名字带反引号：不带时格式化工具把 `open` 当成访问修饰符，会把下一个 case 的注释挪到它前面。
+    case `open`
 
+    /// 已关闭，没有合并。
     case closed
 
     /// 已合并。
