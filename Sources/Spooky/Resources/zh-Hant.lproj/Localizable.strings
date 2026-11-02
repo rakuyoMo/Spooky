@@ -444,6 +444,7 @@
 "menu.repository" = "儲存庫";
 "callback.privateKey" = "解鎖 SSH 私密金鑰";
 "callback.privateKey.help" = "解鎖後的私密金鑰將加入 SSH agent。";
+"callback.accountTokenRejected" = "帳號 “%@” 的權杖未能通過認證，請輸入使用者名稱與密碼。";
 "history.unpushed" = "尚未推送";
 "history.unpulled" = "尚未拉取";
 "branch.deleteMultiple" = "刪除分支";

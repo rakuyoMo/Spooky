@@ -444,6 +444,7 @@
 "menu.repository" = "Repository";
 "callback.privateKey" = "Unlock Private SSH Key";
 "callback.privateKey.help" = "The unlocked key will be added to the SSH agent.";
+"callback.accountTokenRejected" = "The token of the account “%@” wasn’t accepted. Enter a username and password.";
 "history.unpushed" = "Not pushed";
 "history.unpulled" = "Not pulled";
 "branch.deleteMultiple" = "Delete Branches";

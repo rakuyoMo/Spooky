@@ -444,6 +444,7 @@
 "menu.repository" = "Repository";
 "callback.privateKey" = "Privaten SSH-Schlüssel entsperren";
 "callback.privateKey.help" = "Der entsperrte Schlüssel wird zum SSH-Agenten hinzugefügt.";
+"callback.accountTokenRejected" = "Das Token des Accounts „%@“ wurde nicht akzeptiert. Geben Sie Benutzername und Passwort ein.";
 "history.unpushed" = "Nicht gepusht";
 "history.unpulled" = "Nicht gepullt";
 "branch.deleteMultiple" = "Branches löschen";

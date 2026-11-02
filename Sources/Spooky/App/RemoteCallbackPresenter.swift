@@ -20,9 +20,14 @@ final class RemoteCallbackPresenter {
     /// 当前输入的超时任务，与 B 侧的 120 秒上限一致。
     private var timeout: Task<Void, Never>? = nil
 
-    /// 已存凭据直接从 A 的钥匙串取出，其余请求排队呈现。
+    /// 已存凭据直接从 A 的钥匙串取出，其余请求排队呈现；凭据助手的请求交给账号令牌回答。
     func respond(to request: RemoteCallbackRequest) async -> String? {
         guard !Task.isCancelled else { return nil }
+
+        // 账号令牌不经弹框，不能询问用户的操作同样回答；对不上账号时 Git 接着问 askpass
+        if request.kind == .credential {
+            return await AccountGitCredentials.shared.respond(to: request)
+        }
 
         if request.kind != .editor, let saved = credential(for: request) { return saved }
 
@@ -53,15 +58,10 @@ final class RemoteCallbackPresenter {
             switch request.kind {
             case .editor: "callback.editor"
             case .signing: "signing.unlock"
-            case .askpass, .sshAskpass: privateKey ? "callback.privateKey" : "callback.credentials"
+            case .askpass, .sshAskpass, .credential: privateKey ? "callback.privateKey" : "callback.credentials"
             }
         alert.messageText = AppLocalization.text(title)
-        alert.informativeText = request.host + "\n" + request.prompt
-            + (
-                privateKey && request.host.hasPrefix("/")
-                    ? "\n\n" + AppLocalization.text("callback.privateKey.help")
-                    : ""
-            )
+        alert.informativeText = informativeText(for: request, privateKey: privateKey)
         alert.addButton(withTitle: AppLocalization.text("action.continue"))
         alert.addButton(withTitle: AppLocalization.text("action.cancel"))
         let input: NSView
@@ -116,6 +116,21 @@ final class RemoteCallbackPresenter {
 
             finish(request.id, value: answer)
         }
+    }
+
+    /// 输入框的说明：主机或仓库路径与 Git 原始提示；本机的私钥口令补上加入 agent 的说明，账号令牌被拒过的地址补上原因。
+    private func informativeText(for request: RemoteCallbackRequest, privateKey: Bool) -> String {
+        var text = request.host + "\n" + request.prompt
+
+        if privateKey, request.host.hasPrefix("/") {
+            text += "\n\n" + AppLocalization.text("callback.privateKey.help")
+        }
+
+        if request.kind == .askpass, let account = AccountGitCredentials.shared.rejectedAccount(forPrompt: request.prompt) {
+            text += "\n\n" + AppLocalization.text("callback.accountTokenRejected", account.username)
+        }
+
+        return text
     }
 
     /// 取消正在显示或排队的输入，只有持有应答的一方可以恢复 continuation。

@@ -21,6 +21,9 @@ public struct RemoteCallbackRequest: Sendable {
 
         /// 提交签名密钥的口令，来自 gpg 的 loopback 索取或 ssh-keygen 解锁签名私钥。
         case signing
+
+        /// Git 凭据助手协议的请求：HTTPS 地址属于 ``GitCredentialScopes`` 时由账号令牌回答，不询问用户。
+        case credential
     }
 
     /// 服务器主机别名或本机仓库路径，用于区分凭据上下文。
@@ -35,10 +38,10 @@ public struct RemoteCallbackRequest: Sendable {
     /// 提示类型，决定使用安全输入框还是文本编辑器。
     public let kind: Kind
 
-    /// Git 或 SSH 的原始提示。
+    /// Git 或 SSH 的原始提示；凭据助手的请求是 Git 给的动作，`get` 或 `erase`。
     public let prompt: String
 
-    /// 编辑器的初始文本，仅存在内存中。
+    /// 编辑器的初始文本，仅存在内存中；凭据助手的请求是 `<协议>://<主机>/<路径>` 形式的地址，不含用户名与密码。
     public let content: String?
 
     /// 发起回调的操作能否询问用户；不能时只用已存的凭据，取不到就按取消处理。
@@ -335,12 +338,8 @@ final class CallbackRelay: Sendable {
                     $0.clients[client]?.id == id
                 else { return false }
 
-                if
-                    request.kind != .editor,
-                    !request.prompt.lowercased().hasPrefix("username"),
-                    let response, !response.isEmpty
-                {
-                    $0.secrets[message.operation, default: []].append(Data(response.utf8))
+                if let secret = Self.secret(in: response, for: request) {
+                    $0.secrets[message.operation, default: []].append(Data(secret.utf8))
                 }
 
                 return true
@@ -433,5 +432,32 @@ extension CallbackRelay {
     /// 读取本操作已经交付的敏感值，供跨输出块脱敏使用。
     func sensitiveValues(for operation: String) -> [Data] {
         state.withLock { $0.secrets[operation] ?? [] }
+    }
+}
+
+// MARK: - Helpers
+
+extension CallbackRelay {
+    /// 应答里要从输出中遮住的值：编辑器文本与用户名不遮；凭据助手的应答只遮 `password=` 行的值，其余的应答整段遮住。
+    private static func secret(in response: String?, for request: RemoteCallbackRequest) -> String? {
+        guard let response, !response.isEmpty else {
+            return nil
+        }
+
+        switch request.kind {
+        case .editor:
+            return nil
+
+        case .credential:
+            let password = response
+                .split(separator: "\n")
+                .first { $0.hasPrefix("password=") }?
+                .dropFirst("password=".count)
+
+            return password.flatMap { $0.isEmpty ? nil : String($0) }
+
+        case .askpass, .sshAskpass, .signing:
+            return request.prompt.lowercased().hasPrefix("username") ? nil : response
+        }
     }
 }

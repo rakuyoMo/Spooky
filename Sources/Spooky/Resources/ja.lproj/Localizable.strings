@@ -444,6 +444,7 @@
 "menu.repository" = "リポジトリ";
 "callback.privateKey" = "SSH 秘密鍵を解除";
 "callback.privateKey.help" = "解除した鍵を SSH エージェントに追加します。";
+"callback.accountTokenRejected" = "アカウント「%@」のトークンが認証されませんでした。ユーザ名とパスワードを入力してください。";
 "history.unpushed" = "未プッシュ";
 "history.unpulled" = "未プル";
 "branch.deleteMultiple" = "ブランチを削除";

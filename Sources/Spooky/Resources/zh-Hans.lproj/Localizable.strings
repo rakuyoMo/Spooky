@@ -444,6 +444,7 @@
 "menu.repository" = "仓库";
 "callback.privateKey" = "解锁 SSH 私钥";
 "callback.privateKey.help" = "解锁后的私钥将加入 SSH agent。";
+"callback.accountTokenRejected" = "账号 “%@” 的令牌没能通过认证，请输入用户名与密码。";
 "history.unpushed" = "尚未推送";
 "history.unpulled" = "尚未拉取";
 "branch.deleteMultiple" = "删除分支";

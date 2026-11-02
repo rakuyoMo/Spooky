@@ -401,6 +401,37 @@ if ($mode eq 'create-session') {
     } else {
         print encode('UTF-8', $value), "\n";
     }
+} elsif ($mode eq 'credential') {
+    # Git 的凭据助手协议：get 与 erase 只把地址交给 A，令牌只经中继回到标准输出；store 等动作不交给 A，凭据不另存。
+    my $action = shift(@ARGV) // '';
+    exit 0 unless $action eq 'get' || $action eq 'erase';
+
+    my $session = $ENV{SPOOKY_SESSION} // die "callback session missing\n";
+    my $operation = $ENV{SPOOKY_OPERATION} // die "callback operation missing\n";
+    my %fields;
+
+    # 只取协议、主机与路径；erase 带来的密码与新版 Git 的 capability、wwwauth 等行都丢掉。
+    while (my $line = <STDIN>) {
+        $line =~ s/\r?\n\z//;
+        last if $line eq '';
+
+        my ($key, $value) = split(/=/, $line, 2);
+        $fields{$key} = $value if defined $value && $key =~ /\A(?:protocol|host|path)\z/;
+    }
+
+    exit 0 unless defined $fields{protocol} && defined $fields{host};
+
+    my $address = "$fields{protocol}://$fields{host}/" . ($fields{path} // '');
+    my $request = {
+        kind => 'credential',
+        operation => $operation,
+        prompt => $action,
+        content => decode('UTF-8', $address)
+    };
+
+    # A 不回答、拒绝或超时时什么都不输出，Git 接着问 askpass。
+    my $value = eval { relay_request($session, $request, 120) } // '';
+    print encode('UTF-8', $value) if $action eq 'get';
 } elsif ($mode eq 'ssh') {
     $ENV{SSH_ASKPASS} = "$0-askpass";
     $ENV{SSH_ASKPASS_REQUIRE} = 'force';

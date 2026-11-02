@@ -215,7 +215,7 @@ extension HostingAccountsTests {
 // MARK: - MemoryCredentials
 
 /// 只存在内存里的令牌，可以模拟钥匙串拒绝写入。
-private final class MemoryCredentials: HostingCredentialStore {
+final class MemoryCredentials: HostingCredentialStore {
     /// 按账号标识存放的令牌。
     private let tokens = Mutex<[UUID: String]>([:])
 

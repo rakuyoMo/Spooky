@@ -444,6 +444,7 @@
 "menu.repository" = "Repositorio";
 "callback.privateKey" = "Desbloquear clave privada SSH";
 "callback.privateKey.help" = "La clave desbloqueada se añadirá al agente SSH.";
+"callback.accountTokenRejected" = "No se aceptó el token de la cuenta “%@”. Introduce un nombre de usuario y una contraseña.";
 "history.unpushed" = "Pendiente de push";
 "history.unpulled" = "Pendiente de pull";
 "branch.deleteMultiple" = "Eliminar ramas";

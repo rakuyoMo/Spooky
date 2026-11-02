@@ -178,10 +178,11 @@ If you declined, you can turn them on again in **System Settings › Notificatio
 
 - When Git on the server needs a password, an SSH private key passphrase, a signing key passphrase, or an editor, the request comes back to your Mac through a reverse Unix socket on the current master connection, and Spooky shows a dialog
 - Network operations in local repositories also ask for credentials through a private Unix socket callback. After an SSH private key is unlocked, OpenSSH adds it to the current SSH agent
+- When an HTTPS remote belongs to a signed-in hosting account, Git authenticates with the account's token without asking, in local repositories and on servers alike. The account is found the same way as for pull requests, including remotes you associated by hand. On a server, the token comes back through the reverse Unix socket and isn't written to the server. These addresses don't use your own Git credential helpers. If Git rejects the token, Spooky asks for a username and password and says that the account's token wasn't accepted
 - Local commits, merges, rebases, cherry-picks, and reverts ask for SSH signing key passphrases the same way. GPG passphrases are handled by your Mac's own pinentry
 - Credentials stay in memory by default. They're written to your Mac's Keychain only when you select **Save in this Mac’s Keychain**
 - Credentials are never written to temporary files, activity logs, or error messages, and credentials echoed in output are hidden
-- Automatic fetches never show a dialog. They only use credentials saved in the Keychain, and if none are available, the failure is only recorded in the **Activity** window
+- Automatic fetches never show a dialog. They only use account tokens and credentials saved in the Keychain, and if none are available, the failure is only recorded in the **Activity** window
 - Signature checks never download keys from key servers or update the GPG trust database, on your Mac or on the server
 
 ### Data and system changes

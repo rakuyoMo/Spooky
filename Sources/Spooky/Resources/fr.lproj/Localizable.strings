@@ -444,6 +444,7 @@
 "menu.repository" = "Dépôt";
 "callback.privateKey" = "Déverrouiller la clé SSH privée";
 "callback.privateKey.help" = "La clé déverrouillée sera ajoutée à l’agent SSH.";
+"callback.accountTokenRejected" = "Le jeton du compte « %@ » n’a pas été accepté. Saisissez un nom d’utilisateur et un mot de passe.";
 "history.unpushed" = "Non poussé";
 "history.unpulled" = "Non tiré";
 "branch.deleteMultiple" = "Supprimer les branches";

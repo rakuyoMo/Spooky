@@ -39,12 +39,12 @@ extension RemoteConnection {
 
     /// 每条远端 Git 命令附加的回调配置：凭据、编辑器、SSH 与提交签名的交互都经本会话中继回到 A。
     ///
-    /// 编辑器与 SSH 命令由 Git 交给 shell 执行，需要转义；askpass 与签名程序直接执行，路径原样传入。
+    /// 编辑器、SSH 命令与凭据助手由 Git 交给 shell 执行，需要转义；askpass 与签名程序直接执行，路径原样传入。
+    /// B 上的凭据助手先全部清空，``GitCredentialScopes`` 里的地址再交给包装器，由 A 用账号令牌回答。
     static func callbackOptions(wrapper: String) -> [String] {
         let callback = GitRunner.shellQuoted(wrapper)
 
-        return [
-            "-c", "credential.helper=",
+        return ["-c", "credential.helper="] + GitCredentialScopes.options(callback: callback) + [
             "-c", "core.askPass=\(wrapper)-git-askpass",
             "-c", "core.editor=\(callback) editor",
             "-c", "sequence.editor=\(callback) editor",

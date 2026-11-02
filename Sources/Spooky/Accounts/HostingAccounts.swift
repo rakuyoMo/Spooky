@@ -93,6 +93,12 @@ final class HostingAccounts {
     /// 已登录的账号，按添加的先后排列。
     private(set) var items: [HostingAccount]
 
+    /// Git 拒绝过令牌的账号：只记在内存里，重新认证或移除后清掉。
+    ///
+    /// 与 ``HostingAccount/needsReauthentication`` 分开记：接口令牌可能仍然有效，如 GitLab 令牌只缺 `write_repository`。
+    @ObservationIgnored
+    private(set) var gitRejectedAccounts: Set<UUID> = []
+
     /// 存放账号列表的偏好。
     @ObservationIgnored
     private let defaults: UserDefaults
@@ -189,6 +195,9 @@ final class HostingAccounts {
             items.append(account)
         }
 
+        // 换上新令牌后，Git 再次用账号令牌认证
+        gitRejectedAccounts.remove(account.id)
+
         persist()
         return account
     }
@@ -208,6 +217,7 @@ final class HostingAccounts {
     /// 移除账号并删除它的令牌。
     func remove(_ account: HostingAccount) {
         credentials.removeToken(for: account)
+        gitRejectedAccounts.remove(account.id)
         items.removeAll { $0.id == account.id }
         persist()
     }
@@ -220,6 +230,11 @@ final class HostingAccounts {
 
         items[index].needsReauthentication = true
         persist()
+    }
+
+    /// Git 拒绝了账号的令牌时记下，之后这个账号的远端回到询问用户名与密码。
+    func markGitTokenRejected(_ account: HostingAccount) {
+        gitRejectedAccounts.insert(account.id)
     }
 
     /// 把账号列表写回偏好。
