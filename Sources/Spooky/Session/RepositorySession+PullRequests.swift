@@ -81,7 +81,9 @@ extension RepositorySession {
 
     /// 发表评论。
     func addComment(_ body: String, to request: PullRequest) -> Bool {
-        performHosting(title: AppLocalization.text("pullRequests.comment.title")) { client in
+        let service = AccountsSettingsView.serviceTitle(request.id.instance)
+
+        return performHosting(title: pullRequestText("comment.title", service)) { client in
             try await client.addComment(body, to: request.id)
             return nil
         }

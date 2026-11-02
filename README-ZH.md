@@ -67,7 +67,7 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **托管账号**：github.com 可以在浏览器里登录或填个人访问令牌，GitLab.com 填个人访问令牌，私有部署的 GitLab 可以填个人访问令牌或用户名与密码。同一服务可以有多个账号，令牌只保存在钥匙串里
 
-- **Pull Request 与 Merge Request**：按远端列出 GitHub 仓库的 Pull Request 或 GitLab 项目的 Merge Request，查看讨论、提交与改动。可以从同一项目或 Fork 的分支新建，修改、评论、关闭，按项目允许的方式合并，以及检出。经 SSH 别名的远端可以手动关联到账号与项目，仓库也可以发布到 GitHub 或 GitLab
+- **Pull Request 与 Merge Request**：按远端列出 GitHub 仓库的 Pull Request 或 GitLab 项目的 Merge Request，查看讨论、提交与改动。可以从同一项目或 Fork 的分支新建，修改、评论、关闭，按项目允许的方式合并，以及检出。自己的评论可以修改与删除，GitLab 上还可以回复评论。经 SSH 别名的远端可以手动关联到账号与项目，仓库也可以发布到 GitHub 或 GitLab
 
 - **子模块**：添加、初始化、更新、同步、获取、移动、改名和删除子模块，删除时可以保留文件；修改地址与选项，检出其它版本。配置不完整的子模块可以修复；子模块可以在 Spooky 里打开，并一键回到父仓库
 

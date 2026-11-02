@@ -4,7 +4,7 @@ import SpookyKit
 // MARK: - Actions
 
 extension PullRequestConversationView.Coordinator {
-    /// 右键菜单按作用的行现拼，不改变选区；作用的行全是提交时才有菜单。
+    /// 右键菜单按作用的行现拼，不改变选区：作用的行全是提交，或恰好是一条评论或描述时才有菜单。
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
@@ -17,9 +17,15 @@ extension PullRequestConversationView.Coordinator {
             return commit
         }
 
-        guard !commits.isEmpty, commits.count == nodes.count else { return }
+        let items: [NSMenuItem] =
+            switch nodes.first?.item {
+            case .comment(let comment) where nodes.count == 1: commentMenuItems(comment)
+            case .description where nodes.count == 1: descriptionMenuItems()
+            case _ where !commits.isEmpty && commits.count == nodes.count: commitMenuItems(commits)
+            default: []
+            }
 
-        for item in commitMenuItems(commits) {
+        for item in items {
             menu.addItem(item)
         }
     }
@@ -57,11 +63,81 @@ extension PullRequestConversationView.Coordinator {
         return rows.compactMap { outline.item(atRow: $0) as? PullRequestConversationView.Node }
     }
 
-    /// 作用的第一行是提交时回到历史打开它；其余的行不做事。
+    /// 作用的第一行：提交回到历史打开它，评论与描述在能修改时打开修改的对话框、否则提示音；其余的行不做事。
     private func open(_ nodes: [PullRequestConversationView.Node]) {
-        guard case .commit(let commit) = nodes.first?.item else { return }
+        let session = parent.session
+        let request = parent.request
 
-        parent.session.showCommit(commit)
+        switch nodes.first?.item {
+        case .commit(let commit):
+            session.showCommit(commit)
+
+        case .comment(let comment):
+            guard session.canModify(comment) else {
+                NSSound.beep()
+                return
+            }
+
+            session.requestPullRequest(.editComment(request, comment))
+
+        case .description:
+            guard session.canEditDescription(of: request) else {
+                NSSound.beep()
+                return
+            }
+
+            session.requestPullRequest(.editDescription(request))
+
+        default:
+            break
+        }
+    }
+
+    /// 描述：只有修改描述，自己的请求才启用。
+    private func descriptionMenuItems() -> [NSMenuItem] {
+        let session = parent.session
+        let request = parent.request
+
+        let edit = FileViewAction(
+            title: AppLocalization.text("pullRequests.editDescription.menu"),
+            enabled: session.canEditDescription(of: request)
+        ) {
+            session.requestPullRequest(.editDescription(request))
+        }
+
+        return [FileViewMenuItem(edit)]
+    }
+
+    /// 一条评论：修改、托管服务支持时的回复、分隔线与删除；菜单项总在，按能否修改与回复启用。
+    private func commentMenuItems(_ comment: PullRequestComment) -> [NSMenuItem] {
+        let session = parent.session
+        let request = parent.request
+        let canModify = session.canModify(comment)
+
+        let edit = FileViewAction(
+            title: AppLocalization.text("pullRequests.editComment.menu"),
+            enabled: canModify
+        ) {
+            session.requestPullRequest(.editComment(request, comment))
+        }
+
+        let reply = FileViewAction(
+            title: AppLocalization.text("pullRequests.replyComment.menu"),
+            enabled: session.canReplyToComments
+        ) {
+            session.requestPullRequest(.replyToComment(request, comment))
+        }
+
+        let delete = FileViewAction(
+            title: AppLocalization.text("pullRequests.deleteComment.menu"),
+            enabled: canModify
+        ) {
+            session.requestPullRequest(.deleteComment(request, comment))
+        }
+
+        let replies = request.id.instance.service.supportsCommentReplies ? [FileViewMenuItem(reply)] : []
+
+        return [FileViewMenuItem(edit)] + replies + [.separator(), FileViewMenuItem(delete)]
     }
 
     /// 一个提交：复制哈希、分隔线与打开提交；几个提交：只有复制全部哈希。

@@ -18,6 +18,18 @@ enum PullRequestRequest {
     /// 发表评论。
     case comment(PullRequest)
 
+    /// 修改请求里的一条评论。
+    case editComment(PullRequest, PullRequestComment)
+
+    /// 回复请求里的一条评论。
+    case replyToComment(PullRequest, PullRequestComment)
+
+    /// 删除请求里的一条评论。
+    case deleteComment(PullRequest, PullRequestComment)
+
+    /// 只修改请求的描述。
+    case editDescription(PullRequest)
+
     /// 检出成本地分支。
     case checkout(PullRequest)
 

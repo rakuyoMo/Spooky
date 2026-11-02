@@ -93,6 +93,41 @@ extension HostingClient {
         return notes.sorted { ($0.createdAt, $0.id) < ($1.createdAt, $1.id) }
     }
 
+    /// 回复一条评论：先找到评论所在的讨论，再在讨论里加一条；单条评论回复后同样成为一个讨论。
+    func replyToGitLabNote(_ noteID: Int, body: String, on id: PullRequestID) async throws {
+        let request = Self.gitlabProject(id.project) + "/merge_requests/\(id.number)"
+        var page: Int? = 1
+
+        // 评论接口的响应里没有讨论编号，逐页读讨论找到含这条评论的一个
+        while let current = page {
+            let response: HostingResponse<[GitLabDiscussion]> = try await send(
+                "GET",
+                request + "/discussions",
+                query: [
+                    URLQueryItem(name: "per_page", value: "100"),
+                    URLQueryItem(name: "page", value: String(current)),
+                ]
+            )
+
+            if let discussion = response.value.first(where: { $0.notes.contains { $0.id == noteID } }) {
+                let payload = try JSONEncoder().encode(["body": body])
+
+                try await perform(
+                    "POST",
+                    request + "/discussions/" + Self.encodedSegment(discussion.id) + "/notes",
+                    body: payload
+                )
+
+                return
+            }
+
+            page = response.nextPage
+        }
+
+        // 读完都没有这条评论：它已在别处被删除
+        throw HostingError.notFound("")
+    }
+
     /// 新建 Merge Request：建在源项目里，来自 Fork 时带上目标项目的编号。
     func createGitLabMergeRequest(_ draft: PullRequestDraft) async throws -> PullRequest {
         var fields: [String: GitLabValue] = [
@@ -322,6 +357,23 @@ private struct GitLabNote: Decodable, Sendable {
 
     /// 是系统记录。
     let system: Bool?
+}
+
+// MARK: - GitLabDiscussion
+
+/// GitLab Merge Request 上的一个讨论：单条评论也自成一个讨论。
+private struct GitLabDiscussion: Decodable, Sendable {
+    /// 讨论里的一条评论，只取编号。
+    struct Note: Decodable, Sendable {
+        /// 评论编号。
+        let id: Int
+    }
+
+    /// 讨论编号，十六进制的字符串。
+    let id: String
+
+    /// 讨论里的评论，按时间排列。
+    let notes: [Note]
 }
 
 // MARK: - GitLabProject

@@ -117,6 +117,38 @@ extension RepositoryWindowController {
             case .comment(let request):
                 AnyView(PullRequestTextDialog(session: session, request: request, kind: .comment, close: close))
 
+            case .editComment(let request, let comment):
+                AnyView(PullRequestTextDialog(
+                    session: session,
+                    request: request,
+                    kind: .editComment(comment),
+                    close: close
+                ))
+
+            case .replyToComment(let request, let comment):
+                AnyView(PullRequestTextDialog(
+                    session: session,
+                    request: request,
+                    kind: .reply(comment),
+                    close: close
+                ))
+
+            case .deleteComment(let request, let comment):
+                AnyView(PullRequestTextDialog(
+                    session: session,
+                    request: request,
+                    kind: .deleteComment(comment),
+                    close: close
+                ))
+
+            case .editDescription(let request):
+                AnyView(PullRequestTextDialog(
+                    session: session,
+                    request: request,
+                    kind: .editDescription,
+                    close: close
+                ))
+
             case .checkout(let request):
                 AnyView(PullRequestTextDialog(session: session, request: request, kind: .checkout, close: close))
 

@@ -379,84 +379,6 @@ extension MergePullRequestDialog {
     }
 }
 
-// MARK: - PullRequestTextDialog
-
-/// 只有一个输入的对话框：发表评论，或检出时填本地分支名。
-struct PullRequestTextDialog: View {
-    /// 对话框的用途。
-    enum Kind {
-        /// 发表评论。
-        case comment
-
-        /// 检出成本地分支。
-        case checkout
-    }
-
-    /// 发起动作的窗口会话。
-    let session: RepositorySession
-
-    /// 请求。
-    let request: PullRequest
-
-    /// 对话框的用途。
-    let kind: Kind
-
-    /// 关闭 sheet。
-    let close: () -> Void
-
-    /// 输入的内容。
-    @State
-    private var text = ""
-
-    /// 评论的多行输入，或分支名的单行输入。
-    var body: some View {
-        ReferenceDialogLayout(
-            session: session,
-            title: kind == .comment
-                ? AppLocalization.text("pullRequests.comment.title")
-                : session.pullRequestText("checkout.title"),
-            message: kind == .comment
-                ? session.pullRequestText("comment.message", request.id.reference)
-                : session.pullRequestText("checkout.message", request.id.reference, PullRequestText.source(of: request)),
-            submitTitle: AppLocalization.text(kind == .comment ? "pullRequests.comment.title" : "pullRequests.checkout"),
-            error: "",
-            isValid: !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-            cancel: close,
-            submit: submit
-        ) {
-            switch kind {
-            case .comment:
-                ReferenceDialogRows.row(AppLocalization.text("pullRequests.comment")) {
-                    TextEditor(text: $text)
-                        .font(.system(size: 13))
-                        .frame(height: 140)
-                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(AppPalette.color("general_border_color")))
-                }
-
-            case .checkout:
-                ReferenceDialogRows.row(AppLocalization.text("pullRequests.branchName")) {
-                    TextField("", text: $text)
-                }
-            }
-        }
-        .onAppear {
-            // 检出时预填源分支名
-            if kind == .checkout { text = request.source.branch }
-        }
-    }
-
-    /// 开始后关闭。
-    private func submit() {
-        let started =
-            switch kind {
-            case .comment: session.addComment(text, to: request)
-            case .checkout: session.checkoutPullRequest(request, as: text.trimmingCharacters(in: .whitespaces))
-            }
-
-        if started { close() }
-    }
-}
-
 // MARK: - AssociateRemoteDialog
 
 /// 把远端手动关联到一个账号与项目：别名、克隆地址与实例不一致时使用。
@@ -509,6 +431,7 @@ struct AssociateRemoteDialog: View {
         }
         .onAppear {
             account = session.pullRequests.accounts.items.first?.id
+
             // 预填地址里的路径，别名写法的地址同样能取到
             let path = RemoteConfiguration.webURL(for: url)?.path(percentEncoded: false) ?? ""
             project = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))

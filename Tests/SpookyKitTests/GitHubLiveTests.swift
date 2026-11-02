@@ -5,7 +5,8 @@ import Testing
 
 // MARK: - GitHubLiveTests
 
-/// github.com 上的真实流程：在测试仓库里推送临时分支，新建、读取、评论、修改、检出、合并与关闭 Pull Request，结束时删掉临时分支。
+/// github.com 上的真实流程：在测试仓库里推送临时分支，新建、读取、评论、修改与删除评论、修改、检出、合并与关闭 Pull Request，
+/// 结束时删掉临时分支。
 ///
 /// 默认不跑；`SPOOKY_GITHUB_TESTS=1` 时运行，令牌取自 `SPOOKY_GITHUB_TOKEN`，测试仓库取自 `SPOOKY_GITHUB_REPOSITORY`（`owner/repo`）。
 /// 本机 Git 经 `gh auth git-credential` 认证推送与获取，令牌不写进地址与配置。
@@ -17,7 +18,7 @@ struct GitHubLiveTests {
     /// 测试账号的令牌。
     private let token = ProcessInfo.processInfo.environment["SPOOKY_GITHUB_TOKEN"] ?? ""
 
-    /// 新建、列表、详情、评论、修改、检出与压缩合并后删除源分支。
+    /// 新建、列表、详情、评论、修改与删除评论、修改与只改描述、检出与压缩合并后删除源分支。
     @Test("Pull Request 的完整流程", .timeLimit(.minutes(5)))
     func lifecycle() async throws {
         let temporary = try TemporaryRepository()
@@ -42,11 +43,23 @@ struct GitHubLiveTests {
         #expect(try await client.pullRequests(in: repository).items.contains { $0.id == created.id })
 
         try await client.addComment("评论 " + branch, to: created.id)
-        #expect(try await client.comments(on: created.id).contains { $0.body == "评论 " + branch })
+        let comment = try #require(try await client.comments(on: created.id).first { $0.body == "评论 " + branch })
+
+        // 修改与删除评论后读回核对
+        try await client.editComment(comment.id, body: "改过的评论 " + branch, on: created.id)
+        #expect(try await client.comments(on: created.id).first { $0.id == comment.id }?.body == "改过的评论 " + branch)
+
+        try await client.deleteComment(comment.id, on: created.id)
+        #expect(try await !client.comments(on: created.id).contains { $0.id == comment.id })
 
         try await client.updatePullRequest(created.id, title: "Spooky 测试（改）", body: "改过的描述", targetBranch: "main")
+        let edited = try await client.pullRequest(created.id)
+        #expect(edited.title == "Spooky 测试（改）" && edited.body == "改过的描述")
+
+        // 只改描述，标题不变
+        try await client.updateDescription("只改了描述", of: created.id)
         let updated = try await client.pullRequest(created.id)
-        #expect(updated.title == "Spooky 测试（改）" && updated.body == "改过的描述")
+        #expect(updated.title == "Spooky 测试（改）" && updated.body == "只改了描述")
 
         // 在本机取回源分支提交并检出成本地分支
         let pulls = RepositoryPullRequests(runner: runner)

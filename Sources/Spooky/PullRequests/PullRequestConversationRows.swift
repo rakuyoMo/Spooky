@@ -38,6 +38,15 @@ struct PullRequestConversationTextRow: View {
 
                     Spacer(minLength: 0)
 
+                    // 评论上的动作条右缘与正文对齐，与右键菜单打开同样的对话框
+                    if case .comment(let comment) = item {
+                        let actions = commentActions(comment)
+
+                        if !actions.isEmpty {
+                            FileActionBar(actions: actions, hovering: true)
+                        }
+                    }
+
                     if case .description = item {
                         Button(AppLocalization.text("pullRequests.edit")) {
                             session.requestPullRequest(.edit(request))
@@ -124,6 +133,29 @@ extension PullRequestConversationTextRow {
     private static func markdown(_ text: String) -> AttributedString {
         (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(text)
+    }
+
+    /// 评论上的动作：能修改时是 Edit 与 Delete，能回复时再加 Reply；都不能时为空。
+    private func commentActions(_ comment: PullRequestComment) -> [FileViewAction] {
+        var actions: [FileViewAction] = []
+
+        if session.canModify(comment) {
+            actions.append(FileViewAction(title: AppLocalization.text("pullRequests.comment.edit")) {
+                session.requestPullRequest(.editComment(request, comment))
+            })
+
+            actions.append(FileViewAction(title: AppLocalization.text("pullRequests.comment.delete")) {
+                session.requestPullRequest(.deleteComment(request, comment))
+            })
+        }
+
+        if session.canReplyToComments {
+            actions.append(FileViewAction(title: AppLocalization.text("pullRequests.comment.reply")) {
+                session.requestPullRequest(.replyToComment(request, comment))
+            })
+        }
+
+        return actions
     }
 }
 

@@ -54,6 +54,77 @@ extension HostingClient {
         }
     }
 
+    /// 修改一条评论的内容。
+    ///
+    /// - Parameters:
+    ///   - commentID: 托管服务上的评论编号。
+    ///   - body: 新的内容，Markdown。
+    ///   - id: 评论所在的请求。
+    public func editComment(_ commentID: Int, body: String, on id: PullRequestID) async throws {
+        let payload = try JSONEncoder().encode(["body": body])
+
+        switch instance.service {
+        case .github:
+            try await perform(
+                "PATCH",
+                Self.githubRepository(id.project) + "/issues/comments/\(commentID)",
+                body: payload
+            )
+
+        case .gitlab:
+            try await perform(
+                "PUT",
+                Self.gitlabProject(id.project) + "/merge_requests/\(id.number)/notes/\(commentID)",
+                body: payload
+            )
+        }
+    }
+
+    /// 删除一条评论。
+    ///
+    /// - Parameters:
+    ///   - commentID: 托管服务上的评论编号。
+    ///   - id: 评论所在的请求。
+    public func deleteComment(_ commentID: Int, on id: PullRequestID) async throws {
+        switch instance.service {
+        case .github:
+            try await perform("DELETE", Self.githubRepository(id.project) + "/issues/comments/\(commentID)")
+
+        case .gitlab:
+            try await perform(
+                "DELETE",
+                Self.gitlabProject(id.project) + "/merge_requests/\(id.number)/notes/\(commentID)"
+            )
+        }
+    }
+
+    /// 回复一条评论；只有 ``HostingService/supportsCommentReplies`` 为真的服务可用。
+    ///
+    /// - Parameters:
+    ///   - commentID: 被回复的评论编号。
+    ///   - body: 回复的内容，Markdown。
+    ///   - id: 评论所在的请求。
+    public func replyToComment(_ commentID: Int, body: String, on id: PullRequestID) async throws {
+        guard instance.service.supportsCommentReplies else {
+            throw HostingError.incompatible(instance.displayName)
+        }
+
+        try await replyToGitLabNote(commentID, body: body, on: id)
+    }
+
+    /// 只修改描述，标题与目标分支不变。
+    public func updateDescription(_ body: String, of id: PullRequestID) async throws {
+        switch instance.service {
+        case .github:
+            let payload = try JSONEncoder().encode(["body": body])
+            try await perform("PATCH", Self.githubRepository(id.project) + "/pulls/\(id.number)", body: payload)
+
+        case .gitlab:
+            let payload = try JSONEncoder().encode(["description": body])
+            try await perform("PUT", Self.gitlabProject(id.project) + "/merge_requests/\(id.number)", body: payload)
+        }
+    }
+
     /// 新建请求：GitHub 建在目标仓库里，GitLab 建在源项目里并指向目标项目。
     public func createPullRequest(_ draft: PullRequestDraft) async throws -> PullRequest {
         switch instance.service {

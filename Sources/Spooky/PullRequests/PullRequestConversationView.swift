@@ -52,7 +52,9 @@ struct PullRequestConversationView: NSViewRepresentable {
         outline.doubleAction = #selector(Coordinator.doubleClicked(_:))
         outline.openSelection = { context.coordinator.openSelection() }
 
+        // 菜单项按可用条件启用或停用，不交给响应链自动判断
         let menu = NSMenu()
+        menu.autoenablesItems = false
         menu.delegate = context.coordinator
         outline.menu = menu
         context.coordinator.outline = outline
