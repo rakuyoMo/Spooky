@@ -2243,7 +2243,7 @@
 "lfs.patternsRemain.help" = "Git LFS couldn’t remove these patterns from .gitattributes. Remove them with “Open in Editor” in the repository settings.";
 
 "settings.accounts" = "Accounts";
-"accounts.help" = "Spooky uses these accounts for pull requests and merge requests. Tokens are stored only in your keychain.";
+"accounts.help" = "Spooky uses these accounts for pull requests and merge requests. Git also uses them to authenticate with HTTPS remotes that belong to these accounts. Tokens are stored only in your keychain.";
 "accounts.service" = "Service";
 "accounts.instance" = "Instance";
 "accounts.username" = "Username";

@@ -2243,7 +2243,7 @@
 "lfs.patternsRemain.help" = "Git LFS konnte diese Muster nicht aus .gitattributes entfernen. Entfernen Sie sie über „Im Editor öffnen“ in den Repository-Einstellungen.";
 
 "settings.accounts" = "Accounts";
-"accounts.help" = "Spooky verwendet diese Accounts für Pull Requests und Merge Requests. Tokens werden nur in Ihrem Schlüsselbund gespeichert.";
+"accounts.help" = "Spooky verwendet diese Accounts für Pull Requests und Merge Requests. Git verwendet sie auch zur Authentifizierung bei HTTPS-Remotes, die zu diesen Accounts gehören. Tokens werden nur in Ihrem Schlüsselbund gespeichert.";
 "accounts.service" = "Dienst";
 "accounts.instance" = "Instanz";
 "accounts.username" = "Benutzername";

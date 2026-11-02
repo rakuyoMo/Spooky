@@ -2243,7 +2243,7 @@
 "lfs.patternsRemain.help" = "Git LFS 沒能從 .gitattributes 移除這些規則。請在儲存庫設定裡用 “在編輯器中打開” 手動移除。";
 
 "settings.accounts" = "帳號";
-"accounts.help" = "Spooky 用這些帳號處理 Pull Request 與 Merge Request。權杖只儲存在你的鑰匙圈裡。";
+"accounts.help" = "Spooky 用這些帳號處理 Pull Request 與 Merge Request。HTTPS 遠端屬於這些帳號時，Git 也用它們認證。權杖只儲存在你的鑰匙圈裡。";
 "accounts.service" = "服務";
 "accounts.instance" = "實例";
 "accounts.username" = "使用者名稱";

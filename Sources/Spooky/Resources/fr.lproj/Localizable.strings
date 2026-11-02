@@ -2243,7 +2243,7 @@
 "lfs.patternsRemain.help" = "Git LFS n’a pas pu retirer ces motifs de .gitattributes. Retirez-les avec « Ouvrir dans l’éditeur » dans les réglages du dépôt.";
 
 "settings.accounts" = "Comptes";
-"accounts.help" = "Spooky utilise ces comptes pour les pull requests et les merge requests. Les jetons sont stockés uniquement dans votre trousseau.";
+"accounts.help" = "Spooky utilise ces comptes pour les pull requests et les merge requests. Git les utilise aussi pour s’authentifier auprès des dépôts distants HTTPS qui appartiennent à ces comptes. Les jetons sont stockés uniquement dans votre trousseau.";
 "accounts.service" = "Service";
 "accounts.instance" = "Instance";
 "accounts.username" = "Nom d’utilisateur";

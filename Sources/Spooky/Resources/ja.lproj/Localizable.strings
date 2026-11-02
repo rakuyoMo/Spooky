@@ -2243,7 +2243,7 @@
 "lfs.patternsRemain.help" = "Git LFS はこれらのパターンを .gitattributes から削除できませんでした。リポジトリの設定の「エディタで開く」から削除してください。";
 
 "settings.accounts" = "アカウント";
-"accounts.help" = "Spooky はこれらのアカウントでプルリクエストとマージリクエストを扱います。トークンはキーチェーンにのみ保存されます。";
+"accounts.help" = "Spooky はこれらのアカウントでプルリクエストとマージリクエストを扱います。これらのアカウントに属する HTTPS のリモートでは、Git もこれらのアカウントで認証します。トークンはキーチェーンにのみ保存されます。";
 "accounts.service" = "サービス";
 "accounts.instance" = "インスタンス";
 "accounts.username" = "ユーザ名";

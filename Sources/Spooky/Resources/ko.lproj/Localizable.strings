@@ -2243,7 +2243,7 @@
 "lfs.patternsRemain.help" = "Git LFS가 이 패턴을 .gitattributes에서 제거하지 못했습니다. 저장소 설정의 “편집기에서 열기”로 직접 제거하세요.";
 
 "settings.accounts" = "계정";
-"accounts.help" = "Spooky는 이 계정으로 풀 리퀘스트와 머지 리퀘스트를 처리합니다. 토큰은 키체인에만 저장됩니다.";
+"accounts.help" = "Spooky는 이 계정으로 풀 리퀘스트와 머지 리퀘스트를 처리합니다. 이 계정에 속한 HTTPS 원격에서는 Git도 이 계정으로 인증합니다. 토큰은 키체인에만 저장됩니다.";
 "accounts.service" = "서비스";
 "accounts.instance" = "인스턴스";
 "accounts.username" = "사용자 이름";

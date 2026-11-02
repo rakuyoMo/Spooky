@@ -2243,7 +2243,7 @@
 "lfs.patternsRemain.help" = "Git LFS 没能从 .gitattributes 移除这些规则。请在仓库设置里用 “在编辑器中打开” 手动移除。";
 
 "settings.accounts" = "账号";
-"accounts.help" = "Spooky 用这些账号处理 Pull Request 与 Merge Request。令牌只保存在你的钥匙串里。";
+"accounts.help" = "Spooky 用这些账号处理 Pull Request 与 Merge Request。HTTPS 远端属于这些账号时，Git 也用它们认证。令牌只保存在你的钥匙串里。";
 "accounts.service" = "服务";
 "accounts.instance" = "实例";
 "accounts.username" = "用户名";
