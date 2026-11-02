@@ -5,7 +5,7 @@ import SpookyKit
 
 /// 讨论列表的一行：头部、描述、评论、提交组与组里的提交，最后是发表评论。
 enum PullRequestConversationItem {
-    /// 标题、合并方向与指派。
+    /// 标题与编号、状态与合并说明、指派人与作者头像。
     case header
 
     /// 请求的描述。

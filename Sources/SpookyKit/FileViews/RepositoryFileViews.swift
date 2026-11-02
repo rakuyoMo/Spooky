@@ -104,7 +104,7 @@ public struct FileHistoryFilter: Sendable, Equatable {
 
 // MARK: - FileContributor
 
-/// 某个文件或整个仓库的一位作者及其提交数。
+/// 某个文件、整个仓库或一段比较范围里的一位作者及其提交数。
 public struct FileContributor: Sendable, Equatable {
     /// 作者姓名，经过仓库的 `.mailmap` 合并。
     public let name: String

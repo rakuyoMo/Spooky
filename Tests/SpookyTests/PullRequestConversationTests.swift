@@ -29,13 +29,13 @@ struct PullRequestConversationTests {
         let comments = [
             PullRequestComment(
                 id: 1,
-                author: "bob",
+                author: HostingUser(username: "bob", name: nil),
                 body: "same instant",
                 createdAt: afterMidnight
             ),
             PullRequestComment(
                 id: 2,
-                author: "alice",
+                author: HostingUser(username: "alice", name: nil),
                 body: "between",
                 createdAt: try Self.date(day: 2, hour: 0, minute: 0, calendar: calendar)
             ),
@@ -65,7 +65,12 @@ struct PullRequestConversationTests {
     /// 需要获取或比较还没读完时没有提交，讨论里只有评论。
     @Test("没有提交时没有提交组")
     func timelineWithoutCommits() {
-        let comment = PullRequestComment(id: 7, author: "bob", body: "hi", createdAt: Date(timeIntervalSince1970: 0))
+        let comment = PullRequestComment(
+            id: 7,
+            author: HostingUser(username: "bob", name: nil),
+            body: "hi",
+            createdAt: Date(timeIntervalSince1970: 0)
+        )
 
         #expect(PullRequestConversationItem.timeline(comments: [comment], commits: []).map(\.key) == [.comment(7)])
     }
@@ -104,8 +109,8 @@ struct PullRequestConversationTests {
         )
     }
 
-    /// 比较范围里的提交读完才列出，按拓扑序从新到旧；关闭后不再列出。
-    @Test("讨论读出比较范围里的全部提交")
+    /// 比较范围里的提交与参与者读完才列出，提交按拓扑序从新到旧；关闭后不再列出。
+    @Test("讨论读出比较范围里的全部提交与参与者")
     func loadCommits() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "spooky-conversation-" + UUID().uuidString)
@@ -131,8 +136,46 @@ struct PullRequestConversationTests {
         try await FileViewsTests.wait { conversation.commits != nil }
         #expect(conversation.commits?.map(\.subject) == ["three", "two", "one"])
 
+        // 基准的提交不算，三个提交都是同一位作者
+        #expect(conversation.contributors?.map(\.commitCount) == [3])
+
         conversation.close()
-        #expect(conversation.commits == nil)
+        #expect(conversation.commits == nil && conversation.contributors == nil)
+    }
+
+    /// 作者、提交数、目标分支与源分支按参数位置插入并加粗，分支名里的 Markdown 符号原样显示；提交数未知时省掉这一段。
+    @Test("讨论头部的合并说明")
+    func headerInfo() {
+        let request = Self.request(source: "feat/*bold*_x_", target: "main_**")
+
+        // 加粗的几段
+        let emphasized: (AttributedString) -> Set<String> = { info in
+            Set(info.runs.filter { $0.font != nil }.map { String(info[$0.range].characters) })
+        }
+
+        let commits = AppLocalization.text("pullRequests.header.commits", 3)
+        let counted = PullRequestConversationHeader.info(of: request, commitCount: 3)
+
+        #expect(
+            String(counted.characters)
+                == AppLocalization.text("pullRequests.header.info", "alice", commits, "main_**", "feat/*bold*_x_")
+        )
+
+        #expect(emphasized(counted) == ["alice", commits, "main_**", "feat/*bold*_x_"])
+
+        // 1 个提交用单数写法
+        let single = PullRequestConversationHeader.info(of: request, commitCount: 1)
+        #expect(emphasized(single).contains(AppLocalization.text("pullRequests.header.commits.one")))
+
+        // 还没读完提交时不写提交数
+        let unknown = PullRequestConversationHeader.info(of: request, commitCount: nil)
+
+        #expect(
+            String(unknown.characters)
+                == AppLocalization.text("pullRequests.header.infoWithoutCommits", "alice", "main_**", "feat/*bold*_x_")
+        )
+
+        #expect(emphasized(unknown) == ["alice", "main_**", "feat/*bold*_x_"])
     }
 }
 
@@ -149,6 +192,22 @@ extension PullRequestConversationTests {
     /// 2026 年 10 月某天的时刻。
     static func date(day: Int, hour: Int, minute: Int, calendar: Calendar) throws -> Date {
         try #require(calendar.date(from: DateComponents(year: 2026, month: 10, day: day, hour: hour, minute: minute)))
+    }
+
+    /// alice 发起的打开着的请求，源分支与目标分支在同一个项目里。
+    static func request(source: String, target: String) -> PullRequest {
+        PullRequest(
+            id: PullRequestID(instance: .github, project: "o/r", number: 7),
+            title: "t",
+            body: "",
+            state: .open,
+            isDraft: false,
+            author: HostingUser(username: "alice", name: nil),
+            createdAt: Date(timeIntervalSince1970: 0),
+            updatedAt: Date(timeIntervalSince1970: 0),
+            source: PullRequestBranch(project: "o/r", branch: source, sha: ""),
+            target: PullRequestBranch(project: "o/r", branch: target, sha: "")
+        )
     }
 
     /// 只用于排列的提交；哈希由标题重复而成。

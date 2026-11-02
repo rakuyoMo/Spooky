@@ -105,7 +105,7 @@ final class RepositoryPullRequestState {
     /// 提交与改动两段共用的比较。
     let comparison = RevisionComparisonState()
 
-    /// 讨论列出的提交，以及讨论里的选择与折叠。
+    /// 讨论列出的提交、Commits 段的参与者，以及讨论里的选择与折叠。
     let conversation = PullRequestConversationState()
 
     /// 对话框由窗口呈现。
@@ -457,7 +457,7 @@ extension RepositoryPullRequestState {
         }
     }
 
-    /// 源分支提交在仓库里时比较合并基准与源分支、读出讨论列出的提交，否则标出需要获取。
+    /// 源分支提交在仓库里时比较合并基准与源分支、读出讨论列出的提交与参与者，否则标出需要获取。
     private func openComparison(_ request: PullRequest, runner: GitRunner) async throws {
         let pulls = RepositoryPullRequests(runner: runner)
 
@@ -478,11 +478,11 @@ extension RepositoryPullRequestState {
             runner: runner
         )
 
-        // 讨论在同一个比较范围里列出全部提交
+        // 讨论与参与者条在同一个比较范围里读出全部提交与参与者
         conversation.load(base: base, target: request.source.sha, runner: runner)
     }
 
-    /// 清掉详情、比较与讨论列出的提交。
+    /// 清掉详情、比较、讨论列出的提交与参与者。
     private func clearDetail() {
         detailTask?.cancel()
         detailTask = nil

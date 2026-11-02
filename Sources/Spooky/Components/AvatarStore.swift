@@ -3,15 +3,15 @@ import CryptoKit
 
 // MARK: - AvatarStore
 
-/// 按邮箱取作者头像：经 Gravatar 按邮箱的 SHA-256 读取，图片在内存里缓存。
+/// 取头像图片：提交作者按邮箱经 Gravatar 读取，托管服务的用户按服务给出的地址读取；图片在内存里缓存。
 ///
-/// 同一邮箱只读取一次；没有头像、读取失败或不是图片时记下，本次运行里一直用首字母占位。
+/// 同一地址只读取一次；没有头像、读取失败或不是图片时记下，本次运行里一直用首字母占位。
 @MainActor
 final class AvatarStore {
     /// 所有窗口共用的头像缓存。
     static let shared = AvatarStore()
 
-    /// 请求的像素尺寸，所有位置共用一份图片，足够 Retina 屏上最大的 56 pt 头像。
+    /// 向 Gravatar 请求的像素尺寸，所有位置共用一份图片，足够 Retina 屏上最大的 56 pt 头像。
     nonisolated static let pixelSize = 128
 
     /// 读取头像数据；返回 nil 表示没有头像。测试注入不联网的实现。
@@ -20,23 +20,33 @@ final class AvatarStore {
         return (response as? HTTPURLResponse)?.statusCode == 200 ? data : nil
     }
 
-    /// 已取得的图片，键是规范化后的邮箱。
+    /// 已取得的图片，键是请求的地址。
     private var images: [String: NSImage] = [:]
 
-    /// 没有头像或读取失败的邮箱。
+    /// 没有头像或读取失败的地址。
     private var missing = Set<String>()
 
-    /// 正在读取的邮箱，同时出现的多行共用一次读取。
+    /// 正在读取的地址，同时出现的多行共用一次读取。
     private var loading: [String: Task<NSImage?, Never>] = [:]
 
-    /// 邮箱对应的头像；没有邮箱或没有头像时为 nil。
+    /// 邮箱对应的 Gravatar 头像；没有邮箱或没有头像时为 nil。
     func image(for email: String?) async -> NSImage? {
         guard
             let key = email.map(Self.normalized),
             !key.isEmpty,
-            !missing.contains(key),
             let url = Self.url(for: key)
         else { return nil }
+
+        return await image(at: url)
+    }
+
+    /// 地址上的头像，地址原样请求；没有头像时为 nil。
+    func image(at url: URL) async -> NSImage? {
+        let key = url.absoluteString
+
+        guard !missing.contains(key) else {
+            return nil
+        }
 
         if let image = images[key] {
             return image

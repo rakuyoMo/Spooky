@@ -114,13 +114,26 @@ extension HostingClientTests {
         #expect(squash.projectMergeMethod == "rebase_merge")
     }
 
-    /// 单个的 `assignee` 当作指派人，`reopened` 当作打开，没有 `diff_refs` 时没有目标分支提交与合并基准。
+    /// 单个的 `assignee` 当作指派人，带上名字与头像地址；`reopened` 当作打开，没有 `diff_refs` 时没有目标分支提交与合并基准。
     @Test("旧版 GitLab 的请求字段")
     func legacyDecoding() throws {
         let single = try Self.decodeLegacy(
-            Self.legacyRequest(["assignee": ["username": "bob"], "state": "reopened"], removing: ["assignees"])
+            Self.legacyRequest(
+                [
+                    "assignee": ["username": "bob", "name": "Bob 王", "avatar_url": "https://gitlab.example.com/uploads/bob.png"],
+                    "state": "reopened",
+                ],
+                removing: ["assignees"]
+            )
         )
-        #expect(single.assignees == ["bob"] && single.state == .open)
+
+        #expect(
+            single.assignees == [
+                HostingUser(username: "bob", name: "Bob 王", avatarURL: URL(string: "https://gitlab.example.com/uploads/bob.png")),
+            ]
+        )
+
+        #expect(single.state == .open)
         #expect(single.target.sha.isEmpty && single.mergeBase == nil && single.source.sha == "aaa")
 
         let unassigned = try Self.decodeLegacy(Self.legacyRequest(removing: ["assignees"]))
@@ -132,7 +145,7 @@ extension HostingClientTests {
                 "assignees": [["username": "bob"], ["username": "carol"]],
             ])
         )
-        #expect(both.assignees == ["bob", "carol"])
+        #expect(both.assignees.map(\.username) == ["bob", "carol"])
     }
 
     /// 10.3 以前不认 `sort` 与 `order_by`：读完全部页后按发表时间排，时间相同的按编号；参数照旧带上。

@@ -38,7 +38,7 @@ struct GitHubLiveTests {
             )
         )
 
-        #expect(created.author == user.username && created.state == .open && created.source.sha == sha)
+        #expect(created.author.username == user.username && created.state == .open && created.source.sha == sha)
         #expect(try await client.pullRequests(in: repository).items.contains { $0.id == created.id })
 
         try await client.addComment("评论 " + branch, to: created.id)

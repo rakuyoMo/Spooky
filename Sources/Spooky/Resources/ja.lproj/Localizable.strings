@@ -2370,9 +2370,10 @@
 "mr.load.title" = "マージリクエスト一覧を読み込む";
 "pr.loadDetail.title" = "プルリクエストを読み込む";
 "mr.loadDetail.title" = "マージリクエストを読み込む";
+"pr.description.title" = "%1$@ が %2$@ にこのプルリクエストを作成しました";
+"mr.description.title" = "%1$@ が %2$@ にこのマージリクエストを作成しました";
 "pullRequests.account" = "アカウント：";
 "pullRequests.addComment" = "コメントを追加";
-"pullRequests.assignees" = "担当者：%@";
 "pullRequests.associate" = "関連付け…";
 "pullRequests.associate.title" = "リモートを関連付け";
 "pullRequests.associate.message" = "「%@」が属するアカウントと、ホスティングサービス上のプロジェクトを選んでください。";
@@ -2393,9 +2394,16 @@
 "pullRequests.close" = "クローズ";
 "pullRequests.comment.title" = "コメントを追加";
 "pullRequests.comment" = "コメント：";
+"pullRequests.comment.commented" = "%1$@ が %2$@ にコメントしました";
+"pullRequests.comment.edited" = "%1$@ が %2$@ に編集しました";
+"pullRequests.comment.deleted" = "このコメントは削除されました。";
 "pullRequests.commits" = "コミット";
 "pullRequests.commitGroup" = "%2$@ に %1$ld 件のコミットを追加";
 "pullRequests.commitGroup.one" = "%@ に 1 件のコミットを追加";
+"pullRequests.contributors" = "コントリビュータ %ld 人";
+"pullRequests.contributors.one" = "コントリビュータ 1 人";
+"pullRequests.contributors.none" = "まだコントリビュータはいません。";
+"pullRequests.contributors.commits" = "%ld 件のコミット";
 "pullRequests.copyCommitHash" = "コミットハッシュをコピー";
 "pullRequests.copyCommitHashes" = "%ld 件のコミットハッシュをコピー";
 "pullRequests.conversation" = "会話";
@@ -2407,6 +2415,11 @@
 "pullRequests.fetch" = "フェッチ";
 "pullRequests.fetch.title" = "コミットがまだフェッチされていません";
 "pullRequests.fetch.message" = "%1$@ のコミットはまだこのリポジトリにありません。コミットと変更内容を見るには「%2$@」からフェッチしてください。";
+"pullRequests.header.info" = "%1$@ が %4$@ の %2$@ を %3$@ にマージしようとしています";
+"pullRequests.header.infoWithoutCommits" = "%1$@ が %3$@ を %2$@ にマージしようとしています";
+"pullRequests.header.commits" = "%ld 件のコミット";
+"pullRequests.header.commits.one" = "1 件のコミット";
+"pullRequests.header.assignees" = "担当者";
 "pullRequests.loadIssues.title" = "Issue を読み込む";
 "pullRequests.loadMergeOptions.title" = "マージオプションを読み込む";
 "pullRequests.merge" = "マージ";
@@ -2418,7 +2431,7 @@
 "pullRequests.missingToken.title" = "トークンがありません";
 "pullRequests.missingToken.message" = "「%@」のトークンがキーチェーンにありません。「設定」→「アカウント」でアカウントを再認証してください。";
 "pullRequests.noAccount.title" = "%@ アカウントがありません";
-"pullRequests.noDescription" = "説明はありません。";
+"pullRequests.noDescription" = "説明はありません";
 "pullRequests.noProjects" = "選択したアカウントのインスタンスにあるリモートがありません。";
 "pullRequests.noRemotes.title" = "リモートがありません";
 "pullRequests.noRemotes.message" = "github.com、GitLab.com、またはセルフマネージドの GitLab のリモートを追加すると、プルリクエストとマージリクエストを見られます。";
@@ -2435,7 +2448,6 @@
 "pullRequests.strategy.merge" = "マージコミット";
 "pullRequests.strategy.rebase_merge" = "半線形履歴のマージコミット";
 "pullRequests.strategy.ff" = "早送りマージ";
-"pullRequests.summary" = "%1$@ が「%2$@」を「%3$@」にマージしようとしています";
 "pullRequests.target" = "ターゲット：";
 "pullRequests.targetBranch" = "ターゲットブランチ：";
 "pullRequests.titleField" = "タイトル：";

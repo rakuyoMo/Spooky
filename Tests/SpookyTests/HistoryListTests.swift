@@ -126,6 +126,33 @@ struct HistoryListTests {
         #expect(await requests.count == 2)
     }
 
+    /// 托管用户的头像按服务给的地址原样请求，缓存与没有头像的记忆同按邮箱读取的一样。
+    @Test("托管用户头像按地址读取与缓存")
+    func avatarsByAddress() async throws {
+        let store = AvatarStore()
+        let requests = RequestCounter()
+        let image = try #require(NSImage(size: NSSize(width: 2, height: 2), flipped: false) { _ in true }.tiffRepresentation)
+
+        let found = try #require(URL(string: "https://avatars.githubusercontent.com/u/1?v=4"))
+        let absent = try #require(URL(string: "https://git.example.com/uploads/-/system/user/avatar/2/a.png"))
+
+        store.fetch = { url in
+            await requests.record(url)
+            return url == found ? image : nil
+        }
+
+        // 同一地址只请求一次
+        #expect(await store.image(at: found) != nil)
+        #expect(await store.image(at: found) != nil)
+
+        // 没有头像的地址只请求一次
+        #expect(await store.image(at: absent) == nil)
+        #expect(await store.image(at: absent) == nil)
+
+        // 地址原样请求，不加 Gravatar 的尺寸参数
+        #expect(await requests.urls == [found, absent])
+    }
+
     /// 绝对格式写出日期与时间；相对格式写出相对现在的时间；按天分组的标题跟随格式。
     @Test("提交日期格式与分组标题")
     func dateFormats() throws {

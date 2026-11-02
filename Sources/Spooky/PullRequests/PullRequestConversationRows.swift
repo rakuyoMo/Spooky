@@ -4,9 +4,10 @@ import SwiftUI
 
 // MARK: - PullRequestConversationTextRow
 
-/// 讨论里高度随内容变化的行：头部、描述与评论；行高按列宽量出。
+/// 讨论里高度随正文变化的行：描述与评论，行高按列宽量出。
 ///
-/// 描述与评论按 Markdown 的行内格式显示。
+/// 位置从单元格左缘算：40 × 40 的作者头像左 0、上 20；标题一行左 60、与头像顶对齐；
+/// 正文左 60、上 46、右 20、下 20，头像下至少留 20。正文按 Markdown 的行内格式显示。
 struct PullRequestConversationTextRow: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -14,68 +15,108 @@ struct PullRequestConversationTextRow: View {
     /// 显示的请求。
     let request: PullRequest
 
-    /// 这一行：头部、描述或评论。
+    /// 这一行：描述或评论。
     let item: PullRequestConversationItem
 
     /// Settings → General 选的日期格式。
     @AppStorage(CommitDateFormat.key)
     private var dateFormat = CommitDateFormat.absolute
 
-    /// 头部是标题、合并方向与指派；描述与评论是作者、时间与内容。
+    /// 头像在左，标题一行与正文在右。
     var body: some View {
-        Group {
-            switch item {
-            case .header:
-                summary
+        HStack(alignment: .top, spacing: 20) {
+            HostingUserAvatar(user: author, size: 40)
 
-            case .description:
-                entry(
-                    author: request.author,
-                    date: request.createdAt,
-                    text: request.body.isEmpty ? nil : request.body,
-                    action: (AppLocalization.text("pullRequests.edit"), { session.requestPullRequest(.edit(request)) })
-                )
+            VStack(alignment: .leading, spacing: 0) {
+                // 标题一行占 26，正文从上 46 起
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(title)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
 
-            case .comment(let comment):
-                entry(author: comment.author, date: comment.createdAt, text: comment.body, action: nil)
+                    Spacer(minLength: 0)
 
-            default:
-                EmptyView()
+                    if case .description = item {
+                        Button(AppLocalization.text("pullRequests.edit")) {
+                            session.requestPullRequest(.edit(request))
+                        }
+                        .controlSize(.small)
+                        .disabled(session.pullRequests.client == nil)
+                    }
+                }
+                .frame(height: 26, alignment: .topLeading)
+
+                content
+                    .font(.system(size: 13))
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.vertical, 12)
+        .padding(.top, 20)
         .padding(.trailing, 20)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.bottom, 20)
+        .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
     }
 }
 
 // MARK: - Layout
 
 extension PullRequestConversationTextRow {
-    /// 标题、合并方向与指派。
-    private var summary: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(request.title)
-                .font(.system(size: 18, weight: .semibold))
-                .textSelection(.enabled)
+    /// 描述是请求的作者，评论是评论的作者。
+    private var author: HostingUser {
+        guard case .comment(let comment) = item else {
+            return request.author
+        }
 
-            Text(
-                AppLocalization.text(
-                    "pullRequests.summary",
-                    request.author,
-                    PullRequestText.source(of: request),
-                    request.target.branch
-                )
+        return comment.author
+    }
+
+    /// 描述写创建请求的日期；评论在更新时间晚于发表时间时写编辑的日期，否则写发表的日期。
+    private var title: String {
+        guard case .comment(let comment) = item else {
+            return session.pullRequestText(
+                "description.title",
+                request.author.username,
+                dateFormat.string(from: request.createdAt)
             )
-            .font(.system(size: 12))
-            .foregroundStyle(.secondary)
-            .textSelection(.enabled)
+        }
 
-            if !request.assignees.isEmpty {
-                Text(AppLocalization.text("pullRequests.assignees", request.assignees.joined(separator: ", ")))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
+        guard let updatedAt = comment.updatedAt, updatedAt > comment.createdAt else {
+            return AppLocalization.text(
+                "pullRequests.comment.commented",
+                comment.author.username,
+                dateFormat.string(from: comment.createdAt)
+            )
+        }
+
+        return AppLocalization.text(
+            "pullRequests.comment.edited",
+            comment.author.username,
+            dateFormat.string(from: updatedAt)
+        )
+    }
+
+    /// 正文；没有描述时写出没有描述，与正文同色；内容为空的评论写出已删除，用次级色。
+    @ViewBuilder
+    private var content: some View {
+        switch item {
+        case .description where request.body.isEmpty:
+            Text(AppLocalization.text("pullRequests.noDescription"))
+
+        case .description:
+            Text(Self.markdown(request.body))
+
+        case .comment(let comment) where comment.body.isEmpty:
+            Text(AppLocalization.text("pullRequests.comment.deleted"))
+                .foregroundStyle(.secondary)
+
+        case .comment(let comment):
+            Text(Self.markdown(comment.body))
+
+        default:
+            EmptyView()
         }
     }
 
@@ -84,38 +125,6 @@ extension PullRequestConversationTextRow {
         (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(text)
     }
-
-    /// 描述或一条评论：作者与时间、内容；描述没有内容时写出没有描述。
-    private func entry(author: String, date: Date, text: String?, action: (String, () -> Void)?) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Text(author)
-                    .font(.system(size: 12, weight: .semibold))
-
-                Text(dateFormat.string(from: date))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-
-                Spacer(minLength: 8)
-
-                if let action {
-                    Button(action.0, action: action.1)
-                        .controlSize(.small)
-                        .disabled(session.pullRequests.client == nil)
-                }
-            }
-
-            Text(Self.markdown(text ?? AppLocalization.text("pullRequests.noDescription")))
-                .font(.system(size: 13))
-                .foregroundStyle(text == nil ? .secondary : .primary)
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 6).fill(AppPalette.color("general_secondary_background_color")))
-    }
-
 }
 
 // MARK: - PullRequestCommitGroupRow

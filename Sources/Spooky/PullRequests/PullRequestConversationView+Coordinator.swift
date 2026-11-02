@@ -54,7 +54,7 @@ extension PullRequestConversationView {
         /// 上次重建行时的输入。
         private var snapshot: Snapshot? = nil
 
-        /// 头部、描述与评论量出的行高。
+        /// 描述与评论量出的行高。
         private var heights: [PullRequestConversationItem.Key: CGFloat] = [:]
 
         /// 量行高时的列宽，列宽变化后重新量。
@@ -116,12 +116,13 @@ extension PullRequestConversationView {
             !((item as? Node)?.children.isEmpty ?? true)
         }
 
-        /// 头部、描述与评论按列宽量出；提交组 34，提交 24，组末的空白 8，发表评论 62。
+        /// 头部 98；描述与评论按列宽量出；提交组 34，提交 24，组末的空白 8，发表评论 62。
         func outlineView(_: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
             guard let node = item as? Node else { return 1 }
 
             switch node.item {
-            case .header, .description, .comment: return measuredHeight(of: node.item)
+            case .header: return 98
+            case .description, .comment: return measuredHeight(of: node.item)
             case .group: return 34
             case .commit: return 24
             case .spacer: return 8
@@ -159,7 +160,11 @@ extension PullRequestConversationView {
             guard let node = item as? Node else { return nil }
 
             switch node.item {
-            case .header, .description, .comment:
+            case .header:
+                let row = PullRequestConversationHeader(request: parent.request, commitCount: parent.commits?.count)
+                return Self.fill(outlineView.hostingView(row, identifier: "conversation-header"))
+
+            case .description, .comment:
                 let row = PullRequestConversationTextRow(session: parent.session, request: parent.request, item: node.item)
                 return Self.fill(outlineView.hostingView(row, identifier: "conversation-text"))
 
@@ -202,7 +207,7 @@ extension PullRequestConversationView {
             rememberExpansion(notification, collapsed: true)
         }
 
-        /// 列宽变化后重新量头部、描述与评论的行高。
+        /// 列宽变化后重新量描述与评论的行高。
         func outlineViewColumnDidResize(_: Notification) {
             guard let outline, outline.numberOfRows > 0 else { return }
 
@@ -260,7 +265,7 @@ extension PullRequestConversationView.Coordinator {
         return cell
     }
 
-    /// 头部、描述或评论在当前列宽下的高度；列宽变化后丢弃量过的结果。
+    /// 描述或评论在当前列宽下的高度；列宽变化后丢弃量过的结果。
     private func measuredHeight(of item: PullRequestConversationItem) -> CGFloat {
         let indentation = PullRequestConversationView.ConversationOutlineView.indentation
         let width = (outline?.tableColumns.first?.width ?? 0) - indentation

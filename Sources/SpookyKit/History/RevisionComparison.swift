@@ -2,9 +2,9 @@ import Foundation
 
 // MARK: - RevisionComparison
 
-/// 两个版本的比较：目标里有、基准里没有的提交，以及从基准到目标的文件改动。
+/// 两个版本的比较：目标里有、基准里没有的提交与它们的作者，以及从基准到目标的文件改动。
 ///
-/// 两侧都是对象哈希，结果只由哈希决定，按参数复用。
+/// 两侧都是对象哈希；提交与改动只由哈希决定，按参数复用。
 public struct RevisionComparison: Sendable {
     /// 共享的本机或服务器执行器。
     public let runner: GitRunner
@@ -48,6 +48,20 @@ public struct RevisionComparison: Sendable {
         let commits = try HistoryCommit.parse(output)
 
         return HistoryPage(commits: Array(commits.prefix(limit)), hasMore: commits.count > limit)
+    }
+
+    /// 目标独有的提交的作者，经仓库的 `.mailmap` 合并，按提交数从多到少排列。
+    public func contributors() async throws -> [FileContributor] {
+        guard isValid else {
+            throw RepositoryReadError.invalidQuery
+        }
+
+        // shortlog 没有起点时会改读标准输入，起点必须显式给出；作者随 `.mailmap` 合并，结果不按哈希复用
+        let output = try await runner.run(
+            RepositoryHistory.logOptions + ["shortlog", "-n", "-s", "-e", target, "^" + base, "--"]
+        )
+
+        return try FileContributor.parse(output)
     }
 
     /// 从基准到目标改动的文件。

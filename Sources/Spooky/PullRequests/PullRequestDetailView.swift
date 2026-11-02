@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - PullRequestDetailView
 
-/// 所选请求的详情：头部是编号、状态与 Conversation | Commits | Changeset 分段，底部是检出、关闭与合并。
+/// 所选请求的详情：头部是编号与 Conversation | Commits | Changeset 分段，底部是检出、关闭与合并。
 ///
 /// 提交与改动在仓库所在的机器上比较；源分支的提交还不在仓库里时先获取。
 struct PullRequestDetailView: View {
@@ -52,14 +52,13 @@ extension PullRequestDetailView {
     /// 详情的状态。
     private var state: RepositoryPullRequestState { session.pullRequests }
 
-    /// 40 pt 头部：编号、状态与分段。
+    /// 40 pt 头部：编号与分段；状态在讨论的头部。
     private func header(_ request: PullRequest) -> some View {
         HStack(spacing: 8) {
             Text(request.id.reference)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 13))
+                .foregroundStyle(.primary)
                 .textSelection(.enabled)
-
-            PullRequestStateBadge(request: request)
 
             if state.isLoadingDetail {
                 ProgressView()
@@ -81,7 +80,7 @@ extension PullRequestDetailView {
         .frame(height: 40)
     }
 
-    /// 当前分段的内容；提交与改动在源分支提交不在仓库里时说明并提供获取。
+    /// 当前分段的内容；提交与改动在源分支提交不在仓库里时说明并提供获取，Commits 段的顶部是参与者条。
     @ViewBuilder
     private func content(_ request: PullRequest) -> some View {
         switch state.page {
@@ -108,7 +107,18 @@ extension PullRequestDetailView {
                 }
                 .padding(20)
             } else {
-                RevisionComparisonView(state: state.comparison, session: session, showsHeader: false)
+                VStack(spacing: 0) {
+                    if state.page == .commits {
+                        PullRequestContributorsBar(
+                            contributors: state.conversation.contributors,
+                            commitCount: state.conversation.commits?.count
+                        )
+
+                        Divider()
+                    }
+
+                    RevisionComparisonView(state: state.comparison, session: session, showsHeader: false)
+                }
             }
         }
     }
@@ -139,38 +149,87 @@ extension PullRequestDetailView {
     }
 }
 
-// MARK: - PullRequestStateBadge
+// MARK: - PullRequestContributorsBar
 
-/// 状态标记：打开、草稿、关闭或已合并。
-struct PullRequestStateBadge: View {
-    /// 显示的请求。
-    let request: PullRequest
+/// Commits 段顶部 28 pt 的参与者条：左边是人数与参与者的头像，右边是提交数。
+///
+/// 头像排不下时从右侧去掉，能放下几个就完整显示几个。
+struct PullRequestContributorsBar: View {
+    /// 头像的直径。
+    private static let avatarSize: CGFloat = 20
 
-    /// 圆角底色上的状态名。
+    /// 相邻头像的间距。
+    private static let avatarSpacing: CGFloat = 2
+
+    /// 比较范围里提交的作者，按提交数从多到少；还没读完时为 nil。
+    let contributors: [FileContributor]?
+
+    /// 比较范围里的提交数；还没读完时为 nil。
+    let commitCount: Int?
+
+    /// 人数左 20，其后 8 是头像排；提交数距右 20，左边距头像排至少 8。三者竖直居中。
     var body: some View {
-        Text(title)
-            .font(.system(size: 11, weight: .medium))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 2)
-            .background(Capsule().fill(color))
-    }
+        HStack(spacing: 8) {
+            label(contributorsText)
 
-    /// 状态名。
-    private var title: String {
-        switch request.state {
-        case .open: AppLocalization.text(request.isDraft ? "pullRequests.state.draft" : "pullRequests.state.open")
-        case .closed: AppLocalization.text("pullRequests.state.closed")
-        case .merged: AppLocalization.text("pullRequests.state.merged")
+            avatars
+
+            label(commitsText)
+        }
+        .padding(.horizontal, 20)
+        .frame(height: 28)
+    }
+}
+
+// MARK: - Contributors Layout
+
+extension PullRequestContributorsBar {
+    /// 人数的文案，读取完成前为空。
+    private var contributorsText: String {
+        switch contributors?.count {
+        case nil: ""
+        case 0: AppLocalization.text("pullRequests.contributors.none")
+        case 1: AppLocalization.text("pullRequests.contributors.one")
+        case let count?: AppLocalization.text("pullRequests.contributors", count)
         }
     }
 
-    /// 底色。
-    private var color: Color {
-        switch request.state {
-        case .open: request.isDraft ? .gray : .green
-        case .closed: .red
-        case .merged: .purple
+    /// 提交数的文案；没有提交或还没读完时为空。
+    private var commitsText: String {
+        guard let commitCount, commitCount > 0 else {
+            return ""
         }
+
+        return AppLocalization.text("pullRequests.contributors.commits", commitCount)
+    }
+
+    /// 高 22 的头像排：Gravatar 头像，提示是 “姓名 <邮箱>”；按可用宽度算出放得下的个数。
+    private var avatars: some View {
+        GeometryReader { proxy in
+            let step = Self.avatarSize + Self.avatarSpacing
+            let fitting = Int((proxy.size.width + Self.avatarSpacing) / step)
+
+            HStack(spacing: Self.avatarSpacing) {
+                ForEach(Array((contributors ?? []).prefix(fitting).enumerated()), id: \.offset) {
+                    let contributor = $0.element
+                    let title = contributor.name + " <" + contributor.email + ">"
+
+                    InitialsAvatar(name: contributor.name, email: contributor.email, size: Self.avatarSize)
+                        .help(title)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(title)
+                }
+            }
+            .frame(maxHeight: .infinity)
+        }
+        .frame(height: 22)
+    }
+
+    /// 13 pt、不可用控件文字色的一段文字，不截断。
+    private func label(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 13))
+            .foregroundStyle(Color(nsColor: .disabledControlTextColor))
+            .fixedSize()
     }
 }

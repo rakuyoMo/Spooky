@@ -196,7 +196,7 @@ On your Mac:
 - Credentials saved to the Keychain use the service name `com.rakuyo.spooky.remote.<host alias>`
 - Hosting account tokens are stored in the Keychain with the service name `com.rakuyo.spooky.hosting.<instance address>`. For a self-managed GitLab account that signs in with a username and password, the access token, the refresh token, and the expiry time are stored there; the password isn't stored. The account list and the remotes you associated with an account are stored in the preferences, without tokens
 - Connections and callbacks use private `/tmp/spooky-*` temporary directories, which are removed when the session closes. Signature checks in local repositories use one of these directories as well, removed as soon as the check finishes
-- Author pictures are requested from Gravatar with a SHA-256 hash of each author's email address, and are kept in memory only while Spooky is running
+- Author pictures are requested from Gravatar with a SHA-256 hash of each author's email address. Pictures of the authors, assignees, and commenters of pull requests and merge requests are requested from the addresses the hosting service gives. Pictures are kept in memory only while Spooky is running
 - File copies for Quick Look and other apps are kept in private `spooky-files-*` temporary directories, which are removed when the repository closes
 - Opening a server repository in Warp writes `Spooky-*.yaml` to `~/.warp/launch_configurations/`. When Spooky quits, it removes only the files it created
 - At launch, Spooky reads its own crash reports in `~/Library/Logs/DiagnosticReports/` to offer a GitHub issue. Nothing is uploaded automatically

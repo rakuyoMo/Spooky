@@ -230,7 +230,7 @@ private struct PullRequestRow: View {
                 }
             }
 
-            Text(request.id.reference + " · " + request.author + " · " + dateFormat.string(from: request.updatedAt))
+            Text(request.id.reference + " · " + request.author.username + " · " + dateFormat.string(from: request.updatedAt))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
 

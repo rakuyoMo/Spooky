@@ -196,7 +196,7 @@ open .build/Spooky.app
 - 存入钥匙串的凭据，服务名为 `com.rakuyo.spooky.remote.<主机别名>`
 - 托管账号的令牌存在钥匙串里，服务名为 `com.rakuyo.spooky.hosting.<实例地址>`；私有部署 GitLab 用用户名与密码登录的账号，这里存访问令牌、刷新令牌与到期时间，不存密码。账号列表与手动关联到账号的远端存在偏好里，不含令牌
 - 连接和回调使用私有的 `/tmp/spooky-*` 临时目录，关闭会话后清理。本机仓库校验签名时同样使用这样一个目录，校验结束即删除
-- 作者头像以作者邮箱的 SHA-256 哈希向 Gravatar 请求，只在 Spooky 运行期间保存在内存里
+- 作者头像以作者邮箱的 SHA-256 哈希向 Gravatar 请求；Pull Request 与 Merge Request 的作者、指派人与评论者的头像按托管服务给出的地址请求。头像只在 Spooky 运行期间保存在内存里
 - 交给 Quick Look 和其它程序的文件副本放在私有的 `spooky-files-*` 临时目录，关闭仓库后清理
 - 用 Warp 打开服务器仓库时，会在 `~/.warp/launch_configurations/` 写入 `Spooky-*.yaml`；退出 Spooky 时只清理它自己创建的这些文件
 - 启动时读取 `~/Library/Logs/DiagnosticReports/` 里 Spooky 自己的崩溃报告，用来询问是否在 GitHub 上报告；不会自动上传任何内容

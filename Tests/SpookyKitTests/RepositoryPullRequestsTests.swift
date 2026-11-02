@@ -132,7 +132,7 @@ private struct PullRequestFixture {
             body: "",
             state: .open,
             isDraft: false,
-            author: "alice",
+            author: HostingUser(username: "alice", name: nil),
             createdAt: Date(),
             updatedAt: Date(),
             source: PullRequestBranch(project: fork ? "alice/r" : "o/r", branch: "feature", sha: feature),

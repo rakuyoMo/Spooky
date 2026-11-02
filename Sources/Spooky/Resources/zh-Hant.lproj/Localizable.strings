@@ -2370,9 +2370,10 @@
 "mr.load.title" = "載入 Merge Request 列表";
 "pr.loadDetail.title" = "載入 Pull Request";
 "mr.loadDetail.title" = "載入 Merge Request";
+"pr.description.title" = "%1$@ 於 %2$@ 建立了這個 Pull Request";
+"mr.description.title" = "%1$@ 於 %2$@ 建立了這個 Merge Request";
 "pullRequests.account" = "帳號：";
 "pullRequests.addComment" = "加入留言";
-"pullRequests.assignees" = "指派：%@";
 "pullRequests.associate" = "關聯…";
 "pullRequests.associate.title" = "關聯遠端";
 "pullRequests.associate.message" = "選擇 “%@” 所屬的帳號，以及它在託管服務上的專案。";
@@ -2393,9 +2394,16 @@
 "pullRequests.close" = "關閉";
 "pullRequests.comment.title" = "加入留言";
 "pullRequests.comment" = "留言：";
+"pullRequests.comment.commented" = "%1$@ 於 %2$@ 發表了留言";
+"pullRequests.comment.edited" = "%1$@ 於 %2$@ 編輯了留言";
+"pullRequests.comment.deleted" = "這則留言已刪除。";
 "pullRequests.commits" = "提交";
 "pullRequests.commitGroup" = "%2$@ 加入了 %1$ld 個提交";
 "pullRequests.commitGroup.one" = "%@ 加入了 1 個提交";
+"pullRequests.contributors" = "%ld 位貢獻者";
+"pullRequests.contributors.one" = "1 位貢獻者";
+"pullRequests.contributors.none" = "還沒有貢獻者。";
+"pullRequests.contributors.commits" = "%ld 個提交";
 "pullRequests.copyCommitHash" = "複製提交雜湊";
 "pullRequests.copyCommitHashes" = "複製 %ld 個提交雜湊";
 "pullRequests.conversation" = "討論";
@@ -2407,6 +2415,11 @@
 "pullRequests.fetch" = "擷取";
 "pullRequests.fetch.title" = "提交還沒有擷取";
 "pullRequests.fetch.message" = "%1$@ 的提交還不在這個儲存庫裡。從 “%2$@” 擷取後才能查看它的提交與變更。";
+"pullRequests.header.info" = "%1$@ 想把 %4$@ 上的 %2$@ 合併進 %3$@";
+"pullRequests.header.infoWithoutCommits" = "%1$@ 想把 %3$@ 合併進 %2$@";
+"pullRequests.header.commits" = "%ld 個提交";
+"pullRequests.header.commits.one" = "1 個提交";
+"pullRequests.header.assignees" = "指派";
 "pullRequests.loadIssues.title" = "載入 Issue";
 "pullRequests.loadMergeOptions.title" = "載入合併選項";
 "pullRequests.merge" = "合併";
@@ -2418,7 +2431,7 @@
 "pullRequests.missingToken.title" = "缺少權杖";
 "pullRequests.missingToken.message" = "“%@” 的權杖不在鑰匙圈裡。請在 設定 → 帳號 中重新認證這個帳號。";
 "pullRequests.noAccount.title" = "沒有 %@ 帳號";
-"pullRequests.noDescription" = "沒有描述。";
+"pullRequests.noDescription" = "沒有描述";
 "pullRequests.noProjects" = "沒有遠端在所選帳號的實例上。";
 "pullRequests.noRemotes.title" = "沒有遠端";
 "pullRequests.noRemotes.message" = "加入 github.com、GitLab.com 或私有部署 GitLab 上的遠端，才能查看它的 Pull Request 與 Merge Request。";
@@ -2435,7 +2448,6 @@
 "pullRequests.strategy.merge" = "合併提交";
 "pullRequests.strategy.rebase_merge" = "合併提交，保持半線性歷史";
 "pullRequests.strategy.ff" = "快轉合併";
-"pullRequests.summary" = "%1$@ 想把 “%2$@” 合併進 “%3$@”";
 "pullRequests.target" = "目標：";
 "pullRequests.targetBranch" = "目標分支：";
 "pullRequests.titleField" = "標題：";

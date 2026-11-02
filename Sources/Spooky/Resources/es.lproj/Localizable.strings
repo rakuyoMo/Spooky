@@ -2370,9 +2370,10 @@
 "mr.load.title" = "Cargar merge requests";
 "pr.loadDetail.title" = "Cargar la pull request";
 "mr.loadDetail.title" = "Cargar la merge request";
+"pr.description.title" = "%1$@ creó esta pull request el %2$@";
+"mr.description.title" = "%1$@ creó esta merge request el %2$@";
 "pullRequests.account" = "Cuenta:";
 "pullRequests.addComment" = "Añadir comentario";
-"pullRequests.assignees" = "Asignados: %@";
 "pullRequests.associate" = "Asociar…";
 "pullRequests.associate.title" = "Asociar remoto";
 "pullRequests.associate.message" = "Elige la cuenta y el proyecto del servicio de alojamiento al que pertenece “%@”.";
@@ -2393,9 +2394,16 @@
 "pullRequests.close" = "Cerrar";
 "pullRequests.comment.title" = "Añadir comentario";
 "pullRequests.comment" = "Comentario:";
+"pullRequests.comment.commented" = "%1$@ comentó el %2$@";
+"pullRequests.comment.edited" = "%1$@ editó el %2$@";
+"pullRequests.comment.deleted" = "Este comentario se ha eliminado.";
 "pullRequests.commits" = "Commits";
 "pullRequests.commitGroup" = "%1$ld commits añadidos el %2$@";
 "pullRequests.commitGroup.one" = "1 commit añadido el %@";
+"pullRequests.contributors" = "%ld colaboradores";
+"pullRequests.contributors.one" = "1 colaborador";
+"pullRequests.contributors.none" = "Aún no hay colaboradores.";
+"pullRequests.contributors.commits" = "%ld commits";
 "pullRequests.copyCommitHash" = "Copiar hash del commit";
 "pullRequests.copyCommitHashes" = "Copiar hashes de %ld commits";
 "pullRequests.conversation" = "Conversación";
@@ -2407,6 +2415,11 @@
 "pullRequests.fetch" = "Hacer fetch";
 "pullRequests.fetch.title" = "Commits sin obtener";
 "pullRequests.fetch.message" = "Los commits de %1$@ aún no están en este repositorio. Haz fetch desde “%2$@” para ver sus commits y cambios.";
+"pullRequests.header.info" = "%1$@ quiere fusionar %2$@ en %3$@ desde %4$@";
+"pullRequests.header.infoWithoutCommits" = "%1$@ quiere fusionar en %2$@ desde %3$@";
+"pullRequests.header.commits" = "%ld commits";
+"pullRequests.header.commits.one" = "1 commit";
+"pullRequests.header.assignees" = "Asignados";
 "pullRequests.loadIssues.title" = "Cargar incidencias";
 "pullRequests.loadMergeOptions.title" = "Cargar opciones de fusión";
 "pullRequests.merge" = "Fusionar";
@@ -2418,7 +2431,7 @@
 "pullRequests.missingToken.title" = "Falta el token";
 "pullRequests.missingToken.message" = "El token de “%@” no está en tu llavero. Vuelve a autenticar la cuenta en Ajustes → Cuentas.";
 "pullRequests.noAccount.title" = "No hay ninguna cuenta de %@";
-"pullRequests.noDescription" = "Sin descripción.";
+"pullRequests.noDescription" = "Sin descripción";
 "pullRequests.noProjects" = "Ninguno de los remotos está en la instancia de la cuenta seleccionada.";
 "pullRequests.noRemotes.title" = "No hay remotos";
 "pullRequests.noRemotes.message" = "Añade un remoto en github.com, GitLab.com o un GitLab autogestionado para ver sus pull requests y merge requests.";
@@ -2435,7 +2448,6 @@
 "pullRequests.strategy.merge" = "Commit de fusión";
 "pullRequests.strategy.rebase_merge" = "Commit de fusión con historial semilineal";
 "pullRequests.strategy.ff" = "Fusión con avance rápido";
-"pullRequests.summary" = "%1$@ quiere fusionar “%2$@” en “%3$@”";
 "pullRequests.target" = "Destino:";
 "pullRequests.targetBranch" = "Rama de destino:";
 "pullRequests.titleField" = "Título:";

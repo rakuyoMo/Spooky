@@ -54,7 +54,7 @@ struct LocalizationTests {
                 "accept.title", "accept.message", "close.title", "close.message", "comment.message", "checkout.title",
                 "checkout.message", "empty.title", "empty.message", "noSelection", "noAccount.message", "fetchHead.title",
                 "forBranch.create", "forBranch.show", "filter.with", "filter.without",
-                "load.title", "loadDetail.title",
+                "load.title", "loadDetail.title", "description.title",
             ].map { prefix + $0 }
         }
 

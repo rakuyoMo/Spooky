@@ -11,7 +11,8 @@ extension HostingClientTests {
     @Test("GitHub 的 Pull Request 列表")
     func githubList() async throws {
         let body = """
-            [{"number":7,"title":"修复","body":null,"state":"open","draft":true,"user":{"login":"alice"},
+            [{"number":7,"title":"修复","body":null,"state":"open","draft":true,
+              "user":{"login":"alice","avatar_url":"https://avatars.githubusercontent.com/u/1?v=4"},
               "created_at":"2026-10-01T00:00:00Z","updated_at":"2026-10-02T00:00:00Z","merged_at":null,
               "html_url":"https://github.com/o/r/pull/7","assignees":[{"login":"bob"}],
               "head":{"ref":"fix/登录","sha":"aaa","repo":{"full_name":"alice/r"}},
@@ -29,7 +30,16 @@ extension HostingClientTests {
         #expect(request.id.reference == "#7")
         #expect(request.isDraft && request.isFromFork && request.state == .open)
         #expect(request.source == PullRequestBranch(project: "alice/r", branch: "fix/登录", sha: "aaa"))
-        #expect(request.assignees == ["bob"] && request.body.isEmpty)
+        #expect(request.assignees.map(\.username) == ["bob"] && request.body.isEmpty)
+
+        #expect(
+            request.author
+                == HostingUser(
+                    username: "alice",
+                    name: nil,
+                    avatarURL: URL(string: "https://avatars.githubusercontent.com/u/1?v=4")
+                )
+        )
         #expect(request.webURL?.absoluteString == "https://github.com/o/r/pull/7")
 
         let url = try #require(requests.withLock { $0.first?.url?.absoluteString })
@@ -181,7 +191,54 @@ extension HostingClientTests {
         // 推送了新提交这类系统记录不出现在讨论里
         let notes = try await client.comments(on: request.id)
         #expect(notes.map(\.id) == [1])
-        #expect(notes.map(\.author) == ["bob"])
+        #expect(notes.map(\.author.username) == ["bob"])
+    }
+
+    /// 评论的作者带上托管服务给的名字与头像地址，GitHub 的用户对象没有名字；评论带上更新时间，旧版 GitLab 没有给出时为 nil。
+    @Test("评论的作者与更新时间")
+    func commentAuthorsAndTimes() async throws {
+        let github = """
+            [{"id":1,"body":"看过了","user":{"login":"bob","avatar_url":"https://avatars.githubusercontent.com/u/2?v=4"},
+              "created_at":"2026-10-03T00:00:00Z","updated_at":"2026-10-04T00:00:00Z"},
+             {"id":2,"body":null,"user":null,"created_at":"2026-10-05T00:00:00Z","updated_at":"2026-10-05T00:00:00Z"}]
+            """
+
+        HostingStub.respond { _ in (200, [:], Data(github.utf8)) }
+
+        let comments = try await HostingClient(instance: .github, token: "t", session: HostingStub.session())
+            .comments(on: PullRequestID(instance: .github, project: "o/r", number: 7))
+
+        // 用户已删除时作者是空的用户名，内容为 null 时是空字符串
+        #expect(
+            comments.map(\.author) == [
+                HostingUser(username: "bob", name: nil, avatarURL: URL(string: "https://avatars.githubusercontent.com/u/2?v=4")),
+                HostingUser(username: "", name: nil),
+            ]
+        )
+
+        #expect(comments.map(\.updatedAt) == [Self.date("2026-10-04T00:00:00Z"), Self.date("2026-10-05T00:00:00Z")])
+        #expect(comments.last.map(\.body.isEmpty) ?? false)
+
+        let gitlab = """
+            [{"id":3,"body":"改过","author":{"username":"carol","name":"Carol 李","avatar_url":"https://git.example.com/uploads/c.png"},
+              "created_at":"2026-10-03T00:00:00.000Z","updated_at":"2026-10-06T00:00:00.000Z","system":false},
+             {"id":4,"body":"旧版","author":{"username":"dave","name":"Dave","avatar_url":null},
+              "created_at":"2026-10-04T00:00:00.000Z"}]
+            """
+
+        HostingStub.respond { _ in (200, [:], Data(gitlab.utf8)) }
+
+        let notes = try await HostingClient(instance: .gitlabCom, token: "t", session: HostingStub.session())
+            .comments(on: PullRequestID(instance: .gitlabCom, project: "group/project", number: 3))
+
+        #expect(
+            notes.map(\.author) == [
+                HostingUser(username: "carol", name: "Carol 李", avatarURL: URL(string: "https://git.example.com/uploads/c.png")),
+                HostingUser(username: "dave", name: "Dave"),
+            ]
+        )
+
+        #expect(notes.map(\.updatedAt) == [Self.date("2026-10-06T00:00:00Z"), nil])
     }
 }
 
@@ -196,7 +253,7 @@ extension HostingClientTests {
             body: "",
             state: .open,
             isDraft: false,
-            author: "alice",
+            author: HostingUser(username: "alice", name: nil),
             createdAt: Date(),
             updatedAt: Date(),
             source: PullRequestBranch(project: fork ? "alice/r" : "o/r", branch: "feature/x", sha: "aaa"),
@@ -225,6 +282,11 @@ extension HostingClientTests {
          "diff_refs":{"base_sha":"mmm","head_sha":"aaa","start_sha":"bbb"},
          "detailed_merge_status":"\(status)","user":{"can_merge":\(canMerge)},"squash":false}
         """
+    }
+
+    /// ISO 8601 写法的时刻。
+    static func date(_ text: String) -> Date? {
+        ISO8601DateFormatter().date(from: text)
     }
 }
 

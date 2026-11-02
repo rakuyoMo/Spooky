@@ -64,17 +64,26 @@ public struct HostingAccount: Codable, Sendable, Hashable, Identifiable {
 
 // MARK: - HostingUser
 
-/// 令牌对应的用户，添加账号与重新认证时读取。
-public struct HostingUser: Sendable, Equatable {
+/// 托管服务上的用户：令牌对应的用户，以及请求、评论的作者与指派人。
+public struct HostingUser: Sendable, Hashable {
     /// 用户名。
     public let username: String
 
-    /// 显示名；没有设置时为 nil。
+    /// 显示名；没有设置或托管服务没有给出时为 nil。
     public let name: String?
 
+    /// 托管服务给出的头像地址；没有给出时为 nil。
+    public let avatarURL: URL?
+
     /// 创建用户；解析与测试使用。
-    public init(username: String, name: String?) {
+    ///
+    /// - Parameters:
+    ///   - username: 用户名。
+    ///   - name: 显示名。
+    ///   - avatarURL: 头像地址。
+    public init(username: String, name: String?, avatarURL: URL? = nil) {
         self.username = username
         self.name = name
+        self.avatarURL = avatarURL
     }
 }

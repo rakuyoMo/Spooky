@@ -2370,9 +2370,10 @@
 "mr.load.title" = "Load Merge Requests";
 "pr.loadDetail.title" = "Load Pull Request";
 "mr.loadDetail.title" = "Load Merge Request";
+"pr.description.title" = "%1$@ created this pull request on %2$@";
+"mr.description.title" = "%1$@ created this merge request on %2$@";
 "pullRequests.account" = "Account:";
 "pullRequests.addComment" = "Add Comment";
-"pullRequests.assignees" = "Assignees: %@";
 "pullRequests.associate" = "Associate…";
 "pullRequests.associate.title" = "Associate Remote";
 "pullRequests.associate.message" = "Choose the account and the project on the hosting service that “%@” belongs to.";
@@ -2393,9 +2394,16 @@
 "pullRequests.close" = "Close";
 "pullRequests.comment.title" = "Add Comment";
 "pullRequests.comment" = "Comment:";
+"pullRequests.comment.commented" = "%1$@ commented on %2$@";
+"pullRequests.comment.edited" = "%1$@ edited on %2$@";
+"pullRequests.comment.deleted" = "This comment has been deleted.";
 "pullRequests.commits" = "Commits";
 "pullRequests.commitGroup" = "%1$ld commits added on %2$@";
 "pullRequests.commitGroup.one" = "1 commit added on %@";
+"pullRequests.contributors" = "%ld contributors";
+"pullRequests.contributors.one" = "1 contributor";
+"pullRequests.contributors.none" = "No contributors yet.";
+"pullRequests.contributors.commits" = "%ld commits";
 "pullRequests.copyCommitHash" = "Copy Commit Hash to Clipboard";
 "pullRequests.copyCommitHashes" = "Copy %ld Commit Hashes to Clipboard";
 "pullRequests.conversation" = "Conversation";
@@ -2407,6 +2415,11 @@
 "pullRequests.fetch" = "Fetch";
 "pullRequests.fetch.title" = "Commits Not Fetched";
 "pullRequests.fetch.message" = "The commits of %1$@ aren’t in this repository yet. Fetch them from “%2$@” to see its commits and changes.";
+"pullRequests.header.info" = "%1$@ wants to merge %2$@ into %3$@ from %4$@";
+"pullRequests.header.infoWithoutCommits" = "%1$@ wants to merge into %2$@ from %3$@";
+"pullRequests.header.commits" = "%ld commits";
+"pullRequests.header.commits.one" = "1 commit";
+"pullRequests.header.assignees" = "Assignees";
 "pullRequests.loadIssues.title" = "Load Issues";
 "pullRequests.loadMergeOptions.title" = "Load Merge Options";
 "pullRequests.merge" = "Merge";
@@ -2418,7 +2431,7 @@
 "pullRequests.missingToken.title" = "Token Missing";
 "pullRequests.missingToken.message" = "The token of “%@” isn’t in your keychain. Re-authenticate the account in Settings → Accounts.";
 "pullRequests.noAccount.title" = "No %@ Account";
-"pullRequests.noDescription" = "No description given.";
+"pullRequests.noDescription" = "No description given";
 "pullRequests.noProjects" = "None of the remotes is on the instance of the selected account.";
 "pullRequests.noRemotes.title" = "No Remotes";
 "pullRequests.noRemotes.message" = "Add a remote on github.com, GitLab.com or a self-managed GitLab to see its pull requests and merge requests.";
@@ -2435,7 +2448,6 @@
 "pullRequests.strategy.merge" = "Merge Commit";
 "pullRequests.strategy.rebase_merge" = "Merge Commit with Semi-Linear History";
 "pullRequests.strategy.ff" = "Fast-Forward Merge";
-"pullRequests.summary" = "%1$@ wants to merge “%2$@” into “%3$@”";
 "pullRequests.target" = "Target:";
 "pullRequests.targetBranch" = "Target Branch:";
 "pullRequests.titleField" = "Title:";

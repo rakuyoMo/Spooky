@@ -79,9 +79,10 @@ extension HostingClient {
                 .map {
                     PullRequestComment(
                         id: $0.id,
-                        author: $0.author?.username ?? "",
+                        author: GitLabUserReference.user($0.author),
                         body: $0.body,
-                        createdAt: $0.createdAt
+                        createdAt: $0.createdAt,
+                        updatedAt: $0.updatedAt
                     )
                 }
 
@@ -263,12 +264,12 @@ struct GitLabMergeRequest: Decodable, Sendable {
             body: description ?? "",
             state: status,
             isDraft: draft ?? workInProgress ?? false,
-            author: author?.username ?? "",
+            author: GitLabUserReference.user(author),
             createdAt: createdAt,
             updatedAt: updatedAt,
             source: PullRequestBranch(project: sourceProject, branch: sourceBranch, sha: diffRefs?.headSha ?? sha ?? ""),
             target: PullRequestBranch(project: project, branch: targetBranch, sha: diffRefs?.startSha ?? ""),
-            assignees: (assignees ?? assignee.map { [$0] } ?? []).map(\.username),
+            assignees: (assignees ?? assignee.map { [$0] } ?? []).map { GitLabUserReference.user($0) },
             webURL: webURL,
             mergeBase: diffRefs?.baseSha
         )
@@ -279,8 +280,25 @@ struct GitLabMergeRequest: Decodable, Sendable {
 
 /// GitLab 里引用的用户。
 struct GitLabUserReference: Decodable, Sendable {
+    /// 字段名：解码器先把蛇形字段转成驼峰，`avatar_url` 转成 `avatarUrl`。
+    private enum CodingKeys: String, CodingKey {
+        case username, name
+        case avatarURL = "avatarUrl"
+    }
+
     /// 用户名。
     let username: String
+
+    /// 显示名。
+    let name: String?
+
+    /// 头像地址；没有头像时为 null。
+    let avatarURL: URL?
+
+    /// 换成通用的用户；用户已删除、字段为 null 时用户名为空。
+    static func user(_ reference: Self?) -> HostingUser {
+        HostingUser(username: reference?.username ?? "", name: reference?.name, avatarURL: reference?.avatarURL)
+    }
 }
 
 // MARK: - GitLabNote
@@ -298,6 +316,9 @@ private struct GitLabNote: Decodable, Sendable {
 
     /// 发表时间。
     let createdAt: Date
+
+    /// 更新时间。
+    let updatedAt: Date?
 
     /// 是系统记录。
     let system: Bool?

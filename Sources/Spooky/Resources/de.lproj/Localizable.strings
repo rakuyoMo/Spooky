@@ -2370,9 +2370,10 @@
 "mr.load.title" = "Merge Requests laden";
 "pr.loadDetail.title" = "Pull Request laden";
 "mr.loadDetail.title" = "Merge Request laden";
+"pr.description.title" = "%1$@ hat diesen Pull Request am %2$@ erstellt";
+"mr.description.title" = "%1$@ hat diesen Merge Request am %2$@ erstellt";
 "pullRequests.account" = "Account:";
 "pullRequests.addComment" = "Kommentar hinzufügen";
-"pullRequests.assignees" = "Zugewiesen: %@";
 "pullRequests.associate" = "Zuordnen…";
 "pullRequests.associate.title" = "Remote zuordnen";
 "pullRequests.associate.message" = "Wählen Sie den Account und das Projekt auf dem Hosting-Dienst, zu dem „%@“ gehört.";
@@ -2393,9 +2394,16 @@
 "pullRequests.close" = "Schließen";
 "pullRequests.comment.title" = "Kommentar hinzufügen";
 "pullRequests.comment" = "Kommentar:";
+"pullRequests.comment.commented" = "%1$@ hat am %2$@ kommentiert";
+"pullRequests.comment.edited" = "%1$@ hat am %2$@ bearbeitet";
+"pullRequests.comment.deleted" = "Dieser Kommentar wurde gelöscht.";
 "pullRequests.commits" = "Commits";
 "pullRequests.commitGroup" = "%1$ld Commits hinzugefügt am %2$@";
 "pullRequests.commitGroup.one" = "1 Commit hinzugefügt am %@";
+"pullRequests.contributors" = "%ld Beitragende";
+"pullRequests.contributors.one" = "1 Beitragende Person";
+"pullRequests.contributors.none" = "Noch keine Beitragenden.";
+"pullRequests.contributors.commits" = "%ld Commits";
 "pullRequests.copyCommitHash" = "Commit-Hash kopieren";
 "pullRequests.copyCommitHashes" = "%ld Commit-Hashes kopieren";
 "pullRequests.conversation" = "Unterhaltung";
@@ -2407,6 +2415,11 @@
 "pullRequests.fetch" = "Abrufen";
 "pullRequests.fetch.title" = "Commits nicht abgerufen";
 "pullRequests.fetch.message" = "Die Commits von %1$@ sind noch nicht in diesem Repository. Rufen Sie sie von „%2$@“ ab, um Commits und Änderungen zu sehen.";
+"pullRequests.header.info" = "%1$@ möchte %2$@ aus %4$@ in %3$@ mergen";
+"pullRequests.header.infoWithoutCommits" = "%1$@ möchte aus %3$@ in %2$@ mergen";
+"pullRequests.header.commits" = "%ld Commits";
+"pullRequests.header.commits.one" = "1 Commit";
+"pullRequests.header.assignees" = "Zugewiesen";
 "pullRequests.loadIssues.title" = "Issues laden";
 "pullRequests.loadMergeOptions.title" = "Merge-Optionen laden";
 "pullRequests.merge" = "Mergen";
@@ -2418,7 +2431,7 @@
 "pullRequests.missingToken.title" = "Token fehlt";
 "pullRequests.missingToken.message" = "Das Token von „%@“ ist nicht in Ihrem Schlüsselbund. Melden Sie den Account unter „Einstellungen“ → „Accounts“ erneut an.";
 "pullRequests.noAccount.title" = "Kein %@-Account";
-"pullRequests.noDescription" = "Keine Beschreibung.";
+"pullRequests.noDescription" = "Keine Beschreibung";
 "pullRequests.noProjects" = "Keines der Remotes liegt auf der Instanz des ausgewählten Accounts.";
 "pullRequests.noRemotes.title" = "Keine Remotes";
 "pullRequests.noRemotes.message" = "Fügen Sie ein Remote auf github.com, GitLab.com oder einem selbst verwalteten GitLab hinzu, um Pull Requests und Merge Requests zu sehen.";
@@ -2435,7 +2448,6 @@
 "pullRequests.strategy.merge" = "Merge-Commit";
 "pullRequests.strategy.rebase_merge" = "Merge-Commit mit semi-linearem Verlauf";
 "pullRequests.strategy.ff" = "Fast-Forward-Merge";
-"pullRequests.summary" = "%1$@ möchte „%2$@“ in „%3$@“ mergen";
 "pullRequests.target" = "Ziel:";
 "pullRequests.targetBranch" = "Ziel-Branch:";
 "pullRequests.titleField" = "Titel:";
