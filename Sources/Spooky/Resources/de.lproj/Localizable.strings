@@ -2352,8 +2352,6 @@
 "mr.comment.message" = "Fügt Merge Request %1$@ in Ihrem %2$@-Account einen neuen Kommentar hinzu.";
 "pr.checkout.title" = "Pull Request auschecken";
 "mr.checkout.title" = "Merge Request auschecken";
-"pr.checkout.message" = "Erstellt aus %1$@ („%2$@“) einen lokalen Branch und checkt ihn aus. Geben Sie einen Namen für den Branch ein.";
-"mr.checkout.message" = "Erstellt aus %1$@ („%2$@“) einen lokalen Branch und checkt ihn aus. Geben Sie einen Namen für den Branch ein.";
 "pr.empty.title" = "Keine Pull Requests";
 "mr.empty.title" = "Keine Merge Requests";
 "pr.empty.message" = "Dieses Projekt hat keine offenen Pull Requests.";
@@ -2402,6 +2400,7 @@
 "pullRequests.branchName" = "Branch-Name:";
 "pullRequests.changeset" = "Änderungen";
 "pullRequests.checkout" = "Auschecken";
+"pullRequests.checkout.message" = "Der Branch „%@“ wird ausgecheckt. Wählen Sie einen Namen für den lokalen Branch.";
 "pullRequests.chooseAccount.title" = "Account auswählen";
 "pullRequests.chooseAccount.message" = "Mehrere Accounts können auf „%@“ zugreifen. Wählen Sie den gewünschten aus.";
 "pullRequests.chooseAccount.submit" = "Account verwenden";

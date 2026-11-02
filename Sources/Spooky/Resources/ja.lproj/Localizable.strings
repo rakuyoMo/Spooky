@@ -2352,8 +2352,6 @@
 "mr.comment.message" = "%2$@ アカウントでマージリクエスト %1$@ に新しいコメントを追加します。";
 "pr.checkout.title" = "プルリクエストをチェックアウト";
 "mr.checkout.title" = "マージリクエストをチェックアウト";
-"pr.checkout.message" = "%1$@（「%2$@」）からローカルブランチを作成してチェックアウトします。ブランチ名を入力してください。";
-"mr.checkout.message" = "%1$@（「%2$@」）からローカルブランチを作成してチェックアウトします。ブランチ名を入力してください。";
 "pr.empty.title" = "プルリクエストはありません";
 "mr.empty.title" = "マージリクエストはありません";
 "pr.empty.message" = "このプロジェクトにオープン中のプルリクエストはありません。";
@@ -2402,6 +2400,7 @@
 "pullRequests.branchName" = "ブランチ名：";
 "pullRequests.changeset" = "変更内容";
 "pullRequests.checkout" = "チェックアウト";
+"pullRequests.checkout.message" = "ブランチ「%@」をチェックアウトします。ローカルブランチの名前を選んでください。";
 "pullRequests.chooseAccount.title" = "アカウントを選択";
 "pullRequests.chooseAccount.message" = "複数のアカウントが「%@」にアクセスできます。使うアカウントを選んでください。";
 "pullRequests.chooseAccount.submit" = "このアカウントを使用";

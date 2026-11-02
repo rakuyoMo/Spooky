@@ -2352,8 +2352,6 @@
 "mr.comment.message" = "Ajoute un nouveau commentaire à la merge request %1$@ dans votre compte %2$@.";
 "pr.checkout.title" = "Extraire la pull request";
 "mr.checkout.title" = "Extraire la merge request";
-"pr.checkout.message" = "Crée une branche locale à partir de %1$@ (« %2$@ ») et l’extrait. Saisissez un nom pour la branche.";
-"mr.checkout.message" = "Crée une branche locale à partir de %1$@ (« %2$@ ») et l’extrait. Saisissez un nom pour la branche.";
 "pr.empty.title" = "Aucune pull request";
 "mr.empty.title" = "Aucune merge request";
 "pr.empty.message" = "Ce projet n’a aucune pull request ouverte.";
@@ -2402,6 +2400,7 @@
 "pullRequests.branchName" = "Nom de la branche :";
 "pullRequests.changeset" = "Modifications";
 "pullRequests.checkout" = "Extraire";
+"pullRequests.checkout.message" = "La branche « %@ » sera extraite. Choisissez un nom pour la branche locale.";
 "pullRequests.chooseAccount.title" = "Choisir un compte";
 "pullRequests.chooseAccount.message" = "Plusieurs comptes peuvent accéder à « %@ ». Choisissez celui à utiliser.";
 "pullRequests.chooseAccount.submit" = "Utiliser ce compte";

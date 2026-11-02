@@ -48,6 +48,34 @@ struct PullRequestTextDialogTests {
         #expect(Self.subviews(NSTextView.self, in: delete).isEmpty)
         #expect(Self.subviews(NSTextField.self, in: delete).allSatisfy { !$0.isEditable })
     }
+
+    /// 检出说明写出源分支，来自 Fork 时写成 `作者:分支`；分支名不合法时带原因、不能检出；同名的本地分支指向别的提交时只提醒。
+    @Test("检出时校验分支名")
+    func checkoutValidation() async throws {
+        #expect(PullRequestTextDialog.checkoutSource(of: Self.request(branch: "main")) == "main")
+        #expect(PullRequestTextDialog.checkoutSource(of: Self.request(branch: "main", fork: true)) == "me:main")
+
+        let fixture = try await HistoryListTests.makeSession(commits: ["first"])
+        defer { fixture.close() }
+
+        let head = try await RepositoryReferences(runner: fixture.runner).resolve("HEAD")
+        let session = fixture.session
+
+        // 检出源分支提交为 sha 的请求，本地分支名填 name
+        func problem(_ name: String, sha: String) async -> PullRequestTextDialog.BranchNameProblem? {
+            await PullRequestTextDialog.branchNameProblem(name, for: Self.request(branch: name, sha: sha), in: session)
+        }
+
+        let invalid = AppLocalization.text("reference.invalidName", "bad..name")
+        #expect(await problem("bad..name", sha: head) == .invalid(invalid))
+
+        // 同名的本地分支 main 指向别的提交时提醒；就在源分支提交上、源分支提交未知或没有同名分支时没有问题
+        #expect(await problem("main", sha: String(repeating: "0", count: 40)) == .taken)
+        #expect(await problem("main", sha: head.uppercased()) == nil)
+        #expect(await problem("main", sha: "") == nil)
+        #expect(await problem("feature", sha: head) == nil)
+        #expect(await problem("", sha: head) == nil)
+    }
 }
 
 // MARK: - Helpers
@@ -61,9 +89,9 @@ extension PullRequestTextDialogTests {
         createdAt: Date(timeIntervalSince1970: 0)
     )
 
-    /// 把对话框放进按内容定尺寸的宿主，排好版后返回。
-    private static func host(_ kind: PullRequestTextDialog.Kind) -> NSHostingView<PullRequestTextDialog> {
-        let request = PullRequest(
+    /// `me` 发起的请求；来自 Fork 时源分支在另一个项目里。
+    private static func request(branch: String = "feature", sha: String = "", fork: Bool = false) -> PullRequest {
+        PullRequest(
             id: PullRequestID(instance: .gitlabCom, project: "group/project", number: 4),
             title: "t",
             body: "描述",
@@ -72,16 +100,14 @@ extension PullRequestTextDialogTests {
             author: HostingUser(username: "me", name: nil),
             createdAt: Date(timeIntervalSince1970: 0),
             updatedAt: Date(timeIntervalSince1970: 0),
-            source: PullRequestBranch(project: "group/project", branch: "feature", sha: ""),
+            source: PullRequestBranch(project: fork ? "me/project" : "group/project", branch: branch, sha: sha),
             target: PullRequestBranch(project: "group/project", branch: "main", sha: "")
         )
+    }
 
-        let dialog = PullRequestTextDialog(
-            session: RepositorySession(),
-            request: request,
-            kind: kind,
-            close: { }
-        )
+    /// 把对话框放进按内容定尺寸的宿主，排好版后返回。
+    private static func host(_ kind: PullRequestTextDialog.Kind) -> NSHostingView<PullRequestTextDialog> {
+        let dialog = PullRequestTextDialog(session: RepositorySession(), request: request(), kind: kind, close: { })
 
         let hosting = NSHostingView(rootView: dialog)
         hosting.frame.size = hosting.fittingSize

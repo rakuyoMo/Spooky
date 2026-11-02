@@ -2352,8 +2352,6 @@
 "mr.comment.message" = "在你的 %2$@ 帳號中為 Merge Request %1$@ 加入一則新留言。";
 "pr.checkout.title" = "簽出 Pull Request";
 "mr.checkout.title" = "簽出 Merge Request";
-"pr.checkout.message" = "從 %1$@（“%2$@”）新增本機分支並簽出它。請輸入分支名稱。";
-"mr.checkout.message" = "從 %1$@（“%2$@”）新增本機分支並簽出它。請輸入分支名稱。";
 "pr.empty.title" = "沒有 Pull Request";
 "mr.empty.title" = "沒有 Merge Request";
 "pr.empty.message" = "這個專案沒有開啟中的 Pull Request。";
@@ -2402,6 +2400,7 @@
 "pullRequests.branchName" = "分支名稱：";
 "pullRequests.changeset" = "變更";
 "pullRequests.checkout" = "簽出";
+"pullRequests.checkout.message" = "將簽出分支 “%@”。請為本機分支選一個名稱。";
 "pullRequests.chooseAccount.title" = "選擇帳號";
 "pullRequests.chooseAccount.message" = "有多個帳號可以存取 “%@”。請選擇要用的帳號。";
 "pullRequests.chooseAccount.submit" = "使用此帳號";

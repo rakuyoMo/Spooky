@@ -2352,8 +2352,6 @@
 "mr.comment.message" = "在你的 %2$@ 账号中给 Merge Request %1$@ 添加一条新评论。";
 "pr.checkout.title" = "检出 Pull Request";
 "mr.checkout.title" = "检出 Merge Request";
-"pr.checkout.message" = "从 %1$@（“%2$@”）新建本地分支并检出它。请输入分支名。";
-"mr.checkout.message" = "从 %1$@（“%2$@”）新建本地分支并检出它。请输入分支名。";
 "pr.empty.title" = "没有 Pull Request";
 "mr.empty.title" = "没有 Merge Request";
 "pr.empty.message" = "这个项目没有打开着的 Pull Request。";
@@ -2402,6 +2400,7 @@
 "pullRequests.branchName" = "分支名：";
 "pullRequests.changeset" = "改动";
 "pullRequests.checkout" = "检出";
+"pullRequests.checkout.message" = "将检出分支 “%@”。请为本地分支选一个名字。";
 "pullRequests.chooseAccount.title" = "选择账号";
 "pullRequests.chooseAccount.message" = "有多个账号可以访问 “%@”。请选择要用的账号。";
 "pullRequests.chooseAccount.submit" = "使用此账号";

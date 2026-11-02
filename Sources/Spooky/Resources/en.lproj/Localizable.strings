@@ -2352,8 +2352,6 @@
 "mr.comment.message" = "Adds a new comment to Merge Request %1$@ in your %2$@ account.";
 "pr.checkout.title" = "Check Out Pull Request";
 "mr.checkout.title" = "Check Out Merge Request";
-"pr.checkout.message" = "Creates a local branch from %1$@ (“%2$@”) and checks it out. Enter a name for the branch.";
-"mr.checkout.message" = "Creates a local branch from %1$@ (“%2$@”) and checks it out. Enter a name for the branch.";
 "pr.empty.title" = "No Pull Requests";
 "mr.empty.title" = "No Merge Requests";
 "pr.empty.message" = "This project has no open pull requests.";
@@ -2402,6 +2400,7 @@
 "pullRequests.branchName" = "Branch Name:";
 "pullRequests.changeset" = "Changeset";
 "pullRequests.checkout" = "Check Out";
+"pullRequests.checkout.message" = "This will check out the branch “%@”. Please choose a local branch name.";
 "pullRequests.chooseAccount.title" = "Choose an Account";
 "pullRequests.chooseAccount.message" = "Several accounts can access “%@”. Choose the one to use.";
 "pullRequests.chooseAccount.submit" = "Use Account";

@@ -2352,8 +2352,6 @@
 "mr.comment.message" = "Añade un comentario nuevo a la merge request %1$@ en tu cuenta de %2$@.";
 "pr.checkout.title" = "Hacer checkout de la pull request";
 "mr.checkout.title" = "Hacer checkout de la merge request";
-"pr.checkout.message" = "Crea una rama local desde %1$@ (“%2$@”) y hace checkout de ella. Introduce un nombre para la rama.";
-"mr.checkout.message" = "Crea una rama local desde %1$@ (“%2$@”) y hace checkout de ella. Introduce un nombre para la rama.";
 "pr.empty.title" = "No hay pull requests";
 "mr.empty.title" = "No hay merge requests";
 "pr.empty.message" = "Este proyecto no tiene pull requests abiertas.";
@@ -2402,6 +2400,7 @@
 "pullRequests.branchName" = "Nombre de la rama:";
 "pullRequests.changeset" = "Cambios";
 "pullRequests.checkout" = "Hacer checkout";
+"pullRequests.checkout.message" = "Se hará checkout de la rama “%@”. Elige un nombre para la rama local.";
 "pullRequests.chooseAccount.title" = "Elige una cuenta";
 "pullRequests.chooseAccount.message" = "Varias cuentas pueden acceder a “%@”. Elige la que quieres usar.";
 "pullRequests.chooseAccount.submit" = "Usar cuenta";

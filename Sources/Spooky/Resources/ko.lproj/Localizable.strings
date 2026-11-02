@@ -2352,8 +2352,6 @@
 "mr.comment.message" = "%2$@ 계정에서 머지 리퀘스트 %1$@에 새 댓글을 추가합니다.";
 "pr.checkout.title" = "풀 리퀘스트 체크아웃";
 "mr.checkout.title" = "머지 리퀘스트 체크아웃";
-"pr.checkout.message" = "%1$@(“%2$@”)에서 로컬 브랜치를 만들고 체크아웃합니다. 브랜치 이름을 입력하세요.";
-"mr.checkout.message" = "%1$@(“%2$@”)에서 로컬 브랜치를 만들고 체크아웃합니다. 브랜치 이름을 입력하세요.";
 "pr.empty.title" = "풀 리퀘스트 없음";
 "mr.empty.title" = "머지 리퀘스트 없음";
 "pr.empty.message" = "이 프로젝트에 열려 있는 풀 리퀘스트가 없습니다.";
@@ -2402,6 +2400,7 @@
 "pullRequests.branchName" = "브랜치 이름:";
 "pullRequests.changeset" = "변경 사항";
 "pullRequests.checkout" = "체크아웃";
+"pullRequests.checkout.message" = "브랜치 “%@”을(를) 체크아웃합니다. 로컬 브랜치 이름을 정하세요.";
 "pullRequests.chooseAccount.title" = "계정 선택";
 "pullRequests.chooseAccount.message" = "여러 계정이 “%@”에 접근할 수 있습니다. 사용할 계정을 선택하세요.";
 "pullRequests.chooseAccount.submit" = "이 계정 사용";

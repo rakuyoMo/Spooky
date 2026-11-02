@@ -26,6 +26,23 @@ struct PullRequestTextDialog: View {
         case checkout
     }
 
+    /// 检出时分支名的问题。
+    enum BranchNameProblem: Equatable {
+        /// 不合法，带原因；不能检出。
+        case invalid(String)
+
+        /// 同名的本地分支指向别的提交；只提醒，仍可检出。
+        case taken
+
+        /// 错误区写出的说明。
+        var message: String {
+            switch self {
+            case .invalid(let reason): reason
+            case .taken: AppLocalization.text("pullRequests.error.branchMismatch.help")
+            }
+        }
+    }
+
     /// 发起动作的窗口会话。
     let session: RepositorySession
 
@@ -42,6 +59,10 @@ struct PullRequestTextDialog: View {
     @State
     private var text = ""
 
+    /// 检出时分支名的问题；没有问题或还没校验完时为 nil。
+    @State
+    private var nameProblem: BranchNameProblem? = nil
+
     /// 评论与描述是占满宽度、高 300 的多行输入，检出是从对齐线开始的分支名，删除评论没有内容区。
     ///
     /// 仓库暂不可写时主按钮禁用，错误区写出原因。
@@ -50,8 +71,8 @@ struct PullRequestTextDialog: View {
             title: title,
             message: message,
             submitTitle: submitTitle,
-            error: session.canWrite ? nil : AppLocalization.text("dialog.blocked"),
-            canSubmit: isValid && session.canWrite,
+            error: error,
+            canSubmit: canSubmit,
             cancel: close,
             submit: submit
         ) {
@@ -74,6 +95,55 @@ struct PullRequestTextDialog: View {
             }
         }
         .onAppear(perform: prefill)
+        .task(id: text) { await validateBranchName() }
+    }
+}
+
+// MARK: - Checkout
+
+extension PullRequestTextDialog {
+    /// 检出说明里的源分支：来自 Fork 时写成 `作者:分支`。
+    static func checkoutSource(of request: PullRequest) -> String {
+        guard request.isFromFork else {
+            return request.source.branch
+        }
+
+        return request.author.username + ":" + request.source.branch
+    }
+
+    /// 检出时分支名的问题：按 Git 的分支规则不合法时带原因，同名的本地分支指向别的提交时是提醒；没有问题时为 nil。
+    ///
+    /// - Parameters:
+    ///   - name: 去掉首尾空格的分支名。
+    ///   - request: 要检出的请求。
+    ///   - session: 仓库的会话，提供执行器与已读到的引用。
+    static func branchNameProblem(
+        _ name: String,
+        for request: PullRequest,
+        in session: RepositorySession
+    ) async -> BranchNameProblem? {
+        guard !name.isEmpty, let runner = session.runner else {
+            return nil
+        }
+
+        do {
+            try await RepositoryReferences(runner: runner).validate(name: name)
+        } catch {
+            return .invalid(ReferenceDialogRows.validationMessage(error, in: session))
+        }
+
+        let existing = session.history.snapshot?.references
+            .first { $0.id == "refs/heads/" + name }?
+            .objectID
+
+        let source = request.source.sha.lowercased()
+
+        // 没有同名分支、源分支提交未知，或同名分支就在源分支提交上时没有问题
+        guard let existing, !source.isEmpty, existing.lowercased() != source else {
+            return nil
+        }
+
+        return .taken
     }
 }
 
@@ -113,12 +183,19 @@ extension PullRequestTextDialog {
         case .editDescription: session.pullRequestText("editDescription.message")
 
         case .checkout:
-            session.pullRequestText(
-                "checkout.message",
-                request.id.reference,
-                PullRequestText.source(of: request)
-            )
+            AppLocalization.text("pullRequests.checkout.message", Self.checkoutSource(of: request))
         }
+    }
+
+    /// 错误区：分支名不合法的原因、同名分支指向别的提交的提醒，以及仓库暂不可写；都没有时为 nil。
+    private var error: String? {
+        let messages = [
+            nameProblem?.message,
+            session.canWrite ? nil : AppLocalization.text("dialog.blocked"),
+        ]
+
+        let text = messages.compactMap(\.self).joined(separator: "\n")
+        return text.isEmpty ? nil : text
     }
 
     /// 主按钮的标题。
@@ -144,6 +221,19 @@ extension PullRequestTextDialog {
         }
     }
 
+    /// 内容有效、仓库可写，且分支名没有不合法时才能提交；同名分支指向别的提交只是提醒，不挡提交。
+    private var canSubmit: Bool {
+        guard isValid, session.canWrite else {
+            return false
+        }
+
+        if case .invalid = nameProblem {
+            return false
+        }
+
+        return true
+    }
+
     /// 评论与描述的多行输入：四周留 20、占满对话框的宽度、高 300，带边框；没有可见的标签，VoiceOver 读出去掉冒号的标签。
     private func editor(label: String) -> some View {
         TextEditor(text: $text)
@@ -162,6 +252,31 @@ extension PullRequestTextDialog {
         case .checkout: text = request.source.branch
         default: break
         }
+    }
+
+    /// 检出时输入停下后校验分支名，较早的输入的结果不覆盖较新的。
+    private func validateBranchName() async {
+        guard case .checkout = kind else {
+            return
+        }
+
+        try? await Task.sleep(for: .milliseconds(150))
+
+        guard !Task.isCancelled else {
+            return
+        }
+
+        let problem = await Self.branchNameProblem(
+            text.trimmingCharacters(in: .whitespaces),
+            for: request,
+            in: session
+        )
+
+        guard !Task.isCancelled else {
+            return
+        }
+
+        nameProblem = problem
     }
 
     /// 开始后关闭。
