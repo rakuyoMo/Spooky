@@ -78,7 +78,7 @@ struct PullRequestFormDialog: View {
                         .frame(width: Self.fieldWidth)
                 }
 
-                DialogFormRow(label: AppLocalization.text("pullRequests.description")) {
+                DialogFormRow(label: AppLocalization.text("pullRequests.description"), alignment: .top) {
                     descriptionEditor
                 }
             }

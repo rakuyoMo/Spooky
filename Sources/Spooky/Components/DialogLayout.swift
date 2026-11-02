@@ -7,7 +7,7 @@ import SwiftUI
 ///
 /// 头部文字与错误文字对齐 `DialogMetrics.alignment`，应用图标挂在左侧；内容区的边距由内容自己决定，
 /// 表单可以用 `DialogForm` 与 `DialogFormRow` 让输入列也从对齐线开始。
-/// 用于身份档案、Issue 追踪设置、仓库管理，以及请求的评论、描述与检出；要随仓库可写状态禁用的，由调用方给出主按钮与错误区。
+/// 用于身份档案、Issue 追踪设置、仓库管理，以及请求的新建、修改、评论、描述与检出；要随仓库可写状态禁用的，由调用方给出主按钮与错误区。
 struct DialogLayout<Content: View>: View {
     /// 对话框标题，也是 VoiceOver 读出的名称。
     let title: String
@@ -159,13 +159,16 @@ struct DialogFormRow<Field: View>: View {
     /// 标签，带冒号。
     let label: String
 
+    /// 标签与控件的竖直对齐；为 nil 时沿用表单的首行基线对齐，多行的文字区用 `.top` 让标签与它的顶边对齐。
+    var alignment: VerticalAlignment? = nil
+
     /// 输入控件。
     @ViewBuilder
     let field: () -> Field
 
     /// 标签列至少宽到让输入列从对齐线开始。
     var body: some View {
-        GridRow {
+        GridRow(alignment: alignment) {
             Text(label)
                 .frame(minWidth: DialogMetrics.labelWidth, alignment: .trailing)
                 .gridColumnAlignment(.trailing)
