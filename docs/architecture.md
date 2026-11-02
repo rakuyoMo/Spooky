@@ -126,7 +126,14 @@ Spooky 由两个 target 组成：
 - 口令、密码、签名口令与编辑器的请求经 `CallbackRelay` 回到 A：服务器仓库经当前主连接上的反向 Unix socket，本机仓库经私有的 Unix socket
   - 每个请求带会话令牌，只能应答一次，120 秒后超时
   - 凭据不进入记录、日志或错误对象；用户选择保存时只写 A 的钥匙串
-- 不由用户直接发起的操作（如自动获取）放在 `RemoteCallbackRequest.$allowsInteraction.withValue(false)` 里执行：回调只用钥匙串里已存的凭据，取不到按取消处理，不弹出输入框
+- 不由用户直接发起的操作（如自动获取）放在 `RemoteCallbackRequest.$allowsInteraction.withValue(false)` 里执行：回调只用账号令牌与钥匙串里已存的凭据，取不到按取消处理，不弹出输入框
+- HTTPS 远端属于已登录的托管账号时，Git 用账号的令牌认证：
+  - `GitCredentialScopes` 记着交给 Spooky 回答的地址前缀：账号实例的 HTTPS 网页地址，与关联到已登录账号的 HTTPS 远端（去掉用户名）；App 在启动与账号、关联变化时写入
+  - 本机与服务器上的每条 Git 命令为每个前缀先清空已有的凭据助手，再加上包装器的 `credential` 入口，并打开 `credential.useHttpPath`，助手与 askpass 都拿到带路径的地址
+  - 包装器只把 `get` 与 `erase` 的地址经中继交给 App，`store` 不交；`AccountGitCredentials` 按手动关联、账号实例的顺序找账号，回答 `username` 与 `password`，用户名与密码登录换来的令牌配用户名 `oauth2`；服务器仓库的令牌只经中继回到 B 上助手的标准输出
+  - 回答的顺序：账号令牌、钥匙串里存过的凭据、弹框询问。对不上账号、账号需要重新认证或令牌被 Git 拒绝过时，助手不输出，Git 接着问 askpass
+  - 同一操作对刚回答过的地址发来 `erase`，说明 Git 拒绝了令牌：只在内存里标记这个账号，重新认证或移除后清掉；之后这个账号的地址回到询问，说明里写明账号的令牌没能通过
+  - 中继只把应答里 `password=` 行的值记进脱敏集合
 - 签名：
   - 本机会生成提交的命令（`commit`、`merge`、`rebase`、`cherry-pick`、`revert`）经 `LocalGitAuthentication` 执行：SSH 签名的私钥口令经回调询问，GPG 交给本机的 pinentry
   - 服务器仓库在 B 上签名：经包装器的 `-gpg`、`-ssh-keygen` 入口接入中继，仍执行仓库配置的签名程序；gpg 以 loopback 模式运行，只在确实需要口令时询问
@@ -144,9 +151,12 @@ Spooky 由两个 target 组成：
 ## 托管服务
 
 - 接口一律经 `HostingClient` 从 A 发起
-  - 令牌只放在请求头：GitHub 用 `Authorization: Bearer`，GitLab 用 `PRIVATE-TOKEN`
+  - 令牌只放在请求头：GitHub 与用户名和密码登录的 GitLab 账号用 `Authorization: Bearer`，其余 GitLab 账号用 `PRIVATE-TOKEN`
   - 请求不用 URLCache 里的旧响应；失败按 `HostingError` 分类并保留服务端原文
 - 令牌只存在钥匙串，服务名 `com.rakuyo.spooky.hosting.<实例网页地址>`，账户名是账号 UUID
+  - 个人访问令牌与浏览器授权的令牌存原文
+  - 私有部署 GitLab 的用户名与密码经 `GitLabPasswordGrant` 换成 OAuth 令牌，钥匙串存访问令牌、刷新令牌与到期时间的 JSON，密码不保存
+  - 这种账号的客户端在每次请求前经 `HostingAccounts.token(for:)` 取令牌：距到期不到 60 秒时先用刷新令牌续期，同一账号的续期串行进行；刷新令牌被拒时账号标为需要重新认证
 - 请求的提交与改动在仓库所在的机器上比较：源分支提交不在仓库里时，从目标远端的 `refs/pull/<编号>/head`（GitLab 是 `refs/merge-requests/<编号>/head`）取到 `FETCH_HEAD`；合并时带上源分支提交让服务端核对，合并后在仓库所在的机器上获取目标远端
 
 ## 仓库管理与系统集成

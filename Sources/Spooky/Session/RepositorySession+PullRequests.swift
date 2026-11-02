@@ -54,12 +54,69 @@ extension RepositorySession {
     }
 }
 
+// MARK: - Accounts
+
+extension RepositorySession {
+    /// 账号的变化是否要重新读取请求：有账号加入或移除，或者有账号的重新认证标记被清掉。
+    ///
+    /// - Parameters:
+    ///   - previous: 变化前的账号。
+    ///   - current: 变化后的账号。
+    static func accountsChangeReloadsPullRequests(
+        from previous: [HostingAccount],
+        to current: [HostingAccount]
+    ) -> Bool {
+        guard Set(previous.map(\.id)) == Set(current.map(\.id)) else {
+            return true
+        }
+
+        return current.contains { account in
+            !account.needsReauthentication
+                && previous.contains { $0.id == account.id && $0.needsReauthentication }
+        }
+    }
+
+    /// 账号变化后，已读过的请求视图重新找远端对应的账号并读取。
+    ///
+    /// 只在添加、移除或重新认证账号时读取；令牌被拒时自动加上的重新认证标记不触发，以免同一个失败再读一次。
+    ///
+    /// - Parameters:
+    ///   - previous: 变化前的账号。
+    ///   - current: 变化后的账号。
+    func accountsDidChange(from previous: [HostingAccount], to current: [HostingAccount]) {
+        guard pullRequests.isLoaded, Self.accountsChangeReloadsPullRequests(from: previous, to: current) else {
+            return
+        }
+
+        reloadPullRequests()
+    }
+}
+
+// MARK: - Remotes
+
+extension RepositorySession {
+    /// 远端加入、移除或设置变了之后，已读过的请求视图重新读出远端并读取请求；还没读到引用时不比较。
+    ///
+    /// - Parameters:
+    ///   - previous: 变化前各远端设置的摘要，以远端名为键。
+    ///   - current: 变化后各远端设置的摘要，以远端名为键。
+    func remotesDidChange(from previous: [String: String]?, to current: [String: String]?) {
+        guard pullRequests.isLoaded, let previous, let current, previous != current else {
+            return
+        }
+
+        reloadPullRequests()
+    }
+}
+
 // MARK: - Hosting Actions
 
 extension RepositorySession {
-    /// 在托管服务上新建请求，成功后重新读取并选中它。
+    /// 在托管服务上新建请求，成功后重新读取并选中它；Activity 的标题与新建对话框的标题相同。
     func createPullRequest(_ draft: PullRequestDraft) -> Bool {
-        performHosting(title: pullRequestText("create.title")) { [weak self] client in
+        let service = pullRequests.account.map { AccountsSettingsView.serviceTitle($0.instance) } ?? ""
+
+        return performHosting(title: pullRequestText("create.title", service)) { [weak self] client in
             let created = try await client.createPullRequest(draft)
 
             await MainActor.run {
@@ -71,9 +128,11 @@ extension RepositorySession {
         }
     }
 
-    /// 修改标题、描述与目标分支。
+    /// 修改标题、描述与目标分支；Activity 的标题与修改对话框的标题相同。
     func updatePullRequest(_ request: PullRequest, title: String, body: String, targetBranch: String) -> Bool {
-        performHosting(title: pullRequestText("edit.title")) { client in
+        let service = AccountsSettingsView.serviceTitle(request.id.instance)
+
+        return performHosting(title: pullRequestText("edit.title", service, request.id.reference)) { client in
             try await client.updatePullRequest(request.id, title: title, body: body, targetBranch: targetBranch)
             return nil
         }
@@ -81,34 +140,30 @@ extension RepositorySession {
 
     /// 发表评论。
     func addComment(_ body: String, to request: PullRequest) -> Bool {
-        performHosting(title: AppLocalization.text("pullRequests.comment.title")) { client in
+        let service = AccountsSettingsView.serviceTitle(request.id.instance)
+
+        return performHosting(title: pullRequestText("comment.title", service)) { client in
             try await client.addComment(body, to: request.id)
             return nil
         }
     }
 
-    /// 确认后关闭请求。
-    func closePullRequest(_ request: PullRequest) {
-        let site = request.id.instance.displayName
+    /// 关闭请求；Activity 的标题与关闭对话框的标题相同。
+    func closePullRequest(_ request: PullRequest) -> Bool {
+        let service = AccountsSettingsView.serviceTitle(request.id.instance)
 
-        onConfirm?(
-            pullRequestText("close.title"),
-            pullRequestText("close.message", request.id.reference, site),
-            { [weak self] in
-                self?.performHosting(title: self?.pullRequestText("close.title") ?? "") { client in
-                    try await client.closePullRequest(request.id)
-                    return nil
-                }
-            },
-            nil
-        )
+        return performHosting(title: pullRequestText("close.title", service)) { client in
+            try await client.closePullRequest(request.id)
+            return nil
+        }
     }
 
-    /// 在托管服务上合并，成功后在仓库所在的机器上获取目标远端，让远端分支跟上合并结果。
+    /// 在托管服务上合并，成功后在仓库所在的机器上获取目标远端，让远端分支跟上合并结果；Activity 的标题与合并对话框的标题相同。
     func mergePullRequest(_ request: PullRequest, method: PullRequestMergeMethod, deletesSourceBranch: Bool) -> Bool {
         let remote = pullRequests.remote
+        let service = AccountsSettingsView.serviceTitle(request.id.instance)
 
-        return performHosting(title: pullRequestText("accept.title")) { [weak self] client in
+        return performHosting(title: pullRequestText("accept.title", service)) { [weak self] client in
             let result = try await client.merge(request, method: method, deletesSourceBranch: deletesSourceBranch)
 
             await MainActor.run {

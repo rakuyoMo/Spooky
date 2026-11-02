@@ -453,7 +453,7 @@ extension BranchesReviewTests {
             body: "",
             state: state,
             isDraft: false,
-            author: "a",
+            author: HostingUser(username: "a", name: nil),
             createdAt: Date(),
             updatedAt: Date(),
             source: PullRequestBranch(project: "o/r", branch: "topic", sha: sha),

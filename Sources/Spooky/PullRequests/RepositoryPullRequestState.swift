@@ -15,8 +15,23 @@ enum PullRequestRequest {
     /// 在托管服务上合并。
     case merge(PullRequest)
 
+    /// 确认后在托管服务上关闭。
+    case close(PullRequest)
+
     /// 发表评论。
     case comment(PullRequest)
+
+    /// 修改请求里的一条评论。
+    case editComment(PullRequest, PullRequestComment)
+
+    /// 回复请求里的一条评论。
+    case replyToComment(PullRequest, PullRequestComment)
+
+    /// 删除请求里的一条评论。
+    case deleteComment(PullRequest, PullRequestComment)
+
+    /// 只修改请求的描述。
+    case editDescription(PullRequest)
 
     /// 检出成本地分支。
     case checkout(PullRequest)
@@ -104,6 +119,9 @@ final class RepositoryPullRequestState {
 
     /// 提交与改动两段共用的比较。
     let comparison = RevisionComparisonState()
+
+    /// 讨论列出的提交、Commits 段的参与者，以及讨论里的选择与折叠。
+    let conversation = PullRequestConversationState()
 
     /// 对话框由窗口呈现。
     @ObservationIgnored
@@ -454,13 +472,17 @@ extension RepositoryPullRequestState {
         }
     }
 
-    /// 源分支提交在仓库里时比较合并基准与源分支，否则标出需要获取。
+    /// 源分支提交在仓库里时比较合并基准与源分支、读出讨论列出的提交与参与者，否则标出需要获取。
     private func openComparison(_ request: PullRequest, runner: GitRunner) async throws {
         let pulls = RepositoryPullRequests(runner: runner)
 
-        guard try await pulls.hasCommit(request.source.sha), let base = try await pulls.comparisonBase(for: request) else {
+        guard
+            try await pulls.hasCommit(request.source.sha),
+            let base = try await pulls.comparisonBase(for: request, remote: remote)
+        else {
             needsFetch = true
             comparison.close()
+            conversation.close()
             return
         }
 
@@ -470,9 +492,12 @@ extension RepositoryPullRequestState {
             target: RevisionComparisonState.Side(id: request.source.sha, title: request.source.branch),
             runner: runner
         )
+
+        // 讨论与参与者条在同一个比较范围里读出全部提交与参与者
+        conversation.load(base: base, target: request.source.sha, runner: runner)
     }
 
-    /// 清掉详情与比较。
+    /// 清掉详情、比较、讨论列出的提交与参与者。
     private func clearDetail() {
         detailTask?.cancel()
         detailTask = nil
@@ -482,6 +507,7 @@ extension RepositoryPullRequestState {
         detailFailure = nil
         needsFetch = false
         comparison.close()
+        conversation.close()
     }
 
     /// 列表读取结束。

@@ -43,8 +43,15 @@ extension HostingClient {
             )
 
             comments += response.value.map {
-                PullRequestComment(id: $0.id, author: $0.user?.login ?? "", body: $0.body ?? "", createdAt: $0.createdAt)
+                PullRequestComment(
+                    id: $0.id,
+                    author: GitHubUserReference.user($0.user),
+                    body: $0.body ?? "",
+                    createdAt: $0.createdAt,
+                    updatedAt: $0.updatedAt
+                )
             }
+
             page = response.nextPage
         }
 
@@ -85,11 +92,11 @@ extension HostingClient {
         let repository = try await repositoryResponse.value
         let detail = try await detailResponse.value
 
-        // 仓库没有给出设置时按 GitHub 的默认值，三种方式都允许
+        // 仓库没有给出设置时按 GitHub 的默认值，三种方式都允许；列出的顺序是 Merge、Rebase、Squash
         let allowed: [(PullRequestMergeMethod, Bool?)] = [
             (.merge, repository.allowMergeCommit),
-            (.squash, repository.allowSquashMerge),
             (.rebase, repository.allowRebaseMerge),
+            (.squash, repository.allowSquashMerge),
         ]
 
         return PullRequestMergeOptions(
@@ -249,12 +256,12 @@ private struct GitHubPullRequest: Decodable, Sendable {
             body: body ?? "",
             state: mergedAt != nil ? .merged : (state == "open" ? .open : .closed),
             isDraft: draft ?? false,
-            author: user?.login ?? "",
+            author: GitHubUserReference.user(user),
             createdAt: createdAt,
             updatedAt: updatedAt,
             source: PullRequestBranch(project: head.repo?.fullName, branch: head.ref, sha: head.sha),
             target: PullRequestBranch(project: base.repo?.fullName ?? project, branch: base.ref, sha: base.sha),
-            assignees: assignees?.map(\.login) ?? [],
+            assignees: assignees?.map { GitHubUserReference.user($0) } ?? [],
             webURL: htmlURL
         )
     }
@@ -262,10 +269,24 @@ private struct GitHubPullRequest: Decodable, Sendable {
 
 // MARK: - GitHubUserReference
 
-/// GitHub 里引用的用户。
+/// GitHub 里引用的用户；请求、指派人与评论里的用户对象没有显示名。
 private struct GitHubUserReference: Decodable, Sendable {
+    /// 字段名：解码器先把蛇形字段转成驼峰，`avatar_url` 转成 `avatarUrl`。
+    private enum CodingKeys: String, CodingKey {
+        case login
+        case avatarURL = "avatarUrl"
+    }
+
     /// 用户名。
     let login: String
+
+    /// 头像地址。
+    let avatarURL: URL?
+
+    /// 换成通用的用户；用户已删除、字段为 null 时用户名为空。
+    static func user(_ reference: Self?) -> HostingUser {
+        HostingUser(username: reference?.login ?? "", name: nil, avatarURL: reference?.avatarURL)
+    }
 }
 
 // MARK: - GitHubComment
@@ -283,6 +304,9 @@ private struct GitHubComment: Decodable, Sendable {
 
     /// 发表时间。
     let createdAt: Date
+
+    /// 更新时间。
+    let updatedAt: Date?
 }
 
 // MARK: - GitHubRepository

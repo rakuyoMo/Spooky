@@ -42,8 +42,8 @@ extension HostingClient {
         return (items, response.nextPage)
     }
 
-    /// 一个 Merge Request 的详情，以及当前账号能否合并。
-    func gitlabMergeRequest(_ id: PullRequestID) async throws -> (request: PullRequest, payload: GitLabMergeRequest) {
+    /// 一个 Merge Request 的详情。
+    func gitlabMergeRequest(_ id: PullRequestID) async throws -> PullRequest {
         let response: HostingResponse<GitLabMergeRequest> = try await send(
             "GET",
             Self.gitlabProject(id.project) + "/merge_requests/\(id.number)"
@@ -54,10 +54,10 @@ extension HostingClient {
             ? id.project
             : try await gitlabProjectPath(payload.sourceProjectID)
 
-        return (payload.request(on: instance, project: id.project, sourceProject: source), payload)
+        return payload.request(on: instance, project: id.project, sourceProject: source)
     }
 
-    /// Merge Request 的评论与系统记录，逐页读完。
+    /// Merge Request 的评论，逐页读完；系统记录（如推送了新提交）不列出。
     func gitlabNotes(on id: PullRequestID) async throws -> [PullRequestComment] {
         var notes: [PullRequestComment] = []
         var page: Int? = 1
@@ -74,19 +74,58 @@ extension HostingClient {
                 ]
             )
 
-            notes += response.value.map {
-                PullRequestComment(
-                    id: $0.id,
-                    author: $0.author?.username ?? "",
-                    body: $0.body,
-                    createdAt: $0.createdAt,
-                    isSystem: $0.system ?? false
-                )
-            }
+            notes += response.value
+                .filter { $0.system != true }
+                .map {
+                    PullRequestComment(
+                        id: $0.id,
+                        author: GitLabUserReference.user($0.author),
+                        body: $0.body,
+                        createdAt: $0.createdAt,
+                        updatedAt: $0.updatedAt
+                    )
+                }
+
             page = response.nextPage
         }
 
-        return notes
+        // 10.3 以前不认 sort 与 order_by：读完后在本机按发表时间排一次，时间相同的按编号
+        return notes.sorted { ($0.createdAt, $0.id) < ($1.createdAt, $1.id) }
+    }
+
+    /// 回复一条评论：先找到评论所在的讨论，再在讨论里加一条；单条评论回复后同样成为一个讨论。
+    func replyToGitLabNote(_ noteID: Int, body: String, on id: PullRequestID) async throws {
+        let request = Self.gitlabProject(id.project) + "/merge_requests/\(id.number)"
+        var page: Int? = 1
+
+        // 评论接口的响应里没有讨论编号，逐页读讨论找到含这条评论的一个
+        while let current = page {
+            let response: HostingResponse<[GitLabDiscussion]> = try await send(
+                "GET",
+                request + "/discussions",
+                query: [
+                    URLQueryItem(name: "per_page", value: "100"),
+                    URLQueryItem(name: "page", value: String(current)),
+                ]
+            )
+
+            if let discussion = response.value.first(where: { $0.notes.contains { $0.id == noteID } }) {
+                let payload = try JSONEncoder().encode(["body": body])
+
+                try await perform(
+                    "POST",
+                    request + "/discussions/" + Self.encodedSegment(discussion.id) + "/notes",
+                    body: payload
+                )
+
+                return
+            }
+
+            page = response.nextPage
+        }
+
+        // 读完都没有这条评论：它已在别处被删除
+        throw HostingError.notFound("")
     }
 
     /// 新建 Merge Request：建在源项目里，来自 Fork 时带上目标项目的编号。
@@ -112,54 +151,6 @@ extension HostingClient {
         return response.value.request(on: instance, project: draft.targetProject, sourceProject: draft.sourceProject)
     }
 
-    /// 项目的合并策略、压缩设置与删除源分支的默认值，加上当前账号能否合并与 GitLab 给出的合并状态。
-    func gitlabMergeOptions(for request: PullRequest) async throws -> PullRequestMergeOptions {
-        async let projectResponse: HostingResponse<GitLabProject> = send("GET", Self.gitlabProject(request.id.project))
-        async let detail = gitlabMergeRequest(request.id)
-
-        let project = try await projectResponse.value
-        let payload = try await detail.payload
-
-        // squash_option：never 不能压缩，always 必须压缩，default_on / default_off 可选
-        let squash = project.squashOption ?? "default_off"
-
-        return PullRequestMergeOptions(
-            methods: [squash == "always" ? .squash : .merge],
-            allowsSquashOption: squash != "never",
-            squashesByDefault: squash == "always" || squash == "default_on" || (payload.squash ?? false),
-            requiresSquash: squash == "always",
-            deletesSourceBranchByDefault: payload.forceRemoveSourceBranch ?? project.removeSourceBranchAfterMerge ?? false,
-            canDeleteSourceBranch: !request.isFromFork,
-            projectMergeMethod: project.mergeMethod,
-            block: Self.gitlabBlock(payload, request: request)
-        )
-    }
-
-    /// 合并 Merge Request。
-    func mergeGitLabMergeRequest(
-        _ request: PullRequest,
-        squash: Bool,
-        deletesSourceBranch: Bool
-    ) async throws -> PullRequestMergeResult {
-        var fields: [String: GitLabValue] = [
-            "squash": .flag(squash),
-            "should_remove_source_branch": .flag(deletesSourceBranch),
-        ]
-
-        if !request.source.sha.isEmpty {
-            fields["sha"] = .text(request.source.sha)
-        }
-
-        let response: HostingResponse<GitLabMergeRequest> = try await send(
-            "PUT",
-            Self.gitlabProject(request.id.project) + "/merge_requests/\(request.id.number)/merge",
-            body: try JSONEncoder().encode(fields)
-        )
-
-        let merged = response.value
-        return PullRequestMergeResult(sha: merged.mergeCommitSha ?? merged.squashCommitSha ?? merged.sha, message: merged.state)
-    }
-
     /// 项目编号对应的路径；项目已删除或看不到时为 nil。
     private func gitlabProjectPath(_ id: Int) async throws -> String? {
         do {
@@ -167,30 +158,6 @@ extension HostingClient {
             return response.value.pathWithNamespace
         } catch HostingError.notFound {
             return nil
-        }
-    }
-}
-
-// MARK: - GitLab Merge Block
-
-extension HostingClient {
-    /// GitLab 给出的不能合并的原因。
-    private static func gitlabBlock(_ payload: GitLabMergeRequest, request: PullRequest) -> PullRequestMergeBlock? {
-        guard request.state == .open else {
-            return .notOpen
-        }
-
-        guard payload.user?.canMerge ?? false else {
-            return .permission
-        }
-
-        switch payload.detailedMergeStatus {
-        case "mergeable", nil: return nil
-        case "conflict": return .conflicts
-        case "draft_status": return .draft
-        case "not_open": return .notOpen
-        case "checking", "unchecked", "preparing", "approvals_syncing": return .checking
-        case let status?: return .policy(status)
         }
     }
 }
@@ -220,7 +187,8 @@ struct GitLabMergeRequest: Decodable, Sendable {
     /// 字段名：解码器先把蛇形字段转成驼峰，`source_project_id` 转成 `sourceProjectId`。
     private enum CodingKeys: String, CodingKey {
         case iid, title, description, state, draft, workInProgress, author, createdAt, updatedAt
-        case sourceBranch, targetBranch, sha, assignees, diffRefs, detailedMergeStatus, user
+        case sourceBranch, targetBranch, sha, assignees, assignee, diffRefs, detailedMergeStatus, user
+        case mergeStatus, hasConflicts, blockingDiscussionsResolved, mergeError
         case forceRemoveSourceBranch, squash, mergeCommitSha, squashCommitSha
         case sourceProjectID = "sourceProjectId"
         case targetProjectID = "targetProjectId"
@@ -236,10 +204,10 @@ struct GitLabMergeRequest: Decodable, Sendable {
     /// 描述。
     let description: String?
 
-    /// `opened`、`closed`、`merged` 或 `locked`。
+    /// `opened`、`closed`、`merged` 或 `locked`；9.4 及以前另有 `reopened`。
     let state: String
 
-    /// 草稿；16.0 起的字段。
+    /// 草稿；14.0 起的字段。
     let draft: Bool?
 
     /// 草稿；旧版本的字段。
@@ -272,28 +240,43 @@ struct GitLabMergeRequest: Decodable, Sendable {
     /// 网页地址。
     let webURL: URL?
 
-    /// 指派的用户。
+    /// 指派的用户；11.11 起的字段。
     let assignees: [GitLabUserReference]?
+
+    /// 指派的一个用户；11.11 以前只有这个字段。
+    let assignee: GitLabUserReference?
 
     /// 提交引用；列表里没有。
     let diffRefs: DiffReferences?
 
-    /// 合并状态，如 `mergeable`、`conflict`；列表里可能没有。
+    /// 合并状态，如 `mergeable`、`conflict`；15.6 起的字段，列表里可能没有。
     let detailedMergeStatus: String?
 
-    /// 当前账号的权限；只在详情里有。
+    /// 当前账号的权限；只在详情里有，11.9 起才有 `can_merge`。
     let user: UserPermissions?
+
+    /// 旧的合并状态：`unchecked`、`checking`、`can_be_merged`、`cannot_be_merged` 或 `cannot_be_merged_recheck`。
+    let mergeStatus: String?
+
+    /// 源分支与目标分支有冲突；12.5 起的字段。
+    let hasConflicts: Bool?
+
+    /// 挡住合并的讨论都已解决；12.5 起的字段。
+    let blockingDiscussionsResolved: Bool?
+
+    /// 服务端合并失败的原因；11.6 起的字段。
+    let mergeError: String?
 
     /// 请求设置了合并后删除源分支。
     let forceRemoveSourceBranch: Bool?
 
-    /// 请求设置了合并时压缩。
+    /// 请求设置了合并时压缩；CE 11.0 起的字段。
     let squash: Bool?
 
     /// 合并提交。
     let mergeCommitSha: String?
 
-    /// 压缩后的提交。
+    /// 压缩后的提交；12.5 起的字段。
     let squashCommitSha: String?
 
     /// 换成通用的请求。
@@ -306,7 +289,7 @@ struct GitLabMergeRequest: Decodable, Sendable {
         let status: PullRequestState =
             switch state {
             case "merged": .merged
-            case "opened": .open
+            case "opened", "reopened": .open
             default: .closed
             }
 
@@ -316,12 +299,12 @@ struct GitLabMergeRequest: Decodable, Sendable {
             body: description ?? "",
             state: status,
             isDraft: draft ?? workInProgress ?? false,
-            author: author?.username ?? "",
+            author: GitLabUserReference.user(author),
             createdAt: createdAt,
             updatedAt: updatedAt,
             source: PullRequestBranch(project: sourceProject, branch: sourceBranch, sha: diffRefs?.headSha ?? sha ?? ""),
             target: PullRequestBranch(project: project, branch: targetBranch, sha: diffRefs?.startSha ?? ""),
-            assignees: assignees?.map(\.username) ?? [],
+            assignees: (assignees ?? assignee.map { [$0] } ?? []).map { GitLabUserReference.user($0) },
             webURL: webURL,
             mergeBase: diffRefs?.baseSha
         )
@@ -332,8 +315,25 @@ struct GitLabMergeRequest: Decodable, Sendable {
 
 /// GitLab 里引用的用户。
 struct GitLabUserReference: Decodable, Sendable {
+    /// 字段名：解码器先把蛇形字段转成驼峰，`avatar_url` 转成 `avatarUrl`。
+    private enum CodingKeys: String, CodingKey {
+        case username, name
+        case avatarURL = "avatarUrl"
+    }
+
     /// 用户名。
     let username: String
+
+    /// 显示名。
+    let name: String?
+
+    /// 头像地址；没有头像时为 null。
+    let avatarURL: URL?
+
+    /// 换成通用的用户；用户已删除、字段为 null 时用户名为空。
+    static func user(_ reference: Self?) -> HostingUser {
+        HostingUser(username: reference?.username ?? "", name: reference?.name, avatarURL: reference?.avatarURL)
+    }
 }
 
 // MARK: - GitLabNote
@@ -352,34 +352,60 @@ private struct GitLabNote: Decodable, Sendable {
     /// 发表时间。
     let createdAt: Date
 
+    /// 更新时间。
+    let updatedAt: Date?
+
     /// 是系统记录。
     let system: Bool?
+}
+
+// MARK: - GitLabDiscussion
+
+/// GitLab Merge Request 上的一个讨论：单条评论也自成一个讨论。
+private struct GitLabDiscussion: Decodable, Sendable {
+    /// 讨论里的一条评论，只取编号。
+    struct Note: Decodable, Sendable {
+        /// 评论编号。
+        let id: Int
+    }
+
+    /// 讨论编号，十六进制的字符串。
+    let id: String
+
+    /// 讨论里的评论，按时间排列。
+    let notes: [Note]
 }
 
 // MARK: - GitLabProject
 
 /// GitLab 项目里与合并有关的设置。
-private struct GitLabProject: Decodable, Sendable {
+struct GitLabProject: Decodable, Sendable {
     /// 项目编号。
     let id: Int
 
     /// 完整路径。
     let pathWithNamespace: String?
 
-    /// 合并策略：`merge`、`rebase_merge` 或 `ff`。
+    /// 合并策略：`merge`、`rebase_merge` 或 `ff`；10.7 起的字段。
     let mergeMethod: String?
 
-    /// 压缩设置：`never`、`always`、`default_on` 或 `default_off`。
+    /// 压缩设置：`never`、`always`、`default_on` 或 `default_off`；14.0 起的字段。
     let squashOption: String?
 
-    /// 合并后默认删除源分支。
+    /// 合并后默认删除源分支；12.5 起的字段。
     let removeSourceBranchAfterMerge: Bool?
+
+    /// 只有流水线通过才能合并。
+    let onlyAllowMergeIfPipelineSucceeds: Bool?
+
+    /// 只有讨论都解决了才能合并。
+    let onlyAllowMergeIfAllDiscussionsAreResolved: Bool?
 }
 
 // MARK: - GitLabValue
 
 /// GitLab 请求体里的值：文字、数字或布尔。
-private enum GitLabValue: Encodable {
+enum GitLabValue: Encodable {
     /// 文字。
     case text(String)
 

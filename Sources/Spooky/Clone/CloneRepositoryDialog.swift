@@ -101,18 +101,23 @@ extension CloneRepositoryDialog {
         CloneTarget.problem(url: url, parent: parent)
     }
 
-    /// 可折叠的 LFS 与子模块两个勾选框，左缘对齐表单的输入列。
+    /// 可折叠的 LFS 与子模块两个勾选框，左缘对齐表单的输入列；展开三角在输入列左侧 20。
     private var options: some View {
-        DisclosureGroup(AppLocalization.text("clone.options"), isExpanded: $showsOptions) {
-            VStack(alignment: .leading, spacing: 6) {
-                Toggle(AppLocalization.text("clone.lfs"), isOn: $lfs)
-                Toggle(AppLocalization.text("clone.submodules"), isOn: $submodules)
+        DialogInputColumnReader { inputColumn in
+            DisclosureGroup(AppLocalization.text("clone.options"), isExpanded: $showsOptions) {
+                // 展开的内容与展开三角同宽、默认居中；靠左再让出三角的 20，勾选框才落在输入列上
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle(AppLocalization.text("clone.lfs"), isOn: $lfs)
+                    Toggle(AppLocalization.text("clone.submodules"), isOn: $submodules)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 20)
+                .padding(.top, 6)
             }
-            .padding(.top, 6)
+            .padding(.leading, inputColumn - 20)
+            .padding(.trailing, 20)
+            .padding(.bottom, 12)
         }
-        .padding(.leading, DialogMetrics.alignment - 20)
-        .padding(.trailing, 20)
-        .padding(.bottom, 12)
     }
 
     /// 开始克隆并关闭对话框；服务器目标记住这台主机的克隆目录。

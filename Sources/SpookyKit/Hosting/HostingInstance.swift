@@ -9,6 +9,11 @@ public enum HostingService: String, Codable, Sendable, CaseIterable {
 
     /// GitLab.com 或私有部署的 GitLab。
     case gitlab
+
+    /// 请求的评论可以回复：GitLab 的评论回复后成为一个讨论，GitHub 的 Pull Request 评论不能回复。
+    public var supportsCommentReplies: Bool {
+        self == .gitlab
+    }
 }
 
 // MARK: - HostingInstance

@@ -2,15 +2,18 @@ import SwiftUI
 
 // MARK: - InitialsAvatar
 
-/// 圆形头像：有邮箱时按邮箱取头像图片，没有图片时显示姓名前两个词的首字母。
+/// 圆形头像：有头像地址时按地址取图片，否则按邮箱取；没有图片时显示姓名前两个词的首字母。
 ///
 /// 图片在后台读取，读到之前与读不到时都显示首字母，同一个人的占位在各处一致。
 struct InitialsAvatar: View {
     /// 提交人或档案的姓名。
     let name: String
 
-    /// 取头像图片用的邮箱；nil 时只显示首字母。
+    /// 取头像图片用的邮箱；没有头像地址时使用。
     let email: String?
+
+    /// 托管服务给出的头像地址；有地址时不按邮箱取。
+    let avatarURL: URL?
 
     /// 圆形的直径。
     let size: CGFloat
@@ -37,17 +40,29 @@ struct InitialsAvatar: View {
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
-        .task(id: email) {
+        .task(id: avatarURL?.absoluteString ?? email) {
             // 行被复用换成别人时先回到首字母，避免短暂显示上一个人的头像
             image = nil
-            image = await AvatarStore.shared.image(for: email)
+
+            if let avatarURL {
+                image = await AvatarStore.shared.image(at: avatarURL)
+            } else {
+                image = await AvatarStore.shared.image(for: email)
+            }
         }
     }
 
-    /// 创建头像；不传邮箱时只显示首字母。
-    init(name: String, email: String? = nil, size: CGFloat) {
+    /// 创建头像；邮箱与头像地址都不传时只显示首字母。
+    ///
+    /// - Parameters:
+    ///   - name: 姓名，取首字母用。
+    ///   - email: 取 Gravatar 头像用的邮箱。
+    ///   - avatarURL: 托管服务给出的头像地址。
+    ///   - size: 圆形的直径。
+    init(name: String, email: String? = nil, avatarURL: URL? = nil, size: CGFloat) {
         self.name = name
         self.email = email
+        self.avatarURL = avatarURL
         self.size = size
     }
 }

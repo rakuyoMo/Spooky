@@ -19,6 +19,12 @@ public enum HostingError: Error, Sendable, Equatable {
     /// 服务端拒绝了请求，如参数不合法、合并条件不满足或状态冲突。
     case rejected(status: Int, message: String)
 
+    /// 合并时服务端报源分支与目标分支有冲突；带服务端返回的原文。
+    case mergeConflict(String)
+
+    /// 合并接口回了成功，请求却没有合并；带服务端给出的原因，没有给出时为空。
+    case mergeFailed(String)
+
     /// 服务端出错（5xx）。
     case server(status: Int, message: String)
 
@@ -39,4 +45,13 @@ public enum HostingError: Error, Sendable, Equatable {
 
     /// 令牌属于另一个用户，重新认证时不能替换成它。
     case differentUser(String)
+
+    /// 用密码换令牌被拒（`invalid_grant`）：密码不对、账号开了双重验证、只能经单点登录登录，或实例关了密码认证；带服务端原文。
+    case passwordRejected(String)
+
+    /// 实例要求 OAuth 应用凭据才能换令牌（`invalid_client`）；带服务端原文。
+    case clientCredentialsRequired(String)
+
+    /// 实例不支持用密码换令牌（`unsupported_grant_type`）；带服务端原文。
+    case passwordGrantUnsupported(String)
 }

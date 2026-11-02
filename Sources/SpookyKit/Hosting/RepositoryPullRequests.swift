@@ -42,17 +42,28 @@ public struct RepositoryPullRequests: Sendable {
         return result.exitCode == 0
     }
 
-    /// 比较基准：托管服务给出的合并基准，否则在本机算出目标分支与源分支的 merge-base；提交不在仓库里时为 nil。
-    public func comparisonBase(for request: PullRequest) async throws -> String? {
+    /// 比较基准：托管服务给出的合并基准，否则在仓库所在的机器上算出目标分支与源分支的 merge-base；提交不在仓库里时为 nil。
+    ///
+    /// - Parameters:
+    ///   - request: 要比较的请求。
+    ///   - remote: 指向目标项目的远端名；托管服务没有给出目标分支的提交时，用它的远端跟踪分支。
+    public func comparisonBase(for request: PullRequest, remote: String?) async throws -> String? {
         if let base = request.mergeBase, try await hasCommit(base) {
             return base
         }
 
-        guard try await hasCommit(request.target.sha), try await hasCommit(request.source.sha) else {
+        var target = request.target.sha
+
+        // GitLab 10.8 以前没有 diff_refs，请求上没有目标分支的提交
+        if target.isEmpty, let remote {
+            target = try await commit(of: "refs/remotes/" + remote + "/" + request.target.branch) ?? ""
+        }
+
+        guard try await hasCommit(target), try await hasCommit(request.source.sha) else {
             return nil
         }
 
-        let output = try await runner.run(["merge-base", request.target.sha, request.source.sha])
+        let output = try await runner.run(["merge-base", target, request.source.sha])
         let base = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)
 
         return GitObjectID.isValid(base) ? base : nil

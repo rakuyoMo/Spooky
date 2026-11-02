@@ -32,7 +32,7 @@ extension RepositoryWindowController {
         session.requestPullRequest(.create(sourceBranch: nil))
     }
 
-    /// Repository › Publish Repository…：用托管账号新建远端仓库，添加为远端并推送当前分支。
+    /// Repository › Publish Repository…：用托管账号新建远端仓库，添加为远端并推送全部本地分支与标签。
     @objc
     func publishRepository() {
         presentPullRequestRequest(.publish)
@@ -50,7 +50,8 @@ extension RepositoryWindowController {
             return repositoryView
 
         case #selector(publishRepository):
-            return repositoryView && session.canWrite
+            // 新仓库建在登录的账号下，没有账号时不可用
+            return repositoryView && session.canWrite && !session.pullRequests.accounts.items.isEmpty
 
         default:
             return nil
@@ -114,8 +115,43 @@ extension RepositoryWindowController {
             case .merge(let request):
                 AnyView(MergePullRequestDialog(session: session, request: request, close: close))
 
+            case .close(let request):
+                AnyView(PullRequestTextDialog(session: session, request: request, kind: .close, close: close))
+
             case .comment(let request):
                 AnyView(PullRequestTextDialog(session: session, request: request, kind: .comment, close: close))
+
+            case .editComment(let request, let comment):
+                AnyView(PullRequestTextDialog(
+                    session: session,
+                    request: request,
+                    kind: .editComment(comment),
+                    close: close
+                ))
+
+            case .replyToComment(let request, let comment):
+                AnyView(PullRequestTextDialog(
+                    session: session,
+                    request: request,
+                    kind: .reply(comment),
+                    close: close
+                ))
+
+            case .deleteComment(let request, let comment):
+                AnyView(PullRequestTextDialog(
+                    session: session,
+                    request: request,
+                    kind: .deleteComment(comment),
+                    close: close
+                ))
+
+            case .editDescription(let request):
+                AnyView(PullRequestTextDialog(
+                    session: session,
+                    request: request,
+                    kind: .editDescription,
+                    close: close
+                ))
 
             case .checkout(let request):
                 AnyView(PullRequestTextDialog(session: session, request: request, kind: .checkout, close: close))
@@ -129,5 +165,41 @@ extension RepositoryWindowController {
 
         sheet.contentViewController = NSHostingController(rootView: dialog)
         window.beginSheet(sheet)
+    }
+
+    /// 在 Settings › Accounts 里添加、移除或重新认证账号后，请求视图随之更新。
+    ///
+    /// - Parameter previous: 上次看到的账号。
+    func observeHostingAccounts(previous: [HostingAccount]) {
+        let accounts = session.pullRequests.accounts
+
+        withObservationTracking {
+            _ = accounts.items
+        } onChange: { [weak self] in
+            // 变更通知早于新值写入，下一轮主线程再比较并重新订阅。
+            Task { @MainActor in
+                let current = accounts.items
+                self?.session.accountsDidChange(from: previous, to: current)
+                self?.observeHostingAccounts(previous: current)
+            }
+        }
+    }
+
+    /// 仓库里添加、移除远端或改了远端的设置后，请求视图随之更新。
+    ///
+    /// - Parameter previous: 上次看到的各远端设置的摘要；还没读到引用时为 nil。
+    func observeRemotes(previous: [String: String]?) {
+        let history = session.history
+
+        withObservationTracking {
+            _ = history.snapshot
+        } onChange: { [weak self] in
+            // 变更通知早于新值写入，下一轮主线程再比较并重新订阅。
+            Task { @MainActor in
+                let current = history.snapshot?.remoteSettingsDigests
+                self?.session.remotesDidChange(from: previous, to: current)
+                self?.observeRemotes(previous: current)
+            }
+        }
     }
 }

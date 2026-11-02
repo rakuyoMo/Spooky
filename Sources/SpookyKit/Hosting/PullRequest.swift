@@ -31,9 +31,11 @@ public struct PullRequestID: Sendable, Hashable, Codable {
 /// 请求的状态。
 public enum PullRequestState: String, Sendable, Hashable {
     /// 打开着，可以合并或关闭。
-    case /// 已关闭，没有合并。
-        open
+    ///
+    /// 名字带反引号：不带时格式化工具把 `open` 当成访问修饰符，会把下一个 case 的注释挪到它前面。
+    case `open`
 
+    /// 已关闭，没有合并。
     case closed
 
     /// 已合并。
@@ -80,8 +82,8 @@ public struct PullRequest: Sendable, Hashable, Identifiable {
     /// 是草稿。
     public let isDraft: Bool
 
-    /// 作者的用户名。
-    public let author: String
+    /// 作者。
+    public let author: HostingUser
 
     /// 创建的时间。
     public let createdAt: Date
@@ -95,8 +97,8 @@ public struct PullRequest: Sendable, Hashable, Identifiable {
     /// 目标分支。
     public let target: PullRequestBranch
 
-    /// 指派的用户名。
-    public let assignees: [String]
+    /// 指派的用户。
+    public let assignees: [HostingUser]
 
     /// 网页地址。
     public let webURL: URL?
@@ -116,12 +118,12 @@ public struct PullRequest: Sendable, Hashable, Identifiable {
         body: String,
         state: PullRequestState,
         isDraft: Bool,
-        author: String,
+        author: HostingUser,
         createdAt: Date,
         updatedAt: Date,
         source: PullRequestBranch,
         target: PullRequestBranch,
-        assignees: [String] = [],
+        assignees: [HostingUser] = [],
         webURL: URL? = nil,
         mergeBase: String? = nil
     ) {
@@ -143,13 +145,13 @@ public struct PullRequest: Sendable, Hashable, Identifiable {
 
 // MARK: - PullRequestComment
 
-/// 请求下的一条评论；GitLab 的系统记录（如推送了新提交）同样列出并标出。
+/// 请求下的一条评论。
 public struct PullRequestComment: Sendable, Hashable, Identifiable {
     /// 托管服务上的评论编号。
     public let id: Int
 
-    /// 作者的用户名。
-    public let author: String
+    /// 作者。
+    public let author: HostingUser
 
     /// 内容，Markdown。
     public let body: String
@@ -157,16 +159,23 @@ public struct PullRequestComment: Sendable, Hashable, Identifiable {
     /// 发表的时间。
     public let createdAt: Date
 
-    /// 是托管服务自动写下的记录。
-    public let isSystem: Bool
+    /// 最后更新的时间；托管服务没有给出时为 nil。
+    public let updatedAt: Date?
 
     /// 创建评论；解析与测试使用。
-    public init(id: Int, author: String, body: String, createdAt: Date, isSystem: Bool = false) {
+    ///
+    /// - Parameters:
+    ///   - id: 托管服务上的评论编号。
+    ///   - author: 作者。
+    ///   - body: 内容。
+    ///   - createdAt: 发表的时间。
+    ///   - updatedAt: 最后更新的时间。
+    public init(id: Int, author: HostingUser, body: String, createdAt: Date, updatedAt: Date? = nil) {
         self.id = id
         self.author = author
         self.body = body
         self.createdAt = createdAt
-        self.isSystem = isSystem
+        self.updatedAt = updatedAt
     }
 }
 

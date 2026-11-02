@@ -30,31 +30,28 @@ struct HostingClientTests {
         #expect(request.cachePolicy == .reloadIgnoringLocalCacheData)
     }
 
-    /// 私有部署的 GitLab：先查版本再读用户，令牌放在 PRIVATE-TOKEN 头里，地址带端口与部署路径。
-    @Test("GitLab 的版本与当前用户")
+    /// 私有部署的 GitLab：不查版本，直接读用户；令牌放在 PRIVATE-TOKEN 头里，地址带端口与部署路径。
+    @Test("GitLab 的当前用户")
     func gitlabUser() async throws {
         let instance = try #require(HostingInstance.gitlab(address: "https://git.example.com:8443/gitlab"))
-        let requests = HostingStub.respond { request in
-            request.url?.path().hasSuffix("/version") ?? false
-                ? (200, [:], Data(#"{"version":"17.2.1-ee","revision":"abc"}"#.utf8))
-                : (200, [:], Data(#"{"username":"rakuyo","name":null}"#.utf8))
-        }
+        let requests = HostingStub.respond { _ in (200, [:], Data(#"{"username":"rakuyo","name":null}"#.utf8)) }
 
         let user = try await HostingClient(instance: instance, token: "glpat", session: HostingStub.session()).currentUser()
         #expect(user == HostingUser(username: "rakuyo", name: nil))
 
         let urls = requests.withLock { $0.map { $0.url?.absoluteString ?? "" } }
-        #expect(urls == ["https://git.example.com:8443/gitlab/api/v4/version", "https://git.example.com:8443/gitlab/api/v4/user"])
+        #expect(urls == ["https://git.example.com:8443/gitlab/api/v4/user"])
         #expect(requests.withLock { $0.allSatisfy { $0.value(forHTTPHeaderField: "PRIVATE-TOKEN") == "glpat" } })
     }
 
-    /// 低于 15.7 的 GitLab 不兼容，不再读用户。
-    @Test("GitLab 版本过低")
-    func gitlabTooOld() async throws {
-        let requests = HostingStub.respond { _ in (200, [:], Data(#"{"version":"15.6.9","revision":"abc"}"#.utf8)) }
-        let client = HostingClient(instance: .gitlabCom, token: "glpat", session: HostingStub.session())
+    /// 9.0 以前没有 API v4，读用户得到 404：算接口不兼容，带上实例的显示名。
+    @Test("GitLab 没有 API v4")
+    func gitlabWithoutAPIv4() async throws {
+        let instance = try #require(HostingInstance.gitlab(address: "https://old.example.com/gitlab"))
+        let requests = HostingStub.respond { _ in (404, [:], Data("<html>Not Found</html>".utf8)) }
+        let client = HostingClient(instance: instance, token: "glpat", session: HostingStub.session())
 
-        await #expect(throws: HostingError.incompatible("GitLab 15.6.9")) { try await client.currentUser() }
+        await #expect(throws: HostingError.incompatible(instance.displayName)) { try await client.currentUser() }
         #expect(requests.withLock { $0.count } == 1)
     }
 

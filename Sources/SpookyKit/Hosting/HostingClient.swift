@@ -18,34 +18,51 @@ struct HostingResponse<Value: Sendable>: Sendable {
 ///
 /// 令牌只放在请求头里，不进 URL、日志与错误；失败按 ``HostingError`` 分类，保留服务端返回的原文。
 public struct HostingClient: Sendable {
-    /// 支持的最低 GitLab 版本：合并请求的 `diffs` 接口与 `detailed_merge_status` 字段从 15.7 起都有。
-    public static let minimumGitLabVersion = [15, 7]
-
     /// API 请求失败的日志；只记类别与状态码，不记地址、令牌与原文。
     private static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "HostingClient")
 
     /// 账号所在的实例。
     public let instance: HostingInstance
 
-    /// 账号的令牌。
-    private let token: String
+    /// 账号的认证方式，决定 GitLab 的令牌放进哪个请求头。
+    private let authentication: HostingAuthentication
+
+    /// 每次请求前取令牌；会到期的令牌在这里先续期。
+    private let token: @Sendable () async throws -> String
 
     /// 发请求用的会话；测试换成返回固定响应的会话。
     private let session: URLSession
 
-    /// 创建客户端，不立即发请求。
+    /// 用固定的令牌创建客户端，不立即发请求；GitLab 的令牌按个人访问令牌放进 `PRIVATE-TOKEN` 头。
     ///
     /// - Parameters:
     ///   - instance: 账号所在的实例。
-    ///   - token: OAuth 令牌或个人访问令牌。
+    ///   - token: github.com 的 OAuth 令牌或个人访问令牌。
     ///   - session: 发请求用的会话。
     public init(instance: HostingInstance, token: String, session: URLSession = .shared) {
+        self.init(instance: instance, authentication: .personalAccessToken, session: session) { token }
+    }
+
+    /// 创建每次请求前取令牌的客户端，不立即发请求。
+    ///
+    /// - Parameters:
+    ///   - instance: 账号所在的实例。
+    ///   - authentication: 账号的认证方式；用户名与密码登录的 GitLab 账号用 `Authorization: Bearer` 头。
+    ///   - session: 发请求用的会话。
+    ///   - token: 取令牌；失败时这次请求以它的错误失败。
+    public init(
+        instance: HostingInstance,
+        authentication: HostingAuthentication,
+        session: URLSession = .shared,
+        token: @escaping @Sendable () async throws -> String
+    ) {
         self.instance = instance
+        self.authentication = authentication
         self.token = token
         self.session = session
     }
 
-    /// 令牌对应的用户；添加账号与重新认证时用它校验令牌，GitLab 同时检查版本。
+    /// 令牌对应的用户；添加账号与重新认证时用它校验令牌。
     public func currentUser() async throws -> HostingUser {
         switch instance.service {
         case .github:
@@ -53,10 +70,13 @@ public struct HostingClient: Sendable {
             return HostingUser(username: user.login, name: user.name)
 
         case .gitlab:
-            try await checkGitLabVersion()
-
-            let user: GitLabUser = try await send("GET", "user").value
-            return HostingUser(username: user.username, name: user.name)
+            do {
+                let user: GitLabUser = try await send("GET", "user").value
+                return HostingUser(username: user.username, name: user.name)
+            } catch HostingError.notFound {
+                // 9.0 以前没有 API v4，部署路径填错时同样是 404
+                throw HostingError.incompatible(instance.displayName)
+            }
         }
     }
 
@@ -117,6 +137,17 @@ extension HostingClient {
         text.addingPercentEncoding(withAllowedCharacters: unreserved) ?? text
     }
 
+    /// 表单请求体：字段按键排序，键与值除字母、数字与 `-._~` 外都转义。
+    static func formBody(_ fields: [String: String]) -> Data {
+        Data(
+            fields
+                .sorted { $0.key < $1.key }
+                .map { encodedSegment($0.key) + "=" + encodedSegment($0.value) }
+                .joined(separator: "&")
+                .utf8
+        )
+    }
+
     /// 解析 ISO 8601 时间，带不带小数秒都可以。
     static func date(from text: String) -> Date? {
         let fractional = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
@@ -124,14 +155,36 @@ extension HostingClient {
         return (try? Date(text, strategy: fractional)) ?? (try? Date(text, strategy: .iso8601))
     }
 
-    /// 发出请求，返回 2xx 的响应体；其余状态与网络失败按类别抛出。
+    /// 发出请求，返回 2xx 的响应体；GitLab 编码的项目路径 404 时按项目编号重发一次。
     private func perform(
         _ method: String,
         _ path: String,
         query: [URLQueryItem],
         body: Data?
     ) async throws -> (Data, HTTPURLResponse) {
-        let request = try makeRequest(method, path, query: query, body: body)
+        // 之前按编号重发过的项目直接用编号
+        let path = knownGitLabProjectPath(path)
+
+        do {
+            return try await transfer(method, path, query: query, body: body)
+        } catch HostingError.notFound(let message) {
+            // 有的反向代理会把 `%2F` 解码，使编码的项目路径 404：搜出项目编号后换成编号再发一次
+            guard let retry = try await gitlabProjectIDPath(for: path) else {
+                throw HostingError.notFound(message)
+            }
+
+            return try await transfer(method, retry, query: query, body: body)
+        }
+    }
+
+    /// 发出一次请求，返回 2xx 的响应体；其余状态与网络失败按类别抛出。
+    private func transfer(
+        _ method: String,
+        _ path: String,
+        query: [URLQueryItem],
+        body: Data?
+    ) async throws -> (Data, HTTPURLResponse) {
+        let request = try makeRequest(method, path, query: query, body: body, token: try await token())
         let data: Data
         let response: URLResponse
 
@@ -154,8 +207,14 @@ extension HostingClient {
         return (data, http)
     }
 
-    /// 组装请求：认证头按服务取，GitHub 固定 API 版本。
-    private func makeRequest(_ method: String, _ path: String, query: [URLQueryItem], body: Data?) throws -> URLRequest {
+    /// 组装请求：认证头按服务与认证方式取，GitHub 固定 API 版本。
+    private func makeRequest(
+        _ method: String,
+        _ path: String,
+        query: [URLQueryItem],
+        body: Data?,
+        token: String
+    ) throws -> URLRequest {
         guard var components = URLComponents(url: instance.apiURL, resolvingAgainstBaseURL: false) else {
             throw HostingError.incompatible(instance.displayName)
         }
@@ -190,21 +249,15 @@ extension HostingClient {
             request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
             request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
 
+        // 用户名与密码换来的是 OAuth 令牌，按 Bearer 的写法交给 GitLab
+        case .gitlab where authentication == .password:
+            request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
+
         case .gitlab:
             request.setValue(token, forHTTPHeaderField: "PRIVATE-TOKEN")
         }
 
         return request
-    }
-
-    /// 确认 GitLab 不低于 ``minimumGitLabVersion``。
-    private func checkGitLabVersion() async throws {
-        let version: GitLabVersion = try await send("GET", "version").value
-        let components = version.version.split(separator: ".").prefix(2).map { Int($0.prefix { $0.isNumber }) ?? 0 }
-
-        guard components.count == 2, !components.lexicographicallyPrecedes(Self.minimumGitLabVersion) else {
-            throw HostingError.incompatible("GitLab " + version.version)
-        }
     }
 }
 
@@ -349,12 +402,4 @@ private struct GitLabUser: Decodable, Sendable {
 
     /// 显示名。
     let name: String?
-}
-
-// MARK: - GitLabVersion
-
-/// GitLab `GET /version` 的结果。
-private struct GitLabVersion: Decodable, Sendable {
-    /// 版本号，如 `17.2.1-ee`。
-    let version: String
 }

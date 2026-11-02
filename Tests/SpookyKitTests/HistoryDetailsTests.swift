@@ -210,6 +210,49 @@ struct HistoryDetailsTests {
             try await RevisionComparison(runner: runner, base: "HEAD", target: target).changes()
         }
     }
+
+    /// 参与者只算目标独有的提交，经 `.mailmap` 合并同一个人，按提交数从多到少；姓名里的符号与文字原样保留。
+    @Test("比较范围的参与者")
+    func comparisonContributors() async throws {
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+
+        try await fixture.initialize()
+        let runner = fixture.runner
+        let references = RepositoryReferences(runner: runner)
+
+        _ = try await runner.run(["commit", "-q", "--allow-empty", "-m", "base"])
+        let base = try await references.resolve("HEAD")
+
+        // 同一个人用过两个身份，另一位作者的姓名带符号、非拉丁文字与 emoji
+        let authors = [
+            "Alice Old <alice@old.invalid>",
+            "Alice <alice@example.invalid>",
+            "Zoë “Q” O'Brien 李 🐈 [x] <zoe@example.invalid>",
+            "Alice <alice@example.invalid>",
+        ]
+
+        for author in authors {
+            _ = try await runner.run(["commit", "-q", "--allow-empty", "--author=" + author, "-m", "change"])
+        }
+
+        let target = try await references.resolve("HEAD")
+
+        try Data("Alice <alice@example.invalid> Alice Old <alice@old.invalid>\n".utf8)
+            .write(to: fixture.directory.appending(path: ".mailmap"))
+
+        let contributors = try await RevisionComparison(runner: runner, base: base, target: target).contributors()
+
+        #expect(
+            contributors == [
+                FileContributor(name: "Alice", email: "alice@example.invalid", commitCount: 3),
+                FileContributor(name: "Zoë “Q” O'Brien 李 🐈 [x]", email: "zoe@example.invalid", commitCount: 1),
+            ]
+        )
+
+        // 反过来比较时没有目标独有的提交，也就没有参与者
+        #expect(try await RevisionComparison(runner: runner, base: target, target: base).contributors().isEmpty)
+    }
 }
 
 // MARK: - Helpers

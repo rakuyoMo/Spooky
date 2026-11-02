@@ -18,21 +18,21 @@ enum AppLocalization {
 
     /// 与 ``text(_:_:)`` 相同，格式参数以数组传入，供转发可变参数的调用方使用。
     static func text(_ key: String, arguments: [CVarArg]) -> String {
+        String(format: format(key), locale: Locale.current, arguments: arguments)
+    }
+
+    /// 当前语言未经格式化的文案，供要自己按参数位置排版的调用方使用。
+    static func format(_ key: String) -> String {
         let localized = bundle.localizedString(forKey: key, value: nil, table: nil)
-        let format: String =
 
-            // 英文兜底独立于当前系统语言，缺失的翻译不能直接暴露资源键。
-            if
+        // 英文兜底独立于当前系统语言，缺失的翻译不能直接暴露资源键。
+        guard
             localized == key,
-                let url = bundle.url(forResource: "en", withExtension: "lproj"),
-                let english = Bundle(url: url)
-            {
-                english.localizedString(forKey: key, value: "", table: nil)
-            } else {
-                localized
-            }
+            let url = bundle.url(forResource: "en", withExtension: "lproj"),
+            let english = Bundle(url: url)
+        else { return localized }
 
-        return String(format: format, locale: Locale.current, arguments: arguments)
+        return english.localizedString(forKey: key, value: "", table: nil)
     }
 }
 

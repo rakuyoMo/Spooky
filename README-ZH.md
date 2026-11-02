@@ -65,9 +65,9 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **分支整理**：把本地分支与基准分支比较，看它能否干净合并或会不会冲突。显示每个分支的 Pull Request 或 Merge Request，压缩或变基合并的分支同样认得出，并可以按它筛选。可以用合并或变基把父分支的新提交并入分支，批量或自动归档过时的分支，自动归档前先由你确认列表；“活动” 窗口记下每个分支被归档的原因
 
-- **托管账号**：github.com 可以在浏览器里登录或填个人访问令牌，GitLab.com 与私有部署的 GitLab 填个人访问令牌。同一服务可以有多个账号，令牌只保存在钥匙串里
+- **托管账号**：github.com 可以在浏览器里登录或填个人访问令牌，GitLab.com 填个人访问令牌，私有部署的 GitLab 可以填个人访问令牌或用户名与密码。同一服务可以有多个账号，令牌只保存在钥匙串里
 
-- **Pull Request 与 Merge Request**：按远端列出 GitHub 仓库的 Pull Request 或 GitLab 项目的 Merge Request，查看讨论、提交与改动。可以从同一项目或 Fork 的分支新建，修改、评论、关闭，按项目允许的方式合并，以及检出。经 SSH 别名的远端可以手动关联到账号与项目，仓库也可以发布到 GitHub 或 GitLab
+- **Pull Request 与 Merge Request**：按远端列出 GitHub 仓库的 Pull Request 或 GitLab 项目的 Merge Request，查看讨论、提交与改动。可以从同一项目或 Fork 的分支新建，修改、评论、关闭，按项目允许的方式合并，以及检出。自己的评论可以修改与删除，GitLab 上还可以回复评论。经 SSH 别名的远端可以手动关联到账号与项目，仓库也可以发布到 GitHub 或 GitLab
 
 - **子模块**：添加、初始化、更新、同步、获取、移动、改名和删除子模块，删除时可以保留文件；修改地址与选项，检出其它版本。配置不完整的子模块可以修复；子模块可以在 Spooky 里打开，并一键回到父仓库
 
@@ -104,7 +104,7 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
   - `/usr/bin/perl`，以及核心模块 `IO::Socket::UNIX`、`JSON::PP`、`POSIX`
   - 在服务器上输入 SSH 私钥口令时，OpenSSH 需要 `8.4` 或更高版本
   - 不需要 root 权限，也不安装常驻服务
-- Pull Request 与 Merge Request 需要 github.com、GitLab.com 或私有部署 GitLab `15.7` 及以上版本的账号，本机要能访问到它
+- Pull Request 与 Merge Request 需要 github.com、GitLab.com 或私有部署 GitLab `9.0` 及以上版本的账号，本机要能访问到它
 - 使用 Git LFS 的仓库，需要仓库所在的机器上有 Git LFS `2.9.0` 或更高版本，并在那里 Git 使用的 `PATH` 里
 
 ## 从源码构建
@@ -178,10 +178,11 @@ open .build/Spooky.app
 
 - 服务器上的 Git 需要密码、SSH 私钥口令、签名密钥口令或编辑器时，请求经当前主连接上的反向 Unix socket 回到本机，由 Spooky 弹窗处理
 - 本机仓库的网络操作同样通过私有的 Unix socket 回调输入凭据；SSH 私钥解锁后，由 OpenSSH 加入当前的 SSH agent
+- HTTPS 远端属于已登录的托管账号时，Git 用账号的令牌认证，不弹窗询问，本机仓库和服务器仓库都一样。远端属于哪个账号与 Pull Request 的对应相同，包括手动关联的远端。服务器仓库的令牌经反向 Unix socket 取回，不写入服务器。这些地址不使用你自己配置的 Git 凭据助手。Git 拒绝了令牌时，Spooky 弹窗询问用户名与密码，并说明账号的令牌没能通过认证
 - 本机的提交、合并、变基、摘取和反转也以同样的方式询问 SSH 签名密钥的口令；GPG 的口令交给本机自己的 pinentry 处理
 - 凭据默认只保存在内存中，勾选 “存入这台 Mac 的钥匙串” 后才写入本机钥匙串
 - 凭据不会写入临时文件、活动日志或错误信息，输出中回显的凭据会被隐去
-- 自动获取不会弹出任何输入框，只使用钥匙串里已存的凭据；取不到时，失败只记在 “活动” 窗口里
+- 自动获取不会弹出任何输入框，只使用账号的令牌与钥匙串里已存的凭据；取不到时，失败只记在 “活动” 窗口里
 - 校验签名时不会去密钥服务器取钥，也不会更新 GPG 信任库，本机和服务器都一样
 
 ### 数据与对系统的改动
@@ -193,9 +194,9 @@ open .build/Spooky.app
 - “活动” 窗口里获取、拉取、推送等远程操作的记录保存在 `~/Library/Application Support/Spooky/Activity`，一条记录一个文件，7 天后删除；其余记录只在 Spooky 运行期间保存在内存里
 - “活动” 窗口用来计算分支、远端、储藏与子模块增减的上一次清单保存在 `~/Library/Application Support/Spooky/Baselines`，每个仓库一个文件
 - 存入钥匙串的凭据，服务名为 `com.rakuyo.spooky.remote.<主机别名>`
-- 托管账号的令牌存在钥匙串里，服务名为 `com.rakuyo.spooky.hosting.<实例地址>`；账号列表与手动关联到账号的远端存在偏好里，不含令牌
+- 托管账号的令牌存在钥匙串里，服务名为 `com.rakuyo.spooky.hosting.<实例地址>`；私有部署 GitLab 用用户名与密码登录的账号，这里存访问令牌、刷新令牌与到期时间，不存密码。账号列表与手动关联到账号的远端存在偏好里，不含令牌
 - 连接和回调使用私有的 `/tmp/spooky-*` 临时目录，关闭会话后清理。本机仓库校验签名时同样使用这样一个目录，校验结束即删除
-- 作者头像以作者邮箱的 SHA-256 哈希向 Gravatar 请求，只在 Spooky 运行期间保存在内存里
+- 作者头像以作者邮箱的 SHA-256 哈希向 Gravatar 请求；Pull Request 与 Merge Request 的作者、指派人与评论者的头像按托管服务给出的地址请求。头像只在 Spooky 运行期间保存在内存里
 - 交给 Quick Look 和其它程序的文件副本放在私有的 `spooky-files-*` 临时目录，关闭仓库后清理
 - 用 Warp 打开服务器仓库时，会在 `~/.warp/launch_configurations/` 写入 `Spooky-*.yaml`；退出 Spooky 时只清理它自己创建的这些文件
 - 启动时读取 `~/Library/Logs/DiagnosticReports/` 里 Spooky 自己的崩溃报告，用来询问是否在 GitHub 上报告；不会自动上传任何内容

@@ -6,6 +6,7 @@ import SwiftUI
 /// 引用管理对话框共用的骨架：头部、内容、错误、仓库不可写的提示、可折叠的选项与底栏，宽 540。
 ///
 /// 主按钮只在内容合法且仓库可写时可用；提交后由各对话框决定何时关闭。
+/// 头部文字与错误、不可写的提示对齐内容区的输入列，图标挂在头部文字左侧。
 struct ReferenceDialogLayout<Content: View, Options: View>: View {
     /// 发起动作的窗口会话，决定仓库路径与是否可写。
     let session: RepositorySession
@@ -41,6 +42,10 @@ struct ReferenceDialogLayout<Content: View, Options: View>: View {
     @State
     private var optionsExpanded = false
 
+    /// 内容区输入列的左缘；内容区没有输入列时为 nil。
+    @State
+    private var inputColumn: CGFloat?
+
     /// 头部、内容、错误、不可写提示、选项与底栏依次排列。
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -69,6 +74,8 @@ struct ReferenceDialogLayout<Content: View, Options: View>: View {
             footer
         }
         .frame(width: 540)
+        .coordinateSpace(.named(DialogMetrics.coordinateSpace))
+        .onPreferenceChange(DialogInputColumnKey.self) { inputColumn = $0 }
     }
 
     /// 创建带选项区的对话框；选项区默认收起。
@@ -128,30 +135,27 @@ extension ReferenceDialogLayout where Options == EmptyView {
 // MARK: - Layout
 
 extension ReferenceDialogLayout {
+    /// 头部文字与提示文字的左缘。
+    private var alignment: CGFloat {
+        DialogMetrics.textLeading(for: inputColumn)
+    }
+
     /// 校验失败的说明，以及仓库暂不可写的提示。
     @ViewBuilder
     private var notices: some View {
         if !error.isEmpty {
-            Label(error, systemImage: "exclamationmark.triangle")
-                .font(.system(size: 12))
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
+            notice(error)
         }
 
         // 断线或其它写操作进行中时主按钮禁用，说明原因并保留已填写的参数。
         if !session.canWrite {
-            Label(AppLocalization.text("dialog.blocked"), systemImage: "exclamationmark.triangle")
-                .font(.system(size: 12))
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
+            notice(AppLocalization.text("dialog.blocked"))
         }
     }
 
-    /// 头部：图标、标题、服务器仓库的位置与说明。
+    /// 头部：图标、标题、服务器仓库的位置与说明；文字从对齐线开始，图标在文字左侧 16 pt。
     private var header: some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .top, spacing: DialogMetrics.iconSpacing) {
             Image(systemName: "point.3.connected.trianglepath.dotted")
                 .font(.system(size: 42))
                 .frame(width: 64, height: 64)
@@ -174,7 +178,8 @@ extension ReferenceDialogLayout {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.horizontal, 32)
+        .padding(.leading, alignment - DialogMetrics.iconSpacing - 64)
+        .padding(.trailing, 32)
         .padding(.top, 20)
         .padding(.bottom, 12)
     }
@@ -194,6 +199,23 @@ extension ReferenceDialogLayout {
         .padding(.horizontal, 20)
         .frame(height: 53)
     }
+
+    /// 一条提示：图标挂在对齐线左侧，文字从对齐线开始。
+    private func notice(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 4) {
+            Image(systemName: "exclamationmark.triangle")
+                .frame(width: 18, height: 18)
+                .accessibilityHidden(true)
+
+            Text(text)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(.system(size: 12))
+        .padding(.leading, alignment - 4 - 18)
+        .padding(.trailing, 20)
+        .padding(.bottom, 12)
+    }
 }
 
 // MARK: - ReferenceDialogRows
@@ -201,24 +223,24 @@ extension ReferenceDialogLayout {
 /// 引用管理对话框里重复出现的表格行。
 @MainActor
 enum ReferenceDialogRows {
-    /// 标签列右对齐、输入列占满的一行。
+    /// 标签列右对齐、输入列占满的一行，标签列的宽度与辅助功能里标签与控件的配对同 `DialogFormRow`。
     static func row(_ label: String, @ViewBuilder field: () -> some View) -> some View {
-        GridRow {
-            Text(label)
-                .gridColumnAlignment(.trailing)
+        let content = field()
 
-            field()
-                .accessibilityLabel(label.trimmingCharacters(in: CharacterSet(charactersIn: ":：")))
+        return DialogFormRow(label: label) {
+            content
         }
     }
 
-    /// 输入列下方的勾选项，说明紧跟在下面。
+    /// 输入列下方的勾选项，说明紧跟在下面；没有带标签的行时，勾选项本身就是输入列。
     static func option(_ title: String, help: String, isOn: Binding<Bool>) -> some View {
         GridRow {
             Color.clear
-                .gridCellUnsizedAxes([.horizontal, .vertical])
+                .frame(width: DialogMetrics.labelWidth, height: 0)
+                .gridCellUnsizedAxes(.vertical)
 
             ReferenceOption(title: title, help: help, isOn: isOn)
+                .dialogInputColumn()
         }
     }
 

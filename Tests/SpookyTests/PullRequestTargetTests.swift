@@ -80,7 +80,66 @@ struct PullRequestTargetTests {
         let session = RepositorySession()
 
         #expect(!session.usesMergeRequests)
-        #expect(session.pullRequestText("create.message", "github.com").contains("github.com"))
+        #expect(session.pullRequestText("create.message", "GitHub", "o/r").contains("“o/r”"))
         #expect(session.pullRequestText("close.message", "#7", "github.com").contains("#7"))
+    }
+
+    /// 添加、移除与重新认证账号后请求视图重新找对应的账号；令牌被拒时自动加上的标记不再读一次。
+    @Test("账号变化后是否重新读取请求")
+    func accountsChange() {
+        let me = HostingAccount(instance: .gitlabCom, username: "me", authentication: .personalAccessToken)
+        let bot = HostingAccount(instance: .github, username: "bot", authentication: .oauth)
+
+        var rejected = me
+        rejected.needsReauthentication = true
+
+        var renamed = me
+        renamed.name = "Me"
+
+        let reloads = RepositorySession.accountsChangeReloadsPullRequests
+
+        #expect(reloads([me], [me, bot]))
+        #expect(reloads([me, bot], [bot]))
+        #expect(reloads([rejected], [me]))
+
+        #expect(!reloads([me], [rejected]))
+        #expect(!reloads([me], [renamed]))
+        #expect(!reloads([me, bot], [me, bot]))
+    }
+
+    /// 请求视图读过之后，仓库里加了远端、刷新读到新的引用时，请求视图随即重新读出远端。
+    @Test("远端变化后重新读取请求")
+    func remotesChange() async throws {
+        let fixture = try await HistoryListTests.makeSession(commits: ["first"])
+        defer { fixture.close() }
+
+        let session = fixture.session
+        _ = try await fixture.runner.run(["remote", "add", "origin", "http://127.0.0.1:9/group/project.git"])
+        session.refresh(full: true)
+        await session.waitForRefresh()
+
+        // 账号列表只在内存里，不碰本机的账号
+        let suite = "spooky-remotes-change-" + UUID().uuidString
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+
+        session.pullRequests.accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials())
+        session.reloadPullRequests()
+
+        for _ in 0 ..< 1000 where !session.pullRequests.isLoaded {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        #expect(session.pullRequests.remotes.map(\.name) == ["origin"])
+
+        _ = try await fixture.runner.run(["remote", "add", "mirror", "myhost:group/project.git"])
+        session.refresh(full: true)
+        await session.waitForRefresh()
+
+        for _ in 0 ..< 1000 where session.pullRequests.remotes.count < 2 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        #expect(Set(session.pullRequests.remotes.map(\.name)) == ["mirror", "origin"])
     }
 }

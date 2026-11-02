@@ -17,29 +17,6 @@ struct ActivityRow: View {
     /// 这一行被选中；选中时不换灰底，露出列表的选中底色。
     var isSelected = false
 
-    /// 标题：Remote 页按传输方向与状态写动词，后接远端名与 refspec，如 “Fetched origin” “Pulling origin refs/heads/main”；
-    /// 失败与取消在进行时的写法后面接 failed、cancelled。较早保存、没有方向的 Remote 记录与其余两页写操作名称。
-    var title: String {
-        guard activity.kind == .remote, let target = activity.target else {
-            return activity.title
-        }
-
-        // 完成的用过去时，其余用进行时，如 “activity.fetched” “activity.fetching”；有远端名时用带名字的 “…Named”
-        let tense = activity.state == "activity.finished" ? "ed" : "ing"
-        let key = "activity." + target.transfer.rawValue + tense
-        // 远端名后接 refspec，如 “origin refs/heads/main”
-        let name = target.remote.map { remote in
-            [remote, target.refspec].compactMap(\.self).joined(separator: " ")
-        }
-        let action = name.map { AppLocalization.text(key + "Named", $0) } ?? AppLocalization.text(key)
-
-        switch activity.state {
-        case "activity.failed": return AppLocalization.text("activity.titleFailed", action)
-        case "activity.cancelled": return AppLocalization.text("activity.titleCancelled", action)
-        default: return action
-        }
-    }
-
     /// 最后一行文字：日志的最后一个非空行；没有日志时写状态，同步进行中是步骤名。Remote 页进行中的行把它当作进度摘要。
     var status: String {
         activity.lastLine ?? AppLocalization.text(activity.state)
@@ -51,16 +28,7 @@ struct ActivityRow: View {
 
         switch activity.kind {
         case .remote:
-            guard !isFailedOrCancelled else {
-                return warning
-            }
-
-            // 较早保存、没有方向的记录与拉取同用一个图标
-            switch activity.target?.transfer {
-            case .fetch: return "arrow.down.circle"
-            case .push: return "arrow.up.circle"
-            case .pull, nil: return "arrow.down.to.line"
-            }
+            return isFailedOrCancelled ? warning : activity.transferSymbol
 
         case .repository:
             return activity.state == "activity.failed" ? warning : "folder"
@@ -236,7 +204,7 @@ extension ActivityRow {
     ///
     /// - Parameter offset: 标题的中心比图标中心低多少。
     private func titleLine(offset: CGFloat) -> some View {
-        Text(title)
+        Text(activity.displayTitle)
             .font(.system(size: 12, weight: .bold))
             .lineLimit(1)
             .alignmentGuide(.titleCenter) { $0[VerticalAlignment.center] - offset }

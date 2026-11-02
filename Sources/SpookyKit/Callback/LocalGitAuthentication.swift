@@ -15,12 +15,14 @@ enum LocalGitAuthentication {
         onOutput: @escaping @Sendable (GitOutputEvent) -> Void
     ) async throws -> GitCommandResult {
         let directory = URL(fileURLWithPath: "/tmp/spooky-local-" + UUID().uuidString.lowercased())
+
         try FileManager.default.createDirectory(
             at: directory,
             withIntermediateDirectories: false,
             attributes: [.posixPermissions: 0o700]
         )
         defer { try? FileManager.default.removeItem(at: directory) }
+
         let relay = try CallbackRelay(
             path: directory.appendingPathComponent("relay.sock").path,
             host: location.displayPath,
@@ -28,6 +30,7 @@ enum LocalGitAuthentication {
         )
         try relay.start()
         defer { relay.stop() }
+
         let operation = UUID().uuidString.lowercased()
         relay.register(operation)
         defer { relay.unregister(operation) }
@@ -36,9 +39,11 @@ enum LocalGitAuthentication {
         guard let source = Bundle.module.url(forResource: "spooky-remote", withExtension: "pl") else {
             throw RemoteConnectionError(.deployment)
         }
+
         let wrapper = directory.appendingPathComponent("callback")
         try FileManager.default.copyItem(at: source, to: wrapper)
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: wrapper.path)
+
         let askpass = wrapper.path + "-askpass"
         let gitAskpass = wrapper.path + "-git-askpass"
         let sshKeygen = wrapper.path + "-ssh-keygen"
@@ -54,11 +59,21 @@ enum LocalGitAuthentication {
             [.posixPermissions: 0o600],
             ofItemAtPath: directory.appendingPathComponent("session.json").path
         )
+
         let overrides: [Environment.Key: String?] = [
             "SPOOKY_SESSION": directory.path, "SPOOKY_OPERATION": operation,
             "GIT_ASKPASS": gitAskpass, "SSH_ASKPASS": askpass, "SSH_ASKPASS_REQUIRE": "force",
             "DISPLAY": "spooky:0", "GIT_SSH": nil, "GIT_SSH_COMMAND": nil, "SPOOKY_SIGNING": nil,
         ]
+
+        // 账号实例与手动关联的 HTTPS 地址只问包装器的凭据入口，其余地址仍先问用户自己的凭据助手。
+        let callbackOptions = GitCredentialScopes.options(callback: GitRunner.shellQuoted(wrapper.path)) + [
+            "-c", "core.askPass=" + GitRunner.shellQuoted(gitAskpass),
+            "-c",
+            "core.sshCommand=/usr/bin/ssh -o BatchMode=no -o ForwardAgent=no -o StrictHostKeyChecking=yes -o AddKeysToAgent=yes",
+            "-c", "gpg.ssh.program=" + sshKeygen,
+        ]
+
         let redactor = RemoteOutputRedactor(
             values: { relay.sensitiveValues(for: operation) },
             output: onOutput
@@ -68,12 +83,7 @@ enum LocalGitAuthentication {
         do {
             let result = try await CommandExecutor.execute(
                 executable: executable,
-                processArguments: ["-C", location.path] + GitRunner.globalOptions + [
-                    "-c", "core.askPass=" + GitRunner.shellQuoted(gitAskpass),
-                    "-c",
-                    "core.sshCommand=/usr/bin/ssh -o BatchMode=no -o ForwardAgent=no -o StrictHostKeyChecking=yes -o AddKeysToAgent=yes",
-                    "-c", "gpg.ssh.program=" + sshKeygen,
-                ] + arguments,
+                processArguments: ["-C", location.path] + GitRunner.globalOptions + callbackOptions + arguments,
                 arguments: arguments,
                 environment: environment.updating(overrides),
                 input: input,

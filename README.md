@@ -65,9 +65,9 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Branches review**: compare local branches with a base branch to see whether they can be merged cleanly or would conflict. See each branch's pull request or merge request, including branches merged with squash or rebase, and filter by it. Update a branch from its parent branch by merging or rebasing, and archive obsolete branches in bulk or automatically, after you confirm the list; the Activity window records why each branch was archived
 
-- **Hosting accounts**: sign in to github.com in the browser or with a personal access token, and to GitLab.com and self-managed GitLab instances with a personal access token. Several accounts can be used per service, and tokens are stored only in your Keychain
+- **Hosting accounts**: sign in to github.com in the browser or with a personal access token, to GitLab.com with a personal access token, and to self-managed GitLab instances with a personal access token or a username and password. Several accounts can be used per service, and tokens are stored only in your Keychain
 
-- **Pull requests and merge requests**: list the pull requests of a GitHub repository or the merge requests of a GitLab project for each remote, and read the conversation, commits, and changes. Create them from branches of the same project or a fork, edit them, comment on them, close them, merge them with the methods the project allows, and check them out. Remotes behind SSH aliases can be associated with an account and project by hand, and a repository can be published to GitHub or GitLab
+- **Pull requests and merge requests**: list the pull requests of a GitHub repository or the merge requests of a GitLab project for each remote, and read the conversation, commits, and changes. Create them from branches of the same project or a fork, edit them, comment on them, close them, merge them with the methods the project allows, and check them out. Edit and delete your own comments, and reply to comments on GitLab. Remotes behind SSH aliases can be associated with an account and project by hand, and a repository can be published to GitHub or GitLab
 
 - **Submodules**: add, initialize, update, synchronize, fetch, move, rename, and delete submodules, keeping their files if you want, change their URLs and options, and check out other revisions. Incomplete submodules can be repaired, and a submodule opens in Spooky with a button to go back to its parent repository
 
@@ -104,7 +104,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
   - `/usr/bin/perl` with the core modules `IO::Socket::UNIX`, `JSON::PP`, and `POSIX`
   - OpenSSH `8.4` or later, to enter SSH private key passphrases for Git on the server
   - No root access or background services are needed
-- Pull requests and merge requests need an account on github.com, GitLab.com, or a self-managed GitLab `15.7` or later that your Mac can reach
+- Pull requests and merge requests need an account on github.com, GitLab.com, or a self-managed GitLab `9.0` or later that your Mac can reach
 - Repositories that use Git LFS need Git LFS `2.9.0` or later on the machine where the repository is, in the `PATH` that Git uses there
 
 ## Building from source
@@ -178,10 +178,11 @@ If you declined, you can turn them on again in **System Settings › Notificatio
 
 - When Git on the server needs a password, an SSH private key passphrase, a signing key passphrase, or an editor, the request comes back to your Mac through a reverse Unix socket on the current master connection, and Spooky shows a dialog
 - Network operations in local repositories also ask for credentials through a private Unix socket callback. After an SSH private key is unlocked, OpenSSH adds it to the current SSH agent
+- When an HTTPS remote belongs to a signed-in hosting account, Git authenticates with the account's token without asking, in local repositories and on servers alike. The account is found the same way as for pull requests, including remotes you associated by hand. On a server, the token comes back through the reverse Unix socket and isn't written to the server. These addresses don't use your own Git credential helpers. If Git rejects the token, Spooky asks for a username and password and says that the account's token wasn't accepted
 - Local commits, merges, rebases, cherry-picks, and reverts ask for SSH signing key passphrases the same way. GPG passphrases are handled by your Mac's own pinentry
 - Credentials stay in memory by default. They're written to your Mac's Keychain only when you select **Save in this Mac’s Keychain**
 - Credentials are never written to temporary files, activity logs, or error messages, and credentials echoed in output are hidden
-- Automatic fetches never show a dialog. They only use credentials saved in the Keychain, and if none are available, the failure is only recorded in the **Activity** window
+- Automatic fetches never show a dialog. They only use account tokens and credentials saved in the Keychain, and if none are available, the failure is only recorded in the **Activity** window
 - Signature checks never download keys from key servers or update the GPG trust database, on your Mac or on the server
 
 ### Data and system changes
@@ -193,9 +194,9 @@ On your Mac:
 - Remote operations recorded in the **Activity** window, such as fetches, pulls, and pushes, are stored in `~/Library/Application Support/Spooky/Activity`, one file per record, and deleted after 7 days. Other Activity records are kept in memory only while Spooky is running
 - The previous lists of branches, remotes, stashes, and submodules that the **Activity** window compares against to count updated, added, and deleted items are stored in `~/Library/Application Support/Spooky/Baselines`, one file per repository
 - Credentials saved to the Keychain use the service name `com.rakuyo.spooky.remote.<host alias>`
-- Hosting account tokens are stored in the Keychain with the service name `com.rakuyo.spooky.hosting.<instance address>`. The account list and the remotes you associated with an account are stored in the preferences, without tokens
+- Hosting account tokens are stored in the Keychain with the service name `com.rakuyo.spooky.hosting.<instance address>`. For a self-managed GitLab account that signs in with a username and password, the access token, the refresh token, and the expiry time are stored there; the password isn't stored. The account list and the remotes you associated with an account are stored in the preferences, without tokens
 - Connections and callbacks use private `/tmp/spooky-*` temporary directories, which are removed when the session closes. Signature checks in local repositories use one of these directories as well, removed as soon as the check finishes
-- Author pictures are requested from Gravatar with a SHA-256 hash of each author's email address, and are kept in memory only while Spooky is running
+- Author pictures are requested from Gravatar with a SHA-256 hash of each author's email address. Pictures of the authors, assignees, and commenters of pull requests and merge requests are requested from the addresses the hosting service gives. Pictures are kept in memory only while Spooky is running
 - File copies for Quick Look and other apps are kept in private `spooky-files-*` temporary directories, which are removed when the repository closes
 - Opening a server repository in Warp writes `Spooky-*.yaml` to `~/.warp/launch_configurations/`. When Spooky quits, it removes only the files it created
 - At launch, Spooky reads its own crash reports in `~/Library/Logs/DiagnosticReports/` to offer a GitHub issue. Nothing is uploaded automatically

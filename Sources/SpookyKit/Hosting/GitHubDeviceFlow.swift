@@ -161,13 +161,7 @@ extension GitHubDeviceFlow {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.setValue("Spooky", forHTTPHeaderField: "User-Agent")
-        request.httpBody = Data(
-            fields
-                .sorted { $0.key < $1.key }
-                .map { HostingClient.encodedSegment($0.key) + "=" + HostingClient.encodedSegment($0.value) }
-                .joined(separator: "&")
-                .utf8
-        )
+        request.httpBody = HostingClient.formBody(fields)
 
         let data: Data
         let response: URLResponse

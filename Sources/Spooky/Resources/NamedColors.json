@@ -449,6 +449,36 @@
       "alpha": 0.06
     }
   },
+  "repository_pullrequests_conversation_selection_color": {
+    "light": {
+      "hex": "#E6E6E6",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#3C3E41",
+      "alpha": 1.0
+    }
+  },
+  "repository_pullrequests_code_block_background_color": {
+    "light": {
+      "hex": "#F4F4F4",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#46484B",
+      "alpha": 1.0
+    }
+  },
+  "repository_pullrequests_code_block_text_color": {
+    "light": {
+      "hex": "#000000",
+      "alpha": 0.8
+    },
+    "dark": {
+      "hex": "#FFFFFF",
+      "alpha": 0.85
+    }
+  },
   "repository_diff_image_checkerboard_background_color": {
     "light": {
       "hex": "#FFFFFF",
