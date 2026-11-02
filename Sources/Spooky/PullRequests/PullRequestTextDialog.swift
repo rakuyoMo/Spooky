@@ -42,32 +42,31 @@ struct PullRequestTextDialog: View {
     @State
     private var text = ""
 
-    /// 评论与描述是 300 高的多行输入，检出是单行的分支名，删除评论没有输入。
+    /// 评论与描述是占满宽度、高 300 的多行输入，检出是从对齐线开始的分支名，删除评论没有内容区。
+    ///
+    /// 仓库暂不可写时主按钮禁用，错误区写出原因。
     var body: some View {
-        ReferenceDialogLayout(
-            session: session,
+        DialogLayout(
             title: title,
             message: message,
             submitTitle: submitTitle,
-            error: "",
-            isValid: isValid,
+            error: session.canWrite ? nil : AppLocalization.text("dialog.blocked"),
+            canSubmit: isValid && session.canWrite,
             cancel: close,
             submit: submit
         ) {
             switch kind {
             case .comment, .editComment, .reply:
-                ReferenceDialogRows.row(AppLocalization.text("pullRequests.comment")) {
-                    editor
-                }
+                editor(label: AppLocalization.text("pullRequests.comment"))
 
             case .editDescription:
-                ReferenceDialogRows.row(AppLocalization.text("pullRequests.description")) {
-                    editor
-                }
+                editor(label: AppLocalization.text("pullRequests.description"))
 
             case .checkout:
-                ReferenceDialogRows.row(AppLocalization.text("pullRequests.branchName")) {
-                    TextField("", text: $text)
+                DialogForm {
+                    DialogFormRow(label: AppLocalization.text("pullRequests.branchName")) {
+                        TextField("", text: $text)
+                    }
                 }
 
             case .deleteComment:
@@ -137,20 +136,22 @@ extension PullRequestTextDialog {
 // MARK: - Private
 
 extension PullRequestTextDialog {
-    /// 评论与描述的多行输入，带边框。
-    private var editor: some View {
-        TextEditor(text: $text)
-            .font(.system(size: 13))
-            .frame(height: 300)
-            .overlay(RoundedRectangle(cornerRadius: 4).stroke(AppPalette.color("general_border_color")))
-    }
-
     /// 描述可以清空，删除没有输入；其余要有不全是空白的内容。
     private var isValid: Bool {
         switch kind {
         case .editDescription, .deleteComment: true
         default: !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
+    }
+
+    /// 评论与描述的多行输入：四周留 20、占满对话框的宽度、高 300，带边框；没有可见的标签，VoiceOver 读出去掉冒号的标签。
+    private func editor(label: String) -> some View {
+        TextEditor(text: $text)
+            .font(.system(size: 13))
+            .frame(height: 300)
+            .overlay(RoundedRectangle(cornerRadius: 4).stroke(AppPalette.color("general_border_color")))
+            .accessibilityLabel(label.trimmingCharacters(in: CharacterSet(charactersIn: ":：")))
+            .padding(20)
     }
 
     /// 修改评论与描述预填原文，检出预填源分支名。

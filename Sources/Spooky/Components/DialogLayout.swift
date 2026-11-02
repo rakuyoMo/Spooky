@@ -3,11 +3,11 @@ import SwiftUI
 
 // MARK: - DialogLayout
 
-/// 不随仓库可写状态变化的对话框骨架：64 pt 应用图标与标题、说明，内容区，错误区与底栏，宽 480。
+/// 对话框骨架：64 pt 应用图标与标题、说明，内容区，错误区与底栏，宽 480。
 ///
 /// 头部文字与错误文字对齐 `DialogMetrics.alignment`，应用图标挂在左侧；内容区的边距由内容自己决定，
 /// 表单可以用 `DialogForm` 与 `DialogFormRow` 让输入列也从对齐线开始。
-/// 用于身份档案、Issue 追踪设置与仓库管理这类不随仓库可写状态变化的对话框。
+/// 用于身份档案、Issue 追踪设置、仓库管理，以及请求的评论、描述与检出；要随仓库可写状态禁用的，由调用方给出主按钮与错误区。
 struct DialogLayout<Content: View>: View {
     /// 对话框标题，也是 VoiceOver 读出的名称。
     let title: String
