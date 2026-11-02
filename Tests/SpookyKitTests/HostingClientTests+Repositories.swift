@@ -36,8 +36,7 @@ extension HostingClientTests {
         #expect(repository == HostingRepository(
             project: "acme/新仓库",
             webURL: URL(string: "https://github.com/acme/x"),
-            httpsURL: "https://github.com/acme/x.git",
-            sshURL: "git@github.com:acme/x.git"
+            httpsURL: "https://github.com/acme/x.git"
         ))
 
         let sent = try #require(requests.withLock { $0.first })
@@ -67,7 +66,7 @@ extension HostingClientTests {
             visibility: .internal,
             owner: HostingOwner(id: "7", path: "group/sub", isUser: false)
         )
-        #expect(repository.project == "group/sub/x" && repository.sshURL == "git@gitlab.com:group/sub/x.git")
+        #expect(repository.project == "group/sub/x" && repository.httpsURL == "https://gitlab.com/group/sub/x.git")
 
         let body = try JSONSerialization
             .jsonObject(with: HostingStub.body(of: try #require(requests.withLock { $0.first }))) as? [String: Any]

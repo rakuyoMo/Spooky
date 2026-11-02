@@ -2493,10 +2493,12 @@
 
 "publish.menu" = "Publish Repository…";
 "publish.title" = "Publish Repository";
-"publish.message" = "Creates a new, empty repository with the selected account, adds it to this repository as a remote and pushes all local branches and tags to it.";
-"publish.owner" = "Owner:";
+"publish.message" = "Publishes this repository in the specified service account or organization.";
+"publish.submit" = "Publish";
 "publish.name" = "Name:";
-"publish.visibility" = "Visibility:";
+"publish.name.placeholder" = "Repository Name";
+"publish.description.placeholder" = "Optional Repository Description";
+"publish.visibility" = "Access:";
 "publish.visibility.private" = "Private";
 "publish.visibility.internal" = "Internal";
 "publish.visibility.public" = "Public";
@@ -2504,7 +2506,6 @@
 "publish.target" = "Remote URL:";
 "publish.push" = "Pushes all local branches and tags to “%@”. Branches without an upstream track their new remote branch.";
 "publish.exists" = "“%1$@” already exists on %2$@. Choose another name; existing repositories aren’t overwritten.";
-"publish.remoteExists" = "This repository already has a remote named “%@”. Choose another name; existing remotes aren’t replaced.";
 "publish.push.title" = "Add Remote and Push";
 "publish.loadOwners.title" = "Load Owners";
 "publish.checkName.title" = "Check Repository Name";

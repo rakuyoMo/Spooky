@@ -2493,10 +2493,12 @@
 
 "publish.menu" = "Repository veröffentlichen…";
 "publish.title" = "Repository veröffentlichen";
-"publish.message" = "Erstellt mit dem ausgewählten Account ein neues, leeres Repository, fügt es diesem Repository als Remote hinzu und pusht alle lokalen Branches und Tags dorthin.";
-"publish.owner" = "Eigentümer:";
+"publish.message" = "Veröffentlicht dieses Repository im angegebenen Service-Account oder in der angegebenen Organisation.";
+"publish.submit" = "Veröffentlichen";
 "publish.name" = "Name:";
-"publish.visibility" = "Sichtbarkeit:";
+"publish.name.placeholder" = "Repository-Name";
+"publish.description.placeholder" = "Optionale Repository-Beschreibung";
+"publish.visibility" = "Zugriff:";
 "publish.visibility.private" = "Privat";
 "publish.visibility.internal" = "Intern";
 "publish.visibility.public" = "Öffentlich";
@@ -2504,7 +2506,6 @@
 "publish.target" = "Remote-URL:";
 "publish.push" = "Pusht alle lokalen Branches und Tags nach „%@“. Branches ohne Upstream verfolgen ihren neuen Remote-Branch.";
 "publish.exists" = "„%1$@“ existiert auf %2$@ bereits. Wählen Sie einen anderen Namen; vorhandene Repositorys werden nicht überschrieben.";
-"publish.remoteExists" = "Dieses Repository hat bereits ein Remote namens „%@“. Wählen Sie einen anderen Namen; vorhandene Remotes werden nicht ersetzt.";
 "publish.push.title" = "Remote hinzufügen und pushen";
 "publish.loadOwners.title" = "Eigentümer laden";
 "publish.checkName.title" = "Repository-Namen prüfen";

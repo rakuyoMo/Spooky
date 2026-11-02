@@ -2493,10 +2493,12 @@
 
 "publish.menu" = "リポジトリを公開…";
 "publish.title" = "リポジトリを公開";
-"publish.message" = "選択したアカウントで新しい空のリポジトリを作成し、このリポジトリのリモートとして追加して、すべてのローカルブランチとタグをプッシュします。";
-"publish.owner" = "所有者：";
+"publish.message" = "指定したサービスアカウントまたは組織にこのリポジトリを公開します。";
+"publish.submit" = "公開";
 "publish.name" = "名前：";
-"publish.visibility" = "公開範囲：";
+"publish.name.placeholder" = "リポジトリ名";
+"publish.description.placeholder" = "リポジトリの説明（省略可）";
+"publish.visibility" = "アクセス：";
 "publish.visibility.private" = "非公開";
 "publish.visibility.internal" = "内部";
 "publish.visibility.public" = "公開";
@@ -2504,7 +2506,6 @@
 "publish.target" = "リモート URL：";
 "publish.push" = "すべてのローカルブランチとタグを「%@」にプッシュします。追跡先のないブランチは、新しいリモートの同名ブランチを追跡します。";
 "publish.exists" = "%2$@ に「%1$@」はすでに存在します。別の名前を選んでください。既存のリポジトリは上書きされません。";
-"publish.remoteExists" = "このリポジトリにはすでに「%@」というリモートがあります。別の名前を選んでください。既存のリモートは置き換えられません。";
 "publish.push.title" = "リモートを追加してプッシュ";
 "publish.loadOwners.title" = "所有者を読み込む";
 "publish.checkName.title" = "リポジトリ名を確認";

@@ -2493,10 +2493,12 @@
 
 "publish.menu" = "发布仓库…";
 "publish.title" = "发布仓库";
-"publish.message" = "用所选账号新建一个空仓库，把它添加为这个仓库的远端，并把全部本地分支与标签推送过去。";
-"publish.owner" = "所有者：";
+"publish.message" = "在指定的服务账号或组织下发布这个仓库。";
+"publish.submit" = "发布";
 "publish.name" = "名称：";
-"publish.visibility" = "可见性：";
+"publish.name.placeholder" = "仓库名称";
+"publish.description.placeholder" = "可选的仓库描述";
+"publish.visibility" = "访问权限：";
 "publish.visibility.private" = "私有";
 "publish.visibility.internal" = "内部";
 "publish.visibility.public" = "公开";
@@ -2504,7 +2506,6 @@
 "publish.target" = "远端地址：";
 "publish.push" = "把全部本地分支与标签推送到 “%@”。没有上游的分支跟踪新远端上的同名分支。";
 "publish.exists" = "%2$@ 上已经有 “%1$@”。请换一个名字，已有的仓库不会被覆盖。";
-"publish.remoteExists" = "这个仓库已经有名为 “%@” 的远端。请换一个名字，已有的远端不会被替换。";
 "publish.push.title" = "添加远端并推送";
 "publish.loadOwners.title" = "加载所有者";
 "publish.checkName.title" = "检查仓库名称";

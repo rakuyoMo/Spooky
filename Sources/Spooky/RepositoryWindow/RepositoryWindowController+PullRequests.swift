@@ -32,7 +32,7 @@ extension RepositoryWindowController {
         session.requestPullRequest(.create(sourceBranch: nil))
     }
 
-    /// Repository › Publish Repository…：用托管账号新建远端仓库，添加为远端并推送当前分支。
+    /// Repository › Publish Repository…：用托管账号新建远端仓库，添加为远端并推送全部本地分支与标签。
     @objc
     func publishRepository() {
         presentPullRequestRequest(.publish)
@@ -50,7 +50,8 @@ extension RepositoryWindowController {
             return repositoryView
 
         case #selector(publishRepository):
-            return repositoryView && session.canWrite
+            // 新仓库建在登录的账号下，没有账号时不可用
+            return repositoryView && session.canWrite && !session.pullRequests.accounts.items.isEmpty
 
         default:
             return nil

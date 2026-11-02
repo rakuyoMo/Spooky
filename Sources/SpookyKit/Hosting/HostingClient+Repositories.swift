@@ -37,7 +37,7 @@ public enum HostingVisibility: String, Sendable, Hashable, CaseIterable {
 
 // MARK: - HostingRepository
 
-/// 新建好的远端仓库：项目路径、网页地址与两种克隆地址。
+/// 新建好的远端仓库：项目路径、网页地址与 HTTPS 克隆地址。
 public struct HostingRepository: Sendable, Hashable {
     /// 项目路径，如 `owner/repo`。
     public let project: String
@@ -48,15 +48,11 @@ public struct HostingRepository: Sendable, Hashable {
     /// HTTPS 克隆地址。
     public let httpsURL: String
 
-    /// SSH 克隆地址。
-    public let sshURL: String
-
     /// 创建仓库描述；解析与测试使用。
-    public init(project: String, webURL: URL?, httpsURL: String, sshURL: String) {
+    public init(project: String, webURL: URL?, httpsURL: String) {
         self.project = project
         self.webURL = webURL
         self.httpsURL = httpsURL
-        self.sshURL = sshURL
     }
 }
 
@@ -126,12 +122,7 @@ extension HostingClient {
             let created: HostingResponse<GitHubCreatedRepository> = try await send("POST", path, body: payload)
             let value = created.value
 
-            return HostingRepository(
-                project: value.fullName,
-                webURL: value.htmlURL,
-                httpsURL: value.cloneURL,
-                sshURL: value.sshURL
-            )
+            return HostingRepository(project: value.fullName, webURL: value.htmlURL, httpsURL: value.cloneURL)
 
         case .gitlab:
             let payload = try JSONEncoder().encode(
@@ -149,8 +140,7 @@ extension HostingClient {
             return HostingRepository(
                 project: value.pathWithNamespace,
                 webURL: value.webURL,
-                httpsURL: value.httpURLToRepo,
-                sshURL: value.sshURLToRepo
+                httpsURL: value.httpURLToRepo
             )
         }
     }
@@ -187,7 +177,6 @@ private struct GitHubCreatedRepository: Decodable, Sendable {
         case fullName
         case htmlURL = "htmlUrl"
         case cloneURL = "cloneUrl"
-        case sshURL = "sshUrl"
     }
 
     /// `owner/repo`。
@@ -198,9 +187,6 @@ private struct GitHubCreatedRepository: Decodable, Sendable {
 
     /// HTTPS 克隆地址。
     let cloneURL: String
-
-    /// SSH 克隆地址。
-    let sshURL: String
 }
 
 // MARK: - GitLabNamespace
@@ -252,7 +238,6 @@ private struct GitLabCreatedProject: Decodable, Sendable {
         case pathWithNamespace
         case webURL = "webUrl"
         case httpURLToRepo = "httpUrlToRepo"
-        case sshURLToRepo = "sshUrlToRepo"
     }
 
     /// 完整路径。
@@ -263,7 +248,4 @@ private struct GitLabCreatedProject: Decodable, Sendable {
 
     /// HTTPS 克隆地址。
     let httpURLToRepo: String
-
-    /// SSH 克隆地址。
-    let sshURLToRepo: String
 }

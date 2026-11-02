@@ -2493,10 +2493,12 @@
 
 "publish.menu" = "Publicar repositorio…";
 "publish.title" = "Publicar repositorio";
-"publish.message" = "Crea un repositorio vacío con la cuenta seleccionada, lo añade como remoto de este repositorio y hace push de todas las ramas locales y etiquetas.";
-"publish.owner" = "Propietario:";
+"publish.message" = "Publica este repositorio en la cuenta de servicio u organización indicada.";
+"publish.submit" = "Publicar";
 "publish.name" = "Nombre:";
-"publish.visibility" = "Visibilidad:";
+"publish.name.placeholder" = "Nombre del repositorio";
+"publish.description.placeholder" = "Descripción del repositorio opcional";
+"publish.visibility" = "Acceso:";
 "publish.visibility.private" = "Privado";
 "publish.visibility.internal" = "Interno";
 "publish.visibility.public" = "Público";
@@ -2504,7 +2506,6 @@
 "publish.target" = "URL del remoto:";
 "publish.push" = "Hace push de todas las ramas locales y etiquetas a “%@”. Las ramas sin upstream siguen su nueva rama remota.";
 "publish.exists" = "“%1$@” ya existe en %2$@. Elige otro nombre; los repositorios existentes no se sobrescriben.";
-"publish.remoteExists" = "Este repositorio ya tiene un remoto llamado “%@”. Elige otro nombre; los remotos existentes no se sustituyen.";
 "publish.push.title" = "Añadir remoto y hacer push";
 "publish.loadOwners.title" = "Cargar propietarios";
 "publish.checkName.title" = "Comprobar el nombre del repositorio";

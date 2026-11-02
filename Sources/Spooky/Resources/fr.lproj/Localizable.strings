@@ -2493,10 +2493,12 @@
 
 "publish.menu" = "Publier le dépôt…";
 "publish.title" = "Publier le dépôt";
-"publish.message" = "Crée un dépôt vide avec le compte sélectionné, l’ajoute comme dépôt distant de ce dépôt et y pousse toutes les branches locales et étiquettes.";
-"publish.owner" = "Propriétaire :";
+"publish.message" = "Publie ce dépôt dans le compte de service ou l’organisation indiqués.";
+"publish.submit" = "Publier";
 "publish.name" = "Nom :";
-"publish.visibility" = "Visibilité :";
+"publish.name.placeholder" = "Nom du dépôt";
+"publish.description.placeholder" = "Description du dépôt facultative";
+"publish.visibility" = "Accès :";
 "publish.visibility.private" = "Privé";
 "publish.visibility.internal" = "Interne";
 "publish.visibility.public" = "Public";
@@ -2504,7 +2506,6 @@
 "publish.target" = "URL distante :";
 "publish.push" = "Pousse toutes les branches locales et étiquettes vers « %@ ». Les branches sans branche amont suivent leur nouvelle branche distante.";
 "publish.exists" = "« %1$@ » existe déjà sur %2$@. Choisissez un autre nom ; les dépôts existants ne sont pas écrasés.";
-"publish.remoteExists" = "Ce dépôt a déjà un dépôt distant nommé « %@ ». Choisissez un autre nom ; les dépôts distants existants ne sont pas remplacés.";
 "publish.push.title" = "Ajouter le dépôt distant et pousser";
 "publish.loadOwners.title" = "Charger les propriétaires";
 "publish.checkName.title" = "Vérifier le nom du dépôt";
