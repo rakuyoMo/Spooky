@@ -8,9 +8,6 @@ import SwiftUI
 ///
 /// 同名仓库已在托管服务上、或本仓库已有同名远端时不能发布，免得覆盖已有的仓库或远端。
 struct PublishRepositoryDialog: View {
-    /// 输入列的宽度：对话框宽 480，输入列从对齐线开始，右边留 20。
-    private static let fieldWidth = 480 - DialogMetrics.alignment - 20
-
     /// 发起动作的窗口会话。
     let session: RepositorySession
 
@@ -53,11 +50,11 @@ struct PublishRepositoryDialog: View {
     @State
     private var checkFailure = ""
 
-    /// Account 与 Access 两个下拉共用的宽度；量出来之前为 nil。
+    /// Account 与 Access 两个下拉按内容的宽度，取较宽的一个；量出来之前为 nil。
     @State
     private var popUpWidth: CGFloat?
 
-    /// 480 宽的对话框骨架：远端名、账号、名称、描述、可见性与将要添加的地址，输入列从对齐线开始。
+    /// 480 宽的对话框骨架：远端名、账号、名称、描述、可见性与将要添加的地址；输入列至少从对齐线开始，标签长时随之右移。
     var body: some View {
         DialogLayout(
             title: AppLocalization.text("publish.title"),
@@ -133,14 +130,14 @@ extension PublishRepositoryDialog {
         }
     }
 
-    /// 账号与组织在同一个下拉里，按内容宽；一项也没有时不可用。
+    /// 账号与组织在同一个下拉里，按内容宽、不超过输入列；一项也没有时不可用。
     ///
     /// 背后量一份不可见、按内容宽的 Account 与 Access 下拉，取较宽的一个作为两者共用的宽度。
     private var accountRow: some View {
         DialogFormRow(label: AppLocalization.text("pullRequests.account")) {
             accountPicker
                 .buttonSizing(.flexible)
-                .frame(width: popUpWidth)
+                .frame(maxWidth: popUpWidth, alignment: .leading)
                 .disabled(items.isEmpty)
                 .background(alignment: .leading) {
                     VStack(alignment: .leading) {
@@ -151,7 +148,7 @@ extension PublishRepositoryDialog {
                     .fixedSize()
                     .hidden()
                     .onGeometryChange(for: CGFloat.self, of: \.size.width) { width in
-                        popUpWidth = min(width, Self.fieldWidth)
+                        popUpWidth = width
                     }
                 }
         }
@@ -171,20 +168,22 @@ extension PublishRepositoryDialog {
         DialogFormRow(label: AppLocalization.text("publish.visibility")) {
             accessPicker
                 .buttonSizing(.flexible)
-                .frame(width: popUpWidth)
+                .frame(maxWidth: popUpWidth, alignment: .leading)
         }
     }
 
-    /// 将要添加的地址与推送目标，宽度固定为输入列。
+    /// 将要添加的地址与推送目标，宽度固定为输入列：从输入列到对话框右边 20。
     ///
     /// 不固定宽度时，表格按较窄的宽度量多行文字的高度，这一行会比文字高出一截。
     private var targetRow: some View {
         DialogFormRow(label: AppLocalization.text("publish.target")) {
-            Text(target)
-                .textSelection(.enabled)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(width: Self.fieldWidth, alignment: .leading)
+            DialogInputColumnReader { inputColumn in
+                Text(target)
+                    .textSelection(.enabled)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: 480 - inputColumn - 20, alignment: .leading)
+            }
         }
     }
 

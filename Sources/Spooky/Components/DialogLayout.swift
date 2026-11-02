@@ -7,6 +7,7 @@ import SwiftUI
 ///
 /// 头部文字与错误文字对齐内容区的输入列，应用图标挂在头部文字左侧；内容区的边距由内容自己决定。
 /// 输入列由 `DialogFormRow` 报上来，标签长时随之右移；内容区没有输入列时对齐 `DialogMetrics.alignment`。
+/// 内容区里要按输入列定宽或缩进的部分，用 `DialogInputColumnReader` 读到它。
 /// 用于身份档案、Issue 追踪设置、仓库管理，以及请求的新建、修改、评论、描述与检出；要随仓库可写状态禁用的，由调用方给出主按钮与错误区。
 /// 等待中的步骤写在底栏左侧，前面是小号转圈。
 struct DialogLayout<Content: View>: View {
@@ -49,6 +50,7 @@ struct DialogLayout<Content: View>: View {
 
             content()
                 .font(.system(size: 13))
+                .environment(\.dialogInputColumn, alignment)
 
             if let error {
                 errorRow(error)
@@ -237,6 +239,32 @@ extension View {
             }
         }
     }
+}
+
+// MARK: - DialogInputColumnReader
+
+/// 按外层对话框骨架的输入列排版的内容，如固定为输入列宽度的文字、与输入列对齐的选项区。
+struct DialogInputColumnReader<Content: View>: View {
+    /// 由输入列的左缘生成内容。
+    @ViewBuilder
+    let content: (CGFloat) -> Content
+
+    /// 外层骨架的输入列。
+    @Environment(\.dialogInputColumn)
+    private var inputColumn
+
+    /// 用输入列生成的内容。
+    var body: some View {
+        content(inputColumn)
+    }
+}
+
+// MARK: - EnvironmentValues + DialogInputColumn
+
+extension EnvironmentValues {
+    /// 外层对话框骨架里输入列的左缘，也是头部与错误文字的左缘；不在骨架里时是 `DialogMetrics.alignment`。
+    @Entry
+    var dialogInputColumn = DialogMetrics.alignment
 }
 
 // MARK: - DialogInputColumnKey

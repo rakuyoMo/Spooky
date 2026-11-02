@@ -53,7 +53,9 @@ struct DialogLayoutTests {
     /// 标签比标签列的最小宽度长时输入列右移，标题、说明与错误文字跟着它；没有表单时对齐 120 的对齐线。
     @Test("头部与错误文字对齐输入列", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func alignment() throws {
-        let form = AccessibilityProbe.elements(until: { elements in elements.contains { $0.role == "AXTextField" } }) {
+        let form = AccessibilityProbe.elements(
+            until: { elements in elements.contains { $0.role == "AXTextField" } }
+        ) {
             Self.layout(error: "Error") {
                 DialogForm {
                     DialogFormRow(label: "Personal Access Token:") {
@@ -76,11 +78,55 @@ struct DialogLayoutTests {
 
         try Self.expectTexts(in: empty, startingAt: DialogMetrics.alignment)
     }
+
+    /// 内容区里按输入列排版的部分读到的就是输入列：标签长时跟着右移，没有表单时是 120。
+    @Test("内容区读到输入列", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    func inputColumnReader() throws {
+        let form = AccessibilityProbe.elements(
+            until: { elements in elements.contains { $0.role == "AXTextField" } }
+        ) {
+            Self.layout(error: "Error") {
+                VStack(alignment: .leading, spacing: 0) {
+                    DialogForm {
+                        DialogFormRow(label: "Personal Access Token:") {
+                            TextField("", text: .constant(""))
+                        }
+                    }
+
+                    Self.columnText
+                }
+            }
+        }
+
+        let field = try #require(form.first { $0.role == "AXTextField" })
+        let text = try #require(form.first { $0.role == "AXStaticText" && $0.value == "Column" })
+
+        #expect(field.frame.minX > DialogMetrics.alignment + 1)
+        #expect(abs(text.frame.minX - field.frame.minX) <= 1)
+
+        let empty = AccessibilityProbe.elements(until: Self.hasButtons) {
+            Self.layout(error: "Error") {
+                Self.columnText
+            }
+        }
+
+        let alone = try #require(empty.first { $0.role == "AXStaticText" && $0.value == "Column" })
+
+        #expect(abs(alone.frame.minX - DialogMetrics.alignment) <= 1)
+    }
 }
 
 // MARK: - Helpers
 
 extension DialogLayoutTests {
+    /// 从输入列开始的一行文字。
+    private static var columnText: some View {
+        DialogInputColumnReader { inputColumn in
+            Text(verbatim: "Column")
+                .padding(.leading, inputColumn)
+        }
+    }
+
     /// 只有头部与底栏的对话框。
     private static func layout(progress: String?) -> some View {
         DialogLayout(
