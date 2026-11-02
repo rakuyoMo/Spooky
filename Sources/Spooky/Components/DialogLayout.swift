@@ -8,6 +8,7 @@ import SwiftUI
 /// 头部文字与错误文字对齐 `DialogMetrics.alignment`，应用图标挂在左侧；内容区的边距由内容自己决定，
 /// 表单可以用 `DialogForm` 与 `DialogFormRow` 让输入列也从对齐线开始。
 /// 用于身份档案、Issue 追踪设置、仓库管理，以及请求的新建、修改、评论、描述与检出；要随仓库可写状态禁用的，由调用方给出主按钮与错误区。
+/// 等待中的步骤写在底栏左侧，前面是小号转圈。
 struct DialogLayout<Content: View>: View {
     /// 对话框标题，也是 VoiceOver 读出的名称。
     let title: String
@@ -21,10 +22,13 @@ struct DialogLayout<Content: View>: View {
     /// 内容不合法的原因；为 nil 时不显示错误区。
     let error: String?
 
+    /// 等待中的步骤，如 “Validating…”；为 nil 时底栏左侧是空的。
+    var progress: String? = nil
+
     /// 主按钮是否可用。
     let canSubmit: Bool
 
-    /// 取消只关闭对话框。
+    /// 取消按钮与 ⎋ 的动作：关闭对话框，等待中时也可以只停止等待。
     let cancel: () -> Void
 
     /// 主按钮的动作。
@@ -80,9 +84,17 @@ extension DialogLayout {
         .padding(.bottom, 12)
     }
 
-    /// 取消与主按钮；内容不合法时主按钮不可用。
+    /// 左侧是等待中的步骤，右侧是取消与主按钮；内容不合法时主按钮不可用。
     private var footer: some View {
         HStack(spacing: 8) {
+            if let progress {
+                ProgressView()
+                    .controlSize(.small)
+
+                Text(progress)
+                    .font(.system(size: 13))
+            }
+
             Spacer(minLength: 0)
 
             Button(action: cancel) {

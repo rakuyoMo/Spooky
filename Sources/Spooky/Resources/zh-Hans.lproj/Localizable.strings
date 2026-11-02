@@ -2252,8 +2252,8 @@
 "accounts.add" = "添加账号";
 "accounts.remove" = "移除账号";
 "accounts.reauthenticate" = "重新认证…";
-"accounts.remove.title" = "移除账号";
-"accounts.remove.submit" = "移除";
+"accounts.remove.title" = "移除服务账号";
+"accounts.remove.submit" = "移除账号";
 "accounts.remove.message" = "将从 Spooky 移除 %2$@ 上的 “%1$@”，并从钥匙串删除它的令牌。";
 "accounts.kind.github" = "GitHub";
 "accounts.kind.gitlab" = "GitLab";
@@ -2264,6 +2264,7 @@
 "accounts.add.github.title" = "添加 GitHub 账号";
 "accounts.update.github.title" = "更新 GitHub 账号";
 "accounts.add.gitlab.title" = "添加 GitLab 账号";
+"accounts.add.gitlabSelfManaged.title" = "添加私有部署 GitLab 账号";
 "accounts.update.gitlab.title" = "更新 GitLab 账号";
 "accounts.add.submit" = "添加账号";
 "accounts.update.submit" = "更新账号";
@@ -2272,6 +2273,7 @@
 "accounts.authentication.token" = "个人访问令牌";
 "accounts.authentication.password" = "用户名与密码";
 "accounts.host" = "地址：";
+"accounts.host.invalid" = "地址无效";
 "accounts.token" = "个人访问令牌：";
 "accounts.username.label" = "用户名：";
 "accounts.password.label" = "密码：";
@@ -2281,6 +2283,7 @@
 "accounts.validating" = "正在校验…";
 "accounts.authorizing" = "正在等待授权…";
 "accounts.verify.title" = "校验账号";
+"accounts.exists" = "已有使用这个用户名的账号";
 "accounts.message.oauth" = "Spooky 会显示一次性验证码，复制它并在浏览器中打开 GitHub。在那里输入验证码并授权 Spooky。";
 "accounts.message.githubToken" = "请输入带 “repo” 与 “read:org” 权限的个人访问令牌。";
 "accounts.message.gitlab" = "请输入带 “api” 权限的个人访问令牌。";

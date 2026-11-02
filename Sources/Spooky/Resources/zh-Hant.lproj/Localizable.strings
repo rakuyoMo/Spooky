@@ -2252,8 +2252,8 @@
 "accounts.add" = "加入帳號";
 "accounts.remove" = "移除帳號";
 "accounts.reauthenticate" = "重新認證…";
-"accounts.remove.title" = "移除帳號";
-"accounts.remove.submit" = "移除";
+"accounts.remove.title" = "移除服務帳號";
+"accounts.remove.submit" = "移除帳號";
 "accounts.remove.message" = "將從 Spooky 移除 %2$@ 上的 “%1$@”，並從鑰匙圈刪除它的權杖。";
 "accounts.kind.github" = "GitHub";
 "accounts.kind.gitlab" = "GitLab";
@@ -2264,6 +2264,7 @@
 "accounts.add.github.title" = "加入 GitHub 帳號";
 "accounts.update.github.title" = "更新 GitHub 帳號";
 "accounts.add.gitlab.title" = "加入 GitLab 帳號";
+"accounts.add.gitlabSelfManaged.title" = "加入私有部署 GitLab 帳號";
 "accounts.update.gitlab.title" = "更新 GitLab 帳號";
 "accounts.add.submit" = "加入帳號";
 "accounts.update.submit" = "更新帳號";
@@ -2272,6 +2273,7 @@
 "accounts.authentication.token" = "個人存取權杖";
 "accounts.authentication.password" = "使用者名稱與密碼";
 "accounts.host" = "位址：";
+"accounts.host.invalid" = "位址無效";
 "accounts.token" = "個人存取權杖：";
 "accounts.username.label" = "使用者名稱：";
 "accounts.password.label" = "密碼：";
@@ -2281,6 +2283,7 @@
 "accounts.validating" = "正在驗證…";
 "accounts.authorizing" = "正在等待授權…";
 "accounts.verify.title" = "驗證帳號";
+"accounts.exists" = "已有使用這個使用者名稱的帳號";
 "accounts.message.oauth" = "Spooky 會顯示一次性驗證碼，拷貝它並在瀏覽器中打開 GitHub。在那裡輸入驗證碼並授權 Spooky。";
 "accounts.message.githubToken" = "請輸入帶 “repo” 與 “read:org” 權限的個人存取權杖。";
 "accounts.message.gitlab" = "請輸入帶 “api” 權限的個人存取權杖。";

@@ -7,7 +7,8 @@ import SwiftUI
 /// 添加或重新认证托管账号：github.com 可以经浏览器授权或填个人访问令牌，GitLab 填个人访问令牌；
 /// 私有部署的 GitLab 另填地址，也可以用用户名与密码换令牌。
 ///
-/// 令牌先经 API 读到对应的用户才保存；重新认证时令牌必须属于原来的用户。
+/// 令牌先经 API 读到对应的用户才保存；重新认证时令牌必须属于原来的用户，添加时同一实例上不能已有这个用户。
+/// 校验与授权的失败弹出提示框，对话框留着。
 struct AccountDialog: View {
     /// 能添加的账号种类。
     enum Kind: CaseIterable, Hashable {
@@ -63,9 +64,12 @@ struct AccountDialog: View {
         /// 正在经 API 校验令牌。
         case validating
 
-        /// 正在等用户在浏览器里授权。
-        case authorizing(GitHubDeviceFlow.Authorization)
+        /// 正在等用户在浏览器里授权；还没取到验证码时为 nil。
+        case authorizing(GitHubDeviceFlow.Authorization?)
     }
+
+    /// 要添加的账号已经在列表里：错误区写明，不弹提示框。
+    private struct ExistingAccount: Error { }
 
     /// 对话框的用途。
     let purpose: Purpose
@@ -100,21 +104,26 @@ struct AccountDialog: View {
     @State
     private var progress = Progress.idle
 
-    /// 上一次失败的说明。
+    /// 上一次提交读到的用户已经在列表里。
     @State
-    private var error: String?
+    private var isExisting = false
 
-    /// 校验或授权的任务，关闭对话框时取消。
+    /// 校验或授权的失败，弹出提示框。
+    @State
+    private var failure: AppFailure?
+
+    /// 校验或授权的任务，按取消或关闭对话框时取消。
     @State
     private var task: Task<Void, Never>?
 
-    /// 表单、等待中的步骤与失败说明。
+    /// 表单、错误区与底栏的等待中的步骤；失败弹出挂在对话框上的提示框。
     var body: some View {
         DialogLayout(
             title: title,
             message: message,
             submitTitle: AppLocalization.text(isReauthentication ? "accounts.update.submit" : "accounts.add.submit"),
-            error: error,
+            error: inputError,
+            progress: progressMessage,
             canSubmit: canSubmit,
             cancel: cancel,
             submit: submit
@@ -132,8 +141,20 @@ struct AccountDialog: View {
                 }
 
                 credentialRows
-                progressRows
+                codeRow
             }
+        }
+        .alert(
+            failure?.title ?? "",
+            isPresented: Binding(
+                get: { failure != nil },
+                set: { if !$0 { failure = nil } }
+            ),
+            presenting: failure
+        ) { _ in
+            Button(AppLocalization.text("action.ok")) { failure = nil }
+        } message: { failure in
+            Text(failure.message + "\n\n" + failure.details)
         }
         .onAppear(perform: prepare)
         .onDisappear { task?.cancel() }
@@ -161,7 +182,7 @@ struct AccountDialog: View {
 // MARK: - Layout
 
 extension AccountDialog {
-    /// 认证方式的下拉：github.com 是浏览器授权与个人访问令牌，私有部署的 GitLab 是个人访问令牌与用户名和密码。
+    /// 认证方式的下拉，占满输入列：github.com 是浏览器授权与个人访问令牌，私有部署的 GitLab 是个人访问令牌与用户名和密码。
     private var authenticationRow: some View {
         DialogFormRow(label: AppLocalization.text("accounts.authentication")) {
             Picker("", selection: $authentication) {
@@ -170,7 +191,7 @@ extension AccountDialog {
                 }
             }
             .labelsHidden()
-            .fixedSize()
+            .buttonSizing(.flexible)
             .disabled(isBusy)
         }
     }
@@ -206,19 +227,10 @@ extension AccountDialog {
         }
     }
 
-    /// 等待中的提示：校验时只有转圈，浏览器授权时还有验证码与打开网页的按钮。
+    /// 浏览器授权时的验证码与复制它、打开 GitHub 的按钮；等待中的步骤写在底栏。
     @ViewBuilder
-    private var progressRows: some View {
-        switch progress {
-        case .idle:
-            EmptyView()
-
-        case .validating:
-            DialogFormRow(label: "") {
-                waiting(AppLocalization.text("accounts.validating"))
-            }
-
-        case .authorizing(let authorization):
+    private var codeRow: some View {
+        if case .authorizing(let authorization?) = progress {
             DialogFormRow(label: AppLocalization.text("accounts.code")) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(verbatim: authorization.userCode)
@@ -226,21 +238,8 @@ extension AccountDialog {
                         .textSelection(.enabled)
 
                     Button(AppLocalization.text("accounts.openGitHub")) { openVerificationPage(authorization) }
-
-                    waiting(AppLocalization.text("accounts.authorizing"))
                 }
             }
-        }
-    }
-
-    /// 小号转圈与说明。
-    private func waiting(_ text: String) -> some View {
-        HStack(spacing: 6) {
-            ProgressView()
-                .controlSize(.small)
-
-            Text(text)
-                .foregroundStyle(.secondary)
         }
     }
 }
@@ -298,12 +297,31 @@ extension AccountDialog {
         }
     }
 
-    /// 标题写出服务，重新认证时写 “Update”。
-    private var title: String {
+    /// 底栏左侧的等待中的步骤：校验时写 “Validating…”，等浏览器授权时写 “Authorizing…”。
+    private var progressMessage: String? {
+        switch progress {
+        case .idle: nil
+        case .validating: AppLocalization.text("accounts.validating")
+        case .authorizing: AppLocalization.text("accounts.authorizing")
+        }
+    }
+
+    /// 错误区：私有部署的地址不合法，或上一次提交读到的用户已经在列表里。
+    private var inputError: String? {
+        if kind == .gitlabSelfManaged, let error = Self.hostError(host) {
+            return error
+        }
+
+        return isExisting ? AppLocalization.text("accounts.exists") : nil
+    }
+
+    /// 标题写出服务，重新认证时写 “Update”；两种 GitLab 的重新认证同一个标题。
+    var title: String {
         switch (kind, isReauthentication) {
         case (.github, false): AppLocalization.text("accounts.add.github.title")
         case (.github, true): AppLocalization.text("accounts.update.github.title")
-        case (_, false): AppLocalization.text("accounts.add.gitlab.title")
+        case (.gitlab, false): AppLocalization.text("accounts.add.gitlab.title")
+        case (.gitlabSelfManaged, false): AppLocalization.text("accounts.add.gitlabSelfManaged.title")
         case (_, true): AppLocalization.text("accounts.update.gitlab.title")
         }
     }
@@ -333,10 +351,14 @@ extension AccountDialog {
         username = account.username
     }
 
-    /// 取消进行中的校验或授权并关闭。
+    /// 校验或授权进行中时只停止，回到可以编辑的状态，对话框留着；不在进行时关闭。
     private func cancel() {
+        guard isBusy else {
+            close()
+            return
+        }
+
         task?.cancel()
-        close()
     }
 
     /// github.com 的浏览器授权先取验证码再轮询，用户名与密码先换令牌，个人访问令牌直接校验。
@@ -345,12 +367,13 @@ extension AccountDialog {
             return
         }
 
-        error = nil
+        isExisting = false
 
         task = Task {
             do {
                 switch authentication {
                 case .oauth:
+                    progress = .authorizing(nil)
                     let credential = try await authorize()
                     progress = .validating
                     try await save(credential, on: instance, authentication: .oauth)
@@ -371,9 +394,12 @@ extension AccountDialog {
                 close()
             } catch is CancellationError {
                 progress = .idle
+            } catch is ExistingAccount {
+                progress = .idle
+                isExisting = true
             } catch {
                 progress = .idle
-                self.error = Self.describe(error)
+                failure = AppFailure(error: error, opening: false, location: nil)
             }
         }
     }
@@ -393,7 +419,7 @@ extension AccountDialog {
         return try await flow.token(for: authorization)
     }
 
-    /// 校验令牌对应的用户后保存；重新认证时用户必须相同。校验记进 Activity 的 Service 页，不属于任何仓库。
+    /// 校验令牌对应的用户，能保存时保存。校验记进 Activity 的 Service 页，不属于任何仓库。
     private func save(_ token: String, on instance: HostingInstance, authentication: HostingAuthentication) async throws {
         let user = try await RepositoryActivities.shared.recordHosting(
             title: AppLocalization.text("accounts.verify.title"),
@@ -402,7 +428,7 @@ extension AccountDialog {
             try await HostingClient(instance: instance, token: token).currentUser()
         }
 
-        try requireOriginalUser(user)
+        try requireSavable(user, on: instance)
         try accounts.save(user, on: instance, authentication: authentication, token: token)
     }
 
@@ -421,14 +447,20 @@ extension AccountDialog {
             return (try await client.currentUser(), token)
         }
 
-        try requireOriginalUser(user)
+        try requireSavable(user, on: instance)
         try accounts.save(user, on: instance, token: token)
     }
 
-    /// 重新认证时令牌必须属于原来的用户。
-    private func requireOriginalUser(_ user: HostingUser) throws {
+    /// 读到的用户能否保存：校验期间按了取消的不保存；重新认证时必须是原来的用户；添加时同一实例上不能已有这个用户名的账号。
+    private func requireSavable(_ user: HostingUser, on instance: HostingInstance) throws {
+        try Task.checkCancellation()
+
         if case .reauthenticate(let account) = purpose, account.username != user.username {
             throw HostingError.differentUser(user.username)
+        }
+
+        if Self.isExisting(user.username, on: instance, for: purpose, among: accounts.items) {
+            throw ExistingAccount()
         }
     }
 
@@ -452,9 +484,35 @@ extension AccountDialog {
         }
     }
 
-    /// 失败的标题、修复方向与服务端原文。
-    private static func describe(_ error: any Error) -> String {
-        let failure = AppFailure(error: error, opening: false, location: nil)
-        return failure.title + "\n" + failure.message + "\n\n" + failure.details
+    /// 私有部署地址的错误：为空时只禁用主按钮，不写原因；不为空而认不出时写 “Host is not valid”。
+    static func hostError(_ host: String) -> String? {
+        guard
+            !host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            HostingInstance.gitlab(address: host) == nil
+        else {
+            return nil
+        }
+
+        return AppLocalization.text("accounts.host.invalid")
+    }
+
+    /// 添加时同一实例上已有这个用户名的账号；重新认证换的就是已有账号的令牌，不算。
+    ///
+    /// - Parameters:
+    ///   - username: 令牌对应的用户名。
+    ///   - instance: 账号所在的实例。
+    ///   - purpose: 对话框的用途。
+    ///   - accounts: 已登录的账号。
+    static func isExisting(
+        _ username: String,
+        on instance: HostingInstance,
+        for purpose: Purpose,
+        among accounts: [HostingAccount]
+    ) -> Bool {
+        guard case .add = purpose else {
+            return false
+        }
+
+        return accounts.contains { $0.instance == instance && $0.username == username }
     }
 }

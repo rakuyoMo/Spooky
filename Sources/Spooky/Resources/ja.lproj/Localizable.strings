@@ -2252,8 +2252,8 @@
 "accounts.add" = "アカウントを追加";
 "accounts.remove" = "アカウントを削除";
 "accounts.reauthenticate" = "再認証…";
-"accounts.remove.title" = "アカウントを削除";
-"accounts.remove.submit" = "削除";
+"accounts.remove.title" = "サービスアカウントを削除";
+"accounts.remove.submit" = "アカウントを削除";
 "accounts.remove.message" = "%2$@ の「%1$@」を Spooky から削除し、そのトークンをキーチェーンから削除します。";
 "accounts.kind.github" = "GitHub";
 "accounts.kind.gitlab" = "GitLab";
@@ -2264,6 +2264,7 @@
 "accounts.add.github.title" = "GitHub アカウントを追加";
 "accounts.update.github.title" = "GitHub アカウントを更新";
 "accounts.add.gitlab.title" = "GitLab アカウントを追加";
+"accounts.add.gitlabSelfManaged.title" = "GitLab Self-Managed アカウントを追加";
 "accounts.update.gitlab.title" = "GitLab アカウントを更新";
 "accounts.add.submit" = "アカウントを追加";
 "accounts.update.submit" = "アカウントを更新";
@@ -2272,6 +2273,7 @@
 "accounts.authentication.token" = "個人アクセストークン";
 "accounts.authentication.password" = "ユーザ名とパスワード";
 "accounts.host" = "ホスト：";
+"accounts.host.invalid" = "ホストが無効です";
 "accounts.token" = "個人アクセストークン：";
 "accounts.username.label" = "ユーザ名：";
 "accounts.password.label" = "パスワード：";
@@ -2281,6 +2283,7 @@
 "accounts.validating" = "確認中…";
 "accounts.authorizing" = "認可を待っています…";
 "accounts.verify.title" = "アカウントを確認";
+"accounts.exists" = "このユーザ名のアカウントはすでにあります";
 "accounts.message.oauth" = "Spooky がワンタイムコードを表示してコピーし、ブラウザで GitHub を開きます。そこでコードを入力して Spooky を認可してください。";
 "accounts.message.githubToken" = "「repo」と「read:org」のスコープを持つ個人アクセストークンを入力してください。";
 "accounts.message.gitlab" = "「api」スコープを持つ個人アクセストークンを入力してください。";

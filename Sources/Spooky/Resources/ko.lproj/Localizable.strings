@@ -2252,8 +2252,8 @@
 "accounts.add" = "계정 추가";
 "accounts.remove" = "계정 제거";
 "accounts.reauthenticate" = "다시 인증…";
-"accounts.remove.title" = "계정 제거";
-"accounts.remove.submit" = "제거";
+"accounts.remove.title" = "서비스 계정 제거";
+"accounts.remove.submit" = "계정 제거";
 "accounts.remove.message" = "%2$@의 “%1$@” 계정을 Spooky에서 제거하고, 해당 토큰을 키체인에서 삭제합니다.";
 "accounts.kind.github" = "GitHub";
 "accounts.kind.gitlab" = "GitLab";
@@ -2264,6 +2264,7 @@
 "accounts.add.github.title" = "GitHub 계정 추가";
 "accounts.update.github.title" = "GitHub 계정 업데이트";
 "accounts.add.gitlab.title" = "GitLab 계정 추가";
+"accounts.add.gitlabSelfManaged.title" = "GitLab Self-Managed 계정 추가";
 "accounts.update.gitlab.title" = "GitLab 계정 업데이트";
 "accounts.add.submit" = "계정 추가";
 "accounts.update.submit" = "계정 업데이트";
@@ -2272,6 +2273,7 @@
 "accounts.authentication.token" = "개인 액세스 토큰";
 "accounts.authentication.password" = "사용자 이름과 암호";
 "accounts.host" = "호스트:";
+"accounts.host.invalid" = "호스트가 올바르지 않습니다";
 "accounts.token" = "개인 액세스 토큰:";
 "accounts.username.label" = "사용자 이름:";
 "accounts.password.label" = "암호:";
@@ -2281,6 +2283,7 @@
 "accounts.validating" = "확인 중…";
 "accounts.authorizing" = "승인 대기 중…";
 "accounts.verify.title" = "계정 확인";
+"accounts.exists" = "이 사용자 이름의 계정이 이미 있습니다";
 "accounts.message.oauth" = "Spooky가 일회용 코드를 표시하고 복사한 뒤 브라우저에서 GitHub를 엽니다. 그곳에서 코드를 입력하고 Spooky를 승인하세요.";
 "accounts.message.githubToken" = "“repo”와 “read:org” 범위가 있는 개인 액세스 토큰을 입력하세요.";
 "accounts.message.gitlab" = "“api” 범위가 있는 개인 액세스 토큰을 입력하세요.";

@@ -2252,8 +2252,8 @@
 "accounts.add" = "Account hinzufügen";
 "accounts.remove" = "Account entfernen";
 "accounts.reauthenticate" = "Erneut anmelden…";
-"accounts.remove.title" = "Account entfernen";
-"accounts.remove.submit" = "Entfernen";
+"accounts.remove.title" = "Dienst-Account entfernen";
+"accounts.remove.submit" = "Account entfernen";
 "accounts.remove.message" = "„%1$@“ auf %2$@ wird aus Spooky entfernt und sein Token aus Ihrem Schlüsselbund gelöscht.";
 "accounts.kind.github" = "GitHub";
 "accounts.kind.gitlab" = "GitLab";
@@ -2264,6 +2264,7 @@
 "accounts.add.github.title" = "GitHub-Account hinzufügen";
 "accounts.update.github.title" = "GitHub-Account aktualisieren";
 "accounts.add.gitlab.title" = "GitLab-Account hinzufügen";
+"accounts.add.gitlabSelfManaged.title" = "GitLab-Self-Managed-Account hinzufügen";
 "accounts.update.gitlab.title" = "GitLab-Account aktualisieren";
 "accounts.add.submit" = "Account hinzufügen";
 "accounts.update.submit" = "Account aktualisieren";
@@ -2272,6 +2273,7 @@
 "accounts.authentication.token" = "Persönliches Zugriffstoken";
 "accounts.authentication.password" = "Benutzername und Passwort";
 "accounts.host" = "Host:";
+"accounts.host.invalid" = "Host ist ungültig";
 "accounts.token" = "Persönliches Zugriffstoken:";
 "accounts.username.label" = "Benutzername:";
 "accounts.password.label" = "Passwort:";
@@ -2281,6 +2283,7 @@
 "accounts.validating" = "Wird geprüft…";
 "accounts.authorizing" = "Warten auf Autorisierung…";
 "accounts.verify.title" = "Account prüfen";
+"accounts.exists" = "Ein Account mit diesem Benutzernamen existiert bereits";
 "accounts.message.oauth" = "Spooky zeigt einen Einmalcode an, kopiert ihn und öffnet GitHub in Ihrem Browser. Geben Sie dort den Code ein und autorisieren Sie Spooky.";
 "accounts.message.githubToken" = "Geben Sie ein persönliches Zugriffstoken mit den Bereichen „repo“ und „read:org“ ein.";
 "accounts.message.gitlab" = "Geben Sie ein persönliches Zugriffstoken mit dem Bereich „api“ ein.";
