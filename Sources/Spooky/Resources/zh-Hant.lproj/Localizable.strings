@@ -2279,7 +2279,7 @@
 "accounts.message.oauth" = "Spooky 會顯示一次性驗證碼，拷貝它並在瀏覽器中打開 GitHub。在那裡輸入驗證碼並授權 Spooky。";
 "accounts.message.githubToken" = "請輸入帶 “repo” 與 “read:org” 權限的個人存取權杖。";
 "accounts.message.gitlab" = "請輸入帶 “api” 權限的個人存取權杖。";
-"accounts.message.gitlabSelfManaged" = "請輸入 GitLab 伺服器的位址（有連接埠與部署路徑時一併寫上），以及帶 “api” 權限的個人存取權杖。需要 GitLab 15.7 或更高版本。";
+"accounts.message.gitlabSelfManaged" = "請輸入 GitLab 伺服器的位址（有連接埠與部署路徑時一併寫上），以及帶 “api” 權限的個人存取權杖。";
 "hosting.error.unauthorized" = "權杖被拒絕";
 "hosting.error.unauthorized.help" = "權杖無效、已過期或已被撤銷。請在 設定 → 帳號 中重新認證這個帳號。";
 "hosting.error.forbidden" = "權限不足";
@@ -2291,6 +2291,10 @@
 "hosting.error.notFound.help" = "專案不存在，或者這個帳號看不到它。請檢查遠端位址，以及帳號對專案的存取權限。";
 "hosting.error.rejected" = "請求被拒絕";
 "hosting.error.rejected.help" = "託管服務沒有接受這個請求。下方是它的回應。";
+"hosting.error.mergeConflict" = "分支有衝突";
+"hosting.error.mergeConflict.help" = "來源分支與目標分支有衝突，請先解決衝突。";
+"hosting.error.mergeFailed" = "沒有完成合併";
+"hosting.error.mergeFailed.help" = "託管服務沒能完成合併。它給出原因時顯示在下方；請在託管服務上查看這個請求，然後再試。";
 "hosting.error.server" = "託管服務出錯";
 "hosting.error.server.help" = "託管服務遇到了問題。請稍後再試。";
 "hosting.error.unreachable" = "連不上託管服務";
@@ -2298,7 +2302,7 @@
 "hosting.error.certificate" = "憑證不受信任";
 "hosting.error.certificate.help" = "這台 Mac 不信任伺服器的憑證。請檢查實例位址，或者在 “鑰匙圈存取” 中信任該憑證。";
 "hosting.error.incompatible" = "API 不相容";
-"hosting.error.incompatible.help" = "伺服器的 API 與 Spooky 的預期不符。Spooky 支援 github.com 與 GitLab 15.7 或更高版本；請檢查實例位址與版本。";
+"hosting.error.incompatible.help" = "伺服器的 API 與 Spooky 的預期不符。GitLab 需要有 API v4，即 9.0 或更高版本；請檢查實例位址，以及其中的連接埠與部署路徑。";
 "hosting.error.expired" = "驗證碼已過期";
 "hosting.error.expired.help" = "一次性驗證碼已經失效。請重新開始以取得新的驗證碼。";
 "hosting.error.denied" = "授權被拒絕";

@@ -2279,7 +2279,7 @@
 "accounts.message.oauth" = "Spooky muestra un código de un solo uso, lo copia y abre GitHub en tu navegador. Introduce allí el código y autoriza a Spooky.";
 "accounts.message.githubToken" = "Introduce un token de acceso personal con los permisos “repo” y “read:org”.";
 "accounts.message.gitlab" = "Introduce un token de acceso personal con el permiso “api”.";
-"accounts.message.gitlabSelfManaged" = "Introduce la dirección de tu servidor de GitLab, con su puerto y su ruta si los tiene, y un token de acceso personal con el permiso “api”. Se necesita GitLab 15.7 o posterior.";
+"accounts.message.gitlabSelfManaged" = "Introduce la dirección de tu servidor de GitLab, con su puerto y su ruta si los tiene, y un token de acceso personal con el permiso “api”.";
 "hosting.error.unauthorized" = "El token fue rechazado";
 "hosting.error.unauthorized.help" = "El token no es válido, ha caducado o se ha revocado. Vuelve a autenticar la cuenta en Ajustes → Cuentas.";
 "hosting.error.forbidden" = "Permiso denegado";
@@ -2291,6 +2291,10 @@
 "hosting.error.notFound.help" = "El proyecto no existe o la cuenta no puede verlo. Comprueba la URL del remoto y el acceso de la cuenta al proyecto.";
 "hosting.error.rejected" = "La solicitud fue rechazada";
 "hosting.error.rejected.help" = "El servicio de alojamiento no aceptó la solicitud. Su respuesta se muestra abajo.";
+"hosting.error.mergeConflict" = "Las ramas tienen conflictos";
+"hosting.error.mergeConflict.help" = "La rama de origen tiene conflictos con la rama de destino. Resuelve primero los conflictos.";
+"hosting.error.mergeFailed" = "La fusión no se completó";
+"hosting.error.mergeFailed.help" = "El servicio de alojamiento no pudo completar la fusión. Su motivo, si lo dio, se muestra abajo. Revisa la solicitud en el servicio de alojamiento y vuelve a intentarlo.";
 "hosting.error.server" = "Error del servicio de alojamiento";
 "hosting.error.server.help" = "El servicio de alojamiento tuvo un problema. Vuelve a intentarlo más tarde.";
 "hosting.error.unreachable" = "No se puede conectar con el servicio de alojamiento";
@@ -2298,7 +2302,7 @@
 "hosting.error.certificate" = "El certificado no es de confianza";
 "hosting.error.certificate.help" = "Este Mac no confía en el certificado del servidor. Comprueba la dirección de la instancia o confía en el certificado en Acceso a Llaveros.";
 "hosting.error.incompatible" = "API incompatible";
-"hosting.error.incompatible.help" = "La API del servidor no coincide con lo que espera Spooky. Spooky admite github.com y GitLab 15.7 o posterior; comprueba la dirección y la versión de la instancia.";
+"hosting.error.incompatible.help" = "La API del servidor no coincide con lo que espera Spooky. GitLab necesita la API v4, disponible desde la versión 9.0. Comprueba la dirección de la instancia, incluidos su puerto y su ruta.";
 "hosting.error.expired" = "El código ha caducado";
 "hosting.error.expired.help" = "El código de un solo uso ya no es válido. Vuelve a empezar para obtener un código nuevo.";
 "hosting.error.denied" = "Se denegó la autorización";

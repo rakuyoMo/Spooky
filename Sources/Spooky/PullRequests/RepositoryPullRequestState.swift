@@ -458,7 +458,10 @@ extension RepositoryPullRequestState {
     private func openComparison(_ request: PullRequest, runner: GitRunner) async throws {
         let pulls = RepositoryPullRequests(runner: runner)
 
-        guard try await pulls.hasCommit(request.source.sha), let base = try await pulls.comparisonBase(for: request) else {
+        guard
+            try await pulls.hasCommit(request.source.sha),
+            let base = try await pulls.comparisonBase(for: request, remote: remote)
+        else {
             needsFetch = true
             comparison.close()
             return

@@ -2279,7 +2279,7 @@
 "accounts.message.oauth" = "Spooky가 일회용 코드를 표시하고 복사한 뒤 브라우저에서 GitHub를 엽니다. 그곳에서 코드를 입력하고 Spooky를 승인하세요.";
 "accounts.message.githubToken" = "“repo”와 “read:org” 범위가 있는 개인 액세스 토큰을 입력하세요.";
 "accounts.message.gitlab" = "“api” 범위가 있는 개인 액세스 토큰을 입력하세요.";
-"accounts.message.gitlabSelfManaged" = "GitLab 서버 주소(포트와 경로가 있으면 함께)와 “api” 범위가 있는 개인 액세스 토큰을 입력하세요. GitLab 15.7 이상이 필요합니다.";
+"accounts.message.gitlabSelfManaged" = "GitLab 서버 주소(포트와 경로가 있으면 함께)와 “api” 범위가 있는 개인 액세스 토큰을 입력하세요.";
 "hosting.error.unauthorized" = "토큰이 거부됨";
 "hosting.error.unauthorized.help" = "토큰이 유효하지 않거나 만료되었거나 취소되었습니다. 설정 → 계정에서 계정을 다시 인증하세요.";
 "hosting.error.forbidden" = "권한 없음";
@@ -2291,6 +2291,10 @@
 "hosting.error.notFound.help" = "프로젝트가 없거나 계정에서 볼 수 없습니다. 원격 URL과 계정의 프로젝트 접근 권한을 확인하세요.";
 "hosting.error.rejected" = "요청이 거부됨";
 "hosting.error.rejected.help" = "호스팅 서비스가 요청을 받아들이지 않았습니다. 응답은 아래와 같습니다.";
+"hosting.error.mergeConflict" = "브랜치가 충돌함";
+"hosting.error.mergeConflict.help" = "소스 브랜치가 대상 브랜치와 충돌합니다. 먼저 충돌을 해결하세요.";
+"hosting.error.mergeFailed" = "병합이 완료되지 않음";
+"hosting.error.mergeFailed.help" = "호스팅 서비스가 병합을 완료하지 못했습니다. 이유를 알려 준 경우 아래에 표시됩니다. 호스팅 서비스에서 요청을 확인한 뒤 다시 시도하세요.";
 "hosting.error.server" = "호스팅 서비스 오류";
 "hosting.error.server.help" = "호스팅 서비스에 문제가 발생했습니다. 나중에 다시 시도하세요.";
 "hosting.error.unreachable" = "호스팅 서비스에 연결할 수 없음";
@@ -2298,7 +2302,7 @@
 "hosting.error.certificate" = "인증서를 신뢰할 수 없음";
 "hosting.error.certificate.help" = "이 Mac은 서버의 인증서를 신뢰하지 않습니다. 인스턴스 주소를 확인하거나 “키체인 접근”에서 인증서를 신뢰하도록 설정하세요.";
 "hosting.error.incompatible" = "호환되지 않는 API";
-"hosting.error.incompatible.help" = "서버의 API가 Spooky가 기대하는 것과 다릅니다. Spooky는 github.com과 GitLab 15.7 이상을 지원합니다. 인스턴스 주소와 버전을 확인하세요.";
+"hosting.error.incompatible.help" = "서버의 API가 Spooky가 기대하는 것과 다릅니다. GitLab은 API v4(버전 9.0 이상)가 필요합니다. 포트와 경로를 포함해 인스턴스 주소를 확인하세요.";
 "hosting.error.expired" = "코드가 만료됨";
 "hosting.error.expired.help" = "일회용 코드가 더 이상 유효하지 않습니다. 다시 시작해 새 코드를 받으세요.";
 "hosting.error.denied" = "승인이 거부됨";

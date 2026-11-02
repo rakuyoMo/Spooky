@@ -18,9 +18,6 @@ struct HostingResponse<Value: Sendable>: Sendable {
 ///
 /// 令牌只放在请求头里，不进 URL、日志与错误；失败按 ``HostingError`` 分类，保留服务端返回的原文。
 public struct HostingClient: Sendable {
-    /// 支持的最低 GitLab 版本：合并请求的 `diffs` 接口与 `detailed_merge_status` 字段从 15.7 起都有。
-    public static let minimumGitLabVersion = [15, 7]
-
     /// API 请求失败的日志；只记类别与状态码，不记地址、令牌与原文。
     private static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "HostingClient")
 
@@ -45,7 +42,7 @@ public struct HostingClient: Sendable {
         self.session = session
     }
 
-    /// 令牌对应的用户；添加账号与重新认证时用它校验令牌，GitLab 同时检查版本。
+    /// 令牌对应的用户；添加账号与重新认证时用它校验令牌。
     public func currentUser() async throws -> HostingUser {
         switch instance.service {
         case .github:
@@ -53,10 +50,13 @@ public struct HostingClient: Sendable {
             return HostingUser(username: user.login, name: user.name)
 
         case .gitlab:
-            try await checkGitLabVersion()
-
-            let user: GitLabUser = try await send("GET", "user").value
-            return HostingUser(username: user.username, name: user.name)
+            do {
+                let user: GitLabUser = try await send("GET", "user").value
+                return HostingUser(username: user.username, name: user.name)
+            } catch HostingError.notFound {
+                // 9.0 以前没有 API v4，部署路径填错时同样是 404
+                throw HostingError.incompatible(instance.displayName)
+            }
         }
     }
 
@@ -124,8 +124,30 @@ extension HostingClient {
         return (try? Date(text, strategy: fractional)) ?? (try? Date(text, strategy: .iso8601))
     }
 
-    /// 发出请求，返回 2xx 的响应体；其余状态与网络失败按类别抛出。
+    /// 发出请求，返回 2xx 的响应体；GitLab 编码的项目路径 404 时按项目编号重发一次。
     private func perform(
+        _ method: String,
+        _ path: String,
+        query: [URLQueryItem],
+        body: Data?
+    ) async throws -> (Data, HTTPURLResponse) {
+        // 之前按编号重发过的项目直接用编号
+        let path = knownGitLabProjectPath(path)
+
+        do {
+            return try await transfer(method, path, query: query, body: body)
+        } catch HostingError.notFound(let message) {
+            // 有的反向代理会把 `%2F` 解码，使编码的项目路径 404：搜出项目编号后换成编号再发一次
+            guard let retry = try await gitlabProjectIDPath(for: path) else {
+                throw HostingError.notFound(message)
+            }
+
+            return try await transfer(method, retry, query: query, body: body)
+        }
+    }
+
+    /// 发出一次请求，返回 2xx 的响应体；其余状态与网络失败按类别抛出。
+    private func transfer(
         _ method: String,
         _ path: String,
         query: [URLQueryItem],
@@ -195,16 +217,6 @@ extension HostingClient {
         }
 
         return request
-    }
-
-    /// 确认 GitLab 不低于 ``minimumGitLabVersion``。
-    private func checkGitLabVersion() async throws {
-        let version: GitLabVersion = try await send("GET", "version").value
-        let components = version.version.split(separator: ".").prefix(2).map { Int($0.prefix { $0.isNumber }) ?? 0 }
-
-        guard components.count == 2, !components.lexicographicallyPrecedes(Self.minimumGitLabVersion) else {
-            throw HostingError.incompatible("GitLab " + version.version)
-        }
     }
 }
 
@@ -349,12 +361,4 @@ private struct GitLabUser: Decodable, Sendable {
 
     /// 显示名。
     let name: String?
-}
-
-// MARK: - GitLabVersion
-
-/// GitLab `GET /version` 的结果。
-private struct GitLabVersion: Decodable, Sendable {
-    /// 版本号，如 `17.2.1-ee`。
-    let version: String
 }

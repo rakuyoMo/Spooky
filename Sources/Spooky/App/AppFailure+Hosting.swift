@@ -33,6 +33,12 @@ extension AppFailure {
         case .rejected(let status, let message):
             ("hosting.error.rejected", .repository, "hosting.error.rejected.help", nil, "HTTP \(status)\n" + message)
 
+        case .mergeConflict(let message):
+            ("hosting.error.mergeConflict", .repository, "hosting.error.mergeConflict.help", nil, message)
+
+        case .mergeFailed(let message):
+            ("hosting.error.mergeFailed", .repository, "hosting.error.mergeFailed.help", nil, message)
+
         case .server(let status, let message):
             ("hosting.error.server", .environment, "hosting.error.server.help", nil, "HTTP \(status)\n" + message)
 

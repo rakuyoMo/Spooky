@@ -2279,7 +2279,7 @@
 "accounts.message.oauth" = "Spooky がワンタイムコードを表示してコピーし、ブラウザで GitHub を開きます。そこでコードを入力して Spooky を認可してください。";
 "accounts.message.githubToken" = "「repo」と「read:org」のスコープを持つ個人アクセストークンを入力してください。";
 "accounts.message.gitlab" = "「api」スコープを持つ個人アクセストークンを入力してください。";
-"accounts.message.gitlabSelfManaged" = "GitLab サーバのアドレス（ポートやパスがあればそれも含めて）と、「api」スコープを持つ個人アクセストークンを入力してください。GitLab 15.7 以降が必要です。";
+"accounts.message.gitlabSelfManaged" = "GitLab サーバのアドレス（ポートやパスがあればそれも含めて）と、「api」スコープを持つ個人アクセストークンを入力してください。";
 "hosting.error.unauthorized" = "トークンが拒否されました";
 "hosting.error.unauthorized.help" = "トークンが無効、期限切れ、または取り消されています。「設定」→「アカウント」でアカウントを再認証してください。";
 "hosting.error.forbidden" = "権限がありません";
@@ -2291,6 +2291,10 @@
 "hosting.error.notFound.help" = "プロジェクトが存在しないか、アカウントから見えません。リモート URL とアカウントのプロジェクトへのアクセス権を確認してください。";
 "hosting.error.rejected" = "リクエストが拒否されました";
 "hosting.error.rejected.help" = "ホスティングサービスはリクエストを受け付けませんでした。応答を下に示します。";
+"hosting.error.mergeConflict" = "ブランチがコンフリクトしています";
+"hosting.error.mergeConflict.help" = "ソースブランチがターゲットブランチとコンフリクトしています。先にコンフリクトを解決してください。";
+"hosting.error.mergeFailed" = "マージが完了しませんでした";
+"hosting.error.mergeFailed.help" = "ホスティングサービスはマージを完了できませんでした。理由が示された場合は下に表示します。ホスティングサービスでリクエストを確認してから再試行してください。";
 "hosting.error.server" = "ホスティングサービスのエラー";
 "hosting.error.server.help" = "ホスティングサービスで問題が発生しました。しばらくしてから再試行してください。";
 "hosting.error.unreachable" = "ホスティングサービスに接続できません";
@@ -2298,7 +2302,7 @@
 "hosting.error.certificate" = "証明書が信頼されていません";
 "hosting.error.certificate.help" = "この Mac はサーバの証明書を信頼していません。インスタンスのアドレスを確認するか、「キーチェーンアクセス」で証明書を信頼してください。";
 "hosting.error.incompatible" = "互換性のない API";
-"hosting.error.incompatible.help" = "サーバの API が Spooky の想定と一致しません。Spooky は github.com と GitLab 15.7 以降に対応しています。インスタンスのアドレスとバージョンを確認してください。";
+"hosting.error.incompatible.help" = "サーバの API が Spooky の想定と一致しません。GitLab には API v4（バージョン 9.0 以降）が必要です。インスタンスのアドレスを、ポートやパスも含めて確認してください。";
 "hosting.error.expired" = "コードの有効期限が切れました";
 "hosting.error.expired.help" = "ワンタイムコードは無効になりました。最初からやり直して新しいコードを取得してください。";
 "hosting.error.denied" = "認可が拒否されました";

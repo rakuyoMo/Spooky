@@ -18,12 +18,32 @@ struct RepositoryPullRequestsTests {
         let request = fixture.request(fork: true)
 
         #expect(try await !pulls.hasCommit(fixture.feature))
-        #expect(try await pulls.comparisonBase(for: request) == nil)
+        #expect(try await pulls.comparisonBase(for: request, remote: "origin") == nil)
 
         try await pulls.fetchHead(of: request.id, from: "origin")
         #expect(try await pulls.hasCommit(fixture.feature))
-        #expect(try await pulls.comparisonBase(for: request) == fixture.base)
+        #expect(try await pulls.comparisonBase(for: request, remote: "origin") == fixture.base)
         #expect(try await !pulls.hasCommit("not-a-hash"))
+    }
+
+    /// 托管服务没有给出目标分支的提交（GitLab 10.8 以前没有 diff_refs）：用目标远端的跟踪分支求 merge-base，跟踪分支不存在时没有基准。
+    @Test("没有目标分支提交时的比较基准")
+    func baseFromTrackingBranch() async throws {
+        let temporary = try TemporaryRepository()
+        defer { temporary.remove() }
+
+        let fixture = try await PullRequestFixture(temporary)
+        let pulls = RepositoryPullRequests(runner: fixture.clone)
+        let request = fixture.request(fork: true)
+
+        try await pulls.fetchHead(of: request.id, from: "origin")
+
+        let main = fixture.request(fork: true, target: PullRequestBranch(project: "o/r", branch: "main", sha: ""))
+        #expect(try await pulls.comparisonBase(for: main, remote: "origin") == fixture.base)
+        #expect(try await pulls.comparisonBase(for: main, remote: nil) == nil)
+
+        let missing = fixture.request(fork: true, target: PullRequestBranch(project: "o/r", branch: "release", sha: ""))
+        #expect(try await pulls.comparisonBase(for: missing, remote: "origin") == nil)
     }
 
     /// 来自 Fork 的请求从提交新建不跟踪的分支；同名分支指向别处时拒绝；同仓库的请求在远端跟踪分支一致时跟踪它。
@@ -104,8 +124,8 @@ private struct PullRequestFixture {
         _ = try await clone.run(["gc", "-q", "--prune=now"])
     }
 
-    /// 请求 1：来自 Fork 时源项目不同。
-    func request(fork: Bool) -> PullRequest {
+    /// 请求 1：来自 Fork 时源项目不同；目标分支默认是带提交的 main。
+    func request(fork: Bool, target: PullRequestBranch? = nil) -> PullRequest {
         PullRequest(
             id: PullRequestID(instance: .github, project: "o/r", number: 1),
             title: "t",
@@ -116,7 +136,7 @@ private struct PullRequestFixture {
             createdAt: Date(),
             updatedAt: Date(),
             source: PullRequestBranch(project: fork ? "alice/r" : "o/r", branch: "feature", sha: feature),
-            target: PullRequestBranch(project: "o/r", branch: "main", sha: base)
+            target: target ?? PullRequestBranch(project: "o/r", branch: "main", sha: base)
         )
     }
 

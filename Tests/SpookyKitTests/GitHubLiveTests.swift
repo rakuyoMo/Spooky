@@ -52,7 +52,7 @@ struct GitHubLiveTests {
         let pulls = RepositoryPullRequests(runner: runner)
         try await pulls.checkout(updated, remote: "origin", as: "pr-\(created.id.number)")
         #expect(String(decoding: try await runner.run(["rev-parse", "HEAD"]), as: UTF8.self).hasPrefix(sha))
-        #expect(try await pulls.comparisonBase(for: updated) != nil)
+        #expect(try await pulls.comparisonBase(for: updated, remote: "origin") != nil)
 
         let options = try await waitForMergeOptions(client, updated)
         #expect(options.methods.contains(.squash))

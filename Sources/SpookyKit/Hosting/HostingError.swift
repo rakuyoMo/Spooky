@@ -19,6 +19,12 @@ public enum HostingError: Error, Sendable, Equatable {
     /// 服务端拒绝了请求，如参数不合法、合并条件不满足或状态冲突。
     case rejected(status: Int, message: String)
 
+    /// 合并时服务端报源分支与目标分支有冲突；带服务端返回的原文。
+    case mergeConflict(String)
+
+    /// 合并接口回了成功，请求却没有合并；带服务端给出的原因，没有给出时为空。
+    case mergeFailed(String)
+
     /// 服务端出错（5xx）。
     case server(status: Int, message: String)
 

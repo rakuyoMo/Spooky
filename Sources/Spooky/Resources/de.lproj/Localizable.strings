@@ -2279,7 +2279,7 @@
 "accounts.message.oauth" = "Spooky zeigt einen Einmalcode an, kopiert ihn und öffnet GitHub in Ihrem Browser. Geben Sie dort den Code ein und autorisieren Sie Spooky.";
 "accounts.message.githubToken" = "Geben Sie ein persönliches Zugriffstoken mit den Bereichen „repo“ und „read:org“ ein.";
 "accounts.message.gitlab" = "Geben Sie ein persönliches Zugriffstoken mit dem Bereich „api“ ein.";
-"accounts.message.gitlabSelfManaged" = "Geben Sie die Adresse Ihres GitLab-Servers – gegebenenfalls mit Port und Pfad – und ein persönliches Zugriffstoken mit dem Bereich „api“ ein. GitLab 15.7 oder neuer ist erforderlich.";
+"accounts.message.gitlabSelfManaged" = "Geben Sie die Adresse Ihres GitLab-Servers – gegebenenfalls mit Port und Pfad – und ein persönliches Zugriffstoken mit dem Bereich „api“ ein.";
 "hosting.error.unauthorized" = "Das Token wurde abgelehnt";
 "hosting.error.unauthorized.help" = "Das Token ist ungültig, abgelaufen oder wurde widerrufen. Melden Sie den Account unter „Einstellungen“ → „Accounts“ erneut an.";
 "hosting.error.forbidden" = "Keine Berechtigung";
@@ -2291,6 +2291,10 @@
 "hosting.error.notFound.help" = "Das Projekt existiert nicht, oder der Account kann es nicht sehen. Prüfen Sie die Remote-URL und den Zugriff des Accounts auf das Projekt.";
 "hosting.error.rejected" = "Die Anfrage wurde abgelehnt";
 "hosting.error.rejected.help" = "Der Hosting-Dienst hat die Anfrage nicht angenommen. Seine Antwort steht unten.";
+"hosting.error.mergeConflict" = "Die Branches haben Konflikte";
+"hosting.error.mergeConflict.help" = "Der Quell-Branch hat Konflikte mit dem Ziel-Branch. Lösen Sie die Konflikte zuerst.";
+"hosting.error.mergeFailed" = "Das Mergen wurde nicht abgeschlossen";
+"hosting.error.mergeFailed.help" = "Der Hosting-Dienst konnte das Mergen nicht abschließen. Hat er einen Grund genannt, steht er unten. Prüfen Sie die Anfrage beim Hosting-Dienst und versuchen Sie es dann erneut.";
 "hosting.error.server" = "Fehler beim Hosting-Dienst";
 "hosting.error.server.help" = "Beim Hosting-Dienst ist ein Problem aufgetreten. Versuchen Sie es später erneut.";
 "hosting.error.unreachable" = "Hosting-Dienst nicht erreichbar";
@@ -2298,7 +2302,7 @@
 "hosting.error.certificate" = "Dem Zertifikat wird nicht vertraut";
 "hosting.error.certificate.help" = "Dieser Mac vertraut dem Zertifikat des Servers nicht. Prüfen Sie die Adresse der Instanz oder vertrauen Sie dem Zertifikat in der „Schlüsselbundverwaltung“.";
 "hosting.error.incompatible" = "Inkompatible API";
-"hosting.error.incompatible.help" = "Die API des Servers entspricht nicht den Erwartungen von Spooky. Spooky unterstützt github.com und GitLab 15.7 oder neuer; prüfen Sie Adresse und Version der Instanz.";
+"hosting.error.incompatible.help" = "Die API des Servers entspricht nicht den Erwartungen von Spooky. GitLab benötigt API v4, verfügbar ab Version 9.0. Prüfen Sie die Adresse der Instanz einschließlich Port und Pfad.";
 "hosting.error.expired" = "Der Code ist abgelaufen";
 "hosting.error.expired.help" = "Der Einmalcode ist nicht mehr gültig. Beginnen Sie erneut, um einen neuen Code zu erhalten.";
 "hosting.error.denied" = "Die Autorisierung wurde verweigert";

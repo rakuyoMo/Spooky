@@ -25,7 +25,7 @@ extension HostingClient {
     public func pullRequest(_ id: PullRequestID) async throws -> PullRequest {
         switch instance.service {
         case .github: try await githubPullRequest(id)
-        case .gitlab: try await gitlabMergeRequest(id).request
+        case .gitlab: try await gitlabMergeRequest(id)
         }
     }
 

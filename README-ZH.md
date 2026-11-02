@@ -104,7 +104,7 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
   - `/usr/bin/perl`，以及核心模块 `IO::Socket::UNIX`、`JSON::PP`、`POSIX`
   - 在服务器上输入 SSH 私钥口令时，OpenSSH 需要 `8.4` 或更高版本
   - 不需要 root 权限，也不安装常驻服务
-- Pull Request 与 Merge Request 需要 github.com、GitLab.com 或私有部署 GitLab `15.7` 及以上版本的账号，本机要能访问到它
+- Pull Request 与 Merge Request 需要 github.com、GitLab.com 或私有部署 GitLab `9.0` 及以上版本的账号，本机要能访问到它
 - 使用 Git LFS 的仓库，需要仓库所在的机器上有 Git LFS `2.9.0` 或更高版本，并在那里 Git 使用的 `PATH` 里
 
 ## 从源码构建

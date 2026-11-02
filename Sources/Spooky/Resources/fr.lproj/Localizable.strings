@@ -2279,7 +2279,7 @@
 "accounts.message.oauth" = "Spooky affiche un code à usage unique, le copie et ouvre GitHub dans votre navigateur. Saisissez-y le code et autorisez Spooky.";
 "accounts.message.githubToken" = "Saisissez un jeton d’accès personnel avec les portées « repo » et « read:org ».";
 "accounts.message.gitlab" = "Saisissez un jeton d’accès personnel avec la portée « api ».";
-"accounts.message.gitlabSelfManaged" = "Saisissez l’adresse de votre serveur GitLab, avec son port et son chemin s’il en a, et un jeton d’accès personnel avec la portée « api ». GitLab 15.7 ou version ultérieure est requis.";
+"accounts.message.gitlabSelfManaged" = "Saisissez l’adresse de votre serveur GitLab, avec son port et son chemin s’il en a, et un jeton d’accès personnel avec la portée « api ».";
 "hosting.error.unauthorized" = "Le jeton a été refusé";
 "hosting.error.unauthorized.help" = "Le jeton est invalide, a expiré ou a été révoqué. Réauthentifiez le compte dans Réglages → Comptes.";
 "hosting.error.forbidden" = "Autorisation refusée";
@@ -2291,6 +2291,10 @@
 "hosting.error.notFound.help" = "Le projet n’existe pas, ou le compte ne peut pas le voir. Vérifiez l’URL du dépôt distant et l’accès du compte au projet.";
 "hosting.error.rejected" = "La requête a été refusée";
 "hosting.error.rejected.help" = "Le service d’hébergement n’a pas accepté la requête. Sa réponse est affichée ci-dessous.";
+"hosting.error.mergeConflict" = "Les branches sont en conflit";
+"hosting.error.mergeConflict.help" = "La branche source est en conflit avec la branche cible. Résolvez d’abord les conflits.";
+"hosting.error.mergeFailed" = "La fusion n’a pas abouti";
+"hosting.error.mergeFailed.help" = "Le service d’hébergement n’a pas pu terminer la fusion. Sa raison, s’il en a donné une, est affichée ci-dessous. Vérifiez la demande sur le service d’hébergement, puis réessayez.";
 "hosting.error.server" = "Erreur du service d’hébergement";
 "hosting.error.server.help" = "Le service d’hébergement a rencontré un problème. Réessayez plus tard.";
 "hosting.error.unreachable" = "Impossible de joindre le service d’hébergement";
@@ -2298,7 +2302,7 @@
 "hosting.error.certificate" = "Le certificat n’est pas fiable";
 "hosting.error.certificate.help" = "Ce Mac ne fait pas confiance au certificat du serveur. Vérifiez l’adresse de l’instance, ou approuvez le certificat dans Trousseaux d’accès.";
 "hosting.error.incompatible" = "API incompatible";
-"hosting.error.incompatible.help" = "L’API du serveur ne correspond pas à ce qu’attend Spooky. Spooky prend en charge github.com et GitLab 15.7 ou version ultérieure ; vérifiez l’adresse et la version de l’instance.";
+"hosting.error.incompatible.help" = "L’API du serveur ne correspond pas à ce qu’attend Spooky. GitLab doit fournir l’API v4, disponible à partir de la version 9.0. Vérifiez l’adresse de l’instance, y compris son port et son chemin.";
 "hosting.error.expired" = "Le code a expiré";
 "hosting.error.expired.help" = "Le code à usage unique n’est plus valide. Recommencez pour obtenir un nouveau code.";
 "hosting.error.denied" = "L’autorisation a été refusée";

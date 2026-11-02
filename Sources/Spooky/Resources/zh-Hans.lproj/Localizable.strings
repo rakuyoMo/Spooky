@@ -2279,7 +2279,7 @@
 "accounts.message.oauth" = "Spooky 会显示一次性验证码，复制它并在浏览器中打开 GitHub。在那里输入验证码并授权 Spooky。";
 "accounts.message.githubToken" = "请输入带 “repo” 与 “read:org” 权限的个人访问令牌。";
 "accounts.message.gitlab" = "请输入带 “api” 权限的个人访问令牌。";
-"accounts.message.gitlabSelfManaged" = "请输入 GitLab 服务器的地址（有端口与部署路径时一并写上），以及带 “api” 权限的个人访问令牌。需要 GitLab 15.7 或更高版本。";
+"accounts.message.gitlabSelfManaged" = "请输入 GitLab 服务器的地址（有端口与部署路径时一并写上），以及带 “api” 权限的个人访问令牌。";
 "hosting.error.unauthorized" = "令牌被拒绝";
 "hosting.error.unauthorized.help" = "令牌无效、已过期或已被撤销。请在 设置 → 账号 中重新认证这个账号。";
 "hosting.error.forbidden" = "权限不足";
@@ -2291,6 +2291,10 @@
 "hosting.error.notFound.help" = "项目不存在，或者这个账号看不到它。请检查远端地址，以及账号对项目的访问权限。";
 "hosting.error.rejected" = "请求被拒绝";
 "hosting.error.rejected.help" = "托管服务没有接受这个请求。下方是它的回应。";
+"hosting.error.mergeConflict" = "分支有冲突";
+"hosting.error.mergeConflict.help" = "源分支与目标分支有冲突，请先解决冲突。";
+"hosting.error.mergeFailed" = "没有完成合并";
+"hosting.error.mergeFailed.help" = "托管服务没能完成合并。它给出原因时显示在下方；请在托管服务上查看这个请求，然后再试。";
 "hosting.error.server" = "托管服务出错";
 "hosting.error.server.help" = "托管服务遇到了问题。请稍后再试。";
 "hosting.error.unreachable" = "连不上托管服务";
@@ -2298,7 +2302,7 @@
 "hosting.error.certificate" = "证书不受信任";
 "hosting.error.certificate.help" = "这台 Mac 不信任服务器的证书。请检查实例地址，或者在 “钥匙串访问” 中信任该证书。";
 "hosting.error.incompatible" = "API 不兼容";
-"hosting.error.incompatible.help" = "服务器的 API 与 Spooky 的预期不符。Spooky 支持 github.com 与 GitLab 15.7 或更高版本；请检查实例地址与版本。";
+"hosting.error.incompatible.help" = "服务器的 API 与 Spooky 的预期不符。GitLab 需要有 API v4，即 9.0 或更高版本；请检查实例地址，以及其中的端口与部署路径。";
 "hosting.error.expired" = "验证码已过期";
 "hosting.error.expired.help" = "一次性验证码已经失效。请重新开始以获取新的验证码。";
 "hosting.error.denied" = "授权被拒绝";

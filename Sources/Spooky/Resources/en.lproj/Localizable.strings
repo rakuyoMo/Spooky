@@ -2279,7 +2279,7 @@
 "accounts.message.oauth" = "Spooky shows a one-time code, copies it and opens GitHub in your browser. Enter the code there and authorize Spooky.";
 "accounts.message.githubToken" = "Enter a personal access token with the “repo” and “read:org” scopes.";
 "accounts.message.gitlab" = "Enter a personal access token with the “api” scope.";
-"accounts.message.gitlabSelfManaged" = "Enter the address of your GitLab server, with its port and path if it has them, and a personal access token with the “api” scope. GitLab 15.7 or later is required.";
+"accounts.message.gitlabSelfManaged" = "Enter the address of your GitLab server, with its port and path if it has them, and a personal access token with the “api” scope.";
 "hosting.error.unauthorized" = "The Token Was Rejected";
 "hosting.error.unauthorized.help" = "The token is invalid, has expired or was revoked. Re-authenticate the account in Settings → Accounts.";
 "hosting.error.forbidden" = "Permission Denied";
@@ -2291,6 +2291,10 @@
 "hosting.error.notFound.help" = "The project doesn’t exist, or the account can’t see it. Check the remote URL and the account’s access to the project.";
 "hosting.error.rejected" = "The Request Was Rejected";
 "hosting.error.rejected.help" = "The hosting service didn’t accept the request. Its response is shown below.";
+"hosting.error.mergeConflict" = "The Branches Conflict";
+"hosting.error.mergeConflict.help" = "The source branch conflicts with the target branch. Resolve the conflicts first.";
+"hosting.error.mergeFailed" = "The Merge Didn’t Complete";
+"hosting.error.mergeFailed.help" = "The hosting service couldn’t complete the merge. Its reason, if it gave one, is shown below. Check the request on the hosting service, then try again.";
 "hosting.error.server" = "Hosting Service Error";
 "hosting.error.server.help" = "The hosting service ran into a problem. Try again later.";
 "hosting.error.unreachable" = "Can’t Reach the Hosting Service";
@@ -2298,7 +2302,7 @@
 "hosting.error.certificate" = "The Certificate Isn’t Trusted";
 "hosting.error.certificate.help" = "This Mac doesn’t trust the server’s certificate. Check the instance address, or trust the certificate in Keychain Access.";
 "hosting.error.incompatible" = "Incompatible API";
-"hosting.error.incompatible.help" = "The server’s API doesn’t match what Spooky expects. Spooky supports github.com and GitLab 15.7 or later; check the instance address and version.";
+"hosting.error.incompatible.help" = "The server’s API doesn’t match what Spooky expects. GitLab needs API v4, which comes with version 9.0 or later. Check the instance address, including its port and path.";
 "hosting.error.expired" = "The Code Has Expired";
 "hosting.error.expired.help" = "The one-time code is no longer valid. Start again to get a new code.";
 "hosting.error.denied" = "Authorization Was Denied";

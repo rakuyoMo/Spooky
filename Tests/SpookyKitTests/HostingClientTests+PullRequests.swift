@@ -221,7 +221,7 @@ extension HostingClientTests {
          "source_branch":"feature","target_branch":"main","source_project_id":\(source),"target_project_id":1,
          "sha":"aaa","web_url":"https://gitlab.com/group/project/-/merge_requests/\(iid)",
          "diff_refs":{"base_sha":"mmm","head_sha":"aaa","start_sha":"bbb"},
-         "detailed_merge_status":"\(status)","user":{"can_merge":\(canMerge)}}
+         "detailed_merge_status":"\(status)","user":{"can_merge":\(canMerge)},"squash":false}
         """
     }
 }
