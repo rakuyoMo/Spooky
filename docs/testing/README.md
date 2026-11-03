@@ -85,4 +85,4 @@ SPOOKY_PERFORMANCE_TESTS=1 swift test -c release -Xswiftc -enable-testing --filt
 | [M11](M11.md) | 历史续载与回到很靠后的提交、版本选择器、补丁、去掉完全合并、推送与发布、后台自动获取、对话框头部与 Activity 的分页 |
 | [M12](M12.md) | 去掉的功能、主题、Dock 与打开文件、系统通知、新功能卡片、开发者菜单、Show in Finder 与远程编辑器、仓库设置、终端与外部工具、Activity、撤销、子模块菜单、Dock 图标与关于窗口 |
 | [M13](M13.md) | 私有部署 GitLab 的版本与用户名密码登录、账号令牌用于 Git 认证、请求的讨论与右键菜单、托管服务的对话框、对话框对齐输入列与侧边栏的活动区 |
-| [M14](M14.md) | 主菜单的系统项、标题、分组与快捷键，Open Recent 与 Clear Menu，显示仓库管理时的视图切换；工具栏的标签、提示、可见优先级、Fetch 的图标、跟随内层分栏的分隔符与刷新中的 Refresh |
+| [M14](M14.md) | 主菜单的系统项、标题、分组与快捷键，Open Recent 与 Clear Menu，显示仓库管理时的视图切换；工具栏的标签、提示、可见优先级、Fetch 的图标、跟随内层分栏的分隔符与刷新中的 Refresh；丢失页的自动重试，File › Open… 的面板与新建询问，侧边栏的首次宽度，New Window 开成标签页 |

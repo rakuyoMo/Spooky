@@ -66,6 +66,7 @@
 
 
 "repositories.panel.message" = "기존 Git 작업 트리를 선택하세요.";
+"repositories.panel.prompt" = "저장소 열기";
 
 "workspace.group" = "작업 공간";
 

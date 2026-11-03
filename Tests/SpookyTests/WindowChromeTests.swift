@@ -129,6 +129,42 @@ struct WindowChromeTests {
         #expect(window.tabbingMode == .automatic)
     }
 
+    /// 还没有记下侧边栏宽度时，仓库视图的侧边栏宽 428 pt，仓库管理宽 260 pt。
+    @Test("侧边栏的首次宽度")
+    func defaultSidebarWidths() async throws {
+        let fixture = try await NavigationTests.makeWindow()
+        defer { fixture.close() }
+
+        // 分栏宽度记在标准偏好里：从删掉记录到放回整段同步执行，其它测试的窗口插不进来改写
+        let keys = ["Spooky.Repositories", "Spooky.Repository"].map { "NSSplitView Subview Frames " + $0 }
+        let saved = keys.map { UserDefaults.standard.object(forKey: $0) }
+
+        for key in keys {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+
+        let controller = RepositoryWindowController(coordinator: fixture.coordinator)
+
+        let sidebarWidth = {
+            (controller.window?.contentViewController as? NSSplitViewController)?
+                .splitViewItems.first?.viewController.view.frame.width
+        }
+
+        let managerWidth = sidebarWidth()
+        controller.display(fixture.location)
+        let repositoryWidth = sidebarWidth()
+
+        controller.session.close()
+        controller.window?.close()
+
+        for (key, value) in zip(keys, saved) {
+            UserDefaults.standard.set(value, forKey: key)
+        }
+
+        #expect(managerWidth == 260)
+        #expect(repositoryWidth == 428)
+    }
+
     /// 启动窗口 600 × 450、没有标题栏、不能全屏；打开的仓库窗口成为主窗口后它自己关闭。
     @Test("启动窗口")
     func launchWindow() async throws {

@@ -66,6 +66,7 @@
 
 
 "repositories.panel.message" = "選擇現有 Git 儲存庫的工作區目錄。";
+"repositories.panel.prompt" = "開啟儲存庫";
 
 "workspace.group" = "工作空間";
 

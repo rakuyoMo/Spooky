@@ -66,6 +66,7 @@
 
 
 "repositories.panel.message" = "Seleccionar un árbol de trabajo de Git existente.";
+"repositories.panel.prompt" = "Abrir repositorio";
 
 "workspace.group" = "Espacio de trabajo";
 

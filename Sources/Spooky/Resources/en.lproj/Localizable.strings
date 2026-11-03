@@ -66,6 +66,7 @@
 
 
 "repositories.panel.message" = "Select an existing Git working tree.";
+"repositories.panel.prompt" = "Open Repository";
 
 "workspace.group" = "Workspace";
 

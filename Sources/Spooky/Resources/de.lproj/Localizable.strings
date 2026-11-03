@@ -66,6 +66,7 @@
 
 
 "repositories.panel.message" = "Wählen Sie ein vorhandenes Git-Arbeitsverzeichnis aus.";
+"repositories.panel.prompt" = "Repository öffnen";
 
 "workspace.group" = "Arbeitsbereich";
 

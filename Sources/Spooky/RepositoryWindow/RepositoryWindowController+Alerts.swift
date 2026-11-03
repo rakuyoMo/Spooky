@@ -42,11 +42,13 @@ extension RepositoryWindowController {
                 return
             }
 
-            if failure.isOpeningFailure {
-                if failure.isRemoteFailure { addRemoteRepository() }
-                else { chooseRepository() }
-            } else {
+            if !failure.isOpeningFailure {
                 refreshRepository()
+            } else if failure.isRemoteFailure {
+                addRemoteRepository()
+            } else {
+                // 目录面板以模态运行，等这个 sheet 从窗口上收起后再打开，否则它会一直留在面板后面
+                Task { [weak self] in self?.coordinator?.openRepositoryPanel() }
             }
         }
     }

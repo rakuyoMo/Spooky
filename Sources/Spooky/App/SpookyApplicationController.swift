@@ -130,21 +130,31 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         return true
     }
 
-    /// 新窗口始终独立，不并进已有的标签组；普通打开仍优先复用发起窗口。
+    /// 新开一个显示仓库管理的窗口；系统设置 “打开文稿时首选标签页” 为 “始终” 时，它成为当前窗口里的一个标签页。
     @objc
     func newWindow() {
         let controller = makeWindow()
-
-        showSeparately(controller) {
-            controller.showWindow(nil)
-            controller.window?.makeKeyAndOrderFront(nil)
-        }
+        controller.showWindow(nil)
+        controller.window?.makeKeyAndOrderFront(nil)
     }
 
-    /// 应用级 ⌘O 在没有主窗口时也能选择仓库。
+    /// ⌘O 的目录面板：单独的模态面板，不挂在窗口上；选好之后与从 Finder 打开文件夹相同，取消不改变当前仓库。
     @objc
     func openRepositoryPanel() {
-        chooseRepository(in: activeWindow ?? makeWindow())
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = false
+        panel.prompt = AppLocalization.text("repositories.panel.prompt")
+        panel.message = AppLocalization.text("repositories.panel.message")
+        panel.title = AppLocalization.text("action.openLocal")
+
+        guard panel.runModal() == .OK, let url = panel.url else {
+            return
+        }
+
+        openFolders([url])
     }
 
     /// 仓库管理始终可进入，没有可用窗口时创建一个管理窗口。
@@ -364,31 +374,6 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 // MARK: - Repository Opening
 
 extension SpookyApplicationController {
-    /// 使用系统目录选择 sheet；取消不改变当前仓库。
-    func chooseRepository(in source: RepositoryWindowController) {
-        guard let window = source.window, window.attachedSheet == nil else {
-            return
-        }
-
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.canCreateDirectories = false
-        panel.prompt = AppLocalization.text("action.open")
-        panel.message = AppLocalization.text("repositories.panel.message")
-        panel.title = AppLocalization.text("action.openLocal")
-        source.showWindow(nil)
-
-        panel.beginSheetModal(for: window) { [weak self, weak source] response in
-            guard response == .OK, let path = panel.url?.path, let source else {
-                return
-            }
-
-            self?.openRepository(at: .local(path: path), from: source, inNewWindow: false)
-        }
-    }
-
     /// 验证后按规范根路径去重；显式新窗口打开跳过去重。
     ///
     /// - Parameters:
@@ -613,6 +598,71 @@ extension SpookyApplicationController {
 
         source.openingRequest = nil
         source.session.isOpening = false
+    }
+
+    /// 丢失页的自动重试：不询问用户地重新验证位置，仓库回来了就在这个窗口换回仓库界面。
+    ///
+    /// 仍打不开时保持丢失页，不报错，也不改书签的失效标记；服务器仓库收回这次建立的连接。
+    /// 窗口里还有打开或重试没结束时不发起；重试占用窗口的打开请求，关窗或开始别的打开时一起取消。
+    /// 验证完时窗口已经离开这一页的，同样不换回仓库。
+    ///
+    /// - Parameters:
+    ///   - location: 丢失页所指的仓库。
+    ///   - source: 显示丢失页的窗口。
+    ///   - verify: 验证位置的方式，返回规范化后的仓库位置。
+    /// - Returns: 重试的任务；没有发起时为 nil。
+    @discardableResult
+    func retryMissingRepository(
+        _ location: RepositoryLocation,
+        in source: RepositoryWindowController,
+        verify: @escaping @MainActor (RepositoryLocation) async throws -> RepositoryLocation = verifiedLocation
+    ) -> Task<Void, Never>? {
+        guard source.openingRequest == nil else {
+            return nil
+        }
+
+        let request = UUID()
+        source.openingRequest = request
+
+        let task = Task { [weak self, weak source] in
+            guard let self else {
+                return
+            }
+
+            defer {
+                self.openingTasks[request] = nil
+
+                if source?.openingRequest == request {
+                    source?.openingRequest = nil
+                }
+            }
+
+            do {
+                // 重试不是用户发起的：服务器仓库只用已存的凭据，取不到按打不开处理
+                let repository = try await RemoteCallbackRequest.$allowsInteraction.withValue(false) {
+                    try await verify(location)
+                }
+                try Task.checkCancellation()
+
+                // 重试期间窗口离开了丢失页（如回到仓库管理）时不再换回仓库
+                guard let source, source.missingLocation == location else {
+                    releaseConnection(location)
+                    return
+                }
+
+                bookmarks.relocate(location, to: repository)
+                displayRepository(repository, from: source, inNewWindow: false, staysInSource: true)
+            } catch {
+                guard !Task.isCancelled else {
+                    return
+                }
+
+                releaseConnection(location)
+            }
+        }
+
+        openingTasks[request] = task
+        return task
     }
 }
 

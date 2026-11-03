@@ -66,6 +66,7 @@
 
 
 "repositories.panel.message" = "既存の Git 作業ツリーを選択してください。";
+"repositories.panel.prompt" = "リポジトリを開く";
 
 "workspace.group" = "ワークスペース";
 

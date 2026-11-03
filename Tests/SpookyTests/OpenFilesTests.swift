@@ -8,7 +8,7 @@ import Testing
 // MARK: - OpenFilesTests
 
 /// 从 Finder 打开或拖到 Dock 图标上的文件：Info.plist 的文稿类型决定系统交不交给 App，交来的仓库文件夹在窗口里打开，
-/// 经链接或文件启动时只开出需要的窗口。
+/// 经链接或文件启动时只开出需要的窗口；⌘O 选好的文件夹与交来的文件夹走同一条路。
 ///
 /// 不是仓库的文件夹弹出的是模态对话框，不在这里测：测试进程里结束模态循环会让测试进程直接退出，之后的测试都不再运行。
 @MainActor
@@ -55,6 +55,37 @@ struct OpenFilesTests {
                 !$0.showsManager && $0.session.repository?.name == fixture.location.name
             }
         }
+    }
+
+    /// ⌘O 选好的文件夹与 Finder 交来的走同一条路：不是工作区这类其余的失败显示错误 sheet，可以另选文件夹。
+    @Test("⌘O 选了打不开的文件夹")
+    func chosenFolderFailure() async throws {
+        let fixture = try await NavigationTests.makeWindow()
+        let bare = try FileViewsTests.temporaryDirectory()
+
+        defer {
+            for window in fixture.coordinator.windows.compactMap(\.window) {
+                if let sheet = window.attachedSheet {
+                    window.endSheet(sheet)
+                }
+            }
+
+            try? FileManager.default.removeItem(at: bare)
+            fixture.close()
+        }
+
+        let coordinator = fixture.coordinator
+        _ = try await GitRunner(location: .local(path: bare.path)).run(["-c", "init.templateDir=", "init", "--bare", "-q"])
+
+        await coordinator.openFolders([bare]).value
+
+        try await FileViewsTests.wait {
+            coordinator.windows.contains { $0.window?.attachedSheet != nil }
+        }
+
+        let sheets = coordinator.windows.compactMap { $0.window?.attachedSheet }
+        let sheet = try #require(sheets.first)
+        #expect(Self.buttonTitles(in: sheet.contentView).contains(AppLocalization.text("action.chooseAnother")))
     }
 
     /// 经链接启动时，链接的仓库显示在唯一的窗口里，不另开仓库管理窗口。
@@ -135,5 +166,15 @@ extension OpenFilesTests {
 
         try await Task.sleep(for: .milliseconds(300))
         #expect(coordinator.windows.count == 1)
+    }
+
+    /// 视图及其子视图里全部按钮的标题。
+    private static func buttonTitles(in view: NSView?) -> [String] {
+        guard let view else {
+            return []
+        }
+
+        let own = (view as? NSButton).map { [$0.title] } ?? []
+        return own + view.subviews.flatMap { buttonTitles(in: $0) }
     }
 }
