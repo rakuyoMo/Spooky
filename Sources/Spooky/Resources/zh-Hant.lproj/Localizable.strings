@@ -329,8 +329,10 @@
 "branch.default" = "預設分支";
 "branch.create" = "新增分支";
 "branch.create.help" = "從指定版本建立本機分支。";
+"branch.create.title" = "新增分支";
 "branch.track" = "追蹤遠端分支";
 "branch.track.help" = "建立追蹤所選遠端分支的本機分支。";
+"branch.track.submit" = "新增";
 "branch.checkout" = "簽出分支";
 "branch.checkoutNamed" = "簽出 “%@”";
 "branch.delete" = "刪除分支";
@@ -353,6 +355,8 @@
 "sync.pull.help" = "擷取所選分支，再按指定方式合併或重定基底。";
 "sync.push" = "推送";
 "sync.push.help" = "將本機分支推送至指定目標。";
+"sync.pushHead" = "推送 HEAD";
+"sync.pushBranch" = "推送分支";
 "sync.publish" = "發布分支";
 "sync.publish.help" = "在所選遠端建立分支。";
 "sync.merge" = "合併";

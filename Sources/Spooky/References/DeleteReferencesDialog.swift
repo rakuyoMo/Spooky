@@ -105,6 +105,7 @@ extension DeleteReferencesDialog {
                         ForEach(remotes) { Text($0.name).tag($0.name) }
                     }
                     .labelsHidden()
+                    .buttonSizing(.flexible)
                     .frame(maxWidth: 350, alignment: .leading)
                     .disabled(!deletesRemoteTags)
                 }

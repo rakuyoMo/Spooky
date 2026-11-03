@@ -329,8 +329,10 @@
 "branch.default" = "Branche par défaut";
 "branch.create" = "Créer une branche";
 "branch.create.help" = "Créer une branche locale à partir d’une révision.";
+"branch.create.title" = "Créer une branche";
 "branch.track" = "Suivre la branche distante";
 "branch.track.help" = "Créer une branche locale qui suit la branche distante sélectionnée.";
+"branch.track.submit" = "Créer";
 "branch.checkout" = "Basculer sur la branche";
 "branch.checkoutNamed" = "Basculer sur « %@ »";
 "branch.delete" = "Supprimer la branche";
@@ -353,6 +355,8 @@
 "sync.pull.help" = "Récupérer la branche sélectionnée, puis fusionner ou rebaser de manière explicite.";
 "sync.push" = "Pousser";
 "sync.push.help" = "Pousser une branche locale vers la destination sélectionnée.";
+"sync.pushHead" = "Pousser HEAD";
+"sync.pushBranch" = "Pousser la branche";
 "sync.publish" = "Publier la branche";
 "sync.publish.help" = "Créer une branche sur le dépôt distant sélectionné.";
 "sync.merge" = "Fusionner";

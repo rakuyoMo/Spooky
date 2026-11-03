@@ -329,8 +329,10 @@
 "branch.default" = "Standard-Branch";
 "branch.create" = "Branch erstellen";
 "branch.create.help" = "Erstellt einen lokalen Branch aus einer Revision.";
+"branch.create.title" = "Neuen Branch erstellen";
 "branch.track" = "Remote-Branch verfolgen";
 "branch.track.help" = "Erstellt einen lokalen Branch, der den ausgewählten Remote-Branch verfolgt.";
+"branch.track.submit" = "Erstellen";
 "branch.checkout" = "Branch auschecken";
 "branch.checkoutNamed" = "„%@“ auschecken";
 "branch.delete" = "Branch löschen";
@@ -353,6 +355,8 @@
 "sync.pull.help" = "Ruft den ausgewählten Branch ab und führt dann explizit einen Merge oder Rebase aus.";
 "sync.push" = "Pushen";
 "sync.push.help" = "Pusht einen lokalen Branch zum ausgewählten Ziel.";
+"sync.pushHead" = "HEAD pushen";
+"sync.pushBranch" = "Branch pushen";
 "sync.publish" = "Branch veröffentlichen";
 "sync.publish.help" = "Erstellt einen Branch auf dem ausgewählten Remote.";
 "sync.merge" = "Zusammenführen";

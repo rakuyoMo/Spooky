@@ -329,8 +329,10 @@
 "branch.default" = "Default Branch";
 "branch.create" = "Create Branch";
 "branch.create.help" = "Create a local branch from a revision.";
+"branch.create.title" = "Create New Branch";
 "branch.track" = "Track Remote Branch";
 "branch.track.help" = "Create a local branch that tracks the selected remote branch.";
+"branch.track.submit" = "Create";
 "branch.checkout" = "Check Out Branch";
 "branch.checkoutNamed" = "Check Out “%@”";
 "branch.delete" = "Delete Branch";
@@ -353,6 +355,8 @@
 "sync.pull.help" = "Fetch the selected branch, then merge or rebase explicitly.";
 "sync.push" = "Push";
 "sync.push.help" = "Push a local branch to the selected destination.";
+"sync.pushHead" = "Push HEAD";
+"sync.pushBranch" = "Push Branch";
 "sync.publish" = "Publish Branch";
 "sync.publish.help" = "Create a branch on the selected remote.";
 "sync.merge" = "Merge";

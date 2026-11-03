@@ -50,6 +50,7 @@ struct PublishTagDialog: View {
                     ForEach(session.tags) { Text($0.name).tag($0.name) }
                 }
                 .labelsHidden()
+                .buttonSizing(.flexible)
             }
 
             RepositoryDialogRows.row(AppLocalization.text("sync.remote")) {
@@ -57,11 +58,13 @@ struct PublishTagDialog: View {
                     ForEach(session.history.snapshot?.remotes ?? []) { Text($0.name).tag($0.name) }
                 }
                 .labelsHidden()
+                .buttonSizing(.flexible)
             }
         } options: {
             DialogFormOption(
                 title: AppLocalization.text("sync.skipHooks"),
                 help: AppLocalization.text("sync.skipHooks.help"),
+                spacing: 4,
                 isOn: $skipHooks
             )
         }

@@ -81,7 +81,7 @@ struct DialogFormRow<Field: View>: View {
 
 /// 表单输入列里的勾选框，说明紧跟在下面一行；没有带标签的行时，勾选框本身就是输入列。
 ///
-/// 说明 11 pt，左缘对齐勾选框的标题文字，折行到输入列的右缘；勾选框到说明、说明到下一行都是 8 pt。
+/// 说明 11 pt，左缘对齐勾选框的标题文字，折行到输入列的右缘；勾选框到说明默认 8 pt，说明到下一行 8 pt。
 /// 说明用正文色，只在勾选框不可用时随之变灰。
 struct DialogFormOption: View {
     /// 勾选框的标题。
@@ -89,6 +89,9 @@ struct DialogFormOption: View {
 
     /// 说明；为空时只有勾选框。
     var help = ""
+
+    /// 勾选框到说明的间距；发布分支、发布标签、同步、安全强推与推送版本的 Skip Hooks 是 4。
+    var spacing: CGFloat = 8
 
     /// 勾选状态。
     @Binding
@@ -105,7 +108,7 @@ struct DialogFormOption: View {
                 .frame(width: DialogMetrics.labelWidth, height: 0)
                 .gridCellUnsizedAxes(.vertical)
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: spacing) {
                 Toggle(title, isOn: $isOn)
 
                 if !help.isEmpty {
@@ -125,6 +128,14 @@ struct DialogFormOption: View {
 // MARK: - View + DialogInputColumn
 
 extension View {
+    /// 输入列里宽度有上限的控件：不超过上限，靠左；输入列比上限宽时余下的宽度留在控件右侧，标签列不随之变宽。
+    ///
+    /// - Parameter limit: 宽度上限；为 `.infinity` 时占满输入列。
+    func dialogFieldWidth(_ limit: CGFloat) -> some View {
+        frame(maxWidth: limit, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     /// 把这个视图的左缘报给外层的对话框骨架，作为输入列：头部与错误文字对齐它。
     func dialogInputColumn() -> some View {
         background {

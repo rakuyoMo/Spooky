@@ -329,8 +329,10 @@
 "branch.default" = "デフォルトブランチ";
 "branch.create" = "ブランチを作成";
 "branch.create.help" = "指定したリビジョンからローカルブランチを作成します。";
+"branch.create.title" = "新しいブランチを作成";
 "branch.track" = "リモートブランチを追跡";
 "branch.track.help" = "選択したリモートブランチを追跡するローカルブランチを作成します。";
+"branch.track.submit" = "作成";
 "branch.checkout" = "ブランチをチェックアウト";
 "branch.checkoutNamed" = "「%@」をチェックアウト";
 "branch.delete" = "ブランチを削除";
@@ -353,6 +355,8 @@
 "sync.pull.help" = "選択したブランチを取得し、指定した方法でマージまたはリベースします。";
 "sync.push" = "プッシュ";
 "sync.push.help" = "ローカルブランチを選択した宛先に送信します。";
+"sync.pushHead" = "HEAD をプッシュ";
+"sync.pushBranch" = "ブランチをプッシュ";
 "sync.publish" = "ブランチを公開";
 "sync.publish.help" = "選択したリモートにブランチを作成します。";
 "sync.merge" = "マージ";

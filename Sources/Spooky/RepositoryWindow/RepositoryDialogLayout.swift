@@ -17,6 +17,9 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
     /// 标题下方的一句说明。
     let message: String
 
+    /// 对话框的宽度。
+    let width: CGFloat
+
     /// 主按钮的标题。
     let submitTitle: String
 
@@ -44,6 +47,7 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
             title: title,
             message: message,
             repository: session.repository,
+            width: width,
             submitTitle: submitTitle,
             error: notice,
             canSubmit: isValid && session.canWrite,
@@ -56,22 +60,37 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
         )
     }
 
-    /// 创建带选项区的对话框；选项区默认收起。
+    /// 创建对话框；选项区由调用方按内容决定有无，默认收起。
+    ///
+    /// - Parameters:
+    ///   - session: 发起动作的窗口会话。
+    ///   - title: 标题。
+    ///   - message: 标题下方的一句说明。
+    ///   - width: 对话框的宽度。
+    ///   - submitTitle: 主按钮的标题。
+    ///   - error: 校验或加载失败的说明。
+    ///   - isValid: 内容是否完整合法。
+    ///   - cancel: 取消的动作。
+    ///   - submit: 主按钮的动作。
+    ///   - options: 选项区的表单行；为 nil 时没有 “Options” 开关。
+    ///   - content: 内容区的表单行。
     init(
         session: RepositorySession,
         title: String,
         message: String,
+        width: CGFloat = 480,
         submitTitle: String,
         error: String,
         isValid: Bool,
         cancel: @escaping () -> Void,
         submit: @escaping () -> Void,
-        @ViewBuilder content: @escaping () -> Content,
-        @ViewBuilder options: @escaping () -> Options
+        options: (() -> Options)?,
+        @ViewBuilder content: @escaping () -> Content
     ) {
         self.session = session
         self.title = title
         self.message = message
+        self.width = width
         self.submitTitle = submitTitle
         self.error = error
         self.isValid = isValid
@@ -84,12 +103,44 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
 
 // MARK: - Initializers
 
+extension RepositoryDialogLayout {
+    /// 创建带选项区的对话框；选项区默认收起。
+    init(
+        session: RepositorySession,
+        title: String,
+        message: String,
+        width: CGFloat = 480,
+        submitTitle: String,
+        error: String,
+        isValid: Bool,
+        cancel: @escaping () -> Void,
+        submit: @escaping () -> Void,
+        @ViewBuilder content: @escaping () -> Content,
+        @ViewBuilder options: @escaping () -> Options
+    ) {
+        self.init(
+            session: session,
+            title: title,
+            message: message,
+            width: width,
+            submitTitle: submitTitle,
+            error: error,
+            isValid: isValid,
+            cancel: cancel,
+            submit: submit,
+            options: options,
+            content: content
+        )
+    }
+}
+
 extension RepositoryDialogLayout where Options == EmptyView {
     /// 没有选项区的对话框。
     init(
         session: RepositorySession,
         title: String,
         message: String,
+        width: CGFloat = 480,
         submitTitle: String,
         error: String,
         isValid: Bool,
@@ -97,16 +148,19 @@ extension RepositoryDialogLayout where Options == EmptyView {
         submit: @escaping () -> Void,
         @ViewBuilder content: @escaping () -> Content
     ) {
-        self.session = session
-        self.title = title
-        self.message = message
-        self.submitTitle = submitTitle
-        self.error = error
-        self.isValid = isValid
-        self.cancel = cancel
-        self.submit = submit
-        self.content = content
-        options = nil
+        self.init(
+            session: session,
+            title: title,
+            message: message,
+            width: width,
+            submitTitle: submitTitle,
+            error: error,
+            isValid: isValid,
+            cancel: cancel,
+            submit: submit,
+            options: nil,
+            content: content
+        )
     }
 }
 

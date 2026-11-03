@@ -150,27 +150,24 @@ extension RepositoryWindowController {
 
     /// 对话框关闭之后才启动写入，保存发起仓库身份以拒绝迟到提交。
     func presentRepositoryAction(_ request: RepositoryActionRequest) {
-        guard session.canWrite, let window, window.attachedSheet == nil else { return }
+        guard session.canWrite else { return }
 
         // HEAD 还没有上游时，推送 HEAD 分支改为打开发布分支的对话框
         let request = request.resolved(for: session.status?.branch)
 
+        let session = session
         let repository = session.repository
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-        sheet.contentViewController = NSHostingController(
-            rootView: RepositoryOperationDialog(
+
+        presentDialog { close in
+            RepositoryOperationDialog(
                 session: session,
                 request: request,
-                cancel: { [weak sheet] in
-                    if let sheet { window.endSheet(sheet) }
-                },
-                submit: { [weak self, weak sheet] title, target, undo, action in
+                cancel: close,
+                submit: { title, target, undo, action in
                     // 只有写操作真正开始才关闭表单；仓库忙碌或断线时保留未发送的参数。
                     // 拉取与合并被本地改动挡住时按设置询问是否先储藏
                     guard
-                        let self, let sheet, session.repository == repository,
+                        session.repository == repository,
                         session.performGit(
                             action,
                             title: title,
@@ -180,12 +177,11 @@ extension RepositoryWindowController {
                         )
                     else { return false }
 
-                    window.endSheet(sheet)
+                    close()
                     return true
                 }
             )
-        )
-        window.beginSheet(sheet)
+        }
     }
 
     /// 仓库动作按当前视图与加载状态启用；菜单、工具栏与右键菜单共用会话的可用性规则。

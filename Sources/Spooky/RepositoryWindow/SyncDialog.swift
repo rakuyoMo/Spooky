@@ -27,20 +27,29 @@ enum SyncDialogKind {
         }
     }
 
-    /// 主按钮与 Activity 记录的资源键。
-    var actionKey: String {
+    /// 主按钮的资源键。
+    var submitKey: String {
         switch self {
-        case .sync: "sync.sync"
+        case .sync: "sync.syncHead"
         case .rebase: "sync.rebaseHead"
         case .forcePush: "sync.forcePush"
         case .pushRevision: "sync.pushRevision"
+        }
+    }
+
+    /// 下拉框的宽度上限：同步与变基 360，安全强推 320，推送版本不设上限。
+    var pickerWidth: CGFloat {
+        switch self {
+        case .sync, .rebase: 360
+        case .forcePush: 320
+        case .pushRevision: .infinity
         }
     }
 }
 
 // MARK: - SyncDialog
 
-/// 参数 sheet 提交后立即关闭，Git 的进度与失败由仓库窗口承接；骨架与其它操作对话框一致。
+/// 参数 sheet 提交后立即关闭，Git 的进度与失败由仓库窗口承接；骨架是 `RepositoryDialogLayout`。
 struct SyncDialog: View {
     /// 发起动作的窗口会话。
     let session: RepositorySession
@@ -86,10 +95,6 @@ struct SyncDialog: View {
     @State
     var checkingLease = false
 
-    /// 选项展开状态不持久化。
-    @State
-    private var optionsExpanded = false
-
     /// 拉取以变基代替合并，与拉取对话框共用记忆。
     @AppStorage("pullUseRebase")
     var rebase = false
@@ -110,42 +115,22 @@ struct SyncDialog: View {
     @AppStorage("pushSubmoduleMode")
     var pushSubmoduleMode = SubmodulePushMode.onDemand.rawValue
 
-    /// 头部、内容、状态、错误、折叠选项与底栏依次排列。
+    /// 对话框骨架：头部、表单、错误区、Options 与底栏。
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-
-            Grid(horizontalSpacing: 8, verticalSpacing: 10) {
-                form
-            }
-            .font(.system(size: 13))
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-
-            if [.sync, .rebase].contains(kind) {
-                MergeabilityPreview(session: session, revision: source)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
-            }
-
-            if kind == .forcePush {
-                leaseStatus
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
-            }
-
-            notices
-
-            DisclosureGroup(AppLocalization.text("dialog.options"), isExpanded: $optionsExpanded) {
-                options.padding(.vertical, 12)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 8)
-            .background(AppPalette.color("general_secondary_background_color"))
-
-            footer
+        RepositoryDialogLayout(
+            session: session,
+            title: AppLocalization.text(kind.titleKey),
+            message: help,
+            submitTitle: AppLocalization.text(kind.submitKey),
+            error: error,
+            isValid: canSubmit,
+            cancel: close,
+            submit: perform
+        ) {
+            form
+        } options: {
+            options
         }
-        .frame(width: 540)
         .onAppear(perform: prepare)
         .onChange(of: source) {
             if kind == .forcePush {
@@ -159,36 +144,6 @@ struct SyncDialog: View {
 // MARK: - Layout
 
 extension SyncDialog {
-    /// 头部：图标、标题、服务器仓库的位置与说明。
-    private var header: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Image(systemName: "point.3.connected.trianglepath.dotted")
-                .font(.system(size: 42))
-                .frame(width: 64, height: 64)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(AppLocalization.text(kind.titleKey))
-                    .font(.system(size: 14, weight: .bold))
-
-                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
-                if let repository = session.repository, repository.host != nil {
-                    Text(repository.displayPath)
-                        .font(.system(size: 13))
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Text(help)
-                    .font(.system(size: 13))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.horizontal, 32)
-        .padding(.top, 20)
-        .padding(.bottom, 12)
-    }
-
     /// 标题下的说明；同步写出当前分支名。
     private var help: String {
         guard kind == .sync else {
@@ -198,51 +153,15 @@ extension SyncDialog {
         return AppLocalization.text("sync.syncHead.help", session.status?.branch.head ?? "")
     }
 
-    /// 表单内的错误与仓库暂不可写的说明。
-    @ViewBuilder
-    private var notices: some View {
-        if !error.isEmpty {
-            Label(error, systemImage: "exclamationmark.triangle")
-                .font(.system(size: 12))
-                .textSelection(.enabled)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
-        }
-
-        // 断线或其它写操作进行中时主按钮禁用，说明原因并保留已填写的参数。
-        if !session.canWrite {
-            Label(AppLocalization.text("dialog.blocked"), systemImage: "exclamationmark.triangle")
-                .font(.system(size: 12))
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
-        }
-    }
-
-    /// 底栏：取消与执行按钮，参数不完整或仓库不可写时禁用执行。
-    private var footer: some View {
-        HStack(spacing: 8) {
-            Spacer()
-
-            Button(AppLocalization.text("action.cancel"), action: close)
-                .keyboardShortcut(.cancelAction)
-
-            Button(AppLocalization.text(kind.actionKey), action: perform)
-                .keyboardShortcut(.defaultAction)
-                .disabled(!canSubmit)
-        }
-        .padding(.horizontal, 20)
-        .frame(height: 53)
-    }
-
-    /// 勾选项说明保持正常文本色，仅禁用时随控件变灰。
-    func option(_ key: String, value: Binding<Bool>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Toggle(AppLocalization.text(key), isOn: value)
-
-            Text(AppLocalization.text(key + ".help"))
-                .font(.system(size: 11))
-                .padding(.leading, 19)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+    /// 勾选框与下一行的说明，说明的资源键是勾选框的资源键加 `.help`。
+    ///
+    /// - Parameter spacing: 勾选框到说明的间距。
+    func option(_ key: String, spacing: CGFloat = 8, value: Binding<Bool>) -> DialogFormOption {
+        DialogFormOption(
+            title: AppLocalization.text(key),
+            help: AppLocalization.text(key + ".help"),
+            spacing: spacing,
+            isOn: value
+        )
     }
 }

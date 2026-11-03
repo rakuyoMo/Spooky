@@ -329,8 +329,10 @@
 "branch.default" = "默认分支";
 "branch.create" = "新建分支";
 "branch.create.help" = "从指定版本新建本地分支。";
+"branch.create.title" = "新建分支";
 "branch.track" = "跟踪远端分支";
 "branch.track.help" = "新建跟踪所选远端分支的本地分支。";
+"branch.track.submit" = "新建";
 "branch.checkout" = "检出分支";
 "branch.checkoutNamed" = "检出 “%@”";
 "branch.delete" = "删除分支";
@@ -353,6 +355,8 @@
 "sync.pull.help" = "获取所选分支，再按指定方式合并或变基。";
 "sync.push" = "推送";
 "sync.push.help" = "将本地分支推送到指定目标。";
+"sync.pushHead" = "推送 HEAD";
+"sync.pushBranch" = "推送分支";
 "sync.publish" = "发布分支";
 "sync.publish.help" = "在所选远端创建分支。";
 "sync.merge" = "合并";

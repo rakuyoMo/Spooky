@@ -35,6 +35,7 @@ struct LFSTransferDialog: View {
                     ForEach(remotes, id: \.self) { Text($0).tag($0) }
                 }
                 .labelsHidden()
+                .buttonSizing(.flexible)
             }
         }
         .onAppear(perform: prepare)

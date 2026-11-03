@@ -5,6 +5,7 @@ import SwiftUI
 
 /// 合并、拉取、变基与同步对话框里的合并可行性预览：所选版本并入 HEAD 时会不会冲突。
 ///
+/// 放在对话框表单的最后，在上一行下方 20 pt；图标与文字这一组从输入列左侧 20 pt 开始，图标挂在输入列外侧。
 /// 所选版本一变就取消上一次检查重新计算，服务器上的慢响应不会覆盖新的选择；无法检查时不当作可以干净合并。
 struct MergeabilityPreview: View {
     /// 发起检查的窗口会话。
@@ -21,18 +22,24 @@ struct MergeabilityPreview: View {
     @State
     private var checking = false
 
-    /// 一行状态：18 pt 图标加 12 pt 说明文字，冲突的文件列在提示里。
+    /// 一行状态：18 pt 图标加 4 pt 间距再加 12 pt 说明文字，冲突的文件列在提示里。
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            if checking {
-                ProgressView()
-                    .controlSize(.small)
-                    .frame(width: 18, height: 18)
+        DialogInputColumnReader { inputColumn in
+            // 表单的行距 8 再加 12，与上一行相隔 20；表单左边距 20，这一组再从输入列往左 20
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                if checking {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: 18, height: 18)
 
-                Text(AppLocalization.text("merge.checking"))
-            } else if let preview {
-                status(of: preview)
+                    Text(AppLocalization.text("merge.checking"))
+                } else if let preview {
+                    status(of: preview)
+                }
             }
+            .padding(.top, 12)
+            .padding(.leading, inputColumn - 20 - 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .font(.system(size: 12))
         .foregroundStyle(.secondary)

@@ -329,8 +329,10 @@
 "branch.default" = "Rama predeterminada";
 "branch.create" = "Crear rama";
 "branch.create.help" = "Crea una rama local a partir de una revisión.";
+"branch.create.title" = "Crear nueva rama";
 "branch.track" = "Seguir rama remota";
 "branch.track.help" = "Crea una rama local que sigue la rama remota seleccionada.";
+"branch.track.submit" = "Crear";
 "branch.checkout" = "Hacer checkout de la rama";
 "branch.checkoutNamed" = "Hacer checkout de “%@”";
 "branch.delete" = "Eliminar rama";
@@ -353,6 +355,8 @@
 "sync.pull.help" = "Hace fetch de la rama seleccionada y, después, fusiona o hace rebase de forma explícita.";
 "sync.push" = "Hacer push";
 "sync.push.help" = "Hace push de una rama local al destino seleccionado.";
+"sync.pushHead" = "Hacer push de HEAD";
+"sync.pushBranch" = "Hacer push de la rama";
 "sync.publish" = "Publicar rama";
 "sync.publish.help" = "Crea una rama en el remoto seleccionado.";
 "sync.merge" = "Fusionar";

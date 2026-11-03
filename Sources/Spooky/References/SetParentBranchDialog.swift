@@ -47,6 +47,7 @@ struct SetParentBranchDialog: View {
                     ForEach(candidates) { Text($0.name).tag($0.id) }
                 }
                 .labelsHidden()
+                .buttonSizing(.flexible)
                 .frame(maxWidth: 350, alignment: .leading)
             }
         }

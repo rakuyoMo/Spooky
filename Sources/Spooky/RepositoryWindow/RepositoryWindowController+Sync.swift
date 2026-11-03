@@ -49,21 +49,13 @@ extension RepositoryWindowController {
     ///
     /// - Parameter preselection: 入口预选的分支或版本；为 nil 时按 HEAD 的跟踪关系预选。
     func presentSyncDialog(_ kind: SyncDialogKind, preselecting preselection: String? = nil) {
-        guard session.canWrite, let window, window.attachedSheet == nil else {
+        guard session.canWrite else {
             return
         }
 
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-        sheet.contentViewController = NSHostingController(
-            rootView: SyncDialog(session: session, kind: kind, preselection: preselection) { [weak sheet] in
-                if let sheet {
-                    window.endSheet(sheet)
-                }
-            }
-        )
-        window.beginSheet(sheet)
+        presentDialog { close in
+            SyncDialog(session: session, kind: kind, preselection: preselection, close: close)
+        }
     }
 
     /// 同步、变基、强推、推送任意版本与各快速操作的可用性；动作不属于本组时为 nil。

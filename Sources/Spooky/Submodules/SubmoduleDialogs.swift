@@ -235,6 +235,7 @@ extension SubmoduleOperationDialog {
                     }
                 }
                 .labelsHidden()
+                .buttonSizing(.flexible)
                 .disabled(all)
             }
 

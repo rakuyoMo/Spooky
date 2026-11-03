@@ -117,6 +117,7 @@ extension CreateTagDialog {
                 ForEach(keys, id: \.value) { Text(UserProfiles.title(of: $0)).tag($0.value) }
             }
             .labelsHidden()
+            .buttonSizing(.flexible)
             .disabled(!sign)
         }
     }
