@@ -469,14 +469,16 @@ extension RepositoryWindowController {
         return item
     }
 
-    /// 按当前仓库写入主机前缀，或隐藏它。
+    /// 按当前仓库与显示方式写入主机前缀，或隐藏它；主机前缀在工具栏上只出现一次：
+    /// 显示标签时由标签写出，只显示图标时由视图写出。
     private func updateHostItem(_ item: NSToolbarItem) {
         let host = showsManager ? nil : session.repository?.host
         item.label = host.map { $0 + ":" } ?? ""
         item.isHidden = host == nil
 
+        // 标签在每种显示方式下都写着主机前缀，溢出菜单拿它作菜单项的标题；视图只在不显示标签时写出
         let label = item.view as? NSTextField
-        label?.stringValue = item.label
+        label?.stringValue = window?.toolbar?.displayMode == .iconOnly ? item.label : ""
         label?.setAccessibilityLabel(session.repository?.displayPath)
     }
 
