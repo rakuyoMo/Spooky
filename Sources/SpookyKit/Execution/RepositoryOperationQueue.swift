@@ -65,11 +65,17 @@ actor RepositoryOperationQueue {
     /// 应用进程中的统一调度器。
     static let shared = RepositoryOperationQueue()
 
-    /// 保留控制、取消与 SFTP 通道所需余量。
+    /// 同一主机同时执行的命令数；加上取消通道与一个还没释放的会话，不超过 OpenSSH 默认的每条连接 10 个会话（`MaxSessions`）。
     static let maximumHostCommands = 8
+
+    /// 同一主机同时打开的取消通道数：被取消的命令在 B 上结束之前一直占着会话，取消得到确认时那个会话也可能还没释放，取消通道只开一条。
+    static let maximumHostCancellations = 1
 
     /// 主机级并发门闩。
     private var hosts: [String: OperationPermitPool] = [:]
+
+    /// 主机级取消通道门闩。
+    private var cancellations: [String: OperationPermitPool] = [:]
 
     /// 仓库级写操作门闩。
     private var writers: [RepositoryLocation: OperationPermitPool] = [:]
@@ -210,6 +216,30 @@ actor RepositoryOperationQueue {
         } catch {
             await pools.host.release()
             if ownsWrite { await pools.write.release() }
+            throw error
+        }
+    }
+
+    /// 打开取消通道期间占着主机的一个取消名额，名额用完时按到达顺序等待，任何退出路径都释放名额。
+    ///
+    /// - Parameters:
+    ///   - host: 主机别名。
+    ///   - action: 打开取消通道并等它结束的动作。
+    func performCancellation<T: Sendable>(
+        on host: String,
+        action: @Sendable () async throws -> T
+    ) async throws -> T {
+        let pool = cancellations[host] ?? OperationPermitPool(capacity: Self.maximumHostCancellations)
+        cancellations[host] = pool
+
+        try await pool.acquire()
+
+        do {
+            let result = try await action()
+            await pool.release()
+            return result
+        } catch {
+            await pool.release()
             throw error
         }
     }
