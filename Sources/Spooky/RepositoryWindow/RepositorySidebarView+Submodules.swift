@@ -10,7 +10,7 @@ extension RepositorySidebarView {
     /// Submodules 分组：按路径排列的子模块，过滤时按名称匹配；没有子模块时只有标题。
     var submoduleGroup: some View {
         Section(isExpanded: isExpanded(.submodules)) {
-            ForEach(session.submodules.items.filter { !isFiltering || SidebarRefTree.matches($0.name, filter: filterText) }) {
+            ForEach(filteredSubmodules) {
                 submoduleRow($0)
             }
         } header: {
@@ -21,6 +21,11 @@ extension RepositorySidebarView {
                         .disabled(!session.canWrite)
                 }
         }
+    }
+
+    /// 分组里列出的子模块：过滤时只留名称匹配的。
+    var filteredSubmodules: [Submodule] {
+        session.submodules.items.filter { !isFiltering || SidebarRefTree.matches($0.name, filter: filterText) }
     }
 
     /// 子模块行：单击显示详情，双击当仓库打开，右键是子模块的操作。

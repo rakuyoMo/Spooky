@@ -95,18 +95,14 @@ extension RepositorySidebarView {
     /// 未出生或分离 HEAD 时的当前分支行；过滤时同样按名称匹配。
     @ViewBuilder
     private var headRow: some View {
-        if let branch = session.status?.branch, branch.head == nil || branch.oid == nil {
-            let name = branch.head ?? AppLocalization.text("branch.detachedShort")
-
-            if !isFiltering || SidebarRefTree.matches(name, filter: filterText) {
-                SidebarBranchRow(
-                    name: name,
-                    symbol: "arrow.triangle.branch",
-                    badge: [.head],
-                    help: SidebarTooltip.head(branch: branch, host: session.repository?.host)
-                )
-                .tag("HEAD")
-            }
+        if let name = headRowName, let branch = session.status?.branch {
+            SidebarBranchRow(
+                name: name,
+                symbol: "arrow.triangle.branch",
+                badge: [.head],
+                help: SidebarTooltip.head(branch: branch, host: session.repository?.host)
+            )
+            .tag("HEAD")
         }
     }
 }
@@ -193,6 +189,21 @@ extension RepositorySidebarView {
     /// 全部本地分支，按引用名排列。
     var localReferences: [RepositoryReference] {
         session.history.branches.filter(\.isLocal)
+    }
+
+    /// 当前分支行显示的名字；不是未出生或分离 HEAD，或者被过滤掉时为 nil，不显示这一行。
+    var headRowName: String? {
+        guard let branch = session.status?.branch, branch.head == nil || branch.oid == nil else {
+            return nil
+        }
+
+        let name = branch.head ?? AppLocalization.text("branch.detachedShort")
+
+        guard !isFiltering || SidebarRefTree.matches(name, filter: filterText) else {
+            return nil
+        }
+
+        return name
     }
 
     /// 行身份换成完整引用名：置顶分组里的行去掉前缀。

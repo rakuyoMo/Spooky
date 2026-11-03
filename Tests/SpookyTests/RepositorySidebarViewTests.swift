@@ -95,7 +95,7 @@ struct RepositorySidebarViewTests {
 
 extension RepositorySidebarViewTests {
     /// 带一个提交的临时仓库与它的执行器。
-    private static func repository() async throws -> (location: RepositoryLocation, runner: GitRunner) {
+    static func repository() async throws -> (location: RepositoryLocation, runner: GitRunner) {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "spooky-sidebar 侧边栏-" + UUID().uuidString)
 
@@ -111,22 +111,8 @@ extension RepositorySidebarViewTests {
         return (location, runner)
     }
 
-    /// 让会话显示仓库，等到读出的远端个数与预期相同。
-    private static func display(
-        _ location: RepositoryLocation,
-        in session: RepositorySession,
-        remotes: Int
-    ) async throws {
-        session.display(location)
-        session.refresh(full: true)
-        await session.waitForRefresh()
-
-        let loaded = await eventually { session.history.snapshot?.remotes.count == remotes }
-        try #require(loaded)
-    }
-
     /// 把侧边栏放进不显示的窗口；窗口由调用方持有到测试结束。
-    private static func host(_ session: RepositorySession) -> NSWindow {
+    static func host(_ session: RepositorySession) -> NSWindow {
         let sidebar = RepositorySidebarView(
             session: session,
             selectionChanged: { },
@@ -147,6 +133,29 @@ extension RepositorySidebarViewTests {
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: sidebar)
         return window
+    }
+
+    /// 视图层级里的第一个大纲视图，即列表背后的表格。
+    static func outline(in view: NSView) -> NSOutlineView? {
+        if let outline = view as? NSOutlineView {
+            return outline
+        }
+
+        return view.subviews.lazy.compactMap { outline(in: $0) }.first
+    }
+
+    /// 让会话显示仓库，等到读出的远端个数与预期相同。
+    private static func display(
+        _ location: RepositoryLocation,
+        in session: RepositorySession,
+        remotes: Int
+    ) async throws {
+        session.display(location)
+        session.refresh(full: true)
+        await session.waitForRefresh()
+
+        let loaded = await eventually { session.history.snapshot?.remotes.count == remotes }
+        try #require(loaded)
     }
 
     /// 等 Working Copy 行（Workspace 标题下的第一行）的单元格左缘满足条件，返回它；超时为 nil。
@@ -172,15 +181,6 @@ extension RepositorySidebarViewTests {
         }
 
         return satisfied ? leading : nil
-    }
-
-    /// 视图层级里的第一个大纲视图，即列表背后的表格。
-    private static func outline(in view: NSView) -> NSOutlineView? {
-        if let outline = view as? NSOutlineView {
-            return outline
-        }
-
-        return view.subviews.lazy.compactMap { outline(in: $0) }.first
     }
 
     /// 每 20 ms 检查一次条件，10 s 内满足时返回 true。

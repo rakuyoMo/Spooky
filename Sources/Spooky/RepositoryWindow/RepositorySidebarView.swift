@@ -158,6 +158,11 @@ struct RepositorySidebarView: View {
             resetViewState()
             restoreListFocus()
         }
+
+        // 筛选的引用被删除或在获取时修剪后，选中原位置上接替它的行
+        .onChange(of: selectionState) { old, _ in
+            reselectVanishedRows(from: old)
+        }
     }
 
     /// Workspace 分组：工作区、历史、储藏、请求、分支整理，视图设置打开 Show Reflog 时的 Reflog，以及仓库设置。
@@ -289,7 +294,7 @@ struct RepositorySidebarView: View {
 
 extension RepositorySidebarView {
     /// 系统列表和菜单导航使用同一组选择身份。
-    private var selectedItems: Set<String> {
+    var selectedItems: Set<String> {
         if session.activeView == .workingCopy { return ["workingCopy"] }
         if session.activeView == .stashes { return ["stashes"] }
         if session.activeView == .pullRequests { return ["pullRequests"] }
@@ -322,7 +327,7 @@ extension RepositorySidebarView {
     }
 
     /// 选择存入会话，快捷键与点击保持一致。
-    private var selection: Binding<Set<String>> {
+    var selection: Binding<Set<String>> {
         Binding(
             get: { selectedItems },
             set: { value in
