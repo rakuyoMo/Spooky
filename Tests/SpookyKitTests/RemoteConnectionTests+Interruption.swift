@@ -87,4 +87,53 @@ extension RemoteConnectionTests {
             throw error
         }
     }
+
+    /// 被取消的命令在 B 上结束之前仍占着会话；同时取消占满主机名额的读取时，每个取消都得到确认，随后的写入照常执行。
+    @Test("同时取消占满主机名额的读取", .timeLimit(.minutes(2)))
+    func cancellingFullHostCapacity() async throws {
+        let fixture = try await RemoteFixture.create()
+        let connection = fixture.connection()
+
+        do {
+            // 留一处没有提交的改动，Diff 才会调用外部程序
+            _ = try await RemoteFixture.raw([
+                "/bin/sh", "-c",
+                "cd \"$1\" && echo one > file.txt && git add file.txt && git commit -q -m one && echo two > file.txt",
+                "fixture", fixture.repository,
+            ])
+            _ = try await connection.open()
+
+            // 外部 Diff 程序报告开始后一直等待，每条读取都占着一个执行名额与 B 上的一个会话
+            let reads = (0 ..< RepositoryOperationQueue.maximumHostCommands).map { _ in
+                connection.operation(["-c", "diff.external=printf ready; sleep 60; :", "diff"])
+            }
+
+            for read in reads {
+                for await event in read.events {
+                    if case .output(.standardOutput(let data)) = event, data == Data("ready".utf8) { break }
+                }
+            }
+
+            // 一起取消后马上写入：写入要等某条取消得到确认、放出执行名额才开始，这时 B 上被取消的会话可能还没释放
+            for read in reads {
+                read.cancel()
+            }
+
+            async let branch = connection.execute(["branch", "after-cancellation"])
+
+            for read in reads {
+                await #expect(throws: CancellationError.self) { try await read.value }
+            }
+
+            _ = try await branch
+            #expect(await connection.state == .connected)
+
+            await connection.close()
+            try await fixture.remove()
+        } catch {
+            await connection.close()
+            try await fixture.remove()
+            throw error
+        }
+    }
 }

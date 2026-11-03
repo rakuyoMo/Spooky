@@ -736,11 +736,17 @@ extension RemoteConnection {
 
     /// 取消通道只发送随机操作标识，包装器负责 TERM、宽限期、KILL 和退出确认。
     private func cancelRemote(_ operation: String, directory: String, wrapper: String) async -> Bool {
-        let result = try? await commandChannel([
-            wrapper, "cancel", directory, operation, String(configuration.cancellationGrace),
-        ], arguments: ["cancel"])
-        let confirmed = result?.exitCode == 0
         let host = host
+        let grace = String(configuration.cancellationGrace)
+
+        // 被取消的命令在 B 上结束之前仍占着会话，取消通道按主机限量，B 才不会拒绝开新会话
+        let result = try? await RepositoryOperationQueue.shared.performCancellation(on: host) {
+            try await self.commandChannel(
+                [wrapper, "cancel", directory, operation, grace],
+                arguments: ["cancel"]
+            )
+        }
+        let confirmed = result?.exitCode == 0
 
         // 未确认的取消要等重连核对后才能继续写入，记为错误便于事后排查
         Self.logger.log(
