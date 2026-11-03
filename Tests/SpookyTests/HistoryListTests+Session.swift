@@ -87,7 +87,7 @@ extension HistoryListTests {
         #expect(prompts.isEmpty)
 
         // 没有引用指向的提交不在任何历史里
-        let orphan = try await Self.makeOrphan(in: fixture)
+        let orphan = try await Self.makeOrphan(with: fixture.runner)
 
         fixture.session.showCommit(orphan)
         try await FileViewsTests.wait { history.lookupFailure != nil }
@@ -104,7 +104,10 @@ extension HistoryListTests {
     @Test("回到排在很后面的提交先询问")
     func revealAsksBeyondThreshold() async throws {
         let total = RepositoryHistoryState.slowLookupThreshold + 50
-        let fixture = try await Self.makeSession(commits: (0 ..< total).map { "commit \($0)" })
+        let fixture = try await Self.makeSession(
+            commits: (0 ..< total).map { "commit \($0)" },
+            createsOrphan: true
+        )
         defer { fixture.close() }
 
         let session = fixture.session
@@ -183,7 +186,7 @@ extension HistoryListTests {
         #expect(history.lookupFailure == nil)
 
         // 没有引用指向的提交不在历史里，不询问，直接说明找不到
-        let orphan = try await Self.makeOrphan(in: fixture)
+        let orphan = try #require(fixture.orphan)
 
         session.showCommit(orphan)
         try await FileViewsTests.wait { history.lookupFailure != nil && !history.isLoading }
@@ -484,6 +487,9 @@ extension HistoryListTests {
         /// 会话所在的窗口。
         let controller: RepositoryWindowController
 
+        /// 打开窗口之前另建的、没有引用指向的提交；建立时没有要求则为 nil。
+        let orphan: HistoryCommit?
+
         /// 关闭会话与窗口并删除仓库。
         @MainActor
         func close() {
@@ -494,11 +500,18 @@ extension HistoryListTests {
     }
 
     /// 建立按顺序提交的仓库，每个提交改动 file.txt，再打开窗口显示它。
-    static func makeSession(commits: [String]) async throws -> SessionFixture {
+    ///
+    /// 窗口打开后再写入仓库，文件监听会引起自动刷新，重读历史时清掉找不到的说明。
+    ///
+    /// - Parameter createsOrphan: 是否在打开窗口之前另建一个没有引用指向的提交，见 ``SessionFixture/orphan``。
+    static func makeSession(commits: [String], createsOrphan: Bool = false) async throws -> SessionFixture {
         let directory = try FileViewsTests.temporaryDirectory()
         let location = RepositoryLocation.local(path: directory.path)
         let runner = try await FileViewsTests.initializeRepository(at: location)
         try await importCommits(commits, with: runner)
+
+        // 在文件监听开始之前写入，不会引起自动刷新
+        let orphan = createsOrphan ? try await makeOrphan(with: runner) : nil
 
         // 列表里的头像不联网，全部显示首字母
         AvatarStore.shared.fetch = { _ in nil }
@@ -514,7 +527,13 @@ extension HistoryListTests {
         session.refresh(full: true)
         await session.waitForRefresh()
 
-        return SessionFixture(directory: directory, runner: runner, session: session, controller: controller)
+        return SessionFixture(
+            directory: directory,
+            runner: runner,
+            session: session,
+            controller: controller,
+            orphan: orphan
+        )
     }
 
     /// 在空仓库的 main 上按顺序写入提交，每个提交改动 file.txt，提交人日期逐个递增。
@@ -548,13 +567,20 @@ extension HistoryListTests {
     }
 
     /// 用 HEAD 的树另建一个没有引用指向的提交，它不在仓库的任何历史里。
-    static func makeOrphan(in fixture: SessionFixture) async throws -> HistoryCommit {
-        let tree = try await fixture.runner.run(["rev-parse", "HEAD^{tree}"])
-        let dangling = try await fixture.runner.run(
-            ["commit-tree", String(decoding: tree, as: UTF8.self).trimmingCharacters(in: .newlines), "-m", "dangling"]
-        )
+    static func makeOrphan(with runner: GitRunner) async throws -> HistoryCommit {
+        let tree = try await runner.run(["rev-parse", "HEAD^{tree}"])
+
+        // commit-tree 只写入提交对象，不移动任何引用
+        let dangling = try await runner.run([
+            "commit-tree",
+            String(decoding: tree, as: UTF8.self).trimmingCharacters(in: .newlines),
+            "-m",
+            "dangling",
+        ])
         let id = String(decoding: dangling, as: UTF8.self).trimmingCharacters(in: .newlines)
-        let page = try await RepositoryHistory(runner: fixture.runner).page(roots: [id], limit: 1)
+
+        // 以它为根的第一条记录就是它自己
+        let page = try await RepositoryHistory(runner: runner).page(roots: [id], limit: 1)
 
         return try #require(page.commits.first)
     }
