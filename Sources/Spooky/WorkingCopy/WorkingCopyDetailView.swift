@@ -56,9 +56,17 @@ struct WorkingCopyDetailView: View {
             .onChange(of: session.diffSide) { session.diffSideChanged() }
             .reloadsOnDiffPreferenceChange { session.loadDiff() }
         } else if let directory = session.selectedDirectory {
-            EmptyStateView(title: AppLocalization.text(directoryMessage(directory)), message: "", symbol: "folder")
+            EmptyStateView(
+                title: AppLocalization.text(directoryMessage(directory)),
+                message: "",
+                symbol: "folder"
+            )
         } else if session.selectedIDs.count > 1 {
-            EmptyStateView(title: AppLocalization.text("working.multiple"), message: "", symbol: "doc") {
+            EmptyStateView(
+                title: AppLocalization.text("working.multiple"),
+                message: "",
+                symbol: "doc"
+            ) {
                 Button(AppLocalization.text("working.discard")) { session.discard(session.selectedEntries) }
                     .disabled(!session.canDiscard(session.selectedEntries))
 
@@ -69,7 +77,11 @@ struct WorkingCopyDetailView: View {
                 .disabled(!session.canDelete(session.selectedEntries))
             }
         } else {
-            EmptyStateView(title: AppLocalization.text("detail.empty.title"), message: "", symbol: "doc")
+            EmptyStateView(
+                title: AppLocalization.text("detail.empty.title"),
+                message: "",
+                symbol: "doc"
+            )
         }
     }
 
@@ -81,7 +93,11 @@ struct WorkingCopyDetailView: View {
             ConflictWizardView(session: session, entry: entry)
                 .id(entry.path)
         } else if !entry.hasWorkingCopyDiff {
-            EmptyStateView(title: AppLocalization.text(unchangedMessage(entry)), message: "", symbol: "doc")
+            EmptyStateView(
+                title: AppLocalization.text(unchangedMessage(entry)),
+                message: "",
+                symbol: "doc"
+            )
         } else if let failure = session.diffFailure {
             FailureDetailsView(failure: failure) { session.loadDiff() }
                 .padding(20)
