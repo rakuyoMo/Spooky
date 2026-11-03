@@ -57,7 +57,10 @@ extension HistoryListTests {
     /// 回到的提交不在已加载的分页里时按 1000 条续载直到找到，排在询问的阈值以内不询问；找不到时说明原因。
     @Test("回到历史时扩大加载并选中提交")
     func revealExpandsLoading() async throws {
-        let fixture = try await Self.makeSession(commits: (0 ..< 250).map { "commit \($0)" })
+        let fixture = try await Self.makeSession(
+            commits: (0 ..< 250).map { "commit \($0)" },
+            createsOrphan: true
+        )
         defer { fixture.close() }
 
         let history = fixture.session.history
@@ -87,7 +90,7 @@ extension HistoryListTests {
         #expect(prompts.isEmpty)
 
         // 没有引用指向的提交不在任何历史里
-        let orphan = try await Self.makeOrphan(with: fixture.runner)
+        let orphan = try #require(fixture.orphan)
 
         fixture.session.showCommit(orphan)
         try await FileViewsTests.wait { history.lookupFailure != nil }
@@ -567,7 +570,7 @@ extension HistoryListTests {
     }
 
     /// 用 HEAD 的树另建一个没有引用指向的提交，它不在仓库的任何历史里。
-    static func makeOrphan(with runner: GitRunner) async throws -> HistoryCommit {
+    private static func makeOrphan(with runner: GitRunner) async throws -> HistoryCommit {
         let tree = try await runner.run(["rev-parse", "HEAD^{tree}"])
 
         // commit-tree 只写入提交对象，不移动任何引用
