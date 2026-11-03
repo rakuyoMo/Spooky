@@ -24,6 +24,9 @@ struct RemoteHistoryDetailsTests {
             let references = RepositoryReferences(runner: runner)
             let path = "目录 [*]/你好.txt"
 
+            // SFTP 上传不会建出上级目录
+            try await files.createDirectory(location.path + "/目录 [*]")
+
             // 两个分支各改一个文件后合并，合并提交的组合 Diff 没有文件
             try await files.write(Data("one\n".utf8), to: location.path + "/" + path)
             try await working.stageAll(staged: true)
