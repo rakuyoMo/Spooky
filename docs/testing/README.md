@@ -32,6 +32,8 @@ Git LFS 的测试只在 `PATH` 或 Homebrew 的目录里找得到 `git-lfs` 时�
 SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
 ```
 
+服务器测试会同时新建多条 SSH 连接；服务器往返延迟高时，这些连接可能超出 sshd 默认的 `MaxStartups` 而被断开，这时加 `--no-parallel` 串行运行。
+
 | 测试套件 | 覆盖 |
 |---|---|
 | `RemoteConnectionTests` | 连接、连接体检、断线恢复与回调 |

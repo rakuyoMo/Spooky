@@ -103,6 +103,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
   - OpenSSH with reverse Unix socket forwarding
   - `/usr/bin/perl` with the core modules `IO::Socket::UNIX`, `JSON::PP`, and `POSIX`
   - OpenSSH `8.4` or later, to enter SSH private key passphrases for Git on the server
+  - `MaxSessions` of 10 or more in the sshd configuration (the OpenSSH default)
   - No root access or background services are needed
 - Pull requests and merge requests need an account on github.com, GitLab.com, or a self-managed GitLab `9.0` or later that your Mac can reach
 - Repositories that use Git LFS need Git LFS `2.9.0` or later on the machine where the repository is, in the `PATH` that Git uses there
