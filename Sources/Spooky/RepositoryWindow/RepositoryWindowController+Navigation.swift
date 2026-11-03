@@ -103,8 +103,14 @@ extension RepositoryWindowController {
     func display(_ repository: RepositoryLocation, showing destination: RepositoryDestination) {
         isApplyingReference = true
         display(repository)
-        apply(destination)
+        let shown = apply(destination)
         isApplyingReference = false
+
+        // 留在当前视图时不记录：后退 / 前进的位置停在这一步，再按一次接着往前或往后走
+        guard shown else {
+            window?.toolbar?.validateVisibleItems()
+            return
+        }
 
         recordNavigation()
     }
@@ -224,13 +230,20 @@ extension RepositoryWindowController {
         window?.invalidateRestorableState()
     }
 
-    /// 在已显示的仓库里切到指定视图；引用、文件、远端、子模块或工作树已不存在时，由各视图按自己的规则显示空状态或回到工作区。
-    private func apply(_ destination: RepositoryDestination) {
+    /// 在已显示的仓库里切到指定视图；筛选的引用都已被删除时留在当前视图，返回 false。
+    ///
+    /// 文件、远端、子模块或工作树已不存在时，由各视图按自己的规则显示空状态或回到工作区。
+    private func apply(_ destination: RepositoryDestination) -> Bool {
         switch destination {
         case .workingCopy:
             showWorkingCopy()
 
         case .history(let references):
+            // 引用快照里一个也找不到时不换成空的历史，多选时仍在的照常筛选
+            guard references.isEmpty || !session.history.existingReferences(Set(references)).isEmpty else {
+                return false
+            }
+
             showHistory()
             session.history.selectedReferences = Set(references)
 
@@ -270,6 +283,8 @@ extension RepositoryWindowController {
         case .file(let path, let revision, let mode):
             session.showFile(path, at: revision, mode: mode)
         }
+
+        return true
     }
 
     /// 回到全部历史并选中这个提交，再换成整页详情；提交不在已加载的分页里时继续加载去找。

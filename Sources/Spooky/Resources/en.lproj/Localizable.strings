@@ -66,6 +66,7 @@
 
 
 "repositories.panel.message" = "Select an existing Git working tree.";
+"repositories.panel.prompt" = "Open Repository";
 
 "workspace.group" = "Workspace";
 
@@ -122,7 +123,7 @@
 
 
 
-"error.command" = "Git Command Failed";
+"error.command" = "Can’t execute Git command";
 
 "error.launch" = "Git Could Not Start";
 
@@ -152,7 +153,7 @@
 
 "error.details" = "Original Output";
 
-"error.noOutput" = "The command did not provide any output.";
+"error.noOutput" = "(No error message given)";
 
 "error.outputLimitHelp" = "The command exceeded the 256 MiB standard output limit or the 1 MiB standard error limit. The oversized result was not loaded.";
 "action.addRemote" = "Add Server Repository…";
@@ -169,6 +170,7 @@
 "action.find" = "Find…";
 "menu.find" = "Find";
 "remote.form.help" = "Use a host alias from your SSH configuration and an absolute path on that server.";
+"remote.form.title" = "Add Server Repository";
 "remote.host" = "Host alias:";
 "remote.path" = "Repository path:";
 "remote.checking" = "Checking connection…";
@@ -186,13 +188,37 @@
 "settings.themes" = "Themes";
 "settings.terminal" = "Terminal application:";
 "callback.editor" = "Edit Remote Text";
-"callback.credentials" = "Server Credential Request";
+"callback.username.title" = "Enter Username";
+"callback.password.title" = "Enter Password";
+"callback.username.label" = "Username:";
+"callback.password.label" = "Password:";
 "callback.saveKeychain" = "Save in this Mac’s Keychain";
-"callback.value" = "Credential";
 "error.indexLocked" = "The index is locked by another Git process. Wait for it to finish, then retry.";
 "error.terminal" = "Could Not Open Terminal";
 "error.terminalHelp" = "Check the selected terminal in Settings and its macOS Automation permission.";
-"error.exitCode" = "Exit status: %ld";
+"error.remoteConnection" = "Connection to Remote Failed";
+"error.synchronization" = "Synchronization With Remote Failed";
+"error.remoteNotFound" = "Can’t Find Remote Repository";
+"error.indexLocked.title" = "Git Index Locked by Another Git Process";
+"signing.error.title" = "Could Not Sign Data";
+"error.merge" = "Merging Failed";
+"error.rebase" = "Rebase Failed";
+"error.checkout" = "Could Not Checkout Revision";
+"sync.error.branch.title" = "Local Branch Required";
+"branch.error.diverged.title" = "Can’t Fast-Forward Branch";
+"branch.error.current.title" = "Can’t Fast-Forward Current Branch";
+"branch.error.remoteExists.title" = "Remote Branch Already Exists";
+"working.error.stale.title" = "File Changed";
+"working.error.selection.title" = "No Changes Selected";
+"working.error.file.title" = "Regular File Required";
+"working.error.path.title" = "Unsupported Path";
+"diff.error.whitespace.title" = "Selected Lines Don’t Match";
+"reference.error.name.title" = "Invalid Name";
+"reference.error.refspec.title" = "Invalid Refspec";
+"reference.error.url.title" = "Invalid Remote URL";
+"remote.error.browser.title" = "Can’t Open Remote in Browser";
+"failure.reason" = "%1$@ %2$@";
+"error.gitMessage" = "Git Error Message";
 "terminal.notInstalled" = "%@ is not installed.";
 "themes.background" = "Background";
 "themes.selection" = "Selection";
@@ -245,8 +271,8 @@
 "working.subject" = "Commit Subject";
 "working.body" = "Detailed Description";
 "working.staging" = "Staging status: %@";
-"working.list" = "View as List";
-"working.tree" = "View as Tree";
+"working.list" = "View As List";
+"working.tree" = "View As Tree";
 "working.viewMode" = "Working copy display";
 "working.staged" = "Staged";
 "working.unstaged" = "Unstaged";
@@ -272,9 +298,16 @@
 "working.discardLines" = "Discard Lines";
 "working.discard" = "Discard Changes";
 "working.discardAll" = "Discard All Changes…";
+"working.discard.title" = "Discard Local Changes";
+"working.discardAll.title" = "Discard All Local Changes";
+"working.discardAll.submit" = "Discard All Changes";
+"working.discardContent.title" = "Discard Diff Content?";
 "working.discard.message" = "Discard changes in %d files in %@. Tracked files are restored to the last commit, including staged changes, and untracked files are moved to the Trash.";
 "working.discard.remote" = "Discard changes in %d files on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are moved to the Trash on the server.";
 "working.discard.remotePermanent" = "Discard changes in %d files on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are permanently deleted on the server.";
+"working.discard.message.single" = "Discard changes in “%@” in %@. Tracked files are restored to the last commit, including staged changes, and untracked files are moved to the Trash.";
+"working.discard.remote.single" = "Discard changes in “%@” on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are moved to the Trash on the server.";
+"working.discard.remotePermanent.single" = "Discard changes in “%@” on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are permanently deleted on the server.";
 "working.discard.lines" = "Discard the selected lines in %@.";
 "working.discard.remoteLines" = "Overwrite the selected content on the server at %@.";
 "working.resolved" = "Mark as Resolved";
@@ -328,8 +361,10 @@
 "branch.default" = "Default Branch";
 "branch.create" = "Create Branch";
 "branch.create.help" = "Create a local branch from a revision.";
+"branch.create.title" = "Create New Branch";
 "branch.track" = "Track Remote Branch";
 "branch.track.help" = "Create a local branch that tracks the selected remote branch.";
+"branch.track.submit" = "Create";
 "branch.checkout" = "Check Out Branch";
 "branch.checkoutNamed" = "Check Out “%@”";
 "branch.delete" = "Delete Branch";
@@ -352,6 +387,8 @@
 "sync.pull.help" = "Fetch the selected branch, then merge or rebase explicitly.";
 "sync.push" = "Push";
 "sync.push.help" = "Push a local branch to the selected destination.";
+"sync.pushHead" = "Push HEAD";
+"sync.pushBranch" = "Push Branch";
 "sync.publish" = "Publish Branch";
 "sync.publish.help" = "Create a branch on the selected remote.";
 "sync.merge" = "Merge";
@@ -442,7 +479,7 @@
 "dialog.options" = "Options";
 "dialog.doNotAskAgain" = "Do not ask me again";
 "menu.repository" = "Repository";
-"callback.privateKey" = "Unlock Private SSH Key";
+"callback.privateKey.title" = "Enter Password for Private Key";
 "callback.privateKey.help" = "The unlocked key will be added to the SSH agent.";
 "callback.accountTokenRejected" = "The token of the account “%@” wasn’t accepted. Enter a username and password.";
 "history.unpushed" = "Not pushed";
@@ -583,6 +620,7 @@
 "conflict.applied" = "Applied Patch or Stash";
 "conflict.binary" = "Binary content isn’t shown.";
 "conflict.error.version" = "The selected files don’t have this version.";
+"conflict.error.version.title" = "Version Unavailable";
 "conflict.export" = "Export Version from “%@”…";
 "conflict.hint.merge.conflicts" = "Resolve all conflicts to complete the merge.";
 "conflict.hint.merge.resolved" = "Review the commit message, then click **Commit** to complete the merge.";
@@ -646,6 +684,7 @@
 "fileHistory.restoreInWorkingCopy" = "Restore “%@” at Revision “%@” in Working Copy…";
 "fileHistory.showHistoryOf" = "Show File History of “%@”";
 "fileHistory.restoreTitle" = "Restore Files in Working Copy";
+"fileHistory.restore.submit" = "Restore";
 "fileHistory.restore.message" = "Restore “%@” to revision %@ in %@. Staged and unstaged changes in this file will be discarded, and the file is deleted if it does not exist at that revision.";
 "fileHistory.restore.remote" = "Overwrite “%@” with revision %@ on the server at %@. Staged and unstaged changes in this file are discarded, and the file is deleted on the server if it does not exist at that revision.";
 "fileHistory.scope.author" = "Author";
@@ -736,6 +775,7 @@
 "profiles.addCurrent" = "Add User Profile “%@”…";
 "profiles.manage" = "Manage User Profiles…";
 "profiles.apply" = "Use User Profile";
+"profiles.apply.submit" = "Use Profile";
 "profiles.apply.local" = "This writes %@ to the local configuration of the repository %@.";
 "profiles.apply.remote" = "This writes %@ to the local configuration of the repository %@ on the server. Other tools on the server that commit in this repository use the same identity.";
 "commit.signOff" = "Sign Off";
@@ -770,6 +810,7 @@
 "files.untrack.multiple" = "Untrack %ld Items";
 "files.trash" = "Move to Trash";
 "files.delete" = "Delete";
+"files.delete.title" = "Delete Permanently";
 "files.delete.remote" = "Permanently delete the following on the server at %2$@?\n\n%1$@";
 "files.move.menu" = "Move…";
 "files.move" = "Move";
@@ -904,6 +945,7 @@
 "history.search.to" = "to";
 "history.reveal.notFound" = "Commit %@ isn't in this history.";
 "history.reveal.slow" = "Load More Commits";
+"history.reveal.slow.submit" = "Load";
 "history.reveal.slow.message" = "Commit %1$@ comes after the first %2$ld commits of this history. Loading the history up to it may take a while.";
 "history.subtitle" = "%@ (%ld Commits)";
 "history.subtitle.more" = "%@ (%ld Commits or more)";
@@ -1126,7 +1168,7 @@
 "rewrite.rebaseOnto.missing" = "Choose the base revisions.";
 "rewrite.rebaseOnto.newIsHead" = "The new base must not be the HEAD commit.";
 "rewrite.rebaseOnto.currentIsHead" = "The current base must not be the HEAD commit.";
-"rewrite.reword.title" = "Edit Commit Message of “%@”";
+"rewrite.reword.title" = "Edit Commit Message of Revision “%@”";
 "rewrite.reword.help" = "Replaces the message of the selected commit. The commits after it are rewritten as well.";
 "rewrite.error.changed" = "The Branch Changed Before Rewriting";
 "rewrite.error.changed.help" = "The commits on the branch no longer match what was shown. Nothing was rewritten. Refresh the history and try again.";
@@ -1174,18 +1216,18 @@
 "sync.rebaseMenu" = "Rebase…";
 "sync.forcePushMenu" = "Force Push with Lease…";
 "sync.pushToMenu" = "Push To…";
-"sync.fetch.tip" = "Fetch remotes";
-"sync.pull.tip" = "Pull a remote branch into the HEAD branch";
-"sync.push.tip" = "Push a local branch to a remote";
-"sync.sync.tip" = "Sync the HEAD branch with a remote branch";
-"sync.merge.tip" = "Merge another branch into the HEAD branch";
-"sync.rebaseHead.tip" = "Rebase the HEAD branch onto another branch";
-"sync.quickFetch.tip" = "Quick Fetch: Fetch remotes right away";
-"sync.quickPull.tip" = "Quick Pull: Pull the tracking branch";
-"sync.quickPush.tip" = "Quick Push: Push the HEAD branch to its tracking branch";
-"sync.quickSync.tip" = "Quick Sync: Sync the HEAD branch with its tracking branch";
-"sync.quickMerge.tip" = "Quick Merge: Merge the tracking branch into the HEAD branch";
-"sync.quickRebase.tip" = "Quick Rebase: Rebase the HEAD branch onto its tracking branch";
+"sync.fetch.tip" = "Fetches remotes";
+"sync.pull.tip" = "Pulls remote branches";
+"sync.push.tip" = "Pushes local branches to remotes";
+"sync.sync.tip" = "Sync HEAD with a remote branch";
+"sync.merge.tip" = "Merges another branch into the HEAD branch";
+"sync.rebaseHead.tip" = "Rebases the current HEAD branch onto another branch";
+"sync.quickFetch.tip" = "Immediately fetches remotes";
+"sync.quickPull.tip" = "Pulls the tracking remote branch";
+"sync.quickPush.tip" = "Pushes the HEAD branch to its tracking branch";
+"sync.quickSync.tip" = "Syncs the HEAD branch with its tracking branch";
+"sync.quickMerge.tip" = "Merges the tracking branch of the current HEAD branch";
+"sync.quickRebase.tip" = "Rebases the current HEAD branch onto its tracking branch";
 "sync.syncHead" = "Sync HEAD";
 "sync.syncHead.help" = "Pull new commits from the selected remote branch into “%@”, then push its local commits to the same branch.";
 "sync.rebaseHead" = "Rebase";
@@ -1265,7 +1307,9 @@
 "branch.forceDelete" = "Force Deletion";
 "branch.forceDelete.help" = "Deletes the branch even if it is not fully merged.";
 "branch.forceDelete.ask" = "These branches are not fully merged: %@. Delete them anyway?";
-"branch.forceDelete.submit" = "Force Delete";
+"branch.forceDelete.submit" = "Delete";
+"branch.error.delete" = "Could Not Delete Branch";
+"branch.error.deleteMultiple" = "Could Not Delete Branches";
 "branch.deleteRemote" = "Delete Remote Branch";
 "branch.deleteRemote.message" = "Deletes the branch “%@” on its remote.";
 "branch.deleteRemoteMultiple" = "Delete Remote Branches";
@@ -1330,6 +1374,7 @@
 "remote.pushURL.edit" = "Edit Push URL";
 "remote.pushURL.edit.message" = "Enter the URL used to push to “%@”. The connection is checked before the URL is changed.";
 "remote.pushURL.unset" = "Unset Push URL";
+"remote.pushURL.unset.submit" = "Unset";
 "remote.pushURL.unset.confirm" = "Pushing will use the fetch URL again.";
 "remote.refspec" = "Refspec:";
 "remote.refspec.addFetch" = "Add Fetch Refspec";
@@ -1514,6 +1559,7 @@
 "reflog.createBranch" = "Create New Branch from “%@”…";
 "reflog.cherryPick" = "Cherry-Pick “%@”…";
 "reflog.restore.title" = "Restore Branch";
+"reflog.restore.submit" = "Restore";
 "reflog.restore.message" = "Move the branch “%1$@” to %2$@ in %3$@? The working copy and the staging area are not changed. Commits that leave the branch can still be found in the reflog.";
 
 "appearance.system" = "Automatic";
@@ -1609,6 +1655,8 @@
 
 "externalTool.diffTool" = "Diff tool:";
 "externalTool.mergeTool" = "Merge tool:";
+"externalTool.dialog.diffTool" = "Diff Tool:";
+"externalTool.dialog.mergeTool" = "Merge Tool:";
 "externalTool.directoryDiff" = "Perform directory diff";
 "externalTool.keepBackups" = "Keep backup files for merge conflicts";
 "externalTool.noneSelected" = "None selected";
@@ -1678,9 +1726,9 @@
 "menu.newTab" = "New Tab";
 "navigation.back" = "Back";
 "navigation.forward" = "Forward";
-"navigation.back.tip" = "Show the previous view";
-"navigation.forward.tip" = "Show the next view";
-"navigation.title" = "Back/Forward";
+"navigation.back.tip" = "Navigates to the previous view";
+"navigation.forward.tip" = "Navigates to the next view";
+"navigation.title" = "Prev/Next";
 "menu.hideWindowTitle" = "Hide Window Title";
 "menu.showWindowTitle" = "Show Window Title";
 "menu.showToolbar" = "Show Toolbar";
@@ -1692,6 +1740,19 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "Terminal";
 "toolbar.quickActions" = "Quick Actions";
+"toolbar.quickActions.tip" = "Shows Quick Actions";
+"toolbar.bookmarks" = "Bookmarks";
+"toolbar.bookmarks.tip" = "Navigates to Bookmarks view";
+"toolbar.previous" = "Prev";
+"toolbar.next" = "Next";
+"toolbar.synchronize" = "Synchronize";
+"toolbar.applyStash" = "Apply";
+"toolbar.saveStash" = "Save";
+"toolbar.applyStash.tip" = "Reapplies changes to your working copy";
+"toolbar.saveStash.tip" = "Stores your local changes on the Stash";
+"toolbar.createBranch.tip" = "Create a new branch";
+"toolbar.forcePush.tip" = "Push using force-push with lease";
+"toolbar.labeledTip" = "%1$@: %2$@";
 "launch.empty" = "No Recent Repositories";
 "launch.version" = "Version %@";
 
@@ -1819,6 +1880,7 @@
 "quickActions.showRemoteSettings" = "Show Remote Settings";
 "quickActions.setCommitter" = "Set as Committer Identity";
 "quickActions.setGlobalUser" = "Set as Global User";
+"quickActions.setGlobalUser.submit" = "Set";
 "quickActions.setGlobalUser.local" = "This writes user.name and user.email to your global Git configuration on this Mac. Repositories without their own identity commit with it.";
 "quickActions.setGlobalUser.remote" = "This writes user.name and user.email to your global Git configuration on the server “%@”. Repositories on the server without their own identity commit with it.";
 "quickActions.applyTheme" = "Apply Theme";
@@ -1844,7 +1906,6 @@
 "clone.url" = "Remote URL:";
 "clone.to" = "Clone To:";
 "clone.destination" = "Clones into “%@”";
-"clone.options" = "Options";
 "clone.lfs" = "Use LFS Clone";
 "clone.submodules" = "Initialize Submodules";
 "clone.error.invalidURL" = "Invalid remote URL";
@@ -2003,6 +2064,7 @@
 "submodule.add.menu" = "Add Submodule…";
 "submodule.add.message" = "Clones a repository into an empty directory of this repository and records it as a submodule.";
 "submodule.add.submit" = "Add Submodule";
+"submodule.add.title" = "Add Submodule Repository";
 "submodule.autoUpdate" = "Auto-Update Submodules";
 "submodule.autoUpdate.always" = "Always auto-update submodules";
 "submodule.autoUpdate.message" = "The operation changed the recorded revisions of these submodules. Update them now?";
@@ -2142,7 +2204,7 @@
 "submodule.warning.synchronize" = "The remote URL in .gitmodules has changed. Use “Synchronize” to update the outdated configuration.";
 "submodule.warning.uninitialized" = "The submodule isn’t initialized. Use “Update” to initialize it now.";
 "toolbar.parentRepository" = "Parent Repository";
-"toolbar.parentRepository.tip" = "Go to the parent repository";
+"toolbar.parentRepository.tip" = "Go to parent repository";
 
 "menu.addWorktree" = "Add New Worktree…";
 "quickActions.addWorktree" = "Add Worktree";
@@ -2182,7 +2244,7 @@
 "worktree.move" = "Move Worktree";
 "worktree.move.menu" = "Move Worktree…";
 "worktree.move.message" = "Moves the worktree “%@” to another location and keeps its current state.";
-"worktree.move.submit" = "Move";
+"worktree.move.submit" = "Move Worktree";
 "worktree.noRefs" = "This repository has no commits yet.";
 "worktree.open.current" = "Open Worktree";
 "worktree.open.newTab" = "Open Worktree in New Tab";
@@ -2191,13 +2253,13 @@
 "worktree.page.general" = "General";
 "worktree.relocate" = "Relocate Worktree";
 "worktree.relocate.message" = "Choose where the directory of the worktree “%@” is now, so Git can reconnect it to this repository.";
-"worktree.relocate.submit" = "Repair";
+"worktree.relocate.submit" = "Relocate Worktree";
 "worktree.remove" = "Remove Worktree";
 "worktree.remove.force" = "Force Deletion";
 "worktree.remove.force.help" = "Deletes the worktree together with any uncommitted changes.";
 "worktree.remove.menu" = "Remove Worktree…";
 "worktree.remove.message" = "Permanently deletes the worktree “%@” and its directory.";
-"worktree.remove.submit" = "Remove";
+"worktree.remove.submit" = "Remove Worktree";
 "worktree.repair" = "Repair Worktree";
 "worktree.repair.menu" = "Repair Worktree…";
 "worktree.reveal" = "Show Worktree in Finder";
@@ -2211,10 +2273,10 @@
 
 "lfs.menu" = "LFS";
 "lfs.menu.update" = "Update";
-"lfs.menu.fetch" = "Fetch…";
-"lfs.menu.pull" = "Pull…";
-"lfs.menu.push" = "Push…";
-"lfs.menu.track" = "Track…";
+"lfs.menu.fetch" = "Fetch";
+"lfs.menu.pull" = "Pull";
+"lfs.menu.push" = "Push";
+"lfs.menu.track" = "Track";
 "lfs.fetch" = "Fetch LFS Objects";
 "lfs.pull" = "Pull LFS Objects";
 "lfs.push" = "Push LFS Objects";
@@ -2320,7 +2382,7 @@
 "hosting.error.differentUser.help" = "The token is for the user shown below. To sign in as that user, add a new account instead.";
 "hosting.error.passwordRejected" = "The Username or Password Was Rejected";
 "hosting.error.passwordRejected.help" = "The password may be wrong, the account may use two-factor authentication or sign in only through single sign-on, or the server may not allow password sign-in. Use a personal access token instead.";
-"hosting.error.clientCredentialsRequired" = "The Server Requires OAuth Application Credentials";
+"hosting.error.clientCredentialsRequired" = "OAuth Application Credentials Required";
 "hosting.error.clientCredentialsRequired.help" = "This GitLab server issues tokens only to registered OAuth applications, as GitLab 13.9 does and as GitLab 17.8 or later can be set to do. Spooky doesn’t take application credentials. Use a personal access token instead.";
 "hosting.error.passwordGrantUnsupported" = "Password Sign-In Isn’t Supported";
 "hosting.error.passwordGrantUnsupported.help" = "GitLab 19.0 and later no longer exchange a username and password for a token. Use a personal access token instead.";
@@ -2523,3 +2585,44 @@
 "review.audit.stale" = "%1$@: last updated %2$@";
 "review.audit.manual" = "%@: archived manually";
 "review.audit.restored" = "%@: restored";
+"menu.services" = "Services";
+"menu.clearRecent" = "Clear Menu";
+"menu.pasteAndMatchStyle" = "Paste and Match Style";
+"menu.delete" = "Delete";
+"menu.findNext" = "Find Next";
+"menu.findPrevious" = "Find Previous";
+"menu.useSelectionForFind" = "Use Selection for Find";
+"menu.jumpToSelection" = "Jump to Selection";
+"menu.spelling" = "Spelling and Grammar";
+"menu.showSpelling" = "Show Spelling and Grammar";
+"menu.checkDocument" = "Check Document Now";
+"menu.checkSpellingWhileTyping" = "Check Spelling While Typing";
+"menu.checkGrammar" = "Check Grammar With Spelling";
+"menu.correctSpelling" = "Correct Spelling Automatically";
+"menu.substitutions" = "Substitutions";
+"menu.showSubstitutions" = "Show Substitutions";
+"menu.smartCopyPaste" = "Smart Copy/Paste";
+"menu.smartQuotes" = "Smart Quotes";
+"menu.smartDashes" = "Smart Dashes";
+"menu.smartLinks" = "Smart Links";
+"menu.textReplacement" = "Text Replacement";
+"menu.transformations" = "Transformations";
+"menu.upperCase" = "Make Upper Case";
+"menu.lowerCase" = "Make Lower Case";
+"menu.capitalize" = "Capitalize";
+"menu.speech" = "Speech";
+"menu.startSpeaking" = "Start Speaking";
+"menu.stopSpeaking" = "Stop Speaking";
+"history.autoExpand.title" = "Auto-Expand Threshold";
+"sync.fetchMenu" = "Fetch…";
+"sync.pullMenu" = "Pull…";
+"sync.pushMenu" = "Push HEAD…";
+"sync.quickPushMenu" = "Quick Push HEAD";
+"sync.publishMenu" = "Publish Branch…";
+"branch.createMenu" = "Create New Branch…";
+"sync.mergeMenu" = "Merge…";
+"working.commitMenu" = "Commit…";
+"working.stageAllMenu" = "Stage All Local Changes";
+"working.unstageAllMenu" = "Unstage All Local Changes";
+"working.discardMenu" = "Discard Local Changes";
+"working.discardAllMenu" = "Discard All Local Changes…";

@@ -33,18 +33,11 @@ extension RepositoryWindowController {
 
     /// 改写操作的对话框与确认以 sheet 呈现；已有 sheet 时不叠加。
     func presentRewrite(_ request: RewriteRequest) {
-        guard let window, window.attachedSheet == nil, session.repository != nil else { return }
+        guard session.repository != nil else { return }
 
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-
-        let close = { [weak sheet] in
-            if let sheet { window.endSheet(sheet) }
+        presentDialog { close in
+            rewriteDialog(for: request, close: close)
         }
-
-        sheet.contentViewController = NSHostingController(rootView: rewriteDialog(for: request, close: close))
-        window.beginSheet(sheet)
     }
 }
 

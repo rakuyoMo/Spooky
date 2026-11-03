@@ -66,6 +66,7 @@
 
 
 "repositories.panel.message" = "Wählen Sie ein vorhandenes Git-Arbeitsverzeichnis aus.";
+"repositories.panel.prompt" = "Repository öffnen";
 
 "workspace.group" = "Arbeitsbereich";
 
@@ -122,7 +123,7 @@
 
 
 
-"error.command" = "Git-Befehl fehlgeschlagen";
+"error.command" = "Git-Befehl kann nicht ausgeführt werden";
 
 "error.launch" = "Git konnte nicht gestartet werden";
 
@@ -132,13 +133,13 @@
 
 "error.path" = "Repository-Pfad nicht verfügbar";
 
-"error.ownership" = "Git hat die Eigentümerschaft des Repositorys abgelehnt";
+"error.ownership" = "Repository-Eigentümer von Git abgelehnt";
 
 "error.cancelled" = "Vorgang abgebrochen";
 
 "error.outputLimit" = "Git-Ausgabe ist zu groß";
 
-"error.process" = "Kommunikation mit dem Git-Prozess fehlgeschlagen";
+"error.process" = "Git-Prozesskommunikation fehlgeschlagen";
 
 "error.version" = "Git 2.41.0 oder neuer erforderlich";
 
@@ -152,7 +153,7 @@
 
 "error.details" = "Originalausgabe";
 
-"error.noOutput" = "Der Befehl hat keine Ausgabe geliefert.";
+"error.noOutput" = "(Keine Fehlermeldung angegeben)";
 
 "error.outputLimitHelp" = "Der Befehl hat das Limit von 256 MiB für die Standardausgabe oder von 1 MiB für die Standardfehlerausgabe überschritten. Das zu große Ergebnis wurde nicht geladen.";
 "action.addRemote" = "Server-Repository hinzufügen …";
@@ -169,6 +170,7 @@
 "action.find" = "Suchen …";
 "menu.find" = "Suchen";
 "remote.form.help" = "Verwenden Sie einen Host-Alias aus Ihrer SSH-Konfiguration und einen absoluten Pfad auf diesem Server.";
+"remote.form.title" = "Server-Repository hinzufügen";
 "remote.host" = "Host-Alias:";
 "remote.path" = "Repository-Pfad:";
 "remote.checking" = "Verbindung wird geprüft …";
@@ -186,13 +188,37 @@
 "settings.themes" = "Themen";
 "settings.terminal" = "Terminal-App:";
 "callback.editor" = "Text auf dem Server bearbeiten";
-"callback.credentials" = "Anfrage nach Zugangsdaten vom Server";
+"callback.username.title" = "Benutzername eingeben";
+"callback.password.title" = "Passwort eingeben";
+"callback.username.label" = "Benutzername:";
+"callback.password.label" = "Passwort:";
 "callback.saveKeychain" = "Im Schlüsselbund dieses Mac sichern";
-"callback.value" = "Zugangsdaten";
 "error.indexLocked" = "Der Index ist durch einen anderen Git-Prozess gesperrt. Warten Sie, bis dieser beendet ist, und versuchen Sie es dann erneut.";
 "error.terminal" = "Terminal konnte nicht geöffnet werden";
 "error.terminalHelp" = "Prüfen Sie das in den Einstellungen ausgewählte Terminal und seine macOS-Berechtigung für Automation.";
-"error.exitCode" = "Exit-Status: %ld";
+"error.remoteConnection" = "Verbindung zum Remote fehlgeschlagen";
+"error.synchronization" = "Synchronisierung mit Remote fehlgeschlagen";
+"error.remoteNotFound" = "Remote-Repository nicht gefunden";
+"error.indexLocked.title" = "Git-Index von anderem Git-Prozess gesperrt";
+"signing.error.title" = "Signieren nicht möglich";
+"error.merge" = "Zusammenführen fehlgeschlagen";
+"error.rebase" = "Rebase fehlgeschlagen";
+"error.checkout" = "Revision konnte nicht ausgecheckt werden";
+"sync.error.branch.title" = "Lokaler Branch erforderlich";
+"branch.error.diverged.title" = "Branch kann nicht vorgespult werden";
+"branch.error.current.title" = "Aktueller Branch nicht vorspulbar";
+"branch.error.remoteExists.title" = "Remote-Branch existiert bereits";
+"working.error.stale.title" = "Datei geändert";
+"working.error.selection.title" = "Keine Änderungen ausgewählt";
+"working.error.file.title" = "Reguläre Datei erforderlich";
+"working.error.path.title" = "Nicht unterstützter Pfad";
+"diff.error.whitespace.title" = "Ausgewählte Zeilen passen nicht";
+"reference.error.name.title" = "Ungültiger Name";
+"reference.error.refspec.title" = "Ungültige Refspec";
+"reference.error.url.title" = "Ungültige Remote-URL";
+"remote.error.browser.title" = "Remote kann nicht im Browser geöffnet werden";
+"failure.reason" = "%1$@ %2$@";
+"error.gitMessage" = "Git-Fehlermeldung";
 "terminal.notInstalled" = "%@ ist nicht installiert.";
 "themes.background" = "Hintergrund";
 "themes.selection" = "Auswahl";
@@ -221,7 +247,7 @@
 "remoteError.pathUnavailable.help" = "Prüfen Sie, ob der absolute Pfad auf dem ausgewählten Server existiert.";
 "remoteError.pathPermission" = "Zugriff auf Serververzeichnis verweigert";
 "remoteError.pathPermission.help" = "Der SSH-Benutzer benötigt Lese- und Suchberechtigung für dieses Verzeichnis.";
-"remoteError.diskAccess" = "Serververzeichnis durch Datenschutzeinstellungen blockiert";
+"remoteError.diskAccess" = "Serververzeichnis durch Datenschutz blockiert";
 "remoteError.diskAccess.help" = "macOS auf dem Server verhindert, dass SSH-Sitzungen diesen Ordner lesen. Erlauben Sie auf dem Server unter „Freigaben“ → „Entfernte Anmeldung“ den vollständigen Festplattenzugriff für entfernte Benutzer oder verschieben Sie das Repository aus geschützten Ordnern.";
 "remoteError.notWorkingTree" = "Serverpfad ist kein Git-Arbeitsverzeichnis";
 "remoteError.notWorkingTree.help" = "Wählen Sie ein vorhandenes Git-Arbeitsverzeichnis auf dem Server aus. Prüfen Sie die Originalausgabe von Git auf Einschränkungen durch die Eigentümerschaft.";
@@ -233,7 +259,7 @@
 "remoteError.protocolFailure.help" = "Verbinden Sie erneut und prüfen Sie das Repository, bevor Sie einen Schreibvorgang wiederholen.";
 "remoteError.cancellationUnconfirmed" = "Abbruch auf dem Server nicht bestätigt";
 "remoteError.cancellationUnconfirmed.help" = "Der lokale Kanal wurde geschlossen, aber es konnte nicht bestätigt werden, dass der Serverprozess beendet wurde. Verbinden Sie erneut und prüfen Sie das Repository; der Schreibvorgang wird nicht automatisch wiederholt.";
-"remoteError.interruptedWrite" = "Unterbrochener Schreibvorgang muss geprüft werden";
+"remoteError.interruptedWrite" = "Unterbrochenen Schreibvorgang prüfen";
 "remoteError.interruptedWrite.help" = "Verbinden Sie erneut, um Branch, Arbeitsverzeichnis, Index-Sperre und Merge- oder Rebase-Status zu prüfen, bevor Sie wieder schreiben.";
 
 "working.stage" = "Stagen";
@@ -272,9 +298,16 @@
 "working.discardLines" = "Zeilen verwerfen";
 "working.discard" = "Änderungen verwerfen";
 "working.discardAll" = "Alle Änderungen verwerfen …";
+"working.discard.title" = "Lokale Änderungen verwerfen";
+"working.discardAll.title" = "Alle lokalen Änderungen verwerfen";
+"working.discardAll.submit" = "Alle Änderungen verwerfen";
+"working.discardContent.title" = "Diff-Inhalt verwerfen?";
 "working.discard.message" = "Die Änderungen an %d Dateien in %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen auf den letzten Commit zurückgesetzt, unversionierte Dateien werden in den Papierkorb gelegt.";
 "working.discard.remote" = "Die Änderungen an %d Dateien auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden in den Papierkorb des Servers gelegt.";
 "working.discard.remotePermanent" = "Die Änderungen an %d Dateien auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden auf dem Server endgültig gelöscht.";
+"working.discard.message.single" = "Die Änderungen an „%@“ in %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen auf den letzten Commit zurückgesetzt, unversionierte Dateien werden in den Papierkorb gelegt.";
+"working.discard.remote.single" = "Die Änderungen an „%@“ auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden in den Papierkorb des Servers gelegt.";
+"working.discard.remotePermanent.single" = "Die Änderungen an „%@“ auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden auf dem Server endgültig gelöscht.";
 "working.discard.lines" = "Die ausgewählten Zeilen in %@ werden verworfen.";
 "working.discard.remoteLines" = "Der ausgewählte Inhalt auf dem Server unter %@ wird überschrieben.";
 "working.resolved" = "Als aufgelöst markieren";
@@ -328,8 +361,10 @@
 "branch.default" = "Standard-Branch";
 "branch.create" = "Branch erstellen";
 "branch.create.help" = "Erstellt einen lokalen Branch aus einer Revision.";
+"branch.create.title" = "Neuen Branch erstellen";
 "branch.track" = "Remote-Branch verfolgen";
 "branch.track.help" = "Erstellt einen lokalen Branch, der den ausgewählten Remote-Branch verfolgt.";
+"branch.track.submit" = "Erstellen";
 "branch.checkout" = "Branch auschecken";
 "branch.checkoutNamed" = "„%@“ auschecken";
 "branch.delete" = "Branch löschen";
@@ -352,6 +387,8 @@
 "sync.pull.help" = "Ruft den ausgewählten Branch ab und führt dann explizit einen Merge oder Rebase aus.";
 "sync.push" = "Pushen";
 "sync.push.help" = "Pusht einen lokalen Branch zum ausgewählten Ziel.";
+"sync.pushHead" = "HEAD pushen";
+"sync.pushBranch" = "Branch pushen";
 "sync.publish" = "Branch veröffentlichen";
 "sync.publish.help" = "Erstellt einen Branch auf dem ausgewählten Remote.";
 "sync.merge" = "Zusammenführen";
@@ -442,7 +479,7 @@
 "dialog.options" = "Optionen";
 "dialog.doNotAskAgain" = "Nicht mehr fragen";
 "menu.repository" = "Repository";
-"callback.privateKey" = "Privaten SSH-Schlüssel entsperren";
+"callback.privateKey.title" = "Passwort für privaten Schlüssel eingeben";
 "callback.privateKey.help" = "Der entsperrte Schlüssel wird zum SSH-Agenten hinzugefügt.";
 "callback.accountTokenRejected" = "Das Token des Accounts „%@“ wurde nicht akzeptiert. Geben Sie Benutzername und Passwort ein.";
 "history.unpushed" = "Nicht gepusht";
@@ -583,6 +620,7 @@
 "conflict.applied" = "Angewendeter Patch oder Stash";
 "conflict.binary" = "Binäre Inhalte werden nicht angezeigt.";
 "conflict.error.version" = "Die ausgewählten Dateien haben diese Version nicht.";
+"conflict.error.version.title" = "Version nicht vorhanden";
 "conflict.export" = "Version aus „%@“ exportieren …";
 "conflict.hint.merge.conflicts" = "Lösen Sie alle Konflikte auf, um den Merge abzuschließen.";
 "conflict.hint.merge.resolved" = "Prüfen Sie die Commit-Nachricht und klicken Sie dann auf **Committen**, um den Merge abzuschließen.";
@@ -646,6 +684,7 @@
 "fileHistory.restoreInWorkingCopy" = "„%@“ in der Arbeitskopie auf Revision „%@“ wiederherstellen …";
 "fileHistory.showHistoryOf" = "Dateiverlauf von „%@“ anzeigen";
 "fileHistory.restoreTitle" = "Dateien in der Arbeitskopie wiederherstellen";
+"fileHistory.restore.submit" = "Wiederherstellen";
 "fileHistory.restore.message" = "„%@“ wird auf Revision %@ zurückgesetzt (in %@). Gestagte und nicht gestagte Änderungen dieser Datei werden verworfen; existiert die Datei in dieser Revision nicht, wird sie gelöscht.";
 "fileHistory.restore.remote" = "„%@“ wird auf dem Server mit Revision %@ überschrieben (unter %@). Gestagte und nicht gestagte Änderungen dieser Datei werden verworfen; existiert die Datei in dieser Revision nicht, wird sie auf dem Server gelöscht.";
 "fileHistory.scope.author" = "Autor";
@@ -736,6 +775,7 @@
 "profiles.addCurrent" = "Benutzerprofil „%@“ hinzufügen …";
 "profiles.manage" = "Benutzerprofile verwalten …";
 "profiles.apply" = "Benutzerprofil verwenden";
+"profiles.apply.submit" = "Profil verwenden";
 "profiles.apply.local" = "Schreibt %@ in die lokale Konfiguration des Repositorys %@.";
 "profiles.apply.remote" = "Schreibt %@ in die lokale Konfiguration des Repositorys %@ auf dem Server. Andere Werkzeuge, die auf dem Server in diesem Repository committen, verwenden dieselbe Identität.";
 "commit.signOff" = "Abzeichnen";
@@ -770,6 +810,7 @@
 "files.untrack.multiple" = "%ld Objekte nicht mehr verfolgen";
 "files.trash" = "In den Papierkorb legen";
 "files.delete" = "Löschen";
+"files.delete.title" = "Endgültig löschen";
 "files.delete.remote" = "Folgende Dateien auf dem Server unter %2$@ endgültig löschen?\n\n%1$@";
 "files.move.menu" = "Bewegen …";
 "files.move" = "Bewegen";
@@ -830,7 +871,7 @@
 "files.error.preimageHelp" = "Die folgenden Dateien wurden nach dem Erstellen des Patches geändert. Der Patch wurde daher nicht angewendet, die Arbeitskopie ist unverändert. Erstellen Sie den Patch aus den aktuellen Dateien neu oder setzen Sie die Dateien auf die Version zurück, aus der der Patch erstellt wurde.";
 "files.error.destination" = "Das Ziel existiert bereits";
 "files.error.trashUnavailable" = "Auf dem Server ist kein Papierkorb verfügbar";
-"files.error.trashedItems" = "Die Dateien können nicht aus dem Papierkorb zurückgelegt werden";
+"files.error.trashedItems" = "Zurücklegen aus dem Papierkorb nicht möglich";
 "files.doubleClick" = "Doppelklick auf Datei in der Arbeitskopie:";
 "files.doubleClick.openFile" = "Mit Standardprogramm öffnen";
 "files.doubleClick.openDiff" = "Vergleichswerkzeug öffnen";
@@ -904,6 +945,7 @@
 "history.search.to" = "und";
 "history.reveal.notFound" = "Commit %@ ist nicht in diesem Verlauf.";
 "history.reveal.slow" = "Weitere Commits laden";
+"history.reveal.slow.submit" = "Laden";
 "history.reveal.slow.message" = "Commit %1$@ liegt nach den ersten %2$ld Commits dieses Verlaufs. Das Laden des Verlaufs bis zu diesem Commit kann eine Weile dauern.";
 "history.subtitle" = "%@ (%ld Commits)";
 "history.subtitle.more" = "%@ (%ld Commits oder mehr)";
@@ -1126,9 +1168,9 @@
 "rewrite.rebaseOnto.missing" = "Wählen Sie die Basis-Revisionen.";
 "rewrite.rebaseOnto.newIsHead" = "Die neue Basis darf nicht der HEAD-Commit sein.";
 "rewrite.rebaseOnto.currentIsHead" = "Die aktuelle Basis darf nicht der HEAD-Commit sein.";
-"rewrite.reword.title" = "Commit-Nachricht von „%@“ bearbeiten";
+"rewrite.reword.title" = "Nachricht von Revision „%@“ bearbeiten";
 "rewrite.reword.help" = "Ersetzt die Nachricht des ausgewählten Commits. Die nachfolgenden Commits werden ebenfalls umgeschrieben.";
-"rewrite.error.changed" = "Der Branch hat sich vor dem Umschreiben geändert";
+"rewrite.error.changed" = "Branch vor dem Umschreiben geändert";
 "rewrite.error.changed.help" = "Die Commits des Branches entsprechen nicht mehr der Anzeige. Es wurde nichts umgeschrieben. Aktualisieren Sie den Verlauf und versuchen Sie es erneut.";
 "rewrite.error.merges" = "Merge-Commits im Bereich";
 "rewrite.error.merges.help" = "Die umzuschreibenden Commits enthalten einen Merge-Commit, der dabei eingeebnet würde. Wählen Sie Commits nach dem letzten Merge.";
@@ -1174,18 +1216,18 @@
 "sync.rebaseMenu" = "Rebase …";
 "sync.forcePushMenu" = "Force-Push mit Lease …";
 "sync.pushToMenu" = "Pushen nach …";
-"sync.fetch.tip" = "Remotes abrufen";
-"sync.pull.tip" = "Einen Remote-Branch in den HEAD-Branch pullen";
-"sync.push.tip" = "Einen lokalen Branch zu einem Remote pushen";
-"sync.sync.tip" = "Den HEAD-Branch mit einem Remote-Branch synchronisieren";
-"sync.merge.tip" = "Einen anderen Branch in den HEAD-Branch zusammenführen";
-"sync.rebaseHead.tip" = "Den HEAD-Branch auf einen anderen Branch rebasen";
-"sync.quickFetch.tip" = "Schnell abrufen: Remotes sofort abrufen";
-"sync.quickPull.tip" = "Schnell pullen: Den Tracking-Branch pullen";
-"sync.quickPush.tip" = "Schnell pushen: Den HEAD-Branch zu seinem Tracking-Branch pushen";
-"sync.quickSync.tip" = "Schnell synchronisieren: Den HEAD-Branch mit seinem Tracking-Branch synchronisieren";
-"sync.quickMerge.tip" = "Schnell zusammenführen: Den Tracking-Branch in den HEAD-Branch zusammenführen";
-"sync.quickRebase.tip" = "Schnelles Rebase: Den HEAD-Branch auf seinen Tracking-Branch rebasen";
+"sync.fetch.tip" = "Ruft Remotes ab";
+"sync.pull.tip" = "Pullt Remote-Branches";
+"sync.push.tip" = "Pusht lokale Branches zu Remotes";
+"sync.sync.tip" = "HEAD mit einem Remote-Branch synchronisieren";
+"sync.merge.tip" = "Führt einen anderen Branch in den HEAD-Branch zusammen";
+"sync.rebaseHead.tip" = "Rebaset den aktuellen HEAD-Branch auf einen anderen Branch";
+"sync.quickFetch.tip" = "Ruft Remotes sofort ab";
+"sync.quickPull.tip" = "Pullt den verfolgten Remote-Branch";
+"sync.quickPush.tip" = "Pusht den HEAD-Branch zu seinem Tracking-Branch";
+"sync.quickSync.tip" = "Synchronisiert den HEAD-Branch mit seinem Tracking-Branch";
+"sync.quickMerge.tip" = "Führt den Tracking-Branch des aktuellen HEAD-Branches zusammen";
+"sync.quickRebase.tip" = "Rebaset den aktuellen HEAD-Branch auf seinen Tracking-Branch";
 "sync.syncHead" = "HEAD synchronisieren";
 "sync.syncHead.help" = "Neue Commits aus dem ausgewählten Remote-Branch in „%@“ pullen und anschließend dessen lokale Commits zum selben Branch pushen.";
 "sync.rebaseHead" = "Rebase";
@@ -1265,7 +1307,9 @@
 "branch.forceDelete" = "Löschen erzwingen";
 "branch.forceDelete.help" = "Löscht den Branch, auch wenn er nicht vollständig gemergt ist.";
 "branch.forceDelete.ask" = "Diese Branches sind nicht vollständig gemergt: %@. Trotzdem löschen?";
-"branch.forceDelete.submit" = "Löschen erzwingen";
+"branch.forceDelete.submit" = "Löschen";
+"branch.error.delete" = "Branch kann nicht gelöscht werden";
+"branch.error.deleteMultiple" = "Branches können nicht gelöscht werden";
 "branch.deleteRemote" = "Remote-Branch löschen";
 "branch.deleteRemote.message" = "Löscht den Branch „%@“ auf seinem Remote.";
 "branch.deleteRemoteMultiple" = "Remote-Branches löschen";
@@ -1330,6 +1374,7 @@
 "remote.pushURL.edit" = "Push-URL bearbeiten";
 "remote.pushURL.edit.message" = "Gib die URL ein, die beim Pushen nach „%@“ verwendet wird. Die Verbindung wird vor der Änderung geprüft.";
 "remote.pushURL.unset" = "Push-URL entfernen";
+"remote.pushURL.unset.submit" = "Entfernen";
 "remote.pushURL.unset.confirm" = "Pushen verwendet wieder die Fetch-URL.";
 "remote.refspec" = "Refspec:";
 "remote.refspec.addFetch" = "Fetch-Refspec hinzufügen";
@@ -1498,7 +1543,7 @@
 "undo.error.inProgress.help" = "Schließen Sie zuerst den Merge, Rebase, Cherry-Pick oder Revert ab oder brechen Sie ihn ab. Es wurde nichts geändert.";
 "undo.error.conflicts" = "Das Repository hat ungelöste Konflikte";
 "undo.error.conflicts.help" = "Lösen Sie zuerst die Konflikte. Es wurde nichts geändert.";
-"undo.error.trash" = "Die Dateien können nicht aus dem Papierkorb zurückgelegt werden";
+"undo.error.trash" = "Zurücklegen aus dem Papierkorb nicht möglich";
 "undo.error.trash.help" = "Einige in den Papierkorb gelegte Dateien sind dort nicht mehr vorhanden, oder an ihrem ursprünglichen Ort liegen jetzt andere Dateien. Es wurde nichts geändert.";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
@@ -1514,6 +1559,7 @@
 "reflog.createBranch" = "Neuen Branch aus „%@“ erstellen …";
 "reflog.cherryPick" = "„%@“ per Cherry-Pick übernehmen …";
 "reflog.restore.title" = "Branch wiederherstellen";
+"reflog.restore.submit" = "Wiederherstellen";
 "reflog.restore.message" = "Den Branch „%1$@“ in %3$@ auf %2$@ verschieben? Arbeitskopie und Staging-Bereich bleiben unverändert. Commits, die den Branch verlassen, sind weiterhin im Reflog zu finden.";
 
 "appearance.system" = "Automatisch";
@@ -1609,6 +1655,8 @@
 
 "externalTool.diffTool" = "Vergleichswerkzeug:";
 "externalTool.mergeTool" = "Zusammenführungswerkzeug:";
+"externalTool.dialog.diffTool" = "Vergleichswerkzeug:";
+"externalTool.dialog.mergeTool" = "Zusammenführungswerkzeug:";
 "externalTool.directoryDiff" = "Ganze Ordner vergleichen";
 "externalTool.keepBackups" = "Sicherungsdateien bei Zusammenführungskonflikten behalten";
 "externalTool.noneSelected" = "Keines ausgewählt";
@@ -1618,7 +1666,7 @@
 "externalTool.configureMerge" = "Zusammenführungswerkzeug festlegen";
 "externalTool.configureMerge.message" = "Wählen Sie das Programm, mit dem Zusammenführungskonflikte gelöst werden.";
 "externalTool.select" = "Auswählen";
-"externalTool.error" = "Das externe Werkzeug kann nicht geöffnet werden";
+"externalTool.error" = "Externes Werkzeug kann nicht geöffnet werden";
 "externalTool.error.help" = "Prüfen Sie, ob das in den Einstellungen gewählte Vergleichs- oder Zusammenführungswerkzeug installiert ist, und versuchen Sie es erneut. Details stehen unten.";
 "externalTool.fileChanged" = "Datei wurde anderswo geändert";
 "externalTool.fileChanged.message" = "„%1$@“ in %2$@ wurde geändert, nachdem es an das externe Programm übergeben wurde. Mit der bearbeiteten Version überschreiben?";
@@ -1678,9 +1726,9 @@
 "menu.newTab" = "Neuer Tab";
 "navigation.back" = "Zurück";
 "navigation.forward" = "Vorwärts";
-"navigation.back.tip" = "Vorherige Ansicht zeigen";
-"navigation.forward.tip" = "Nächste Ansicht zeigen";
-"navigation.title" = "Zurück/Vorwärts";
+"navigation.back.tip" = "Wechselt zur vorherigen Ansicht";
+"navigation.forward.tip" = "Wechselt zur nächsten Ansicht";
+"navigation.title" = "Vorherige/Nächste";
 "menu.hideWindowTitle" = "Fenstertitel ausblenden";
 "menu.showWindowTitle" = "Fenstertitel einblenden";
 "menu.showToolbar" = "Symbolleiste einblenden";
@@ -1692,6 +1740,19 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "Terminal";
 "toolbar.quickActions" = "Schnellaktionen";
+"toolbar.quickActions.tip" = "Zeigt die Schnellaktionen";
+"toolbar.bookmarks" = "Lesezeichen";
+"toolbar.bookmarks.tip" = "Wechselt zur Lesezeichen-Ansicht";
+"toolbar.previous" = "Vorherige";
+"toolbar.next" = "Nächste";
+"toolbar.synchronize" = "Synchronisieren";
+"toolbar.applyStash" = "Anwenden";
+"toolbar.saveStash" = "Sichern";
+"toolbar.applyStash.tip" = "Wendet Änderungen erneut auf die Arbeitskopie an";
+"toolbar.saveStash.tip" = "Sichert die lokalen Änderungen im Stash";
+"toolbar.createBranch.tip" = "Einen neuen Branch erstellen";
+"toolbar.forcePush.tip" = "Mit Force-Push mit Lease pushen";
+"toolbar.labeledTip" = "%1$@: %2$@";
 "launch.empty" = "Keine zuletzt benutzten Repositorys";
 "launch.version" = "Version %@";
 
@@ -1819,6 +1880,7 @@
 "quickActions.showRemoteSettings" = "Remote-Einstellungen zeigen";
 "quickActions.setCommitter" = "Als Committer-Identität festlegen";
 "quickActions.setGlobalUser" = "Als globalen Benutzer festlegen";
+"quickActions.setGlobalUser.submit" = "Festlegen";
 "quickActions.setGlobalUser.local" = "Schreibt user.name und user.email in die globale Git-Konfiguration auf diesem Mac. Repositorys ohne eigene Identität committen damit.";
 "quickActions.setGlobalUser.remote" = "Schreibt user.name und user.email in die globale Git-Konfiguration auf dem Server „%@“. Repositorys auf dem Server ohne eigene Identität committen damit.";
 "quickActions.applyTheme" = "Thema anwenden";
@@ -1844,7 +1906,6 @@
 "clone.url" = "Entfernte URL:";
 "clone.to" = "Klonen nach:";
 "clone.destination" = "Wird nach „%@“ geklont";
-"clone.options" = "Optionen";
 "clone.lfs" = "Mit LFS klonen";
 "clone.submodules" = "Submodule initialisieren";
 "clone.error.invalidURL" = "Ungültige entfernte URL";
@@ -2003,6 +2064,7 @@
 "submodule.add.menu" = "Submodul hinzufügen…";
 "submodule.add.message" = "Klont ein Repository in ein leeres Verzeichnis dieses Repositorys und trägt es als Submodul ein.";
 "submodule.add.submit" = "Submodul hinzufügen";
+"submodule.add.title" = "Submodul-Repository hinzufügen";
 "submodule.autoUpdate" = "Submodule automatisch aktualisieren";
 "submodule.autoUpdate.always" = "Submodule immer automatisch aktualisieren";
 "submodule.autoUpdate.message" = "Der Vorgang hat die eingetragenen Revisionen dieser Submodule geändert. Jetzt aktualisieren?";
@@ -2021,7 +2083,7 @@
 "submodule.editURL" = "Submodul-URL bearbeiten";
 "submodule.editURL.message" = "Gib die URL des Submodul-Repositorys ein.";
 "submodule.editURL.submit" = "Ändern";
-"submodule.error.gitDirectoryExists" = "Für dieses Submodul gibt es bereits ein Git-Verzeichnis";
+"submodule.error.gitDirectoryExists" = "Git-Verzeichnis des Submoduls existiert bereits";
 "submodule.error.gitDirectoryExists.help" = "Verwende das vorhandene Git-Verzeichnis erneut, überschreibe es oder wähle einen anderen Pfad.";
 "submodule.error.localModifications" = "Das Submodul hat lokale Änderungen";
 "submodule.error.localModifications.help" = "Committe oder verwirf die Änderungen im Submodul oder lösche es trotzdem.";
@@ -2182,7 +2244,7 @@
 "worktree.move" = "Worktree verschieben";
 "worktree.move.menu" = "Worktree verschieben…";
 "worktree.move.message" = "Verschiebt den Worktree „%@“ an einen anderen Ort und behält seinen aktuellen Zustand.";
-"worktree.move.submit" = "Verschieben";
+"worktree.move.submit" = "Worktree verschieben";
 "worktree.noRefs" = "Dieses Repository hat noch keine Commits.";
 "worktree.open.current" = "Worktree öffnen";
 "worktree.open.newTab" = "Worktree in neuem Tab öffnen";
@@ -2191,13 +2253,13 @@
 "worktree.page.general" = "Allgemein";
 "worktree.relocate" = "Worktree neu zuordnen";
 "worktree.relocate.message" = "Wähle aus, wo sich das Verzeichnis des Worktrees „%@“ jetzt befindet, damit Git ihn wieder mit diesem Repository verbindet.";
-"worktree.relocate.submit" = "Reparieren";
+"worktree.relocate.submit" = "Worktree neu zuordnen";
 "worktree.remove" = "Worktree entfernen";
 "worktree.remove.force" = "Löschen erzwingen";
 "worktree.remove.force.help" = "Löscht den Worktree mitsamt allen nicht committeten Änderungen.";
 "worktree.remove.menu" = "Worktree entfernen…";
 "worktree.remove.message" = "Löscht den Worktree „%@“ und sein Verzeichnis endgültig.";
-"worktree.remove.submit" = "Entfernen";
+"worktree.remove.submit" = "Worktree entfernen";
 "worktree.repair" = "Worktree reparieren";
 "worktree.repair.menu" = "Worktree reparieren…";
 "worktree.reveal" = "Worktree im Finder zeigen";
@@ -2211,10 +2273,10 @@
 
 "lfs.menu" = "LFS";
 "lfs.menu.update" = "Aktualisieren";
-"lfs.menu.fetch" = "Abrufen…";
-"lfs.menu.pull" = "Pullen…";
-"lfs.menu.push" = "Pushen…";
-"lfs.menu.track" = "Verfolgen…";
+"lfs.menu.fetch" = "Abrufen";
+"lfs.menu.pull" = "Pullen";
+"lfs.menu.push" = "Pushen";
+"lfs.menu.track" = "Verfolgen";
 "lfs.fetch" = "LFS-Objekte abrufen";
 "lfs.pull" = "LFS-Objekte pullen";
 "lfs.push" = "LFS-Objekte pushen";
@@ -2523,3 +2585,44 @@
 "review.audit.stale" = "%1$@: zuletzt aktualisiert am %2$@";
 "review.audit.manual" = "%@: manuell archiviert";
 "review.audit.restored" = "%@: wiederhergestellt";
+"menu.services" = "Dienste";
+"menu.clearRecent" = "Einträge löschen";
+"menu.pasteAndMatchStyle" = "Einsetzen und Stil anpassen";
+"menu.delete" = "Löschen";
+"menu.findNext" = "Weitersuchen";
+"menu.findPrevious" = "Rückwärts suchen";
+"menu.useSelectionForFind" = "Auswahl für Suche verwenden";
+"menu.jumpToSelection" = "Auswahl anzeigen";
+"menu.spelling" = "Rechtschreibung und Grammatik";
+"menu.showSpelling" = "Rechtschreibung und Grammatik einblenden";
+"menu.checkDocument" = "Dokument jetzt prüfen";
+"menu.checkSpellingWhileTyping" = "Während der Texteingabe prüfen";
+"menu.checkGrammar" = "Grammatik mit Rechtschreibung prüfen";
+"menu.correctSpelling" = "Rechtschreibung automatisch korrigieren";
+"menu.substitutions" = "Ersetzungen";
+"menu.showSubstitutions" = "Ersetzungen einblenden";
+"menu.smartCopyPaste" = "Intelligentes Kopieren/Einsetzen";
+"menu.smartQuotes" = "Intelligente Anführungszeichen";
+"menu.smartDashes" = "Intelligente Gedankenstriche";
+"menu.smartLinks" = "Intelligente Links";
+"menu.textReplacement" = "Textersetzung";
+"menu.transformations" = "Transformationen";
+"menu.upperCase" = "Großschreibung";
+"menu.lowerCase" = "Kleinschreibung";
+"menu.capitalize" = "Großschreibung am Wortanfang";
+"menu.speech" = "Sprachausgabe";
+"menu.startSpeaking" = "Sprachausgabe starten";
+"menu.stopSpeaking" = "Sprachausgabe stoppen";
+"history.autoExpand.title" = "Schwelle für automatisches Erweitern";
+"sync.fetchMenu" = "Abrufen …";
+"sync.pullMenu" = "Pullen …";
+"sync.pushMenu" = "HEAD pushen …";
+"sync.quickPushMenu" = "HEAD schnell pushen";
+"sync.publishMenu" = "Branch veröffentlichen …";
+"branch.createMenu" = "Neuen Branch erstellen …";
+"sync.mergeMenu" = "Zusammenführen …";
+"working.commitMenu" = "Committen …";
+"working.stageAllMenu" = "Alle lokalen Änderungen stagen";
+"working.unstageAllMenu" = "Alle lokalen Änderungen unstagen";
+"working.discardMenu" = "Lokale Änderungen verwerfen";
+"working.discardAllMenu" = "Alle lokalen Änderungen verwerfen …";

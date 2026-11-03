@@ -30,16 +30,15 @@ extension SpookyApplicationController {
 
         return tasks
     }
-}
 
-// MARK: - Private
-
-extension SpookyApplicationController {
     /// 依次打开文件夹：仓库在当前窗口打开，没有窗口时新开一个；不是仓库的询问是否在这里新建。
+    ///
+    /// 从 Finder 或 Dock 交来的文件夹与 ⌘O 选好的文件夹都走这里。
     ///
     /// - Parameter urls: 本机文件夹。
     /// - Returns: 检查与打开的任务，退出时与仓库管理的拖入检查一起取消、等待。
-    private func openFolders(_ urls: [URL]) -> Task<Void, Never> {
+    @discardableResult
+    func openFolders(_ urls: [URL]) -> Task<Void, Never> {
         let request = UUID()
 
         let task = Task { [weak self] in
@@ -68,7 +67,30 @@ extension SpookyApplicationController {
         addingTasks[request] = task
         return task
     }
+}
 
+// MARK: - Open Links
+
+extension SpookyApplicationController {
+    /// 不认识或不可信的链接的提示：骨架的提示版，只有 Close。
+    ///
+    /// - Parameters:
+    ///   - url: 打不开的链接，原样写进说明。
+    ///   - close: 关掉提示。
+    static func invalidLinkNotice(for url: URL, close: @escaping () -> Void) -> DialogLayout<EmptyView, EmptyView> {
+        DialogLayout(
+            title: AppLocalization.text("link.invalid.title"),
+            message: AppLocalization.text("link.invalid.message", url.absoluteString),
+            submitTitle: AppLocalization.text("action.close"),
+            cancel: nil,
+            submit: close
+        )
+    }
+}
+
+// MARK: - Private
+
+extension SpookyApplicationController {
     /// 文件夹打不开时：不是仓库的询问是否新建，建好后在当前窗口打开；其它错误以 sheet 显示在当前窗口。没有窗口时新开一个。
     ///
     /// - Parameters:
@@ -101,34 +123,9 @@ extension SpookyApplicationController {
     private func confirmCreatingRepository(in directory: URL) -> Bool {
         var creates = false
 
-        let controller = NSHostingController(
-            rootView: NoRepositoryFoundDialog(
-                directory: directory,
-                close: { NSApp.stopModal() },
-                create: { creates = true }
-            )
-        )
-        controller.sizingOptions = .preferredContentSize
-
-        let window = NSWindow(contentViewController: controller)
-        window.styleMask = [.titled, .closable]
-        window.title = ""
-        window.tabbingMode = .disallowed
-        window.isReleasedWhenClosed = false
-        window.center()
-
-        // 点标题栏的关闭按钮时窗口自己关掉，模态循环要另外结束
-        let closing = NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification,
-            object: window,
-            queue: .main
-        ) { _ in
-            MainActor.assumeIsolated { NSApp.stopModal() }
+        DialogWindow.present(on: nil) { close in
+            NoRepositoryFoundDialog(directory: directory, close: close, create: { creates = true })
         }
-
-        _ = NSApp.runModal(for: window)
-        NotificationCenter.default.removeObserver(closing)
-        window.orderOut(nil)
 
         return creates
     }

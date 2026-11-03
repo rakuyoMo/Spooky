@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 // MARK: - Developer
 
@@ -109,22 +110,37 @@ extension SpookyApplicationController {
 // MARK: - Helpers
 
 extension SpookyApplicationController {
-    /// Reset User Defaults 的确认：Reset 是默认按钮；有窗口时以 sheet 显示，否则以模态窗口显示。
+    /// Reset User Defaults 的确认：骨架的确认版，Reset 是主按钮；有窗口时挂成 sheet，否则是应用级的模态对话框。
     ///
-    /// - Parameter window: 显示 sheet 的窗口。
+    /// - Parameter window: 挂 sheet 的窗口。
     /// - Returns: 用户选了 Reset。
     static func confirmResetUserDefaults(in window: NSWindow?) async -> Bool {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = AppLocalization.text("developer.resetUserDefaults.title")
-        alert.informativeText = AppLocalization.text("developer.resetUserDefaults.message")
-        alert.addButton(withTitle: AppLocalization.text("developer.resetUserDefaults.confirm"))
-        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
+        await withCheckedContinuation { continuation in
+            var answered = false
 
-        guard let window else {
-            return alert.runModal() == .alertFirstButtonReturn
+            let answer = { (confirmed: Bool) in
+                guard !answered else { return }
+
+                answered = true
+                continuation.resume(returning: confirmed)
+            }
+
+            DialogWindow.present(on: window) { close in
+                ConfirmationDialog(
+                    title: AppLocalization.text("developer.resetUserDefaults.title"),
+                    message: AppLocalization.text("developer.resetUserDefaults.message"),
+                    submitTitle: AppLocalization.text("developer.resetUserDefaults.confirm"),
+                    close: close,
+                    cancel: { answer(false) }
+                ) { _ in
+                    answer(true)
+                }
+            }
+
+            // 应用级的模态对话框关闭后才回到这里；用标题栏的关闭按钮关掉时没有选任何按钮，按取消处理
+            if window == nil {
+                answer(false)
+            }
         }
-
-        return await alert.beginSheetModal(for: window) == .alertFirstButtonReturn
     }
 }

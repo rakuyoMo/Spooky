@@ -6,14 +6,10 @@ import SwiftUI
 
 /// 仓库设置 General 段的 Local Folder 一行，只有服务器仓库有：B 上的仓库目录在这台 Mac 上对应的本机目录，自动找不到挂载时手动指定。
 ///
-/// Choose… 要连着 B，选定目录后经标记文件核对一次，通过才保存；Clear 删掉记录，恢复自动查找。
+/// Choose… 要连着 B，选定目录后经标记文件核对一次，通过才保存，没通过时以提示版说明；Clear 删掉记录，恢复自动查找。
 struct RepositoryLocalFolderRow: View {
     /// 所在窗口的会话。
     let session: RepositorySession
-
-    /// 核对没有通过的目录，用来说明它不是这个仓库；没有时不显示提示。
-    @State
-    private var rejected: URL?
 
     /// 指定的目录（主目录缩写成 `~`）或 “Not set”，悬停时出现 Choose… 与 Clear。
     var body: some View {
@@ -26,14 +22,26 @@ struct RepositoryLocalFolderRow: View {
             small: true,
             actions: actions(folder: folder)
         )
-        .alert(
-            AppLocalization.text("repositorySettings.localFolder.rejected"),
-            isPresented: Binding(
-                get: { rejected != nil },
-                set: { if !$0 { rejected = nil } }
+    }
+
+    /// 核对没有通过时，以提示版挂在仓库窗口上说明选的目录不是 B 上的这个仓库；只有 Close。
+    ///
+    /// - Parameter folder: 没有通过核对的目录。
+    func showRejection(of folder: URL) {
+        let message = AppLocalization.text(
+            "repositorySettings.localFolder.rejected.message",
+            HomePath.abbreviated(folder.path),
+            session.repository?.displayPath ?? ""
+        )
+
+        DialogWindow.present(on: session.presentingWindow) { close in
+            DialogLayout(
+                title: AppLocalization.text("repositorySettings.localFolder.rejected"),
+                message: message,
+                submitTitle: AppLocalization.text("action.close"),
+                cancel: nil,
+                submit: close
             )
-        ) { } message: {
-            Text(rejectedMessage)
         }
     }
 }
@@ -41,15 +49,6 @@ struct RepositoryLocalFolderRow: View {
 // MARK: - Private
 
 extension RepositoryLocalFolderRow {
-    /// 核对失败的说明：选的目录不是 B 上的这个仓库。
-    private var rejectedMessage: String {
-        AppLocalization.text(
-            "repositorySettings.localFolder.rejected.message",
-            rejected.map { HomePath.abbreviated($0.path) } ?? "",
-            session.repository?.displayPath ?? ""
-        )
-    }
-
     /// Choose… 在没连上 B 时禁用；指定了目录时另有 Clear。
     private func actions(folder: URL?) -> [RemoteSettingAction] {
         let choose = RemoteSettingAction(
@@ -87,7 +86,7 @@ extension RepositoryLocalFolderRow {
 
             Task {
                 if await !session.chooseLocalFolder(url) {
-                    rejected = url
+                    showRejection(of: url)
                 }
             }
         }

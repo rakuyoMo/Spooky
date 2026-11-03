@@ -112,7 +112,6 @@ struct BranchesReviewListView: View {
                 message: "",
                 symbol: "arrow.triangle.branch"
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List(selection: Bindable(session.branchesReview).selectedIDs) {
                 ForEach(items) { item in

@@ -19,9 +19,9 @@ extension UndoSessionTests {
         let untracked = fixture.directory.appending(path: "未跟踪 ' [x].txt")
         var confirmations = 0
 
-        session.onConfirm = { _, _, action, _ in
+        session.onConfirm = { request in
             confirmations += 1
-            action()
+            request.action()
         }
 
         try fixture.write("changed\n")
@@ -62,7 +62,7 @@ extension UndoSessionTests {
         let session = fixture.session
         defer { Self.emptyTrash(of: session) }
 
-        session.onConfirm = { title, _, _, _ in Issue.record("不应弹出确认：\(title)") }
+        session.onConfirm = { Issue.record("不应弹出确认：\($0.title)") }
 
         try await fixture.perform { session.delete([StatusEntry(kind: .unchanged, path: "a b.txt")]) }
         #expect(!FileManager.default.fileExists(atPath: fixture.directory.appending(path: "a b.txt").path))

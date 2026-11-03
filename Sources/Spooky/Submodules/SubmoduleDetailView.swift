@@ -44,7 +44,6 @@ struct SubmoduleDetailView: View {
                     message: AppLocalization.text("submodule.missing.message", session.submodules.selectedPath ?? ""),
                     symbol: "shippingbox"
                 )
-                .frame(maxHeight: .infinity)
             } else {
                 ProgressView()
                     .frame(maxHeight: .infinity)
@@ -109,25 +108,21 @@ extension SubmoduleDetailView {
 
     /// 配置不完整的子模块：空状态与修复、删除两个按钮。
     private func invalidState(_ submodule: Submodule) -> some View {
-        VStack(spacing: 16) {
-            EmptyStateView(
-                title: AppLocalization.text("submodule.invalid"),
-                message: AppLocalization.text("submodule.invalid.message"),
-                symbol: "exclamationmark.triangle"
-            )
+        EmptyStateView(
+            title: AppLocalization.text("submodule.invalid"),
+            message: AppLocalization.text("submodule.invalid.message"),
+            symbol: "exclamationmark.triangle"
+        ) {
+            EmptyStateButton(AppLocalization.text("submodule.repair.submit")) {
+                session.requestSubmodule(.repair(submodule))
+            }
+            .disabled(!session.canWrite)
 
-            HStack(spacing: 8) {
-                Button(AppLocalization.text("submodule.repair.submit")) {
-                    session.requestSubmodule(.repair(submodule))
-                }
-
-                Button(AppLocalization.text("submodule.delete.submit")) {
-                    session.requestSubmodule(.delete(submodule))
-                }
+            EmptyStateButton(AppLocalization.text("submodule.delete.submit")) {
+                session.requestSubmodule(.delete(submodule))
             }
             .disabled(!session.canWrite)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

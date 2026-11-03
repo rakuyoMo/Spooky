@@ -44,6 +44,9 @@ extension RepositoryWindowController {
         timelineItem.holdingPriority = .init(475)
         timelineItem.canCollapse = false
 
+        // 列表不延伸到工具栏下面，免得列表的底色与分隔线穿过工具栏上的项
+        timelineItem.allowsFullHeightLayout = false
+
         let detail = NSHostingController(
             rootView: FileHistoryDetailView(session: session, state: session.fileHistory)
         )

@@ -139,11 +139,11 @@ final class RepositorySession {
     /// 窗口询问注释行的处理方式；参数为去掉注释后信息是否为空，用户取消时不回调。
     var onCommentPrompt: ((Bool, @escaping (CommentHandling) -> Void) -> Void)? = nil
 
-    /// 窗口负责确认并在 sheet 关闭后执行操作。
-    var onConfirm: ((String, String, @escaping () -> Void, (() -> Void)?) -> Void)? = nil
+    /// 窗口以确认版对话框请用户确认，对话框关闭后才执行操作；带 “Do not ask me again” 时勾选并确认由窗口关掉这项确认。
+    var onConfirm: ((ConfirmationRequest) -> Void)? = nil
 
-    /// 窗口负责服务器仓库的确认，确认框里可以勾选不再提醒；勾选并确认后由窗口关掉这项确认。
-    var onServerConfirm: ((ServerConfirmation, String, String, @escaping () -> Void) -> Void)? = nil
+    /// 合并没有暂存的改动时，窗口询问是建空合并提交还是中止合并；参数依次是提交与中止的动作。
+    var onEmptyMergePrompt: ((@escaping () -> Void, @escaping () -> Void) -> Void)? = nil
 
     /// 窗口在重连核对完成后向用户报告中断写入的结果；没有新的核对时表示写入没有开始。
     var onRecovery: ((InterruptedWrite, RemoteRecoverySnapshot?) -> Void)? = nil
@@ -332,9 +332,7 @@ final class RepositorySession {
         }
 
         // 回到的提交排得很靠后时，由窗口询问是否继续加载
-        history.onSlowLookup = { [weak self] title, message, action in
-            self?.onConfirm?(title, message, action, nil)
-        }
+        history.onSlowLookup = { [weak self] in self?.onConfirm?($0) }
     }
 
     /// 切换工作区；同一仓库保留选区和视图，切回打开过的仓库时恢复它的视图状态。

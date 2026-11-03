@@ -28,24 +28,18 @@ extension RepositoryWindowController {
 
     /// 导出、保存补丁与比较版本的对话框以 sheet 呈现。
     func presentRevisionDialog(_ request: RevisionRequest) {
-        guard let window, window.attachedSheet == nil, session.repository != nil else {
+        guard session.repository != nil else {
             return
         }
 
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-        sheet.contentViewController = NSHostingController(
-            rootView: RevisionDialog(
+        presentDialog { close in
+            RevisionDialog(
                 session: session,
                 request: request,
-                repository: session.repository
-            ) { [weak sheet] in
-                if let sheet { window.endSheet(sheet) }
-            }
-        )
-
-        window.beginSheet(sheet)
+                repository: session.repository,
+                close: close
+            )
+        }
     }
 
     /// 导出、比较与签名校验动作的可用性；动作不属于本组时为 nil。

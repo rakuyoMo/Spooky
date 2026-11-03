@@ -17,7 +17,6 @@ struct CommitPageDiffView: View {
             .reloadsOnDiffPreferenceChange { history.reloadDiffs() }
         } else {
             EmptyStateView(title: AppLocalization.text("detail.empty.title"), message: "", symbol: "doc")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
@@ -88,7 +87,6 @@ struct CommitDetailView: View {
             HistoryMultipleSelectionView(session: session)
         } else {
             EmptyStateView(title: AppLocalization.text("history.noSelection"), message: "", symbol: "doc.text")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 

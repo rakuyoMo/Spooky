@@ -4,108 +4,88 @@ import SpookyKit
 // MARK: - Alerts
 
 extension RepositoryWindowController {
-    /// 把错误原文放入可滚动、可复制的附件，恢复操作在 sheet 结束后执行。
+    /// 以 Git 错误框挂成 sheet；窗口已有 sheet 时排在它后面。拉大后的尺寸记在 `GitErrorDialog` 名下。
     func showFailure(_ failure: AppFailure) {
         guard let window else {
             return
         }
 
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = failure.title
-        alert.informativeText = failure.message + "\n\n" + failure.context
-        alert.addButton(withTitle: AppLocalization.text("action.close"))
-        alert.addButton(withTitle: AppLocalization.text(
-            failure.isOpeningFailure ? "action.chooseAnother" : "action.refresh"
-        ))
-
-        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 400, height: 175))
-        scroll.hasVerticalScroller = true
-        scroll.borderType = .bezelBorder
-
-        let text = NSTextView(frame: scroll.bounds)
-        text.isEditable = false
-        text.isSelectable = true
-        text.isRichText = false
-        text.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
-        text.textColor = .secondaryLabelColor
-        text.textContainerInset = NSSize(width: 8, height: 8)
-        text.autoresizingMask = [.width]
-        text.textContainer?.widthTracksTextView = true
-        text.string = failure.details
-        text.setAccessibilityLabel(AppLocalization.text("error.details"))
-        scroll.documentView = text
-        alert.accessoryView = scroll
-
-        alert.beginSheetModal(for: window) { [weak self] response in
-            guard let self, response == .alertSecondButtonReturn else {
-                return
-            }
-
-            if failure.isOpeningFailure {
-                if failure.isRemoteFailure { addRemoteRepository() }
-                else { chooseRepository() }
-            } else {
-                refreshRepository()
-            }
+        DialogWindow.present(on: window, autosaveName: "GitErrorDialog") { [weak self] close in
+            GitErrorDialog(
+                failure: failure,
+                close: close,
+                chooseAnother: failure.isOpeningFailure ? { self?.chooseAnotherRepository(after: failure) } : nil
+            )
         }
     }
 
-    /// 确认框，确认按钮与标题相同；服务器仓库的确认可以勾选 “Do not ask me again”，勾选并确认后关掉这项确认。
+    /// 以确认版对话框挂成 sheet 请用户确认；窗口已有 sheet 时不叠加。
+    func showConfirmation(_ request: ConfirmationRequest) {
+        presentDialog { close in
+            ConfirmationDialog(request: request, close: close)
+        }
+    }
+
+    /// 合并没有暂存的改动时询问建空合并提交还是中止合并：系统提示框，两个按钮都会执行动作。
     ///
     /// - Parameters:
-    ///   - title: 确认框与确认按钮的标题。
-    ///   - message: 写明影响范围的说明。
-    ///   - confirmation: 服务器仓库的确认种类；为 nil 时没有勾选框。
-    ///   - action: 确认后执行，sheet 已经结束。
-    ///   - abort: 第二个按钮改为中止时执行的操作；为 nil 时第二个按钮是取消。
-    func showConfirmation(
-        title: String,
-        message: String,
-        confirmation: ServerConfirmation?,
-        action: @escaping () -> Void,
-        abort: (() -> Void)?
-    ) {
+    ///   - commit: 建空合并提交，sheet 已经结束。
+    ///   - abort: 中止合并，sheet 已经结束。
+    func showEmptyMergePrompt(commit: @escaping () -> Void, abort: @escaping () -> Void) {
         guard let window, window.attachedSheet == nil else { return }
 
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = title
-        alert.informativeText = message
-        alert.addButton(withTitle: title)
-        alert.addButton(withTitle: AppLocalization.text(abort == nil ? "action.cancel" : "working.abort"))
+        alert.messageText = AppLocalization.text("working.emptyMerge")
+        alert.informativeText = AppLocalization.text("working.emptyMerge.message")
+        alert.addButton(withTitle: AppLocalization.text("working.emptyMerge"))
+        alert.addButton(withTitle: AppLocalization.text("working.abort"))
 
-        if confirmation != nil {
-            alert.showsSuppressionButton = true
-            alert.suppressionButton?.title = AppLocalization.text("dialog.doNotAskAgain")
-        }
-
-        // Sheet 已结束后才开始写入，错误与进度由仓库视图承接；取消时勾选不生效。
+        // Sheet 已结束后才开始写入，错误与进度由仓库视图承接
         alert.beginSheetModal(for: window) { response in
             if response == .alertFirstButtonReturn {
-                if alert.suppressionButton?.state == .on { confirmation?.isEnabled = false }
-
-                action()
+                commit()
             } else if response == .alertSecondButtonReturn {
-                abort?()
+                abort()
             }
         }
     }
 
-    /// 重连核对后报告中断写入的结果：HEAD 是否变化与仓库状态；写入没有被重试。
+    /// 重连核对后以提示版报告中断写入的结果：HEAD 是否变化与仓库状态；写入没有被重试。
     func showRecovery(_ write: InterruptedWrite, snapshot: RemoteRecoverySnapshot?) {
         guard let window else {
             return
         }
 
-        let alert = NSAlert()
-        alert.alertStyle = .informational
-        alert.messageText = AppLocalization.text("recovery.title")
-        alert.informativeText = Self.recoveryMessage(write, snapshot: snapshot)
+        let message = Self.recoveryMessage(write, snapshot: snapshot)
             + (session.repository.map { "\n\n" + AppLocalization.text("failure.location", $0.displayPath) } ?? "")
-        alert.addButton(withTitle: AppLocalization.text("action.close"))
 
-        // 中断时的错误 sheet 可能仍未关闭，AppKit 会在它结束后依次显示。
-        alert.beginSheetModal(for: window)
+        // 中断时的错误框可能还开着，AppKit 会在它结束后再挂上这一个
+        DialogWindow.present(on: window) { close in
+            DialogLayout(
+                title: AppLocalization.text("recovery.title"),
+                message: message,
+                submitTitle: AppLocalization.text("action.close"),
+                cancel: nil,
+                submit: close
+            )
+        }
+    }
+}
+
+// MARK: - Private
+
+extension RepositoryWindowController {
+    /// 打开失败后重新选择：服务器仓库重新打开添加服务器的表单，本机仓库重新选目录。
+    ///
+    /// 两者都等错误框从窗口上收起后再打开：目录面板以模态运行，否则会一直留在面板后面；表单在窗口已有 sheet 时不会挂上。
+    private func chooseAnotherRepository(after failure: AppFailure) {
+        Task { [weak self] in
+            if failure.isRemoteFailure {
+                self?.addRemoteRepository()
+            } else {
+                self?.coordinator?.openRepositoryPanel()
+            }
+        }
     }
 }

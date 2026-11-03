@@ -45,7 +45,7 @@ struct RemoteValueDialog: View {
 
     /// “Remote URL:” 或 “Refspec:” 一个输入框。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(keys.title),
             message: AppLocalization.text(keys.message, remote),
@@ -55,7 +55,7 @@ struct RemoteValueDialog: View {
             cancel: close,
             submit: submit
         ) {
-            ReferenceDialogRows.row(AppLocalization.text(isURL ? "remote.url" : "remote.refspec")) {
+            RepositoryDialogRows.row(AppLocalization.text(isURL ? "remote.url" : "remote.refspec")) {
                 TextField("", text: $value, prompt: isURL ? Text(verbatim: "ssh://example.com/repo.git") : nil)
                     .accessibilityIdentifier("remote-value")
             }
@@ -123,7 +123,7 @@ extension RemoteValueDialog {
                 original = (push ? configuration?.pushURLs.first : configuration?.url) ?? ""
                 value = original
             } catch {
-                self.error = ReferenceDialogRows.validationMessage(error, in: session)
+                self.error = RepositoryDialogRows.validationMessage(error, in: session)
             }
         }
     }
@@ -151,7 +151,7 @@ extension RemoteValueDialog {
             isValid = true
         } catch {
             if !Task.isCancelled {
-                self.error = ReferenceDialogRows.validationMessage(error, in: session)
+                self.error = RepositoryDialogRows.validationMessage(error, in: session)
             }
         }
     }

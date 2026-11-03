@@ -39,19 +39,19 @@ struct DialogFormRowAccessibilityTests {
     }
 
     /// 引用对话框的表格行与骨架的表单行相同。
-    @Test("ReferenceDialogRows.row 读出标签与值")
+    @Test("RepositoryDialogRows.row 读出标签与值")
     func referenceRow() throws {
         let elements = AccessibilityProbe.elements(until: Self.hasControls) {
             Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 8) {
-                ReferenceDialogRows.row("Merge Strategy:") {
+                RepositoryDialogRows.row("Merge Strategy:") {
                     Text(verbatim: "Merge Commit")
                 }
 
-                ReferenceDialogRows.row("Project:") {
+                RepositoryDialogRows.row("Project:") {
                     TextField("", text: .constant("group/project"))
                 }
 
-                ReferenceDialogRows.row("Code:") {
+                RepositoryDialogRows.row("Code:") {
                     VStack {
                         Text(verbatim: "ABCD-1234")
                         Button("Open Page") { }

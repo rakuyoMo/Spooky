@@ -28,7 +28,7 @@ extension RepositorySync {
             let status = try await runner.status()
 
             guard status.entries.isEmpty else {
-                throw RepositorySyncError.dirtyWorkingCopy
+                throw RepositorySyncError.dirtyWorkingCopy(rebase: rebase)
             }
 
             let references = RepositoryReferences(runner: runner)

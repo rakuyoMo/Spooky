@@ -20,9 +20,9 @@ struct LFSTransferDialog: View {
 
     /// 一个 “Remote:” 下拉。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
-            title: transfer.title,
+            title: submitTitle,
             message: message,
             submitTitle: submitTitle,
             error: remotes.isEmpty ? AppLocalization.text("sync.noRemotes") : "",
@@ -30,11 +30,12 @@ struct LFSTransferDialog: View {
             cancel: close,
             submit: submit
         ) {
-            ReferenceDialogRows.row(AppLocalization.text("sync.remote")) {
+            RepositoryDialogRows.row(AppLocalization.text("sync.remote")) {
                 Picker("", selection: $remote) {
                     ForEach(remotes, id: \.self) { Text($0).tag($0) }
                 }
                 .labelsHidden()
+                .buttonSizing(.flexible)
             }
         }
         .onAppear(perform: prepare)
@@ -58,7 +59,7 @@ extension LFSTransferDialog {
         }
     }
 
-    /// 主按钮标题。
+    /// 标题，也是主按钮的标题。
     private var submitTitle: String {
         switch transfer {
         case .fetch: AppLocalization.text("sync.fetch")

@@ -39,7 +39,6 @@ struct PullRequestDetailView: View {
                     message: "",
                     symbol: "arrow.triangle.pull"
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(minWidth: 420)
@@ -95,17 +94,20 @@ extension PullRequestDetailView {
 
         case .commits, .changeset:
             if state.needsFetch {
-                VStack(spacing: 12) {
-                    EmptyStateView(
-                        title: AppLocalization.text("pullRequests.fetch.title"),
-                        message: AppLocalization.text("pullRequests.fetch.message", request.id.reference, state.remote ?? ""),
-                        symbol: "arrow.down.circle"
-                    )
-
-                    Button(AppLocalization.text("pullRequests.fetch")) { session.fetchPullRequestHead(request) }
-                        .disabled(!session.canWrite)
+                EmptyStateView(
+                    title: AppLocalization.text("pullRequests.fetch.title"),
+                    message: AppLocalization.text(
+                        "pullRequests.fetch.message",
+                        request.id.reference,
+                        state.remote ?? ""
+                    ),
+                    symbol: "arrow.down.circle"
+                ) {
+                    EmptyStateButton(AppLocalization.text("pullRequests.fetch")) {
+                        session.fetchPullRequestHead(request)
+                    }
+                    .disabled(!session.canWrite)
                 }
-                .padding(20)
             } else {
                 VStack(spacing: 0) {
                     if state.page == .commits {

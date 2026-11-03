@@ -64,7 +64,7 @@ enum FailureKind: String, CaseIterable {
 
 // MARK: - AppFailure
 
-/// 错误 sheet 与内嵌错误共用的本地化说明、类别、仓库位置和可复制原文。
+/// Git 错误框与内嵌错误共用的本地化标题、说明、类别、仓库位置和可复制原文。
 struct AppFailure: Identifiable {
     /// 每次错误的独立标识。
     let id = UUID()
@@ -72,10 +72,10 @@ struct AppFailure: Identifiable {
     /// 用户可理解的错误类别。
     let kind: FailureKind
 
-    /// 错误标题。
+    /// 错误标题，是简短的名词短语。
     let title: String
 
-    /// 用户可采取的恢复步骤。
+    /// 说明：先写原因（标题已说清时没有这一句），再接用户可采取的恢复步骤。
     var message: String
 
     /// Git 输出或进程错误原文。
@@ -90,7 +90,7 @@ struct AppFailure: Identifiable {
     /// 服务器失败的恢复入口仍打开服务器表单。
     let isRemoteFailure: Bool
 
-    /// 类别与仓库位置两行说明，错误 sheet 和内嵌错误使用同一格式。
+    /// 类别与仓库位置两行说明，Git 错误框和内嵌错误使用同一格式。
     var context: String {
         [
             AppLocalization.text("failure.category", AppLocalization.text("failure.kind." + kind.rawValue)),
@@ -197,25 +197,32 @@ struct AppFailure: Identifiable {
         }
 
         self.kind = kind
-        title = AppLocalization.text(key)
 
-        // 写操作失败后仓库状态可能已部分变化，恢复说明引导用户看原文后刷新核对。
+        // 原因写成一整句的错误另有简短的标题，原因写在说明里
+        let headline = Self.headline(of: key, for: error)
+        title = AppLocalization.text(headline.title)
+
+        // 写操作失败后仓库状态可能已部分变化，恢复说明引导用户看原文后刷新核对；有原因时恢复说明接在原因之后，同在一段。
         let fallbackKey = opening ? "error.openHelp" : (writing ? "error.writeHelp" : "error.refreshHelp")
         let recovery = AppLocalization.text(recoveryKey ?? fallbackKey)
+        let reason = headline.cause.map { cause in
+            AppLocalization.text("failure.reason", AppLocalization.text(cause), recovery)
+        } ?? recovery
+
         message = exceededOutputLimit
-            ? AppLocalization.text("error.outputLimitHelp") + "\n\n" + recovery
-            : recovery
+            ? AppLocalization.text("error.outputLimitHelp") + "\n\n" + reason
+            : reason
 
         details = Self.details(output: output, diagnostic: diagnostic)
     }
 
-    /// 可复制的原文：同时保留 stderr 和 stdout，版本校验等失败的原因可能只出现在 stdout；什么都没有时说明没有输出。
+    /// 可复制的原文：先 stderr、再 stdout，版本校验等失败的原因可能只出现在 stdout；没有 Git 输出的错误写诊断原文，
+    /// 什么都没有时说明没有错误信息。
     private static func details(output: GitCommandResult?, diagnostic: String?) -> String {
         let raw = [
             output.map { String(decoding: $0.standardError, as: UTF8.self) },
             output.map { String(decoding: $0.standardOutput, as: UTF8.self) },
             diagnostic,
-            output?.exitCode.map { AppLocalization.text("error.exitCode", Int($0)) },
         ]
         .compactMap { $0 }
         .filter { !$0.isEmpty }

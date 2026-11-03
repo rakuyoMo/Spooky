@@ -40,22 +40,25 @@ struct RebaseOntoDialog: View {
     @State
     private var skipHooks = false
 
-    /// 基点组合框、影响范围与 Skip Hooks。
+    /// 基点组合框与影响范围，选项区是 Skip Hooks；服务器仓库在说明后写明在哪台服务器上执行。
     var body: some View {
-        RewriteDialogFrame(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("rewrite.rebaseOnto"),
-            help: help,
-            primary: AppLocalization.text("rewrite.rebaseOnto.button"),
-            canSubmit: partial ? plan != nil : impact != nil,
-            rewritesHistory: true,
+            message: session.rewriteDialogMessage(help),
+            submitTitle: AppLocalization.text("rewrite.rebaseOnto.button"),
             error: error,
+            isValid: partial ? plan != nil : impact != nil,
             cancel: close,
             submit: perform
         ) {
             form
         } options: {
-            RewriteOption(key: "sync.skipHooks", isOn: $skipHooks)
+            DialogFormOption(
+                title: AppLocalization.text("sync.skipHooks"),
+                help: AppLocalization.text("sync.skipHooks.help"),
+                isOn: $skipHooks
+            )
         }
         .task(id: currentBase + "\u{0}" + newBase) { await preview() }
     }
@@ -79,23 +82,20 @@ extension RebaseOntoDialog {
     }
 
     /// 当前基点（只移动所选提交时不需要）、新基点与影响范围。
+    @ViewBuilder
     private var form: some View {
-        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 10) {
-            if !partial {
-                baseRow("rewrite.rebaseOnto.current", text: $currentBase)
-            }
+        if !partial {
+            baseRow("rewrite.rebaseOnto.current", text: $currentBase)
+        }
 
-            baseRow("rewrite.rebaseOnto.new", text: $newBase)
+        baseRow("rewrite.rebaseOnto.new", text: $newBase)
 
-            if let rows {
-                GridRow {
-                    Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+        if let rows {
+            DialogFormField {
+                VStack(alignment: .leading, spacing: 6) {
+                    RewriteWarnings(pushed: !shared.pushed.isEmpty, merged: !shared.merged.isEmpty)
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        RewriteWarnings(pushed: !shared.pushed.isEmpty, merged: !shared.merged.isEmpty)
-
-                        CommitSummaryList(rows: rows)
-                    }
+                    CommitSummaryList(rows: rows)
                 }
             }
         }
@@ -126,13 +126,11 @@ extension RebaseOntoDialog {
         return impact?.commits.map { .init(id: $0.id, subject: $0.subject, isShared: all.contains($0.id)) }
     }
 
-    /// 一行基点组合框。
+    /// 一行填满输入列的基点组合框。
     private func baseRow(_ key: String, text: Binding<String>) -> some View {
-        GridRow {
-            Text(AppLocalization.text(key)).gridColumnAlignment(.trailing)
-
+        // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐
+        DialogFormRow(label: AppLocalization.text(key), alignment: .center) {
             RevisionComboBox(text: text, items: session.revisionCandidates, label: AppLocalization.text(key))
-                .frame(maxWidth: 350)
         }
     }
 }

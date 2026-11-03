@@ -14,8 +14,12 @@ final class RemoteCallbackPresenter {
     /// 等待呈现的请求与一次性应答。
     private var pending: [(RemoteCallbackRequest, CheckedContinuation<String?, Never>)] = []
 
-    /// 当前正在显示的请求。
-    private var current: (RemoteCallbackRequest, CheckedContinuation<String?, Never>, NSAlert)? = nil
+    /// 当前正在显示的请求、它的应答与关掉对话框的动作。
+    private var current: (
+        request: RemoteCallbackRequest,
+        continuation: CheckedContinuation<String?, Never>,
+        close: () -> Void
+    )? = nil
 
     /// 当前输入的超时任务，与 B 侧的 120 秒上限一致。
     private var timeout: Task<Void, Never>? = nil
@@ -46,97 +50,52 @@ final class RemoteCallbackPresenter {
         }
     }
 
-    /// 使用安全输入框或可滚动文本编辑器；Git 原始提示保持原文。
+    /// 以对话框骨架挂在当前窗口最上层的 sheet 上；找不到窗口时按取消处理。
     private func presentNext() {
         guard current == nil, !pending.isEmpty else { return }
         let (request, continuation) = pending.removeFirst()
-        let alert = NSAlert()
-        let privateKey = request.kind == .sshAskpass && request.prompt.lowercased().contains("passphrase")
 
-        // 签名口令单独命名：解锁的签名私钥不会加入 SSH agent，不能沿用网络私钥的说明。
-        let title: String =
-            switch request.kind {
-            case .editor: "callback.editor"
-            case .signing: "signing.unlock"
-            case .askpass, .sshAskpass, .credential: privateKey ? "callback.privateKey" : "callback.credentials"
-            }
-        alert.messageText = AppLocalization.text(title)
-        alert.informativeText = informativeText(for: request, privateKey: privateKey)
-        alert.addButton(withTitle: AppLocalization.text("action.continue"))
-        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
-        let input: NSView
-        let value: () -> String
-        let save = NSButton(checkboxWithTitle: AppLocalization.text("callback.saveKeychain"), target: nil, action: nil)
-
-        if request.kind == .editor {
-            let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 480, height: 260))
-            scroll.hasVerticalScroller = true
-            let editor = NSTextView(frame: scroll.bounds)
-            editor.isRichText = false
-            editor.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
-            editor.string = request.content ?? ""
-            editor.setAccessibilityLabel(AppLocalization.text("callback.editor"))
-            scroll.documentView = editor
-            input = scroll
-            value = { editor.string }
-        } else {
-            let field: NSTextField = request.kind == .askpass && request.prompt.lowercased().hasPrefix("username")
-                ? NSTextField()
-                : NSSecureTextField()
-            field.setAccessibilityLabel(AppLocalization.text("callback.value"))
-            field.frame = NSRect(x: 0, y: 36, width: 400, height: 24)
-            save.frame = NSRect(x: 0, y: 0, width: 400, height: 24)
-            let container = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 64))
-            container.addSubview(field)
-            container.addSubview(save)
-            input = container
-            value = { field.stringValue }
+        guard let window = NSApp.keyWindow ?? NSApp.mainWindow else {
+            continuation.resume(returning: nil)
+            presentNext()
+            return
         }
 
-        alert.accessoryView = input
-        current = (request, continuation, alert)
+        let prompt = RemoteCallbackPrompt(request: request)
+        var close: () -> Void = { }
+
+        // 挂成 sheet 时立即返回，关掉对话框的动作留给超时与取消
+        DialogWindow.present(on: window.attachedSheet ?? window) { dismiss in
+            close = dismiss
+
+            return RemoteCallbackDialog(prompt: prompt, close: dismiss) { [weak self] value, saves in
+                self?.answer(request, value: value, saves: saves)
+            }
+        }
+
+        current = (request, continuation, close)
         timeout = Task { [weak self] in
             do { try await Task.sleep(for: .seconds(120)) }
             catch { return }
             self?.cancel(request.id)
         }
-
-        guard let window = NSApp.keyWindow ?? NSApp.mainWindow else {
-            finish(request.id, value: nil)
-            return
-        }
-
-        alert.beginSheetModal(for: window.attachedSheet ?? window) { [weak self] response in
-            guard let self, current?.0.id == request.id else { return }
-            let answer = response == .alertFirstButtonReturn ? value() : nil
-
-            if let answer, request.kind != .editor, save.state == .on {
-                store(answer, for: request)
-            }
-
-            finish(request.id, value: answer)
-        }
     }
 
-    /// 输入框的说明：主机或仓库路径与 Git 原始提示；本机的私钥口令补上加入 agent 的说明，账号令牌被拒过的地址补上原因。
-    private func informativeText(for request: RemoteCallbackRequest, privateKey: Bool) -> String {
-        var text = request.host + "\n" + request.prompt
+    /// 对话框交回输入：勾选了保存的写进钥匙串，再结束这次请求。
+    private func answer(_ request: RemoteCallbackRequest, value: String?, saves: Bool) {
+        guard current?.request.id == request.id else { return }
 
-        if privateKey, request.host.hasPrefix("/") {
-            text += "\n\n" + AppLocalization.text("callback.privateKey.help")
+        if let value, saves {
+            store(value, for: request)
         }
 
-        if request.kind == .askpass, let account = AccountGitCredentials.shared.rejectedAccount(forPrompt: request.prompt) {
-            text += "\n\n" + AppLocalization.text("callback.accountTokenRejected", account.username)
-        }
-
-        return text
+        finish(request.id, value: value)
     }
 
     /// 取消正在显示或排队的输入，只有持有应答的一方可以恢复 continuation。
     private func cancel(_ id: String) {
-        if let current, current.0.id == id {
-            current.2.window.sheetParent?.endSheet(current.2.window, returnCode: .cancel)
+        if let current, current.request.id == id {
+            current.close()
             finish(id, value: nil)
         } else if let index = pending.firstIndex(where: { $0.0.id == id }) {
             pending.remove(at: index).1.resume(returning: nil)
@@ -145,11 +104,11 @@ final class RemoteCallbackPresenter {
 
     /// 结束一次请求后再呈现下一项，避免同时叠加认证 sheet。
     private func finish(_ id: String, value: String?) {
-        guard let active = current, active.0.id == id else { return }
+        guard let active = current, active.request.id == id else { return }
         current = nil
         timeout?.cancel()
         timeout = nil
-        active.1.resume(returning: value)
+        active.continuation.resume(returning: value)
         presentNext()
     }
 

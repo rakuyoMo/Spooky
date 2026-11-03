@@ -11,7 +11,7 @@ extension RepositorySidebarView {
     /// Worktrees 分组：本窗口仓库之外的工作树，按名称排列，过滤时按路径匹配；标题接受本地分支拖入以新建工作树。
     var worktreeGroup: some View {
         Section(isExpanded: isExpanded(.worktrees)) {
-            ForEach(session.worktrees.others.filter { !isFiltering || SidebarRefTree.matches($0.path, filter: filterText) }) {
+            ForEach(filteredWorktrees) {
                 worktreeRow($0)
             }
         } header: {
@@ -21,6 +21,11 @@ extension RepositorySidebarView {
                         .disabled(!session.canWrite)
                 }
         }
+    }
+
+    /// 分组里列出的工作树：过滤时只留路径匹配的。
+    var filteredWorktrees: [Worktree] {
+        session.worktrees.others.filter { !isFiltering || SidebarRefTree.matches($0.path, filter: filterText) }
     }
 
     /// 工作树行：单击显示详情，双击在本窗口打开，失效时响铃。

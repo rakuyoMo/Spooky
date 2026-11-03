@@ -33,7 +33,7 @@ extension RepositoryWindowController {
     func branchesReviewAvailability(of item: any NSValidatedUserInterfaceItem) -> Bool? {
         switch item.action {
         case #selector(showBranchesReview):
-            return session.repository != nil
+            return !showsManager && session.repository != nil
 
         case #selector(runAutoArchive):
             return !showsManager && session.repository != nil
@@ -68,6 +68,9 @@ extension RepositoryWindowController {
         listItem.holdingPriority = .init(475)
         listItem.canCollapse = false
 
+        // 列表不延伸到工具栏下面，免得列表的底色与分隔线穿过工具栏上的项
+        listItem.allowsFullHeightLayout = false
+
         let detail = NSHostingController(rootView: BranchesReviewDetailView(session: session))
         detail.sizingOptions = [.minSize]
 
@@ -87,25 +90,18 @@ extension RepositoryWindowController {
 
     /// 批量归档对话框；自动归档时是待处理分支的确认。
     func presentArchiveDialog(automatic: Bool, candidates: [RepositoryReference]) {
-        guard session.canWrite, let window, window.attachedSheet == nil else {
+        guard session.canWrite else {
             return
         }
 
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-        let dialog = ArchiveBranchesDialog(
-            session: session,
-            automatic: automatic,
-            candidates: candidates
-        ) { [weak sheet] in
-            if let sheet {
-                window.endSheet(sheet)
-            }
+        presentDialog { close in
+            ArchiveBranchesDialog(
+                session: session,
+                automatic: automatic,
+                candidates: candidates,
+                close: close
+            )
         }
-
-        sheet.contentViewController = NSHostingController(rootView: dialog)
-        window.beginSheet(sheet)
     }
 
     /// 自动归档开着、距上次检查满一天且窗口在前台时，列出待归档的分支请用户确认；没有待归档的分支时只记下检查时刻。

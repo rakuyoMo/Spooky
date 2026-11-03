@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - AccessibilityProbe
 
-/// 经辅助功能接口读本进程窗口里的元素，必要时先按下一个控件，核对 SwiftUI 控件的名称与位置：这些控件不在 AppKit 的视图树里。
+/// 经辅助功能接口读本进程窗口里的元素，必要时先依次按下几个控件，核对 SwiftUI 控件的名称与位置：这些控件不在 AppKit 的视图树里。
 ///
 /// 进程没有辅助功能权限时读不到任何元素，用到它的测试以 `AXIsProcessTrusted()` 为前提，没有权限时跳过。
 @MainActor
@@ -14,7 +14,10 @@ enum AccessibilityProbe {
         /// 角色，如 `AXStaticText`。
         let role: String
 
-        /// 值；静态文字是它显示的文字。
+        /// 子角色，如安全输入框的 `AXSecureTextField`；没有时为空。
+        let subrole: String
+
+        /// 值；静态文字是它显示的文字，勾选框是 “0” 或 “1”。
         let value: String
 
         /// 自己的名称（`AXDescription`）。
@@ -25,6 +28,9 @@ enum AccessibilityProbe {
 
         /// 相对窗口左上角的位置与大小；窗口带标题栏，横坐标与内容区的相同。
         let frame: CGRect
+
+        /// 控件是否可用；没有这个属性的元素算可用。
+        let isEnabled: Bool
     }
 
     /// 把视图放进屏外的窗口，在主线程经辅助功能接口读出全部元素。
@@ -33,12 +39,12 @@ enum AccessibilityProbe {
     ///
     /// - Parameters:
     ///   - width: 窗口内容的宽度。
-    ///   - name: 读到时先按一下的控件的名称，如展开三角；为 nil 时不按。
+    ///   - names: 读到时依次各按一下的控件的名称，如展开三角，或勾选框再加按钮；为空时不按。
     ///   - isComplete: 要等的控件都读到了；控件的元素在窗口排版之后才陆续建出，没到齐时转动 run loop 再读，最多读 100 次。
     ///   - content: 窗口的内容。
     static func elements(
         width: CGFloat = 480,
-        pressing name: String? = nil,
+        pressing names: [String] = [],
         until isComplete: ([Element]) -> Bool,
         @ViewBuilder of content: () -> some View
     ) -> [Element] {
@@ -60,7 +66,7 @@ enum AccessibilityProbe {
         defer { window.close() }
 
         var found: [Element] = []
-        var pending = name
+        var pending = names[...]
 
         for _ in 0 ..< 100 {
             RunLoop.main.run(until: Date().addingTimeInterval(0.05))
@@ -68,14 +74,14 @@ enum AccessibilityProbe {
             let collected = collect(inWindowTitled: title)
             found = collected.map(\.element)
 
-            // 要按的控件读到后按一次，之后读到的是按过以后的样子
-            if let name = pending, let target = collected.first(where: { $0.element.name == name }) {
+            // 要按的控件读到后按一次，之后读到的是按过以后的样子，再找下一个要按的
+            if let name = pending.first, let target = collected.first(where: { $0.element.name == name }) {
                 press(target.reference)
-                pending = nil
+                pending = pending.dropFirst()
                 continue
             }
 
-            if pending == nil, isComplete(found) {
+            if pending.isEmpty, isComplete(found) {
                 break
             }
         }
@@ -107,10 +113,12 @@ extension AccessibilityProbe {
 
             let element = Element(
                 role: attribute(reference, kAXRoleAttribute) as? String ?? "",
-                value: attribute(reference, kAXValueAttribute) as? String ?? "",
+                subrole: attribute(reference, kAXSubroleAttribute) as? String ?? "",
+                value: text(attribute(reference, kAXValueAttribute)),
                 name: attribute(reference, kAXDescriptionAttribute) as? String ?? "",
                 title: titleElement.flatMap { attribute($0, kAXValueAttribute) as? String } ?? "",
-                frame: frame(of: reference).offsetBy(dx: -origin.x, dy: -origin.y)
+                frame: frame(of: reference).offsetBy(dx: -origin.x, dy: -origin.y),
+                isEnabled: attribute(reference, kAXEnabledAttribute) as? Bool ?? true
             )
 
             elements.append((reference, element))
@@ -165,6 +173,15 @@ extension AccessibilityProbe {
         }
 
         return unsafeDowncast(value, to: AXValue.self)
+    }
+
+    /// 文字或整数的属性值写成文字，其余为空。
+    private static func text(_ value: AnyObject?) -> String {
+        if let string = value as? String {
+            return string
+        }
+
+        return (value as? Int).map(String.init) ?? ""
     }
 
     /// 读一个属性；没有这个属性时为 nil。

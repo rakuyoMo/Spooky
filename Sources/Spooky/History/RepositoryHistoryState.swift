@@ -157,8 +157,8 @@ final class RepositoryHistoryState {
     /// 恢复的引用在新快照中已不存在时通知会话回退视图。
     var onRestoreFailure: (() -> Void)? = nil
 
-    /// 回到的提交排在询问的阈值之后时交给窗口询问；参数是标题兼确认按钮文字、说明与同意后的操作，取消时不回调。
-    var onSlowLookup: ((String, String, @escaping () -> Void) -> Void)? = nil
+    /// 回到的提交排在询问的阈值之后时交给窗口询问；同意后执行请求里的操作，取消时不回调。
+    var onSlowLookup: ((ConfirmationRequest) -> Void)? = nil
 
     /// 当前窗口的执行器，测试可以注入隔离环境。
     private(set) var runner: GitRunner? = nil
@@ -740,6 +740,20 @@ extension RepositoryHistoryState {
     }
 }
 
+// MARK: - References
+
+extension RepositoryHistoryState {
+    /// 一组引用里在当前引用快照中仍在的；还没有读到快照时无从核对，原样返回。
+    func existingReferences(_ references: Set<String>) -> Set<String> {
+        guard let snapshot else {
+            return references
+        }
+
+        let known = Set(snapshot.references.map(\.id)).union(["HEAD"])
+        return references.intersection(known)
+    }
+}
+
 // MARK: - Private
 
 extension RepositoryHistoryState {
@@ -811,6 +825,9 @@ extension RepositoryHistoryState {
         // 恢复的引用已被删除时回到全部历史，并让会话回到 Working Copy。
         checkRestoredReferences(in: snapshot)
 
+        // 筛选的引用被删除或在获取时修剪后，只留下仍在的；一个也不剩时回到全部历史
+        dropVanishedReferences()
+
         if changed || needsReload {
             needsReload = false
             reloadCommits(records: records)
@@ -833,6 +850,15 @@ extension RepositoryHistoryState {
             selectedReferences = []
             onRestoreFailure?()
         }
+    }
+
+    /// 去掉快照里已经没有的选中引用，列表不会停在不存在的引用上；侧边栏随后按行的位置选中接替它的行。
+    private func dropVanishedReferences() {
+        let remaining = existingReferences(selectedReferences)
+
+        guard remaining != selectedReferences else { return }
+
+        selectedReferences = remaining
     }
 
     /// 核对要找的提交在当前历史里排第几个：在询问的阈值以内就续载；排在之后先询问；不在历史里就说明找不到。

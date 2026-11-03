@@ -31,43 +31,40 @@ struct MissingRepositoryView: View {
     /// 回到仓库管理。
     let close: () -> Void
 
-    /// 图标、标题、说明、原始输出与按钮竖排居中。
+    /// 空状态的按钮行位置上自上而下是连不上时的原始输出、Refresh 与 Close、重新打开期间的进度。
     var body: some View {
-        VStack(spacing: 16) {
-            EmptyStateView(title: title, message: message, symbol: symbol)
-
-            if case .unreachable(let failure) = reason {
-                ScrollView {
-                    Text(failure.details)
-                        .font(.system(size: 11, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(8)
+        EmptyStateView(title: title, message: message, symbol: symbol) {
+            VStack(spacing: 8) {
+                if case .unreachable(let failure) = reason {
+                    ScrollView {
+                        Text(failure.details)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(8)
+                    }
+                    .frame(maxWidth: 480, maxHeight: 120)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(AppPalette.color("general_border_color")))
+                    .accessibilityLabel(AppLocalization.text("error.details"))
                 }
-                .frame(maxWidth: 480, maxHeight: 120)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .overlay(RoundedRectangle(cornerRadius: 4).stroke(AppPalette.color("general_border_color")))
-                .accessibilityLabel(AppLocalization.text("error.details"))
-            }
 
-            HStack(spacing: 8) {
-                Button(AppLocalization.text("action.refresh"), action: refresh)
-                    .disabled(session.isOpening)
-                    .accessibilityIdentifier("missing-refresh")
+                HStack(spacing: 8) {
+                    EmptyStateButton(AppLocalization.text("action.refresh"), action: refresh)
+                        .disabled(session.isOpening)
+                        .accessibilityIdentifier("missing-refresh")
 
-                Button(AppLocalization.text("action.close"), action: close)
-                    .accessibilityIdentifier("missing-close")
-            }
+                    EmptyStateButton(AppLocalization.text("action.close"), action: close)
+                        .accessibilityIdentifier("missing-close")
+                }
 
-            if session.isOpening {
-                ProgressView(AppLocalization.text("loading.open"))
-                    .controlSize(.small)
+                if session.isOpening {
+                    ProgressView(AppLocalization.text("loading.open"))
+                        .controlSize(.small)
+                }
             }
         }
-        .padding(32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AppPalette.color("general_background_color"))
     }
 
     /// 打开失败是否属于这一页：本机路径不存在，服务器上的路径不存在，或服务器连不上；其余失败仍走错误 sheet。

@@ -97,23 +97,24 @@ extension RepositorySession {
             ? AppLocalization.text("profiles.apply.local", keys, repository.displayPath)
             : AppLocalization.text("profiles.apply.remote", keys, repository.displayPath)
 
-        onConfirm?(
-            AppLocalization.text("profiles.apply"),
-            message,
-            { [weak self] in
-                guard let self, generation == request else { return }
+        let title = AppLocalization.text("profiles.apply")
 
-                performGit(
-                    { runner, _ in
-                        try await WorkingCopyOperations(runner: runner)
-                            .applyIdentity(name: profile.name, email: profile.email, signingKey: profile.signingKey)
-                    },
-                    title: AppLocalization.text("profiles.apply"),
-                    recordsActivity: false
-                )
-            },
-            nil
-        )
+        onConfirm?(ConfirmationRequest(
+            title: title,
+            message: message,
+            submitTitle: AppLocalization.text("profiles.apply.submit")
+        ) { [weak self] in
+            guard let self, generation == request else { return }
+
+            performGit(
+                { runner, _ in
+                    try await WorkingCopyOperations(runner: runner)
+                        .applyIdentity(name: profile.name, email: profile.email, signingKey: profile.signingKey)
+                },
+                title: title,
+                recordsActivity: false
+            )
+        })
     }
 
     /// 把身份档案的姓名与邮箱写进仓库所在机器上的全局 Git 配置；先确认，说明写在哪台机器、影响哪些仓库。
@@ -128,23 +129,24 @@ extension RepositorySession {
         let message = repository.host.map { AppLocalization.text("quickActions.setGlobalUser.remote", $0) }
             ?? AppLocalization.text("quickActions.setGlobalUser.local")
 
-        onConfirm?(
-            AppLocalization.text("quickActions.setGlobalUser"),
-            message,
-            { [weak self] in
-                guard let self, generation == request else { return }
+        let title = AppLocalization.text("quickActions.setGlobalUser")
 
-                performGit(
-                    { runner, _ in
-                        try await WorkingCopyOperations(runner: runner)
-                            .applyGlobalIdentity(name: profile.name, email: profile.email)
-                    },
-                    title: AppLocalization.text("quickActions.setGlobalUser"),
-                    recordsActivity: false
-                )
-            },
-            nil
-        )
+        onConfirm?(ConfirmationRequest(
+            title: title,
+            message: message,
+            submitTitle: AppLocalization.text("quickActions.setGlobalUser.submit")
+        ) { [weak self] in
+            guard let self, generation == request else { return }
+
+            performGit(
+                { runner, _ in
+                    try await WorkingCopyOperations(runner: runner)
+                        .applyGlobalIdentity(name: profile.name, email: profile.email)
+                },
+                title: title,
+                recordsActivity: false
+            )
+        })
     }
 
     /// 按注释设置整理提交信息，确定后回调；需要用户决定注释行时先询问，取消则不回调。

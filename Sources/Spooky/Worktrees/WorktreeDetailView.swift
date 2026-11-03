@@ -25,7 +25,6 @@ struct WorktreeDetailView: View {
                         message: invalidMessage(worktree),
                         symbol: "exclamationmark.triangle"
                     )
-                    .frame(maxHeight: .infinity)
                 }
             } else if session.worktrees.isLoaded {
                 EmptyStateView(
@@ -33,7 +32,6 @@ struct WorktreeDetailView: View {
                     message: AppLocalization.text("worktree.missing.message", session.worktrees.selectedPath ?? ""),
                     symbol: "rectangle.on.rectangle"
                 )
-                .frame(maxHeight: .infinity)
             } else {
                 ProgressView()
                     .frame(maxHeight: .infinity)

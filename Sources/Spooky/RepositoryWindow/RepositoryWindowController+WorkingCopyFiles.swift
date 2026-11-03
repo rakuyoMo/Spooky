@@ -47,18 +47,12 @@ extension RepositoryWindowController {
 
         switch request {
         case .form(let form):
-            let sheet = NSWindow()
-            sheet.styleMask = [.titled]
-            sheet.tabbingMode = .disallowed
-            sheet.contentViewController = NSHostingController(
-                rootView: WorkingCopyFileDialog(session: session, form: form) { [weak sheet] in
-                    if let sheet { window.endSheet(sheet) }
-                }
-            )
-            window.beginSheet(sheet)
+            presentDialog { close in
+                WorkingCopyFileDialog(session: session, form: form, close: close)
+            }
 
         case .untrackIgnored(let file, let patterns, let tracked):
-            askUntrackIgnored(file, patterns: patterns, tracked: tracked, in: window)
+            askUntrackIgnored(file, patterns: patterns, tracked: tracked)
         }
     }
 
@@ -120,35 +114,26 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 要忽略的文件里有已跟踪的文件：停止跟踪、只写规则，或取消。
-    private func askUntrackIgnored(
-        _ file: IgnoreFile,
-        patterns: [String],
-        tracked: [StatusEntry],
-        in window: NSWindow
-    ) {
+    /// 要忽略的文件里有已跟踪的文件：停止跟踪是主按钮，只写规则是备选按钮，或取消。
+    private func askUntrackIgnored(_ file: IgnoreFile, patterns: [String], tracked: [StatusEntry]) {
         let request = session.generation
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = AppLocalization.text("files.untrackIgnored.title")
-        alert.informativeText = AppLocalization.text("files.untrackIgnored.message", session.scopeDescription(tracked))
-        alert.addButton(withTitle: AppLocalization.text("files.untrack"))
-        alert.addButton(withTitle: AppLocalization.text("files.untrackIgnored.skip"))
-        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
 
         // 询问结束后才开始写入，仓库已切换时不执行
-        alert.beginSheetModal(for: window) { [weak self] response in
+        let write: ([StatusEntry]) -> Void = { [weak self] untracking in
             guard let self, session.generation == request else { return }
 
-            switch response {
-            case .alertFirstButtonReturn:
-                session.writePatterns(patterns, in: file, untracking: tracked)
+            session.writePatterns(patterns, in: file, untracking: untracking)
+        }
 
-            case .alertSecondButtonReturn:
-                session.writePatterns(patterns, in: file, untracking: [])
-
-            default:
-                break
+        presentDialog { close in
+            ConfirmationDialog(
+                title: AppLocalization.text("files.untrackIgnored.title"),
+                message: AppLocalization.text("files.untrackIgnored.message", session.scopeDescription(tracked)),
+                submitTitle: AppLocalization.text("files.untrack"),
+                alternate: (title: AppLocalization.text("files.untrackIgnored.skip"), action: { _ in write([]) }),
+                close: close
+            ) { _ in
+                write(tracked)
             }
         }
     }

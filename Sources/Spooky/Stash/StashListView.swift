@@ -65,10 +65,8 @@ extension StashListView {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if stashes.entries.isEmpty {
             EmptyStateView(title: AppLocalization.text("stash.empty"), message: "", symbol: "tray")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if visible.isEmpty {
             EmptyStateView(title: AppLocalization.text("stash.noMatches"), message: "", symbol: "magnifyingglass")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             list(visible)
         }

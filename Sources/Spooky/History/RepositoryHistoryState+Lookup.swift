@@ -107,14 +107,18 @@ extension RepositoryHistoryState {
 
     /// 经窗口询问是否回到排在询问的阈值之后的提交；同意时执行 `agree`，取消时不回调。
     func askSlowLookup(_ id: String, then agree: @escaping () -> Void) {
-        let title = AppLocalization.text("history.reveal.slow")
         let message = AppLocalization.text(
             "history.reveal.slow.message",
             String(id.prefix(8)),
             Self.slowLookupThreshold
         )
 
-        onSlowLookup?(title, message, agree)
+        onSlowLookup?(ConfirmationRequest(
+            title: AppLocalization.text("history.reveal.slow"),
+            message: message,
+            submitTitle: AppLocalization.text("history.reveal.slow.submit"),
+            action: agree
+        ))
     }
 
     /// 作废进行中的核对：取消读取，放弃等着引用的核对，之前的询问不再生效。

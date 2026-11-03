@@ -97,20 +97,13 @@ extension RepositoryWindowController {
             break
         }
 
-        guard window.attachedSheet == nil, session.canWrite else {
+        guard session.canWrite else {
             return
         }
 
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-
-        let close = { [weak sheet] in
-            if let sheet { window.endSheet(sheet) }
+        presentDialog { close in
+            dialog(for: request, close: close)
         }
-
-        sheet.contentViewController = NSHostingController(rootView: dialog(for: request, close: close))
-        window.beginSheet(sheet)
     }
 }
 
@@ -159,77 +152,75 @@ extension RepositoryWindowController {
     private func askForceDeletion(_ offer: SubmoduleDeletionOffer, in window: NSWindow) {
         let repository = session.repository
 
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = AppLocalization.text("submodule.delete")
-        alert.informativeText = AppLocalization.text("submodule.forceDelete.message", offer.submodule.name)
-        alert.addButton(withTitle: AppLocalization.text("submodule.forceDelete.submit"))
-        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
-        alert.buttons.first?.hasDestructiveAction = true
+        DialogWindow.present(on: window) { close in
+            ConfirmationDialog(
+                title: AppLocalization.text("submodule.delete"),
+                message: AppLocalization.text("submodule.forceDelete.message", offer.submodule.name),
+                submitTitle: AppLocalization.text("submodule.forceDelete.submit"),
+                close: close
+            ) { [weak self] _ in
+                guard let self, session.repository == repository else {
+                    return
+                }
 
-        alert.beginSheetModal(for: window) { [weak self] response in
-            guard let self, response == .alertFirstButtonReturn, session.repository == repository else {
-                return
+                session.deleteSubmodule(offer.submodule, keepsWorkingTree: offer.keepsWorkingTree, force: true)
             }
-
-            session.deleteSubmodule(offer.submodule, keepsWorkingTree: offer.keepsWorkingTree, force: true)
         }
     }
 
-    /// 已有同名 Git 目录时询问复用还是覆盖。
+    /// 已有同名 Git 目录时询问复用还是覆盖：复用是主按钮，覆盖是备选按钮。
     private func askForceAddition(_ offer: SubmoduleAdditionOffer, in window: NSWindow) {
         let repository = session.repository
 
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = AppLocalization.text("submodule.forceAdd")
-        alert.informativeText = AppLocalization.text("submodule.forceAdd.message", offer.path)
-        alert.addButton(withTitle: AppLocalization.text("submodule.forceAdd.reuse"))
-        alert.addButton(withTitle: AppLocalization.text("submodule.forceAdd.overwrite"))
-        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
-        alert.buttons[1].hasDestructiveAction = true
-
-        alert.beginSheetModal(for: window) { [weak self] response in
+        let overwrite: (Bool) -> Void = { [weak self] _ in
             guard let self, session.repository == repository else {
                 return
             }
 
-            switch response {
-            case .alertFirstButtonReturn:
+            session.addSubmodule(url: offer.url, path: offer.path, overwrites: true)
+        }
+
+        DialogWindow.present(on: window) { close in
+            ConfirmationDialog(
+                title: AppLocalization.text("submodule.forceAdd"),
+                message: AppLocalization.text("submodule.forceAdd.message", offer.path),
+                submitTitle: AppLocalization.text("submodule.forceAdd.reuse"),
+                alternate: (title: AppLocalization.text("submodule.forceAdd.overwrite"), action: overwrite),
+                close: close
+            ) { [weak self] _ in
+                guard let self, session.repository == repository else {
+                    return
+                }
+
                 session.addSubmodule(url: offer.url, path: offer.path, reusesGitDirectory: true)
-
-            case .alertSecondButtonReturn:
-                session.addSubmodule(url: offer.url, path: offer.path, overwrites: true)
-
-            default:
-                break
             }
         }
     }
 
-    /// 操作改动了已初始化子模块的指针时询问是否更新；勾选 “总是” 后之后的操作直接更新。
+    /// 操作改动了已初始化子模块的指针时询问是否更新；勾选 “总是” 并更新后，之后的操作直接更新。
     private func askAutoUpdate(_ submodules: [Submodule], in window: NSWindow) {
         let repository = session.repository
 
-        let alert = NSAlert()
-        alert.messageText = AppLocalization.text("submodule.autoUpdate")
-        alert.informativeText = AppLocalization.text("submodule.autoUpdate.message")
-            + "\n\n" + submodules.map(\.name).joined(separator: "\n")
-        alert.addButton(withTitle: AppLocalization.text("submodule.autoUpdate.update"))
-        alert.addButton(withTitle: AppLocalization.text("submodule.autoUpdate.skip"))
-        alert.showsSuppressionButton = true
-        alert.suppressionButton?.title = AppLocalization.text("submodule.autoUpdate.always")
+        DialogWindow.present(on: window) { close in
+            ConfirmationDialog(
+                title: AppLocalization.text("submodule.autoUpdate"),
+                message: AppLocalization.text("submodule.autoUpdate.message")
+                    + "\n\n" + submodules.map(\.name).joined(separator: "\n"),
+                submitTitle: AppLocalization.text("submodule.autoUpdate.update"),
+                cancelTitle: AppLocalization.text("submodule.autoUpdate.skip"),
+                checkbox: AppLocalization.text("submodule.autoUpdate.always"),
+                close: close
+            ) { [weak self] always in
+                guard let self, session.repository == repository else {
+                    return
+                }
 
-        alert.beginSheetModal(for: window) { [weak self, weak alert] response in
-            guard let self, response == .alertFirstButtonReturn, session.repository == repository else {
-                return
+                if always {
+                    UserDefaults.standard.set(true, forKey: SubmodulePreferences.alwaysUpdate)
+                }
+
+                session.updateSubmodules(submodules, recursive: false)
             }
-
-            if alert?.suppressionButton?.state == .on {
-                UserDefaults.standard.set(true, forKey: SubmodulePreferences.alwaysUpdate)
-            }
-
-            session.updateSubmodules(submodules, recursive: false)
         }
     }
 }

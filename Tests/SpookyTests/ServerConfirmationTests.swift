@@ -16,22 +16,32 @@ struct ServerConfirmationTests {
         defer { UserDefaults.standard.set(saved, forKey: confirmation.key) }
 
         let session = RepositorySession()
-        var shown: [ServerConfirmation] = []
+        var shown: [ServerConfirmation?] = []
         var performed = 0
 
-        session.onServerConfirm = { confirmation, _, _, action in
-            shown.append(confirmation)
-            action()
+        session.onConfirm = { request in
+            shown.append(request.suppression)
+            request.action()
         }
 
         UserDefaults.standard.removeObject(forKey: confirmation.key)
-        session.confirmOnServer(confirmation, title: "Restore", message: "") { performed += 1 }
+        session.confirmOnServer(
+            confirmation,
+            title: "Restore",
+            submitTitle: "Restore",
+            message: ""
+        ) { performed += 1 }
         #expect(shown == [confirmation])
         #expect(performed == 1)
 
-        // 在确认框里勾选不再提醒之后
+        // 在确认对话框里勾选不再提醒之后
         confirmation.isEnabled = false
-        session.confirmOnServer(confirmation, title: "Restore", message: "") { performed += 1 }
+        session.confirmOnServer(
+            confirmation,
+            title: "Restore",
+            submitTitle: "Restore",
+            message: ""
+        ) { performed += 1 }
         #expect(shown == [confirmation])
         #expect(performed == 2)
     }

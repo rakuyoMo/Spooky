@@ -1,10 +1,11 @@
-import AppKit
 import SpookyKit
 import SwiftUI
 
-/// 添加服务器仓库的体检表单；失败时保留输入和原始错误供修复。
+// MARK: - AddRemoteRepositoryView
+
+/// 添加服务器仓库的体检表单；失败时保留输入，错误区写出修复方向与原始输出。
 ///
-/// 路径可以手填，也可以浏览 B 上的目录；路径不存在或还不是 Git 工作区时，可以在那里新建仓库再打开。
+/// 路径可以手填，也可以浏览 B 上的目录；路径不存在或还不是 Git 工作区时换成备选底栏，可以在那里新建仓库再打开。
 struct AddRemoteRepositoryView: View {
     /// 验证成功后由窗口协调器保存记录并打开仓库。
     let opened: (RepositoryLocation) -> Void
@@ -36,30 +37,29 @@ struct AddRemoteRepositoryView: View {
     @State
     private var isBrowsing = false
 
-    /// 标题、两列表单、错误区和底栏沿用统一 sheet 骨架。
+    /// 第一次连接时要提醒的 GIT_ 变量；为 nil 时没有提醒。
+    @State
+    private var environmentWarning: EnvironmentWarning?
+
+    /// 体检通过、等环境变量提醒关掉后再打开的仓库。
+    @State
+    private var checkedRepository: RepositoryLocation?
+
+    /// 对话框骨架：主机别名与路径两行；体检中底栏左侧写出进度，主按钮与表单不可用，取消照常可用。
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            header
-
+        DialogLayout(
+            title: AppLocalization.text("remote.form.title"),
+            message: AppLocalization.text("remote.form.help"),
+            submitTitle: AppLocalization.text("action.open"),
+            alternate: createAlternate,
+            error: Self.notice(for: failure),
+            progress: task == nil ? nil : AppLocalization.text("remote.checking"),
+            canSubmit: !host.isEmpty && path.hasPrefix("/") && task == nil,
+            cancel: cancel,
+            submit: submit
+        ) {
             form
-
-            if let failure {
-                FailureDetailsView(failure: failure)
-            }
-
-            // 路径不存在或还不是工作区时，可以在那里新建仓库
-            if failedKind == .pathUnavailable || failedKind == .notWorkingTree {
-                Button(AppLocalization.text("bookmarks.noRepository.create"), action: createRepository)
-                    .disabled(task != nil)
-                    .accessibilityIdentifier("remote-create")
-            }
-
-            Divider()
-
-            footer
         }
-        .padding(20)
-        .frame(width: 520)
         .onDisappear { task?.cancel() }
         .sheet(isPresented: $isBrowsing) {
             ServerDirectoryBrowser(host: host, path: path) { chosen in
@@ -70,25 +70,24 @@ struct AddRemoteRepositoryView: View {
                 }
             }
         }
+        .sheet(item: $environmentWarning, onDismiss: openCheckedRepository) { warning in
+            ServerEnvironmentNotice(host: warning.host, variables: warning.variables) {
+                environmentWarning = nil
+            }
+        }
     }
 
     /// 主机别名与路径两行；路径可以浏览 B 上的目录。体检进行中禁用。
     private var form: some View {
-        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 12) {
-            GridRow {
-                Text(AppLocalization.text("remote.host"))
-                    .gridColumnAlignment(.trailing)
+        DialogForm {
+            DialogFormRow(label: AppLocalization.text("remote.host")) {
                 TextField("", text: $host)
-                    .accessibilityLabel(AppLocalization.text("remote.host"))
                     .accessibilityIdentifier("remote-host")
             }
 
-            GridRow {
-                Text(AppLocalization.text("remote.path"))
-
+            DialogFormRow(label: AppLocalization.text("remote.path")) {
                 HStack(spacing: 8) {
                     TextField("", text: $path)
-                        .accessibilityLabel(AppLocalization.text("remote.path"))
                         .accessibilityIdentifier("remote-path")
 
                     Button(AppLocalization.text("clone.browse")) { isBrowsing = true }
@@ -99,59 +98,29 @@ struct AddRemoteRepositoryView: View {
         .disabled(task != nil)
     }
 
-    /// 服务器图标、表单标题与填写说明。
-    private var header: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Image(systemName: "server.rack")
-                .font(.system(size: 48))
-                .frame(width: 64, height: 64)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(AppLocalization.text("action.addRemote"))
-                    .font(.system(size: 14, weight: .bold))
-
-                Text(AppLocalization.text("remote.form.help"))
-                    .font(.system(size: 13))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+    /// 路径不存在或还不是工作区时的备选按钮：在那里新建仓库；其余时候为 nil。
+    private var createAlternate: (title: String, action: () -> Void)? {
+        guard Self.canCreateRepository(after: failedKind) else {
+            return nil
         }
+
+        return (title: AppLocalization.text("bookmarks.noRepository.create"), action: createRepository)
     }
 
-    /// 底栏：体检进度、取消与打开按钮。
-    private var footer: some View {
-        HStack(spacing: 8) {
-            if task != nil {
-                ProgressView(AppLocalization.text("remote.checking"))
-                    .controlSize(.small)
-            }
-
-            Spacer()
-
-            Button(AppLocalization.text("action.cancel")) {
-                task?.cancel()
-                cancelled()
-            }
-            .keyboardShortcut(.cancelAction)
-
-            Button(AppLocalization.text("action.open"), action: submit)
-                .keyboardShortcut(.defaultAction)
-                .disabled(host.isEmpty || !path.hasPrefix("/") || task != nil)
-                .accessibilityIdentifier("remote-open")
-        }
+    /// 错误区的文字：体检失败的修复方向，空一行后是原始输出；没有失败时为 nil。
+    static func notice(for failure: AppFailure?) -> String? {
+        failure.map { $0.message + "\n\n" + $0.details }
     }
 
-    /// 提示 B 的非交互环境设置了 GIT_ 变量：它们会改变 Spooky 在 B 上执行的每条 Git 命令查找仓库与读取配置的方式。
-    private static func warnAbout(_ variables: [String], on host: String) {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = AppLocalization.text("remote.environment.title")
-        alert.informativeText = AppLocalization.text(
-            "remote.environment.message",
-            host,
-            variables.formatted(.list(type: .and))
-        )
-        alert.runModal()
+    /// 体检失败后能否在那个路径新建仓库：路径不存在或还不是 Git 工作区时可以。
+    static func canCreateRepository(after kind: RemoteConnectionError.Kind?) -> Bool {
+        kind == .pathUnavailable || kind == .notWorkingTree
+    }
+
+    /// 取消体检并关闭表单。
+    private func cancel() {
+        task?.cancel()
+        cancelled()
     }
 
     /// 体检通过才加入最近记录；取消和失败会关闭本次连接。
@@ -174,9 +143,11 @@ struct AddRemoteRepositoryView: View {
                 try Task.checkCancellation()
                 task = nil
 
-                // 第一次连接时提示 B 的非交互环境里会改变 Git 行为的变量
-                if !variables.isEmpty {
-                    Self.warnAbout(variables, on: host)
+                // 第一次连接时先提醒 B 的非交互环境里会改变 Git 行为的变量，关掉提醒后再打开
+                guard variables.isEmpty else {
+                    checkedRepository = repository.location
+                    environmentWarning = EnvironmentWarning(host: host, variables: variables)
+                    return
                 }
 
                 opened(repository.location)
@@ -188,6 +159,16 @@ struct AddRemoteRepositoryView: View {
                 task = nil
             }
         }
+    }
+
+    /// 环境变量提醒关掉后打开体检通过的仓库。
+    private func openCheckedRepository() {
+        guard let checkedRepository else {
+            return
+        }
+
+        self.checkedRepository = nil
+        opened(checkedRepository)
     }
 
     /// 在 B 上的这个路径执行 `git init`，目录不存在时一并建出，成功后照常体检并打开。
@@ -210,5 +191,50 @@ struct AddRemoteRepositoryView: View {
                 task = nil
             }
         }
+    }
+}
+
+// MARK: - EnvironmentWarning
+
+/// 环境变量提醒的内容：B 的非交互环境里设置的 GIT_ 变量。
+private struct EnvironmentWarning: Identifiable {
+    /// 每次提醒的独立标识。
+    let id = UUID()
+
+    /// 主机别名。
+    let host: String
+
+    /// 设置了的 GIT_ 变量名。
+    let variables: [String]
+}
+
+// MARK: - ServerEnvironmentNotice
+
+/// 服务器的非交互环境设置了 GIT_ 变量时的提醒：它们会改变 Spooky 在服务器上执行的每条 Git 命令查找仓库与读取配置的方式。
+///
+/// 提示版的对话框骨架，底栏只有 Close，↩ 与 ⎋ 都关掉它。
+struct ServerEnvironmentNotice: View {
+    /// 主机别名。
+    let host: String
+
+    /// 设置了的 GIT_ 变量名。
+    let variables: [String]
+
+    /// 关掉提醒。
+    let close: () -> Void
+
+    /// 标题与说明，说明写出主机与变量名。
+    var body: some View {
+        DialogLayout(
+            title: AppLocalization.text("remote.environment.title"),
+            message: AppLocalization.text(
+                "remote.environment.message",
+                host,
+                variables.formatted(.list(type: .and))
+            ),
+            submitTitle: AppLocalization.text("action.close"),
+            cancel: nil,
+            submit: close
+        )
     }
 }

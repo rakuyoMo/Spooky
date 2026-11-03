@@ -34,22 +34,19 @@ struct ResetDialog: View {
     @State
     private var error = ""
 
-    /// 版本、档位与影响范围。
+    /// 版本、档位与影响范围；服务器仓库在说明后写明在哪台服务器上执行。
     var body: some View {
-        RewriteDialogFrame(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("rewrite.reset.title"),
-            help: AppLocalization.text("rewrite.reset.help"),
-            primary: AppLocalization.text("rewrite.reset.button"),
-            canSubmit: resolved,
-            rewritesHistory: true,
+            message: session.rewriteDialogMessage(AppLocalization.text("rewrite.reset.help")),
+            submitTitle: AppLocalization.text("rewrite.reset.button"),
             error: error,
+            isValid: resolved,
             cancel: close,
             submit: perform
         ) {
             form
-        } options: {
-            EmptyView()
         }
         .onAppear { target = revision ?? "" }
         .task(id: target) { await preview() }
@@ -59,51 +56,44 @@ struct ResetDialog: View {
 // MARK: - Layout
 
 extension ResetDialog {
-    /// 版本组合框、三档单选与影响范围。
+    /// 填满输入列的版本组合框、三档单选与影响范围。
+    @ViewBuilder
     private var form: some View {
-        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 10) {
-            GridRow {
-                Text(AppLocalization.text("rewrite.revision")).gridColumnAlignment(.trailing)
+        // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐
+        DialogFormRow(label: AppLocalization.text("rewrite.revision"), alignment: .center) {
+            RevisionComboBox(
+                text: $target,
+                items: session.revisionCandidates,
+                label: AppLocalization.text("rewrite.revision")
+            )
+        }
 
-                RevisionComboBox(
-                    text: $target,
-                    items: session.revisionCandidates,
-                    label: AppLocalization.text("rewrite.revision")
-                )
-                .frame(maxWidth: 350)
+        modeRow
+
+        if mode == .hard, hasLocalChanges {
+            DialogFormField {
+                Label(AppLocalization.text("rewrite.reset.discards"), systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Color(nsColor: .systemRed))
+                    .fixedSize(horizontal: false, vertical: true)
             }
+        }
 
-            modeRow
+        if !leaving.isEmpty {
+            DialogFormField {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(AppLocalization.text("rewrite.reset.leaving", leaving.count))
 
-            if mode == .hard, hasLocalChanges {
-                GridRow {
-                    Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
-                    Label(AppLocalization.text("rewrite.reset.discards"), systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(Color(nsColor: .systemRed))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            if !leaving.isEmpty {
-                GridRow {
-                    Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(AppLocalization.text("rewrite.reset.leaving", leaving.count))
-
-                        CommitSummaryList(rows: leaving.map { .init(id: $0.id, subject: $0.subject) })
-                    }
+                    CommitSummaryList(rows: leaving.map { .init(id: $0.id, subject: $0.subject) })
                 }
             }
         }
     }
 
-    /// 三档单选，每档下面写明暂存区与工作区会怎样。
+    /// 占满输入列的三档单选，每档下面写明暂存区与工作区会怎样；标签与第一档的顶边对齐。
+    ///
+    /// 单选组不占满输入列时，量出的高度按较宽的说明折行，比实际排出的矮。
     private var modeRow: some View {
-        GridRow(alignment: .top) {
-            Text(AppLocalization.text("rewrite.reset.mode"))
-
+        DialogFormRow(label: AppLocalization.text("rewrite.reset.mode"), alignment: .top) {
             Picker("", selection: $mode) {
                 ForEach(ResetMode.allCases, id: \.self) { mode in
                     VStack(alignment: .leading, spacing: 2) {
@@ -118,7 +108,7 @@ extension ResetDialog {
             }
             .pickerStyle(.radioGroup)
             .labelsHidden()
-            .accessibilityLabel(AppLocalization.text("rewrite.reset.mode"))
+            .dialogFieldWidth(.infinity)
         }
     }
 

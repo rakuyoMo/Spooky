@@ -27,58 +27,66 @@ struct ArchiveBranchesDialog: View {
 
     /// 对话框骨架里放分支列表与自动归档开关。
     var body: some View {
-        RewriteDialogFrame(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("review.archive.title"),
-            help: AppLocalization.text(automatic ? "review.archive.automaticHelp" : "review.archive.help"),
-            primary: AppLocalization.text("review.archive.submit"),
-            canSubmit: !selected.isEmpty,
+            message: AppLocalization.text(automatic ? "review.archive.automaticHelp" : "review.archive.help"),
+            submitTitle: AppLocalization.text("review.archive.submit"),
+            error: "",
+            isValid: !selected.isEmpty,
             cancel: close,
-            submit: submit,
-            content: { content },
-            options: { EmptyView() }
-        )
+            submit: submit
+        ) {
+            content
+        }
     }
 
-    /// 没有建议时说明原因；否则是可勾选的分支列表。
-    @ViewBuilder
+    /// 分支列表在上，自动归档开关在下，两者相隔 12 pt。
     private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if candidates.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(AppLocalization.text("review.archive.empty"))
-                        .bold()
+            branches
 
-                    Text(AppLocalization.text("review.archive.emptyHelp"))
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            } else {
-                List(candidates) { branch in
-                    Toggle(isOn: binding(for: branch.id)) {
-                        HStack(spacing: 8) {
-                            Text(branch.name)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle(AppLocalization.text("review.archive.auto"), isOn: $autoArchive)
 
-                            Spacer(minLength: 8)
+                Text(AppLocalization.text("review.archive.autoHelp"))
+                    .font(.system(size: 11))
+                    .padding(.leading, 19)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
 
-                            Text(reason(for: branch))
-                                .font(.system(size: 11))
-                                .foregroundStyle(.secondary)
-                        }
+    /// 没有建议时说明原因；否则是可勾选的分支列表，最高 220 pt。
+    @ViewBuilder
+    private var branches: some View {
+        if candidates.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(AppLocalization.text("review.archive.empty"))
+                    .bold()
+
+                Text(AppLocalization.text("review.archive.emptyHelp"))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } else {
+            List(candidates) { branch in
+                Toggle(isOn: binding(for: branch.id)) {
+                    HStack(spacing: 8) {
+                        Text(branch.name)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+
+                        Spacer(minLength: 8)
+
+                        Text(reason(for: branch))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
                     }
                 }
-                .listStyle(.bordered)
-                .frame(height: min(CGFloat(candidates.count) * 24 + 12, 220))
             }
-
-            Toggle(AppLocalization.text("review.archive.auto"), isOn: $autoArchive)
-
-            Text(AppLocalization.text("review.archive.autoHelp"))
-                .font(.system(size: 11))
-                .padding(.leading, 19)
-                .fixedSize(horizontal: false, vertical: true)
+            .listStyle(.bordered)
+            .frame(height: min(CGFloat(candidates.count) * 24 + 12, 220))
         }
     }
 

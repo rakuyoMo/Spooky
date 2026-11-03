@@ -56,7 +56,7 @@ struct CreateTagDialog: View {
 
     /// 名称、版本、说明、签名与签名密钥依次排列。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("tag.create"),
             message: AppLocalization.text("tag.create.message"),
@@ -85,7 +85,7 @@ extension CreateTagDialog {
     /// 表单各行；签名密钥只在勾选签名时可选。
     @ViewBuilder
     private var rows: some View {
-        ReferenceDialogRows.row(AppLocalization.text("reference.name")) {
+        RepositoryDialogRows.row(AppLocalization.text("reference.name")) {
             TextField("", text: $name)
                 .accessibilityIdentifier("tag-name")
         }
@@ -103,25 +103,21 @@ extension CreateTagDialog {
             .frame(maxWidth: .infinity)
         }
 
-        ReferenceDialogRows.row(AppLocalization.text("tag.messageField")) {
+        RepositoryDialogRows.row(AppLocalization.text("tag.messageField")) {
             TextField("", text: $message, axis: .vertical)
                 .lineLimit(4, reservesSpace: true)
         }
 
-        GridRow {
-            Color.clear
-                .gridCellUnsizedAxes([.horizontal, .vertical])
+        DialogFormOption(title: AppLocalization.text("tag.sign"), isOn: $sign)
 
-            Toggle(AppLocalization.text("tag.sign"), isOn: $sign)
-        }
-
-        ReferenceDialogRows.row(AppLocalization.text("tag.signingKey")) {
+        RepositoryDialogRows.row(AppLocalization.text("tag.signingKey")) {
             Picker("", selection: $signingKey) {
                 Text(AppLocalization.text("tag.signingKey.configured")).tag("")
 
                 ForEach(keys, id: \.value) { Text(UserProfiles.title(of: $0)).tag($0.value) }
             }
             .labelsHidden()
+            .buttonSizing(.flexible)
             .disabled(!sign)
         }
     }
@@ -175,7 +171,7 @@ extension CreateTagDialog {
             validName = true
         } catch {
             if !Task.isCancelled {
-                nameError = ReferenceDialogRows.validationMessage(error, in: session)
+                nameError = RepositoryDialogRows.validationMessage(error, in: session)
             }
         }
     }

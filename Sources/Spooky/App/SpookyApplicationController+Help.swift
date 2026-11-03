@@ -79,9 +79,12 @@ extension SpookyApplicationController {
 
 extension SpookyApplicationController: NSMenuItemValidation {
     /// 这个构建没有打包任何版本的更新说明时 What's New 不可用，没有当前版本的说明时 Show What's New Card 不可用；
-    /// Auto-Reload Repository 同时标出开关状态；其余菜单项总是可用。
+    /// 最近打开列表为空时 Clear Menu 不可用；Auto-Reload Repository 同时标出开关状态；其余菜单项总是可用。
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
         switch item.action {
+        case #selector(clearRecentRepositories):
+            return !bookmarks.recentlyOpened.isEmpty
+
         case #selector(showWhatsNew):
             return !WhatsNewState.shared.entries.isEmpty
 

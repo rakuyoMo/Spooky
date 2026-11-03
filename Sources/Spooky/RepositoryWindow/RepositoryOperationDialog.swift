@@ -5,7 +5,7 @@ import SwiftUI
 
 /// 同一个 Git 动作的菜单、工具栏、右键和拖放共享参数入口。
 struct RepositoryActionRequest {
-    /// 这个入口支持的操作种类，原始值兼作标题、说明与按钮文字的本地化键。
+    /// 这个入口支持的操作种类；原始值是 Activity 记录与拖放提示的标题的资源键，加上 `.help` 是对话框说明的资源键。
     enum Kind: String {
         /// 新建本地分支。
         case create = "branch.create"
@@ -35,6 +35,28 @@ struct RepositoryActionRequest {
             case .pull: .pull
             case .push, .publish: .push
             case .create, .track, .merge: nil
+            }
+        }
+
+        /// 对话框标题的资源键：新建分支是 Create New Branch，推送按本地分支是不是 HEAD 分支写 Push HEAD 或 Push Branch。
+        ///
+        /// - Parameter pushesHead: 推送的本地分支是不是 HEAD 分支；其余种类不看它。
+        func titleKey(pushesHead: Bool) -> String {
+            switch self {
+            case .create: "branch.create.title"
+            case .push: pushesHead ? "sync.pushHead" : "sync.pushBranch"
+            case .track, .fetch, .pull, .publish, .merge: rawValue
+            }
+        }
+
+        /// 主按钮的资源键：跟踪远端分支是 Create，推送与标题相同。
+        ///
+        /// - Parameter pushesHead: 推送的本地分支是不是 HEAD 分支；其余种类不看它。
+        func submitKey(pushesHead: Bool) -> String {
+            switch self {
+            case .track: "branch.track.submit"
+            case .push: titleKey(pushesHead: pushesHead)
+            case .create, .fetch, .pull, .publish, .merge: rawValue
             }
         }
     }
@@ -140,10 +162,6 @@ struct RepositoryOperationDialog: View {
     @State
     private var forcePush = false
 
-    /// 选项展开状态不持久化。
-    @State
-    private var optionsExpanded = false
-
     /// 压缩合并与强制合并提交互斥。
     @State
     private var squash = false
@@ -208,55 +226,47 @@ struct RepositoryOperationDialog: View {
     @AppStorage("pullVerifySignatures")
     private var pullVerify = false
 
-    /// 原生 sheet 骨架保持头部、内容、校验、折叠选项和底栏顺序。
+    /// 对话框骨架：头部、表单、错误区、Options 与底栏；跟踪远端分支没有选项区。
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-
-            form
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-
-            if !error.isEmpty {
-                Label(error, systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12))
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
-            }
-
-            // 断线或其它写操作进行中时主按钮禁用，说明原因并保留已填写的参数。
-            if !session.canWrite {
-                Label(AppLocalization.text("dialog.blocked"), systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12))
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
-            }
-
-            if [.merge, .pull].contains(request.kind) { preview }
-
-            if [.create, .fetch, .merge, .pull, .push, .publish].contains(request.kind) {
-                DisclosureGroup(AppLocalization.text("dialog.options"), isExpanded: $optionsExpanded) {
-                    options.padding(.vertical, 12)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 8)
-                .background(AppPalette.color("general_secondary_background_color"))
-            }
-
-            footer
+        RepositoryDialogLayout(
+            session: session,
+            title: AppLocalization.text(request.kind.titleKey(pushesHead: pushesHead)),
+            message: AppLocalization.text(request.kind.rawValue + ".help"),
+            width: request.kind == .push ? 450 : 480,
+            submitTitle: AppLocalization.text(request.kind.submitKey(pushesHead: pushesHead)),
+            error: error,
+            isValid: canSubmit,
+            cancel: cancel,
+            submit: perform,
+            options: request.kind == .track ? nil : { options }
+        ) {
+            rows
         }
-        .frame(width: 540)
         .onAppear(perform: prepare)
-        .onChange(of: name) { if cleanNames { name = RepositoryReferences.normalizedName(name) } }
+        .onChange(of: name) {
+            if cleanNames {
+                name = RepositoryReferences.normalizedName(name)
+            }
+        }
         .onChange(of: source) {
-            if request.kind == .track { name = remoteBranchName(source) }
-            if !canTrack { track = false }
+            if request.kind == .track {
+                name = remoteBranchName(source)
+            }
+
+            if !canTrack {
+                track = false
+            }
 
             // 起点是分支时，新分支的父分支默认是它
-            if request.kind == .create { parent = startBranch?.id ?? "" }
+            if request.kind == .create {
+                parent = startBranch?.id ?? ""
+            }
         }
-        .onChange(of: localBranch) { if request.kind == .publish { name = localBranch } }
+        .onChange(of: localBranch) {
+            if request.kind == .publish {
+                name = localBranch
+            }
+        }
         .task(id: name + "\u{0}" + remote) { await validateName() }
     }
 
@@ -269,18 +279,26 @@ struct RepositoryOperationDialog: View {
     /// 起点对应的分支；起点是提交哈希、标签或其它写法时为 nil。
     private var startBranch: RepositoryReference? { branches.first { $0.id == source || $0.name == source } }
 
-    /// 表单校验在客户端及时反馈，执行时核心库仍重新核对。
+    /// 推送的本地分支是不是 HEAD 分支，决定推送对话框的标题与主按钮。
+    private var pushesHead: Bool { localBranch == session.status?.branch.head }
+
+    /// 表单校验在客户端及时反馈，执行时核心库仍重新核对；仓库是否可写由骨架判断。
     private var canSubmit: Bool {
-        guard session.canWrite else { return false }
         switch request.kind {
-        case .create: return validName && !source.isEmpty
-        case .track: return validName && branches.contains { $0.id == source && $0.isRemote }
+        case .create:
+            validName && !source.isEmpty
+
+        case .track:
+            validName && branches.contains { $0.id == source && $0.isRemote }
+
         case .fetch:
-            return !(session.history.snapshot?.remotes.isEmpty ?? true) && (allRemotes || !remote.isEmpty)
+            !(session.history.snapshot?.remotes.isEmpty ?? true) && (allRemotes || !remote.isEmpty)
+
         case .pull, .merge:
-            return !source.isEmpty && session.status?.branch.head != nil && session.context?.operation == nil
+            !source.isEmpty && session.status?.branch.head != nil && session.context?.operation == nil
+
         case .push, .publish:
-            return validName && !remote.isEmpty && !localBranch.isEmpty
+            validName && !remote.isEmpty && !localBranch.isEmpty
         }
     }
 }
@@ -288,60 +306,38 @@ struct RepositoryOperationDialog: View {
 // MARK: - Layout
 
 extension RepositoryOperationDialog {
-    /// 头部：图标、动作名、服务器仓库的位置与动作说明。
-    private var header: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Image(systemName: "point.3.connected.trianglepath.dotted")
-                .font(.system(size: 42))
-                .frame(width: 64, height: 64)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(AppLocalization.text(request.kind.rawValue))
-                    .font(.system(size: 14, weight: .bold))
-
-                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
-                if let repository = session.repository, repository.host != nil {
-                    Text(repository.displayPath)
-                        .font(.system(size: 13))
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Text(AppLocalization.text(request.kind.rawValue + ".help"))
-                    .font(.system(size: 13))
-            }
+    /// 内容区输入控件的宽度上限：拉取与合并 360，新建分支与发布 350，推送 320；跟踪与获取占满输入列。
+    private var fieldWidth: CGFloat {
+        switch request.kind {
+        case .pull, .merge: 360
+        case .create, .publish: 350
+        case .push: 320
+        case .track, .fetch: .infinity
         }
-        .padding(.horizontal, 32)
-        .padding(.top, 20)
-        .padding(.bottom, 12)
     }
 
     /// 按操作种类呈现各自的字段。
     @ViewBuilder
-    private var form: some View {
-        Grid(horizontalSpacing: 8, verticalSpacing: 10) {
-            switch request.kind {
-            case .create:
-                createRows
+    private var rows: some View {
+        switch request.kind {
+        case .create:
+            createRows
 
-            case .track:
-                trackRows
+        case .track:
+            trackRows
 
-            case .fetch:
-                fetchRows
+        case .fetch:
+            fetchRows
 
-            case .pull:
-                pullRows
+        case .pull:
+            pullRows
 
-            case .merge:
-                mergeRows
+        case .merge:
+            mergeRows
 
-            case .push, .publish:
-                pushRows
-            }
+        case .push, .publish:
+            pushRows
         }
-        .font(.system(size: 13))
     }
 
     /// 新建分支：名称、可输入也可从引用列表选的起点，以及跟踪起点、置顶与新建后检出的选项。
@@ -351,244 +347,229 @@ extension RepositoryOperationDialog {
 
         // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐
         GridRow(alignment: .center) {
-            Text(AppLocalization.text("branch.start")).gridColumnAlignment(.trailing)
+            Text(AppLocalization.text("branch.start"))
+                .gridColumnAlignment(.trailing)
 
             RevisionComboBox(
                 text: $source,
                 items: session.revisionReferences.map(\.name),
                 label: AppLocalization.text("branch.start")
             )
-            .frame(maxWidth: 350, alignment: .leading)
+            .dialogFieldWidth(fieldWidth)
         }
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-            VStack(alignment: .leading, spacing: 8) {
-                // 起点是分支时标题写出它的名字
-                option(
-                    "branch.trackStart",
-                    title: startBranch.map { AppLocalization.text("branch.trackStart.named", $0.name) },
-                    value: $track
-                )
-                .disabled(!canTrack)
+        // 起点是分支时标题写出它的名字
+        option(
+            "branch.trackStart",
+            title: startBranch.map { AppLocalization.text("branch.trackStart.named", $0.name) },
+            value: $track
+        )
+        .disabled(!canTrack)
 
-                option("branch.pin", value: $pin)
-                option("branch.checkoutCreated", value: $checkout)
-            }
-        }
+        option("branch.pin", value: $pin)
+
+        option("branch.checkoutCreated", value: $checkout)
     }
 
     #warning(
         "TODO: 新建分支选项区的父分支下拉以 None 开头、默认选中起点分支是推断。核实方式：分别从分支和从提交打开新建分支对话框，展开 Options 比对 Parent Branch 的列表与默认值；只影响父分支的可选项与默认值。"
     )
 
-    /// 新建分支的选项区：父分支下拉，第一项表示不设置。
-    private var parentRow: some View {
-        Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 8) {
-            GridRow {
-                Text(AppLocalization.text("branch.parentOption")).gridColumnAlignment(.trailing)
+    /// 新建分支的选项区：父分支下拉，第一项表示不设置；说明在下拉下方，与下拉左对齐。
+    @ViewBuilder
+    private var parentRows: some View {
+        RepositoryDialogRows.row(AppLocalization.text("branch.parentOption")) {
+            Picker("", selection: $parent) {
+                Text(AppLocalization.text("branch.parentOption.none")).tag("")
 
-                Picker("", selection: $parent) {
-                    Text(AppLocalization.text("branch.parentOption.none")).tag("")
-
-                    ForEach(branches) { Text($0.name).tag($0.id) }
-                }
-                .labelsHidden()
-                .accessibilityLabel(AppLocalization.text("branch.parentOption"))
+                ForEach(branches) { Text($0.name).tag($0.id) }
             }
-
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
-                Text(AppLocalization.text("branch.parentOption.help"))
-                    .font(.system(size: 11))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            .labelsHidden()
+            .buttonSizing(.flexible)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+
+        GridRow {
+            Color.clear
+                .frame(width: DialogMetrics.labelWidth, height: 0)
+                .gridCellUnsizedAxes(.vertical)
+
+            Text(AppLocalization.text("branch.parentOption.help"))
+                .font(.system(size: 11))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     /// 跟踪远端分支：远端分支、本地名称与新建后检出的选项。
     @ViewBuilder
     private var trackRows: some View {
         branchPicker(local: false, label: "branch.remoteField")
+
         nameRow
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-            option("branch.checkoutCreated", value: $checkout)
-        }
+        option("branch.checkoutCreated", value: $checkout)
     }
 
     /// 获取：选择单个远端，或改为获取全部远端。
     @ViewBuilder
     private var fetchRows: some View {
-        remotePicker.disabled(allRemotes)
+        remotePicker
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-            Toggle(AppLocalization.text("sync.allRemotes"), isOn: $allRemotes)
-        }
+        DialogFormOption(title: AppLocalization.text("sync.allRemotes"), isOn: $allRemotes)
     }
 
-    /// 拉取：远端分支与是否以变基方式拉取。
+    /// 拉取：远端分支、是否以变基方式拉取，以及合并可行性预览。
     @ViewBuilder
     private var pullRows: some View {
         branchPicker(local: false)
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-            option("sync.rebase", value: $rebase)
-        }
+        option("sync.rebase", value: $rebase)
+
+        MergeabilityPreview(session: session, revision: source)
     }
 
-    /// 合并：目标分支，以及压缩、合并提交与自动提交的选项。
+    /// 合并：目标分支，压缩、合并提交与自动提交的选项，以及合并可行性预览。
     @ViewBuilder
     private var mergeRows: some View {
         branchPicker(local: nil)
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-            VStack(alignment: .leading, spacing: 8) {
-                option("merge.squash", value: $squash).disabled(alwaysCommit)
-                option("merge.alwaysCommit", value: $alwaysCommit).disabled(squash)
+        option("merge.squash", value: $squash)
+            .disabled(alwaysCommit)
 
-                // 自动提交只在强制创建合并提交且不压缩时可改，其余情况固定显示为勾选。
-                option(
-                    "merge.autoCommit",
-                    value: Binding(
-                        get: { alwaysCommit && !squash ? autoCommit : true },
-                        set: { autoCommit = $0 }
-                    )
-                )
-                .disabled(!alwaysCommit || squash)
-            }
-        }
+        option("merge.alwaysCommit", value: $alwaysCommit)
+            .disabled(squash)
+
+        // 自动提交只在强制创建合并提交且不压缩时可改，其余情况固定显示为勾选
+        option(
+            "merge.autoCommit",
+            value: Binding(
+                get: { alwaysCommit && !squash ? autoCommit : true },
+                set: { autoCommit = $0 }
+            )
+        )
+        .disabled(!alwaysCommit || squash)
+
+        MergeabilityPreview(session: session, revision: source)
     }
 
     /// 推送与发布：本地分支、远端与远端分支名；只有发布有跟踪远端分支的选项。
     @ViewBuilder
     private var pushRows: some View {
-        GridRow {
-            Text(AppLocalization.text("branch.local")).gridColumnAlignment(.trailing)
+        RepositoryDialogRows.row(AppLocalization.text("branch.local")) {
             Picker("", selection: $localBranch) {
                 ForEach(branches.filter(\.isLocal)) { Text($0.name).tag($0.name) }
             }
             .labelsHidden()
-            .accessibilityLabel(AppLocalization.text("branch.local"))
+            .buttonSizing(.flexible)
+            .dialogFieldWidth(fieldWidth)
         }
 
         remotePicker
+
         nameRow
 
         if request.kind == .publish {
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                option("sync.setUpstream", value: $upstream)
-            }
+            option("sync.setUpstream", value: $upstream)
         }
     }
 
     /// 名称字段在创建和发布时采用相同的实时规范化。
     private var nameRow: some View {
-        GridRow {
-            Text(AppLocalization.text("branch.name")).gridColumnAlignment(.trailing)
+        RepositoryDialogRows.row(AppLocalization.text("branch.name")) {
             TextField("", text: $name)
-                .accessibilityLabel(AppLocalization.text("branch.name"))
                 .accessibilityIdentifier("branch-name")
+                .dialogFieldWidth(fieldWidth)
         }
     }
 
-    /// 远端从配置快照中选择，不在 UI 接受未经验证的 URL。
+    /// 远端从配置快照中选择，不在 UI 接受未经验证的 URL；获取全部远端时不可用。
     private var remotePicker: some View {
-        GridRow {
-            Text(AppLocalization.text("sync.remote")).gridColumnAlignment(.trailing)
+        RepositoryDialogRows.row(AppLocalization.text("sync.remote")) {
             Picker("", selection: $remote) {
                 ForEach(session.history.snapshot?.remotes ?? []) { Text($0.name).tag($0.name) }
             }
             .labelsHidden()
-            .accessibilityLabel(AppLocalization.text("sync.remote"))
+            .buttonSizing(.flexible)
+            .dialogFieldWidth(fieldWidth)
+            .disabled(request.kind == .fetch && allRemotes)
         }
     }
 
-    /// 合并与拉取的可行性预览，随所选分支重新计算。
-    private var preview: some View {
-        MergeabilityPreview(session: session, revision: source)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 12)
-    }
-
-    /// 新建分支的父分支，以及 Fetch、合并及推送附带的选项，按各自行为过滤。
+    /// 新建分支的父分支，以及获取、拉取、合并、推送与发布附带的选项，按各自行为过滤。
     @ViewBuilder
     private var options: some View {
-        if request.kind == .create {
-            parentRow
-        } else {
-            VStack(alignment: .leading, spacing: 8) {
-                if request.kind == .fetch {
-                    option("sync.prune", value: $prune)
-                    option("sync.fetchSubmodules", value: $fetchSubmodules)
-                    option("sync.allTags", value: $allTags)
-                }
+        switch request.kind {
+        case .create:
+            parentRows
 
-                if request.kind == .merge { option("merge.verify", value: $mergeVerify).disabled(squash) }
-                if request.kind == .pull { option("merge.verify", value: $pullVerify) }
+        case .fetch:
+            option("sync.prune", value: $prune)
 
-                if request.kind == .push {
-                    option("sync.pushAllTags", value: $pushAllTags)
-                    option("sync.forcePush", value: $forcePush)
+            option("sync.fetchSubmodules", value: $fetchSubmodules)
 
-                    SubmodulePushOption(enabled: $pushSubmodules, mode: $pushSubmoduleMode)
-                }
+            option("sync.allTags", value: $allTags)
 
-                if request.kind != .fetch { option("sync.skipHooks", value: $skipHooks) }
-            }
+        case .pull:
+            option("merge.verify", value: $pullVerify)
+
+            option("sync.skipHooks", value: $skipHooks)
+
+        case .merge:
+            option("merge.verify", value: $mergeVerify)
+                .disabled(squash)
+
+            option("sync.skipHooks", value: $skipHooks)
+
+        case .push:
+            option("sync.pushAllTags", value: $pushAllTags)
+
+            option("sync.forcePush", value: $forcePush)
+
+            SubmodulePushOption(enabled: $pushSubmodules, mode: $pushSubmoduleMode)
+
+            option("sync.skipHooks", value: $skipHooks)
+
+        case .publish:
+            option("sync.skipHooks", spacing: 4, value: $skipHooks)
+
+        case .track:
+            EmptyView()
         }
-    }
-
-    /// 底栏：取消与执行按钮，参数不完整或仓库不可写时禁用执行。
-    private var footer: some View {
-        HStack(spacing: 8) {
-            Spacer()
-
-            Button(AppLocalization.text("action.cancel"), action: cancel)
-                .keyboardShortcut(.cancelAction)
-
-            Button(AppLocalization.text(request.kind.rawValue), action: perform)
-                .keyboardShortcut(.defaultAction)
-                .disabled(!canSubmit)
-        }
-        .padding(.horizontal, 20)
-        .frame(height: 53)
     }
 
     /// 合并可选两类分支；拉取和跟踪只选远端。
     ///
     /// - Parameter label: 标签的文案键；跟踪远端分支写明是远端分支。
     private func branchPicker(local: Bool?, label: String = "branch.target") -> some View {
-        GridRow {
-            Text(AppLocalization.text(label)).gridColumnAlignment(.trailing)
+        RepositoryDialogRows.row(AppLocalization.text(label)) {
             Picker("", selection: $source) {
                 ForEach(branches.filter { local == nil || $0.isLocal == local }) {
                     Text($0.name).tag($0.id)
                 }
             }
             .labelsHidden()
-            .accessibilityLabel(AppLocalization.text(label))
+            .buttonSizing(.flexible)
+            .dialogFieldWidth(fieldWidth)
         }
     }
 
-    /// 勾选项说明保持正常文本色，仅禁用时随控件变灰。
+    /// 勾选框与下一行的说明，说明的资源键是勾选框的资源键加 `.help`。
     ///
-    /// - Parameter title: 随表单内容变化的标题；为 nil 时用文案键对应的标题。
-    private func option(_ key: String, title: String? = nil, value: Binding<Bool>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Toggle(title ?? AppLocalization.text(key), isOn: value)
-            Text(AppLocalization.text(key + ".help"))
-                .font(.system(size: 11))
-                .padding(.leading, 19)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+    /// - Parameters:
+    ///   - title: 随表单内容变化的标题；为 nil 时用资源键对应的标题。
+    ///   - spacing: 勾选框到说明的间距。
+    private func option(
+        _ key: String,
+        title: String? = nil,
+        spacing: CGFloat = 8,
+        value: Binding<Bool>
+    ) -> DialogFormOption {
+        DialogFormOption(
+            title: title ?? AppLocalization.text(key),
+            help: AppLocalization.text(key + ".help"),
+            spacing: spacing,
+            isOn: value
+        )
     }
 }
 

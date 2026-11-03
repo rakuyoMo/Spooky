@@ -22,7 +22,7 @@ extension RepositorySidebarView {
     }
 
     /// 标签的树：没有过滤时只留最新的若干个，选中的总会留下，再按名称排序。
-    private var tagNodes: [SidebarRefNode] {
+    var tagNodes: [SidebarRefNode] {
         guard let snapshot = session.history.snapshot else {
             return []
         }

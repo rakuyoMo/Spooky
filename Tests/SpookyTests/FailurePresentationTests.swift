@@ -30,7 +30,7 @@ struct FailurePresentationTests {
             (RepositoryOpenError.unsupportedGitVersion(result), .version),
             (RemoteConnectionError(.gitVersion), .version),
             (RemoteConnectionError(.pathUnavailable), .repository),
-            (RepositorySyncError.dirtyWorkingCopy, .repository),
+            (RepositorySyncError.dirtyWorkingCopy(rebase: false), .repository),
         ]
 
         for (error, kind) in cases {
@@ -61,7 +61,7 @@ struct FailurePresentationTests {
         #expect(writing.context.contains("spooky-test:/tmp/repository"))
     }
 
-    /// 写操作的 Git 失败提示看原文后刷新核对；同一错误发生在读取时仍提示刷新重试。
+    /// 写操作的 Git 失败提示看原文后刷新核对；同一错误发生在读取时仍提示刷新重试；恢复说明接在原因之后。
     @Test("写操作失败的恢复说明")
     func writeRecovery() {
         let result = GitCommandResult(
@@ -75,8 +75,12 @@ struct FailurePresentationTests {
         let writing = AppFailure(error: error, opening: false, location: nil, writing: true)
         let reading = AppFailure(error: error, opening: false, location: nil)
 
-        #expect(writing.message == AppLocalization.text("error.writeHelp"))
-        #expect(reading.message == AppLocalization.text("error.refreshHelp"))
+        let cause = AppLocalization.text("sync.error.remote")
+        let writeHelp = AppLocalization.text("error.writeHelp")
+        let refreshHelp = AppLocalization.text("error.refreshHelp")
+
+        #expect(writing.message == AppLocalization.text("failure.reason", cause, writeHelp))
+        #expect(reading.message == AppLocalization.text("failure.reason", cause, refreshHelp))
         #expect(writing.details.contains("Could not read from remote repository."))
     }
 

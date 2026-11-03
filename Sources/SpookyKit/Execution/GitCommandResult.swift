@@ -127,6 +127,9 @@ public struct GitError: Error, Sendable {
     /// 出错的子命令及其参数，保持原有 API 语义。
     public var arguments: [String] { result.arguments }
 
+    /// 出错的子命令名，跳过 `-c`、`-C` 等全局参数；界面按它说明被挡住的是哪种操作。
+    public var command: String? { RepositoryOperationQueue.command(in: result.arguments) }
+
     /// 正常退出时的退出码，保持原有 API 语义。
     public var exitCode: Int32? { result.exitCode }
 

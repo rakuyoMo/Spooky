@@ -40,22 +40,21 @@ extension RepositorySession {
             repository.displayPath
         )
 
-        onConfirm?(
-            title,
-            message,
-            { [weak self] in
-                guard let self, generation == request else { return }
+        onConfirm?(ConfirmationRequest(
+            title: title,
+            message: message,
+            submitTitle: AppLocalization.text("reflog.restore.submit")
+        ) { [weak self] in
+            guard let self, generation == request else { return }
 
-                performGit(
-                    { runner, _ in
-                        try await RepositoryReflog(runner: runner)
-                            .restore(branch.id, to: entry.commit.id, expected: branch.objectID)
-                    },
-                    title: title,
-                    undo: .reversible
-                )
-            },
-            nil
-        )
+            performGit(
+                { runner, _ in
+                    try await RepositoryReflog(runner: runner)
+                        .restore(branch.id, to: entry.commit.id, expected: branch.objectID)
+                },
+                title: title,
+                undo: .reversible
+            )
+        })
     }
 }

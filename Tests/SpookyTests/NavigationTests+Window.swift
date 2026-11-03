@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import SwiftUI
+import Synchronization
 import Testing
 
 @testable import Spooky
@@ -181,9 +182,9 @@ extension NavigationTests {
         var prompts = 0
         var agrees = false
 
-        session.onConfirm = { _, _, action, _ in
+        session.onConfirm = { request in
             prompts += 1
-            if agrees { action() }
+            if agrees { request.action() }
         }
 
         // 链接：询问时窗口仍在 Working Copy，取消后视图与记录都不变
@@ -315,5 +316,108 @@ extension NavigationTests {
 
         #expect(!controller.showsManager)
         #expect(coordinator.bookmarks.isMissing(missing))
+    }
+}
+
+// MARK: - Missing Repository
+
+extension NavigationTests {
+    /// 丢失页出现时与窗口重新成为主窗口时都会重试：仓库在就换回仓库界面；
+    /// 仍不在时页面原样留着，不弹错误，也不把书签标为失效，页面不重建也就不会反复重试。
+    @Test("丢失页自动重试")
+    func missingRepositoryRetry() async throws {
+        let fixture = try await Self.makeWindow()
+        let moved = fixture.directory.deletingLastPathComponent()
+            .appending(path: fixture.directory.lastPathComponent + "-moved", directoryHint: .isDirectory)
+
+        defer {
+            try? FileManager.default.removeItem(at: moved)
+            fixture.close()
+        }
+
+        // 重试只在协调者管着的窗口里换回仓库，测试的窗口因此由协调者建出
+        let controller = fixture.coordinator.makeWindow()
+
+        let showsRepository = {
+            !(controller.window?.contentViewController is NSHostingController<MissingRepositoryView>)
+                && controller.session.repository != nil
+        }
+
+        // 仓库还在时，丢失页一出现就换回仓库界面
+        controller.showMissingRepository(fixture.location, reason: .notFound)
+        #expect(!showsRepository())
+        try await FileViewsTests.wait(showsRepository)
+
+        let restored = try #require(controller.session.repository)
+
+        // 目录不见后，出现时的重试打不开仓库
+        try FileManager.default.moveItem(at: fixture.directory, to: moved)
+        controller.showMissingRepository(fixture.location, reason: .notFound)
+        let page = controller.window?.contentViewController
+
+        // 出现时的重试排在主线程上：让出一会儿后它已经发起，再等它结束
+        try await Task.sleep(for: .milliseconds(50))
+        try await FileViewsTests.wait { controller.openingRequest == nil }
+
+        #expect(controller.window?.contentViewController === page)
+        #expect(controller.window?.attachedSheet == nil)
+        #expect(!fixture.coordinator.bookmarks.isMissing(restored))
+
+        // 目录放回后，窗口再次成为主窗口时换回仓库界面
+        try FileManager.default.moveItem(at: moved, to: fixture.directory)
+        controller.windowDidBecomeMain(
+            Notification(name: NSWindow.didBecomeMainNotification, object: controller.window)
+        )
+        #expect(controller.openingRequest != nil)
+        try await FileViewsTests.wait(showsRepository)
+    }
+
+    /// 重试不是用户发起的，验证位置时不允许询问用户；同一窗口上一次重试还没结束时不发起新的重试。
+    @Test("丢失页的重试不询问用户")
+    func missingRepositoryRetryIsQuiet() async throws {
+        let fixture = try await Self.makeWindow()
+        defer { fixture.close() }
+
+        let coordinator = fixture.coordinator
+        let controller = fixture.controller
+        let interactions = Mutex<[Bool]>([])
+
+        let task = coordinator.retryMissingRepository(fixture.location, in: controller) { _ in
+            interactions.withLock { $0.append(RemoteCallbackRequest.allowsInteraction) }
+            try await Task.sleep(for: .milliseconds(100))
+            throw CocoaError(.fileNoSuchFile)
+        }
+
+        #expect(task != nil)
+        #expect(coordinator.retryMissingRepository(fixture.location, in: controller) == nil)
+
+        await task?.value
+        #expect(interactions.withLock { $0 } == [false])
+        #expect(controller.openingRequest == nil)
+    }
+
+    /// 重试期间窗口回到了仓库管理时，仓库回来了也不把窗口换回仓库界面。
+    @Test("离开丢失页后重试不换回仓库")
+    func missingRepositoryRetryAfterLeaving() async throws {
+        let fixture = try await Self.makeWindow()
+        defer { fixture.close() }
+
+        let coordinator = fixture.coordinator
+        let controller = coordinator.makeWindow()
+
+        // 页面出现时的重试会立即换回仓库，先发起一次慢的重试占住窗口
+        let task = coordinator.retryMissingRepository(fixture.location, in: controller) { location in
+            try await Task.sleep(for: .milliseconds(200))
+            return location
+        }
+
+        controller.showMissingRepository(fixture.location, reason: .notFound)
+        #expect(controller.missingLocation == fixture.location)
+
+        controller.showRepositories()
+        await task?.value
+
+        #expect(controller.showsManager)
+        #expect(controller.missingLocation == nil)
     }
 }

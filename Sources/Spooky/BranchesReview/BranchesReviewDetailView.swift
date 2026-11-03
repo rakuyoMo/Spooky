@@ -20,7 +20,6 @@ struct BranchesReviewDetailView: View {
                 message: "",
                 symbol: "arrow.triangle.branch"
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if
             let id = selected.first,
             let branch = session.history.branches.first(where: { $0.id == id })
@@ -36,7 +35,6 @@ struct BranchesReviewDetailView: View {
                 message: "",
                 symbol: "arrow.triangle.branch"
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }

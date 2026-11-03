@@ -32,7 +32,7 @@ struct SetParentBranchDialog: View {
 
     /// “Parent:” 下拉，宽不超过 350。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("branch.parent.set"),
             message: message,
@@ -42,11 +42,12 @@ struct SetParentBranchDialog: View {
             cancel: close,
             submit: submit
         ) {
-            ReferenceDialogRows.row(AppLocalization.text("branch.parent.field")) {
+            RepositoryDialogRows.row(AppLocalization.text("branch.parent.field")) {
                 Picker("", selection: $parent) {
                     ForEach(candidates) { Text($0.name).tag($0.id) }
                 }
                 .labelsHidden()
+                .buttonSizing(.flexible)
                 .frame(maxWidth: 350, alignment: .leading)
             }
         }
@@ -91,7 +92,7 @@ extension SetParentBranchDialog {
                 parent = currentParent
             }
         } catch {
-            self.error = ReferenceDialogRows.validationMessage(error, in: session)
+            self.error = RepositoryDialogRows.validationMessage(error, in: session)
         }
     }
 

@@ -66,6 +66,7 @@
 
 
 "repositories.panel.message" = "Seleccionar un árbol de trabajo de Git existente.";
+"repositories.panel.prompt" = "Abrir repositorio";
 
 "workspace.group" = "Espacio de trabajo";
 
@@ -122,7 +123,7 @@
 
 
 
-"error.command" = "El comando de Git ha fallado";
+"error.command" = "No se puede ejecutar el comando de Git";
 
 "error.launch" = "No se ha podido iniciar Git";
 
@@ -152,7 +153,7 @@
 
 "error.details" = "Salida original";
 
-"error.noOutput" = "El comando no ha generado ninguna salida.";
+"error.noOutput" = "(No se ha indicado ningún mensaje de error)";
 
 "error.outputLimitHelp" = "El comando ha superado el límite de 256 MiB de la salida estándar o el de 1 MiB del error estándar. No se ha cargado el resultado que superaba el límite.";
 "action.addRemote" = "Añadir repositorio de servidor…";
@@ -169,6 +170,7 @@
 "action.find" = "Buscar…";
 "menu.find" = "Buscar";
 "remote.form.help" = "Usar un alias de host de la configuración de SSH y una ruta absoluta en ese servidor.";
+"remote.form.title" = "Añadir repositorio de servidor";
 "remote.host" = "Alias del host:";
 "remote.path" = "Ruta del repositorio:";
 "remote.checking" = "Comprobando la conexión…";
@@ -186,13 +188,37 @@
 "settings.themes" = "Temas";
 "settings.terminal" = "App de terminal:";
 "callback.editor" = "Editar texto remoto";
-"callback.credentials" = "Solicitud de credenciales del servidor";
+"callback.username.title" = "Introducir el nombre de usuario";
+"callback.password.title" = "Introducir la contraseña";
+"callback.username.label" = "Nombre de usuario:";
+"callback.password.label" = "Contraseña:";
 "callback.saveKeychain" = "Guardar en el llavero de este Mac";
-"callback.value" = "Credencial";
 "error.indexLocked" = "El índice está bloqueado por otro proceso de Git. Esperar a que termine y volver a intentarlo.";
 "error.terminal" = "No se ha podido abrir el terminal";
 "error.terminalHelp" = "Comprobar el terminal seleccionado en Ajustes y su permiso de Automatización de macOS.";
-"error.exitCode" = "Estado de salida: %ld";
+"error.remoteConnection" = "Error al conectar con el remoto";
+"error.synchronization" = "Error al sincronizar con el remoto";
+"error.remoteNotFound" = "No se encuentra el repositorio remoto";
+"error.indexLocked.title" = "Índice de Git bloqueado por otro proceso de Git";
+"signing.error.title" = "No se ha podido firmar";
+"error.merge" = "Error al fusionar";
+"error.rebase" = "Error al hacer rebase";
+"error.checkout" = "No se ha podido hacer checkout de la revisión";
+"sync.error.branch.title" = "Se necesita una rama local";
+"branch.error.diverged.title" = "La rama no puede avanzar rápido";
+"branch.error.current.title" = "La rama actual no puede avanzar rápido aquí";
+"branch.error.remoteExists.title" = "La rama remota ya existe";
+"working.error.stale.title" = "El archivo ha cambiado";
+"working.error.selection.title" = "No hay cambios seleccionados";
+"working.error.file.title" = "Se necesita un archivo regular";
+"working.error.path.title" = "Ruta no admitida";
+"diff.error.whitespace.title" = "Las líneas seleccionadas no coinciden";
+"reference.error.name.title" = "Nombre no válido";
+"reference.error.refspec.title" = "Refspec no válida";
+"reference.error.url.title" = "URL remota no válida";
+"remote.error.browser.title" = "No se puede abrir el remoto en un navegador";
+"failure.reason" = "%1$@ %2$@";
+"error.gitMessage" = "Mensaje de error de Git";
 "terminal.notInstalled" = "%@ no está instalado.";
 "themes.background" = "Fondo";
 "themes.selection" = "Selección";
@@ -223,13 +249,13 @@
 "remoteError.pathPermission.help" = "El usuario de SSH necesita permisos de lectura y búsqueda en este directorio.";
 "remoteError.diskAccess" = "Carpeta del servidor bloqueada por la privacidad";
 "remoteError.diskAccess.help" = "macOS en el servidor impide que las sesiones SSH lean esta carpeta. En el servidor, permite el acceso total al disco para usuarios remotos en Compartir → Sesión remota, o mueve el repositorio fuera de las carpetas protegidas.";
-"remoteError.notWorkingTree" = "La ruta del servidor no es un árbol de trabajo de Git";
+"remoteError.notWorkingTree" = "La ruta no es un árbol de trabajo de Git";
 "remoteError.notWorkingTree.help" = "Seleccionar un árbol de trabajo de Git existente en el servidor. Revisar la salida original de Git por si hay restricciones de propiedad.";
 "remoteError.statusFormat" = "No se ha podido leer el estado del servidor";
 "remoteError.statusFormat.help" = "Revisar el error de Git status que aparece debajo. Git debe admitir porcelain v2 con salida separada por NUL.";
 "remoteError.deployment" = "No se ha podido preparar la sesión en el servidor";
 "remoteError.deployment.help" = "Comprobar el reenvío de sockets Unix de SSH, /usr/bin/perl y el acceso de escritura a ~/.spooky/bin y al directorio temporal de la sesión.";
-"remoteError.protocolFailure" = "El resultado de la operación en el servidor está incompleto";
+"remoteError.protocolFailure" = "Resultado incompleto en el servidor";
 "remoteError.protocolFailure.help" = "Volver a conectar e inspeccionar el repositorio antes de repetir cualquier operación de escritura.";
 "remoteError.cancellationUnconfirmed" = "Cancelación remota no confirmada";
 "remoteError.cancellationUnconfirmed.help" = "Se ha cerrado el canal local, pero no se ha podido confirmar que el proceso del servidor se haya detenido. Volver a conectar e inspeccionar el repositorio; la escritura no se repetirá automáticamente.";
@@ -272,9 +298,16 @@
 "working.discardLines" = "Descartar líneas";
 "working.discard" = "Descartar cambios";
 "working.discardAll" = "Descartar todos los cambios…";
+"working.discard.title" = "Descartar cambios locales";
+"working.discardAll.title" = "Descartar todos los cambios locales";
+"working.discardAll.submit" = "Descartar todos los cambios";
+"working.discardContent.title" = "¿Descartar el contenido del diff?";
 "working.discard.message" = "Descartar los cambios de %d archivos en %@: los archivos con seguimiento vuelven al último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera.";
 "working.discard.remote" = "Descartar los cambios de %d archivos del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera del servidor.";
 "working.discard.remotePermanent" = "Descartar los cambios de %d archivos del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se eliminan permanentemente del servidor.";
+"working.discard.message.single" = "Descartar los cambios de “%@” en %@: los archivos con seguimiento vuelven al último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera.";
+"working.discard.remote.single" = "Descartar los cambios de “%@” del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera del servidor.";
+"working.discard.remotePermanent.single" = "Descartar los cambios de “%@” del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se eliminan permanentemente del servidor.";
 "working.discard.lines" = "Descartar las líneas seleccionadas en %@.";
 "working.discard.remoteLines" = "Sobrescribir el contenido seleccionado del servidor en %@.";
 "working.resolved" = "Marcar como resuelto";
@@ -328,8 +361,10 @@
 "branch.default" = "Rama predeterminada";
 "branch.create" = "Crear rama";
 "branch.create.help" = "Crea una rama local a partir de una revisión.";
+"branch.create.title" = "Crear nueva rama";
 "branch.track" = "Seguir rama remota";
 "branch.track.help" = "Crea una rama local que sigue la rama remota seleccionada.";
+"branch.track.submit" = "Crear";
 "branch.checkout" = "Hacer checkout de la rama";
 "branch.checkoutNamed" = "Hacer checkout de “%@”";
 "branch.delete" = "Eliminar rama";
@@ -352,6 +387,8 @@
 "sync.pull.help" = "Hace fetch de la rama seleccionada y, después, fusiona o hace rebase de forma explícita.";
 "sync.push" = "Hacer push";
 "sync.push.help" = "Hace push de una rama local al destino seleccionado.";
+"sync.pushHead" = "Hacer push de HEAD";
+"sync.pushBranch" = "Hacer push de la rama";
 "sync.publish" = "Publicar rama";
 "sync.publish.help" = "Crea una rama en el remoto seleccionado.";
 "sync.merge" = "Fusionar";
@@ -442,7 +479,7 @@
 "dialog.options" = "Opciones";
 "dialog.doNotAskAgain" = "No volver a preguntarme";
 "menu.repository" = "Repositorio";
-"callback.privateKey" = "Desbloquear clave privada SSH";
+"callback.privateKey.title" = "Introducir la contraseña de la clave privada";
 "callback.privateKey.help" = "La clave desbloqueada se añadirá al agente SSH.";
 "callback.accountTokenRejected" = "No se aceptó el token de la cuenta “%@”. Introduce un nombre de usuario y una contraseña.";
 "history.unpushed" = "Pendiente de push";
@@ -583,6 +620,7 @@
 "conflict.applied" = "Parche o stash aplicado";
 "conflict.binary" = "El contenido binario no se muestra.";
 "conflict.error.version" = "Los archivos seleccionados no tienen esta versión.";
+"conflict.error.version.title" = "Versión no disponible";
 "conflict.export" = "Exportar la versión de “%@”…";
 "conflict.hint.merge.conflicts" = "Resolver todos los conflictos para completar la fusión.";
 "conflict.hint.merge.resolved" = "Revisar el mensaje del commit y, después, hacer clic en **Hacer commit** para completar la fusión.";
@@ -646,6 +684,7 @@
 "fileHistory.restoreInWorkingCopy" = "Restaurar “%@” a la revisión “%@” en la copia de trabajo…";
 "fileHistory.showHistoryOf" = "Mostrar el historial de “%@”";
 "fileHistory.restoreTitle" = "Restaurar archivos en la copia de trabajo";
+"fileHistory.restore.submit" = "Restaurar";
 "fileHistory.restore.message" = "“%@” se restaurará a la revisión %@ en %@. Se descartarán los cambios de este archivo, estén o no en el stage; si no existe en esa revisión, se eliminará.";
 "fileHistory.restore.remote" = "“%@” se sobrescribirá con la revisión %@ en el servidor en %@. Se descartarán los cambios de este archivo, estén o no en el stage; si no existe en esa revisión, se eliminará del servidor.";
 "fileHistory.scope.author" = "Autor";
@@ -736,6 +775,7 @@
 "profiles.addCurrent" = "Añadir perfil de usuario “%@”…";
 "profiles.manage" = "Gestionar perfiles de usuario…";
 "profiles.apply" = "Usar perfil de usuario";
+"profiles.apply.submit" = "Usar perfil";
 "profiles.apply.local" = "Escribe %@ en la configuración local del repositorio %@.";
 "profiles.apply.remote" = "Escribe %@ en la configuración local del repositorio %@ del servidor. Las demás herramientas que hacen commits en este repositorio del servidor usarán la misma identidad.";
 "commit.signOff" = "Firmar (Signed-off-by)";
@@ -770,6 +810,7 @@
 "files.untrack.multiple" = "Dejar de seguir %ld ítems";
 "files.trash" = "Trasladar a la papelera";
 "files.delete" = "Eliminar";
+"files.delete.title" = "Eliminar permanentemente";
 "files.delete.remote" = "¿Eliminar permanentemente los siguientes archivos del servidor en %2$@?\n\n%1$@";
 "files.move.menu" = "Mover…";
 "files.move" = "Mover";
@@ -829,8 +870,8 @@
 "files.error.preimage" = "El parche no coincide con los archivos";
 "files.error.preimageHelp" = "Los siguientes archivos cambiaron después de crear el parche, así que no se ha aplicado y la copia de trabajo no ha cambiado. Vuelve a crear el parche a partir de los archivos actuales, o revierte los archivos a la versión a partir de la que se creó el parche.";
 "files.error.destination" = "El destino ya existe";
-"files.error.trashUnavailable" = "No hay ninguna papelera disponible en el servidor";
-"files.error.trashedItems" = "No se pueden devolver los archivos desde la papelera";
+"files.error.trashUnavailable" = "No hay papelera disponible en el servidor";
+"files.error.trashedItems" = "No se pueden restaurar desde la papelera";
 "files.doubleClick" = "Doble clic en un archivo de la copia de trabajo:";
 "files.doubleClick.openFile" = "Abrir con la aplicación por omisión";
 "files.doubleClick.openDiff" = "Abrir herramienta de comparación";
@@ -904,6 +945,7 @@
 "history.search.to" = "y";
 "history.reveal.notFound" = "El commit %@ no está en este historial.";
 "history.reveal.slow" = "Cargar más commits";
+"history.reveal.slow.submit" = "Cargar";
 "history.reveal.slow.message" = "El commit %1$@ está después de los primeros %2$ld commits de este historial. Cargar el historial hasta ese commit puede tardar un poco.";
 "history.subtitle" = "%@ (%ld commits)";
 "history.subtitle.more" = "%@ (%ld commits o más)";
@@ -1126,7 +1168,7 @@
 "rewrite.rebaseOnto.missing" = "Elegir las revisiones base.";
 "rewrite.rebaseOnto.newIsHead" = "La nueva base no puede ser el commit de HEAD.";
 "rewrite.rebaseOnto.currentIsHead" = "La base actual no puede ser el commit de HEAD.";
-"rewrite.reword.title" = "Editar el mensaje de commit de «%@»";
+"rewrite.reword.title" = "Editar el mensaje de la revisión «%@»";
 "rewrite.reword.help" = "Sustituye el mensaje del commit seleccionado. Los commits posteriores también se reescriben.";
 "rewrite.error.changed" = "La rama cambió antes de reescribir";
 "rewrite.error.changed.help" = "Los commits de la rama ya no coinciden con lo mostrado. No se reescribió nada. Actualizar el historial y volver a intentarlo.";
@@ -1174,18 +1216,18 @@
 "sync.rebaseMenu" = "Hacer rebase…";
 "sync.forcePushMenu" = "Push forzado con lease…";
 "sync.pushToMenu" = "Hacer push a…";
-"sync.fetch.tip" = "Hacer fetch de los remotos";
-"sync.pull.tip" = "Hacer pull de una rama remota en la rama HEAD";
-"sync.push.tip" = "Hacer push de una rama local a un remoto";
-"sync.sync.tip" = "Sincronizar la rama HEAD con una rama remota";
-"sync.merge.tip" = "Fusionar otra rama en la rama HEAD";
-"sync.rebaseHead.tip" = "Hacer rebase de la rama HEAD sobre otra rama";
-"sync.quickFetch.tip" = "Fetch rápido: hacer fetch de los remotos de inmediato";
-"sync.quickPull.tip" = "Pull rápido: hacer pull de la rama de seguimiento";
-"sync.quickPush.tip" = "Push rápido: hacer push de la rama HEAD a su rama de seguimiento";
-"sync.quickSync.tip" = "Sincronización rápida: sincronizar la rama HEAD con su rama de seguimiento";
-"sync.quickMerge.tip" = "Fusión rápida: fusionar la rama de seguimiento en la rama HEAD";
-"sync.quickRebase.tip" = "Rebase rápido: hacer rebase de la rama HEAD sobre su rama de seguimiento";
+"sync.fetch.tip" = "Hace fetch de los remotos";
+"sync.pull.tip" = "Hace pull de las ramas remotas";
+"sync.push.tip" = "Hace push de las ramas locales a los remotos";
+"sync.sync.tip" = "Sincronizar HEAD con una rama remota";
+"sync.merge.tip" = "Fusiona otra rama en la rama HEAD";
+"sync.rebaseHead.tip" = "Hace rebase de la rama HEAD actual sobre otra rama";
+"sync.quickFetch.tip" = "Hace fetch de los remotos de inmediato";
+"sync.quickPull.tip" = "Hace pull de la rama remota de seguimiento";
+"sync.quickPush.tip" = "Hace push de la rama HEAD a su rama de seguimiento";
+"sync.quickSync.tip" = "Sincroniza la rama HEAD con su rama de seguimiento";
+"sync.quickMerge.tip" = "Fusiona la rama de seguimiento de la rama HEAD actual";
+"sync.quickRebase.tip" = "Hace rebase de la rama HEAD actual sobre su rama de seguimiento";
 "sync.syncHead" = "Sincronizar HEAD";
 "sync.syncHead.help" = "Hace pull de los nuevos commits de la rama remota seleccionada en “%@” y después hace push de sus commits locales a la misma rama.";
 "sync.rebaseHead" = "Hacer rebase";
@@ -1265,7 +1307,9 @@
 "branch.forceDelete" = "Forzar eliminación";
 "branch.forceDelete.help" = "Elimina la rama aunque no esté completamente fusionada.";
 "branch.forceDelete.ask" = "Estas ramas no están completamente fusionadas: %@. ¿Eliminarlas de todos modos?";
-"branch.forceDelete.submit" = "Forzar eliminación";
+"branch.forceDelete.submit" = "Eliminar";
+"branch.error.delete" = "No se puede eliminar la rama";
+"branch.error.deleteMultiple" = "No se pueden eliminar las ramas";
 "branch.deleteRemote" = "Eliminar rama remota";
 "branch.deleteRemote.message" = "Elimina la rama “%@” en su remoto.";
 "branch.deleteRemoteMultiple" = "Eliminar ramas remotas";
@@ -1330,6 +1374,7 @@
 "remote.pushURL.edit" = "Editar URL de envío";
 "remote.pushURL.edit.message" = "Introduce la URL que se usa para enviar a “%@”. La conexión se comprueba antes del cambio.";
 "remote.pushURL.unset" = "Quitar URL de envío";
+"remote.pushURL.unset.submit" = "Quitar";
 "remote.pushURL.unset.confirm" = "El envío volverá a usar la URL de obtención.";
 "remote.refspec" = "Refspec:";
 "remote.refspec.addFetch" = "Añadir refspec de obtención";
@@ -1498,7 +1543,7 @@
 "undo.error.inProgress.help" = "Terminar o cancelar primero la fusión, el rebase, el cherry-pick o el revert. No se ha cambiado nada.";
 "undo.error.conflicts" = "El repositorio tiene conflictos sin resolver";
 "undo.error.conflicts.help" = "Resolver primero los conflictos. No se ha cambiado nada.";
-"undo.error.trash" = "No se pueden devolver los archivos desde la papelera";
+"undo.error.trash" = "No se pueden restaurar desde la papelera";
 "undo.error.trash.help" = "Algunos archivos trasladados a la papelera ya no están allí, o ahora hay otros archivos en su ubicación original. No se ha cambiado nada.";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
@@ -1514,6 +1559,7 @@
 "reflog.createBranch" = "Crear rama desde “%@”…";
 "reflog.cherryPick" = "Cherry-pick de “%@”…";
 "reflog.restore.title" = "Restaurar rama";
+"reflog.restore.submit" = "Restaurar";
 "reflog.restore.message" = "¿Mover la rama “%1$@” a %2$@ en %3$@? La copia de trabajo y el área de preparación no cambian. Los commits que salen de la rama se siguen encontrando en el reflog.";
 
 "appearance.system" = "Automático";
@@ -1609,6 +1655,8 @@
 
 "externalTool.diffTool" = "Herramienta de comparación:";
 "externalTool.mergeTool" = "Herramienta de fusión:";
+"externalTool.dialog.diffTool" = "Herramienta de comparación:";
+"externalTool.dialog.mergeTool" = "Herramienta de fusión:";
 "externalTool.directoryDiff" = "Comparar carpetas completas";
 "externalTool.keepBackups" = "Conservar archivos de copia de seguridad de los conflictos de fusión";
 "externalTool.noneSelected" = "Ninguna";
@@ -1678,9 +1726,9 @@
 "menu.newTab" = "Nueva pestaña";
 "navigation.back" = "Atrás";
 "navigation.forward" = "Adelante";
-"navigation.back.tip" = "Mostrar la vista anterior";
-"navigation.forward.tip" = "Mostrar la vista siguiente";
-"navigation.title" = "Atrás/Adelante";
+"navigation.back.tip" = "Va a la vista anterior";
+"navigation.forward.tip" = "Va a la vista siguiente";
+"navigation.title" = "Anterior/Siguiente";
 "menu.hideWindowTitle" = "Ocultar título de la ventana";
 "menu.showWindowTitle" = "Mostrar título de la ventana";
 "menu.showToolbar" = "Mostrar barra de herramientas";
@@ -1692,6 +1740,19 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "Terminal";
 "toolbar.quickActions" = "Acciones rápidas";
+"toolbar.quickActions.tip" = "Muestra las acciones rápidas";
+"toolbar.bookmarks" = "Marcadores";
+"toolbar.bookmarks.tip" = "Va a la vista de marcadores";
+"toolbar.previous" = "Anterior";
+"toolbar.next" = "Siguiente";
+"toolbar.synchronize" = "Sincronizar";
+"toolbar.applyStash" = "Aplicar";
+"toolbar.saveStash" = "Guardar";
+"toolbar.applyStash.tip" = "Vuelve a aplicar cambios a la copia de trabajo";
+"toolbar.saveStash.tip" = "Guarda los cambios locales en el stash";
+"toolbar.createBranch.tip" = "Crear una rama nueva";
+"toolbar.forcePush.tip" = "Hacer push forzado con lease";
+"toolbar.labeledTip" = "%1$@: %2$@";
 "launch.empty" = "No hay repositorios recientes";
 "launch.version" = "Versión %@";
 
@@ -1819,6 +1880,7 @@
 "quickActions.showRemoteSettings" = "Mostrar ajustes del remoto";
 "quickActions.setCommitter" = "Establecer como identidad de commit";
 "quickActions.setGlobalUser" = "Establecer como usuario global";
+"quickActions.setGlobalUser.submit" = "Establecer";
 "quickActions.setGlobalUser.local" = "Escribe user.name y user.email en la configuración global de Git de este Mac. Los repositorios sin identidad propia la usan para hacer commits.";
 "quickActions.setGlobalUser.remote" = "Escribe user.name y user.email en la configuración global de Git del servidor “%@”. Los repositorios del servidor sin identidad propia la usan para hacer commits.";
 "quickActions.applyTheme" = "Aplicar tema";
@@ -1844,7 +1906,6 @@
 "clone.url" = "URL remota:";
 "clone.to" = "Clonar en:";
 "clone.destination" = "Se clonará en “%@”";
-"clone.options" = "Opciones";
 "clone.lfs" = "Clonar con LFS";
 "clone.submodules" = "Inicializar submódulos";
 "clone.error.invalidURL" = "URL remota no válida";
@@ -2003,6 +2064,7 @@
 "submodule.add.menu" = "Añadir submódulo…";
 "submodule.add.message" = "Clona un repositorio en una carpeta vacía de este repositorio y lo registra como submódulo.";
 "submodule.add.submit" = "Añadir submódulo";
+"submodule.add.title" = "Añadir repositorio de submódulo";
 "submodule.autoUpdate" = "Actualizar submódulos automáticamente";
 "submodule.autoUpdate.always" = "Actualizar siempre los submódulos automáticamente";
 "submodule.autoUpdate.message" = "La operación cambió las revisiones registradas de estos submódulos. ¿Actualizarlos ahora?";
@@ -2182,7 +2244,7 @@
 "worktree.move" = "Mover worktree";
 "worktree.move.menu" = "Mover worktree…";
 "worktree.move.message" = "Mueve el worktree “%@” a otra ubicación conservando su estado actual.";
-"worktree.move.submit" = "Mover";
+"worktree.move.submit" = "Mover worktree";
 "worktree.noRefs" = "Este repositorio aún no tiene commits.";
 "worktree.open.current" = "Abrir worktree";
 "worktree.open.newTab" = "Abrir worktree en una pestaña nueva";
@@ -2191,13 +2253,13 @@
 "worktree.page.general" = "General";
 "worktree.relocate" = "Reubicar worktree";
 "worktree.relocate.message" = "Elige dónde está ahora el directorio del worktree “%@” para que Git lo vuelva a conectar a este repositorio.";
-"worktree.relocate.submit" = "Reparar";
+"worktree.relocate.submit" = "Reubicar worktree";
 "worktree.remove" = "Eliminar worktree";
 "worktree.remove.force" = "Forzar eliminación";
 "worktree.remove.force.help" = "Elimina el worktree junto con los cambios sin confirmar.";
 "worktree.remove.menu" = "Eliminar worktree…";
 "worktree.remove.message" = "Elimina permanentemente el worktree “%@” y su directorio.";
-"worktree.remove.submit" = "Eliminar";
+"worktree.remove.submit" = "Eliminar worktree";
 "worktree.repair" = "Reparar worktree";
 "worktree.repair.menu" = "Reparar worktree…";
 "worktree.reveal" = "Mostrar worktree en el Finder";
@@ -2211,10 +2273,10 @@
 
 "lfs.menu" = "LFS";
 "lfs.menu.update" = "Actualizar";
-"lfs.menu.fetch" = "Hacer fetch…";
-"lfs.menu.pull" = "Hacer pull…";
-"lfs.menu.push" = "Hacer push…";
-"lfs.menu.track" = "Seguir…";
+"lfs.menu.fetch" = "Hacer fetch";
+"lfs.menu.pull" = "Hacer pull";
+"lfs.menu.push" = "Hacer push";
+"lfs.menu.track" = "Seguir";
 "lfs.fetch" = "Hacer fetch de objetos LFS";
 "lfs.pull" = "Hacer pull de objetos LFS";
 "lfs.push" = "Hacer push de objetos LFS";
@@ -2306,7 +2368,7 @@
 "hosting.error.mergeFailed.help" = "El servicio de alojamiento no pudo completar la fusión. Su motivo, si lo dio, se muestra abajo. Revisa la solicitud en el servicio de alojamiento y vuelve a intentarlo.";
 "hosting.error.server" = "Error del servicio de alojamiento";
 "hosting.error.server.help" = "El servicio de alojamiento tuvo un problema. Vuelve a intentarlo más tarde.";
-"hosting.error.unreachable" = "No se puede conectar con el servicio de alojamiento";
+"hosting.error.unreachable" = "Servicio de alojamiento inaccesible";
 "hosting.error.unreachable.help" = "Comprueba la conexión de red y la dirección de la instancia. Una instancia autogestionada debe ser accesible desde este Mac.";
 "hosting.error.certificate" = "El certificado no es de confianza";
 "hosting.error.certificate.help" = "Este Mac no confía en el certificado del servidor. Comprueba la dirección de la instancia o confía en el certificado en Acceso a Llaveros.";
@@ -2320,7 +2382,7 @@
 "hosting.error.differentUser.help" = "El token es del usuario que se muestra abajo. Para iniciar sesión con ese usuario, añade una cuenta nueva.";
 "hosting.error.passwordRejected" = "Se rechazó el nombre de usuario o la contraseña";
 "hosting.error.passwordRejected.help" = "Puede que la contraseña sea incorrecta, que la cuenta use autenticación de dos factores o solo pueda iniciar sesión mediante inicio de sesión único, o que el servidor no permita iniciar sesión con contraseña. Usa un token de acceso personal en su lugar.";
-"hosting.error.clientCredentialsRequired" = "El servidor exige credenciales de aplicación OAuth";
+"hosting.error.clientCredentialsRequired" = "Se requieren credenciales de aplicación OAuth";
 "hosting.error.clientCredentialsRequired.help" = "Este servidor de GitLab solo emite tokens para aplicaciones OAuth registradas, como hace GitLab 13.9 y, según su configuración, GitLab 17.8 o posterior. Spooky no admite credenciales de aplicación. Usa un token de acceso personal en su lugar.";
 "hosting.error.passwordGrantUnsupported" = "No se admite iniciar sesión con contraseña";
 "hosting.error.passwordGrantUnsupported.help" = "A partir de GitLab 19.0 ya no se puede cambiar un nombre de usuario y una contraseña por un token. Usa un token de acceso personal en su lugar.";
@@ -2523,3 +2585,44 @@
 "review.audit.stale" = "%1$@: última actualización el %2$@";
 "review.audit.manual" = "%@: archivada manualmente";
 "review.audit.restored" = "%@: restaurada";
+"menu.services" = "Servicios";
+"menu.clearRecent" = "Borrar menú";
+"menu.pasteAndMatchStyle" = "Pegar con el mismo estilo";
+"menu.delete" = "Eliminar";
+"menu.findNext" = "Buscar siguiente";
+"menu.findPrevious" = "Buscar anterior";
+"menu.useSelectionForFind" = "Usar selección para buscar";
+"menu.jumpToSelection" = "Ir a la selección";
+"menu.spelling" = "Ortografía y gramática";
+"menu.showSpelling" = "Mostrar ortografía y gramática";
+"menu.checkDocument" = "Comprobar documento ahora";
+"menu.checkSpellingWhileTyping" = "Comprobar ortografía mientras se escribe";
+"menu.checkGrammar" = "Comprobar gramática con la ortografía";
+"menu.correctSpelling" = "Corregir ortografía automáticamente";
+"menu.substitutions" = "Sustituciones";
+"menu.showSubstitutions" = "Mostrar sustituciones";
+"menu.smartCopyPaste" = "Copiar/pegar inteligente";
+"menu.smartQuotes" = "Comillas tipográficas";
+"menu.smartDashes" = "Guiones inteligentes";
+"menu.smartLinks" = "Enlaces inteligentes";
+"menu.textReplacement" = "Sustitución de texto";
+"menu.transformations" = "Transformaciones";
+"menu.upperCase" = "Convertir en mayúsculas";
+"menu.lowerCase" = "Convertir en minúsculas";
+"menu.capitalize" = "Poner en mayúscula inicial";
+"menu.speech" = "Voz";
+"menu.startSpeaking" = "Iniciar locución";
+"menu.stopSpeaking" = "Detener locución";
+"history.autoExpand.title" = "Umbral de expansión automática";
+"sync.fetchMenu" = "Hacer fetch…";
+"sync.pullMenu" = "Hacer pull…";
+"sync.pushMenu" = "Hacer push de HEAD…";
+"sync.quickPushMenu" = "Push rápido de HEAD";
+"sync.publishMenu" = "Publicar rama…";
+"branch.createMenu" = "Crear nueva rama…";
+"sync.mergeMenu" = "Fusionar…";
+"working.commitMenu" = "Hacer commit…";
+"working.stageAllMenu" = "Añadir todos los cambios locales al stage";
+"working.unstageAllMenu" = "Quitar todos los cambios locales del stage";
+"working.discardMenu" = "Descartar cambios locales";
+"working.discardAllMenu" = "Descartar todos los cambios locales…";

@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SwiftUI
 import Testing
 
 @testable import Spooky
@@ -70,7 +71,7 @@ struct DeveloperMenuTests {
         #expect(DeveloperPreferences.dataKeys.allSatisfy { defaults.object(forKey: $0) == nil })
     }
 
-    /// Reset User Defaults 先询问：说明保留哪些数据，Reset 是默认按钮；选 Cancel 不执行，选 Reset 才执行。
+    /// Reset User Defaults 先以确认对话框询问：说明保留哪些数据，Reset 是主按钮；选 Cancel 不执行，选 Reset 才执行。
     @Test("Reset 先询问，Cancel 时不执行")
     func resetConfirmation() async throws {
         let window = NSWindow(
@@ -83,25 +84,28 @@ struct DeveloperMenuTests {
         window.isReleasedWhenClosed = false
         defer { window.close() }
 
-        let reset = AppLocalization.text("developer.resetUserDefaults.confirm")
-        let cancel = AppLocalization.text("action.cancel")
-
-        for (choice, confirmed) in [(cancel, false), (reset, true)] {
+        for confirms in [false, true] {
             let answer = Task { await SpookyApplicationController.confirmResetUserDefaults(in: window) }
             let sheet = try await Self.attachedSheet(of: window)
-            let content = try #require(sheet.contentView)
+            let hosting = sheet.contentViewController as? NSHostingController<ConfirmationDialog>
+            let dialog = try #require(hosting?.rootView)
 
-            // 标题与说明来自资源，Reset 是默认按钮
-            let texts = Self.subviews(NSTextField.self, in: content).map(\.stringValue)
-            #expect(texts.contains(AppLocalization.text("developer.resetUserDefaults.title")))
-            #expect(texts.contains(AppLocalization.text("developer.resetUserDefaults.message")))
+            // 标题与说明来自资源，Reset 是主按钮
+            #expect(dialog.title == AppLocalization.text("developer.resetUserDefaults.title"))
+            #expect(dialog.message == AppLocalization.text("developer.resetUserDefaults.message"))
+            #expect(dialog.submitTitle == AppLocalization.text("developer.resetUserDefaults.confirm"))
+            #expect(dialog.cancelTitle == AppLocalization.text("action.cancel"))
 
-            #expect(sheet.defaultButtonCell?.title == reset)
+            // 照这一轮的选择走对话框的取消或主按钮：Cancel 不执行，Reset 才执行
+            dialog.close()
 
-            // 按下这一轮选的按钮：Cancel 不执行，Reset 才执行
-            let buttons = Self.subviews(NSButton.self, in: content)
-            try #require(buttons.first { $0.title == choice }).performClick(nil)
-            #expect(await answer.value == confirmed)
+            if confirms {
+                dialog.submit(false)
+            } else {
+                dialog.cancel()
+            }
+
+            #expect(await answer.value == confirms)
         }
     }
 
@@ -146,12 +150,5 @@ extension DeveloperMenuTests {
         }
 
         return try #require(window.attachedSheet)
-    }
-
-    /// 视图层级里给定类型的全部视图，按深度优先的顺序。
-    private static func subviews<Element: NSView>(_: Element.Type, in root: NSView) -> [Element] {
-        root.subviews.flatMap { child in
-            [child as? Element].compactMap(\.self) + subviews(Element.self, in: child)
-        }
     }
 }

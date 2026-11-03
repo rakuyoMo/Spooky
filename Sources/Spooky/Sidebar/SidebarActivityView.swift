@@ -189,8 +189,7 @@ struct SidebarActivityRow: View {
     /// 第一行：18 × 11 格子里按传输方向的图标，右边 6 pt 起是 11 pt 的标题，两者按首行基线对齐。
     private var titleLine: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Image(systemName: activity.transferSymbol)
-                .font(.system(size: 11))
+            transferIcon
                 .frame(width: 18, height: 11)
                 .accessibilityHidden(true)
 
@@ -200,6 +199,22 @@ struct SidebarActivityRow: View {
                 .help(activity.displayTitle)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { showActivity() }
+        }
+    }
+
+    /// 传输方向的图标：SF 符号按 11 pt 的字号显示，获取的自绘图标缩放到 11 × 11。
+    @ViewBuilder
+    private var transferIcon: some View {
+        switch activity.transferIcon {
+        case .symbol:
+            activity.transferIcon.image
+                .font(.system(size: 11))
+
+        case .fetch:
+            activity.transferIcon.image
+                .resizable()
+                .scaledToFit()
+                .frame(width: 11, height: 11)
         }
     }
 

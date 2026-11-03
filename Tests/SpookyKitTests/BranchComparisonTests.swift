@@ -181,7 +181,7 @@ struct BranchComparisonTests {
 
         // 本地改动挡住时报告工作区不干净，HEAD 不变
         try write("dirty\n", to: "rebase-me.txt", in: fixture)
-        await #expect(throws: RepositorySyncError.dirtyWorkingCopy) {
+        await #expect(throws: RepositorySyncError.dirtyWorkingCopy(rebase: false)) {
             try await sync.updateBranch("refs/heads/conflict", from: "refs/heads/main", rebase: false)
         }
         #expect(try await runner.status().branch.head == "rebase-me")

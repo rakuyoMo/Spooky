@@ -89,22 +89,8 @@ extension UserProfiles {
     ///   - window: 提交区所在的窗口。
     @MainActor
     static func add(name: String, email: String, signingKey: String?, in window: NSWindow) {
-        let parent = window.attachedSheet ?? window
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-
-        let content = NSHostingController(
-            rootView: AddUserProfileDialog(name: name, email: email, signingKey: signingKey) { [weak sheet] in
-                if let sheet {
-                    parent.endSheet(sheet)
-                }
-            }
-        )
-
-        // sheet 的高度取内容的理想尺寸，说明折成几行就留几行的高度。
-        content.sizingOptions = .preferredContentSize
-        sheet.contentViewController = content
-        parent.beginSheet(sheet)
+        DialogWindow.present(on: window.attachedSheet ?? window) { close in
+            AddUserProfileDialog(name: name, email: email, signingKey: signingKey, close: close)
+        }
     }
 }

@@ -1,5 +1,6 @@
 import AppKit
 import SpookyKit
+import SwiftUI
 import Synchronization
 
 // MARK: - WorkingCopyComparison
@@ -266,19 +267,19 @@ extension RepositorySession {
             return
         }
 
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = AppLocalization.text("externalTool.fileChanged")
-        alert.informativeText = AppLocalization.text(
-            "externalTool.fileChanged.message",
-            Self.fileName(path),
-            repository.displayPath
-        )
-        alert.addButton(withTitle: AppLocalization.text("externalTool.overwrite"))
-        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
-
-        alert.beginSheetModal(for: window) { response in
-            if response == .alertFirstButtonReturn { overwrite() }
+        DialogWindow.present(on: window) { close in
+            ConfirmationDialog(
+                title: AppLocalization.text("externalTool.fileChanged"),
+                message: AppLocalization.text(
+                    "externalTool.fileChanged.message",
+                    Self.fileName(path),
+                    repository.displayPath
+                ),
+                submitTitle: AppLocalization.text("externalTool.overwrite"),
+                close: close
+            ) { _ in
+                overwrite()
+            }
         }
     }
 }
@@ -456,31 +457,40 @@ extension RepositorySession {
             return false
         }
 
-        let alert = NSAlert()
-        alert.alertStyle = .informational
-        alert.messageText = AppLocalization.text("externalTool.finishMerge", tool.displayName)
-        alert.informativeText = AppLocalization.text(
-            "externalTool.finishMerge.message",
-            tool.displayName,
-            Self.fileName(files.path)
-        )
-        alert.addButton(withTitle: AppLocalization.text("externalTool.done"))
-        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
-
-        return await alert.beginSheetModal(for: window) == .alertFirstButtonReturn
+        // 选了 Done 或 Cancel 之后才继续，两个按钮都会先关掉对话框
+        return await withCheckedContinuation { continuation in
+            DialogWindow.present(on: window) { close in
+                ConfirmationDialog(
+                    title: AppLocalization.text("externalTool.finishMerge", tool.displayName),
+                    message: AppLocalization.text(
+                        "externalTool.finishMerge.message",
+                        tool.displayName,
+                        Self.fileName(files.path)
+                    ),
+                    submitTitle: AppLocalization.text("externalTool.done"),
+                    close: close,
+                    cancel: { continuation.resume(returning: false) }
+                ) { _ in
+                    continuation.resume(returning: true)
+                }
+            }
+        }
     }
 
-    /// 在本会话的窗口上显示一条说明。
+    /// 在本会话的窗口上显示一条说明：骨架的提示版，只有 Close。
     private func showNotice(_ title: String, _ message: String) {
         guard let window = presentingWindow else {
             return
         }
 
-        let alert = NSAlert()
-        alert.alertStyle = .informational
-        alert.messageText = title
-        alert.informativeText = message
-        alert.addButton(withTitle: AppLocalization.text("action.close"))
-        alert.beginSheetModal(for: window)
+        DialogWindow.present(on: window) { close in
+            DialogLayout(
+                title: title,
+                message: message,
+                submitTitle: AppLocalization.text("action.close"),
+                cancel: nil,
+                submit: close
+            )
+        }
     }
 }

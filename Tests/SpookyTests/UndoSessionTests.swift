@@ -56,7 +56,7 @@ struct UndoSessionTests {
         defer { fixture.remove() }
         let session = fixture.session
 
-        session.onConfirm = { _, _, action, _ in action() }
+        session.onConfirm = { $0.action() }
 
         try fixture.write("base\nadded\n")
         await fixture.refresh()
@@ -91,7 +91,7 @@ struct UndoSessionTests {
         let session = fixture.session
         let root = try await fixture.head()
 
-        session.onConfirm = { _, _, action, _ in action() }
+        session.onConfirm = { $0.action() }
 
         try fixture.write("changed\n")
         await fixture.refresh()
@@ -126,7 +126,7 @@ struct UndoSessionTests {
         defer { fixture.remove() }
         let session = fixture.session
 
-        session.onConfirm = { _, _, action, _ in action() }
+        session.onConfirm = { $0.action() }
 
         // 储藏一份改动后删掉这个储藏
         try fixture.write("stashed\n")

@@ -15,8 +15,11 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 窗口位置与尺寸的 autosave 名称。
     private static let frameName = "Spooky.RepositoryWindow"
 
-    /// 首次打开或恢复失败时外层侧边栏的宽度。
-    private static let defaultSidebarWidth: CGFloat = 260
+    /// 还没有记下宽度时，仓库视图外层侧边栏的宽度，不随窗口宽度变化。
+    private static let repositorySidebarWidth: CGFloat = 428
+
+    /// 还没有记下宽度时，仓库管理外层侧边栏的宽度。
+    private static let managerSidebarWidth: CGFloat = 260
 
     /// 每个窗口独立拥有读取任务与选区。
     let session: RepositorySession
@@ -50,6 +53,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
 
     /// 窗口级快捷键跨越 AppKit 文件列表与 SwiftUI 信息框。
     private var keyMonitor: Any?
+
+    /// 观察工具栏的显示方式，改变后重写提示与跟随分隔符。
+    var displayModeObservation: NSKeyValueObservation?
 
     /// 文件历史搜索框的贡献者补全。
     let contributorCompletion = ContributorCompletion()
@@ -147,13 +153,12 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 侧边栏与标签菜单预选了分支或版本的同步对话框同样以窗口的 sheet 呈现
         session.onSyncRequest = { [weak self] in self?.presentSyncDialog($0.kind, preselecting: $0.preselection) }
 
-        session.onConfirm = { [weak self] title, message, action, abort in
-            self?.showConfirmation(title: title, message: message, confirmation: nil, action: action, abort: abort)
-        }
+        // 会话里的确认以确认版对话框挂成 sheet
+        session.onConfirm = { [weak self] in self?.showConfirmation($0) }
 
-        // 服务器仓库的确认多一个 “Do not ask me again”
-        session.onServerConfirm = { [weak self] confirmation, title, message, action in
-            self?.showConfirmation(title: title, message: message, confirmation: confirmation, action: action, abort: nil)
+        // 空合并提交的询问是系统提示框
+        session.onEmptyMergePrompt = { [weak self] commit, abort in
+            self?.showEmptyMergePrompt(commit: commit, abort: abort)
         }
 
         showRepositories()
@@ -293,13 +298,14 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         installOuterSplit(
             sidebar: BookmarkSidebarController(manager: manager),
             detail: detail,
-            name: "Spooky.Repositories"
+            name: "Spooky.Repositories",
+            sidebarWidth: Self.managerSidebarWidth
         )
         coordinator.bookmarks.validate()
         didChangeView()
     }
 
-    /// 打开的仓库找不到或连不上时，整个窗口换成丢失页；会话与上一个仓库的连接一并交还。
+    /// 打开的仓库找不到或连不上时，整个窗口换成丢失页；会话与上一个仓库的连接一并交还。页面出现后随即重试一次。
     ///
     /// - Parameters:
     ///   - location: 打不开的仓库。
@@ -321,6 +327,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         page.sizingOptions = [.minSize]
 
         showPage(page, title: location.name)
+
+        // 打开失败时这一页在打开任务里换入，等那个任务交还打开请求后再重试
+        Task { [weak self] in self?.retryMissingRepository() }
     }
 
     /// 整个窗口换成一页：仓库丢失页或克隆进度页。会话与上一个仓库的连接一并交还，标题换成页面所指的仓库。
@@ -358,6 +367,11 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         session.setActive(!showsManager)
     }
 
+    /// 窗口每次成为主窗口时，正显示丢失页就重试一次。
+    func windowDidBecomeMain(_: Notification) {
+        retryMissingRepository()
+    }
+
     /// 后台窗口降为十秒轮询；App 或窗口失去前台时，按住 ⌥ 换出的快速操作复原。
     func windowDidResignKey(_: Notification) {
         session.setActive(false)
@@ -380,32 +394,44 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
 // MARK: - Navigation
 
 extension RepositoryWindowController {
-    /// 打开系统目录选择器，发起窗口决定普通打开的目的地。
-    @objc
-    func chooseRepository() {
-        coordinator?.chooseRepository(in: self)
+    /// 当前主视图的内层分栏；单栏视图、仓库管理、丢失页与克隆进度页没有。
+    var innerSplit: NSSplitViewController? {
+        guard !showsManager else {
+            return nil
+        }
+
+        return outerSplit?.splitViewItems.last?.viewController as? NSSplitViewController
+    }
+
+    /// 丢失页所指的仓库；窗口没在显示丢失页时为 nil。
+    var missingLocation: RepositoryLocation? {
+        (window?.contentViewController as? NSHostingController<MissingRepositoryView>)?.rootView.location
+    }
+
+    /// 正显示丢失页时，静默地重新打开它所指的仓库。
+    func retryMissingRepository() {
+        guard let missingLocation else {
+            return
+        }
+
+        coordinator?.retryMissingRepository(missingLocation, in: self)
     }
 
     /// 体检在表单内部进行，只有成功的工作区才进入可用列表。
     @objc
     func addRemoteRepository() {
-        guard let window, window.attachedSheet == nil else { return }
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-        let view = AddRemoteRepositoryView(
-            opened: { [weak self, weak sheet] repository in
-                guard let self, let sheet else { return }
-                window.endSheet(sheet)
-                coordinator?.displayRepository(repository, from: self, inNewWindow: false)
-            },
-            cancelled: { [weak sheet] in
-                guard let sheet else { return }
-                window.endSheet(sheet)
-            }
-        )
-        sheet.contentViewController = NSHostingController(rootView: view)
-        window.beginSheet(sheet)
+        presentDialog { close in
+            AddRemoteRepositoryView(
+                opened: { [weak self] repository in
+                    close()
+
+                    guard let self else { return }
+
+                    coordinator?.displayRepository(repository, from: self, inNewWindow: false)
+                },
+                cancelled: close
+            )
+        }
     }
 
     /// 关闭仓库只回到管理界面，不关闭窗口或结束 App。
@@ -628,7 +654,12 @@ extension RepositoryWindowController {
 
         let detail = makeDetailView()
 
-        installOuterSplit(sidebar: sidebar, detail: detail, name: "Spooky.Repository")
+        installOuterSplit(
+            sidebar: sidebar,
+            detail: detail,
+            name: "Spooky.Repository",
+            sidebarWidth: Self.repositorySidebarWidth
+        )
 
         // 首次使用或恢复失败后工作区列表宽 400 pt、历史与文件历史的列表宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
         if UserDefaults.standard.object(forKey: "NSSplitView Subview Frames Spooky.WorkingCopy") == nil {
@@ -736,6 +767,9 @@ extension RepositoryWindowController {
         listItem.holdingPriority = .init(475)
         listItem.canCollapse = false
 
+        // 列表不延伸到工具栏下面，免得列表的底色与分隔线穿过工具栏上的项
+        listItem.allowsFullHeightLayout = false
+
         let fileDetail = NSHostingController(rootView: WorkingCopyDetailView(session: session))
         fileDetail.sizingOptions = [.minSize]
         let detailItem = NSSplitViewItem(viewController: fileDetail)
@@ -795,6 +829,9 @@ extension RepositoryWindowController {
         listItem.holdingPriority = .init(475)
         listItem.canCollapse = false
 
+        // 列表不延伸到工具栏下面，免得列表的底色与分隔线穿过工具栏上的项
+        listItem.allowsFullHeightLayout = false
+
         let contentItem = NSSplitViewItem(viewController: content)
         contentItem.holdingPriority = .init(470)
         contentItem.canCollapse = false
@@ -805,10 +842,17 @@ extension RepositoryWindowController {
     }
 
     /// 侧边栏不可折叠且最小 150 pt，宽度按视图保存并在仓库间共用。
+    ///
+    /// - Parameters:
+    ///   - sidebar: 侧边栏。
+    ///   - detail: 详情区。
+    ///   - name: 记下分栏宽度的 autosave 名称。
+    ///   - sidebarWidth: 还没有记下宽度或记录不可用时侧边栏的宽度。
     private func installOuterSplit(
         sidebar: NSViewController,
         detail: NSViewController,
-        name: String
+        name: String,
+        sidebarWidth: CGFloat
     ) {
         let split: NSSplitViewController
 
@@ -848,9 +892,9 @@ extension RepositoryWindowController {
         window?.contentViewController = split
         window?.contentView?.layoutSubtreeIfNeeded()
 
-        // 首次使用或恢复失败后侧边栏宽 260 pt，此后交给 NSSplitView 的 autosave 恢复。
+        // 首次使用或恢复失败后侧边栏取给定的宽度，此后交给 NSSplitView 的 autosave 恢复。
         if UserDefaults.standard.object(forKey: "NSSplitView Subview Frames " + name) == nil {
-            split.splitView.setPosition(Self.defaultSidebarWidth, ofDividerAt: 0)
+            split.splitView.setPosition(sidebarWidth, ofDividerAt: 0)
         }
 
         // 换了外层分栏后，工具栏的侧边栏分隔符改跟新的分隔线

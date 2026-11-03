@@ -34,6 +34,9 @@ extension RepositoryWindowController {
         listItem.holdingPriority = .init(475)
         listItem.canCollapse = false
 
+        // 列表不延伸到工具栏下面，免得列表的底色与分隔线穿过工具栏上的项
+        listItem.allowsFullHeightLayout = false
+
         let detail = NSHostingController(rootView: StashDetailView(session: session))
         detail.sizingOptions = [.minSize]
         let detailItem = NSSplitViewItem(viewController: detail)
@@ -45,7 +48,7 @@ extension RepositoryWindowController {
         return split
     }
 
-    /// 工具栏的储藏分段组：应用 | 保存，空间不足时整组进入溢出菜单。
+    /// 工具栏的储藏分段组：Apply | Save，空间不足时整组进入溢出菜单。
     func makeStashToolbarItem(_ identifier: NSToolbarItem.Identifier) -> NSToolbarItem {
         let group = NSToolbarItemGroup(
             itemIdentifier: identifier,
@@ -55,16 +58,17 @@ extension RepositoryWindowController {
                     NSImage(systemSymbolName: $0, accessibilityDescription: nil) ?? NSImage()
                 },
             selectionMode: .momentary,
-            labels: ["stash.apply", "stash.save"].map { AppLocalization.text($0) },
+            labels: ["toolbar.applyStash", "toolbar.saveStash"].map { AppLocalization.text($0) },
             target: self,
             action: nil
         )
         group.controlRepresentation = .expanded
 
-        // 每段带上自己的动作，工具栏自动校验时逐段决定可用性。
+        // 每段带上自己的动作与提示，工具栏自动校验时逐段决定可用性。
         for (segment, action) in zip(group.subitems, [#selector(applyStash), #selector(saveStash)]) {
             segment.target = self
             segment.action = action
+            updateTip(of: segment)
         }
 
         return group
@@ -74,7 +78,7 @@ extension RepositoryWindowController {
     func stashAvailability(of action: Selector?, repositoryView: Bool) -> Bool? {
         switch action {
         case #selector(showStashes):
-            session.repository != nil
+            repositoryView
 
         case #selector(saveStash), #selector(createSnapshot):
             repositoryView && session.canSaveStash
@@ -95,18 +99,13 @@ extension RepositoryWindowController {
             return
         }
 
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-        sheet.contentViewController = NSHostingController(
-            rootView: StashDialog(
+        presentDialog { close in
+            StashDialog(
                 session: session,
                 request: request,
-                repository: session.repository
-            ) { [weak sheet] in
-                if let sheet { window.endSheet(sheet) }
-            }
-        )
-        window.beginSheet(sheet)
+                repository: session.repository,
+                close: close
+            )
+        }
     }
 }

@@ -417,7 +417,7 @@ extension RepositorySyncTests {
 
         try Data("dirty\n".utf8).write(to: file)
 
-        await #expect(throws: RepositorySyncError.dirtyWorkingCopy) {
+        await #expect(throws: RepositorySyncError.dirtyWorkingCopy(rebase: true)) {
             try await sync.rebase(onto: "main")
         }
 
@@ -477,7 +477,7 @@ extension RepositorySyncTests {
         try Data("dirty\n".utf8).write(to: fixture.repository.directory.appendingPathComponent("dirty"))
         steps.reset()
 
-        await #expect(throws: RepositorySyncError.dirtyWorkingCopy) {
+        await #expect(throws: RepositorySyncError.dirtyWorkingCopy(rebase: false)) {
             try await fixture.syncMain(steps: steps)
         }
 

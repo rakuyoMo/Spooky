@@ -26,21 +26,19 @@ struct CheckoutRevisionDialog: View {
     @State
     private var error = ""
 
-    /// 版本组合框与去向说明。
+    /// 版本组合框与去向说明；仓库还没有引用时错误区说明原因，仍可直接输入版本。
     var body: some View {
-        RewriteDialogFrame(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("rewrite.checkout.title"),
-            help: AppLocalization.text("rewrite.checkout.help"),
-            primary: AppLocalization.text("rewrite.checkout.button"),
-            canSubmit: destination != nil,
-            error: session.revisionCandidates.isEmpty && error.isEmpty ? AppLocalization.text("rewrite.noRefs") : error,
+            message: AppLocalization.text("rewrite.checkout.help"),
+            submitTitle: AppLocalization.text("rewrite.checkout.button"),
+            error: notice,
+            isValid: destination != nil,
             cancel: close,
             submit: perform
         ) {
-            form
-        } options: {
-            EmptyView()
+            rows
         }
         .onAppear { target = revision ?? "" }
         .task(id: target) { await resolve() }
@@ -50,33 +48,37 @@ struct CheckoutRevisionDialog: View {
 // MARK: - Layout
 
 extension CheckoutRevisionDialog {
-    /// 版本输入与分离 HEAD 的说明。
-    private var form: some View {
-        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 10) {
-            GridRow {
-                Text(AppLocalization.text("rewrite.revision")).gridColumnAlignment(.trailing)
+    /// 错误区的文字：版本解析失败的说明；仓库还没有引用时说明原因。
+    private var notice: String {
+        guard error.isEmpty, session.revisionCandidates.isEmpty else {
+            return error
+        }
 
-                RevisionComboBox(
-                    text: $target,
-                    items: session.revisionCandidates,
-                    label: AppLocalization.text("rewrite.revision"),
-                    visibleItems: 10,
-                    completes: true
+        return AppLocalization.text("rewrite.noRefs")
+    }
+
+    /// 填满输入列的版本组合框，以及分离 HEAD 时的说明。
+    @ViewBuilder
+    private var rows: some View {
+        // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐
+        DialogFormRow(label: AppLocalization.text("rewrite.revision"), alignment: .center) {
+            RevisionComboBox(
+                text: $target,
+                items: session.revisionCandidates,
+                label: AppLocalization.text("rewrite.revision"),
+                visibleItems: 10,
+                completes: true
+            )
+        }
+
+        if case .detached(let commit) = destination {
+            DialogFormField {
+                Label(
+                    AppLocalization.text("rewrite.checkout.detached", String(commit.prefix(8))),
+                    systemImage: "exclamationmark.triangle"
                 )
-                .frame(maxWidth: 350)
-            }
-
-            if case .detached(let commit) = destination {
-                GridRow {
-                    Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
-                    Label(
-                        AppLocalization.text("rewrite.checkout.detached", String(commit.prefix(8))),
-                        systemImage: "exclamationmark.triangle"
-                    )
-                    .font(.system(size: 12))
-                    .fixedSize(horizontal: false, vertical: true)
-                }
+                .font(.system(size: 12))
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

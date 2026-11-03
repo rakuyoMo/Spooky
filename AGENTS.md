@@ -68,6 +68,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 | `./scripts/build-app.sh` | 生成开发用 `.build/Spooky.app` |
 | `mise run bundle` | release 构建并生成 `build/Spooky.app`，拷贝资源、图标与更新框架后由内向外 ad-hoc 签名并校验 |
 | `swift scripts/make-icon.swift Sources/Spooky/AppIcon` | 重新生成全部四份应用图标 |
+| `swift scripts/make-fetch-icon.swift Sources/Spooky/Resources` | 重新生成工具栏 Fetch 段与获取记录共用的模板图 |
 
 需要服务器、github.com 或大仓库的测试默认跳过，开启方式见 [测试](docs/testing/README.md)；`mise run release` 与 `mise run appcast` 见 [发布](docs/releasing.md)。
 

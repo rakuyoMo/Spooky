@@ -66,6 +66,7 @@
 
 
 "repositories.panel.message" = "選擇現有 Git 儲存庫的工作區目錄。";
+"repositories.panel.prompt" = "開啟儲存庫";
 
 "workspace.group" = "工作空間";
 
@@ -122,7 +123,7 @@
 
 
 
-"error.command" = "Git 命令執行失敗";
+"error.command" = "無法執行 Git 命令";
 
 "error.launch" = "無法啟動 Git";
 
@@ -152,7 +153,7 @@
 
 "error.details" = "原始輸出";
 
-"error.noOutput" = "命令未提供輸出。";
+"error.noOutput" = "（沒有錯誤訊息）";
 
 "error.outputLimitHelp" = "命令超過標準輸出 256 MiB 或標準錯誤 1 MiB 的收集上限，已拒絕載入超限結果。";
 "action.addRemote" = "加入伺服器儲存庫…";
@@ -169,6 +170,7 @@
 "action.find" = "尋找…";
 "menu.find" = "尋找";
 "remote.form.help" = "輸入 SSH 設定中的主機別名及該伺服器上的絕對路徑。";
+"remote.form.title" = "加入伺服器儲存庫";
 "remote.host" = "主機別名：";
 "remote.path" = "儲存庫路徑：";
 "remote.checking" = "正在檢查連線…";
@@ -186,13 +188,37 @@
 "settings.themes" = "主題";
 "settings.terminal" = "終端機程式：";
 "callback.editor" = "編輯遠端文字";
-"callback.credentials" = "伺服器認證資訊請求";
+"callback.username.title" = "輸入使用者名稱";
+"callback.password.title" = "輸入密碼";
+"callback.username.label" = "使用者名稱：";
+"callback.password.label" = "密碼：";
 "callback.saveKeychain" = "儲存至這台 Mac 的鑰匙圈";
-"callback.value" = "認證資訊";
 "error.indexLocked" = "另一個 Git 程序持有暫存區鎖定，請等待它結束後重試。";
 "error.terminal" = "無法開啟終端機";
 "error.terminalHelp" = "請檢查設定中的終端機選擇及 macOS 自動化權限。";
-"error.exitCode" = "結束碼：%ld";
+"error.remoteConnection" = "連線遠端失敗";
+"error.synchronization" = "與遠端同步失敗";
+"error.remoteNotFound" = "找不到遠端儲存庫";
+"error.indexLocked.title" = "Git 暫存區被另一個 Git 程序鎖定";
+"signing.error.title" = "無法簽署";
+"error.merge" = "合併失敗";
+"error.rebase" = "重定基底失敗";
+"error.checkout" = "無法檢出版本";
+"sync.error.branch.title" = "需要本機分支";
+"branch.error.diverged.title" = "無法快轉分支";
+"branch.error.current.title" = "無法在這裡快轉目前分支";
+"branch.error.remoteExists.title" = "遠端分支已存在";
+"working.error.stale.title" = "檔案已變更";
+"working.error.selection.title" = "未選取變更";
+"working.error.file.title" = "需要一般檔案";
+"working.error.path.title" = "路徑不受支援";
+"diff.error.whitespace.title" = "選取的行對應不上";
+"reference.error.name.title" = "名稱無效";
+"reference.error.refspec.title" = "refspec 無效";
+"reference.error.url.title" = "遠端位址無效";
+"remote.error.browser.title" = "無法在瀏覽器中開啟遠端";
+"failure.reason" = "%1$@%2$@";
+"error.gitMessage" = "Git 錯誤訊息";
 "terminal.notInstalled" = "尚未安裝 %@。";
 "themes.background" = "背景";
 "themes.selection" = "選取範圍";
@@ -272,9 +298,16 @@
 "working.discardLines" = "捨棄所選行";
 "working.discard" = "捨棄變更";
 "working.discardAll" = "捨棄全部變更…";
+"working.discard.title" = "捨棄本機變更";
+"working.discardAll.title" = "捨棄全部本機變更";
+"working.discardAll.submit" = "捨棄全部變更";
+"working.discardContent.title" = "捨棄 Diff 內容？";
 "working.discard.message" = "將捨棄 %d 個檔案的變更：已追蹤的檔案恢復到最後一次提交（含暫存變更），未追蹤檔案丟到垃圾桶。儲存庫：%@。";
 "working.discard.remote" = "將在伺服器上捨棄 %d 個檔案的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案丟到伺服器的垃圾桶。儲存庫：%@。";
 "working.discard.remotePermanent" = "將在伺服器上捨棄 %d 個檔案的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案在伺服器上永久刪除。儲存庫：%@。";
+"working.discard.message.single" = "將捨棄 “%@” 的變更：已追蹤的檔案恢復到最後一次提交（含暫存變更），未追蹤檔案丟到垃圾桶。儲存庫：%@。";
+"working.discard.remote.single" = "將在伺服器上捨棄 “%@” 的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案丟到伺服器的垃圾桶。儲存庫：%@。";
+"working.discard.remotePermanent.single" = "將在伺服器上捨棄 “%@” 的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案在伺服器上永久刪除。儲存庫：%@。";
 "working.discard.lines" = "將捨棄 %@ 中所選行的變更。";
 "working.discard.remoteLines" = "將在伺服器 %@ 上覆寫所選內容。";
 "working.resolved" = "標記已解決";
@@ -328,8 +361,10 @@
 "branch.default" = "預設分支";
 "branch.create" = "新增分支";
 "branch.create.help" = "從指定版本建立本機分支。";
+"branch.create.title" = "新增分支";
 "branch.track" = "追蹤遠端分支";
 "branch.track.help" = "建立追蹤所選遠端分支的本機分支。";
+"branch.track.submit" = "新增";
 "branch.checkout" = "簽出分支";
 "branch.checkoutNamed" = "簽出 “%@”";
 "branch.delete" = "刪除分支";
@@ -352,6 +387,8 @@
 "sync.pull.help" = "擷取所選分支，再按指定方式合併或重定基底。";
 "sync.push" = "推送";
 "sync.push.help" = "將本機分支推送至指定目標。";
+"sync.pushHead" = "推送 HEAD";
+"sync.pushBranch" = "推送分支";
 "sync.publish" = "發布分支";
 "sync.publish.help" = "在所選遠端建立分支。";
 "sync.merge" = "合併";
@@ -442,7 +479,7 @@
 "dialog.options" = "選項";
 "dialog.doNotAskAgain" = "不再詢問";
 "menu.repository" = "儲存庫";
-"callback.privateKey" = "解鎖 SSH 私密金鑰";
+"callback.privateKey.title" = "輸入私密金鑰的密碼";
 "callback.privateKey.help" = "解鎖後的私密金鑰將加入 SSH agent。";
 "callback.accountTokenRejected" = "帳號 “%@” 的權杖未能通過認證，請輸入使用者名稱與密碼。";
 "history.unpushed" = "尚未推送";
@@ -583,6 +620,7 @@
 "conflict.applied" = "套用的修補或儲藏";
 "conflict.binary" = "不顯示二進位內容。";
 "conflict.error.version" = "所選檔案沒有這個版本。";
+"conflict.error.version.title" = "沒有這個版本";
 "conflict.export" = "匯出來自 “%@” 的版本…";
 "conflict.hint.merge.conflicts" = "解決全部衝突後才能完成合併。";
 "conflict.hint.merge.resolved" = "檢查提交訊息，然後按一下 **提交** 完成合併。";
@@ -646,6 +684,7 @@
 "fileHistory.restoreInWorkingCopy" = "在工作區中將 “%@” 還原到版本 “%@”…";
 "fileHistory.showHistoryOf" = "顯示 “%@” 的檔案歷史";
 "fileHistory.restoreTitle" = "在工作區中還原檔案";
+"fileHistory.restore.submit" = "還原";
 "fileHistory.restore.message" = "將 “%@” 還原到版本 %@。儲存庫：%@。這個檔案已暫存與未暫存的變更都會被捨棄；該版本中沒有這個檔案時會將其刪除。";
 "fileHistory.restore.remote" = "將在伺服器上覆寫 “%@”，改為版本 %@ 的內容。儲存庫：%@。這個檔案已暫存與未暫存的變更都會被捨棄；該版本中沒有這個檔案時，會在伺服器上將其刪除。";
 "fileHistory.scope.author" = "作者";
@@ -736,6 +775,7 @@
 "profiles.addCurrent" = "加入身分設定檔 “%@”…";
 "profiles.manage" = "管理身分設定檔…";
 "profiles.apply" = "使用身分設定檔";
+"profiles.apply.submit" = "使用設定檔";
 "profiles.apply.local" = "將把 %@ 寫入儲存庫 %@ 的本機設定。";
 "profiles.apply.remote" = "將把 %@ 寫入伺服器上儲存庫 %@ 的本機設定。伺服器上在此儲存庫提交的其他工具也會使用這個身分。";
 "commit.signOff" = "署名";
@@ -770,6 +810,7 @@
 "files.untrack.multiple" = "停止追蹤 %ld 個項目";
 "files.trash" = "丟到垃圾桶";
 "files.delete" = "刪除";
+"files.delete.title" = "永久刪除";
 "files.delete.remote" = "要在伺服器上永久刪除以下檔案嗎？儲存庫：%2$@。\n\n%1$@";
 "files.move.menu" = "移動…";
 "files.move" = "移動";
@@ -904,6 +945,7 @@
 "history.search.to" = "至";
 "history.reveal.notFound" = "提交 %@ 不在這段歷史中。";
 "history.reveal.slow" = "載入更多提交";
+"history.reveal.slow.submit" = "載入";
 "history.reveal.slow.message" = "提交 %1$@ 排在這段歷史的前 %2$ld 個提交之後。載入到它為止可能需要一些時間。";
 "history.subtitle" = "%@（%ld 個提交）";
 "history.subtitle.more" = "%@（%ld 個或更多提交）";
@@ -1126,7 +1168,7 @@
 "rewrite.rebaseOnto.missing" = "請選擇基點。";
 "rewrite.rebaseOnto.newIsHead" = "新基點不能是 HEAD 所在的提交。";
 "rewrite.rebaseOnto.currentIsHead" = "目前基點不能是 HEAD 所在的提交。";
-"rewrite.reword.title" = "編輯 “%@” 的提交訊息";
+"rewrite.reword.title" = "編輯版本 “%@” 的提交訊息";
 "rewrite.reword.help" = "取代所選提交的提交訊息，它之後的提交也會一起改寫。";
 "rewrite.error.changed" = "改寫前分支已經變化";
 "rewrite.error.changed.help" = "分支上的提交與顯示的已不一致，沒有改寫任何提交。請重新整理歷史後重試。";
@@ -1175,17 +1217,17 @@
 "sync.forcePushMenu" = "安全強制推送…";
 "sync.pushToMenu" = "推送到…";
 "sync.fetch.tip" = "擷取遠端";
-"sync.pull.tip" = "把遠端分支拉取到 HEAD 分支";
+"sync.pull.tip" = "拉取遠端分支";
 "sync.push.tip" = "把本機分支推送到遠端";
-"sync.sync.tip" = "同步 HEAD 分支與遠端分支";
+"sync.sync.tip" = "同步 HEAD 與遠端分支";
 "sync.merge.tip" = "把其他分支合併到 HEAD 分支";
-"sync.rebaseHead.tip" = "把 HEAD 分支重定基底到其他分支上";
-"sync.quickFetch.tip" = "快速擷取：立即擷取遠端";
-"sync.quickPull.tip" = "快速拉取：拉取追蹤分支";
-"sync.quickPush.tip" = "快速推送：把 HEAD 分支推送到它的追蹤分支";
-"sync.quickSync.tip" = "快速同步：同步 HEAD 分支與它的追蹤分支";
-"sync.quickMerge.tip" = "快速合併：把追蹤分支合併到 HEAD 分支";
-"sync.quickRebase.tip" = "快速重定基底：把 HEAD 分支重定基底到它的追蹤分支上";
+"sync.rebaseHead.tip" = "把目前的 HEAD 分支重定基底到其他分支上";
+"sync.quickFetch.tip" = "立即擷取遠端";
+"sync.quickPull.tip" = "拉取追蹤的遠端分支";
+"sync.quickPush.tip" = "把 HEAD 分支推送到它的追蹤分支";
+"sync.quickSync.tip" = "同步 HEAD 分支與它的追蹤分支";
+"sync.quickMerge.tip" = "合併目前 HEAD 分支的追蹤分支";
+"sync.quickRebase.tip" = "把目前的 HEAD 分支重定基底到它的追蹤分支上";
 "sync.syncHead" = "同步 HEAD";
 "sync.syncHead.help" = "先把所選遠端分支的新提交拉取到 “%@”，再把它的本機提交推送到同一個遠端分支。";
 "sync.rebaseHead" = "重定基底";
@@ -1265,7 +1307,9 @@
 "branch.forceDelete" = "強制刪除";
 "branch.forceDelete.help" = "即使分支沒有完全合併也刪除。";
 "branch.forceDelete.ask" = "這些分支沒有完全合併：%@。仍然刪除嗎？";
-"branch.forceDelete.submit" = "強制刪除";
+"branch.forceDelete.submit" = "刪除";
+"branch.error.delete" = "無法刪除分支";
+"branch.error.deleteMultiple" = "無法刪除分支";
 "branch.deleteRemote" = "刪除遠端分支";
 "branch.deleteRemote.message" = "在遠端刪除分支 “%@”。";
 "branch.deleteRemoteMultiple" = "刪除遠端分支";
@@ -1330,6 +1374,7 @@
 "remote.pushURL.edit" = "編輯推送位址";
 "remote.pushURL.edit.message" = "輸入推送到 “%@” 時使用的位址。修改前會先檢查連線。";
 "remote.pushURL.unset" = "取消推送位址";
+"remote.pushURL.unset.submit" = "取消設定";
 "remote.pushURL.unset.confirm" = "推送將重新使用取得位址。";
 "remote.refspec" = "Refspec：";
 "remote.refspec.addFetch" = "新增取得 Refspec";
@@ -1514,6 +1559,7 @@
 "reflog.createBranch" = "從 “%@” 新增分支…";
 "reflog.cherryPick" = "摘取 “%@”…";
 "reflog.restore.title" = "還原分支";
+"reflog.restore.submit" = "還原";
 "reflog.restore.message" = "要把 %3$@ 中的分支 “%1$@” 移到 %2$@ 嗎？工作區與暫存區不會變更。離開分支的提交仍能在 Reflog 裡找到。";
 
 "appearance.system" = "自動";
@@ -1609,6 +1655,8 @@
 
 "externalTool.diffTool" = "比較工具：";
 "externalTool.mergeTool" = "合併工具：";
+"externalTool.dialog.diffTool" = "比較工具：";
+"externalTool.dialog.mergeTool" = "合併工具：";
 "externalTool.directoryDiff" = "比較整個目錄";
 "externalTool.keepBackups" = "保留合併衝突的備份檔案";
 "externalTool.noneSelected" = "未選擇";
@@ -1678,9 +1726,9 @@
 "menu.newTab" = "新增標籤頁";
 "navigation.back" = "上一頁";
 "navigation.forward" = "下一頁";
-"navigation.back.tip" = "顯示上一個視圖";
-"navigation.forward.tip" = "顯示下一個視圖";
-"navigation.title" = "上一頁/下一頁";
+"navigation.back.tip" = "前往上一個視圖";
+"navigation.forward.tip" = "前往下一個視圖";
+"navigation.title" = "上一個/下一個";
 "menu.hideWindowTitle" = "隱藏視窗標題";
 "menu.showWindowTitle" = "顯示視窗標題";
 "menu.showToolbar" = "顯示工具列";
@@ -1692,6 +1740,19 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "終端機";
 "toolbar.quickActions" = "快速操作";
+"toolbar.quickActions.tip" = "顯示快速操作";
+"toolbar.bookmarks" = "書籤";
+"toolbar.bookmarks.tip" = "前往書籤視圖";
+"toolbar.previous" = "上一個";
+"toolbar.next" = "下一個";
+"toolbar.synchronize" = "同步";
+"toolbar.applyStash" = "套用";
+"toolbar.saveStash" = "保存";
+"toolbar.applyStash.tip" = "把變更重新套用到工作區";
+"toolbar.saveStash.tip" = "把本機變更存進儲藏";
+"toolbar.createBranch.tip" = "新增一個分支";
+"toolbar.forcePush.tip" = "以安全強制推送的方式推送";
+"toolbar.labeledTip" = "%1$@：%2$@";
 "launch.empty" = "沒有最近的儲存庫";
 "launch.version" = "版本 %@";
 
@@ -1819,6 +1880,7 @@
 "quickActions.showRemoteSettings" = "顯示遠端設定";
 "quickActions.setCommitter" = "設為提交者身分";
 "quickActions.setGlobalUser" = "設為全域使用者";
+"quickActions.setGlobalUser.submit" = "設定";
 "quickActions.setGlobalUser.local" = "將把 user.name 與 user.email 寫入這台 Mac 上你的全域 Git 設定。沒有自己身分的儲存庫都用它提交。";
 "quickActions.setGlobalUser.remote" = "將把 user.name 與 user.email 寫入伺服器 “%@” 上你的全域 Git 設定。伺服器上沒有自己身分的儲存庫都用它提交。";
 "quickActions.applyTheme" = "套用主題";
@@ -1844,7 +1906,6 @@
 "clone.url" = "遠端位址：";
 "clone.to" = "複製到：";
 "clone.destination" = "將複製到 “%@”";
-"clone.options" = "選項";
 "clone.lfs" = "使用 LFS 複製";
 "clone.submodules" = "初始化子模組";
 "clone.error.invalidURL" = "遠端位址無效";
@@ -2003,6 +2064,7 @@
 "submodule.add.menu" = "加入子模組…";
 "submodule.add.message" = "把一個儲存庫複製到本儲存庫的空目錄裡，並登記為子模組。";
 "submodule.add.submit" = "加入子模組";
+"submodule.add.title" = "加入子模組倉庫";
 "submodule.autoUpdate" = "自動更新子模組";
 "submodule.autoUpdate.always" = "總是自動更新子模組";
 "submodule.autoUpdate.message" = "這次操作改動了以下子模組登記的版本。要現在更新它們嗎？";
@@ -2182,7 +2244,7 @@
 "worktree.move" = "移動工作樹";
 "worktree.move.menu" = "移動工作樹…";
 "worktree.move.message" = "把工作樹 “%@” 移到別的位置，保留它現在的狀態。";
-"worktree.move.submit" = "移動";
+"worktree.move.submit" = "移動工作樹";
 "worktree.noRefs" = "這個儲存庫還沒有提交。";
 "worktree.open.current" = "開啟工作樹";
 "worktree.open.newTab" = "在新標籤頁中開啟工作樹";
@@ -2191,13 +2253,13 @@
 "worktree.page.general" = "一般";
 "worktree.relocate" = "重新定位工作樹";
 "worktree.relocate.message" = "選擇工作樹 “%@” 的目錄現在所在的位置，讓 Git 重新把它連到這個儲存庫。";
-"worktree.relocate.submit" = "修復";
+"worktree.relocate.submit" = "重新定位工作樹";
 "worktree.remove" = "刪除工作樹";
 "worktree.remove.force" = "強制刪除";
 "worktree.remove.force.help" = "連同未提交的改動一起刪除工作樹。";
 "worktree.remove.menu" = "刪除工作樹…";
 "worktree.remove.message" = "永久刪除工作樹 “%@” 及它的目錄。";
-"worktree.remove.submit" = "刪除";
+"worktree.remove.submit" = "刪除工作樹";
 "worktree.repair" = "修復工作樹";
 "worktree.repair.menu" = "修復工作樹…";
 "worktree.reveal" = "在 Finder 中顯示工作樹";
@@ -2211,10 +2273,10 @@
 
 "lfs.menu" = "LFS";
 "lfs.menu.update" = "更新";
-"lfs.menu.fetch" = "擷取…";
-"lfs.menu.pull" = "拉取…";
-"lfs.menu.push" = "推送…";
-"lfs.menu.track" = "追蹤…";
+"lfs.menu.fetch" = "擷取";
+"lfs.menu.pull" = "拉取";
+"lfs.menu.push" = "推送";
+"lfs.menu.track" = "追蹤";
 "lfs.fetch" = "擷取 LFS 物件";
 "lfs.pull" = "拉取 LFS 物件";
 "lfs.push" = "推送 LFS 物件";
@@ -2523,3 +2585,44 @@
 "review.audit.stale" = "%1$@：最後更新於 %2$@";
 "review.audit.manual" = "%@：手動封存";
 "review.audit.restored" = "%@：已恢復";
+"menu.services" = "服務";
+"menu.clearRecent" = "清除選單";
+"menu.pasteAndMatchStyle" = "貼上並符合樣式";
+"menu.delete" = "刪除";
+"menu.findNext" = "尋找下一個";
+"menu.findPrevious" = "尋找上一個";
+"menu.useSelectionForFind" = "使用所選範圍來尋找";
+"menu.jumpToSelection" = "跳至所選範圍";
+"menu.spelling" = "拼字與文法";
+"menu.showSpelling" = "顯示拼字與文法";
+"menu.checkDocument" = "立即檢查文件";
+"menu.checkSpellingWhileTyping" = "輸入時檢查拼字";
+"menu.checkGrammar" = "同時檢查文法與拼字";
+"menu.correctSpelling" = "自動修正拼字";
+"menu.substitutions" = "替代";
+"menu.showSubstitutions" = "顯示替代";
+"menu.smartCopyPaste" = "智慧型拷貝/貼上";
+"menu.smartQuotes" = "智慧型引號";
+"menu.smartDashes" = "智慧型破折號";
+"menu.smartLinks" = "智慧型連結";
+"menu.textReplacement" = "文字替代";
+"menu.transformations" = "轉換";
+"menu.upperCase" = "轉換為大寫";
+"menu.lowerCase" = "轉換為小寫";
+"menu.capitalize" = "首字大寫";
+"menu.speech" = "語音";
+"menu.startSpeaking" = "開始朗讀";
+"menu.stopSpeaking" = "停止朗讀";
+"history.autoExpand.title" = "自動展開門檻";
+"sync.fetchMenu" = "擷取…";
+"sync.pullMenu" = "拉取…";
+"sync.pushMenu" = "推送 HEAD…";
+"sync.quickPushMenu" = "快速推送 HEAD";
+"sync.publishMenu" = "發布分支…";
+"branch.createMenu" = "新增分支…";
+"sync.mergeMenu" = "合併…";
+"working.commitMenu" = "提交…";
+"working.stageAllMenu" = "暫存全部本機變更";
+"working.unstageAllMenu" = "取消暫存全部本機變更";
+"working.discardMenu" = "捨棄本機變更";
+"working.discardAllMenu" = "捨棄全部本機變更…";

@@ -297,7 +297,7 @@ struct FileViewsTests {
 
         // 恢复到第一个版本：确认说明写出文件与仓库位置，确认后才写入
         var confirmation: (message: String, action: () -> Void)? = nil
-        session.onConfirm = { _, message, action, _ in confirmation = (message, action) }
+        session.onConfirm = { confirmation = ($0.message, $0.action) }
         session.restoreFile("a [*].txt", at: first)
 
         let confirm = try #require(confirmation)

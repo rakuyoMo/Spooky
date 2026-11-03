@@ -64,7 +64,7 @@ extension UndoSessionTests {
         let bare = try await Self.makeRemote(for: fixture)
         defer { try? FileManager.default.removeItem(atPath: bare) }
 
-        session.onConfirm = { _, _, action, _ in action() }
+        session.onConfirm = { $0.action() }
         _ = try await fixture.runner.run(["remote", "add", "origin", bare])
 
         let operations: [() -> Void] = [

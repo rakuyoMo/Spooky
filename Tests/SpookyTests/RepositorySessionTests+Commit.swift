@@ -134,9 +134,9 @@ extension RepositorySessionTests {
         }
 
         var messages: [String] = []
-        session.onConfirm = { _, message, action, _ in
-            messages.append(message)
-            action()
+        session.onConfirm = { request in
+            messages.append(request.message)
+            request.action()
         }
 
         session.applyProfile(
@@ -224,7 +224,7 @@ extension RepositorySessionTests {
             try? FileManager.default.removeItem(at: directory)
         }
 
-        session.onConfirm = { title, _, _, _ in Issue.record("不应弹出确认：\(title)") }
+        session.onConfirm = { Issue.record("不应弹出确认：\($0.title)") }
 
         let key = CommitEditorSettings.wrappingKey
         let saved = UserDefaults.standard.object(forKey: key)

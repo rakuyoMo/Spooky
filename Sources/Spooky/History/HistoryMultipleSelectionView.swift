@@ -17,33 +17,25 @@ struct HistoryMultipleSelectionView: View {
     @State
     private var monitor: Any? = nil
 
-    /// 图标、选中数与比较按钮居中排列。
+    /// 选中数的空状态，按钮行是反转或摘取与比较按钮。
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "square.stack")
-                .font(.system(size: 40))
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
+        EmptyStateView(
+            title: AppLocalization.text("history.multiple", session.history.selectedIDs.count),
+            message: "",
+            symbol: "square.stack"
+        ) {
+            pickButton
 
-            Text(AppLocalization.text("history.multiple", session.history.selectedIDs.count))
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 8) {
-                pickButton
-
-                if let (newer, older) = session.comparedCommits {
-                    Button(
-                        optionDown
-                            ? AppLocalization.text("compare.selected", newer.shortID, older.shortID)
-                            : AppLocalization.text("compare.submit")
-                    ) {
-                        session.compareSelectedCommits(reversed: optionDown)
-                    }
+            if let (newer, older) = session.comparedCommits {
+                EmptyStateButton(
+                    optionDown
+                        ? AppLocalization.text("compare.selected", newer.shortID, older.shortID)
+                        : AppLocalization.text("compare.submit")
+                ) {
+                    session.compareSelectedCommits(reversed: optionDown)
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear(perform: startMonitoring)
         .onDisappear(perform: stopMonitoring)
     }
@@ -53,7 +45,10 @@ struct HistoryMultipleSelectionView: View {
         let history = session.history
         let ids = history.commits.filter { history.selectedIDs.contains($0.id) }.map(\.id)
 
-        return Button(AppLocalization.text(session.isViewingHead ? "rewrite.revert.button" : "rewrite.cherryPick.button")) {
+        return EmptyStateButton(
+            AppLocalization
+                .text(session.isViewingHead ? "rewrite.revert.button" : "rewrite.cherryPick.button")
+        ) {
             if session.isViewingHead {
                 session.requestRevert(ids)
             } else {

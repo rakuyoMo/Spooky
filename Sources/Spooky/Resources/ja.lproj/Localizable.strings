@@ -66,6 +66,7 @@
 
 
 "repositories.panel.message" = "既存の Git 作業ツリーを選択してください。";
+"repositories.panel.prompt" = "リポジトリを開く";
 
 "workspace.group" = "ワークスペース";
 
@@ -122,7 +123,7 @@
 
 
 
-"error.command" = "Git コマンドが失敗しました";
+"error.command" = "Git コマンドを実行できません";
 
 "error.launch" = "Git を起動できません";
 
@@ -152,7 +153,7 @@
 
 "error.details" = "元の出力";
 
-"error.noOutput" = "コマンドから出力がありませんでした。";
+"error.noOutput" = "（エラーメッセージはありません）";
 
 "error.outputLimitHelp" = "標準出力の 256 MiB または標準エラー出力の 1 MiB の上限を超えたため、結果を読み込みませんでした。";
 "action.addRemote" = "サーバーリポジトリを追加…";
@@ -169,6 +170,7 @@
 "action.find" = "検索…";
 "menu.find" = "検索";
 "remote.form.help" = "SSH 設定のホスト名とサーバー上の絶対パスを入力してください。";
+"remote.form.title" = "サーバーリポジトリを追加";
 "remote.host" = "ホスト名：";
 "remote.path" = "リポジトリのパス：";
 "remote.checking" = "接続を確認中…";
@@ -186,13 +188,37 @@
 "settings.themes" = "テーマ";
 "settings.terminal" = "ターミナルアプリ：";
 "callback.editor" = "リモートのテキストを編集";
-"callback.credentials" = "サーバーの認証情報";
+"callback.username.title" = "ユーザ名を入力";
+"callback.password.title" = "パスワードを入力";
+"callback.username.label" = "ユーザ名：";
+"callback.password.label" = "パスワード：";
 "callback.saveKeychain" = "この Mac のキーチェーンに保存";
-"callback.value" = "認証情報";
 "error.indexLocked" = "別の Git プロセスがインデックスをロックしています。終了後に再試行してください。";
 "error.terminal" = "ターミナルを開けません";
 "error.terminalHelp" = "設定のターミナル選択と macOS のオートメーション権限を確認してください。";
-"error.exitCode" = "終了コード：%ld";
+"error.remoteConnection" = "リモートへの接続に失敗しました";
+"error.synchronization" = "リモートとの同期に失敗しました";
+"error.remoteNotFound" = "リモートリポジトリが見つかりません";
+"error.indexLocked.title" = "別の Git プロセスが Git インデックスをロック中";
+"signing.error.title" = "署名できませんでした";
+"error.merge" = "マージに失敗しました";
+"error.rebase" = "リベースに失敗しました";
+"error.checkout" = "リビジョンをチェックアウトできませんでした";
+"sync.error.branch.title" = "ローカルブランチが必要です";
+"branch.error.diverged.title" = "ブランチを早送りできません";
+"branch.error.current.title" = "現在のブランチはここでは早送りできません";
+"branch.error.remoteExists.title" = "リモートブランチはすでにあります";
+"working.error.stale.title" = "ファイルが変更されました";
+"working.error.selection.title" = "変更が選択されていません";
+"working.error.file.title" = "通常のファイルが必要です";
+"working.error.path.title" = "サポートされていないパス";
+"diff.error.whitespace.title" = "選択した行が一致しません";
+"reference.error.name.title" = "無効な名前";
+"reference.error.refspec.title" = "無効な refspec";
+"reference.error.url.title" = "無効なリモート URL";
+"remote.error.browser.title" = "リモートをブラウザで開けません";
+"failure.reason" = "%1$@%2$@";
+"error.gitMessage" = "Git のエラーメッセージ";
 "terminal.notInstalled" = "%@ がインストールされていません。";
 "themes.background" = "背景";
 "themes.selection" = "選択範囲";
@@ -221,7 +247,7 @@
 "remoteError.pathUnavailable.help" = "指定したサーバーに絶対パスが存在するか確認してください。";
 "remoteError.pathPermission" = "サーバーのディレクトリにアクセスできません";
 "remoteError.pathPermission.help" = "SSH ユーザーにはディレクトリの読み取りと検索権限が必要です。";
-"remoteError.diskAccess" = "サーバのディレクトリがプライバシー設定で拒否されました";
+"remoteError.diskAccess" = "サーバのディレクトリがプライバシー設定で拒否";
 "remoteError.diskAccess.help" = "サーバの macOS が SSH セッションによるこのフォルダの読み取りを許可していません。サーバの「共有」→「リモートログイン」でリモートユーザにフルディスクアクセスを許可するか、リポジトリを保護されたフォルダの外に移動してください。";
 "remoteError.notWorkingTree" = "サーバーのパスは Git 作業ツリーではありません";
 "remoteError.notWorkingTree.help" = "サーバーの既存の Git 作業ツリーを選択してください。所有権の制限は Git 出力で確認できます。";
@@ -272,9 +298,16 @@
 "working.discardLines" = "選択行を破棄";
 "working.discard" = "変更を破棄";
 "working.discardAll" = "すべての変更を破棄…";
+"working.discard.title" = "ローカルの変更を破棄";
+"working.discardAll.title" = "すべてのローカルの変更を破棄";
+"working.discardAll.submit" = "すべての変更を破棄";
+"working.discardContent.title" = "Diff の内容を破棄しますか？";
 "working.discard.message" = "%d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットに戻し、未追跡ファイルはゴミ箱に入れます。";
 "working.discard.remote" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバーのゴミ箱に入れます。";
 "working.discard.remotePermanent" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバー上で完全に削除します。";
+"working.discard.message.single" = "「%@」の変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットに戻し、未追跡ファイルはゴミ箱に入れます。";
+"working.discard.remote.single" = "サーバー上の「%@」の変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバーのゴミ箱に入れます。";
+"working.discard.remotePermanent.single" = "サーバー上の「%@」の変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバー上で完全に削除します。";
 "working.discard.lines" = "%@ の選択行の変更を破棄します。";
 "working.discard.remoteLines" = "サーバー %@ 上の選択内容を上書きします。";
 "working.resolved" = "解決済みにする";
@@ -328,8 +361,10 @@
 "branch.default" = "デフォルトブランチ";
 "branch.create" = "ブランチを作成";
 "branch.create.help" = "指定したリビジョンからローカルブランチを作成します。";
+"branch.create.title" = "新しいブランチを作成";
 "branch.track" = "リモートブランチを追跡";
 "branch.track.help" = "選択したリモートブランチを追跡するローカルブランチを作成します。";
+"branch.track.submit" = "作成";
 "branch.checkout" = "ブランチをチェックアウト";
 "branch.checkoutNamed" = "「%@」をチェックアウト";
 "branch.delete" = "ブランチを削除";
@@ -352,6 +387,8 @@
 "sync.pull.help" = "選択したブランチを取得し、指定した方法でマージまたはリベースします。";
 "sync.push" = "プッシュ";
 "sync.push.help" = "ローカルブランチを選択した宛先に送信します。";
+"sync.pushHead" = "HEAD をプッシュ";
+"sync.pushBranch" = "ブランチをプッシュ";
 "sync.publish" = "ブランチを公開";
 "sync.publish.help" = "選択したリモートにブランチを作成します。";
 "sync.merge" = "マージ";
@@ -442,7 +479,7 @@
 "dialog.options" = "オプション";
 "dialog.doNotAskAgain" = "今後確認しない";
 "menu.repository" = "リポジトリ";
-"callback.privateKey" = "SSH 秘密鍵を解除";
+"callback.privateKey.title" = "秘密鍵のパスワードを入力";
 "callback.privateKey.help" = "解除した鍵を SSH エージェントに追加します。";
 "callback.accountTokenRejected" = "アカウント「%@」のトークンが認証されませんでした。ユーザ名とパスワードを入力してください。";
 "history.unpushed" = "未プッシュ";
@@ -583,6 +620,7 @@
 "conflict.applied" = "適用したパッチまたはスタッシュ";
 "conflict.binary" = "バイナリの内容は表示しません。";
 "conflict.error.version" = "選択したファイルにはこのバージョンがありません。";
+"conflict.error.version.title" = "このバージョンはありません";
 "conflict.export" = "「%@」のバージョンを書き出す…";
 "conflict.hint.merge.conflicts" = "マージを完了するには、すべての競合を解決してください。";
 "conflict.hint.merge.resolved" = "コミットメッセージを確認し、**コミット** をクリックしてマージを完了してください。";
@@ -646,6 +684,7 @@
 "fileHistory.restoreInWorkingCopy" = "作業コピーの「%@」をリビジョン「%@」に復元…";
 "fileHistory.showHistoryOf" = "「%@」のファイル履歴を表示";
 "fileHistory.restoreTitle" = "作業コピーのファイルを復元";
+"fileHistory.restore.submit" = "復元";
 "fileHistory.restore.message" = "「%@」をリビジョン %@ に復元します。対象：%@。このファイルのステージ済みと未ステージの変更は破棄され、そのリビジョンにファイルがない場合は削除されます。";
 "fileHistory.restore.remote" = "サーバー上の「%@」をリビジョン %@ の内容で上書きします。対象：%@。このファイルのステージ済みと未ステージの変更は破棄され、そのリビジョンにファイルがない場合はサーバー上から削除されます。";
 "fileHistory.scope.author" = "作成者";
@@ -736,6 +775,7 @@
 "profiles.addCurrent" = "ユーザプロファイル “%@” を追加…";
 "profiles.manage" = "ユーザプロファイルを管理…";
 "profiles.apply" = "ユーザプロファイルを使用";
+"profiles.apply.submit" = "プロファイルを使用";
 "profiles.apply.local" = "%@ をリポジトリ %@ のローカル設定に書き込みます。";
 "profiles.apply.remote" = "%@ をサーバー上のリポジトリ %@ のローカル設定に書き込みます。サーバー上でこのリポジトリにコミットするほかのツールも同じ ID を使います。";
 "commit.signOff" = "サインオフ";
@@ -770,6 +810,7 @@
 "files.untrack.multiple" = "%ld 項目の追跡を解除";
 "files.trash" = "ゴミ箱に入れる";
 "files.delete" = "削除";
+"files.delete.title" = "完全に削除";
 "files.delete.remote" = "サーバー上の次のファイルを完全に削除しますか？対象：%2$@。\n\n%1$@";
 "files.move.menu" = "移動…";
 "files.move" = "移動";
@@ -904,6 +945,7 @@
 "history.search.to" = "〜";
 "history.reveal.notFound" = "コミット %@ はこの履歴にありません。";
 "history.reveal.slow" = "さらにコミットを読み込む";
+"history.reveal.slow.submit" = "読み込む";
 "history.reveal.slow.message" = "コミット %1$@ はこの履歴の最初の %2$ld 件のコミットより後にあります。そこまで読み込むには時間がかかることがあります。";
 "history.subtitle" = "%@（%ld 件のコミット）";
 "history.subtitle.more" = "%@（%ld 件以上のコミット）";
@@ -1126,7 +1168,7 @@
 "rewrite.rebaseOnto.missing" = "ベースを選択してください。";
 "rewrite.rebaseOnto.newIsHead" = "新しいベースに HEAD のコミットは指定できません。";
 "rewrite.rebaseOnto.currentIsHead" = "現在のベースに HEAD のコミットは指定できません。";
-"rewrite.reword.title" = "“%@” のコミットメッセージを編集";
+"rewrite.reword.title" = "リビジョン “%@” のコミットメッセージを編集";
 "rewrite.reword.help" = "選択したコミットのメッセージを置き換えます。後に続くコミットも書き換えられます。";
 "rewrite.error.changed" = "書き換える前にブランチが変わりました";
 "rewrite.error.changed.help" = "ブランチのコミットが表示と一致しなくなったため、何も書き換えていません。履歴を更新してからやり直してください。";
@@ -1175,17 +1217,17 @@
 "sync.forcePushMenu" = "リース付き強制プッシュ…";
 "sync.pushToMenu" = "指定先にプッシュ…";
 "sync.fetch.tip" = "リモートをフェッチ";
-"sync.pull.tip" = "リモートブランチを HEAD ブランチにプル";
+"sync.pull.tip" = "リモートブランチをプル";
 "sync.push.tip" = "ローカルブランチをリモートにプッシュ";
-"sync.sync.tip" = "HEAD ブランチをリモートブランチと同期";
+"sync.sync.tip" = "HEAD をリモートブランチと同期";
 "sync.merge.tip" = "別のブランチを HEAD ブランチにマージ";
-"sync.rebaseHead.tip" = "HEAD ブランチを別のブランチにリベース";
-"sync.quickFetch.tip" = "クイックフェッチ：すぐにリモートをフェッチ";
-"sync.quickPull.tip" = "クイックプル：追跡ブランチをプル";
-"sync.quickPush.tip" = "クイックプッシュ：HEAD ブランチを追跡ブランチにプッシュ";
-"sync.quickSync.tip" = "クイック同期：HEAD ブランチを追跡ブランチと同期";
-"sync.quickMerge.tip" = "クイックマージ：追跡ブランチを HEAD ブランチにマージ";
-"sync.quickRebase.tip" = "クイックリベース：HEAD ブランチを追跡ブランチにリベース";
+"sync.rebaseHead.tip" = "現在の HEAD ブランチを別のブランチにリベース";
+"sync.quickFetch.tip" = "すぐにリモートをフェッチ";
+"sync.quickPull.tip" = "追跡しているリモートブランチをプル";
+"sync.quickPush.tip" = "HEAD ブランチを追跡ブランチにプッシュ";
+"sync.quickSync.tip" = "HEAD ブランチを追跡ブランチと同期";
+"sync.quickMerge.tip" = "現在の HEAD ブランチの追跡ブランチをマージ";
+"sync.quickRebase.tip" = "現在の HEAD ブランチを追跡ブランチにリベース";
 "sync.syncHead" = "HEAD を同期";
 "sync.syncHead.help" = "選択したリモートブランチの新しいコミットを「%@」にプルしてから、そのローカルコミットを同じブランチにプッシュします。";
 "sync.rebaseHead" = "リベース";
@@ -1265,7 +1307,9 @@
 "branch.forceDelete" = "強制削除";
 "branch.forceDelete.help" = "完全にマージされていなくてもブランチを削除します。";
 "branch.forceDelete.ask" = "次のブランチは完全にマージされていません：%@。それでも削除しますか？";
-"branch.forceDelete.submit" = "強制削除";
+"branch.forceDelete.submit" = "削除";
+"branch.error.delete" = "ブランチを削除できません";
+"branch.error.deleteMultiple" = "ブランチを削除できません";
 "branch.deleteRemote" = "リモートブランチを削除";
 "branch.deleteRemote.message" = "リモート上のブランチ「%@」を削除します。";
 "branch.deleteRemoteMultiple" = "リモートブランチを削除";
@@ -1330,6 +1374,7 @@
 "remote.pushURL.edit" = "プッシュ URL を編集";
 "remote.pushURL.edit.message" = "「%@」にプッシュするときの URL を入力してください。変更する前に接続を確認します。";
 "remote.pushURL.unset" = "プッシュ URL を解除";
+"remote.pushURL.unset.submit" = "解除";
 "remote.pushURL.unset.confirm" = "プッシュには再びフェッチ URL が使われます。";
 "remote.refspec" = "Refspec：";
 "remote.refspec.addFetch" = "フェッチ Refspec を追加";
@@ -1514,6 +1559,7 @@
 "reflog.createBranch" = "「%@」から新しいブランチを作成…";
 "reflog.cherryPick" = "「%@」をチェリーピック…";
 "reflog.restore.title" = "ブランチを戻す";
+"reflog.restore.submit" = "戻す";
 "reflog.restore.message" = "%3$@ のブランチ「%1$@」を %2$@ に移動しますか？作業コピーとステージングエリアは変更されません。ブランチから外れるコミットは引き続き Reflog で見つけられます。";
 
 "appearance.system" = "自動";
@@ -1609,6 +1655,8 @@
 
 "externalTool.diffTool" = "比較ツール：";
 "externalTool.mergeTool" = "マージツール：";
+"externalTool.dialog.diffTool" = "比較ツール：";
+"externalTool.dialog.mergeTool" = "マージツール：";
 "externalTool.directoryDiff" = "ディレクトリ単位で比較";
 "externalTool.keepBackups" = "マージコンフリクトのバックアップファイルを残す";
 "externalTool.noneSelected" = "未選択";
@@ -1678,9 +1726,9 @@
 "menu.newTab" = "新規タブ";
 "navigation.back" = "戻る";
 "navigation.forward" = "進む";
-"navigation.back.tip" = "前の表示に戻る";
-"navigation.forward.tip" = "次の表示に進む";
-"navigation.title" = "戻る/進む";
+"navigation.back.tip" = "前の表示に移動";
+"navigation.forward.tip" = "次の表示に移動";
+"navigation.title" = "前へ/次へ";
 "menu.hideWindowTitle" = "ウインドウタイトルを非表示";
 "menu.showWindowTitle" = "ウインドウタイトルを表示";
 "menu.showToolbar" = "ツールバーを表示";
@@ -1692,6 +1740,19 @@
 "toolbar.finder" = "Finder";
 "toolbar.terminal" = "ターミナル";
 "toolbar.quickActions" = "クイックアクション";
+"toolbar.quickActions.tip" = "クイックアクションを表示";
+"toolbar.bookmarks" = "ブックマーク";
+"toolbar.bookmarks.tip" = "ブックマーク表示に移動";
+"toolbar.previous" = "前へ";
+"toolbar.next" = "次へ";
+"toolbar.synchronize" = "同期";
+"toolbar.applyStash" = "適用";
+"toolbar.saveStash" = "保存";
+"toolbar.applyStash.tip" = "変更を作業コピーに再適用";
+"toolbar.saveStash.tip" = "ローカルの変更をスタッシュに保存";
+"toolbar.createBranch.tip" = "新しいブランチを作成";
+"toolbar.forcePush.tip" = "リース付き強制プッシュでプッシュ";
+"toolbar.labeledTip" = "%1$@：%2$@";
 "launch.empty" = "最近使ったリポジトリはありません";
 "launch.version" = "バージョン %@";
 
@@ -1819,6 +1880,7 @@
 "quickActions.showRemoteSettings" = "リモートの設定を表示";
 "quickActions.setCommitter" = "コミッタの ID に設定";
 "quickActions.setGlobalUser" = "グローバルユーザに設定";
+"quickActions.setGlobalUser.submit" = "設定";
 "quickActions.setGlobalUser.local" = "user.name と user.email をこの Mac のグローバルな Git 設定に書き込みます。独自の ID を持たないリポジトリはこの ID でコミットします。";
 "quickActions.setGlobalUser.remote" = "user.name と user.email をサーバー「%@」のグローバルな Git 設定に書き込みます。サーバー上で独自の ID を持たないリポジトリはこの ID でコミットします。";
 "quickActions.applyTheme" = "テーマを適用";
@@ -1844,7 +1906,6 @@
 "clone.url" = "リモート URL：";
 "clone.to" = "クローン先：";
 "clone.destination" = "「%@」にクローンします";
-"clone.options" = "オプション";
 "clone.lfs" = "LFS でクローン";
 "clone.submodules" = "サブモジュールを初期化";
 "clone.error.invalidURL" = "リモート URL が無効です";
@@ -2003,6 +2064,7 @@
 "submodule.add.menu" = "サブモジュールを追加…";
 "submodule.add.message" = "リポジトリをこのリポジトリ内の空のディレクトリにクローンし、サブモジュールとして登録します。";
 "submodule.add.submit" = "サブモジュールを追加";
+"submodule.add.title" = "サブモジュールリポジトリを追加";
 "submodule.autoUpdate" = "サブモジュールの自動更新";
 "submodule.autoUpdate.always" = "常にサブモジュールを自動更新";
 "submodule.autoUpdate.message" = "この操作で次のサブモジュールの記録済みリビジョンが変わりました。今すぐ更新しますか？";
@@ -2021,7 +2083,7 @@
 "submodule.editURL" = "サブモジュールの URL を編集";
 "submodule.editURL.message" = "サブモジュールのリポジトリの URL を入力します。";
 "submodule.editURL.submit" = "変更";
-"submodule.error.gitDirectoryExists" = "このサブモジュールの Git ディレクトリがすでにあります";
+"submodule.error.gitDirectoryExists" = "サブモジュールの Git ディレクトリがすでにあります";
 "submodule.error.gitDirectoryExists.help" = "既存の Git ディレクトリを再利用するか上書きするか、別のパスを選んでください。";
 "submodule.error.localModifications" = "サブモジュールにローカルの変更があります";
 "submodule.error.localModifications.help" = "サブモジュール内の変更をコミットまたは破棄するか、そのまま削除してください。";
@@ -2182,7 +2244,7 @@
 "worktree.move" = "ワークツリーを移動";
 "worktree.move.menu" = "ワークツリーを移動…";
 "worktree.move.message" = "ワークツリー「%@」を現在の状態のまま別の場所へ移動します。";
-"worktree.move.submit" = "移動";
+"worktree.move.submit" = "ワークツリーを移動";
 "worktree.noRefs" = "このリポジトリにはまだコミットがありません。";
 "worktree.open.current" = "ワークツリーを開く";
 "worktree.open.newTab" = "ワークツリーを新規タブで開く";
@@ -2191,13 +2253,13 @@
 "worktree.page.general" = "一般";
 "worktree.relocate" = "ワークツリーの場所を指定";
 "worktree.relocate.message" = "ワークツリー「%@」のディレクトリが今ある場所を選ぶと、Git がこのリポジトリにつなぎ直します。";
-"worktree.relocate.submit" = "修復";
+"worktree.relocate.submit" = "ワークツリーの場所を指定";
 "worktree.remove" = "ワークツリーを削除";
 "worktree.remove.force" = "強制的に削除";
 "worktree.remove.force.help" = "コミットしていない変更ごとワークツリーを削除します。";
 "worktree.remove.menu" = "ワークツリーを削除…";
 "worktree.remove.message" = "ワークツリー「%@」とそのディレクトリを完全に削除します。";
-"worktree.remove.submit" = "削除";
+"worktree.remove.submit" = "ワークツリーを削除";
 "worktree.repair" = "ワークツリーを修復";
 "worktree.repair.menu" = "ワークツリーを修復…";
 "worktree.reveal" = "ワークツリーを Finder に表示";
@@ -2211,10 +2273,10 @@
 
 "lfs.menu" = "LFS";
 "lfs.menu.update" = "更新";
-"lfs.menu.fetch" = "フェッチ…";
-"lfs.menu.pull" = "プル…";
-"lfs.menu.push" = "プッシュ…";
-"lfs.menu.track" = "追跡…";
+"lfs.menu.fetch" = "フェッチ";
+"lfs.menu.pull" = "プル";
+"lfs.menu.push" = "プッシュ";
+"lfs.menu.track" = "追跡";
 "lfs.fetch" = "LFS オブジェクトをフェッチ";
 "lfs.pull" = "LFS オブジェクトをプル";
 "lfs.push" = "LFS オブジェクトをプッシュ";
@@ -2320,7 +2382,7 @@
 "hosting.error.differentUser.help" = "このトークンは下に示すユーザのものです。そのユーザでサインインするには、新しいアカウントとして追加してください。";
 "hosting.error.passwordRejected" = "ユーザ名またはパスワードが拒否されました";
 "hosting.error.passwordRejected.help" = "パスワードが間違っているか、アカウントで 2 要素認証が有効になっているかシングルサインオンでしかサインインできないか、サーバでパスワードによるサインインが無効になっています。代わりに個人アクセストークンを使ってください。";
-"hosting.error.clientCredentialsRequired" = "サーバが OAuth アプリケーションの資格情報を必要としています";
+"hosting.error.clientCredentialsRequired" = "OAuth アプリケーションの資格情報が必要です";
 "hosting.error.clientCredentialsRequired.help" = "この GitLab サーバは登録済みの OAuth アプリケーションにのみトークンを発行します（GitLab 13.9、および設定によっては 17.8 以降）。Spooky はアプリケーションの資格情報を受け付けません。代わりに個人アクセストークンを使ってください。";
 "hosting.error.passwordGrantUnsupported" = "パスワードによるサインインはサポートされていません";
 "hosting.error.passwordGrantUnsupported.help" = "GitLab 19.0 以降では、ユーザ名とパスワードでトークンを取得できなくなりました。代わりに個人アクセストークンを使ってください。";
@@ -2523,3 +2585,44 @@
 "review.audit.stale" = "%1$@：最終更新 %2$@";
 "review.audit.manual" = "%@：手動でアーカイブ";
 "review.audit.restored" = "%@：元に戻しました";
+"menu.services" = "サービス";
+"menu.clearRecent" = "メニューを消去";
+"menu.pasteAndMatchStyle" = "ペーストしてスタイルを合わせる";
+"menu.delete" = "削除";
+"menu.findNext" = "次を検索";
+"menu.findPrevious" = "前を検索";
+"menu.useSelectionForFind" = "選択部分を検索に使用";
+"menu.jumpToSelection" = "選択部分へジャンプ";
+"menu.spelling" = "スペルと文法";
+"menu.showSpelling" = "スペルと文法を表示";
+"menu.checkDocument" = "書類を今すぐチェック";
+"menu.checkSpellingWhileTyping" = "入力中にスペルチェック";
+"menu.checkGrammar" = "スペルと同時に文法をチェック";
+"menu.correctSpelling" = "スペルを自動的に修正";
+"menu.substitutions" = "自動置換";
+"menu.showSubstitutions" = "置換を表示";
+"menu.smartCopyPaste" = "スマートコピー／ペースト";
+"menu.smartQuotes" = "スマート引用符";
+"menu.smartDashes" = "スマートダッシュ";
+"menu.smartLinks" = "スマートリンク";
+"menu.textReplacement" = "テキストの置換";
+"menu.transformations" = "変換";
+"menu.upperCase" = "大文字にする";
+"menu.lowerCase" = "小文字にする";
+"menu.capitalize" = "先頭を大文字にする";
+"menu.speech" = "スピーチ";
+"menu.startSpeaking" = "読み上げを開始";
+"menu.stopSpeaking" = "読み上げを停止";
+"history.autoExpand.title" = "自動展開のしきい値";
+"sync.fetchMenu" = "フェッチ…";
+"sync.pullMenu" = "プル…";
+"sync.pushMenu" = "HEAD をプッシュ…";
+"sync.quickPushMenu" = "HEAD をクイックプッシュ";
+"sync.publishMenu" = "ブランチを公開…";
+"branch.createMenu" = "新しいブランチを作成…";
+"sync.mergeMenu" = "マージ…";
+"working.commitMenu" = "コミット…";
+"working.stageAllMenu" = "すべてのローカルの変更をステージ";
+"working.unstageAllMenu" = "すべてのローカルの変更をステージ解除";
+"working.discardMenu" = "ローカルの変更を破棄";
+"working.discardAllMenu" = "すべてのローカルの変更を破棄…";

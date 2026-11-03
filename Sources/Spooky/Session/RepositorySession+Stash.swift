@@ -98,22 +98,25 @@ extension RepositorySession {
         let repository = repository
         let single = selected.count == 1
 
-        onConfirm?(
-            AppLocalization.text(single ? "stash.delete" : "stash.deleteStashes"),
-            single
-                ? AppLocalization.text("stash.delete.confirm", first.title)
-                : AppLocalization.text("stash.deleteStashes.confirm", selected.count),
-            { [weak self] in
-                guard let self, self.repository == repository else { return }
+        // 标题与主按钮相同，也是 Activity 与撤销记录的名称
+        let title = AppLocalization.text(single ? "stash.delete" : "stash.deleteStashes")
+        let message = single
+            ? AppLocalization.text("stash.delete.confirm", first.title)
+            : AppLocalization.text("stash.deleteStashes.confirm", selected.count)
 
-                performGit(
-                    { runner, _ in try await RepositoryStashes(runner: runner).drop(selected) },
-                    title: AppLocalization.text(single ? "stash.delete" : "stash.deleteStashes"),
-                    undo: .reversible
-                )
-            },
-            nil
-        )
+        onConfirm?(ConfirmationRequest(
+            title: title,
+            message: message,
+            submitTitle: title
+        ) { [weak self] in
+            guard let self, self.repository == repository else { return }
+
+            performGit(
+                { runner, _ in try await RepositoryStashes(runner: runner).drop(selected) },
+                title: title,
+                undo: .reversible
+            )
+        })
     }
 
     /// 只把储藏里的一个文件套用到工作区，补丁按储藏哈希生成。
@@ -171,8 +174,8 @@ extension RepositorySession {
 extension RepositorySession {
     /// 检出、拉取与合并被本地改动挡住：Spooky 发起前的干净工作区检查，或 Git 拒绝覆盖未提交的改动。
     static func isBlockedByLocalChanges(_ error: any Error) -> Bool {
-        if let sync = error as? RepositorySyncError {
-            return sync == .dirtyWorkingCopy
+        if case .dirtyWorkingCopy = error as? RepositorySyncError {
+            return true
         }
 
         return (error as? GitError)?.category == .localChanges

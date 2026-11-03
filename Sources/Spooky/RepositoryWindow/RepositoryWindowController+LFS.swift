@@ -52,21 +52,12 @@ extension RepositoryWindowController {
 extension RepositoryWindowController {
     /// 以 sheet 呈现 LFS 传输对话框；传输开始后才关闭。
     private func presentLFSTransfer(_ transfer: LFSTransfer) {
-        guard let window, session.repository != nil, window.attachedSheet == nil, session.canWrite else {
+        guard session.repository != nil, session.canWrite else {
             return
         }
 
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-
-        let close = { [weak sheet] in
-            if let sheet { window.endSheet(sheet) }
+        presentDialog { close in
+            LFSTransferDialog(session: session, transfer: transfer, close: close)
         }
-
-        sheet.contentViewController = NSHostingController(
-            rootView: LFSTransferDialog(session: session, transfer: transfer, close: close)
-        )
-        window.beginSheet(sheet)
     }
 }
