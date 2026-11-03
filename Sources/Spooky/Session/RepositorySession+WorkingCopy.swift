@@ -38,7 +38,7 @@ extension RepositorySession {
         let request = generation
         let removal = fileRemoval
 
-        // Activity 与撤销记录沿用动作名，确认对话框按丢弃所选还是全部取标题与主按钮
+        // Activity 与撤销记录用动作名，确认对话框按丢弃所选还是全部取标题与主按钮
         let activityTitle = AppLocalization.text("working.discard")
         let title = AppLocalization.text(all ? "working.discardAll.title" : "working.discard.title")
         let submitTitle = AppLocalization.text(all ? "working.discardAll.submit" : "working.discard")

@@ -76,9 +76,11 @@ struct FailurePresentationTests {
         let reading = AppFailure(error: error, opening: false, location: nil)
 
         let cause = AppLocalization.text("sync.error.remote")
+        let writeHelp = AppLocalization.text("error.writeHelp")
+        let refreshHelp = AppLocalization.text("error.refreshHelp")
 
-        #expect(writing.message == AppLocalization.text("failure.reason", cause, AppLocalization.text("error.writeHelp")))
-        #expect(reading.message == AppLocalization.text("failure.reason", cause, AppLocalization.text("error.refreshHelp")))
+        #expect(writing.message == AppLocalization.text("failure.reason", cause, writeHelp))
+        #expect(reading.message == AppLocalization.text("failure.reason", cause, refreshHelp))
         #expect(writing.details.contains("Could not read from remote repository."))
     }
 

@@ -35,7 +35,8 @@ extension WindowChromeTests {
         )
         #expect(Self.tips(of: RepositoryToolbar.synchronize, in: controller) == [text("sync.sync.tip")])
         #expect(
-            Self.tips(of: RepositoryToolbar.merge, in: controller) == [text("sync.merge.tip"), text("sync.rebaseHead.tip")]
+            Self.tips(of: RepositoryToolbar.merge, in: controller)
+                == [text("sync.merge.tip"), text("sync.rebaseHead.tip")]
         )
         #expect(
             Self.tips(of: RepositoryToolbar.stashes, in: controller)
@@ -59,7 +60,7 @@ extension WindowChromeTests {
     }
 
     /// 只显示图标时多数项在提示前面加上 “<标签>: ”，Sync、Create Branch、Refresh、Force Push、Push To、Close Repository
-    /// 与 Parent Repository 不加；按住 ⌥ 时同步一组的提示前面总是加上 “Quick Fetch: ” 这类标签。
+    /// 与 Parent Repository 不加。
     @Test("只显示图标时的工具栏提示")
     func iconOnlyTips() async throws {
         let fixture = try await NavigationTests.makeWindow()
@@ -110,10 +111,10 @@ extension WindowChromeTests {
             Self.tips(of: RepositoryToolbar.quickActions, in: controller)
                 == [Self.labeledTip("toolbar.quickActions", "toolbar.quickActions.tip")]
         )
-        #expect(Self.tips(of: RepositoryToolbar.finder, in: controller) == [Self.labeledTip(
-            "toolbar.finder",
-            "action.revealFinder"
-        )])
+        #expect(
+            Self.tips(of: RepositoryToolbar.finder, in: controller)
+                == [Self.labeledTip("toolbar.finder", "action.revealFinder")]
+        )
         #expect(
             Self.tips(of: RepositoryToolbar.terminal, in: controller)
                 == [Self.labeledTip("toolbar.terminal", "action.openTerminal")]
@@ -127,10 +128,25 @@ extension WindowChromeTests {
         #expect(Self.tips(of: RepositoryToolbar.pushTo, in: controller) == [text("toolbar.pushTo")])
         #expect(Self.tips(of: RepositoryToolbar.closeRepository, in: controller) == [text("action.closeRepository")])
         #expect(
-            Self.tips(of: RepositoryToolbar.parentRepository, in: controller) == [text("toolbar.parentRepository.tip")]
+            Self.tips(of: RepositoryToolbar.parentRepository, in: controller)
+                == [text("toolbar.parentRepository.tip")]
         )
+    }
 
-        // 只显示图标时按住 ⌥：快速操作的提示前面总是加上标签，Sync 也加
+    /// 只显示图标时按住 ⌥：同步一组的提示前面总是加上 “Quick Fetch: ” 这类标签，Sync 也加。
+    @Test("只显示图标时按住 ⌥ 的工具栏提示")
+    func iconOnlyQuickTips() async throws {
+        let fixture = try await NavigationTests.makeWindow()
+        let controller = fixture.controller
+        let toolbar = try #require(controller.window?.toolbar)
+        let saved = toolbar.displayMode
+
+        defer {
+            toolbar.displayMode = saved
+            fixture.close()
+        }
+
+        toolbar.displayMode = .iconOnly
         controller.updateQuickToolbarItems(option: true)
         #expect(
             Self.tips(of: RepositoryToolbar.sync, in: controller) == [
@@ -169,7 +185,7 @@ extension WindowChromeTests {
         let text = { (key: String) in AppLocalization.text(key) }
         let host = { (tip: String) in "spooky-test: " + tip }
 
-        // 窗口照旧显示本机的工作区，会话换成同一目录的服务器仓库，只用来取主机别名
+        // 窗口显示的是本机的工作区，会话换成同一目录的服务器仓库，只用来取主机别名
         controller.session.display(.remote(host: "spooky-test", path: fixture.directory.path))
 
         toolbar.displayMode = .iconAndLabel
@@ -187,7 +203,8 @@ extension WindowChromeTests {
 
         toolbar.displayMode = .iconOnly
         #expect(
-            Self.tips(of: RepositoryToolbar.sync, in: controller).first == host(Self.labeledTip("sync.fetch", "sync.fetch.tip"))
+            Self.tips(of: RepositoryToolbar.sync, in: controller).first
+                == host(Self.labeledTip("sync.fetch", "sync.fetch.tip"))
         )
         #expect(
             Self.tips(of: RepositoryToolbar.quickActions, in: controller)
@@ -219,19 +236,24 @@ extension WindowChromeTests {
         defer { fixture.close() }
 
         let controller = fixture.controller
-        let repositories = try #require(Self.item(RepositoryToolbar.repositories, in: controller) as? NSToolbarItemGroup)
-        let navigation = try #require(Self.item(RepositoryToolbar.navigation, in: controller) as? NSToolbarItemGroup)
-        let stashes = try #require(Self.item(RepositoryToolbar.stashes, in: controller) as? NSToolbarItemGroup)
+        let group = { (identifier: NSToolbarItem.Identifier) in
+            Self.item(identifier, in: controller) as? NSToolbarItemGroup
+        }
+
+        let repositories = try #require(group(RepositoryToolbar.repositories))
+        let navigation = try #require(group(RepositoryToolbar.navigation))
+        let stashes = try #require(group(RepositoryToolbar.stashes))
         let synchronize = try #require(Self.item(RepositoryToolbar.synchronize, in: controller))
+        let text = { (key: String) in AppLocalization.text(key) }
 
-        #expect(repositories.subitems.map(\.label) == [AppLocalization.text("toolbar.bookmarks")])
-        #expect(repositories.paletteLabel == AppLocalization.text("toolbar.bookmarks"))
-        #expect(navigation.subitems.map(\.label) == ["toolbar.previous", "toolbar.next"].map { AppLocalization.text($0) })
-        #expect(stashes.subitems.map(\.label) == ["toolbar.applyStash", "toolbar.saveStash"].map { AppLocalization.text($0) })
-        #expect(synchronize.label == AppLocalization.text("sync.sync"))
-        #expect(synchronize.paletteLabel == AppLocalization.text("toolbar.synchronize"))
+        #expect(repositories.subitems.map(\.label) == [text("toolbar.bookmarks")])
+        #expect(repositories.paletteLabel == text("toolbar.bookmarks"))
+        #expect(navigation.subitems.map(\.label) == [text("toolbar.previous"), text("toolbar.next")])
+        #expect(stashes.subitems.map(\.label) == [text("toolbar.applyStash"), text("toolbar.saveStash")])
+        #expect(synchronize.label == text("sync.sync"))
+        #expect(synchronize.paletteLabel == text("toolbar.synchronize"))
 
-        // 高优先级的五项，其余照旧；工具栏里的搜索框读回的优先级随布局变化，取新建的一个
+        // 高优先级的五项，其余是标准优先级；工具栏里的搜索框读回的优先级随布局变化，取新建的一个
         let high: [NSToolbarItem.Identifier] = [
             RepositoryToolbar.parentRepository, RepositoryToolbar.repositories,
             RepositoryToolbar.createBranch, RepositoryToolbar.forcePush,
@@ -389,7 +411,11 @@ extension WindowChromeTests {
         defer { fixture.close() }
 
         let controller = fixture.controller
-        let item = NSMenuItem(title: "", action: #selector(RepositoryWindowController.refreshRepository), keyEquivalent: "")
+        let item = NSMenuItem(
+            title: "",
+            action: #selector(RepositoryWindowController.refreshRepository),
+            keyEquivalent: ""
+        )
 
         controller.session.refresh(full: true)
         #expect(controller.session.isRefreshing)
@@ -403,7 +429,10 @@ extension WindowChromeTests {
 
 extension WindowChromeTests {
     /// 窗口工具栏里的项；不在工具栏里的按标识新建一个，与自定义面板里拖进来的相同。
-    static func item(_ identifier: NSToolbarItem.Identifier, in controller: RepositoryWindowController) -> NSToolbarItem? {
+    static func item(
+        _ identifier: NSToolbarItem.Identifier,
+        in controller: RepositoryWindowController
+    ) -> NSToolbarItem? {
         guard let toolbar = controller.window?.toolbar else {
             return nil
         }
@@ -421,7 +450,10 @@ extension WindowChromeTests {
     }
 
     /// 一项的提示；分段组按段依次取出。
-    static func tips(of identifier: NSToolbarItem.Identifier, in controller: RepositoryWindowController) -> [String?] {
+    static func tips(
+        of identifier: NSToolbarItem.Identifier,
+        in controller: RepositoryWindowController
+    ) -> [String?] {
         guard let item = item(identifier, in: controller) else {
             return []
         }

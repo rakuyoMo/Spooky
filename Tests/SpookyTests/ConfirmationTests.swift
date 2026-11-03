@@ -6,7 +6,7 @@ import Testing
 
 // MARK: - ConfirmationTests
 
-/// 会话里的确认：标题是名词短语，主按钮写动作，不再与标题相同；丢弃的说明在一个文件时点名它；
+/// 会话里的确认：标题是名词短语，主按钮写动作；丢弃的说明在一个文件时点名它；
 /// 丢弃块与行在本机仓库同样带 “Do not ask me again”，与 General 页的警告是同一项。
 @MainActor
 struct ConfirmationTests {

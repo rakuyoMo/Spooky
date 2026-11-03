@@ -113,7 +113,7 @@ extension RemoteCallbackPrompt {
 
 // MARK: - RemoteCallbackDialog
 
-/// 回调中继的询问：骨架的认证版，标题按询问的种类写，说明是主机与私钥路径或提示原文。
+/// 回调中继的询问：骨架的表单版，标题按询问的种类写，说明是主机与私钥路径或提示原文。
 ///
 /// 用户名、密码与口令的内容区是带标签的输入框与 “Save in this Mac’s Keychain” 勾选框，按钮是 Cancel 与 OK，输入为空时 OK 不可用；
 /// 编辑器请求的内容区是带边框的等宽编辑区，按钮是 Cancel 与 Continue。输入框或编辑区在出现时成为焦点。

@@ -19,7 +19,7 @@ final class RepositoryBookmarks {
     /// 最外层的书签，按手动顺序排列。
     private(set) var items: [Bookmark]
 
-    /// 最近一次清空最近打开列表的时间；在这之前打开的仓库不再列入 `recentlyOpened`，书签与打开时间都保留。
+    /// 最近一次清空最近打开列表的时间；在这之前打开的仓库不列入 `recentlyOpened`，书签与打开时间都保留。
     private(set) var recentsCleared: Date? = nil
 
     /// 最近一次检查或打开失败的仓库位置。

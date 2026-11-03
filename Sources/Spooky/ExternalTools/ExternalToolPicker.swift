@@ -71,7 +71,9 @@ struct ConfigureExternalToolDialog: View {
         ) {
             DialogForm {
                 DialogFormRow(
-                    label: AppLocalization.text(merge ? "externalTool.dialog.mergeTool" : "externalTool.dialog.diffTool")
+                    label: AppLocalization.text(
+                        merge ? "externalTool.dialog.mergeTool" : "externalTool.dialog.diffTool"
+                    )
                 ) {
                     ExternalToolPopUp(selection: $selection, merge: merge)
                         .buttonSizing(.flexible)

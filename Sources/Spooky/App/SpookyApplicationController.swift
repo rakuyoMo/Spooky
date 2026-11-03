@@ -641,7 +641,7 @@ extension SpookyApplicationController {
                 }
                 try Task.checkCancellation()
 
-                // 重试期间窗口离开了丢失页（如回到仓库管理）时不再换回仓库
+                // 重试期间窗口离开了丢失页（如回到仓库管理）时不换回仓库
                 guard let source, source.missingLocation == location else {
                     releaseConnection(location)
                     return

@@ -20,7 +20,12 @@ struct PromptDialogTests {
         let controller = fixture.controller
         let window = try #require(controller.window)
 
-        for (branches, title) in [(["topic"], "branch.error.delete"), (["topic", "other"], "branch.error.deleteMultiple")] {
+        let cases = [
+            (["topic"], "branch.error.delete"),
+            (["topic", "other"], "branch.error.deleteMultiple"),
+        ]
+
+        for (branches, title) in cases {
             let offer = ForceDeletionOffer(
                 branches: branches.map { "refs/heads/" + $0 },
                 deletingUpstream: false,
@@ -34,7 +39,10 @@ struct PromptDialogTests {
 
             #expect(dialog.title == AppLocalization.text(title))
             #expect(dialog.message.contains(branches.joined(separator: ", ")))
-            #expect(Self.buttons(of: dialog) == ["action.cancel", "branch.forceDelete.submit"].map { AppLocalization.text($0) })
+            #expect(Self.buttons(of: dialog) == [
+                "action.cancel",
+                "branch.forceDelete.submit",
+            ].map { AppLocalization.text($0) })
             #expect(dialog.checkbox == nil)
         }
     }
@@ -56,9 +64,15 @@ struct PromptDialogTests {
 
         let deletion = try await Self.confirmation(on: window)
         #expect(deletion.title == AppLocalization.text("submodule.delete"))
-        #expect(Self.buttons(of: deletion) == ["action.cancel", "submodule.forceDelete.submit"].map { AppLocalization.text($0) })
+        #expect(Self.buttons(of: deletion) == [
+            "action.cancel",
+            "submodule.forceDelete.submit",
+        ].map { AppLocalization.text($0) })
 
-        controller.presentSubmoduleRequest(.forceAdd(SubmoduleAdditionOffer(url: "https://example.com/lib.git", path: "lib")))
+        controller.presentSubmoduleRequest(.forceAdd(SubmoduleAdditionOffer(
+            url: "https://example.com/lib.git",
+            path: "lib"
+        )))
 
         let addition = try await Self.confirmation(on: window)
         #expect(addition.title == AppLocalization.text("submodule.forceAdd"))
@@ -110,7 +124,10 @@ struct PromptDialogTests {
 
         let overwrite = try await Self.confirmation(on: window)
         #expect(overwrite.title == AppLocalization.text("externalTool.fileChanged"))
-        #expect(Self.buttons(of: overwrite) == ["action.cancel", "externalTool.overwrite"].map { AppLocalization.text($0) })
+        #expect(Self.buttons(of: overwrite) == [
+            "action.cancel",
+            "externalTool.overwrite",
+        ].map { AppLocalization.text($0) })
 
         session.onCommentPrompt?(false) { _ in }
 
@@ -138,7 +155,10 @@ struct PromptDialogTests {
 
         let deletion = try await Self.confirmation(on: window)
         #expect(deletion.title == AppLocalization.text("bookmarks.delete.titleMultiple", 2))
-        #expect(Self.buttons(of: deletion) == ["action.cancel", "bookmarks.delete.submit"].map { AppLocalization.text($0) })
+        #expect(Self.buttons(of: deletion) == [
+            "action.cancel",
+            "bookmarks.delete.submit",
+        ].map { AppLocalization.text($0) })
 
         // 详情区读完仓库概况才能写入身份
         manager.selection = [first]
@@ -148,7 +168,10 @@ struct PromptDialogTests {
 
         let profile = try await Self.confirmation(on: window)
         #expect(profile.title == AppLocalization.text("profiles.apply"))
-        #expect(Self.buttons(of: profile) == ["action.cancel", "profiles.apply.submit"].map { AppLocalization.text($0) })
+        #expect(Self.buttons(of: profile) == [
+            "action.cancel",
+            "profiles.apply.submit",
+        ].map { AppLocalization.text($0) })
 
         manager.selection = []
     }

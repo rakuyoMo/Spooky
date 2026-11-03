@@ -129,7 +129,9 @@ extension RepositoryWindowController {
         // 询问结束后才开始强制删除，进度与失败由仓库视图承接
         DialogWindow.present(on: window) { close in
             ConfirmationDialog(
-                title: AppLocalization.text(names.count == 1 ? "branch.error.delete" : "branch.error.deleteMultiple"),
+                title: AppLocalization.text(
+                    names.count == 1 ? "branch.error.delete" : "branch.error.deleteMultiple"
+                ),
                 message: AppLocalization.text("branch.forceDelete.ask", names.joined(separator: ", "))
                     + "\n\n" + failure.context,
                 submitTitle: AppLocalization.text("branch.forceDelete.submit"),

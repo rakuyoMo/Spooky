@@ -523,7 +523,9 @@ extension RepositoryWindowController {
     /// 跟随分隔符：跟的分栏必须在本窗口里，窗口换成整页时不建，回到有内层分栏的视图后再插入；
     /// 别的仓库窗口插入它时会同步到本窗口，本窗口已经有了就不再建第二个。
     private func makeDetailSeparator() -> NSToolbarItem? {
-        let exists = window?.toolbar?.items.contains { $0.itemIdentifier == RepositoryToolbar.detailSeparator } ?? false
+        let exists = window?.toolbar?.items.contains {
+            $0.itemIdentifier == RepositoryToolbar.detailSeparator
+        } ?? false
 
         guard let target = detailSeparatorTarget, !exists else {
             return nil

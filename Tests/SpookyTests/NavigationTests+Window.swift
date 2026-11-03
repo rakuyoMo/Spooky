@@ -365,12 +365,14 @@ extension NavigationTests {
 
         // 目录放回后，窗口再次成为主窗口时换回仓库界面
         try FileManager.default.moveItem(at: moved, to: fixture.directory)
-        controller.windowDidBecomeMain(Notification(name: NSWindow.didBecomeMainNotification, object: controller.window))
+        controller.windowDidBecomeMain(
+            Notification(name: NSWindow.didBecomeMainNotification, object: controller.window)
+        )
         #expect(controller.openingRequest != nil)
         try await FileViewsTests.wait(showsRepository)
     }
 
-    /// 重试不是用户发起的，验证位置时不允许询问用户；同一窗口上一次重试还没结束时不再发起。
+    /// 重试不是用户发起的，验证位置时不允许询问用户；同一窗口上一次重试还没结束时不发起新的重试。
     @Test("丢失页的重试不询问用户")
     func missingRepositoryRetryIsQuiet() async throws {
         let fixture = try await Self.makeWindow()
@@ -394,7 +396,7 @@ extension NavigationTests {
         #expect(controller.openingRequest == nil)
     }
 
-    /// 重试期间窗口回到了仓库管理时，仓库回来了也不再把窗口换回仓库界面。
+    /// 重试期间窗口回到了仓库管理时，仓库回来了也不把窗口换回仓库界面。
     @Test("离开丢失页后重试不换回仓库")
     func missingRepositoryRetryAfterLeaving() async throws {
         let fixture = try await Self.makeWindow()

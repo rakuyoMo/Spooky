@@ -96,11 +96,17 @@ extension PullRequestDetailView {
             if state.needsFetch {
                 EmptyStateView(
                     title: AppLocalization.text("pullRequests.fetch.title"),
-                    message: AppLocalization.text("pullRequests.fetch.message", request.id.reference, state.remote ?? ""),
+                    message: AppLocalization.text(
+                        "pullRequests.fetch.message",
+                        request.id.reference,
+                        state.remote ?? ""
+                    ),
                     symbol: "arrow.down.circle"
                 ) {
-                    EmptyStateButton(AppLocalization.text("pullRequests.fetch")) { session.fetchPullRequestHead(request) }
-                        .disabled(!session.canWrite)
+                    EmptyStateButton(AppLocalization.text("pullRequests.fetch")) {
+                        session.fetchPullRequestHead(request)
+                    }
+                    .disabled(!session.canWrite)
                 }
             } else {
                 VStack(spacing: 0) {

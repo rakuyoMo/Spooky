@@ -87,7 +87,8 @@ struct DeveloperMenuTests {
         for confirms in [false, true] {
             let answer = Task { await SpookyApplicationController.confirmResetUserDefaults(in: window) }
             let sheet = try await Self.attachedSheet(of: window)
-            let dialog = try #require((sheet.contentViewController as? NSHostingController<ConfirmationDialog>)?.rootView)
+            let hosting = sheet.contentViewController as? NSHostingController<ConfirmationDialog>
+            let dialog = try #require(hosting?.rootView)
 
             // 标题与说明来自资源，Reset 是主按钮
             #expect(dialog.title == AppLocalization.text("developer.resetUserDefaults.title"))

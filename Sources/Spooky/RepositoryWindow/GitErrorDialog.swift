@@ -6,7 +6,8 @@ import SwiftUI
 /// Git 错误框：骨架的错误版，挂在仓库窗口上，窗口可以拉大。
 ///
 /// 头部是系统的警告图标、错误标题，说明是原因与恢复步骤，空一行后是类别与仓库位置；
-/// Git 原文在默认展开的 “Git Error Message” 区里，随窗口拉大而变大。底栏只有 Close，打开仓库失败时左侧另有 Choose Another Folder…。
+/// Git 原文在默认展开的 “Git Error Message” 区里，随窗口拉大而变大。
+/// 底栏只有 Close，打开仓库失败时 Close 左侧另有 Choose Another Folder…。
 struct GitErrorDialog: View {
     /// 要报告的错误。
     let failure: AppFailure

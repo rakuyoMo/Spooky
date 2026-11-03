@@ -80,7 +80,9 @@ struct OpenFilesTests {
         }
 
         let coordinator = fixture.coordinator
-        _ = try await GitRunner(location: .local(path: bare.path)).run(["-c", "init.templateDir=", "init", "--bare", "-q"])
+        _ = try await GitRunner(location: .local(path: bare.path)).run(
+            ["-c", "init.templateDir=", "init", "--bare", "-q"]
+        )
 
         await coordinator.openFolders([bare]).value
 

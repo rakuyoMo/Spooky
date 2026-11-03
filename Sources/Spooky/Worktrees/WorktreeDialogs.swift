@@ -258,7 +258,9 @@ struct WorktreePathDialog: View {
             cancel: close,
             submit: submit
         ) {
-            RepositoryDialogRows.row(AppLocalization.text(target == .move ? "worktree.destination" : "worktree.location")) {
+            RepositoryDialogRows.row(
+                AppLocalization.text(target == .move ? "worktree.destination" : "worktree.location")
+            ) {
                 HStack(spacing: 8) {
                     TextField("", text: $path)
                         .accessibilityIdentifier("worktree-path")

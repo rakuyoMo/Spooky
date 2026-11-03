@@ -15,7 +15,7 @@ import Testing
 @MainActor
 struct OperationDialogTests {
     /// 新建分支的标题是 Create New Branch，跟踪远端分支的主按钮是 Create，推送的标题与主按钮都按本地分支是不是 HEAD 写；
-    /// 其余种类的标题与主按钮仍是动作名，同步的主按钮是 Sync HEAD。
+    /// 其余种类的标题与主按钮是动作名，同步的主按钮是 Sync HEAD。
     @Test("标题与主按钮的资源键")
     func keys() {
         typealias Kind = RepositoryActionRequest.Kind

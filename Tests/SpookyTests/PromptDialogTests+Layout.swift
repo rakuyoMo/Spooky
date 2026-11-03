@@ -98,18 +98,24 @@ extension PromptDialogTests {
             dialog
         }
 
-        let removableButtons = removable.filter { $0.role == "AXButton" }.sorted { $0.frame.minX < $1.frame.minX }
+        let removableButtons = removable
+            .filter { $0.role == "AXButton" }
+            .sorted { $0.frame.minX < $1.frame.minX }
 
         #expect(removableButtons.map(\.name) == [cancel, keep, remove])
         #expect(abs((removableButtons.first?.frame.minX ?? 0) - DialogMetrics.alignment) <= 1)
         #expect(abs(width - (removableButtons.last?.frame.maxX ?? 0) - 20) <= 1)
-        #expect(removable.contains { $0.role == "AXCheckBox" && $0.name == AppLocalization.text("commit.doNotAskAgain") })
+        #expect(removable.contains {
+            $0.role == "AXCheckBox" && $0.name == AppLocalization.text("commit.doNotAskAgain")
+        })
 
         let commentsOnly = AccessibilityProbe.elements(until: { $0.contains { $0.name == keepAndCommit } }) {
             CommitCommentsDialog(empty: true) { } finish: { _, _ in }
         }
 
-        let commentsOnlyButtons = commentsOnly.filter { $0.role == "AXButton" }.sorted { $0.frame.minX < $1.frame.minX }
+        let commentsOnlyButtons = commentsOnly
+            .filter { $0.role == "AXButton" }
+            .sorted { $0.frame.minX < $1.frame.minX }
 
         #expect(commentsOnlyButtons.map(\.name) == [cancel, keepAndCommit])
         #expect(!commentsOnly.contains { $0.role == "AXCheckBox" })
@@ -138,7 +144,9 @@ extension PromptDialogTests {
             let buttons = elements.filter { $0.role == "AXButton" }.sorted { $0.frame.minX < $1.frame.minX }
 
             #expect(buttons.map(\.name) == [dontReport, report])
-            #expect(elements.contains { $0.role == "AXStaticText" && $0.value == AppLocalization.text("crash.title") })
+            #expect(elements.contains {
+                $0.role == "AXStaticText" && $0.value == AppLocalization.text("crash.title")
+            })
             #expect(reported == reports)
             #expect(defaults.bool(forKey: CrashReporter.alwaysSendKey) == reports)
         }

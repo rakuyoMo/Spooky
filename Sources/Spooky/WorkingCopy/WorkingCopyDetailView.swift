@@ -67,11 +67,15 @@ struct WorkingCopyDetailView: View {
                 message: "",
                 symbol: "doc"
             ) {
-                EmptyStateButton(AppLocalization.text("working.discard")) { session.discard(session.selectedEntries) }
-                    .disabled(!session.canDiscard(session.selectedEntries))
+                EmptyStateButton(AppLocalization.text("working.discard")) {
+                    session.discard(session.selectedEntries)
+                }
+                .disabled(!session.canDiscard(session.selectedEntries))
 
                 // 直接移进废纸篓，服务器上没有可用的废纸篓时确认后永久删除
-                EmptyStateButton(AppLocalization.text(session.fileRemoval == .trash ? "files.trash" : "files.delete")) {
+                EmptyStateButton(
+                    AppLocalization.text(session.fileRemoval == .trash ? "files.trash" : "files.delete")
+                ) {
                     session.delete(session.selectedEntries)
                 }
                 .disabled(!session.canDelete(session.selectedEntries))
