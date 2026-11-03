@@ -43,7 +43,7 @@ extension RepositoryWindowController {
         switch item.action {
         case #selector(showPullRequests):
             (item as? NSMenuItem)?.title = session.pullRequestText("show.menu")
-            return session.repository != nil
+            return repositoryView
 
         case #selector(createPullRequest):
             (item as? NSMenuItem)?.title = session.pullRequestText("create.menu")

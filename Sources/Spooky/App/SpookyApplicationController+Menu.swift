@@ -20,7 +20,7 @@ extension SpookyApplicationController {
         configureHelpMenu(in: menu)
     }
 
-    /// 应用菜单：关于、检查更新、设置、隐藏与退出。
+    /// 应用菜单：关于、检查更新、设置、系统的 Services、隐藏与退出。
     private func configureApplicationMenu(in menu: NSMenu) {
         let application = addMenu("app.name", to: menu)
         addItem("menu.about", action: #selector(showAbout), target: self, to: application)
@@ -35,6 +35,10 @@ extension SpookyApplicationController {
 
         application.addItem(.separator())
         addItem("settings.title", action: #selector(showSettings), key: ",", target: self, to: application)
+
+        // Services 的内容由系统按当前选中的内容填充
+        application.addItem(.separator())
+        NSApp.servicesMenu = addMenu("menu.services", to: application)
 
         application.addItem(.separator())
         addItem("menu.hide", action: #selector(NSApplication.hide(_:)), key: "h", to: application)
@@ -88,42 +92,6 @@ extension SpookyApplicationController {
         file.addItem(.separator())
         addItem("action.revealFinder", action: #selector(RepositoryWindowController.revealInFinder), to: file)
         addItem("action.openTerminal", action: #selector(RepositoryWindowController.openInTerminal), to: file)
-    }
-
-    /// Edit 菜单：撤销与重做、系统文本动作、提交信息的段落重排与查找。
-    private func configureEditMenu(in menu: NSMenu) {
-        let edit = addMenu("menu.edit", to: menu)
-
-        // 标题与可用性由窗口的撤销管理器在每次打开菜单时给出
-        addItem("menu.undo", action: Selector(("undo:")), key: "z", to: edit)
-        addItem("menu.redo", action: Selector(("redo:")), key: "z", modifiers: [.command, .shift], to: edit)
-
-        edit.addItem(.separator())
-        addItem("menu.cut", action: #selector(NSText.cut(_:)), key: "x", to: edit)
-        addItem("menu.copy", action: #selector(NSText.copy(_:)), key: "c", to: edit)
-        addItem("menu.paste", action: #selector(NSText.paste(_:)), key: "v", to: edit)
-        addItem("menu.selectAll", action: #selector(NSText.selectAll(_:)), key: "a", to: edit)
-        addItem(
-            "commit.reformatParagraph",
-            action: #selector(CommitMessageTextView.reformatParagraph(_:)),
-            key: "w",
-            modifiers: [.command, .shift],
-            to: edit
-        )
-
-        edit.addItem(.separator())
-        let find = addMenu("menu.find", to: edit)
-        addItem("action.find", action: #selector(RepositoryWindowController.focusSearch), key: "f", to: find)
-
-        // 按住 ⌥ 时 Find… 换成 Search，同样聚焦工具栏搜索框
-        let search = NSMenuItem(
-            title: AppLocalization.text("action.search"),
-            action: #selector(RepositoryWindowController.focusSearch),
-            keyEquivalent: "f"
-        )
-        search.keyEquivalentModifierMask = [.command, .option]
-        search.isAlternate = true
-        find.addItem(search)
     }
 
     /// View 菜单：仓库管理、工作区、历史、储藏与 Reflog 视图，后退与前进，工作区文件列表、历史与 Diff 的显示选项，刷新，窗口标题与工具栏，以及全屏。
@@ -230,8 +198,6 @@ extension SpookyApplicationController {
         addItem(
             "files.showAssumeUnchanged",
             action: #selector(RepositoryWindowController.toggleAssumeUnchangedItems),
-            key: "u",
-            modifiers: [.control, .command],
             to: status
         )
     }
@@ -242,7 +208,7 @@ extension SpookyApplicationController {
         HistoryViewMenu.addItems(to: history, keyEquivalents: true)
     }
 
-    /// 变更集子菜单：全部展开、全部收起与自动展开阈值。
+    /// 变更集子菜单：全部展开、全部收起，以及一行标题下的自动展开阈值。
     private func configureHistoryDiffsMenu(in view: NSMenu) {
         let changes = addMenu("history.diffs", to: view)
         addItem(
@@ -261,6 +227,11 @@ extension SpookyApplicationController {
         )
 
         changes.addItem(.separator())
+
+        // 阈值上方的标题行没有动作，菜单自动把它置为不可用
+        changes.addItem(
+            NSMenuItem(title: AppLocalization.text("history.autoExpand.title"), action: nil, keyEquivalent: "")
+        )
 
         for threshold in [0, 5, 10, 15, 20, 25, 50, Int.max] {
             let title =
@@ -302,7 +273,7 @@ extension SpookyApplicationController {
         let repository = addMenu("menu.repository", to: menu)
         configureSyncItems(in: repository)
 
-        addItem("sync.publish", action: #selector(RepositoryWindowController.publishBranch), to: repository)
+        addItem("sync.publishMenu", action: #selector(RepositoryWindowController.publishBranch), to: repository)
         addItem("tag.publishMainMenu", action: #selector(RepositoryWindowController.publishTag), to: repository)
         addItem("publish.menu", action: #selector(RepositoryWindowController.publishRepository), to: repository)
 
@@ -319,7 +290,7 @@ extension SpookyApplicationController {
 
         repository.addItem(.separator())
         addItem(
-            "branch.create",
+            "branch.createMenu",
             action: #selector(RepositoryWindowController.createBranch),
             key: "b",
             to: repository
@@ -372,10 +343,10 @@ extension SpookyApplicationController {
         addItem("lfs.menu.track", action: #selector(RepositoryWindowController.trackLFS), to: lfs)
     }
 
-    /// 获取、拉取、同步与推送各项，按住 ⌥ 换成快速操作；后接安全强推与推送任意版本。
+    /// 获取、拉取与同步一组，推送 HEAD、安全强推与推送任意版本另起一组；获取、拉取、同步与推送按住 ⌥ 换成快速操作。
     private func configureSyncItems(in repository: NSMenu) {
         addItem(
-            "sync.fetch",
+            "sync.fetchMenu",
             action: #selector(RepositoryWindowController.fetch),
             key: "f",
             modifiers: [.shift, .command],
@@ -389,7 +360,7 @@ extension SpookyApplicationController {
         )
         addItem("sync.fetchAll", action: #selector(RepositoryWindowController.fetchAll), to: repository)
         addItem(
-            "sync.pull",
+            "sync.pullMenu",
             action: #selector(RepositoryWindowController.pull),
             key: "p",
             modifiers: [.shift, .command],
@@ -414,15 +385,16 @@ extension SpookyApplicationController {
             key: "y",
             to: repository
         )
+        repository.addItem(.separator())
         addItem(
-            "sync.push",
+            "sync.pushMenu",
             action: #selector(RepositoryWindowController.push),
             key: "u",
             modifiers: [.shift, .command],
             to: repository
         )
         addAlternate(
-            "sync.quickPush",
+            "sync.quickPushMenu",
             action: #selector(RepositoryWindowController.quickPush),
             key: "u",
             to: repository
@@ -441,7 +413,8 @@ extension SpookyApplicationController {
         )
     }
 
-    /// Working Copy 菜单：检出版本、合并与变基（按住 ⌥ 换成快速操作）、变基到别处与应用补丁，储藏，提交与暂存，丢弃改动与重置 HEAD，以及用比较工具比较。
+    /// Working Copy 菜单：检出版本，合并、变基与应用补丁，储藏，丢弃全部改动与重置 HEAD，提交与暂存，丢弃所选改动，
+    /// 以及用比较工具比较；组与组之间一条分隔线。
     private func configureWorkingCopyMenu(in menu: NSMenu) {
         let working = addMenu("workspace.title", to: menu)
         addItem(
@@ -451,8 +424,36 @@ extension SpookyApplicationController {
             modifiers: [.shift, .command],
             to: working
         )
+
+        working.addItem(.separator())
+        configureMergeItems(in: working)
+
+        working.addItem(.separator())
+        configureStashItems(in: working)
+
+        working.addItem(.separator())
+        addItem("working.discardAllMenu", action: #selector(RepositoryWindowController.discardAll), to: working)
+        addItem("rewrite.reset.menu", action: #selector(RepositoryWindowController.resetHead), to: working)
+
+        working.addItem(.separator())
+        configureCommitItems(in: working)
+
+        working.addItem(.separator())
         addItem(
-            "sync.merge",
+            "working.discardMenu",
+            action: #selector(RepositoryWindowController.discardSelected),
+            key: "\u{8}",
+            modifiers: [.shift, .command],
+            to: working
+        )
+
+        configureCompareMenu(in: working)
+    }
+
+    /// 合并与变基（按住 ⌥ 换成快速操作）、变基到别处与应用补丁。
+    private func configureMergeItems(in working: NSMenu) {
+        addItem(
+            "sync.mergeMenu",
             action: #selector(RepositoryWindowController.merge),
             key: "m",
             modifiers: [.shift, .command],
@@ -485,46 +486,58 @@ extension SpookyApplicationController {
             to: working
         )
         addItem("files.applyPatch.menu", action: #selector(RepositoryWindowController.applyPatch), to: working)
+    }
 
-        working.addItem(.separator())
+    /// 保存储藏、应用储藏与创建快照。
+    private func configureStashItems(in working: NSMenu) {
         addItem(
-            "stash.saveMenu", action: #selector(RepositoryWindowController.saveStash),
-            key: "s", modifiers: [.shift, .command], to: working
+            "stash.saveMenu",
+            action: #selector(RepositoryWindowController.saveStash),
+            key: "s",
+            modifiers: [.shift, .command],
+            to: working
         )
         addItem(
-            "stash.applyMenu", action: #selector(RepositoryWindowController.applyStash),
-            key: "s", modifiers: [.option, .shift, .command], to: working
+            "stash.applyMenu",
+            action: #selector(RepositoryWindowController.applyStash),
+            key: "s",
+            modifiers: [.option, .shift, .command],
+            to: working
         )
         addItem(
-            "stash.snapshotMenu", action: #selector(RepositoryWindowController.createSnapshot),
-            key: "s", modifiers: [.control, .shift, .command], to: working
+            "stash.snapshotMenu",
+            action: #selector(RepositoryWindowController.createSnapshot),
+            key: "s",
+            modifiers: [.control, .shift, .command],
+            to: working
         )
+    }
 
-        working.addItem(.separator())
+    /// 提交，暂存与取消暂存所选文件，以及暂存与取消暂存全部本地改动。
+    private func configureCommitItems(in working: NSMenu) {
         addItem(
-            "working.commit", action: #selector(RepositoryWindowController.composeCommit),
-            key: "c", modifiers: [.shift, .command], to: working
+            "working.commitMenu",
+            action: #selector(RepositoryWindowController.composeCommit),
+            key: "c",
+            modifiers: [.shift, .command],
+            to: working
         )
         addItem("working.stage", action: #selector(RepositoryWindowController.stageSelected), to: working)
         addItem("working.unstage", action: #selector(RepositoryWindowController.unstageSelected), to: working)
         addItem(
-            "working.stageAll", action: #selector(RepositoryWindowController.stageAll),
-            key: "e", modifiers: [.shift, .command], to: working
+            "working.stageAllMenu",
+            action: #selector(RepositoryWindowController.stageAll),
+            key: "e",
+            modifiers: [.shift, .command],
+            to: working
         )
         addItem(
-            "working.unstageAll", action: #selector(RepositoryWindowController.unstageAll),
-            key: "e", modifiers: [.option, .shift, .command], to: working
+            "working.unstageAllMenu",
+            action: #selector(RepositoryWindowController.unstageAll),
+            key: "e",
+            modifiers: [.option, .shift, .command],
+            to: working
         )
-
-        working.addItem(.separator())
-        addItem(
-            "working.discard", action: #selector(RepositoryWindowController.discardSelected),
-            key: "\u{8}", modifiers: [.shift, .command], to: working
-        )
-        addItem("working.discardAll", action: #selector(RepositoryWindowController.discardAll), to: working)
-        addItem("rewrite.reset.menu", action: #selector(RepositoryWindowController.resetHead), to: working)
-
-        configureCompareMenu(in: working)
     }
 
     /// Working Copy 菜单末尾的 Compare 子菜单：用比较工具比较所选文件的工作区、暂存区与 HEAD 版本。
@@ -551,11 +564,15 @@ extension SpookyApplicationController {
         )
     }
 
-    /// Window 菜单：Activity 与系统窗口动作，并登记为应用的窗口菜单。
+    /// Window 菜单：最小化与缩放、Activity、前置全部窗口，三组之间各一条分隔线；并登记为应用的窗口菜单。
     private func configureWindowMenu(in menu: NSMenu) {
         let window = addMenu("menu.window", to: menu)
         NSApp.windowsMenu = window
 
+        addItem("menu.minimize", action: #selector(NSWindow.performMiniaturize(_:)), key: "m", to: window)
+        addItem("menu.zoom", action: #selector(NSWindow.performZoom(_:)), to: window)
+
+        window.addItem(.separator())
         addItem(
             "activity.title",
             action: #selector(showActivity),
@@ -564,8 +581,8 @@ extension SpookyApplicationController {
             target: self,
             to: window
         )
-        addItem("menu.minimize", action: #selector(NSWindow.performMiniaturize(_:)), key: "m", to: window)
-        addItem("menu.zoom", action: #selector(NSWindow.performZoom(_:)), to: window)
+
+        window.addItem(.separator())
         addItem("menu.bringAll", action: #selector(NSApplication.arrangeInFront(_:)), to: window)
     }
 

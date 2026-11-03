@@ -13,8 +13,14 @@ final class RepositoryBookmarks {
     /// 书签树在偏好里的键。
     static let key = "repositoryBookmarks"
 
+    /// 最近一次清空最近打开列表的时间在偏好里的键。
+    static let recentsClearedKey = "recentlyOpenedClearedDate"
+
     /// 最外层的书签，按手动顺序排列。
     private(set) var items: [Bookmark]
+
+    /// 最近一次清空最近打开列表的时间；在这之前打开的仓库不再列入 `recentlyOpened`，书签与打开时间都保留。
+    private(set) var recentsCleared: Date? = nil
 
     /// 最近一次检查或打开失败的仓库位置。
     private(set) var missing: Set<RepositoryLocation> = []
@@ -30,6 +36,7 @@ final class RepositoryBookmarks {
     /// - Parameter defaults: 偏好域，测试使用独立的临时域。
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        recentsCleared = defaults.object(forKey: Self.recentsClearedKey) as? Date
 
         if let data = defaults.data(forKey: Self.key) {
             items = (try? JSONDecoder().decode([Bookmark].self, from: data)) ?? []
@@ -56,10 +63,11 @@ extension RepositoryBookmarks {
     /// 按树的先序排列的全部仓库书签。
     var repositories: [Bookmark] { items.repositories }
 
-    /// 打开过的仓库书签，最近打开的在前。
+    /// 上次清空最近打开列表之后打开过的仓库书签，最近打开的在前。
     var recentlyOpened: [Bookmark] {
+        // 没有打开时间的书签按 distantPast 算，总不晚于清空时间，不会列入
         repositories
-            .filter { $0.lastOpened != nil }
+            .filter { ($0.lastOpened ?? .distantPast) > (recentsCleared ?? .distantPast) }
             .sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }
     }
 
@@ -81,6 +89,18 @@ extension RepositoryBookmarks {
     /// 仓库是否已失效。
     func isMissing(_ location: RepositoryLocation) -> Bool {
         missing.contains(location)
+    }
+}
+
+// MARK: - Recently Opened
+
+extension RepositoryBookmarks {
+    /// 清空最近打开列表：记下清空的时间并写入偏好，书签与各自的打开时间都不变，之后打开的仓库照常进入列表。
+    ///
+    /// - Parameter date: 清空的时间。
+    func clearRecentlyOpened(at date: Date = Date()) {
+        recentsCleared = date
+        defaults.set(date, forKey: Self.recentsClearedKey)
     }
 }
 

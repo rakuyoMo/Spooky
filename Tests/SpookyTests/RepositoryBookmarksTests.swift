@@ -7,7 +7,7 @@ import Testing
 
 // MARK: - RepositoryBookmarksTests
 
-/// 仓库书签：旧记录的迁移、去重与打开时间、文件夹与手动顺序、改名与删除、失效标记与失效时的写法，以及改指向工作区根目录。
+/// 仓库书签：旧记录的迁移、去重与打开时间、最近打开列表的清空、文件夹与手动顺序、改名与删除、失效标记与失效时的写法，以及改指向工作区根目录。
 @MainActor
 struct RepositoryBookmarksTests {
     /// 每个用例独立的偏好域。
@@ -56,6 +56,29 @@ struct RepositoryBookmarksTests {
 
         #expect(bookmarks.repositories.compactMap(\.location) == [first, never, second])
         #expect(bookmarks.recentlyOpened.compactMap(\.location) == [second, first])
+    }
+
+    /// Clear Menu 只清空最近打开列表：书签与各自的打开时间都在，重新读取偏好后仍是空的；之后打开的仓库照常进入列表。
+    @Test("清空最近打开列表，书签保留")
+    func clearsRecentlyOpened() throws {
+        let (defaults, suite) = try Self.defaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let bookmarks = RepositoryBookmarks(defaults: defaults)
+        let first = RepositoryLocation.local(path: "/tmp/first")
+        let second = RepositoryLocation.remote(host: "spooky-test", path: "/srv/second")
+        bookmarks.recordOpened(first, at: Date(timeIntervalSince1970: 100))
+        bookmarks.recordOpened(second, at: Date(timeIntervalSince1970: 200))
+
+        bookmarks.clearRecentlyOpened(at: Date(timeIntervalSince1970: 300))
+        #expect(bookmarks.recentlyOpened.isEmpty)
+        #expect(bookmarks.repositories.compactMap(\.location) == [first, second])
+        #expect(bookmarks.bookmark(for: first)?.lastOpened == Date(timeIntervalSince1970: 100))
+        #expect(RepositoryBookmarks(defaults: defaults).recentlyOpened.isEmpty)
+
+        // 清空时间之后再打开的仓库重新出现在列表里
+        bookmarks.recordOpened(first, at: Date(timeIntervalSince1970: 400))
+        #expect(bookmarks.recentlyOpened.compactMap(\.location) == [first])
     }
 
     /// 移进文件夹保持原来的先后；文件夹不能移进它自己或它里面的文件夹；排序只排一层。

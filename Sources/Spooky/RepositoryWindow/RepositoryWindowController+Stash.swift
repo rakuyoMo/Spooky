@@ -74,7 +74,7 @@ extension RepositoryWindowController {
     func stashAvailability(of action: Selector?, repositoryView: Bool) -> Bool? {
         switch action {
         case #selector(showStashes):
-            session.repository != nil
+            repositoryView
 
         case #selector(saveStash), #selector(createSnapshot):
             repositoryView && session.canSaveStash

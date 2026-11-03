@@ -33,7 +33,7 @@ extension RepositoryWindowController {
     func branchesReviewAvailability(of item: any NSValidatedUserInterfaceItem) -> Bool? {
         switch item.action {
         case #selector(showBranchesReview):
-            return session.repository != nil
+            return !showsManager && session.repository != nil
 
         case #selector(runAutoArchive):
             return !showsManager && session.repository != nil

@@ -220,8 +220,9 @@ extension RepositoryWindowController {
         }
 
         switch item.action {
-        case #selector(showHeadBranch):
-            return session.repository != nil
+        // 窗口显示仓库管理时不能切换主视图，后退与前进照常按记录走
+        case #selector(showHeadBranch), #selector(showWorkingCopy), #selector(showHistory), #selector(showReflog):
+            return repositoryView
 
         case #selector(openInTerminal), #selector(copyPath):
             return (showsManager ? session.selectedRecentLocation : session.repository) != nil
@@ -237,12 +238,6 @@ extension RepositoryWindowController {
 
         case #selector(closeRepository):
             return !showsManager && session.repository != nil
-
-        case #selector(showWorkingCopy), #selector(showHistory):
-            return session.repository != nil
-
-        case #selector(showReflog):
-            return session.repository != nil
 
         case #selector(focusSearch):
             return repositoryView && session.activeView.supportsSearch

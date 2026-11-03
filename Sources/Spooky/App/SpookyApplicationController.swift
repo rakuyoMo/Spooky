@@ -359,21 +359,6 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
         Task { await remote.close() }
     }
-
-    /// 最近菜单每次展开时按最近打开时间列出打开过的仓库，失效的仍可选择重试。
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        menu.removeAllItems()
-
-        for path in bookmarks.recentlyOpened.compactMap(\.location) {
-            let item = NSMenuItem(title: path.displayPath, action: #selector(openRecent(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = path
-            item.toolTip = bookmarks.isMissing(path)
-                ? AppLocalization.text("repositories.unavailable")
-                : path.displayPath
-            menu.addItem(item)
-        }
-    }
 }
 
 // MARK: - Repository Opening
@@ -649,16 +634,6 @@ extension SpookyApplicationController {
 
         // 本机仓库先校验 Git 版本，再把子目录和符号链接统一到工作区根目录。
         return try await runner.openLocalRepository().location
-    }
-
-    /// 最近菜单直接走窗口复用与版本检查流程。
-    @objc
-    private func openRecent(_ sender: NSMenuItem) {
-        guard let path = sender.representedObject as? RepositoryLocation else {
-            return
-        }
-
-        openRepository(at: path, from: activeWindow, inNewWindow: false)
     }
 
     /// 打开失败：路径不存在或服务器连不上时整页显示丢失页，其余失败显示错误 sheet。
