@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 
@@ -179,43 +180,54 @@ struct ActivityRowTests {
 
     /// Remote 页按传输方向显示图标，失败或取消的用警告图标；Repository 与 Service 页是文件夹与账号，只有失败的用警告图标。
     /// 侧边栏底部的活动区共用按方向取的图标，失败与取消不换，结束的行仍看得出是哪种传输。
+    /// 获取与工具栏的 Fetch 段同用自绘的图标，与克隆的 `arrow.down.circle` 区分开。
     @Test("行首图标")
     func symbols() {
-        let warning = "exclamationmark.triangle.fill"
+        let warning = ActivityIcon.symbol("exclamationmark.triangle.fill")
 
         // 较早保存、没有方向的 Remote 记录与拉取同用一个图标
-        let transfers: [(ActivityTransfer?, String)] = [
-            (.fetch, "arrow.down.circle"),
-            (.pull, "arrow.down.to.line"),
-            (.push, "arrow.up.circle"),
-            (nil, "arrow.down.to.line"),
+        let transfers: [(ActivityTransfer?, ActivityIcon)] = [
+            (.fetch, .fetch),
+            (.pull, .symbol("arrow.down.to.line")),
+            (.push, .symbol("arrow.up.circle")),
+            (nil, .symbol("arrow.down.to.line")),
         ]
 
-        for (transfer, symbol) in transfers {
+        for (transfer, icon) in transfers {
             let target = transfer.map { ActivityTarget(transfer: $0, remote: "origin", refspec: nil) }
             let activity = RepositoryActivity(kind: .remote, repository: location, title: "Remote", target: target)
-            #expect(ActivityRow(activity: activity).symbol == symbol)
-            #expect(activity.transferSymbol == symbol)
+            #expect(ActivityRow(activity: activity).leadingIcon == icon)
+            #expect(activity.transferIcon == icon)
 
             activity.state = "activity.cancelled"
-            #expect(ActivityRow(activity: activity).symbol == warning)
+            #expect(ActivityRow(activity: activity).leadingIcon == warning)
 
             activity.state = "activity.failed"
-            #expect(ActivityRow(activity: activity).symbol == warning)
+            #expect(ActivityRow(activity: activity).leadingIcon == warning)
 
             // 侧边栏底部的活动区按方向取图标，失败与取消不换
-            #expect(activity.transferSymbol == symbol)
+            #expect(activity.transferIcon == icon)
         }
 
-        for (kind, symbol) in [(ActivityKind.repository, "folder"), (.service, "person.crop.circle")] {
+        let folders: [(ActivityKind, ActivityIcon)] = [
+            (.repository, .symbol("folder")),
+            (.service, .symbol("person.crop.circle")),
+        ]
+
+        for (kind, icon) in folders {
             let activity = RepositoryActivity(kind: kind, repository: location, title: "Other")
 
             activity.state = "activity.cancelled"
-            #expect(ActivityRow(activity: activity).symbol == symbol)
+            #expect(ActivityRow(activity: activity).leadingIcon == icon)
 
             activity.state = "activity.failed"
-            #expect(ActivityRow(activity: activity).symbol == warning)
+            #expect(ActivityRow(activity: activity).leadingIcon == warning)
         }
+
+        // 获取的图标是随 App 打包的模板图，@1x 与 @2x 两张都在
+        #expect(FetchIcon.image.isTemplate)
+        #expect(FetchIcon.image.size == NSSize(width: 18, height: 18))
+        #expect(FetchIcon.image.representations.count == 2)
     }
 
     /// 进度是几个阶段的平均：推送以外的操作算 Compressing、Receiving、Resolving、Unpacking 四个阶段，没出现过的算 0，

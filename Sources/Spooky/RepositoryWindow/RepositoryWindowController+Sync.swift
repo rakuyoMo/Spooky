@@ -99,28 +99,56 @@ extension RepositoryWindowController {
 // MARK: - Sync Toolbar
 
 extension RepositoryWindowController {
-    /// 工具栏按钮的常态与快速动作，以及各自的提示文字。
+    /// 同步一组按钮的常态与快速动作，各自的提示键，以及只显示图标时加在提示前面的标签键；常态的标签为 nil 时只显示图标也不加。
     private static let quickActions: [
-        (action: Selector, quick: Selector, tip: String, quickTip: String)
+        (action: Selector, quick: Selector, label: String?, quickLabel: String, tip: String, quickTip: String)
     ] = [
-        (#selector(fetch), #selector(quickFetch), "sync.fetch.tip", "sync.quickFetch.tip"),
-        (#selector(pull), #selector(quickPull), "sync.pull.tip", "sync.quickPull.tip"),
-        (#selector(push), #selector(quickPush), "sync.push.tip", "sync.quickPush.tip"),
-        (#selector(sync), #selector(quickSync), "sync.sync.tip", "sync.quickSync.tip"),
-        (#selector(merge), #selector(quickMerge), "sync.merge.tip", "sync.quickMerge.tip"),
-        (#selector(rebase), #selector(quickRebase), "sync.rebaseHead.tip", "sync.quickRebase.tip"),
+        (
+            #selector(fetch), #selector(quickFetch),
+            "sync.fetch", "sync.quickFetch",
+            "sync.fetch.tip", "sync.quickFetch.tip"
+        ),
+        (
+            #selector(pull), #selector(quickPull),
+            "sync.pull", "sync.quickPull",
+            "sync.pull.tip", "sync.quickPull.tip"
+        ),
+        (
+            #selector(push), #selector(quickPush),
+            "sync.push", "sync.quickPush",
+            "sync.push.tip", "sync.quickPush.tip"
+        ),
+        (
+            #selector(sync), #selector(quickSync),
+            nil, "sync.quickSync",
+            "sync.sync.tip", "sync.quickSync.tip"
+        ),
+        (
+            #selector(merge), #selector(quickMerge),
+            "sync.merge", "sync.quickMerge",
+            "sync.merge.tip", "sync.quickMerge.tip"
+        ),
+        (
+            #selector(rebase), #selector(quickRebase),
+            "sync.rebaseHead", "sync.quickRebase",
+            "sync.rebaseHead.tip", "sync.quickRebase.tip"
+        ),
     ]
 
     /// 工具栏的同步项：Fetch | Pull | Push 分组、Sync 按钮、Merge | Rebase 分组；其它标识返回 nil。
     func makeSyncToolbarItem(_ identifier: NSToolbarItem.Identifier) -> NSToolbarItem? {
+        // 取不到符号时以空图占位，分段数与标签保持一致
+        let symbol = { NSImage(systemSymbolName: $0, accessibilityDescription: nil) ?? NSImage() }
+
         switch identifier.rawValue {
         case "sync":
+            // Fetch 用自绘的图标，与 Clone 的 arrow.down.circle 区分开
             return makeSegmentedGroup(
                 identifier,
                 segments: [
-                    ("sync.fetch", "arrow.down.circle", #selector(fetch)),
-                    ("sync.pull", "arrow.down.to.line", #selector(pull)),
-                    ("sync.push", "arrow.up.circle", #selector(push)),
+                    ("sync.fetch", FetchIcon.image, #selector(fetch)),
+                    ("sync.pull", symbol("arrow.down.to.line"), #selector(pull)),
+                    ("sync.push", symbol("arrow.up.circle"), #selector(push)),
                 ]
             )
 
@@ -128,14 +156,15 @@ extension RepositoryWindowController {
             return makeSegmentedGroup(
                 identifier,
                 segments: [
-                    ("sync.merge", "arrow.triangle.merge", #selector(merge)),
-                    ("sync.rebaseHead", "arrow.triangle.branch", #selector(rebase)),
+                    ("sync.merge", symbol("arrow.triangle.merge"), #selector(merge)),
+                    ("sync.rebaseHead", symbol("arrow.triangle.branch"), #selector(rebase)),
                 ]
             )
 
         case "synchronize":
             let item = NSToolbarItem(itemIdentifier: identifier)
             item.label = AppLocalization.text("sync.sync")
+            item.paletteLabel = AppLocalization.text("toolbar.synchronize")
             item.image = NSImage(
                 systemSymbolName: "arrow.triangle.2.circlepath",
                 accessibilityDescription: item.label
@@ -166,14 +195,11 @@ extension RepositoryWindowController {
     /// 一个分段按钮组，每段带自己的动作与提示，点按是瞬时的。
     private func makeSegmentedGroup(
         _ identifier: NSToolbarItem.Identifier,
-        segments: [(label: String, symbol: String, action: Selector)]
+        segments: [(label: String, image: NSImage, action: Selector)]
     ) -> NSToolbarItemGroup {
         let group = NSToolbarItemGroup(
             itemIdentifier: identifier,
-            images: segments.map {
-                // 取不到符号时以空图占位，分段数与标签保持一致。
-                NSImage(systemSymbolName: $0.symbol, accessibilityDescription: nil) ?? NSImage()
-            },
+            images: segments.map(\.image),
             selectionMode: .momentary,
             labels: segments.map { AppLocalization.text($0.label) },
             target: self,
@@ -205,7 +231,13 @@ extension RepositoryWindowController {
 
         item.action = option ? actions.quick : actions.action
 
-        let tip = AppLocalization.text(option ? actions.quickTip : actions.tip)
-        item.toolTip = session.repository?.host.map { $0 + ": " + tip } ?? tip
+        // 只显示图标时，快速动作的提示前面总是加上 “Quick Fetch: ” 这类标签
+        let label = option ? actions.quickLabel : actions.label
+
+        item.toolTip = toolbarTip(
+            AppLocalization.text(option ? actions.quickTip : actions.tip),
+            label: label.map { AppLocalization.text($0) },
+            showsHost: true
+        )
     }
 }

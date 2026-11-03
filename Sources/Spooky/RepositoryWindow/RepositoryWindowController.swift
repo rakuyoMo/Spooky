@@ -51,6 +51,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 窗口级快捷键跨越 AppKit 文件列表与 SwiftUI 信息框。
     private var keyMonitor: Any?
 
+    /// 观察工具栏的显示方式，改变后重写提示与跟随分隔符。
+    var displayModeObservation: NSKeyValueObservation?
+
     /// 文件历史搜索框的贡献者补全。
     let contributorCompletion = ContributorCompletion()
 
@@ -380,6 +383,15 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
 // MARK: - Navigation
 
 extension RepositoryWindowController {
+    /// 当前主视图的内层分栏；单栏视图、仓库管理、丢失页与克隆进度页没有。
+    var innerSplit: NSSplitViewController? {
+        guard !showsManager else {
+            return nil
+        }
+
+        return outerSplit?.splitViewItems.last?.viewController as? NSSplitViewController
+    }
+
     /// 打开系统目录选择器，发起窗口决定普通打开的目的地。
     @objc
     func chooseRepository() {

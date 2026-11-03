@@ -45,7 +45,7 @@ extension RepositoryWindowController {
         return split
     }
 
-    /// 工具栏的储藏分段组：应用 | 保存，空间不足时整组进入溢出菜单。
+    /// 工具栏的储藏分段组：Apply | Save，空间不足时整组进入溢出菜单。
     func makeStashToolbarItem(_ identifier: NSToolbarItem.Identifier) -> NSToolbarItem {
         let group = NSToolbarItemGroup(
             itemIdentifier: identifier,
@@ -55,16 +55,17 @@ extension RepositoryWindowController {
                     NSImage(systemSymbolName: $0, accessibilityDescription: nil) ?? NSImage()
                 },
             selectionMode: .momentary,
-            labels: ["stash.apply", "stash.save"].map { AppLocalization.text($0) },
+            labels: ["toolbar.applyStash", "toolbar.saveStash"].map { AppLocalization.text($0) },
             target: self,
             action: nil
         )
         group.controlRepresentation = .expanded
 
-        // 每段带上自己的动作，工具栏自动校验时逐段决定可用性。
+        // 每段带上自己的动作与提示，工具栏自动校验时逐段决定可用性。
         for (segment, action) in zip(group.subitems, [#selector(applyStash), #selector(saveStash)]) {
             segment.target = self
             segment.action = action
+            updateTip(of: segment)
         }
 
         return group

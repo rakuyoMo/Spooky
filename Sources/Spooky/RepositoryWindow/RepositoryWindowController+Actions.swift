@@ -230,10 +230,10 @@ extension RepositoryWindowController {
         case #selector(revealInFinder):
             return finderAvailability(of: item)
 
+        // 刷新进行中照常可用，再按一次由会话合并成一次补做
         case #selector(refreshRepository):
             return !showsManager
                 && session.repository != nil
-                && !session.isRefreshing
                 && !session.isOpening
 
         case #selector(closeRepository):
@@ -338,9 +338,9 @@ extension RepositoryWindowController {
         if let menuItem = item as? NSMenuItem {
             menuItem.toolTip = tip
         } else if let toolbarItem = item as? NSToolbarItem {
-            updateButtonTip(toolbarItem)
+            updateTip(of: toolbarItem)
 
-            // 不能显示时提示原因，代替平时的名称
+            // 不能显示时提示原因，代替平时的提示
             if let tip {
                 toolbarItem.toolTip = tip
             }

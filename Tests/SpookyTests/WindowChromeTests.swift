@@ -9,6 +9,7 @@ import Testing
 @MainActor
 struct WindowChromeTests {
     /// 工具栏只放有行为的项：默认排布与可选项都能创建，按钮的动作都有响应者，主机前缀不能被移除。
+    /// 跟随内层分栏的分隔符由窗口按需插入，不在自定义面板里，也不能被移除。
     @Test("工具栏的默认排布与可选项")
     func toolbarItems() async throws {
         let fixture = try await NavigationTests.makeWindow()
@@ -16,11 +17,14 @@ struct WindowChromeTests {
 
         let controller = fixture.controller
         let toolbar = try #require(controller.window?.toolbar)
+        let identifiers = toolbar.items.map(\.itemIdentifier)
         #expect(toolbar.identifier == RepositoryToolbar.identifier)
         #expect(toolbar.allowsUserCustomization && toolbar.autosavesConfiguration)
-        #expect(toolbar.items.map(\.itemIdentifier) == RepositoryToolbar.defaultItems)
+        #expect(identifiers.filter { $0 != RepositoryToolbar.detailSeparator } == RepositoryToolbar.defaultItems)
         #expect(Set(RepositoryToolbar.defaultItems).isSubset(of: RepositoryToolbar.allowedItems))
         #expect(controller.toolbarImmovableItemIdentifiers(toolbar).contains(RepositoryToolbar.host))
+        #expect(!RepositoryToolbar.allowedItems.contains(RepositoryToolbar.detailSeparator))
+        #expect(controller.toolbarImmovableItemIdentifiers(toolbar).contains(RepositoryToolbar.detailSeparator))
 
         // 自定义面板里的每一项都能创建，每个按钮或分段的动作都由窗口响应
         let system: Set<NSToolbarItem.Identifier> = [.space, .flexibleSpace]

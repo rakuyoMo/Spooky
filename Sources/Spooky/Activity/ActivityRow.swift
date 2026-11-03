@@ -22,19 +22,19 @@ struct ActivityRow: View {
         activity.lastLine ?? AppLocalization.text(activity.state)
     }
 
-    /// 行首的 SF Symbols 图标：Remote 页按传输方向，失败或取消的用警告图标；其余两页是文件夹与账号，失败的用警告图标。
-    var symbol: String {
-        let warning = "exclamationmark.triangle.fill"
+    /// 行首的图标：Remote 页按传输方向，失败或取消的用警告图标；其余两页是文件夹与账号，失败的用警告图标。
+    var leadingIcon: ActivityIcon {
+        let warning = ActivityIcon.symbol("exclamationmark.triangle.fill")
 
         switch activity.kind {
         case .remote:
-            return isFailedOrCancelled ? warning : activity.transferSymbol
+            return isFailedOrCancelled ? warning : activity.transferIcon
 
         case .repository:
-            return activity.state == "activity.failed" ? warning : "folder"
+            return activity.state == "activity.failed" ? warning : .symbol("folder")
 
         case .service:
-            return activity.state == "activity.failed" ? warning : "person.crop.circle"
+            return activity.state == "activity.failed" ? warning : .symbol("person.crop.circle")
         }
     }
 
@@ -214,7 +214,7 @@ extension ActivityRow {
     ///
     /// - Parameter size: 图标的边长。
     private func icon(size: CGFloat) -> some View {
-        Image(systemName: symbol)
+        leadingIcon.image
             .resizable()
             .scaledToFit()
             .frame(width: size, height: size)
