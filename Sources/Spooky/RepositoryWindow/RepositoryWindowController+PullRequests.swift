@@ -73,6 +73,9 @@ extension RepositoryWindowController {
         listItem.holdingPriority = .init(475)
         listItem.canCollapse = false
 
+        // 列表不延伸到工具栏下面，免得列表的底色与分隔线穿过工具栏上的项
+        listItem.allowsFullHeightLayout = false
+
         let detail = NSHostingController(rootView: PullRequestDetailView(session: session))
         detail.sizingOptions = [.minSize]
 

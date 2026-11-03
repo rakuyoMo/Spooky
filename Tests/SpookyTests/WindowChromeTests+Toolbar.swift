@@ -354,6 +354,34 @@ extension WindowChromeTests {
         #expect(toolbar.items.count(where: { $0.itemIdentifier == RepositoryToolbar.detailSeparator }) == 1)
     }
 
+    /// 有内层分栏的视图里，左侧的列表不延伸到工具栏下面：显示文字时，列表的底色与分隔线不穿过工具栏上的项。
+    @Test("内层分栏的列表不延伸到工具栏下面")
+    func innerListBelowToolbar() async throws {
+        let fixture = try await NavigationTests.makeWindow()
+        defer { fixture.close() }
+
+        let controller = fixture.controller
+        let session = controller.session
+
+        let views: [(name: String, show: () -> Void)] = [
+            ("Working Copy", controller.showWorkingCopy),
+            ("History", controller.showHistory),
+            ("Commit", controller.showCommitPage),
+            ("Stashes", controller.showStashes),
+            ("Reflog", controller.showReflog),
+            ("Branches Review", controller.showBranchesReview),
+            ("Pull Requests", controller.showPullRequests),
+            ("File History", { session.showFileHistory("a.txt") }),
+        ]
+
+        for view in views {
+            view.show()
+
+            let list = try #require(controller.innerSplit?.splitViewItems.first, "\(view.name)")
+            #expect(!list.allowsFullHeightLayout, "\(view.name)")
+        }
+    }
+
     /// 刷新进行中，工具栏的 Refresh 与 View › Refresh（⌘R）照常可用。
     @Test("刷新中 Refresh 可用")
     func refreshWhileRefreshing() async throws {
