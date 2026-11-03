@@ -108,11 +108,14 @@ struct ReflogSessionTests {
         #expect(session.canRestoreReflogBranch(to: start))
         #expect(!session.canRestoreReflogBranch(to: try #require(reflog.entries.first)))
 
-        var confirmed: (() -> Void)? = nil
-        session.onConfirm = { _, _, action, _ in confirmed = action }
+        // 确认的标题是 Restore Branch，主按钮是 Restore
+        var confirmed: ConfirmationRequest? = nil
+        session.onConfirm = { confirmed = $0 }
         session.requestRestore(start)
         let restore = try #require(confirmed)
-        try await fixture.perform { restore() }
+        #expect(restore.title == AppLocalization.text("reflog.restore.title"))
+        #expect(restore.submitTitle == AppLocalization.text("reflog.restore.submit"))
+        try await fixture.perform { restore.action() }
 
         let references = RepositoryReferences(runner: fixture.runner)
         #expect(try await references.resolve("refs/heads/功能/分支") == start.commit.id)

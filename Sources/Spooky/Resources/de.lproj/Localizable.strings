@@ -274,9 +274,16 @@
 "working.discardLines" = "Zeilen verwerfen";
 "working.discard" = "Änderungen verwerfen";
 "working.discardAll" = "Alle Änderungen verwerfen …";
+"working.discard.title" = "Lokale Änderungen verwerfen";
+"working.discardAll.title" = "Alle lokalen Änderungen verwerfen";
+"working.discardAll.submit" = "Alle Änderungen verwerfen";
+"working.discardContent.title" = "Diff-Inhalt verwerfen?";
 "working.discard.message" = "Die Änderungen an %d Dateien in %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen auf den letzten Commit zurückgesetzt, unversionierte Dateien werden in den Papierkorb gelegt.";
 "working.discard.remote" = "Die Änderungen an %d Dateien auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden in den Papierkorb des Servers gelegt.";
 "working.discard.remotePermanent" = "Die Änderungen an %d Dateien auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden auf dem Server endgültig gelöscht.";
+"working.discard.message.single" = "Die Änderungen an „%@“ in %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen auf den letzten Commit zurückgesetzt, unversionierte Dateien werden in den Papierkorb gelegt.";
+"working.discard.remote.single" = "Die Änderungen an „%@“ auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden in den Papierkorb des Servers gelegt.";
+"working.discard.remotePermanent.single" = "Die Änderungen an „%@“ auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden auf dem Server endgültig gelöscht.";
 "working.discard.lines" = "Die ausgewählten Zeilen in %@ werden verworfen.";
 "working.discard.remoteLines" = "Der ausgewählte Inhalt auf dem Server unter %@ wird überschrieben.";
 "working.resolved" = "Als aufgelöst markieren";
@@ -652,6 +659,7 @@
 "fileHistory.restoreInWorkingCopy" = "„%@“ in der Arbeitskopie auf Revision „%@“ wiederherstellen …";
 "fileHistory.showHistoryOf" = "Dateiverlauf von „%@“ anzeigen";
 "fileHistory.restoreTitle" = "Dateien in der Arbeitskopie wiederherstellen";
+"fileHistory.restore.submit" = "Wiederherstellen";
 "fileHistory.restore.message" = "„%@“ wird auf Revision %@ zurückgesetzt (in %@). Gestagte und nicht gestagte Änderungen dieser Datei werden verworfen; existiert die Datei in dieser Revision nicht, wird sie gelöscht.";
 "fileHistory.restore.remote" = "„%@“ wird auf dem Server mit Revision %@ überschrieben (unter %@). Gestagte und nicht gestagte Änderungen dieser Datei werden verworfen; existiert die Datei in dieser Revision nicht, wird sie auf dem Server gelöscht.";
 "fileHistory.scope.author" = "Autor";
@@ -742,6 +750,7 @@
 "profiles.addCurrent" = "Benutzerprofil „%@“ hinzufügen …";
 "profiles.manage" = "Benutzerprofile verwalten …";
 "profiles.apply" = "Benutzerprofil verwenden";
+"profiles.apply.submit" = "Profil verwenden";
 "profiles.apply.local" = "Schreibt %@ in die lokale Konfiguration des Repositorys %@.";
 "profiles.apply.remote" = "Schreibt %@ in die lokale Konfiguration des Repositorys %@ auf dem Server. Andere Werkzeuge, die auf dem Server in diesem Repository committen, verwenden dieselbe Identität.";
 "commit.signOff" = "Abzeichnen";
@@ -776,6 +785,7 @@
 "files.untrack.multiple" = "%ld Objekte nicht mehr verfolgen";
 "files.trash" = "In den Papierkorb legen";
 "files.delete" = "Löschen";
+"files.delete.title" = "Endgültig löschen";
 "files.delete.remote" = "Folgende Dateien auf dem Server unter %2$@ endgültig löschen?\n\n%1$@";
 "files.move.menu" = "Bewegen …";
 "files.move" = "Bewegen";
@@ -910,6 +920,7 @@
 "history.search.to" = "und";
 "history.reveal.notFound" = "Commit %@ ist nicht in diesem Verlauf.";
 "history.reveal.slow" = "Weitere Commits laden";
+"history.reveal.slow.submit" = "Laden";
 "history.reveal.slow.message" = "Commit %1$@ liegt nach den ersten %2$ld Commits dieses Verlaufs. Das Laden des Verlaufs bis zu diesem Commit kann eine Weile dauern.";
 "history.subtitle" = "%@ (%ld Commits)";
 "history.subtitle.more" = "%@ (%ld Commits oder mehr)";
@@ -1336,6 +1347,7 @@
 "remote.pushURL.edit" = "Push-URL bearbeiten";
 "remote.pushURL.edit.message" = "Gib die URL ein, die beim Pushen nach „%@“ verwendet wird. Die Verbindung wird vor der Änderung geprüft.";
 "remote.pushURL.unset" = "Push-URL entfernen";
+"remote.pushURL.unset.submit" = "Entfernen";
 "remote.pushURL.unset.confirm" = "Pushen verwendet wieder die Fetch-URL.";
 "remote.refspec" = "Refspec:";
 "remote.refspec.addFetch" = "Fetch-Refspec hinzufügen";
@@ -1520,6 +1532,7 @@
 "reflog.createBranch" = "Neuen Branch aus „%@“ erstellen …";
 "reflog.cherryPick" = "„%@“ per Cherry-Pick übernehmen …";
 "reflog.restore.title" = "Branch wiederherstellen";
+"reflog.restore.submit" = "Wiederherstellen";
 "reflog.restore.message" = "Den Branch „%1$@“ in %3$@ auf %2$@ verschieben? Arbeitskopie und Staging-Bereich bleiben unverändert. Commits, die den Branch verlassen, sind weiterhin im Reflog zu finden.";
 
 "appearance.system" = "Automatisch";
@@ -1840,6 +1853,7 @@
 "quickActions.showRemoteSettings" = "Remote-Einstellungen zeigen";
 "quickActions.setCommitter" = "Als Committer-Identität festlegen";
 "quickActions.setGlobalUser" = "Als globalen Benutzer festlegen";
+"quickActions.setGlobalUser.submit" = "Festlegen";
 "quickActions.setGlobalUser.local" = "Schreibt user.name und user.email in die globale Git-Konfiguration auf diesem Mac. Repositorys ohne eigene Identität committen damit.";
 "quickActions.setGlobalUser.remote" = "Schreibt user.name und user.email in die globale Git-Konfiguration auf dem Server „%@“. Repositorys auf dem Server ohne eigene Identität committen damit.";
 "quickActions.applyTheme" = "Thema anwenden";

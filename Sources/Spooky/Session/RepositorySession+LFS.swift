@@ -102,18 +102,19 @@ extension RepositorySession {
 
     /// 确认后从 `.gitattributes` 去掉一条规则，已经存进 LFS 的文件保持原样。
     func untrackLFS(_ pattern: String) {
-        onConfirm?(
-            AppLocalization.text("lfs.remove.title"),
-            AppLocalization.text("lfs.remove.message", pattern),
-            { [weak self] in
-                self?.performGit(
-                    { runner, _ in try await RepositoryLFS(runner: runner).untrack([pattern]) },
-                    title: AppLocalization.text("lfs.remove.title"),
-                    undo: .reversible
-                )
-            },
-            nil
-        )
+        let title = AppLocalization.text("lfs.remove.title")
+
+        onConfirm?(ConfirmationRequest(
+            title: title,
+            message: AppLocalization.text("lfs.remove.message", pattern),
+            submitTitle: AppLocalization.text("lfs.remove")
+        ) { [weak self] in
+            self?.performGit(
+                { runner, _ in try await RepositoryLFS(runner: runner).untrack([pattern]) },
+                title: title,
+                undo: .reversible
+            )
+        })
     }
 
     /// 与远端之间传输 LFS 对象，进度写进 Activity。

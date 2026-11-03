@@ -274,9 +274,16 @@
 "working.discardLines" = "選択行を破棄";
 "working.discard" = "変更を破棄";
 "working.discardAll" = "すべての変更を破棄…";
+"working.discard.title" = "ローカルの変更を破棄";
+"working.discardAll.title" = "すべてのローカルの変更を破棄";
+"working.discardAll.submit" = "すべての変更を破棄";
+"working.discardContent.title" = "Diff の内容を破棄しますか？";
 "working.discard.message" = "%d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットに戻し、未追跡ファイルはゴミ箱に入れます。";
 "working.discard.remote" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバーのゴミ箱に入れます。";
 "working.discard.remotePermanent" = "サーバー上の %d ファイルの変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバー上で完全に削除します。";
+"working.discard.message.single" = "「%@」の変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットに戻し、未追跡ファイルはゴミ箱に入れます。";
+"working.discard.remote.single" = "サーバー上の「%@」の変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバーのゴミ箱に入れます。";
+"working.discard.remotePermanent.single" = "サーバー上の「%@」の変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバー上で完全に削除します。";
 "working.discard.lines" = "%@ の選択行の変更を破棄します。";
 "working.discard.remoteLines" = "サーバー %@ 上の選択内容を上書きします。";
 "working.resolved" = "解決済みにする";
@@ -652,6 +659,7 @@
 "fileHistory.restoreInWorkingCopy" = "作業コピーの「%@」をリビジョン「%@」に復元…";
 "fileHistory.showHistoryOf" = "「%@」のファイル履歴を表示";
 "fileHistory.restoreTitle" = "作業コピーのファイルを復元";
+"fileHistory.restore.submit" = "復元";
 "fileHistory.restore.message" = "「%@」をリビジョン %@ に復元します。対象：%@。このファイルのステージ済みと未ステージの変更は破棄され、そのリビジョンにファイルがない場合は削除されます。";
 "fileHistory.restore.remote" = "サーバー上の「%@」をリビジョン %@ の内容で上書きします。対象：%@。このファイルのステージ済みと未ステージの変更は破棄され、そのリビジョンにファイルがない場合はサーバー上から削除されます。";
 "fileHistory.scope.author" = "作成者";
@@ -742,6 +750,7 @@
 "profiles.addCurrent" = "ユーザプロファイル “%@” を追加…";
 "profiles.manage" = "ユーザプロファイルを管理…";
 "profiles.apply" = "ユーザプロファイルを使用";
+"profiles.apply.submit" = "プロファイルを使用";
 "profiles.apply.local" = "%@ をリポジトリ %@ のローカル設定に書き込みます。";
 "profiles.apply.remote" = "%@ をサーバー上のリポジトリ %@ のローカル設定に書き込みます。サーバー上でこのリポジトリにコミットするほかのツールも同じ ID を使います。";
 "commit.signOff" = "サインオフ";
@@ -776,6 +785,7 @@
 "files.untrack.multiple" = "%ld 項目の追跡を解除";
 "files.trash" = "ゴミ箱に入れる";
 "files.delete" = "削除";
+"files.delete.title" = "完全に削除";
 "files.delete.remote" = "サーバー上の次のファイルを完全に削除しますか？対象：%2$@。\n\n%1$@";
 "files.move.menu" = "移動…";
 "files.move" = "移動";
@@ -910,6 +920,7 @@
 "history.search.to" = "〜";
 "history.reveal.notFound" = "コミット %@ はこの履歴にありません。";
 "history.reveal.slow" = "さらにコミットを読み込む";
+"history.reveal.slow.submit" = "読み込む";
 "history.reveal.slow.message" = "コミット %1$@ はこの履歴の最初の %2$ld 件のコミットより後にあります。そこまで読み込むには時間がかかることがあります。";
 "history.subtitle" = "%@（%ld 件のコミット）";
 "history.subtitle.more" = "%@（%ld 件以上のコミット）";
@@ -1336,6 +1347,7 @@
 "remote.pushURL.edit" = "プッシュ URL を編集";
 "remote.pushURL.edit.message" = "「%@」にプッシュするときの URL を入力してください。変更する前に接続を確認します。";
 "remote.pushURL.unset" = "プッシュ URL を解除";
+"remote.pushURL.unset.submit" = "解除";
 "remote.pushURL.unset.confirm" = "プッシュには再びフェッチ URL が使われます。";
 "remote.refspec" = "Refspec：";
 "remote.refspec.addFetch" = "フェッチ Refspec を追加";
@@ -1520,6 +1532,7 @@
 "reflog.createBranch" = "「%@」から新しいブランチを作成…";
 "reflog.cherryPick" = "「%@」をチェリーピック…";
 "reflog.restore.title" = "ブランチを戻す";
+"reflog.restore.submit" = "戻す";
 "reflog.restore.message" = "%3$@ のブランチ「%1$@」を %2$@ に移動しますか？作業コピーとステージングエリアは変更されません。ブランチから外れるコミットは引き続き Reflog で見つけられます。";
 
 "appearance.system" = "自動";
@@ -1840,6 +1853,7 @@
 "quickActions.showRemoteSettings" = "リモートの設定を表示";
 "quickActions.setCommitter" = "コミッタの ID に設定";
 "quickActions.setGlobalUser" = "グローバルユーザに設定";
+"quickActions.setGlobalUser.submit" = "設定";
 "quickActions.setGlobalUser.local" = "user.name と user.email をこの Mac のグローバルな Git 設定に書き込みます。独自の ID を持たないリポジトリはこの ID でコミットします。";
 "quickActions.setGlobalUser.remote" = "user.name と user.email をサーバー「%@」のグローバルな Git 設定に書き込みます。サーバー上で独自の ID を持たないリポジトリはこの ID でコミットします。";
 "quickActions.applyTheme" = "テーマを適用";

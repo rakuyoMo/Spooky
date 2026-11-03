@@ -25,15 +25,24 @@ extension RepositorySession {
         stage(status?.entries.filter { staged ? $0.hasUnstagedChanges : $0.hasStagedChanges } ?? [], staged: staged)
     }
 
-    /// 丢弃先确认，关闭 sheet 后才开始 Git 操作：已跟踪的改动恢复到最后一次提交，未跟踪文件移进废纸篓。
+    /// 丢弃先确认，确认对话框关闭后才开始 Git 操作：已跟踪的改动恢复到最后一次提交，未跟踪文件移进废纸篓。
     ///
     /// 服务器仓库的确认写明在服务器上覆盖，没有可用的废纸篓时写明永久删除未跟踪文件，并可以勾选不再提醒。
-    func discard(_ entries: [StatusEntry]) {
+    ///
+    /// - Parameters:
+    ///   - entries: 要丢弃的文件。
+    ///   - all: 是否丢弃全部改动，确认的标题与主按钮随之不同。
+    func discard(_ entries: [StatusEntry], all: Bool = false) {
         guard canWrite, !entries.isEmpty, let repository else { return }
 
         let request = generation
         let removal = fileRemoval
-        let title = AppLocalization.text("working.discard")
+
+        // Activity 与撤销记录沿用动作名，确认对话框按丢弃所选还是全部取标题与主按钮
+        let activityTitle = AppLocalization.text("working.discard")
+        let title = AppLocalization.text(all ? "working.discardAll.title" : "working.discard.title")
+        let submitTitle = AppLocalization.text(all ? "working.discardAll.submit" : "working.discard")
+        let message = Self.discardMessage(entries, in: repository, removal: removal)
 
         let perform = { [weak self] in
             guard let self, generation == request else { return }
@@ -42,29 +51,29 @@ extension RepositorySession {
                 { runner, _ in
                     try await WorkingCopyOperations(runner: runner).discard(entries, removal: removal)
                 },
-                title: title,
+                title: activityTitle,
                 recordsActivity: false,
                 undo: .reversible
             )
         }
 
         guard repository.host != nil else {
-            onConfirm?(
-                title,
-                AppLocalization.text("working.discard.message", entries.count, repository.displayPath),
-                perform,
-                nil
-            )
+            onConfirm?(ConfirmationRequest(
+                title: title,
+                message: message,
+                submitTitle: submitTitle,
+                action: perform
+            ))
             return
         }
 
-        let message = AppLocalization.text(
-            removal == .trash ? "working.discard.remote" : "working.discard.remotePermanent",
-            entries.count,
-            repository.displayPath
+        confirmOnServer(
+            .discardChanges,
+            title: title,
+            submitTitle: submitTitle,
+            message: message,
+            action: perform
         )
-
-        confirmOnServer(.discardChanges, title: title, message: message, action: perform)
     }
 
     /// 暂存与丢弃使用正在显示的快照，确认期间的变化由核心库拒绝。
@@ -96,21 +105,25 @@ extension RepositorySession {
             )
         }
 
-        // 丢弃块或行默认先确认；General 设置里关掉警告后直接丢弃，服务器仓库的确认框里也可以勾选不再提醒。
+        // 丢弃块或行默认先确认；General 设置里关掉警告或在确认对话框里勾选不再提醒后直接丢弃。
         guard discard, ServerConfirmation.discardChunks.isEnabled, let repository else {
             perform()
             return
         }
 
-        let prompt = AppLocalization.text("working.discard")
+        let message = AppLocalization.text(
+            repository.host == nil ? "working.discard.lines" : "working.discard.remoteLines",
+            repository.displayPath
+        )
 
-        guard repository.host != nil else {
-            onConfirm?(prompt, AppLocalization.text("working.discard.lines", repository.displayPath), perform, nil)
-            return
-        }
-
-        let message = AppLocalization.text("working.discard.remoteLines", repository.displayPath)
-        confirmOnServer(.discardChunks, title: prompt, message: message, action: perform)
+        // 本机与服务器仓库的确认都可以勾选不再提醒，与 General 设置里的警告是同一项
+        onConfirm?(ConfirmationRequest(
+            title: AppLocalization.text("working.discardContent.title"),
+            message: message,
+            submitTitle: AppLocalization.text("working.discard"),
+            suppression: .discardChunks,
+            action: perform
+        ))
     }
 
     /// 修补载入最近信息，退出修补时恢复普通提交草稿。
@@ -196,15 +209,11 @@ extension RepositorySession {
         }
 
         if context?.operation == .merge, status?.entries.contains(where: \.hasStagedChanges) != true {
-            onConfirm?(
-                AppLocalization.text("working.emptyMerge"),
-                AppLocalization.text("working.emptyMerge.message"),
-                action,
-                { [weak self] in
-                    guard let self, generation == request else { return }
-                    finishOperation("abort")
-                }
-            )
+            onEmptyMergePrompt?(action) { [weak self] in
+                guard let self, generation == request else { return }
+
+                finishOperation("abort")
+            }
         } else {
             action()
         }
@@ -251,5 +260,44 @@ extension RepositorySession {
     /// 第一行成为标题，正文保留内部换行。
     func setMessage(_ message: String) {
         (commitSubject, commitBody) = CommitMessage.parts(of: message)
+    }
+}
+
+// MARK: - Helpers
+
+extension RepositorySession {
+    /// 丢弃确认的说明：一个文件时点名它，多个时写文件数；服务器仓库写明在服务器上覆盖，
+    /// 以及未跟踪文件移进服务器的废纸篓还是永久删除。
+    ///
+    /// - Parameters:
+    ///   - entries: 要丢弃的文件，至少一个。
+    ///   - repository: 文件所在的仓库。
+    ///   - removal: 未跟踪文件的删除方式。
+    static func discardMessage(
+        _ entries: [StatusEntry],
+        in repository: RepositoryLocation,
+        removal: FileRemoval
+    ) -> String {
+        let keys: (single: String, multiple: String) =
+            switch (repository.host, removal) {
+            case (nil, _):
+                ("working.discard.message.single", "working.discard.message")
+
+            case (_, .trash):
+                ("working.discard.remote.single", "working.discard.remote")
+
+            default:
+                ("working.discard.remotePermanent.single", "working.discard.remotePermanent")
+            }
+
+        guard entries.count == 1, let entry = entries.first else {
+            return AppLocalization.text(keys.multiple, entries.count, repository.displayPath)
+        }
+
+        return AppLocalization.text(
+            keys.single,
+            WorkingCopyFileList.fileName(of: entry.path),
+            repository.displayPath
+        )
     }
 }

@@ -180,7 +180,8 @@ extension RepositorySession {
 
         confirmOnServer(
             .deletePermanently,
-            title: title,
+            title: AppLocalization.text("files.delete.title"),
+            submitTitle: title,
             message: AppLocalization.text("files.delete.remote", scopeDescription(targets), repository.displayPath)
         ) { [weak self] in
             guard let self, generation == request else { return }

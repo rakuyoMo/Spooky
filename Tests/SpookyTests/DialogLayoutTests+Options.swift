@@ -25,7 +25,7 @@ extension DialogLayoutTests {
         #expect(!collapsed.contains { $0.value == "Option Content" })
 
         let expanded = AccessibilityProbe.elements(
-            pressing: title,
+            pressing: [title],
             until: { elements in elements.contains { $0.value == "Option Content" } }
         ) {
             Self.layout(optionsExpanded: false)

@@ -274,9 +274,16 @@
 "working.discardLines" = "Abandonner les lignes";
 "working.discard" = "Abandonner les modifications";
 "working.discardAll" = "Abandonner toutes les modifications…";
+"working.discard.title" = "Abandonner les modifications locales";
+"working.discardAll.title" = "Abandonner toutes les modifications locales";
+"working.discardAll.submit" = "Abandonner toutes les modifications";
+"working.discardContent.title" = "Abandonner le contenu du diff ?";
 "working.discard.message" = "Les modifications de %d fichiers dans %@ seront abandonnées : les fichiers suivis reviennent au dernier commit, modifications indexées comprises, et les fichiers non suivis sont placés dans la corbeille.";
 "working.discard.remote" = "Les modifications de %d fichiers seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont placés dans la corbeille du serveur.";
 "working.discard.remotePermanent" = "Les modifications de %d fichiers seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont définitivement supprimés sur le serveur.";
+"working.discard.message.single" = "Les modifications de « %@ » dans %@ seront abandonnées : les fichiers suivis reviennent au dernier commit, modifications indexées comprises, et les fichiers non suivis sont placés dans la corbeille.";
+"working.discard.remote.single" = "Les modifications de « %@ » seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont placés dans la corbeille du serveur.";
+"working.discard.remotePermanent.single" = "Les modifications de « %@ » seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont définitivement supprimés sur le serveur.";
 "working.discard.lines" = "Les modifications des lignes sélectionnées dans %@ seront abandonnées.";
 "working.discard.remoteLines" = "Le contenu sélectionné sera écrasé sur le serveur dans %@.";
 "working.resolved" = "Marquer comme résolu";
@@ -652,6 +659,7 @@
 "fileHistory.restoreInWorkingCopy" = "Restaurer « %@ » à la révision « %@ » dans la copie de travail…";
 "fileHistory.showHistoryOf" = "Afficher l’historique de « %@ »";
 "fileHistory.restoreTitle" = "Restaurer des fichiers dans la copie de travail";
+"fileHistory.restore.submit" = "Restaurer";
 "fileHistory.restore.message" = "« %@ » sera restauré à la révision %@ dans %@. Les modifications indexées et non indexées de ce fichier seront abandonnées ; s’il n’existe pas dans cette révision, il sera supprimé.";
 "fileHistory.restore.remote" = "« %@ » sera écrasé par la révision %@ sur le serveur dans %@. Les modifications indexées et non indexées de ce fichier seront abandonnées ; s’il n’existe pas dans cette révision, il sera supprimé du serveur.";
 "fileHistory.scope.author" = "Auteur";
@@ -742,6 +750,7 @@
 "profiles.addCurrent" = "Ajouter le profil utilisateur « %@ »…";
 "profiles.manage" = "Gérer les profils utilisateur…";
 "profiles.apply" = "Utiliser le profil utilisateur";
+"profiles.apply.submit" = "Utiliser le profil";
 "profiles.apply.local" = "Écrit %@ dans la configuration locale du dépôt %@.";
 "profiles.apply.remote" = "Écrit %@ dans la configuration locale du dépôt %@ sur le serveur. Les autres outils qui valident des commits dans ce dépôt sur le serveur utiliseront la même identité.";
 "commit.signOff" = "Signer (Signed-off-by)";
@@ -776,6 +785,7 @@
 "files.untrack.multiple" = "Ne plus suivre %ld éléments";
 "files.trash" = "Placer dans la corbeille";
 "files.delete" = "Supprimer";
+"files.delete.title" = "Supprimer définitivement";
 "files.delete.remote" = "Supprimer définitivement les fichiers suivants sur le serveur dans %2$@ ?\n\n%1$@";
 "files.move.menu" = "Déplacer…";
 "files.move" = "Déplacer";
@@ -910,6 +920,7 @@
 "history.search.to" = "et";
 "history.reveal.notFound" = "Le commit %@ n’est pas dans cet historique.";
 "history.reveal.slow" = "Charger plus de commits";
+"history.reveal.slow.submit" = "Charger";
 "history.reveal.slow.message" = "Le commit %1$@ se trouve après les %2$ld premiers commits de cet historique. Charger l’historique jusqu’à ce commit peut prendre un moment.";
 "history.subtitle" = "%@ (%ld commits)";
 "history.subtitle.more" = "%@ (%ld commits ou plus)";
@@ -1336,6 +1347,7 @@
 "remote.pushURL.edit" = "Modifier l’URL de poussée";
 "remote.pushURL.edit.message" = "Saisissez l’URL utilisée pour pousser vers « %@ ». La connexion est vérifiée avant la modification.";
 "remote.pushURL.unset" = "Retirer l’URL de poussée";
+"remote.pushURL.unset.submit" = "Retirer";
 "remote.pushURL.unset.confirm" = "La poussée utilisera de nouveau l’URL de récupération.";
 "remote.refspec" = "Refspec :";
 "remote.refspec.addFetch" = "Ajouter une refspec de récupération";
@@ -1520,6 +1532,7 @@
 "reflog.createBranch" = "Créer une branche à partir de « %@ »…";
 "reflog.cherryPick" = "Cherry-pick de « %@ »…";
 "reflog.restore.title" = "Restaurer la branche";
+"reflog.restore.submit" = "Restaurer";
 "reflog.restore.message" = "Déplacer la branche « %1$@ » vers %2$@ dans %3$@ ? La copie de travail et la zone de préparation ne changent pas. Les commits qui quittent la branche restent visibles dans le reflog.";
 
 "appearance.system" = "Automatique";
@@ -1840,6 +1853,7 @@
 "quickActions.showRemoteSettings" = "Afficher les réglages du dépôt distant";
 "quickActions.setCommitter" = "Définir comme identité de commit";
 "quickActions.setGlobalUser" = "Définir comme utilisateur global";
+"quickActions.setGlobalUser.submit" = "Définir";
 "quickActions.setGlobalUser.local" = "Écrit user.name et user.email dans la configuration Git globale de ce Mac. Les dépôts sans identité propre l’utilisent pour leurs commits.";
 "quickActions.setGlobalUser.remote" = "Écrit user.name et user.email dans la configuration Git globale du serveur « %@ ». Les dépôts du serveur sans identité propre l’utilisent pour leurs commits.";
 "quickActions.applyTheme" = "Appliquer le thème";

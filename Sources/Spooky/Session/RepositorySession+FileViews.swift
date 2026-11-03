@@ -121,12 +121,25 @@ extension RepositorySession {
             )
         }
 
+        let submitTitle = AppLocalization.text("fileHistory.restore.submit")
+
         guard repository?.host != nil else {
-            onConfirm?(title, message, perform, nil)
+            onConfirm?(ConfirmationRequest(
+                title: title,
+                message: message,
+                submitTitle: submitTitle,
+                action: perform
+            ))
             return
         }
 
-        confirmOnServer(.restoreFiles, title: title, message: message, action: perform)
+        confirmOnServer(
+            .restoreFiles,
+            title: title,
+            submitTitle: submitTitle,
+            message: message,
+            action: perform
+        )
     }
 
     /// 把某个版本的文件导出到本机：保存面板在本机，内容取自仓库所在机器上的 Git 输出。

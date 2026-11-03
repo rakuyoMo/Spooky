@@ -224,7 +224,7 @@ struct RepositorySidebarView: View {
                 .disabled(!session.canMerge)
             Divider()
             Button(AppLocalization.text("working.discardAll")) {
-                session.discard(session.status?.entries ?? [])
+                session.discard(session.status?.entries ?? [], all: true)
             }
             .disabled(!session.canDiscard(session.status?.entries ?? []))
             Divider()

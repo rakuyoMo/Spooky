@@ -75,7 +75,7 @@ extension RepositoryWindowController {
 
     /// 全部丢弃只覆盖当前状态中的改动。
     @objc
-    func discardAll() { session.discard(session.status?.entries ?? []) }
+    func discardAll() { session.discard(session.status?.entries ?? [], all: true) }
 
     /// 新建分支默认从当前选中提交或 HEAD 开始。
     @objc

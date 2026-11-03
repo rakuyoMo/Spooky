@@ -229,21 +229,21 @@ extension RepositorySession {
     /// 确认后删除推送地址，此后推送用获取地址。
     func confirmUnsetPushURL(of remote: String) {
         let repository = repository
+        let title = AppLocalization.text("remote.pushURL.unset")
 
-        onConfirm?(
-            AppLocalization.text("remote.pushURL.unset"),
-            AppLocalization.text("remote.pushURL.unset.confirm"),
-            { [weak self] in
-                guard let self, self.repository == repository else { return }
+        onConfirm?(ConfirmationRequest(
+            title: title,
+            message: AppLocalization.text("remote.pushURL.unset.confirm"),
+            submitTitle: AppLocalization.text("remote.pushURL.unset.submit")
+        ) { [weak self] in
+            guard let self, self.repository == repository else { return }
 
-                performGit(
-                    { runner, _ in try await RepositoryRemotes(runner: runner).unsetPushURL(of: remote) },
-                    title: AppLocalization.text("remote.pushURL.unset"),
-                    undo: .changingRemote(remote)
-                )
-            },
-            nil
-        )
+            performGit(
+                { runner, _ in try await RepositoryRemotes(runner: runner).unsetPushURL(of: remote) },
+                title: title,
+                undo: .changingRemote(remote)
+            )
+        })
     }
 
     /// 确认后删除一条 refspec。
@@ -251,22 +251,21 @@ extension RepositorySession {
         let repository = repository
         let title = AppLocalization.text(push ? "remote.refspec.deletePush" : "remote.refspec.deleteFetch")
 
-        onConfirm?(
-            title,
-            AppLocalization.text("remote.refspec.delete.confirm", refspec),
-            { [weak self] in
-                guard let self, self.repository == repository else { return }
+        onConfirm?(ConfirmationRequest(
+            title: title,
+            message: AppLocalization.text("remote.refspec.delete.confirm", refspec),
+            submitTitle: AppLocalization.text("remote.action.delete")
+        ) { [weak self] in
+            guard let self, self.repository == repository else { return }
 
-                performGit(
-                    { runner, _ in
-                        try await RepositoryRemotes(runner: runner).removeRefspec(refspec, from: remote, push: push)
-                    },
-                    title: title,
-                    undo: .changingRemote(remote)
-                )
-            },
-            nil
-        )
+            performGit(
+                { runner, _ in
+                    try await RepositoryRemotes(runner: runner).removeRefspec(refspec, from: remote, push: push)
+                },
+                title: title,
+                undo: .changingRemote(remote)
+            )
+        })
     }
 
     /// 在浏览器中打开远端的网页；地址换算不出时报告原因。

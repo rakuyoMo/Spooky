@@ -153,13 +153,12 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 侧边栏与标签菜单预选了分支或版本的同步对话框同样以窗口的 sheet 呈现
         session.onSyncRequest = { [weak self] in self?.presentSyncDialog($0.kind, preselecting: $0.preselection) }
 
-        session.onConfirm = { [weak self] title, message, action, abort in
-            self?.showConfirmation(title: title, message: message, confirmation: nil, action: action, abort: abort)
-        }
+        // 会话里的确认以确认版对话框挂成 sheet
+        session.onConfirm = { [weak self] in self?.showConfirmation($0) }
 
-        // 服务器仓库的确认多一个 “Do not ask me again”
-        session.onServerConfirm = { [weak self] confirmation, title, message, action in
-            self?.showConfirmation(title: title, message: message, confirmation: confirmation, action: action, abort: nil)
+        // 空合并提交的询问是系统提示框
+        session.onEmptyMergePrompt = { [weak self] commit, abort in
+            self?.showEmptyMergePrompt(commit: commit, abort: abort)
         }
 
         showRepositories()

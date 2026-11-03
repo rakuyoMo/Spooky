@@ -274,9 +274,16 @@
 "working.discardLines" = "Descartar líneas";
 "working.discard" = "Descartar cambios";
 "working.discardAll" = "Descartar todos los cambios…";
+"working.discard.title" = "Descartar cambios locales";
+"working.discardAll.title" = "Descartar todos los cambios locales";
+"working.discardAll.submit" = "Descartar todos los cambios";
+"working.discardContent.title" = "¿Descartar el contenido del diff?";
 "working.discard.message" = "Descartar los cambios de %d archivos en %@: los archivos con seguimiento vuelven al último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera.";
 "working.discard.remote" = "Descartar los cambios de %d archivos del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera del servidor.";
 "working.discard.remotePermanent" = "Descartar los cambios de %d archivos del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se eliminan permanentemente del servidor.";
+"working.discard.message.single" = "Descartar los cambios de “%@” en %@: los archivos con seguimiento vuelven al último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera.";
+"working.discard.remote.single" = "Descartar los cambios de “%@” del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera del servidor.";
+"working.discard.remotePermanent.single" = "Descartar los cambios de “%@” del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se eliminan permanentemente del servidor.";
 "working.discard.lines" = "Descartar las líneas seleccionadas en %@.";
 "working.discard.remoteLines" = "Sobrescribir el contenido seleccionado del servidor en %@.";
 "working.resolved" = "Marcar como resuelto";
@@ -652,6 +659,7 @@
 "fileHistory.restoreInWorkingCopy" = "Restaurar “%@” a la revisión “%@” en la copia de trabajo…";
 "fileHistory.showHistoryOf" = "Mostrar el historial de “%@”";
 "fileHistory.restoreTitle" = "Restaurar archivos en la copia de trabajo";
+"fileHistory.restore.submit" = "Restaurar";
 "fileHistory.restore.message" = "“%@” se restaurará a la revisión %@ en %@. Se descartarán los cambios de este archivo, estén o no en el stage; si no existe en esa revisión, se eliminará.";
 "fileHistory.restore.remote" = "“%@” se sobrescribirá con la revisión %@ en el servidor en %@. Se descartarán los cambios de este archivo, estén o no en el stage; si no existe en esa revisión, se eliminará del servidor.";
 "fileHistory.scope.author" = "Autor";
@@ -742,6 +750,7 @@
 "profiles.addCurrent" = "Añadir perfil de usuario “%@”…";
 "profiles.manage" = "Gestionar perfiles de usuario…";
 "profiles.apply" = "Usar perfil de usuario";
+"profiles.apply.submit" = "Usar perfil";
 "profiles.apply.local" = "Escribe %@ en la configuración local del repositorio %@.";
 "profiles.apply.remote" = "Escribe %@ en la configuración local del repositorio %@ del servidor. Las demás herramientas que hacen commits en este repositorio del servidor usarán la misma identidad.";
 "commit.signOff" = "Firmar (Signed-off-by)";
@@ -776,6 +785,7 @@
 "files.untrack.multiple" = "Dejar de seguir %ld ítems";
 "files.trash" = "Trasladar a la papelera";
 "files.delete" = "Eliminar";
+"files.delete.title" = "Eliminar permanentemente";
 "files.delete.remote" = "¿Eliminar permanentemente los siguientes archivos del servidor en %2$@?\n\n%1$@";
 "files.move.menu" = "Mover…";
 "files.move" = "Mover";
@@ -910,6 +920,7 @@
 "history.search.to" = "y";
 "history.reveal.notFound" = "El commit %@ no está en este historial.";
 "history.reveal.slow" = "Cargar más commits";
+"history.reveal.slow.submit" = "Cargar";
 "history.reveal.slow.message" = "El commit %1$@ está después de los primeros %2$ld commits de este historial. Cargar el historial hasta ese commit puede tardar un poco.";
 "history.subtitle" = "%@ (%ld commits)";
 "history.subtitle.more" = "%@ (%ld commits o más)";
@@ -1336,6 +1347,7 @@
 "remote.pushURL.edit" = "Editar URL de envío";
 "remote.pushURL.edit.message" = "Introduce la URL que se usa para enviar a “%@”. La conexión se comprueba antes del cambio.";
 "remote.pushURL.unset" = "Quitar URL de envío";
+"remote.pushURL.unset.submit" = "Quitar";
 "remote.pushURL.unset.confirm" = "El envío volverá a usar la URL de obtención.";
 "remote.refspec" = "Refspec:";
 "remote.refspec.addFetch" = "Añadir refspec de obtención";
@@ -1520,6 +1532,7 @@
 "reflog.createBranch" = "Crear rama desde “%@”…";
 "reflog.cherryPick" = "Cherry-pick de “%@”…";
 "reflog.restore.title" = "Restaurar rama";
+"reflog.restore.submit" = "Restaurar";
 "reflog.restore.message" = "¿Mover la rama “%1$@” a %2$@ en %3$@? La copia de trabajo y el área de preparación no cambian. Los commits que salen de la rama se siguen encontrando en el reflog.";
 
 "appearance.system" = "Automático";
@@ -1840,6 +1853,7 @@
 "quickActions.showRemoteSettings" = "Mostrar ajustes del remoto";
 "quickActions.setCommitter" = "Establecer como identidad de commit";
 "quickActions.setGlobalUser" = "Establecer como usuario global";
+"quickActions.setGlobalUser.submit" = "Establecer";
 "quickActions.setGlobalUser.local" = "Escribe user.name y user.email en la configuración global de Git de este Mac. Los repositorios sin identidad propia la usan para hacer commits.";
 "quickActions.setGlobalUser.remote" = "Escribe user.name y user.email en la configuración global de Git del servidor “%@”. Los repositorios del servidor sin identidad propia la usan para hacer commits.";
 "quickActions.applyTheme" = "Aplicar tema";

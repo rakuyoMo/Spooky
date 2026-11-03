@@ -157,8 +157,8 @@ final class RepositoryHistoryState {
     /// 恢复的引用在新快照中已不存在时通知会话回退视图。
     var onRestoreFailure: (() -> Void)? = nil
 
-    /// 回到的提交排在询问的阈值之后时交给窗口询问；参数是标题兼确认按钮文字、说明与同意后的操作，取消时不回调。
-    var onSlowLookup: ((String, String, @escaping () -> Void) -> Void)? = nil
+    /// 回到的提交排在询问的阈值之后时交给窗口询问；同意后执行请求里的操作，取消时不回调。
+    var onSlowLookup: ((ConfirmationRequest) -> Void)? = nil
 
     /// 当前窗口的执行器，测试可以注入隔离环境。
     private(set) var runner: GitRunner? = nil

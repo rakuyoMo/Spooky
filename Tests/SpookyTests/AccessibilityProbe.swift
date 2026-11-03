@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - AccessibilityProbe
 
-/// 经辅助功能接口读本进程窗口里的元素，必要时先按下一个控件，核对 SwiftUI 控件的名称与位置：这些控件不在 AppKit 的视图树里。
+/// 经辅助功能接口读本进程窗口里的元素，必要时先依次按下几个控件，核对 SwiftUI 控件的名称与位置：这些控件不在 AppKit 的视图树里。
 ///
 /// 进程没有辅助功能权限时读不到任何元素，用到它的测试以 `AXIsProcessTrusted()` 为前提，没有权限时跳过。
 @MainActor
@@ -36,12 +36,12 @@ enum AccessibilityProbe {
     ///
     /// - Parameters:
     ///   - width: 窗口内容的宽度。
-    ///   - name: 读到时先按一下的控件的名称，如展开三角；为 nil 时不按。
+    ///   - names: 读到时依次各按一下的控件的名称，如展开三角，或勾选框再加按钮；为空时不按。
     ///   - isComplete: 要等的控件都读到了；控件的元素在窗口排版之后才陆续建出，没到齐时转动 run loop 再读，最多读 100 次。
     ///   - content: 窗口的内容。
     static func elements(
         width: CGFloat = 480,
-        pressing name: String? = nil,
+        pressing names: [String] = [],
         until isComplete: ([Element]) -> Bool,
         @ViewBuilder of content: () -> some View
     ) -> [Element] {
@@ -63,7 +63,7 @@ enum AccessibilityProbe {
         defer { window.close() }
 
         var found: [Element] = []
-        var pending = name
+        var pending = names[...]
 
         for _ in 0 ..< 100 {
             RunLoop.main.run(until: Date().addingTimeInterval(0.05))
@@ -71,14 +71,14 @@ enum AccessibilityProbe {
             let collected = collect(inWindowTitled: title)
             found = collected.map(\.element)
 
-            // 要按的控件读到后按一次，之后读到的是按过以后的样子
-            if let name = pending, let target = collected.first(where: { $0.element.name == name }) {
+            // 要按的控件读到后按一次，之后读到的是按过以后的样子，再找下一个要按的
+            if let name = pending.first, let target = collected.first(where: { $0.element.name == name }) {
                 press(target.reference)
-                pending = nil
+                pending = pending.dropFirst()
                 continue
             }
 
-            if pending == nil, isComplete(found) {
+            if pending.isEmpty, isComplete(found) {
                 break
             }
         }

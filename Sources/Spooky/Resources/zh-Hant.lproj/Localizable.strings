@@ -274,9 +274,16 @@
 "working.discardLines" = "捨棄所選行";
 "working.discard" = "捨棄變更";
 "working.discardAll" = "捨棄全部變更…";
+"working.discard.title" = "捨棄本機變更";
+"working.discardAll.title" = "捨棄全部本機變更";
+"working.discardAll.submit" = "捨棄全部變更";
+"working.discardContent.title" = "捨棄 Diff 內容？";
 "working.discard.message" = "將捨棄 %d 個檔案的變更：已追蹤的檔案恢復到最後一次提交（含暫存變更），未追蹤檔案丟到垃圾桶。儲存庫：%@。";
 "working.discard.remote" = "將在伺服器上捨棄 %d 個檔案的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案丟到伺服器的垃圾桶。儲存庫：%@。";
 "working.discard.remotePermanent" = "將在伺服器上捨棄 %d 個檔案的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案在伺服器上永久刪除。儲存庫：%@。";
+"working.discard.message.single" = "將捨棄 “%@” 的變更：已追蹤的檔案恢復到最後一次提交（含暫存變更），未追蹤檔案丟到垃圾桶。儲存庫：%@。";
+"working.discard.remote.single" = "將在伺服器上捨棄 “%@” 的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案丟到伺服器的垃圾桶。儲存庫：%@。";
+"working.discard.remotePermanent.single" = "將在伺服器上捨棄 “%@” 的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案在伺服器上永久刪除。儲存庫：%@。";
 "working.discard.lines" = "將捨棄 %@ 中所選行的變更。";
 "working.discard.remoteLines" = "將在伺服器 %@ 上覆寫所選內容。";
 "working.resolved" = "標記已解決";
@@ -652,6 +659,7 @@
 "fileHistory.restoreInWorkingCopy" = "在工作區中將 “%@” 還原到版本 “%@”…";
 "fileHistory.showHistoryOf" = "顯示 “%@” 的檔案歷史";
 "fileHistory.restoreTitle" = "在工作區中還原檔案";
+"fileHistory.restore.submit" = "還原";
 "fileHistory.restore.message" = "將 “%@” 還原到版本 %@。儲存庫：%@。這個檔案已暫存與未暫存的變更都會被捨棄；該版本中沒有這個檔案時會將其刪除。";
 "fileHistory.restore.remote" = "將在伺服器上覆寫 “%@”，改為版本 %@ 的內容。儲存庫：%@。這個檔案已暫存與未暫存的變更都會被捨棄；該版本中沒有這個檔案時，會在伺服器上將其刪除。";
 "fileHistory.scope.author" = "作者";
@@ -742,6 +750,7 @@
 "profiles.addCurrent" = "加入身分設定檔 “%@”…";
 "profiles.manage" = "管理身分設定檔…";
 "profiles.apply" = "使用身分設定檔";
+"profiles.apply.submit" = "使用設定檔";
 "profiles.apply.local" = "將把 %@ 寫入儲存庫 %@ 的本機設定。";
 "profiles.apply.remote" = "將把 %@ 寫入伺服器上儲存庫 %@ 的本機設定。伺服器上在此儲存庫提交的其他工具也會使用這個身分。";
 "commit.signOff" = "署名";
@@ -776,6 +785,7 @@
 "files.untrack.multiple" = "停止追蹤 %ld 個項目";
 "files.trash" = "丟到垃圾桶";
 "files.delete" = "刪除";
+"files.delete.title" = "永久刪除";
 "files.delete.remote" = "要在伺服器上永久刪除以下檔案嗎？儲存庫：%2$@。\n\n%1$@";
 "files.move.menu" = "移動…";
 "files.move" = "移動";
@@ -910,6 +920,7 @@
 "history.search.to" = "至";
 "history.reveal.notFound" = "提交 %@ 不在這段歷史中。";
 "history.reveal.slow" = "載入更多提交";
+"history.reveal.slow.submit" = "載入";
 "history.reveal.slow.message" = "提交 %1$@ 排在這段歷史的前 %2$ld 個提交之後。載入到它為止可能需要一些時間。";
 "history.subtitle" = "%@（%ld 個提交）";
 "history.subtitle.more" = "%@（%ld 個或更多提交）";
@@ -1336,6 +1347,7 @@
 "remote.pushURL.edit" = "編輯推送位址";
 "remote.pushURL.edit.message" = "輸入推送到 “%@” 時使用的位址。修改前會先檢查連線。";
 "remote.pushURL.unset" = "取消推送位址";
+"remote.pushURL.unset.submit" = "取消設定";
 "remote.pushURL.unset.confirm" = "推送將重新使用取得位址。";
 "remote.refspec" = "Refspec：";
 "remote.refspec.addFetch" = "新增取得 Refspec";
@@ -1520,6 +1532,7 @@
 "reflog.createBranch" = "從 “%@” 新增分支…";
 "reflog.cherryPick" = "摘取 “%@”…";
 "reflog.restore.title" = "還原分支";
+"reflog.restore.submit" = "還原";
 "reflog.restore.message" = "要把 %3$@ 中的分支 “%1$@” 移到 %2$@ 嗎？工作區與暫存區不會變更。離開分支的提交仍能在 Reflog 裡找到。";
 
 "appearance.system" = "自動";
@@ -1840,6 +1853,7 @@
 "quickActions.showRemoteSettings" = "顯示遠端設定";
 "quickActions.setCommitter" = "設為提交者身分";
 "quickActions.setGlobalUser" = "設為全域使用者";
+"quickActions.setGlobalUser.submit" = "設定";
 "quickActions.setGlobalUser.local" = "將把 user.name 與 user.email 寫入這台 Mac 上你的全域 Git 設定。沒有自己身分的儲存庫都用它提交。";
 "quickActions.setGlobalUser.remote" = "將把 user.name 與 user.email 寫入伺服器 “%@” 上你的全域 Git 設定。伺服器上沒有自己身分的儲存庫都用它提交。";
 "quickActions.applyTheme" = "套用主題";

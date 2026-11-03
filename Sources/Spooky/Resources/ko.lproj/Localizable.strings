@@ -274,9 +274,16 @@
 "working.discardLines" = "선택한 줄 버리기";
 "working.discard" = "변경 사항 버리기";
 "working.discardAll" = "모든 변경 사항 버리기…";
+"working.discard.title" = "로컬 변경 사항 버리기";
+"working.discardAll.title" = "모든 로컬 변경 사항 버리기";
+"working.discardAll.submit" = "모든 변경 사항 버리기";
+"working.discardContent.title" = "Diff 내용을 버릴까요?";
 "working.discard.message" = "파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 되돌리고, 추적되지 않은 파일은 휴지통으로 이동합니다.";
 "working.discard.remote" = "서버의 파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 덮어쓰고, 추적되지 않은 파일은 서버의 휴지통으로 이동합니다.";
 "working.discard.remotePermanent" = "서버의 파일 %d 개의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 덮어쓰고, 추적되지 않은 파일은 서버에서 영구적으로 삭제합니다.";
+"working.discard.message.single" = "“%@”의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 되돌리고, 추적되지 않은 파일은 휴지통으로 이동합니다.";
+"working.discard.remote.single" = "서버의 “%@”의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 덮어쓰고, 추적되지 않은 파일은 서버의 휴지통으로 이동합니다.";
+"working.discard.remotePermanent.single" = "서버의 “%@”의 변경을 버립니다. 저장소: %@. 추적 중인 파일은 스테이지된 변경을 포함해 마지막 커밋으로 덮어쓰고, 추적되지 않은 파일은 서버에서 영구적으로 삭제합니다.";
 "working.discard.lines" = "%@ 의 선택한 줄 변경을 버립니다.";
 "working.discard.remoteLines" = "서버 %@ 의 선택한 내용을 덮어씁니다.";
 "working.resolved" = "해결됨으로 표시";
@@ -652,6 +659,7 @@
 "fileHistory.restoreInWorkingCopy" = "작업 사본의 “%@”을(를) 리비전 “%@”(으)로 복원…";
 "fileHistory.showHistoryOf" = "“%@”의 파일 기록 보기";
 "fileHistory.restoreTitle" = "작업 사본의 파일 복원";
+"fileHistory.restore.submit" = "복원";
 "fileHistory.restore.message" = "“%@”을(를) 리비전 %@(으)로 복원합니다. 저장소: %@. 이 파일의 스테이지된 변경과 스테이지되지 않은 변경은 버려지며, 해당 리비전에 파일이 없으면 삭제됩니다.";
 "fileHistory.restore.remote" = "서버의 “%@”을(를) 리비전 %@의 내용으로 덮어씁니다. 저장소: %@. 이 파일의 스테이지된 변경과 스테이지되지 않은 변경은 버려지며, 해당 리비전에 파일이 없으면 서버에서 삭제됩니다.";
 "fileHistory.scope.author" = "작성자";
@@ -742,6 +750,7 @@
 "profiles.addCurrent" = "사용자 프로필 “%@” 추가…";
 "profiles.manage" = "사용자 프로필 관리…";
 "profiles.apply" = "사용자 프로필 사용";
+"profiles.apply.submit" = "프로필 사용";
 "profiles.apply.local" = "%@ 값을 저장소 %@의 로컬 설정에 씁니다.";
 "profiles.apply.remote" = "%@ 값을 서버에 있는 저장소 %@의 로컬 설정에 씁니다. 서버에서 이 저장소에 커밋하는 다른 도구도 같은 신원을 사용합니다.";
 "commit.signOff" = "사인오프";
@@ -776,6 +785,7 @@
 "files.untrack.multiple" = "항목 %ld개 추적 중단";
 "files.trash" = "휴지통으로 이동";
 "files.delete" = "삭제";
+"files.delete.title" = "영구적으로 삭제";
 "files.delete.remote" = "서버에서 다음 파일을 영구적으로 삭제할까요? 저장소: %2$@.\n\n%1$@";
 "files.move.menu" = "이동…";
 "files.move" = "이동";
@@ -910,6 +920,7 @@
 "history.search.to" = "~";
 "history.reveal.notFound" = "커밋 %@이(가) 이 기록에 없습니다.";
 "history.reveal.slow" = "커밋 더 불러오기";
+"history.reveal.slow.submit" = "불러오기";
 "history.reveal.slow.message" = "커밋 %1$@은(는) 이 기록의 처음 %2$ld개 커밋 뒤에 있습니다. 해당 커밋까지 불러오는 데 시간이 걸릴 수 있습니다.";
 "history.subtitle" = "%@ (커밋 %ld개)";
 "history.subtitle.more" = "%@ (커밋 %ld개 이상)";
@@ -1336,6 +1347,7 @@
 "remote.pushURL.edit" = "푸시 URL 편집";
 "remote.pushURL.edit.message" = "“%@”에 푸시할 때 쓸 URL을 입력하세요. 변경하기 전에 연결을 확인합니다.";
 "remote.pushURL.unset" = "푸시 URL 해제";
+"remote.pushURL.unset.submit" = "해제";
 "remote.pushURL.unset.confirm" = "푸시에 다시 페치 URL을 씁니다.";
 "remote.refspec" = "Refspec:";
 "remote.refspec.addFetch" = "페치 Refspec 추가";
@@ -1520,6 +1532,7 @@
 "reflog.createBranch" = "“%@”에서 새 브랜치 만들기…";
 "reflog.cherryPick" = "“%@” 체리픽…";
 "reflog.restore.title" = "브랜치 복원";
+"reflog.restore.submit" = "복원";
 "reflog.restore.message" = "%3$@의 브랜치 “%1$@”을(를) %2$@(으)로 옮기시겠습니까? 작업 사본과 스테이징 영역은 바뀌지 않습니다. 브랜치에서 벗어나는 커밋은 Reflog에서 계속 찾을 수 있습니다.";
 
 "appearance.system" = "자동";
@@ -1840,6 +1853,7 @@
 "quickActions.showRemoteSettings" = "원격 설정 보기";
 "quickActions.setCommitter" = "커미터 신원으로 설정";
 "quickActions.setGlobalUser" = "전역 사용자로 설정";
+"quickActions.setGlobalUser.submit" = "설정";
 "quickActions.setGlobalUser.local" = "user.name과 user.email을 이 Mac의 전역 Git 설정에 씁니다. 자체 신원이 없는 저장소는 이 신원으로 커밋합니다.";
 "quickActions.setGlobalUser.remote" = "user.name과 user.email을 서버 “%@”의 전역 Git 설정에 씁니다. 서버에서 자체 신원이 없는 저장소는 이 신원으로 커밋합니다.";
 "quickActions.applyTheme" = "테마 적용";

@@ -23,7 +23,7 @@ extension RepositorySessionTests {
         defer { session.close() }
 
         // 冲突向导的操作都不需要确认，弹出确认就是错误
-        session.onConfirm = { title, _, _, _ in Issue.record("不应弹出确认：\(title)") }
+        session.onConfirm = { Issue.record("不应弹出确认：\($0.title)") }
         session.display(location)
         session.refresh()
 

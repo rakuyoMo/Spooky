@@ -274,9 +274,16 @@
 "working.discardLines" = "Discard Lines";
 "working.discard" = "Discard Changes";
 "working.discardAll" = "Discard All Changes…";
+"working.discard.title" = "Discard Local Changes";
+"working.discardAll.title" = "Discard All Local Changes";
+"working.discardAll.submit" = "Discard All Changes";
+"working.discardContent.title" = "Discard Diff Content?";
 "working.discard.message" = "Discard changes in %d files in %@. Tracked files are restored to the last commit, including staged changes, and untracked files are moved to the Trash.";
 "working.discard.remote" = "Discard changes in %d files on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are moved to the Trash on the server.";
 "working.discard.remotePermanent" = "Discard changes in %d files on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are permanently deleted on the server.";
+"working.discard.message.single" = "Discard changes in “%@” in %@. Tracked files are restored to the last commit, including staged changes, and untracked files are moved to the Trash.";
+"working.discard.remote.single" = "Discard changes in “%@” on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are moved to the Trash on the server.";
+"working.discard.remotePermanent.single" = "Discard changes in “%@” on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are permanently deleted on the server.";
 "working.discard.lines" = "Discard the selected lines in %@.";
 "working.discard.remoteLines" = "Overwrite the selected content on the server at %@.";
 "working.resolved" = "Mark as Resolved";
@@ -652,6 +659,7 @@
 "fileHistory.restoreInWorkingCopy" = "Restore “%@” at Revision “%@” in Working Copy…";
 "fileHistory.showHistoryOf" = "Show File History of “%@”";
 "fileHistory.restoreTitle" = "Restore Files in Working Copy";
+"fileHistory.restore.submit" = "Restore";
 "fileHistory.restore.message" = "Restore “%@” to revision %@ in %@. Staged and unstaged changes in this file will be discarded, and the file is deleted if it does not exist at that revision.";
 "fileHistory.restore.remote" = "Overwrite “%@” with revision %@ on the server at %@. Staged and unstaged changes in this file are discarded, and the file is deleted on the server if it does not exist at that revision.";
 "fileHistory.scope.author" = "Author";
@@ -742,6 +750,7 @@
 "profiles.addCurrent" = "Add User Profile “%@”…";
 "profiles.manage" = "Manage User Profiles…";
 "profiles.apply" = "Use User Profile";
+"profiles.apply.submit" = "Use Profile";
 "profiles.apply.local" = "This writes %@ to the local configuration of the repository %@.";
 "profiles.apply.remote" = "This writes %@ to the local configuration of the repository %@ on the server. Other tools on the server that commit in this repository use the same identity.";
 "commit.signOff" = "Sign Off";
@@ -776,6 +785,7 @@
 "files.untrack.multiple" = "Untrack %ld Items";
 "files.trash" = "Move to Trash";
 "files.delete" = "Delete";
+"files.delete.title" = "Delete Permanently";
 "files.delete.remote" = "Permanently delete the following on the server at %2$@?\n\n%1$@";
 "files.move.menu" = "Move…";
 "files.move" = "Move";
@@ -910,6 +920,7 @@
 "history.search.to" = "to";
 "history.reveal.notFound" = "Commit %@ isn't in this history.";
 "history.reveal.slow" = "Load More Commits";
+"history.reveal.slow.submit" = "Load";
 "history.reveal.slow.message" = "Commit %1$@ comes after the first %2$ld commits of this history. Loading the history up to it may take a while.";
 "history.subtitle" = "%@ (%ld Commits)";
 "history.subtitle.more" = "%@ (%ld Commits or more)";
@@ -1336,6 +1347,7 @@
 "remote.pushURL.edit" = "Edit Push URL";
 "remote.pushURL.edit.message" = "Enter the URL used to push to “%@”. The connection is checked before the URL is changed.";
 "remote.pushURL.unset" = "Unset Push URL";
+"remote.pushURL.unset.submit" = "Unset";
 "remote.pushURL.unset.confirm" = "Pushing will use the fetch URL again.";
 "remote.refspec" = "Refspec:";
 "remote.refspec.addFetch" = "Add Fetch Refspec";
@@ -1520,6 +1532,7 @@
 "reflog.createBranch" = "Create New Branch from “%@”…";
 "reflog.cherryPick" = "Cherry-Pick “%@”…";
 "reflog.restore.title" = "Restore Branch";
+"reflog.restore.submit" = "Restore";
 "reflog.restore.message" = "Move the branch “%1$@” to %2$@ in %3$@? The working copy and the staging area are not changed. Commits that leave the branch can still be found in the reflog.";
 
 "appearance.system" = "Automatic";
@@ -1840,6 +1853,7 @@
 "quickActions.showRemoteSettings" = "Show Remote Settings";
 "quickActions.setCommitter" = "Set as Committer Identity";
 "quickActions.setGlobalUser" = "Set as Global User";
+"quickActions.setGlobalUser.submit" = "Set";
 "quickActions.setGlobalUser.local" = "This writes user.name and user.email to your global Git configuration on this Mac. Repositories without their own identity commit with it.";
 "quickActions.setGlobalUser.remote" = "This writes user.name and user.email to your global Git configuration on the server “%@”. Repositories on the server without their own identity commit with it.";
 "quickActions.applyTheme" = "Apply Theme";

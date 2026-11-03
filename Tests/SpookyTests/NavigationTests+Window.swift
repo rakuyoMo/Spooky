@@ -182,9 +182,9 @@ extension NavigationTests {
         var prompts = 0
         var agrees = false
 
-        session.onConfirm = { _, _, action, _ in
+        session.onConfirm = { request in
             prompts += 1
-            if agrees { action() }
+            if agrees { request.action() }
         }
 
         // 链接：询问时窗口仍在 Working Copy，取消后视图与记录都不变

@@ -66,7 +66,7 @@ extension HistoryListTests {
 
         // 记下所有询问，不回调
         var prompts: [String] = []
-        fixture.session.onConfirm = { title, _, _, _ in prompts.append(title) }
+        fixture.session.onConfirm = { prompts.append($0.title) }
 
         // 第 200 个提交不在第一页里
         let head = try await RepositoryReferences(runner: fixture.runner).resolve("HEAD")
@@ -125,9 +125,14 @@ extension HistoryListTests {
         let conditions = history.searchConditions
         #expect(session.activeView == .workingCopy)
 
-        // 取消询问时不回调，只记下询问的标题与说明
+        // 取消询问时不回调，只记下询问的标题、说明与主按钮
         var prompts: [(title: String, message: String)] = []
-        session.onConfirm = { title, message, _, _ in prompts.append((title, message)) }
+        var submitTitles: [String] = []
+
+        session.onConfirm = { request in
+            prompts.append((request.title, request.message))
+            submitTitles.append(request.submitTitle)
+        }
 
         // 排在第 10,000 个之后的提交先询问；询问时还没切换，取消后什么都不变
         let target = try await Self.commit(
@@ -139,6 +144,7 @@ extension HistoryListTests {
         try await FileViewsTests.wait { prompts.count == 1 }
 
         #expect(prompts.first?.title == AppLocalization.text("history.reveal.slow"))
+        #expect(submitTitles == [AppLocalization.text("history.reveal.slow.submit")])
         #expect(
             prompts.first?.message
                 == AppLocalization.text(
@@ -158,9 +164,9 @@ extension HistoryListTests {
         #expect(!history.isLoading)
 
         // 同意后切到整页详情，续载到它为止并选中，不再询问第二次
-        session.onConfirm = { title, message, action, _ in
-            prompts.append((title, message))
-            action()
+        session.onConfirm = { request in
+            prompts.append((request.title, request.message))
+            request.action()
         }
 
         session.showCommit(target)
@@ -220,7 +226,7 @@ extension HistoryListTests {
 
         // 取消询问时不回调
         var prompts = 0
-        session.onConfirm = { _, _, _, _ in prompts += 1 }
+        session.onConfirm = { _ in prompts += 1 }
 
         let target = try await Self.commit(
             at: RepositoryHistoryState.slowLookupThreshold + 20,
@@ -290,7 +296,7 @@ extension HistoryListTests {
 
         // 记下所有询问的说明，不回调
         var prompts: [String] = []
-        session.onConfirm = { _, message, _, _ in prompts.append(message) }
+        session.onConfirm = { prompts.append($0.message) }
 
         let earlier = try await Self.commit(
             at: RepositoryHistoryState.slowLookupThreshold + 10,
@@ -340,8 +346,8 @@ extension HistoryListTests {
         let target = try #require(page.commits.first)
 
         // 同意后窗口重新成为主窗口，完整刷新从第一页重读列表
-        session.onConfirm = { _, _, action, _ in
-            action()
+        session.onConfirm = { request in
+            request.action()
             history.reloadCommits()
         }
 

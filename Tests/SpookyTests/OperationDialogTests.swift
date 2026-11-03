@@ -197,7 +197,7 @@ struct OperationDialogTests {
 
         try Self.expectSkipHooksSpacing(4, in: publish)
 
-        let sync = AccessibilityProbe.elements(pressing: options, until: Self.hasSkipHooks) {
+        let sync = AccessibilityProbe.elements(pressing: [options], until: Self.hasSkipHooks) {
             SyncDialog(session: fixture.session, kind: .sync, close: { })
         }
 
@@ -261,7 +261,7 @@ extension OperationDialogTests {
     ) -> [AccessibilityProbe.Element] {
         AccessibilityProbe.elements(
             width: request.kind == .push ? 450 : 480,
-            pressing: name,
+            pressing: name.map { [$0] } ?? [],
             until: name == nil ? hasDialog : hasSkipHooks
         ) {
             RepositoryOperationDialog(

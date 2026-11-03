@@ -2,9 +2,9 @@ import Foundation
 
 // MARK: - ServerConfirmation
 
-/// 服务器仓库里删除或覆盖文件前的确认：确认框里可以勾选不再提醒，Settings → General 逐项列出并可以重新打开。
+/// 服务器仓库里删除或覆盖文件前的确认：确认对话框的内容区可以勾选不再提醒，Settings → General 逐项列出并可以重新打开。
 ///
-/// 丢弃块或行与本机仓库共用 “Warn when discarding changes in a chunk” 这一项。
+/// 丢弃块或行与本机仓库共用 “Warn when discarding changes in a chunk” 这一项，本机仓库的确认同样可以勾选不再提醒。
 enum ServerConfirmation: CaseIterable {
     /// 丢弃块或行，覆盖服务器上的文件内容。
     case discardChunks
@@ -48,16 +48,18 @@ enum ServerConfirmation: CaseIterable {
 // MARK: - Server Confirmation
 
 extension RepositorySession {
-    /// 服务器仓库的删除与覆盖先确认；这项确认已经关掉时直接执行。
+    /// 服务器仓库的删除与覆盖先确认，确认对话框里可以勾选不再提醒；这项确认已经关掉时直接执行。
     ///
     /// - Parameters:
     ///   - confirmation: 确认的种类，决定读写哪个偏好。
-    ///   - title: 确认框的标题，也是确认按钮的标题。
+    ///   - title: 确认对话框的标题。
+    ///   - submitTitle: 主按钮的标题。
     ///   - message: 写明在服务器上覆盖、移进废纸篓或永久删除的说明。
     ///   - action: 确认后执行的操作。
     func confirmOnServer(
         _ confirmation: ServerConfirmation,
         title: String,
+        submitTitle: String,
         message: String,
         action: @escaping () -> Void
     ) {
@@ -66,6 +68,12 @@ extension RepositorySession {
             return
         }
 
-        onServerConfirm?(confirmation, title, message, action)
+        onConfirm?(ConfirmationRequest(
+            title: title,
+            message: message,
+            submitTitle: submitTitle,
+            suppression: confirmation,
+            action: action
+        ))
     }
 }
