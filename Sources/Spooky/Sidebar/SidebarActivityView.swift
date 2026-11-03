@@ -186,11 +186,11 @@ struct SidebarActivityRow: View {
         .onTapGesture(perform: showActivity)
     }
 
-    /// 第一行：18 × 11 格子里按传输方向的图标，右边 6 pt 起是 11 pt 的标题，两者按首行基线对齐。
+    /// 第一行：18 pt 宽的格子里按传输方向的图标，右边 6 pt 起是 11 pt 的标题，两者垂直居中。
     private var titleLine: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
+        HStack(spacing: 6) {
             transferIcon
-                .frame(width: 18, height: 11)
+                .frame(width: 18)
                 .accessibilityHidden(true)
 
             Text(activity.displayTitle)
@@ -202,12 +202,12 @@ struct SidebarActivityRow: View {
         }
     }
 
-    /// 传输方向的自绘图标，缩放到 11 × 11。
+    /// 传输方向的自绘图标，缩放到 14 × 14，与 Activity 窗口里已结束的行一样大。
     private var transferIcon: some View {
         activity.transferIcon.image
             .resizable()
             .scaledToFit()
-            .frame(width: 11, height: 11)
+            .frame(width: 14, height: 14)
     }
 
     /// 第二行：进度条与右边 7 pt 处的停止按钮。
