@@ -1282,7 +1282,9 @@
 "branch.forceDelete" = "強制削除";
 "branch.forceDelete.help" = "完全にマージされていなくてもブランチを削除します。";
 "branch.forceDelete.ask" = "次のブランチは完全にマージされていません：%@。それでも削除しますか？";
-"branch.forceDelete.submit" = "強制削除";
+"branch.forceDelete.submit" = "削除";
+"branch.error.delete" = "ブランチを削除できません";
+"branch.error.deleteMultiple" = "ブランチを削除できません";
 "branch.deleteRemote" = "リモートブランチを削除";
 "branch.deleteRemote.message" = "リモート上のブランチ「%@」を削除します。";
 "branch.deleteRemoteMultiple" = "リモートブランチを削除";

@@ -49,6 +49,35 @@ extension DialogLayoutTests {
         #expect(abs(480 - submit.frame.maxX - 20) <= 1)
     }
 
+    /// 按钮组在 480 里放不下时对话框随之加宽：备选底栏的取消仍对齐输入列，主按钮仍距右边 20。
+    @Test("按钮组放不下时加宽", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    func widenedFooter() throws {
+        let dialog = DialogLayout(
+            title: "Title",
+            message: "Message",
+            submitTitle: "OK",
+            alternate: (title: String(repeating: "Alternate ", count: 8), action: { }),
+            cancel: { },
+            submit: { }
+        )
+
+        let width = Self.hosting(dialog).frame.width
+
+        let elements = AccessibilityProbe.elements(
+            width: width,
+            until: { elements in elements.count { $0.role == "AXButton" } >= 3 }
+        ) {
+            dialog
+        }
+
+        let cancel = try #require(Self.button(AppLocalization.text("action.cancel"), in: elements))
+        let submit = try #require(Self.button("OK", in: elements))
+
+        #expect(width > 480)
+        #expect(abs(cancel.frame.minX - DialogMetrics.alignment) <= 1)
+        #expect(abs(width - submit.frame.maxX - 20) <= 1)
+    }
+
     /// 提交中主按钮与取消都不可用；平时两者都可用。
     @Test("提交中的按钮", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func submitting() throws {

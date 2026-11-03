@@ -1282,7 +1282,9 @@
 "branch.forceDelete" = "Löschen erzwingen";
 "branch.forceDelete.help" = "Löscht den Branch, auch wenn er nicht vollständig gemergt ist.";
 "branch.forceDelete.ask" = "Diese Branches sind nicht vollständig gemergt: %@. Trotzdem löschen?";
-"branch.forceDelete.submit" = "Löschen erzwingen";
+"branch.forceDelete.submit" = "Löschen";
+"branch.error.delete" = "Branch kann nicht gelöscht werden";
+"branch.error.deleteMultiple" = "Branches können nicht gelöscht werden";
 "branch.deleteRemote" = "Remote-Branch löschen";
 "branch.deleteRemote.message" = "Löscht den Branch „%@“ auf seinem Remote.";
 "branch.deleteRemoteMultiple" = "Remote-Branches löschen";

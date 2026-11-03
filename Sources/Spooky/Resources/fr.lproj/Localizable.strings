@@ -1282,7 +1282,9 @@
 "branch.forceDelete" = "Forcer la suppression";
 "branch.forceDelete.help" = "Supprime la branche même si elle n’est pas entièrement fusionnée.";
 "branch.forceDelete.ask" = "Ces branches ne sont pas entièrement fusionnées : %@. Les supprimer quand même ?";
-"branch.forceDelete.submit" = "Forcer la suppression";
+"branch.forceDelete.submit" = "Supprimer";
+"branch.error.delete" = "Impossible de supprimer la branche";
+"branch.error.deleteMultiple" = "Impossible de supprimer les branches";
 "branch.deleteRemote" = "Supprimer la branche distante";
 "branch.deleteRemote.message" = "Supprime la branche « %@ » sur son dépôt distant.";
 "branch.deleteRemoteMultiple" = "Supprimer les branches distantes";

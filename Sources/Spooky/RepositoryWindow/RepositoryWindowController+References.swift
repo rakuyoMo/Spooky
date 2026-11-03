@@ -121,43 +121,26 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 未合并分支的普通删除失败后询问是否强制删除：说明写出这些分支，附上 Git 原文。
+    /// 未合并分支的普通删除失败后询问是否强制删除：标题按分支个数取单复数，说明写出这些分支与仓库。
     private func askForceDeletion(_ offer: ForceDeletionOffer, failure: AppFailure, in window: NSWindow) {
         let names = offer.branches.map { String($0.dropFirst("refs/heads/".count)) }
         let repository = session.repository
 
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = failure.title
-        alert.informativeText = AppLocalization.text("branch.forceDelete.ask", names.joined(separator: ", "))
-            + "\n\n" + failure.context
-        alert.addButton(withTitle: AppLocalization.text("branch.forceDelete.submit"))
-        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
-        alert.buttons.first?.hasDestructiveAction = true
-
-        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 400, height: 140))
-        scroll.hasVerticalScroller = true
-        scroll.borderType = .bezelBorder
-
-        let text = NSTextView(frame: scroll.bounds)
-        text.isEditable = false
-        text.isRichText = false
-        text.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
-        text.textColor = .secondaryLabelColor
-        text.textContainerInset = NSSize(width: 8, height: 8)
-        text.autoresizingMask = [.width]
-        text.string = failure.details
-        text.setAccessibilityLabel(AppLocalization.text("error.details"))
-        scroll.documentView = text
-        alert.accessoryView = scroll
-
         // 询问结束后才开始强制删除，进度与失败由仓库视图承接
-        alert.beginSheetModal(for: window) { [weak self] response in
-            guard let self, response == .alertFirstButtonReturn, session.repository == repository else {
-                return
-            }
+        DialogWindow.present(on: window) { close in
+            ConfirmationDialog(
+                title: AppLocalization.text(names.count == 1 ? "branch.error.delete" : "branch.error.deleteMultiple"),
+                message: AppLocalization.text("branch.forceDelete.ask", names.joined(separator: ", "))
+                    + "\n\n" + failure.context,
+                submitTitle: AppLocalization.text("branch.forceDelete.submit"),
+                close: close
+            ) { [weak self] _ in
+                guard let self, session.repository == repository else {
+                    return
+                }
 
-            session.deleteBranches(offer.branches, force: true, deletingUpstream: offer.deletingUpstream)
+                session.deleteBranches(offer.branches, force: true, deletingUpstream: offer.deletingUpstream)
+            }
         }
     }
 }

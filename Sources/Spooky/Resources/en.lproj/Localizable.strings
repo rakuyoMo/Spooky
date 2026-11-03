@@ -1282,7 +1282,9 @@
 "branch.forceDelete" = "Force Deletion";
 "branch.forceDelete.help" = "Deletes the branch even if it is not fully merged.";
 "branch.forceDelete.ask" = "These branches are not fully merged: %@. Delete them anyway?";
-"branch.forceDelete.submit" = "Force Delete";
+"branch.forceDelete.submit" = "Delete";
+"branch.error.delete" = "Could Not Delete Branch";
+"branch.error.deleteMultiple" = "Could Not Delete Branches";
 "branch.deleteRemote" = "Delete Remote Branch";
 "branch.deleteRemote.message" = "Deletes the branch “%@” on its remote.";
 "branch.deleteRemoteMultiple" = "Delete Remote Branches";

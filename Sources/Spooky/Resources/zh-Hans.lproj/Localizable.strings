@@ -1282,7 +1282,9 @@
 "branch.forceDelete" = "强制删除";
 "branch.forceDelete.help" = "即使分支没有完全合并也删除。";
 "branch.forceDelete.ask" = "这些分支没有完全合并：%@。仍然删除吗？";
-"branch.forceDelete.submit" = "强制删除";
+"branch.forceDelete.submit" = "删除";
+"branch.error.delete" = "无法删除分支";
+"branch.error.deleteMultiple" = "无法删除分支";
 "branch.deleteRemote" = "删除远端分支";
 "branch.deleteRemote.message" = "在远端删除分支 “%@”。";
 "branch.deleteRemoteMultiple" = "删除远端分支";

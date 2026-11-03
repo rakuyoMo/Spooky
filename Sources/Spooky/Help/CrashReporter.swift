@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SwiftUI
 
 // MARK: - CrashReport
 
@@ -191,20 +192,40 @@ enum CrashReporter {
         }
     }
 
-    /// 询问是否在 GitHub 上报告；勾选 “Always send crash reports” 后之后不再询问。
+    /// 询问的内容：Don’t Report 在取消的位置，Report on GitHub… 是主按钮；
+    /// 勾选 “Always send crash reports” 并选了报告后，之后不再询问。
+    ///
+    /// - Parameters:
+    ///   - defaults: 记下 “总是发送” 的偏好。
+    ///   - close: 关闭对话框。
+    ///   - report: 选了报告。
+    static func askDialog(
+        defaults: UserDefaults,
+        close: @escaping () -> Void,
+        report: @escaping () -> Void
+    ) -> ConfirmationDialog {
+        ConfirmationDialog(
+            title: AppLocalization.text("crash.title"),
+            message: AppLocalization.text("crash.message"),
+            submitTitle: AppLocalization.text("crash.report"),
+            cancelTitle: AppLocalization.text("crash.dontReport"),
+            checkbox: AppLocalization.text("settings.crashReports.always"),
+            close: close
+        ) { always in
+            if always {
+                defaults.set(true, forKey: alwaysSendKey)
+            }
+
+            report()
+        }
+    }
+
+    /// 询问是否在 GitHub 上报告：启动时还没有窗口，是应用级的模态对话框，关闭后才返回。
     private static func ask(defaults: UserDefaults) -> Bool {
-        let alert = NSAlert()
-        alert.messageText = AppLocalization.text("crash.title")
-        alert.informativeText = AppLocalization.text("crash.message")
-        alert.addButton(withTitle: AppLocalization.text("crash.report"))
-        alert.addButton(withTitle: AppLocalization.text("crash.dontReport"))
-        alert.showsSuppressionButton = true
-        alert.suppressionButton?.title = AppLocalization.text("settings.crashReports.always")
+        var reports = false
 
-        let reports = alert.runModal() == .alertFirstButtonReturn
-
-        if alert.suppressionButton?.state == .on {
-            defaults.set(true, forKey: alwaysSendKey)
+        DialogWindow.present(on: nil) { close in
+            askDialog(defaults: defaults, close: close) { reports = true }
         }
 
         return reports

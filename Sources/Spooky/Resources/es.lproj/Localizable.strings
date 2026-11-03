@@ -1282,7 +1282,9 @@
 "branch.forceDelete" = "Forzar eliminación";
 "branch.forceDelete.help" = "Elimina la rama aunque no esté completamente fusionada.";
 "branch.forceDelete.ask" = "Estas ramas no están completamente fusionadas: %@. ¿Eliminarlas de todos modos?";
-"branch.forceDelete.submit" = "Forzar eliminación";
+"branch.forceDelete.submit" = "Eliminar";
+"branch.error.delete" = "No se puede eliminar la rama";
+"branch.error.deleteMultiple" = "No se pueden eliminar las ramas";
 "branch.deleteRemote" = "Eliminar rama remota";
 "branch.deleteRemote.message" = "Elimina la rama “%@” en su remoto.";
 "branch.deleteRemoteMultiple" = "Eliminar ramas remotas";

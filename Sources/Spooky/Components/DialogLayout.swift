@@ -5,6 +5,7 @@ import SwiftUI
 // MARK: - DialogLayout
 
 /// 对话框骨架：自上而下是头部、内容区、错误区、Options 开关与选项区、底栏，段与段之间不留间距，默认宽 480。
+/// 底栏的按钮组在这个宽度里放不下时，对话框随之加宽。
 ///
 /// 头部是 64 pt 图标与单行标题、自动折行的说明，服务器仓库在标题下多一行带主机前缀的位置。
 /// 头部文字、错误文字与备选底栏的按钮组对齐内容区的输入列，图标挂在头部文字左侧；输入列由 `DialogFormRow` 报上来，
@@ -78,27 +79,28 @@ struct DialogLayout<Content: View, Options: View>: View {
 
     /// 头部、内容区、错误区、Options 与底栏依次排列；错误出现与消失时带动画。
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
+        DialogStack(width: width) {
+            VStack(alignment: .leading, spacing: 0) {
+                header
 
-            content()
-                .font(.system(size: 13))
-                .environment(\.dialogInputColumn, alignment)
+                content()
+                    .font(.system(size: 13))
+                    .environment(\.dialogInputColumn, alignment)
 
-            if let error {
-                errorRow(error)
-                    .transition(.opacity)
-            }
+                if let error {
+                    errorRow(error)
+                        .transition(.opacity)
+                }
 
-            if let options {
-                optionsToggle
+                if let options {
+                    optionsToggle
 
-                optionsArea(options)
+                    optionsArea(options)
+                }
             }
 
             footer
         }
-        .frame(width: width)
         .coordinateSpace(.named(DialogMetrics.coordinateSpace))
         .onPreferenceChange(DialogInputColumnKey.self) { inputColumn = $0 }
         .animation(.easeOut(duration: 0.2), value: error == nil)
@@ -420,5 +422,55 @@ private final class PassthroughButton: NSButton {
     /// 永远不命中。
     override func hitTest(_: NSPoint) -> NSView? {
         nil
+    }
+}
+
+// MARK: - DialogStack
+
+/// 骨架的两段：上面是头部到选项区，下面是底栏，宽度取指定宽度与底栏理想宽度中较大的一个。
+///
+/// 按钮文字较长的语言里，底栏的按钮组可能在指定宽度里放不下，对话框随之加宽，上面一段按同一宽度排版；
+/// 高度有富余时（可以拉大的对话框）都交给上面一段。
+private struct DialogStack: Layout {
+    /// 指定的宽度。
+    let width: CGFloat
+
+    /// 宽度取指定宽度与底栏理想宽度中较大的一个，高度是两段之和。
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
+        let width = resolvedWidth(subviews)
+        let footer = footerHeight(subviews, width: width)
+
+        let body = subviews[0].sizeThatFits(ProposedViewSize(
+            width: width,
+            height: proposal.height.map { max($0 - footer, 0) }
+        ))
+
+        return CGSize(width: width, height: body.height + footer)
+    }
+
+    /// 上面一段从顶边开始，底栏紧接在它下面。
+    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
+        let width = resolvedWidth(subviews)
+        let footer = footerHeight(subviews, width: width)
+
+        let proposal = ProposedViewSize(width: width, height: max(bounds.height - footer, 0))
+        let body = subviews[0].sizeThatFits(proposal)
+
+        subviews[0].place(at: bounds.origin, proposal: proposal)
+
+        subviews[1].place(
+            at: CGPoint(x: bounds.minX, y: bounds.minY + body.height),
+            proposal: ProposedViewSize(width: width, height: footer)
+        )
+    }
+
+    /// 指定宽度与底栏理想宽度中较大的一个。
+    private func resolvedWidth(_ subviews: Subviews) -> CGFloat {
+        max(width, subviews[1].sizeThatFits(.unspecified).width)
+    }
+
+    /// 底栏在这个宽度下的高度。
+    private func footerHeight(_ subviews: Subviews, width: CGFloat) -> CGFloat {
+        subviews[1].sizeThatFits(ProposedViewSize(width: width, height: nil)).height
     }
 }

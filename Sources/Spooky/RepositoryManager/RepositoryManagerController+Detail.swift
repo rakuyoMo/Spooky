@@ -57,12 +57,7 @@ extension RepositoryManagerController {
 
     /// 选用身份档案：说明要写入的配置项与位置，确认后写进仓库本地配置。
     func applyProfile(_ profile: UserProfile) {
-        guard
-            canEditDetail,
-            let location = detailLocation,
-            let sheetParent = window?.window,
-            sheetParent.attachedSheet == nil
-        else {
+        guard canEditDetail, let location = detailLocation else {
             return
         }
 
@@ -70,23 +65,19 @@ extension RepositoryManagerController {
             ? "user.name, user.email"
             : "user.name, user.email, user.signingkey, gpg.format"
 
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = AppLocalization.text("profiles.apply")
-        alert.informativeText = location.host == nil
-            ? AppLocalization.text("profiles.apply.local", keys, location.displayPath)
-            : AppLocalization.text("profiles.apply.remote", keys, location.displayPath)
-        alert.addButton(withTitle: AppLocalization.text("profiles.apply"))
-        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
-
-        alert.beginSheetModal(for: sheetParent) { [weak self] response in
-            guard response == .alertFirstButtonReturn else {
-                return
-            }
-
-            self?.write(location) {
-                try await WorkingCopyOperations(runner: $0)
-                    .applyIdentity(name: profile.name, email: profile.email, signingKey: profile.signingKey)
+        window?.presentDialog { close in
+            ConfirmationDialog(
+                title: AppLocalization.text("profiles.apply"),
+                message: location.host == nil
+                    ? AppLocalization.text("profiles.apply.local", keys, location.displayPath)
+                    : AppLocalization.text("profiles.apply.remote", keys, location.displayPath),
+                submitTitle: AppLocalization.text("profiles.apply.submit"),
+                close: close
+            ) { [weak self] _ in
+                self?.write(location) {
+                    try await WorkingCopyOperations(runner: $0)
+                        .applyIdentity(name: profile.name, email: profile.email, signingKey: profile.signingKey)
+                }
             }
         }
     }

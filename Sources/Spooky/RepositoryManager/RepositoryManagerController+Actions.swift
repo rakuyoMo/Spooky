@@ -156,26 +156,26 @@ extension RepositoryManagerController {
     func confirmDelete(_ ids: [Bookmark.ID]) {
         let targets = ids.compactMap(bookmarks.bookmark)
 
-        guard let sheetParent = window?.window, sheetParent.attachedSheet == nil, !targets.isEmpty else {
+        guard !targets.isEmpty else {
             return
         }
 
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = targets.count == 1
-            ? AppLocalization.text("bookmarks.delete.title", targets[0].displayName)
-            : AppLocalization.text("bookmarks.delete.titleMultiple", targets.count)
-        alert.informativeText = AppLocalization.text("bookmarks.delete.message")
-        alert.addButton(withTitle: AppLocalization.text("bookmarks.delete.submit"))
-        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
+        window?.presentDialog { close in
+            ConfirmationDialog(
+                title: targets.count == 1
+                    ? AppLocalization.text("bookmarks.delete.title", targets[0].displayName)
+                    : AppLocalization.text("bookmarks.delete.titleMultiple", targets.count),
+                message: AppLocalization.text("bookmarks.delete.message"),
+                submitTitle: AppLocalization.text("bookmarks.delete.submit"),
+                close: close
+            ) { [weak self] _ in
+                guard let self else {
+                    return
+                }
 
-        alert.beginSheetModal(for: sheetParent) { [weak self] response in
-            guard response == .alertFirstButtonReturn, let self else {
-                return
+                bookmarks.delete(targets.map(\.id))
+                selection.removeAll { bookmarks.bookmark($0) == nil }
             }
-
-            bookmarks.delete(targets.map(\.id))
-            selection.removeAll { bookmarks.bookmark($0) == nil }
         }
     }
 

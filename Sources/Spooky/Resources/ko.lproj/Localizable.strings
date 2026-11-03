@@ -1282,7 +1282,9 @@
 "branch.forceDelete" = "강제 삭제";
 "branch.forceDelete.help" = "완전히 병합되지 않았어도 브랜치를 삭제합니다.";
 "branch.forceDelete.ask" = "다음 브랜치는 완전히 병합되지 않았습니다: %@. 그래도 삭제할까요?";
-"branch.forceDelete.submit" = "강제 삭제";
+"branch.forceDelete.submit" = "삭제";
+"branch.error.delete" = "브랜치를 삭제할 수 없음";
+"branch.error.deleteMultiple" = "브랜치를 삭제할 수 없음";
 "branch.deleteRemote" = "원격 브랜치 삭제";
 "branch.deleteRemote.message" = "원격에서 브랜치 “%@”을(를) 삭제합니다.";
 "branch.deleteRemoteMultiple" = "원격 브랜치 삭제";
