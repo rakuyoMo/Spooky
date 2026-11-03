@@ -67,11 +67,11 @@ struct WorkingCopyDetailView: View {
                 message: "",
                 symbol: "doc"
             ) {
-                Button(AppLocalization.text("working.discard")) { session.discard(session.selectedEntries) }
+                EmptyStateButton(AppLocalization.text("working.discard")) { session.discard(session.selectedEntries) }
                     .disabled(!session.canDiscard(session.selectedEntries))
 
                 // 直接移进废纸篓，服务器上没有可用的废纸篓时确认后永久删除
-                Button(AppLocalization.text(session.fileRemoval == .trash ? "files.trash" : "files.delete")) {
+                EmptyStateButton(AppLocalization.text(session.fileRemoval == .trash ? "files.trash" : "files.delete")) {
                     session.delete(session.selectedEntries)
                 }
                 .disabled(!session.canDelete(session.selectedEntries))
@@ -117,7 +117,7 @@ struct WorkingCopyDetailView: View {
                     message: "",
                     symbol: nil
                 ) {
-                    Button(AppLocalization.text("working.showDiff")) {
+                    EmptyStateButton(AppLocalization.text("working.showDiff")) {
                         session.showsLargeDiff = true
                         session.loadDiff()
                     }

@@ -173,7 +173,7 @@ extension PullRequestListView {
     /// 标题、说明与一个按钮的空状态。
     private func notice(title: String, message: String, action: String, perform: @escaping () -> Void) -> some View {
         EmptyStateView(title: title, message: message, symbol: "arrow.triangle.pull") {
-            Button(action, action: perform)
+            EmptyStateButton(action, action: perform)
         }
     }
 }
@@ -296,7 +296,7 @@ private struct PullRequestAccountChoice: View {
                 }
                 .fixedSize()
 
-                Button(AppLocalization.text("pullRequests.chooseAccount.submit")) {
+                EmptyStateButton(AppLocalization.text("pullRequests.chooseAccount.submit")) {
                     guard let selection, let url = session.pullRequests.remoteURL else { return }
 
                     PullRequestAssociations.set(PullRequestAssociation(account: selection), for: url)

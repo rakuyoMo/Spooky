@@ -113,12 +113,12 @@ extension SubmoduleDetailView {
             message: AppLocalization.text("submodule.invalid.message"),
             symbol: "exclamationmark.triangle"
         ) {
-            Button(AppLocalization.text("submodule.repair.submit")) {
+            EmptyStateButton(AppLocalization.text("submodule.repair.submit")) {
                 session.requestSubmodule(.repair(submodule))
             }
             .disabled(!session.canWrite)
 
-            Button(AppLocalization.text("submodule.delete.submit")) {
+            EmptyStateButton(AppLocalization.text("submodule.delete.submit")) {
                 session.requestSubmodule(.delete(submodule))
             }
             .disabled(!session.canWrite)

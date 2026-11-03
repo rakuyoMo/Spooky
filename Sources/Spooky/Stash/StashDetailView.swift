@@ -36,7 +36,7 @@ struct StashDetailView: View {
                 message: "",
                 symbol: "tray.2"
             ) {
-                Button(AppLocalization.text("stash.deleteButton")) {
+                EmptyStateButton(AppLocalization.text("stash.deleteButton")) {
                     session.deleteStashes(stashes.selectedStashes)
                 }
                 .disabled(!session.canDelete(stashes.selectedStashes))

@@ -27,7 +27,7 @@ struct HistoryMultipleSelectionView: View {
             pickButton
 
             if let (newer, older) = session.comparedCommits {
-                Button(
+                EmptyStateButton(
                     optionDown
                         ? AppLocalization.text("compare.selected", newer.shortID, older.shortID)
                         : AppLocalization.text("compare.submit")
@@ -45,7 +45,10 @@ struct HistoryMultipleSelectionView: View {
         let history = session.history
         let ids = history.commits.filter { history.selectedIDs.contains($0.id) }.map(\.id)
 
-        return Button(AppLocalization.text(session.isViewingHead ? "rewrite.revert.button" : "rewrite.cherryPick.button")) {
+        return EmptyStateButton(
+            AppLocalization
+                .text(session.isViewingHead ? "rewrite.revert.button" : "rewrite.cherryPick.button")
+        ) {
             if session.isViewingHead {
                 session.requestRevert(ids)
             } else {

@@ -51,11 +51,11 @@ struct MissingRepositoryView: View {
                 }
 
                 HStack(spacing: 8) {
-                    Button(AppLocalization.text("action.refresh"), action: refresh)
+                    EmptyStateButton(AppLocalization.text("action.refresh"), action: refresh)
                         .disabled(session.isOpening)
                         .accessibilityIdentifier("missing-refresh")
 
-                    Button(AppLocalization.text("action.close"), action: close)
+                    EmptyStateButton(AppLocalization.text("action.close"), action: close)
                         .accessibilityIdentifier("missing-close")
                 }
 

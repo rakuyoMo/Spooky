@@ -50,7 +50,7 @@ struct RepositoryManagerDetailView: View {
                 message: AppLocalization.text("bookmarks.multiple.message", count),
                 symbol: "square.stack"
             ) {
-                Button(AppLocalization.text("bookmarks.multiple.delete")) {
+                EmptyStateButton(AppLocalization.text("bookmarks.multiple.delete")) {
                     manager.confirmDelete(manager.selection)
                 }
                 .accessibilityIdentifier("delete-bookmarks")

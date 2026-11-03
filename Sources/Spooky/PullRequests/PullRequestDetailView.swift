@@ -99,7 +99,7 @@ extension PullRequestDetailView {
                     message: AppLocalization.text("pullRequests.fetch.message", request.id.reference, state.remote ?? ""),
                     symbol: "arrow.down.circle"
                 ) {
-                    Button(AppLocalization.text("pullRequests.fetch")) { session.fetchPullRequestHead(request) }
+                    EmptyStateButton(AppLocalization.text("pullRequests.fetch")) { session.fetchPullRequestHead(request) }
                         .disabled(!session.canWrite)
                 }
             } else {
