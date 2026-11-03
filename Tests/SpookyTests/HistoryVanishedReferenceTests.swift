@@ -91,6 +91,57 @@ struct HistoryVanishedReferenceTests {
         #expect(above == ["refs/heads/main"])
     }
 
+    /// 分支连同它所在的文件夹一起消失时按行号接替：文件夹下面的那一行补到文件夹的行号上，落到原行号上的是再下面一行。
+    @Test("筛选的分支连同文件夹一起消失后按行号接替")
+    func folderReplacementRow() async throws {
+        let repository = try await RepositorySidebarViewTests.repository()
+        defer { try? FileManager.default.removeItem(atPath: repository.location.path) }
+
+        // 文件夹排在前面：feature（里面只有 x）、alpha、main、zeta
+        for name in ["alpha", "feature/x", "zeta"] {
+            _ = try await repository.runner.run(["branch", name])
+        }
+
+        let session = RepositorySession(
+            makeRunner: { _ in repository.runner },
+            activities: RepositoryActivities()
+        )
+
+        defer { session.close() }
+
+        session.display(repository.location)
+        try await Self.refresh(session) { $0.contains("refs/heads/feature/x") }
+
+        let window = RepositorySidebarViewTests.host(session)
+
+        // 等列表排好行，再展开 feature 文件夹
+        try await FileViewsTests.wait {
+            window.contentView?.layoutSubtreeIfNeeded()
+            return Self.folderRow(in: window) != nil
+        }
+
+        let outline = try #require(window.contentView.flatMap(RepositorySidebarViewTests.outline(in:)))
+        let rows = outline.numberOfRows
+        let folder = try #require(Self.folderRow(in: window))
+
+        outline.expandItem(outline.item(atRow: folder))
+
+        try await FileViewsTests.wait {
+            window.contentView?.layoutSubtreeIfNeeded()
+            return outline.numberOfRows > rows
+        }
+
+        // x 与文件夹一起消失，alpha 补到文件夹的行号上，原行号上是 main
+        let replacement = try await Self.delete(
+            "feature/x",
+            filteredIn: session,
+            window: window,
+            runner: repository.runner
+        )
+
+        #expect(replacement == ["refs/heads/main"])
+    }
+
     /// 后退到筛选引用都已被删除的历史时留在当前视图，记录不变；位置停在那一步，再后退接着往前走。
     @Test("后退到筛选引用已删除的历史时留在当前视图")
     func navigateToVanishedReference() async throws {
@@ -190,5 +241,16 @@ extension HistoryVanishedReferenceTests {
     /// 侧边栏列表选中的行号。
     private static func selectedRows(in window: NSWindow) -> IndexSet? {
         window.contentView.flatMap(RepositorySidebarViewTests.outline(in:))?.selectedRowIndexes
+    }
+
+    /// 侧边栏列表里分组下第一个可展开的行的行号；列表还没有排好行时为 nil。
+    private static func folderRow(in window: NSWindow) -> Int? {
+        guard let outline = window.contentView.flatMap(RepositorySidebarViewTests.outline(in:)) else {
+            return nil
+        }
+
+        return (0 ..< outline.numberOfRows).first {
+            outline.level(forRow: $0) == 1 && outline.isExpandable(outline.item(atRow: $0))
+        }
     }
 }
