@@ -183,7 +183,10 @@ extension EmptyStateViewTests {
     }
 
     /// 文字是给定内容的静态文字元素。
-    private static func text(_ value: String, in elements: [AccessibilityProbe.Element]) -> AccessibilityProbe.Element? {
+    private static func text(
+        _ value: String,
+        in elements: [AccessibilityProbe.Element]
+    ) -> AccessibilityProbe.Element? {
         elements.first { $0.role == "AXStaticText" && $0.value == value }
     }
 
