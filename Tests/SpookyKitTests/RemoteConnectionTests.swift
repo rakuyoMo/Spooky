@@ -47,7 +47,12 @@ struct RemoteConnectionTests {
             #expect(childSession.standardOutput == session.standardOutput)
             let wrapper = try await connection.execute(["config", "--get", "core.askPass"])
             let wrapperPath = String(decoding: wrapper.standardOutput.dropLast(), as: UTF8.self)
-            let permissions = try await RemoteFixture.raw(["/usr/bin/stat", "-f", "%Lp", sessionPath, wrapperPath])
+
+            // stat 的参数在 macOS 与 Linux 上不同，权限用 B 上必备的 Perl 读出
+            let permissions = try await RemoteFixture.raw([
+                "/usr/bin/perl", "-e", #"printf("%o\n", (stat)[2] & 07777) for @ARGV"#,
+                "--", sessionPath, wrapperPath,
+            ])
             #expect(permissions.standardOutput == Data("700\n700\n".utf8))
             await connection.close()
             _ = try await RemoteFixture.raw(["/bin/test", "!", "-e", sessionPath])

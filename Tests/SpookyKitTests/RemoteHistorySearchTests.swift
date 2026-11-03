@@ -21,6 +21,8 @@ struct RemoteHistorySearchTests {
             let working = WorkingCopyOperations(runner: runner)
             let path = "文档/说明 [*].md"
 
+            // SFTP 上传不会建出上级目录
+            try await files.createDirectory(location.path + "/文档")
             try await files.write(Data("one\n".utf8), to: location.path + "/" + path)
             try await working.stageAll(staged: true)
             try await working.commit(subject: "服务器 fix *star*", body: "")
