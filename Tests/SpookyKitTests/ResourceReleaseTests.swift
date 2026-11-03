@@ -75,8 +75,15 @@ struct ResourceReleaseTests {
             _ = try await cancelAfterStart(cancelling)
         }
 
-        // 其它并行测试也会短暂占用描述符；逐次泄漏会让数量随 60 次调用明显增长。
-        #expect(try openDescriptors() - before < 16)
+        // 其它并行测试也会短暂占用描述符：超出时隔一会儿再读，取最少的一次；逐次泄漏会让数量随 60 次调用明显增长，怎么读都降不下来。
+        var after = try openDescriptors()
+
+        for _ in 0 ..< 20 where after - before >= 16 {
+            try await Task.sleep(for: .milliseconds(250))
+            after = min(after, try openDescriptors())
+        }
+
+        #expect(after - before < 16)
     }
 
     /// 本机凭据回调的私有会话目录在成功、失败和取消后都被删除。

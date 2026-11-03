@@ -154,8 +154,8 @@ extension RepositorySidebarViewTests {
         session.refresh(full: true)
         await session.waitForRefresh()
 
-        let loaded = await eventually { session.history.snapshot?.remotes.count == remotes }
-        try #require(loaded)
+        // 整套测试并行时 Git 读取要排队，等的上限按整套测试的耗时留足
+        try await FileViewsTests.wait { session.history.snapshot?.remotes.count == remotes }
     }
 
     /// 等 Working Copy 行（Workspace 标题下的第一行）的单元格左缘满足条件，返回它；超时为 nil。

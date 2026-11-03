@@ -145,9 +145,10 @@ struct WindowChromeTests {
 
         let controller = RepositoryWindowController(coordinator: fixture.coordinator)
 
+        // 宽度取分栏里侧边栏一栏的右缘，即分隔线的位置：有的系统版本把侧边栏的内容缩进几 pt，内容视图比这一栏窄
         let sidebarWidth = {
             (controller.window?.contentViewController as? NSSplitViewController)?
-                .splitViewItems.first?.viewController.view.frame.width
+                .splitView.arrangedSubviews.first?.frame.maxX
         }
 
         let managerWidth = sidebarWidth()

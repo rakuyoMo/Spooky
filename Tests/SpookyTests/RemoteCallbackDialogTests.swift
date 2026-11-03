@@ -146,10 +146,15 @@ struct RemoteCallbackDialogTests {
 
         let editor = try #require(elements.first { $0.role == "AXTextArea" })
 
+        // 宽度量外面的滚动区：系统显示常驻滚动条时，文本区让出滚动条的宽度
+        let area = try #require(elements.first {
+            $0.role == "AXScrollArea" && $0.frame.contains(editor.frame.origin)
+        })
+
         #expect(editor.name == AppLocalization.text("callback.editor"))
         #expect(editor.value == "Fix the parser\n")
-        #expect(abs(editor.frame.minX - 21) <= 1)
-        #expect(abs(editor.frame.maxX - 459) <= 1)
+        #expect(abs(area.frame.minX - 21) <= 1)
+        #expect(abs(area.frame.maxX - 459) <= 1)
         #expect(!elements.contains { $0.role == "AXCheckBox" })
         #expect(Self.buttons(in: elements).map(\.name) == [cancel, submit])
         #expect(events == ["close", "answer Fix the parser\n false"])
