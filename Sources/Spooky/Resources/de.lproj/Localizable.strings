@@ -188,9 +188,11 @@
 "settings.themes" = "Themen";
 "settings.terminal" = "Terminal-App:";
 "callback.editor" = "Text auf dem Server bearbeiten";
-"callback.credentials" = "Anfrage nach Zugangsdaten vom Server";
+"callback.username.title" = "Benutzername eingeben";
+"callback.password.title" = "Passwort eingeben";
+"callback.username.label" = "Benutzername:";
+"callback.password.label" = "Passwort:";
 "callback.saveKeychain" = "Im Schlüsselbund dieses Mac sichern";
-"callback.value" = "Zugangsdaten";
 "error.indexLocked" = "Der Index ist durch einen anderen Git-Prozess gesperrt. Warten Sie, bis dieser beendet ist, und versuchen Sie es dann erneut.";
 "error.terminal" = "Terminal konnte nicht geöffnet werden";
 "error.terminalHelp" = "Prüfen Sie das in den Einstellungen ausgewählte Terminal und seine macOS-Berechtigung für Automation.";
@@ -477,7 +479,7 @@
 "dialog.options" = "Optionen";
 "dialog.doNotAskAgain" = "Nicht mehr fragen";
 "menu.repository" = "Repository";
-"callback.privateKey" = "Privaten SSH-Schlüssel entsperren";
+"callback.privateKey.title" = "Passwort für privaten Schlüssel eingeben";
 "callback.privateKey.help" = "Der entsperrte Schlüssel wird zum SSH-Agenten hinzugefügt.";
 "callback.accountTokenRejected" = "Das Token des Accounts „%@“ wurde nicht akzeptiert. Geben Sie Benutzername und Passwort ein.";
 "history.unpushed" = "Nicht gepusht";

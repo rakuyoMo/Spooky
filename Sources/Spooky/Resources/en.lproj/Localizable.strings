@@ -188,9 +188,11 @@
 "settings.themes" = "Themes";
 "settings.terminal" = "Terminal application:";
 "callback.editor" = "Edit Remote Text";
-"callback.credentials" = "Server Credential Request";
+"callback.username.title" = "Enter Username";
+"callback.password.title" = "Enter Password";
+"callback.username.label" = "Username:";
+"callback.password.label" = "Password:";
 "callback.saveKeychain" = "Save in this Mac’s Keychain";
-"callback.value" = "Credential";
 "error.indexLocked" = "The index is locked by another Git process. Wait for it to finish, then retry.";
 "error.terminal" = "Could Not Open Terminal";
 "error.terminalHelp" = "Check the selected terminal in Settings and its macOS Automation permission.";
@@ -477,7 +479,7 @@
 "dialog.options" = "Options";
 "dialog.doNotAskAgain" = "Do not ask me again";
 "menu.repository" = "Repository";
-"callback.privateKey" = "Unlock Private SSH Key";
+"callback.privateKey.title" = "Enter Password for Private Key";
 "callback.privateKey.help" = "The unlocked key will be added to the SSH agent.";
 "callback.accountTokenRejected" = "The token of the account “%@” wasn’t accepted. Enter a username and password.";
 "history.unpushed" = "Not pushed";

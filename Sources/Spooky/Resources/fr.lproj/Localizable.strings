@@ -188,9 +188,11 @@
 "settings.themes" = "Thèmes";
 "settings.terminal" = "App de terminal :";
 "callback.editor" = "Modifier le texte distant";
-"callback.credentials" = "Demande d’informations d’identification du serveur";
+"callback.username.title" = "Saisir le nom d’utilisateur";
+"callback.password.title" = "Saisir le mot de passe";
+"callback.username.label" = "Nom d’utilisateur :";
+"callback.password.label" = "Mot de passe :";
 "callback.saveKeychain" = "Enregistrer dans le trousseau de ce Mac";
-"callback.value" = "Information d’identification";
 "error.indexLocked" = "L’index est verrouillé par un autre processus Git. Attendez qu’il se termine, puis réessayez.";
 "error.terminal" = "Impossible d’ouvrir le terminal";
 "error.terminalHelp" = "Vérifiez le terminal sélectionné dans les Réglages, ainsi que son autorisation d’automatisation dans macOS.";
@@ -477,7 +479,7 @@
 "dialog.options" = "Options";
 "dialog.doNotAskAgain" = "Ne plus me demander";
 "menu.repository" = "Dépôt";
-"callback.privateKey" = "Déverrouiller la clé SSH privée";
+"callback.privateKey.title" = "Saisir le mot de passe de la clé privée";
 "callback.privateKey.help" = "La clé déverrouillée sera ajoutée à l’agent SSH.";
 "callback.accountTokenRejected" = "Le jeton du compte « %@ » n’a pas été accepté. Saisissez un nom d’utilisateur et un mot de passe.";
 "history.unpushed" = "Non poussé";

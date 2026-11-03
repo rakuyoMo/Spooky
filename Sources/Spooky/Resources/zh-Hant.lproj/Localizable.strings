@@ -188,9 +188,11 @@
 "settings.themes" = "主題";
 "settings.terminal" = "終端機程式：";
 "callback.editor" = "編輯遠端文字";
-"callback.credentials" = "伺服器認證資訊請求";
+"callback.username.title" = "輸入使用者名稱";
+"callback.password.title" = "輸入密碼";
+"callback.username.label" = "使用者名稱：";
+"callback.password.label" = "密碼：";
 "callback.saveKeychain" = "儲存至這台 Mac 的鑰匙圈";
-"callback.value" = "認證資訊";
 "error.indexLocked" = "另一個 Git 程序持有暫存區鎖定，請等待它結束後重試。";
 "error.terminal" = "無法開啟終端機";
 "error.terminalHelp" = "請檢查設定中的終端機選擇及 macOS 自動化權限。";
@@ -477,7 +479,7 @@
 "dialog.options" = "選項";
 "dialog.doNotAskAgain" = "不再詢問";
 "menu.repository" = "儲存庫";
-"callback.privateKey" = "解鎖 SSH 私密金鑰";
+"callback.privateKey.title" = "輸入私密金鑰的密碼";
 "callback.privateKey.help" = "解鎖後的私密金鑰將加入 SSH agent。";
 "callback.accountTokenRejected" = "帳號 “%@” 的權杖未能通過認證，請輸入使用者名稱與密碼。";
 "history.unpushed" = "尚未推送";

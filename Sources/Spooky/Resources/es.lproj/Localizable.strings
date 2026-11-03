@@ -188,9 +188,11 @@
 "settings.themes" = "Temas";
 "settings.terminal" = "App de terminal:";
 "callback.editor" = "Editar texto remoto";
-"callback.credentials" = "Solicitud de credenciales del servidor";
+"callback.username.title" = "Introducir el nombre de usuario";
+"callback.password.title" = "Introducir la contraseña";
+"callback.username.label" = "Nombre de usuario:";
+"callback.password.label" = "Contraseña:";
 "callback.saveKeychain" = "Guardar en el llavero de este Mac";
-"callback.value" = "Credencial";
 "error.indexLocked" = "El índice está bloqueado por otro proceso de Git. Esperar a que termine y volver a intentarlo.";
 "error.terminal" = "No se ha podido abrir el terminal";
 "error.terminalHelp" = "Comprobar el terminal seleccionado en Ajustes y su permiso de Automatización de macOS.";
@@ -477,7 +479,7 @@
 "dialog.options" = "Opciones";
 "dialog.doNotAskAgain" = "No volver a preguntarme";
 "menu.repository" = "Repositorio";
-"callback.privateKey" = "Desbloquear clave privada SSH";
+"callback.privateKey.title" = "Introducir la contraseña de la clave privada";
 "callback.privateKey.help" = "La clave desbloqueada se añadirá al agente SSH.";
 "callback.accountTokenRejected" = "No se aceptó el token de la cuenta “%@”. Introduce un nombre de usuario y una contraseña.";
 "history.unpushed" = "Pendiente de push";

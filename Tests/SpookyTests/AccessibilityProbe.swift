@@ -14,6 +14,9 @@ enum AccessibilityProbe {
         /// 角色，如 `AXStaticText`。
         let role: String
 
+        /// 子角色，如安全输入框的 `AXSecureTextField`；没有时为空。
+        let subrole: String
+
         /// 值；静态文字是它显示的文字，勾选框是 “0” 或 “1”。
         let value: String
 
@@ -110,6 +113,7 @@ extension AccessibilityProbe {
 
             let element = Element(
                 role: attribute(reference, kAXRoleAttribute) as? String ?? "",
+                subrole: attribute(reference, kAXSubroleAttribute) as? String ?? "",
                 value: text(attribute(reference, kAXValueAttribute)),
                 name: attribute(reference, kAXDescriptionAttribute) as? String ?? "",
                 title: titleElement.flatMap { attribute($0, kAXValueAttribute) as? String } ?? "",

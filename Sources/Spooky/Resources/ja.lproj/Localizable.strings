@@ -188,9 +188,11 @@
 "settings.themes" = "テーマ";
 "settings.terminal" = "ターミナルアプリ：";
 "callback.editor" = "リモートのテキストを編集";
-"callback.credentials" = "サーバーの認証情報";
+"callback.username.title" = "ユーザ名を入力";
+"callback.password.title" = "パスワードを入力";
+"callback.username.label" = "ユーザ名：";
+"callback.password.label" = "パスワード：";
 "callback.saveKeychain" = "この Mac のキーチェーンに保存";
-"callback.value" = "認証情報";
 "error.indexLocked" = "別の Git プロセスがインデックスをロックしています。終了後に再試行してください。";
 "error.terminal" = "ターミナルを開けません";
 "error.terminalHelp" = "設定のターミナル選択と macOS のオートメーション権限を確認してください。";
@@ -477,7 +479,7 @@
 "dialog.options" = "オプション";
 "dialog.doNotAskAgain" = "今後確認しない";
 "menu.repository" = "リポジトリ";
-"callback.privateKey" = "SSH 秘密鍵を解除";
+"callback.privateKey.title" = "秘密鍵のパスワードを入力";
 "callback.privateKey.help" = "解除した鍵を SSH エージェントに追加します。";
 "callback.accountTokenRejected" = "アカウント「%@」のトークンが認証されませんでした。ユーザ名とパスワードを入力してください。";
 "history.unpushed" = "未プッシュ";
