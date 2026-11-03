@@ -14,21 +14,19 @@ struct RewriteConfirmationDialog: View {
     /// 关闭对话框。
     let close: () -> Void
 
-    /// 警告、影响范围与 Reflog 的说明。
+    /// 警告、影响范围与 Reflog 的说明占满内容区的宽度；服务器仓库在问题后写明在哪台服务器上执行。
     var body: some View {
-        RewriteDialogFrame(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(RepositorySession.titleKey(of: plan.action)),
-            help: question,
-            primary: AppLocalization.text(RepositorySession.titleKey(of: plan.action) + ".button"),
-            canSubmit: true,
-            rewritesHistory: true,
+            message: session.rewriteDialogMessage(question),
+            submitTitle: AppLocalization.text(RepositorySession.titleKey(of: plan.action) + ".button"),
+            error: "",
+            isValid: true,
             cancel: close,
             submit: perform
         ) {
             RewriteImpactView(plan: plan, notes: notes)
-        } options: {
-            EmptyView()
         }
     }
 }

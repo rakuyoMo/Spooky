@@ -24,7 +24,7 @@ enum DialogMetrics {
 
 // MARK: - DialogForm
 
-/// 对话框的表单区：一组 `DialogFormRow` 与 `DialogFormOption`，行距 8，左右各留 20 pt、上下各留 12 pt。
+/// 对话框的表单区：一组 `DialogFormRow`、`DialogFormOption` 与 `DialogFormField`，行距 8，左右各留 20 pt、上下各留 12 pt。
 struct DialogForm<Rows: View>: View {
     /// 表单的行。
     @ViewBuilder
@@ -103,11 +103,7 @@ struct DialogFormOption: View {
 
     /// 标签列留空，勾选框与说明在输入列。
     var body: some View {
-        GridRow {
-            Color.clear
-                .frame(width: DialogMetrics.labelWidth, height: 0)
-                .gridCellUnsizedAxes(.vertical)
-
+        DialogFormField {
             VStack(alignment: .leading, spacing: spacing) {
                 Toggle(title, isOn: $isOn)
 
@@ -119,8 +115,30 @@ struct DialogFormOption: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .dialogInputColumn()
+        }
+    }
+}
+
+// MARK: - DialogFormField
+
+/// 表单里没有标签的一行：标签列留空，内容在输入列，如勾选框、说明文字与提交列表。
+///
+/// 内容靠左、宽度到输入列的右缘；没有带标签的行时，这一行本身就是输入列。
+struct DialogFormField<Content: View>: View {
+    /// 输入列里的内容。
+    @ViewBuilder
+    let content: () -> Content
+
+    /// 标签列放一个只占宽度的空白，内容报为输入列。
+    var body: some View {
+        GridRow {
+            Color.clear
+                .frame(width: DialogMetrics.labelWidth, height: 0)
+                .gridCellUnsizedAxes(.vertical)
+
+            content()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .dialogInputColumn()
         }
     }
 }

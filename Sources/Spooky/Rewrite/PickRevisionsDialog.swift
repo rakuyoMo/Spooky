@@ -54,25 +54,27 @@ struct PickRevisionsDialog: View {
     @AppStorage("cherryPickFastForward")
     private var fastForward = false
 
-    /// 内容区是直接提交的选项，选项区是主线与快进。
+    /// 内容区是直接提交的选项，选项区是主线与快进；读取提交时底栏左侧写出进度。
     var body: some View {
-        RewriteDialogFrame(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(titleKey),
-            help: help,
-            primary: AppLocalization.text(kind == .revert ? "rewrite.revert.button" : "rewrite.cherryPick.button"),
-            canSubmit: !loading && error.isEmpty,
+            message: help,
+            submitTitle: AppLocalization.text(
+                kind == .revert ? "rewrite.revert.button" : "rewrite.cherryPick.button"
+            ),
             error: error,
-            progress: loading ? AppLocalization.text("rewrite.loadingCommits") : "",
+            progress: loading ? AppLocalization.text("rewrite.loadingCommits") : nil,
+            isValid: !loading && error.isEmpty,
             cancel: close,
-            submit: perform
+            submit: perform,
+            options: { options }
         ) {
-            RewriteOption(
-                key: kind == .revert ? "rewrite.revert.commit" : "rewrite.cherryPick.commit",
-                isOn: kind == .revert ? $revertCommits : $pickCommits
-            )
-        } options: {
-            options
+            if kind == .revert {
+                option("rewrite.revert.commit", isOn: $revertCommits)
+            } else {
+                option("rewrite.cherryPick.commit", isOn: $pickCommits)
+            }
         }
         .task { await load() }
     }
@@ -102,35 +104,44 @@ extension PickRevisionsDialog {
         }
     }
 
-    /// 主线只在涉及合并提交时可选；快进只对直接提交的摘取有效。
+    /// 主线只在涉及合并提交时可选，说明在下拉下方；摘取另有一条分隔线与快进，快进只对直接提交有效。
+    @ViewBuilder
     private var options: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Text(AppLocalization.text("rewrite.mainline"))
-
-                Picker("", selection: $mainline) {
-                    ForEach(Array(parents.enumerated()), id: \.offset) { index, parent in
-                        Text("\(parent.shortID) \(parent.subject)").tag(index + 1)
-                    }
+        DialogFormRow(label: AppLocalization.text("rewrite.mainline")) {
+            Picker("", selection: $mainline) {
+                ForEach(Array(parents.enumerated()), id: \.offset) { index, parent in
+                    Text("\(parent.shortID) \(parent.subject)").tag(index + 1)
                 }
-                .labelsHidden()
-                .frame(maxWidth: 350)
-                .accessibilityLabel(AppLocalization.text("rewrite.mainline"))
             }
-            .disabled(parents.count < 2)
+            .labelsHidden()
+            .buttonSizing(.flexible)
+        }
+        .disabled(parents.count < 2)
 
+        DialogFormField {
             Text(AppLocalization.text("rewrite.mainline.help"))
                 .font(.system(size: 11))
-                .foregroundStyle(parents.count < 2 ? .secondary : .primary)
+                .foregroundStyle(parents.count < 2 ? Color.secondary : Color.primary)
                 .fixedSize(horizontal: false, vertical: true)
-
-            if kind == .cherryPick {
-                Divider()
-
-                RewriteOption(key: "rewrite.cherryPick.fastForward", isOn: $fastForward)
-                    .disabled(!pickCommits)
-            }
         }
+
+        if kind == .cherryPick {
+            DialogFormField {
+                Divider()
+            }
+
+            option("rewrite.cherryPick.fastForward", isOn: $fastForward)
+                .disabled(!pickCommits)
+        }
+    }
+
+    /// 勾选框加说明；说明的键在勾选框的键后加 `.help`。
+    private func option(_ key: String, isOn: Binding<Bool>) -> DialogFormOption {
+        DialogFormOption(
+            title: AppLocalization.text(key),
+            help: AppLocalization.text(key + ".help"),
+            isOn: isOn
+        )
     }
 }
 

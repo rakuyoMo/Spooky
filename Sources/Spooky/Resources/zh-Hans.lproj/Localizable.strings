@@ -170,6 +170,7 @@
 "action.find" = "查找…";
 "menu.find" = "查找";
 "remote.form.help" = "输入 SSH 配置中的主机别名及该服务器上的绝对路径。";
+"remote.form.title" = "添加服务器仓库";
 "remote.host" = "主机别名：";
 "remote.path" = "仓库路径：";
 "remote.checking" = "正在检查连接…";
@@ -1131,7 +1132,7 @@
 "rewrite.rebaseOnto.missing" = "请选择基点。";
 "rewrite.rebaseOnto.newIsHead" = "新基点不能是 HEAD 所在的提交。";
 "rewrite.rebaseOnto.currentIsHead" = "当前基点不能是 HEAD 所在的提交。";
-"rewrite.reword.title" = "编辑 “%@” 的提交信息";
+"rewrite.reword.title" = "编辑版本 “%@” 的提交信息";
 "rewrite.reword.help" = "替换所选提交的提交信息，它之后的提交也会一起改写。";
 "rewrite.error.changed" = "改写前分支已经变化";
 "rewrite.error.changed.help" = "分支上的提交与显示的已不一致，没有改写任何提交。请刷新历史后重试。";
@@ -1614,6 +1615,8 @@
 
 "externalTool.diffTool" = "比较工具：";
 "externalTool.mergeTool" = "合并工具：";
+"externalTool.dialog.diffTool" = "比较工具：";
+"externalTool.dialog.mergeTool" = "合并工具：";
 "externalTool.directoryDiff" = "比较整个目录";
 "externalTool.keepBackups" = "保留合并冲突的备份文件";
 "externalTool.noneSelected" = "未选择";

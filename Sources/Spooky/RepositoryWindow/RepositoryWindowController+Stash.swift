@@ -96,18 +96,13 @@ extension RepositoryWindowController {
             return
         }
 
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-        sheet.contentViewController = NSHostingController(
-            rootView: StashDialog(
+        presentDialog { close in
+            StashDialog(
                 session: session,
                 request: request,
-                repository: session.repository
-            ) { [weak sheet] in
-                if let sheet { window.endSheet(sheet) }
-            }
-        )
-        window.beginSheet(sheet)
+                repository: session.repository,
+                close: close
+            )
+        }
     }
 }

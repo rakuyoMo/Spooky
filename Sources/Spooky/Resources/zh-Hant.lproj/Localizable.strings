@@ -170,6 +170,7 @@
 "action.find" = "尋找…";
 "menu.find" = "尋找";
 "remote.form.help" = "輸入 SSH 設定中的主機別名及該伺服器上的絕對路徑。";
+"remote.form.title" = "加入伺服器儲存庫";
 "remote.host" = "主機別名：";
 "remote.path" = "儲存庫路徑：";
 "remote.checking" = "正在檢查連線…";
@@ -1131,7 +1132,7 @@
 "rewrite.rebaseOnto.missing" = "請選擇基點。";
 "rewrite.rebaseOnto.newIsHead" = "新基點不能是 HEAD 所在的提交。";
 "rewrite.rebaseOnto.currentIsHead" = "目前基點不能是 HEAD 所在的提交。";
-"rewrite.reword.title" = "編輯 “%@” 的提交訊息";
+"rewrite.reword.title" = "編輯版本 “%@” 的提交訊息";
 "rewrite.reword.help" = "取代所選提交的提交訊息，它之後的提交也會一起改寫。";
 "rewrite.error.changed" = "改寫前分支已經變化";
 "rewrite.error.changed.help" = "分支上的提交與顯示的已不一致，沒有改寫任何提交。請重新整理歷史後重試。";
@@ -1614,6 +1615,8 @@
 
 "externalTool.diffTool" = "比較工具：";
 "externalTool.mergeTool" = "合併工具：";
+"externalTool.dialog.diffTool" = "比較工具：";
+"externalTool.dialog.mergeTool" = "合併工具：";
 "externalTool.directoryDiff" = "比較整個目錄";
 "externalTool.keepBackups" = "保留合併衝突的備份檔案";
 "externalTool.noneSelected" = "未選擇";

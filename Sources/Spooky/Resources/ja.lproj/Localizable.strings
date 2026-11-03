@@ -170,6 +170,7 @@
 "action.find" = "検索…";
 "menu.find" = "検索";
 "remote.form.help" = "SSH 設定のホスト名とサーバー上の絶対パスを入力してください。";
+"remote.form.title" = "サーバーリポジトリを追加";
 "remote.host" = "ホスト名：";
 "remote.path" = "リポジトリのパス：";
 "remote.checking" = "接続を確認中…";
@@ -1131,7 +1132,7 @@
 "rewrite.rebaseOnto.missing" = "ベースを選択してください。";
 "rewrite.rebaseOnto.newIsHead" = "新しいベースに HEAD のコミットは指定できません。";
 "rewrite.rebaseOnto.currentIsHead" = "現在のベースに HEAD のコミットは指定できません。";
-"rewrite.reword.title" = "“%@” のコミットメッセージを編集";
+"rewrite.reword.title" = "リビジョン “%@” のコミットメッセージを編集";
 "rewrite.reword.help" = "選択したコミットのメッセージを置き換えます。後に続くコミットも書き換えられます。";
 "rewrite.error.changed" = "書き換える前にブランチが変わりました";
 "rewrite.error.changed.help" = "ブランチのコミットが表示と一致しなくなったため、何も書き換えていません。履歴を更新してからやり直してください。";
@@ -1614,6 +1615,8 @@
 
 "externalTool.diffTool" = "比較ツール：";
 "externalTool.mergeTool" = "マージツール：";
+"externalTool.dialog.diffTool" = "比較ツール：";
+"externalTool.dialog.mergeTool" = "マージツール：";
 "externalTool.directoryDiff" = "ディレクトリ単位で比較";
 "externalTool.keepBackups" = "マージコンフリクトのバックアップファイルを残す";
 "externalTool.noneSelected" = "未選択";

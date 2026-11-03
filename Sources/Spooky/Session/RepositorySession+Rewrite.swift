@@ -234,6 +234,17 @@ extension RepositorySession {
         case .rebase: "rewrite.rebaseOnto"
         }
     }
+
+    /// 会改写历史的对话框头部说明：服务器仓库在说明后另起一段，写明操作在哪台服务器上执行。
+    ///
+    /// - Parameter help: 对话框本身的说明。
+    func rewriteDialogMessage(_ help: String) -> String {
+        guard let host = repository?.host else {
+            return help
+        }
+
+        return help + "\n\n" + AppLocalization.text("rewrite.remote", host)
+    }
 }
 
 // MARK: - Private

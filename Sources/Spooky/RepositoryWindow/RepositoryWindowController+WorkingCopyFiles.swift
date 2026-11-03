@@ -47,15 +47,9 @@ extension RepositoryWindowController {
 
         switch request {
         case .form(let form):
-            let sheet = NSWindow()
-            sheet.styleMask = [.titled]
-            sheet.tabbingMode = .disallowed
-            sheet.contentViewController = NSHostingController(
-                rootView: WorkingCopyFileDialog(session: session, form: form) { [weak sheet] in
-                    if let sheet { window.endSheet(sheet) }
-                }
-            )
-            window.beginSheet(sheet)
+            presentDialog { close in
+                WorkingCopyFileDialog(session: session, form: form, close: close)
+            }
 
         case .untrackIgnored(let file, let patterns, let tracked):
             askUntrackIgnored(file, patterns: patterns, tracked: tracked, in: window)

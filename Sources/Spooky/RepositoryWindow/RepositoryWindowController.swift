@@ -421,23 +421,18 @@ extension RepositoryWindowController {
     /// 体检在表单内部进行，只有成功的工作区才进入可用列表。
     @objc
     func addRemoteRepository() {
-        guard let window, window.attachedSheet == nil else { return }
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-        let view = AddRemoteRepositoryView(
-            opened: { [weak self, weak sheet] repository in
-                guard let self, let sheet else { return }
-                window.endSheet(sheet)
-                coordinator?.displayRepository(repository, from: self, inNewWindow: false)
-            },
-            cancelled: { [weak sheet] in
-                guard let sheet else { return }
-                window.endSheet(sheet)
-            }
-        )
-        sheet.contentViewController = NSHostingController(rootView: view)
-        window.beginSheet(sheet)
+        presentDialog { close in
+            AddRemoteRepositoryView(
+                opened: { [weak self] repository in
+                    close()
+
+                    guard let self else { return }
+
+                    coordinator?.displayRepository(repository, from: self, inNewWindow: false)
+                },
+                cancelled: close
+            )
+        }
     }
 
     /// 关闭仓库只回到管理界面，不关闭窗口或结束 App。

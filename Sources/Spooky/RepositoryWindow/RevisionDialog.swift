@@ -47,10 +47,6 @@ struct RevisionDialog: View {
     @AppStorage(RepositorySession.omitsPatchPrefixesKey)
     private var omitsPrefixes = false
 
-    /// 补丁选项区是否展开；默认收起，不记忆。
-    @State
-    private var optionsExpanded = false
-
     /// 版本解析失败的说明。
     @State
     private var error = ""
@@ -59,34 +55,26 @@ struct RevisionDialog: View {
     @State
     private var isResolving = false
 
-    /// 头部、内容、错误、选项与底栏依次排列。
+    /// 对话框骨架：导出与比较的内容区是表单，保存补丁没有内容区、只有 Options。
+    ///
+    /// 这几种都只读取仓库，不随仓库是否可写禁用主按钮。
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-
-            Grid(horizontalSpacing: 8, verticalSpacing: 8) {
-                form
-            }
-            .font(.system(size: 13))
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-
-            if !error.isEmpty {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
-            }
-
-            if case .savePatch = request {
-                options
-            }
-
-            footer
-        }
-        .frame(width: 540)
+        DialogLayout(
+            title: title,
+            message: message,
+            repository: session.repository,
+            submitTitle: AppLocalization.text(submitKey),
+            error: error.isEmpty ? nil : error,
+            canSubmit: canSubmit,
+            cancel: close,
+            submit: submit,
+            content: {
+                if !isSavePatch {
+                    DialogForm { form }
+                }
+            },
+            options: isSavePatch ? { patchOptions } : nil
+        )
         .onAppear(perform: prepare)
         .onChange(of: revision) { error = "" }
         .onChange(of: other) { error = "" }
@@ -96,50 +84,27 @@ struct RevisionDialog: View {
 // MARK: - Layout
 
 extension RevisionDialog {
-    /// 头部：图标、标题、服务器仓库的位置与说明。
-    private var header: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Image(systemName: "point.3.connected.trianglepath.dotted")
-                .font(.system(size: 42))
-                .frame(width: 64, height: 64)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.system(size: 14, weight: .bold))
-
-                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
-                if let repository = session.repository, repository.host != nil {
-                    Text(repository.displayPath)
-                        .font(.system(size: 13))
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Text(message)
-                    .font(.system(size: 13))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+    /// 是否为保存补丁。
+    private var isSavePatch: Bool {
+        if case .savePatch = request {
+            return true
         }
-        .padding(.horizontal, 32)
-        .padding(.top, 20)
-        .padding(.bottom, 12)
+
+        return false
     }
 
-    /// 导出：版本与是否归档；比较：两个版本；保存补丁没有内容区。
+    /// 导出：版本与是否归档；比较：两个版本。
     @ViewBuilder
     private var form: some View {
         switch request {
         case .export:
             revisionRow("export.revision", text: $revision)
 
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                option("export.createArchive", value: $createsArchive)
-            }
+            option("export.createArchive", value: $createsArchive)
 
         case .compare:
             revisionRow("compare.base", text: $revision)
+
             revisionRow("compare.target", text: $other)
 
         case .savePatch:
@@ -147,56 +112,29 @@ extension RevisionDialog {
         }
     }
 
-    /// 保存补丁的选项区：去掉路径前缀。
-    private var options: some View {
-        DisclosureGroup(AppLocalization.text("dialog.options"), isExpanded: $optionsExpanded) {
+    /// 保存补丁的选项区：去掉路径前缀；表单上下各留 20。
+    private var patchOptions: some View {
+        DialogForm {
             option("patch.omitPrefixes", value: $omitsPrefixes)
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 20)
         .padding(.vertical, 8)
-        .background(AppPalette.color("general_secondary_background_color"))
     }
 
-    /// 底栏：取消与主按钮。
-    private var footer: some View {
-        HStack(spacing: 8) {
-            Spacer()
-
-            Button(AppLocalization.text("action.cancel"), action: close)
-                .keyboardShortcut(.cancelAction)
-
-            Button(AppLocalization.text(submitKey), action: submit)
-                .keyboardShortcut(.defaultAction)
-                .disabled(!canSubmit)
-        }
-        .padding(.horizontal, 20)
-        .frame(height: 53)
-    }
-
-    /// 一行可输入的版本组合框，列表是仓库里的引用。
+    /// 一行填满输入列、可输入的版本组合框，列表是仓库里的引用。
     private func revisionRow(_ key: String, text: Binding<String>) -> some View {
-        GridRow {
-            Text(AppLocalization.text(key))
-                .gridColumnAlignment(.trailing)
-
+        // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐
+        DialogFormRow(label: AppLocalization.text(key), alignment: .center) {
             RevisionComboBox(text: text, items: references, label: AppLocalization.text(key))
-                .frame(width: 350, alignment: .leading)
         }
     }
 
-    /// 勾选项与下面一行 11 pt 说明，说明对齐勾选框的标题。
-    private func option(_ key: String, value: Binding<Bool>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Toggle(AppLocalization.text(key), isOn: value)
-
-            Text(AppLocalization.text(key + ".help"))
-                .font(.system(size: 11))
-                .padding(.leading, 19)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+    /// 输入列里的勾选项与下面一行 11 pt 说明。
+    private func option(_ key: String, value: Binding<Bool>) -> DialogFormOption {
+        DialogFormOption(
+            title: AppLocalization.text(key),
+            help: AppLocalization.text(key + ".help"),
+            isOn: value
+        )
     }
 }
 

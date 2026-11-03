@@ -31,35 +31,20 @@ struct WorkingCopyFileDialog: View {
     @State
     private var error = ""
 
-    /// 头部、内容、校验说明与底栏，与其它操作表单一致。
+    /// 对话框骨架：内容区是各操作的输入行，校验与读取失败写在错误区。
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-
+        RepositoryDialogLayout(
+            session: session,
+            title: title,
+            message: message,
+            submitTitle: submitTitle,
+            error: error,
+            isValid: canSubmit,
+            cancel: close,
+            submit: submit
+        ) {
             content
-                .font(.system(size: 13))
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-
-            if !error.isEmpty {
-                Label(error, systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12))
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
-            }
-
-            // 断线或其它写操作进行中时主按钮禁用，说明原因并保留已填写的参数
-            if !session.canWrite {
-                Label(AppLocalization.text("dialog.blocked"), systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12))
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
-            }
-
-            footer
         }
-        .frame(width: 540)
         .onAppear(perform: prepare)
     }
 }
@@ -67,61 +52,28 @@ struct WorkingCopyFileDialog: View {
 // MARK: - Layout
 
 extension WorkingCopyFileDialog {
-    /// 头部：图标、操作名、服务器仓库的位置与说明。
-    private var header: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Image(systemName: "doc.badge.gearshape")
-                .font(.system(size: 42))
-                .frame(width: 64, height: 64)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.system(size: 14, weight: .bold))
-
-                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
-                if let repository = session.repository, repository.host != nil {
-                    Text(repository.displayPath)
-                        .font(.system(size: 13))
-                        .textSelection(.enabled)
-                }
-
-                Text(message)
-                    .font(.system(size: 13))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.horizontal, 32)
-        .padding(.top, 20)
-        .padding(.bottom, 12)
-    }
-
     /// 各操作的输入行。
     @ViewBuilder
     private var content: some View {
-        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 10) {
-            switch form {
-            case .revert:
-                revisionRow
+        switch form {
+        case .revert:
+            revisionRow
 
-            case .move:
-                textRow("files.move.destination")
+        case .move:
+            textRow("files.move.destination")
 
-            case .pattern, .lfsPattern:
-                textRow("files.pattern")
+        case .pattern, .lfsPattern:
+            textRow("files.pattern")
 
-            case .applyPatch:
-                patchRow
-            }
+        case .applyPatch:
+            patchRow
         }
     }
 
-    /// 版本输入：组合框里可以直接输入版本，也可以从引用里选。
+    /// 版本输入：填满输入列的组合框里可以直接输入版本，也可以从引用里选。
     private var revisionRow: some View {
-        GridRow {
-            Text(AppLocalization.text("files.revert.revision"))
-                .gridColumnAlignment(.trailing)
-
+        // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐
+        DialogFormRow(label: AppLocalization.text("files.revert.revision"), alignment: .center) {
             RevisionComboBox(
                 text: $text,
                 items: revisions,
@@ -134,12 +86,9 @@ extension WorkingCopyFileDialog {
         }
     }
 
-    /// 补丁文件：本次表单选过的文件与选择新文件的入口。
+    /// 补丁文件：输入列里填满的弹出菜单，列出本次表单选过的文件与选择新文件的入口；这一行没有标签。
     private var patchRow: some View {
-        GridRow {
-            Text(AppLocalization.text("files.applyPatch.file"))
-                .gridColumnAlignment(.trailing)
-
+        DialogFormField {
             Menu {
                 ForEach(patchFiles, id: \.self) { url in
                     Toggle(url.lastPathComponent, isOn: Binding(get: { patchFile == url }, set: { _ in patchFile = url }))
@@ -153,34 +102,15 @@ extension WorkingCopyFileDialog {
             } label: {
                 Text(patchFile?.lastPathComponent ?? AppLocalization.text("files.applyPatch.none"))
             }
+            .buttonSizing(.flexible)
             .accessibilityLabel(AppLocalization.text("files.applyPatch.file"))
         }
     }
 
-    /// 底栏：取消与执行按钮，参数不完整或仓库不可写时禁用执行。
-    private var footer: some View {
-        HStack(spacing: 8) {
-            Spacer()
-
-            Button(AppLocalization.text("action.cancel"), action: close)
-                .keyboardShortcut(.cancelAction)
-
-            Button(submitTitle, action: submit)
-                .keyboardShortcut(.defaultAction)
-                .disabled(!canSubmit)
-        }
-        .padding(.horizontal, 20)
-        .frame(height: 53)
-    }
-
-    /// 标签加单行输入框。
+    /// 标签加填满输入列的单行输入框。
     private func textRow(_ key: String) -> some View {
-        GridRow {
-            Text(AppLocalization.text(key))
-                .gridColumnAlignment(.trailing)
-
+        DialogFormRow(label: AppLocalization.text(key)) {
             TextField("", text: $text)
-                .accessibilityLabel(AppLocalization.text(key))
         }
     }
 }
@@ -253,14 +183,12 @@ extension WorkingCopyFileDialog {
         )
     }
 
-    /// 参数完整且仓库可写时允许提交。
+    /// 参数完整时允许提交；仓库是否可写由骨架判断。
     private var canSubmit: Bool {
-        guard session.canWrite else { return false }
-
         switch form {
-        case .revert, .pattern, .lfsPattern: return !text.trimmingCharacters(in: .whitespaces).isEmpty
-        case .move(let entry): return Self.destination(text, from: entry.path) != nil
-        case .applyPatch: return patchFile != nil
+        case .revert, .pattern, .lfsPattern: !text.trimmingCharacters(in: .whitespaces).isEmpty
+        case .move(let entry): Self.destination(text, from: entry.path) != nil
+        case .applyPatch: patchFile != nil
         }
     }
 

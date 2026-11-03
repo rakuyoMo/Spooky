@@ -23,8 +23,17 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
     /// 主按钮的标题。
     let submitTitle: String
 
+    /// 取消按钮的标题。
+    let cancelTitle: String
+
+    /// 备选按钮的标题与动作；为 nil 时用普通底栏。
+    let alternate: (title: String, action: () -> Void)?
+
     /// 校验或加载失败的说明；为空时不显示。
     let error: String
+
+    /// 对话框自己加载数据时底栏左侧的步骤；为 nil 时不显示。
+    let progress: String?
 
     /// 内容是否完整合法。
     let isValid: Bool
@@ -49,7 +58,10 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
             repository: session.repository,
             width: width,
             submitTitle: submitTitle,
+            cancelTitle: cancelTitle,
+            alternate: alternate,
             error: notice,
+            progress: progress,
             canSubmit: isValid && session.canWrite,
             cancel: cancel,
             submit: submit,
@@ -68,7 +80,10 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
     ///   - message: 标题下方的一句说明。
     ///   - width: 对话框的宽度。
     ///   - submitTitle: 主按钮的标题。
+    ///   - cancelTitle: 取消按钮的标题。
+    ///   - alternate: 备选按钮的标题与动作；给了时换成备选底栏。
     ///   - error: 校验或加载失败的说明。
+    ///   - progress: 对话框自己加载数据时的步骤。
     ///   - isValid: 内容是否完整合法。
     ///   - cancel: 取消的动作。
     ///   - submit: 主按钮的动作。
@@ -80,7 +95,10 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
         message: String,
         width: CGFloat = 480,
         submitTitle: String,
+        cancelTitle: String = AppLocalization.text("action.cancel"),
+        alternate: (title: String, action: () -> Void)? = nil,
         error: String,
+        progress: String? = nil,
         isValid: Bool,
         cancel: @escaping () -> Void,
         submit: @escaping () -> Void,
@@ -92,7 +110,10 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
         self.message = message
         self.width = width
         self.submitTitle = submitTitle
+        self.cancelTitle = cancelTitle
+        self.alternate = alternate
         self.error = error
+        self.progress = progress
         self.isValid = isValid
         self.cancel = cancel
         self.submit = submit
@@ -135,14 +156,17 @@ extension RepositoryDialogLayout {
 }
 
 extension RepositoryDialogLayout where Options == EmptyView {
-    /// 没有选项区的对话框。
+    /// 没有选项区的对话框；可以换成备选底栏。
     init(
         session: RepositorySession,
         title: String,
         message: String,
         width: CGFloat = 480,
         submitTitle: String,
+        cancelTitle: String = AppLocalization.text("action.cancel"),
+        alternate: (title: String, action: () -> Void)? = nil,
         error: String,
+        progress: String? = nil,
         isValid: Bool,
         cancel: @escaping () -> Void,
         submit: @escaping () -> Void,
@@ -154,7 +178,10 @@ extension RepositoryDialogLayout where Options == EmptyView {
             message: message,
             width: width,
             submitTitle: submitTitle,
+            cancelTitle: cancelTitle,
+            alternate: alternate,
             error: error,
+            progress: progress,
             isValid: isValid,
             cancel: cancel,
             submit: submit,

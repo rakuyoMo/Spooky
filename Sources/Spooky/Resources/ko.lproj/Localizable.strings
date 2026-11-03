@@ -170,6 +170,7 @@
 "action.find" = "찾기…";
 "menu.find" = "찾기";
 "remote.form.help" = "SSH 설정의 호스트 별칭과 서버의 절대 경로를 입력하세요.";
+"remote.form.title" = "서버 저장소 추가";
 "remote.host" = "호스트 별칭:";
 "remote.path" = "저장소 경로:";
 "remote.checking" = "연결 확인 중…";
@@ -1131,7 +1132,7 @@
 "rewrite.rebaseOnto.missing" = "베이스를 선택하세요.";
 "rewrite.rebaseOnto.newIsHead" = "새 베이스는 HEAD 커밋일 수 없습니다.";
 "rewrite.rebaseOnto.currentIsHead" = "현재 베이스는 HEAD 커밋일 수 없습니다.";
-"rewrite.reword.title" = "“%@”의 커밋 메시지 편집";
+"rewrite.reword.title" = "리비전 “%@”의 커밋 메시지 편집";
 "rewrite.reword.help" = "선택한 커밋의 메시지를 바꿉니다. 그 뒤의 커밋도 함께 다시 쓰입니다.";
 "rewrite.error.changed" = "다시 쓰기 전에 브랜치가 바뀌었습니다";
 "rewrite.error.changed.help" = "브랜치의 커밋이 표시된 내용과 달라 아무것도 다시 쓰지 않았습니다. 기록을 새로 고친 뒤 다시 시도하세요.";
@@ -1614,6 +1615,8 @@
 
 "externalTool.diffTool" = "비교 도구:";
 "externalTool.mergeTool" = "병합 도구:";
+"externalTool.dialog.diffTool" = "비교 도구:";
+"externalTool.dialog.mergeTool" = "병합 도구:";
 "externalTool.directoryDiff" = "디렉터리 단위로 비교";
 "externalTool.keepBackups" = "병합 충돌의 백업 파일 남기기";
 "externalTool.noneSelected" = "선택 안 함";

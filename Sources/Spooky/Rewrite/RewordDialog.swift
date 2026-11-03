@@ -22,15 +22,15 @@ struct RewordDialog: View {
     @State
     private var messageBody = ""
 
-    /// 标题框、正文框与影响范围。
+    /// 标题框、正文框与影响范围占满内容区的宽度；服务器仓库在说明后写明在哪台服务器上执行。
     var body: some View {
-        RewriteDialogFrame(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("rewrite.reword.title", String(commit?.shortID ?? "")),
-            help: AppLocalization.text("rewrite.reword.help"),
-            primary: AppLocalization.text("rewrite.reword.button"),
-            canSubmit: !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-            rewritesHistory: true,
+            message: session.rewriteDialogMessage(AppLocalization.text("rewrite.reword.help")),
+            submitTitle: AppLocalization.text("rewrite.reword.button"),
+            error: "",
+            isValid: !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
             cancel: close,
             submit: perform
         ) {
@@ -46,8 +46,6 @@ struct RewordDialog: View {
 
                 RewriteImpactView(plan: plan)
             }
-        } options: {
-            EmptyView()
         }
         .onAppear {
             (subject, messageBody) = CommitMessage.parts(of: commit?.message ?? "")

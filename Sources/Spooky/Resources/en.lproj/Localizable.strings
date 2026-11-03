@@ -170,6 +170,7 @@
 "action.find" = "Find…";
 "menu.find" = "Find";
 "remote.form.help" = "Use a host alias from your SSH configuration and an absolute path on that server.";
+"remote.form.title" = "Add Server Repository";
 "remote.host" = "Host alias:";
 "remote.path" = "Repository path:";
 "remote.checking" = "Checking connection…";
@@ -1131,7 +1132,7 @@
 "rewrite.rebaseOnto.missing" = "Choose the base revisions.";
 "rewrite.rebaseOnto.newIsHead" = "The new base must not be the HEAD commit.";
 "rewrite.rebaseOnto.currentIsHead" = "The current base must not be the HEAD commit.";
-"rewrite.reword.title" = "Edit Commit Message of “%@”";
+"rewrite.reword.title" = "Edit Commit Message of Revision “%@”";
 "rewrite.reword.help" = "Replaces the message of the selected commit. The commits after it are rewritten as well.";
 "rewrite.error.changed" = "The Branch Changed Before Rewriting";
 "rewrite.error.changed.help" = "The commits on the branch no longer match what was shown. Nothing was rewritten. Refresh the history and try again.";
@@ -1614,6 +1615,8 @@
 
 "externalTool.diffTool" = "Diff tool:";
 "externalTool.mergeTool" = "Merge tool:";
+"externalTool.dialog.diffTool" = "Diff Tool:";
+"externalTool.dialog.mergeTool" = "Merge Tool:";
 "externalTool.directoryDiff" = "Perform directory diff";
 "externalTool.keepBackups" = "Keep backup files for merge conflicts";
 "externalTool.noneSelected" = "None selected";

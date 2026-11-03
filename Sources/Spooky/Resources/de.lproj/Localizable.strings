@@ -170,6 +170,7 @@
 "action.find" = "Suchen …";
 "menu.find" = "Suchen";
 "remote.form.help" = "Verwenden Sie einen Host-Alias aus Ihrer SSH-Konfiguration und einen absoluten Pfad auf diesem Server.";
+"remote.form.title" = "Server-Repository hinzufügen";
 "remote.host" = "Host-Alias:";
 "remote.path" = "Repository-Pfad:";
 "remote.checking" = "Verbindung wird geprüft …";
@@ -1131,7 +1132,7 @@
 "rewrite.rebaseOnto.missing" = "Wählen Sie die Basis-Revisionen.";
 "rewrite.rebaseOnto.newIsHead" = "Die neue Basis darf nicht der HEAD-Commit sein.";
 "rewrite.rebaseOnto.currentIsHead" = "Die aktuelle Basis darf nicht der HEAD-Commit sein.";
-"rewrite.reword.title" = "Commit-Nachricht von „%@“ bearbeiten";
+"rewrite.reword.title" = "Nachricht von Revision „%@“ bearbeiten";
 "rewrite.reword.help" = "Ersetzt die Nachricht des ausgewählten Commits. Die nachfolgenden Commits werden ebenfalls umgeschrieben.";
 "rewrite.error.changed" = "Der Branch hat sich vor dem Umschreiben geändert";
 "rewrite.error.changed.help" = "Die Commits des Branches entsprechen nicht mehr der Anzeige. Es wurde nichts umgeschrieben. Aktualisieren Sie den Verlauf und versuchen Sie es erneut.";
@@ -1614,6 +1615,8 @@
 
 "externalTool.diffTool" = "Vergleichswerkzeug:";
 "externalTool.mergeTool" = "Zusammenführungswerkzeug:";
+"externalTool.dialog.diffTool" = "Vergleichswerkzeug:";
+"externalTool.dialog.mergeTool" = "Zusammenführungswerkzeug:";
 "externalTool.directoryDiff" = "Ganze Ordner vergleichen";
 "externalTool.keepBackups" = "Sicherungsdateien bei Zusammenführungskonflikten behalten";
 "externalTool.noneSelected" = "Keines ausgewählt";

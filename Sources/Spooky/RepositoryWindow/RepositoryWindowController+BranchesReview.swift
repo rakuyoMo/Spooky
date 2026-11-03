@@ -87,25 +87,18 @@ extension RepositoryWindowController {
 
     /// 批量归档对话框；自动归档时是待处理分支的确认。
     func presentArchiveDialog(automatic: Bool, candidates: [RepositoryReference]) {
-        guard session.canWrite, let window, window.attachedSheet == nil else {
+        guard session.canWrite else {
             return
         }
 
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-        let dialog = ArchiveBranchesDialog(
-            session: session,
-            automatic: automatic,
-            candidates: candidates
-        ) { [weak sheet] in
-            if let sheet {
-                window.endSheet(sheet)
-            }
+        presentDialog { close in
+            ArchiveBranchesDialog(
+                session: session,
+                automatic: automatic,
+                candidates: candidates,
+                close: close
+            )
         }
-
-        sheet.contentViewController = NSHostingController(rootView: dialog)
-        window.beginSheet(sheet)
     }
 
     /// 自动归档开着、距上次检查满一天且窗口在前台时，列出待归档的分支请用户确认；没有待归档的分支时只记下检查时刻。

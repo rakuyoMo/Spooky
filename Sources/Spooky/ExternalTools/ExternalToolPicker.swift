@@ -33,27 +33,19 @@ enum ExternalToolPicker {
     /// 以 sheet 显示选择对话框，等用户选择或取消。
     private static func choose(merge: Bool, in window: NSWindow) async -> ExternalTool? {
         await withCheckedContinuation { continuation in
-            let sheet = NSWindow()
-            sheet.styleMask = [.titled]
-            sheet.tabbingMode = .disallowed
-
-            let dialog = ConfigureExternalToolDialog(merge: merge) { [weak window, weak sheet] tool in
-                if let window, let sheet {
-                    window.endSheet(sheet)
+            DialogWindow.present(on: window) { close in
+                ConfigureExternalToolDialog(merge: merge) { tool in
+                    close()
+                    continuation.resume(returning: tool)
                 }
-
-                continuation.resume(returning: tool)
             }
-
-            sheet.contentViewController = NSHostingController(rootView: dialog)
-            window.beginSheet(sheet)
         }
     }
 }
 
 // MARK: - ConfigureExternalToolDialog
 
-/// 选择外部工具的对话框：头部的标题与说明、一行工具弹出菜单、取消与 Select。
+/// 选择外部工具的对话框：对话框骨架里一行填满输入列的工具弹出菜单，底栏是取消与 Select。
 struct ConfigureExternalToolDialog: View {
     /// 选合并工具；否则选比较工具。
     let merge: Bool
@@ -65,75 +57,26 @@ struct ConfigureExternalToolDialog: View {
     @State
     private var selection = ""
 
-    /// 头部、内容与底栏依次排列，宽 540。
+    /// 还没有选工具时 Select 不可用。
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-
-            Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 10) {
-                GridRow {
-                    Text(AppLocalization.text(merge ? "externalTool.mergeTool" : "externalTool.diffTool"))
-                        .gridColumnAlignment(.trailing)
-
+        DialogLayout(
+            title: AppLocalization.text(merge ? "externalTool.configureMerge" : "externalTool.configureDiff"),
+            message: AppLocalization.text(
+                merge ? "externalTool.configureMerge.message" : "externalTool.configureDiff.message"
+            ),
+            submitTitle: AppLocalization.text("externalTool.select"),
+            canSubmit: ExternalTool(rawValue: selection) != nil,
+            cancel: { finish(nil) },
+            submit: { finish(ExternalTool(rawValue: selection)) }
+        ) {
+            DialogForm {
+                DialogFormRow(
+                    label: AppLocalization.text(merge ? "externalTool.dialog.mergeTool" : "externalTool.dialog.diffTool")
+                ) {
                     ExternalToolPopUp(selection: $selection, merge: merge)
-                        .frame(width: 278)
-                        .accessibilityLabel(
-                            AppLocalization.text(merge ? "externalTool.mergeTool" : "externalTool.diffTool")
-                        )
+                        .buttonSizing(.flexible)
                 }
             }
-            .font(.system(size: 13))
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-
-            footer
         }
-        .frame(width: 540)
-    }
-}
-
-// MARK: - Layout
-
-extension ConfigureExternalToolDialog {
-    /// 头部：图标、标题与一句说明。
-    private var header: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Image(systemName: "point.3.connected.trianglepath.dotted")
-                .font(.system(size: 42))
-                .frame(width: 64, height: 64)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(AppLocalization.text(merge ? "externalTool.configureMerge" : "externalTool.configureDiff"))
-                    .font(.system(size: 14, weight: .bold))
-
-                Text(AppLocalization.text(
-                    merge ? "externalTool.configureMerge.message" : "externalTool.configureDiff.message"
-                ))
-                .font(.system(size: 13))
-                .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.horizontal, 32)
-        .padding(.top, 20)
-        .padding(.bottom, 12)
-    }
-
-    /// 底栏：取消与 Select；还没有选工具时 Select 不可用。
-    private var footer: some View {
-        HStack(spacing: 8) {
-            Spacer()
-
-            Button(AppLocalization.text("action.cancel")) { finish(nil) }
-                .keyboardShortcut(.cancelAction)
-
-            Button(AppLocalization.text("externalTool.select")) {
-                finish(ExternalTool(rawValue: selection))
-            }
-            .keyboardShortcut(.defaultAction)
-            .disabled(ExternalTool(rawValue: selection) == nil)
-        }
-        .padding(.horizontal, 20)
-        .frame(height: 53)
     }
 }

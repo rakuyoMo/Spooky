@@ -170,6 +170,7 @@
 "action.find" = "Rechercher…";
 "menu.find" = "Rechercher";
 "remote.form.help" = "Utilisez un alias d’hôte de votre configuration SSH et un chemin absolu sur ce serveur.";
+"remote.form.title" = "Ajouter un dépôt sur un serveur";
 "remote.host" = "Alias d’hôte :";
 "remote.path" = "Chemin du dépôt :";
 "remote.checking" = "Vérification de la connexion…";
@@ -1131,7 +1132,7 @@
 "rewrite.rebaseOnto.missing" = "Choisissez les révisions de base.";
 "rewrite.rebaseOnto.newIsHead" = "La nouvelle base ne peut pas être le commit HEAD.";
 "rewrite.rebaseOnto.currentIsHead" = "La base actuelle ne peut pas être le commit HEAD.";
-"rewrite.reword.title" = "Modifier le message de commit de « %@ »";
+"rewrite.reword.title" = "Modifier le message de la révision « %@ »";
 "rewrite.reword.help" = "Remplace le message du commit sélectionné. Les commits suivants sont aussi réécrits.";
 "rewrite.error.changed" = "La branche a changé avant la réécriture";
 "rewrite.error.changed.help" = "Les commits de la branche ne correspondent plus à l’affichage. Rien n’a été réécrit. Actualisez l’historique et réessayez.";
@@ -1614,6 +1615,8 @@
 
 "externalTool.diffTool" = "Outil de comparaison :";
 "externalTool.mergeTool" = "Outil de fusion :";
+"externalTool.dialog.diffTool" = "Outil de comparaison :";
+"externalTool.dialog.mergeTool" = "Outil de fusion :";
 "externalTool.directoryDiff" = "Comparer des dossiers entiers";
 "externalTool.keepBackups" = "Conserver les fichiers de sauvegarde des conflits de fusion";
 "externalTool.noneSelected" = "Aucun";
@@ -2002,7 +2005,7 @@
 "developer.autoReload" = "Auto-Reload Repository";
 
 /* 第一次连接服务器时的环境变量提示。 */
-"remote.environment.title" = "Le serveur définit des variables d’environnement Git";
+"remote.environment.title" = "Variables d’environnement Git sur le serveur";
 "remote.environment.message" = "Le shell non interactif de « %1$@ » définit %2$@. Ces variables changent la façon dont Git trouve les dépôts et lit sa configuration pour chaque commande que Spooky y exécute. Retirez-les des fichiers de démarrage du shell sur le serveur si Git se comporte de façon inattendue.";
 
 "files.openSubmodules" = "Toujours ouvrir les sous-modules dans Spooky";

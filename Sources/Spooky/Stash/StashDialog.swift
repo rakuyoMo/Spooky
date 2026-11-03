@@ -43,36 +43,22 @@ struct StashDialog: View {
     @AppStorage("autoStashReapply")
     private var reapply = true
 
-    /// 头部、内容、提示与底栏依次排列，与其它操作对话框的骨架一致。
+    /// 对话框骨架：内容区是表单；自动储藏换成备选底栏，中止在左，不储藏与储藏在右。
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-
-            Grid(horizontalSpacing: 8, verticalSpacing: 10) {
-                form
-            }
-            .font(.system(size: 13))
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-
-            if case .apply = request, session.stashes.entries.isEmpty {
-                Label(AppLocalization.text("stash.noStashes"), systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12))
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
-            }
-
-            // 断线或其它写操作进行中时主按钮禁用，说明原因并保留已填写的内容。
-            if !session.canWrite {
-                Label(AppLocalization.text("dialog.blocked"), systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 12))
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
-            }
-
-            footer
+        RepositoryDialogLayout(
+            session: session,
+            title: AppLocalization.text(titleKey),
+            message: AppLocalization.text(titleKey + ".help"),
+            submitTitle: AppLocalization.text(submitKey),
+            cancelTitle: AppLocalization.text(skipAction == nil ? "action.cancel" : "stash.autoStash.abort"),
+            alternate: skipAction.map { (title: AppLocalization.text("stash.autoStash.skip"), action: $0) },
+            error: notice,
+            isValid: canSubmit,
+            cancel: close,
+            submit: submit
+        ) {
+            form
         }
-        .frame(width: 540)
         .onAppear(perform: prepare)
     }
 }
@@ -80,36 +66,6 @@ struct StashDialog: View {
 // MARK: - Layout
 
 extension StashDialog {
-    /// 头部：图标、标题、服务器仓库的位置与说明。
-    private var header: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Image(systemName: "point.3.connected.trianglepath.dotted")
-                .font(.system(size: 42))
-                .frame(width: 64, height: 64)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(AppLocalization.text(titleKey))
-                    .font(.system(size: 14, weight: .bold))
-
-                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
-                if let repository = session.repository, repository.host != nil {
-                    Text(repository.displayPath)
-                        .font(.system(size: 13))
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Text(AppLocalization.text(titleKey + ".help"))
-                    .font(.system(size: 13))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.horizontal, 32)
-        .padding(.top, 20)
-        .padding(.bottom, 12)
-    }
-
     /// 按种类呈现字段：说明与未跟踪文件、储藏与应用选项，或自动储藏的说明与恢复选项。
     @ViewBuilder
     private var form: some View {
@@ -119,11 +75,7 @@ extension StashDialog {
 
             // 部分储藏总是带上所选的未跟踪文件，不显示这个选项
             if entries.isEmpty {
-                GridRow {
-                    Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                    Toggle(AppLocalization.text("stash.includeUntracked"), isOn: $includeUntracked)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                DialogFormOption(title: AppLocalization.text("stash.includeUntracked"), isOn: $includeUntracked)
             }
 
         case .apply:
@@ -133,78 +85,60 @@ extension StashDialog {
             // 完成后恢复时储藏只是临时的，说明不可编辑
             messageRow(placeholder: "stash.autoStash.placeholder", disabled: reapply)
 
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                Toggle(AppLocalization.text("stash.autoStash.reapply"), isOn: $reapply)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            DialogFormOption(title: AppLocalization.text("stash.autoStash.reapply"), isOn: $reapply)
         }
     }
 
-    /// 应用储藏：储藏下拉、应用后删除与恢复暂存区两个选项。
+    /// 应用储藏：不超过 350 pt 的储藏下拉、应用后删除与恢复暂存区两个选项。
     @ViewBuilder
     private var applyRows: some View {
-        GridRow {
-            Text(AppLocalization.text("stash.picker")).gridColumnAlignment(.trailing)
-
+        DialogFormRow(label: AppLocalization.text("stash.picker")) {
             Picker("", selection: $selectedStash) {
                 ForEach(session.stashes.entries) { Text($0.title).tag($0.id) }
             }
             .labelsHidden()
-            .frame(maxWidth: 350, alignment: .leading)
+            .buttonSizing(.flexible)
+            .dialogFieldWidth(350)
             .disabled(session.stashes.entries.isEmpty)
-            .accessibilityLabel(AppLocalization.text("stash.picker"))
         }
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+        DialogFormOption(title: AppLocalization.text("stash.deleteAfterApply"), isOn: $deleteAfterApply)
 
-            VStack(alignment: .leading, spacing: 8) {
-                Toggle(AppLocalization.text("stash.deleteAfterApply"), isOn: $deleteAfterApply)
-                Toggle(AppLocalization.text("stash.restoreIndex"), isOn: $restoreIndex)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        DialogFormOption(title: AppLocalization.text("stash.restoreIndex"), isOn: $restoreIndex)
+    }
+
+    /// 自动储藏的 Do Not Stash：关闭对话框，被挡住的操作照常报告失败；其余种类没有这个按钮。
+    private var skipAction: (() -> Void)? {
+        guard case .autoStash(let pending) = request else {
+            return nil
+        }
+
+        return {
+            close()
+            session.declineAutoStash(pending)
         }
     }
 
-    /// 底栏：普通对话框为取消与主按钮；自动储藏把中止放在左侧，右侧是不储藏与储藏。
-    @ViewBuilder
-    private var footer: some View {
-        HStack(spacing: 8) {
-            if case .autoStash(let pending) = request {
-                Button(AppLocalization.text("stash.autoStash.abort"), action: close)
-                    .keyboardShortcut(.cancelAction)
-
-                Spacer()
-
-                Button(AppLocalization.text("stash.autoStash.skip")) {
-                    close()
-                    session.declineAutoStash(pending)
-                }
-            } else {
-                Spacer()
-
-                Button(AppLocalization.text("action.cancel"), action: close)
-                    .keyboardShortcut(.cancelAction)
-            }
-
-            Button(AppLocalization.text(submitKey), action: submit)
-                .keyboardShortcut(.defaultAction)
-                .disabled(!canSubmit)
+    /// 错误区的文字：应用储藏时没有储藏可选。
+    private var notice: String {
+        guard case .apply = request, session.stashes.entries.isEmpty else {
+            return ""
         }
-        .padding(.horizontal, 20)
-        .frame(height: 53)
+
+        return AppLocalization.text("stash.noStashes")
     }
 
-    /// 说明输入行。
+    /// 填满输入列、高两行的说明框。
     private func messageRow(placeholder: String, disabled: Bool = false) -> some View {
-        GridRow {
-            Text(AppLocalization.text("stash.message")).gridColumnAlignment(.trailing)
-
-            TextField("", text: $message, prompt: Text(AppLocalization.text(placeholder)))
-                .frame(width: 350)
-                .disabled(disabled)
-                .accessibilityLabel(AppLocalization.text("stash.message"))
+        DialogFormRow(label: AppLocalization.text("stash.message")) {
+            TextField(
+                "",
+                text: $message,
+                prompt: Text(AppLocalization.text(placeholder)),
+                axis: .vertical
+            )
+            .lineLimit(2, reservesSpace: true)
+            .disabled(disabled)
         }
     }
 }
@@ -242,7 +176,7 @@ extension StashDialog {
 
     /// 输入在客户端及时校验，执行时核心库仍重新核对。
     private var canSubmit: Bool {
-        guard session.canWrite, session.repository == repository else { return false }
+        guard session.repository == repository else { return false }
 
         switch request {
         case .save(_, let entries):

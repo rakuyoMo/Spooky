@@ -170,6 +170,7 @@
 "action.find" = "Buscar…";
 "menu.find" = "Buscar";
 "remote.form.help" = "Usar un alias de host de la configuración de SSH y una ruta absoluta en ese servidor.";
+"remote.form.title" = "Añadir repositorio de servidor";
 "remote.host" = "Alias del host:";
 "remote.path" = "Ruta del repositorio:";
 "remote.checking" = "Comprobando la conexión…";
@@ -1131,7 +1132,7 @@
 "rewrite.rebaseOnto.missing" = "Elegir las revisiones base.";
 "rewrite.rebaseOnto.newIsHead" = "La nueva base no puede ser el commit de HEAD.";
 "rewrite.rebaseOnto.currentIsHead" = "La base actual no puede ser el commit de HEAD.";
-"rewrite.reword.title" = "Editar el mensaje de commit de «%@»";
+"rewrite.reword.title" = "Editar el mensaje de la revisión «%@»";
 "rewrite.reword.help" = "Sustituye el mensaje del commit seleccionado. Los commits posteriores también se reescriben.";
 "rewrite.error.changed" = "La rama cambió antes de reescribir";
 "rewrite.error.changed.help" = "Los commits de la rama ya no coinciden con lo mostrado. No se reescribió nada. Actualizar el historial y volver a intentarlo.";
@@ -1614,6 +1615,8 @@
 
 "externalTool.diffTool" = "Herramienta de comparación:";
 "externalTool.mergeTool" = "Herramienta de fusión:";
+"externalTool.dialog.diffTool" = "Herramienta de comparación:";
+"externalTool.dialog.mergeTool" = "Herramienta de fusión:";
 "externalTool.directoryDiff" = "Comparar carpetas completas";
 "externalTool.keepBackups" = "Conservar archivos de copia de seguridad de los conflictos de fusión";
 "externalTool.noneSelected" = "Ninguna";
