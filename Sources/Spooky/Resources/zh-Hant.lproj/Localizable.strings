@@ -1858,7 +1858,6 @@
 "clone.url" = "遠端位址：";
 "clone.to" = "複製到：";
 "clone.destination" = "將複製到 “%@”";
-"clone.options" = "選項";
 "clone.lfs" = "使用 LFS 複製";
 "clone.submodules" = "初始化子模組";
 "clone.error.invalidURL" = "遠端位址無效";
@@ -2017,6 +2016,7 @@
 "submodule.add.menu" = "加入子模組…";
 "submodule.add.message" = "把一個儲存庫複製到本儲存庫的空目錄裡，並登記為子模組。";
 "submodule.add.submit" = "加入子模組";
+"submodule.add.title" = "加入子模組倉庫";
 "submodule.autoUpdate" = "自動更新子模組";
 "submodule.autoUpdate.always" = "總是自動更新子模組";
 "submodule.autoUpdate.message" = "這次操作改動了以下子模組登記的版本。要現在更新它們嗎？";
@@ -2196,7 +2196,7 @@
 "worktree.move" = "移動工作樹";
 "worktree.move.menu" = "移動工作樹…";
 "worktree.move.message" = "把工作樹 “%@” 移到別的位置，保留它現在的狀態。";
-"worktree.move.submit" = "移動";
+"worktree.move.submit" = "移動工作樹";
 "worktree.noRefs" = "這個儲存庫還沒有提交。";
 "worktree.open.current" = "開啟工作樹";
 "worktree.open.newTab" = "在新標籤頁中開啟工作樹";
@@ -2205,13 +2205,13 @@
 "worktree.page.general" = "一般";
 "worktree.relocate" = "重新定位工作樹";
 "worktree.relocate.message" = "選擇工作樹 “%@” 的目錄現在所在的位置，讓 Git 重新把它連到這個儲存庫。";
-"worktree.relocate.submit" = "修復";
+"worktree.relocate.submit" = "重新定位工作樹";
 "worktree.remove" = "刪除工作樹";
 "worktree.remove.force" = "強制刪除";
 "worktree.remove.force.help" = "連同未提交的改動一起刪除工作樹。";
 "worktree.remove.menu" = "刪除工作樹…";
 "worktree.remove.message" = "永久刪除工作樹 “%@” 及它的目錄。";
-"worktree.remove.submit" = "刪除";
+"worktree.remove.submit" = "刪除工作樹";
 "worktree.repair" = "修復工作樹";
 "worktree.repair.menu" = "修復工作樹…";
 "worktree.reveal" = "在 Finder 中顯示工作樹";

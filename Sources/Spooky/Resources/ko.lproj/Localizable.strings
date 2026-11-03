@@ -1858,7 +1858,6 @@
 "clone.url" = "원격 URL:";
 "clone.to" = "복제할 위치:";
 "clone.destination" = "“%@”에 복제됨";
-"clone.options" = "옵션";
 "clone.lfs" = "LFS로 복제";
 "clone.submodules" = "하위 모듈 초기화";
 "clone.error.invalidURL" = "원격 URL이 유효하지 않음";
@@ -2017,6 +2016,7 @@
 "submodule.add.menu" = "하위 모듈 추가…";
 "submodule.add.message" = "저장소를 이 저장소의 빈 디렉터리에 복제하고 하위 모듈로 등록합니다.";
 "submodule.add.submit" = "하위 모듈 추가";
+"submodule.add.title" = "하위 모듈 저장소 추가";
 "submodule.autoUpdate" = "하위 모듈 자동 업데이트";
 "submodule.autoUpdate.always" = "항상 하위 모듈 자동 업데이트";
 "submodule.autoUpdate.message" = "이 작업으로 다음 하위 모듈에 기록된 리비전이 바뀌었습니다. 지금 업데이트할까요?";
@@ -2196,7 +2196,7 @@
 "worktree.move" = "작업 트리 이동";
 "worktree.move.menu" = "작업 트리 이동…";
 "worktree.move.message" = "작업 트리 “%@”을(를) 현재 상태 그대로 다른 위치로 옮깁니다.";
-"worktree.move.submit" = "이동";
+"worktree.move.submit" = "작업 트리 이동";
 "worktree.noRefs" = "이 저장소에는 아직 커밋이 없습니다.";
 "worktree.open.current" = "작업 트리 열기";
 "worktree.open.newTab" = "새 탭에서 작업 트리 열기";
@@ -2205,13 +2205,13 @@
 "worktree.page.general" = "일반";
 "worktree.relocate" = "작업 트리 위치 지정";
 "worktree.relocate.message" = "작업 트리 “%@”의 디렉터리가 지금 있는 위치를 선택하면 Git이 이 저장소에 다시 연결합니다.";
-"worktree.relocate.submit" = "복구";
+"worktree.relocate.submit" = "작업 트리 위치 지정";
 "worktree.remove" = "작업 트리 삭제";
 "worktree.remove.force" = "강제 삭제";
 "worktree.remove.force.help" = "커밋하지 않은 변경 사항과 함께 작업 트리를 삭제합니다.";
 "worktree.remove.menu" = "작업 트리 삭제…";
 "worktree.remove.message" = "작업 트리 “%@”과(와) 그 디렉터리를 영구적으로 삭제합니다.";
-"worktree.remove.submit" = "삭제";
+"worktree.remove.submit" = "작업 트리 삭제";
 "worktree.repair" = "작업 트리 복구";
 "worktree.repair.menu" = "작업 트리 복구…";
 "worktree.reveal" = "Finder에서 작업 트리 보기";

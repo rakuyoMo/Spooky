@@ -14,7 +14,7 @@ enum AccessibilityProbe {
         /// 角色，如 `AXStaticText`。
         let role: String
 
-        /// 值；静态文字是它显示的文字。
+        /// 值；静态文字是它显示的文字，勾选框是 “0” 或 “1”。
         let value: String
 
         /// 自己的名称（`AXDescription`）。
@@ -25,6 +25,9 @@ enum AccessibilityProbe {
 
         /// 相对窗口左上角的位置与大小；窗口带标题栏，横坐标与内容区的相同。
         let frame: CGRect
+
+        /// 控件是否可用；没有这个属性的元素算可用。
+        let isEnabled: Bool
     }
 
     /// 把视图放进屏外的窗口，在主线程经辅助功能接口读出全部元素。
@@ -107,10 +110,11 @@ extension AccessibilityProbe {
 
             let element = Element(
                 role: attribute(reference, kAXRoleAttribute) as? String ?? "",
-                value: attribute(reference, kAXValueAttribute) as? String ?? "",
+                value: text(attribute(reference, kAXValueAttribute)),
                 name: attribute(reference, kAXDescriptionAttribute) as? String ?? "",
                 title: titleElement.flatMap { attribute($0, kAXValueAttribute) as? String } ?? "",
-                frame: frame(of: reference).offsetBy(dx: -origin.x, dy: -origin.y)
+                frame: frame(of: reference).offsetBy(dx: -origin.x, dy: -origin.y),
+                isEnabled: attribute(reference, kAXEnabledAttribute) as? Bool ?? true
             )
 
             elements.append((reference, element))
@@ -165,6 +169,15 @@ extension AccessibilityProbe {
         }
 
         return unsafeDowncast(value, to: AXValue.self)
+    }
+
+    /// 文字或整数的属性值写成文字，其余为空。
+    private static func text(_ value: AnyObject?) -> String {
+        if let string = value as? String {
+            return string
+        }
+
+        return (value as? Int).map(String.init) ?? ""
     }
 
     /// 读一个属性；没有这个属性时为 nil。

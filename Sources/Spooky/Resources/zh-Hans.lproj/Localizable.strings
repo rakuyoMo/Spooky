@@ -1858,7 +1858,6 @@
 "clone.url" = "远端地址：";
 "clone.to" = "克隆到：";
 "clone.destination" = "将克隆到 “%@”";
-"clone.options" = "选项";
 "clone.lfs" = "使用 LFS 克隆";
 "clone.submodules" = "初始化子模块";
 "clone.error.invalidURL" = "远端地址无效";
@@ -2017,6 +2016,7 @@
 "submodule.add.menu" = "添加子模块…";
 "submodule.add.message" = "把一个仓库克隆到本仓库的空目录里，并登记为子模块。";
 "submodule.add.submit" = "添加子模块";
+"submodule.add.title" = "添加子模块仓库";
 "submodule.autoUpdate" = "自动更新子模块";
 "submodule.autoUpdate.always" = "总是自动更新子模块";
 "submodule.autoUpdate.message" = "这次操作改动了以下子模块登记的版本。要现在更新它们吗？";
@@ -2196,7 +2196,7 @@
 "worktree.move" = "移动工作树";
 "worktree.move.menu" = "移动工作树…";
 "worktree.move.message" = "把工作树 “%@” 移到别的位置，保留它现在的状态。";
-"worktree.move.submit" = "移动";
+"worktree.move.submit" = "移动工作树";
 "worktree.noRefs" = "这个仓库还没有提交。";
 "worktree.open.current" = "打开工作树";
 "worktree.open.newTab" = "在新标签页中打开工作树";
@@ -2205,13 +2205,13 @@
 "worktree.page.general" = "通用";
 "worktree.relocate" = "重新定位工作树";
 "worktree.relocate.message" = "选择工作树 “%@” 的目录现在所在的位置，让 Git 重新把它连到这个仓库。";
-"worktree.relocate.submit" = "修复";
+"worktree.relocate.submit" = "重新定位工作树";
 "worktree.remove" = "删除工作树";
 "worktree.remove.force" = "强制删除";
 "worktree.remove.force.help" = "连同未提交的改动一起删除工作树。";
 "worktree.remove.menu" = "删除工作树…";
 "worktree.remove.message" = "永久删除工作树 “%@” 及它的目录。";
-"worktree.remove.submit" = "删除";
+"worktree.remove.submit" = "删除工作树";
 "worktree.repair" = "修复工作树";
 "worktree.repair.menu" = "修复工作树…";
 "worktree.reveal" = "在 Finder 中显示工作树";

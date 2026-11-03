@@ -45,7 +45,7 @@ struct RenameReferenceDialog: View {
 
     /// 一个 “Name:” 输入框，打开时填入原名字。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(keys.title),
             message: AppLocalization.text(keys.message, originalName),
@@ -55,7 +55,7 @@ struct RenameReferenceDialog: View {
             cancel: close,
             submit: submit
         ) {
-            ReferenceDialogRows.row(AppLocalization.text("reference.name")) {
+            RepositoryDialogRows.row(AppLocalization.text("reference.name")) {
                 TextField("", text: $name)
                     .accessibilityIdentifier("reference-name")
             }
@@ -129,7 +129,7 @@ extension RenameReferenceDialog {
             isValid = true
         } catch {
             if !Task.isCancelled {
-                self.error = ReferenceDialogRows.validationMessage(error, in: session)
+                self.error = RepositoryDialogRows.validationMessage(error, in: session)
             }
         }
     }

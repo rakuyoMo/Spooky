@@ -1858,7 +1858,6 @@
 "clone.url" = "URL distante :";
 "clone.to" = "Cloner dans :";
 "clone.destination" = "Sera cloné dans « %@ »";
-"clone.options" = "Options";
 "clone.lfs" = "Cloner avec LFS";
 "clone.submodules" = "Initialiser les sous-modules";
 "clone.error.invalidURL" = "URL distante non valide";
@@ -2017,6 +2016,7 @@
 "submodule.add.menu" = "Ajouter un sous-module…";
 "submodule.add.message" = "Clone un dépôt dans un dossier vide de ce dépôt et l’enregistre comme sous-module.";
 "submodule.add.submit" = "Ajouter le sous-module";
+"submodule.add.title" = "Ajouter un dépôt de sous-module";
 "submodule.autoUpdate" = "Mise à jour automatique des sous-modules";
 "submodule.autoUpdate.always" = "Toujours mettre à jour automatiquement les sous-modules";
 "submodule.autoUpdate.message" = "L’opération a modifié les révisions enregistrées de ces sous-modules. Les mettre à jour maintenant ?";
@@ -2196,7 +2196,7 @@
 "worktree.move" = "Déplacer le worktree";
 "worktree.move.menu" = "Déplacer le worktree…";
 "worktree.move.message" = "Déplace le worktree « %@ » vers un autre emplacement en conservant son état actuel.";
-"worktree.move.submit" = "Déplacer";
+"worktree.move.submit" = "Déplacer le worktree";
 "worktree.noRefs" = "Ce dépôt n’a pas encore de commits.";
 "worktree.open.current" = "Ouvrir le worktree";
 "worktree.open.newTab" = "Ouvrir le worktree dans un nouvel onglet";
@@ -2205,13 +2205,13 @@
 "worktree.page.general" = "Général";
 "worktree.relocate" = "Relocaliser le worktree";
 "worktree.relocate.message" = "Choisissez l’emplacement actuel du dossier du worktree « %@ » pour que Git le reconnecte à ce dépôt.";
-"worktree.relocate.submit" = "Réparer";
+"worktree.relocate.submit" = "Relocaliser le worktree";
 "worktree.remove" = "Supprimer le worktree";
 "worktree.remove.force" = "Forcer la suppression";
 "worktree.remove.force.help" = "Supprime le worktree avec toutes les modifications non validées.";
 "worktree.remove.menu" = "Supprimer le worktree…";
 "worktree.remove.message" = "Supprime définitivement le worktree « %@ » et son dossier.";
-"worktree.remove.submit" = "Supprimer";
+"worktree.remove.submit" = "Supprimer le worktree";
 "worktree.repair" = "Réparer le worktree";
 "worktree.repair.menu" = "Réparer le worktree…";
 "worktree.reveal" = "Afficher le worktree dans le Finder";

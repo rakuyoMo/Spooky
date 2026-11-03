@@ -53,20 +53,13 @@ extension RepositoryWindowController {
             return
         }
 
-        guard window.attachedSheet == nil, session.canWrite else {
+        guard session.canWrite else {
             return
         }
 
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-
-        let close = { [weak sheet] in
-            if let sheet { window.endSheet(sheet) }
+        presentDialog { close in
+            dialog(for: request, close: close)
         }
-
-        sheet.contentViewController = NSHostingController(rootView: dialog(for: request, close: close))
-        window.beginSheet(sheet)
     }
 
     /// 远端视图：所选远端的设置与远端分支。

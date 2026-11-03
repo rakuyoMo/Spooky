@@ -14,7 +14,7 @@ enum LFSTransfer {
     /// 上传本地分支与标签用到的对象。
     case push
 
-    /// 对话框与 Activity 的标题。
+    /// Activity 记录的标题。
     var title: String {
         switch self {
         case .fetch: AppLocalization.text("lfs.fetch")

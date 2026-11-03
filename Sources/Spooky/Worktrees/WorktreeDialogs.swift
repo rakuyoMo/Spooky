@@ -42,7 +42,7 @@ struct AddWorktreeDialog: View {
 
     /// “Revision:” 与 “Destination:” 两行，以及两个勾选项。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("worktree.add"),
             message: AppLocalization.text("worktree.add.message"),
@@ -52,7 +52,7 @@ struct AddWorktreeDialog: View {
             cancel: close,
             submit: submit
         ) {
-            ReferenceDialogRows.row(AppLocalization.text("worktree.revision")) {
+            RepositoryDialogRows.row(AppLocalization.text("worktree.revision")) {
                 RevisionComboBox(
                     text: $revision,
                     items: session.revisionCandidates,
@@ -60,10 +60,9 @@ struct AddWorktreeDialog: View {
                 )
             }
 
-            ReferenceDialogRows.row(AppLocalization.text("worktree.destination")) {
+            RepositoryDialogRows.row(AppLocalization.text("worktree.destination")) {
                 HStack(spacing: 8) {
                     TextField("", text: destinationBinding)
-                        .frame(minWidth: 200)
                         .accessibilityIdentifier("worktree-destination")
 
                     Button(AppLocalization.text("submodule.path.select"), action: selectDestination)
@@ -71,14 +70,14 @@ struct AddWorktreeDialog: View {
                 }
             }
 
-            ReferenceDialogRows.option(
-                AppLocalization.text("worktree.detach"),
+            DialogFormOption(
+                title: AppLocalization.text("worktree.detach"),
                 help: AppLocalization.text("worktree.detach.help"),
                 isOn: $detach
             )
 
-            ReferenceDialogRows.option(
-                AppLocalization.text("worktree.force"),
+            DialogFormOption(
+                title: AppLocalization.text("worktree.force"),
                 help: AppLocalization.text("worktree.force.help"),
                 isOn: $force
             )
@@ -249,7 +248,7 @@ struct WorktreePathDialog: View {
 
     /// 一行路径与选择按钮。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(target == .move ? "worktree.move" : "worktree.relocate"),
             message: AppLocalization.text(target == .move ? "worktree.move.message" : "worktree.relocate.message", worktree.name),
@@ -259,10 +258,9 @@ struct WorktreePathDialog: View {
             cancel: close,
             submit: submit
         ) {
-            ReferenceDialogRows.row(AppLocalization.text(target == .move ? "worktree.destination" : "worktree.location")) {
+            RepositoryDialogRows.row(AppLocalization.text(target == .move ? "worktree.destination" : "worktree.location")) {
                 HStack(spacing: 8) {
                     TextField("", text: $path)
-                        .frame(minWidth: 200)
                         .accessibilityIdentifier("worktree-path")
 
                     Button(AppLocalization.text("submodule.path.select"), action: select)
@@ -361,7 +359,7 @@ struct RemoveWorktreeDialog: View {
 
     /// 说明与强制删除的勾选项。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("worktree.remove"),
             message: AppLocalization.text("worktree.remove.message", worktree.name),
@@ -371,8 +369,8 @@ struct RemoveWorktreeDialog: View {
             cancel: close,
             submit: submit
         ) {
-            ReferenceDialogRows.option(
-                AppLocalization.text("worktree.remove.force"),
+            DialogFormOption(
+                title: AppLocalization.text("worktree.remove.force"),
                 help: AppLocalization.text("worktree.remove.force.help"),
                 isOn: $force
             )

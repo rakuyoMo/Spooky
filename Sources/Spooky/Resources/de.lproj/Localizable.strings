@@ -1858,7 +1858,6 @@
 "clone.url" = "Entfernte URL:";
 "clone.to" = "Klonen nach:";
 "clone.destination" = "Wird nach „%@“ geklont";
-"clone.options" = "Optionen";
 "clone.lfs" = "Mit LFS klonen";
 "clone.submodules" = "Submodule initialisieren";
 "clone.error.invalidURL" = "Ungültige entfernte URL";
@@ -2017,6 +2016,7 @@
 "submodule.add.menu" = "Submodul hinzufügen…";
 "submodule.add.message" = "Klont ein Repository in ein leeres Verzeichnis dieses Repositorys und trägt es als Submodul ein.";
 "submodule.add.submit" = "Submodul hinzufügen";
+"submodule.add.title" = "Submodul-Repository hinzufügen";
 "submodule.autoUpdate" = "Submodule automatisch aktualisieren";
 "submodule.autoUpdate.always" = "Submodule immer automatisch aktualisieren";
 "submodule.autoUpdate.message" = "Der Vorgang hat die eingetragenen Revisionen dieser Submodule geändert. Jetzt aktualisieren?";
@@ -2196,7 +2196,7 @@
 "worktree.move" = "Worktree verschieben";
 "worktree.move.menu" = "Worktree verschieben…";
 "worktree.move.message" = "Verschiebt den Worktree „%@“ an einen anderen Ort und behält seinen aktuellen Zustand.";
-"worktree.move.submit" = "Verschieben";
+"worktree.move.submit" = "Worktree verschieben";
 "worktree.noRefs" = "Dieses Repository hat noch keine Commits.";
 "worktree.open.current" = "Worktree öffnen";
 "worktree.open.newTab" = "Worktree in neuem Tab öffnen";
@@ -2205,13 +2205,13 @@
 "worktree.page.general" = "Allgemein";
 "worktree.relocate" = "Worktree neu zuordnen";
 "worktree.relocate.message" = "Wähle aus, wo sich das Verzeichnis des Worktrees „%@“ jetzt befindet, damit Git ihn wieder mit diesem Repository verbindet.";
-"worktree.relocate.submit" = "Reparieren";
+"worktree.relocate.submit" = "Worktree neu zuordnen";
 "worktree.remove" = "Worktree entfernen";
 "worktree.remove.force" = "Löschen erzwingen";
 "worktree.remove.force.help" = "Löscht den Worktree mitsamt allen nicht committeten Änderungen.";
 "worktree.remove.menu" = "Worktree entfernen…";
 "worktree.remove.message" = "Löscht den Worktree „%@“ und sein Verzeichnis endgültig.";
-"worktree.remove.submit" = "Entfernen";
+"worktree.remove.submit" = "Worktree entfernen";
 "worktree.repair" = "Worktree reparieren";
 "worktree.repair.menu" = "Worktree reparieren…";
 "worktree.reveal" = "Worktree im Finder zeigen";

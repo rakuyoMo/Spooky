@@ -145,9 +145,8 @@ extension MergePullRequestDialog {
             }
 
             if options.allowsSquashOption {
-                ReferenceDialogRows.option(
-                    AppLocalization.text("pullRequests.squash"),
-                    help: "",
+                DialogFormOption(
+                    title: AppLocalization.text("pullRequests.squash"),
                     isOn: $squash
                 )
                 .disabled(options.requiresSquash)
@@ -165,9 +164,8 @@ extension MergePullRequestDialog {
             }
         }
 
-        ReferenceDialogRows.option(
-            AppLocalization.text("pullRequests.deleteBranch"),
-            help: "",
+        DialogFormOption(
+            title: AppLocalization.text("pullRequests.deleteBranch"),
             isOn: $deletesBranch
         )
         .disabled(!options.canDeleteSourceBranch)

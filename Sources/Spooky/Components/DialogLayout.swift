@@ -1,49 +1,82 @@
 import AppKit
+import SpookyKit
 import SwiftUI
 
 // MARK: - DialogLayout
 
-/// 对话框骨架：64 pt 应用图标与标题、说明，内容区，错误区与底栏，宽 480。
+/// 对话框骨架：自上而下是头部、内容区、错误区、Options 开关与选项区、底栏，段与段之间不留间距，默认宽 480。
 ///
-/// 头部文字与错误文字对齐内容区的输入列，应用图标挂在头部文字左侧；内容区的边距由内容自己决定。
-/// 输入列由 `DialogFormRow` 报上来，标签长时随之右移；内容区没有输入列时对齐 `DialogMetrics.alignment`。
-/// 内容区里要按输入列定宽或缩进的部分，用 `DialogInputColumnReader` 读到它。
-/// 要随仓库可写状态禁用的对话框，由调用方给出主按钮与错误区。
-/// 等待中的步骤写在底栏左侧，前面是小号转圈。
-struct DialogLayout<Content: View>: View {
+/// 头部是 64 pt 图标与单行标题、自动折行的说明，服务器仓库在标题下多一行带主机前缀的位置。
+/// 头部文字、错误文字与备选底栏的按钮组对齐内容区的输入列，图标挂在头部文字左侧；输入列由 `DialogFormRow` 报上来，
+/// 标签长时随之右移，内容区没有输入列时对齐 `DialogMetrics.alignment`。
+/// 内容区与选项区的边距由内容自己决定，里面要按输入列定宽或缩进的部分用 `DialogInputColumnReader` 读到它。
+///
+/// 几种版本由参数组合出来：
+/// - 表单版：内容区是表单
+/// - 确认版：没有内容区，只有头部与底栏
+/// - 提示版：没有取消动作，底栏只有主按钮，↩ 与 ⎋ 都按它
+/// - 备选底栏：给了备选按钮时，取消贴按钮组左端，备选按钮与主按钮贴右端
+struct DialogLayout<Content: View, Options: View>: View {
     /// 对话框标题，也是 VoiceOver 读出的名称。
     let title: String
 
     /// 标题下方的说明。
     let message: String
 
+    /// 头部图标；为 nil 时是应用图标。
+    let icon: NSImage?
+
+    /// 对话框所属的仓库；服务器仓库在标题下写出带主机前缀的位置。
+    let repository: RepositoryLocation?
+
+    /// 对话框的宽度。
+    let width: CGFloat
+
     /// 主按钮的标题。
     let submitTitle: String
 
-    /// 内容不合法的原因；为 nil 时不显示错误区。
+    /// 取消按钮的标题。
+    let cancelTitle: String
+
+    /// 备选按钮的标题与动作；为 nil 时用普通底栏。
+    let alternate: (title: String, action: () -> Void)?
+
+    /// 输入校验或加载失败的说明；为 nil 时错误区收起。
     let error: String?
 
-    /// 等待中的步骤，如 “Validating…”；为 nil 时底栏左侧是空的。
-    var progress: String? = nil
+    /// 对话框自己加载数据时的步骤，如 “Loading commits…”；为 nil 时底栏左侧是空的。
+    let progress: String?
 
-    /// 主按钮是否可用。
+    /// 内容是否合法。
     let canSubmit: Bool
 
-    /// 取消按钮与 ⎋ 的动作：关闭对话框，等待中时也可以只停止等待。
-    let cancel: () -> Void
+    /// 是否正在提交：主按钮与取消按钮都不可用。
+    let submitting: Bool
+
+    /// Options 开关的文字。
+    let optionsTitle: String
+
+    /// 取消按钮与 ⎋ 的动作；为 nil 时没有取消按钮，⎋ 按主按钮。
+    let cancel: (() -> Void)?
 
     /// 主按钮的动作。
     let submit: () -> Void
 
     /// 内容区。
-    @ViewBuilder
     let content: () -> Content
+
+    /// 选项区；为 nil 时没有 Options 开关。
+    let options: (() -> Options)?
+
+    /// 选项区是否展开，只在本次对话框里有效。
+    @State
+    private var optionsExpanded: Bool
 
     /// 内容区输入列的左缘；内容区没有输入列时为 nil。
     @State
     private var inputColumn: CGFloat?
 
-    /// 头部、内容、错误区与底栏依次排列。
+    /// 头部、内容区、错误区、Options 与底栏依次排列；错误出现与消失时带动画。
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
@@ -54,28 +87,99 @@ struct DialogLayout<Content: View>: View {
 
             if let error {
                 errorRow(error)
+                    .transition(.opacity)
+            }
+
+            if let options {
+                optionsToggle
+
+                optionsArea(options)
             }
 
             footer
         }
-        .frame(width: 480)
+        .frame(width: width)
         .coordinateSpace(.named(DialogMetrics.coordinateSpace))
         .onPreferenceChange(DialogInputColumnKey.self) { inputColumn = $0 }
+        .animation(.easeOut(duration: 0.2), value: error == nil)
+    }
+
+    /// 创建对话框；不给内容区时是确认版，不给选项区时没有 Options 开关。
+    ///
+    /// - Parameters:
+    ///   - title: 标题。
+    ///   - message: 标题下方的说明。
+    ///   - icon: 头部图标；为 nil 时是应用图标。
+    ///   - repository: 对话框所属的仓库。
+    ///   - width: 对话框的宽度。
+    ///   - submitTitle: 主按钮的标题。
+    ///   - cancelTitle: 取消按钮的标题。
+    ///   - alternate: 备选按钮的标题与动作。
+    ///   - error: 输入校验或加载失败的说明。
+    ///   - progress: 对话框自己加载数据时的步骤。
+    ///   - canSubmit: 内容是否合法。
+    ///   - submitting: 是否正在提交。
+    ///   - optionsTitle: Options 开关的文字。
+    ///   - optionsExpanded: 选项区一开始是否展开。
+    ///   - cancel: 取消按钮与 ⎋ 的动作；为 nil 时没有取消按钮。
+    ///   - submit: 主按钮的动作。
+    ///   - content: 内容区。
+    ///   - options: 选项区。
+    init(
+        title: String,
+        message: String,
+        icon: NSImage? = nil,
+        repository: RepositoryLocation? = nil,
+        width: CGFloat = 480,
+        submitTitle: String,
+        cancelTitle: String = AppLocalization.text("action.cancel"),
+        alternate: (title: String, action: () -> Void)? = nil,
+        error: String? = nil,
+        progress: String? = nil,
+        canSubmit: Bool = true,
+        submitting: Bool = false,
+        optionsTitle: String = AppLocalization.text("dialog.options"),
+        optionsExpanded: Bool = false,
+        cancel: (() -> Void)?,
+        submit: @escaping () -> Void,
+        @ViewBuilder content: @escaping () -> Content = { EmptyView() },
+        options: (() -> Options)? = (() -> EmptyView)?.none
+    ) {
+        self.title = title
+        self.message = message
+        self.icon = icon
+        self.repository = repository
+        self.width = width
+        self.submitTitle = submitTitle
+        self.cancelTitle = cancelTitle
+        self.alternate = alternate
+        self.error = error
+        self.progress = progress
+        self.canSubmit = canSubmit
+        self.submitting = submitting
+        self.optionsTitle = optionsTitle
+        self.cancel = cancel
+        self.submit = submit
+        self.content = content
+        self.options = options
+        _optionsExpanded = State(initialValue: optionsExpanded)
     }
 }
 
-// MARK: - Private
+// MARK: - Sections
 
 extension DialogLayout {
-    /// 头部文字与错误文字的左缘。
+    /// 头部文字、错误文字与备选底栏按钮组的左缘。
     private var alignment: CGFloat {
         DialogMetrics.textLeading(for: inputColumn)
     }
 
-    /// 64 pt 应用图标与右侧的标题、说明：文字从对齐线开始，图标在文字左侧 16 pt，右边距 20。
+    /// 图标距顶 20，右侧 16 pt 是标题、服务器仓库的位置与说明；说明距头部底边 12，右边距 20。
+    ///
+    /// 图标下方不留这 12，头部至少高 84：距顶 20 加上图标的 64。
     private var header: some View {
         HStack(alignment: .top, spacing: DialogMetrics.iconSpacing) {
-            Image(nsImage: NSApp.applicationIconImage)
+            Image(nsImage: icon ?? NSApp.applicationIconImage)
                 .resizable()
                 .frame(width: 64, height: 64)
                 .accessibilityHidden(true)
@@ -83,6 +187,15 @@ extension DialogLayout {
             VStack(alignment: .leading, spacing: 8) {
                 Text(title)
                     .font(.system(size: 14, weight: .bold))
+                    .lineLimit(1)
+
+                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
+                if let repository, repository.host != nil {
+                    Text(repository.displayPath)
+                        .font(.system(size: 13))
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 Text(message)
                     .font(.system(size: 13))
@@ -90,17 +203,39 @@ extension DialogLayout {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, 12)
         }
         .padding(.leading, alignment - DialogMetrics.iconSpacing - 64)
         .padding(.trailing, 20)
         .padding(.top, 20)
-        .padding(.bottom, 12)
     }
 
-    /// 左侧是等待中的步骤，右侧是取消与主按钮；内容不合法时主按钮不可用。
+    /// 高 34 的开关行：17 pt 的披露三角距左 20，右侧 4 pt 是文字，点文字也能切换。
+    private var optionsToggle: some View {
+        Toggle(optionsTitle, isOn: animatedOptionsExpanded)
+            .toggleStyle(DialogDisclosureStyle())
+            .padding(.leading, 20)
+            .frame(maxWidth: .infinity, minHeight: 34, maxHeight: 34, alignment: .leading)
+    }
+
+    /// 切换选项区时做 0.2 s 的 ease-out 动画；应用级模态窗口里不做动画。
+    private var animatedOptionsExpanded: Binding<Bool> {
+        Binding(
+            get: { optionsExpanded },
+            set: { expanded in
+                let animation: Animation? = NSApp.modalWindow == nil ? .easeOut(duration: 0.2) : nil
+
+                withAnimation(animation) {
+                    optionsExpanded = expanded
+                }
+            }
+        )
+    }
+
+    /// 左侧是加载中的步骤，右侧是取消与主按钮；给了备选按钮时换成备选底栏。高 53，按钮距顶 12。
     private var footer: some View {
         HStack(spacing: 8) {
-            if let progress {
+            if alternate == nil, let progress {
                 ProgressView()
                     .controlSize(.small)
 
@@ -108,178 +243,182 @@ extension DialogLayout {
                     .font(.system(size: 13))
             }
 
-            Spacer(minLength: 0)
-
-            Button(action: cancel) {
-                Text(AppLocalization.text("action.cancel"))
-                    .frame(minWidth: 56)
+            if alternate == nil || cancel == nil {
+                Spacer(minLength: 0)
             }
-            .keyboardShortcut(.cancelAction)
 
-            Button(action: submit) {
-                Text(submitTitle)
-                    .frame(minWidth: 56)
+            if let cancel {
+                footerButton(cancelTitle, action: cancel)
+                    .keyboardShortcut(.cancelAction)
+                    .disabled(submitting)
             }
-            .keyboardShortcut(.defaultAction)
-            .disabled(!canSubmit)
+
+            if let alternate {
+                if cancel != nil {
+                    Spacer(minLength: 0)
+                }
+
+                footerButton(alternate.title, action: alternate.action)
+                    .disabled(submitting)
+            }
+
+            footerButton(submitTitle, action: submit)
+                .keyboardShortcut(.defaultAction)
+                .disabled(!canSubmit || submitting)
         }
-        .padding(.horizontal, 20)
+        .padding(.leading, alternate == nil ? 20 : alignment)
+        .padding(.trailing, 20)
         .padding(.top, 12)
         .frame(height: 53, alignment: .top)
+        .background {
+            // 没有取消按钮时 ⎋ 也按主按钮
+            if cancel == nil {
+                Button(action: submit) {
+                    EmptyView()
+                }
+                .keyboardShortcut(.cancelAction)
+                .disabled(!canSubmit || submitting)
+                .opacity(0)
+                .accessibilityHidden(true)
+            }
+        }
     }
 
-    /// 黄色警告图标挂在对齐线左侧，原因文字从对齐线开始。
+    /// 选项区的边线：`general_border_color`，带黑色、25% 不透明度、模糊半径 4 的阴影。
+    private var optionsBorder: some View {
+        Rectangle()
+            .fill(AppPalette.color("general_border_color"))
+            .frame(height: 1)
+            .shadow(color: .black.opacity(0.25), radius: 4)
+    }
+
+    /// 黄色警告图标挂在对齐线左侧 4 pt，原因文字从对齐线开始，右边距 20，至少高 51。
     private func errorRow(_ error: String) -> some View {
         HStack(alignment: .top, spacing: 4) {
             Image(systemName: "exclamationmark.triangle.fill")
+                .resizable()
+                .scaledToFit()
                 .foregroundStyle(.yellow)
                 .frame(width: 18, height: 18)
                 .accessibilityHidden(true)
 
-            Text(error)
+            Text(Self.linkingURLs(in: error))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, minHeight: 51, alignment: .topLeading)
+                .padding(.top, 1)
         }
         .padding(.leading, alignment - 4 - 18)
         .padding(.trailing, 20)
-        .padding(.bottom, 12)
     }
-}
 
-// MARK: - DialogMetrics
-
-/// 对话框骨架的度量：头部文字、表单输入列与错误文字共用一条左对齐线。
-enum DialogMetrics {
-    /// 距对话框左缘 120 pt 的对齐线：表单标签都不长时输入列从这里开始，内容区没有输入列时头部与错误文字对齐它。
-    static let alignment: CGFloat = 120
-
-    /// 头部图标与文字的间距。
-    static let iconSpacing: CGFloat = 16
-
-    /// 对话框骨架的坐标空间，`dialogInputColumn()` 在其中量出输入列的位置。
-    static let coordinateSpace = "DialogLayout"
-
-    /// 表单标签列的最小宽度：表单左边距 20 pt，标签右缘与输入列相隔 8 pt，输入列正好从对齐线开始。
-    static let labelWidth: CGFloat = alignment - 20 - 8
-
-    /// 头部文字与错误文字的左缘：内容区的输入列，没有输入列时是 `alignment`；不小于图标距左 32 时文字的位置。
-    static func textLeading(for inputColumn: CGFloat?) -> CGFloat {
-        max(inputColumn ?? alignment, 32 + 64 + iconSpacing)
-    }
-}
-
-// MARK: - DialogForm
-
-/// 对话框的表单区：一组 `DialogFormRow`，左右各留 20 pt、上下各留 12 pt。
-struct DialogForm<Rows: View>: View {
-    /// 表单的行。
-    @ViewBuilder
-    let rows: () -> Rows
-
-    /// 标签列右对齐、输入列左对齐的网格。
-    var body: some View {
-        Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 8) {
-            rows()
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-    }
-}
-
-// MARK: - DialogFormRow
-
-/// 表单的一行：右对齐的标签与它右侧的输入控件。
-///
-/// 标签列至少宽到让输入列从对齐线开始，标签长时输入列随之右移，并报给外层的对话框骨架。
-/// 标签在辅助功能里是控件的标题，VoiceOver 读控件时读出标签；控件是只读的文字时，标签与文字本身都读得出，
-/// 一组控件时各自保留自己的名称。
-struct DialogFormRow<Field: View>: View {
-    /// 标签，带冒号。
-    let label: String
-
-    /// 标签与控件的竖直对齐；为 nil 时沿用表单的首行基线对齐，多行的文字区用 `.top` 让标签与它的顶边对齐。
-    var alignment: VerticalAlignment? = nil
-
-    /// 输入控件。
-    @ViewBuilder
-    let field: () -> Field
-
-    /// 把标签与控件配成一对的辅助功能命名空间。
-    @Namespace
-    private var accessibility
-
-    /// 标签列至少宽到 `DialogMetrics.labelWidth`。
-    var body: some View {
-        GridRow(alignment: alignment) {
-            Text(label)
-                .frame(minWidth: DialogMetrics.labelWidth, alignment: .trailing)
-                .gridColumnAlignment(.trailing)
-                .accessibilityLabeledPair(role: .label, id: 0, in: accessibility)
-
-            field()
-                .accessibilityLabeledPair(role: .content, id: 0, in: accessibility)
-                .dialogInputColumn()
-        }
-    }
-}
-
-// MARK: - View + DialogInputColumn
-
-extension View {
-    /// 把这个视图的左缘报给外层的对话框骨架，作为输入列：头部与错误文字对齐它。
-    func dialogInputColumn() -> some View {
-        background {
-            GeometryReader { proxy in
-                Color.clear.preference(
-                    key: DialogInputColumnKey.self,
-                    value: proxy.frame(in: .named(DialogMetrics.coordinateSpace)).minX
-                )
+    /// 选项区上下各留 8 pt；展开时整块填次要背景色，上下各一条带阴影的 1 pt 边线。
+    private func optionsArea(_ options: () -> Options) -> some View {
+        VStack(spacing: 0) {
+            if optionsExpanded {
+                options()
+                    .font(.system(size: 13))
+                    .environment(\.dialogInputColumn, alignment)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(AppPalette.color("general_secondary_background_color"))
+                    .overlay(alignment: .top) { optionsBorder }
+                    .overlay(alignment: .bottom) { optionsBorder }
             }
         }
+        .padding(.vertical, 8)
+    }
+
+    /// 最小 70 pt 宽的按钮：文字至少 56 pt，加上按钮自己的边距正好 70；文字长时随之加宽。
+    private func footerButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .frame(minWidth: 56)
+        }
+        .fixedSize()
     }
 }
 
-// MARK: - DialogInputColumnReader
+// MARK: - Helpers
 
-/// 按外层对话框骨架的输入列排版的内容，如固定为输入列宽度的文字、与输入列对齐的选项区。
-struct DialogInputColumnReader<Content: View>: View {
-    /// 由输入列的左缘生成内容。
-    @ViewBuilder
-    let content: (CGFloat) -> Content
+extension DialogLayout {
+    /// 文字里的网址写成可点的链接。
+    private static func linkingURLs(in text: String) -> AttributedString {
+        var attributed = AttributedString(text)
 
-    /// 外层骨架的输入列。
-    @Environment(\.dialogInputColumn)
-    private var inputColumn
-
-    /// 用输入列生成的内容。
-    var body: some View {
-        content(inputColumn)
-    }
-}
-
-// MARK: - EnvironmentValues + DialogInputColumn
-
-extension EnvironmentValues {
-    /// 外层对话框骨架里输入列的左缘，也是头部与错误文字的左缘；不在骨架里时是 `DialogMetrics.alignment`。
-    @Entry
-    var dialogInputColumn = DialogMetrics.alignment
-}
-
-// MARK: - DialogInputColumnKey
-
-/// 表单输入列的左缘，由 `dialogInputColumn()` 报给外层的对话框骨架，头部与错误文字据此对齐；几行时取最靠左的。
-struct DialogInputColumnKey: PreferenceKey {
-    /// 没有表单行时为 nil。
-    static let defaultValue: CGFloat? = nil
-
-    /// 合并几行报上来的位置。
-    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
-        guard let next = nextValue() else {
-            return
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
+            return attributed
         }
 
-        value = min(value ?? next, next)
+        for match in detector.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+            guard
+                let url = match.url,
+                let range = Range(match.range, in: text),
+                let linkRange = Range(range, in: attributed)
+            else {
+                continue
+            }
+
+            attributed[linkRange].link = url
+        }
+
+        return attributed
+    }
+}
+
+// MARK: - DialogDisclosureStyle
+
+/// Options 开关：系统的披露三角加文字，整行都能点。
+///
+/// 辅助功能里是一个以文字为名称的勾选框，勾上表示展开。
+private struct DialogDisclosureStyle: ToggleStyle {
+    /// 17 × 17 的披露三角，右侧 4 pt 是 13 pt 的文字。
+    func makeBody(configuration: Configuration) -> some View {
+        Button {
+            configuration.isOn.toggle()
+        } label: {
+            HStack(spacing: 4) {
+                DisclosureTriangle(isExpanded: configuration.isOn)
+                    .frame(width: 17, height: 17)
+
+                configuration.label
+                    .font(.system(size: 13))
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - DisclosureTriangle
+
+/// 只用来显示的系统披露三角；点击交给外层的开关。
+private struct DisclosureTriangle: NSViewRepresentable {
+    /// 是否画成展开的样子。
+    let isExpanded: Bool
+
+    /// 不接收点击、不进入辅助功能的披露按钮。
+    func makeNSView(context _: Context) -> NSButton {
+        let button = PassthroughButton(title: "", target: nil, action: nil)
+        button.bezelStyle = .disclosure
+        button.setButtonType(.pushOnPushOff)
+        button.setAccessibilityElement(false)
+        return button
+    }
+
+    /// 同步展开状态。
+    func updateNSView(_ button: NSButton, context _: Context) {
+        button.state = isExpanded ? .on : .off
+    }
+}
+
+// MARK: - PassthroughButton
+
+/// 不接收点击的按钮，点击落到下面的视图上。
+private final class PassthroughButton: NSButton {
+    /// 永远不命中。
+    override func hitTest(_: NSPoint) -> NSView? {
+        nil
     }
 }

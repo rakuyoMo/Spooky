@@ -1858,7 +1858,6 @@
 "clone.url" = "URL remota:";
 "clone.to" = "Clonar en:";
 "clone.destination" = "Se clonará en “%@”";
-"clone.options" = "Opciones";
 "clone.lfs" = "Clonar con LFS";
 "clone.submodules" = "Inicializar submódulos";
 "clone.error.invalidURL" = "URL remota no válida";
@@ -2017,6 +2016,7 @@
 "submodule.add.menu" = "Añadir submódulo…";
 "submodule.add.message" = "Clona un repositorio en una carpeta vacía de este repositorio y lo registra como submódulo.";
 "submodule.add.submit" = "Añadir submódulo";
+"submodule.add.title" = "Añadir repositorio de submódulo";
 "submodule.autoUpdate" = "Actualizar submódulos automáticamente";
 "submodule.autoUpdate.always" = "Actualizar siempre los submódulos automáticamente";
 "submodule.autoUpdate.message" = "La operación cambió las revisiones registradas de estos submódulos. ¿Actualizarlos ahora?";
@@ -2196,7 +2196,7 @@
 "worktree.move" = "Mover worktree";
 "worktree.move.menu" = "Mover worktree…";
 "worktree.move.message" = "Mueve el worktree “%@” a otra ubicación conservando su estado actual.";
-"worktree.move.submit" = "Mover";
+"worktree.move.submit" = "Mover worktree";
 "worktree.noRefs" = "Este repositorio aún no tiene commits.";
 "worktree.open.current" = "Abrir worktree";
 "worktree.open.newTab" = "Abrir worktree en una pestaña nueva";
@@ -2205,13 +2205,13 @@
 "worktree.page.general" = "General";
 "worktree.relocate" = "Reubicar worktree";
 "worktree.relocate.message" = "Elige dónde está ahora el directorio del worktree “%@” para que Git lo vuelva a conectar a este repositorio.";
-"worktree.relocate.submit" = "Reparar";
+"worktree.relocate.submit" = "Reubicar worktree";
 "worktree.remove" = "Eliminar worktree";
 "worktree.remove.force" = "Forzar eliminación";
 "worktree.remove.force.help" = "Elimina el worktree junto con los cambios sin confirmar.";
 "worktree.remove.menu" = "Eliminar worktree…";
 "worktree.remove.message" = "Elimina permanentemente el worktree “%@” y su directorio.";
-"worktree.remove.submit" = "Eliminar";
+"worktree.remove.submit" = "Eliminar worktree";
 "worktree.repair" = "Reparar worktree";
 "worktree.repair.menu" = "Reparar worktree…";
 "worktree.reveal" = "Mostrar worktree en el Finder";

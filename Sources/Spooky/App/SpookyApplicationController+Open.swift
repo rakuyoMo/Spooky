@@ -1,6 +1,5 @@
 import AppKit
 import SpookyKit
-import SwiftUI
 
 // MARK: - Open Files
 
@@ -104,34 +103,9 @@ extension SpookyApplicationController {
     private func confirmCreatingRepository(in directory: URL) -> Bool {
         var creates = false
 
-        let controller = NSHostingController(
-            rootView: NoRepositoryFoundDialog(
-                directory: directory,
-                close: { NSApp.stopModal() },
-                create: { creates = true }
-            )
-        )
-        controller.sizingOptions = .preferredContentSize
-
-        let window = NSWindow(contentViewController: controller)
-        window.styleMask = [.titled, .closable]
-        window.title = ""
-        window.tabbingMode = .disallowed
-        window.isReleasedWhenClosed = false
-        window.center()
-
-        // 点标题栏的关闭按钮时窗口自己关掉，模态循环要另外结束
-        let closing = NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification,
-            object: window,
-            queue: .main
-        ) { _ in
-            MainActor.assumeIsolated { NSApp.stopModal() }
+        DialogWindow.present(on: nil) { close in
+            NoRepositoryFoundDialog(directory: directory, close: close, create: { creates = true })
         }
-
-        _ = NSApp.runModal(for: window)
-        NotificationCenter.default.removeObserver(closing)
-        window.orderOut(nil)
 
         return creates
     }

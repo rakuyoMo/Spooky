@@ -26,9 +26,9 @@ struct AddSubmoduleDialog: View {
 
     /// “Remote URL:” 与 “Path:” 两行。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
-            title: AppLocalization.text("submodule.add"),
+            title: AppLocalization.text("submodule.add.title"),
             message: AppLocalization.text("submodule.add.message"),
             submitTitle: AppLocalization.text("submodule.add.submit"),
             error: error,
@@ -36,15 +36,14 @@ struct AddSubmoduleDialog: View {
             cancel: close,
             submit: submit
         ) {
-            ReferenceDialogRows.row(AppLocalization.text("remote.url")) {
+            RepositoryDialogRows.row(AppLocalization.text("remote.url")) {
                 TextField("", text: $url, prompt: Text(verbatim: "ssh://example.com/repo.git"))
                     .accessibilityIdentifier("submodule-url")
             }
 
-            ReferenceDialogRows.row(AppLocalization.text("submodule.path")) {
+            RepositoryDialogRows.row(AppLocalization.text("submodule.path")) {
                 HStack(spacing: 8) {
                     TextField("", text: $path, prompt: Text(AppLocalization.text("submodule.path.placeholder")))
-                        .frame(minWidth: 200)
                         .accessibilityIdentifier("submodule-path")
 
                     Button(AppLocalization.text("submodule.path.select"), action: selectDestination)
@@ -89,7 +88,7 @@ extension AddSubmoduleDialog {
             do {
                 try RepositoryReferences.validate(url: url)
             } catch {
-                return ReferenceDialogRows.validationMessage(error, in: session)
+                return RepositoryDialogRows.validationMessage(error, in: session)
             }
         }
 
@@ -219,7 +218,7 @@ struct SubmoduleOperationDialog: View {
 extension SubmoduleOperationDialog {
     /// 获取与更新：子模块菜单、全部的勾选项与各自的选项。
     private var selectableBody: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(kind == .fetch ? "submodule.fetch" : "submodule.update"),
             message: message,
@@ -229,7 +228,7 @@ extension SubmoduleOperationDialog {
             cancel: close,
             submit: submit
         ) {
-            ReferenceDialogRows.row(AppLocalization.text("submodule.field")) {
+            RepositoryDialogRows.row(AppLocalization.text("submodule.field")) {
                 Picker("", selection: $selectedPath) {
                     ForEach(candidates) { submodule in
                         Text(submodule.name).tag(submodule.path)
@@ -239,21 +238,20 @@ extension SubmoduleOperationDialog {
                 .disabled(all)
             }
 
-            ReferenceDialogRows.option(
-                AppLocalization.text(kind == .fetch ? "submodule.fetchAll" : "submodule.updateAll"),
-                help: "",
+            DialogFormOption(
+                title: AppLocalization.text(kind == .fetch ? "submodule.fetchAll" : "submodule.updateAll"),
                 isOn: $all
             )
 
             if kind == .fetch {
-                ReferenceDialogRows.option(
-                    AppLocalization.text("sync.prune"),
+                DialogFormOption(
+                    title: AppLocalization.text("sync.prune"),
                     help: AppLocalization.text("sync.prune.help"),
                     isOn: $prunes
                 )
             } else {
-                ReferenceDialogRows.option(
-                    AppLocalization.text("submodule.update.recursive"),
+                DialogFormOption(
+                    title: AppLocalization.text("submodule.update.recursive"),
                     help: AppLocalization.text("submodule.update.recursive.help"),
                     isOn: $recursive
                 )
@@ -266,7 +264,7 @@ extension SubmoduleOperationDialog {
 
     /// 只作用于一个子模块的种类：说明与删除的保留工作区。
     private var singleBody: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: title,
             message: message,
@@ -277,8 +275,8 @@ extension SubmoduleOperationDialog {
             submit: submit
         ) {
             if kind == .delete {
-                ReferenceDialogRows.option(
-                    AppLocalization.text("submodule.delete.keepWorkingTree"),
+                DialogFormOption(
+                    title: AppLocalization.text("submodule.delete.keepWorkingTree"),
                     help: AppLocalization.text("submodule.delete.keepWorkingTree.help"),
                     isOn: $keepsWorkingTree
                 )
@@ -316,7 +314,7 @@ extension SubmoduleOperationDialog {
         case .initialize: AppLocalization.text("submodule.initialize.submit")
         case .synchronize: AppLocalization.text("submodule.synchronize.submit")
         case .repair: AppLocalization.text("submodule.repair.submit")
-        case .delete: AppLocalization.text("submodule.delete.submit")
+        case .delete: AppLocalization.text("submodule.delete")
         }
     }
 
@@ -415,7 +413,7 @@ struct SubmoduleValueDialog: View {
 
     /// 一个输入框；移动另带改名的勾选项。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: texts.title,
             message: texts.message,
@@ -425,14 +423,14 @@ struct SubmoduleValueDialog: View {
             cancel: close,
             submit: submit
         ) {
-            ReferenceDialogRows.row(texts.label) {
+            RepositoryDialogRows.row(texts.label) {
                 TextField("", text: $value, prompt: texts.placeholder.map { Text(verbatim: $0) })
                     .accessibilityIdentifier("submodule-value")
             }
 
             if case .move = target {
-                ReferenceDialogRows.option(
-                    AppLocalization.text("submodule.move.rename"),
+                DialogFormOption(
+                    title: AppLocalization.text("submodule.move.rename"),
                     help: AppLocalization.text("submodule.move.rename.help"),
                     isOn: $renames
                 )
@@ -530,7 +528,7 @@ extension SubmoduleValueDialog {
                 try RepositoryReferences.validate(url: trimmed)
                 return ""
             } catch {
-                return ReferenceDialogRows.validationMessage(error, in: session)
+                return RepositoryDialogRows.validationMessage(error, in: session)
             }
         }
     }

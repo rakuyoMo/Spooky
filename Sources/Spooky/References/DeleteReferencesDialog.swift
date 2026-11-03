@@ -51,7 +51,7 @@ struct DeleteReferencesDialog: View {
 
     /// 确认说明与按对象出现的勾选项。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(keys.title),
             message: message,
@@ -79,28 +79,28 @@ extension DeleteReferencesDialog {
         switch target {
         case .branches:
             if let upstream = trackedUpstream {
-                ReferenceDialogRows.option(
-                    AppLocalization.text("branch.deleteUpstream"),
+                DialogFormOption(
+                    title: AppLocalization.text("branch.deleteUpstream"),
                     help: AppLocalization.text("branch.deleteUpstream.help", upstream),
                     isOn: $deletesUpstream
                 )
             }
 
-            ReferenceDialogRows.option(
-                AppLocalization.text("branch.forceDelete"),
+            DialogFormOption(
+                title: AppLocalization.text("branch.forceDelete"),
                 help: AppLocalization.text("branch.forceDelete.help"),
                 isOn: $force
             )
 
         case .tags:
             if let remotes = session.history.snapshot?.remotes, !remotes.isEmpty {
-                ReferenceDialogRows.option(
-                    AppLocalization.text("tag.deleteRemote"),
+                DialogFormOption(
+                    title: AppLocalization.text("tag.deleteRemote"),
                     help: AppLocalization.text("tag.deleteRemote.help"),
                     isOn: $deletesRemoteTags
                 )
 
-                ReferenceDialogRows.row(AppLocalization.text("sync.remote")) {
+                RepositoryDialogRows.row(AppLocalization.text("sync.remote")) {
                     Picker("", selection: $remote) {
                         ForEach(remotes) { Text($0.name).tag($0.name) }
                     }
@@ -115,7 +115,7 @@ extension DeleteReferencesDialog {
         }
     }
 
-    /// 标题与主按钮的文案键：单个与多个各一组；分支与标签的主按钮与标题相同。
+    /// 标题与主按钮的文案键：单个与多个各一组；本地分支与标签的主按钮与标题相同，远端分支的主按钮与本地分支的相同。
     private var keys: (title: String, submit: String) {
         switch target {
         case .branches(let items):
@@ -123,8 +123,8 @@ extension DeleteReferencesDialog {
 
         case .remoteBranches(let items):
             items.count == 1
-                ? ("branch.deleteRemote", "branch.deleteRemote")
-                : ("branch.deleteRemoteMultiple", "branch.deleteRemoteMultiple")
+                ? ("branch.deleteRemote", "branch.delete")
+                : ("branch.deleteRemoteMultiple", "branch.deleteMultiple")
 
         case .tags(let items):
             items.count == 1 ? ("tag.delete", "tag.delete") : ("tag.deleteMultiple", "tag.deleteMultiple")

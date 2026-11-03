@@ -1858,7 +1858,6 @@
 "clone.url" = "リモート URL：";
 "clone.to" = "クローン先：";
 "clone.destination" = "「%@」にクローンします";
-"clone.options" = "オプション";
 "clone.lfs" = "LFS でクローン";
 "clone.submodules" = "サブモジュールを初期化";
 "clone.error.invalidURL" = "リモート URL が無効です";
@@ -2017,6 +2016,7 @@
 "submodule.add.menu" = "サブモジュールを追加…";
 "submodule.add.message" = "リポジトリをこのリポジトリ内の空のディレクトリにクローンし、サブモジュールとして登録します。";
 "submodule.add.submit" = "サブモジュールを追加";
+"submodule.add.title" = "サブモジュールリポジトリを追加";
 "submodule.autoUpdate" = "サブモジュールの自動更新";
 "submodule.autoUpdate.always" = "常にサブモジュールを自動更新";
 "submodule.autoUpdate.message" = "この操作で次のサブモジュールの記録済みリビジョンが変わりました。今すぐ更新しますか？";
@@ -2196,7 +2196,7 @@
 "worktree.move" = "ワークツリーを移動";
 "worktree.move.menu" = "ワークツリーを移動…";
 "worktree.move.message" = "ワークツリー「%@」を現在の状態のまま別の場所へ移動します。";
-"worktree.move.submit" = "移動";
+"worktree.move.submit" = "ワークツリーを移動";
 "worktree.noRefs" = "このリポジトリにはまだコミットがありません。";
 "worktree.open.current" = "ワークツリーを開く";
 "worktree.open.newTab" = "ワークツリーを新規タブで開く";
@@ -2205,13 +2205,13 @@
 "worktree.page.general" = "一般";
 "worktree.relocate" = "ワークツリーの場所を指定";
 "worktree.relocate.message" = "ワークツリー「%@」のディレクトリが今ある場所を選ぶと、Git がこのリポジトリにつなぎ直します。";
-"worktree.relocate.submit" = "修復";
+"worktree.relocate.submit" = "ワークツリーの場所を指定";
 "worktree.remove" = "ワークツリーを削除";
 "worktree.remove.force" = "強制的に削除";
 "worktree.remove.force.help" = "コミットしていない変更ごとワークツリーを削除します。";
 "worktree.remove.menu" = "ワークツリーを削除…";
 "worktree.remove.message" = "ワークツリー「%@」とそのディレクトリを完全に削除します。";
-"worktree.remove.submit" = "削除";
+"worktree.remove.submit" = "ワークツリーを削除";
 "worktree.repair" = "ワークツリーを修復";
 "worktree.repair.menu" = "ワークツリーを修復…";
 "worktree.reveal" = "ワークツリーを Finder に表示";

@@ -35,7 +35,7 @@ struct PublishTagDialog: View {
 
     /// “Local Tag:” 与 “Remote:” 两个下拉。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("tag.publish"),
             message: AppLocalization.text("tag.publish.message"),
@@ -45,21 +45,21 @@ struct PublishTagDialog: View {
             cancel: close,
             submit: submit
         ) {
-            ReferenceDialogRows.row(AppLocalization.text("tag.local")) {
+            RepositoryDialogRows.row(AppLocalization.text("tag.local")) {
                 Picker("", selection: $selectedTag) {
                     ForEach(session.tags) { Text($0.name).tag($0.name) }
                 }
                 .labelsHidden()
             }
 
-            ReferenceDialogRows.row(AppLocalization.text("sync.remote")) {
+            RepositoryDialogRows.row(AppLocalization.text("sync.remote")) {
                 Picker("", selection: $remote) {
                     ForEach(session.history.snapshot?.remotes ?? []) { Text($0.name).tag($0.name) }
                 }
                 .labelsHidden()
             }
         } options: {
-            ReferenceOption(
+            DialogFormOption(
                 title: AppLocalization.text("sync.skipHooks"),
                 help: AppLocalization.text("sync.skipHooks.help"),
                 isOn: $skipHooks

@@ -1858,7 +1858,6 @@
 "clone.url" = "Remote URL:";
 "clone.to" = "Clone To:";
 "clone.destination" = "Clones into “%@”";
-"clone.options" = "Options";
 "clone.lfs" = "Use LFS Clone";
 "clone.submodules" = "Initialize Submodules";
 "clone.error.invalidURL" = "Invalid remote URL";
@@ -2017,6 +2016,7 @@
 "submodule.add.menu" = "Add Submodule…";
 "submodule.add.message" = "Clones a repository into an empty directory of this repository and records it as a submodule.";
 "submodule.add.submit" = "Add Submodule";
+"submodule.add.title" = "Add Submodule Repository";
 "submodule.autoUpdate" = "Auto-Update Submodules";
 "submodule.autoUpdate.always" = "Always auto-update submodules";
 "submodule.autoUpdate.message" = "The operation changed the recorded revisions of these submodules. Update them now?";
@@ -2196,7 +2196,7 @@
 "worktree.move" = "Move Worktree";
 "worktree.move.menu" = "Move Worktree…";
 "worktree.move.message" = "Moves the worktree “%@” to another location and keeps its current state.";
-"worktree.move.submit" = "Move";
+"worktree.move.submit" = "Move Worktree";
 "worktree.noRefs" = "This repository has no commits yet.";
 "worktree.open.current" = "Open Worktree";
 "worktree.open.newTab" = "Open Worktree in New Tab";
@@ -2205,13 +2205,13 @@
 "worktree.page.general" = "General";
 "worktree.relocate" = "Relocate Worktree";
 "worktree.relocate.message" = "Choose where the directory of the worktree “%@” is now, so Git can reconnect it to this repository.";
-"worktree.relocate.submit" = "Repair";
+"worktree.relocate.submit" = "Relocate Worktree";
 "worktree.remove" = "Remove Worktree";
 "worktree.remove.force" = "Force Deletion";
 "worktree.remove.force.help" = "Deletes the worktree together with any uncommitted changes.";
 "worktree.remove.menu" = "Remove Worktree…";
 "worktree.remove.message" = "Permanently deletes the worktree “%@” and its directory.";
-"worktree.remove.submit" = "Remove";
+"worktree.remove.submit" = "Remove Worktree";
 "worktree.repair" = "Repair Worktree";
 "worktree.repair.menu" = "Repair Worktree…";
 "worktree.reveal" = "Show Worktree in Finder";

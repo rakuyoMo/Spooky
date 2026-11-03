@@ -141,7 +141,7 @@ extension PullRequestTextDialog {
         do {
             try await RepositoryReferences(runner: runner).validate(name: name)
         } catch {
-            return .invalid(ReferenceDialogRows.validationMessage(error, in: session))
+            return .invalid(RepositoryDialogRows.validationMessage(error, in: session))
         }
 
         let existing = session.history.snapshot?.references

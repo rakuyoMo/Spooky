@@ -97,20 +97,13 @@ extension RepositoryWindowController {
             break
         }
 
-        guard window.attachedSheet == nil, session.canWrite else {
+        guard session.canWrite else {
             return
         }
 
-        let sheet = NSWindow()
-        sheet.styleMask = [.titled]
-        sheet.tabbingMode = .disallowed
-
-        let close = { [weak sheet] in
-            if let sheet { window.endSheet(sheet) }
+        presentDialog { close in
+            dialog(for: request, close: close)
         }
-
-        sheet.contentViewController = NSHostingController(rootView: dialog(for: request, close: close))
-        window.beginSheet(sheet)
     }
 }
 

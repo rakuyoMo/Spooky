@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - CloneRepositoryDialog
 
-/// 克隆远端仓库：地址、克隆到的机器与目录，以及可折叠的 LFS 与子模块选项。
+/// 克隆远端仓库：地址、克隆到的机器与目录，以及初始化子模块与 LFS 克隆两个勾选框。
 ///
 /// 提交后对话框立即关闭，克隆在后台进行；服务器目标在 B 上克隆，并记住这台主机的克隆目录。
 struct CloneRepositoryDialog: View {
@@ -24,19 +24,15 @@ struct CloneRepositoryDialog: View {
     @State
     private var parent = RepositoryLocation.local(path: CloneDirectory.current)
 
-    /// 选项区是否展开。
+    /// 克隆后初始化并检出子模块，默认勾上。
     @State
-    private var showsOptions = false
+    private var submodules = true
 
     /// 克隆后取出 LFS 文件。
     @State
     private var lfs = false
 
-    /// 克隆后初始化并检出子模块。
-    @State
-    private var submodules = false
-
-    /// 地址、目标与选项。
+    /// 地址、目标与两个勾选框。
     var body: some View {
         DialogLayout(
             title: AppLocalization.text("clone.title"),
@@ -47,27 +43,29 @@ struct CloneRepositoryDialog: View {
             cancel: close,
             submit: start
         ) {
-            VStack(alignment: .leading, spacing: 0) {
-                DialogForm {
-                    DialogFormRow(label: AppLocalization.text("clone.url")) {
-                        TextField("", text: $url)
-                            .accessibilityIdentifier("clone-url")
-                    }
+            DialogForm {
+                DialogFormRow(label: AppLocalization.text("clone.url")) {
+                    TextField("", text: $url)
+                        .accessibilityIdentifier("clone-url")
+                }
 
-                    HostDirectoryPicker(label: AppLocalization.text("clone.to"), hosts: hosts, directory: $parent)
+                HostDirectoryPicker(label: AppLocalization.text("clone.to"), hosts: hosts, directory: $parent)
 
-                    if let destination {
-                        DialogFormRow(label: "") {
-                            Text(AppLocalization.text("clone.destination", destination.displayPath))
-                                .font(.system(size: 11))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                                .truncationMode(.middle)
-                        }
+                if let destination {
+                    DialogFormRow(label: "") {
+                        Text(AppLocalization.text("clone.destination", destination.displayPath))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .truncationMode(.middle)
                     }
                 }
 
-                options
+                // 两个勾选框与上一行相隔 10，彼此相隔 8
+                DialogFormOption(title: AppLocalization.text("clone.submodules"), isOn: $submodules)
+                    .padding(.top, 2)
+
+                DialogFormOption(title: AppLocalization.text("clone.lfs"), isOn: $lfs)
             }
         }
     }
@@ -99,25 +97,6 @@ extension CloneRepositoryDialog {
     /// 地址或目标的问题；地址还没填时不提示。
     private var problem: String? {
         CloneTarget.problem(url: url, parent: parent)
-    }
-
-    /// 可折叠的 LFS 与子模块两个勾选框，左缘对齐表单的输入列；展开三角在输入列左侧 20。
-    private var options: some View {
-        DialogInputColumnReader { inputColumn in
-            DisclosureGroup(AppLocalization.text("clone.options"), isExpanded: $showsOptions) {
-                // 展开的内容与展开三角同宽、默认居中；靠左再让出三角的 20，勾选框才落在输入列上
-                VStack(alignment: .leading, spacing: 6) {
-                    Toggle(AppLocalization.text("clone.lfs"), isOn: $lfs)
-                    Toggle(AppLocalization.text("clone.submodules"), isOn: $submodules)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 20)
-                .padding(.top, 6)
-            }
-            .padding(.leading, inputColumn - 20)
-            .padding(.trailing, 20)
-            .padding(.bottom, 12)
-        }
     }
 
     /// 开始克隆并关闭对话框；服务器目标记住这台主机的克隆目录。

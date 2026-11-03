@@ -19,15 +19,11 @@ struct NoRepositoryFoundDialog: View {
             title: AppLocalization.text("bookmarks.noRepository.title"),
             message: AppLocalization.text("bookmarks.noRepository.message", directory.path),
             submitTitle: AppLocalization.text("bookmarks.noRepository.create"),
-            error: nil,
-            canSubmit: true,
             cancel: close,
             submit: {
                 close()
                 create()
             }
-        ) {
-            EmptyView()
-        }
+        )
     }
 }

@@ -33,7 +33,7 @@ struct AddRemoteDialog: View {
 
     /// “Name:” 与 “Remote URL:” 两个输入框。
     var body: some View {
-        ReferenceDialogLayout(
+        RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("remote.add"),
             message: AppLocalization.text("remote.add.message"),
@@ -43,12 +43,12 @@ struct AddRemoteDialog: View {
             cancel: close,
             submit: submit
         ) {
-            ReferenceDialogRows.row(AppLocalization.text("reference.name")) {
+            RepositoryDialogRows.row(AppLocalization.text("reference.name")) {
                 TextField("", text: $name, prompt: Text(AppLocalization.text("remote.name.placeholder")))
                     .accessibilityIdentifier("remote-name")
             }
 
-            ReferenceDialogRows.row(AppLocalization.text("remote.url")) {
+            RepositoryDialogRows.row(AppLocalization.text("remote.url")) {
                 TextField("", text: $url, prompt: Text(verbatim: "ssh://example.com/repo.git"))
                     .accessibilityIdentifier("remote-url")
             }
@@ -79,7 +79,7 @@ extension AddRemoteDialog {
             try RepositoryReferences.validate(url: url)
             return ""
         } catch {
-            return ReferenceDialogRows.validationMessage(error, in: session)
+            return RepositoryDialogRows.validationMessage(error, in: session)
         }
     }
 
@@ -99,7 +99,7 @@ extension AddRemoteDialog {
             validName = true
         } catch {
             if !Task.isCancelled {
-                nameError = ReferenceDialogRows.validationMessage(error, in: session)
+                nameError = RepositoryDialogRows.validationMessage(error, in: session)
             }
         }
     }
