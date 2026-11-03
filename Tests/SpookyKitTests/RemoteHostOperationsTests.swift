@@ -7,7 +7,7 @@ import Testing
 
 /// 仓库还不存在时在 B 上执行的操作：列目录、新建、扫描与克隆，都只在本次测试的目录里进行。
 ///
-/// 主机连接先以测试专用的认证与隔离的 Git 环境登记，之后的主机操作都复用它。
+/// 主机连接先以测试专用的认证与隔离的 Git 环境登记，之后的主机操作都复用它；每项测试结束时关掉，主连接随之退出，本机不留下会话目录。
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteHostOperationsTests {
     /// 测试用的主机别名。
@@ -44,10 +44,12 @@ struct RemoteHostOperationsTests {
 
             #expect(Set(found) == [fixture.repository, created])
         } catch {
+            await RemoteConnection.closeHosts()
             try await fixture.remove()
             throw error
         }
 
+        await RemoteConnection.closeHosts()
         try await fixture.remove()
     }
 
@@ -74,10 +76,12 @@ struct RemoteHostOperationsTests {
                 _ = try await clone.start().value
             }
         } catch {
+            await RemoteConnection.closeHosts()
             try await fixture.remove()
             throw error
         }
 
+        await RemoteConnection.closeHosts()
         try await fixture.remove()
     }
 }
