@@ -228,6 +228,43 @@ extension WindowChromeTests {
         controller.updateQuickToolbarItems(option: false)
     }
 
+    /// 服务器仓库的主机前缀在每种显示方式下只出现一次：显示标签时只由标签写出，只显示图标时只由视图写出；
+    /// 标签一直写着主机前缀，溢出菜单里仍是可读的名字；自定义面板里的名字是 “Server”。
+    @Test("服务器仓库的主机前缀只出现一次")
+    func serverHostItem() async throws {
+        let fixture = try await NavigationTests.makeWindow()
+        let controller = fixture.controller
+        let toolbar = try #require(controller.window?.toolbar)
+        let saved = toolbar.displayMode
+
+        defer {
+            toolbar.displayMode = saved
+            fixture.close()
+        }
+
+        // 窗口显示的是本机的工作区，会话换成同一目录的服务器仓库，只用来取主机别名
+        controller.session.display(.remote(host: "spooky-test", path: fixture.directory.path))
+        controller.updateToolbarItems()
+
+        let item = try #require(toolbar.items.first { $0.itemIdentifier == RepositoryToolbar.host })
+        let view = try #require(item.view as? NSTextField)
+        #expect(!item.isHidden)
+        #expect(item.paletteLabel == AppLocalization.text("toolbar.host"))
+
+        // 换显示方式后由观察者重写这一项
+        let expected: [(mode: NSToolbar.DisplayMode, view: String)] = [
+            (.iconAndLabel, ""),
+            (.labelOnly, ""),
+            (.iconOnly, "spooky-test:"),
+        ]
+
+        for (mode, text) in expected {
+            toolbar.displayMode = mode
+            #expect(item.label == "spooky-test:")
+            #expect(view.stringValue == text)
+        }
+    }
+
     /// 仓库管理入口叫 Bookmarks，Sync 在自定义面板里叫 Synchronize，后退 / 前进叫 Prev / Next，储藏两段叫 Apply / Save；
     /// 搜索框、父仓库、Bookmarks、新建分支与安全强推在窗口变窄时最后才进溢出菜单。
     @Test("工具栏的标签与可见优先级")
