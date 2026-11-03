@@ -134,13 +134,12 @@ extension RepositoryWindowController {
 
         switch identifier.rawValue {
         case "sync":
-            // Fetch 用自绘的图标，与 Clone 的 arrow.down.circle 区分开
             return makeSegmentedGroup(
                 identifier,
                 segments: [
-                    ("sync.fetch", FetchIcon.image, #selector(fetch)),
-                    ("sync.pull", symbol("arrow.down.to.line"), #selector(pull)),
-                    ("sync.push", symbol("arrow.up.circle"), #selector(push)),
+                    ("sync.fetch", TransferIcon.image(for: .fetch), #selector(fetch)),
+                    ("sync.pull", TransferIcon.image(for: .pull), #selector(pull)),
+                    ("sync.push", TransferIcon.image(for: .push), #selector(push)),
                 ]
             )
 

@@ -3,23 +3,23 @@ import SwiftUI
 
 // MARK: - ActivityIcon
 
-/// Activity 窗口与侧边栏活动区里一行的图标：SF 符号，或获取的自绘图标。
+/// Activity 窗口与侧边栏活动区里一行的图标：SF 符号，或传输方向的自绘图标。
 enum ActivityIcon: Equatable {
     /// SF 符号。
     case symbol(String)
 
-    /// 获取的自绘图标，与工具栏的 Fetch 段相同。
-    case fetch
+    /// 传输方向的自绘图标，与工具栏对应的段相同。
+    case transfer(ActivityTransfer)
 
-    /// 图标的图像；获取的模板图随前景色着色。
+    /// 图标的图像；自绘的模板图随前景色着色。
     @MainActor
     var image: Image {
         switch self {
         case .symbol(let name):
             Image(systemName: name)
 
-        case .fetch:
-            Image(nsImage: FetchIcon.image).renderingMode(.template)
+        case .transfer(let transfer):
+            Image(nsImage: TransferIcon.image(for: transfer)).renderingMode(.template)
         }
     }
 }
@@ -53,13 +53,9 @@ extension RepositoryActivity {
         }
     }
 
-    /// Remote 记录按传输方向取的图标，不随失败与取消变化：获取与工具栏的 Fetch 段同用自绘的图标，推送与拉取是 SF 符号；
+    /// Remote 记录按传输方向取的图标，与工具栏对应的段相同，不随失败与取消变化；
     /// 较早保存、没有方向的记录与拉取同用一个图标。
     var transferIcon: ActivityIcon {
-        switch target?.transfer {
-        case .fetch: .fetch
-        case .push: .symbol("arrow.up.circle")
-        case .pull, nil: .symbol("arrow.down.to.line")
-        }
+        .transfer(target?.transfer ?? .pull)
     }
 }

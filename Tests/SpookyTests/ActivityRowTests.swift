@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import Testing
 
@@ -180,17 +179,17 @@ struct ActivityRowTests {
 
     /// Remote 页按传输方向显示图标，失败或取消的用警告图标；Repository 与 Service 页是文件夹与账号，只有失败的用警告图标。
     /// 侧边栏底部的活动区共用按方向取的图标，失败与取消不换，结束的行仍看得出是哪种传输。
-    /// 获取与工具栏的 Fetch 段同用自绘的图标，与克隆的 `arrow.down.circle` 区分开。
+    /// 获取、拉取、推送与工具栏对应的段同用自绘的图标。
     @Test("行首图标")
     func symbols() {
         let warning = ActivityIcon.symbol("exclamationmark.triangle.fill")
 
         // 较早保存、没有方向的 Remote 记录与拉取同用一个图标
         let transfers: [(ActivityTransfer?, ActivityIcon)] = [
-            (.fetch, .fetch),
-            (.pull, .symbol("arrow.down.to.line")),
-            (.push, .symbol("arrow.up.circle")),
-            (nil, .symbol("arrow.down.to.line")),
+            (.fetch, .transfer(.fetch)),
+            (.pull, .transfer(.pull)),
+            (.push, .transfer(.push)),
+            (nil, .transfer(.pull)),
         ]
 
         for (transfer, icon) in transfers {
@@ -223,11 +222,6 @@ struct ActivityRowTests {
             activity.state = "activity.failed"
             #expect(ActivityRow(activity: activity).leadingIcon == warning)
         }
-
-        // 获取的图标是随 App 打包的模板图，@1x 与 @2x 两张都在
-        #expect(FetchIcon.image.isTemplate)
-        #expect(FetchIcon.image.size == NSSize(width: 18, height: 18))
-        #expect(FetchIcon.image.representations.count == 2)
     }
 
     /// 进度是几个阶段的平均：推送以外的操作算 Compressing、Receiving、Resolving、Unpacking 四个阶段，没出现过的算 0，

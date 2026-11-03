@@ -202,20 +202,12 @@ struct SidebarActivityRow: View {
         }
     }
 
-    /// 传输方向的图标：SF 符号按 11 pt 的字号显示，获取的自绘图标缩放到 11 × 11。
-    @ViewBuilder
+    /// 传输方向的自绘图标，缩放到 11 × 11。
     private var transferIcon: some View {
-        switch activity.transferIcon {
-        case .symbol:
-            activity.transferIcon.image
-                .font(.system(size: 11))
-
-        case .fetch:
-            activity.transferIcon.image
-                .resizable()
-                .scaledToFit()
-                .frame(width: 11, height: 11)
-        }
+        activity.transferIcon.image
+            .resizable()
+            .scaledToFit()
+            .frame(width: 11, height: 11)
     }
 
     /// 第二行：进度条与右边 7 pt 处的停止按钮。

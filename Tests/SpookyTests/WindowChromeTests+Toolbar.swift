@@ -347,19 +347,31 @@ extension WindowChromeTests {
         }
     }
 
-    /// Fetch 段用自绘的模板图，与 Clone 的 `arrow.down.circle` 不同。
-    @Test("Fetch 的图标")
-    func fetchIcon() async throws {
+    /// Fetch | Pull | Push 三段依次用获取、拉取、推送的自绘图标，都是随 App 打包、@1x 与 @2x 齐全的 18 pt 模板图；
+    /// 三张图的像素两两不同，也与 Clone 的 `arrow.down.circle` 不同，几个按钮一眼认得出来。
+    @Test("Fetch、Pull 与 Push 的图标")
+    func transferIcons() async throws {
         let fixture = try await NavigationTests.makeWindow()
         defer { fixture.close() }
 
         let controller = fixture.controller
         let sync = try #require(Self.item(RepositoryToolbar.sync, in: controller) as? NSToolbarItemGroup)
         let clone = try #require(Self.item(RepositoryToolbar.clone, in: controller))
+        let transfers: [ActivityTransfer] = [.fetch, .pull, .push]
 
-        #expect(sync.subitems.first?.image === FetchIcon.image)
-        #expect(FetchIcon.image.isTemplate)
-        #expect(clone.image !== FetchIcon.image)
+        #expect(sync.subitems.count == transfers.count)
+
+        for (segment, transfer) in zip(sync.subitems, transfers) {
+            let image = TransferIcon.image(for: transfer)
+            #expect(segment.image === image)
+            #expect(image.isTemplate)
+            #expect(image.size == NSSize(width: 18, height: 18))
+            #expect(image.representations.count == 2)
+        }
+
+        // 三段与 Clone 的图按像素比较，四张都不一样
+        let images = sync.subitems.map(\.image) + [clone.image]
+        #expect(Set(images.compactMap { $0?.tiffRepresentation }).count == 4)
     }
 
     /// 只显示图标时，有内层分栏的视图在侧边栏分隔符之后有一个跟随内层分隔线的分隔符；
