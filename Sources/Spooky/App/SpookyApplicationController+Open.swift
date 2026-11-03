@@ -1,5 +1,6 @@
 import AppKit
 import SpookyKit
+import SwiftUI
 
 // MARK: - Open Files
 
@@ -65,6 +66,25 @@ extension SpookyApplicationController {
 
         addingTasks[request] = task
         return task
+    }
+}
+
+// MARK: - Open Links
+
+extension SpookyApplicationController {
+    /// 不认识或不可信的链接的提示：骨架的提示版，只有 Close。
+    ///
+    /// - Parameters:
+    ///   - url: 打不开的链接，原样写进说明。
+    ///   - close: 关掉提示。
+    static func invalidLinkNotice(for url: URL, close: @escaping () -> Void) -> DialogLayout<EmptyView, EmptyView> {
+        DialogLayout(
+            title: AppLocalization.text("link.invalid.title"),
+            message: AppLocalization.text("link.invalid.message", url.absoluteString),
+            submitTitle: AppLocalization.text("action.close"),
+            cancel: nil,
+            submit: close
+        )
     }
 }
 

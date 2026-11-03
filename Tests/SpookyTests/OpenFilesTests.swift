@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import SpookyKit
+import SwiftUI
 import Testing
 
 @testable import Spooky
@@ -63,6 +64,9 @@ struct OpenFilesTests {
         let fixture = try await NavigationTests.makeWindow()
         let bare = try FileViewsTests.temporaryDirectory()
 
+        // 错误框会记下自己的尺寸，测完恢复
+        let savedFrame = UserDefaults.standard.object(forKey: GitErrorDialogTests.frameKey)
+
         defer {
             for window in fixture.coordinator.windows.compactMap(\.window) {
                 if let sheet = window.attachedSheet {
@@ -70,6 +74,7 @@ struct OpenFilesTests {
                 }
             }
 
+            UserDefaults.standard.set(savedFrame, forKey: GitErrorDialogTests.frameKey)
             try? FileManager.default.removeItem(at: bare)
             fixture.close()
         }
@@ -85,7 +90,8 @@ struct OpenFilesTests {
 
         let sheets = coordinator.windows.compactMap { $0.window?.attachedSheet }
         let sheet = try #require(sheets.first)
-        #expect(Self.buttonTitles(in: sheet.contentView).contains(AppLocalization.text("action.chooseAnother")))
+        let dialog = try #require(sheet.contentViewController as? NSHostingController<GitErrorDialog>)
+        #expect(dialog.rootView.chooseAnother != nil)
     }
 
     /// 经链接启动时，链接的仓库显示在唯一的窗口里，不另开仓库管理窗口。
@@ -166,15 +172,5 @@ extension OpenFilesTests {
 
         try await Task.sleep(for: .milliseconds(300))
         #expect(coordinator.windows.count == 1)
-    }
-
-    /// 视图及其子视图里全部按钮的标题。
-    private static func buttonTitles(in view: NSView?) -> [String] {
-        guard let view else {
-            return []
-        }
-
-        let own = (view as? NSButton).map { [$0.title] } ?? []
-        return own + view.subviews.flatMap { buttonTitles(in: $0) }
     }
 }

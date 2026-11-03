@@ -47,7 +47,7 @@ struct StashSessionTests {
 
         // 不储藏时照常报告原操作被挡住的失败
         session.declineAutoStash(pending)
-        #expect(failures.first?.title == AppLocalization.text("sync.error.dirty"))
+        #expect(failures.first?.title == AppLocalization.text("error.merge"))
 
         session.performAutoStash(pending, message: "auto", reapply: true)
         await session.writeTask?.value
@@ -70,7 +70,7 @@ struct StashSessionTests {
             isCancelled: false
         )
 
-        #expect(RepositorySession.isBlockedByLocalChanges(RepositorySyncError.dirtyWorkingCopy))
+        #expect(RepositorySession.isBlockedByLocalChanges(RepositorySyncError.dirtyWorkingCopy(rebase: true)))
         #expect(RepositorySession.isBlockedByLocalChanges(GitError(result: result, category: .localChanges, diagnostic: nil)))
         #expect(!RepositorySession.isBlockedByLocalChanges(RepositorySyncError.requiresBranch))
         #expect(!RepositorySession.isBlockedByLocalChanges(GitError(result: result, category: .commandFailed, diagnostic: nil)))

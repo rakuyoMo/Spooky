@@ -4,8 +4,10 @@ import Foundation
 
 /// 发起同步前的仓库条件错误，不伪造 Git 输出。
 public enum RepositorySyncError: Error, Sendable, Equatable {
-    /// 合并和拉取必须从干净工作区开始。
-    case dirtyWorkingCopy
+    /// 合并、变基、拉取与同步必须从干净工作区开始。
+    ///
+    /// - Parameter rebase: 被挡住的是变基（包括用变基的拉取与同步），否则是合并。
+    case dirtyWorkingCopy(rebase: Bool)
 
     /// 当前操作需要已出生且附着的本地分支。
     case requiresBranch
@@ -259,7 +261,7 @@ public struct RepositorySync: Sendable {
             }
 
             guard status.entries.isEmpty else {
-                throw RepositorySyncError.dirtyWorkingCopy
+                throw RepositorySyncError.dirtyWorkingCopy(rebase: rebase)
             }
 
             let target = try await pullTarget(remote: remote, branch: branch, current: current)
@@ -338,7 +340,7 @@ public struct RepositorySync: Sendable {
     ) async throws {
         try await runner.writeTransaction {
             guard try await runner.status().entries.isEmpty else {
-                throw RepositorySyncError.dirtyWorkingCopy
+                throw RepositorySyncError.dirtyWorkingCopy(rebase: false)
             }
 
             let target = try await RepositoryReferences(runner: runner).resolve(revision)

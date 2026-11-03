@@ -19,7 +19,7 @@ extension RepositoryStashesTests {
         try write("new\n", to: "未跟踪.txt", in: repository)
 
         // 未跟踪文件同样会挡住合并，自动储藏要把它们一起收走
-        await #expect(throws: RepositorySyncError.dirtyWorkingCopy) {
+        await #expect(throws: RepositorySyncError.dirtyWorkingCopy(rebase: false)) {
             try await RepositorySync(runner: runner).merge("refs/heads/feature")
         }
 

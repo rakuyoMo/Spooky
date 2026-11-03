@@ -45,10 +45,11 @@ enum DialogWindow {
         window.contentViewController = controller
 
         if let autosaveName {
-            // 可以拉大的对话框以内容的最小尺寸为下限，先按理想尺寸打开，再换成记住的尺寸
+            // 可以拉大的对话框以内容的最小尺寸为下限：先按约束把窗口排成这个尺寸再接上尺寸记录名，
+            // 否则记下的是还没排版的空窗口；记住过尺寸的随即换成记住的尺寸
             controller.sizingOptions = [.minSize]
             window.styleMask.insert(.resizable)
-            window.setContentSize(controller.view.fittingSize)
+            window.updateConstraintsIfNeeded()
             window.setFrameAutosaveName(autosaveName)
         } else {
             // 高度取内容的理想尺寸，说明折成几行就留几行的高度

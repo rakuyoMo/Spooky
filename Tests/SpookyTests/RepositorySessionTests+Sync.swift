@@ -200,7 +200,8 @@ extension RepositorySessionTests {
 
         session.quickPush()
         #expect(!session.isWriting)
-        #expect(failures.last?.title == AppLocalization.text("sync.error.upstream"))
+        #expect(failures.last?.title == AppLocalization.text("error.synchronization"))
+        #expect(failures.last?.message.hasPrefix(AppLocalization.text("sync.error.upstream")) ?? false)
     }
 
     /// HEAD 没有上游时，推送 HEAD 分支改开发布分支；有上游、指定了目标远端分支或推的是别的分支时仍是推送。

@@ -49,7 +49,8 @@ struct ReferenceSessionTests {
         #expect(offer.deletingUpstream)
         #expect(failure.details.lowercased().contains("not fully merged"))
         #expect(failures.isEmpty)
-        #expect(failure.title == AppLocalization.text("branch.error.unmerged"))
+        #expect(failure.title == AppLocalization.text("branch.error.delete"))
+        #expect(failure.message.hasPrefix(AppLocalization.text("branch.error.unmerged")))
 
         session.deleteBranches(offer.branches, force: true, deletingUpstream: offer.deletingUpstream)
         await session.writeTask?.value
@@ -120,7 +121,7 @@ struct ReferenceSessionTests {
         session.openRemoteInBrowser("origin")
         try await Self.wait { !failures.isEmpty }
 
-        #expect(failures.first?.title == AppLocalization.text("remote.error.browser"))
+        #expect(failures.first?.title == AppLocalization.text("remote.error.browser.title"))
         #expect(failures.first?.details == bare)
         #expect(failures.first?.kind == .repository)
     }

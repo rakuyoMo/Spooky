@@ -123,7 +123,7 @@
 
 
 
-"error.command" = "Git-Befehl fehlgeschlagen";
+"error.command" = "Git-Befehl kann nicht ausgeführt werden";
 
 "error.launch" = "Git konnte nicht gestartet werden";
 
@@ -133,13 +133,13 @@
 
 "error.path" = "Repository-Pfad nicht verfügbar";
 
-"error.ownership" = "Git hat die Eigentümerschaft des Repositorys abgelehnt";
+"error.ownership" = "Repository-Eigentümer von Git abgelehnt";
 
 "error.cancelled" = "Vorgang abgebrochen";
 
 "error.outputLimit" = "Git-Ausgabe ist zu groß";
 
-"error.process" = "Kommunikation mit dem Git-Prozess fehlgeschlagen";
+"error.process" = "Git-Prozesskommunikation fehlgeschlagen";
 
 "error.version" = "Git 2.41.0 oder neuer erforderlich";
 
@@ -153,7 +153,7 @@
 
 "error.details" = "Originalausgabe";
 
-"error.noOutput" = "Der Befehl hat keine Ausgabe geliefert.";
+"error.noOutput" = "(Keine Fehlermeldung angegeben)";
 
 "error.outputLimitHelp" = "Der Befehl hat das Limit von 256 MiB für die Standardausgabe oder von 1 MiB für die Standardfehlerausgabe überschritten. Das zu große Ergebnis wurde nicht geladen.";
 "action.addRemote" = "Server-Repository hinzufügen …";
@@ -194,7 +194,29 @@
 "error.indexLocked" = "Der Index ist durch einen anderen Git-Prozess gesperrt. Warten Sie, bis dieser beendet ist, und versuchen Sie es dann erneut.";
 "error.terminal" = "Terminal konnte nicht geöffnet werden";
 "error.terminalHelp" = "Prüfen Sie das in den Einstellungen ausgewählte Terminal und seine macOS-Berechtigung für Automation.";
-"error.exitCode" = "Exit-Status: %ld";
+"error.remoteConnection" = "Verbindung zum Remote fehlgeschlagen";
+"error.synchronization" = "Synchronisierung mit Remote fehlgeschlagen";
+"error.remoteNotFound" = "Remote-Repository nicht gefunden";
+"error.indexLocked.title" = "Git-Index von anderem Git-Prozess gesperrt";
+"signing.error.title" = "Signieren nicht möglich";
+"error.merge" = "Zusammenführen fehlgeschlagen";
+"error.rebase" = "Rebase fehlgeschlagen";
+"error.checkout" = "Revision konnte nicht ausgecheckt werden";
+"sync.error.branch.title" = "Lokaler Branch erforderlich";
+"branch.error.diverged.title" = "Branch kann nicht vorgespult werden";
+"branch.error.current.title" = "Aktueller Branch nicht vorspulbar";
+"branch.error.remoteExists.title" = "Remote-Branch existiert bereits";
+"working.error.stale.title" = "Datei geändert";
+"working.error.selection.title" = "Keine Änderungen ausgewählt";
+"working.error.file.title" = "Reguläre Datei erforderlich";
+"working.error.path.title" = "Nicht unterstützter Pfad";
+"diff.error.whitespace.title" = "Ausgewählte Zeilen passen nicht";
+"reference.error.name.title" = "Ungültiger Name";
+"reference.error.refspec.title" = "Ungültige Refspec";
+"reference.error.url.title" = "Ungültige Remote-URL";
+"remote.error.browser.title" = "Remote kann nicht im Browser geöffnet werden";
+"failure.reason" = "%1$@ %2$@";
+"error.gitMessage" = "Git-Fehlermeldung";
 "terminal.notInstalled" = "%@ ist nicht installiert.";
 "themes.background" = "Hintergrund";
 "themes.selection" = "Auswahl";
@@ -223,7 +245,7 @@
 "remoteError.pathUnavailable.help" = "Prüfen Sie, ob der absolute Pfad auf dem ausgewählten Server existiert.";
 "remoteError.pathPermission" = "Zugriff auf Serververzeichnis verweigert";
 "remoteError.pathPermission.help" = "Der SSH-Benutzer benötigt Lese- und Suchberechtigung für dieses Verzeichnis.";
-"remoteError.diskAccess" = "Serververzeichnis durch Datenschutzeinstellungen blockiert";
+"remoteError.diskAccess" = "Serververzeichnis durch Datenschutz blockiert";
 "remoteError.diskAccess.help" = "macOS auf dem Server verhindert, dass SSH-Sitzungen diesen Ordner lesen. Erlauben Sie auf dem Server unter „Freigaben“ → „Entfernte Anmeldung“ den vollständigen Festplattenzugriff für entfernte Benutzer oder verschieben Sie das Repository aus geschützten Ordnern.";
 "remoteError.notWorkingTree" = "Serverpfad ist kein Git-Arbeitsverzeichnis";
 "remoteError.notWorkingTree.help" = "Wählen Sie ein vorhandenes Git-Arbeitsverzeichnis auf dem Server aus. Prüfen Sie die Originalausgabe von Git auf Einschränkungen durch die Eigentümerschaft.";
@@ -235,7 +257,7 @@
 "remoteError.protocolFailure.help" = "Verbinden Sie erneut und prüfen Sie das Repository, bevor Sie einen Schreibvorgang wiederholen.";
 "remoteError.cancellationUnconfirmed" = "Abbruch auf dem Server nicht bestätigt";
 "remoteError.cancellationUnconfirmed.help" = "Der lokale Kanal wurde geschlossen, aber es konnte nicht bestätigt werden, dass der Serverprozess beendet wurde. Verbinden Sie erneut und prüfen Sie das Repository; der Schreibvorgang wird nicht automatisch wiederholt.";
-"remoteError.interruptedWrite" = "Unterbrochener Schreibvorgang muss geprüft werden";
+"remoteError.interruptedWrite" = "Unterbrochenen Schreibvorgang prüfen";
 "remoteError.interruptedWrite.help" = "Verbinden Sie erneut, um Branch, Arbeitsverzeichnis, Index-Sperre und Merge- oder Rebase-Status zu prüfen, bevor Sie wieder schreiben.";
 
 "working.stage" = "Stagen";
@@ -596,6 +618,7 @@
 "conflict.applied" = "Angewendeter Patch oder Stash";
 "conflict.binary" = "Binäre Inhalte werden nicht angezeigt.";
 "conflict.error.version" = "Die ausgewählten Dateien haben diese Version nicht.";
+"conflict.error.version.title" = "Version nicht vorhanden";
 "conflict.export" = "Version aus „%@“ exportieren …";
 "conflict.hint.merge.conflicts" = "Lösen Sie alle Konflikte auf, um den Merge abzuschließen.";
 "conflict.hint.merge.resolved" = "Prüfen Sie die Commit-Nachricht und klicken Sie dann auf **Committen**, um den Merge abzuschließen.";
@@ -846,7 +869,7 @@
 "files.error.preimageHelp" = "Die folgenden Dateien wurden nach dem Erstellen des Patches geändert. Der Patch wurde daher nicht angewendet, die Arbeitskopie ist unverändert. Erstellen Sie den Patch aus den aktuellen Dateien neu oder setzen Sie die Dateien auf die Version zurück, aus der der Patch erstellt wurde.";
 "files.error.destination" = "Das Ziel existiert bereits";
 "files.error.trashUnavailable" = "Auf dem Server ist kein Papierkorb verfügbar";
-"files.error.trashedItems" = "Die Dateien können nicht aus dem Papierkorb zurückgelegt werden";
+"files.error.trashedItems" = "Zurücklegen aus dem Papierkorb nicht möglich";
 "files.doubleClick" = "Doppelklick auf Datei in der Arbeitskopie:";
 "files.doubleClick.openFile" = "Mit Standardprogramm öffnen";
 "files.doubleClick.openDiff" = "Vergleichswerkzeug öffnen";
@@ -1145,7 +1168,7 @@
 "rewrite.rebaseOnto.currentIsHead" = "Die aktuelle Basis darf nicht der HEAD-Commit sein.";
 "rewrite.reword.title" = "Nachricht von Revision „%@“ bearbeiten";
 "rewrite.reword.help" = "Ersetzt die Nachricht des ausgewählten Commits. Die nachfolgenden Commits werden ebenfalls umgeschrieben.";
-"rewrite.error.changed" = "Der Branch hat sich vor dem Umschreiben geändert";
+"rewrite.error.changed" = "Branch vor dem Umschreiben geändert";
 "rewrite.error.changed.help" = "Die Commits des Branches entsprechen nicht mehr der Anzeige. Es wurde nichts umgeschrieben. Aktualisieren Sie den Verlauf und versuchen Sie es erneut.";
 "rewrite.error.merges" = "Merge-Commits im Bereich";
 "rewrite.error.merges.help" = "Die umzuschreibenden Commits enthalten einen Merge-Commit, der dabei eingeebnet würde. Wählen Sie Commits nach dem letzten Merge.";
@@ -1518,7 +1541,7 @@
 "undo.error.inProgress.help" = "Schließen Sie zuerst den Merge, Rebase, Cherry-Pick oder Revert ab oder brechen Sie ihn ab. Es wurde nichts geändert.";
 "undo.error.conflicts" = "Das Repository hat ungelöste Konflikte";
 "undo.error.conflicts.help" = "Lösen Sie zuerst die Konflikte. Es wurde nichts geändert.";
-"undo.error.trash" = "Die Dateien können nicht aus dem Papierkorb zurückgelegt werden";
+"undo.error.trash" = "Zurücklegen aus dem Papierkorb nicht möglich";
 "undo.error.trash.help" = "Einige in den Papierkorb gelegte Dateien sind dort nicht mehr vorhanden, oder an ihrem ursprünglichen Ort liegen jetzt andere Dateien. Es wurde nichts geändert.";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
@@ -1641,7 +1664,7 @@
 "externalTool.configureMerge" = "Zusammenführungswerkzeug festlegen";
 "externalTool.configureMerge.message" = "Wählen Sie das Programm, mit dem Zusammenführungskonflikte gelöst werden.";
 "externalTool.select" = "Auswählen";
-"externalTool.error" = "Das externe Werkzeug kann nicht geöffnet werden";
+"externalTool.error" = "Externes Werkzeug kann nicht geöffnet werden";
 "externalTool.error.help" = "Prüfen Sie, ob das in den Einstellungen gewählte Vergleichs- oder Zusammenführungswerkzeug installiert ist, und versuchen Sie es erneut. Details stehen unten.";
 "externalTool.fileChanged" = "Datei wurde anderswo geändert";
 "externalTool.fileChanged.message" = "„%1$@“ in %2$@ wurde geändert, nachdem es an das externe Programm übergeben wurde. Mit der bearbeiteten Version überschreiben?";
@@ -2058,7 +2081,7 @@
 "submodule.editURL" = "Submodul-URL bearbeiten";
 "submodule.editURL.message" = "Gib die URL des Submodul-Repositorys ein.";
 "submodule.editURL.submit" = "Ändern";
-"submodule.error.gitDirectoryExists" = "Für dieses Submodul gibt es bereits ein Git-Verzeichnis";
+"submodule.error.gitDirectoryExists" = "Git-Verzeichnis des Submoduls existiert bereits";
 "submodule.error.gitDirectoryExists.help" = "Verwende das vorhandene Git-Verzeichnis erneut, überschreibe es oder wähle einen anderen Pfad.";
 "submodule.error.localModifications" = "Das Submodul hat lokale Änderungen";
 "submodule.error.localModifications.help" = "Committe oder verwirf die Änderungen im Submodul oder lösche es trotzdem.";

@@ -57,7 +57,7 @@ extension RepositorySync {
             }
 
             guard status.entries.isEmpty else {
-                throw RepositorySyncError.dirtyWorkingCopy
+                throw RepositorySyncError.dirtyWorkingCopy(rebase: true)
             }
 
             let target = try await RepositoryReferences(runner: runner).resolve(revision)
@@ -88,7 +88,7 @@ extension RepositorySync {
 
             // 工作区不干净时在获取之前就停下，自动储藏可以在任何步骤开始前介入
             guard status.entries.isEmpty else {
-                throw RepositorySyncError.dirtyWorkingCopy
+                throw RepositorySyncError.dirtyWorkingCopy(rebase: options.rebase)
             }
 
             let target = try await pullTarget(remote: remote, branch: branch, current: current)

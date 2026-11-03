@@ -174,8 +174,8 @@ extension RepositorySession {
 extension RepositorySession {
     /// 检出、拉取与合并被本地改动挡住：Spooky 发起前的干净工作区检查，或 Git 拒绝覆盖未提交的改动。
     static func isBlockedByLocalChanges(_ error: any Error) -> Bool {
-        if let sync = error as? RepositorySyncError {
-            return sync == .dirtyWorkingCopy
+        if case .dirtyWorkingCopy = error as? RepositorySyncError {
+            return true
         }
 
         return (error as? GitError)?.category == .localChanges

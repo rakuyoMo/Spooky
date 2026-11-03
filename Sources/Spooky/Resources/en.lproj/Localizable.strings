@@ -123,7 +123,7 @@
 
 
 
-"error.command" = "Git Command Failed";
+"error.command" = "Can’t execute Git command";
 
 "error.launch" = "Git Could Not Start";
 
@@ -153,7 +153,7 @@
 
 "error.details" = "Original Output";
 
-"error.noOutput" = "The command did not provide any output.";
+"error.noOutput" = "(No error message given)";
 
 "error.outputLimitHelp" = "The command exceeded the 256 MiB standard output limit or the 1 MiB standard error limit. The oversized result was not loaded.";
 "action.addRemote" = "Add Server Repository…";
@@ -194,7 +194,29 @@
 "error.indexLocked" = "The index is locked by another Git process. Wait for it to finish, then retry.";
 "error.terminal" = "Could Not Open Terminal";
 "error.terminalHelp" = "Check the selected terminal in Settings and its macOS Automation permission.";
-"error.exitCode" = "Exit status: %ld";
+"error.remoteConnection" = "Connection to Remote Failed";
+"error.synchronization" = "Synchronization With Remote Failed";
+"error.remoteNotFound" = "Can’t Find Remote Repository";
+"error.indexLocked.title" = "Git Index Locked by Another Git Process";
+"signing.error.title" = "Could Not Sign Data";
+"error.merge" = "Merging Failed";
+"error.rebase" = "Rebase Failed";
+"error.checkout" = "Could Not Checkout Revision";
+"sync.error.branch.title" = "Local Branch Required";
+"branch.error.diverged.title" = "Can’t Fast-Forward Branch";
+"branch.error.current.title" = "Can’t Fast-Forward Current Branch";
+"branch.error.remoteExists.title" = "Remote Branch Already Exists";
+"working.error.stale.title" = "File Changed";
+"working.error.selection.title" = "No Changes Selected";
+"working.error.file.title" = "Regular File Required";
+"working.error.path.title" = "Unsupported Path";
+"diff.error.whitespace.title" = "Selected Lines Don’t Match";
+"reference.error.name.title" = "Invalid Name";
+"reference.error.refspec.title" = "Invalid Refspec";
+"reference.error.url.title" = "Invalid Remote URL";
+"remote.error.browser.title" = "Can’t Open Remote in Browser";
+"failure.reason" = "%1$@ %2$@";
+"error.gitMessage" = "Git Error Message";
 "terminal.notInstalled" = "%@ is not installed.";
 "themes.background" = "Background";
 "themes.selection" = "Selection";
@@ -596,6 +618,7 @@
 "conflict.applied" = "Applied Patch or Stash";
 "conflict.binary" = "Binary content isn’t shown.";
 "conflict.error.version" = "The selected files don’t have this version.";
+"conflict.error.version.title" = "Version Unavailable";
 "conflict.export" = "Export Version from “%@”…";
 "conflict.hint.merge.conflicts" = "Resolve all conflicts to complete the merge.";
 "conflict.hint.merge.resolved" = "Review the commit message, then click **Commit** to complete the merge.";
@@ -2357,7 +2380,7 @@
 "hosting.error.differentUser.help" = "The token is for the user shown below. To sign in as that user, add a new account instead.";
 "hosting.error.passwordRejected" = "The Username or Password Was Rejected";
 "hosting.error.passwordRejected.help" = "The password may be wrong, the account may use two-factor authentication or sign in only through single sign-on, or the server may not allow password sign-in. Use a personal access token instead.";
-"hosting.error.clientCredentialsRequired" = "The Server Requires OAuth Application Credentials";
+"hosting.error.clientCredentialsRequired" = "OAuth Application Credentials Required";
 "hosting.error.clientCredentialsRequired.help" = "This GitLab server issues tokens only to registered OAuth applications, as GitLab 13.9 does and as GitLab 17.8 or later can be set to do. Spooky doesn’t take application credentials. Use a personal access token instead.";
 "hosting.error.passwordGrantUnsupported" = "Password Sign-In Isn’t Supported";
 "hosting.error.passwordGrantUnsupported.help" = "GitLab 19.0 and later no longer exchange a username and password for a token. Use a personal access token instead.";

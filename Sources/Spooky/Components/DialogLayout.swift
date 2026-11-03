@@ -17,6 +17,7 @@ import SwiftUI
 /// - 确认版：没有内容区，只有头部与底栏
 /// - 提示版：没有取消动作，底栏只有主按钮，↩ 与 ⎋ 都按它
 /// - 备选底栏：给了备选按钮时，取消贴按钮组左端，备选按钮与主按钮贴右端
+/// - 可以拉大：内容随窗口变宽变高，多出的高度交给选项区里能伸展的部分
 struct DialogLayout<Content: View, Options: View>: View {
     /// 对话框标题，也是 VoiceOver 读出的名称。
     let title: String
@@ -54,6 +55,9 @@ struct DialogLayout<Content: View, Options: View>: View {
     /// 是否正在提交：主按钮与取消按钮都不可用。
     let submitting: Bool
 
+    /// 对话框所在的窗口能否拉大；能拉大时内容占满窗口的宽度。
+    let resizable: Bool
+
     /// Options 开关的文字。
     let optionsTitle: String
 
@@ -79,7 +83,7 @@ struct DialogLayout<Content: View, Options: View>: View {
 
     /// 头部、内容区、错误区、Options 与底栏依次排列；错误出现与消失时带动画。
     var body: some View {
-        DialogStack(width: width) {
+        DialogStack(width: width, fillsProposedWidth: resizable) {
             VStack(alignment: .leading, spacing: 0) {
                 header
 
@@ -123,6 +127,7 @@ struct DialogLayout<Content: View, Options: View>: View {
     ///   - submitting: 是否正在提交。
     ///   - optionsTitle: Options 开关的文字。
     ///   - optionsExpanded: 选项区一开始是否展开。
+    ///   - resizable: 对话框所在的窗口能否拉大。
     ///   - cancel: 取消按钮与 ⎋ 的动作；为 nil 时没有取消按钮。
     ///   - submit: 主按钮的动作。
     ///   - content: 内容区。
@@ -142,6 +147,7 @@ struct DialogLayout<Content: View, Options: View>: View {
         submitting: Bool = false,
         optionsTitle: String = AppLocalization.text("dialog.options"),
         optionsExpanded: Bool = false,
+        resizable: Bool = false,
         cancel: (() -> Void)?,
         submit: @escaping () -> Void,
         @ViewBuilder content: @escaping () -> Content = { EmptyView() },
@@ -159,6 +165,7 @@ struct DialogLayout<Content: View, Options: View>: View {
         self.progress = progress
         self.canSubmit = canSubmit
         self.submitting = submitting
+        self.resizable = resizable
         self.optionsTitle = optionsTitle
         self.cancel = cancel
         self.submit = submit
@@ -430,14 +437,17 @@ private final class PassthroughButton: NSButton {
 /// 骨架的两段：上面是头部到选项区，下面是底栏，宽度取指定宽度与底栏理想宽度中较大的一个。
 ///
 /// 按钮文字较长的语言里，底栏的按钮组可能在指定宽度里放不下，对话框随之加宽，上面一段按同一宽度排版；
-/// 高度有富余时（可以拉大的对话框）都交给上面一段。
+/// 可以拉大的对话框再占满窗口给的宽度，高度有富余时都交给上面一段。
 private struct DialogStack: Layout {
     /// 指定的宽度。
     let width: CGFloat
 
+    /// 是否占满提议的宽度：可以拉大的对话框拉宽后，内容随窗口变宽。
+    let fillsProposedWidth: Bool
+
     /// 宽度取指定宽度与底栏理想宽度中较大的一个，高度是两段之和。
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
-        let width = resolvedWidth(subviews)
+        let width = resolvedWidth(subviews, proposed: proposal.width)
         let footer = footerHeight(subviews, width: width)
 
         let body = subviews[0].sizeThatFits(ProposedViewSize(
@@ -450,7 +460,7 @@ private struct DialogStack: Layout {
 
     /// 上面一段从顶边开始，底栏紧接在它下面。
     func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
-        let width = resolvedWidth(subviews)
+        let width = resolvedWidth(subviews, proposed: bounds.width)
         let footer = footerHeight(subviews, width: width)
 
         let proposal = ProposedViewSize(width: width, height: max(bounds.height - footer, 0))
@@ -464,9 +474,15 @@ private struct DialogStack: Layout {
         )
     }
 
-    /// 指定宽度与底栏理想宽度中较大的一个。
-    private func resolvedWidth(_ subviews: Subviews) -> CGFloat {
-        max(width, subviews[1].sizeThatFits(.unspecified).width)
+    /// 指定宽度与底栏理想宽度中较大的一个；占满提议的宽度时，提议的宽度更大就取它。
+    private func resolvedWidth(_ subviews: Subviews, proposed: CGFloat?) -> CGFloat {
+        let fitting = max(width, subviews[1].sizeThatFits(.unspecified).width)
+
+        guard fillsProposedWidth, let proposed, proposed.isFinite else {
+            return fitting
+        }
+
+        return max(fitting, proposed)
     }
 
     /// 底栏在这个宽度下的高度。

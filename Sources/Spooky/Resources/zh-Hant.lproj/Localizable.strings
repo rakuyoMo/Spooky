@@ -123,7 +123,7 @@
 
 
 
-"error.command" = "Git 命令執行失敗";
+"error.command" = "無法執行 Git 命令";
 
 "error.launch" = "無法啟動 Git";
 
@@ -153,7 +153,7 @@
 
 "error.details" = "原始輸出";
 
-"error.noOutput" = "命令未提供輸出。";
+"error.noOutput" = "（沒有錯誤訊息）";
 
 "error.outputLimitHelp" = "命令超過標準輸出 256 MiB 或標準錯誤 1 MiB 的收集上限，已拒絕載入超限結果。";
 "action.addRemote" = "加入伺服器儲存庫…";
@@ -194,7 +194,29 @@
 "error.indexLocked" = "另一個 Git 程序持有暫存區鎖定，請等待它結束後重試。";
 "error.terminal" = "無法開啟終端機";
 "error.terminalHelp" = "請檢查設定中的終端機選擇及 macOS 自動化權限。";
-"error.exitCode" = "結束碼：%ld";
+"error.remoteConnection" = "連線遠端失敗";
+"error.synchronization" = "與遠端同步失敗";
+"error.remoteNotFound" = "找不到遠端儲存庫";
+"error.indexLocked.title" = "Git 暫存區被另一個 Git 程序鎖定";
+"signing.error.title" = "無法簽署";
+"error.merge" = "合併失敗";
+"error.rebase" = "重定基底失敗";
+"error.checkout" = "無法檢出版本";
+"sync.error.branch.title" = "需要本機分支";
+"branch.error.diverged.title" = "無法快轉分支";
+"branch.error.current.title" = "無法在這裡快轉目前分支";
+"branch.error.remoteExists.title" = "遠端分支已存在";
+"working.error.stale.title" = "檔案已變更";
+"working.error.selection.title" = "未選取變更";
+"working.error.file.title" = "需要一般檔案";
+"working.error.path.title" = "路徑不受支援";
+"diff.error.whitespace.title" = "選取的行對應不上";
+"reference.error.name.title" = "名稱無效";
+"reference.error.refspec.title" = "refspec 無效";
+"reference.error.url.title" = "遠端位址無效";
+"remote.error.browser.title" = "無法在瀏覽器中開啟遠端";
+"failure.reason" = "%1$@%2$@";
+"error.gitMessage" = "Git 錯誤訊息";
 "terminal.notInstalled" = "尚未安裝 %@。";
 "themes.background" = "背景";
 "themes.selection" = "選取範圍";
@@ -596,6 +618,7 @@
 "conflict.applied" = "套用的修補或儲藏";
 "conflict.binary" = "不顯示二進位內容。";
 "conflict.error.version" = "所選檔案沒有這個版本。";
+"conflict.error.version.title" = "沒有這個版本";
 "conflict.export" = "匯出來自 “%@” 的版本…";
 "conflict.hint.merge.conflicts" = "解決全部衝突後才能完成合併。";
 "conflict.hint.merge.resolved" = "檢查提交訊息，然後按一下 **提交** 完成合併。";

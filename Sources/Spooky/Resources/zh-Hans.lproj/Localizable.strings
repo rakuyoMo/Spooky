@@ -123,7 +123,7 @@
 
 
 
-"error.command" = "Git 命令执行失败";
+"error.command" = "无法执行 Git 命令";
 
 "error.launch" = "无法启动 Git";
 
@@ -153,7 +153,7 @@
 
 "error.details" = "原始输出";
 
-"error.noOutput" = "命令未提供输出。";
+"error.noOutput" = "（没有错误信息）";
 
 "error.outputLimitHelp" = "命令超过标准输出 256 MiB 或标准错误 1 MiB 的收集上限，已拒绝载入超限结果。";
 "action.addRemote" = "添加服务器仓库…";
@@ -194,7 +194,29 @@
 "error.indexLocked" = "另一个 Git 进程持有暂存区锁，请等待它结束后重试。";
 "error.terminal" = "无法打开终端";
 "error.terminalHelp" = "请检查设置中的终端选择及 macOS 自动化权限。";
-"error.exitCode" = "退出码：%ld";
+"error.remoteConnection" = "连接远端失败";
+"error.synchronization" = "与远端同步失败";
+"error.remoteNotFound" = "找不到远端仓库";
+"error.indexLocked.title" = "Git 暂存区被另一个 Git 进程锁定";
+"signing.error.title" = "无法签名";
+"error.merge" = "合并失败";
+"error.rebase" = "变基失败";
+"error.checkout" = "无法检出版本";
+"sync.error.branch.title" = "需要本地分支";
+"branch.error.diverged.title" = "无法快进分支";
+"branch.error.current.title" = "无法在这里快进当前分支";
+"branch.error.remoteExists.title" = "远端分支已存在";
+"working.error.stale.title" = "文件已变化";
+"working.error.selection.title" = "未选择改动";
+"working.error.file.title" = "需要普通文件";
+"working.error.path.title" = "路径不受支持";
+"diff.error.whitespace.title" = "选中的行对应不上";
+"reference.error.name.title" = "名称无效";
+"reference.error.refspec.title" = "refspec 无效";
+"reference.error.url.title" = "远端地址无效";
+"remote.error.browser.title" = "无法在浏览器中打开远端";
+"failure.reason" = "%1$@%2$@";
+"error.gitMessage" = "Git 错误信息";
 "terminal.notInstalled" = "未安装 %@。";
 "themes.background" = "背景";
 "themes.selection" = "选区";
@@ -596,6 +618,7 @@
 "conflict.applied" = "应用的补丁或储藏";
 "conflict.binary" = "不显示二进制内容。";
 "conflict.error.version" = "所选文件没有这个版本。";
+"conflict.error.version.title" = "没有这个版本";
 "conflict.export" = "导出来自 “%@” 的版本…";
 "conflict.hint.merge.conflicts" = "解决全部冲突后才能完成合并。";
 "conflict.hint.merge.resolved" = "检查提交信息，然后点按 **提交** 完成合并。";

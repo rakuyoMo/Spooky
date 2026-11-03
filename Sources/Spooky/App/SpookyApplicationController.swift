@@ -220,11 +220,8 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
         for url in urls where !url.isFileURL {
             guard let request = SpookyURL(url) else {
-                let alert = NSAlert()
-                alert.alertStyle = .warning
-                alert.messageText = AppLocalization.text("link.invalid.title")
-                alert.informativeText = AppLocalization.text("link.invalid.message", url.absoluteString)
-                alert.runModal()
+                // 链接不是从哪个窗口发起的，提示是应用级的模态窗口
+                DialogWindow.present(on: nil) { Self.invalidLinkNotice(for: url, close: $0) }
                 continue
             }
 

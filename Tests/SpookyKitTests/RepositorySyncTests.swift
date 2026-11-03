@@ -121,7 +121,7 @@ struct RepositorySyncTests {
             #expect(error.category == .localChanges)
         }
         #expect(try String(contentsOf: file, encoding: .utf8) == "main\n")
-        await #expect(throws: RepositorySyncError.dirtyWorkingCopy) {
+        await #expect(throws: RepositorySyncError.dirtyWorkingCopy(rebase: false)) {
             try await sync.merge("refs/heads/" + name)
         }
         _ = try await runner.run(["commit", "-am", "main"])

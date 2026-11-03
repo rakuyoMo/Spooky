@@ -123,7 +123,7 @@
 
 
 
-"error.command" = "Git コマンドが失敗しました";
+"error.command" = "Git コマンドを実行できません";
 
 "error.launch" = "Git を起動できません";
 
@@ -153,7 +153,7 @@
 
 "error.details" = "元の出力";
 
-"error.noOutput" = "コマンドから出力がありませんでした。";
+"error.noOutput" = "（エラーメッセージはありません）";
 
 "error.outputLimitHelp" = "標準出力の 256 MiB または標準エラー出力の 1 MiB の上限を超えたため、結果を読み込みませんでした。";
 "action.addRemote" = "サーバーリポジトリを追加…";
@@ -194,7 +194,29 @@
 "error.indexLocked" = "別の Git プロセスがインデックスをロックしています。終了後に再試行してください。";
 "error.terminal" = "ターミナルを開けません";
 "error.terminalHelp" = "設定のターミナル選択と macOS のオートメーション権限を確認してください。";
-"error.exitCode" = "終了コード：%ld";
+"error.remoteConnection" = "リモートへの接続に失敗しました";
+"error.synchronization" = "リモートとの同期に失敗しました";
+"error.remoteNotFound" = "リモートリポジトリが見つかりません";
+"error.indexLocked.title" = "別の Git プロセスが Git インデックスをロック中";
+"signing.error.title" = "署名できませんでした";
+"error.merge" = "マージに失敗しました";
+"error.rebase" = "リベースに失敗しました";
+"error.checkout" = "リビジョンをチェックアウトできませんでした";
+"sync.error.branch.title" = "ローカルブランチが必要です";
+"branch.error.diverged.title" = "ブランチを早送りできません";
+"branch.error.current.title" = "現在のブランチはここでは早送りできません";
+"branch.error.remoteExists.title" = "リモートブランチはすでにあります";
+"working.error.stale.title" = "ファイルが変更されました";
+"working.error.selection.title" = "変更が選択されていません";
+"working.error.file.title" = "通常のファイルが必要です";
+"working.error.path.title" = "サポートされていないパス";
+"diff.error.whitespace.title" = "選択した行が一致しません";
+"reference.error.name.title" = "無効な名前";
+"reference.error.refspec.title" = "無効な refspec";
+"reference.error.url.title" = "無効なリモート URL";
+"remote.error.browser.title" = "リモートをブラウザで開けません";
+"failure.reason" = "%1$@%2$@";
+"error.gitMessage" = "Git のエラーメッセージ";
 "terminal.notInstalled" = "%@ がインストールされていません。";
 "themes.background" = "背景";
 "themes.selection" = "選択範囲";
@@ -223,7 +245,7 @@
 "remoteError.pathUnavailable.help" = "指定したサーバーに絶対パスが存在するか確認してください。";
 "remoteError.pathPermission" = "サーバーのディレクトリにアクセスできません";
 "remoteError.pathPermission.help" = "SSH ユーザーにはディレクトリの読み取りと検索権限が必要です。";
-"remoteError.diskAccess" = "サーバのディレクトリがプライバシー設定で拒否されました";
+"remoteError.diskAccess" = "サーバのディレクトリがプライバシー設定で拒否";
 "remoteError.diskAccess.help" = "サーバの macOS が SSH セッションによるこのフォルダの読み取りを許可していません。サーバの「共有」→「リモートログイン」でリモートユーザにフルディスクアクセスを許可するか、リポジトリを保護されたフォルダの外に移動してください。";
 "remoteError.notWorkingTree" = "サーバーのパスは Git 作業ツリーではありません";
 "remoteError.notWorkingTree.help" = "サーバーの既存の Git 作業ツリーを選択してください。所有権の制限は Git 出力で確認できます。";
@@ -596,6 +618,7 @@
 "conflict.applied" = "適用したパッチまたはスタッシュ";
 "conflict.binary" = "バイナリの内容は表示しません。";
 "conflict.error.version" = "選択したファイルにはこのバージョンがありません。";
+"conflict.error.version.title" = "このバージョンはありません";
 "conflict.export" = "「%@」のバージョンを書き出す…";
 "conflict.hint.merge.conflicts" = "マージを完了するには、すべての競合を解決してください。";
 "conflict.hint.merge.resolved" = "コミットメッセージを確認し、**コミット** をクリックしてマージを完了してください。";
@@ -2058,7 +2081,7 @@
 "submodule.editURL" = "サブモジュールの URL を編集";
 "submodule.editURL.message" = "サブモジュールのリポジトリの URL を入力します。";
 "submodule.editURL.submit" = "変更";
-"submodule.error.gitDirectoryExists" = "このサブモジュールの Git ディレクトリがすでにあります";
+"submodule.error.gitDirectoryExists" = "サブモジュールの Git ディレクトリがすでにあります";
 "submodule.error.gitDirectoryExists.help" = "既存の Git ディレクトリを再利用するか上書きするか、別のパスを選んでください。";
 "submodule.error.localModifications" = "サブモジュールにローカルの変更があります";
 "submodule.error.localModifications.help" = "サブモジュール内の変更をコミットまたは破棄するか、そのまま削除してください。";
@@ -2357,7 +2380,7 @@
 "hosting.error.differentUser.help" = "このトークンは下に示すユーザのものです。そのユーザでサインインするには、新しいアカウントとして追加してください。";
 "hosting.error.passwordRejected" = "ユーザ名またはパスワードが拒否されました";
 "hosting.error.passwordRejected.help" = "パスワードが間違っているか、アカウントで 2 要素認証が有効になっているかシングルサインオンでしかサインインできないか、サーバでパスワードによるサインインが無効になっています。代わりに個人アクセストークンを使ってください。";
-"hosting.error.clientCredentialsRequired" = "サーバが OAuth アプリケーションの資格情報を必要としています";
+"hosting.error.clientCredentialsRequired" = "OAuth アプリケーションの資格情報が必要です";
 "hosting.error.clientCredentialsRequired.help" = "この GitLab サーバは登録済みの OAuth アプリケーションにのみトークンを発行します（GitLab 13.9、および設定によっては 17.8 以降）。Spooky はアプリケーションの資格情報を受け付けません。代わりに個人アクセストークンを使ってください。";
 "hosting.error.passwordGrantUnsupported" = "パスワードによるサインインはサポートされていません";
 "hosting.error.passwordGrantUnsupported.help" = "GitLab 19.0 以降では、ユーザ名とパスワードでトークンを取得できなくなりました。代わりに個人アクセストークンを使ってください。";

@@ -123,7 +123,7 @@
 
 
 
-"error.command" = "Échec de la commande Git";
+"error.command" = "Impossible d’exécuter la commande Git";
 
 "error.launch" = "Impossible de lancer Git";
 
@@ -153,7 +153,7 @@
 
 "error.details" = "Sortie d’origine";
 
-"error.noOutput" = "La commande n’a produit aucune sortie.";
+"error.noOutput" = "(Aucun message d’erreur)";
 
 "error.outputLimitHelp" = "La commande a dépassé la limite de 256 Mio de la sortie standard ou celle de 1 Mio de la sortie d’erreur standard. Le résultat trop volumineux n’a pas été chargé.";
 "action.addRemote" = "Ajouter un dépôt sur un serveur…";
@@ -194,7 +194,29 @@
 "error.indexLocked" = "L’index est verrouillé par un autre processus Git. Attendez qu’il se termine, puis réessayez.";
 "error.terminal" = "Impossible d’ouvrir le terminal";
 "error.terminalHelp" = "Vérifiez le terminal sélectionné dans les Réglages, ainsi que son autorisation d’automatisation dans macOS.";
-"error.exitCode" = "Code de sortie : %ld";
+"error.remoteConnection" = "Échec de la connexion au dépôt distant";
+"error.synchronization" = "Échec de la synchronisation avec le dépôt distant";
+"error.remoteNotFound" = "Dépôt distant introuvable";
+"error.indexLocked.title" = "Index Git verrouillé par un autre processus Git";
+"signing.error.title" = "Impossible de signer";
+"error.merge" = "Échec de la fusion";
+"error.rebase" = "Échec du rebasage";
+"error.checkout" = "Impossible d’extraire la révision";
+"sync.error.branch.title" = "Branche locale requise";
+"branch.error.diverged.title" = "Impossible d’avancer rapidement la branche";
+"branch.error.current.title" = "Impossible d’avancer la branche actuelle";
+"branch.error.remoteExists.title" = "La branche distante existe déjà";
+"working.error.stale.title" = "Fichier modifié";
+"working.error.selection.title" = "Aucune modification sélectionnée";
+"working.error.file.title" = "Fichier ordinaire requis";
+"working.error.path.title" = "Chemin non pris en charge";
+"diff.error.whitespace.title" = "Les lignes sélectionnées ne correspondent pas";
+"reference.error.name.title" = "Nom non valide";
+"reference.error.refspec.title" = "Refspec non valide";
+"reference.error.url.title" = "URL distante non valide";
+"remote.error.browser.title" = "Ouverture dans le navigateur impossible";
+"failure.reason" = "%1$@ %2$@";
+"error.gitMessage" = "Message d’erreur Git";
 "terminal.notInstalled" = "%@ n’est pas installé.";
 "themes.background" = "Arrière-plan";
 "themes.selection" = "Sélection";
@@ -223,13 +245,13 @@
 "remoteError.pathUnavailable.help" = "Vérifiez que le chemin absolu existe sur le serveur sélectionné.";
 "remoteError.pathPermission" = "Accès refusé au répertoire du serveur";
 "remoteError.pathPermission.help" = "L’utilisateur SSH doit disposer des autorisations de lecture et de recherche sur ce répertoire.";
-"remoteError.diskAccess" = "Dossier du serveur bloqué par les réglages de confidentialité";
+"remoteError.diskAccess" = "Dossier du serveur bloqué par la confidentialité";
 "remoteError.diskAccess.help" = "macOS sur le serveur empêche les sessions SSH de lire ce dossier. Sur le serveur, autorisez l’accès complet au disque pour les utilisateurs distants dans Partage → Session à distance, ou déplacez le dépôt hors des dossiers protégés.";
-"remoteError.notWorkingTree" = "Le chemin du serveur n’est pas un arbre de travail Git";
+"remoteError.notWorkingTree" = "Ce chemin n’est pas un arbre de travail Git";
 "remoteError.notWorkingTree.help" = "Sélectionnez un arbre de travail Git existant sur le serveur. Vérifiez dans la sortie d’origine de Git s’il existe des restrictions liées au propriétaire.";
 "remoteError.statusFormat" = "Impossible de lire l’état du serveur";
 "remoteError.statusFormat.help" = "Consultez l’erreur de Git status ci-dessous. Git doit prendre en charge le format porcelain v2 avec une sortie séparée par des caractères NUL.";
-"remoteError.deployment" = "Impossible de configurer la session sur le serveur";
+"remoteError.deployment" = "Impossible de préparer la session serveur";
 "remoteError.deployment.help" = "Vérifiez la redirection de sockets Unix par SSH, /usr/bin/perl, ainsi que l’accès en écriture à ~/.spooky/bin et au répertoire temporaire de la session.";
 "remoteError.protocolFailure" = "Résultat de l’opération sur le serveur incomplet";
 "remoteError.protocolFailure.help" = "Reconnectez-vous et inspectez le dépôt avant de relancer une opération d’écriture.";
@@ -596,6 +618,7 @@
 "conflict.applied" = "Patch ou remisage appliqué";
 "conflict.binary" = "Le contenu binaire n’est pas affiché.";
 "conflict.error.version" = "Les fichiers sélectionnés n’ont pas cette version.";
+"conflict.error.version.title" = "Version indisponible";
 "conflict.export" = "Exporter la version de « %@ »…";
 "conflict.hint.merge.conflicts" = "Résolvez tous les conflits pour terminer la fusion.";
 "conflict.hint.merge.resolved" = "Vérifiez le message de commit, puis cliquez sur **Valider** pour terminer la fusion.";
@@ -846,7 +869,7 @@
 "files.error.preimageHelp" = "Les fichiers ci-dessous ont été modifiés après la création du patch : le patch n’a donc pas été appliqué et la copie de travail est inchangée. Recréez le patch à partir des fichiers actuels, ou rétablissez les fichiers dans la version à partir de laquelle le patch a été créé.";
 "files.error.destination" = "La destination existe déjà";
 "files.error.trashUnavailable" = "Aucune corbeille n’est disponible sur le serveur";
-"files.error.trashedItems" = "Impossible de remettre les fichiers depuis la corbeille";
+"files.error.trashedItems" = "Impossible de restaurer depuis la corbeille";
 "files.doubleClick" = "Double-clic sur un fichier de la copie de travail :";
 "files.doubleClick.openFile" = "Ouvrir avec l’application par défaut";
 "files.doubleClick.openDiff" = "Ouvrir l’outil de comparaison";
@@ -1518,7 +1541,7 @@
 "undo.error.inProgress.help" = "Terminez ou abandonnez d’abord la fusion, le rebase, le cherry-pick ou le revert. Rien n’a été modifié.";
 "undo.error.conflicts" = "Le dépôt a des conflits non résolus";
 "undo.error.conflicts.help" = "Résolvez d’abord les conflits. Rien n’a été modifié.";
-"undo.error.trash" = "Impossible de remettre les fichiers depuis la corbeille";
+"undo.error.trash" = "Impossible de restaurer depuis la corbeille";
 "undo.error.trash.help" = "Certains fichiers placés dans la corbeille n’y sont plus, ou d’autres fichiers occupent maintenant leur emplacement d’origine. Rien n’a été modifié.";
 
 /* Reflog 视图：入口、引用选择、列表状态、右键菜单与恢复分支的确认。 */
@@ -2060,7 +2083,7 @@
 "submodule.editURL.submit" = "Modifier";
 "submodule.error.gitDirectoryExists" = "Un dossier Git existe déjà pour ce sous-module";
 "submodule.error.gitDirectoryExists.help" = "Réutilisez ou écrasez le dossier Git existant, ou choisissez un autre chemin.";
-"submodule.error.localModifications" = "Le sous-module contient des modifications locales";
+"submodule.error.localModifications" = "Modifications locales dans le sous-module";
 "submodule.error.localModifications.help" = "Validez ou annulez les modifications du sous-module, ou supprimez-le quand même.";
 "submodule.error.missingRemoteURL" = "L’URL distante du sous-module est inconnue";
 "submodule.error.missingRemoteURL.help" = "Le dépôt du sous-module n’a aucun dépôt distant permettant de restaurer la configuration. Supprimez le sous-module et ajoutez-le de nouveau avec son URL.";
@@ -2355,11 +2378,11 @@
 "hosting.error.denied.help" = "Spooky n’a pas été autorisé dans le navigateur. Recommencez et autorisez Spooky pour ajouter le compte.";
 "hosting.error.differentUser" = "Le jeton appartient à un autre utilisateur";
 "hosting.error.differentUser.help" = "Le jeton appartient à l’utilisateur indiqué ci-dessous. Pour vous connecter avec cet utilisateur, ajoutez plutôt un nouveau compte.";
-"hosting.error.passwordRejected" = "Le nom d’utilisateur ou le mot de passe a été refusé";
+"hosting.error.passwordRejected" = "Nom d’utilisateur ou mot de passe refusé";
 "hosting.error.passwordRejected.help" = "Le mot de passe est peut-être incorrect, le compte utilise peut-être l’authentification à deux facteurs ou ne peut se connecter que par authentification unique, ou le serveur n’autorise pas la connexion par mot de passe. Utilisez plutôt un jeton d’accès personnel.";
-"hosting.error.clientCredentialsRequired" = "Le serveur exige des identifiants d’application OAuth";
+"hosting.error.clientCredentialsRequired" = "Identifiants d’application OAuth requis";
 "hosting.error.clientCredentialsRequired.help" = "Ce serveur GitLab ne délivre des jetons qu’aux applications OAuth enregistrées, comme GitLab 13.9 et, selon sa configuration, GitLab 17.8 ou ultérieur. Spooky n’accepte pas d’identifiants d’application. Utilisez plutôt un jeton d’accès personnel.";
-"hosting.error.passwordGrantUnsupported" = "La connexion par mot de passe n’est pas prise en charge";
+"hosting.error.passwordGrantUnsupported" = "Connexion par mot de passe non prise en charge";
 "hosting.error.passwordGrantUnsupported.help" = "À partir de GitLab 19.0, un nom d’utilisateur et un mot de passe ne peuvent plus être échangés contre un jeton. Utilisez plutôt un jeton d’accès personnel.";
 "hosting.error.keychain" = "Impossible d’enregistrer le jeton";
 "hosting.error.keychain.help" = "Le trousseau n’a pas accepté le jeton. Vérifiez que votre trousseau de session est déverrouillé, puis réessayez.";

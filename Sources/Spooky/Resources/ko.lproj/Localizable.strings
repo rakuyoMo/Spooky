@@ -123,7 +123,7 @@
 
 
 
-"error.command" = "Git 명령 실패";
+"error.command" = "Git 명령을 실행할 수 없음";
 
 "error.launch" = "Git를 시작할 수 없습니다";
 
@@ -153,7 +153,7 @@
 
 "error.details" = "원본 출력";
 
-"error.noOutput" = "명령에서 출력이 제공되지 않았습니다.";
+"error.noOutput" = "(오류 메시지 없음)";
 
 "error.outputLimitHelp" = "표준 출력 256 MiB 또는 표준 오류 1 MiB 제한을 초과하여 결과를 불러오지 않았습니다.";
 "action.addRemote" = "서버 저장소 추가…";
@@ -194,7 +194,29 @@
 "error.indexLocked" = "다른 Git 프로세스가 인덱스를 잠갔습니다. 종료 후 다시 시도하세요.";
 "error.terminal" = "터미널을 열 수 없음";
 "error.terminalHelp" = "설정에서 터미널 선택과 macOS 자동화 권한을 확인하세요.";
-"error.exitCode" = "종료 코드: %ld";
+"error.remoteConnection" = "원격 연결 실패";
+"error.synchronization" = "원격과 동기화 실패";
+"error.remoteNotFound" = "원격 저장소를 찾을 수 없음";
+"error.indexLocked.title" = "다른 Git 프로세스가 Git 인덱스를 잠금";
+"signing.error.title" = "서명할 수 없음";
+"error.merge" = "병합 실패";
+"error.rebase" = "리베이스 실패";
+"error.checkout" = "리비전을 체크아웃할 수 없음";
+"sync.error.branch.title" = "로컬 브랜치 필요";
+"branch.error.diverged.title" = "브랜치를 빨리 감기할 수 없음";
+"branch.error.current.title" = "현재 브랜치는 여기서 빨리 감기할 수 없음";
+"branch.error.remoteExists.title" = "원격 브랜치가 이미 있음";
+"working.error.stale.title" = "파일이 변경됨";
+"working.error.selection.title" = "선택된 변경 없음";
+"working.error.file.title" = "일반 파일 필요";
+"working.error.path.title" = "지원되지 않는 경로";
+"diff.error.whitespace.title" = "선택한 줄이 일치하지 않음";
+"reference.error.name.title" = "유효하지 않은 이름";
+"reference.error.refspec.title" = "유효하지 않은 refspec";
+"reference.error.url.title" = "유효하지 않은 원격 URL";
+"remote.error.browser.title" = "브라우저에서 원격을 열 수 없음";
+"failure.reason" = "%1$@ %2$@";
+"error.gitMessage" = "Git 오류 메시지";
 "terminal.notInstalled" = "%@이(가) 설치되어 있지 않습니다.";
 "themes.background" = "배경";
 "themes.selection" = "선택 영역";
@@ -596,6 +618,7 @@
 "conflict.applied" = "적용한 패치 또는 스태시";
 "conflict.binary" = "바이너리 내용은 표시하지 않습니다.";
 "conflict.error.version" = "선택한 파일에 이 버전이 없습니다.";
+"conflict.error.version.title" = "버전 없음";
 "conflict.export" = "“%@”의 버전 내보내기…";
 "conflict.hint.merge.conflicts" = "병합을 완료하려면 모든 충돌을 해결하세요.";
 "conflict.hint.merge.resolved" = "커밋 메시지를 확인한 후 **커밋**을 클릭해 병합을 완료하세요.";
