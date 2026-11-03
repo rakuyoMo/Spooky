@@ -106,7 +106,6 @@ extension ReflogListView {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if reflog.entries.isEmpty {
             EmptyStateView(title: AppLocalization.text("reflog.empty"), message: "", symbol: "clock.arrow.circlepath")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             list
         }

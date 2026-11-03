@@ -126,7 +126,6 @@ struct FileHistoryTimelineView: View {
             FileNoticeView(message: AppLocalization.text("fileHistory.submodule"))
         } else if state.commits.isEmpty, !state.isLoading, state.failure == nil {
             EmptyStateView(title: AppLocalization.text("history.empty"), message: "", symbol: "clock")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List(selection: $state.selectedID) {
                 ForEach(sections) { section in
@@ -297,7 +296,6 @@ struct FileHistoryDetailView: View {
             }
         } else {
             EmptyStateView(title: AppLocalization.text("history.noSelection"), message: "", symbol: "doc.text")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 

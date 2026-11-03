@@ -31,22 +31,18 @@ struct StashDetailView: View {
                 .reloadsOnDiffPreferenceChange { stashes.reloadDiffs() }
             }
         } else if stashes.selectedIDs.count > 1 {
-            VStack(spacing: 20) {
-                EmptyStateView(
-                    title: AppLocalization.text("stash.multiple", stashes.selectedIDs.count),
-                    message: "",
-                    symbol: "tray.2"
-                )
-
+            EmptyStateView(
+                title: AppLocalization.text("stash.multiple", stashes.selectedIDs.count),
+                message: "",
+                symbol: "tray.2"
+            ) {
                 Button(AppLocalization.text("stash.deleteButton")) {
                     session.deleteStashes(stashes.selectedStashes)
                 }
                 .disabled(!session.canDelete(stashes.selectedStashes))
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             EmptyStateView(title: AppLocalization.text("stash.noSelection"), message: "", symbol: "tray")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }

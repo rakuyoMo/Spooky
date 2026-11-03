@@ -79,7 +79,6 @@ extension PullRequestListView {
                 message: AppLocalization.text("pullRequests.noRemotes.message"),
                 symbol: "arrow.triangle.pull"
             )
-            .padding(20)
         } else if let target = state.target {
             switch target {
             case .resolved(let account, _):
@@ -150,7 +149,6 @@ extension PullRequestListView {
                 message: session.pullRequestText("empty.message"),
                 symbol: "arrow.triangle.pull"
             )
-            .padding(20)
         } else {
             list
         }
@@ -172,14 +170,11 @@ extension PullRequestListView {
         .padding(20)
     }
 
-    /// 居中的标题、说明与一个按钮。
+    /// 标题、说明与一个按钮的空状态。
     private func notice(title: String, message: String, action: String, perform: @escaping () -> Void) -> some View {
-        VStack(spacing: 12) {
-            EmptyStateView(title: title, message: message, symbol: "arrow.triangle.pull")
-
+        EmptyStateView(title: title, message: message, symbol: "arrow.triangle.pull") {
             Button(action, action: perform)
         }
-        .padding(20)
     }
 }
 
@@ -286,31 +281,30 @@ private struct PullRequestAccountChoice: View {
     @State
     private var selection: UUID?
 
-    /// 说明、账号下拉与确认按钮。
+    /// 说明的空状态，按钮行的位置上是账号下拉与下方的确认按钮；列表栏窄，两者上下排。
     var body: some View {
-        VStack(spacing: 12) {
-            EmptyStateView(
-                title: AppLocalization.text("pullRequests.chooseAccount.title"),
-                message: AppLocalization.text("pullRequests.chooseAccount.message", session.pullRequests.remote ?? ""),
-                symbol: "person.2"
-            )
-
-            Picker(AppLocalization.text("pullRequests.account"), selection: $selection) {
-                ForEach(accounts) { account in
-                    Text(account.username).tag(Optional(account.id))
+        EmptyStateView(
+            title: AppLocalization.text("pullRequests.chooseAccount.title"),
+            message: AppLocalization.text("pullRequests.chooseAccount.message", session.pullRequests.remote ?? ""),
+            symbol: "person.2"
+        ) {
+            VStack(spacing: 8) {
+                Picker(AppLocalization.text("pullRequests.account"), selection: $selection) {
+                    ForEach(accounts) { account in
+                        Text(account.username).tag(Optional(account.id))
+                    }
                 }
-            }
-            .fixedSize()
+                .fixedSize()
 
-            Button(AppLocalization.text("pullRequests.chooseAccount.submit")) {
-                guard let selection, let url = session.pullRequests.remoteURL else { return }
+                Button(AppLocalization.text("pullRequests.chooseAccount.submit")) {
+                    guard let selection, let url = session.pullRequests.remoteURL else { return }
 
-                PullRequestAssociations.set(PullRequestAssociation(account: selection), for: url)
-                session.reloadPullRequests()
+                    PullRequestAssociations.set(PullRequestAssociation(account: selection), for: url)
+                    session.reloadPullRequests()
+                }
+                .disabled(selection == nil)
             }
-            .disabled(selection == nil)
         }
-        .padding(20)
         .onAppear { selection = accounts.first?.id }
     }
 }

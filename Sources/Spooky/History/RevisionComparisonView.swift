@@ -82,7 +82,6 @@ struct RevisionComparisonView: View {
     private var commitList: some View {
         if state.commits.isEmpty, !state.isLoadingCommits {
             EmptyStateView(title: AppLocalization.text("history.empty"), message: "", symbol: "clock")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List(state.commits) { commit in
                 ComparisonCommitRow(commit: commit)

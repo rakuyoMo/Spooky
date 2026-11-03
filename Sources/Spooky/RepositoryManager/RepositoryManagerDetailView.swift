@@ -45,20 +45,16 @@ struct RepositoryManagerDetailView: View {
             }
 
         case .multiple(let count):
-            VStack(spacing: 16) {
-                EmptyStateView(
-                    title: AppLocalization.text("bookmarks.multiple.title"),
-                    message: AppLocalization.text("bookmarks.multiple.message", count),
-                    symbol: "square.stack"
-                )
-
+            EmptyStateView(
+                title: AppLocalization.text("bookmarks.multiple.title"),
+                message: AppLocalization.text("bookmarks.multiple.message", count),
+                symbol: "square.stack"
+            ) {
                 Button(AppLocalization.text("bookmarks.multiple.delete")) {
                     manager.confirmDelete(manager.selection)
                 }
                 .accessibilityIdentifier("delete-bookmarks")
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(AppPalette.color("general_background_color"))
         }
     }
 }

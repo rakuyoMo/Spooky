@@ -166,7 +166,6 @@ struct HistoryListView: View {
     private var commitList: some View {
         if session.history.rows.isEmpty, !session.history.isLoading {
             EmptyStateView(title: AppLocalization.text("history.empty"), message: "", symbol: "clock")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             HistoryCommitTable(
                 session: session,

@@ -56,30 +56,20 @@ struct WorkingCopyDetailView: View {
             .onChange(of: session.diffSide) { session.diffSideChanged() }
             .reloadsOnDiffPreferenceChange { session.loadDiff() }
         } else if let directory = session.selectedDirectory {
-            unchangedView(AppLocalization.text(directoryMessage(directory)), symbol: "folder")
-        } else {
-            VStack(spacing: 16) {
-                EmptyStateView(
-                    title: AppLocalization.text(session.selectedIDs.count > 1 ? "working.multiple" : "detail.empty.title"),
-                    message: "",
-                    symbol: "doc"
-                )
+            EmptyStateView(title: AppLocalization.text(directoryMessage(directory)), message: "", symbol: "folder")
+        } else if session.selectedIDs.count > 1 {
+            EmptyStateView(title: AppLocalization.text("working.multiple"), message: "", symbol: "doc") {
+                Button(AppLocalization.text("working.discard")) { session.discard(session.selectedEntries) }
+                    .disabled(!session.canDiscard(session.selectedEntries))
 
-                if session.selectedIDs.count > 1 {
-                    HStack(spacing: 8) {
-                        Button(AppLocalization.text("working.discard")) { session.discard(session.selectedEntries) }
-                            .disabled(!session.canDiscard(session.selectedEntries))
-
-                        // 直接移进废纸篓，服务器上没有可用的废纸篓时确认后永久删除
-                        Button(AppLocalization.text(session.fileRemoval == .trash ? "files.trash" : "files.delete")) {
-                            session.delete(session.selectedEntries)
-                        }
-                        .disabled(!session.canDelete(session.selectedEntries))
-                    }
+                // 直接移进废纸篓，服务器上没有可用的废纸篓时确认后永久删除
+                Button(AppLocalization.text(session.fileRemoval == .trash ? "files.trash" : "files.delete")) {
+                    session.delete(session.selectedEntries)
                 }
+                .disabled(!session.canDelete(session.selectedEntries))
             }
-            .padding(24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            EmptyStateView(title: AppLocalization.text("detail.empty.title"), message: "", symbol: "doc")
         }
     }
 
@@ -91,7 +81,7 @@ struct WorkingCopyDetailView: View {
             ConflictWizardView(session: session, entry: entry)
                 .id(entry.path)
         } else if !entry.hasWorkingCopyDiff {
-            unchangedView(AppLocalization.text(unchangedMessage(entry)), symbol: "doc")
+            EmptyStateView(title: AppLocalization.text(unchangedMessage(entry)), message: "", symbol: "doc")
         } else if let failure = session.diffFailure {
             FailureDetailsView(failure: failure) { session.loadDiff() }
                 .padding(20)
@@ -105,8 +95,12 @@ struct WorkingCopyDetailView: View {
                 DiffContentView(session: session, snapshot: snapshot, diff: diff)
                     .id(snapshot.fingerprint)
             } else {
-                VStack(spacing: 16) {
-                    Text(AppLocalization.text("working.largeDiff", snapshot.byteCount / 1000))
+                // 超过大小上限的 Diff 换成没有图标的空状态，按 Show Diff 才读取
+                EmptyStateView(
+                    title: AppLocalization.text("working.largeDiff", snapshot.byteCount / 1000),
+                    message: "",
+                    symbol: nil
+                ) {
                     Button(AppLocalization.text("working.showDiff")) {
                         session.showsLargeDiff = true
                         session.loadDiff()
@@ -126,13 +120,6 @@ struct WorkingCopyDetailView: View {
 // MARK: - Unchanged
 
 extension WorkingCopyDetailView {
-    /// 未改动视图：没有可显示的 Diff 时说明文件或目录的状态。
-    private func unchangedView(_ text: String, symbol: String) -> some View {
-        EmptyStateView(title: text, message: "", symbol: symbol)
-            .padding(24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
     /// 目录说明的资源键：目录下有改动的文件时说明这一点。
     private func directoryMessage(_ directory: String) -> String {
         let prefix = directory + "/"
