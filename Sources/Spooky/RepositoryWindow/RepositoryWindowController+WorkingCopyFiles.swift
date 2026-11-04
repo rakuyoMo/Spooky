@@ -52,7 +52,9 @@ extension RepositoryWindowController {
             }
 
         case .untrackIgnored(let file, let patterns, let tracked):
-            askUntrackIgnored(file, patterns: patterns, tracked: tracked)
+            presentDialog { close in
+                Self.untrackIgnoredPrompt(file, patterns: patterns, tracked: tracked, in: session, close: close)
+            }
         }
     }
 
@@ -93,6 +95,45 @@ extension RepositoryWindowController {
 
 }
 
+// MARK: - Prompts
+
+extension RepositoryWindowController {
+    /// 要忽略的文件里有已跟踪的文件时询问：停止跟踪是主按钮，只写规则是备选按钮，或取消。
+    ///
+    /// - Parameters:
+    ///   - file: 写入规则的忽略文件。
+    ///   - patterns: 要写入的规则。
+    ///   - tracked: 规则匹配到的已跟踪文件，选停止跟踪时一并停止跟踪。
+    ///   - session: 选定后在它的仓库里写入；仓库已切换时不执行。
+    ///   - close: 关闭询问。
+    static func untrackIgnoredPrompt(
+        _ file: IgnoreFile,
+        patterns: [String],
+        tracked: [StatusEntry],
+        in session: RepositorySession,
+        close: @escaping () -> Void
+    ) -> ConfirmationDialog {
+        let request = session.generation
+
+        // 询问结束后才开始写入，仓库已切换时不执行
+        let write: ([StatusEntry]) -> Void = { [weak session] untracking in
+            guard let session, session.generation == request else { return }
+
+            session.writePatterns(patterns, in: file, untracking: untracking)
+        }
+
+        return ConfirmationDialog(
+            title: AppLocalization.text("files.untrackIgnored.title"),
+            message: AppLocalization.text("files.untrackIgnored.message", session.scopeDescription(tracked)),
+            submitTitle: AppLocalization.text("files.untrack"),
+            alternate: (title: AppLocalization.text("files.untrackIgnored.skip"), action: { _ in write([]) }),
+            close: close
+        ) { _ in
+            write(tracked)
+        }
+    }
+}
+
 // MARK: - Private
 
 extension RepositoryWindowController {
@@ -111,30 +152,6 @@ extension RepositoryWindowController {
 
         for controller in NSApp.windows.compactMap({ $0.windowController as? RepositoryWindowController }) {
             controller.session.setListMode(mode)
-        }
-    }
-
-    /// 要忽略的文件里有已跟踪的文件：停止跟踪是主按钮，只写规则是备选按钮，或取消。
-    private func askUntrackIgnored(_ file: IgnoreFile, patterns: [String], tracked: [StatusEntry]) {
-        let request = session.generation
-
-        // 询问结束后才开始写入，仓库已切换时不执行
-        let write: ([StatusEntry]) -> Void = { [weak self] untracking in
-            guard let self, session.generation == request else { return }
-
-            session.writePatterns(patterns, in: file, untracking: untracking)
-        }
-
-        presentDialog { close in
-            ConfirmationDialog(
-                title: AppLocalization.text("files.untrackIgnored.title"),
-                message: AppLocalization.text("files.untrackIgnored.message", session.scopeDescription(tracked)),
-                submitTitle: AppLocalization.text("files.untrack"),
-                alternate: (title: AppLocalization.text("files.untrackIgnored.skip"), action: { _ in write([]) }),
-                close: close
-            ) { _ in
-                write(tracked)
-            }
         }
     }
 }

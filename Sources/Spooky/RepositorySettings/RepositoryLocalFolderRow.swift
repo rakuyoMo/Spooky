@@ -28,21 +28,26 @@ struct RepositoryLocalFolderRow: View {
     ///
     /// - Parameter folder: 没有通过核对的目录。
     func showRejection(of folder: URL) {
-        let message = AppLocalization.text(
-            "repositorySettings.localFolder.rejected.message",
-            HomePath.abbreviated(folder.path),
-            session.repository?.displayPath ?? ""
-        )
+        DialogWindow.present(on: session.presentingWindow) { rejectionNotice(of: folder, close: $0) }
+    }
 
-        DialogWindow.present(on: session.presentingWindow) { close in
-            DialogLayout(
-                title: AppLocalization.text("repositorySettings.localFolder.rejected"),
-                message: message,
-                submitTitle: AppLocalization.text("action.close"),
-                cancel: nil,
-                submit: close
-            )
-        }
+    /// 核对没有通过的提示：骨架的提示版，说明写出选的目录与仓库，只有 Close。
+    ///
+    /// - Parameters:
+    ///   - folder: 没有通过核对的目录。
+    ///   - close: 关掉提示。
+    func rejectionNotice(of folder: URL, close: @escaping () -> Void) -> DialogLayout<EmptyView, EmptyView> {
+        DialogLayout(
+            title: AppLocalization.text("repositorySettings.localFolder.rejected"),
+            message: AppLocalization.text(
+                "repositorySettings.localFolder.rejected.message",
+                HomePath.abbreviated(folder.path),
+                session.repository?.displayPath ?? ""
+            ),
+            submitTitle: AppLocalization.text("action.close"),
+            cancel: nil,
+            submit: close
+        )
     }
 }
 

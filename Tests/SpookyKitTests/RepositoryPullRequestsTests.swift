@@ -7,8 +7,9 @@ import Testing
 
 /// 请求在仓库里的 Git 动作：远端用本机裸仓库，在其中写入托管服务为请求保留的 `refs/pull/1/head`。
 struct RepositoryPullRequestsTests {
-    /// 克隆不会取回请求的引用；取回后提交可用，比较基准由本机的 merge-base 算出。
-    @Test("取回源分支提交与比较基准")
+    /// 克隆不会取回请求的引用，请求的提交只能经托管服务保留的引用取回：取回后提交可用，比较基准由本机的 merge-base 算出；
+    /// 托管服务没有给出目标分支的提交（GitLab 10.8 以前没有 diff_refs）时用目标远端的跟踪分支求基准，跟踪分支不存在时没有基准。
+    @Test("取回源分支提交与比较基准，没有目标分支提交时用跟踪分支")
     func fetchAndBase() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
@@ -17,6 +18,7 @@ struct RepositoryPullRequestsTests {
         let pulls = RepositoryPullRequests(runner: fixture.clone)
         let request = fixture.request(fork: true)
 
+        // 取回之前克隆里没有请求的提交，也就没有比较基准
         #expect(try await !pulls.hasCommit(fixture.feature))
         #expect(try await pulls.comparisonBase(for: request, remote: "origin") == nil)
 
@@ -24,25 +26,21 @@ struct RepositoryPullRequestsTests {
         #expect(try await pulls.hasCommit(fixture.feature))
         #expect(try await pulls.comparisonBase(for: request, remote: "origin") == fixture.base)
         #expect(try await !pulls.hasCommit("not-a-hash"))
-    }
 
-    /// 托管服务没有给出目标分支的提交（GitLab 10.8 以前没有 diff_refs）：用目标远端的跟踪分支求 merge-base，跟踪分支不存在时没有基准。
-    @Test("没有目标分支提交时的比较基准")
-    func baseFromTrackingBranch() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
+        // 没有目标分支的提交：用目标远端的跟踪分支求 merge-base，跟踪分支不存在时没有基准
+        let main = fixture.request(
+            fork: true,
+            target: PullRequestBranch(project: "o/r", branch: "main", sha: "")
+        )
 
-        let fixture = try await PullRequestFixture(temporary)
-        let pulls = RepositoryPullRequests(runner: fixture.clone)
-        let request = fixture.request(fork: true)
-
-        try await pulls.fetchHead(of: request.id, from: "origin")
-
-        let main = fixture.request(fork: true, target: PullRequestBranch(project: "o/r", branch: "main", sha: ""))
         #expect(try await pulls.comparisonBase(for: main, remote: "origin") == fixture.base)
         #expect(try await pulls.comparisonBase(for: main, remote: nil) == nil)
 
-        let missing = fixture.request(fork: true, target: PullRequestBranch(project: "o/r", branch: "release", sha: ""))
+        let missing = fixture.request(
+            fork: true,
+            target: PullRequestBranch(project: "o/r", branch: "release", sha: "")
+        )
+
         #expect(try await pulls.comparisonBase(for: missing, remote: "origin") == nil)
     }
 

@@ -1,5 +1,6 @@
 import AppKit
 import SpookyKit
+import SwiftUI
 
 // MARK: - Alerts
 
@@ -57,19 +58,37 @@ extension RepositoryWindowController {
             return
         }
 
-        let message = Self.recoveryMessage(write, snapshot: snapshot)
-            + (session.repository.map { "\n\n" + AppLocalization.text("failure.location", $0.displayPath) } ?? "")
-
         // 中断时的错误框可能还开着，AppKit 会在它结束后再挂上这一个
         DialogWindow.present(on: window) { close in
-            DialogLayout(
-                title: AppLocalization.text("recovery.title"),
-                message: message,
-                submitTitle: AppLocalization.text("action.close"),
-                cancel: nil,
-                submit: close
-            )
+            Self.recoveryNotice(write, snapshot: snapshot, in: session.repository, close: close)
         }
+    }
+}
+
+// MARK: - Notices
+
+extension RepositoryWindowController {
+    /// 中断写入的恢复说明：骨架的提示版，只有 Close；说明是核对结果，空一行后写出仓库。
+    ///
+    /// - Parameters:
+    ///   - write: 被中断的写入。
+    ///   - snapshot: 重连后的核对结果；为 nil 时写入未在服务器上开始。
+    ///   - repository: 写入所在的仓库；为 nil 时不写仓库一行。
+    ///   - close: 关掉提示。
+    static func recoveryNotice(
+        _ write: InterruptedWrite,
+        snapshot: RemoteRecoverySnapshot?,
+        in repository: RepositoryLocation?,
+        close: @escaping () -> Void
+    ) -> DialogLayout<EmptyView, EmptyView> {
+        DialogLayout(
+            title: AppLocalization.text("recovery.title"),
+            message: recoveryMessage(write, snapshot: snapshot)
+                + (repository.map { "\n\n" + AppLocalization.text("failure.location", $0.displayPath) } ?? ""),
+            submitTitle: AppLocalization.text("action.close"),
+            cancel: nil,
+            submit: close
+        )
     }
 }
 

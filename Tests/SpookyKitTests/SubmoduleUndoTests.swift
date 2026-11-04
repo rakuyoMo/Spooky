@@ -215,13 +215,49 @@ struct SubmoduleUndoTests {
     }
 
     /// 在子模块里检出分支或附注标签再撤销：回到原来的分支；原来是分离 HEAD 的，以分离 HEAD 回到原来的提交。
-    @Test("检出版本的撤销")
+    /// 子模块在别处换过版本时撤销报仓库已改变；子模块里的改动与原来的版本冲突时 Git 拒绝检出，子模块与改动都不变。
+    @Test("检出版本的撤销，前提不符或改动冲突时拒绝")
     func revisionCheckout() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
 
         let repositories = try await SubmoduleRepositories(temporary)
         let (submodules, submodule) = try await Self.submoduleWithRevisions(repositories)
+
+        try await Self.undoRevisionCheckout(submodules, submodule, in: repositories)
+
+        // 撤销后子模块停在分离 HEAD；检出回 main，从添加后的起点核对拒绝撤销的两种情形
+        _ = try await repositories.parent.run(["-C", submodule.path, "checkout", "-q", "main"])
+        try await Self.blockedRevisionUndo(submodules, submodule, in: repositories)
+    }
+
+    /// `ls-files -s -z` 的一条记录取出模式与对象；格式不对时报格式错误，冲突中的文件不能写回。
+    @Test("暂存记录的解析")
+    func stagedRecordParsing() throws {
+        let object = String(repeating: "a", count: 40)
+
+        #expect(try RepositorySubmodules.stagedRecord(Data()) == nil)
+        #expect(try RepositorySubmodules.stagedRecord(Data("100644 \(object) 0\t.gitmodules\0".utf8)) == "100644 \(object)")
+
+        #expect(throws: RepositoryReadError.malformedOutput("ls-files")) {
+            try RepositorySubmodules.stagedRecord(Data("100644 \(object) 0 .gitmodules\0".utf8))
+        }
+
+        #expect(throws: RepositoryUndoError.unresolvedConflicts) {
+            try RepositorySubmodules.stagedRecord(Data("100644 \(object) 2\t.gitmodules\0".utf8))
+        }
+    }
+}
+
+// MARK: - Steps
+
+extension SubmoduleUndoTests {
+    /// 在子模块里检出分支或附注标签再撤销：回到原来的分支；原来是分离 HEAD 的，以分离 HEAD 回到原来的提交。
+    private static func undoRevisionCheckout(
+        _ submodules: RepositorySubmodules,
+        _ submodule: Submodule,
+        in repositories: SubmoduleRepositories
+    ) async throws {
         let branch = SubmoduleRevision(reference: "refs/heads/特性", isCurrent: false)
         let tag = SubmoduleRevision(reference: "refs/tags/v1", isCurrent: false)
 
@@ -250,13 +286,11 @@ struct SubmoduleUndoTests {
     }
 
     /// 子模块在别处换过版本时撤销报仓库已改变；子模块里的改动与原来的版本冲突时 Git 拒绝检出，子模块与改动都不变。
-    @Test("撤销检出版本时前提不符或改动冲突")
-    func blockedRevisionUndo() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
-
-        let repositories = try await SubmoduleRepositories(temporary)
-        let (submodules, submodule) = try await Self.submoduleWithRevisions(repositories)
+    private static func blockedRevisionUndo(
+        _ submodules: RepositorySubmodules,
+        _ submodule: Submodule,
+        in repositories: SubmoduleRepositories
+    ) async throws {
         let branch = SubmoduleRevision(reference: "refs/heads/特性", isCurrent: false)
 
         let switched = try await submodules.checkoutRecord(of: branch, in: submodule)
@@ -281,23 +315,6 @@ struct SubmoduleUndoTests {
         #expect(error?.message.contains("would be overwritten by checkout") ?? false)
         #expect(try await SubmoduleSnapshot(repositories) == modified)
         #expect(try String(contentsOf: file, encoding: .utf8) == "改动\n")
-    }
-
-    /// `ls-files -s -z` 的一条记录取出模式与对象；格式不对时报格式错误，冲突中的文件不能写回。
-    @Test("暂存记录的解析")
-    func stagedRecordParsing() throws {
-        let object = String(repeating: "a", count: 40)
-
-        #expect(try RepositorySubmodules.stagedRecord(Data()) == nil)
-        #expect(try RepositorySubmodules.stagedRecord(Data("100644 \(object) 0\t.gitmodules\0".utf8)) == "100644 \(object)")
-
-        #expect(throws: RepositoryReadError.malformedOutput("ls-files")) {
-            try RepositorySubmodules.stagedRecord(Data("100644 \(object) 0 .gitmodules\0".utf8))
-        }
-
-        #expect(throws: RepositoryUndoError.unresolvedConflicts) {
-            try RepositorySubmodules.stagedRecord(Data("100644 \(object) 2\t.gitmodules\0".utf8))
-        }
     }
 }
 

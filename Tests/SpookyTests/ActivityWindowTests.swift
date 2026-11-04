@@ -13,7 +13,8 @@ import Testing
 @MainActor
 struct ActivityWindowTests {
     /// 工具栏自左向右是 Clear All、分段、搜索框；分段的标题与提示对应三页，第一次打开是 Remote。
-    @Test("工具栏的排布、分段与第一次打开的页")
+    /// 分段每段宽度随文字；窗口窄时整组移进 » 菜单，菜单里的子项与分段同名同提示；从哪一处换页，分段都选中当前页。
+    @Test("工具栏的排布、分段与换页")
     func toolbarItems() throws {
         let controller = ActivityWindowController(activities: RepositoryActivities())
         defer { controller.close() }
@@ -81,65 +82,9 @@ struct ActivityWindowTests {
             let action = try #require(action)
             #expect(controller.responds(to: action))
         }
-    }
 
-    /// 分段每段宽度随文字；窗口窄时整组移进 » 菜单，菜单里的子项与分段同名同提示；从哪一处换页，分段都选中当前页。
-    @Test("分段的宽度、» 菜单的子项与换页")
-    func kindsItem() throws {
-        let controller = ActivityWindowController(activities: RepositoryActivities())
-        defer { controller.close() }
-
-        let items = controller.window?.toolbar?.items ?? []
-        let group = try #require(
-            items.first { $0.itemIdentifier == ActivityToolbar.kinds } as? NSToolbarItemGroup
-        )
-
-        let control = try #require(group.view as? NSSegmentedControl)
-        let font = try #require(control.font)
-        let segments = 0 ..< control.segmentCount
-        let titles = segments.map { control.label(forSegment: $0) ?? "" }
-        let tips = segments.map { control.toolTip(forSegment: $0) }
-
-        // 不等分：标题最长的一段比最短的一段宽，宽出的部分接近两段标题的文字宽度之差，等分时宽出 0；
-        // 段宽的取整与内边距随系统版本略有不同，只要求宽出文字宽度差的一半以上
-        let segmentElements = try #require(
-            (control.cell as? NSSegmentedCell)?.accessibilityChildren() as? [NSAccessibilityElement]
-        )
-
-        let segmentWidths = segmentElements.map { $0.accessibilityFrame().width }
-        let textWidths = titles.map {
-            NSAttributedString(string: $0, attributes: [.font: font])
-                .size()
-                .width
-        }
-
-        let longest = try #require(textWidths.indices.max { textWidths[$0] < textWidths[$1] })
-        let shortest = try #require(textWidths.indices.min { textWidths[$0] < textWidths[$1] })
-
-        #expect(control.segmentDistribution == .fit && segmentWidths.count == 3)
-
-        #expect(
-            segmentWidths[longest] - segmentWidths[shortest]
-                >= (textWidths[longest] - textWidths[shortest]) / 2
-        )
-
-        // » 菜单里的子项：标签与提示同分段，tag 是页的序号
-        #expect(group.subitems.map(\.label) == titles)
-        #expect(group.subitems.map(\.toolTip) == tips)
-        #expect(group.subitems.map(\.tag) == [0, 1, 2])
-
-        // 点分段换页
-        control.selectedSegment = 2
-        #expect(control.sendAction(control.action, to: control.target))
-        #expect(controller.state.kind == .service)
-
-        // 从 » 菜单的子项换页，分段的选中跟着变
-        for (index, item) in group.subitems.enumerated() {
-            let action = try #require(item.action)
-            #expect(NSApplication.shared.sendAction(action, to: item.target, from: item))
-            #expect(controller.state.kind == ActivityKind.allCases[index])
-            #expect(control.selectedSegment == index)
-        }
+        // 换页放在最后：前面核对的是第一次打开时的页
+        try expectKindsItem(group, control: control, in: controller)
     }
 
     /// 列表只列当前页；搜索按仓库名与日志内容匹配，忽略大小写，路径的其它部分不算；没有仓库的记录只按日志匹配。
@@ -212,12 +157,6 @@ struct ActivityWindowTests {
             controller.window?.toolbar?.items.first { $0.itemIdentifier == ActivityToolbar.kinds } as? NSToolbarItemGroup
         )
 
-        // 分段依次换到对应的页
-        for (segment, kind) in zip(group.subitems, ActivityKind.allCases) {
-            controller.selectKind(segment)
-            #expect(controller.state.kind == kind)
-        }
-
         // 在 Repository 页清除：只删这一页已结束的记录
         controller.selectKind(group.subitems[1])
         controller.clearAll(nil)
@@ -227,6 +166,59 @@ struct ActivityWindowTests {
         controller.selectKind(group.subitems[0])
         controller.clearAll(nil)
         #expect(activities.items.map(\.id) == [endedRequest.id, runningMerge.id, runningPush.id])
+    }
+
+    /// 分段的宽度随文字，» 菜单里的子项与分段一致；从分段或子项换页后，分段都选中当前页。
+    private func expectKindsItem(
+        _ group: NSToolbarItemGroup,
+        control: NSSegmentedControl,
+        in controller: ActivityWindowController
+    ) throws {
+        let font = try #require(control.font)
+        let segments = 0 ..< control.segmentCount
+        let titles = segments.map { control.label(forSegment: $0) ?? "" }
+        let tips = segments.map { control.toolTip(forSegment: $0) }
+
+        // 不等分：标题最长的一段比最短的一段宽，宽出的部分接近两段标题的文字宽度之差，等分时宽出 0；
+        // 段宽的取整与内边距随系统版本略有不同，只要求宽出文字宽度差的一半以上
+        let segmentElements = try #require(
+            (control.cell as? NSSegmentedCell)?.accessibilityChildren() as? [NSAccessibilityElement]
+        )
+
+        let segmentWidths = segmentElements.map { $0.accessibilityFrame().width }
+        let textWidths = titles.map {
+            NSAttributedString(string: $0, attributes: [.font: font])
+                .size()
+                .width
+        }
+
+        let longest = try #require(textWidths.indices.max { textWidths[$0] < textWidths[$1] })
+        let shortest = try #require(textWidths.indices.min { textWidths[$0] < textWidths[$1] })
+
+        #expect(control.segmentDistribution == .fit && segmentWidths.count == 3)
+
+        #expect(
+            segmentWidths[longest] - segmentWidths[shortest]
+                >= (textWidths[longest] - textWidths[shortest]) / 2
+        )
+
+        // » 菜单里的子项：标签与提示同分段，tag 是页的序号
+        #expect(group.subitems.map(\.label) == titles)
+        #expect(group.subitems.map(\.toolTip) == tips)
+        #expect(group.subitems.map(\.tag) == [0, 1, 2])
+
+        // 点分段换页
+        control.selectedSegment = 2
+        #expect(control.sendAction(control.action, to: control.target))
+        #expect(controller.state.kind == .service)
+
+        // 从 » 菜单的子项换页，分段的选中跟着变
+        for (index, item) in group.subitems.enumerated() {
+            let action = try #require(item.action)
+            #expect(NSApplication.shared.sendAction(action, to: item.target, from: item))
+            #expect(controller.state.kind == ActivityKind.allCases[index])
+            #expect(control.selectedSegment == index)
+        }
     }
 
     /// 一条本机仓库的记录。

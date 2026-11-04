@@ -141,9 +141,10 @@ struct RepositoryMountStateTests {
     /// 手动指定的本机目录按仓库的显示路径记在偏好里：同一路径在不同主机上各记各的，清除后读不到。
     @Test("记下与清除手动指定的目录")
     func storedFolders() throws {
-        let suite = "spooky-local-folders-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-local-folders-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let repository = RepositoryLocation.remote(host: "spooky-test", path: "/Users/wgy/spooky-test/仓 库")
         let other = RepositoryLocation.remote(host: "spooky-other", path: "/Users/wgy/spooky-test/仓 库")

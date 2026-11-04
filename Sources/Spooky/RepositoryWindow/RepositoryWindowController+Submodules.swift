@@ -82,15 +82,15 @@ extension RepositoryWindowController {
 
         switch request {
         case .forceDelete(let offer):
-            askForceDeletion(offer, in: window)
+            DialogWindow.present(on: window) { Self.forceDeleteSubmodulePrompt(offer, in: session, close: $0) }
             return
 
         case .forceAdd(let offer):
-            askForceAddition(offer, in: window)
+            DialogWindow.present(on: window) { Self.forceAddSubmodulePrompt(offer, in: session, close: $0) }
             return
 
         case .autoUpdate(let submodules):
-            askAutoUpdate(submodules, in: window)
+            DialogWindow.present(on: window) { Self.autoUpdateSubmodulesPrompt(submodules, in: session, close: $0) }
             return
 
         default:
@@ -103,6 +103,107 @@ extension RepositoryWindowController {
 
         presentDialog { close in
             dialog(for: request, close: close)
+        }
+    }
+}
+
+// MARK: - Prompts
+
+extension RepositoryWindowController {
+    /// 子模块里有本地改动时询问是否强制删除。
+    ///
+    /// - Parameters:
+    ///   - offer: 要强制删除的子模块。
+    ///   - session: 确认后在它的仓库里删除；仓库已切换时不执行。
+    ///   - close: 关闭询问。
+    static func forceDeleteSubmodulePrompt(
+        _ offer: SubmoduleDeletionOffer,
+        in session: RepositorySession,
+        close: @escaping () -> Void
+    ) -> ConfirmationDialog {
+        let repository = session.repository
+
+        return ConfirmationDialog(
+            title: AppLocalization.text("submodule.delete"),
+            message: AppLocalization.text("submodule.forceDelete.message", offer.submodule.name),
+            submitTitle: AppLocalization.text("submodule.forceDelete.submit"),
+            close: close
+        ) { [weak session] _ in
+            guard let session, session.repository == repository else {
+                return
+            }
+
+            session.deleteSubmodule(offer.submodule, keepsWorkingTree: offer.keepsWorkingTree, force: true)
+        }
+    }
+
+    /// 已有同名 Git 目录时询问复用还是覆盖：复用是主按钮，覆盖是备选按钮。
+    ///
+    /// - Parameters:
+    ///   - offer: 要添加的子模块。
+    ///   - session: 选定后在它的仓库里添加；仓库已切换时不执行。
+    ///   - close: 关闭询问。
+    static func forceAddSubmodulePrompt(
+        _ offer: SubmoduleAdditionOffer,
+        in session: RepositorySession,
+        close: @escaping () -> Void
+    ) -> ConfirmationDialog {
+        let repository = session.repository
+
+        let overwrite: (Bool) -> Void = { [weak session] _ in
+            guard let session, session.repository == repository else {
+                return
+            }
+
+            session.addSubmodule(url: offer.url, path: offer.path, overwrites: true)
+        }
+
+        return ConfirmationDialog(
+            title: AppLocalization.text("submodule.forceAdd"),
+            message: AppLocalization.text("submodule.forceAdd.message", offer.path),
+            submitTitle: AppLocalization.text("submodule.forceAdd.reuse"),
+            alternate: (title: AppLocalization.text("submodule.forceAdd.overwrite"), action: overwrite),
+            close: close
+        ) { [weak session] _ in
+            guard let session, session.repository == repository else {
+                return
+            }
+
+            session.addSubmodule(url: offer.url, path: offer.path, reusesGitDirectory: true)
+        }
+    }
+
+    /// 操作改动了已初始化子模块的指针时询问是否更新；勾选 “总是” 并更新后，之后的操作直接更新。
+    ///
+    /// - Parameters:
+    ///   - submodules: 指针被改动的子模块，逐行写进说明。
+    ///   - session: 确认后在它的仓库里更新；仓库已切换时不执行。
+    ///   - close: 关闭询问。
+    static func autoUpdateSubmodulesPrompt(
+        _ submodules: [Submodule],
+        in session: RepositorySession,
+        close: @escaping () -> Void
+    ) -> ConfirmationDialog {
+        let repository = session.repository
+
+        return ConfirmationDialog(
+            title: AppLocalization.text("submodule.autoUpdate"),
+            message: AppLocalization.text("submodule.autoUpdate.message")
+                + "\n\n" + submodules.map(\.name).joined(separator: "\n"),
+            submitTitle: AppLocalization.text("submodule.autoUpdate.update"),
+            cancelTitle: AppLocalization.text("submodule.autoUpdate.skip"),
+            checkbox: AppLocalization.text("submodule.autoUpdate.always"),
+            close: close
+        ) { [weak session] always in
+            guard let session, session.repository == repository else {
+                return
+            }
+
+            if always {
+                UserDefaults.standard.set(true, forKey: SubmodulePreferences.alwaysUpdate)
+            }
+
+            session.updateSubmodules(submodules, recursive: false)
         }
     }
 }
@@ -145,82 +246,6 @@ extension RepositoryWindowController {
 
         case .forceDelete, .forceAdd, .autoUpdate:
             AnyView(EmptyView())
-        }
-    }
-
-    /// 子模块里有本地改动时询问是否强制删除。
-    private func askForceDeletion(_ offer: SubmoduleDeletionOffer, in window: NSWindow) {
-        let repository = session.repository
-
-        DialogWindow.present(on: window) { close in
-            ConfirmationDialog(
-                title: AppLocalization.text("submodule.delete"),
-                message: AppLocalization.text("submodule.forceDelete.message", offer.submodule.name),
-                submitTitle: AppLocalization.text("submodule.forceDelete.submit"),
-                close: close
-            ) { [weak self] _ in
-                guard let self, session.repository == repository else {
-                    return
-                }
-
-                session.deleteSubmodule(offer.submodule, keepsWorkingTree: offer.keepsWorkingTree, force: true)
-            }
-        }
-    }
-
-    /// 已有同名 Git 目录时询问复用还是覆盖：复用是主按钮，覆盖是备选按钮。
-    private func askForceAddition(_ offer: SubmoduleAdditionOffer, in window: NSWindow) {
-        let repository = session.repository
-
-        let overwrite: (Bool) -> Void = { [weak self] _ in
-            guard let self, session.repository == repository else {
-                return
-            }
-
-            session.addSubmodule(url: offer.url, path: offer.path, overwrites: true)
-        }
-
-        DialogWindow.present(on: window) { close in
-            ConfirmationDialog(
-                title: AppLocalization.text("submodule.forceAdd"),
-                message: AppLocalization.text("submodule.forceAdd.message", offer.path),
-                submitTitle: AppLocalization.text("submodule.forceAdd.reuse"),
-                alternate: (title: AppLocalization.text("submodule.forceAdd.overwrite"), action: overwrite),
-                close: close
-            ) { [weak self] _ in
-                guard let self, session.repository == repository else {
-                    return
-                }
-
-                session.addSubmodule(url: offer.url, path: offer.path, reusesGitDirectory: true)
-            }
-        }
-    }
-
-    /// 操作改动了已初始化子模块的指针时询问是否更新；勾选 “总是” 并更新后，之后的操作直接更新。
-    private func askAutoUpdate(_ submodules: [Submodule], in window: NSWindow) {
-        let repository = session.repository
-
-        DialogWindow.present(on: window) { close in
-            ConfirmationDialog(
-                title: AppLocalization.text("submodule.autoUpdate"),
-                message: AppLocalization.text("submodule.autoUpdate.message")
-                    + "\n\n" + submodules.map(\.name).joined(separator: "\n"),
-                submitTitle: AppLocalization.text("submodule.autoUpdate.update"),
-                cancelTitle: AppLocalization.text("submodule.autoUpdate.skip"),
-                checkbox: AppLocalization.text("submodule.autoUpdate.always"),
-                close: close
-            ) { [weak self] always in
-                guard let self, session.repository == repository else {
-                    return
-                }
-
-                if always {
-                    UserDefaults.standard.set(true, forKey: SubmodulePreferences.alwaysUpdate)
-                }
-
-                session.updateSubmodules(submodules, recursive: false)
-            }
         }
     }
 }

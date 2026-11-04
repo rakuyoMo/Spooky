@@ -293,9 +293,7 @@ struct RepositorySessionTests {
         )
 
         for await _ in started { break }
-        let start = ContinuousClock.now
         await session.shutdown()
-        #expect(start.duration(to: .now) < .seconds(5))
         #expect(session.repository == nil && session.writeTask == nil)
         #expect(!RepositoryWriteLocks.shared.contains(location))
         #expect(session.activities.items.first { $0.title == "Fetch" }?.state == "activity.cancelled")

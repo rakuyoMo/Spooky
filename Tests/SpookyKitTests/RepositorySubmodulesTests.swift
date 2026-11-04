@@ -9,7 +9,8 @@ import Testing
 /// 增删改移、初始化、更新、同步与修复都在父仓库所在的机器上由 Git 完成。
 struct RepositorySubmodulesTests {
     /// 添加后列出一个干净的子模块；子模块里的改动与检出别的提交分别反映在概况与状态里。
-    @Test("添加、列出与概况")
+    /// 子模块读得出父仓库的工作区、认得出自己的工作树；子模块的选项写进 `.gitmodules` 或本地配置，本地优先。
+    @Test("添加、列出与概况，父仓库与选项")
     func addListAndSummary() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
@@ -30,6 +31,9 @@ struct RepositorySubmodulesTests {
         #expect(added.pointer == repositories.upstreamHead)
         #expect(added.checkedOut == repositories.upstreamHead)
         #expect(try await submodules.summary(of: added) == SubmoduleSummary(changes: 0, ahead: 0, behind: 0))
+
+        // 只读的核对放在改动子模块之前
+        try await Self.superproject(of: added, in: temporary, repositories)
 
         // 子模块里多一个未跟踪文件、检出上一个提交
         try Data("x\n".utf8).write(to: repositories.parentURL.appending(path: "依赖/my lib/新 文件.txt"))
@@ -54,6 +58,9 @@ struct RepositorySubmodulesTests {
 
         try await submodules.checkout(try #require(revisions.first), in: updated)
         #expect(try await submodules.list().first?.state == .clean)
+
+        // 设下的 ignore 会改变状态的读数，选项放在最后
+        try await Self.options(of: submodules)
     }
 
     /// 相对地址按父仓库的默认远端或工作区路径换算后再比较；`.gitmodules` 的地址改了才提示同步，同步后不再提示。
@@ -227,38 +234,6 @@ struct RepositorySubmodulesTests {
         #expect(try await submodules.summary(of: lib).changes == 0)
     }
 
-    /// 选项写进 `.gitmodules` 或本地配置，本地优先；删除没有设置的选项不报错。
-    @Test("选项")
-    func options() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
-
-        let repositories = try await SubmoduleRepositories(temporary)
-        let submodules = RepositorySubmodules(runner: repositories.parent)
-
-        try await submodules.add(url: repositories.upstreamPath, path: "lib", reusesGitDirectory: false)
-        var lib = try #require(try await submodules.list().first)
-        #expect(lib.fetchMode == nil && lib.ignoreMode == nil && lib.updateStrategy == nil)
-
-        try await submodules.set(.fetchRecurseSubmodules, to: "false", for: lib, in: .shared)
-        try await submodules.set(.ignore, to: "dirty", for: lib, in: .shared)
-        try await submodules.set(.update, to: "rebase", for: lib, in: .local)
-        try await submodules.set(.fetchRecurseSubmodules, to: "on-demand", for: lib, in: .local)
-
-        lib = try #require(try await submodules.list().first)
-        #expect(lib.fetchMode == .onDemand)
-        #expect(lib.shared?.fetchRecurseSubmodules == "false")
-        #expect(lib.ignoreMode == .dirty)
-        #expect(lib.updateStrategy == .rebase)
-
-        try await submodules.set(.fetchRecurseSubmodules, to: nil, for: lib, in: .local)
-        try await submodules.set(.ignore, to: nil, for: lib, in: .local)
-
-        lib = try #require(try await submodules.list().first)
-        #expect(lib.fetchMode == .never)
-        #expect(lib.ignoreMode == .dirty)
-    }
-
     /// 重新添加删除过的子模块时父仓库里已有它的 Git 目录：不复用就报出，可以复用，也可以删掉后重新克隆。
     @Test("已有的 Git 目录")
     func existingGitDirectory() async throws {
@@ -281,27 +256,6 @@ struct RepositorySubmodulesTests {
         try await submodules.removeGitDirectory(named: "lib")
         try await submodules.add(url: repositories.upstreamPath, path: "lib", reusesGitDirectory: false)
         #expect(try await submodules.list().first?.state == .clean)
-    }
-
-    /// 本仓库作为子模块时读出父仓库的工作区，不是子模块时为 nil；子模块自己的工作树清单认得出它自己。
-    @Test("父仓库")
-    func superproject() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
-
-        let repositories = try await SubmoduleRepositories(temporary)
-        try await RepositorySubmodules(runner: repositories.parent)
-            .add(url: repositories.upstreamPath, path: "lib", reusesGitDirectory: false)
-
-        let childRunner = temporary.submoduleRunner(at: repositories.parentURL.appending(path: "lib").path)
-        let parent = try #require(try await RepositorySubmodules(runner: childRunner).superproject())
-        #expect(parent.hasSuffix("/父 仓库"))
-        #expect(try await RepositorySubmodules(runner: repositories.parent).superproject() == nil)
-
-        // 子模块里 Git 把主工作树写成 Git 目录，清单换成工作区根目录并认作当前工作树
-        let worktrees = try await RepositoryWorktrees(runner: childRunner).list()
-        #expect(worktrees.count == 1)
-        #expect(worktrees[0].isCurrent && worktrees[0].path.hasSuffix("/父 仓库/lib"))
     }
 }
 
@@ -427,6 +381,54 @@ extension RepositorySubmodulesTests {
         #expect(RepositoryOperationQueue.isReadOnly(["-C", "lib", "status", "--porcelain=v2"]))
         #expect(!RepositoryOperationQueue.isReadOnly(["-C", "lib", "checkout", "main"]))
         #expect(RepositoryOperationQueue.command(in: ["-C", "lib", "fetch", "--all"]) == "fetch")
+    }
+}
+
+// MARK: - Steps
+
+extension RepositorySubmodulesTests {
+    /// 本仓库作为子模块时读出父仓库的工作区，不是子模块时为 nil；子模块自己的工作树清单认得出它自己。
+    private static func superproject(
+        of submodule: Submodule,
+        in temporary: TemporaryRepository,
+        _ repositories: SubmoduleRepositories
+    ) async throws {
+        let childRunner = temporary.submoduleRunner(
+            at: repositories.parentURL.appending(path: submodule.path).path
+        )
+
+        let parent = try #require(try await RepositorySubmodules(runner: childRunner).superproject())
+        #expect(parent.hasSuffix("/父 仓库"))
+        #expect(try await RepositorySubmodules(runner: repositories.parent).superproject() == nil)
+
+        // 子模块里 Git 把主工作树写成 Git 目录，清单换成工作区根目录并认作当前工作树
+        let worktrees = try await RepositoryWorktrees(runner: childRunner).list()
+        #expect(worktrees.count == 1)
+        #expect(worktrees[0].isCurrent && worktrees[0].path.hasSuffix("/父 仓库/" + submodule.path))
+    }
+
+    /// 选项写进 `.gitmodules` 或本地配置，本地优先；删除没有设置的选项不报错。
+    private static func options(of submodules: RepositorySubmodules) async throws {
+        var lib = try #require(try await submodules.list().first)
+        #expect(lib.fetchMode == nil && lib.ignoreMode == nil && lib.updateStrategy == nil)
+
+        try await submodules.set(.fetchRecurseSubmodules, to: "false", for: lib, in: .shared)
+        try await submodules.set(.ignore, to: "dirty", for: lib, in: .shared)
+        try await submodules.set(.update, to: "rebase", for: lib, in: .local)
+        try await submodules.set(.fetchRecurseSubmodules, to: "on-demand", for: lib, in: .local)
+
+        lib = try #require(try await submodules.list().first)
+        #expect(lib.fetchMode == .onDemand)
+        #expect(lib.shared?.fetchRecurseSubmodules == "false")
+        #expect(lib.ignoreMode == .dirty)
+        #expect(lib.updateStrategy == .rebase)
+
+        try await submodules.set(.fetchRecurseSubmodules, to: nil, for: lib, in: .local)
+        try await submodules.set(.ignore, to: nil, for: lib, in: .local)
+
+        lib = try #require(try await submodules.list().first)
+        #expect(lib.fetchMode == .never)
+        #expect(lib.ignoreMode == .dirty)
     }
 }
 

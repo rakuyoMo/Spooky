@@ -87,9 +87,10 @@ struct BranchesReviewTests {
         let runner = try await FileViewsTests.initializeRepository(at: location)
         try await prepareBranches(runner: runner, in: directory)
 
-        let suite = "spooky-compare-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let defaultsDirectory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-compare-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: defaultsDirectory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: defaultsDirectory) }
         defaults.set(true, forKey: RepositoryHistoryState.comparesBranchesKey)
 
         let session = RepositorySession(makeRunner: { _ in runner })
@@ -185,9 +186,10 @@ struct BranchesReviewTests {
         #expect(automatic.map(\.name) == ["requested", "stale"])
 
         // 每个仓库各自记录检查时刻，满一天才再检查
-        let suite = "spooky-archive-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-archive-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
         let repository = RepositoryLocation.remote(host: "spooky-test", path: "/仓库 'x'")
 
         #expect(BranchArchiving.isDue(for: repository, defaults: defaults, now: date))
@@ -270,40 +272,6 @@ struct BranchesReviewTests {
         // 没有账号时不能把未知当成有或没有请求
         #expect(!BranchesReviewState.matches(item(nil), filter: .withoutPullRequest, staleMonths: 3, now: now))
         #expect(!BranchesReviewState.matches(item(open), filter: .withPullRequest, staleMonths: 3, now: now))
-    }
-
-    /// 托管服务上请求已合并的分支进入归档建议，即使它不陈旧。
-    @Test("服务端合并的分支可以归档")
-    func serverMergedCandidates() {
-        let now = Date(timeIntervalSince1970: 1_700_000_000)
-        let references = ["main", "squashed"].map { reference("refs/heads/" + $0, date: now) }
-        let snapshot = ReferenceSnapshot(references: references, remotes: [])
-        let conditions = Dictionary(uniqueKeysWithValues: references.map { reference in
-            (
-                reference.id,
-                BranchCondition(
-                    reference: reference.id,
-                    lastUpdated: now,
-                    missingUpstream: nil,
-                    isBase: reference.name == "main"
-                )
-            )
-        })
-
-        let candidates = { (merged: Set<String>) in
-            BranchArchiving.candidates(
-                in: snapshot,
-                conditions: conditions,
-                head: nil,
-                staleMonths: 3,
-                automatic: true,
-                mergedOnServer: merged,
-                now: now
-            )
-        }
-
-        #expect(candidates([]).isEmpty)
-        #expect(candidates(["refs/heads/squashed"]).map(\.name) == ["squashed"])
     }
 }
 

@@ -43,7 +43,6 @@ struct RepositoryFileCacheTests {
     func localWorkingTree() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
-        try await repository.initialize()
 
         let path = "子 目录/文件 [*].txt"
         let file = repository.directory.appending(path: path)

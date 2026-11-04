@@ -62,9 +62,10 @@ struct PullRequestTargetTests {
     /// 关联写进偏好后可以读回，删除后不再存在。
     @Test("关联的存取")
     func associations() throws {
-        let suite = "spooky-pr-associations-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-pr-associations-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let association = PullRequestAssociation(account: UUID(), project: "o/r")
         PullRequestAssociations.set(association, for: "git@alias:o/r.git", in: defaults)
@@ -110,7 +111,8 @@ struct PullRequestTargetTests {
     /// 请求视图读过之后，仓库里加了远端、刷新读到新的引用时，请求视图随即重新读出远端。
     @Test("远端变化后重新读取请求")
     func remotesChange() async throws {
-        let fixture = try await HistoryListTests.makeSession(commits: ["first"])
+        // 远端变化由窗口观察，再交给会话重读请求
+        let fixture = try await HistoryListTests.makeSession(commits: ["first"], createsWindowController: true)
         defer { fixture.close() }
 
         let session = fixture.session
@@ -119,9 +121,10 @@ struct PullRequestTargetTests {
         await session.waitForRefresh()
 
         // 账号列表只在内存里，不碰本机的账号
-        let suite = "spooky-remotes-change-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-remotes-change-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         session.pullRequests.accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials())
         session.reloadPullRequests()

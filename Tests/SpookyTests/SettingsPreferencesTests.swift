@@ -13,9 +13,11 @@ struct SettingsPreferencesTests {
     /// 三种窗口恢复方式写进 App 自己的偏好域；交给系统设置时删除键，读出时不受全局域影响。
     @Test("窗口恢复方式的读写")
     func windowRestoration() throws {
-        let domain = "com.rakuyo.spooky.tests.restoration." + UUID().uuidString
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "com.rakuyo.spooky.tests.restoration." + UUID().uuidString)
+        let domain = directory.appending(path: "defaults").path
         let defaults = try #require(UserDefaults(suiteName: domain))
-        defer { defaults.removePersistentDomain(forName: domain) }
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         #expect(WindowRestoration.current(in: defaults, domain: domain) == .system)
 
@@ -50,9 +52,10 @@ struct SettingsPreferencesTests {
     /// 环境设置写进偏好并立即交给核心库；登录 shell 的变量只在开启时带上，重新创建时读回保存的值。
     @Test("本机执行设置的持久化")
     func localExecutionPreferences() async throws {
-        let domain = "com.rakuyo.spooky.tests.environment." + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: domain))
-        defer { defaults.removePersistentDomain(forName: domain) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "com.rakuyo.spooky.tests.environment." + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         var applied: [LocalExecutionSettings] = []
         let preferences = LocalExecutionPreferences(
@@ -88,9 +91,10 @@ struct SettingsPreferencesTests {
     /// 没有改过设置时读取登录 shell 的变量，本机 Git 才能找到 shell 配置里补进 PATH 的工具；存过关闭的不被默认值覆盖。
     @Test("登录 shell 环境默认读取")
     func loginShellDefault() throws {
-        let domain = "com.rakuyo.spooky.tests.loginShell." + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: domain))
-        defer { defaults.removePersistentDomain(forName: domain) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "com.rakuyo.spooky.tests.loginShell." + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let fresh = LocalExecutionPreferences(defaults: defaults, readLoginShell: { [:] }, apply: { _ in })
         #expect(fresh.usesLoginShell)

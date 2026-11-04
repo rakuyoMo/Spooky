@@ -10,17 +10,19 @@ import Testing
 /// 仓库书签：旧记录的迁移、去重与打开时间、最近打开列表的清空、文件夹与手动顺序、改名与删除、失效标记与失效时的写法，以及改指向工作区根目录。
 @MainActor
 struct RepositoryBookmarksTests {
-    /// 每个用例独立的偏好域。
-    private static func defaults() throws -> (UserDefaults, String) {
-        let suite = "spooky-bookmarks-" + UUID().uuidString
-        return (try #require(UserDefaults(suiteName: suite)), suite)
+    /// 每个用例独立的偏好域与它所在的临时目录；用例结束时删掉目录。
+    private static func defaults() throws -> (UserDefaults, URL) {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-bookmarks-" + UUID().uuidString)
+
+        return (try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path)), directory)
     }
 
     /// 已有的最近记录变成同样顺序的书签，旧键随之删除；之后只读新键。
     @Test("旧版本的最近记录迁移成书签")
     func migratesLegacyRecords() throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let locations: [RepositoryLocation] = [
             .remote(host: "spooky-test", path: "/srv/应用 app"),
@@ -39,8 +41,8 @@ struct RepositoryBookmarksTests {
     /// 同一位置只有一个书签；打开过的按最近打开时间排在前面，没打开过的不算最近。
     @Test("加入不重复，按打开时间列出最近打开")
     func addsAndRecordsOpening() throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let bookmarks = RepositoryBookmarks(defaults: defaults)
         let first = RepositoryLocation.local(path: "/tmp/first")
@@ -61,8 +63,8 @@ struct RepositoryBookmarksTests {
     /// Clear Menu 只清空最近打开列表：书签与各自的打开时间都在，重新读取偏好后仍是空的；之后打开的仓库照常进入列表。
     @Test("清空最近打开列表，书签保留")
     func clearsRecentlyOpened() throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let bookmarks = RepositoryBookmarks(defaults: defaults)
         let first = RepositoryLocation.local(path: "/tmp/first")
@@ -84,8 +86,8 @@ struct RepositoryBookmarksTests {
     /// 移进文件夹保持原来的先后；文件夹不能移进它自己或它里面的文件夹；排序只排一层。
     @Test("文件夹、移动与按名称排序")
     func foldersMoveAndSort() throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let bookmarks = RepositoryBookmarks(defaults: defaults)
         let b10 = bookmarks.add(.local(path: "/tmp/b10"))
@@ -115,8 +117,8 @@ struct RepositoryBookmarksTests {
     /// 改名去掉首尾空白，空名字不接受；删除文件夹连同里面的书签，失效标记一并清掉。
     @Test("改名、删除与失效标记")
     func renameDeleteAndMissing() throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let bookmarks = RepositoryBookmarks(defaults: defaults)
         let gone = RepositoryLocation.local(path: "/tmp/gone")
@@ -140,8 +142,8 @@ struct RepositoryBookmarksTests {
     /// 失效的书签只靠灰色名称与警告图标标出，VoiceOver 把警告图标读作 “Unavailable”；丢失页说明里的本机路径缩写主目录。
     @Test("失效书签的行与丢失页的说明")
     func missingPresentation() throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let bookmarks = RepositoryBookmarks(defaults: defaults)
         let home = NSHomeDirectory()
@@ -185,8 +187,8 @@ struct RepositoryBookmarksTests {
     /// 书签指向子目录时改指向工作区根目录：没改过的名字随之更新，改过的保留；根目录已有书签时不动。
     @Test("书签改指向工作区根目录")
     func relocatesToWorkingTreeRoot() throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let bookmarks = RepositoryBookmarks(defaults: defaults)
         let nested = RepositoryLocation.local(path: "/tmp/app/Sources")

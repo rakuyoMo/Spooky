@@ -63,8 +63,6 @@ struct GitCredentialScopesTests {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
 
-        try await fixture.initialize()
-
         let spooky = try Self.helper("spooky", answer: "", in: fixture)
 
         GitCredentialScopes.current = ["https://github.com"]

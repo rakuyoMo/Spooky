@@ -13,9 +13,10 @@ struct PublishRepositoryDialogTests {
     /// 480 宽；Remote Name、Name 与 Description 从对齐线开始，右缘距对话框右边 20，Description 高 64。
     @Test("对话框的宽度与输入框的位置")
     func layout() throws {
-        let suite = "spooky-publish-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-publish-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let session = RepositorySession()
         session.pullRequests.accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials())

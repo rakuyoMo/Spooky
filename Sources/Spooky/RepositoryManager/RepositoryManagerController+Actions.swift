@@ -161,21 +161,30 @@ extension RepositoryManagerController {
         }
 
         window?.presentDialog { close in
-            ConfirmationDialog(
-                title: targets.count == 1
-                    ? AppLocalization.text("bookmarks.delete.title", targets[0].displayName)
-                    : AppLocalization.text("bookmarks.delete.titleMultiple", targets.count),
-                message: AppLocalization.text("bookmarks.delete.message"),
-                submitTitle: AppLocalization.text("bookmarks.delete.submit"),
-                close: close
-            ) { [weak self] _ in
-                guard let self else {
-                    return
-                }
+            deleteBookmarksPrompt(targets, close: close)
+        }
+    }
 
-                bookmarks.delete(targets.map(\.id))
-                selection.removeAll { bookmarks.bookmark($0) == nil }
+    /// 删除书签的询问：标题按个数取写法，主按钮是 Delete；确认后删除，并从选中里去掉。
+    ///
+    /// - Parameters:
+    ///   - targets: 要删除的书签。
+    ///   - close: 关闭询问。
+    func deleteBookmarksPrompt(_ targets: [Bookmark], close: @escaping () -> Void) -> ConfirmationDialog {
+        ConfirmationDialog(
+            title: targets.count == 1
+                ? AppLocalization.text("bookmarks.delete.title", targets[0].displayName)
+                : AppLocalization.text("bookmarks.delete.titleMultiple", targets.count),
+            message: AppLocalization.text("bookmarks.delete.message"),
+            submitTitle: AppLocalization.text("bookmarks.delete.submit"),
+            close: close
+        ) { [weak self] _ in
+            guard let self else {
+                return
             }
+
+            bookmarks.delete(targets.map(\.id))
+            selection.removeAll { bookmarks.bookmark($0) == nil }
         }
     }
 

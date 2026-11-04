@@ -42,7 +42,7 @@ struct OpenFilesTests {
     /// 交来仓库里的子文件夹时，打开的是它所在的仓库。
     @Test("打开仓库文件夹")
     func openRepositoryFolder() async throws {
-        let fixture = try await NavigationTests.makeWindow()
+        let fixture = try await NavigationTests.makeCoordinator()
         defer { fixture.close() }
 
         let coordinator = fixture.coordinator
@@ -61,7 +61,7 @@ struct OpenFilesTests {
     /// ⌘O 选好的文件夹与 Finder 交来的走同一条路：不是工作区这类其余的失败显示错误 sheet，可以另选文件夹。
     @Test("⌘O 选了打不开的文件夹")
     func chosenFolderFailure() async throws {
-        let fixture = try await NavigationTests.makeWindow()
+        let fixture = try await NavigationTests.makeCoordinator()
         let bare = try FileViewsTests.temporaryDirectory()
 
         // 错误框会记下自己的尺寸，测完恢复
@@ -96,15 +96,15 @@ struct OpenFilesTests {
         #expect(dialog.rootView.chooseAnother != nil)
     }
 
-    /// 经链接启动时，链接的仓库显示在唯一的窗口里，不另开仓库管理窗口。
-    @Test("经链接启动只开一个窗口")
+    /// 经链接启动时，链接的仓库经正常的打开流程显示在唯一的窗口里，停在链接指向的视图，不另开仓库管理窗口。
+    @Test("经链接启动只开一个窗口，显示链接指向的视图")
     func launchWithLink() async throws {
-        let fixture = try await NavigationTests.makeWindow()
+        let fixture = try await NavigationTests.makeCoordinator()
         defer { fixture.close() }
 
         let coordinator = fixture.coordinator
         let path = try #require(fixture.directory.path.addingPercentEncoding(withAllowedCharacters: .alphanumerics))
-        let url = try #require(URL(string: "spooky://open?repository=" + path))
+        let url = try #require(URL(string: "spooky://open?repository=" + path + "&view=stashes"))
 
         // 启动中交来的链接先存下，启动收尾时才处理
         Self.beginLaunching(coordinator)
@@ -112,13 +112,19 @@ struct OpenFilesTests {
         #expect(coordinator.windows.isEmpty)
 
         coordinator.finishLaunchOpenings()
+
+        // 打开流程结束后，窗口停在链接指向的视图
+        try await FileViewsTests.wait {
+            coordinator.windows.contains { $0.session.activeView == .stashes && !$0.showsManager }
+        }
+
         try await Self.waitForSingleRepositoryWindow(coordinator)
     }
 
     /// 经仓库文件夹启动时，仓库显示在唯一的窗口里，不另开仓库管理窗口。
     @Test("经仓库文件夹启动只开一个窗口")
     func launchWithRepositoryFolder() async throws {
-        let fixture = try await NavigationTests.makeWindow()
+        let fixture = try await NavigationTests.makeCoordinator()
         defer { fixture.close() }
 
         let coordinator = fixture.coordinator
@@ -133,7 +139,7 @@ struct OpenFilesTests {
     /// 经克隆链接启动时，克隆对话框显示在唯一的窗口上，不另开仓库管理窗口。
     @Test("经克隆链接启动只开一个窗口")
     func launchWithCloneLink() async throws {
-        let fixture = try await NavigationTests.makeWindow()
+        let fixture = try await NavigationTests.makeCoordinator()
 
         defer {
             for window in fixture.coordinator.windows.compactMap(\.window) {

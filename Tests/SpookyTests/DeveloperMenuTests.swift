@@ -45,9 +45,11 @@ struct DeveloperMenuTests {
     /// Reset 之后只剩书签、身份档案、托管账号、账号关联与服务器仓库的本机目录，设置都回到默认；Clear 之后整个域都空了。
     @Test("Reset 保留数据，Clear 全部删掉")
     func resetAndClear() throws {
-        let domain = "com.rakuyo.spooky.tests.developer." + UUID().uuidString
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "com.rakuyo.spooky.tests.developer." + UUID().uuidString)
+        let domain = directory.appending(path: "defaults").path
         let defaults = try #require(UserDefaults(suiteName: domain))
-        defer { defaults.removePersistentDomain(forName: domain) }
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         for key in DeveloperPreferences.dataKeys {
             defaults.set(Data("[]".utf8), forKey: key)
@@ -86,7 +88,7 @@ struct DeveloperMenuTests {
 
         for confirms in [false, true] {
             let answer = Task { await SpookyApplicationController.confirmResetUserDefaults(in: window) }
-            let sheet = try await Self.attachedSheet(of: window)
+            let sheet = try await PromptDialogTests.attachedSheet(of: window)
             let hosting = sheet.contentViewController as? NSHostingController<ConfirmationDialog>
             let dialog = try #require(hosting?.rootView)
 
@@ -112,9 +114,10 @@ struct DeveloperMenuTests {
     /// 关掉 Auto-Reload Repository 后，文件监听与轮询共用的刷新入口不读取状态；没有记录或打开时照常刷新。
     @Test("关掉自动刷新后文件监听与轮询不刷新")
     func autoReload() async throws {
-        let domain = "com.rakuyo.spooky.tests.autoreload." + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: domain))
-        defer { defaults.removePersistentDomain(forName: domain) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "com.rakuyo.spooky.tests.autoreload." + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let status = try WorkingCopyStatus(porcelainV2: Data("# branch.oid (initial)\0# branch.head main\0".utf8))
         let session = RepositorySession(loadStatus: { _ in status })
@@ -135,20 +138,5 @@ struct DeveloperMenuTests {
 
         await session.refreshTask?.value
         #expect(session.status == status)
-    }
-}
-
-// MARK: - Helpers
-
-extension DeveloperMenuTests {
-    /// 等窗口挂上 sheet，最多等 5 秒。
-    private static func attachedSheet(of window: NSWindow) async throws -> NSWindow {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
-
-        while window.attachedSheet == nil, .now < deadline {
-            try await Task.sleep(for: .milliseconds(20))
-        }
-
-        return try #require(window.attachedSheet)
     }
 }

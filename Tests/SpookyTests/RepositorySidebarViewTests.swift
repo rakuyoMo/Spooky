@@ -183,9 +183,11 @@ extension RepositorySidebarViewTests {
         return satisfied ? leading : nil
     }
 
-    /// 每 20 ms 检查一次条件，10 s 内满足时返回 true。
+    /// 每 20 ms 检查一次条件，300 s 内满足时返回 true。
+    ///
+    /// 整套测试并行时主线程要排队，等待上限按整套测试的耗时留足。
     private static func eventually(_ condition: () -> Bool) async -> Bool {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(10))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
 
         while !condition() {
             guard .now < deadline else {

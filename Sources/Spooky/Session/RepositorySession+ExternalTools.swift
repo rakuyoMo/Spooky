@@ -103,6 +103,33 @@ extension RepositorySession {
         changes.map { ComparedFile(path: $0.path, originalPath: $0.originalPath) }
     }
 
+    /// 文件已在别处改过时的覆盖询问：说明写出文件名与仓库，主按钮是 Overwrite。
+    ///
+    /// - Parameters:
+    ///   - path: 文件在仓库内的路径或仓库所在机器上的路径，只显示文件名。
+    ///   - repository: 文件所在的仓库。
+    ///   - close: 关闭询问。
+    ///   - overwrite: 用户确认覆盖后的动作。
+    static func overwritePrompt(
+        _ path: String,
+        in repository: RepositoryLocation,
+        close: @escaping () -> Void,
+        overwrite: @escaping () -> Void
+    ) -> ConfirmationDialog {
+        ConfirmationDialog(
+            title: AppLocalization.text("externalTool.fileChanged"),
+            message: AppLocalization.text(
+                "externalTool.fileChanged.message",
+                fileName(path),
+                repository.displayPath
+            ),
+            submitTitle: AppLocalization.text("externalTool.overwrite"),
+            close: close
+        ) { _ in
+            overwrite()
+        }
+    }
+
     /// 所选文件里至少有一个能这样比较；冲突文件的三种比较只对单个文件提供。
     func canCompare(_ entries: [StatusEntry], _ comparison: WorkingCopyComparison) -> Bool {
         guard repository != nil else {
@@ -268,18 +295,7 @@ extension RepositorySession {
         }
 
         DialogWindow.present(on: window) { close in
-            ConfirmationDialog(
-                title: AppLocalization.text("externalTool.fileChanged"),
-                message: AppLocalization.text(
-                    "externalTool.fileChanged.message",
-                    Self.fileName(path),
-                    repository.displayPath
-                ),
-                submitTitle: AppLocalization.text("externalTool.overwrite"),
-                close: close
-            ) { _ in
-                overwrite()
-            }
+            Self.overwritePrompt(path, in: repository, close: close, overwrite: overwrite)
         }
     }
 }

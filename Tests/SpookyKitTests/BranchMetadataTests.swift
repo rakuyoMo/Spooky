@@ -5,8 +5,9 @@ import Testing
 
 /// 置顶、归档与父分支写在分支配置段里，随分支改名移动、随删除清除。
 struct BranchMetadataTests {
-    /// 名称含点、斜杠与中文的分支也能按完整引用名读回，取消标记后键被删除。
-    @Test("置顶、归档与父分支的写入、读回与取消")
+    /// 名称含点、斜杠与中文的分支也能按完整引用名读回，取消标记后键被删除；
+    /// 改名带走整个分支配置段，删除分支时一并清除，不留下孤立的键。
+    @Test("置顶、归档与父分支的写入、读回与取消，随分支改名移动、随删除清除")
     func roundTrip() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
@@ -35,18 +36,8 @@ struct BranchMetadataTests {
         // 取消一个本来就没有的标记同样成功
         try await refs.setArchived(false, branches: ["refs/heads/main"])
         #expect(try await refs.metadata().isEmpty)
-    }
 
-    /// 改名带走整个分支配置段，删除分支时一并清除，不留下孤立的键。
-    @Test("分支改名与删除时附加信息随之移动与清除")
-    func followsBranchLifecycle() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        try await fixture.initialize()
-        let runner = fixture.runner
-        let refs = RepositoryReferences(runner: runner)
-        _ = try await runner.run(["commit", "--allow-empty", "-m", "root"])
+        // 改名带走整个分支配置段，删除分支时一并清除
         _ = try await runner.run(["branch", "topic"])
         try await refs.setPinned(true, branches: ["refs/heads/topic"])
         try await refs.setParent("refs/heads/main", of: "refs/heads/topic")
@@ -63,11 +54,8 @@ struct BranchMetadataTests {
     /// 只接受完整的本地分支引用；父分支不能是自身，也不能是缩写。
     @Test("拒绝非本地分支、空列表与无效的父分支")
     func rejectsInvalidInput() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        try await fixture.initialize()
-        let refs = RepositoryReferences(runner: fixture.runner)
+        // 这些调用都在执行 Git 之前就被拒绝，用不到仓库
+        let refs = RepositoryReferences(runner: GitRunner(location: .local(path: "/nonexistent")))
 
         await #expect(throws: RepositoryReadError.invalidQuery) {
             try await refs.setPinned(true, branches: ["main"])

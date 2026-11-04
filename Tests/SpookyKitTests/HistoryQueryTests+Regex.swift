@@ -6,53 +6,19 @@ import Testing
 // MARK: - Regex
 
 extension HistoryQueryTests {
-    /// 没有配置时说明、作者与提交人按基本正则匹配，与在 Git 里直接搜索相同。
-    @Test("说明、作者与提交人默认按基本正则匹配", arguments: ["sha1", "sha256"])
-    func regexConditions(objectFormat: String) async throws {
+    /// 没有配置时说明、作者与提交人按基本正则匹配，与在 Git 里直接搜索相同；
+    /// Git 编译不了的正则不执行 Git，列表为空、计数为 0、没有位置，也不报错。SHA-1 与 SHA-256 仓库都要通过。
+    @Test("默认按基本正则匹配，编译不了的正则没有结果、不报错", arguments: ["sha1", "sha256"])
+    func defaultPatterns(objectFormat: String) async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
 
         let head = try await Self.makeRegexHistory(in: fixture, objectFormat: objectFormat)
         let history = RepositoryHistory(runner: fixture.runner)
 
-        // 点号匹配任一字符，转义后只匹配点号本身
-        let dot = try await Self.subjects(
-            history,
-            head: head,
-            [.init(kind: .message, text: "A.C")]
-        )
-
-        #expect(Set(dot) == ["abc search target", "axc other", "a.c literal target"])
-
-        let escaped = try await Self.subjects(
-            history,
-            head: head,
-            [.init(kind: .message, text: "a\\.c")]
-        )
-
-        #expect(escaped == ["a.c literal target"])
-
-        // 作者与提交人同样按正则匹配，行首从姓名开始
-        let author = try await Self.subjects(
-            history,
-            head: head,
-            [.init(kind: .author, text: "^C.ROL")]
-        )
-
-        #expect(author == ["call(x) done"])
-
-        let committer = try await Self.subjects(
-            history,
-            head: head,
-            [.init(kind: .committer, text: "^bob <.*>$")]
-        )
-
-        #expect(committer == ["axc other"])
-
-        // 交给 Git 的参数写明正则的写法并忽略大小写
-        let query = HistoryQuery(conditions: [.init(kind: .message, text: "a.c")])
-        #expect(query.filterArguments == ["-i", "--basic-regexp", "--grep=a.c"])
-        #expect(try await history.patternType() == .basic)
+        // 两步都在默认的 grep 配置下只读这份历史，先后互不影响
+        try await Self.regexConditions(history, head: head)
+        try await Self.invalidPatterns(history, head: head)
     }
 
     /// 写法跟随仓库生效的 grep.patternType 与 grep.extendedRegexp：结果与直接执行 git log 相同，计数与列表一致。
@@ -180,44 +146,6 @@ extension HistoryQueryTests {
         }
     }
 
-    /// Git 编译不了的正则不执行 Git：列表为空、计数为 0、没有位置，也不报错。
-    @Test("编译不了的正则没有结果，不报错", arguments: ["sha1", "sha256"])
-    func invalidPatterns(objectFormat: String) async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        let head = try await Self.makeRegexHistory(in: fixture, objectFormat: objectFormat)
-        let history = RepositoryHistory(runner: fixture.runner)
-
-        let conditions: [HistorySearchCondition] = [
-            .init(kind: .message, text: "x["),
-            .init(kind: .message, text: "\\("),
-            .init(kind: .author, text: "x["),
-            .init(kind: .committer, text: "\\("),
-        ]
-
-        for condition in conditions {
-            let query = HistoryQuery(conditions: [condition])
-            let page = try await history.page(roots: [head], query: query)
-
-            #expect(page.commits.isEmpty)
-            #expect(!page.hasMore)
-            #expect(try await history.count(roots: [head], query: query, limit: 100) == 0)
-            #expect(
-                try await history.position(of: head, roots: [head], query: query, limit: 100) == nil
-            )
-        }
-
-        // 与哈希条件同时使用时同样没有结果
-        let hash = HistoryQuery(conditions: [
-            .init(kind: .hash, text: String(head.prefix(7))),
-            .init(kind: .message, text: "x["),
-        ])
-
-        #expect(try await history.page(roots: [head], query: hash).commits.isEmpty)
-        #expect(try await history.count(roots: [head], query: hash, limit: 100) == 0)
-    }
-
     /// 能否编译的判断与 Git 相同：基本与扩展正则里 Git 报错退出的写法都判为编译不了；字面与 Perl 正则不在本机判断。
     @Test("判断正则能否编译与 Git 一致")
     func patternValidity() async throws {
@@ -268,6 +196,83 @@ extension HistoryQueryTests {
 
         #expect(RepositoryOperationQueue.isReadOnly(read))
         #expect(!RepositoryOperationQueue.isReadOnly(["config", "--local", "grep.patternType", "perl"]))
+    }
+}
+
+// MARK: - Regex Steps
+
+extension HistoryQueryTests {
+    /// 没有配置时说明、作者与提交人按基本正则匹配，与在 Git 里直接搜索相同。
+    private static func regexConditions(_ history: RepositoryHistory, head: String) async throws {
+        // 点号匹配任一字符，转义后只匹配点号本身
+        let dot = try await Self.subjects(
+            history,
+            head: head,
+            [.init(kind: .message, text: "A.C")]
+        )
+
+        #expect(Set(dot) == ["abc search target", "axc other", "a.c literal target"])
+
+        let escaped = try await Self.subjects(
+            history,
+            head: head,
+            [.init(kind: .message, text: "a\\.c")]
+        )
+
+        #expect(escaped == ["a.c literal target"])
+
+        // 作者与提交人同样按正则匹配，行首从姓名开始
+        let author = try await Self.subjects(
+            history,
+            head: head,
+            [.init(kind: .author, text: "^C.ROL")]
+        )
+
+        #expect(author == ["call(x) done"])
+
+        let committer = try await Self.subjects(
+            history,
+            head: head,
+            [.init(kind: .committer, text: "^bob <.*>$")]
+        )
+
+        #expect(committer == ["axc other"])
+
+        // 交给 Git 的参数写明正则的写法并忽略大小写
+        let query = HistoryQuery(conditions: [.init(kind: .message, text: "a.c")])
+        #expect(query.filterArguments == ["-i", "--basic-regexp", "--grep=a.c"])
+        #expect(try await history.patternType() == .basic)
+    }
+
+    /// Git 编译不了的正则不执行 Git：列表为空、计数为 0、没有位置，也不报错。
+    private static func invalidPatterns(_ history: RepositoryHistory, head: String) async throws {
+        let conditions: [HistorySearchCondition] = [
+            .init(kind: .message, text: "x["),
+            .init(kind: .message, text: "\\("),
+            .init(kind: .author, text: "x["),
+            .init(kind: .committer, text: "\\("),
+        ]
+
+        for condition in conditions {
+            let query = HistoryQuery(conditions: [condition])
+            let page = try await history.page(roots: [head], query: query)
+
+            #expect(page.commits.isEmpty)
+            #expect(!page.hasMore)
+            #expect(try await history.count(roots: [head], query: query, limit: 100) == 0)
+            #expect(
+                try await history.position(of: head, roots: [head], query: query, limit: 100) == nil
+            )
+        }
+
+        // 与哈希条件同时使用时同样没有结果
+        let hash = HistoryQuery(conditions: [
+            .init(kind: .hash, text: String(head.prefix(7))),
+            .init(kind: .message, text: "x["),
+        ])
+
+        #expect(try await history.page(roots: [head], query: hash).commits.isEmpty)
+        #expect(try await history.count(roots: [head], query: hash, limit: 100) == 0)
     }
 }
 

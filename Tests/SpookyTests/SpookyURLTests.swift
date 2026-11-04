@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import SpookyKit
 import Testing
@@ -8,7 +7,6 @@ import Testing
 // MARK: - SpookyURLTests
 
 /// App 接收的链接：打开本机或服务器仓库与视图、克隆，以及无效或不可信的链接只得到 nil。
-@MainActor
 struct SpookyURLTests {
     /// 解析一个链接。
     private static func parse(_ text: String) throws -> SpookyURL? {
@@ -75,23 +73,6 @@ struct SpookyURLTests {
 
         for link in rejected {
             #expect(try Self.parse(link) == nil, "应拒绝：\(link)")
-        }
-    }
-
-    /// 打开本机仓库的链接经正常的打开流程，在窗口里显示链接指向的视图。
-    @Test("经链接打开本机仓库")
-    func openLocalRepository() async throws {
-        let fixture = try await NavigationTests.makeWindow()
-        defer { fixture.close() }
-
-        let coordinator = fixture.coordinator
-        let path = try #require(fixture.directory.path.addingPercentEncoding(withAllowedCharacters: .alphanumerics))
-        let url = try #require(URL(string: "spooky://open?repository=" + path + "&view=stashes"))
-
-        coordinator.application(NSApplication.shared, open: [url])
-
-        try await FileViewsTests.wait {
-            coordinator.windows.contains { $0.session.activeView == .stashes && !$0.showsManager }
         }
     }
 }

@@ -18,9 +18,10 @@ struct UpdatesTests {
         ] as [(String?, UpdateChannel)]
     )
     func channelPreference(stored: String?, expected: UpdateChannel) throws {
-        let domain = "com.rakuyo.spooky.tests.updates." + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: domain))
-        defer { defaults.removePersistentDomain(forName: domain) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "com.rakuyo.spooky.tests.updates." + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         if let stored {
             defaults.set(stored, forKey: UpdateChannel.key)

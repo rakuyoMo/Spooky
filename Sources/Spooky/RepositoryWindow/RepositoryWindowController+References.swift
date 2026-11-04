@@ -47,9 +47,12 @@ extension RepositoryWindowController {
             return
         }
 
-        // 失败后的询问与错误 sheet 一样排队显示，不能因为别的 sheet 而丢掉
+        // 失败后的询问与错误 sheet 一样排队显示，不能因为别的 sheet 而丢掉；询问结束后才开始强制删除
         if case .forceDelete(let offer, let failure) = request {
-            askForceDeletion(offer, failure: failure, in: window)
+            DialogWindow.present(on: window) { close in
+                Self.forceDeleteBranchesPrompt(offer, failure: failure, in: session, close: close)
+            }
+
             return
         }
 
@@ -67,6 +70,43 @@ extension RepositoryWindowController {
         let controller = NSHostingController(rootView: RemoteDetailView(session: session))
         controller.sizingOptions = [.minSize]
         return controller
+    }
+}
+
+// MARK: - Prompts
+
+extension RepositoryWindowController {
+    /// 未合并分支的普通删除失败后询问是否强制删除：标题按分支个数取单复数，说明写出这些分支与仓库。
+    ///
+    /// - Parameters:
+    ///   - offer: 要强制删除的分支。
+    ///   - failure: 普通删除的失败，说明里写出它的仓库。
+    ///   - session: 确认后在它的仓库里强制删除，进度与失败由仓库视图承接；仓库已切换时不执行。
+    ///   - close: 关闭询问。
+    static func forceDeleteBranchesPrompt(
+        _ offer: ForceDeletionOffer,
+        failure: AppFailure,
+        in session: RepositorySession,
+        close: @escaping () -> Void
+    ) -> ConfirmationDialog {
+        let names = offer.branches.map { String($0.dropFirst("refs/heads/".count)) }
+        let repository = session.repository
+
+        return ConfirmationDialog(
+            title: AppLocalization.text(
+                names.count == 1 ? "branch.error.delete" : "branch.error.deleteMultiple"
+            ),
+            message: AppLocalization.text("branch.forceDelete.ask", names.joined(separator: ", "))
+                + "\n\n" + failure.context,
+            submitTitle: AppLocalization.text("branch.forceDelete.submit"),
+            close: close
+        ) { [weak session] _ in
+            guard let session, session.repository == repository else {
+                return
+            }
+
+            session.deleteBranches(offer.branches, force: true, deletingUpstream: offer.deletingUpstream)
+        }
     }
 }
 
@@ -118,31 +158,6 @@ extension RepositoryWindowController {
 
         case .forceDelete:
             AnyView(EmptyView())
-        }
-    }
-
-    /// 未合并分支的普通删除失败后询问是否强制删除：标题按分支个数取单复数，说明写出这些分支与仓库。
-    private func askForceDeletion(_ offer: ForceDeletionOffer, failure: AppFailure, in window: NSWindow) {
-        let names = offer.branches.map { String($0.dropFirst("refs/heads/".count)) }
-        let repository = session.repository
-
-        // 询问结束后才开始强制删除，进度与失败由仓库视图承接
-        DialogWindow.present(on: window) { close in
-            ConfirmationDialog(
-                title: AppLocalization.text(
-                    names.count == 1 ? "branch.error.delete" : "branch.error.deleteMultiple"
-                ),
-                message: AppLocalization.text("branch.forceDelete.ask", names.joined(separator: ", "))
-                    + "\n\n" + failure.context,
-                submitTitle: AppLocalization.text("branch.forceDelete.submit"),
-                close: close
-            ) { [weak self] _ in
-                guard let self, session.repository == repository else {
-                    return
-                }
-
-                session.deleteBranches(offer.branches, force: true, deletingUpstream: offer.deletingUpstream)
-            }
         }
     }
 }

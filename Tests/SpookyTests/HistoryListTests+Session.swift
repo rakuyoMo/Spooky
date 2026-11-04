@@ -369,11 +369,11 @@ extension HistoryListTests {
     /// 工作区写出分支与改动数，分离 HEAD 时不写分支；历史写出所选引用与提交数，数到上限时写 “or more”。
     @Test("工作区与历史的窗口副标题")
     func subtitles() async throws {
-        let fixture = try await Self.makeSession(commits: ["first", "second"])
+        let fixture = try await Self.makeSession(commits: ["first", "second"], createsWindowController: true)
         defer { fixture.close() }
 
         let session = fixture.session
-        let controller = fixture.controller
+        let controller = try #require(fixture.controller)
         _ = try await fixture.runner.run(["branch", "topic", "HEAD~1"])
 
         // 一个修改的文件与一个未跟踪的文件
@@ -476,7 +476,7 @@ extension HistoryListTests {
 // MARK: - Fixture
 
 extension HistoryListTests {
-    /// 一个打开了临时仓库的窗口与会话。
+    /// 一个显示临时仓库的会话，按需带上它所在的窗口。
     struct SessionFixture {
         /// 仓库目录。
         let directory: URL
@@ -487,27 +487,40 @@ extension HistoryListTests {
         /// 显示仓库的会话。
         let session: RepositorySession
 
-        /// 会话所在的窗口。
-        let controller: RepositoryWindowController
+        /// 会话所在的窗口；建立时没有要求则为 nil。
+        let controller: RepositoryWindowController?
 
-        /// 打开窗口之前另建的、没有引用指向的提交；建立时没有要求则为 nil。
+        /// 显示仓库之前另建的、没有引用指向的提交；建立时没有要求则为 nil。
         let orphan: HistoryCommit?
 
-        /// 关闭会话与窗口并删除仓库。
+        /// 窗口的偏好域所在的临时目录；没有建窗口时为 nil。
+        let defaultsDirectory: URL?
+
+        /// 关闭会话与窗口，删除仓库与窗口的偏好域。
         @MainActor
         func close() {
             session.close()
-            controller.window?.close()
+            controller?.window?.close()
             try? FileManager.default.removeItem(at: directory)
+
+            if let defaultsDirectory {
+                try? FileManager.default.removeItem(at: defaultsDirectory)
+            }
         }
     }
 
-    /// 建立按顺序提交的仓库，每个提交改动 file.txt，再打开窗口显示它。
+    /// 建立按顺序提交的仓库，每个提交改动 file.txt，再用会话显示它。
     ///
-    /// 窗口打开后再写入仓库，文件监听会引起自动刷新，重读历史时清掉找不到的说明。
+    /// 显示后再写入仓库，文件监听会引起自动刷新，重读历史时清掉找不到的说明。
     ///
-    /// - Parameter createsOrphan: 是否在打开窗口之前另建一个没有引用指向的提交，见 ``SessionFixture/orphan``。
-    static func makeSession(commits: [String], createsOrphan: Bool = false) async throws -> SessionFixture {
+    /// - Parameters:
+    ///   - createsOrphan: 是否在显示仓库之前另建一个没有引用指向的提交，见 ``SessionFixture/orphan``。
+    ///   - createsWindowController: 是否建出会话所在的窗口；副标题、远端变化后重读请求这类由窗口接上的行为才需要。
+    static func makeSession(
+        commits: [String],
+        createsOrphan: Bool = false,
+        createsWindowController: Bool = false
+    ) async throws -> SessionFixture {
         let directory = try FileViewsTests.temporaryDirectory()
         let location = RepositoryLocation.local(path: directory.path)
         let runner = try await FileViewsTests.initializeRepository(at: location)
@@ -519,12 +532,20 @@ extension HistoryListTests {
         // 列表里的头像不联网，全部显示首字母
         AvatarStore.shared.fetch = { _ in nil }
 
-        let defaults = try temporaryDefaults()
         let session = RepositorySession(makeRunner: { _ in runner })
-        let controller = RepositoryWindowController(
-            coordinator: SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults)),
-            session: session
-        )
+        var controller: RepositoryWindowController?
+        var defaultsDirectory: URL?
+
+        // 窗口要在显示仓库之前建好，与 App 里先有窗口、再在其中打开仓库的顺序相同
+        if createsWindowController {
+            let temporary = try temporaryDefaults()
+            defaultsDirectory = temporary.directory
+
+            controller = RepositoryWindowController(
+                coordinator: SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: temporary.defaults)),
+                session: session
+            )
+        }
 
         session.display(location)
         session.refresh(full: true)
@@ -535,7 +556,8 @@ extension HistoryListTests {
             runner: runner,
             session: session,
             controller: controller,
-            orphan: orphan
+            orphan: orphan,
+            defaultsDirectory: defaultsDirectory
         )
     }
 

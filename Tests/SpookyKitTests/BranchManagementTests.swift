@@ -111,7 +111,7 @@ struct BranchManagementTests {
     /// 改名带走分支自己的父分支与置顶，以它为父分支的分支改指新名字；重名与非法名字不改动任何分支。
     @Test("重命名本地分支并更新父分支关系")
     func renameLocalBranch() async throws {
-        let (fixture, _) = try await Self.repository(objectFormat: "sha256")
+        let fixture = try await Self.committedRepository(objectFormat: "sha256")
         defer { fixture.remove() }
 
         let runner = fixture.runner
@@ -225,7 +225,7 @@ struct BranchManagementTests {
     /// 新建分支时置顶与父分支和分支一起写入。
     @Test("新建分支同时置顶并设置父分支")
     func createWithMetadata() async throws {
-        let (fixture, _) = try await Self.repository(objectFormat: "sha1")
+        let fixture = try await Self.committedRepository(objectFormat: "sha1")
         defer { fixture.remove() }
 
         let refs = RepositoryReferences(runner: fixture.runner)
@@ -248,10 +248,17 @@ struct BranchManagementTests {
 // MARK: - Helpers
 
 extension BranchManagementTests {
-    /// 带一个已推送 main 的裸仓库远端的工作区；裸仓库放在工作区里并列入排除规则。
-    static func repository(objectFormat: String) async throws -> (TemporaryRepository, bare: String) {
+    /// 只有一个空的根提交、没有远端的工作区；用不到远端的测试用它。
+    static func committedRepository(objectFormat: String) async throws -> TemporaryRepository {
         let fixture = try TemporaryRepository()
         try await fixture.initialize(objectFormat: objectFormat)
+        _ = try await fixture.runner.run(["commit", "--allow-empty", "-m", "root"])
+        return fixture
+    }
+
+    /// 带一个已推送 main 的裸仓库远端的工作区；裸仓库放在工作区里并列入排除规则。
+    static func repository(objectFormat: String) async throws -> (TemporaryRepository, bare: String) {
+        let fixture = try await committedRepository(objectFormat: objectFormat)
         let runner = fixture.runner
         let bare = fixture.directory.appendingPathComponent("remote.git").path
 
@@ -263,7 +270,6 @@ extension BranchManagementTests {
 
         _ = try await runner.run(["init", "-q", "--bare", "--object-format=" + objectFormat, bare])
         _ = try await runner.run(["remote", "add", "origin", bare])
-        _ = try await runner.run(["commit", "--allow-empty", "-m", "root"])
         _ = try await runner.run(["push", "-q", "-u", "origin", "main"])
         return (fixture, bare)
     }

@@ -35,22 +35,18 @@ private struct SyncFixture {
     /// 裸远端的路径。
     let bare: String
 
-    /// 模拟别人推送的克隆。
-    let other: GitRunner
-
     /// 本地工作区的执行器。
     var runner: GitRunner { repository.runner }
 
     /// 本地工作区的同步服务。
     var sync: RepositorySync { RepositorySync(runner: runner) }
 
-    /// 初始化本地仓库、发布 `main` 并克隆出另一个工作区。
+    /// 初始化本地仓库并发布 `main`。
     static func make(objectFormat: String = "sha1") async throws -> Self {
         let repository = try TemporaryRepository()
         try await repository.initialize(objectFormat: objectFormat)
         let runner = repository.runner
         let bare = repository.directory.appendingPathComponent("remote.git").path
-        let otherPath = repository.directory.appendingPathComponent("other").path
 
         // 远端与另一个克隆都放在工作区目录里，排除后不影响工作区状态
         try FileManager.default.createDirectory(
@@ -67,21 +63,35 @@ private struct SyncFixture {
         _ = try await RepositorySync(runner: runner)
             .push(branch: "main", remote: "origin", destination: "main", setUpstream: true)
 
-        _ = try await runner.run(["clone", "-q", "-b", "main", bare, otherPath])
-        let other = repository.runner(at: otherPath)
-        _ = try await other.run(["config", "--local", "user.name", "Other"])
-        _ = try await other.run(["config", "--local", "user.email", "other@example.invalid"])
-        _ = try await other.run(["config", "--local", "commit.gpgSign", "false"])
+        return Self(repository: repository, bare: bare)
+    }
 
-        return Self(repository: repository, bare: bare, other: other)
+    /// 模拟别人推送的克隆的执行器；只在用到它的测试里，第一次用到时从裸远端克隆出来。
+    func other() async throws -> GitRunner {
+        let path = repository.directory.appendingPathComponent("other").path
+        let clone = repository.runner(at: path)
+
+        guard !FileManager.default.fileExists(atPath: path) else {
+            return clone
+        }
+
+        // 从裸远端克隆 main，提交身份只写进克隆自己的本地配置
+        _ = try await runner.run(["clone", "-q", "-b", "main", bare, path])
+        _ = try await clone.run(["config", "--local", "user.name", "Other"])
+        _ = try await clone.run(["config", "--local", "user.email", "other@example.invalid"])
+        _ = try await clone.run(["config", "--local", "commit.gpgSign", "false"])
+
+        return clone
     }
 
     /// 另一个克隆先跟上远端，再提交并推送一次，模拟远端有了新提交。
     func pushFromOther(_ message: String) async throws {
-        _ = try await other.run(["fetch", "-q", "origin"])
-        _ = try await other.run(["reset", "-q", "--hard", "origin/main"])
-        _ = try await other.run(["commit", "--allow-empty", "-m", message])
-        _ = try await other.run(["push", "-q", "origin", "HEAD:main"])
+        let clone = try await other()
+
+        _ = try await clone.run(["fetch", "-q", "origin"])
+        _ = try await clone.run(["reset", "-q", "--hard", "origin/main"])
+        _ = try await clone.run(["commit", "--allow-empty", "-m", message])
+        _ = try await clone.run(["push", "-q", "origin", "HEAD:main"])
     }
 
     /// 读取裸远端上某个引用指向的提交。
@@ -155,12 +165,13 @@ extension RepositorySyncTests {
         defer { fixture.repository.remove() }
         let runner = fixture.runner
         let sync = fixture.sync
+        let other = try await fixture.other()
 
         _ = try await runner.run(["remote", "add", "mirror.backup", fixture.bare])
         _ = try await runner.run(["config", "--local", "remote.mirror.backup.skipFetchAll", "true"])
-        _ = try await fixture.other.run(["push", "-q", "origin", "HEAD:refs/heads/gone"])
-        _ = try await fixture.other.run(["tag", "v1"])
-        _ = try await fixture.other.run(["push", "-q", "origin", "v1"])
+        _ = try await other.run(["push", "-q", "origin", "HEAD:refs/heads/gone"])
+        _ = try await other.run(["tag", "v1"])
+        _ = try await other.run(["push", "-q", "origin", "v1"])
 
         _ = try await runner.run(["remote", "add", "second", fixture.bare])
 
@@ -185,7 +196,7 @@ extension RepositorySyncTests {
         #expect(explicit.contains { $0.reference == "refs/remotes/mirror.backup/main" })
         _ = try await fixture.localObject("refs/tags/v1")
 
-        _ = try await fixture.other.run(["push", "-q", "origin", ":refs/heads/gone"])
+        _ = try await other.run(["push", "-q", "origin", ":refs/heads/gone"])
         let pruned = try await sync.fetch(remote: "origin", prune: true)
         #expect(pruned.contains { $0.flag == "-" && $0.reference == "refs/remotes/origin/gone" })
 
@@ -246,25 +257,16 @@ extension RepositorySyncTests {
         #expect(try await runner.status().branch.behind == 0)
     }
 
-    /// 推送全部标签与子模块检查都写进参数；没有子模块时检查直接通过。
-    @Test("Push 全部标签与子模块选项")
-    func pushOptions() async throws {
+    /// 推送全部标签与子模块检查都写进参数，没有子模块时检查直接通过；
+    /// Push To 把任意版本推到分支名或完整引用，`refs/for/` 下的引用原样写入，非法目标在执行前被拒绝。
+    @Test("Push 全部标签与子模块选项，Push To 分支名、refs/for/ 下的完整引用与非法目标")
+    func pushOptionsAndTargets() async throws {
         let fixture = try await SyncFixture.make()
         defer { fixture.repository.remove() }
-        let runner = fixture.runner
 
-        _ = try await runner.run(["commit", "--allow-empty", "-m", "tagged"])
-        _ = try await runner.run(["tag", "-a", "-m", "发布", "v1.0"])
-
-        var options = PushOptions()
-        options.allTags = true
-        options.submodules = .check
-
-        let updates = try await fixture.pushMain(options: options)
-        #expect(updates.contains { $0.reference == "refs/tags/v1.0" && $0.flag == "*" })
-
-        let tagged = try await fixture.remoteObject("refs/tags/v1.0^{commit}")
-        #expect(try await tagged == fixture.localObject("HEAD"))
+        // 两步推送的引用互不相干，先后不影响结果
+        try await Self.pushOptions(fixture)
+        try await Self.pushToReference(fixture)
     }
 }
 
@@ -343,53 +345,6 @@ extension RepositorySyncTests {
     }
 }
 
-// MARK: - Push To
-
-extension RepositorySyncTests {
-    /// 任意版本推到分支名或完整引用，`refs/for/` 下的引用原样写入；非法目标在执行前被拒绝。
-    @Test("Push To 分支名、refs/for/ 下的完整引用与非法目标")
-    func pushToReference() async throws {
-        let fixture = try await SyncFixture.make()
-        defer { fixture.repository.remove() }
-        let sync = fixture.sync
-        let fullReference = "refs/for/主分支"
-
-        _ = try await fixture.runner.run(["commit", "--allow-empty", "-m", "full reference"])
-
-        let updates = try await sync.push(revision: "main", remote: "origin", to: fullReference)
-        #expect(updates.contains { $0.reference == fullReference })
-        #expect(try await fixture.remoteObject(fullReference) == fixture.localObject("HEAD"))
-
-        _ = try await sync.push(revision: "HEAD~1", remote: "origin", to: "功能/新分支", skipHooks: true)
-        #expect(try await fixture.remoteObject("refs/heads/功能/新分支") == fixture.localObject("HEAD~1"))
-
-        // 附注标签推到标签引用时推的是标签对象，远端得到的仍是附注标签
-        _ = try await fixture.runner.run(["tag", "-a", "-m", "发布", "v1"])
-        _ = try await sync.push(revision: "v1", remote: "origin", to: "refs/tags/v1")
-        let tagObject = String(decoding: try await fixture.runner.run(["rev-parse", "--verify", "refs/tags/v1"]), as: UTF8.self)
-            .trimmingCharacters(in: .newlines)
-
-        #expect(try await fixture.remoteObject("refs/tags/v1") == tagObject)
-        #expect(try await fixture.remoteObject("refs/tags/v1^{commit}") == fixture.localObject("HEAD"))
-
-        await #expect(throws: RepositoryReadError.invalidQuery) {
-            _ = try await sync.push(revision: "main", remote: "origin", to: "--force")
-        }
-
-        await #expect(throws: GitError.self) {
-            _ = try await sync.push(revision: "main", remote: "origin", to: "bad..name")
-        }
-
-        await #expect(throws: RepositorySyncError.missingRemote) {
-            _ = try await sync.push(revision: "main", remote: "missing", to: "main")
-        }
-
-        await #expect(throws: GitError.self) {
-            _ = try await sync.push(revision: "no-such-revision", remote: "origin", to: "main")
-        }
-    }
-}
-
 // MARK: - Rebase & Sync
 
 extension RepositorySyncTests {
@@ -434,8 +389,9 @@ extension RepositorySyncTests {
         #expect(try await WorkingCopyOperations(runner: runner).context(head: nil).operation == .rebase)
     }
 
-    /// 三步依次执行；推送被远端钩子拒绝时停在推送，前两步的结果保留。
-    @Test("Sync 的步骤顺序与中途失败")
+    /// 三步依次执行；推送被远端钩子拒绝时停在推送，前两步的结果保留；工作区不干净时一步也不开始；
+    /// 远端仓库消失时停在获取，本地引用与 HEAD 都不变。
+    @Test("Sync 的步骤顺序、中途失败与网络中断时停在获取")
     func syncSteps() async throws {
         let fixture = try await SyncFixture.make()
         defer { fixture.repository.remove() }
@@ -482,14 +438,11 @@ extension RepositorySyncTests {
         }
 
         #expect(steps.recorded.isEmpty)
-    }
 
-    /// 远端仓库消失时停在获取，本地引用与 HEAD 都不变。
-    @Test("Sync 在网络中断时停在获取并保持本地状态")
-    func syncStopsAtFetch() async throws {
-        let fixture = try await SyncFixture.make()
-        defer { fixture.repository.remove() }
-        let steps = StepRecorder()
+        // 工作区恢复干净之后远端仓库消失
+        try FileManager.default.removeItem(at: fixture.repository.directory.appendingPathComponent("dirty"))
+        steps.reset()
+
         let head = try await fixture.localObject("HEAD")
         let tracking = try await fixture.localObject("refs/remotes/origin/main")
 
@@ -505,5 +458,71 @@ extension RepositorySyncTests {
         #expect(steps.recorded == [.fetch])
         #expect(try await fixture.localObject("HEAD") == head)
         #expect(try await fixture.localObject("refs/remotes/origin/main") == tracking)
+    }
+}
+
+// MARK: - Steps
+
+extension RepositorySyncTests {
+    /// 推送全部标签与子模块检查都写进参数；没有子模块时检查直接通过。
+    private static func pushOptions(_ fixture: SyncFixture) async throws {
+        let runner = fixture.runner
+
+        _ = try await runner.run(["commit", "--allow-empty", "-m", "tagged"])
+        _ = try await runner.run(["tag", "-a", "-m", "发布", "v1.0"])
+
+        var options = PushOptions()
+        options.allTags = true
+        options.submodules = .check
+
+        let updates = try await fixture.pushMain(options: options)
+        #expect(updates.contains { $0.reference == "refs/tags/v1.0" && $0.flag == "*" })
+
+        let tagged = try await fixture.remoteObject("refs/tags/v1.0^{commit}")
+        #expect(try await tagged == fixture.localObject("HEAD"))
+    }
+
+    /// 任意版本推到分支名或完整引用，`refs/for/` 下的引用原样写入；非法目标在执行前被拒绝。
+    private static func pushToReference(_ fixture: SyncFixture) async throws {
+        let sync = fixture.sync
+        let fullReference = "refs/for/主分支"
+
+        _ = try await fixture.runner.run(["commit", "--allow-empty", "-m", "full reference"])
+
+        let updates = try await sync.push(revision: "main", remote: "origin", to: fullReference)
+        #expect(updates.contains { $0.reference == fullReference })
+        #expect(try await fixture.remoteObject(fullReference) == fixture.localObject("HEAD"))
+
+        _ = try await sync.push(revision: "HEAD~1", remote: "origin", to: "功能/新分支", skipHooks: true)
+        #expect(try await fixture.remoteObject("refs/heads/功能/新分支") == fixture.localObject("HEAD~1"))
+
+        // 附注标签推到标签引用时推的是标签对象，远端得到的仍是附注标签
+        _ = try await fixture.runner.run(["tag", "-a", "-m", "发布", "v1"])
+        _ = try await sync.push(revision: "v1", remote: "origin", to: "refs/tags/v1")
+
+        let tagObject = String(
+            decoding: try await fixture.runner.run(["rev-parse", "--verify", "refs/tags/v1"]),
+            as: UTF8.self
+        )
+        .trimmingCharacters(in: .newlines)
+
+        #expect(try await fixture.remoteObject("refs/tags/v1") == tagObject)
+        #expect(try await fixture.remoteObject("refs/tags/v1^{commit}") == fixture.localObject("HEAD"))
+
+        await #expect(throws: RepositoryReadError.invalidQuery) {
+            _ = try await sync.push(revision: "main", remote: "origin", to: "--force")
+        }
+
+        await #expect(throws: GitError.self) {
+            _ = try await sync.push(revision: "main", remote: "origin", to: "bad..name")
+        }
+
+        await #expect(throws: RepositorySyncError.missingRemote) {
+            _ = try await sync.push(revision: "main", remote: "missing", to: "main")
+        }
+
+        await #expect(throws: GitError.self) {
+            _ = try await sync.push(revision: "no-such-revision", remote: "origin", to: "main")
+        }
     }
 }

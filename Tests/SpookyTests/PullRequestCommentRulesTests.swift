@@ -106,8 +106,8 @@ extension PullRequestCommentRulesTests {
         /// 临时仓库所在的目录。
         let directory: URL
 
-        /// 偏好域名。
-        let suite: String
+        /// 偏好域所在的临时目录。
+        let defaultsDirectory: URL
 
         /// 只在内存里的令牌。
         let credentials: MemoryCredentials
@@ -127,8 +127,9 @@ extension PullRequestCommentRulesTests {
             let runner = try await FileViewsTests.initializeRepository(at: .local(path: directory.path))
             _ = try await runner.run(["remote", "add", "origin", "http://127.0.0.1:9/group/project.git"])
 
-            let suite = "spooky-comment-rules-" + UUID().uuidString
-            let defaults = try #require(UserDefaults(suiteName: suite))
+            let defaultsDirectory = FileManager.default.temporaryDirectory
+                .appending(path: "spooky-comment-rules-" + UUID().uuidString)
+            let defaults = try #require(UserDefaults(suiteName: defaultsDirectory.appending(path: "defaults").path))
             let credentials = MemoryCredentials()
             let accounts = HostingAccounts(defaults: defaults, credentials: credentials)
             let instance = try #require(HostingInstance.gitlab(address: "http://127.0.0.1:9"))
@@ -153,7 +154,7 @@ extension PullRequestCommentRulesTests {
 
             return Self(
                 directory: directory,
-                suite: suite,
+                defaultsDirectory: defaultsDirectory,
                 credentials: credentials,
                 accounts: accounts,
                 account: account,
@@ -164,7 +165,7 @@ extension PullRequestCommentRulesTests {
         /// 删除仓库与偏好域。
         func close() {
             session.close()
-            UserDefaults.standard.removePersistentDomain(forName: suite)
+            try? FileManager.default.removeItem(at: defaultsDirectory)
             try? FileManager.default.removeItem(at: directory)
         }
     }

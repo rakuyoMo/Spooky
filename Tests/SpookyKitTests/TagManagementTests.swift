@@ -12,7 +12,7 @@ struct TagManagementTests {
     /// 没有说明时是轻量标签，有说明时是附注标签，说明里以 “#” 开头的行原样保留；重名、非法名字与签名缺说明都被拒绝。
     @Test("轻量标签与附注标签", arguments: ["sha1", "sha256"])
     func createTags(objectFormat: String) async throws {
-        let (fixture, _) = try await BranchManagementTests.repository(objectFormat: objectFormat)
+        let fixture = try await BranchManagementTests.committedRepository(objectFormat: objectFormat)
         defer { fixture.remove() }
 
         let runner = fixture.runner
