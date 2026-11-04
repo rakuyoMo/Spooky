@@ -46,6 +46,32 @@ extension NavigationTests {
         }
     }
 
+    /// 一个提交过一次的临时仓库与一个协调者，不建窗口：给只用到协调者的测试，省去显示仓库与读第一次刷新。
+    struct CoordinatorFixture {
+        /// 临时目录，里面放着仓库与协调者的偏好文件。
+        let root: URL
+
+        /// 仓库目录。
+        let directory: URL
+
+        /// 仓库位置。
+        let location: RepositoryLocation
+
+        /// 测试持有的协调者，书签记在临时目录里的偏好文件中。
+        let coordinator: SpookyApplicationController
+
+        /// 关闭协调者开出的全部窗口，删除临时目录。
+        @MainActor
+        func close() {
+            for window in coordinator.windows {
+                window.session.close()
+                window.window?.close()
+            }
+
+            try? FileManager.default.removeItem(at: root)
+        }
+    }
+
     /// 建立临时仓库，用窗口打开它并读完第一次刷新。
     ///
     /// - Parameters:
@@ -60,9 +86,7 @@ extension NavigationTests {
         if let commits {
             try await HistoryListTests.importCommits(commits, with: runner)
         } else {
-            try Data("one\n".utf8).write(to: directory.appending(path: "a.txt"))
-            _ = try await runner.run(["add", "--all"])
-            _ = try await runner.run(["commit", "-q", "-m", "first"])
+            try await commitFirstFile(in: directory, with: runner)
         }
 
         let suite = "spooky-navigation-" + UUID().uuidString
@@ -87,8 +111,31 @@ extension NavigationTests {
         )
     }
 
+    /// 建立一个只有添加 a.txt 这一个提交的临时仓库，以及书签记在临时目录里的协调者。
+    static func makeCoordinator() async throws -> CoordinatorFixture {
+        // 仓库放在临时目录的子目录里，偏好文件不出现在工作区中
+        let root = try FileViewsTests.temporaryDirectory()
+        let directory = root.appending(path: "repository", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+
+        let location = RepositoryLocation.local(path: directory.path)
+        let runner = try await FileViewsTests.initializeRepository(at: location)
+        try await commitFirstFile(in: directory, with: runner)
+
+        // 偏好以临时目录里的文件路径作 suite 名，随临时目录一起删除
+        let defaults = try #require(UserDefaults(suiteName: root.appending(path: "defaults").path))
+
+        return CoordinatorFixture(
+            root: root,
+            directory: directory,
+            location: location,
+            coordinator: SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
+        )
+    }
+
     /// 后退与前进按每个窗口自己的记录走，菜单与工具栏的可用性跟着记录变；从中间位置去别的视图后，前进的记录作废。
-    @Test("仓库窗口的后退与前进")
+    /// 窗口显示仓库管理时，⌘1–⌘6 与 ⌘0 都不可用，后退照常可用；回到仓库后切换视图的各项恢复可用。
+    @Test("仓库窗口的后退与前进，显示仓库管理时不能切换主视图")
     func windowBackForward() async throws {
         let fixture = try await Self.makeWindow()
         defer { fixture.close() }
@@ -97,6 +144,19 @@ extension NavigationTests {
         let location = fixture.location
         let back = NSMenuItem(title: "", action: #selector(RepositoryWindowController.navigateBack), keyEquivalent: "")
         let forward = NSMenuItem(title: "", action: #selector(RepositoryWindowController.navigateForward), keyEquivalent: "")
+
+        // 切换主视图的 ⌘1–⌘6 与 ⌘0，显示仓库时都可用
+        let switching = [
+            #selector(RepositoryWindowController.showWorkingCopy),
+            #selector(RepositoryWindowController.showHistory),
+            #selector(RepositoryWindowController.showStashes),
+            #selector(RepositoryWindowController.showPullRequests),
+            #selector(RepositoryWindowController.showBranchesReview),
+            #selector(RepositoryWindowController.showReflog),
+            #selector(RepositoryWindowController.showHeadBranch),
+        ].map { NSMenuItem(title: "", action: $0, keyEquivalent: "") }
+
+        #expect(switching.allSatisfy { controller.validateUserInterfaceItem($0) })
 
         controller.showHistory()
         controller.showStashes()
@@ -129,6 +189,16 @@ extension NavigationTests {
         #expect(controller.navigation.entries.last == .repository(location, .reflog))
         #expect(!controller.navigation.entries.contains(.repository(location, .stashes)))
         #expect(!controller.validateUserInterfaceItem(forward))
+
+        // 去仓库管理后不能切换主视图，后退照常可用；后退回到仓库后恢复
+        controller.showRepositories()
+        #expect(controller.showsManager)
+        #expect(switching.allSatisfy { !controller.validateUserInterfaceItem($0) })
+        #expect(controller.validateUserInterfaceItem(back))
+
+        controller.navigateBack()
+        #expect(!controller.showsManager)
+        #expect(switching.allSatisfy { controller.validateUserInterfaceItem($0) })
     }
 
     /// 按引用切换视图会带上选择：历史选中的引用、提交整页、文件原文的版本与模式，当前引用随之一致。
@@ -291,7 +361,7 @@ extension NavigationTests {
     /// 读不出视图引用时窗口留在仓库管理；仓库已不存在时窗口换成丢失页，书签标为失效。
     @Test("恢复失败时显示仓库管理或丢失页")
     func restoreFailure() async throws {
-        let fixture = try await Self.makeWindow()
+        let fixture = try await Self.makeCoordinator()
         defer { fixture.close() }
 
         let coordinator = fixture.coordinator
@@ -333,14 +403,11 @@ extension NavigationTests {
     /// 仍不在时页面原样留着，不弹错误，也不把书签标为失效，页面不重建也就不会反复重试。
     @Test("丢失页自动重试")
     func missingRepositoryRetry() async throws {
-        let fixture = try await Self.makeWindow()
-        let moved = fixture.directory.deletingLastPathComponent()
-            .appending(path: fixture.directory.lastPathComponent + "-moved", directoryHint: .isDirectory)
+        let fixture = try await Self.makeCoordinator()
+        defer { fixture.close() }
 
-        defer {
-            try? FileManager.default.removeItem(at: moved)
-            fixture.close()
-        }
+        // 挪走的仓库仍在临时目录里，随它一起删除
+        let moved = fixture.root.appending(path: "moved", directoryHint: .isDirectory)
 
         // 重试只在协调者管着的窗口里换回仓库，测试的窗口因此由协调者建出
         let controller = fixture.coordinator.makeWindow()
@@ -382,11 +449,11 @@ extension NavigationTests {
     /// 重试不是用户发起的，验证位置时不允许询问用户；同一窗口上一次重试还没结束时不发起新的重试。
     @Test("丢失页的重试不询问用户")
     func missingRepositoryRetryIsQuiet() async throws {
-        let fixture = try await Self.makeWindow()
+        let fixture = try await Self.makeCoordinator()
         defer { fixture.close() }
 
         let coordinator = fixture.coordinator
-        let controller = fixture.controller
+        let controller = coordinator.makeWindow()
         let interactions = Mutex<[Bool]>([])
 
         let task = coordinator.retryMissingRepository(fixture.location, in: controller) { _ in
@@ -406,7 +473,7 @@ extension NavigationTests {
     /// 重试期间窗口回到了仓库管理时，仓库回来了也不把窗口换回仓库界面。
     @Test("离开丢失页后重试不换回仓库")
     func missingRepositoryRetryAfterLeaving() async throws {
-        let fixture = try await Self.makeWindow()
+        let fixture = try await Self.makeCoordinator()
         defer { fixture.close() }
 
         let coordinator = fixture.coordinator
@@ -426,5 +493,16 @@ extension NavigationTests {
 
         #expect(controller.showsManager)
         #expect(controller.missingLocation == nil)
+    }
+}
+
+// MARK: - Helpers
+
+extension NavigationTests {
+    /// 写入内容为 “one” 的 a.txt，提交为 “first”。
+    private static func commitFirstFile(in directory: URL, with runner: GitRunner) async throws {
+        try Data("one\n".utf8).write(to: directory.appending(path: "a.txt"))
+        _ = try await runner.run(["add", "--all"])
+        _ = try await runner.run(["commit", "-q", "-m", "first"])
     }
 }

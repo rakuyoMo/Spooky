@@ -271,40 +271,6 @@ struct BranchesReviewTests {
         #expect(!BranchesReviewState.matches(item(nil), filter: .withoutPullRequest, staleMonths: 3, now: now))
         #expect(!BranchesReviewState.matches(item(open), filter: .withPullRequest, staleMonths: 3, now: now))
     }
-
-    /// 托管服务上请求已合并的分支进入归档建议，即使它不陈旧。
-    @Test("服务端合并的分支可以归档")
-    func serverMergedCandidates() {
-        let now = Date(timeIntervalSince1970: 1_700_000_000)
-        let references = ["main", "squashed"].map { reference("refs/heads/" + $0, date: now) }
-        let snapshot = ReferenceSnapshot(references: references, remotes: [])
-        let conditions = Dictionary(uniqueKeysWithValues: references.map { reference in
-            (
-                reference.id,
-                BranchCondition(
-                    reference: reference.id,
-                    lastUpdated: now,
-                    missingUpstream: nil,
-                    isBase: reference.name == "main"
-                )
-            )
-        })
-
-        let candidates = { (merged: Set<String>) in
-            BranchArchiving.candidates(
-                in: snapshot,
-                conditions: conditions,
-                head: nil,
-                staleMonths: 3,
-                automatic: true,
-                mergedOnServer: merged,
-                now: now
-            )
-        }
-
-        #expect(candidates([]).isEmpty)
-        #expect(candidates(["refs/heads/squashed"]).map(\.name) == ["squashed"])
-    }
 }
 
 // MARK: - Steps

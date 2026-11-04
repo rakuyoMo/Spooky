@@ -8,7 +8,7 @@ import Testing
 // MARK: - MainMenuTests
 
 /// 主菜单的结构：应用菜单的 Services，Edit 菜单的系统项、分组与子菜单，Repository、Working Copy、View 与 Window 菜单的
-/// 标题、分组与快捷键，Open Recent 的标题与 Clear Menu，以及显示仓库管理时不能切换主视图。
+/// 标题、分组与快捷键，以及 Open Recent 的标题与 Clear Menu。
 ///
 /// 系统会往 Edit 与 Window 菜单里自己插入分隔线和项，这里只核对 Spooky 加的项与分隔线，不断言菜单的总项数。
 @MainActor
@@ -235,7 +235,7 @@ struct MainMenuTests {
     }
 }
 
-// MARK: - Open Recent 与仓库管理
+// MARK: - Open Recent and English Titles
 
 extension MainMenuTests {
     /// 菜单项写文件夹名，同名的几项带上一级文件夹名，服务器仓库不带主机前缀，提示写完整位置；
@@ -276,41 +276,6 @@ extension MainMenuTests {
         bookmarks.recordOpened(first, at: Date().addingTimeInterval(1))
         controller.menuNeedsUpdate(recent)
         #expect(Self.rows(of: recent) == ["demo", "-", clearTitle])
-    }
-
-    /// 窗口显示仓库管理时，⌘1–⌘6 与 ⌘0 都不可用，后退照常可用；回到仓库后切换视图的各项恢复可用。
-    @Test("显示仓库管理时不能切换主视图")
-    func viewSwitchingInManager() async throws {
-        let fixture = try await NavigationTests.makeWindow()
-        defer { fixture.close() }
-
-        let controller = fixture.controller
-        let actions = [
-            #selector(RepositoryWindowController.showWorkingCopy),
-            #selector(RepositoryWindowController.showHistory),
-            #selector(RepositoryWindowController.showStashes),
-            #selector(RepositoryWindowController.showPullRequests),
-            #selector(RepositoryWindowController.showBranchesReview),
-            #selector(RepositoryWindowController.showReflog),
-            #selector(RepositoryWindowController.showHeadBranch),
-        ]
-        let items = actions.map { NSMenuItem(title: "", action: $0, keyEquivalent: "") }
-        let back = NSMenuItem(
-            title: "",
-            action: #selector(RepositoryWindowController.navigateBack),
-            keyEquivalent: ""
-        )
-
-        #expect(items.allSatisfy { controller.validateUserInterfaceItem($0) })
-
-        controller.showRepositories()
-        #expect(controller.showsManager)
-        #expect(items.allSatisfy { !controller.validateUserInterfaceItem($0) })
-        #expect(controller.validateUserInterfaceItem(back))
-
-        controller.navigateBack()
-        #expect(!controller.showsManager)
-        #expect(items.allSatisfy { controller.validateUserInterfaceItem($0) })
     }
 
     /// 改了标题与新加的菜单项，英文按下面写。

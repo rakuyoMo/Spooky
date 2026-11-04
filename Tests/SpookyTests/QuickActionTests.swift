@@ -52,10 +52,10 @@ struct QuickActionTests {
     /// 当前分支排在分支的最前面；它的动作沿用分支菜单的规则，不能检出自己、不能合并进自己。
     @Test("对象与动作的可用性")
     func catalogActions() async throws {
-        let fixture = try await NavigationTests.makeWindow()
-        defer { fixture.close() }
+        let fixture = try await UndoSessionTests.Fixture()
+        defer { fixture.remove() }
 
-        let session = fixture.controller.session
+        let session = fixture.session
         _ = try await session.runner?.run(["branch", "topic"])
         session.refresh(full: true)
         await session.waitForRefresh()
@@ -92,15 +92,15 @@ struct QuickActionTests {
     /// 像哈希的输入只找那一个提交，其余按提交信息搜索；HEAD 树里的文件不含目录。
     @Test("提交与文件的查询")
     func commitAndFileQueries() async throws {
-        let fixture = try await NavigationTests.makeWindow()
-        defer { fixture.close() }
+        let fixture = try await UndoSessionTests.Fixture()
+        defer { fixture.remove() }
 
-        let session = fixture.controller.session
+        let session = fixture.session
         let catalog = QuickActionCatalog(session: session)
         let head = try #require(session.status?.branch.oid)
 
         let byHash = try await catalog.commits(matching: String(head.prefix(7)))
-        let byMessage = try await catalog.commits(matching: "first")
+        let byMessage = try await catalog.commits(matching: "root")
         let none = try await catalog.commits(matching: "nothing like this")
 
         #expect(byHash.map(\.title).count == 1)
@@ -109,7 +109,7 @@ struct QuickActionTests {
 
         let files = try #require(try await catalog.headFiles())
         #expect(files.head == head)
-        #expect(files.paths == ["a.txt"])
+        #expect(files.paths == ["a b.txt"])
     }
 
     /// 动作经窗口执行，走菜单的同一个入口：导航切换主视图，文件动作打开文件历史。

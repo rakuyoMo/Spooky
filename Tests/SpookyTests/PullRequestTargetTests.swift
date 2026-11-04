@@ -110,7 +110,8 @@ struct PullRequestTargetTests {
     /// 请求视图读过之后，仓库里加了远端、刷新读到新的引用时，请求视图随即重新读出远端。
     @Test("远端变化后重新读取请求")
     func remotesChange() async throws {
-        let fixture = try await HistoryListTests.makeSession(commits: ["first"])
+        // 远端变化由窗口观察，再交给会话重读请求
+        let fixture = try await HistoryListTests.makeSession(commits: ["first"], createsWindowController: true)
         defer { fixture.close() }
 
         let session = fixture.session
