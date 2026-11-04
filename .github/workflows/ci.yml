@@ -19,7 +19,11 @@ concurrency:
 jobs:
   check:
     name: 检查与构建
-    runs-on: macos-26
+    runs-on: xcode-27
+
+    # 固定 Xcode 版本，镜像更新默认版本时不跟着变
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
 
     steps:
       - uses: actions/checkout@v7
