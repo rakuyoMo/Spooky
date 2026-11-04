@@ -37,6 +37,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 ## 技术栈与环境
 
 - Swift 6.2，工程由 Swift Package Manager 管理
+- 测试与发布始终用同一版 Xcode：改版本时，`ci.yml` 与 `release.yml` 的 `runs-on` 和 `DEVELOPER_DIR` 一起改
 - 包的最低平台为 macOS 26，定义于 `Package.swift`
 - Git 子进程通过 [swift-subprocess](https://github.com/swiftlang/swift-subprocess) 启动
 - 自动更新使用 [Sparkle 2](https://github.com/sparkle-project/Sparkle)

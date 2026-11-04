@@ -20,7 +20,8 @@ jobs:
       github.event.pull_request.merged == true
       && startsWith(github.event.pull_request.title, 'release:')
 
-    runs-on: macos-26
+    # 测试与发布用同一个镜像与同一版 Xcode，改版本时与 ci.yml 一起改
+    runs-on: xcode-27
 
     permissions:
       contents: write
@@ -29,6 +30,9 @@ jobs:
     env:
       PR_TITLE: ${{ github.event.pull_request.title }}
       MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+
+      # 固定 Xcode 版本，镜像更新默认版本时不跟着变
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
 
     steps:
       # 打包与打标签都基于 PR 合并进 main 后产生的提交；第一父提交是合并前的 main

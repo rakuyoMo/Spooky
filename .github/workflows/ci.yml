@@ -19,6 +19,8 @@ concurrency:
 jobs:
   check:
     name: 检查与构建
+
+    # 测试与发布用同一个镜像与同一版 Xcode，改版本时与 release.yml 一起改
     runs-on: xcode-27
 
     # 固定 Xcode 版本，镜像更新默认版本时不跟着变
