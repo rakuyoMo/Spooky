@@ -86,7 +86,7 @@ struct DeveloperMenuTests {
 
         for confirms in [false, true] {
             let answer = Task { await SpookyApplicationController.confirmResetUserDefaults(in: window) }
-            let sheet = try await Self.attachedSheet(of: window)
+            let sheet = try await PromptDialogTests.attachedSheet(of: window)
             let hosting = sheet.contentViewController as? NSHostingController<ConfirmationDialog>
             let dialog = try #require(hosting?.rootView)
 
@@ -135,20 +135,5 @@ struct DeveloperMenuTests {
 
         await session.refreshTask?.value
         #expect(session.status == status)
-    }
-}
-
-// MARK: - Helpers
-
-extension DeveloperMenuTests {
-    /// 等窗口挂上 sheet，最多等 5 秒。
-    private static func attachedSheet(of window: NSWindow) async throws -> NSWindow {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
-
-        while window.attachedSheet == nil, .now < deadline {
-            try await Task.sleep(for: .milliseconds(20))
-        }
-
-        return try #require(window.attachedSheet)
     }
 }

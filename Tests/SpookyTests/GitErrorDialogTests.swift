@@ -138,52 +138,26 @@ struct GitErrorDialogTests {
         )
     }
 
-    /// 断线后的恢复说明以提示版挂在窗口上，只有 Close。
+    /// 断线后的恢复说明是提示版，以核对结果开头，只有 Close。
     @Test("恢复说明只有 Close")
-    func recoveryNotice() async throws {
-        let fixture = try await NavigationTests.makeWindow()
-        defer { fixture.close() }
+    func recoveryNotice() {
+        let write = InterruptedWrite(title: "Push", branch: nil, time: Date())
+        let notice = RepositoryWindowController.recoveryNotice(write, snapshot: nil, in: nil) { }
 
-        let controller = fixture.controller
-        let window = try #require(controller.window)
-        let branch = try #require(controller.session.status?.branch)
-        let write = InterruptedWrite(title: "Push", branch: branch, time: Date())
-
-        controller.showRecovery(write, snapshot: nil)
-        try await FileViewsTests.wait { window.attachedSheet != nil }
-
-        let sheet = try #require(window.attachedSheet)
-        let notice = try #require(sheet.contentViewController as? NSHostingController<Notice>)
-
-        #expect(notice.rootView.title == AppLocalization.text("recovery.title"))
-        #expect(notice.rootView.message.hasPrefix(AppLocalization.text("recovery.notStarted", "Push")))
-        Self.expectCloseOnly(notice.rootView)
-
-        window.endSheet(sheet)
-        try await FileViewsTests.wait { window.attachedSheet == nil }
+        #expect(notice.title == AppLocalization.text("recovery.title"))
+        #expect(notice.message.hasPrefix(AppLocalization.text("recovery.notStarted", "Push")))
+        Self.expectCloseOnly(notice)
     }
 
-    /// 仓库设置里 Local Folder 核对没通过时，提示版挂在仓库窗口上，说明写出选的目录，只有 Close。
+    /// 仓库设置里 Local Folder 核对没通过时的提示，说明写出选的目录，只有 Close。
     @Test("Local Folder 的提示只有 Close")
-    func localFolderNotice() async throws {
-        let fixture = try await NavigationTests.makeWindow()
-        defer { fixture.close() }
+    func localFolderNotice() {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "elsewhere")
+        let notice = RepositoryLocalFolderRow(session: RepositorySession()).rejectionNotice(of: folder) { }
 
-        let window = try #require(fixture.controller.window)
-        let folder = fixture.directory.appending(path: "elsewhere")
-
-        RepositoryLocalFolderRow(session: fixture.controller.session).showRejection(of: folder)
-        try await FileViewsTests.wait { window.attachedSheet != nil }
-
-        let sheet = try #require(window.attachedSheet)
-        let notice = try #require(sheet.contentViewController as? NSHostingController<Notice>)
-
-        #expect(notice.rootView.title == AppLocalization.text("repositorySettings.localFolder.rejected"))
-        #expect(notice.rootView.message.contains(HomePath.abbreviated(folder.path)))
-        Self.expectCloseOnly(notice.rootView)
-
-        window.endSheet(sheet)
-        try await FileViewsTests.wait { window.attachedSheet == nil }
+        #expect(notice.title == AppLocalization.text("repositorySettings.localFolder.rejected"))
+        #expect(notice.message.contains(HomePath.abbreviated(folder.path)))
+        Self.expectCloseOnly(notice)
     }
 
     /// 无效的 `spooky://` 链接的提示只有 Close，说明写出链接原文。

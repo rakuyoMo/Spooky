@@ -61,23 +61,37 @@ extension RepositoryManagerController {
             return
         }
 
+        window?.presentDialog { close in
+            applyProfilePrompt(profile, to: location, close: close)
+        }
+    }
+
+    /// 选用身份档案的询问：说明写出要写入的配置项与仓库，主按钮是 Use Profile；确认后写进仓库本地配置。
+    ///
+    /// - Parameters:
+    ///   - profile: 要选用的身份档案。
+    ///   - location: 详情区的仓库。
+    ///   - close: 关闭询问。
+    func applyProfilePrompt(
+        _ profile: UserProfile,
+        to location: RepositoryLocation,
+        close: @escaping () -> Void
+    ) -> ConfirmationDialog {
         let keys = profile.signingKey == nil
             ? "user.name, user.email"
             : "user.name, user.email, user.signingkey, gpg.format"
 
-        window?.presentDialog { close in
-            ConfirmationDialog(
-                title: AppLocalization.text("profiles.apply"),
-                message: location.host == nil
-                    ? AppLocalization.text("profiles.apply.local", keys, location.displayPath)
-                    : AppLocalization.text("profiles.apply.remote", keys, location.displayPath),
-                submitTitle: AppLocalization.text("profiles.apply.submit"),
-                close: close
-            ) { [weak self] _ in
-                self?.write(location) {
-                    try await WorkingCopyOperations(runner: $0)
-                        .applyIdentity(name: profile.name, email: profile.email, signingKey: profile.signingKey)
-                }
+        return ConfirmationDialog(
+            title: AppLocalization.text("profiles.apply"),
+            message: location.host == nil
+                ? AppLocalization.text("profiles.apply.local", keys, location.displayPath)
+                : AppLocalization.text("profiles.apply.remote", keys, location.displayPath),
+            submitTitle: AppLocalization.text("profiles.apply.submit"),
+            close: close
+        ) { [weak self] _ in
+            self?.write(location) {
+                try await WorkingCopyOperations(runner: $0)
+                    .applyIdentity(name: profile.name, email: profile.email, signingKey: profile.signingKey)
             }
         }
     }

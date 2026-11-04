@@ -31,7 +31,7 @@ struct ConfirmationDialogTests {
 
         session.discard(session.status?.entries ?? [])
 
-        let confirmation = try await Self.attachedSheet(of: window)
+        let confirmation = try await PromptDialogTests.attachedSheet(of: window)
         #expect(confirmation.contentViewController is NSHostingController<ConfirmationDialog>)
         window.endSheet(confirmation)
 
@@ -43,7 +43,7 @@ struct ConfirmationDialogTests {
 
         session.confirmCommit(("merge", ""), amend: false, signOff: false, skipHooks: false)
 
-        let alert = try await Self.attachedSheet(of: window)
+        let alert = try await PromptDialogTests.attachedSheet(of: window)
         let buttons = Self.subviews(NSButton.self, in: try #require(alert.contentView)).map(\.title)
 
         #expect(alert.contentViewController == nil)
@@ -175,17 +175,6 @@ extension ConfirmationDialogTests {
         _ = try? await runner.run(["merge", "-q", "side"])
         _ = try await runner.run(["checkout", "--ours", "--", "a.txt"])
         _ = try await runner.run(["add", "a.txt"])
-    }
-
-    /// 等窗口挂上 sheet，最多等 5 秒。
-    private static func attachedSheet(of window: NSWindow) async throws -> NSWindow {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
-
-        while window.attachedSheet == nil, .now < deadline {
-            try await Task.sleep(for: .milliseconds(20))
-        }
-
-        return try #require(window.attachedSheet)
     }
 
     /// 视图树里某一类的全部子视图。
