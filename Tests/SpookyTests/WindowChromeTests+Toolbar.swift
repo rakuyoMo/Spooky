@@ -347,31 +347,42 @@ extension WindowChromeTests {
         }
     }
 
-    /// Fetch | Pull | Push 三段依次用获取、拉取、推送的自绘图标，都是随 App 打包、@1x 与 @2x 齐全的 18 pt 模板图；
-    /// 三张图的像素两两不同，也与 Clone 的 `arrow.down.circle` 不同，几个按钮一眼认得出来。
-    @Test("Fetch、Pull 与 Push 的图标")
+    /// Fetch | Pull | Push 三段依次用获取、拉取、推送的自绘图标，Push To 与 Force Push 用加了角标的推送图标；
+    /// 五张都是随 App 打包、@1x 与 @2x 齐全的 18 pt 模板图，像素两两不同，也与 Clone 的 `arrow.down.circle` 不同，
+    /// 几个按钮一眼认得出来。
+    @Test("Fetch、Pull、Push、Push To 与 Force Push 的图标")
     func transferIcons() async throws {
         let fixture = try await NavigationTests.makeWindow()
         defer { fixture.close() }
 
         let controller = fixture.controller
         let sync = try #require(Self.item(RepositoryToolbar.sync, in: controller) as? NSToolbarItemGroup)
+        let pushTo = try #require(Self.item(RepositoryToolbar.pushTo, in: controller))
+        let forcePush = try #require(Self.item(RepositoryToolbar.forcePush, in: controller))
         let clone = try #require(Self.item(RepositoryToolbar.clone, in: controller))
         let transfers: [ActivityTransfer] = [.fetch, .pull, .push]
 
         #expect(sync.subitems.count == transfers.count)
 
         for (segment, transfer) in zip(sync.subitems, transfers) {
-            let image = TransferIcon.image(for: transfer)
-            #expect(segment.image === image)
-            #expect(image.isTemplate)
-            #expect(image.size == NSSize(width: 18, height: 18))
-            #expect(image.representations.count == 2)
+            #expect(segment.image === TransferIcon.image(for: transfer))
         }
 
-        // 三段与 Clone 的图按像素比较，四张都不一样
-        let images = sync.subitems.map(\.image) + [clone.image]
-        #expect(Set(images.compactMap { $0?.tiffRepresentation }).count == 4)
+        #expect(pushTo.image === TransferIcon.pushTo)
+        #expect(forcePush.image === TransferIcon.forcePush)
+
+        // 五张传输图标都是 @1x 与 @2x 齐全的 18 pt 模板图
+        let icons = transfers.map { TransferIcon.image(for: $0) } + [TransferIcon.pushTo, TransferIcon.forcePush]
+
+        for icon in icons {
+            #expect(icon.isTemplate)
+            #expect(icon.size == NSSize(width: 18, height: 18))
+            #expect(icon.representations.count == 2)
+        }
+
+        // 五个按钮与 Clone 的图按像素比较，六张都不一样
+        let images = sync.subitems.map(\.image) + [pushTo.image, forcePush.image, clone.image]
+        #expect(Set(images.compactMap { $0?.tiffRepresentation }).count == 6)
     }
 
     /// 只显示图标时，有内层分栏的视图在侧边栏分隔符之后有一个跟随内层分隔线的分隔符；

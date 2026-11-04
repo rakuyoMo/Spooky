@@ -89,24 +89,37 @@ enum RepositoryToolbar {
 // MARK: - Toolbar
 
 extension RepositoryWindowController {
-    /// 仓库窗口里仓库动作按钮的标签键、符号与动作。
-    private static let buttons: [NSToolbarItem.Identifier: (label: String, palette: String, symbol: String, action: Selector)] = [
+    /// 仓库窗口里仓库动作按钮的标签键、图标与动作。
+    private static let buttons: [NSToolbarItem.Identifier: (
+        label: String,
+        palette: String,
+        icon: ToolbarButtonIcon,
+        action: Selector
+    )] = [
         RepositoryToolbar.quickActions: (
-            "toolbar.quickActions", "toolbar.quickActions", "wand.and.stars", #selector(showQuickActions)
+            "toolbar.quickActions", "toolbar.quickActions", .symbol("wand.and.stars"), #selector(showQuickActions)
         ),
-        RepositoryToolbar.refresh: ("action.refresh", "action.refresh", "arrow.clockwise", #selector(refreshRepository)),
+        RepositoryToolbar.refresh: (
+            "action.refresh", "action.refresh", .symbol("arrow.clockwise"), #selector(refreshRepository)
+        ),
         RepositoryToolbar.closeRepository: (
-            "action.closeRepository", "action.closeRepository", "xmark.circle", #selector(closeRepository)
+            "action.closeRepository", "action.closeRepository", .symbol("xmark.circle"), #selector(closeRepository)
         ),
         RepositoryToolbar.createBranch: (
-            "toolbar.createBranch", "toolbar.createBranch", "arrow.branch", #selector(createBranch)
+            "toolbar.createBranch", "toolbar.createBranch", .symbol("arrow.branch"), #selector(createBranch)
         ),
         RepositoryToolbar.forcePush: (
-            "toolbar.forcePush", "toolbar.forcePush", "arrow.up.circle.fill", #selector(forcePushWithLease)
+            "toolbar.forcePush", "toolbar.forcePush", .image(TransferIcon.forcePush), #selector(forcePushWithLease)
         ),
-        RepositoryToolbar.pushTo: ("toolbar.pushTo", "toolbar.pushTo", "arrow.up.right.circle", #selector(pushRevision)),
-        RepositoryToolbar.finder: ("toolbar.finder", "action.revealFinder", "finder", #selector(revealInFinder)),
-        RepositoryToolbar.terminal: ("toolbar.terminal", "action.openTerminal", "apple.terminal", #selector(openInTerminal)),
+        RepositoryToolbar.pushTo: (
+            "toolbar.pushTo", "toolbar.pushTo", .image(TransferIcon.pushTo), #selector(pushRevision)
+        ),
+        RepositoryToolbar.finder: (
+            "toolbar.finder", "action.revealFinder", .symbol("finder"), #selector(revealInFinder)
+        ),
+        RepositoryToolbar.terminal: (
+            "toolbar.terminal", "action.openTerminal", .symbol("apple.terminal"), #selector(openInTerminal)
+        ),
     ]
 
     /// 按钮与分段的提示，按动作查找：提示键，只显示图标时加在提示前面的标签键，以及服务器仓库里是否加主机前缀。
@@ -491,7 +504,15 @@ extension RepositoryWindowController {
         let item = NSToolbarItem(itemIdentifier: identifier)
         item.label = AppLocalization.text(button.label)
         item.paletteLabel = AppLocalization.text(button.palette)
-        item.image = NSImage(systemSymbolName: button.symbol, accessibilityDescription: item.paletteLabel)
+
+        switch button.icon {
+        case .symbol(let name):
+            item.image = NSImage(systemSymbolName: name, accessibilityDescription: item.paletteLabel)
+
+        case .image(let image):
+            item.image = image
+        }
+
         item.target = self
         item.action = button.action
         updateTip(of: item)
@@ -585,4 +606,15 @@ extension RepositoryWindowController {
             item.splitView = target.splitView
         }
     }
+}
+
+// MARK: - ToolbarButtonIcon
+
+/// 仓库动作按钮的图标：SF 符号，或随 App 打包的模板图。
+private enum ToolbarButtonIcon {
+    /// SF 符号的名字。
+    case symbol(String)
+
+    /// 随 App 打包的模板图。
+    case image(NSImage)
 }

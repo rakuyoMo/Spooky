@@ -1,4 +1,4 @@
-// 生成获取、拉取、推送三个工具栏图标：在无窗口的 WebKit 中运行同目录 make-transfer-icons.js 的 Canvas 绘制，
+// 生成获取、拉取、推送、推送任意版本与强推五个工具栏图标：在无窗口的 WebKit 中运行同目录 make-transfer-icons.js 的 Canvas 绘制，
 // 每个图标导出 @1x 与 @2x 两张模板图，如 FetchTemplate.png、FetchTemplate@2x.png。
 //
 // 用法：swift scripts/make-transfer-icons.swift <输出目录>
@@ -13,6 +13,8 @@ let icons: [(name: String, kind: String)] = [
     ("FetchTemplate", "fetch"),
     ("PullTemplate", "pull"),
     ("PushTemplate", "push"),
+    ("PushToTemplate", "pushTo"),
+    ("ForcePushTemplate", "forcePush"),
 ]
 
 /// 每个图标导出的倍率与文件名后缀。
