@@ -12,6 +12,10 @@ public struct RepositorySubmodules: Sendable {
     /// 子模块指针在索引里的文件模式。
     static let gitlinkMode = "160000"
 
+    /// 读取子模块状态的子命令。`git submodule` 是 shell 脚本，每次都要另起 sh 与约 9 个 git 进程，最后转交给
+    /// `submodule--helper status`；直接调用它，在工作区里输出与退出码都相同。
+    static let statusCommand = ["submodule--helper", "status"]
+
     /// 共享的本机或服务器执行器。
     public let runner: GitRunner
 
@@ -22,7 +26,7 @@ public struct RepositorySubmodules: Sendable {
 
     /// 读取全部子模块，按路径排序；配置不完整的子模块同样列出，并标出原因。
     ///
-    /// `.gitmodules`、本地配置与 `submodule status` 并发读取；有指针缺少配置时 `submodule status` 整体失败，
+    /// `.gitmodules`、本地配置与子模块状态并发读取；有指针缺少配置时状态读取整体失败，
     /// 此时从索引找出全部子模块指针，只对配置完整的路径再读一次状态。
     public func list() async throws -> [Submodule] {
         async let sharedResult = runner.execute(
@@ -33,7 +37,7 @@ public struct RepositorySubmodules: Sendable {
             ["config", "-z", "--local", "--get-regexp", Self.settingsPattern],
             acceptedExitCodes: [0, 1]
         )
-        async let statusResult = runner.execute(["submodule", "status"], acceptedExitCodes: [0, 1, 128])
+        async let statusResult = runner.execute(Self.statusCommand, acceptedExitCodes: [0, 1, 128])
 
         let shared = try Self.parseSettings(try await sharedResult.standardOutput)
         let local = Dictionary(
@@ -178,7 +182,7 @@ extension RepositorySubmodules {
         }
 
         let result = try await runner.execute(
-            ["--literal-pathspecs", "submodule", "status", "--"] + paths,
+            ["--literal-pathspecs"] + Self.statusCommand + ["--"] + paths,
             acceptedExitCodes: [0, 1, 128]
         )
 

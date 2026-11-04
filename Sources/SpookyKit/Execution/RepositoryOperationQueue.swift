@@ -118,8 +118,8 @@ actor RepositoryOperationQueue {
             return options.first == "list"
         }
 
-        // 只有读取子模块状态是查询，其余 submodule 子命令会克隆、检出或改配置
-        if command == "submodule" {
+        // 子模块状态经 submodule--helper 读取，是查询；submodule 的子命令会克隆、检出或改配置，按写操作调度
+        if command == "submodule--helper" {
             return options.first == "status"
         }
 
