@@ -24,11 +24,14 @@ extension NavigationTests {
         /// 显示仓库的窗口。
         let controller: RepositoryWindowController
 
-        /// 独立的偏好域，测试结束时删除。
+        /// 独立的偏好域，测试结束时随它所在的临时目录删除。
         let defaults: UserDefaults
 
-        /// 偏好域的名称，也是独有工具栏的标识。
-        let suite: String
+        /// 偏好域所在的临时目录。
+        let defaultsDirectory: URL
+
+        /// 独有工具栏的标识。
+        let toolbarIdentifier: String
 
         /// 关闭全部窗口，删除仓库、偏好域与独有工具栏的配置。
         @MainActor
@@ -38,11 +41,11 @@ extension NavigationTests {
                 window.window?.close()
             }
 
-            defaults.removePersistentDomain(forName: suite)
+            try? FileManager.default.removeItem(at: defaultsDirectory)
             try? FileManager.default.removeItem(at: directory)
 
             // 独有工具栏自动保存的配置写在标准偏好里，键名带着它的标识
-            UserDefaults.standard.removeObject(forKey: "NSToolbar Configuration " + suite)
+            UserDefaults.standard.removeObject(forKey: "NSToolbar Configuration " + toolbarIdentifier)
         }
     }
 
@@ -89,13 +92,15 @@ extension NavigationTests {
             try await commitFirstFile(in: directory, with: runner)
         }
 
-        let suite = "spooky-navigation-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
+        // 偏好域放在以本窗口标识命名的临时目录里，不放进仓库，工作区里不多出文件
+        let identifier = "spooky-navigation-" + UUID().uuidString
+        let defaultsDirectory = FileManager.default.temporaryDirectory.appending(path: identifier)
+        let defaults = try #require(UserDefaults(suiteName: defaultsDirectory.appending(path: "defaults").path))
         let coordinator = SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
         let controller = RepositoryWindowController(
             coordinator: coordinator,
             session: RepositorySession(makeRunner: { _ in runner }),
-            toolbarIdentifier: isolatesToolbar ? NSToolbar.Identifier(suite) : RepositoryToolbar.identifier
+            toolbarIdentifier: isolatesToolbar ? NSToolbar.Identifier(identifier) : RepositoryToolbar.identifier
         )
 
         controller.display(location)
@@ -107,7 +112,8 @@ extension NavigationTests {
             coordinator: coordinator,
             controller: controller,
             defaults: defaults,
-            suite: suite
+            defaultsDirectory: defaultsDirectory,
+            toolbarIdentifier: identifier
         )
     }
 

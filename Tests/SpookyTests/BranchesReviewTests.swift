@@ -87,9 +87,10 @@ struct BranchesReviewTests {
         let runner = try await FileViewsTests.initializeRepository(at: location)
         try await prepareBranches(runner: runner, in: directory)
 
-        let suite = "spooky-compare-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let defaultsDirectory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-compare-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: defaultsDirectory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: defaultsDirectory) }
         defaults.set(true, forKey: RepositoryHistoryState.comparesBranchesKey)
 
         let session = RepositorySession(makeRunner: { _ in runner })
@@ -185,9 +186,10 @@ struct BranchesReviewTests {
         #expect(automatic.map(\.name) == ["requested", "stale"])
 
         // 每个仓库各自记录检查时刻，满一天才再检查
-        let suite = "spooky-archive-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-archive-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
         let repository = RepositoryLocation.remote(host: "spooky-test", path: "/仓库 'x'")
 
         #expect(BranchArchiving.isDue(for: repository, defaults: defaults, now: date))

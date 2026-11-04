@@ -493,12 +493,19 @@ extension HistoryListTests {
         /// 显示仓库之前另建的、没有引用指向的提交；建立时没有要求则为 nil。
         let orphan: HistoryCommit?
 
-        /// 关闭会话与窗口并删除仓库。
+        /// 窗口的偏好域所在的临时目录；没有建窗口时为 nil。
+        let defaultsDirectory: URL?
+
+        /// 关闭会话与窗口，删除仓库与窗口的偏好域。
         @MainActor
         func close() {
             session.close()
             controller?.window?.close()
             try? FileManager.default.removeItem(at: directory)
+
+            if let defaultsDirectory {
+                try? FileManager.default.removeItem(at: defaultsDirectory)
+            }
         }
     }
 
@@ -527,13 +534,15 @@ extension HistoryListTests {
 
         let session = RepositorySession(makeRunner: { _ in runner })
         var controller: RepositoryWindowController?
+        var defaultsDirectory: URL?
 
         // 窗口要在显示仓库之前建好，与 App 里先有窗口、再在其中打开仓库的顺序相同
         if createsWindowController {
-            let defaults = try temporaryDefaults()
+            let temporary = try temporaryDefaults()
+            defaultsDirectory = temporary.directory
 
             controller = RepositoryWindowController(
-                coordinator: SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults)),
+                coordinator: SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: temporary.defaults)),
                 session: session
             )
         }
@@ -547,7 +556,8 @@ extension HistoryListTests {
             runner: runner,
             session: session,
             controller: controller,
-            orphan: orphan
+            orphan: orphan,
+            defaultsDirectory: defaultsDirectory
         )
     }
 

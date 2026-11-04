@@ -14,8 +14,8 @@ struct HostingAccountsTests {
     /// 新账号写进偏好，重新读取后仍在；令牌不在偏好里。
     @Test("保存与读回")
     func saveAndReload() throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let credentials = MemoryCredentials()
         let accounts = HostingAccounts(defaults: defaults, credentials: credentials)
@@ -41,8 +41,8 @@ struct HostingAccountsTests {
     /// 同一实例同名的账号换上新令牌并清除重新认证的标记；不同用户名或不同实例另加一个账号。
     @Test("重新认证与多个账号")
     func reauthenticateAndMultiple() throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let credentials = MemoryCredentials()
         let accounts = HostingAccounts(defaults: defaults, credentials: credentials)
@@ -81,8 +81,8 @@ struct HostingAccountsTests {
     /// 移除账号同时删除令牌；令牌写不进去时账号列表不变。
     @Test("移除与写入失败")
     func removeAndFailure() throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let credentials = MemoryCredentials()
         let accounts = HostingAccounts(defaults: defaults, credentials: credentials)
@@ -107,8 +107,8 @@ struct HostingAccountsTests {
     /// 用户名与密码登录的账号：钥匙串存令牌的 JSON；离到期还远时直接用访问令牌，没有到期时间时从不续期。
     @Test("用户名与密码登录的令牌")
     func passwordToken() async throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let credentials = MemoryCredentials()
         let renewals = Mutex<[String]>([])
@@ -140,8 +140,8 @@ struct HostingAccountsTests {
     /// 距到期不到 60 秒先续期并写回；同时取两次令牌只续期一次。
     @Test("到期前串行续期")
     func renewBeforeExpiry() async throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let credentials = MemoryCredentials()
         let renewals = Mutex<[String]>([])
@@ -175,8 +175,8 @@ struct HostingAccountsTests {
     /// 刷新令牌被拒时账号标为需要重新认证；网络失败只报错不标记；重新认证换到新令牌后标记清除。
     @Test("刷新令牌被拒")
     func renewRejected() async throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let failure = Mutex<HostingError>(.unreachable("offline"))
         let accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials()) { _, _ in
@@ -205,10 +205,12 @@ struct HostingAccountsTests {
 // MARK: - Helpers
 
 extension HostingAccountsTests {
-    /// 独立的偏好域。
-    private static func defaults() throws -> (UserDefaults, String) {
-        let suite = "spooky-hosting-accounts-" + UUID().uuidString
-        return (try #require(UserDefaults(suiteName: suite)), suite)
+    /// 独立的偏好域与它所在的临时目录；用例结束时删掉目录。
+    private static func defaults() throws -> (UserDefaults, URL) {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-hosting-accounts-" + UUID().uuidString)
+
+        return (try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path)), directory)
     }
 }
 

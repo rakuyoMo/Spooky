@@ -152,8 +152,8 @@ extension AccountGitCredentialsTests {
     /// 独立偏好域里的账号与回答者，令牌只存在内存里。
     @MainActor
     private struct Fixture {
-        /// 偏好域的名字，测试结束时删除。
-        let suite: String
+        /// 偏好域所在的临时目录，测试结束时删除。
+        let directory: URL
 
         /// 存放账号列表与手动关联的偏好。
         let defaults: UserDefaults
@@ -166,8 +166,9 @@ extension AccountGitCredentialsTests {
 
         /// 创建空的偏好域与账号。
         init() throws {
-            suite = "spooky-account-git-credentials-" + UUID().uuidString
-            defaults = try #require(UserDefaults(suiteName: suite))
+            directory = FileManager.default.temporaryDirectory
+                .appending(path: "spooky-account-git-credentials-" + UUID().uuidString)
+            defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
             accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials())
             credentials = AccountGitCredentials(accounts: accounts, defaults: defaults)
         }
@@ -208,9 +209,9 @@ extension AccountGitCredentialsTests {
             return await credentials.respond(to: request)
         }
 
-        /// 删除偏好域。
+        /// 删除偏好域所在的临时目录。
         func remove() {
-            defaults.removePersistentDomain(forName: suite)
+            try? FileManager.default.removeItem(at: directory)
         }
     }
 }

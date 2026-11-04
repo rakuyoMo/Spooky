@@ -134,9 +134,10 @@ extension PullRequestActionRulesTests {
 
     /// 请求视图读出远端，选中 origin；账号列表只在内存里，不碰本机的账号。
     private static func loadRemote(of session: RepositorySession, runner: GitRunner) async throws {
-        let suite = "spooky-action-rules-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-action-rules-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         session.pullRequests.accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials())
         session.pullRequests.load(runner: runner)

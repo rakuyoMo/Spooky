@@ -52,9 +52,10 @@ struct PullRequestDialogsTests {
     /// 仓库允许上次用的方式时预选它；不允许、没有记录或记录认不出时选仓库允许的第一种。
     @Test("预选上次用的合并方式")
     func preselectedMethod() throws {
-        let suite = "spooky-merge-method-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-merge-method-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let all: [PullRequestMergeMethod] = [.merge, .rebase, .squash]
         #expect(MergePullRequestDialog.preselectedMethod(in: all, defaults: defaults) == .merge)

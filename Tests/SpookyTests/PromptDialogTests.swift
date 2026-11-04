@@ -135,9 +135,10 @@ struct PromptDialogTests {
     /// 仓库管理：删除书签的标题按个数取写法、主按钮是 Delete；应用身份档案的主按钮是 Use Profile。
     @Test("仓库管理里的询问")
     func managerPrompts() throws {
-        let suite = "spooky-prompts-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-prompts-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let bookmarks = RepositoryBookmarks(defaults: defaults)
         let manager = RepositoryManagerController(bookmarks: bookmarks, session: RepositorySession())

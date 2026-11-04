@@ -125,9 +125,10 @@ extension PromptDialogTests {
     /// 选报告才记下。
     @Test("崩溃报告的询问", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func crashReport() throws {
-        let domain = "com.rakuyo.spooky.tests.crash." + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: domain))
-        defer { defaults.removePersistentDomain(forName: domain) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "com.rakuyo.spooky.tests.crash." + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let always = AppLocalization.text("settings.crashReports.always")
         let dontReport = AppLocalization.text("crash.dontReport")

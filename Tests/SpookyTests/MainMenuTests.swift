@@ -16,8 +16,8 @@ struct MainMenuTests {
     /// Services 排在设置与隐藏两组之间，两侧各一条分隔线；登记给系统后才会被填上可用的服务。
     @Test("应用菜单的 Services")
     func servicesMenu() throws {
-        let (controller, suite) = try Self.makeController()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let (controller, directory) = try Self.makeController()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let application = try #require(NSApp.mainMenu?.items.first?.submenu)
         let servicesTitle = AppLocalization.text("menu.services")
@@ -38,8 +38,8 @@ struct MainMenuTests {
     /// 撤销、剪贴板、段落重排与五个子菜单各成一组；新加的两项走响应链，由第一响应者决定能不能用。
     @Test("Edit 菜单的分组")
     func editMenuGroups() throws {
-        let (controller, suite) = try Self.makeController()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let (controller, directory) = try Self.makeController()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let edit = try Self.topMenu("menu.edit")
         let leading = [
@@ -78,8 +78,8 @@ struct MainMenuTests {
     /// Find 在聚焦搜索框的两项之后接查找栏的四个动作；拼写、替换、大小写与朗读用系统的标准动作，替换里的项都不带快捷键。
     @Test("Edit 菜单的子菜单")
     func editSubmenus() throws {
-        let (controller, suite) = try Self.makeController()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let (controller, directory) = try Self.makeController()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let edit = try Self.topMenu("menu.edit")
         let find = try #require(Self.item("menu.find", in: edit).submenu)
@@ -135,8 +135,8 @@ struct MainMenuTests {
     /// 获取、拉取与同步一组，推送 HEAD 起另一组；⌃⌘U 在整个主菜单里只属于安全强推；LFS 的四项不带省略号。
     @Test("Repository 菜单")
     func repositoryMenu() throws {
-        let (controller, suite) = try Self.makeController()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let (controller, directory) = try Self.makeController()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let repository = try Self.topMenu("menu.repository")
         let leading = [
@@ -168,8 +168,8 @@ struct MainMenuTests {
     /// 七组依次为检出、合并与变基、储藏、丢弃全部与重置、提交与暂存、丢弃所选、Compare。
     @Test("Working Copy 菜单")
     func workingCopyMenu() throws {
-        let (controller, suite) = try Self.makeController()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let (controller, directory) = try Self.makeController()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let working = try Self.topMenu("workspace.title")
         #expect(Self.rows(of: working) == [
@@ -192,8 +192,8 @@ struct MainMenuTests {
     /// 工作区状态的两种显示带 ⌃⌘T、⌃⌘L，Show Assume-Unchanged Items 不带快捷键；变更集的阈值上方有一行不可选的标题。
     @Test("View 菜单的工作区状态与变更集")
     func viewMenu() throws {
-        let (controller, suite) = try Self.makeController()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let (controller, directory) = try Self.makeController()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let view = try Self.topMenu("menu.view")
         let status = try #require(Self.item("files.statusMenu", in: view).submenu)
@@ -218,8 +218,8 @@ struct MainMenuTests {
     /// 最小化与缩放一组，Activity 一组，前置全部窗口一组。
     @Test("Window 菜单")
     func windowMenu() throws {
-        let (controller, suite) = try Self.makeController()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let (controller, directory) = try Self.makeController()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let window = try Self.topMenu("menu.window")
         let rows = Self.rows(of: window)
@@ -242,8 +242,8 @@ extension MainMenuTests {
     /// Clear Menu 之后列表为空、书签还在、Clear Menu 不可用，再打开的仓库重新进入列表。
     @Test("Open Recent 的标题与 Clear Menu")
     func openRecent() throws {
-        let (controller, suite) = try Self.makeController()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let (controller, directory) = try Self.makeController()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let bookmarks = controller.bookmarks
         let first = RepositoryLocation.local(path: "/tmp/alpha/demo")
@@ -323,15 +323,16 @@ extension MainMenuTests {
 // MARK: - Helpers
 
 extension MainMenuTests {
-    /// 用独立的偏好域建出应用控制器并装好主菜单；返回控制器与偏好域名。
-    private static func makeController() throws -> (SpookyApplicationController, String) {
-        let suite = "spooky-main-menu-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
+    /// 用独立的偏好域建出应用控制器并装好主菜单；返回控制器与偏好域所在的临时目录，用例结束时删掉目录。
+    private static func makeController() throws -> (SpookyApplicationController, URL) {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-main-menu-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
         let controller = SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
 
         _ = NSApplication.shared
         controller.configureMenu()
-        return (controller, suite)
+        return (controller, directory)
     }
 
     /// 主菜单里标题为某个资源键的顶层菜单。

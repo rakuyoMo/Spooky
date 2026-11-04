@@ -9,10 +9,12 @@ import Testing
 /// 克隆：对话框的目标与校验、每台主机记住的目录、进度的文字，以及后台克隆与书签的生命周期。
 @MainActor
 struct CloneActivityTests {
-    /// 每个用例独立的偏好域。
-    private static func defaults() throws -> (UserDefaults, String) {
-        let suite = "spooky-clone-" + UUID().uuidString
-        return (try #require(UserDefaults(suiteName: suite)), suite)
+    /// 每个用例独立的偏好域与它所在的临时目录；用例结束时删掉目录。
+    private static func defaults() throws -> (UserDefaults, URL) {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-clone-" + UUID().uuidString)
+
+        return (try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path)), directory)
     }
 
     /// 目标是所选目录下以仓库名命名的新目录；服务器目标沿用主机，地址不合法、主机别名或目录不完整时没有目标。
@@ -59,8 +61,8 @@ struct CloneActivityTests {
     /// 每台主机记住上次克隆用的目录；选择机器时列出书签里的主机与克隆过的主机。
     @Test("每台主机的克隆目录")
     func serverDirectories() throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let bookmarks = RepositoryBookmarks(defaults: defaults)
         bookmarks.add(.remote(host: "nas", path: "/volume1/app"))
@@ -93,8 +95,8 @@ struct CloneActivityTests {
     /// 克隆一开始书签就出现；失败后留着书签供重试，重试再加回书签，移除没有完成的克隆时连书签一起移除。
     @Test("克隆与书签的生命周期")
     func lifecycle() async throws {
-        let (defaults, suite) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let bookmarks = RepositoryBookmarks(defaults: defaults)
         let clones = CloneActivities(bookmarks: bookmarks)

@@ -62,9 +62,10 @@ struct PullRequestTargetTests {
     /// 关联写进偏好后可以读回，删除后不再存在。
     @Test("关联的存取")
     func associations() throws {
-        let suite = "spooky-pr-associations-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-pr-associations-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let association = PullRequestAssociation(account: UUID(), project: "o/r")
         PullRequestAssociations.set(association, for: "git@alias:o/r.git", in: defaults)
@@ -120,9 +121,10 @@ struct PullRequestTargetTests {
         await session.waitForRefresh()
 
         // 账号列表只在内存里，不碰本机的账号
-        let suite = "spooky-remotes-change-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-remotes-change-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         session.pullRequests.accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials())
         session.reloadPullRequests()

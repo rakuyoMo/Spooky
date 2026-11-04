@@ -47,8 +47,8 @@ struct WhatsNewTests {
     /// 没有已读记录时，当前版本以外的版本都记为已读，只有当前版本带蓝点；已有记录时启动不改动它；选中一条就记为已读。
     @Test("已读记录")
     func readVersions() throws {
-        let (defaults, domain) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: domain) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let fresh = WhatsNewState(entries: Self.entries, currentVersion: "0.12.0", defaults: defaults)
         fresh.start()
@@ -73,8 +73,8 @@ struct WhatsNewTests {
     /// 卡片只在打包了当前版本的说明、且这个版本还没显示过卡片时出现；出现后立即记下版本号，下次启动不再出现。
     @Test("新功能卡片的出现条件")
     func cardCondition() throws {
-        let (defaults, domain) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: domain) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         // 没有当前版本的说明
         let missing = WhatsNewState(entries: Self.entries, currentVersion: "0.13.0", defaults: defaults)
@@ -111,11 +111,11 @@ struct WhatsNewTests {
     /// Learn More… 把当前版本记为已读并关掉卡片；× 只关掉卡片，当前版本仍带蓝点。
     @Test("卡片的 Learn More… 与 ×")
     func cardActions() throws {
-        let (learnDefaults, learnDomain) = try Self.defaults()
-        let (closeDefaults, closeDomain) = try Self.defaults()
+        let (learnDefaults, learnDirectory) = try Self.defaults()
+        let (closeDefaults, closeDirectory) = try Self.defaults()
         defer {
-            learnDefaults.removePersistentDomain(forName: learnDomain)
-            closeDefaults.removePersistentDomain(forName: closeDomain)
+            try? FileManager.default.removeItem(at: learnDirectory)
+            try? FileManager.default.removeItem(at: closeDirectory)
         }
 
         let learn = WhatsNewState(entries: Self.entries, currentVersion: "0.12.0", defaults: learnDefaults)
@@ -138,8 +138,8 @@ struct WhatsNewTests {
     /// Developer 菜单的 Show What's New Card：已经关掉、按记录不会再出现的卡片重新出现；没有当前版本的说明时仍不出现。
     @Test("重新显示新功能卡片")
     func showCardAgain() throws {
-        let (defaults, domain) = try Self.defaults()
-        defer { defaults.removePersistentDomain(forName: domain) }
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         let state = WhatsNewState(entries: Self.entries, currentVersion: "0.12.0", defaults: defaults)
         state.start()
@@ -169,10 +169,12 @@ extension WhatsNewTests {
         WhatsNewEntry(version: "0.9.0", notes: "nine"),
     ]
 
-    /// 临时目录里的独立偏好域。
-    private static func defaults() throws -> (UserDefaults, String) {
-        let domain = "com.rakuyo.spooky.tests.whatsnew." + UUID().uuidString
-        return (try #require(UserDefaults(suiteName: domain)), domain)
+    /// 临时目录里的独立偏好域与这个目录；用例结束时删掉目录。
+    private static func defaults() throws -> (UserDefaults, URL) {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "com.rakuyo.spooky.tests.whatsnew." + UUID().uuidString)
+
+        return (try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path)), directory)
     }
 
     /// 在临时目录里按 “版本 → 语言 → 内容” 写出说明，每份是 `<版本>/<语言>.md`。

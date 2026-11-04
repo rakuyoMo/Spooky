@@ -13,7 +13,8 @@ struct HistoryListTests {
     /// 显示提交图时总按拓扑序；两种排序都勾选时按日期；分组只在按日期排序时生效。
     @Test("视图设置组成历史查询")
     func viewSettings() throws {
-        let defaults = try Self.temporaryDefaults()
+        let (defaults, directory) = try Self.temporaryDefaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         // 没有设置过时显示提交图、按拓扑序、不分组
         var settings = HistoryViewSettings(defaults: defaults)
@@ -205,12 +206,12 @@ private actor RequestCounter {
 // MARK: - Helpers
 
 extension HistoryListTests {
-    /// 测试专用的偏好域，与应用的偏好隔离。
-    static func temporaryDefaults() throws -> UserDefaults {
-        let name = "spooky-history-tests-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: name))
-        defaults.removePersistentDomain(forName: name)
-        return defaults
+    /// 测试专用的偏好域与它所在的临时目录，与应用的偏好隔离；用例结束时删掉目录。
+    static func temporaryDefaults() throws -> (defaults: UserDefaults, directory: URL) {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-history-tests-" + UUID().uuidString)
+
+        return (try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path)), directory)
     }
 
     /// 构造只用于排列的提交。
