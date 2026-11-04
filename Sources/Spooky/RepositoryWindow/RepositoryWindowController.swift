@@ -72,7 +72,16 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     }
 
     /// 创建原生窗口；窗口按系统偏好参与标签页，并以视图引用参与系统的窗口恢复。
-    init(coordinator: SpookyApplicationController, session: RepositorySession = RepositorySession()) {
+    ///
+    /// - Parameters:
+    ///   - coordinator: 跨窗口的打开与记录管理。
+    ///   - session: 窗口独立拥有的仓库会话。
+    ///   - toolbarIdentifier: 工具栏标识；标识相同的工具栏同步显示方式与排布，App 的仓库窗口都用默认的标识。
+    init(
+        coordinator: SpookyApplicationController,
+        session: RepositorySession = RepositorySession(),
+        toolbarIdentifier: NSToolbar.Identifier = RepositoryToolbar.identifier
+    ) {
         self.coordinator = coordinator
         self.session = session
 
@@ -162,7 +171,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         }
 
         showRepositories()
-        configureToolbar()
+        configureToolbar(toolbarIdentifier)
         restoreFrame()
         observeToolbarState()
         observeConnectionState()

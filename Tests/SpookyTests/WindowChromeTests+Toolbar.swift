@@ -11,16 +11,11 @@ extension WindowChromeTests {
     /// 显示文字时提示就是一句话；按住 ⌥ 时同步一组换成快速操作的提示，同样不带标签。
     @Test("显示文字时的工具栏提示")
     func labelModeTips() async throws {
-        let fixture = try await NavigationTests.makeWindow()
+        let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
+        defer { fixture.close() }
+
         let controller = fixture.controller
         let toolbar = try #require(controller.window?.toolbar)
-        let saved = toolbar.displayMode
-
-        defer {
-            toolbar.displayMode = saved
-            fixture.close()
-        }
-
         let text = { (key: String) in AppLocalization.text(key) }
 
         toolbar.displayMode = .iconAndLabel
@@ -63,16 +58,11 @@ extension WindowChromeTests {
     /// 与 Parent Repository 不加。
     @Test("只显示图标时的工具栏提示")
     func iconOnlyTips() async throws {
-        let fixture = try await NavigationTests.makeWindow()
+        let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
+        defer { fixture.close() }
+
         let controller = fixture.controller
         let toolbar = try #require(controller.window?.toolbar)
-        let saved = toolbar.displayMode
-
-        defer {
-            toolbar.displayMode = saved
-            fixture.close()
-        }
-
         let text = { (key: String) in AppLocalization.text(key) }
 
         // 先切到显示文字再切回，提示随显示方式的变化重写
@@ -136,15 +126,11 @@ extension WindowChromeTests {
     /// 只显示图标时按住 ⌥：同步一组的提示前面总是加上 “Quick Fetch: ” 这类标签，Sync 也加。
     @Test("只显示图标时按住 ⌥ 的工具栏提示")
     func iconOnlyQuickTips() async throws {
-        let fixture = try await NavigationTests.makeWindow()
+        let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
+        defer { fixture.close() }
+
         let controller = fixture.controller
         let toolbar = try #require(controller.window?.toolbar)
-        let saved = toolbar.displayMode
-
-        defer {
-            toolbar.displayMode = saved
-            fixture.close()
-        }
 
         toolbar.displayMode = .iconOnly
         controller.updateQuickToolbarItems(option: true)
@@ -172,16 +158,11 @@ extension WindowChromeTests {
     /// Push To 只显示图标时也不重复标签；Bookmarks、Prev / Next 与储藏两段不加主机前缀。
     @Test("服务器仓库的工具栏提示")
     func serverToolbarTips() async throws {
-        let fixture = try await NavigationTests.makeWindow()
+        let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
+        defer { fixture.close() }
+
         let controller = fixture.controller
         let toolbar = try #require(controller.window?.toolbar)
-        let saved = toolbar.displayMode
-
-        defer {
-            toolbar.displayMode = saved
-            fixture.close()
-        }
-
         let text = { (key: String) in AppLocalization.text(key) }
         let host = { (tip: String) in "spooky-test: " + tip }
 
@@ -232,15 +213,11 @@ extension WindowChromeTests {
     /// 标签一直写着主机前缀，溢出菜单里仍是可读的名字；自定义面板里的名字是 “Server”。
     @Test("服务器仓库的主机前缀只出现一次")
     func serverHostItem() async throws {
-        let fixture = try await NavigationTests.makeWindow()
+        let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
+        defer { fixture.close() }
+
         let controller = fixture.controller
         let toolbar = try #require(controller.window?.toolbar)
-        let saved = toolbar.displayMode
-
-        defer {
-            toolbar.displayMode = saved
-            fixture.close()
-        }
 
         // 窗口显示的是本机的工作区，会话换成同一目录的服务器仓库，只用来取主机别名
         controller.session.display(.remote(host: "spooky-test", path: fixture.directory.path))
@@ -389,15 +366,11 @@ extension WindowChromeTests {
     /// 单栏视图、仓库管理与显示文字时隐藏，留在工具栏里不删。
     @Test("跟随内层分栏的分隔符")
     func detailSeparator() async throws {
-        let fixture = try await NavigationTests.makeWindow()
+        let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
+        defer { fixture.close() }
+
         let controller = fixture.controller
         let toolbar = try #require(controller.window?.toolbar)
-        let saved = toolbar.displayMode
-
-        defer {
-            toolbar.displayMode = saved
-            fixture.close()
-        }
 
         toolbar.displayMode = .iconOnly
         controller.showWorkingCopy()
