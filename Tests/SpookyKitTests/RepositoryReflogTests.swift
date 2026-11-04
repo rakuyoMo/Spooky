@@ -69,12 +69,15 @@ struct RepositoryReflogTests {
         }
     }
 
-    /// HEAD 与分支各有自己的记录；分页额外读一条判断是否还有下一页，位置延续上一页。
-    @Test("按引用分页读取")
-    func pages() async throws {
+    /// HEAD 与分支各有自己的记录，分页额外读一条判断是否还有下一页，位置延续上一页；
+    /// 搜索只看说明，不区分大小写，方括号与星号按字面匹配；
+    /// 分支能移回记录里的提交，分支已经不在读取时的位置上时 Git 拒绝，分支保持原样。
+    @Test("按引用分页读取、按说明搜索与把分支恢复到某条记录")
+    func pagesSearchAndRestore() async throws {
         let repository = try await makeRepository()
         defer { repository.remove() }
-        let reflog = RepositoryReflog(runner: repository.runner)
+        let runner = repository.runner
+        let reflog = RepositoryReflog(runner: runner)
 
         let head = try await reflog.page(of: "HEAD", limit: 2)
         #expect(head.entries.map(\.command) == ["checkout", "commit"])
@@ -87,15 +90,8 @@ struct RepositoryReflogTests {
         // 分支的记录只有它自己的移动
         let branch = try await reflog.page(of: "refs/heads/功能/分支")
         #expect(branch.entries.map(\.message) == ["commit: 功能 [x] *", "branch: Created from HEAD"])
-    }
 
-    /// 搜索只看说明，不区分大小写，方括号与星号按字面匹配。
-    @Test("按说明搜索")
-    func search() async throws {
-        let repository = try await makeRepository()
-        defer { repository.remove() }
-        let reflog = RepositoryReflog(runner: repository.runner)
-
+        // 搜索只看说明，不区分大小写，方括号与星号按字面匹配
         let moving = try await reflog.page(of: "HEAD", matching: "MOVING FROM")
         #expect(moving.entries.map(\.command) == ["checkout", "checkout"])
 
@@ -104,15 +100,8 @@ struct RepositoryReflogTests {
 
         let none = try await reflog.page(of: "HEAD", matching: "rebase")
         #expect(none.entries.isEmpty)
-    }
 
-    /// 分支移回记录里的提交；分支已经不在读取时的位置上时 Git 拒绝，分支保持原样。
-    @Test("把分支恢复到某条记录")
-    func restoreBranch() async throws {
-        let repository = try await makeRepository()
-        defer { repository.remove() }
-        let runner = repository.runner
-        let reflog = RepositoryReflog(runner: runner)
+        // 恢复会改动分支与它的引用日志，放在只读的核对之后
         let entries = try await reflog.page(of: "refs/heads/功能/分支").entries
         let tip = entries[0].commit.id
         let start = entries[1].commit.id

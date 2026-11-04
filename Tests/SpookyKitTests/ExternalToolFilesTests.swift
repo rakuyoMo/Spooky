@@ -95,107 +95,21 @@ struct ExternalToolFilesTests {
         #expect(!FileManager.default.fileExists(atPath: right.appending(path: "gone.txt").path))
     }
 
-    /// 合并工具的四个文件：三方取自索引，结果文件是带冲突标记的工作区内容；没有动过结果文件就没有结果。
-    @Test("合并工具的文件与结果判定")
-    func mergeFiles() async throws {
+    /// 合并工具的四个文件：三方取自索引，结果文件是带冲突标记的工作区内容，没有动过结果文件就没有结果；
+    /// 写回前核对工作区文件仍是准备时的内容，改过就拒绝覆盖，用户确认后才覆盖；写回后文件不再是冲突，按需留下备份。
+    @Test("合并工具的文件与结果判定，写回前的核对、备份与确认后的覆盖")
+    func mergeTool() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
         try await repository.initialize()
 
-        let path = "src/冲突 [1].swift"
-        try await diverge(repository, path: path)
+        // 一次合并让三个文件都冲突，每个文件核对一个方面
+        try await diverge(repository, paths: ["src/冲突 [1].swift", "file.txt", "other.txt"])
         _ = try await repository.runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
 
-        let entry = try #require(try await repository.runner.status().entries.first { $0.path == path })
-        let cache = RepositoryFileCache(runner: repository.runner)
-        defer { cache.removeAll() }
-        let files = try await ExternalToolFiles(cache: cache).prepareMerge(entry)
-
-        #expect(files.hasBase)
-        #expect(files.base.lastPathComponent == "冲突 [1].BASE.swift")
-        #expect(files.local.lastPathComponent == "冲突 [1].LOCAL.swift")
-        #expect(files.remote.lastPathComponent == "冲突 [1].REMOTE.swift")
-        #expect(files.merged.lastPathComponent == "冲突 [1].swift")
-        #expect(try text(files.base) == "base\n")
-        #expect(try text(files.local) == "ours\n")
-        #expect(try text(files.remote) == "theirs\n")
-        #expect(try text(files.merged).contains("<<<<<<<"))
-
-        // 工具没有写结果文件：没有结果
-        #expect(try files.result() == nil)
-
-        // 只保存不改内容也算产生了结果：修改时间晚于准备时
-        let later = Date().addingTimeInterval(5)
-        try FileManager.default.setAttributes([.modificationDate: later], ofItemAtPath: files.merged.path)
-        #expect(try files.result() == (try Data(contentsOf: files.merged)))
-
-        // 内容改了即是结果
-        try Data("merged\n".utf8).write(to: files.merged)
-        #expect(try files.result() == Data("merged\n".utf8))
-    }
-
-    /// 写回前核对工作区文件仍是准备时的内容；改过就拒绝覆盖，确认后才覆盖；写回后文件不再是冲突，按需留下备份。
-    @Test("合并结果写回前的核对与备份")
-    func applyMergeResult() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-
-        let path = "file.txt"
-        try await diverge(repository, path: path)
-        _ = try await repository.runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
-
-        let entry = try #require(try await repository.runner.status().entries.first)
-        let cache = RepositoryFileCache(runner: repository.runner)
-        defer { cache.removeAll() }
-        let files = try await ExternalToolFiles(cache: cache).prepareMerge(entry)
-        let service = WorkingCopyOperations(runner: repository.runner)
-        let marked = try Data(contentsOf: repository.directory.appending(path: path))
-
-        // 合并工具运行期间文件在别处被改：不覆盖
-        try write("edited elsewhere\n", to: path, in: repository)
-
-        await #expect(throws: ExternalToolError.fileChanged) {
-            try await service.applyMergeResult(Data("merged\n".utf8), for: files, keepBackup: true)
-        }
-
-        #expect(try text(repository.directory.appending(path: path)) == "edited elsewhere\n")
-        #expect(try await repository.runner.status().entries.first?.kind == .conflicted)
-
-        // 改回准备时的内容后写回：结果进入工作区与索引，被覆盖的内容留作 .orig
-        try marked.write(to: repository.directory.appending(path: path))
-        try await service.applyMergeResult(Data("merged\n".utf8), for: files, keepBackup: true)
-
-        #expect(try text(repository.directory.appending(path: path)) == "merged\n")
-        #expect(try Data(contentsOf: repository.directory.appending(path: path + ".orig")) == marked)
-
-        let status = try await repository.runner.status()
-        #expect(!status.entries.contains { $0.kind == .conflicted })
-        #expect(status.entries.first { $0.path == path }?.staged == .modified)
-    }
-
-    /// 用户确认覆盖时，即使文件已在别处改过也写入；不保留备份时不留下 .orig。
-    @Test("确认后覆盖别处的修改")
-    func overwriteMergeResult() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-
-        let path = "file.txt"
-        try await diverge(repository, path: path)
-        _ = try await repository.runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
-
-        let entry = try #require(try await repository.runner.status().entries.first)
-        let cache = RepositoryFileCache(runner: repository.runner)
-        defer { cache.removeAll() }
-        let files = try await ExternalToolFiles(cache: cache).prepareMerge(entry)
-
-        try write("edited elsewhere\n", to: path, in: repository)
-        try await WorkingCopyOperations(runner: repository.runner)
-            .applyMergeResult(Data("merged\n".utf8), for: files, keepBackup: false, overwrite: true)
-
-        #expect(try text(repository.directory.appending(path: path)) == "merged\n")
-        #expect(!FileManager.default.fileExists(atPath: repository.directory.appending(path: path + ".orig").path))
+        try await mergeFiles(of: "src/冲突 [1].swift", in: repository)
+        try await applyMergeResult(to: "file.txt", in: repository)
+        try await overwriteMergeResult(of: "other.txt", in: repository)
     }
 
     /// 删除与修改的冲突没有可合并的两侧，不交给合并工具。
@@ -268,6 +182,90 @@ struct ExternalToolFilesTests {
     }
 }
 
+// MARK: - Merge Tool Steps
+
+extension ExternalToolFilesTests {
+    /// 合并工具的四个文件：三方取自索引，结果文件是带冲突标记的工作区内容；没有动过结果文件就没有结果。
+    private func mergeFiles(of path: String, in repository: TemporaryRepository) async throws {
+        let entry = try #require(try await repository.runner.status().entries.first { $0.path == path })
+        let cache = RepositoryFileCache(runner: repository.runner)
+        defer { cache.removeAll() }
+        let files = try await ExternalToolFiles(cache: cache).prepareMerge(entry)
+
+        #expect(files.hasBase)
+        #expect(files.base.lastPathComponent == "冲突 [1].BASE.swift")
+        #expect(files.local.lastPathComponent == "冲突 [1].LOCAL.swift")
+        #expect(files.remote.lastPathComponent == "冲突 [1].REMOTE.swift")
+        #expect(files.merged.lastPathComponent == "冲突 [1].swift")
+        #expect(try text(files.base) == "base\n")
+        #expect(try text(files.local) == "ours\n")
+        #expect(try text(files.remote) == "theirs\n")
+        #expect(try text(files.merged).contains("<<<<<<<"))
+
+        // 工具没有写结果文件：没有结果
+        #expect(try files.result() == nil)
+
+        // 只保存不改内容也算产生了结果：修改时间晚于准备时
+        let later = Date().addingTimeInterval(5)
+        try FileManager.default.setAttributes([.modificationDate: later], ofItemAtPath: files.merged.path)
+        #expect(try files.result() == (try Data(contentsOf: files.merged)))
+
+        // 内容改了即是结果
+        try Data("merged\n".utf8).write(to: files.merged)
+        #expect(try files.result() == Data("merged\n".utf8))
+    }
+
+    /// 写回前核对工作区文件仍是准备时的内容；改过就拒绝覆盖，确认后才覆盖；写回后文件不再是冲突，按需留下备份。
+    private func applyMergeResult(to path: String, in repository: TemporaryRepository) async throws {
+        let entry = try #require(try await repository.runner.status().entries.first { $0.path == path })
+        let cache = RepositoryFileCache(runner: repository.runner)
+        defer { cache.removeAll() }
+        let files = try await ExternalToolFiles(cache: cache).prepareMerge(entry)
+        let service = WorkingCopyOperations(runner: repository.runner)
+        let marked = try Data(contentsOf: repository.directory.appending(path: path))
+
+        // 合并工具运行期间文件在别处被改：不覆盖
+        try write("edited elsewhere\n", to: path, in: repository)
+
+        await #expect(throws: ExternalToolError.fileChanged) {
+            try await service.applyMergeResult(Data("merged\n".utf8), for: files, keepBackup: true)
+        }
+
+        #expect(try text(repository.directory.appending(path: path)) == "edited elsewhere\n")
+        #expect(try await repository.runner.status().entries.first { $0.path == path }?.kind == .conflicted)
+
+        // 改回准备时的内容后写回：结果进入工作区与索引，被覆盖的内容留作 .orig
+        try marked.write(to: repository.directory.appending(path: path))
+        try await service.applyMergeResult(Data("merged\n".utf8), for: files, keepBackup: true)
+
+        #expect(try text(repository.directory.appending(path: path)) == "merged\n")
+        #expect(try Data(contentsOf: repository.directory.appending(path: path + ".orig")) == marked)
+
+        // 其它文件的冲突还在，只看写回的这个文件
+        let status = try await repository.runner.status()
+        #expect(status.entries.first { $0.path == path }?.kind != .conflicted)
+        #expect(status.entries.first { $0.path == path }?.staged == .modified)
+    }
+
+    /// 用户确认覆盖时，即使文件已在别处改过也写入；不保留备份时不留下 .orig。
+    private func overwriteMergeResult(of path: String, in repository: TemporaryRepository) async throws {
+        let entry = try #require(try await repository.runner.status().entries.first { $0.path == path })
+        let cache = RepositoryFileCache(runner: repository.runner)
+        defer { cache.removeAll() }
+        let files = try await ExternalToolFiles(cache: cache).prepareMerge(entry)
+
+        try write("edited elsewhere\n", to: path, in: repository)
+        try await WorkingCopyOperations(runner: repository.runner)
+            .applyMergeResult(Data("merged\n".utf8), for: files, keepBackup: false, overwrite: true)
+
+        #expect(try text(repository.directory.appending(path: path)) == "merged\n")
+
+        #expect(
+            !FileManager.default.fileExists(atPath: repository.directory.appending(path: path + ".orig").path)
+        )
+    }
+}
+
 // MARK: - Helpers
 
 extension ExternalToolFilesTests {
@@ -307,14 +305,19 @@ extension ExternalToolFilesTests {
         return try #require(try await repository.runner.status().branch.oid)
     }
 
-    /// 同一文件在 main 与 side 上各改一次，合并 side 时产生两侧都修改的冲突。
-    private func diverge(_ repository: TemporaryRepository, path: String) async throws {
-        try await commit(repository, [path: "base\n"], message: "base")
+    /// 同一组文件在 main 与 side 上各改一次，合并 side 时每个文件都产生两侧都修改的冲突。
+    private func diverge(_ repository: TemporaryRepository, paths: [String]) async throws {
+        // 每次提交把这组文件都写成同一份内容
+        let contents = { (content: String) -> [String: String?] in
+            Dictionary(uniqueKeysWithValues: paths.map { ($0, content) })
+        }
+
+        try await commit(repository, contents("base\n"), message: "base")
 
         _ = try await repository.runner.run(["checkout", "-q", "-b", "side"])
-        try await commit(repository, [path: "theirs\n"], message: "theirs")
+        try await commit(repository, contents("theirs\n"), message: "theirs")
 
         _ = try await repository.runner.run(["checkout", "-q", "main"])
-        try await commit(repository, [path: "ours\n"], message: "ours")
+        try await commit(repository, contents("ours\n"), message: "ours")
     }
 }

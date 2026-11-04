@@ -92,6 +92,9 @@ struct RepositoryRewriteTests {
         try await operations.finish(.cherryPick, action: "abort")
         #expect(try await head(in: repository) == before)
 
+        // 中止还要撤回冲突留下的改动，只清掉进行中的状态不算中止
+        #expect(try await repository.runner.status().entries.isEmpty)
+
         await #expect(throws: GitError.self) { try await rewrite.cherryPick(picked, options: PickOptions()) }
         try write("解决\n", to: file(0), in: repository)
         _ = try await repository.runner.run(["add", "--", file(0)])

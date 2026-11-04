@@ -57,37 +57,36 @@ struct ReleaseScriptTests {
         #expect(result.error.contains("工作区有未提交的改动或未跟踪的文件"))
     }
 
-    /// 开 PR 失败时撤回发布分支：本机与远端都不留下，版本号不变，更新说明留在工作区，修好后可以直接重试。
-    @Test("开 PR 失败时撤回本机与远端的发布分支")
-    func discardsBranchWhenPullRequestFails() async throws {
+    /// 开 PR 失败时撤回发布分支：本机与远端都不留下，版本号不变，更新说明留在工作区；
+    /// 不用收拾就能直接重试：发布分支在远端，提交写入版本号与加 1 的构建号，PR 标题带上通道；本机回到 main。
+    @Test("开 PR 失败时撤回本机与远端的发布分支，重试后开出 release PR")
+    func opensPullRequestAfterFailure() async throws {
         let fixture = try await ReleaseFixture()
         defer { fixture.remove() }
 
         try fixture.copyReleaseNotes(version: "1.2.0")
-        let result = try await release(fixture, "1.2.0", environment: ["GH_FAIL_PR": "1"])
+        let failed = try await release(fixture, "1.2.0", environment: ["GH_FAIL_PR": "1"])
 
-        #expect(result.status == 1)
-        #expect(result.error.contains("创建 PR 失败"))
+        #expect(failed.status == 1)
+        #expect(failed.error.contains("创建 PR 失败"))
 
         let localBranches = try await fixture.git("branch", "--list", "release/*")
         let remoteBranches = try await fixture.git("ls-remote", "--heads", "origin")
-        let currentBranch = try await fixture.git("branch", "--show-current")
+        let branchAfterFailure = try await fixture.git("branch", "--show-current")
 
         #expect(localBranches.isEmpty)
         #expect(!remoteBranches.contains("release/1.2.0"))
-        #expect(currentBranch == "main\n")
+        #expect(branchAfterFailure == "main\n")
         #expect(try fixture.infoPlistValue("CFBundleShortVersionString") == "1.1.0")
         #expect(try fixture.infoPlistValue("CFBundleVersion") == "7")
-        #expect(FileManager.default.fileExists(atPath: fixture.notesDirectory(version: "1.2.0").appending(path: "en.md").path))
-    }
 
-    /// 成功时发布分支在远端，提交写入版本号与加 1 的构建号，PR 标题带上通道；本机回到 main。
-    @Test("开出 release PR")
-    func opensPullRequest() async throws {
-        let fixture = try await ReleaseFixture()
-        defer { fixture.remove() }
+        #expect(
+            FileManager.default.fileExists(
+                atPath: fixture.notesDirectory(version: "1.2.0").appending(path: "en.md").path
+            )
+        )
 
-        try fixture.copyReleaseNotes(version: "1.2.0")
+        // 撤回后的工作区原样重试，这次开 PR 成功
         let result = try await release(fixture, "1.2.0", "beta")
 
         #expect(result.status == 0, "\(result.error)")

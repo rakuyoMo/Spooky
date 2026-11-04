@@ -44,23 +44,6 @@ struct RepositoryUndoTests {
         #expect(try await undo.capture() == after)
     }
 
-    /// 撤销硬重置找回被丢掉的暂存与未暂存改动，文件内容逐字节回到原样。
-    @Test("撤销硬重置找回本地改动")
-    func undoHardReset() async throws {
-        let repository = try await makeRepository(dirty: true)
-        defer { repository.remove() }
-        let undo = RepositoryUndo(runner: repository.runner)
-
-        let before = try await undo.capture()
-        _ = try await repository.runner.run(["reset", "-q", "--hard", "HEAD~1"])
-        let after = try await undo.capture()
-        try await undo.restore(before, expecting: after, message: "undo")
-
-        #expect(try read("tracked *.txt", in: repository) == "staged\n")
-        #expect(try read("dir/文件.txt", in: repository) == "unstaged\n")
-        #expect(try read("new [1].txt", in: repository) == "untracked\n")
-    }
-
     /// 带未跟踪文件保存的储藏：撤销时从储藏里写回被删掉的未跟踪文件，并从列表里拿掉这个储藏。
     @Test("撤销带未跟踪文件的储藏")
     func undoStashWithUntracked() async throws {

@@ -39,15 +39,69 @@ struct HistoryQueryTests {
         return calendar
     }()
 
-    /// 每类条件单独筛选，同类取并集、不同类取交集；没有配置时说明、作者与提交人按基本正则匹配、忽略大小写，文件按字面匹配。
-    @Test("按信息、作者、提交人与文件组合搜索", arguments: ["sha1", "sha256"])
-    func textConditions(objectFormat: String) async throws {
+    /// 历史列表、搜索、计数与回到某个提交读的是同一份历史，各自的结果必须彼此一致：
+    /// 在一份带分支与合并的历史上依次核对文本、哈希与日期条件，排序、第一父、计数与分页，以及提交在历史中的位置；
+    /// SHA-1 与 SHA-256 仓库都要通过。
+    @Test("条件搜索、排序、第一父、计数、分页与提交位置", arguments: ["sha1", "sha256"])
+    func queries(objectFormat: String) async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
 
         let commits = try await Self.makeHistory(in: fixture, objectFormat: objectFormat)
         let history = RepositoryHistory(runner: fixture.runner)
 
+        // 各步都只读这份历史，先后互不影响
+        try await Self.textConditions(history, commits)
+        try await Self.hashConditions(history, commits, objectFormat: objectFormat)
+        try await Self.dateConditions(history, commits)
+        try await Self.orderAndCount(history, commits)
+        try await Self.commitPositions(history, commits)
+    }
+
+    /// rev-list 的计数不是整数时拒绝显示。
+    @Test("计数输出损坏时报告格式错误")
+    func malformedCount() async throws {
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+
+        let executable = fixture.directory.appending(path: "broken-git")
+        try Data("#!/bin/sh\ncat > /dev/null\nprintf 'many\\n'\n".utf8).write(to: executable)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+
+        let runner = fixture.runner(at: fixture.directory.path, executable: executable.path)
+        let root = String(repeating: "a", count: 40)
+
+        await #expect(throws: RepositoryReadError.malformedOutput("rev-list")) {
+            try await RepositoryHistory(runner: runner).count(roots: [root], limit: 10)
+        }
+    }
+}
+
+// MARK: - Position
+
+extension HistoryQueryTests {
+    /// rev-list 每行一个哈希；空输出里没有位置，夹杂别的文字时拒绝，不把它当成找不到。
+    @Test("解析提交位置的输出")
+    func parsePosition() throws {
+        let first = String(repeating: "a", count: 40)
+        let second = String(repeating: "b", count: 64)
+        let output = Data("\(first)\n\(second)\n".utf8)
+
+        #expect(try RepositoryHistory.position(of: second, in: output) == 1)
+        #expect(try RepositoryHistory.position(of: String(repeating: "c", count: 40), in: output) == nil)
+        #expect(try RepositoryHistory.position(of: first, in: Data()) == nil)
+
+        #expect(throws: RepositoryReadError.malformedOutput("rev-list")) {
+            try RepositoryHistory.position(of: first, in: Data("\(first)\nwarning: refname is ambiguous\n".utf8))
+        }
+    }
+}
+
+// MARK: - Steps
+
+extension HistoryQueryTests {
+    /// 每类条件单独筛选，同类取并集、不同类取交集；没有配置时说明、作者与提交人按基本正则匹配、忽略大小写，文件按字面匹配。
+    private static func textConditions(_ history: RepositoryHistory, _ commits: Commits) async throws {
         // 忽略大小写的基本正则：转义的星号按字面匹配，`.*` 与行首、行尾按正则解释
         #expect(
             try await Self.subjects(history, commits, [.init(kind: .message, text: "fix BUG")]) ==
@@ -70,8 +124,15 @@ struct HistoryQueryTests {
         )
 
         // Unicode 作者与提交人
-        #expect(try await Self.subjects(history, commits, [.init(kind: .author, text: "李 café")]) == ["Fix bug *star*"])
-        #expect(try await Self.subjects(history, commits, [.init(kind: .committer, text: "bob")]) == ["Fix bug *star*"])
+        #expect(
+            try await Self.subjects(history, commits, [.init(kind: .author, text: "李 café")]) ==
+                ["Fix bug *star*"]
+        )
+
+        #expect(
+            try await Self.subjects(history, commits, [.init(kind: .committer, text: "bob")]) ==
+                ["Fix bug *star*"]
+        )
 
         // 同类条件取并集，不同类条件取交集
         let either = try await Self.subjects(
@@ -89,10 +150,22 @@ struct HistoryQueryTests {
         #expect(both.isEmpty)
 
         // 文件按字面路径匹配，通配符不会展开
-        #expect(try await Self.subjects(history, commits, [.init(kind: .file, text: Self.bracketPath)]) == ["初始提交"])
-        #expect(try await Self.subjects(history, commits, [.init(kind: .file, text: Self.weirdPath)]) == ["Fix bug *star*"])
+        #expect(
+            try await Self.subjects(history, commits, [.init(kind: .file, text: Self.bracketPath)]) ==
+                ["初始提交"]
+        )
+
+        #expect(
+            try await Self.subjects(history, commits, [.init(kind: .file, text: Self.weirdPath)]) ==
+                ["Fix bug *star*"]
+        )
+
         #expect(try await Self.subjects(history, commits, [.init(kind: .file, text: "*")]).isEmpty)
-        #expect(try await Self.subjects(history, commits, [.init(kind: .file, text: "文档")]) == ["初始提交"])
+
+        #expect(
+            try await Self.subjects(history, commits, [.init(kind: .file, text: "文档")]) ==
+                ["初始提交"]
+        )
 
         // 空条件不参与筛选
         let all = try await Self.subjects(history, commits, [.init(kind: .message, text: "  ")])
@@ -100,13 +173,11 @@ struct HistoryQueryTests {
     }
 
     /// 哈希前缀解析成唯一的提交，只在所选引用的历史里出现，并与其它条件取交集。
-    @Test("按哈希前缀搜索", arguments: ["sha1", "sha256"])
-    func hashConditions(objectFormat: String) async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        let commits = try await Self.makeHistory(in: fixture, objectFormat: objectFormat)
-        let history = RepositoryHistory(runner: fixture.runner)
+    private static func hashConditions(
+        _ history: RepositoryHistory,
+        _ commits: Commits,
+        objectFormat: String
+    ) async throws {
         let prefix = String(commits.fix.prefix(7)).uppercased()
 
         let found = try await history.page(
@@ -144,13 +215,7 @@ struct HistoryQueryTests {
     }
 
     /// 日期条件按整天比较提交人日期；多个日期条件取交集。
-    @Test("按日期之后、之前与区间搜索", arguments: ["sha1", "sha256"])
-    func dateConditions(objectFormat: String) async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        let commits = try await Self.makeHistory(in: fixture, objectFormat: objectFormat)
-        let history = RepositoryHistory(runner: fixture.runner)
+    private static func dateConditions(_ history: RepositoryHistory, _ commits: Commits) async throws {
         let third = try Self.day(3)
 
         let after = HistorySearchCondition(kind: .date, relation: .after, date: third)
@@ -160,31 +225,42 @@ struct HistoryQueryTests {
         #expect(try await Self.subjects(history, commits, [before]) == ["初始提交"])
 
         // 结束日早于起始日时交换两端
-        let range = HistorySearchCondition(kind: .date, relation: .range, date: third, endDate: try Self.day(2))
-        #expect(Set(try await Self.subjects(history, commits, [range])) == ["Fix bug *star*", "side work"])
+        let range = HistorySearchCondition(
+            kind: .date,
+            relation: .range,
+            date: third,
+            endDate: try Self.day(2)
+        )
+
+        #expect(
+            Set(try await Self.subjects(history, commits, [range])) == ["Fix bug *star*", "side work"]
+        )
 
         #expect(try await Self.subjects(history, commits, [after, before]).isEmpty)
     }
 
     /// 只沿第一父时不出现合并进来的提交；按日期排序时严格按提交人日期倒序；计数到上限为止。
-    @Test("排序、第一父、计数与分页", arguments: ["sha1", "sha256"])
-    func orderAndCount(objectFormat: String) async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        let commits = try await Self.makeHistory(in: fixture, objectFormat: objectFormat)
-        let history = RepositoryHistory(runner: fixture.runner)
+    private static func orderAndCount(_ history: RepositoryHistory, _ commits: Commits) async throws {
         let roots = [commits.merge]
 
         let firstParent = try await history.page(roots: roots, query: HistoryQuery(firstParentOnly: true))
-        #expect(firstParent.commits.map(\.id) == [commits.merge, commits.main, commits.fix, commits.initial])
+
+        #expect(
+            firstParent.commits.map(\.id) == [commits.merge, commits.main, commits.fix, commits.initial]
+        )
 
         let byDate = try await history.page(roots: roots, query: HistoryQuery(order: .date))
-        #expect(byDate.commits.map(\.id) == [commits.merge, commits.main, commits.side, commits.fix, commits.initial])
+
+        #expect(
+            byDate.commits.map(\.id) == [commits.merge, commits.main, commits.side, commits.fix, commits.initial]
+        )
 
         // 拓扑序里子提交总在父提交之前
         let topo = try await history.page(roots: roots, query: HistoryQuery(order: .topological)).commits
-        let positions = Dictionary(uniqueKeysWithValues: topo.enumerated().map { ($0.element.id, $0.offset) })
+
+        let positions = Dictionary(
+            uniqueKeysWithValues: topo.enumerated().map { ($0.element.id, $0.offset) }
+        )
 
         for commit in topo {
             for parent in commit.parents {
@@ -194,7 +270,11 @@ struct HistoryQueryTests {
 
         #expect(try await history.count(roots: roots, limit: 100) == 5)
         #expect(try await history.count(roots: roots, limit: 3) == 3)
-        #expect(try await history.count(roots: roots, query: HistoryQuery(firstParentOnly: true), limit: 100) == 4)
+
+        #expect(
+            try await history.count(roots: roots, query: HistoryQuery(firstParentOnly: true), limit: 100) == 4
+        )
+
         #expect(try await history.count(roots: [], limit: 100) == 0)
 
         // 搜索结果同样分页
@@ -203,39 +283,14 @@ struct HistoryQueryTests {
         let second = try await history.page(roots: roots, query: query, offset: 1, limit: 1)
         #expect(first.hasMore)
         #expect(!second.hasMore)
-        #expect(first.commits.map(\.subject) + second.commits.map(\.subject) == ["merge side", "main work"])
+
+        #expect(
+            first.commits.map(\.subject) + second.commits.map(\.subject) == ["merge side", "main work"]
+        )
     }
 
-    /// rev-list 的计数不是整数时拒绝显示。
-    @Test("计数输出损坏时报告格式错误")
-    func malformedCount() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        let executable = fixture.directory.appending(path: "broken-git")
-        try Data("#!/bin/sh\ncat > /dev/null\nprintf 'many\\n'\n".utf8).write(to: executable)
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
-
-        let runner = fixture.runner(at: fixture.directory.path, executable: executable.path)
-        let root = String(repeating: "a", count: 40)
-
-        await #expect(throws: RepositoryReadError.malformedOutput("rev-list")) {
-            try await RepositoryHistory(runner: runner).count(roots: [root], limit: 10)
-        }
-    }
-}
-
-// MARK: - Position
-
-extension HistoryQueryTests {
     /// 回到历史时按提交的下标决定是否询问，下标必须与列表分页的顺序一致，否则会多载或少载。
-    @Test("提交在历史中的位置与分页顺序一致", arguments: ["sha1", "sha256"])
-    func position(objectFormat: String) async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        let commits = try await Self.makeHistory(in: fixture, objectFormat: objectFormat)
-        let history = RepositoryHistory(runner: fixture.runner)
+    private static func commitPositions(_ history: RepositoryHistory, _ commits: Commits) async throws {
         let roots = [commits.merge]
 
         // 各种排序、只沿第一父与带特殊字符的文件条件下，下标都等于分页里的次序
@@ -251,7 +306,9 @@ extension HistoryQueryTests {
             let order = try await history.page(roots: roots, query: query).commits.map(\.id)
 
             for (index, id) in order.enumerated() {
-                #expect(try await history.position(of: id, roots: roots, query: query, limit: 100) == index)
+                #expect(
+                    try await history.position(of: id, roots: roots, query: query, limit: 100) == index
+                )
             }
         }
 
@@ -265,11 +322,17 @@ extension HistoryQueryTests {
                 limit: 100
             ) == nil
         )
-        #expect(try await history.position(of: commits.fix, roots: roots, query: queries[3], limit: 100) == nil)
+
+        #expect(
+            try await history.position(of: commits.fix, roots: roots, query: queries[3], limit: 100) == nil
+        )
+
         #expect(try await history.position(of: commits.merge, roots: [], limit: 100) == nil)
 
         // 不是哈希的提交、哈希条件与非正的上限都拒绝
-        let hashQuery = HistoryQuery(conditions: [.init(kind: .hash, text: String(commits.fix.prefix(7)))])
+        let hashQuery = HistoryQuery(
+            conditions: [.init(kind: .hash, text: String(commits.fix.prefix(7)))]
+        )
 
         await #expect(throws: RepositoryReadError.invalidQuery) {
             try await history.position(of: "HEAD", roots: roots, limit: 100)
@@ -281,22 +344,6 @@ extension HistoryQueryTests {
 
         await #expect(throws: RepositoryReadError.invalidQuery) {
             try await history.position(of: commits.fix, roots: roots, limit: 0)
-        }
-    }
-
-    /// rev-list 每行一个哈希；空输出里没有位置，夹杂别的文字时拒绝，不把它当成找不到。
-    @Test("解析提交位置的输出")
-    func parsePosition() throws {
-        let first = String(repeating: "a", count: 40)
-        let second = String(repeating: "b", count: 64)
-        let output = Data("\(first)\n\(second)\n".utf8)
-
-        #expect(try RepositoryHistory.position(of: second, in: output) == 1)
-        #expect(try RepositoryHistory.position(of: String(repeating: "c", count: 40), in: output) == nil)
-        #expect(try RepositoryHistory.position(of: first, in: Data()) == nil)
-
-        #expect(throws: RepositoryReadError.malformedOutput("rev-list")) {
-            try RepositoryHistory.position(of: first, in: Data("\(first)\nwarning: refname is ambiguous\n".utf8))
         }
     }
 }

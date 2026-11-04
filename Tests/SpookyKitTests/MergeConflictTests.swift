@@ -253,6 +253,9 @@ struct MergeConflictTests {
         try await service.finish(.revert, action: "abort")
         #expect(try await service.context(head: head).operation == nil)
         #expect(try await runner.status().branch.oid == head)
+
+        // 中止还要撤回冲突留下的改动，只清掉进行中的状态不算中止
+        #expect(try await runner.status().entries.isEmpty)
     }
 
     /// merge 后端的变基在空的一步上继续，同样保留空提交并完成后面的步骤。

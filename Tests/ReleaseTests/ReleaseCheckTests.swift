@@ -10,7 +10,7 @@ struct ReleaseCheckTests {
     /// 版本号必须是三段不带前导零的整数，带 v、少一段或多一段都不能发布。
     @Test("版本号格式不对时拒绝", arguments: ["1.2", "01.2.0", "v1.2.0", "1.2.0.1", "1.2.x"])
     func rejectsVersionFormat(version: String) async throws {
-        let fixture = try await ReleaseFixture()
+        let fixture = try await ReleaseFixture(repository: false)
         defer { fixture.remove() }
 
         let result = try await fixture.script("check-release.sh", version)
@@ -22,7 +22,7 @@ struct ReleaseCheckTests {
     /// 通道只有稳定、测试与开发三种，App 的 Updates 页按它们接收更新。
     @Test("通道不认识时拒绝")
     func rejectsChannel() async throws {
-        let fixture = try await ReleaseFixture()
+        let fixture = try await ReleaseFixture(repository: false)
         defer { fixture.remove() }
 
         try fixture.copyReleaseNotes(version: "1.2.0")
@@ -35,7 +35,7 @@ struct ReleaseCheckTests {
     /// 每种语言的更新说明都要嵌进更新清单：缺一份、或只有空白，都要一次列全。
     @Test("更新说明缺失或为空时列出全部问题")
     func rejectsMissingNotes() async throws {
-        let fixture = try await ReleaseFixture()
+        let fixture = try await ReleaseFixture(repository: false)
         defer { fixture.remove() }
 
         try fixture.copyReleaseNotes(version: "1.2.0")
@@ -70,7 +70,7 @@ struct ReleaseCheckTests {
     /// 构建号是更新比较新旧的依据，不是正整数就无法递增。
     @Test("当前构建号不是正整数时拒绝", arguments: ["0", "1.5", "abc"])
     func rejectsCurrentBuild(build: String) async throws {
-        let fixture = try await ReleaseFixture(build: build)
+        let fixture = try await ReleaseFixture(build: build, repository: false)
         defer { fixture.remove() }
 
         try fixture.copyReleaseNotes(version: "1.2.0")
@@ -99,7 +99,7 @@ struct ReleaseCheckTests {
         arguments: ["release 1.2.0", "release: 1.2.0 (stable)", "release: 1.2.0 (nightly)", "release: 1.2.0 beta"]
     )
     func rejectsTitle(title: String) async throws {
-        let fixture = try await releaseCommit(version: "1.2.0", build: "8")
+        let fixture = try await ReleaseFixture(version: "1.2.0", build: "8", repository: false)
         defer { fixture.remove() }
 
         let result = try await fixture.script("check-release.sh", "--title", title, "--base", "HEAD^")
@@ -111,7 +111,7 @@ struct ReleaseCheckTests {
     /// 标题里的版本号同样要满足格式。
     @Test("PR 标题里的版本号格式不对时拒绝")
     func rejectsTitleVersion() async throws {
-        let fixture = try await releaseCommit(version: "1.2.0", build: "8")
+        let fixture = try await ReleaseFixture(version: "1.2.0", build: "8", repository: false)
         defer { fixture.remove() }
 
         let result = try await fixture.script("check-release.sh", "--title", "release: 1.02.0", "--base", "HEAD^")
@@ -123,7 +123,7 @@ struct ReleaseCheckTests {
     /// 发布的安装包里的版本号必须是标题里的版本号。
     @Test("Info.plist 的版本号与标题不一致时拒绝")
     func rejectsMismatchedVersion() async throws {
-        let fixture = try await releaseCommit(version: "1.2.1", build: "8")
+        let fixture = try await ReleaseFixture(version: "1.2.1", build: "8", repository: false)
         defer { fixture.remove() }
 
         try fixture.copyReleaseNotes(version: "1.2.0")

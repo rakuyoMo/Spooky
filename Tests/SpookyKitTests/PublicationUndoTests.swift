@@ -77,8 +77,9 @@ struct PublicationUndoTests {
     }
 
     /// 另一个克隆把发布的分支推进一个提交之后，撤销被租约拒绝：远端分支与本机的跟踪设置都不变。
-    @Test("远端分支被推进后拒绝撤销发布")
-    func leaseRejected() async throws {
+    /// 本机的前提不符时拒绝撤销，不连接远端：发布后跟踪设置以外的分支设置被改过，改名后的远端跟踪分支已不在，远端已被删掉。
+    @Test("远端分支被推进或本机前提不符时拒绝撤销")
+    func rejectedUndo() async throws {
         let (fixture, bare) = try await BranchManagementTests.repository(objectFormat: "sha1")
         defer { fixture.remove() }
 
@@ -106,6 +107,28 @@ struct PublicationUndoTests {
         await #expect(throws: GitError.self) { try await sync.undoPublish(publication) }
         #expect(try await Self.object("refs/heads/feature", in: remote) == pushed)
         #expect(try await RepositoryUndo(runner: runner).branchSettings() == settings)
+
+        // 被拒绝的撤销没有改动本机；发布后又给 feature 加了一项设置
+        _ = try await runner.run(["config", "--local", "branch.feature.rebase", "true"])
+        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await sync.undoPublish(publication) }
+        #expect(try await Self.references(in: remote).contains("refs/heads/feature"))
+
+        // 改名后的远端跟踪分支已不在，原名字的还在
+        await #expect(throws: RepositoryUndoError.repositoryChanged) {
+            try await RepositoryReferences(runner: runner)
+                .undoRenameRemoteBranch("feature", on: "origin", to: "missing")
+        }
+
+        // 远端已被删掉
+        _ = try await runner.run(["remote", "remove", "origin"])
+        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await sync.undoPublish(publication) }
+
+        await #expect(throws: RepositoryUndoError.repositoryChanged) {
+            try await RepositoryTags(runner: runner)
+                .undoPublish("v1", on: "origin", object: publication.commit)
+        }
+
+        #expect(try await Self.references(in: remote).contains("refs/heads/feature"))
     }
 
     /// 撤销发布附注标签：远端没有这个标签；远端标签被改指别的对象后，撤销被租约拒绝。
@@ -153,39 +176,6 @@ struct PublicationUndoTests {
         try await refs.undoRenameRemoteBranch("main", on: "origin", to: "功能/改名")
         #expect(try await Self.references(in: remote) == ["refs/heads/main"])
         #expect(try await Self.object("refs/heads/main", in: remote) == original)
-    }
-
-    /// 本机的前提不符时拒绝撤销，不连接远端：远端已被删掉，发布后跟踪设置以外的分支设置被改过，改名后的远端跟踪分支已不在。
-    @Test("前提不符时拒绝撤销远端引用")
-    func changedRepository() async throws {
-        let (fixture, bare) = try await BranchManagementTests.repository(objectFormat: "sha1")
-        defer { fixture.remove() }
-
-        let runner = fixture.runner
-        let remote = fixture.runner(at: bare)
-        let sync = RepositorySync(runner: runner)
-
-        _ = try await runner.run(["branch", "-q", "feature"])
-        let publication = try await sync.publication(of: "feature", to: "origin", as: "feature", setsUpstream: true)
-        _ = try await sync.push(branch: "feature", remote: "origin", destination: "feature", setUpstream: true)
-
-        // 发布后又给 feature 加了一项设置
-        _ = try await runner.run(["config", "--local", "branch.feature.rebase", "true"])
-        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await sync.undoPublish(publication) }
-        #expect(try await Self.references(in: remote).contains("refs/heads/feature"))
-
-        // 改名后的远端跟踪分支已不在，原名字的还在
-        await #expect(throws: RepositoryUndoError.repositoryChanged) {
-            try await RepositoryReferences(runner: runner).undoRenameRemoteBranch("feature", on: "origin", to: "missing")
-        }
-
-        // 远端已被删掉
-        _ = try await runner.run(["remote", "remove", "origin"])
-        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await sync.undoPublish(publication) }
-        await #expect(throws: RepositoryUndoError.repositoryChanged) {
-            try await RepositoryTags(runner: runner).undoPublish("v1", on: "origin", object: publication.commit)
-        }
-        #expect(try await Self.references(in: remote).contains("refs/heads/feature"))
     }
 }
 

@@ -18,7 +18,7 @@ struct CommandResult {
 
 // MARK: - ReleaseFixture
 
-/// 发布脚本的测试仓库：临时目录里的工作区，以及作为 origin 的裸仓库。
+/// 发布脚本的测试现场：临时目录里的工作区，建成 Git 仓库时另有作为 origin 的裸仓库。
 ///
 /// 工作区里放着仓库的发布脚本与一份 Info.plist，脚本按自身位置把工作区当作仓库根目录；
 /// Git 忽略系统与用户的配置，提交身份只写进工作区的本地配置。
@@ -40,25 +40,20 @@ struct ReleaseFixture {
     /// 工作区。
     var workTree: URL { root.appending(path: "work") }
 
-    /// 作为 origin 的裸仓库。
+    /// 作为 origin 的裸仓库；只在建成 Git 仓库时存在。
     var origin: URL { root.appending(path: "origin.git") }
 
-    /// 建好工作区与 origin：Info.plist 写入给定的版本号与构建号，连同发布脚本提交到 main 并推送。
-    init(version: String = "1.1.0", build: String = "7") async throws {
+    /// 建好工作区：放好发布脚本，Info.plist 写入给定的版本号与构建号。
+    ///
+    /// - Parameter repository: 为 true 时再建成 Git 仓库，连同发布脚本提交到 main 并推送到 origin；
+    ///   脚本在执行第一条 Git 命令之前就退出的检查传 false，只用到这些文件。
+    init(version: String = "1.1.0", build: String = "7", repository: Bool = true) async throws {
         root = FileManager.default.temporaryDirectory.appending(path: "spooky-release-\(UUID().uuidString)")
 
         let scripts = workTree.appending(path: "scripts")
         try FileManager.default.createDirectory(at: scripts, withIntermediateDirectories: true)
 
-        // 1. 裸仓库与工作区，初始分支都是 main
-        try await expectSuccess("/usr/bin/git", ["init", "-q", "--bare", "-b", "main", origin.path], in: root)
-        try await git("init", "-q", "-b", "main")
-        try await git("config", "user.name", "Spooky Test")
-        try await git("config", "user.email", "spooky@example.invalid")
-        try await git("config", "commit.gpgSign", "false")
-        try await git("remote", "add", "origin", origin.path)
-
-        // 2. 发布脚本与 Info.plist
+        // 1. 发布脚本与 Info.plist
         for script in ["check-release.sh", "release.sh"] {
             try FileManager.default.copyItem(
                 at: Self.package.appending(path: "scripts/\(script)"),
@@ -67,6 +62,18 @@ struct ReleaseFixture {
         }
 
         try writeInfoPlist(version: version, build: build)
+
+        guard repository else {
+            return
+        }
+
+        // 2. 裸仓库与工作区，初始分支都是 main
+        try await expectSuccess("/usr/bin/git", ["init", "-q", "--bare", "-b", "main", origin.path], in: root)
+        try await git("init", "-q", "-b", "main")
+        try await git("config", "user.name", "Spooky Test")
+        try await git("config", "user.email", "spooky@example.invalid")
+        try await git("config", "commit.gpgSign", "false")
+        try await git("remote", "add", "origin", origin.path)
 
         // 3. 提交并推送，origin/main 与本地 main 一致
         try await git("add", "--all")
