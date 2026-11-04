@@ -19,7 +19,11 @@ concurrency:
 jobs:
   check:
     name: 检查与构建
-    runs-on: macos-26
+    runs-on: xcode-27
+
+    # 固定 Xcode 版本，镜像更新默认版本时不跟着变
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
 
     steps:
       - uses: actions/checkout@v7
@@ -32,8 +36,21 @@ jobs:
       - name: 编译
         run: mise run build
 
+      # 测试的输出接到管道上时攒成整块再写，日志里每行的时间不是测试结束的时间；事件流里每个事件都带着发生的时间
+      # 这两个选项不列在 swift test 的帮助里
       - name: 测试
-        run: mise run test
+        run: |
+          mise run test \
+            --event-stream-output-path "$RUNNER_TEMP/test-events.jsonl" \
+            --event-stream-version 0
+
+      # 测试失败时同样上传；产物名带上第几次运行，重跑时不与前一次重名
+      - name: 上传测试事件
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-events-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/test-events.jsonl
 
       - name: 打包
         run: mise run bundle
