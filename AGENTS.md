@@ -127,6 +127,9 @@ docs/                    架构、测试与发布的文档
 - 涉及本机 Git 的测试使用临时目录，并在测试结束后清理
 - Git 测试通过隔离环境忽略系统和用户全局配置，提交身份只写入临时仓库的本地配置
 - Git 或 SSH 的失败路径检查 `GitError` 的退出码与错误信息
+- 核对对话框的标题、说明与按钮时，直接调用构建对话框内容的入口（如 `RepositoryWindowController.recoveryNotice`），不挂 sheet；只有核对挂上、排队与尺寸这类窗口上的行为时才挂
+  - 挂上与收起 sheet 都要在主线程上同步等完动画，整套测试并行时其它 `@MainActor` 测试都排在它后面
+- 不断言墙钟耗时：整套测试并行时主线程与 CPU 都要排队，耗时取决于同时运行的其它测试；等待条件成立的上限按整套测试的耗时留足，与 `FileViewsTests.wait` 一样取 300 s
 - 改动 App 时还须运行 `swift build --product Spooky`，按 [M1 验收步骤](docs/testing/M1.md) 实际启动、操作并截图；未执行的检查明确记录为未验证
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
 
