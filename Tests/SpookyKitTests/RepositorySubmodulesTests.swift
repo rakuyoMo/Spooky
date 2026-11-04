@@ -371,11 +371,11 @@ extension RepositorySubmodulesTests {
         #expect(RepositorySubmodules.resolvedURL("https://example.com/x", base: "/srv") == "https://example.com/x")
     }
 
-    /// 在子模块里执行的 `-C <路径>` 不影响读写判断与认证用的子命令名，只有 `submodule status` 是读取。
+    /// 在子模块里执行的 `-C <路径>` 不影响读写判断与认证用的子命令名，只有读取子模块状态的 `submodule--helper status` 是读取。
     @Test("子模块命令的调度")
     func scheduling() {
-        #expect(RepositoryOperationQueue.isReadOnly(["submodule", "status"]))
-        #expect(RepositoryOperationQueue.isReadOnly(["--literal-pathspecs", "submodule", "status", "--", "lib"]))
+        #expect(RepositoryOperationQueue.isReadOnly(RepositorySubmodules.statusCommand))
+        #expect(RepositoryOperationQueue.isReadOnly(["--literal-pathspecs"] + RepositorySubmodules.statusCommand + ["--", "lib"]))
         #expect(!RepositoryOperationQueue.isReadOnly(["submodule", "update", "--init"]))
         #expect(RepositoryOperationQueue.isReadOnly(["-C", "config", "config", "-z", "--local", "--get-regexp", "x"]))
         #expect(RepositoryOperationQueue.isReadOnly(["-C", "lib", "status", "--porcelain=v2"]))
