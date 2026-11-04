@@ -128,9 +128,11 @@ extension RepositoryWindowController {
         #selector(openInTerminal): ("action.openTerminal", "toolbar.terminal", true),
     ]
 
-    /// 建立窗口唯一的工具栏：默认只显示图标，可以自定义，排布与显示方式自动保存并在所有仓库窗口间同步。
-    func configureToolbar() {
-        let toolbar = NSToolbar(identifier: RepositoryToolbar.identifier)
+    /// 建立窗口唯一的工具栏：默认只显示图标，可以自定义，排布与显示方式自动保存并在同一标识的仓库窗口间同步。
+    ///
+    /// - Parameter identifier: 构造窗口时传入的工具栏标识。
+    func configureToolbar(_ identifier: NSToolbar.Identifier) {
+        let toolbar = NSToolbar(identifier: identifier)
         toolbar.delegate = self
         toolbar.displayMode = .iconOnly
         toolbar.allowsUserCustomization = true

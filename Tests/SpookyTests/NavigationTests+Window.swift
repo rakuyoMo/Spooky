@@ -27,10 +27,10 @@ extension NavigationTests {
         /// 独立的偏好域，测试结束时删除。
         let defaults: UserDefaults
 
-        /// 偏好域的名称。
+        /// 偏好域的名称，也是独有工具栏的标识。
         let suite: String
 
-        /// 关闭全部窗口并删除仓库与偏好域。
+        /// 关闭全部窗口，删除仓库、偏好域与独有工具栏的配置。
         @MainActor
         func close() {
             for window in coordinator.windows + [controller] {
@@ -40,13 +40,19 @@ extension NavigationTests {
 
             defaults.removePersistentDomain(forName: suite)
             try? FileManager.default.removeItem(at: directory)
+
+            // 独有工具栏自动保存的配置写在标准偏好里，键名带着它的标识
+            UserDefaults.standard.removeObject(forKey: "NSToolbar Configuration " + suite)
         }
     }
 
     /// 建立临时仓库，用窗口打开它并读完第一次刷新。
     ///
-    /// - Parameter commits: 按顺序写入 main 的提交信息；nil 时只有一个添加 a.txt 的提交。
-    static func makeWindow(commits: [String]? = nil) async throws -> WindowFixture {
+    /// - Parameters:
+    ///   - commits: 按顺序写入 main 的提交信息；nil 时只有一个添加 a.txt 的提交。
+    ///   - isolatesToolbar: 工具栏改用本窗口独有的标识。切换显示方式的测试都要打开：同一标识的工具栏会同步显示方式，
+    ///     切换一次就要逐个重排同一进程里其它测试的全部仓库窗口。
+    static func makeWindow(commits: [String]? = nil, isolatesToolbar: Bool = false) async throws -> WindowFixture {
         let directory = try FileViewsTests.temporaryDirectory()
         let location = RepositoryLocation.local(path: directory.path)
         let runner = try await FileViewsTests.initializeRepository(at: location)
@@ -64,7 +70,8 @@ extension NavigationTests {
         let coordinator = SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
         let controller = RepositoryWindowController(
             coordinator: coordinator,
-            session: RepositorySession(makeRunner: { _ in runner })
+            session: RepositorySession(makeRunner: { _ in runner }),
+            toolbarIdentifier: isolatesToolbar ? NSToolbar.Identifier(suite) : RepositoryToolbar.identifier
         )
 
         controller.display(location)
