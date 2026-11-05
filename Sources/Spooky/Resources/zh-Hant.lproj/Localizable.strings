@@ -2626,3 +2626,5 @@
 "working.unstageAllMenu" = "取消暫存全部本機變更";
 "working.discardMenu" = "捨棄本機變更";
 "working.discardAllMenu" = "捨棄全部本機變更…";
+
+"externalTool.action.diffTool" = "比較工具";

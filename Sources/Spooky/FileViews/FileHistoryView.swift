@@ -289,7 +289,6 @@ struct FileHistoryDetailView: View {
         if let commit = state.selectedCommit {
             VStack(spacing: 0) {
                 header(commit)
-                Divider()
 
                 content(commit)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -299,8 +298,8 @@ struct FileHistoryDetailView: View {
         }
     }
 
-    /// 动作条：查看这个版本的 Blame、回到对应的提交。
-    private func actions(_ commit: HistoryCommit) -> [FileViewAction] {
+    /// 动作条：查看这个版本的 Blame、回到提交与比较第一父提交。
+    func actions(_ commit: HistoryCommit) -> [FileViewAction] {
         let path = state.path ?? ""
 
         return [
@@ -309,6 +308,9 @@ struct FileHistoryDetailView: View {
             },
             FileViewAction(title: AppLocalization.text("fileHistory.showCommit")) {
                 session.showCommit(commit)
+            },
+            FileViewAction(title: AppLocalization.text("externalTool.action.diffTool")) {
+                session.openDiffTool(for: commit, files: [ComparedFile(path: path)])
             },
         ]
     }
@@ -335,7 +337,7 @@ struct FileHistoryDetailView: View {
         }
         .padding(.horizontal, 20)
         .frame(height: 40)
-        .background(.bar)
+        .background(FileHeaderBackground())
         .modifier(FileActionHeader(actions: actions(commit), hovering: $hovering))
     }
 

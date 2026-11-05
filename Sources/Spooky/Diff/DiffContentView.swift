@@ -251,10 +251,6 @@ private struct DiffBottomBar: View {
 
             Spacer(minLength: 8)
 
-            if session.isLoadingDiff {
-                ProgressView().controlSize(.mini)
-            }
-
             Text(summary)
 
             Spacer(minLength: 8)

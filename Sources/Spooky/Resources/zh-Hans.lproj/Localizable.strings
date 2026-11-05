@@ -2626,3 +2626,5 @@
 "working.unstageAllMenu" = "取消暂存全部本地改动";
 "working.discardMenu" = "丢弃本地改动";
 "working.discardAllMenu" = "丢弃全部本地改动…";
+
+"externalTool.action.diffTool" = "比较工具";

@@ -18,7 +18,7 @@ extension RepositorySession {
             return
         }
 
-        fileHistory.open(path, head: status?.branch.oid, runner: runner)
+        fileHistory.open(path.hasSuffix("/") ? String(path.dropLast()) : path, head: status?.branch.oid, runner: runner)
         activeView = .fileHistory
 
         // 从文件历史里换文件时搜索框保留内容，新文件沿用同样的筛选
@@ -163,14 +163,27 @@ extension RepositorySession {
         }
     }
 
-    /// 工作区详情头部的动作：跟随当前 HEAD 的 Blame，以及文件历史。
-    func workingCopyFileActions(_ path: String) -> [FileViewAction] {
-        [
-            FileViewAction(title: AppLocalization.text("blame.title")) { [weak self] in
+    /// 工作区详情动作按对象能力与当前比较侧生成，目录只提供文件历史。
+    func workingCopyFileActions(
+        _ path: String,
+        entry: StatusEntry?,
+        isDirectory: Bool
+    ) -> [FileViewAction] {
+        let comparison: WorkingCopyComparison = diffSide == .staged ? .indexToBase : .workingTreeToIndex
+        let entries = entry.map { [$0] } ?? []
+
+        return [
+            FileViewAction(title: AppLocalization.text("blame.title"), enabled: !isDirectory) { [weak self] in
                 self?.showFile(path, at: nil, mode: .blame)
             },
             FileViewAction(title: AppLocalization.text("fileHistory.title")) { [weak self] in
                 self?.showFileHistory(path)
+            },
+            FileViewAction(
+                title: AppLocalization.text("externalTool.action.diffTool"),
+                enabled: !isDirectory && canCompare(entries, comparison)
+            ) { [weak self] in
+                self?.compare(entries, comparison)
             },
         ]
     }

@@ -2626,3 +2626,5 @@
 "working.unstageAllMenu" = "Alle lokalen Änderungen unstagen";
 "working.discardMenu" = "Lokale Änderungen verwerfen";
 "working.discardAllMenu" = "Alle lokalen Änderungen verwerfen …";
+
+"externalTool.action.diffTool" = "Vergleichswerkzeug";

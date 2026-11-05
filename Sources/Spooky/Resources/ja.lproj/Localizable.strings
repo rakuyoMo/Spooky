@@ -2626,3 +2626,5 @@
 "working.unstageAllMenu" = "すべてのローカルの変更をステージ解除";
 "working.discardMenu" = "ローカルの変更を破棄";
 "working.discardAllMenu" = "すべてのローカルの変更を破棄…";
+
+"externalTool.action.diffTool" = "比較ツール";

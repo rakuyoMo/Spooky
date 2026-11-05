@@ -2626,3 +2626,5 @@
 "working.unstageAllMenu" = "Quitar todos los cambios locales del stage";
 "working.discardMenu" = "Descartar cambios locales";
 "working.discardAllMenu" = "Descartar todos los cambios locales…";
+
+"externalTool.action.diffTool" = "Herramienta de comparación";

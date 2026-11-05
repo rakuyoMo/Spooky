@@ -2626,3 +2626,5 @@
 "working.unstageAllMenu" = "Désindexer toutes les modifications locales";
 "working.discardMenu" = "Abandonner les modifications locales";
 "working.discardAllMenu" = "Abandonner toutes les modifications locales…";
+
+"externalTool.action.diffTool" = "Outil de comparaison";

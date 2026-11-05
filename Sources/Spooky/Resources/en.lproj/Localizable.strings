@@ -2626,3 +2626,5 @@
 "working.unstageAllMenu" = "Unstage All Local Changes";
 "working.discardMenu" = "Discard Local Changes";
 "working.discardAllMenu" = "Discard All Local Changes…";
+
+"externalTool.action.diffTool" = "Diff Tool";

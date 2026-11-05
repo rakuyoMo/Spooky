@@ -29,24 +29,42 @@ struct FileActionBar: View {
     /// 鼠标是否在头部上。
     let hovering: Bool
 
+    /// 文件头使用分段组，评论附件使用独立按钮。
+    var segmented = true
+
+    /// 原生分段组是否获得键盘焦点。
+    @State
+    private var segmentFocused = false
+
     /// 获得键盘焦点的按钮。
     @FocusState
     private var focused: String?
 
-    /// 文字按钮靠右排列，隐藏时仍保留位置与键盘焦点。
+    /// 隐藏时保留占位与键盘入口，悬停或获得焦点时淡入。
     var body: some View {
-        HStack(spacing: 2) {
-            ForEach(actions) { action in
-                Button(action.title, action: action.perform)
-                    .disabled(!action.enabled)
-                    .focused($focused, equals: action.id)
+        Group {
+            if segmented {
+                FileActionSegments(actions: actions) { segmentFocused = $0 }
+                    .fixedSize()
+            } else {
+                HStack(spacing: 2) {
+                    ForEach(actions) { action in
+                        Button(action.title, action: action.perform)
+                            .disabled(!action.enabled)
+                            .focused($focused, equals: action.id)
+                    }
+                }
+                .buttonStyle(.accessoryBar)
+                .controlSize(.regular)
             }
         }
-        .buttonStyle(.accessoryBar)
-        .controlSize(.small)
         .frame(height: 25)
-        .opacity(hovering || focused != nil ? 1 : 0)
+        .opacity(visible ? 1 : 0)
+        .animation(.easeInOut(duration: 0.15), value: visible)
     }
+
+    /// 鼠标与键盘任一入口都能显示动作。
+    private var visible: Bool { hovering || focused != nil || segmentFocused }
 }
 
 // MARK: - FileActionHeader
