@@ -10,10 +10,13 @@ enum SyntaxStyle: String, Sendable {
     /// 名称、变量、参数与符号。
     case identifier
 
+    /// 函数名与调用名称。
+    case function
+
     /// 数字。
     case number
 
-    /// 字符串与正则表达式。
+    /// 字符串。
     case string
 
     /// 注释。
@@ -22,17 +25,20 @@ enum SyntaxStyle: String, Sendable {
     /// 预处理指令、注解等元信息。
     case preprocessor
 
-    /// 标记语言的标签与标签名。
+    /// 标记语言的标签。
     case xmlTag
 
     /// 属性名、样式表的属性与配置文件的键。
     case attributeName
 
+    /// XML 与 HTML 标签里的属性值。
+    case attributeValue
+
     /// 样式表的选择器。
     case cssSelector
 
     /// 运算符、标点与列表符号。
-    case delimiter
+    case symbol
 
     /// 文档标题。
     case heading
@@ -49,11 +55,7 @@ enum SyntaxStyle: String, Sendable {
     /// 链接地址。
     case url
 
-    #warning(
-        "TODO: 核实记号类别到颜色键的映射：keyword、params、bullet、attribute、selector 五组各自的成员已确定，每组对应的颜色键与其余类别的取舍是推断；用同一份文件逐类比对记号颜色，影响全部语言的着色"
-    )
-
-    /// highlight.js 记号类别对应的颜色，键是类名 `hljs-` 之后、第一个空格之前的部分。
+    /// highlight.js 记号类别对应的颜色，键是去掉 `hljs-` 前缀后的类名，分层类名保留原样。
     ///
     /// 表里没有的类别（如字符串里的插值）沿用外层记号的颜色，与样式表的颜色继承一致。
     static let scopes: [String: Self] = [
@@ -67,9 +69,11 @@ enum SyntaxStyle: String, Sendable {
         "title": .identifier,
         "variable": .identifier,
 
-        "bullet": .delimiter,
-        "operator": .delimiter,
-        "punctuation": .delimiter,
+        "function_": .function,
+
+        "bullet": .symbol,
+        "operator": .symbol,
+        "punctuation": .symbol,
 
         "attribute": .attributeName,
         "attr": .attributeName,
@@ -82,11 +86,9 @@ enum SyntaxStyle: String, Sendable {
 
         "number": .number,
         "string": .string,
-        "regexp": .string,
         "comment": .comment,
         "meta": .preprocessor,
         "tag": .xmlTag,
-        "name": .xmlTag,
         "section": .heading,
         "emphasis": .emphasized,
         "strong": .stronglyEmphasized,
@@ -119,9 +121,19 @@ actor SyntaxActor {
 
 /// 语法着色的入口：按路径与内容识别 highlight.js 的语言，再把整段文本切成每行的片段；Diff、Blame 与原文视图共用。
 enum SyntaxHighlighter {
-    #warning("TODO: 核实按内容识别的细节：上限按 UTF-8 字节数比较、候选只取核心脚本自带的常用语言，都是推断；用没有扩展名的各类文件比对识别结果，影响无扩展名与未知扩展名文件的着色")
+    /// 路径识别的结果；明确的纯文本与需要全文判断的未知类型分开。
+    enum PathLanguage: Equatable {
+        /// 已知语言的规范名。
+        case language(String)
 
-    /// 扩展名无法识别时，只对不超过这个字节数的内容按内容识别语言。
+        /// 明确对应纯文本，不按内容识别。
+        case plaintext
+
+        /// 文件名与扩展名都无法识别。
+        case unknown
+    }
+
+    /// 扩展名无法识别时，只对不超过这个字符数的内容按内容识别语言。
     static let unknownFileLimit = 20_000
 
     /// highlight.js 不按文件名识别，这些没有扩展名的常见文件按完整文件名对应语言。
@@ -177,6 +189,39 @@ enum SyntaxHighlighter {
         "vue": "xml",
         "sass": "css",
         "mdown": "markdown",
+        "adb": "ada",
+        "ads": "ada",
+        "aj": "aspectj",
+        "asm": "x86asm",
+        "s": "x86asm",
+        "bas": "basic",
+        "cljc": "clojure",
+        "cljs": "clojure",
+        "csx": "csharp",
+        "jl": "julia",
+        "lhs": "haskell",
+        "litcoffee": "coffeescript",
+        "ma": "mathematica",
+        "ml": "ocaml",
+        "mli": "ocaml",
+        "p": "prolog",
+        "pro": "prolog",
+        "pbxproj": "json",
+        "php": "php-template",
+        "rslib": "rust",
+        "scpt": "applescript",
+        "scptd": "applescript",
+        "shtm": "xml",
+        "shtml": "xml",
+        "xht": "xml",
+        "xhtm": "xml",
+        "ss": "scheme",
+        "strings": "objectivec",
+        "svelte": "javascript",
+        "vbe": "vbscript",
+        "wsc": "vbscript",
+        "wsf": "vbscript",
+        "vhd": "vhdl",
     ]
 
     /// 首行 `#!` 中的解释器对应的语言。
@@ -220,27 +265,19 @@ enum SyntaxHighlighter {
     /// - Returns: highlight.js 的语言名，如 `swift`。
     @SyntaxActor
     static func language(forPath path: String, content: String?) async -> String? {
-        let name = path.split(separator: "/").last.map(String.init) ?? path
-        let pathExtension = name.lastIndex(of: ".").map { name[name.index(after: $0)...].lowercased() } ?? ""
-
-        // 没有扩展名的常见文件按完整文件名识别
-        if let language = fileNames[name] {
+        switch await pathLanguage(forPath: path, content: content) {
+        case .language(let language):
             return language
-        }
 
-        // 自带的扩展名表先于 highlight.js 的别名；扩展名对应纯文本时直接按纯文本显示
-        if !pathExtension.isEmpty {
-            if let language = extensions[pathExtension] {
-                return language
-            }
+        case .plaintext:
+            return nil
 
-            if let language = await withRuntime({ await $0.language(named: pathExtension) }) {
-                return language == HighlightRuntime.plaintext ? nil : language
-            }
+        case .unknown:
+            break
         }
 
         // 扩展名不认识时才看内容：先看首行的 `#!`，再由 highlight.js 判断
-        guard let content, content.utf8.count <= unknownFileLimit else {
+        guard let content, content.count <= unknownFileLimit else {
             return nil
         }
 
@@ -249,6 +286,35 @@ enum SyntaxHighlighter {
         }
 
         return await withRuntime { await $0.detectLanguage(in: content) }
+    }
+
+    /// 依次按完整文件名、头文件内容、自带扩展名与语言别名识别；未知类型交给全文识别。
+    @SyntaxActor
+    static func pathLanguage(forPath path: String, content: String?) async -> PathLanguage {
+        let name = path.split(separator: "/").last.map(String.init) ?? path
+        let pathExtension = name.lastIndex(of: ".").map { name[name.index(after: $0)...].lowercased() } ?? ""
+
+        if let language = fileNames[name] {
+            return .language(language)
+        }
+
+        // .h 的 Objective-C 标记在注释和字符串里同样有效，不受未知文件的识别上限限制
+        if pathExtension == "h" {
+            let markers = ["#import", "@class", "@interface", "@protocol", "@import", "@\""]
+            let isObjectiveC = markers.contains { content?.contains($0) ?? false }
+            return .language(isObjectiveC ? "objectivec" : "cpp")
+        }
+
+        if let language = extensions[pathExtension] {
+            return .language(language)
+        }
+
+        guard
+            !pathExtension.isEmpty,
+            let language = await withRuntime({ await $0.language(named: pathExtension) })
+        else { return .unknown }
+
+        return language == HighlightRuntime.plaintext ? .plaintext : .language(language)
     }
 
     /// 给整段文本着色。

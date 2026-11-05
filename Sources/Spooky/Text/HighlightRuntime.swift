@@ -22,11 +22,6 @@ actor HighlightRuntime {
     /// 小写的语言名与别名对应的语言名。
     private let names: [String: String]
 
-    /// 按内容识别时参与比较的语言：核心脚本自带的常用语言。
-    ///
-    /// 全部语言一起比较时，常见代码也常被判成冷门语言，耗时也成倍增加。
-    private let detectionCandidates: [String]
-
     /// actor 的任务都在这份上下文的串行队列上执行。
     nonisolated var unownedExecutor: UnownedSerialExecutor {
         queue.asUnownedSerialExecutor()
@@ -50,7 +45,6 @@ actor HighlightRuntime {
         Self.evaluate(core, in: context)
 
         let hljs: JSValue = context.objectForKeyedSubscript("hljs")
-        detectionCandidates = Self.languageList(of: hljs)
 
         // 其余语言各有一个脚本，执行时注册到同一个 hljs
         for file in languages.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
@@ -68,9 +62,9 @@ actor HighlightRuntime {
         names[name.lowercased()]
     }
 
-    /// 由 highlight.js 在常用语言中按内容判断语言；判断不出时为空。
+    /// 由 highlight.js 在全部允许自动识别的语言中按内容判断；判断不出时为空。
     func detectLanguage(in text: String) -> String? {
-        let result = hljs.invokeMethod("highlightAuto", withArguments: [text, detectionCandidates])
+        let result = hljs.invokeMethod("highlightAuto", withArguments: [text])
 
         defer { context.exception = nil }
 
@@ -92,7 +86,7 @@ actor HighlightRuntime {
             return nil
         }
 
-        let options: [String: Any] = ["language": language, "ignoreIllegals": true]
+        let options: [String: Any] = ["language": language, "ignoreIllegals": false]
         let result = hljs.invokeMethod("highlight", withArguments: [text, options])
 
         // 未知语言等异常按纯文本处理
@@ -114,7 +108,7 @@ actor HighlightRuntime {
             count: JSStringGetLength(string)
         )
 
-        return HighlightMarkup.lines(of: units)
+        return HighlightMarkup.lines(of: units, language: language)
     }
 }
 
