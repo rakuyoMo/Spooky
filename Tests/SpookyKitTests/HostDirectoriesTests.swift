@@ -33,7 +33,10 @@ struct HostDirectoriesTests {
         let entries = try await HostDirectories.list(.local(path: root.path + "/"))
         let byName = Dictionary(uniqueKeysWithValues: entries.map { ($0.name, $0) })
 
-        #expect(entries.map(\.name) == [".hidden", "A", "b", "link", "locked", "repo", "worktree", "仓 库'\""])
+        let expected = [".hidden", "A", "b", "link", "locked", "repo", "worktree", "仓 库'\""]
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+
+        #expect(entries.map(\.name) == expected)
         #expect(byName["仓 库'\""]?.path == root.path + "/仓 库'\"")
         #expect(byName["repo"]?.isRepository ?? false)
         #expect(byName["worktree"]?.isRepository ?? false)
