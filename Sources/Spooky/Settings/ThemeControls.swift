@@ -18,11 +18,11 @@ struct ThemeColorWell: NSViewRepresentable {
             self.parent = parent
         }
 
-        /// 颜色面板改动了色块的颜色；无法换算到 sRGB 或与主题现有的值相同时不写回。
+        /// 颜色面板改动了色块的颜色；无法换算到 Generic RGB 或与主题现有的值相同时不写回。
         @objc
         func colorChanged(_ sender: NSColorWell) {
             guard
-                let color = PaletteColor(nsColor: sender.color),
+                let color = PaletteColor(nsColor: sender.color, colorSpace: .genericRGB),
                 color != parent.color
             else { return }
 
@@ -61,8 +61,8 @@ struct ThemeColorWell: NSViewRepresentable {
         well.isEnabled = isEnabled && color != nil
 
         // 换了主题或颜色时更新色块；正在编辑的色块继续编辑，颜色面板随之换成新颜色。
-        if let color, PaletteColor(nsColor: well.color) != color {
-            well.color = color.nsColor
+        if let color, PaletteColor(nsColor: well.color, colorSpace: .genericRGB) != color {
+            well.color = color.calibratedNSColor
         }
 
         // 没有文件可写时停止编辑：关闭颜色面板会让正在编辑的色块退出激活。

@@ -173,7 +173,7 @@ struct ThemeAndTerminalTests {
 
         // 打开页面时选中 Plain Text，Font Color 是正文色。
         #expect(tokens.selectedRow == 0)
-        #expect(PaletteColor(nsColor: fontColor.color) == theme.colors["text"])
+        #expect(PaletteColor(nsColor: fontColor.color, colorSpace: .genericRGB) == theme.colors["text"])
 
         // 用户选中 Keyword 后，Font Color 换成 keyword 的颜色。
         let keyword = try #require(theme.colors["keyword"])
@@ -182,17 +182,25 @@ struct ThemeAndTerminalTests {
 
         try await FileViewsTests.wait {
             hosting.layoutSubtreeIfNeeded()
-            return PaletteColor(nsColor: fontColor.color) == keyword
+            return PaletteColor(nsColor: fontColor.color, colorSpace: .genericRGB) == keyword
         }
 
         // 颜色面板调出的颜色经色块的动作写回主题。
         let picked = PaletteColor(hex: "#123456", alpha: 0.5)
-        fontColor.color = picked.nsColor
+        fontColor.color = picked.calibratedNSColor
         _ = (fontColor.target as? NSObject)?.perform(fontColor.action, with: fontColor)
 
         let saved = try #require(store.themes.first { $0.id == theme.id })
         #expect(saved.colors["keyword"] == picked)
         #expect(saved.colors["text"] == theme.colors["text"])
+
+        // 切回正文时色块回填正文色，不把刚编辑的关键字色写到其它记号。
+        tokens.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+
+        try await FileViewsTests.wait {
+            hosting.layoutSubtreeIfNeeded()
+            return PaletteColor(nsColor: fontColor.color, colorSpace: .genericRGB) == theme.colors["text"]
+        }
     }
 
     /// 终端候选固定为六个程序，靠 Bundle Identifier 认出；路径与主机别名里的引号不能逃出转义。

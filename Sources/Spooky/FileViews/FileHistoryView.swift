@@ -349,7 +349,7 @@ struct FileHistoryDetailView: View {
             ScrollView {
                 ReadOnlyFileDiffView(result: diff, source: source) { state.loadDetail(showLarge: true) }
             }
-            .background(TextTheme.current(dark: colorScheme == .dark).colors["background"]?.color ?? .clear)
+            .background(TextTheme.current(dark: colorScheme == .dark).colors["background"]?.calibratedColor ?? .clear)
             .reloadsOnDiffPreferenceChange { state.loadDetail() }
         } else if state.detailMode == .raw, let content = state.content {
             raw(content, commit: commit)

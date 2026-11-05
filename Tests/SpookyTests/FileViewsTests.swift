@@ -110,7 +110,7 @@ struct FileViewsTests {
         #expect(storage.string == "    let x = 1\nplain")
 
         let keyword = try #require(storage.attribute(.foregroundColor, at: 4, effectiveRange: nil) as? NSColor)
-        let expected = try #require(theme.colors["keyword"]?.nsColor)
+        let expected = try #require(theme.colors["keyword"]?.calibratedNSColor)
         #expect(Self.sameColor(keyword, expected))
 
         let plain = try #require(storage.attribute(.foregroundColor, at: 15, effectiveRange: nil) as? NSColor)

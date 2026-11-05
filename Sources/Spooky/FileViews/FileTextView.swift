@@ -74,14 +74,16 @@ struct FileTextStyle: Equatable {
         font = NSFont(name: theme.fontName, size: theme.fontSize)
             ?? .monospacedSystemFont(ofSize: theme.fontSize, weight: .regular)
         lineHeight = (NSLayoutManager().defaultLineHeight(for: font) * Self.lineHeightMultiple).rounded()
-        text = theme.colors["text"]?.nsColor ?? .textColor
-        background = theme.colors["background"]?.nsColor ?? .textBackgroundColor
-        selection = theme.colors["selection"]?.nsColor ?? .selectedTextBackgroundColor
+        text = theme.colors["text"]?.calibratedNSColor ?? .textColor
+        background = theme.colors["background"]?.calibratedNSColor ?? .textBackgroundColor
+        selection = theme.colors["selection"]?.calibratedNSColor ?? .selectedTextBackgroundColor
 
-        // 深色正文调亮、浅色正文调暗；背景同理
-        secondary = Self.shifted(text, by: Self.isDark(text) ? 0.2 : -0.2)
-        highlight = Self.shifted(background, by: Self.isDark(background) ? 0.1 : -0.1)
-        separator = Self.shifted(background, by: Self.isDark(background) ? 0.2 : -0.2)
+        // 推导色取主题原始分量的 sRGB 表示，深色调亮、浅色调暗
+        let sourceText = theme.colors["text"]?.nsColor ?? .textColor
+        let sourceBackground = theme.colors["background"]?.nsColor ?? .textBackgroundColor
+        secondary = Self.shifted(sourceText, by: Self.isDark(sourceText) ? 0.2 : -0.2)
+        highlight = Self.shifted(sourceBackground, by: Self.isDark(sourceBackground) ? 0.1 : -0.1)
+        separator = Self.shifted(sourceBackground, by: Self.isDark(sourceBackground) ? 0.2 : -0.2)
     }
 
     /// 按亮度判断颜色偏深还是偏浅。

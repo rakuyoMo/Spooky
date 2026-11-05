@@ -30,7 +30,7 @@ struct TextStyle {
 
     /// 按语义键取主题色，主题缺少的键按正文色处理。
     func color(_ key: String) -> Color {
-        (theme.colors[key] ?? theme.colors["text"])?.color ?? .primary
+        (theme.colors[key] ?? theme.colors["text"])?.calibratedColor ?? .primary
     }
 }
 

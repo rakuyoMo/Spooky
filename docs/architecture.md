@@ -183,6 +183,8 @@ Spooky 由两个 target 组成：
   - Default 与 Default (Dark) 按名称认出，可以编辑，不能改名、删除
   - 浅色与深色外观各选一个主题；找不到时按名称回退到 Default 或 Default (Dark)，再退到 `BuiltinThemes.json` 里的版本
   - Diff、原文、Blame 与 Themes 页的 Diff 预览取主题一律用 `TextTheme.current(dark:)`；在 SwiftUI 的 `body` 里调用，即随主题的编辑、切换与外观变化刷新
+  - 主题文件的 RGB 分量按 calibrated RGB（Generic RGB）直接构色，正文、背景、选区、语法记号、增删行底色与 Themes 页共用；颜色面板也先转到 Generic RGB 再保存，避免编辑往返改变颜色
+  - 行号、描边与原文 / Blame 的次要文字、段高亮、分隔线从文件的原始分量按 sRGB 推导；`NamedColors.json` 的命名色同样保持 sRGB
 - 语法着色、Tab 宽度与不可见字符的偏好集中在 `TextPreferences`；一行文本按 `TextStyle` 经 `TextLineRenderer` 渲染
 - 提交详情、储藏详情与文件历史的只读 Diff 共用 `ReadOnlyFileDiffView`
 - 语法着色经 `SyntaxHighlighter` 借用 highlight.js 的上下文执行
