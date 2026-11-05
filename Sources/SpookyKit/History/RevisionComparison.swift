@@ -90,14 +90,19 @@ public struct RevisionComparison: Sendable {
         }
 
         let paths = [file.path] + (file.originalPath.map { [$0] } ?? [])
+        let scope = RepositoryFileViews.needsFileChangeScope(paths)
+            ? try await changes()
+            : []
+        let changedPaths = scope.flatMap { [$0.path] + ($0.originalPath.map { [$0] } ?? []) }
+        let pathspecs = RepositoryFileViews.filePathspecs(paths, changedPaths: changedPaths)
 
         let patch = try await runner.immutableRun(
-            RepositoryFileViews.storedPathOptions
+            RepositoryFileViews.filePathOptions
                 + [
                     "diff", "--no-color", "--word-diff=none", "--no-ext-diff", "--no-textconv", "--full-index",
                     "-M", "-C", "--src-prefix=a/", "--dst-prefix=b/",
                 ]
-                + options.arguments + [base, target, "--"] + paths
+                + options.arguments + [base, target, "--"] + pathspecs
         )
 
         return try CommitDiff(

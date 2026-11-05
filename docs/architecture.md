@@ -93,6 +93,8 @@ Spooky 由两个 target 组成：
 - 移进废纸篓的文件不进快照：写操作期间由 `TrashLog` 记下它们在废纸篓里的位置，撤销时移回原处，重做时重新移进废纸篓；废纸篓程序不报告位置时这次操作不能撤销
 - 发布分支与标签只连接一次远端：写操作期间由 `PushLog` 记下 `push --porcelain` 的逐条结果，新建了远端引用才登记撤销，已是最新时不碰撤销记录，快进了远端已有的分支与推送一样不能撤销
 
+- 本机与服务器的 Git 子进程都清除 `GIT_LITERAL_PATHSPECS`、`GIT_GLOB_PATHSPECS`、`GIT_NOGLOB_PATHSPECS`、`GIT_ICASE_PATHSPECS`；文件补丁通过字面包含与子项排除限定实际新旧路径，目录历史查询仍递归匹配。
+
 ## 服务器仓库
 
 - 只通过 `~/.ssh/config` 中的主机别名访问；连接、认证、主机指纹与复用交给系统 SSH
@@ -187,6 +189,7 @@ Spooky 由两个 target 组成：
   - 行号、描边与原文 / Blame 的次要文字、段高亮、分隔线从文件的原始分量按 sRGB 推导；`NamedColors.json` 的命名色同样保持 sRGB
 - 语法着色、Tab 宽度与不可见字符的偏好集中在 `TextPreferences`；一行文本按 `TextStyle` 经 `TextLineRenderer` 渲染
 - 提交详情、储藏详情与文件历史的只读 Diff 共用 `ReadOnlyFileDiffView`
+- 目录文件历史按完整变更集筛选真实新旧路径，每文件独立读取、放行与重试；当前提交和第一父提交的树条目决定目录范围与内容能力，不从 HEAD 推断历史类型。逐文件请求与可见登记有独立身份，换目标、关闭或重读时旧结果不能覆盖新状态。
 - 语法着色经 `SyntaxHighlighter` 借用 highlight.js 的上下文执行
   - 最多两份上下文，每份是一个 `HighlightRuntime` actor，只在自己的串行队列上使用，由全局 actor `SyntaxActor` 负责借还
   - 一份被已取消的长任务占着时，新的请求由另一份接手

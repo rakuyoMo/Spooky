@@ -155,17 +155,24 @@ struct ChangesetFileMenu: View {
     /// 文件所在的提交。
     let commit: HistoryCommit
 
+    /// 目录对象与未解析的目标禁用内容读取，文件动作保持各自的能力。
+    var contentEnabled = true
+
     /// 查看组、比较工具与恢复、导出组之间有分隔线。
     var body: some View {
         let name = RepositorySession.fileName(path)
 
         Button(AppLocalization.text("fileHistory.showAt", name, commit.shortID)) {
+            guard contentEnabled else { return }
             session.showFile(path, at: commit.id, mode: .raw)
         }
+        .disabled(!contentEnabled)
 
         Button(AppLocalization.text("fileHistory.blameAt", name, commit.shortID)) {
+            guard contentEnabled else { return }
             session.showFile(path, at: commit.id, mode: .blame)
         }
+        .disabled(!contentEnabled)
 
         Button(AppLocalization.text("fileHistory.showHistoryOf", name)) {
             session.showFileHistory(path)
@@ -186,7 +193,9 @@ struct ChangesetFileMenu: View {
         .disabled(!session.canWrite)
 
         Button(AppLocalization.text("fileHistory.exportAt", name, commit.shortID)) {
+            guard contentEnabled else { return }
             session.exportFile(path, at: commit.id)
         }
+        .disabled(!contentEnabled)
     }
 }

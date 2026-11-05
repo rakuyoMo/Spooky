@@ -238,7 +238,7 @@ extension RepositorySession {
                 // 版本中没有这个文件或是子模块时没有可用的内容
                 guard
                     let entry = try await views.storedEntry(for: path, in: revision),
-                    !entry.isSubmodule
+                    entry.type == "blob"
                 else { throw FileViewError.missingAtRevision }
 
                 let data = try await views.contents(of: entry)

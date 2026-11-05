@@ -133,7 +133,10 @@ struct FileHistoryTimelineView: View {
                         ForEach(section.commits) { commit in
                             FileHistoryCommitRow(commit: commit)
                                 .tag(commit.id)
-                                .onAppear { loadMoreIfLast(commit) }
+                                .onAppear {
+                                    state.prepareTarget(commit)
+                                    loadMoreIfLast(commit)
+                                }
                         }
                     } header: {
                         Text(dateFormat.dayTitle(section.day).uppercased())
@@ -158,37 +161,13 @@ struct FileHistoryTimelineView: View {
     /// 时间线的右键菜单：查看这个版本、回到提交、用比较工具比较、恢复与导出。
     @ViewBuilder
     private func menu(for commit: HistoryCommit) -> some View {
-        let path = state.path ?? ""
-        let name = RepositorySession.fileName(path)
+        let actions = session.fileHistoryMenuActions(commit)
 
-        Button(AppLocalization.text("fileHistory.showAt", name, commit.shortID)) {
-            session.showFile(path, at: commit.id, mode: .raw)
-        }
+        ForEach(Array(actions.enumerated()), id: \.element.id) { index, action in
+            if index == 3 || index == 4 { Divider() }
 
-        Button(AppLocalization.text("fileHistory.blameAt", name, commit.shortID)) {
-            session.showFile(path, at: commit.id, mode: .blame)
-        }
-
-        Button(AppLocalization.text("fileHistory.showCommitFor", commit.shortID)) {
-            session.showCommit(commit)
-        }
-
-        Divider()
-
-        // 这个版本的文件与它在提交的第一个父提交里的版本比较
-        Button(AppLocalization.text("externalTool.openDiffAt", name, commit.shortID)) {
-            session.openDiffTool(for: commit, files: [ComparedFile(path: path)])
-        }
-
-        Divider()
-
-        Button(AppLocalization.text("fileHistory.restoreAt", name, commit.shortID)) {
-            session.restoreFile(path, at: commit.id)
-        }
-        .disabled(!session.canWrite)
-
-        Button(AppLocalization.text("fileHistory.exportAt", name, commit.shortID)) {
-            session.exportFile(path, at: commit.id)
+            Button(action.title, action: action.perform)
+                .disabled(!action.enabled)
         }
     }
 
@@ -293,6 +272,7 @@ struct FileHistoryDetailView: View {
                 content(commit)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .reloadsOnDiffPreferenceChange { state.reloadDiffs() }
         } else {
             EmptyStateView(title: AppLocalization.text("history.noSelection"), message: "", symbol: "doc.text")
         }
@@ -300,19 +280,7 @@ struct FileHistoryDetailView: View {
 
     /// 动作条：查看这个版本的 Blame、回到提交与比较第一父提交。
     func actions(_ commit: HistoryCommit) -> [FileViewAction] {
-        let path = state.path ?? ""
-
-        return [
-            FileViewAction(title: AppLocalization.text("blame.title")) {
-                session.showFile(path, at: commit.id, mode: .blame)
-            },
-            FileViewAction(title: AppLocalization.text("fileHistory.showCommit")) {
-                session.showCommit(commit)
-            },
-            FileViewAction(title: AppLocalization.text("externalTool.action.diffTool")) {
-                session.openDiffTool(for: commit, files: [ComparedFile(path: path)])
-            },
-        ]
+        session.fileHistoryHeaderActions(commit)
     }
 
     /// 40 pt 头部：可选中的短哈希、动作条与 Diff / Raw 分段控件。
@@ -327,13 +295,11 @@ struct FileHistoryDetailView: View {
 
             FileActionBar(actions: actions(commit), hovering: hovering)
 
-            Picker("", selection: $state.detailMode) {
-                Text(AppLocalization.text("fileHistory.diff")).tag(FileHistoryDetailMode.diff)
-                Text(AppLocalization.text("showFile.raw")).tag(FileHistoryDetailMode.raw)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(width: 112)
+            FileHistoryDetailPicker(
+                mode: $state.detailMode,
+                allowsRaw: session.canReadFileHistory(state.targets[commit.id])
+            )
+            .fixedSize()
         }
         .padding(.horizontal, 20)
         .frame(height: 40)
@@ -347,12 +313,16 @@ struct FileHistoryDetailView: View {
         if let failure = state.detailFailure {
             FailureDetailsView(failure: failure) { state.loadDetail() }
                 .padding(20)
+        } else if state.detailMode == .diff, state.directory.commit != nil {
+            ScrollView {
+                FileHistoryDirectoryView(session: session, state: state.directory)
+            }
+            .background(TextTheme.current(dark: colorScheme == .dark).colors["background"]?.calibratedColor ?? .clear)
         } else if state.detailMode == .diff, let diff = state.diff, let source = state.detailSource {
             ScrollView {
                 ReadOnlyFileDiffView(result: diff, source: source) { state.loadDetail(showLarge: true) }
             }
             .background(TextTheme.current(dark: colorScheme == .dark).colors["background"]?.calibratedColor ?? .clear)
-            .reloadsOnDiffPreferenceChange { state.loadDetail() }
         } else if state.detailMode == .raw, let content = state.content {
             raw(content, commit: commit)
         } else {

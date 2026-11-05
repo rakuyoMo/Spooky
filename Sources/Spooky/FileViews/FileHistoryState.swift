@@ -38,7 +38,7 @@ final class FileHistoryState {
     private(set) var isLoading = false
 
     /// 时间线读取失败的可复制诊断。
-    private(set) var failure: AppFailure? = nil
+    var failure: AppFailure? = nil
 
     /// 搜索框的匹配范围。
     var scope = FileHistoryFilter.Scope.author {
@@ -62,16 +62,16 @@ final class FileHistoryState {
     }
 
     /// 所选提交中这个文件的补丁。
-    private(set) var diff: CommitDiff? = nil
+    var diff: CommitDiff? = nil
 
     /// 所选版本的文件原文。
-    private(set) var content: FileRevisionContent? = nil
+    var content: FileRevisionContent? = nil
 
     /// 详情是否正在读取。
-    private(set) var isLoadingDetail = false
+    var isLoadingDetail = false
 
     /// 详情读取失败的可复制诊断，不覆盖时间线。
-    private(set) var detailFailure: AppFailure? = nil
+    var detailFailure: AppFailure? = nil
 
     /// 停顿后生效的搜索框内容。
     var searchText = ""
@@ -86,13 +86,13 @@ final class FileHistoryState {
     private var resolvedPath = false
 
     /// 关闭、重读或换文件时变更代数，阻止旧结果回写。
-    private var generation = 0
+    var generation = 0
 
     /// 第一页与计数的读取任务。
     private var pageTask: Task<Void, Never>? = nil
 
     /// 详情的读取任务。
-    private var detailTask: Task<Void, Never>? = nil
+    var detailTask: Task<Void, Never>? = nil
 
     /// 搜索框输入的延迟任务。
     var searchTask: Task<Void, Never>? = nil
@@ -107,6 +107,24 @@ final class FileHistoryState {
     /// 时间线与详情的读取记进的 Activity 列表，由会话设成它自己的列表。
     @ObservationIgnored
     var activities = RepositoryActivities.shared
+
+    /// 当前目录详情的逐文件结果，与单文件详情互斥。
+    let directory = FileHistoryDirectoryState()
+
+    /// 当前目标路径下按提交哈希缓存的不可变对象能力。
+    var targets: [String: FileHistoryTarget] = [:]
+
+    /// 时间线可见行的类型读取任务。
+    var targetTasks: [String: Task<Void, Never>] = [:]
+
+    /// 目录比较的准备任务，换目标或关闭时取消。
+    var comparisonTask: Task<Void, Never>? = nil
+
+    /// 当前详情请求身份，隔离同一提交的重试。
+    var detailRequest = UUID()
+
+    /// 自动刷新衍生的读取不触发交互。
+    var recordsReads = true
 
     /// 当前选中的提交记录。
     var selectedCommit: HistoryCommit? {
@@ -145,6 +163,8 @@ final class FileHistoryState {
         }
 
         self.head = head
+        resolvedPath = false
+        isSubmodule = false
         reload(records: records)
     }
 
@@ -153,6 +173,7 @@ final class FileHistoryState {
     /// - Parameter records: 第一页、总数与随后重读的详情是否记进 Activity；自动刷新引起的重读不记。
     func reload(records: Bool = true) {
         cancelTasks()
+        recordsReads = records
         failure = nil
         commits = []
         totalCount = nil
@@ -179,8 +200,7 @@ final class FileHistoryState {
         pageTask = Task { [weak self] in
             do {
                 let views = RepositoryFileViews(runner: runner)
-                let entry = resolve ? try await views.storedEntry(for: path, in: head) : nil
-                let path = entry?.path ?? path
+                let (path, entry) = try await FileHistoryTarget.resolvePath(path, head: head, views: views, resolve: resolve)
                 let root = try await Self.root(for: filter, head: head, runner: runner)
                 let result = try await Self.firstPage(
                     of: path,
@@ -264,84 +284,6 @@ final class FileHistoryState {
         }
     }
 
-    /// 读取所选提交的补丁或原文；放行大 Diff 只作用于这一次读取。
-    ///
-    /// - Parameter records: 是否记进 Activity；自动刷新引起的重读不记。
-    func loadDetail(showLarge: Bool = false, records: Bool = true) {
-        detailTask?.cancel()
-        diff = nil
-        content = nil
-        detailFailure = nil
-        isLoadingDetail = false
-
-        guard let commit = selectedCommit, let path, let runner else {
-            return
-        }
-
-        let request = generation
-        let mode = detailMode
-        let threshold = UserDefaults.standard.object(forKey: "diffWarningKilobytes") as? Int
-            ?? WorkingCopyOperations.defaultWarningKilobytes
-
-        // 与工作区和提交详情使用同样的上下文行数与忽略空白偏好
-        let options = DiffPreferences.options()
-        let activities = activities
-
-        // 原文与补丁分别读取，切换显示方式时才读另一种；补丁记为 Load Commit Diffs，原文记为 Load Blob
-        let title = AppLocalization.text(
-            mode == .diff ? "activity.read.commitDiffs" : "activity.read.blob"
-        )
-
-        let read: @MainActor () async throws -> (CommitDiff?, FileRevisionContent?) = {
-            try await activities.recordRead([title], in: runner.location, records: records) {
-                let views = RepositoryFileViews(runner: runner)
-
-                let diff = mode == .diff
-                    ? try await views.diff(
-                        of: path,
-                        in: commit.id,
-                        options: options,
-                        warningKilobytes: threshold,
-                        showLarge: showLarge
-                    )
-                    : nil
-
-                let content = mode == .raw
-                    ? try await FileRevisionContent.load(path, at: commit.id, views: views)
-                    : nil
-
-                return (diff, content)
-            }
-        }
-
-        isLoadingDetail = true
-
-        detailTask = Task { [weak self] in
-            do {
-                let (diff, content) = try await read()
-
-                guard let self, generation == request, selectedID == commit.id, !Task.isCancelled else {
-                    return
-                }
-
-                self.diff = diff
-                self.content = content
-            } catch {
-                guard let self, generation == request, selectedID == commit.id, !Task.isCancelled else {
-                    return
-                }
-
-                detailFailure = AppFailure(error: error, opening: false, location: runner.location)
-            }
-
-            guard let self, generation == request, selectedID == commit.id, !Task.isCancelled else {
-                return
-            }
-
-            isLoadingDetail = false
-        }
-    }
-
     /// 关闭文件历史，清除全部结果与条件。
     func close() {
         cancelTasks()
@@ -349,6 +291,9 @@ final class FileHistoryState {
         searchTask = nil
         detailTask?.cancel()
         detailTask = nil
+        targets = [:]
+        comparisonTask?.cancel()
+        comparisonTask = nil
         path = nil
         runner = nil
         head = nil
@@ -488,12 +433,11 @@ extension FileHistoryState {
     ///
     /// - Parameter records: 重读的详情是否记进 Activity，与第一页相同。
     private func apply(_ result: FirstPage, path: String, submodule: Bool?, records: Bool) {
+        if self.path?.utf8.elementsEqual(path.utf8) != true { targets = [:] }
         self.path = path
         resolvedPath = true
 
-        if let submodule {
-            isSubmodule = submodule
-        }
+        isSubmodule = submodule ?? isSubmodule
 
         commits = result.commits
         hasMore = result.hasMore
@@ -511,5 +455,14 @@ extension FileHistoryState {
         generation += 1
         pageTask?.cancel()
         pageTask = nil
+        detailTask?.cancel()
+        detailTask = nil
+        detailRequest = UUID()
+        directory.close()
+        diff = nil
+        content = nil
+
+        for task in targetTasks.values { task.cancel() }
+        targetTasks = [:]
     }
 }

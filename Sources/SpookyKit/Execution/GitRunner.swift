@@ -35,6 +35,10 @@ public struct GitRunner: Sendable {
         "GIT_ALTERNATE_OBJECT_DIRECTORIES": nil,
         "GIT_NAMESPACE": nil,
         "GIT_PREFIX": nil,
+        "GIT_LITERAL_PATHSPECS": nil,
+        "GIT_GLOB_PATHSPECS": nil,
+        "GIT_NOGLOB_PATHSPECS": nil,
+        "GIT_ICASE_PATHSPECS": nil,
     ]
 
     /// 命令失败与取消的日志；只记录子命令名，参数里可能有带凭据的地址。

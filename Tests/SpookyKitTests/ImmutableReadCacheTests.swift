@@ -69,6 +69,20 @@ struct ImmutableReadCacheTests {
         #expect(try invocations(log) == 5)
     }
 
+    /// Git 按字节区分规范等价的路径，空查询也不能覆盖另一种形式的真实结果。
+    @Test("缓存参数保留路径的 Unicode 字节身份")
+    func unicodeArguments() async {
+        let cache = ImmutableReadCache(byteCapacity: 100, countCapacity: 3)
+        let location = RepositoryLocation.local(path: "/temporary/cache")
+        let composed = ImmutableReadCache.Key(location: location, arguments: ["log", "café"], input: nil)
+        let decomposed = ImmutableReadCache.Key(location: location, arguments: ["log", "cafe\u{301}"], input: nil)
+        await cache.store(Data(), for: composed)
+        #expect(await cache.value(for: decomposed) == nil)
+        await cache.store(Data("commit".utf8), for: decomposed)
+        #expect(await cache.value(for: composed) == Data())
+        #expect(await cache.value(for: decomposed) == Data("commit".utf8))
+    }
+
     /// 计数文件中每行代表一次进程启动。
     private func invocations(_ log: URL) throws -> Int {
         String(decoding: try Data(contentsOf: log), as: UTF8.self).split(separator: "\n").count

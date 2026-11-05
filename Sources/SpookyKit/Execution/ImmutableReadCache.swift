@@ -11,11 +11,18 @@ actor ImmutableReadCache {
         /// 仓库位置，本机与服务器的同名路径互不混用。
         let location: RepositoryLocation
 
-        /// 完整的子命令参数。
-        let arguments: [String]
+        /// 完整参数的 UTF-8 字节，规范等价但字节不同的 Git 路径不可混用。
+        let arguments: [Data]
 
         /// 写入标准输入的内容，如历史分页的根哈希。
         let input: Data?
+
+        /// 用传给 Git 的实际参数字节建立查询身份。
+        init(location: RepositoryLocation, arguments: [String], input: Data?) {
+            self.location = location
+            self.arguments = arguments.map { Data($0.utf8) }
+            self.input = input
+        }
     }
 
     /// 应用进程内共享的缓存，最多占用 64 MiB 输出与 4096 条结果。
