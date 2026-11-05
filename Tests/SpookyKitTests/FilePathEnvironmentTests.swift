@@ -15,6 +15,8 @@ struct FilePathEnvironmentTests {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
         try await fixture.initialize()
+        _ = try await fixture.runner.run(["commit", "--allow-empty", "-qm", "empty base"])
+        let base = try await RepositoryReferences(runner: fixture.runner).resolve("HEAD")
         let head = try await caseCommit(fixture)
         let variables = Dictionary(uniqueKeysWithValues: keys.map { ($0, "1") })
         var inherited: [Environment.Key: String?] = [
@@ -39,6 +41,13 @@ struct FilePathEnvironmentTests {
         let diff = try await history.diff(in: head, file: file)
         #expect(diff.diff?.files.count == 1)
         #expect(diff.diff?.files.first?.headers.first == "diff --git a/case b/case")
+
+        // 两版本比较使用自己的查询缓存键，同样不能把大小写不同的文件混进补丁。
+        let comparison = RevisionComparison(runner: runner, base: base, target: head)
+        let comparedFile = try #require(try await comparison.changes().first { $0.path == "case" })
+        let compared = try await comparison.diff(of: comparedFile)
+        #expect(compared.diff?.files.count == 1)
+        #expect(compared.diff?.files.first?.headers.first == "diff --git a/case b/case")
     }
 
     /// 使用生产远端前缀执行本机 shell，验证四项环境变量的真实清理。
