@@ -88,9 +88,14 @@ struct FileHistoryDirectoryTests {
         try Data("other\n".utf8).write(to: node.appending(path: "b.txt"))
         let directoryCommit = try await commit(runner, message: "directory")
         try FileManager.default.removeItem(at: node)
-        let deletedCommit = try await commit(runner, message: "deleted")
         try Data("again\n".utf8).write(to: node)
         let newFileCommit = try await commit(runner, message: "new file")
+        try FileManager.default.removeItem(at: node)
+        try FileManager.default.createDirectory(at: node, withIntermediateDirectories: false)
+        try Data("restored\n".utf8).write(to: node.appending(path: "a.txt"))
+        _ = try await commit(runner, message: "directory again")
+        try FileManager.default.removeItem(at: node)
+        let deletedCommit = try await commit(runner, message: "deleted")
 
         var targets: [FileHistoryTarget] = []
 
@@ -98,7 +103,7 @@ struct FileHistoryDirectoryTests {
             targets.append(try await FileHistoryTarget.load(path: "node", commit: commit, runner: runner))
         }
         #expect(targets.map(\.allowsContent) == [true, false, false, true])
-        #expect(targets.map(\.needsDirectoryDiff) == [false, true, true, false])
+        #expect(targets.map(\.needsDirectoryDiff) == [false, true, true, true])
 
         let changes = try await FileHistoryTarget.changes(path: "node", commit: directoryCommit, runner: runner)
         #expect(changes.map(\.path) == ["node", "node/a.txt", "node/b.txt"])

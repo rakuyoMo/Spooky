@@ -63,6 +63,112 @@ struct FileHistoryDirectoryLoadingTests {
         #expect(state.files.isEmpty && state.diffs.isEmpty && state.loadingPaths.isEmpty)
     }
 
+    /// 连续更新选项时必须实际启动不同参数的查询，取消的读取记为 Cancelled。
+    @Test("目录读取中连续更新上下文和空白选项")
+    func preferenceChanges() async throws {
+        let directory = try FileViewsTests.temporaryDirectory()
+        let tools = try FileViewsTests.temporaryDirectory()
+        let suite = "Spooky.DirectoryOptions." + UUID().uuidString
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer {
+            defaults.removePersistentDomain(forName: suite)
+            try? Data().write(to: tools.appending(path: "gate"))
+            try? FileManager.default.removeItem(at: directory)
+            try? FileManager.default.removeItem(at: tools)
+        }
+
+        let runner = try await FileViewsTests.initializeRepository(at: .local(path: directory.path))
+        let original = (1 ... 30).map { "line \($0)" }.joined(separator: "\n") + "\n"
+        try Data(original.utf8).write(to: directory.appending(path: "a.txt"))
+        _ = try await commit(runner)
+        let changed = original.replacingOccurrences(of: "line 15", with: "changed 15")
+            .replacingOccurrences(of: "line 25", with: "line   25")
+        try Data(changed.utf8).write(to: directory.appending(path: "a.txt"))
+        let head = try await commit(runner)
+        let files = try await RepositoryHistory(runner: runner).changes(in: head.id)
+        let gated = try gatedRunner(location: runner.location, tools: tools)
+        let activities = RepositoryActivities()
+        let state = FileHistoryDirectoryState(defaults: defaults)
+        defer { state.close() }
+        defaults.set(1, forKey: DiffPreferences.contextLinesKey)
+        state.open(commit: head, files: files, runner: gated, activities: activities, records: true)
+        state.setVisible("a.txt", visible: true, identity: state.identity)
+        try await FileViewsTests.wait { FileManager.default.fileExists(atPath: tools.appending(path: "read-1").path) }
+        defaults.set(5, forKey: DiffPreferences.contextLinesKey)
+        state.reloadDiffs()
+        try await FileViewsTests.wait { FileManager.default.fileExists(atPath: tools.appending(path: "read-5").path) }
+        defaults.set(10, forKey: DiffPreferences.contextLinesKey)
+        defaults.set(true, forKey: DiffPreferences.ignoresWhitespaceKey)
+        state.reloadDiffs()
+        try await FileViewsTests.wait { FileManager.default.fileExists(atPath: tools.appending(path: "read-10").path) }
+        let request = state.requests["a.txt"]
+        try Data().write(to: tools.appending(path: "gate"))
+        try await FileViewsTests.wait { state.diffs["a.txt"] != nil && state.loadingPaths.isEmpty && activities.items.count == 3 }
+        let expected = try await RepositoryHistory(runner: runner).diff(
+            in: head.id, file: #require(files.first), options: DiffOptions(contextLines: 10, ignoresWhitespace: true)
+        )
+        #expect(state.diffs["a.txt"]?.diff == expected.diff)
+        #expect(state.requests["a.txt"] == request)
+        #expect(state.failures.isEmpty)
+        #expect(activities.items.filter { $0.state == "activity.cancelled" }.count == 2)
+        #expect(activities.items.filter { $0.state == "activity.finished" }.count == 1)
+    }
+
+    /// 换仓库后的同路径请求与关闭后的空状态都不接受迟到结果。
+    @Test("目录加载中切换同路径目标或关闭", arguments: [false, true])
+    func targetBoundary(close: Bool) async throws {
+        let directory = try FileViewsTests.temporaryDirectory()
+        let replacement = try FileViewsTests.temporaryDirectory()
+        let tools = try FileViewsTests.temporaryDirectory()
+        defer {
+            try? Data().write(to: tools.appending(path: "gate"))
+            for url in [directory, replacement, tools] { try? FileManager.default.removeItem(at: url) }
+        }
+
+        let runner = try await FileViewsTests.initializeRepository(at: .local(path: directory.path))
+        try Data("old target\n".utf8).write(to: directory.appending(path: "a.txt"))
+        let old = try await commit(runner)
+        let newRunner = try await FileViewsTests.initializeRepository(at: .local(path: replacement.path))
+        try Data("new target\n".utf8).write(to: replacement.appending(path: "a.txt"))
+        let new = try await commit(newRunner)
+        let oldFiles = try await RepositoryHistory(runner: runner).changes(in: old.id)
+        let newFiles = try await RepositoryHistory(runner: newRunner).changes(in: new.id)
+        let activities = RepositoryActivities()
+        let state = FileHistoryDirectoryState()
+        defer { state.close() }
+        state.open(
+            commit: old, files: oldFiles, runner: try gatedRunner(location: runner.location, tools: tools),
+            activities: activities, records: true
+        )
+        state.setVisible("a.txt", visible: true, identity: state.identity)
+        try await FileViewsTests.wait { FileManager.default.fileExists(atPath: tools.appending(path: "read").path) }
+        let identity = state.identity
+        state.close()
+
+        if !close {
+            state.open(commit: new, files: newFiles, runner: newRunner, activities: activities, records: true)
+            state.setVisible("a.txt", visible: true, identity: state.identity)
+            state.setVisible("a.txt", visible: false, identity: identity)
+        }
+
+        try Data().write(to: tools.appending(path: "gate"))
+        try await FileViewsTests.wait {
+            activities.items.contains { $0.state == "activity.cancelled" }
+                && state.loadingPaths.isEmpty && (close || state.diffs["a.txt"] != nil)
+        }
+        #expect(state.failures.isEmpty)
+
+        if close {
+            #expect(state.commit == nil && state.files.isEmpty && state.diffs.isEmpty && state.requests.isEmpty)
+        } else {
+            #expect(state.commit?.id == new.id)
+            let lines = try #require(state.diffs["a.txt"]?.diff).files.flatMap(\.hunks).flatMap(\.lines)
+            #expect(lines.map { String(decoding: $0.content, as: UTF8.self) } == ["new target"])
+            state.reloadDiffs()
+            try await FileViewsTests.wait { state.diffs["a.txt"] != nil }
+        }
+    }
+
     /// 真实 Git 读完后等待显式闸门，失败路径保留退出码与原文。
     private func gatedRunner(location: RepositoryLocation, tools: URL) throws -> GitRunner {
         let script = tools.appending(path: "git")
@@ -75,6 +181,9 @@ struct FileHistoryDirectoryLoadingTests {
                     output=$(mktemp "$tools/output.XXXXXXXX")
                     /usr/bin/git "$@" > "$output"
                     code=$?
+                    for arg in "$@"; do
+                        case "$arg" in --unified=*) : > "$tools/read-${arg#--unified=}" ;; esac
+                    done
                     : > "$tools/read"
                     while [ ! -e "$tools/gate" ]; do sleep 0.02; done
                     cat "$output"

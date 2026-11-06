@@ -74,6 +74,46 @@ struct SingleFileDiffTests {
         }
     }
 
+    /// 目录收缩为文件时，父目录和子项各自只有自己的补丁；符号链接变化保留两个段。
+    @Test("目录变文件与符号链接的补丁范围", arguments: ["sha1", "sha256"])
+    func directoryAndSymlink(format: String) async throws {
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+        try await fixture.initialize(objectFormat: format)
+        let node = fixture.directory.appending(path: "node")
+        try FileManager.default.createDirectory(at: node, withIntermediateDirectories: false)
+        try Data("first\n".utf8).write(to: node.appending(path: "a.txt"))
+        try Data("second\n".utf8).write(to: node.appending(path: "b.txt"))
+        let directory = try await commit(fixture, message: "directory")
+        try FileManager.default.removeItem(at: node)
+        try Data("regular\n".utf8).write(to: node)
+        let regular = try await commit(fixture, message: "regular")
+        let history = RepositoryHistory(runner: fixture.runner)
+        let changes = try await history.changes(in: regular)
+        #expect(changes.map(\.path) == ["node", "node/a.txt", "node/b.txt"])
+        let comparison = RevisionComparison(runner: fixture.runner, base: directory, target: regular)
+        let contents = ["node": "regular", "node/a.txt": "first", "node/b.txt": "second"]
+
+        for file in changes {
+            let diff = try #require(try await history.diff(in: regular, file: file).diff)
+            #expect(diff.files.count == 1)
+            #expect(try await comparison.diff(of: file).diff == diff)
+            let text = diff.files.flatMap(\.hunks).flatMap(\.lines).map { String(decoding: $0.content, as: UTF8.self) }
+            #expect(text == [try #require(contents[file.path])])
+        }
+
+        try FileManager.default.removeItem(at: node)
+        try FileManager.default.createSymbolicLink(atPath: node.path, withDestinationPath: "target")
+        let linked = try await commit(fixture, message: "symlink")
+        let file = try #require(try await history.changes(in: linked).first)
+        let diff = try #require(try await history.diff(in: linked, file: file).diff)
+        #expect(diff.files.count == 2)
+        #expect(diff.files.contains { $0.deletedMode == "100644" })
+        #expect(diff.files.contains { $0.addedMode == "120000" })
+        let linkComparison = RevisionComparison(runner: fixture.runner, base: regular, target: linked)
+        #expect(try await linkComparison.diff(of: file).diff == diff)
+    }
+
     /// 规范等价的目录可定位，但文件选择器仍然只返回文件。
     @Test("目录对象支持 Unicode 等价定位")
     func directoryUnicode() async throws {

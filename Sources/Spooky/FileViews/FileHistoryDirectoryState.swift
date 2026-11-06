@@ -51,8 +51,16 @@ final class FileHistoryDirectoryState {
     @ObservationIgnored
     private let warningKilobytes: () -> Int
 
+    /// 上下文与空白选项的偏好来源，每次读取重新取值。
+    @ObservationIgnored
+    private let defaults: UserDefaults
+
     /// 创建目录状态，阈值与工作区使用同一偏好。
-    init(warningKilobytes: @escaping () -> Int = { RepositorySession.diffWarningBytes / 1000 }) {
+    init(
+        defaults: UserDefaults = .standard,
+        warningKilobytes: @escaping () -> Int = { RepositorySession.diffWarningBytes / 1000 }
+    ) {
+        self.defaults = defaults
         self.warningKilobytes = warningKilobytes
     }
 
@@ -109,7 +117,7 @@ final class FileHistoryDirectoryState {
         requests[path] = request
         loadingPaths.insert(path)
         failures[path] = nil
-        let options = DiffPreferences.options()
+        let options = DiffPreferences.options(defaults: defaults)
         let threshold = warningKilobytes()
         let activities = activities
 
