@@ -234,7 +234,8 @@ struct ReadOnlyFileDiffView: View {
                 enabled: false,
                 readOnly: true,
                 presentation: presentation,
-                hasPrecedingHunk: file.hunks.first?.id != hunk.id
+                hasPrecedingHunk: file.hunks.first?.id != hunk.id,
+                colorsSyntax: colorsSyntax && colorsDiffSyntax
             ) { _, _ in }
         }
     }

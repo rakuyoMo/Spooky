@@ -8,11 +8,11 @@ final class DiffGutterView: NSView {
     /// 提供逐行布局的块容器。
     weak var owner: DiffHunkTextContainer?
 
-    /// 行号选区变更后通知 SwiftUI，正文字符选区不受影响。
-    var onSelectionChange: (Set<Int>) -> Void = { _ in }
+    /// 由块宿主提供的独立选择模型。
+    private(set) var selection = DiffLineSelection()
 
-    /// 当前逻辑行选区。
-    private(set) var selected: Set<Int> = []
+    /// 当前逻辑行选区，只读栏始终为空。
+    var selected: Set<Int> { readOnly ? [] : selection.selected }
 
     /// 当前键盘焦点所在的逻辑行。
     private(set) var focusedID: Int?
@@ -24,22 +24,16 @@ final class DiffGutterView: NSView {
     private(set) var enabled = false
 
     /// 只读栏不参与键盘与辅助功能动作。
-    private var readOnly = true
+    private(set) var readOnly = true
+
+    /// 指针所在的单个显示行，提示不与正文联动悬停。
+    private(set) var hoveredIndex: Int?
 
     /// 已创建辅助功能元素的块。
     private var hunk: DiffHunk?
 
     /// 每个可操作逻辑行只暴露一个按钮。
     private var elements: [DiffGutterElement] = []
-
-    /// ⇧ 范围选择的锚点。
-    private var anchor: Int?
-
-    /// 拖选的起始逻辑行。
-    private var dragStart: Int?
-
-    /// 拖选期间固定执行选中或取消。
-    private var dragSelecting = false
 
     /// 行号与正文使用相同的向下坐标。
     override var isFlipped: Bool { true }
@@ -60,9 +54,11 @@ final class DiffGutterView: NSView {
         return super.resignFirstResponder()
     }
 
-    /// 内容改变时重建逻辑行按钮，单纯选区变化只刷新值与绘制。
-    func configure(hunk: DiffHunk, enabled: Bool, readOnly: Bool, selected: Set<Int>) {
+    /// 内容改变时重建逻辑行按钮，模型复用时只重新绑定绘制。
+    func configure(hunk: DiffHunk, enabled: Bool, readOnly: Bool, selection: DiffLineSelection) {
         let readOnly = readOnly || hunk.combinedRanges != nil
+        if self.hunk != hunk || self.selection !== selection { selection.bind(hunk) }
+        self.selection = selection
 
         if self.hunk != hunk || self.readOnly != readOnly {
             self.hunk = hunk
@@ -70,33 +66,30 @@ final class DiffGutterView: NSView {
             elements = (readOnly ? [] : hunk.lines.filter(\.isChange)).map {
                 DiffGutterElement(owner: self, line: $0)
             }
-
             if let focusedID, !selectable.contains(focusedID) { self.focusedID = nil }
         }
 
         self.enabled = enabled
         self.readOnly = readOnly
-        self.selected = readOnly ? [] : selected
+        if !enabled || readOnly {
+            hoveredIndex = nil
+            selection.cancelDrag()
+        }
+        selectionChanged()
         needsDisplay = true
+        window?.invalidateCursorRects(for: self)
     }
 
-    /// 按逻辑行切换，⇧ 沿用锚点到目标的范围选择。
+    /// Space 与 VoiceOver 按下是完整动作，计数立即发布。
     @discardableResult
     func select(_ id: Int, extending: Bool = false) -> Bool {
-        guard enabled, !readOnly, selectable.contains(id) else { return false }
-
-        if extending, let anchor {
-            selected.formUnion(selectable.filter { (min(anchor, id) ... max(anchor, id)).contains($0) })
-        } else if selected.contains(id) {
-            selected.remove(id)
-        } else {
-            selected.insert(id)
+        guard enabled, !readOnly, selectable.contains(id), let index = selection.rows.firstIndex(of: id) else {
+            return false
         }
 
-        anchor = id
+        selection.activate(at: index, extending: extending)
         focus(id)
-        onSelectionChange(selected)
-        needsDisplay = true
+        selectionChanged()
         return true
     }
 
@@ -104,14 +97,16 @@ final class DiffGutterView: NSView {
     func focus(_ id: Int) {
         guard selectable.contains(id) else { return }
 
+        if let focusedID { setNeedsDisplay(frame(for: focusedID)) }
         focusedID = id
-        scrollToVisible(id)
-        needsDisplay = true
+        let rect = frame(for: id)
+        if !rect.isNull { scrollToVisible(rect) }
+        setNeedsDisplay(rect)
     }
 
     /// 在可操作逻辑行间移动，跳过上下文与重复的无换行提示。
     func moveFocus(by offset: Int) {
-        guard enabled, !selectable.isEmpty else { return }
+        guard enabled, !readOnly, !selectable.isEmpty else { return }
 
         let current = focusedID.flatMap { selectable.firstIndex(of: $0) }
         let next = current.map { min(max($0 + offset, 0), selectable.count - 1) }
@@ -119,59 +114,33 @@ final class DiffGutterView: NSView {
         focus(selectable[next])
     }
 
-    /// 单击先决定本次拖选方向，再通过同一入口选择。
-    override func mouseDown(with event: NSEvent) {
-        guard
-            enabled, !readOnly,
-            let id = lineID(at: convert(event.locationInWindow, from: nil)),
-            selectable.contains(id)
-        else { return }
+    /// 只有未选中的可选显示行有悬停态，正文与行号共用整块坐标。
+    func hover(at point: CGPoint?) {
+        var next: Int?
+        if
+            enabled, !readOnly, let point, let owner, owner.bounds.contains(point),
+            let row = owner.textLayout?.row(at: point), selection.rows.indices.contains(row.index),
+            let id = selection.rows[row.index], !selected.contains(id)
+        {
+            next = row.index
+        }
+        guard next != hoveredIndex else { return }
 
-        window?.makeFirstResponder(self)
-        dragStart = id
-        dragSelecting = !selected.contains(id)
-        select(id, extending: event.modifierFlags.contains(.shift))
+        for row in owner?.textLayout?.rows ?? [] where row.index == hoveredIndex || row.index == next {
+            setNeedsDisplay(CGRect(x: 0, y: row.rect.minY, width: bounds.width, height: row.rect.height))
+        }
+        hoveredIndex = next
     }
 
-    /// 拖过的逻辑行一起选中或取消，折行命中仍映射到原始补丁行。
-    override func mouseDragged(with event: NSEvent) {
-        guard
-            enabled, let start = dragStart,
-            let end = lineID(at: convert(event.locationInWindow, from: nil))
-        else { return }
-
-        let range = min(start, end) ... max(start, end)
-
-        for id in selectable where range.contains(id) {
-            if dragSelecting { selected.insert(id) } else { selected.remove(id) }
+    /// 即时重画受影响的正文，行号和辅助功能值同时读取同一模型。
+    func selectionChanged() {
+        if let hoveredIndex {
+            let id = selection.rows.indices.contains(hoveredIndex) ? selection.rows[hoveredIndex] : nil
+            if id.map({ selected.contains($0) }) ?? true { self.hoveredIndex = nil }
         }
-
-        onSelectionChange(selected)
-        needsDisplay = true
-    }
-
-    /// 结束本次拖选，不影响已选行。
-    override func mouseUp(with _: NSEvent) { dragStart = nil }
-
-    /// Tab 按原生焦点链离开，方向键与 Space 在行号栏内操作。
-    override func keyDown(with event: NSEvent) {
-        switch event.keyCode {
-        case 125: moveFocus(by: 1)
-
-        case 126: moveFocus(by: -1)
-
-        case 49:
-            if let focusedID { select(focusedID) }
-
-        case 48:
-            if event.modifierFlags.contains(.shift) {
-                window?.selectPreviousKeyView(self)
-            } else {
-                window?.selectNextKeyView(self)
-            }
-
-        default: super.keyDown(with: event)
-        }
+        let changed = (owner?.paintedSelection ?? []).symmetricDifference(selected)
+        owner?.updateLineSelection()
+        for id in changed { setNeedsDisplay(frame(for: id)) }
     }
 
     /// 虚拟按钮作为行号栏的子元素，不复制正文文本的可访问性节点。
@@ -196,13 +165,5 @@ final class DiffGutterView: NSView {
 
         return layout.rows.filter { content.rows[$0.index].line.lineID == id }
             .reduce(CGRect.null) { $0.union(CGRect(x: 0, y: $1.rect.minY, width: bounds.width, height: $1.rect.height)) }
-    }
-
-    /// 焦点行滚到外层 ScrollView 的可见区域。
-    private func scrollToVisible(_ id: Int) {
-        let rect = frame(for: id)
-        guard !rect.isNull else { return }
-
-        scrollToVisible(rect)
     }
 }

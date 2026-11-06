@@ -82,7 +82,7 @@ struct CombinedDiffDisplayTests {
         #expect(height == 36)
         let content = try #require(view.content)
         #expect(content.copiedText(in: NSRange(location: 0, length: content.attributed.length)) == "text\t名\r\n")
-        view.gutter.configure(hunk: hunk, enabled: true, readOnly: false, selected: [0])
+        view.gutter.configure(hunk: hunk, enabled: true, readOnly: false, selection: view.gutter.selection)
         #expect(view.gutter.selected.isEmpty)
         #expect(!view.gutter.acceptsFirstResponder)
         #expect(view.gutter.accessibilityChildren()?.isEmpty ?? false)

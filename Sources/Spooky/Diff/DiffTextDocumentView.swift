@@ -58,7 +58,7 @@ final class DiffTextDocumentView: NSTextView {
             guard let color = style.theme.colors[key] else { continue }
 
             let area = CGRect(x: 0, y: item.rect.minY, width: bounds.width, height: item.rect.height)
-            color.calibratedNSColor.setFill()
+            owner.backgroundColor(for: row)?.setFill()
             area.fill()
             PaletteColor(hex: color.hex, alpha: min(1, color.alpha + 0.25)).nsColor.setFill()
             let before = item.index > 0 ? content.rows[item.index - 1].line.prefix : nil

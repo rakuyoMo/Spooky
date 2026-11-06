@@ -36,13 +36,23 @@ extension DiffGutterView {
             for (column, number) in line.numbers.enumerated() {
                 let x = CGFloat(column) * width
 
+                let cell = CGRect(x: x, y: item.rect.minY, width: width - 1, height: item.rect.height)
+                let isHovered = hoveredIndex == item.index && !isSelected
+
                 if isSelected {
-                    NSColor.controlAccentColor.setFill()
-                    CGRect(x: x, y: item.rect.minY, width: width - 1, height: item.rect.height).fill()
+                    NSColor.selectedContentBackgroundColor.setFill()
+                    cell.fill()
+                } else if isHovered {
+                    NSColor.white.setFill()
+                    cell.fill()
+                    NSColor.selectedContentBackgroundColor.withAlphaComponent(0.6).setFill()
+                    cell.fill()
                 }
 
                 var attributes = baseAttributes
-                attributes[.foregroundColor] = isSelected ? NSColor.alternateSelectedControlTextColor : color
+                attributes[.foregroundColor] = isSelected
+                    ? NSColor.alternateSelectedControlTextColor
+                    : (isHovered ? .white : color)
                 let paragraph = NSMutableParagraphStyle()
                 paragraph.setParagraphStyle(baseAttributes[.paragraphStyle] as? NSParagraphStyle ?? .default)
                 paragraph.alignment = .right

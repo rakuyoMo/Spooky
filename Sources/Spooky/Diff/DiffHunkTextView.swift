@@ -25,8 +25,10 @@ struct DiffHunkTextView: NSViewRepresentable {
     let readOnly: Bool
 
     /// 行号选区与正文字符选区分别持有。
-    @Binding
-    var selected: Set<Int>
+    let selection: DiffLineSelection
+
+    /// 有效着色选项不依赖当前片段是否为空。
+    let colorsSyntax: Bool
 
     /// 创建同一份负责量高和绘制的文本栈。
     func makeNSView(context _: Context) -> DiffHunkTextContainer {
@@ -35,9 +37,9 @@ struct DiffHunkTextView: NSViewRepresentable {
 
     /// 只在内容或样式改变时更新文字，行号选择变化不重设全文。
     func updateNSView(_ view: DiffHunkTextContainer, context _: Context) {
-        view.show(hunk: hunk, style: style, syntax: syntax, highlights: highlights)
-        view.gutter.configure(hunk: hunk, enabled: enabled, readOnly: readOnly, selected: selected)
-        view.gutter.onSelectionChange = { selected = $0 }
+        view.show(hunk: hunk, style: style, syntax: syntax, highlights: highlights, colorsSyntax: colorsSyntax)
+        view.gutter.configure(hunk: hunk, enabled: enabled, readOnly: readOnly, selection: selection)
+        view.updateLineSelection()
     }
 
     /// 按提议宽度布局正文，块高包括 TextKit 自带的末尾空片段。
@@ -66,6 +68,12 @@ final class DiffHunkTextContainer: NSView {
 
     /// 当前宽度下的布局。
     private(set) var textLayout: DiffTextLayout?
+
+    /// 选中正文的样式由有效开关决定，不以片段读取结果代替。
+    private(set) var colorsSyntax = false
+
+    /// 已应用到正文属性的逻辑选区，用于只更新变化的行。
+    var paintedSelection: Set<Int> = []
 
     /// 上次构造正文使用的块。
     private var hunk: DiffHunk?
@@ -101,8 +109,17 @@ final class DiffHunkTextContainer: NSView {
     required init?(coder _: NSCoder) { fatalError("块文本区仅从代码构造") }
 
     /// 内容变更时重建映射；颜色变化只更新属性，不触碰字符选区。
-    func show(hunk: DiffHunk, style: TextStyle, syntax: DiffSyntax?, highlights: [Int: [Range<Int>]]) {
-        guard self.hunk != hunk || self.style != style || self.syntax != syntax || self.highlights != highlights else {
+    func show(
+        hunk: DiffHunk,
+        style: TextStyle,
+        syntax: DiffSyntax?,
+        highlights: [Int: [Range<Int>]],
+        colorsSyntax: Bool = false
+    ) {
+        guard
+            self.hunk != hunk || self.style != style || self.syntax != syntax
+            || self.highlights != highlights || self.colorsSyntax != colorsSyntax
+        else {
             return
         }
 
@@ -116,6 +133,7 @@ final class DiffHunkTextContainer: NSView {
         self.style = style
         self.syntax = syntax
         self.highlights = highlights
+        self.colorsSyntax = colorsSyntax
         content = next
 
         if sameText, sameMetrics, previousHunk == hunk {
@@ -131,6 +149,8 @@ final class DiffHunkTextContainer: NSView {
         document.selectedTextAttributes = [
             .backgroundColor: style.theme.colors["selection"]?.calibratedNSColor ?? NSColor.selectedTextBackgroundColor,
         ]
+        paintedSelection = []
+        updateLineSelection()
         needsLayout = true
         document.needsDisplay = true
         gutter.needsDisplay = true
@@ -162,6 +182,7 @@ final class DiffHunkTextContainer: NSView {
         let gutterWidth = (content?.columnWidth ?? 0) * CGFloat(content?.rows.first?.line.numbers.count ?? 2)
         gutter.frame = CGRect(x: 0, y: 0, width: gutterWidth, height: height)
         document.frame = CGRect(x: gutterWidth, y: 0, width: max(1, bounds.width - gutterWidth), height: height)
+        window?.invalidateCursorRects(for: gutter)
     }
 
     /// 只写入绘制属性，避免颜色更新使字形和段落重新布局。

@@ -38,6 +38,9 @@ struct DiffHunkView: View {
     /// 当前文件里上一条内容是另一个块的正文。
     var hasPrecedingHunk = false
 
+    /// 当前有效的 Diff 着色开关，与语法片段是否已经读完无关。
+    var colorsSyntax = false
+
     /// 把选区交给会话，确认和命令均在视图外执行。
     let apply: (Set<Int>, Bool) -> Void
 
@@ -45,9 +48,9 @@ struct DiffHunkView: View {
     @State
     private var isPinned = false
 
-    /// 仅包含增删行序号的选区。
+    /// 块级模型分别保存即时选区与已发布给按钮的数量。
     @State
-    private var selected: Set<Int> = []
+    private var selection = DiffLineSelection()
 
     /// 常驻块头按钮随选择数量更新文案。
     var body: some View {
@@ -77,7 +80,8 @@ struct DiffHunkView: View {
             highlights: highlights,
             enabled: enabled,
             readOnly: readOnly,
-            selected: $selected
+            selection: selection,
+            colorsSyntax: colorsSyntax
         )
     }
 
@@ -93,10 +97,10 @@ struct DiffHunkView: View {
 
             if !readOnly, hunk.combinedRanges == nil {
                 if !staged {
-                    Button(actionTitle("discard")) { apply(selected, true) }
+                    Button(actionTitle("discard")) { apply(selection.selected, true) }
                 }
 
-                Button(actionTitle(staged ? "unstage" : "stage")) { apply(selected, false) }
+                Button(actionTitle(staged ? "unstage" : "stage")) { apply(selection.selected, false) }
             }
         }
         .buttonStyle(.bordered)
@@ -109,7 +113,7 @@ struct DiffHunkView: View {
 
     /// 没有选行时处理整块，否则使用单行或多行文案。
     private func actionTitle(_ action: String) -> String {
-        let suffix = selected.isEmpty ? "Chunk" : (selected.count == 1 ? "Line" : "Lines")
+        let suffix = selection.publishedCount == 0 ? "Chunk" : (selection.publishedCount == 1 ? "Line" : "Lines")
         return AppLocalization.text("working." + action + suffix)
     }
 
