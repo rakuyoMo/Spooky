@@ -97,7 +97,6 @@ struct ChangesetEmptyStateTests {
         let summary = ChangesetSummaryBar.summary([])
         let elements = AccessibilityProbe.elements(width: 800, until: { $0.contains { $0.value == summary } }, of: content)
         #expect(elements.contains { $0.value == summary })
-        #expect(!elements.contains { $0.value == AppLocalization.text("working.noDiff") })
         #expect(!elements.contains { $0.name == AppLocalization.text("history.expandAll") })
     }
 }

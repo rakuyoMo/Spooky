@@ -138,7 +138,19 @@ struct FileHistoryDirectoryTests {
         #expect(state.diffs.values.allSatisfy { $0.diff == nil })
         #expect(activities.items.isEmpty)
         let secondRequest = state.requests["b.txt"]
-        state.load("a.txt", showLarge: true)
+        let file = try #require(files.first { $0.path == "a.txt" })
+        let result = try #require(state.diffs[file.path])
+        let hosting = NSHostingView(rootView: ReadOnlyFileDiffView(
+            result: result,
+            source: CommitFileDiffSource(runner: runner, commit: commit.id, file: file)
+        ) {
+            state.load(file.path, showLarge: true)
+        }.frame(width: 480))
+        hosting.frame.size = hosting.fittingSize
+        hosting.layoutSubtreeIfNeeded()
+        let button = try #require(buttons(in: hosting).first)
+        #expect(button.title == AppLocalization.text("working.showDiff"))
+        button.performClick(nil)
         try await FileViewsTests.wait { state.diffs["a.txt"]?.diff != nil }
         #expect(state.diffs["b.txt"]?.diff == nil)
         #expect(state.requests["b.txt"] == secondRequest)
@@ -210,6 +222,11 @@ struct FileHistoryDirectoryTests {
         state.selectedID = state.commits.first?.id
         try await FileViewsTests.wait { state.directory.commit != nil }
         #expect(state.directory.files.map(\.path) == [path + "/a.txt"])
+    }
+
+    /// 只查询当前无窗口宿主里的原生按钮。
+    private func buttons(in view: NSView) -> [NSButton] {
+        view.subviews.flatMap { [$0 as? NSButton].compactMap(\.self) + buttons(in: $0) }
     }
 
     /// 创建提交并通过生产解析入口读取元信息。

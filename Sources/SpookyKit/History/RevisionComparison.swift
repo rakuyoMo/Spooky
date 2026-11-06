@@ -72,7 +72,7 @@ public struct RevisionComparison: Sendable {
 
         let output = try await runner.immutableRun([
             "diff", "--no-color", "--no-ext-diff", "--no-textconv", "--raw", "--numstat", "--no-abbrev",
-            "-z", "-M", "-C", base, target, "--",
+            "-z", "-M", base, target, "--",
         ])
 
         return try CommitFileChange.parse(output)
@@ -100,7 +100,7 @@ public struct RevisionComparison: Sendable {
             RepositoryFileViews.filePathOptions
                 + [
                     "diff", "--no-color", "--word-diff=none", "--no-ext-diff", "--no-textconv", "--full-index",
-                    "-M", "-C", "--src-prefix=a/", "--dst-prefix=b/",
+                    "-M", "--src-prefix=a/", "--dst-prefix=b/",
                 ]
                 + options.arguments + [base, target, "--"] + pathspecs
         )

@@ -99,7 +99,7 @@ struct WorkingCopyDetailView: View {
             } else {
                 // 超过大小上限的 Diff 换成没有图标的空状态，按 Show Diff 才读取
                 EmptyStateView(
-                    title: AppLocalization.text("working.largeDiff", snapshot.byteCount / 1000),
+                    title: AppLocalization.text("working.largeDiff"),
                     message: "",
                     symbol: nil
                 ) {

@@ -387,7 +387,7 @@ public struct RepositoryHistory: Sendable {
                 + mergeMode.arguments
                 + [
                     "--no-color", "--no-ext-diff", "--no-textconv", "--raw", "--numstat", "--no-abbrev",
-                    "-z", "-M", "-C", commit, "--",
+                    "-z", "-M", commit, "--",
                 ]
         )
 
@@ -416,7 +416,7 @@ public struct RepositoryHistory: Sendable {
                 + mergeMode.arguments
                 + [
                     "--no-color", "--word-diff=none", "--no-ext-diff", "--no-textconv", "--full-index",
-                    "-M", "-C", "--src-prefix=a/", "--dst-prefix=b/",
+                    "-M", "--src-prefix=a/", "--dst-prefix=b/",
                 ]
                 + options.arguments + [commit, "--"] + pathspecs
         )

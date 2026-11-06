@@ -80,6 +80,13 @@ struct LocalizationTests {
             keys += [key, key + ".one"]
         }
 
+        for kind in ["chunks", "insertions", "deletions"] {
+            keys += ["diff.summary." + kind, "diff.summary." + kind + ".one"]
+        }
+
+        keys += ["regular", "executable", "symbolicLink", "directory", "submodule", "none"]
+            .map { "diff.summary.mode." + $0 }
+
         return keys
     }
 

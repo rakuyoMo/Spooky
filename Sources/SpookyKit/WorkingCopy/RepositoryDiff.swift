@@ -130,8 +130,11 @@ public struct DiffFile: Sendable, Equatable, Identifiable {
     /// 补丁内段序号。
     public let id: Int
 
-    /// Git 原始扩展头，用于显示重命名、复制和模式变化。
+    /// Git 原始扩展头，用于对象哈希和补丁写回。
     public let headers: [String]
+
+    /// 从扩展头一次解析的文件摘要信息。
+    public let metadata: DiffFileMetadata
 
     /// 二进制内容只显示提示。
     public let isBinary: Bool
@@ -227,6 +230,7 @@ public struct RepositoryDiff: Sendable, Equatable {
             files.append(DiffFile(
                 id: files.count,
                 headers: headers,
+                metadata: DiffFileMetadata(headers: headers),
                 isBinary: binary,
                 addedMode: added,
                 deletedMode: deleted,

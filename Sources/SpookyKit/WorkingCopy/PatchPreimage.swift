@@ -53,7 +53,8 @@ extension PatchPreimage {
     }
 
     /// 反转义 Git 的 C 风格引号路径，八进制转义按原始字节拼回 UTF-8；格式不完整时为 nil
-    static func unquoted(_ value: String) -> String? {
+    /// `requiresEnd` 用于必须在闭引号处结束的扩展头字段。
+    static func unquoted(_ value: String, requiresEnd: Bool = false) -> String? {
         var bytes: [UInt8] = []
         var iterator = Array(value.utf8).dropFirst().makeIterator()
 
@@ -61,6 +62,8 @@ extension PatchPreimage {
             switch byte {
             // 结束引号之后不应再有内容，Git 只会补一个 Tab
             case UInt8(ascii: "\""):
+                guard !requiresEnd || iterator.next() == nil else { return nil }
+
                 return String(decoding: bytes, as: UTF8.self)
 
             case UInt8(ascii: "\\"):

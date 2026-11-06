@@ -94,7 +94,7 @@ struct DiffContentView: View {
     private func segmentView(_ segment: DiffSegment, style: TextStyle) -> some View {
         switch segment {
         case .file(let file):
-            fileHeader(file, style: style)
+            DiffFileHeader(file: file)
 
         case .hunk(let file, let hunk):
             DiffHunkView(
@@ -110,20 +110,6 @@ struct DiffContentView: View {
         }
     }
 
-    /// 文件段的开头：Git 扩展头，以及二进制或无文本改动的提示。
-    private func fileHeader(_ file: DiffFile, style: TextStyle) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            DiffFileHeader(file: file, style: style)
-
-            if file.isBinary {
-                Text(AppLocalization.text("working.binary"))
-                    .padding(20)
-            } else if file.hunks.isEmpty {
-                Text(AppLocalization.text("working.noDiff"))
-                    .padding(20)
-            }
-        }
-    }
 }
 
 // MARK: - DiffSegment
@@ -171,27 +157,6 @@ enum DiffSegment: Identifiable {
     }
 }
 
-// MARK: - DiffFileHeader
-
-/// 文件段开头的 Git 扩展头，显示重命名、复制与模式变化，可选中复制。
-struct DiffFileHeader: View {
-    /// 文件段。
-    let file: DiffFile
-
-    /// 主题字体。
-    let style: TextStyle
-
-    /// 等宽字体的次要色原文。
-    var body: some View {
-        Text(file.headers.joined(separator: "\n"))
-            .font(style.font)
-            .foregroundStyle(.secondary)
-            .textSelection(.enabled)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-    }
-}
-
 // MARK: - DiffNotice
 
 /// Diff 区里与文件头同样式的一行说明，如只剩空白改动。
@@ -209,95 +174,5 @@ struct DiffNotice: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 20)
             .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
-    }
-}
-
-// MARK: - DiffBottomBar
-
-/// Diff 底栏：左侧两个开关，中间是块数与增删行数，右侧是上下文行数。
-private struct DiffBottomBar: View {
-    /// 显示整个文件属于当前会话的视图状态。
-    @Bindable
-    var session: RepositorySession
-
-    /// 统计来源。
-    let diff: RepositoryDiff
-
-    /// 全局的忽略空白偏好。
-    @AppStorage(DiffPreferences.ignoresWhitespaceKey)
-    private var ignoresWhitespace = false
-
-    /// 全局的上下文行数偏好。
-    @AppStorage(DiffPreferences.contextLinesKey)
-    private var contextLines = DiffOptions.defaultContextLines
-
-    /// 32 pt 高的材质底栏。
-    var body: some View {
-        HStack(spacing: 4) {
-            toggle("diff.ignoreWhitespace", symbol: "space", isOn: $ignoresWhitespace)
-
-            toggle(
-                "diff.showEntireFile",
-                symbol: "arrow.up.and.down.text.horizontal",
-                isOn: Binding(
-                    get: { session.diffShowsEntireFile },
-                    set: {
-                        session.diffShowsEntireFile = $0
-                        session.loadDiff()
-                    }
-                )
-            )
-
-            Spacer(minLength: 8)
-
-            Text(summary)
-
-            Spacer(minLength: 8)
-
-            Text(AppLocalization.text("diff.context"))
-
-            Picker(AppLocalization.text("diff.context"), selection: $contextLines) {
-                ForEach(DiffOptions.contextChoices, id: \.self) {
-                    Text(DiffPreferences.contextTitle($0)).tag($0)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .controlSize(.small)
-            .fixedSize()
-            .disabled(session.diffShowsEntireFile)
-        }
-        .font(.system(size: 11))
-        .foregroundStyle(.secondary)
-        .padding(.leading, 8)
-        .padding(.trailing, 10)
-        .frame(height: 32)
-        .background(.bar)
-    }
-
-    /// 块数、新增行数与删除行数。
-    private var summary: String {
-        let hunks = diff.files.flatMap(\.hunks)
-        let lines = hunks.flatMap(\.lines)
-
-        return AppLocalization.text(
-            "working.diffSummary",
-            hunks.count,
-            lines.filter { $0.prefix == 43 }.count,
-            lines.filter { $0.prefix == 45 }.count
-        )
-    }
-
-    /// 30 pt 宽的图标开关，打开时图标使用强调色。
-    private func toggle(_ key: String, symbol: String, isOn: Binding<Bool>) -> some View {
-        Toggle(isOn: isOn) {
-            Image(systemName: symbol)
-                .foregroundStyle(isOn.wrappedValue ? Color.accentColor : .secondary)
-        }
-        .toggleStyle(.button)
-        .buttonStyle(.borderless)
-        .frame(width: 30)
-        .help(AppLocalization.text(key))
-        .accessibilityLabel(AppLocalization.text(key))
     }
 }
