@@ -5,6 +5,15 @@ import SwiftUI
 
 /// 工作区的单列表 Diff：吸顶块头、可换行正文，底栏放忽略空白、显示整个文件、增删统计与上下文行数。
 struct DiffContentView: View {
+    /// 新快照或有效着色选项变化时取消旧语法任务。
+    struct SyntaxKey: Hashable {
+        /// 快照仍使用完整安全指纹，不改变核心的过期校验。
+        let fingerprint: Data
+
+        /// 两个着色开关合成后的有效状态。
+        let enabled: Bool
+    }
+
     /// 写操作使用所属会话。
     let session: RepositorySession
 
@@ -65,7 +74,9 @@ struct DiffContentView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             DiffBottomBar(session: session, diff: diff)
         }
-        .task(id: [colorsSyntax, colorsDiffSyntax]) {
+        .task(id: SyntaxKey(fingerprint: snapshot.fingerprint, enabled: colorsSyntax && colorsDiffSyntax)) {
+            // 新快照开始着色前清除旧片段，行选择由会话独立保留。
+            syntax = nil
             let colored = await session.diffSyntax(for: snapshot, diff: diff)
 
             // 着色期间切换了开关时任务已取消，结果作废，不覆盖新任务写入的片段
@@ -106,7 +117,8 @@ struct DiffContentView: View {
                 enabled: session.canWrite && !session.isLoadingDiff && diff.files.count == 1,
                 presentation: .standalone,
                 hasPrecedingHunk: file.hunks.first?.id != hunk.id,
-                colorsSyntax: colorsSyntax && colorsDiffSyntax
+                colorsSyntax: colorsSyntax && colorsDiffSyntax,
+                selection: session.diffSelections.selection(file: file.id, hunk: hunk.id)
             ) { lines, discard in
                 session.apply(file: file.id, hunk: hunk.id, lines: lines, discard: discard)
             }

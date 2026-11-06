@@ -17,6 +17,9 @@ final class DiffLineSelection {
     /// 每个显示行对应的可选逻辑标识，上下文为 nil。
     private(set) var rows: [Int?] = []
 
+    /// 范围切换后旧视图的事件不能重新激活已退役的模型。
+    private(set) var isActive = true
+
     /// 鼠标最初按下的位置，拖动期间不改写。
     private var dragStart: Int? = nil
 
@@ -28,6 +31,8 @@ final class DiffLineSelection {
 
     /// 绑定当前块的显示映射，组合块没有可选行。
     func bind(_ hunk: DiffHunk) {
+        guard isActive else { return }
+
         let allowed = Set(hunk.combinedRanges == nil ? hunk.lines.filter(\.isChange).map(\.id) : [])
         let next = DiffDisplayLine.rows(in: hunk).map { allowed.contains($0.lineID) ? $0.lineID : nil }
         guard rows != next else { return }
@@ -38,7 +43,7 @@ final class DiffLineSelection {
 
     /// 按下即修改当前选区，块头计数仍保持上次发布值。
     func begin(at index: Int, extending: Bool) {
-        guard rows.indices.contains(index) else { return }
+        guard isActive, rows.indices.contains(index) else { return }
 
         dragStart = index
         dragSelecting = nil
@@ -54,7 +59,7 @@ final class DiffLineSelection {
 
     /// 沿初始位置到当前位置累计处理，回拖不撤销已经改变的单位。
     func drag(to index: Int) {
-        guard let start = dragStart, rows.indices.contains(index) else { return }
+        guard isActive, let start = dragStart, rows.indices.contains(index) else { return }
 
         let indices = start <= index ? Array(start ... index) : Array((index ... start).reversed())
         let identifiers = indices.compactMap { rows[$0] }
@@ -78,7 +83,7 @@ final class DiffLineSelection {
 
     /// Space 与辅助功能按下是完整的一次选择，立即发布。
     func activate(at index: Int, extending: Bool = false) {
-        guard rows.indices.contains(index), let id = rows[index] else { return }
+        guard isActive, rows.indices.contains(index), let id = rows[index] else { return }
 
         if extending {
             extend(to: index)
@@ -100,6 +105,12 @@ final class DiffLineSelection {
         publishedCount = 0
         anchor = nil
         cancelDrag()
+    }
+
+    /// 退出当前范围后清空并永久停止接收旧视图的事件。
+    func invalidate() {
+        clear()
+        isActive = false
     }
 
     /// 单击取消时清空范围起点，添加时记住当前显示行。

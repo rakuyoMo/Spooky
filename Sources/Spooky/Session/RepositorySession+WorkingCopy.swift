@@ -80,6 +80,7 @@ extension RepositorySession {
     func apply(file: Int, hunk: Int, lines: Set<Int>, discard: Bool) {
         guard canWrite, let snapshot = diffSnapshot else { return }
         let request = generation
+        let selectedBlock = lines.isEmpty ? nil : diffSelections.target(file: file, hunk: hunk)
 
         // 中断报告沿用块头按钮的动作名称。
         let action = discard ? "discard" : (snapshot.side == .staged ? "unstage" : "stage")
@@ -88,7 +89,7 @@ extension RepositorySession {
         )
         let perform: () -> Void = { [weak self] in
             guard let self, generation == request else { return }
-            performGit(
+            let accepted = performGit(
                 { runner, _ in
                     try await WorkingCopyOperations(runner: runner)
                         .apply(
@@ -103,6 +104,7 @@ extension RepositorySession {
                 recordsActivity: false,
                 undo: .reversible
             )
+            if accepted { diffSelections.clear(selectedBlock) }
         }
 
         // 丢弃块或行默认先确认；General 设置里关掉警告或在确认对话框里勾选不再提醒后直接丢弃。

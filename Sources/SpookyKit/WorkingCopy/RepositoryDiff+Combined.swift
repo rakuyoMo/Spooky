@@ -10,6 +10,7 @@ extension RepositoryDiff {
 
     /// 组合块保留每个父提交及结果的范围；双侧行号仍表示第一父提交与结果。
     static func combinedHunk(_ source: [Data], cursor: inout Int, id: Int) throws -> DiffHunk {
+        let start = cursor
         let header = text(source[cursor])
         let marker = header.prefix { $0 == "@" }
         let parents = marker.count - 1
@@ -58,6 +59,7 @@ extension RepositoryDiff {
             oldStart: ranges[0].start,
             newStart: ranges[parents].start,
             lines: lines,
+            rawContent: rawContent(source[start ..< cursor]),
             combinedRanges: ranges
         )
     }

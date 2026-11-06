@@ -10,8 +10,36 @@ struct WorkingCopyDetailView: View {
     @Bindable
     var session: RepositorySession
 
-    /// 文件头、比较侧和可访问的内容状态。
+    /// 当前外观选择生效主题。
+    @Environment(\.colorScheme)
+    private var colorScheme
+
+    /// 全局语法着色开关。
+    @AppStorage(TextPreferences.syntaxColoringKey)
+    private var colorsSyntax = true
+
+    /// Diff 语法着色开关。
+    @AppStorage(TextPreferences.diffSyntaxColoringKey)
+    private var colorsDiffSyntax = false
+
+    /// 大 Diff 阈值的变化需要清空选择并立即重读。
+    @AppStorage("diffWarningKilobytes")
+    private var warningKilobytes = WorkingCopyOperations.defaultWarningKilobytes
+
+    /// 在工作区入口统一观察设置，避免各块重复清空或重读。
     var body: some View {
+        let appearance = DiffSelectionAppearance(
+            theme: TextTheme.current(dark: colorScheme == .dark),
+            colorsSyntax: colorsSyntax && colorsDiffSyntax
+        )
+        detail
+            .onChange(of: appearance, initial: true) { session.diffAppearanceChanged(appearance) }
+            .onChange(of: warningKilobytes) { session.diffWarningThresholdChanged() }
+    }
+
+    /// 文件头、比较侧和可访问的内容状态。
+    @ViewBuilder
+    private var detail: some View {
         if let entry = session.selectedEntry {
             VStack(spacing: 0) {
                 WorkingCopyFileHeader(
@@ -95,7 +123,7 @@ struct WorkingCopyDetailView: View {
                 }
             } else if let diff = snapshot.diff {
                 DiffContentView(session: session, snapshot: snapshot, diff: diff)
-                    .id(snapshot.fingerprint)
+                    .id(session.diffSelections.revision)
             } else {
                 // 超过大小上限的 Diff 换成没有图标的空状态，按 Show Diff 才读取
                 EmptyStateView(

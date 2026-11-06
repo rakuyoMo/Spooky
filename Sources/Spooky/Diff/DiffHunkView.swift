@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - DiffHunkView
 
-/// 一块文本独立保存行号选区，单击、拖动与 ⇧ 范围选择共用同一规则。
+/// 一个块的行号与正文共用逻辑选区，单击、拖动与 ⇧ 范围选择使用同一模型。
 ///
 /// 块头归分节管理，正文用同一个文本区保留块内跨行的字符选择。
 struct DiffHunkView: View {
@@ -41,6 +41,9 @@ struct DiffHunkView: View {
     /// 当前有效的 Diff 着色开关，与语法片段是否已经读完无关。
     var colorsSyntax = false
 
+    /// 工作区由会话按块原文提供模型，滚动复用不丢失选择。
+    var selection: DiffLineSelection? = nil
+
     /// 把选区交给会话，确认和命令均在视图外执行。
     let apply: (Set<Int>, Bool) -> Void
 
@@ -48,9 +51,12 @@ struct DiffHunkView: View {
     @State
     private var isPinned = false
 
-    /// 块级模型分别保存即时选区与已发布给按钮的数量。
+    /// 未绑定会话时的块内状态，不跨视图生命周期保存。
     @State
-    private var selection = DiffLineSelection()
+    private var localSelection = DiffLineSelection()
+
+    /// 行号、正文与块头始终共享当前绑定的模型。
+    private var lineSelection: DiffLineSelection { selection ?? localSelection }
 
     /// 常驻块头按钮随选择数量更新文案。
     var body: some View {
@@ -78,9 +84,9 @@ struct DiffHunkView: View {
             style: style,
             syntax: syntax,
             highlights: highlights,
-            enabled: enabled,
+            enabled: enabled && lineSelection.isActive,
             readOnly: readOnly,
-            selection: selection,
+            selection: lineSelection,
             colorsSyntax: colorsSyntax
         )
     }
@@ -97,23 +103,23 @@ struct DiffHunkView: View {
 
             if !readOnly, hunk.combinedRanges == nil {
                 if !staged {
-                    Button(actionTitle("discard")) { apply(selection.selected, true) }
+                    Button(actionTitle("discard")) { apply(lineSelection.selected, true) }
                 }
 
-                Button(actionTitle(staged ? "unstage" : "stage")) { apply(selection.selected, false) }
+                Button(actionTitle(staged ? "unstage" : "stage")) { apply(lineSelection.selected, false) }
             }
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
-        .disabled(!enabled)
+        .disabled(!enabled || !lineSelection.isActive)
         .padding(.horizontal, 20)
         .frame(height: DiffHeaderBackground.height)
         .background(DiffHeaderBackground(showsTopBorder: hasPrecedingHunk && !isPinned))
     }
 
     /// 没有选行时处理整块，否则使用单行或多行文案。
-    private func actionTitle(_ action: String) -> String {
-        let suffix = selection.publishedCount == 0 ? "Chunk" : (selection.publishedCount == 1 ? "Line" : "Lines")
+    func actionTitle(_ action: String) -> String {
+        let suffix = lineSelection.publishedCount == 0 ? "Chunk" : (lineSelection.publishedCount == 1 ? "Line" : "Lines")
         return AppLocalization.text("working." + action + suffix)
     }
 
