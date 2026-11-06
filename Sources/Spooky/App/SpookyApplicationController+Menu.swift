@@ -245,10 +245,11 @@ extension SpookyApplicationController {
 
             let item = NSMenuItem(
                 title: title,
-                action: #selector(RepositoryWindowController.setAutoExpand(_:)),
+                action: #selector(setAutoExpand(_:)),
                 keyEquivalent: ""
             )
             item.tag = threshold
+            item.target = self
             changes.addItem(item)
         }
     }

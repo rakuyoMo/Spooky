@@ -8,6 +8,9 @@ import SpookyKit
 @MainActor
 @Observable
 final class RepositoryStashState {
+    /// 自动展开阈值所在的偏好域，测试注入临时域。
+    var preferences = UserDefaults.standard
+
     /// 最近一次读取的储藏，最新的在前。
     private(set) var entries: [StashEntry] = []
 
@@ -199,6 +202,10 @@ extension RepositoryStashState {
                 let files = try await RepositoryStashes(runner: runner).changes(in: stash)
                 guard let self, generation == request, selectedStash?.id == stash.id, !Task.isCancelled else { return }
                 changes = files
+
+                let threshold = preferences.integer(forKey: "historyAutoExpand")
+
+                if threshold > 0, files.count <= threshold { expandAll(true) }
             } catch {
                 guard let self, generation == request, selectedStash?.id == stash.id, !Task.isCancelled else { return }
                 changesFailure = AppFailure(error: error, opening: false, location: runner.location)

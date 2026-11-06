@@ -32,10 +32,6 @@ struct CommitDetailView: View {
     /// 文件右键菜单打开文件视图，并把文件恢复到工作区或导出。
     let session: RepositorySession
 
-    /// 显示文件树；否则显示变更集。切换提交时保持。
-    @State
-    private var showsTree = false
-
     /// 文件树的逐层读取状态。
     @State
     private var tree = CommitTreeState()
@@ -51,22 +47,24 @@ struct CommitDetailView: View {
     /// 换选提交时结束比较。
     var body: some View {
         content
-            .onChange(of: history.selectedIDs) { session.comparison.close() }
+            .onChange(of: history.selectedIDs) {
+                if history === session.history { session.comparison.close() }
+            }
     }
 
     /// 按比较、单选、多选与未选中依次选择内容。
     @ViewBuilder
     private var content: some View {
-        if session.comparison.isActive {
-            RevisionComparisonView(state: session.comparison, session: session) {
-                session.comparison.close()
-            }
-        } else if let commit = history.selectedCommit {
+        switch session.commitDetailContent(for: history) {
+        case .comparison(let comparison):
+            RevisionComparisonView(state: comparison, session: session) { comparison.close() }
+
+        case .commit(let commit):
             VStack(spacing: 0) {
-                CommitDetailBar(commit: commit, showsTree: $showsTree)
+                CommitDetailBar(commit: commit, showsTree: $history.showsTree)
                 Divider()
 
-                if showsTree {
+                if history.showsTree {
                     CommitTreeView(tree: tree, session: session, commit: commit)
                 } else {
                     ScrollView {
@@ -83,10 +81,13 @@ struct CommitDetailView: View {
                     session.signatures.request(commit.id, runner: runner)
                 }
             }
-        } else if history.selectedIDs.count > 1 {
-            HistoryMultipleSelectionView(session: session)
-        } else {
-            EmptyStateView(title: AppLocalization.text("history.noSelection"), message: "", symbol: "doc.text")
+
+        case .selection:
+            if history.selectedIDs.count > 1 {
+                HistoryMultipleSelectionView(session: session)
+            } else {
+                EmptyStateView(title: AppLocalization.text("history.noSelection"), message: "", symbol: "doc.text")
+            }
         }
     }
 

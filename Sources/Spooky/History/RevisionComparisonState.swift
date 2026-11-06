@@ -19,6 +19,9 @@ final class RevisionComparisonState {
         let title: String
     }
 
+    /// 自动展开阈值所在的偏好域，测试注入临时域。
+    var preferences = UserDefaults.standard
+
     /// 比较的基准。
     private(set) var base: Side? = nil
 
@@ -245,7 +248,7 @@ extension RevisionComparisonState {
 
                 changes = files
 
-                let threshold = UserDefaults.standard.integer(forKey: "historyAutoExpand")
+                let threshold = preferences.integer(forKey: "historyAutoExpand")
 
                 if threshold > 0, files.count <= threshold {
                     expandAll(true)

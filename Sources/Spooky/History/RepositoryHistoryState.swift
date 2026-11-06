@@ -121,6 +121,9 @@ final class RepositoryHistoryState {
         }
     }
 
+    /// 提交详情的文件树分段；切换提交时保持，与菜单路由共用。
+    var showsTree = false
+
     /// 双击进入左文件列表、右补丁的整页提交详情。
     var showsCommitPage = false
 
@@ -607,7 +610,7 @@ extension RepositoryHistoryState {
                     !Task.isCancelled
                 else { return }
                 changes = files
-                let threshold = UserDefaults.standard.integer(forKey: "historyAutoExpand")
+                let threshold = preferences.integer(forKey: "historyAutoExpand")
                 if threshold > 0, files.count <= threshold { expandAll(true) }
             } catch {
                 guard

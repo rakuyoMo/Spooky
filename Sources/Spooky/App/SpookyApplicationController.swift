@@ -14,6 +14,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 退出收尾的日志：宽限期先到时说明仍有任务未结束。
     private nonisolated static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "SpookyApplicationController")
 
+    /// 全局变更集自动展开阈值所在的偏好域，测试注入临时域。
+    var changesetPreferences = UserDefaults.standard
+
     /// 跨窗口共享的仓库书签。
     let bookmarks: RepositoryBookmarks
 

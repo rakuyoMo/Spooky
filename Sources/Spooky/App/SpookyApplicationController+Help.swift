@@ -91,6 +91,10 @@ extension SpookyApplicationController: NSMenuItemValidation {
         case #selector(showWhatsNewCard):
             return WhatsNewState.shared.hasCurrentNotes
 
+        case #selector(setAutoExpand(_:)):
+            item.state = item.tag == changesetPreferences.integer(forKey: "historyAutoExpand") ? .on : .off
+            return true
+
         case #selector(toggleAutoReload):
             item.state = DeveloperPreferences.autoReloads() ? .on : .off
             return true
