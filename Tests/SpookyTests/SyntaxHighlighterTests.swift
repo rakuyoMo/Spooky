@@ -243,7 +243,7 @@ struct SyntaxHighlighterTests {
         let marked = TextStyle(theme: theme, tabWidth: 4, showsInvisibles: true)
 
         #expect(String(TextLineRenderer.attributed("ab\tc\r", spans: nil, style: plain).characters) == "ab  c")
-        #expect(String(TextLineRenderer.attributed("\tx y\r", spans: nil, style: marked).characters) == "→   x·y␍")
+        #expect(String(TextLineRenderer.attributed("\tx y\r", spans: nil, style: marked).characters) == "»   x·y␍")
 
         // 片段比行短时剩余部分按正文显示，不丢字
         let short = [SyntaxSpan(length: 1, style: .keyword)]

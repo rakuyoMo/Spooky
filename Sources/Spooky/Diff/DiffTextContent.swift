@@ -68,7 +68,7 @@ struct DiffTextContent {
             var mapping = rendered.mapping
             mapping.append(source: 1, display: 1)
             content.append(rendered.appKit(attributes: values))
-            content.append(NSAttributedString(string: "\n", attributes: values))
+            content.append(TextInvisibleLayoutManager.lineFeed(after: row.source, style: style, attributes: values))
             original.append(row.source + "\n")
             mapped.append(Row(
                 line: row,

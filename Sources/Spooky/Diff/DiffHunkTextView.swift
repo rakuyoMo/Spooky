@@ -189,11 +189,14 @@ final class DiffHunkTextContainer: NSView {
     private func updateColors(_ attributed: NSAttributedString) {
         guard let storage = document.textStorage else { return }
 
+        let markers = [TextInvisibleLayoutManager.symbol, TextInvisibleLayoutManager.color]
+        let keys = Set([.foregroundColor, .backgroundColor] + markers)
         storage.beginEditing()
-        storage.removeAttribute(.backgroundColor, range: NSRange(location: 0, length: storage.length))
+        for key in [.backgroundColor] + markers {
+            storage.removeAttribute(key, range: NSRange(location: 0, length: storage.length))
+        }
         attributed.enumerateAttributes(in: NSRange(location: 0, length: attributed.length)) { values, range, _ in
-            let colors = values.filter { $0.key == .foregroundColor || $0.key == .backgroundColor }
-            storage.addAttributes(colors, range: range)
+            storage.addAttributes(values.filter { keys.contains($0.key) }, range: range)
         }
         storage.endEditing()
     }

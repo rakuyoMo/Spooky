@@ -194,6 +194,7 @@ struct FileContentView: View {
                 contentID: identity + "/raw",
                 path: content.path,
                 lines: content.lines,
+                source: content.source,
                 theme: theme
             )
         } else if let blame = state.blame {
@@ -201,6 +202,7 @@ struct FileContentView: View {
                 contentID: identity + "/blame",
                 path: content.path,
                 lines: state.blameLines,
+                source: content.source,
                 theme: theme,
                 annotations: FileTextAnnotations(
                     groups: blame.groups,

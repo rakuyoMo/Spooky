@@ -13,7 +13,7 @@ final class DiffTextDocumentView: NSTextView {
     /// 构造可折行的 TextKit 1 正文，尺寸由块容器控制。
     static func make() -> DiffTextDocumentView {
         let storage = NSTextStorage()
-        let manager = NSLayoutManager()
+        let manager = TextInvisibleLayoutManager()
         storage.addLayoutManager(manager)
         let container = NSTextContainer(size: CGSize(width: 1, height: CGFloat.greatestFiniteMagnitude))
         container.widthTracksTextView = false

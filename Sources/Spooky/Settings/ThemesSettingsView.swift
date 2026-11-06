@@ -18,6 +18,10 @@ struct ThemesSettingsView: View {
     @Environment(\.colorScheme)
     private var colorScheme
 
+    /// 预览跟随 Text 页已有的不可见字符开关。
+    @AppStorage(TextPreferences.showsInvisiblesKey)
+    private var showsInvisibles = false
+
     /// 刚新建、要立即进入改名的主题。
     @State
     private var renameRequest: String?
@@ -242,7 +246,7 @@ extension ThemesSettingsView {
         let style = TextStyle(
             theme: theme,
             tabWidth: TextPreferences.defaultTabWidth,
-            showsInvisibles: false
+            showsInvisibles: showsInvisibles
         )
 
         return LazyVStack(alignment: .leading, spacing: 0) {

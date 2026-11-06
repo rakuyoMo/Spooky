@@ -79,10 +79,10 @@ struct FileViewsTests {
     func displayLines() {
         let data = Data("a\r\nb\rc\u{2028}d\n\ne\n".utf8)
 
-        #expect(FileRevisionContent.displayLines(data) == ["a", "b\u{FFFD}c\u{FFFD}d", "", "e"])
+        #expect(FileRevisionContent.displayLines(data) == ["a\r", "b\rc\u{FFFD}d", "", "e"])
         #expect(FileRevisionContent.displayLines(Data("last".utf8)) == ["last"])
         #expect(FileRevisionContent.displayLines(Data()).isEmpty)
-        #expect(FileRevisionContent.displayLine("tab\tkept\r") == "tab\tkept")
+        #expect(FileRevisionContent.displayLine("tab\tkept\r") == "tab\tkept\r")
     }
 
     /// 原文与 Blame 的正文和 Diff 用同一套渲染：制表符按 Tab 宽度展开，语法片段换成主题颜色，没有片段的部分用正文色。
@@ -101,6 +101,7 @@ struct FileViewsTests {
 
         document.show(
             ["\tlet x = 1", "plain"],
+            source: "\tlet x = 1\nplain",
             style: style,
             rendering: TextStyle(theme: theme, tabWidth: 4, showsInvisibles: false),
             spans: spans
@@ -163,7 +164,7 @@ struct FileViewsTests {
             let document = FileTextDocumentView.make()
             let scroll = NSScrollView()
             scroll.documentView = document
-            document.show(lines, style: style, rendering: rendering, spans: nil)
+            document.show(lines, source: lines.joined(separator: "\n"), style: style, rendering: rendering, spans: nil)
 
             let gutter = FileGutterView(scrollView: scroll, document: document)
             gutter.update(lineCount: lines.count, annotations: annotations)

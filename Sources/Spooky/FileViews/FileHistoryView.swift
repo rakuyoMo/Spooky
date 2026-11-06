@@ -353,6 +353,7 @@ struct FileHistoryDetailView: View {
                 contentID: content.path + "@" + commit.id,
                 path: content.path,
                 lines: content.lines,
+                source: content.source,
                 theme: TextTheme.current(dark: colorScheme == .dark)
             )
         }

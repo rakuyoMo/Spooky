@@ -38,7 +38,7 @@ struct DiffTextCopyTests {
     /// 字面上的标记、Tab、CR 与 UTF-16 多码元字符不能通过反向替换损坏。
     @Test("Diff 原文保真", arguments: [false, true])
     func sourceFidelity(invisibles: Bool) throws {
-        let source = "a\t b\r·→¬👍\r"
+        let source = "a\t b\r·→»¬␍👍\r"
         let hunk = try DiffTextLayoutTests.hunk("@@ -0,0 +1,1 @@\n+\(source)\n")
         let style = TextStyle(theme: TextTheme.builtin[0], tabWidth: 4, showsInvisibles: invisibles)
         let view = DiffHunkTextContainer()

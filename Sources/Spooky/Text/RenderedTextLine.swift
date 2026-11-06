@@ -11,6 +11,9 @@ struct RenderedTextLine {
     /// 显示字符与源字符的 UTF-16 对应关系。
     let mapping: TextSourceMap
 
+    /// 占用原空格位置的可见符号，不能用符号本身的宽度参与排版。
+    let markers: [Int: String]
+
     /// 转成 TextKit 使用的属性，保留正文、语法色与行内高亮底色。
     func appKit(attributes: [NSAttributedString.Key: Any]) -> NSAttributedString {
         let result = NSMutableAttributedString()
@@ -32,6 +35,15 @@ struct RenderedTextLine {
             ))
         }
 
+        for (index, symbol) in markers {
+            let range = NSRange(location: index, length: 1)
+            let color = result.attribute(.foregroundColor, at: index, effectiveRange: nil) ?? NSColor.secondaryLabelColor
+            result.replaceCharacters(in: range, with: " ")
+            result.addAttributes([
+                TextInvisibleLayoutManager.symbol: symbol,
+                TextInvisibleLayoutManager.color: color,
+            ], range: range)
+        }
         return result
     }
 }
@@ -76,6 +88,13 @@ struct TextSourceMap {
 
         sourceLength += source
         displayLength += display
+    }
+
+    /// 追加另一行的映射，保持各段的源与显示长度关系。
+    mutating func append(_ mapping: Self) {
+        for segment in mapping.segments {
+            append(source: segment.source.length, display: segment.display.length)
+        }
     }
 
     /// 将非空的显示选区还原为源范围；选中部分 Tab 也只复制一个原始 Tab。
