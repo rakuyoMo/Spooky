@@ -86,6 +86,10 @@ final class DiffHunkTextContainer: NSView {
     init() {
         super.init(frame: .zero)
 
+        // 原生子视图限制在本块内绘制，避免后面的块覆盖前面的内容与分节头。
+        clipsToBounds = true
+        document.clipsToBounds = true
+        gutter.clipsToBounds = true
         document.owner = self
         gutter.owner = self
         addSubview(gutter)

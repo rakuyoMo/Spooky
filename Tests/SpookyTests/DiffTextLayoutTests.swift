@@ -123,6 +123,9 @@ struct DiffTextLayoutTests {
         #expect(view.gutter.frame.height == height)
         #expect(view.document.textContainerInset == CGSize(width: 4, height: 0))
         #expect(view.document.textContainer?.lineFragmentPadding == 0)
+        #expect(view.clipsToBounds)
+        #expect(view.document.clipsToBounds)
+        #expect(view.gutter.clipsToBounds)
     }
 
     /// 行号边线用原始浮点分量，透明度不变，不经十六进制往返。
