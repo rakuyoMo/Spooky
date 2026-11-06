@@ -284,7 +284,6 @@
 "working.noDiff" = "텍스트 변경 없음";
 "working.binary" = "바이너리 파일이 변경되었습니다. 텍스트 미리 보기를 사용할 수 없습니다.";
 "working.diffSummary" = "블록 %d 개, 추가 %d 줄, 삭제 %d 줄";
-"working.noNewline" = "파일 끝에 줄 바꿈 없음";
 "working.selectLine" = "%d 번째 줄 변경 선택";
 "working.selected" = "선택됨";
 "working.stageChunk" = "블록 스테이지";

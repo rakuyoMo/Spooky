@@ -284,7 +284,6 @@
 "working.noDiff" = "No text changes";
 "working.binary" = "Binary file differs. Text preview is unavailable.";
 "working.diffSummary" = "%d chunks, %d insertions, %d deletions";
-"working.noNewline" = "No newline at end of file";
 "working.selectLine" = "Select change at line %d";
 "working.selected" = "Selected";
 "working.stageChunk" = "Stage Chunk";

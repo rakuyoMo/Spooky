@@ -188,6 +188,8 @@ Spooky 由两个 target 组成：
   - 主题文件的 RGB 分量按 calibrated RGB（Generic RGB）直接构色，正文、背景、选区、语法记号、增删行底色与 Themes 页共用；颜色面板也先转到 Generic RGB 再保存，避免编辑往返改变颜色
   - 行号、描边与原文 / Blame 的次要文字、段高亮、分隔线从文件的原始分量按 sRGB 推导；`NamedColors.json` 的命名色同样保持 sRGB
 - 语法着色、Tab 宽度与不可见字符的偏好集中在 `TextPreferences`；一行文本按 `TextStyle` 经 `TextLineRenderer` 渲染
+- Diff 外层按块懒加载，每块正文是独立的 TextKit 1 文本区，原生字符选择只在块内跨行。行号栏与正文共享实际折行矩形，写入选区仍使用逻辑补丁行标识。
+- 每个显示行记录显示 UTF-16 范围、源范围与所属补丁行；无换行提示单独成行但指向所属行。复制从源映射取字符，保留原始 Tab、CR 与已有的末尾 LF，不复制显示替换标记。
 - 提交详情、储藏详情与文件历史的只读 Diff 共用 `ReadOnlyFileDiffView`
 - 目录文件历史按完整变更集筛选真实新旧路径，每文件独立读取、放行与重试；当前提交和第一父提交的树条目决定目录范围与内容能力，不从 HEAD 推断历史类型。逐文件请求与可见登记有独立身份，换目标、关闭或重读时旧结果不能覆盖新状态。
 - 语法着色经 `SyntaxHighlighter` 借用 highlight.js 的上下文执行

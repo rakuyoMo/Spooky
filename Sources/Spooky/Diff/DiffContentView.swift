@@ -60,7 +60,6 @@ struct DiffContentView: View {
                     segmentView(segment, style: style)
                 }
             }
-            .coordinateSpace(name: DiffHunkView.coordinateSpace)
         }
         .background(style.color("background"))
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -101,7 +100,7 @@ struct DiffContentView: View {
             DiffHunkView(
                 hunk: hunk,
                 style: style,
-                spans: { syntax?.spans(for: $0) },
+                syntax: syntax,
                 highlights: highlights[segment.id] ?? [:],
                 staged: snapshot.side == .staged,
                 enabled: session.canWrite && !session.isLoadingDiff && diff.files.count == 1

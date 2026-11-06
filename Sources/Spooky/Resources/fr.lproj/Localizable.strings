@@ -284,7 +284,6 @@
 "working.noDiff" = "Aucune modification de texte";
 "working.binary" = "Le fichier binaire a été modifié. L’aperçu du texte n’est pas disponible.";
 "working.diffSummary" = "%d sections, %d insertions, %d suppressions";
-"working.noNewline" = "Pas de saut de ligne à la fin du fichier";
 "working.selectLine" = "Sélectionner la modification à la ligne %d";
 "working.selected" = "Sélectionnée";
 "working.stageChunk" = "Indexer la section";

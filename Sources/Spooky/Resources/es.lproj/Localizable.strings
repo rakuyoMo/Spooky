@@ -284,7 +284,6 @@
 "working.noDiff" = "No hay cambios de texto";
 "working.binary" = "El archivo binario tiene diferencias. La previsualización de texto no está disponible.";
 "working.diffSummary" = "%d fragmentos, %d inserciones, %d eliminaciones";
-"working.noNewline" = "Sin salto de línea al final del archivo";
 "working.selectLine" = "Seleccionar el cambio de la línea %d";
 "working.selected" = "Seleccionado";
 "working.stageChunk" = "Añadir fragmento al stage";

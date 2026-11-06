@@ -258,7 +258,6 @@ extension ThemesSettingsView {
                 ) { _, _ in }
             }
         }
-        .coordinateSpace(name: DiffHunkView.coordinateSpace)
         .frame(width: 652, height: 222, alignment: .top)
         .background(style.color("background"))
         .clipped()

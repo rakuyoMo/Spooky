@@ -284,7 +284,6 @@
 "working.noDiff" = "沒有文字變更";
 "working.binary" = "二進位檔案有變更，無法顯示文字預覽。";
 "working.diffSummary" = "%d 個區塊，新增 %d 行，刪除 %d 行";
-"working.noNewline" = "檔案結尾沒有換行";
 "working.selectLine" = "選取第 %d 行變更";
 "working.selected" = "已選取";
 "working.stageChunk" = "暫存區塊";

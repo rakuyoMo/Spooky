@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - TextStyle
 
 /// 文本区的显示样式：主题的字体与颜色、Tab 宽度和是否标出不可见字符，Diff 与文件文本共用。
-struct TextStyle {
+struct TextStyle: Equatable {
     /// 当前外观的主题。
     let theme: TextTheme
 
@@ -62,6 +62,23 @@ enum TextLineRenderer {
         highlightColor: Color = .clear,
         style: TextStyle
     ) -> AttributedString {
+        rendered(
+            line,
+            spans: spans,
+            highlights: highlights,
+            highlightColor: highlightColor,
+            style: style
+        ).attributed
+    }
+
+    /// 在同一渲染过程中记录显示范围与原文范围，供文本区复制使用。
+    static func rendered(
+        _ line: String,
+        spans: [SyntaxSpan]?,
+        highlights: [Range<Int>] = [],
+        highlightColor: Color = .clear,
+        style: TextStyle
+    ) -> RenderedTextLine {
         var builder = Builder(style: style, highlightColor: highlightColor)
         let units = Array(line.utf16)
         var pieces: [(range: Range<Int>, color: Color?)] = []
@@ -91,7 +108,7 @@ enum TextLineRenderer {
         }
 
         builder.flush()
-        return builder.result
+        return RenderedTextLine(attributed: builder.result, mapping: builder.mapping)
     }
 
     /// 把一段范围按高亮范围的边界切开，标出每一部分是否落在高亮里。
@@ -138,6 +155,9 @@ private struct Builder {
     /// 已生成的内容。
     var result = AttributedString()
 
+    /// 显示串对应的源字符范围。
+    var mapping = TextSourceMap()
+
     /// 当前列，从 0 开始。
     var column = 0
 
@@ -161,8 +181,11 @@ private struct Builder {
         for character in text {
             switch character {
             case "\t":
+
                 // 补齐到下一个 Tab 位置，标记占第一格
-                let width = style.tabWidth - column % style.tabWidth
+                let tabWidth = max(1, style.tabWidth)
+                let width = tabWidth - column % tabWidth
+                mapping.append(source: 1, display: width)
                 column += width
 
                 guard style.showsInvisibles else {
@@ -174,16 +197,22 @@ private struct Builder {
                 pending += String(repeating: " ", count: width - 1)
 
             case " " where style.showsInvisibles:
+                mapping.append(source: 1, display: 1)
                 column += 1
                 mark(TextLineRenderer.spaceMarker)
 
             case "\r":
+
                 // 不标出时直接省略，避免回车在文本视图里另起一行
+                mapping.append(source: 1, display: style.showsInvisibles ? 1 : 0)
+
                 if style.showsInvisibles {
                     mark(TextLineRenderer.returnMarker)
                 }
 
             default:
+                let length = character.utf16.count
+                mapping.append(source: length, display: length)
                 column += 1
                 pending.append(character)
             }

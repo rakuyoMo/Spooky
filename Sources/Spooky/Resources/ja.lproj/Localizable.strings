@@ -284,7 +284,6 @@
 "working.noDiff" = "テキストの変更はありません";
 "working.binary" = "バイナリファイルが変更されています。テキストプレビューは利用できません。";
 "working.diffSummary" = "%d 個のブロック、%d 行追加、%d 行削除";
-"working.noNewline" = "ファイル末尾に改行なし";
 "working.selectLine" = "%d 行目の変更を選択";
 "working.selected" = "選択済み";
 "working.stageChunk" = "ブロックをステージ";

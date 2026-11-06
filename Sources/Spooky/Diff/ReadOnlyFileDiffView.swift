@@ -221,7 +221,7 @@ struct ReadOnlyFileDiffView: View {
             DiffHunkView(
                 hunk: hunk,
                 style: style,
-                spans: { syntax?.spans(for: $0) },
+                syntax: syntax,
                 highlights: highlights[segment.id] ?? [:],
                 staged: false,
                 enabled: false,

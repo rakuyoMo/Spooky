@@ -284,7 +284,6 @@
 "working.noDiff" = "Keine Textänderungen";
 "working.binary" = "Die Binärdatei unterscheidet sich. Eine Textvorschau ist nicht verfügbar.";
 "working.diffSummary" = "%d Blöcke, %d Zeilen hinzugefügt, %d Zeilen gelöscht";
-"working.noNewline" = "Kein Zeilenumbruch am Dateiende";
 "working.selectLine" = "Änderung in Zeile %d auswählen";
 "working.selected" = "Ausgewählt";
 "working.stageChunk" = "Block stagen";

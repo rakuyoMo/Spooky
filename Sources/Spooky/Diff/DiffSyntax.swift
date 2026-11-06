@@ -6,7 +6,7 @@ import SpookyKit
 /// 一个文件 Diff 两侧全文的语法片段，按行号取用：删除行取旧版，上下文与新增行取新版。
 ///
 /// 块注释、多行字符串跨越 Diff 的块边界，所以着色基于两侧全文，而不是只看显示出的几行。
-struct DiffSyntax: Sendable {
+struct DiffSyntax: Sendable, Equatable {
     /// 旧版每行的片段，下标为行号减一。
     let old: [[SyntaxSpan]]
 

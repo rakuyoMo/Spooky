@@ -284,7 +284,6 @@
 "working.noDiff" = "没有文本改动";
 "working.binary" = "二进制文件有变化，无法显示文本预览。";
 "working.diffSummary" = "%d 个块，新增 %d 行，删除 %d 行";
-"working.noNewline" = "文件末尾没有换行";
 "working.selectLine" = "选择第 %d 行改动";
 "working.selected" = "已选择";
 "working.stageChunk" = "暂存块";
