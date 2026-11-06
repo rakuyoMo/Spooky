@@ -20,7 +20,7 @@ struct DiffDisplayLine {
     /// 无换行提示不参与行号推进。
     var isNotice: Bool { prefix == nil }
 
-    /// 普通补丁的完整两侧行号先按各自范围推进，再与上一逻辑行去重。
+    /// 普通补丁推进两侧行号，组合补丁使用核心的完整向量；各列独立去重。
     static func rows(in hunk: DiffHunk) -> [Self] {
         var old = max(0, hunk.oldStart - (hunk.lines.contains { $0.oldNumber != nil } ? 1 : 0))
         var new = max(0, hunk.newStart - (hunk.lines.contains { $0.newNumber != nil } ? 1 : 0))
@@ -30,11 +30,14 @@ struct DiffDisplayLine {
         for line in hunk.lines {
             old = line.oldNumber ?? old
             new = line.newNumber ?? new
-            let values = [old, new]
+            let values = line.combined?.numbers ?? [old, new]
             let numbers = values.enumerated().map { column, value in
                 guard previous?[column] != value else { return "" }
 
-                let sign = column == 0 && line.prefix == 45 ? "-" : (column == 1 && line.prefix == 43 ? "+" : "")
+                let prefixes = line.combined?.prefixes ?? [line.prefix]
+                let isRemoval = column < prefixes.count && prefixes[column] == 45
+                let isAddition = column == values.count - 1 && line.prefix == 43
+                let sign = isRemoval ? "-" : (isAddition ? "+" : "")
                 return sign + String(value)
             }
 
@@ -50,7 +53,7 @@ struct DiffDisplayLine {
                 result.append(Self(
                     lineID: line.id,
                     source: " No newline at end of file",
-                    numbers: ["", ""],
+                    numbers: Array(repeating: "", count: values.count),
                     prefix: nil
                 ))
             }

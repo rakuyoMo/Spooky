@@ -14,6 +14,11 @@ struct DiffTextLayoutTests {
         TextStyle(theme: TextTheme.builtin[0], tabWidth: 4, showsInvisibles: false)
     }
 
+    /// 字体测量先建立 AppKit 应用环境，定向运行不依赖其它套件的初始化顺序。
+    init() {
+        _ = NSApplication.shared
+    }
+
     /// 从生产解析器得到一块供显示测试使用的补丁。
     static func hunk(_ body: String) throws -> DiffHunk {
         let patch = "diff --git a/a.txt b/a.txt\n--- a/a.txt\n+++ b/a.txt\n" + body

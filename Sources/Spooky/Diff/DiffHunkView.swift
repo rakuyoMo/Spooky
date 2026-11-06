@@ -68,7 +68,7 @@ struct DiffHunkView: View {
 
             Spacer(minLength: 4)
 
-            if !readOnly {
+            if !readOnly, hunk.combinedRanges == nil {
                 if !staged {
                     Button(actionTitle("discard")) { apply(selected, true) }
                 }

@@ -62,6 +62,8 @@ final class DiffGutterView: NSView {
 
     /// 内容改变时重建逻辑行按钮，单纯选区变化只刷新值与绘制。
     func configure(hunk: DiffHunk, enabled: Bool, readOnly: Bool, selected: Set<Int>) {
+        let readOnly = readOnly || hunk.combinedRanges != nil
+
         if self.hunk != hunk || self.readOnly != readOnly {
             self.hunk = hunk
             selectable = readOnly ? [] : hunk.lines.filter(\.isChange).map(\.id)
@@ -74,7 +76,7 @@ final class DiffGutterView: NSView {
 
         self.enabled = enabled
         self.readOnly = readOnly
-        self.selected = selected
+        self.selected = readOnly ? [] : selected
         needsDisplay = true
     }
 
