@@ -334,7 +334,7 @@
 "history.empty" = "沒有提交";
 "history.loading" = "正在載入提交…";
 "history.copyHash" = "複製提交雜湊";
-"history.changes" = "%d 個變更檔案";
+"history.changes" = "%ld 個變更檔案";
 "history.noSelection" = "未選取提交";
 "history.multiple" = "已選取 %ld 個提交";
 "history.expandAll" = "全部展開";
@@ -973,7 +973,7 @@
 "history.changeset" = "變更集";
 "history.tree" = "檔案樹";
 "history.detailMode" = "提交詳細資訊內容";
-"history.summary" = "共 %1$ld 個變更檔案，新增 %2$ld 行，刪除 %3$ld 行";
+"history.summary" = "%1$@，%2$@，%3$@";
 "history.mergeDiff" = "合併提交的 Diff：";
 "history.mergeDiff.off" = "不顯示";
 "history.mergeDiff.firstParent" = "相對第一父提交";
@@ -2628,3 +2628,11 @@
 "working.discardAllMenu" = "捨棄全部本機變更…";
 
 "externalTool.action.diffTool" = "比較工具";
+"history.noChanges" = "沒有變更。";
+"history.summary.files.one" = "共 %ld 個變更檔案";
+"history.summary.files" = "共 %ld 個變更檔案";
+"history.summary.additions.one" = "新增 %ld 行";
+"history.summary.additions" = "新增 %ld 行";
+"history.summary.deletions.one" = "刪除 %ld 行";
+"history.summary.deletions" = "刪除 %ld 行";
+"history.changes.one" = "%ld 個變更檔案";

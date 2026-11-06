@@ -334,7 +334,7 @@
 "history.empty" = "没有提交";
 "history.loading" = "正在加载提交…";
 "history.copyHash" = "复制提交哈希";
-"history.changes" = "%d 个变更文件";
+"history.changes" = "%ld 个变更文件";
 "history.noSelection" = "未选择提交";
 "history.multiple" = "已选择 %ld 个提交";
 "history.expandAll" = "全部展开";
@@ -973,7 +973,7 @@
 "history.changeset" = "变更集";
 "history.tree" = "文件树";
 "history.detailMode" = "提交详情内容";
-"history.summary" = "共 %1$ld 个变更文件，新增 %2$ld 行，删除 %3$ld 行";
+"history.summary" = "%1$@，%2$@，%3$@";
 "history.mergeDiff" = "合并提交的 Diff：";
 "history.mergeDiff.off" = "不显示";
 "history.mergeDiff.firstParent" = "相对第一父提交";
@@ -2628,3 +2628,11 @@
 "working.discardAllMenu" = "丢弃全部本地改动…";
 
 "externalTool.action.diffTool" = "比较工具";
+"history.noChanges" = "没有改动。";
+"history.summary.files.one" = "共 %ld 个变更文件";
+"history.summary.files" = "共 %ld 个变更文件";
+"history.summary.additions.one" = "新增 %ld 行";
+"history.summary.additions" = "新增 %ld 行";
+"history.summary.deletions.one" = "删除 %ld 行";
+"history.summary.deletions" = "删除 %ld 行";
+"history.changes.one" = "%ld 个变更文件";

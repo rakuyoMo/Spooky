@@ -334,7 +334,7 @@
 "history.empty" = "No hay commits";
 "history.loading" = "Cargando commits…";
 "history.copyHash" = "Copiar hashes de los commits";
-"history.changes" = "%d archivos modificados";
+"history.changes" = "%ld archivos modificados";
 "history.noSelection" = "Ningún commit seleccionado";
 "history.multiple" = "%ld commits seleccionados";
 "history.expandAll" = "Expandir todo";
@@ -973,7 +973,7 @@
 "history.changeset" = "Cambios";
 "history.tree" = "Árbol";
 "history.detailMode" = "Contenido de los detalles del commit";
-"history.summary" = "%1$ld archivos modificados con %2$ld líneas añadidas y %3$ld eliminadas";
+"history.summary" = "%1$@ %2$@ %3$@";
 "history.mergeDiff" = "Diffs de los commits de fusión:";
 "history.mergeDiff.off" = "Ninguno";
 "history.mergeDiff.firstParent" = "Con el primer padre";
@@ -2628,3 +2628,11 @@
 "working.discardAllMenu" = "Descartar todos los cambios locales…";
 
 "externalTool.action.diffTool" = "Herramienta de comparación";
+"history.noChanges" = "Sin cambios.";
+"history.summary.files.one" = "%ld archivo modificado";
+"history.summary.files" = "%ld archivos modificados";
+"history.summary.additions.one" = "con %ld línea añadida";
+"history.summary.additions" = "con %ld líneas añadidas";
+"history.summary.deletions.one" = "y %ld línea eliminada";
+"history.summary.deletions" = "y %ld líneas eliminadas";
+"history.changes.one" = "%ld archivo modificado";

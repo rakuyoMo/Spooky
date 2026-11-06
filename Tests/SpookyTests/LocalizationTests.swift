@@ -76,6 +76,10 @@ struct LocalizationTests {
             }
         }
 
+        for key in ["history.summary.files", "history.summary.additions", "history.summary.deletions", "history.changes"] {
+            keys += [key, key + ".one"]
+        }
+
         return keys
     }
 
@@ -85,26 +89,56 @@ struct LocalizationTests {
         return try #require(PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any])
     }
 
+    /// 提取位置与转换类型，跳过字面百分号；无编号的参数按消费顺序编号。
+    static func formatSignature(_ value: String) throws -> [Int: Set<String>] {
+        let pattern = try NSRegularExpression(
+            pattern: #"%(?:%|(?:([1-9][0-9]*)\$)?[-+ #0]*[0-9]*(?:\.[0-9]+)?(hh|ll|[hlLqztj])?([@diuoxXfFeEgGaAcCsSp]))"#
+        )
+        var next = 1
+        var signature: [Int: Set<String>] = [:]
+
+        for match in pattern.matches(in: value, range: NSRange(value.startIndex..., in: value)) {
+            guard let type = Range(match.range(at: 3), in: value) else { continue }
+            let position = Range(match.range(at: 1), in: value).flatMap { Int(value[$0]) }
+            let length = Range(match.range(at: 2), in: value).map { String(value[$0]) } ?? ""
+            signature[position ?? next, default: []].insert(length + value[type])
+
+            if position == nil { next += 1 }
+        }
+
+        return signature
+    }
+
     /// 任一语言缺少键、空译文或格式参数变化都会失败。
     @Test("本地化键集合和格式参数一致", arguments: AppLocalization.languages)
     func completeResources(language: String) throws {
         let english = try strings("en")
         let translated = try strings(language)
-        let pattern = try NSRegularExpression(pattern: "%[0-9.]*(?:l)?[@dfiu]")
         #expect(Set(translated.keys) == Set(english.keys))
 
         for (key, value) in translated {
             #expect(!value.isEmpty, "译文不能为空：\(language) / \(key)")
             #expect(value != key)
             let base = try #require(english[key])
-            let expected = try pattern.matches(in: base, range: NSRange(base.startIndex..., in: base))
-                .map { try #require(Range($0.range, in: base)) }
-                .map { String(base[$0]) }
-            let actual = try pattern.matches(in: value, range: NSRange(value.startIndex..., in: value))
-                .map { try #require(Range($0.range, in: value)) }
-                .map { String(value[$0]) }
+            let expected = try Self.formatSignature(base)
+            let actual = try Self.formatSignature(value)
             #expect(actual == expected, "格式参数不一致：\(language) / \(key)")
         }
+    }
+
+    /// 格式参数按实际位置比较，允许译文调换次序但不能缺参或改变类型。
+    @Test("本地化位置参数签名")
+    func positionalFormats() throws {
+        let expected = try Self.formatSignature("%1$@ %2$ld")
+        #expect(try Self.formatSignature("%2$ld %1$@") == expected)
+        #expect(try Self.formatSignature("%@ %ld") == expected)
+        #expect(try Self.formatSignature("%% %1$@ %2$ld %%") == expected)
+
+        for invalid in ["%1$@", "%2$ld", "%1$@ %3$ld", "%1$@ %2$d", "%1$@ %2$@"] {
+            #expect(try Self.formatSignature(invalid) != expected)
+        }
+
+        #expect(try Self.formatSignature("%2$08.2f %1$@") == Self.formatSignature("%@ %f"))
     }
 
     /// 空状态、仓库标签和错误提示在每种语言里都有各不相同的实际译文。

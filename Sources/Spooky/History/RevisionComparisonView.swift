@@ -102,8 +102,8 @@ struct RevisionComparisonView: View {
         LazyVStack(alignment: .leading, spacing: 0) {
             ChangesetSummaryBar(
                 changes: state.changes,
-                expanded: !state.expandedPaths.isEmpty,
-                toggle: { state.expandAll(state.expandedPaths.isEmpty) }
+                expanded: state.allItemsExpanded,
+                toggle: { state.expandAll(!state.allItemsExpanded) }
             )
 
             if state.isLoadingChanges {
@@ -115,12 +115,6 @@ struct RevisionComparisonView: View {
             ForEach(state.changes) { file in
                 fileSection(file)
                 Divider()
-            }
-
-            if state.changes.isEmpty, !state.isLoadingChanges, state.failure == nil {
-                Text(AppLocalization.text("working.noDiff"))
-                    .foregroundStyle(.secondary)
-                    .padding(20)
             }
         }
     }
@@ -174,10 +168,7 @@ struct RevisionComparisonView: View {
                 state.loadDiff(path, showLarge: true)
             }
         } else {
-            ProgressView(AppLocalization.text("working.loadingDiff"))
-                .controlSize(.small)
-                .padding(20)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            ChangesetDiffLoadingView()
         }
     }
 }

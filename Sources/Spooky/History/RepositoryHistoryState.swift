@@ -139,6 +139,11 @@ final class RepositoryHistoryState {
     /// 展开的文件共享一个滚动区域。
     var expandedPaths = Set<String>()
 
+    /// 仅当前变更集的每个文件都展开时成立，忽略残留的其它身份。
+    var allItemsExpanded: Bool {
+        !changes.isEmpty && changes.allSatisfy { expandedPaths.contains($0.path) }
+    }
+
     /// 单文件已加载的补丁，切换提交时失效。
     private(set) var diffs: [String: CommitDiff] = [:]
 

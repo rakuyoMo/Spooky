@@ -145,7 +145,7 @@ struct ChangesetSummaryBar: View {
     /// 变更集里的文件。
     let changes: [CommitFileChange]
 
-    /// 已有文件展开时按钮显示为全部收起。
+    /// 当前变更集的全部文件展开时，按钮显示为全部收起。
     let expanded: Bool
 
     /// 全部展开或全部收起。
@@ -154,15 +154,20 @@ struct ChangesetSummaryBar: View {
     /// 11 pt 文字，摘要用二级文字色。
     var body: some View {
         HStack {
-            if !changes.isEmpty {
+            if showsToggle {
                 Button(AppLocalization.text(expanded ? "history.collapseAll" : "history.expandAll"), action: toggle)
                     .buttonStyle(.borderless)
+                    .fixedSize()
+                    .layoutPriority(1)
             }
 
-            Spacer()
+            Spacer(minLength: 0)
 
-            Text(summary)
-                .foregroundStyle(.secondary)
+            Text(Self.summary(changes))
+                .foregroundStyle(Color(nsColor: .secondaryLabelColor))
+                .textSelection(.enabled)
+                .lineLimit(1)
+                .truncationMode(.tail)
         }
         .font(.system(size: 11))
         .padding(.leading, 3)
@@ -170,19 +175,26 @@ struct ChangesetSummaryBar: View {
         .frame(height: 32)
     }
 
-    /// 有增删行数时一起列出；组合 Diff 等没有统计的变更集只列文件数。
-    private var summary: String {
-        let counted = changes.filter { $0.additions != nil }
+    /// 空变更集保留摘要，但没有可展开的文件。
+    var showsToggle: Bool { !changes.isEmpty }
 
-        guard !counted.isEmpty else {
-            return AppLocalization.text("history.changes", changes.count)
-        }
-
-        return AppLocalization.text(
+    /// 文件数与两类行数分别选择单复数，未知统计按零累计。
+    static func summary(_ changes: [CommitFileChange]) -> String {
+        AppLocalization.text(
             "history.summary",
-            changes.count,
-            counted.compactMap(\.additions).reduce(0, +),
-            counted.compactMap(\.deletions).reduce(0, +)
+            countText("history.summary.files", changes.count),
+            countText("history.summary.additions", changes.compactMap(\.additions).reduce(0, +)),
+            countText("history.summary.deletions", changes.compactMap(\.deletions).reduce(0, +))
         )
+    }
+
+    /// 整页详情工具条的独立文件数。
+    static func fileCount(_ count: Int) -> String {
+        countText("history.changes", count)
+    }
+
+    /// 只有数量为一时选用单数，零与其它数量使用复数。
+    private static func countText(_ key: String, _ count: Int) -> String {
+        AppLocalization.text(count == 1 ? key + ".one" : key, count)
     }
 }

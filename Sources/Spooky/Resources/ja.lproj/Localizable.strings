@@ -334,7 +334,7 @@
 "history.empty" = "コミットがありません";
 "history.loading" = "コミットを読み込み中…";
 "history.copyHash" = "コミットハッシュをコピー";
-"history.changes" = "%d 個の変更ファイル";
+"history.changes" = "%ld 個の変更ファイル";
 "history.noSelection" = "コミットが選択されていません";
 "history.multiple" = "%ld 個のコミットを選択中";
 "history.expandAll" = "すべて展開";
@@ -973,7 +973,7 @@
 "history.changeset" = "変更セット";
 "history.tree" = "ツリー";
 "history.detailMode" = "コミット詳細の内容";
-"history.summary" = "%1$ld 個の変更ファイル、%2$ld 行の追加と %3$ld 行の削除";
+"history.summary" = "%1$@、%2$@と %3$@";
 "history.mergeDiff" = "マージコミットの差分：";
 "history.mergeDiff.off" = "表示しない";
 "history.mergeDiff.firstParent" = "第 1 親と比較";
@@ -2628,3 +2628,11 @@
 "working.discardAllMenu" = "すべてのローカルの変更を破棄…";
 
 "externalTool.action.diffTool" = "比較ツール";
+"history.noChanges" = "変更はありません。";
+"history.summary.files.one" = "%ld 個の変更ファイル";
+"history.summary.files" = "%ld 個の変更ファイル";
+"history.summary.additions.one" = "%ld 行の追加";
+"history.summary.additions" = "%ld 行の追加";
+"history.summary.deletions.one" = "%ld 行の削除";
+"history.summary.deletions" = "%ld 行の削除";
+"history.changes.one" = "%ld 個の変更ファイル";

@@ -334,7 +334,7 @@
 "history.empty" = "Keine Commits";
 "history.loading" = "Commits werden geladen …";
 "history.copyHash" = "Commit-Hashes kopieren";
-"history.changes" = "%d geänderte Dateien";
+"history.changes" = "%ld geänderte Dateien";
 "history.noSelection" = "Kein Commit ausgewählt";
 "history.multiple" = "%ld Commits ausgewählt";
 "history.expandAll" = "Alle erweitern";
@@ -973,7 +973,7 @@
 "history.changeset" = "Änderungen";
 "history.tree" = "Dateibaum";
 "history.detailMode" = "Inhalt der Commit-Details";
-"history.summary" = "%1$ld geänderte Dateien mit %2$ld hinzugefügten und %3$ld entfernten Zeilen";
+"history.summary" = "%1$@ %2$@ %3$@";
 "history.mergeDiff" = "Diffs für Merge-Commits:";
 "history.mergeDiff.off" = "Keine";
 "history.mergeDiff.firstParent" = "Zum ersten Eltern-Commit";
@@ -2628,3 +2628,11 @@
 "working.discardAllMenu" = "Alle lokalen Änderungen verwerfen …";
 
 "externalTool.action.diffTool" = "Vergleichswerkzeug";
+"history.noChanges" = "Keine Änderungen.";
+"history.summary.files.one" = "%ld geänderte Datei";
+"history.summary.files" = "%ld geänderte Dateien";
+"history.summary.additions.one" = "mit %ld hinzugefügter Zeile";
+"history.summary.additions" = "mit %ld hinzugefügten Zeilen";
+"history.summary.deletions.one" = "und %ld entfernter Zeile";
+"history.summary.deletions" = "und %ld entfernten Zeilen";
+"history.changes.one" = "%ld geänderte Datei";
