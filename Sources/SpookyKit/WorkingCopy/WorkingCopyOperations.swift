@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 // MARK: - RepositoryOperationState
@@ -418,51 +417,5 @@ extension WorkingCopyOperations {
             "-c", "i18n.logOutputEncoding=UTF-8", "log", "-1", "--format=%B", head, "--",
         ])
         return String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)
-    }
-
-    /// 两侧补丁与路径状态一起校验，暂存视图也会察觉外部工作区编辑。
-    ///
-    /// 逐字节的两侧补丁始终计入摘要；忽略空白时另取显示用的补丁，同样计入，外部只改空白也能察觉。
-    func snapshot(_ entry: StatusEntry, options: DiffOptions = DiffOptions()) async throws -> DiffContents {
-        let statusArguments = ["--literal-pathspecs", "status", "--porcelain=v2", "-z", "--untracked-files=all", "--"]
-            + entry.operationPaths
-        var exactOptions = options
-        exactOptions.ignoresWhitespace = false
-
-        let before = try await runner.run(statusArguments)
-        let staged = try await patch(for: entry, side: .staged, options: exactOptions)
-        let unstaged = try await patch(for: entry, side: .unstaged, options: exactOptions)
-        var shown = (staged: staged, unstaged: unstaged)
-
-        if options.ignoresWhitespace {
-            shown = (
-                try await patch(for: entry, side: .staged, options: options),
-                try await patch(for: entry, side: .unstaged, options: options)
-            )
-        }
-
-        guard try await runner.run(statusArguments) == before else { throw WorkingCopyError.staleSnapshot }
-        var hash = SHA256()
-
-        // 选项不同的快照即使补丁恰好相同也不互相冒充
-        hash.update(data: Data(options.arguments.joined(separator: " ").utf8))
-
-        for data in [before, staged, unstaged] + (options.ignoresWhitespace ? [shown.staged, shown.unstaged] : []) {
-            hash.update(data: Data("\(data.count):".utf8))
-            hash.update(data: data)
-        }
-
-        return DiffContents(
-            staged: shown.staged,
-            unstaged: shown.unstaged,
-            exactStaged: staged,
-            exactUnstaged: unstaged,
-            fingerprint: Data(hash.finalize())
-        )
-    }
-
-    /// 按快照生成时的选项重新读取，摘要相同说明文件与暂存区都没有变化。
-    func isCurrent(_ snapshot: DiffSnapshot) async throws -> Bool {
-        try await self.snapshot(snapshot.entry, options: snapshot.options).fingerprint == snapshot.fingerprint
     }
 }

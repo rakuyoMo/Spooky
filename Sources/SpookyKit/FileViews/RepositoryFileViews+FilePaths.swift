@@ -47,7 +47,7 @@ extension RepositoryFileViews {
 
         let unique = uniquePaths(excluded)
         let minimal = unique.filter { candidate in
-            !unique.contains { $0 != candidate && isDescendant(candidate, of: $0) }
+            !unique.contains { !samePath($0, candidate) && isDescendant(candidate, of: $0) }
         }
 
         return wanted.map { ":(top,literal)" + $0 }

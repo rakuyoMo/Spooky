@@ -79,7 +79,12 @@ Spooky 由两个 target 组成：
 
 - 写命令经 `RepositoryOperationQueue` 按仓库串行；纯读取命令登记在 `RepositoryOperationQueue.isReadOnly`
 - 组合操作用 `GitRunner.writeTransaction` 持有仓库锁
-- 工作区的写入经 `WorkingCopyOperations` 发起：补丁以原始字节生成并核对快照，路径列表经字面 NUL 输入传递
+- 工作区的写入经 `WorkingCopyOperations` 发起：补丁以原始字节生成并核对快照，文件级操作的路径列表经字面 NUL 输入传递
+  - 单文件 Diff 用字面包含与子项排除，只比较真实新旧路径；新旧路径互为祖先时，从当前完整状态确定旁支排除范围，每轮重新计算，路径比较使用 UTF-8 字节
+  - 状态展示与快照共用严格记录解析；先验证完整输出再过滤，保留原始字段、重命名双 NUL 路径、记录顺序及同路径重复条目。旧重命名条目须匹配当前新旧路径和同一暂存侧
+  - 一轮采样中的两侧逐字节补丁和忽略空白的显示补丁共用范围。前后目标状态不同立即拒绝；仅排除范围改变时丢弃整轮结果，最多完整重读一次。指纹只包含选项、所选原始状态及补丁，不包含旁支状态或排除计划
+  - 重命名后旧路径新建的独立未跟踪文件，其出现、消失或暂存使旧快照失效；只改内容不改变重命名指纹。按块 / 行写入只生成新路径补丁，不覆盖该独立文件
+  - 按块 / 行写入在仓库锁内两次核对快照，并经 `git apply --check` 与正式写入检查。此锁只串行 App 内的写操作；外部 Git 和编辑器仍可改动仓库，因此属于乐观校验，不是跨进程原子快照
 - App 内同一仓库同时只允许一个写操作（`RepositoryWriteLocks`）；菜单、工具栏、右键菜单与拖放统一使用 `RepositorySession` 的 `can…` 可用性规则
 - 写操作经 `RepositorySession.performGit(target:)` 声明记在 Activity 的哪一页：传了连接的对象（`ActivityTarget`：传输方向、远端名与 refspec）就记在 Remote 页，记录的标题与图标由它写出；没传的记在 Repository 页
   - 一次写操作连接几个对象时分成几条记录，如获取全部远端时每个远端一条，同步的拉取与推送各一条：动作里经 task-local 的 `ActivityRecording` 另起记录，这些事件与 Git 输出走同一个流，先后不乱
