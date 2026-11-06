@@ -320,7 +320,9 @@ struct FileHistoryDetailView: View {
             .background(TextTheme.current(dark: colorScheme == .dark).colors["background"]?.calibratedColor ?? .clear)
         } else if state.detailMode == .diff, let diff = state.diff, let source = state.detailSource {
             ScrollView {
-                ReadOnlyFileDiffView(result: diff, source: source) { state.loadDetail(showLarge: true) }
+                ReadOnlyFileDiffView(result: diff, source: source, presentation: .standalone) {
+                    state.loadDetail(showLarge: true)
+                }
             }
             .background(TextTheme.current(dark: colorScheme == .dark).colors["background"]?.calibratedColor ?? .clear)
         } else if state.detailMode == .raw, let content = state.content {

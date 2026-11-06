@@ -103,7 +103,9 @@ struct DiffContentView: View {
                 syntax: syntax,
                 highlights: highlights[segment.id] ?? [:],
                 staged: snapshot.side == .staged,
-                enabled: session.canWrite && !session.isLoadingDiff && diff.files.count == 1
+                enabled: session.canWrite && !session.isLoadingDiff && diff.files.count == 1,
+                presentation: .standalone,
+                hasPrecedingHunk: file.hunks.first?.id != hunk.id
             ) { lines, discard in
                 session.apply(file: file.id, hunk: hunk.id, lines: lines, discard: discard)
             }

@@ -91,6 +91,9 @@ struct ReadOnlyFileDiffView: View {
     /// 语法着色与图片内容的来源。
     let source: CommitFileDiffSource
 
+    /// 变更集默认内嵌，独立文件由调用方明确启用吸顶块头。
+    var presentation = DiffPresentation.embedded
+
     /// 放行大 Diff 后重新读取。
     let showLarge: () -> Void
 
@@ -130,7 +133,11 @@ struct ReadOnlyFileDiffView: View {
             showsInvisibles: showsInvisibles
         )
 
-        LazyVStack(alignment: .leading, spacing: 0) {
+        LazyVStack(
+            alignment: .leading,
+            spacing: 0,
+            pinnedViews: presentation == .standalone ? [.sectionHeaders] : []
+        ) {
             if result.onlyWhitespaceChanges {
                 DiffNotice(key: "diff.onlyWhitespace", style: style)
             }
@@ -217,7 +224,7 @@ struct ReadOnlyFileDiffView: View {
                 }
             }
 
-        case .hunk(_, let hunk):
+        case .hunk(let file, let hunk):
             DiffHunkView(
                 hunk: hunk,
                 style: style,
@@ -225,7 +232,9 @@ struct ReadOnlyFileDiffView: View {
                 highlights: highlights[segment.id] ?? [:],
                 staged: false,
                 enabled: false,
-                readOnly: true
+                readOnly: true,
+                presentation: presentation,
+                hasPrecedingHunk: file.hunks.first?.id != hunk.id
             ) { _, _ in }
         }
     }

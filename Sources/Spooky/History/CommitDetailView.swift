@@ -12,7 +12,7 @@ struct CommitPageDiffView: View {
     var body: some View {
         if let path = history.selectedPath {
             ScrollView {
-                CommitFileDiffView(history: history, path: path)
+                CommitFileDiffView(history: history, path: path, presentation: .standalone)
             }
             .reloadsOnDiffPreferenceChange { history.reloadDiffs() }
         } else {
@@ -345,6 +345,9 @@ struct CommitFileDiffView: View {
     /// 已选择或展开的文件路径。
     let path: String
 
+    /// 独立文件与变更集内嵌的滚动方式。
+    var presentation = DiffPresentation.embedded
+
     /// 失败可重试，补丁读取完成前显示进度。
     var body: some View {
         if let failure = history.diffFailures[path] {
@@ -352,7 +355,7 @@ struct CommitFileDiffView: View {
                 .padding(20)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else if let result = history.diffs[path], let source = history.diffSource(path: path) {
-            ReadOnlyFileDiffView(result: result, source: source) {
+            ReadOnlyFileDiffView(result: result, source: source, presentation: presentation) {
                 history.loadDiff(path, showLarge: true)
             }
         } else {

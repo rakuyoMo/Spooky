@@ -32,8 +32,18 @@ struct DiffHunkView: View {
     /// 是否显示块头；Themes 页的 Diff 预览只显示各行。
     var showsHeader = true
 
+    /// 当前宿主是否拥有独立文件滚动区域。
+    var presentation = DiffPresentation.embedded
+
+    /// 当前文件里上一条内容是另一个块的正文。
+    var hasPrecedingHunk = false
+
     /// 把选区交给会话，确认和命令均在视图外执行。
     let apply: (Set<Int>, Bool) -> Void
+
+    /// 正文的自然位置越过视口顶部时，块头处于浮动或被后块推挤的状态。
+    @State
+    private var isPinned = false
 
     /// 仅包含增删行序号的选区。
     @State
@@ -42,20 +52,33 @@ struct DiffHunkView: View {
     /// 常驻块头按钮随选择数量更新文案。
     var body: some View {
         Section {
-            DiffHunkTextView(
-                hunk: hunk,
-                style: style,
-                syntax: syntax,
-                highlights: highlights,
-                enabled: enabled,
-                readOnly: readOnly,
-                selected: $selected
-            )
+            if showsHeader, presentation == .standalone {
+                text.onGeometryChange(for: Bool.self) {
+                    $0.frame(in: .scrollView(axis: .vertical)).minY - DiffHeaderBackground.height < 0
+                } action: {
+                    isPinned = $0
+                }
+            } else {
+                text
+            }
         } header: {
             if showsHeader {
                 header
             }
         }
+    }
+
+    /// 正文只在独立文件模式参与吸顶检测，预览与内嵌模式不增加几何观察。
+    private var text: some View {
+        DiffHunkTextView(
+            hunk: hunk,
+            style: style,
+            syntax: syntax,
+            highlights: highlights,
+            enabled: enabled,
+            readOnly: readOnly,
+            selected: $selected
+        )
     }
 
     /// 块头原文与写入按钮。
@@ -80,8 +103,8 @@ struct DiffHunkView: View {
         .controlSize(.small)
         .disabled(!enabled)
         .padding(.horizontal, 20)
-        .frame(height: 32)
-        .background(.bar)
+        .frame(height: DiffHeaderBackground.height)
+        .background(DiffHeaderBackground(showsTopBorder: hasPrecedingHunk && !isPinned))
     }
 
     /// 没有选行时处理整块，否则使用单行或多行文案。
