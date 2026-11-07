@@ -675,8 +675,10 @@
 "conflict.step" = "Étape %d sur %d";
 "conflict.step.applying" = "Étape %d sur %d : application de « %@ »";
 "conflict.step.editing" = "Étape %d sur %d : modification de « %@ »";
+"conflict.step.reverting" = "Étape %d sur %d : revert de « %@ »";
 "conflict.title.cherryPick" = "Cherry-pick de %d commits sur « %@ »";
 "conflict.title.cherryPick.one" = "Cherry-pick de 1 commit sur « %@ »";
+"conflict.title.edit" = "Modification de %@ sur « %@ »";
 "conflict.title.merge" = "Fusion de « %@ » dans « %@ »";
 "conflict.title.rebase" = "Rebasage de « %@ » sur « %@ »";
 "conflict.title.revert" = "Revert de %d commits sur « %@ »";
@@ -800,7 +802,7 @@
 "commit.amendHash" = "Corriger %@";
 "commit.commitHelp" = "Valider les modifications indexées";
 "commit.amendHelp" = "Corriger le dernier commit";
-"commit.continueHelp" = "Continuer l’opération en cours";
+"commit.continueHelp" = "Continuer la séquence de fusion";
 "commit.remaining" = "%ld caractères restants";
 "commit.quickAmendHint" = "• Maintenez ⌥ enfoncée lorsqu’aucun champ du message n’est actif pour corriger rapidement le dernier commit.";
 "commit.pin" = "Garder la description déployée";
@@ -915,8 +917,6 @@
 "conflict.open.missing" = "Ouvrir";
 "conflict.export.missing" = "Exporter…";
 "conflict.toolTip" = "Fichier à fusionner : %@";
-"conflict.sequence.applying" = "Application de « %@ »";
-"conflict.sequence.reverting" = "Revert de « %@ »";
 
 /* 提交体验。 */
 "profiles.add.message" = "« %@ <%@> (%@) » sera enregistré comme profil utilisateur. Saisissez un titre pour ce profil.";

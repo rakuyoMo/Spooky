@@ -187,33 +187,73 @@ struct MergeConflictParsingTests {
         #expect(edit.stepSubject == nil)
         #expect(edit.stepKind == .applying)
 
+        // edit 指令的提交冲突时 Git 不写 amend，这一步仍是应用
+        let conflicted = try #require(OperationProgress(files: [
+            "rebase-merge/head-name": "refs/heads/feature",
+            "rebase-merge/done": "edit aaaa change\n",
+            "rebase-merge/stopped-sha": "aaaa\n",
+        ], head: nil))
+
+        #expect(conflicted.stepKind == .applying && !conflicted.stopsForEdit)
+
         let editing = try #require(OperationProgress(files: [
             "rebase-merge/head-name": "refs/heads/feature",
             "rebase-merge/done": "edit aaaa change\n",
+            "rebase-merge/amend": "bbbb\n",
+            "rebase-merge/stopped-sha": "aaaa\n",
         ], head: nil))
 
-        #expect(editing.stepKind == .editing)
+        #expect(editing.stepKind == .editing && editing.editedCommit == "bbbb")
+        #expect(!editing.isPendingInteractive)
     }
 
-    /// 序列看 todo 的第一条指令，只数得出剩余的提交，没有当前一步；单个提交的摘取、反转与合并只看伪引用文件。
+    /// squash、fixup 停下时同样有 amend，不是 edit；merge 后端还没停在任何提交上时是交互式变基尚未开始。
+    @Test("变基进度：squash 停顿与尚未开始")
+    func squashAndPendingRebases() throws {
+        let squashing = try #require(OperationProgress(files: [
+            "rebase-merge/head-name": "refs/heads/feature",
+            "rebase-merge/done": "pick aaaa one\nsquash bbbb three\n",
+            "rebase-merge/amend": "aaaa\n",
+            "rebase-merge/stopped-sha": "bbbb\n",
+        ], head: nil))
+
+        #expect(!squashing.stopsForEdit && squashing.stepKind == .applying)
+        #expect(!squashing.isPendingInteractive && squashing.isSequence)
+
+        let pending = try #require(OperationProgress(files: [
+            "rebase-merge/head-name": "refs/heads/feature",
+            "rebase-merge/interactive": "",
+        ], head: nil))
+
+        #expect(pending.isPendingInteractive && pending.step == nil)
+
+        // apply 后端没有交互式的待开始状态
+        let apply = try #require(OperationProgress(files: ["rebase-apply/head-name": "refs/heads/feature"], head: nil))
+        #expect(!apply.isPendingInteractive && apply.isSequence)
+    }
+
+    /// 序列看 todo 的第一条指令，只数得出剩余的提交，当前一步总是第 1 个；单个提交的摘取、反转与合并只看伪引用文件。
     @Test("摘取、反转与合并的识别")
     func sequencesAndMerges() throws {
         let picking = try #require(OperationProgress(files: [
             "sequencer/todo": "pick aaaa first commit\npick bbbb second\n",
+            "sequencer/head": "cccc\n",
             "CHERRY_PICK_HEAD": "aaaaaaaa\n",
         ], head: "cccc"))
 
-        #expect(picking.state == .cherryPick)
+        #expect(picking.state == .cherryPick && picking.isSequence)
         #expect(picking.ours == "cccc" && picking.theirs == "aaaaaaaa")
-        #expect(picking.step == nil && picking.stepCount == 2)
+        #expect(picking.step == 1 && picking.stepCount == 2)
         #expect(picking.stepSubject == "first commit")
 
         let reverting = try #require(OperationProgress(files: ["REVERT_HEAD": "dddd\n"], head: "cccc"))
         #expect(reverting.state == .revert && reverting.theirs == "dddd" && reverting.stepKind == .reverting)
-        #expect(reverting.stepCount == nil && reverting.stepSubject == nil)
+        #expect(reverting.step == nil && reverting.stepCount == nil && reverting.stepSubject == nil)
+        #expect(!reverting.isSequence)
 
         let merging = try #require(OperationProgress(files: ["MERGE_HEAD": "eeee\nffff\n", "MERGE_MSG": "Merge"], head: "cccc"))
         #expect(merging.state == .merge && merging.theirs == "eeee" && merging.ours == "cccc")
+        #expect(!merging.isSequence)
 
         let squashing = try #require(OperationProgress(files: ["SQUASH_MSG": "Squashed"], head: "cccc"))
         #expect(squashing.state == .squash && squashing.theirs == nil)

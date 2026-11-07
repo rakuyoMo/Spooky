@@ -673,15 +673,17 @@
 "conflict.restoreVersion" = "Restore Version from “%@”";
 "conflict.result" = "Manually Edited or Merged Version";
 "conflict.step" = "Step %d of %d";
-"conflict.step.applying" = "Step %d of %d: Applying “%@”";
-"conflict.step.editing" = "Step %d of %d: Editing “%@”";
+"conflict.step.applying" = "Rebase %d of %d: Applying “%@”";
+"conflict.step.editing" = "Rebase %d of %d: Editing “%@”";
+"conflict.step.reverting" = "Step %d of %d: Reverting “%@”";
 "conflict.title.cherryPick" = "Cherry-Picking %d commits onto “%@”";
 "conflict.title.cherryPick.one" = "Cherry-Picking 1 commit onto “%@”";
+"conflict.title.edit" = "Editing %@ on “%@”";
 "conflict.title.merge" = "Merging “%@” into “%@”";
 "conflict.title.rebase" = "Rebasing “%@” onto “%@”";
 "conflict.title.revert" = "Reverting %d commits on “%@”";
 "conflict.title.revert.one" = "Reverting 1 commit on “%@”";
-"conflict.title.squash" = "Squash-Merging commits into “%@”";
+"conflict.title.squash" = "Squash-Merge commits into “%@”";
 "conflict.unresolved.none" = "No unresolved conflicts";
 "conflict.unresolved.one" = "1 unresolved conflict";
 "conflict.version" = "Version from “%@”";
@@ -800,7 +802,7 @@
 "commit.amendHash" = "Amend %@";
 "commit.commitHelp" = "Commit the staged changes";
 "commit.amendHelp" = "Amend the last commit";
-"commit.continueHelp" = "Continue the operation in progress";
+"commit.continueHelp" = "Continue the merge sequence";
 "commit.remaining" = "%ld characters remaining";
 "commit.quickAmendHint" = "• Hold ⌥ while no message field is focused to amend the last commit quickly.";
 "commit.pin" = "Keep Description Expanded";
@@ -915,8 +917,6 @@
 "conflict.open.missing" = "Open";
 "conflict.export.missing" = "Export…";
 "conflict.toolTip" = "File requires merging: %@";
-"conflict.sequence.applying" = "Applying “%@”";
-"conflict.sequence.reverting" = "Reverting “%@”";
 
 /* 提交体验。 */
 "profiles.add.message" = "Saves “%@ <%@> (%@)” as a user profile. Enter a title for it.";

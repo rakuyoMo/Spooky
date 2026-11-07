@@ -675,13 +675,15 @@
 "conflict.step" = "%d / %d 단계";
 "conflict.step.applying" = "%d / %d 단계: “%@” 적용 중";
 "conflict.step.editing" = "%d / %d 단계: “%@” 편집 중";
+"conflict.step.reverting" = "%d / %d 단계: “%@” 되돌리는 중";
 "conflict.title.cherryPick" = "커밋 %d 개를 “%@”에 체리픽하는 중";
 "conflict.title.cherryPick.one" = "커밋 1 개를 “%@”에 체리픽하는 중";
+"conflict.title.edit" = "%@을(를) “%@”에서 편집하는 중";
 "conflict.title.merge" = "“%@”을(를) “%@”에 병합하는 중";
 "conflict.title.rebase" = "“%@”을(를) “%@” 위로 리베이스하는 중";
 "conflict.title.revert" = "커밋 %d 개를 “%@”에서 되돌리는 중";
 "conflict.title.revert.one" = "커밋 1 개를 “%@”에서 되돌리는 중";
-"conflict.title.squash" = "커밋을 “%@”에 스쿼시 병합하는 중";
+"conflict.title.squash" = "커밋을 “%@”에 스쿼시 병합";
 "conflict.unresolved.none" = "해결되지 않은 충돌 없음";
 "conflict.unresolved.one" = "해결되지 않은 충돌 1 개";
 "conflict.version" = "“%@”의 버전";
@@ -800,7 +802,7 @@
 "commit.amendHash" = "%@ 수정";
 "commit.commitHelp" = "스테이지된 변경 사항 커밋";
 "commit.amendHelp" = "최근 커밋 수정";
-"commit.continueHelp" = "진행 중인 작업 계속";
+"commit.continueHelp" = "병합 시퀀스 계속";
 "commit.remaining" = "%ld자 남음";
 "commit.quickAmendHint" = "• 메시지 입력란에 포커스가 없을 때 ⌥를 누르고 있으면 최근 커밋을 빠르게 수정합니다.";
 "commit.pin" = "설명 펼친 상태 유지";
@@ -915,8 +917,6 @@
 "conflict.open.missing" = "열기";
 "conflict.export.missing" = "내보내기…";
 "conflict.toolTip" = "병합이 필요한 파일: %@";
-"conflict.sequence.applying" = "“%@” 적용 중";
-"conflict.sequence.reverting" = "“%@” 되돌리는 중";
 
 /* 提交体验。 */
 "profiles.add.message" = "“%@ <%@> (%@)”을(를) 사용자 프로필로 저장합니다. 제목을 입력하세요.";

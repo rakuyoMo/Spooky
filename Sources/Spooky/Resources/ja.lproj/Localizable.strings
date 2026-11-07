@@ -675,13 +675,15 @@
 "conflict.step" = "ステップ %d / %d";
 "conflict.step.applying" = "ステップ %d / %d：「%@」を適用中";
 "conflict.step.editing" = "ステップ %d / %d：「%@」を編集中";
+"conflict.step.reverting" = "ステップ %d / %d：「%@」をリバート中";
 "conflict.title.cherryPick" = "%d 件のコミットを「%@」にチェリーピック中";
 "conflict.title.cherryPick.one" = "1 件のコミットを「%@」にチェリーピック中";
+"conflict.title.edit" = "%@ を「%@」上で編集中";
 "conflict.title.merge" = "「%@」を「%@」にマージ中";
 "conflict.title.rebase" = "「%@」を「%@」にリベース中";
 "conflict.title.revert" = "%d 件のコミットを「%@」上でリバート中";
 "conflict.title.revert.one" = "1 件のコミットを「%@」上でリバート中";
-"conflict.title.squash" = "コミットを「%@」にスカッシュマージ中";
+"conflict.title.squash" = "コミットを「%@」にスカッシュマージ";
 "conflict.unresolved.none" = "未解決の競合はありません";
 "conflict.unresolved.one" = "未解決の競合：1 件";
 "conflict.version" = "「%@」のバージョン";
@@ -800,7 +802,7 @@
 "commit.amendHash" = "%@ を修正";
 "commit.commitHelp" = "ステージ済みの変更をコミット";
 "commit.amendHelp" = "直前のコミットを修正";
-"commit.continueHelp" = "進行中の操作を続行";
+"commit.continueHelp" = "マージシーケンスを続行";
 "commit.remaining" = "残り %ld 文字";
 "commit.quickAmendHint" = "• メッセージ欄にフォーカスがないときに ⌥ を押したままにすると、直前のコミットをすばやく修正できます。";
 "commit.pin" = "説明を展開したままにする";
@@ -915,8 +917,6 @@
 "conflict.open.missing" = "開く";
 "conflict.export.missing" = "書き出す…";
 "conflict.toolTip" = "マージが必要なファイル：%@";
-"conflict.sequence.applying" = "「%@」を適用中";
-"conflict.sequence.reverting" = "「%@」をリバート中";
 
 /* 提交体验。 */
 "profiles.add.message" = "“%@ <%@> (%@)” をユーザプロファイルとして保存します。タイトルを入力してください。";

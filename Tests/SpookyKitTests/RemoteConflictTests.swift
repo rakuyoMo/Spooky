@@ -76,4 +76,77 @@ struct RemoteConflictTests {
             throw error
         }
     }
+
+    /// B 上的状态文件经同一次定位与读取：摘取序列、单个摘取与 edit 停顿的分类和步数与本机一致。
+    @Test("服务器上进行中操作的分类", .timeLimit(.minutes(3)))
+    func operationKinds() async throws {
+        let fixture = try await RemoteFixture.create()
+        let remote = fixture.connection()
+
+        do {
+            let location = try await remote.open().location
+            let runner = GitRunner(location: location, remote: remote)
+            let service = WorkingCopyOperations(runner: runner)
+            let files = RepositoryFiles(runner: runner)
+
+            /// 在 B 上写入一个文件并提交全部改动。
+            func commit(_ name: String, _ content: String, message: String) async throws {
+                try await files.write(Data((content + "\n").utf8), to: fixture.repository + "/" + name)
+                _ = try await runner.run(["add", "-A"])
+                _ = try await runner.run(["commit", "-q", "-m", message])
+            }
+
+            /// 按 B 上当前的 HEAD 读取进行中的操作。
+            func progress() async throws -> OperationProgress {
+                let head = try await runner.status().branch.oid
+                return try #require(try await service.context(head: head).progress)
+            }
+
+            try await commit("x", "base", message: "base")
+            _ = try await runner.run(["checkout", "-q", "-b", "side"])
+            try await commit("a", "a", message: "one")
+            try await commit("x", "two", message: "two")
+            try await commit("c", "c", message: "three")
+            _ = try await runner.run(["checkout", "-q", "main"])
+            try await commit("x", "main", message: "main")
+            try await commit("y", "after", message: "after")
+
+            // 三个提交在第二个冲突，序列剩两项
+            _ = try await runner.execute(["cherry-pick", "side~2", "side~1", "side"], acceptedExitCodes: [1])
+            let sequence = try await progress()
+
+            #expect(sequence.state == .cherryPick && sequence.isSequence)
+            #expect(sequence.step == 1 && sequence.stepCount == 2 && sequence.stepSubject == "two")
+
+            try await service.finish(.cherryPick, action: "abort")
+
+            // 只摘一个提交时 Git 不建 sequencer
+            _ = try await runner.execute(["cherry-pick", "side~1"], acceptedExitCodes: [1])
+            let single = try await progress()
+
+            #expect(single.state == .cherryPick && !single.isSequence && single.stepCount == nil)
+
+            try await service.finish(.cherryPick, action: "abort")
+
+            // edit 停下时记下正在修改的提交，不是尚未开始
+            let rewrite = RepositoryRewrite(runner: runner)
+            let edited = try await rewrite.resolve("HEAD~1")
+            try await rewrite.perform(try await rewrite.plan(.edit(edited)))
+
+            let editing = try await progress()
+
+            #expect(editing.stopsForEdit && editing.editedCommit == edited && editing.stepKind == .editing)
+            #expect(!editing.isPendingInteractive)
+
+            try await service.finish(.rebase, action: "abort")
+
+            await remote.close()
+            try await fixture.remove()
+        } catch {
+            if let git = error as? GitError { Issue.record(Comment(rawValue: git.message)) }
+            await remote.close()
+            try await fixture.remove()
+            throw error
+        }
+    }
 }

@@ -623,12 +623,8 @@ extension RepositoryWindowController {
         let quick = flags.contains(.option) && !session.isEditingCommitMessage && !session.amend
         if quick { session.setAmend(true) }
 
-        if
-            let operation = session.context?.operation,
-            [.rebase, .cherryPick, .revert].contains(operation),
-            !(session.context?.progress?.stopsForEdit ?? false),
-            session.canWrite, session.conflictCount == 0
-        {
+        // 提交区隐藏时不继续：还有未解决冲突，或交互式变基尚未开始
+        if session.continuesSequence, session.showsCommitArea, session.canWrite {
             session.finishOperation("continue")
         } else if session.canCommit {
             session.commit()

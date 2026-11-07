@@ -11,10 +11,10 @@ struct OperationBannerView: View {
         /// 还有未解决的冲突。
         case conflicts
 
-        /// 冲突都已解决，已跟踪的文件还有改动。
+        /// 冲突都已解决，工作区还有改动。
         case resolved
 
-        /// 冲突都已解决，已跟踪的文件没有任何改动；跳过这一步不会丢掉工作区里的改动。
+        /// 冲突都已解决，工作区没有任何改动。
         case empty
     }
 
@@ -33,14 +33,13 @@ struct OperationBannerView: View {
 // MARK: - Private
 
 extension OperationBannerView {
-    /// 当前阶段，按冲突与已跟踪文件的改动判断；未跟踪的文件不影响跳过。
+    /// 当前阶段，按冲突与整份工作区的改动判断；未跟踪的文件也算改动。
     private var phase: Phase {
         if session.conflictCount > 0 {
             return .conflicts
         }
 
-        let changed = session.status?.entries.contains { $0.kind == .tracked } ?? false
-        return changed ? .resolved : .empty
+        return session.isWorkingCopyClean ? .empty : .resolved
     }
 
     /// 未解决与已解决的冲突数；从没有出现过冲突时不显示。
@@ -115,23 +114,18 @@ extension OperationBannerView {
             .accessibilityHidden(true)
     }
 
-    /// 序列进度：变基多个提交时显示第几步与进度条；摘取与反转不记录已完成的步数，只说明正在处理的提交。
+    /// 序列进度：变基、摘取与反转的序列显示进度条与第几步，一项也显示；单个提交的操作没有进度。
     @ViewBuilder
     private func stepProgress(_ progress: OperationProgress) -> some View {
-        if [.cherryPick, .revert].contains(progress.state), let subject = progress.stepSubject {
-            Text(AppLocalization.text(
-                progress.stepKind == .reverting ? "conflict.sequence.reverting" : "conflict.sequence.applying",
-                subject
-            ))
-            .font(.system(size: 12))
-            .foregroundStyle(.secondary)
-            .lineLimit(2)
-            .padding(.top, 12)
-        } else if let step = progress.step, let count = progress.stepCount, count > 1 {
+        if
+            let text = session.operationStepText,
+            let step = progress.step,
+            let count = progress.stepCount
+        {
             VStack(alignment: .leading, spacing: 4) {
                 ProgressView(value: Double(min(step, count)), total: Double(count))
 
-                Text(stepText(progress, step: step, count: count))
+                Text(text)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -140,7 +134,7 @@ extension OperationBannerView {
         }
     }
 
-    /// 只看冲突文件的勾选框，以及中止和跳过；跳过只在序列的这一步没有改动时提供。
+    /// 只看冲突文件的勾选框，以及中止、结束编辑和跳过。
     private func actionRow(_ progress: OperationProgress) -> some View {
         HStack(spacing: 8) {
             Toggle(AppLocalization.text("working.onlyConflicts"), isOn: $session.onlyConflicts)
@@ -152,27 +146,27 @@ extension OperationBannerView {
             Button(AppLocalization.text("working.abort")) { session.finishOperation("abort") }
                 .disabled(!session.canWrite)
 
-            // 停在 edit 上时，撤回的改动（包括变成未跟踪的新文件）都提交之后才能继续
+            // 工作区还有改动或未跟踪文件时照样可以结束编辑，Git 拒绝时报告它的错误
             if progress.stopsForEdit {
-                let pending = session.status?.entries.contains { [.tracked, .conflicted, .untracked].contains($0.kind) }
-
                 Button(AppLocalization.text("working.continue")) { session.finishOperation("continue") }
-                    .disabled(!session.canWrite || (pending ?? true))
-            } else if progress.state != .merge, progress.state != .squash, phase == .empty {
+                    .disabled(!session.canWrite)
+            } else if session.offersSkip {
                 Button(AppLocalization.text("working.skip")) { session.finishOperation("skip") }
                     .disabled(!session.canWrite)
             }
         }
     }
 
-    /// 按操作与阶段给出下一步提示，停在 edit 上时说明先提交再继续；按钮名以粗体标出。
+    /// 按操作与阶段给出下一步提示，按钮名以粗体标出。
+    ///
+    /// 停在 edit 上时说明先提交再继续；单个提交的摘取与反转同合并一样以提交收尾。
     private func hint(_ progress: OperationProgress) -> AttributedString {
         let key =
             switch (progress.state, phase) {
             case (_, _) where progress.stopsForEdit: "conflict.hint.rebase.edit"
-            case (.merge, .conflicts), (.squash, .conflicts): "conflict.hint.merge.conflicts"
-            case (.merge, .resolved), (.squash, .resolved): "conflict.hint.merge.resolved"
-            case (.merge, .empty), (.squash, .empty): "conflict.hint.merge.empty"
+            case (_, .conflicts) where !progress.isSequence: "conflict.hint.merge.conflicts"
+            case (_, .resolved) where !progress.isSequence: "conflict.hint.merge.resolved"
+            case (_, .empty) where !progress.isSequence: "conflict.hint.merge.empty"
             case (.rebase, .conflicts): "conflict.hint.rebase.conflicts"
             case (.rebase, .resolved): "conflict.hint.rebase.resolved"
             case (.rebase, .empty): "conflict.hint.rebase.empty"
@@ -183,16 +177,6 @@ extension OperationBannerView {
 
         let text = AppLocalization.text(key)
         return (try? AttributedString(markdown: text)) ?? AttributedString(text)
-    }
-
-    /// 变基的 “第 N 步，共 M 步” 加上当前一步的动作与提交标题。
-    private func stepText(_ progress: OperationProgress, step: Int, count: Int) -> String {
-        guard let subject = progress.stepSubject else {
-            return AppLocalization.text("conflict.step", step, count)
-        }
-
-        let key = progress.stepKind == .editing ? "conflict.step.editing" : "conflict.step.applying"
-        return AppLocalization.text(key, step, count, subject)
     }
 }
 

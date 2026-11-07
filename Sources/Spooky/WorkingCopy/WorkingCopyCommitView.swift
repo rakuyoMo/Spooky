@@ -67,14 +67,12 @@ struct WorkingCopyCommitView: View {
     @AppStorage(CommitEditorSettings.bodyHeightKey)
     private var bodyHeight = CommitEditorSettings.minimumBodyHeight
 
-    /// 进行中横幅位于信息区上方，冲突解决后重新显示提交控件。
-    ///
-    /// 储藏恢复等没有进行中操作的冲突既没有横幅也没有提交控件，此时整块不留边距，不显示空的底色块。
+    /// 进行中横幅位于信息区上方；进行中的操作还有未解决冲突或尚未开始时只显示横幅。
     var body: some View {
         VStack(spacing: 12) {
             OperationBannerView(session: session)
 
-            if session.conflictCount == 0 {
+            if session.showsCommitArea {
                 // 提交成功到清空信息之间，选项与按钮同信息框一起锁定。
                 VStack(spacing: 8) {
                     subjectField
@@ -89,7 +87,7 @@ struct WorkingCopyCommitView: View {
                 .animation(.easeInOut(duration: 0.2), value: session.collapsesCommitBody)
             }
         }
-        .padding(session.conflictCount == 0 || session.context?.progress != nil ? 20 : 0)
+        .padding(20)
         .background(HeaderMaterial())
         .onModifierKeysChanged(mask: .option) { _, flags in
             optionPressed = flags.contains(.option)
@@ -154,7 +152,12 @@ extension WorkingCopyCommitView {
 
     /// 写入、提交后等待清空、快速修补和继续序列期间信息只读。
     private var isEditable: Bool {
-        !(session.isWriting || session.commitResetTask != nil || quickAmend || continuesSequence)
+        let locked = session.isWriting
+            || session.commitResetTask != nil
+            || quickAmend
+            || session.continuesSequence
+
+        return !locked
     }
 
     /// 标题右端显示的剩余字数；不显示时为 nil。
@@ -309,7 +312,7 @@ extension WorkingCopyCommitView {
 
             if session.commitConfiguration?.hasCommitHooks ?? false {
                 Toggle(AppLocalization.text("commit.skipHooks"), isOn: $session.skipHooks)
-                    .disabled(!session.canWrite || continuesSequence)
+                    .disabled(!session.canWrite || session.continuesSequence)
             }
         }
         .toggleStyle(.checkbox)
@@ -344,7 +347,7 @@ extension WorkingCopyCommitView {
                 ProgressView().controlSize(.small)
             }
 
-            if continuesSequence {
+            if session.continuesSequence {
                 Button(AppLocalization.text("working.continue")) { session.finishOperation("continue") }
                     .disabled(!session.canWrite)
                     .help(AppLocalization.text("commit.continueHelp"))
@@ -362,14 +365,6 @@ extension WorkingCopyCommitView {
         let entries = session.status?.entries ?? []
         return entries.contains(where: \.hasStagedChanges)
             && (optionPressed || !entries.contains(where: \.hasUnstagedChanges))
-    }
-
-    /// 序列继续沿用 Git 已保存的信息，普通提交和合并收尾才编辑输入。
-    private var continuesSequence: Bool {
-        guard let operation = session.context?.operation else { return false }
-
-        // 停在 edit 上时撤回到工作区的改动要先提交，继续在横幅里
-        return [.rebase, .cherryPick, .revert].contains(operation) && !(session.context?.progress?.stopsForEdit ?? false)
     }
 
     /// 焦点在标题与正文之间移动时不收起：失去焦点后等这一轮事件结束，另一个框没有接过焦点才收起。

@@ -675,13 +675,15 @@
 "conflict.step" = "Paso %d de %d";
 "conflict.step.applying" = "Paso %d de %d: aplicando “%@”";
 "conflict.step.editing" = "Paso %d de %d: editando “%@”";
+"conflict.step.reverting" = "Paso %d de %d: revirtiendo “%@”";
 "conflict.title.cherryPick" = "Haciendo cherry-pick de %d commits sobre “%@”";
 "conflict.title.cherryPick.one" = "Haciendo cherry-pick de 1 commit sobre “%@”";
+"conflict.title.edit" = "Editando %@ en “%@”";
 "conflict.title.merge" = "Fusionando “%@” en “%@”";
 "conflict.title.rebase" = "Haciendo rebase de “%@” sobre “%@”";
 "conflict.title.revert" = "Revirtiendo %d commits en “%@”";
 "conflict.title.revert.one" = "Revirtiendo 1 commit en “%@”";
-"conflict.title.squash" = "Haciendo squash merge de commits en “%@”";
+"conflict.title.squash" = "Squash merge de commits en “%@”";
 "conflict.unresolved.none" = "No hay conflictos sin resolver";
 "conflict.unresolved.one" = "1 conflicto sin resolver";
 "conflict.version" = "Versión de “%@”";
@@ -800,7 +802,7 @@
 "commit.amendHash" = "Enmendar %@";
 "commit.commitHelp" = "Hacer commit de los cambios en el stage";
 "commit.amendHelp" = "Enmendar el último commit";
-"commit.continueHelp" = "Continuar la operación en curso";
+"commit.continueHelp" = "Continuar la secuencia de fusión";
 "commit.remaining" = "Quedan %ld caracteres";
 "commit.quickAmendHint" = "• Mantener pulsada ⌥ cuando ningún campo del mensaje está activo para enmendar rápidamente el último commit.";
 "commit.pin" = "Mantener la descripción desplegada";
@@ -915,8 +917,6 @@
 "conflict.open.missing" = "Abrir";
 "conflict.export.missing" = "Exportar…";
 "conflict.toolTip" = "El archivo requiere fusión: %@";
-"conflict.sequence.applying" = "Aplicando “%@”";
-"conflict.sequence.reverting" = "Revirtiendo “%@”";
 
 /* 提交体验。 */
 "profiles.add.message" = "“%@ <%@> (%@)” se guardará como perfil de usuario. Introduce un título para él.";

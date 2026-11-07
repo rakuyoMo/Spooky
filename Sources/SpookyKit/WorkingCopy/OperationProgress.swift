@@ -23,9 +23,10 @@ public struct OperationProgress: Sendable, Equatable {
         "MERGE_HEAD", "SQUASH_MSG", "CHERRY_PICK_HEAD", "REVERT_HEAD", "MERGE_MSG",
         "rebase-merge/head-name", "rebase-merge/onto", "rebase-merge/orig-head",
         "rebase-merge/msgnum", "rebase-merge/end", "rebase-merge/done", "rebase-merge/amend",
+        "rebase-merge/stopped-sha",
         "rebase-apply/head-name", "rebase-apply/onto", "rebase-apply/orig-head",
         "rebase-apply/next", "rebase-apply/last", "rebase-apply/final-commit",
-        "sequencer/todo",
+        "sequencer/todo", "sequencer/head",
     ]
 
     /// 进行中的操作。
@@ -40,10 +41,10 @@ public struct OperationProgress: Sendable, Equatable {
     /// 正在变基的分支的完整引用名；在分离 HEAD 上变基时为 nil。
     public let branch: String?
 
-    /// 变基当前一步的序号，从 1 开始；摘取与反转不记录已完成的步数，为 nil。
+    /// 当前一步的序号，从 1 开始：变基取 Git 记录的步号；摘取与反转的序列不记录已完成的步数，正在处理的总是剩余中的第 1 个；单个提交的操作为 nil。
     public let step: Int?
 
-    /// 变基的总步数；摘取与反转序列是 todo 里尚未完成的提交数，含正在处理的这一个；单个提交的操作为 nil。
+    /// 总步数：变基是全部步数；摘取与反转的序列是 todo 里尚未完成的提交数，含正在处理的这一个；单个提交的操作为 nil。
     public let stepCount: Int?
 
     /// 当前一步的动作。
@@ -52,11 +53,24 @@ public struct OperationProgress: Sendable, Equatable {
     /// 当前一步处理的提交标题。
     public let stepSubject: String?
 
+    /// 操作是序列，收尾时继续处理后面的步骤：变基总是序列；摘取与反转以 Git 是否建了 sequencer 为准，只剩一项的 sequencer 仍是序列。
+    ///
+    /// 只摘取或反转一个提交时 Git 不建 sequencer，按合并的方式提交收尾。
+    public let isSequence: Bool
+
     /// 这次操作中已经标记解决的冲突文件，来自索引的 resolve-undo 记录。
     public internal(set) var resolvedPaths: Set<String> = []
 
-    /// 交互式变基按 edit 指令停在这一步，等待修改后继续；冲突造成的停顿不算。
-    public internal(set) var stopsForEdit = false
+    /// 交互式变基按 edit 指令停下时正在修改的提交；冲突、squash 与 fixup 造成的停顿为 nil。
+    public internal(set) var editedCommit: String?
+
+    /// 交互式变基尚未开始：merge 后端的变基既没有停在 edit 上，也没有停在某个提交上。
+    ///
+    /// 这时没有可以提交的一步，只能中止。
+    public internal(set) var isPendingInteractive = false
+
+    /// 交互式变基按 edit 指令停在这一步，等待修改后继续。
+    public var stopsForEdit: Bool { editedCommit != nil }
 }
 
 extension OperationProgress {
@@ -95,7 +109,8 @@ extension OperationProgress {
             step: nil,
             stepCount: nil,
             stepKind: nil,
-            stepSubject: nil
+            stepSubject: nil,
+            isSequence: false
         )
     }
 
@@ -257,6 +272,10 @@ extension OperationProgress {
             ? value("rebase-apply/final-commit").flatMap { $0.split(separator: "\n").first.map(String.init) }
             : current?.subject
 
+        // squash、fixup 停下时 Git 同样写 amend，只有最后一条是 edit 指令时才是停下来修改提交
+        let stopsForEdit = !apply && ["edit", "e"].contains(current?.command ?? "")
+        let edited = stopsForEdit ? value("rebase-merge/amend") : nil
+
         var progress = Self(
             state: .rebase,
             ours: value(backend + "onto"),
@@ -264,18 +283,24 @@ extension OperationProgress {
             branch: head.flatMap { $0.hasPrefix("refs/") ? $0 : nil },
             step: value(backend + (apply ? "next" : "msgnum")).flatMap { Int($0) },
             stepCount: value(backend + (apply ? "last" : "end")).flatMap { Int($0) },
-            stepKind: ["edit", "e"].contains(current?.command ?? "") ? .editing : .applying,
-            stepSubject: subject
+            stepKind: edited == nil ? .applying : .editing,
+            stepSubject: subject,
+            isSequence: true
         )
 
-        // Git 只在 edit 指令主动停下时写 amend，记下要修改的提交
-        progress.stopsForEdit = !apply && value("rebase-merge/amend") != nil
+        progress.editedCommit = edited
+
+        // Git 每次停在某个提交上都会写 stopped-sha；还没有它就是还没开始处理任何提交
+        progress.isPendingInteractive = !apply
+            && edited == nil
+            && value("rebase-merge/stopped-sha") == nil
+
         return progress
     }
 
     /// 摘取与反转：序列看 sequencer/todo 的第一条指令，单个提交看 CHERRY_PICK_HEAD、REVERT_HEAD。
     ///
-    /// 序列只记录尚未完成的指令，不记录已完成的步数，所以只有剩余的提交数，没有当前一步的序号。
+    /// 序列只记录尚未完成的指令，不记录已完成的步数，所以总数是剩余的提交数，当前一步总是其中的第 1 个。
     private static func sequence(_ value: (String) -> String?, head: String?) -> Self? {
         let todo = value("sequencer/todo").map(instructions) ?? []
         let first = todo.first
@@ -293,10 +318,11 @@ extension OperationProgress {
             ours: head,
             theirs: current,
             branch: nil,
-            step: nil,
+            step: todo.isEmpty ? nil : 1,
             stepCount: todo.isEmpty ? nil : todo.count,
             stepKind: reverting ? .reverting : .applying,
-            stepSubject: first?.subject
+            stepSubject: first?.subject,
+            isSequence: value("sequencer/todo") != nil || value("sequencer/head") != nil
         )
     }
 

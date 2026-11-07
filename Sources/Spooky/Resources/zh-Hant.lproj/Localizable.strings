@@ -675,13 +675,15 @@
 "conflict.step" = "第 %d 步，共 %d 步";
 "conflict.step.applying" = "第 %d 步，共 %d 步：正在套用 “%@”";
 "conflict.step.editing" = "第 %d 步，共 %d 步：正在編輯 “%@”";
+"conflict.step.reverting" = "第 %d 步，共 %d 步：正在反轉 “%@”";
 "conflict.title.cherryPick" = "正在把 %d 個提交摘取到 “%@”";
 "conflict.title.cherryPick.one" = "正在把 1 個提交摘取到 “%@”";
+"conflict.title.edit" = "正在編輯 %@，位於 “%@” 上";
 "conflict.title.merge" = "正在把 “%@” 合併到 “%@”";
 "conflict.title.rebase" = "正在把 “%@” 變基到 “%@”";
 "conflict.title.revert" = "正在反轉 %d 個提交，位於 “%@” 上";
 "conflict.title.revert.one" = "正在反轉 1 個提交，位於 “%@” 上";
-"conflict.title.squash" = "正在把提交壓縮合併到 “%@”";
+"conflict.title.squash" = "把提交壓縮合併到 “%@”";
 "conflict.unresolved.none" = "沒有未解決的衝突";
 "conflict.unresolved.one" = "1 個未解決衝突";
 "conflict.version" = "來自 “%@” 的版本";
@@ -800,7 +802,7 @@
 "commit.amendHash" = "修補 %@";
 "commit.commitHelp" = "提交已暫存的變更";
 "commit.amendHelp" = "修補最近一次提交";
-"commit.continueHelp" = "繼續進行中的操作";
+"commit.continueHelp" = "繼續合併序列";
 "commit.remaining" = "還可輸入 %ld 個字";
 "commit.quickAmendHint" = "• 焦點不在訊息欄時按住 ⌥ 可快速修補最近一次提交。";
 "commit.pin" = "保持內文展開";
@@ -915,8 +917,6 @@
 "conflict.open.missing" = "開啟";
 "conflict.export.missing" = "匯出…";
 "conflict.toolTip" = "檔案需要合併：%@";
-"conflict.sequence.applying" = "正在套用 “%@”";
-"conflict.sequence.reverting" = "正在反轉 “%@”";
 
 /* 提交体验。 */
 "profiles.add.message" = "將 “%@ <%@> (%@)” 儲存為身分設定檔，請為它輸入標題。";

@@ -193,7 +193,7 @@ struct MergeConflictTests {
         #expect(try await runner.status().branch.oid == original)
     }
 
-    /// 摘取序列不记录已完成的步数，只能数出剩余的提交；这一步解决后没有改动时，继续保留一个沿用原作者与信息的空提交。
+    /// 摘取序列不记录已完成的步数，只数剩余的提交，当前一步是其中第 1 个；这一步解决后没有改动时，继续保留一个沿用原作者与信息的空提交。
     @Test("摘取序列：剩余提交数与空的一步继续")
     func cherryPickSequence() async throws {
         let repository = try TemporaryRepository()
@@ -214,7 +214,7 @@ struct MergeConflictTests {
         let progress = try #require(try await service.context(head: try await runner.status().branch.oid).progress)
 
         #expect(progress.state == .cherryPick)
-        #expect(progress.step == nil && progress.stepCount == 2)
+        #expect(progress.step == 1 && progress.stepCount == 2 && progress.isSequence)
         #expect(progress.stepSubject == "pick me")
 
         // 采用我方后这一步与 HEAD 相同
