@@ -50,17 +50,17 @@ extension PromptDialogTests {
         #expect(closed == 1)
     }
 
-    /// 勾上勾选框后取消：只关闭对话框、执行取消的动作，勾选不生效。
-    @Test("取消时勾选不生效", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    /// 勾上勾选框后取消：关闭对话框，取消的动作收到勾选状态，主按钮的动作不执行。
+    @Test("取消时勾选交给取消的动作", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func cancelWithCheckbox() {
         var submitted: [Bool] = []
-        var cancelled = 0
+        var cancelled: [Bool] = []
         var closed = 0
         let cancel = AppLocalization.text("action.cancel")
 
         _ = AccessibilityProbe.elements(
             pressing: ["Remember", cancel],
-            until: { _ in cancelled > 0 }
+            until: { _ in !cancelled.isEmpty }
         ) {
             ConfirmationDialog(
                 title: "Title",
@@ -68,14 +68,14 @@ extension PromptDialogTests {
                 submitTitle: "OK",
                 checkbox: "Remember",
                 close: { closed += 1 },
-                cancel: { cancelled += 1 }
+                cancel: { cancelled.append($0) }
             ) {
                 submitted.append($0)
             }
         }
 
         #expect(submitted.isEmpty)
-        #expect(cancelled == 1)
+        #expect(cancelled == [true])
         #expect(closed == 1)
     }
 

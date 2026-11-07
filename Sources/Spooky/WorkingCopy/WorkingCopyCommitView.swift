@@ -67,14 +67,14 @@ struct WorkingCopyCommitView: View {
     @AppStorage(CommitEditorSettings.bodyHeightKey)
     private var bodyHeight = CommitEditorSettings.minimumBodyHeight
 
-    /// 进行中横幅位于信息区上方，冲突解决后重新显示提交控件。
+    /// 进行中横幅位于信息区上方；进行中的操作还有未解决冲突或尚未开始时只显示横幅。
     ///
-    /// 储藏恢复等没有进行中操作的冲突既没有横幅也没有提交控件，此时整块不留边距，不显示空的底色块。
+    /// 横幅自带外边距，信息区另有 20 pt 内边距，两者之间不再留间距。
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 0) {
             OperationBannerView(session: session)
 
-            if session.conflictCount == 0 {
+            if session.showsCommitArea {
                 // 提交成功到清空信息之间，选项与按钮同信息框一起锁定。
                 VStack(spacing: 8) {
                     subjectField
@@ -86,17 +86,15 @@ struct WorkingCopyCommitView: View {
                     actionRow
                 }
                 .disabled(session.commitResetTask != nil)
+                .animation(.easeInOut(duration: 0.2), value: session.collapsesCommitBody)
+                .padding(20)
             }
         }
-        .padding(session.conflictCount == 0 || session.context?.progress != nil ? 20 : 0)
-        .background(AppPalette.color("general_header_background_color"))
+        .background(HeaderMaterial())
         .onModifierKeysChanged(mask: .option) { _, flags in
             optionPressed = flags.contains(.option)
 
-            if
-                optionPressed, focusedField == nil, !session.amend,
-                session.status?.branch.oid != nil, session.context?.operation == nil
-            {
+            if optionPressed, focusedField == nil, !session.amend, session.canAmend {
                 session.setAmend(true)
                 quickAmend = session.amend
             } else if !optionPressed, quickAmend {
@@ -117,22 +115,57 @@ struct WorkingCopyCommitView: View {
     }
 }
 
+// MARK: - Subject Counter
+
+extension WorkingCopyCommitView {
+    /// 标题剩余字数：上限减去去掉首尾空白后标题的 UTF-16 码元数，超出上限时为负数。
+    ///
+    /// 组合字符与 emoji 按码元计，不按字符计。标题与正文都为空或关闭计数时不显示，返回 nil。
+    ///
+    /// - Parameters:
+    ///   - subject: 标题。
+    ///   - body: 正文。
+    ///   - limit: 标题字数上限，至少为 1。
+    ///   - isEnabled: Editor 设置里是否显示计数。
+    nonisolated static func remainingCharacters(
+        subject: String,
+        body: String,
+        limit: Int,
+        isEnabled: Bool
+    ) -> Int? {
+        guard isEnabled, !(subject.isEmpty && body.isEmpty) else {
+            return nil
+        }
+
+        return max(1, limit) - subject.trimmingCharacters(in: .whitespacesAndNewlines).utf16.count
+    }
+}
+
 // MARK: - Private
 
 extension WorkingCopyCommitView {
-    /// 焦点在信息框、已钉住或正文非空时展开。
+    /// 焦点在信息框、已钉住或正文非空时展开；提交成功后收起，直到信息框再次获得焦点。
     private var isExpanded: Bool {
-        focusedField != nil || pinned || !session.commitBody.isEmpty
+        !session.collapsesCommitBody && (focusedField != nil || pinned || !session.commitBody.isEmpty)
     }
 
-    /// 写入、提交后等待清空、快速修补和继续序列期间信息只读。
+    /// 写入、提交后等待清空和快速修补期间信息只读；继续序列前可以编辑这一步的信息。
     private var isEditable: Bool {
-        !(session.isWriting || session.commitResetTask != nil || quickAmend || continuesSequence)
+        let locked = session.isWriting
+            || session.commitResetTask != nil
+            || quickAmend
+
+        return !locked
     }
 
-    /// 标题剩余字数，超出上限时为负数。
-    private var remaining: Int {
-        max(1, subjectLimit) - session.commitSubject.count
+    /// 标题右端显示的剩余字数；不显示时为 nil。
+    private var remaining: Int? {
+        Self.remainingCharacters(
+            subject: session.commitSubject,
+            body: session.commitBody,
+            limit: subjectLimit,
+            isEnabled: showsCounter
+        )
     }
 
     /// 硬折行只改显示：等宽字体、正文不折行，参考线右侧变浅，超长的行整行标出。
@@ -141,29 +174,34 @@ extension WorkingCopyCommitView {
     }
 
     /// 单行标题，右端是剩余字数；回车或 Tab 转到正文。
+    ///
+    /// 剩余字数是带底色的浮层，只在显示时占用标题右侧的空间。
     private var subjectField: some View {
-        CommitMessageEditor(
-            role: .subject,
-            text: $session.commitSubject,
-            placeholder: AppLocalization.text("working.subject"),
-            isEditable: isEditable,
-            monospaced: hardWrap,
-            characterLimit: max(1, subjectLimit),
-            reformatLimit: nil,
-            hardWrap: false,
-            showsGuide: false,
-            focusRequest: session.commitFocusRequest,
-            onFocusChange: { focusChanged(.subject, focused: $0) },
-            onSubmit: { bodyFocusRequest += 1 },
-            completions: { await session.completions(for: $0) }
-        )
-        .padding(.trailing, showsCounter ? 36 : 0)
-        .overlay(alignment: .trailing) {
-            if showsCounter {
+        HStack(spacing: 0) {
+            CommitMessageEditor(
+                role: .subject,
+                text: $session.commitSubject,
+                placeholder: AppLocalization.text("working.subject"),
+                isEditable: isEditable,
+                releasesFocus: session.isCommitting,
+                monospaced: hardWrap,
+                characterLimit: max(1, subjectLimit),
+                reformatLimit: nil,
+                hardWrap: false,
+                showsGuide: false,
+                focusRequest: session.commitFocusRequest,
+                onFocusChange: { focusChanged(.subject, focused: $0) },
+                onSubmit: { bodyFocusRequest += 1 },
+                completions: { await session.completions(for: $0) }
+            )
+
+            if let remaining {
                 Text(String(remaining))
-                    .font(.system(size: 11).monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .padding(.trailing, 8)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
+                    .padding(EdgeInsets(top: 2, leading: 6, bottom: 2, trailing: 3))
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .padding(.trailing, 1)
                     .accessibilityLabel(AppLocalization.text("commit.remaining", remaining))
             }
         }
@@ -177,7 +215,7 @@ extension WorkingCopyCommitView {
         session.commitConfiguration?.bodyLineLimit ?? max(1, bodyLineLimit)
     }
 
-    /// 正文框连同底部的钉住与折行按钮，下沿与右下角可拖动；其下是提交选项与提交人。
+    /// 正文框连同底部的钉住与折行按钮，下沿与右下角可拖动；其下是提交选项与提交人，选项行下留 11 pt。
     private var details: some View {
         VStack(spacing: 12) {
             VStack(spacing: 0) {
@@ -186,6 +224,7 @@ extension WorkingCopyCommitView {
                     text: $session.commitBody,
                     placeholder: AppLocalization.text("working.body") + "\n\n" + AppLocalization.text("commit.quickAmendHint"),
                     isEditable: isEditable,
+                    releasesFocus: session.isCommitting,
                     monospaced: hardWrap,
                     characterLimit: effectiveBodyLineLimit,
                     reformatLimit: effectiveBodyLineLimit,
@@ -211,6 +250,7 @@ extension WorkingCopyCommitView {
                 CommitIdentityView(session: session)
             }
         }
+        .padding(.bottom, 11)
     }
 
     /// 钉住正文区与切换软 / 硬折行。
@@ -260,17 +300,14 @@ extension WorkingCopyCommitView {
     private var options: some View {
         VStack(alignment: .leading, spacing: 8) {
             Toggle(amendTitle, isOn: Binding(get: { session.amend }, set: { session.setAmend($0) }))
-                .disabled(
-                    !session.canWrite || quickAmend
-                        || session.status?.branch.oid == nil || session.context?.operation != nil
-                )
+                .disabled(!session.canAmend || quickAmend)
 
             Toggle(AppLocalization.text("commit.signOff"), isOn: $signOff)
                 .disabled(!session.canWrite || quickAmend)
 
             if session.commitConfiguration?.hasCommitHooks ?? false {
                 Toggle(AppLocalization.text("commit.skipHooks"), isOn: $session.skipHooks)
-                    .disabled(!session.canWrite || continuesSequence)
+                    .disabled(!session.canWrite || session.continuesSequence)
             }
         }
         .toggleStyle(.checkbox)
@@ -300,10 +337,13 @@ extension WorkingCopyCommitView {
 
             Spacer(minLength: 0)
 
-            if session.isWriting { ProgressView().controlSize(.small) }
+            // 只有超过延迟仍未结束的提交才转圈，暂存、丢弃等其它写操作不显示
+            if session.showsCommitProgress {
+                ProgressView().controlSize(.small)
+            }
 
-            if continuesSequence {
-                Button(AppLocalization.text("working.continue")) { session.finishOperation("continue") }
+            if session.continuesSequence {
+                Button(AppLocalization.text("working.continue")) { session.continueSequence() }
                     .disabled(!session.canWrite)
                     .help(AppLocalization.text("commit.continueHelp"))
             } else {
@@ -322,18 +362,16 @@ extension WorkingCopyCommitView {
             && (optionPressed || !entries.contains(where: \.hasUnstagedChanges))
     }
 
-    /// 序列继续沿用 Git 已保存的信息，普通提交和合并收尾才编辑输入。
-    private var continuesSequence: Bool {
-        guard let operation = session.context?.operation else { return false }
-
-        // 停在 edit 上时撤回到工作区的改动要先提交，继续在横幅里
-        return [.rebase, .cherryPick, .revert].contains(operation) && !(session.context?.progress?.stopsForEdit ?? false)
-    }
-
     /// 焦点在标题与正文之间移动时不收起：失去焦点后等这一轮事件结束，另一个框没有接过焦点才收起。
+    ///
+    /// 提交成功后的收起在信息框重新获得焦点时结束。
     private func focusChanged(_ field: Field, focused: Bool) {
         if focused {
-            withAnimation(.easeInOut(duration: 0.2)) { focusedField = field }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                session.collapsesCommitBody = false
+                focusedField = field
+            }
+
             return
         }
 

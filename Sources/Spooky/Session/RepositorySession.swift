@@ -124,9 +124,6 @@ final class RepositorySession {
     /// 列表多选使用的稳定标识。
     var selectedIDs: Set<StatusRowID> = []
 
-    /// 横幅的冲突过滤选项。
-    var onlyConflicts = false
-
     /// 主菜单请求聚焦提交标题。
     var commitFocusRequest = 0
 
@@ -148,14 +145,33 @@ final class RepositorySession {
     /// 提交成功后保留提交信息的时长；测试把它改长，在写操作收尾时稳定地看到等待中的状态。
     var commitResetDelay = Duration.milliseconds(300)
 
+    /// 提交命令开始到它成功、失败或取消之间为真；只由提交置位，暂存、丢弃等其它写操作不影响。
+    var isCommitting = false
+
+    /// 提交超过 `commitProgressDelay` 仍未结束时为真，提交区据此在按钮旁转圈。
+    var showsCommitProgress = false
+
+    /// 提交开始后多久才显示转圈，提前结束的提交不会闪现；测试把它改短或改长，稳定地看到两种状态。
+    var commitProgressDelay = Duration.seconds(1)
+
+    /// 等待显示转圈的任务；只属于正在进行的这次提交。
+    @ObservationIgnored
+    var commitProgressTask: Task<Void, Never>? = nil
+
+    /// 提交成功后收起正文区，钉住时也收起；信息框再次获得焦点时取消。
+    var collapsesCommitBody = false
+
+    /// 提交成功后请求工作区文件列表成为第一响应者。
+    var fileListFocusRequest = 0
+
     /// 窗口询问注释行的处理方式；参数为去掉注释后信息是否为空，用户取消时不回调。
     var onCommentPrompt: ((Bool, @escaping (CommentHandling) -> Void) -> Void)? = nil
 
     /// 窗口以确认版对话框请用户确认，对话框关闭后才执行操作；带 “Do not ask me again” 时勾选并确认由窗口关掉这项确认。
     var onConfirm: ((ConfirmationRequest) -> Void)? = nil
 
-    /// 合并没有暂存的改动时，窗口询问是建空合并提交还是中止合并；参数依次是提交与中止的动作。
-    var onEmptyMergePrompt: ((@escaping () -> Void, @escaping () -> Void) -> Void)? = nil
+    /// 进行中的操作没有任何改动时，窗口确认是否保留空提交。
+    var onEmptyCommitPrompt: ((EmptyCommitRequest) -> Void)? = nil
 
     /// 窗口在重连核对完成后向用户报告中断写入的结果；没有新的核对时表示写入没有开始。
     var onRecovery: ((InterruptedWrite, RemoteRecoverySnapshot?) -> Void)? = nil
@@ -209,7 +225,7 @@ final class RepositorySession {
     /// 当前刷新任务，关闭仓库时取消。
     private(set) var refreshTask: Task<Void, Never>? = nil
 
-    /// ⌥ 快速修补生效前保存的普通草稿。
+    /// 进入修补前保存的普通草稿，取消修补或修补成功后恢复；进入合并时丢弃。
     var originalDraft: (subject: String, body: String)? = nil
 
     /// 当前文件的读取任务。
@@ -217,6 +233,9 @@ final class RepositorySession {
 
     /// 提交信息与进行中状态的读取任务。
     private var contextTask: Task<Void, Never>? = nil
+
+    /// 读取进行中状态期间收到的重读请求，本次结束后补做。
+    private var pendingContext = false
 
     /// 本机递归文件监听。
     private var fileMonitor: RepositoryFileMonitor? = nil
@@ -466,9 +485,9 @@ final class RepositorySession {
 extension RepositorySession {
     /// 结束当前读取并清空仓库，视图状态存入窗口缓存；不影响 App 的其它窗口和进程。
     func close() {
-        // 提交后还没清空的信息属于已完成的提交，不能随视图状态存下来。
+        // 提交后还没重置的信息属于已完成的提交，不能随视图状态存下来。
         if commitResetTask != nil {
-            clearCommittedMessage()
+            resetCommittedMessage()
         }
 
         if let repository {
@@ -516,7 +535,8 @@ extension RepositorySession {
         commitBody = ""
         amend = false
         originalDraft = nil
-        onlyConflicts = false
+        endCommitProgress()
+        collapsesCommitBody = false
         isEditingCommitMessage = false
         resetCommitConfiguration()
         pollingTask?.cancel()
@@ -755,7 +775,6 @@ extension RepositorySession {
         fileHistory.update(head: status.branch.oid, records: records)
         fileContent.update(head: status.branch.oid, records: records)
 
-        if !status.entries.contains(where: { $0.kind == .conflicted }) { onlyConflicts = false }
         stagingOverrides = [:]
 
         // 暂存会把未跟踪项变为已跟踪项；同路径优先延续选择，双记录仍优先匹配类别。
@@ -940,22 +959,31 @@ extension RepositorySession {
 
     /// 身份与状态加载失败仍展示诊断，不能误把未知状态当成普通改动。
     private func loadContext() {
-        guard contextTask == nil, let repository else { return }
+        guard let repository else { return }
+
+        // 正在读取时合并请求，结束后按那时的 HEAD 再读一次：正在进行的读取可能早于刚结束的 Git 命令
+        guard contextTask == nil else {
+            pendingContext = true
+            return
+        }
+
+        pendingContext = false
         let request = generation
         let head = status?.branch.oid
         let service = WorkingCopyOperations(runner: makeRunner(repository))
+
         contextTask = Task { [weak self] in
             do {
                 let context = try await service.context(head: head)
-                guard let self, generation == request, !Task.isCancelled else { return }
-                let previous = self.context?.operation
-                self.context = context
 
-                if previous != context.operation, context.operation != nil, commitSubject.isEmpty {
-                    setMessage(context.mergeMessage)
-                }
+                guard let self, generation == request, !Task.isCancelled else { return }
+
+                let previous = self.context
+                self.context = context
+                updateMessage(for: context, previous: previous)
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
+
                 let failure = AppFailure(error: error, opening: false, location: repository)
                 self.failure = failure
 
@@ -969,6 +997,9 @@ extension RepositorySession {
 
             guard let self, generation == request else { return }
             contextTask = nil
+
+            // 被写入取消的读取不补做，写入结束后的完整刷新会重读
+            if pendingContext, !Task.isCancelled { loadContext() }
         }
     }
 

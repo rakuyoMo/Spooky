@@ -10,6 +10,20 @@ extension RepositorySession {
         return context?.progress?.resolvedPaths.subtracting(conflicted).count ?? 0
     }
 
+    /// 只看冲突时列表保留的文件：当前未解决的冲突与这次操作已经解决的冲突。
+    ///
+    /// 没有进行中的操作，或这次操作从没有出现过冲突时为 nil：横幅里的开关不可用，列表也不按它过滤。
+    var conflictPaths: Set<String>? {
+        guard let progress = context?.progress else {
+            return nil
+        }
+
+        let unresolved = status?.entries.filter { $0.kind == .conflicted }.map(\.path) ?? []
+        let paths = progress.resolvedPaths.union(unresolved)
+
+        return paths.isEmpty ? nil : paths
+    }
+
     /// 我方的显示名：变基时是被变基到的提交，其余是当前 HEAD。
     var oursName: String {
         displayName(of: context?.progress?.ours ?? status?.branch.oid)
@@ -29,7 +43,7 @@ extension RepositorySession {
         return displayName(of: progress.theirs)
     }
 
-    /// 进行中操作横幅的标题；摘取与反转按序列里尚未完成的提交数说明。
+    /// 进行中操作横幅的标题；摘取与反转按序列里尚未完成的提交数说明，停在 edit 上时写正在修改的提交与原分支。
     var operationBannerTitle: String? {
         guard let progress = context?.progress else {
             return nil
@@ -42,7 +56,13 @@ extension RepositorySession {
 
         case .squash: return AppLocalization.text("conflict.title.squash", oursName)
 
-        case .rebase: return AppLocalization.text("conflict.title.rebase", theirsName, oursName)
+        case .rebase:
+            // 变基的对方就是原分支
+            if let edited = progress.editedCommit {
+                return AppLocalization.text("conflict.title.edit", String(edited.prefix(8)), theirsName)
+            }
+
+            return AppLocalization.text("conflict.title.rebase", theirsName, oursName)
 
         case .cherryPick:
             return count == 1
@@ -56,6 +76,79 @@ extension RepositorySession {
         }
     }
 
+    /// 序列的进度行：第几步、共几步，加上当前一步的动作与提交标题；不是序列或 Git 没有记下步数时为 nil。
+    var operationStepText: String? {
+        guard
+            let progress = context?.progress, progress.isSequence,
+            let step = progress.step, let count = progress.stepCount
+        else {
+            return nil
+        }
+
+        guard let subject = progress.stepSubject else {
+            return AppLocalization.text("conflict.step", step, count)
+        }
+
+        let key =
+            switch progress.stepKind {
+            case .editing: "conflict.step.editing"
+            case .reverting: "conflict.step.reverting"
+            case .applying, nil: "conflict.step.applying"
+            }
+
+        return AppLocalization.text(key, step, count, subject)
+    }
+
+    /// 工作区没有任何改动：暂存、未暂存、冲突与未跟踪的文件都算改动；还没读到状态时不算空。
+    var isWorkingCopyClean: Bool {
+        guard let entries = status?.entries else {
+            return false
+        }
+
+        return !entries.contains { [.tracked, .conflicted, .untracked].contains($0.kind) }
+    }
+
+    /// 提交或继续会建空提交：有进行中的操作、不在 edit 步，工作区没有任何改动。
+    var commitsEmpty: Bool {
+        guard let progress = context?.progress else {
+            return false
+        }
+
+        return !progress.stopsForEdit && isWorkingCopyClean
+    }
+
+    /// 提交区的主按钮继续序列：变基与摘取、反转的序列；停在 edit 上时提交当前修订，合并与单个提交的操作用 Commit 收尾。
+    var continuesSequence: Bool {
+        guard let progress = context?.progress else {
+            return false
+        }
+
+        return progress.isSequence && !progress.stopsForEdit
+    }
+
+    /// 显示提交区：进行中的操作还有未解决冲突或交互式变基尚未开始时隐藏。
+    ///
+    /// 储藏恢复这类没有进行中操作的冲突照常显示，由提交的可用性拒绝带着冲突提交。
+    var showsCommitArea: Bool {
+        guard let progress = context?.progress else {
+            return true
+        }
+
+        return conflictCount == 0 && !progress.isPendingInteractive
+    }
+
+    /// 横幅提供 Skip：序列里这一步没有任何改动、不在 edit 步，且变基已经开始处理提交。
+    var offersSkip: Bool {
+        guard let progress = context?.progress else {
+            return false
+        }
+
+        return progress.isSequence
+            && isWorkingCopyClean
+            && !progress.stopsForEdit
+            && !progress.isPendingInteractive
+    }
+
     /// 读取冲突向导显示的三方原文与工作区文件。
     func conflictContents(of entry: StatusEntry) async throws -> ConflictContents {
         guard let runner else {
@@ -63,6 +156,31 @@ extension RepositorySession {
         }
 
         return try await WorkingCopyOperations(runner: runner).conflictContents(of: entry)
+    }
+
+    /// 冲突两侧版本所在的提交：我方是 HEAD，对方按进行中的操作取；没有提交来源或读取失败的一侧为 nil。
+    ///
+    /// 应用补丁或储藏、压缩合并的对方没有提交来源。
+    func conflictCommits() async -> (ours: HistoryCommit?, theirs: HistoryCommit?) {
+        guard let runner else {
+            return (nil, nil)
+        }
+
+        let history = RepositoryHistory(runner: runner)
+
+        /// 一个提交的信息；读取失败时卡片只是少了下栏，不另外报告。
+        func commit(_ id: String?) async -> HistoryCommit? {
+            guard let id else {
+                return nil
+            }
+
+            return try? await history.page(roots: [id], limit: 1).commits.first
+        }
+
+        let ours = await commit(status?.branch.oid)
+        let theirs = await commit(context?.progress?.theirsCommit)
+
+        return (ours, theirs)
     }
 
     /// 所选文件中有可以恢复到指定版本的冲突；重新生成冲突也适用于已经标记解决的文件。

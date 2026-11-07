@@ -13,6 +13,10 @@ struct BookmarkIdentityRow: View {
     /// 读到的仓库概况。
     let summary: RepositorySummary
 
+    /// 本机可用的签名密钥，供身份菜单写出签名密钥的简述。
+    @State
+    private var keys: [SigningKey] = []
+
     /// 设置表格样式的提交人一行；不能编辑详情时头像菜单禁用。
     var body: some View {
         IdentitySettingRow(
@@ -24,10 +28,12 @@ struct BookmarkIdentityRow: View {
                 name: summary.committer?.name ?? "",
                 email: summary.committer?.email ?? "",
                 signingKey: summary.signingKey,
+                keys: keys,
                 canApply: manager.canEditDetail,
                 apply: manager.applyProfile
             )
         }
+        .task { keys = await SigningKeys.local() }
     }
 }
 

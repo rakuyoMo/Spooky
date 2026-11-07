@@ -4,7 +4,7 @@ import Testing
 
 @testable import SpookyKit
 
-/// M7 的同步在 B 上执行：Sync 的三步、变基、带期望值的强推、Push To 与不询问用户的获取。
+/// 同步在 B 上执行：Sync 的三步、变基、带期望值的强推、Push To、不询问用户的获取与停在冲突上的合并。
 extension RemoteHistorySyncTests {
     /// 两个工作区与裸仓库都在 B 的测试目录里，所有命令经主连接在 B 上执行。
     @Test("服务器 Sync、Rebase、安全强推、Push To 与后台获取", .timeLimit(.minutes(3)))
@@ -86,6 +86,64 @@ extension RemoteHistorySyncTests {
         } catch {
             if let error = error as? GitError { Issue.record(Comment(rawValue: error.message)) }
             await otherRemote.close()
+            await remote.close()
+            try await fixture.remove()
+            throw error
+        }
+    }
+
+    /// B 上的合并停在冲突上时返回冲突结果；主连接中断时合并不执行，连接错误照原样抛出。
+    @Test("服务器合并冲突与断线", .timeLimit(.minutes(3)))
+    func mergeConflicts() async throws {
+        let fixture = try await RemoteFixture.create()
+        let remote = fixture.connection()
+
+        do {
+            let location = try await remote.open().location
+            let runner = GitRunner(location: location, remote: remote)
+            let sync = RepositorySync(runner: runner)
+            let files = RepositoryFiles(runner: runner)
+            let file = fixture.repository + "/file"
+
+            // 在 B 上分出两边都改了 file 的分支
+            try await files.write(Data("base\n".utf8), to: file)
+            _ = try await runner.run(["add", "-A"])
+            _ = try await runner.run(["commit", "-q", "-m", "base"])
+            _ = try await runner.run(["checkout", "-q", "-b", "side"])
+            try await files.write(Data("side\n".utf8), to: file)
+            _ = try await runner.run(["commit", "-q", "-a", "-m", "side"])
+            _ = try await runner.run(["checkout", "-q", "main"])
+            try await files.write(Data("main\n".utf8), to: file)
+            _ = try await runner.run(["commit", "-q", "-a", "-m", "main"])
+
+            // 主连接中断时合并不执行，连接错误不被当作冲突
+            try await remote.interruptMaster()
+
+            await #expect(throws: RemoteConnectionError.self) {
+                try await sync.merge("refs/heads/side")
+            }
+
+            _ = try await remote.reconnect()
+            #expect(try await runner.status().entries.isEmpty)
+
+            // 重连后的合并停在冲突上，B 上留下合并状态与冲突文件
+            #expect(try await sync.merge("refs/heads/side") == .conflicts)
+
+            let status = try await runner.status()
+            let progress = try await WorkingCopyOperations(runner: runner)
+                .context(head: status.branch.oid)
+                .progress
+
+            #expect(status.entries.map(\.kind) == [.conflicted])
+            #expect(progress?.state == .merge)
+
+            await remote.close()
+            try await fixture.remove()
+        } catch {
+            if let git = error as? GitError {
+                Issue.record(Comment(rawValue: git.message))
+            }
+
             await remote.close()
             try await fixture.remove()
             throw error

@@ -44,18 +44,18 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
 |---|---|
 | `RemoteConnectionTests` | 连接、连接体检、断线恢复与回调 |
 | `RemoteWorkingCopyTests` | SFTP、服务器提交与服务器文件缓存 |
-| `RemoteHistorySyncTests` | 历史、同步与取消，以及 Sync、变基、安全强推、Push To 与不询问用户的获取 |
+| `RemoteHistorySyncTests` | 历史、同步与取消，以及 Sync、变基、安全强推、Push To、不询问用户的获取与停在冲突上的合并 |
 | `RemoteWorkingCopyFilesTests` | 文件操作与应用补丁 |
 | `RemoteDiffTests` | Diff 选项与图片 |
 | `RemoteStashTests` | 储藏与 Auto Stash 的断线 |
-| `RemoteConflictTests` | 冲突向导与断线 |
+| `RemoteConflictTests` | 冲突向导、合并工具结果的写回、进行中操作的分类、用编辑后的信息继续、空提交与断线 |
 | `RemoteFileViewsTests` | 文件历史、Blame、原文与 NFD 路径 |
 | `RemoteCommitSigningTests` | 提交签名 |
 | `RemoteHistorySearchTests` | 历史搜索、计数与可达性 |
 | `RemoteHistoryDetailsTests` | 合并 Diff、文件树、比较、签名与导出 |
 | `RemoteSidebarTests` | 标签说明、分支状态、置顶归档与标签检出 |
 | `RemoteReferenceManagementTests` | 分支、标签与远端管理 |
-| `RemoteRewriteTests` | 反转、摘取、重置与交互式变基 |
+| `RemoteRewriteTests` | 反转、摘取、重置、交互式变基与修补旧提交 |
 | `RemoteBranchesReviewTests` | 分支比较、分叉点、归档标记与 Update Branch |
 | `RemoteReflogUndoTests` | Reflog 与撤销、重做 |
 | `RemoteHostOperationsTests` | 列目录、新建、扫描与克隆 |
@@ -95,3 +95,4 @@ SPOOKY_PERFORMANCE_TESTS=1 swift test -c release -Xswiftc -enable-testing --filt
 | [M13](M13.md) | 私有部署 GitLab 的版本与用户名密码登录、账号令牌用于 Git 认证、请求的讨论与右键菜单、托管服务的对话框、对话框对齐输入列与侧边栏的活动区 |
 | [M14](M14.md) | 主菜单的系统项、标题、分组与快捷键，Open Recent 与 Clear Menu，显示仓库管理时的视图切换；工具栏的标签、提示、可见优先级、Fetch / Pull / Push / Push To / Force Push 的图标、跟随内层分栏的分隔符、内层分栏的列表停在工具栏下沿与刷新中的 Refresh；丢失页的自动重试，File › Open… 的面板与新建询问，侧边栏的首次宽度，New Window 开成标签页；对话框骨架，引用、子模块、工作树、LFS 与克隆对话框的版式、标题与主按钮；分支与同步对话框的标题、主按钮、宽度、表单间距与下拉宽度；改写、版本、储藏、工作区文件、外部工具选择与添加服务器仓库的对话框；会话里确认的标题、主按钮与 Do not ask me again；其余询问的确认版、备选底栏与按钮放不下时的加宽；Git 错误框的标题、说明、原文区与拉大，恢复说明、无效链接与 Local Folder 的提示版；History 筛选的引用消失后侧边栏按行号选中接替的行，后退 / 前进到这种 History 时留在当前视图；回调中继的认证询问与编辑器中继的对话框；空状态的间距、位置、颜色、背景与按钮行 |
 | [M15](M15.md) | 语言识别、头文件语法、按内容识别的字符数边界、Diff 两侧着色与语法记号颜色；主题色的色彩空间、推导色与颜色面板的往返保存；文件头部、原生动作组与重命名显示；目录文件历史、对象能力与精确补丁路径；变更集计数、部分展开与空行；可见详情的菜单路由与自动展开阈值；块内字符复制、折行与行号键盘 / 辅助功能；组合 Diff 多父列、文件头摘要与大 Diff 警告；工作区单文件快照安全边界、块头吸顶与分隔线；行选择、提示联动、末行补丁与按块原文跨重载保留；不可见字符、真实行尾与源串复制 |
+| [M16](M16.md) | 提交区的计数、提交进度与头像，进行中操作的分类、步数与横幅，Show only conflicts，合并冲突直接显示工作区与自动储藏后的冲突，提交信息的注释询问与编辑后继续，两种空提交确认，冲突向导的版本卡片、选择、版本菜单与外部比较，历史中旧提交的 Amend 与 Edit 停顿 |

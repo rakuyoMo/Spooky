@@ -333,13 +333,19 @@
 "working.abort" = "Vorgang abbrechen";
 "working.continue" = "Fortsetzen";
 "working.skip" = "Überspringen";
+"working.endEditing" = "Bearbeitung beenden";
 "working.diffThreshold" = "Warnung anzeigen für Diffs größer als (kB):";
 "working.error.stale" = "Die Datei hat sich geändert. Aktualisieren Sie den Diff und wählen Sie die Änderungen erneut aus.";
 "working.error.selection" = "Keine anwendbaren Textänderungen ausgewählt.";
 "working.error.file" = "Dieser Vorgang erfordert eine reguläre Datei.";
 "working.error.path" = "Dieser Pfad kann in SFTP-Batch-Befehlen nicht dargestellt werden.";
-"working.emptyMerge" = "Leeren Merge-Commit erstellen";
-"working.emptyMerge.message" = "Dieser Merge enthält keine gestagten Änderungen. Erstellen Sie den Merge-Commit oder brechen Sie den Merge ab.";
+"commit.empty.title" = "Möchten Sie einen leeren Commit erstellen?";
+"commit.empty.message" = "Es gibt keine Änderungen zum Committen. Erstellen Sie einen leeren Commit oder brechen Sie den aktuellen Vorgang ab.";
+"commit.empty.sequenceMessage" = "Dieser Schritt enthält keine Änderungen. Behalten Sie ihn als leeren Commit und fahren Sie fort, oder überspringen Sie ihn.";
+"commit.empty.use" = "Leeren Commit verwenden";
+"commit.empty.abort" = "Merge abbrechen";
+"commit.empty.skip" = "Commit überspringen";
+"commit.empty.doNotShowAgain" = "Diese Warnung nicht mehr anzeigen";
 
 /* 历史、分支、同步与活动。 */
 "history.all" = "Alle Branches, Remotes und Tags";
@@ -630,11 +636,12 @@
 "stash.error.conflicts.help" = "Lösen Sie die Konflikte in der Arbeitskopie. Der Stash wurde behalten.";
 "stash.error.operation" = "Vorgang nach dem Stashen fehlgeschlagen";
 "stash.error.operation.help" = "Ihre lokalen Änderungen wurden im Stash gesichert und sind dort weiterhin vorhanden. Prüfen Sie die Arbeitskopie und wenden Sie den Stash an, wenn Sie bereit sind.";
+"stash.error.operationConflicts" = "Konflikte nach dem Stashen";
+"stash.error.operationConflicts.help" = "Lösen Sie die Konflikte in der Arbeitskopie. Ihre lokalen Änderungen wurden im Stash gesichert und sind dort weiterhin vorhanden. Wenden Sie den Stash an, wenn Sie bereit sind.";
 "stash.error.reapply" = "Stash konnte nicht wieder angewendet werden";
 "stash.error.reapply.help" = "Der Vorgang ist abgeschlossen, aber Ihre lokalen Änderungen konnten nicht wieder angewendet werden. Sie bleiben im Stash erhalten; wenden Sie ihn an, wenn Sie bereit sind.";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "Angewendeter Patch oder Stash";
-"conflict.binary" = "Binäre Inhalte werden nicht angezeigt.";
 "conflict.error.version" = "Die ausgewählten Dateien haben diese Version nicht.";
 "conflict.error.version.title" = "Version nicht vorhanden";
 "conflict.export" = "Version aus „%@“ exportieren …";
@@ -642,10 +649,10 @@
 "conflict.hint.merge.resolved" = "Prüfen Sie die Commit-Nachricht und klicken Sie dann auf **Committen**, um den Merge abzuschließen.";
 "conflict.hint.merge.empty" = "Es sind keine Änderungen zum Committen übrig. Klicken Sie auf **Vorgang abbrechen**, um den Merge abzubrechen, oder auf **Committen**, um einen leeren Merge-Commit zu erstellen.";
 "conflict.hint.rebase.conflicts" = "Lösen Sie alle Konflikte auf, um den Rebase fortzusetzen.";
-"conflict.hint.rebase.resolved" = "Klicken Sie auf **Fortsetzen**, um diesen Schritt zu committen und den Rebase fortzusetzen.";
+"conflict.hint.rebase.resolved" = "Prüfen Sie die Commit-Nachricht und klicken Sie dann auf **Fortsetzen**, um diesen Schritt zu committen und den Rebase fortzusetzen.";
 "conflict.hint.rebase.empty" = "In diesem Schritt sind keine Änderungen übrig. Klicken Sie auf **Überspringen**, um diesen Commit auszulassen, oder auf **Fortsetzen**, um einen leeren Commit zu behalten und den Rebase fortzusetzen.";
 "conflict.hint.sequence.conflicts" = "Lösen Sie alle Konflikte auf, um fortzufahren.";
-"conflict.hint.sequence.resolved" = "Klicken Sie auf **Fortsetzen**, um diesen Schritt zu committen und mit den übrigen Commits fortzufahren.";
+"conflict.hint.sequence.resolved" = "Prüfen Sie die Commit-Nachricht und klicken Sie dann auf **Fortsetzen**, um diesen Schritt zu committen und mit den übrigen Commits fortzufahren.";
 "conflict.hint.sequence.empty" = "In diesem Schritt sind keine Änderungen übrig. Klicken Sie auf **Überspringen**, um diesen Commit auszulassen, oder auf **Fortsetzen**, um einen leeren Commit zu behalten und fortzufahren.";
 "conflict.kind.addedByThem" = "Von der Gegenseite hinzugefügt";
 "conflict.kind.addedByUs" = "Von uns hinzugefügt";
@@ -659,9 +666,7 @@
 "conflict.markResolved.one" = "„%@“ als aufgelöst markieren";
 "conflict.menu.resolve" = "Merge-Konflikte auflösen";
 "conflict.menu.restore" = "Versionen des Merge-Konflikts wiederherstellen";
-"conflict.missing" = "Diese Version löscht die Datei.";
 "conflict.open" = "Version aus „%@“ öffnen";
-"conflict.reload" = "Neu laden";
 "conflict.resolveCurrent" = "Mit aktueller Version auflösen";
 "conflict.resolvedSuffix" = "%@ (%d aufgelöst)";
 "conflict.resolveUsing" = "Mit „%@“ auflösen";
@@ -675,8 +680,10 @@
 "conflict.step" = "Schritt %d von %d";
 "conflict.step.applying" = "Schritt %d von %d: „%@“ wird angewendet";
 "conflict.step.editing" = "Schritt %d von %d: „%@“ wird bearbeitet";
+"conflict.step.reverting" = "Schritt %d von %d: „%@“ wird zurückgenommen";
 "conflict.title.cherryPick" = "Cherry-Pick von %d Commits auf „%@“";
 "conflict.title.cherryPick.one" = "Cherry-Pick von 1 Commit auf „%@“";
+"conflict.title.edit" = "Bearbeitung von %@ auf „%@“";
 "conflict.title.merge" = "Merge von „%@“ in „%@“";
 "conflict.title.rebase" = "Rebase von „%@“ auf „%@“";
 "conflict.title.revert" = "Revert von %d Commits auf „%@“";
@@ -686,6 +693,17 @@
 "conflict.unresolved.one" = "1 nicht aufgelöster Konflikt";
 "conflict.version" = "Version aus „%@“";
 "conflict.versionMenu" = "Aktionen für die Version aus „%@“";
+"conflict.selectVersion" = "Bitte oben eine Version auswählen";
+"conflict.resolve" = "Auflösen";
+"conflict.resolveBoth" = "Mit beiden Versionen auflösen";
+"conflict.change.added" = "HINZUGEFÜGT";
+"conflict.change.modified" = "GEÄNDERT";
+"conflict.change.deleted" = "GELÖSCHT";
+"conflict.change.merge" = "ZUSAMMENFÜHREN";
+"conflict.openWith" = "Version aus „%@“ öffnen mit";
+"conflict.openWith.missing" = "Öffnen mit";
+"conflict.compareOther" = "Mit anderer Version vergleichen";
+"conflict.compareBase" = "Mit gemeinsamem Vorfahren vergleichen";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "Dateiverlauf";
 "fileHistory.showCommit" = "Commit anzeigen";
@@ -766,6 +784,7 @@
 "signing.key" = "Signaturschlüssel: %@ (%@)";
 "signing.defaultKey" = "Signaturschlüssel: passend zum Committer (%@)";
 "signing.none" = "Kein Signaturschlüssel";
+"signing.unknown" = "Unbekannter Signaturschlüssel";
 "signing.off" = "Commits werden nicht signiert";
 "settings.editor" = "Editor";
 "settings.profiles" = "Benutzerprofile";
@@ -799,9 +818,9 @@
 "commit.amendHash" = "%@ ändern";
 "commit.commitHelp" = "Gestagte Änderungen committen";
 "commit.amendHelp" = "Letzten Commit ändern";
-"commit.continueHelp" = "Laufenden Vorgang fortsetzen";
+"commit.continueHelp" = "Merge-Sequenz fortsetzen";
 "commit.remaining" = "Noch %ld Zeichen";
-"commit.quickAmendHint" = "Halten Sie ⌥ gedrückt, während kein Nachrichtenfeld aktiv ist, um den letzten Commit schnell zu ändern.";
+"commit.quickAmendHint" = "• Halten Sie ⌥ gedrückt, während kein Nachrichtenfeld aktiv ist, um den letzten Commit schnell zu ändern.";
 "commit.pin" = "Beschreibung ausgeklappt lassen";
 "commit.reformatParagraph" = "Absatz neu umbrechen";
 "commit.comments" = "Kommentare aus der Commit-Nachricht entfernen?";
@@ -914,13 +933,12 @@
 "conflict.open.missing" = "Öffnen";
 "conflict.export.missing" = "Exportieren …";
 "conflict.toolTip" = "Datei muss zusammengeführt werden: %@";
-"conflict.sequence.applying" = "„%@“ wird angewendet";
-"conflict.sequence.reverting" = "„%@“ wird zurückgenommen";
 
 /* 提交体验。 */
 "profiles.add.message" = "„%@ <%@> (%@)“ wird als Benutzerprofil gespeichert. Geben Sie einen Titel dafür ein.";
 "profiles.add.submit" = "Profil hinzufügen";
 "profiles.titleExists" = "Ein Benutzerprofil mit diesem Titel ist bereits vorhanden.";
+"profiles.identityExists" = "Ein Benutzerprofil mit diesem Benutzernamen und dieser E-Mail-Adresse ist bereits vorhanden.";
 "profiles.signer" = "Signierer:";
 "commit.doNotAskAgain" = "Nicht mehr fragen";
 
@@ -1114,7 +1132,6 @@
 "rewrite.edit.button" = "Bearbeiten";
 "rewrite.drop.button" = "Löschen";
 "rewrite.move.button" = "Verschieben";
-"rewrite.amend.button" = "Ergänzen";
 "rewrite.autosquash.button" = "Autosquash";
 "rewrite.rebaseOnto.button" = "Rebase";
 "rewrite.revert.button" = "Revert";
@@ -1127,7 +1144,6 @@
 "rewrite.edit.confirm" = "Bei „%@“ anhalten und seine Änderungen in die Arbeitskopie zurückholen? Committen Sie sie und klicken Sie dann auf „Fortsetzen“.";
 "rewrite.drop.confirm" = "%ld Commits aus dem aktuellen Branch löschen?";
 "rewrite.move.confirm" = "%ld Commits an die neue Position verschieben?";
-"rewrite.amend.confirm" = "Die gestagten Änderungen zu „%@“ hinzufügen?";
 "rewrite.autosquash.confirm" = "Alle mit fixup!, squash! oder amend! markierten Commits in den jeweils genannten Commit einfügen?";
 "rewrite.rebaseOnto.confirm" = "%ld Commits auf die neue Basis rebasen?";
 "rewrite.note.drop" = "Löschen";
@@ -1135,7 +1151,6 @@
 "rewrite.note.fixup" = "Fixup";
 "rewrite.note.edit" = "Bearbeiten";
 "rewrite.note.move" = "Verschieben";
-"rewrite.note.amend" = "Ergänzen";
 "rewrite.remote" = "Dieser Vorgang wird auf dem Server „%@“ ausgeführt.";
 "rewrite.shared" = "Bereits gepusht oder zusammengeführt";
 "rewrite.warning.pushed" = "Einige dieser Commits sind bereits im Upstream-Branch. Nach dem Umschreiben laufen lokaler Branch und Upstream auseinander.";
@@ -1194,8 +1209,6 @@
 "rewrite.error.notInHead.help" = "Die ausgewählten Commits müssen alle auf einer Linie im Verlauf von HEAD liegen.";
 "rewrite.error.root" = "Der Root-Commit kann nicht bearbeitet werden";
 "rewrite.error.root.help" = "Der erste Commit des Repositorys hat keinen Eltern-Commit, zu dem seine Änderungen zurückkehren könnten.";
-"rewrite.error.noStaged" = "Keine gestagten Änderungen";
-"rewrite.error.noStaged.help" = "Stagen Sie zuerst die Änderungen, die zum Commit hinzugefügt werden sollen.";
 "rewrite.error.autosquash" = "Nichts automatisch zusammenzufassen";
 "rewrite.error.autosquash.help" = "Kein neuerer Commit ist mit fixup!, squash! oder amend! für einen früheren Commit markiert.";
 "rewrite.error.selection" = "Ungültige Auswahl";
@@ -1203,7 +1216,8 @@
 "rewrite.checkout.menu" = "Revision auschecken…";
 "rewrite.rebaseOnto.menu" = "Rebase auf andere Basis…";
 "rewrite.reset.menu" = "HEAD auf Revision zurücksetzen…";
-"conflict.hint.rebase.edit" = "Committen Sie die aus diesem Commit zurückgeholten Änderungen und klicken Sie dann auf **Fortsetzen**.";
+"conflict.hint.rebase.edit" = "Teilen oder überarbeiten Sie diesen Commit, indem Sie mit **Committen** neue Commits erstellen, und klicken Sie dann auf **Bearbeitung beenden**, um den Rebase fortzusetzen.";
+"conflict.hint.rebase.pending" = "Dieser interaktive Rebase hat noch keine Commits verarbeitet. Klicken Sie auf **Vorgang abbrechen**, um ihn abzubrechen.";
 "rewrite.squash.confirm.one" = "„%@“ in „%@“ zusammenfassen? Die Nachrichten werden kombiniert.";
 "rewrite.fixup.confirm.one" = "„%@“ in „%@“ einfügen und nur die Nachricht des Ziels behalten?";
 "rewrite.drop.confirm.one" = "„%@“ aus dem aktuellen Branch löschen?";

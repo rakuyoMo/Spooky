@@ -102,6 +102,7 @@ extension RepositoryGeneralSettings {
                 name: summary.committer?.name ?? "",
                 email: summary.committer?.email ?? "",
                 signingKey: summary.signingKey,
+                keys: keys,
                 canApply: session.canWrite,
                 apply: session.applyProfile
             )

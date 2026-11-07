@@ -333,13 +333,19 @@
 "working.abort" = "中止";
 "working.continue" = "繼續";
 "working.skip" = "跳過";
+"working.endEditing" = "結束編輯";
 "working.diffThreshold" = "Diff 警告門檻（kB）：";
 "working.error.stale" = "檔案已發生變更，請重新整理 Diff 後重新選取變更。";
 "working.error.selection" = "未選取可套用的文字變更。";
 "working.error.file" = "此操作需要一般檔案。";
 "working.error.path" = "此路徑無法透過 SFTP 批次指令表示。";
-"working.emptyMerge" = "建立空合併提交";
-"working.emptyMerge.message" = "本次合併沒有暫存變更。可建立合併提交，或中止合併。";
+"commit.empty.title" = "要建立空提交嗎？";
+"commit.empty.message" = "沒有可提交的變更。可以建立空提交，或中止目前的操作。";
+"commit.empty.sequenceMessage" = "這一步沒有變更。可以保留為空提交並繼續，或略過這一步。";
+"commit.empty.use" = "使用空提交";
+"commit.empty.abort" = "中止合併";
+"commit.empty.skip" = "略過提交";
+"commit.empty.doNotShowAgain" = "不再顯示此警告";
 
 /* 历史、分支、同步与活动。 */
 "history.all" = "所有分支、遠端與標籤";
@@ -630,11 +636,12 @@
 "stash.error.conflicts.help" = "請在工作區中解決衝突。儲藏已保留。";
 "stash.error.operation" = "儲藏之後操作失敗";
 "stash.error.operation.help" = "本機變更已存進儲藏，仍然保留在那裡。請檢查工作區，準備好後再套用這個儲藏。";
+"stash.error.operationConflicts" = "儲藏之後出現衝突";
+"stash.error.operationConflicts.help" = "請在工作區中解決衝突。本機變更已存進儲藏，仍然保留在那裡；準備好後再套用這個儲藏。";
 "stash.error.reapply" = "無法還原儲藏的變更";
 "stash.error.reapply.help" = "操作已完成，但本機變更未能重新套用，仍保留在儲藏中；準備好後再套用它。";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "套用的修補或儲藏";
-"conflict.binary" = "不顯示二進位內容。";
 "conflict.error.version" = "所選檔案沒有這個版本。";
 "conflict.error.version.title" = "沒有這個版本";
 "conflict.export" = "匯出來自 “%@” 的版本…";
@@ -642,10 +649,10 @@
 "conflict.hint.merge.resolved" = "檢查提交訊息，然後按一下 **提交** 完成合併。";
 "conflict.hint.merge.empty" = "沒有可提交的變更。按一下 **中止** 取消合併，或按一下 **提交** 建立空的合併提交。";
 "conflict.hint.rebase.conflicts" = "解決全部衝突後才能繼續變基。";
-"conflict.hint.rebase.resolved" = "按一下 **繼續** 提交這一步並繼續變基。";
+"conflict.hint.rebase.resolved" = "檢查提交訊息，然後按一下 **繼續** 提交這一步並繼續變基。";
 "conflict.hint.rebase.empty" = "這一步沒有可提交的變更。按一下 **跳過** 略過這個提交，或按一下 **繼續** 保留一個空提交並繼續變基。";
 "conflict.hint.sequence.conflicts" = "解決全部衝突後才能繼續。";
-"conflict.hint.sequence.resolved" = "按一下 **繼續** 提交這一步，再處理後面的提交。";
+"conflict.hint.sequence.resolved" = "檢查提交訊息，然後按一下 **繼續** 提交這一步，再處理後面的提交。";
 "conflict.hint.sequence.empty" = "這一步沒有可提交的變更。按一下 **跳過** 略過這個提交，或按一下 **繼續** 保留一個空提交再繼續。";
 "conflict.kind.addedByThem" = "對方新增";
 "conflict.kind.addedByUs" = "我方新增";
@@ -659,9 +666,7 @@
 "conflict.markResolved.one" = "將 “%@” 標記為已解決";
 "conflict.menu.resolve" = "解決合併衝突";
 "conflict.menu.restore" = "回復合併衝突的版本";
-"conflict.missing" = "這個版本刪除了檔案。";
 "conflict.open" = "開啟來自 “%@” 的版本";
-"conflict.reload" = "重新載入";
 "conflict.resolveCurrent" = "採用目前版本解決";
 "conflict.resolvedSuffix" = "%@（已解決 %d 個）";
 "conflict.resolveUsing" = "採用 “%@” 解決";
@@ -675,17 +680,30 @@
 "conflict.step" = "第 %d 步，共 %d 步";
 "conflict.step.applying" = "第 %d 步，共 %d 步：正在套用 “%@”";
 "conflict.step.editing" = "第 %d 步，共 %d 步：正在編輯 “%@”";
+"conflict.step.reverting" = "第 %d 步，共 %d 步：正在反轉 “%@”";
 "conflict.title.cherryPick" = "正在把 %d 個提交摘取到 “%@”";
 "conflict.title.cherryPick.one" = "正在把 1 個提交摘取到 “%@”";
+"conflict.title.edit" = "正在編輯 %@，位於 “%@” 上";
 "conflict.title.merge" = "正在把 “%@” 合併到 “%@”";
 "conflict.title.rebase" = "正在把 “%@” 變基到 “%@”";
 "conflict.title.revert" = "正在反轉 %d 個提交，位於 “%@” 上";
 "conflict.title.revert.one" = "正在反轉 1 個提交，位於 “%@” 上";
-"conflict.title.squash" = "正在把提交壓縮合併到 “%@”";
+"conflict.title.squash" = "把提交壓縮合併到 “%@”";
 "conflict.unresolved.none" = "沒有未解決的衝突";
 "conflict.unresolved.one" = "1 個未解決衝突";
 "conflict.version" = "來自 “%@” 的版本";
 "conflict.versionMenu" = "來自 “%@” 的版本的操作";
+"conflict.selectVersion" = "請在上方選擇一個版本";
+"conflict.resolve" = "解決";
+"conflict.resolveBoth" = "採用兩個版本解決";
+"conflict.change.added" = "新增";
+"conflict.change.modified" = "修改";
+"conflict.change.deleted" = "刪除";
+"conflict.change.merge" = "合併";
+"conflict.openWith" = "開啟來自 “%@” 的版本的方式";
+"conflict.openWith.missing" = "開啟方式";
+"conflict.compareOther" = "與另一側版本比較";
+"conflict.compareBase" = "與共同祖先比較";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "檔案歷史";
 "fileHistory.showCommit" = "顯示提交";
@@ -766,6 +784,7 @@
 "signing.key" = "簽署金鑰：%@（%@）";
 "signing.defaultKey" = "簽署金鑰：依提交者選擇（%@）";
 "signing.none" = "沒有簽署金鑰";
+"signing.unknown" = "無法識別的簽署金鑰";
 "signing.off" = "提交不簽署";
 "settings.editor" = "編輯器";
 "settings.profiles" = "身分設定檔";
@@ -799,9 +818,9 @@
 "commit.amendHash" = "修補 %@";
 "commit.commitHelp" = "提交已暫存的變更";
 "commit.amendHelp" = "修補最近一次提交";
-"commit.continueHelp" = "繼續進行中的操作";
+"commit.continueHelp" = "繼續合併序列";
 "commit.remaining" = "還可輸入 %ld 個字";
-"commit.quickAmendHint" = "焦點不在訊息欄時按住 ⌥ 可快速修補最近一次提交。";
+"commit.quickAmendHint" = "• 焦點不在訊息欄時按住 ⌥ 可快速修補最近一次提交。";
 "commit.pin" = "保持內文展開";
 "commit.reformatParagraph" = "重新排列段落";
 "commit.comments" = "要移除提交訊息中的註解嗎？";
@@ -914,13 +933,12 @@
 "conflict.open.missing" = "開啟";
 "conflict.export.missing" = "匯出…";
 "conflict.toolTip" = "檔案需要合併：%@";
-"conflict.sequence.applying" = "正在套用 “%@”";
-"conflict.sequence.reverting" = "正在反轉 “%@”";
 
 /* 提交体验。 */
 "profiles.add.message" = "將 “%@ <%@> (%@)” 儲存為身分設定檔，請為它輸入標題。";
 "profiles.add.submit" = "加入設定檔";
 "profiles.titleExists" = "已有相同標題的身分設定檔。";
+"profiles.identityExists" = "已有相同使用者名稱與電子郵件的身分設定檔。";
 "profiles.signer" = "簽署者：";
 "commit.doNotAskAgain" = "不再詢問";
 
@@ -1114,7 +1132,6 @@
 "rewrite.edit.button" = "編輯";
 "rewrite.drop.button" = "刪除";
 "rewrite.move.button" = "移動";
-"rewrite.amend.button" = "修補";
 "rewrite.autosquash.button" = "自動壓縮";
 "rewrite.rebaseOnto.button" = "變基";
 "rewrite.revert.button" = "反轉";
@@ -1127,7 +1144,6 @@
 "rewrite.edit.confirm" = "停在 “%@” 並把它的變更撤回到工作區？提交這些變更後按一下 “繼續”。";
 "rewrite.drop.confirm" = "從目前分支刪除 %ld 個提交？";
 "rewrite.move.confirm" = "把 %ld 個提交移到新的位置？";
-"rewrite.amend.confirm" = "把暫存的變更併入 “%@”？";
 "rewrite.autosquash.confirm" = "把所有標記了 fixup!、squash! 或 amend! 的提交併入它們所指的提交？";
 "rewrite.rebaseOnto.confirm" = "把 %ld 個提交變基到新的基點上？";
 "rewrite.note.drop" = "刪除";
@@ -1135,7 +1151,6 @@
 "rewrite.note.fixup" = "Fixup";
 "rewrite.note.edit" = "編輯";
 "rewrite.note.move" = "移動";
-"rewrite.note.amend" = "修補";
 "rewrite.remote" = "此操作在伺服器 “%@” 上執行。";
 "rewrite.shared" = "已推送或已合併";
 "rewrite.warning.pushed" = "其中一些提交已經在上游分支中。改寫之後，本機分支會與上游分岔。";
@@ -1194,8 +1209,6 @@
 "rewrite.error.notInHead.help" = "所選提交都必須在 HEAD 的歷史中，並且位於同一條線上。";
 "rewrite.error.root" = "無法編輯根提交";
 "rewrite.error.root.help" = "儲存庫的第一個提交沒有父提交，無法把它的變更撤回到工作區。";
-"rewrite.error.noStaged" = "沒有暫存的變更";
-"rewrite.error.noStaged.help" = "請先暫存要併入提交的變更。";
 "rewrite.error.autosquash" = "沒有可以自動壓縮的提交";
 "rewrite.error.autosquash.help" = "最近的提交裡沒有以 fixup!、squash! 或 amend! 指向更早提交的提交。";
 "rewrite.error.selection" = "選擇無效";
@@ -1203,7 +1216,8 @@
 "rewrite.checkout.menu" = "檢出版本…";
 "rewrite.rebaseOnto.menu" = "變基到別處…";
 "rewrite.reset.menu" = "把 HEAD 重設到版本…";
-"conflict.hint.rebase.edit" = "提交從這個提交撤回的變更後，按一下 **繼續**。";
+"conflict.hint.rebase.edit" = "用 **提交** 把這個提交拆分或改寫成新的提交，然後按一下 **結束編輯** 繼續變基。";
+"conflict.hint.rebase.pending" = "這次互動式變基還沒有處理任何提交。按一下 **中止** 取消變基。";
 "rewrite.squash.confirm.one" = "將 “%@” 壓縮進 “%@”？它們的提交訊息會合併。";
 "rewrite.fixup.confirm.one" = "將 “%@” 併入 “%@”，只保留目標的提交訊息？";
 "rewrite.drop.confirm.one" = "從目前分支刪除 “%@”？";

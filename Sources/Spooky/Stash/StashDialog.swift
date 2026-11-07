@@ -81,11 +81,13 @@ extension StashDialog {
         case .apply:
             applyRows
 
-        case .autoStash:
-            // 完成后恢复时储藏只是临时的，说明不可编辑
-            messageRow(placeholder: "stash.autoStash.placeholder", disabled: reapply)
+        case .autoStash(let pending):
+            // 完成后恢复时储藏只是临时的，说明不可编辑；开始前询问时储藏一直保留，不提供恢复选项
+            messageRow(placeholder: "stash.autoStash.placeholder", disabled: reapplies(pending))
 
-            DialogFormOption(title: AppLocalization.text("stash.autoStash.reapply"), isOn: $reapply)
+            if !pending.asksBeforeStart {
+                DialogFormOption(title: AppLocalization.text("stash.autoStash.reapply"), isOn: $reapply)
+            }
         }
     }
 
@@ -200,6 +202,11 @@ extension StashDialog {
         selectedStash = preselected?.id ?? session.stashes.entries.first?.id ?? ""
     }
 
+    /// 自动储藏的操作完成后是否恢复改动：开始前询问时总是保留储藏，其余按选项。
+    private func reapplies(_ pending: AutoStashRequest) -> Bool {
+        reapply && !pending.asksBeforeStart
+    }
+
     /// 捕获表单值后开始执行；仓库暂不可写时对话框保持打开，已填写的内容保留。
     private func submit() {
         guard canSubmit else { return }
@@ -220,6 +227,7 @@ extension StashDialog {
 
         case .autoStash(let pending):
             // 完成后恢复时储藏只是临时的，说明固定为自动储藏的标记
+            let reapply = reapplies(pending)
             let typed = message.trimmingCharacters(in: .whitespacesAndNewlines)
             let text = reapply || typed.isEmpty ? AppLocalization.text("stash.autoStash.message", pending.title) : typed
             started = session.performAutoStash(pending, message: text, reapply: reapply)

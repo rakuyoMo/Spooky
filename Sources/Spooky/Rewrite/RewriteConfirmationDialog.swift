@@ -50,8 +50,11 @@ extension RewriteConfirmationDialog {
 
             return AppLocalization.text(key, folded.count, into)
 
-        case .edit(let commit), .amend(let commit):
+        case .edit(let commit):
             return AppLocalization.text(key, subject(of: commit))
+
+        case .amend:
+            preconditionFailure("修补旧提交不经确认，直接开始")
 
         case .reword:
             return AppLocalization.text("rewrite.reword.help")
@@ -73,9 +76,6 @@ extension RewriteConfirmationDialog {
         switch plan.action {
         case .move(let commits, _, _):
             return Dictionary(commits.map { ($0, AppLocalization.text("rewrite.note.move")) }, uniquingKeysWith: { $1 })
-
-        case .amend(let commit):
-            return [commit: AppLocalization.text("rewrite.note.amend")]
 
         default:
             let keys: [RebaseInstruction.Command: String] = [

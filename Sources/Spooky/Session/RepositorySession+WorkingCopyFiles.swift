@@ -35,13 +35,15 @@ enum WorkingCopyFileForm {
 // MARK: - Display
 
 extension RepositorySession {
-    /// 工作区列表当前的显示选项；被忽略与 assume-unchanged 文件的开关是全局偏好。
+    /// 工作区列表当前的显示选项；被忽略、assume-unchanged 文件与只看冲突的开关是全局偏好。
     var listing: WorkingCopyListing {
-        WorkingCopyListing(
+        let onlyConflicts = UserDefaults.standard.bool(forKey: WorkingCopyPreferences.showOnlyConflicts)
+
+        return WorkingCopyListing(
             mode: listMode,
             showsIgnored: UserDefaults.standard.bool(forKey: WorkingCopyPreferences.showIgnored),
             showsAssumeUnchanged: UserDefaults.standard.bool(forKey: WorkingCopyPreferences.showAssumeUnchanged),
-            onlyConflicts: onlyConflicts,
+            conflictPaths: onlyConflicts ? conflictPaths : nil,
             filter: searchText
         )
     }
@@ -76,10 +78,12 @@ extension RepositorySession {
         loadWorkingTreeFiles()
     }
 
-    /// 补充清单里的条目：未改动或被忽略的文件；清单里已经没有这个路径时为 nil。
+    /// 补充清单里的条目：未改动或被忽略的文件，以及只看冲突时解决成与 HEAD 相同的冲突文件；清单里已经没有这个路径时为 nil。
     func supplementaryEntry(_ id: StatusRowID) -> StatusEntry? {
-        switch id.kind {
-        case .unchanged where workingTreeFiles.indexPaths.contains(id.path),
+        let conflicted = listing.conflictPaths?.contains(id.path) ?? false
+
+        return switch id.kind {
+        case .unchanged where workingTreeFiles.indexPaths.contains(id.path) || conflicted,
              .ignored where workingTreeFiles.ignoredPaths.contains(id.path):
             StatusEntry(kind: id.kind, path: id.path)
 

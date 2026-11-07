@@ -17,7 +17,6 @@ extension RepositorySession {
             commitBody: commitBody,
             amend: amend,
             originalDraft: originalDraft,
-            onlyConflicts: onlyConflicts,
             historyReferences: history.selectedReferences,
             historyCommits: history.selectedIDs
         )
@@ -30,7 +29,6 @@ extension RepositorySession {
         commitBody = state.commitBody
         amend = state.amend
         originalDraft = state.originalDraft
-        onlyConflicts = state.onlyConflicts
         selectedIDs = state.selectedIDs
 
         // 先恢复选中行再恢复暂存侧，选中行的变更回调会重置暂存侧。

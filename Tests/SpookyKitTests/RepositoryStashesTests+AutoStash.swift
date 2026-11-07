@@ -3,7 +3,7 @@ import Testing
 
 @testable import SpookyKit
 
-/// Auto Stash 的三种结局：全部完成、原操作失败、恢复失败；失败时储藏必须保留，原始错误随之带回。
+/// Auto Stash 的结局：全部完成、原操作失败、原操作停在冲突上、恢复失败；没有全部完成时储藏必须保留，原始错误随之带回。
 extension RepositoryStashesTests {
     /// 合并被本地改动挡住后，储藏、合并、按暂存区状态恢复依次完成，储藏随后删除。
     @Test("Auto Stash 完成合并并恢复改动")
@@ -46,9 +46,11 @@ extension RepositoryStashesTests {
         _ = try await runner.run(["commit", "-q", "-am", "main change"])
         try write("local\n", to: "tracked x.txt", in: repository)
 
+        // 拉取里的合并把冲突当作失败抛出
         do {
             try await stashes.stashingLocalChanges(message: "auto", reapply: true) {
-                try await RepositorySync(runner: runner).merge("refs/heads/feature")
+                try await RepositorySync(runner: runner)
+                    .performMerge("refs/heads/feature", options: MergeOptions(), onOutput: nil)
             }
             Issue.record("冲突的合并应失败")
         } catch StashError.operationFailed(let stash, let underlying) {
@@ -57,6 +59,39 @@ extension RepositoryStashesTests {
         }
 
         // 冲突留给用户处理，本地改动仍在储藏里，没有被套回冲突中的工作区
+        #expect(try await stashes.list().map(\.message) == ["auto"])
+        #expect(try await runner.status().entries.contains { $0.kind == .conflicted })
+        #expect(try read("tracked x.txt", in: repository) == "base\n")
+    }
+
+    /// 原操作停在冲突上而没有失败时同样不恢复：储藏保留，错误说明储藏的去向，冲突留在工作区。
+    @Test("Auto Stash 后原操作停在冲突上")
+    func autoStashOperationConflicts() async throws {
+        let repository = try await makeRepository()
+        defer { repository.remove() }
+
+        let runner = repository.runner
+        let stashes = RepositoryStashes(runner: runner)
+
+        // main 与 feature 改了同一个文件，另有本地改动需要先储藏
+        try await commitOnFeature("tracked *.txt", content: "feature\n", in: repository)
+        try write("main\n", to: "tracked *.txt", in: repository)
+        _ = try await runner.run(["commit", "-q", "-am", "main change"])
+        try write("local\n", to: "tracked x.txt", in: repository)
+
+        do {
+            try await stashes.stashingLocalChanges(message: "auto", reapply: true) {
+                let outcome = try await RepositorySync(runner: runner)
+                    .merge("refs/heads/feature")
+
+                #expect(outcome == .conflicts)
+            }
+
+            Issue.record("停在冲突上的合并不应恢复储藏")
+        } catch StashError.operationConflicts(let stash) {
+            #expect(stash == "auto")
+        }
+
         #expect(try await stashes.list().map(\.message) == ["auto"])
         #expect(try await runner.status().entries.contains { $0.kind == .conflicted })
         #expect(try read("tracked x.txt", in: repository) == "base\n")

@@ -20,12 +20,13 @@ public enum OperationStepKind: String, Sendable {
 public struct OperationProgress: Sendable, Equatable {
     /// 判断与横幅字段需要的状态文件，路径相对仓库的 Git 目录。
     static let stateFiles = [
-        "MERGE_HEAD", "SQUASH_MSG", "CHERRY_PICK_HEAD", "REVERT_HEAD", "MERGE_MSG",
+        "MERGE_HEAD", "SQUASH_MSG", "CHERRY_PICK_HEAD", "REVERT_HEAD", "MERGE_MSG", "REBASE_HEAD",
         "rebase-merge/head-name", "rebase-merge/onto", "rebase-merge/orig-head",
         "rebase-merge/msgnum", "rebase-merge/end", "rebase-merge/done", "rebase-merge/amend",
+        "rebase-merge/stopped-sha", "rebase-merge/message", "rebase-merge/message-squash", "rebase-merge/message-fixup",
         "rebase-apply/head-name", "rebase-apply/onto", "rebase-apply/orig-head",
         "rebase-apply/next", "rebase-apply/last", "rebase-apply/final-commit",
-        "sequencer/todo",
+        "sequencer/todo", "sequencer/head",
     ]
 
     /// 进行中的操作。
@@ -40,10 +41,10 @@ public struct OperationProgress: Sendable, Equatable {
     /// 正在变基的分支的完整引用名；在分离 HEAD 上变基时为 nil。
     public let branch: String?
 
-    /// 变基当前一步的序号，从 1 开始；摘取与反转不记录已完成的步数，为 nil。
+    /// 当前一步的序号，从 1 开始：变基取 Git 记录的步号；摘取与反转的序列不记录已完成的步数，正在处理的总是剩余中的第 1 个；单个提交的操作为 nil。
     public let step: Int?
 
-    /// 变基的总步数；摘取与反转序列是 todo 里尚未完成的提交数，含正在处理的这一个；单个提交的操作为 nil。
+    /// 总步数：变基是全部步数；摘取与反转的序列是 todo 里尚未完成的提交数，含正在处理的这一个；单个提交的操作为 nil。
     public let stepCount: Int?
 
     /// 当前一步的动作。
@@ -52,11 +53,36 @@ public struct OperationProgress: Sendable, Equatable {
     /// 当前一步处理的提交标题。
     public let stepSubject: String?
 
+    /// 操作是序列，收尾时继续处理后面的步骤：变基总是序列；摘取与反转以 Git 是否建了 sequencer 为准，只剩一项的 sequencer 仍是序列。
+    ///
+    /// 只摘取或反转一个提交时 Git 不建 sequencer，按合并的方式提交收尾。
+    public let isSequence: Bool
+
     /// 这次操作中已经标记解决的冲突文件，来自索引的 resolve-undo 记录。
     public internal(set) var resolvedPaths: Set<String> = []
 
-    /// 交互式变基按 edit 指令停在这一步，等待修改后继续；冲突造成的停顿不算。
-    public internal(set) var stopsForEdit = false
+    /// 交互式变基按 edit 指令停下时正在修改的提交；冲突、squash 与 fixup 造成的停顿为 nil。
+    public internal(set) var editedCommit: String?
+
+    /// 停下时正在修改的提交的第一个父提交，撤下这个提交后 HEAD 回到这里；不是 edit 停顿或停在根提交上时为 nil。
+    public internal(set) var editedParent: String?
+
+    /// 交互式变基尚未开始：merge 后端的变基既没有停在 edit 上，也没有停在某个提交上。
+    ///
+    /// 这时没有可以提交的一步，只能中止。
+    public internal(set) var isPendingInteractive = false
+
+    /// 变基这一步正在应用的提交，取自 REBASE_HEAD；冲突停下时两种后端都有。
+    public internal(set) var rebaseHead: String?
+
+    /// 交互式变基按 edit 指令停在这一步，等待修改后继续。
+    public var stopsForEdit: Bool { editedCommit != nil }
+
+    /// 冲突里对方版本（stage 3）所在的提交：合并取 MERGE_HEAD 的第一个提交，摘取与反转取正在处理的提交，变基取 REBASE_HEAD；
+    /// 压缩合并没有对方提交。
+    public var theirsCommit: String? {
+        state == .rebase ? rebaseHead : theirs
+    }
 }
 
 extension OperationProgress {
@@ -95,22 +121,34 @@ extension OperationProgress {
             step: nil,
             stepCount: nil,
             stepKind: nil,
-            stepSubject: nil
+            stepSubject: nil,
+            isSequence: false
         )
     }
 
-    /// 读取进行中操作的完整进度；已解决的冲突需要额外读取索引的 resolve-undo 记录。
+    /// 读取进行中操作的完整进度；已解决的冲突需要额外读取索引的 resolve-undo 记录，edit 停顿另读正在修改的提交的父提交。
     ///
     /// - Parameters:
     ///   - files: 相对 Git 目录的状态文件内容。
     ///   - head: 当前 HEAD 提交。
-    ///   - runner: 读取索引的执行器。
+    ///   - runner: 读取索引与提交的执行器。
     static func read(files: [String: String], head: String?, runner: GitRunner) async throws -> Self? {
         guard var progress = Self(files: files, head: head) else {
             return nil
         }
 
         progress.resolvedPaths = try parseResolveUndo(try await runner.run(["ls-files", "--resolve-undo", "-z"]))
+
+        // 父提交只由提交的哈希决定，停顿期间反复刷新只读一次；根提交没有父提交，输出为空
+        if let edited = progress.editedCommit, GitObjectID.isValid(edited) {
+            let parents = try await runner.immutableRun(["rev-parse", edited + "^@"])
+
+            progress.editedParent = String(decoding: parents, as: UTF8.self)
+                .split(separator: "\n")
+                .first
+                .map(String.init)
+        }
+
         return progress
     }
 
@@ -145,6 +183,39 @@ extension OperationProgress {
     }
 }
 
+// MARK: - Prepared Message
+
+extension OperationProgress {
+    /// 提交区预填的信息：按 `SQUASH_MSG`、当前 fixup / squash 步的信息、`rebase-merge/message`、
+    /// `rebase-apply/final-commit`、`MERGE_MSG` 的顺序取第一个存在的文件，注释行原样保留。
+    ///
+    /// - Parameter files: 同一次读取的状态文件快照。
+    /// - Returns: 文件原文；都不存在时为 nil。
+    static func preparedMessage(in files: [String: String]) -> String? {
+        let current = files["rebase-merge/done"].flatMap { instructions($0).last?.command }
+
+        // fixup 与 squash 各有自己的信息文件，按当前一步的指令选，不依次尝试两个文件
+        let step: String? =
+            switch current {
+            case "fixup", "f": "rebase-merge/message-fixup"
+            case "squash", "s": "rebase-merge/message-squash"
+            default: nil
+            }
+
+        let names = [
+            "SQUASH_MSG",
+            step,
+            "rebase-merge/message",
+            "rebase-apply/final-commit",
+            "MERGE_MSG",
+        ]
+
+        return names.lazy
+            .compactMap { $0.flatMap { files[$0] } }
+            .first
+    }
+}
+
 // MARK: - State Files
 
 extension WorkingCopyOperations {
@@ -165,59 +236,6 @@ extension WorkingCopyOperations {
         return Dictionary(uniqueKeysWithValues: zip(names, paths).compactMap { name, path in
             content[path].map { (name, String(decoding: $0, as: UTF8.self)) }
         })
-    }
-
-    /// 序列的这一步没有可提交的改动时，提交一个保留原信息的空提交再接着处理后面的步骤；须在写事务中执行。
-    ///
-    /// - Returns: 是否已经处理；这一步有改动时返回 false，交给 Git 自己的继续命令。
-    func commitEmptyStep(of operation: RepositoryOperationState) async throws -> Bool {
-        guard [.rebase, .cherryPick, .revert].contains(operation) else {
-            return false
-        }
-
-        // 暂存区与 HEAD 相同，这一步就没有可提交的改动
-        let changes = try await runner.execute(["diff", "--cached", "--quiet", "HEAD", "--"], acceptedExitCodes: [0, 1])
-
-        guard changes.exitCode == 0 else {
-            return false
-        }
-
-        let files = try await stateFiles([
-            "rebase-merge/stopped-sha", "rebase-merge/amend", "rebase-apply/original-commit", "sequencer/todo",
-        ])
-
-        // 停在 edit 上时暂存区与 HEAD 相同是常态，继续就是让 Git 接着处理后面的指令
-        guard files["rebase-merge/amend"] == nil else {
-            return false
-        }
-        let commit = [
-            "-c", "i18n.commitencoding=UTF-8", "-c", "commit.verbose=false",
-            "commit", "--allow-empty", "--no-verify", "-q",
-        ]
-        let editor = ["-c", "core.editor=:", "-c", "core.trustctime=false"]
-
-        if operation == .rebase {
-            // 停下的提交提供原作者与信息；apply 后端提交后要跳过这一步，merge 后端直接继续
-            let applying = files["rebase-apply/original-commit"]?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let stopped = files["rebase-merge/stopped-sha"]?.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            guard let current = stopped ?? applying, GitObjectID.isValid(current) else {
-                return false
-            }
-
-            _ = try await runner.run(commit + ["-C", current])
-            _ = try await runner.run(editor + ["rebase", applying == nil ? "--continue" : "--skip"])
-            return true
-        }
-
-        // 摘取与反转沿用 Git 准备的 MERGE_MSG 并去掉注释行，摘取保留原作者；单个提交的操作到此结束
-        _ = try await runner.run(commit + ["--no-edit", "--cleanup=strip"])
-
-        if files["sequencer/todo"] != nil {
-            _ = try await runner.run(editor + [operation == .revert ? "revert" : "cherry-pick", "--continue"])
-        }
-
-        return true
     }
 }
 
@@ -257,6 +275,10 @@ extension OperationProgress {
             ? value("rebase-apply/final-commit").flatMap { $0.split(separator: "\n").first.map(String.init) }
             : current?.subject
 
+        // squash、fixup 停下时 Git 同样写 amend，只有最后一条是 edit 指令时才是停下来修改提交
+        let stopsForEdit = !apply && ["edit", "e"].contains(current?.command ?? "")
+        let edited = stopsForEdit ? value("rebase-merge/amend") : nil
+
         var progress = Self(
             state: .rebase,
             ours: value(backend + "onto"),
@@ -264,18 +286,25 @@ extension OperationProgress {
             branch: head.flatMap { $0.hasPrefix("refs/") ? $0 : nil },
             step: value(backend + (apply ? "next" : "msgnum")).flatMap { Int($0) },
             stepCount: value(backend + (apply ? "last" : "end")).flatMap { Int($0) },
-            stepKind: ["edit", "e"].contains(current?.command ?? "") ? .editing : .applying,
-            stepSubject: subject
+            stepKind: edited == nil ? .applying : .editing,
+            stepSubject: subject,
+            isSequence: true
         )
 
-        // Git 只在 edit 指令主动停下时写 amend，记下要修改的提交
-        progress.stopsForEdit = !apply && value("rebase-merge/amend") != nil
+        progress.editedCommit = edited
+        progress.rebaseHead = value("REBASE_HEAD")
+
+        // Git 每次停在某个提交上都会写 stopped-sha；还没有它就是还没开始处理任何提交
+        progress.isPendingInteractive = !apply
+            && edited == nil
+            && value("rebase-merge/stopped-sha") == nil
+
         return progress
     }
 
     /// 摘取与反转：序列看 sequencer/todo 的第一条指令，单个提交看 CHERRY_PICK_HEAD、REVERT_HEAD。
     ///
-    /// 序列只记录尚未完成的指令，不记录已完成的步数，所以只有剩余的提交数，没有当前一步的序号。
+    /// 序列只记录尚未完成的指令，不记录已完成的步数，所以总数是剩余的提交数，当前一步总是其中的第 1 个。
     private static func sequence(_ value: (String) -> String?, head: String?) -> Self? {
         let todo = value("sequencer/todo").map(instructions) ?? []
         let first = todo.first
@@ -293,10 +322,11 @@ extension OperationProgress {
             ours: head,
             theirs: current,
             branch: nil,
-            step: nil,
+            step: todo.isEmpty ? nil : 1,
             stepCount: todo.isEmpty ? nil : todo.count,
             stepKind: reverting ? .reverting : .applying,
-            stepSubject: first?.subject
+            stepSubject: first?.subject,
+            isSequence: value("sequencer/todo") != nil || value("sequencer/head") != nil
         )
     }
 

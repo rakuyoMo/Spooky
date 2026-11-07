@@ -333,13 +333,19 @@
 "working.abort" = "中止";
 "working.continue" = "続行";
 "working.skip" = "スキップ";
+"working.endEditing" = "編集を終了";
 "working.diffThreshold" = "Diff 警告のしきい値（kB）：";
 "working.error.stale" = "ファイルが変更されました。Diff を更新して変更を選び直してください。";
 "working.error.selection" = "適用できるテキスト変更が選択されていません。";
 "working.error.file" = "この操作には通常のファイルが必要です。";
 "working.error.path" = "このパスは SFTP バッチコマンドで表現できません。";
-"working.emptyMerge" = "空のマージコミットを作成";
-"working.emptyMerge.message" = "このマージにはステージ済みの変更がありません。マージコミットを作成するか、マージを中止してください。";
+"commit.empty.title" = "空のコミットを作成しますか？";
+"commit.empty.message" = "コミットする変更がありません。空のコミットを作成するか、現在の操作を中止してください。";
+"commit.empty.sequenceMessage" = "このステップには変更がありません。空のコミットとして残して続行するか、このステップをスキップしてください。";
+"commit.empty.use" = "空のコミットを使用";
+"commit.empty.abort" = "マージを中止";
+"commit.empty.skip" = "コミットをスキップ";
+"commit.empty.doNotShowAgain" = "今後この警告を表示しない";
 
 /* 历史、分支、同步与活动。 */
 "history.all" = "すべてのブランチ・リモート・タグ";
@@ -630,11 +636,12 @@
 "stash.error.conflicts.help" = "作業コピーで競合を解決してください。スタッシュは残されています。";
 "stash.error.operation" = "スタッシュ後に操作が失敗しました";
 "stash.error.operation.help" = "ローカルの変更はスタッシュに保存され、そのまま残っています。作業コピーを確認し、準備ができたらスタッシュを適用してください。";
+"stash.error.operationConflicts" = "スタッシュ後に競合が発生しました";
+"stash.error.operationConflicts.help" = "作業コピーで競合を解決してください。ローカルの変更はスタッシュに保存され、そのまま残っています。準備ができたらスタッシュを適用してください。";
 "stash.error.reapply" = "スタッシュを再適用できませんでした";
 "stash.error.reapply.help" = "操作は完了しましたが、ローカルの変更を再適用できませんでした。変更はスタッシュに残っているので、準備ができたら適用してください。";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "適用したパッチまたはスタッシュ";
-"conflict.binary" = "バイナリの内容は表示しません。";
 "conflict.error.version" = "選択したファイルにはこのバージョンがありません。";
 "conflict.error.version.title" = "このバージョンはありません";
 "conflict.export" = "「%@」のバージョンを書き出す…";
@@ -642,10 +649,10 @@
 "conflict.hint.merge.resolved" = "コミットメッセージを確認し、**コミット** をクリックしてマージを完了してください。";
 "conflict.hint.merge.empty" = "コミットできる変更が残っていません。**中止** でマージを取り消すか、**コミット** で空のマージコミットを作成してください。";
 "conflict.hint.rebase.conflicts" = "リベースを続けるには、すべての競合を解決してください。";
-"conflict.hint.rebase.resolved" = "**続行** をクリックすると、このステップをコミットしてリベースを続けます。";
+"conflict.hint.rebase.resolved" = "コミットメッセージを確認し、**続行** をクリックしてこのステップをコミットし、リベースを続けてください。";
 "conflict.hint.rebase.empty" = "このステップには変更が残っていません。**スキップ** でこのコミットを除くか、**続行** で空のコミットを残してリベースを続けてください。";
 "conflict.hint.sequence.conflicts" = "続けるには、すべての競合を解決してください。";
-"conflict.hint.sequence.resolved" = "**続行** をクリックすると、このステップをコミットして残りのコミットに進みます。";
+"conflict.hint.sequence.resolved" = "コミットメッセージを確認し、**続行** をクリックしてこのステップをコミットし、残りのコミットに進んでください。";
 "conflict.hint.sequence.empty" = "このステップには変更が残っていません。**スキップ** でこのコミットを除くか、**続行** で空のコミットを残して続けてください。";
 "conflict.kind.addedByThem" = "相手側で追加";
 "conflict.kind.addedByUs" = "自分側で追加";
@@ -659,9 +666,7 @@
 "conflict.markResolved.one" = "「%@」を解決済みにする";
 "conflict.menu.resolve" = "マージ競合を解決";
 "conflict.menu.restore" = "マージ競合のバージョンを復元";
-"conflict.missing" = "このバージョンではファイルが削除されています。";
 "conflict.open" = "「%@」のバージョンを開く";
-"conflict.reload" = "再読み込み";
 "conflict.resolveCurrent" = "現在のバージョンで解決";
 "conflict.resolvedSuffix" = "%@（解決済み：%d 件）";
 "conflict.resolveUsing" = "「%@」で解決";
@@ -675,17 +680,30 @@
 "conflict.step" = "ステップ %d / %d";
 "conflict.step.applying" = "ステップ %d / %d：「%@」を適用中";
 "conflict.step.editing" = "ステップ %d / %d：「%@」を編集中";
+"conflict.step.reverting" = "ステップ %d / %d：「%@」をリバート中";
 "conflict.title.cherryPick" = "%d 件のコミットを「%@」にチェリーピック中";
 "conflict.title.cherryPick.one" = "1 件のコミットを「%@」にチェリーピック中";
+"conflict.title.edit" = "%@ を「%@」上で編集中";
 "conflict.title.merge" = "「%@」を「%@」にマージ中";
 "conflict.title.rebase" = "「%@」を「%@」にリベース中";
 "conflict.title.revert" = "%d 件のコミットを「%@」上でリバート中";
 "conflict.title.revert.one" = "1 件のコミットを「%@」上でリバート中";
-"conflict.title.squash" = "コミットを「%@」にスカッシュマージ中";
+"conflict.title.squash" = "コミットを「%@」にスカッシュマージ";
 "conflict.unresolved.none" = "未解決の競合はありません";
 "conflict.unresolved.one" = "未解決の競合：1 件";
 "conflict.version" = "「%@」のバージョン";
 "conflict.versionMenu" = "「%@」のバージョンの操作";
+"conflict.selectVersion" = "上のバージョンを選択してください";
+"conflict.resolve" = "解決";
+"conflict.resolveBoth" = "両方のバージョンで解決";
+"conflict.change.added" = "追加";
+"conflict.change.modified" = "変更";
+"conflict.change.deleted" = "削除";
+"conflict.change.merge" = "マージ";
+"conflict.openWith" = "「%@」のバージョンを次で開く";
+"conflict.openWith.missing" = "このアプリケーションで開く";
+"conflict.compareOther" = "もう一方のバージョンと比較";
+"conflict.compareBase" = "共通の祖先と比較";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "ファイル履歴";
 "fileHistory.showCommit" = "コミットを表示";
@@ -766,6 +784,7 @@
 "signing.key" = "署名鍵：%@（%@）";
 "signing.defaultKey" = "署名鍵：コミッターに合わせて選択（%@）";
 "signing.none" = "署名鍵なし";
+"signing.unknown" = "不明な署名鍵";
 "signing.off" = "コミットに署名しません";
 "settings.editor" = "エディタ";
 "settings.profiles" = "ユーザプロファイル";
@@ -799,9 +818,9 @@
 "commit.amendHash" = "%@ を修正";
 "commit.commitHelp" = "ステージ済みの変更をコミット";
 "commit.amendHelp" = "直前のコミットを修正";
-"commit.continueHelp" = "進行中の操作を続行";
+"commit.continueHelp" = "マージシーケンスを続行";
 "commit.remaining" = "残り %ld 文字";
-"commit.quickAmendHint" = "メッセージ欄にフォーカスがないときに ⌥ を押したままにすると、直前のコミットをすばやく修正できます。";
+"commit.quickAmendHint" = "• メッセージ欄にフォーカスがないときに ⌥ を押したままにすると、直前のコミットをすばやく修正できます。";
 "commit.pin" = "説明を展開したままにする";
 "commit.reformatParagraph" = "段落を整形";
 "commit.comments" = "コミットメッセージからコメントを削除しますか？";
@@ -914,13 +933,12 @@
 "conflict.open.missing" = "開く";
 "conflict.export.missing" = "書き出す…";
 "conflict.toolTip" = "マージが必要なファイル：%@";
-"conflict.sequence.applying" = "「%@」を適用中";
-"conflict.sequence.reverting" = "「%@」をリバート中";
 
 /* 提交体验。 */
 "profiles.add.message" = "“%@ <%@> (%@)” をユーザプロファイルとして保存します。タイトルを入力してください。";
 "profiles.add.submit" = "プロファイルを追加";
 "profiles.titleExists" = "同じタイトルのユーザプロファイルがすでにあります。";
+"profiles.identityExists" = "同じユーザ名とメールアドレスのユーザプロファイルがすでにあります。";
 "profiles.signer" = "署名者：";
 "commit.doNotAskAgain" = "今後確認しない";
 
@@ -1114,7 +1132,6 @@
 "rewrite.edit.button" = "編集";
 "rewrite.drop.button" = "削除";
 "rewrite.move.button" = "移動";
-"rewrite.amend.button" = "修正";
 "rewrite.autosquash.button" = "自動スカッシュ";
 "rewrite.rebaseOnto.button" = "リベース";
 "rewrite.revert.button" = "リバート";
@@ -1127,7 +1144,6 @@
 "rewrite.edit.confirm" = "“%@” で止めて、その変更を作業コピーに戻しますか？変更をコミットしてから “続行” をクリックしてください。";
 "rewrite.drop.confirm" = "現在のブランチから %ld 件のコミットを削除しますか？";
 "rewrite.move.confirm" = "%ld 件のコミットを新しい位置へ移動しますか？";
-"rewrite.amend.confirm" = "ステージした変更を “%@” に取り込みますか？";
 "rewrite.autosquash.confirm" = "fixup!、squash!、amend! の付いたコミットを、それぞれが指すコミットに取り込みますか？";
 "rewrite.rebaseOnto.confirm" = "%ld 件のコミットを新しいベースへリベースしますか？";
 "rewrite.note.drop" = "削除";
@@ -1135,7 +1151,6 @@
 "rewrite.note.fixup" = "Fixup";
 "rewrite.note.edit" = "編集";
 "rewrite.note.move" = "移動";
-"rewrite.note.amend" = "修正";
 "rewrite.remote" = "この操作はサーバ “%@” で実行されます。";
 "rewrite.shared" = "プッシュ済みまたはマージ済み";
 "rewrite.warning.pushed" = "一部のコミットはすでに上流ブランチにあります。書き換えると、ローカルブランチと上流が分岐します。";
@@ -1194,8 +1209,6 @@
 "rewrite.error.notInHead.help" = "選択したコミットはすべて HEAD の履歴上の一本の線にある必要があります。";
 "rewrite.error.root" = "ルートコミットは編集できません";
 "rewrite.error.root.help" = "リポジトリの最初のコミットには親がないため、変更を作業コピーへ戻せません。";
-"rewrite.error.noStaged" = "ステージされた変更がありません";
-"rewrite.error.noStaged.help" = "先にコミットへ取り込む変更をステージしてください。";
 "rewrite.error.autosquash" = "自動スカッシュするコミットがありません";
 "rewrite.error.autosquash.help" = "最近のコミットに、fixup!、squash!、amend! で以前のコミットを指すものがありません。";
 "rewrite.error.selection" = "選択が正しくありません";
@@ -1203,7 +1216,8 @@
 "rewrite.checkout.menu" = "リビジョンをチェックアウト…";
 "rewrite.rebaseOnto.menu" = "別の場所へリベース…";
 "rewrite.reset.menu" = "HEAD をリビジョンへリセット…";
-"conflict.hint.rebase.edit" = "このコミットから戻した変更をコミットしてから、**続行** をクリックしてください。";
+"conflict.hint.rebase.edit" = "**コミット** でこのコミットを分割または書き直して新しいコミットを作成し、**編集を終了** をクリックしてリベースを続けてください。";
+"conflict.hint.rebase.pending" = "このインタラクティブリベースはまだどのコミットも処理していません。**中止** をクリックして取り消してください。";
 "rewrite.squash.confirm.one" = "“%@” を “%@” にスカッシュしますか？メッセージは結合されます。";
 "rewrite.fixup.confirm.one" = "“%@” を “%@” に取り込み、対象のメッセージだけを残しますか？";
 "rewrite.drop.confirm.one" = "現在のブランチから “%@” を削除しますか？";

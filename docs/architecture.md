@@ -100,6 +100,17 @@ Spooky 由两个 target 组成：
 
 - 本机与服务器的 Git 子进程都清除 `GIT_LITERAL_PATHSPECS`、`GIT_GLOB_PATHSPECS`、`GIT_NOGLOB_PATHSPECS`、`GIT_ICASE_PATHSPECS`；文件补丁通过字面包含与子项排除限定实际新旧路径，目录历史查询仍递归匹配。
 
+## 进行中的操作与提交
+
+- 进行中的操作由 `OperationProgress` 一次读出：状态文件经同一次 `rev-parse --git-path` 定位、经 `RepositoryFiles` 读取，本机与服务器同一路径
+  - 核心库给出分类：变基总是序列，摘取与反转以 `sequencer/` 是否存在为准；停在 `edit` 指令且有 `rebase-merge/amend` 时是 edit 步。另给出步数、edit 步的父提交、冲突时对方的提交与预填的提交信息
+  - 横幅、提交区、Skip、空提交确认与冲突向导都读这份结果，不各自判断
+- 提交信息有普通、修补与合并三种编辑模式，共用一份草稿：进入修补前记下草稿，取消或修补成功后恢复；进入合并或序列的下一步时换成预填的信息
+- 提交与继续都经 `commit -F -` 传入信息，并加 `--cleanup=whitespace`，注释行先按设置处理；继续序列时先用编辑后的信息提交这一步，再让 Git 继续剩下的步骤
+- 合并以 `RepositorySync.merge` 的结果区分是否停在冲突上：退出码为 1 时在同一写事务里核对 `MERGE_HEAD`（压缩合并为 `SQUASH_MSG`）与冲突条目，其余失败照原样抛出
+- 冲突向导的两侧版本取自索引的 stage，对方的提交在变基时取 `REBASE_HEAD`；选择只在视图里，不写仓库；交给本机程序的版本先写进 `RepositoryFileCache`
+- 旧提交的 Amend 与 Edit 用同一份 todo（目标为 edit、其余为 pick），Amend 停在目标本身；有本地改动时先询问是否储藏，储藏不自动恢复
+
 ## 服务器仓库
 
 - 只通过 `~/.ssh/config` 中的主机别名访问；连接、认证、主机指纹与复用交给系统 SSH

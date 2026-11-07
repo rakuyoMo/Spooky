@@ -4,7 +4,7 @@ import SwiftUI
 
 /// 对话框骨架的确认版：只有头部与底栏，内容区最多一个勾选框。
 ///
-/// 勾选框左缘对齐对齐线，下方留 20 pt；它的状态交给主按钮与备选按钮的动作，取消时不生效。
+/// 勾选框左缘对齐对齐线，下方留 20 pt；它的状态交给每个按钮的动作，由动作决定是否生效。
 /// 每个按钮都先关闭对话框，再执行各自的动作。
 struct ConfirmationDialog: View {
     /// 标题，是一个名词短语。
@@ -28,8 +28,8 @@ struct ConfirmationDialog: View {
     /// 关闭对话框。
     let close: () -> Void
 
-    /// 取消后执行，此时对话框已经关闭。
-    let cancel: () -> Void
+    /// 取消后执行，此时对话框已经关闭；参数是勾选框是否勾上。
+    let cancel: (_ checked: Bool) -> Void
 
     /// 选了主按钮后执行，此时对话框已经关闭；参数是勾选框是否勾上。
     let submit: (_ checked: Bool) -> Void
@@ -48,10 +48,7 @@ struct ConfirmationDialog: View {
             alternate: alternate.map { alternate in
                 (title: alternate.title, action: { choose(alternate.action) })
             },
-            cancel: {
-                close()
-                cancel()
-            },
+            cancel: { choose(cancel) },
             submit: { choose(submit) }
         ) {
             if let checkbox {
@@ -82,7 +79,7 @@ struct ConfirmationDialog: View {
         alternate: (title: String, action: (_ checked: Bool) -> Void)? = nil,
         checkbox: String? = nil,
         close: @escaping () -> Void,
-        cancel: @escaping () -> Void = { },
+        cancel: @escaping (_ checked: Bool) -> Void = { _ in },
         submit: @escaping (_ checked: Bool) -> Void
     ) {
         self.title = title

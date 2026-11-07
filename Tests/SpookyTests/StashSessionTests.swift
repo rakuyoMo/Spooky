@@ -124,6 +124,17 @@ struct StashSessionTests {
         )
         #expect(failed.title == AppLocalization.text("stash.error.operation"))
         #expect(failed.details.contains("Merge conflict in a.txt") && failed.details.contains("Automatic merge failed"))
+
+        // 停在冲突上的原操作没有 Git 错误，说明只写储藏的去向
+        let conflicts = AppFailure(
+            error: StashError.operationConflicts(stash: "auto"),
+            opening: false,
+            location: nil,
+            writing: true
+        )
+
+        #expect(conflicts.title == AppLocalization.text("stash.error.operationConflicts"))
+        #expect(conflicts.message == AppLocalization.text("stash.error.operationConflicts.help"))
     }
 }
 

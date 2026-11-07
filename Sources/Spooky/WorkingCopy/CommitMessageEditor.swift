@@ -277,6 +277,9 @@ struct CommitMessageEditor: NSViewRepresentable {
     /// 写入、快速修补或继续序列期间只读。
     let isEditable: Bool
 
+    /// 为真时放弃键盘焦点：提交开始后信息框失焦并锁定。
+    let releasesFocus: Bool
+
     /// 硬折行时使用等宽字体。
     let monospaced: Bool
 
@@ -384,6 +387,15 @@ struct CommitMessageEditor: NSViewRepresentable {
         if coordinator.focusRequest != focusRequest {
             coordinator.focusRequest = focusRequest
             DispatchQueue.main.async { textView.window?.makeFirstResponder(textView) }
+        }
+
+        // 失焦等这一轮更新结束再做，焦点回调不在视图更新中途改状态
+        if releasesFocus {
+            DispatchQueue.main.async {
+                guard let window = textView.window, window.firstResponder === textView else { return }
+
+                window.makeFirstResponder(nil)
+            }
         }
     }
 }

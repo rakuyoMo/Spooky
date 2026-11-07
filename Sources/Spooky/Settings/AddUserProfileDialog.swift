@@ -5,7 +5,7 @@ import SwiftUI
 
 /// 把仓库当前的提交人身份存成身份档案：姓名、邮箱与签名密钥取自仓库，只填写档案标题。
 ///
-/// 标题为空或与已有档案重名时不能添加，重名的原因显示在错误区。
+/// 标题为空、与已有档案重名，或姓名与邮箱都与已有档案相同时不能添加，重复的原因显示在错误区。
 struct AddUserProfileDialog: View {
     /// 档案的姓名。
     let name: String
@@ -27,7 +27,7 @@ struct AddUserProfileDialog: View {
     @State
     private var title = AppLocalization.text("profiles.newProfile")
 
-    /// 对话框骨架里放标题输入；标题重名的原因显示在错误区。
+    /// 对话框骨架里放标题输入；重复的原因显示在错误区。
     var body: some View {
         DialogLayout(
             title: AppLocalization.text("profiles.add"),
@@ -38,8 +38,8 @@ struct AddUserProfileDialog: View {
                 signingKey.map(UserProfiles.keyDescription) ?? AppLocalization.text("signing.none")
             ),
             submitTitle: AppLocalization.text("profiles.add.submit"),
-            error: titleExists ? AppLocalization.text("profiles.titleExists") : nil,
-            canSubmit: !trimmedTitle.isEmpty && !titleExists,
+            error: duplicate?.message,
+            canSubmit: !trimmedTitle.isEmpty && duplicate == nil,
             cancel: close,
             submit: add
         ) {
@@ -64,14 +64,18 @@ extension AddUserProfileDialog {
         title.trimmingCharacters(in: .whitespaces)
     }
 
-    /// 已有同名档案。
-    private var titleExists: Bool {
-        UserProfiles.decode(storage).contains { $0.title == trimmedTitle }
+    /// 要添加的档案与已有档案的重复。
+    private var duplicate: UserProfiles.Duplicate? {
+        UserProfiles.duplicate(of: profile, in: UserProfiles.decode(storage))
+    }
+
+    /// 要添加的档案：输入的标题与仓库当前的身份。
+    private var profile: UserProfile {
+        UserProfile(title: trimmedTitle, name: name, email: email, signingKey: signingKey)
     }
 
     /// 追加新档案，已有档案原样保留。
     private func add() {
-        let profile = UserProfile(title: trimmedTitle, name: name, email: email, signingKey: signingKey)
         storage = UserProfiles.encode(UserProfiles.decode(storage) + [profile])
         close()
     }

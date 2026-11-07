@@ -22,7 +22,7 @@ public enum RewriteAction: Sendable, Equatable {
     /// 把若干提交移到目标旁边，保持它们之间的先后。
     case move([String], to: String, position: MovePosition)
 
-    /// 把暂存的改动并入这个提交。
+    /// 停在这个提交的 edit 步供修补：HEAD 分离到它，索引与工作区保持原样，修补后再继续。
     case amend(String)
 
     /// 按 `fixup!`、`squash!`、`amend!` 标记把提交并进各自的目标。

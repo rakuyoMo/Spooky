@@ -276,7 +276,7 @@ extension RepositorySessionTests {
 
 extension RepositorySessionTests {
     /// 打开临时仓库并完成第一次完整刷新。
-    private func commitSession() async throws -> (RepositorySession, GitRunner, URL) {
+    func commitSession() async throws -> (RepositorySession, GitRunner, URL) {
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-commit-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
 
@@ -291,7 +291,7 @@ extension RepositorySessionTests {
     }
 
     /// 写入文件并经会话暂存全部改动。
-    private func stageChange(in session: RepositorySession, directory: URL, content: String) async throws {
+    func stageChange(in session: RepositorySession, directory: URL, content: String) async throws {
         try Data(content.utf8).write(to: directory.appending(path: "file.txt"))
         session.refresh(full: true)
         await session.waitForRefresh()
@@ -313,7 +313,7 @@ extension RepositorySessionTests {
     }
 
     /// 最近一次提交的完整信息。
-    private func lastMessage(_ runner: GitRunner) async throws -> String {
+    func lastMessage(_ runner: GitRunner) async throws -> String {
         String(decoding: try await runner.run(["log", "-1", "--format=%B"]), as: UTF8.self)
             .trimmingCharacters(in: .newlines)
     }

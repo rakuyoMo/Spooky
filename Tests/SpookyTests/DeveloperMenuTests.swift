@@ -104,7 +104,7 @@ struct DeveloperMenuTests {
             if confirms {
                 dialog.submit(false)
             } else {
-                dialog.cancel()
+                dialog.cancel(false)
             }
 
             #expect(await answer.value == confirms)

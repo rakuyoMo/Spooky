@@ -97,9 +97,14 @@ extension RepositorySession {
                 let plan = try await RepositoryRewrite(runner: runner).plan(action)
                 guard let self, generation == request else { return }
 
-                if case .reword = action {
+                switch action {
+                case .reword:
                     onRewriteRequest?(.reword(plan))
-                } else {
+
+                case .amend:
+                    amend(plan)
+
+                default:
                     onRewriteRequest?(.confirm(plan))
                 }
             } catch {
@@ -188,7 +193,7 @@ extension RepositorySession {
 
     /// 执行已确认的交互式变基计划。
     ///
-    /// 并入暂存改动的计划由变基自己储藏其余改动：先储藏会把要并入的暂存改动一起收走，所以不询问自动储藏。
+    /// 修补旧提交在开始前已按本地改动询问过是否储藏，被本地改动挡住时只报告 Git 的原始错误，不再询问。
     ///
     /// - Parameter skipHooks: 跳过 pre-rebase 钩子。
     @discardableResult
@@ -203,6 +208,32 @@ extension RepositorySession {
             offersAutoStash: !amends,
             undo: .reversible
         )
+    }
+
+    /// 修补旧提交：不经确认，直接停到目标的 edit 步；有本地改动时先询问是否储藏，储藏的改动不自动恢复。
+    ///
+    /// - Returns: 是否已开始执行或已转为询问。
+    @discardableResult
+    func amend(_ plan: RewritePlan) -> Bool {
+        guard !isWorkingCopyClean else {
+            return perform(plan)
+        }
+
+        guard let onStashRequest else {
+            return false
+        }
+
+        let request = AutoStashRequest(
+            title: AppLocalization.text(Self.titleKey(of: plan.action)),
+            error: nil,
+            action: { runner, output in
+                try await RepositoryRewrite(runner: runner).perform(plan, onOutput: output)
+            },
+            undo: .reversible
+        )
+
+        onStashRequest(.autoStash(request))
+        return true
     }
 
     /// 改写提交信息：编辑后的信息先按提交区的规则处理注释行与折行，再执行。

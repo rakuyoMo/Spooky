@@ -129,11 +129,15 @@ extension RepositorySession {
     }
 
     /// 修补载入最近信息，退出修补时恢复普通提交草稿。
+    ///
+    /// 提交进行中不进入修补，提交后等待重置期间不切换修补：保存的普通草稿只留给成功后的重置。
+    /// 进入修补按 ``canAmend``：edit 停顿时载入的是当前 HEAD 的信息。
     func setAmend(_ enabled: Bool) {
-        guard enabled != amend else { return }
+        guard enabled != amend, commitResetTask == nil else { return }
 
         if enabled {
-            guard status?.branch.oid != nil, context?.operation == nil, let context else { return }
+            guard !isCommitting, canAmend, let context else { return }
+
             originalDraft = (commitSubject, commitBody)
             setMessage(context.lastMessage)
         } else if let originalDraft {
@@ -165,7 +169,7 @@ extension RepositorySession {
         }
     }
 
-    /// 提交整理好的信息；合并没有暂存的改动时先确认建空合并提交。
+    /// 提交整理好的信息；进行中的操作没有任何改动时，按警告设置先确认建空提交还是中止。
     ///
     /// - Parameters:
     ///   - message: 已按注释设置整理的标题与正文。
@@ -179,9 +183,14 @@ extension RepositorySession {
         skipHooks: Bool
     ) {
         let request = generation
-        let action: () -> Void = { [weak self] in
+
+        // 修补成功后回到的普通草稿：还在修补里时是进入修补前存下的，⌥ 快速修补已经退出时就是信息框里恢复的内容
+        let draft = amend ? (originalDraft ?? (commitSubject, commitBody)) : nil
+
+        let action: (_ allowEmpty: Bool) -> Void = { [weak self] allowEmpty in
             guard let self, generation == request else { return }
-            performGit(
+
+            let started = performGit(
                 { runner, _ in
                     try await WorkingCopyOperations(runner: runner)
                         .commit(
@@ -189,44 +198,46 @@ extension RepositorySession {
                             body: message.body,
                             amend: amend,
                             signOff: signOff,
-                            skipHooks: skipHooks
+                            skipHooks: skipHooks,
+                            allowEmpty: allowEmpty
                         )
                 },
                 title: AppLocalization.text(amend ? "working.amend" : "working.commit"),
                 recordsActivity: false,
                 undo: .reversible
             ) { [weak self] in
-                guard let self else { return }
+                self?.finishSuccessfulCommit(restoring: draft)
+            }
 
-                // 提交成功后过了 commitResetDelay 才清空信息，其间提交区保持锁定，不会接受新的输入。
-                let delay = commitResetDelay
-                commitResetTask = Task { [weak self] in
-                    try? await Task.sleep(for: delay)
-
-                    guard !Task.isCancelled else { return }
-
-                    self?.clearCommittedMessage()
-                }
+            // 只有真正开始的提交才进入提交中状态；仓库不可写时什么也不变
+            if started {
+                beginCommitProgress()
             }
         }
 
-        if context?.operation == .merge, status?.entries.contains(where: \.hasStagedChanges) != true {
-            onEmptyMergePrompt?(action) { [weak self] in
-                guard let self, generation == request else { return }
+        // 修补改写的是已有的提交，不是空提交
+        guard commitsEmpty, !amend else {
+            action(false)
+            return
+        }
 
-                finishOperation("abort")
-            }
-        } else {
-            action()
+        confirmEmptyCommit(isSequence: false) {
+            action(true)
+        } alternate: { [weak self] in
+            guard let self, generation == request else { return }
+
+            finishOperation("abort")
         }
     }
 
-    /// 清空已经提交的信息与这次的提交选项，结束提交后的锁定。
-    func clearCommittedMessage() {
+    /// 按编辑模式重置已经提交的信息并清除这次的提交选项，结束提交后的锁定。
+    ///
+    /// 修补回到进入修补前的普通草稿；普通提交与合并收尾清空，合并前的草稿不再恢复。
+    func resetCommittedMessage() {
         commitResetTask?.cancel()
         commitResetTask = nil
-        commitSubject = ""
-        commitBody = ""
+        commitSubject = originalDraft?.subject ?? ""
+        commitBody = originalDraft?.body ?? ""
         amend = false
         originalDraft = nil
 
@@ -257,6 +268,48 @@ extension RepositorySession {
             title: AppLocalization.text("working." + action),
             recordsActivity: false
         )
+    }
+
+    /// 用信息框里编辑后的信息继续序列；注释行先按 Editor 设置询问或删除。
+    ///
+    /// 这一步没有任何改动且信息非空时，按警告设置先确认保留空提交还是跳过这一步。
+    func continueSequence() {
+        guard canWrite, let operation = context?.operation else { return }
+
+        let request = generation
+
+        prepareCommitMessage { [weak self] message in
+            guard let self, generation == request else { return }
+
+            let (subject, body) = CommitMessage.parts(of: message)
+
+            let perform: (_ allowEmpty: Bool) -> Void = { [weak self] allowEmpty in
+                guard let self, generation == request else { return }
+
+                performGit(
+                    { runner, _ in
+                        try await WorkingCopyOperations(runner: runner)
+                            .continueSequence(operation, subject: subject, body: body, allowEmpty: allowEmpty)
+                    },
+                    title: AppLocalization.text("working.continue"),
+                    recordsActivity: false
+                )
+            }
+
+            // 信息为空时直接交给 Git，由它报告缺少提交信息
+            guard commitsEmpty, !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                perform(false)
+                return
+            }
+
+            confirmEmptyCommit(isSequence: true) {
+                perform(true)
+            } alternate: { [weak self] in
+                guard let self, generation == request else { return }
+
+                finishOperation("skip")
+            }
+        }
     }
 
     /// 第一行成为标题，正文保留内部换行。
@@ -301,5 +354,26 @@ extension RepositorySession {
             WorkingCopyFileList.fileName(of: entry.path),
             repository.displayPath
         )
+    }
+
+    /// 空提交按警告设置先确认；关掉警告时直接保留空提交，不记住中止或跳过的选择。
+    ///
+    /// - Parameters:
+    ///   - isSequence: 序列中的一步，备选是跳过；否则备选是中止当前操作。
+    ///   - commit: 保留空提交。
+    ///   - alternate: 中止或跳过。
+    private func confirmEmptyCommit(
+        isSequence: Bool,
+        commit: @escaping () -> Void,
+        alternate: @escaping () -> Void
+    ) {
+        let warns = UserDefaults.standard.object(forKey: WorkingCopyPreferences.warnsEmptyCommit) as? Bool ?? true
+
+        guard warns else {
+            commit()
+            return
+        }
+
+        onEmptyCommitPrompt?(EmptyCommitRequest(isSequence: isSequence, commit: commit, alternate: alternate))
     }
 }

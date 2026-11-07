@@ -18,15 +18,36 @@ extension RepositorySession {
     /// 未解决冲突期间不允许提交或修补。
     var conflictCount: Int { status?.entries.filter { $0.kind == .conflicted }.count ?? 0 }
 
-    /// 有标题、有暂存改动或可修补的 HEAD 时允许提交；合并可产生空树差异。
+    /// 有标题、有暂存改动或可修补的 HEAD 时允许提交；合并可产生空树差异，进行中的操作没有任何改动时确认后建空提交。
     var canCommit: Bool {
         canWrite && commitResetTask == nil && conflictCount == 0
             && !commitSubject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && (
                 amend
                     || context?.operation == .merge
+                    || commitsEmpty
                     || (status?.entries.contains(where: \.hasStagedChanges) ?? false)
             )
+    }
+
+    /// 提交区可以打开修补：可写，且 HEAD 是可以修补的提交。
+    var canAmend: Bool { canWrite && isHeadAmendable }
+
+    /// HEAD 是可以修补的提交：已有提交，且没有进行中的操作，或交互式变基停在 edit 步等待修补当前 HEAD；与此刻能否写入无关。
+    ///
+    /// edit 停顿里 HEAD 是停下的提交、它的修补结果或停顿中新建的提交时可以修补；
+    /// 撤下停下的提交后 HEAD 回到它的父提交，那是用户没有选中的提交，不能修补。
+    var isHeadAmendable: Bool {
+        guard let head = status?.branch.oid else {
+            return false
+        }
+
+        // 没有进行中的操作时照常修补
+        guard let progress = context?.progress else {
+            return true
+        }
+
+        return progress.stopsForEdit && head != progress.editedParent
     }
 
     /// 提交区显示的提交人：仓库所在机器上生效的 `user.name` 与 `user.email`；没有配置或还没读到时为空。
@@ -51,6 +72,98 @@ extension RepositorySession {
 
             configurationTask = nil
         }
+    }
+
+    /// 提交命令已经开始：过了 `commitProgressDelay` 仍未结束才显示转圈；写操作结束时不论成败都结束提交状态。
+    func beginCommitProgress() {
+        let write = writeTask
+        let delay = commitProgressDelay
+        isCommitting = true
+
+        let progress = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+
+            guard !Task.isCancelled else { return }
+
+            self?.showsCommitProgress = true
+        }
+
+        commitProgressTask = progress
+
+        // 失败与取消没有成功回调，等写操作结束后收起；这期间已经开始的下一次提交不受影响
+        Task { [weak self] in
+            await write?.value
+
+            guard let self, commitProgressTask == progress else { return }
+
+            endCommitProgress()
+        }
+    }
+
+    /// 结束提交中状态并停止转圈；还没到显示转圈的时间就结束的提交不会再显示。
+    func endCommitProgress() {
+        commitProgressTask?.cancel()
+        commitProgressTask = nil
+        isCommitting = false
+        showsCommitProgress = false
+    }
+
+    /// 提交成功：立即停止转圈、收起正文并把焦点交给文件列表；过了 `commitResetDelay` 再按编辑模式重置信息，其间提交区保持锁定。
+    ///
+    /// - Parameter draft: 修补时进入修补前的普通草稿，重置时恢复它；普通提交与合并收尾为 nil，重置时清空。
+    func finishSuccessfulCommit(restoring draft: (subject: String, body: String)?) {
+        endCommitProgress()
+        collapsesCommitBody = true
+        fileListFocusRequest += 1
+
+        // ⌥ 快速修补可能已经先恢复了草稿，这里重新记下，关闭仓库时的立即重置同样用它
+        if let draft {
+            originalDraft = draft
+        }
+
+        let delay = commitResetDelay
+        commitResetTask = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+
+            guard !Task.isCancelled else { return }
+
+            self?.resetCommittedMessage()
+        }
+    }
+
+    /// 读到新的上下文时按编辑模式更新信息：进入进行中操作即进入合并模式，用 Git 准备的信息替换草稿并退出修补，合并成功后信息为空。
+    ///
+    /// 序列进入下一步或停在另一个提交上时同样换成这一步的信息；同一步里重新读取不覆盖编辑中的内容。
+    /// edit 停顿结束，或 HEAD 不再是可以修补的提交时，退出已打开的修补。
+    /// 仓库刚打开时还没有上一份上下文，只在信息为空时填入，切回仓库时恢复的草稿保留。
+    ///
+    /// - Parameters:
+    ///   - context: 刚读到的上下文。
+    ///   - previous: 上一份上下文；仓库刚打开时为 nil。
+    func updateMessage(for context: WorkingCopyContext, previous: WorkingCopyContext?) {
+        guard let progress = context.progress else {
+            // edit 停顿里打开的修补只针对停顿中的提交，变基结束或中止后退出修补，恢复进入修补前的草稿
+            if previous?.progress?.stopsForEdit ?? false { setAmend(false) }
+
+            return
+        }
+
+        // HEAD 不再能修补（如回到停下的提交的父提交）时，已打开的修补随之退出，恢复进入修补前的草稿
+        if !isHeadAmendable { setAmend(false) }
+
+        // 变基的步号随每一步增加；摘取与反转的序列总是第 1 步，换的是正在处理的提交
+        let last = previous?.progress
+        let changed = progress.state != last?.state
+            || progress.step != last?.step
+            || progress.theirs != last?.theirs
+
+        guard changed else { return }
+        guard previous != nil || commitSubject.isEmpty else { return }
+
+        // 合并成功后按合并模式清空，修补前存下的普通草稿不再恢复
+        amend = false
+        originalDraft = nil
+        setMessage(context.preparedMessage)
     }
 
     /// 切换或关闭仓库时清空提交配置与只对本仓库有效的提交选项。

@@ -269,7 +269,7 @@
 "working.commit" = "Commit";
 "working.amend" = "Amend";
 "working.subject" = "Commit Subject";
-"working.body" = "Detailed Description";
+"working.body" = "Detailed description";
 "working.staging" = "Staging status: %@";
 "working.list" = "View As List";
 "working.tree" = "View As Tree";
@@ -333,13 +333,19 @@
 "working.abort" = "Abort";
 "working.continue" = "Continue";
 "working.skip" = "Skip";
+"working.endEditing" = "End Editing";
 "working.diffThreshold" = "Show warning for diffs larger than (kB):";
 "working.error.stale" = "The file changed. Refresh the diff and select the changes again.";
 "working.error.selection" = "No applicable text changes selected.";
 "working.error.file" = "This operation requires a regular file.";
 "working.error.path" = "This path cannot be represented by SFTP batch commands.";
-"working.emptyMerge" = "Create Empty Merge Commit";
-"working.emptyMerge.message" = "This merge has no staged changes. Create the merge commit or abort the merge.";
+"commit.empty.title" = "Do you want to create an empty commit?";
+"commit.empty.message" = "There are no changes to commit. Create an empty commit, or abort the current operation.";
+"commit.empty.sequenceMessage" = "This step has no changes. Keep it as an empty commit and continue, or skip it.";
+"commit.empty.use" = "Use Empty Commit";
+"commit.empty.abort" = "Abort Merge";
+"commit.empty.skip" = "Skip Commit";
+"commit.empty.doNotShowAgain" = "Do not show this warning again";
 
 /* 历史、分支、同步与活动。 */
 "history.all" = "All Branches, Remotes, Tags";
@@ -630,11 +636,12 @@
 "stash.error.conflicts.help" = "Resolve the conflicts in Working Copy. The stash was kept.";
 "stash.error.operation" = "Operation Failed After Stashing";
 "stash.error.operation.help" = "Your local changes were saved on the Stash and are still there. Check the working copy, then apply the stash when you are ready.";
+"stash.error.operationConflicts" = "Conflicts After Stashing";
+"stash.error.operationConflicts.help" = "Resolve the conflicts in Working Copy. Your local changes were saved on the Stash and are still there; apply the stash when you are ready.";
 "stash.error.reapply" = "Stash Could Not Be Re-Applied";
 "stash.error.reapply.help" = "The operation finished, but your local changes could not be applied again. They are kept on the Stash; apply them when you are ready.";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "Applied Patch or Stash";
-"conflict.binary" = "Binary content isn’t shown.";
 "conflict.error.version" = "The selected files don’t have this version.";
 "conflict.error.version.title" = "Version Unavailable";
 "conflict.export" = "Export Version from “%@”…";
@@ -642,26 +649,24 @@
 "conflict.hint.merge.resolved" = "Review the commit message, then click **Commit** to complete the merge.";
 "conflict.hint.merge.empty" = "No changes are left to commit. Click **Abort** to cancel the merge, or **Commit** to create an empty merge commit.";
 "conflict.hint.rebase.conflicts" = "Resolve all conflicts to continue the rebase.";
-"conflict.hint.rebase.resolved" = "Click **Continue** to commit this step and continue the rebase.";
+"conflict.hint.rebase.resolved" = "Review the commit message, then click **Continue** to commit this step and continue the rebase.";
 "conflict.hint.rebase.empty" = "No changes are left in this step. Click **Skip** to leave out this commit, or **Continue** to keep an empty commit and continue the rebase.";
 "conflict.hint.sequence.conflicts" = "Resolve all conflicts to continue.";
-"conflict.hint.sequence.resolved" = "Click **Continue** to commit this step and go on with the remaining commits.";
+"conflict.hint.sequence.resolved" = "Review the commit message, then click **Continue** to commit this step and go on with the remaining commits.";
 "conflict.hint.sequence.empty" = "No changes are left in this step. Click **Skip** to leave out this commit, or **Continue** to keep an empty commit and go on.";
-"conflict.kind.addedByThem" = "Added by Them";
-"conflict.kind.addedByUs" = "Added by Us";
+"conflict.kind.addedByThem" = "Added By Them";
+"conflict.kind.addedByUs" = "Added By Us";
 "conflict.kind.bothAdded" = "Both Added";
 "conflict.kind.bothDeleted" = "Both Deleted";
 "conflict.kind.bothModified" = "Both Modified";
-"conflict.kind.deletedByThem" = "Deleted by Them";
-"conflict.kind.deletedByUs" = "Deleted by Us";
+"conflict.kind.deletedByThem" = "Deleted By Them";
+"conflict.kind.deletedByUs" = "Deleted By Us";
 "conflict.loading" = "Loading conflict…";
 "conflict.markResolved.many" = "Mark %d Items as Resolved";
 "conflict.markResolved.one" = "Mark “%@” as Resolved";
 "conflict.menu.resolve" = "Resolve Merge Conflicts";
 "conflict.menu.restore" = "Restore Merge Conflict Versions";
-"conflict.missing" = "This version deletes the file.";
 "conflict.open" = "Open Version from “%@”";
-"conflict.reload" = "Reload";
 "conflict.resolveCurrent" = "Resolve Using Current Version";
 "conflict.resolvedSuffix" = "%@ (%d resolved)";
 "conflict.resolveUsing" = "Resolve Using “%@”";
@@ -673,19 +678,32 @@
 "conflict.restoreVersion" = "Restore Version from “%@”";
 "conflict.result" = "Manually Edited or Merged Version";
 "conflict.step" = "Step %d of %d";
-"conflict.step.applying" = "Step %d of %d: Applying “%@”";
-"conflict.step.editing" = "Step %d of %d: Editing “%@”";
+"conflict.step.applying" = "Rebase %d of %d: Applying “%@”";
+"conflict.step.editing" = "Rebase %d of %d: Editing “%@”";
+"conflict.step.reverting" = "Step %d of %d: Reverting “%@”";
 "conflict.title.cherryPick" = "Cherry-Picking %d commits onto “%@”";
 "conflict.title.cherryPick.one" = "Cherry-Picking 1 commit onto “%@”";
+"conflict.title.edit" = "Editing %@ on “%@”";
 "conflict.title.merge" = "Merging “%@” into “%@”";
 "conflict.title.rebase" = "Rebasing “%@” onto “%@”";
 "conflict.title.revert" = "Reverting %d commits on “%@”";
 "conflict.title.revert.one" = "Reverting 1 commit on “%@”";
-"conflict.title.squash" = "Squash-Merging commits into “%@”";
+"conflict.title.squash" = "Squash-Merge commits into “%@”";
 "conflict.unresolved.none" = "No unresolved conflicts";
 "conflict.unresolved.one" = "1 unresolved conflict";
 "conflict.version" = "Version from “%@”";
 "conflict.versionMenu" = "Actions for the version from “%@”";
+"conflict.selectVersion" = "Please select a version above";
+"conflict.resolve" = "Resolve";
+"conflict.resolveBoth" = "Resolve Using Both Versions";
+"conflict.change.added" = "ADDED";
+"conflict.change.modified" = "MODIFIED";
+"conflict.change.deleted" = "DELETED";
+"conflict.change.merge" = "MERGE";
+"conflict.openWith" = "Open Version from “%@” With";
+"conflict.openWith.missing" = "Open With";
+"conflict.compareOther" = "Compare with Other Version";
+"conflict.compareBase" = "Compare with Common Ancestor";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "File History";
 "fileHistory.showCommit" = "Show Commit";
@@ -766,6 +784,7 @@
 "signing.key" = "Signing Key: %@ (%@)";
 "signing.defaultKey" = "Signing Key: Chosen by Committer (%@)";
 "signing.none" = "No Signing Key";
+"signing.unknown" = "Unknown signing key";
 "signing.off" = "Commits Are Not Signed";
 "settings.editor" = "Editor";
 "settings.profiles" = "User Profiles";
@@ -799,9 +818,9 @@
 "commit.amendHash" = "Amend %@";
 "commit.commitHelp" = "Commit the staged changes";
 "commit.amendHelp" = "Amend the last commit";
-"commit.continueHelp" = "Continue the operation in progress";
+"commit.continueHelp" = "Continue the merge sequence";
 "commit.remaining" = "%ld characters remaining";
-"commit.quickAmendHint" = "Hold ⌥ while no message field is focused to amend the last commit quickly.";
+"commit.quickAmendHint" = "• Hold ⌥ while no message field is focused to amend the last commit quickly.";
 "commit.pin" = "Keep Description Expanded";
 "commit.reformatParagraph" = "Reformat Paragraph";
 "commit.comments" = "Remove comments from the commit message?";
@@ -914,13 +933,12 @@
 "conflict.open.missing" = "Open";
 "conflict.export.missing" = "Export…";
 "conflict.toolTip" = "File requires merging: %@";
-"conflict.sequence.applying" = "Applying “%@”";
-"conflict.sequence.reverting" = "Reverting “%@”";
 
 /* 提交体验。 */
 "profiles.add.message" = "Saves “%@ <%@> (%@)” as a user profile. Enter a title for it.";
 "profiles.add.submit" = "Add Profile";
 "profiles.titleExists" = "A user profile with this title already exists.";
+"profiles.identityExists" = "A user profile with this user name and email already exists.";
 "profiles.signer" = "Signer:";
 "commit.doNotAskAgain" = "Do not ask again";
 
@@ -1114,7 +1132,6 @@
 "rewrite.edit.button" = "Edit";
 "rewrite.drop.button" = "Delete";
 "rewrite.move.button" = "Move";
-"rewrite.amend.button" = "Amend";
 "rewrite.autosquash.button" = "Autosquash";
 "rewrite.rebaseOnto.button" = "Rebase";
 "rewrite.revert.button" = "Revert";
@@ -1127,7 +1144,6 @@
 "rewrite.edit.confirm" = "Stop at “%@” and return its changes to the working copy? Commit them, then click Continue.";
 "rewrite.drop.confirm" = "Delete %ld revisions from the current branch?";
 "rewrite.move.confirm" = "Move %ld revisions to the new position?";
-"rewrite.amend.confirm" = "Add the staged changes to “%@”?";
 "rewrite.autosquash.confirm" = "Fold every commit marked fixup!, squash! or amend! into the commit it refers to?";
 "rewrite.rebaseOnto.confirm" = "Rebase %ld revisions onto the new base?";
 "rewrite.note.drop" = "Delete";
@@ -1135,7 +1151,6 @@
 "rewrite.note.fixup" = "Fixup";
 "rewrite.note.edit" = "Edit";
 "rewrite.note.move" = "Move";
-"rewrite.note.amend" = "Amend";
 "rewrite.remote" = "This operation runs on the server “%@”.";
 "rewrite.shared" = "Already pushed or merged";
 "rewrite.warning.pushed" = "Some of these commits are already on the upstream branch. After rewriting, the local branch and its upstream diverge.";
@@ -1194,8 +1209,6 @@
 "rewrite.error.notInHead.help" = "The selected commits must all be in the history of HEAD, on one line.";
 "rewrite.error.root" = "Cannot Edit the Root Commit";
 "rewrite.error.root.help" = "The first commit of the repository has no parent to return its changes to.";
-"rewrite.error.noStaged" = "No Staged Changes";
-"rewrite.error.noStaged.help" = "Stage the changes to add to the commit first.";
 "rewrite.error.autosquash" = "Nothing to Autosquash";
 "rewrite.error.autosquash.help" = "No recent commit is marked with fixup!, squash! or amend! for an earlier commit.";
 "rewrite.error.selection" = "Invalid Selection";
@@ -1203,7 +1216,8 @@
 "rewrite.checkout.menu" = "Checkout Revision…";
 "rewrite.rebaseOnto.menu" = "Rebase Onto…";
 "rewrite.reset.menu" = "Reset HEAD to Revision…";
-"conflict.hint.rebase.edit" = "Commit the changes returned from this commit, then click **Continue**.";
+"conflict.hint.rebase.edit" = "Split or rewrite this commit by creating new commits with **Commit**, then click **End Editing** to continue the rebase.";
+"conflict.hint.rebase.pending" = "This interactive rebase has not processed any commits yet. Click **Abort** to cancel it.";
 "rewrite.squash.confirm.one" = "Squash “%@” into “%@”? Their messages are combined.";
 "rewrite.fixup.confirm.one" = "Fold “%@” into “%@” and keep only the message of the target?";
 "rewrite.drop.confirm.one" = "Delete “%@” from the current branch?";

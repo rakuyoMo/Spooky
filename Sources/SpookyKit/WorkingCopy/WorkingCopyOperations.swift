@@ -33,8 +33,8 @@ public struct WorkingCopyContext: Sendable {
     /// 进行中操作的两侧、序列进度与已解决的冲突；没有进行中的操作时为 nil。
     public let progress: OperationProgress?
 
-    /// Git 准备的结论信息。
-    public let mergeMessage: String
+    /// 提交区预填的信息，取自 Git 为进行中操作准备的信息文件，保留其中的注释行；没有时为空。
+    public let preparedMessage: String
 }
 
 // MARK: - DiffSnapshot
@@ -274,21 +274,30 @@ public struct WorkingCopyOperations: Sendable {
     ///   - amend: 改写最近一次提交。
     ///   - signOff: 追加 `Signed-off-by` 尾注。
     ///   - skipHooks: 跳过 pre-commit 与 commit-msg 钩子。
+    ///   - allowEmpty: 没有改动时同样建提交，用于用户确认过的空提交。
     public func commit(
         subject: String,
         body: String,
         amend: Bool = false,
         signOff: Bool = false,
-        skipHooks: Bool = false
+        skipHooks: Bool = false,
+        allowEmpty: Bool = false
     ) async throws {
         let message = CommitMessage.text(subject: subject, body: body)
-        var arguments = ["-c", "i18n.commitencoding=UTF-8", "-c", "commit.verbose=false", "commit", "-F", "-"]
+
+        // 注释行已按注释设置处理过，不再让仓库的 commit.cleanup 剥掉
+        var arguments = [
+            "-c", "i18n.commitencoding=UTF-8", "-c", "commit.verbose=false",
+            "commit", "--cleanup=whitespace", "-F", "-",
+        ]
 
         if amend { arguments.append("--amend") }
 
         if signOff { arguments.append("--signoff") }
 
         if skipHooks { arguments.append("--no-verify") }
+
+        if allowEmpty { arguments.append("--allow-empty") }
 
         _ = try await runner.run(arguments, input: Data(message.utf8))
     }
@@ -346,14 +355,7 @@ public struct WorkingCopyOperations: Sendable {
         case .revert: command = "revert"
         }
 
-        try await runner.writeTransaction {
-            // 序列的这一步没有可提交的改动时，继续表示保留一个空提交，再接着处理后面的步骤
-            if action == "continue", try await commitEmptyStep(of: operation) {
-                return
-            }
-
-            _ = try await runner.run(["-c", "core.editor=:", "-c", "core.trustctime=false", command, "--" + action])
-        }
+        _ = try await runner.run(["-c", "core.editor=:", "-c", "core.trustctime=false", command, "--" + action])
     }
 
     /// 一次读取状态文件快照，进行中模式不依赖人读的 git status 文案。
@@ -374,17 +376,15 @@ public struct WorkingCopyOperations: Sendable {
         // 进行中的操作与它的两侧、步数和已解决的冲突都从同一份状态文件快照算出
         let progress = try await OperationProgress.read(files: files, head: head, runner: runner)
 
-        // Git 生成的冲突清单不属于提交正文，预填时移除其注释行。
-        let mergeMessage = (files["SQUASH_MSG"] ?? files["MERGE_MSG"] ?? "")
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .filter { !$0.hasPrefix("#") }
-            .joined(separator: "\n")
+        // 冲突清单等注释行留在预填里，提交时再按注释设置保留、询问或删除
+        let preparedMessage = OperationProgress.preparedMessage(in: files)?
             .trimmingCharacters(in: .newlines)
+
         return WorkingCopyContext(
             lastMessage: lastMessage,
             operation: progress?.state,
             progress: progress,
-            mergeMessage: mergeMessage
+            preparedMessage: preparedMessage ?? ""
         )
     }
 

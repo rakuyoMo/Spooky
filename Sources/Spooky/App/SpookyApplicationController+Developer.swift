@@ -131,7 +131,7 @@ extension SpookyApplicationController {
                     message: AppLocalization.text("developer.resetUserDefaults.message"),
                     submitTitle: AppLocalization.text("developer.resetUserDefaults.confirm"),
                     close: close,
-                    cancel: { answer(false) }
+                    cancel: { _ in answer(false) }
                 ) { _ in
                     answer(true)
                 }

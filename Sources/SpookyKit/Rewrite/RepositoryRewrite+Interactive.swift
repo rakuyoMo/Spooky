@@ -34,7 +34,7 @@ extension RepositoryRewrite {
             throw RewriteError.notInHead
         }
 
-        try await checkPreconditions(of: action, in: range)
+        try checkPreconditions(of: action, in: range)
 
         let impact = try await impact(of: range, base: start.parents.first)
         let onto: String? = if case .rebase(_, let target) = action { try await resolve(target) } else { nil }
@@ -64,28 +64,12 @@ extension RepositoryRewrite {
                 throw RewriteError.sequenceChanged(nil)
             }
 
-            var instructions = plan.instructions
-            var fixup: String? = nil
-
-            // 暂存的改动先写成一个不挂在分支上的 fixup 提交，再在 todo 里紧跟目标
-            if case .amend(let target) = plan.action, let commit = plan.commits.first(where: { $0.id == target }) {
-                let created = try await fixupCommit(for: commit, head: plan.head)
-                let index = (instructions.firstIndex { $0.commit == target } ?? instructions.count - 1) + 1
-                instructions.insert(
-                    RebaseInstruction(command: .fixup, commit: created, subject: "fixup! " + commit.subject),
-                    at: index
-                )
-                fixup = created
-            }
-
             do {
                 _ = try await runner.execute(
-                    Self.rebaseArguments(plan, instructions: instructions, skipHooks: skipHooks),
+                    Self.rebaseArguments(plan, skipHooks: skipHooks),
                     onOutput: onOutput
                 )
             } catch {
-                if let fixup { try await restoreIndex(from: fixup, head: plan.head) }
-
                 if let git = error as? GitError, Self.isSequenceChange(git.result) {
                     throw RewriteError.sequenceChanged(git.result)
                 }
@@ -147,14 +131,11 @@ extension RepositoryRewrite {
         case .drop(let selected):
             return range.map { line($0, selected.contains($0.id) ? .drop : .pick) }
 
-        case .edit(let target):
+        case .edit(let target), .amend(let target):
             return range.map { line($0, $0.id == target ? .edit : .pick) }
 
         case .reword(let target, _):
             return range.map { line($0, $0.id == target ? .reword : .pick) }
-
-        case .amend:
-            return range.map { line($0, .pick) }
 
         case .autosquash:
             return []
@@ -256,23 +237,14 @@ extension RepositoryRewrite {
         return try HistoryCommit.parse(output)
     }
 
-    /// 动作自己的前提：根提交不能编辑，并入暂存改动需要有暂存的改动。
-    private func checkPreconditions(of action: RewriteAction, in range: [HistoryCommit]) async throws {
-        switch action {
-        case .edit(let target):
-            if range.first(where: { $0.id == target })?.parents.isEmpty ?? true {
-                throw RewriteError.rootCommit
-            }
+    /// 动作自己的前提：根提交不能编辑。
+    private func checkPreconditions(of action: RewriteAction, in range: [HistoryCommit]) throws {
+        guard case .edit(let target) = action else {
+            return
+        }
 
-        case .amend:
-            let staged = try await runner.execute(["diff", "--cached", "--quiet", "HEAD", "--"], acceptedExitCodes: [0, 1])
-
-            if staged.exitCode == 0 {
-                throw RewriteError.noStagedChanges
-            }
-
-        default:
-            break
+        if range.first(where: { $0.id == target })?.parents.isEmpty ?? true {
+            throw RewriteError.rootCommit
         }
     }
 }

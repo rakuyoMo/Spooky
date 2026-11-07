@@ -29,9 +29,6 @@ struct RepositoryViewState {
     /// 进入修补前的普通草稿。
     var originalDraft: (subject: String, body: String)? = nil
 
-    /// 是否只显示冲突文件。
-    var onlyConflicts = false
-
     /// 历史侧边栏选中的引用。
     var historyReferences: Set<String> = []
 

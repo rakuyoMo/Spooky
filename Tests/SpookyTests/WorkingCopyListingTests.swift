@@ -52,9 +52,28 @@ struct WorkingCopyListingTests {
             mode: .allFiles,
             showsIgnored: true,
             showsAssumeUnchanged: true,
-            onlyConflicts: true
+            conflictPaths: ["merge.txt"]
         )
         #expect(conflicts.entries(status: Self.status, files: Self.files).map(\.path) == ["merge.txt"])
+    }
+
+    /// 只看冲突保留这次操作已经解决的文件：解决后仍有改动的照常列出，与 HEAD 相同、已不在状态里的补成未改动的条目。
+    @Test("只看冲突保留已解决的文件")
+    func resolvedConflicts() {
+        let listing = WorkingCopyListing(
+            mode: .list,
+            conflictPaths: ["merge.txt", "src/App.swift", "same.txt"]
+        )
+
+        let entries = listing.entries(status: Self.status, files: Self.files)
+
+        #expect(entries.map(\.path) == ["src/App.swift", "merge.txt", "same.txt"])
+        #expect(entries.map(\.kind) == [.tracked, .conflicted, .unchanged])
+
+        // 搜索仍在冲突文件里过滤
+        var searching = listing
+        searching.filter = "same"
+        #expect(searching.entries(status: Self.status, files: Self.files).map(\.path) == ["same.txt"])
     }
 
     /// 搜索按路径或文件名过滤：不区分大小写，组合与分解两种 Unicode 写法相同，重命名的原路径也能命中。
