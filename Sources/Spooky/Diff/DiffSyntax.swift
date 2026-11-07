@@ -6,29 +6,24 @@ import SpookyKit
 /// 一个文件 Diff 两侧全文的语法片段，按行号取用：删除行取旧版，上下文与新增行取新版。
 ///
 /// 块注释、多行字符串跨越 Diff 的块边界，所以着色基于两侧全文，而不是只看显示出的几行。
-struct DiffSyntax: Sendable {
+struct DiffSyntax: Sendable, Equatable {
     /// 旧版每行的片段，下标为行号减一。
     let old: [[SyntaxSpan]]
 
     /// 新版每行的片段。
     let new: [[SyntaxSpan]]
 
-    /// 显示的 Diff 能否着色：按路径识别出语言，或新版首行是 `#!`（需要全文再判断）。
+    /// 显示的 Diff 能否着色：二进制与两侧路径都明确对应纯文本的文件不着色，其余取全文后识别。
     static func mayColor(_ diff: RepositoryDiff, oldPath: String, newPath: String) async -> Bool {
         guard let file = diff.files.first, !file.isBinary else {
             return false
         }
 
-        if await SyntaxHighlighter.language(forPath: newPath, content: nil) != nil {
+        if await SyntaxHighlighter.pathLanguage(forPath: newPath, content: nil) != .plaintext {
             return true
         }
 
-        if await SyntaxHighlighter.language(forPath: oldPath, content: nil) != nil {
-            return true
-        }
-
-        let firstLine = file.hunks.first?.lines.first { $0.newNumber == 1 && $0.prefix != 45 }
-        return firstLine?.content.starts(with: "#!".utf8) ?? false
+        return await SyntaxHighlighter.pathLanguage(forPath: oldPath, content: nil) != .plaintext
     }
 
     /// 显示的 Diff 已经包含两侧全文：显示整个文件，或整份文件新增、删除。

@@ -39,7 +39,9 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Working copy**: view changes as a list or a tree, or browse every file in the repository. Show ignored and assume-unchanged files, and filter by path. Untrack, delete, move, ignore, or exclude files, restore them to a revision, and apply patch files. Deleted files and discarded untracked files go to the Trash, also on a server that has one. Preview files with Quick Look, drag them out, or open them in their default app
 
-- **Stage files, hunks, or lines**: multiple selection and three-state checkboxes. Select lines in a diff to stage or discard just those lines
+- **Stage files, hunks, or lines**: multiple selection and three-state checkboxes. Select lines in a diff to stage or discard just those lines. Unchanged hunks keep their line selections when the diff reloads
+
+- **Diff text**: select and copy text across lines within a hunk, without line numbers or diff prefixes. Copying preserves the original whitespace even when invisible characters are shown. File summaries describe renames, mode changes, and binary changes
 
 - **Diff options**: change the number of context lines, show the entire file, ignore whitespace, show invisible characters, and set the tab width. Changed words within modified lines are highlighted. Syntax coloring uses highlight.js and covers its 192 languages; files whose language can't be identified are shown as plain text. Images are compared side by side or one at a time
 
@@ -51,7 +53,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Stashes**: save all or only selected changes, take snapshots that leave the working copy as it is, and apply a stash with its staged state or apply a single file from it. When local changes block a checkout, pull, or merge, Spooky offers to stash them first and reapply them afterward
 
-- **File history and blame**: follow a file through history, filtered by author, committer, or revision, with author names suggested as you type. See who last changed each line, view any committed version of a file, and export versions from its history
+- **File history and blame**: follow a file through history, filtered by author, committer, or revision, with author names suggested as you type. See who last changed each line, view any committed version of a file, and export versions from its history. Directory history shows all changed files within the directory
 
 - **History**: commits load page by page, with a commit graph, ref badges, and markers for unpushed and unpulled commits. Search by message, author, committer, file, commit hash, and date, and combine several conditions. Sort by date or topology, group commits by day, week, or month, or follow only first parents. Dates can be shown in full or relative to now, and authors appear with their Gravatar picture or their initials
 

@@ -29,24 +29,42 @@ struct FileActionBar: View {
     /// 鼠标是否在头部上。
     let hovering: Bool
 
+    /// 文件头使用分段组，评论附件使用独立按钮。
+    var segmented = true
+
+    /// 原生分段组是否获得键盘焦点。
+    @State
+    private var segmentFocused = false
+
     /// 获得键盘焦点的按钮。
     @FocusState
     private var focused: String?
 
-    /// 文字按钮靠右排列，隐藏时仍保留位置与键盘焦点。
+    /// 隐藏时保留占位与键盘入口，悬停或获得焦点时淡入。
     var body: some View {
-        HStack(spacing: 2) {
-            ForEach(actions) { action in
-                Button(action.title, action: action.perform)
-                    .disabled(!action.enabled)
-                    .focused($focused, equals: action.id)
+        Group {
+            if segmented {
+                FileActionSegments(actions: actions) { segmentFocused = $0 }
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                HStack(spacing: 2) {
+                    ForEach(actions) { action in
+                        Button(action.title, action: action.perform)
+                            .disabled(!action.enabled)
+                            .focused($focused, equals: action.id)
+                    }
+                }
+                .buttonStyle(.accessoryBar)
+                .controlSize(.regular)
             }
         }
-        .buttonStyle(.accessoryBar)
-        .controlSize(.small)
         .frame(height: 25)
-        .opacity(hovering || focused != nil ? 1 : 0)
+        .opacity(visible ? 1 : 0)
+        .animation(.easeInOut(duration: 0.15), value: visible)
     }
+
+    /// 鼠标与键盘任一入口都能显示动作。
+    private var visible: Bool { hovering || focused != nil || segmentFocused }
 }
 
 // MARK: - FileActionHeader
@@ -137,17 +155,24 @@ struct ChangesetFileMenu: View {
     /// 文件所在的提交。
     let commit: HistoryCommit
 
+    /// 目录对象与未解析的目标禁用内容读取，文件动作保持各自的能力。
+    var contentEnabled = true
+
     /// 查看组、比较工具与恢复、导出组之间有分隔线。
     var body: some View {
         let name = RepositorySession.fileName(path)
 
         Button(AppLocalization.text("fileHistory.showAt", name, commit.shortID)) {
+            guard contentEnabled else { return }
             session.showFile(path, at: commit.id, mode: .raw)
         }
+        .disabled(!contentEnabled)
 
         Button(AppLocalization.text("fileHistory.blameAt", name, commit.shortID)) {
+            guard contentEnabled else { return }
             session.showFile(path, at: commit.id, mode: .blame)
         }
+        .disabled(!contentEnabled)
 
         Button(AppLocalization.text("fileHistory.showHistoryOf", name)) {
             session.showFileHistory(path)
@@ -168,7 +193,9 @@ struct ChangesetFileMenu: View {
         .disabled(!session.canWrite)
 
         Button(AppLocalization.text("fileHistory.exportAt", name, commit.shortID)) {
+            guard contentEnabled else { return }
             session.exportFile(path, at: commit.id)
         }
+        .disabled(!contentEnabled)
     }
 }

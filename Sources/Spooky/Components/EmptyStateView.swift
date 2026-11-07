@@ -18,51 +18,68 @@ struct EmptyStateView<Actions: View>: View {
     /// 系统符号名称；为 nil 时没有图标。
     let symbol: String?
 
+    /// 内联内容按实际文字和按钮确定高度，整页空状态仍铺满容器。
+    let fitsContent: Bool
+
     /// 按钮行里的控件；为 nil 时没有按钮行。
     private let actions: Actions?
 
     /// 标题、说明与按钮行在宽度内居中，标题的中心对齐比容器中心低 32 的位置；
     /// 整块与背景延伸到窗口工具栏下面，容器的中心按延伸后的高度算。
     var body: some View {
-        VStack(spacing: 8) {
-            if let symbol {
-                Image(systemName: symbol)
-                    .font(.system(size: 58, weight: .light))
-                    .frame(width: 128, height: 100)
-                    .foregroundStyle(.tertiary)
-                    .accessibilityHidden(true)
+        if fitsContent {
+            EmptyStateInlineLayout(hasSymbol: symbol != nil) {
+                content
             }
-
-            // 容器的中心对齐到标题中心以上 32 处，标题因此比容器中心低 32
-            Text(title)
-                .font(.system(size: 18))
-                .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 8)
-                .alignmentGuide(.emptyStateTitle) { $0[VerticalAlignment.center] - 32 }
-
-            // 说明为空时同样占一行，按钮行与标题之间隔着这一行
-            Text(message)
-                .font(.system(size: 13))
-                .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
-                .accessibilityHidden(message.isEmpty)
-
-            if let actions {
-                HStack(spacing: 8) {
-                    actions
-                }
-                .padding(.horizontal, 20)
+            .background(ContentBackgroundView())
+        } else {
+            VStack(spacing: 8) {
+                content
             }
+            .frame(
+                maxWidth: .infinity,
+                maxHeight: .infinity,
+                alignment: Alignment(horizontal: .center, vertical: .emptyStateTitle)
+            )
+            .background(ContentBackgroundView())
+            .ignoresSafeArea(.container, edges: .top)
         }
-        .frame(
-            maxWidth: .infinity,
-            maxHeight: .infinity,
-            alignment: Alignment(horizontal: .center, vertical: .emptyStateTitle)
-        )
-        .background(ContentBackgroundView())
-        .ignoresSafeArea(.container, edges: .top)
+    }
+
+    /// 两种容器共用标题、说明、按钮与原有文本样式。
+    @ViewBuilder
+    private var content: some View {
+        if let symbol {
+            Image(systemName: symbol)
+                .font(.system(size: 58, weight: .light))
+                .frame(width: 128, height: 100)
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
+        }
+
+        // 容器的中心对齐到标题中心以上 32 处，标题因此比容器中心低 32
+        Text(title)
+            .font(.system(size: 18))
+            .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 8)
+            .alignmentGuide(.emptyStateTitle) { $0[VerticalAlignment.center] - 32 }
+
+        // 说明为空时同样占一行，按钮行与标题之间隔着这一行
+        Text(message)
+            .font(.system(size: 13))
+            .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 20)
+            .accessibilityHidden(message.isEmpty)
+
+        if let actions {
+            HStack(spacing: 8) {
+                actions
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, fitsContent ? EmptyStateButton.bottomOutset : 0)
+        }
     }
 
     /// 带按钮行的空状态。
@@ -71,16 +88,19 @@ struct EmptyStateView<Actions: View>: View {
     ///   - title: 本地化后的标题。
     ///   - message: 本地化后的说明；为空时这一行留空。
     ///   - symbol: 系统符号名称；为 nil 时没有图标。
+    ///   - fitsContent: 内联模式按内容自动增加高度，不延伸到工具栏区域。
     ///   - actions: 按钮行里的控件，由空状态排成一行；按钮用 `EmptyStateButton`。
     init(
         title: String,
         message: String,
         symbol: String?,
+        fitsContent: Bool = false,
         @ViewBuilder actions: () -> Actions
     ) {
         self.title = title
         self.message = message
         self.symbol = symbol
+        self.fitsContent = fitsContent
         self.actions = actions()
     }
 }
@@ -98,6 +118,7 @@ extension EmptyStateView where Actions == EmptyView {
         self.title = title
         self.message = message
         self.symbol = symbol
+        fitsContent = false
         actions = nil
     }
 }
@@ -121,6 +142,13 @@ extension VerticalAlignment {
 
 /// 空状态按钮行里的按钮：工具栏样式的边框，标题是次要标签色。
 struct EmptyStateButton: NSViewRepresentable {
+    /// 原生按钮的可见边框超出 SwiftUI 使用的对齐矩形，内联容器要给底边留出这段高度。
+    static var bottomOutset: CGFloat {
+        let button = NSButton(title: "", target: nil, action: nil)
+        button.bezelStyle = .toolbar
+        return max(0, button.alignmentRectInsets.bottom)
+    }
+
     /// 本地化后的标题。
     let title: String
 

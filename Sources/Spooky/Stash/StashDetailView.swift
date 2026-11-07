@@ -50,25 +50,6 @@ struct StashDetailView: View {
 // MARK: - Layout
 
 extension StashDetailView {
-    /// 全部展开或收起的按钮与变更文件数。
-    private var changesBar: some View {
-        let stashes = session.stashes
-
-        return HStack {
-            Button(AppLocalization.text(stashes.expandedPaths.isEmpty ? "history.expandAll" : "history.collapseAll")) {
-                stashes.expandAll(stashes.expandedPaths.isEmpty)
-            }
-            .disabled(stashes.changes.isEmpty)
-
-            Spacer()
-
-            Text(AppLocalization.text("history.changes", stashes.changes.count))
-        }
-        .font(.system(size: 11))
-        .padding(.horizontal, 8)
-        .frame(height: 32)
-    }
-
     /// 滚动区域：元信息、说明、操作按钮、变更文件栏与逐个文件的 Diff。
     private func scrollContent(_ stash: StashEntry) -> some View {
         LazyVStack(alignment: .leading, spacing: 0) {
@@ -92,7 +73,11 @@ extension StashDetailView {
 
             Divider()
 
-            changesBar
+            ChangesetSummaryBar(
+                changes: session.stashes.changes.map(\.file),
+                expanded: session.stashes.allItemsExpanded,
+                toggle: { session.stashes.expandAll(!session.stashes.allItemsExpanded) }
+            )
             changeList(stash)
         }
     }
@@ -129,12 +114,6 @@ extension StashDetailView {
         ForEach(stashes.changes) { change in
             fileSection(change, in: stash)
             Divider()
-        }
-
-        if stashes.changes.isEmpty, !stashes.isLoadingChanges, stashes.changesFailure == nil {
-            Text(AppLocalization.text("working.noDiff"))
-                .foregroundStyle(.secondary)
-                .padding(20)
         }
     }
 
@@ -252,10 +231,7 @@ private struct StashFileDiffView: View {
                 stashes.loadDiff(path, showLarge: true)
             }
         } else {
-            ProgressView(AppLocalization.text("working.loadingDiff"))
-                .controlSize(.small)
-                .padding(20)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            ChangesetDiffLoadingView()
         }
     }
 }

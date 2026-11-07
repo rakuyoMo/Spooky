@@ -74,14 +74,16 @@ struct FileTextStyle: Equatable {
         font = NSFont(name: theme.fontName, size: theme.fontSize)
             ?? .monospacedSystemFont(ofSize: theme.fontSize, weight: .regular)
         lineHeight = (NSLayoutManager().defaultLineHeight(for: font) * Self.lineHeightMultiple).rounded()
-        text = theme.colors["text"]?.nsColor ?? .textColor
-        background = theme.colors["background"]?.nsColor ?? .textBackgroundColor
-        selection = theme.colors["selection"]?.nsColor ?? .selectedTextBackgroundColor
+        text = theme.colors["text"]?.calibratedNSColor ?? .textColor
+        background = theme.colors["background"]?.calibratedNSColor ?? .textBackgroundColor
+        selection = theme.colors["selection"]?.calibratedNSColor ?? .selectedTextBackgroundColor
 
-        // 深色正文调亮、浅色正文调暗；背景同理
-        secondary = Self.shifted(text, by: Self.isDark(text) ? 0.2 : -0.2)
-        highlight = Self.shifted(background, by: Self.isDark(background) ? 0.1 : -0.1)
-        separator = Self.shifted(background, by: Self.isDark(background) ? 0.2 : -0.2)
+        // 推导色取主题原始分量的 sRGB 表示，深色调亮、浅色调暗
+        let sourceText = theme.colors["text"]?.nsColor ?? .textColor
+        let sourceBackground = theme.colors["background"]?.nsColor ?? .textBackgroundColor
+        secondary = Self.shifted(sourceText, by: Self.isDark(sourceText) ? 0.2 : -0.2)
+        highlight = Self.shifted(sourceBackground, by: Self.isDark(sourceBackground) ? 0.1 : -0.1)
+        separator = Self.shifted(sourceBackground, by: Self.isDark(sourceBackground) ? 0.2 : -0.2)
     }
 
     /// 按亮度判断颜色偏深还是偏浅。
@@ -126,8 +128,8 @@ struct FileTextView: NSViewRepresentable {
         /// 已应用的样式。
         var style: FileTextStyle?
 
-        /// 已应用的 Tab 宽度与不可见字符设置。
-        var renderingKey: String?
+        /// 已应用的完整主题、Tab 宽度与不可见字符设置。
+        var rendering: TextStyle?
 
         /// 已着色的内容身份与是否着色；变化时重新着色。
         var syntaxKey: String?
@@ -182,6 +184,9 @@ struct FileTextView: NSViewRepresentable {
 
     /// 各行原文。
     let lines: [String]
+
+    /// 已读 blob 的完整源串，决定末行 LF 与复制内容。
+    let source: String
 
     /// 当前文本主题。
     let theme: TextTheme
@@ -246,7 +251,6 @@ struct FileTextView: NSViewRepresentable {
 
         let style = FileTextStyle(theme: theme)
         let rendering = TextStyle(theme: theme, tabWidth: tabWidth, showsInvisibles: showsInvisibles)
-        let renderingKey = "\(tabWidth)\u{0}\(showsInvisibles)"
         let replaced = coordinator.contentID != contentID
 
         // 内容换了就丢掉上一份语法片段，着色完成后再补上颜色
@@ -254,11 +258,11 @@ struct FileTextView: NSViewRepresentable {
             coordinator.spans = nil
         }
 
-        if replaced || coordinator.style != style || coordinator.renderingKey != renderingKey {
-            document.show(lines, style: style, rendering: rendering, spans: coordinator.spans)
+        if replaced || coordinator.style != style || coordinator.rendering != rendering {
+            document.show(lines, source: source, style: style, rendering: rendering, spans: coordinator.spans)
             coordinator.contentID = contentID
             coordinator.style = style
-            coordinator.renderingKey = renderingKey
+            coordinator.rendering = rendering
         }
 
         if replaced {
@@ -297,13 +301,14 @@ extension FileTextView {
         guard colorsSyntax else {
             if coordinator.spans != nil {
                 coordinator.spans = nil
-                document.show(lines, style: style, rendering: rendering, spans: nil)
+                document.show(lines, source: source, style: style, rendering: rendering, spans: nil)
             }
 
             return
         }
 
         let lines = lines
+        let source = source
         let path = path
         let text = lines.joined(separator: "\n")
 
@@ -327,156 +332,8 @@ extension FileTextView {
             else { return }
 
             coordinator.spans = spans
-            document.show(lines, style: style, rendering: document.rendering ?? rendering, spans: spans)
+            document.show(lines, source: source, style: style, rendering: document.rendering ?? rendering, spans: spans)
         }
-    }
-}
-
-// MARK: - FileTextDocumentView
-
-/// 固定行高的只读正文，在背景上画出 Blame 段的分隔线与高亮。
-final class FileTextDocumentView: NSTextView {
-    /// 当前样式。
-    private(set) var style: FileTextStyle?
-
-    /// 当前的 Tab 宽度、不可见字符与主题颜色设置。
-    private(set) var rendering: TextStyle?
-
-    /// Blame 的注释；原文为 nil。
-    var annotations: FileTextAnnotations?
-
-    /// 第一行顶边离正文顶部的距离。
-    var topInset: CGFloat { textContainerInset.height }
-
-    /// 创建使用 TextKit 1 的只读正文：固定行高靠段落样式保证，行号按行号乘行高定位。
-    static func make() -> FileTextDocumentView {
-        let storage = NSTextStorage()
-        let layout = NSLayoutManager()
-        layout.allowsNonContiguousLayout = true
-        storage.addLayoutManager(layout)
-
-        // 容器不跟随视图宽度，长行不折行，改为横向滚动
-        let container = NSTextContainer(
-            size: NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        )
-        container.widthTracksTextView = false
-        layout.addTextContainer(container)
-
-        let document = FileTextDocumentView(frame: .zero, textContainer: container)
-        document.isEditable = false
-        document.isSelectable = true
-        document.isRichText = false
-        document.usesFindBar = false
-        document.drawsBackground = true
-        document.isVerticallyResizable = true
-        document.isHorizontallyResizable = true
-        document.minSize = .zero
-        document.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        document.autoresizingMask = [.width]
-        document.textContainerInset = NSSize(width: 4, height: 6)
-        return document
-    }
-
-    /// 第 index 行（从 0 开始）顶边的纵坐标。
-    func lineTop(_ index: Int) -> CGFloat {
-        topInset + CGFloat(index) * (style?.lineHeight ?? 0)
-    }
-
-    /// 替换正文与样式，所有行使用同一个固定行高。
-    ///
-    /// - Parameters:
-    ///   - lines: 各行原文。
-    ///   - style: 字体、行高与颜色。
-    ///   - rendering: Tab 宽度与不可见字符设置，与 Diff 的显示一致。
-    ///   - spans: 与行一一对应的语法片段；为空时按正文色显示。
-    func show(_ lines: [String], style: FileTextStyle, rendering: TextStyle, spans: [[SyntaxSpan]]?) {
-        self.style = style
-        self.rendering = rendering
-
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.minimumLineHeight = style.lineHeight
-        paragraph.maximumLineHeight = style.lineHeight
-
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: style.font,
-            .foregroundColor: style.text,
-            .paragraphStyle: paragraph,
-        ]
-        let content = NSMutableAttributedString()
-
-        // 每行经与 Diff 相同的渲染展开制表符、标出空白，再把片段颜色换成 AppKit 的颜色
-        for (index, line) in lines.enumerated() {
-            if index > 0 {
-                content.append(NSAttributedString(string: "\n", attributes: attributes))
-            }
-
-            let lineSpans = spans.flatMap { $0.indices.contains(index) ? $0[index] : nil }
-            let rendered = TextLineRenderer.attributed(line, spans: lineSpans, style: rendering)
-
-            for run in rendered.runs {
-                var runAttributes = attributes
-
-                if let color = run.foregroundColor {
-                    runAttributes[.foregroundColor] = NSColor(color)
-                }
-
-                content.append(NSAttributedString(
-                    string: String(rendered[run.range].characters),
-                    attributes: runAttributes
-                ))
-            }
-        }
-
-        textStorage?.setAttributedString(content)
-        backgroundColor = style.background
-        insertionPointColor = style.text
-        selectedTextAttributes = [.backgroundColor: style.selection]
-        enclosingScrollView?.backgroundColor = style.background
-    }
-
-    /// 背景之上画出高亮的段与段之间的分隔线。
-    override func drawBackground(in rect: NSRect) {
-        super.drawBackground(in: rect)
-
-        guard let annotations, let style, style.lineHeight > 0 else {
-            return
-        }
-
-        for index in visibleGroups(in: rect, annotations: annotations) {
-            let group = annotations.groups[index]
-            let top = lineTop(group.firstLine - 1)
-
-            if group.commitID == annotations.highlightedCommit {
-                style.highlight.setFill()
-                NSRect(
-                    x: rect.minX,
-                    y: top,
-                    width: rect.width,
-                    height: CGFloat(group.lineCount) * style.lineHeight
-                )
-                .fill()
-            }
-
-            if index > 0 {
-                style.separator.setFill()
-                NSRect(x: rect.minX, y: top, width: rect.width, height: 1).fill()
-            }
-        }
-    }
-
-    /// 与某个矩形相交的段的序号。
-    func visibleGroups(in rect: NSRect, annotations: FileTextAnnotations) -> Range<Int> {
-        guard let style, style.lineHeight > 0, !annotations.groups.isEmpty else {
-            return 0 ..< 0
-        }
-
-        // 先换算出矩形覆盖的行，再找到包含首末两行的段
-        let first = max(Int(((rect.minY - topInset) / style.lineHeight).rounded(.down)) + 1, 1)
-        let last = max(Int(((rect.maxY - topInset) / style.lineHeight).rounded(.up)) + 1, first)
-        let lower = annotations.groupIndex(containing: first) ?? 0
-        let upper = annotations.groupIndex(containing: last) ?? annotations.groups.count - 1
-
-        return lower ..< max(upper + 1, lower)
     }
 }
 

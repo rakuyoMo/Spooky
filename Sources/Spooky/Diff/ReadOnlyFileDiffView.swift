@@ -91,6 +91,9 @@ struct ReadOnlyFileDiffView: View {
     /// 语法着色与图片内容的来源。
     let source: CommitFileDiffSource
 
+    /// 变更集默认内嵌，独立文件由调用方明确启用吸顶块头。
+    var presentation = DiffPresentation.embedded
+
     /// 放行大 Diff 后重新读取。
     let showLarge: () -> Void
 
@@ -130,7 +133,11 @@ struct ReadOnlyFileDiffView: View {
             showsInvisibles: showsInvisibles
         )
 
-        LazyVStack(alignment: .leading, spacing: 0) {
+        LazyVStack(
+            alignment: .leading,
+            spacing: 0,
+            pinnedViews: presentation == .standalone ? [.sectionHeaders] : []
+        ) {
             if result.onlyWhitespaceChanges {
                 DiffNotice(key: "diff.onlyWhitespace", style: style)
             }
@@ -140,11 +147,14 @@ struct ReadOnlyFileDiffView: View {
                     segmentView(segment, style: style)
                 }
             } else {
-                Text(AppLocalization.text("working.largeDiff", (result.byteCount + 999) / 1000))
-                    .padding(12)
-
-                Button(AppLocalization.text("working.showDiff"), action: showLarge)
-                    .padding(12)
+                EmptyStateView(
+                    title: AppLocalization.text("working.largeDiff"),
+                    message: "",
+                    symbol: nil,
+                    fitsContent: true
+                ) {
+                    EmptyStateButton(AppLocalization.text("working.showDiff"), action: showLarge)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -204,28 +214,28 @@ struct ReadOnlyFileDiffView: View {
         switch segment {
         case .file(let file):
             VStack(alignment: .leading, spacing: 0) {
-                DiffFileHeader(file: file, style: style)
+                DiffFileHeader(file: file)
 
                 if ImageDiffView.isImage(file, path: source.file.path) {
                     // 图片换成两侧对照，两侧都取自对象库
                     ImageDiffView(placement: .top, id: source.commit + "\u{0}" + source.file.path) {
                         try await source.imageContents(of: file)
                     }
-                } else if file.isBinary {
-                    Text(AppLocalization.text("working.binary"))
-                        .padding(20)
                 }
             }
 
-        case .hunk(_, let hunk):
+        case .hunk(let file, let hunk):
             DiffHunkView(
                 hunk: hunk,
                 style: style,
-                spans: { syntax?.spans(for: $0) },
+                syntax: syntax,
                 highlights: highlights[segment.id] ?? [:],
                 staged: false,
                 enabled: false,
-                readOnly: true
+                readOnly: true,
+                presentation: presentation,
+                hasPrecedingHunk: file.hunks.first?.id != hunk.id,
+                colorsSyntax: colorsSyntax && colorsDiffSyntax
             ) { _, _ in }
         }
     }

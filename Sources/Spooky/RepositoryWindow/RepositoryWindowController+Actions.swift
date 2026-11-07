@@ -135,17 +135,16 @@ extension RepositoryWindowController {
 
     /// 变更集展开快捷键复用文件懒加载。
     @objc
-    func expandChanges() { session.history.expandAll(true) }
+    func expandChanges() {
+        guard !showsManager else { return }
+        session.expandChanges(true)
+    }
 
     /// 折叠不丢弃已取得的只读补丁。
     @objc
-    func collapseChanges() { session.history.expandAll(false) }
-
-    /// 自动展开阈值立即更新当前提交的文件展示。
-    @objc
-    func setAutoExpand(_ sender: NSMenuItem) {
-        UserDefaults.standard.set(sender.tag, forKey: "historyAutoExpand")
-        session.history.expandAll(sender.tag > 0 && session.history.changes.count <= sender.tag)
+    func collapseChanges() {
+        guard !showsManager else { return }
+        session.expandChanges(false)
     }
 
     /// 对话框关闭之后才启动写入，保存发起仓库身份以拒绝迟到提交。
@@ -315,12 +314,8 @@ extension RepositoryWindowController {
             return !showsManager && session.activeView == .history
                 && HistoryViewSettings().showsGraph
 
-        case #selector(expandChanges), #selector(collapseChanges), #selector(setAutoExpand(_:)):
-            if item.action == #selector(setAutoExpand(_:)), let item = item as? NSMenuItem {
-                item.state =
-                    item.tag == UserDefaults.standard.integer(forKey: "historyAutoExpand") ? .on : .off
-            }
-            return !showsManager && session.activeView == .history && session.history.selectedCommit != nil
+        case #selector(expandChanges), #selector(collapseChanges):
+            return !showsManager && session.canExpandChanges
 
         default:
             return nil

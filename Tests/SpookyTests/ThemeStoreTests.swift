@@ -67,7 +67,7 @@ struct ThemeStoreTests {
 
         // 色板选出的颜色换算成六位十六进制与两位小数的不透明度，再读回时不变。
         let picked = PaletteColor(hex: "#336699", alpha: 0.25)
-        #expect(PaletteColor(nsColor: picked.nsColor) == picked)
+        #expect(PaletteColor(nsColor: picked.calibratedNSColor, colorSpace: .genericRGB) == picked)
     }
 
     /// 改名移动文件；与其它主题重名、只改大小写和名称含 `/` 的情况都按文件名规则处理。

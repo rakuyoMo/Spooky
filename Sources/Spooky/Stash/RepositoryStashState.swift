@@ -8,6 +8,9 @@ import SpookyKit
 @MainActor
 @Observable
 final class RepositoryStashState {
+    /// 自动展开阈值所在的偏好域，测试注入临时域。
+    var preferences = UserDefaults.standard
+
     /// 最近一次读取的储藏，最新的在前。
     private(set) var entries: [StashEntry] = []
 
@@ -38,6 +41,11 @@ final class RepositoryStashState {
 
     /// 已展开的文件路径。
     var expandedPaths = Set<String>()
+
+    /// 仅当前变更集的每个文件都展开时成立，忽略残留的其它身份。
+    var allItemsExpanded: Bool {
+        !changes.isEmpty && changes.allSatisfy { expandedPaths.contains($0.id) }
+    }
 
     /// 已读取的文件补丁，按路径保存。
     private(set) var diffs: [String: CommitDiff] = [:]
@@ -194,6 +202,10 @@ extension RepositoryStashState {
                 let files = try await RepositoryStashes(runner: runner).changes(in: stash)
                 guard let self, generation == request, selectedStash?.id == stash.id, !Task.isCancelled else { return }
                 changes = files
+
+                let threshold = preferences.integer(forKey: "historyAutoExpand")
+
+                if threshold > 0, files.count <= threshold { expandAll(true) }
             } catch {
                 guard let self, generation == request, selectedStash?.id == stash.id, !Task.isCancelled else { return }
                 changesFailure = AppFailure(error: error, opening: false, location: runner.location)

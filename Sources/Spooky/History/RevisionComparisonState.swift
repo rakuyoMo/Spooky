@@ -19,6 +19,9 @@ final class RevisionComparisonState {
         let title: String
     }
 
+    /// 自动展开阈值所在的偏好域，测试注入临时域。
+    var preferences = UserDefaults.standard
+
     /// 比较的基准。
     private(set) var base: Side? = nil
 
@@ -48,6 +51,11 @@ final class RevisionComparisonState {
 
     /// 展开的文件。
     var expandedPaths = Set<String>()
+
+    /// 仅当前变更集的每个文件都展开时成立，忽略残留的其它身份。
+    var allItemsExpanded: Bool {
+        !changes.isEmpty && changes.allSatisfy { expandedPaths.contains($0.path) }
+    }
 
     /// 已读取的文件补丁。
     private(set) var diffs: [String: CommitDiff] = [:]
@@ -240,7 +248,7 @@ extension RevisionComparisonState {
 
                 changes = files
 
-                let threshold = UserDefaults.standard.integer(forKey: "historyAutoExpand")
+                let threshold = preferences.integer(forKey: "historyAutoExpand")
 
                 if threshold > 0, files.count <= threshold {
                     expandAll(true)

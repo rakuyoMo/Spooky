@@ -237,6 +237,6 @@ final class ThemeTokenListCoordinator: NSObject, NSTableViewDataSource, NSTableV
 
     /// 取主题里的颜色，缺少时用给定的颜色。
     private func color(_ key: String, fallback: NSColor) -> NSColor {
-        parent.theme.colors[key]?.nsColor ?? fallback
+        parent.theme.colors[key]?.calibratedNSColor ?? fallback
     }
 }

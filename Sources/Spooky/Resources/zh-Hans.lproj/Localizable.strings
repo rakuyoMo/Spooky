@@ -278,13 +278,29 @@
 "working.unstaged" = "未暂存";
 "working.diffSide" = "显示的改动";
 "working.multiple" = "已选择多个文件";
-"working.largeDiff" = "此 Diff 为 %d kB，是否加载内容？";
+"working.largeDiff" = "此 Diff 较大，是否显示？";
 "working.showDiff" = "显示 Diff";
 "working.loadingDiff" = "正在加载 Diff…";
-"working.noDiff" = "没有文本改动";
-"working.binary" = "二进制文件有变化，无法显示文本预览。";
-"working.diffSummary" = "%d 个块，新增 %d 行，删除 %d 行";
-"working.noNewline" = "文件末尾没有换行";
+"working.diffSummary" = "%1$@，%2$@，%3$@";
+
+"diff.summary.mode" = "%1$@ (%2$@)";
+"diff.summary.mode.regular" = "普通文件";
+"diff.summary.mode.executable" = "可执行文件";
+"diff.summary.mode.symbolicLink" = "符号链接";
+"diff.summary.mode.directory" = "目录";
+"diff.summary.mode.submodule" = "子模块";
+"diff.summary.mode.none" = "无";
+"diff.summary.modeChanged" = "文件模式由 %1$@ 变为 %2$@";
+"diff.summary.added" = "新文件，模式为 %@";
+"diff.summary.deleted" = "已删除文件，模式为 %@";
+"diff.summary.renamed" = "文件从 %1$@ 重命名为 %2$@ (%3$ld %%)";
+"diff.summary.binary" = "二进制文件有变化";
+"diff.summary.chunks.one" = "1 个块";
+"diff.summary.chunks" = "%ld 个块";
+"diff.summary.insertions.one" = "新增 1 行";
+"diff.summary.insertions" = "新增 %ld 行";
+"diff.summary.deletions.one" = "删除 1 行";
+"diff.summary.deletions" = "删除 %ld 行";
 "working.selectLine" = "选择第 %d 行改动";
 "working.selected" = "已选择";
 "working.stageChunk" = "暂存块";
@@ -334,7 +350,7 @@
 "history.empty" = "没有提交";
 "history.loading" = "正在加载提交…";
 "history.copyHash" = "复制提交哈希";
-"history.changes" = "%d 个变更文件";
+"history.changes" = "%ld 个变更文件";
 "history.noSelection" = "未选择提交";
 "history.multiple" = "已选择 %ld 个提交";
 "history.expandAll" = "全部展开";
@@ -973,7 +989,7 @@
 "history.changeset" = "变更集";
 "history.tree" = "文件树";
 "history.detailMode" = "提交详情内容";
-"history.summary" = "共 %1$ld 个变更文件，新增 %2$ld 行，删除 %3$ld 行";
+"history.summary" = "%1$@，%2$@，%3$@";
 "history.mergeDiff" = "合并提交的 Diff：";
 "history.mergeDiff.off" = "不显示";
 "history.mergeDiff.firstParent" = "相对第一父提交";
@@ -2626,3 +2642,13 @@
 "working.unstageAllMenu" = "取消暂存全部本地改动";
 "working.discardMenu" = "丢弃本地改动";
 "working.discardAllMenu" = "丢弃全部本地改动…";
+
+"externalTool.action.diffTool" = "比较工具";
+"history.noChanges" = "没有改动。";
+"history.summary.files.one" = "共 %ld 个变更文件";
+"history.summary.files" = "共 %ld 个变更文件";
+"history.summary.additions.one" = "新增 %ld 行";
+"history.summary.additions" = "新增 %ld 行";
+"history.summary.deletions.one" = "删除 %ld 行";
+"history.summary.deletions" = "删除 %ld 行";
+"history.changes.one" = "%ld 个变更文件";

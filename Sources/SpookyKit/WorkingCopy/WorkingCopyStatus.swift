@@ -126,58 +126,77 @@ extension GitRunner {
 }
 
 extension WorkingCopyStatus {
+    /// 一条完整的原始状态记录；重命名的第二个 NUL 路径属于同一记录。
+    struct Record {
+        /// 包括末尾 NUL 的原始字节，模式、对象哈希与分数不经重组。
+        let raw: Data
+
+        /// 分支头没有文件条目，其余记录保留已有严格解析结果。
+        let entry: StatusEntry?
+    }
+
     /// 解析 `git status --porcelain=v2 -z --branch` 的输出
     ///
     /// 格式见 git-status(1) 的 “Porcelain Format Version 2” 一节。
     public init(porcelainV2 output: Data) throws {
-        var branch = BranchStatus()
-        var entries: [StatusEntry] = []
+        let parsed = try Self.records(in: output)
+        self.init(branch: parsed.branch, entries: parsed.records.compactMap(\.entry))
+    }
 
-        // 截断的记录不能作为有效快照展示，否则刷新失败会被误认为文件已消失。
+    /// 先验证整份输出，再供状态展示或精确文件快照过滤使用。
+    static func records(in output: Data) throws -> (branch: BranchStatus, records: [Record]) {
         guard output.isEmpty || output.last == 0 else {
             throw StatusParseError(record: String(decoding: output, as: UTF8.self))
         }
 
-        // -z 模式下每条记录以 NUL 结尾；重命名、复制记录的后面紧跟一条 “原路径” 记录
-        let terminatedRecords = output.isEmpty
+        let segments: [Data] = output.isEmpty
             ? []
-            : output
-                .dropLast()
-                .split(separator: 0, omittingEmptySubsequences: false)
-                .map { String(decoding: $0, as: UTF8.self) }
-        var records = terminatedRecords.makeIterator()
+            : output.dropLast().split(separator: 0, omittingEmptySubsequences: false).map { Data($0) }
+        var iterator = segments.makeIterator()
+        var branch = BranchStatus()
+        var records: [Record] = []
 
-        while let record = records.next() {
+        while let bytes = iterator.next() {
+            let record = String(decoding: bytes, as: UTF8.self)
+            var raw = bytes + Data([0])
+            let entry: StatusEntry?
+
             switch record.first {
             case "#":
                 try branch.apply(header: record)
+                entry = nil
 
             case "1":
-                entries.append(try StatusEntry(ordinary: record))
+                entry = try StatusEntry(ordinary: record)
 
             case "2":
-                guard let originalPath = records.next(), !originalPath.isEmpty else {
+                guard let original = iterator.next(), !original.isEmpty else {
                     throw StatusParseError(record: record)
                 }
 
-                entries.append(try StatusEntry(renamedOrCopied: record, originalPath: originalPath))
+                raw.append(original)
+                raw.append(0)
+                entry = try StatusEntry(renamedOrCopied: record, originalPath: String(decoding: original, as: UTF8.self))
 
             case "u":
-                entries.append(try StatusEntry(unmerged: record))
+                entry = try StatusEntry(unmerged: record)
 
             case "?":
-                entries.append(try StatusEntry(kind: .untracked, record: record))
+                entry = try StatusEntry(kind: .untracked, record: record)
 
             case "!":
-                entries.append(try StatusEntry(kind: .ignored, record: record))
+                entry = try StatusEntry(kind: .ignored, record: record)
 
             default:
                 throw StatusParseError(record: record)
             }
+
+            records.append(Record(raw: raw, entry: entry))
         }
 
-        self.init(branch: branch, entries: entries)
+        return (branch, records)
     }
+
 }
 
 extension BranchStatus {

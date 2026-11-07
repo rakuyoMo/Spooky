@@ -278,13 +278,29 @@
 "working.unstaged" = "Fuera del stage";
 "working.diffSide" = "Cambios que mostrar";
 "working.multiple" = "Varios archivos seleccionados";
-"working.largeDiff" = "Este diff ocupa %d kB. ¿Cargar su contenido?";
+"working.largeDiff" = "Este diff es grande. ¿Quieres mostrarlo?";
 "working.showDiff" = "Mostrar diff";
 "working.loadingDiff" = "Cargando diff…";
-"working.noDiff" = "No hay cambios de texto";
-"working.binary" = "El archivo binario tiene diferencias. La previsualización de texto no está disponible.";
-"working.diffSummary" = "%d fragmentos, %d inserciones, %d eliminaciones";
-"working.noNewline" = "Sin salto de línea al final del archivo";
+"working.diffSummary" = "%1$@, %2$@, %3$@";
+
+"diff.summary.mode" = "%1$@ (%2$@)";
+"diff.summary.mode.regular" = "Regular";
+"diff.summary.mode.executable" = "Ejecutable";
+"diff.summary.mode.symbolicLink" = "Enlace simbólico";
+"diff.summary.mode.directory" = "Directorio";
+"diff.summary.mode.submodule" = "Submódulo";
+"diff.summary.mode.none" = "Ninguno";
+"diff.summary.modeChanged" = "Modo del archivo cambiado de %1$@ a %2$@";
+"diff.summary.added" = "Archivo nuevo con modo %@";
+"diff.summary.deleted" = "Archivo eliminado con modo %@";
+"diff.summary.renamed" = "Archivo renombrado de %1$@ a %2$@ (%3$ld %%)";
+"diff.summary.binary" = "El archivo binario tiene diferencias";
+"diff.summary.chunks.one" = "1 fragmento";
+"diff.summary.chunks" = "%ld fragmentos";
+"diff.summary.insertions.one" = "1 inserción";
+"diff.summary.insertions" = "%ld inserciones";
+"diff.summary.deletions.one" = "1 eliminación";
+"diff.summary.deletions" = "%ld eliminaciones";
 "working.selectLine" = "Seleccionar el cambio de la línea %d";
 "working.selected" = "Seleccionado";
 "working.stageChunk" = "Añadir fragmento al stage";
@@ -334,7 +350,7 @@
 "history.empty" = "No hay commits";
 "history.loading" = "Cargando commits…";
 "history.copyHash" = "Copiar hashes de los commits";
-"history.changes" = "%d archivos modificados";
+"history.changes" = "%ld archivos modificados";
 "history.noSelection" = "Ningún commit seleccionado";
 "history.multiple" = "%ld commits seleccionados";
 "history.expandAll" = "Expandir todo";
@@ -973,7 +989,7 @@
 "history.changeset" = "Cambios";
 "history.tree" = "Árbol";
 "history.detailMode" = "Contenido de los detalles del commit";
-"history.summary" = "%1$ld archivos modificados con %2$ld líneas añadidas y %3$ld eliminadas";
+"history.summary" = "%1$@ %2$@ %3$@";
 "history.mergeDiff" = "Diffs de los commits de fusión:";
 "history.mergeDiff.off" = "Ninguno";
 "history.mergeDiff.firstParent" = "Con el primer padre";
@@ -2626,3 +2642,13 @@
 "working.unstageAllMenu" = "Quitar todos los cambios locales del stage";
 "working.discardMenu" = "Descartar cambios locales";
 "working.discardAllMenu" = "Descartar todos los cambios locales…";
+
+"externalTool.action.diffTool" = "Herramienta de comparación";
+"history.noChanges" = "Sin cambios.";
+"history.summary.files.one" = "%ld archivo modificado";
+"history.summary.files" = "%ld archivos modificados";
+"history.summary.additions.one" = "con %ld línea añadida";
+"history.summary.additions" = "con %ld líneas añadidas";
+"history.summary.deletions.one" = "y %ld línea eliminada";
+"history.summary.deletions" = "y %ld líneas eliminadas";
+"history.changes.one" = "%ld archivo modificado";

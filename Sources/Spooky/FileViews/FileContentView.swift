@@ -36,7 +36,6 @@ struct FileContentView: View {
 
             header
             contributorsRow
-            Divider()
 
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -76,7 +75,7 @@ struct FileContentView: View {
         .font(.system(size: 13))
         .padding(.horizontal, 12)
         .frame(height: 40)
-        .background(AppPalette.color("general_header_background_color"))
+        .background(FileHeaderBackground())
         .modifier(FileActionHeader(actions: navigationActions, hovering: $hovering))
     }
 
@@ -124,6 +123,7 @@ struct FileContentView: View {
         }
         .padding(.horizontal, 12)
         .frame(height: 28)
+        .background(FileHeaderBackground())
     }
 
     /// 贡献者数的文案，读取完成前为空。
@@ -194,6 +194,7 @@ struct FileContentView: View {
                 contentID: identity + "/raw",
                 path: content.path,
                 lines: content.lines,
+                source: content.source,
                 theme: theme
             )
         } else if let blame = state.blame {
@@ -201,6 +202,7 @@ struct FileContentView: View {
                 contentID: identity + "/blame",
                 path: content.path,
                 lines: state.blameLines,
+                source: content.source,
                 theme: theme,
                 annotations: FileTextAnnotations(
                     groups: blame.groups,

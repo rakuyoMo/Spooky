@@ -65,7 +65,7 @@ struct SyntaxHighlighterTests {
         #expect(styles(of: "@MainActor func run(_ value: Int) {", lines[0]) == [
             "@MainActor": .preprocessor,
             "func": .keyword,
-            "run": .identifier,
+            "run": .function,
             "_": .keyword,
             "value": .identifier,
             "Int": .keyword,
@@ -75,7 +75,7 @@ struct SyntaxHighlighterTests {
         let third = styles(of: "  继续 */ let s = \"a\\\"b\" + 42", lines[2])
         #expect(third["  继续 */"] == .comment)
         #expect(third["let"] == .keyword)
-        #expect(third["="] == .delimiter)
+        #expect(third["="] == .symbol)
         #expect(third["\"a\\\"b\""] == .string)
         #expect(third["42"] == .number)
         #expect(styles(of: "#if DEBUG", lines[3]) == ["#if": .keyword, "DEBUG": .keyword])
@@ -93,7 +93,7 @@ struct SyntaxHighlighterTests {
             "<view ": .xmlTag,
             "id": .attributeName,
             "=": .xmlTag,
-            "\"main\"": .string,
+            "\"main\"": .attributeValue,
             "/>": .xmlTag,
             "<!-- c -->": .comment,
         ])
@@ -120,7 +120,7 @@ struct SyntaxHighlighterTests {
 
         let jsonStyles = styles(of: object, json[0])
         #expect(jsonStyles["\"a\""] == .attributeName)
-        #expect(jsonStyles["{"] == .delimiter)
+        #expect(jsonStyles["{"] == .symbol)
         #expect(jsonStyles["1"] == .number)
         #expect(jsonStyles["true"] == .keyword)
     }
@@ -224,7 +224,8 @@ struct SyntaxHighlighterTests {
         let lines = try #require(diff.files.first?.hunks.first?.lines)
 
         #expect(await DiffSyntax.mayColor(diff, oldPath: "a.swift", newPath: "a.swift"))
-        #expect(!(await DiffSyntax.mayColor(diff, oldPath: "notes", newPath: "notes")))
+        #expect(await DiffSyntax.mayColor(diff, oldPath: "notes", newPath: "notes"))
+        #expect(!(await DiffSyntax.mayColor(diff, oldPath: "notes.txt", newPath: "notes.txt")))
 
         #expect(syntax.spans(for: lines[0]) == [SyntaxSpan(length: 6, style: .comment)])
         #expect(syntax.spans(for: lines[1])?.first == SyntaxSpan(length: 3, style: .keyword))
@@ -242,7 +243,7 @@ struct SyntaxHighlighterTests {
         let marked = TextStyle(theme: theme, tabWidth: 4, showsInvisibles: true)
 
         #expect(String(TextLineRenderer.attributed("ab\tc\r", spans: nil, style: plain).characters) == "ab  c")
-        #expect(String(TextLineRenderer.attributed("\tx y\r", spans: nil, style: marked).characters) == "→   x·y␍")
+        #expect(String(TextLineRenderer.attributed("\tx y\r", spans: nil, style: marked).characters) == "»   x·y␍")
 
         // 片段比行短时剩余部分按正文显示，不丢字
         let short = [SyntaxSpan(length: 1, style: .keyword)]
@@ -254,7 +255,7 @@ struct SyntaxHighlighterTests {
 
 extension SyntaxHighlighterTests {
     /// 把一行的片段还原成 “文字 → 类别”，只保留有类别的片段。
-    private func styles(of line: String, _ spans: [SyntaxSpan]) -> [String: SyntaxStyle] {
+    func styles(of line: String, _ spans: [SyntaxSpan]) -> [String: SyntaxStyle] {
         let units = Array(line.utf16)
         var offset = 0
         var result: [String: SyntaxStyle] = [:]

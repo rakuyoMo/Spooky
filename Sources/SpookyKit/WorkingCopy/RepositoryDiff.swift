@@ -90,6 +90,9 @@ public struct DiffLine: Sendable, Equatable, Identifiable {
     /// 新版行号；删除行为空。
     public let newNumber: Int?
 
+    /// 组合补丁的全部父前缀与列号；普通补丁没有此数据。
+    public var combined: CombinedDiffLine? = nil
+
     /// 原文件此行没有末尾换行。
     public var noNewline = false
 
@@ -115,6 +118,12 @@ public struct DiffHunk: Sendable, Equatable, Identifiable {
 
     /// 包含上下文与增删的行序列。
     public let lines: [DiffLine]
+
+    /// 块头、全部前缀与内容、LF 及无换行标记的原始字节，不含邻块或文件扩展头。
+    public var rawContent = Data()
+
+    /// 组合块按父提交顺序排列范围，最后一项为结果侧；组合块只供读取。
+    public var combinedRanges: [CombinedDiffRange]? = nil
 }
 
 // MARK: - DiffFile
@@ -124,8 +133,11 @@ public struct DiffFile: Sendable, Equatable, Identifiable {
     /// 补丁内段序号。
     public let id: Int
 
-    /// Git 原始扩展头，用于显示重命名、复制和模式变化。
+    /// Git 原始扩展头，用于对象哈希和补丁写回。
     public let headers: [String]
+
+    /// 从扩展头一次解析的文件摘要信息。
+    public let metadata: DiffFileMetadata
 
     /// 二进制内容只显示提示。
     public let isBinary: Bool
@@ -221,6 +233,7 @@ public struct RepositoryDiff: Sendable, Equatable {
             files.append(DiffFile(
                 id: files.count,
                 headers: headers,
+                metadata: DiffFileMetadata(headers: headers),
                 isBinary: binary,
                 addedMode: added,
                 deletedMode: deleted,
@@ -233,6 +246,7 @@ public struct RepositoryDiff: Sendable, Equatable {
 
     /// 块内计数必须与标题完全一致，截断或损坏的输出不能成为可写补丁。
     private static func hunk(_ source: [Data], cursor: inout Int, id: Int) throws -> DiffHunk {
+        let start = cursor
         let header = text(source[cursor])
         let parts = header.split(separator: " ")
         guard parts.count >= 4, parts[0] == "@@", parts[3] == "@@" else {
@@ -288,7 +302,22 @@ public struct RepositoryDiff: Sendable, Equatable {
         }
 
         guard oldCount == old.1, newCount == new.1 else { throw WorkingCopyError.malformedDiff }
-        return DiffHunk(id: id, header: header, oldStart: old.0, newStart: new.0, lines: lines)
+        return DiffHunk(
+            id: id,
+            header: header,
+            oldStart: old.0,
+            newStart: new.0,
+            lines: lines,
+            rawContent: rawContent(source[start ..< cursor])
+        )
+    }
+
+    /// 按解析器已消费的范围保留原始行，每行恢复 Git 输出的 LF。
+    static func rawContent(_ lines: ArraySlice<Data>) -> Data {
+        lines.reduce(into: Data()) {
+            $0.append($1)
+            $0.append(10)
+        }
     }
 
     /// 缺省行数为 1，空文件范围允许起点和行数为 0。
@@ -340,6 +369,8 @@ public struct RepositoryDiff: Sendable, Equatable {
 
         let file = files[index]
         let hunk = file.hunks[hunkIndex]
+        guard hunk.combinedRanges == nil else { throw WorkingCopyError.invalidSelection }
+
         let selection = selectedLines.isEmpty
             ? Set(hunk.lines.filter(\.isChange).map(\.id))
             : selectedLines
@@ -398,9 +429,12 @@ public struct RepositoryDiff: Sendable, Equatable {
     /// - Parameter lines: 忽略空白的 Diff 中选中的改动行。
     /// - Returns: 本 Diff 中对应的块序号与行序号；任何一行对应不上时为空。
     public func matchingChanges(of lines: [DiffLine]) -> (hunk: Int, lines: Set<Int>)? {
-        guard files.count == 1, !lines.isEmpty, lines.allSatisfy(\.isChange) else {
-            return nil
-        }
+        guard
+            files.count == 1,
+            !lines.isEmpty,
+            lines.allSatisfy({ $0.isChange && $0.combined == nil }),
+            files[0].hunks.allSatisfy({ $0.combinedRanges == nil })
+        else { return nil }
 
         for hunk in files[0].hunks {
             // 两张行号表让整文件的大块也能线性完成对应

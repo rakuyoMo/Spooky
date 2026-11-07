@@ -1,6 +1,17 @@
 import Foundation
 import SpookyKit
 
+// MARK: - DiffSelectionAppearance
+
+/// 当前真正用于工作区 Diff 的主题与有效语法着色开关。
+struct DiffSelectionAppearance: Equatable {
+    /// 已按当前外观选出的主题。
+    let theme: TextTheme
+
+    /// 选择颜色使用语法着色的样式。
+    let colorsSyntax: Bool
+}
+
 // MARK: - Diff
 
 extension RepositorySession {
@@ -37,6 +48,22 @@ extension RepositorySession {
             return
         }
 
+        loadDiff()
+    }
+
+    /// 只有当前生效主题改变且着色开启时清空选择，首次观察只记录基线。
+    func diffAppearanceChanged(_ appearance: DiffSelectionAppearance) {
+        let previous = diffSelectionAppearance
+        diffSelectionAppearance = appearance
+        guard let previous, previous.theme != appearance.theme, appearance.colorsSyntax else { return }
+
+        diffSelections.reset()
+        diffSelections.reconcile(diffSnapshot?.diff)
+    }
+
+    /// 阈值改变清空选择并重读，当前文件的大 Diff 放行状态保持。
+    func diffWarningThresholdChanged() {
+        diffSelections.reset()
         loadDiff()
     }
 
@@ -83,5 +110,81 @@ extension RepositorySession {
             path: snapshot.entry.path,
             newFromWorkingTree: snapshot.side == .unstaged
         )
+    }
+}
+
+// MARK: - Diff
+
+extension RepositorySession {
+    /// 选区或暂存侧变化后取消旧 Diff，较晚完成的旧请求不会覆盖新选择。
+    ///
+    /// - Parameter records: 是否记进 Activity；自动刷新引起的重读不记。
+    func loadDiff(records: Bool = true) {
+        diffTask?.cancel()
+        diffFailure = nil
+        guard loadsRepositoryDetails, let repository, let runner, let entry = selectedEntry, entry.hasWorkingCopyDiff else {
+            diffSnapshot = nil
+            isLoadingDiff = false
+            loadedDiffSide = nil
+            diffSelections.reconcile(nil)
+            return
+        }
+
+        if diffSide == .staged, !entry.hasStagedChanges { diffSide = .unstaged }
+        if diffSide == .unstaged, !entry.hasUnstagedChanges { diffSide = .staged }
+        let side = diffSide
+        diffSelections.setScope(selectedID, side: side)
+        loadedDiffSide = side
+        let request = generation
+        let showLarge = showsLargeDiff
+
+        // 上下文与忽略空白取全局偏好，显示整个文件取本窗口的底栏开关
+        let options = DiffPreferences.options(showsEntireFile: diffShowsEntireFile)
+
+        let threshold = UserDefaults.standard.object(forKey: "diffWarningKilobytes") as? Int
+            ?? WorkingCopyOperations.defaultWarningKilobytes
+        let service = WorkingCopyOperations(runner: runner)
+        let remote = repository.host != nil
+        let activities = activities
+
+        // 只读显示的那一侧，记一条
+        let title = AppLocalization.text(
+            side == .staged ? "activity.read.stagedDiff" : "activity.read.unstagedDiff"
+        )
+
+        isLoadingDiff = true
+        diffTask = Task { [weak self] in
+            do {
+                let (hash, snapshot) = try await activities.recordRead(
+                    [title],
+                    in: repository,
+                    records: records
+                ) {
+                    // 服务器先记下内容哈希再读补丁：之后的修改一定使哈希不同，轮询不会漏掉。
+                    let hash = remote ? try await service.worktreeHash(of: entry) : nil
+                    let snapshot = try await service.diff(
+                        for: entry,
+                        side: side,
+                        options: options,
+                        warningKilobytes: threshold,
+                        showLarge: showLarge
+                    )
+
+                    return (hash, snapshot)
+                }
+
+                guard let self, generation == request, !Task.isCancelled else { return }
+                diffSelections.reconcile(snapshot.diff)
+                diffSnapshot = snapshot
+                contentHash = (StatusRowID(path: entry.path, kind: entry.kind), hash)
+            } catch {
+                guard let self, generation == request, !Task.isCancelled else { return }
+                diffSnapshot = nil
+                diffFailure = AppFailure(error: error, opening: false, location: repository)
+            }
+
+            guard let self, generation == request, !Task.isCancelled else { return }
+            isLoadingDiff = false
+        }
     }
 }

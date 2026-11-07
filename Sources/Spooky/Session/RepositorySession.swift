@@ -85,14 +85,26 @@ final class RepositorySession {
     private(set) var context: WorkingCopyContext? = nil
 
     /// 当前文件的补丁快照。
-    private(set) var diffSnapshot: DiffSnapshot? = nil
+    var diffSnapshot: DiffSnapshot? = nil
 
-    /// 当前显示哪一侧改动。
-    var diffSide = DiffSide.unstaged
+    /// 当前文件和暂存侧的行选择，不进入偏好或窗口恢复。
+    let diffSelections = DiffSelectionStore()
+
+    /// 已观察的有效主题和着色选项。
+    @ObservationIgnored
+    var diffSelectionAppearance: DiffSelectionAppearance? = nil
+
+    /// 当前显示哪一侧改动，切侧立即隔离旧行选择。
+    var diffSide = DiffSide.unstaged {
+        didSet {
+            guard diffSide != oldValue else { return }
+            diffSelections.setScope(selectedID, side: diffSide)
+        }
+    }
 
     /// 最近一次读取的 Diff 是哪一侧；暂存侧变化时据此判断这一侧是否已经在读。
     @ObservationIgnored
-    private(set) var loadedDiffSide: DiffSide? = nil
+    var loadedDiffSide: DiffSide? = nil
 
     /// 大 Diff 放行只对当前文件有效。
     var showsLargeDiff = false
@@ -101,10 +113,10 @@ final class RepositorySession {
     var diffShowsEntireFile = false
 
     /// Diff 加载中仍保留旧内容。
-    private(set) var isLoadingDiff = false
+    var isLoadingDiff = false
 
     /// Diff 失败显示在详情中，并保留可复制原文。
-    private(set) var diffFailure: AppFailure? = nil
+    var diffFailure: AppFailure? = nil
 
     /// 点击勾选框后的临时状态，刷新成功或失败后撤回。
     var stagingOverrides: [StatusRowID: Bool] = [:]
@@ -201,7 +213,7 @@ final class RepositorySession {
     var originalDraft: (subject: String, body: String)? = nil
 
     /// 当前文件的读取任务。
-    private var diffTask: Task<Void, Never>? = nil
+    var diffTask: Task<Void, Never>? = nil
 
     /// 提交信息与进行中状态的读取任务。
     private var contextTask: Task<Void, Never>? = nil
@@ -210,7 +222,7 @@ final class RepositorySession {
     private var fileMonitor: RepositoryFileMonitor? = nil
 
     /// 注入状态源的测试不额外访问真实仓库。
-    private let loadsRepositoryDetails: Bool
+    let loadsRepositoryDetails: Bool
 
     /// 测试注入隔离配置，生产环境按仓库位置取得共享执行器。
     private let makeRunner: @Sendable (RepositoryLocation) -> GitRunner
@@ -234,7 +246,7 @@ final class RepositorySession {
     private var refreshID = UUID()
 
     /// 已显示 Diff 对应的工作区内容哈希，服务器轮询据此判断文件内容是否变化。
-    private(set) var contentHash: (id: StatusRowID, hash: String?)? = nil
+    var contentHash: (id: StatusRowID, hash: String?)? = nil
 
     /// 本窗口打开过的仓库视图状态，切换回仓库时恢复。
     @ObservationIgnored
@@ -290,6 +302,7 @@ final class RepositorySession {
             showsLargeDiff = false
             diffSnapshot = nil
             diffSide = (selectedEntry?.hasUnstagedChanges ?? false) ? .unstaged : .staged
+            diffSelections.setScope(selectedID, side: diffSide)
             loadDiff()
         }
     }
@@ -463,6 +476,8 @@ extension RepositorySession {
         }
 
         generation += 1
+        diffSelections.setScope(nil, side: diffSide)
+        diffSelectionAppearance = nil
         history.close()
         stashes.close()
         submodules.close()
@@ -591,79 +606,6 @@ extension RepositorySession {
                 guard let self, generation == request else { return }
                 connectionState = .reconnecting
             }
-        }
-    }
-}
-
-// MARK: - Diff
-
-extension RepositorySession {
-    /// 选区或暂存侧变化后取消旧 Diff，较晚完成的旧请求不会覆盖新选择。
-    ///
-    /// - Parameter records: 是否记进 Activity；自动刷新引起的重读不记。
-    func loadDiff(records: Bool = true) {
-        diffTask?.cancel()
-        diffFailure = nil
-        guard loadsRepositoryDetails, let repository, let entry = selectedEntry, entry.hasWorkingCopyDiff else {
-            diffSnapshot = nil
-            isLoadingDiff = false
-            loadedDiffSide = nil
-            return
-        }
-
-        if diffSide == .staged, !entry.hasStagedChanges { diffSide = .unstaged }
-        if diffSide == .unstaged, !entry.hasUnstagedChanges { diffSide = .staged }
-        let side = diffSide
-        loadedDiffSide = side
-        let request = generation
-        let showLarge = showsLargeDiff
-
-        // 上下文与忽略空白取全局偏好，显示整个文件取本窗口的底栏开关
-        let options = DiffPreferences.options(showsEntireFile: diffShowsEntireFile)
-
-        let threshold = UserDefaults.standard.object(forKey: "diffWarningKilobytes") as? Int
-            ?? WorkingCopyOperations.defaultWarningKilobytes
-        let service = WorkingCopyOperations(runner: makeRunner(repository))
-        let remote = repository.host != nil
-        let activities = activities
-
-        // 只读显示的那一侧，记一条
-        let title = AppLocalization.text(
-            side == .staged ? "activity.read.stagedDiff" : "activity.read.unstagedDiff"
-        )
-
-        isLoadingDiff = true
-        diffTask = Task { [weak self] in
-            do {
-                let (hash, snapshot) = try await activities.recordRead(
-                    [title],
-                    in: repository,
-                    records: records
-                ) {
-                    // 服务器先记下内容哈希再读补丁：之后的修改一定使哈希不同，轮询不会漏掉。
-                    let hash = remote ? try await service.worktreeHash(of: entry) : nil
-                    let snapshot = try await service.diff(
-                        for: entry,
-                        side: side,
-                        options: options,
-                        warningKilobytes: threshold,
-                        showLarge: showLarge
-                    )
-
-                    return (hash, snapshot)
-                }
-
-                guard let self, generation == request, !Task.isCancelled else { return }
-                diffSnapshot = snapshot
-                contentHash = (StatusRowID(path: entry.path, kind: entry.kind), hash)
-            } catch {
-                guard let self, generation == request, !Task.isCancelled else { return }
-                diffSnapshot = nil
-                diffFailure = AppFailure(error: error, opening: false, location: repository)
-            }
-
-            guard let self, generation == request, !Task.isCancelled else { return }
-            isLoadingDiff = false
         }
     }
 }

@@ -23,7 +23,7 @@ struct FileRevisionContent: Equatable {
     private static let binaryProbeLength = 8000
 
     /// 文本排版会当成换行、而 Git 不算作换行的字符。
-    private static let lineBreaks: Set<Unicode.Scalar> = ["\r", "\u{85}", "\u{2028}", "\u{2029}"]
+    private static let lineBreaks: Set<Unicode.Scalar> = ["\u{85}", "\u{2028}", "\u{2029}"]
 
     /// 树中存储的路径；版本中没有这个文件时是请求的路径。
     let path: String
@@ -36,6 +36,9 @@ struct FileRevisionContent: Equatable {
 
     /// 用于显示的各行，按换行符切分。
     let lines: [String]
+
+    /// 解码后的完整源串，保留 CR 与末尾 LF，供原文和 Blame 共用复制映射。
+    var source: String { data.map { String(decoding: $0, as: UTF8.self) } ?? "" }
 
     /// 按 Unicode 等价找到版本中的条目后读取内容，并判断能否以文本显示。
     static func load(_ path: String, at revision: String, views: RepositoryFileViews) async throws -> Self {
@@ -72,19 +75,13 @@ struct FileRevisionContent: Equatable {
         return records.map { displayLine(String(decoding: $0, as: UTF8.self)) }
     }
 
-    /// 一行的显示形式：去掉行尾的回车，行内其它会被文本排版当成换行的字符换成替代符，行号才能与 Git 的行一一对应。
+    /// 一行的显示形式：CR 保留到共享渲染器，其它会被文本排版当成换行的字符换成替代符，行号才能与 Git 的行一一对应。
     static func displayLine(_ line: String) -> String {
         // 绝大多数行没有这些字符，原样返回
         guard line.unicodeScalars.contains(where: lineBreaks.contains) else {
             return line
         }
 
-        var scalars = Array(line.unicodeScalars)
-
-        if scalars.last == "\r" {
-            scalars.removeLast()
-        }
-
-        return String(String.UnicodeScalarView(scalars.map { lineBreaks.contains($0) ? "\u{FFFD}" : $0 }))
+        return String(String.UnicodeScalarView(line.unicodeScalars.map { lineBreaks.contains($0) ? "\u{FFFD}" : $0 }))
     }
 }

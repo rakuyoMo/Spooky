@@ -32,22 +32,36 @@ struct DiffSidePicker: NSViewRepresentable {
     /// 工作区侧是否可用。
     let unstaged: Bool
 
+    /// 已跟踪且有改动的文件才启用整组控件。
+    let enabled: Bool
+
     /// 分段动作桥接。
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     /// 保持 Staged、Unstaged 的固定顺序。
     func makeNSView(context: Context) -> NSSegmentedControl {
-        NSSegmentedControl(
+        let control = NSSegmentedControl(
             labels: [AppLocalization.text("working.staged"), AppLocalization.text("working.unstaged")],
             trackingMode: .selectOne,
             target: context.coordinator,
             action: #selector(Coordinator.changed(_:))
         )
+        configure(control)
+        return control
     }
 
     /// 刷新后没有内容的一侧立即禁用。
     func updateNSView(_ control: NSSegmentedControl, context: Context) {
         context.coordinator.parent = self
+        configure(control)
+    }
+
+    /// 构建与更新共用同一组原生控件属性。
+    func configure(_ control: NSSegmentedControl) {
+        control.segmentStyle = .rounded
+        control.controlSize = .regular
+        control.trackingMode = .selectOne
+        control.isEnabled = enabled
         control.selectedSegment = side == .staged ? 0 : 1
         control.setEnabled(staged, forSegment: 0)
         control.setEnabled(unstaged, forSegment: 1)

@@ -121,6 +121,9 @@ final class RepositoryHistoryState {
         }
     }
 
+    /// 提交详情的文件树分段；切换提交时保持，与菜单路由共用。
+    var showsTree = false
+
     /// 双击进入左文件列表、右补丁的整页提交详情。
     var showsCommitPage = false
 
@@ -138,6 +141,11 @@ final class RepositoryHistoryState {
 
     /// 展开的文件共享一个滚动区域。
     var expandedPaths = Set<String>()
+
+    /// 仅当前变更集的每个文件都展开时成立，忽略残留的其它身份。
+    var allItemsExpanded: Bool {
+        !changes.isEmpty && changes.allSatisfy { expandedPaths.contains($0.path) }
+    }
 
     /// 单文件已加载的补丁，切换提交时失效。
     private(set) var diffs: [String: CommitDiff] = [:]
@@ -602,7 +610,7 @@ extension RepositoryHistoryState {
                     !Task.isCancelled
                 else { return }
                 changes = files
-                let threshold = UserDefaults.standard.integer(forKey: "historyAutoExpand")
+                let threshold = preferences.integer(forKey: "historyAutoExpand")
                 if threshold > 0, files.count <= threshold { expandAll(true) }
             } catch {
                 guard

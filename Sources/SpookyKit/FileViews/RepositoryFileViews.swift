@@ -279,7 +279,8 @@ public struct RepositoryFileViews: Sendable {
         }
 
         // Swift 的字符串比较按规范等价进行，NFC 与 NFD 的同名路径视为相等
-        return try await files(in: revision).first { $0.path == path }
+        let output = try await runner.immutableRun(["ls-tree", "-r", "-t", "-z", "--full-tree", revision])
+        return try TreeEntry.parse(output).first { $0.path == path }
     }
 
     /// 文件条目的原始内容；子模块与目录没有文件内容。

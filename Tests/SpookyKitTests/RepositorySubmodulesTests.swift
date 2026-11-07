@@ -339,8 +339,11 @@ extension RepositorySubmodulesTests {
             return Data(lines.map { $0 + "\n" }.joined().utf8)
         }
 
+        let branches = ["main", "特性/新版"].sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        let tags = ["v1.0", "v2", "轻量"].sorted { $0.localizedStandardCompare($1) == .orderedAscending }
         let onBranch = try RepositorySubmodules.parseRevisions(output("*"), checkedOut: head)
-        #expect(onBranch.map(\.name) == ["main", "特性/新版", "v1.0", "v2", "轻量"])
+
+        #expect(onBranch.map(\.name) == branches + tags)
         #expect(onBranch.filter(\.isCurrent).map(\.name) == ["main"])
 
         // 没有分支带 HEAD 标记就是分离 HEAD

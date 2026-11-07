@@ -387,7 +387,7 @@ public struct RepositoryHistory: Sendable {
                 + mergeMode.arguments
                 + [
                     "--no-color", "--no-ext-diff", "--no-textconv", "--raw", "--numstat", "--no-abbrev",
-                    "-z", "-M", "-C", commit, "--",
+                    "-z", "-M", commit, "--",
                 ]
         )
 
@@ -405,15 +405,20 @@ public struct RepositoryHistory: Sendable {
     ) async throws -> CommitDiff {
         guard GitObjectID.isValid(commit) else { throw RepositoryReadError.invalidQuery }
         let paths = [file.path] + (file.originalPath.map { [$0] } ?? [])
+        let scope = RepositoryFileViews.needsFileChangeScope(paths)
+            ? try await changes(in: commit, mergeMode: mergeMode)
+            : []
+        let changedPaths = scope.flatMap { [$0.path] + ($0.originalPath.map { [$0] } ?? []) }
+        let pathspecs = RepositoryFileViews.filePathspecs(paths, changedPaths: changedPaths)
         let patch = try await runner.immutableRun(
-            RepositoryFileViews.storedPathOptions + Self.logOptions
+            RepositoryFileViews.filePathOptions + Self.logOptions
                 + ["show", "--format=", "--root"]
                 + mergeMode.arguments
                 + [
                     "--no-color", "--word-diff=none", "--no-ext-diff", "--no-textconv", "--full-index",
-                    "-M", "-C", "--src-prefix=a/", "--dst-prefix=b/",
+                    "-M", "--src-prefix=a/", "--dst-prefix=b/",
                 ]
-                + options.arguments + [commit, "--"] + paths
+                + options.arguments + [commit, "--"] + pathspecs
         )
 
         return try CommitDiff(

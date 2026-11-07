@@ -278,13 +278,29 @@
 "working.unstaged" = "Unstaged";
 "working.diffSide" = "Changes to display";
 "working.multiple" = "Multiple files selected";
-"working.largeDiff" = "This diff is %d kB. Load its contents?";
+"working.largeDiff" = "This is a large diff. Do you want to show it?";
 "working.showDiff" = "Show Diff";
 "working.loadingDiff" = "Loading Diff…";
-"working.noDiff" = "No text changes";
-"working.binary" = "Binary file differs. Text preview is unavailable.";
-"working.diffSummary" = "%d chunks, %d insertions, %d deletions";
-"working.noNewline" = "No newline at end of file";
+"working.diffSummary" = "%1$@, %2$@, %3$@";
+
+"diff.summary.mode" = "%1$@ (%2$@)";
+"diff.summary.mode.regular" = "Regular";
+"diff.summary.mode.executable" = "Executable";
+"diff.summary.mode.symbolicLink" = "Symbolic Link";
+"diff.summary.mode.directory" = "Directory";
+"diff.summary.mode.submodule" = "Submodule";
+"diff.summary.mode.none" = "None";
+"diff.summary.modeChanged" = "File mode changed from %1$@ to %2$@";
+"diff.summary.added" = "New file with mode %@";
+"diff.summary.deleted" = "Deleted file with mode %@";
+"diff.summary.renamed" = "File renamed from %1$@ to %2$@ (%3$ld %%)";
+"diff.summary.binary" = "Binary file differs";
+"diff.summary.chunks.one" = "1 chunk";
+"diff.summary.chunks" = "%ld chunks";
+"diff.summary.insertions.one" = "1 insertion";
+"diff.summary.insertions" = "%ld insertions";
+"diff.summary.deletions.one" = "1 deletion";
+"diff.summary.deletions" = "%ld deletions";
 "working.selectLine" = "Select change at line %d";
 "working.selected" = "Selected";
 "working.stageChunk" = "Stage Chunk";
@@ -334,7 +350,7 @@
 "history.empty" = "No commits";
 "history.loading" = "Loading commits…";
 "history.copyHash" = "Copy Commit Hashes";
-"history.changes" = "%d changed files";
+"history.changes" = "%ld changed files";
 "history.noSelection" = "No commit selected";
 "history.multiple" = "%ld commits selected";
 "history.expandAll" = "Expand All";
@@ -973,7 +989,7 @@
 "history.changeset" = "Changeset";
 "history.tree" = "Tree";
 "history.detailMode" = "Commit Details Content";
-"history.summary" = "Showing %1$ld changed files with %2$ld additions and %3$ld deletions";
+"history.summary" = "%1$@ %2$@ %3$@";
 "history.mergeDiff" = "Show diffs for merge commits:";
 "history.mergeDiff.off" = "None";
 "history.mergeDiff.firstParent" = "First parent";
@@ -2626,3 +2642,13 @@
 "working.unstageAllMenu" = "Unstage All Local Changes";
 "working.discardMenu" = "Discard Local Changes";
 "working.discardAllMenu" = "Discard All Local Changes…";
+
+"externalTool.action.diffTool" = "Diff Tool";
+"history.noChanges" = "No changes.";
+"history.summary.files.one" = "Showing %ld changed file";
+"history.summary.files" = "Showing %ld changed files";
+"history.summary.additions.one" = "with %ld addition";
+"history.summary.additions" = "with %ld additions";
+"history.summary.deletions.one" = "and %ld deletion";
+"history.summary.deletions" = "and %ld deletions";
+"history.changes.one" = "%ld changed file";

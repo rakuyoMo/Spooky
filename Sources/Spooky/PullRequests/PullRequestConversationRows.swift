@@ -43,7 +43,7 @@ struct PullRequestConversationTextRow: View {
                         let actions = commentActions(comment)
 
                         if !actions.isEmpty {
-                            FileActionBar(actions: actions, hovering: true)
+                            FileActionBar(actions: actions, hovering: true, segmented: false)
                         }
                     }
 

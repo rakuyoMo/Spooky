@@ -36,28 +36,48 @@ extension WorkingCopyOperations {
     ///   - side: 暂存区相对 HEAD，或工作区相对暂存区。
     ///   - options: 上下文行数、显示整个文件与忽略空白。
     public func patch(for entry: StatusEntry, side: DiffSide, options: DiffOptions) async throws -> Data {
+        guard entry.staged == .renamed || entry.unstaged == .renamed else {
+            let paths = RepositoryFileViews.filePathspecs(side == .staged ? entry.operationPaths : [entry.path])
+            return try await scopedPatch(for: entry, side: side, options: options, paths: paths)
+        }
+
+        for _ in 0 ..< 2 {
+            try Task.checkCancellation()
+            let before = try await scope(for: entry)
+            let patch = try await scopedPatch(
+                for: entry,
+                side: side,
+                options: options,
+                paths: side == .staged ? before.staged : before.unstaged
+            )
+            let after = try await scope(for: entry)
+            guard before.status == after.status else { throw WorkingCopyError.staleSnapshot }
+            guard before.hasSamePaths(as: after) else { continue }
+
+            return patch
+        }
+
+        throw WorkingCopyError.staleSnapshot
+    }
+
+    /// 在同一轮状态范围内读取补丁，不额外取状态或复用其它快照的排除项。
+    func scopedPatch(for entry: StatusEntry, side: DiffSide, options: DiffOptions, paths: [String]) async throws -> Data {
         let arguments = Self.diffArguments + options.arguments
 
-        switch side {
-        case .staged:
-            return try await runner.run(
-                ["--literal-pathspecs", "diff", "--cached"] + arguments + ["--"] + entry.operationPaths
-            )
-
-        case .unstaged where entry.kind == .untracked:
+        if side == .unstaged, entry.kind == .untracked {
             guard !entry.path.hasSuffix("/") else { throw WorkingCopyError.unsupportedFile }
 
-            // no-index 有差异时退出码为 1
+            // no-index 接收文件名而非路径规格，有差异时退出码为 1。
             return try await runner.execute(
                 ["diff", "--no-index"] + arguments + ["--", "/dev/null", entry.path],
                 acceptedExitCodes: [0, 1]
             ).standardOutput
-
-        case .unstaged:
-            return try await runner.run(
-                ["--literal-pathspecs", "diff"] + arguments + ["--", entry.path]
-            )
         }
+
+        return try await runner.run(
+            ["--no-literal-pathspecs", "diff"] + (side == .staged ? ["--cached"] : [])
+                + arguments + ["--"] + paths
+        )
     }
 
     /// 写入用的补丁：普通选项直接取显示的块；忽略空白时在逐字节的整文件 Diff 中找到同一批改动再生成。

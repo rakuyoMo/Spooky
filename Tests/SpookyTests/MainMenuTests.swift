@@ -320,6 +320,70 @@ extension MainMenuTests {
     }
 }
 
+// MARK: - Changeset Menu
+
+extension MainMenuTests {
+    /// 阈值是全局动作，静态命令仍走窗口响应链；无仓库和管理页都能保存并勾选八档设置。
+    @Test("变更集菜单的全局阈值与快捷键")
+    func changesetMenu() throws {
+        let (controller, directory) = try Self.makeController()
+        let suite = "Spooky.ChangesetMenu." + UUID().uuidString
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer {
+            defaults.removePersistentDomain(forName: suite)
+            try? FileManager.default.removeItem(at: directory)
+        }
+
+        controller.changesetPreferences = defaults
+        let menu = try #require(Self.item("history.diffs", in: Self.topMenu("menu.view")).submenu)
+        #expect(menu.items.count == 12)
+        #expect(menu.items[0].action == #selector(RepositoryWindowController.expandChanges))
+        #expect(menu.items[1].action == #selector(RepositoryWindowController.collapseChanges))
+        #expect(menu.items[0].keyEquivalent == "\u{f703}")
+        #expect(menu.items[1].keyEquivalent == "\u{f702}")
+        #expect(menu.items.prefix(2).allSatisfy { $0.keyEquivalentModifierMask == [.control, .command] && $0.target == nil })
+        #expect(menu.items[2].isSeparatorItem)
+        #expect(menu.items[3].title == AppLocalization.text("history.autoExpand.title"))
+        #expect(menu.items[3].action == nil)
+        #expect(menu.items.allSatisfy { !$0.isAlternate })
+        let thresholds = Array(menu.items.dropFirst(4))
+        #expect(thresholds.map(\.tag) == [0, 5, 10, 15, 20, 25, 50, Int.max])
+        #expect(thresholds.allSatisfy { $0.target === controller && $0.action == #selector(controller.setAutoExpand(_:)) })
+        #expect(thresholds.allSatisfy { $0.keyEquivalent.isEmpty })
+        let titles = [AppLocalization.text("history.autoExpand.never")]
+            + [5, 10, 15, 20, 25, 50].map { AppLocalization.text("history.autoExpand.items", $0) }
+            + [AppLocalization.text("history.autoExpand.always")]
+        #expect(thresholds.map(\.title) == titles)
+        #expect(controller.windows.isEmpty)
+        #expect(controller.validateMenuItem(thresholds[0]) && thresholds[0].state == .on)
+        assertThresholds(thresholds, controller: controller)
+
+        let manager = RepositoryWindowController(coordinator: controller)
+        defer { manager.window?.close() }
+        #expect(manager.showsManager)
+        assertThresholds(thresholds, controller: controller)
+        menu.update()
+        #expect(!menu.items[3].isEnabled)
+    }
+
+    /// 经真实菜单动作切换档位，验证只勾选保存值，动作不依赖任何仓库窗口。
+    private func assertThresholds(_ items: [NSMenuItem], controller: SpookyApplicationController) {
+        for selected in items {
+            guard let action = selected.action else {
+                Issue.record("阈值项必须提供全局设置动作")
+                continue
+            }
+
+            #expect(NSApp.sendAction(action, to: selected.target, from: selected))
+
+            for item in items {
+                #expect(controller.validateMenuItem(item))
+                #expect(item.state == (item.tag == selected.tag ? .on : .off))
+            }
+        }
+    }
+}
+
 // MARK: - Helpers
 
 extension MainMenuTests {

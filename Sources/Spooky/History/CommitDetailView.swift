@@ -12,7 +12,7 @@ struct CommitPageDiffView: View {
     var body: some View {
         if let path = history.selectedPath {
             ScrollView {
-                CommitFileDiffView(history: history, path: path)
+                CommitFileDiffView(history: history, path: path, presentation: .standalone)
             }
             .reloadsOnDiffPreferenceChange { history.reloadDiffs() }
         } else {
@@ -32,10 +32,6 @@ struct CommitDetailView: View {
     /// 文件右键菜单打开文件视图，并把文件恢复到工作区或导出。
     let session: RepositorySession
 
-    /// 显示文件树；否则显示变更集。切换提交时保持。
-    @State
-    private var showsTree = false
-
     /// 文件树的逐层读取状态。
     @State
     private var tree = CommitTreeState()
@@ -51,22 +47,24 @@ struct CommitDetailView: View {
     /// 换选提交时结束比较。
     var body: some View {
         content
-            .onChange(of: history.selectedIDs) { session.comparison.close() }
+            .onChange(of: history.selectedIDs) {
+                if history === session.history { session.comparison.close() }
+            }
     }
 
     /// 按比较、单选、多选与未选中依次选择内容。
     @ViewBuilder
     private var content: some View {
-        if session.comparison.isActive {
-            RevisionComparisonView(state: session.comparison, session: session) {
-                session.comparison.close()
-            }
-        } else if let commit = history.selectedCommit {
+        switch session.commitDetailContent(for: history) {
+        case .comparison(let comparison):
+            RevisionComparisonView(state: comparison, session: session) { comparison.close() }
+
+        case .commit(let commit):
             VStack(spacing: 0) {
-                CommitDetailBar(commit: commit, showsTree: $showsTree)
+                CommitDetailBar(commit: commit, showsTree: $history.showsTree)
                 Divider()
 
-                if showsTree {
+                if history.showsTree {
                     CommitTreeView(tree: tree, session: session, commit: commit)
                 } else {
                     ScrollView {
@@ -83,10 +81,13 @@ struct CommitDetailView: View {
                     session.signatures.request(commit.id, runner: runner)
                 }
             }
-        } else if history.selectedIDs.count > 1 {
-            HistoryMultipleSelectionView(session: session)
-        } else {
-            EmptyStateView(title: AppLocalization.text("history.noSelection"), message: "", symbol: "doc.text")
+
+        case .selection:
+            if history.selectedIDs.count > 1 {
+                HistoryMultipleSelectionView(session: session)
+            } else {
+                EmptyStateView(title: AppLocalization.text("history.noSelection"), message: "", symbol: "doc.text")
+            }
         }
     }
 
@@ -107,16 +108,6 @@ struct CommitDetailView: View {
         ForEach(history.changes) { file in
             fileSection(file)
             Divider()
-        }
-
-        if
-            history.changes.isEmpty,
-            !history.isLoadingChanges,
-            history.changesFailure == nil
-        {
-            Text(AppLocalization.text("working.noDiff"))
-                .foregroundStyle(.secondary)
-                .padding(20)
         }
     }
 
@@ -141,8 +132,8 @@ struct CommitDetailView: View {
 
             ChangesetSummaryBar(
                 changes: history.changes,
-                expanded: !history.expandedPaths.isEmpty,
-                toggle: { history.expandAll(history.expandedPaths.isEmpty) }
+                expanded: history.allItemsExpanded,
+                toggle: { history.expandAll(!history.allItemsExpanded) }
             )
 
             changeRows
@@ -213,7 +204,7 @@ struct CommitFileListView: View {
                 HStack {
                     revisionButton(commit)
                     Spacer()
-                    Text(AppLocalization.text("history.changes", history.changes.count))
+                    Text(ChangesetSummaryBar.fileCount(history.changes.count))
                 }
                 .padding(.horizontal, 12)
                 .frame(height: 40)
@@ -226,26 +217,42 @@ struct CommitFileListView: View {
                 ProgressView(AppLocalization.text("history.loadingChanges"))
                     .controlSize(.small)
                     .padding(12)
-            } else if history.changes.isEmpty, history.changesFailure == nil {
-                Text(AppLocalization.text("working.noDiff"))
-                    .foregroundStyle(.secondary)
-                    .padding(12)
             }
         }
         .frame(minWidth: 300)
     }
 
+    /// 读取完成且没有失败时，空列表才显示占位行。
+    var emptyMessage: String? {
+        guard history.changes.isEmpty, !history.isLoadingChanges, history.changesFailure == nil else {
+            return nil
+        }
+
+        return AppLocalization.text("history.noChanges")
+    }
+
     /// 变更文件列表，右键菜单打开文件视图，并把文件恢复到工作区或导出。
     private var fileList: some View {
-        List(history.changes, selection: $history.selectedPath) { file in
-            CommitFileLabel(file: file)
-                .tag(file.path)
-                .contextMenu {
-                    if let commit = history.selectedCommit {
-                        ChangesetFileMenu(session: session, path: file.path, originalPath: file.originalPath, commit: commit)
+        List(selection: $history.selectedPath) {
+            if let emptyMessage {
+                Text(emptyMessage)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color(nsColor: .controlTextColor))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 42)
+                    .listRowInsets(EdgeInsets())
+            }
+
+            ForEach(history.changes) { file in
+                CommitFileLabel(file: file)
+                    .tag(file.path)
+                    .contextMenu {
+                        if let commit = history.selectedCommit {
+                            ChangesetFileMenu(session: session, path: file.path, originalPath: file.originalPath, commit: commit)
+                        }
                     }
-                }
-                .onDrag { CommitFileDragging.provider(file, session: session) }
+                    .onDrag { CommitFileDragging.provider(file, session: session) }
+            }
         }
     }
 
@@ -338,6 +345,9 @@ struct CommitFileDiffView: View {
     /// 已选择或展开的文件路径。
     let path: String
 
+    /// 独立文件与变更集内嵌的滚动方式。
+    var presentation = DiffPresentation.embedded
+
     /// 失败可重试，补丁读取完成前显示进度。
     var body: some View {
         if let failure = history.diffFailures[path] {
@@ -345,14 +355,11 @@ struct CommitFileDiffView: View {
                 .padding(20)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else if let result = history.diffs[path], let source = history.diffSource(path: path) {
-            ReadOnlyFileDiffView(result: result, source: source) {
+            ReadOnlyFileDiffView(result: result, source: source, presentation: presentation) {
                 history.loadDiff(path, showLarge: true)
             }
         } else {
-            ProgressView(AppLocalization.text("working.loadingDiff"))
-                .controlSize(.small)
-                .padding(20)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            ChangesetDiffLoadingView()
         }
     }
 }

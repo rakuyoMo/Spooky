@@ -36,14 +36,16 @@ struct SubmoduleMenuTests {
         #expect(menu.items.filter { !$0.isSeparatorItem }.allSatisfy { $0.isEnabled })
 
         let revisions = try #require(menu.items[2].submenu)
-        #expect(Self.titles(revisions) == [AppLocalization.text("branch.group"), "main", "特性"])
+        let branches = ["main", "特性"].sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        #expect(Self.titles(revisions) == [AppLocalization.text("branch.group")] + branches)
         #expect(revisions.items.map(\.indentationLevel) == [0, 1, 1])
-        #expect(revisions.items.map(\.isEnabled) == [false, false, true])
-        #expect(revisions.items.map(\.state) == [.off, .on, .off])
+        #expect(revisions.items.map(\.isEnabled) == [false] + branches.map { $0 != "main" })
+        #expect(revisions.items.map(\.state) == [.off] + branches.map { $0 == "main" ? .on : .off })
 
-        // 菜单项的动作经 NSApp 发出
+        // 菜单项的动作经 NSApp 发出，目标按分支名定位，不依赖当前区域的排序位置
         _ = NSApplication.shared
-        try await fixture.perform { revisions.performActionForItem(at: 2) }
+        let target = try #require(revisions.items.firstIndex { $0.title == "特性" })
+        try await fixture.perform { revisions.performActionForItem(at: target) }
 
         let output = try await fixture.runner.run(["-C", "lib", "branch", "--show-current"])
         let current = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)

@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - PaletteColor
 
-/// 以 sRGB 数值与透明度保存颜色；命名色资源与主题文件使用同一种写法。
+/// 保存 RGB 数值与不透明度；命名色与主题文件共用写法，由调用方选择解释的色彩空间。
 struct PaletteColor: Codable, Sendable, Equatable {
     /// `#` 开头的六位 RGB 值。
     let hex: String
@@ -16,7 +16,7 @@ struct PaletteColor: Codable, Sendable, Equatable {
         hex.wholeMatch(of: /#[0-9A-Fa-f]{6}/) != nil && (0 ... 1).contains(alpha)
     }
 
-    /// AppKit 与 SwiftUI 共用同一种色彩空间。
+    /// 按 sRGB 分量构造的命名色与推导色。
     var nsColor: NSColor {
         let rgb = UInt32(hex.dropFirst(), radix: 16) ?? 0
         return NSColor(
@@ -27,25 +27,44 @@ struct PaletteColor: Codable, Sendable, Equatable {
         )
     }
 
-    /// 文本主题的固定外观颜色。
+    /// SwiftUI 使用的 sRGB 色。
     var color: Color { Color(nsColor: nsColor) }
+
+    /// 主题文件的分量直接按 calibrated RGB 构造，不从 sRGB 转换颜色。
+    var calibratedNSColor: NSColor {
+        let rgb = UInt32(hex.dropFirst(), radix: 16) ?? 0
+        return NSColor(
+            calibratedRed: Double((rgb >> 16) & 255) / 255,
+            green: Double((rgb >> 8) & 255) / 255,
+            blue: Double(rgb & 255) / 255,
+            alpha: alpha
+        )
+    }
+
+    /// SwiftUI 直接显示的主题色。
+    var calibratedColor: Color { Color(nsColor: calibratedNSColor) }
 }
 
 extension PaletteColor {
-    /// 取颜色面板等处选出的颜色；无法换算到 sRGB 的颜色（如图案）返回 nil。
+    /// 取颜色的 sRGB 分量；无法转换的颜色（如图案）返回 nil。
     init?(nsColor: NSColor) {
-        guard let srgb = nsColor.usingColorSpace(.sRGB) else {
+        self.init(nsColor: nsColor, colorSpace: .sRGB)
+    }
+
+    /// 转到指定色彩空间，再把 RGB 分量与不透明度保存为主题文件的格式。
+    init?(nsColor: NSColor, colorSpace: NSColorSpace) {
+        guard let rgb = nsColor.usingColorSpace(colorSpace) else {
             return nil
         }
 
-        // 分量先夹到 0–1，扩展色域的颜色超出范围时取最接近的 sRGB 值。
-        let components = [srgb.redComponent, srgb.greenComponent, srgb.blueComponent]
+        // 分量先夹到 0–1，扩展色域的颜色超出范围时取目标色域内的边界值。
+        let components = [rgb.redComponent, rgb.greenComponent, rgb.blueComponent]
             .map { Int((min(max(Double($0), 0), 1) * 255).rounded()) }
 
         hex = String(format: "#%02X%02X%02X", components[0], components[1], components[2])
 
         // 颜色面板的不透明度以百分比调节，保留两位小数即可还原面板上的值。
-        alpha = (min(max(Double(srgb.alphaComponent), 0), 1) * 100).rounded() / 100
+        alpha = (min(max(Double(rgb.alphaComponent), 0), 1) * 100).rounded() / 100
     }
 }
 

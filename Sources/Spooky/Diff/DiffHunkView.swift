@@ -4,27 +4,18 @@ import SwiftUI
 
 // MARK: - DiffHunkView
 
-/// 一块文本独立保存行号选区，单击、拖动与 ⇧ 范围选择共用同一规则。
+/// 一个块的行号与正文共用逻辑选区，单击、拖动与 ⇧ 范围选择使用同一模型。
 ///
-/// 块头是分节头，行直接放进分节内容，放在懒加载栈里时只排版可见的行，显示整个文件也能流畅滚动。
+/// 块头归分节管理，正文用同一个文本区保留块内跨行的字符选择。
 struct DiffHunkView: View {
-    /// 行号拖选使用的坐标系，由外层的懒加载栈提供。
-    nonisolated static let coordinateSpace = "diff-content"
-
-    /// 新增行里改动部分的高亮底色，分浅色与深色两套，不随文本区主题变化。
-    private static let addedHighlight = AppPalette.color("diff_inline_added_highlight_color")
-
-    /// 删除行里改动部分的高亮底色。
-    private static let deletedHighlight = AppPalette.color("diff_inline_deleted_highlight_color")
-
     /// 带原始字节的块。
     let hunk: DiffHunk
 
     /// 主题、Tab 宽度与不可见字符设置。
     let style: TextStyle
 
-    /// 按行取语法片段；没有着色时为空。
-    var spans: (DiffLine) -> [SyntaxSpan]? = { _ in nil }
+    /// 两侧全文的语法片段；没有着色时为空。
+    var syntax: DiffSyntax?
 
     /// 各修改行的行内高亮范围，键是块内行序号；在视图外按块算好，排版时只取用。
     var highlights: [Int: [Range<Int>]] = [:]
@@ -41,41 +32,43 @@ struct DiffHunkView: View {
     /// 是否显示块头；Themes 页的 Diff 预览只显示各行。
     var showsHeader = true
 
+    /// 当前宿主是否拥有独立文件滚动区域。
+    var presentation = DiffPresentation.embedded
+
+    /// 当前文件里上一条内容是另一个块的正文。
+    var hasPrecedingHunk = false
+
+    /// 当前有效的 Diff 着色开关，与语法片段是否已经读完无关。
+    var colorsSyntax = false
+
+    /// 工作区由会话按块原文提供模型，滚动复用不丢失选择。
+    var selection: DiffLineSelection? = nil
+
     /// 把选区交给会话，确认和命令均在视图外执行。
     let apply: (Set<Int>, Bool) -> Void
 
-    /// 仅包含增删行序号的选区。
+    /// 正文的自然位置越过视口顶部时，块头处于浮动或被后块推挤的状态。
     @State
-    private var selected: Set<Int> = []
+    private var isPinned = false
 
-    /// ⇧ 范围选择的锚点。
+    /// 未绑定会话时的块内状态，不跨视图生命周期保存。
     @State
-    private var anchor: Int?
+    private var localSelection = DiffLineSelection()
 
-    /// 拖动开始时固定为选中或取消，后续经过各行不反复切换。
-    @State
-    private var dragSelecting: Bool?
-
-    /// 已排版行的行号区域，坐标属于外层懒加载栈。
-    @State
-    private var rowFrames: [Int: CGRect] = [:]
+    /// 行号、正文与块头始终共享当前绑定的模型。
+    private var lineSelection: DiffLineSelection { selection ?? localSelection }
 
     /// 常驻块头按钮随选择数量更新文案。
     var body: some View {
         Section {
-            ForEach(rows) { item in
-                // 每行与它的无换行提示合成一个视图：懒加载栈里一个元素展开成多个视图时，分节的第一行不会显示
-                VStack(alignment: .leading, spacing: 0) {
-                    row(item.line)
-
-                    if item.line.noNewline {
-                        Text(AppLocalization.text("working.noNewline"))
-                            .font(style.font)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 88)
-                    }
+            if showsHeader, presentation == .standalone {
+                text.onGeometryChange(for: Bool.self) {
+                    $0.frame(in: .scrollView(axis: .vertical)).minY - DiffHeaderBackground.height < 0
+                } action: {
+                    isPinned = $0
                 }
+            } else {
+                text
             }
         } header: {
             if showsHeader {
@@ -84,11 +77,18 @@ struct DiffHunkView: View {
         }
     }
 
-    /// 各行与它们在整个补丁里的身份。
-    private var rows: [HunkRow] {
-        hunk.lines.map { line in
-            HunkRow(id: HunkRow.ID(oldStart: hunk.oldStart, newStart: hunk.newStart, index: line.id), line: line)
-        }
+    /// 正文只在独立文件模式参与吸顶检测，预览与内嵌模式不增加几何观察。
+    private var text: some View {
+        DiffHunkTextView(
+            hunk: hunk,
+            style: style,
+            syntax: syntax,
+            highlights: highlights,
+            enabled: enabled && lineSelection.isActive,
+            readOnly: readOnly,
+            selection: lineSelection,
+            colorsSyntax: colorsSyntax
+        )
     }
 
     /// 块头原文与写入按钮。
@@ -101,183 +101,26 @@ struct DiffHunkView: View {
 
             Spacer(minLength: 4)
 
-            if !readOnly {
+            if !readOnly, hunk.combinedRanges == nil {
                 if !staged {
-                    Button(actionTitle("discard")) { apply(selected, true) }
+                    Button(actionTitle("discard")) { apply(lineSelection.selected, true) }
                 }
 
-                Button(actionTitle(staged ? "unstage" : "stage")) { apply(selected, false) }
+                Button(actionTitle(staged ? "unstage" : "stage")) { apply(lineSelection.selected, false) }
             }
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
-        .disabled(!enabled)
+        .disabled(!enabled || !lineSelection.isActive)
         .padding(.horizontal, 20)
-        .frame(height: 32)
-        .background(.bar)
-    }
-
-    /// 一行：行号、正文、改动底色与行内高亮，以及连续改动首尾的描边。
-    private func row(_ line: DiffLine) -> some View {
-        HStack(alignment: .top, spacing: 0) {
-            gutter(line)
-
-            Text(
-                TextLineRenderer.attributed(
-                    String(decoding: line.content, as: UTF8.self),
-                    spans: spans(line),
-                    highlights: highlights[line.id] ?? [],
-                    highlightColor: line.prefix == 43 ? Self.addedHighlight : Self.deletedHighlight,
-                    style: style
-                )
-            )
-            .textSelection(.enabled)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 8)
-        }
-        .font(style.font)
-        .foregroundStyle(style.textColor)
-        .frame(minHeight: 18)
-        .background(changeColor(line).map { style.color($0) } ?? .clear)
-        .overlay(alignment: .top) { edge(line, before: true) }
-        .overlay(alignment: .bottom) { edge(line, before: false) }
-    }
-
-    /// 连续同类改动的首行顶边与末行底边，颜色是改动底色加深 0.25 的不透明度。
-    @ViewBuilder
-    private func edge(_ line: DiffLine, before: Bool) -> some View {
-        let neighbor = hunk.lines.indices.contains(line.id + (before ? -1 : 1))
-            ? hunk.lines[line.id + (before ? -1 : 1)].prefix
-            : nil
-
-        if let key = changeColor(line), neighbor != line.prefix, let color = style.theme.colors[key] {
-            PaletteColor(hex: color.hex, alpha: min(1, color.alpha + 0.25)).color
-                .frame(height: 1)
-        }
-    }
-
-    /// 行号独立接管鼠标，正文仍可选择复制而不改变补丁选区。
-    private func gutter(_ line: DiffLine) -> some View {
-        HStack(spacing: 0) {
-            Text(line.oldNumber.map(String.init) ?? "").frame(width: 38, alignment: .trailing)
-            Text(line.newNumber.map(String.init) ?? "").frame(width: 38, alignment: .trailing)
-        }
-        .padding(.trailing, 4)
-        .frame(minHeight: 18)
-        .background(selected.contains(line.id) ? Color.accentColor : .clear)
-        .foregroundStyle(
-            selected.contains(line.id)
-                ? Color(nsColor: .alternateSelectedControlTextColor)
-                : style.lineNumberColor
-        )
-        .contentShape(Rectangle())
-        .onGeometryChange(for: CGRect.self) { proxy in
-            proxy.frame(in: .named(Self.coordinateSpace))
-        } action: { frame in
-            rowFrames[line.id] = frame
-        }
-        .onTapGesture { select(line.id, range: NSEvent.modifierFlags.contains(.shift)) }
-        .gesture(dragGesture(from: line))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(AppLocalization.text("working.selectLine", line.oldNumber ?? line.newNumber ?? 0))
-        .accessibilityAddTraits(line.isChange && !readOnly ? .isButton : [])
-        .accessibilityValue(selected.contains(line.id) ? AppLocalization.text("working.selected") : "")
-        .accessibilityAction { select(line.id, range: false) }
-        .focusable(line.isChange && !readOnly)
-        .allowsHitTesting(!readOnly)
-        .onKeyPress(.space) {
-            select(line.id, range: false)
-            return .handled
-        }
-    }
-
-    /// 按下那一行决定一路选中还是一路取消，经过的改动行随之变化。
-    private func dragGesture(from line: DiffLine) -> some Gesture {
-        DragGesture(minimumDistance: 1, coordinateSpace: .named(Self.coordinateSpace))
-            .onChanged { value in
-                guard enabled, line.isChange else { return }
-
-                if dragSelecting == nil {
-                    dragSelecting = !selected.contains(line.id)
-                    anchor = line.id
-                }
-
-                guard
-                    let end = rowFrames.first(where: {
-                        $0.value.minY <= value.location.y && $0.value.maxY >= value.location.y
-                    })?.key
-                else { return }
-
-                let range = min(line.id, end) ... max(line.id, end)
-
-                for item in hunk.lines where item.isChange && range.contains(item.id) {
-                    if dragSelecting ?? false {
-                        selected.insert(item.id)
-                    } else {
-                        selected.remove(item.id)
-                    }
-                }
-            }
-            .onEnded { _ in dragSelecting = nil }
-    }
-
-    /// 单击切换，⇧ 单击选中锚点与当前行之间的全部改动行。
-    private func select(_ id: Int, range: Bool) {
-        guard enabled, hunk.lines.contains(where: { $0.id == id && $0.isChange }) else { return }
-
-        if range, let anchor {
-            let lines = min(anchor, id) ... max(anchor, id)
-
-            for line in hunk.lines where line.isChange && lines.contains(line.id) {
-                selected.insert(line.id)
-            }
-        } else if selected.contains(id) {
-            selected.remove(id)
-        } else {
-            selected.insert(id)
-        }
-
-        anchor = id
+        .frame(height: DiffHeaderBackground.height)
+        .background(DiffHeaderBackground(showsTopBorder: hasPrecedingHunk && !isPinned))
     }
 
     /// 没有选行时处理整块，否则使用单行或多行文案。
-    private func actionTitle(_ action: String) -> String {
-        let suffix = selected.isEmpty ? "Chunk" : (selected.count == 1 ? "Line" : "Lines")
+    func actionTitle(_ action: String) -> String {
+        let suffix = lineSelection.publishedCount == 0 ? "Chunk" : (lineSelection.publishedCount == 1 ? "Line" : "Lines")
         return AppLocalization.text("working." + action + suffix)
     }
 
-    /// 改动行的主题颜色键，上下文行没有底色。
-    private func changeColor(_ line: DiffLine) -> String? {
-        switch line.prefix {
-        case 43: "added"
-        case 45: "deleted"
-        default: nil
-        }
-    }
-}
-
-// MARK: - HunkRow
-
-/// 块里的一行与它在整个补丁里的身份。
-///
-/// 懒加载栈把各块的行排在同一层，只用块内序号作身份时，后面的块里序号相同的行不会显示。
-private struct HunkRow: Identifiable {
-    /// 块两侧的起点加块内序号；同一补丁里不同块的两侧起点不会都相同。
-    struct ID: Hashable {
-        /// 块的旧版起点。
-        let oldStart: Int
-
-        /// 块的新版起点。
-        let newStart: Int
-
-        /// 块内序号。
-        let index: Int
-    }
-
-    /// 补丁内唯一的身份。
-    let id: ID
-
-    /// 这一行。
-    let line: DiffLine
 }

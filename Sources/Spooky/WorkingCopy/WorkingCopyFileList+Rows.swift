@@ -56,11 +56,11 @@ extension WorkingCopyFileList.Coordinator {
         let entry = node.entry
         let dimmed = entry?.kind == .ignored || entry.map { renderMarked.contains($0.path) } ?? false
 
-        let label = NSTextField(labelWithString: tree ? node.name : node.path)
+        let label = NSTextField(labelWithString: Self.pathTitle(node, tree: tree))
         label.font = .systemFont(ofSize: style.fontSize.pointSize)
         label.lineBreakMode = style.truncation.lineBreakMode
         label.textColor = dimmed ? .secondaryLabelColor : .controlTextColor
-        label.toolTip = node.path
+        label.toolTip = Self.pathTitle(node, tree: false)
 
         // 冲突、目录与文件使用各自的系统符号；符号不可用时保留空白图标位
         let symbol = entry?.kind == .conflicted
@@ -187,6 +187,19 @@ extension WorkingCopyFileList.Coordinator {
 // MARK: - Tree
 
 extension WorkingCopyFileList.Coordinator {
+    /// 重命名保留完整旧路径；树形的新路径只显示末级名称。
+    static func pathTitle(_ node: WorkingCopyFileList.Node, tree: Bool) -> String {
+        let title = tree ? node.name : node.path
+
+        guard
+            let entry = node.entry,
+            entry.staged == .renamed || entry.unstaged == .renamed,
+            let original = entry.originalPath
+        else { return title }
+
+        return "\(original) → \(title)"
+    }
+
     /// 按目录组织条目：目录节点只建一次，文件挂在所在目录下；被忽略的整个目录本身是一个叶子。
     static func tree(_ entries: [StatusEntry]) -> [WorkingCopyFileList.Node] {
         var roots: [WorkingCopyFileList.Node] = []

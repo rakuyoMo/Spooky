@@ -10,45 +10,44 @@ struct WorkingCopyDetailView: View {
     @Bindable
     var session: RepositorySession
 
-    /// 鼠标是否在文件头部上，决定 Blame 与文件历史的动作条是否显示。
-    @State
-    private var hoveringHeader = false
+    /// 当前外观选择生效主题。
+    @Environment(\.colorScheme)
+    private var colorScheme
+
+    /// 全局语法着色开关。
+    @AppStorage(TextPreferences.syntaxColoringKey)
+    private var colorsSyntax = true
+
+    /// Diff 语法着色开关。
+    @AppStorage(TextPreferences.diffSyntaxColoringKey)
+    private var colorsDiffSyntax = false
+
+    /// 大 Diff 阈值的变化需要清空选择并立即重读。
+    @AppStorage("diffWarningKilobytes")
+    private var warningKilobytes = WorkingCopyOperations.defaultWarningKilobytes
+
+    /// 在工作区入口统一观察设置，避免各块重复清空或重读。
+    var body: some View {
+        let appearance = DiffSelectionAppearance(
+            theme: TextTheme.current(dark: colorScheme == .dark),
+            colorsSyntax: colorsSyntax && colorsDiffSyntax
+        )
+        detail
+            .onChange(of: appearance, initial: true) { session.diffAppearanceChanged(appearance) }
+            .onChange(of: warningKilobytes) { session.diffWarningThresholdChanged() }
+    }
 
     /// 文件头、比较侧和可访问的内容状态。
-    var body: some View {
+    @ViewBuilder
+    private var detail: some View {
         if let entry = session.selectedEntry {
             VStack(spacing: 0) {
-                HStack(spacing: 8) {
-                    Image(systemName: entry.path.hasSuffix("/") ? "folder" : "doc")
-                        .font(.system(size: 24))
-                        .accessibilityHidden(true)
-                    Text(entry.path)
-                        .font(.system(size: 13, weight: .semibold))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
-                        .help(entry.path)
-                    Spacer(minLength: 0)
-
-                    // 悬停时出现的 Blame 与文件历史，头部右键菜单提供同样的入口
-                    FileActionBar(actions: session.workingCopyFileActions(entry.path), hovering: hoveringHeader)
-
-                    if entry.hasWorkingCopyDiff {
-                        DiffSidePicker(
-                            side: $session.diffSide,
-                            staged: entry.hasStagedChanges,
-                            unstaged: entry.hasUnstagedChanges
-                        )
-                        .frame(width: 170)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .frame(height: 40)
-                .background(AppPalette.color("general_header_background_color"))
-                .modifier(
-                    FileActionHeader(actions: session.workingCopyFileActions(entry.path), hovering: $hoveringHeader)
+                WorkingCopyFileHeader(
+                    session: session,
+                    path: entry.path,
+                    entry: entry,
+                    isDirectory: entry.path.hasSuffix("/")
                 )
-                Divider()
 
                 content(entry)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -56,11 +55,16 @@ struct WorkingCopyDetailView: View {
             .onChange(of: session.diffSide) { session.diffSideChanged() }
             .reloadsOnDiffPreferenceChange { session.loadDiff() }
         } else if let directory = session.selectedDirectory {
-            EmptyStateView(
-                title: AppLocalization.text(directoryMessage(directory)),
-                message: "",
-                symbol: "folder"
-            )
+            VStack(spacing: 0) {
+                WorkingCopyFileHeader(session: session, path: directory, entry: nil, isDirectory: true)
+
+                EmptyStateView(
+                    title: AppLocalization.text(directoryMessage(directory)),
+                    message: "",
+                    symbol: "doc"
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         } else if session.selectedIDs.count > 1 {
             EmptyStateView(
                 title: AppLocalization.text("working.multiple"),
@@ -96,6 +100,12 @@ struct WorkingCopyDetailView: View {
             // 换一个冲突文件时重建向导，上一个文件的内容与未保存的编辑不会带过来
             ConflictWizardView(session: session, entry: entry)
                 .id(entry.path)
+        } else if entry.path.hasSuffix("/"), entry.kind != .ignored {
+            EmptyStateView(
+                title: AppLocalization.text(directoryMessage(String(entry.path.dropLast()))),
+                message: "",
+                symbol: "doc"
+            )
         } else if !entry.hasWorkingCopyDiff {
             EmptyStateView(
                 title: AppLocalization.text(unchangedMessage(entry)),
@@ -113,11 +123,11 @@ struct WorkingCopyDetailView: View {
                 }
             } else if let diff = snapshot.diff {
                 DiffContentView(session: session, snapshot: snapshot, diff: diff)
-                    .id(snapshot.fingerprint)
+                    .id(session.diffSelections.revision)
             } else {
                 // 超过大小上限的 Diff 换成没有图标的空状态，按 Show Diff 才读取
                 EmptyStateView(
-                    title: AppLocalization.text("working.largeDiff", snapshot.byteCount / 1000),
+                    title: AppLocalization.text("working.largeDiff"),
                     message: "",
                     symbol: nil
                 ) {
@@ -128,11 +138,8 @@ struct WorkingCopyDetailView: View {
                     .disabled(session.isLoadingDiff)
                 }
             }
-        } else if session.isLoadingDiff {
-            ProgressView(AppLocalization.text("working.loadingDiff"))
         } else {
-            Text(AppLocalization.text("working.noDiff"))
-                .foregroundStyle(.secondary)
+            Color.clear
         }
     }
 }

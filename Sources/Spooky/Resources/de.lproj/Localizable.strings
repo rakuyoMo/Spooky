@@ -278,13 +278,29 @@
 "working.unstaged" = "Nicht gestagt";
 "working.diffSide" = "Anzuzeigende Änderungen";
 "working.multiple" = "Mehrere Dateien ausgewählt";
-"working.largeDiff" = "Dieser Diff ist %d kB groß. Inhalt laden?";
+"working.largeDiff" = "Dieser Diff ist groß. Möchten Sie ihn anzeigen?";
 "working.showDiff" = "Diff anzeigen";
 "working.loadingDiff" = "Diff wird geladen …";
-"working.noDiff" = "Keine Textänderungen";
-"working.binary" = "Die Binärdatei unterscheidet sich. Eine Textvorschau ist nicht verfügbar.";
-"working.diffSummary" = "%d Blöcke, %d Zeilen hinzugefügt, %d Zeilen gelöscht";
-"working.noNewline" = "Kein Zeilenumbruch am Dateiende";
+"working.diffSummary" = "%1$@, %2$@, %3$@";
+
+"diff.summary.mode" = "%1$@ (%2$@)";
+"diff.summary.mode.regular" = "Regulär";
+"diff.summary.mode.executable" = "Ausführbar";
+"diff.summary.mode.symbolicLink" = "Symbolischer Link";
+"diff.summary.mode.directory" = "Verzeichnis";
+"diff.summary.mode.submodule" = "Submodul";
+"diff.summary.mode.none" = "Keine";
+"diff.summary.modeChanged" = "Dateimodus von %1$@ zu %2$@ geändert";
+"diff.summary.added" = "Neue Datei mit Modus %@";
+"diff.summary.deleted" = "Gelöschte Datei mit Modus %@";
+"diff.summary.renamed" = "Datei von %1$@ in %2$@ umbenannt (%3$ld %%)";
+"diff.summary.binary" = "Binärdatei unterscheidet sich";
+"diff.summary.chunks.one" = "1 Block";
+"diff.summary.chunks" = "%ld Blöcke";
+"diff.summary.insertions.one" = "1 Zeile hinzugefügt";
+"diff.summary.insertions" = "%ld Zeilen hinzugefügt";
+"diff.summary.deletions.one" = "1 Zeile gelöscht";
+"diff.summary.deletions" = "%ld Zeilen gelöscht";
 "working.selectLine" = "Änderung in Zeile %d auswählen";
 "working.selected" = "Ausgewählt";
 "working.stageChunk" = "Block stagen";
@@ -334,7 +350,7 @@
 "history.empty" = "Keine Commits";
 "history.loading" = "Commits werden geladen …";
 "history.copyHash" = "Commit-Hashes kopieren";
-"history.changes" = "%d geänderte Dateien";
+"history.changes" = "%ld geänderte Dateien";
 "history.noSelection" = "Kein Commit ausgewählt";
 "history.multiple" = "%ld Commits ausgewählt";
 "history.expandAll" = "Alle erweitern";
@@ -973,7 +989,7 @@
 "history.changeset" = "Änderungen";
 "history.tree" = "Dateibaum";
 "history.detailMode" = "Inhalt der Commit-Details";
-"history.summary" = "%1$ld geänderte Dateien mit %2$ld hinzugefügten und %3$ld entfernten Zeilen";
+"history.summary" = "%1$@ %2$@ %3$@";
 "history.mergeDiff" = "Diffs für Merge-Commits:";
 "history.mergeDiff.off" = "Keine";
 "history.mergeDiff.firstParent" = "Zum ersten Eltern-Commit";
@@ -2626,3 +2642,13 @@
 "working.unstageAllMenu" = "Alle lokalen Änderungen unstagen";
 "working.discardMenu" = "Lokale Änderungen verwerfen";
 "working.discardAllMenu" = "Alle lokalen Änderungen verwerfen …";
+
+"externalTool.action.diffTool" = "Vergleichswerkzeug";
+"history.noChanges" = "Keine Änderungen.";
+"history.summary.files.one" = "%ld geänderte Datei";
+"history.summary.files" = "%ld geänderte Dateien";
+"history.summary.additions.one" = "mit %ld hinzugefügter Zeile";
+"history.summary.additions" = "mit %ld hinzugefügten Zeilen";
+"history.summary.deletions.one" = "und %ld entfernter Zeile";
+"history.summary.deletions" = "und %ld entfernten Zeilen";
+"history.changes.one" = "%ld geänderte Datei";
