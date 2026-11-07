@@ -31,12 +31,20 @@ extension RepositorySession {
     }
 
     /// 提交区可以打开修补：HEAD 已有提交，且没有进行中的操作，或交互式变基停在 edit 步等待修补当前 HEAD。
+    ///
+    /// edit 停顿里 HEAD 是停下的提交、它的修补结果或停顿中新建的提交时可以修补；
+    /// 撤下停下的提交后 HEAD 回到它的父提交，那是用户没有选中的提交，不能修补。
     var canAmend: Bool {
-        guard canWrite, status?.branch.oid != nil else {
+        guard canWrite, let head = status?.branch.oid else {
             return false
         }
 
-        return context?.operation == nil || (context?.progress?.stopsForEdit ?? false)
+        // 没有进行中的操作时照常修补
+        guard let progress = context?.progress else {
+            return true
+        }
+
+        return progress.stopsForEdit && head != progress.editedParent
     }
 
     /// 提交区显示的提交人：仓库所在机器上生效的 `user.name` 与 `user.email`；没有配置或还没读到时为空。
@@ -131,7 +139,7 @@ extension RepositorySession {
     ///   - previous: 上一份上下文；仓库刚打开时为 nil。
     func updateMessage(for context: WorkingCopyContext, previous: WorkingCopyContext?) {
         guard let progress = context.progress else {
-            // edit 停顿里打开的修补只针对停下时的 HEAD，变基结束或中止后退出修补，恢复进入修补前的草稿
+            // edit 停顿里打开的修补只针对停顿中的提交，变基结束或中止后退出修补，恢复进入修补前的草稿
             if previous?.progress?.stopsForEdit ?? false { setAmend(false) }
 
             return

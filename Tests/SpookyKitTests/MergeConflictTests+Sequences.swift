@@ -133,7 +133,7 @@ extension MergeConflictTests {
         #expect(!progress.stopsForEdit && !progress.isPendingInteractive)
     }
 
-    /// edit 停下时记下正在修改的提交；squash、fixup 的冲突同样留下 amend，却不是 edit。
+    /// edit 停下时记下正在修改的提交与它的父提交；squash、fixup 的冲突同样留下 amend，却不是 edit。
     @Test("edit 停顿与 squash、fixup 冲突的区分")
     func editAndSquashStops() async throws {
         let repository = try TemporaryRepository()
@@ -147,6 +147,7 @@ extension MergeConflictTests {
         try await commit(repository, ["x": "two\n"], message: "two")
         try await commit(repository, ["x": "three\n"], message: "three")
 
+        let base = try await commitID("HEAD~3", in: repository)
         let one = try await commitID("HEAD~2", in: repository)
         let three = try await commitID("HEAD", in: repository)
 
@@ -154,7 +155,7 @@ extension MergeConflictTests {
 
         let editing = try await currentProgress(repository)
 
-        #expect(editing.stopsForEdit && editing.editedCommit == one)
+        #expect(editing.stopsForEdit && editing.editedCommit == one && editing.editedParent == base)
         #expect(editing.stepKind == .editing && editing.stepSubject == "one")
         #expect(!editing.isPendingInteractive)
 
@@ -170,7 +171,7 @@ extension MergeConflictTests {
 
             let stopped = try await currentProgress(repository)
 
-            #expect(!stopped.stopsForEdit && stopped.stepKind == .applying)
+            #expect(!stopped.stopsForEdit && stopped.editedParent == nil && stopped.stepKind == .applying)
             #expect(!stopped.isPendingInteractive)
             #expect(try await runner.status().entries.contains { $0.kind == .conflicted })
 

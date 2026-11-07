@@ -27,6 +27,7 @@ extension RepositoryRewriteTests {
 
         #expect(try await head(in: repository) == commits[1])
         #expect(progress?.editedCommit == commits[1])
+        #expect(progress?.editedParent == commits[0])
         #expect(try await runner.status().entries.isEmpty)
 
         try write("补充\n", to: file(1), in: repository)

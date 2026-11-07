@@ -131,7 +131,7 @@ extension RepositorySession {
     /// 修补载入最近信息，退出修补时恢复普通提交草稿。
     ///
     /// 提交进行中不进入修补，提交后等待重置期间不切换修补：保存的普通草稿只留给成功后的重置。
-    /// 进入修补按 ``canAmend``：edit 停顿时载入的是停下时 HEAD 的信息。
+    /// 进入修补按 ``canAmend``：edit 停顿时载入的是当前 HEAD 的信息。
     func setAmend(_ enabled: Bool) {
         guard enabled != amend, commitResetTask == nil else { return }
 

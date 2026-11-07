@@ -147,7 +147,7 @@ extension RewriteSessionTests {
     }
 
     /// 计划一个动作并取回确认请求里的计划。
-    private func requestPlan(_ action: RewriteAction, in session: RepositorySession) async throws -> RewritePlan {
+    func requestPlan(_ action: RewriteAction, in session: RepositorySession) async throws -> RewritePlan {
         session.requestRewrite(action)
 
         guard case .confirm(let plan) = try await waitForRequest(in: session) else {

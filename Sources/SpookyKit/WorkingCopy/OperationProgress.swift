@@ -64,6 +64,9 @@ public struct OperationProgress: Sendable, Equatable {
     /// 交互式变基按 edit 指令停下时正在修改的提交；冲突、squash 与 fixup 造成的停顿为 nil。
     public internal(set) var editedCommit: String?
 
+    /// 停下时正在修改的提交的第一个父提交，撤下这个提交后 HEAD 回到这里；不是 edit 停顿或停在根提交上时为 nil。
+    public internal(set) var editedParent: String?
+
     /// 交互式变基尚未开始：merge 后端的变基既没有停在 edit 上，也没有停在某个提交上。
     ///
     /// 这时没有可以提交的一步，只能中止。
@@ -123,18 +126,29 @@ extension OperationProgress {
         )
     }
 
-    /// 读取进行中操作的完整进度；已解决的冲突需要额外读取索引的 resolve-undo 记录。
+    /// 读取进行中操作的完整进度；已解决的冲突需要额外读取索引的 resolve-undo 记录，edit 停顿另读正在修改的提交的父提交。
     ///
     /// - Parameters:
     ///   - files: 相对 Git 目录的状态文件内容。
     ///   - head: 当前 HEAD 提交。
-    ///   - runner: 读取索引的执行器。
+    ///   - runner: 读取索引与提交的执行器。
     static func read(files: [String: String], head: String?, runner: GitRunner) async throws -> Self? {
         guard var progress = Self(files: files, head: head) else {
             return nil
         }
 
         progress.resolvedPaths = try parseResolveUndo(try await runner.run(["ls-files", "--resolve-undo", "-z"]))
+
+        // 父提交只由提交的哈希决定，停顿期间反复刷新只读一次；根提交没有父提交，输出为空
+        if let edited = progress.editedCommit, GitObjectID.isValid(edited) {
+            let parents = try await runner.immutableRun(["rev-parse", edited + "^@"])
+
+            progress.editedParent = String(decoding: parents, as: UTF8.self)
+                .split(separator: "\n")
+                .first
+                .map(String.init)
+        }
+
         return progress
     }
 

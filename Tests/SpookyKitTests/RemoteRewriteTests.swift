@@ -107,9 +107,12 @@ extension RemoteRewriteTests {
         _ = try await runner.run(["add", "--all"])
         try await operations.commit(subject: "修补 'q' $HOME", body: "正文 `x`", amend: true)
 
-        // 修补后仍停在 edit 步，继续时没有要并入的改动，直接重放后面的提交
+        // 修补后仍停在 edit 步，停下的根提交没有父提交；继续时没有要并入的改动，直接重放后面的提交
         let amendedHead = try await rewrite.resolve("HEAD")
-        #expect(try await operations.context(head: amendedHead).progress?.stopsForEdit ?? false)
+        let stopped = try await operations.context(head: amendedHead).progress
+
+        #expect(stopped?.stopsForEdit ?? false)
+        #expect(stopped?.editedCommit == target && stopped?.editedParent == nil)
 
         try await operations.finish(.rebase, action: "continue")
 
