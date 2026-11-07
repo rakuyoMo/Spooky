@@ -766,6 +766,7 @@
 "signing.key" = "署名鍵：%@（%@）";
 "signing.defaultKey" = "署名鍵：コミッターに合わせて選択（%@）";
 "signing.none" = "署名鍵なし";
+"signing.unknown" = "不明な署名鍵";
 "signing.off" = "コミットに署名しません";
 "settings.editor" = "エディタ";
 "settings.profiles" = "ユーザプロファイル";
@@ -921,6 +922,7 @@
 "profiles.add.message" = "“%@ <%@> (%@)” をユーザプロファイルとして保存します。タイトルを入力してください。";
 "profiles.add.submit" = "プロファイルを追加";
 "profiles.titleExists" = "同じタイトルのユーザプロファイルがすでにあります。";
+"profiles.identityExists" = "同じユーザ名とメールアドレスのユーザプロファイルがすでにあります。";
 "profiles.signer" = "署名者：";
 "commit.doNotAskAgain" = "今後確認しない";
 

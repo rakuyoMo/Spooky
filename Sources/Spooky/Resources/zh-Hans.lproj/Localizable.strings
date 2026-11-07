@@ -766,6 +766,7 @@
 "signing.key" = "签名密钥：%@（%@）";
 "signing.defaultKey" = "签名密钥：按提交人选择（%@）";
 "signing.none" = "没有签名密钥";
+"signing.unknown" = "无法识别的签名密钥";
 "signing.off" = "提交不签名";
 "settings.editor" = "编辑器";
 "settings.profiles" = "身份档案";
@@ -921,6 +922,7 @@
 "profiles.add.message" = "将 “%@ <%@> (%@)” 存为身份档案，请为它填写标题。";
 "profiles.add.submit" = "添加档案";
 "profiles.titleExists" = "已有同样标题的身份档案。";
+"profiles.identityExists" = "已有同样用户名与邮箱的身份档案。";
 "profiles.signer" = "签名人：";
 "commit.doNotAskAgain" = "不再询问";
 

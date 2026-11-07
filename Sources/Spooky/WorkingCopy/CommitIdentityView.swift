@@ -3,10 +3,14 @@ import SwiftUI
 
 // MARK: - CommitIdentityView
 
-/// 提交人的姓名、邮箱与头像；点头像弹出身份档案菜单，头像的提示写明提交时的签名状态。
+/// 提交人的姓名、邮箱与头像；头像按提交人的邮箱取，点头像弹出身份档案菜单，头像的提示写明提交时的签名状态。
 struct CommitIdentityView: View {
     /// 当前仓库会话。
     let session: RepositorySession
+
+    /// 本机可用的签名密钥，供身份菜单写出签名密钥的简述。
+    @State
+    private var keys: [SigningKey] = []
 
     /// 姓名与邮箱右对齐叠放在 45 pt 头像左侧，提示显示签名状态。
     var body: some View {
@@ -28,11 +32,12 @@ struct CommitIdentityView: View {
                     name: session.committer.name,
                     email: session.committer.email,
                     signingKey: session.commitConfiguration?.signingKey,
+                    keys: keys,
                     canApply: session.canWrite,
                     apply: session.applyProfile
                 )
             } label: {
-                InitialsAvatar(name: session.committer.name, size: 45)
+                InitialsAvatar(name: session.committer.name, email: session.committer.email, size: 45)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -41,6 +46,7 @@ struct CommitIdentityView: View {
             .help(signingStatus)
             .accessibilityLabel(AppLocalization.text("profiles.menu"))
         }
+        .task { keys = await SigningKeys.local() }
     }
 }
 

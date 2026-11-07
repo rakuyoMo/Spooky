@@ -20,17 +20,26 @@ struct UserProfile: Codable, Identifiable, Equatable {
 
     /// 写入 `user.signingkey` 的签名密钥；为 nil 时套用档案不改动签名配置。
     var signingKey: String?
-
-    /// 身份菜单里的一项：姓名、尖括号里的邮箱与圆括号里的档案标题。
-    var menuTitle: String {
-        "\(name) <\(email)> (\(title))"
-    }
 }
 
 // MARK: - UserProfiles
 
 /// 身份档案的存取；设置页与提交区的身份菜单读写同一偏好键。
 enum UserProfiles {
+    /// 档案与其它档案的重复，有重复时不能保存。
+    enum Duplicate {
+        /// 标题与另一个档案相同。
+        case title
+
+        /// 姓名与邮箱都与另一个档案相同。
+        case identity
+
+        /// 显示在对话框错误区的原因。
+        var message: String {
+            AppLocalization.text(self == .title ? "profiles.titleExists" : "profiles.identityExists")
+        }
+    }
+
     /// 偏好键，值为档案数组的 JSON。
     static let key = "userProfiles"
 
@@ -80,6 +89,35 @@ enum UserProfiles {
 
         return "SSH: " + HomePath.abbreviated(comment, home: home) + " " + fingerprint
     }
+
+    /// 身份菜单里签名密钥的简述：`GPG: <指纹末 8 位>` 或 `SSH: <指纹末 8 位>`，末 8 位的取法与 `title(of:)` 相同。
+    ///
+    /// - Parameter key: 本机的一把签名密钥。
+    static func shortTitle(of key: SigningKey) -> String {
+        (key.format == .ssh ? "SSH: " : "GPG: ") + key.fingerprint.suffix(8)
+    }
+
+    /// 档案与其它档案的重复：先看标题，再看姓名与邮箱是否同时相同；没有重复时为 nil。
+    ///
+    /// 标题去掉首尾空格后比较，与保存时的写法一致；姓名与邮箱按原字符串比较，签名密钥不参与。
+    ///
+    /// - Parameters:
+    ///   - profile: 要保存的档案。
+    ///   - profiles: 已有的全部档案；与 `profile` 标识相同的是它自己，编辑时不和自己比较。
+    static func duplicate(of profile: UserProfile, in profiles: [UserProfile]) -> Duplicate? {
+        let others = profiles.filter { $0.id != profile.id }
+        let title = profile.title.trimmingCharacters(in: .whitespaces)
+
+        if others.contains(where: { $0.title == title }) {
+            return .title
+        }
+
+        if others.contains(where: { $0.name == profile.name && $0.email == profile.email }) {
+            return .identity
+        }
+
+        return nil
+    }
 }
 
 // MARK: - UserProfilesSettingsView
@@ -127,7 +165,7 @@ struct UserProfilesSettingsView: View {
             UserProfileEditor(
                 profile: profile,
                 isNew: !profiles.contains { $0.id == profile.id },
-                otherTitles: Set(profiles.filter { $0.id != profile.id }.map(\.title)),
+                profiles: profiles,
                 keys: keys
             ) { save($0) }
         }
@@ -215,7 +253,7 @@ extension UserProfilesSettingsView {
     private func profileDetail(_ profile: UserProfile) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                InitialsAvatar(name: profile.name, size: 48)
+                InitialsAvatar(name: profile.name, size: 50)
                 Text(profile.title)
                     .font(.system(size: 16, weight: .bold))
                     .lineLimit(1)
@@ -295,7 +333,7 @@ extension UserProfilesSettingsView {
 
 /// 新建或更新档案的对话框：标题、姓名、邮箱与签名密钥；签名密钥从本机的密钥里选，或不带密钥。
 ///
-/// 标题、姓名与邮箱都不能为空，标题不能与其它档案重名。
+/// 标题、姓名与邮箱都不能为空；标题不能与其它档案重名，姓名与邮箱不能同时与其它档案相同。
 private struct UserProfileEditor: View {
     /// 编辑中的副本。
     @State
@@ -304,8 +342,8 @@ private struct UserProfileEditor: View {
     /// 新建档案；否则是更新已有的档案。
     let isNew: Bool
 
-    /// 其它档案的标题，用来检查重名。
-    let otherTitles: Set<String>
+    /// 已有的全部档案，用来检查重复。
+    let profiles: [UserProfile]
 
     /// 本机可用的签名密钥。
     let keys: [SigningKey]
@@ -326,8 +364,8 @@ private struct UserProfileEditor: View {
             title: AppLocalization.text(isNew ? "profiles.create.title" : "profiles.update.title"),
             message: AppLocalization.text(isNew ? "profiles.create.message" : "profiles.update.message"),
             submitTitle: AppLocalization.text(isNew ? "profiles.create.submit" : "profiles.update.submit"),
-            error: titleExists ? AppLocalization.text("profiles.titleExists") : nil,
-            canSubmit: !titleExists
+            error: duplicate?.message,
+            canSubmit: duplicate == nil
                 && ![profile.title, profile.name, profile.email]
                 .contains { $0.trimmingCharacters(in: .whitespaces).isEmpty },
             cancel: { dismiss() },
@@ -354,13 +392,13 @@ private struct UserProfileEditor: View {
     init(
         profile: UserProfile,
         isNew: Bool,
-        otherTitles: Set<String>,
+        profiles: [UserProfile],
         keys: [SigningKey],
         onSave: @escaping (UserProfile) -> Void
     ) {
         _profile = State(initialValue: profile)
         self.isNew = isNew
-        self.otherTitles = otherTitles
+        self.profiles = profiles
         self.keys = keys
         self.onSave = onSave
         configuredKey = profile.signingKey
@@ -370,9 +408,9 @@ private struct UserProfileEditor: View {
 // MARK: - UserProfileEditor Private
 
 extension UserProfileEditor {
-    /// 去掉首尾空格后的标题与其它档案重名。
-    private var titleExists: Bool {
-        otherTitles.contains(profile.title.trimmingCharacters(in: .whitespaces))
+    /// 编辑中的档案与其它档案的重复。
+    private var duplicate: UserProfiles.Duplicate? {
+        UserProfiles.duplicate(of: profile, in: profiles)
     }
 
     /// 本机找不到的已配置密钥，菜单里显示为不可选的一项。

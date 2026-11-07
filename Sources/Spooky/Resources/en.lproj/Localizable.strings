@@ -766,6 +766,7 @@
 "signing.key" = "Signing Key: %@ (%@)";
 "signing.defaultKey" = "Signing Key: Chosen by Committer (%@)";
 "signing.none" = "No Signing Key";
+"signing.unknown" = "Unknown signing key";
 "signing.off" = "Commits Are Not Signed";
 "settings.editor" = "Editor";
 "settings.profiles" = "User Profiles";
@@ -921,6 +922,7 @@
 "profiles.add.message" = "Saves “%@ <%@> (%@)” as a user profile. Enter a title for it.";
 "profiles.add.submit" = "Add Profile";
 "profiles.titleExists" = "A user profile with this title already exists.";
+"profiles.identityExists" = "A user profile with this user name and email already exists.";
 "profiles.signer" = "Signer:";
 "commit.doNotAskAgain" = "Do not ask again";
 

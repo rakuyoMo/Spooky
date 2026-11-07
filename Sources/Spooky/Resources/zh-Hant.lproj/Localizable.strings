@@ -766,6 +766,7 @@
 "signing.key" = "簽署金鑰：%@（%@）";
 "signing.defaultKey" = "簽署金鑰：依提交者選擇（%@）";
 "signing.none" = "沒有簽署金鑰";
+"signing.unknown" = "無法識別的簽署金鑰";
 "signing.off" = "提交不簽署";
 "settings.editor" = "編輯器";
 "settings.profiles" = "身分設定檔";
@@ -921,6 +922,7 @@
 "profiles.add.message" = "將 “%@ <%@> (%@)” 儲存為身分設定檔，請為它輸入標題。";
 "profiles.add.submit" = "加入設定檔";
 "profiles.titleExists" = "已有相同標題的身分設定檔。";
+"profiles.identityExists" = "已有相同使用者名稱與電子郵件的身分設定檔。";
 "profiles.signer" = "簽署者：";
 "commit.doNotAskAgain" = "不再詢問";
 
