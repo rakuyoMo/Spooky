@@ -223,6 +223,40 @@ extension RepositorySessionTests {
         #expect(session.conflictPaths == nil)
         #expect(listed(session).map(\.path) == ["note.txt"])
     }
+
+    /// 合并停在冲突上时不报告失败，切到工作区；横幅与冲突文件随刷新出现。快速合并与合并对话框共用这个写操作。
+    @Test("合并冲突时切到工作区且不报错")
+    func mergeConflictsShowWorkingCopy() async throws {
+        let (session, directory, runner) = try await openOperationRepository()
+        defer { closeOperationRepository(session, directory) }
+
+        try await commitFiles(["x": "base"], message: "base", in: directory, runner: runner)
+        _ = try await runner.run(["checkout", "-q", "-b", "side"])
+        try await commitFiles(["x": "side"], message: "side", in: directory, runner: runner)
+        _ = try await runner.run(["checkout", "-q", "main"])
+        try await commitFiles(["x": "main"], message: "main", in: directory, runner: runner)
+        try await reload(session) { session.status?.entries.isEmpty ?? false }
+
+        var failures: [AppFailure] = []
+        session.onFailure = { failures.append($0) }
+        session.activeView = .history
+
+        let started = session.performGit(
+            session.mergeAction("refs/heads/side", options: MergeOptions()),
+            title: AppLocalization.text("sync.quickMerge"),
+            undo: .reversible
+        )
+
+        #expect(started)
+        await session.writeTask?.value
+        try await reload(session) {
+            session.conflictCount == 1
+                && session.context?.progress?.state == .merge
+        }
+
+        #expect(failures.isEmpty)
+        #expect(session.activeView == .workingCopy)
+    }
 }
 
 // MARK: - Helpers

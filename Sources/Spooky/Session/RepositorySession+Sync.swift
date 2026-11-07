@@ -327,12 +327,8 @@ extension RepositorySession {
             return
         }
 
-        let options = SyncPreferences.merge
-
         performGit(
-            { runner, output in
-                try await RepositorySync(runner: runner).merge(target, options: options, onOutput: output)
-            },
+            mergeAction(target, options: SyncPreferences.merge),
             title: AppLocalization.text("sync.quickMerge"),
             offersAutoStash: true,
             undo: .reversible
@@ -354,6 +350,28 @@ extension RepositorySession {
             offersAutoStash: true,
             undo: .reversible
         )
+    }
+
+    /// 合并的写操作，快速合并与合并对话框共用。
+    ///
+    /// 停在待解决的冲突上时不当作失败，切到工作区；横幅与冲突文件随写操作结束后的刷新出现。
+    func mergeAction(
+        _ revision: String,
+        options: MergeOptions
+    ) -> @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void {
+        { [weak self] runner, output in
+            let outcome = try await RepositorySync(runner: runner)
+                .merge(revision, options: options, onOutput: output)
+
+            guard outcome == .conflicts else {
+                return
+            }
+
+            await MainActor.run {
+                self?.activeView = .workingCopy
+                self?.onActiveViewChange?()
+            }
+        }
     }
 
     /// 快速操作无法开始时说明原因，与写入失败使用同一个错误 sheet。

@@ -762,8 +762,8 @@ extension RepositoryOperationDialog {
         let selected = branches.first { $0.id == revision }
         let pullRemote = selected.flatMap { session.history.snapshot?.remote(for: $0) }
         let pullBranch = selected.map { "refs/heads/" + remoteBranchName($0.id) }
-        let options = mergeConfiguration()
         let push = pushConfiguration()
+        let merge = session.mergeAction(revision, options: mergeConfiguration())
 
         /// 按动作种类调用核心库，只读取上面复制的表单值。
         @Sendable
@@ -818,7 +818,7 @@ extension RepositoryOperationDialog {
                     )
 
             case .merge:
-                try await RepositorySync(runner: runner).merge(revision, options: options, onOutput: output)
+                try await merge(runner, output)
             }
         }
 

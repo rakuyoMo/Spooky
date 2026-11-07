@@ -136,6 +136,17 @@ public enum MergePreview: Sendable, Equatable {
     case unavailable(String)
 }
 
+// MARK: - MergeOutcome
+
+/// 合并的结果：Git 完成了合并，或停在待解决的冲突上。
+public enum MergeOutcome: Sendable, Equatable {
+    /// 合并完成；不提交的合并与压缩合并停在提交之前，同样算完成。
+    case merged
+
+    /// 合并停在待解决的冲突上，由工作区里的横幅接着收尾。
+    case conflicts
+}
+
 // MARK: - MergeOptions
 
 /// 合并对话框的显式选项，不依赖用户的 merge.ff 等全局默认。
@@ -271,7 +282,7 @@ public struct RepositorySync: Sendable {
                 var options = MergeOptions()
                 options.verifySignatures = verifySignatures
                 options.skipHooks = skipHooks
-                try await merge(fetched, options: options, onOutput: onOutput)
+                try await performMerge(fetched, options: options, onOutput: onOutput)
                 return
             }
 
@@ -332,38 +343,62 @@ public struct RepositorySync: Sendable {
         }
     }
 
-    /// 合并前再次读取工作区，避免对话框打开期间新增的改动被覆盖。
+    /// 合并，停在待解决的冲突上时不当作失败。
+    ///
+    /// - Returns: 停在待解决的冲突上时为 ``MergeOutcome/conflicts``；其它失败照原样抛出 Git 的错误。
+    @discardableResult
     public func merge(
         _ revision: String,
         options: MergeOptions = MergeOptions(),
         onOutput: (@Sendable (GitOutputEvent) -> Void)? = nil
-    ) async throws {
+    ) async throws -> MergeOutcome {
         try await runner.writeTransaction {
-            guard try await runner.status().entries.isEmpty else {
-                throw RepositorySyncError.dirtyWorkingCopy(rebase: false)
+            do {
+                try await performMerge(revision, options: options, onOutput: onOutput)
+                return .merged
+            } catch let error as GitError where error.exitCode == 1 {
+                // 钩子与签名校验失败同样以 1 退出；只有留下合并状态并有未合并的文件才是停在冲突上
+                guard try await stoppedOnConflicts(squash: options.squash) else {
+                    throw error
+                }
+
+                return .conflicts
             }
-
-            let target = try await RepositoryReferences(runner: runner).resolve(revision)
-            var arguments = ["-c", "merge.autoStash=false", "merge", "--no-edit", "--no-autostash"]
-
-            // 压缩合并留下暂存区，普通合并明确指定快进与提交策略。
-            if options.squash {
-                arguments += ["--squash", "--ff", "--no-commit"]
-            } else {
-                arguments += [options.alwaysCreateCommit ? "--no-ff" : "--ff"]
-                arguments += [options.commit ? "--commit" : "--no-commit"]
-            }
-
-            arguments.append(
-                options.verifySignatures && !options.squash ? "--verify-signatures" : "--no-verify-signatures"
-            )
-
-            if options.skipHooks {
-                arguments.append("--no-verify")
-            }
-
-            _ = try await runner.execute(arguments + [target], onOutput: onOutput)
         }
+    }
+
+    /// 执行合并；冲突与其它失败一样抛出 Git 的错误，须在写事务中调用。
+    ///
+    /// 合并前再次读取工作区，避免对话框打开期间新增的改动被覆盖。
+    func performMerge(
+        _ revision: String,
+        options: MergeOptions,
+        onOutput: (@Sendable (GitOutputEvent) -> Void)?
+    ) async throws {
+        guard try await runner.status().entries.isEmpty else {
+            throw RepositorySyncError.dirtyWorkingCopy(rebase: false)
+        }
+
+        let target = try await RepositoryReferences(runner: runner).resolve(revision)
+        var arguments = ["-c", "merge.autoStash=false", "merge", "--no-edit", "--no-autostash"]
+
+        // 压缩合并留下暂存区，普通合并明确指定快进与提交策略。
+        if options.squash {
+            arguments += ["--squash", "--ff", "--no-commit"]
+        } else {
+            arguments += [options.alwaysCreateCommit ? "--no-ff" : "--ff"]
+            arguments += [options.commit ? "--commit" : "--no-commit"]
+        }
+
+        arguments.append(
+            options.verifySignatures && !options.squash ? "--verify-signatures" : "--no-verify-signatures"
+        )
+
+        if options.skipHooks {
+            arguments.append("--no-verify")
+        }
+
+        _ = try await runner.execute(arguments + [target], onOutput: onOutput)
     }
 }
 
@@ -500,5 +535,17 @@ extension RepositorySync {
             ],
             onOutput: onOutput
         )
+    }
+
+    /// 合并是否停在待解决的冲突上：Git 留下了合并状态（压缩合并是 SQUASH_MSG），且有未合并的文件；须在写事务中调用。
+    private func stoppedOnConflicts(squash: Bool) async throws -> Bool {
+        let name = squash ? "SQUASH_MSG" : "MERGE_HEAD"
+        let state = try await WorkingCopyOperations(runner: runner).stateFiles([name])
+
+        guard state[name] != nil else {
+            return false
+        }
+
+        return try await runner.status().entries.contains { $0.kind == .conflicted }
     }
 }
