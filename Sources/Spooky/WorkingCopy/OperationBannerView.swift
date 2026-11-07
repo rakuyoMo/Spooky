@@ -19,8 +19,11 @@ struct OperationBannerView: View {
     }
 
     /// 当前仓库会话。
-    @Bindable
-    var session: RepositorySession
+    let session: RepositorySession
+
+    /// 是否只显示冲突文件，全局偏好。
+    @AppStorage(WorkingCopyPreferences.showOnlyConflicts)
+    private var onlyConflicts = false
 
     /// 只在有进行中的操作时显示；左、右、上留 12 pt，下方接提交区时不留，提交区隐藏时留 12 pt。
     var body: some View {
@@ -168,9 +171,10 @@ extension OperationBannerView {
     /// 只看冲突文件的勾选框，以及中止、结束编辑和跳过。
     private func actionRow(_ progress: OperationProgress) -> some View {
         HStack(spacing: 8) {
-            Toggle(AppLocalization.text("working.onlyConflicts"), isOn: $session.onlyConflicts)
+            // 全部解决后仍可切换，直到操作结束
+            Toggle(AppLocalization.text("working.onlyConflicts"), isOn: $onlyConflicts)
                 .toggleStyle(.checkbox)
-                .disabled(session.conflictCount == 0)
+                .disabled(session.conflictPaths == nil)
 
             Spacer(minLength: 0)
 

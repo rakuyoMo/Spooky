@@ -88,6 +88,9 @@ enum WorkingCopyPreferences {
     /// 是否显示被忽略的文件。
     static let showIgnored = "workingCopyShowIgnored"
 
+    /// 进行中的操作有冲突时是否只显示冲突文件；默认关，操作结束后保留。
+    static let showOnlyConflicts = "workingCopyShowOnlyConflicts"
+
     /// 是否显示 assume-unchanged 文件。
     static let showAssumeUnchanged = "workingCopyShowAssumeUnchanged"
 
@@ -152,8 +155,8 @@ struct WorkingCopyListing: Equatable {
     /// 是否显示 assume-unchanged 文件。
     var showsAssumeUnchanged = false
 
-    /// 是否只显示冲突文件。
-    var onlyConflicts = false
+    /// 只看冲突时保留的文件路径；为 nil 时不按冲突过滤。
+    var conflictPaths: Set<String>? = nil
 
     /// 工具栏搜索框的内容，按路径或文件名过滤。
     var filter = ""
@@ -166,12 +169,22 @@ struct WorkingCopyListing: Equatable {
     }
 
     /// 列表条目：状态里的改动在前，按选项补出的被忽略、未改动与 assume-unchanged 文件在后，再按搜索过滤。
+    ///
+    /// 只看冲突时只列冲突文件，解决后与 HEAD 相同、已不在状态里的文件补成未改动的条目，不补其它文件。
     func entries(status: [StatusEntry], files: WorkingTreeFileListing) -> [StatusEntry] {
-        var entries = status.filter { !onlyConflicts || $0.kind == .conflicted }
+        var entries: [StatusEntry]
 
-        // 只看冲突时不补其它文件
-        if !onlyConflicts {
-            entries += supplementaryEntries(status: status, files: files)
+        if let conflictPaths {
+            entries = status.filter { conflictPaths.contains($0.path) }
+
+            let listed = Set(entries.map(\.path))
+
+            entries += conflictPaths
+                .subtracting(listed)
+                .sorted()
+                .map { StatusEntry(kind: .unchanged, path: $0) }
+        } else {
+            entries = status + supplementaryEntries(status: status, files: files)
         }
 
         #warning("TODO: 核实搜索过滤后全部暂存、丢弃全部等动作是否只作用于可见的文件，目前作用于整个工作区；只影响过滤状态下的全部动作")

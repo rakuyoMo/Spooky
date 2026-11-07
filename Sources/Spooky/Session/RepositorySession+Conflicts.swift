@@ -10,6 +10,20 @@ extension RepositorySession {
         return context?.progress?.resolvedPaths.subtracting(conflicted).count ?? 0
     }
 
+    /// 只看冲突时列表保留的文件：当前未解决的冲突与这次操作已经解决的冲突。
+    ///
+    /// 没有进行中的操作，或这次操作从没有出现过冲突时为 nil：横幅里的开关不可用，列表也不按它过滤。
+    var conflictPaths: Set<String>? {
+        guard let progress = context?.progress else {
+            return nil
+        }
+
+        let unresolved = status?.entries.filter { $0.kind == .conflicted }.map(\.path) ?? []
+        let paths = progress.resolvedPaths.union(unresolved)
+
+        return paths.isEmpty ? nil : paths
+    }
+
     /// 我方的显示名：变基时是被变基到的提交，其余是当前 HEAD。
     var oursName: String {
         displayName(of: context?.progress?.ours ?? status?.branch.oid)

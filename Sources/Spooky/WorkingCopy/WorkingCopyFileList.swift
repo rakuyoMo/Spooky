@@ -18,6 +18,10 @@ struct WorkingCopyFileList: NSViewRepresentable {
     @AppStorage(WorkingCopyPreferences.showAssumeUnchanged)
     private var showsAssumeUnchanged = false
 
+    /// 是否只显示冲突文件，全局偏好。
+    @AppStorage(WorkingCopyPreferences.showOnlyConflicts)
+    private var onlyConflicts = false
+
     /// 文件名的字号档位。
     @AppStorage(WorkingCopyPreferences.fontSize)
     private var fontSize = WorkingCopyPreferences.FontSize.regular
@@ -83,7 +87,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
             mode: session.listMode,
             showsIgnored: showsIgnored,
             showsAssumeUnchanged: showsAssumeUnchanged,
-            onlyConflicts: session.onlyConflicts,
+            conflictPaths: onlyConflicts ? session.conflictPaths : nil,
             filter: session.searchText
         )
 

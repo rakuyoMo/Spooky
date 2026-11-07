@@ -124,9 +124,6 @@ final class RepositorySession {
     /// 列表多选使用的稳定标识。
     var selectedIDs: Set<StatusRowID> = []
 
-    /// 横幅的冲突过滤选项。
-    var onlyConflicts = false
-
     /// 主菜单请求聚焦提交标题。
     var commitFocusRequest = 0
 
@@ -537,7 +534,6 @@ extension RepositorySession {
         originalDraft = nil
         endCommitProgress()
         collapsesCommitBody = false
-        onlyConflicts = false
         isEditingCommitMessage = false
         resetCommitConfiguration()
         pollingTask?.cancel()
@@ -776,7 +772,6 @@ extension RepositorySession {
         fileHistory.update(head: status.branch.oid, records: records)
         fileContent.update(head: status.branch.oid, records: records)
 
-        if !status.entries.contains(where: { $0.kind == .conflicted }) { onlyConflicts = false }
         stagingOverrides = [:]
 
         // 暂存会把未跟踪项变为已跟踪项；同路径优先延续选择，双记录仍优先匹配类别。

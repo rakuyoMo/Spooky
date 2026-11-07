@@ -160,6 +160,69 @@ extension RepositorySessionTests {
         #expect(session.isWorkingCopyClean)
         #expect(!session.showsCommitArea && !session.offersSkip)
     }
+
+    /// 只看冲突是全局偏好：另一个会话读到同一个开关；全部解决后仍然可用并保留已解决的文件，操作结束后偏好保留但不再过滤。
+    @Test("只看冲突：全局偏好、解决后保留与操作结束")
+    func onlyConflictsPreference() async throws {
+        let key = WorkingCopyPreferences.showOnlyConflicts
+        let saved = UserDefaults.standard.object(forKey: key)
+        defer { UserDefaults.standard.set(saved, forKey: key) }
+
+        UserDefaults.standard.set(true, forKey: key)
+
+        let (session, directory, runner) = try await openOperationRepository()
+        defer { closeOperationRepository(session, directory) }
+
+        try await commitFiles(["x": "base", "y": "base"], message: "base", in: directory, runner: runner)
+        _ = try await runner.run(["checkout", "-q", "-b", "side"])
+        try await commitFiles(["x": "side", "y": "side"], message: "side", in: directory, runner: runner)
+        _ = try await runner.run(["checkout", "-q", "main"])
+        try await commitFiles(["x": "main", "y": "main"], message: "main", in: directory, runner: runner)
+
+        _ = try await runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
+        try Data("note".utf8).write(to: directory.appending(path: "note.txt"))
+        try await reload(session) { session.conflictCount == 2 && session.context?.progress != nil }
+
+        /// 会话当前列出的条目。
+        func listed(_ session: RepositorySession) -> [StatusEntry] {
+            session.listing.entries(
+                status: session.status?.entries ?? [],
+                files: session.workingTreeFiles
+            )
+        }
+
+        #expect(session.conflictPaths == ["x", "y"])
+        #expect(listed(session).map(\.path) == ["x", "y"])
+
+        // x 采用对方后仍有改动，y 采用我方后与 HEAD 相同、不在状态里
+        let entries = session.status?.entries ?? []
+        session.resolve(entries.filter { $0.path == "x" }, theirs: true)
+        await session.writeTask?.value
+        session.resolve(entries.filter { $0.path == "y" }, theirs: false)
+        await session.writeTask?.value
+        try await reload(session) { session.conflictCount == 0 && session.resolvedConflictCount == 2 }
+
+        #expect(session.conflictPaths == ["x", "y"])
+        #expect(listed(session).map(\.path) == ["x", "y"])
+        #expect(listed(session).map(\.kind) == [.tracked, .unchanged])
+
+        // 另一个会话打开同一仓库，按同一个偏好过滤
+        let location = RepositoryLocation.local(path: directory.path)
+        let other = RepositorySession(makeRunner: { _ in runner })
+        defer { other.close() }
+
+        other.display(location)
+        try await reload(other) { other.conflictPaths != nil }
+        #expect(listed(other).map(\.path) == ["x", "y"])
+
+        // 合并提交后操作结束，偏好保留，列表恢复成普通的改动
+        _ = try await runner.run(["commit", "-q", "--no-edit"])
+        try await reload(session) { session.context != nil && session.context?.progress == nil }
+
+        #expect(UserDefaults.standard.bool(forKey: key))
+        #expect(session.conflictPaths == nil)
+        #expect(listed(session).map(\.path) == ["note.txt"])
+    }
 }
 
 // MARK: - Helpers
