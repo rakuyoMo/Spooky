@@ -801,7 +801,7 @@
 "commit.amendHelp" = "최근 커밋 수정";
 "commit.continueHelp" = "진행 중인 작업 계속";
 "commit.remaining" = "%ld자 남음";
-"commit.quickAmendHint" = "메시지 입력란에 포커스가 없을 때 ⌥를 누르고 있으면 최근 커밋을 빠르게 수정합니다.";
+"commit.quickAmendHint" = "• 메시지 입력란에 포커스가 없을 때 ⌥를 누르고 있으면 최근 커밋을 빠르게 수정합니다.";
 "commit.pin" = "설명 펼친 상태 유지";
 "commit.reformatParagraph" = "단락 다시 정렬";
 "commit.comments" = "커밋 메시지에서 주석을 제거하겠습니까?";

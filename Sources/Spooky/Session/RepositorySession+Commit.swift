@@ -53,6 +53,56 @@ extension RepositorySession {
         }
     }
 
+    /// 提交命令已经开始：过了 `commitProgressDelay` 仍未结束才显示转圈；写操作结束时不论成败都结束提交状态。
+    func beginCommitProgress() {
+        let write = writeTask
+        let delay = commitProgressDelay
+        isCommitting = true
+
+        let progress = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+
+            guard !Task.isCancelled else { return }
+
+            self?.showsCommitProgress = true
+        }
+
+        commitProgressTask = progress
+
+        // 失败与取消没有成功回调，等写操作结束后收起；这期间已经开始的下一次提交不受影响
+        Task { [weak self] in
+            await write?.value
+
+            guard let self, commitProgressTask == progress else { return }
+
+            endCommitProgress()
+        }
+    }
+
+    /// 结束提交中状态并停止转圈；还没到显示转圈的时间就结束的提交不会再显示。
+    func endCommitProgress() {
+        commitProgressTask?.cancel()
+        commitProgressTask = nil
+        isCommitting = false
+        showsCommitProgress = false
+    }
+
+    /// 提交成功：立即停止转圈、收起正文并把焦点交给文件列表；过了 `commitResetDelay` 再清空信息，其间提交区保持锁定。
+    func finishSuccessfulCommit() {
+        endCommitProgress()
+        collapsesCommitBody = true
+        fileListFocusRequest += 1
+
+        let delay = commitResetDelay
+        commitResetTask = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+
+            guard !Task.isCancelled else { return }
+
+            self?.clearCommittedMessage()
+        }
+    }
+
     /// 切换或关闭仓库时清空提交配置与只对本仓库有效的提交选项。
     func resetCommitConfiguration() {
         configurationTask?.cancel()

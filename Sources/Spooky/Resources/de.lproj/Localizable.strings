@@ -801,7 +801,7 @@
 "commit.amendHelp" = "Letzten Commit ändern";
 "commit.continueHelp" = "Laufenden Vorgang fortsetzen";
 "commit.remaining" = "Noch %ld Zeichen";
-"commit.quickAmendHint" = "Halten Sie ⌥ gedrückt, während kein Nachrichtenfeld aktiv ist, um den letzten Commit schnell zu ändern.";
+"commit.quickAmendHint" = "• Halten Sie ⌥ gedrückt, während kein Nachrichtenfeld aktiv ist, um den letzten Commit schnell zu ändern.";
 "commit.pin" = "Beschreibung ausgeklappt lassen";
 "commit.reformatParagraph" = "Absatz neu umbrechen";
 "commit.comments" = "Kommentare aus der Commit-Nachricht entfernen?";

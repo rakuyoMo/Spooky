@@ -77,7 +77,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
         return scroll
     }
 
-    /// 数据或显示选项变化才重建树，普通选区变化不打断键盘焦点。
+    /// 数据或显示选项变化才重建树，普通选区变化不打断键盘焦点；提交成功后列表接过焦点。
     func updateNSView(_: NSScrollView, context: Context) {
         let listing = WorkingCopyListing(
             mode: session.listMode,
@@ -87,7 +87,17 @@ struct WorkingCopyFileList: NSViewRepresentable {
             filter: session.searchText
         )
 
-        context.coordinator.update(listing: listing, style: Style(fontSize: fontSize, truncation: truncation))
+        let coordinator = context.coordinator
+        coordinator.update(listing: listing, style: Style(fontSize: fontSize, truncation: truncation))
+
+        // 焦点等这一轮更新结束再交，信息框的失焦回调不在视图更新中途改状态
+        if coordinator.focusRequest != session.fileListFocusRequest {
+            coordinator.focusRequest = session.fileListFocusRequest
+
+            DispatchQueue.main.async { [weak outline = coordinator.outline] in
+                outline?.window?.makeFirstResponder(outline)
+            }
+        }
     }
 }
 
@@ -230,6 +240,9 @@ extension WorkingCopyFileList {
         /// 本列表的 Quick Look 面板数据源。
         let quickLook: WorkingCopyQuickLook
 
+        /// 已处理的焦点请求。
+        var focusRequest: Int
+
         /// 右键菜单作用的条目。
         var menuEntries: [StatusEntry] = []
 
@@ -242,9 +255,10 @@ extension WorkingCopyFileList {
         /// 恢复选区期间不回写会话。
         private var updating = false
 
-        /// 初始化原生事件桥接。
+        /// 初始化原生事件桥接；创建前的焦点请求视为已处理，列表出现时不抢焦点。
         init(session: RepositorySession) {
             self.session = session
+            focusRequest = session.fileListFocusRequest
             quickLook = WorkingCopyQuickLook(session: session)
         }
 

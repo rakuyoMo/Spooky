@@ -801,7 +801,7 @@
 "commit.amendHelp" = "Enmendar el último commit";
 "commit.continueHelp" = "Continuar la operación en curso";
 "commit.remaining" = "Quedan %ld caracteres";
-"commit.quickAmendHint" = "Mantener pulsada ⌥ cuando ningún campo del mensaje está activo para enmendar rápidamente el último commit.";
+"commit.quickAmendHint" = "• Mantener pulsada ⌥ cuando ningún campo del mensaje está activo para enmendar rápidamente el último commit.";
 "commit.pin" = "Mantener la descripción desplegada";
 "commit.reformatParagraph" = "Reajustar párrafo";
 "commit.comments" = "¿Eliminar los comentarios del mensaje de commit?";

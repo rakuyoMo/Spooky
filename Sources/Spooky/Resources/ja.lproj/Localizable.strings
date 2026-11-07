@@ -801,7 +801,7 @@
 "commit.amendHelp" = "直前のコミットを修正";
 "commit.continueHelp" = "進行中の操作を続行";
 "commit.remaining" = "残り %ld 文字";
-"commit.quickAmendHint" = "メッセージ欄にフォーカスがないときに ⌥ を押したままにすると、直前のコミットをすばやく修正できます。";
+"commit.quickAmendHint" = "• メッセージ欄にフォーカスがないときに ⌥ を押したままにすると、直前のコミットをすばやく修正できます。";
 "commit.pin" = "説明を展開したままにする";
 "commit.reformatParagraph" = "段落を整形";
 "commit.comments" = "コミットメッセージからコメントを削除しますか？";

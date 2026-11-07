@@ -269,7 +269,7 @@
 "working.commit" = "Commit";
 "working.amend" = "Amend";
 "working.subject" = "Commit Subject";
-"working.body" = "Detailed Description";
+"working.body" = "Detailed description";
 "working.staging" = "Staging status: %@";
 "working.list" = "View As List";
 "working.tree" = "View As Tree";
@@ -801,7 +801,7 @@
 "commit.amendHelp" = "Amend the last commit";
 "commit.continueHelp" = "Continue the operation in progress";
 "commit.remaining" = "%ld characters remaining";
-"commit.quickAmendHint" = "Hold ⌥ while no message field is focused to amend the last commit quickly.";
+"commit.quickAmendHint" = "• Hold ⌥ while no message field is focused to amend the last commit quickly.";
 "commit.pin" = "Keep Description Expanded";
 "commit.reformatParagraph" = "Reformat Paragraph";
 "commit.comments" = "Remove comments from the commit message?";

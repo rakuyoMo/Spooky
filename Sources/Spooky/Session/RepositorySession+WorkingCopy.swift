@@ -181,7 +181,8 @@ extension RepositorySession {
         let request = generation
         let action: () -> Void = { [weak self] in
             guard let self, generation == request else { return }
-            performGit(
+
+            let started = performGit(
                 { runner, _ in
                     try await WorkingCopyOperations(runner: runner)
                         .commit(
@@ -196,17 +197,12 @@ extension RepositorySession {
                 recordsActivity: false,
                 undo: .reversible
             ) { [weak self] in
-                guard let self else { return }
+                self?.finishSuccessfulCommit()
+            }
 
-                // 提交成功后过了 commitResetDelay 才清空信息，其间提交区保持锁定，不会接受新的输入。
-                let delay = commitResetDelay
-                commitResetTask = Task { [weak self] in
-                    try? await Task.sleep(for: delay)
-
-                    guard !Task.isCancelled else { return }
-
-                    self?.clearCommittedMessage()
-                }
+            // 只有真正开始的提交才进入提交中状态；仓库不可写时什么也不变
+            if started {
+                beginCommitProgress()
             }
         }
 

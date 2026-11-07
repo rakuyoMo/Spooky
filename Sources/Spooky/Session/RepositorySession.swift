@@ -148,6 +148,25 @@ final class RepositorySession {
     /// 提交成功后保留提交信息的时长；测试把它改长，在写操作收尾时稳定地看到等待中的状态。
     var commitResetDelay = Duration.milliseconds(300)
 
+    /// 提交命令开始到它成功、失败或取消之间为真；只由提交置位，暂存、丢弃等其它写操作不影响。
+    var isCommitting = false
+
+    /// 提交超过 `commitProgressDelay` 仍未结束时为真，提交区据此在按钮旁转圈。
+    var showsCommitProgress = false
+
+    /// 提交开始后多久才显示转圈，提前结束的提交不会闪现；测试把它改短或改长，稳定地看到两种状态。
+    var commitProgressDelay = Duration.seconds(1)
+
+    /// 等待显示转圈的任务；只属于正在进行的这次提交。
+    @ObservationIgnored
+    var commitProgressTask: Task<Void, Never>? = nil
+
+    /// 提交成功后收起正文区，钉住时也收起；信息框再次获得焦点时取消。
+    var collapsesCommitBody = false
+
+    /// 提交成功后请求工作区文件列表成为第一响应者。
+    var fileListFocusRequest = 0
+
     /// 窗口询问注释行的处理方式；参数为去掉注释后信息是否为空，用户取消时不回调。
     var onCommentPrompt: ((Bool, @escaping (CommentHandling) -> Void) -> Void)? = nil
 
@@ -516,6 +535,8 @@ extension RepositorySession {
         commitBody = ""
         amend = false
         originalDraft = nil
+        endCommitProgress()
+        collapsesCommitBody = false
         onlyConflicts = false
         isEditingCommitMessage = false
         resetCommitConfiguration()

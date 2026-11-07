@@ -801,7 +801,7 @@
 "commit.amendHelp" = "修補最近一次提交";
 "commit.continueHelp" = "繼續進行中的操作";
 "commit.remaining" = "還可輸入 %ld 個字";
-"commit.quickAmendHint" = "焦點不在訊息欄時按住 ⌥ 可快速修補最近一次提交。";
+"commit.quickAmendHint" = "• 焦點不在訊息欄時按住 ⌥ 可快速修補最近一次提交。";
 "commit.pin" = "保持內文展開";
 "commit.reformatParagraph" = "重新排列段落";
 "commit.comments" = "要移除提交訊息中的註解嗎？";

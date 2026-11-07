@@ -801,7 +801,7 @@
 "commit.amendHelp" = "Corriger le dernier commit";
 "commit.continueHelp" = "Continuer l’opération en cours";
 "commit.remaining" = "%ld caractères restants";
-"commit.quickAmendHint" = "Maintenez ⌥ enfoncée lorsqu’aucun champ du message n’est actif pour corriger rapidement le dernier commit.";
+"commit.quickAmendHint" = "• Maintenez ⌥ enfoncée lorsqu’aucun champ du message n’est actif pour corriger rapidement le dernier commit.";
 "commit.pin" = "Garder la description déployée";
 "commit.reformatParagraph" = "Reformater le paragraphe";
 "commit.comments" = "Supprimer les commentaires du message de commit ?";
