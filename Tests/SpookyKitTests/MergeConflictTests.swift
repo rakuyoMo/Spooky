@@ -193,7 +193,7 @@ struct MergeConflictTests {
         #expect(try await runner.status().branch.oid == original)
     }
 
-    /// 摘取序列不记录已完成的步数，只数剩余的提交，当前一步是其中第 1 个；这一步解决后没有改动时，继续保留一个沿用原作者与信息的空提交。
+    /// 摘取序列不记录已完成的步数，只数剩余的提交，当前一步是其中第 1 个；这一步解决后没有改动时，确认保留的空提交沿用原作者。
     @Test("摘取序列：剩余提交数与空的一步继续")
     func cherryPickSequence() async throws {
         let repository = try TemporaryRepository()
@@ -219,7 +219,7 @@ struct MergeConflictTests {
 
         // 采用我方后这一步与 HEAD 相同
         try await service.resolve(try await runner.status().entries, theirs: false)
-        try await service.finish(.cherryPick, action: "continue")
+        try await service.continueSequence(.cherryPick, subject: "pick me", body: "", allowEmpty: true)
 
         #expect(try await service.context(head: try await runner.status().branch.oid).operation == nil)
 
@@ -258,7 +258,7 @@ struct MergeConflictTests {
         #expect(try await runner.status().entries.isEmpty)
     }
 
-    /// merge 后端的变基在空的一步上继续，同样保留空提交并完成后面的步骤。
+    /// merge 后端的变基在空的一步上确认保留，空提交沿用原作者并完成后面的步骤。
     @Test("变基的空的一步继续时保留空提交")
     func emptyRebaseStep() async throws {
         let repository = try TemporaryRepository()
@@ -279,7 +279,7 @@ struct MergeConflictTests {
 
         // 变基时我方是 main，采用它之后这一步没有改动
         try await service.resolve(try await runner.status().entries, theirs: false)
-        try await service.finish(.rebase, action: "continue")
+        try await service.continueSequence(.rebase, subject: "conflicting", body: "", allowEmpty: true)
 
         #expect(try await service.context(head: try await runner.status().branch.oid).operation == nil)
 

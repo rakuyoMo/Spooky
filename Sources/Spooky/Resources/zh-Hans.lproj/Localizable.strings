@@ -339,8 +339,13 @@
 "working.error.selection" = "未选择可应用的文本改动。";
 "working.error.file" = "此操作需要普通文件。";
 "working.error.path" = "此路径无法通过 SFTP 批处理表示。";
-"working.emptyMerge" = "创建空合并提交";
-"working.emptyMerge.message" = "本次合并没有暂存改动。可创建合并提交，或中止合并。";
+"commit.empty.title" = "要创建空提交吗？";
+"commit.empty.message" = "没有可提交的改动。可以创建空提交，或中止当前操作。";
+"commit.empty.sequenceMessage" = "这一步没有改动。可以保留为空提交并继续，或跳过这一步。";
+"commit.empty.use" = "使用空提交";
+"commit.empty.abort" = "中止合并";
+"commit.empty.skip" = "跳过提交";
+"commit.empty.doNotShowAgain" = "不再显示此警告";
 
 /* 历史、分支、同步与活动。 */
 "history.all" = "全部分支、远端和标签";

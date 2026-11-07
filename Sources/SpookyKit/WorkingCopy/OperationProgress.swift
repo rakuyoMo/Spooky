@@ -214,59 +214,6 @@ extension WorkingCopyOperations {
             content[path].map { (name, String(decoding: $0, as: UTF8.self)) }
         })
     }
-
-    /// 序列的这一步没有可提交的改动时，提交一个保留原信息的空提交再接着处理后面的步骤；须在写事务中执行。
-    ///
-    /// - Returns: 是否已经处理；这一步有改动时返回 false，交给 Git 自己的继续命令。
-    func commitEmptyStep(of operation: RepositoryOperationState) async throws -> Bool {
-        guard [.rebase, .cherryPick, .revert].contains(operation) else {
-            return false
-        }
-
-        // 暂存区与 HEAD 相同，这一步就没有可提交的改动
-        let changes = try await runner.execute(["diff", "--cached", "--quiet", "HEAD", "--"], acceptedExitCodes: [0, 1])
-
-        guard changes.exitCode == 0 else {
-            return false
-        }
-
-        let files = try await stateFiles([
-            "rebase-merge/stopped-sha", "rebase-merge/amend", "rebase-apply/original-commit", "sequencer/todo",
-        ])
-
-        // 停在 edit 上时暂存区与 HEAD 相同是常态，继续就是让 Git 接着处理后面的指令
-        guard files["rebase-merge/amend"] == nil else {
-            return false
-        }
-        let commit = [
-            "-c", "i18n.commitencoding=UTF-8", "-c", "commit.verbose=false",
-            "commit", "--allow-empty", "--no-verify", "-q",
-        ]
-        let editor = ["-c", "core.editor=:", "-c", "core.trustctime=false"]
-
-        if operation == .rebase {
-            // 停下的提交提供原作者与信息；apply 后端提交后要跳过这一步，merge 后端直接继续
-            let applying = files["rebase-apply/original-commit"]?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let stopped = files["rebase-merge/stopped-sha"]?.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            guard let current = stopped ?? applying, GitObjectID.isValid(current) else {
-                return false
-            }
-
-            _ = try await runner.run(commit + ["-C", current])
-            _ = try await runner.run(editor + ["rebase", applying == nil ? "--continue" : "--skip"])
-            return true
-        }
-
-        // 摘取与反转沿用 Git 准备的 MERGE_MSG 并去掉注释行，摘取保留原作者；单个提交的操作到此结束
-        _ = try await runner.run(commit + ["--no-edit", "--cleanup=strip"])
-
-        if files["sequencer/todo"] != nil {
-            _ = try await runner.run(editor + [operation == .revert ? "revert" : "cherry-pick", "--continue"])
-        }
-
-        return true
-    }
 }
 
 // MARK: - Private

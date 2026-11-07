@@ -339,8 +339,13 @@
 "working.error.selection" = "적용 가능한 텍스트 변경이 선택되지 않았습니다.";
 "working.error.file" = "이 작업에는 일반 파일이 필요합니다.";
 "working.error.path" = "이 경로는 SFTP 배치 명령으로 표현할 수 없습니다.";
-"working.emptyMerge" = "빈 병합 커밋 만들기";
-"working.emptyMerge.message" = "이 병합에는 스테이지된 변경이 없습니다. 병합 커밋을 만들거나 병합을 중단하세요.";
+"commit.empty.title" = "빈 커밋을 만드시겠습니까?";
+"commit.empty.message" = "커밋할 변경 사항이 없습니다. 빈 커밋을 만들거나 현재 작업을 중단하세요.";
+"commit.empty.sequenceMessage" = "이 단계에는 변경 사항이 없습니다. 빈 커밋으로 유지하고 계속하거나 이 단계를 건너뛰세요.";
+"commit.empty.use" = "빈 커밋 사용";
+"commit.empty.abort" = "병합 중단";
+"commit.empty.skip" = "커밋 건너뛰기";
+"commit.empty.doNotShowAgain" = "이 경고를 다시 표시하지 않음";
 
 /* 历史、分支、同步与活动。 */
 "history.all" = "모든 브랜치, 원격 및 태그";

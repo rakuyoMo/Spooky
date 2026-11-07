@@ -170,8 +170,8 @@ final class RepositorySession {
     /// 窗口以确认版对话框请用户确认，对话框关闭后才执行操作；带 “Do not ask me again” 时勾选并确认由窗口关掉这项确认。
     var onConfirm: ((ConfirmationRequest) -> Void)? = nil
 
-    /// 合并没有暂存的改动时，窗口询问是建空合并提交还是中止合并；参数依次是提交与中止的动作。
-    var onEmptyMergePrompt: ((@escaping () -> Void, @escaping () -> Void) -> Void)? = nil
+    /// 进行中的操作没有任何改动时，窗口确认是否保留空提交。
+    var onEmptyCommitPrompt: ((EmptyCommitRequest) -> Void)? = nil
 
     /// 窗口在重连核对完成后向用户报告中断写入的结果；没有新的核对时表示写入没有开始。
     var onRecovery: ((InterruptedWrite, RemoteRecoverySnapshot?) -> Void)? = nil

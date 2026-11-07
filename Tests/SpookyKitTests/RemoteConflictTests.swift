@@ -205,4 +205,82 @@ struct RemoteConflictTests {
             throw error
         }
     }
+
+    /// B 上解决后没有任何改动的单个摘取与序列步骤：保留空提交、中止与跳过的结果都在 B 上完成。
+    @Test("服务器上空提交的保留、中止与跳过", .timeLimit(.minutes(3)))
+    func emptyCommits() async throws {
+        let fixture = try await RemoteFixture.create()
+        let remote = fixture.connection()
+
+        do {
+            let location = try await remote.open().location
+            let runner = GitRunner(location: location, remote: remote)
+            let service = WorkingCopyOperations(runner: runner)
+            let files = RepositoryFiles(runner: runner)
+
+            /// 在 B 上写入一个文件并提交全部改动。
+            func commit(_ name: String, _ content: String, message: String) async throws {
+                try await files.write(Data((content + "\n").utf8), to: fixture.repository + "/" + name)
+                _ = try await runner.run(["add", "-A"])
+                _ = try await runner.run(["commit", "-q", "-m", message])
+            }
+
+            /// 摘取给定的提交，第一个冲突后采用我方，停在没有任何改动的一步上。
+            func stopEmpty(_ revisions: [String]) async throws {
+                _ = try await runner.execute(["cherry-pick"] + revisions, acceptedExitCodes: [1])
+                try await service.resolve(try await runner.status().entries, theirs: false)
+            }
+
+            /// main 原来的提交之后的标题，从新到旧。
+            func subjects(after base: String) async throws -> String {
+                String(decoding: try await runner.run(["log", "--format=%s", "\(base)..HEAD"]), as: UTF8.self)
+            }
+
+            try await commit("x", "base", message: "base")
+            _ = try await runner.run(["checkout", "-q", "-b", "picked"])
+            try await commit("x", "one", message: "one")
+            try await commit("y", "two", message: "two")
+            _ = try await runner.run(["checkout", "-q", "main"])
+            try await commit("x", "main", message: "main")
+
+            let base = try await runner.status().branch.oid ?? ""
+
+            // 单个摘取：保留空提交，标题用编辑后的信息
+            try await stopEmpty(["picked~1"])
+            try await service.commit(subject: "空提交", body: "", allowEmpty: true)
+
+            #expect(try await subjects(after: base) == "空提交\n")
+
+            // 单个摘取：中止后回到原来的提交
+            _ = try await runner.run(["reset", "-q", "--hard", base])
+            try await stopEmpty(["picked~1"])
+            try await service.finish(.cherryPick, action: "abort")
+
+            #expect(try await runner.status().branch.oid == base)
+
+            // 序列：保留这一步再继续，或跳过这一步，后面的提交都照常摘取
+            try await stopEmpty(["picked~1", "picked"])
+            try await service.continueSequence(.cherryPick, subject: "空步骤", body: "", allowEmpty: true)
+
+            #expect(try await subjects(after: base) == "two\n空步骤\n")
+
+            _ = try await runner.run(["reset", "-q", "--hard", base])
+            try await stopEmpty(["picked~1", "picked"])
+            try await service.finish(.cherryPick, action: "skip")
+
+            #expect(try await subjects(after: base) == "two\n")
+            #expect(try await service.context(head: try await runner.status().branch.oid).operation == nil)
+
+            await remote.close()
+            try await fixture.remove()
+        } catch {
+            if let git = error as? GitError {
+                Issue.record(Comment(rawValue: git.message))
+            }
+
+            await remote.close()
+            try await fixture.remove()
+            throw error
+        }
+    }
 }

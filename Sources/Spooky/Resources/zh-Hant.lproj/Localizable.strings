@@ -339,8 +339,13 @@
 "working.error.selection" = "未選取可套用的文字變更。";
 "working.error.file" = "此操作需要一般檔案。";
 "working.error.path" = "此路徑無法透過 SFTP 批次指令表示。";
-"working.emptyMerge" = "建立空合併提交";
-"working.emptyMerge.message" = "本次合併沒有暫存變更。可建立合併提交，或中止合併。";
+"commit.empty.title" = "要建立空提交嗎？";
+"commit.empty.message" = "沒有可提交的變更。可以建立空提交，或中止目前的操作。";
+"commit.empty.sequenceMessage" = "這一步沒有變更。可以保留為空提交並繼續，或略過這一步。";
+"commit.empty.use" = "使用空提交";
+"commit.empty.abort" = "中止合併";
+"commit.empty.skip" = "略過提交";
+"commit.empty.doNotShowAgain" = "不再顯示此警告";
 
 /* 历史、分支、同步与活动。 */
 "history.all" = "所有分支、遠端與標籤";

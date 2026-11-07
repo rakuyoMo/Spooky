@@ -311,7 +311,7 @@ extension RepositorySessionTests {
     /// 在临时目录新建仓库并打开会话。
     ///
     /// - Returns: 会话、仓库目录与操作仓库的执行器。
-    private func openOperationRepository() async throws -> (RepositorySession, URL, GitRunner) {
+    func openOperationRepository() async throws -> (RepositorySession, URL, GitRunner) {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "spooky-operation-" + UUID().uuidString)
 
@@ -325,13 +325,13 @@ extension RepositorySessionTests {
     }
 
     /// 关闭会话并删除临时仓库。
-    private func closeOperationRepository(_ session: RepositorySession, _ directory: URL) {
+    func closeOperationRepository(_ session: RepositorySession, _ directory: URL) {
         session.close()
         try? FileManager.default.removeItem(at: directory)
     }
 
     /// 写入文件后提交全部改动；内容末尾补一个换行。
-    private func commitFiles(
+    func commitFiles(
         _ files: [String: String],
         message: String,
         in directory: URL,
@@ -346,14 +346,14 @@ extension RepositorySessionTests {
     }
 
     /// 在外部改动仓库后刷新会话，等到读到的状态满足条件。
-    private func reload(_ session: RepositorySession, until condition: () -> Bool) async throws {
+    func reload(_ session: RepositorySession, until condition: () -> Bool) async throws {
         session.refresh(full: true)
         await session.waitForRefresh()
         try await waitUntil(condition)
     }
 
     /// 经会话把全部冲突采用同一侧解决，等到冲突清空。
-    private func resolveAll(_ session: RepositorySession, theirs: Bool) async throws {
+    func resolveAll(_ session: RepositorySession, theirs: Bool) async throws {
         session.resolve(session.status?.entries.filter { $0.kind == .conflicted } ?? [], theirs: theirs)
         await session.writeTask?.value
         try await waitUntil { session.conflictCount == 0 && session.context?.progress != nil }

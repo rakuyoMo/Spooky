@@ -27,28 +27,10 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 合并没有暂存的改动时询问建空合并提交还是中止合并：系统提示框，两个按钮都会执行动作。
-    ///
-    /// - Parameters:
-    ///   - commit: 建空合并提交，sheet 已经结束。
-    ///   - abort: 中止合并，sheet 已经结束。
-    func showEmptyMergePrompt(commit: @escaping () -> Void, abort: @escaping () -> Void) {
-        guard let window, window.attachedSheet == nil else { return }
-
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = AppLocalization.text("working.emptyMerge")
-        alert.informativeText = AppLocalization.text("working.emptyMerge.message")
-        alert.addButton(withTitle: AppLocalization.text("working.emptyMerge"))
-        alert.addButton(withTitle: AppLocalization.text("working.abort"))
-
-        // Sheet 已结束后才开始写入，错误与进度由仓库视图承接
-        alert.beginSheetModal(for: window) { response in
-            if response == .alertFirstButtonReturn {
-                commit()
-            } else if response == .alertSecondButtonReturn {
-                abort()
-            }
+    /// 进行中的操作没有任何改动时确认是否保留空提交；窗口已有 sheet 时不叠加。
+    func showEmptyCommitPrompt(_ request: EmptyCommitRequest) {
+        presentDialog { close in
+            Self.emptyCommitDialog(request, close: close)
         }
     }
 
@@ -68,6 +50,44 @@ extension RepositoryWindowController {
 // MARK: - Notices
 
 extension RepositoryWindowController {
+    /// 空提交的确认：主按钮保留空提交，备选是中止当前操作或跳过这一步，内容区是不再提示的勾选框。
+    ///
+    /// 勾上不再提示时，无论选哪个按钮（包括 Cancel）都关掉这项警告；Cancel 不执行 Git。
+    ///
+    /// - Parameters:
+    ///   - request: 会话发来的确认请求。
+    ///   - close: 关闭对话框。
+    static func emptyCommitDialog(_ request: EmptyCommitRequest, close: @escaping () -> Void) -> ConfirmationDialog {
+        let remember: (_ checked: Bool) -> Void = { checked in
+            if checked {
+                UserDefaults.standard.set(false, forKey: WorkingCopyPreferences.warnsEmptyCommit)
+            }
+        }
+
+        let keys = request.isSequence
+            ? (message: "commit.empty.sequenceMessage", alternate: "commit.empty.skip")
+            : (message: "commit.empty.message", alternate: "commit.empty.abort")
+
+        return ConfirmationDialog(
+            title: AppLocalization.text("commit.empty.title"),
+            message: AppLocalization.text(keys.message),
+            submitTitle: AppLocalization.text("commit.empty.use"),
+            alternate: (
+                title: AppLocalization.text(keys.alternate),
+                action: { checked in
+                    remember(checked)
+                    request.alternate()
+                }
+            ),
+            checkbox: AppLocalization.text("commit.empty.doNotShowAgain"),
+            close: close,
+            cancel: remember
+        ) { checked in
+            remember(checked)
+            request.commit()
+        }
+    }
+
     /// 中断写入的恢复说明：骨架的提示版，只有 Close；说明是核对结果，空一行后写出仓库。
     ///
     /// - Parameters:

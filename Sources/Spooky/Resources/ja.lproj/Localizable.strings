@@ -339,8 +339,13 @@
 "working.error.selection" = "適用できるテキスト変更が選択されていません。";
 "working.error.file" = "この操作には通常のファイルが必要です。";
 "working.error.path" = "このパスは SFTP バッチコマンドで表現できません。";
-"working.emptyMerge" = "空のマージコミットを作成";
-"working.emptyMerge.message" = "このマージにはステージ済みの変更がありません。マージコミットを作成するか、マージを中止してください。";
+"commit.empty.title" = "空のコミットを作成しますか？";
+"commit.empty.message" = "コミットする変更がありません。空のコミットを作成するか、現在の操作を中止してください。";
+"commit.empty.sequenceMessage" = "このステップには変更がありません。空のコミットとして残して続行するか、このステップをスキップしてください。";
+"commit.empty.use" = "空のコミットを使用";
+"commit.empty.abort" = "マージを中止";
+"commit.empty.skip" = "コミットをスキップ";
+"commit.empty.doNotShowAgain" = "今後この警告を表示しない";
 
 /* 历史、分支、同步与活动。 */
 "history.all" = "すべてのブランチ・リモート・タグ";

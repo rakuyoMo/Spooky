@@ -11,26 +11,28 @@ extension WorkingCopyOperations {
     ///   - operation: 进行中的变基、摘取或反转。
     ///   - subject: 已按注释设置整理的标题。
     ///   - body: 已按注释设置整理的正文。
-    public func continueSequence(_ operation: RepositoryOperationState, subject: String, body: String) async throws {
+    ///   - allowEmpty: 这一步没有改动时保留为空提交，用于用户确认过的空步骤。
+    public func continueSequence(
+        _ operation: RepositoryOperationState,
+        subject: String,
+        body: String,
+        allowEmpty: Bool = false
+    ) async throws {
         guard [.rebase, .cherryPick, .revert].contains(operation) else {
             throw WorkingCopyError.invalidSelection
         }
 
         let message = Data(CommitMessage.text(subject: subject, body: body).utf8)
+        let commit = Self.sequenceCommit + (allowEmpty ? ["--allow-empty"] : [])
 
         try await runner.writeTransaction {
-            // 这一步没有可提交的改动时保留空提交再继续
-            if try await commitEmptyStep(of: operation) {
-                return
-            }
-
             if operation == .rebase {
-                try await continueRebase(message: message)
+                try await continueRebase(commit: commit, message: message)
                 return
             }
 
             // 摘取的作者由 Git 从 CHERRY_PICK_HEAD 取，反转的作者是当前身份；钩子照常运行，与 Git 自己继续时相同
-            _ = try await runner.run(Self.sequenceCommit + ["-F", "-"], input: message)
+            _ = try await runner.run(commit + ["-F", "-"], input: message)
 
             // 冲突在最后一步时，提交即结束序列、Git 删掉 sequencer，不能再继续
             guard try await stateFiles(["sequencer/todo"])["sequencer/todo"] != nil else {
@@ -55,13 +57,17 @@ extension WorkingCopyOperations {
     private static let continuing = ["-c", "core.editor=:", "-c", "core.trustctime=false"]
 
     /// 提交变基的这一步再继续；Git 自己继续变基时不跑提交钩子，这里同样跳过。
-    private func continueRebase(message: Data) async throws {
+    ///
+    /// - Parameters:
+    ///   - commit: 提交命令的前半段。
+    ///   - message: 送进标准输入的提交信息。
+    private func continueRebase(commit: [String], message: Data) async throws {
         let files = try await stateFiles(["rebase-merge/amend", "rebase-apply/head-name"])
 
         if files["rebase-merge/amend"] != nil {
             // squash / fixup 停下时改写正在合成的提交，作者随它保留。
             // 后面还有 squash / fixup 时，Git 继续时用自己在 message-squash 里累积的信息重建下一步，这里编辑的信息不会带过去，与命令行 Git 相同
-            _ = try await runner.run(Self.sequenceCommit + ["--amend", "--no-verify", "-F", "-"], input: message)
+            _ = try await runner.run(commit + ["--amend", "--no-verify", "-F", "-"], input: message)
         } else {
             // 冲突停下时没有 CHERRY_PICK_HEAD，作者与作者日期要从这一步的原提交取
             let author = try await runner.run([
@@ -81,7 +87,7 @@ extension WorkingCopyOperations {
                 "--date=@\(fields[2])",
             ]
 
-            _ = try await runner.run(Self.sequenceCommit + identity + ["-F", "-"], input: message)
+            _ = try await runner.run(commit + identity + ["-F", "-"], input: message)
         }
 
         // apply 后端自行提交后再 --continue 会报没有改动并停住，改为跳过这一步

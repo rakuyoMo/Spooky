@@ -91,6 +91,9 @@ enum WorkingCopyPreferences {
     /// 进行中的操作有冲突时是否只显示冲突文件；默认关，操作结束后保留。
     static let showOnlyConflicts = "workingCopyShowOnlyConflicts"
 
+    /// 进行中的操作没有任何改动时，提交或继续前是否确认空提交；默认开，关掉后直接保留空提交。
+    static let warnsEmptyCommit = "workingCopyWarnsEmptyCommit"
+
     /// 是否显示 assume-unchanged 文件。
     static let showAssumeUnchanged = "workingCopyShowAssumeUnchanged"
 

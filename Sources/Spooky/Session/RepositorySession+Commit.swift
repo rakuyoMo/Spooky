@@ -18,13 +18,14 @@ extension RepositorySession {
     /// 未解决冲突期间不允许提交或修补。
     var conflictCount: Int { status?.entries.filter { $0.kind == .conflicted }.count ?? 0 }
 
-    /// 有标题、有暂存改动或可修补的 HEAD 时允许提交；合并可产生空树差异。
+    /// 有标题、有暂存改动或可修补的 HEAD 时允许提交；合并可产生空树差异，进行中的操作没有任何改动时确认后建空提交。
     var canCommit: Bool {
         canWrite && commitResetTask == nil && conflictCount == 0
             && !commitSubject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && (
                 amend
                     || context?.operation == .merge
+                    || commitsEmpty
                     || (status?.entries.contains(where: \.hasStagedChanges) ?? false)
             )
     }

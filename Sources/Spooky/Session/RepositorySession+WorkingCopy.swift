@@ -173,7 +173,7 @@ extension RepositorySession {
         }
     }
 
-    /// 提交整理好的信息；合并没有暂存的改动时先确认建空合并提交。
+    /// 提交整理好的信息；进行中的操作没有任何改动时，按警告设置先确认建空提交还是中止。
     ///
     /// - Parameters:
     ///   - message: 已按注释设置整理的标题与正文。
@@ -191,7 +191,7 @@ extension RepositorySession {
         // 修补成功后回到的普通草稿：还在修补里时是进入修补前存下的，⌥ 快速修补已经退出时就是信息框里恢复的内容
         let draft = amend ? (originalDraft ?? (commitSubject, commitBody)) : nil
 
-        let action: () -> Void = { [weak self] in
+        let action: (_ allowEmpty: Bool) -> Void = { [weak self] allowEmpty in
             guard let self, generation == request else { return }
 
             let started = performGit(
@@ -202,7 +202,8 @@ extension RepositorySession {
                             body: message.body,
                             amend: amend,
                             signOff: signOff,
-                            skipHooks: skipHooks
+                            skipHooks: skipHooks,
+                            allowEmpty: allowEmpty
                         )
                 },
                 title: AppLocalization.text(amend ? "working.amend" : "working.commit"),
@@ -218,14 +219,18 @@ extension RepositorySession {
             }
         }
 
-        if context?.operation == .merge, status?.entries.contains(where: \.hasStagedChanges) != true {
-            onEmptyMergePrompt?(action) { [weak self] in
-                guard let self, generation == request else { return }
+        // 修补改写的是已有的提交，不是空提交
+        guard commitsEmpty, !amend else {
+            action(false)
+            return
+        }
 
-                finishOperation("abort")
-            }
-        } else {
-            action()
+        confirmEmptyCommit(isSequence: false) {
+            action(true)
+        } alternate: { [weak self] in
+            guard let self, generation == request else { return }
+
+            finishOperation("abort")
         }
     }
 
@@ -270,6 +275,8 @@ extension RepositorySession {
     }
 
     /// 用信息框里编辑后的信息继续序列；注释行先按 Editor 设置询问或删除。
+    ///
+    /// 这一步没有任何改动且信息非空时，按警告设置先确认保留空提交还是跳过这一步。
     func continueSequence() {
         guard canWrite, let operation = context?.operation else { return }
 
@@ -280,14 +287,32 @@ extension RepositorySession {
 
             let (subject, body) = CommitMessage.parts(of: message)
 
-            performGit(
-                { runner, _ in
-                    try await WorkingCopyOperations(runner: runner)
-                        .continueSequence(operation, subject: subject, body: body)
-                },
-                title: AppLocalization.text("working.continue"),
-                recordsActivity: false
-            )
+            let perform: (_ allowEmpty: Bool) -> Void = { [weak self] allowEmpty in
+                guard let self, generation == request else { return }
+
+                performGit(
+                    { runner, _ in
+                        try await WorkingCopyOperations(runner: runner)
+                            .continueSequence(operation, subject: subject, body: body, allowEmpty: allowEmpty)
+                    },
+                    title: AppLocalization.text("working.continue"),
+                    recordsActivity: false
+                )
+            }
+
+            // 信息为空时直接交给 Git，由它报告缺少提交信息
+            guard commitsEmpty, !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                perform(false)
+                return
+            }
+
+            confirmEmptyCommit(isSequence: true) {
+                perform(true)
+            } alternate: { [weak self] in
+                guard let self, generation == request else { return }
+
+                finishOperation("skip")
+            }
         }
     }
 
@@ -333,5 +358,26 @@ extension RepositorySession {
             WorkingCopyFileList.fileName(of: entry.path),
             repository.displayPath
         )
+    }
+
+    /// 空提交按警告设置先确认；关掉警告时直接保留空提交，不记住中止或跳过的选择。
+    ///
+    /// - Parameters:
+    ///   - isSequence: 序列中的一步，备选是跳过；否则备选是中止当前操作。
+    ///   - commit: 保留空提交。
+    ///   - alternate: 中止或跳过。
+    private func confirmEmptyCommit(
+        isSequence: Bool,
+        commit: @escaping () -> Void,
+        alternate: @escaping () -> Void
+    ) {
+        let warns = UserDefaults.standard.object(forKey: WorkingCopyPreferences.warnsEmptyCommit) as? Bool ?? true
+
+        guard warns else {
+            commit()
+            return
+        }
+
+        onEmptyCommitPrompt?(EmptyCommitRequest(isSequence: isSequence, commit: commit, alternate: alternate))
     }
 }

@@ -165,10 +165,8 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 会话里的确认以确认版对话框挂成 sheet
         session.onConfirm = { [weak self] in self?.showConfirmation($0) }
 
-        // 空合并提交的询问是系统提示框
-        session.onEmptyMergePrompt = { [weak self] commit, abort in
-            self?.showEmptyMergePrompt(commit: commit, abort: abort)
-        }
+        // 进行中的操作没有任何改动时，空提交的确认同样以确认版对话框挂成 sheet
+        session.onEmptyCommitPrompt = { [weak self] in self?.showEmptyCommitPrompt($0) }
 
         showRepositories()
         configureToolbar(toolbarIdentifier)

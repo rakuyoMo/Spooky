@@ -274,12 +274,14 @@ public struct WorkingCopyOperations: Sendable {
     ///   - amend: 改写最近一次提交。
     ///   - signOff: 追加 `Signed-off-by` 尾注。
     ///   - skipHooks: 跳过 pre-commit 与 commit-msg 钩子。
+    ///   - allowEmpty: 没有改动时同样建提交，用于用户确认过的空提交。
     public func commit(
         subject: String,
         body: String,
         amend: Bool = false,
         signOff: Bool = false,
-        skipHooks: Bool = false
+        skipHooks: Bool = false,
+        allowEmpty: Bool = false
     ) async throws {
         let message = CommitMessage.text(subject: subject, body: body)
 
@@ -294,6 +296,8 @@ public struct WorkingCopyOperations: Sendable {
         if signOff { arguments.append("--signoff") }
 
         if skipHooks { arguments.append("--no-verify") }
+
+        if allowEmpty { arguments.append("--allow-empty") }
 
         _ = try await runner.run(arguments, input: Data(message.utf8))
     }
@@ -351,14 +355,7 @@ public struct WorkingCopyOperations: Sendable {
         case .revert: command = "revert"
         }
 
-        try await runner.writeTransaction {
-            // 序列的这一步没有可提交的改动时，继续表示保留一个空提交，再接着处理后面的步骤
-            if action == "continue", try await commitEmptyStep(of: operation) {
-                return
-            }
-
-            _ = try await runner.run(["-c", "core.editor=:", "-c", "core.trustctime=false", command, "--" + action])
-        }
+        _ = try await runner.run(["-c", "core.editor=:", "-c", "core.trustctime=false", command, "--" + action])
     }
 
     /// 一次读取状态文件快照，进行中模式不依赖人读的 git status 文案。

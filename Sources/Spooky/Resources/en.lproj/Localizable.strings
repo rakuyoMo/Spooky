@@ -339,8 +339,13 @@
 "working.error.selection" = "No applicable text changes selected.";
 "working.error.file" = "This operation requires a regular file.";
 "working.error.path" = "This path cannot be represented by SFTP batch commands.";
-"working.emptyMerge" = "Create Empty Merge Commit";
-"working.emptyMerge.message" = "This merge has no staged changes. Create the merge commit or abort the merge.";
+"commit.empty.title" = "Do you want to create an empty commit?";
+"commit.empty.message" = "There are no changes to commit. Create an empty commit, or abort the current operation.";
+"commit.empty.sequenceMessage" = "This step has no changes. Keep it as an empty commit and continue, or skip it.";
+"commit.empty.use" = "Use Empty Commit";
+"commit.empty.abort" = "Abort Merge";
+"commit.empty.skip" = "Skip Commit";
+"commit.empty.doNotShowAgain" = "Do not show this warning again";
 
 /* 历史、分支、同步与活动。 */
 "history.all" = "All Branches, Remotes, Tags";

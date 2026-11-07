@@ -339,8 +339,13 @@
 "working.error.selection" = "No se ha seleccionado ningún cambio de texto aplicable.";
 "working.error.file" = "Esta operación requiere un archivo regular.";
 "working.error.path" = "Esta ruta no se puede representar con comandos por lotes de SFTP.";
-"working.emptyMerge" = "Crear commit de fusión vacío";
-"working.emptyMerge.message" = "Esta fusión no tiene cambios en el stage. Crear el commit de fusión o abortar la fusión.";
+"commit.empty.title" = "¿Quieres crear un commit vacío?";
+"commit.empty.message" = "No hay cambios para hacer commit. Crear un commit vacío o abortar la operación en curso.";
+"commit.empty.sequenceMessage" = "Este paso no tiene cambios. Conservarlo como commit vacío y continuar, u omitirlo.";
+"commit.empty.use" = "Usar commit vacío";
+"commit.empty.abort" = "Abortar fusión";
+"commit.empty.skip" = "Omitir commit";
+"commit.empty.doNotShowAgain" = "No volver a mostrar esta advertencia";
 
 /* 历史、分支、同步与活动。 */
 "history.all" = "Todas las ramas, remotos y etiquetas";

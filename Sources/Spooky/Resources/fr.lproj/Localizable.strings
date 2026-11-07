@@ -339,8 +339,13 @@
 "working.error.selection" = "Aucune modification de texte applicable n’est sélectionnée.";
 "working.error.file" = "Cette opération nécessite un fichier ordinaire.";
 "working.error.path" = "Ce chemin ne peut pas être représenté dans les commandes SFTP par lots.";
-"working.emptyMerge" = "Créer un commit de fusion vide";
-"working.emptyMerge.message" = "Cette fusion ne contient aucune modification indexée. Créez le commit de fusion ou abandonnez la fusion.";
+"commit.empty.title" = "Voulez-vous créer un commit vide ?";
+"commit.empty.message" = "Aucune modification à valider. Créez un commit vide ou abandonnez l’opération en cours.";
+"commit.empty.sequenceMessage" = "Cette étape ne contient aucune modification. Conservez-la comme commit vide et continuez, ou ignorez-la.";
+"commit.empty.use" = "Utiliser un commit vide";
+"commit.empty.abort" = "Abandonner la fusion";
+"commit.empty.skip" = "Ignorer le commit";
+"commit.empty.doNotShowAgain" = "Ne plus afficher cet avertissement";
 
 /* 历史、分支、同步与活动。 */
 "history.all" = "Toutes les branches, dépôts distants et étiquettes";

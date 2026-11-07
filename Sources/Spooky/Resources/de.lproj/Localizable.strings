@@ -339,8 +339,13 @@
 "working.error.selection" = "Keine anwendbaren Textänderungen ausgewählt.";
 "working.error.file" = "Dieser Vorgang erfordert eine reguläre Datei.";
 "working.error.path" = "Dieser Pfad kann in SFTP-Batch-Befehlen nicht dargestellt werden.";
-"working.emptyMerge" = "Leeren Merge-Commit erstellen";
-"working.emptyMerge.message" = "Dieser Merge enthält keine gestagten Änderungen. Erstellen Sie den Merge-Commit oder brechen Sie den Merge ab.";
+"commit.empty.title" = "Möchten Sie einen leeren Commit erstellen?";
+"commit.empty.message" = "Es gibt keine Änderungen zum Committen. Erstellen Sie einen leeren Commit oder brechen Sie den aktuellen Vorgang ab.";
+"commit.empty.sequenceMessage" = "Dieser Schritt enthält keine Änderungen. Behalten Sie ihn als leeren Commit und fahren Sie fort, oder überspringen Sie ihn.";
+"commit.empty.use" = "Leeren Commit verwenden";
+"commit.empty.abort" = "Merge abbrechen";
+"commit.empty.skip" = "Commit überspringen";
+"commit.empty.doNotShowAgain" = "Diese Warnung nicht mehr anzeigen";
 
 /* 历史、分支、同步与活动。 */
 "history.all" = "Alle Branches, Remotes und Tags";

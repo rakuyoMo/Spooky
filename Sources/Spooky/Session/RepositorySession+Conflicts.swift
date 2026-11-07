@@ -108,6 +108,15 @@ extension RepositorySession {
         return !entries.contains { [.tracked, .conflicted, .untracked].contains($0.kind) }
     }
 
+    /// 提交或继续会建空提交：有进行中的操作、不在 edit 步，工作区没有任何改动。
+    var commitsEmpty: Bool {
+        guard let progress = context?.progress else {
+            return false
+        }
+
+        return !progress.stopsForEdit && isWorkingCopyClean
+    }
+
     /// 提交区的主按钮继续序列：变基与摘取、反转的序列；停在 edit 上时提交当前修订，合并与单个提交的操作用 Commit 收尾。
     var continuesSequence: Bool {
         guard let progress = context?.progress else {

@@ -485,7 +485,7 @@ extension RepositorySession {
                     ),
                     submitTitle: AppLocalization.text("externalTool.done"),
                     close: close,
-                    cancel: { continuation.resume(returning: false) }
+                    cancel: { _ in continuation.resume(returning: false) }
                 ) { _ in
                     continuation.resume(returning: true)
                 }
