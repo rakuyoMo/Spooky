@@ -4,7 +4,7 @@ import Foundation
 
 extension RepositoryRewrite {
     /// 交互式变基的完整参数：内联的序列编辑器与信息编辑器，并固定会改变 todo 形态的配置，不受用户配置影响。
-    static func rebaseArguments(_ plan: RewritePlan, instructions: [RebaseInstruction], skipHooks: Bool) -> [String] {
+    static func rebaseArguments(_ plan: RewritePlan, skipHooks: Bool) -> [String] {
         let autosquash = plan.action == .autosquash
 
         // 改信息时编辑器把文件整个换成新信息；其余步骤沿用 Git 准备好的信息，不打开编辑器
@@ -17,7 +17,7 @@ extension RepositoryRewrite {
 
         let sequence = sequenceEditor(
             expected: plan.commits.map(\.id),
-            instructions: instructions,
+            instructions: plan.instructions,
             ordered: !autosquash
         )
 
@@ -33,13 +33,10 @@ extension RepositoryRewrite {
         // 新信息已按提交区的规则处理过注释行，只整理空白
         if case .reword = plan.action { arguments += ["-c", "commit.cleanup=whitespace"] }
 
-        // 暂存的改动已经写进 fixup 提交，剩下的本地改动由变基自己储藏并在结束时恢复
-        let amend = if case .amend = plan.action { true } else { false }
-
         arguments += [
             "rebase", "--interactive",
             autosquash ? "--autosquash" : "--no-autosquash",
-            amend ? "--autostash" : "--no-autostash",
+            "--no-autostash",
         ]
 
         if skipHooks { arguments.append("--no-verify") }
@@ -104,41 +101,6 @@ extension RepositoryRewrite {
         return (pushed, merged)
     }
 
-    /// 写一个不挂在分支上的 fixup 提交：树取自暂存区，父提交是 HEAD；它会被并进目标，不签名。
-    func fixupCommit(for target: HistoryCommit, head: String) async throws -> String {
-        let staged = try await runner.execute(["diff", "--cached", "--quiet", "HEAD", "--"], acceptedExitCodes: [0, 1])
-
-        guard staged.exitCode == 1 else {
-            throw RewriteError.noStagedChanges
-        }
-
-        let tree = Self.trimmed(try await runner.run(["write-tree"]))
-        let message = Data(("fixup! " + target.subject + "\n").utf8)
-        let commit = Self.trimmed(
-            try await runner.run(
-                ["-c", "i18n.commitencoding=UTF-8", "commit-tree", "--no-gpg-sign", tree, "-p", head],
-                input: message
-            )
-        )
-
-        guard GitObjectID.isValid(commit) else {
-            throw RepositoryReadError.malformedOutput("commit-tree")
-        }
-
-        return commit
-    }
-
-    /// 变基没有开始时，把暂存区恢复成并入前的内容；变基已经停下时保持原样，交给进行中横幅处理。
-    func restoreIndex(from fixup: String, head: String) async throws {
-        let state = try await WorkingCopyOperations(runner: runner).stateFiles(["rebase-merge/head-name"])
-
-        guard state.isEmpty, try await resolve("HEAD") == head else {
-            return
-        }
-
-        _ = try await runner.run(["read-tree", fixup])
-    }
-
     /// 停在 edit 上之后撤下这个提交，让它的改动回到工作区；没有停在 edit 上时不做任何事。
     func reopenEditedCommit() async throws {
         let state = try await WorkingCopyOperations(runner: runner).stateFiles(["rebase-merge/amend"])
@@ -177,12 +139,5 @@ extension RepositoryRewrite {
         let output = try await runner.run(["rev-list", "--stdin"], input: Data((revisions.joined(separator: "\n") + "\n").utf8))
 
         return Set(String(decoding: output, as: UTF8.self).split(separator: "\n").map(String.init))
-    }
-}
-
-extension RepositoryRewrite {
-    /// 去掉命令输出末尾的换行。
-    private static func trimmed(_ output: Data) -> String {
-        String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

@@ -16,9 +16,6 @@ public enum RewriteError: Error, Sendable {
     /// 根提交没有父提交，不能撤回到工作区编辑。
     case rootCommit
 
-    /// 并入所选提交需要已暂存的改动。
-    case noStagedChanges
-
     /// 没有带 `fixup!`、`squash!` 或 `amend!` 标记、并能找到目标的提交。
     case nothingToAutosquash
 

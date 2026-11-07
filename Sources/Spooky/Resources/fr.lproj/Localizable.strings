@@ -1132,7 +1132,6 @@
 "rewrite.edit.button" = "Modifier";
 "rewrite.drop.button" = "Supprimer";
 "rewrite.move.button" = "Déplacer";
-"rewrite.amend.button" = "Compléter";
 "rewrite.autosquash.button" = "Autosquash";
 "rewrite.rebaseOnto.button" = "Rebaser";
 "rewrite.revert.button" = "Revert";
@@ -1145,7 +1144,6 @@
 "rewrite.edit.confirm" = "S’arrêter à « %@ » et remettre ses modifications dans la copie de travail ? Validez-les, puis cliquez sur « Continuer ».";
 "rewrite.drop.confirm" = "Supprimer %ld commits de la branche courante ?";
 "rewrite.move.confirm" = "Déplacer %ld commits vers la nouvelle position ?";
-"rewrite.amend.confirm" = "Ajouter les modifications indexées à « %@ » ?";
 "rewrite.autosquash.confirm" = "Intégrer chaque commit marqué fixup!, squash! ou amend! dans le commit qu’il désigne ?";
 "rewrite.rebaseOnto.confirm" = "Rebaser %ld commits sur la nouvelle base ?";
 "rewrite.note.drop" = "Supprimer";
@@ -1153,7 +1151,6 @@
 "rewrite.note.fixup" = "Fixup";
 "rewrite.note.edit" = "Modifier";
 "rewrite.note.move" = "Déplacer";
-"rewrite.note.amend" = "Compléter";
 "rewrite.remote" = "Cette opération s’exécute sur le serveur « %@ ».";
 "rewrite.shared" = "Déjà poussé ou fusionné";
 "rewrite.warning.pushed" = "Certains de ces commits sont déjà sur la branche amont. Après la réécriture, la branche locale et l’amont divergent.";
@@ -1212,8 +1209,6 @@
 "rewrite.error.notInHead.help" = "Les commits sélectionnés doivent tous se trouver sur une même ligne de l’historique de HEAD.";
 "rewrite.error.root" = "Impossible de modifier le commit racine";
 "rewrite.error.root.help" = "Le premier commit du dépôt n’a pas de parent auquel rendre ses modifications.";
-"rewrite.error.noStaged" = "Aucune modification indexée";
-"rewrite.error.noStaged.help" = "Indexez d’abord les modifications à ajouter au commit.";
 "rewrite.error.autosquash" = "Rien à fusionner automatiquement";
 "rewrite.error.autosquash.help" = "Aucun commit récent n’est marqué fixup!, squash! ou amend! pour un commit antérieur.";
 "rewrite.error.selection" = "Sélection non valide";

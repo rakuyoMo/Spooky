@@ -1132,7 +1132,6 @@
 "rewrite.edit.button" = "Edit";
 "rewrite.drop.button" = "Delete";
 "rewrite.move.button" = "Move";
-"rewrite.amend.button" = "Amend";
 "rewrite.autosquash.button" = "Autosquash";
 "rewrite.rebaseOnto.button" = "Rebase";
 "rewrite.revert.button" = "Revert";
@@ -1145,7 +1144,6 @@
 "rewrite.edit.confirm" = "Stop at “%@” and return its changes to the working copy? Commit them, then click Continue.";
 "rewrite.drop.confirm" = "Delete %ld revisions from the current branch?";
 "rewrite.move.confirm" = "Move %ld revisions to the new position?";
-"rewrite.amend.confirm" = "Add the staged changes to “%@”?";
 "rewrite.autosquash.confirm" = "Fold every commit marked fixup!, squash! or amend! into the commit it refers to?";
 "rewrite.rebaseOnto.confirm" = "Rebase %ld revisions onto the new base?";
 "rewrite.note.drop" = "Delete";
@@ -1153,7 +1151,6 @@
 "rewrite.note.fixup" = "Fixup";
 "rewrite.note.edit" = "Edit";
 "rewrite.note.move" = "Move";
-"rewrite.note.amend" = "Amend";
 "rewrite.remote" = "This operation runs on the server “%@”.";
 "rewrite.shared" = "Already pushed or merged";
 "rewrite.warning.pushed" = "Some of these commits are already on the upstream branch. After rewriting, the local branch and its upstream diverge.";
@@ -1212,8 +1209,6 @@
 "rewrite.error.notInHead.help" = "The selected commits must all be in the history of HEAD, on one line.";
 "rewrite.error.root" = "Cannot Edit the Root Commit";
 "rewrite.error.root.help" = "The first commit of the repository has no parent to return its changes to.";
-"rewrite.error.noStaged" = "No Staged Changes";
-"rewrite.error.noStaged.help" = "Stage the changes to add to the commit first.";
 "rewrite.error.autosquash" = "Nothing to Autosquash";
 "rewrite.error.autosquash.help" = "No recent commit is marked with fixup!, squash! or amend! for an earlier commit.";
 "rewrite.error.selection" = "Invalid Selection";

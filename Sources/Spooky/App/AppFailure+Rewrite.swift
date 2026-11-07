@@ -21,9 +21,6 @@ extension AppFailure {
         case .rootCommit:
             ("rewrite.error.root", .repository, "rewrite.error.root.help", nil)
 
-        case .noStagedChanges:
-            ("rewrite.error.noStaged", .repository, "rewrite.error.noStaged.help", nil)
-
         case .nothingToAutosquash:
             ("rewrite.error.autosquash", .repository, "rewrite.error.autosquash.help", nil)
 

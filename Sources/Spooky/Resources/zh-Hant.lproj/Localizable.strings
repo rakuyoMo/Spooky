@@ -1132,7 +1132,6 @@
 "rewrite.edit.button" = "編輯";
 "rewrite.drop.button" = "刪除";
 "rewrite.move.button" = "移動";
-"rewrite.amend.button" = "修補";
 "rewrite.autosquash.button" = "自動壓縮";
 "rewrite.rebaseOnto.button" = "變基";
 "rewrite.revert.button" = "反轉";
@@ -1145,7 +1144,6 @@
 "rewrite.edit.confirm" = "停在 “%@” 並把它的變更撤回到工作區？提交這些變更後按一下 “繼續”。";
 "rewrite.drop.confirm" = "從目前分支刪除 %ld 個提交？";
 "rewrite.move.confirm" = "把 %ld 個提交移到新的位置？";
-"rewrite.amend.confirm" = "把暫存的變更併入 “%@”？";
 "rewrite.autosquash.confirm" = "把所有標記了 fixup!、squash! 或 amend! 的提交併入它們所指的提交？";
 "rewrite.rebaseOnto.confirm" = "把 %ld 個提交變基到新的基點上？";
 "rewrite.note.drop" = "刪除";
@@ -1153,7 +1151,6 @@
 "rewrite.note.fixup" = "Fixup";
 "rewrite.note.edit" = "編輯";
 "rewrite.note.move" = "移動";
-"rewrite.note.amend" = "修補";
 "rewrite.remote" = "此操作在伺服器 “%@” 上執行。";
 "rewrite.shared" = "已推送或已合併";
 "rewrite.warning.pushed" = "其中一些提交已經在上游分支中。改寫之後，本機分支會與上游分岔。";
@@ -1212,8 +1209,6 @@
 "rewrite.error.notInHead.help" = "所選提交都必須在 HEAD 的歷史中，並且位於同一條線上。";
 "rewrite.error.root" = "無法編輯根提交";
 "rewrite.error.root.help" = "儲存庫的第一個提交沒有父提交，無法把它的變更撤回到工作區。";
-"rewrite.error.noStaged" = "沒有暫存的變更";
-"rewrite.error.noStaged.help" = "請先暫存要併入提交的變更。";
 "rewrite.error.autosquash" = "沒有可以自動壓縮的提交";
 "rewrite.error.autosquash.help" = "最近的提交裡沒有以 fixup!、squash! 或 amend! 指向更早提交的提交。";
 "rewrite.error.selection" = "選擇無效";

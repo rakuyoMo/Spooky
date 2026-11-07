@@ -17,13 +17,13 @@ enum StashRequest {
 
 // MARK: - AutoStashRequest
 
-/// 被本地改动挡住的写操作；用户选择储藏后原样重新执行。
+/// 被本地改动挡住、或开始前就有本地改动的写操作；用户选择储藏后原样执行。
 struct AutoStashRequest {
     /// 已本地化的操作名称。
     let title: String
 
-    /// 原操作的失败；用户选择不储藏时照常报告。
-    let error: any Error
+    /// 原操作的失败；用户选择不储藏时照常报告。开始前询问时为 nil。
+    let error: (any Error)?
 
     /// 原操作的执行闭包。
     let action: @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
@@ -33,6 +33,11 @@ struct AutoStashRequest {
 
     /// 原操作能否撤销；储藏、重新执行与恢复储藏合起来按同一声明记录。
     var undo = UndoRecording.irreversible
+
+    /// 开始前询问：不储藏时直接执行原操作，储藏一直保留，对话框不提供完成后恢复。
+    var asksBeforeStart: Bool {
+        error == nil
+    }
 }
 
 // MARK: - Availability
@@ -224,8 +229,18 @@ extension RepositorySession {
         )
     }
 
-    /// 用户选择不储藏：照常报告原操作被挡住的失败。
+    /// 用户选择不储藏：开始前询问的操作直接执行，Git 因本地改动拒绝时只报告这一次；其余照常报告原操作被挡住的失败。
     func declineAutoStash(_ request: AutoStashRequest) {
-        onFailure?(AppFailure(error: request.error, opening: false, location: repository, writing: true))
+        guard let error = request.error else {
+            performGit(
+                request.action,
+                title: request.title,
+                undo: request.undo,
+                failureNote: request.failureNote
+            )
+            return
+        }
+
+        onFailure?(AppFailure(error: error, opening: false, location: repository, writing: true))
     }
 }

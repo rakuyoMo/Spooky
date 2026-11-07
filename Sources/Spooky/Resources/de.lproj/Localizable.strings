@@ -1132,7 +1132,6 @@
 "rewrite.edit.button" = "Bearbeiten";
 "rewrite.drop.button" = "Löschen";
 "rewrite.move.button" = "Verschieben";
-"rewrite.amend.button" = "Ergänzen";
 "rewrite.autosquash.button" = "Autosquash";
 "rewrite.rebaseOnto.button" = "Rebase";
 "rewrite.revert.button" = "Revert";
@@ -1145,7 +1144,6 @@
 "rewrite.edit.confirm" = "Bei „%@“ anhalten und seine Änderungen in die Arbeitskopie zurückholen? Committen Sie sie und klicken Sie dann auf „Fortsetzen“.";
 "rewrite.drop.confirm" = "%ld Commits aus dem aktuellen Branch löschen?";
 "rewrite.move.confirm" = "%ld Commits an die neue Position verschieben?";
-"rewrite.amend.confirm" = "Die gestagten Änderungen zu „%@“ hinzufügen?";
 "rewrite.autosquash.confirm" = "Alle mit fixup!, squash! oder amend! markierten Commits in den jeweils genannten Commit einfügen?";
 "rewrite.rebaseOnto.confirm" = "%ld Commits auf die neue Basis rebasen?";
 "rewrite.note.drop" = "Löschen";
@@ -1153,7 +1151,6 @@
 "rewrite.note.fixup" = "Fixup";
 "rewrite.note.edit" = "Bearbeiten";
 "rewrite.note.move" = "Verschieben";
-"rewrite.note.amend" = "Ergänzen";
 "rewrite.remote" = "Dieser Vorgang wird auf dem Server „%@“ ausgeführt.";
 "rewrite.shared" = "Bereits gepusht oder zusammengeführt";
 "rewrite.warning.pushed" = "Einige dieser Commits sind bereits im Upstream-Branch. Nach dem Umschreiben laufen lokaler Branch und Upstream auseinander.";
@@ -1212,8 +1209,6 @@
 "rewrite.error.notInHead.help" = "Die ausgewählten Commits müssen alle auf einer Linie im Verlauf von HEAD liegen.";
 "rewrite.error.root" = "Der Root-Commit kann nicht bearbeitet werden";
 "rewrite.error.root.help" = "Der erste Commit des Repositorys hat keinen Eltern-Commit, zu dem seine Änderungen zurückkehren könnten.";
-"rewrite.error.noStaged" = "Keine gestagten Änderungen";
-"rewrite.error.noStaged.help" = "Stagen Sie zuerst die Änderungen, die zum Commit hinzugefügt werden sollen.";
 "rewrite.error.autosquash" = "Nichts automatisch zusammenzufassen";
 "rewrite.error.autosquash.help" = "Kein neuerer Commit ist mit fixup!, squash! oder amend! für einen früheren Commit markiert.";
 "rewrite.error.selection" = "Ungültige Auswahl";

@@ -1132,7 +1132,6 @@
 "rewrite.edit.button" = "편집";
 "rewrite.drop.button" = "삭제";
 "rewrite.move.button" = "이동";
-"rewrite.amend.button" = "수정";
 "rewrite.autosquash.button" = "자동 스쿼시";
 "rewrite.rebaseOnto.button" = "리베이스";
 "rewrite.revert.button" = "되돌리기";
@@ -1145,7 +1144,6 @@
 "rewrite.edit.confirm" = "“%@”에서 멈추고 변경을 작업 사본으로 되돌릴까요? 변경을 커밋한 뒤 “계속”을 클릭하세요.";
 "rewrite.drop.confirm" = "현재 브랜치에서 %ld개의 커밋을 삭제할까요?";
 "rewrite.move.confirm" = "%ld개의 커밋을 새 위치로 옮길까요?";
-"rewrite.amend.confirm" = "스테이지한 변경을 “%@”에 합칠까요?";
 "rewrite.autosquash.confirm" = "fixup!, squash!, amend! 표시가 있는 커밋을 각각 가리키는 커밋에 합칠까요?";
 "rewrite.rebaseOnto.confirm" = "%ld개의 커밋을 새 베이스로 리베이스할까요?";
 "rewrite.note.drop" = "삭제";
@@ -1153,7 +1151,6 @@
 "rewrite.note.fixup" = "Fixup";
 "rewrite.note.edit" = "편집";
 "rewrite.note.move" = "이동";
-"rewrite.note.amend" = "수정";
 "rewrite.remote" = "이 작업은 서버 “%@”에서 실행됩니다.";
 "rewrite.shared" = "이미 푸시되었거나 병합됨";
 "rewrite.warning.pushed" = "일부 커밋은 이미 업스트림 브랜치에 있습니다. 다시 쓰면 로컬 브랜치와 업스트림이 갈라집니다.";
@@ -1212,8 +1209,6 @@
 "rewrite.error.notInHead.help" = "선택한 커밋은 모두 HEAD 기록의 한 줄 위에 있어야 합니다.";
 "rewrite.error.root" = "루트 커밋은 편집할 수 없습니다";
 "rewrite.error.root.help" = "저장소의 첫 커밋에는 부모가 없어 변경을 작업 사본으로 되돌릴 수 없습니다.";
-"rewrite.error.noStaged" = "스테이지된 변경이 없습니다";
-"rewrite.error.noStaged.help" = "먼저 커밋에 합칠 변경을 스테이지하세요.";
 "rewrite.error.autosquash" = "자동 스쿼시할 커밋이 없습니다";
 "rewrite.error.autosquash.help" = "최근 커밋 중 fixup!, squash!, amend!로 이전 커밋을 가리키는 커밋이 없습니다.";
 "rewrite.error.selection" = "선택이 올바르지 않습니다";

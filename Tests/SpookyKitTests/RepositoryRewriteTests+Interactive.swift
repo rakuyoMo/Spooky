@@ -100,27 +100,6 @@ extension RepositoryRewriteTests {
         await #expect(throws: RewriteError.self) { try await rewrite.plan(.edit(commits[0])) }
     }
 
-    /// 暂存的改动并入较早的提交；未暂存的改动由变基自己储藏，结束后回到工作区。
-    @Test("暂存的改动并入所选提交")
-    func amendStagedChanges() async throws {
-        let (repository, commits) = try await makeRepository(["一", "二"])
-        defer { repository.remove() }
-
-        try write("补充\n", to: file(0), in: repository)
-        _ = try await repository.runner.run(["add", "--", file(0)])
-        try write("未暂存\n", to: file(1), in: repository)
-        let rewrite = RepositoryRewrite(runner: repository.runner)
-        try await rewrite.perform(try await rewrite.plan(.amend(commits[0])))
-
-        let first = try await rewrite.resolve("HEAD~1")
-        let content = try await repository.runner.run(["show", first + ":" + file(0)])
-        #expect(String(decoding: content, as: UTF8.self) == "补充\n")
-        #expect(try await subjects(in: repository) == ["二", "一"])
-        #expect(try read(file(1), in: repository) == "未暂存\n")
-
-        await #expect(throws: RewriteError.self) { try await rewrite.plan(.amend(first)) }
-    }
-
     /// Autosquash 由 Git 按标记排列 todo，核对时只比较提交集合。
     @Test("Autosquash")
     func autosquash() async throws {

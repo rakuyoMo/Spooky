@@ -8,7 +8,7 @@ import Testing
 /// M7 的改写操作在服务器上执行：内联的序列编辑器与信息编辑器只在 B 上运行，不依赖 A 的路径。只在显式启用时访问 spooky-test。
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteRewriteTests {
-    /// 在 B 上依次反转、摘取、改信息、压缩、编辑后继续、并入暂存改动与重置，再核对序列被改变时不改写。
+    /// 在 B 上依次反转、摘取、改信息、重置、压缩，储藏后修补旧提交、断线与中止，再核对序列被改变时不改写。
     @Test("服务器上的反转、摘取、交互式变基与重置", .timeLimit(.minutes(3)))
     func rewriteFlow() async throws {
         let fixture = try await RemoteFixture.create()
@@ -34,10 +34,7 @@ struct RemoteRewriteTests {
             try await rewrite.perform(try await rewrite.plan(.squash([head, second], into: nil)))
             #expect(try await subjects(runner) == ["二 'q'", "新标题 `x`"])
 
-            try await RepositoryFiles(runner: runner).write(Data("补充\n".utf8), to: location.path + "/文件 0 [*].txt")
-            _ = try await runner.run(["add", "--all"])
-            try await rewrite.perform(try await rewrite.plan(.amend(try await rewrite.resolve("HEAD~1"))))
-            #expect(try await subjects(runner) == ["二 'q'", "新标题 `x`"])
+            try await amendAfterStash(rewrite, runner: runner, remote: remote, path: location.path)
 
             let stale = try await rewrite.plan(.drop([try await rewrite.resolve("HEAD")]))
             _ = try await runner.run(["commit", "-q", "--allow-empty", "-m", "终端里的提交"])
@@ -56,6 +53,46 @@ struct RemoteRewriteTests {
 // MARK: - Helpers
 
 extension RemoteRewriteTests {
+    /// 留下本地改动后修补旧提交：先储藏，再停到目标的 edit 步；断线时继续不会执行，重连后仍停在目标，中止后回到原来的 HEAD，储藏一直保留。
+    private func amendAfterStash(
+        _ rewrite: RepositoryRewrite,
+        runner: GitRunner,
+        remote: RemoteConnection,
+        path: String
+    ) async throws {
+        let operations = WorkingCopyOperations(runner: runner)
+        let stashes = RepositoryStashes(runner: runner)
+        let before = try await rewrite.resolve("HEAD")
+        let target = try await rewrite.resolve("HEAD~1")
+        let plan = try await rewrite.plan(.amend(target))
+
+        try await RepositoryFiles(runner: runner).write(Data("补充\n".utf8), to: path + "/文件 0 [*].txt")
+
+        try await stashes.stashingLocalChanges(message: "修补前", reapply: false) {
+            try await rewrite.perform(plan)
+        }
+
+        #expect(try await rewrite.resolve("HEAD") == target)
+        #expect(try await operations.context(head: target).progress?.editedCommit == target)
+
+        // 断线中的继续不会执行，也不自动重试；重连后仍停在目标
+        try await remote.interruptMaster()
+
+        await #expect(throws: RemoteConnectionError.self) {
+            try await operations.finish(.rebase, action: "continue")
+        }
+
+        _ = try await remote.reconnect()
+
+        #expect(try await rewrite.resolve("HEAD") == target)
+        #expect(try await operations.context(head: target).progress?.stopsForEdit ?? false)
+
+        try await operations.finish(.rebase, action: "abort")
+
+        #expect(try await rewrite.resolve("HEAD") == before)
+        #expect(try await stashes.list().count == 1)
+    }
+
     /// 在 B 上依次提交，每个提交新增一个文件；返回从旧到新的提交。
     private func commit(_ subjects: [String], at path: String, runner: GitRunner) async throws -> [String] {
         var commits: [String] = []

@@ -1132,7 +1132,6 @@
 "rewrite.edit.button" = "編集";
 "rewrite.drop.button" = "削除";
 "rewrite.move.button" = "移動";
-"rewrite.amend.button" = "修正";
 "rewrite.autosquash.button" = "自動スカッシュ";
 "rewrite.rebaseOnto.button" = "リベース";
 "rewrite.revert.button" = "リバート";
@@ -1145,7 +1144,6 @@
 "rewrite.edit.confirm" = "“%@” で止めて、その変更を作業コピーに戻しますか？変更をコミットしてから “続行” をクリックしてください。";
 "rewrite.drop.confirm" = "現在のブランチから %ld 件のコミットを削除しますか？";
 "rewrite.move.confirm" = "%ld 件のコミットを新しい位置へ移動しますか？";
-"rewrite.amend.confirm" = "ステージした変更を “%@” に取り込みますか？";
 "rewrite.autosquash.confirm" = "fixup!、squash!、amend! の付いたコミットを、それぞれが指すコミットに取り込みますか？";
 "rewrite.rebaseOnto.confirm" = "%ld 件のコミットを新しいベースへリベースしますか？";
 "rewrite.note.drop" = "削除";
@@ -1153,7 +1151,6 @@
 "rewrite.note.fixup" = "Fixup";
 "rewrite.note.edit" = "編集";
 "rewrite.note.move" = "移動";
-"rewrite.note.amend" = "修正";
 "rewrite.remote" = "この操作はサーバ “%@” で実行されます。";
 "rewrite.shared" = "プッシュ済みまたはマージ済み";
 "rewrite.warning.pushed" = "一部のコミットはすでに上流ブランチにあります。書き換えると、ローカルブランチと上流が分岐します。";
@@ -1212,8 +1209,6 @@
 "rewrite.error.notInHead.help" = "選択したコミットはすべて HEAD の履歴上の一本の線にある必要があります。";
 "rewrite.error.root" = "ルートコミットは編集できません";
 "rewrite.error.root.help" = "リポジトリの最初のコミットには親がないため、変更を作業コピーへ戻せません。";
-"rewrite.error.noStaged" = "ステージされた変更がありません";
-"rewrite.error.noStaged.help" = "先にコミットへ取り込む変更をステージしてください。";
 "rewrite.error.autosquash" = "自動スカッシュするコミットがありません";
 "rewrite.error.autosquash.help" = "最近のコミットに、fixup!、squash!、amend! で以前のコミットを指すものがありません。";
 "rewrite.error.selection" = "選択が正しくありません";

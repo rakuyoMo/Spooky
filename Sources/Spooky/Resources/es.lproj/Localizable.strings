@@ -1132,7 +1132,6 @@
 "rewrite.edit.button" = "Editar";
 "rewrite.drop.button" = "Eliminar";
 "rewrite.move.button" = "Mover";
-"rewrite.amend.button" = "Enmendar";
 "rewrite.autosquash.button" = "Autosquash";
 "rewrite.rebaseOnto.button" = "Hacer rebase";
 "rewrite.revert.button" = "Revertir";
@@ -1145,7 +1144,6 @@
 "rewrite.edit.confirm" = "¿Detenerse en «%@» y devolver sus cambios a la copia de trabajo? Hacer commit de ellos y luego hacer clic en «Continuar».";
 "rewrite.drop.confirm" = "¿Eliminar %ld commits de la rama actual?";
 "rewrite.move.confirm" = "¿Mover %ld commits a la nueva posición?";
-"rewrite.amend.confirm" = "¿Añadir los cambios en el stage a «%@»?";
 "rewrite.autosquash.confirm" = "¿Incorporar cada commit marcado con fixup!, squash! o amend! en el commit al que se refiere?";
 "rewrite.rebaseOnto.confirm" = "¿Hacer rebase de %ld commits en la nueva base?";
 "rewrite.note.drop" = "Eliminar";
@@ -1153,7 +1151,6 @@
 "rewrite.note.fixup" = "Fixup";
 "rewrite.note.edit" = "Editar";
 "rewrite.note.move" = "Mover";
-"rewrite.note.amend" = "Enmendar";
 "rewrite.remote" = "Esta operación se ejecuta en el servidor «%@».";
 "rewrite.shared" = "Ya enviado o fusionado";
 "rewrite.warning.pushed" = "Algunos de estos commits ya están en la rama upstream. Tras reescribirlos, la rama local y la upstream divergen.";
@@ -1212,8 +1209,6 @@
 "rewrite.error.notInHead.help" = "Los commits seleccionados deben estar todos en una misma línea del historial de HEAD.";
 "rewrite.error.root" = "No se puede editar el commit raíz";
 "rewrite.error.root.help" = "El primer commit del repositorio no tiene padre al que devolver sus cambios.";
-"rewrite.error.noStaged" = "No hay cambios en el stage";
-"rewrite.error.noStaged.help" = "Añadir primero al stage los cambios que se van a incorporar al commit.";
 "rewrite.error.autosquash" = "Nada que combinar automáticamente";
 "rewrite.error.autosquash.help" = "Ningún commit reciente está marcado con fixup!, squash! o amend! para un commit anterior.";
 "rewrite.error.selection" = "Selección no válida";

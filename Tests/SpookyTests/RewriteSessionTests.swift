@@ -111,7 +111,7 @@ struct RewriteSessionTests {
 
 extension RewriteSessionTests {
     /// 带三个提交的隔离仓库与已完成首次刷新的会话；返回从旧到新的提交。
-    private func makeSession() async throws -> (RepositorySession, URL, [String]) {
+    func makeSession() async throws -> (RepositorySession, URL, [String]) {
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-rewrite-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
 
@@ -158,7 +158,7 @@ extension RewriteSessionTests {
     }
 
     /// 等待会话发出下一个改写请求。
-    private func waitForRequest(in session: RepositorySession) async throws -> RewriteRequest {
+    func waitForRequest(in session: RepositorySession) async throws -> RewriteRequest {
         var received: RewriteRequest?
         session.onRewriteRequest = { received = $0 }
 
@@ -167,20 +167,20 @@ extension RewriteSessionTests {
     }
 
     /// 等待写操作与随后的完整刷新结束。
-    private func settle(_ session: RepositorySession) async {
+    func settle(_ session: RepositorySession) async {
         await session.writeTask?.value
         await session.waitForRefresh()
     }
 
     /// 当前分支从新到旧的提交标题。
-    private func subjects(_ session: RepositorySession) async throws -> [String] {
+    func subjects(_ session: RepositorySession) async throws -> [String] {
         let runner = try #require(session.runner)
         let output = try await runner.run(["log", "-z", "--format=%s"])
         return String(decoding: output, as: UTF8.self).split(separator: "\0").map(String.init)
     }
 
     /// 关闭会话并删除临时仓库。
-    private func cleanUp(_ session: RepositorySession, _ directory: URL) {
+    func cleanUp(_ session: RepositorySession, _ directory: URL) {
         session.close()
         try? FileManager.default.removeItem(at: directory)
     }

@@ -38,7 +38,7 @@ struct LocalizationTests {
         // 重置的三档，与交互式变基各动作确认 sheet 的问题与按钮
         keys += ResetMode.allCases.map { "rewrite.reset." + $0.rawValue }
 
-        for action in ["squash", "fixup", "edit", "drop", "move", "amend", "autosquash", "rebaseOnto"] {
+        for action in ["squash", "fixup", "edit", "drop", "move", "autosquash", "rebaseOnto"] {
             keys += [".confirm", ".button"].map { "rewrite." + action + $0 }
         }
 
