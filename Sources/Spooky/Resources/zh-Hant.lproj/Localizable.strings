@@ -631,6 +631,8 @@
 "stash.error.conflicts.help" = "請在工作區中解決衝突。儲藏已保留。";
 "stash.error.operation" = "儲藏之後操作失敗";
 "stash.error.operation.help" = "本機變更已存進儲藏，仍然保留在那裡。請檢查工作區，準備好後再套用這個儲藏。";
+"stash.error.operationConflicts" = "儲藏之後出現衝突";
+"stash.error.operationConflicts.help" = "請在工作區中解決衝突。本機變更已存進儲藏，仍然保留在那裡；準備好後再套用這個儲藏。";
 "stash.error.reapply" = "無法還原儲藏的變更";
 "stash.error.reapply.help" = "操作已完成，但本機變更未能重新套用，仍保留在儲藏中；準備好後再套用它。";
 /* 冲突向导与进行中操作。 */

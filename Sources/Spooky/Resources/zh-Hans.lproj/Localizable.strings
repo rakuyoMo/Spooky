@@ -631,6 +631,8 @@
 "stash.error.conflicts.help" = "请在工作区中解决冲突。储藏已保留。";
 "stash.error.operation" = "储藏之后操作失败";
 "stash.error.operation.help" = "本地改动已存进储藏，仍然保留在那里。请检查工作区，准备好后再应用这个储藏。";
+"stash.error.operationConflicts" = "储藏之后出现冲突";
+"stash.error.operationConflicts.help" = "请在工作区中解决冲突。本地改动已存进储藏，仍然保留在那里；准备好后再应用这个储藏。";
 "stash.error.reapply" = "无法恢复储藏的改动";
 "stash.error.reapply.help" = "操作已完成，但本地改动未能重新应用，仍保留在储藏中；准备好后再应用它。";
 /* 冲突向导与进行中操作。 */

@@ -22,6 +22,9 @@ extension AppFailure {
             let raw = rawOutput(of: underlying)
             return ("stash.error.operation", .git, "stash.error.operation.help", raw.output, raw.diagnostic)
 
+        case .operationConflicts:
+            return ("stash.error.operationConflicts", .git, "stash.error.operationConflicts.help", nil, nil)
+
         case .reapplyFailed(_, let underlying):
             let raw = rawOutput(of: underlying)
             return ("stash.error.reapply", .git, "stash.error.reapply.help", raw.output, raw.diagnostic)

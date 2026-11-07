@@ -16,6 +16,9 @@ public enum StashError: Error, Sendable {
     /// 自动储藏之后原操作失败；本地改动保存在说明为 `stash` 的储藏里。
     case operationFailed(stash: String, underlying: any Error)
 
+    /// 自动储藏之后原操作停在待解决的冲突上，储藏没有恢复；本地改动保存在说明为 `stash` 的储藏里。
+    case operationConflicts(stash: String)
+
     /// 原操作已完成，但恢复自动储藏失败；储藏保留。
     case reapplyFailed(stash: String, underlying: any Error)
 }
@@ -194,6 +197,7 @@ public struct RepositoryStashes: Sendable {
     /// 先储藏全部本地改动（含未跟踪文件），再执行被本地改动挡住的操作，按需在完成后恢复。
     ///
     /// 任何一步失败都停在当前状态：储藏保留，原操作与恢复的失败分别包装成 ``StashError``，原始错误随之带回。
+    /// 原操作停在冲突上时不恢复储藏，以 ``StashError/operationConflicts(stash:)`` 说明储藏的去向。
     /// 断线与取消不包装，交给调用方的断线核对与取消处理，也不自动重试。
     ///
     /// - Parameters:
@@ -219,6 +223,13 @@ public struct RepositoryStashes: Sendable {
             }
 
             do {
+                // 储藏套不回有冲突的工作区，留给用户解决冲突后再应用
+                let entries = try await runner.status().entries
+
+                guard !entries.contains(where: { $0.kind == .conflicted }) else {
+                    throw StashError.operationConflicts(stash: message)
+                }
+
                 guard let entry = try await list().first(where: { $0.id == stash }) else {
                     throw StashError.stashChanged
                 }

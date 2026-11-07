@@ -631,6 +631,8 @@
 "stash.error.conflicts.help" = "Résolvez les conflits dans la copie de travail. Le remisage a été conservé.";
 "stash.error.operation" = "Échec de l’opération après le remisage";
 "stash.error.operation.help" = "Vos modifications locales ont été remisées et s’y trouvent toujours. Vérifiez la copie de travail, puis appliquez le remisage quand vous êtes prêt.";
+"stash.error.operationConflicts" = "Conflits après le remisage";
+"stash.error.operationConflicts.help" = "Résolvez les conflits dans la copie de travail. Vos modifications locales ont été remisées et s’y trouvent toujours. Appliquez le remisage quand vous êtes prêt.";
 "stash.error.reapply" = "Impossible de réappliquer le remisage";
 "stash.error.reapply.help" = "L’opération est terminée, mais vos modifications locales n’ont pas pu être réappliquées. Elles restent dans le remisage ; appliquez-le quand vous êtes prêt.";
 /* 冲突向导与进行中操作。 */

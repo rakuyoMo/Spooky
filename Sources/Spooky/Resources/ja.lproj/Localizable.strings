@@ -631,6 +631,8 @@
 "stash.error.conflicts.help" = "作業コピーで競合を解決してください。スタッシュは残されています。";
 "stash.error.operation" = "スタッシュ後に操作が失敗しました";
 "stash.error.operation.help" = "ローカルの変更はスタッシュに保存され、そのまま残っています。作業コピーを確認し、準備ができたらスタッシュを適用してください。";
+"stash.error.operationConflicts" = "スタッシュ後に競合が発生しました";
+"stash.error.operationConflicts.help" = "作業コピーで競合を解決してください。ローカルの変更はスタッシュに保存され、そのまま残っています。準備ができたらスタッシュを適用してください。";
 "stash.error.reapply" = "スタッシュを再適用できませんでした";
 "stash.error.reapply.help" = "操作は完了しましたが、ローカルの変更を再適用できませんでした。変更はスタッシュに残っているので、準備ができたら適用してください。";
 /* 冲突向导与进行中操作。 */

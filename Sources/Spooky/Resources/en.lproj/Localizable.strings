@@ -631,6 +631,8 @@
 "stash.error.conflicts.help" = "Resolve the conflicts in Working Copy. The stash was kept.";
 "stash.error.operation" = "Operation Failed After Stashing";
 "stash.error.operation.help" = "Your local changes were saved on the Stash and are still there. Check the working copy, then apply the stash when you are ready.";
+"stash.error.operationConflicts" = "Conflicts After Stashing";
+"stash.error.operationConflicts.help" = "Resolve the conflicts in Working Copy. Your local changes were saved on the Stash and are still there; apply the stash when you are ready.";
 "stash.error.reapply" = "Stash Could Not Be Re-Applied";
 "stash.error.reapply.help" = "The operation finished, but your local changes could not be applied again. They are kept on the Stash; apply them when you are ready.";
 /* 冲突向导与进行中操作。 */

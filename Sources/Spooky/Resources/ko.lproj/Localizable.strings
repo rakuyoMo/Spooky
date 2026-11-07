@@ -631,6 +631,8 @@
 "stash.error.conflicts.help" = "작업 사본에서 충돌을 해결하세요. 스태시는 그대로 남아 있습니다.";
 "stash.error.operation" = "스태시 후 작업 실패";
 "stash.error.operation.help" = "로컬 변경 사항은 스태시에 저장되어 그대로 남아 있습니다. 작업 사본을 확인한 후 준비가 되면 스태시를 적용하세요.";
+"stash.error.operationConflicts" = "스태시 후 충돌 발생";
+"stash.error.operationConflicts.help" = "작업 사본에서 충돌을 해결하세요. 로컬 변경 사항은 스태시에 저장되어 그대로 남아 있습니다. 준비가 되면 스태시를 적용하세요.";
 "stash.error.reapply" = "스태시를 다시 적용할 수 없음";
 "stash.error.reapply.help" = "작업은 끝났지만 로컬 변경 사항을 다시 적용하지 못했습니다. 변경 사항은 스태시에 남아 있으니 준비가 되면 적용하세요.";
 /* 冲突向导与进行中操作。 */
