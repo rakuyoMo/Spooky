@@ -48,7 +48,7 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
 | `RemoteWorkingCopyFilesTests` | 文件操作与应用补丁 |
 | `RemoteDiffTests` | Diff 选项与图片 |
 | `RemoteStashTests` | 储藏与 Auto Stash 的断线 |
-| `RemoteConflictTests` | 冲突向导、进行中操作的分类、用编辑后的信息继续、空提交与断线 |
+| `RemoteConflictTests` | 冲突向导、合并工具结果的写回、进行中操作的分类、用编辑后的信息继续、空提交与断线 |
 | `RemoteFileViewsTests` | 文件历史、Blame、原文与 NFD 路径 |
 | `RemoteCommitSigningTests` | 提交签名 |
 | `RemoteHistorySearchTests` | 历史搜索、计数与可达性 |
