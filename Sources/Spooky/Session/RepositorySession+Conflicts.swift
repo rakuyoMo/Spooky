@@ -158,6 +158,31 @@ extension RepositorySession {
         return try await WorkingCopyOperations(runner: runner).conflictContents(of: entry)
     }
 
+    /// 冲突两侧版本所在的提交：我方是 HEAD，对方按进行中的操作取；没有提交来源或读取失败的一侧为 nil。
+    ///
+    /// 应用补丁或储藏、压缩合并的对方没有提交来源。
+    func conflictCommits() async -> (ours: HistoryCommit?, theirs: HistoryCommit?) {
+        guard let runner else {
+            return (nil, nil)
+        }
+
+        let history = RepositoryHistory(runner: runner)
+
+        /// 一个提交的信息；读取失败时卡片只是少了下栏，不另外报告。
+        func commit(_ id: String?) async -> HistoryCommit? {
+            guard let id else {
+                return nil
+            }
+
+            return try? await history.page(roots: [id], limit: 1).commits.first
+        }
+
+        let ours = await commit(status?.branch.oid)
+        let theirs = await commit(context?.progress?.theirsCommit)
+
+        return (ours, theirs)
+    }
+
     /// 所选文件中有可以恢复到指定版本的冲突；重新生成冲突也适用于已经标记解决的文件。
     func canRestoreConflicts(_ entries: [StatusEntry], to version: ConflictVersion) -> Bool {
         guard canWrite else {

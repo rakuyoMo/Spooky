@@ -20,7 +20,7 @@ public enum OperationStepKind: String, Sendable {
 public struct OperationProgress: Sendable, Equatable {
     /// 判断与横幅字段需要的状态文件，路径相对仓库的 Git 目录。
     static let stateFiles = [
-        "MERGE_HEAD", "SQUASH_MSG", "CHERRY_PICK_HEAD", "REVERT_HEAD", "MERGE_MSG",
+        "MERGE_HEAD", "SQUASH_MSG", "CHERRY_PICK_HEAD", "REVERT_HEAD", "MERGE_MSG", "REBASE_HEAD",
         "rebase-merge/head-name", "rebase-merge/onto", "rebase-merge/orig-head",
         "rebase-merge/msgnum", "rebase-merge/end", "rebase-merge/done", "rebase-merge/amend",
         "rebase-merge/stopped-sha", "rebase-merge/message", "rebase-merge/message-squash", "rebase-merge/message-fixup",
@@ -69,8 +69,17 @@ public struct OperationProgress: Sendable, Equatable {
     /// 这时没有可以提交的一步，只能中止。
     public internal(set) var isPendingInteractive = false
 
+    /// 变基这一步正在应用的提交，取自 REBASE_HEAD；冲突停下时两种后端都有。
+    public internal(set) var rebaseHead: String?
+
     /// 交互式变基按 edit 指令停在这一步，等待修改后继续。
     public var stopsForEdit: Bool { editedCommit != nil }
+
+    /// 冲突里对方版本（stage 3）所在的提交：合并取 MERGE_HEAD 的第一个提交，摘取与反转取正在处理的提交，变基取 REBASE_HEAD；
+    /// 压缩合并没有对方提交。
+    public var theirsCommit: String? {
+        state == .rebase ? rebaseHead : theirs
+    }
 }
 
 extension OperationProgress {
@@ -269,6 +278,7 @@ extension OperationProgress {
         )
 
         progress.editedCommit = edited
+        progress.rebaseHead = value("REBASE_HEAD")
 
         // Git 每次停在某个提交上都会写 stopped-sha；还没有它就是还没开始处理任何提交
         progress.isPendingInteractive = !apply

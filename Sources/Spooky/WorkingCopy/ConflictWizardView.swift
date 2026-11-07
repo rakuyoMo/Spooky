@@ -4,24 +4,17 @@ import SwiftUI
 
 // MARK: - ConflictWizardView
 
-/// 选中冲突文件时的右栏：我方、对方两张版本卡片与合并工具，两侧都要保留时交给合并工具；文件已在别处改过时，多一张手动编辑结果的卡片。
+/// 选中冲突文件时的右栏：上排我方、对方两张版本卡片，两条箭头汇入下方的结果框，结果框下是统一的动作按钮。
+///
+/// 单击卡片选中这一侧，⌘ 单击另一张可以两侧都选，再单击已选的卡片取消；选择只是视图状态，不改工作区或索引。
 struct ConflictWizardView: View {
-    /// 触发载入的请求：文件的三方版本变化或用户要求重新载入时重新读取。
+    /// 触发载入的请求：文件的三方版本变化或需要重新读取时重新载入。
     private struct LoadRequest: Equatable {
         /// 选中的冲突文件，包含三方 stage 的哈希。
         let entry: StatusEntry
 
         /// 重新载入的请求序号。
         let reloads: Int
-    }
-
-    /// 版本卡片对应的一侧。
-    private enum Side {
-        /// 我方版本。
-        case ours
-
-        /// 对方版本。
-        case theirs
     }
 
     /// 当前仓库会话。
@@ -35,6 +28,10 @@ struct ConflictWizardView: View {
     @State
     private var contents: ConflictContents?
 
+    /// 两侧版本所在的提交，随内容一起载入。
+    @State
+    private var commits: (ours: HistoryCommit?, theirs: HistoryCommit?) = (nil, nil)
+
     /// 载入失败的原因，保留可复制的原文。
     @State
     private var failure: AppFailure?
@@ -43,13 +40,21 @@ struct ConflictWizardView: View {
     @State
     private var reloads = 0
 
+    /// 选中的版本卡片。
+    @State
+    private var selection: Set<ConflictSide> = []
+
     /// 设置里选的合并工具，决定合并按钮的标题。
     @AppStorage(ExternalTool.mergeToolKey)
     private var mergeTool = ""
 
+    /// 设置里的提交日期格式。
+    @AppStorage(CommitDateFormat.key)
+    private var dateFormat = CommitDateFormat.absolute
+
     /// 载入中、失败或向导内容。
     ///
-    /// 写入结束、重新连上服务器与切回本程序时自动重新载入：文件可能已在外部编辑器里改过。
+    /// 写入结束、重新连上服务器与切回本程序时自动重新载入：文件可能已在外部编辑器里改过。换了文件时清空选择。
     var body: some View {
         Group {
             if let failure {
@@ -63,6 +68,7 @@ struct ConflictWizardView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task(id: LoadRequest(entry: entry, reloads: reloads)) { await load() }
+        .onChange(of: entry.path) { selection = [] }
         .onChange(of: session.isWriting) {
             if !session.isWriting { reloads += 1 }
         }
@@ -78,11 +84,6 @@ struct ConflictWizardView: View {
 // MARK: - Private
 
 extension ConflictWizardView {
-    /// 没有进行中的操作时，冲突来自应用补丁或储藏，对方卡片用专门的标题。
-    private var isAppliedChange: Bool {
-        session.context?.progress == nil
-    }
-
     /// 合并按钮：选过合并工具时写出它的名字，还没有选时先选工具。
     private var mergeToolTitle: String {
         guard let tool = ExternalTool(rawValue: mergeTool), tool.supportsMerge else {
@@ -92,170 +93,137 @@ extension ConflictWizardView {
         return AppLocalization.text("externalTool.mergeIn", tool.displayName)
     }
 
-    /// 卡片底色。
-    private var tile: some View {
-        RoundedRectangle(cornerRadius: 8)
-            .fill(AppPalette.color("repository_mergeconflict_tile_background_light_color"))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppPalette.color("general_border_color")))
+    /// 交给合并工具的按钮；只有两侧都是普通文件的单个冲突可用。
+    private var mergeToolButton: some View {
+        Button(mergeToolTitle) { session.openMergeTool(entry) }
+            .disabled(!session.canOpenMergeTool([entry]))
     }
 
-    /// 卡片内容区的深一档底色。
-    private var innerTile: some View {
-        RoundedRectangle(cornerRadius: 4)
-            .fill(AppPalette.color("repository_mergeconflict_tile_background_dark_color"))
-    }
-
-    /// 冲突类型的说明与重新载入。
-    private var header: some View {
-        HStack(spacing: 8) {
-            Label(entry.conflictKind?.title ?? "", systemImage: "exclamationmark.triangle.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.red)
-
-            Spacer(minLength: 0)
-
-            Button(AppLocalization.text("conflict.reload")) { reloads += 1 }
-        }
-    }
-
-    /// 可以按文本显示的内容：不含 NUL 且是有效的 UTF-8。
-    private static func text(_ data: Data) -> String? {
-        guard !data.contains(0) else {
-            return nil
-        }
-
-        return String(data: data, encoding: .utf8)
-    }
-
-    /// 冲突类型与重新载入、两张版本卡片、合并工具，以及手动编辑结果的卡片。
+    /// 两张卡片、汇入结果框的箭头、结果框与结果框下的动作。
     private func wizard(_ contents: ConflictContents) -> some View {
-        #warning("TODO: 制造冲突后打开向导核对：版本卡片是否显示原文，合并工具按钮位于卡片下方还是两张卡片之间；只影响冲突向导右栏的卡片内容与按钮位置")
+        let result = ConflictResult.of(selection: selection, contents: contents)
 
-        return VStack(alignment: .leading, spacing: 16) {
-            header
-
+        return VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
-                versionCard(.ours, data: contents.ours)
-                versionCard(.theirs, data: contents.theirs)
+                card(.ours, data: contents.ours, commit: commits.ours)
+                card(.theirs, data: contents.theirs, commit: commits.theirs)
             }
 
-            if entry.conflict?.hasRegularFilesOnBothSides ?? false {
-                Button(mergeToolTitle) { session.openMergeTool(entry) }
-                    .disabled(!session.canOpenMergeTool([entry]))
-                    .frame(maxWidth: .infinity)
-            }
+            ConflictArrows(selection: selection)
+                .frame(height: 32)
 
-            if contents.isManuallyEdited {
-                editedCard(contents)
-            }
+            resultBox(result)
+
+            action(result)
+                .padding(.top, 12)
         }
         .padding(20)
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
-    /// 一侧的版本：标题、打开与导出菜单、原文预览和采用这一侧的按钮。
-    private func versionCard(_ side: Side, data: Data?) -> some View {
-        let name = side == .ours ? session.oursName : session.theirsName
-        let applied = side == .theirs && isAppliedChange
+    /// 一张版本卡片；单击选中或取消，按住 ⌘ 时加入已有的选择。
+    private func card(_ side: ConflictSide, data: Data?, commit: HistoryCommit?) -> some View {
+        ConflictVersionCard(
+            session: session,
+            entry: entry,
+            side: side,
+            data: data,
+            commit: commit,
+            isSelected: selection.contains(side)
+        )
+        .onTapGesture {
+            selection = side.toggled(in: selection, adding: NSEvent.modifierFlags.contains(.command))
+        }
+        .accessibilityAddTraits(selection.contains(side) ? [.isButton, .isSelected] : .isButton)
+    }
 
-        let title = applied
-            ? AppLocalization.text("conflict.version.applied")
-            : AppLocalization.text("conflict.version", name)
+    /// 结果框：未选时提示选择，单选与当前文件等于某侧时显示该侧，两侧都选时是合并，手动合并过时是当前版本。
+    private func resultBox(_ result: ConflictResult) -> some View {
+        Group {
+            switch result {
+            case .unselected:
+                Text(AppLocalization.text("conflict.selectVersion"))
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
 
-        let resolveTitle = applied
-            ? AppLocalization.text("conflict.resolveUsing.applied")
-            : AppLocalization.text("conflict.resolveUsing", name)
+            case .side(let side):
+                let commit = side == .ours ? commits.ours : commits.theirs
 
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Text(title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .help(title)
+                ConflictVersionSummary(
+                    path: entry.path,
+                    change: entry.conflict?.change(theirs: side == .theirs),
+                    date: commit.map { dateFormat.string(from: $0.commitDate) }
+                )
 
-                Spacer(minLength: 0)
+            case .both:
+                resultTitle("conflict.resolveBoth", badge: .merge)
 
-                versionMenu(name: name, data: data)
+            case .current:
+                resultTitle("conflict.result", badge: nil)
             }
-
-            preview(data, label: title)
-
-            Button(resolveTitle) { session.resolve([entry], theirs: side == .theirs) }
-                .disabled(!session.canResolve([entry]))
         }
         .padding(12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(tile)
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+        .background(ConflictTile(isSelected: false))
     }
 
-    /// 打开或导出这一侧的原文；这一侧删除了文件时两项都不可用，只显示动作名。
-    private func versionMenu(name: String, data: Data?) -> some View {
-        Menu {
-            if let data {
-                Button(AppLocalization.text("conflict.open", name)) { open(data) }
+    /// 结果框里两侧合并或手动合并的结果：标题在上，文件摘要在下。
+    private func resultTitle(_ key: String, badge: ConflictBadge?) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(AppLocalization.text(key))
+                .font(.system(size: 13, weight: .semibold))
+                .lineLimit(1)
+                .truncationMode(.tail)
 
-                Divider()
+            ConflictVersionSummary(path: entry.path, change: nil, date: nil, badge: badge)
+        }
+    }
 
-                Button(AppLocalization.text("conflict.export", name)) { export(data) }
+    /// 结果框下的动作：内容冲突与双方新增未选时交给合并工具，其余冲突未选时 Resolve 不可用。
+    @ViewBuilder
+    private func action(_ result: ConflictResult) -> some View {
+        switch result {
+        case .unselected:
+            if entry.conflict?.hasRegularFilesOnBothSides ?? false {
+                mergeToolButton
             } else {
-                Button(AppLocalization.text("conflict.open.missing")) { }
-                    .disabled(true)
-
-                Divider()
-
-                Button(AppLocalization.text("conflict.export.missing")) { }
+                Button(AppLocalization.text("conflict.resolve")) { }
                     .disabled(true)
             }
-        } label: {
-            Image(systemName: "ellipsis.circle")
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-        .accessibilityLabel(AppLocalization.text("conflict.versionMenu", name))
-    }
 
-    /// 工作区里已经改过的当前文件，可以直接用它标记解决。
-    private func editedCard(_ contents: ConflictContents) -> some View {
-        let title = AppLocalization.text("conflict.result")
+        case .side(let side):
+            Button(resolveTitle(side)) { session.resolve([entry], theirs: side == .theirs) }
+                .disabled(!session.canResolve([entry]))
 
-        return VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
+        case .both:
+            mergeToolButton
 
-            preview(contents.worktree, label: title)
-
+        case .current:
             Button(AppLocalization.text("conflict.resolveCurrent")) { session.stage([entry], staged: true) }
                 .disabled(!session.canResolve([entry]))
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(tile)
     }
 
-    /// 只读预览；删除了文件的一侧与二进制内容只显示说明。
-    @ViewBuilder
-    private func preview(_ data: Data?, label: String) -> some View {
-        if let data, let string = Self.text(data) {
-            ConflictTextView(text: string)
-                .background(innerTile)
-                .accessibilityLabel(label)
-        } else {
-            Text(AppLocalization.text(data == nil ? "conflict.missing" : "conflict.binary"))
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(innerTile)
+    /// 采用一侧的按钮标题：应用补丁或储藏的一侧是状态描述，不加引用名的引号。
+    private func resolveTitle(_ side: ConflictSide) -> String {
+        guard side == .theirs, session.context?.progress == nil else {
+            return AppLocalization.text("conflict.resolveUsing", ConflictVersionCard.name(of: side, in: session))
         }
+
+        return AppLocalization.text("conflict.resolveUsing.applied")
     }
 
-    /// 读取三方内容；被新的请求取代的结果直接丢弃。
+    /// 读取三方内容与两侧的提交；被新的请求取代的结果直接丢弃。
     private func load() async {
         do {
             let loaded = try await session.conflictContents(of: entry)
+            let sources = await session.conflictCommits()
 
             guard !Task.isCancelled else { return }
 
             contents = loaded
+            commits = sources
             failure = nil
         } catch {
             guard !Task.isCancelled else { return }
@@ -263,48 +231,67 @@ extension ConflictWizardView {
             failure = AppFailure(error: error, opening: false, location: session.repository)
         }
     }
+}
 
-    /// 用默认程序打开这一侧的原文；副本放在会话的本机缓存里，服务器路径不交给本机程序。
-    private func open(_ data: Data) {
-        guard let cache = session.fileCache else { return }
+// MARK: - ConflictArrows
 
-        do {
-            NSWorkspace.shared.open(try cache.store(data, named: entry.path))
-        } catch {
-            session.onFailure?(AppFailure(error: error, opening: false, location: session.repository))
-        }
-    }
+/// 两张卡片汇入结果框的箭头；对应的卡片选中时变蓝。
+private struct ConflictArrows: View {
+    /// 选中的卡片。
+    let selection: Set<ConflictSide>
 
-    /// 把这一侧的原文导出到用户选择的位置；服务器上的版本在载入时已经取到本机。
-    private func export(_ data: Data) {
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = entry.path.split(separator: "/").last.map(String.init) ?? entry.path
+    /// 两条从卡片中线斜向结果框中央的箭头。
+    var body: some View {
+        GeometryReader { proxy in
+            let size = proxy.size
 
-        let repository = session.repository
-        let report = session.onFailure
+            ZStack {
+                arrow(
+                    from: CGPoint(x: size.width * 0.25, y: 4),
+                    to: CGPoint(x: size.width / 2 - 8, y: size.height - 4),
+                    isSelected: selection.contains(.ours)
+                )
 
-        let completion: (NSApplication.ModalResponse) -> Void = { response in
-            guard response == .OK, let url = panel.url else { return }
-
-            do {
-                try data.write(to: url)
-            } catch {
-                report?(AppFailure(error: error, opening: false, location: repository))
+                arrow(
+                    from: CGPoint(x: size.width * 0.75, y: 4),
+                    to: CGPoint(x: size.width / 2 + 8, y: size.height - 4),
+                    isSelected: selection.contains(.theirs)
+                )
             }
         }
+        .accessibilityHidden(true)
+    }
 
-        if let window = NSApp.keyWindow {
-            panel.beginSheetModal(for: window, completionHandler: completion)
-        } else {
-            panel.begin(completionHandler: completion)
+    /// 一条带箭头的线：箭头两翼与线身各成 30°。
+    private func arrow(from start: CGPoint, to end: CGPoint, isSelected: Bool) -> some View {
+        let angle = atan2(end.y - start.y, end.x - start.x)
+
+        /// 箭头一翼的端点。
+        func wing(_ offset: CGFloat) -> CGPoint {
+            CGPoint(
+                x: end.x - 7 * cos(angle + offset),
+                y: end.y - 7 * sin(angle + offset)
+            )
         }
+
+        return Path { path in
+            path.move(to: start)
+            path.addLine(to: end)
+            path.move(to: wing(.pi / 6))
+            path.addLine(to: end)
+            path.addLine(to: wing(-.pi / 6))
+        }
+        .stroke(
+            isSelected ? Color.accentColor : Color.secondary,
+            style: StrokeStyle(lineWidth: isSelected ? 2 : 1, lineCap: .round, lineJoin: .round)
+        )
     }
 }
 
 // MARK: - ConflictKind
 
 extension ConflictKind {
-    /// 冲突类型的本地化名称，向导标题与文件行的悬停提示共用。
+    /// 冲突类型的本地化名称，用于文件行的悬停提示。
     var title: String {
         switch self {
         case .bothModified: AppLocalization.text("conflict.kind.bothModified")
@@ -315,39 +302,5 @@ extension ConflictKind {
         case .deletedByUs: AppLocalization.text("conflict.kind.deletedByUs")
         case .deletedByThem: AppLocalization.text("conflict.kind.deletedByThem")
         }
-    }
-}
-
-// MARK: - ConflictTextView
-
-/// 冲突内容的只读等宽文本区：可以选中复制，大文件交给 NSTextView 排版。
-private struct ConflictTextView: NSViewRepresentable {
-    /// 显示的文本。
-    let text: String
-
-    /// 关闭编辑，保留选择与复制。
-    func makeNSView(context _: Context) -> NSScrollView {
-        let scroll = NSTextView.scrollableTextView()
-        scroll.drawsBackground = false
-
-        guard let view = scroll.documentView as? NSTextView else {
-            return scroll
-        }
-
-        view.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
-        view.isRichText = false
-        view.isEditable = false
-        view.isSelectable = true
-        view.drawsBackground = false
-        view.textContainerInset = NSSize(width: 4, height: 4)
-        view.string = text
-        return scroll
-    }
-
-    /// 内容变化时才替换，选区保持不变。
-    func updateNSView(_ scroll: NSScrollView, context _: Context) {
-        guard let view = scroll.documentView as? NSTextView, view.string != text else { return }
-
-        view.string = text
     }
 }

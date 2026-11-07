@@ -642,7 +642,6 @@
 "stash.error.reapply.help" = "操作已完成，但本機變更未能重新套用，仍保留在儲藏中；準備好後再套用它。";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "套用的修補或儲藏";
-"conflict.binary" = "不顯示二進位內容。";
 "conflict.error.version" = "所選檔案沒有這個版本。";
 "conflict.error.version.title" = "沒有這個版本";
 "conflict.export" = "匯出來自 “%@” 的版本…";
@@ -667,9 +666,7 @@
 "conflict.markResolved.one" = "將 “%@” 標記為已解決";
 "conflict.menu.resolve" = "解決合併衝突";
 "conflict.menu.restore" = "回復合併衝突的版本";
-"conflict.missing" = "這個版本刪除了檔案。";
 "conflict.open" = "開啟來自 “%@” 的版本";
-"conflict.reload" = "重新載入";
 "conflict.resolveCurrent" = "採用目前版本解決";
 "conflict.resolvedSuffix" = "%@（已解決 %d 個）";
 "conflict.resolveUsing" = "採用 “%@” 解決";
@@ -696,6 +693,17 @@
 "conflict.unresolved.one" = "1 個未解決衝突";
 "conflict.version" = "來自 “%@” 的版本";
 "conflict.versionMenu" = "來自 “%@” 的版本的操作";
+"conflict.selectVersion" = "請在上方選擇一個版本";
+"conflict.resolve" = "解決";
+"conflict.resolveBoth" = "採用兩個版本解決";
+"conflict.change.added" = "新增";
+"conflict.change.modified" = "修改";
+"conflict.change.deleted" = "刪除";
+"conflict.change.merge" = "合併";
+"conflict.openWith" = "開啟來自 “%@” 的版本的方式";
+"conflict.openWith.missing" = "開啟方式";
+"conflict.compareOther" = "與另一側版本比較";
+"conflict.compareBase" = "與共同祖先比較";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "檔案歷史";
 "fileHistory.showCommit" = "顯示提交";

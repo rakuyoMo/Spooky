@@ -642,7 +642,6 @@
 "stash.error.reapply.help" = "작업은 끝났지만 로컬 변경 사항을 다시 적용하지 못했습니다. 변경 사항은 스태시에 남아 있으니 준비가 되면 적용하세요.";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "적용한 패치 또는 스태시";
-"conflict.binary" = "바이너리 내용은 표시하지 않습니다.";
 "conflict.error.version" = "선택한 파일에 이 버전이 없습니다.";
 "conflict.error.version.title" = "버전 없음";
 "conflict.export" = "“%@”의 버전 내보내기…";
@@ -667,9 +666,7 @@
 "conflict.markResolved.one" = "“%@”을(를) 해결됨으로 표시";
 "conflict.menu.resolve" = "병합 충돌 해결";
 "conflict.menu.restore" = "병합 충돌 버전 복원";
-"conflict.missing" = "이 버전에서는 파일이 삭제되었습니다.";
 "conflict.open" = "“%@”의 버전 열기";
-"conflict.reload" = "다시 불러오기";
 "conflict.resolveCurrent" = "현재 버전으로 해결";
 "conflict.resolvedSuffix" = "%@ (%d 개 해결됨)";
 "conflict.resolveUsing" = "“%@”(으)로 해결";
@@ -696,6 +693,17 @@
 "conflict.unresolved.one" = "해결되지 않은 충돌 1 개";
 "conflict.version" = "“%@”의 버전";
 "conflict.versionMenu" = "“%@”의 버전 작업";
+"conflict.selectVersion" = "위에서 버전을 선택하세요";
+"conflict.resolve" = "해결";
+"conflict.resolveBoth" = "두 버전 모두로 해결";
+"conflict.change.added" = "추가됨";
+"conflict.change.modified" = "수정됨";
+"conflict.change.deleted" = "삭제됨";
+"conflict.change.merge" = "병합";
+"conflict.openWith" = "“%@”의 버전을 다음으로 열기";
+"conflict.openWith.missing" = "다음으로 열기";
+"conflict.compareOther" = "다른 버전과 비교";
+"conflict.compareBase" = "공통 조상과 비교";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "파일 기록";
 "fileHistory.showCommit" = "커밋 보기";

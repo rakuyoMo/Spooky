@@ -71,6 +71,31 @@ extension ConflictStages {
     public var hasRegularFilesOnBothSides: Bool {
         [oursMode, theirsMode].allSatisfy { $0?.hasPrefix("100") ?? false }
     }
+
+    /// 一侧相对共同祖先的改动：这一侧没有版本是删除，没有共同祖先是新增，其余是修改。
+    ///
+    /// - Parameter theirs: 取对方一侧；为 false 时取我方。
+    public func change(theirs: Bool) -> ConflictChange {
+        guard (theirs ? self.theirs : ours) != nil else {
+            return .deleted
+        }
+
+        return base == nil ? .added : .modified
+    }
+}
+
+// MARK: - ConflictChange
+
+/// 冲突一侧的版本相对共同祖先的改动。
+public enum ConflictChange: Sendable, Equatable {
+    /// 共同祖先里没有这个文件。
+    case added
+
+    /// 两边都有，内容或模式变了。
+    case modified
+
+    /// 这一侧删除了文件。
+    case deleted
 }
 
 // MARK: - ConflictKind
@@ -144,8 +169,6 @@ extension ConflictContents {
 
     /// 工作区文件已是手动编辑或合并工具得到的结果：文件还在、与两侧版本都不同，且不再含有冲突标记。
     public var isManuallyEdited: Bool {
-        #warning("TODO: 在外部编辑器改动冲突文件后核对 “Manually Edited or Merged Version” 何时出现，目前要求与两侧都不同且没有冲突标记；只影响这张卡片的显示")
-
         guard let worktree, worktree != ours, worktree != theirs else {
             return false
         }

@@ -642,7 +642,6 @@
 "stash.error.reapply.help" = "操作は完了しましたが、ローカルの変更を再適用できませんでした。変更はスタッシュに残っているので、準備ができたら適用してください。";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "適用したパッチまたはスタッシュ";
-"conflict.binary" = "バイナリの内容は表示しません。";
 "conflict.error.version" = "選択したファイルにはこのバージョンがありません。";
 "conflict.error.version.title" = "このバージョンはありません";
 "conflict.export" = "「%@」のバージョンを書き出す…";
@@ -667,9 +666,7 @@
 "conflict.markResolved.one" = "「%@」を解決済みにする";
 "conflict.menu.resolve" = "マージ競合を解決";
 "conflict.menu.restore" = "マージ競合のバージョンを復元";
-"conflict.missing" = "このバージョンではファイルが削除されています。";
 "conflict.open" = "「%@」のバージョンを開く";
-"conflict.reload" = "再読み込み";
 "conflict.resolveCurrent" = "現在のバージョンで解決";
 "conflict.resolvedSuffix" = "%@（解決済み：%d 件）";
 "conflict.resolveUsing" = "「%@」で解決";
@@ -696,6 +693,17 @@
 "conflict.unresolved.one" = "未解決の競合：1 件";
 "conflict.version" = "「%@」のバージョン";
 "conflict.versionMenu" = "「%@」のバージョンの操作";
+"conflict.selectVersion" = "上のバージョンを選択してください";
+"conflict.resolve" = "解決";
+"conflict.resolveBoth" = "両方のバージョンで解決";
+"conflict.change.added" = "追加";
+"conflict.change.modified" = "変更";
+"conflict.change.deleted" = "削除";
+"conflict.change.merge" = "マージ";
+"conflict.openWith" = "「%@」のバージョンを次で開く";
+"conflict.openWith.missing" = "このアプリケーションで開く";
+"conflict.compareOther" = "もう一方のバージョンと比較";
+"conflict.compareBase" = "共通の祖先と比較";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "ファイル履歴";
 "fileHistory.showCommit" = "コミットを表示";

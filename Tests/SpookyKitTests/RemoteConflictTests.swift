@@ -40,7 +40,12 @@ struct RemoteConflictTests {
 
             #expect(String(decoding: try #require(contents.worktree), as: UTF8.self).contains("<<<<<<<"))
             #expect(contents.ours == Data("ours\n".utf8) && contents.theirs == Data("theirs\n".utf8))
-            #expect(try await service.context(head: status.branch.oid).progress?.state == .merge)
+
+            // 对方版本所在的提交是被合并的分支
+            let merging = try await service.context(head: status.branch.oid).progress
+            let side = try await RepositoryRewrite(runner: runner).resolve("side")
+
+            #expect(merging?.state == .merge && merging?.theirsCommit == side)
 
             // 恢复祖先版本只改 B 上的工作区，文件仍是冲突，内容不同于两侧即算手动改过
             try await service.restoreConflicts([entry], to: .base)
@@ -77,7 +82,7 @@ struct RemoteConflictTests {
         }
     }
 
-    /// B 上的状态文件经同一次定位与读取：摘取序列、单个摘取与 edit 停顿的分类和步数与本机一致。
+    /// B 上的状态文件经同一次定位与读取：摘取序列、单个摘取与 edit 停顿的分类和步数，以及变基冲突时对方版本的提交，都与本机一致。
     @Test("服务器上进行中操作的分类", .timeLimit(.minutes(3)))
     func operationKinds() async throws {
         let fixture = try await RemoteFixture.create()
@@ -137,6 +142,17 @@ struct RemoteConflictTests {
 
             #expect(editing.stopsForEdit && editing.editedCommit == edited && editing.stepKind == .editing)
             #expect(!editing.isPendingInteractive)
+
+            try await service.finish(.rebase, action: "abort")
+
+            // 变基在 two 上冲突，对方版本是这一步正在应用的原提交
+            _ = try await runner.run(["checkout", "-q", "side"])
+            _ = try await runner.execute(["rebase", "main"], acceptedExitCodes: [1])
+
+            let rebasing = try await progress()
+            let applying = try await rewrite.resolve("side~1")
+
+            #expect(rebasing.state == .rebase && rebasing.theirsCommit == applying)
 
             try await service.finish(.rebase, action: "abort")
 

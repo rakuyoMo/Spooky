@@ -642,7 +642,6 @@
 "stash.error.reapply.help" = "L’opération est terminée, mais vos modifications locales n’ont pas pu être réappliquées. Elles restent dans le remisage ; appliquez-le quand vous êtes prêt.";
 /* 冲突向导与进行中操作。 */
 "conflict.applied" = "Patch ou remisage appliqué";
-"conflict.binary" = "Le contenu binaire n’est pas affiché.";
 "conflict.error.version" = "Les fichiers sélectionnés n’ont pas cette version.";
 "conflict.error.version.title" = "Version indisponible";
 "conflict.export" = "Exporter la version de « %@ »…";
@@ -667,9 +666,7 @@
 "conflict.markResolved.one" = "Marquer « %@ » comme résolu";
 "conflict.menu.resolve" = "Résoudre les conflits de fusion";
 "conflict.menu.restore" = "Restaurer les versions du conflit de fusion";
-"conflict.missing" = "Cette version supprime le fichier.";
 "conflict.open" = "Ouvrir la version de « %@ »";
-"conflict.reload" = "Recharger";
 "conflict.resolveCurrent" = "Résoudre avec la version actuelle";
 "conflict.resolvedSuffix" = "%@ (%d résolus)";
 "conflict.resolveUsing" = "Résoudre avec « %@ »";
@@ -696,6 +693,17 @@
 "conflict.unresolved.one" = "1 conflit non résolu";
 "conflict.version" = "Version de « %@ »";
 "conflict.versionMenu" = "Actions pour la version de « %@ »";
+"conflict.selectVersion" = "Veuillez sélectionner une version ci-dessus";
+"conflict.resolve" = "Résoudre";
+"conflict.resolveBoth" = "Résoudre avec les deux versions";
+"conflict.change.added" = "AJOUTÉ";
+"conflict.change.modified" = "MODIFIÉ";
+"conflict.change.deleted" = "SUPPRIMÉ";
+"conflict.change.merge" = "FUSION";
+"conflict.openWith" = "Ouvrir la version de « %@ » avec";
+"conflict.openWith.missing" = "Ouvrir avec";
+"conflict.compareOther" = "Comparer avec l’autre version";
+"conflict.compareBase" = "Comparer avec l’ancêtre commun";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "Historique du fichier";
 "fileHistory.showCommit" = "Afficher le commit";
