@@ -156,13 +156,13 @@ actor RepositoryOperationQueue {
         commandIndex(in: arguments).map { arguments[$0] }
     }
 
-    /// 真正的子命令所在的位置；全局参数只有 `--literal-pathspecs`、`-c <键=值>` 与在子模块里执行的 `-C <路径>`。
+    /// 真正的子命令所在的位置；跳过路径规格开关、`-c <键=值>` 与在子模块里执行的 `-C <路径>`。
     private nonisolated static func commandIndex(in arguments: [String]) -> Int? {
         var index = 0
 
         // 全局配置与工作目录只改变查询方式，读写属性由真正的子命令决定。
         while index < arguments.count {
-            if arguments[index] == "--literal-pathspecs" {
+            if ["--literal-pathspecs", "--no-literal-pathspecs"].contains(arguments[index]) {
                 index += 1
             } else if ["-c", "-C"].contains(arguments[index]), index + 1 < arguments.count {
                 index += 2

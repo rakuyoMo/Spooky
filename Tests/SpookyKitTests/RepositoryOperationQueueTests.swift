@@ -17,6 +17,30 @@ struct RepositoryOperationQueueTests {
         #expect(sessions + 1 <= 10)
     }
 
+    /// 路径规格的开关只影响参数解释，读取仍能越过写队列，写入与未知命令仍受写锁保护。
+    @Test("路径规格全局选项保留命令分类", arguments: ["--literal-pathspecs", "--no-literal-pathspecs"])
+    func pathspecCommands(option: String) {
+        let prefix = ["-c", "core.quotepath=false", option, "-C", "directory"]
+        let cases: [([String], Bool)] = [
+            (["status", "--porcelain=v2", "-z"], true),
+            (["diff", "--cached", "--", ":(literal)file"], true),
+            (["hash-object", "--no-filters", "--", "file"], true),
+            (["hash-object", "-w", "--stdin"], false),
+            (["apply", "--cached", "-"], false),
+            (["config", "--local", "user.name", "Test"], false),
+            (["unknown-command"], false),
+        ]
+
+        for (arguments, readOnly) in cases {
+            #expect(RepositoryOperationQueue.command(in: prefix + arguments) == arguments.first)
+            #expect(RepositoryOperationQueue.isReadOnly(prefix + arguments) == readOnly)
+        }
+
+        #expect(RepositoryOperationQueue.command(in: [option]) == nil)
+        #expect(!RepositoryOperationQueue.isReadOnly([option]))
+        #expect(!RepositoryOperationQueue.isReadOnly([option, "-C"]))
+    }
+
     /// 同一主机同时打开的取消通道不超过名额，多出的依次执行，最后都执行完。
     @Test("取消通道按主机限量")
     func cancellationsPerHost() async throws {

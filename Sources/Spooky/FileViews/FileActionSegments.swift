@@ -20,6 +20,16 @@ struct FileActionSegments: NSViewRepresentable {
     func updateNSView(_ control: FileActionSegmentControl, context _: Context) {
         control.configure(actions: actions, focusChanged: focusChanged)
     }
+
+    /// 优先采用标题的原生宽度，窄栏内接受宿主分配的可用宽度。
+    func sizeThatFits(
+        _ proposal: ProposedViewSize,
+        nsView: FileActionSegmentControl,
+        context _: Context
+    ) -> CGSize? {
+        let intrinsic = nsView.intrinsicContentSize
+        return CGSize(width: min(proposal.width ?? intrinsic.width, intrinsic.width), height: intrinsic.height)
+    }
 }
 
 // MARK: - FileActionSegmentControl
@@ -39,6 +49,8 @@ final class FileActionSegmentControl: NSSegmentedControl {
         segmentStyle = .texturedRounded
         trackingMode = .momentary
         controlSize = .regular
+        segmentDistribution = .fillProportionally
+        cell?.lineBreakMode = .byTruncatingMiddle
         target = self
         action = #selector(performAction)
         configure(actions: actions, focusChanged: focusChanged)

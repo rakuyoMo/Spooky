@@ -24,10 +24,11 @@ struct WorkingCopyFileHeader: View {
     @State
     private var hovering = false
 
-    /// 文件名允许压缩，原生控件按标题保留宽度。
+    /// 文件名中间截断，宽度不足时动作组按原生分段比例压缩。
     var body: some View {
         let actions = session.workingCopyFileActions(path, entry: entry, isDirectory: isDirectory)
         let folder = isDirectory || session.submodules.items.contains { $0.path == path }
+        let name = RepositorySession.fileName(path)
 
         HStack(spacing: 8) {
             Image(nsImage: Self.icon(path: path, isFolder: folder))
@@ -35,13 +36,14 @@ struct WorkingCopyFileHeader: View {
                 .frame(width: 24, height: 24)
                 .accessibilityHidden(true)
 
-            Text(RepositorySession.fileName(path))
+            Text(name)
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(Color(nsColor: .headerTextColor))
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .textSelection(.enabled)
                 .help(path)
+                .frame(minWidth: minimumNameWidth(name), alignment: .leading)
                 .layoutPriority(-1)
 
             Spacer(minLength: 0)
@@ -74,5 +76,12 @@ struct WorkingCopyFileHeader: View {
         let extensionName = name.lastIndex(of: ".").map { String(name[name.index(after: $0)...]) } ?? ""
         let type = UTType(filenameExtension: extensionName) ?? .data
         return NSWorkspace.shared.icon(for: type)
+    }
+
+    /// 为中间截断预留首尾字符与省略号的宽度，短文件名则保留原宽。
+    private func minimumNameWidth(_ name: String) -> CGFloat {
+        let text = name.count > 2 ? "\(name.prefix(1))…\(name.suffix(1))" : name
+        let font = NSFont.boldSystemFont(ofSize: 13)
+        return ceil(NSAttributedString(string: text, attributes: [.font: font]).size().width)
     }
 }

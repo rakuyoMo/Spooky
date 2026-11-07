@@ -55,6 +55,33 @@ extension WorkingCopyScopeTests {
         #expect(try fixture.commands().count == (kind == "ordinary" ? 1 : (kind == "retry" ? 6 : 3)))
     }
 
+    /// 真实快照发出的状态与两侧补丁查询都属于读取，路径规格选项不能使取消被误判为中断写入。
+    @Test("快照查询保留只读调度身份")
+    func snapshotReadClassification() async throws {
+        let fixture = try WorkingCopyScopeFixture()
+        defer { fixture.repository.remove() }
+        try await fixture.prepare()
+        try fixture.change()
+        let entry = try await fixture.entry()
+        let runner = try fixture.wrappedRunner(before: """
+            sequence=$(wc -l < "$root/scope-log" | tr -d ' ')
+            printf '%s\\0' "$@" > "$root/arguments-$sequence"
+            """)
+        let snapshot = try await WorkingCopyOperations(runner: runner).diff(for: entry, side: .unstaged)
+        #expect(snapshot.diff?.files.count == 1)
+        let commands = try fixture.commands()
+        #expect(commands == ["status", "diff", "diff", "status"])
+
+        for (index, command) in commands.enumerated() {
+            let data = try fixture.read(".git/arguments-\(index + 1)")
+            let arguments = data.split(separator: 0).map { String(decoding: $0, as: UTF8.self) }
+            let start = try #require(arguments.firstIndex(of: "--no-literal-pathspecs"))
+            let query = Array(arguments[start...])
+            #expect(RepositoryOperationQueue.command(in: query) == command)
+            #expect(RepositoryOperationQueue.isReadOnly(query))
+        }
+    }
+
     /// apply 预检后的目标变化在第二次取样中被拒绝，无关旁支则不阻止安全写入。
     @Test("预检之后的第二次快照校验", arguments: ["worktree", "index", "sibling"])
     func secondValidation(change: String) async throws {

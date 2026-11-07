@@ -45,7 +45,7 @@ struct FileActionBar: View {
         Group {
             if segmented {
                 FileActionSegments(actions: actions) { segmentFocused = $0 }
-                    .fixedSize()
+                    .fixedSize(horizontal: false, vertical: true)
             } else {
                 HStack(spacing: 2) {
                     ForEach(actions) { action in
