@@ -625,7 +625,7 @@ extension RepositoryWindowController {
 
         // 提交区隐藏时不继续：还有未解决冲突，或交互式变基尚未开始
         if session.continuesSequence, session.showsCommitArea, session.canWrite {
-            session.finishOperation("continue")
+            session.continueSequence()
         } else if session.canCommit {
             session.commit()
         } else {

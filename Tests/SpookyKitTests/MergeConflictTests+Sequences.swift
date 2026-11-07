@@ -198,11 +198,11 @@ extension MergeConflictTests {
     }
 }
 
-// MARK: - Private
+// MARK: - Sequence Helpers
 
 extension MergeConflictTests {
     /// 按当前 HEAD 读取仓库里进行中的操作；没有进行中的操作时记为失败。
-    private func currentProgress(_ repository: TemporaryRepository) async throws -> OperationProgress {
+    func currentProgress(_ repository: TemporaryRepository) async throws -> OperationProgress {
         let runner = repository.runner
         let head = try await runner.status().branch.oid
         let context = try await WorkingCopyOperations(runner: runner).context(head: head)
@@ -211,7 +211,7 @@ extension MergeConflictTests {
     }
 
     /// 解析引用对应的完整提交哈希。
-    private func commitID(_ reference: String, in repository: TemporaryRepository) async throws -> String {
+    func commitID(_ reference: String, in repository: TemporaryRepository) async throws -> String {
         let output = try await repository.runner.run(["rev-parse", "--verify", reference + "^{commit}"])
         return String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -219,7 +219,7 @@ extension MergeConflictTests {
     /// 以给定的指令清单做一次交互式变基；停下时 Git 以 1 退出，与成功一样接受。
     ///
     /// 指令清单写在系统临时目录下的独立文件里，由序列编辑器原样复制过去。
-    private func rebaseInteractively(
+    func rebaseInteractively(
         _ repository: TemporaryRepository,
         todo: String,
         onto base: String

@@ -110,21 +110,30 @@ extension RepositorySession {
         }
     }
 
-    /// 读到新的上下文时按编辑模式更新信息：进入进行中操作即进入合并模式，用合并说明替换草稿并退出修补，合并成功后信息为空。
+    /// 读到新的上下文时按编辑模式更新信息：进入进行中操作即进入合并模式，用 Git 准备的信息替换草稿并退出修补，合并成功后信息为空。
     ///
+    /// 序列进入下一步或停在另一个提交上时同样换成这一步的信息；同一步里重新读取不覆盖编辑中的内容。
     /// 仓库刚打开时还没有上一份上下文，只在信息为空时填入，切回仓库时恢复的草稿保留。
     ///
     /// - Parameters:
     ///   - context: 刚读到的上下文。
     ///   - previous: 上一份上下文；仓库刚打开时为 nil。
     func updateMessage(for context: WorkingCopyContext, previous: WorkingCopyContext?) {
-        guard context.operation != nil, context.operation != previous?.operation else { return }
+        guard let progress = context.progress else { return }
+
+        // 变基的步号随每一步增加；摘取与反转的序列总是第 1 步，换的是正在处理的提交
+        let last = previous?.progress
+        let changed = progress.state != last?.state
+            || progress.step != last?.step
+            || progress.theirs != last?.theirs
+
+        guard changed else { return }
         guard previous != nil || commitSubject.isEmpty else { return }
 
         // 合并成功后按合并模式清空，修补前存下的普通草稿不再恢复
         amend = false
         originalDraft = nil
-        setMessage(context.mergeMessage)
+        setMessage(context.preparedMessage)
     }
 
     /// 切换或关闭仓库时清空提交配置与只对本仓库有效的提交选项。

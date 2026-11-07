@@ -23,7 +23,7 @@ public struct OperationProgress: Sendable, Equatable {
         "MERGE_HEAD", "SQUASH_MSG", "CHERRY_PICK_HEAD", "REVERT_HEAD", "MERGE_MSG",
         "rebase-merge/head-name", "rebase-merge/onto", "rebase-merge/orig-head",
         "rebase-merge/msgnum", "rebase-merge/end", "rebase-merge/done", "rebase-merge/amend",
-        "rebase-merge/stopped-sha",
+        "rebase-merge/stopped-sha", "rebase-merge/message", "rebase-merge/message-squash", "rebase-merge/message-fixup",
         "rebase-apply/head-name", "rebase-apply/onto", "rebase-apply/orig-head",
         "rebase-apply/next", "rebase-apply/last", "rebase-apply/final-commit",
         "sequencer/todo", "sequencer/head",
@@ -157,6 +157,39 @@ extension OperationProgress {
         }
 
         return paths
+    }
+}
+
+// MARK: - Prepared Message
+
+extension OperationProgress {
+    /// 提交区预填的信息：按 `SQUASH_MSG`、当前 fixup / squash 步的信息、`rebase-merge/message`、
+    /// `rebase-apply/final-commit`、`MERGE_MSG` 的顺序取第一个存在的文件，注释行原样保留。
+    ///
+    /// - Parameter files: 同一次读取的状态文件快照。
+    /// - Returns: 文件原文；都不存在时为 nil。
+    static func preparedMessage(in files: [String: String]) -> String? {
+        let current = files["rebase-merge/done"].flatMap { instructions($0).last?.command }
+
+        // fixup 与 squash 各有自己的信息文件，按当前一步的指令选，不依次尝试两个文件
+        let step: String? =
+            switch current {
+            case "fixup", "f": "rebase-merge/message-fixup"
+            case "squash", "s": "rebase-merge/message-squash"
+            default: nil
+            }
+
+        let names = [
+            "SQUASH_MSG",
+            step,
+            "rebase-merge/message",
+            "rebase-apply/final-commit",
+            "MERGE_MSG",
+        ]
+
+        return names.lazy
+            .compactMap { $0.flatMap { files[$0] } }
+            .first
     }
 }
 

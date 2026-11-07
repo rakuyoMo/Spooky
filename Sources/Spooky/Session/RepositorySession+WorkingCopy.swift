@@ -269,6 +269,28 @@ extension RepositorySession {
         )
     }
 
+    /// 用信息框里编辑后的信息继续序列；注释行先按 Editor 设置询问或删除。
+    func continueSequence() {
+        guard canWrite, let operation = context?.operation else { return }
+
+        let request = generation
+
+        prepareCommitMessage { [weak self] message in
+            guard let self, generation == request else { return }
+
+            let (subject, body) = CommitMessage.parts(of: message)
+
+            performGit(
+                { runner, _ in
+                    try await WorkingCopyOperations(runner: runner)
+                        .continueSequence(operation, subject: subject, body: body)
+                },
+                title: AppLocalization.text("working.continue"),
+                recordsActivity: false
+            )
+        }
+    }
+
     /// 第一行成为标题，正文保留内部换行。
     func setMessage(_ message: String) {
         (commitSubject, commitBody) = CommitMessage.parts(of: message)

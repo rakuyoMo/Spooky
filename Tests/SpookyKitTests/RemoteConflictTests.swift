@@ -149,4 +149,60 @@ struct RemoteConflictTests {
             throw error
         }
     }
+
+    /// B 上的变基冲突解决后用编辑后的信息继续：Unicode、换行、引号与注释行经标准输入送到 B，原作者保留。
+    @Test("服务器上用编辑后的信息继续变基", .timeLimit(.minutes(3)))
+    func continueWithMessage() async throws {
+        let fixture = try await RemoteFixture.create()
+        let remote = fixture.connection()
+
+        do {
+            let location = try await remote.open().location
+            let runner = GitRunner(location: location, remote: remote)
+            let service = WorkingCopyOperations(runner: runner)
+            let files = RepositoryFiles(runner: runner)
+            let file = fixture.repository + "/x"
+
+            // feature 的提交由另一个作者写下，与 main 冲突
+            try await files.write(Data("base\n".utf8), to: file)
+            _ = try await runner.run(["add", "-A"])
+            _ = try await runner.run(["commit", "-q", "-m", "base"])
+            _ = try await runner.run(["checkout", "-q", "-b", "feature"])
+            try await files.write(Data("feature\n".utf8), to: file)
+            _ = try await runner.run([
+                "commit", "-q", "-am", "conflicting", "--author=Original Author <author@example.invalid>",
+            ])
+            _ = try await runner.run(["checkout", "-q", "main"])
+            try await files.write(Data("main\n".utf8), to: file)
+            _ = try await runner.run(["commit", "-q", "-am", "main"])
+            _ = try await runner.run(["checkout", "-q", "feature"])
+            _ = try await runner.execute(["rebase", "main"], acceptedExitCodes: [1])
+
+            try await service.resolve(try await runner.status().entries, theirs: true)
+
+            let subject = "标题 “弯引号” 'single' \"double\""
+            let body = "第一行\n# 注释\n第二行"
+            try await service.continueSequence(.rebase, subject: subject, body: body)
+
+            let log = try await runner.run(["log", "-1", "--format=%an%n%B"])
+            let head = try await runner.status().branch.oid
+
+            #expect(
+                String(decoding: log, as: UTF8.self).trimmingCharacters(in: .newlines)
+                    == "Original Author\n" + subject + "\n\n" + body
+            )
+            #expect(try await service.context(head: head).operation == nil)
+
+            await remote.close()
+            try await fixture.remove()
+        } catch {
+            if let git = error as? GitError {
+                Issue.record(Comment(rawValue: git.message))
+            }
+
+            await remote.close()
+            try await fixture.remove()
+            throw error
+        }
+    }
 }

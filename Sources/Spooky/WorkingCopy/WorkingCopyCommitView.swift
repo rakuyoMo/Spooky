@@ -152,12 +152,11 @@ extension WorkingCopyCommitView {
         !session.collapsesCommitBody && (focusedField != nil || pinned || !session.commitBody.isEmpty)
     }
 
-    /// 写入、提交后等待清空、快速修补和继续序列期间信息只读。
+    /// 写入、提交后等待清空和快速修补期间信息只读；继续序列前可以编辑这一步的信息。
     private var isEditable: Bool {
         let locked = session.isWriting
             || session.commitResetTask != nil
             || quickAmend
-            || session.continuesSequence
 
         return !locked
     }
@@ -350,7 +349,7 @@ extension WorkingCopyCommitView {
             }
 
             if session.continuesSequence {
-                Button(AppLocalization.text("working.continue")) { session.finishOperation("continue") }
+                Button(AppLocalization.text("working.continue")) { session.continueSequence() }
                     .disabled(!session.canWrite)
                     .help(AppLocalization.text("commit.continueHelp"))
             } else {

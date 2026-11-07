@@ -259,6 +259,52 @@ extension RepositorySessionTests {
     }
 }
 
+// MARK: - Sequence Messages
+
+extension RepositorySessionTests {
+    /// 摘取序列两步都冲突：第一步用信息框里编辑后的信息继续，停在第二步时预填换成第二个提交的信息。
+    @Test("序列用编辑后的信息继续，下一步更新预填")
+    func continueSequenceWithEditedMessage() async throws {
+        let (session, directory, runner) = try await openOperationRepository()
+        defer { closeOperationRepository(session, directory) }
+
+        try await commitFiles(["x": "base"], message: "base", in: directory, runner: runner)
+        _ = try await runner.run(["checkout", "-q", "-b", "picked"])
+        try await commitFiles(["x": "one"], message: "one", in: directory, runner: runner)
+        try await commitFiles(["x": "two"], message: "two", in: directory, runner: runner)
+        let two = String(decoding: try await runner.run(["rev-parse", "HEAD"]), as: UTF8.self)
+            .trimmingCharacters(in: .newlines)
+
+        _ = try await runner.run(["checkout", "-q", "main"])
+        try await commitFiles(["x": "main"], message: "main", in: directory, runner: runner)
+        _ = try await runner.execute(["cherry-pick", "picked~1", "picked"], acceptedExitCodes: [1])
+
+        try await reload(session) {
+            session.conflictCount == 1 && (session.context?.progress?.isSequence ?? false)
+        }
+
+        #expect(session.commitSubject == "one")
+
+        // 手工解决成两侧都没有的内容，第二步接在它上面同样冲突
+        try Data("resolved\n".utf8).write(to: directory.appending(path: "x"))
+        _ = try await runner.run(["add", "-A"])
+        try await reload(session) { session.conflictCount == 0 }
+
+        session.setMessage("编辑后的 “one”\n\n正文")
+        session.continueSequence()
+        await session.writeTask?.value
+
+        try await reload(session) {
+            session.conflictCount == 1 && session.context?.progress?.theirs == two
+        }
+
+        let message = String(decoding: try await runner.run(["log", "-1", "--format=%B", "HEAD"]), as: UTF8.self)
+
+        #expect(message.trimmingCharacters(in: .newlines) == "编辑后的 “one”\n\n正文")
+        #expect(session.commitSubject == "two")
+    }
+}
+
 // MARK: - Helpers
 
 extension RepositorySessionTests {
