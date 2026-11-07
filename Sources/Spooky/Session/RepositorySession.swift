@@ -234,6 +234,9 @@ final class RepositorySession {
     /// 提交信息与进行中状态的读取任务。
     private var contextTask: Task<Void, Never>? = nil
 
+    /// 读取进行中状态期间收到的重读请求，本次结束后补做。
+    private var pendingContext = false
+
     /// 本机递归文件监听。
     private var fileMonitor: RepositoryFileMonitor? = nil
 
@@ -956,19 +959,31 @@ extension RepositorySession {
 
     /// 身份与状态加载失败仍展示诊断，不能误把未知状态当成普通改动。
     private func loadContext() {
-        guard contextTask == nil, let repository else { return }
+        guard let repository else { return }
+
+        // 正在读取时合并请求，结束后按那时的 HEAD 再读一次：正在进行的读取可能早于刚结束的 Git 命令
+        guard contextTask == nil else {
+            pendingContext = true
+            return
+        }
+
+        pendingContext = false
         let request = generation
         let head = status?.branch.oid
         let service = WorkingCopyOperations(runner: makeRunner(repository))
+
         contextTask = Task { [weak self] in
             do {
                 let context = try await service.context(head: head)
+
                 guard let self, generation == request, !Task.isCancelled else { return }
+
                 let previous = self.context
                 self.context = context
                 updateMessage(for: context, previous: previous)
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
+
                 let failure = AppFailure(error: error, opening: false, location: repository)
                 self.failure = failure
 
@@ -982,6 +997,9 @@ extension RepositorySession {
 
             guard let self, generation == request else { return }
             contextTask = nil
+
+            // 被写入取消的读取不补做，写入结束后的完整刷新会重读
+            if pendingContext, !Task.isCancelled { loadContext() }
         }
     }
 

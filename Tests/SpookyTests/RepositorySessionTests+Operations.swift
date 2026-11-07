@@ -69,7 +69,13 @@ extension RepositorySessionTests {
         try await commitFiles(["x": "again"], message: "again", in: directory, runner: runner)
 
         _ = try await runner.execute(["revert", "--no-edit", "HEAD~3", "HEAD~2", "HEAD~1"], acceptedExitCodes: [1])
-        try await reload(session) { session.context?.operation == .revert && session.conflictCount == 1 }
+
+        // 第一个反转已经提交，等状态与操作读到同一个 HEAD
+        try await reload(session) {
+            session.context?.operation == .revert
+                && session.context?.progress?.ours == session.status?.branch.oid
+                && session.conflictCount == 1
+        }
 
         #expect(session.operationBannerTitle == AppLocalization.text("conflict.title.revert", 2, "main"))
         #expect(session.operationStepText == AppLocalization.text("conflict.step.reverting", 1, 2, "two"))
