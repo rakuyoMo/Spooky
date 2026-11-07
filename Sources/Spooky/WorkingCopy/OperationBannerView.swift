@@ -4,10 +4,10 @@ import SwiftUI
 
 // MARK: - OperationBannerView
 
-/// 提交区上方的进行中操作横幅：标题、冲突计数、当前阶段的提示与序列进度，以及只看冲突、中止和跳过。
+/// 提交区上方的进行中操作横幅：标题、冲突计数、当前阶段的提示与序列进度，以及只看冲突、中止、结束编辑和跳过。
 struct OperationBannerView: View {
-    /// 当前阶段：决定提示文字与是否提供跳过。
-    private enum Phase {
+    /// 当前阶段：决定提示文字。
+    enum Phase {
         /// 还有未解决的冲突。
         case conflicts
 
@@ -22,10 +22,56 @@ struct OperationBannerView: View {
     @Bindable
     var session: RepositorySession
 
-    /// 只在有进行中的操作时显示。
+    /// 只在有进行中的操作时显示；左、右、上留 12 pt，下方接提交区时不留，提交区隐藏时留 12 pt。
     var body: some View {
         if let progress = session.context?.progress {
             banner(progress)
+                .padding([.horizontal, .top], 12)
+                .padding(.bottom, session.showsCommitArea ? 0 : 12)
+        }
+    }
+}
+
+// MARK: - Texts
+
+extension OperationBannerView {
+    /// 冲突计数：总写未解决的数量；这次操作出现过冲突时，后面接已解决的数量，从 0 起。
+    ///
+    /// - Parameters:
+    ///   - unresolved: 当前未解决的冲突数。
+    ///   - resolved: 这次操作中已经解决的冲突数。
+    static func conflictSummary(unresolved: Int, resolved: Int) -> String {
+        let base =
+            switch unresolved {
+            case 0: AppLocalization.text("conflict.unresolved.none")
+            case 1: AppLocalization.text("conflict.unresolved.one")
+            default: AppLocalization.text("working.conflicts", unresolved)
+            }
+
+        // 从没有出现过冲突的操作（如 merge --no-commit）不带括号
+        guard unresolved > 0 || resolved > 0 else {
+            return base
+        }
+
+        return AppLocalization.text("conflict.resolvedSuffix", base, resolved)
+    }
+
+    /// 按操作与阶段选择提示的资源键。
+    ///
+    /// edit 步与尚未开始的交互式变基各有说明；合并、压缩合并与单个提交的摘取、反转以提交收尾，序列与变基以继续收尾。
+    static func hintKey(_ progress: OperationProgress, phase: Phase) -> String {
+        switch (progress.state, phase) {
+        case (_, _) where progress.stopsForEdit: "conflict.hint.rebase.edit"
+        case (_, _) where progress.isPendingInteractive: "conflict.hint.rebase.pending"
+        case (_, .conflicts) where !progress.isSequence: "conflict.hint.merge.conflicts"
+        case (_, .resolved) where !progress.isSequence: "conflict.hint.merge.resolved"
+        case (_, .empty) where !progress.isSequence: "conflict.hint.merge.empty"
+        case (.rebase, .conflicts): "conflict.hint.rebase.conflicts"
+        case (.rebase, .resolved): "conflict.hint.rebase.resolved"
+        case (.rebase, .empty): "conflict.hint.rebase.empty"
+        case (_, .conflicts): "conflict.hint.sequence.conflicts"
+        case (_, .resolved): "conflict.hint.sequence.resolved"
+        case (_, .empty): "conflict.hint.sequence.empty"
         }
     }
 }
@@ -42,28 +88,12 @@ extension OperationBannerView {
         return session.isWorkingCopyClean ? .empty : .resolved
     }
 
-    /// 未解决与已解决的冲突数；从没有出现过冲突时不显示。
-    private var conflictSummary: String? {
-        let unresolved = session.conflictCount
-        let resolved = session.resolvedConflictCount
-
-        let base: String? =
-            switch unresolved {
-            case 0: resolved > 0 ? AppLocalization.text("conflict.unresolved.none") : nil
-            case 1: AppLocalization.text("conflict.unresolved.one")
-            default: AppLocalization.text("working.conflicts", unresolved)
-            }
-
-        guard let base, resolved > 0 else {
-            return base
-        }
-
-        return AppLocalization.text("conflict.resolvedSuffix", base, resolved)
-    }
-
     /// 左侧是操作类型的图标，右侧是文字列；底行的勾选框与文字列左对齐，按钮靠右。
     private func banner(_ progress: OperationProgress) -> some View {
-        #warning("TODO: 核对横幅着色所用的命名色，目前取系统红色；只影响进行中操作横幅的底色与描边")
+        let summary = Self.conflictSummary(
+            unresolved: session.conflictCount,
+            resolved: session.resolvedConflictCount
+        )
 
         return HStack(alignment: .top, spacing: 8) {
             icon(progress.state)
@@ -72,11 +102,9 @@ extension OperationBannerView {
                 Text(session.operationBannerTitle ?? "")
                     .font(.system(size: 13, weight: .bold))
 
-                if let summary = conflictSummary {
-                    Text(summary)
-                        .font(.system(size: 13))
-                        .padding(.top, 4)
-                }
+                Text(summary)
+                    .font(.system(size: 13))
+                    .padding(.top, 4)
 
                 Text(hint(progress))
                     .font(.system(size: 13))
@@ -92,15 +120,18 @@ extension OperationBannerView {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            // 着色铺在最下层，上面盖一层半透明的标题栏材质
+            // 警告底色铺在最下层，上面盖一层半透明的标题栏材质；命名色两种外观各有取值
             ZStack {
-                Color.red.opacity(0.15)
+                AppPalette.color("general_warning_bg_color")
 
                 BannerMaterialView()
             }
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
-        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.red.opacity(0.25), lineWidth: 1))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(Color(nsColor: .systemYellow).opacity(0.25), lineWidth: 1)
+        }
     }
 
     /// 合并与压缩合并用合并的图标，变基、摘取与反转用分支的图标；系统黄色，略微透明。
@@ -148,7 +179,7 @@ extension OperationBannerView {
 
             // 工作区还有改动或未跟踪文件时照样可以结束编辑，Git 拒绝时报告它的错误
             if progress.stopsForEdit {
-                Button(AppLocalization.text("working.continue")) { session.finishOperation("continue") }
+                Button(AppLocalization.text("working.endEditing")) { session.finishOperation("continue") }
                     .disabled(!session.canWrite)
             } else if session.offersSkip {
                 Button(AppLocalization.text("working.skip")) { session.finishOperation("skip") }
@@ -157,25 +188,9 @@ extension OperationBannerView {
         }
     }
 
-    /// 按操作与阶段给出下一步提示，按钮名以粗体标出。
-    ///
-    /// 停在 edit 上时说明先提交再继续；单个提交的摘取与反转同合并一样以提交收尾。
+    /// 当前阶段的下一步提示，按钮名以粗体标出。
     private func hint(_ progress: OperationProgress) -> AttributedString {
-        let key =
-            switch (progress.state, phase) {
-            case (_, _) where progress.stopsForEdit: "conflict.hint.rebase.edit"
-            case (_, .conflicts) where !progress.isSequence: "conflict.hint.merge.conflicts"
-            case (_, .resolved) where !progress.isSequence: "conflict.hint.merge.resolved"
-            case (_, .empty) where !progress.isSequence: "conflict.hint.merge.empty"
-            case (.rebase, .conflicts): "conflict.hint.rebase.conflicts"
-            case (.rebase, .resolved): "conflict.hint.rebase.resolved"
-            case (.rebase, .empty): "conflict.hint.rebase.empty"
-            case (_, .conflicts): "conflict.hint.sequence.conflicts"
-            case (_, .resolved): "conflict.hint.sequence.resolved"
-            case (_, .empty): "conflict.hint.sequence.empty"
-            }
-
-        let text = AppLocalization.text(key)
+        let text = AppLocalization.text(Self.hintKey(progress, phase: phase))
         return (try? AttributedString(markdown: text)) ?? AttributedString(text)
     }
 }

@@ -68,8 +68,10 @@ struct WorkingCopyCommitView: View {
     private var bodyHeight = CommitEditorSettings.minimumBodyHeight
 
     /// 进行中横幅位于信息区上方；进行中的操作还有未解决冲突或尚未开始时只显示横幅。
+    ///
+    /// 横幅自带外边距，信息区另有 20 pt 内边距，两者之间不再留间距。
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 0) {
             OperationBannerView(session: session)
 
             if session.showsCommitArea {
@@ -85,9 +87,9 @@ struct WorkingCopyCommitView: View {
                 }
                 .disabled(session.commitResetTask != nil)
                 .animation(.easeInOut(duration: 0.2), value: session.collapsesCommitBody)
+                .padding(20)
             }
         }
-        .padding(20)
         .background(HeaderMaterial())
         .onModifierKeysChanged(mask: .option) { _, flags in
             optionPressed = flags.contains(.option)

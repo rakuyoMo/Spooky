@@ -333,6 +333,7 @@
 "working.abort" = "Abandonner";
 "working.continue" = "Continuer";
 "working.skip" = "Ignorer";
+"working.endEditing" = "Terminer la modification";
 "working.diffThreshold" = "Afficher un avertissement pour les diffs de plus de (ko) :";
 "working.error.stale" = "Le fichier a été modifié. Actualisez le diff et sélectionnez à nouveau les modifications.";
 "working.error.selection" = "Aucune modification de texte applicable n’est sélectionnée.";
@@ -642,10 +643,10 @@
 "conflict.hint.merge.resolved" = "Vérifiez le message de commit, puis cliquez sur **Valider** pour terminer la fusion.";
 "conflict.hint.merge.empty" = "Il ne reste aucune modification à valider. Cliquez sur **Abandonner** pour annuler la fusion, ou sur **Valider** pour créer un commit de fusion vide.";
 "conflict.hint.rebase.conflicts" = "Résolvez tous les conflits pour poursuivre le rebasage.";
-"conflict.hint.rebase.resolved" = "Cliquez sur **Continuer** pour valider cette étape et poursuivre le rebasage.";
+"conflict.hint.rebase.resolved" = "Vérifiez le message de commit, puis cliquez sur **Continuer** pour valider cette étape et poursuivre le rebasage.";
 "conflict.hint.rebase.empty" = "Il ne reste aucune modification dans cette étape. Cliquez sur **Ignorer** pour écarter ce commit, ou sur **Continuer** pour conserver un commit vide et poursuivre le rebasage.";
 "conflict.hint.sequence.conflicts" = "Résolvez tous les conflits pour poursuivre.";
-"conflict.hint.sequence.resolved" = "Cliquez sur **Continuer** pour valider cette étape et passer aux commits suivants.";
+"conflict.hint.sequence.resolved" = "Vérifiez le message de commit, puis cliquez sur **Continuer** pour valider cette étape et passer aux commits suivants.";
 "conflict.hint.sequence.empty" = "Il ne reste aucune modification dans cette étape. Cliquez sur **Ignorer** pour écarter ce commit, ou sur **Continuer** pour conserver un commit vide et poursuivre.";
 "conflict.kind.addedByThem" = "Ajouté par eux";
 "conflict.kind.addedByUs" = "Ajouté par nous";
@@ -1205,7 +1206,8 @@
 "rewrite.checkout.menu" = "Extraire une révision…";
 "rewrite.rebaseOnto.menu" = "Rebaser ailleurs…";
 "rewrite.reset.menu" = "Réinitialiser HEAD à une révision…";
-"conflict.hint.rebase.edit" = "Validez les modifications remises par ce commit, puis cliquez sur **Continuer**.";
+"conflict.hint.rebase.edit" = "Scindez ou réécrivez ce commit en créant de nouveaux commits avec **Valider**, puis cliquez sur **Terminer la modification** pour poursuivre le rebasage.";
+"conflict.hint.rebase.pending" = "Ce rebasage interactif n’a encore traité aucun commit. Cliquez sur **Abandonner** pour l’annuler.";
 "rewrite.squash.confirm.one" = "Fusionner « %@ » dans « %@ » ? Les messages sont combinés.";
 "rewrite.fixup.confirm.one" = "Intégrer « %@ » dans « %@ » en ne gardant que le message de la cible ?";
 "rewrite.drop.confirm.one" = "Supprimer « %@ » de la branche courante ?";

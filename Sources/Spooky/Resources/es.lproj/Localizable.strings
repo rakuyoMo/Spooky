@@ -333,6 +333,7 @@
 "working.abort" = "Abortar";
 "working.continue" = "Continuar";
 "working.skip" = "Omitir";
+"working.endEditing" = "Terminar edición";
 "working.diffThreshold" = "Mostrar aviso para diffs mayores de (kB):";
 "working.error.stale" = "El archivo ha cambiado. Actualizar el diff y volver a seleccionar los cambios.";
 "working.error.selection" = "No se ha seleccionado ningún cambio de texto aplicable.";
@@ -642,10 +643,10 @@
 "conflict.hint.merge.resolved" = "Revisar el mensaje del commit y, después, hacer clic en **Hacer commit** para completar la fusión.";
 "conflict.hint.merge.empty" = "No quedan cambios para hacer commit. Hacer clic en **Abortar** para cancelar la fusión o en **Hacer commit** para crear un commit de fusión vacío.";
 "conflict.hint.rebase.conflicts" = "Resolver todos los conflictos para continuar el rebase.";
-"conflict.hint.rebase.resolved" = "Hacer clic en **Continuar** para hacer commit de este paso y continuar el rebase.";
+"conflict.hint.rebase.resolved" = "Revisar el mensaje del commit y, después, hacer clic en **Continuar** para hacer commit de este paso y continuar el rebase.";
 "conflict.hint.rebase.empty" = "No quedan cambios en este paso. Hacer clic en **Omitir** para dejar fuera este commit o en **Continuar** para conservar un commit vacío y continuar el rebase.";
 "conflict.hint.sequence.conflicts" = "Resolver todos los conflictos para continuar.";
-"conflict.hint.sequence.resolved" = "Hacer clic en **Continuar** para hacer commit de este paso y seguir con los commits restantes.";
+"conflict.hint.sequence.resolved" = "Revisar el mensaje del commit y, después, hacer clic en **Continuar** para hacer commit de este paso y seguir con los commits restantes.";
 "conflict.hint.sequence.empty" = "No quedan cambios en este paso. Hacer clic en **Omitir** para dejar fuera este commit o en **Continuar** para conservar un commit vacío y seguir.";
 "conflict.kind.addedByThem" = "Añadido por ellos";
 "conflict.kind.addedByUs" = "Añadido por nosotros";
@@ -1205,7 +1206,8 @@
 "rewrite.checkout.menu" = "Hacer checkout de una revisión…";
 "rewrite.rebaseOnto.menu" = "Hacer rebase en otra base…";
 "rewrite.reset.menu" = "Restablecer HEAD a una revisión…";
-"conflict.hint.rebase.edit" = "Hacer commit de los cambios devueltos por este commit y luego hacer clic en **Continuar**.";
+"conflict.hint.rebase.edit" = "Dividir o reescribir este commit creando commits nuevos con **Hacer commit** y, después, hacer clic en **Terminar edición** para continuar el rebase.";
+"conflict.hint.rebase.pending" = "Este rebase interactivo aún no ha procesado ningún commit. Hacer clic en **Abortar** para cancelarlo.";
 "rewrite.squash.confirm.one" = "¿Combinar «%@» en «%@»? Sus mensajes se unen.";
 "rewrite.fixup.confirm.one" = "¿Incorporar «%@» en «%@» y conservar solo el mensaje del destino?";
 "rewrite.drop.confirm.one" = "¿Eliminar «%@» de la rama actual?";

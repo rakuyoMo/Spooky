@@ -333,6 +333,7 @@
 "working.abort" = "Vorgang abbrechen";
 "working.continue" = "Fortsetzen";
 "working.skip" = "Überspringen";
+"working.endEditing" = "Bearbeitung beenden";
 "working.diffThreshold" = "Warnung anzeigen für Diffs größer als (kB):";
 "working.error.stale" = "Die Datei hat sich geändert. Aktualisieren Sie den Diff und wählen Sie die Änderungen erneut aus.";
 "working.error.selection" = "Keine anwendbaren Textänderungen ausgewählt.";
@@ -642,10 +643,10 @@
 "conflict.hint.merge.resolved" = "Prüfen Sie die Commit-Nachricht und klicken Sie dann auf **Committen**, um den Merge abzuschließen.";
 "conflict.hint.merge.empty" = "Es sind keine Änderungen zum Committen übrig. Klicken Sie auf **Vorgang abbrechen**, um den Merge abzubrechen, oder auf **Committen**, um einen leeren Merge-Commit zu erstellen.";
 "conflict.hint.rebase.conflicts" = "Lösen Sie alle Konflikte auf, um den Rebase fortzusetzen.";
-"conflict.hint.rebase.resolved" = "Klicken Sie auf **Fortsetzen**, um diesen Schritt zu committen und den Rebase fortzusetzen.";
+"conflict.hint.rebase.resolved" = "Prüfen Sie die Commit-Nachricht und klicken Sie dann auf **Fortsetzen**, um diesen Schritt zu committen und den Rebase fortzusetzen.";
 "conflict.hint.rebase.empty" = "In diesem Schritt sind keine Änderungen übrig. Klicken Sie auf **Überspringen**, um diesen Commit auszulassen, oder auf **Fortsetzen**, um einen leeren Commit zu behalten und den Rebase fortzusetzen.";
 "conflict.hint.sequence.conflicts" = "Lösen Sie alle Konflikte auf, um fortzufahren.";
-"conflict.hint.sequence.resolved" = "Klicken Sie auf **Fortsetzen**, um diesen Schritt zu committen und mit den übrigen Commits fortzufahren.";
+"conflict.hint.sequence.resolved" = "Prüfen Sie die Commit-Nachricht und klicken Sie dann auf **Fortsetzen**, um diesen Schritt zu committen und mit den übrigen Commits fortzufahren.";
 "conflict.hint.sequence.empty" = "In diesem Schritt sind keine Änderungen übrig. Klicken Sie auf **Überspringen**, um diesen Commit auszulassen, oder auf **Fortsetzen**, um einen leeren Commit zu behalten und fortzufahren.";
 "conflict.kind.addedByThem" = "Von der Gegenseite hinzugefügt";
 "conflict.kind.addedByUs" = "Von uns hinzugefügt";
@@ -1205,7 +1206,8 @@
 "rewrite.checkout.menu" = "Revision auschecken…";
 "rewrite.rebaseOnto.menu" = "Rebase auf andere Basis…";
 "rewrite.reset.menu" = "HEAD auf Revision zurücksetzen…";
-"conflict.hint.rebase.edit" = "Committen Sie die aus diesem Commit zurückgeholten Änderungen und klicken Sie dann auf **Fortsetzen**.";
+"conflict.hint.rebase.edit" = "Teilen oder überarbeiten Sie diesen Commit, indem Sie mit **Committen** neue Commits erstellen, und klicken Sie dann auf **Bearbeitung beenden**, um den Rebase fortzusetzen.";
+"conflict.hint.rebase.pending" = "Dieser interaktive Rebase hat noch keine Commits verarbeitet. Klicken Sie auf **Vorgang abbrechen**, um ihn abzubrechen.";
 "rewrite.squash.confirm.one" = "„%@“ in „%@“ zusammenfassen? Die Nachrichten werden kombiniert.";
 "rewrite.fixup.confirm.one" = "„%@“ in „%@“ einfügen und nur die Nachricht des Ziels behalten?";
 "rewrite.drop.confirm.one" = "„%@“ aus dem aktuellen Branch löschen?";

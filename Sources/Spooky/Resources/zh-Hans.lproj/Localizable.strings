@@ -333,6 +333,7 @@
 "working.abort" = "中止";
 "working.continue" = "继续";
 "working.skip" = "跳过";
+"working.endEditing" = "结束编辑";
 "working.diffThreshold" = "Diff 警告阈值（kB）：";
 "working.error.stale" = "文件已发生变化，请刷新 Diff 后重新选择改动。";
 "working.error.selection" = "未选择可应用的文本改动。";
@@ -642,10 +643,10 @@
 "conflict.hint.merge.resolved" = "检查提交信息，然后点按 **提交** 完成合并。";
 "conflict.hint.merge.empty" = "没有可提交的改动。点按 **中止** 取消合并，或点按 **提交** 创建空的合并提交。";
 "conflict.hint.rebase.conflicts" = "解决全部冲突后才能继续变基。";
-"conflict.hint.rebase.resolved" = "点按 **继续** 提交这一步并继续变基。";
+"conflict.hint.rebase.resolved" = "检查提交信息，然后点按 **继续** 提交这一步并继续变基。";
 "conflict.hint.rebase.empty" = "这一步没有可提交的改动。点按 **跳过** 略过这个提交，或点按 **继续** 保留一个空提交并继续变基。";
 "conflict.hint.sequence.conflicts" = "解决全部冲突后才能继续。";
-"conflict.hint.sequence.resolved" = "点按 **继续** 提交这一步，再处理后面的提交。";
+"conflict.hint.sequence.resolved" = "检查提交信息，然后点按 **继续** 提交这一步，再处理后面的提交。";
 "conflict.hint.sequence.empty" = "这一步没有可提交的改动。点按 **跳过** 略过这个提交，或点按 **继续** 保留一个空提交再继续。";
 "conflict.kind.addedByThem" = "对方新增";
 "conflict.kind.addedByUs" = "我方新增";
@@ -1205,7 +1206,8 @@
 "rewrite.checkout.menu" = "检出版本…";
 "rewrite.rebaseOnto.menu" = "变基到别处…";
 "rewrite.reset.menu" = "把 HEAD 重置到版本…";
-"conflict.hint.rebase.edit" = "提交从这个提交撤回的改动后，点按 **继续**。";
+"conflict.hint.rebase.edit" = "用 **提交** 把这个提交拆分或改写成新的提交，然后点按 **结束编辑** 继续变基。";
+"conflict.hint.rebase.pending" = "这次交互式变基还没有处理任何提交。点按 **中止** 取消变基。";
 "rewrite.squash.confirm.one" = "将 “%@” 压缩进 “%@”？它们的提交信息会合并。";
 "rewrite.fixup.confirm.one" = "将 “%@” 并入 “%@”，只保留目标的提交信息？";
 "rewrite.drop.confirm.one" = "从当前分支删除 “%@”？";

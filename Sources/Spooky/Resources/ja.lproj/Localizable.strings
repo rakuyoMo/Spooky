@@ -333,6 +333,7 @@
 "working.abort" = "中止";
 "working.continue" = "続行";
 "working.skip" = "スキップ";
+"working.endEditing" = "編集を終了";
 "working.diffThreshold" = "Diff 警告のしきい値（kB）：";
 "working.error.stale" = "ファイルが変更されました。Diff を更新して変更を選び直してください。";
 "working.error.selection" = "適用できるテキスト変更が選択されていません。";
@@ -642,10 +643,10 @@
 "conflict.hint.merge.resolved" = "コミットメッセージを確認し、**コミット** をクリックしてマージを完了してください。";
 "conflict.hint.merge.empty" = "コミットできる変更が残っていません。**中止** でマージを取り消すか、**コミット** で空のマージコミットを作成してください。";
 "conflict.hint.rebase.conflicts" = "リベースを続けるには、すべての競合を解決してください。";
-"conflict.hint.rebase.resolved" = "**続行** をクリックすると、このステップをコミットしてリベースを続けます。";
+"conflict.hint.rebase.resolved" = "コミットメッセージを確認し、**続行** をクリックしてこのステップをコミットし、リベースを続けてください。";
 "conflict.hint.rebase.empty" = "このステップには変更が残っていません。**スキップ** でこのコミットを除くか、**続行** で空のコミットを残してリベースを続けてください。";
 "conflict.hint.sequence.conflicts" = "続けるには、すべての競合を解決してください。";
-"conflict.hint.sequence.resolved" = "**続行** をクリックすると、このステップをコミットして残りのコミットに進みます。";
+"conflict.hint.sequence.resolved" = "コミットメッセージを確認し、**続行** をクリックしてこのステップをコミットし、残りのコミットに進んでください。";
 "conflict.hint.sequence.empty" = "このステップには変更が残っていません。**スキップ** でこのコミットを除くか、**続行** で空のコミットを残して続けてください。";
 "conflict.kind.addedByThem" = "相手側で追加";
 "conflict.kind.addedByUs" = "自分側で追加";
@@ -1205,7 +1206,8 @@
 "rewrite.checkout.menu" = "リビジョンをチェックアウト…";
 "rewrite.rebaseOnto.menu" = "別の場所へリベース…";
 "rewrite.reset.menu" = "HEAD をリビジョンへリセット…";
-"conflict.hint.rebase.edit" = "このコミットから戻した変更をコミットしてから、**続行** をクリックしてください。";
+"conflict.hint.rebase.edit" = "**コミット** でこのコミットを分割または書き直して新しいコミットを作成し、**編集を終了** をクリックしてリベースを続けてください。";
+"conflict.hint.rebase.pending" = "このインタラクティブリベースはまだどのコミットも処理していません。**中止** をクリックして取り消してください。";
 "rewrite.squash.confirm.one" = "“%@” を “%@” にスカッシュしますか？メッセージは結合されます。";
 "rewrite.fixup.confirm.one" = "“%@” を “%@” に取り込み、対象のメッセージだけを残しますか？";
 "rewrite.drop.confirm.one" = "現在のブランチから “%@” を削除しますか？";
