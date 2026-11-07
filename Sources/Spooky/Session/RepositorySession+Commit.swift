@@ -30,6 +30,15 @@ extension RepositorySession {
             )
     }
 
+    /// 提交区可以打开修补：HEAD 已有提交，且没有进行中的操作，或交互式变基停在 edit 步等待修补当前 HEAD。
+    var canAmend: Bool {
+        guard canWrite, status?.branch.oid != nil else {
+            return false
+        }
+
+        return context?.operation == nil || (context?.progress?.stopsForEdit ?? false)
+    }
+
     /// 提交区显示的提交人：仓库所在机器上生效的 `user.name` 与 `user.email`；没有配置或还没读到时为空。
     var committer: (name: String, email: String) {
         (commitConfiguration?.userName ?? "", commitConfiguration?.userEmail ?? "")
@@ -114,13 +123,19 @@ extension RepositorySession {
     /// 读到新的上下文时按编辑模式更新信息：进入进行中操作即进入合并模式，用 Git 准备的信息替换草稿并退出修补，合并成功后信息为空。
     ///
     /// 序列进入下一步或停在另一个提交上时同样换成这一步的信息；同一步里重新读取不覆盖编辑中的内容。
+    /// edit 停顿结束后退出停顿里打开的修补。
     /// 仓库刚打开时还没有上一份上下文，只在信息为空时填入，切回仓库时恢复的草稿保留。
     ///
     /// - Parameters:
     ///   - context: 刚读到的上下文。
     ///   - previous: 上一份上下文；仓库刚打开时为 nil。
     func updateMessage(for context: WorkingCopyContext, previous: WorkingCopyContext?) {
-        guard let progress = context.progress else { return }
+        guard let progress = context.progress else {
+            // edit 停顿里打开的修补只针对停下时的 HEAD，变基结束或中止后退出修补，恢复进入修补前的草稿
+            if previous?.progress?.stopsForEdit ?? false { setAmend(false) }
+
+            return
+        }
 
         // 变基的步号随每一步增加；摘取与反转的序列总是第 1 步，换的是正在处理的提交
         let last = previous?.progress

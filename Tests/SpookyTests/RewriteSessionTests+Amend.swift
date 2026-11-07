@@ -6,7 +6,7 @@ import Testing
 
 // MARK: - Amend
 
-/// 修补旧提交不经确认：干净工作区直接停到目标；有本地改动时先询问储藏，三个按钮各自的结果。
+/// 修补旧提交不经确认：干净工作区直接停到目标，停下后可在提交区修补；有本地改动时先询问储藏，三个按钮各自的结果。
 extension RewriteSessionTests {
     /// 干净工作区直接停到目标本身；暂存修补后结束编辑，目标带上修补，后面的提交照原样重放。
     @Test("修补旧提交：干净工作区直接开始")
@@ -42,6 +42,73 @@ extension RewriteSessionTests {
 
         #expect(try await subjects(session) == ["第三个", "第二个", "第一个"])
         #expect(String(decoding: amended, as: UTF8.self) == "补充\n")
+    }
+
+    /// 停下后在提交区打开修补，信息换成目标的信息；改了内容与信息再修补，结束编辑后目标两者都生效，后面的提交照原样重放。
+    @Test("修补旧提交：停下后在提交区修补，再结束编辑")
+    func amendInCommitArea() async throws {
+        let (session, directory, commits) = try await makeSession()
+        defer { cleanUp(session, directory) }
+
+        try await stopForAmend(commits[1], in: session)
+
+        // edit 停顿时提交区可以修补，载入的是停下时 HEAD 的信息
+        #expect(session.canAmend)
+
+        session.setAmend(true)
+        #expect(session.amend && session.commitSubject == "第二个")
+
+        try Data("补充\n".utf8).write(to: directory.appending(path: "二.txt"))
+        await reload(session)
+        session.stageAll(staged: true)
+        await settle(session)
+
+        session.commitSubject = "第二个（修补）"
+        session.commitBody = "修补的正文"
+        session.commit()
+        await settle(session)
+        await session.commitResetTask?.value
+
+        // 修补改写了停下时的 HEAD，仍停在 edit 步，修补随这次提交结束
+        #expect(session.context?.progress?.stopsForEdit ?? false)
+        #expect(session.status?.branch.oid != commits[1])
+        #expect(!session.amend)
+
+        session.finishOperation("continue")
+        await settle(session)
+        try await FileViewsTests.wait { session.context?.operation == nil }
+
+        let runner = try #require(session.runner)
+        let message = try await runner.run(["log", "-1", "--format=%B", "HEAD~1"])
+        let amended = try await runner.run(["show", "HEAD~1:二.txt"])
+
+        #expect(try await subjects(session) == ["第三个", "第二个（修补）", "第一个"])
+        #expect(String(decoding: amended, as: UTF8.self) == "补充\n")
+        #expect(
+            String(decoding: message, as: UTF8.self).trimmingCharacters(in: .newlines)
+                == "第二个（修补）\n\n修补的正文"
+        )
+    }
+
+    /// edit 停顿里打开的修补只针对停下时的 HEAD：中止后退出修补，信息回到进入修补前的草稿。
+    @Test("修补旧提交：中止后退出提交区的修补")
+    func amendEndsWithEditStop() async throws {
+        let (session, directory, commits) = try await makeSession()
+        defer { cleanUp(session, directory) }
+
+        try await stopForAmend(commits[1], in: session)
+
+        session.commitSubject = "草稿"
+        session.setAmend(true)
+        #expect(session.amend && session.commitSubject == "第二个")
+
+        session.finishOperation("abort")
+        await settle(session)
+        try await FileViewsTests.wait { session.context?.operation == nil }
+
+        #expect(!session.amend)
+        #expect(session.commitSubject == "草稿")
+        #expect(session.status?.branch.oid == commits[2])
     }
 
     /// 有本地改动时先询问储藏，对话框不提供完成后恢复；Abort 只关闭对话框，HEAD、工作区与储藏列表都不变。
@@ -110,6 +177,13 @@ extension RewriteSessionTests {
 // MARK: - Helpers
 
 extension RewriteSessionTests {
+    /// 工作区干净时请求修补旧提交，等到停在目标的 edit 步。
+    private func stopForAmend(_ commit: String, in session: RepositorySession) async throws {
+        session.requestRewrite(.amend(commit))
+        try await FileViewsTests.wait { session.context?.progress?.stopsForEdit ?? false }
+        await settle(session)
+    }
+
     /// 在已跟踪的文件里留下未暂存的改动，再请求修补旧提交，取回储藏询问。
     private func requestAmend(
         _ commit: String,
@@ -140,7 +214,9 @@ extension RewriteSessionTests {
 
     /// 仓库里的储藏数。
     private func stashCount(_ session: RepositorySession) async throws -> Int {
-        let output = try await try #require(session.runner).run(["stash", "list", "-z"])
+        let runner = try #require(session.runner)
+        let output = try await runner.run(["stash", "list", "-z"])
+
         return String(decoding: output, as: UTF8.self).split(separator: "\0").count
     }
 }

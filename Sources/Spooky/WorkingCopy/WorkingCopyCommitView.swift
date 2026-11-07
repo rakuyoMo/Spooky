@@ -94,10 +94,7 @@ struct WorkingCopyCommitView: View {
         .onModifierKeysChanged(mask: .option) { _, flags in
             optionPressed = flags.contains(.option)
 
-            if
-                optionPressed, focusedField == nil, !session.amend,
-                session.status?.branch.oid != nil, session.context?.operation == nil
-            {
+            if optionPressed, focusedField == nil, !session.amend, session.canAmend {
                 session.setAmend(true)
                 quickAmend = session.amend
             } else if !optionPressed, quickAmend {
@@ -303,10 +300,7 @@ extension WorkingCopyCommitView {
     private var options: some View {
         VStack(alignment: .leading, spacing: 8) {
             Toggle(amendTitle, isOn: Binding(get: { session.amend }, set: { session.setAmend($0) }))
-                .disabled(
-                    !session.canWrite || quickAmend
-                        || session.status?.branch.oid == nil || session.context?.operation != nil
-                )
+                .disabled(!session.canAmend || quickAmend)
 
             Toggle(AppLocalization.text("commit.signOff"), isOn: $signOff)
                 .disabled(!session.canWrite || quickAmend)

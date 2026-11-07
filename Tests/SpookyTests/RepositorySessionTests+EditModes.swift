@@ -4,7 +4,8 @@ import Testing
 @testable import Spooky
 @testable import SpookyKit
 
-/// 提交区的三种编辑模式共用一份草稿：修补结束后回到普通草稿，合并换上合并说明且成功后为空，失败保留正在编辑的信息。
+/// 提交区的三种编辑模式共用一份草稿：修补结束后回到普通草稿，合并换上合并说明且成功后为空，失败保留正在编辑的信息；
+/// 修补只在没有进行中的操作或停在 edit 步时可用。
 extension RepositorySessionTests {
     /// 取消修补与修补成功都回到进入修补前的普通草稿；修补失败时信息与修补状态原样保留。
     @Test("修补取消、失败与成功")
@@ -134,6 +135,46 @@ extension RepositorySessionTests {
 
         #expect(try await lastMessage(runner) == "改过的合并说明")
         #expect(session.commitSubject.isEmpty && session.commitBody.isEmpty)
+    }
+
+    /// 修补只在没有进行中的操作或停在 edit 步时可用：合并、摘取与变基停在冲突上，冲突解决之后同样不能打开修补。
+    @Test("合并、摘取与变基进行中不能修补")
+    func amendUnavailableDuringOperations() async throws {
+        let (session, directory, runner) = try await openOperationRepository()
+        defer { closeOperationRepository(session, directory) }
+
+        try await commitFiles(["x": "base"], message: "base", in: directory, runner: runner)
+        _ = try await runner.run(["checkout", "-q", "-b", "side"])
+        try await commitFiles(["x": "side"], message: "side", in: directory, runner: runner)
+        _ = try await runner.run(["checkout", "-q", "main"])
+        try await commitFiles(["x": "main"], message: "main", in: directory, runner: runner)
+        try await reload(session) { session.context != nil && session.status?.branch.oid != nil }
+
+        #expect(session.canAmend)
+
+        let operations: [(command: String, state: RepositoryOperationState)] = [
+            ("merge", .merge),
+            ("cherry-pick", .cherryPick),
+            ("rebase", .rebase),
+        ]
+
+        for (command, state) in operations {
+            _ = try await runner.execute([command, "side"], acceptedExitCodes: [1])
+            try await reload(session) { session.context?.operation == state && session.conflictCount == 1 }
+
+            #expect(!session.canAmend)
+
+            // 冲突解决之后仍在进行中的操作里，打开修补不起作用
+            try await resolveAll(session, theirs: false)
+            session.setAmend(true)
+
+            #expect(!session.canAmend && !session.amend)
+
+            _ = try await runner.run([command, "--abort"])
+            try await reload(session) { session.context != nil && session.context?.operation == nil }
+        }
+
+        #expect(session.canAmend)
     }
 }
 
