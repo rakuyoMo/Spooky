@@ -30,12 +30,15 @@ extension RepositorySession {
             )
     }
 
-    /// 提交区可以打开修补：HEAD 已有提交，且没有进行中的操作，或交互式变基停在 edit 步等待修补当前 HEAD。
+    /// 提交区可以打开修补：可写，且 HEAD 是可以修补的提交。
+    var canAmend: Bool { canWrite && isHeadAmendable }
+
+    /// HEAD 是可以修补的提交：已有提交，且没有进行中的操作，或交互式变基停在 edit 步等待修补当前 HEAD；与此刻能否写入无关。
     ///
     /// edit 停顿里 HEAD 是停下的提交、它的修补结果或停顿中新建的提交时可以修补；
     /// 撤下停下的提交后 HEAD 回到它的父提交，那是用户没有选中的提交，不能修补。
-    var canAmend: Bool {
-        guard canWrite, let head = status?.branch.oid else {
+    var isHeadAmendable: Bool {
+        guard let head = status?.branch.oid else {
             return false
         }
 
@@ -131,7 +134,7 @@ extension RepositorySession {
     /// 读到新的上下文时按编辑模式更新信息：进入进行中操作即进入合并模式，用 Git 准备的信息替换草稿并退出修补，合并成功后信息为空。
     ///
     /// 序列进入下一步或停在另一个提交上时同样换成这一步的信息；同一步里重新读取不覆盖编辑中的内容。
-    /// edit 停顿结束后退出停顿里打开的修补。
+    /// edit 停顿结束，或 HEAD 不再是可以修补的提交时，退出已打开的修补。
     /// 仓库刚打开时还没有上一份上下文，只在信息为空时填入，切回仓库时恢复的草稿保留。
     ///
     /// - Parameters:
@@ -144,6 +147,9 @@ extension RepositorySession {
 
             return
         }
+
+        // HEAD 不再能修补（如回到停下的提交的父提交）时，已打开的修补随之退出，恢复进入修补前的草稿
+        if !isHeadAmendable { setAmend(false) }
 
         // 变基的步号随每一步增加；摘取与反转的序列总是第 1 步，换的是正在处理的提交
         let last = previous?.progress

@@ -173,6 +173,47 @@ extension RewriteSessionTests {
         #expect(session.status?.branch.oid == commits[2])
     }
 
+    /// 修补打开后 HEAD 被重置到停下的提交的父提交：修补退出、草稿恢复，之后的提交是新提交，父提交不被改写。
+    @Test("修补旧提交：HEAD 回到父提交后退出修补")
+    func amendEndsWhenHeadMovesToParent() async throws {
+        let (session, directory, commits) = try await makeSession()
+        defer { cleanUp(session, directory) }
+
+        try await stopForAmend(commits[1], in: session)
+
+        session.commitSubject = "草稿"
+        session.setAmend(true)
+        #expect(session.amend && session.commitSubject == "第二个")
+
+        // 在会话之外撤下停下的提交，HEAD 回到它的父提交，等会话读到父提交的状态与信息
+        let runner = try #require(session.runner)
+        _ = try await runner.run(["reset", "-q", "HEAD^", "--"])
+        await reload(session)
+
+        try await FileViewsTests.wait {
+            session.status?.branch.oid == commits[0]
+                && session.context?.lastMessage == "第一个"
+        }
+
+        #expect(!session.amend && !session.canAmend)
+        #expect(session.commitSubject == "草稿")
+
+        // 用恢复的草稿提交撤下的改动，得到新提交，父提交保持原样
+        session.stageAll(staged: true)
+        await settle(session)
+
+        session.commit()
+        await settle(session)
+        await session.commitResetTask?.value
+
+        session.finishOperation("continue")
+        await settle(session)
+        try await FileViewsTests.wait { session.context?.operation == nil }
+
+        #expect(try await subjects(session) == ["第三个", "草稿", "第一个"])
+        #expect(try await RepositoryRewrite(runner: runner).resolve("HEAD~2") == commits[0])
+    }
+
     /// 有本地改动时先询问储藏，对话框不提供完成后恢复；Abort 只关闭对话框，HEAD、工作区与储藏列表都不变。
     @Test("修补旧提交：有本地改动时询问，Abort 不改任何东西")
     func amendAbort() async throws {
