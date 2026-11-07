@@ -228,7 +228,7 @@ final class RepositorySession {
     /// 当前刷新任务，关闭仓库时取消。
     private(set) var refreshTask: Task<Void, Never>? = nil
 
-    /// ⌥ 快速修补生效前保存的普通草稿。
+    /// 进入修补前保存的普通草稿，取消修补或修补成功后恢复；进入合并时丢弃。
     var originalDraft: (subject: String, body: String)? = nil
 
     /// 当前文件的读取任务。
@@ -485,9 +485,9 @@ final class RepositorySession {
 extension RepositorySession {
     /// 结束当前读取并清空仓库，视图状态存入窗口缓存；不影响 App 的其它窗口和进程。
     func close() {
-        // 提交后还没清空的信息属于已完成的提交，不能随视图状态存下来。
+        // 提交后还没重置的信息属于已完成的提交，不能随视图状态存下来。
         if commitResetTask != nil {
-            clearCommittedMessage()
+            resetCommittedMessage()
         }
 
         if let repository {
@@ -969,12 +969,9 @@ extension RepositorySession {
             do {
                 let context = try await service.context(head: head)
                 guard let self, generation == request, !Task.isCancelled else { return }
-                let previous = self.context?.operation
+                let previous = self.context
                 self.context = context
-
-                if previous != context.operation, context.operation != nil, commitSubject.isEmpty {
-                    setMessage(context.mergeMessage)
-                }
+                updateMessage(for: context, previous: previous)
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
                 let failure = AppFailure(error: error, opening: false, location: repository)

@@ -129,11 +129,19 @@ extension RepositorySession {
     }
 
     /// 修补载入最近信息，退出修补时恢复普通提交草稿。
+    ///
+    /// 提交进行中不进入修补，提交后等待重置期间不切换修补：保存的普通草稿只留给成功后的重置。
     func setAmend(_ enabled: Bool) {
-        guard enabled != amend else { return }
+        guard enabled != amend, commitResetTask == nil else { return }
 
         if enabled {
-            guard status?.branch.oid != nil, context?.operation == nil, let context else { return }
+            guard
+                !isCommitting,
+                status?.branch.oid != nil,
+                context?.operation == nil,
+                let context
+            else { return }
+
             originalDraft = (commitSubject, commitBody)
             setMessage(context.lastMessage)
         } else if let originalDraft {
@@ -179,6 +187,10 @@ extension RepositorySession {
         skipHooks: Bool
     ) {
         let request = generation
+
+        // 修补成功后回到的普通草稿：还在修补里时是进入修补前存下的，⌥ 快速修补已经退出时就是信息框里恢复的内容
+        let draft = amend ? (originalDraft ?? (commitSubject, commitBody)) : nil
+
         let action: () -> Void = { [weak self] in
             guard let self, generation == request else { return }
 
@@ -197,7 +209,7 @@ extension RepositorySession {
                 recordsActivity: false,
                 undo: .reversible
             ) { [weak self] in
-                self?.finishSuccessfulCommit()
+                self?.finishSuccessfulCommit(restoring: draft)
             }
 
             // 只有真正开始的提交才进入提交中状态；仓库不可写时什么也不变
@@ -217,12 +229,14 @@ extension RepositorySession {
         }
     }
 
-    /// 清空已经提交的信息与这次的提交选项，结束提交后的锁定。
-    func clearCommittedMessage() {
+    /// 按编辑模式重置已经提交的信息并清除这次的提交选项，结束提交后的锁定。
+    ///
+    /// 修补回到进入修补前的普通草稿；普通提交与合并收尾清空，合并前的草稿不再恢复。
+    func resetCommittedMessage() {
         commitResetTask?.cancel()
         commitResetTask = nil
-        commitSubject = ""
-        commitBody = ""
+        commitSubject = originalDraft?.subject ?? ""
+        commitBody = originalDraft?.body ?? ""
         amend = false
         originalDraft = nil
 

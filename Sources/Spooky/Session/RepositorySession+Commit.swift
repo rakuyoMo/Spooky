@@ -87,11 +87,18 @@ extension RepositorySession {
         showsCommitProgress = false
     }
 
-    /// 提交成功：立即停止转圈、收起正文并把焦点交给文件列表；过了 `commitResetDelay` 再清空信息，其间提交区保持锁定。
-    func finishSuccessfulCommit() {
+    /// 提交成功：立即停止转圈、收起正文并把焦点交给文件列表；过了 `commitResetDelay` 再按编辑模式重置信息，其间提交区保持锁定。
+    ///
+    /// - Parameter draft: 修补时进入修补前的普通草稿，重置时恢复它；普通提交与合并收尾为 nil，重置时清空。
+    func finishSuccessfulCommit(restoring draft: (subject: String, body: String)?) {
         endCommitProgress()
         collapsesCommitBody = true
         fileListFocusRequest += 1
+
+        // ⌥ 快速修补可能已经先恢复了草稿，这里重新记下，关闭仓库时的立即重置同样用它
+        if let draft {
+            originalDraft = draft
+        }
 
         let delay = commitResetDelay
         commitResetTask = Task { [weak self] in
@@ -99,8 +106,25 @@ extension RepositorySession {
 
             guard !Task.isCancelled else { return }
 
-            self?.clearCommittedMessage()
+            self?.resetCommittedMessage()
         }
+    }
+
+    /// 读到新的上下文时按编辑模式更新信息：进入进行中操作即进入合并模式，用合并说明替换草稿并退出修补，合并成功后信息为空。
+    ///
+    /// 仓库刚打开时还没有上一份上下文，只在信息为空时填入，切回仓库时恢复的草稿保留。
+    ///
+    /// - Parameters:
+    ///   - context: 刚读到的上下文。
+    ///   - previous: 上一份上下文；仓库刚打开时为 nil。
+    func updateMessage(for context: WorkingCopyContext, previous: WorkingCopyContext?) {
+        guard context.operation != nil, context.operation != previous?.operation else { return }
+        guard previous != nil || commitSubject.isEmpty else { return }
+
+        // 合并成功后按合并模式清空，修补前存下的普通草稿不再恢复
+        amend = false
+        originalDraft = nil
+        setMessage(context.mergeMessage)
     }
 
     /// 切换或关闭仓库时清空提交配置与只对本仓库有效的提交选项。
