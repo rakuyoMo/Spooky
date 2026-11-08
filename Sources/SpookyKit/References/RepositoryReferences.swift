@@ -408,6 +408,38 @@ public struct RepositoryReferences: Sendable {
         }
     }
 
+    /// 先新建分支并写入置顶与父分支，再检出它；两步在同一个仓库操作里执行。
+    ///
+    /// 检出被 Git 拒绝时分支保留，抛出 ``ReferenceError/createdBranchCheckoutFailed(_:_:)``；取消与连接失败照常抛出。
+    ///
+    /// - Parameters:
+    ///   - pinned: 是否置顶新分支。
+    ///   - parent: 父分支的完整引用名；为 nil 时不设置。
+    public func createThenCheckOut(
+        name: String,
+        startingAt start: String,
+        track: Bool,
+        pinned: Bool = false,
+        parent: String? = nil
+    ) async throws {
+        try await runner.writeTransaction {
+            try await create(
+                name: name,
+                startingAt: start,
+                track: track,
+                checkout: false,
+                pinned: pinned,
+                parent: parent
+            )
+
+            do {
+                try await checkout("refs/heads/" + name)
+            } catch let error as GitError where !error.isCancelled {
+                throw ReferenceError.createdBranchCheckoutFailed(name, error)
+            }
+        }
+    }
+
     /// 只检出明确的本地分支；不存在时不猜测远端，也不把名字解释为文件。
     public func checkout(_ reference: String) async throws {
         guard reference.hasPrefix("refs/heads/") else { throw RepositoryReadError.invalidQuery }

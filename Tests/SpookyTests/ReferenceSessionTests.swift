@@ -123,6 +123,13 @@ extension ReferenceSessionTests {
         #expect(failure.title == AppLocalization.text("branch.error.delete"))
         #expect(failure.message.hasPrefix(AppLocalization.text("branch.error.unmerged")))
 
+        // 用户确认之前分支与远端分支都还在
+        let kept = try await runner.run(["for-each-ref", "--format=%(refname)", "refs/heads/topic"])
+        let keptRemote = try await runner.run(["-C", bare, "for-each-ref", "refs/heads/topic"])
+
+        #expect(!kept.isEmpty)
+        #expect(!keptRemote.isEmpty)
+
         // 按原选项强制删除
         session.deleteBranches(
             offer.branches,

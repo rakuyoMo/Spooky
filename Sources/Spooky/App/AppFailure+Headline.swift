@@ -18,6 +18,7 @@ extension AppFailure {
         "branch.error.diverged": "branch.error.diverged.title",
         "branch.error.current": "branch.error.current.title",
         "branch.error.remoteExists": "branch.error.remoteExists.title",
+        "branch.error.checkoutCreated": "branch.error.checkoutCreated.title",
         "working.error.stale": "working.error.stale.title",
         "working.error.selection": "working.error.selection.title",
         "working.error.file": "working.error.file.title",

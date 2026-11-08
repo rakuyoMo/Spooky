@@ -102,6 +102,17 @@ extension FailurePresentationTests {
 
         #expect(reason.details.contains("is not a valid branch name"))
 
+        // 新分支建好、检出失败时标题与说明写明已创建，原文是检出的输出
+        let checkout = AppFailure(
+            error: ReferenceError.createdBranchCheckoutFailed("topic", Self.gitError(.localChanges, ["switch", "topic"])),
+            opening: false,
+            location: nil,
+            writing: true
+        )
+
+        #expect(checkout.title == AppLocalization.text("branch.error.checkoutCreated.title"))
+        #expect(checkout.message.hasPrefix(AppLocalization.text("branch.error.checkoutCreated")))
+
         let locked = AppFailure(
             error: Self.gitError(.indexLocked, ["add", "--", "a.txt"]),
             opening: false,

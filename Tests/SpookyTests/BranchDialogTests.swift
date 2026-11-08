@@ -1,12 +1,16 @@
+import ApplicationServices
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
 
 // MARK: - BranchDialogTests
 
-/// 新建、跟踪、改名分支的名称框：输入时的规范化随对话框与对象变化，校验说明写出不能使用的原因。
+/// 新建、跟踪、改名与删除分支的对话框：名称框的规范化与校验说明、跟踪远端分支的预选，以及删除分支的说明与选项顺序。
+///
+/// 删除分支的一项经辅助功能接口读本进程的窗口，进程没有辅助功能权限时跳过。
 @MainActor
 struct BranchDialogTests {
     /// 新建本地分支与本地分支改名按分支规则规范化，推送与发布按通用规则，跟踪远端分支、远端分支改名与远端改名原样保留，
@@ -57,6 +61,89 @@ struct BranchDialogTests {
 
             #expect(result.isValid == isValid, "\(name) \(kind)")
             #expect(result.error == error, "\(name) \(kind)")
+        }
+    }
+
+    /// 跟踪远端分支的预选：入口传入的远端分支优先；没有预选或预选不是远端分支时取 HEAD 的上游；
+    /// HEAD 没有上游时取第一个远端分支；没有远端分支时为空。
+    @Test("跟踪远端分支的预选回退")
+    func trackPreselection() async throws {
+        let fixture = try await OperationWiringTests.makeFixture()
+        defer { fixture.close() }
+
+        let session = fixture.session
+        _ = try await fixture.runner.run(["update-ref", "refs/remotes/origin/feature", "HEAD"])
+        await Self.reload(session)
+
+        let source = { RepositoryOperationDialog.trackSource(preselection: $0, in: session) }
+
+        // 排在 origin/main 前面的 origin/feature 是第一个远端分支，HEAD 的上游是 origin/main
+        #expect(source("refs/remotes/origin/feature") == "refs/remotes/origin/feature")
+        #expect(source(nil) == "refs/remotes/origin/main")
+        #expect(source("refs/heads/side") == "refs/remotes/origin/main")
+
+        // HEAD 没有上游
+        _ = try await fixture.runner.run(["branch", "--unset-upstream", "main"])
+        await Self.reload(session)
+
+        #expect(source(nil) == "refs/remotes/origin/feature")
+
+        // 没有远端分支
+        let empty = RepositorySession(loadStatus: { _ in throw CancellationError() })
+
+        #expect(RepositoryOperationDialog.trackSource(preselection: nil, in: empty).isEmpty)
+    }
+
+    /// 删除一个跟踪远端分支的本地分支：说明写出分支名，强制删除在上、不带说明、不勾，删除跟踪的远端分支在下并写出它；
+    /// 删除多个分支时说明写成所选分支，没有删除跟踪分支的选项。
+    @Test("删除分支的说明与选项顺序", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    func deleteBranches() async throws {
+        let fixture = try await OperationWiringTests.makeFixture()
+        defer { fixture.close() }
+
+        let session = fixture.session
+        let branches = session.history.branches
+        let main = try #require(branches.first { $0.id == "refs/heads/main" })
+        let side = try #require(branches.first { $0.id == "refs/heads/side" })
+
+        // 单个分支
+        let single = await Self.deleteDialog(.branches([main]), in: session)
+        let checkBoxes = single.filter { $0.role == "AXCheckBox" }.sorted { $0.frame.minY < $1.frame.minY }
+
+        #expect(checkBoxes.map(\.name) == [
+            AppLocalization.text("branch.forceDelete"),
+            AppLocalization.text("branch.deleteUpstream"),
+        ])
+
+        #expect(checkBoxes.map(\.value) == ["0", "0"])
+        #expect(single.contains { $0.value == AppLocalization.text("branch.delete.message", "main") })
+        #expect(single.contains { $0.value == AppLocalization.text("branch.deleteUpstream.help", "origin/main") })
+
+        // 多个分支
+        let multiple = await Self.deleteDialog(.branches([main, side]), in: session)
+
+        #expect(multiple.contains { $0.value == AppLocalization.text("branch.deleteMultiple.message") })
+        #expect(multiple.filter { $0.role == "AXCheckBox" }.map(\.name) == [AppLocalization.text("branch.forceDelete")])
+    }
+}
+
+// MARK: - Helpers
+
+extension BranchDialogTests {
+    /// 重新读取仓库，等引用与历史都读完。
+    private static func reload(_ session: RepositorySession) async {
+        session.refresh(full: true)
+        await session.waitForRefresh()
+        await untilFinished { session.history.activeTasks }
+    }
+
+    /// 打开删除对话框，读出全部元素。
+    private static func deleteDialog(
+        _ target: DeleteReferencesDialog.Target,
+        in session: RepositorySession
+    ) async -> [AccessibilityProbe.Element] {
+        await AccessibilityProbe.elements(until: { $0.contains { $0.role == "AXCheckBox" } }) {
+            DeleteReferencesDialog(session: session, target: target, close: { })
         }
     }
 }

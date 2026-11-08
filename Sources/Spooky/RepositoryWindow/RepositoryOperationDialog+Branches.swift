@@ -64,6 +64,23 @@ extension RepositoryOperationDialog {
     }
 }
 
+// MARK: - Preselection
+
+extension RepositoryOperationDialog {
+    /// 跟踪远端分支的预选：入口传入的远端分支在候选里时用它，否则取 HEAD 的上游（是远端分支时），再否则取第一个远端分支。
+    ///
+    /// - Returns: 远端分支的完整引用名；没有远端分支时为空字符串。
+    static func trackSource(preselection: String?, in session: RepositorySession) -> String {
+        let remotes = session.history.branches.filter(\.isRemote)
+        let upstream = session.headBranch?.upstream
+
+        return remotes.first { $0.id == preselection }?.id
+            ?? remotes.first { $0.id == upstream }?.id
+            ?? remotes.first?.id
+            ?? ""
+    }
+}
+
 // MARK: - Private
 
 extension RepositoryOperationDialog {

@@ -76,9 +76,13 @@ struct RepositoryOperationDialog: View {
     @State
     private var skipHooks = false
 
-    /// 新建后检出偏好跨仓库保存。
+    /// 新建分支后是否检出，跨仓库保存；没有保存值时不勾。
     @AppStorage("checkoutCreatedBranch")
-    private var checkout = true
+    private var checkout = false
+
+    /// 跟踪远端分支后是否检出：每次打开默认勾选，不记忆，与新建分支的检出偏好分开。
+    @State
+    private var trackCheckout = true
 
     /// 输入时规范化名称的开关。
     @AppStorage("cleanRefNames")
@@ -323,7 +327,11 @@ extension RepositoryOperationDialog {
 
         nameRow
 
-        option("branch.checkoutCreated", value: $checkout)
+        option(
+            "branch.checkoutCreated",
+            title: AppLocalization.text("branch.track.checkout"),
+            value: $trackCheckout
+        )
     }
 
     /// 获取：选择单个远端，或改为获取全部远端。
@@ -389,9 +397,11 @@ extension RepositoryOperationDialog {
         }
     }
 
-    /// 名称字段：输入时的规范化见 ``normalizedName(_:for:cleaning:)``。
+    /// 名称字段：新建与跟踪是新本地分支的名称，推送与发布是远端分支名；输入时的规范化见 ``normalizedName(_:for:cleaning:)``。
     private var nameRow: some View {
-        RepositoryDialogRows.row(AppLocalization.text("branch.name")) {
+        let label = [.create, .track].contains(request.kind) ? "reference.name" : "branch.name"
+
+        return RepositoryDialogRows.row(AppLocalization.text(label)) {
             TextField("", text: $name)
                 .accessibilityIdentifier("branch-name")
                 .dialogFieldWidth(fieldWidth)
@@ -508,7 +518,7 @@ extension RepositoryOperationDialog {
             parent = startBranch?.id ?? ""
 
         case .track:
-            source = request.reference ?? branches.first(where: \.isRemote)?.id ?? ""
+            source = Self.trackSource(preselection: request.reference, in: session)
             name = remoteBranchName(source)
 
         case .fetch:
@@ -565,6 +575,46 @@ extension RepositoryOperationDialog {
 
         validName = result.isValid
         error = result.error
+    }
+
+    /// 新建与跟踪分支的写入，捕获当前表单值：新建分支勾选检出时先建分支再检出，检出被拒绝时分支保留；
+    /// 其余用一条命令建好，跟踪远端分支总是跟踪所选分支，并按它自己的勾选检出。
+    ///
+    /// - Parameter revision: 新分支的起点。
+    private func branchCreation(startingAt revision: String) -> @Sendable (GitRunner) async throws -> Void {
+        let name = name
+        let creating = request.kind == .create
+        let track = !creating || track
+        let pinned = creating && pin
+        let parent = creating && !parent.isEmpty ? parent : nil
+        let checksOutAfterwards = creating && checkout
+        let checkout = !creating && trackCheckout
+
+        return { runner in
+            let references = RepositoryReferences(runner: runner)
+
+            // 分两步时检出失败的说明写明已创建、未检出
+            if checksOutAfterwards {
+                try await references.createThenCheckOut(
+                    name: name,
+                    startingAt: revision,
+                    track: track,
+                    pinned: pinned,
+                    parent: parent
+                )
+
+                return
+            }
+
+            try await references.create(
+                name: name,
+                startingAt: revision,
+                track: track,
+                checkout: checkout,
+                pinned: pinned,
+                parent: parent
+            )
+        }
     }
 
     /// 推送的选项与强推期望值：发布只带跳过钩子；推送时强推以表单所见的远端跟踪分支为期望值，没有跟踪分支时要求远端分支不存在。
@@ -646,12 +696,8 @@ extension RepositoryOperationDialog {
 
         // 不与属性 source 同名：闭包里引用同名属性会让 Swift 6.3 的类型推断失败
         let revision = session.revision(for: source)
-        let pinned = request.kind == .create && pin
-        let parentBranch = request.kind == .create && !parent.isEmpty ? parent : nil
         let remote = remote
         let localBranch = localBranch
-        let checkout = checkout
-        let track = track
         let upstream = upstream
         let allRemotes = allRemotes
         let prune = prune
@@ -666,6 +712,7 @@ extension RepositoryOperationDialog {
         let pullBranch = selected.map { "refs/heads/" + remoteBranchName($0.id) }
         let push = pushConfiguration()
         let merge = session.mergeAction(revision, options: mergeConfiguration())
+        let createBranch = branchCreation(startingAt: revision)
 
         /// 按动作种类调用核心库，只读取上面复制的表单值。
         @Sendable
@@ -675,15 +722,7 @@ extension RepositoryOperationDialog {
         ) async throws {
             switch kind {
             case .create, .track:
-                try await RepositoryReferences(runner: runner)
-                    .create(
-                        name: name,
-                        startingAt: revision,
-                        track: kind == .track || track,
-                        checkout: checkout,
-                        pinned: pinned,
-                        parent: parentBranch
-                    )
+                try await createBranch(runner)
 
             case .fetch:
                 _ = try await RepositorySync(runner: runner)

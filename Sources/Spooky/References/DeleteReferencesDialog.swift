@@ -74,10 +74,14 @@ struct DeleteReferencesDialog: View {
 
 extension DeleteReferencesDialog {
     /// 本地分支的两个勾选项，或标签的远端选项；其余对象没有内容区。
+    ///
+    /// 本地分支的强制删除在上、不带说明，删除跟踪的远端分支在下，说明写出要删的远端分支。
     @ViewBuilder
     private var options: some View {
         switch target {
         case .branches:
+            DialogFormOption(title: AppLocalization.text("branch.forceDelete"), isOn: $force)
+
             if let upstream = trackedUpstream {
                 DialogFormOption(
                     title: AppLocalization.text("branch.deleteUpstream"),
@@ -85,12 +89,6 @@ extension DeleteReferencesDialog {
                     isOn: $deletesUpstream
                 )
             }
-
-            DialogFormOption(
-                title: AppLocalization.text("branch.forceDelete"),
-                help: AppLocalization.text("branch.forceDelete.help"),
-                isOn: $force
-            )
 
         case .tags:
             if let remotes = session.history.snapshot?.remotes, !remotes.isEmpty {
@@ -137,13 +135,13 @@ extension DeleteReferencesDialog {
         }
     }
 
-    /// 单个对象写出名字，多个对象写出个数。
+    /// 单个对象写出名字；多个本地分支写成 “所选分支”，其余多个对象写出个数。
     private var message: String {
         switch target {
         case .branches(let items):
             items.count == 1
                 ? AppLocalization.text("branch.delete.message", items[0].name)
-                : AppLocalization.text("branch.deleteMultiple.message", items.count)
+                : AppLocalization.text("branch.deleteMultiple.message")
 
         case .remoteBranches(let items):
             items.count == 1

@@ -166,6 +166,50 @@ struct BranchManagementTests {
         #expect(try await refs.snapshot().references.contains { $0.id == renamed })
     }
 
+    /// 先建分支再检出：检出成功时 HEAD 在新分支上，置顶一起写入；本地修改挡住检出时分支已经建好、HEAD 不变、
+    /// 本地修改原样保留，错误说明已创建、未检出，并带着 Git 的退出码与原文。
+    @Test("新建分支后检出，检出被本地修改挡住时分支保留")
+    func createThenCheckOut() async throws {
+        let fixture = try await Self.committedRepository(objectFormat: "sha1")
+        defer { fixture.remove() }
+
+        let runner = fixture.runner
+        let refs = RepositoryReferences(runner: runner)
+        let file = fixture.directory.appendingPathComponent("a.txt")
+
+        // 两个提交里 a.txt 内容不同，HEAD 在第二个提交上
+        try Data("one\n".utf8).write(to: file)
+        _ = try await runner.run(["add", "a.txt"])
+        _ = try await runner.run(["commit", "-q", "-m", "one"])
+        try Data("two\n".utf8).write(to: file)
+        _ = try await runner.run(["commit", "-q", "-am", "two"])
+
+        // 检出成功
+        try await refs.createThenCheckOut(name: "topic", startingAt: "HEAD", track: false, pinned: true)
+
+        #expect(try await runner.status().branch.head == "topic")
+        #expect(try await refs.metadata()["refs/heads/topic"] == BranchMetadata(isPinned: true, parent: nil))
+
+        // 本地修改挡住检出
+        try Data("local\n".utf8).write(to: file)
+
+        let error = try await #require(throws: ReferenceError.self) {
+            try await refs.createThenCheckOut(name: "old", startingAt: "HEAD~1", track: false)
+        }
+
+        guard case .createdBranchCheckoutFailed("old", let checkout) = error else {
+            Issue.record("应说明已创建、未检出：\(error)")
+            return
+        }
+
+        #expect(checkout.category == .localChanges)
+        #expect(checkout.exitCode == 1)
+        #expect(checkout.message.contains("would be overwritten by checkout"))
+        #expect(try await refs.resolve("refs/heads/old") == refs.resolve("HEAD~1"))
+        #expect(try await runner.status().branch.head == "topic")
+        #expect(try String(contentsOf: file, encoding: .utf8) == "local\n")
+    }
+
     /// 未合并的分支普通删除失败并列出名字，能删的照删；强制删除成功；同时删除跟踪的远端分支。
     /// 远端分支改名保留原提交；新名字已存在时推送被拒，原分支仍在；删除远端分支一次推送完成。
     @Test("删除本地分支与跟踪的远端分支，重命名与删除远端分支")

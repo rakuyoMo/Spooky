@@ -29,6 +29,9 @@ public enum ReferenceError: Error, Sendable {
 
     /// 普通删除时部分分支未完全合并；带上这些分支的完整引用名与 Git 原文，供强制删除。
     case unmergedBranches([String], GitError)
+
+    /// 新分支已经建好，随后的检出被 Git 拒绝；带上新分支的短名与检出的 Git 原文。
+    case createdBranchCheckoutFailed(String, GitError)
 }
 
 // MARK: - ReferenceNameProblem
