@@ -136,7 +136,15 @@ extension RepositoryUndo {
     ///
     /// 工作区与 HEAD 没有差别时它不输出任何内容，这时工作区就是索引。
     private func worktreeTree(index: String) async throws -> String {
-        let output = try await runner.run(["stash", "create"])
+        // 只有时间戳变了的已跟踪文件会先被算作改动，刷新索引后又找不到改动时 Git 以 1 退出、不输出任何内容；
+        // 这时索引已经刷新，再执行一次就得到确定的结果，真正的失败在第二次照常抛出
+        let first = try await runner.execute(["stash", "create"], acceptedExitCodes: [0, 1])
+        var output = first.standardOutput
+
+        if first.exitCode == 1 {
+            output = try await runner.run(["stash", "create"])
+        }
+
         let commit = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !commit.isEmpty else {
