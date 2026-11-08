@@ -82,6 +82,8 @@ Sources/Spooky/          App，按功能分目录
 Tests/SpookyKitTests/    核心库测试，Fixtures/ 是固定的 Git 输出夹具
 Tests/SpookyTests/       App 的会话、窗口、导航、设置与本地化等测试
 Tests/ReleaseTests/      发布检查、发版脚本与更新清单合成的测试
+Tests/TestSupport/       测试共用的等待、进程闸门与空仓库模板
+Tests/InvisibleWindows/  App 测试进程里的窗口透明、sheet 不播动画
 scripts/                 App Bundle、应用图标、发布检查、发版与更新清单的脚本
 docs/                    架构、测试与发布的文档
 .github/workflows/       CI、发布检查与发布
@@ -128,8 +130,20 @@ docs/                    架构、测试与发布的文档
 - Git 测试通过隔离环境忽略系统和用户全局配置，提交身份只写入临时仓库的本地配置
 - Git 或 SSH 的失败路径检查 `GitError` 的退出码与错误信息
 - 核对对话框的标题、说明与按钮时，直接调用构建对话框内容的入口（如 `RepositoryWindowController.recoveryNotice`），不挂 sheet；只有核对挂上、排队与尺寸这类窗口上的行为时才挂
-  - 挂上与收起 sheet 都要在主线程上同步等完动画，整套测试并行时其它 `@MainActor` 测试都排在它后面
-- 不断言墙钟耗时：整套测试并行时主线程与 CPU 都要排队，耗时取决于同时运行的其它测试；等待条件成立的上限按整套测试的耗时留足，与 `FileViewsTests.wait` 一样取 300 s
+- 能不建窗口就不建：整套 App 测试受主线程限制，建仓库窗口、挂 sheet 与排版都占用主线程
+  - App 测试链接 `InvisibleWindows`，测试进程里的窗口透明、sheet 不播动画，运行期间屏幕上看不到窗口
+- 等待只等事件，不靠时间：整套测试并行时主线程、CPU 与 Git 的执行槽都要排队，耗时取决于同时运行的其它测试
+  - 主线程上的状态用 `TestSupport` 的 `until { }` 等；能直接等的任务直接 `await`，如 `writeTask`、`waitForRefresh()`
+  - 等某个值变化时，旧值在触发动作之前记下：触发之后才记，那次读取可能已经结束，等待不会结束
+  - 要让脚本里的命令停在中途时用 `ProcessGate`：等它报到，再放行
+  - 脚本只拦一次时，会被取消打断的工作放在认领之前，从认领到放行忽略 TERM：会话取消读取时向整个进程组发 TERM，认领后被结束的进程不会再报到
+  - 不用 `Task.sleep`、`RunLoop.run(until:)` 等延时，不给等待设上限，不加 `.timeLimit`；卡死由 CI 测试 job 的超时兜底
+  - 不断言墙钟耗时
+- 测试只验证有判断的行为，同一现场的核对写在一个测试里
+  - 用同一个临时仓库、会话、窗口或对话框核对的几件事合成一个测试，按核对的内容分段注释
+  - 参数化测试只取边界与典型的参数，不做全排列；对象格式只在与 SHA-256 相关的行为上同时测两种
+  - 不写只核对常量、文案拼接或简单映射的测试；核心库已验证的 Git 结果，App 测试不再核对，只核对会话状态与界面规则
+- 新建空仓库用 `TemporaryRepository.initialize` 或 `FileViewsTests.initializeRepository`，它们由 `RepositoryTemplate` 直接写出 `.git`，不逐个执行 `git init` 与 `git config`
 - 改动 App 时还须运行 `swift build --product Spooky`，按 [M1 验收步骤](docs/testing/M1.md) 实际启动、操作并截图；未执行的检查明确记录为未验证
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
 
