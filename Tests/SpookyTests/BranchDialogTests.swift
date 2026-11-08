@@ -114,6 +114,49 @@ struct BranchDialogTests {
         #expect(RepositoryOperationDialog.trackSource(preselection: nil, in: empty).isEmpty)
     }
 
+    /// 新建分支的父分支只能是起点本身（本地分支）或与远端起点同名、且确实跟踪它的本地分支；
+    /// 提交、标签、只是同名或只是跟踪它的起点都没有候选，候选分支消失后同样没有。
+    @Test("新建分支的父分支候选随起点核对")
+    func parentCandidates() async throws {
+        let fixture = try await OperationWiringTests.makeFixture()
+        defer { fixture.close() }
+
+        let session = fixture.session
+        let runner = fixture.runner
+        let candidate = { RepositoryOperationDialog.parentCandidate(for: $0, in: session)?.id }
+
+        // 远端有与 side 同名的分支 origin/side，还有 origin/feature
+        _ = try await runner.run(["update-ref", "refs/remotes/origin/side", "side"])
+        _ = try await runner.run(["update-ref", "refs/remotes/origin/feature", "HEAD"])
+        await Self.reload(session)
+
+        // 本地分支起点、提交与标签起点；main 跟踪同名的 origin/main
+        #expect(candidate("side") == "refs/heads/side")
+        #expect(candidate("refs/heads/main") == "refs/heads/main")
+        #expect(candidate(try #require(fixture.ids["A"])) == nil)
+        #expect(candidate("v1") == nil)
+        #expect(candidate("origin/main") == "refs/heads/main")
+
+        // side 同名但不跟踪 origin/side；跟踪 origin/feature 但不同名
+        _ = try await runner.run(["branch", "-q", "--set-upstream-to=origin/feature", "side"])
+        await Self.reload(session)
+
+        #expect(candidate("origin/side") == nil)
+        #expect(candidate("origin/feature") == nil)
+
+        // 改为跟踪同名的 origin/side 后才是候选
+        _ = try await runner.run(["branch", "-q", "--set-upstream-to=origin/side", "side"])
+        await Self.reload(session)
+
+        #expect(candidate("refs/remotes/origin/side") == "refs/heads/side")
+
+        // 候选分支消失
+        _ = try await runner.run(["branch", "-q", "-D", "side"])
+        await Self.reload(session)
+
+        #expect(candidate("origin/side") == nil)
+    }
+
     /// 删除一个跟踪远端分支的本地分支：说明写出分支名，强制删除在上、不带说明、不勾，删除跟踪的远端分支在下并写出它；
     /// 删除多个分支时说明写成所选分支，没有删除跟踪分支的选项。
     @Test("删除分支的说明与选项顺序", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))

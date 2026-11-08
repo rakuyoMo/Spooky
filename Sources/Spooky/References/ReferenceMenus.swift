@@ -32,10 +32,6 @@ private struct LocalBranchManagementMenu: View {
     /// 右键的本地分支。
     let reference: RepositoryReference
 
-    #warning(
-        "TODO: 跟踪与父分支两个子菜单的标题是推断（Tracking、Parent Branch），父分支子菜单只放 Set Parent Branch… 与 Remove Parent Branch。核实方式：右键非 HEAD 的本地分支，比对这两个子菜单的标题与条目；只影响子菜单标题与父分支子菜单的条目。"
-    )
-
     /// 只落后于上游时才有快进；跟踪子菜单在分离 HEAD 时没有可设置的分支。
     var body: some View {
         Divider()
@@ -54,14 +50,7 @@ private struct LocalBranchManagementMenu: View {
         .disabled(!session.canManage(reference))
 
         Menu(AppLocalization.text("branch.parent")) {
-            Button(AppLocalization.text("branch.parent.setMenu")) {
-                session.requestReference(.setParent(reference))
-            }
-
-            Button(AppLocalization.text("branch.parent.remove")) {
-                session.removeParent(of: reference)
-            }
-            .disabled(session.history.snapshot?.metadata(for: reference.id).parent == nil)
+            BranchParentMenu(session: session, branch: reference)
         }
         .disabled(!session.canManage(reference))
 
@@ -119,6 +108,61 @@ private struct BranchTrackingMenu: View {
             upstream.name,
             isOn: Binding(get: { branch.upstream == upstream.id }, set: { _ in session.setUpstream(upstream, for: branch) })
         )
+    }
+}
+
+// MARK: - BranchParentMenu
+
+/// 父分支子菜单：没有父分支时列出建议的父分支与跟踪其它父分支；已有父分支时显示它（打勾、不可点）与移除。
+struct BranchParentMenu: View {
+    /// 所在窗口的会话。
+    let session: RepositorySession
+
+    /// 要设置父分支的本地分支。
+    let branch: RepositoryReference
+
+    /// 按是否已有父分支选择一组菜单项。
+    var body: some View {
+        if let parent = session.history.snapshot?.metadata(for: branch.id).parent {
+            // 父分支已被删除时仍写出记下的名字
+            Toggle(BranchesReviewRow.shortName(parent), isOn: .constant(true))
+                .disabled(true)
+
+            Divider()
+
+            Button(AppLocalization.text("branch.parent.remove")) {
+                session.removeParent(of: branch)
+            }
+        } else {
+            let candidates = suggestions
+
+            ForEach(candidates) { suggestion in
+                Button(suggestion.name) {
+                    session.setParent(suggestion.id, of: branch)
+                }
+            }
+
+            if !candidates.isEmpty {
+                Divider()
+            }
+
+            Button(AppLocalization.text("branch.parent.setMenu")) {
+                session.requestReference(.setParent(branch))
+            }
+        }
+    }
+
+    /// 建议的父分支：仓库的基准分支，即存在的 main、master 等标准名分支与其它分支设过的父分支，不含分支自己。
+    private var suggestions: [RepositoryReference] {
+        guard let snapshot = session.history.snapshot else {
+            return []
+        }
+
+        let branches = session.history.branches
+
+        return RepositoryReferences.baseBranches(in: snapshot)
+            .filter { $0 != branch.id }
+            .compactMap { id in branches.first { $0.id == id } }
     }
 }
 

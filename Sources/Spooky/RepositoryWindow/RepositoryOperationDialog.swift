@@ -175,9 +175,15 @@ struct RepositoryOperationDialog: View {
                 track = false
             }
 
-            // 起点是分支时，新分支的父分支默认是它
+            // 换了起点就按新起点重新取默认的父分支，不沿用上一个起点的选择
             if request.kind == .create {
-                parent = startBranch?.id ?? ""
+                parent = parentCandidate?.id ?? ""
+            }
+        }
+        .onChange(of: parentCandidate?.id) { _, candidate in
+            // 候选消失或换成别的分支时，不留下已不在候选里的父分支
+            if !parent.isEmpty, parent != candidate {
+                parent = ""
             }
         }
         .onChange(of: localBranch) {
@@ -196,6 +202,9 @@ struct RepositoryOperationDialog: View {
 
     /// 起点对应的分支；起点是提交哈希、标签或其它写法时为 nil。
     private var startBranch: RepositoryReference? { branches.first { $0.id == source || $0.name == source } }
+
+    /// 当前起点下可选的父分支；为 nil 时父分支固定为不设置。
+    private var parentCandidate: RepositoryReference? { Self.parentCandidate(for: source, in: session) }
 
     /// 推送的本地分支是不是 HEAD 分支，决定推送对话框的标题与主按钮。
     private var pushesHead: Bool { localBranch == session.status?.branch.head }
@@ -316,21 +325,21 @@ extension RepositoryOperationDialog {
         option("branch.checkoutCreated", value: $checkout)
     }
 
-    #warning(
-        "TODO: 新建分支选项区的父分支下拉以 None 开头、默认选中起点分支是推断。核实方式：分别从分支和从提交打开新建分支对话框，展开 Options 比对 Parent Branch 的列表与默认值；只影响父分支的可选项与默认值。"
-    )
-
-    /// 新建分支的选项区：父分支下拉，第一项表示不设置；说明在下拉下方，与下拉左对齐。
+    /// 新建分支的选项区：父分支下拉只有当前起点下可选的父分支与不设置，没有可选的父分支时不可用；
+    /// 说明在下拉下方，与下拉左对齐。
     @ViewBuilder
     private var parentRows: some View {
         RepositoryDialogRows.row(AppLocalization.text("branch.parentOption")) {
             Picker("", selection: $parent) {
-                Text(AppLocalization.text("branch.parentOption.none")).tag("")
+                if let candidate = parentCandidate {
+                    Text(candidate.name).tag(candidate.id)
+                }
 
-                ForEach(branches) { Text($0.name).tag($0.id) }
+                Text(AppLocalization.text("branch.parentOption.none")).tag("")
             }
             .labelsHidden()
             .buttonSizing(.flexible)
+            .disabled(parentCandidate == nil)
         }
 
         GridRow {
@@ -557,11 +566,11 @@ extension RepositoryOperationDialog {
         case .create:
             name = request.name ?? ""
 
-            // 起点框显示引用的短名，没有指定时是当前分支；起点是分支时它也是默认的父分支
+            // 起点框显示引用的短名，没有指定时是当前分支；默认的父分支见 parentCandidate(for:in:)
             source = request.reference.map { reference in
                 session.revisionReferences.first { $0.id == reference }?.name ?? reference
             } ?? head?.name ?? "HEAD"
-            parent = startBranch?.id ?? ""
+            parent = parentCandidate?.id ?? ""
 
         case .track:
             source = Self.trackSource(preselection: request.reference, in: session)
@@ -630,7 +639,13 @@ extension RepositoryOperationDialog {
         let creating = request.kind == .create
         let track = !creating || track
         let pinned = creating && pin
-        let parent = creating && !parent.isEmpty ? parent : nil
+
+        // 提交时再核对一次，父分支必须仍是当前起点下的候选
+        let parent =
+            creating && !parent.isEmpty && parent == parentCandidate?.id
+                ? parent
+                : nil
+
         let checksOutAfterwards = creating && checkout
         let checkout = !creating && trackCheckout
 

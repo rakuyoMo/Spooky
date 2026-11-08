@@ -80,6 +80,31 @@ extension RepositoryOperationDialog {
             ?? ""
     }
 
+    /// 新建分支时可选的父分支：起点是本地分支时是这个分支；起点是远端分支时是与它同名、且跟踪它的本地分支；
+    /// 起点是提交、标签或没有满足条件的本地分支时没有，父分支只能不设置。
+    ///
+    /// - Parameters:
+    ///   - source: 起点框里的写法，完整引用名或分支名。
+    ///   - session: 对话框所属的窗口会话。
+    static func parentCandidate(for source: String, in session: RepositorySession) -> RepositoryReference? {
+        let branches = session.history.branches
+
+        guard let start = branches.first(where: { $0.id == source || $0.name == source }) else {
+            return nil
+        }
+
+        if start.isLocal {
+            return start
+        }
+
+        // 只认真正跟踪这个远端分支的同名本地分支，不按名字猜测关系
+        guard let parts = session.remoteParts(of: start) else {
+            return nil
+        }
+
+        return branches.first { $0.isLocal && $0.name == parts.branch && $0.upstream == start.id }
+    }
+
     /// 拉取与合并的来源候选：合并依次是本地分支（含 HEAD 分支）、远端分支与标签，拉取只有远端分支；组内按公共顺序排列。
     ///
     /// - Parameters:

@@ -83,6 +83,58 @@ extension OperationWiringTests {
         #expect(try await Self.remoteTip("side", in: remote, runner: runner) == a)
         #expect(try await Self.remoteTip("main", in: remote, runner: runner) == main)
     }
+
+    /// 没有父分支时，父分支子菜单列出不含分支自己的基准分支作为建议，选中即设为父分支，另一项打开设置父分支对话框；
+    /// 已有父分支时只显示它（打勾、不可点）与移除，移除后回到建议。
+    @Test("父分支子菜单的建议、当前值与移除")
+    func parentBranchMenu() async throws {
+        let fixture = try await Self.makeFixture()
+        defer { fixture.close() }
+
+        let session = fixture.session
+        let (main, side, _) = try fixture.branches()
+        let other = AppLocalization.text("branch.parent.setMenu")
+        let remove = AppLocalization.text("branch.parent.remove")
+
+        var references: [String] = []
+        session.onReferenceRequest = { request in
+            if case .setParent(let branch) = request {
+                references.append(branch.id)
+            }
+        }
+
+        // 没有父分支：基准分支 main 是 side 的建议，main 自己没有建议
+        let suggestions = HostedMenu(BranchParentMenu(session: session, branch: side))
+
+        #expect(suggestions.titles == ["main", "", other])
+        #expect(HostedMenu(BranchParentMenu(session: session, branch: main)).titles == [other])
+
+        suggestions.perform(other)
+        await until { !references.isEmpty }
+
+        #expect(references == ["refs/heads/side"])
+
+        // 选中建议即设为父分支
+        suggestions.perform("main")
+        await session.writeTask?.value
+        await Self.reload(session)
+
+        #expect(session.history.snapshot?.metadata(for: side.id).parent == "refs/heads/main")
+
+        // 已有父分支：当前值打勾且不可点，另有移除
+        let current = HostedMenu(BranchParentMenu(session: session, branch: side))
+
+        #expect(current.titles == ["main", "", remove])
+        #expect(current.enabled == [false, true])
+        #expect(current.menu.items.first?.state == .on)
+
+        current.perform(remove)
+        await session.writeTask?.value
+        await Self.reload(session)
+
+        #expect(session.history.snapshot?.metadata(for: side.id).parent == nil)
+        #expect(HostedMenu(BranchParentMenu(session: session, branch: side)).titles == ["main", "", other])
+    }
 }
 
 // MARK: - Checks
