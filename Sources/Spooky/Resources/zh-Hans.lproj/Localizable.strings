@@ -400,7 +400,7 @@
 "branch.checkoutCreated" = "创建后检出";
 "branch.checkoutCreated.help" = "创建分支后切换工作区。";
 "branch.cleanNames" = "输入时自动规范引用名称";
-"branch.exists" = "同名分支已存在。";
+"branch.exists" = "本地分支 “%@” 已存在。";
 "branch.error.unmerged" = "分支尚未完全合并。";
 "sync.fetch" = "获取";
 "sync.fetch.help" = "获取远端更新，保留当前工作区。";
@@ -1302,6 +1302,13 @@
 "reference.invalidURL" = "“%@” 不是有效的远端地址。";
 "reference.error.name" = "名称无效。";
 "reference.error.name.help" = "名称不能包含空格、控制字符或 ~ ^ : ? * [ \\ 中的任何一个，也不能以 “-” 开头。";
+"reference.name.leadingHyphen" = "名称不能以 “-” 开头。";
+"reference.name.character" = "名称不能包含空格、控制字符或 ~ ^ : ? * [ \\ 中的任何一个。";
+"reference.name.sequence" = "名称不能包含 “..”、“//” 或 “@{”。";
+"reference.name.boundary" = "名称不能以 “/” 开头或结尾，也不能以 “.” 结尾。";
+"reference.name.component" = "名称中以 “/” 分隔的每一段都不能以 “.” 开头，也不能以 “.lock” 结尾。";
+"reference.name.ambiguous" = "名称不能是 “HEAD” 或完整的提交哈希。";
+"reference.name.other" = "Git 不接受这个名称。";
 "reference.error.refspec" = "refspec 无效。";
 "reference.error.refspec.help" = "请输入形如 +refs/heads/*:refs/remotes/origin/* 的 refspec。";
 "reference.error.url" = "远端地址无效。";

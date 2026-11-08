@@ -400,7 +400,7 @@
 "branch.checkoutCreated" = "Basculer sur la branche";
 "branch.checkoutCreated.help" = "Basculer la copie de travail sur la branche après sa création.";
 "branch.cleanNames" = "Convertir automatiquement les noms de référence en un format valide lors de la saisie";
-"branch.exists" = "Une branche portant ce nom existe déjà.";
+"branch.exists" = "La branche locale « %@ » existe déjà.";
 "branch.error.unmerged" = "La branche n’est pas entièrement fusionnée.";
 "sync.fetch" = "Récupérer";
 "sync.fetch.help" = "Télécharger les mises à jour distantes sans modifier la copie de travail.";
@@ -1302,6 +1302,13 @@
 "reference.invalidURL" = "« %@ » n’est pas une URL distante valide.";
 "reference.error.name" = "Le nom n’est pas valide.";
 "reference.error.name.help" = "Les noms ne peuvent contenir ni espaces, ni caractères de contrôle, ni aucun de ~ ^ : ? * [ \\, et ne peuvent pas commencer par « - ».";
+"reference.name.leadingHyphen" = "Les noms ne peuvent pas commencer par « - ».";
+"reference.name.character" = "Les noms ne peuvent contenir ni espaces, ni caractères de contrôle, ni aucun de ~ ^ : ? * [ \\.";
+"reference.name.sequence" = "Les noms ne peuvent pas contenir « .. », « // » ou « @{ ».";
+"reference.name.boundary" = "Les noms ne peuvent ni commencer ni se terminer par « / », ni se terminer par « . ».";
+"reference.name.component" = "Aucune partie d’un nom séparée par « / » ne peut commencer par « . » ni se terminer par « .lock ».";
+"reference.name.ambiguous" = "Les noms ne peuvent être ni « HEAD » ni un hash de commit complet.";
+"reference.name.other" = "Git n’accepte pas ce nom.";
 "reference.error.refspec" = "La refspec n’est pas valide.";
 "reference.error.refspec.help" = "Saisissez une refspec telle que +refs/heads/*:refs/remotes/origin/*.";
 "reference.error.url" = "L’URL distante n’est pas valide.";

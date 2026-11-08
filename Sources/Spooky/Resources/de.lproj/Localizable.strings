@@ -400,7 +400,7 @@
 "branch.checkoutCreated" = "Branch auschecken";
 "branch.checkoutCreated.help" = "Schaltet die Arbeitskopie nach dem Erstellen auf den Branch um.";
 "branch.cleanNames" = "Referenznamen bei der Eingabe automatisch in ein gültiges Format umwandeln";
-"branch.exists" = "Ein Branch mit diesem Namen existiert bereits.";
+"branch.exists" = "Der lokale Branch „%@“ existiert bereits.";
 "branch.error.unmerged" = "Der Branch ist nicht vollständig zusammengeführt.";
 "sync.fetch" = "Abrufen";
 "sync.fetch.help" = "Lädt Aktualisierungen vom Remote herunter, ohne die Arbeitskopie zu ändern.";
@@ -1302,6 +1302,13 @@
 "reference.invalidURL" = "„%@“ ist keine gültige Remote-URL.";
 "reference.error.name" = "Der Name ist ungültig.";
 "reference.error.name.help" = "Namen dürfen keine Leerzeichen, Steuerzeichen oder eines von ~ ^ : ? * [ \\ enthalten und nicht mit „-“ beginnen.";
+"reference.name.leadingHyphen" = "Namen dürfen nicht mit „-“ beginnen.";
+"reference.name.character" = "Namen dürfen keine Leerzeichen, Steuerzeichen oder eines von ~ ^ : ? * [ \\ enthalten.";
+"reference.name.sequence" = "Namen dürfen weder „..“ noch „//“ oder „@{“ enthalten.";
+"reference.name.boundary" = "Namen dürfen nicht mit „/“ beginnen oder enden und nicht mit „.“ enden.";
+"reference.name.component" = "Kein durch „/“ getrennter Teil eines Namens darf mit „.“ beginnen oder auf „.lock“ enden.";
+"reference.name.ambiguous" = "Namen dürfen weder „HEAD“ noch ein vollständiger Commit-Hash sein.";
+"reference.name.other" = "Git akzeptiert diesen Namen nicht.";
 "reference.error.refspec" = "Die Refspec ist ungültig.";
 "reference.error.refspec.help" = "Gib eine Refspec wie +refs/heads/*:refs/remotes/origin/* ein.";
 "reference.error.url" = "Die Remote-URL ist ungültig.";

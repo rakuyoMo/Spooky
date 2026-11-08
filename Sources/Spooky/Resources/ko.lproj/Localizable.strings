@@ -400,7 +400,7 @@
 "branch.checkoutCreated" = "생성 후 체크아웃";
 "branch.checkoutCreated.help" = "브랜치를 만든 후 작업 사본을 전환합니다.";
 "branch.cleanNames" = "입력 중 참조 이름을 유효한 형식으로 변환";
-"branch.exists" = "같은 이름의 브랜치가 이미 있습니다.";
+"branch.exists" = "로컬 브랜치 “%@”이(가) 이미 있습니다.";
 "branch.error.unmerged" = "브랜치가 완전히 병합되지 않았습니다.";
 "sync.fetch" = "가져오기";
 "sync.fetch.help" = "작업 사본을 유지하고 원격 업데이트를 가져옵니다.";
@@ -1302,6 +1302,13 @@
 "reference.invalidURL" = "“%@”은(는) 유효한 원격 URL이 아닙니다.";
 "reference.error.name" = "이름이 유효하지 않습니다.";
 "reference.error.name.help" = "이름에는 공백, 제어 문자, ~ ^ : ? * [ \\ 중 어느 것도 쓸 수 없고 “-”로 시작할 수 없습니다.";
+"reference.name.leadingHyphen" = "이름은 “-”로 시작할 수 없습니다.";
+"reference.name.character" = "이름에는 공백, 제어 문자, ~ ^ : ? * [ \\ 중 어느 것도 쓸 수 없습니다.";
+"reference.name.sequence" = "이름에는 “..”, “//”, “@{”를 포함할 수 없습니다.";
+"reference.name.boundary" = "이름은 “/”로 시작하거나 끝날 수 없고, “.”로 끝날 수도 없습니다.";
+"reference.name.component" = "“/”로 구분된 이름의 각 부분은 “.”로 시작하거나 “.lock”으로 끝날 수 없습니다.";
+"reference.name.ambiguous" = "이름은 “HEAD”나 전체 커밋 해시일 수 없습니다.";
+"reference.name.other" = "Git에서 이 이름을 허용하지 않습니다.";
 "reference.error.refspec" = "refspec이 유효하지 않습니다.";
 "reference.error.refspec.help" = "+refs/heads/*:refs/remotes/origin/* 같은 refspec을 입력하세요.";
 "reference.error.url" = "원격 URL이 유효하지 않습니다.";

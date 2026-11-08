@@ -400,7 +400,7 @@
 "branch.checkoutCreated" = "Check Out Branch";
 "branch.checkoutCreated.help" = "Switch the working copy after creating the branch.";
 "branch.cleanNames" = "Automatically convert ref names into valid format while typing";
-"branch.exists" = "A branch with this name already exists.";
+"branch.exists" = "A local branch named “%@” already exists.";
 "branch.error.unmerged" = "The branch is not fully merged.";
 "sync.fetch" = "Fetch";
 "sync.fetch.help" = "Download remote updates without changing the working copy.";
@@ -1302,6 +1302,13 @@
 "reference.invalidURL" = "“%@” is not a valid remote URL.";
 "reference.error.name" = "The name is not valid.";
 "reference.error.name.help" = "Names can't contain spaces, control characters or any of ~ ^ : ? * [ \\, and can't start with “-”.";
+"reference.name.leadingHyphen" = "Names can't start with “-”.";
+"reference.name.character" = "Names can't contain spaces, control characters or any of ~ ^ : ? * [ \\.";
+"reference.name.sequence" = "Names can't contain “..”, “//” or “@{”.";
+"reference.name.boundary" = "Names can't start or end with “/”, or end with “.”.";
+"reference.name.component" = "No part of a name between “/” can start with “.” or end with “.lock”.";
+"reference.name.ambiguous" = "Names can't be “HEAD” or a full commit hash.";
+"reference.name.other" = "Git doesn't accept this name.";
 "reference.error.refspec" = "The refspec is not valid.";
 "reference.error.refspec.help" = "Enter a refspec such as +refs/heads/*:refs/remotes/origin/*.";
 "reference.error.url" = "The remote URL is not valid.";

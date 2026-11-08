@@ -400,7 +400,7 @@
 "branch.checkoutCreated" = "作成後にチェックアウト";
 "branch.checkoutCreated.help" = "ブランチ作成後に作業コピーを切り替えます。";
 "branch.cleanNames" = "入力中に参照名を有効な形式に変換";
-"branch.exists" = "同名のブランチが既に存在します。";
+"branch.exists" = "ローカルブランチ「%@」はすでにあります。";
 "branch.error.unmerged" = "ブランチは完全にマージされていません。";
 "sync.fetch" = "フェッチ";
 "sync.fetch.help" = "作業コピーを維持してリモートの更新を取得します。";
@@ -1302,6 +1302,13 @@
 "reference.invalidURL" = "「%@」は有効なリモート URL ではありません。";
 "reference.error.name" = "名前が無効です。";
 "reference.error.name.help" = "名前には空白、制御文字、~ ^ : ? * [ \\ のいずれも使えず、「-」で始めることもできません。";
+"reference.name.leadingHyphen" = "名前を「-」で始めることはできません。";
+"reference.name.character" = "名前には空白、制御文字、~ ^ : ? * [ \\ のいずれも使えません。";
+"reference.name.sequence" = "名前に「..」「//」「@{」を含めることはできません。";
+"reference.name.boundary" = "名前を「/」で始めたり終えたりすることはできず、「.」で終えることもできません。";
+"reference.name.component" = "「/」で区切られた名前の各部分は、「.」で始めることも「.lock」で終えることもできません。";
+"reference.name.ambiguous" = "名前を「HEAD」や完全なコミットハッシュにすることはできません。";
+"reference.name.other" = "Git はこの名前を受け付けません。";
 "reference.error.refspec" = "refspec が無効です。";
 "reference.error.refspec.help" = "+refs/heads/*:refs/remotes/origin/* のような refspec を入力してください。";
 "reference.error.url" = "リモート URL が無効です。";

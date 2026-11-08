@@ -400,7 +400,7 @@
 "branch.checkoutCreated" = "建立後簽出";
 "branch.checkoutCreated.help" = "建立分支後切換工作區。";
 "branch.cleanNames" = "輸入時自動規範引用名稱";
-"branch.exists" = "同名分支已存在。";
+"branch.exists" = "本機分支 “%@” 已存在。";
 "branch.error.unmerged" = "分支尚未完全合併。";
 "sync.fetch" = "擷取";
 "sync.fetch.help" = "擷取遠端更新，保留目前工作區。";
@@ -1302,6 +1302,13 @@
 "reference.invalidURL" = "“%@” 不是有效的遠端位址。";
 "reference.error.name" = "名稱無效。";
 "reference.error.name.help" = "名稱不能包含空格、控制字元或 ~ ^ : ? * [ \\ 中的任何一個，也不能以 “-” 開頭。";
+"reference.name.leadingHyphen" = "名稱不能以 “-” 開頭。";
+"reference.name.character" = "名稱不能包含空格、控制字元或 ~ ^ : ? * [ \\ 中的任何一個。";
+"reference.name.sequence" = "名稱不能包含 “..”、“//” 或 “@{”。";
+"reference.name.boundary" = "名稱不能以 “/” 開頭或結尾，也不能以 “.” 結尾。";
+"reference.name.component" = "名稱中以 “/” 分隔的每一段都不能以 “.” 開頭，也不能以 “.lock” 結尾。";
+"reference.name.ambiguous" = "名稱不能是 “HEAD” 或完整的提交雜湊。";
+"reference.name.other" = "Git 不接受這個名稱。";
 "reference.error.refspec" = "refspec 無效。";
 "reference.error.refspec.help" = "請輸入形如 +refs/heads/*:refs/remotes/origin/* 的 refspec。";
 "reference.error.url" = "遠端位址無效。";

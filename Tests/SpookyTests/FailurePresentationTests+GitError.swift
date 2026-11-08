@@ -61,6 +61,7 @@ extension FailurePresentationTests {
     }
 
     /// 写成整句的原因排在说明最前，恢复说明接在同一段，标题已经说清的错误只有恢复说明；
+    /// 分支名带着不合法的原因时，恢复说明换成这条原因，Git 的原文写进详情；
     /// 原文先 stderr、再 stdout，不写退出码，两者都为空且没有诊断时写 “(No error message given)”。
     @Test("说明先写原因，原文先 stderr 后 stdout")
     func messageAndDetails() {
@@ -76,6 +77,30 @@ extension FailurePresentationTests {
                 AppLocalization.text("reference.error.name.help")
             )
         )
+
+        let rejection = GitCommandResult(
+            arguments: ["check-ref-format", "--branch", "a/.b"],
+            standardOutput: Data(),
+            standardError: Data("fatal: 'a/.b' is not a valid branch name\n".utf8),
+            terminationStatus: .exited(128),
+            isCancelled: false
+        )
+
+        let reason = AppFailure(
+            error: ReferenceError.invalidName("a/.b", problem: .component, output: rejection),
+            opening: false,
+            location: nil
+        )
+
+        #expect(
+            reason.message == AppLocalization.text(
+                "failure.reason",
+                AppLocalization.text("reference.error.name"),
+                AppLocalization.text("reference.name.component")
+            )
+        )
+
+        #expect(reason.details.contains("is not a valid branch name"))
 
         let locked = AppFailure(
             error: Self.gitError(.indexLocked, ["add", "--", "a.txt"]),

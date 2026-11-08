@@ -221,11 +221,12 @@ enum RepositoryDialogRows {
         }
     }
 
-    /// 校验失败的说明：名字、地址与 refspec 不合法时写出所填的值，其余失败给出 Git 原文。
+    /// 校验失败的说明：分支名不合法时写出原因；其余名字、地址与 refspec 不合法时写出所填的值；其余失败给出 Git 原文。
     static func validationMessage(_ error: any Error, in session: RepositorySession) -> String {
         switch error {
-        case ReferenceError.invalidName(let name):
-            AppLocalization.text("reference.invalidName", name)
+        case ReferenceError.invalidName(let name, let problem, _):
+            problem.map { AppLocalization.text($0.messageKey) }
+                ?? AppLocalization.text("reference.invalidName", name)
 
         case ReferenceError.invalidRefspec(let refspec):
             AppLocalization.text("reference.invalidRefspec", refspec)

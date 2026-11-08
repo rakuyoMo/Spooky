@@ -39,7 +39,7 @@ struct RenameReferenceDialog: View {
     @State
     private var error = ""
 
-    /// 输入时规范化引用名的开关，只作用于分支名。
+    /// 输入时规范化引用名的开关，只作用于本地分支名。
     @AppStorage("cleanRefNames")
     private var cleanNames = true
 
@@ -65,9 +65,7 @@ struct RenameReferenceDialog: View {
             name = originalName
         }
         .onChange(of: name) {
-            if cleanNames, case .branch = target {
-                name = RepositoryReferences.normalizedName(name)
-            }
+            name = Self.normalizedName(name, for: target, cleaning: cleanNames)
         }
         .task(id: name) { await validate() }
     }
@@ -96,6 +94,20 @@ extension RenameReferenceDialog {
         case .branch(let reference): session.remoteParts(of: reference)?.branch ?? reference.name
         case .remote(let remote): remote
         }
+    }
+
+    /// 输入时的规范化：只有本地分支按分支规则规范化，远端分支与远端名保持原样，只经校验。
+    ///
+    /// - Parameters:
+    ///   - input: 名称框里的文字。
+    ///   - target: 要重命名的对象。
+    ///   - cleaning: 设置里是否开启输入时规范化。
+    static func normalizedName(_ input: String, for target: Target, cleaning: Bool) -> String {
+        guard cleaning, case .branch(let reference) = target, reference.isLocal else {
+            return input
+        }
+
+        return RepositoryReferences.normalizedBranchName(input)
     }
 
     /// 名字为空或未变时直接不可提交；其余按 Git 规则校验，并检查同名对象。
@@ -147,7 +159,7 @@ extension RenameReferenceDialog {
             }
 
             let taken = snapshot?.references.contains { $0.id == "refs/heads/" + name } ?? false
-            return taken ? AppLocalization.text("branch.exists") : nil
+            return taken ? AppLocalization.text("branch.exists", name) : nil
 
         case .remote:
             let taken = snapshot?.remotes.contains { $0.name == name } ?? false

@@ -400,7 +400,7 @@
 "branch.checkoutCreated" = "Hacer checkout de la rama";
 "branch.checkoutCreated.help" = "Cambia la copia de trabajo tras crear la rama.";
 "branch.cleanNames" = "Convertir automáticamente los nombres de referencia a un formato válido al escribir";
-"branch.exists" = "Ya existe una rama con este nombre.";
+"branch.exists" = "La rama local “%@” ya existe.";
 "branch.error.unmerged" = "La rama no se ha fusionado por completo.";
 "sync.fetch" = "Hacer fetch";
 "sync.fetch.help" = "Descarga las actualizaciones del remoto sin cambiar la copia de trabajo.";
@@ -1302,6 +1302,13 @@
 "reference.invalidURL" = "“%@” no es una URL remota válida.";
 "reference.error.name" = "El nombre no es válido.";
 "reference.error.name.help" = "Los nombres no pueden contener espacios, caracteres de control ni ninguno de ~ ^ : ? * [ \\, ni empezar por “-”.";
+"reference.name.leadingHyphen" = "Los nombres no pueden empezar por “-”.";
+"reference.name.character" = "Los nombres no pueden contener espacios, caracteres de control ni ninguno de ~ ^ : ? * [ \\.";
+"reference.name.sequence" = "Los nombres no pueden contener “..”, “//” ni “@{”.";
+"reference.name.boundary" = "Los nombres no pueden empezar ni terminar por “/”, ni terminar por “.”.";
+"reference.name.component" = "Ninguna parte de un nombre separada por “/” puede empezar por “.” ni terminar en “.lock”.";
+"reference.name.ambiguous" = "Los nombres no pueden ser “HEAD” ni un hash de commit completo.";
+"reference.name.other" = "Git no acepta este nombre.";
 "reference.error.refspec" = "La refspec no es válida.";
 "reference.error.refspec.help" = "Introduce una refspec como +refs/heads/*:refs/remotes/origin/*.";
 "reference.error.url" = "La URL remota no es válida.";

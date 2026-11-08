@@ -82,7 +82,7 @@ struct PullRequestTextDialogTests {
             )
         }
 
-        let invalid = AppLocalization.text("reference.invalidName", "bad..name")
+        let invalid = AppLocalization.text("reference.name.sequence")
 
         #expect(await problem("bad..name", sha: head) == .invalid(invalid))
 
