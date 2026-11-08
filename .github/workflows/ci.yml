@@ -29,6 +29,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # SwiftPM 把依赖的 Git 镜像和下载过的二进制存进共享缓存，恢复后解析依赖直接取用，不再每次从 GitHub Release 下载
+      # 三个 job 各占一台机器，各自恢复；Package.resolved 变了就按前缀恢复旧缓存，只下载变化的部分
+      - name: 缓存 SwiftPM 依赖
+        uses: actions/cache@v6
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: swiftpm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: swiftpm-${{ runner.os }}-
+
       - uses: jdx/mise-action@v4
 
       - name: 检查代码规范
@@ -47,6 +56,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+
+      - name: 缓存 SwiftPM 依赖
+        uses: actions/cache@v6
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: swiftpm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: swiftpm-${{ runner.os }}-
 
       - uses: jdx/mise-action@v4
 
@@ -72,6 +88,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+
+      - name: 缓存 SwiftPM 依赖
+        uses: actions/cache@v6
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: swiftpm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: swiftpm-${{ runner.os }}-
 
       - uses: jdx/mise-action@v4
 
