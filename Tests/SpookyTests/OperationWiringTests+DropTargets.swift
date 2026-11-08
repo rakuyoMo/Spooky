@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import Foundation
+import SwiftUI
 import Testing
 import TestSupport
 
@@ -61,7 +62,8 @@ extension OperationWiringTests {
         #expect(requests.map(\.remoteBranch) == ["refs/remotes/origin/main"])
     }
 
-    /// 徽标加在来源影像的右侧并竖直居中；换动作名时替换而不叠加，去掉时只剩来源给出的组件。
+    /// 徽标加在来源影像的右侧并竖直居中；换动作名时替换而不叠加，去掉时只剩来源给出的组件；
+    /// 落点在拖动离开时去掉自己加上的徽标，拖到无效位置时影像上不留动作名。
     @Test("拖动影像上的徽标")
     func dragBadge() throws {
         let item = NSDraggingItem(pasteboardWriter: NSPasteboardItem())
@@ -96,6 +98,46 @@ extension OperationWiringTests {
 
         #expect(components().map(\.key) == [.icon, .label])
         #expect(components().map(\.frame) == [icon.frame, label.frame])
+
+        // 落点：进入时加上动作名，离开时去掉
+        let target = DropTargetView(type: .string)
+        let info = DraggingInfoStub(item: item)
+
+        target.resolve = { _ in DropBadgeAction(title: "Publish") { true } }
+
+        #expect(target.draggingEntered(info) == .copy)
+        #expect(components().map(\.key) == [.icon, .label, DragBadge.key])
+
+        target.draggingExited(info)
+
+        #expect(components().map(\.key) == [.icon, .label])
+    }
+
+    /// 拖动结束时历史列表移除落点旁的动作名，结束的处理不交给 NSTableView：它没有实现这个方法，
+    /// 交给它会抛出异常，经过列表的拖动来源之后再也拖不起来。
+    @Test("拖动结束时历史列表的收尾")
+    func historyDragEnded() {
+        let table = HistoryCommitTable.CommitTableView()
+        let rows = SingleRowSource()
+
+        table.addTableColumn(NSTableColumn(identifier: .init("commit")))
+        table.dataSource = rows
+        table.reloadData()
+
+        /// 表格里落点旁的动作名。
+        func labels() -> [NSView] {
+            table.subviews.filter { $0 is NSHostingView<DropActionLabel> }
+        }
+
+        table.dropLabel.show("Squash", row: 0, between: false, in: table)
+
+        #expect(labels().count == 1)
+
+        let item = NSDraggingItem(pasteboardWriter: NSPasteboardItem())
+
+        table.draggingEnded(DraggingInfoStub(item: item))
+
+        #expect(labels().isEmpty)
     }
 
     /// 打开时两个下拉按拖动源与落点预选；提交只把这个非 HEAD 本地分支推到这个远端分支，推送表单保存的全部标签与递归子模块
@@ -205,4 +247,86 @@ extension OperationWiringTests.Fixture {
 
         return action?.title
     }
+}
+
+// MARK: - DraggingInfoStub
+
+/// 只带一个拖动项的拖动信息，供直接调用落点的拖放方法。
+@MainActor
+private final class DraggingInfoStub: NSObject, @MainActor NSDraggingInfo {
+    /// 唯一的拖动项。
+    let item: NSDraggingItem
+
+    /// 拖动的格式。
+    var draggingFormation = NSDraggingFormation.default
+
+    /// 落下后是否动画移到落点。
+    var animatesToDestination = false
+
+    /// 落点接受的拖动项个数。
+    var numberOfValidItemsForDrop = 1
+
+    /// 用到时才建的独立粘贴板，不碰系统的拖放粘贴板。
+    lazy var draggingPasteboard = NSPasteboard.withUniqueName()
+
+    /// 落点所在的窗口；直接调用落点的方法时没有窗口。
+    var draggingDestinationWindow: NSWindow? { nil }
+
+    /// 来源允许的操作。
+    var draggingSourceOperationMask: NSDragOperation { .copy }
+
+    /// 光标在落点窗口里的位置。
+    var draggingLocation: NSPoint { .zero }
+
+    /// 拖动影像的位置。
+    var draggedImageLocation: NSPoint { .zero }
+
+    /// 拖动影像。
+    var draggedImage: NSImage? { nil }
+
+    /// 拖动来源；别处拖来时为 nil。
+    var draggingSource: Any? { nil }
+
+    /// 拖动的序号。
+    var draggingSequenceNumber: Int { 1 }
+
+    /// 弹簧加载的高亮。
+    var springLoadingHighlight: NSSpringLoadingHighlight { .none }
+
+    /// 建出只有这个拖动项的拖动信息。
+    ///
+    /// - Parameter item: 拖动项。
+    init(item: NSDraggingItem) {
+        self.item = item
+    }
+
+    /// 把唯一的拖动项交给回调。
+    func enumerateDraggingItems(
+        options _: NSDraggingItemEnumerationOptions = [],
+        for _: NSView?,
+        classes _: [AnyClass],
+        searchOptions _: [NSPasteboard.ReadingOptionKey: Any] = [:],
+        using block: (NSDraggingItem, Int, UnsafeMutablePointer<ObjCBool>) -> Void
+    ) {
+        var stop = ObjCBool(false)
+        block(item, 0, &stop)
+    }
+
+    /// 不移动拖动影像。
+    func slideDraggedImage(to _: NSPoint) { }
+
+    /// 没有承诺的文件。
+    override func namesOfPromisedFilesDropped(atDestination _: URL) -> [String]? { nil }
+
+    /// 没有弹簧加载。
+    func resetSpringLoading() { }
+}
+
+// MARK: - SingleRowSource
+
+/// 只有一行的表格数据源，让落点旁的动作名有行可贴。
+@MainActor
+private final class SingleRowSource: NSObject, NSTableViewDataSource {
+    /// 固定一行。
+    func numberOfRows(in _: NSTableView) -> Int { 1 }
 }

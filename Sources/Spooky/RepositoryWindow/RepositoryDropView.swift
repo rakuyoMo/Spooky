@@ -39,7 +39,7 @@ struct RepositoryDropView: NSViewRepresentable {
 
 /// 落点的 AppKit 视图：拖动进入与经过时按当前动作换徽标，⌥ 不动鼠标也会随周期性的拖动更新切换。
 ///
-/// 拖动离开后，AppKit 把落点对拖动项的改动还原，徽标随之消失。
+/// 拖动项上的改动不会随拖动离开还原，离开时由落点自己去掉加上的徽标。
 final class DropTargetView: NSView {
     /// 按这次拖动求当前的有效动作。
     var resolve: (@MainActor (any NSDraggingInfo) -> DropBadgeAction?)? = nil
@@ -73,8 +73,12 @@ final class DropTargetView: NSView {
         update(sender)
     }
 
-    /// 离开后 AppKit 已还原拖动影像。
-    override func draggingExited(_: (any NSDraggingInfo)?) {
+    /// 离开时去掉加上的徽标，拖到无效位置时拖动影像上不留动作名。
+    override func draggingExited(_ sender: (any NSDraggingInfo)?) {
+        if badge != nil, let sender {
+            show(nil, on: sender)
+        }
+
         badge = nil
     }
 
@@ -97,20 +101,27 @@ extension DropTargetView {
 
         if action?.title != badge {
             badge = action?.title
-
-            // 徽标只加给第一个拖动项
-            info.enumerateDraggingItems(
-                options: [],
-                for: self,
-                classes: [NSPasteboardItem.self],
-                searchOptions: [:]
-            ) { item, _, stop in
-                DragBadge.apply(action?.title, to: item)
-                stop.pointee = true
-            }
+            show(action?.title, on: info)
         }
 
         return action == nil ? [] : .copy
+    }
+
+    /// 换掉或去掉拖动影像上的徽标；徽标只加给第一个拖动项。
+    ///
+    /// - Parameters:
+    ///   - title: 动作名；为 nil 时去掉徽标。
+    ///   - info: 这次拖动。
+    private func show(_ title: String?, on info: any NSDraggingInfo) {
+        info.enumerateDraggingItems(
+            options: [],
+            for: self,
+            classes: [NSPasteboardItem.self],
+            searchOptions: [:]
+        ) { item, _, stop in
+            DragBadge.apply(title, to: item)
+            stop.pointee = true
+        }
     }
 }
 
