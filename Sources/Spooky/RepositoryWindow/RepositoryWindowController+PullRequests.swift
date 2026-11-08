@@ -201,6 +201,12 @@ extension RepositoryWindowController {
             Task { @MainActor in
                 let current = history.snapshot?.remoteSettingsDigests
                 self?.session.remotesDidChange(from: previous, to: current)
+
+                // 增减了远端时自动获取重新计时；仓库刚读出或换了仓库由显示仓库时处理
+                if let previous, let current, Set(previous.keys) != Set(current.keys) {
+                    self?.autoFetch.restart()
+                }
+
                 self?.observeRemotes(previous: current)
             }
         }

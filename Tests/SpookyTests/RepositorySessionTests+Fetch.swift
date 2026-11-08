@@ -47,7 +47,7 @@ extension RepositorySessionTests {
         // 自动获取：加上标签映射后，清理删除远端没有的本地标签
         _ = try await runner.run(["config", "--local", "--add", "remote.origin.fetch", "+refs/tags/*:refs/tags/*"])
 
-        #expect(session.autoFetch(defaults: defaults))
+        #expect(session.autoFetch(remote: "origin", defaults: defaults))
         await session.writeTask?.value
 
         refs = try await references(runner)

@@ -255,6 +255,35 @@ public struct RepositorySync: Sendable {
         }
     }
 
+    /// 自动获取可以获取的远端：去掉设了 `skipFetchAll` 的；本机仓库再去掉地址解析不出主机的，规则见 ``RemoteAddress/host(in:)``。
+    ///
+    /// 地址取 `remote get-url` 的结果，即经 `url.<base>.insteadOf` 改写后的第一个地址；读不出地址时按解析不出主机处理。
+    ///
+    /// - Parameters:
+    ///   - remotes: 到期的远端，结果保持它们的顺序。
+    ///   - requiresHost: 本机仓库传 true；服务器仓库的地址由服务器上的 Git 解释，不在这里判断。
+    public func autoFetchTargets(among remotes: [String], requiresHost: Bool) async throws -> [String] {
+        let skipped = try await skippedRemotes()
+        var targets: [String] = []
+
+        for name in remotes where !skipped.contains(name) {
+            try Task.checkCancellation()
+
+            if requiresHost {
+                let result = try? await runner.execute(["remote", "get-url", name])
+                let url = result.map { String(decoding: $0.standardOutput, as: UTF8.self) } ?? ""
+
+                guard RemoteAddress.host(in: url.trimmingCharacters(in: .newlines)) != nil else {
+                    continue
+                }
+            }
+
+            targets.append(name)
+        }
+
+        return targets
+    }
+
     /// 获取选定分支后显式执行 merge 或 rebase，两个阶段共用同一写锁。
     ///
     /// 已跟踪的文件有改动或冲突时不开始；只有未跟踪的文件时照常执行，会覆盖同名未跟踪文件时由 Git 拒绝。
@@ -523,14 +552,19 @@ extension RepositorySync {
             return [remote]
         }
 
+        let skipped = try await skippedRemotes()
+        return remotes.filter { !skipped.contains($0) }
+    }
+
+    /// 设了 `skipFetchAll` 的远端。
+    private func skippedRemotes() async throws -> Set<String> {
         // 没有任何记录时 config 以 1 退出，是正常的空结果
         let result = try await runner.execute(
             ["config", "-z", "--get-regexp", "^remote\\..*\\.skipfetchall$"],
             acceptedExitCodes: [0, 1]
         )
 
-        let skipped = try Self.skippedRemotes(in: result.standardOutput)
-        return remotes.filter { !skipped.contains($0) }
+        return try Self.skippedRemotes(in: result.standardOutput)
     }
 
     /// porcelain 输出不能与递归子模块同用，子模块在仓库本身获取完之后逐个获取。

@@ -4,14 +4,16 @@ import SpookyKit
 // MARK: - Fetch
 
 extension RepositorySession {
-    /// 自动获取：获取全部远端（跳过设了 skipFetchAll 的），不询问凭据，失败只记进 Activity。
+    /// 自动获取一个到期的远端：不询问凭据，失败只记进 Activity。
     ///
-    /// - Parameter defaults: 读取获取选项的偏好，测试使用独立的域。
+    /// - Parameters:
+    ///   - remote: 要获取的远端。
+    ///   - defaults: 读取获取选项、记录获取时刻的偏好，测试使用独立的域。
     /// - Returns: 是否已开始执行。
     @discardableResult
-    func autoFetch(defaults: UserDefaults = .standard) -> Bool {
+    func autoFetch(remote: String, defaults: UserDefaults = .standard) -> Bool {
         fetchWithPreferences(
-            nil,
+            remote,
             title: AppLocalization.text("sync.autoFetch"),
             undo: .unrecorded,
             background: true,
@@ -46,6 +48,29 @@ extension RepositorySession {
             undo: .irreversible,
             defaults: defaults
         )
+    }
+
+    /// 每个远端开始获取时调用：另起一条 Activity 记录，并记下这个远端的获取时刻。
+    ///
+    /// - Parameter defaults: 记录获取时刻的偏好，测试使用独立的域。
+    func fetchingRemote(defaults: UserDefaults = .standard) -> @Sendable (String) -> Void {
+        let repository = repository
+
+        // 偏好在主线程上读改写，同一仓库先后几个远端的记录不会互相覆盖
+        let record: @MainActor (String, Date) -> Void = { remote, date in
+            guard let repository else {
+                return
+            }
+
+            RemoteFetchTimes.record(remote, in: repository, at: date, defaults: defaults)
+        }
+
+        return { remote in
+            let date = Date()
+            ActivityRecording.fetching(remote)
+
+            Task { await record(remote, date) }
+        }
     }
 
     /// 添加远端，成功后立即获取它；两步各记一条 Activity。
@@ -107,7 +132,7 @@ extension RepositorySession {
     ///   - title: 已本地化的操作名称。
     ///   - undo: 与撤销记录的关系。
     ///   - background: 不由用户直接发起：不询问凭据，失败只记进 Activity。
-    ///   - defaults: 读取获取选项的偏好。
+    ///   - defaults: 读取获取选项、记录获取时刻的偏好。
     /// - Returns: 是否已开始执行。
     @discardableResult
     private func fetchWithPreferences(
@@ -118,6 +143,7 @@ extension RepositorySession {
         defaults: UserDefaults
     ) -> Bool {
         let options = SyncPreferences.fetchOptions(in: defaults)
+        let fetching = fetchingRemote(defaults: defaults)
 
         return performGit(
             { runner, output in
@@ -128,7 +154,7 @@ extension RepositorySession {
                             remote: remote,
                             prune: options.prune,
                             submodules: options.submodules,
-                            onRemote: ActivityRecording.fetching,
+                            onRemote: fetching,
                             onOutput: output
                         )
                 }

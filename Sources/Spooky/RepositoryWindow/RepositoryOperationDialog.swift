@@ -709,6 +709,7 @@ extension RepositoryOperationDialog {
         let prune = prune
         let allTags = allTags
         let submodules = fetchSubmodules
+        let fetching = session.fetchingRemote()
         let rebase = rebase
         let verify = pullVerify
         let skipHooks = skipHooks
@@ -737,7 +738,7 @@ extension RepositoryOperationDialog {
                         prune: prune,
                         allTags: allTags,
                         submodules: submodules,
-                        onRemote: ActivityRecording.fetching,
+                        onRemote: fetching,
                         onOutput: output
                     )
 

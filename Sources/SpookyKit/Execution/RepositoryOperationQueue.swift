@@ -113,6 +113,11 @@ actor RepositoryOperationQueue {
             return options.elementsEqual(["--show-current"])
         }
 
+        // 只读出远端地址；其余 remote 子命令会改动远端配置
+        if command == "remote" {
+            return options.first == "get-url"
+        }
+
         // 只有列出工作树是读取，其余 worktree 子命令都会改动仓库
         if command == "worktree" {
             return options.first == "list"
