@@ -70,8 +70,12 @@ extension RepositoryWindowController {
         case #selector(quickPush), #selector(forcePushWithLease):
             repositoryView && session.canPush
 
-        case #selector(sync), #selector(quickSync):
+        case #selector(sync):
             repositoryView && session.canSync
+
+        // 快速同步不经对话框，直接以跟踪分支为目标，要求有远端分支
+        case #selector(quickSync):
+            repositoryView && session.canPull
 
         case #selector(quickMerge):
             repositoryView && session.canMerge

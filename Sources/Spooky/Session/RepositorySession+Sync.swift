@@ -128,15 +128,15 @@ final class SyncProgress {
 // MARK: - Sync & Quick Actions
 
 extension RepositorySession {
-    /// Sync 与快速同步需要可同步的当前分支与远端分支，规则与拉取相同。
-    var canSync: Bool { canPull }
+    /// Sync HEAD 对话框的入口只要可同步的当前分支；没有远端或远端分支时也能打开，由对话框禁止提交。
+    var canSync: Bool { canWrite && hasCurrentBranch }
 
     /// 变基当前分支需要可同步的当前分支与其它分支，规则与合并相同。
     var canRebase: Bool { canMerge }
 
-    /// 把任意版本推到远端引用：需要远端，且仓库至少有一个提交。
+    /// 把任意版本推到远端引用的对话框入口：仓库至少有一个提交；没有远端时也能打开，由对话框禁止提交。
     var canPushRevision: Bool {
-        canFetch && status?.branch.oid != nil
+        canWrite && status?.branch.oid != nil
     }
 
     /// HEAD 所在的本地分支；分离或未出生时为 nil。

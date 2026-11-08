@@ -96,7 +96,7 @@ extension RepositoryWindowController {
     @objc
     func pull() { presentRepositoryAction(RepositoryActionRequest(kind: .pull)) }
 
-    /// 推送表单明确目标远端和目标分支。
+    /// 推送 HEAD 的表单选择目标远端分支；没有远端时改为发布仓库。
     @objc
     func push() { presentRepositoryAction(RepositoryActionRequest(kind: .push)) }
 
@@ -139,6 +139,17 @@ extension RepositoryWindowController {
     /// 对话框关闭之后才启动写入，保存发起仓库身份以拒绝迟到提交。
     func presentRepositoryAction(_ request: RepositoryActionRequest) {
         guard session.canWrite else { return }
+
+        // 没有远端时，没有指定本地分支与目标的推送改为发布仓库：新建托管仓库、添加为远端再推送
+        if
+            request.kind == .push,
+            request.localBranch == nil,
+            request.reference == nil,
+            session.pushPublishesRepository
+        {
+            publishRepository()
+            return
+        }
 
         // HEAD 还没有上游时，推送 HEAD 分支改为打开发布分支的对话框
         let request = request.resolved(for: session.status?.branch)
@@ -245,7 +256,7 @@ extension RepositoryWindowController {
             repositoryView && session.canPull
 
         case #selector(push):
-            repositoryView && session.canPush
+            repositoryView && session.canPushHead
 
         case #selector(publishBranch):
             repositoryView && session.canPublish

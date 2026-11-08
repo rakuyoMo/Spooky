@@ -50,8 +50,7 @@ extension RepositoryWindowController {
             return repositoryView
 
         case #selector(publishRepository):
-            // 新仓库建在登录的账号下，没有账号时不可用
-            return repositoryView && session.canWrite && !session.pullRequests.accounts.items.isEmpty
+            return repositoryView && session.canPublishRepository
 
         default:
             return nil

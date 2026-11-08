@@ -145,10 +145,10 @@ struct RepositoryOperationDialog: View {
         RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(request.kind.titleKey(pushesHead: pushesHead)),
-            message: AppLocalization.text(request.kind.rawValue + ".help"),
+            message: message,
             width: request.kind == .push ? 450 : 480,
             submitTitle: AppLocalization.text(request.kind.submitKey(pushesHead: pushesHead)),
-            error: emptyState ?? error,
+            error: Self.emptyState(for: request, in: session) ?? error,
             isValid: canSubmit,
             cancel: cancel,
             submit: perform,
@@ -157,6 +157,12 @@ struct RepositoryOperationDialog: View {
             rows
         }
         .onAppear(perform: prepare)
+        .onChange(of: destinationIDs) { _, candidates in
+            // Destination 所选的远端分支不在候选里了，按同一顺序重新预选
+            if usesDestination, !candidates.contains(source) {
+                source = Self.destinationPreselection(preselection: request.reference, in: session)
+            }
+        }
         .onChange(of: name) {
             name = Self.normalizedName(name, for: request.kind, cleaning: cleanNames)
         }
@@ -194,7 +200,29 @@ struct RepositoryOperationDialog: View {
     /// 推送的本地分支是不是 HEAD 分支，决定推送对话框的标题与主按钮。
     private var pushesHead: Bool { localBranch == session.status?.branch.head }
 
+    /// 推送 HEAD 分支时只有一个 Destination，见 ``usesDestination(_:in:)``。
+    private var usesDestination: Bool { Self.usesDestination(request, in: session) }
+
+    /// Push HEAD 的 Destination 候选的完整引用名，其余表单为空，供候选变化时重新预选。
+    private var destinationIDs: [String] {
+        usesDestination ? Self.pushDestinations(in: session).map(\.id) : []
+    }
+
+    /// 标题下的说明：Push HEAD 写出 HEAD 分支名，其余按动作取。
+    private var message: String {
+        usesDestination
+            ? AppLocalization.text("sync.pushHead.help", localBranch)
+            : AppLocalization.text(request.kind.rawValue + ".help")
+    }
+
+    /// 已配置的远端里有表单所选的远端。
+    private var hasSelectedRemote: Bool {
+        session.history.snapshot?.remotes.contains { $0.name == remote } ?? false
+    }
+
     /// 表单校验在客户端及时反馈，执行时核心库仍重新核对；仓库是否可写由骨架判断。
+    ///
+    /// 所选的远端、来源或目标在对话框打开后被移除时不可提交。
     private var canSubmit: Bool {
         switch request.kind {
         case .create:
@@ -204,26 +232,19 @@ struct RepositoryOperationDialog: View {
             validName && branches.contains { $0.id == source && $0.isRemote }
 
         case .fetch:
-            !(session.history.snapshot?.remotes.isEmpty ?? true) && (allRemotes || !remote.isEmpty)
+            !(session.history.snapshot?.remotes.isEmpty ?? true) && (allRemotes || hasSelectedRemote)
 
         case .pull, .merge:
-            !source.isEmpty && session.status?.branch.head != nil && session.context?.operation == nil
+            Self.sourceCandidates(for: request.kind, in: session).contains { $0.id == source }
+                && session.status?.branch.head != nil
+                && session.context?.operation == nil
+
+        case .push where usesDestination:
+            !localBranch.isEmpty && Self.destinationTarget(source, in: session) != nil
 
         case .push, .publish:
-            validName && !remote.isEmpty && !localBranch.isEmpty
+            validName && hasSelectedRemote && branches.contains { $0.isLocal && $0.name == localBranch }
         }
-    }
-
-    /// 要连接远端的动作在仓库没有远端时的说明，随引用快照更新；其余情况为 nil。
-    private var emptyState: String? {
-        guard
-            [.fetch, .pull, .push, .publish, .track].contains(request.kind),
-            session.history.snapshot?.remotes.isEmpty != false
-        else {
-            return nil
-        }
-
-        return AppLocalization.text("sync.noRemotes")
     }
 }
 
@@ -380,9 +401,20 @@ extension RepositoryOperationDialog {
         MergeabilityPreview(session: session, revision: source, showsCleanResults: false)
     }
 
-    /// 推送与发布：本地分支、远端与远端分支名；只有发布有跟踪远端分支的选项。
+    /// 推送与发布：Push HEAD 只有 Destination 一行；Push Branch 与发布是本地分支、远端与远端分支名，
+    /// 只有发布有跟踪新远端分支的选项。
     @ViewBuilder
     private var pushRows: some View {
+        if usesDestination {
+            referencePicker(Self.pushDestinations(in: session), label: "sync.destination")
+        } else {
+            branchPushRows
+        }
+    }
+
+    /// Push Branch 与发布的本地分支、远端与远端分支名三行，以及发布的跟踪选项。
+    @ViewBuilder
+    private var branchPushRows: some View {
         RepositoryDialogRows.row(AppLocalization.text("branch.local")) {
             Picker("", selection: $localBranch) {
                 ForEach(branches.filter(\.isLocal)) { Text($0.name).tag($0.name) }
@@ -540,6 +572,9 @@ extension RepositoryOperationDialog {
         case .merge, .pull:
             source = Self.sourcePreselection(for: request.kind, preselection: request.reference, in: session)
 
+        case .push where usesDestination:
+            source = Self.destinationPreselection(preselection: request.reference, in: session)
+
         case .push, .publish:
             let selected = branches.first { $0.isLocal && $0.name == localBranch }
 
@@ -560,7 +595,8 @@ extension RepositoryOperationDialog {
     private func validateName() async {
         validName = false
 
-        guard [.create, .track, .push, .publish].contains(request.kind) else {
+        // Push HEAD 从已有的远端分支里选目标，没有名称框
+        guard [.create, .track, .push, .publish].contains(request.kind), !usesDestination else {
             return
         }
 
@@ -623,7 +659,19 @@ extension RepositoryOperationDialog {
         }
     }
 
-    /// 推送的选项与强推期望值：发布只带跳过钩子；推送时强推以表单所见的远端跟踪分支为期望值，没有跟踪分支时要求远端分支不存在。
+    /// 推送与发布的目标远端、远端上的分支名与强推的期望值：Push HEAD 取 Destination 所选的远端分支；
+    /// 其余取表单的远端与名称，期望值是表单所见的远端跟踪分支，没有跟踪分支时要求远端分支不存在。
+    private func pushTarget() -> (remote: String, branch: String, lease: String) {
+        if usesDestination {
+            return Self.destinationTarget(source, in: session) ?? ("", "", "")
+        }
+
+        let tracking = branches.first { $0.id == "refs/remotes/" + remote + "/" + name }
+
+        return (remote, name, tracking?.objectID ?? "")
+    }
+
+    /// 推送的选项与强推期望值：发布只带跳过钩子；推送时强推的期望值见 ``pushTarget()``。
     private func pushConfiguration() -> (options: PushOptions, lease: String?) {
         var options = PushOptions()
         options.skipHooks = skipHooks
@@ -638,8 +686,7 @@ extension RepositoryOperationDialog {
             options.submodules = SubmodulePushMode(rawValue: pushSubmoduleMode) ?? .onDemand
         }
 
-        let tracking = branches.first { $0.id == "refs/remotes/" + remote + "/" + name }
-        return (options, forcePush ? tracking?.objectID ?? "" : nil)
+        return (options, forcePush ? pushTarget().lease : nil)
     }
 
     /// 合并的选项：压缩、总是新建合并提交、随即提交、签名校验与跳过钩子都照表单。
@@ -660,7 +707,9 @@ extension RepositoryOperationDialog {
     ///   - pullRemote: 拉取来源所属的远端。
     ///   - pullBranch: 拉取来源在远端上的完整分支引用名。
     private func activityTarget(pullRemote: String?, pullBranch: String?) -> ActivityTarget? {
-        request.kind.transfer.map { transfer in
+        let push = pushTarget()
+
+        return request.kind.transfer.map { transfer in
             switch transfer {
             case .fetch:
                 ActivityTarget(transfer: transfer, remote: allRemotes ? nil : remote, refspec: nil)
@@ -671,8 +720,8 @@ extension RepositoryOperationDialog {
             case .push:
                 ActivityTarget(
                     transfer: transfer,
-                    remote: remote,
-                    refspec: "refs/heads/" + localBranch + ":refs/heads/" + name
+                    remote: push.remote,
+                    refspec: "refs/heads/" + localBranch + ":refs/heads/" + push.branch
                 )
             }
         }
@@ -698,7 +747,7 @@ extension RepositoryOperationDialog {
 
     /// 捕获表单值后关闭 sheet，再运行核心库动作。
     private func perform() {
-        let name = name
+        let destination = pushTarget()
 
         // 不与属性 source 同名：闭包里引用同名属性会让 Swift 6.3 的类型推断失败
         let revision = session.revision(for: source)
@@ -757,8 +806,8 @@ extension RepositoryOperationDialog {
                 _ = try await RepositorySync(runner: runner)
                     .push(
                         branch: localBranch,
-                        remote: remote,
-                        destination: name,
+                        remote: destination.remote,
+                        destination: destination.branch,
                         setUpstream: kind == .publish && upstream,
                         options: push.options,
                         lease: push.lease,

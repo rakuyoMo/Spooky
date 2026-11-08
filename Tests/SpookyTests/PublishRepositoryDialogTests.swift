@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -96,8 +97,9 @@ struct PublishRepositoryDialogTests {
         #expect(Set(items.map(\.id)).count == items.count)
     }
 
-    /// 没有登录的账号时 Publish Repository… 不可用，加上账号后可用。
-    @Test("菜单项要求有登录的账号")
+    /// 仓库没有远端：Fetch 与 Pull 不可用，Sync HEAD 与 Push To 能打开对话框；Publish Repository… 与工具栏的 Push
+    /// 要求有登录的账号，Push 打开的是发布仓库的对话框。
+    @Test("没有远端时的入口与发布仓库要求的账号")
     func menuRequiresAccount() async throws {
         let fixture = try await NavigationTests.makeWindow()
         defer { fixture.close() }
@@ -105,16 +107,36 @@ struct PublishRepositoryDialogTests {
         let credentials = MemoryCredentials()
         let accounts = HostingAccounts(defaults: fixture.defaults, credentials: credentials)
         let controller = fixture.controller
+        let window = try #require(controller.window)
         controller.session.pullRequests.accounts = accounts
 
-        let item = NSMenuItem(
-            title: "",
-            action: #selector(RepositoryWindowController.publishRepository),
-            keyEquivalent: ""
-        )
+        await untilFinished { controller.session.history.activeTasks }
+        try #require(controller.session.history.snapshot?.remotes.isEmpty ?? false)
 
-        #expect(!controller.validateUserInterfaceItem(item))
+        let enabled = { (action: Selector) in
+            controller.validateUserInterfaceItem(NSMenuItem(title: "", action: action, keyEquivalent: ""))
+        }
 
+        let publish = #selector(RepositoryWindowController.publishRepository)
+        let push = #selector(RepositoryWindowController.push)
+
+        #expect(!enabled(publish) && !enabled(push))
+        #expect(!enabled(#selector(RepositoryWindowController.fetch)))
+        #expect(!enabled(#selector(RepositoryWindowController.pull)))
+        #expect(enabled(#selector(RepositoryWindowController.sync)))
+        #expect(enabled(#selector(RepositoryWindowController.pushRevision)))
+
+        // 没有账号时打开，发布仓库的对话框不读取组织；它有 Remote Name、Name 与 Description 三个输入框
+        controller.push()
+
+        let sheet = try #require(window.attachedSheet)
+        let content = try #require(sheet.contentView)
+
+        await until { Self.subviews(NSTextField.self, in: content).count(where: \.isEditable) == 3 }
+
+        window.endSheet(sheet)
+
+        // 加上账号
         _ = try accounts.save(
             HostingUser(username: "me", name: nil),
             on: .github,
@@ -122,7 +144,7 @@ struct PublishRepositoryDialogTests {
             token: "t"
         )
 
-        #expect(controller.validateUserInterfaceItem(item))
+        #expect(enabled(publish) && enabled(push))
     }
 }
 

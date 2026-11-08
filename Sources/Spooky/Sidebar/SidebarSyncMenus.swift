@@ -72,7 +72,7 @@ struct BranchSyncMenu: View {
         .disabled(!session.canSync)
         .quickAlternate(
             upstream.map { AppLocalization.text("sync.quickSyncNamed", reference.name, $0) },
-            enabled: session.canQuickPush(reference) && session.canSync
+            enabled: session.canQuickPush(reference) && session.canPull
         ) {
             session.quickSync()
         }

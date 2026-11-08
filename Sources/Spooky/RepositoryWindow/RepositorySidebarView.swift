@@ -222,7 +222,7 @@ struct RepositorySidebarView: View {
             Button(AppLocalization.text("sync.pull")) { request(RepositoryActionRequest(kind: .pull)) }
                 .disabled(!session.canPull)
             Button(AppLocalization.text("sync.push")) { request(RepositoryActionRequest(kind: .push)) }
-                .disabled(!session.canPush)
+                .disabled(!session.canPushHead)
             Button(AppLocalization.text("sync.publish")) { request(RepositoryActionRequest(kind: .publish)) }
                 .disabled(!session.canPublish)
             Button(AppLocalization.text("sync.merge")) { request(RepositoryActionRequest(kind: .merge)) }

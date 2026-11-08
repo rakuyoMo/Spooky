@@ -25,6 +25,26 @@ extension RepositorySession {
         canWrite && status?.branch.head != nil && status?.branch.oid != nil && hasRemotes
     }
 
+    /// 没有远端时推送 HEAD 的入口改为发布仓库；引用快照还没读出时不算没有远端。
+    var pushPublishesRepository: Bool {
+        history.snapshot?.remotes.isEmpty ?? false
+    }
+
+    /// 工具栏、主菜单与工作区右键的 Push：有远端时同 ``canPush``；没有远端时转到发布仓库，
+    /// 仍要求 HEAD 是已有提交的本地分支，并且能发布仓库。
+    var canPushHead: Bool {
+        guard pushPublishesRepository else {
+            return canPush
+        }
+
+        return status?.branch.head != nil && status?.branch.oid != nil && canPublishRepository
+    }
+
+    /// 发布仓库把新仓库建在登录的账号下，没有账号时不可用。
+    var canPublishRepository: Bool {
+        canWrite && !pullRequests.accounts.items.isEmpty
+    }
+
     /// 发布需要本地分支与远端。
     var canPublish: Bool {
         canWrite && history.branches.contains(where: \.isLocal) && hasRemotes
@@ -46,7 +66,7 @@ extension RepositorySession {
     }
 
     /// 当前分支已附着、已有提交且没有进行中的操作。
-    private var hasCurrentBranch: Bool {
+    var hasCurrentBranch: Bool {
         status?.branch.head != nil && status?.branch.oid != nil && context?.operation == nil
     }
 

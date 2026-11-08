@@ -33,14 +33,14 @@ extension SyncDialog {
                 "branch.target",
                 selection: $source,
                 references: branches.filter(\.isLocal),
-                count: lease.map { AppLocalization.text("sync.lease.introduced", $0.introduced) }
+                count: lease.map { Self.leaseCounts(of: $0).introduced }
             )
 
             leasePicker(
                 "sync.destination",
                 selection: $destination,
                 references: remoteBranches,
-                count: lease.map { AppLocalization.text("sync.lease.overwritten", $0.overwritten) }
+                count: lease.map { Self.leaseCounts(of: $0).overwritten }
             )
 
             leaseStatus
@@ -69,21 +69,25 @@ extension SyncDialog {
         option("sync.skipHooks", spacing: kind == .rebase ? 8 : 4, value: $skipHooks)
     }
 
-    /// 参数完整且仓库可写时才能执行；强推还要求核对完成且两侧不是同一个提交。
+    /// 参数完整且仓库可写时才能执行；同步与推送版本的目标远端分支或远端还要仍然存在；
+    /// 强推还要求核对完成且两侧不是同一个提交。
     var canSubmit: Bool {
+        let snapshot = session.history.snapshot
+
         switch kind {
         case .sync:
-            session.canSync && !source.isEmpty
+            return session.canSync
+                && remoteBranches.contains { $0.id == source && snapshot?.remote(for: $0) != nil }
 
         case .rebase:
-            session.canRebase && !source.isEmpty
+            return session.canRebase && !source.isEmpty
 
         case .forcePush:
-            session.canPush && !checkingLease && (lease.map { $0.status != .sameRevision } ?? false)
+            return session.canPush && !checkingLease && (lease.map { $0.status != .sameRevision } ?? false)
 
         case .pushRevision:
-            session.canPushRevision
-                && !remote.isEmpty
+            return session.canPushRevision
+                && (snapshot?.remotes.contains { $0.name == remote } ?? false)
                 && !source.trimmingCharacters(in: .whitespaces).isEmpty
                 && !destination.trimmingCharacters(in: .whitespaces).isEmpty
         }
@@ -149,6 +153,36 @@ extension SyncDialog {
                     }
                 }
         }
+    }
+
+    /// 强推下拉下方两行提交数的说明：推送后远端分支新增与被覆盖的提交数，零、一个与多个各用一条文案。
+    ///
+    /// - Parameter lease: 强推的核对结果。
+    static func leaseCounts(of lease: ForcePushPreview) -> (introduced: String, overwritten: String) {
+        let introduced =
+            switch lease.introduced {
+            case 0: AppLocalization.text("sync.lease.introduced.zero")
+            case 1: AppLocalization.text("sync.lease.introduced.one")
+            default: AppLocalization.text("sync.lease.introduced", lease.introduced)
+            }
+
+        let overwritten =
+            switch lease.overwritten {
+            case 0: AppLocalization.text("sync.lease.overwritten.zero")
+            case 1: AppLocalization.text("sync.lease.overwritten.one")
+            default: AppLocalization.text("sync.lease.overwritten", lease.overwritten)
+            }
+
+        return (introduced, overwritten)
+    }
+
+    /// 远端分支有本地从未见过的提交时的提醒，按一个与多个取文案；有这种提交时个数至少为 1。
+    ///
+    /// - Parameter count: 本地从未见过的提交数。
+    static func newerCommits(_ count: Int) -> String {
+        count == 1
+            ? AppLocalization.text("sync.lease.newer.one")
+            : AppLocalization.text("sync.lease.newer", count)
     }
 
     /// 标签加下拉框的一行，列出引用的短名。
@@ -221,7 +255,7 @@ extension SyncDialog {
                 ("exclamationmark.triangle.fill", .yellow, AppLocalization.text("sync.lease.differs"))
 
             case .newerOnRemote(let count):
-                ("exclamationmark.triangle.fill", .yellow, AppLocalization.text("sync.lease.newer", count))
+                ("exclamationmark.triangle.fill", .yellow, Self.newerCommits(count))
             }
 
         if let line {
