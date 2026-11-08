@@ -35,6 +35,15 @@ struct OperationBannerView: View {
     }
 }
 
+// MARK: - Icons
+
+extension OperationBannerView {
+    /// 操作类型的系统符号名：合并与压缩合并用合并的图标，变基、摘取与反转用分支的图标；侧边栏的 Working Copy 行用同一分类。
+    static func symbolName(_ state: RepositoryOperationState) -> String {
+        state == .merge || state == .squash ? "arrow.triangle.merge" : "arrow.triangle.branch"
+    }
+}
+
 // MARK: - Texts
 
 extension OperationBannerView {
@@ -137,11 +146,9 @@ extension OperationBannerView {
         }
     }
 
-    /// 合并与压缩合并用合并的图标，变基、摘取与反转用分支的图标；系统黄色，略微透明。
+    /// 操作类型的图标；系统黄色，略微透明。
     private func icon(_ state: RepositoryOperationState) -> some View {
-        let merging = state == .merge || state == .squash
-
-        return Image(systemName: merging ? "arrow.triangle.merge" : "arrow.triangle.branch")
+        Image(systemName: Self.symbolName(state))
             .font(.system(size: 36))
             .foregroundStyle(Color(nsColor: .systemYellow).opacity(0.9))
             .frame(width: 48, height: 48)

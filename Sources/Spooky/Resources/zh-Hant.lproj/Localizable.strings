@@ -92,6 +92,18 @@
 "branch.behind" = "落後 %ld";
 
 "workspace.changed" = "變更檔案：%ld";
+"workspace.checkoutMenu" = "檢出";
+"workspace.checkoutRevisionMenu" = "檢出版本…";
+"workspace.pushMenu" = "推送…";
+"workspace.pushRevisionMenu" = "把版本推送到…";
+"workspace.publishMenu" = "發佈…";
+"workspace.resetMenu" = "重設到版本…";
+"workspace.mergeMenu" = "與版本合併…";
+"workspace.rebaseMenu" = "重定基底到版本…";
+"workspace.copyPathMenu" = "拷貝檔案路徑";
+"workspace.tooltip.head" = "本機 HEAD 是分支 “%@”";
+"workspace.tooltip.detached" = "本機 HEAD 分離於 “%@”";
+"workspace.tooltip.changes" = "未提交的檔案：%ld";
 
 "status.column" = "狀態";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "捨棄行";
 "working.discardLines" = "捨棄所選行";
 "working.discard" = "捨棄變更";
-"working.discardAll" = "捨棄全部變更…";
 "working.discard.title" = "捨棄本機變更";
 "working.discardAll.title" = "捨棄全部本機變更";
 "working.discardAll.submit" = "捨棄全部變更";
@@ -583,6 +594,7 @@
 "stash.snapshot" = "建立快照";
 "stash.snapshot.help" = "把本機變更存進儲藏，工作區保持不變。";
 "stash.snapshotMenu" = "建立快照…";
+"stash.quickSnapshotMenu" = "快速建立快照";
 "stash.savePartial" = "保存部分儲藏";
 "stash.savePartial.help" = "只把所選檔案存進儲藏，工作區的其餘內容保持不變。";
 "stash.snapshotPartial" = "建立部分快照";
@@ -1113,6 +1125,9 @@
 "branch.tooltip.stale" = "- 已陳舊（%@）";
 "branch.tooltip.missingUpstream" = "- 追蹤的分支 “%@” 已不存在";
 "remote.tooltip.branch" = "遠端分支 “%@”";
+"remote.tooltip.remote" = "遠端 “%@”";
+"remote.tooltip.fetchURL" = "取得位址：%@";
+"remote.tooltip.pushURL" = "推送位址：%@";
 "tag.tooltip.revision" = "指向版本 “%@”";
 "tag.tooltip.message" = "標籤說明：“%@”";
 "tag.checkoutNamed" = "簽出 “%@”…";

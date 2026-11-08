@@ -92,6 +92,18 @@
 "branch.behind" = "%ld 遅れています";
 
 "workspace.changed" = "変更ファイル数：%ld";
+"workspace.checkoutMenu" = "チェックアウト";
+"workspace.checkoutRevisionMenu" = "リビジョンをチェックアウト…";
+"workspace.pushMenu" = "プッシュ…";
+"workspace.pushRevisionMenu" = "リビジョンを指定先にプッシュ…";
+"workspace.publishMenu" = "公開…";
+"workspace.resetMenu" = "リビジョンへリセット…";
+"workspace.mergeMenu" = "リビジョンとマージ…";
+"workspace.rebaseMenu" = "リビジョンにリベース…";
+"workspace.copyPathMenu" = "ファイルパスをコピー";
+"workspace.tooltip.head" = "ローカルの HEAD はブランチ「%@」";
+"workspace.tooltip.detached" = "ローカルの HEAD は「%@」で分離";
+"workspace.tooltip.changes" = "未コミットのファイル：%ld";
 
 "status.column" = "状態";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "行を破棄";
 "working.discardLines" = "選択行を破棄";
 "working.discard" = "変更を破棄";
-"working.discardAll" = "すべての変更を破棄…";
 "working.discard.title" = "ローカルの変更を破棄";
 "working.discardAll.title" = "すべてのローカルの変更を破棄";
 "working.discardAll.submit" = "すべての変更を破棄";
@@ -583,6 +594,7 @@
 "stash.snapshot" = "スナップショットを作成";
 "stash.snapshot.help" = "ローカルの変更をスタッシュに保存し、作業コピーはそのまま残します。";
 "stash.snapshotMenu" = "スナップショットを作成…";
+"stash.quickSnapshotMenu" = "スナップショットをすぐに作成";
 "stash.savePartial" = "一部をスタッシュに保存";
 "stash.savePartial.help" = "選択したファイルだけをスタッシュに保存し、作業コピーのほかの部分はそのまま残します。";
 "stash.snapshotPartial" = "一部のスナップショットを作成";
@@ -1113,6 +1125,9 @@
 "branch.tooltip.stale" = "- 古いブランチ（%@）";
 "branch.tooltip.missingUpstream" = "- 追跡ブランチ「%@」が存在しません";
 "remote.tooltip.branch" = "リモートブランチ「%@」";
+"remote.tooltip.remote" = "リモート「%@」";
+"remote.tooltip.fetchURL" = "フェッチ URL：%@";
+"remote.tooltip.pushURL" = "プッシュ URL：%@";
 "tag.tooltip.revision" = "リビジョン「%@」を指しています";
 "tag.tooltip.message" = "タグのメッセージ:「%@」";
 "tag.checkoutNamed" = "「%@」をチェックアウト…";

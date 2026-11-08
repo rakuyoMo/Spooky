@@ -92,6 +92,18 @@
 "branch.behind" = "%ld 뒤처짐";
 
 "workspace.changed" = "변경된 파일: %ld";
+"workspace.checkoutMenu" = "체크아웃";
+"workspace.checkoutRevisionMenu" = "리비전 체크아웃…";
+"workspace.pushMenu" = "푸시…";
+"workspace.pushRevisionMenu" = "리비전을 지정 위치로 푸시…";
+"workspace.publishMenu" = "게시…";
+"workspace.resetMenu" = "리비전으로 재설정…";
+"workspace.mergeMenu" = "리비전과 병합…";
+"workspace.rebaseMenu" = "리비전에 리베이스…";
+"workspace.copyPathMenu" = "파일 경로 복사";
+"workspace.tooltip.head" = "로컬 HEAD는 브랜치 “%@”";
+"workspace.tooltip.detached" = "로컬 HEAD가 “%@”에서 분리됨";
+"workspace.tooltip.changes" = "커밋하지 않은 파일: %ld";
 
 "status.column" = "상태";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "줄 버리기";
 "working.discardLines" = "선택한 줄 버리기";
 "working.discard" = "변경 사항 버리기";
-"working.discardAll" = "모든 변경 사항 버리기…";
 "working.discard.title" = "로컬 변경 사항 버리기";
 "working.discardAll.title" = "모든 로컬 변경 사항 버리기";
 "working.discardAll.submit" = "모든 변경 사항 버리기";
@@ -583,6 +594,7 @@
 "stash.snapshot" = "스냅샷 만들기";
 "stash.snapshot.help" = "로컬 변경 사항을 스태시에 저장하고 작업 사본은 그대로 둡니다.";
 "stash.snapshotMenu" = "스냅샷 만들기…";
+"stash.quickSnapshotMenu" = "빠르게 스냅샷 만들기";
 "stash.savePartial" = "일부 스태시 저장";
 "stash.savePartial.help" = "선택한 파일만 스태시에 저장하고 작업 사본의 나머지는 그대로 둡니다.";
 "stash.snapshotPartial" = "일부 스냅샷 만들기";
@@ -1113,6 +1125,9 @@
 "branch.tooltip.stale" = "- 오래됨(%@)";
 "branch.tooltip.missingUpstream" = "- 추적 중인 브랜치 “%@”이(가) 더 이상 없음";
 "remote.tooltip.branch" = "원격 브랜치 “%@”";
+"remote.tooltip.remote" = "원격 “%@”";
+"remote.tooltip.fetchURL" = "페치 URL: %@";
+"remote.tooltip.pushURL" = "푸시 URL: %@";
 "tag.tooltip.revision" = "리비전 “%@”을(를) 가리킴";
 "tag.tooltip.message" = "태그 메시지: “%@”";
 "tag.checkoutNamed" = "“%@” 체크아웃…";

@@ -92,6 +92,18 @@
 "branch.behind" = "%ld por detrás";
 
 "workspace.changed" = "Archivos modificados: %ld";
+"workspace.checkoutMenu" = "Hacer checkout";
+"workspace.checkoutRevisionMenu" = "Hacer checkout de una revisión…";
+"workspace.pushMenu" = "Hacer push…";
+"workspace.pushRevisionMenu" = "Hacer push de una revisión a…";
+"workspace.publishMenu" = "Publicar…";
+"workspace.resetMenu" = "Restablecer a una revisión…";
+"workspace.mergeMenu" = "Fusionar con una revisión…";
+"workspace.rebaseMenu" = "Hacer rebase sobre una revisión…";
+"workspace.copyPathMenu" = "Copiar ruta del archivo";
+"workspace.tooltip.head" = "El HEAD local es la rama “%@”";
+"workspace.tooltip.detached" = "El HEAD local está desacoplado en “%@”";
+"workspace.tooltip.changes" = "Archivos sin confirmar: %ld";
 
 "status.column" = "Estado";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "Descartar línea";
 "working.discardLines" = "Descartar líneas";
 "working.discard" = "Descartar cambios";
-"working.discardAll" = "Descartar todos los cambios…";
 "working.discard.title" = "Descartar cambios locales";
 "working.discardAll.title" = "Descartar todos los cambios locales";
 "working.discardAll.submit" = "Descartar todos los cambios";
@@ -583,6 +594,7 @@
 "stash.snapshot" = "Crear instantánea";
 "stash.snapshot.help" = "Guarda los cambios locales en el stash y deja la copia de trabajo tal como está.";
 "stash.snapshotMenu" = "Crear instantánea…";
+"stash.quickSnapshotMenu" = "Crear instantánea rápida";
 "stash.savePartial" = "Guardar stash parcial";
 "stash.savePartial.help" = "Guarda solo los archivos seleccionados en el stash; el resto de la copia de trabajo no cambia.";
 "stash.snapshotPartial" = "Crear instantánea parcial";
@@ -1113,6 +1125,9 @@
 "branch.tooltip.stale" = "- está antigua (%@)";
 "branch.tooltip.missingUpstream" = "- la rama seguida “%@” ya no existe";
 "remote.tooltip.branch" = "Rama remota “%@”";
+"remote.tooltip.remote" = "Remoto “%@”";
+"remote.tooltip.fetchURL" = "URL de obtención: %@";
+"remote.tooltip.pushURL" = "URL de envío: %@";
 "tag.tooltip.revision" = "Apunta a la revisión “%@”";
 "tag.tooltip.message" = "Mensaje de la etiqueta: “%@”";
 "tag.checkoutNamed" = "Hacer checkout de “%@”…";

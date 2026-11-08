@@ -62,6 +62,51 @@ enum SidebarTooltip {
         return prefix(host) + AppLocalization.text("branch.tooltip.detached", commit)
     }
 
+    /// Working Copy 行的悬停提示：本地 HEAD 所在的分支，分离时写出所在提交的短哈希；下一行是未提交的文件数。
+    ///
+    /// - Parameters:
+    ///   - status: 工作区状态；还没有读到时没有提示。
+    ///   - host: 服务器仓库的主机别名；本机仓库为 nil。
+    static func workingCopy(_ status: WorkingCopyStatus?, host: String?) -> String {
+        guard let status else {
+            return ""
+        }
+
+        // 未出生的分支同样是 HEAD 所在的分支，只有分离 HEAD 才写短哈希
+        let head =
+            if let branch = status.branch.head {
+                AppLocalization.text("workspace.tooltip.head", branch)
+            } else {
+                AppLocalization.text("workspace.tooltip.detached", String((status.branch.oid ?? "").prefix(8)))
+            }
+
+        return [
+            prefix(host) + head,
+            AppLocalization.text("workspace.tooltip.changes", status.entries.count),
+        ]
+        .joined(separator: "\n")
+    }
+
+    /// 远端行的悬停提示：远端名，下面依次是获取地址与推送地址；设置还没有读到或没有地址时只写远端名。
+    ///
+    /// - Parameters:
+    ///   - name: 远端名。
+    ///   - configuration: 远端的设置；推送地址没有单独设置时与获取地址相同。
+    ///   - host: 服务器仓库的主机别名；本机仓库为 nil。
+    static func remote(_ name: String, configuration: RemoteConfiguration?, host: String?) -> String {
+        var lines = [prefix(host) + AppLocalization.text("remote.tooltip.remote", name)]
+
+        if let url = configuration?.url {
+            lines.append(AppLocalization.text("remote.tooltip.fetchURL", url))
+        }
+
+        if let url = configuration?.effectivePushURL {
+            lines.append(AppLocalization.text("remote.tooltip.pushURL", url))
+        }
+
+        return lines.joined(separator: "\n")
+    }
+
     /// 远端分支的悬停提示。
     static func remoteBranch(_ reference: RepositoryReference, host: String?) -> String {
         prefix(host) + AppLocalization.text("remote.tooltip.branch", reference.name)

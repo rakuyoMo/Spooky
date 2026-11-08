@@ -92,6 +92,18 @@
 "branch.behind" = "%ld en retard";
 
 "workspace.changed" = "Fichiers modifiés : %ld";
+"workspace.checkoutMenu" = "Extraire";
+"workspace.checkoutRevisionMenu" = "Extraire une révision…";
+"workspace.pushMenu" = "Pousser…";
+"workspace.pushRevisionMenu" = "Pousser une révision vers…";
+"workspace.publishMenu" = "Publier…";
+"workspace.resetMenu" = "Réinitialiser à une révision…";
+"workspace.mergeMenu" = "Fusionner avec une révision…";
+"workspace.rebaseMenu" = "Rebaser sur une révision…";
+"workspace.copyPathMenu" = "Copier le chemin du fichier";
+"workspace.tooltip.head" = "Le HEAD local est la branche « %@ »";
+"workspace.tooltip.detached" = "Le HEAD local est détaché sur « %@ »";
+"workspace.tooltip.changes" = "Fichiers non validés : %ld";
 
 "status.column" = "État";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "Abandonner la ligne";
 "working.discardLines" = "Abandonner les lignes";
 "working.discard" = "Abandonner les modifications";
-"working.discardAll" = "Abandonner toutes les modifications…";
 "working.discard.title" = "Abandonner les modifications locales";
 "working.discardAll.title" = "Abandonner toutes les modifications locales";
 "working.discardAll.submit" = "Abandonner toutes les modifications";
@@ -583,6 +594,7 @@
 "stash.snapshot" = "Créer un instantané";
 "stash.snapshot.help" = "Met vos modifications locales de côté dans un remisage sans toucher à la copie de travail.";
 "stash.snapshotMenu" = "Créer un instantané…";
+"stash.quickSnapshotMenu" = "Créer un instantané immédiat";
 "stash.savePartial" = "Remisage partiel";
 "stash.savePartial.help" = "Remise uniquement les fichiers sélectionnés ; le reste de la copie de travail reste inchangé.";
 "stash.snapshotPartial" = "Instantané partiel";
@@ -1113,6 +1125,9 @@
 "branch.tooltip.stale" = "- est ancienne (%@)";
 "branch.tooltip.missingUpstream" = "- la branche suivie « %@ » n’existe plus";
 "remote.tooltip.branch" = "Branche distante « %@ »";
+"remote.tooltip.remote" = "Dépôt distant « %@ »";
+"remote.tooltip.fetchURL" = "URL de récupération : %@";
+"remote.tooltip.pushURL" = "URL de poussée : %@";
 "tag.tooltip.revision" = "Pointe vers la révision « %@ »";
 "tag.tooltip.message" = "Message du tag : « %@ »";
 "tag.checkoutNamed" = "Basculer sur « %@ »…";

@@ -92,6 +92,18 @@
 "branch.behind" = "%ld behind";
 
 "workspace.changed" = "Changed files: %ld";
+"workspace.checkoutMenu" = "Check Out";
+"workspace.checkoutRevisionMenu" = "Check Out Revision…";
+"workspace.pushMenu" = "Push…";
+"workspace.pushRevisionMenu" = "Push Revision To…";
+"workspace.publishMenu" = "Publish…";
+"workspace.resetMenu" = "Reset to Revision…";
+"workspace.mergeMenu" = "Merge With Revision…";
+"workspace.rebaseMenu" = "Rebase On Revision…";
+"workspace.copyPathMenu" = "Copy File Path";
+"workspace.tooltip.head" = "Local HEAD is branch “%@”";
+"workspace.tooltip.detached" = "Local HEAD is detached at “%@”";
+"workspace.tooltip.changes" = "Uncommitted files: %ld";
 
 "status.column" = "Status";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "Discard Line";
 "working.discardLines" = "Discard Lines";
 "working.discard" = "Discard Changes";
-"working.discardAll" = "Discard All Changes…";
 "working.discard.title" = "Discard Local Changes";
 "working.discardAll.title" = "Discard All Local Changes";
 "working.discardAll.submit" = "Discard All Changes";
@@ -583,6 +594,7 @@
 "stash.snapshot" = "Create Snapshot";
 "stash.snapshot.help" = "Saves your local changes on the Stash and keeps the working copy as it is.";
 "stash.snapshotMenu" = "Create Snapshot…";
+"stash.quickSnapshotMenu" = "Quick Create Snapshot";
 "stash.savePartial" = "Save Partial Stash";
 "stash.savePartial.help" = "Saves only the selected files on the Stash; the rest of the working copy stays as it is.";
 "stash.snapshotPartial" = "Create Partial Snapshot";
@@ -1113,6 +1125,9 @@
 "branch.tooltip.stale" = "- is stale (%@)";
 "branch.tooltip.missingUpstream" = "- tracked branch “%@” no longer exists";
 "remote.tooltip.branch" = "Remote branch “%@”";
+"remote.tooltip.remote" = "Remote “%@”";
+"remote.tooltip.fetchURL" = "Fetch URL: %@";
+"remote.tooltip.pushURL" = "Push URL: %@";
 "tag.tooltip.revision" = "Points at revision “%@”";
 "tag.tooltip.message" = "Tag Message: “%@”";
 "tag.checkoutNamed" = "Check Out “%@”…";

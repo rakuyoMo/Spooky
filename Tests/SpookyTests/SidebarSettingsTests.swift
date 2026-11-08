@@ -205,6 +205,82 @@ struct SidebarSettingsTests {
                 + AppLocalization.text("tag.tooltip.message", "Release “1.0”")
         )
     }
+
+    /// Working Copy 行尾：改动数为零时没有标记；有进行中的操作时换成操作图标，合并与压缩合并、变基与摘取各用一个。
+    /// Working Copy 的提示写出 HEAD 所在的分支或分离时的短哈希，以及未提交的文件数；远端的提示分行写出获取与推送地址。
+    @Test("Working Copy 行的标记与提示，远端行的提示")
+    func workingCopyMarker() throws {
+        let marker = RepositorySidebarView.WorkingCopyMarker.current
+        let clean = try WorkingCopyStatus(porcelainV2: Data("# branch.oid (initial)\0# branch.head main\0".utf8))
+        let changed = try WorkingCopyStatus(
+            porcelainV2: Data("# branch.oid (initial)\0# branch.head main\0? a.txt\0? b 文件.txt\0".utf8)
+        )
+
+        #expect(marker(nil, nil) == nil)
+        #expect(marker(nil, clean) == nil)
+        #expect(marker(nil, changed) == .changes(2))
+
+        // 进行中的操作优先于改动数，合并与序列操作的图标不同
+        let merge = try #require(OperationProgress(files: ["MERGE_HEAD": "aaaa\n"], head: "bbbb"))
+        let squash = try #require(OperationProgress(files: ["SQUASH_MSG": "squash\n"], head: "bbbb"))
+        let pick = try #require(OperationProgress(files: ["CHERRY_PICK_HEAD": "aaaa\n"], head: "bbbb"))
+        let rebase = try #require(
+            OperationProgress(
+                files: [
+                    "rebase-merge/head-name": "refs/heads/main\n",
+                    "rebase-merge/onto": "aaaa\n",
+                    "rebase-merge/orig-head": "bbbb\n",
+                ],
+                head: "cccc"
+            )
+        )
+
+        let symbols = [merge, squash, pick, rebase].compactMap { progress -> String? in
+            guard case .operation(let symbol) = marker(progress, changed) else { return nil }
+            return symbol
+        }
+
+        #expect(symbols.count == 4)
+        #expect(symbols[0] == symbols[1] && symbols[2] == symbols[3] && symbols[0] != symbols[2])
+        #expect(symbols.allSatisfy { NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil })
+
+        // Working Copy 的提示：分支名或分离时的短哈希，服务器仓库带主机前缀
+        let oid = String(repeating: "d", count: 40)
+        let detached = try WorkingCopyStatus(
+            porcelainV2: Data("# branch.oid \(oid)\0# branch.head (detached)\0? a.txt\0".utf8)
+        )
+
+        #expect(SidebarTooltip.workingCopy(nil, host: nil).isEmpty)
+        #expect(
+            SidebarTooltip.workingCopy(changed, host: "b").components(separatedBy: "\n") == [
+                "b: " + AppLocalization.text("workspace.tooltip.head", "main"),
+                AppLocalization.text("workspace.tooltip.changes", 2),
+            ]
+        )
+        #expect(
+            SidebarTooltip.workingCopy(detached, host: nil).components(separatedBy: "\n") == [
+                AppLocalization.text("workspace.tooltip.detached", "dddddddd"),
+                AppLocalization.text("workspace.tooltip.changes", 1),
+            ]
+        )
+
+        // 远端的提示：设置还没读到时只有名字；推送地址单独设置时与获取地址不同
+        var origin = RemoteConfiguration(name: "origin")
+        origin.urls = ["git@example.com:a/b.git"]
+        origin.pushURLs = ["ssh://push.example.com/a/b.git"]
+
+        #expect(
+            SidebarTooltip.remote("origin", configuration: nil, host: nil)
+                == AppLocalization.text("remote.tooltip.remote", "origin")
+        )
+        #expect(
+            SidebarTooltip.remote("origin", configuration: origin, host: nil).components(separatedBy: "\n") == [
+                AppLocalization.text("remote.tooltip.remote", "origin"),
+                AppLocalization.text("remote.tooltip.fetchURL", "git@example.com:a/b.git"),
+                AppLocalization.text("remote.tooltip.pushURL", "ssh://push.example.com/a/b.git"),
+            ]
+        )
+    }
 }
 
 // MARK: - Helpers

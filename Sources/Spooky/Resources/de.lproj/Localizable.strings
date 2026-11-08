@@ -92,6 +92,18 @@
 "branch.behind" = "%ld zurück";
 
 "workspace.changed" = "Geänderte Dateien: %ld";
+"workspace.checkoutMenu" = "Auschecken";
+"workspace.checkoutRevisionMenu" = "Revision auschecken …";
+"workspace.pushMenu" = "Pushen …";
+"workspace.pushRevisionMenu" = "Revision pushen nach …";
+"workspace.publishMenu" = "Veröffentlichen …";
+"workspace.resetMenu" = "Auf Revision zurücksetzen …";
+"workspace.mergeMenu" = "Mit Revision zusammenführen …";
+"workspace.rebaseMenu" = "Rebase auf Revision …";
+"workspace.copyPathMenu" = "Dateipfad kopieren";
+"workspace.tooltip.head" = "Lokaler HEAD ist Branch „%@“";
+"workspace.tooltip.detached" = "Lokaler HEAD ist bei „%@“ losgelöst";
+"workspace.tooltip.changes" = "Nicht committete Dateien: %ld";
 
 "status.column" = "Status";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "Zeile verwerfen";
 "working.discardLines" = "Zeilen verwerfen";
 "working.discard" = "Änderungen verwerfen";
-"working.discardAll" = "Alle Änderungen verwerfen …";
 "working.discard.title" = "Lokale Änderungen verwerfen";
 "working.discardAll.title" = "Alle lokalen Änderungen verwerfen";
 "working.discardAll.submit" = "Alle Änderungen verwerfen";
@@ -583,6 +594,7 @@
 "stash.snapshot" = "Snapshot erstellen";
 "stash.snapshot.help" = "Sichert Ihre lokalen Änderungen im Stash und lässt die Arbeitskopie unverändert.";
 "stash.snapshotMenu" = "Snapshot erstellen …";
+"stash.quickSnapshotMenu" = "Sofort-Snapshot erstellen";
 "stash.savePartial" = "Teil-Stash sichern";
 "stash.savePartial.help" = "Sichert nur die ausgewählten Dateien im Stash; der Rest der Arbeitskopie bleibt unverändert.";
 "stash.snapshotPartial" = "Teil-Snapshot erstellen";
@@ -1113,6 +1125,9 @@
 "branch.tooltip.stale" = "- ist veraltet (%@)";
 "branch.tooltip.missingUpstream" = "- verfolgter Branch „%@“ existiert nicht mehr";
 "remote.tooltip.branch" = "Remote-Branch „%@“";
+"remote.tooltip.remote" = "Remote „%@“";
+"remote.tooltip.fetchURL" = "Fetch-URL: %@";
+"remote.tooltip.pushURL" = "Push-URL: %@";
 "tag.tooltip.revision" = "Zeigt auf Revision „%@“";
 "tag.tooltip.message" = "Tag-Nachricht: „%@“";
 "tag.checkoutNamed" = "„%@“ auschecken …";
