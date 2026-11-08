@@ -11,6 +11,9 @@ struct CreateTagDialog: View {
     /// 预填的版本；为 nil 时用当前分支，没有当前分支时用 HEAD。
     let revision: String?
 
+    /// 预填的标签名，如标签文件夹的路径与结尾的 “/”；为空时名称框为空。
+    var initialName = ""
+
     /// 关闭 sheet。
     let close: () -> Void
 
@@ -150,6 +153,7 @@ extension CreateTagDialog {
     /// 版本默认取入口指定的版本，否则取当前分支。
     private func prepare() {
         repository = session.repository
+        name = initialName
         target = revision.map { value in session.revisionReferences.first { $0.id == value }?.name ?? value }
             ?? session.status?.branch.head
             ?? "HEAD"

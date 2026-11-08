@@ -18,6 +18,12 @@ extension RepositorySidebarView {
         } header: {
             // 提交或本地分支拖到标题上新建标签
             groupHeader("sidebar.tags", destination: .tags)
+                .contextMenu {
+                    Button(AppLocalization.text("tag.createMenu")) {
+                        session.requestReference(.createTag(revision: nil))
+                    }
+                    .disabled(!session.canCreateTag)
+                }
         }
     }
 

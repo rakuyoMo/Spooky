@@ -57,7 +57,7 @@ struct SyncDialog: View {
     /// 对话框种类。
     let kind: SyncDialogKind
 
-    /// 入口预选的变基目标分支（完整引用名）或推送来源（分支名或标签名）；为 nil 时按 HEAD 的跟踪关系预选。
+    /// 入口预选的变基目标分支、强推的本地分支（完整引用名），或推送来源（分支名或标签名）；为 nil 时按 HEAD 与它的跟踪关系预选。
     var preselection: String? = nil
 
     /// 关闭 sheet。
@@ -134,7 +134,7 @@ struct SyncDialog: View {
         .onAppear(perform: prepare)
         .onChange(of: source) {
             if kind == .forcePush {
-                selectDestination()
+                destination = Self.forcePushDestination(for: source, in: session)
             }
         }
         .task(id: source + "\u{0}" + destination) { await loadLease() }

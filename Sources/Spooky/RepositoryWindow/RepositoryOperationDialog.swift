@@ -555,6 +555,8 @@ extension RepositoryOperationDialog {
 
         switch request.kind {
         case .create:
+            name = request.name ?? ""
+
             // 起点框显示引用的短名，没有指定时是当前分支；起点是分支时它也是默认的父分支
             source = request.reference.map { reference in
                 session.revisionReferences.first { $0.id == reference }?.name ?? reference

@@ -1420,6 +1420,7 @@
 "remote.add.message" = "輸入遠端儲存庫的名稱與位址。新增前會先檢查連線。";
 "remote.add.submit" = "新增遠端";
 "remote.addMenu" = "新增遠端儲存庫…";
+"remote.fetchMenu" = "擷取 “%@”…";
 "remote.addMainMenu" = "新增遠端…";
 "remote.name.placeholder" = "遠端名稱";
 "remote.url" = "遠端位址：";
@@ -1583,6 +1584,14 @@
 "sync.quickMergeInto" = "快速把 “%1$@” 合併到 “%2$@”";
 "sync.quickRebaseOn" = "快速把 “%1$@” 重定基底到 “%2$@”";
 "branch.pushToMenu" = "把 “%@” 推送到…";
+"branch.publishMenu" = "發佈 “%@”…";
+"branch.createFromMenu" = "從 “%@” 新增分支…";
+"branch.trackMenu" = "追蹤 “%@”…";
+"branch.pullMenu" = "拉取 “%@”…";
+"branch.copyRemoteNameMenu" = "將遠端分支名稱複製到剪貼簿";
+"branch.compareMenu" = "將 “%@” 與其他版本比較…";
+"branch.rebaseOntoMenu" = "變基到別處的版本…";
+"branch.deleteMenu.multiple" = "刪除 %ld 個分支…";
 "tag.compareMenu" = "將 “%@” 與其他版本比較…";
 
 /* 分支拖进 “/” 文件夹时的动作名。 */

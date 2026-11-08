@@ -1420,6 +1420,7 @@
 "remote.add.message" = "リモートリポジトリの名前と URL を入力してください。追加する前に接続を確認します。";
 "remote.add.submit" = "リモートを追加";
 "remote.addMenu" = "リモートリポジトリを追加…";
+"remote.fetchMenu" = "「%@」をフェッチ…";
 "remote.addMainMenu" = "新しいリモートを追加…";
 "remote.name.placeholder" = "リモート名";
 "remote.url" = "リモート URL：";
@@ -1583,6 +1584,14 @@
 "sync.quickMergeInto" = "「%1$@」を「%2$@」へクイックマージ";
 "sync.quickRebaseOn" = "「%1$@」を「%2$@」の上へクイックリベース";
 "branch.pushToMenu" = "「%@」を指定先にプッシュ…";
+"branch.publishMenu" = "「%@」を公開…";
+"branch.createFromMenu" = "「%@」から新しいブランチを作成…";
+"branch.trackMenu" = "「%@」を追跡…";
+"branch.pullMenu" = "「%@」をプル…";
+"branch.copyRemoteNameMenu" = "リモートブランチ名をクリップボードにコピー";
+"branch.compareMenu" = "「%@」を別のリビジョンと比較…";
+"branch.rebaseOntoMenu" = "別の場所のリビジョンへリベース…";
+"branch.deleteMenu.multiple" = "%ld 個のブランチを削除…";
 "tag.compareMenu" = "「%@」を別のリビジョンと比較…";
 
 /* 分支拖进 “/” 文件夹时的动作名。 */

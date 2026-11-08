@@ -3,10 +3,11 @@ import SwiftUI
 
 // MARK: - BranchSyncMenu
 
-/// 分支右键菜单里的推送与拉取一组；按住 ⌥ 时换成跳过对话框的快速操作。
+/// 分支右键菜单里的拉取与推送；按住 ⌥ 时换成跳过对话框的快速操作。
 ///
-/// HEAD 分支是 Push、Pull 与 Sync，快速版本以它的跟踪分支为对象，没有跟踪分支时不提供；
-/// 其它本地分支是 Push 与 Push “X” To…；远端分支是 Pull，快速版本把它并入 HEAD。
+/// HEAD 分支是 Pull…、Push…、Force Push with Lease… 与 Sync…，快速版本以它的跟踪分支为对象，没有跟踪分支时不提供；
+/// 其它本地分支只有 Force Push with Lease…；本地分支随后另起一组 Publish “X”… 与 Push “X” To…。
+/// 远端分支是 Pull “X”…，快速版本把它并入 HEAD。
 struct BranchSyncMenu: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -17,10 +18,10 @@ struct BranchSyncMenu: View {
     /// 打开推送、拉取等参数对话框。
     let request: (RepositoryActionRequest) -> Void
 
-    /// 按分支种类选择一组菜单项。
+    /// 按分支种类选择菜单项。
     var body: some View {
         if reference.isRemote {
-            Button(AppLocalization.text("sync.pull")) {
+            Button(AppLocalization.text("branch.pullMenu", reference.name)) {
                 request(RepositoryActionRequest(kind: .pull, reference: reference.id))
             }
             .disabled(!session.canPull(from: reference))
@@ -30,32 +31,25 @@ struct BranchSyncMenu: View {
             ) {
                 session.quickPull(from: reference)
             }
-        } else if reference.name == session.status?.branch.head {
-            headItems
         } else {
-            push
-
-            Button(AppLocalization.text("branch.pushToMenu", reference.name)) {
-                session.requestSyncDialog(.pushRevision, preselecting: reference.name)
+            if reference.name == session.status?.branch.head {
+                headItems
+            } else {
+                forcePush
             }
-            .disabled(!session.canPushRevision)
+
+            Divider()
+
+            publishItems
         }
     }
 
-    /// HEAD 分支：推送、拉取与同步，各带以跟踪分支为对象的快速版本。
+    /// HEAD 分支：拉取、推送、安全强推与同步，除安全强推外各带以跟踪分支为对象的快速版本。
     @ViewBuilder
     private var headItems: some View {
         let upstream = session.upstreamName(of: reference)
 
-        push
-            .quickAlternate(
-                upstream.map { AppLocalization.text("sync.quickPushNamed", reference.name, $0) },
-                enabled: session.canQuickPush(reference)
-            ) {
-                session.quickPush(reference)
-            }
-
-        Button(AppLocalization.text("sync.pull")) {
+        Button(AppLocalization.text("sync.pullMenu")) {
             request(RepositoryActionRequest(kind: .pull))
         }
         .disabled(!session.canPull)
@@ -65,6 +59,19 @@ struct BranchSyncMenu: View {
         ) {
             session.quickPull()
         }
+
+        Button(AppLocalization.text("workspace.pushMenu")) {
+            request(RepositoryActionRequest(kind: .push, localBranch: reference.name))
+        }
+        .disabled(!session.canPush(reference))
+        .quickAlternate(
+            upstream.map { AppLocalization.text("sync.quickPushNamed", reference.name, $0) },
+            enabled: session.canQuickPush(reference)
+        ) {
+            session.quickPush(reference)
+        }
+
+        forcePush
 
         Button(AppLocalization.text("sync.syncMenu")) {
             session.requestSyncDialog(.sync)
@@ -78,21 +85,34 @@ struct BranchSyncMenu: View {
         }
     }
 
-    /// 推送这个本地分支的对话框。
-    private var push: some View {
-        Button(AppLocalization.text("sync.push")) {
-            request(RepositoryActionRequest(kind: .push, localBranch: reference.name))
+    /// 安全强推这个本地分支：对话框预选它与它的跟踪分支，不换成 HEAD。
+    private var forcePush: some View {
+        Button(AppLocalization.text("sync.forcePushMenu")) {
+            session.requestSyncDialog(.forcePush, preselecting: reference.id)
         }
         .disabled(!session.canPush(reference))
+    }
+
+    /// 发布这一个分支，以及把它推到指定的远端引用。
+    @ViewBuilder
+    private var publishItems: some View {
+        Button(AppLocalization.text("branch.publishMenu", reference.name)) {
+            request(RepositoryActionRequest(kind: .publish, localBranch: reference.name))
+        }
+        .disabled(!session.canPush(reference))
+
+        Button(AppLocalization.text("branch.pushToMenu", reference.name)) {
+            session.requestSyncDialog(.pushRevision, preselecting: reference.name)
+        }
+        .disabled(!session.canPushRevision)
     }
 }
 
 // MARK: - BranchIntegrationMenu
 
-/// 分支右键菜单里的合并与变基一组；按住 ⌥ 时换成跳过对话框的快速操作。
+/// HEAD 分支右键菜单里的合并与变基一组；按住 ⌥ 时换成跳过对话框的快速操作，快速版本以它的跟踪分支为对象，没有跟踪分支时不提供。
 ///
-/// HEAD 分支是 Merge、Rebase 与 Rebase Onto，快速版本以它的跟踪分支为对象，没有跟踪分支时不提供；
-/// 其它分支是把它并入 HEAD 的 Merge 与把 HEAD 变基到它上面的 Rebase On “X”…。
+/// 其它分支的菜单没有合并与变基：把它并入 HEAD 经 HEAD 分支的菜单或拖放。
 struct BranchIntegrationMenu: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -103,55 +123,38 @@ struct BranchIntegrationMenu: View {
     /// 打开合并的参数对话框。
     let request: (RepositoryActionRequest) -> Void
 
-    /// HEAD 分支与其它分支各有一组。
+    /// 只有 HEAD 分支有这一组：选版本合并、选分支变基与变基到别处。
     var body: some View {
         if let head = session.status?.branch.head, reference.isLocal, reference.name == head {
-            headItems(head)
-        } else {
-            otherItems
-        }
-    }
+            let upstream = session.upstreamName(of: reference)
 
-    /// 其它分支：打开预选了它的合并对话框，把它并入 HEAD；变基到它上面经按住 ⌥ 的拖放或 Rebase 对话框。
-    @ViewBuilder
-    private var otherItems: some View {
-        Button(AppLocalization.text("sync.merge")) {
-            request(RepositoryActionRequest(kind: .merge, reference: reference.id))
-        }
-        .disabled(!session.canMerge(reference))
-    }
+            Button(AppLocalization.text("workspace.mergeMenu")) {
+                request(RepositoryActionRequest(kind: .merge))
+            }
+            .disabled(!session.canMerge)
+            .quickAlternate(
+                upstream.map { AppLocalization.text("sync.quickMergeInto", $0, head) },
+                enabled: session.canMerge
+            ) {
+                session.quickMerge()
+            }
 
-    /// HEAD 分支：选版本合并、选分支变基与变基到别处。
-    @ViewBuilder
-    private func headItems(_ head: String) -> some View {
-        let upstream = session.upstreamName(of: reference)
+            Button(AppLocalization.text("workspace.rebaseMenu")) {
+                session.requestSyncDialog(.rebase)
+            }
+            .disabled(!session.canRebase)
+            .quickAlternate(
+                upstream.map { AppLocalization.text("sync.quickRebaseOn", head, $0) },
+                enabled: session.canRebase
+            ) {
+                session.quickRebase()
+            }
 
-        Button(AppLocalization.text("sync.merge")) {
-            request(RepositoryActionRequest(kind: .merge))
+            Button(AppLocalization.text("branch.rebaseOntoMenu")) {
+                session.requestRebaseOnto()
+            }
+            .disabled(!session.canRewrite)
         }
-        .disabled(!session.canMerge)
-        .quickAlternate(
-            upstream.map { AppLocalization.text("sync.quickMergeInto", $0, head) },
-            enabled: session.canMerge
-        ) {
-            session.quickMerge()
-        }
-
-        Button(AppLocalization.text("sync.rebaseMenu")) {
-            session.requestSyncDialog(.rebase)
-        }
-        .disabled(!session.canRebase)
-        .quickAlternate(
-            upstream.map { AppLocalization.text("sync.quickRebaseOn", head, $0) },
-            enabled: session.canRebase
-        ) {
-            session.quickRebase()
-        }
-
-        Button(AppLocalization.text("rewrite.rebaseOnto.menu")) {
-            session.requestRebaseOnto()
-        }
-        .disabled(!session.canRewrite)
     }
 }
 

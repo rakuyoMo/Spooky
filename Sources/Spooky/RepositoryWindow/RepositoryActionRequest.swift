@@ -72,6 +72,9 @@ struct RepositoryActionRequest {
     /// 推送拖放指定的本地源分支。
     var localBranch: String? = nil
 
+    /// 新建分支预填的名称，如文件夹右键预填的文件夹路径与结尾的 “/”。
+    var name: String? = nil
+
     /// 清理右键预设的选项。
     var prune = false
 

@@ -177,6 +177,50 @@ extension RepositorySession {
         )
     }
 
+    /// 以核对过的远端版本为期望值，把指定的本地分支强推到远端分支；远端已不是这个版本时 Git 拒绝推送，不退回无条件强推。
+    ///
+    /// - Parameters:
+    ///   - branch: 强推的本地分支，可以不是 HEAD 分支。
+    ///   - target: 被覆盖的远端跟踪分支。
+    ///   - lease: 期望远端分支仍指向的提交。
+    ///   - skipHooks: 是否跳过推送钩子。
+    /// - Returns: 是否已开始执行。
+    @discardableResult
+    func forcePush(
+        _ branch: RepositoryReference,
+        to target: RepositoryReference,
+        lease: String,
+        skipHooks: Bool
+    ) -> Bool {
+        guard branch.isLocal, let parts = remoteParts(of: target) else {
+            return false
+        }
+
+        let local = branch.name
+        let (remote, name) = parts
+
+        var settings = PushOptions()
+        settings.skipHooks = skipHooks
+        let options = settings
+
+        return performGit(
+            { runner, output in
+                _ = try await RepositorySync(runner: runner)
+                    .push(
+                        branch: local,
+                        remote: remote,
+                        destination: name,
+                        setUpstream: false,
+                        options: options,
+                        lease: lease,
+                        onOutput: output
+                    )
+            },
+            title: AppLocalization.text("sync.forcePush"),
+            target: .push(remote, refspec: "refs/heads/" + local + ":refs/heads/" + name)
+        )
+    }
+
     /// 快速拉取：把指定的远端分支并入 HEAD；未指定时拉取 HEAD 的跟踪分支。
     func quickPull(from reference: RepositoryReference? = nil) {
         var remote: String? = nil

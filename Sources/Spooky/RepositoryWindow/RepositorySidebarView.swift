@@ -138,6 +138,9 @@ struct RepositorySidebarView: View {
             }
             .listStyle(.sidebar)
             .focused($listFocused)
+
+            // ⌘⌫ 删除所选的引用、远端或子模块，没有可删除的选择时菜单项不可用
+            .onDeleteCommand(perform: deleteCommand)
             .id(session.repository)
 
             // 刚归档的分支数与撤销
@@ -178,10 +181,11 @@ struct RepositorySidebarView: View {
             ArchiveFooterButton(session: session)
 
             Menu {
-                Button(AppLocalization.text("branch.create")) {
+                Button(AppLocalization.text("branch.createMenu")) {
                     request(RepositoryActionRequest(kind: .create))
                 }
                 .disabled(!session.canCreateBranch)
+
                 AddReferenceMenu(session: session)
             } label: {
                 Image(systemName: "plus")
@@ -340,7 +344,7 @@ extension RepositorySidebarView {
                 )
             )
             .contextMenu {
-                Button(AppLocalization.text("sync.fetch")) {
+                Button(AppLocalization.text("remote.fetchMenu", remote.name)) {
                     request(RepositoryActionRequest(kind: .fetch, remote: remote.name))
                 }
                 .disabled(!session.canFetch)
@@ -402,73 +406,6 @@ extension RepositorySidebarView {
         )
     }
 
-    /// 分支菜单只包含已经实现的动作。
-    @ViewBuilder
-    func branchMenu(_ ref: RepositoryReference) -> some View {
-        let selected = session.history.branches.filter { session.history.selectedReferences.contains($0.id) }
-        if selected.count > 1, selected.contains(where: { $0.id == ref.id }), selected.allSatisfy(\.isLocal) {
-            pinMenuItems(selected)
-            Divider()
-            archiveMenuItems(selected)
-            Divider()
-            Button(AppLocalization.text("branch.deleteMultiple")) { delete(selected) }
-                .disabled(!session.canDelete(selected))
-        } else {
-            if ref.isLocal {
-                // 已在别的工作树检出的分支不能在这里检出，换成那个工作树的打开与删除
-                if session.worktrees.branchWorktrees[ref.id] == nil {
-                    Button(AppLocalization.text("branch.checkout")) { session.checkoutBranch(ref, request: request) }
-                        .disabled(!session.canCheckout(ref))
-                }
-
-                BranchWorktreeMenuItems(session: session, branch: ref)
-                Divider()
-                pinMenuItems([ref])
-                Divider()
-                Button(AppLocalization.text("sync.publish")) {
-                    request(RepositoryActionRequest(kind: .publish, localBranch: ref.name))
-                }
-                .disabled(!session.canPush(ref))
-
-                // 推送、拉取与同步，按住 ⌥ 换成快速操作
-                BranchSyncMenu(session: session, reference: ref, request: request)
-            } else {
-                Button(AppLocalization.text("branch.track")) {
-                    request(RepositoryActionRequest(kind: .track, reference: ref.id))
-                }
-                .disabled(!session.canTrack(ref))
-
-                BranchSyncMenu(session: session, reference: ref, request: request)
-            }
-            Button(AppLocalization.text("branch.create")) {
-                request(RepositoryActionRequest(kind: .create, reference: ref.id))
-            }
-            .disabled(!session.canCreateBranchFromReference)
-
-            // 已有打开着的请求时换成显示它
-            PullRequestBranchMenuItem(session: session, reference: ref)
-
-            // 合并与变基，按住 ⌥ 换成快速操作
-            BranchIntegrationMenu(session: session, reference: ref, request: request)
-
-            // HEAD 分支设了父分支时可以并入父分支或变基到父分支上
-            ParentBranchMenuItems(session: session, reference: ref, request: request)
-            if ref.isLocal {
-                Divider()
-                archiveMenuItems([ref])
-                Divider()
-                Button(AppLocalization.text("branch.delete")) { delete([ref]) }
-                    .disabled(!session.canDelete([ref]))
-            }
-            BranchManagementMenu(session: session, reference: ref)
-            Divider()
-            Button(AppLocalization.text("branch.copyName")) {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(ref.name, forType: .string)
-            }
-        }
-    }
-
     /// 拖动开始时仓库仍在显示才提供载荷；仓库刚关闭时返回空的拖动内容。
     func dragProvider(kind: RepositoryDragPayload.Kind, reference: String) -> NSItemProvider {
         guard let repository = session.repository else {
@@ -482,11 +419,6 @@ extension RepositorySidebarView {
 // MARK: - Actions
 
 extension RepositorySidebarView {
-    /// 删除前在对话框里确认，可选同时删除跟踪的远端分支与强制删除。
-    private func delete(_ references: [RepositoryReference]) {
-        session.requestReference(.deleteBranches(references))
-    }
-
     /// 读出各远端的设置；读取失败或仓库已断开时清空，提示只写远端名。
     private func loadRemoteConfigurations() async {
         guard let runner = session.runner else {

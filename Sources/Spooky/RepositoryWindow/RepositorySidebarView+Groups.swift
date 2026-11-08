@@ -46,7 +46,7 @@ extension RepositorySidebarView {
         } header: {
             groupHeader("branch.group", destination: .branches)
                 .contextMenu {
-                    Button(AppLocalization.text("branch.create")) {
+                    Button(AppLocalization.text("branch.createMenu")) {
                         request(RepositoryActionRequest(kind: .create))
                     }
                     .disabled(!session.canCreateBranch)
@@ -89,6 +89,13 @@ extension RepositorySidebarView {
             }
         } header: {
             Text(AppLocalization.text("remote.group"))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contextMenu {
+                    Button(AppLocalization.text("remote.addMenu")) {
+                        session.requestReference(.addRemote)
+                    }
+                    .disabled(!session.canWrite)
+                }
         }
     }
 
@@ -135,10 +142,40 @@ extension RepositorySidebarView {
             .modifier(RepositoryDropTarget(session: session, destination: destination, request: request))
     }
 
-    /// 按 “/” 折叠出的文件夹行；作为落点接受拖入改名、新建分支或标签。
+    /// 按 “/” 折叠出的文件夹行；作为落点接受拖入改名、新建分支或标签。本地分支与标签的文件夹有右键菜单，远端分支的文件夹没有。
+    @ViewBuilder
     func folderLabel(_ node: SidebarRefNode, destination: RepositoryDropDestination) -> some View {
-        SidebarFolderLabel(name: node.name)
+        let label = SidebarFolderLabel(name: node.name)
             .modifier(RepositoryDropTarget(session: session, destination: destination, request: request))
+
+        switch destination {
+        case .branchFolder, .tagFolder:
+            label.contextMenu { folderMenu(destination) }
+
+        default:
+            label
+        }
+    }
+
+    /// 文件夹的右键菜单只有一项新建，名称预填文件夹路径与结尾的 “/”：分支文件夹从 HEAD 新建分支，标签文件夹在 HEAD 上新建标签。
+    @ViewBuilder
+    func folderMenu(_ destination: RepositoryDropDestination) -> some View {
+        switch destination {
+        case .branchFolder(let path):
+            Button(AppLocalization.text("branch.createMenu")) {
+                request(RepositoryActionRequest(kind: .create, name: path + "/"))
+            }
+            .disabled(!session.canCreateBranch)
+
+        case .tagFolder(let path):
+            Button(AppLocalization.text("tag.createMenu")) {
+                session.requestReference(.createTag(revision: nil, name: path + "/"))
+            }
+            .disabled(!session.canCreateTag)
+
+        default:
+            EmptyView()
+        }
     }
 
     /// 胶囊徽标的各段：HEAD、超前、落后，有才显示。

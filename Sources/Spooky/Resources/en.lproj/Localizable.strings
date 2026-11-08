@@ -1420,6 +1420,7 @@
 "remote.add.message" = "Enter a name and the URL of the remote repository. The connection is checked before the remote is added.";
 "remote.add.submit" = "Add Remote";
 "remote.addMenu" = "Add Remote Repository…";
+"remote.fetchMenu" = "Fetch “%@”…";
 "remote.addMainMenu" = "Add New Remote…";
 "remote.name.placeholder" = "Remote name";
 "remote.url" = "Remote URL:";
@@ -1583,6 +1584,14 @@
 "sync.quickMergeInto" = "Quick Merge “%1$@” Into “%2$@”";
 "sync.quickRebaseOn" = "Quick Rebase “%1$@” on “%2$@”";
 "branch.pushToMenu" = "Push “%@” To…";
+"branch.publishMenu" = "Publish “%@”…";
+"branch.createFromMenu" = "Create New Branch from “%@”…";
+"branch.trackMenu" = "Track “%@”…";
+"branch.pullMenu" = "Pull “%@”…";
+"branch.copyRemoteNameMenu" = "Copy Remote Branch Name to Clipboard";
+"branch.compareMenu" = "Compare “%@” with Revision…";
+"branch.rebaseOntoMenu" = "Rebase Onto Revision…";
+"branch.deleteMenu.multiple" = "Delete %ld Branches…";
 "tag.compareMenu" = "Compare “%@” With Revision…";
 
 /* 分支拖进 “/” 文件夹时的动作名。 */
