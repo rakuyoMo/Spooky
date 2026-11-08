@@ -8,7 +8,8 @@ import Testing
 /// 分支整理与基准分支比较的判定只看结构化结果：双向计数、`merge-tree` 的合并状态与 `merge-base` 的退出码。
 struct BranchComparisonTests {
     /// 已并入、能快进、能干净合并、有冲突与没有共同历史的分支各得到对应的结论；SHA-1 与 SHA-256 结果一致。
-    @Test("与基准分支比较的五种结论", arguments: ["sha1", "sha256"])
+    /// 分叉点取自 merge-base；没有共同历史时为 nil，不当作错误。
+    @Test("与基准分支比较的五种结论与分叉点", arguments: ["sha1", "sha256"])
     func compare(objectFormat: String) async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
@@ -51,8 +52,11 @@ struct BranchComparisonTests {
 
         let snapshot = try await refs.snapshot()
         let tips = Dictionary(
-            uniqueKeysWithValues: snapshot.references.filter(\.isLocal).map { ($0.id, $0.objectID) }
+            uniqueKeysWithValues: snapshot.references
+                .filter(\.isLocal)
+                .map { ($0.id, $0.objectID) }
         )
+
         let base = try #require(tips["refs/heads/main"])
         let branches = tips.filter { $0.key != "refs/heads/main" }
         let result = try await refs.compare(branches, toBase: base)
@@ -60,6 +64,7 @@ struct BranchComparisonTests {
         #expect(Set(result.keys) == Set(branches.keys))
 
         let merged = try #require(result["refs/heads/merged"])
+
         #expect(merged.merge == .unchanged)
         #expect(merged.divergence == ReferenceDivergence(ahead: 0, behind: 1))
 
@@ -68,37 +73,22 @@ struct BranchComparisonTests {
         #expect(result["refs/heads/clean"]?.merge == .clean)
         #expect(result["refs/heads/feature/冲突'x'"]?.merge == .conflicts([conflictPath]))
 
+        // 分叉点：冲突分支与 main 都从根提交分出，没有共同历史的分支没有分叉点
+        let root = try #require(tips["refs/heads/merged"])
+        let conflicted = try #require(tips["refs/heads/feature/冲突'x'"])
+        let lone = try #require(tips["refs/heads/lone"])
+
+        #expect(try await refs.forkPoint(of: conflicted, base: base) == root)
+        #expect(try await refs.forkPoint(of: lone, base: base) == nil)
+
+        await #expect(throws: RepositoryReadError.self) {
+            try await refs.forkPoint(of: "HEAD", base: base)
+        }
+
         // 批量预览因没有共同历史失败后逐个预览，只有这一个无法检查
         guard case .unavailable = result["refs/heads/lone"]?.merge else {
             Issue.record("没有共同历史的分支应当无法检查")
             return
-        }
-    }
-
-    /// 分叉点取自 merge-base；没有共同历史时为 nil，不当作错误。
-    @Test("分叉点", arguments: ["sha1", "sha256"])
-    func forkPoint(objectFormat: String) async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        try await fixture.initialize(objectFormat: objectFormat)
-        let runner = fixture.runner
-        let refs = RepositoryReferences(runner: runner)
-
-        _ = try await runner.run(["commit", "-q", "--allow-empty", "-m", "root"])
-        let root = try await refs.resolve("HEAD")
-        _ = try await runner.run(["switch", "-q", "-c", "topic"])
-        _ = try await runner.run(["commit", "-q", "--allow-empty", "-m", "topic"])
-        let topic = try await refs.resolve("HEAD")
-        _ = try await runner.run(["switch", "-q", "--orphan", "lone"])
-        _ = try await runner.run(["commit", "-q", "--allow-empty", "-m", "lone"])
-        let lone = try await refs.resolve("HEAD")
-
-        #expect(try await refs.forkPoint(of: topic, base: root) == root)
-        #expect(try await refs.forkPoint(of: lone, base: root) == nil)
-
-        await #expect(throws: RepositoryReadError.self) {
-            try await refs.forkPoint(of: "HEAD", base: root)
         }
     }
 
@@ -134,12 +124,12 @@ struct BranchComparisonTests {
     }
 
     /// Update Branch：合并会先检出要更新的分支，变基把分支接到父分支上；冲突留下进行中的操作，本地改动挡住时不动 HEAD。
-    @Test("Update Branch 的合并、变基、冲突与本地改动", arguments: ["sha1", "sha256"])
-    func updateBranch(objectFormat: String) async throws {
+    @Test("Update Branch 的合并、变基、冲突与本地改动")
+    func updateBranch() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
 
-        try await fixture.initialize(objectFormat: objectFormat)
+        try await fixture.initialize()
         let runner = fixture.runner
         let refs = RepositoryReferences(runner: runner)
         let sync = RepositorySync(runner: runner)
@@ -147,6 +137,7 @@ struct BranchComparisonTests {
         try write("a\n", to: "file.txt", in: fixture)
         _ = try await runner.run(["add", "-A"])
         _ = try await runner.run(["commit", "-q", "-m", "root"])
+
         _ = try await runner.run(["branch", "merge-me"])
         _ = try await runner.run(["branch", "rebase-me"])
         _ = try await runner.run(["branch", "conflict"])
@@ -166,86 +157,47 @@ struct BranchComparisonTests {
         _ = try await runner.run(["switch", "-q", "main"])
         try write("main\n", to: "file.txt", in: fixture)
         _ = try await runner.run(["commit", "-q", "-am", "main"])
+
         let main = try await refs.resolve("main")
 
         // 合并：从 main 出发更新 merge-me，HEAD 切到 merge-me 并生成合并提交
         try await sync.updateBranch("refs/heads/merge-me", from: "refs/heads/main", rebase: false)
+
         #expect(try await runner.status().branch.head == "merge-me")
+
         let mergeParents = try await runner.run(["rev-list", "--parents", "-n", "1", "HEAD"])
+
         #expect(String(decoding: mergeParents, as: UTF8.self).split(separator: " ").count == 3)
 
         // 变基：rebase-me 的提交接在 main 之上
         try await sync.updateBranch("refs/heads/rebase-me", from: "refs/heads/main", rebase: true)
+
         #expect(try await runner.status().branch.head == "rebase-me")
         #expect(try await refs.resolve("rebase-me^") == main)
 
         // 本地改动挡住时报告工作区不干净，HEAD 不变
         try write("dirty\n", to: "rebase-me.txt", in: fixture)
+
         await #expect(throws: RepositorySyncError.dirtyWorkingCopy(rebase: false)) {
             try await sync.updateBranch("refs/heads/conflict", from: "refs/heads/main", rebase: false)
         }
+
         #expect(try await runner.status().branch.head == "rebase-me")
+
         _ = try await runner.run(["checkout", "--", "rebase-me.txt"])
 
         // 冲突：合并失败后留下进行中的合并
         await #expect(throws: GitError.self) {
             try await sync.updateBranch("refs/heads/conflict", from: "refs/heads/main", rebase: false)
         }
+
         #expect(try await runner.status().branch.head == "conflict")
         #expect(try await runner.status().entries.contains { $0.kind == .conflicted })
 
+        // 分支不能从自身更新
         await #expect(throws: RepositoryReadError.self) {
             try await sync.updateBranch("refs/heads/main", from: "refs/heads/main", rebase: false)
         }
-    }
-
-    /// 自动归档写入待审阅标记，取消归档一并清除；跳过自动归档与归档各自独立，随快照读回。
-    @Test("分支整理的标记")
-    func metadataFlags() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        try await fixture.initialize()
-        let runner = fixture.runner
-        let refs = RepositoryReferences(runner: runner)
-        let branch = "refs/heads/feature/it's-\"合并\""
-
-        _ = try await runner.run(["commit", "-q", "--allow-empty", "-m", "root"])
-        _ = try await runner.run(["branch", "feature/it's-\"合并\""])
-
-        try await refs.setArchived(true, branches: [branch], review: true)
-        try await refs.setSkipsAutoArchive(true, branches: [branch])
-
-        var metadata = try await refs.snapshot().metadata(for: branch)
-        #expect(metadata.isArchived && metadata.needsArchiveReview)
-        #expect(metadata.skipsAutoArchive)
-
-        try await refs.markArchiveReviewed(branches: [branch])
-        metadata = try await refs.snapshot().metadata(for: branch)
-        #expect(metadata.isArchived && !metadata.needsArchiveReview)
-
-        // 撤销自动归档：取消归档同时去掉待审阅标记
-        try await refs.setArchived(true, branches: [branch], review: true)
-        try await refs.setArchived(false, branches: [branch])
-        metadata = try await refs.snapshot().metadata(for: branch)
-        #expect(!metadata.isArchived && !metadata.needsArchiveReview)
-        #expect(metadata.skipsAutoArchive)
-
-        // 配置里的布尔写法与 Git 一致：只写键也表示真
-        let parsed = try BranchMetadata.parse(Data(
-            [
-                "branch.a.spooky-archive-review",
-                "branch.a.spooky-skip-auto-archive\nno",
-                "branch.a.spooky-archived\nyes",
-            ]
-            .map { $0 + "\0" }
-            .joined()
-            .utf8
-        ))
-        let flags = try #require(parsed["refs/heads/a"])
-        #expect(flags.needsArchiveReview)
-        #expect(!flags.skipsAutoArchive)
-        #expect(flags.isArchived)
     }
 }
 

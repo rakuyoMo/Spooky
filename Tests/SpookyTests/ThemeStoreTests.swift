@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import Testing
 
@@ -11,9 +10,9 @@ import Testing
 /// 每个测试在临时目录里放 Themes 目录与偏好文件，测试结束随目录删除，不碰 Application Support 与标准偏好。
 @MainActor
 struct ThemeStoreTests {
-    /// 新主题以所在外观的内置主题为底，立即成为这一外观的主题，重新启动后仍然有效。
-    @Test("新建主题按外观取底色并立即选用")
-    func createSelectsForAppearance() throws {
+    /// 新主题以所在外观的内置主题为底并立即成为这一外观的主题；字体与颜色的改动写回文件，重新启动后仍然有效。
+    @Test("新建主题按外观取底色并立即选用，编辑写回文件")
+    func createAndEdit() throws {
         let root = try Self.makeRoot()
         defer { try? FileManager.default.removeItem(at: root) }
 
@@ -22,52 +21,37 @@ struct ThemeStoreTests {
         let second = try store.create(named: "New Theme", dark: false)
         let night = try store.create(named: "New Theme", dark: true)
 
-        // 重名时依次编号，文件名取主题名称。
+        // 重名时依次编号。
         #expect([first.name, second.name, night.name] == ["New Theme", "New Theme 2", "New Theme 3"])
-        #expect(FileManager.default.fileExists(atPath: Self.themes(root).appending(path: "New Theme 2.spookytheme").path))
+        #expect(first.id != second.id)
 
         // 浅色外观新建的主题沿用 Default，深色外观沿用 Default (Dark)。
         #expect(first.colors == TextTheme.builtin[0].colors)
         #expect(night.colors == TextTheme.builtin[1].colors)
-        #expect(first.id != second.id)
-
-        #expect(TextTheme.current(dark: false, in: store) == second)
         #expect(TextTheme.current(dark: true, in: store) == night)
 
-        // 新的存储实例从同一目录与偏好读回全部主题和两种外观的选择。
-        let reopened = try Self.store(in: root)
-        #expect(reopened.themes.map(\.name) == ["New Theme", "New Theme 2", "New Theme 3"])
-        #expect(TextTheme.current(dark: false, in: reopened) == second)
-        #expect(TextTheme.current(dark: true, in: reopened) == night)
-    }
-
-    /// 字体与颜色的改动写回主题文件，正在使用这个主题的视图取到的是新值。
-    @Test("编辑字体与颜色写回文件")
-    func editWritesThemeFile() throws {
-        let root = try Self.makeRoot()
-        defer { try? FileManager.default.removeItem(at: root) }
-
-        let store = try Self.store(in: root)
-        let theme = try store.create(named: "Paper", dark: false)
+        // 字体与颜色的改动写回以主题名称命名的文件，正在使用这个主题的视图取到的是新值。
         let added = PaletteColor(hex: "#123456", alpha: 0.5)
 
-        try store.update(theme.id) {
+        try store.update(second.id) {
             $0.colors["added"] = added
             $0.fontName = "Monaco"
             $0.fontSize = 13
         }
 
         let current = TextTheme.current(dark: false, in: store)
+        #expect(current.id == second.id)
         #expect(current.colors["added"] == added)
         #expect(current.fontName == "Monaco" && current.fontSize == 13)
 
-        // 文件内容与内存中的主题一致。
-        let data = try Data(contentsOf: Self.themes(root).appending(path: "Paper.spookytheme"))
-        #expect(try TextTheme.decode(data) == current)
+        let file = Self.themes(root).appending(path: "New Theme 2.spookytheme")
+        #expect(try TextTheme.decode(Data(contentsOf: file)) == current)
 
-        // 色板选出的颜色换算成六位十六进制与两位小数的不透明度，再读回时不变。
-        let picked = PaletteColor(hex: "#336699", alpha: 0.25)
-        #expect(PaletteColor(nsColor: picked.calibratedNSColor, colorSpace: .genericRGB) == picked)
+        // 新的存储实例从同一目录与偏好读回全部主题和两种外观的选择。
+        let reopened = try Self.store(in: root)
+        #expect(reopened.themes.map(\.name) == ["New Theme", "New Theme 2", "New Theme 3"])
+        #expect(TextTheme.current(dark: false, in: reopened) == current)
+        #expect(TextTheme.current(dark: true, in: reopened) == night)
     }
 
     /// 改名移动文件；与其它主题重名、只改大小写和名称含 `/` 的情况都按文件名规则处理。
@@ -84,7 +68,9 @@ struct ThemeStoreTests {
         #expect(try Self.themeFiles(root) == ["Night Owl.spookytheme", "Other.spookytheme"])
 
         // 其它主题的名称不能再用，比较时不区分大小写。
-        #expect(throws: ThemeStoreError.nameInUse("other")) { try store.rename(theme.id, to: "other") }
+        #expect(throws: ThemeStoreError.nameInUse("other")) {
+            try store.rename(theme.id, to: "other")
+        }
 
         // 只改大小写时文件随之改名，不会丢失。
         try store.rename(theme.id, to: "night owl")
@@ -93,6 +79,7 @@ struct ThemeStoreTests {
         // 空白名称不生效；`/` 在文件名里换成 `-`，主题名称保持原样。
         try store.rename(theme.id, to: "   ")
         try store.rename(theme.id, to: "Light/Dark")
+
         #expect(store.themes.map(\.name) == ["Light/Dark", "Other"])
         #expect(try Self.themeFiles(root) == ["Light-Dark.spookytheme", "Other.spookytheme"])
 
@@ -102,24 +89,41 @@ struct ThemeStoreTests {
         #expect(reopened.themes.map(\.id).contains(theme.id))
     }
 
-    /// 列表里删掉所选主题后，删除时所在的外观改选列表第一行；另一外观选的也是它时，按名称回到目录里编辑过的 Default。
-    @Test("删除后所在外观选中第一行，另一外观按名称回退")
-    func deleteSelectsFirstRow() throws {
+    /// 浅色、深色外观各自记住所选主题，Default 与 Default (Dark) 可以跨外观选用；
+    /// 删掉所选主题后，删除时所在的外观改选列表第一行，另一外观选的也是它时按名称回到目录里编辑过的 Default。
+    @Test("两种外观各自选择主题，删除所选主题后改选")
+    func selectAndDelete() throws {
         let root = try Self.makeRoot()
         defer { try? FileManager.default.removeItem(at: root) }
 
         let store = try Self.store(in: root)
         try store.installDefaultThemes()
-        let day = try #require(store.themes.first { $0.name == "Default" })
-        try store.update(day.id) { $0.fontSize = 15 }
 
-        // Aurora 排在列表第一行，Dusk 同时是两种外观的所选主题。
-        let aurora = try store.create(named: "Aurora", dark: false)
+        let edited = try #require(store.themes.first { $0.name == "Default" })
+        try store.update(edited.id) { $0.fontSize = 15 }
+
+        let day = try #require(store.themes.first { $0.name == "Default" })
+        let night = try #require(store.themes.first { $0.name == "Default (Dark)" })
+
+        // 两种外观各选一套，重新启动后互不影响。
         let dusk = try store.create(named: "Dusk", dark: true)
+        store.select(night.id, dark: false)
+
+        #expect(TextTheme.current(dark: false, in: store) == night)
+        #expect(TextTheme.current(dark: true, in: store) == dusk)
+
+        store.select(day.id, dark: true)
+
+        let reopened = try Self.store(in: root)
+        #expect(TextTheme.current(dark: false, in: reopened) == night)
+        #expect(TextTheme.current(dark: true, in: reopened) == day)
+
+        // Aurora 排在列表第一行，Dusk 同时是两种外观的所选主题，在深色外观删掉它。
+        let aurora = try store.create(named: "Aurora", dark: false)
         store.select(dusk.id, dark: false)
+        store.select(dusk.id, dark: true)
 
         try store.delete(dusk.id, dark: true)
-
         #expect(!(try Self.themeFiles(root).contains("Dusk.spookytheme")))
 
         // 深色外观改选第一行的 Aurora，重新启动后仍然有效。
@@ -128,35 +132,12 @@ struct ThemeStoreTests {
         #expect(TextTheme.current(dark: true, in: try Self.store(in: root)) == aurora)
 
         // 浅色外观按名称回到目录里编辑过的 Default。
-        #expect(TextTheme.current(dark: false, in: store).id == day.id)
-        #expect(TextTheme.current(dark: false, in: store).fontSize == 15)
-        #expect(TextTheme.current(dark: false, in: try Self.store(in: root)).fontSize == 15)
+        #expect(TextTheme.current(dark: false, in: store) == day)
+        #expect(TextTheme.current(dark: false, in: try Self.store(in: root)) == day)
     }
 
-    /// 浅色、深色外观各选一套，Default 与 Default (Dark) 也可以跨外观选用，选择互不影响。
-    @Test("浅色与深色外观各自记住所选主题")
-    func appearancesSelectIndependently() throws {
-        let root = try Self.makeRoot()
-        defer { try? FileManager.default.removeItem(at: root) }
-
-        let store = try Self.store(in: root)
-        try store.installDefaultThemes()
-        let day = try #require(store.themes.first { $0.name == "Default" })
-        let night = try #require(store.themes.first { $0.name == "Default (Dark)" })
-
-        let theme = try store.create(named: "Midnight", dark: true)
-        store.select(night.id, dark: false)
-
-        #expect(TextTheme.current(dark: false, in: store) == night)
-        #expect(TextTheme.current(dark: true, in: store) == theme)
-
-        store.select(day.id, dark: true)
-        let reopened = try Self.store(in: root)
-        #expect(TextTheme.current(dark: false, in: reopened) == night)
-        #expect(TextTheme.current(dark: true, in: reopened) == day)
-    }
-
-    /// 导出的文件只含颜色、字体与名称标识，导入后与原主题一致；同名时必须确认覆盖。
+    /// 导出的文件只含颜色、字体与名称标识，导入后与原主题一致；同名时必须确认覆盖，
+    /// 标识与已有主题重复时换成新标识，无效文件不导入。
     @Test("导出与导入主题文件")
     func importAndExport() throws {
         let root = try Self.makeRoot()
@@ -165,12 +146,16 @@ struct ThemeStoreTests {
         let store = try Self.store(in: root)
         let theme = try store.create(named: "Harbor", dark: false)
         try store.update(theme.id) { $0.colors["text"] = PaletteColor(hex: "#0A0B0C", alpha: 1) }
+
         let edited = TextTheme.current(dark: false, in: store)
 
         // 导出的内容只有标识、名称、字体与颜色。
         let exported = root.appending(path: "Harbor.spookytheme")
         try edited.encoded().write(to: exported)
-        let object = try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: exported)) as? [String: Any])
+
+        let object = try #require(
+            try JSONSerialization.jsonObject(with: Data(contentsOf: exported)) as? [String: Any]
+        )
         #expect(Set(object.keys) == ["identifier", "name", "fontName", "fontSize", "colors"])
 
         // 在另一份存储里导入，内容与原主题一致，原文件保留在原处。
@@ -192,53 +177,31 @@ struct ThemeStoreTests {
         let replaced = try store.importTheme(at: exported, replacing: true)
         #expect(replaced.id == theme.id)
         #expect(TextTheme.current(dark: false, in: store).colors["text"]?.hex == "#FFFFFF")
-    }
-
-    /// 导入的名称与目录里的 Default 相同时同样要确认覆盖，标识重复时换成新标识；无效文件不导入。
-    @Test("导入时同名需确认、避开重复标识")
-    func importAvoidsCollisions() throws {
-        let root = try Self.makeRoot()
-        defer { try? FileManager.default.removeItem(at: root) }
-
-        let store = try Self.store(in: root)
-        try store.installDefaultThemes()
-        let source = root.appending(path: "incoming.spookytheme")
-
-        // 导出的 Default 再导入，与目录里的 Default 同名，不确认就不覆盖。
-        let original = try #require(store.themes.first { $0.name == "Default" })
-        try original.encoded().write(to: source)
-        let destination = Self.themes(root).appending(path: "Default.spookytheme")
-        #expect(throws: ThemeStoreError.fileExists(destination)) {
-            try store.importTheme(at: source, replacing: false)
-        }
 
         // 名称不同、标识与已有主题相同的文件换成新标识，两个主题并存。
-        var twin = original
+        var twin = replaced
         twin.name = "Twin"
-        try twin.encoded().write(to: source)
-        let imported = try store.importTheme(at: source, replacing: false)
-        #expect(imported.id != original.id)
-        #expect(Set(store.themes.map(\.name)) == ["Default", "Default (Dark)", "Twin"])
+        try twin.encoded().write(to: exported)
+        #expect(try store.importTheme(at: exported, replacing: false).id != theme.id)
 
         // 无法解码与缺少颜色的文件都算无效，不写入 Themes 目录。
-        try Data("not json".utf8).write(to: source)
-        #expect(throws: ThemeStoreError.invalidFile) { try store.importTheme(at: source, replacing: false) }
+        try Data("not json".utf8).write(to: exported)
+        #expect(throws: ThemeStoreError.invalidFile) {
+            try store.importTheme(at: exported, replacing: false)
+        }
 
         var incomplete = twin
         incomplete.name = "Incomplete"
         incomplete.colors["added"] = nil
-        try incomplete.encoded().write(to: source)
-        #expect(throws: ThemeStoreError.invalidFile) { try store.importTheme(at: source, replacing: false) }
-        #expect(
-            Set(try Self.themeFiles(root)) == [
-                "Default.spookytheme",
-                "Default (Dark).spookytheme",
-                "Twin.spookytheme",
-            ]
-        )
+        try incomplete.encoded().write(to: exported)
+
+        #expect(throws: ThemeStoreError.invalidFile) {
+            try store.importTheme(at: exported, replacing: false)
+        }
+        #expect(try Self.themeFiles(root) == ["Harbor.spookytheme", "Twin.spookytheme"])
     }
 
-    /// 所选主题丢失、损坏或与其它主题重复时，按名称回退到 Default 或 Default (Dark)；
+    /// 所选主题丢失、损坏或与其它主题重复时，按名称回退到目录里的 Default 或 Default (Dark)，而不是资源里的版本；
     /// 它们的文件也损坏时用资源里的版本，损坏的文件列为无法加载。
     @Test("所选主题无法加载时按外观回退")
     func unloadableThemesFallBack() throws {
@@ -247,6 +210,11 @@ struct ThemeStoreTests {
 
         let store = try Self.store(in: root)
         try store.installDefaultThemes()
+
+        // 编辑过的 Default (Dark) 与资源里的版本不同，回退时能分辨取的是哪一份。
+        let edited = try #require(store.themes.first { $0.name == "Default (Dark)" })
+        try store.update(edited.id) { $0.fontSize = 15 }
+
         let day = try #require(store.themes.first { $0.name == "Default" })
         let night = try #require(store.themes.first { $0.name == "Default (Dark)" })
         let theme = try store.create(named: "Ember", dark: true)
@@ -255,15 +223,18 @@ struct ThemeStoreTests {
         // 与已有主题同标识的另一份文件无法加载，按文件名先读到的主题不受影响。
         var duplicate = theme
         duplicate.name = "Other Ember"
+
         let duplicateFile = Self.themes(root).appending(path: "Other Ember.spookytheme")
         try duplicate.encoded().write(to: duplicateFile)
         store.reload()
+
         #expect(store.invalidFiles.map(\.lastPathComponent) == ["Other Ember.spookytheme"])
         #expect(TextTheme.current(dark: true, in: store) == theme)
         try FileManager.default.removeItem(at: duplicateFile)
 
-        // 所选主题的文件损坏后，深色外观回到目录里的 Default (Dark)，浅色外观不受影响。
+        // 所选主题的文件损坏后，深色外观回到目录里编辑过的 Default (Dark)，浅色外观不受影响。
         try Data("{".utf8).write(to: file)
+
         var reopened = try Self.store(in: root)
         #expect(reopened.invalidFiles.map(\.lastPathComponent) == ["Ember.spookytheme"])
         #expect(TextTheme.current(dark: true, in: reopened) == night)

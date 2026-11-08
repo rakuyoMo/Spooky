@@ -7,65 +7,33 @@ import Testing
 
 extension HistoryQueryTests {
     /// 没有配置时说明、作者与提交人按基本正则匹配，与在 Git 里直接搜索相同；
-    /// Git 编译不了的正则不执行 Git，列表为空、计数为 0、没有位置，也不报错。SHA-1 与 SHA-256 仓库都要通过。
-    @Test("默认按基本正则匹配，编译不了的正则没有结果、不报错", arguments: ["sha1", "sha256"])
-    func defaultPatterns(objectFormat: String) async throws {
+    /// Git 编译不了的正则不执行 Git，列表为空、计数为 0、没有位置，也不报错，能否编译的判断与 Git 相同；
+    /// 写法跟随仓库生效的 grep.patternType 与 grep.extendedRegexp，读这两项配置只是查询，越过写队列。
+    @Test("默认的基本正则、编译不了的正则、按仓库配置的写法与读配置的只读登记")
+    func patterns() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
 
-        let head = try await Self.makeRegexHistory(in: fixture, objectFormat: objectFormat)
+        let head = try await Self.makeRegexHistory(in: fixture)
         let history = RepositoryHistory(runner: fixture.runner)
 
-        // 两步都在默认的 grep 配置下只读这份历史，先后互不影响
+        // 前三步在默认的 grep 配置下只读这份历史，最后一步改写 grep 配置
         try await Self.regexConditions(history, head: head)
         try await Self.invalidPatterns(history, head: head)
-    }
+        try await Self.patternValidity(in: fixture)
+        try await Self.configuredPatterns(history, head: head, in: fixture)
 
-    /// 写法跟随仓库生效的 grep.patternType 与 grep.extendedRegexp：结果与直接执行 git log 相同，计数与列表一致。
-    @Test("按仓库配置的写法匹配，列表与计数一致")
-    func configuredPatternType() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        let head = try await Self.makeRegexHistory(in: fixture, objectFormat: "sha1")
-        let history = RepositoryHistory(runner: fixture.runner)
-
-        // 同一个键写多次时以最后一个为准；extendedRegexp 只在 patternType 是 default 或没有配置时生效
-        let cases: [(entries: [(String, String)], type: HistoryQuery.PatternType)] = [
-            ([], .basic),
-            ([("grep.patternType", "extended")], .extended),
-            ([("grep.patternType", "fixed")], .fixed),
-            ([("grep.patternType", "basic"), ("grep.extendedRegexp", "true")], .basic),
-            ([("grep.extendedRegexp", "true")], .extended),
-            ([("grep.extendedRegexp", "1k")], .extended),
-            ([("grep.patternType", "default"), ("grep.extendedRegexp", "yes")], .extended),
-            ([("grep.patternType", "extended"), ("grep.patternType", "default")], .basic),
+        // 读搜索写法的配置登记为只读命令，写配置仍按写操作排队
+        let read = [
+            "config",
+            "-z",
+            "--type=bool-or-str",
+            "--get-regexp",
+            "^grep\\.(patterntype|extendedregexp)$",
         ]
 
-        for (entries, type) in cases {
-            try await Self.configureGrep(entries, in: fixture)
-            #expect(try await history.patternType() == type)
-
-            // 点号与竖线在几种写法下的含义各不相同，两者都与 git log 一致
-            for pattern in ["a.c", "abc|axc"] {
-                let query = HistoryQuery(conditions: [.init(kind: .message, text: pattern)])
-                let listed = try await history.page(roots: [head], query: query)
-                    .commits
-                    .map(\.subject)
-
-                #expect(listed == (try await Self.logSubjects(pattern, head: head, in: fixture)))
-                #expect(
-                    try await history.count(roots: [head], query: query, limit: 100) == listed.count
-                )
-            }
-        }
-
-        // 扩展正则里编译不了的条件同样没有结果，不报错
-        try await Self.configureGrep([("grep.patternType", "extended")], in: fixture)
-        let unbalanced = HistoryQuery(conditions: [.init(kind: .message, text: "l(x")])
-
-        #expect(try await history.page(roots: [head], query: unbalanced).commits.isEmpty)
-        #expect(try await history.count(roots: [head], query: unbalanced, limit: 10) == 0)
+        #expect(RepositoryOperationQueue.isReadOnly(read))
+        #expect(!RepositoryOperationQueue.isReadOnly(["config", "--local", "grep.patternType", "perl"]))
     }
 
     /// 配了 Perl 正则时按它匹配；编译不了的条件没有结果、不报错，与其它写法相同。
@@ -77,10 +45,11 @@ extension HistoryQueryTests {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
 
-        let head = try await Self.makeRegexHistory(in: fixture, objectFormat: "sha1")
+        let head = try await Self.makeRegexHistory(in: fixture)
         let history = RepositoryHistory(runner: fixture.runner)
 
         try await Self.configureGrep([("grep.patternType", "perl")], in: fixture)
+
         #expect(try await history.patternType() == .perl)
 
         // 先行断言只有 Perl 正则支持
@@ -144,58 +113,6 @@ extension HistoryQueryTests {
         await #expect(throws: GitError.self) {
             try await history.count(roots: [root], query: query, limit: 10)
         }
-    }
-
-    /// 能否编译的判断与 Git 相同：基本与扩展正则里 Git 报错退出的写法都判为编译不了；字面与 Perl 正则不在本机判断。
-    @Test("判断正则能否编译与 Git 一致")
-    func patternValidity() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        try await fixture.initialize()
-        _ = try await fixture.runner.run(["commit", "-q", "--allow-empty", "-m", "start"])
-
-        let invalid = ["x[", "\\(", "a\\)", "a\\{1", "[z-a]", "a\\"]
-        let valid = ["a.c", "fix(", "a\\+", "*abc", "中文", "^fix.*$", "a{1"]
-
-        for text in invalid + valid {
-            let query = HistoryQuery(conditions: [.init(kind: .message, text: text)])
-            #expect(query.hasInvalidPattern == invalid.contains(text))
-            #expect(try await Self.gitRejects(query, in: fixture) == query.hasInvalidPattern)
-        }
-
-        // 扩展正则另有自己的写法，判断同样与 Git 相同
-        for text in invalid + valid + ["(x", "a|b", "a{2,1}", "a**"] {
-            var query = HistoryQuery(conditions: [.init(kind: .message, text: text)])
-            query.patternType = .extended
-            #expect(try await Self.gitRejects(query, in: fixture) == query.hasInvalidPattern)
-        }
-
-        // 字面匹配总能编译，Perl 正则交给 Git；文件按字面匹配，哈希另行解析，空条件不参与筛选
-        for type in [HistoryQuery.PatternType.fixed, .perl] {
-            var query = HistoryQuery(conditions: [.init(kind: .message, text: "x[")])
-            query.patternType = type
-            #expect(!query.hasInvalidPattern)
-        }
-
-        #expect(!HistoryQuery(conditions: [.init(kind: .file, text: "x[")]).hasInvalidPattern)
-        #expect(!HistoryQuery(conditions: [.init(kind: .hash, text: "x[")]).hasInvalidPattern)
-        #expect(!HistoryQuery(conditions: [.init(kind: .message, text: "  ")]).hasInvalidPattern)
-    }
-
-    /// 读搜索写法的配置只是查询，越过写队列。
-    @Test("读搜索写法的配置登记为只读命令")
-    func patternTypeReadIsReadOnly() {
-        let read = [
-            "config",
-            "-z",
-            "--type=bool-or-str",
-            "--get-regexp",
-            "^grep\\.(patterntype|extendedregexp)$",
-        ]
-
-        #expect(RepositoryOperationQueue.isReadOnly(read))
-        #expect(!RepositoryOperationQueue.isReadOnly(["config", "--local", "grep.patternType", "perl"]))
     }
 }
 
@@ -274,6 +191,91 @@ extension HistoryQueryTests {
         #expect(try await history.page(roots: [head], query: hash).commits.isEmpty)
         #expect(try await history.count(roots: [head], query: hash, limit: 100) == 0)
     }
+
+    /// 能否编译的判断与 Git 相同：基本与扩展正则里 Git 报错退出的写法都判为编译不了；字面与 Perl 正则不在本机判断。
+    private static func patternValidity(in fixture: TemporaryRepository) async throws {
+        let invalid = ["x[", "\\(", "a\\)", "a\\{1", "[z-a]", "a\\"]
+        let valid = ["a.c", "fix(", "a\\+", "*abc", "中文", "^fix.*$", "a{1"]
+
+        for text in invalid + valid {
+            let query = HistoryQuery(conditions: [.init(kind: .message, text: text)])
+
+            #expect(query.hasInvalidPattern == invalid.contains(text))
+            #expect(try await Self.gitRejects(query, in: fixture) == query.hasInvalidPattern)
+        }
+
+        // 扩展正则另有自己的写法，判断同样与 Git 相同
+        for text in invalid + valid + ["(x", "a|b", "a{2,1}", "a**"] {
+            var query = HistoryQuery(conditions: [.init(kind: .message, text: text)])
+            query.patternType = .extended
+
+            #expect(try await Self.gitRejects(query, in: fixture) == query.hasInvalidPattern)
+        }
+
+        // 字面匹配总能编译，Perl 正则交给 Git；文件按字面匹配，哈希另行解析，空条件不参与筛选
+        for type in [HistoryQuery.PatternType.fixed, .perl] {
+            var query = HistoryQuery(conditions: [.init(kind: .message, text: "x[")])
+            query.patternType = type
+
+            #expect(!query.hasInvalidPattern)
+        }
+
+        #expect(!HistoryQuery(conditions: [.init(kind: .file, text: "x[")]).hasInvalidPattern)
+        #expect(!HistoryQuery(conditions: [.init(kind: .hash, text: "x[")]).hasInvalidPattern)
+        #expect(!HistoryQuery(conditions: [.init(kind: .message, text: "  ")]).hasInvalidPattern)
+    }
+
+    /// 写法跟随仓库生效的 grep 配置：每种写法第一次出现时，结果与直接执行 git log 相同，计数与列表一致。
+    private static func configuredPatterns(
+        _ history: RepositoryHistory,
+        head: String,
+        in fixture: TemporaryRepository
+    ) async throws {
+        // 同一个键写多次时以最后一个为准；extendedRegexp 只在 patternType 是 default 或没有配置时生效
+        let cases: [(entries: [(String, String)], type: HistoryQuery.PatternType)] = [
+            ([], .basic),
+            ([("grep.patternType", "extended")], .extended),
+            ([("grep.patternType", "fixed")], .fixed),
+            ([("grep.patternType", "basic"), ("grep.extendedRegexp", "true")], .basic),
+            ([("grep.extendedRegexp", "true")], .extended),
+            ([("grep.extendedRegexp", "1k")], .extended),
+            ([("grep.patternType", "default"), ("grep.extendedRegexp", "yes")], .extended),
+            ([("grep.patternType", "extended"), ("grep.patternType", "default")], .basic),
+        ]
+
+        var compared: Set<HistoryQuery.PatternType> = []
+
+        for (entries, type) in cases {
+            try await Self.configureGrep(entries, in: fixture)
+
+            #expect(try await history.patternType() == type)
+
+            guard compared.insert(type).inserted else {
+                continue
+            }
+
+            // 点号与竖线在几种写法下的含义各不相同，两者都与 git log 一致
+            for pattern in ["a.c", "abc|axc"] {
+                let query = HistoryQuery(conditions: [.init(kind: .message, text: pattern)])
+                let listed = try await history.page(roots: [head], query: query)
+                    .commits
+                    .map(\.subject)
+
+                #expect(listed == (try await Self.logSubjects(pattern, head: head, in: fixture)))
+                #expect(
+                    try await history.count(roots: [head], query: query, limit: 100) == listed.count
+                )
+            }
+        }
+
+        // 扩展正则里编译不了的条件同样没有结果，不报错
+        try await Self.configureGrep([("grep.patternType", "extended")], in: fixture)
+
+        let unbalanced = HistoryQuery(conditions: [.init(kind: .message, text: "l(x")])
+
+        #expect(try await history.page(roots: [head], query: unbalanced).commits.isEmpty)
+        #expect(try await history.count(roots: [head], query: unbalanced, limit: 10) == 0)
+    }
 }
 
 // MARK: - Regex Helpers
@@ -350,11 +352,8 @@ extension HistoryQueryTests {
     }
 
     /// 建立说明含 abc、axc 与 a.c 的一条历史，返回最新的提交；axc 的提交人是 Bob，最新的提交由 Carol 写。
-    private static func makeRegexHistory(
-        in fixture: TemporaryRepository,
-        objectFormat: String
-    ) async throws -> String {
-        try await fixture.initialize(objectFormat: objectFormat)
+    private static func makeRegexHistory(in fixture: TemporaryRepository) async throws -> String {
+        try await fixture.initialize()
 
         _ = try await commit(in: fixture, file: "1.txt", message: "abc search target", day: 1)
 

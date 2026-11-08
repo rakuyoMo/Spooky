@@ -7,12 +7,15 @@ import Testing
 
 /// 外部比较、合并工具与编辑器拿到的都是本机文件：用真实 Git 在临时仓库里核对各版本的内容、结果判定与写回前的核对。
 struct ExternalToolFilesTests {
-    /// 比较的每一侧都取自对应的版本；版本里没有的文件是同名空文件，本机工作区文件直接交出原路径。
-    @Test("比较两侧的版本内容")
+    /// 比较的每一侧都取自对应的版本；版本里没有的文件是同名空文件，本机工作区文件直接交出原路径；
+    /// 还没有提交的仓库没有 HEAD，比较 HEAD 一侧是空文件而不是失败；目录对比的两侧按相对路径放入文件。
+    @Test("比较两侧的版本内容与目录对比")
     func comparedVersions() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
+
         try await repository.initialize()
+        try await unbornHead(in: repository)
 
         let path = "目 录/文件 '[*]'.txt"
         let first = try await commit(repository, [path: "first\n"], message: "first")
@@ -25,8 +28,8 @@ struct ExternalToolFilesTests {
 
         let cache = RepositoryFileCache(runner: repository.runner)
         defer { cache.removeAll() }
-        let files = ExternalToolFiles(cache: cache)
 
+        let files = ExternalToolFiles(cache: cache)
         #expect(try await text(files.file(path, at: .commit(first))) == "first\n")
         #expect(try await text(files.file(path, at: .head)) == "second\n")
         #expect(try await text(files.file(path, at: .index)) == "staged\n")
@@ -42,97 +45,45 @@ struct ExternalToolFilesTests {
 
         let empty = try await files.file(path, at: .blob(nil))
         #expect(try Data(contentsOf: empty).isEmpty)
-    }
 
-    /// 还没有提交的仓库没有 HEAD，比较 HEAD 一侧是空文件而不是失败。
-    @Test("没有提交时 HEAD 一侧为空")
-    func unbornHead() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-
-        try write("new\n", to: "a.txt", in: repository)
-
-        let cache = RepositoryFileCache(runner: repository.runner)
-        defer { cache.removeAll() }
-        let files = ExternalToolFiles(cache: cache)
-
-        #expect(try await Data(contentsOf: files.file("a.txt", at: .head)).isEmpty)
-        #expect(try await Data(contentsOf: files.file("a.txt", at: .index)).isEmpty)
-    }
-
-    /// 目录对比的两侧按仓库内的相对路径放入文件，一侧没有的文件不放入；重命名的左侧按原路径读取。
-    @Test("目录对比的两侧")
-    func directoryComparison() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-
-        let parent = try await commit(repository, ["a/old.txt": "same\n", "gone.txt": "gone\n"], message: "parent")
-        _ = try await repository.runner.run(["mv", "a/old.txt", "a/new.txt"])
-        let child = try await commit(repository, ["gone.txt": nil, "b/added.txt": "added\n"], message: "child")
-
-        let cache = RepositoryFileCache(runner: repository.runner)
-        defer { cache.removeAll() }
-
-        let (left, right) = try await ExternalToolFiles(cache: cache).directories(
-            [
-                ComparedFile(path: "a/new.txt", originalPath: "a/old.txt"),
-                ComparedFile(path: "gone.txt"),
-                ComparedFile(path: "b/added.txt"),
-            ],
-            left: (.commit(parent), String(parent.prefix(7))),
-            right: (.commit(child), String(child.prefix(7)))
-        )
-
-        #expect(left.lastPathComponent == String(parent.prefix(7)))
-        #expect(try String(contentsOf: left.appending(path: "a/old.txt"), encoding: .utf8) == "same\n")
-        #expect(try String(contentsOf: left.appending(path: "gone.txt"), encoding: .utf8) == "gone\n")
-        #expect(!FileManager.default.fileExists(atPath: left.appending(path: "b/added.txt").path))
-
-        #expect(try String(contentsOf: right.appending(path: "a/new.txt"), encoding: .utf8) == "same\n")
-        #expect(try String(contentsOf: right.appending(path: "b/added.txt"), encoding: .utf8) == "added\n")
-        #expect(!FileManager.default.fileExists(atPath: right.appending(path: "gone.txt").path))
+        try await compareDirectories(in: repository)
     }
 
     /// 合并工具的四个文件：三方取自索引，结果文件是带冲突标记的工作区内容，没有动过结果文件就没有结果；
-    /// 写回前核对工作区文件仍是准备时的内容，改过就拒绝覆盖，用户确认后才覆盖；写回后文件不再是冲突，按需留下备份。
+    /// 写回前核对工作区文件仍是准备时的内容，改过就拒绝覆盖，用户确认后才覆盖；写回后文件解除冲突，按需留下备份；
+    /// 删除与修改的冲突没有可合并的两侧，不交给合并工具；三方副本的版本标记插在扩展名之前。
     @Test("合并工具的文件与结果判定，写回前的核对、备份与确认后的覆盖")
     func mergeTool() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
+
         try await repository.initialize()
 
-        // 一次合并让三个文件都冲突，每个文件核对一个方面
-        try await diverge(repository, paths: ["src/冲突 [1].swift", "file.txt", "other.txt"])
+        // 一次合并让四个文件都冲突，每个文件核对一个方面
+        try await diverge(
+            repository,
+            paths: ["src/冲突 [1].swift", "file.txt", "other.txt"],
+            deleted: "gone.txt"
+        )
         _ = try await repository.runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
 
         try await mergeFiles(of: "src/冲突 [1].swift", in: repository)
         try await applyMergeResult(to: "file.txt", in: repository)
         try await overwriteMergeResult(of: "other.txt", in: repository)
-    }
 
-    /// 删除与修改的冲突没有可合并的两侧，不交给合并工具。
-    @Test("删除冲突不交给合并工具")
-    func deletionConflict() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-
-        try await commit(repository, ["file.txt": "base\n"], message: "base")
-        _ = try await repository.runner.run(["checkout", "-q", "-b", "side"])
-        try await commit(repository, ["file.txt": nil], message: "theirs")
-        _ = try await repository.runner.run(["checkout", "-q", "main"])
-        try await commit(repository, ["file.txt": "ours\n"], message: "ours")
-        _ = try await repository.runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
-
-        let entry = try #require(try await repository.runner.status().entries.first)
+        // 一侧删除、一侧修改的冲突
+        let deletion = try #require(try await repository.runner.status().entries.first { $0.path == "gone.txt" })
         let cache = RepositoryFileCache(runner: repository.runner)
         defer { cache.removeAll() }
 
         await #expect(throws: ConflictResolutionError.versionUnavailable) {
-            _ = try await ExternalToolFiles(cache: cache).prepareMerge(entry)
+            _ = try await ExternalToolFiles(cache: cache).prepareMerge(deletion)
         }
+
+        // 没有扩展名或以点开头的文件名，标记放在最后
+        #expect(ExternalToolFiles.name("dir/a.tar.gz", marker: "LOCAL") == "a.tar.LOCAL.gz")
+        #expect(ExternalToolFiles.name("Makefile", marker: "BASE") == "Makefile.BASE")
+        #expect(ExternalToolFiles.name(".gitignore", marker: "REMOTE") == ".gitignore.REMOTE")
     }
 
     /// 编辑器副本：没改不写回；改了且原文件没动过就写回；原文件在别处改过时拒绝，确认后覆盖。关闭仓库时副本随缓存删除。
@@ -172,13 +123,52 @@ struct ExternalToolFilesTests {
         cache.removeAll()
         #expect(!FileManager.default.fileExists(atPath: copy.file.path))
     }
+}
 
-    /// 版本标记插在扩展名之前；没有扩展名或以点开头的文件名，标记放在最后。
-    @Test("三方副本的文件名")
-    func markedNames() {
-        #expect(ExternalToolFiles.name("dir/a.tar.gz", marker: "LOCAL") == "a.tar.LOCAL.gz")
-        #expect(ExternalToolFiles.name("Makefile", marker: "BASE") == "Makefile.BASE")
-        #expect(ExternalToolFiles.name(".gitignore", marker: "REMOTE") == ".gitignore.REMOTE")
+// MARK: - Comparison Steps
+
+extension ExternalToolFilesTests {
+    /// 还没有提交时 HEAD 与暂存区一侧都是空文件；用单独的缓存，不影响之后的比较。
+    private func unbornHead(in repository: TemporaryRepository) async throws {
+        try write("new\n", to: "a.txt", in: repository)
+
+        let cache = RepositoryFileCache(runner: repository.runner)
+        defer { cache.removeAll() }
+
+        let files = ExternalToolFiles(cache: cache)
+        #expect(try await Data(contentsOf: files.file("a.txt", at: .head)).isEmpty)
+        #expect(try await Data(contentsOf: files.file("a.txt", at: .index)).isEmpty)
+    }
+
+    /// 目录对比的两侧按仓库内的相对路径放入文件，一侧没有的文件不放入；重命名的左侧按原路径读取。
+    private func compareDirectories(in repository: TemporaryRepository) async throws {
+        let parent = try await commit(repository, ["a/old.txt": "same\n", "gone.txt": "gone\n"], message: "parent")
+        _ = try await repository.runner.run(["mv", "a/old.txt", "a/new.txt"])
+        let child = try await commit(repository, ["gone.txt": nil, "b/added.txt": "added\n"], message: "child")
+
+        let cache = RepositoryFileCache(runner: repository.runner)
+        defer { cache.removeAll() }
+
+        let (left, right) = try await ExternalToolFiles(cache: cache).directories(
+            [
+                ComparedFile(path: "a/new.txt", originalPath: "a/old.txt"),
+                ComparedFile(path: "gone.txt"),
+                ComparedFile(path: "b/added.txt"),
+            ],
+            left: (.commit(parent), String(parent.prefix(7))),
+            right: (.commit(child), String(child.prefix(7)))
+        )
+
+        // 左侧是父提交，没有新增的文件
+        #expect(left.lastPathComponent == String(parent.prefix(7)))
+        #expect(try text(left.appending(path: "a/old.txt")) == "same\n")
+        #expect(try text(left.appending(path: "gone.txt")) == "gone\n")
+        #expect(!FileManager.default.fileExists(atPath: left.appending(path: "b/added.txt").path))
+
+        // 右侧是子提交，没有删除的文件
+        #expect(try text(right.appending(path: "a/new.txt")) == "same\n")
+        #expect(try text(right.appending(path: "b/added.txt")) == "added\n")
+        #expect(!FileManager.default.fileExists(atPath: right.appending(path: "gone.txt").path))
     }
 }
 
@@ -190,6 +180,7 @@ extension ExternalToolFilesTests {
         let entry = try #require(try await repository.runner.status().entries.first { $0.path == path })
         let cache = RepositoryFileCache(runner: repository.runner)
         defer { cache.removeAll() }
+
         let files = try await ExternalToolFiles(cache: cache).prepareMerge(entry)
 
         #expect(files.hasBase)
@@ -215,11 +206,12 @@ extension ExternalToolFilesTests {
         #expect(try files.result() == Data("merged\n".utf8))
     }
 
-    /// 写回前核对工作区文件仍是准备时的内容；改过就拒绝覆盖，确认后才覆盖；写回后文件不再是冲突，按需留下备份。
+    /// 写回前核对工作区文件仍是准备时的内容；改过就拒绝覆盖，确认后才覆盖；写回后文件解除冲突，按需留下备份。
     private func applyMergeResult(to path: String, in repository: TemporaryRepository) async throws {
         let entry = try #require(try await repository.runner.status().entries.first { $0.path == path })
         let cache = RepositoryFileCache(runner: repository.runner)
         defer { cache.removeAll() }
+
         let files = try await ExternalToolFiles(cache: cache).prepareMerge(entry)
         let service = WorkingCopyOperations(runner: repository.runner)
         let marked = try Data(contentsOf: repository.directory.appending(path: path))
@@ -252,6 +244,7 @@ extension ExternalToolFilesTests {
         let entry = try #require(try await repository.runner.status().entries.first { $0.path == path })
         let cache = RepositoryFileCache(runner: repository.runner)
         defer { cache.removeAll() }
+
         let files = try await ExternalToolFiles(cache: cache).prepareMerge(entry)
 
         try write("edited elsewhere\n", to: path, in: repository)
@@ -305,17 +298,27 @@ extension ExternalToolFilesTests {
         return try #require(try await repository.runner.status().branch.oid)
     }
 
-    /// 同一组文件在 main 与 side 上各改一次，合并 side 时每个文件都产生两侧都修改的冲突。
-    private func diverge(_ repository: TemporaryRepository, paths: [String]) async throws {
+    /// 同一组文件在 main 与 side 上各改一次，合并 side 时每个文件都产生两侧都修改的冲突；
+    /// 另一个文件在 side 上删除、在 main 上修改，产生删除与修改的冲突。
+    ///
+    /// - Parameters:
+    ///   - paths: 两侧都修改的文件。
+    ///   - deleted: 在 side 上删除的文件。
+    private func diverge(
+        _ repository: TemporaryRepository,
+        paths: [String],
+        deleted: String
+    ) async throws {
         // 每次提交把这组文件都写成同一份内容
         let contents = { (content: String) -> [String: String?] in
-            Dictionary(uniqueKeysWithValues: paths.map { ($0, content) })
+            Dictionary(uniqueKeysWithValues: (paths + [deleted]).map { ($0, content) })
         }
 
         try await commit(repository, contents("base\n"), message: "base")
 
         _ = try await repository.runner.run(["checkout", "-q", "-b", "side"])
-        try await commit(repository, contents("theirs\n"), message: "theirs")
+        let theirs = contents("theirs\n").merging([deleted: nil]) { _, new in new }
+        try await commit(repository, theirs, message: "theirs")
 
         _ = try await repository.runner.run(["checkout", "-q", "main"])
         try await commit(repository, contents("ours\n"), message: "ours")

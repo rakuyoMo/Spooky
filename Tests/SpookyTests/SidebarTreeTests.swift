@@ -9,7 +9,8 @@ import Testing
 /// 侧边栏按 “/” 折叠、过滤、数量限制与排序都只依赖引用名与时间，与界面无关。
 struct SidebarTreeTests {
     /// 多级前缀逐级成为文件夹，只有一个子项的前缀也是文件夹；文件夹出现在第一个子项的位置。
-    @Test("按斜杠折叠成文件夹")
+    /// 远端名带斜杠时，分支按最长前缀归属，显示名去掉远端名后再折叠；不同分组里的同名文件夹各有身份。
+    @Test("按斜杠折叠成文件夹，远端名含斜杠的远端分支")
     func grouping() {
         let entries = ["a", "feature/x", "feature/sub/y", "main", "solo/only"].map(entry)
         let nodes = SidebarRefTree.nodes(for: entries, grouped: true, foldersFirst: false, scope: "branches")
@@ -38,11 +39,8 @@ struct SidebarTreeTests {
             SidebarRefTree.folderIDs(in: nodes).map(\.value).sorted()
                 == ["branches|folder|feature", "branches|folder|feature/sub", "branches|folder|solo"]
         )
-    }
 
-    /// 远端名带斜杠时，分支按最长前缀归属，显示名去掉远端名后再折叠；不同分组里的同名文件夹各有身份。
-    @Test("远端名含斜杠的远端分支")
-    func remoteBranches() {
+        // 远端名含斜杠：按最长前缀归属
         let snapshot = ReferenceSnapshot(
             references: [
                 reference("refs/remotes/team/HEAD", symbolicTarget: "refs/remotes/team/main"),
@@ -71,9 +69,14 @@ struct SidebarTreeTests {
         )
         #expect(nested.map(\.name) == ["feature/x", "main"])
 
-        let nodes = SidebarRefTree.nodes(for: nested, grouped: true, foldersFirst: true, scope: "remote|team/origin")
-        #expect(nodes.first?.id.value == "remote|team/origin|folder|feature")
-        #expect(nodes.first?.children.first?.reference?.id == "refs/remotes/team/origin/feature/x")
+        let remoteNodes = SidebarRefTree.nodes(
+            for: nested,
+            grouped: true,
+            foldersFirst: true,
+            scope: "remote|team/origin"
+        )
+        #expect(remoteNodes.first?.id.value == "remote|team/origin|folder|feature")
+        #expect(remoteNodes.first?.children.first?.reference?.id == "refs/remotes/team/origin/feature/x")
     }
 
     /// 过滤按字符顺序匹配，不区分大小写与变音符号；空文字匹配一切。
@@ -93,7 +96,8 @@ struct SidebarTreeTests {
     }
 
     /// 数量限制按时间取最新的若干个，选中的引用总会留下，结果保持原有顺序；时间相同时按引用名决定。
-    @Test("只显示最新的若干个")
+    /// 标签按名称排序时数字按数值比较；数量限制先取最新的，再排序。
+    @Test("只显示最新的若干个，标签的排序")
     func newest() {
         let references = [
             reference("refs/remotes/origin/a", date: Date(timeIntervalSince1970: 100)),
@@ -127,12 +131,9 @@ struct SidebarTreeTests {
             including: []
         )
         #expect(filtered.map(\.name) == ["a"])
-    }
 
-    /// 标签按名称排序时数字按数值比较；数量限制先取最新的，再排序。
-    @Test("标签的排序与数量")
-    func tagOrder() {
-        let snapshot = ReferenceSnapshot(
+        // 标签按名称排序时数字按数值比较
+        let tags = ReferenceSnapshot(
             references: [
                 reference("refs/heads/main"),
                 reference("refs/tags/v1.10", date: Date(timeIntervalSince1970: 300)),
@@ -144,7 +145,7 @@ struct SidebarTreeTests {
         )
 
         let ascending = SidebarRefTree.tagEntries(
-            in: snapshot,
+            in: tags,
             filter: "",
             limit: 0,
             including: [],
@@ -152,23 +153,25 @@ struct SidebarTreeTests {
         )
         #expect(ascending.map(\.name) == ["release/v2", "v1.2", "v1.9", "v1.10"])
 
-        let newest = SidebarRefTree.tagEntries(
-            in: snapshot,
+        // 数量限制先取最新的，再排序
+        let newestTags = SidebarRefTree.tagEntries(
+            in: tags,
             filter: "",
             limit: 2,
             including: [],
             order: .nameDescending
         )
-        #expect(newest.map(\.name) == ["v1.10", "release/v2"])
+        #expect(newestTags.map(\.name) == ["v1.10", "release/v2"])
 
-        let filtered = SidebarRefTree.tagEntries(
-            in: snapshot,
+        // 过滤标签时同样不受数量限制
+        let filteredTags = SidebarRefTree.tagEntries(
+            in: tags,
             filter: "v19",
             limit: 1,
             including: [],
             order: .nameAscending
         )
-        #expect(filtered.map(\.name) == ["v1.9"])
+        #expect(filteredTags.map(\.name) == ["v1.9"])
     }
 }
 

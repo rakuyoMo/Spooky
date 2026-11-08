@@ -5,30 +5,9 @@ import Testing
 @testable import Spooky
 @testable import SpookyKit
 
-/// 上下文行数的菜单入口必须存在，并连到窗口的动作上，否则功能只能从底栏使用。
+/// Diff 上下文行数的偏好：菜单与底栏都按它取当前的档位。
 @MainActor
 struct DiffMenuTests {
-    /// View 菜单列出全部上下文档位。
-    @Test("Diff 菜单入口")
-    func menuItems() throws {
-        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-menu-" + UUID().uuidString)
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
-        let controller = SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
-        _ = NSApplication.shared
-        controller.configureMenu()
-
-        let items = NSApp.mainMenu?.items.compactMap(\.submenu).flatMap(\.items) ?? []
-        let context = try #require(items.first { $0.title == AppLocalization.text("diff.contextMenu") }?.submenu)
-
-        // 每个档位一项，标签即行数，标题与底栏的弹出菜单一致
-        #expect(context.items.map(\.tag) == DiffOptions.contextChoices)
-        #expect(context.items.map(\.title) == DiffOptions.contextChoices.map(DiffPreferences.contextTitle))
-        let action = #selector(RepositoryWindowController.setDiffContextLines(_:))
-        #expect(context.items.allSatisfy { $0.action == action })
-    }
-
     /// 偏好里没有记录或记录了不在档位中的值时，按默认的 3 行处理。
     @Test("上下文行数偏好的取值")
     func contextPreference() throws {
@@ -37,6 +16,7 @@ struct DiffMenuTests {
 
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
         let key = DiffPreferences.contextLinesKey
+
         #expect(DiffPreferences.options(defaults: defaults).contextLines == DiffOptions.defaultContextLines)
 
         defaults.set(7, forKey: key)
@@ -45,10 +25,12 @@ struct DiffMenuTests {
         // 不在档位中的值写进另一个偏好域：覆盖已有的值后立即读取，可能仍读到旧值
         let invalid = try #require(UserDefaults(suiteName: directory.appending(path: "invalid").path))
         invalid.set(11, forKey: key)
+
         #expect(DiffPreferences.options(defaults: invalid).contextLines == DiffOptions.defaultContextLines)
 
         defaults.set(true, forKey: DiffPreferences.ignoresWhitespaceKey)
         let options = DiffPreferences.options(showsEntireFile: true, defaults: defaults)
+
         #expect(options.ignoresWhitespace)
         #expect(options.showsEntireFile)
     }

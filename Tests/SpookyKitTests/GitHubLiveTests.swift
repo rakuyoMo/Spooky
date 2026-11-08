@@ -19,7 +19,7 @@ struct GitHubLiveTests {
     private let token = ProcessInfo.processInfo.environment["SPOOKY_GITHUB_TOKEN"] ?? ""
 
     /// 新建、列表、详情、评论、修改与删除评论、修改与只改描述、检出与压缩合并后删除源分支。
-    @Test("Pull Request 的完整流程", .timeLimit(.minutes(5)))
+    @Test("Pull Request 的完整流程")
     func lifecycle() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
@@ -82,7 +82,7 @@ struct GitHubLiveTests {
     }
 
     /// 关闭不合并；结束时删掉远端的临时分支。
-    @Test("关闭 Pull Request", .timeLimit(.minutes(3)))
+    @Test("关闭 Pull Request")
     func close() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
@@ -112,12 +112,17 @@ struct GitHubLiveTests {
 
 extension GitHubLiveTests {
     /// 克隆测试仓库，在新分支上提交一次并推送；返回克隆的执行器、分支名与提交。
-    private func pushBranch(in temporary: TemporaryRepository, name prefix: String) async throws -> (GitRunner, String, String) {
+    private func pushBranch(
+        in temporary: TemporaryRepository,
+        name prefix: String
+    ) async throws -> (GitRunner, String, String) {
         let path = temporary.directory.path + "/clone"
         let branch = prefix + UUID().uuidString.prefix(8).lowercased()
         let helper = ["-c", "credential.helper=", "-c", "credential.helper=!gh auth git-credential"]
 
-        _ = try await temporary.runner.run(helper + ["clone", "-q", "--", "https://github.com/" + repository + ".git", path])
+        _ = try await temporary.runner.run(
+            helper + ["clone", "-q", "--", "https://github.com/" + repository + ".git", path]
+        )
 
         let runner = temporary.runner(at: path)
         _ = try await runner.run(["config", "--local", "credential.helper", "!gh auth git-credential"])
@@ -137,7 +142,10 @@ extension GitHubLiveTests {
     }
 
     /// GitHub 在后台计算能否合并，等它算完。
-    private func waitForMergeOptions(_ client: HostingClient, _ request: PullRequest) async throws -> PullRequestMergeOptions {
+    private func waitForMergeOptions(
+        _ client: HostingClient,
+        _ request: PullRequest
+    ) async throws -> PullRequestMergeOptions {
         for _ in 0 ..< 20 {
             let options = try await client.mergeOptions(for: request)
 

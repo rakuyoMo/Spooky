@@ -39,59 +39,45 @@ struct AppIconRendererTests {
         (unlit: "AppIconDark", lit: "AppIconDarkConnected"),
     ]
 
-    /// 运行时图标的像素尺寸与系统图标相同：Dock 按同样的尺寸缩放，放大只发生在图标内部。
-    @Test("像素尺寸与系统图标相同")
-    func keepsSystemIconSize() throws {
-        let image = try Self.image(color: (0.5, 0.5, 0.5))
-
-        let output = try #require(
-            AppIconRenderer.runtimeIcon(
-                system: image,
-                bundled: image,
-                target: image
-            )
-        )
-
-        #expect(output.width == Self.side)
-        #expect(output.height == Self.side)
-    }
-
-    /// 内容以中心为准按 `dockScale` 放大：方块的中心不动，左边缘向外移出原来的位置。
-    @Test("内容以中心为准放大")
+    /// 内容以中心为准按 `dockScale` 放大：方块的中心不动，左边缘向外移出原来的位置；
+    /// 像素尺寸与系统图标相同，Dock 按同样的尺寸缩放，放大只发生在图标内部。
+    @Test("内容以中心为准放大，像素尺寸与系统图标相同")
     func scalesAroundCenter() throws {
         let system = try Self.squareImage(color: (1, 1, 1), halfSide: Self.squareHalfSide)
         let empty = try Self.squareImage(color: (0, 0, 0), halfSide: 0)
         let input = try Self.pixels(of: system)
         let center = Self.side / 2
 
-        let output = try Self.pixels(
-            of: #require(
-                AppIconRenderer.runtimeIcon(
-                    system: system,
-                    bundled: empty,
-                    target: empty
-                )
+        let rendered = try #require(
+            AppIconRenderer.runtimeIcon(
+                system: system,
+                bundled: empty,
+                target: empty
             )
         )
 
+        #expect(rendered.width == Self.side && rendered.height == Self.side)
+
         // 放大前方块从 80 开始，放大后从 76 开始：78 列由透明变成不透明，74 列仍然透明。
+        let output = try Self.pixels(of: rendered)
+
         #expect(input[Self.offset(x: 78, y: center) + 3] == 0)
         #expect(output[Self.offset(x: 78, y: center) + 3] > 1 - Self.tolerance)
         #expect(output[Self.offset(x: 74, y: center) + 3] < Self.tolerance)
         #expect(output[Self.offset(x: center, y: center) + 3] > 1 - Self.tolerance)
     }
 
-    /// 系统图标带着高于白色的亮度余量：白色仍是 1，比白色还亮的亮边原样保留，不被整体压暗。
-    @Test("系统图标的白色不被压暗，亮边保留")
-    func keepsSystemBrightness() throws {
-        let system = try Self.highDynamicRangeImage()
-        let black = try Self.image(color: (0, 0, 0))
+    /// 系统图标带着高于白色的亮度余量：白色仍是 1，比白色还亮的亮边原样保留，不被整体压暗；
+    /// 目标图标与包内图标不同的地方叠上两者的差别，相同的地方保持系统图标，比白色还亮的结果不截断。
+    @Test("保留系统图标的亮度，只在目标与包内图标不同的地方改动")
+    func keepsSystemBrightnessAndAddsTargetDifference() throws {
         let center = Self.side / 2
+        let black = try Self.image(color: (0, 0, 0))
 
-        let output = try Self.pixels(
+        let bright = try Self.pixels(
             of: #require(
                 AppIconRenderer.runtimeIcon(
-                    system: system,
+                    system: Self.highDynamicRangeImage(),
                     bundled: black,
                     target: black
                 )
@@ -103,31 +89,23 @@ struct AppIconRendererTests {
         let edge = Self.offset(x: center, y: center)
 
         for channel in 0 ..< 3 {
-            #expect(abs(output[white + channel] - 1) < Self.tolerance)
-            #expect(abs(output[edge + channel] - Self.edgeBrightness) < Self.tolerance)
+            #expect(abs(bright[white + channel] - 1) < Self.tolerance)
+            #expect(abs(bright[edge + channel] - Self.edgeBrightness) < Self.tolerance)
         }
-    }
 
-    /// 目标图标与包内图标不同的地方叠上两者的差别，相同的地方保持系统图标，比白色还亮的结果不截断。
-    @Test("只在目标与包内图标不同的地方改动")
-    func addsTargetDifference() throws {
-        let system = try Self.image(color: (0.5, 0.5, 0.5))
-        let bundled = try Self.image(color: (0, 0, 0))
-        let target = try Self.image(color: (0, 0, 0), square: (1, 0, 0), squareHalfSide: 100)
+        // 灰色的系统图标上叠目标的差别：中间的方块里红色加上 1，方块外与系统图标相同。
         let gray = Float(128) / 255
-        let center = Self.side / 2
 
         let output = try Self.pixels(
             of: #require(
                 AppIconRenderer.runtimeIcon(
-                    system: system,
-                    bundled: bundled,
-                    target: target
+                    system: Self.image(color: (0.5, 0.5, 0.5)),
+                    bundled: black,
+                    target: Self.image(color: (0, 0, 0), square: (1, 0, 0), squareHalfSide: 100)
                 )
             )
         )
 
-        // 中间的方块里红色加上 1，方块外与系统图标相同。
         let changed = Self.offset(x: center, y: center)
         let unchanged = Self.offset(x: center / 4, y: center / 4)
 
@@ -227,6 +205,7 @@ extension AppIconRendererTests {
         context.fill(CGRect(x: 0, y: center - band, width: side, height: band * 2))
 
         let image = try #require(context.makeImage())
+
         return try #require(CGImageCreateCopyWithContentHeadroom(headroom, image))
     }
 
@@ -283,6 +262,7 @@ extension AppIconRendererTests {
         let icon = try #require(NSImage(contentsOf: iconsURL.appending(path: "\(name).icns")))
 
         var rect = CGRect(x: 0, y: 0, width: 1024, height: 1024)
+
         return try #require(icon.cgImage(forProposedRect: &rect, context: nil, hints: nil))
     }
 

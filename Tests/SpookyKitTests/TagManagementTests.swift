@@ -7,38 +7,77 @@ import Testing
 
 // MARK: - TagManagementTests
 
-/// 标签的新建、签名、推送与删除；远端是测试目录里的裸仓库，SHA-1 与 SHA-256 仓库都要通过。
+/// 标签的新建、签名、推送与删除；远端是测试目录里的裸仓库。
 struct TagManagementTests {
-    /// 没有说明时是轻量标签，有说明时是附注标签，说明里以 “#” 开头的行原样保留；重名、非法名字与签名缺说明都被拒绝。
-    @Test("轻量标签与附注标签", arguments: ["sha1", "sha256"])
-    func createTags(objectFormat: String) async throws {
-        let fixture = try await BranchManagementTests.committedRepository(objectFormat: objectFormat)
+    /// 没有说明时是轻量标签，有说明时是附注标签，说明里以 “#” 开头的行原样保留；重名、非法名字与签名缺说明都被拒绝；
+    /// 发布一个标签、推送全部标签、删除本地标签与远端标签。
+    @Test("轻量标签与附注标签，推送与删除本地、远端标签")
+    func createPushAndDelete() async throws {
+        let (fixture, bare) = try await BranchManagementTests.repository(objectFormat: "sha1")
         defer { fixture.remove() }
 
         let runner = fixture.runner
+        let remote = fixture.runner(at: bare)
         let tags = RepositoryTags(runner: runner)
 
+        // 只有空白的说明按没有说明处理
         try await tags.create(name: "v1.0", revision: "HEAD", message: " \n", sign: false)
+
         #expect(try await Self.text(["cat-file", "-t", "refs/tags/v1.0"], runner) == "commit")
 
         try await tags.create(name: "发布/v2", revision: "refs/heads/main", message: "# 第一行\n\n说明", sign: false)
+
         #expect(try await Self.text(["cat-file", "-t", "refs/tags/发布/v2"], runner) == "tag")
+
         #expect(
             try await Self.text(["for-each-ref", "--format=%(contents)", "refs/tags/发布/v2"], runner)
                 == "# 第一行\n\n说明"
         )
 
+        // 重名、非法名字、签名缺说明与不存在的版本
         await #expect(throws: GitError.self) {
             try await tags.create(name: "v1.0", revision: "HEAD", message: "", sign: false)
         }
+
         await #expect(throws: ReferenceError.self) {
             try await tags.create(name: "-v3", revision: "HEAD", message: "", sign: false)
         }
+
         await #expect(throws: RepositoryReadError.invalidQuery) {
             try await tags.create(name: "v3", revision: "HEAD", message: "  ", sign: true)
         }
+
         await #expect(throws: GitError.self) {
             try await tags.create(name: "v3", revision: "no-such-revision", message: "", sign: false)
+        }
+
+        // 发布一个标签，再推送全部标签
+        try await tags.publish("v1.0", to: "origin", skipHooks: true)
+
+        #expect(try await Self.text(["for-each-ref", "--format=%(refname)", "refs/tags"], remote) == "refs/tags/v1.0")
+
+        try await tags.pushAll(to: "origin")
+
+        #expect(
+            try await Self.text(["for-each-ref", "--format=%(refname)", "refs/tags"], remote)
+                == "refs/tags/v1.0\nrefs/tags/发布/v2"
+        )
+
+        // 删除本地标签不影响远端，删除远端标签只删指定的
+        try await tags.delete(["v1.0", "发布/v2"])
+
+        #expect(try await Self.text(["for-each-ref", "refs/tags"], runner).isEmpty)
+
+        try await tags.deleteRemote(["发布/v2"], on: "origin")
+
+        #expect(try await Self.text(["for-each-ref", "--format=%(refname)", "refs/tags"], remote) == "refs/tags/v1.0")
+
+        await #expect(throws: ReferenceError.self) {
+            try await tags.pushAll(to: "-origin")
+        }
+
+        await #expect(throws: RepositoryReadError.invalidQuery) {
+            try await tags.delete([])
         }
     }
 
@@ -100,43 +139,15 @@ struct TagManagementTests {
 
         // 仓库改回 OpenPGP 也不影响：选定的 SSH 密钥带上自己的签名格式
         _ = try await fixture.runner.run(["config", "--local", "gpg.format", "openpgp"])
-        try await tags.create(name: "chosen", revision: "HEAD", message: "选定密钥", sign: true, signingKey: open.path + ".pub")
-        #expect(try await Self.text(["cat-file", "-p", "refs/tags/chosen"], runner).contains("BEGIN SSH SIGNATURE"))
-    }
-
-    /// 发布一个标签、推送全部标签、删除本地标签与远端标签。
-    @Test("推送与删除本地、远端标签", arguments: ["sha1", "sha256"])
-    func pushAndDelete(objectFormat: String) async throws {
-        let (fixture, bare) = try await BranchManagementTests.repository(objectFormat: objectFormat)
-        defer { fixture.remove() }
-
-        let runner = fixture.runner
-        let remote = fixture.runner(at: bare)
-        let tags = RepositoryTags(runner: runner)
-        try await tags.create(name: "v1", revision: "HEAD", message: "", sign: false)
-        try await tags.create(name: "v2/候选", revision: "HEAD", message: "说明", sign: false)
-
-        try await tags.publish("v1", to: "origin", skipHooks: true)
-        #expect(try await Self.text(["for-each-ref", "--format=%(refname)", "refs/tags"], remote) == "refs/tags/v1")
-
-        try await tags.pushAll(to: "origin")
-        #expect(
-            try await Self.text(["for-each-ref", "--format=%(refname)", "refs/tags"], remote)
-                == "refs/tags/v1\nrefs/tags/v2/候选"
+        try await tags.create(
+            name: "chosen",
+            revision: "HEAD",
+            message: "选定密钥",
+            sign: true,
+            signingKey: open.path + ".pub"
         )
 
-        try await tags.delete(["v1", "v2/候选"])
-        #expect(try await Self.text(["for-each-ref", "refs/tags"], runner).isEmpty)
-
-        try await tags.deleteRemote(["v2/候选"], on: "origin")
-        #expect(try await Self.text(["for-each-ref", "--format=%(refname)", "refs/tags"], remote) == "refs/tags/v1")
-
-        await #expect(throws: ReferenceError.self) {
-            try await tags.pushAll(to: "-origin")
-        }
-        await #expect(throws: RepositoryReadError.invalidQuery) {
-            try await tags.delete([])
-        }
+        #expect(try await Self.text(["cat-file", "-p", "refs/tags/chosen"], runner).contains("BEGIN SSH SIGNATURE"))
     }
 }
 

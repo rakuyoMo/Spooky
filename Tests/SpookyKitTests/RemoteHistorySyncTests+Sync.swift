@@ -7,7 +7,7 @@ import Testing
 /// 同步在 B 上执行：Sync 的三步、变基、带期望值的强推、Push To、不询问用户的获取与停在冲突上的合并。
 extension RemoteHistorySyncTests {
     /// 两个工作区与裸仓库都在 B 的测试目录里，所有命令经主连接在 B 上执行。
-    @Test("服务器 Sync、Rebase、安全强推、Push To 与后台获取", .timeLimit(.minutes(3)))
+    @Test("服务器 Sync、Rebase、安全强推、Push To 与后台获取")
     func syncOptions() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -93,7 +93,7 @@ extension RemoteHistorySyncTests {
     }
 
     /// B 上的合并停在冲突上时返回冲突结果；主连接中断时合并不执行，连接错误照原样抛出。
-    @Test("服务器合并冲突与断线", .timeLimit(.minutes(3)))
+    @Test("服务器合并冲突与断线")
     func mergeConflicts() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

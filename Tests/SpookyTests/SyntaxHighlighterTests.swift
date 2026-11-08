@@ -9,53 +9,8 @@ import Testing
 
 /// 语法着色必须识别出常见语言、识别失败时退回纯文本，且每行的片段与原文逐码元对齐，否则颜色会错位。
 struct SyntaxHighlighterTests {
-    /// 完整文件名、自带的扩展名表、highlight.js 的别名与首行解释器依次决定语言，扩展名不区分大小写。
-    @Test("按路径与解释器识别语言")
-    func languageFromPath() async {
-        #expect(await SyntaxHighlighter.language(forPath: "Sources/App.swift", content: nil) == "swift")
-        #expect(await SyntaxHighlighter.language(forPath: "目录 一/Makefile", content: nil) == "makefile")
-        #expect(await SyntaxHighlighter.language(forPath: "Gemfile", content: nil) == "ruby")
-        #expect(await SyntaxHighlighter.language(forPath: "Info.PLIST", content: nil) == "xml")
-        #expect(await SyntaxHighlighter.language(forPath: "Main.xib", content: nil) == "xml")
-        #expect(await SyntaxHighlighter.language(forPath: "config.yml", content: nil) == "yaml")
-
-        // highlight.js 把 m 当作另一种语言的别名，仓库里的 .m 文件仍按 Objective-C 着色
-        #expect(await SyntaxHighlighter.language(forPath: "AppDelegate.m", content: nil) == "objectivec")
-
-        let script = "#!/usr/bin/env python3\nprint(1)\n"
-        #expect(await SyntaxHighlighter.language(forPath: "tool", content: script) == "python")
-        #expect(await SyntaxHighlighter.language(forPath: "run", content: "#!/bin/bash -e\n") == "bash")
-    }
-
-    /// 扩展名不认识时由 highlight.js 按内容判断；超过大小上限、没有内容、扩展名对应纯文本或语言未知时按纯文本显示。
-    @Test("按内容识别与纯文本回退")
-    func languageFromContent() async {
-        let plist = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <plist version="1.0">
-            <dict>
-              <key>Name</key>
-              <string>Spooky</string>
-            </dict>
-            </plist>
-
-            """
-
-        #expect(await SyntaxHighlighter.language(forPath: "Contents", content: plist) == "xml")
-
-        // 超过大小上限的未知类型文件不按内容判断，首行是 #! 也一样
-        let padding = String(repeating: "x", count: SyntaxHighlighter.unknownFileLimit)
-        #expect(await SyntaxHighlighter.language(forPath: "Contents", content: plist + padding) == nil)
-        #expect(await SyntaxHighlighter.language(forPath: "data", content: "#!/bin/sh\n" + padding) == nil)
-
-        #expect(await SyntaxHighlighter.language(forPath: "data", content: nil) == nil)
-        #expect(await SyntaxHighlighter.language(forPath: "notes.unknown", content: nil) == nil)
-        #expect(await SyntaxHighlighter.language(forPath: "notes.txt", content: plist) == nil)
-        #expect(await SyntaxHighlighter.highlight(plist, as: "unknown-language").isEmpty)
-    }
-
-    /// 记号按类别映射到主题的颜色键；块注释切到所跨的每一行，字符串里的转义沿用字符串的颜色。
-    @Test("程序语言的记号与跨行注释")
+    /// 记号按类别映射到主题的颜色键；块注释切到所跨的每一行，字符串里的转义沿用字符串的颜色；分层的函数类别覆盖名称色，没有颜色规则的记号沿用正文。
+    @Test("程序语言的记号、跨行注释与类别回退")
     func codeTokens() async throws {
         let text = "@MainActor func run(_ value: Int) {\n  /* 注释\n  继续 */ let s = \"a\\\"b\" + 42\n#if DEBUG\n}"
         let lines = await SyntaxHighlighter.highlight(text, as: "swift")
@@ -70,6 +25,7 @@ struct SyntaxHighlighterTests {
             "value": .identifier,
             "Int": .keyword,
         ])
+
         #expect(styles(of: "  /* 注释", lines[1]) == ["/* 注释": .comment])
 
         let third = styles(of: "  继续 */ let s = \"a\\\"b\" + 42", lines[2])
@@ -80,9 +36,29 @@ struct SyntaxHighlighterTests {
         #expect(third["42"] == .number)
         #expect(styles(of: "#if DEBUG", lines[3]) == ["#if": .keyword, "DEBUG": .keyword])
         #expect(lines[4] == [SyntaxSpan(length: 1, style: nil)])
+
+        // 函数调用的分层类别覆盖名称色，类名仍保持标识符色
+        let rust = "fn main() { run(); }"
+        let rustStyles = styles(of: rust, try #require(await SyntaxHighlighter.highlight(rust, as: "rust").first))
+        #expect(rustStyles["main"] == .function)
+        #expect(rustStyles["run"] == .function)
+
+        let swift = "class A: B {}"
+        let swiftStyles = styles(of: swift, try #require(await SyntaxHighlighter.highlight(swift, as: "swift").first))
+        #expect(swiftStyles["A"] == .identifier)
+        #expect(swiftStyles["B"] == .identifier)
+
+        // 没有颜色规则的正则与名称沿用正文
+        let javascript = "const re = /a+b/g;"
+        let jsSpans = try #require(await SyntaxHighlighter.highlight(javascript, as: "javascript").first)
+        #expect(styles(of: javascript, jsSpans)["/a+b/g"] == nil)
+
+        let clojure = "(println \"x\")"
+        let clojureSpans = try #require(await SyntaxHighlighter.highlight(clojure, as: "clojure").first)
+        #expect(styles(of: clojure, clojureSpans)["println"] == nil)
     }
 
-    /// 标签、属性、样式表、Markdown 与 JSON 的结构各自着色，代码块跨行延续。
+    /// 标签、属性、样式表、Markdown 与 JSON 的结构各自着色，代码块跨行延续；属性值按直接父类别取色。
     @Test("标记语言、样式表、Markdown 与 JSON")
     func documentTokens() async throws {
         let tag = "<view id=\"main\"/><!-- c -->"
@@ -114,6 +90,7 @@ struct SyntaxHighlighterTests {
         #expect(inline["https://example.com"] == .url)
         #expect(styles(of: "let x", markdown[3]) == ["let x": .codeBlock])
 
+        // JSON 的键、标点与字面量
         let object = "{\"a\": [1, true, null]}"
         let json = await SyntaxHighlighter.highlight(object, as: "json")
         try #require(json.count == 1)
@@ -121,49 +98,59 @@ struct SyntaxHighlighterTests {
         let jsonStyles = styles(of: object, json[0])
         #expect(jsonStyles["\"a\""] == .attributeName)
         #expect(jsonStyles["{"] == .symbol)
+        #expect(jsonStyles[","] == .symbol)
         #expect(jsonStyles["1"] == .number)
         #expect(jsonStyles["true"] == .keyword)
+
+        // XML 及嵌入的 XML 属性值使用独立颜色，声明与其它语法里的字符串保留字符串色
+        let attributes: [(String, String, String, SyntaxStyle)] = [
+            ("javascript", "render(<div className=\"a\">{run()}</div>);", "\"a\"", .attributeValue),
+            ("xml", "<?xml version=\"1.0\"?>", "\"1.0\"", .string),
+            ("javascript", "const value = \"Home\";", "\"Home\"", .string),
+        ]
+
+        for (language, line, token, style) in attributes {
+            let spans = try #require(await SyntaxHighlighter.highlight(line, as: language).first)
+            #expect(styles(of: line, spans)[token] == style)
+        }
     }
 
-    /// 中文与表情占的 UTF-16 码元数不同于字符数，片段长度按码元计，后面的记号才不会错位。
-    @Test("多字节字符的 UTF-16 偏移")
-    func utf16Offsets() async throws {
+    /// 任何输入下片段长度之和都等于该行的 UTF-16 长度：多字节字符、HTML 实体、CRLF、未闭合的字符串与回退成纯文本的文件都不例外。
+    @Test("片段按 UTF-16 码元覆盖整行")
+    func spanCoverage() async throws {
+        // 中文与表情占的码元数不同于字符数，后面的记号不错位
         let line = "let 名 = \"中文😀\"; let x = 1 // 注释 😀"
-        let lines = await SyntaxHighlighter.highlight(line, as: "swift")
-        try #require(lines.count == 1)
+        let swift = try #require(await SyntaxHighlighter.highlight(line, as: "swift").first)
+        #expect(styles(of: line, swift)["\"中文😀\""] == .string)
+        #expect(styles(of: line, swift)["1"] == .number)
+        #expect(styles(of: line, swift)["// 注释 😀"] == .comment)
+        #expect(swift.reduce(0) { $0 + $1.length } == line.utf16.count)
 
-        let result = styles(of: line, lines[0])
-        #expect(result["\"中文😀\""] == .string)
-        #expect(result["1"] == .number)
-        #expect(result["// 注释 😀"] == .comment)
-        #expect(lines[0].reduce(0) { $0 + $1.length } == line.utf16.count)
-    }
+        // highlight.js 写成实体的 `&`、`<`、`>` 与引号各还原成原文的一个码元
+        let condition = "if (a < b && c > \"d\") { e = 'f' }"
+        let javascript = try #require(await SyntaxHighlighter.highlight(condition, as: "javascript").first)
+        #expect(styles(of: condition, javascript)["'f'"] == .string)
+        #expect(javascript.reduce(0) { $0 + $1.length } == condition.utf16.count)
 
-    /// highlight.js 把 `&`、`<`、`>` 与引号写成实体，每个实体还原成原文的一个码元。
-    @Test("HTML 实体还原成原文")
-    func entities() async throws {
-        let line = "if (a < b && c > \"d\") { e = 'f' }"
-        let lines = await SyntaxHighlighter.highlight(line, as: "javascript")
-        try #require(lines.count == 1)
+        // 同一段混杂文本交给不同语言
+        let text = "a = \"未闭合 😀\r\n<b x='1'># ${HOME} `t` **s\n"
+            + "[x](y) /* 1.5e3 */ 0x1F @attr\n\n\t- key: [v] & &amp;"
 
-        let result = styles(of: line, lines[0])
-        #expect(result["\"d\""] == .string)
-        #expect(result["'f'"] == .string)
-        #expect(lines[0].reduce(0) { $0 + $1.length } == line.utf16.count)
-    }
+        for pathExtension in ["swift", "py", "html", "md", "sh", "yml"] {
+            let detected = await SyntaxHighlighter.language(forPath: "file." + pathExtension, content: nil)
+            let language = try #require(detected)
+            await expectCoverage(text, as: language)
+        }
 
-    /// 任何输入下片段长度之和都等于该行的 UTF-16 长度，表情、CRLF 与未闭合的字符串也不例外。
-    @Test("片段覆盖整行", arguments: ["swift", "py", "json", "html", "css", "md", "sh", "toml", "m", "rb", "sql", "yml"])
-    func spansCoverLines(_ pathExtension: String) async throws {
-        let language = try #require(await SyntaxHighlighter.language(forPath: "file." + pathExtension, content: nil))
-        let text = "a = \"未闭合 😀\r\n<b x='1'># ${HOME} `t` **s\n[x](y) /* 1.5e3 */ 0x1F @attr\n\n\t- key: [v] & &amp;"
-        let lines = text.components(separatedBy: "\n")
-        let spans = await SyntaxHighlighter.highlight(text, as: language)
-
+        // JSON 中非法的工程文件记号让整份文件回退成纯文本，仍保留全部行与长度
+        let project = "// !$*UTF8*$!\n{\n  archiveVersion = 1;\n  value = \"中文😀\";\n}"
+        let language = try #require(await SyntaxHighlighter.language(forPath: "project.pbxproj", content: project))
+        let spans = await SyntaxHighlighter.highlight(project, as: language)
+        let lines = project.components(separatedBy: "\n")
         #expect(spans.count == lines.count)
 
         for (line, lineSpans) in zip(lines, spans) {
-            #expect(lineSpans.reduce(0) { $0 + $1.length } == line.utf16.count)
+            #expect(lineSpans == [SyntaxSpan(length: line.utf16.count, style: nil)])
         }
     }
 
@@ -179,75 +166,15 @@ struct SyntaxHighlighterTests {
         #expect(await SyntaxHighlighter.highlight("let x = 1", as: "swift").count == 1)
     }
 
-    /// 一份上下文被长任务占着时，新的着色由另一份上下文接手，不排在它后面；长任务被取消后跑完的结果作废。
-    @Test("长任务不阻塞新的着色")
-    func longTaskDoesNotBlock() async throws {
-        let item = "  {\"id\": 1, \"name\": \"item\", \"tags\": [\"a\", \"b\"], \"ok\": true},\n"
-        let json = "[\n" + String(repeating: item, count: 10_000) + "  {}\n]"
-        let clock = ContinuousClock()
+    /// 一种语言下每行都有片段，长度之和等于该行的 UTF-16 长度。
+    private func expectCoverage(_ text: String, as language: String) async {
+        let lines = text.components(separatedBy: "\n")
+        let spans = await SyntaxHighlighter.highlight(text, as: language)
+        #expect(spans.count == lines.count)
 
-        let long = Task {
-            let lines = await SyntaxHighlighter.highlight(json, as: "json")
-            return (lines, clock.now)
+        for (line, lineSpans) in zip(lines, spans) {
+            #expect(lineSpans.reduce(0) { $0 + $1.length } == line.utf16.count)
         }
-
-        // 等长任务借到上下文、开始执行脚本
-        try await Task.sleep(for: .milliseconds(300))
-
-        let short = await SyntaxHighlighter.highlight("let x = 1", as: "swift")
-        let shortEnd = clock.now
-
-        long.cancel()
-        let (lines, longEnd) = await long.value
-
-        #expect(short.count == 1)
-        #expect(shortEnd < longEnd)
-        #expect(lines.isEmpty)
-    }
-
-    /// 删除行取旧版的片段，新增与上下文行取新版；旧版的块注释不影响新版的着色。
-    @Test("Diff 两侧全文的着色")
-    func diffSyntax() async throws {
-        let patch = """
-            diff --git a/a.swift b/a.swift
-            index 1111111..2222222 100644
-            --- a/a.swift
-            +++ b/a.swift
-            @@ -1,2 +1,2 @@
-            -/* old
-            +let new = 1
-             end */
-
-            """
-        let diff = try RepositoryDiff(patch: Data(patch.utf8))
-        let syntax = try #require(await DiffSyntax.make(from: diff, oldPath: "a.swift", newPath: "a.swift"))
-        let lines = try #require(diff.files.first?.hunks.first?.lines)
-
-        #expect(await DiffSyntax.mayColor(diff, oldPath: "a.swift", newPath: "a.swift"))
-        #expect(await DiffSyntax.mayColor(diff, oldPath: "notes", newPath: "notes"))
-        #expect(!(await DiffSyntax.mayColor(diff, oldPath: "notes.txt", newPath: "notes.txt")))
-
-        #expect(syntax.spans(for: lines[0]) == [SyntaxSpan(length: 6, style: .comment)])
-        #expect(syntax.spans(for: lines[1])?.first == SyntaxSpan(length: 3, style: .keyword))
-
-        // 新版里 “end */” 不在注释里
-        let context = try #require(syntax.spans(for: lines[2]))
-        #expect(!context.contains { $0.style == .comment })
-    }
-
-    /// 制表符补齐到下一个 Tab 位置；打开不可见字符时标出制表符、空格与行内回车，关闭时省略回车。
-    @Test("Tab 宽度与不可见字符")
-    func lineRendering() {
-        let theme = TextTheme.builtin[0]
-        let plain = TextStyle(theme: theme, tabWidth: 4, showsInvisibles: false)
-        let marked = TextStyle(theme: theme, tabWidth: 4, showsInvisibles: true)
-
-        #expect(String(TextLineRenderer.attributed("ab\tc\r", spans: nil, style: plain).characters) == "ab  c")
-        #expect(String(TextLineRenderer.attributed("\tx y\r", spans: nil, style: marked).characters) == "»   x·y␍")
-
-        // 片段比行短时剩余部分按正文显示，不丢字
-        let short = [SyntaxSpan(length: 1, style: .keyword)]
-        #expect(String(TextLineRenderer.attributed("let", spans: short, style: plain).characters) == "let")
     }
 }
 

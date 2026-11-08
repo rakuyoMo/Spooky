@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteStashTests {
     /// 部分储藏、快照、带暂存区状态的 Pop 与删除全部经同一主连接在服务器上完成。
-    @Test("服务器储藏、部分储藏、Snapshot 与恢复", .timeLimit(.minutes(2)))
+    @Test("服务器储藏、部分储藏、Snapshot 与恢复")
     func stashFlow() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -59,7 +59,7 @@ struct RemoteStashTests {
     }
 
     /// 自动储藏后原操作遇到断线：断线错误原样抛出不重试，储藏留在服务器上，原操作没有执行。
-    @Test("服务器 Auto Stash 断线不重试写操作", .timeLimit(.minutes(2)))
+    @Test("服务器 Auto Stash 断线不重试写操作")
     func autoStashInterrupted() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

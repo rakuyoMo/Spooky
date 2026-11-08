@@ -39,15 +39,17 @@ struct HistoryListTests {
         #expect(settings.order == .date)
         #expect(settings.grouping == .week)
 
-        let query = settings.query(conditions: [HistorySearchCondition(kind: .author, text: "alice")])
+        let conditions = [HistorySearchCondition(kind: .author, text: "alice")]
+        let query = settings.query(conditions: conditions)
         #expect(query.firstParentOnly)
         #expect(query.isSearching)
-        #expect(query.hasSameResults(as: settings.query(conditions: [HistorySearchCondition(kind: .author, text: "alice")])))
+        #expect(query.hasSameResults(as: settings.query(conditions: conditions)))
         #expect(!query.hasSameResults(as: settings.query(conditions: [])))
     }
 
-    /// 按天、周、月分组时每组前插入一行标题，表格行号经映射找到提交，标题行不对应提交。
-    @Test("日期分组行与行到提交的映射")
+    /// 按天、周、月分组时每组前插入一行标题，表格行号经映射找到提交，标题行不对应提交；
+    /// 绝对格式写出日期与时间，相对格式写出相对现在的时间，按天分组的标题跟随格式。
+    @Test("日期分组的行、标题与提交日期格式")
     func groupedRows() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: "UTC"))
@@ -66,7 +68,8 @@ struct HistoryListTests {
         let months = HistoryRow.rows(for: commits, grouping: .month, calendar: calendar)
         #expect(months.map { $0.commit?.subject ?? "-" } == ["-", "d", "-", "c", "b", "a"])
 
-        #expect(HistoryRow.rows(for: commits, grouping: .ungrouped, calendar: calendar).map(\.id) == commits.map(\.id))
+        let ungrouped = HistoryRow.rows(for: commits, grouping: .ungrouped, calendar: calendar)
+        #expect(ungrouped.map(\.id) == commits.map(\.id))
 
         // 行号映射跳过标题行
         let history = RepositoryHistoryState()
@@ -77,6 +80,40 @@ struct HistoryListTests {
         #expect(history.commit(atRow: 99) == nil)
         #expect(history.row(of: commits[3].id) == 6)
         #expect(history.row(of: String(repeating: "f", count: 40)) == nil)
+
+        // 提交日期：绝对格式写出日期与时间，相对格式写出相对现在的时间
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let earlier = now.addingTimeInterval(-3 * 3600)
+        let absolute = CommitDateFormat.absolute.string(from: earlier, now: now)
+        let relative = CommitDateFormat.relative.string(from: earlier, now: now)
+
+        #expect(absolute == earlier.formatted(date: .abbreviated, time: .shortened))
+        #expect(relative.contains("3"))
+        #expect(relative != absolute)
+
+        // 按天分组的标题跟随日期格式
+        let local = Calendar.current
+        let today = local.startOfDay(for: now)
+        let yesterday = try #require(local.date(byAdding: .day, value: -1, to: today))
+
+        #expect(
+            CommitDateFormat.absolute.dayTitle(yesterday, now: now)
+                == yesterday.formatted(date: .long, time: .omitted)
+        )
+
+        #expect(
+            CommitDateFormat.relative.dayTitle(yesterday, now: now)
+                != CommitDateFormat.relative.dayTitle(today, now: now)
+        )
+
+        // 按周的标题写出全年第几周，按月的标题不随日期格式变化
+        let week = HistoryGrouping.week.title(of: yesterday, format: .relative, now: now, calendar: local)
+        #expect(week.contains(String(local.component(.weekOfYear, from: yesterday))))
+
+        #expect(
+            HistoryGrouping.month.title(of: yesterday, format: .relative, now: now, calendar: local)
+                == HistoryGrouping.month.title(of: yesterday, format: .absolute, now: now, calendar: local)
+        )
     }
 
     /// 文件名连续命中的排在前面，其次是文件名按顺序命中、路径命中；不区分大小写。
@@ -100,14 +137,18 @@ struct HistoryListTests {
         #expect(HistorySearchSuggestions.fileMatches("zzz", in: paths).isEmpty)
     }
 
-    /// 读到头像时显示图片；没有头像或读取失败时记下，之后不再请求。
-    @Test("作者头像的读取、缓存与回退")
+    /// 按邮箱读取的头像：读到时显示图片，没有头像或读取失败时记下、之后不再请求；
+    /// 托管用户的头像按服务给的地址原样请求，缓存与没有头像的记忆相同。
+    @Test("作者头像按邮箱与按地址的读取、缓存与回退")
     func avatars() async throws {
         let store = AvatarStore()
-        let requests = RequestCounter()
-        let image = try #require(NSImage(size: NSSize(width: 2, height: 2), flipped: false) { _ in true }.tiffRepresentation)
+        let image = try #require(
+            NSImage(size: NSSize(width: 2, height: 2), flipped: false) { _ in true }.tiffRepresentation
+        )
 
-        // 只有第一次请求的邮箱有头像
+        // 按邮箱读取：只有第一次请求的邮箱有头像
+        let requests = RequestCounter()
+
         store.fetch = { url in
             await requests.record(url)
             let count = await requests.count
@@ -125,65 +166,25 @@ struct HistoryListTests {
         #expect(await store.image(for: nil) == nil)
         #expect(await store.image(for: "  ") == nil)
         #expect(await requests.count == 2)
-    }
 
-    /// 托管用户的头像按服务给的地址原样请求，缓存与没有头像的记忆同按邮箱读取的一样。
-    @Test("托管用户头像按地址读取与缓存")
-    func avatarsByAddress() async throws {
-        let store = AvatarStore()
-        let requests = RequestCounter()
-        let image = try #require(NSImage(size: NSSize(width: 2, height: 2), flipped: false) { _ in true }.tiffRepresentation)
-
+        // 按地址读取：只有 found 有头像
+        let addresses = RequestCounter()
         let found = try #require(URL(string: "https://avatars.githubusercontent.com/u/1?v=4"))
         let absent = try #require(URL(string: "https://git.example.com/uploads/-/system/user/avatar/2/a.png"))
 
         store.fetch = { url in
-            await requests.record(url)
+            await addresses.record(url)
             return url == found ? image : nil
         }
 
-        // 同一地址只请求一次
+        // 同一地址只请求一次，没有头像的地址也只请求一次
         #expect(await store.image(at: found) != nil)
         #expect(await store.image(at: found) != nil)
-
-        // 没有头像的地址只请求一次
         #expect(await store.image(at: absent) == nil)
         #expect(await store.image(at: absent) == nil)
 
         // 地址原样请求，不加 Gravatar 的尺寸参数
-        #expect(await requests.urls == [found, absent])
-    }
-
-    /// 绝对格式写出日期与时间；相对格式写出相对现在的时间；按天分组的标题跟随格式。
-    @Test("提交日期格式与分组标题")
-    func dateFormats() throws {
-        let now = Date(timeIntervalSince1970: 1_800_000_000)
-        let earlier = now.addingTimeInterval(-3 * 3600)
-
-        #expect(CommitDateFormat.absolute.string(from: earlier, now: now) == earlier.formatted(
-            date: .abbreviated,
-            time: .shortened
-        ))
-        #expect(CommitDateFormat.relative.string(from: earlier, now: now).contains("3"))
-        #expect(CommitDateFormat.relative.string(from: earlier, now: now) != CommitDateFormat.absolute.string(
-            from: earlier,
-            now: now
-        ))
-
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: now)
-        let yesterday = try #require(calendar.date(byAdding: .day, value: -1, to: today))
-
-        #expect(CommitDateFormat.absolute.dayTitle(yesterday, now: now) == yesterday.formatted(date: .long, time: .omitted))
-        #expect(CommitDateFormat.relative.dayTitle(yesterday, now: now) != CommitDateFormat.relative.dayTitle(today, now: now))
-
-        // 按周的标题写出全年第几周，按月的标题不随日期格式变化
-        let week = HistoryGrouping.week.title(of: yesterday, format: .relative, now: now, calendar: calendar)
-        #expect(week.contains(String(calendar.component(.weekOfYear, from: yesterday))))
-        #expect(
-            HistoryGrouping.month.title(of: yesterday, format: .relative, now: now, calendar: calendar)
-                == HistoryGrouping.month.title(of: yesterday, format: .absolute, now: now, calendar: calendar)
-        )
+        #expect(await addresses.urls == [found, absent])
     }
 }
 

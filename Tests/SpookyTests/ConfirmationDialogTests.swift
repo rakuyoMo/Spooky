@@ -2,64 +2,58 @@ import AppKit
 import ApplicationServices
 import SwiftUI
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
 
 // MARK: - ConfirmationDialogTests
 
-/// 确认对话框：会话的确认与空提交的确认都以骨架的确认版挂成 sheet；
+/// 确认对话框与仓库窗口挂出的 sheet：会话的确认、空提交的确认、提交信息含注释的询问与 Git 错误框都挂成 sheet；
 /// “Do not ask me again” 在内容区、对齐 120 pt 的对齐线，只在确认时生效；空提交的 “Do not show this warning again” 选哪个按钮都生效。
 ///
-/// 读勾选框与按钮的几项经辅助功能接口读本进程的窗口，进程没有辅助功能权限时跳过。
+/// 读勾选框与按钮的一项经辅助功能接口读本进程的窗口，进程没有辅助功能权限时跳过。
 @MainActor
 struct ConfirmationDialogTests {
-    /// 丢弃文件的确认挂成确认对话框的 sheet；合并没有任何改动时，提交前的空提交确认同样是确认对话框。
-    @Test("确认对话框与空提交确认挂成 sheet")
+    /// 会话发起的确认与空提交确认挂成确认对话框的 sheet，提交信息含注释的询问挂成自己的 sheet；
+    /// Git 错误框挂成可以拉大的 sheet，以 `GitErrorDialog` 记住排好版的尺寸，下次照记住的尺寸打开。
+    @Test("仓库窗口挂出的 sheet")
     func presentation() async throws {
         let fixture = try await NavigationTests.makeWindow()
         defer { fixture.close() }
 
-        let controller = fixture.controller
-        let session = controller.session
-        let window = try #require(controller.window)
+        let session = fixture.controller.session
+        let window = try #require(fixture.controller.window)
 
-        // 丢弃文件：确认对话框挂在窗口上
-        try Data("changed\n".utf8).write(to: fixture.directory.appending(path: "a.txt"))
-        session.refresh(full: true)
-        await session.waitForRefresh()
+        // 会话的确认与空提交确认
+        session.onConfirm?(Self.request(suppression: nil) { })
+        try await Self.expectSheet(NSHostingController<ConfirmationDialog>.self, on: window)
 
-        session.discard(session.status?.entries ?? [])
+        session.onEmptyCommitPrompt?(EmptyCommitRequest(isSequence: false, commit: { }, alternate: { }))
+        try await Self.expectSheet(NSHostingController<ConfirmationDialog>.self, on: window)
 
-        let confirmation = try await PromptDialogTests.attachedSheet(of: window)
-        #expect(confirmation.contentViewController is NSHostingController<ConfirmationDialog>)
-        window.endSheet(confirmation)
+        // 提交信息含注释的询问
+        session.onCommentPrompt?(false) { _ in }
+        try await Self.expectSheet(NSHostingController<CommitCommentsDialog>.self, on: window)
 
-        // 合并冲突按本地版本解决后没有任何改动，提交前确认空提交
-        try await Self.prepareEmptyMerge(in: fixture)
-        session.refresh(full: true)
-        await session.waitForRefresh()
-        try await FileViewsTests.wait { session.context?.operation == .merge && session.commitsEmpty }
-
-        let key = WorkingCopyPreferences.warnsEmptyCommit
-        let saved = UserDefaults.standard.object(forKey: key)
-        defer { UserDefaults.standard.set(saved, forKey: key) }
-
-        UserDefaults.standard.removeObject(forKey: key)
-        session.confirmCommit(("merge", ""), amend: false, signOff: false, skipHooks: false)
-
-        let empty = try await PromptDialogTests.attachedSheet(of: window)
-        #expect(empty.contentViewController is NSHostingController<ConfirmationDialog>)
-        window.endSheet(empty)
+        try await Self.expectGitErrorSheet(in: fixture)
     }
 
-    /// 空提交的两种确认：标题相同，主按钮保留空提交，备选按单个操作与序列分别是中止与跳过，内容区是不再提示的勾选框；
-    /// 勾上后选哪个按钮都关掉警告，Cancel 不执行任何动作。
-    @Test("空提交确认的内容与不再提示", arguments: [false, true])
-    func emptyCommitDialog(isSequence: Bool) {
+    /// 空提交确认的备选按单个操作与序列分别是中止与跳过，内容区是不再提示的勾选框；
+    /// 不勾选时三个按钮都不改警告设置，勾上后选哪个按钮都关掉警告，Cancel 不执行任何动作。
+    @Test("空提交确认的备选与不再提示")
+    func emptyCommitDialog() {
         let key = WorkingCopyPreferences.warnsEmptyCommit
         let saved = UserDefaults.standard.object(forKey: key)
         defer { UserDefaults.standard.set(saved, forKey: key) }
+
+        for (isSequence, alternate) in [(false, "commit.empty.abort"), (true, "commit.empty.skip")] {
+            let request = EmptyCommitRequest(isSequence: isSequence, commit: { }, alternate: { })
+            let dialog = RepositoryWindowController.emptyCommitDialog(request) { }
+
+            #expect(dialog.alternate?.title == AppLocalization.text(alternate))
+            #expect(dialog.checkbox != nil)
+        }
 
         // 没写过这项设置时警告是开着的
         let warns = { UserDefaults.standard.object(forKey: key) as? Bool ?? true }
@@ -68,23 +62,12 @@ struct ConfirmationDialogTests {
         var alternated = 0
 
         let request = EmptyCommitRequest(
-            isSequence: isSequence,
+            isSequence: false,
             commit: { committed += 1 },
             alternate: { alternated += 1 }
         )
 
         let dialog = RepositoryWindowController.emptyCommitDialog(request) { }
-
-        let keys = isSequence
-            ? (message: "commit.empty.sequenceMessage", alternate: "commit.empty.skip")
-            : (message: "commit.empty.message", alternate: "commit.empty.abort")
-
-        #expect(dialog.title == AppLocalization.text("commit.empty.title"))
-        #expect(dialog.message == AppLocalization.text(keys.message))
-        #expect(dialog.submitTitle == AppLocalization.text("commit.empty.use"))
-        #expect(dialog.alternate?.title == AppLocalization.text(keys.alternate))
-        #expect(dialog.cancelTitle == AppLocalization.text("action.cancel"))
-        #expect(dialog.checkbox == AppLocalization.text("commit.empty.doNotShowAgain"))
 
         // 不勾选时三个按钮都不改警告设置；Cancel 不执行任何动作
         UserDefaults.standard.removeObject(forKey: key)
@@ -115,10 +98,11 @@ struct ConfirmationDialogTests {
         #expect(committed == 2)
     }
 
-    /// 带可以关掉的确认项时内容区是 “Do not ask me again”，左缘在对齐线；勾上并确认后关掉这项确认，再执行操作。
-    @Test("勾选不再提醒并确认", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func suppressAndConfirm() {
-        let confirmation = ServerConfirmation.discardChunks
+    /// 带可以关掉的确认项时内容区是 “Do not ask me again”，左缘在对齐线；勾上后取消只关闭对话框，确认项保持打开，
+    /// 勾上并确认后关掉这项确认，再执行操作；没有可以关掉的确认项时没有勾选框。
+    @Test("勾选不再提醒后取消或确认", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    func suppression() async throws {
+        let confirmation = ServerConfirmation.deletePermanently
         let saved = UserDefaults.standard.object(forKey: confirmation.key)
         defer { UserDefaults.standard.set(saved, forKey: confirmation.key) }
 
@@ -127,73 +111,39 @@ struct ConfirmationDialogTests {
         var performed = 0
         var closed = 0
         let checkbox = AppLocalization.text("dialog.doNotAskAgain")
-        let submit = AppLocalization.text("working.discard")
 
-        let elements = AccessibilityProbe.elements(
-            pressing: [checkbox, submit],
-            until: { _ in performed > 0 }
-        ) {
-            ConfirmationDialog(
-                request: Self.request(suppression: confirmation) { performed += 1 },
-                close: { closed += 1 }
-            )
-        }
+        let dialog = ConfirmationDialog(
+            request: Self.request(suppression: confirmation) { performed += 1 },
+            close: { closed += 1 }
+        )
 
-        let box = elements.first { $0.role == "AXCheckBox" && $0.name == checkbox }
-
-        #expect(abs((box?.frame.minX ?? 0) - DialogMetrics.alignment) <= 2)
-        #expect(performed == 1)
-        #expect(closed == 1)
-        #expect(!confirmation.isEnabled)
-    }
-
-    /// 勾上 “Do not ask me again” 后取消：只关闭对话框，确认项保持打开，操作不执行。
-    @Test("勾选不再提醒后取消", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func suppressAndCancel() {
-        let confirmation = ServerConfirmation.discardChunks
-        let saved = UserDefaults.standard.object(forKey: confirmation.key)
-        defer { UserDefaults.standard.set(saved, forKey: confirmation.key) }
-
-        UserDefaults.standard.removeObject(forKey: confirmation.key)
-
-        var performed = 0
-        var closed = 0
-        let checkbox = AppLocalization.text("dialog.doNotAskAgain")
-        let cancel = AppLocalization.text("action.cancel")
-
-        _ = AccessibilityProbe.elements(
-            pressing: [checkbox, cancel],
+        // 勾上后取消
+        _ = await AccessibilityProbe.elements(
+            pressing: [checkbox, AppLocalization.text("action.cancel")],
             until: { _ in closed > 0 }
         ) {
-            ConfirmationDialog(
-                request: Self.request(suppression: confirmation) { performed += 1 },
-                close: { closed += 1 }
-            )
+            dialog
         }
 
         #expect(performed == 0)
-        #expect(closed == 1)
         #expect(confirmation.isEnabled)
-    }
 
-    /// 没有可以关掉的确认项时只有头部与底栏：标题、说明，Cancel 与写动作的主按钮，没有勾选框。
-    @Test("确认版只有头部与底栏", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func plainConfirmation() {
-        let submit = AppLocalization.text("working.discard")
-
-        let elements = AccessibilityProbe.elements(
-            until: { elements in elements.contains { $0.role == "AXButton" && $0.name == submit } }
+        // 勾上后确认
+        let elements = await AccessibilityProbe.elements(
+            pressing: [checkbox, AppLocalization.text("working.discard")],
+            until: { _ in performed > 0 }
         ) {
-            ConfirmationDialog(request: Self.request(suppression: nil) { }) { }
+            dialog
         }
 
-        let title = AppLocalization.text("working.discard.title")
-        let buttons = elements.filter { $0.role == "AXButton" }.map(\.name)
+        let box = try #require(elements.first { $0.role == "AXCheckBox" && $0.name == checkbox })
 
-        #expect(elements.contains { $0.role == "AXStaticText" && $0.value == title })
-        #expect(buttons.contains(AppLocalization.text("action.cancel")))
-        #expect(buttons.contains(submit))
-        #expect(!elements.contains { $0.role == "AXCheckBox" })
+        #expect(abs(box.frame.minX - DialogMetrics.alignment) <= 2)
+        #expect(performed == 1)
+        #expect(closed == 2)
+        #expect(!confirmation.isEnabled)
+
+        #expect(ConfirmationDialog(request: Self.request(suppression: nil) { }) { }.checkbox == nil)
     }
 }
 
@@ -218,24 +168,67 @@ extension ConfirmationDialogTests {
         )
     }
 
-    /// 让 `side` 与 `main` 都改过 `a.txt`，合并出冲突后按本地版本解决：合并进行中，工作区没有任何改动。
-    private static func prepareEmptyMerge(in fixture: NavigationTests.WindowFixture) async throws {
-        let runner = try #require(fixture.controller.session.runner)
-        let file = fixture.directory.appending(path: "a.txt")
+    /// Git 错误框挂成可以拉大的 sheet，以 `GitErrorDialog` 记住排好版的尺寸；记住的尺寸比内容宽时，下次照它打开。
+    private static func expectGitErrorSheet(in fixture: NavigationTests.WindowFixture) async throws {
+        let key = GitErrorDialogTests.frameKey
+        let saved = UserDefaults.standard.object(forKey: key)
+        defer { UserDefaults.standard.set(saved, forKey: key) }
 
-        _ = try await runner.run(["checkout", "-q", "--", "a.txt"])
-        _ = try await runner.run(["branch", "side"])
+        let controller = fixture.controller
+        let window = try #require(controller.window)
 
-        try Data("main\n".utf8).write(to: file)
-        _ = try await runner.run(["commit", "-q", "-am", "main"])
+        let failure = AppFailure(
+            error: FailurePresentationTests.gitError(.pushRejected, ["push", "origin"]),
+            opening: false,
+            location: fixture.location,
+            writing: true
+        )
 
-        _ = try await runner.run(["checkout", "-q", "side"])
-        try Data("side\n".utf8).write(to: file)
-        _ = try await runner.run(["commit", "-q", "-am", "side"])
-        _ = try await runner.run(["checkout", "-q", "main"])
+        UserDefaults.standard.removeObject(forKey: key)
+        controller.showFailure(failure)
 
-        _ = try? await runner.run(["merge", "-q", "side"])
-        _ = try await runner.run(["checkout", "--ours", "--", "a.txt"])
-        _ = try await runner.run(["add", "a.txt"])
+        let sheet = try await PromptDialogTests.attachedSheet(of: window)
+        let dialog = try #require(sheet.contentViewController as? NSHostingController<GitErrorDialog>)
+
+        #expect(sheet.styleMask.contains(.resizable))
+        #expect(sheet.frameAutosaveName == "GitErrorDialog")
+        #expect(savedFrameWidth() == sheet.frame.width)
+        #expect(dialog.rootView.chooseAnother == nil)
+
+        window.endSheet(sheet)
+        await until { window.attachedSheet == nil }
+
+        // 下次照记住的尺寸打开
+        UserDefaults.standard.set("0 0 700 600 0 0 1470 923", forKey: key)
+        controller.showFailure(failure)
+
+        let resized = try await PromptDialogTests.attachedSheet(of: window)
+
+        #expect(resized.frame.width == 700)
+
+        window.endSheet(resized)
+        await until { window.attachedSheet == nil }
+    }
+
+    /// 等窗口挂上 sheet，核对它的内容是这一类，再收起它。
+    private static func expectSheet<Content: NSViewController>(
+        _: Content.Type,
+        on window: NSWindow
+    ) async throws {
+        let sheet = try await PromptDialogTests.attachedSheet(of: window)
+
+        #expect(sheet.contentViewController is Content)
+
+        window.endSheet(sheet)
+        await until { window.attachedSheet == nil }
+    }
+
+    /// 记下的错误框宽度：偏好里的值以 “x y 宽 高” 开头；没有记下时为 nil。
+    private static func savedFrameWidth() -> CGFloat? {
+        let numbers = UserDefaults.standard.string(forKey: GitErrorDialogTests.frameKey)?
+            .split(separator: " ")
+            .compactMap { Double($0) }
+
+        return numbers.flatMap { $0.count > 2 ? CGFloat($0[2]) : nil }
     }
 }

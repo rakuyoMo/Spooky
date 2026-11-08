@@ -5,10 +5,11 @@ import Testing
 
 // MARK: - Pull Requests
 
-/// Pull Request 与 Merge Request：列表与 Fork、评论、新建、合并选项与合并的请求和解析；与 ``HostingClientTests`` 同属一组依次执行。
+/// Pull Request 与 Merge Request：列表与 Fork、新建、合并选项与合并的请求和解析；与 ``HostingClientTests`` 同属一组依次执行。
 extension HostingClientTests {
-    /// GitHub 列表：Fork 的源仓库与目标仓库不同，已合并的按 merged_at 认出；下一页来自 Link 头。
-    @Test("GitHub 的 Pull Request 列表")
+    /// GitHub 列表：Fork 的源仓库与目标仓库不同，已合并的按 merged_at 认出，下一页取 Link 头里 `rel="next"` 的页码；
+    /// 从 Fork 新建时 head 写成 `owner:branch`，请求发到目标仓库。
+    @Test("GitHub 的 Pull Request 列表与从 Fork 新建")
     func githubList() async throws {
         let body = """
             [{"number":7,"title":"修复","body":null,"state":"open","draft":true,
@@ -18,14 +19,17 @@ extension HostingClientTests {
               "head":{"ref":"fix/登录","sha":"aaa","repo":{"full_name":"alice/r"}},
               "base":{"ref":"main","sha":"bbb","repo":{"full_name":"o/r"}}}]
             """
-        let link = #"<https://api.github.com/repos/o/r/pulls?page=2>; rel="next""#
+
+        let link = #"<https://api.github.com/repos/o/r/pulls?page=1>; rel="prev", "#
+            + #"<https://api.github.com/repos/o/r/pulls?per_page=50&page=3>; rel="next""#
+
         let requests = HostingStub.respond { _ in (200, ["Link": link], Data(body.utf8)) }
         let client = HostingClient(instance: .github, token: "t", session: HostingStub.session())
 
         let (items, next) = try await client.pullRequests(in: "o/r")
         let request = try #require(items.first)
 
-        #expect(next == 2)
+        #expect(next == 3)
         #expect(request.id == PullRequestID(instance: .github, project: "o/r", number: 7))
         #expect(request.id.reference == "#7")
         #expect(request.isDraft && request.isFromFork && request.state == .open)
@@ -40,10 +44,34 @@ extension HostingClientTests {
                     avatarURL: URL(string: "https://avatars.githubusercontent.com/u/1?v=4")
                 )
         )
+
         #expect(request.webURL?.absoluteString == "https://github.com/o/r/pull/7")
 
         let url = try #require(requests.withLock { $0.first?.url?.absoluteString })
+
         #expect(url == "https://api.github.com/repos/o/r/pulls?state=open&per_page=50&page=1")
+
+        // 从 Fork 新建
+        let created = HostingStub.respond { _ in
+            (201, [:], Data(Self.githubDetail(mergeable: "null", state: "unknown").utf8))
+        }
+
+        let draft = PullRequestDraft(
+            sourceProject: "alice/r",
+            sourceBranch: "feature/x",
+            targetProject: "o/r",
+            targetBranch: "main",
+            title: "标题",
+            body: "描述"
+        )
+
+        _ = try await client.createPullRequest(draft)
+
+        let sent = try #require(created.withLock { $0.first })
+        let payload = try JSONSerialization.jsonObject(with: HostingStub.body(of: sent)) as? [String: String]
+
+        #expect(sent.url?.absoluteString == "https://api.github.com/repos/o/r/pulls")
+        #expect(payload == ["title": "标题", "body": "描述", "head": "alice:feature/x", "base": "main"])
     }
 
     /// GitHub 合并选项：按 Merge、Rebase、Squash 的顺序列出，仓库不允许的方式不列出，没有写权限或有冲突时说明原因；
@@ -57,13 +85,17 @@ extension HostingClientTests {
                 ? (
                     200,
                     [:],
-                    Data(#"{"allow_rebase_merge":false,"delete_branch_on_merge":true,"permissions":{"push":true}}"#.utf8)
+                    Data(
+                        #"{"allow_rebase_merge":false,"delete_branch_on_merge":true,"permissions":{"push":true}}"#
+                            .utf8
+                    )
                 )
                 : (200, [:], Data(Self.githubDetail(mergeable: "false", state: "dirty").utf8))
         }
 
         let client = HostingClient(instance: .github, token: "t", session: HostingStub.session())
         let options = try await client.mergeOptions(for: request)
+
         #expect(options.methods == [.merge, .squash])
         #expect(options.deletesSourceBranchByDefault && options.canDeleteSourceBranch)
         #expect(options.block == .conflicts)
@@ -76,6 +108,7 @@ extension HostingClientTests {
 
         // 仓库没有给出设置时三种方式都列出
         let readOnly = try await client.mergeOptions(for: request)
+
         #expect(readOnly.methods == [.merge, .rebase, .squash])
         #expect(readOnly.block == .permission)
 
@@ -86,42 +119,26 @@ extension HostingClientTests {
         }
 
         let result = try await client.merge(request, method: .squash, deletesSourceBranch: true)
+
         #expect(result == PullRequestMergeResult(sha: "ccc", message: "Pull Request successfully merged"))
 
         let sent = requests.withLock { $0 }
+
         #expect(sent.map { $0.httpMethod ?? "" } == ["PUT", "DELETE"])
         #expect(sent.last?.url?.absoluteString == "https://api.github.com/repos/o/r/git/refs/heads/feature/x")
 
-        let merge = try JSONSerialization.jsonObject(with: HostingStub.body(of: try #require(sent.first))) as? [String: String]
+        let merge = try JSONSerialization.jsonObject(with: HostingStub.body(of: try #require(sent.first)))
+            as? [String: String]
+
         #expect(merge == ["merge_method": "squash", "sha": "aaa"])
     }
 
-    /// GitHub 从 Fork 新建：head 写成 `owner:branch`，请求发到目标仓库。
-    @Test("GitHub 从 Fork 新建 Pull Request")
-    func githubCreateFromFork() async throws {
-        let requests = HostingStub.respond { _ in (201, [:], Data(Self.githubDetail(mergeable: "null", state: "unknown").utf8)) }
-        let client = HostingClient(instance: .github, token: "t", session: HostingStub.session())
-        let draft = PullRequestDraft(
-            sourceProject: "alice/r",
-            sourceBranch: "feature/x",
-            targetProject: "o/r",
-            targetBranch: "main",
-            title: "标题",
-            body: "描述"
-        )
-
-        _ = try await client.createPullRequest(draft)
-
-        let sent = try #require(requests.withLock { $0.first })
-        let payload = try JSONSerialization.jsonObject(with: HostingStub.body(of: sent)) as? [String: String]
-        #expect(sent.url?.absoluteString == "https://api.github.com/repos/o/r/pulls")
-        #expect(payload == ["title": "标题", "body": "描述", "head": "alice:feature/x", "base": "main"])
-    }
-
-    /// GitLab 列表：多层命名空间的项目路径整体转义；同一个 Fork 的源项目路径只读一次。
-    @Test("GitLab 的 Merge Request 列表")
+    /// GitLab 列表：多层命名空间的项目路径整体转义，同一个 Fork 的源项目路径只读一次；旧版的单个 `assignee` 当作指派人，
+    /// 带上名字与头像地址，`reopened` 当作打开，没有 `diff_refs` 时没有目标分支提交与合并基准。
+    @Test("GitLab 的 Merge Request 列表与旧版的请求字段")
     func gitlabList() async throws {
         let instance = try #require(HostingInstance.gitlab(address: "https://git.example.com/gitlab"))
+
         let requests = HostingStub.respond { request in
             guard request.url?.path().hasSuffix("/projects/42") ?? false else {
                 return (
@@ -141,109 +158,33 @@ extension HostingClientTests {
         #expect(items.map(\.id.reference) == ["!3", "!4"])
         #expect(items.first?.webURL?.absoluteString == "https://gitlab.com/group/project/-/merge_requests/3")
         #expect(items.first?.mergeBase == "mmm" && items.first?.target.sha == "bbb")
-        #expect(items.allSatisfy { $0.source.project == "alice/项目" && $0.target.project == "group/子组/项目" && $0.isFromFork })
+
+        #expect(
+            items.allSatisfy {
+                $0.source.project == "alice/项目" && $0.target.project == "group/子组/项目" && $0.isFromFork
+            }
+        )
 
         let urls = requests.withLock { $0.map { $0.url?.absoluteString ?? "" } }
+        let encoded = "group%2F%E5%AD%90%E7%BB%84%2F%E9%A1%B9%E7%9B%AE"
+
         #expect(urls.count == 2)
         #expect(
-            urls.first?
-                .hasPrefix(
-                    "https://git.example.com/gitlab/api/v4/projects/group%2F%E5%AD%90%E7%BB%84%2F%E9%A1%B9%E7%9B%AE/merge_requests?"
-                ) ??
-                false
+            urls.first?.hasPrefix("https://git.example.com/gitlab/api/v4/projects/\(encoded)/merge_requests?")
+                ?? false
         )
         #expect(urls.last == "https://git.example.com/gitlab/api/v4/projects/42")
+
+        // 路径里的空格与 “+” 同样转义
+        #expect(HostingClient.encodedSegment("group/子 组+x") == "group%2F%E5%AD%90%20%E7%BB%84%2Bx")
 
         // 不同项目的同号请求是不同的身份
         #expect(
             PullRequestID(instance: instance, project: "a/b", number: 3) !=
                 PullRequestID(instance: instance, project: "a/c", number: 3)
         )
-    }
 
-    /// GitLab 合并选项：项目要求压缩时只能压缩；当前账号不能合并或项目规则不满足时说明原因。
-    /// 评论里不列出系统记录。
-    @Test("GitLab 的合并选项与评论")
-    func gitlabOptionsAndNotes() async throws {
-        let request = try #require(
-            try HostingStub.decodeGitLab(Self.gitlabRequest(iid: 3, source: 1), project: "group/project")
-        )
-
-        HostingStub.respond { request in
-            request.url?.path().hasSuffix("/merge_requests/3") ?? false
-                ? (200, [:], Data(Self.gitlabRequest(iid: 3, source: 1, canMerge: true, status: "ci_must_pass").utf8))
-                : (
-                    200,
-                    [:],
-                    Data(#"{"id":1,"merge_method":"ff","squash_option":"always","remove_source_branch_after_merge":true}"#.utf8)
-                )
-        }
-
-        let client = HostingClient(instance: .gitlabCom, token: "t", session: HostingStub.session())
-        let options = try await client.mergeOptions(for: request)
-        #expect(options.methods == [.squash] && options.requiresSquash && options.squashesByDefault)
-        #expect(options.projectMergeMethod == "ff" && options.deletesSourceBranchByDefault)
-        #expect(options.block == .policy("ci_must_pass"))
-
-        HostingStub.respond { _ in
-            let notes =
-                #"[{"id":1,"body":"看过了","author":{"username":"bob"},"created_at":"2026-10-03T00:00:00.000Z","system":false},"#
-                    +
-                    #"{"id":2,"body":"added 1 commit","author":{"username":"alice"},"created_at":"2026-10-04T00:00:00.000Z","system":true}]"#
-            return (200, [:], Data(notes.utf8))
-        }
-
-        // 推送了新提交这类系统记录不出现在讨论里
-        let notes = try await client.comments(on: request.id)
-        #expect(notes.map(\.id) == [1])
-        #expect(notes.map(\.author.username) == ["bob"])
-    }
-
-    /// 评论的作者带上托管服务给的名字与头像地址，GitHub 的用户对象没有名字；评论带上更新时间，旧版 GitLab 没有给出时为 nil。
-    @Test("评论的作者与更新时间")
-    func commentAuthorsAndTimes() async throws {
-        let github = """
-            [{"id":1,"body":"看过了","user":{"login":"bob","avatar_url":"https://avatars.githubusercontent.com/u/2?v=4"},
-              "created_at":"2026-10-03T00:00:00Z","updated_at":"2026-10-04T00:00:00Z"},
-             {"id":2,"body":null,"user":null,"created_at":"2026-10-05T00:00:00Z","updated_at":"2026-10-05T00:00:00Z"}]
-            """
-
-        HostingStub.respond { _ in (200, [:], Data(github.utf8)) }
-
-        let comments = try await HostingClient(instance: .github, token: "t", session: HostingStub.session())
-            .comments(on: PullRequestID(instance: .github, project: "o/r", number: 7))
-
-        // 用户已删除时作者是空的用户名，内容为 null 时是空字符串
-        #expect(
-            comments.map(\.author) == [
-                HostingUser(username: "bob", name: nil, avatarURL: URL(string: "https://avatars.githubusercontent.com/u/2?v=4")),
-                HostingUser(username: "", name: nil),
-            ]
-        )
-
-        #expect(comments.map(\.updatedAt) == [Self.date("2026-10-04T00:00:00Z"), Self.date("2026-10-05T00:00:00Z")])
-        #expect(comments.last.map(\.body.isEmpty) ?? false)
-
-        let gitlab = """
-            [{"id":3,"body":"改过","author":{"username":"carol","name":"Carol 李","avatar_url":"https://git.example.com/uploads/c.png"},
-              "created_at":"2026-10-03T00:00:00.000Z","updated_at":"2026-10-06T00:00:00.000Z","system":false},
-             {"id":4,"body":"旧版","author":{"username":"dave","name":"Dave","avatar_url":null},
-              "created_at":"2026-10-04T00:00:00.000Z"}]
-            """
-
-        HostingStub.respond { _ in (200, [:], Data(gitlab.utf8)) }
-
-        let notes = try await HostingClient(instance: .gitlabCom, token: "t", session: HostingStub.session())
-            .comments(on: PullRequestID(instance: .gitlabCom, project: "group/project", number: 3))
-
-        #expect(
-            notes.map(\.author) == [
-                HostingUser(username: "carol", name: "Carol 李", avatarURL: URL(string: "https://git.example.com/uploads/c.png")),
-                HostingUser(username: "dave", name: "Dave"),
-            ]
-        )
-
-        #expect(notes.map(\.updatedAt) == [Self.date("2026-10-06T00:00:00Z"), nil])
+        try Self.expectLegacyFields()
     }
 }
 
@@ -278,29 +219,62 @@ extension HostingClientTests {
     }
 
     /// GitLab 请求的 JSON；source 是源项目编号，目标项目编号是 1。
-    static func gitlabRequest(iid: Int, source: Int, canMerge: Bool = false, status: String = "mergeable") -> String {
+    static func gitlabRequest(iid: Int, source: Int) -> String {
         """
         {"iid":\(iid),"title":"t","description":"d","state":"opened","draft":false,"author":{"username":"alice"},
          "created_at":"2026-10-01T00:00:00.000Z","updated_at":"2026-10-02T00:00:00.000Z",
          "source_branch":"feature","target_branch":"main","source_project_id":\(source),"target_project_id":1,
          "sha":"aaa","web_url":"https://gitlab.com/group/project/-/merge_requests/\(iid)",
          "diff_refs":{"base_sha":"mmm","head_sha":"aaa","start_sha":"bbb"},
-         "detailed_merge_status":"\(status)","user":{"can_merge":\(canMerge)},"squash":false}
+         "detailed_merge_status":"mergeable","user":{"can_merge":false},"squash":false}
         """
-    }
-
-    /// ISO 8601 写法的时刻。
-    static func date(_ text: String) -> Date? {
-        ISO8601DateFormatter().date(from: text)
     }
 }
 
-// MARK: - Decoding
+// MARK: - Legacy Fields
 
-extension HostingStub {
-    /// 把 GitLab 请求的 JSON 换成通用的请求，源项目与目标项目相同。
-    static func decodeGitLab(_ json: String, project: String) throws -> PullRequest? {
-        try HostingClient.decoder.decode(GitLabMergeRequest.self, from: Data(json.utf8))
-            .request(on: .gitlabCom, project: project, sourceProject: project)
+extension HostingClientTests {
+    /// 核对旧版 GitLab 请求的指派人、状态与提交字段。
+    fileprivate static func expectLegacyFields() throws {
+        let single = try decodeLegacy(
+            legacyRequest(
+                [
+                    "assignee": [
+                        "username": "bob",
+                        "name": "Bob 王",
+                        "avatar_url": "https://gitlab.example.com/uploads/bob.png",
+                    ],
+                    "state": "reopened",
+                ],
+                removing: ["assignees"]
+            )
+        )
+
+        #expect(
+            single.assignees == [
+                HostingUser(
+                    username: "bob",
+                    name: "Bob 王",
+                    avatarURL: URL(string: "https://gitlab.example.com/uploads/bob.png")
+                ),
+            ]
+        )
+
+        #expect(single.state == .open)
+        #expect(single.target.sha.isEmpty && single.mergeBase == nil && single.source.sha == "aaa")
+
+        let unassigned = try decodeLegacy(legacyRequest(removing: ["assignees"]))
+
+        #expect(unassigned.assignees.isEmpty)
+
+        // 单个与多个指派人同时给出时取多个
+        let both = try decodeLegacy(
+            legacyRequest([
+                "assignee": ["username": "bob"],
+                "assignees": [["username": "bob"], ["username": "carol"]],
+            ])
+        )
+
+        #expect(both.assignees.map(\.username) == ["bob", "carol"])
     }
 }

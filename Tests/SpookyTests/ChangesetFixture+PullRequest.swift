@@ -1,6 +1,7 @@
 import Foundation
 import Synchronization
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -27,11 +28,11 @@ extension ChangesetFixture {
         session.pullRequests.accounts = accounts
         _ = try await runner.run(["config", "--local", "remote.origin.url", "https://" + host + "/group/project.git"])
         session.pullRequests.load(runner: runner)
-        try await FileViewsTests.wait { self.session.pullRequests.isLoaded }
+        await until { self.session.pullRequests.isLoaded }
         #expect(session.pullRequests.failure == nil)
         let request = try #require(session.pullRequests.items.first)
         session.pullRequests.select(request.id, runner: runner)
-        try await FileViewsTests.wait { !self.session.pullRequests.isLoadingDetail }
+        await until { !self.session.pullRequests.isLoadingDetail }
         #expect(session.pullRequests.detailFailure == nil)
         #expect(session.pullRequests.detail != nil)
         session.pullRequests.page = .changeset

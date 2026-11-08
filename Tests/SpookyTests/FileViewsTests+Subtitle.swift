@@ -16,7 +16,11 @@ extension FileViewsTests {
 
         let location = RepositoryLocation.local(path: directory.path)
         let runner = try await Self.initializeRepository(at: location)
-        try FileManager.default.createDirectory(at: directory.appending(path: "dir"), withIntermediateDirectories: false)
+        try FileManager.default.createDirectory(
+            at: directory.appending(path: "dir"),
+            withIntermediateDirectories: false
+        )
+
         try Data("one\n".utf8).write(to: directory.appending(path: "dir/a.txt"))
         _ = try await runner.run(["add", "--all"])
         _ = try await runner.run(["commit", "-q", "-m", "first"])

@@ -14,8 +14,8 @@ import Testing
 struct CloneRepositoryDialogTests {
     /// 两个勾选框的左缘与 Remote URL 输入框的相同；与 Folder 一行相隔 10，彼此相隔 8。
     @Test("勾选框的顺序、默认值与位置", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func options() throws {
-        let elements = AccessibilityProbe.elements(
+    func options() async throws {
+        let elements = await AccessibilityProbe.elements(
             until: { elements in elements.count { $0.role == "AXCheckBox" } == 2 }
         ) {
             CloneRepositoryDialog(hosts: [], close: { }, submit: { _ in })

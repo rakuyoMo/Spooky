@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -12,9 +13,7 @@ struct BranchesReviewTests {
     /// 列表按与基准的比较筛选与排序；归档带待审阅标记并可撤销；Update Branch 合并父分支。
     @Test("分支整理的比较、筛选、归档与 Update Branch")
     func reviewSession() async throws {
-        let directory = FileManager.default.temporaryDirectory
-            .appending(path: "spooky-review-" + UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        let directory = try FileViewsTests.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
 
         let location = RepositoryLocation.local(path: directory.path)
@@ -23,17 +22,23 @@ struct BranchesReviewTests {
 
         let session = RepositorySession(makeRunner: { _ in runner })
         defer { session.close() }
+
         session.display(location)
-        session.refresh()
-        try await waitUntil { session.history.snapshot != nil && !session.history.conditions.isEmpty }
+        await reload(session)
 
         // 基准默认是 main；比较完成前没有结论，不算能合并
         let review = session.branchesReview
-        review.update(snapshot: session.history.snapshot, head: session.status?.branch.head, runner: runner)
+        review.update(
+            snapshot: session.history.snapshot,
+            head: session.status?.branch.head,
+            runner: runner
+        )
+
         #expect(review.base?.id == "refs/heads/main")
         #expect(review.items(conditions: [:], search: "", order: order(.mergeable), staleMonths: 3).isEmpty)
 
-        try await waitUntil { review.comparisons.count == 3 }
+        await until { !review.isComparing }
+        #expect(review.comparisons.count == 3)
 
         let ids = { (filter: BranchesReviewFilter) in
             review.items(
@@ -55,6 +60,7 @@ struct BranchesReviewTests {
             review.items(conditions: [:], search: "CONF", order: order(.all), staleMonths: 3).map(\.id)
                 == ["refs/heads/conflict"]
         )
+
         #expect(
             review.items(
                 conditions: [:],
@@ -67,7 +73,8 @@ struct BranchesReviewTests {
 
         // 单选后详情从分叉点比较到分支顶端
         review.selectedIDs = ["refs/heads/conflict"]
-        try await waitUntil { review.comparison.isActive }
+        await until { review.comparison.isActive }
+
         #expect(review.comparison.target?.title == "conflict")
         #expect(review.comparison.base?.title == "main")
 
@@ -75,58 +82,54 @@ struct BranchesReviewTests {
         try await updateBranch(session: session)
     }
 
-    /// 打开 Compare Branches 后插入分叉点行、置灰父分支的提交；没有新提交的分支只有一行说明。
-    @Test("与基准分支比较的表格行")
+    /// 打开 Compare Branches 后插入分叉点行、置灰父分支的提交；没有新提交的分支只有一行说明；
+    /// 没有父分支或父分支已删除时，默认基准取标准名的基准分支（含 trunk），再取引用名排第一的其它本地分支，当前分支不优先。
+    @Test("与基准分支比较的表格行与默认基准")
     func compareRows() async throws {
-        let directory = FileManager.default.temporaryDirectory
-            .appending(path: "spooky-compare-" + UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        let directory = try FileViewsTests.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
 
         let location = RepositoryLocation.local(path: directory.path)
         let runner = try await FileViewsTests.initializeRepository(at: location)
         try await prepareBranches(runner: runner, in: directory)
 
-        let defaultsDirectory = FileManager.default.temporaryDirectory
-            .appending(path: "spooky-compare-" + UUID().uuidString)
-        let defaults = try #require(UserDefaults(suiteName: defaultsDirectory.appending(path: "defaults").path))
-        defer { try? FileManager.default.removeItem(at: defaultsDirectory) }
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
         defaults.set(true, forKey: RepositoryHistoryState.comparesBranchesKey)
 
         let session = RepositorySession(makeRunner: { _ in runner })
         defer { session.close() }
+
         session.history.preferences = defaults
         session.display(location)
-        session.refresh()
-        try await waitUntil { session.history.snapshot != nil }
+        await reload(session)
 
         // 有自己提交的分支：分叉点行插在分叉点提交之前，分叉点及其祖先置灰
         session.history.selectedReference = "refs/heads/conflict"
-        try await waitUntil { session.history.rows.contains(.forkPoint("main")) }
+        await waitForComparison(session)
+
         let fork = try #require(session.history.baseComparison?.forkPoint)
         let index = try #require(session.history.rows.firstIndex(of: .forkPoint("main")))
+
         #expect(session.history.rows[index + 1].commit?.id == fork)
         #expect(session.history.parentCommits.contains(fork))
         #expect(session.history.baseComparison?.comparison?.divergence.behind == 1)
 
-        // 父分支已删除时同样退回 main
-        _ = try await runner.run(["config", "branch.conflict.spooky-parent", "refs/heads/gone"])
-        session.refresh(full: true)
-        try await waitUntil { session.history.snapshot?.metadata(for: "refs/heads/conflict").parent != nil }
-        let selected = try #require(session.history.selectedLocalBranch)
-        #expect(session.history.defaultBase(for: selected)?.name == "main")
-
         // 顶端就是分叉点的分支没有新提交
         session.history.selectedReference = "refs/heads/merged"
-        try await waitUntil { session.history.rows.first == .noNewCommits("main") }
+        await waitForComparison(session)
+
+        #expect(session.history.rows.first == .noNewCommits("main"))
 
         // 关掉比较后恢复普通的表格行。关掉的设置写进另一个偏好域：覆盖已有的值后立即读取，可能仍读到旧值
         let closed = try #require(UserDefaults(suiteName: directory.appending(path: "compare-off").path))
         closed.set(false, forKey: RepositoryHistoryState.comparesBranchesKey)
         session.history.preferences = closed
         session.history.loadBaseComparison()
+
         #expect(session.history.baseComparison == nil)
         #expect(session.history.rows.allSatisfy { $0.commit != nil })
+
+        try await checkDefaultBase(session, runner: runner)
     }
 
     /// 归档建议只收陈旧与请求已合并的分支，排除基准分支、当前分支、置顶与已归档的分支；自动归档还排除勾了跳过的分支；每天只检查一次。
@@ -172,6 +175,7 @@ struct BranchesReviewTests {
             mergedOnServer: ["refs/heads/requested"],
             now: date
         )
+
         #expect(manual.map(\.name) == ["requested", "skipped", "stale"])
 
         let automatic = BranchArchiving.candidates(
@@ -183,6 +187,7 @@ struct BranchesReviewTests {
             mergedOnServer: ["refs/heads/requested"],
             now: date
         )
+
         #expect(automatic.map(\.name) == ["requested", "stale"])
 
         // 每个仓库各自记录检查时刻，满一天才再检查
@@ -196,13 +201,15 @@ struct BranchesReviewTests {
         BranchArchiving.recordCheck(for: repository, defaults: defaults, now: date)
         let hourLater = date.addingTimeInterval(3600)
         let dayLater = date.addingTimeInterval(86_400)
+
         #expect(!BranchArchiving.isDue(for: repository, defaults: defaults, now: hourLater))
         #expect(BranchArchiving.isDue(for: repository, defaults: defaults, now: dayLater))
         #expect(BranchArchiving.isDue(for: .local(path: "/other"), defaults: defaults, now: date))
     }
 
-    /// 还在比较或无法检查的分支不算能合并或有冲突；陈旧与活跃按阈值互补。
-    @Test("筛选不把未知状态当作能合并")
+    /// 还在比较或无法检查的分支不算能合并或有冲突，陈旧与活跃按阈值互补；
+    /// 打开着的请求才算有请求，不知道请求状态时两项请求筛选都不满足。
+    @Test("筛选不把未知状态当作已知")
     func unknownStatus() {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let branch = reference("refs/heads/topic", date: now.addingTimeInterval(-200 * 24 * 60 * 60))
@@ -233,45 +240,8 @@ struct BranchesReviewTests {
         #expect(BranchesReviewState.matches(pending, filter: .stale, staleMonths: 3, now: now))
         #expect(!BranchesReviewState.matches(pending, filter: .active, staleMonths: 3, now: now))
         #expect(BranchesReviewState.matches(pending, filter: .active, staleMonths: 12, now: now))
-    }
 
-    /// 打开着的请求才算有请求；不知道请求状态时两项请求筛选都不满足。
-    @Test("请求状态的筛选")
-    func pullRequestStatus() {
-        let now = Date(timeIntervalSince1970: 1_700_000_000)
-        let branch = reference("refs/heads/topic", date: now)
-        let open = Self.request(state: .open, sha: branch.objectID)
-        let merged = Self.request(state: .merged, sha: branch.objectID)
-
-        let item = { (request: PullRequest?) in
-            BranchesReviewItem(reference: branch, comparison: nil, condition: nil, pullRequest: request)
-        }
-
-        #expect(BranchesReviewState.matches(
-            item(open),
-            filter: .withPullRequest,
-            staleMonths: 3,
-            now: now,
-            knowsPullRequests: true
-        ))
-        #expect(BranchesReviewState.matches(
-            item(nil),
-            filter: .withoutPullRequest,
-            staleMonths: 3,
-            now: now,
-            knowsPullRequests: true
-        ))
-        #expect(BranchesReviewState.matches(
-            item(merged),
-            filter: .withoutPullRequest,
-            staleMonths: 3,
-            now: now,
-            knowsPullRequests: true
-        ))
-
-        // 没有账号时不能把未知当成有或没有请求
-        #expect(!BranchesReviewState.matches(item(nil), filter: .withoutPullRequest, staleMonths: 3, now: now))
-        #expect(!BranchesReviewState.matches(item(open), filter: .withPullRequest, staleMonths: 3, now: now))
+        checkPullRequestFilters(branch: branch, now: now)
     }
 }
 
@@ -289,13 +259,16 @@ extension BranchesReviewTests {
         #expect(session.archiveCandidates(automatic: true, staleMonths: 3).map(\.id) == [stale.id])
 
         session.archive([stale], automatic: true)
-        try await waitUntil { session.history.snapshot?.metadata(for: stale.id).needsArchiveReview ?? false }
+        await waitForWrite(session)
+
+        #expect(session.history.snapshot?.metadata(for: stale.id).needsArchiveReview ?? false)
         #expect(session.branchesReview.archivedBranches == [stale.id])
         #expect(session.archiveCandidates(automatic: true, staleMonths: 3).isEmpty)
 
-        try await waitUntil { session.canWrite }
         session.undoArchive()
-        try await waitUntil { !(session.history.snapshot?.metadata(for: stale.id).isArchived ?? true) }
+        await waitForWrite(session)
+
+        #expect(!(session.history.snapshot?.metadata(for: stale.id).isArchived ?? true))
         #expect(!(session.history.snapshot?.metadata(for: stale.id).needsArchiveReview ?? true))
         #expect(session.branchesReview.archivedBranches == nil)
     }
@@ -322,33 +295,82 @@ extension BranchesReviewTests {
         let commit = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
         _ = try await dated.run(["branch", "stale", commit])
 
-        session.refresh(full: true)
-        try await waitUntil { session.history.conditions["refs/heads/stale"] != nil }
+        await reload(session)
+        #expect(session.history.conditions["refs/heads/stale"] != nil)
 
         return try #require(session.history.branches.first { $0.id == "refs/heads/stale" })
     }
 
     /// 设了父分支的分支可以用父分支更新：合并后 HEAD 切到它，父分支的提交并入。
     private func updateBranch(session: RepositorySession) async throws {
-        try await waitUntil { session.canWrite }
         let feature = try #require(session.history.branches.first { $0.name == "feature/改名'x'" })
         let main = try #require(session.history.branches.first { $0.id == "refs/heads/main" })
+
         #expect(!session.canUpdateBranch(feature))
 
         let runner = try #require(session.runner)
         try await RepositoryReferences(runner: runner).setParent(main.id, of: feature.id)
-        session.refresh(full: true)
-        try await waitUntil { session.parentBranch(of: feature)?.id == main.id }
+        await reload(session)
+
+        #expect(session.parentBranch(of: feature)?.id == main.id)
         #expect(session.canUpdateBranch(feature))
 
         session.updateBranch(feature, rebase: false)
-        try await waitUntil { session.status?.branch.head == "feature/改名'x'" && !session.isWriting }
+        await waitForWrite(session)
+        #expect(session.status?.branch.head == "feature/改名'x'")
 
         let ancestor = try await runner.execute(
             ["merge-base", "--is-ancestor", main.objectID, "HEAD"],
             acceptedExitCodes: [0, 1]
         )
+
         #expect(ancestor.exitCode == 0)
+    }
+
+    /// conflict 的父分支已删除：标准名只剩 trunk 时取它；没有标准名时取引用名排第一的其它本地分支，HEAD 所在的 merged 排在后面也不优先。
+    private func checkDefaultBase(_ session: RepositorySession, runner: GitRunner) async throws {
+        _ = try await runner.run(["config", "branch.conflict.spooky-parent", "refs/heads/gone"])
+        _ = try await runner.run(["branch", "-m", "main", "trunk"])
+        await reload(session)
+
+        let conflict = try #require(session.history.branches.first { $0.id == "refs/heads/conflict" })
+
+        #expect(session.history.snapshot?.metadata(for: conflict.id).parent != nil)
+        #expect(session.history.defaultBase(for: conflict)?.name == "trunk")
+
+        _ = try await runner.run(["switch", "-q", "merged"])
+        _ = try await runner.run(["branch", "-D", "trunk"])
+        await reload(session)
+
+        #expect(session.history.defaultBase(for: conflict)?.name == "feature/改名'x'")
+    }
+
+    /// 打开着的请求才算有请求；没有账号、不知道请求状态时两项请求筛选都不满足。
+    private func checkPullRequestFilters(branch: RepositoryReference, now: Date) {
+        let open = Self.request(state: .open, sha: branch.objectID)
+        let merged = Self.request(state: .merged, sha: branch.objectID)
+
+        let item = { (request: PullRequest?) in
+            BranchesReviewItem(reference: branch, comparison: nil, condition: nil, pullRequest: request)
+        }
+
+        let matches = { (request: PullRequest?, filter: BranchesReviewFilter, knows: Bool) in
+            BranchesReviewState.matches(
+                item(request),
+                filter: filter,
+                staleMonths: 3,
+                now: now,
+                knowsPullRequests: knows
+            )
+        }
+
+        #expect(matches(open, .withPullRequest, true))
+        #expect(matches(nil, .withoutPullRequest, true))
+        #expect(matches(merged, .withoutPullRequest, true))
+
+        // 没有账号时不能把未知当成有或没有请求
+        #expect(!matches(nil, .withoutPullRequest, false))
+        #expect(!matches(open, .withPullRequest, false))
     }
 }
 
@@ -395,18 +417,24 @@ extension BranchesReviewTests {
         )
     }
 
-    /// 等待写入与随后的刷新落定，最多 5 分钟。
-    func waitUntil(_ condition: () -> Bool) async throws {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
+    /// 完整刷新会话，等刷新与它带起的 History 读取都结束。
+    private func reload(_ session: RepositorySession) async {
+        session.refresh(full: true)
+        await session.waitForRefresh()
+        await untilFinished { session.history.activeTasks }
+    }
 
-        while !condition() {
-            guard ContinuousClock.now < deadline else {
-                Issue.record("等待超时")
-                return
-            }
+    /// 等写操作、随后的完整刷新与它带起的 History 读取都结束。
+    private func waitForWrite(_ session: RepositorySession) async {
+        await session.writeTask?.value
+        await session.waitForRefresh()
+        await untilFinished { session.history.activeTasks }
+    }
 
-            try await Task.sleep(for: .milliseconds(50))
-        }
+    /// 选择分支后等表格的读取与基准比较都结束；比较在选择分支时开始，不在 `activeTasks` 里。
+    private func waitForComparison(_ session: RepositorySession) async {
+        await untilFinished { session.history.activeTasks }
+        await session.history.comparisonTask?.value
     }
 }
 

@@ -6,7 +6,8 @@ import Testing
 
 // MARK: - IdentityProfileMenuTests
 
-/// 头像的身份档案菜单：提交区、仓库设置与仓库管理详情列出同样的项，当前身份总能找到，也总能存为档案；每项写出签名密钥，用户靠它分辨同名的身份。
+/// 头像的身份档案菜单：提交区、仓库设置与仓库管理详情列出同样的项，当前身份总能找到，也总能存为档案；
+/// 每项写出签名密钥，用户靠它分辨同名的身份。
 @MainActor
 struct IdentityProfileMenuTests {
     /// 同名的工作档案。
@@ -15,23 +16,27 @@ struct IdentityProfileMenuTests {
     /// 同名的个人档案，只有邮箱与工作档案不同。
     private let home = UserProfile(title: "Home", name: "Ada Lovelace", email: "ada@home.example")
 
-    /// 当前身份对应某个档案时只勾选它，不单列身份，也不提供存为档案。
-    @Test("当前身份有对应的档案")
-    func matchingProfile() {
-        let items = IdentityProfileMenu.items(
+    /// 当前身份对应某个档案时只勾选它，不单列身份，也不提供存为档案；没有对应档案时单列当前身份，分隔线后可以把它存为档案；
+    /// 没有身份也没有档案时只有管理档案，前面不留分隔线；签名密钥也要相同才是当前档案。
+    @Test("菜单列出的档案与当前身份")
+    func menuItems() {
+        let matching = IdentityProfileMenu.items(
             profiles: [work, home],
             name: "Ada Lovelace",
             email: "ada@home.example",
             signingKey: nil
         )
 
-        #expect(items == [.profile(work, isCurrent: false), .profile(home, isCurrent: true), .separator, .manage])
-    }
+        #expect(matching == [.profile(work, isCurrent: false), .profile(home, isCurrent: true), .separator, .manage])
 
-    /// 没有对应档案时单列当前身份，分隔线后可以把它存为档案。
-    @Test("当前身份没有对应的档案")
-    func identityWithoutProfile() {
-        let empty = IdentityProfileMenu.items(profiles: [], name: "Ada Lovelace", email: "ada@example.com", signingKey: nil)
+        // 当前身份没有对应的档案
+        let empty = IdentityProfileMenu.items(
+            profiles: [],
+            name: "Ada Lovelace",
+            email: "ada@example.com",
+            signingKey: nil
+        )
+
         let other = IdentityProfileMenu.items(
             profiles: [work],
             name: "Ada Lovelace",
@@ -41,22 +46,22 @@ struct IdentityProfileMenuTests {
 
         #expect(empty == [.identity, .separator, .addCurrent, .manage])
         #expect(other == [.profile(work, isCurrent: false), .identity, .separator, .addCurrent, .manage])
-    }
 
-    /// 没有身份也没有档案时只有管理档案，前面不留分隔线。
-    @Test("没有身份也没有档案")
-    func nothingToList() {
+        // 没有身份也没有档案
         #expect(IdentityProfileMenu.items(profiles: [], name: "", email: "", signingKey: nil) == [.manage])
-    }
 
-    /// 签名密钥也要相同才是当前档案：只差大小写仍然匹配，换了密钥或去掉密钥就单列当前身份。
-    @Test("当前档案比较签名密钥")
-    func matchingSigningKey() {
+        // 签名密钥只差大小写仍然匹配，换了密钥或去掉密钥就单列当前身份
         var signed = work
+
         signed.signingKey = "0123456789ABCDEFBB199F7C"
 
         let items = { (key: String?) in
-            IdentityProfileMenu.items(profiles: [signed], name: signed.name, email: signed.email, signingKey: key)
+            IdentityProfileMenu.items(
+                profiles: [signed],
+                name: signed.name,
+                email: signed.email,
+                signingKey: key
+            )
         }
 
         #expect(items("0123456789abcdefbb199f7c") == [.profile(signed, isCurrent: true), .separator, .manage])
@@ -70,11 +75,19 @@ struct IdentityProfileMenuTests {
     @Test("菜单项写出签名密钥")
     func signingKeyTitle() {
         let fingerprint = "0123456789ABCDEF0123456789ABCDEFBB199F7C"
-        let gpg = SigningKey(format: .openpgp, value: fingerprint, fingerprint: fingerprint, signer: nil, comment: nil)
+
+        let gpg = SigningKey(
+            format: .openpgp,
+            value: fingerprint,
+            fingerprint: fingerprint,
+            signer: nil,
+            comment: nil
+        )
 
         // 字面 SSH 公钥：长度前缀的类型名与 32 字节的 Ed25519 公钥
         let blob = [0, 0, 0, 11] + Array("ssh-ed25519".utf8) + [0, 0, 0, 32] + Array(repeating: 1, count: 32)
         let literal = "ssh-ed25519 " + Data(blob).base64EncodedString()
+
         let ssh = SigningKey(
             format: .ssh,
             value: "key::" + literal,
@@ -84,7 +97,12 @@ struct IdentityProfileMenuTests {
         )
 
         let title = { (key: String?) in
-            IdentityProfileMenu.title(name: "Ada Lovelace", email: "ada@work.example", signingKey: key, keys: [gpg, ssh])
+            IdentityProfileMenu.title(
+                name: "Ada Lovelace",
+                email: "ada@work.example",
+                signingKey: key,
+                keys: [gpg, ssh]
+            )
         }
 
         #expect(title("BB199F7C") == "Ada Lovelace <ada@work.example> (GPG: BB199F7C)")
@@ -92,6 +110,7 @@ struct IdentityProfileMenuTests {
 
         let none = AppLocalization.text("signing.none")
         let unknown = AppLocalization.text("signing.unknown")
+
         #expect(title(nil) == "Ada Lovelace <ada@work.example> (\(none))")
         #expect(title("~/.ssh/id_ed25519.pub") == "Ada Lovelace <ada@work.example> (\(unknown))")
     }

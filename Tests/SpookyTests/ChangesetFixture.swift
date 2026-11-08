@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -111,7 +112,7 @@ final class ChangesetFixture {
         session.history.refresh(status: try await runner.status(), runner: runner, records: false)
         session.stashes.refresh(runner: runner, records: false)
         session.reflog.load(runner: runner, location: runner.location)
-        try await FileViewsTests.wait {
+        await until {
             !self.session.history.branches.isEmpty && self.session.stashes.isLoaded && self.session.reflog.isLoaded
         }
 
@@ -139,7 +140,7 @@ final class ChangesetFixture {
 
     /// 等待六份状态的清单完成，不以固定延迟判断加载成功。
     func waitForChanges() async throws {
-        try await FileViewsTests.wait {
+        await until {
             !self.session.history.isLoadingChanges && !self.session.stashes.isLoadingChanges
                 && !self.session.reflog.detail.isLoadingChanges && !self.session.comparison.isLoadingChanges
                 && !self.session.branchesReview.comparison.isLoadingChanges

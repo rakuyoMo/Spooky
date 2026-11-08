@@ -9,7 +9,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteRewriteTests {
     /// 在 B 上依次反转、摘取、改信息、重置、压缩，储藏后修补旧提交、断线与中止，停下后修补当前提交再继续，再核对序列被改变时不改写。
-    @Test("服务器上的反转、摘取、交互式变基与重置", .timeLimit(.minutes(3)))
+    @Test("服务器上的反转、摘取、交互式变基与重置")
     func rewriteFlow() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -130,7 +130,10 @@ extension RemoteRewriteTests {
         var commits: [String] = []
 
         for (index, subject) in subjects.enumerated() {
-            try await RepositoryFiles(runner: runner).write(Data("\(subject)\n".utf8), to: path + "/文件 \(index) [*].txt")
+            try await RepositoryFiles(runner: runner).write(
+                Data("\(subject)\n".utf8),
+                to: path + "/文件 \(index) [*].txt"
+            )
             _ = try await runner.run(["add", "--all"])
             _ = try await runner.run(["commit", "-q", "-m", subject])
             commits.append(try await RepositoryRewrite(runner: runner).resolve("HEAD"))

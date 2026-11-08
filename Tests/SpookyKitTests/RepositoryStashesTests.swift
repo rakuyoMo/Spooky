@@ -11,8 +11,9 @@ import Testing
 /// 依次是 `stash create` + `stash store` 的快照、带未跟踪文件和含冒号说明的储藏、Git 自动生成标题的储藏，
 /// 后两个保存在中文分支 `功能/分支` 上。
 struct RepositoryStashesTests {
-    /// 序号取自引用日志选择器；说明、来源分支、基准提交与未跟踪文件的父提交都从同一份输出读出。
-    @Test("stash list 夹具：序号、说明、分支、父提交与日期")
+    /// 序号取自引用日志选择器；说明、来源分支、基准提交与未跟踪文件的父提交都从同一份输出读出，
+    /// 哈希长度随仓库算法变化，格式错误时拒绝整份列表；只有列出与查看储藏越过写队列。
+    @Test("stash list 的夹具、SHA-256 仓库与格式错误，储藏子命令的读写分类")
     func parseList() throws {
         let stashes = try StashEntry.parse(try fixture("stash-list.bin"))
         #expect(stashes.map(\.index) == [0, 1, 2])
@@ -35,53 +36,37 @@ struct RepositoryStashesTests {
         #expect(stashes[2].message == nil)
         #expect(stashes[2].base == stashes[2].parents[0])
         #expect(stashes[2].reference == "stash@{2}")
-    }
 
-    /// 哈希长度随仓库算法变化，SHA-256 仓库同样可以解析。
-    @Test("stash list 夹具：SHA-256 仓库")
-    func parseSHA256() throws {
-        let stashes = try StashEntry.parse(try fixture("stash-list-sha256.bin"))
-        #expect(stashes.count == 3)
-        #expect(stashes.allSatisfy { $0.id.count == 64 && $0.parents.allSatisfy { $0.count == 64 } })
-    }
+        // SHA-256 仓库的哈希同样可以解析
+        let sha256 = try StashEntry.parse(try fixture("stash-list-sha256.bin"))
+        #expect(sha256.count == 3)
 
-    /// 截断、字段错位、日期形式的选择器或不像储藏的提交都拒绝整份列表，序号与哈希不会错位。
-    @Test("stash list 格式错误")
-    func malformedList() throws {
-        let hash = String(repeating: "a", count: 40)
-        let parents = hash + " " + String(repeating: "b", count: 40)
-        let valid = "stash@{0}\0\(hash)\0\(parents)\0100\0On main: x\0"
-        #expect(try StashEntry.parse(Data(valid.utf8)).count == 1)
-        #expect(try StashEntry.parse(Data()).isEmpty)
-
-        let broken = [
-            String(valid.dropLast()),
-            "stash@{0}\0\(hash)\0\(parents)\0100\0",
-            "stash@{2026-01-01}\0\(hash)\0\(parents)\0100\0x\0",
-            "refs/stash@{0}\0\(hash)\0\(parents)\0100\0x\0",
-            "stash@{0}\0\(hash)\0\(hash)\0100\0x\0",
-            "stash@{0}\0HEAD\0\(parents)\0100\0x\0",
-            "stash@{0}\0\(hash)\0\(parents)\0soon\0x\0",
-        ]
-
-        for output in broken {
-            #expect(throws: RepositoryReadError.malformedOutput("stash list")) {
-                try StashEntry.parse(Data(output.utf8))
+        #expect(
+            sha256.allSatisfy {
+                $0.id.count == 64 && $0.parents.allSatisfy { $0.count == 64 }
             }
-        }
+        )
+
+        try Self.expectMalformedListRejected()
+        Self.expectWriteClassification()
     }
 
-    /// 保存后工作区变干净；应用时恢复暂存区，Pop 成功后储藏从列表中消失。
-    @Test("保存、应用与 Pop 恢复暂存区状态")
+    /// 没有改动时保存与快照都失败；保存后工作区变干净，应用时恢复暂存区，Pop 成功后储藏从列表中消失；
+    /// 多选删除从大到小进行，未选的储藏保留。
+    @Test("没有改动时保存失败，保存、应用、Pop 与删除多个储藏")
     func saveApplyPop() async throws {
         let repository = try await makeRepository()
         defer { repository.remove() }
+
         let stashes = RepositoryStashes(runner: repository.runner)
+
+        // 只有未跟踪文件但不包含未跟踪文件时没有可储藏的改动
+        try write("new\n", to: "未跟踪.txt", in: repository)
+        try await Self.expectNothingToSave(stashes)
 
         try write("staged\n", to: "tracked *.txt", in: repository)
         _ = try await repository.runner.run(["--literal-pathspecs", "add", "--", "tracked *.txt"])
         try write("unstaged\n", to: "tracked x.txt", in: repository)
-        try write("new\n", to: "未跟踪.txt", in: repository)
 
         try await stashes.save(message: "说明 -m", includeUntracked: true)
         #expect(try await repository.runner.status().entries.isEmpty)
@@ -92,6 +77,7 @@ struct RepositoryStashesTests {
 
         // 应用保留储藏；恢复暂存区后已暂存的文件仍是已暂存状态
         try await stashes.apply(saved, restoreIndex: true, drop: false)
+
         let restored = try await repository.runner.status().entries
         #expect(restored.first { $0.path == "tracked *.txt" }?.staged == .modified)
         #expect(restored.first { $0.path == "tracked x.txt" }?.unstaged == .modified)
@@ -99,46 +85,36 @@ struct RepositoryStashesTests {
         #expect(try await stashes.list().count == 1)
 
         // 不恢复暂存区的 Pop：改动全部回到工作区且未暂存，成功后储藏被删除
-        _ = try await repository.runner.run(["reset", "-q", "--hard"])
-        _ = try await repository.runner.run(["clean", "-q", "-f"])
-        try await stashes.apply(try #require(try await stashes.list().first), restoreIndex: false, drop: true)
+        try await discardLocalChanges(in: repository)
+
+        let listed = try #require(try await stashes.list().first)
+        try await stashes.apply(listed, restoreIndex: false, drop: true)
+
         let popped = try await repository.runner.status().entries
         #expect(popped.first { $0.path == "tracked *.txt" }?.staged == nil)
         #expect(popped.first { $0.path == "tracked *.txt" }?.unstaged == .modified)
         #expect(try await stashes.list().isEmpty)
-    }
 
-    /// 没有改动时 Git 以 0 退出；储藏服务必须把它当作失败，并保留 Git 的原文。
-    @Test("没有可储藏的改动")
-    func nothingToSave() async throws {
-        let repository = try await makeRepository()
-        defer { repository.remove() }
-        let stashes = RepositoryStashes(runner: repository.runner)
+        // 存下三个储藏，删除第一个与第三个
+        try await discardLocalChanges(in: repository)
 
-        // 只有未跟踪文件但不包含未跟踪文件时同样没有可储藏的改动
-        try write("new\n", to: "untracked.txt", in: repository)
-
-        do {
-            try await stashes.save(message: "", includeUntracked: false)
-            Issue.record("没有改动时保存应失败")
-        } catch StashError.noLocalChanges(let result) {
-            #expect(result.exitCode == 0)
-            #expect(String(decoding: result.standardOutput, as: UTF8.self).contains("No local changes to save"))
+        for message in ["one", "two", "three"] {
+            try write(message + "\n", to: "tracked x.txt", in: repository)
+            try await stashes.save(message: message, includeUntracked: false)
         }
 
-        do {
-            try await stashes.snapshot(message: "", includeUntracked: false)
-            Issue.record("没有改动时快照应失败")
-        } catch StashError.noLocalChanges { }
-
-        #expect(try await stashes.list().isEmpty)
+        let list = try await stashes.list()
+        try await stashes.drop([list[0], list[2]])
+        #expect(try await stashes.list().map(\.message) == ["two"])
     }
 
-    /// 部分储藏只收入所选文件（含所选的未跟踪文件），通配符按字面匹配，其余改动原样保留。
-    @Test("部分储藏")
-    func partialStash() async throws {
+    /// 部分储藏只收入所选文件（含所选的未跟踪文件），通配符按字面匹配，其余改动原样保留；
+    /// 快照登记储藏但不改动工作区：全部改动不碰文件，带未跟踪文件或部分快照时内容与状态复原。
+    @Test("部分储藏、Snapshot 与部分 Snapshot")
+    func partialStashAndSnapshots() async throws {
         let repository = try await makeRepository()
         defer { repository.remove() }
+
         let stashes = RepositoryStashes(runner: repository.runner)
 
         try write("changed\n", to: "tracked *.txt", in: repository)
@@ -157,66 +133,21 @@ struct RepositoryStashesTests {
         let files = try await stashes.changes(in: stash)
         #expect(Set(files.map(\.file.path)) == ["tracked *.txt", "新 [*].txt"])
         #expect(files.first { $0.file.path == "新 [*].txt" }?.isUntracked ?? false)
+
+        // 清空工作区与储藏，从新的改动开始核对快照
+        try await discardLocalChanges(in: repository)
+        _ = try await repository.runner.run(["stash", "clear"])
+
+        try await snapshots(in: repository)
     }
 
-    /// 快照登记储藏但不改动工作区：全部改动不碰文件，带未跟踪文件或部分快照时内容与状态复原。
-    @Test("Snapshot 与部分 Snapshot")
-    func snapshots() async throws {
+    /// 服务器上可能有终端同时储藏：序号已指向别的储藏时拒绝操作，不误删、不误用；
+    /// 应用冲突时 Git 保留储藏，服务以冲突错误报告，冲突文件留在工作区。
+    @Test("序号变化后拒绝按旧序号操作，应用冲突时保留储藏")
+    func changedIndexAndConflict() async throws {
         let repository = try await makeRepository()
         defer { repository.remove() }
-        let stashes = RepositoryStashes(runner: repository.runner)
 
-        try write("staged\n", to: "tracked *.txt", in: repository)
-        _ = try await repository.runner.run(["--literal-pathspecs", "add", "--", "tracked *.txt"])
-        try write("unstaged\n", to: "tracked x.txt", in: repository)
-        try write("new\n", to: "untracked.txt", in: repository)
-        let before = try await repository.runner.status()
-
-        try await stashes.snapshot(message: "全部", includeUntracked: false)
-        #expect(try await repository.runner.status() == before)
-
-        let entries = before.entries.filter { ["tracked x.txt", "untracked.txt"].contains($0.path) }
-        try await stashes.snapshot(message: "部分", includeUntracked: true, entries: entries)
-        #expect(try await repository.runner.status() == before)
-        #expect(try read("tracked x.txt", in: repository) == "unstaged\n")
-
-        let list = try await stashes.list()
-        #expect(list.map(\.message) == ["部分", "全部"])
-        #expect(Set(try await stashes.changes(in: list[1]).map(\.file.path)) == ["tracked *.txt", "tracked x.txt"])
-
-        // Git 的部分储藏总是记下整个暂存区，所选文件之外已暂存的改动也在储藏里
-        let partial = Set(try await stashes.changes(in: list[0]).map(\.file.path))
-        #expect(partial.isSuperset(of: ["tracked x.txt", "untracked.txt"]))
-    }
-
-    /// 冲突时 Git 保留储藏；服务以冲突错误报告，冲突文件留在工作区。
-    @Test("应用冲突时保留储藏")
-    func applyConflict() async throws {
-        let repository = try await makeRepository()
-        defer { repository.remove() }
-        let stashes = RepositoryStashes(runner: repository.runner)
-
-        try write("stashed\n", to: "tracked x.txt", in: repository)
-        try await stashes.save(message: "conflict", includeUntracked: false)
-        try write("committed\n", to: "tracked x.txt", in: repository)
-        _ = try await repository.runner.run(["commit", "-q", "-am", "change"])
-
-        do {
-            try await stashes.apply(try #require(try await stashes.list().first), restoreIndex: false, drop: true)
-            Issue.record("冲突的 Pop 应报告冲突")
-        } catch StashError.conflicts(let result) {
-            #expect(result.exitCode == 1)
-        }
-
-        #expect(try await stashes.list().count == 1)
-        #expect(try await repository.runner.status().entries.contains { $0.kind == .conflicted })
-    }
-
-    /// 服务器上可能有终端同时储藏：序号已指向别的储藏时拒绝操作，不误删、不误用。
-    @Test("序号变化后拒绝按旧序号操作")
-    func changedIndex() async throws {
-        let repository = try await makeRepository()
-        defer { repository.remove() }
         let stashes = RepositoryStashes(runner: repository.runner)
 
         try write("first\n", to: "tracked x.txt", in: repository)
@@ -227,27 +158,33 @@ struct RepositoryStashesTests {
         try write("second\n", to: "tracked x.txt", in: repository)
         _ = try await repository.runner.run(["stash", "push", "-q", "-m", "terminal"])
 
-        await #expect(throws: StashError.self) { try await stashes.drop([listed]) }
-        await #expect(throws: StashError.self) { try await stashes.apply(listed, restoreIndex: false, drop: false) }
-        #expect(try await stashes.list().map(\.message) == ["terminal", "first"])
-        #expect(try await repository.runner.status().entries.isEmpty)
-    }
-
-    /// 多选删除从大到小进行，未选的储藏保留。
-    @Test("删除多个储藏")
-    func dropSeveral() async throws {
-        let repository = try await makeRepository()
-        defer { repository.remove() }
-        let stashes = RepositoryStashes(runner: repository.runner)
-
-        for message in ["one", "two", "three"] {
-            try write(message + "\n", to: "tracked x.txt", in: repository)
-            try await stashes.save(message: message, includeUntracked: false)
+        await #expect(throws: StashError.self) {
+            try await stashes.drop([listed])
         }
 
-        let list = try await stashes.list()
-        try await stashes.drop([list[0], list[2]])
-        #expect(try await stashes.list().map(\.message) == ["two"])
+        await #expect(throws: StashError.self) {
+            try await stashes.apply(listed, restoreIndex: false, drop: false)
+        }
+
+        #expect(try await stashes.list().map(\.message) == ["terminal", "first"])
+        #expect(try await repository.runner.status().entries.isEmpty)
+
+        // 储藏之后同一个文件又提交了别的内容，Pop 停在冲突上
+        try write("stashed\n", to: "tracked x.txt", in: repository)
+        try await stashes.save(message: "conflict", includeUntracked: false)
+        try write("committed\n", to: "tracked x.txt", in: repository)
+        _ = try await repository.runner.run(["commit", "-q", "-am", "change"])
+
+        do {
+            let conflicting = try #require(try await stashes.list().first)
+            try await stashes.apply(conflicting, restoreIndex: false, drop: true)
+            Issue.record("冲突的 Pop 应报告冲突")
+        } catch StashError.conflicts(let result) {
+            #expect(result.exitCode == 1)
+        }
+
+        #expect(try await stashes.list().map(\.message) == ["conflict", "terminal", "first"])
+        #expect(try await repository.runner.status().entries.contains { $0.kind == .conflicted })
     }
 
     /// 只应用储藏中的一个文件：其它文件不动，未跟踪文件同样可以应用；套用不上时整体失败。
@@ -255,6 +192,7 @@ struct RepositoryStashesTests {
     func applySingleFile() async throws {
         let repository = try await makeRepository()
         defer { repository.remove() }
+
         let stashes = RepositoryStashes(runner: repository.runner)
 
         try write("stashed\n", to: "tracked *.txt", in: repository)
@@ -287,6 +225,104 @@ struct RepositoryStashesTests {
     }
 }
 
+// MARK: - Steps
+
+extension RepositoryStashesTests {
+    /// 截断、字段错位、日期形式的选择器或不像储藏的提交都拒绝整份列表，序号与哈希不会错位。
+    private static func expectMalformedListRejected() throws {
+        let hash = String(repeating: "a", count: 40)
+        let parents = hash + " " + String(repeating: "b", count: 40)
+        let valid = "stash@{0}\0\(hash)\0\(parents)\0100\0On main: x\0"
+
+        #expect(try StashEntry.parse(Data(valid.utf8)).count == 1)
+        #expect(try StashEntry.parse(Data()).isEmpty)
+
+        let broken = [
+            String(valid.dropLast()),
+            "stash@{0}\0\(hash)\0\(parents)\0100\0",
+            "stash@{2026-01-01}\0\(hash)\0\(parents)\0100\0x\0",
+            "refs/stash@{0}\0\(hash)\0\(parents)\0100\0x\0",
+            "stash@{0}\0\(hash)\0\(hash)\0100\0x\0",
+            "stash@{0}\0HEAD\0\(parents)\0100\0x\0",
+            "stash@{0}\0\(hash)\0\(parents)\0soon\0x\0",
+        ]
+
+        for output in broken {
+            #expect(throws: RepositoryReadError.malformedOutput("stash list")) {
+                try StashEntry.parse(Data(output.utf8))
+            }
+        }
+    }
+
+    /// 只有列出与查看储藏越过写队列；保存、应用、删除、登记与生成储藏提交都按写操作排队。
+    private static func expectWriteClassification() {
+        #expect(RepositoryOperationQueue.isReadOnly(["-c", "log.date=default", "stash", "list", "-z"]))
+        #expect(RepositoryOperationQueue.isReadOnly(["stash", "show", "-p", "stash@{0}"]))
+
+        let writes = [
+            ["stash"],
+            ["stash", "push"],
+            ["--literal-pathspecs", "stash", "push", "-u"],
+            ["stash", "apply"],
+            ["stash", "pop", "--index"],
+            ["stash", "drop"],
+            ["stash", "store"],
+            ["stash", "create"],
+        ]
+
+        for arguments in writes {
+            #expect(!RepositoryOperationQueue.isReadOnly(arguments))
+        }
+    }
+
+    /// 没有改动时 Git 以 0 退出；保存与快照都必须把它当作失败并保留 Git 的原文，列表不变。
+    private static func expectNothingToSave(_ stashes: RepositoryStashes) async throws {
+        do {
+            try await stashes.save(message: "", includeUntracked: false)
+            Issue.record("没有改动时保存应失败")
+        } catch StashError.noLocalChanges(let result) {
+            #expect(result.exitCode == 0)
+            #expect(String(decoding: result.standardOutput, as: UTF8.self).contains("No local changes to save"))
+        }
+
+        do {
+            try await stashes.snapshot(message: "", includeUntracked: false)
+            Issue.record("没有改动时快照应失败")
+        } catch StashError.noLocalChanges { }
+
+        #expect(try await stashes.list().isEmpty)
+    }
+
+    /// 快照登记储藏但不改动工作区：全部改动不碰文件，带未跟踪文件或部分快照时内容与状态复原。
+    private func snapshots(in repository: TemporaryRepository) async throws {
+        let stashes = RepositoryStashes(runner: repository.runner)
+
+        try write("staged\n", to: "tracked *.txt", in: repository)
+        _ = try await repository.runner.run(["--literal-pathspecs", "add", "--", "tracked *.txt"])
+        try write("unstaged\n", to: "tracked x.txt", in: repository)
+        try write("new\n", to: "untracked.txt", in: repository)
+        let before = try await repository.runner.status()
+
+        try await stashes.snapshot(message: "全部", includeUntracked: false)
+        #expect(try await repository.runner.status() == before)
+
+        let entries = before.entries.filter { ["tracked x.txt", "untracked.txt"].contains($0.path) }
+        try await stashes.snapshot(message: "部分", includeUntracked: true, entries: entries)
+        #expect(try await repository.runner.status() == before)
+        #expect(try read("tracked x.txt", in: repository) == "unstaged\n")
+
+        let list = try await stashes.list()
+        #expect(list.map(\.message) == ["部分", "全部"])
+
+        let whole = Set(try await stashes.changes(in: list[1]).map(\.file.path))
+        #expect(whole == ["tracked *.txt", "tracked x.txt"])
+
+        // Git 的部分储藏总是记下整个暂存区，所选文件之外已暂存的改动也在储藏里
+        let partial = Set(try await stashes.changes(in: list[0]).map(\.file.path))
+        #expect(partial.isSuperset(of: ["tracked x.txt", "untracked.txt"]))
+    }
+}
+
 // MARK: - Helpers
 
 extension RepositoryStashesTests {
@@ -299,6 +335,7 @@ extension RepositoryStashesTests {
         try write("base\n", to: "tracked x.txt", in: repository)
         _ = try await repository.runner.run(["add", "--all"])
         _ = try await repository.runner.run(["commit", "-q", "-m", "root"])
+
         return repository
     }
 
@@ -310,6 +347,12 @@ extension RepositoryStashesTests {
     /// 读取仓库内的文件。
     func read(_ path: String, in repository: TemporaryRepository) throws -> String {
         String(decoding: try Data(contentsOf: repository.directory.appending(path: path)), as: UTF8.self)
+    }
+
+    /// 丢掉工作区与暂存区里的全部改动，连同未跟踪文件。
+    private func discardLocalChanges(in repository: TemporaryRepository) async throws {
+        _ = try await repository.runner.run(["reset", "-q", "--hard"])
+        _ = try await repository.runner.run(["clean", "-q", "-f"])
     }
 
     /// 读取固定输出夹具。

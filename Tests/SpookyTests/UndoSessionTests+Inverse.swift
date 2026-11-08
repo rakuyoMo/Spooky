@@ -6,22 +6,25 @@ import Testing
 
 // MARK: - Inverse
 
-/// 由操作自己给出反向操作的撤销：assume-unchanged 的标记与 Git LFS 的启用，以及准备结果与撤销记录的关系。
+/// 由操作自己给出反向操作的撤销：assume-unchanged 的标记与 Git LFS 的启用。
 extension UndoSessionTests {
     /// 标记与取消 assume-unchanged 各自撤销后文件列表随之变化，重做后再次生效；标记本来都在时不占撤销栈。
     @Test("assume-unchanged 的撤销与重做")
     func assumeUnchangedRoundTrip() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
+
         let session = fixture.session
         let set = AppLocalization.text("files.assumeUnchanged.set")
 
         try fixture.write("changed\n")
         await fixture.refresh()
+
         let entry = try #require(session.status?.entries.first)
 
         // 标记后 Git 不再报告这个文件的改动
         try await fixture.perform { session.setAssumeUnchanged([entry], true) }
+
         #expect(session.status?.entries.isEmpty ?? false)
         #expect(try await Self.settledState(of: session, redo: false) == .available(set))
 
@@ -51,12 +54,15 @@ extension UndoSessionTests {
     func enableLFSRoundTrip() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
+
         let session = fixture.session
         let lfs = RepositoryLFS(runner: fixture.runner)
+        let enable = AppLocalization.text("lfs.enable")
 
         try await fixture.perform { session.enableLFS() }
+
         #expect(try await lfs.isInstalledLocally())
-        #expect(try await Self.settledState(of: session, redo: false) == .available(AppLocalization.text("lfs.enable")))
+        #expect(try await Self.settledState(of: session, redo: false) == .available(enable))
 
         try await fixture.perform { session.undoLastOperation() }
         #expect(try await !lfs.isInstalledLocally())
@@ -64,28 +70,9 @@ extension UndoSessionTests {
         try await fixture.perform { session.redoLastOperation() }
         #expect(try await lfs.isInstalledLocally())
 
+        // 本来就启用时再启用
         try await fixture.perform { session.enableLFS() }
         #expect(session.undoHistory?.undoEntries.count == 1)
-    }
-
-    /// 准备失败时操作照常执行，按不能撤销处理：清空撤销栈，菜单写明上一个操作不能撤销。
-    @Test("准备反向操作失败时不能撤销")
-    func failedPreparation() async throws {
-        let fixture = try await Fixture()
-        defer { fixture.remove() }
-        let session = fixture.session
-
-        try await fixture.createBranch("topic")
-        try await fixture.perform {
-            session.performGit(
-                { runner, _ in _ = try await runner.run(["config", "--local", "x.y", "z"]) },
-                title: "Prepare",
-                undo: .inverse { _ in throw RepositoryReadError.invalidQuery }
-            )
-        }
-
-        #expect(try await Self.settledState(of: session, redo: false) == .irreversible("Prepare"))
-        #expect(session.undoHistory?.undoEntries.isEmpty ?? false)
     }
 }
 

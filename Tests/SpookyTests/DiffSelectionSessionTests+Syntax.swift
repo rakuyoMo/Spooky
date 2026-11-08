@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -10,6 +11,8 @@ extension DiffSelectionSessionTests {
     @Test("新快照在同一宿主重启语法任务")
     func syntaxReload() async throws {
         _ = NSApplication.shared
+
+        // 本测试打开语法着色，结束时还原
         let defaults = UserDefaults.standard
         let saved = defaults.volatileDomain(forName: UserDefaults.argumentDomain)
         var arguments = saved
@@ -17,64 +20,80 @@ extension DiffSelectionSessionTests {
         arguments[TextPreferences.diffSyntaxColoringKey] = true
         defaults.setVolatileDomain(arguments, forName: UserDefaults.argumentDomain)
         defer { defaults.setVolatileDomain(saved, forName: UserDefaults.argumentDomain) }
+
         let fixture = try await UndoSessionTests.Fixture()
         defer { fixture.remove() }
+
         let url = fixture.directory.appending(path: "code.swift")
         try Data("let base = 0\n".utf8).write(to: url)
         _ = try await fixture.runner.run(["add", "--all"])
         _ = try await fixture.runner.run(["commit", "-qm", "code"])
         try Data("let answer = 1\n".utf8).write(to: url)
         await fixture.refresh()
+
         let session = fixture.session
         let entry = try #require(session.status?.entries.first { $0.path == "code.swift" })
         session.selectedID = StatusRowID(path: entry.path, kind: entry.kind)
-        try await FileViewsTests.wait { !session.isLoadingDiff && session.diffSnapshot?.diff != nil }
+        await until { !session.isLoadingDiff && session.diffSnapshot?.diff != nil }
+
+        // 显示用的会话经闸门读全文，着色任务可以停在读取上
         let first = try #require(session.diffSnapshot)
-        let gate = fixture.directory.appending(path: ".git")
-        let runner = try gatedRunner(fixture, root: gate)
+        let root = fixture.directory.appending(path: ".git")
+        let gate = try ProcessGate(in: root)
+        defer { gate.release() }
+
+        let runner = try gatedRunner(fixture, gate: gate, root: root)
         let display = RepositorySession(makeRunner: { _ in runner }, activities: RepositoryActivities())
         display.display(fixture.location)
         defer { display.close() }
-        defer { try? Data().write(to: gate.appending(path: "release")) }
-        let host = NSHostingView(rootView: DiffContentView(session: display, snapshot: first, diff: try #require(first.diff)))
+
+        let host = NSHostingView(
+            rootView: DiffContentView(session: display, snapshot: first, diff: try #require(first.diff))
+        )
+
         host.frame = NSRect(x: 0, y: 0, width: 700, height: 500)
-        try await waitForColor("keyword", in: host)
+        await waitForColor("keyword", in: host)
+
+        // 换成新快照：着色跟随新正文，选择的版本不变
         let revision = session.diffSelections.revision
         try Data("/* a comment */\n".utf8).write(to: url)
         session.loadDiff()
-        try await FileViewsTests.wait { !session.isLoadingDiff && session.diffSnapshot?.fingerprint != first.fingerprint }
+        await until { !session.isLoadingDiff && session.diffSnapshot?.fingerprint != first.fingerprint }
+
         let second = try #require(session.diffSnapshot)
         #expect(session.diffSelections.revision == revision)
         #expect(
             DiffContentView.SyntaxKey(fingerprint: first.fingerprint, enabled: true)
                 != DiffContentView.SyntaxKey(fingerprint: second.fingerprint, enabled: true)
         )
-        host.rootView = DiffContentView(session: display, snapshot: second, diff: try #require(second.diff))
-        try await waitForColor("comment", in: host)
 
-        // 旧全文已读完但尚未返回时换快照，新任务结果不能再被旧着色覆盖。
+        host.rootView = DiffContentView(session: display, snapshot: second, diff: try #require(second.diff))
+        await waitForColor("comment", in: host)
+
+        // 旧全文已读完但尚未返回时换快照，新任务结果不能再被旧着色覆盖
         try Data("let answer = 1\n".utf8).write(to: url)
-        try Data().write(to: gate.appending(path: "arm"))
+        try Data().write(to: root.appending(path: "arm"))
         host.rootView = DiffContentView(session: display, snapshot: first, diff: try #require(first.diff))
-        try await FileViewsTests.wait {
-            host.layoutSubtreeIfNeeded()
-            return FileManager.default.fileExists(atPath: gate.appending(path: "started").path)
-        }
+        host.layoutSubtreeIfNeeded()
+        await gate.arrival()
+
         try Data("/* a comment */\n".utf8).write(to: url)
         host.rootView = DiffContentView(session: display, snapshot: second, diff: try #require(second.diff))
         host.layoutSubtreeIfNeeded()
-        try Data().write(to: gate.appending(path: "release"))
-        try await waitForColor("comment", in: host)
+        gate.release()
+
+        await waitForColor("comment", in: host)
         await DiffHeaderTests().settle(host)
-        try await waitForColor("comment", in: host)
+        await waitForColor("comment", in: host)
         #expect(host.window == nil)
+
         await display.shutdown()
     }
 
     /// 查看真实新增行的首字颜色，等待生产语法任务更新原生文本存储。
-    private func waitForColor(_ key: String, in host: NSHostingView<some View>) async throws {
+    private func waitForColor(_ key: String, in host: NSHostingView<some View>) async {
         let helper = DiffHeaderTests()
-        try await FileViewsTests.wait {
+        await until {
             host.layoutSubtreeIfNeeded()
             guard
                 let view = helper.descendants(DiffHunkTextContainer.self, in: host).first,

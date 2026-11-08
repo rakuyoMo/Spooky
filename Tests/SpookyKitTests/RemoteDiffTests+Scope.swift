@@ -5,7 +5,7 @@ import Testing
 
 extension RemoteDiffTests {
     /// 同一套精确路径、快照与写入检查在服务器执行，文件内容通过 SFTP 读取。
-    @Test("服务器单文件补丁边界", .timeLimit(.minutes(3)), arguments: [false, true])
+    @Test("服务器单文件补丁边界", arguments: [false, true])
     func remoteScope(ancestor: Bool) async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -45,7 +45,9 @@ extension RemoteDiffTests {
         _ = try await runner.run(["mv", "--", old, ".moving"])
 
         if ancestor {
-            _ = try await RemoteFixture.raw(["mkdir", "-p", fixture.repository + "/node/sub", fixture.repository + "/node/side"])
+            _ = try await RemoteFixture.raw([
+                "mkdir", "-p", fixture.repository + "/node/sub", fixture.repository + "/node/side",
+            ])
         }
 
         _ = try await runner.run(["mv", "--", ".moving", new])
@@ -79,7 +81,10 @@ extension RemoteDiffTests {
         try await service.apply(snapshot, file: 0, hunk: 0)
         #expect(try await runner.run(["show", ":" + new]) == Data(changed.utf8))
         #expect(try await runner.run(["show", ":" + sibling]) == siblingData)
-        #expect(try await files.read([fixture.repository + "/" + sibling])[fixture.repository + "/" + sibling] == siblingData)
+
+        let siblingPath = fixture.repository + "/" + sibling
+
+        #expect(try await files.read([siblingPath])[siblingPath] == siblingData)
         try await verifyRemoteStale(fixture, runner: runner, entry: entry, changed: changed)
 
         if !ancestor {

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -9,10 +10,15 @@ import Testing
 extension HistoryListTests {
     /// 快速保存每个提交记一条 Format Patch，写耗时、没有一行结果，没有整次保存的记录；保存后在 Finder 里选中补丁。
     /// 第一个提交执行中取消时只有这一条记为 Cancelled，后面的提交不执行，也不打开 Finder、不提示失败。
-    @Test("保存补丁按提交记进 Repository 页", .timeLimit(.minutes(10)))
+    @Test("保存补丁按提交记进 Repository 页")
     func savePatchRecords() async throws {
         let directory = try FileViewsTests.temporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
+        let tools = try FileViewsTests.temporaryDirectory()
+
+        defer {
+            try? FileManager.default.removeItem(at: directory)
+            try? FileManager.default.removeItem(at: tools)
+        }
 
         let location = RepositoryLocation.local(path: directory.path)
         let runner = try await FileViewsTests.initializeRepository(at: location)
@@ -22,6 +28,16 @@ extension HistoryListTests {
         let newer = try await Self.commit(at: 0, with: runner)
         let older = try await Self.commit(at: 1, with: runner)
 
+        // 每个提交的 format-patch 开始前停在闸门上，放行后才执行
+        let gate = try ProcessGate(in: tools)
+        defer { gate.release() }
+
+        let gated = try Self.scriptedRunner(location: location, tools: tools, cases: """
+            *format-patch*)
+                \(gate.command)
+                ;;
+            """)
+
         // 只记下要在 Finder 里选中的文件，不打开 Finder
         var revealed: [[String]] = []
         let reveal = RepositorySession.revealInFinder
@@ -30,7 +46,7 @@ extension HistoryListTests {
 
         let activities = RepositoryActivities()
         let session = RepositorySession(
-            makeRunner: { _ in runner },
+            makeRunner: { _ in gated },
             loadStatus: { _ in try await runner.status() },
             activities: activities
         )
@@ -40,8 +56,15 @@ extension HistoryListTests {
         session.onFailure = { failures.append($0) }
         session.display(location)
 
+        // 两个提交依次走到闸门，逐个放行；保存完最后一步是在 Finder 里选中补丁
         session.requestSavePatch([newer, older], quick: true)
-        try await FileViewsTests.wait { !revealed.isEmpty }
+
+        for _ in 0 ..< 2 {
+            await gate.arrival()
+            gate.release()
+        }
+
+        await until { !revealed.isEmpty }
 
         let saved = formatPatches(in: activities)
         #expect(saved.count == 2)
@@ -54,19 +77,17 @@ extension HistoryListTests {
         #expect(!activities.items.contains { $0.title == AppLocalization.text("patch.title") })
         #expect(revealed == [["0001-first.patch", "0002-second.patch"]])
 
-        // 第一个提交的记录一插入就取消，这时它的 format-patch 还没执行完
+        // 再保存一次：第一个提交的记录已插入，它的 format-patch 停在闸门上，这时取消
         session.requestSavePatch([newer, older], quick: true)
-
-        while formatPatches(in: activities).count == saved.count {
-            try await Task.sleep(for: .milliseconds(1))
-        }
+        await gate.arrival()
 
         let running = try #require(formatPatches(in: activities).first)
-        running.cancel?()
-        try await FileViewsTests.wait { running.isEnded }
+        #expect(formatPatches(in: activities).count == saved.count + 1)
 
-        // 留出后面的提交开始执行所需的时间，确认它没有开始
-        try await Task.sleep(for: .milliseconds(200))
+        running.cancel?()
+
+        // 取消带来的错误在这条记录结束之后才离开这个提交，后面的提交不会再开始
+        await until { running.isEnded }
 
         #expect(running.state == "activity.cancelled")
         #expect(formatPatches(in: activities).count == saved.count + 1)

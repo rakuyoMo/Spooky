@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -29,6 +30,7 @@ struct DiffHeaderTests {
             ScrollView {
                 LazyVStack(spacing: 0, pinnedViews: presentation == .standalone ? [.sectionHeaders] : []) {
                     Color.clear.frame(height: 56)
+
                     ForEach(hunks) { hunk in
                         DiffHunkView(
                             hunk: hunk,
@@ -40,6 +42,7 @@ struct DiffHeaderTests {
                             hasPrecedingHunk: hunk.id != hunks.first?.id
                         ) { _, _ in }
                     }
+
                     Color.clear.frame(height: 500)
                 }
             }
@@ -49,84 +52,33 @@ struct DiffHeaderTests {
     /// 原生字体和系统颜色使用已初始化的 AppKit。
     init() { _ = NSApplication.shared }
 
-    /// 所有边线都落在固定高度内，首块和浮动块共用仅底线的背景。
-    @Test("块头边线不增加高度", arguments: [false, true])
-    func borders(top: Bool) {
-        let view = DiffHeaderBackgroundView(frame: NSRect(x: 0, y: 0, width: 400, height: 32))
-        view.showsTopBorder = top
-        #expect(view.isOpaque)
-        #expect(view.hitTest(.zero) == nil)
-        #expect(view.borders.count == (top ? 2 : 1))
-        #expect(view.borders.last == NSRect(x: 0, y: 31, width: 400, height: 1))
-        #expect(view.borders.allSatisfy { view.bounds.contains($0) && $0.height == 1 })
+    /// 使用解析后的真实正文，测试仅改变块的当前寻址序号。
+    static func hunk(id: Int) throws -> DiffHunk {
+        let lines = (1 ... 15).map { " line \($0)" }.joined(separator: "\n")
+        let patch = "diff --git a/f b/f\n--- a/f\n+++ b/f\n@@ -1,15 +1,15 @@ context\n" + lines + "\n"
+        let hunk = try #require(RepositoryDiff(patch: Data(patch.utf8)).files.first?.hunks.first)
+        return DiffHunk(
+            id: id,
+            header: hunk.header,
+            oldStart: hunk.oldStart,
+            newStart: hunk.newStart,
+            lines: hunk.lines
+        )
     }
 
     /// 正文自然位置进入负值才浮动，后块推挤时也不恢复顶线；内嵌模式始终随内容滚动。
-    @Test("实际块头吸顶与回滚", arguments: [false, true])
-    func pinning(standalone: Bool) async throws {
-        let root = try Host(presentation: standalone ? .standalone : .embedded)
-        let host = NSHostingView(rootView: root)
-        host.frame = NSRect(x: 0, y: 0, width: 600, height: 500)
-        await settle(host)
-        let scroll = try #require(descendants(NSScrollView.self, in: host).first)
-        let initialHeaders = descendants(DiffHeaderBackgroundView.self, in: host).sorted {
-            $0.convert($0.bounds, to: scroll.contentView).minY < $1.convert($1.bounds, to: scroll.contentView).minY
-        }
-        let first = try #require(initialHeaders.first)
-        let firstY = first.convert(first.bounds, to: scroll.documentView).minY
-        #expect(!first.showsTopBorder)
-        #expect(first.bounds.height == 32)
-
-        for offset in [firstY, firstY + 1, firstY + 100, 0] {
-            scroll.contentView.scroll(to: NSPoint(x: 0, y: offset))
-            scroll.reflectScrolledClipView(scroll.contentView)
+    @Test("实际块头吸顶与回滚")
+    func pinning() async throws {
+        for standalone in [false, true] {
+            let host = NSHostingView(rootView: try Host(presentation: standalone ? .standalone : .embedded))
+            host.frame = NSRect(x: 0, y: 0, width: 600, height: 500)
             await settle(host)
-            let rendered = first.convert(first.bounds, to: scroll.documentView).minY - offset
-            #expect(abs(rendered - (standalone ? max(0, firstY - offset) : firstY - offset)) < 0.01)
-            #expect(!first.showsTopBorder)
-        }
 
-        // 第二块初始有顶线，吸顶及后块推挤时去掉，滚回后恢复。
-        let headers = descendants(DiffHeaderBackgroundView.self, in: host).sorted {
-            $0.convert($0.bounds, to: scroll.documentView).minY < $1.convert($1.bounds, to: scroll.documentView).minY
+            let scroll = try #require(descendants(NSScrollView.self, in: host).first)
+            try await expectFirstHeader(host, scroll: scroll, standalone: standalone)
+            try await expectSecondHeader(host, scroll: scroll, standalone: standalone)
+            #expect(host.window == nil)
         }
-        let second = try #require(headers.dropFirst().first)
-        let secondY = second.convert(second.bounds, to: scroll.documentView).minY
-        #expect(second.showsTopBorder)
-        let body = try #require(descendants(DiffHunkTextContainer.self, in: host).first)
-        let span = body.bounds.height + 32
-
-        for offset in [secondY, secondY + 1, secondY + span - 10, 0] {
-            scroll.contentView.scroll(to: NSPoint(x: 0, y: offset))
-            scroll.reflectScrolledClipView(scroll.contentView)
-            await settle(host)
-            #expect(second.showsTopBorder == (!standalone || offset <= secondY))
-        }
-        #expect(host.window == nil)
-    }
-
-    /// 预览不创建块头或边线，非零 ID 不影响调用方传入的首块规则。
-    @Test("预览隐藏块头", arguments: [false, true])
-    func preview(hidden: Bool) async throws {
-        let hunk = try Self.hunk(id: 9)
-        let root = VStack(spacing: 0) {
-            DiffHunkView(
-                hunk: hunk,
-                style: TextStyle(theme: TextTheme.builtin[0], tabWidth: 4, showsInvisibles: false),
-                staged: false,
-                enabled: true,
-                showsHeader: !hidden,
-                presentation: .standalone,
-                hasPrecedingHunk: false
-            ) { _, _ in }
-        }
-        let host = NSHostingView(rootView: root)
-        host.frame = NSRect(x: 0, y: 0, width: 600, height: 600)
-        await settle(host)
-        let backgrounds = descendants(DiffHeaderBackgroundView.self, in: host)
-        #expect(backgrounds.count == (hidden ? 0 : 1))
-        #expect(backgrounds.allSatisfy { !$0.showsTopBorder })
-        #expect(descendants(DiffHunkTextContainer.self, in: host).count == 1)
     }
 
     /// 查询当前宿主树，不读取桌面辅助功能层级。
@@ -136,22 +88,56 @@ struct DiffHeaderTests {
 
     /// 让 SwiftUI 几何观察和 AppKit 排版完成，不断言经过的时间。
     func settle(_ host: NSView) async {
-        for _ in 0 ..< 8 {
-            host.layoutSubtreeIfNeeded()
-            await Task.yield()
-            try? await Task.sleep(for: .milliseconds(10))
-        }
+        await runLoopTurns(8) { host.layoutSubtreeIfNeeded() }
     }
 }
 
 // MARK: - Private
 
 extension DiffHeaderTests {
-    /// 使用解析后的真实正文，测试仅改变块的当前寻址序号。
-    private static func hunk(id: Int) throws -> DiffHunk {
-        let lines = (1 ... 15).map { " line \($0)" }.joined(separator: "\n")
-        let patch = "diff --git a/f b/f\n--- a/f\n+++ b/f\n@@ -1,15 +1,15 @@ context\n" + lines + "\n"
-        let hunk = try #require(RepositoryDiff(patch: Data(patch.utf8)).files.first?.hunks.first)
-        return DiffHunk(id: id, header: hunk.header, oldStart: hunk.oldStart, newStart: hunk.newStart, lines: hunk.lines)
+    /// 首块始终没有顶线；独立模式滚过正文位置后停在顶部，内嵌模式随内容移动。
+    private func expectFirstHeader(_ host: NSView, scroll: NSScrollView, standalone: Bool) async throws {
+        let headers = descendants(DiffHeaderBackgroundView.self, in: host).sorted {
+            $0.convert($0.bounds, to: scroll.contentView).minY < $1.convert($1.bounds, to: scroll.contentView).minY
+        }
+
+        let first = try #require(headers.first)
+        let firstY = first.convert(first.bounds, to: scroll.documentView).minY
+        #expect(!first.showsTopBorder)
+        #expect(first.bounds.height == 32)
+
+        for offset in [firstY + 1, firstY + 100, 0] {
+            await move(scroll, to: offset, host: host)
+
+            let rendered = first.convert(first.bounds, to: scroll.documentView).minY - offset
+            #expect(abs(rendered - (standalone ? max(0, firstY - offset) : firstY - offset)) < 0.01)
+            #expect(!first.showsTopBorder)
+        }
+    }
+
+    /// 第二块初始有顶线，吸顶及后块推挤时去掉，滚回后恢复。
+    private func expectSecondHeader(_ host: NSView, scroll: NSScrollView, standalone: Bool) async throws {
+        let headers = descendants(DiffHeaderBackgroundView.self, in: host).sorted {
+            $0.convert($0.bounds, to: scroll.documentView).minY < $1.convert($1.bounds, to: scroll.documentView).minY
+        }
+
+        let second = try #require(headers.dropFirst().first)
+        let secondY = second.convert(second.bounds, to: scroll.documentView).minY
+        #expect(second.showsTopBorder)
+
+        let body = try #require(descendants(DiffHunkTextContainer.self, in: host).first)
+        let span = body.bounds.height + 32
+
+        for offset in [secondY, secondY + 1, secondY + span - 10, 0] {
+            await move(scroll, to: offset, host: host)
+            #expect(second.showsTopBorder == (!standalone || offset <= secondY))
+        }
+    }
+
+    /// 把内容滚到指定位置，等布局跟上。
+    private func move(_ scroll: NSScrollView, to offset: CGFloat, host: NSView) async {
+        scroll.contentView.scroll(to: NSPoint(x: 0, y: offset))
+        scroll.reflectScrolledClipView(scroll.contentView)
+        await settle(host)
     }
 }

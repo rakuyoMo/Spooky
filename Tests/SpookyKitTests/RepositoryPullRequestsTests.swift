@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import TestSupport
 
 @testable import SpookyKit
 
@@ -9,8 +10,9 @@ import Testing
 struct RepositoryPullRequestsTests {
     /// 克隆不会取回请求的引用，请求的提交只能经托管服务保留的引用取回：取回后提交可用，比较基准由本机的 merge-base 算出；
     /// 托管服务没有给出目标分支的提交（GitLab 10.8 以前没有 diff_refs）时用目标远端的跟踪分支求基准，跟踪分支不存在时没有基准。
-    @Test("取回源分支提交与比较基准，没有目标分支提交时用跟踪分支")
-    func fetchAndBase() async throws {
+    /// 来自 Fork 的请求从提交新建不跟踪的分支；同名分支指向别处时拒绝；同仓库的请求在远端跟踪分支一致时跟踪它。
+    @Test("取回源分支提交与比较基准，检出请求")
+    func fetchAndCheckout() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
 
@@ -23,6 +25,7 @@ struct RepositoryPullRequestsTests {
         #expect(try await pulls.comparisonBase(for: request, remote: "origin") == nil)
 
         try await pulls.fetchHead(of: request.id, from: "origin")
+
         #expect(try await pulls.hasCommit(fixture.feature))
         #expect(try await pulls.comparisonBase(for: request, remote: "origin") == fixture.base)
         #expect(try await !pulls.hasCommit("not-a-hash"))
@@ -42,34 +45,29 @@ struct RepositoryPullRequestsTests {
         )
 
         #expect(try await pulls.comparisonBase(for: missing, remote: "origin") == nil)
-    }
 
-    /// 来自 Fork 的请求从提交新建不跟踪的分支；同名分支指向别处时拒绝；同仓库的请求在远端跟踪分支一致时跟踪它。
-    @Test("检出请求")
-    func checkout() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
+        // 来自 Fork 的请求检出成不跟踪的新分支
+        try await pulls.checkout(request, remote: "origin", as: "pr-1")
 
-        let fixture = try await PullRequestFixture(temporary)
-        let pulls = RepositoryPullRequests(runner: fixture.clone)
-
-        try await pulls.checkout(fixture.request(fork: true), remote: "origin", as: "pr-1")
         #expect(try await fixture.text(["rev-parse", "HEAD"]) == fixture.feature)
         #expect(try await fixture.text(["symbolic-ref", "--short", "HEAD"]) == "pr-1")
 
         // 同名分支已指向源分支提交时直接检出
         _ = try await fixture.clone.run(["switch", "-q", "main"])
-        try await pulls.checkout(fixture.request(fork: true), remote: "origin", as: "pr-1")
+        try await pulls.checkout(request, remote: "origin", as: "pr-1")
+
         #expect(try await fixture.text(["symbolic-ref", "--short", "HEAD"]) == "pr-1")
 
         await #expect(throws: PullRequestCheckoutError.branchMismatch("main")) {
-            try await pulls.checkout(fixture.request(fork: true), remote: "origin", as: "main")
+            try await pulls.checkout(request, remote: "origin", as: "main")
         }
 
         // 获取远端后 origin/feature 正是源分支提交
         _ = try await fixture.clone.run(["fetch", "-q", "origin"])
         try await pulls.checkout(fixture.request(fork: false), remote: "origin", as: "功能")
+
         let upstream = try await fixture.text(["rev-parse", "--abbrev-ref", "功能@{upstream}"])
+
         #expect(upstream == "origin/feature")
     }
 }
@@ -95,11 +93,12 @@ private struct PullRequestFixture {
         let setup = temporary.runner
 
         _ = try await setup.run(["-c", "init.templateDir=", "init", "-q", "--bare", "-b", "main", "--", remote])
-        _ = try await setup.run(["-c", "init.templateDir=", "init", "-q", "-b", "main", "--", work])
+
+        try FileManager.default.createDirectory(atPath: work, withIntermediateDirectories: false)
+        try await RepositoryTemplate.create(at: URL(fileURLWithPath: work))
 
         let source = temporary.runner(at: work)
-        _ = try await source.run(["config", "--local", "user.name", "Spooky Test"])
-        _ = try await source.run(["config", "--local", "user.email", "spooky@example.invalid"])
+
         _ = try await source.run(["commit", "-q", "--allow-empty", "-m", "基准"])
         _ = try await source.run(["switch", "-q", "-c", "feature"])
         _ = try await source.run(["commit", "-q", "--allow-empty", "-m", "功能"])
@@ -113,6 +112,7 @@ private struct PullRequestFixture {
 
         _ = try await setup.run(["clone", "-q", "--", remote, root + "/克隆"])
         clone = temporary.runner(at: root + "/克隆")
+
         _ = try await clone.run(["config", "--local", "user.name", "Spooky Test"])
         _ = try await clone.run(["config", "--local", "user.email", "spooky@example.invalid"])
 

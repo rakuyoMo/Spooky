@@ -16,9 +16,11 @@ struct AppcastCompositionTests {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
         // 先编译到临时文件名，再整体换上，其它进程不会读到写了一半的程序
+        let source = ReleaseFixture.package.appending(path: "scripts/compose-appcast.swift")
+
         let result = try await ReleaseFixture.run(
             "/usr/bin/xcrun",
-            ["swiftc", "-o", partial.path, ReleaseFixture.package.appending(path: "scripts/compose-appcast.swift").path],
+            ["swiftc", "-o", partial.path, source.path],
             in: directory
         )
 
@@ -32,38 +34,23 @@ struct AppcastCompositionTests {
         return binary
     }
 
-    /// 稳定版所有用户都会收到，上一份清单里的条目都比它旧，不再带上。
-    @Test("稳定版只留新条目")
-    func stableKeepsOnlyNewItem() async throws {
-        let feed = try await compose(generated: "generated-stable.xml", previous: "previous.xml")
+    /// 稳定版所有用户都会收到，上一份清单里的条目都比它旧，不再带上；测试版带上最新的稳定版，选稳定通道的用户仍能收到它，
+    /// 更旧的稳定版与开发版不带；开发版带上最新的稳定版与测试版；第一次发布没有上一份清单，只有新条目。
+    @Test("各通道带上更稳定的通道里最新的条目，没有上一份清单时只有新条目")
+    func carriesNewestItems() async throws {
+        let stable = try await compose(generated: "generated-stable.xml", previous: "previous.xml")
+        #expect(stable.items.map(\.build) == [6])
 
-        #expect(feed.items.map(\.build) == [6])
-    }
+        let beta = try await compose(generated: "generated-beta.xml", previous: "previous.xml")
+        #expect(beta.items.map(\.build) == [6, 3])
+        #expect(beta.items.map(\.channel) == ["beta", nil])
 
-    /// 测试版带上最新的稳定版，选稳定通道的用户仍能收到它；更旧的稳定版与开发版不带。
-    @Test("测试版带上最新的稳定版")
-    func betaCarriesNewestStable() async throws {
-        let feed = try await compose(generated: "generated-beta.xml", previous: "previous.xml")
+        let development = try await compose(generated: "generated-development.xml", previous: "previous.xml")
+        #expect(development.items.map(\.build) == [6, 3, 4])
+        #expect(development.items.map(\.channel) == ["development", nil, "beta"])
 
-        #expect(feed.items.map(\.build) == [6, 3])
-        #expect(feed.items.map(\.channel) == ["beta", nil])
-    }
-
-    /// 开发版带上最新的稳定版与测试版。
-    @Test("开发版带上最新的稳定版与测试版")
-    func developmentCarriesNewestStableAndBeta() async throws {
-        let feed = try await compose(generated: "generated-development.xml", previous: "previous.xml")
-
-        #expect(feed.items.map(\.build) == [6, 3, 4])
-        #expect(feed.items.map(\.channel) == ["development", nil, "beta"])
-    }
-
-    /// 第一次发布没有上一份清单，只有新条目。
-    @Test("没有上一份清单时只有新条目")
-    func composesWithoutPreviousFeed() async throws {
-        let feed = try await compose(generated: "generated-beta.xml", previous: nil)
-
-        #expect(feed.items.map(\.build) == [6])
+        let first = try await compose(generated: "generated-beta.xml", previous: nil)
+        #expect(first.items.map(\.build) == [6])
     }
 
     /// 每种语言一份 Markdown 说明，与文件内容逐字相同；`]]>` 与 CRLF 也原样保留为 LF 文本。
@@ -80,34 +67,33 @@ struct AppcastCompositionTests {
         #expect(descriptions.first?.text == "### Fixed\n\n- Text with ]]> inside.\n")
 
         for description in descriptions.dropFirst() {
-            let expected = try String(contentsOf: notes.appending(path: "\(description.language).md"), encoding: .utf8)
+            let expected = try String(
+                contentsOf: notes.appending(path: "\(description.language).md"),
+                encoding: .utf8
+            )
+
             #expect(description.text == expected)
         }
     }
 
-    /// 私钥与 App 的公钥不配对时安装包没有签名，App 不会安装，不能发布。
-    @Test("安装包没有签名时拒绝")
-    func rejectsUnsignedArchive() async throws {
-        let directory = try temporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let appcast = try copyFixture("generated-unsigned.xml", to: directory)
-        let original = try Data(contentsOf: appcast)
-        let result = try await runComposer(appcast: appcast, notes: ReleaseFixture.fixtures.appending(path: "release-notes"))
-
-        #expect(result.status == 1)
-        #expect(result.error.contains("安装包没有 EdDSA 签名"))
-        #expect(try Data(contentsOf: appcast) == original)
-    }
-
-    /// 缺一种语言的说明时不改动清单。
-    @Test("缺少更新说明时不改动清单")
-    func rejectsMissingNotes() async throws {
+    /// 私钥与 App 的公钥不配对时安装包没有签名，App 不会安装，不能发布；缺一种语言的说明时同样拒绝；两种情形都不改动清单。
+    @Test("安装包没有签名或缺少更新说明时拒绝，不改动清单")
+    func rejectsInvalidInput() async throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
 
         let notes = directory.appending(path: "notes")
         try FileManager.default.copyItem(at: ReleaseFixture.fixtures.appending(path: "release-notes"), to: notes)
+
+        let unsigned = try copyFixture("generated-unsigned.xml", to: directory)
+        let unsignedOriginal = try Data(contentsOf: unsigned)
+        let unsignedResult = try await runComposer(appcast: unsigned, notes: notes)
+
+        #expect(unsignedResult.status == 1)
+        #expect(unsignedResult.error.contains("安装包没有 EdDSA 签名"))
+        #expect(try Data(contentsOf: unsigned) == unsignedOriginal)
+
+        // 缺少 fr.md
         try FileManager.default.removeItem(at: notes.appending(path: "fr.md"))
 
         let appcast = try copyFixture("generated-stable.xml", to: directory)
@@ -126,7 +112,11 @@ struct AppcastCompositionTests {
         let plist = try PropertyListSerialization.propertyList(from: infoPlist, format: nil) as? [String: Any]
         let declared = try #require(plist?["CFBundleLocalizations"] as? [String])
 
-        let check = try String(contentsOf: ReleaseFixture.package.appending(path: "scripts/check-release.sh"), encoding: .utf8)
+        let check = try String(
+            contentsOf: ReleaseFixture.package.appending(path: "scripts/check-release.sh"),
+            encoding: .utf8
+        )
+
         let compose = try String(
             contentsOf: ReleaseFixture.package.appending(path: "scripts/compose-appcast.swift"),
             encoding: .utf8
@@ -226,7 +216,12 @@ extension AppcastCompositionTests {
     /// 把夹具里的一份清单拷进目录。
     private func copyFixture(_ name: String, to directory: URL) throws -> URL {
         let destination = directory.appending(path: name)
-        try FileManager.default.copyItem(at: ReleaseFixture.fixtures.appending(path: "appcast/\(name)"), to: destination)
+
+        try FileManager.default.copyItem(
+            at: ReleaseFixture.fixtures.appending(path: "appcast/\(name)"),
+            to: destination
+        )
+
         return destination
     }
 

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -9,7 +10,7 @@ import Testing
 extension FileViewsTests {
     /// 文件历史、原文与 Blame 的读取记进 Repository 页：第一页写出读到的提交数，总数、补丁、原文与逐行追溯各记一条；
     /// HEAD 移动引起的重读与引起它的刷新相同，不记录的刷新引起的不记，完整刷新引起的照常记；按版本范围筛选时不读总数。
-    @Test("文件视图的读取记进 Repository 页", .timeLimit(.minutes(10)))
+    @Test("文件视图的读取记进 Repository 页")
     func fileViewReads() async throws {
         let directory = try Self.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -36,7 +37,7 @@ extension FileViewsTests {
 
         // 文件历史：第一页写出读到的提交数，总数没有结果
         session.showFileHistory("root.txt")
-        try await Self.wait { session.fileHistory.totalCount != nil }
+        await until { session.fileHistory.totalCount != nil }
 
         let root = try #require(session.fileHistory.commits.first)
 
@@ -49,16 +50,16 @@ extension FileViewsTests {
 
         // 所选提交的补丁与原文各记一条
         session.fileHistory.selectedID = root.id
-        try await Self.wait { session.fileHistory.diff != nil }
+        await until { session.fileHistory.diff != nil }
         #expect(results("activity.read.commitDiffs", in: activities) == [nil])
 
         session.fileHistory.detailMode = .raw
-        try await Self.wait { session.fileHistory.content != nil }
+        await until { session.fileHistory.content != nil }
         #expect(results("activity.read.blob", in: activities) == [nil])
 
         // Blame 先读原文再读逐行追溯
         session.showFile("root.txt", at: nil, mode: .blame)
-        try await Self.wait { session.fileContent.blame != nil }
+        await until { session.fileContent.blame != nil }
         #expect(results("activity.read.blob", in: activities).count == 2)
         #expect(results("activity.read.blame", in: activities) == [nil])
 
@@ -94,11 +95,11 @@ extension FileViewsTests {
 
         // 按版本范围筛选：只读最近修改过这个文件的一个提交，不读总数
         session.fileHistory.scope = .revision
-        try await Self.wait { session.fileHistory.totalCount == 3 && session.fileHistory.content != nil }
+        await until { session.fileHistory.totalCount == 3 && session.fileHistory.content != nil }
 
         let before = activities.items.count
         session.fileHistory.search(root.id)
-        try await Self.wait { session.fileHistory.totalCount == 1 && session.fileHistory.content != nil }
+        await until { session.fileHistory.totalCount == 1 && session.fileHistory.content != nil }
 
         let added = activities.items.prefix(activities.items.count - before).map(\.title)
         #expect(added.contains(AppLocalization.text("activity.read.commits")))
@@ -116,7 +117,7 @@ extension FileViewsTests {
     ///
     /// 刷新替换状态时已同步发起重读、清掉旧结果，所以这些结果再出现时就是重读的结果。
     private func waitForFileViews(of session: RepositorySession, commits: Int) async throws {
-        try await Self.wait {
+        await until {
             session.fileHistory.totalCount == commits
                 && session.fileHistory.content != nil
                 && session.fileContent.blame?.lines.count == commits

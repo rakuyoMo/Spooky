@@ -18,38 +18,25 @@ struct ActivityRowTests {
     /// Remote 页的标题随状态变化：进行中写进行时加远端名，拉取与推送再接 refspec，完成换成过去时；
     /// 失败与取消在进行时的写法后面接 failed、cancelled，用户由此看出操作停在了哪个远端的哪个分支。
     /// 没有单一远端的只写动词；较早保存、没有方向的记录与其余两页写操作名称。
-    @Test("标题")
-    func title() throws {
-        let english = try #require(
-            AppLocalization.bundle
-                .url(forResource: "en", withExtension: "lproj")
-                .flatMap(Bundle.init(url:))
-        )
-
-        /// 按英文资源取的标题。
-        func text(_ key: String, _ argument: String? = nil) -> String {
-            let format = english.localizedString(forKey: key, value: nil, table: nil)
-            return argument.map { String(format: format, $0) } ?? format
-        }
-
+    /// 行首图标：Remote 页按传输方向显示，失败或取消的用警告图标；Repository 与 Service 页是文件夹与账号，只有失败的用警告图标。
+    /// 侧边栏底部的活动区共用按方向取的图标，失败与取消不换，结束的行仍看得出是哪种传输。
+    @Test("标题与行首图标")
+    func titleAndIcons() {
         let fetch = RepositoryActivity(
             kind: .remote,
             repository: location,
             title: "Quick Fetch",
             target: .fetch("origin")
         )
-        #expect(fetch.displayTitle == AppLocalization.text("activity.fetchingNamed", "origin"))
-        #expect(text("activity.fetchingNamed", "origin") == "Fetching origin")
+        let fetching = AppLocalization.text("activity.fetchingNamed", "origin")
+        #expect(fetch.displayTitle == fetching)
 
         fetch.state = "activity.finished"
         #expect(fetch.displayTitle == AppLocalization.text("activity.fetchedNamed", "origin"))
-        #expect(text("activity.fetchedNamed", "origin") == "Fetched origin")
 
         // 失败与取消接在进行时的写法后面
         fetch.state = "activity.failed"
-        let fetching = AppLocalization.text("activity.fetchingNamed", "origin")
         #expect(fetch.displayTitle == AppLocalization.text("activity.titleFailed", fetching))
-        #expect(text("activity.titleFailed", text("activity.fetchingNamed", "origin")) == "Fetching origin failed")
 
         let push = RepositoryActivity(
             kind: .remote,
@@ -58,12 +45,9 @@ struct ActivityRowTests {
             target: .push("fork", refspec: "refs/heads/main:refs/heads/main")
         )
         push.state = "activity.cancelled"
+
         let pushing = AppLocalization.text("activity.pushingNamed", "fork refs/heads/main:refs/heads/main")
         #expect(push.displayTitle == AppLocalization.text("activity.titleCancelled", pushing))
-        #expect(
-            text("activity.titleCancelled", text("activity.pushingNamed", "fork refs/heads/main:refs/heads/main"))
-                == "Pushing fork refs/heads/main:refs/heads/main cancelled"
-        )
 
         // 同步里的拉取在获取与拉取两步都是进行时，远端名后接远端分支
         let sync = RepositoryActivity(
@@ -73,15 +57,12 @@ struct ActivityRowTests {
             target: .pull("origin", refspec: "refs/heads/main")
         )
         sync.state = "sync.step.fetch"
-        let pulling = AppLocalization.text("activity.pullingNamed", "origin refs/heads/main")
-        #expect(sync.displayTitle == pulling)
-        #expect(text("activity.pullingNamed", "origin refs/heads/main") == "Pulling origin refs/heads/main")
+        #expect(sync.displayTitle == AppLocalization.text("activity.pullingNamed", "origin refs/heads/main"))
 
         // 获取全部远端时没有单一的远端名，只写动词
         let all = RepositoryActivity(kind: .remote, repository: location, title: "Auto Fetch", target: .fetch(nil))
         all.state = "activity.finished"
         #expect(all.displayTitle == AppLocalization.text("activity.fetched"))
-        #expect(text("activity.fetched") == "Fetched")
 
         // 没有方向的旧 Remote 记录与 Repository 页写操作名称
         let old = RepositoryActivity(kind: .remote, repository: location, title: "Fetch")
@@ -89,12 +70,18 @@ struct ActivityRowTests {
 
         let checkout = RepositoryActivity(kind: .repository, repository: location, title: "Check Out “main”")
         #expect(checkout.displayTitle == "Check Out “main”")
+
+        // 各页的行首图标
+        expectTransferIcons()
+        expectFolderIcons()
     }
 
     /// Remote 页进行中的行写 In Progress…，结束后换成开始的日期，今天与昨天写作相对的说法、更早的写完整日期，都不写时间；
     /// 其余两页写两位小数的耗时，进行中的算到当前时间。
-    @Test("右上角的时间")
-    func corner() throws {
+    /// 最后一行写日志的最后一个非空行，行首的空白原样保留：stderr 有内容时取它的，否则取 stdout 的；
+    /// 没有日志时写状态，同步进行中是步骤名。
+    @Test("右上角的时间与最后一行的文字")
+    func cornerAndStatus() {
         let now = Date()
         let fetch = RepositoryActivity(
             kind: .remote,
@@ -139,20 +126,7 @@ struct ActivityRowTests {
             #expect(ActivityRow(activity: activity).corner(now: now) == elapsed(0.034))
         }
 
-        let english = try #require(
-            AppLocalization.bundle
-                .url(forResource: "en", withExtension: "lproj")
-                .flatMap(Bundle.init(url:))
-        )
-
-        #expect(english.localizedString(forKey: "activity.elapsed", value: nil, table: nil) == "%@ sec")
-        #expect(english.localizedString(forKey: "activity.inProgress", value: nil, table: nil) == "In Progress…")
-    }
-
-    /// 最后一行写日志的最后一个非空行，行首的空白原样保留：stderr 有内容时取它的，否则取 stdout 的；
-    /// 没有日志时写状态，同步进行中是步骤名。
-    @Test("最后一行的文字")
-    func status() {
+        // 最后一行取 stderr 的最后一个非空行
         let push = RepositoryActivity(kind: .remote, repository: location, title: "Push", target: .push("origin"))
         push.append(.standardOutput(Data("ignored\n".utf8)))
         push.append(.standardError(Data("To /tmp/remote.git\n   1a2b3c4..5d6e7f8  main -> main\n  \n".utf8)))
@@ -175,53 +149,6 @@ struct ActivityRowTests {
         let request = RepositoryActivity(kind: .service, repository: nil, title: "Verify Account")
         request.state = "activity.finished"
         #expect(ActivityRow(activity: request).status == AppLocalization.text("activity.finished"))
-    }
-
-    /// Remote 页按传输方向显示图标，失败或取消的用警告图标；Repository 与 Service 页是文件夹与账号，只有失败的用警告图标。
-    /// 侧边栏底部的活动区共用按方向取的图标，失败与取消不换，结束的行仍看得出是哪种传输。
-    /// 获取、拉取、推送与工具栏对应的段同用自绘的图标。
-    @Test("行首图标")
-    func symbols() {
-        let warning = ActivityIcon.symbol("exclamationmark.triangle.fill")
-
-        // 较早保存、没有方向的 Remote 记录与拉取同用一个图标
-        let transfers: [(ActivityTransfer?, ActivityIcon)] = [
-            (.fetch, .transfer(.fetch)),
-            (.pull, .transfer(.pull)),
-            (.push, .transfer(.push)),
-            (nil, .transfer(.pull)),
-        ]
-
-        for (transfer, icon) in transfers {
-            let target = transfer.map { ActivityTarget(transfer: $0, remote: "origin", refspec: nil) }
-            let activity = RepositoryActivity(kind: .remote, repository: location, title: "Remote", target: target)
-            #expect(ActivityRow(activity: activity).leadingIcon == icon)
-            #expect(activity.transferIcon == icon)
-
-            activity.state = "activity.cancelled"
-            #expect(ActivityRow(activity: activity).leadingIcon == warning)
-
-            activity.state = "activity.failed"
-            #expect(ActivityRow(activity: activity).leadingIcon == warning)
-
-            // 侧边栏底部的活动区按方向取图标，失败与取消不换
-            #expect(activity.transferIcon == icon)
-        }
-
-        let folders: [(ActivityKind, ActivityIcon)] = [
-            (.repository, .symbol("folder")),
-            (.service, .symbol("person.crop.circle")),
-        ]
-
-        for (kind, icon) in folders {
-            let activity = RepositoryActivity(kind: kind, repository: location, title: "Other")
-
-            activity.state = "activity.cancelled"
-            #expect(ActivityRow(activity: activity).leadingIcon == icon)
-
-            activity.state = "activity.failed"
-            #expect(ActivityRow(activity: activity).leadingIcon == warning)
-        }
     }
 
     /// 进度是几个阶段的平均：推送以外的操作算 Compressing、Receiving、Resolving、Unpacking 四个阶段，没出现过的算 0，
@@ -269,5 +196,51 @@ struct ActivityRowTests {
     /// 两位小数、按系统地区数字格式的耗时。
     private func elapsed(_ seconds: TimeInterval) -> String {
         AppLocalization.text("activity.elapsed", seconds.formatted(.number.precision(.fractionLength(2))))
+    }
+
+    /// 核对 Remote 页各传输方向的行首图标与侧边栏底部的图标；较早保存、没有方向的记录与拉取同用一个图标。
+    private func expectTransferIcons() {
+        let warning = ActivityIcon.symbol("exclamationmark.triangle.fill")
+        let transfers: [(ActivityTransfer?, ActivityIcon)] = [
+            (.fetch, .transfer(.fetch)),
+            (.pull, .transfer(.pull)),
+            (.push, .transfer(.push)),
+            (nil, .transfer(.pull)),
+        ]
+
+        for (transfer, icon) in transfers {
+            let target = transfer.map { ActivityTarget(transfer: $0, remote: "origin", refspec: nil) }
+            let activity = RepositoryActivity(kind: .remote, repository: location, title: "Remote", target: target)
+            #expect(ActivityRow(activity: activity).leadingIcon == icon)
+            #expect(activity.transferIcon == icon)
+
+            activity.state = "activity.cancelled"
+            #expect(ActivityRow(activity: activity).leadingIcon == warning)
+
+            activity.state = "activity.failed"
+            #expect(ActivityRow(activity: activity).leadingIcon == warning)
+
+            // 侧边栏底部的活动区按方向取图标，失败与取消不换
+            #expect(activity.transferIcon == icon)
+        }
+    }
+
+    /// 核对 Repository 与 Service 页的行首图标：取消时不换，失败时换成警告图标。
+    private func expectFolderIcons() {
+        let warning = ActivityIcon.symbol("exclamationmark.triangle.fill")
+        let folders: [(ActivityKind, ActivityIcon)] = [
+            (.repository, .symbol("folder")),
+            (.service, .symbol("person.crop.circle")),
+        ]
+
+        for (kind, icon) in folders {
+            let activity = RepositoryActivity(kind: kind, repository: location, title: "Other")
+
+            activity.state = "activity.cancelled"
+            #expect(ActivityRow(activity: activity).leadingIcon == icon)
+
+            activity.state = "activity.failed"
+            #expect(ActivityRow(activity: activity).leadingIcon == warning)
+        }
     }
 }

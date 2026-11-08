@@ -83,8 +83,9 @@ struct RepositoryFileViewsTests {
         #expect(authors.first?.commitCount == 2)
     }
 
-    /// Blame 的段、提交元信息与原文按 porcelain 协议解析，哈希长度随仓库算法变化。
-    @Test("Blame 的段、元信息、特殊路径与无结尾换行", arguments: ["sha1", "sha256"])
+    /// Blame 的段、提交元信息与原文按 porcelain 协议解析，哈希长度随仓库算法变化；
+    /// 原文按对象哈希读取，版本中没有的文件返回 nil，由界面说明不能显示的原因。
+    @Test("Blame 的段与元信息、原文读取与整棵树的条目", arguments: ["sha1", "sha256"])
     func blame(objectFormat: String) async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
@@ -96,8 +97,9 @@ struct RepositoryFileViewsTests {
             withIntermediateDirectories: true
         )
 
-        // 最后一行没有换行，第二次提交只改中间一行
+        // 最后一行没有换行，第二次提交只改中间一行；另有一个二进制文件
         try Data("a\nb\nc".utf8).write(to: file)
+        try Data([0, 1, 2, 255]).write(to: fixture.directory.appending(path: "binary"))
         try await commit(in: fixture, message: "第一版", author: "李 café", date: "2020-01-01T00:00:00Z")
         let refs = RepositoryReferences(runner: fixture.runner)
         let root = try await refs.resolve("HEAD")
@@ -124,45 +126,26 @@ struct RepositoryFileViewsTests {
         // 早期版本的追溯只有一段
         let early = try await views.blame(Self.path, at: root)
         #expect(early.groups == [BlameGroup(commitID: root, firstLine: 1, lineCount: 3, originalLine: 1)])
-    }
 
-    /// 原文按对象哈希读取；版本中没有的文件返回 nil，由界面说明不能显示的原因。
-    @Test("原文读取、版本中缺失的文件与整棵树的条目")
-    func contents() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        try await fixture.initialize()
-        let file = fixture.directory.appending(path: Self.path)
-        try FileManager.default.createDirectory(
-            at: file.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        try Data("text\n".utf8).write(to: file)
-        try Data([0, 1, 2, 255]).write(to: fixture.directory.appending(path: "binary"))
-        try await commit(in: fixture, message: "root", author: "Alice", date: "2020-01-01T00:00:00Z")
-
-        // 提交之后才出现的文件不在这个版本里
-        try Data("new\n".utf8).write(to: fixture.directory.appending(path: "untracked.txt"))
-
-        let views = RepositoryFileViews(runner: fixture.runner)
-        let head = try await RepositoryReferences(runner: fixture.runner).resolve("HEAD")
-
+        // 原文按对象读取，文本与二进制都原样返回
         let entry = try #require(try await views.entry(at: Self.path, in: head))
         #expect(entry.mode == "100644")
         #expect(!entry.isSubmodule)
-        #expect(try await views.contents(of: entry) == Data("text\n".utf8))
+        #expect(try await views.contents(of: entry) == Data("a\n\tB\r\nc".utf8))
 
         let binary = try #require(try await views.entry(at: "binary", in: head))
         #expect(try await views.contents(of: binary) == Data([0, 1, 2, 255]))
 
+        // 提交之后才出现的文件不在这个版本里
+        try Data("new\n".utf8).write(to: fixture.directory.appending(path: "untracked.txt"))
         #expect(try await views.entry(at: "untracked.txt", in: head) == nil)
         #expect(try await views.storedEntry(for: "untracked.txt", in: head) == nil)
         #expect(try await views.files(in: head).map(\.path).sorted() == ["binary", Self.path].sorted())
     }
 
-    /// macOS 上的 Git 默认把命令行路径转成 NFC，树中以 NFD 存储的文件也必须能查到历史、Blame、原文与补丁。
-    @Test("NFD 文件名的历史、Blame、原文与补丁")
+    /// macOS 上的 Git 默认把命令行路径转成 NFC，树中以 NFD 存储的文件也必须能查到历史、Blame、原文与补丁；
+    /// 规范等价的目录可定位，但文件选择器仍然只返回文件。
+    @Test("NFD 文件名与目录的历史、Blame、原文与补丁")
     func decomposedPaths() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
@@ -199,14 +182,21 @@ struct RepositoryFileViewsTests {
         let diff = try await views.diff(of: entry.path, in: head)
         #expect(!(diff.diff?.files.first?.hunks.isEmpty ?? true))
 
+        // 按 NFC 请求的目录同样找到 NFD 形式，文件列表里没有目录
+        let directory = try #require(try await views.storedEntry(for: "café", in: head))
+        #expect(directory.isDirectory)
+        #expect(Array(directory.path.utf8) == Array("cafe\u{301}".utf8))
+        #expect(try await views.files(in: head).allSatisfy { !$0.isDirectory })
+
         // 提交详情的补丁使用变更集给出的原样路径，同样不被转成 NFC
         let change = try #require(try await RepositoryHistory(runner: runner).changes(in: head).first)
         let commitDiff = try await RepositoryHistory(runner: runner).diff(in: head, file: change)
         #expect(!(commitDiff.diff?.files.first?.hunks.isEmpty ?? true))
     }
 
-    /// 输出错位时拒绝显示不完整的结果，不能把残缺的追溯当成文件原文。
-    @Test("Blame、ls-tree 与 shortlog 的格式错误")
+    /// 输出错位时拒绝显示不完整的结果，不能把残缺的追溯当成文件原文；
+    /// 文件视图的查询都不写入仓库，可以与写操作并行，不占用仓库写队列。
+    @Test("Blame、ls-tree 与 shortlog 的格式错误，查询登记为只读")
     func malformedOutput() throws {
         let hash = String(repeating: "a", count: 40)
         let metadata = [
@@ -264,11 +254,8 @@ struct RepositoryFileViewsTests {
                 try FileContributor.parse(Data(output.utf8))
             }
         }
-    }
 
-    /// 文件视图的查询都不写入仓库，可以与写操作并行，不占用仓库写队列。
-    @Test("文件视图的查询登记为只读")
-    func readOnlyCommands() {
+        // 三种查询都登记为只读
         #expect(RepositoryOperationQueue.isReadOnly(RepositoryFileViews.storedPathOptions + ["blame", "--porcelain"]))
         #expect(RepositoryOperationQueue.isReadOnly(["ls-tree", "-r", "-z"]))
         #expect(RepositoryOperationQueue.isReadOnly(RepositoryHistory.logOptions + ["shortlog", "-n", "-s"]))

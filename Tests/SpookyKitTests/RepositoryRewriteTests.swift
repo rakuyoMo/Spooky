@@ -7,47 +7,52 @@ import Testing
 
 /// 反转、摘取、重置、检出版本与变基到别处在真实 Git 上的结果；路径含空格、中文、引号与通配符。
 struct RepositoryRewriteTests {
-    /// 反转一个提交会新增一个抵消它的提交，原提交仍在历史里；再摘取原提交又把改动带回来。SHA-1 与 SHA-256 仓库结果相同。
-    @Test("反转单个提交再摘取回来", arguments: ["sha1", "sha256"])
-    func revertSingle(objectFormat: String) async throws {
-        let (repository, commits) = try await makeRepository(["一", "二"], objectFormat: objectFormat)
-        defer { repository.remove() }
-
-        let rewrite = RepositoryRewrite(runner: repository.runner)
-        try await rewrite.revert([commits[1]], options: PickOptions())
-
-        #expect(try await subjects(in: repository) == ["Revert \"二\"", "二", "一"])
-        #expect(!exists(file(1), in: repository))
-
-        try await rewrite.cherryPick([commits[1]], options: PickOptions())
-        #expect(exists(file(1), in: repository))
-    }
-
-    /// 不直接提交时，多个提交的反转只留在暂存区，HEAD 不动。
-    @Test("反转多个提交但不提交")
-    func revertWithoutCommit() async throws {
+    /// 本地改动会被反转覆盖时失败归为本地改动；反转一个提交新增抵消它的提交，再摘取原提交又把改动带回来；
+    /// 多个提交按给定顺序摘取，标题与原提交相同；不直接提交时多个提交的反转只留在暂存区，HEAD 不动。
+    @Test("反转与摘取：本地改动挡住、反转后摘取回来、按顺序摘取与只反转不提交")
+    func revertAndCherryPick() async throws {
         let (repository, commits) = try await makeRepository(["一", "二", "三"])
         defer { repository.remove() }
 
+        let rewrite = RepositoryRewrite(runner: repository.runner)
+
+        // 本地改动会被反转覆盖时，失败归为本地改动，供自动储藏询问
+        try write("本地\n", to: file(2), in: repository)
+
+        let blocked = await #expect(throws: GitError.self) {
+            try await rewrite.revert([commits[2]], options: PickOptions())
+        }
+
+        #expect(blocked?.category == .localChanges)
+
+        _ = try await repository.runner.run(["checkout", "--", file(2)])
+
+        // 反转新增抵消原提交的提交，原提交仍在历史里；再摘取原提交又把改动带回来
+        try await rewrite.revert([commits[2]], options: PickOptions())
+
+        #expect(try await subjects(in: repository) == ["Revert \"三\"", "三", "二", "一"])
+        #expect(!exists(file(2), in: repository))
+
+        try await rewrite.cherryPick([commits[2]], options: PickOptions())
+        #expect(exists(file(2), in: repository))
+
+        // 多个提交按给定顺序摘取到当前分支
+        let picked = try await sideBranch(["甲 'quote'", "乙 $HOME"], from: commits[0], in: repository)
+        try await rewrite.cherryPick(picked, options: PickOptions())
+
+        #expect(try await subjects(in: repository).prefix(2) == ["乙 $HOME", "甲 'quote'"])
+
+        // 不直接提交时，多个提交的反转只留在暂存区
+        let before = try await head(in: repository)
+
         var options = PickOptions()
         options.commit = false
-        try await RepositoryRewrite(runner: repository.runner).revert([commits[2], commits[1]], options: options)
+        try await rewrite.revert([commits[2], commits[1]], options: options)
 
         let status = try await repository.runner.status()
-        #expect(status.branch.oid == commits[2])
+
+        #expect(status.branch.oid == before)
         #expect(Set(status.entries.filter(\.hasStagedChanges).map(\.path)) == [file(1), file(2)])
-    }
-
-    /// 多个提交按给定顺序摘取到当前分支，标题与原提交相同。
-    @Test("按顺序摘取多个提交")
-    func cherryPickMany() async throws {
-        let (repository, commits) = try await makeRepository(["基础"])
-        defer { repository.remove() }
-
-        let picked = try await sideBranch(["甲 'quote'", "乙 $HOME"], from: commits[0], in: repository)
-        try await RepositoryRewrite(runner: repository.runner).cherryPick(picked, options: PickOptions())
-
-        #expect(try await subjects(in: repository) == ["乙 $HOME", "甲 'quote'", "基础"])
     }
 
     /// 合并提交只能指定主线摘取；主线 1 取得被合并分支带来的改动。
@@ -56,19 +61,23 @@ struct RepositoryRewriteTests {
         let (repository, commits) = try await makeRepository(["基础"])
         defer { repository.remove() }
 
+        let runner = repository.runner
+        let rewrite = RepositoryRewrite(runner: runner)
+
         _ = try await sideBranch(["支线"], from: commits[0], in: repository)
-        _ = try await repository.runner.run(["switch", "-q", "-c", "合并", commits[0]])
-        _ = try await repository.runner.run(["merge", "-q", "--no-ff", "--no-edit", "side"])
+        _ = try await runner.run(["switch", "-q", "-c", "合并", commits[0]])
+        _ = try await runner.run(["merge", "-q", "--no-ff", "--no-edit", "side"])
+
         let merge = try await head(in: repository)
-        _ = try await repository.runner.run(["switch", "-q", "main"])
+        _ = try await runner.run(["switch", "-q", "main"])
 
         await #expect(throws: GitError.self) {
-            try await RepositoryRewrite(runner: repository.runner).cherryPick([merge], options: PickOptions())
+            try await rewrite.cherryPick([merge], options: PickOptions())
         }
 
         var options = PickOptions()
         options.mainline = 1
-        try await RepositoryRewrite(runner: repository.runner).cherryPick([merge], options: options)
+        try await rewrite.cherryPick([merge], options: options)
 
         #expect(exists("side 1.txt", in: repository))
     }
@@ -82,11 +91,15 @@ struct RepositoryRewriteTests {
         let picked = try await sideBranch(["改同一行"], from: commits[0], in: repository, file: file(0))
         try write("本地\n", to: file(0), in: repository)
         _ = try await repository.runner.run(["commit", "-q", "-am", "本地改动"])
+
         let before = try await head(in: repository)
         let rewrite = RepositoryRewrite(runner: repository.runner)
         let operations = WorkingCopyOperations(runner: repository.runner)
 
-        await #expect(throws: GitError.self) { try await rewrite.cherryPick(picked, options: PickOptions()) }
+        await #expect(throws: GitError.self) {
+            try await rewrite.cherryPick(picked, options: PickOptions())
+        }
+
         #expect(try await operations.context(head: before).operation == .cherryPick)
 
         try await operations.finish(.cherryPick, action: "abort")
@@ -95,28 +108,16 @@ struct RepositoryRewriteTests {
         // 中止还要撤回冲突留下的改动，只清掉进行中的状态不算中止
         #expect(try await repository.runner.status().entries.isEmpty)
 
-        await #expect(throws: GitError.self) { try await rewrite.cherryPick(picked, options: PickOptions()) }
+        await #expect(throws: GitError.self) {
+            try await rewrite.cherryPick(picked, options: PickOptions())
+        }
+
         try write("解决\n", to: file(0), in: repository)
         _ = try await repository.runner.run(["add", "--", file(0)])
         try await operations.finish(.cherryPick, action: "continue")
 
         #expect(try await subjects(in: repository).first == "改同一行")
         #expect(try await operations.context(head: try await head(in: repository)).operation == nil)
-    }
-
-    /// 本地改动会被反转覆盖时，失败归为本地改动，供自动储藏询问。
-    @Test("反转被本地改动挡住")
-    func revertBlockedByLocalChanges() async throws {
-        let (repository, commits) = try await makeRepository(["一", "二"])
-        defer { repository.remove() }
-
-        try write("本地\n", to: file(1), in: repository)
-
-        let error = await #expect(throws: GitError.self) {
-            try await RepositoryRewrite(runner: repository.runner).revert([commits[1]], options: PickOptions())
-        }
-
-        #expect(error?.category == .localChanges)
     }
 }
 

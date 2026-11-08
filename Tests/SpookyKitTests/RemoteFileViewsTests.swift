@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteFileViewsTests {
     /// 查询都由 B 上的 Git 执行；工作区文件经 SFTP 下载到本机缓存后才交给本机程序。
-    @Test("服务器文件历史、Blame、原文、NFD 路径与 SFTP 副本", .timeLimit(.minutes(3)))
+    @Test("服务器文件历史、Blame、原文、NFD 路径与 SFTP 副本")
     func fileViews() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

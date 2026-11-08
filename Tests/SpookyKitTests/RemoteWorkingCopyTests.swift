@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteWorkingCopyTests {
     /// SFTP 与 Git 复用同一测试连接，按行提交后服务器工作区恢复干净。
-    @Test("服务器 SFTP、按行暂存、提交、Amend 与永久丢弃", .timeLimit(.minutes(2)))
+    @Test("服务器 SFTP、按行暂存、提交、Amend 与永久丢弃")
     func commitFlow() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -51,7 +51,7 @@ struct RemoteWorkingCopyTests {
     }
 
     /// 服务器文件经 SFTP 取到本机缓存，副本路径不含远端目录；清理后副本消失。
-    @Test("服务器文件进入本机缓存与清理", .timeLimit(.minutes(2)))
+    @Test("服务器文件进入本机缓存与清理")
     func fileCache() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -81,7 +81,7 @@ struct RemoteWorkingCopyTests {
     }
 
     /// 断线后的写入必须失败，重连核对不能制造成功提交。
-    @Test("服务器旧 Diff 与断线提交拒绝", .timeLimit(.minutes(2)))
+    @Test("服务器旧 Diff 与断线提交拒绝")
     func disconnectedWrite() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -8,9 +9,9 @@ import Testing
 /// 文件详情头部的原生控件、目录动作与重命名显示。
 @MainActor
 struct FileHeaderTests {
-    /// 控件整体禁用不改变所选侧，各段仍保留各自的可用性。
-    @Test("比较侧使用圆角原生控件并分别控制两侧")
-    func sides() {
+    /// 比较侧整体禁用不改变所选侧，各段仍保留各自的可用性；动作分段使用瞬时动作，禁用段不会执行，刷新后使用新的闭包。
+    @Test("比较侧与动作分段的原生控件")
+    func controls() {
         let cases: [(Bool, Bool, Bool, DiffSide)] = [
             (false, true, true, .unstaged),
             (true, false, true, .staged),
@@ -19,32 +20,20 @@ struct FileHeaderTests {
         ]
 
         for (staged, unstaged, enabled, side) in cases {
-            let picker = DiffSidePicker(side: .constant(side), staged: staged, unstaged: unstaged, enabled: enabled)
-            let control = NSSegmentedControl(labels: ["Staged", "Unstaged"], trackingMode: .selectOne, target: nil, action: nil)
-            picker.configure(control)
-
-            #expect(control.segmentStyle == .rounded)
-            #expect(control.controlSize == .regular)
-            #expect(control.trackingMode == .selectOne)
-            #expect(control.isEnabled == enabled)
-            #expect(control.isEnabled(forSegment: 0) == staged)
-            #expect(control.isEnabled(forSegment: 1) == unstaged)
-            #expect(control.selectedSegment == (side == .staged ? 0 : 1))
+            expectSides(staged: staged, unstaged: unstaged, enabled: enabled, side: side)
         }
-    }
 
-    /// 真实分段控件使用瞬时动作，禁用段不会执行，刷新后使用新的闭包。
-    @Test("动作分段按标题布局并保留键盘焦点通知")
-    func actions() {
+        // 动作分段按标题布局
         var invoked = 0
         var focused = false
+
         let actions = [
             FileViewAction(title: "Blame", enabled: false) { invoked += 1 },
             FileViewAction(title: "File History") { invoked += 10 },
             FileViewAction(title: "Diff Tool") { invoked += 100 },
         ]
-        let control = FileActionSegmentControl(actions: actions) { focused = $0 }
 
+        let control = FileActionSegmentControl(actions: actions) { focused = $0 }
         #expect(control.segmentStyle == .texturedRounded)
         #expect(control.trackingMode == .momentary)
         #expect(control.controlSize == .regular)
@@ -57,15 +46,18 @@ struct FileHeaderTests {
         control.selectedSegment = 0
         control.sendAction(control.action, to: control.target)
         #expect(invoked == 0)
+
         control.selectedSegment = 1
         control.sendAction(control.action, to: control.target)
         #expect(invoked == 10)
 
+        // 键盘焦点通知
         #expect(control.becomeFirstResponder())
         #expect(focused)
         #expect(control.resignFirstResponder())
         #expect(!focused)
 
+        // 刷新后使用新的闭包
         control.configure(actions: [FileViewAction(title: "Updated") { invoked += 1000 }], focusChanged: { _ in })
         control.selectedSegment = 0
         control.sendAction(control.action, to: control.target)
@@ -76,8 +68,18 @@ struct FileHeaderTests {
     @Test("重命名列表保留旧路径与新路径层级")
     func renamedPaths() {
         let entries = [
-            StatusEntry(kind: .tracked, path: "src/new.swift", originalPath: "src/old.swift", staged: .renamed),
-            StatusEntry(kind: .tracked, path: "文档/新 文件.md", originalPath: "old/说明.md", unstaged: .renamed),
+            StatusEntry(
+                kind: .tracked,
+                path: "src/new.swift",
+                originalPath: "src/old.swift",
+                staged: .renamed
+            ),
+            StatusEntry(
+                kind: .tracked,
+                path: "文档/新 文件.md",
+                originalPath: "old/说明.md",
+                unstaged: .renamed
+            ),
         ]
 
         for entry in entries {
@@ -104,12 +106,15 @@ struct FileHeaderTests {
 
         let location = RepositoryLocation.local(path: directory.path)
         let runner = try await FileViewsTests.initializeRepository(at: location)
+
+        // 目录里的提交在前，目录外的提交在后
         let path = "文档 [v2]"
         try FileManager.default.createDirectory(at: directory.appending(path: path), withIntermediateDirectories: false)
         try Data("one\n".utf8).write(to: directory.appending(path: path + "/a.txt"))
         try Data("two\n".utf8).write(to: directory.appending(path: path + "/b.txt"))
         _ = try await runner.run(["add", "."])
         _ = try await runner.run(["commit", "-qm", "directory"])
+
         try Data("outside\n".utf8).write(to: directory.appending(path: "outside.txt"))
         _ = try await runner.run(["add", "."])
         _ = try await runner.run(["commit", "-qm", "outside"])
@@ -120,6 +125,8 @@ struct FileHeaderTests {
         session.display(location)
         session.refresh(full: true)
         await session.waitForRefresh()
+
+        // 末尾斜线的目录只启用历史
         let actions = session.workingCopyFileActions(path + "/", entry: nil, isDirectory: true)
         #expect(actions.map(\.enabled) == [false, true, false])
         #expect(actions.map(\.title) == [
@@ -129,15 +136,38 @@ struct FileHeaderTests {
         ])
 
         actions[1].perform()
-        try await FileViewsTests.wait { session.fileHistory.totalCount != nil }
+        await until { session.fileHistory.totalCount != nil }
         #expect(session.fileHistory.path == path)
         #expect(session.fileHistory.commits.map(\.subject) == ["directory"])
 
+        // 冲突文件不能交给外部 Diff 工具
         let conflict = StatusEntry(kind: .conflicted, path: "conflict.txt")
         #expect(!session.workingCopyFileActions(conflict.path, entry: conflict, isDirectory: false)[2].enabled)
 
+        // 没有提交的目录
         session.showFileHistory("empty/")
-        try await FileViewsTests.wait { session.fileHistory.totalCount != nil }
+        await until { session.fileHistory.totalCount != nil }
         #expect(session.fileHistory.commits.isEmpty)
+    }
+
+    /// 用比较侧选择器配置一个原生分段控件，核对样式、整体与各段可用性及所选侧。
+    private func expectSides(staged: Bool, unstaged: Bool, enabled: Bool, side: DiffSide) {
+        let picker = DiffSidePicker(side: .constant(side), staged: staged, unstaged: unstaged, enabled: enabled)
+
+        let control = NSSegmentedControl(
+            labels: ["Staged", "Unstaged"],
+            trackingMode: .selectOne,
+            target: nil,
+            action: nil
+        )
+
+        picker.configure(control)
+        #expect(control.segmentStyle == .rounded)
+        #expect(control.controlSize == .regular)
+        #expect(control.trackingMode == .selectOne)
+        #expect(control.isEnabled == enabled)
+        #expect(control.isEnabled(forSegment: 0) == staged)
+        #expect(control.isEnabled(forSegment: 1) == unstaged)
+        #expect(control.selectedSegment == (side == .staged ? 0 : 1))
     }
 }

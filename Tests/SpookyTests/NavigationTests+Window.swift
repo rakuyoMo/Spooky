@@ -3,6 +3,7 @@ import Foundation
 import SwiftUI
 import Synchronization
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -139,17 +140,198 @@ extension NavigationTests {
         )
     }
 
-    /// 后退与前进按每个窗口自己的记录走，菜单与工具栏的可用性跟着记录变；从中间位置去别的视图后，前进的记录作废。
-    /// 窗口显示仓库管理时，⌘1–⌘6 与 ⌘0 都不可用，后退照常可用；回到仓库后切换视图的各项恢复可用。
-    @Test("仓库窗口的后退与前进，显示仓库管理时不能切换主视图")
-    func windowBackForward() async throws {
+    /// 同一个仓库窗口依次核对后退与前进、按视图引用切换视图与选择，以及窗口恢复的成功与失败。
+    @Test("仓库窗口的后退与前进、按视图引用切换与窗口恢复")
+    func windowNavigation() async throws {
         let fixture = try await Self.makeWindow()
         defer { fixture.close() }
 
+        // 历史的引用与第一页读完后再切换，核对提交位置时不用等引用
+        await untilFinished { fixture.controller.session.history.activeTasks }
+
+        expectBackForward(in: fixture)
+        try await expectReferenceSwitching(in: fixture)
+        try await expectRestoration(in: fixture)
+        try await expectRestorationFailure(in: fixture)
+    }
+
+    /// 经链接、后退或前进回到排在询问的阈值之后的提交：询问时还没切换，取消后视图与后退 / 前进的位置、记录都不变；
+    /// 同意后才切到整页详情。核对位置与询问都在历史的读取任务里，每一步等这些任务结束后核对。
+    @Test("回到很靠后的提交先询问，取消时窗口不变")
+    func slowCommitReference() async throws {
+        let total = RepositoryHistoryState.slowLookupThreshold + 50
+        let fixture = try await Self.makeWindow(commits: (0 ..< total).map { "commit \($0)" })
+        defer { fixture.close() }
+
+        let controller = fixture.controller
+        let session = controller.session
+        let history = session.history
+        let runner = try #require(session.runner)
+        await untilFinished { history.activeTasks }
+
+        let far = try await HistoryListTests.commit(
+            at: RepositoryHistoryState.slowLookupThreshold + 20,
+            with: runner
+        )
+
+        let working = ViewReference.repository(fixture.location, .workingCopy)
+        let page = ViewReference.repository(fixture.location, .commit(far.id))
+
+        // 记下询问的次数，按开关决定同意还是取消
+        var prompts = 0
+        var agrees = false
+
+        session.onConfirm = { request in
+            prompts += 1
+
+            if agrees {
+                request.action()
+            }
+        }
+
+        // 链接：询问时窗口仍在 Working Copy，取消后视图与记录都不变
+        let entries = controller.navigation.entries
+        controller.show(page)
+        await untilFinished { history.activeTasks }
+
+        #expect(prompts == 1)
+        #expect(controller.currentReference == working)
+        #expect(controller.navigation.entries == entries)
+
+        // 同意后切到整页详情，续载到它并记进后退 / 前进
+        agrees = true
+        controller.show(page)
+        await untilFinished { history.activeTasks }
+
+        #expect(prompts == 2)
+        #expect(history.commits.contains(far) && history.lookup == nil)
+        #expect(controller.currentReference == page)
+        #expect(controller.navigation.entries == entries + [page])
+
+        // 去 Stashes，并让列表只看 main，回到这个提交又要核对位置
+        controller.showStashes()
+        let stashes = controller.currentReference
+        history.selectedReferences = ["refs/heads/main"]
+
+        // 后退：取消时位置与视图都不变
+        agrees = false
+        controller.navigateBack()
+        await untilFinished { history.activeTasks }
+
+        #expect(prompts == 3)
+        #expect(controller.currentReference == stashes)
+        #expect(controller.navigation.current == stashes)
+        #expect(!controller.navigation.canGoForward)
+
+        // 同意后才后退到整页详情
+        agrees = true
+        controller.navigateBack()
+        await untilFinished { history.activeTasks }
+
+        #expect(prompts == 4)
+        #expect(controller.currentReference == page && history.lookup == nil)
+        #expect(controller.navigation.current == page)
+        #expect(controller.navigation.next == stashes)
+
+        // 再退到 Working Copy 不用询问；列表只看 main 后前进，取消时同样不动
+        controller.navigateBack()
+        #expect(controller.currentReference == working)
+
+        history.selectedReferences = ["refs/heads/main"]
+        agrees = false
+        controller.navigateForward()
+        await untilFinished { history.activeTasks }
+
+        #expect(prompts == 5)
+        #expect(controller.currentReference == working)
+        #expect(controller.navigation.current == working)
+
+        // 同意后才前进到整页详情
+        agrees = true
+        controller.navigateForward()
+        await untilFinished { history.activeTasks }
+
+        #expect(prompts == 6)
+        #expect(controller.currentReference == page)
+        #expect(controller.navigation.current == page)
+    }
+}
+
+// MARK: - Missing Repository
+
+extension NavigationTests {
+    /// 同一个由协调者建出的窗口依次核对丢失页的重试：重试不询问用户，上一次没结束时不发起新的；
+    /// 重试期间回到仓库管理时不换回仓库；丢失页出现时与窗口重新成为主窗口时都会重试，
+    /// 仓库在就换回仓库界面，仍不在时页面原样留着，不弹错误，也不把书签标为失效。
+    @Test("丢失页的重试")
+    func missingRepositoryRetry() async throws {
+        let fixture = try await Self.makeCoordinator()
+        defer { fixture.close() }
+
+        // 重试只在协调者管着的窗口里换回仓库，测试的窗口因此由协调者建出
+        let controller = fixture.coordinator.makeWindow()
+
+        await expectQuietRetry(in: controller, of: fixture)
+        await expectRetryAfterLeaving(in: controller, of: fixture)
+
+        let showsRepository: @MainActor () -> Bool = {
+            !(controller.window?.contentViewController is NSHostingController<MissingRepositoryView>)
+                && controller.session.repository != nil
+        }
+
+        // 仓库还在时，丢失页一出现就重试并换回仓库界面
+        controller.showMissingRepository(fixture.location, reason: .notFound)
+        #expect(!showsRepository())
+
+        await waitForAppearanceRetry(in: controller)
+        #expect(showsRepository())
+
+        let restored = try #require(controller.session.repository)
+
+        // 目录不见后，出现时的重试打不开仓库，页面原样留着；挪走的仓库仍在临时目录里，随它一起删除
+        let moved = fixture.root.appending(path: "moved", directoryHint: .isDirectory)
+        try FileManager.default.moveItem(at: fixture.directory, to: moved)
+
+        controller.showMissingRepository(fixture.location, reason: .notFound)
+        let page = controller.window?.contentViewController
+        await waitForAppearanceRetry(in: controller)
+
+        #expect(controller.window?.contentViewController === page)
+        #expect(controller.window?.attachedSheet == nil)
+        #expect(!fixture.coordinator.bookmarks.isMissing(restored))
+
+        // 目录放回后，窗口再次成为主窗口时换回仓库界面
+        try FileManager.default.moveItem(at: moved, to: fixture.directory)
+
+        controller.windowDidBecomeMain(
+            Notification(name: NSWindow.didBecomeMainNotification, object: controller.window)
+        )
+        #expect(controller.openingRequest != nil)
+
+        await until { controller.openingRequest == nil }
+        #expect(showsRepository())
+    }
+}
+
+// MARK: - Steps
+
+extension NavigationTests {
+    /// 后退与前进按窗口自己的记录走，菜单与工具栏的可用性跟着记录变；从中间位置去别的视图后，前进的记录作废。
+    /// 窗口显示仓库管理时，⌘1–⌘6 与 ⌘0 都不可用，后退照常可用；回到仓库后切换视图的各项恢复可用。
+    private func expectBackForward(in fixture: WindowFixture) {
         let controller = fixture.controller
         let location = fixture.location
-        let back = NSMenuItem(title: "", action: #selector(RepositoryWindowController.navigateBack), keyEquivalent: "")
-        let forward = NSMenuItem(title: "", action: #selector(RepositoryWindowController.navigateForward), keyEquivalent: "")
+
+        let back = NSMenuItem(
+            title: "",
+            action: #selector(RepositoryWindowController.navigateBack),
+            keyEquivalent: ""
+        )
+        let forward = NSMenuItem(
+            title: "",
+            action: #selector(RepositoryWindowController.navigateForward),
+            keyEquivalent: ""
+        )
 
         // 切换主视图的 ⌘1–⌘6 与 ⌘0，显示仓库时都可用
         let switching = [
@@ -166,6 +348,7 @@ extension NavigationTests {
 
         controller.showHistory()
         controller.showStashes()
+
         #expect(controller.navigation.entries == [
             .repositories,
             .repository(location, .workingCopy),
@@ -207,12 +390,9 @@ extension NavigationTests {
         #expect(switching.allSatisfy { controller.validateUserInterfaceItem($0) })
     }
 
-    /// 按引用切换视图会带上选择：历史选中的引用、提交整页、文件原文的版本与模式，当前引用随之一致。
-    @Test("按视图引用切换视图与选择")
-    func showReferences() async throws {
-        let fixture = try await Self.makeWindow()
-        defer { fixture.close() }
-
+    /// 按引用切换视图会带上选择：历史选中的引用、提交整页、文件原文的版本与模式，当前引用随之一致；
+    /// 中途经过的视图不进记录，后退一步就回到提交整页。
+    private func expectReferenceSwitching(in fixture: WindowFixture) async throws {
         let controller = fixture.controller
         let session = controller.session
         let location = fixture.location
@@ -220,127 +400,35 @@ extension NavigationTests {
 
         let history = ViewReference.repository(location, .history(references: ["refs/heads/main"]))
         controller.show(history)
+
         #expect(session.history.selectedReferences == ["refs/heads/main"])
         #expect(controller.currentReference == history)
 
         // 列表只看 main 时先核对提交的位置，核对完才切到整页详情
         let commit = ViewReference.repository(location, .commit(head))
         controller.show(commit)
-        try await FileViewsTests.wait { session.history.showsCommitPage }
+        await untilFinished { session.history.activeTasks }
+
+        #expect(session.history.showsCommitPage)
         #expect(controller.currentReference == commit)
 
         let blame = ViewReference.repository(location, .file(path: "a.txt", revision: head, mode: .blame))
         controller.show(blame)
+
         #expect(session.activeView == .fileContent)
         #expect(session.fileContent.mode == .blame)
         #expect(controller.currentReference == blame)
 
         // 中途经过的视图不进记录，后退一步就回到提交整页
         controller.navigateBack()
-        try await FileViewsTests.wait { controller.currentReference == commit }
+        await untilFinished { session.history.activeTasks }
+
+        #expect(controller.currentReference == commit)
     }
 
-    /// 经链接、后退或前进回到排在询问的阈值之后的提交：询问时还没切换，取消后视图与后退 / 前进的位置、记录都不变；同意后才切到整页详情。
-    @Test("回到很靠后的提交先询问，取消时窗口不变")
-    func slowCommitReference() async throws {
-        let total = RepositoryHistoryState.slowLookupThreshold + 50
-        let fixture = try await Self.makeWindow(commits: (0 ..< total).map { "commit \($0)" })
-        defer { fixture.close() }
-
-        let controller = fixture.controller
-        let session = controller.session
-        let history = session.history
-        let runner = try #require(session.runner)
-        try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
-
-        let far = try await HistoryListTests.commit(
-            at: RepositoryHistoryState.slowLookupThreshold + 20,
-            with: runner
-        )
-
-        let working = ViewReference.repository(fixture.location, .workingCopy)
-        let page = ViewReference.repository(fixture.location, .commit(far.id))
-
-        // 记下询问的次数，按开关决定同意还是取消
-        var prompts = 0
-        var agrees = false
-
-        session.onConfirm = { request in
-            prompts += 1
-            if agrees { request.action() }
-        }
-
-        // 链接：询问时窗口仍在 Working Copy，取消后视图与记录都不变
-        let entries = controller.navigation.entries
-        controller.show(page)
-        try await FileViewsTests.wait { prompts == 1 }
-
-        #expect(controller.currentReference == working)
-        #expect(controller.navigation.entries == entries)
-
-        // 同意后切到整页详情，续载到它并记进后退 / 前进
-        agrees = true
-        controller.show(page)
-        try await FileViewsTests.wait {
-            history.commits.contains(far) && history.lookup == nil && !history.isLoading
-        }
-
-        #expect(prompts == 2)
-        #expect(controller.currentReference == page)
-        #expect(controller.navigation.entries == entries + [page])
-
-        // 去 Stashes，并让列表只看 main，回到这个提交又要核对位置
-        controller.showStashes()
-        let stashes = controller.currentReference
-        history.selectedReferences = ["refs/heads/main"]
-
-        // 后退：取消时位置与视图都不变
-        agrees = false
-        controller.navigateBack()
-        try await FileViewsTests.wait { prompts == 3 }
-
-        #expect(controller.currentReference == stashes)
-        #expect(controller.navigation.current == stashes)
-        #expect(!controller.navigation.canGoForward)
-
-        // 同意后才后退到整页详情
-        agrees = true
-        controller.navigateBack()
-        try await FileViewsTests.wait {
-            controller.currentReference == page && history.lookup == nil && !history.isLoading
-        }
-
-        #expect(prompts == 4)
-        #expect(controller.navigation.current == page)
-        #expect(controller.navigation.next == stashes)
-
-        // 再退到 Working Copy 不用询问；列表只看 main 后前进，取消时同样不动
-        controller.navigateBack()
-        #expect(controller.currentReference == working)
-
-        history.selectedReferences = ["refs/heads/main"]
-        agrees = false
-        controller.navigateForward()
-        try await FileViewsTests.wait { prompts == 5 }
-
-        #expect(controller.currentReference == working)
-        #expect(controller.navigation.current == working)
-
-        // 同意后才前进到整页详情
-        agrees = true
-        controller.navigateForward()
-        try await FileViewsTests.wait { controller.currentReference == page }
-
-        #expect(prompts == 6)
-        #expect(controller.navigation.current == page)
-    }
-
-    /// 窗口恢复写下当前视图引用，重新启动后按它重新打开同一个仓库与视图。
-    @Test("窗口恢复按保存的视图引用重新打开仓库")
-    func restoreSavedReference() async throws {
-        let fixture = try await Self.makeWindow()
-        defer { fixture.close() }
-
+    /// 窗口恢复写下当前视图引用，按它重新打开同一个仓库与视图：经正常的打开流程验证仓库后显示，
+    /// 位置换成规范的根路径，与已显示同一仓库的窗口互不合并。
+    private func expectRestoration(in fixture: WindowFixture) async throws {
         let controller = fixture.controller
         controller.showHistory()
         controller.session.history.selectedReferences = ["refs/heads/main"]
@@ -353,23 +441,21 @@ extension NavigationTests {
         let window = try #require(fixture.coordinator.restoreWindow(from: state))
         let restored = try #require(window.windowController as? RepositoryWindowController)
 
-        // 经正常的打开流程验证仓库后显示，位置换成规范的根路径；与已显示同一仓库的窗口互不合并
-        try await FileViewsTests.wait { !restored.showsManager }
+        // 恢复时同步发出打开请求，交还请求时仓库已经显示
+        await until { restored.openingRequest == nil }
+
         let resolved = try #require(realpath(fixture.directory.path, nil))
         defer { free(resolved) }
 
         let root = RepositoryLocation.local(path: String(cString: resolved))
 
         #expect(restored !== controller)
+        #expect(!restored.showsManager)
         #expect(restored.currentReference == .repository(root, .history(references: ["refs/heads/main"])))
     }
 
     /// 读不出视图引用时窗口留在仓库管理；仓库已不存在时窗口换成丢失页，书签标为失效。
-    @Test("恢复失败时显示仓库管理或丢失页")
-    func restoreFailure() async throws {
-        let fixture = try await Self.makeCoordinator()
-        defer { fixture.close() }
-
+    private func expectRestorationFailure(in fixture: WindowFixture) async throws {
         let coordinator = fixture.coordinator
 
         let garbage = NSKeyedArchiver(requiringSecureCoding: true)
@@ -378,6 +464,7 @@ extension NavigationTests {
 
         let window = try coordinator.restoreWindow(from: NSKeyedUnarchiver(forReadingFrom: garbage.encodedData))
         let manager = try #require(window?.windowController as? RepositoryWindowController)
+
         #expect(manager.showsManager)
         #expect(manager.currentReference == .repositories)
 
@@ -386,110 +473,53 @@ extension NavigationTests {
         coordinator.bookmarks.add(missing)
 
         let gone = NSKeyedArchiver(requiringSecureCoding: true)
-        gone.encode(ViewReference.repository(missing, .workingCopy).string, forKey: RepositoryWindowController.viewReferenceKey)
+
+        gone.encode(
+            ViewReference.repository(missing, .workingCopy).string,
+            forKey: RepositoryWindowController.viewReferenceKey
+        )
         gone.finishEncoding()
 
         let failed = try coordinator.restoreWindow(from: NSKeyedUnarchiver(forReadingFrom: gone.encodedData))
         let controller = try #require(failed?.windowController as? RepositoryWindowController)
 
-        // 仓库管理的后台检查也会标记失效，以丢失页出现为准
-        try await FileViewsTests.wait {
-            controller.window?.contentViewController is NSHostingController<MissingRepositoryView>
-        }
+        // 打开失败时在交还打开请求之前换上丢失页
+        await until { controller.openingRequest == nil }
 
+        #expect(controller.window?.contentViewController is NSHostingController<MissingRepositoryView>)
         #expect(!controller.showsManager)
         #expect(coordinator.bookmarks.isMissing(missing))
     }
-}
-
-// MARK: - Missing Repository
-
-extension NavigationTests {
-    /// 丢失页出现时与窗口重新成为主窗口时都会重试：仓库在就换回仓库界面；
-    /// 仍不在时页面原样留着，不弹错误，也不把书签标为失效，页面不重建也就不会反复重试。
-    @Test("丢失页自动重试")
-    func missingRepositoryRetry() async throws {
-        let fixture = try await Self.makeCoordinator()
-        defer { fixture.close() }
-
-        // 挪走的仓库仍在临时目录里，随它一起删除
-        let moved = fixture.root.appending(path: "moved", directoryHint: .isDirectory)
-
-        // 重试只在协调者管着的窗口里换回仓库，测试的窗口因此由协调者建出
-        let controller = fixture.coordinator.makeWindow()
-
-        let showsRepository = {
-            !(controller.window?.contentViewController is NSHostingController<MissingRepositoryView>)
-                && controller.session.repository != nil
-        }
-
-        // 仓库还在时，丢失页一出现就换回仓库界面
-        controller.showMissingRepository(fixture.location, reason: .notFound)
-        #expect(!showsRepository())
-        try await FileViewsTests.wait(showsRepository)
-
-        let restored = try #require(controller.session.repository)
-
-        // 目录不见后，出现时的重试打不开仓库
-        try FileManager.default.moveItem(at: fixture.directory, to: moved)
-        controller.showMissingRepository(fixture.location, reason: .notFound)
-        let page = controller.window?.contentViewController
-
-        // 出现时的重试排在主线程上：让出一会儿后它已经发起，再等它结束
-        try await Task.sleep(for: .milliseconds(50))
-        try await FileViewsTests.wait { controller.openingRequest == nil }
-
-        #expect(controller.window?.contentViewController === page)
-        #expect(controller.window?.attachedSheet == nil)
-        #expect(!fixture.coordinator.bookmarks.isMissing(restored))
-
-        // 目录放回后，窗口再次成为主窗口时换回仓库界面
-        try FileManager.default.moveItem(at: moved, to: fixture.directory)
-        controller.windowDidBecomeMain(
-            Notification(name: NSWindow.didBecomeMainNotification, object: controller.window)
-        )
-        #expect(controller.openingRequest != nil)
-        try await FileViewsTests.wait(showsRepository)
-    }
 
     /// 重试不是用户发起的，验证位置时不允许询问用户；同一窗口上一次重试还没结束时不发起新的重试。
-    @Test("丢失页的重试不询问用户")
-    func missingRepositoryRetryIsQuiet() async throws {
-        let fixture = try await Self.makeCoordinator()
-        defer { fixture.close() }
-
-        let coordinator = fixture.coordinator
-        let controller = coordinator.makeWindow()
+    private func expectQuietRetry(
+        in controller: RepositoryWindowController,
+        of fixture: CoordinatorFixture
+    ) async {
         let interactions = Mutex<[Bool]>([])
 
-        let task = coordinator.retryMissingRepository(fixture.location, in: controller) { _ in
+        let task = fixture.coordinator.retryMissingRepository(fixture.location, in: controller) { _ in
             interactions.withLock { $0.append(RemoteCallbackRequest.allowsInteraction) }
-            try await Task.sleep(for: .milliseconds(100))
             throw CocoaError(.fileNoSuchFile)
         }
 
+        // 验证要等测试让出主线程才开始，这时第一次重试仍占着窗口
         #expect(task != nil)
-        #expect(coordinator.retryMissingRepository(fixture.location, in: controller) == nil)
+        #expect(fixture.coordinator.retryMissingRepository(fixture.location, in: controller) == nil)
 
         await task?.value
+
         #expect(interactions.withLock { $0 } == [false])
         #expect(controller.openingRequest == nil)
     }
 
     /// 重试期间窗口回到了仓库管理时，仓库回来了也不把窗口换回仓库界面。
-    @Test("离开丢失页后重试不换回仓库")
-    func missingRepositoryRetryAfterLeaving() async throws {
-        let fixture = try await Self.makeCoordinator()
-        defer { fixture.close() }
-
-        let coordinator = fixture.coordinator
-        let controller = coordinator.makeWindow()
-
-        // 页面出现时的重试会立即换回仓库，先发起一次慢的重试占住窗口
-        let task = coordinator.retryMissingRepository(fixture.location, in: controller) { location in
-            try await Task.sleep(for: .milliseconds(200))
-            return location
-        }
+    private func expectRetryAfterLeaving(
+        in controller: RepositoryWindowController,
+        of fixture: CoordinatorFixture
+    ) async {
+        // 先发起一次重试占住窗口，页面出现时的重试就不会抢先换回仓库；验证要等测试让出主线程才开始
+        let task = fixture.coordinator.retryMissingRepository(fixture.location, in: controller) { $0 }
 
         controller.showMissingRepository(fixture.location, reason: .notFound)
         #expect(controller.missingLocation == fixture.location)
@@ -499,6 +529,16 @@ extension NavigationTests {
 
         #expect(controller.showsManager)
         #expect(controller.missingLocation == nil)
+    }
+
+    /// 等丢失页出现时排进主线程的那次重试结束。
+    ///
+    /// 重试由丢失页排在主线程队列上，让出一次后它已经发出打开请求；随后等它交还请求。
+    private func waitForAppearanceRetry(in controller: RepositoryWindowController) async {
+        await Task.yield()
+        #expect(controller.openingRequest != nil)
+
+        await until { controller.openingRequest == nil }
     }
 }
 

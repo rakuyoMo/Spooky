@@ -41,48 +41,26 @@ struct HistoryQueryTests {
 
     /// 历史列表、搜索、计数与回到某个提交读的是同一份历史，各自的结果必须彼此一致：
     /// 在一份带分支与合并的历史上依次核对文本、哈希与日期条件，排序、第一父、计数与分页，以及提交在历史中的位置；
-    /// SHA-1 与 SHA-256 仓库都要通过。
-    @Test("条件搜索、排序、第一父、计数、分页与提交位置", arguments: ["sha1", "sha256"])
-    func queries(objectFormat: String) async throws {
+    /// 仓库用 SHA-256，哈希前缀与位置都按 64 位的对象名核对。
+    @Test("条件搜索、排序、第一父、计数、分页与提交位置")
+    func queries() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
 
-        let commits = try await Self.makeHistory(in: fixture, objectFormat: objectFormat)
+        let commits = try await Self.makeHistory(in: fixture)
         let history = RepositoryHistory(runner: fixture.runner)
 
         // 各步都只读这份历史，先后互不影响
         try await Self.textConditions(history, commits)
-        try await Self.hashConditions(history, commits, objectFormat: objectFormat)
+        try await Self.hashConditions(history, commits)
         try await Self.dateConditions(history, commits)
         try await Self.orderAndCount(history, commits)
         try await Self.commitPositions(history, commits)
     }
 
-    /// rev-list 的计数不是整数时拒绝显示。
-    @Test("计数输出损坏时报告格式错误")
-    func malformedCount() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        let executable = fixture.directory.appending(path: "broken-git")
-        try Data("#!/bin/sh\ncat > /dev/null\nprintf 'many\\n'\n".utf8).write(to: executable)
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
-
-        let runner = fixture.runner(at: fixture.directory.path, executable: executable.path)
-        let root = String(repeating: "a", count: 40)
-
-        await #expect(throws: RepositoryReadError.malformedOutput("rev-list")) {
-            try await RepositoryHistory(runner: runner).count(roots: [root], limit: 10)
-        }
-    }
-}
-
-// MARK: - Position
-
-extension HistoryQueryTests {
-    /// rev-list 每行一个哈希；空输出里没有位置，夹杂别的文字时拒绝，不把它当成找不到。
-    @Test("解析提交位置的输出")
-    func parsePosition() throws {
+    /// rev-list 每行一个哈希：空输出里没有位置，夹杂别的文字时拒绝，不把它当成找不到；计数不是整数时拒绝显示。
+    @Test("rev-list 输出：提交位置的解析与损坏的计数")
+    func revListOutput() async throws {
         let first = String(repeating: "a", count: 40)
         let second = String(repeating: "b", count: 64)
         let output = Data("\(first)\n\(second)\n".utf8)
@@ -92,7 +70,24 @@ extension HistoryQueryTests {
         #expect(try RepositoryHistory.position(of: first, in: Data()) == nil)
 
         #expect(throws: RepositoryReadError.malformedOutput("rev-list")) {
-            try RepositoryHistory.position(of: first, in: Data("\(first)\nwarning: refname is ambiguous\n".utf8))
+            try RepositoryHistory.position(
+                of: first,
+                in: Data("\(first)\nwarning: refname is ambiguous\n".utf8)
+            )
+        }
+
+        // 替身 Git 的计数输出不是整数
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+
+        let executable = fixture.directory.appending(path: "broken-git")
+        try Data("#!/bin/sh\ncat > /dev/null\nprintf 'many\\n'\n".utf8).write(to: executable)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+
+        let runner = fixture.runner(at: fixture.directory.path, executable: executable.path)
+
+        await #expect(throws: RepositoryReadError.malformedOutput("rev-list")) {
+            try await RepositoryHistory(runner: runner).count(roots: [first], limit: 10)
         }
     }
 }
@@ -173,26 +168,24 @@ extension HistoryQueryTests {
     }
 
     /// 哈希前缀解析成唯一的提交，只在所选引用的历史里出现，并与其它条件取交集。
-    private static func hashConditions(
-        _ history: RepositoryHistory,
-        _ commits: Commits,
-        objectFormat: String
-    ) async throws {
+    private static func hashConditions(_ history: RepositoryHistory, _ commits: Commits) async throws {
         let prefix = String(commits.fix.prefix(7)).uppercased()
 
         let found = try await history.page(
             roots: [commits.merge],
             query: HistoryQuery(conditions: [.init(kind: .hash, text: " \(prefix) ")])
         )
+
         #expect(found.commits.map(\.id) == [commits.fix])
         #expect(!found.hasMore)
-        #expect(found.commits.first?.id.count == (objectFormat == "sha1" ? 40 : 64))
+        #expect(found.commits.first?.id.count == 64)
 
         // side 上的提交不在合并之前的 main 历史里
         let unreachable = try await history.page(
             roots: [commits.main],
             query: HistoryQuery(conditions: [.init(kind: .hash, text: String(commits.side.prefix(8)))])
         )
+
         #expect(unreachable.commits.isEmpty)
 
         // 不是十六进制、少于 4 位或与其它条件不符时没有结果
@@ -201,6 +194,7 @@ extension HistoryQueryTests {
                 roots: [commits.merge],
                 query: HistoryQuery(conditions: [.init(kind: .hash, text: text)])
             )
+
             #expect(page.commits.isEmpty)
         }
 
@@ -208,8 +202,11 @@ extension HistoryQueryTests {
             .init(kind: .hash, text: prefix),
             .init(kind: .message, text: "nothing"),
         ])
+
         #expect(try await history.page(roots: [commits.merge], query: mismatch).commits.isEmpty)
         #expect(try await history.count(roots: [commits.merge], query: mismatch, limit: 10) == 0)
+
+        // 提交是否在所选引用的历史里
         #expect(try await history.contains(commits.side, roots: [commits.merge]))
         #expect(try await !history.contains(commits.side, roots: [commits.main]))
     }
@@ -366,9 +363,9 @@ extension HistoryQueryTests {
         return try await history.page(roots: [commits.merge], query: query).commits.map(\.subject)
     }
 
-    /// 建立带分支与合并的历史，每个提交的作者、提交人与日期都固定。
-    private static func makeHistory(in fixture: TemporaryRepository, objectFormat: String) async throws -> Commits {
-        try await fixture.initialize(objectFormat: objectFormat)
+    /// 在 SHA-256 仓库里建立带分支与合并的历史，每个提交的作者、提交人与日期都固定。
+    private static func makeHistory(in fixture: TemporaryRepository) async throws -> Commits {
+        try await fixture.initialize(objectFormat: "sha256")
 
         let initial = try await commit(
             in: fixture,

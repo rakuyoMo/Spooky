@@ -19,10 +19,11 @@ struct CombinedDiffTests {
         let versions: [Data]
     }
 
-    /// 所有父侧的行号都指向同一行原文，不把第一父侧的行号当作其它父侧的替代。
+    /// 所有父侧的行号都指向同一行原文，不拿第一父侧的行号顶替其它父侧。
     @Test("组合 Diff 完整列号对应真实文件")
     func realFixtures() throws {
-        let url = URL(filePath: #filePath).deletingLastPathComponent()
+        let url = URL(filePath: #filePath)
+            .deletingLastPathComponent()
             .appending(path: "Fixtures/diff-combined.json")
         let fixtures = try JSONDecoder().decode([Fixture].self, from: Data(contentsOf: url))
         #expect(fixtures.count == 22)
@@ -32,19 +33,24 @@ struct CombinedDiffTests {
             let file = try #require(diff.files.first)
             #expect(diff.files.count == 1)
             #expect(!file.hunks.isEmpty)
+
             try verify(file, fixture: fixture)
 
+            // 各父侧前缀的全部组合都出现
             if fixture.name.contains("subsets") {
                 let prefixes = Set(file.hunks.flatMap(\.lines).compactMap(\.combined).map(\.prefixes))
                 #expect(prefixes.count == (fixture.versions.count == 3 ? 7 : 15))
             }
 
-            if fixture.name == "multiple-hunks" { #expect(file.hunks.count == 2) }
+            if fixture.name == "multiple-hunks" {
+                #expect(file.hunks.count == 2)
+            }
 
             if fixture.name.hasPrefix("nonewline-") {
                 #expect(file.hunks.flatMap(\.lines).allSatisfy { !$0.noNewline })
             }
 
+            // 组合 Diff 的块不能生成可写补丁
             for hunk in file.hunks {
                 for reverse in [false, true] {
                     #expect(throws: WorkingCopyError.invalidSelection) {
@@ -55,47 +61,51 @@ struct CombinedDiffTests {
         }
     }
 
-    /// 输入中的标记关联上一条逻辑行，不新增行号或补丁行。
-    @Test("组合 Diff 的显式无换行标记")
-    func noNewline() throws {
+    /// 输入中的无换行标记关联上一条逻辑行，不新增行号或补丁行；组合范围和逐行前缀必须一致，
+    /// 损坏数据不能作为部分成功返回；忽略空白的匹配不允许在普通与组合行之间拼接可写补丁。
+    @Test("手写组合 Diff 的无换行标记、错误边界与行匹配")
+    func handwritten() throws {
         let diff = try parse("@@@ -1 -1 +1 @@@\n- a\n\\ No newline at end of file\n -b\n++c\n")
         let lines = try #require(diff.files.first?.hunks.first?.lines)
         #expect(lines.count == 3)
         #expect(lines.map(\.noNewline) == [true, false, false])
         #expect(lines.compactMap(\.combined).map(\.numbers) == [[1, 0, 0], [1, 1, 0], [1, 1, 1]])
-    }
 
-    /// 组合范围和逐行前缀必须一致，损坏数据不能作为部分成功返回。
-    @Test("组合 Diff 拒绝非法前缀与范围", arguments: [
-        "@@@ -1 -1 +1 @@@\n-+a\n",
-        "@@@ -1 -1 +1 @@@\n+-a\n",
-        "@@@ -1 -1 +1 @@@\n xa\n",
-        "@@@ -1 -1 +1 @@@\n a\n",
-        "@@@ -1 +1 @@@\n  a\n",
-        "@@@@ -1 -1 +1 @@@@\n  a\n",
-        "@@@ -1,2 -1,2 +1,2 @@@\n  a\n",
-        "@@@ -1 -1 +1 @@@\n  a\n  b\n",
-        "@@@ -1,0 -1 +1 @@@\n  a\n",
-        "@@@ -1 -1 +1 @@@\n\\ No newline at end of file\n  a\n",
-        "@@@ -1 -1 +1 @@@\n  a\n\\ No newline at end of file\n\\ No newline at end of file\n",
-        "@@@ -9223372036854775807,2 -1 +1 @@@\n  a\n",
-        "@@@ -1 -1 +1 @@@\n  a",
-    ])
-    func malformed(body: String) {
-        #expect(throws: WorkingCopyError.malformedDiff) { try parse(body) }
-    }
+        // 非法前缀、范围与标记
+        let malformed = [
+            "@@@ -1 -1 +1 @@@\n-+a\n",
+            "@@@ -1 -1 +1 @@@\n+-a\n",
+            "@@@ -1 -1 +1 @@@\n xa\n",
+            "@@@ -1 -1 +1 @@@\n a\n",
+            "@@@ -1 +1 @@@\n  a\n",
+            "@@@@ -1 -1 +1 @@@@\n  a\n",
+            "@@@ -1,2 -1,2 +1,2 @@@\n  a\n",
+            "@@@ -1 -1 +1 @@@\n  a\n  b\n",
+            "@@@ -1,0 -1 +1 @@@\n  a\n",
+            "@@@ -1 -1 +1 @@@\n\\ No newline at end of file\n  a\n",
+            "@@@ -1 -1 +1 @@@\n  a\n\\ No newline at end of file\n\\ No newline at end of file\n",
+            "@@@ -9223372036854775807,2 -1 +1 @@@\n  a\n",
+            "@@@ -1 -1 +1 @@@\n  a",
+        ]
 
-    /// 忽略空白的匹配不允许在普通与组合行之间拼接可写补丁。
-    @Test("组合 Diff 不参与可写行匹配")
-    func matching() throws {
+        for body in malformed {
+            #expect(throws: WorkingCopyError.malformedDiff) {
+                try parse(body)
+            }
+        }
+
+        // 普通行与组合行互不匹配，只有普通行之间能匹配
         let combined = try parse("@@@ -1 -1 +1 @@@\n--old\n++new\n")
         let ordinary = try RepositoryDiff(patch: Data("diff --git a/f b/f\n@@ -1 +1 @@\n-old\n+new\n".utf8))
         let combinedLines = try #require(combined.files.first?.hunks.first?.lines)
         let ordinaryLines = try #require(ordinary.files.first?.hunks.first?.lines)
+
         #expect(combined.matchingChanges(of: ordinaryLines) == nil)
         #expect(ordinary.matchingChanges(of: combinedLines) == nil)
         #expect(combined.matchingChanges(of: combinedLines) == nil)
         #expect(ordinary.matchingChanges(of: ordinaryLines)?.lines == [0, 1])
+
+        // 匹配需要至少一行上下文
         #expect(DiffOptions(contextLines: 0).arguments == ["--unified=1"])
     }
 

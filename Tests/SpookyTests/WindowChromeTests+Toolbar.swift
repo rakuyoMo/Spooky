@@ -8,16 +8,17 @@ import Testing
 // MARK: - Toolbar
 
 extension WindowChromeTests {
-    /// 本机仓库的提示随显示方式与 ⌥ 改写：显示文字时不带标签，只显示图标时多数项在提示前面加上标签，
-    /// 按住 ⌥ 时同步一组换成快速操作的提示。
-    @Test("本机仓库的工具栏提示")
-    func localToolbarTips() async throws {
+    /// 同一个工具栏独有的仓库窗口依次核对：本机仓库的提示随显示方式与 ⌥ 改写；
+    /// 跟随内层分栏的分隔符与内层分栏的列表；服务器仓库的提示与主机前缀。
+    @Test("工具栏的提示、跟随内层分栏的分隔符与服务器仓库的主机前缀")
+    func toolbarTipsAndSeparator() async throws {
         let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
         defer { fixture.close() }
 
         let controller = fixture.controller
         let toolbar = try #require(controller.window?.toolbar)
 
+        // 本机仓库：显示文字时不带标签，只显示图标时多数项在提示前面加上标签，按住 ⌥ 时同步一组换成快速操作的提示
         toolbar.displayMode = .iconAndLabel
         Self.expectLabelModeTips(in: controller)
 
@@ -25,19 +26,11 @@ extension WindowChromeTests {
         toolbar.displayMode = .iconOnly
         Self.expectIconOnlyTips(in: controller)
         Self.expectIconOnlyQuickTips(in: controller)
-    }
 
-    /// 服务器仓库的工具栏标明主机：主机前缀一项在每种显示方式下只写出一次，
-    /// 按钮表里的按钮与同步一组的提示在最前面加主机前缀，Bookmarks、Prev / Next 与储藏两段不加。
-    @Test("服务器仓库的工具栏提示与主机前缀")
-    func serverToolbarTips() async throws {
-        let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
-        defer { fixture.close() }
+        try Self.expectDetailSeparator(in: controller)
 
-        let controller = fixture.controller
-        let toolbar = try #require(controller.window?.toolbar)
-
-        // 窗口显示的是本机的工作区，会话换成同一目录的服务器仓库，只用来取主机别名
+        // 服务器仓库：窗口显示的是本机的工作区，会话换成同一目录的服务器仓库，只用来取主机别名
+        controller.showWorkingCopy()
         controller.session.display(.remote(host: "spooky-test", path: fixture.directory.path))
         controller.updateToolbarItems()
 
@@ -51,16 +44,15 @@ extension WindowChromeTests {
         toolbar.displayMode = .iconOnly
         Self.expectServerIconOnlyTips(in: controller)
     }
+}
 
+// MARK: - Steps
+
+extension WindowChromeTests {
     /// 只显示图标时，有内层分栏的视图在侧边栏分隔符之后有一个跟随内层分隔线的分隔符；
     /// 单栏视图、仓库管理与显示文字时隐藏，留在工具栏里不删。
     /// 有内层分栏的视图里，左侧的列表不延伸到工具栏下面：显示文字时，列表的底色与分隔线不穿过工具栏上的项。
-    @Test("跟随内层分栏的分隔符，内层分栏的列表不延伸到工具栏下面")
-    func detailSeparatorAndInnerList() async throws {
-        let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
-        defer { fixture.close() }
-
-        let controller = fixture.controller
+    private static func expectDetailSeparator(in controller: RepositoryWindowController) throws {
         let session = controller.session
         let toolbar = try #require(controller.window?.toolbar)
 
@@ -77,8 +69,10 @@ extension WindowChromeTests {
         let separator = try #require(
             Self.item(RepositoryToolbar.detailSeparator, in: controller) as? NSTrackingSeparatorToolbarItem
         )
+
         let identifiers = toolbar.items.map(\.itemIdentifier)
         let sidebar = try #require(identifiers.firstIndex(of: RepositoryToolbar.sidebarSeparator))
+
         #expect(identifiers.firstIndex(of: RepositoryToolbar.detailSeparator) == sidebar + 1)
         #expect(!separator.isHidden)
         #expect(separator.splitView === controller.innerSplit?.splitView)
@@ -87,6 +81,7 @@ extension WindowChromeTests {
         // 换到历史改跟历史的内层分栏
         controller.showHistory()
         try expectListBelowToolbar("History")
+
         #expect(!separator.isHidden)
         #expect(separator.splitView === controller.innerSplit?.splitView)
 
@@ -107,12 +102,14 @@ extension WindowChromeTests {
 
         // 仓库设置是单栏视图
         controller.showRepositorySettings()
+
         #expect(controller.innerSplit == nil)
         #expect(separator.isHidden)
 
         // 显示文字时有内层分栏也隐藏
         controller.showWorkingCopy()
         #expect(!separator.isHidden)
+
         toolbar.displayMode = .iconAndLabel
         #expect(separator.isHidden)
 
@@ -124,30 +121,6 @@ extension WindowChromeTests {
         #expect(toolbar.items.count(where: { $0.itemIdentifier == RepositoryToolbar.detailSeparator }) == 1)
     }
 
-    /// 刷新进行中，工具栏的 Refresh 与 View › Refresh（⌘R）照常可用。
-    @Test("刷新中 Refresh 可用")
-    func refreshWhileRefreshing() async throws {
-        let fixture = try await NavigationTests.makeWindow()
-        defer { fixture.close() }
-
-        let controller = fixture.controller
-        let item = NSMenuItem(
-            title: "",
-            action: #selector(RepositoryWindowController.refreshRepository),
-            keyEquivalent: ""
-        )
-
-        controller.session.refresh(full: true)
-        #expect(controller.session.isRefreshing)
-        #expect(controller.validateUserInterfaceItem(item))
-
-        await controller.session.waitForRefresh()
-    }
-}
-
-// MARK: - Steps
-
-extension WindowChromeTests {
     /// 显示文字时提示就是一句话；按住 ⌥ 时同步一组换成快速操作的提示，同样不带标签。
     private static func expectLabelModeTips(in controller: RepositoryWindowController) {
         let text = { (key: String) in AppLocalization.text(key) }

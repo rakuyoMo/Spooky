@@ -11,78 +11,64 @@ import Testing
 ///
 /// 经辅助功能接口读本进程的窗口并按下控件，进程没有辅助功能权限时跳过。
 extension PromptDialogTests {
-    /// 备选底栏：Cancel 对齐对齐线，备选按钮与主按钮贴右端；勾上勾选框后选备选按钮，备选按钮的动作拿到勾选状态。
-    @Test("备选按钮拿到勾选状态", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func alternateWithCheckbox() throws {
+    /// 备选底栏：Cancel 与勾选框对齐对齐线，备选按钮与主按钮贴右端；勾上勾选框后选备选按钮，备选按钮的动作拿到勾选状态；
+    /// 勾上后取消时关闭对话框，取消的动作收到勾选状态，主按钮的动作不执行。
+    @Test("勾选状态交给选中按钮的动作", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    func checkbox() async throws {
         var alternate: [Bool] = []
+        var cancelled: [Bool] = []
         var submitted = 0
         var closed = 0
 
-        let elements = AccessibilityProbe.elements(
+        let dialog = ConfirmationDialog(
+            title: "Title",
+            message: "Message",
+            submitTitle: "OK",
+            alternate: (title: "Other", action: { alternate.append($0) }),
+            checkbox: "Remember",
+            close: { closed += 1 },
+            cancel: { cancelled.append($0) }
+        ) { _ in
+            submitted += 1
+        }
+
+        let elements = await AccessibilityProbe.elements(
             pressing: ["Remember", "Other"],
             until: { _ in !alternate.isEmpty }
         ) {
-            ConfirmationDialog(
-                title: "Title",
-                message: "Message",
-                submitTitle: "OK",
-                alternate: (title: "Other", action: { alternate.append($0) }),
-                checkbox: "Remember",
-                close: { closed += 1 }
-            ) { _ in
-                submitted += 1
-            }
+            dialog
         }
 
         let cancel = try #require(DialogLayoutTests.button(AppLocalization.text("action.cancel"), in: elements))
         let other = try #require(DialogLayoutTests.button("Other", in: elements))
         let submit = try #require(DialogLayoutTests.button("OK", in: elements))
-        let checkbox = try #require(elements.first { $0.role == "AXCheckBox" })
+        let box = try #require(elements.first { $0.role == "AXCheckBox" })
 
         #expect(abs(cancel.frame.minX - DialogMetrics.alignment) <= 1)
-        #expect(abs(checkbox.frame.minX - DialogMetrics.alignment) <= 2)
+        #expect(abs(box.frame.minX - DialogMetrics.alignment) <= 2)
         #expect(cancel.frame.maxX < other.frame.minX)
         #expect(abs(submit.frame.minX - other.frame.maxX - 8) <= 1)
         #expect(abs(480 - submit.frame.maxX - 20) <= 1)
-
         #expect(alternate == [true])
-        #expect(submitted == 0)
-        #expect(closed == 1)
-    }
 
-    /// 勾上勾选框后取消：关闭对话框，取消的动作收到勾选状态，主按钮的动作不执行。
-    @Test("取消时勾选交给取消的动作", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func cancelWithCheckbox() {
-        var submitted: [Bool] = []
-        var cancelled: [Bool] = []
-        var closed = 0
-        let cancel = AppLocalization.text("action.cancel")
-
-        _ = AccessibilityProbe.elements(
-            pressing: ["Remember", cancel],
+        // 勾上后取消
+        _ = await AccessibilityProbe.elements(
+            pressing: ["Remember", AppLocalization.text("action.cancel")],
             until: { _ in !cancelled.isEmpty }
         ) {
-            ConfirmationDialog(
-                title: "Title",
-                message: "Message",
-                submitTitle: "OK",
-                checkbox: "Remember",
-                close: { closed += 1 },
-                cancel: { cancelled.append($0) }
-            ) {
-                submitted.append($0)
-            }
+            dialog
         }
 
-        #expect(submitted.isEmpty)
         #expect(cancelled == [true])
-        #expect(closed == 1)
+        #expect(alternate == [true])
+        #expect(submitted == 0)
+        #expect(closed == 2)
     }
 
     /// 提交信息含注释：能删除注释时 Cancel 对齐对齐线，Keep Comments 与 Remove Comments 贴右边 20，有不再询问的勾选框，
     /// 三个按钮在 480 里放不下时对话框随之加宽；去掉注释后为空时只有 Cancel 与 Keep Comments and Commit，没有勾选框。
     @Test("提交信息含注释的询问", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func commitComments() throws {
+    func commitComments() async throws {
         let cancel = AppLocalization.text("action.cancel")
         let keep = AppLocalization.text("commit.keepComments")
         let remove = AppLocalization.text("commit.removeComments")
@@ -91,7 +77,7 @@ extension PromptDialogTests {
         let dialog = CommitCommentsDialog(empty: false) { } finish: { _, _ in }
         let width = DialogLayoutTests.hosting(dialog).frame.width
 
-        let removable = AccessibilityProbe.elements(
+        let removable = await AccessibilityProbe.elements(
             width: width,
             until: { elements in elements.count { $0.role == "AXButton" } >= 3 }
         ) {
@@ -109,7 +95,10 @@ extension PromptDialogTests {
             $0.role == "AXCheckBox" && $0.name == AppLocalization.text("commit.doNotAskAgain")
         })
 
-        let commentsOnly = AccessibilityProbe.elements(until: { $0.contains { $0.name == keepAndCommit } }) {
+        // 去掉注释后为空
+        let commentsOnly = await AccessibilityProbe.elements(
+            until: { elements in elements.contains { $0.name == keepAndCommit } }
+        ) {
             CommitCommentsDialog(empty: true) { } finish: { _, _ in }
         }
 
@@ -124,9 +113,10 @@ extension PromptDialogTests {
     /// 崩溃报告：Don’t Report 在取消的位置，Report on GitHub… 是主按钮；勾上 “总是发送” 后选 Don’t Report 不记下，
     /// 选报告才记下。
     @Test("崩溃报告的询问", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func crashReport() throws {
+    func crashReport() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "com.rakuyo.spooky.tests.crash." + UUID().uuidString)
+
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -138,7 +128,10 @@ extension PromptDialogTests {
             var closed = 0
             var reported = false
 
-            let elements = AccessibilityProbe.elements(pressing: [always, choice], until: { _ in closed > 0 }) {
+            let elements = await AccessibilityProbe.elements(
+                pressing: [always, choice],
+                until: { _ in closed > 0 }
+            ) {
                 CrashReporter.askDialog(defaults: defaults, close: { closed += 1 }) { reported = true }
             }
 

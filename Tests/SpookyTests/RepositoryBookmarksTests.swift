@@ -7,7 +7,7 @@ import Testing
 
 // MARK: - RepositoryBookmarksTests
 
-/// 仓库书签：旧记录的迁移、去重与打开时间、最近打开列表的清空、文件夹与手动顺序、改名与删除、失效标记与失效时的写法，以及改指向工作区根目录。
+/// 仓库书签：旧记录的迁移、去重与打开时间、最近打开列表的清空、文件夹与手动顺序、改名、改指向工作区根目录与删除、失效标记与失效时的写法。
 @MainActor
 struct RepositoryBookmarksTests {
     /// 每个用例独立的偏好域与它所在的临时目录；用例结束时删掉目录。
@@ -39,14 +39,15 @@ struct RepositoryBookmarksTests {
     }
 
     /// 同一位置只有一个书签；打开过的按最近打开时间排在前面，没打开过的不算最近。
-    @Test("加入不重复，按打开时间列出最近打开")
-    func addsAndRecordsOpening() throws {
+    /// Clear Menu 只清空最近打开列表：书签与各自的打开时间都在，重新读取偏好后仍是空的；之后打开的仓库照常进入列表。
+    @Test("加入不重复，按打开时间列出最近打开，清空时书签保留")
+    func recentlyOpened() throws {
         let (defaults, directory) = try Self.defaults()
         defer { try? FileManager.default.removeItem(at: directory) }
 
         let bookmarks = RepositoryBookmarks(defaults: defaults)
         let first = RepositoryLocation.local(path: "/tmp/first")
-        let second = RepositoryLocation.local(path: "/tmp/second")
+        let second = RepositoryLocation.remote(host: "spooky-test", path: "/srv/second")
         let never = RepositoryLocation.local(path: "/tmp/never")
 
         let id = bookmarks.add(first)
@@ -58,23 +59,11 @@ struct RepositoryBookmarksTests {
 
         #expect(bookmarks.repositories.compactMap(\.location) == [first, never, second])
         #expect(bookmarks.recentlyOpened.compactMap(\.location) == [second, first])
-    }
 
-    /// Clear Menu 只清空最近打开列表：书签与各自的打开时间都在，重新读取偏好后仍是空的；之后打开的仓库照常进入列表。
-    @Test("清空最近打开列表，书签保留")
-    func clearsRecentlyOpened() throws {
-        let (defaults, directory) = try Self.defaults()
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let bookmarks = RepositoryBookmarks(defaults: defaults)
-        let first = RepositoryLocation.local(path: "/tmp/first")
-        let second = RepositoryLocation.remote(host: "spooky-test", path: "/srv/second")
-        bookmarks.recordOpened(first, at: Date(timeIntervalSince1970: 100))
-        bookmarks.recordOpened(second, at: Date(timeIntervalSince1970: 200))
-
+        // 清空最近打开列表，书签与打开时间都在
         bookmarks.clearRecentlyOpened(at: Date(timeIntervalSince1970: 300))
         #expect(bookmarks.recentlyOpened.isEmpty)
-        #expect(bookmarks.repositories.compactMap(\.location) == [first, second])
+        #expect(bookmarks.repositories.compactMap(\.location) == [first, never, second])
         #expect(bookmarks.bookmark(for: first)?.lastOpened == Date(timeIntervalSince1970: 100))
         #expect(RepositoryBookmarks(defaults: defaults).recentlyOpened.isEmpty)
 
@@ -114,9 +103,10 @@ struct RepositoryBookmarksTests {
         #expect(RepositoryBookmarks(defaults: defaults).items == bookmarks.items)
     }
 
-    /// 改名去掉首尾空白，空名字不接受；删除文件夹连同里面的书签，失效标记一并清掉。
-    @Test("改名、删除与失效标记")
-    func renameDeleteAndMissing() throws {
+    /// 改名去掉首尾空白，空名字不接受；书签指向子目录时改指向工作区根目录：没改过的名字随之更新，改过的保留，
+    /// 根目录已有书签时不动；删除文件夹连同里面的书签，失效标记一并清掉。
+    @Test("改名、改指向工作区根目录、删除与失效标记")
+    func renameRelocateAndDelete() throws {
         let (defaults, directory) = try Self.defaults()
         defer { try? FileManager.default.removeItem(at: directory) }
 
@@ -129,13 +119,34 @@ struct RepositoryBookmarksTests {
         bookmarks.rename(repository, to: "   ")
         #expect(bookmarks.bookmark(repository)?.name == "工作 仓库")
 
+        // 指向子目录的书签改指向工作区根目录
+        let nested = RepositoryLocation.local(path: "/tmp/app/Sources")
+        let root = RepositoryLocation.local(path: "/tmp/app")
+        let renamedNested = RepositoryLocation.local(path: "/tmp/tool/docs")
+        let id = bookmarks.add(nested)
+        let renamed = bookmarks.add(renamedNested)
+        bookmarks.rename(renamed, to: "Tool")
+
+        bookmarks.relocate(nested, to: root)
+        bookmarks.relocate(renamedNested, to: .local(path: "/tmp/tool"))
+
+        #expect(bookmarks.bookmark(id)?.location == root)
+        #expect(bookmarks.bookmark(id)?.name == "app")
+        #expect(bookmarks.bookmark(renamed)?.name == "Tool")
+
+        // 根目录已有书签时，指向子目录的书签保持原样
+        let other = bookmarks.add(.local(path: "/tmp/app/Tests"))
+        bookmarks.relocate(.local(path: "/tmp/app/Tests"), to: root)
+        #expect(bookmarks.bookmark(other)?.location == .local(path: "/tmp/app/Tests"))
+
         // 不在书签里的位置不做标记
         bookmarks.markMissing(.local(path: "/tmp/unknown"))
         bookmarks.markMissing(gone)
         #expect(bookmarks.missing == [gone])
 
+        // 删除文件夹连同里面的书签与失效标记
         bookmarks.delete([folder])
-        #expect(bookmarks.items.isEmpty)
+        #expect(bookmarks.items.map(\.id) == [id, renamed, other])
         #expect(bookmarks.missing.isEmpty)
     }
 
@@ -182,33 +193,6 @@ struct RepositoryBookmarksTests {
 
         #expect(local.message == AppLocalization.text("missing.message", "~/Projects/gone"))
         #expect(remote.message == AppLocalization.text("missing.message", "spooky-test:" + home + "/repo"))
-    }
-
-    /// 书签指向子目录时改指向工作区根目录：没改过的名字随之更新，改过的保留；根目录已有书签时不动。
-    @Test("书签改指向工作区根目录")
-    func relocatesToWorkingTreeRoot() throws {
-        let (defaults, directory) = try Self.defaults()
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let bookmarks = RepositoryBookmarks(defaults: defaults)
-        let nested = RepositoryLocation.local(path: "/tmp/app/Sources")
-        let root = RepositoryLocation.local(path: "/tmp/app")
-        let renamedNested = RepositoryLocation.local(path: "/tmp/tool/docs")
-        let id = bookmarks.add(nested)
-        let renamed = bookmarks.add(renamedNested)
-        bookmarks.rename(renamed, to: "Tool")
-
-        bookmarks.relocate(nested, to: root)
-        bookmarks.relocate(renamedNested, to: .local(path: "/tmp/tool"))
-
-        #expect(bookmarks.bookmark(id)?.location == root)
-        #expect(bookmarks.bookmark(id)?.name == "app")
-        #expect(bookmarks.bookmark(renamed)?.name == "Tool")
-
-        // 根目录已有书签时，指向子目录的书签保持原样
-        let other = bookmarks.add(.local(path: "/tmp/app/Tests"))
-        bookmarks.relocate(.local(path: "/tmp/app/Tests"), to: root)
-        #expect(bookmarks.bookmark(other)?.location == .local(path: "/tmp/app/Tests"))
     }
 }
 

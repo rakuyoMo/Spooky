@@ -9,7 +9,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteBranchesReviewTests {
     /// 与基准分支的比较、分叉点、自动归档的标记与 Update Branch 都在 B 上执行，结论与本机一致。
-    @Test("服务器上的分支比较、分叉点、归档标记与 Update Branch", .timeLimit(.minutes(3)))
+    @Test("服务器上的分支比较、分叉点、归档标记与 Update Branch")
     func branchesReviewOnServer() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

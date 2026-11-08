@@ -8,16 +8,19 @@ import Testing
 /// 夹具由 Git 2.54 在忽略系统与用户配置、固定提交身份与时间的临时仓库中生成，
 /// 覆盖重命名、冲突、二进制、中文与引号路径、NFD 文件名、合并提交和 SHA-256 哈希。
 struct GitOutputFixtureTests {
-    /// 分支头、各类条目与特殊路径都从同一份 porcelain v2 输出中读出。
-    @Test("status 夹具：上游计数、重命名、冲突、删除与特殊路径")
+    /// 分支头、各类条目与特殊路径都从同一份 porcelain v2 输出中读出；关闭预组合时 Git 输出原始 NFD 字节，
+    /// 路径保持原样，与 NFC 写法按规范等价比较。
+    @Test("status 夹具：上游计数、各类条目、特殊路径与 NFD 文件名")
     func status() throws {
         let status = try WorkingCopyStatus(porcelainV2: try fixture("status.bin"))
+
         #expect(status.branch.head == "main")
         #expect(status.branch.upstream == "origin/main")
         #expect(status.branch.ahead == 1 && status.branch.behind == 0)
         #expect(status.branch.oid?.count == 40)
 
         let entries = Dictionary(uniqueKeysWithValues: status.entries.map { ($0.path, $0) })
+
         #expect(status.entries.count == 7)
         #expect(entries["deleted.txt"]?.unstaged == .deleted)
         #expect(entries["image.bin"]?.staged == .modified && entries["image.bin"]?.unstaged == nil)
@@ -27,24 +30,24 @@ struct GitOutputFixtureTests {
         #expect(entries["conflict.txt"]?.kind == .conflicted)
         #expect(entries["café.txt"]?.kind == .untracked)
         #expect(entries["未跟踪 \"quoted\" [*].txt"]?.kind == .untracked)
-    }
 
-    /// 关闭预组合时 Git 输出原始 NFD 字节；路径保持原样，与 NFC 写法按规范等价比较。
-    @Test("status 夹具：NFD 文件名")
-    func decomposedPath() throws {
-        let status = try WorkingCopyStatus(porcelainV2: try fixture("status-nfd.bin"))
-        let entry = try #require(status.entries.first { $0.kind == .untracked && $0.path.hasPrefix("caf") })
+        // NFD 文件名
+        let decomposed = try WorkingCopyStatus(porcelainV2: try fixture("status-nfd.bin"))
+        let entry = try #require(decomposed.entries.first { $0.kind == .untracked && $0.path.hasPrefix("caf") })
+
         #expect(entry.path.unicodeScalars.contains("\u{301}"))
         #expect(entry.path == "caf\u{E9}.txt")
         #expect(entry.path.precomposedStringWithCanonicalMapping.unicodeScalars.count == 8)
-        #expect(status.branch.head == nil)
+        #expect(decomposed.branch.head == nil)
     }
 
-    /// 两个块与末尾无换行的补丁可以逐行重组：未选的删除行原地变为上下文，未选的新增行连同无换行标记一起丢弃。
-    @Test("diff 夹具：多块、末尾无换行与按行补丁")
-    func hunks() throws {
+    /// 两个块与末尾无换行的补丁可以逐行重组：未选的删除行原地变为上下文，未选的新增行连同无换行标记一起丢弃；
+    /// 二进制段只给出提示，重命名保留原始扩展头与中文路径。
+    @Test("diff 夹具：多块、末尾无换行与按行补丁，二进制与重命名")
+    func diffs() throws {
         let diff = try RepositoryDiff(patch: try fixture("diff-hunks.bin"))
         let file = try #require(diff.files.first)
+
         #expect(diff.files.count == 1)
         #expect(file.hunks.count == 2)
         #expect(file.hunks[0].oldStart == 1 && file.hunks[0].newStart == 1)
@@ -52,6 +55,7 @@ struct GitOutputFixtureTests {
         #expect(file.hunks[1].lines.last?.noNewline ?? false)
 
         let patch = try diff.patch(path: "lines.txt", file: 0, hunk: 1, selectedLines: [3, 5], reverse: false)
+
         let expected = """
             diff --git "a/lines.txt" "b/lines.txt"
             --- "a/lines.txt"
@@ -65,42 +69,47 @@ struct GitOutputFixtureTests {
             +TEN
 
             """
-        #expect(String(decoding: patch, as: UTF8.self) == expected)
-    }
 
-    /// 二进制段只给出提示，重命名保留原始扩展头与中文路径。
-    @Test("diff 夹具：二进制与重命名")
-    func binaryAndRename() throws {
-        let diff = try RepositoryDiff(patch: try fixture("diff-binary-rename.bin"))
-        #expect(diff.files.count == 2)
-        #expect(diff.files[0].isBinary && diff.files[0].hunks.isEmpty)
-        #expect(diff.files[1].headers.contains("rename from renamed source.txt"))
-        #expect(diff.files[1].headers.contains("rename to 重命名 target.txt"))
-        #expect(!diff.files[1].isBinary)
+        #expect(String(decoding: patch, as: UTF8.self) == expected)
+
+        // 二进制与重命名
+        let mixed = try RepositoryDiff(patch: try fixture("diff-binary-rename.bin"))
+
+        #expect(mixed.files.count == 2)
+        #expect(mixed.files[0].isBinary && mixed.files[0].hunks.isEmpty)
+        #expect(mixed.files[1].headers.contains("rename from renamed source.txt"))
+        #expect(mixed.files[1].headers.contains("rename to 重命名 target.txt"))
+        #expect(!mixed.files[1].isBinary)
     }
 
     /// 合并提交、Unicode 作者、正文控制字符与日期都按固定字段读取，哈希长度随对象格式变化。
-    @Test("log 夹具：SHA-1 与 SHA-256", arguments: [("log-sha1.bin", 40, 5), ("log-sha256.bin", 64, 4)])
-    func history(name: String, hashLength: Int, count: Int) throws {
-        let commits = try HistoryCommit.parse(try fixture(name))
-        #expect(commits.count == count)
-        #expect(commits.allSatisfy { $0.id.count == hashLength && $0.tree.count == hashLength })
-        #expect(commits.filter { $0.parents.count == 2 }.count == 1)
-        #expect(commits.last?.parents.isEmpty ?? false)
-        #expect(commits.allSatisfy { $0.author == "Zoë Ünicode" && $0.committer == "Spooky Test" })
-
-        let root = try #require(commits.last)
+    @Test("log 夹具：SHA-1 与 SHA-256")
+    func history() throws {
         let date = try #require(ISO8601DateFormatter().date(from: "2026-10-01T08:01:00+08:00"))
-        #expect(root.commitDate == date)
 
-        // 提交图按拓扑序逐行生成，合并提交从圆点分出第二条线。
-        var graph = CommitGraph()
-        let rows = commits.map { graph.append($0) }
-        let merge = try #require(commits.firstIndex { $0.parents.count == 2 })
-        #expect(rows[merge].segments.contains { $0.startsAtCommit && $0.end != rows[merge].column })
+        for (name, hashLength, count) in [("log-sha1.bin", 40, 5), ("log-sha256.bin", 64, 4)] {
+            let commits = try HistoryCommit.parse(try fixture(name))
 
-        if name == "log-sha1.bin" {
-            #expect(root.message == "Root commit\n\nBody with\ttab and 中文\n\u{1f} control\n")
+            #expect(commits.count == count, "\(name)")
+            #expect(commits.allSatisfy { $0.id.count == hashLength && $0.tree.count == hashLength }, "\(name)")
+            #expect(commits.filter { $0.parents.count == 2 }.count == 1, "\(name)")
+            #expect(commits.last?.parents.isEmpty ?? false, "\(name)")
+            #expect(commits.allSatisfy { $0.author == "Zoë Ünicode" && $0.committer == "Spooky Test" }, "\(name)")
+
+            let root = try #require(commits.last, "\(name)")
+
+            #expect(root.commitDate == date, "\(name)")
+
+            // 提交图按拓扑序逐行生成，合并提交从圆点分出第二条线
+            var graph = CommitGraph()
+            let rows = commits.map { graph.append($0) }
+            let merge = try #require(commits.firstIndex { $0.parents.count == 2 }, "\(name)")
+
+            #expect(rows[merge].segments.contains { $0.startsAtCommit && $0.end != rows[merge].column }, "\(name)")
+
+            if name == "log-sha1.bin" {
+                #expect(root.message == "Root commit\n\nBody with\ttab and 中文\n\u{1f} control\n")
+            }
         }
     }
 
@@ -109,14 +118,17 @@ struct GitOutputFixtureTests {
     func references() throws {
         let references = try RepositoryReference.parse(try fixture("refs.bin"))
         let byID = Dictionary(uniqueKeysWithValues: references.map { ($0.id, $0) })
+
         #expect(references.count == 7)
 
         let main = try #require(byID["refs/heads/main"])
+
         #expect(main.upstream == "refs/remotes/origin/main")
         #expect(main.upstreamRemote == "origin")
         #expect(main.upstreamBranch == "refs/heads/main")
 
         let tag = try #require(byID["refs/tags/v1.0"])
+
         #expect(tag.objectType == "commit")
         #expect(tag.objectID == byID["refs/remotes/origin/main"]?.objectID)
 
@@ -128,37 +140,35 @@ struct GitOutputFixtureTests {
         #expect(main.date == Date(timeIntervalSince1970: 1_775_369_228))
 
         let snapshot = ReferenceSnapshot(references: references, remotes: [RepositoryRemote(name: "origin")])
+
         #expect(snapshot.defaultBranch(for: RepositoryRemote(name: "origin")) == "refs/remotes/origin/main")
         #expect(snapshot.remote(for: try #require(byID["refs/remotes/origin/side"]))?.name == "origin")
     }
 
-    /// Fetch porcelain 覆盖快进、强制更新、新建、清理与标签。
-    @Test("fetch 夹具：引用更新标志")
-    func fetch() throws {
-        let updates = try RemoteReferenceUpdate.parseFetch(try fixture("fetch.txt"))
-        let flags = Dictionary(uniqueKeysWithValues: updates.map { ($0.reference, $0.flag) })
-        #expect(updates.count == 5)
+    /// Fetch porcelain 覆盖快进、强制更新、新建、清理与标签；Push porcelain 跳过 To / Done 行，保留被拒原因，
+    /// 每行的标志对应推送结果：新建、快进与已是最新，删除没有结果；中文引用名原样保留。
+    @Test("fetch 与 push 夹具：引用更新标志与推送结果")
+    func transfers() throws {
+        let fetched = try RemoteReferenceUpdate.parseFetch(try fixture("fetch.txt"))
+        let flags = Dictionary(uniqueKeysWithValues: fetched.map { ($0.reference, $0.flag) })
+
+        #expect(fetched.count == 5)
         #expect(flags["refs/remotes/origin/gone-local"] == "-")
         #expect(flags["refs/remotes/origin/main"] == " ")
         #expect(flags["refs/remotes/origin/fresh"] == "*")
         #expect(flags["refs/remotes/origin/side"] == "+")
         #expect(flags["refs/tags/v2.0"] == "*")
-        #expect(updates.first { $0.flag == "*" }?.oldObject?.allSatisfy { $0 == "0" } ?? false)
-    }
+        #expect(fetched.first { $0.flag == "*" }?.oldObject?.allSatisfy { $0 == "0" } ?? false)
 
-    /// Push porcelain 跳过 To / Done 行，保留被拒原因。
-    @Test("push 夹具：新分支、快进与被拒")
-    func push() throws {
-        let updates = try RemoteReferenceUpdate.parsePush(try fixture("push.txt"))
-        #expect(updates.map(\.flag) == [" ", "*", "!"])
-        #expect(updates[1].reference == "refs/heads/published")
-        #expect(updates[2].source == "refs/heads/side")
-        #expect(updates[2].summary == "[rejected] (non-fast-forward)")
-    }
+        // 新分支、快进与被拒
+        let pushed = try RemoteReferenceUpdate.parsePush(try fixture("push.txt"))
 
-    /// Push porcelain 每行的标志对应推送结果：新建、快进与已是最新，删除没有结果；中文引用名原样保留。
-    @Test("push 夹具：新建、快进与已是最新的结果")
-    func pushResults() throws {
+        #expect(pushed.map(\.flag) == [" ", "*", "!"])
+        #expect(pushed[1].reference == "refs/heads/published")
+        #expect(pushed[2].source == "refs/heads/side")
+        #expect(pushed[2].summary == "[rejected] (non-fast-forward)")
+
+        // 推送结果
         let updates = try RemoteReferenceUpdate.parsePush(try fixture("push-results.txt"))
         let results = Dictionary(uniqueKeysWithValues: updates.map { ($0.reference, $0.pushResult) })
 
@@ -172,7 +182,7 @@ struct GitOutputFixtureTests {
 
         // 标志不认识、或少了 refspec 一栏时按格式错误抛出
         for line in ["?\trefs/heads/main:refs/heads/main\t[x]", "*\t[new branch]"] {
-            #expect(throws: RepositoryReadError.malformedOutput("push --porcelain")) {
+            #expect(throws: RepositoryReadError.malformedOutput("push --porcelain"), "\(line)") {
                 try RemoteReferenceUpdate.parsePush(Data(line.utf8))
             }
         }

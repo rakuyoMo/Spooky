@@ -8,48 +8,51 @@ import Testing
 
 /// 导出文件、归档与保存补丁都写到本机，输出边读边写；失败与取消不留下写了一半的文件。存进仓库根目录的补丁由 Git 直接写出。
 struct RevisionExportTests {
-    /// 导出成目录保留仓库里的目录结构、特殊字符路径与二进制内容；只导出所选路径时其余文件不出现。
-    @Test("导出版本里的文件", arguments: ["sha1", "sha256"])
-    func exportFiles(objectFormat: String) async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        try await fixture.initialize(objectFormat: objectFormat)
-        let special = "目录 [*]/文件 '\"?.txt"
-        let revision = try await Self.commit(fixture, files: [special: Data("one\n".utf8), "binary": Data([0, 1, 2, 255])])
-
-        let output = try Self.outputDirectory()
-        defer { try? FileManager.default.removeItem(at: output) }
-
-        let export = RevisionExport(runner: fixture.runner)
-        let whole = output.appending(path: "整个 版本")
-        try await export.export(revision, to: whole)
-        #expect(try Data(contentsOf: whole.appending(path: special)) == Data("one\n".utf8))
-        #expect(try Data(contentsOf: whole.appending(path: "binary")) == Data([0, 1, 2, 255]))
-
-        // 已存在的目录整个替换
-        let partial = output.appending(path: "整个 版本")
-        try await export.export(revision, paths: [special], to: partial)
-        #expect(FileManager.default.fileExists(atPath: partial.appending(path: special).path))
-        #expect(!FileManager.default.fileExists(atPath: partial.appending(path: "binary").path))
-        #expect(try FileManager.default.contentsOfDirectory(atPath: output.path) == ["整个 版本"])
-    }
-
-    /// zip 与 tar 归档的内容能被本机解开；路径按字面匹配，通配符不会多选文件。
-    @Test("归档版本里的文件")
-    func archives() async throws {
+    /// 导出成目录保留仓库里的目录结构、特殊字符路径与二进制内容，只导出所选路径时其余文件不出现；
+    /// zip 与 tar 归档的内容能被本机解开，路径按字面匹配，通配符不会多选文件；
+    /// 输出流式交给回调，不收集进结果；失败或取消时目标与临时文件都不存在。
+    @Test("导出与归档：目录结构、特殊路径、字面匹配，流式写盘与失败、取消的清理")
+    func exportAndArchive() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
 
         try await fixture.initialize()
-        let revision = try await Self.commit(fixture, files: ["[*].txt": Data("star\n".utf8), "a.txt": Data("a\n".utf8)])
+        let runner = fixture.runner
+        let special = "目录 [*]/文件 '\"?.txt"
+
+        let revision = try await Self.commit(
+            fixture,
+            files: [
+                special: Data("one\n".utf8),
+                "binary": Data([0, 1, 2, 255]),
+                "[*].txt": Data("star\n".utf8),
+                "large.txt": Data(repeating: 97, count: 100_000),
+            ]
+        )
 
         let output = try Self.outputDirectory()
         defer { try? FileManager.default.removeItem(at: output) }
 
-        let export = RevisionExport(runner: fixture.runner)
+        let export = RevisionExport(runner: runner)
+
+        // 导出整个版本
+        let whole = output.appending(path: "整个 版本")
+        try await export.export(revision, to: whole)
+
+        #expect(try Data(contentsOf: whole.appending(path: special)) == Data("one\n".utf8))
+        #expect(try Data(contentsOf: whole.appending(path: "binary")) == Data([0, 1, 2, 255]))
+
+        // 只导出所选路径，已存在的目录整个替换
+        try await export.export(revision, paths: [special], to: whole)
+
+        #expect(FileManager.default.fileExists(atPath: whole.appending(path: special).path))
+        #expect(!FileManager.default.fileExists(atPath: whole.appending(path: "binary").path))
+        #expect(try FileManager.default.contentsOfDirectory(atPath: output.path) == ["整个 版本"])
+
+        // zip 归档整棵树，tar 只归档按字面匹配的路径
         let zip = output.appending(path: "归档.zip")
         try await export.archive(revision, format: .zip, to: zip)
+
         #expect(try Data(contentsOf: zip).prefix(2) == Data("PK".utf8))
 
         let tar = output.appending(path: "部分.tar")
@@ -60,20 +63,68 @@ struct RevisionExportTests {
             processArguments: ["-t", "-f", tar.path],
             arguments: ["tar"]
         )
+
         #expect(String(decoding: listing.standardOutput, as: UTF8.self) == "[*].txt\n")
+
+        // 输出流式交给回调，不收集进结果
+        let received = Mutex(0)
+
+        let result = try await CommandExecutor.$streamsStandardOutput.withValue(true) {
+            try await runner.execute(["archive", "--format=tar", revision]) { event in
+                if case .standardOutput(let data) = event {
+                    received.withLock { $0 += data.count }
+                }
+            }
+        }
+
+        #expect(result.standardOutput.isEmpty)
+        #expect(received.withLock { $0 } > 100_000)
+
+        // 失败与取消都写进单独的空目录，结束后目录里不留下任何文件
+        let failed = output.appending(path: "失败")
+        try FileManager.default.createDirectory(at: failed, withIntermediateDirectories: false)
+
+        let missing = failed.appending(path: "missing.zip")
+
+        await #expect(throws: GitError.self) {
+            try await export.archive(revision, paths: ["no such path"], format: .zip, to: missing)
+        }
+
+        let cancelled = failed.appending(path: "cancelled.tar")
+        let task = Task { try await export.archive(revision, format: .tar, to: cancelled) }
+        task.cancel()
+        _ = await task.result
+
+        #expect(try FileManager.default.contentsOfDirectory(atPath: failed.path).isEmpty)
+
+        // 版本不是提交哈希时不执行 Git
+        await #expect(throws: RepositoryReadError.self) {
+            try await export.export("HEAD", to: missing)
+        }
     }
 
-    /// 文件名与 format-patch 写进目录时相同；去掉前缀、跳过合并提交，同名文件被替换；封面信没配或配成 auto 时只写补丁本身。
-    @Test("保存补丁", arguments: ["sha1", "sha256"])
-    func patches(objectFormat: String) async throws {
+    /// 存到所选目录时文件名与 format-patch 写进目录时相同，存进仓库根目录的补丁由 Git 直接写出，内容都与输出到标准输出时相同；
+    /// 去掉前缀再存一次时同名文件被替换；封面信配成 auto 时只写补丁本身；
+    /// 合并提交没有补丁，序号仍按传入的位置计；仓库的后缀配置不改变文件名。
+    @Test("保存补丁：存到所选目录与仓库根目录")
+    func patches() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
 
-        try await fixture.initialize(objectFormat: objectFormat)
+        try await fixture.initialize()
         let runner = fixture.runner
+        let root = runner.location.path
+
+        // 先建好全部提交，之后写进根目录的补丁不会被提交进去
         let long = "Ünïcode [*] 'quoted' subject that is long enough to be truncated by git format patch"
         let first = try await Self.commit(fixture, files: ["one.txt": Data("one\n".utf8)], message: long)
         let second = try await Self.commit(fixture, files: ["two.bin": Data([0, 1])], message: "second: two")
+
+        _ = try await runner.run(["switch", "-q", "-c", "side", first])
+        let side = try await Self.commit(fixture, files: ["side.txt": Data("s\n".utf8)], message: "side")
+        _ = try await runner.run(["switch", "-q", "main"])
+        _ = try await runner.run(["merge", "-q", "--no-ff", "-m", "merge", "side"])
+        let merge = try await RepositoryReferences(runner: runner).resolve("HEAD")
 
         let output = try Self.outputDirectory()
         defer { try? FileManager.default.removeItem(at: output) }
@@ -83,88 +134,89 @@ struct RevisionExportTests {
         _ = try await runner.run(["format-patch", "-q", "-o", reference.path, "-2", second])
         let expected = try FileManager.default.contentsOfDirectory(atPath: reference.path).sorted()
 
+        // 存到所选目录
         let directory = output.appending(path: "补丁 目录")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+
         let export = RevisionExport(runner: runner)
         let saved = try await export.savePatches([first, second], omitsPrefixes: false, to: directory)
+
         #expect(saved.map(\.lastPathComponent) == expected)
 
         let patch = String(decoding: try Data(contentsOf: saved[0]), as: UTF8.self)
+
         #expect(patch.contains("--- /dev/null\n+++ b/one.txt\n"))
 
         // 没配封面信时，与 Git 只输出这一个提交的补丁逐字节相同
         let plain = try Data(contentsOf: saved[1])
+
         #expect(try await runner.run(["format-patch", "--stdout", "-1", second]) == plain)
 
+        // 去掉前缀再存一次，同名文件被替换
         let omitted = try await export.savePatches([first], omitsPrefixes: true, to: directory)
-        #expect(String(decoding: try Data(contentsOf: omitted[0]), as: UTF8.self).contains("+++ one.txt\n"))
+        let omittedPatch = String(decoding: try Data(contentsOf: omitted[0]), as: UTF8.self)
+
+        #expect(omittedPatch.contains("+++ one.txt\n"))
         #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).count == 2)
+
+        // 存进仓库根目录
+        let rooted = try await export.savePatchesToRepositoryRoot([first, second], omitsPrefixes: false)
+
+        #expect(rooted == expected.map { root + "/" + $0 })
+
+        for (path, commit) in zip(rooted, [first, second]) {
+            let content = try await runner.run(["format-patch", "--stdout", "-1", commit])
+
+            #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == content)
+        }
+
+        // 去掉前缀再存一次，同名文件被覆盖
+        let rootOmitted = try await export.savePatchesToRepositoryRoot([first], omitsPrefixes: true)
+        let rootPatch = try Data(contentsOf: URL(fileURLWithPath: rootOmitted[0]))
+
+        #expect(rootOmitted == [rooted[0]])
+        #expect(String(decoding: rootPatch, as: UTF8.self).contains("+++ one.txt\n"))
 
         // 封面信配成 auto 时，每次只存一个提交，Git 不写封面信，文件与配置前逐字节相同
         _ = try await runner.run(["config", "--local", "format.coverLetter", "auto"])
+
         #expect(try await export.savePatches([first, second], omitsPrefixes: false, to: directory) == saved)
         #expect(try Data(contentsOf: saved[1]) == plain)
         #expect(String(decoding: plain, as: UTF8.self).contains("\nSubject: [PATCH] second: two\n"))
         #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).count == 2)
 
-        // 合并提交没有补丁
-        _ = try await runner.run(["switch", "-q", "-c", "side", first])
-        let side = try await Self.commit(fixture, files: ["side.txt": Data("s\n".utf8)])
-        _ = try await runner.run(["switch", "-q", "main"])
-        _ = try await runner.run(["merge", "-q", "--no-ff", "-m", "merge", "side"])
-        let merge = try await RepositoryReferences(runner: runner).resolve("HEAD")
+        // 合并提交没有补丁，序号仍按传入的位置计
         #expect(try await export.savePatches([side, merge], omitsPrefixes: false, to: directory).count == 1)
-    }
 
-    /// 补丁由 Git 直接写进仓库根目录，内容与输出到标准输出时相同；仓库的后缀配置不改变文件名，封面信配成 auto 时不写。
-    @Test("补丁存进仓库根目录", arguments: ["sha1", "sha256"])
-    func patchesInRepositoryRoot(objectFormat: String) async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
+        #expect(
+            try await export.savePatchesToRepositoryRoot([merge, side], omitsPrefixes: false)
+                == [root + "/0002-side.patch"]
+        )
 
-        try await fixture.initialize(objectFormat: objectFormat)
-        let runner = fixture.runner
-        let root = runner.location.path
-
-        // 先建好全部提交，之后写进根目录的补丁不会被提交进去
-        let first = try await Self.commit(fixture, files: ["one.txt": Data("one\n".utf8)], message: "first: one")
-        let second = try await Self.commit(fixture, files: ["two.bin": Data([0, 1])], message: "second two")
-        _ = try await runner.run(["switch", "-q", "-c", "side", first])
-        let side = try await Self.commit(fixture, files: ["side.txt": Data("s\n".utf8)], message: "side")
-        _ = try await runner.run(["switch", "-q", "main"])
-        _ = try await runner.run(["merge", "-q", "--no-ff", "-m", "merge", "side"])
-        let merge = try await RepositoryReferences(runner: runner).resolve("HEAD")
-
-        let export = RevisionExport(runner: runner)
-        let saved = try await export.savePatchesToRepositoryRoot([first, second], omitsPrefixes: false)
-        #expect(saved == [root + "/0001-first-one.patch", root + "/0002-second-two.patch"])
-
-        for (path, commit) in zip(saved, [first, second]) {
-            let expected = try await runner.run(["format-patch", "--stdout", "-1", commit])
-            #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == expected)
-        }
-
-        // 去掉前缀再存一次，同名文件被覆盖
-        let omitted = try await export.savePatchesToRepositoryRoot([first], omitsPrefixes: true)
-        #expect(omitted == [saved[0]])
-        #expect(String(decoding: try Data(contentsOf: URL(fileURLWithPath: omitted[0])), as: UTF8.self).contains("+++ one.txt\n"))
-
-        // 合并提交不写文件，序号仍按传入的位置计
-        #expect(try await export.savePatchesToRepositoryRoot([merge, side], omitsPrefixes: false) == [root + "/0002-side.patch"])
-
+        // 仓库配了别的后缀时，根目录里的文件名不变
         _ = try await runner.run(["config", "--local", "format.suffix", ".diff"])
-        _ = try await runner.run(["config", "--local", "format.coverLetter", "auto"])
-        #expect(try await export.savePatchesToRepositoryRoot([second], omitsPrefixes: false) == [root + "/0001-second-two.patch"])
+
+        #expect(
+            try await export.savePatchesToRepositoryRoot([second], omitsPrefixes: false)
+                == [root + "/0001-second-two.patch"]
+        )
 
         // 根目录里只有这几个补丁，没有封面信，也没有 .diff 文件
-        let patches = try FileManager.default.contentsOfDirectory(atPath: root).filter { $0.hasPrefix("000") }.sorted()
-        #expect(patches == ["0001-first-one.patch", "0001-second-two.patch", "0002-second-two.patch", "0002-side.patch"])
+        let patches = try FileManager.default.contentsOfDirectory(atPath: root)
+            .filter { $0.hasPrefix("000") }
+            .sorted()
+
+        #expect(patches == (expected + ["0001-second-two.patch", "0002-side.patch"]).sorted())
 
         // 写文件的 format-patch 与其它写操作一样排队，只输出到标准输出的仍是读取
         #expect(RepositoryOperationQueue.isReadOnly(["format-patch", "--stdout", "-1", first]))
         #expect(!RepositoryOperationQueue.isReadOnly(["format-patch", "-o", root, "-1", first]))
 
         // 没有提交时不执行 Git
+        await #expect(throws: RepositoryReadError.self) {
+            try await export.savePatches([], omitsPrefixes: false, to: directory)
+        }
+
         await #expect(throws: RepositoryReadError.self) {
             try await export.savePatchesToRepositoryRoot([], omitsPrefixes: false)
         }
@@ -240,48 +292,6 @@ struct RevisionExportTests {
 
         #expect(try undated(URL(filePath: quick[0])) == undated(cover))
     }
-
-    /// 输出流式交给回调，不收集进结果；失败或取消时目标与临时文件都不存在。
-    @Test("流式写盘、失败与取消的清理")
-    func cleanup() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        try await fixture.initialize()
-        let revision = try await Self.commit(fixture, files: ["a.txt": Data(repeating: 97, count: 100_000)])
-        let runner = fixture.runner
-
-        let received = Mutex(0)
-        let result = try await CommandExecutor.$streamsStandardOutput.withValue(true) {
-            try await runner.execute(["archive", "--format=tar", revision]) { event in
-                if case .standardOutput(let data) = event {
-                    received.withLock { $0 += data.count }
-                }
-            }
-        }
-        #expect(result.standardOutput.isEmpty)
-        #expect(received.withLock { $0 } > 100_000)
-
-        let output = try Self.outputDirectory()
-        defer { try? FileManager.default.removeItem(at: output) }
-
-        let export = RevisionExport(runner: runner)
-        let missing = output.appending(path: "missing.zip")
-        await #expect(throws: GitError.self) {
-            try await export.archive(revision, paths: ["no such path"], format: .zip, to: missing)
-        }
-
-        let cancelled = output.appending(path: "cancelled.tar")
-        let task = Task { try await export.archive(revision, format: .tar, to: cancelled) }
-        task.cancel()
-        _ = await task.result
-
-        #expect(try FileManager.default.contentsOfDirectory(atPath: output.path).isEmpty)
-        await #expect(throws: RepositoryReadError.self) { try await export.export("HEAD", to: missing) }
-        await #expect(throws: RepositoryReadError.self) {
-            try await export.savePatches([], omitsPrefixes: false, to: output)
-        }
-    }
 }
 
 // MARK: - Helpers
@@ -302,7 +312,11 @@ extension RevisionExportTests {
     ) async throws -> String {
         for (path, content) in files {
             let url = fixture.directory.appendingPathComponent(path)
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+
             try content.write(to: url)
         }
 

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -54,7 +55,7 @@ extension FileViewsTests {
         await session.waitForRefresh()
 
         session.showFileHistory("a.txt")
-        try await Self.wait { session.fileHistory.totalCount != nil }
+        await until { session.fileHistory.totalCount != nil }
         #expect(try await session.fileHistory.authors().map(\.name) == ["Author A", "Author B"])
 
         // HEAD 移动后重读
@@ -64,7 +65,7 @@ extension FileViewsTests {
         await session.waitForRefresh()
 
         session.showFileHistory("b.txt")
-        try await Self.wait { session.fileHistory.totalCount != nil }
+        await until { session.fileHistory.totalCount != nil }
         #expect(try await session.fileHistory.authors().map(\.name) == ["Author A", "Author B", "Author C"])
     }
 }

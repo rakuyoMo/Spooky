@@ -16,29 +16,36 @@ struct DeveloperMenuTests {
     @Test("勾选框决定 Developer 菜单是否显示")
     func menuVisibility() throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-developer-" + UUID().uuidString)
+
         defer { try? FileManager.default.removeItem(at: directory) }
 
         // 勾选框写的是标准偏好，测完恢复原值
         let key = DeveloperPreferences.showsMenuKey
         let saved = UserDefaults.standard.object(forKey: key)
+
         defer { UserDefaults.standard.set(saved, forKey: key) }
+
         UserDefaults.standard.removeObject(forKey: key)
 
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
         let controller = SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
+
         _ = NSApplication.shared
         controller.configureMenu()
 
         let items = NSApp.mainMenu?.items ?? []
         let index = try #require(items.firstIndex { $0.title == AppLocalization.text("menu.developer") })
+
         #expect(items[index - 1].title == AppLocalization.text("menu.window"))
         #expect(items[index + 1].title == AppLocalization.text("menu.help"))
         #expect(items[index].isHidden)
 
         UserDefaults.standard.set(true, forKey: key)
+
         #expect(!items[index].isHidden)
 
         UserDefaults.standard.set(false, forKey: key)
+
         #expect(items[index].isHidden)
     }
 
@@ -47,8 +54,10 @@ struct DeveloperMenuTests {
     func resetAndClear() throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "com.rakuyo.spooky.tests.developer." + UUID().uuidString)
+
         let domain = directory.appending(path: "defaults").path
         let defaults = try #require(UserDefaults(suiteName: domain))
+
         defer { try? FileManager.default.removeItem(at: directory) }
 
         for key in DeveloperPreferences.dataKeys {
@@ -62,6 +71,7 @@ struct DeveloperMenuTests {
         DeveloperPreferences.removeValues(in: domain, of: defaults, keepingData: true)
 
         let kept = defaults.persistentDomain(forName: domain) ?? [:]
+
         #expect(Set(kept.keys) == Set(DeveloperPreferences.dataKeys))
         #expect(defaults.object(forKey: AppAppearance.key) == nil)
         #expect(defaults.object(forKey: BranchArchiving.lastCheckKey) == nil)
@@ -84,10 +94,12 @@ struct DeveloperMenuTests {
         )
 
         window.isReleasedWhenClosed = false
+
         defer { window.close() }
 
         for confirms in [false, true] {
             let answer = Task { await SpookyApplicationController.confirmResetUserDefaults(in: window) }
+
             let sheet = try await PromptDialogTests.attachedSheet(of: window)
             let hosting = sheet.contentViewController as? NSHostingController<ConfirmationDialog>
             let dialog = try #require(hosting?.rootView)
@@ -116,27 +128,34 @@ struct DeveloperMenuTests {
     func autoReload() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "com.rakuyo.spooky.tests.autoreload." + UUID().uuidString)
+
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+
         defer { try? FileManager.default.removeItem(at: directory) }
 
         let status = try WorkingCopyStatus(porcelainV2: Data("# branch.oid (initial)\0# branch.head main\0".utf8))
         let session = RepositorySession(loadStatus: { _ in status })
+
         defer { session.close() }
+
         session.display(.local(path: "/temporary/auto-reload-" + UUID().uuidString))
 
         #expect(DeveloperPreferences.autoReloads(in: defaults))
 
         defaults.set(false, forKey: DeveloperPreferences.autoReloadKey)
         session.autoReload(defaults: defaults)
+
         #expect(!session.isRefreshing)
         #expect(session.refreshTask == nil)
         #expect(session.status == nil)
 
         defaults.set(true, forKey: DeveloperPreferences.autoReloadKey)
         session.autoReload(defaults: defaults)
+
         #expect(session.isRefreshing)
 
         await session.refreshTask?.value
+
         #expect(session.status == status)
     }
 }

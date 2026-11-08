@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -10,157 +11,17 @@ import Testing
 /// 历史与侧边栏上接线的操作入口：历史右键菜单按 “单选 / 多选 × 是否在看 HEAD 分支 × 是否未拉取” 拼出的项与可用状态。
 @MainActor
 struct OperationWiringTests {
-    /// 只有选中当前分支或 HEAD 行才算在看 HEAD 分支；全部引用与别的分支都不算，改写类入口据此出现。
-    @Test("在看 HEAD 分支的判断")
-    func viewingHead() async throws {
+    /// 只有选中当前分支或 HEAD 行才算在看 HEAD 分支，改写类入口据此出现；单选与多选、别的分支与当前分支、
+    /// 未拉取与合并提交各自拼出的项与可用状态；菜单项把所选提交交给会话的请求入口。
+    @Test("历史右键菜单的项、可用状态与发出的请求")
+    func commitMenu() async throws {
         let fixture = try await Self.makeFixture()
         defer { fixture.close() }
 
-        let history = fixture.session.history
-        #expect(!fixture.session.isViewingHead)
-
-        history.selectedReferences = ["refs/heads/main"]
-        #expect(fixture.session.isViewingHead)
-
-        history.selectedReferences = ["refs/heads/side"]
-        #expect(!fixture.session.isViewingHead)
-
-        history.selectedReferences = ["HEAD"]
-        #expect(fixture.session.isViewingHead)
-
-        history.selectedReferences = ["refs/heads/main", "refs/heads/side"]
-        #expect(!fixture.session.isViewingHead)
-    }
-
-    /// 不在看 HEAD 分支：反转只有灰色的通用项，摘取可用，改写各项不出现。
-    @Test("别的分支上单选提交的右键菜单")
-    func singleOnOtherBranch() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
-        let side = try await fixture.select("refs/heads/side", subjects: ["S"])
-        let menu = fixture.menu()
-
-        #expect(menu.enabled("rewrite.menu.checkout", side.shortID))
-        #expect(menu.enabled("rewrite.menu.reset", side.shortID))
-        #expect(menu.disabled("rewrite.menu.revertGeneric"))
-        #expect(menu.enabled("rewrite.menu.cherryPick", side.shortID))
-        #expect(menu.enabled("history.createBranch", side.shortID))
-        #expect(menu.enabled("tag.createFrom", side.shortID))
-        #expect(!menu.contains("rewrite.menu.amend", side.shortID))
-        #expect(!menu.contains("rewrite.menu.delete", side.shortID))
-        #expect(!menu.contains("rewrite.menu.rebaseOnto", side.shortID))
-    }
-
-    /// 在看 HEAD 分支：已在本地的提交可以反转、变基到别处与交互式改写，摘取不出现；未拉取的提交才有摘取。
-    @Test("当前分支上单选提交的右键菜单")
-    func singleOnHead() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
-        let local = try await fixture.select("refs/heads/main", subjects: ["B"])
-        var menu = fixture.menu()
-
-        #expect(menu.enabled("rewrite.menu.revert", local.shortID))
-        #expect(!menu.contains("rewrite.menu.cherryPick", local.shortID))
-        #expect(menu.enabled("rewrite.menu.rebaseOnto", local.shortID))
-
-        for key in ["rewrite.menu.amend", "rewrite.menu.edit", "rewrite.menu.reword", "rewrite.menu.delete"] {
-            #expect(menu.enabled(key, local.shortID))
-        }
-
-        // 只在上游里的提交可以摘取到当前分支
-        let unpulled = try await fixture.select("refs/heads/main", subjects: ["C"])
-        #expect(fixture.session.history.unpulled == [unpulled.id])
-
-        menu = fixture.menu()
-        #expect(menu.enabled("rewrite.menu.cherryPick", unpulled.shortID))
-        #expect(menu.enabled("rewrite.menu.revert", unpulled.shortID))
-    }
-
-    /// 合并提交与普通提交的菜单相同；主线由反转与摘取的对话框选择，范围里的合并提交由交互式变基报告。
-    @Test("合并提交的右键菜单")
-    func mergeCommit() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
-        let merge = try await fixture.select("refs/heads/main", subjects: ["M"])
-        #expect(merge.parents.count == 2)
-
-        let menu = fixture.menu()
-        #expect(menu.enabled("rewrite.menu.revert", merge.shortID))
-        #expect(menu.enabled("rewrite.menu.reset", merge.shortID))
-        #expect(menu.enabled("rewrite.menu.amend", merge.shortID))
-    }
-
-    /// 多选时检出、重置、新建分支与标签只有灰色的通用项；当前分支上压缩、fixup 与删除作用于全部所选。
-    @Test("多选提交的右键菜单")
-    func multipleSelection() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
-        _ = try await fixture.select("refs/heads/main", subjects: ["B", "A"])
-        var menu = fixture.menu()
-
-        let generic = [
-            "rewrite.menu.checkoutGeneric",
-            "rewrite.menu.resetGeneric",
-            "history.createBranchGeneric",
-            "tag.createMenu",
-        ]
-
-        for key in generic {
-            #expect(menu.disabled(key))
-        }
-
-        #expect(menu.enabled("rewrite.menu.revertMany", 2))
-        #expect(!menu.contains("rewrite.menu.cherryPickMany", 2))
-        #expect(menu.enabled("rewrite.menu.rebaseOntoMany", 2))
-        #expect(menu.enabled("rewrite.menu.deleteMany", 2))
-        #expect(menu.enabled("rewrite.menu.squashMany", 2))
-        #expect(menu.enabled("rewrite.menu.fixupMany", 2))
-
-        // 别的分支上多选：反转灰色，可以摘取
-        _ = try await fixture.select("refs/heads/side", subjects: ["S", "A"])
-        menu = fixture.menu()
-
-        #expect(menu.disabled("rewrite.menu.revertGeneric"))
-        #expect(menu.enabled("rewrite.menu.cherryPickMany", 2))
-        #expect(!menu.contains("rewrite.menu.squashMany", 2))
-    }
-
-    /// 菜单项把所选提交交给会话的请求入口：反转打开选项对话框，压缩先计划再请求确认。
-    @Test("右键菜单项发出改写请求")
-    func menuRequests() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
-        var requests: [RewriteRequest] = []
-        fixture.session.onRewriteRequest = { requests.append($0) }
-
-        let local = try await fixture.select("refs/heads/main", subjects: ["B"])
-        fixture.menu().perform("rewrite.menu.revert", local.shortID)
-
-        guard case .revert(let commits) = try #require(requests.first) else {
-            Issue.record("反转应打开选项对话框")
-            return
-        }
-
-        #expect(commits == [local.id])
-
-        let selected = try await fixture.select("refs/heads/main", subjects: ["D", "B"])
-        fixture.menu().perform("rewrite.menu.squashMany", 2)
-        try await FileViewsTests.wait { requests.count == 2 }
-
-        guard
-            case .confirm(let plan) = requests.last,
-            case .squash(let squashed, into: nil) = plan.action
-        else {
-            Issue.record("压缩应先计划再请求确认")
-            return
-        }
-
-        #expect(Set(squashed) == Set([selected.id, fixture.ids["B"] ?? ""]))
+        checkViewingHead(in: fixture)
+        try await checkSingleSelection(in: fixture)
+        try await checkMultipleSelection(in: fixture)
+        try await checkMenuRequests(in: fixture)
     }
 }
 
@@ -195,11 +56,11 @@ extension OperationWiringTests {
         func select(_ reference: String, subjects: [String]) async throws -> HistoryCommit {
             let history = session.history
             let wanted = Set(subjects.compactMap { ids[$0] })
-            history.selectedReferences = [reference]
 
-            try await FileViewsTests.wait {
-                !history.isLoading && wanted.isSubset(of: history.commits.map(\.id))
-            }
+            // 换了引用时列表同步开始重读，读完再选中
+            history.selectedReferences = [reference]
+            await untilFinished { history.activeTasks }
+            try #require(wanted.isSubset(of: history.commits.map(\.id)))
 
             history.selectedIDs = wanted
             return try #require(history.commits.first { $0.id == ids[subjects[0]] })
@@ -282,16 +143,165 @@ extension OperationWiringTests {
         _ = try await runner.run(["update-ref", "refs/remotes/origin/main", "HEAD"])
         _ = try await runner.run(["reset", "-q", "--hard", "HEAD~1"])
         _ = try await runner.run(["config", "--local", "remote.origin.url", directory.path])
-        _ = try await runner.run(["config", "--local", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"])
+        let fetch = "+refs/heads/*:refs/remotes/origin/*"
+        _ = try await runner.run(["config", "--local", "remote.origin.fetch", fetch])
         _ = try await runner.run(["config", "--local", "branch.main.remote", "origin"])
         _ = try await runner.run(["config", "--local", "branch.main.merge", "refs/heads/main"])
 
-        let session = RepositorySession(makeRunner: { _ in runner })
+        let session = RepositorySession(makeRunner: { _ in runner }, activities: RepositoryActivities())
         session.display(location)
         session.refresh(full: true)
+
+        // 刷新期间同步开始读引用与列表，一起等完
         await session.waitForRefresh()
-        try await FileViewsTests.wait { session.history.snapshot != nil && !session.history.isLoading }
+        await untilFinished { session.history.activeTasks }
+        try #require(session.history.snapshot != nil)
 
         return Fixture(directory: directory, runner: runner, session: session, ids: ids)
+    }
+}
+
+// MARK: - Commit Menu
+
+extension OperationWiringTests {
+    /// 只有选中当前分支或 HEAD 行才算在看 HEAD 分支；全部引用、别的分支与同时选中几个分支都不算。
+    private func checkViewingHead(in fixture: Fixture) {
+        let session = fixture.session
+        let history = session.history
+
+        #expect(!session.isViewingHead)
+
+        history.selectedReferences = ["refs/heads/main"]
+        #expect(session.isViewingHead)
+
+        history.selectedReferences = ["refs/heads/side"]
+        #expect(!session.isViewingHead)
+
+        history.selectedReferences = ["HEAD"]
+        #expect(session.isViewingHead)
+
+        history.selectedReferences = ["refs/heads/main", "refs/heads/side"]
+        #expect(!session.isViewingHead)
+    }
+
+    /// 单选一个提交：别的分支上反转只有灰色的通用项、摘取可用、改写各项不出现；当前分支上已在本地的提交可以反转、
+    /// 变基到别处与交互式改写，摘取不出现，未拉取的提交才有摘取；合并提交与普通提交的菜单相同。
+    private func checkSingleSelection(in fixture: Fixture) async throws {
+        // 别的分支上的提交
+        let side = try await fixture.select("refs/heads/side", subjects: ["S"])
+        var menu = fixture.menu()
+
+        #expect(menu.enabled("rewrite.menu.checkout", side.shortID))
+        #expect(menu.enabled("rewrite.menu.reset", side.shortID))
+        #expect(menu.disabled("rewrite.menu.revertGeneric"))
+        #expect(menu.enabled("rewrite.menu.cherryPick", side.shortID))
+        #expect(menu.enabled("history.createBranch", side.shortID))
+        #expect(menu.enabled("tag.createFrom", side.shortID))
+        #expect(!menu.contains("rewrite.menu.amend", side.shortID))
+        #expect(!menu.contains("rewrite.menu.delete", side.shortID))
+        #expect(!menu.contains("rewrite.menu.rebaseOnto", side.shortID))
+
+        // 当前分支上已在本地的提交
+        let local = try await fixture.select("refs/heads/main", subjects: ["B"])
+        menu = fixture.menu()
+
+        #expect(menu.enabled("rewrite.menu.revert", local.shortID))
+        #expect(!menu.contains("rewrite.menu.cherryPick", local.shortID))
+        #expect(menu.enabled("rewrite.menu.rebaseOnto", local.shortID))
+
+        let rewrites = [
+            "rewrite.menu.amend",
+            "rewrite.menu.edit",
+            "rewrite.menu.reword",
+            "rewrite.menu.delete",
+        ]
+
+        for key in rewrites {
+            #expect(menu.enabled(key, local.shortID))
+        }
+
+        // 只在上游里的提交可以摘取到当前分支
+        let unpulled = try await fixture.select("refs/heads/main", subjects: ["C"])
+        #expect(fixture.session.history.unpulled == [unpulled.id])
+
+        menu = fixture.menu()
+
+        #expect(menu.enabled("rewrite.menu.cherryPick", unpulled.shortID))
+        #expect(menu.enabled("rewrite.menu.revert", unpulled.shortID))
+
+        // 合并提交：主线由反转与摘取的对话框选择，范围里的合并提交由交互式变基报告
+        let merge = try await fixture.select("refs/heads/main", subjects: ["M"])
+        #expect(merge.parents.count == 2)
+
+        menu = fixture.menu()
+
+        #expect(menu.enabled("rewrite.menu.revert", merge.shortID))
+        #expect(menu.enabled("rewrite.menu.reset", merge.shortID))
+        #expect(menu.enabled("rewrite.menu.amend", merge.shortID))
+    }
+
+    /// 多选时检出、重置、新建分支与标签只有灰色的通用项；当前分支上压缩、fixup 与删除作用于全部所选，
+    /// 别的分支上反转灰色、可以摘取。
+    private func checkMultipleSelection(in fixture: Fixture) async throws {
+        _ = try await fixture.select("refs/heads/main", subjects: ["B", "A"])
+        var menu = fixture.menu()
+
+        let generic = [
+            "rewrite.menu.checkoutGeneric",
+            "rewrite.menu.resetGeneric",
+            "history.createBranchGeneric",
+            "tag.createMenu",
+        ]
+
+        for key in generic {
+            #expect(menu.disabled(key))
+        }
+
+        #expect(menu.enabled("rewrite.menu.revertMany", 2))
+        #expect(!menu.contains("rewrite.menu.cherryPickMany", 2))
+        #expect(menu.enabled("rewrite.menu.rebaseOntoMany", 2))
+        #expect(menu.enabled("rewrite.menu.deleteMany", 2))
+        #expect(menu.enabled("rewrite.menu.squashMany", 2))
+        #expect(menu.enabled("rewrite.menu.fixupMany", 2))
+
+        // 别的分支上多选
+        _ = try await fixture.select("refs/heads/side", subjects: ["S", "A"])
+        menu = fixture.menu()
+
+        #expect(menu.disabled("rewrite.menu.revertGeneric"))
+        #expect(menu.enabled("rewrite.menu.cherryPickMany", 2))
+        #expect(!menu.contains("rewrite.menu.squashMany", 2))
+    }
+
+    /// 菜单项把所选提交交给会话的请求入口：反转打开选项对话框，压缩先计划再请求确认。
+    private func checkMenuRequests(in fixture: Fixture) async throws {
+        var requests: [RewriteRequest] = []
+        fixture.session.onRewriteRequest = { requests.append($0) }
+
+        // 反转直接请求打开选项对话框
+        let local = try await fixture.select("refs/heads/main", subjects: ["B"])
+        fixture.menu().perform("rewrite.menu.revert", local.shortID)
+
+        guard case .revert(let commits) = try #require(requests.first) else {
+            Issue.record("反转应打开选项对话框")
+            return
+        }
+
+        #expect(commits == [local.id])
+
+        // 压缩的计划在后台任务里完成，完成后在主线程请求确认
+        let selected = try await fixture.select("refs/heads/main", subjects: ["D", "B"])
+        fixture.menu().perform("rewrite.menu.squashMany", 2)
+        await until { requests.count == 2 }
+
+        guard
+            case .confirm(let plan) = requests.last,
+            case .squash(let squashed, into: nil) = plan.action
+        else {
+            Issue.record("压缩应先计划再请求确认")
+            return
+        }
+
+        #expect(Set(squashed) == Set([selected.id, fixture.ids["B"] ?? ""]))
     }
 }

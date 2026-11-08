@@ -11,10 +11,13 @@ import Testing
 /// 摘取、重置、合并、检出、提交、检出与首次提交；分支名是中文的 `功能/分支`，
 /// 一次提交的标题带双引号、单引号、通配符与方括号，正文有两行。
 struct RepositoryReflogTests {
-    /// 每条记录的时间来自选择器，命令名与配色类别取自说明，提交的完整信息与列表相同。
-    @Test("reflog 夹具：时间、说明、命令名与提交")
-    func parseFixture() throws {
+    /// 每条记录的时间来自选择器，命令名与配色类别取自说明，提交的完整信息与列表相同；
+    /// 哈希长度随仓库算法变化，SHA-256 仓库同样可以解析，分页的位置从偏移量开始编号；
+    /// 截断、字段数不对、选择器不是时间形式或提交字段错位时拒绝整页，不会显示错位的记录。
+    @Test("reflog 夹具：时间、说明、命令名、提交、SHA-256 与偏移量，以及格式错误")
+    func parse() throws {
         let entries = try ReflogEntry.parse(try fixture("reflog-sha1.bin"), offset: 0)
+
         #expect(entries.map(\.id) == Array(0 ..< 7))
         #expect(entries.map(\.command) == ["cherry-pick", "reset", "merge", "checkout", "commit", "checkout", "commit"])
         #expect(entries.map(\.category) == [.commit, .move, .merge, .move, .commit, .move, .commit])
@@ -33,25 +36,23 @@ struct RepositoryReflogTests {
         #expect(entries[1].commit.id == entries[3].commit.id)
         #expect(entries[2].commit.parents.count == 2)
         #expect(entries.allSatisfy { $0.commit.id.count == 40 })
-    }
 
-    /// 哈希长度随仓库算法变化，SHA-256 仓库同样可以解析；分页的位置从偏移量开始编号。
-    @Test("reflog 夹具：SHA-256 仓库与偏移量")
-    func parseSHA256() throws {
-        let entries = try ReflogEntry.parse(try fixture("reflog-sha256.bin"), offset: 100)
-        #expect(entries.count == 7)
-        #expect(entries.map(\.id) == Array(100 ..< 107))
-        #expect(entries.allSatisfy { $0.commit.id.count == 64 && $0.commit.tree.count == 64 })
-    }
+        // SHA-256 仓库，位置从偏移量开始编号
+        let sha256 = try ReflogEntry.parse(try fixture("reflog-sha256.bin"), offset: 100)
 
-    /// 截断、字段数不对、选择器不是时间形式或提交字段错位时拒绝整页，不会显示错位的记录。
-    @Test("reflog 格式错误")
-    func malformedOutput() throws {
+        #expect(sha256.map(\.id) == Array(100 ..< 107))
+        #expect(sha256.allSatisfy { $0.commit.id.count == 64 && $0.commit.tree.count == 64 })
+
+        // 手写的一条完整记录与空输出
         let hash = String(repeating: "a", count: 40)
         let commit = [hash, hash, "", "A", "a@x", "1", "C", "c@x", "2", "message"].joined(separator: "\0")
         let valid = "HEAD@{100}\0commit: x\0" + commit + "\0"
+
         #expect(try ReflogEntry.parse(Data(valid.utf8), offset: 0).first?.date == Date(timeIntervalSince1970: 100))
         #expect(try ReflogEntry.parse(Data(), offset: 0).isEmpty)
+
+        // 截断、缺少说明、选择器后有多余文字、选择器不是时间、没有选择器与提交字段错位
+        let misplaced = commit.replacingOccurrences(of: hash + "\0" + hash, with: "HEAD\0" + hash)
 
         let broken = [
             String(valid.dropLast()),
@@ -59,7 +60,7 @@ struct RepositoryReflogTests {
             "HEAD@{0}x\0commit: x\0" + commit + "\0",
             "HEAD@{soon}\0commit: x\0" + commit + "\0",
             "HEAD\0commit: x\0" + commit + "\0",
-            "HEAD@{100}\0commit: x\0" + commit.replacingOccurrences(of: hash + "\0" + hash, with: "HEAD\0" + hash) + "\0",
+            "HEAD@{100}\0commit: x\0" + misplaced + "\0",
         ]
 
         for output in broken {
@@ -71,58 +72,45 @@ struct RepositoryReflogTests {
 
     /// HEAD 与分支各有自己的记录，分页额外读一条判断是否还有下一页，位置延续上一页；
     /// 搜索只看说明，不区分大小写，方括号与星号按字面匹配；
-    /// 分支能移回记录里的提交，分支已经不在读取时的位置上时 Git 拒绝，分支保持原样。
-    @Test("按引用分页读取、按说明搜索与把分支恢复到某条记录")
+    /// 分支能移回记录里的提交，分支已经不在读取时的位置上时 Git 拒绝，分支保持原样；
+    /// 只接受 HEAD 与本地分支，选项和修订表达式在执行 Git 之前就被拒绝。
+    @Test("按引用分页读取、按说明搜索、把分支恢复到某条记录与拒绝非法参数")
     func pagesSearchAndRestore() async throws {
         let repository = try await makeRepository()
         defer { repository.remove() }
+
         let runner = repository.runner
         let reflog = RepositoryReflog(runner: runner)
 
         let head = try await reflog.page(of: "HEAD", limit: 2)
+
         #expect(head.entries.map(\.command) == ["checkout", "commit"])
         #expect(head.hasMore)
 
         let next = try await reflog.page(of: "HEAD", offset: 2, limit: 2)
+
         #expect(next.entries.map(\.id) == [2, 3])
         #expect(!next.hasMore)
 
         // 分支的记录只有它自己的移动
         let branch = try await reflog.page(of: "refs/heads/功能/分支")
+
         #expect(branch.entries.map(\.message) == ["commit: 功能 [x] *", "branch: Created from HEAD"])
 
         // 搜索只看说明，不区分大小写，方括号与星号按字面匹配
         let moving = try await reflog.page(of: "HEAD", matching: "MOVING FROM")
+
         #expect(moving.entries.map(\.command) == ["checkout", "checkout"])
 
         let literal = try await reflog.page(of: "refs/heads/功能/分支", matching: " [x] *")
+
         #expect(literal.entries.count == 1)
 
         let none = try await reflog.page(of: "HEAD", matching: "rebase")
+
         #expect(none.entries.isEmpty)
 
-        // 恢复会改动分支与它的引用日志，放在只读的核对之后
-        let entries = try await reflog.page(of: "refs/heads/功能/分支").entries
-        let tip = entries[0].commit.id
-        let start = entries[1].commit.id
-
-        await #expect(throws: GitError.self) {
-            try await reflog.restore("refs/heads/功能/分支", to: start, expected: start)
-        }
-
-        try await reflog.restore("refs/heads/功能/分支", to: start, expected: tip)
-        #expect(try await revision("refs/heads/功能/分支", in: runner) == start)
-
-        // 恢复本身也写进分支的引用日志
-        let after = try await reflog.page(of: "refs/heads/功能/分支").entries
-        #expect(after.first?.command == "reflog")
-    }
-
-    /// 只接受 HEAD 与本地分支，选项和修订表达式在执行 Git 之前就被拒绝。
-    @Test("拒绝非法引用与分页参数")
-    func invalidQueries() async throws {
-        let reflog = RepositoryReflog(runner: GitRunner(location: .local(path: "/nonexistent")))
-
+        // 非法的引用与参数在执行 Git 之前就被拒绝
         for reference in ["--all", "main", "refs/remotes/origin/main", "refs/heads/a..b", "refs/heads/x@{1}"] {
             await #expect(throws: RepositoryReadError.invalidQuery) {
                 try await reflog.page(of: reference)
@@ -136,6 +124,23 @@ struct RepositoryReflogTests {
         await #expect(throws: RepositoryReadError.invalidQuery) {
             try await reflog.restore("HEAD", to: "abcd", expected: "abcd")
         }
+
+        // 恢复会改动分支与它的引用日志，放在只读的核对之后
+        let tip = branch.entries[0].commit.id
+        let start = branch.entries[1].commit.id
+
+        await #expect(throws: GitError.self) {
+            try await reflog.restore("refs/heads/功能/分支", to: start, expected: start)
+        }
+
+        try await reflog.restore("refs/heads/功能/分支", to: start, expected: tip)
+
+        #expect(try await revision("refs/heads/功能/分支", in: runner) == start)
+
+        // 恢复本身也写进分支的引用日志
+        let after = try await reflog.page(of: "refs/heads/功能/分支").entries
+
+        #expect(after.first?.command == "reflog")
     }
 }
 

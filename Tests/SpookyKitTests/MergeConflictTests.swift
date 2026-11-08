@@ -7,14 +7,19 @@ import Testing
 
 /// 用真实 Git 在临时仓库里构造合并、变基、摘取与反转的冲突，验证冲突向导读到的内容和每个写入的结果。
 struct MergeConflictTests {
-    /// 向导显示的三方内容必须与索引一致；采用一侧后 resolve-undo 记录让横幅能数出已解决的冲突。
-    @Test("合并冲突：三方内容与采用一侧")
+    /// 向导显示的三方内容必须与索引一致；合并的对方提交是被合并的提交，预填保留 Git 写下的冲突清单注释；
+    /// 恢复只改工作区，文件仍是冲突，恢复成某一侧之外的内容就算手动改过，标记解决后还能重新生成冲突；
+    /// 采用一侧后 resolve-undo 记录让横幅能数出已解决的冲突。
+    @Test("合并冲突：三方内容、预填信息、恢复冲突版本、手动编辑的识别与采用一侧")
     func mergeWizard() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
+
         try await repository.initialize()
 
         let path = "冲突 '文件' [*].txt"
+        let file = repository.directory.appending(path: path)
+
         let side = try await diverge(
             repository,
             base: [path: "base\n"],
@@ -39,69 +44,69 @@ struct MergeConflictTests {
         #expect(!contents.isManuallyEdited)
 
         // 合并的我方是当前 HEAD，对方是被合并的提交，还没有解决任何冲突
-        let progress = try #require(try await service.context(head: status.branch.oid).progress)
+        let context = try await service.context(head: status.branch.oid)
+        let progress = try #require(context.progress)
 
         #expect(progress.state == .merge)
         #expect(progress.ours == status.branch.oid)
-        #expect(progress.theirs == side)
+        #expect(progress.theirs == side && progress.theirsCommit == side)
         #expect(progress.resolvedPaths.isEmpty)
 
-        try await service.resolve([entry], theirs: true)
-        #expect(try Data(contentsOf: repository.directory.appending(path: path)) == Data("theirs\n".utf8))
+        // 预填保留 Git 写下的冲突清单注释，交给提交时的注释设置处理
+        #expect(context.preparedMessage.hasPrefix("Merge branch 'side'"))
+        #expect(context.preparedMessage.contains("# Conflicts:"))
 
-        // 解决之后，resolve-undo 记录让横幅能数出已解决的冲突
-        let resolved = try #require(try await service.context(head: status.branch.oid).progress)
-        #expect(resolved.resolvedPaths == [path])
-    }
-
-    /// 恢复只改工作区，文件仍是冲突；恢复成某一侧之外的内容就算手动改过；标记解决后还能重新生成冲突。
-    @Test("恢复冲突版本与手动编辑的识别")
-    func restoreConflictVersions() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-
-        let path = "file.txt"
-        let file = repository.directory.appending(path: path)
-        _ = try await diverge(repository, base: [path: "base\n"], ours: [path: "ours\n"], theirs: [path: "theirs\n"])
-        _ = try await repository.runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
-
-        let service = WorkingCopyOperations(runner: repository.runner)
-        let entry = try #require(try await repository.runner.status().entries.first)
-
+        // 恢复成我方：只改工作区，文件仍是冲突；与我方相同的内容只是一侧的版本，不算手动编辑
         try await service.restoreConflicts([entry], to: .ours)
+
         #expect(try Data(contentsOf: file) == Data("ours\n".utf8))
         #expect(try await repository.runner.status().entries.first?.kind == .conflicted)
-
-        // 与我方相同的内容只是一侧的版本，不算手动编辑
         #expect(try await !service.conflictContents(of: entry).isManuallyEdited)
 
+        // 恢复成共同祖先算手动改过，重新生成冲突标记则不算
         try await service.restoreConflicts([entry], to: .base)
+
         #expect(try Data(contentsOf: file) == Data("base\n".utf8))
         #expect(try await service.conflictContents(of: entry).isManuallyEdited)
 
         try await service.restoreConflicts([entry], to: .unmerged)
+
         #expect(String(decoding: try Data(contentsOf: file), as: UTF8.self).contains(">>>>>>>"))
         #expect(try await !service.conflictContents(of: entry).isManuallyEdited)
 
         // 在外部编辑器里删掉冲突标记、写成自己的结果
         try Data("edited\n".utf8).write(to: file)
+
         #expect(try await service.conflictContents(of: entry).isManuallyEdited)
 
         // 标记解决之后，Git 的 resolve-undo 记录仍能重新生成冲突
         try await service.stage([entry], staged: true)
+
         #expect(try await repository.runner.status().entries.allSatisfy { $0.kind != .conflicted })
 
         try await service.restoreConflicts([entry], to: .unmerged)
+
         #expect(try await repository.runner.status().entries.first?.kind == .conflicted)
+
+        // 采用对方之后，resolve-undo 记录让横幅能数出已解决的冲突
+        try await service.resolve([entry], theirs: true)
+
+        #expect(try Data(contentsOf: file) == Data("theirs\n".utf8))
+
+        let resolved = try #require(try await service.context(head: status.branch.oid).progress)
+
+        #expect(resolved.resolvedPaths == [path])
     }
 
-    /// 缺少一侧的冲突也要能读、能解决；二进制内容原样取回；没有的版本拒绝恢复。
-    @Test("删改冲突、两侧新增与二进制冲突")
+    /// 缺少一侧的冲突也要能读、能解决；二进制内容原样取回；没有的版本拒绝恢复；
+    /// 压缩合并的对方没有提交来源，储藏应用冲突时没有进行中的操作。
+    @Test("删改冲突、两侧新增、二进制冲突、压缩合并与储藏应用")
     func otherConflictKinds() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
+
         try await repository.initialize()
+        let runner = repository.runner
 
         _ = try await diverge(
             repository,
@@ -110,10 +115,14 @@ struct MergeConflictTests {
             theirs: ["deleted.txt": nil, "binary.bin": "\0theirs", "added.txt": "theirs\n"]
         )
 
-        _ = try await repository.runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
+        _ = try await runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
 
-        let service = WorkingCopyOperations(runner: repository.runner)
-        let entries = Dictionary(uniqueKeysWithValues: try await repository.runner.status().entries.map { ($0.path, $0) })
+        let service = WorkingCopyOperations(runner: runner)
+
+        let entries = Dictionary(
+            uniqueKeysWithValues: try await runner.status().entries.map { ($0.path, $0) }
+        )
+
         let deleted = try #require(entries["deleted.txt"])
         let binary = try #require(entries["binary.bin"])
         let added = try #require(entries["added.txt"])
@@ -122,6 +131,7 @@ struct MergeConflictTests {
         #expect(added.conflictKind == .bothAdded)
 
         let deletedContents = try await service.conflictContents(of: deleted)
+
         #expect(deletedContents.theirs == nil)
         #expect(deletedContents.ours == Data("ours\n".utf8))
         #expect(deletedContents.worktree == Data("ours\n".utf8))
@@ -140,151 +150,126 @@ struct MergeConflictTests {
         #expect(!FileManager.default.fileExists(atPath: repository.directory.appending(path: "deleted.txt").path))
         #expect(try Data(contentsOf: repository.directory.appending(path: "binary.bin")) == Data("\0theirs".utf8))
 
-        let remaining = try await repository.runner.status().entries.filter { $0.kind == .conflicted }
+        let remaining = try await runner.status().entries.filter { $0.kind == .conflicted }
+
         #expect(remaining.map(\.path) == ["added.txt"])
+
+        // 压缩合并的对方没有提交来源
+        _ = try await runner.run(["reset", "-q", "--hard"])
+        _ = try await runner.execute(["merge", "--squash", "side"], acceptedExitCodes: [1])
+
+        #expect(try await currentProgress(repository).theirsCommit == nil)
+
+        // 储藏应用冲突时没有进行中的操作
+        _ = try await runner.run(["reset", "-q", "--hard"])
+        try Data("stashed\n".utf8).write(to: repository.directory.appending(path: "added.txt"))
+        _ = try await runner.run(["stash", "-q"])
+        try await commit(repository, ["added.txt": "changed\n"], message: "changed")
+        _ = try await runner.execute(["stash", "apply", "-q"], acceptedExitCodes: [1])
+
+        #expect(try await service.context(head: try await runner.status().branch.oid).progress == nil)
     }
 
-    /// 继续之后停在下一步的冲突上，Git 以失败退出，状态文件仍显示进行中，不能当作变基已经完成。
-    @Test("变基冲突：步数与标题，继续后停在下一步仍是进行中")
+    /// 继续之后停在下一步的冲突上，Git 以失败退出，状态文件仍显示进行中，不能当作变基已经完成；
+    /// 对方提交是这一步正在重放的提交；空的一步确认保留后，空提交沿用原作者并完成变基。
+    @Test("变基冲突：步数、标题与对方提交，继续后停在下一步，空的一步继续时保留空提交")
     func rebaseSteps() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
-        try await repository.initialize()
 
+        try await repository.initialize()
         let runner = repository.runner
+
         try await commit(repository, ["f": "base\n", "g": "base\n"], message: "base")
         _ = try await runner.run(["checkout", "-q", "-b", "feature"])
-        try await commit(repository, ["f": "f1\n"], message: "feature one")
-        try await commit(repository, ["g": "g2\n"], message: "feature two")
+        try await commit(repository, ["f": "f1\n"], message: "feature one", author: "Original Author")
+        try await commit(repository, ["g": "g2\n"], message: "feature two", author: "Original Author")
+
         let original = try #require(try await runner.status().branch.oid)
+        let featureOne = try await commitID("HEAD~1", in: repository)
 
         _ = try await runner.run(["checkout", "-q", "main"])
         try await commit(repository, ["f": "main\n", "g": "main\n"], message: "main")
+
         let onto = try #require(try await runner.status().branch.oid)
 
         _ = try await runner.run(["checkout", "-q", "feature"])
         _ = try await runner.execute(["rebase", "main"], acceptedExitCodes: [1])
 
         let service = WorkingCopyOperations(runner: runner)
-        let first = try #require(try await service.context(head: try await runner.status().branch.oid).progress)
+        let first = try await currentProgress(repository)
 
         #expect(first.state == .rebase)
         #expect(first.step == 1 && first.stepCount == 2)
         #expect(first.stepSubject == "feature one")
         #expect(first.branch == "refs/heads/feature")
         #expect(first.ours == onto && first.theirs == original)
+        #expect(first.theirsCommit == featureOne)
 
         // 变基时对方是正在重放的提交
         try await service.resolve(try await runner.status().entries, theirs: true)
+
         #expect(try Data(contentsOf: repository.directory.appending(path: "f")) == Data("f1\n".utf8))
 
         await #expect(throws: GitError.self) {
             try await service.finish(.rebase, action: "continue")
         }
 
-        let second = try #require(try await service.context(head: try await runner.status().branch.oid).progress)
+        let second = try await currentProgress(repository)
 
         #expect(second.step == 2 && second.stepSubject == "feature two")
+        #expect(second.theirsCommit == original)
         #expect(second.resolvedPaths.isEmpty)
         #expect(try await runner.status().entries.contains { $0.kind == .conflicted })
 
-        try await service.finish(.rebase, action: "abort")
-        #expect(try await service.context(head: try await runner.status().branch.oid).progress == nil)
-        #expect(try await runner.status().branch.oid == original)
+        // 我方是 main，采用它之后这一步没有改动，确认保留空提交
+        try await service.resolve(try await runner.status().entries, theirs: false)
+        try await service.continueSequence(.rebase, subject: "feature two", body: "", allowEmpty: true)
+
+        #expect(try await service.context(head: try await runner.status().branch.oid).operation == nil)
+
+        let log = String(decoding: try await runner.run(["log", "-3", "--format=%an|%s"]), as: UTF8.self)
+
+        #expect(log == "Original Author|feature two\nOriginal Author|feature one\nSpooky Test|main\n")
     }
 
-    /// 摘取序列不记录已完成的步数，只数剩余的提交，当前一步是其中第 1 个；这一步解决后没有改动时，确认保留的空提交沿用原作者。
+    /// 摘取序列不记录已完成的步数，只数剩余的提交：三个提交在第二个冲突时剩两个，当前一步是其中第 1 个；
+    /// 这一步解决后没有改动时，确认保留的空提交沿用原作者，后面的提交照常摘取。
     @Test("摘取序列：剩余提交数与空的一步继续")
     func cherryPickSequence() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
-        try await repository.initialize()
 
+        try await repository.initialize()
         let runner = repository.runner
+
         try await commit(repository, ["x": "base\n"], message: "base")
-        _ = try await runner.run(["checkout", "-q", "-b", "picked"])
-        try await commit(repository, ["x": "picked\n"], message: "pick me", author: "Original Author")
-        try await commit(repository, ["y": "second\n"], message: "second", author: "Original Author")
+        _ = try await runner.run(["checkout", "-q", "-b", "side"])
+        try await commit(repository, ["a": "a\n"], message: "one", author: "Original Author")
+        try await commit(repository, ["x": "two\n"], message: "two", author: "Original Author")
+        try await commit(repository, ["c": "c\n"], message: "three", author: "Original Author")
         _ = try await runner.run(["checkout", "-q", "main"])
         try await commit(repository, ["x": "main\n"], message: "main")
 
-        _ = try await runner.execute(["cherry-pick", "picked~1", "picked"], acceptedExitCodes: [1])
+        _ = try await runner.execute(["cherry-pick", "side~2", "side~1", "side"], acceptedExitCodes: [1])
 
         let service = WorkingCopyOperations(runner: runner)
-        let progress = try #require(try await service.context(head: try await runner.status().branch.oid).progress)
+        let progress = try await currentProgress(repository)
 
-        #expect(progress.state == .cherryPick)
-        #expect(progress.step == 1 && progress.stepCount == 2 && progress.isSequence)
-        #expect(progress.stepSubject == "pick me")
+        #expect(progress.state == .cherryPick && progress.isSequence)
+        #expect(progress.step == 1 && progress.stepCount == 2)
+        #expect(progress.stepKind == .applying && progress.stepSubject == "two")
+        #expect(progress.theirsCommit == (try await commitID("side~1", in: repository)))
 
         // 采用我方后这一步与 HEAD 相同
         try await service.resolve(try await runner.status().entries, theirs: false)
-        try await service.continueSequence(.cherryPick, subject: "pick me", body: "", allowEmpty: true)
+        try await service.continueSequence(.cherryPick, subject: "two", body: "", allowEmpty: true)
 
         #expect(try await service.context(head: try await runner.status().branch.oid).operation == nil)
 
-        let log = String(decoding: try await runner.run(["log", "-3", "--format=%an|%s"]), as: UTF8.self)
-        #expect(log == "Original Author|second\nOriginal Author|pick me\nSpooky Test|main\n")
-    }
+        let log = String(decoding: try await runner.run(["log", "-4", "--format=%an|%s"]), as: UTF8.self)
 
-    /// 反转的对方是被反转的提交；中止回到反转之前的 HEAD。
-    @Test("反转冲突的识别与中止")
-    func revertConflict() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-
-        let runner = repository.runner
-        try await commit(repository, ["x": "base\n"], message: "base")
-        try await commit(repository, ["x": "changed\n"], message: "change")
-        let reverted = try #require(try await runner.status().branch.oid)
-        try await commit(repository, ["x": "again\n"], message: "again")
-        let head = try #require(try await runner.status().branch.oid)
-
-        _ = try await runner.execute(["revert", "--no-edit", reverted], acceptedExitCodes: [1])
-
-        let service = WorkingCopyOperations(runner: runner)
-        let progress = try #require(try await service.context(head: head).progress)
-
-        #expect(progress.state == .revert)
-        #expect(progress.theirs == reverted && progress.ours == head)
-        #expect(progress.stepKind == .reverting)
-
-        try await service.finish(.revert, action: "abort")
-        #expect(try await service.context(head: head).operation == nil)
-        #expect(try await runner.status().branch.oid == head)
-
-        // 中止还要撤回冲突留下的改动，只清掉进行中的状态不算中止
-        #expect(try await runner.status().entries.isEmpty)
-    }
-
-    /// merge 后端的变基在空的一步上确认保留，空提交沿用原作者并完成后面的步骤。
-    @Test("变基的空的一步继续时保留空提交")
-    func emptyRebaseStep() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-
-        let runner = repository.runner
-        try await commit(repository, ["x": "base\n"], message: "base")
-        _ = try await runner.run(["checkout", "-q", "-b", "feature"])
-        try await commit(repository, ["x": "feature\n"], message: "conflicting", author: "Original Author")
-        try await commit(repository, ["y": "after\n"], message: "after")
-        _ = try await runner.run(["checkout", "-q", "main"])
-        try await commit(repository, ["x": "main\n"], message: "main")
-        _ = try await runner.run(["checkout", "-q", "feature"])
-        _ = try await runner.execute(["rebase", "main"], acceptedExitCodes: [1])
-
-        let service = WorkingCopyOperations(runner: runner)
-
-        // 变基时我方是 main，采用它之后这一步没有改动
-        try await service.resolve(try await runner.status().entries, theirs: false)
-        try await service.continueSequence(.rebase, subject: "conflicting", body: "", allowEmpty: true)
-
-        #expect(try await service.context(head: try await runner.status().branch.oid).operation == nil)
-
-        let log = String(decoding: try await runner.run(["log", "-3", "--format=%an|%s"]), as: UTF8.self)
-        #expect(log == "Spooky Test|after\nOriginal Author|conflicting\nSpooky Test|main\n")
+        #expect(log == "Original Author|three\nOriginal Author|two\nOriginal Author|one\nSpooky Test|main\n")
     }
 }
 

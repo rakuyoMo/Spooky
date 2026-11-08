@@ -5,9 +5,10 @@ import Testing
 
 /// 交给本机程序的副本只落在私有缓存目录，清理后不留下文件。
 struct RepositoryFileCacheTests {
-    /// 副本保留原文件名、同名互不覆盖，缓存目录只对当前用户开放；清理后仍可继续使用。
-    @Test("缓存副本的文件名、权限与清理")
-    func storeAndRemove() throws {
+    /// 副本保留原文件名、同名互不覆盖，缓存目录只对当前用户开放，清理后仍可继续使用；
+    /// 本机仓库的工作区文件不复制，直接交出原路径，下载接口仍能把文件复制到指定位置。
+    @Test("缓存副本的文件名、权限与清理，本机工作区文件使用原路径")
+    func storeAndRemove() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
 
@@ -36,14 +37,8 @@ struct RepositoryFileCacheTests {
         #expect(again.lastPathComponent == "file")
         #expect(try Data(contentsOf: again) == Data("three".utf8))
         cache.removeAll()
-    }
 
-    /// 本机仓库的工作区文件不复制，直接交出原路径；下载接口仍能把文件复制到指定位置。
-    @Test("本机工作区文件使用原路径")
-    func localWorkingTree() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-
+        // 工作区文件直接交出原路径
         let path = "子 目录/文件 [*].txt"
         let file = repository.directory.appending(path: path)
 
@@ -52,10 +47,9 @@ struct RepositoryFileCacheTests {
             withIntermediateDirectories: true
         )
         try Data("content".utf8).write(to: file)
-
-        let cache = RepositoryFileCache(runner: repository.runner)
         #expect(try await cache.workingTreeFile(path).standardizedFileURL == file.standardizedFileURL)
 
+        // 下载接口复制到指定位置
         let copy = repository.directory.appending(path: "copy.txt")
         try await RepositoryFiles(runner: repository.runner).download(file.path, to: copy)
         #expect(try Data(contentsOf: copy) == Data("content".utf8))

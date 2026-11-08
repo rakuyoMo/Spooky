@@ -10,6 +10,7 @@ extension WorkingCopyOperationsTests {
     func conflicts() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
+
         try await repository.initialize()
         let service = WorkingCopyOperations(runner: repository.runner)
         let file = repository.directory.appending(path: "file")

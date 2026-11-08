@@ -12,7 +12,9 @@ private final class StepRecorder: Sendable {
     private let steps = Mutex<[SyncStep]>([])
 
     /// 至今开始过的步骤，按开始顺序。
-    var recorded: [SyncStep] { steps.withLock { $0 } }
+    var recorded: [SyncStep] {
+        steps.withLock { $0 }
+    }
 
     /// 记下一个开始的步骤。
     func append(_ step: SyncStep) {
@@ -36,27 +38,26 @@ private struct SyncFixture {
     let bare: String
 
     /// 本地工作区的执行器。
-    var runner: GitRunner { repository.runner }
+    var runner: GitRunner {
+        repository.runner
+    }
 
     /// 本地工作区的同步服务。
-    var sync: RepositorySync { RepositorySync(runner: runner) }
+    var sync: RepositorySync {
+        RepositorySync(runner: runner)
+    }
 
     /// 初始化本地仓库并发布 `main`。
-    static func make(objectFormat: String = "sha1") async throws -> Self {
+    static func make() async throws -> Self {
         let repository = try TemporaryRepository()
-        try await repository.initialize(objectFormat: objectFormat)
+        try await repository.initialize()
         let runner = repository.runner
         let bare = repository.directory.appendingPathComponent("remote.git").path
 
-        // 远端与另一个克隆都放在工作区目录里，排除后不影响工作区状态
-        try FileManager.default.createDirectory(
-            at: repository.directory.appendingPathComponent(".git/info"),
-            withIntermediateDirectories: true
-        )
-        try Data("remote.git/\nother/\nlibrary/\n".utf8)
-            .write(to: repository.directory.appendingPathComponent(".git/info/exclude"))
+        // 远端、另一个克隆与子模块的上游都放在工作区目录里
+        try RepositorySyncTests.exclude("remote.git/\nother/\nlibrary/\n", in: repository)
 
-        _ = try await runner.run(["init", "--bare", "--object-format=" + objectFormat, bare])
+        _ = try await runner.run(["init", "--bare", bare])
         _ = try await runner.run(["remote", "add", "origin", bare])
         _ = try await runner.run(["commit", "--allow-empty", "-m", "root"])
 
@@ -137,49 +138,33 @@ private struct SyncFixture {
 // MARK: - Options
 
 extension RepositorySyncTests {
-    /// 自动获取与获取全部远端都按 Git 的 skipFetchAll 跳过远端；键里的远端名可以含点。
-    @Test("skipFetchAll 的解析")
-    func skippedRemotesParsing() throws {
-        let records = [
-            "remote.origin.skipfetchall\ntrue",
-            "remote.my.mirror.skipfetchall",
-            "remote.备份 远端.skipfetchall\nyes",
-            "remote.later.skipfetchall\ntrue",
-            "remote.later.skipfetchall\nfalse",
-        ]
-        let data = Data(records.joined(separator: "\u{0}").utf8) + Data([0])
-
-        #expect(try RepositorySync.skippedRemotes(in: data) == ["origin", "my.mirror", "备份 远端"])
-        #expect(try RepositorySync.skippedRemotes(in: Data()).isEmpty)
-
-        #expect(throws: RepositoryReadError.self) {
-            try RepositorySync.skippedRemotes(in: Data("branch.main.remote\norigin\u{0}".utf8))
-        }
-    }
-
     /// 获取全部远端时跳过设了 skipFetchAll 的远端，明确选中它时照常获取，每个远端开始前报出它的名字，
-    /// Activity 据此每个远端记一条；清理与标签按选项写入。
-    @Test("Fetch 跳过远端、逐个报出远端、清理已删除分支与获取标签")
-    func fetchSkipsAndPrunes() async throws {
+    /// Activity 据此每个远端记一条；清理与标签按选项写入；递归子模块时，仓库本身获取完之后再获取每个已检出子模块的远端。
+    @Test("Fetch 跳过远端、逐个报出远端、清理已删除分支、获取标签与递归子模块")
+    func fetchOptions() async throws {
         let fixture = try await SyncFixture.make()
         defer { fixture.repository.remove() }
+
         let runner = fixture.runner
         let sync = fixture.sync
         let other = try await fixture.other()
+
+        try Self.expectSkippedRemotesParsing()
 
         _ = try await runner.run(["remote", "add", "mirror.backup", fixture.bare])
         _ = try await runner.run(["config", "--local", "remote.mirror.backup.skipFetchAll", "true"])
         _ = try await other.run(["push", "-q", "origin", "HEAD:refs/heads/gone"])
         _ = try await other.run(["tag", "v1"])
         _ = try await other.run(["push", "-q", "origin", "v1"])
-
         _ = try await runner.run(["remote", "add", "second", fixture.bare])
 
         let names = Mutex<[String]>([])
+
         let all = try await sync.fetch(
             submodules: true,
             onRemote: { name in names.withLock { $0.append(name) } }
         )
+
         #expect(all.allSatisfy { !$0.reference.hasPrefix("refs/remotes/mirror.backup/") })
         #expect(all.contains { $0.reference == "refs/remotes/origin/gone" })
         #expect(all.contains { $0.reference == "refs/remotes/second/gone" })
@@ -187,15 +172,18 @@ extension RepositorySyncTests {
 
         // 明确选中的远端同样报出
         names.withLock { $0.removeAll() }
+
         let explicit = try await sync.fetch(
             remote: "mirror.backup",
             allTags: true,
             onRemote: { name in names.withLock { $0.append(name) } }
         )
+
         #expect(names.withLock { $0 } == ["mirror.backup"])
         #expect(explicit.contains { $0.reference == "refs/remotes/mirror.backup/main" })
         _ = try await fixture.localObject("refs/tags/v1")
 
+        // 远端删掉的分支在清理时删掉
         _ = try await other.run(["push", "-q", "origin", ":refs/heads/gone"])
         let pruned = try await sync.fetch(remote: "origin", prune: true)
         #expect(pruned.contains { $0.flag == "-" && $0.reference == "refs/remotes/origin/gone" })
@@ -203,47 +191,18 @@ extension RepositorySyncTests {
         await #expect(throws: RepositorySyncError.missingRemote) {
             _ = try await sync.fetch(remote: "missing")
         }
+
+        try await Self.fetchSubmodules(fixture)
     }
 
-    /// 递归子模块时，仓库本身获取完之后再获取每个已检出子模块的远端。
-    @Test("Fetch 递归子模块")
-    func fetchSubmodules() async throws {
+    /// 变基拉取不受仓库里 pull.rebase=false 影响，结果是线性历史；
+    /// 推送全部标签与子模块检查都写进参数，没有子模块时检查直接通过；
+    /// Push To 把任意版本推到分支名或完整引用，`refs/for/` 下的引用原样写入，非法目标在执行前被拒绝。
+    @Test("Pull 显式变基，Push 全部标签与子模块选项，Push To 分支名、refs/for/ 下的完整引用与非法目标")
+    func pullAndPush() async throws {
         let fixture = try await SyncFixture.make()
         defer { fixture.repository.remove() }
-        let runner = fixture.runner
-        let directory = fixture.repository.directory
-        let library = directory.appendingPathComponent("library").path
-        let upstream = fixture.repository.runner(at: library)
 
-        _ = try await runner.run(["init", "-q", "-b", "main", library])
-        _ = try await upstream.run(["config", "--local", "user.name", "Library"])
-        _ = try await upstream.run(["config", "--local", "user.email", "library@example.invalid"])
-        _ = try await upstream.run(["commit", "-q", "--allow-empty", "-m", "first"])
-
-        _ = try await runner.run([
-            "-c", "protocol.file.allow=always",
-            "submodule", "add", "-q", library, "子模块 lib",
-        ])
-        _ = try await runner.run(["commit", "-q", "-m", "add submodule"])
-        _ = try await upstream.run(["commit", "-q", "--allow-empty", "-m", "second"])
-
-        let submodule = fixture.repository.runner(at: directory.appendingPathComponent("子模块 lib").path)
-        let latest = try await RepositoryReferences(runner: upstream).resolve("HEAD")
-
-        // 测试里的子模块远端是本机目录，Git 默认只允许用户直接发起的 file 传输
-        _ = try await submodule.run(["config", "--local", "protocol.file.allow", "always"])
-
-        _ = try await fixture.sync.fetch(remote: "origin", submodules: true)
-
-        let fetched = try await RepositoryReferences(runner: submodule).resolve("refs/remotes/origin/main")
-        #expect(fetched == latest)
-    }
-
-    /// 变基拉取不受仓库里 pull.rebase=false 影响，结果是线性历史。
-    @Test("Pull 显式变基")
-    func pullRebase() async throws {
-        let fixture = try await SyncFixture.make()
-        defer { fixture.repository.remove() }
         let runner = fixture.runner
 
         _ = try await runner.run(["config", "--local", "pull.rebase", "false"])
@@ -255,14 +214,6 @@ extension RepositorySyncTests {
         let parents = try await runner.run(["rev-list", "--parents", "-n", "1", "HEAD"])
         #expect(String(decoding: parents, as: UTF8.self).split(separator: " ").count == 2)
         #expect(try await runner.status().branch.behind == 0)
-    }
-
-    /// 推送全部标签与子模块检查都写进参数，没有子模块时检查直接通过；
-    /// Push To 把任意版本推到分支名或完整引用，`refs/for/` 下的引用原样写入，非法目标在执行前被拒绝。
-    @Test("Push 全部标签与子模块选项，Push To 分支名、refs/for/ 下的完整引用与非法目标")
-    func pushOptionsAndTargets() async throws {
-        let fixture = try await SyncFixture.make()
-        defer { fixture.repository.remove() }
 
         // 两步推送的引用互不相干，先后不影响结果
         try await Self.pushOptions(fixture)
@@ -274,74 +225,14 @@ extension RepositorySyncTests {
 
 extension RepositorySyncTests {
     /// 远端有本地从未见过的提交时提示个数；陈旧的期望值被拒绝，核对过的期望值才能覆盖。
-    @Test("安全强推的状态与租约", arguments: ["sha1", "sha256"])
-    func forcePushLease(objectFormat: String) async throws {
-        let fixture = try await SyncFixture.make(objectFormat: objectFormat)
-        defer { fixture.repository.remove() }
-        let runner = fixture.runner
-
-        _ = try await runner.run(["commit", "--allow-empty", "-m", "pushed"])
-        try await fixture.pushMain()
-        let pushed = try await fixture.localObject("HEAD")
-
-        // 改写已推送的提交，远端仍是改写前的版本
-        _ = try await runner.run(["commit", "--amend", "--allow-empty", "-m", "rewritten"])
-        let matching = try await fixture.previewMain()
-        #expect(matching.status == .matchesLastKnown)
-        #expect(matching.introduced == 1 && matching.overwritten == 1)
-        #expect(matching.destination == pushed)
-
-        // 别人在改写前的版本上又推了一个提交
-        try await fixture.pushFromOther("newer")
-        _ = try await fixture.sync.fetch(remote: "origin")
-        let newer = try await fixture.previewMain()
-        #expect(newer.status == .newerOnRemote(1))
-        #expect(newer.overwritten == 2)
-
-        do {
-            try await fixture.pushMain(lease: pushed)
-            Issue.record("陈旧的期望值必须被拒绝")
-        } catch let error as GitError {
-            #expect(error.category == .pushRejected)
-            #expect(String(decoding: error.result.standardOutput, as: UTF8.self).contains("stale info"))
-        }
-
-        #expect(try await fixture.remoteObject("refs/heads/main") == newer.destination)
-
-        try await fixture.pushMain(lease: newer.destination)
-        #expect(try await fixture.remoteObject("refs/heads/main") == fixture.localObject("HEAD"))
-        #expect(try await fixture.previewMain().status == .sameRevision)
-
-        await #expect(throws: RepositoryReadError.self) {
-            try await fixture.pushMain(lease: "HEAD")
-        }
-    }
-
     /// 只落后的远端不需要说明；改写后的历史与远端不一致、但远端没有新提交时提示核对。
-    @Test("安全强推的另外两种状态")
-    func forcePushOtherStates() async throws {
+    @Test("安全强推的状态与租约")
+    func forcePushLease() async throws {
         let fixture = try await SyncFixture.make()
         defer { fixture.repository.remove() }
-        let runner = fixture.runner
 
-        _ = try await runner.run(["commit", "--allow-empty", "-m", "ahead"])
-        let ahead = try await fixture.previewMain()
-        #expect(ahead.status == .fastForward)
-        #expect(ahead.introduced == 1 && ahead.overwritten == 0)
-
-        // 推出 A，本地再提交 B 后丢掉 A 与 B，从根提交另起 C：改写前的版本是 B，远端仍是 A
-        try await fixture.pushMain()
-        _ = try await runner.run(["commit", "--allow-empty", "-m", "unpushed"])
-        _ = try await runner.run(["reset", "-q", "--hard", "HEAD~2"])
-        _ = try await runner.run(["commit", "--allow-empty", "-m", "restarted"])
-
-        let differs = try await fixture.previewMain()
-        #expect(differs.status == .differsFromLastKnown)
-        #expect(differs.overwritten == 1)
-
-        await #expect(throws: RepositoryReadError.self) {
-            _ = try await fixture.sync.forcePushPreview(branch: "main", destination: "origin/main")
-        }
+        try await Self.staleLease(fixture)
+        try await Self.otherPreviewStates(fixture)
     }
 }
 
@@ -353,6 +244,7 @@ extension RepositorySyncTests {
     func rebaseCurrentBranch() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
+
         try await fixture.initialize()
         let runner = fixture.runner
         let sync = RepositorySync(runner: runner)
@@ -370,12 +262,14 @@ extension RepositorySyncTests {
         try await sync.rebase(onto: "main")
         #expect(try await runner.run(["merge-base", "--is-ancestor", "main", "topic"]).isEmpty)
 
+        // 工作区不干净时不开始
         try Data("dirty\n".utf8).write(to: file)
 
         await #expect(throws: RepositorySyncError.dirtyWorkingCopy(rebase: true)) {
             try await sync.rebase(onto: "main")
         }
 
+        // 两边改了同一个文件，变基停在冲突上
         _ = try await runner.run(["commit", "-q", "-am", "topic change"])
         _ = try await runner.run(["switch", "-q", "main"])
         try Data("main\n".utf8).write(to: file)
@@ -390,11 +284,12 @@ extension RepositorySyncTests {
     }
 
     /// 三步依次执行；推送被远端钩子拒绝时停在推送，前两步的结果保留；工作区不干净时一步也不开始；
-    /// 远端仓库消失时停在获取，本地引用与 HEAD 都不变。
+    /// 远端仓库消失时停在获取，Git 以 128 退出，本地引用与 HEAD 都不变。
     @Test("Sync 的步骤顺序、中途失败与网络中断时停在获取")
     func syncSteps() async throws {
         let fixture = try await SyncFixture.make()
         defer { fixture.repository.remove() }
+
         let runner = fixture.runner
         let steps = StepRecorder()
 
@@ -414,8 +309,9 @@ extension RepositorySyncTests {
 
         // 之后远端的 pre-receive 钩子拒绝一切推送
         let hooks = URL(fileURLWithPath: fixture.bare).appendingPathComponent("hooks")
-        try FileManager.default.createDirectory(at: hooks, withIntermediateDirectories: true)
         let hook = hooks.appendingPathComponent("pre-receive")
+
+        try FileManager.default.createDirectory(at: hooks, withIntermediateDirectories: true)
         try Data("#!/bin/sh\necho 'rejected by policy' >&2\nexit 1\n".utf8).write(to: hook)
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: hook.path)
 
@@ -430,6 +326,7 @@ extension RepositorySyncTests {
         #expect(steps.recorded == [.fetch, .pull, .push])
         #expect(try await runner.status().branch.behind == 0)
 
+        // 工作区不干净时一步也不开始
         try Data("dirty\n".utf8).write(to: fixture.repository.directory.appendingPathComponent("dirty"))
         steps.reset()
 
@@ -439,25 +336,8 @@ extension RepositorySyncTests {
 
         #expect(steps.recorded.isEmpty)
 
-        // 工作区恢复干净之后远端仓库消失
         try FileManager.default.removeItem(at: fixture.repository.directory.appendingPathComponent("dirty"))
-        steps.reset()
-
-        let head = try await fixture.localObject("HEAD")
-        let tracking = try await fixture.localObject("refs/remotes/origin/main")
-
-        try FileManager.default.removeItem(atPath: fixture.bare)
-
-        do {
-            try await fixture.syncMain(steps: steps)
-            Issue.record("远端不存在时不能报告成功")
-        } catch let error as GitError {
-            #expect(error.category == .remoteNotFound)
-        }
-
-        #expect(steps.recorded == [.fetch])
-        #expect(try await fixture.localObject("HEAD") == head)
-        #expect(try await fixture.localObject("refs/remotes/origin/main") == tracking)
+        try await Self.syncWithoutRemote(fixture, steps: steps)
     }
 }
 
@@ -524,5 +404,148 @@ extension RepositorySyncTests {
         await #expect(throws: GitError.self) {
             _ = try await sync.push(revision: "no-such-revision", remote: "origin", to: "main")
         }
+    }
+}
+
+// MARK: - Fetch & Force Push Steps
+
+extension RepositorySyncTests {
+    /// 自动获取与获取全部远端都按 Git 的 skipFetchAll 跳过远端；键里的远端名可以含点，格式错误时抛出。
+    private static func expectSkippedRemotesParsing() throws {
+        let records = [
+            "remote.origin.skipfetchall\ntrue",
+            "remote.my.mirror.skipfetchall",
+            "remote.备份 远端.skipfetchall\nyes",
+            "remote.later.skipfetchall\ntrue",
+            "remote.later.skipfetchall\nfalse",
+        ]
+
+        let data = Data(records.joined(separator: "\u{0}").utf8) + Data([0])
+
+        #expect(try RepositorySync.skippedRemotes(in: data) == ["origin", "my.mirror", "备份 远端"])
+        #expect(try RepositorySync.skippedRemotes(in: Data()).isEmpty)
+
+        #expect(throws: RepositoryReadError.self) {
+            try RepositorySync.skippedRemotes(in: Data("branch.main.remote\norigin\u{0}".utf8))
+        }
+    }
+
+    /// 递归子模块时，仓库本身获取完之后再获取每个已检出子模块的远端。
+    private static func fetchSubmodules(_ fixture: SyncFixture) async throws {
+        let runner = fixture.runner
+        let directory = fixture.repository.directory
+        let library = directory.appendingPathComponent("library").path
+        let upstream = fixture.repository.runner(at: library)
+
+        _ = try await runner.run(["init", "-q", "-b", "main", library])
+        _ = try await upstream.run(["config", "--local", "user.name", "Library"])
+        _ = try await upstream.run(["config", "--local", "user.email", "library@example.invalid"])
+        _ = try await upstream.run(["commit", "-q", "--allow-empty", "-m", "first"])
+
+        _ = try await runner.run([
+            "-c", "protocol.file.allow=always",
+            "submodule", "add", "-q", library, "子模块 lib",
+        ])
+
+        _ = try await runner.run(["commit", "-q", "-m", "add submodule"])
+        _ = try await upstream.run(["commit", "-q", "--allow-empty", "-m", "second"])
+
+        let submodule = fixture.repository.runner(at: directory.appendingPathComponent("子模块 lib").path)
+        let latest = try await RepositoryReferences(runner: upstream).resolve("HEAD")
+
+        // 测试里的子模块远端是本机目录，Git 默认只允许用户直接发起的 file 传输
+        _ = try await submodule.run(["config", "--local", "protocol.file.allow", "always"])
+
+        _ = try await fixture.sync.fetch(remote: "origin", submodules: true)
+
+        let fetched = try await RepositoryReferences(runner: submodule).resolve("refs/remotes/origin/main")
+        #expect(fetched == latest)
+    }
+
+    /// 远端有本地从未见过的提交时提示个数；陈旧的期望值被拒绝，核对过的期望值才能覆盖。
+    private static func staleLease(_ fixture: SyncFixture) async throws {
+        let runner = fixture.runner
+
+        _ = try await runner.run(["commit", "--allow-empty", "-m", "pushed"])
+        try await fixture.pushMain()
+        let pushed = try await fixture.localObject("HEAD")
+
+        // 改写已推送的提交，远端仍是改写前的版本
+        _ = try await runner.run(["commit", "--amend", "--allow-empty", "-m", "rewritten"])
+        let matching = try await fixture.previewMain()
+        #expect(matching.status == .matchesLastKnown)
+        #expect(matching.introduced == 1 && matching.overwritten == 1)
+        #expect(matching.destination == pushed)
+
+        // 别人在改写前的版本上又推了一个提交
+        try await fixture.pushFromOther("newer")
+        _ = try await fixture.sync.fetch(remote: "origin")
+        let newer = try await fixture.previewMain()
+        #expect(newer.status == .newerOnRemote(1))
+        #expect(newer.overwritten == 2)
+
+        do {
+            try await fixture.pushMain(lease: pushed)
+            Issue.record("陈旧的期望值必须被拒绝")
+        } catch let error as GitError {
+            #expect(error.category == .pushRejected)
+            #expect(String(decoding: error.result.standardOutput, as: UTF8.self).contains("stale info"))
+        }
+
+        #expect(try await fixture.remoteObject("refs/heads/main") == newer.destination)
+
+        try await fixture.pushMain(lease: newer.destination)
+        #expect(try await fixture.remoteObject("refs/heads/main") == fixture.localObject("HEAD"))
+        #expect(try await fixture.previewMain().status == .sameRevision)
+
+        await #expect(throws: RepositoryReadError.self) {
+            try await fixture.pushMain(lease: "HEAD")
+        }
+    }
+
+    /// 只落后的远端不需要说明；改写后的历史与远端不一致、但远端没有新提交时提示核对；目标不是完整引用时拒绝。
+    private static func otherPreviewStates(_ fixture: SyncFixture) async throws {
+        let runner = fixture.runner
+
+        _ = try await runner.run(["commit", "--allow-empty", "-m", "ahead"])
+        let ahead = try await fixture.previewMain()
+        #expect(ahead.status == .fastForward)
+        #expect(ahead.introduced == 1 && ahead.overwritten == 0)
+
+        // 推出 A，本地再提交 B 后丢掉 A 与 B，从 A 的父提交另起 C：改写前的版本是 B，远端仍是 A
+        try await fixture.pushMain()
+        _ = try await runner.run(["commit", "--allow-empty", "-m", "unpushed"])
+        _ = try await runner.run(["reset", "-q", "--hard", "HEAD~2"])
+        _ = try await runner.run(["commit", "--allow-empty", "-m", "restarted"])
+
+        let differs = try await fixture.previewMain()
+        #expect(differs.status == .differsFromLastKnown)
+        #expect(differs.overwritten == 1)
+
+        await #expect(throws: RepositoryReadError.self) {
+            _ = try await fixture.sync.forcePushPreview(branch: "main", destination: "origin/main")
+        }
+    }
+
+    /// 远端仓库消失时停在获取：Git 以 128 退出并给出原文，本地引用与 HEAD 都不变。
+    private static func syncWithoutRemote(_ fixture: SyncFixture, steps: StepRecorder) async throws {
+        steps.reset()
+
+        let head = try await fixture.localObject("HEAD")
+        let tracking = try await fixture.localObject("refs/remotes/origin/main")
+
+        try FileManager.default.removeItem(atPath: fixture.bare)
+
+        do {
+            try await fixture.syncMain(steps: steps)
+            Issue.record("远端不存在时不能报告成功")
+        } catch let error as GitError {
+            #expect(error.category == .remoteNotFound)
+            #expect(error.exitCode == 128 && !error.message.isEmpty)
+        }
+
+        #expect(steps.recorded == [.fetch])
+        #expect(try await fixture.localObject("HEAD") == head)
+        #expect(try await fixture.localObject("refs/remotes/origin/main") == tracking)
     }
 }

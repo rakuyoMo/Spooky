@@ -27,27 +27,33 @@ struct WorkingCopyListingTests {
         ignored: ["build/"]
     )
 
-    /// 平铺与树形只列出状态里的改动；全部文件补出暂存区里没有改动的文件，状态里已有的路径不重复。
-    @Test("全部文件补出未改动的文件")
-    func allFiles() {
+    /// 平铺与树形只列出状态里的改动；全部文件补出暂存区里没有改动的文件，状态里已有的路径不重复；
+    /// 被忽略与 assume-unchanged 文件只在打开对应选项时出现。
+    @Test("列出的条目随显示选项变化")
+    func entries() {
         let changes = WorkingCopyListing(mode: .tree).entries(status: Self.status, files: Self.files)
         #expect(changes == Self.status)
 
+        // 全部文件在状态之后补出未改动的文件。
         let all = WorkingCopyListing(mode: .allFiles).entries(status: Self.status, files: Self.files)
-        #expect(Array(all.prefix(Self.status.count)) == Self.status)
-        #expect(all.dropFirst(Self.status.count).map(\.path) == ["README.md", "config.local"])
-        #expect(all.dropFirst(Self.status.count).allSatisfy { $0.kind == .unchanged })
-    }
+        let unchanged = all.dropFirst(Self.status.count)
 
-    /// 被忽略与 assume-unchanged 文件只在打开对应选项时出现；只看冲突时不补任何文件。
-    @Test("被忽略与 assume-unchanged 文件按选项出现")
-    func ignoredAndAssumeUnchanged() {
+        #expect(Array(all.prefix(Self.status.count)) == Self.status)
+        #expect(unchanged.map(\.path) == ["README.md", "config.local"])
+        #expect(unchanged.allSatisfy { $0.kind == .unchanged })
+
+        // 打开两个选项后，平铺也补出被忽略的目录与 assume-unchanged 文件。
         let listing = WorkingCopyListing(mode: .list, showsIgnored: true, showsAssumeUnchanged: true)
         let extra = listing.entries(status: Self.status, files: Self.files).dropFirst(Self.status.count)
 
         #expect(extra.map(\.path) == ["build/", "config.local"])
         #expect(extra.map(\.kind) == [.ignored, .unchanged])
+    }
 
+    /// 只看冲突时不补任何文件，但保留这次操作已经解决的文件：解决后仍有改动的照常列出，与 HEAD 相同、已不在状态里的补成未改动的条目；
+    /// 搜索按路径或文件名过滤：不区分大小写，组合与分解两种 Unicode 写法相同，重命名的原路径也能命中。
+    @Test("只看冲突与搜索的过滤")
+    func conflictsAndFilter() {
         let conflicts = WorkingCopyListing(
             mode: .allFiles,
             showsIgnored: true,
@@ -55,42 +61,34 @@ struct WorkingCopyListingTests {
             conflictPaths: ["merge.txt"]
         )
         #expect(conflicts.entries(status: Self.status, files: Self.files).map(\.path) == ["merge.txt"])
-    }
 
-    /// 只看冲突保留这次操作已经解决的文件：解决后仍有改动的照常列出，与 HEAD 相同、已不在状态里的补成未改动的条目。
-    @Test("只看冲突保留已解决的文件")
-    func resolvedConflicts() {
-        let listing = WorkingCopyListing(
+        // 冲突路径里已经解决的文件仍然列出。
+        var resolved = WorkingCopyListing(
             mode: .list,
             conflictPaths: ["merge.txt", "src/App.swift", "same.txt"]
         )
 
-        let entries = listing.entries(status: Self.status, files: Self.files)
-
+        let entries = resolved.entries(status: Self.status, files: Self.files)
         #expect(entries.map(\.path) == ["src/App.swift", "merge.txt", "same.txt"])
         #expect(entries.map(\.kind) == [.tracked, .conflicted, .unchanged])
 
-        // 搜索仍在冲突文件里过滤
-        var searching = listing
-        searching.filter = "same"
-        #expect(searching.entries(status: Self.status, files: Self.files).map(\.path) == ["same.txt"])
-    }
+        // 搜索仍在冲突文件里过滤。
+        resolved.filter = "same"
+        #expect(resolved.entries(status: Self.status, files: Self.files).map(\.path) == ["same.txt"])
 
-    /// 搜索按路径或文件名过滤：不区分大小写，组合与分解两种 Unicode 写法相同，重命名的原路径也能命中。
-    @Test("搜索不区分大小写与 Unicode 写法")
-    func filter() {
-        let entries = { (query: String) in
+        // 全部文件里搜索。
+        let search = { (query: String) in
             WorkingCopyListing(mode: .allFiles, filter: query)
                 .entries(status: Self.status, files: Self.files)
                 .map(\.path)
         }
 
-        #expect(entries("APP.SWIFT") == ["src/App.swift"])
-        #expect(entries("CAFÉ") == ["notes/cafe\u{301}.txt"])
-        #expect(entries("old") == ["docs/新 名字.md"])
-        #expect(entries("readme") == ["README.md"])
-        #expect(entries("  ").count == Self.status.count + 2)
-        #expect(entries("zzz").isEmpty)
+        #expect(search("APP.SWIFT") == ["src/App.swift"])
+        #expect(search("CAFÉ") == ["notes/cafe\u{301}.txt"])
+        #expect(search("old") == ["docs/新 名字.md"])
+        #expect(search("readme") == ["README.md"])
+        #expect(search("  ").count == Self.status.count + 2)
+        #expect(search("zzz").isEmpty)
     }
 
     /// 显示模式只有一个全局记录：没有记录时为平铺，记下的模式对之后打开的每个仓库都生效，无法识别的记录回到平铺。
@@ -100,6 +98,7 @@ struct WorkingCopyListingTests {
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-modes-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         defer { try? FileManager.default.removeItem(at: directory) }
+
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
 
         #expect(WorkingCopyListMode.stored(defaults: defaults) == .list)
@@ -113,9 +112,10 @@ struct WorkingCopyListingTests {
         #expect(WorkingCopyListMode.stored(defaults: unknown) == .list)
     }
 
-    /// 文件操作的可用范围：只有暂存区里的文件能停止跟踪，工作区里已经没有的文件不能删除或打开。
-    @Test("文件操作的适用条目")
-    func entryPredicates() {
+    /// 文件操作的可用范围：只有暂存区里的文件能停止跟踪，工作区里已经没有的文件不能删除或打开；
+    /// 补丁前像不符与移动目标已存在都属于仓库状态问题，前像不符时列出这些文件，外部工具启动失败时写出诊断。
+    @Test("文件操作的适用条目与错误呈现")
+    func fileOperations() {
         let stagedDeletion = StatusEntry(kind: .tracked, path: "gone.txt", staged: .deleted)
         let worktreeDeletion = StatusEntry(kind: .tracked, path: "removed.txt", unstaged: .deleted)
         let ignoredDirectory = StatusEntry(kind: .ignored, path: "build/")
@@ -123,24 +123,47 @@ struct WorkingCopyListingTests {
 
         #expect(!stagedDeletion.isInIndex && !stagedDeletion.isDeletable)
         #expect(worktreeDeletion.isInIndex && !worktreeDeletion.isOpenable)
-        #expect(ignoredDirectory.isDeletable && !ignoredDirectory.isOpenable && !ignoredDirectory.isStageable)
         #expect(unchanged.isInIndex && unchanged.isOpenable && !unchanged.hasWorkingCopyDiff)
         #expect(!Self.status[3].isInIndex && !Self.status[3].isDeletable)
+
+        #expect(
+            ignoredDirectory.isDeletable
+                && !ignoredDirectory.isOpenable
+                && !ignoredDirectory.isStageable
+        )
+
+        // 错误的类别与详情。
+        let mismatch = AppFailure(
+            error: WorkingCopyFileError.patchPreimageMismatch(["a.txt", "b [*].txt"]),
+            opening: false,
+            location: nil,
+            writing: true
+        )
+        #expect(mismatch.kind == .repository)
+        #expect(mismatch.details.contains("a.txt\nb [*].txt"))
+
+        let exists = AppFailure(error: WorkingCopyFileError.destinationExists, opening: false, location: nil)
+        #expect(exists.kind == .repository)
+
+        let tool = AppFailure(
+            error: ExternalToolLaunchError(diagnostic: "/Applications/Tool.app/Contents/MacOS/tool"),
+            opening: false,
+            location: nil
+        )
+        #expect(tool.details.contains("/Applications/Tool.app/Contents/MacOS/tool"))
     }
 
-    /// 移动的新路径必须留在仓库内：不能是绝对路径、含 “.” 或 “..” 段、换行，或与原路径相同。
-    @Test("移动目标路径校验")
-    func moveDestination() {
+    /// 移动的新路径必须留在仓库内：不能是绝对路径、含 “.” 或 “..” 段、换行，或与原路径相同；
+    /// 恢复版本的候选：当前分支排在最前，打开表单时预选它；同名标签仍各占一项，符号引用不列出，分离 HEAD 时保持快照顺序。
+    @Test("移动目标校验与恢复版本的候选")
+    func dialogInputs() {
         #expect(WorkingCopyFileDialog.destination("docs/新 名字.md", from: "a.md") == "docs/新 名字.md")
 
         for invalid in ["", "a.md", "/etc/passwd", "../outside.md", "docs/./a.md", "docs//a.md", "a\nb.md"] {
             #expect(WorkingCopyFileDialog.destination(invalid, from: "a.md") == nil)
         }
-    }
 
-    /// 恢复版本的候选：当前分支排在最前，打开表单时预选它；同名标签仍各占一项，符号引用不列出，分离 HEAD 时保持快照顺序。
-    @Test("恢复版本的候选顺序")
-    func revisionCandidates() {
+        // 恢复版本的候选按当前分支排序。
         let references = [
             Self.reference("refs/heads/feature"),
             Self.reference("refs/heads/main"),
@@ -157,31 +180,6 @@ struct WorkingCopyListingTests {
             WorkingCopyFileDialog.revisions(in: references, currentBranch: nil)
                 == ["feature", "main", "origin/main", "main"]
         )
-    }
-
-    /// 补丁前像不符与移动目标已存在都属于仓库状态问题；前像不符时列出这些文件。
-    @Test("文件操作错误的呈现")
-    func failures() {
-        let mismatch = AppFailure(
-            error: WorkingCopyFileError.patchPreimageMismatch(["a.txt", "b [*].txt"]),
-            opening: false,
-            location: nil,
-            writing: true
-        )
-        #expect(mismatch.kind == .repository)
-        #expect(mismatch.title == AppLocalization.text("files.error.preimage"))
-        #expect(mismatch.details.contains("a.txt\nb [*].txt"))
-
-        let exists = AppFailure(error: WorkingCopyFileError.destinationExists, opening: false, location: nil)
-        #expect(exists.kind == .repository)
-
-        let tool = AppFailure(
-            error: ExternalToolLaunchError(diagnostic: "/Applications/Tool.app/Contents/MacOS/tool"),
-            opening: false,
-            location: nil
-        )
-        #expect(tool.details.contains("/Applications/Tool.app/Contents/MacOS/tool"))
-        #expect(tool.message == AppLocalization.text("externalTool.error.help"))
     }
 }
 

@@ -116,7 +116,9 @@ struct RemoteMountTests {
 
         // 工作树的 Git 目录名由 Git 按目录名生成，从 Git 读出来
         let gitDirectory = try await layout.runner.run(["-C", worktree, "rev-parse", "--absolute-git-dir"])
-        #expect(try layout.markers(in: String(decoding: gitDirectory, as: UTF8.self).trimmingCharacters(in: .newlines)).isEmpty)
+        let gitDirectoryPath = String(decoding: gitDirectory, as: UTF8.self).trimmingCharacters(in: .newlines)
+
+        #expect(try layout.markers(in: gitDirectoryPath).isEmpty)
 
         // Git 目录在挂载范围之外时，换算不出本机位置，核对不通过
         let narrow = try layout.link("narrow", to: "server/树 外")

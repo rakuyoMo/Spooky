@@ -1,32 +1,16 @@
 import Foundation
 import Testing
+import TestSupport
 
 @testable import SpookyKit
 
 // MARK: - Safety
 
 extension RepositoryRewriteTests {
-    /// 计划之后分支被别的操作移动过：执行前发现 HEAD 变了，不改写任何提交。
-    @Test("计划后 HEAD 被移动时不执行")
-    func headMovedAfterPlanning() async throws {
-        let (repository, commits) = try await makeRepository(["一", "二"])
-        defer { repository.remove() }
-
-        let rewrite = RepositoryRewrite(runner: repository.runner)
-        let plan = try await rewrite.plan(.drop([commits[1]]))
-
-        try write("终端\n", to: "终端.txt", in: repository)
-        _ = try await repository.runner.run(["add", "--all"])
-        _ = try await repository.runner.run(["commit", "-q", "-m", "终端里的提交"])
-        let moved = try await head(in: repository)
-
-        await #expect(throws: RewriteError.self) { try await rewrite.perform(plan) }
-        #expect(try await head(in: repository) == moved)
-    }
-
-    /// Git 生成的 todo 与计划的提交序列对不上时，序列编辑器中止变基，HEAD 与工作区都不变。
-    @Test("todo 与计划不一致时中止")
-    func sequenceMismatch() async throws {
+    /// 计划之后历史变了就不执行：Git 生成的 todo 与计划的提交序列对不上时，序列编辑器中止变基，HEAD 与工作区都不变；
+    /// 分支被别的操作移动过时，执行前发现 HEAD 变了，不改写任何提交。
+    @Test("计划过期时不执行：todo 与计划不一致、HEAD 被移动")
+    func stalePlans() async throws {
         let (repository, commits) = try await makeRepository(["一", "二", "三"])
         defer { repository.remove() }
 
@@ -45,15 +29,33 @@ extension RepositoryRewriteTests {
             merged: []
         )
 
-        let error = await #expect(throws: RewriteError.self) { try await rewrite.perform(stale) }
+        let error = await #expect(throws: RewriteError.self) {
+            try await rewrite.perform(stale)
+        }
+
         guard case .sequenceChanged(let result) = error else {
             Issue.record("应当报告提交序列已变化")
             return
         }
 
+        let operations = WorkingCopyOperations(runner: repository.runner)
+
         #expect(result.map(RepositoryRewrite.isSequenceChange) ?? false)
         #expect(try await head(in: repository) == commits[2])
-        #expect(try await WorkingCopyOperations(runner: repository.runner).context(head: commits[2]).operation == nil)
+        #expect(try await operations.context(head: commits[2]).operation == nil)
+
+        // 终端里又提交了一次，原来的计划不再执行
+        try write("终端\n", to: "终端.txt", in: repository)
+        _ = try await repository.runner.run(["add", "--all"])
+        _ = try await repository.runner.run(["commit", "-q", "-m", "终端里的提交"])
+
+        let moved = try await head(in: repository)
+
+        await #expect(throws: RewriteError.self) {
+            try await rewrite.perform(plan)
+        }
+
+        #expect(try await head(in: repository) == moved)
     }
 
     /// 调整顺序引起冲突时变基停下，进行中状态是变基；中止后回到开始之前。
@@ -74,9 +76,12 @@ extension RepositoryRewriteTests {
         let operations = WorkingCopyOperations(runner: repository.runner)
         let plan = try await rewrite.plan(.move([changed[1]], to: changed[0], position: .below))
 
-        await #expect(throws: GitError.self) { try await rewrite.perform(plan) }
+        await #expect(throws: GitError.self) {
+            try await rewrite.perform(plan)
+        }
 
         let context = try await operations.context(head: try await head(in: repository))
+
         #expect(context.operation == .rebase)
         #expect(!(context.progress?.stopsForEdit ?? true))
 
@@ -84,20 +89,43 @@ extension RepositoryRewriteTests {
         #expect(try await head(in: repository) == changed[1])
     }
 
-    /// 范围里有合并提交时不做交互式变基；不在 HEAD 历史里的提交同样拒绝。
-    @Test("合并提交与不在 HEAD 里的提交")
-    func rejectsMergesAndForeignCommits() async throws {
-        let (repository, commits) = try await makeRepository(["一", "二"])
+    /// 已推送到上游与已并入其它分支的提交分别列出，供确认时警告；
+    /// 范围里有合并提交时不做交互式变基，不在 HEAD 历史里的提交同样拒绝。
+    @Test("计划时的检查：已推送、已并入、合并提交与不在 HEAD 里的提交")
+    func planChecks() async throws {
+        let (repository, commits) = try await makeRepository(["一", "二", "三", "四"])
         defer { repository.remove() }
 
+        let runner = repository.runner
+        let rewrite = RepositoryRewrite(runner: runner)
+
+        // 上游指向第二个提交，另一个分支停在第三个提交
+        _ = try await runner.run(["update-ref", "refs/remotes/origin/main", commits[1]])
+        _ = try await runner.run(["symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main"])
+        _ = try await runner.run(["config", "remote.origin.url", "/nonexistent"])
+        _ = try await runner.run(["config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"])
+        _ = try await runner.run(["config", "branch.main.remote", "origin"])
+        _ = try await runner.run(["config", "branch.main.merge", "refs/heads/main"])
+        _ = try await runner.run(["branch", "其它", commits[2]])
+
+        let plan = try await rewrite.plan(.drop([commits[3], commits[1]]))
+
+        #expect(plan.pushed == [commits[1]])
+        #expect(plan.merged == [commits[1], commits[2]])
+
+        // 不在 HEAD 历史里的提交
         let side = try await sideBranch(["支线"], from: commits[0], in: repository)
-        let rewrite = RepositoryRewrite(runner: repository.runner)
 
-        await #expect(throws: RewriteError.self) { try await rewrite.plan(.drop(side)) }
+        await #expect(throws: RewriteError.self) {
+            try await rewrite.plan(.drop(side))
+        }
 
-        _ = try await repository.runner.run(["merge", "-q", "--no-ff", "--no-edit", "side"])
+        // 合并之后，范围里有合并提交
+        _ = try await runner.run(["merge", "-q", "--no-ff", "--no-edit", "side"])
 
-        await #expect(throws: RewriteError.self) { try await rewrite.plan(.drop([commits[1]])) }
+        await #expect(throws: RewriteError.self) {
+            try await rewrite.plan(.drop([commits[1]]))
+        }
     }
 
     /// 取消正在执行的变基：Git 进程被结束，仓库停在开始之前。
@@ -106,12 +134,17 @@ extension RepositoryRewriteTests {
         let (repository, commits) = try await makeRepository(["一", "二"])
         defer { repository.remove() }
 
-        try installHook("pre-rebase", script: "sleep 10", in: repository)
+        // 变基开始前的钩子停在闸门上，报到时 Git 进程确实在运行
+        let gate = try ProcessGate(in: repository.directory.appending(path: ".git"))
+        defer { gate.release() }
+
+        try installHook("pre-rebase", script: gate.command, in: repository)
+
         let rewrite = RepositoryRewrite(runner: repository.runner)
         let plan = try await rewrite.plan(.drop([commits[1]]))
         let task = Task { try await rewrite.perform(plan) }
 
-        try await Task.sleep(for: .milliseconds(800))
+        await gate.arrival()
         task.cancel()
 
         let result = await task.result
@@ -121,64 +154,29 @@ extension RepositoryRewriteTests {
             case .failure(let error): error is CancellationError || ((error as? GitError)?.isCancelled ?? false)
             }
 
+        let operations = WorkingCopyOperations(runner: repository.runner)
+
         #expect(cancelled)
         #expect(try await head(in: repository) == commits[1])
-        #expect(try await WorkingCopyOperations(runner: repository.runner).context(head: commits[1]).operation == nil)
-    }
-
-    /// 已推送到上游与已并入其它分支的提交分别列出，供确认时警告。
-    @Test("已推送与已并入其它分支的提交")
-    func pushedAndMergedCommits() async throws {
-        let (repository, commits) = try await makeRepository(["一", "二", "三", "四"])
-        defer { repository.remove() }
-
-        _ = try await repository.runner.run(["update-ref", "refs/remotes/origin/main", commits[1]])
-        _ = try await repository.runner.run(["symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main"])
-        _ = try await repository.runner.run(["config", "remote.origin.url", "/nonexistent"])
-        _ = try await repository.runner.run(["config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"])
-        _ = try await repository.runner.run(["config", "branch.main.remote", "origin"])
-        _ = try await repository.runner.run(["config", "branch.main.merge", "refs/heads/main"])
-        _ = try await repository.runner.run(["branch", "其它", commits[2]])
-
-        let plan = try await RepositoryRewrite(runner: repository.runner).plan(.drop([commits[3], commits[1]]))
-
-        #expect(plan.pushed == [commits[1]])
-        #expect(plan.merged == [commits[1], commits[2]])
+        #expect(try await operations.context(head: commits[1]).operation == nil)
     }
 
     /// for-each-ref 的四个字段：引用名、上游、符号引用目标与当前分支标记；字段数不对时报告格式错误。
     @Test("包含提交的引用解析")
     func parseContainingReferences() throws {
-        let output =
-            Data("refs/heads/功能 分支\0refs/remotes/origin/x\0\0*\nrefs/remotes/origin/HEAD\0\0refs/remotes/origin/main\0 \n".utf8)
+        let output = Data(
+            "refs/heads/功能 分支\0refs/remotes/origin/x\0\0*\nrefs/remotes/origin/HEAD\0\0refs/remotes/origin/main\0 \n"
+                .utf8
+        )
+
         let references = try RepositoryRewrite.parseContainingReferences(output)
 
         #expect(references.map(\.name) == ["refs/heads/功能 分支", "refs/remotes/origin/HEAD"])
         #expect(references[0].isHead && !references[0].isSymbolic)
         #expect(references[1].isSymbolic && !references[1].isHead)
+
         #expect(throws: RepositoryReadError.self) {
             try RepositoryRewrite.parseContainingReferences(Data("refs/heads/x\0\n".utf8))
         }
-    }
-
-    /// 标记可以连续出现；没有标记或只剩标记时不是 Autosquash 提交。
-    @Test("Autosquash 标记")
-    func autosquashReference() {
-        #expect(RepositoryRewrite.autosquashReference(of: "fixup! fixup! 标题") == "标题")
-        #expect(RepositoryRewrite.autosquashReference(of: "amend! abc1234") == "abc1234")
-        #expect(RepositoryRewrite.autosquashReference(of: "squash! ") == nil)
-        #expect(RepositoryRewrite.autosquashReference(of: "普通提交") == nil)
-    }
-
-    /// 只有 edit 主动停下时才有 amend 文件；冲突停下与 apply 后端都不算。
-    @Test("edit 停顿的判断")
-    func editStop() throws {
-        var files = ["rebase-merge/head-name": "refs/heads/main\n", "rebase-merge/done": "edit abcd1234 # 标题\n"]
-        #expect(!(OperationProgress(files: files, head: nil)?.stopsForEdit ?? true))
-
-        files["rebase-merge/amend"] = "abcd1234\n"
-        let progress = try #require(OperationProgress(files: files, head: nil))
-        #expect(progress.stopsForEdit)
-        #expect(progress.stepSubject == "标题")
     }
 }

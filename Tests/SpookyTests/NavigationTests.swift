@@ -4,14 +4,15 @@ import Testing
 @testable import Spooky
 @testable import SpookyKit
 
-/// 后退 / 前进记录与视图引用：记录的截断与去重，视图引用文字形式的往返与拒绝。
+/// 后退 / 前进记录与视图引用：记录的截断、去重与相邻项，视图引用文字形式的往返与拒绝。
 @MainActor
 struct NavigationTests {
     /// 测试用的本机仓库位置。
     private static let local = RepositoryLocation.local(path: "/tmp/spooky repo")
 
     /// 后退之后到达新视图，前进的记录作废；与当前视图相同的到达不重复记录，否则一次后退会原地不动。
-    @Test("后退、前进与截断")
+    /// 后退 / 前进先拿目标去核对，读上一项与下一项不能移动位置，否则取消后位置已经变了。
+    @Test("后退、前进、截断与读相邻项")
     func historyTruncation() {
         var history = NavigationHistory()
         let working = ViewReference.repository(Self.local, .workingCopy)
@@ -20,6 +21,7 @@ struct NavigationTests {
         let reflog = ViewReference.repository(Self.local, .reflog)
 
         #expect(!history.canGoBack && !history.canGoForward)
+        #expect(history.previous == nil && history.next == nil)
 
         history.record(.repositories)
         history.record(working)
@@ -28,7 +30,16 @@ struct NavigationTests {
         history.record(stashes)
         #expect(history.entries == [.repositories, working, log, stashes])
 
+        // 读上一项与下一项只看不走，后退一步后两侧跟着变
+        #expect(history.previous == log)
+        #expect(history.next == nil)
+        #expect(history.current == stashes)
+
         #expect(history.goBack() == log)
+        #expect(history.previous == working)
+        #expect(history.next == stashes)
+        #expect(history.current == log)
+
         #expect(history.goBack() == working)
         #expect(history.canGoBack && history.canGoForward)
         #expect(history.goForward() == log)
@@ -44,33 +55,14 @@ struct NavigationTests {
         #expect(history.current == reflog)
 
         while history.goBack() != nil { }
+
         #expect(history.current == .repositories)
+        #expect(history.previous == nil)
         #expect(history.goBack() == nil)
     }
 
-    /// 后退 / 前进先拿目标去核对，读上一项与下一项不能移动位置，否则取消后位置已经变了。
-    @Test("读上一项与下一项不移动位置")
-    func neighbors() {
-        var history = NavigationHistory()
-        let working = ViewReference.repository(Self.local, .workingCopy)
-        let log = ViewReference.repository(Self.local, .history(references: []))
-
-        #expect(history.previous == nil)
-        #expect(history.next == nil)
-
-        history.record(working)
-        history.record(log)
-        #expect(history.previous == working)
-        #expect(history.next == nil)
-        #expect(history.current == log)
-
-        #expect(history.goBack() == working)
-        #expect(history.previous == nil)
-        #expect(history.next == log)
-        #expect(history.current == working)
-    }
-
     /// 每种视图引用写成文字再解析回来不变：窗口恢复与链接都靠它还原到同一个视图。
+    /// 服务器仓库的位置写作 “主机别名:路径”，与复制路径的写法一致。
     @Test("视图引用的文字形式往返不变")
     func referenceRoundTrip() throws {
         let remote = RepositoryLocation.remote(host: "b", path: "/srv/git/app & co")
@@ -110,14 +102,11 @@ struct NavigationTests {
         }
 
         #expect(Array(parsed.utf8) == Array(path.utf8))
-    }
 
-    /// 文字形式里服务器仓库写作 “主机别名:路径”，与复制路径的写法一致。
-    @Test("服务器仓库的位置写作主机别名加路径")
-    func remoteLocationText() {
-        let reference = ViewReference.repository(.remote(host: "b", path: "/srv/app"), .workingCopy)
+        // 服务器仓库写作主机别名加路径，本机仓库只写路径
+        let server = ViewReference.repository(.remote(host: "b", path: "/srv/app"), .workingCopy)
 
-        #expect(reference.string == "repository?location=b:/srv/app&view=workingCopy")
+        #expect(server.string == "repository?location=b:/srv/app&view=workingCopy")
         #expect(RepositoryLocation(displayPath: "b:/srv/app") == .remote(host: "b", path: "/srv/app"))
         #expect(RepositoryLocation(displayPath: "/Users/me/app") == .local(path: "/Users/me/app"))
     }

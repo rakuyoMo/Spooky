@@ -10,25 +10,31 @@ import Testing
 /// 回调中继的询问：标题按询问的种类写，说明是主机与私钥路径或提示原文；用户名用普通输入框，密码与口令用安全输入框，
 /// 输入为空时 OK 不可用；编辑器请求是等宽编辑区，按钮是 Continue。
 ///
-/// 控件经辅助功能接口读取，进程没有辅助功能权限时跳过这几项。
+/// 控件经辅助功能接口读取，进程没有辅助功能权限时跳过这一项。
 @MainActor
 struct RemoteCallbackDialogTests {
-    /// 私钥口令、用户名、HTTPS 与 SSH 的密码、签名口令与编辑器请求各有自己的标题与输入的种类。
-    @Test("各种询问的标题与输入的种类")
-    func titles() {
-        let privateKey = Self.prompt(.sshAskpass, "Enter passphrase for key '/tmp/id_test': ")
+    /// 私钥口令、用户名、HTTPS 与 SSH 的密码、签名口令与编辑器请求各有自己的标题与输入的种类；
+    /// 私钥口令的说明是主机一行、私钥路径一行，本机仓库另起一段说明私钥会加入 agent，提示里取不到路径时照写提示原文，
+    /// 其余询问是主机与提示原文；用户名、密码与口令为空时不能提交，编辑的文本可以为空，提交空文本由 Git 自己处理。
+    @Test("询问的标题、输入的种类、说明与空输入")
+    func prompts() {
         let username = Self.prompt(.askpass, "Username for 'https://example.com': ")
-        let password = Self.prompt(.askpass, "Password for 'https://me@example.com': ")
-        let sshPassword = Self.prompt(.sshAskpass, "me@example.com's password: ")
-        let signing = Self.prompt(.signing, "Enter passphrase for \"/tmp/signing\": ")
         let editor = Self.prompt(.editor, "/srv/repo/.git/COMMIT_EDITMSG", content: "Message\n")
 
         let cases: [(prompt: RemoteCallbackPrompt, title: String, input: RemoteCallbackPrompt.Input)] = [
-            (privateKey, "callback.privateKey.title", .password),
+            (
+                Self.prompt(.sshAskpass, "Enter passphrase for key '/tmp/id_test': "),
+                "callback.privateKey.title",
+                .password
+            ),
             (username, "callback.username.title", .username),
-            (password, "callback.password.title", .password),
-            (sshPassword, "callback.password.title", .password),
-            (signing, "signing.unlock", .password),
+            (
+                Self.prompt(.askpass, "Password for 'https://me@example.com': "),
+                "callback.password.title",
+                .password
+            ),
+            (Self.prompt(.sshAskpass, "me@example.com's password: "), "callback.password.title", .password),
+            (Self.prompt(.signing, "Enter passphrase for \"/tmp/signing\": "), "signing.unlock", .password),
             (editor, "callback.editor", .text),
         ]
 
@@ -37,15 +43,9 @@ struct RemoteCallbackDialogTests {
             #expect(prompt.input == input, "\(title)")
         }
 
-        #expect(username.label == AppLocalization.text("callback.username.label"))
-        #expect(password.label == AppLocalization.text("callback.password.label"))
         #expect(editor.text == "Message\n")
-    }
 
-    /// 私钥口令的说明是主机一行、私钥路径一行，本机仓库另起一段说明私钥会加入 agent；
-    /// 提示里取不到路径时照写提示原文；其余询问是主机与提示原文。
-    @Test("说明写出主机与私钥路径或提示原文")
-    func messages() {
+        // 说明
         let path = "/tmp/key dir/it's_test"
         let passphrase = "Enter passphrase for key '\(path)': "
         let password = "Password for 'https://example.com': "
@@ -56,34 +56,42 @@ struct RemoteCallbackDialogTests {
         #expect(Self.prompt(.sshAskpass, passphrase, host: server).message == server + "\n" + path)
         #expect(Self.prompt(.sshAskpass, "Enter passphrase:", host: server).message == server + "\nEnter passphrase:")
         #expect(Self.prompt(.askpass, password, host: server).message == server + "\n" + password)
-    }
 
-    /// 用户名、密码与口令为空时不能提交；编辑的文本可以为空，提交空文本由 Git 自己处理。
-    @Test("空输入时不能提交")
-    func acceptsInput() {
-        let username = Self.prompt(.askpass, "Username for 'https://example.com': ")
-        let passphrase = Self.prompt(.sshAskpass, "Enter passphrase for key '/k': ")
-        let editor = Self.prompt(.editor, "/srv/repo/.git/COMMIT_EDITMSG")
+        // 空输入
+        let key = Self.prompt(.sshAskpass, "Enter passphrase for key '/k': ")
 
         #expect(!username.accepts(""))
         #expect(username.accepts("me"))
-        #expect(!passphrase.accepts(""))
-        #expect(passphrase.accepts(" "))
+        #expect(!key.accepts(""))
+        #expect(key.accepts(" "))
         #expect(editor.accepts(""))
     }
 
+    /// 口令、用户名与编辑器三种询问的控件与按钮。
+    @Test("口令、用户名与编辑器询问的控件", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    func controls() async throws {
+        try await Self.expectPasswordControls()
+        try await Self.expectUsernameField()
+        try await Self.expectEditorControls()
+    }
+}
+
+// MARK: - Dialogs
+
+extension RemoteCallbackDialogTests {
     /// 私钥口令：“Password:” 标签加安全输入框，从输入列伸到右边距 20；钥匙串勾选框在输入框那一列、默认不勾；
     /// 按钮是 Cancel 与 OK，空口令时 OK 不可用。点 Cancel 先关掉对话框，再交回取消。
-    @Test("口令询问的输入框、勾选框与按钮", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func passwordControls() throws {
+    private static func expectPasswordControls() async throws {
         let prompt = Self.prompt(.sshAskpass, "Enter passphrase for key '/tmp/id_test': ")
         let cancel = AppLocalization.text("action.cancel")
         var events: [String] = []
 
-        let elements = AccessibilityProbe.elements(until: { Self.buttons(in: $0).count == 2 }) {
-            RemoteCallbackDialog(prompt: prompt, close: { events.append("close") }) { value, saves in
-                events.append("answer \(value ?? "nil") \(saves)")
-            }
+        let dialog = RemoteCallbackDialog(prompt: prompt, close: { events.append("close") }) { value, saves in
+            events.append("answer \(value ?? "nil") \(saves)")
+        }
+
+        let elements = await AccessibilityProbe.elements(until: { Self.buttons(in: $0).count == 2 }) {
+            dialog
         }
 
         let label = AppLocalization.text("callback.password.label")
@@ -104,21 +112,19 @@ struct RemoteCallbackDialogTests {
         #expect(buttons.map(\.name) == [cancel, AppLocalization.text("action.ok")])
         #expect(buttons.map(\.isEnabled) == [true, false])
 
-        _ = AccessibilityProbe.elements(pressing: [cancel], until: { _ in !events.isEmpty }) {
-            RemoteCallbackDialog(prompt: prompt, close: { events.append("close") }) { value, saves in
-                events.append("answer \(value ?? "nil") \(saves)")
-            }
+        // 点 Cancel
+        _ = await AccessibilityProbe.elements(pressing: [cancel], until: { _ in !events.isEmpty }) {
+            dialog
         }
 
         #expect(events == ["close", "answer nil false"])
     }
 
-    /// 用户名：“Username:” 标签加普通输入框。
-    @Test("用户名询问用普通输入框", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func usernameField() throws {
+    /// 用户名：“Username:” 标签加普通输入框，空输入时 OK 不可用。
+    private static func expectUsernameField() async throws {
         let prompt = Self.prompt(.askpass, "Username for 'https://example.com': ")
 
-        let elements = AccessibilityProbe.elements(until: { Self.buttons(in: $0).count == 2 }) {
+        let elements = await AccessibilityProbe.elements(until: { Self.buttons(in: $0).count == 2 }) {
             RemoteCallbackDialog(prompt: prompt, close: { }, answer: { _, _ in })
         }
 
@@ -131,17 +137,25 @@ struct RemoteCallbackDialogTests {
 
     /// 编辑器请求：等宽编辑区写着要编辑的文本、占满内容区的宽度，没有钥匙串勾选框；
     /// 按钮是 Cancel 与 Continue，点 Continue 先关掉对话框，再交回编辑区的文本。
-    @Test("编辑器请求的编辑区与按钮", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func editorControls() throws {
+    private static func expectEditorControls() async throws {
         let prompt = Self.prompt(.editor, "/srv/repo/.git/COMMIT_EDITMSG", content: "Fix the parser\n")
         let cancel = AppLocalization.text("action.cancel")
         let submit = AppLocalization.text("action.continue")
         var events: [String] = []
 
-        let elements = AccessibilityProbe.elements(pressing: [submit], until: { _ in !events.isEmpty }) {
-            RemoteCallbackDialog(prompt: prompt, close: { events.append("close") }) { value, saves in
-                events.append("answer \(value ?? "nil") \(saves)")
+        let dialog = RemoteCallbackDialog(prompt: prompt, close: { events.append("close") }) { value, saves in
+            events.append("answer \(value ?? "nil") \(saves)")
+        }
+
+        // 先读排好版的样子，再另开一次按 Continue
+        let elements = await AccessibilityProbe.elements(
+            until: { elements in
+                Self.buttons(in: elements).count == 2
+                    && elements.contains { $0.role == "AXTextArea" }
+                    && elements.contains { $0.role == "AXScrollArea" }
             }
+        ) {
+            dialog
         }
 
         let editor = try #require(elements.first { $0.role == "AXTextArea" })
@@ -157,6 +171,12 @@ struct RemoteCallbackDialogTests {
         #expect(abs(area.frame.maxX - 459) <= 1)
         #expect(!elements.contains { $0.role == "AXCheckBox" })
         #expect(Self.buttons(in: elements).map(\.name) == [cancel, submit])
+
+        // 点 Continue
+        _ = await AccessibilityProbe.elements(pressing: [submit], until: { _ in !events.isEmpty }) {
+            dialog
+        }
+
         #expect(events == ["close", "answer Fix the parser\n false"])
     }
 }

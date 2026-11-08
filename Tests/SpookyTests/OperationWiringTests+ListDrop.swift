@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -7,13 +8,60 @@ import Testing
 // MARK: - List Drop
 
 extension OperationWiringTests {
-    /// 在看 HEAD 分支时，提交落在另一个提交上是压缩、按住 ⌥ 是 fixup；未拉取的提交与提交自己都不是落点。
-    @Test("列表内拖放：压缩与 fixup")
-    func listDropSquash() async throws {
+    /// 在看 HEAD 分支时，提交落在另一个提交上是压缩、按住 ⌥ 是 fixup，落在两行之间是移到那里；
+    /// 未拉取的提交、提交自己、位置不变与日期分组行都不接受；不在看 HEAD 分支时列表内拖放不生效。
+    @Test("列表内拖放：压缩、fixup 与移动")
+    func listDrop() async throws {
         let fixture = try await Self.makeFixture()
         defer { fixture.close() }
 
         _ = try await fixture.select("refs/heads/main", subjects: ["D"])
+
+        try checkSquash(in: fixture)
+        try checkMove(in: fixture)
+        try checkAcrossGroups(in: fixture)
+
+        // 不在看 HEAD 分支时列表内拖放不生效
+        let d = fixture.ids["D"] ?? ""
+        let s = fixture.ids["S"] ?? ""
+        _ = try await fixture.select("refs/heads/side", subjects: ["S"])
+
+        #expect(fixture.listDrop([d], row: try #require(fixture.session.history.row(of: s))) == nil)
+    }
+
+    /// 在看 HEAD 分支、最近的提交里有能找到目标的 fixup! 提交时出现横幅；看别的分支时不出现。
+    @Test("Autosquash 横幅")
+    func autosquashBanner() async throws {
+        let fixture = try await Self.makeFixture()
+        defer { fixture.close() }
+
+        let session = fixture.session
+        let history = session.history
+        let banner = HistoryAutosquashBanner(session: session)
+
+        _ = try await fixture.select("refs/heads/main", subjects: ["D"])
+        #expect(!banner.isVisible)
+
+        // 在 main 上提交一个 fixup! D，刷新后引用变化，列表随之重读
+        try Data("D2\n".utf8).write(to: fixture.directory.appending(path: "D.txt"))
+        _ = try await fixture.runner.run(["commit", "-q", "-a", "-m", "fixup! D"])
+
+        session.refresh(full: true)
+        await session.waitForRefresh()
+        await untilFinished { history.activeTasks }
+        try #require(history.commits.contains { $0.subject == "fixup! D" })
+
+        #expect(banner.isVisible)
+
+        // 看别的分支时不出现
+        history.selectedReferences = ["refs/heads/side"]
+        await untilFinished { history.activeTasks }
+
+        #expect(!banner.isVisible)
+    }
+
+    /// 提交落在另一个提交上是压缩、按住 ⌥ 是 fixup；未拉取的提交与提交自己都不是落点。
+    private func checkSquash(in fixture: Fixture) throws {
         let (b, c, d) = (fixture.ids["B"] ?? "", fixture.ids["C"] ?? "", fixture.ids["D"] ?? "")
         let history = fixture.session.history
 
@@ -28,19 +76,10 @@ extension OperationWiringTests {
 
         // 落在自己身上不接受
         #expect(fixture.listDrop([d], row: try #require(history.row(of: d))) == nil)
-
-        // 不在看 HEAD 分支时列表内拖放不生效
-        _ = try await fixture.select("refs/heads/side", subjects: ["S"])
-        #expect(fixture.listDrop([d], row: try #require(history.row(of: fixture.ids["S"] ?? ""))) == nil)
     }
 
     /// 落在两行之间是移到那里：缝隙下面最近的提交的上方；缝隙在末尾时是最后一个提交的下方；位置不变时不接受。
-    @Test("列表内拖放：移到两行之间")
-    func listDropMove() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
-        _ = try await fixture.select("refs/heads/main", subjects: ["D"])
+    private func checkMove(in fixture: Fixture) throws {
         let (b, d) = (fixture.ids["B"] ?? "", fixture.ids["D"] ?? "")
         let history = fixture.session.history
 
@@ -60,13 +99,8 @@ extension OperationWiringTests {
     }
 
     /// 日期分组行不是提交：落在分组行上不接受，落在分组行上方等于落在它下面最近的提交上方。
-    @Test("列表内拖放跨过日期分组行")
-    func listDropAcrossGroups() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
-        _ = try await fixture.select("refs/heads/main", subjects: ["D"])
-        let (b, d) = (fixture.ids["B"] ?? "", fixture.ids["D"] ?? "")
+    private func checkAcrossGroups(in fixture: Fixture) throws {
+        let (a, b, d) = (fixture.ids["A"] ?? "", fixture.ids["B"] ?? "", fixture.ids["D"] ?? "")
         let history = fixture.session.history
 
         // 在 B 前面插一个分组行，模拟 B 与 D 分属两天
@@ -81,37 +115,7 @@ extension OperationWiringTests {
         #expect(fixture.listDrop([d], row: index, between: true) == nil)
 
         // 把 A 拖到分组行上方：移到 B 上方
-        let a = fixture.ids["A"] ?? ""
         #expect(fixture.listDrop([a], row: index, between: true) == .move([a], to: b, position: .above))
-    }
-
-    /// 在看 HEAD 分支、最近的提交里有能找到目标的 fixup! 提交时出现横幅；看别的分支或搜索时不出现。
-    @Test("Autosquash 横幅")
-    func autosquashBanner() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
-        let banner = HistoryAutosquashBanner(session: fixture.session)
-
-        _ = try await fixture.select("refs/heads/main", subjects: ["D"])
-        #expect(!banner.isVisible)
-
-        // 在 main 上提交一个 fixup! D
-        try Data("D2\n".utf8).write(to: fixture.directory.appending(path: "D.txt"))
-        _ = try await fixture.runner.run(["commit", "-q", "-a", "-m", "fixup! D"])
-        fixture.session.refresh(full: true)
-        await fixture.session.waitForRefresh()
-
-        let history = fixture.session.history
-        try await FileViewsTests.wait {
-            !history.isLoading && history.commits.contains { $0.subject == "fixup! D" }
-        }
-
-        #expect(banner.isVisible)
-
-        history.selectedReferences = ["refs/heads/side"]
-        try await FileViewsTests.wait { !history.isLoading }
-        #expect(!banner.isVisible)
     }
 }
 
@@ -120,7 +124,18 @@ extension OperationWiringTests {
 extension OperationWiringTests.Fixture {
     /// 把这些提交拖到历史列表的这一行时算出的交互式变基动作。
     @MainActor
-    func listDrop(_ dragged: [String], row: Int, between: Bool = false, alternate: Bool = false) -> RewriteAction? {
-        HistoryListDrop.action(dragged: dragged, row: row, between: between, alternate: alternate, session: session)
+    func listDrop(
+        _ dragged: [String],
+        row: Int,
+        between: Bool = false,
+        alternate: Bool = false
+    ) -> RewriteAction? {
+        HistoryListDrop.action(
+            dragged: dragged,
+            row: row,
+            between: between,
+            alternate: alternate,
+            session: session
+        )
     }
 }

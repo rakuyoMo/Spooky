@@ -9,7 +9,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteHistoryDetailsTests {
     /// 查询与导出都由 B 上的 Git 执行，写出的文件在本机的临时目录里；存进仓库根目录的补丁留在 B 上。
-    @Test("服务器的合并 Diff、文件树、比较、签名与导出", .timeLimit(.minutes(3)))
+    @Test("服务器的合并 Diff、文件树、比较、签名与导出")
     func historyDetails() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

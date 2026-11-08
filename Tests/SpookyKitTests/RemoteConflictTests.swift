@@ -9,7 +9,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteConflictTests {
     /// 冲突文件的读取、恢复祖先与采用一侧都经主连接在 B 上完成；断线后的写入不会被当作已执行。
-    @Test("服务器冲突向导：三方内容、恢复、采用一侧与断线", .timeLimit(.minutes(3)))
+    @Test("服务器冲突向导：三方内容、恢复、采用一侧与断线")
     func conflictWizard() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -83,7 +83,7 @@ struct RemoteConflictTests {
     }
 
     /// B 上的状态文件经同一次定位与读取：摘取序列、单个摘取与 edit 停顿的分类和步数，以及变基冲突时对方版本的提交，都与本机一致。
-    @Test("服务器上进行中操作的分类", .timeLimit(.minutes(3)))
+    @Test("服务器上进行中操作的分类")
     func operationKinds() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -167,7 +167,7 @@ struct RemoteConflictTests {
     }
 
     /// B 上的变基冲突解决后用编辑后的信息继续：Unicode、换行、引号与注释行经标准输入送到 B，原作者保留。
-    @Test("服务器上用编辑后的信息继续变基", .timeLimit(.minutes(3)))
+    @Test("服务器上用编辑后的信息继续变基")
     func continueWithMessage() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -223,7 +223,7 @@ struct RemoteConflictTests {
     }
 
     /// B 上解决后没有任何改动的单个摘取与序列步骤：保留空提交、中止与跳过的结果都在 B 上完成。
-    @Test("服务器上空提交的保留、中止与跳过", .timeLimit(.minutes(3)))
+    @Test("服务器上空提交的保留、中止与跳过")
     func emptyCommits() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

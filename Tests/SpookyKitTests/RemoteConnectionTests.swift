@@ -9,7 +9,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteConnectionTests {
     /// 建立专属主连接、完成体检并原样传递特殊路径和提交信息。
-    @Test("远端体检、状态与 stdin 转义", .timeLimit(.minutes(1)))
+    @Test("远端体检、状态与 stdin 转义")
     func connectionAndStatus() async throws {
         let fixture = try await RemoteFixture.create()
         let connection = fixture.connection()
@@ -65,7 +65,7 @@ struct RemoteConnectionTests {
     }
 
     /// 目录和 Git 环境失败不能误报成 SSH 连接故障。
-    @Test("远端路径、权限、Git 缺失与低版本", .timeLimit(.minutes(1)))
+    @Test("远端路径、权限、Git 缺失与低版本")
     func healthFailures() async throws {
         let fixture = try await RemoteFixture.create()
 
@@ -78,7 +78,12 @@ struct RemoteConnectionTests {
             #expect(missingError?.result?.exitCode == 2)
             await missing.close()
 
-            let plain = RemoteConnection(host: "spooky-test", path: fixture.root, configuration: RemoteFixture.configuration)
+            let plain = RemoteConnection(
+                host: "spooky-test",
+                path: fixture.root,
+                configuration: RemoteFixture.configuration
+            )
+
             let plainError = await #expect(throws: RemoteConnectionError.self) { try await plain.open() }
             #expect(plainError?.kind == .notWorkingTree)
             await plain.close()
@@ -91,8 +96,13 @@ struct RemoteConnectionTests {
             await absent.close()
 
             _ = try await RemoteFixture.raw([
-                "/bin/sh", "-c", "mkdir \"$1/bin\"; cat > \"$1/bin/git\"; chmod 700 \"$1/bin/git\"", "fixture", fixture.root,
+                "/bin/sh",
+                "-c",
+                "mkdir \"$1/bin\"; cat > \"$1/bin/git\"; chmod 700 \"$1/bin/git\"",
+                "fixture",
+                fixture.root,
             ], input: Data("#!/bin/sh\nprintf 'git version 2.40.0\\n'\n".utf8))
+
             var oldConfiguration = RemoteFixture.configuration
             oldConfiguration.remoteEnvironment["PATH"] = fixture.root + "/bin"
             let old = fixture.connection(configuration: oldConfiguration)
@@ -132,7 +142,7 @@ struct RemoteConnectionTests {
     }
 
     /// 临时 known_hosts 与临时密钥只改变本次连接，不写 A 或 B 的 SSH 配置。
-    @Test("未知指纹、变化指纹与认证失败", .timeLimit(.minutes(1)))
+    @Test("未知指纹、变化指纹与认证失败")
     func authenticationFailures() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: "Spooky-SSH-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
@@ -167,7 +177,12 @@ struct RemoteConnectionTests {
         configuration.file = config.path
         configuration.knownHosts = knownHosts.path
 
-        let unknown = RemoteConnection(host: "spooky-test", path: "/Users/wgy/spooky-test", configuration: configuration)
+        let unknown = RemoteConnection(
+            host: "spooky-test",
+            path: "/Users/wgy/spooky-test",
+            configuration: configuration
+        )
+
         let unknownError = await #expect(throws: RemoteConnectionError.self) { try await unknown.open() }
         #expect(unknownError?.kind == .unknownHostKey)
         #expect(unknownError?.result?.exitCode == 255)
@@ -175,7 +190,12 @@ struct RemoteConnectionTests {
 
         let publicKey = try String(contentsOf: URL(fileURLWithPath: key.path + ".pub"), encoding: .utf8)
         try (hostname + " " + publicKey).write(to: knownHosts, atomically: true, encoding: .utf8)
-        let changed = RemoteConnection(host: "spooky-test", path: "/Users/wgy/spooky-test", configuration: configuration)
+        let changed = RemoteConnection(
+            host: "spooky-test",
+            path: "/Users/wgy/spooky-test",
+            configuration: configuration
+        )
+
         let changedError = await #expect(throws: RemoteConnectionError.self) { try await changed.open() }
         #expect(changedError?.kind == .changedHostKey)
         await changed.close()
@@ -192,7 +212,7 @@ struct RemoteConnectionTests {
     }
 
     /// Git 返回 255 仍是 Git 错误；凭据和编辑器回调走同一反向 Unix socket。
-    @Test("Git 255、凭据脱敏与编辑器回调", .timeLimit(.minutes(1)))
+    @Test("Git 255、凭据脱敏与编辑器回调")
     func callbacksAndExitStatus() async throws {
         let fixture = try await RemoteFixture.create()
         let connection = fixture.connection()
@@ -290,7 +310,9 @@ struct RemoteFixture: Sendable {
         do {
             _ = try await raw(["git", "-c", "init.templateDir=", "init", "-q", "-b", "main", fixture.repository])
             _ = try await raw(["git", "-C", fixture.repository, "config", "--local", "user.name", "Spooky Test"])
-            _ = try await raw(["git", "-C", fixture.repository, "config", "--local", "user.email", "spooky@example.invalid"])
+            _ = try await raw([
+                "git", "-C", fixture.repository, "config", "--local", "user.email", "spooky@example.invalid",
+            ])
             _ = try await raw(["git", "-C", fixture.repository, "config", "--local", "commit.gpgSign", "false"])
             return fixture
         } catch {

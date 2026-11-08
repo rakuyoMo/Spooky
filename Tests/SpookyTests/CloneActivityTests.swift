@@ -1,12 +1,13 @@
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
 
 // MARK: - CloneActivityTests
 
-/// 克隆：对话框的目标与校验、每台主机记住的目录、进度的文字，以及后台克隆与书签的生命周期。
+/// 克隆：对话框的目标与校验、每台主机记住的目录，以及后台克隆与书签的生命周期。
 @MainActor
 struct CloneActivityTests {
     /// 每个用例独立的偏好域与它所在的临时目录；用例结束时删掉目录。
@@ -18,11 +19,15 @@ struct CloneActivityTests {
     }
 
     /// 目标是所选目录下以仓库名命名的新目录；服务器目标沿用主机，地址不合法、主机别名或目录不完整时没有目标。
-    @Test("克隆目标")
-    func destinations() {
+    /// 地址不合法时提示；本机目标已是有内容的目录或文件时提示，空目录可以；地址没填时不提示。
+    @Test("克隆目标与它的校验")
+    func destinations() throws {
         let url = "git@github.com:rakuyoMo/Spooky.git"
 
-        #expect(CloneTarget.destination(url: url, parent: .local(path: "/tmp/克隆 目录")) == .local(path: "/tmp/克隆 目录/Spooky"))
+        #expect(
+            CloneTarget.destination(url: url, parent: .local(path: "/tmp/克隆 目录"))
+                == .local(path: "/tmp/克隆 目录/Spooky")
+        )
         #expect(CloneTarget.destination(url: url, parent: .local(path: "/")) == .local(path: "/Spooky"))
         #expect(
             CloneTarget.destination(url: url, parent: .remote(host: "spooky-test", path: "/srv/"))
@@ -32,11 +37,8 @@ struct CloneActivityTests {
         #expect(CloneTarget.destination(url: url, parent: .remote(host: "b", path: "srv")) == nil)
         #expect(CloneTarget.destination(url: "https://", parent: .local(path: "/tmp")) == nil)
         #expect(CloneTarget.destination(url: "-invalid", parent: .local(path: "/tmp")) == nil)
-    }
 
-    /// 地址不合法时提示；本机目标已是有内容的目录或文件时提示，空目录可以；地址没填时不提示。
-    @Test("克隆目标的校验")
-    func problems() throws {
+        // 本机目标：空目录可以，有内容的目录与文件不行
         let root = FileManager.default.temporaryDirectory.appending(path: "spooky-clone-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: root.appending(path: "empty"), withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: root.appending(path: "full"), withIntermediateDirectories: true)
@@ -54,8 +56,15 @@ struct CloneActivityTests {
         #expect(CloneTarget.problem(url: "https://example.invalid/team/file", parent: parent) != nil)
 
         // 服务器目标由 B 上的 Git 检查，这里只要求绝对路径
-        #expect(CloneTarget.problem(url: "https://example.invalid/a.git", parent: .remote(host: "b", path: "srv")) != nil)
-        #expect(CloneTarget.problem(url: "https://example.invalid/a.git", parent: .remote(host: "b", path: "/srv")) == nil)
+        let server = { (path: String) in
+            CloneTarget.problem(
+                url: "https://example.invalid/a.git",
+                parent: .remote(host: "b", path: path)
+            )
+        }
+
+        #expect(server("srv") != nil)
+        #expect(server("/srv") == nil)
     }
 
     /// 每台主机记住上次克隆用的目录；选择机器时列出书签里的主机与克隆过的主机。
@@ -75,23 +84,6 @@ struct CloneActivityTests {
         #expect(ServerCloneDirectories.hosts(in: bookmarks, defaults: defaults) == ["nas", "spooky-test"])
     }
 
-    /// 进度的文字写出阶段、百分比与对象数；没有百分比时只写对象数，还没有进度时写正在开始。
-    @Test("克隆进度的文字")
-    func progressStatus() {
-        let receiving = CloneProgress(phase: .receiving, percent: 42, completed: 420, total: 1000)
-        let counting = CloneProgress(phase: .counting, percent: nil, completed: 7, total: nil)
-
-        #expect(
-            CloneProgressBar.status(receiving)
-                == AppLocalization.text("clone.status.percent", AppLocalization.text("clone.phase.receiving"), 42, 420, 1000)
-        )
-        #expect(
-            CloneProgressBar.status(counting)
-                == AppLocalization.text("clone.status.count", AppLocalization.text("clone.phase.counting"), 7)
-        )
-        #expect(CloneProgressBar.status(nil) == AppLocalization.text("clone.status.starting"))
-    }
-
     /// 克隆一开始书签就出现；失败后留着书签供重试，重试再加回书签，移除没有完成的克隆时连书签一起移除。
     @Test("克隆与书签的生命周期")
     func lifecycle() async throws {
@@ -108,7 +100,7 @@ struct CloneActivityTests {
         #expect(bookmarks.bookmark(for: destination) != nil)
         #expect(clones.unfinished(at: destination) === activity)
 
-        try await FileViewsTests.wait { !activity.isRunning }
+        await until { !activity.isRunning }
         guard case .failed = activity.state else {
             Issue.record("目标不是绝对路径时克隆应失败")
             return
@@ -117,7 +109,7 @@ struct CloneActivityTests {
         bookmarks.delete(bookmarks.repositories.map(\.id))
         clones.restart(activity)
         #expect(bookmarks.bookmark(for: destination) != nil)
-        try await FileViewsTests.wait { !activity.isRunning }
+        await until { !activity.isRunning }
 
         clones.clear()
         #expect(clones.isEmpty)

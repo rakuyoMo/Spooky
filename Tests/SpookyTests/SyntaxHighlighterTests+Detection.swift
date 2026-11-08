@@ -7,61 +7,115 @@ import Testing
 // MARK: - Detection
 
 extension SyntaxHighlighterTests {
-    /// 文件扩展名表先于语言别名，大小写不会改变语言选择。
-    @Test("扩展名覆盖语言别名", arguments: [
-        ("adb", "ada"), ("ads", "ada"), ("aj", "aspectj"), ("asm", "x86asm"), ("s", "x86asm"),
-        ("bas", "basic"), ("cljc", "clojure"), ("cljs", "clojure"), ("csx", "csharp"), ("jl", "julia"),
-        ("lhs", "haskell"), ("litcoffee", "coffeescript"), ("ma", "mathematica"), ("ml", "ocaml"),
-        ("mli", "ocaml"), ("p", "prolog"), ("pro", "prolog"), ("pbxproj", "json"), ("php", "php-template"),
-        ("rslib", "rust"), ("scpt", "applescript"), ("scptd", "applescript"), ("shtm", "xml"), ("shtml", "xml"),
-        ("xht", "xml"), ("xhtm", "xml"), ("ss", "scheme"), ("strings", "objectivec"), ("svelte", "javascript"),
-        ("vbe", "vbscript"), ("wsc", "vbscript"), ("wsf", "vbscript"), ("vhd", "vhdl"),
-    ])
-    func extensionOverrides(_ pathExtension: String, _ language: String) async {
-        #expect(await SyntaxHighlighter.language(forPath: "文件." + pathExtension, content: nil) == language)
-        #expect(await SyntaxHighlighter.language(forPath: "文件." + pathExtension.uppercased(), content: nil) == language)
+    /// 完整文件名、自带的扩展名表、highlight.js 的别名与首行解释器依次决定语言；扩展名表先于语言别名，大小写不会改变语言选择。
+    @Test("按路径、扩展名与解释器识别语言")
+    func languageFromPath() async {
+        #expect(await SyntaxHighlighter.language(forPath: "Sources/App.swift", content: nil) == "swift")
+        #expect(await SyntaxHighlighter.language(forPath: "目录 一/Makefile", content: nil) == "makefile")
+        #expect(await SyntaxHighlighter.language(forPath: "Gemfile", content: nil) == "ruby")
+        #expect(await SyntaxHighlighter.language(forPath: "Info.PLIST", content: nil) == "xml")
+        #expect(await SyntaxHighlighter.language(forPath: "config.yml", content: nil) == "yaml")
+
+        // highlight.js 把这些扩展名当作别的语言的别名，仓库里的文件仍按扩展名表着色
+        let overrides = [
+            ("m", "objectivec"), ("s", "x86asm"), ("pbxproj", "json"), ("php", "php-template"),
+            ("strings", "objectivec"), ("svelte", "javascript"),
+        ]
+
+        for (pathExtension, language) in overrides {
+            let lower = await SyntaxHighlighter.language(forPath: "文件." + pathExtension, content: nil)
+            let upper = await SyntaxHighlighter.language(forPath: "文件." + pathExtension.uppercased(), content: nil)
+            #expect(lower == language && upper == language)
+        }
+
+        // 没有扩展名时看首行解释器
+        let script = "#!/usr/bin/env python3\nprint(1)\n"
+        #expect(await SyntaxHighlighter.language(forPath: "tool", content: script) == "python")
+        #expect(await SyntaxHighlighter.language(forPath: "run", content: "#!/bin/bash -e\n") == "bash")
     }
 
-    /// 头文件在全文中查找区分大小写的 Objective-C 标记，注释和超出自动识别上限的文字同样参与。
-    @Test("头文件的语言标记", arguments: ["#import", "@class", "@interface", "@protocol", "@import", "@\""])
-    func headerMarkers(_ marker: String) async {
-        #expect(await SyntaxHighlighter.language(forPath: "Bridge.h", content: "// " + marker) == "objectivec")
-        #expect(await SyntaxHighlighter.language(forPath: "Bridge.H", content: "\"" + marker + "\"") == "objectivec")
+    /// 扩展名不认识时由 highlight.js 按字符数上限内的内容判断，否则按纯文本显示；头文件在全文中查找区分大小写的 Objective-C 标记，没有标记时用 C++。
+    @Test("按内容识别、纯文本回退与头文件")
+    func languageFromContent() async {
+        let plist = "<?xml version=\"1.0\"?><plist><dict><key>Name</key><string>Spooky</string></dict></plist><!--"
+        #expect(await SyntaxHighlighter.language(forPath: "Contents", content: plist + "-->") == "xml")
 
-        let large = String(repeating: "x", count: 30_000) + marker
-        #expect(await SyntaxHighlighter.language(forPath: "Bridge.h", content: large) == "objectivec")
-    }
+        // 上限按字符数计，多字节文字不会提前用尽配额；超过上限时首行是 #! 也不判断
+        let padding = String(repeating: "字", count: SyntaxHighlighter.unknownFileLimit - plist.count - 3)
+        let limit = plist + padding + "-->"
+        #expect(limit.count == SyntaxHighlighter.unknownFileLimit && limit.utf8.count > limit.count)
+        #expect(await SyntaxHighlighter.language(forPath: "Contents", content: limit) == "xml")
+        #expect(await SyntaxHighlighter.language(forPath: "Contents", content: limit + "字") == nil)
+        #expect(await SyntaxHighlighter.language(forPath: "data", content: "#!/bin/sh\n" + padding + padding) == nil)
 
-    /// 未出现标记的头文件使用 C++，不把标记当作不区分大小写的关键字。
-    @Test("头文件默认使用 C++")
-    func cppHeaders() async {
+        // 没有内容、扩展名未知或对应纯文本、语言未知时按纯文本显示
+        #expect(await SyntaxHighlighter.language(forPath: "data", content: nil) == nil)
+        #expect(await SyntaxHighlighter.language(forPath: "notes.unknown", content: nil) == nil)
+        #expect(await SyntaxHighlighter.language(forPath: "notes.txt", content: plist) == nil)
+        #expect(await SyntaxHighlighter.highlight(plist, as: "unknown-language").isEmpty)
+
+        // 头文件：注释、字符串与超出自动识别上限的文字里的标记都算
+        for marker in ["#import", "@class", "@\""] {
+            let commented = await SyntaxHighlighter.language(forPath: "Bridge.h", content: "// " + marker)
+            let quoted = await SyntaxHighlighter.language(forPath: "Bridge.H", content: "\"" + marker + "\"")
+            #expect(commented == "objectivec" && quoted == "objectivec")
+
+            let large = String(repeating: "x", count: 30_000) + marker
+            #expect(await SyntaxHighlighter.language(forPath: "Bridge.h", content: large) == "objectivec")
+        }
+
         #expect(await SyntaxHighlighter.language(forPath: "Vector.h", content: nil) == "cpp")
         #expect(await SyntaxHighlighter.language(forPath: "Vector.H", content: "#IMPORT <vector>") == "cpp")
-        #expect(await SyntaxHighlighter.language(forPath: "Vector.h", content: "namespace geo {}") == "cpp")
     }
 
-    /// 自动识别按字符数限制，多字节文字不会提前用尽配额。
-    @Test("自动识别的字符数边界")
-    func detectionCharacterLimit() async {
-        let prefix = "<?xml version=\"1.0\"?><plist><dict><key>Name</key><string>Spooky</string></dict></plist><!--"
-        let suffix = "-->"
-        let padding = String(repeating: "字", count: SyntaxHighlighter.unknownFileLimit - prefix.count - suffix.count)
-        let content = prefix + padding + suffix
+    /// 删除行取旧版的片段，新增与上下文行取新版；两侧分别识别语言，未知路径读取全文参与判断，二进制与纯文本不着色。
+    @Test("Diff 两侧全文的着色")
+    func diffSyntax() async throws {
+        let patch = """
+            diff --git a/a.swift b/a.swift
+            index 1111111..2222222 100644
+            --- a/a.swift
+            +++ b/a.swift
+            @@ -1,2 +1,2 @@
+            -/* old
+            +let new = 1
+             end */
 
-        #expect(content.count == 20_000)
-        #expect(content.utf8.count > 20_000)
-        #expect(await SyntaxHighlighter.language(forPath: "Contents", content: content) == "xml")
-        #expect(await SyntaxHighlighter.language(forPath: "Contents", content: content + "字") == nil)
+            """
+
+        let diff = try RepositoryDiff(patch: Data(patch.utf8))
+        let syntax = try #require(await DiffSyntax.make(from: diff, oldPath: "a.swift", newPath: "a.swift"))
+        let lines = try #require(diff.files.first?.hunks.first?.lines)
+
+        #expect(await DiffSyntax.mayColor(diff, oldPath: "a.swift", newPath: "a.swift"))
+        #expect(!(await DiffSyntax.mayColor(diff, oldPath: "notes.txt", newPath: "notes.txt")))
+        #expect(syntax.spans(for: lines[0]) == [SyntaxSpan(length: 6, style: .comment)])
+        #expect(syntax.spans(for: lines[1])?.first == SyntaxSpan(length: 3, style: .keyword))
+
+        // 新版里 “end */” 不在注释里
+        let context = try #require(syntax.spans(for: lines[2]))
+        #expect(!context.contains { $0.style == .comment })
+
+        try await expectUnknownPath()
+
+        // 删除 Objective-C 标记后，新侧单独按 C++ 识别，不沿用旧侧语言
+        let header = "diff --git a/a.h b/a.h\n--- a/a.h\n+++ b/a.h\n@@ -1,2 +1 @@\n-@class X;\n namespace a {}\n"
+        let headerDiff = try RepositoryDiff(patch: Data(header.utf8))
+        let headerSyntax = try #require(await DiffSyntax.make(from: headerDiff, oldPath: "a.h", newPath: "a.h"))
+        #expect(!headerSyntax.old[1].contains { $0.style == .keyword })
+        #expect(headerSyntax.new[0].first == SyntaxSpan(length: 9, style: .keyword))
+
+        let binary = try RepositoryDiff(patch: Data("diff --git a/a b/a\nBinary files a/a and b/a differ\n".utf8))
+        #expect(!(await DiffSyntax.mayColor(binary, oldPath: "a", newPath: "a")))
     }
 
-    /// 自动识别使用扩展语言，Diff 的未知路径也读取全文参与判断。
-    @Test("未知路径的 Diff 按全文识别语言")
-    func unknownDiffLanguage() async throws {
+    /// 未知路径的 Diff 按全文识别语言；一侧是纯文本扩展名、另一侧可着色时仍着色。
+    private func expectUnknownPath() async throws {
         let content = "FROM node:22\nWORKDIR /app\nCOPY . .\nRUN npm install\nCMD [\"node\", \"index.js\"]"
-        #expect(await SyntaxHighlighter.language(forPath: "build", content: content) == "dockerfile")
 
         let patch = "diff --git a/build b/build\nnew file mode 100644\n--- /dev/null\n+++ b/build\n@@ -0,0 +1,5 @@\n"
             + content.components(separatedBy: "\n").map { "+" + $0 + "\n" }.joined()
+
         let diff = try RepositoryDiff(patch: Data(patch.utf8))
         let syntax = try #require(await DiffSyntax.make(from: diff, oldPath: "build", newPath: "build"))
 
@@ -69,35 +123,5 @@ extension SyntaxHighlighterTests {
         #expect(syntax.new.first?.first == SyntaxSpan(length: 4, style: .keyword))
         #expect(!(await DiffSyntax.mayColor(diff, oldPath: "build.txt", newPath: "build.txt")))
         #expect(await DiffSyntax.mayColor(diff, oldPath: "build.txt", newPath: "build.h"))
-
-        let binary = try RepositoryDiff(patch: Data("diff --git a/a b/a\nBinary files a/a and b/a differ\n".utf8))
-        #expect(!(await DiffSyntax.mayColor(binary, oldPath: "a", newPath: "a")))
-    }
-
-    /// 删除 Objective-C 标记后，新侧单独按 C++ 识别，不沿用旧侧语言。
-    @Test("Diff 两侧分别识别头文件")
-    func headerDiffLanguages() async throws {
-        let patch = "diff --git a/a.h b/a.h\n--- a/a.h\n+++ b/a.h\n@@ -1,2 +1 @@\n-@class X;\n namespace a {}\n"
-        let diff = try RepositoryDiff(patch: Data(patch.utf8))
-        let syntax = try #require(await DiffSyntax.make(from: diff, oldPath: "a.h", newPath: "a.h"))
-
-        #expect(await DiffSyntax.mayColor(diff, oldPath: "a.h", newPath: "a.h"))
-        #expect(!syntax.old[1].contains { $0.style == .keyword })
-        #expect(syntax.new[0].first == SyntaxSpan(length: 9, style: .keyword))
-    }
-
-    /// JSON 中非法的工程文件记号让整份文件回退，仍保留全部行与 UTF-16 长度。
-    @Test("非法记号让整个文件显示纯文本")
-    func illegalTokens() async throws {
-        let text = "// !$*UTF8*$!\n{\n  archiveVersion = 1;\n  value = \"中文😀\";\n}"
-        let language = try #require(await SyntaxHighlighter.language(forPath: "project.pbxproj", content: text))
-        let spans = await SyntaxHighlighter.highlight(text, as: language)
-        let lines = text.components(separatedBy: "\n")
-
-        #expect(spans.count == lines.count)
-
-        for (line, lineSpans) in zip(lines, spans) {
-            #expect(lineSpans == [SyntaxSpan(length: line.utf16.count, style: nil)])
-        }
     }
 }

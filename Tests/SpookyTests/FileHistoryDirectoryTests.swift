@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -18,7 +19,11 @@ struct FileHistoryDirectoryTests {
 
         for path in paths {
             let url = directory.appending(path: path)
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+
             try Data("let value = 1\n".utf8).write(to: url)
         }
 
@@ -29,11 +34,11 @@ struct FileHistoryDirectoryTests {
         session.refresh(full: true)
         await session.waitForRefresh()
         session.showFileHistory("dir")
-        try await FileViewsTests.wait { session.fileHistory.totalCount != nil }
+        await until { session.fileHistory.totalCount != nil }
         let state = session.fileHistory
         #expect(session.fileHistoryHeaderActions(root).map(\.enabled) == [false, true, true])
         state.selectedID = root.id
-        try await FileViewsTests.wait { state.directory.commit != nil }
+        await until { state.directory.commit != nil }
         #expect(state.directory.files.map(\.path) == ["dir/a.swift", "dir/b.txt"])
         #expect(session.fileHistoryMenuActions(root).map(\.enabled) == [false, false, true, true, true, false])
 
@@ -41,7 +46,7 @@ struct FileHistoryDirectoryTests {
             state.directory.setVisible(file.path, visible: true, identity: state.directory.identity)
         }
 
-        try await FileViewsTests.wait { state.directory.diffs.count == 2 }
+        await until { state.directory.diffs.count == 2 }
         #expect(state.directory.diffs.values.allSatisfy { $0.diff?.files.count == 1 })
         #expect(state.directory.targets.values.allSatisfy { $0.allowsContent })
         #expect(state.directory.files.allSatisfy { state.directory.source(for: $0)?.file == $0 })
@@ -51,17 +56,17 @@ struct FileHistoryDirectoryTests {
 
         // 程序请求 Raw 同样退回 Diff，不能读取 tree 对象。
         state.detailMode = .raw
-        try await FileViewsTests.wait { state.detailMode == .diff && !state.isLoadingDetail }
+        await until { state.detailMode == .diff && !state.isLoadingDetail }
         #expect(state.content == nil)
         #expect(state.detailFailure == nil)
 
         let oldIdentity = state.directory.identity
         state.loadDetail()
-        try await FileViewsTests.wait { state.directory.identity != oldIdentity && state.directory.commit != nil }
+        await until { state.directory.identity != oldIdentity && state.directory.commit != nil }
         state.directory.setVisible("dir/a.swift", visible: true, identity: state.directory.identity)
         state.directory.setVisible("dir/a.swift", visible: false, identity: oldIdentity)
         state.reloadDiffs()
-        try await FileViewsTests.wait { state.directory.diffs["dir/a.swift"] != nil }
+        await until { state.directory.diffs["dir/a.swift"] != nil }
         #expect(state.directory.diffs["dir/b.txt"] == nil)
 
         let control = NSSegmentedControl(labels: ["Diff", "Raw"], trackingMode: .selectOne, target: nil, action: nil)
@@ -134,7 +139,7 @@ struct FileHistoryDirectoryTests {
         state.open(commit: commit, files: files, runner: runner, activities: activities, records: false)
 
         for file in files { state.setVisible(file.path, visible: true, identity: state.identity) }
-        try await FileViewsTests.wait { state.diffs.count == 2 }
+        await until { state.diffs.count == 2 }
         #expect(state.diffs.values.allSatisfy { $0.diff == nil })
         #expect(activities.items.isEmpty)
         let secondRequest = state.requests["b.txt"]
@@ -151,7 +156,7 @@ struct FileHistoryDirectoryTests {
         let button = try #require(buttons(in: hosting).first)
         #expect(button.title == AppLocalization.text("working.showDiff"))
         button.performClick(nil)
-        try await FileViewsTests.wait { state.diffs["a.txt"]?.diff != nil }
+        await until { state.diffs["a.txt"]?.diff != nil }
         #expect(state.diffs["b.txt"]?.diff == nil)
         #expect(state.requests["b.txt"] == secondRequest)
         #expect(activities.items.count == 1)
@@ -163,7 +168,11 @@ struct FileHistoryDirectoryTests {
         let directory = try FileViewsTests.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let runner = try await FileViewsTests.initializeRepository(at: .local(path: directory.path))
-        try FileManager.default.createDirectory(at: directory.appending(path: "dir"), withIntermediateDirectories: false)
+        try FileManager.default.createDirectory(
+            at: directory.appending(path: "dir"),
+            withIntermediateDirectories: false
+        )
+
         try Data("first\n".utf8).write(to: directory.appending(path: "dir/a.txt"))
         try Data("second\n".utf8).write(to: directory.appending(path: "dir/b.txt"))
         let root = try await commit(runner, message: "root")
@@ -175,9 +184,9 @@ struct FileHistoryDirectoryTests {
         session.refresh(full: true)
         await session.waitForRefresh()
         session.showFileHistory("dir")
-        try await FileViewsTests.wait { session.fileHistory.totalCount != nil }
+        await until { session.fileHistory.totalCount != nil }
         session.fileHistory.selectedID = root.id
-        try await FileViewsTests.wait { session.fileHistory.directory.commit != nil }
+        await until { session.fileHistory.directory.commit != nil }
 
         let files = try await session.fileHistoryComparisonFiles(moved, path: "dir")
         #expect(files.map(\.path) == ["outside.txt"])
@@ -216,11 +225,11 @@ struct FileHistoryDirectoryTests {
         let state = FileHistoryState()
         defer { state.close() }
         state.open("café", head: head, runner: runner)
-        try await FileViewsTests.wait { state.totalCount != nil }
+        await until { state.totalCount != nil }
         #expect(Array((state.path ?? "").utf8) == Array(path.utf8))
         #expect(state.commits.map(\.subject) == ["delete", "directory"])
         state.selectedID = state.commits.first?.id
-        try await FileViewsTests.wait { state.directory.commit != nil }
+        await until { state.directory.commit != nil }
         #expect(state.directory.files.map(\.path) == [path + "/a.txt"])
     }
 

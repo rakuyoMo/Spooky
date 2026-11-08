@@ -17,14 +17,18 @@ struct DiffFileMetadataTests {
         let path: String?
     }
 
-    /// 各类普通文件、二进制负载与重命名字段都从真实 Git 补丁中读取。
+    /// 各类普通文件、二进制负载与重命名字段都从真实 Git 补丁中读取；
+    /// 组合 Diff 的原模式列表保留父顺序、重复项与不存在的父，显示去重属于 App。
     @Test("真实 Git 文件摘要元数据")
     func fixtures() throws {
         let fixtures = try loadFixtures()
         #expect(fixtures.count == 27)
+
         let files = try Dictionary(uniqueKeysWithValues: fixtures.map {
             ($0.name, try #require(RepositoryDiff(patch: $0.patch).files.first))
         })
+
+        // 普通文件的新增、删除与模式变化
         #expect(files["modified"]?.metadata.oldModes.map(\.value) == ["100644"])
         #expect(files["modified"]?.metadata.newMode?.value == "100644")
         #expect(files["added"]?.metadata.isAdded ?? false)
@@ -37,26 +41,26 @@ struct DiffFileMetadataTests {
         #expect(files["mode-only"]?.metadata.newMode?.kind == .executable)
         #expect(files["empty-added"]?.hunks.isEmpty ?? false)
         #expect(files["empty-added"]?.metadata.isAdded ?? false)
+
+        // 特殊文件类型、二进制负载与相似度
         #expect(files["symlink"]?.metadata.newMode?.kind == .symbolicLink)
         #expect(files["submodule"]?.metadata.newMode?.kind == .submodule)
         #expect(files["binary"]?.isBinary ?? false)
         #expect(files["binary-patch"]?.isBinary ?? false)
         #expect(files["rename-edited"]?.metadata.rename?.similarity == 98)
 
+        // 特殊路径的重命名按字节保留原路径
         for fixture in fixtures where fixture.path != nil {
             let path = try #require(fixture.path)
             let rename = try #require(files[fixture.name]?.metadata.rename)
+
             #expect(Data(rename.oldPath.utf8) == Data(path.utf8))
             #expect(Data(rename.newPath.utf8) == Data(("new-" + path).utf8))
             #expect(rename.similarity == 100)
         }
-    }
 
-    /// 原模式列表保留父顺序、重复项与不存在的父，显示去重属于 App。
-    @Test("组合 Diff 摘要保留逐父模式")
-    func combined() throws {
-        let fixtures = try loadFixtures()
-        let expected = [
+        // 组合 Diff 逐父保留原模式
+        let combined = [
             "combined-missing-same": ["000000", "100644"],
             "combined-missing-changed": ["000000", "100644"],
             "combined-mixed": ["100644", "100755"],
@@ -67,20 +71,30 @@ struct DiffFileMetadataTests {
         ]
 
         for fixture in fixtures where fixture.name.hasPrefix("combined-") {
-            let file = try #require(RepositoryDiff(patch: fixture.patch).files.first)
-            #expect(file.metadata.oldModes.map(\.value) == expected[fixture.name])
+            let file = try #require(files[fixture.name])
+
+            #expect(file.metadata.oldModes.map(\.value) == combined[fixture.name])
             #expect(file.metadata.isDeleted == fixture.name.contains("deleted"))
             #expect(file.metadata.isAdded == fixture.name.contains("all-absent"))
         }
     }
 
-    /// 类别只按六位八进制模式解释，未知但合法的值不冒充普通文件。
-    @Test("文件模式的类别与合法性")
-    func modes() {
-        for (value, kind) in [
-            ("100644", DiffFileMode.Kind.regular), ("100755", .executable), ("120000", .symbolicLink),
-            ("040000", .directory), ("160000", .submodule), ("000000", .unspecified), ("100600", .unspecified),
-        ] {
+    /// 类别只按六位八进制模式解释，未知但合法的值不冒充普通文件；
+    /// 非法路径、越界百分比和缺字段只省略重命名项，不丢掉其它合法摘要；
+    /// 损坏的行数、缺失终止符无论有没有扩展头都不能进入可写模型。
+    @Test("手写摘要的模式、损坏字段与正文校验")
+    func malformed() throws {
+        let modes: [(String, DiffFileMode.Kind)] = [
+            ("100644", .regular),
+            ("100755", .executable),
+            ("120000", .symbolicLink),
+            ("040000", .directory),
+            ("160000", .submodule),
+            ("000000", .unspecified),
+            ("100600", .unspecified),
+        ]
+
+        for (value, kind) in modes {
             #expect(DiffFileMode(value)?.kind == kind)
             #expect(DiffFileMode(value)?.value == value)
             #expect(DiffFileMode(value)?.exists == (value != "000000"))
@@ -89,44 +103,49 @@ struct DiffFileMetadataTests {
         for value in ["100644,100755", "100648", "644", "-00644", " 100644", "100644 ", "Regular"] {
             #expect(DiffFileMode(value) == nil)
         }
-    }
 
-    /// 非法路径、越界百分比和缺字段只省略重命名项，不丢掉其它合法摘要。
-    @Test("可选摘要字段损坏", arguments: [
-        ["rename from old", "rename to new"],
-        ["rename from old", "similarity index 100%"],
-        ["rename from old", "rename to new", "similarity index 101%"],
-        ["rename from old", "rename to new", "similarity index -1%"],
-        ["rename from old", "rename to new", "similarity index 1.5%"],
-        ["rename from old", "rename to new", "similarity index 1 %"],
-        ["rename from \"old", "rename to new", "similarity index 100%"],
-        ["rename from \"old\"suffix", "rename to new", "similarity index 100%"],
-        ["rename from \"old\"\t", "rename to new", "similarity index 100%"],
-        ["rename from \"\"", "rename to new", "similarity index 100%"],
-        ["rename from \"\\777\"", "rename to new", "similarity index 100%"],
-        ["rename from old", "rename to \"\\q\"", "similarity index 100%"],
-    ])
-    func malformedOptional(headers: [String]) throws {
-        let patch = (["diff --git a/f b/f", "old mode 100644", "new mode 100755"] + headers).joined(separator: "\n") + "\n"
-        let file = try #require(RepositoryDiff(patch: Data(patch.utf8)).files.first)
-        #expect(file.metadata.rename == nil)
-        #expect(file.metadata.newMode?.kind == .executable)
-        #expect(file.metadata.oldModes.first?.kind == .regular)
-    }
+        // 重命名字段损坏时只丢掉重命名，模式变化照常读出
+        let optionalHeaders = [
+            ["rename from old", "rename to new"],
+            ["rename from old", "similarity index 100%"],
+            ["rename from old", "rename to new", "similarity index 101%"],
+            ["rename from old", "rename to new", "similarity index -1%"],
+            ["rename from old", "rename to new", "similarity index 1.5%"],
+            ["rename from old", "rename to new", "similarity index 1 %"],
+            ["rename from \"old", "rename to new", "similarity index 100%"],
+            ["rename from \"old\"suffix", "rename to new", "similarity index 100%"],
+            ["rename from \"old\"\t", "rename to new", "similarity index 100%"],
+            ["rename from \"\"", "rename to new", "similarity index 100%"],
+            ["rename from \"\\777\"", "rename to new", "similarity index 100%"],
+            ["rename from old", "rename to \"\\q\"", "similarity index 100%"],
+        ]
 
-    /// 摘要解析不把损坏的正文当作无块文件成功返回。
-    @Test("摘要不放宽补丁严格校验")
-    func malformedBody() {
-        for body in ["@@ -1 +1 @@\n-old\n", "@@ invalid @@\n", "@@ -1 +1 @@\n-old\n+new"] {
-            #expect(throws: WorkingCopyError.malformedDiff) {
-                try RepositoryDiff(patch: Data(("diff --git a/f b/f\nnew file mode broken\n" + body).utf8))
+        for headers in optionalHeaders {
+            let lines = ["diff --git a/f b/f", "old mode 100644", "new mode 100755"] + headers
+            let patch = lines.joined(separator: "\n") + "\n"
+            let file = try #require(RepositoryDiff(patch: Data(patch.utf8)).files.first)
+
+            #expect(file.metadata.rename == nil)
+            #expect(file.metadata.newMode?.kind == .executable)
+            #expect(file.metadata.oldModes.first?.kind == .regular)
+        }
+
+        // 正文损坏时整份补丁被拒绝，扩展头损坏也不让它当作无块文件通过
+        for header in ["", "new file mode broken\n"] {
+            for body in ["@@ -1 +1 @@\n-old\n", "@@ -x +1 @@\n-old\n+new\n", "@@ -1 +1 @@\n-old\n+new"] {
+                #expect(throws: WorkingCopyError.malformedDiff) {
+                    try RepositoryDiff(patch: Data(("diff --git a/f b/f\n" + header + body).utf8))
+                }
             }
         }
     }
 
     /// 每份固定夹具同时保留原补丁与路径，用字节比较避免 Unicode 规范等价掩盖变化。
     private func loadFixtures() throws -> [Fixture] {
-        let url = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures/diff-metadata.json")
+        let url = URL(filePath: #filePath)
+            .deletingLastPathComponent()
+            .appending(path: "Fixtures/diff-metadata.json")
+
         return try JSONDecoder().decode([Fixture].self, from: Data(contentsOf: url))
     }
 }

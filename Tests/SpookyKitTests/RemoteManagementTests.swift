@@ -74,7 +74,11 @@ struct RemoteManagementTests {
         #expect(origin.effectivePushURL == bare)
 
         await #expect(throws: GitError.self) {
-            try await remotes.setURL(fixture.directory.appendingPathComponent("none.git").path, of: "origin", push: false)
+            try await remotes.setURL(
+                fixture.directory.appendingPathComponent("none.git").path,
+                of: "origin",
+                push: false
+            )
         }
 
         try await remotes.addRefspec("+refs/tags/*:refs/tags/*", to: "origin", push: false)

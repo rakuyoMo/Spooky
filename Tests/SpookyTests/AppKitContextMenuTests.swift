@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import TestSupport
 
 @testable import Spooky
 
@@ -11,7 +12,8 @@ import Testing
 @MainActor
 struct AppKitContextMenuTests {
     /// 只接本行上的右键与 ⌃ 点按，行首的空白处也算；表格为这次点按给出菜单，记下点按的行；挂着表单时不接。
-    @Test("经表格弹出右键菜单")
+    /// 表格给出的 SwiftUI 菜单逐项对应：分隔线、按住 ⌥ 的替换项、子菜单、打勾与可用性都保留，选中后执行同一个动作。
+    @Test("经表格弹出右键菜单，SwiftUI 菜单与 AppKit 菜单项目一致")
     func routesThroughTable() async throws {
         let fixture = try await Fixture()
         let table = fixture.table
@@ -31,26 +33,8 @@ struct AppKitContextMenuTests {
         #expect(view.menuTarget(for: click, in: table) === table)
         #expect(table.clickedRow == 1)
 
-        // 窗口挂着表单时，点按不落到窗口里
-        let sheet = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 200, height: 100),
-            styleMask: [.titled],
-            backing: .buffered,
-            defer: false
-        )
-
-        fixture.window.beginSheet(sheet, completionHandler: nil)
-        #expect(!view.isContextClick(onRowOf: table, click))
-        fixture.window.endSheet(sheet)
-    }
-
-    /// SwiftUI 菜单逐项对应：分隔线、按住 ⌥ 的替换项、子菜单、打勾与可用性都保留，选中后执行同一个动作。
-    @Test("SwiftUI 菜单与 AppKit 菜单项目一致")
-    func swiftUIMenuMirrorsItems() async throws {
-        let fixture = try await Fixture()
-        let table = fixture.table
-
-        let menu = try #require(table.menu(for: Self.click(.rightMouseDown, row: 1, in: table)))
+        // 表格给出的 SwiftUI 菜单与 AppKit 菜单逐项对应
+        let menu = try #require(table.menu(for: click))
 
         #expect(
             Self.describe(menu) == [
@@ -65,12 +49,28 @@ struct AppKitContextMenuTests {
 
         // 选中 SwiftUI 菜单的项目，执行的是 AppKit 菜单项的动作
         let revisions = try #require(menu.items[4].submenu)
+
         menu.performActionForItem(at: 0)
         menu.performActionForItem(at: 3)
         revisions.performActionForItem(at: 2)
 
-        try await FileViewsTests.wait { fixture.performed.titles.count == 3 }
+        await until { fixture.performed.titles.count == 3 }
+
         #expect(fixture.performed.titles == ["Open", "Quick Fetch", "feature"])
+
+        // 窗口挂着表单时，点按不落到窗口里
+        let sheet = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 200, height: 100),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+
+        fixture.window.beginSheet(sheet, completionHandler: nil)
+
+        #expect(!view.isContextClick(onRowOf: table, click))
+
+        fixture.window.endSheet(sheet)
     }
 }
 
@@ -97,6 +97,7 @@ extension AppKitContextMenuTests {
             _ = NSApplication.shared
 
             let performed = Performed()
+
             let list = List {
                 Text(verbatim: "plain")
                 Text(verbatim: "menu")
@@ -117,10 +118,11 @@ extension AppKitContextMenuTests {
             let root = try #require(window.contentView)
             let menuViews = { AppKitContextMenuTests.views(AppKitContextMenu.RowMenuView.self, in: root) }
 
-            try await FileViewsTests.wait { !menuViews().isEmpty }
+            await until { !menuViews().isEmpty }
 
             self.window = window
             self.performed = performed
+
             table = try #require(AppKitContextMenuTests.views(NSTableView.self, in: root).first)
             menuView = try #require(menuViews().first)
         }
@@ -140,6 +142,7 @@ extension AppKitContextMenuTests {
     /// 各类菜单项都有的菜单：普通项、分隔线、带 ⌥ 替换项的一项、带组名与打勾项的子菜单、不可用的一项。
     static func sampleMenu(_ performed: Performed) -> NSMenu {
         let menu = NSMenu()
+
         menu.autoenablesItems = false
 
         func item(_ title: String, enabled: Bool = true) -> NSMenuItem {
@@ -151,24 +154,30 @@ extension AppKitContextMenuTests {
         }
 
         let quick = item("Quick Fetch")
+
         quick.isAlternate = true
         quick.keyEquivalentModifierMask = .option
 
         let header = NSMenuItem(title: "Branches", action: nil, keyEquivalent: "")
+
         header.isEnabled = false
 
         let current = item("main", enabled: false)
+
         current.state = .on
         current.indentationLevel = 1
 
         let other = item("feature")
+
         other.indentationLevel = 1
 
         let submenu = NSMenu()
+
         submenu.autoenablesItems = false
         [header, current, other].forEach(submenu.addItem)
 
         let revisions = NSMenuItem(title: "Revisions", action: nil, keyEquivalent: "")
+
         revisions.submenu = submenu
 
         let items: [NSMenuItem] = [
@@ -181,6 +190,7 @@ extension AppKitContextMenuTests {
         ]
 
         items.forEach(menu.addItem)
+
         return menu
     }
 
