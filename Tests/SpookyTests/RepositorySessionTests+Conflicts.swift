@@ -40,7 +40,7 @@ extension RepositorySessionTests {
         await session.writeTask?.value
         try #require(failures.isEmpty)
 
-        // 合并开始前不能有任何改动，未跟踪的文件也不行：它在合并停下后才写入，用来核对只看冲突时滤掉其它改动
+        // 合并停下后再写入一个未跟踪的文件，用来核对只看冲突时滤掉其它改动
         try Data("note".utf8).write(to: directory.appending(path: "note.txt"))
         await reload(session) { session.context?.operation == .merge }
 

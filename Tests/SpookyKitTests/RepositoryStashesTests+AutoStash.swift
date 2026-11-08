@@ -20,7 +20,7 @@ extension RepositoryStashesTests {
         _ = try await runner.run(["--literal-pathspecs", "add", "--", "tracked x.txt"])
         try write("new\n", to: "未跟踪.txt", in: repository)
 
-        // 未跟踪文件同样会挡住合并，自动储藏要把它们一起收走
+        // 已暂存的改动挡住合并，自动储藏把未跟踪文件也一起收走
         await #expect(throws: RepositorySyncError.dirtyWorkingCopy(rebase: false)) {
             try await RepositorySync(runner: runner).merge("refs/heads/feature")
         }
