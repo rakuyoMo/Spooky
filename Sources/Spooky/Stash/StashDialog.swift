@@ -37,11 +37,9 @@ struct StashDialog: View {
     @AppStorage("stashRestoreIndex")
     private var restoreIndex = false
 
-    #warning("TODO: 在全新的偏好下打开自动储藏对话框，核实 “完成后恢复改动” 是否默认勾选；只影响该选项的初始值。")
-
-    /// 自动储藏的操作完成后恢复改动。
+    /// 自动储藏的操作完成后恢复改动，跨仓库记忆；没有保存值时不勾，储藏在操作完成后保留。
     @AppStorage("autoStashReapply")
-    private var reapply = true
+    private var reapply = false
 
     /// 对话框骨架：内容区是表单；自动储藏换成备选底栏，中止在左，不储藏与储藏在右。
     var body: some View {

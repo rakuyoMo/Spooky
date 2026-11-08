@@ -6,8 +6,8 @@ import Testing
 /// Auto Stash 的结局：全部完成、原操作失败、原操作停在冲突上、恢复失败、取消；没有全部完成时储藏必须保留，原始错误随之带回。
 extension RepositoryStashesTests {
     /// 合并被本地改动挡住后，储藏、合并、按暂存区状态恢复依次完成，储藏随后删除；
-    /// 取消不包装成储藏错误，交给调用方按取消处理，储藏保留。
-    @Test("Auto Stash 完成合并并恢复改动，取消时保留储藏")
+    /// 取消不包装成储藏错误，交给调用方按取消处理，储藏保留；不恢复时操作完成后储藏保留，改动不回到工作区。
+    @Test("Auto Stash 完成合并并恢复改动，取消或不恢复时保留储藏")
     func autoStashMerge() async throws {
         let repository = try await makeRepository()
         defer { repository.remove() }
@@ -44,6 +44,16 @@ extension RepositoryStashesTests {
         }
 
         #expect(try await stashes.list().map(\.message) == ["cancelled"])
+
+        // 不恢复：已经合并过的分支再合并一次照常完成，储藏留着
+        try write("kept\n", to: "tracked x.txt", in: repository)
+
+        try await stashes.stashingLocalChanges(message: "kept", reapply: false) {
+            try await RepositorySync(runner: runner).merge("refs/heads/feature")
+        }
+
+        #expect(try await stashes.list().map(\.message) == ["kept", "cancelled"])
+        #expect(try read("tracked x.txt", in: repository) == "base\n")
     }
 
     /// 原操作失败或停在冲突上时都不恢复：储藏保留，错误说明储藏的去向，失败时带回 Git 的原始错误，冲突留在工作区。
