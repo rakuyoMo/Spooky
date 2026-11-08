@@ -1,3 +1,4 @@
+import AppKit
 import SpookyKit
 
 // MARK: - Sidebar
@@ -65,27 +66,61 @@ extension RepositorySession {
         }
     }
 
-    /// 在历史里只看一个引用，与侧边栏单击分支或标签相同。
+    /// 在历史里只看一个引用，与侧边栏单击分支或标签相同；侧边栏展开并滚动到它的行。
     func showHistory(of reference: RepositoryReference) {
         history.showsCommitPage = false
-        history.selectedReference = reference.id
+        history.reveal([reference.id])
         activeView = .history
         onActiveViewChange?()
     }
 
-    /// 检出分支，保留 Git 对本地修改的覆盖保护：本地分支直接检出，已在别的工作树检出时打开那个工作树；远端分支检出已有的跟踪分支，或原子创建并检出同名跟踪分支。
+    /// 侧边栏双击引用：HEAD 分支什么都不做；不能检出时响铃；标签检出成分离 HEAD，分支交给 ``checkoutBranch(_:in:)``。
     ///
     /// - Parameters:
-    ///   - reference: 要检出的本地或远端分支。
-    ///   - request: 打开分支操作表单；同名本地分支已存在却不跟踪这个远端分支时，在跟踪表单里让用户指定名称。
-    func checkoutBranch(_ reference: RepositoryReference, request: (RepositoryActionRequest) -> Void) {
-        // 已在别的工作树检出的本地分支不能再检出，改为打开那个工作树
-        if let worktree = worktrees.branchWorktrees[reference.id] {
-            open(worktree, in: .currentWindow)
+    ///   - reference: 被双击的本地分支、远端分支或标签。
+    ///   - target: 本地分支已在别的工作树检出时打开那个工作树的位置，按住 ⌘ 双击时是新标签页。
+    ///   - beep: 不能检出时的提示音；测试换成记录调用。
+    func doubleClick(
+        _ reference: RepositoryReference,
+        in target: RepositoryOpenTarget,
+        beep: () -> Void = { NSSound.beep() }
+    ) {
+        // HEAD 分支已经检出，双击不响铃
+        if reference.isLocal, reference.name == status?.branch.head {
             return
         }
 
+        let available = reference.isTag ? canCheckoutRevision : canCheckout(reference)
+
+        guard available else {
+            beep()
+            return
+        }
+
+        guard reference.isTag else {
+            checkoutBranch(reference, in: target)
+            return
+        }
+
+        checkout(revision: reference.id)
+    }
+
+    /// 检出分支，保留 Git 对本地修改的覆盖保护：本地分支直接检出，已在别的工作树检出时打开那个工作树；
+    /// 远端分支检出已有的跟踪分支，有不跟踪它的同名本地分支时询问后检出那个分支并设好上游，都没有时原子创建并检出同名跟踪分支。
+    ///
+    /// 菜单、快捷操作与双击共用；不能检出时什么都不做，入口自己禁用或响铃。
+    ///
+    /// - Parameters:
+    ///   - reference: 要检出的本地或远端分支。
+    ///   - target: 本地分支已在别的工作树检出时打开那个工作树的位置。
+    func checkoutBranch(_ reference: RepositoryReference, in target: RepositoryOpenTarget = .currentWindow) {
         guard canCheckout(reference) else {
+            return
+        }
+
+        // 已在别的工作树检出的本地分支不能再检出，改为打开那个工作树
+        if let worktree = worktrees.branchWorktrees[reference.id] {
+            open(worktree, in: target)
             return
         }
 
@@ -106,15 +141,15 @@ extension RepositorySession {
         }
 
         if let existing = snapshot.references.first(where: { $0.isLocal && $0.upstream == reference.id }) {
-            checkoutBranch(existing, request: request)
+            checkoutBranch(existing, in: target)
             return
         }
 
         let name = String(reference.id.dropFirst(("refs/remotes/" + remote.name + "/").count))
 
-        // 同名本地分支可能有不同含义，保留它并让用户在跟踪表单中指定名称。
-        if snapshot.references.contains(where: { $0.id == "refs/heads/" + name }) {
-            request(RepositoryActionRequest(kind: .track, reference: reference.id))
+        // 同名本地分支可能有自己的提交，检出它并改设上游，不用远端分支的提交覆盖它
+        if let local = snapshot.references.first(where: { $0.id == "refs/heads/" + name }) {
+            confirmTrackingCheckout(local, upstream: reference)
             return
         }
 
@@ -132,5 +167,46 @@ extension RepositorySession {
             offersAutoStash: true,
             undo: .reversible
         )
+    }
+}
+
+// MARK: - Private
+
+extension RepositorySession {
+    /// 询问后检出同名的本地分支并把上游设为远端分支，询问里写出两个分支；取消时不执行任何 Git。
+    ///
+    /// 两步在一个写操作里先后执行：分支在别的工作树检出时说明原因、不写上游；上游设好后检出失败时说明上游已经改了。
+    /// 结束后的完整刷新重新读出 HEAD、分支的提交与上游。
+    ///
+    /// - Parameters:
+    ///   - branch: 与远端分支同名、没有跟踪它的本地分支。
+    ///   - upstream: 被检出的远端分支。
+    private func confirmTrackingCheckout(_ branch: RepositoryReference, upstream: RepositoryReference) {
+        let repository = repository
+
+        onConfirm?(ConfirmationRequest(
+            title: AppLocalization.text("branch.trackExisting.title"),
+            message: AppLocalization.text("branch.trackExisting.message", branch.name, upstream.name),
+            submitTitle: AppLocalization.text("action.continue")
+        ) { [weak self] in
+            guard let self, self.repository == repository, canCheckout(upstream) else {
+                return
+            }
+
+            // 询问期间两个分支有一个已被删除时不执行
+            let references = history.snapshot?.references ?? []
+
+            guard [branch.id, upstream.id].allSatisfy({ id in references.contains { $0.id == id } }) else {
+                return
+            }
+
+            performGit(
+                { runner, _ in
+                    try await RepositoryReferences(runner: runner).checkout(branch.id, tracking: upstream.id)
+                },
+                title: AppLocalization.text("branch.checkoutNamed", branch.name),
+                undo: .reversible
+            )
+        })
     }
 }

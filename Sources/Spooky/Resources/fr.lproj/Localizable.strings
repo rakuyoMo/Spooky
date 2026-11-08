@@ -1387,6 +1387,14 @@
 "branch.error.checkoutCreated.title" = "Branche créée mais non basculée";
 "branch.error.checkoutCreated" = "La nouvelle branche a été créée, mais le basculement sur celle-ci a échoué.";
 "branch.error.checkoutCreated.help" = "La branche reste dans le dépôt. Consultez la sortie d’origine, puis basculez sur la branche après avoir corrigé le problème.";
+"branch.error.inWorktree.title" = "Branche extraite dans un autre worktree";
+"branch.error.inWorktree" = "La branche est déjà extraite dans un autre worktree.";
+"branch.error.inWorktree.help" = "Rien n’a été modifié. Ouvrez ce worktree, ou basculez-le d’abord sur une autre branche.";
+"branch.error.checkoutTracking.title" = "Branche amont définie, mais branche non basculée";
+"branch.error.checkoutTracking" = "La branche amont a été définie, mais le basculement sur la branche a échoué.";
+"branch.error.checkoutTracking.help" = "La branche garde ses commits et sa nouvelle branche amont. Consultez la sortie d’origine, puis basculez sur la branche après avoir corrigé le problème.";
+"branch.trackExisting.title" = "Basculer sur la branche existante";
+"branch.trackExisting.message" = "Vous allez basculer sur la branche locale « %1$@ », qui suivra la branche distante « %2$@ ». Ses commits restent inchangés.";
 "branch.error.unmerged.help" = "Vérifiez les commits de la branche ou supprimez-la avec « Forcer la suppression ».";
 "tag.create" = "Créer un tag";
 "tag.create.message" = "Crée un tag local sur la révision saisie.";

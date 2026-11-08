@@ -1387,6 +1387,14 @@
 "branch.error.checkoutCreated.title" = "Rama creada, pero sin checkout";
 "branch.error.checkoutCreated" = "La nueva rama se creó, pero no se pudo hacer checkout.";
 "branch.error.checkoutCreated.help" = "La rama sigue en el repositorio. Revisa la salida original y haz checkout de la rama después de resolver el problema.";
+"branch.error.inWorktree.title" = "Rama con checkout en otro worktree";
+"branch.error.inWorktree" = "La rama ya tiene checkout en otro worktree.";
+"branch.error.inWorktree.help" = "No se ha cambiado nada. Abre ese worktree o cambia allí primero a otra rama.";
+"branch.error.checkoutTracking.title" = "Upstream establecido, pero la rama sin checkout";
+"branch.error.checkoutTracking" = "Se estableció el upstream de la rama, pero no se pudo hacer checkout.";
+"branch.error.checkoutTracking.help" = "La rama conserva sus commits y su nuevo upstream. Revisa la salida original y haz checkout de la rama después de resolver el problema.";
+"branch.trackExisting.title" = "Hacer checkout de la rama existente";
+"branch.trackExisting.message" = "Se hará checkout de la rama local “%1$@” y seguirá a la rama remota “%2$@”. Sus commits no cambian.";
 "branch.error.unmerged.help" = "Revisa los commits de la rama o elimínala con Forzar eliminación.";
 "tag.create" = "Crear nueva etiqueta";
 "tag.create.message" = "Crea una etiqueta local en la revisión introducida.";

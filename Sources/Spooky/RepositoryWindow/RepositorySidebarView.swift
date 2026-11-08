@@ -124,22 +124,27 @@ struct RepositorySidebarView: View {
     /// 分组顺序固定：Workspace、Pinned、Branches、Archived Branches、Tags、Remotes、Submodules、Worktrees。
     var body: some View {
         VStack(spacing: 0) {
-            // 列表按仓库区分身份，换了仓库就整个重建：列表显示过可展开的行（远端、文件夹）后，
-            // 行首一直留着展开箭头的位置，换成没有这类行的仓库也不收回；重建后与新开窗口的排版相同
-            List(selection: selection) {
-                workspace
-                pinnedBranches
-                localBranches
-                archivedBranches
-                tags
-                remoteBranches
-                submoduleGroup
-                worktreeGroup
+            ScrollViewReader { proxy in
+                // 列表按仓库区分身份，换了仓库就整个重建：列表显示过可展开的行（远端、文件夹）后，
+                // 行首一直留着展开箭头的位置，换成没有这类行的仓库也不收回；重建后与新开窗口的排版相同
+                List(selection: selection) {
+                    workspace
+                    pinnedBranches
+                    localBranches
+                    archivedBranches
+                    tags
+                    remoteBranches
+                    submoduleGroup
+                    worktreeGroup
+                }
+                .listStyle(.sidebar)
+                .focused($listFocused)
+                .onDeleteCommand(perform: deleteCommand)
+                .id(session.repository)
+                .onChange(of: session.history.revealRequests) {
+                    revealSelectedReferences(with: proxy)
+                }
             }
-            .listStyle(.sidebar)
-            .focused($listFocused)
-            .onDeleteCommand(perform: deleteCommand)
-            .id(session.repository)
 
             // 刚归档的分支数与撤销
             ArchiveNoticeView(session: session)
@@ -312,9 +317,7 @@ extension RepositorySidebarView {
             if let ref = node.reference {
                 branchRow(ref, name: node.name)
                     .tag(ref.id)
-                    .onTapGesture(count: 2) {
-                        session.checkoutBranch(ref, request: request)
-                    }
+                    .onTapGesture(count: 2) { doubleClick(ref) }
                     .onDrag { dragProvider(kind: .remote, reference: ref.id) }
                     .contextMenu { branchMenu(ref) }
                     .modifier(

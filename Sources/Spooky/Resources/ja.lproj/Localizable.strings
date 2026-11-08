@@ -1387,6 +1387,14 @@
 "branch.error.checkoutCreated.title" = "ブランチは作成されましたがチェックアウトされていません";
 "branch.error.checkoutCreated" = "新しいブランチは作成されましたが、チェックアウトに失敗しました。";
 "branch.error.checkoutCreated.help" = "ブランチはリポジトリに残っています。元の出力を確認し、問題を解決してからブランチをチェックアウトしてください。";
+"branch.error.inWorktree.title" = "ブランチは別のワークツリーでチェックアウトされています";
+"branch.error.inWorktree" = "このブランチはすでに別のワークツリーでチェックアウトされています。";
+"branch.error.inWorktree.help" = "何も変更していません。そのワークツリーを開くか、先にそちらで別のブランチに切り替えてください。";
+"branch.error.checkoutTracking.title" = "上流は設定されましたがブランチはチェックアウトされていません";
+"branch.error.checkoutTracking" = "ブランチの上流は設定されましたが、チェックアウトに失敗しました。";
+"branch.error.checkoutTracking.help" = "ブランチのコミットと新しい上流はそのまま残っています。元の出力を確認し、問題を解決してからブランチをチェックアウトしてください。";
+"branch.trackExisting.title" = "既存のブランチをチェックアウト";
+"branch.trackExisting.message" = "ローカルブランチ「%1$@」をチェックアウトし、リモートブランチ「%2$@」を追跡させます。ローカルブランチのコミットは変わりません。";
 "branch.error.unmerged.help" = "ブランチのコミットを確認するか、強制削除で削除してください。";
 "tag.create" = "新しいタグを作成";
 "tag.create.message" = "入力したリビジョンにローカルタグを作成します。";

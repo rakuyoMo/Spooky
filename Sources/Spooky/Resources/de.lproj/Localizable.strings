@@ -1387,6 +1387,14 @@
 "branch.error.checkoutCreated.title" = "Branch erstellt, aber nicht ausgecheckt";
 "branch.error.checkoutCreated" = "Der neue Branch wurde erstellt, aber das Auschecken ist fehlgeschlagen.";
 "branch.error.checkoutCreated.help" = "Der Branch bleibt im Repository. Prüfe die ursprüngliche Ausgabe und checke den Branch aus, nachdem du das Problem behoben hast.";
+"branch.error.inWorktree.title" = "Branch in einem anderen Worktree ausgecheckt";
+"branch.error.inWorktree" = "Der Branch ist bereits in einem anderen Worktree ausgecheckt.";
+"branch.error.inWorktree.help" = "Es wurde nichts geändert. Öffne diesen Worktree oder wechsle dort zuerst zu einem anderen Branch.";
+"branch.error.checkoutTracking.title" = "Upstream festgelegt, Branch aber nicht ausgecheckt";
+"branch.error.checkoutTracking" = "Der Upstream des Branches wurde festgelegt, aber das Auschecken ist fehlgeschlagen.";
+"branch.error.checkoutTracking.help" = "Der Branch behält seine Commits und seinen neuen Upstream. Prüfe die ursprüngliche Ausgabe und checke den Branch aus, nachdem du das Problem behoben hast.";
+"branch.trackExisting.title" = "Vorhandenen Branch auschecken";
+"branch.trackExisting.message" = "Der lokale Branch „%1$@“ wird ausgecheckt und verfolgt dann den Remote-Branch „%2$@“. Seine Commits bleiben unverändert.";
 "branch.error.unmerged.help" = "Prüfe die Commits des Branches oder lösche ihn mit „Löschen erzwingen“.";
 "tag.create" = "Neues Tag erstellen";
 "tag.create.message" = "Erstellt ein lokales Tag an der eingegebenen Revision.";

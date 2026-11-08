@@ -1387,6 +1387,14 @@
 "branch.error.checkoutCreated.title" = "分支已创建，但未检出";
 "branch.error.checkoutCreated" = "新分支已创建，但检出失败。";
 "branch.error.checkoutCreated.help" = "分支保留在仓库中。请查看原始输出，解决问题后再检出这个分支。";
+"branch.error.inWorktree.title" = "分支已在别的工作树检出";
+"branch.error.inWorktree" = "这个分支已在另一个工作树中检出。";
+"branch.error.inWorktree.help" = "仓库没有任何改动。请打开那个工作树，或先在那里切换到其他分支。";
+"branch.error.checkoutTracking.title" = "上游已设置，但分支未检出";
+"branch.error.checkoutTracking" = "分支的上游已设置，但检出失败。";
+"branch.error.checkoutTracking.help" = "分支保留原有的提交与新的上游。请查看原始输出，解决问题后再检出这个分支。";
+"branch.trackExisting.title" = "检出已有分支";
+"branch.trackExisting.message" = "将检出本地分支 “%1$@”，并让它跟踪远端分支 “%2$@”。本地分支的提交保持不变。";
 "branch.error.unmerged.help" = "请检查分支的提交，或勾选强制删除后再删除。";
 "tag.create" = "新建标签";
 "tag.create.message" = "在输入的版本上新建本地标签。";

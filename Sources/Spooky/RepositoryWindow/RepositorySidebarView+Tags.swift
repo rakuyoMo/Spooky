@@ -55,11 +55,7 @@ extension RepositorySidebarView {
             .lineLimit(1)
             .help(SidebarTooltip.tag(ref, host: session.repository?.host))
             .tag(ref.id)
-            .onTapGesture(count: 2) {
-                guard session.canCheckoutRevision else { return }
-
-                session.checkout(revision: ref.id)
-            }
+            .onTapGesture(count: 2) { doubleClick(ref) }
             .onDrag { dragProvider(kind: .tag, reference: ref.id) }
             .contextMenu { tagMenu(ref) }
             .popover(isPresented: signaturePresented(ref), arrowEdge: .top) {

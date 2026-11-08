@@ -1,3 +1,4 @@
+import AppKit
 import SpookyKit
 import SwiftUI
 
@@ -110,6 +111,7 @@ extension RepositorySidebarView {
                 help: SidebarTooltip.head(branch: branch, host: session.repository?.host)
             )
             .tag("HEAD")
+            .id(Self.headRowID)
         }
     }
 }
@@ -123,7 +125,7 @@ extension RepositorySidebarView {
     func localBranchRow(_ ref: RepositoryReference, name: String) -> some View {
         branchRow(ref, name: name)
             .tag(ref.id)
-            .onTapGesture(count: 2) { session.checkoutBranch(ref, request: request) }
+            .onTapGesture(count: 2) { doubleClick(ref) }
             .onDrag { dragProvider(kind: .local, reference: ref.id) }
             .contextMenu { branchMenu(ref) }
             .modifier(
@@ -133,6 +135,12 @@ extension RepositorySidebarView {
                     request: request
                 )
             )
+    }
+
+    /// 双击本地分支、远端分支或标签的行；按住 ⌘ 时，已在别的工作树检出的分支在新标签页打开那个工作树。
+    func doubleClick(_ ref: RepositoryReference) {
+        let target: RepositoryOpenTarget = NSEvent.modifierFlags.contains(.command) ? .newTab : .currentWindow
+        session.doubleClick(ref, in: target)
     }
 
     /// 分组标题；作为落点时整行都接受拖放。
@@ -249,13 +257,16 @@ extension RepositorySidebarView {
         }
     }
 
-    /// 当前分支行显示的名字；不是未出生或分离 HEAD，或者被过滤掉时为 nil，不显示这一行。
+    /// 当前分支行显示的名字：未出生时是分支名，分离 HEAD 时是当前提交的 8 位短哈希；
+    /// 不是未出生或分离 HEAD，或者被过滤掉时为 nil，不显示这一行。
     var headRowName: String? {
-        guard let branch = session.status?.branch, branch.head == nil || branch.oid == nil else {
+        guard
+            let branch = session.status?.branch,
+            branch.head == nil || branch.oid == nil,
+            let name = branch.head ?? branch.oid.map({ String($0.prefix(8)) })
+        else {
             return nil
         }
-
-        let name = branch.head ?? AppLocalization.text("branch.detachedShort")
 
         guard !isFiltering || SidebarRefTree.matches(name, filter: filterText) else {
             return nil

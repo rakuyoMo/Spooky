@@ -174,19 +174,24 @@ extension SidebarSessionTests {
         session.activeView = .workingCopy
     }
 
-    /// 检出本地分支与远端分支时，Activity 的标题带上分支名，远端分支带远端名前缀；双击标签检出成分离 HEAD。
+    /// 双击检出本地分支与远端分支时，Activity 的标题带上分支名，远端分支带远端名前缀；双击标签检出成分离 HEAD。
     private func checkCheckouts(in session: RepositorySession) async throws {
+        let beep: () -> Void = { Issue.record("可以检出时不响铃") }
+        var confirmations: [ConfirmationRequest] = []
+        session.onConfirm = { confirmations.append($0) }
+
         let feature = try #require(session.history.branches.first { $0.id == "refs/heads/feature/一" })
-        session.checkoutBranch(feature) { _ in Issue.record("本地分支直接检出") }
+        session.doubleClick(feature, in: .currentWindow, beep: beep)
         await settle(session)
         #expect(session.status?.branch.head == "feature/一")
 
-        // 远端分支没有对应的本地分支，建同名跟踪分支并检出
+        // 远端分支没有对应的本地分支，不询问，直接建同名跟踪分支并检出
         let references = session.history.snapshot?.references ?? []
         let side = try #require(references.first { $0.id == "refs/remotes/origin/side" })
-        session.checkoutBranch(side) { _ in Issue.record("没有同名的本地分支，不打开跟踪表单") }
+        session.doubleClick(side, in: .currentWindow, beep: beep)
         await settle(session)
         #expect(session.status?.branch.head == "side")
+        #expect(confirmations.isEmpty)
 
         let titles = session.activities.items.map(\.title)
 
@@ -195,9 +200,8 @@ extension SidebarSessionTests {
 
         // 双击标签按完整标签名检出，HEAD 分离在标签所指的提交上
         let tag = try #require(session.history.snapshot?.references.first { $0.isTag })
-        #expect(session.canCheckoutRevision)
 
-        session.checkout(revision: tag.id)
+        session.doubleClick(tag, in: .currentWindow, beep: beep)
         await settle(session)
 
         #expect(session.status?.branch.head == nil)
@@ -205,7 +209,7 @@ extension SidebarSessionTests {
     }
 
     /// 等写操作、随后的完整刷新与引用读取都结束；读引用期间又要求的读取也一起等完。
-    private func settle(_ session: RepositorySession) async {
+    func settle(_ session: RepositorySession) async {
         await session.writeTask?.value
         await session.waitForRefresh()
         await untilFinished { session.history.activeTasks }

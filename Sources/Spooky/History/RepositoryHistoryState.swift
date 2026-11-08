@@ -233,6 +233,11 @@ final class RepositoryHistoryState {
         set { selectedReferences = newValue.map { [$0] } ?? [] }
     }
 
+    /// 侧边栏之外的入口选中引用的次数；侧边栏据此展开选中的行所在的分组与文件夹，并滚动过去。
+    ///
+    /// 选中的引用没有变化时同样加一，⌘0 再按一次也能找回收起的行；在侧边栏里点选不改它，列表不随点选跳动。
+    private(set) var revealRequests = 0
+
     /// 整页详情选中的文件。
     var selectedPath: String? = nil {
         didSet {
@@ -764,6 +769,14 @@ extension RepositoryHistoryState {
 
         let known = Set(snapshot.references.map(\.id)).union(["HEAD"])
         return references.intersection(known)
+    }
+
+    /// 从侧边栏之外的入口选中引用，如 ⌘0、后退与前进、链接与快捷操作，并请侧边栏把选中的行显示出来。
+    ///
+    /// - Parameter references: 选中的完整引用名；HEAD 表示分离或未出生分支的行，空集合表示全部历史。
+    func reveal(_ references: Set<String>) {
+        selectedReferences = references
+        revealRequests += 1
     }
 }
 

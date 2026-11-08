@@ -1387,6 +1387,14 @@
 "branch.error.checkoutCreated.title" = "Branch Created but Not Checked Out";
 "branch.error.checkoutCreated" = "The new branch was created, but checking it out failed.";
 "branch.error.checkoutCreated.help" = "The branch stays in the repository. Check the original output, then check out the branch after fixing the problem.";
+"branch.error.inWorktree.title" = "Branch Checked Out in Another Worktree";
+"branch.error.inWorktree" = "The branch is already checked out in another worktree.";
+"branch.error.inWorktree.help" = "Nothing was changed. Open that worktree, or switch it to another branch first.";
+"branch.error.checkoutTracking.title" = "Upstream Set but Branch Not Checked Out";
+"branch.error.checkoutTracking" = "The upstream of the branch was set, but checking it out failed.";
+"branch.error.checkoutTracking.help" = "The branch keeps its commits and its new upstream. Check the original output, then check out the branch after fixing the problem.";
+"branch.trackExisting.title" = "Check Out Existing Branch";
+"branch.trackExisting.message" = "The local branch “%1$@” will be checked out and will track the remote branch “%2$@”. Its commits stay as they are.";
 "branch.error.unmerged.help" = "Check the branch's commits, or delete it with Force Deletion.";
 "tag.create" = "Create New Tag";
 "tag.create.message" = "Creates a local tag at the entered revision.";

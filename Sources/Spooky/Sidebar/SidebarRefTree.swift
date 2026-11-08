@@ -83,6 +83,17 @@ enum SidebarRefTree {
         return result
     }
 
+    /// 树里的每个引用与从顶层到它的各级节点身份，按显示顺序；收起的文件夹里的引用同样列出。
+    static func paths(in nodes: [SidebarRefNode]) -> [(reference: String, path: [SidebarNodeID])] {
+        nodes.flatMap { node -> [(reference: String, path: [SidebarNodeID])] in
+            if let reference = node.reference {
+                return [(reference.id, [node.id])]
+            }
+
+            return paths(in: node.children).map { ($0.reference, [node.id] + $0.path) }
+        }
+    }
+
     /// 模糊匹配：过滤文字的每个字符按顺序出现在名字里即算匹配，不区分大小写与变音符号；空文字匹配一切。
     #warning("TODO: 过滤按字符顺序的子序列匹配，未核实是否还应匹配单词首字母或容许错字；核实方式：输入跳字与错字比对结果；影响侧边栏过滤后留下哪些引用")
     static func matches(_ name: String, filter: String) -> Bool {

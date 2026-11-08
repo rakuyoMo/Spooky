@@ -1387,6 +1387,14 @@
 "branch.error.checkoutCreated.title" = "分支已建立，但未簽出";
 "branch.error.checkoutCreated" = "新分支已建立，但簽出失敗。";
 "branch.error.checkoutCreated.help" = "分支保留在倉庫中。請查看原始輸出，解決問題後再簽出這個分支。";
+"branch.error.inWorktree.title" = "分支已在其他工作樹簽出";
+"branch.error.inWorktree" = "這個分支已在另一個工作樹中簽出。";
+"branch.error.inWorktree.help" = "倉庫沒有任何變更。請打開那個工作樹，或先在那裡切換到其他分支。";
+"branch.error.checkoutTracking.title" = "上游已設定，但分支未簽出";
+"branch.error.checkoutTracking" = "分支的上游已設定，但簽出失敗。";
+"branch.error.checkoutTracking.help" = "分支保留原有的提交與新的上游。請查看原始輸出，解決問題後再簽出這個分支。";
+"branch.trackExisting.title" = "簽出現有分支";
+"branch.trackExisting.message" = "將簽出本機分支 “%1$@”，並讓它追蹤遠端分支 “%2$@”。本機分支的提交保持不變。";
 "branch.error.unmerged.help" = "請檢查分支的提交，或勾選強制刪除後再刪除。";
 "tag.create" = "新增標籤";
 "tag.create.message" = "在輸入的版本上新增本機標籤。";

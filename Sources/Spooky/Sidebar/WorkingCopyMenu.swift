@@ -66,7 +66,7 @@ extension WorkingCopyMenu {
                     Toggle(branch.name, isOn: .constant(true))
                 } else {
                     Button(branch.name) {
-                        session.checkoutBranch(branch, request: request)
+                        session.checkoutBranch(branch)
                     }
                     .disabled(!session.canCheckout(branch))
                 }

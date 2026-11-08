@@ -502,13 +502,13 @@ extension RepositoryWindowController {
         configureRepositoryView()
     }
 
-    /// ⌘0 选中当前 HEAD，分离和未出生分支仍可定位。
+    /// ⌘0 选中当前 HEAD 并在侧边栏里显示出来，分离和未出生分支仍可定位。
     @objc
     func showHeadBranch() {
         guard session.repository != nil else { return }
         session.activeView = .history
         session.history.showsCommitPage = false
-        session.history.selectedReference = session.status?.branch.head.map { "refs/heads/" + $0 } ?? "HEAD"
+        session.history.reveal([session.status?.branch.head.map { "refs/heads/" + $0 } ?? "HEAD"])
         showsManager = false
         configureRepositoryView()
     }

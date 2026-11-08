@@ -46,7 +46,7 @@ extension RepositorySidebarView {
             // 已在别的工作树检出的分支不能在这里检出，换成那个工作树的打开与删除
             if session.worktrees.branchWorktrees[ref.id] == nil {
                 Button(AppLocalization.text("branch.checkoutNamed", ref.name)) {
-                    session.checkoutBranch(ref, request: request)
+                    session.checkoutBranch(ref)
                 }
                 .disabled(!session.canCheckout(ref))
             }
