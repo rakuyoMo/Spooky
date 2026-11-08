@@ -160,7 +160,7 @@ struct RepositoryOperationDialog: View {
         .onChange(of: destinationIDs) { _, candidates in
             // Destination 所选的远端分支不在候选里了，按同一顺序重新预选
             if usesDestination, !candidates.contains(source) {
-                source = Self.destinationPreselection(preselection: request.reference, in: session)
+                source = Self.destinationPreselection(in: session)
             }
         }
         .onChange(of: name) {
@@ -584,7 +584,7 @@ extension RepositoryOperationDialog {
             source = Self.sourcePreselection(for: request.kind, preselection: request.reference, in: session)
 
         case .push where usesDestination:
-            source = Self.destinationPreselection(preselection: request.reference, in: session)
+            source = Self.destinationPreselection(in: session)
 
         case .push, .publish:
             let selected = branches.first { $0.isLocal && $0.name == localBranch }
@@ -595,8 +595,7 @@ extension RepositoryOperationDialog {
             if request.kind == .publish {
                 name = localBranch
             } else {
-                name = request.reference.map(remoteBranchName)
-                    ?? selected?.upstreamBranch.map { String($0.dropFirst("refs/heads/".count)) }
+                name = selected?.upstreamBranch.map { String($0.dropFirst("refs/heads/".count)) }
                     ?? localBranch
             }
         }

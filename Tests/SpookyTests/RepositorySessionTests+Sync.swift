@@ -53,7 +53,7 @@ extension RepositorySessionTests {
         try await rejectedSync(session, runner: runner, directory: directory)
     }
 
-    /// HEAD 没有上游时，推送 HEAD 分支改开发布分支；有上游、指定了目标远端分支或推的是别的分支时仍是推送。
+    /// HEAD 没有上游时，推送 HEAD 分支改开发布分支；有上游或推的是别的分支时仍是推送。
     @Test("HEAD 没有上游时 Push 改开 Publish Branch")
     func pushWithoutUpstreamPublishes() {
         let untracked = BranchStatus(head: "feature/一", oid: "abc", upstream: nil)
@@ -70,13 +70,8 @@ extension RepositorySessionTests {
         #expect(head.remote == "origin")
         #expect(head.localBranch == "feature/一")
 
-        // 有上游、拖到远端分支指定了目标、推的是别的本地分支，以及读不到状态时仍是推送
+        // 有上游、推的是别的本地分支，以及读不到状态时仍是推送
         #expect(RepositoryActionRequest(kind: .push).resolved(for: tracked).kind == .push)
-        #expect(
-            RepositoryActionRequest(kind: .push, reference: "refs/remotes/origin/main", localBranch: "feature/一")
-                .resolved(for: untracked).kind == .push
-        )
-
         #expect(RepositoryActionRequest(kind: .push, localBranch: "main").resolved(for: untracked).kind == .push)
         #expect(RepositoryActionRequest(kind: .push).resolved(for: nil).kind == .push)
 

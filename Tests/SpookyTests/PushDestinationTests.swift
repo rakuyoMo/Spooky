@@ -9,7 +9,7 @@ import TestSupport
 
 // MARK: - PushDestinationTests
 
-/// 推送 HEAD 的 Destination 与无目标状态：候选只取已配置远端的远端分支，预选依次是入口指定、上游、无上游时同名、第一个；
+/// 推送 HEAD 的 Destination 与无目标状态：候选只取已配置远端的远端分支，预选依次是上游、无上游时同名、第一个；
 /// 各动作没有目标时各自说明并禁止提交；强推的期望值是所选远端分支的版本。
 ///
 /// 读对话框控件的一项经辅助功能接口读本进程的窗口，进程没有辅助功能权限时跳过。
@@ -141,16 +141,13 @@ extension PushDestinationTests {
         #expect(RepositoryOperationDialog.destinationTarget("refs/remotes/gone/main", in: session) == nil)
     }
 
-    /// 入口指定的远端分支不在候选里时取上游；HEAD 没有上游时取同名的远端分支而不是第一个候选；
-    /// 上游已删除时直接取第一个候选。
+    /// HEAD 有上游时取上游；HEAD 没有上游时取同名的远端分支而不是第一个候选；上游已删除时直接取第一个候选。
     private static func expectPreselection(in fixture: OperationWiringTests.Fixture) async throws {
         let runner = fixture.runner
         let session = fixture.session
-        let preselect = { RepositoryOperationDialog.destinationPreselection(preselection: $0, in: session) }
+        let preselect = { RepositoryOperationDialog.destinationPreselection(in: session) }
 
-        #expect(preselect("refs/remotes/backup/feature/一") == "refs/remotes/backup/feature/一")
-        #expect(preselect("refs/remotes/gone/main") == "refs/remotes/origin/main")
-        #expect(preselect(nil) == "refs/remotes/origin/main")
+        #expect(preselect() == "refs/remotes/origin/main")
 
         // HEAD 没有上游，origin 上也没有 main：只有 backup 上有同名的远端分支，它不是第一个候选
         _ = try await runner.run(["config", "--local", "--unset", "branch.main.remote"])
@@ -164,7 +161,7 @@ extension PushDestinationTests {
 
         try #require(candidates.first != "refs/remotes/backup/main")
 
-        #expect(preselect(nil) == "refs/remotes/backup/main")
+        #expect(preselect() == "refs/remotes/backup/main")
 
         // 上游仍配置为已删除的 origin/main
         _ = try await runner.run(["config", "--local", "branch.main.remote", "origin"])
@@ -172,7 +169,7 @@ extension PushDestinationTests {
 
         await reload(session)
 
-        #expect(preselect(nil) == candidates.first)
+        #expect(preselect() == candidates.first)
     }
 
     /// 远端都在、远端分支全部删除时 Push HEAD、拉取与跟踪说明还没有远端分支，Push Branch 仍可推到新的远端分支；
@@ -199,7 +196,7 @@ extension PushDestinationTests {
         #expect(emptyState(RepositoryActionRequest(kind: .pull)) == noRemoteBranches)
         #expect(emptyState(RepositoryActionRequest(kind: .track)) == noRemoteBranches)
         #expect(emptyState(RepositoryActionRequest(kind: .fetch)) == nil)
-        #expect(RepositoryOperationDialog.destinationPreselection(preselection: nil, in: session).isEmpty)
+        #expect(RepositoryOperationDialog.destinationPreselection(in: session).isEmpty)
 
         // 远端全部移除
         _ = try await runner.run(["remote", "remove", "origin"])
