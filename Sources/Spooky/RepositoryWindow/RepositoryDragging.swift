@@ -87,8 +87,11 @@ final class RepositoryDragContext {
 // MARK: - RepositoryDropDestination
 
 /// 已实现的引用落点。
-enum RepositoryDropDestination {
-    /// 工作区或 HEAD。
+enum RepositoryDropDestination: Equatable {
+    /// Working Copy 行。
+    case workingCopy
+
+    /// HEAD 分支行。
     case head
 
     /// Branches 标题。
@@ -127,7 +130,7 @@ enum RepositoryDropDestination {
 
 // MARK: - RepositoryDropTarget
 
-/// 在目标行展示动作名，落下只打开已有参数表单。
+/// 引用落点：拖动中把动作名加在拖动影像上，落下时执行同一个动作；需要参数的动作只打开已有的参数表单。
 struct RepositoryDropTarget: ViewModifier {
     /// 当前会话。
     let session: RepositorySession
@@ -138,243 +141,58 @@ struct RepositoryDropTarget: ViewModifier {
     /// 参数表单入口。
     let request: (RepositoryActionRequest) -> Void
 
-    /// 悬停提示文字。
-    @State
-    private var label: String?
-
-    /// SwiftUI 落点高亮承载当前动作标签。
+    /// 落点盖在行上，点击穿透给行。
     func body(content: Content) -> some View {
         content
-            .overlay(alignment: .trailing) {
-                if let label {
-                    DropActionLabel(text: label)
-                }
+            .overlay {
+                RepositoryDropView(type: Self.type) { action(for: $0) }
+                    .allowsHitTesting(false)
             }
-            .onDrop(
-                of: [RepositoryDragPayload.type],
-                delegate: ReferenceDropDelegate(
-                    session: session,
-                    destination: destination,
-                    request: request,
-                    label: $label
-                )
-            )
     }
 }
 
-// MARK: - DropActionLabel
+// MARK: - Private
 
-/// 拖动悬停在落点上时的动作名：白底圆角 4、高 24，13 pt 粗体强调色文字；侧边栏与历史列表的落点共用。
-struct DropActionLabel: View {
-    /// 动作名。
-    let text: String
+extension RepositoryDropTarget {
+    /// 引用拖动的粘贴板类型。
+    private static let type = NSPasteboard.PasteboardType(RepositoryDragPayload.type)
 
-    /// 不拦截鼠标，拖放事件照常交给落点。
-    var body: some View {
-        Text(text)
-            .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(Color.accentColor)
-            .padding(.horizontal, 8)
-            .frame(height: 24)
-            .background(.white, in: RoundedRectangle(cornerRadius: 4))
-            .allowsHitTesting(false)
-    }
-}
-
-// MARK: - ReferenceDropDelegate
-
-/// 来源、目标与修饰键共用一张动作表，未交付的变体明确拒绝。
-private struct ReferenceDropDelegate: DropDelegate {
-    /// 当前仓库及写入状态。
-    let session: RepositorySession
-
-    /// 落点身份。
-    let destination: RepositoryDropDestination
-
-    /// 对话框入口。
-    let request: (RepositoryActionRequest) -> Void
-
-    /// 当前动作文字。
-    @Binding
-    var label: String?
-
-    /// 本次拖动的唯一来源；历史里多选的提交拖动时为 nil，那时只有改写动作可用。
-    private var singlePayload: RepositoryDragPayload? {
-        let payloads = RepositoryDragContext.shared.payloads
-        return payloads.count == 1 ? payloads.first : nil
-    }
-
-    /// 只接受同仓库的拖放：单项引用、储藏或文件，或历史里多选的提交；拖动的每一项都在载荷里。
-    func validateDrop(info: DropInfo) -> Bool {
-        let count = RepositoryDragContext.shared.payloads.count
-
-        guard count > 0, info.itemProviders(for: [RepositoryDragPayload.type]).count == count else {
-            return false
-        }
-
-        return action() != nil
-            || stashAction() != nil
-            || upstreamAction() != nil
-            || flagAction() != nil
-            || operationAction() != nil
-    }
-
-    /// 修饰键变化时同步更新动作提示。
-    func dropUpdated(info _: DropInfo) -> DropProposal? {
-        let action = action()
-        let stash = stashAction()
-        let upstream = upstreamAction()
-        let flag = flagAction()
-        let operation = operationAction()
-
-        // 长的可选链分段写，避免类型检查超时
-        let requestLabel = action.map { AppLocalization.text($0.kind.rawValue) }
-            ?? stash.map { AppLocalization.text($0.titleKey) }
-            ?? upstream.map { _ in AppLocalization.text("branch.dragTrack") }
-
-        label = requestLabel
-            ?? flag.map { AppLocalization.text($0.titleKey) }
-            ?? operation.map { AppLocalization.text($0.titleKey) }
-
-        return DropProposal(operation: label == nil ? .forbidden : .copy)
-    }
-
-    /// 离开落点后移除提示。
-    func dropExited(info _: DropInfo) { label = nil }
-
-    /// 核对实际载荷后打开表单，异步期间仓库变化则放弃。
-    func performDrop(info: DropInfo) -> Bool {
-        label = nil
-        let action = action()
-        let stash = stashAction()
-        let upstream = upstreamAction()
-        let flag = flagAction()
-        let operation = operationAction()
+    /// 这次拖动的有效动作：只接受同仓库的拖放，拖动的每一项都在载荷里；动作按来源、落点、⌥ 与会话解析。
+    private func action(for info: any NSDraggingInfo) -> DropBadgeAction? {
         let expected = RepositoryDragContext.shared.payloads
+        let items = info.draggingPasteboard.pasteboardItems?.filter { $0.types.contains(Self.type) } ?? []
 
         guard
-            validateDrop(info: info),
-            let provider = info.itemProviders(for: [RepositoryDragPayload.type]).first
-        else { return false }
+            !expected.isEmpty,
+            items.count == expected.count,
+            let action = ReferenceDropAction(
+                payloads: expected,
+                destination: destination,
+                alternate: NSEvent.modifierFlags.contains(.option),
+                session: session
+            )
+        else { return nil }
 
-        provider.loadDataRepresentation(forTypeIdentifier: RepositoryDragPayload.type) { data, _ in
+        return DropBadgeAction(title: action.title) {
             // 实际载荷必须是本次拖动的来源之一
             guard
-                let data, let payload = try? JSONDecoder().decode(RepositoryDragPayload.self, from: data),
+                let data = items.first?.data(forType: Self.type),
+                let payload = try? JSONDecoder().decode(RepositoryDragPayload.self, from: data),
                 expected.contains(where: {
                     $0.repository == payload.repository && $0.reference == payload.reference && $0.path == payload.path
                 })
-            else { return }
+            else { return false }
+
+            // 拖动会话结束后再执行，执行前核对仓库没有变化且仍可写
             Task { @MainActor in
-                guard session.repository == payload.repository, session.canWrite else { return }
-
-                // 储藏、置顶、归档与改写直接交给会话，设置上游直接执行，其余动作打开参数表单
-                if let action {
-                    request(action)
-                } else if let upstream {
-                    session.setUpstream(upstream.remote, for: upstream.branch)
-                } else if let stash {
-                    stash.perform(in: session)
-                } else if let flag {
-                    flag.perform(in: session)
-                } else {
-                    operation?.perform(in: session)
+                guard session.repository == payload.repository, session.canWrite else {
+                    return
                 }
+
+                action.perform(in: session, request: request)
             }
-        }
-        return true
-    }
 
-    /// 提交、提交里的文件、分支与标签拖到落点时的改写、标签与改名动作；可用条件与对应的菜单项相同。
-    private func operationAction() -> RepositoryOperationDrop? {
-        RepositoryOperationDrop(
-            payloads: RepositoryDragContext.shared.payloads,
-            destination: destination,
-            alternate: NSEvent.modifierFlags.contains(.option),
-            session: session
-        )
-    }
-
-    /// 储藏或储藏文件拖到工作区与 HEAD 分支时的动作；可用条件与菜单和右键菜单相同。
-    private func stashAction() -> StashDropAction? {
-        guard
-            let payload = singlePayload,
-            payload.repository == session.repository
-        else { return nil }
-
-        return StashDropAction(payload: payload, destination: destination, session: session)
-    }
-
-    /// 本地分支拖到 Pinned 或 Archived Branches 标题时的动作；可用条件与右键菜单相同。
-    private func flagAction() -> BranchFlagDropAction? {
-        guard
-            let payload = singlePayload,
-            payload.repository == session.repository
-        else { return nil }
-
-        return BranchFlagDropAction(payload: payload, destination: destination, session: session)
-    }
-
-    /// 按住 ⌥ 把远端分支拖到 HEAD 落点上：设为当前分支的上游；没按 ⌥ 时这个落点是拉取。
-    private func upstreamAction() -> (remote: RepositoryReference, branch: RepositoryReference)? {
-        guard
-            NSEvent.modifierFlags.contains(.option),
-            case .head = destination,
-            let payload = singlePayload,
-            payload.repository == session.repository,
-            payload.kind == .remote,
-            let remote = session.history.branches.first(where: { $0.id == payload.reference }),
-            let head = session.history.branches.first(where: { $0.isLocal && $0.name == session.status?.branch.head }),
-            session.canManage(head)
-        else { return nil }
-
-        return (remote, head)
-    }
-
-    /// 每个映射都指向实际可用的业务动作，可用条件与菜单和右键菜单相同。
-    private func action() -> RepositoryActionRequest? {
-        guard
-            let payload = singlePayload,
-            payload.repository == session.repository
-        else { return nil }
-        let alternate = NSEvent.modifierFlags.contains(.option)
-        let source = session.history.branches.first { $0.id == payload.reference }
-
-        switch (payload.kind, destination) {
-        case (.local, .head):
-            guard !alternate, let source, session.canMerge(source) else { return nil }
-            return RepositoryActionRequest(kind: .merge, reference: payload.reference)
-
-        case (.remote, .head):
-            guard !alternate, let source, session.canPull(from: source) else { return nil }
-            return RepositoryActionRequest(kind: .pull, reference: payload.reference)
-
-        case (.local, .branches), (.commit, .branches), (.tag, .branches), (.commit, .branchFolder):
-            guard !alternate, session.canCreateBranchFromReference else { return nil }
-            return RepositoryActionRequest(kind: .create, reference: payload.reference)
-
-        case (.remote, .branches):
-            guard let source, session.canTrack(source) else { return nil }
-            return RepositoryActionRequest(kind: .track, reference: payload.reference)
-
-        case (.local, .remote(let remote)):
-            guard let source, session.canPush(source) else { return nil }
-            return RepositoryActionRequest(
-                kind: .publish,
-                remote: remote,
-                localBranch: String(payload.reference.dropFirst(11))
-            )
-
-        case (.local, .remoteBranch(let remote, let reference)):
-            guard let source, session.canPush(source) else { return nil }
-            return RepositoryActionRequest(
-                kind: .push,
-                reference: reference,
-                remote: remote,
-                localBranch: String(payload.reference.dropFirst(11))
-            )
-
-        default: return nil
+            return true
         }
     }
 }

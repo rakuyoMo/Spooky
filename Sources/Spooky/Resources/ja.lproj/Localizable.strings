@@ -424,6 +424,7 @@
 "sync.pushHead.help" = "ローカルの HEAD ブランチ「%@」の新しいコミットを、選択したリモートブランチにプッシュします。";
 "sync.pushHead" = "HEAD をプッシュ";
 "sync.pushBranch" = "ブランチをプッシュ";
+"sync.pushBranch.help" = "選択したローカルブランチの新しいコミットを、選択したリモートブランチにプッシュします。";
 "sync.publish" = "ブランチを公開";
 "sync.publish.help" = "選択したリモートにブランチを作成します。";
 "sync.merge" = "マージ";
@@ -1488,6 +1489,7 @@
 "remote.error.browser" = "このリモートはブラウザで開けません。";
 "remote.error.browser.help" = "HTTP(S)、SSH、git プロトコルの URL を持つリモートだけに Web ページがあります。ローカルパスや file URL にはありません。";
 "branch.dragTrack" = "追跡";
+"branch.dragPublish" = "公開";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "リモート設定（%@）";

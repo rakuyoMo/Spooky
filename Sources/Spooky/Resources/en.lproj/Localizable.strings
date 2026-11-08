@@ -424,6 +424,7 @@
 "sync.pushHead.help" = "Push the new commits on the local HEAD branch “%@” to the selected remote branch.";
 "sync.pushHead" = "Push HEAD";
 "sync.pushBranch" = "Push Branch";
+"sync.pushBranch.help" = "Push the new commits on the selected local branch to the selected remote branch.";
 "sync.publish" = "Publish Branch";
 "sync.publish.help" = "Create a branch on the selected remote.";
 "sync.merge" = "Merge";
@@ -1488,6 +1489,7 @@
 "remote.error.browser" = "The remote can't be opened in a browser.";
 "remote.error.browser.help" = "Only remotes with an HTTP(S), SSH or git protocol URL have a web page. Local paths and file URLs don't.";
 "branch.dragTrack" = "Track";
+"branch.dragPublish" = "Publish";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Remote Settings (%@)";

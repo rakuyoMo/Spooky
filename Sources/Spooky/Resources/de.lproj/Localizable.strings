@@ -424,6 +424,7 @@
 "sync.pushHead.help" = "Pusht die neuen Commits des lokalen HEAD-Branches „%@“ zum ausgewählten Remote-Branch.";
 "sync.pushHead" = "HEAD pushen";
 "sync.pushBranch" = "Branch pushen";
+"sync.pushBranch.help" = "Pusht die neuen Commits des ausgewählten lokalen Branches zum ausgewählten Remote-Branch.";
 "sync.publish" = "Branch veröffentlichen";
 "sync.publish.help" = "Erstellt einen Branch auf dem ausgewählten Remote.";
 "sync.merge" = "Zusammenführen";
@@ -1488,6 +1489,7 @@
 "remote.error.browser" = "Das Remote kann nicht im Browser geöffnet werden.";
 "remote.error.browser.help" = "Nur Remotes mit einer HTTP(S)-, SSH- oder git-Protokoll-URL haben eine Webseite. Lokale Pfade und file-URLs nicht.";
 "branch.dragTrack" = "Verfolgen";
+"branch.dragPublish" = "Veröffentlichen";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Remote-Einstellungen (%@)";

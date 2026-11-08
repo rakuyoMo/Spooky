@@ -85,7 +85,7 @@ extension SidebarSessionTests {
         )
 
         let pin = try #require(
-            BranchFlagDropAction(payload: payload, destination: .pinned, session: session)
+            BranchFlagDropAction(payload: payload, destination: .pinned, alternate: false, session: session)
         )
         #expect(pin.titleKey == "branch.pin")
 
@@ -94,6 +94,7 @@ extension SidebarSessionTests {
         let archive = BranchFlagDropAction(
             payload: payload,
             destination: .archived,
+            alternate: false,
             session: session
         )
 
@@ -105,7 +106,7 @@ extension SidebarSessionTests {
         #expect(Set(selected.map(\.id)) == [feature.id, main.id])
 
         #expect(
-            BranchFlagDropAction(payload: payload, destination: .branches, session: session) == nil
+            BranchFlagDropAction(payload: payload, destination: .branches, alternate: false, session: session) == nil
         )
 
         // 选中 feature 后置顶，写入后的刷新不改变选中的引用

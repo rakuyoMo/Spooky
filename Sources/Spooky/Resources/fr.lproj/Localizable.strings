@@ -424,6 +424,7 @@
 "sync.pushHead.help" = "Pousser les nouveaux commits de la branche HEAD locale « %@ » vers la branche distante sélectionnée.";
 "sync.pushHead" = "Pousser HEAD";
 "sync.pushBranch" = "Pousser la branche";
+"sync.pushBranch.help" = "Pousser les nouveaux commits de la branche locale sélectionnée vers la branche distante sélectionnée.";
 "sync.publish" = "Publier la branche";
 "sync.publish.help" = "Créer une branche sur le dépôt distant sélectionné.";
 "sync.merge" = "Fusionner";
@@ -1488,6 +1489,7 @@
 "remote.error.browser" = "Le dépôt distant ne peut pas être ouvert dans un navigateur.";
 "remote.error.browser.help" = "Seuls les dépôts distants avec une URL HTTP(S), SSH ou du protocole git ont une page web. Les chemins locaux et les URL file n’en ont pas.";
 "branch.dragTrack" = "Suivre";
+"branch.dragPublish" = "Publier";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Réglages du dépôt distant (%@)";

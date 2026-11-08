@@ -162,6 +162,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 侧边栏与标签菜单预选了分支或版本的同步对话框同样以窗口的 sheet 呈现
         session.onSyncRequest = { [weak self] in self?.presentSyncDialog($0.kind, preselecting: $0.preselection) }
 
+        // 本地分支拖到远端分支时的 Push Branch 对话框同样以窗口的 sheet 呈现
+        session.onPushBranchRequest = { [weak self] in self?.presentPushBranchDialog($0) }
+
         // 会话里的确认以确认版对话框挂成 sheet
         session.onConfirm = { [weak self] in self?.showConfirmation($0) }
 

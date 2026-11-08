@@ -147,3 +147,22 @@ final class HistoryDropLabel {
         view = nil
     }
 }
+
+// MARK: - DropActionLabel
+
+/// 历史列表内拖放时落点旁的动作名：白底圆角 4、高 24，13 pt 粗体强调色文字。
+struct DropActionLabel: View {
+    /// 动作名。
+    let text: String
+
+    /// 不拦截鼠标，拖放事件照常交给落点。
+    var body: some View {
+        Text(text)
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 8)
+            .frame(height: 24)
+            .background(.white, in: RoundedRectangle(cornerRadius: 4))
+            .allowsHitTesting(false)
+    }
+}

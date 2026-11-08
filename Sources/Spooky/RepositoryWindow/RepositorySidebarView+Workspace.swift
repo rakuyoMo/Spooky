@@ -36,7 +36,7 @@ extension RepositorySidebarView {
             workingCopy
                 .tag("workingCopy")
                 .modifier(
-                    RepositoryDropTarget(session: session, destination: .head, request: request)
+                    RepositoryDropTarget(session: session, destination: .workingCopy, request: request)
                 )
 
             Label(AppLocalization.text("history.title"), systemImage: "clock").tag("history")

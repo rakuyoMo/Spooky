@@ -12,6 +12,17 @@ struct SyncDialogRequest {
     var preselection: String? = nil
 }
 
+// MARK: - PushBranchRequest
+
+/// 本地分支拖到远端分支时打开的 Push Branch 对话框的请求：预选的本地分支与远端分支，都是完整引用名。
+struct PushBranchRequest {
+    /// 本地分支。
+    let localBranch: String
+
+    /// 远端跟踪分支。
+    let remoteBranch: String
+}
+
 // MARK: - Requests
 
 extension RepositorySession {
@@ -22,5 +33,14 @@ extension RepositorySession {
         }
 
         onSyncRequest?(SyncDialogRequest(kind: kind, preselection: preselection))
+    }
+
+    /// 请求打开 Push Branch 对话框；本地分支拖到远端分支时经它预选两者。
+    func requestPushBranch(_ request: PushBranchRequest) {
+        guard canWrite else {
+            return
+        }
+
+        onPushBranchRequest?(request)
     }
 }

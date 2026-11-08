@@ -1,4 +1,3 @@
-import AppKit
 import SpookyKit
 
 // MARK: - BranchFlagDropAction
@@ -19,12 +18,19 @@ enum BranchFlagDropAction {
         }
     }
 
-    /// 只认本地分支来源与两个分组标题；已经置顶或全部已归档、或当前不可写时为 nil。
+    /// 只认本地分支来源与两个分组标题；按住 ⌥、已经置顶或全部已归档、或当前不可写时为 nil。
+    ///
+    /// - Parameter alternate: 是否按住 ⌥。
     @MainActor
-    init?(payload: RepositoryDragPayload, destination: RepositoryDropDestination, session: RepositorySession) {
+    init?(
+        payload: RepositoryDragPayload,
+        destination: RepositoryDropDestination,
+        alternate: Bool,
+        session: RepositorySession
+    ) {
         guard
             payload.kind == .local,
-            !NSEvent.modifierFlags.contains(.option),
+            !alternate,
             let snapshot = session.history.snapshot,
             let source = session.history.branches.first(where: { $0.id == payload.reference })
         else { return nil }

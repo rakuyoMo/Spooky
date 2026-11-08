@@ -424,6 +424,7 @@
 "sync.pushHead.help" = "Hace push de los nuevos commits de la rama HEAD local “%@” a la rama remota seleccionada.";
 "sync.pushHead" = "Hacer push de HEAD";
 "sync.pushBranch" = "Hacer push de la rama";
+"sync.pushBranch.help" = "Hace push de los nuevos commits de la rama local seleccionada a la rama remota seleccionada.";
 "sync.publish" = "Publicar rama";
 "sync.publish.help" = "Crea una rama en el remoto seleccionado.";
 "sync.merge" = "Fusionar";
@@ -1488,6 +1489,7 @@
 "remote.error.browser" = "El remoto no se puede abrir en un navegador.";
 "remote.error.browser.help" = "Solo los remotos con una URL HTTP(S), SSH o del protocolo git tienen página web. Las rutas locales y las URL file no.";
 "branch.dragTrack" = "Seguir";
+"branch.dragPublish" = "Publicar";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Ajustes del remoto (%@)";

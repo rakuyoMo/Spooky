@@ -221,6 +221,41 @@ extension RepositorySession {
         )
     }
 
+    /// Push Branch 对话框的推送：只把这个本地分支推到这个远端分支，普通推送，不设上游，
+    /// 不带标签、子模块与钩子选项；Git 照常拒绝非快进。
+    ///
+    /// - Parameters:
+    ///   - branch: 推送的本地分支，可以不是 HEAD 分支。
+    ///   - target: 目标远端跟踪分支。
+    /// - Returns: 是否已开始执行；本地分支不是本地分支、或目标不是已配置远端上的分支时为 false。
+    @discardableResult
+    func pushBranch(_ branch: RepositoryReference, to target: RepositoryReference) -> Bool {
+        guard branch.isLocal, let parts = remoteParts(of: target) else {
+            return false
+        }
+
+        let local = branch.name
+        let (remote, name) = parts
+
+        return performGit(
+            { runner, output in
+                _ = try await RepositorySync(runner: runner)
+                    .push(
+                        branch: local,
+                        remote: remote,
+                        destination: name,
+                        setUpstream: false,
+                        options: PushOptions(),
+                        lease: nil,
+                        onOutput: output
+                    )
+            },
+            title: AppLocalization.text("sync.push"),
+            target: .push(remote, refspec: "refs/heads/" + local + ":refs/heads/" + name),
+            undo: .irreversible
+        )
+    }
+
     /// 快速拉取：把指定的远端分支并入 HEAD；未指定时拉取 HEAD 的跟踪分支。
     func quickPull(from reference: RepositoryReference? = nil) {
         var remote: String? = nil

@@ -424,6 +424,7 @@
 "sync.pushHead.help" = "把本機 HEAD 分支 “%@” 的新提交推送到所選遠端分支。";
 "sync.pushHead" = "推送 HEAD";
 "sync.pushBranch" = "推送分支";
+"sync.pushBranch.help" = "把所選本機分支的新提交推送到所選遠端分支。";
 "sync.publish" = "發布分支";
 "sync.publish.help" = "在所選遠端建立分支。";
 "sync.merge" = "合併";
@@ -1488,6 +1489,7 @@
 "remote.error.browser" = "無法在瀏覽器中開啟這個遠端。";
 "remote.error.browser.help" = "只有 HTTP(S)、SSH 或 git 協定位址的遠端有網頁，本機路徑與 file 位址沒有。";
 "branch.dragTrack" = "追蹤";
+"branch.dragPublish" = "發佈";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "遠端設定（%@）";
