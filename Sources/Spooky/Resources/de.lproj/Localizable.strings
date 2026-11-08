@@ -419,7 +419,7 @@
 "sync.remote" = "Remote:";
 "sync.allRemotes" = "Alle Remotes abrufen";
 "sync.prune" = "Veraltete Remote-Branches bereinigen";
-"sync.prune.help" = "Entfernt lokale Tracking-Referenzen, die auf dem Remote gelöscht wurden.";
+"sync.prune.help" = "Entfernt lokale Referenzen, die von den Fetch-Refspecs des Remotes erfasst werden, dort aber nicht mehr existieren. Enthalten die Refspecs Tags, können auch lokale Tags entfernt werden.";
 "sync.allTags" = "Alle Tags abrufen";
 "sync.allTags.help" = "Bezieht alle Tags der ausgewählten Remotes mit ein.";
 "sync.rebase" = "Rebase statt Merge verwenden";

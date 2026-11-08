@@ -419,7 +419,7 @@
 "sync.remote" = "遠端：";
 "sync.allRemotes" = "擷取所有遠端";
 "sync.prune" = "清理已刪除的遠端分支";
-"sync.prune.help" = "移除遠端已不存在的本機追蹤引用。";
+"sync.prune.help" = "依遠端的擷取對應（refspec）刪除遠端已不存在的本機引用；對應包含標籤時，本機標籤也可能被刪除。";
 "sync.allTags" = "擷取所有標籤";
 "sync.allTags.help" = "一併擷取所選遠端的所有標籤。";
 "sync.rebase" = "使用重定基底拉取";

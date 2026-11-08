@@ -88,13 +88,17 @@ struct RepositoryOperationDialog: View {
     @AppStorage("cleanRefNames")
     private var cleanNames = true
 
-    /// 获取全部远端的默认选择。
+    /// 获取全部远端，跨仓库保存；没有保存值时不勾，入口预选的远端不改变它。
     @AppStorage("fetchAllRemotes")
-    private var allRemotes = true
+    private var allRemotes = false
 
-    /// 清理远端引用的默认选择。
+    /// 清理远端引用的偏好，跨仓库保存；没有保存值时勾选。
     @AppStorage("fetchPrune")
-    private var prune = false
+    private var savedPrune = true
+
+    /// 本次获取是否清理：打开时取保存的偏好，Prune 入口打开时勾选；只有用户切换勾选框时写回偏好。
+    @State
+    private var prune = true
 
     /// 获取全部标签是 Fetch 的附带选项。
     @AppStorage("fetchAllTags")
@@ -429,7 +433,15 @@ extension RepositoryOperationDialog {
             parentRows
 
         case .fetch:
-            option("sync.prune", value: $prune)
+            option(
+                "sync.prune",
+                value: Binding {
+                    prune
+                } set: {
+                    prune = $0
+                    savedPrune = $0
+                }
+            )
 
             option("sync.fetchSubmodules", value: $fetchSubmodules)
 
@@ -522,8 +534,8 @@ extension RepositoryOperationDialog {
             name = remoteBranchName(source)
 
         case .fetch:
-            if request.remote != nil { allRemotes = false }
-            if request.prune { prune = true }
+            // 入口预选的远端与 Prune 意图只作用于本次打开，不写回偏好
+            prune = request.prune || savedPrune
 
         case .merge, .pull:
             source = Self.sourcePreselection(for: request.kind, preselection: request.reference, in: session)

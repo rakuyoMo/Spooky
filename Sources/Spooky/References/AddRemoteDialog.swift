@@ -104,24 +104,13 @@ extension AddRemoteDialog {
         }
     }
 
-    /// 捕获表单值后开始添加；仓库忙碌或已切换时表单保持打开。
+    /// 开始添加，添加成功后随即获取这个远端；仓库忙碌或已切换时表单保持打开。
     private func submit() {
-        let name = name
-        let url = url
-
         guard session.repository == repository else {
             return
         }
 
-        let started = session.performGit(
-            { runner, output in
-                try await RepositoryRemotes(runner: runner).add(name: name, url: url, onOutput: output)
-            },
-            title: AppLocalization.text("remote.add"),
-            undo: .addingRemote(name)
-        )
-
-        if started {
+        if session.addRemote(name: name, url: url) {
             close()
         }
     }

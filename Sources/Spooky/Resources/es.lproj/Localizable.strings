@@ -419,7 +419,7 @@
 "sync.remote" = "Remoto:";
 "sync.allRemotes" = "Hacer fetch de todos los remotos";
 "sync.prune" = "Podar ramas remotas obsoletas";
-"sync.prune.help" = "Elimina las referencias de seguimiento locales que se han borrado en el remoto.";
+"sync.prune.help" = "Elimina las referencias locales cubiertas por los refspecs de fetch del remoto que ya no existen en él. Si los refspecs incluyen etiquetas, también pueden eliminarse etiquetas locales.";
 "sync.allTags" = "Hacer fetch de todas las etiquetas";
 "sync.allTags.help" = "Incluye todas las etiquetas de los remotos seleccionados.";
 "sync.rebase" = "Usar rebase en lugar de fusión";

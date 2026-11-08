@@ -229,14 +229,14 @@ extension RepositorySessionTests {
 
 extension RepositorySessionTests {
     /// 本测试专用的临时目录。
-    private func temporaryDirectory() throws -> URL {
+    func temporaryDirectory() throws -> URL {
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-sync-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         return directory
     }
 
     /// 本地仓库发布 `main` 到同目录的裸远端，并克隆出另一个工作区模拟别人推送。
-    private func makeSyncRepository(in directory: URL) async throws -> (local: GitRunner, other: GitRunner) {
+    func makeSyncRepository(in directory: URL) async throws -> (local: GitRunner, other: GitRunner) {
         let local = directory.appending(path: "local")
         try FileManager.default.createDirectory(at: local, withIntermediateDirectories: false)
 
@@ -266,7 +266,7 @@ extension RepositorySessionTests {
     }
 
     /// 打开仓库，等刷新与它带起的引用读取都结束。
-    private func openSession(_ runner: GitRunner) async throws -> RepositorySession {
+    func openSession(_ runner: GitRunner) async throws -> RepositorySession {
         let session = RepositorySession(makeRunner: { _ in runner })
         session.display(runner.location)
         session.refresh()
@@ -278,14 +278,14 @@ extension RepositorySessionTests {
     }
 
     /// 本地仓库在 Activity 的 Remote 页上的记录，新的在前。
-    private func remoteRecords(_ runner: GitRunner) -> [RepositoryActivity] {
+    func remoteRecords(_ runner: GitRunner) -> [RepositoryActivity] {
         RepositoryActivities.shared.items.filter {
             $0.repository == runner.location && $0.kind == .remote
         }
     }
 
     /// 另一个克隆提交并推送，返回推上去的提交。
-    private func commitAndPush(_ other: GitRunner, message: String) async throws -> String {
+    func commitAndPush(_ other: GitRunner, message: String) async throws -> String {
         _ = try await other.run(["commit", "--allow-empty", "-m", message])
         _ = try await other.run(["push", "-q", "origin", "HEAD:main"])
         return try await RepositoryReferences(runner: other).resolve("HEAD")

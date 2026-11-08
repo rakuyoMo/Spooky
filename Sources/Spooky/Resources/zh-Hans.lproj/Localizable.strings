@@ -419,7 +419,7 @@
 "sync.remote" = "远端：";
 "sync.allRemotes" = "获取全部远端";
 "sync.prune" = "清理已删除的远端分支";
-"sync.prune.help" = "删除远端已不存在的本地跟踪引用。";
+"sync.prune.help" = "按远端的获取映射（refspec）删除远端已不存在的本地引用；映射包含标签时，本地标签也可能被删除。";
 "sync.allTags" = "获取全部标签";
 "sync.allTags.help" = "同时获取所选远端的全部标签。";
 "sync.rebase" = "使用变基拉取";

@@ -419,7 +419,7 @@
 "sync.remote" = "リモート：";
 "sync.allRemotes" = "すべてのリモートを取得";
 "sync.prune" = "削除済みリモートブランチを整理";
-"sync.prune.help" = "リモートから削除された追跡参照を除去します。";
+"sync.prune.help" = "リモートのフェッチ refspec に含まれ、リモートに存在しなくなったローカル参照を削除します。refspec にタグが含まれる場合は、ローカルタグも削除されることがあります。";
 "sync.allTags" = "すべてのタグを取得";
 "sync.allTags.help" = "選択したリモートのすべてのタグを取得します。";
 "sync.rebase" = "マージの代わりにリベース";

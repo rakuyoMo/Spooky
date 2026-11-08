@@ -88,20 +88,9 @@ extension RepositoryWindowController {
     @objc
     func fetch() { presentRepositoryAction(RepositoryActionRequest(kind: .fetch)) }
 
-    /// 全部获取使用持久化的清理与标签选项。
+    /// 全部获取不打开对话框，清理与递归子模块读获取对话框保存的偏好。
     @objc
-    func fetchAll() {
-        let prune = UserDefaults.standard.bool(forKey: "fetchPrune")
-        let tags = UserDefaults.standard.bool(forKey: "fetchAllTags")
-        session.performGit(
-            { runner, output in
-                _ = try await RepositorySync(runner: runner)
-                    .fetch(prune: prune, allTags: tags, onRemote: ActivityRecording.fetching, onOutput: output)
-            },
-            title: AppLocalization.text("sync.fetch"),
-            target: .fetch(nil)
-        )
-    }
+    func fetchAll() { session.fetchAll() }
 
     /// 拉取表单明确选择合并或变基。
     @objc
