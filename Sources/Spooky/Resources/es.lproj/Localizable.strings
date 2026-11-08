@@ -1533,13 +1533,14 @@
 "review.update.clean" = "Sin conflictos con la rama padre";
 "review.archive.title" = "Archivar ramas";
 "review.archive.help" = "Selecciona las ramas que quieres ocultar de la lista. Las ramas archivadas pasan a “Ramas archivadas” en la barra lateral y siguen disponibles allí.";
-"review.archive.automaticHelp" = "Estas ramas no se han actualizado recientemente o su pull request o merge request ya se fusionó, y se archivarán automáticamente. Desmarca las que quieras conservar.";
+"review.archive.automaticHelp" = "Estas ramas no se han actualizado recientemente o su pull request o merge request ya se fusionó, y se archivarán automáticamente. Marca las que quieras archivar.";
 "review.archive.submit" = "Archivar";
 "review.archive.empty" = "No hay ramas que archivar";
 "review.archive.emptyHelp" = "Solo se sugiere archivar las ramas que no se han actualizado recientemente o cuya pull request o merge request ya se fusionó.";
 "review.archive.auto" = "Archivar ramas automáticamente";
 "review.archive.autoHelp" = "Una vez al día se muestran las ramas obsoletas para que confirmes antes de archivarlas.";
 "review.archive.count" = "Se pueden archivar %ld ramas";
+"review.archive.selection" = "Seleccionadas: %1$ld de %2$ld";
 "review.archived.one" = "1 rama archivada";
 "review.archived.many" = "%ld ramas archivadas";
 "review.archived.undo" = "Deshacer";
@@ -2474,6 +2475,8 @@
 
 "pr.title" = "Pull requests";
 "mr.title" = "Merge requests";
+"pr.archive.merged" = "Pull request fusionada";
+"mr.archive.merged" = "Merge request fusionada";
 "pr.show.menu" = "Mostrar pull requests";
 "mr.show.menu" = "Mostrar merge requests";
 "pr.create.menu" = "Crear pull request…";

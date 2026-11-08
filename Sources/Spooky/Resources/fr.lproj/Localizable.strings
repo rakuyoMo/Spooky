@@ -1533,13 +1533,14 @@
 "review.update.clean" = "Aucun conflit avec la branche parente";
 "review.archive.title" = "Archiver des branches";
 "review.archive.help" = "Sélectionnez les branches à masquer de la liste. Les branches archivées passent dans « Branches archivées » dans la barre latérale et y restent disponibles.";
-"review.archive.automaticHelp" = "Ces branches n’ont pas été mises à jour récemment ou leur pull request ou merge request a été fusionnée, et vont être archivées automatiquement. Décochez celles à conserver.";
+"review.archive.automaticHelp" = "Ces branches n’ont pas été mises à jour récemment ou leur pull request ou merge request a été fusionnée, et vont être archivées automatiquement. Cochez celles à archiver.";
 "review.archive.submit" = "Archiver";
 "review.archive.empty" = "Aucune branche à archiver";
 "review.archive.emptyHelp" = "Seules les branches non mises à jour récemment ou dont la pull request ou merge request a été fusionnée sont proposées à l’archivage.";
 "review.archive.auto" = "Archiver automatiquement les branches";
 "review.archive.autoHelp" = "Une fois par jour, les branches obsolètes sont listées pour confirmation avant d’être archivées.";
 "review.archive.count" = "%ld branches peuvent être archivées";
+"review.archive.selection" = "Sélection : %1$ld sur %2$ld";
 "review.archived.one" = "1 branche archivée";
 "review.archived.many" = "%ld branches archivées";
 "review.archived.undo" = "Annuler";
@@ -2474,6 +2475,8 @@
 
 "pr.title" = "Pull requests";
 "mr.title" = "Merge requests";
+"pr.archive.merged" = "Pull request fusionnée";
+"mr.archive.merged" = "Merge request fusionnée";
 "pr.show.menu" = "Afficher les pull requests";
 "mr.show.menu" = "Afficher les merge requests";
 "pr.create.menu" = "Créer une pull request…";

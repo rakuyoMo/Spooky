@@ -1533,13 +1533,14 @@
 "review.update.clean" = "与父分支没有冲突";
 "review.archive.title" = "归档分支";
 "review.archive.help" = "选择要从分支列表中隐藏的分支。归档的分支移到侧边栏的 “已归档分支”，仍可在那里使用。";
-"review.archive.automaticHelp" = "这些分支长期没有更新，或者 Pull Request 或 Merge Request 已合并，即将自动归档。取消勾选要保留的分支。";
+"review.archive.automaticHelp" = "这些分支长期没有更新，或者 Pull Request 或 Merge Request 已合并，即将自动归档。勾选要归档的分支。";
 "review.archive.submit" = "归档";
 "review.archive.empty" = "没有可归档的分支";
 "review.archive.emptyHelp" = "只建议归档长期没有更新，或者 Pull Request 或 Merge Request 已合并的分支。";
 "review.archive.auto" = "自动归档分支";
 "review.archive.autoHelp" = "每天一次列出过时的分支，经你确认后再归档。";
 "review.archive.count" = "%ld 个分支可以归档";
+"review.archive.selection" = "已选 %1$ld 个，共 %2$ld 个";
 "review.archived.one" = "已归档 1 个分支";
 "review.archived.many" = "已归档 %ld 个分支";
 "review.archived.undo" = "撤销";
@@ -2474,6 +2475,8 @@
 
 "pr.title" = "Pull Request";
 "mr.title" = "Merge Request";
+"pr.archive.merged" = "Pull Request 已合并";
+"mr.archive.merged" = "Merge Request 已合并";
 "pr.show.menu" = "显示 Pull Request";
 "mr.show.menu" = "显示 Merge Request";
 "pr.create.menu" = "新建 Pull Request…";

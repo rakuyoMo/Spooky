@@ -1533,13 +1533,14 @@
 "review.update.clean" = "Keine Konflikte mit dem übergeordneten Branch";
 "review.archive.title" = "Branches archivieren";
 "review.archive.help" = "Wähle Branches, die in der Branch-Liste ausgeblendet werden. Archivierte Branches stehen in der Seitenleiste unter „Archivierte Branches“ weiter zur Verfügung.";
-"review.archive.automaticHelp" = "Diese Branches wurden länger nicht aktualisiert oder ihr Pull Request bzw. Merge Request wurde gemergt; sie werden automatisch archiviert. Entferne das Häkchen bei Branches, die du behalten möchtest.";
+"review.archive.automaticHelp" = "Diese Branches wurden länger nicht aktualisiert oder ihr Pull Request bzw. Merge Request wurde gemergt; sie werden automatisch archiviert. Setze ein Häkchen bei den Branches, die du archivieren möchtest.";
 "review.archive.submit" = "Archivieren";
 "review.archive.empty" = "Keine Branches zum Archivieren";
 "review.archive.emptyHelp" = "Zum Archivieren werden nur Branches vorgeschlagen, die länger nicht aktualisiert wurden oder deren Pull Request bzw. Merge Request gemergt wurde.";
 "review.archive.auto" = "Branches automatisch archivieren";
 "review.archive.autoHelp" = "Einmal täglich werden veraltete Branches zur Bestätigung aufgelistet, bevor sie archiviert werden.";
 "review.archive.count" = "%ld Branches können archiviert werden";
+"review.archive.selection" = "%1$ld von %2$ld ausgewählt";
 "review.archived.one" = "1 Branch archiviert";
 "review.archived.many" = "%ld Branches archiviert";
 "review.archived.undo" = "Widerrufen";
@@ -2474,6 +2475,8 @@
 
 "pr.title" = "Pull Requests";
 "mr.title" = "Merge Requests";
+"pr.archive.merged" = "Pull Request gemergt";
+"mr.archive.merged" = "Merge Request gemergt";
 "pr.show.menu" = "Pull Requests anzeigen";
 "mr.show.menu" = "Merge Requests anzeigen";
 "pr.create.menu" = "Pull Request erstellen…";

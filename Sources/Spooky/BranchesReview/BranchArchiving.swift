@@ -11,16 +11,11 @@ enum BranchArchiving {
     /// 自动归档的间隔：一天一次。
     static let interval: TimeInterval = 24 * 60 * 60
 
-    #warning(
-        "TODO: 置顶分支与当前 HEAD 分支不在归档建议里是推断的；核实方式：让一个置顶分支和当前分支都满足请求已合并或陈旧，打开批量归档对话框看它们是否出现；影响归档建议、底栏的可归档数量与自动归档"
-    )
-
-    /// 建议归档的本地分支：请求已在托管服务上合并或陈旧，且不是基准分支、当前分支、置顶或已归档的分支。
+    /// 建议归档的本地分支：请求已在托管服务上合并或陈旧，且不是基准分支、置顶或已归档的分支；当前检出的分支同样可以建议。
     ///
     /// - Parameters:
     ///   - snapshot: 引用快照，提供分支与附加信息。
     ///   - conditions: 分支的整理状态。
-    ///   - head: 当前分支名；分离或未出生时为 nil。
     ///   - staleMonths: 陈旧阈值的月数。
     ///   - automatic: 自动归档时还要跳过勾了 “自动归档时跳过” 的分支。
     ///   - mergedOnServer: 请求已在托管服务上合并、此后没有新提交的分支。
@@ -29,7 +24,6 @@ enum BranchArchiving {
     static func candidates(
         in snapshot: ReferenceSnapshot,
         conditions: [String: BranchCondition],
-        head: String?,
         staleMonths: Int,
         automatic: Bool,
         mergedOnServer: Set<String> = [],
@@ -41,7 +35,6 @@ enum BranchArchiving {
 
                 guard
                     reference.isLocal,
-                    reference.name != head,
                     !metadata.isArchived,
                     !metadata.isPinned,
                     !(automatic && metadata.skipsAutoArchive),

@@ -1533,13 +1533,14 @@
 "review.update.clean" = "與父分支沒有衝突";
 "review.archive.title" = "封存分支";
 "review.archive.help" = "選擇要從分支列表中隱藏的分支。封存的分支移到側邊欄的 “已封存分支”，仍可在那裡使用。";
-"review.archive.automaticHelp" = "這些分支長期沒有更新，或者 Pull Request 或 Merge Request 已合併，即將自動封存。取消勾選要保留的分支。";
+"review.archive.automaticHelp" = "這些分支長期沒有更新，或者 Pull Request 或 Merge Request 已合併，即將自動封存。勾選要封存的分支。";
 "review.archive.submit" = "封存";
 "review.archive.empty" = "沒有可封存的分支";
 "review.archive.emptyHelp" = "只建議封存長期沒有更新，或者 Pull Request 或 Merge Request 已合併的分支。";
 "review.archive.auto" = "自動封存分支";
 "review.archive.autoHelp" = "每天一次列出過時的分支，經你確認後再封存。";
 "review.archive.count" = "%ld 個分支可以封存";
+"review.archive.selection" = "已選 %1$ld 個，共 %2$ld 個";
 "review.archived.one" = "已封存 1 個分支";
 "review.archived.many" = "已封存 %ld 個分支";
 "review.archived.undo" = "還原";
@@ -2474,6 +2475,8 @@
 
 "pr.title" = "Pull Request";
 "mr.title" = "Merge Request";
+"pr.archive.merged" = "Pull Request 已合併";
+"mr.archive.merged" = "Merge Request 已合併";
 "pr.show.menu" = "顯示 Pull Request";
 "mr.show.menu" = "顯示 Merge Request";
 "pr.create.menu" = "新增 Pull Request…";

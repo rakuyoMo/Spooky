@@ -1533,13 +1533,14 @@
 "review.update.clean" = "상위 브랜치와 충돌 없음";
 "review.archive.title" = "브랜치 보관";
 "review.archive.help" = "브랜치 목록에서 숨길 브랜치를 선택합니다. 보관한 브랜치는 사이드바의 “보관된 브랜치”로 이동하며 계속 사용할 수 있습니다.";
-"review.archive.automaticHelp" = "이 브랜치들은 오랫동안 업데이트되지 않았거나 풀 리퀘스트 또는 머지 리퀘스트가 병합되어 자동으로 보관됩니다. 유지할 브랜치는 선택을 해제하십시오.";
+"review.archive.automaticHelp" = "이 브랜치들은 오랫동안 업데이트되지 않았거나 풀 리퀘스트 또는 머지 리퀘스트가 병합되어 자동으로 보관됩니다. 보관할 브랜치를 선택하십시오.";
 "review.archive.submit" = "보관";
 "review.archive.empty" = "보관할 브랜치 없음";
 "review.archive.emptyHelp" = "오랫동안 업데이트되지 않았거나 풀 리퀘스트 또는 머지 리퀘스트가 병합된 브랜치만 보관을 권장합니다.";
 "review.archive.auto" = "브랜치 자동 보관";
 "review.archive.autoHelp" = "하루에 한 번 오래된 브랜치를 나열하고 확인을 받은 뒤 보관합니다.";
 "review.archive.count" = "보관할 수 있는 브랜치 %ld개";
+"review.archive.selection" = "%2$ld개 중 %1$ld개 선택됨";
 "review.archived.one" = "브랜치 1개 보관함";
 "review.archived.many" = "브랜치 %ld개 보관함";
 "review.archived.undo" = "실행 취소";
@@ -2474,6 +2475,8 @@
 
 "pr.title" = "풀 리퀘스트";
 "mr.title" = "머지 리퀘스트";
+"pr.archive.merged" = "풀 리퀘스트 병합됨";
+"mr.archive.merged" = "머지 리퀘스트 병합됨";
 "pr.show.menu" = "풀 리퀘스트 보기";
 "mr.show.menu" = "머지 리퀘스트 보기";
 "pr.create.menu" = "풀 리퀘스트 만들기…";

@@ -1533,13 +1533,14 @@
 "review.update.clean" = "No conflicts with parent branch";
 "review.archive.title" = "Archive Branches";
 "review.archive.help" = "Select branches to hide from the main branch list. Archived branches move to Archived Branches in the sidebar and stay available there.";
-"review.archive.automaticHelp" = "These branches haven't been updated recently or their pull request or merge request has been merged, and are about to be archived automatically. Uncheck any branch you want to keep.";
+"review.archive.automaticHelp" = "These branches haven't been updated recently or their pull request or merge request has been merged, and are about to be archived automatically. Select the branches you want to archive.";
 "review.archive.submit" = "Archive";
 "review.archive.empty" = "No Branches to Archive";
 "review.archive.emptyHelp" = "Branches are only suggested for archiving when they haven't been updated recently or their pull request or merge request has been merged.";
 "review.archive.auto" = "Automatically archive branches";
 "review.archive.autoHelp" = "Once a day, obsolete branches are listed for you to confirm before they're archived.";
 "review.archive.count" = "%ld branches can be archived";
+"review.archive.selection" = "%1$ld of %2$ld selected";
 "review.archived.one" = "1 branch archived";
 "review.archived.many" = "%ld branches archived";
 "review.archived.undo" = "Undo";
@@ -2474,6 +2475,8 @@
 
 "pr.title" = "Pull Requests";
 "mr.title" = "Merge Requests";
+"pr.archive.merged" = "Pull Request Merged";
+"mr.archive.merged" = "Merge Request Merged";
 "pr.show.menu" = "Show Pull Requests";
 "mr.show.menu" = "Show Merge Requests";
 "pr.create.menu" = "Create Pull Request…";

@@ -1533,13 +1533,14 @@
 "review.update.clean" = "親ブランチとのコンフリクトはありません";
 "review.archive.title" = "ブランチをアーカイブ";
 "review.archive.help" = "ブランチ一覧から隠すブランチを選択します。アーカイブしたブランチはサイドバーの「アーカイブ済みブランチ」に移り、そこから引き続き使えます。";
-"review.archive.automaticHelp" = "これらのブランチはしばらく更新されていないか、プルリクエストまたはマージリクエストがマージ済みのため、自動でアーカイブされます。残したいブランチのチェックを外してください。";
+"review.archive.automaticHelp" = "これらのブランチはしばらく更新されていないか、プルリクエストまたはマージリクエストがマージ済みのため、自動でアーカイブされます。アーカイブするブランチにチェックを入れてください。";
 "review.archive.submit" = "アーカイブ";
 "review.archive.empty" = "アーカイブするブランチはありません";
 "review.archive.emptyHelp" = "アーカイブを勧めるのは、しばらく更新されていないか、プルリクエストまたはマージリクエストがマージ済みのブランチだけです。";
 "review.archive.auto" = "ブランチを自動でアーカイブ";
 "review.archive.autoHelp" = "1 日 1 回、不要になったブランチを一覧表示し、確認してからアーカイブします。";
 "review.archive.count" = "%ld 個のブランチをアーカイブできます";
+"review.archive.selection" = "%2$ld 件中 %1$ld 件を選択";
 "review.archived.one" = "1 個のブランチをアーカイブしました";
 "review.archived.many" = "%ld 個のブランチをアーカイブしました";
 "review.archived.undo" = "取り消す";
@@ -2474,6 +2475,8 @@
 
 "pr.title" = "プルリクエスト";
 "mr.title" = "マージリクエスト";
+"pr.archive.merged" = "プルリクエストがマージ済み";
+"mr.archive.merged" = "マージリクエストがマージ済み";
 "pr.show.menu" = "プルリクエストを表示";
 "mr.show.menu" = "マージリクエストを表示";
 "pr.create.menu" = "プルリクエストを作成…";
