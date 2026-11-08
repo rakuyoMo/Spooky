@@ -171,8 +171,13 @@ extension RepositorySessionTests {
     }
 
     /// 打开仓库，等刷新与它带起的引用读取都结束。
-    func openSession(_ runner: GitRunner) async throws -> RepositorySession {
-        let session = RepositorySession(makeRunner: { _ in runner })
+    ///
+    /// - Parameter activities: 记录写入的列表；核对 Repository 页的记录时传独立的一份，免得被并行测试的记录挤出上限。
+    func openSession(
+        _ runner: GitRunner,
+        activities: RepositoryActivities = .shared
+    ) async throws -> RepositorySession {
+        let session = RepositorySession(makeRunner: { _ in runner }, activities: activities)
         session.display(runner.location)
         session.refresh()
         await session.waitForRefresh()
@@ -183,8 +188,8 @@ extension RepositorySessionTests {
     }
 
     /// 本地仓库在 Activity 的 Remote 页上的记录，新的在前。
-    func remoteRecords(_ runner: GitRunner) -> [RepositoryActivity] {
-        RepositoryActivities.shared.items.filter {
+    func remoteRecords(_ runner: GitRunner, in activities: RepositoryActivities = .shared) -> [RepositoryActivity] {
+        activities.items.filter {
             $0.repository == runner.location && $0.kind == .remote
         }
     }

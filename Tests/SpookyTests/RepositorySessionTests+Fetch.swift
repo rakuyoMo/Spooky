@@ -73,7 +73,8 @@ extension RepositorySessionTests {
         defer { try? FileManager.default.removeItem(at: directory) }
 
         let (runner, other) = try await makeSyncRepository(in: directory)
-        let session = try await openSession(runner)
+        let activities = RepositoryActivities()
+        let session = try await openSession(runner, activities: activities)
         defer { session.close() }
 
         var failures: [AppFailure] = []
@@ -84,10 +85,12 @@ extension RepositorySessionTests {
         _ = try await other.run(["init", "-q", "--bare", mirror])
         _ = try await other.run(["push", "-q", mirror, "HEAD:main"])
 
-        try await addRemote("mirror", url: mirror, to: session, runner: runner)
+        try await addRemote("mirror", url: mirror, to: session, runner: runner, activities: activities)
 
         #expect(try await references(runner).contains("refs/remotes/mirror/main"))
-        #expect(remoteRecords(runner).first { $0.target == .fetch("mirror") }?.state == "activity.finished")
+        let mirrorFetch = remoteRecords(runner, in: activities).first { $0.target == .fetch("mirror") }
+
+        #expect(mirrorFetch?.state == "activity.finished")
         #expect(failures.isEmpty)
 
         // 远端的引用读得到，但缺了提交的树对象：添加成功、获取失败。空树是 Git 内置的对象，提交里须有文件
@@ -105,10 +108,10 @@ extension RepositorySessionTests {
             atPath: broken + "/objects/" + tree.prefix(2) + "/" + tree.dropFirst(2)
         )
 
-        try await addRemote("broken", url: broken, to: session, runner: runner)
+        try await addRemote("broken", url: broken, to: session, runner: runner, activities: activities)
 
         let remotes = String(decoding: try await runner.run(["remote"]), as: UTF8.self)
-        let fetch = remoteRecords(runner).first
+        let fetch = remoteRecords(runner, in: activities).first
 
         #expect(remotes.split(separator: "\n") == ["broken", "mirror", "origin"])
         #expect(fetch?.target == .fetch("broken"))
@@ -125,14 +128,15 @@ extension RepositorySessionTests {
         _ name: String,
         url: String,
         to session: RepositorySession,
-        runner: GitRunner
+        runner: GitRunner,
+        activities: RepositoryActivities
     ) async throws {
         let adding = AppLocalization.text("remote.add")
 
         #expect(session.addRemote(name: name, url: url))
         await session.writeTask?.value
 
-        let added = RepositoryActivities.shared.items.first {
+        let added = activities.items.first {
             $0.repository == runner.location && $0.title == adding
         }
 
@@ -141,7 +145,7 @@ extension RepositorySessionTests {
 
         // 获取在添加的写操作结束后才开始
         await until {
-            remoteRecords(runner).contains { $0.target == .fetch(name) && $0.ended != nil }
+            remoteRecords(runner, in: activities).contains { $0.target == .fetch(name) && $0.ended != nil }
         }
     }
 
