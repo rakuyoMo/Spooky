@@ -60,8 +60,8 @@ struct OperationDialogTests {
     }
 
     /// 同一个仓库上依次打开推送、新建与跟踪分支、合并、发布、拉取、同步与安全强推的对话框，读出标题、主按钮、行距与下拉宽度，
-    /// 以及新建与跟踪分支的检出默认值。
-    @Test("标题、主按钮、行距、下拉宽度与检出默认值", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    /// 新建与跟踪分支的检出默认值，以及合并预览的冲突说明换行。
+    @Test("标题、主按钮、行距、下拉宽度、检出默认值与合并预览换行", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func layout() async throws {
         let fixture = try await OperationWiringTests.makeFixture()
         defer { fixture.close() }
@@ -76,6 +76,7 @@ struct OperationDialogTests {
         try await Self.expectBranchForms(in: fixture.session)
         try await Self.expectOptions(in: fixture.session)
         try await Self.expectSyncDialogs(in: fixture.session)
+        try await Self.expectMergePreviewWraps(in: fixture)
     }
 }
 
@@ -214,6 +215,33 @@ extension OperationDialogTests {
         for popUp in popUps {
             #expect(abs(popUp.frame.width - 320) <= 1)
         }
+    }
+
+    /// 合并预览的冲突说明在对话框里放不下一行时换行，HEAD 分支名与冲突数不被截掉。
+    private static func expectMergePreviewWraps(in fixture: OperationWiringTests.Fixture) async throws {
+        let runner = fixture.runner
+
+        // 从 A 起一个分支，新增与 main 同名而内容不同的 B.txt，并入 main 时两边都新增而冲突
+        _ = try await runner.run(["checkout", "-q", "-b", "clash", try #require(fixture.ids["A"])])
+        try Data("clash\n".utf8).write(to: fixture.directory.appending(path: "B.txt"))
+        _ = try await runner.run(["add", "--all"])
+        _ = try await runner.run(["commit", "-q", "-m", "Clash"])
+        _ = try await runner.run(["checkout", "-q", "main"])
+
+        let message = AppLocalization.text("merge.conflicts.one", "main")
+        let merge = await AccessibilityProbe.elements(
+            until: { elements in elements.contains { $0.value == message } }
+        ) {
+            RepositoryOperationDialog(
+                session: fixture.session,
+                request: RepositoryActionRequest(kind: .merge, reference: "refs/heads/clash"),
+                cancel: { },
+                submit: { _, _, _, _ in false }
+            )
+        }
+
+        // 12 pt 的说明至少占两行
+        #expect(try text(message, in: merge).frame.height >= 2 * 12)
     }
 }
 

@@ -26,7 +26,7 @@ struct MergeabilityPreview: View {
     @State
     private var checking = false
 
-    /// 一行状态：18 pt 图标加 4 pt 间距再加 12 pt 说明文字，冲突的文件列在提示里。
+    /// 状态：18 pt 图标加 4 pt 间距再加 12 pt 说明文字，说明放不下时换行；冲突的文件列在提示里。
     var body: some View {
         let message = preview.flatMap { result in
             Self.message(for: result, showsCleanResults: showsCleanResults, head: headName)
@@ -47,6 +47,9 @@ struct MergeabilityPreview: View {
                     status(of: preview, message: message)
                 }
             }
+
+            // 说明里有 HEAD 分支名与冲突数，放不下时换行，不截断
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.top, visible ? 12 : 0)
             .padding(.leading, inputColumn - 20 - 20)
             .frame(maxWidth: .infinity, alignment: .leading)
