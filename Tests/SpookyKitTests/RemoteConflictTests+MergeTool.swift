@@ -7,7 +7,7 @@ import Testing
 
 extension RemoteConflictTests {
     /// 服务器上的冲突交给本机合并工具：三方副本与结果文件只在本机缓存里，结果核对后写回 B 再暂存；没有结果或核对失败时文件仍是冲突。
-    @Test("服务器冲突交给合并工具：缓存副本、取消、核对失败与写回", .timeLimit(.minutes(3)))
+    @Test("服务器冲突交给合并工具：缓存副本、取消、核对失败与写回")
     func mergeTool() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

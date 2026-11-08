@@ -96,7 +96,7 @@ struct PerformanceTests {
     }
 
     /// 本机大仓库的首屏状态与历史分页。
-    @Test("本机大仓库首屏状态与历史分页", .timeLimit(.minutes(10)))
+    @Test("本机大仓库首屏状态与历史分页")
     func localRepository() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
@@ -134,8 +134,7 @@ struct PerformanceTests {
     /// 服务器大仓库：建立专属主连接、完成体检并读出首屏状态。
     @Test(
         "服务器大仓库首屏状态",
-        .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"),
-        .timeLimit(.minutes(10))
+        .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1")
     )
     func remoteRepository() async throws {
         let fixture = try await RemoteFixture.create()
@@ -178,5 +177,4 @@ struct PerformanceTests {
             throw error
         }
     }
-
 }

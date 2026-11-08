@@ -32,8 +32,8 @@ struct DiffLineSelectionTests {
         return selection
     }
 
-    /// 单击和提示共用一个单位，取消清空起点，上下文不改变已有状态。
-    @Test("单击、提示与范围起点")
+    /// 单击和提示共用一个单位，取消清空起点，上下文不改变已有状态；Shift 无起点时依次采用已选末行或块首，只添加并保留原起点；块间状态完全独立。
+    @Test("单击、Shift 范围选择与独立块")
     func clicking() throws {
         let model = try Self.model()
         #expect(model.rows == [nil, 1, 1, 2, 2, nil, 4, 5, nil])
@@ -47,83 +47,81 @@ struct DiffLineSelectionTests {
         #expect(model.selected.isEmpty && model.anchor == nil && model.publishedCount == 0)
         model.activate(at: 4)
         #expect(model.selected == [2] && model.anchor == 4 && model.publishedCount == 1)
-    }
 
-    /// 无起点时依次采用已选末行或块首，范围选择只添加并保留原起点。
-    @Test("Shift 范围选择与后备起点")
-    func extending() throws {
-        let model = try Self.model()
-        model.activate(at: 6, extending: true)
-        #expect(model.selected == [1, 2, 4] && model.anchor == 0)
-        model.activate(at: 7, extending: true)
-        #expect(model.selected == [1, 2, 4, 5] && model.anchor == 0)
-        model.clear()
-        model.activate(at: 1)
-        model.activate(at: 3)
-        model.activate(at: 3)
-        #expect(model.selected == [1] && model.anchor == nil)
-        model.activate(at: 7, extending: true)
-        #expect(model.selected == [1, 2, 4, 5] && model.anchor == 2)
-    }
+        // 没有起点时以块首为起点扩选
+        let extending = try Self.model()
+        extending.activate(at: 6, extending: true)
+        #expect(extending.selected == [1, 2, 4] && extending.anchor == 0)
+        extending.activate(at: 7, extending: true)
+        #expect(extending.selected == [1, 2, 4, 5] && extending.anchor == 0)
 
-    /// 拖动方向在按下时锁定，回拖不恢复先前累计修改。
-    @Test("拖动累计增选和取消", arguments: [false, true])
-    func dragging(removing: Bool) throws {
-        let model = try Self.model()
-        if removing { model.activate(at: 7, extending: true) }
-        let published = model.publishedCount
-        model.begin(at: 1, extending: false)
-        model.drag(to: 7)
-        model.drag(to: 2)
-        #expect(model.selected == (removing ? [] : [1, 2, 4, 5]))
-        #expect(model.publishedCount == published)
-        model.end()
-        #expect(model.publishedCount == (removing ? 0 : 4))
-    }
+        // 取消起点后以已选末行为起点
+        extending.clear()
+        extending.activate(at: 1)
+        extending.activate(at: 3)
+        extending.activate(at: 3)
+        #expect(extending.selected == [1] && extending.anchor == nil)
+        extending.activate(at: 7, extending: true)
+        #expect(extending.selected == [1, 2, 4, 5] && extending.anchor == 2)
 
-    /// 从上下文起拖跨越两侧时，始终以最初按下位置取范围。
-    @Test("上下文起拖保留初始位置")
-    func contextDrag() throws {
-        let model = try Self.model()
-        model.begin(at: 5, extending: false)
-        model.drag(to: 7)
-        #expect(model.selected == [4, 5])
-        model.drag(to: 1)
-        #expect(model.selected == [1, 2, 4, 5])
-        model.drag(to: 100)
-        #expect(model.selected == [1, 2, 4, 5])
-        model.end()
-        #expect(model.publishedCount == 4)
-    }
+        // 另一块不受影响；上下文的无换行提示没有可选身份
+        #expect(try Self.model().selected.isEmpty)
 
-    /// Shift 按下先扩选，首次拖过已选行后锁定取消方向，回拖仍以最初位置为准。
-    @Test("Shift 起拖与回拖")
-    func shiftDrag() throws {
-        let model = try Self.model()
-        model.begin(at: 3, extending: true)
-        #expect(model.selected == [1, 2] && model.publishedCount == 0)
-        model.drag(to: 7)
-        #expect(model.selected == [1])
-        model.drag(to: 1)
-        #expect(model.selected.isEmpty)
-        model.end()
-        #expect(model.publishedCount == 0)
-    }
-
-    /// 上下文的无换行提示没有可选身份，块间状态完全独立。
-    @Test("上下文提示与独立块")
-    func boundaries() throws {
-        let first = try Self.model()
-        let second = try Self.model()
-        first.activate(at: 2)
-        #expect(second.selected.isEmpty && second.anchor == nil)
         let context = DiffLineSelection()
         context.bind(try DiffTextLayoutTests.hunk("@@ -1 +1 @@\n same\n\\ No newline at end of file\n"))
         context.activate(at: 1, extending: true)
         #expect(context.rows == [nil, nil] && context.selected.isEmpty)
-        first.begin(at: 3, extending: false)
-        first.cancelDrag()
-        first.drag(to: 7)
-        #expect(first.selected == [1, 2])
+    }
+
+    /// 拖动方向在按下时锁定，回拖不恢复先前累计修改；上下文或 Shift 起拖时始终以最初按下位置取范围。
+    @Test("拖动累计增选、取消与起拖位置")
+    func dragging() throws {
+        for removing in [false, true] {
+            let model = try Self.model()
+
+            if removing {
+                model.activate(at: 7, extending: true)
+            }
+
+            let published = model.publishedCount
+            model.begin(at: 1, extending: false)
+            model.drag(to: 7)
+            model.drag(to: 2)
+            #expect(model.selected == (removing ? [] : [1, 2, 4, 5]))
+            #expect(model.publishedCount == published)
+            model.end()
+            #expect(model.publishedCount == (removing ? 0 : 4))
+        }
+
+        // 从上下文起拖跨越两侧
+        let context = try Self.model()
+        context.begin(at: 5, extending: false)
+        context.drag(to: 7)
+        #expect(context.selected == [4, 5])
+        context.drag(to: 1)
+        #expect(context.selected == [1, 2, 4, 5])
+        context.drag(to: 100)
+        #expect(context.selected == [1, 2, 4, 5])
+        context.end()
+        #expect(context.publishedCount == 4)
+
+        // Shift 按下先扩选，首次拖过已选行后锁定取消方向
+        let shift = try Self.model()
+        shift.begin(at: 3, extending: true)
+        #expect(shift.selected == [1, 2] && shift.publishedCount == 0)
+        shift.drag(to: 7)
+        #expect(shift.selected == [1])
+        shift.drag(to: 1)
+        #expect(shift.selected.isEmpty)
+        shift.end()
+        #expect(shift.publishedCount == 0)
+
+        // 取消的拖动不再改变选区
+        let cancelled = try Self.model()
+        cancelled.activate(at: 2)
+        cancelled.begin(at: 3, extending: false)
+        cancelled.cancelDrag()
+        cancelled.drag(to: 7)
+        #expect(cancelled.selected == [1, 2])
     }
 }

@@ -97,8 +97,14 @@ struct RemoteUndoTests {
 
         try await remotes.add(name: "origin", url: bare)
         try await remotes.add(name: "fork", url: bare)
-        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await remotes.undoRename("origin", to: "fork") }
-        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await remotes.restoreSettings([], of: "missing") }
+
+        await #expect(throws: RepositoryUndoError.repositoryChanged) {
+            try await remotes.undoRename("origin", to: "fork")
+        }
+
+        await #expect(throws: RepositoryUndoError.repositoryChanged) {
+            try await remotes.restoreSettings([], of: "missing")
+        }
         #expect(try await remotes.configurations().map(\.name) == ["fork", "origin"])
     }
 }
@@ -114,7 +120,9 @@ extension RemoteUndoTests {
 
         _ = try await runner.run(["remote", "add", "--", name, bare])
         _ = try await runner.run(["config", "--local", "remote." + name + ".pushurl", bare])
-        _ = try await runner.run(["config", "--local", "--add", "remote." + name + ".fetch", "+refs/tags/*:refs/tags/*"])
+        _ = try await runner.run([
+            "config", "--local", "--add", "remote." + name + ".fetch", "+refs/tags/*:refs/tags/*",
+        ])
         _ = try await runner.run(["config", "--local", "remote." + name + ".tagOpt", "--no-tags"])
         _ = try await runner.run(["fetch", "-q", "--", name])
         _ = try await runner.run(["symbolic-ref", "refs/remotes/" + name + "/HEAD", "refs/remotes/" + name + "/main"])

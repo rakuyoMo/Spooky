@@ -6,7 +6,7 @@ import Testing
 
 // MARK: - SidebarActivityViewTests
 
-/// 侧边栏底部的活动区：列出哪些记录、区高，以及行里进度条的值与停止按钮。
+/// 侧边栏底部的活动区：列出哪些记录，以及行里进度条的值与停止按钮。
 @MainActor
 struct SidebarActivityViewTests {
     /// 窗口所在的仓库。
@@ -25,13 +25,16 @@ struct SidebarActivityViewTests {
         let running = fetch(location)
 
         let justEnded = fetch(location)
+
         justEnded.state = "activity.finished"
         justEnded.ended = now.addingTimeInterval(-3.9)
 
         let collecting = fetch(location)
+
         collecting.state = "activity.failed"
 
         let expired = fetch(location)
+
         expired.state = "activity.finished"
         expired.ended = now.addingTimeInterval(-4)
 
@@ -50,55 +53,54 @@ struct SidebarActivityViewTests {
             expired,
             restored,
         ]
+
         let listed = SidebarActivityView.items(of: activities, in: location, now: now)
 
         #expect(listed.map(\.id) == [running.id, justEnded.id, collecting.id])
     }
 
-    /// 每行 65，最多露出三行，再多在区内滚动；没有行时收起成 0。
-    @Test("区高")
-    func height() {
-        #expect(SidebarActivityView.height(rows: 0) == 0)
-        #expect(SidebarActivityView.height(rows: 1) == 65)
-        #expect(SidebarActivityView.height(rows: 3) == 195)
-        #expect(SidebarActivityView.height(rows: 4) == 195)
-    }
-
     /// 进行中的跟着 git 的进度走；完成与失败满格，表示这次传输已经结束；取消停在当时的位置，看得出停在了哪里。
-    @Test("进度条的值")
-    func progress() {
+    /// 停止按钮只在进行中、有取消入口时可用；结束后按钮仍在而不可用，不会去取消已经结束的操作。
+    @Test("进度条的值与停止按钮")
+    func progressAndCancel() {
         let activity = fetch(location)
+
         #expect(row(activity).progress == 0)
 
         activity.append(.standardError(Data("Receiving objects:  50% (6/12)\r".utf8)))
+
         #expect(row(activity).progress == 0.125)
 
         activity.state = "activity.cancelled"
+
         #expect(row(activity).progress == 0.125)
 
         activity.state = "activity.finished"
+
         #expect(row(activity).progress == 1)
 
         activity.state = "activity.failed"
+
         #expect(row(activity).progress == 1)
-    }
 
-    /// 停止按钮只在进行中、有取消入口时可用；结束后按钮仍在而不可用，不会去取消已经结束的操作。
-    @Test("停止按钮")
-    func cancel() {
+        // 停止按钮：有取消入口才可用
         let activities = RepositoryActivities()
-        let activity = fetch(location)
-        #expect(!row(activity).canCancel)
+        let cancellable = fetch(location)
 
-        activity.cancel = { }
-        #expect(row(activity).canCancel)
+        #expect(!row(cancellable).canCancel)
+
+        cancellable.cancel = { }
+
+        #expect(row(cancellable).canCancel)
 
         // 状态已换成结束、取消入口还没清掉
-        activity.state = "activity.finished"
-        #expect(!row(activity).canCancel)
+        cancellable.state = "activity.finished"
 
-        activities.finish(activity)
-        #expect(!row(activity).canCancel)
+        #expect(!row(cancellable).canCancel)
+
+        activities.finish(cancellable)
+
+        #expect(!row(cancellable).canCancel)
     }
 
     /// 本次运行里获取一个远端的记录。

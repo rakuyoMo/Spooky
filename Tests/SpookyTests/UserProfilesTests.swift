@@ -9,47 +9,56 @@ import Testing
 /// 签名密钥菜单里一把密钥的写法：身份档案、Git Config 页与仓库设置看到的文字相同，用户靠它分辨密钥；
 /// 以及保存档案前的重复检查，重复的档案会让身份菜单分不清该勾哪一个。
 struct UserProfilesTests {
-    /// GPG 写签名人与指纹末 8 位；没有签名人时括号前只有格式名。
-    @Test("GPG 密钥的菜单项")
-    func gpgTitle() {
-        let fingerprint = "0123456789ABCDEF0123456789ABCDEFBB199F7C"
-        let signed = SigningKey(
-            format: .openpgp,
-            value: fingerprint,
-            fingerprint: fingerprint,
-            signer: "Valid Signer <valid@example.com>",
-            comment: nil
+    /// GPG 写签名人与指纹末 8 位，没有签名人时括号前只有格式名；
+    /// SSH 的注释是现有文件时写出路径并把主目录缩写成 `~`，文件不存在或没有注释时只写指纹末 8 位。
+    @Test("签名密钥的菜单项")
+    func keyTitles() throws {
+        // GPG 写签名人与指纹末 8 位。
+        let gpgFingerprint = "0123456789ABCDEF0123456789ABCDEFBB199F7C"
+        let gpg = { (signer: String?) in
+            SigningKey(
+                format: .openpgp,
+                value: gpgFingerprint,
+                fingerprint: gpgFingerprint,
+                signer: signer,
+                comment: nil
+            )
+        }
+
+        #expect(
+            UserProfiles.title(of: gpg("Valid Signer <valid@example.com>"))
+                == "GPG: Valid Signer <valid@example.com> (BB199F7C)"
         )
-        let anonymous = SigningKey(format: .openpgp, value: fingerprint, fingerprint: fingerprint, signer: nil, comment: nil)
+        #expect(UserProfiles.title(of: gpg(nil)) == "GPG: (BB199F7C)")
 
-        #expect(UserProfiles.title(of: signed) == "GPG: Valid Signer <valid@example.com> (BB199F7C)")
-        #expect(UserProfiles.title(of: anonymous) == "GPG: (BB199F7C)")
-    }
-
-    /// SSH 的注释是现有文件时写出路径并把主目录缩写成 `~`；文件不存在或没有注释时只写指纹末 8 位。
-    @Test("SSH 密钥的菜单项")
-    func sshTitle() throws {
+        // SSH 的注释指向临时主目录里的密钥文件。
         let home = FileManager.default.temporaryDirectory.appending(path: "spooky-home-" + UUID().uuidString)
-        let file = home.appending(path: ".ssh/id_ed25519")
-        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Data().write(to: file)
         defer { try? FileManager.default.removeItem(at: home) }
 
-        let fingerprint = "SHA256:aGVsbG8gd29ybGQgdGhpcyBpcyBhIGtleQ1a2b3c4d"
-        let key = { (comment: String?) in
+        let file = home.appending(path: ".ssh/id_ed25519")
+
+        try FileManager.default.createDirectory(
+            at: file.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data().write(to: file)
+
+        let ssh = { (comment: String?) in
             SigningKey(
                 format: .ssh,
                 value: "key::ssh-ed25519 AAAA",
-                fingerprint: fingerprint,
+                fingerprint: "SHA256:aGVsbG8gd29ybGQgdGhpcyBpcyBhIGtleQ1a2b3c4d",
                 signer: nil,
                 comment: comment
             )
         }
 
-        #expect(UserProfiles.title(of: key(file.path), home: home.path) == "SSH: ~/.ssh/id_ed25519 (1a2b3c4d)")
-        #expect(UserProfiles.title(of: key(home.appending(path: "missing").path), home: home.path) == "SSH: (1a2b3c4d)")
-        #expect(UserProfiles.title(of: key("wgy@laptop"), home: home.path) == "SSH: (1a2b3c4d)")
-        #expect(UserProfiles.title(of: key(nil), home: home.path) == "SSH: (1a2b3c4d)")
+        let missing = home.appending(path: "missing").path
+        #expect(UserProfiles.title(of: ssh(file.path), home: home.path) == "SSH: ~/.ssh/id_ed25519 (1a2b3c4d)")
+
+        for comment in [missing, "wgy@laptop", nil] {
+            #expect(UserProfiles.title(of: ssh(comment), home: home.path) == "SSH: (1a2b3c4d)")
+        }
     }
 
     /// 标题去掉首尾空格后重名即重复；姓名与邮箱按原字符串同时相同也重复，只是邮箱相同不算，签名密钥不参与；编辑时不和自己比较。

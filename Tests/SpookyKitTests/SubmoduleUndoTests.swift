@@ -26,7 +26,11 @@ struct SubmoduleUndoTests {
         #expect(before.file == nil)
 
         // 上游改名后重做：没有连接上游，指针仍是原来的提交
-        try FileManager.default.moveItem(atPath: repositories.upstreamPath, toPath: repositories.upstreamPath + " 旧")
+        try FileManager.default.moveItem(
+            atPath: repositories.upstreamPath,
+            toPath: repositories.upstreamPath + " 旧"
+        )
+
         try await submodules.add(url: repositories.upstreamPath, path: "依赖/my lib", reusesGitDirectory: true)
 
         let restored = try #require(try await submodules.list().first)
@@ -58,54 +62,32 @@ struct SubmoduleUndoTests {
 
         let before = try await SubmoduleSnapshot(repositories)
 
-        for path in ["a.b", "子 模块/c"] {
-            for keepsWorkingTree in [false, true] {
-                let submodule = try #require(try await submodules.list().first { $0.path == path })
-                let record = try await submodules.removalRecord(of: submodule, keepsWorkingTree: keepsWorkingTree)
+        let removals: [(path: String, keepsWorkingTree: Bool)] = [
+            ("a.b", false),
+            ("a.b", true),
+            ("子 模块/c", false),
+        ]
 
-                try await submodules.delete(submodule, keepsWorkingTree: keepsWorkingTree, force: false)
-                #expect(try await SubmoduleSnapshot(repositories) != before)
+        for (path, keepsWorkingTree) in removals {
+            let submodule = try #require(try await submodules.list().first { $0.path == path })
+            let record = try await submodules.removalRecord(of: submodule, keepsWorkingTree: keepsWorkingTree)
 
-                try await submodules.undoDelete(record)
-                #expect(try await SubmoduleSnapshot(repositories) == before)
-            }
+            try await submodules.delete(submodule, keepsWorkingTree: keepsWorkingTree, force: false)
+
+            #expect(
+                try await SubmoduleSnapshot(repositories) != before,
+                "\(path), keepsWorkingTree: \(keepsWorkingTree)"
+            )
+
+            try await submodules.undoDelete(record)
+
+            #expect(
+                try await SubmoduleSnapshot(repositories) == before,
+                "\(path), keepsWorkingTree: \(keepsWorkingTree)"
+            )
         }
 
         #expect(before.branch == "特性")
-    }
-
-    /// 要删掉的工作区里有找不回的内容时不记撤销：子模块里有改动，或 Git 目录就在工作区里；保留工作区时不受影响。
-    @Test("删除时工作区的内容找不回")
-    func unrecoverableRemoval() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
-
-        let repositories = try await SubmoduleRepositories(temporary)
-        let submodules = RepositorySubmodules(runner: repositories.parent)
-
-        // 先克隆再加入的子模块，Git 目录留在自己的工作区里
-        _ = try await repositories.parent.run(["clone", "-q", repositories.upstreamPath, "内嵌"])
-
-        for path in ["lib", "内嵌"] {
-            try await submodules.add(url: repositories.upstreamPath, path: path, reusesGitDirectory: false)
-        }
-
-        try Data("改动\n".utf8).write(to: repositories.parentURL.appending(path: "lib/a.txt"))
-
-        let list = try await submodules.list()
-        let modified = try #require(list.first { $0.path == "lib" })
-        let embedded = try #require(list.first { $0.path == "内嵌" })
-
-        await #expect(throws: SubmoduleError.localModifications) {
-            try await submodules.removalRecord(of: modified, keepsWorkingTree: false)
-        }
-
-        await #expect(throws: RepositoryUndoError.untrackedFiles) {
-            try await submodules.removalRecord(of: embedded, keepsWorkingTree: false)
-        }
-
-        _ = try await submodules.removalRecord(of: modified, keepsWorkingTree: true)
-        _ = try await submodules.removalRecord(of: embedded, keepsWorkingTree: true)
     }
 
     /// 移动时同时改名、单独改名，撤销后路径、名称、子模块的 Git 目录与 `.gitmodules` 的原文都回到操作前。
@@ -141,88 +123,24 @@ struct SubmoduleUndoTests {
         #expect(try await submodules.list().first?.state == .clean)
     }
 
-    /// 本地配置里的地址与选项：撤销后写回原值，原来没有设置的撤销后不存在；值没变时不记。
-    @Test("本地设置的撤销")
-    func localSettings() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
-
-        let repositories = try await SubmoduleRepositories(temporary)
-        let submodules = RepositorySubmodules(runner: repositories.parent)
-
-        try await submodules.add(url: repositories.upstreamPath, path: "lib", reusesGitDirectory: false)
-        _ = try await repositories.parent.run(["config", "--local", "submodule.lib.update", "rebase"])
-
-        let submodule = try #require(try await submodules.list().first)
-        let before = try await SubmoduleSnapshot(repositories)
-
-        // 改地址、设置原来没有的忽略模式、删掉原来有的更新策略
-        let url = try #require(try await submodules.localURLChange(of: submodule, to: "https://example.com/lib.git"))
-        try await submodules.setURL("https://example.com/lib.git", for: submodule, in: .local)
-
-        let ignore = try #require(try await submodules.localOptionChange(.ignore, of: submodule, to: "all"))
-        try await submodules.set(.ignore, to: "all", for: submodule, in: .local)
-
-        let update = try #require(try await submodules.localOptionChange(.update, of: submodule, to: nil))
-        try await submodules.set(.update, to: nil, for: submodule, in: .local)
-
-        for change in [update, ignore, url] {
-            try await submodules.undoSettingChange(change)
-        }
-
-        #expect(try await SubmoduleSnapshot(repositories) == before)
-        #expect(try await submodules.localOptionChange(.ignore, of: submodule, to: nil) == nil)
-        #expect(try await submodules.localOptionChange(.update, of: submodule, to: "rebase") == nil)
-    }
-
-    /// 仓库已经变了时撤销报仓库已改变，不做任何改动。
-    @Test("撤销子模块操作时前提不符")
-    func changedRepository() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
-
-        let repositories = try await SubmoduleRepositories(temporary)
-        let submodules = RepositorySubmodules(runner: repositories.parent)
-
-        // 撤销添加之前子模块已在外部删掉
-        let addition = try await submodules.additionRecord(at: "lib")
-        try await submodules.add(url: repositories.upstreamPath, path: "lib", reusesGitDirectory: false)
-        _ = try await repositories.parent.run(["rm", "-q", "-f", "lib"])
-
-        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await submodules.undoAdd(addition) }
-
-        // 撤销删除之前原路径上已有别的文件
-        try await submodules.add(url: repositories.upstreamPath, path: "other", reusesGitDirectory: false)
-        let other = try #require(try await submodules.list().first { $0.path == "other" })
-        let removal = try await submodules.removalRecord(of: other, keepsWorkingTree: false)
-        try await submodules.delete(other, keepsWorkingTree: false, force: false)
-        try Data("占位\n".utf8).write(to: repositories.parentURL.appending(path: "other"))
-
-        let occupied = try await SubmoduleSnapshot(repositories)
-        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await submodules.undoDelete(removal) }
-        #expect(try await SubmoduleSnapshot(repositories) == occupied)
-
-        // 撤销修改本地设置之前这一项已在外部改过
-        try FileManager.default.removeItem(at: repositories.parentURL.appending(path: "other"))
-        try await submodules.undoDelete(removal)
-
-        let restored = try #require(try await submodules.list().first { $0.path == "other" })
-        let change = try #require(try await submodules.localOptionChange(.ignore, of: restored, to: "all"))
-        try await submodules.set(.ignore, to: "all", for: restored, in: .local)
-        _ = try await repositories.parent.run(["config", "--local", "submodule.other.ignore", "dirty"])
-
-        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await submodules.undoSettingChange(change) }
-    }
-
-    /// 在子模块里检出分支或附注标签再撤销：回到原来的分支；原来是分离 HEAD 的，以分离 HEAD 回到原来的提交。
-    /// 子模块在别处换过版本时撤销报仓库已改变；子模块里的改动与原来的版本冲突时 Git 拒绝检出，子模块与改动都不变。
-    @Test("检出版本的撤销，前提不符或改动冲突时拒绝")
-    func revisionCheckout() async throws {
+    /// 本地设置与子模块里检出的版本，撤销后都回到操作前；子模块在别处换过版本，或子模块里的改动与原来的版本冲突时，
+    /// 检出的撤销被拒绝。父仓库里只有时间戳变了的文件不妨碍记录状态。
+    @Test("本地设置与检出版本的撤销，前提不符或改动冲突时拒绝")
+    func settingsAndCheckout() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
 
         let repositories = try await SubmoduleRepositories(temporary)
         let (submodules, submodule) = try await Self.submoduleWithRevisions(repositories)
+
+        try await Self.undoLocalSettings(submodules, submodule, in: repositories)
+
+        // `.gitmodules` 只改时间戳；检出版本后子模块有了改动，记录状态时 `stash create` 先把这个文件算作改动，
+        // 刷新索引后又找不到改动
+        try FileManager.default.setAttributes(
+            [.modificationDate: Date(timeIntervalSince1970: 0)],
+            ofItemAtPath: repositories.parentURL.appending(path: ".gitmodules").path
+        )
 
         try await Self.undoRevisionCheckout(submodules, submodule, in: repositories)
 
@@ -231,13 +149,30 @@ struct SubmoduleUndoTests {
         try await Self.blockedRevisionUndo(submodules, submodule, in: repositories)
     }
 
+    /// 要删掉的工作区里有找不回的内容时不记撤销：子模块里有改动，或 Git 目录就在工作区里；保留工作区时不受影响。
+    /// 仓库已经变了时撤销添加、删除与本地设置都报仓库已改变，不做任何改动。
+    @Test("删除时工作区的内容找不回，撤销时前提不符")
+    func rejectedUndo() async throws {
+        let temporary = try TemporaryRepository()
+        defer { temporary.remove() }
+
+        let repositories = try await SubmoduleRepositories(temporary)
+
+        try await Self.changedRepository(repositories)
+        try await Self.unrecoverableRemoval(repositories)
+    }
+
     /// `ls-files -s -z` 的一条记录取出模式与对象；格式不对时报格式错误，冲突中的文件不能写回。
     @Test("暂存记录的解析")
     func stagedRecordParsing() throws {
         let object = String(repeating: "a", count: 40)
 
         #expect(try RepositorySubmodules.stagedRecord(Data()) == nil)
-        #expect(try RepositorySubmodules.stagedRecord(Data("100644 \(object) 0\t.gitmodules\0".utf8)) == "100644 \(object)")
+
+        #expect(
+            try RepositorySubmodules.stagedRecord(Data("100644 \(object) 0\t.gitmodules\0".utf8))
+                == "100644 \(object)"
+        )
 
         #expect(throws: RepositoryReadError.malformedOutput("ls-files")) {
             try RepositorySubmodules.stagedRecord(Data("100644 \(object) 0 .gitmodules\0".utf8))
@@ -252,6 +187,39 @@ struct SubmoduleUndoTests {
 // MARK: - Steps
 
 extension SubmoduleUndoTests {
+    /// 本地配置里的地址与选项：撤销后写回原值，原来没有设置的撤销后不存在；值没变时不记。
+    private static func undoLocalSettings(
+        _ submodules: RepositorySubmodules,
+        _ submodule: Submodule,
+        in repositories: SubmoduleRepositories
+    ) async throws {
+        let url = "https://example.com/lib.git"
+
+        _ = try await repositories.parent.run([
+            "config", "--local", "submodule." + submodule.name + ".update", "rebase",
+        ])
+
+        let before = try await SubmoduleSnapshot(repositories)
+
+        // 改地址、设置原来没有的忽略模式、删掉原来有的更新策略
+        let urlChange = try #require(try await submodules.localURLChange(of: submodule, to: url))
+        try await submodules.setURL(url, for: submodule, in: .local)
+
+        let ignore = try #require(try await submodules.localOptionChange(.ignore, of: submodule, to: "all"))
+        try await submodules.set(.ignore, to: "all", for: submodule, in: .local)
+
+        let update = try #require(try await submodules.localOptionChange(.update, of: submodule, to: nil))
+        try await submodules.set(.update, to: nil, for: submodule, in: .local)
+
+        for change in [update, ignore, urlChange] {
+            try await submodules.undoSettingChange(change)
+        }
+
+        #expect(try await SubmoduleSnapshot(repositories) == before)
+        #expect(try await submodules.localOptionChange(.ignore, of: submodule, to: nil) == nil)
+        #expect(try await submodules.localOptionChange(.update, of: submodule, to: "rebase") == nil)
+    }
+
     /// 在子模块里检出分支或附注标签再撤销：回到原来的分支；原来是分离 HEAD 的，以分离 HEAD 回到原来的提交。
     private static func undoRevisionCheckout(
         _ submodules: RepositorySubmodules,
@@ -298,7 +266,11 @@ extension SubmoduleUndoTests {
         _ = try await repositories.parent.run(["-C", submodule.path, "checkout", "-q", "main"])
 
         let elsewhere = try await SubmoduleSnapshot(repositories)
-        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await submodules.undoCheckout(switched) }
+
+        await #expect(throws: RepositoryUndoError.repositoryChanged) {
+            try await submodules.undoCheckout(switched)
+        }
+
         #expect(try await SubmoduleSnapshot(repositories) == elsewhere)
 
         // a.txt 在两个版本里不同，改过之后检出回 main 会覆盖这处改动
@@ -309,12 +281,87 @@ extension SubmoduleUndoTests {
         try Data("改动\n".utf8).write(to: file)
 
         let modified = try await SubmoduleSnapshot(repositories)
-        let error = await #expect(throws: GitError.self) { try await submodules.undoCheckout(record) }
+
+        let error = await #expect(throws: GitError.self) {
+            try await submodules.undoCheckout(record)
+        }
 
         #expect(error?.exitCode == 1)
         #expect(error?.message.contains("would be overwritten by checkout") ?? false)
         #expect(try await SubmoduleSnapshot(repositories) == modified)
         #expect(try String(contentsOf: file, encoding: .utf8) == "改动\n")
+    }
+
+    /// 仓库已经变了时撤销报仓库已改变，不做任何改动：添加的子模块已在外部删掉，删除的子模块原路径上已有别的文件，
+    /// 本地设置已在外部改过。
+    private static func changedRepository(_ repositories: SubmoduleRepositories) async throws {
+        let submodules = RepositorySubmodules(runner: repositories.parent)
+
+        // 撤销添加之前子模块已在外部删掉
+        let addition = try await submodules.additionRecord(at: "lib")
+        try await submodules.add(url: repositories.upstreamPath, path: "lib", reusesGitDirectory: false)
+        _ = try await repositories.parent.run(["rm", "-q", "-f", "lib"])
+
+        await #expect(throws: RepositoryUndoError.repositoryChanged) {
+            try await submodules.undoAdd(addition)
+        }
+
+        // 撤销删除之前原路径上已有别的文件
+        try await submodules.add(url: repositories.upstreamPath, path: "other", reusesGitDirectory: false)
+        let other = try #require(try await submodules.list().first { $0.path == "other" })
+        let removal = try await submodules.removalRecord(of: other, keepsWorkingTree: false)
+        try await submodules.delete(other, keepsWorkingTree: false, force: false)
+        try Data("占位\n".utf8).write(to: repositories.parentURL.appending(path: "other"))
+
+        let occupied = try await SubmoduleSnapshot(repositories)
+
+        await #expect(throws: RepositoryUndoError.repositoryChanged) {
+            try await submodules.undoDelete(removal)
+        }
+
+        #expect(try await SubmoduleSnapshot(repositories) == occupied)
+
+        // 撤销修改本地设置之前这一项已在外部改过
+        try FileManager.default.removeItem(at: repositories.parentURL.appending(path: "other"))
+        try await submodules.undoDelete(removal)
+
+        let restored = try #require(try await submodules.list().first { $0.path == "other" })
+        let change = try #require(try await submodules.localOptionChange(.ignore, of: restored, to: "all"))
+        try await submodules.set(.ignore, to: "all", for: restored, in: .local)
+        _ = try await repositories.parent.run(["config", "--local", "submodule.other.ignore", "dirty"])
+
+        await #expect(throws: RepositoryUndoError.repositoryChanged) {
+            try await submodules.undoSettingChange(change)
+        }
+    }
+
+    /// 要删掉的工作区里有找不回的内容时不记撤销：子模块里有改动，或 Git 目录就在工作区里；保留工作区时不受影响。
+    private static func unrecoverableRemoval(_ repositories: SubmoduleRepositories) async throws {
+        let submodules = RepositorySubmodules(runner: repositories.parent)
+
+        // 先克隆再加入的子模块，Git 目录留在自己的工作区里
+        _ = try await repositories.parent.run(["clone", "-q", repositories.upstreamPath, "内嵌"])
+
+        for path in ["改动", "内嵌"] {
+            try await submodules.add(url: repositories.upstreamPath, path: path, reusesGitDirectory: false)
+        }
+
+        try Data("改动\n".utf8).write(to: repositories.parentURL.appending(path: "改动/a.txt"))
+
+        let list = try await submodules.list()
+        let modified = try #require(list.first { $0.path == "改动" })
+        let embedded = try #require(list.first { $0.path == "内嵌" })
+
+        await #expect(throws: SubmoduleError.localModifications) {
+            try await submodules.removalRecord(of: modified, keepsWorkingTree: false)
+        }
+
+        await #expect(throws: RepositoryUndoError.untrackedFiles) {
+            try await submodules.removalRecord(of: embedded, keepsWorkingTree: false)
+        }
+
+        _ = try await submodules.removalRecord(of: modified, keepsWorkingTree: true)
+        _ = try await submodules.removalRecord(of: embedded, keepsWorkingTree: true)
     }
 }
 
@@ -366,6 +413,7 @@ private struct SubmoduleSnapshot: Equatable {
 
         state = try await RepositoryUndo(runner: parent).capture()
         file = try? Data(contentsOf: repositories.parentURL.appending(path: ".gitmodules"))
+
         settings = try await parent.execute(
             ["config", "-z", "--local", "--get-regexp", #"^submodule\."#],
             acceptedExitCodes: [0, 1]

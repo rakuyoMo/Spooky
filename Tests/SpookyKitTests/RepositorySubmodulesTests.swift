@@ -64,8 +64,9 @@ struct RepositorySubmodulesTests {
     }
 
     /// 相对地址按父仓库的默认远端或工作区路径换算后再比较；`.gitmodules` 的地址改了才提示同步，同步后不再提示。
-    @Test("相对地址与同步")
-    func relativeURLAndSynchronize() async throws {
+    /// 提交后去掉初始化，状态是未检出；更新时先初始化再检出指针所指的提交。
+    @Test("相对地址与同步，初始化与更新")
+    func relativeURLSyncAndUpdate() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
 
@@ -87,22 +88,12 @@ struct RepositorySubmodulesTests {
         submodule = try #require(try await submodules.list().first)
         #expect(!submodule.needsSynchronizing)
         #expect(try await submodules.remoteURL(of: submodule) == repositories.upstreamPath + "/")
-    }
 
-    /// 去掉初始化后状态是未检出；更新时先初始化再检出指针所指的提交。
-    @Test("初始化与更新")
-    func initializeAndUpdate() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
-
-        let repositories = try await SubmoduleRepositories(temporary)
-        let submodules = RepositorySubmodules(runner: repositories.parent)
-
-        try await submodules.add(url: repositories.upstreamPath, path: "lib", reusesGitDirectory: false)
+        // 提交后去掉初始化
         _ = try await repositories.parent.run(["commit", "-q", "-m", "添加子模块"])
         _ = try await repositories.parent.run(["submodule", "deinit", "-q", "-f", "--", "lib"])
 
-        var submodule = try #require(try await submodules.list().first)
+        submodule = try #require(try await submodules.list().first)
         #expect(submodule.state == .uninitialized)
         #expect(!submodule.isInitialized)
         #expect(submodule.checkedOut == nil)
@@ -155,8 +146,9 @@ struct RepositorySubmodulesTests {
     }
 
     /// 保留工作区只删配置与指针；不保留时连目录一起删除，子模块里有改动时要求强制。
-    @Test("删除")
-    func delete() async throws {
+    /// 重新添加删除过的子模块时父仓库里已有它的 Git 目录：不复用就报出，可以复用，也可以删掉后重新克隆。
+    @Test("删除与重新添加")
+    func deleteAndReAdd() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
 
@@ -175,6 +167,7 @@ struct RepositorySubmodulesTests {
 
         // 子模块里有未跟踪文件时不强制就不删
         try Data("x\n".utf8).write(to: repositories.parentURL.appending(path: "删除/新.txt"))
+
         await #expect(throws: SubmoduleError.localModifications) {
             try await submodules.delete(removed, keepsWorkingTree: false, force: false)
         }
@@ -184,11 +177,30 @@ struct RepositorySubmodulesTests {
 
         // 两段配置都已删除，保留的目录变成未跟踪的仓库
         #expect(try await submodules.list().isEmpty)
+
         let local = try await repositories.parent.execute(
             ["config", "--local", "--get-regexp", "^submodule\\."],
             acceptedExitCodes: [0, 1]
         )
+
         #expect(local.exitCode == 1)
+
+        // 删除的子模块在父仓库里留下了 Git 目录
+        await #expect(throws: SubmoduleError.gitDirectoryExists(name: "删除")) {
+            try await submodules.add(url: repositories.upstreamPath, path: "删除", reusesGitDirectory: false)
+        }
+
+        try await submodules.add(url: repositories.upstreamPath, path: "删除", reusesGitDirectory: true)
+
+        try await submodules.delete(
+            try #require(try await submodules.list().first),
+            keepsWorkingTree: false,
+            force: false
+        )
+
+        try await submodules.removeGitDirectory(named: "删除")
+        try await submodules.add(url: repositories.upstreamPath, path: "删除", reusesGitDirectory: false)
+        #expect(try await submodules.list().first?.state == .clean)
     }
 
     /// 移动到不存在的目录并把名称改成新路径；改名把 Git 目录搬到新名称下，子模块仍能正常使用；名称被占用时拒绝。
@@ -214,6 +226,7 @@ struct RepositorySubmodulesTests {
         let gitDirectory = try await repositories.parent.run(
             ["-C", "第三方/新 lib", "rev-parse", "--path-format=absolute", "--git-dir"]
         )
+
         #expect(String(decoding: gitDirectory, as: UTF8.self).hasSuffix("/.git/modules/第三方/新 lib\n"))
 
         // .git 文件按 Git 的写法记相对路径
@@ -221,6 +234,7 @@ struct RepositorySubmodulesTests {
             contentsOf: repositories.parentURL.appending(path: "第三方/新 lib/.git"),
             encoding: .utf8
         )
+
         #expect(gitfile == "gitdir: ../../.git/modules/第三方/新 lib\n")
 
         await #expect(throws: SubmoduleError.nameInUse("other")) {
@@ -233,88 +247,103 @@ struct RepositorySubmodulesTests {
         #expect(lib.state == .clean)
         #expect(try await submodules.summary(of: lib).changes == 0)
     }
-
-    /// 重新添加删除过的子模块时父仓库里已有它的 Git 目录：不复用就报出，可以复用，也可以删掉后重新克隆。
-    @Test("已有的 Git 目录")
-    func existingGitDirectory() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
-
-        let repositories = try await SubmoduleRepositories(temporary)
-        let submodules = RepositorySubmodules(runner: repositories.parent)
-
-        try await submodules.add(url: repositories.upstreamPath, path: "lib", reusesGitDirectory: false)
-        try await submodules.delete(try #require(try await submodules.list().first), keepsWorkingTree: false, force: false)
-
-        await #expect(throws: SubmoduleError.gitDirectoryExists(name: "lib")) {
-            try await submodules.add(url: repositories.upstreamPath, path: "lib", reusesGitDirectory: false)
-        }
-
-        try await submodules.add(url: repositories.upstreamPath, path: "lib", reusesGitDirectory: true)
-        try await submodules.delete(try #require(try await submodules.list().first), keepsWorkingTree: false, force: false)
-
-        try await submodules.removeGitDirectory(named: "lib")
-        try await submodules.add(url: repositories.upstreamPath, path: "lib", reusesGitDirectory: false)
-        #expect(try await submodules.list().first?.state == .clean)
-    }
 }
 
 // MARK: - Parsing
 
 extension RepositorySubmodulesTests {
-    /// 段名可以含句点，没有值的布尔键算 true，没有段名的键不属于任何子模块，格式错误时抛出。
-    @Test("解析子模块配置")
-    func parseSettings() throws {
+    /// 段名可以含句点，没有值的布尔键算 true，没有段名的键不属于任何子模块，格式错误时抛出；
+    /// 相对地址按 Git 的规则逐级换算：网址与路径按 “/” 去掉一级，scp 写法去到主机时以 “:” 连接。
+    @Test("解析子模块配置，换算相对地址")
+    func parseSettingsAndURLs() throws {
         let output = Data(
             "submodule.recurse\ntrue\0submodule.a.b.path\nlib/a.b\0submodule.a.b.url\n../a\0"
                 .appending("submodule.a.b.fetchrecursesubmodules\0submodule.c.ignore\nDirty\0").utf8
         )
+
         let settings = try RepositorySubmodules.parseSettings(output)
 
         #expect(settings.map(\.name) == ["a.b", "c"])
-        #expect(settings[0].settings == SubmoduleSettings(path: "lib/a.b", url: "../a", fetchRecurseSubmodules: "true"))
+
+        #expect(
+            settings[0].settings
+                == SubmoduleSettings(path: "lib/a.b", url: "../a", fetchRecurseSubmodules: "true")
+        )
+
         #expect(settings[1].settings.ignore == "Dirty")
         #expect(SubmoduleIgnoreMode(configValue: "Dirty") == .dirty)
         #expect(try RepositorySubmodules.parseSettings(Data()).isEmpty)
-        #expect(throws: RepositoryReadError.self) { try RepositorySubmodules.parseSettings(Data("core.bare\n".utf8)) }
+
+        #expect(throws: RepositoryReadError.self) {
+            try RepositorySubmodules.parseSettings(Data("core.bare\n".utf8))
+        }
+
+        // 相对地址的换算
+        let resolved = { (url: String, base: String) in
+            RepositorySubmodules.resolvedURL(url, base: base)
+        }
+
+        #expect(resolved("../lib", "https://example.com/a/b/super.git") == "https://example.com/a/b/lib")
+        #expect(resolved("./lib/", "https://example.com/a/") == "https://example.com/a/lib")
+        #expect(resolved("../../x.git", "git@example.com:team/repo.git") == "git@example.com:x.git")
+        #expect(resolved("../lib", "/srv/git/super") == "/srv/git/lib")
+        #expect(resolved("../lib", "super") == "lib")
+        #expect(resolved("../../lib", "super") == nil)
+        #expect(resolved("https://example.com/x", "/srv") == "https://example.com/x")
     }
 
-    /// 只留下模式为 160000 的指针，冲突中的指针没有提交，路径原样保留。
-    @Test("解析子模块指针")
-    func parseGitlinks() throws {
-        let output = Data(
-            "100644 aaaa 0\ta.txt\0160000 bbbb 0\t子 模块/x\0160000 cccc 2\t冲突\0160000 dddd 3\t冲突\0".utf8
+    /// 指针只留下模式为 160000 的，冲突中的指针没有提交，路径原样保留；
+    /// 状态行按已知路径切分：路径里的空格、换行与括号不影响切分，提交长度随对象格式变化。
+    /// 在子模块里执行的 `-C <路径>` 不影响读写判断与认证用的子命令名，只有读取子模块状态的 `submodule--helper status` 是读取。
+    @Test("解析子模块指针与状态，子模块命令的调度")
+    func parseGitlinksAndStatus() throws {
+        let gitlinks = try RepositorySubmodules.parseGitlinks(
+            Data("100644 aaaa 0\ta.txt\0160000 bbbb 0\t子 模块/x\0160000 cccc 2\t冲突\0160000 dddd 3\t冲突\0".utf8)
         )
-        let gitlinks = try RepositorySubmodules.parseGitlinks(output)
 
         #expect(gitlinks.count == 2)
         #expect(gitlinks["子 模块/x"] == "bbbb")
         #expect(gitlinks["冲突"] == .some(nil))
-        #expect(throws: RepositoryReadError.self) { try RepositorySubmodules.parseGitlinks(Data("160000 x 0\0".utf8)) }
-    }
 
-    /// 按已知路径切分状态行：路径里的空格、换行与括号不影响切分，提交长度随对象格式变化。
-    @Test("解析子模块状态")
-    func parseStatus() throws {
+        #expect(throws: RepositoryReadError.self) {
+            try RepositorySubmodules.parseGitlinks(Data("160000 x 0\0".utf8))
+        }
+
+        // 状态行
         let sha256 = String(repeating: "a", count: 64)
+
         let output = Data(
             (
                 "+\(sha256) 路 径 (x) (heads/main)\n-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb 换\n行\n"
                     + "U0000000000000000000000000000000000000000 冲突\n"
             ).utf8
         )
+
         let records = try RepositorySubmodules.parseStatus(output, paths: ["路 径 (x)", "换\n行", "冲突", "路"])
 
         #expect(records["路 径 (x)"] == RepositorySubmodules.StatusRecord(state: .updated, commit: sha256))
         #expect(records["换\n行"]?.state == .uninitialized)
         #expect(records["冲突"]?.state == .unmerged)
         #expect(records["路"] == nil)
+
         #expect(throws: RepositoryReadError.self) {
             try RepositorySubmodules.parseStatus(Data("*abc lib\n".utf8), paths: ["lib"])
         }
+
         #expect(throws: RepositoryReadError.self) {
             try RepositorySubmodules.parseStatus(Data(" abc other\n".utf8), paths: ["lib"])
         }
+
+        // 命令的调度
+        let statusCommand = RepositorySubmodules.statusCommand
+
+        #expect(RepositoryOperationQueue.isReadOnly(statusCommand))
+        #expect(RepositoryOperationQueue.isReadOnly(["--literal-pathspecs"] + statusCommand + ["--", "lib"]))
+        #expect(!RepositoryOperationQueue.isReadOnly(["submodule", "update", "--init"]))
+        #expect(RepositoryOperationQueue.isReadOnly(["-C", "config", "config", "-z", "--local", "--get-regexp", "x"]))
+        #expect(RepositoryOperationQueue.isReadOnly(["-C", "lib", "status", "--porcelain=v2"]))
+        #expect(!RepositoryOperationQueue.isReadOnly(["-C", "lib", "checkout", "main"]))
+        #expect(RepositoryOperationQueue.command(in: ["-C", "lib", "fetch", "--all"]) == "fetch")
     }
 
     /// 分支在前、按名称排序；停在分支上时只有它是当前版本，分离 HEAD 时所指提交等于检出的提交的标签是当前版本，
@@ -352,38 +381,17 @@ extension RepositorySubmodulesTests {
 
         #expect(try RepositorySubmodules.parseRevisions(Data(), checkedOut: head).isEmpty)
 
-        for malformed in ["refs/heads/main\0*\0\(head)\n", "refs/heads/main\0\0abc\0\n", "\0\0\(head)\0\n"] {
+        let malformed = [
+            "refs/heads/main\0*\0\(head)\n",
+            "refs/heads/main\0\0abc\0\n",
+            "\0\0\(head)\0\n",
+        ]
+
+        for line in malformed {
             #expect(throws: RepositoryReadError.malformedOutput("for-each-ref")) {
-                try RepositorySubmodules.parseRevisions(Data(malformed.utf8), checkedOut: head)
+                try RepositorySubmodules.parseRevisions(Data(line.utf8), checkedOut: head)
             }
         }
-    }
-
-    /// 相对地址按 Git 的规则逐级换算：网址与路径按 “/” 去掉一级，scp 写法去到主机时以 “:” 连接。
-    @Test("换算相对地址")
-    func resolvedURL() {
-        #expect(
-            RepositorySubmodules
-                .resolvedURL("../lib", base: "https://example.com/a/b/super.git") == "https://example.com/a/b/lib"
-        )
-        #expect(RepositorySubmodules.resolvedURL("./lib/", base: "https://example.com/a/") == "https://example.com/a/lib")
-        #expect(RepositorySubmodules.resolvedURL("../../x.git", base: "git@example.com:team/repo.git") == "git@example.com:x.git")
-        #expect(RepositorySubmodules.resolvedURL("../lib", base: "/srv/git/super") == "/srv/git/lib")
-        #expect(RepositorySubmodules.resolvedURL("../lib", base: "super") == "lib")
-        #expect(RepositorySubmodules.resolvedURL("../../lib", base: "super") == nil)
-        #expect(RepositorySubmodules.resolvedURL("https://example.com/x", base: "/srv") == "https://example.com/x")
-    }
-
-    /// 在子模块里执行的 `-C <路径>` 不影响读写判断与认证用的子命令名，只有读取子模块状态的 `submodule--helper status` 是读取。
-    @Test("子模块命令的调度")
-    func scheduling() {
-        #expect(RepositoryOperationQueue.isReadOnly(RepositorySubmodules.statusCommand))
-        #expect(RepositoryOperationQueue.isReadOnly(["--literal-pathspecs"] + RepositorySubmodules.statusCommand + ["--", "lib"]))
-        #expect(!RepositoryOperationQueue.isReadOnly(["submodule", "update", "--init"]))
-        #expect(RepositoryOperationQueue.isReadOnly(["-C", "config", "config", "-z", "--local", "--get-regexp", "x"]))
-        #expect(RepositoryOperationQueue.isReadOnly(["-C", "lib", "status", "--porcelain=v2"]))
-        #expect(!RepositoryOperationQueue.isReadOnly(["-C", "lib", "checkout", "main"]))
-        #expect(RepositoryOperationQueue.command(in: ["-C", "lib", "fetch", "--all"]) == "fetch")
     }
 }
 

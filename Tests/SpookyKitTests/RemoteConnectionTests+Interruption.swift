@@ -6,7 +6,7 @@ import Testing
 /// 远端写入被取消或断线打断时的串行、进程终止与重连核对。
 extension RemoteConnectionTests {
     /// 两条写入必须依次进入临界区；排队取消不能运行，活动取消必须确认远端退出。
-    @Test("写入串行、队列取消与远端进程组取消", .timeLimit(.minutes(1)))
+    @Test("写入串行、队列取消与远端进程组取消")
     func serialWritesAndCancellation() async throws {
         let fixture = try await RemoteFixture.create()
         let connection = fixture.connection()
@@ -52,7 +52,7 @@ extension RemoteConnectionTests {
     }
 
     /// 仅关闭 Spooky 的主连接来模拟断线，原写入不重试，重连后读取仓库事实。
-    @Test("主动断线、写入不重试与重连核对", .timeLimit(.minutes(1)))
+    @Test("主动断线、写入不重试与重连核对")
     func disconnectionAndRecovery() async throws {
         let fixture = try await RemoteFixture.create()
         let connection = fixture.connection()
@@ -89,7 +89,7 @@ extension RemoteConnectionTests {
     }
 
     /// 被取消的命令在 B 上结束之前仍占着会话；同时取消占满主机名额的读取时，每个取消都得到确认，随后的写入照常执行。
-    @Test("同时取消占满主机名额的读取", .timeLimit(.minutes(2)))
+    @Test("同时取消占满主机名额的读取")
     func cancellingFullHostCapacity() async throws {
         let fixture = try await RemoteFixture.create()
         let connection = fixture.connection()

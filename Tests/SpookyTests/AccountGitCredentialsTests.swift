@@ -50,8 +50,9 @@ struct AccountGitCredentialsTests {
         )
     }
 
-    /// 令牌按服务交给 Git：GitHub 的令牌与 GitLab 的个人访问令牌配账号的用户名，用户名与密码登录换来的令牌配 oauth2。
-    @Test("回答的格式")
+    /// 令牌按服务交给 Git：GitHub 的令牌与 GitLab 的个人访问令牌配账号的用户名，用户名与密码登录换来的令牌配 oauth2；
+    /// 需要重新认证的账号不回答，免得 Git 拿着已知失效的令牌失败。
+    @Test("回答的格式，需要重新认证的账号不回答")
     func answerFormats() async throws {
         let fixture = try Fixture()
         defer { fixture.remove() }
@@ -59,7 +60,7 @@ struct AccountGitCredentialsTests {
         let selfManaged = try #require(HostingInstance.gitlab(address: "https://git.example.com/gitlab"))
         let expiry = Date().addingTimeInterval(7200)
 
-        try fixture.save("rakuyo", on: .github, authentication: .oauth, token: "gho_token")
+        let github = try fixture.save("rakuyo", on: .github, authentication: .oauth, token: "gho_token")
         try fixture.save("me", on: .gitlabCom, authentication: .personalAccessToken, token: "glpat-token")
         try fixture.accounts.save(
             HostingUser(username: "dev", name: nil),
@@ -69,11 +70,19 @@ struct AccountGitCredentialsTests {
 
         #expect(await fixture.get("https://github.com/o/r.git") == "username=rakuyo\npassword=gho_token\n")
         #expect(await fixture.get("https://gitlab.com/g/s/p.git") == "username=me\npassword=glpat-token\n")
-        #expect(await fixture.get("https://git.example.com/gitlab/g/p.git") == "username=oauth2\npassword=oauth-access\n")
+
+        #expect(
+            await fixture.get("https://git.example.com/gitlab/g/p.git")
+                == "username=oauth2\npassword=oauth-access\n"
+        )
 
         // 地址不属于任何账号，或不是 HTTPS 时不回答，Git 接着问 askpass
         #expect(await fixture.get("https://other.example.com/o/r.git") == nil)
         #expect(await fixture.get("http://github.com/o/r.git") == nil)
+
+        // 需要重新认证的账号不回答
+        fixture.accounts.markNeedsReauthentication(github)
+        #expect(await fixture.get("https://github.com/o/r.git") == nil)
     }
 
     /// 同一实例几个账号时按手动关联选定的回答；关联地址带不带用户名、`.git` 与结尾的 “/” 都算同一个远端，没有关联时不猜。
@@ -105,18 +114,6 @@ struct AccountGitCredentialsTests {
         )
 
         #expect(await fixture.get("https://mirror.example.com/g/p.git") == "username=bot\npassword=bot-token\n")
-    }
-
-    /// 需要重新认证的账号不回答，免得 Git 拿着已知失效的令牌失败。
-    @Test("需要重新认证的账号")
-    func needsReauthentication() async throws {
-        let fixture = try Fixture()
-        defer { fixture.remove() }
-
-        let account = try fixture.save("rakuyo", on: .github, authentication: .oauth)
-        fixture.accounts.markNeedsReauthentication(account)
-
-        #expect(await fixture.get("https://github.com/o/r.git") == nil)
     }
 
     /// 同一操作刚用账号令牌回答过的地址被 erase，说明 Git 拒绝了令牌：之后这个账号的地址不回答，askpass 的提示认得出这个账号；重新认证后恢复。

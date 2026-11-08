@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import SwiftUI
+import TestSupport
 
 // MARK: - AccessibilityProbe
 
@@ -36,18 +37,19 @@ enum AccessibilityProbe {
     /// 把视图放进屏外的窗口，在主线程经辅助功能接口读出全部元素。
     ///
     /// 本进程的请求在发出请求的线程上应答，SwiftUI 的下拉等控件只能在主线程读，所以不另开线程。
+    /// 控件的元素在窗口排版之后才陆续建出：每读一次之前先让窗口排完版、画完，没到齐时等主线程处理完下一批事件再读。
     ///
     /// - Parameters:
     ///   - width: 窗口内容的宽度。
     ///   - names: 读到时依次各按一下的控件的名称，如展开三角，或勾选框再加按钮；为空时不按。
-    ///   - isComplete: 要等的控件都读到了；控件的元素在窗口排版之后才陆续建出，没到齐时转动 run loop 再读，最多读 100 次。
+    ///   - isComplete: 要等的控件都读到了，或按下控件后要等的动作已经发生。
     ///   - content: 窗口的内容。
     static func elements(
         width: CGFloat = 480,
         pressing names: [String] = [],
-        until isComplete: ([Element]) -> Bool,
+        until isComplete: @escaping ([Element]) -> Bool,
         @ViewBuilder of content: () -> some View
-    ) -> [Element] {
+    ) async -> [Element] {
         // 测试进程的 NSApplication 没有走完启动时，辅助功能请求一律报未实现
         NSApplication.shared.finishLaunching()
 
@@ -59,34 +61,60 @@ enum AccessibilityProbe {
             defer: false
         )
 
+        let hosting = NSHostingView(rootView: content().frame(width: width))
+
         window.title = title
         window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: content().frame(width: width))
+        window.contentView = hosting
+
+        // 窗口一开始就按内容的理想尺寸定好大小，读到的位置不受宿主视图之后再调整窗口的影响
+        window.setContentSize(hosting.fittingSize)
         window.orderFront(nil)
         defer { window.close() }
 
-        var found: [Element] = []
-        var pending = names[...]
+        let reading = Reading(window: window)
 
-        for _ in 0 ..< 100 {
-            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+        // 要按的控件读到后按一次，之后读到的是按过以后的样子，再找下一个要按的
+        for name in names {
+            await until { reading.read().contains { $0.element.name == name } }
 
-            let collected = collect(inWindowTitled: title)
-            found = collected.map(\.element)
-
-            // 要按的控件读到后按一次，之后读到的是按过以后的样子，再找下一个要按的
-            if let name = pending.first, let target = collected.first(where: { $0.element.name == name }) {
+            if let target = reading.collected.first(where: { $0.element.name == name }) {
                 press(target.reference)
-                pending = pending.dropFirst()
-                continue
-            }
-
-            if pending.isEmpty, isComplete(found) {
-                break
             }
         }
 
-        return found
+        await until { isComplete(reading.read().map(\.element)) }
+
+        return reading.collected.map(\.element)
+    }
+}
+
+// MARK: AccessibilityProbe.Reading
+
+extension AccessibilityProbe {
+    /// 一个窗口的读取，记下最近一次读到的元素，连同元素本身，供按下控件用。
+    @MainActor
+    private final class Reading {
+        /// 要读的窗口。
+        private let window: NSWindow
+
+        /// 最近一次读到的元素；还没读过时为空。
+        private(set) var collected: [(reference: AXUIElement, element: Element)] = []
+
+        /// 记下要读的窗口。
+        ///
+        /// - Parameter window: 要读的窗口。
+        init(window: NSWindow) {
+            self.window = window
+        }
+
+        /// 先让窗口排完版、画完，再重新读一遍窗口里的元素并记下。
+        func read() -> [(reference: AXUIElement, element: Element)] {
+            window.layoutIfNeeded()
+            window.displayIfNeeded()
+            collected = AccessibilityProbe.collect(inWindowTitled: window.title)
+            return collected
+        }
     }
 }
 
@@ -132,13 +160,16 @@ extension AccessibilityProbe {
     /// 按下一个控件。
     ///
     /// 按本进程的控件时，辅助功能接口会停下主线程当前所在的那一层 run loop；直接按会停在测试框架驱动主线程的那一层，
-    /// 测试一结束进程就随之退出、来不及报告结果，所以放进单独转一次的 run loop 里按。
+    /// 测试一结束进程就随之退出、来不及报告结果，所以另开一层 run loop，在里面按下，按完停下这一层。
     private static func press(_ element: AXUIElement) {
-        CFRunLoopPerformBlock(CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue) {
+        let runLoop = CFRunLoopGetMain()
+
+        CFRunLoopPerformBlock(runLoop, CFRunLoopMode.defaultMode.rawValue) {
             AXUIElementPerformAction(element, kAXPressAction as CFString)
+            CFRunLoopStop(runLoop)
         }
 
-        CFRunLoopRunInMode(.defaultMode, 1, false)
+        CFRunLoopRunInMode(.defaultMode, .greatestFiniteMagnitude, false)
     }
 
     /// 元素在屏幕上的位置与大小，原点在主屏幕左上角；读不到时为零。

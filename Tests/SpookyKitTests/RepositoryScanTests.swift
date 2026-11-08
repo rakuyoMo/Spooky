@@ -5,8 +5,9 @@ import Testing
 
 /// 扫描在选定目录下找仓库：不跟随符号链接、跳过隐藏与不能读取的目录，仓库内部不再报告。
 struct RepositoryScanTests {
-    /// 路径含空格、中文与引号；嵌套仓库、隐藏目录、不能读取的目录与指向外部的链接都不出现在结果里。
-    @Test("本机扫描：结果、跳过规则与特殊路径", .timeLimit(.minutes(5)))
+    /// 路径含空格、中文与引号；嵌套仓库、隐藏目录、不能读取的目录与指向外部的链接都不出现在结果里；
+    /// 输出块在路径中间切开时拼回完整路径，嵌套在已找到的仓库里的结果丢弃。
+    @Test("本机扫描：结果、跳过规则与特殊路径，跨块路径与嵌套过滤")
     func scan() async throws {
         let fixture = try TemporaryRepository()
         let outside = try TemporaryRepository()
@@ -32,14 +33,17 @@ struct RepositoryScanTests {
         // 链接工作区的 .git 是文件；指向选定目录之外的链接不跟随
         try FileManager.default.createDirectory(at: root.appending(path: "worktree"), withIntermediateDirectories: true)
         try Data("gitdir: /elsewhere\n".utf8).write(to: root.appending(path: "worktree/.git"))
+
         try FileManager.default.createDirectory(
             at: outside.directory.appending(path: "external/.git"),
             withIntermediateDirectories: true
         )
+
         try FileManager.default.createSymbolicLink(
             at: root.appending(path: "link"),
             withDestinationURL: outside.directory
         )
+
         try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: locked.path)
 
         var found: [RepositoryLocation] = []
@@ -49,13 +53,25 @@ struct RepositoryScanTests {
         }
 
         let expected = (repositories + ["worktree"]).map { RepositoryLocation.local(path: root.path + "/" + $0) }
+
         #expect(Set(found) == Set(expected))
         #expect(found.count == expected.count)
         #expect(found.allSatisfy { $0.host == nil })
+
+        // 跨块路径与嵌套过滤
+        let collector = RepositoryScan.Collector(host: "b")
+        let output = Data("/s/a/.git\u{0}/s/a/n/.git\u{0}/s/ab/.git\u{0}".utf8)
+
+        let first = collector.receive(output.prefix(5))
+        let rest = collector.receive(output.dropFirst(5))
+
+        #expect(first.isEmpty)
+        #expect(rest == [.remote(host: "b", path: "/s/a"), .remote(host: "b", path: "/s/ab")])
     }
 
-    /// 选定目录本身就是仓库时只报告它自己；根目录不存在或不能读取时以错误结束。
-    @Test("本机扫描：根目录是仓库、不存在与不能读取", .timeLimit(.minutes(5)))
+    /// 选定目录本身就是仓库时只报告它自己；根目录不存在或不能读取时以错误结束；
+    /// 取得第一个结果后停止迭代即取消扫描，之后同一主机的命令照常执行。
+    @Test("本机扫描：根目录是仓库、不存在与不能读取，提前结束迭代即取消")
     func rootCases() async throws {
         let fixture = try TemporaryRepository()
         let locked = fixture.directory.appending(path: "locked")
@@ -65,17 +81,17 @@ struct RepositoryScanTests {
             fixture.remove()
         }
 
-        try FileManager.default.createDirectory(
-            at: fixture.directory.appending(path: "repo/.git"),
-            withIntermediateDirectories: true
-        )
-        try FileManager.default.createDirectory(
-            at: fixture.directory.appending(path: "repo/inner/.git"),
-            withIntermediateDirectories: true
-        )
+        for path in ["repo/.git", "repo/inner/.git"] + (0 ..< 50).map({ "many/r\($0)/.git" }) {
+            try FileManager.default.createDirectory(
+                at: fixture.directory.appending(path: path),
+                withIntermediateDirectories: true
+            )
+        }
+
         try FileManager.default.createDirectory(at: locked, withIntermediateDirectories: false)
         try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: locked.path)
 
+        // 根目录本身是仓库
         var found: [RepositoryLocation] = []
         let repository = fixture.directory.appending(path: "repo").path
 
@@ -85,6 +101,7 @@ struct RepositoryScanTests {
 
         #expect(found == [.local(path: repository)])
 
+        // 根目录不存在与不能读取
         await #expect(throws: HostOperationError.self) {
             for try await _ in RepositoryScan.repositories(in: .local(path: fixture.directory.path + "/missing")) { }
         }
@@ -92,46 +109,22 @@ struct RepositoryScanTests {
         let denied = await #expect(throws: HostOperationError.self) {
             for try await _ in RepositoryScan.repositories(in: .local(path: locked.path)) { }
         }
+
         guard case .permissionDenied = denied else {
             Issue.record("不能读取的根目录应报告为没有权限")
             return
         }
-    }
 
-    /// 取得第一个结果后停止迭代即取消扫描，之后同一主机的命令照常执行。
-    @Test("本机扫描：提前结束迭代即取消", .timeLimit(.minutes(5)))
-    func cancellation() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
+        // 取得第一个结果后停止迭代
+        let many = fixture.directory.appending(path: "many").path
+        var earliest: RepositoryLocation? = nil
 
-        for index in 0 ..< 50 {
-            try FileManager.default.createDirectory(
-                at: fixture.directory.appending(path: "r\(index)/.git"),
-                withIntermediateDirectories: true
-            )
-        }
-
-        var first: RepositoryLocation? = nil
-
-        for try await location in RepositoryScan.repositories(in: .local(path: fixture.directory.path)) {
-            first = location
+        for try await location in RepositoryScan.repositories(in: .local(path: many)) {
+            earliest = location
             break
         }
 
-        #expect(first != nil)
-        #expect(try await HostDirectories.status(of: .local(path: fixture.directory.path)).isDirectory)
-    }
-
-    /// 输出块在路径中间切开时拼回完整路径；嵌套在已找到的仓库里的结果丢弃。
-    @Test("扫描结果：跨块路径与嵌套过滤")
-    func collector() {
-        let collector = RepositoryScan.Collector(host: "b")
-        let output = Data("/s/a/.git\u{0}/s/a/n/.git\u{0}/s/ab/.git\u{0}".utf8)
-
-        let first = collector.receive(output.prefix(5))
-        let rest = collector.receive(output.dropFirst(5))
-
-        #expect(first.isEmpty)
-        #expect(rest == [.remote(host: "b", path: "/s/a"), .remote(host: "b", path: "/s/ab")])
+        #expect(earliest != nil)
+        #expect(try await HostDirectories.status(of: .local(path: many)).isDirectory)
     }
 }

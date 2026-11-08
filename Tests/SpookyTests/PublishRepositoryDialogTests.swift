@@ -24,6 +24,7 @@ struct PublishRepositoryDialogTests {
         let hosting = NSHostingView(rootView: PublishRepositoryDialog(session: session, close: { }))
         hosting.frame.size = hosting.fittingSize
         hosting.layoutSubtreeIfNeeded()
+
         #expect(hosting.frame.width == 480)
 
         // 自上而下依次是 Remote Name、Name 与 Description；描述的文字框外有上下 8、左右 4 的边距，边框画在边距外缘
@@ -44,24 +45,25 @@ struct PublishRepositoryDialogTests {
         #expect(abs(description.height - 64) <= 1)
     }
 
-    /// `origin` 没被占用时用它；被占用时依次试 `origin-2`、`origin-3`。
-    @Test("预填的远端名")
-    func remoteName() {
+    /// 远端名：`origin` 没被占用时用它，被占用时依次试 `origin-2`、`origin-3`。
+    /// Account 下拉按账号列表的顺序，每个账号先是本人、再是按路径升序的组织；
+    /// 本人写出实例，组织写路径，还没读到的账号没有项。
+    @Test("预填的远端名与 Account 下拉的项")
+    func prefill() throws {
         #expect(PublishRepositoryDialog.remoteName(avoiding: []) == "origin")
         #expect(PublishRepositoryDialog.remoteName(avoiding: ["upstream"]) == "origin")
         #expect(PublishRepositoryDialog.remoteName(avoiding: ["origin"]) == "origin-2")
         #expect(PublishRepositoryDialog.remoteName(avoiding: ["origin", "origin-2"]) == "origin-3")
-    }
 
-    /// 按账号列表的顺序，每个账号先是本人、再是按路径升序的组织；本人写出实例，组织写路径；还没读到的账号没有项。
-    @Test("Account 下拉的项")
-    func items() throws {
+        // Account 下拉
         let github = HostingAccount(instance: .github, username: "rakuyo", authentication: .oauth)
+
         let gitlab = HostingAccount(
             instance: try #require(HostingInstance.gitlab(address: "https://git.example.com")),
             username: "me",
             authentication: .personalAccessToken
         )
+
         let pending = HostingAccount(instance: .gitlabCom, username: "later", authentication: .personalAccessToken)
 
         let owners = [
@@ -79,14 +81,17 @@ struct PublishRepositoryDialogTests {
 
         let items = PublishRepositoryDialog.items(of: [github, pending, gitlab], owners: owners)
 
-        #expect(items.map(\.title) == [
-            "rakuyo – " + HostingInstance.github.displayName,
-            "Acme",
-            "zeta",
-            "me – " + gitlab.instance.displayName,
-            "group",
-            "group/sub",
-        ])
+        #expect(
+            items.map(\.title) == [
+                "rakuyo – " + HostingInstance.github.displayName,
+                "Acme",
+                "zeta",
+                "me – " + gitlab.instance.displayName,
+                "group",
+                "group/sub",
+            ]
+        )
+
         #expect(items.map(\.account) == [github, github, github, gitlab, gitlab, gitlab])
         #expect(Set(items.map(\.id)).count == items.count)
     }
@@ -107,6 +112,7 @@ struct PublishRepositoryDialogTests {
             action: #selector(RepositoryWindowController.publishRepository),
             keyEquivalent: ""
         )
+
         #expect(!controller.validateUserInterfaceItem(item))
 
         _ = try accounts.save(
@@ -115,6 +121,7 @@ struct PublishRepositoryDialogTests {
             authentication: .personalAccessToken,
             token: "t"
         )
+
         #expect(controller.validateUserInterfaceItem(item))
     }
 }

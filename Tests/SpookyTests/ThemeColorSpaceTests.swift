@@ -9,24 +9,24 @@ import Testing
 /// 直接主题色按 Generic RGB 解释，推导色与界面命名色保持 sRGB，颜色面板的显示和保存不能往返漂移。
 @MainActor
 struct ThemeColorSpaceTests {
-    /// 两套内置主题的全部颜色经过真正的 SwiftUI 渲染入口后，仍保留文件里的 Generic RGB 分量。
-    @Test("主题色的直接构色与渲染", arguments: [0, 1])
-    func themeColors(_ index: Int) throws {
-        let theme = TextTheme.builtin[index]
-        let style = TextStyle(theme: theme, tabWidth: 4, showsInvisibles: false)
+    /// 两套内置主题的全部颜色经过真正的 SwiftUI 渲染入口后，仍保留文件里的 Generic RGB 分量；
+    /// 黑白保留原来的外观，中间色必须改变显示分量，防止把直接构色写成保色的空间转换；
+    /// 行号与块描边使用 sRGB 偏移，任意精度的不透明度不经过颜色面板的两位舍入。
+    @Test("主题色的直接构色、渲染与 Diff 推导色")
+    func themeColors() throws {
+        for theme in TextTheme.builtin {
+            let style = TextStyle(theme: theme, tabWidth: 4, showsInvisibles: false)
 
-        for (key, color) in theme.colors {
-            let expected = try Self.components(color.nsColor, space: .sRGB)
-            try Self.expect(color.calibratedNSColor, space: .genericRGB, components: expected)
-            try Self.expect(NSColor(style.color(key)), space: .genericRGB, components: expected)
-            #expect(PaletteColor(nsColor: color.calibratedNSColor, colorSpace: .genericRGB) == color)
-            #expect(PaletteColor(nsColor: color.nsColor) == color)
+            for (key, color) in theme.colors {
+                let expected = try Self.components(color.nsColor, space: .sRGB)
+                try Self.expect(color.calibratedNSColor, space: .genericRGB, components: expected)
+                try Self.expect(NSColor(style.color(key)), space: .genericRGB, components: expected)
+                #expect(PaletteColor(nsColor: color.calibratedNSColor, colorSpace: .genericRGB) == color)
+                #expect(PaletteColor(nsColor: color.nsColor) == color)
+            }
         }
-    }
 
-    /// 黑白保留原来的外观，中间色必须改变显示分量，防止把直接构色写成保色的空间转换。
-    @Test("黑白与中间色的空间区别")
-    func colorInterpretation() throws {
+        // 黑白与中间色的空间区别
         for (hex, value) in [("#000000", 0.0), ("#FFFFFF", 1.0)] {
             let color = PaletteColor(hex: hex, alpha: 1)
             try Self.expect(color.calibratedNSColor, space: .sRGB, components: [value, value, value, 1])
@@ -36,6 +36,21 @@ struct ThemeColorSpaceTests {
         let srgb = try Self.components(color.nsColor, space: .sRGB)
         let calibrated = try Self.components(color.calibratedNSColor, space: .sRGB)
         #expect(abs(srgb[0] - calibrated[0]) > 0.01)
+
+        // Diff 推导色保留 sRGB 与原始不透明度
+        let source = PaletteColor(hex: "#161819", alpha: 0.123_456)
+        let shifted = source.offset(by: 0.2)
+        #expect(shifted.alpha == source.alpha)
+        #expect(shifted.hex == "#494B4C")
+
+        var theme = TextTheme.builtin[1]
+        theme.colors["text"] = source
+        let style = TextStyle(theme: theme, tabWidth: 4, showsInvisibles: false)
+        try Self.expect(
+            NSColor(style.lineNumberColor),
+            space: .sRGB,
+            components: Self.components(shifted.nsColor, space: .sRGB)
+        )
     }
 
     /// 原文、背景与选区直接取主题色；次要文字、段高亮与分隔线仍由原始 sRGB 分量按亮度推导。
@@ -74,26 +89,9 @@ struct ThemeColorSpaceTests {
         }
     }
 
-    /// 行号与块描边使用 sRGB 偏移，任意精度的不透明度不经过颜色面板的两位舍入。
-    @Test("Diff 推导色保留 sRGB 与原始不透明度")
-    func derivedDiffColors() throws {
-        let source = PaletteColor(hex: "#161819", alpha: 0.123_456)
-        let shifted = source.offset(by: 0.2)
-        #expect(shifted.alpha == source.alpha)
-        #expect(shifted.hex == "#494B4C")
-
-        var theme = TextTheme.builtin[1]
-        theme.colors["text"] = source
-        let style = TextStyle(theme: theme, tabWidth: 4, showsInvisibles: false)
-        try Self.expect(
-            NSColor(style.lineNumberColor),
-            space: .sRGB,
-            components: Self.components(shifted.nsColor, space: .sRGB)
-        )
-    }
-
-    /// 不同来源先转到 Generic RGB 再夹值与舍入，存回后保持稳定；透明度与图案色也走同一入口。
-    @Test("颜色面板的空间转换与保存")
+    /// 不同来源先转到 Generic RGB 再夹值与舍入，存回后保持稳定；透明度与图案色也走同一入口；
+    /// 色块收到相同颜色时不写回，真实 sRGB 面板输入转换为 Generic RGB 后写入一次。
+    @Test("颜色面板的空间转换、保存与写入")
     func panelConversion() throws {
         let inputs = [
             NSColor(srgbRed: 0.2, green: 0.4, blue: 0.6, alpha: 0.123_456),
@@ -116,11 +114,8 @@ struct ThemeColorSpaceTests {
         let pattern = NSColor(patternImage: NSImage(size: NSSize(width: 2, height: 2)))
         #expect(PaletteColor(nsColor: pattern, colorSpace: .genericRGB) == nil)
         #expect(PaletteColor(nsColor: pattern) == nil)
-    }
 
-    /// 相同颜色不写回，真实 sRGB 面板输入转换为 Generic RGB 后写入一次。
-    @Test("颜色面板避免重复写入")
-    func panelChanges() throws {
+        // 色块收到相同颜色时不写回
         let original = PaletteColor(hex: "#123456", alpha: 0.5)
         var changes: [PaletteColor] = []
         let parent = ThemeColorWell(color: original, isEnabled: true, label: "Color") { changes.append($0) }
@@ -160,7 +155,6 @@ struct ThemeColorSpaceTests {
             #expect(saved.alpha == (expected.alpha * 100).rounded() / 100)
         }
     }
-
 }
 
 // MARK: - Helpers

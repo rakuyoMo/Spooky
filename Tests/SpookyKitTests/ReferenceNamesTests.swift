@@ -12,15 +12,19 @@ struct ReferenceNamesTests {
         String(repeating: "a", count: 40), String(repeating: "0", count: 64),
     ]
 
-    /// 斜杠分层、中文、点号与引号都是合法名字；非法写法逐一被拒绝。
-    @Test("分支与标签名的合法与非法写法")
-    func branchAndTagNames() async throws {
+    /// 分支与标签名：斜杠分层、中文、点号与引号都是合法名字，非法写法逐一被拒绝；
+    /// 远端名可以含斜杠与点，但不能是 “.”、“..”，也不能含会改变命令行配置键的 “=”；
+    /// refspec 的强制前缀、通配符成对，push 允许空来源表示删除，fetch 必须有目标；
+    /// 远端地址只拒绝会被当作选项、带控制字符或首尾空白的写法，各种协议与本机路径都放行。
+    @Test("分支、标签、远端名、refspec 与远端地址的合法与非法写法")
+    func validation() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
 
         try await fixture.initialize()
         let refs = RepositoryReferences(runner: fixture.runner)
 
+        // 分支与标签名
         for name in ["feature/v1.2/功能", "release-1.0", "it's", "a\"b", String(repeating: "a", count: 39)] {
             try await refs.validate(name: name)
             try await refs.validate(tag: name)
@@ -30,21 +34,13 @@ struct ReferenceNamesTests {
             await #expect(throws: ReferenceError.self, "分支名应被拒绝：\(name.debugDescription)") {
                 try await refs.validate(name: name)
             }
+
             await #expect(throws: ReferenceError.self, "标签名应被拒绝：\(name.debugDescription)") {
                 try await refs.validate(tag: name)
             }
         }
-    }
 
-    /// 远端名可以含斜杠与点，但不能是 “.”、“..”，也不能含会改变命令行配置键的 “=”。
-    @Test("远端名的合法与非法写法")
-    func remoteNames() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        try await fixture.initialize()
-        let refs = RepositoryReferences(runner: fixture.runner)
-
+        // 远端名
         for name in ["origin", "up.stream", "team/fork", "上游"] {
             try await refs.validate(remote: name)
         }
@@ -54,17 +50,8 @@ struct ReferenceNamesTests {
                 try await refs.validate(remote: name)
             }
         }
-    }
 
-    /// fetch 与 push 的 refspec：强制前缀、通配符成对、push 允许空来源表示删除，fetch 必须有目标。
-    @Test("refspec 的合法与非法写法")
-    func refspecs() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        try await fixture.initialize()
-        let refs = RepositoryReferences(runner: fixture.runner)
-
+        // fetch 与 push 的 refspec
         let validFetch = [
             "+refs/heads/*:refs/remotes/origin/*",
             "refs/heads/main:refs/remotes/origin/main",
@@ -96,11 +83,8 @@ struct ReferenceNamesTests {
                 try await refs.validate(refspec: spec, push: true)
             }
         }
-    }
 
-    /// 远端地址只拒绝会被当作选项、带控制字符或首尾空白的写法，各种协议与本机路径都放行。
-    @Test("远端地址的注入与控制字符")
-    func urls() throws {
+        // 远端地址
         for url in ["git@github.com:owner/repo.git", "https://example.com/a b.git", "../remote.git", "/srv/仓库.git"] {
             try RepositoryReferences.validate(url: url)
         }
@@ -112,10 +96,11 @@ struct ReferenceNamesTests {
         }
     }
 
-    /// 网页地址：SSH、scp 写法与 git 协议换成 HTTPS 并去掉端口，HTTP(S) 保留端口，用户名、口令与 .git 后缀都去掉。
-    @Test(
-        "远端地址换算网页地址",
-        arguments: [
+    /// 网页地址：SSH、scp 写法与 git 协议换成 HTTPS 并去掉端口，HTTP(S) 保留端口，用户名、口令与 .git 后缀都去掉；
+    /// 本机路径、file 协议、不认识的协议与没有仓库路径的地址都换算不出网页地址。
+    @Test("远端地址换算网页地址与换算不出的地址")
+    func webURLs() {
+        let cases = [
             ("git@github.com:owner/repo.git", "https://github.com/owner/repo"),
             ("github.com:owner/repo", "https://github.com/owner/repo"),
             ("ssh://git@example.com:2222/team/project.git", "https://example.com/team/project"),
@@ -126,14 +111,12 @@ struct ReferenceNamesTests {
             ("https://example.com/仓库.git", "https://example.com/%E4%BB%93%E5%BA%93"),
             ("git@example.com:/srv/git/repo.git", "https://example.com/srv/git/repo"),
         ]
-    )
-    func webURLs(remote: String, expected: String) {
-        #expect(RemoteConfiguration.webURL(for: remote)?.absoluteString == expected)
-    }
 
-    /// 本机路径、file 协议、不认识的协议与没有仓库路径的地址都换算不出网页地址。
-    @Test("换算不出网页地址的远端地址")
-    func webURLFailures() {
+        for (remote, expected) in cases {
+            #expect(RemoteConfiguration.webURL(for: remote)?.absoluteString == expected, "\(remote)")
+        }
+
+        // 换算不出网页地址的远端地址
         let remotes = [
             "/srv/git/repo.git", "../remote.git", "file:///srv/repo.git", "ftp://example.com/x.git",
             "https://example.com/", "git@example.com:", "C/x:y",

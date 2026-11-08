@@ -49,7 +49,10 @@ struct WorkingCopyScopeFixture {
         }
 
         let target = repository.directory.appending(path: newPath)
-        try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: target.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
         try FileManager.default.moveItem(at: temporary, to: target)
         _ = try await runner.run(["add", "--all"])
         let renamed = try await entry()

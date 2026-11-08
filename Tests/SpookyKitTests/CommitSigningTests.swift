@@ -46,49 +46,45 @@ struct CommitSigningTests {
         printf '%s\\n' '-----BEGIN PGP SIGNATURE-----' 'fake' '-----END PGP SIGNATURE-----'
         """
 
-    /// 密钥已解锁或没有口令时不弹出询问，提交照常签名。
-    @Test("gpg 不需要口令时不询问")
-    func gpgWithoutPassphrase() async throws {
+    /// 密钥已解锁或没有口令时不弹出询问；需要口令时只询问一次，请求标为签名口令并带上 gpg 给出的密钥提示；
+    /// 取消输入、口令错误和找不到程序都归为签名失败，原始输出保留，提交没有生成。
+    @Test("gpg 签名口令的询问、应答与失败")
+    func gpgPassphrase() async throws {
         let requests = Mutex<[RemoteCallbackRequest]>([])
-        let result = try await Self.commitThroughWrapper(passphrase: "") { request in
+        let unlocked = try await Self.commitThroughWrapper(passphrase: "") { request in
             requests.withLock { $0.append(request) }
             return nil
         }
 
-        let asked = requests.withLock { $0 }
-        #expect(result.signed)
-        #expect(asked.isEmpty)
-    }
+        #expect(unlocked.signed)
+        #expect(requests.withLock { $0 }.isEmpty)
 
-    /// 需要口令时只询问一次，请求标为签名口令并带上 gpg 给出的密钥提示。
-    @Test("gpg 口令经中继应答")
-    func gpgPassphraseRelayed() async throws {
-        let requests = Mutex<[RemoteCallbackRequest]>([])
-        let result = try await Self.commitThroughWrapper(passphrase: "口令 pw") { request in
+        // 需要口令时经中继应答一次
+        let relayed = try await Self.commitThroughWrapper(passphrase: "口令 pw") { request in
             requests.withLock { $0.append(request) }
             return "口令 pw"
         }
 
         let asked = requests.withLock { $0 }
-        #expect(result.signed)
+        #expect(relayed.signed)
         #expect(asked.count == 1)
+
         let request = try #require(asked.first)
         #expect(request.kind == .signing)
         #expect(request.prompt.contains("Spooky Test <spooky@example.invalid>"))
-    }
 
-    /// 取消输入、口令错误和找不到程序都归为签名失败，原始输出保留，提交没有生成。
-    @Test("gpg 签名失败保留原始错误")
-    func gpgFailures() async throws {
+        // 取消输入
         let cancelled = try await Self.commitThroughWrapper(passphrase: "secret") { _ in nil }
         #expect(cancelled.error?.category == .signingFailed)
         #expect(cancelled.standardError.contains("Operation cancelled"))
         #expect(!cancelled.signed)
 
+        // 口令错误
         let wrong = try await Self.commitThroughWrapper(passphrase: "secret") { _ in "wrong" }
         #expect(wrong.error?.category == .signingFailed)
         #expect(wrong.standardError.contains("Bad passphrase"))
 
+        // 找不到配置的 gpg 程序
         let missing = try await Self.commitThroughWrapper(passphrase: "", program: "/nonexistent/gpg") { _ in nil }
         #expect(missing.error?.category == .signingFailed)
         #expect(missing.standardError.contains("cannot exec '/nonexistent/gpg'"))
@@ -99,10 +95,12 @@ struct CommitSigningTests {
     func localSSHSigning() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
+
         try await repository.initialize()
 
         let keys = try Self.privateDirectory()
         defer { try? FileManager.default.removeItem(at: keys) }
+
         let key = keys.appending(path: "签名 key")
         _ = try await CommandExecutor.execute(
             executable: "/usr/bin/ssh-keygen",
@@ -110,7 +108,11 @@ struct CommitSigningTests {
             arguments: ["ssh-keygen"]
         )
 
-        for (name, value) in [("gpg.format", "ssh"), ("user.signingkey", key.path + ".pub"), ("commit.gpgsign", "true")] {
+        for (name, value) in [
+            ("gpg.format", "ssh"),
+            ("user.signingkey", key.path + ".pub"),
+            ("commit.gpgsign", "true"),
+        ] {
             _ = try await repository.runner.run(["config", "--local", name, value])
         }
 
@@ -175,6 +177,7 @@ extension CommitSigningTests {
     ) async throws -> SigningResult {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
+
         try await repository.initialize()
 
         let session = try Self.privateDirectory()
@@ -184,6 +187,7 @@ extension CommitSigningTests {
         let relay = try CallbackRelay(path: session.appending(path: "relay.sock").path, host: "test", handler: handler)
         try relay.start()
         defer { relay.stop() }
+
         let operation = UUID().uuidString.lowercased()
         relay.register(operation)
         defer { relay.unregister(operation) }
@@ -224,7 +228,9 @@ extension CommitSigningTests {
         }
 
         let head = try await runner.execute(["cat-file", "-p", "HEAD"], acceptedExitCodes: [0, 128])
-        let signed = String(decoding: head.standardOutput, as: UTF8.self).contains("gpgsig -----BEGIN PGP SIGNATURE-----")
+        let text = String(decoding: head.standardOutput, as: UTF8.self)
+        let signed = text.contains("gpgsig -----BEGIN PGP SIGNATURE-----")
+
         return SigningResult(error: failure, signed: signed)
     }
 

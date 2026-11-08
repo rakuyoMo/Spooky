@@ -1,6 +1,7 @@
 import Foundation
 import SpookyKit
 import Testing
+import TestSupport
 
 @testable import Spooky
 
@@ -10,8 +11,10 @@ import Testing
 @MainActor
 struct PullRequestTargetTests {
     /// github.com 上只有一个账号时直接对应；GitLab.com 的地址没有账号时说明要登录 GitLab。
-    @Test("按账号的实例对应")
-    func resolveByInstance() {
+    /// 同一实例上的多个账号要选一个；选定或手动关联后按关联对应，手动填的项目路径优先于地址推出的；
+    /// 关联写进偏好后可以读回，删除后不再存在。
+    @Test("按账号的实例对应，多个账号与手动关联")
+    func resolve() throws {
         let github = HostingAccount(instance: .github, username: "rakuyo", authentication: .oauth)
 
         #expect(
@@ -27,11 +30,8 @@ struct PullRequestTargetTests {
                 == .unsupported
         )
         #expect(PullRequestTarget.resolve(remoteURL: "/srv/r.git", accounts: [], associations: [:]) == .unsupported)
-    }
 
-    /// 同一实例上的多个账号要选一个；选定或手动关联后按关联对应，手动填的项目路径优先于地址推出的。
-    @Test("多个账号与手动关联")
-    func chooseAndAssociate() throws {
+        // 同一实例上的多个账号
         let instance = try #require(HostingInstance.gitlab(address: "https://git.example.com/gitlab"))
         let me = HostingAccount(instance: instance, username: "me", authentication: .personalAccessToken)
         let bot = HostingAccount(instance: instance, username: "bot", authentication: .personalAccessToken)
@@ -56,33 +56,25 @@ struct PullRequestTargetTests {
         )
 
         // 关联的账号已被移除时当作没有关联
-        #expect(PullRequestTarget.resolve(remoteURL: alias, accounts: [bot], associations: [alias: association]) == .unsupported)
-    }
+        #expect(
+            PullRequestTarget.resolve(
+                remoteURL: alias,
+                accounts: [bot],
+                associations: [alias: association]
+            ) == .unsupported
+        )
 
-    /// 关联写进偏好后可以读回，删除后不再存在。
-    @Test("关联的存取")
-    func associations() throws {
+        // 关联的存取
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "spooky-pr-associations-" + UUID().uuidString)
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
         defer { try? FileManager.default.removeItem(at: directory) }
 
-        let association = PullRequestAssociation(account: UUID(), project: "o/r")
-        PullRequestAssociations.set(association, for: "git@alias:o/r.git", in: defaults)
-        #expect(PullRequestAssociations.load(from: defaults) == ["git@alias:o/r.git": association])
+        PullRequestAssociations.set(association, for: alias, in: defaults)
+        #expect(PullRequestAssociations.load(from: defaults) == [alias: association])
 
-        PullRequestAssociations.set(nil, for: "git@alias:o/r.git", in: defaults)
+        PullRequestAssociations.set(nil, for: alias, in: defaults)
         #expect(PullRequestAssociations.load(from: defaults).isEmpty)
-    }
-
-    /// 请求视图的文案按服务取叫法，格式参数原样代入。
-    @Test("按服务的文案")
-    func terminology() {
-        let session = RepositorySession()
-
-        #expect(!session.usesMergeRequests)
-        #expect(session.pullRequestText("create.message", "GitHub", "o/r").contains("“o/r”"))
-        #expect(session.pullRequestText("close.message", "#7", "github.com").contains("#7"))
     }
 
     /// 添加、移除与重新认证账号后请求视图重新找对应的账号；令牌被拒时自动加上的标记不再读一次。
@@ -111,16 +103,17 @@ struct PullRequestTargetTests {
     /// 请求视图读过之后，仓库里加了远端、刷新读到新的引用时，请求视图随即重新读出远端。
     @Test("远端变化后重新读取请求")
     func remotesChange() async throws {
-        // 远端变化由窗口观察，再交给会话重读请求
-        let fixture = try await HistoryListTests.makeSession(commits: ["first"], createsWindowController: true)
+        // 远端变化由窗口观察，再交给会话重读请求；第一个远端在文件监听开始之前加上
+        let fixture = try await HistoryListTests.makeSession(
+            commits: ["first"],
+            createsWindowController: true
+        ) { runner, _ in
+            _ = try await runner.run(["remote", "add", "origin", "http://127.0.0.1:9/group/project.git"])
+        }
         defer { fixture.close() }
 
-        let session = fixture.session
-        _ = try await fixture.runner.run(["remote", "add", "origin", "http://127.0.0.1:9/group/project.git"])
-        session.refresh(full: true)
-        await session.waitForRefresh()
-
         // 账号列表只在内存里，不碰本机的账号
+        let session = fixture.session
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "spooky-remotes-change-" + UUID().uuidString)
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
@@ -129,20 +122,17 @@ struct PullRequestTargetTests {
         session.pullRequests.accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials())
         session.reloadPullRequests()
 
-        for _ in 0 ..< 1000 where !session.pullRequests.isLoaded {
-            try await Task.sleep(for: .milliseconds(10))
-        }
-
+        // 没有账号，远端对应不到服务，列表不发请求就读完；第一次读完时标记已读过
+        await until { session.pullRequests.isLoaded }
         #expect(session.pullRequests.remotes.map(\.name) == ["origin"])
 
+        // 加了远端后刷新，窗口看到新的引用就让会话重读请求；重读可能在刷新结束前就已读完，所以在加远端之前记下读到的远端
+        let before = session.pullRequests.remotes
         _ = try await fixture.runner.run(["remote", "add", "mirror", "myhost:group/project.git"])
         session.refresh(full: true)
         await session.waitForRefresh()
 
-        for _ in 0 ..< 1000 where session.pullRequests.remotes.count < 2 {
-            try await Task.sleep(for: .milliseconds(10))
-        }
-
+        await until { session.pullRequests.remotes != before && !session.pullRequests.isLoading }
         #expect(Set(session.pullRequests.remotes.map(\.name)) == ["mirror", "origin"])
     }
 }

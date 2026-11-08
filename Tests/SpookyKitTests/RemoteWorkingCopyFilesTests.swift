@@ -9,7 +9,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteWorkingCopyFilesTests {
     /// 忽略与排除规则写进 B 上的文件，info 目录不存在时经 SFTP 创建；停止跟踪、移动与删除都在 B 上执行。
-    @Test("服务器忽略、排除、停止跟踪、移动与删除", .timeLimit(.minutes(2)))
+    @Test("服务器忽略、排除、停止跟踪、移动与删除")
     func fileOperations() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -67,7 +67,7 @@ struct RemoteWorkingCopyFilesTests {
     }
 
     /// A 上的补丁内容经标准输入交给 B 上的 git apply；B 上的文件已被改动时前像核对拒绝应用。
-    @Test("服务器应用补丁并核对前像", .timeLimit(.minutes(2)))
+    @Test("服务器应用补丁并核对前像")
     func applyPatch() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

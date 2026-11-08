@@ -27,9 +27,10 @@ struct HostingInstanceTests {
         #expect(!HostingInstance.gitlabCom.isSelfManaged)
     }
 
-    /// github.com 的 HTTPS、SSH、scp 与 ssh.github.com 写法都对应到 owner/repo；别的主机与不是两段的路径不对应。
-    @Test("github.com 的远端")
-    func githubRemotes() {
+    /// github.com 的 HTTPS、SSH、scp 与 ssh.github.com 写法都对应到 owner/repo，别的主机与不是两段的路径不对应；
+    /// 私有部署的 GitLab 的 HTTPS 地址要带相同的端口与部署路径，SSH 地址只比主机，组可以多层。
+    @Test("远端地址对应到 github.com 与私有部署 GitLab 的项目")
+    func remotes() throws {
         let github = HostingInstance.github
 
         for url in [
@@ -48,11 +49,8 @@ struct HostingInstanceTests {
         #expect(github.projectPath(forRemote: "https://ssh.github.com/a/b") == nil)
         #expect(github.projectPath(forRemote: "gh-work:rakuyoMo/Spooky.git") == nil)
         #expect(github.projectPath(forRemote: "/srv/git/Spooky.git") == nil)
-    }
 
-    /// 私有部署的 GitLab：HTTPS 地址要带相同的端口与部署路径，SSH 地址只比主机；组可以多层。
-    @Test("私有部署 GitLab 的远端")
-    func gitlabRemotes() throws {
+        // 私有部署的 GitLab
         let instance = try #require(HostingInstance.gitlab(address: "https://git.example.com:8443/gitlab"))
 
         #expect(instance.projectPath(forRemote: "https://git.example.com:8443/gitlab/组/子组/项目.git") == "组/子组/项目")

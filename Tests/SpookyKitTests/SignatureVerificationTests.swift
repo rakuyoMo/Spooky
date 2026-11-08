@@ -7,9 +7,10 @@ import Testing
 
 /// 提交与标签的签名校验：SSH 签名用测试仓库本地配置的 allowed signers；本机没有 gpg 时跳过 OpenPGP 的实测。
 struct SignatureVerificationTests {
-    /// 有效、不在 allowed signers 里、没有签名与内容被篡改的提交各自得到对应的状态。
-    @Test("SSH 签名的提交状态", arguments: ["sha1", "sha256"])
-    func commitSignatures(objectFormat: String) async throws {
+    /// 有效、不在 allowed signers 里、没有签名与内容被篡改的提交，以及有效签名、陌生密钥、
+    /// 未签名的附注标签与轻量标签，各自得到对应的状态；去掉 allowed signers 后带签名头的都无法校验。
+    @Test("SSH 签名的提交与标签状态", arguments: ["sha1", "sha256"])
+    func sshSignatures(objectFormat: String) async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
 
@@ -20,16 +21,29 @@ struct SignatureVerificationTests {
         let runner = fixture.runner
         let trusted = try await Self.makeKey(in: keys, name: "trusted key")
         let other = try await Self.makeKey(in: keys, name: "other key")
-        try await Self.configure(fixture, signingKey: trusted, allowed: [("spooky@example.invalid", trusted)], keys: keys)
 
+        try await Self.configure(
+            fixture,
+            signingKey: trusted,
+            allowed: [("spooky@example.invalid", trusted)],
+            keys: keys
+        )
+
+        // 受信任的密钥签一个提交与一个标签，另有未签名的提交、附注标签与轻量标签
         let good = try await Self.commit(fixture, message: "signed", sign: true)
         let unsigned = try await Self.commit(fixture, message: "unsigned", sign: false)
+        _ = try await runner.run(["tag", "-s", "-m", "good", "签名/v1.0"])
+        _ = try await runner.run(["tag", "-a", "-m", "plain", "plain"])
+        _ = try await runner.run(["tag", "light"])
+
+        // 换成不在 allowed signers 里的密钥再签一个提交与一个标签
         _ = try await runner.run(["config", "--local", "user.signingkey", other.path])
         let unknown = try await Self.commit(fixture, message: "other", sign: true)
+        _ = try await runner.run(["tag", "-s", "-m", "other", "other"])
 
         // 改掉已签名提交的说明，签名头原样保留
-        let object = try await runner.run(["cat-file", "commit", good])
-        let edited = Data(String(decoding: object, as: UTF8.self).replacingOccurrences(of: "signed\n", with: "tampered\n").utf8)
+        let object = String(decoding: try await runner.run(["cat-file", "commit", good]), as: UTF8.self)
+        let edited = Data(object.replacingOccurrences(of: "signed\n", with: "tampered\n").utf8)
         let tampered = String(
             decoding: try await runner.run(["hash-object", "-t", "commit", "-w", "--stdin"], input: edited),
             as: UTF8.self
@@ -37,6 +51,7 @@ struct SignatureVerificationTests {
         .trimmingCharacters(in: .newlines)
 
         let history = RepositoryHistory(runner: runner)
+        let references = RepositoryReferences(runner: runner)
         let signatures = try await history.signatures(of: [good, unsigned, unknown, tampered])
 
         #expect(signatures[good]?.status == .good)
@@ -47,48 +62,28 @@ struct SignatureVerificationTests {
         #expect(signatures[unknown]?.status == .unknownValidity)
         #expect(signatures[tampered]?.status == .bad)
 
-        // 没有配置 allowed signers 时 Git 报告为没有签名，带签名头的提交改为无法校验
-        _ = try await runner.run(["config", "--local", "--unset", "gpg.ssh.allowedSignersFile"])
-        let unconfigured = try await history.signatures(of: [good, unsigned])
-        #expect(unconfigured[good]?.status == .cannotCheck)
-        #expect(unconfigured[unsigned]?.status == SignatureStatus.unsigned)
-
-        await #expect(throws: RepositoryReadError.self) { try await history.signatures(of: ["HEAD"]) }
-    }
-
-    /// 标签：有效签名、不在 allowed signers 里的密钥、未签名的附注标签与轻量标签。
-    @Test("SSH 签名的标签状态")
-    func tagSignatures() async throws {
-        let fixture = try TemporaryRepository()
-        defer { fixture.remove() }
-
-        try await fixture.initialize()
-        let keys = try Self.keyDirectory()
-        defer { try? FileManager.default.removeItem(at: keys) }
-
-        let runner = fixture.runner
-        let trusted = try await Self.makeKey(in: keys, name: "trusted")
-        let other = try await Self.makeKey(in: keys, name: "other")
-        try await Self.configure(fixture, signingKey: trusted, allowed: [("spooky@example.invalid", trusted)], keys: keys)
-        _ = try await Self.commit(fixture, message: "root", sign: false)
-
-        _ = try await runner.run(["tag", "-s", "-m", "good", "签名/v1.0"])
-        _ = try await runner.run(["tag", "-a", "-m", "plain", "plain"])
-        _ = try await runner.run(["tag", "light"])
-        _ = try await runner.run(["config", "--local", "user.signingkey", other.path])
-        _ = try await runner.run(["tag", "-s", "-m", "other", "other"])
-
-        let references = RepositoryReferences(runner: runner)
-        let good = try await references.signature(ofTag: "refs/tags/签名/v1.0")
-        #expect(good.status == .good && good.signer == "spooky@example.invalid")
+        // 标签按同样的规则归类，未签名的附注标签与轻量标签都算没有签名
+        let tag = try await references.signature(ofTag: "refs/tags/签名/v1.0")
+        #expect(tag.status == .good && tag.signer == "spooky@example.invalid")
         #expect(try await references.signature(ofTag: "refs/tags/other").status == .unknownValidity)
         #expect(try await references.signature(ofTag: "refs/tags/plain").status == SignatureStatus.unsigned)
         #expect(try await references.signature(ofTag: "refs/tags/light").status == SignatureStatus.unsigned)
 
+        // 没有配置 allowed signers 时 Git 报告为没有签名，带签名头的提交与标签归为无法校验
         _ = try await runner.run(["config", "--local", "--unset", "gpg.ssh.allowedSignersFile"])
+
+        let unconfigured = try await history.signatures(of: [good, unsigned])
+        #expect(unconfigured[good]?.status == .cannotCheck)
+        #expect(unconfigured[unsigned]?.status == SignatureStatus.unsigned)
         #expect(try await references.signature(ofTag: "refs/tags/签名/v1.0").status == .cannotCheck)
 
-        await #expect(throws: RepositoryReadError.self) { try await references.signature(ofTag: "refs/heads/main") }
+        // 不是提交哈希的参数与不是标签的引用都报读取错误
+        await #expect(throws: RepositoryReadError.self) {
+            try await history.signatures(of: ["HEAD"])
+        }
+        await #expect(throws: RepositoryReadError.self) {
+            try await references.signature(ofTag: "refs/heads/main")
+        }
     }
 
     /// 本机装有 gpg 时实测 OpenPGP 签名经包装器校验；没有 gpg 时跳过。
@@ -178,31 +173,52 @@ struct SignatureVerificationTests {
     @Test("签名输出的解析")
     func parsing() throws {
         let hash = String(repeating: "b", count: 40)
-        let parsed = try CommitSignature.parse(Data("\(hash)\0G\0Name <mail@example.invalid>\0KEY\0FPR\0".utf8))
+
+        // 签名查询的字段以 NUL 分隔，签名人拆成名字与邮箱；字段缺失、状态不认识或不是哈希时报错
+        let record = "\(hash)\0G\0Name <mail@example.invalid>\0KEY\0FPR\0"
+        let parsed = try CommitSignature.parse(Data(record.utf8))
         #expect(parsed[hash]?.name == "Name" && parsed[hash]?.email == "mail@example.invalid")
 
         for malformed in ["\(hash)\0G\0", "\(hash)\0Z\0\0\0\0", "HEAD\0G\0\0\0\0", "\(hash)\0G\0\0\0"] {
-            #expect(throws: RepositoryReadError.self) { try CommitSignature.parse(Data(malformed.utf8)) }
+            #expect(throws: RepositoryReadError.self) {
+                try CommitSignature.parse(Data(malformed.utf8))
+            }
         }
 
+        // cat-file 输出里缺失的对象跳过，签名头只在头部算数，长度不符时报错
         let object = "\(hash) commit 11\ngpgsig x\n\nm\n\(hash) missing\n"
         let objects = try CommitObjects.parse(Data(object.utf8))
         #expect(objects.count == 1 && CommitObjects.hasSignature(objects[0].content))
         #expect(!CommitObjects.hasSignature(Data("tree a\n\ngpgsig in message\n".utf8)))
-        #expect(throws: RepositoryReadError.self) { try CommitObjects.parse(Data("\(hash) commit 99\nshort\n".utf8)) }
 
+        #expect(throws: RepositoryReadError.self) {
+            try CommitObjects.parse(Data("\(hash) commit 99\nshort\n".utf8))
+        }
+
+        // 标签的 GOODSIG 带上信任行才算有效，签名人、密钥与主密钥指纹都取出
         let good = "[GNUPG:] GOODSIG ABC Name <a@b.c>\n[GNUPG:] VALIDSIG F1 2 3 4 5 6 7 8 9 PRIMARY\n"
+        let trusted = TagVerification.parse(Self.result(good + "[GNUPG:] TRUST_ULTIMATE 0 pgp\n"))
         #expect(TagVerification.parse(Self.result(good)).status == .unknownValidity)
-        #expect(TagVerification.parse(Self.result(good + "[GNUPG:] TRUST_ULTIMATE 0 pgp\n")) == CommitSignature(
-            status: .good,
-            signer: "Name <a@b.c>",
-            key: "ABC",
-            primaryFingerprint: "PRIMARY"
-        ))
-        #expect(TagVerification.parse(Self.result("[GNUPG:] BADSIG ABC Name <a@b.c>\n")).status == .bad)
-        #expect(TagVerification.parse(Self.result("[GNUPG:] EXPKEYSIG ABC Name\n")).status == .expiredKey)
-        #expect(TagVerification.parse(Self.result("[GNUPG:] ERRSIG ABC 1 2 00 0 9\n")).status == .cannotCheck)
-        #expect(TagVerification.parse(Self.result("Signature verification failed: incorrect signature\n")).status == .bad)
+        #expect(
+            trusted == CommitSignature(
+                status: .good,
+                signer: "Name <a@b.c>",
+                key: "ABC",
+                primaryFingerprint: "PRIMARY"
+            )
+        )
+
+        // 坏签名、过期密钥、无法校验与 Git 自己的失败提示
+        let statuses: [(String, SignatureStatus)] = [
+            ("[GNUPG:] BADSIG ABC Name <a@b.c>\n", .bad),
+            ("[GNUPG:] EXPKEYSIG ABC Name\n", .expiredKey),
+            ("[GNUPG:] ERRSIG ABC 1 2 00 0 9\n", .cannotCheck),
+            ("Signature verification failed: incorrect signature\n", .bad),
+        ]
+
+        for (output, status) in statuses {
+            #expect(TagVerification.parse(Self.result(output)).status == status)
+        }
     }
 }
 
@@ -259,8 +275,15 @@ extension SignatureVerificationTests {
     }
 
     /// 创建一个空提交并返回它的哈希。
-    private static func commit(_ fixture: TemporaryRepository, message: String, sign: Bool) async throws -> String {
-        _ = try await fixture.runner.run(["commit", "-q", "--allow-empty", sign ? "-S" : "--no-gpg-sign", "-m", message])
+    private static func commit(
+        _ fixture: TemporaryRepository,
+        message: String,
+        sign: Bool
+    ) async throws -> String {
+        _ = try await fixture.runner.run([
+            "commit", "-q", "--allow-empty", sign ? "-S" : "--no-gpg-sign", "-m", message,
+        ])
+
         return try await RepositoryReferences(runner: fixture.runner).resolve("HEAD")
     }
 

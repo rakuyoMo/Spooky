@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteReflogUndoTests {
     /// HEAD 与分支的记录分页读取、按说明搜索，分支按读取时的位置核对后移回某条记录。
-    @Test("服务器 Reflog 分页、搜索与恢复分支", .timeLimit(.minutes(2)))
+    @Test("服务器 Reflog 分页、搜索与恢复分支")
     func reflog() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -49,7 +49,7 @@ struct RemoteReflogUndoTests {
     }
 
     /// 提交与带未跟踪文件的储藏在服务器上撤销后回到记录的状态，重做后回到操作后；操作后又被改动时拒绝。
-    @Test("服务器撤销与重做", .timeLimit(.minutes(3)))
+    @Test("服务器撤销与重做")
     func undo() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

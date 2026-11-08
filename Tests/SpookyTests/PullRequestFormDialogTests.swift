@@ -18,15 +18,18 @@ struct PullRequestFormDialogTests {
     func layout() throws {
         for request in [nil, Self.request()] {
             let hosting = Self.host(request)
+
             #expect(hosting.frame.width == 480)
 
             let title = try #require(Self.subviews(NSTextField.self, in: hosting).first { $0.isEditable })
             let titleFrame = title.convert(title.bounds, to: hosting)
+
             #expect(abs(titleFrame.minX - DialogMetrics.alignment) <= 1)
             #expect(abs(titleFrame.width - 320) <= 1)
 
             let scroll = try #require(Self.subviews(NSTextView.self, in: hosting).first?.enclosingScrollView)
             let descriptionFrame = scroll.convert(scroll.bounds, to: hosting)
+
             #expect(abs(descriptionFrame.minX - DialogMetrics.alignment) <= 1)
             #expect(abs(descriptionFrame.width - 320) <= 1)
             #expect(abs(descriptionFrame.height - 64) <= 1)

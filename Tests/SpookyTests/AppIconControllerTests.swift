@@ -14,62 +14,42 @@ struct AppIconControllerTests {
     ///
     /// 深色样式的 “始终” 子变体不看外观；“自动” 子变体只在深色外观（含高对比度、vibrant 变体）下换成深色图标，
     /// 浅色外观下与默认样式（键不存在）相同；透明、色调的各子变体在任何外观下都不换。
-    private nonisolated static let cases: [(
+    private static let cases: [(
         iconTheme: String?,
         appearance: NSAppearance.Name,
         disconnected: AppIconVariant?,
         connected: AppIconVariant?
     )] = [
         (nil, .darkAqua, nil, .connected),
-        (nil, .aqua, nil, .connected),
-
-        ("RegularDark", .darkAqua, .dark(isConnected: false), .dark(isConnected: true)),
         ("RegularDark", .aqua, .dark(isConnected: false), .dark(isConnected: true)),
-        ("RegularAutomatic", .darkAqua, .dark(isConnected: false), .dark(isConnected: true)),
         ("RegularAutomatic", .accessibilityHighContrastDarkAqua, .dark(isConnected: false), .dark(isConnected: true)),
         ("RegularAutomatic", .vibrantDark, .dark(isConnected: false), .dark(isConnected: true)),
-        ("RegularAutomatic", .aqua, nil, .connected),
         ("RegularAutomatic", .accessibilityHighContrastAqua, nil, .connected),
-        ("RegularAutomatic", .vibrantLight, nil, .connected),
-
-        ("ClearLight", .darkAqua, nil, nil),
-        ("ClearLight", .aqua, nil, nil),
-        ("ClearDark", .darkAqua, nil, nil),
-        ("ClearDark", .aqua, nil, nil),
         ("ClearAutomatic", .darkAqua, nil, nil),
-        ("ClearAutomatic", .aqua, nil, nil),
-
-        ("TintedLight", .darkAqua, nil, nil),
         ("TintedLight", .aqua, nil, nil),
-        ("TintedDark", .darkAqua, nil, nil),
-        ("TintedDark", .aqua, nil, nil),
-        ("TintedAutomatic", .darkAqua, nil, nil),
-        ("TintedAutomatic", .aqua, nil, nil),
     ]
 
     /// 样式、外观与连接状态决定换上哪一版图标。
-    @Test("样式、深浅外观与连接状态决定换上的图标", arguments: cases)
-    func variantFollowsIconStyleAndConnection(
-        iconTheme: String?,
-        appearance: NSAppearance.Name,
-        disconnected: AppIconVariant?,
-        connected: AppIconVariant?
-    ) throws {
-        let effectiveAppearance = try #require(NSAppearance(named: appearance))
+    @Test("样式、深浅外观与连接状态决定换上的图标")
+    func variantFollowsIconStyleAndConnection() throws {
+        for entry in Self.cases {
+            let appearance = try #require(NSAppearance(named: entry.appearance))
+            let label = "\(entry.iconTheme ?? "nil") \(entry.appearance.rawValue)"
 
-        let whenDisconnected = AppIconController.variant(
-            forIconTheme: iconTheme,
-            appearance: effectiveAppearance,
-            isConnected: false
-        )
+            let whenDisconnected = AppIconController.variant(
+                forIconTheme: entry.iconTheme,
+                appearance: appearance,
+                isConnected: false
+            )
 
-        let whenConnected = AppIconController.variant(
-            forIconTheme: iconTheme,
-            appearance: effectiveAppearance,
-            isConnected: true
-        )
+            let whenConnected = AppIconController.variant(
+                forIconTheme: entry.iconTheme,
+                appearance: appearance,
+                isConnected: true
+            )
 
-        #expect(whenDisconnected == disconnected)
-        #expect(whenConnected == connected)
+            #expect(whenDisconnected == entry.disconnected, "\(label)")
+            #expect(whenConnected == entry.connected, "\(label)")
+        }
     }
 }

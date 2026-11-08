@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -10,6 +11,7 @@ import Testing
 @MainActor
 struct PullRequestConversationTests {
     /// 组的时间比组里最早的提交早 2 秒，所以组排在当天的提交与同一时刻的评论之前；午夜前后的提交分在两天。
+    /// 组的标题在 1 个提交时用单数写法，日期跟随 Settings → General 的日期格式；没有提交时讨论里只有评论。
     @Test("提交按日历日分组，与评论按时间排列")
     func timeline() throws {
         let calendar = try Self.calendar()
@@ -60,53 +62,26 @@ struct PullRequestConversationTests {
 
         #expect(groups.map { $0.commits.map(\.subject) } == [["a"], ["b", "c"]])
         #expect(groups.map(\.date) == [lateNight.addingTimeInterval(-2), afterMidnight.addingTimeInterval(-2)])
-    }
 
-    /// 需要获取或比较还没读完时没有提交，讨论里只有评论。
-    @Test("没有提交时没有提交组")
-    func timelineWithoutCommits() {
-        let comment = PullRequestComment(
-            id: 7,
-            author: HostingUser(username: "bob", name: nil),
-            body: "hi",
-            createdAt: Date(timeIntervalSince1970: 0)
+        // 组的标题：1 个提交用单数写法，日期按所选的格式写
+        #expect(
+            groups[0].title(format: .absolute)
+                == AppLocalization.text(
+                    "pullRequests.commitGroup.one",
+                    CommitDateFormat.absolute.string(from: groups[0].date)
+                )
         )
 
-        #expect(PullRequestConversationItem.timeline(comments: [comment], commits: []).map(\.key) == [.comment(7)])
-    }
-
-    /// 1 个提交用单数写法；日期跟随 Settings → General 的日期格式。
-    @Test("提交组的标题")
-    func groupTitle() throws {
-        let calendar = try Self.calendar()
-        let date = try Self.date(day: 3, hour: 12, minute: 0, calendar: calendar)
-
-        let single = try #require(
-            PullRequestCommitGroup.groups(of: [Self.commit("a", date: date)], calendar: calendar).first
-        )
-
-        let double = try #require(
-            PullRequestCommitGroup.groups(
-                of: [Self.commit("b", date: date), Self.commit("a", date: date)],
-                calendar: calendar
+        for format in [CommitDateFormat.absolute, .relative] {
+            #expect(
+                groups[1].title(format: format)
+                    == AppLocalization.text("pullRequests.commitGroup", 2, format.string(from: groups[1].date))
             )
-            .first
-        )
+        }
 
-        #expect(
-            single.title(format: .absolute)
-                == AppLocalization.text("pullRequests.commitGroup.one", CommitDateFormat.absolute.string(from: single.date))
-        )
-
-        #expect(
-            double.title(format: .absolute)
-                == AppLocalization.text("pullRequests.commitGroup", 2, CommitDateFormat.absolute.string(from: double.date))
-        )
-
-        #expect(
-            double.title(format: .relative)
-                == AppLocalization.text("pullRequests.commitGroup", 2, CommitDateFormat.relative.string(from: double.date))
-        )
+        // 需要获取或比较还没读完时没有提交，讨论里只有评论
+        let alone = PullRequestConversationItem.timeline(comments: comments, commits: [], calendar: calendar)
+        #expect(alone.map(\.key) == [.comment(2), .comment(1)])
     }
 
     /// 比较范围里的提交与参与者读完才列出，提交按拓扑序从新到旧；关闭后不再列出。
@@ -133,7 +108,7 @@ struct PullRequestConversationTests {
         let conversation = PullRequestConversationState()
         conversation.load(base: heads[0], target: heads[3], runner: runner)
 
-        try await FileViewsTests.wait { conversation.commits != nil }
+        await until { conversation.commits != nil }
         #expect(conversation.commits?.map(\.subject) == ["three", "two", "one"])
 
         // 基准的提交不算，三个提交都是同一位作者

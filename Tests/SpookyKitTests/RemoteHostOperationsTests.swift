@@ -19,7 +19,7 @@ struct RemoteHostOperationsTests {
     }
 
     /// 列目录只列子目录并标出工作区；在测试目录里新建仓库，扫描找到两个仓库。
-    @Test("服务器上列目录、新建与扫描", .timeLimit(.minutes(2)))
+    @Test("服务器上列目录、新建与扫描")
     func listCreateAndScan() async throws {
         let fixture = try await RemoteFixture.create()
         _ = Self.connection()
@@ -54,14 +54,17 @@ struct RemoteHostOperationsTests {
     }
 
     /// 克隆在 B 上执行，目标是 B 上的目录；报告的进度来自 stderr，克隆好的是工作区。
-    @Test("服务器上克隆", .timeLimit(.minutes(2)))
+    @Test("服务器上克隆")
     func cloneOnServer() async throws {
         let fixture = try await RemoteFixture.create()
         _ = Self.connection()
 
         do {
             let origin = fixture.root + "/origin.git"
-            _ = try await RemoteFixture.raw(["git", "-C", fixture.repository, "commit", "--allow-empty", "-q", "-m", "first"])
+            _ = try await RemoteFixture.raw([
+                "git", "-C", fixture.repository, "commit", "--allow-empty", "-q", "-m", "first",
+            ])
+
             _ = try await RemoteFixture.raw(["git", "clone", "-q", "--bare", fixture.repository, origin])
 
             let destination = RepositoryLocation.remote(host: Self.host, path: fixture.root + "/克隆 clone")

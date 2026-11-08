@@ -1,6 +1,7 @@
 import Foundation
 import SpookyKit
 import Testing
+import TestSupport
 
 @testable import Spooky
 
@@ -37,7 +38,10 @@ struct SettingsPreferencesTests {
     @Test("克隆目录的候选")
     func cloneDirectoryCandidates() throws {
         let home = FileManager.default.temporaryDirectory.appending(path: "spooky-home-" + UUID().uuidString)
-        try FileManager.default.createDirectory(at: home.appending(path: "Development"), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: home.appending(path: "Development"),
+            withIntermediateDirectories: true
+        )
         defer { try? FileManager.default.removeItem(at: home) }
 
         let development = home.appending(path: "Development").path
@@ -50,7 +54,8 @@ struct SettingsPreferencesTests {
     }
 
     /// 环境设置写进偏好并立即交给核心库；登录 shell 的变量只在开启时带上，重新创建时读回保存的值。
-    @Test("本机执行设置的持久化")
+    /// 没有改过设置时读取登录 shell 的变量，本机 Git 才能找到 shell 配置里补进 PATH 的工具；存过关闭的不被默认值覆盖。
+    @Test("本机执行设置的持久化，登录 shell 环境默认读取")
     func localExecutionPreferences() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "com.rakuyo.spooky.tests.environment." + UUID().uuidString)
@@ -64,14 +69,16 @@ struct SettingsPreferencesTests {
             apply: { applied.append($0) }
         )
 
+        // 没有改过设置时默认读取登录 shell 环境
+        #expect(preferences.usesLoginShell)
+
         preferences.saveCustomVariables([CustomEnvironmentVariable(name: "TOKEN", value: "值")])
         preferences.selectGitExecutable("/opt/homebrew/bin/git")
         preferences.setUsesLoginShell(true)
 
-        // 登录 shell 在后台读取，读完后再交一次设置。
-        for _ in 0 ..< 100 where preferences.loginShellState != .loaded {
-            try await Task.sleep(for: .milliseconds(20))
-        }
+        // 登录 shell 在后台读取，读完后再交一次设置
+        await until { preferences.loginShellState != .reading }
+        #expect(preferences.loginShellState == .loaded)
 
         let last = try #require(applied.last)
         #expect(last.customVariables == ["TOKEN": "值"])
@@ -86,21 +93,8 @@ struct SettingsPreferencesTests {
 
         preferences.setUsesLoginShell(false)
         #expect(applied.last?.loginShellVariables.isEmpty ?? false)
-    }
 
-    /// 没有改过设置时读取登录 shell 的变量，本机 Git 才能找到 shell 配置里补进 PATH 的工具；存过关闭的不被默认值覆盖。
-    @Test("登录 shell 环境默认读取")
-    func loginShellDefault() throws {
-        let directory = FileManager.default.temporaryDirectory
-            .appending(path: "com.rakuyo.spooky.tests.loginShell." + UUID().uuidString)
-        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let fresh = LocalExecutionPreferences(defaults: defaults, readLoginShell: { [:] }, apply: { _ in })
-        #expect(fresh.usesLoginShell)
-
-        defaults.set(false, forKey: LocalExecutionPreferences.loginShellKey)
-
+        // 存过关闭的不被默认值覆盖
         let saved = LocalExecutionPreferences(defaults: defaults, readLoginShell: { [:] }, apply: { _ in })
         #expect(!saved.usesLoginShell)
     }

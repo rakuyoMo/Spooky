@@ -31,14 +31,50 @@ struct HelpTests {
         #expect(!redacted.contains("s3cret"))
     }
 
-    /// 摘要写出版本、系统、异常与崩溃线程的栈帧，没有符号的帧写偏移；不是 ips 格式时为 nil。
-    @Test("崩溃报告的摘要")
-    func crashSummary() throws {
-        let header = #"{"app_name":"Spooky","app_version":"0.8.0","build_version":"12","os_version":"macOS 26.0 (25A100)"}"#
+    /// 只列出处理时间之后的 Spooky 报告，最新的在前，别的 App 的报告与旧报告不算；
+    /// 摘要写出版本、系统、异常与崩溃线程的栈帧，没有符号的帧写偏移，不是 ips 格式时为 nil。
+    @Test("待处理的崩溃报告与摘要")
+    func crashReports() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-crash-" + UUID().uuidString)
+
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let handled = Date(timeIntervalSince1970: 1_000_000)
+
+        let files: [(String, TimeInterval)] = [
+            ("Spooky-old.ips", 900_000),
+            ("Spooky-new.ips", 1_100_000),
+            ("Spooky-newest.ips", 1_200_000),
+            ("Other-new.ips", 1_300_000),
+            ("Spooky-new.txt", 1_300_000),
+        ]
+
+        for (name, time) in files {
+            let url = directory.appending(path: name)
+
+            try Data("x".utf8).write(to: url)
+
+            try FileManager.default.setAttributes(
+                [.modificationDate: Date(timeIntervalSince1970: time)],
+                ofItemAtPath: url.path
+            )
+        }
+
+        let pending = CrashReporter.pendingReports(in: directory, after: handled)
+
+        #expect(pending.map(\.url.lastPathComponent) == ["Spooky-newest.ips", "Spooky-new.ips"])
+
+        // 第一行是报告头，其余是正文
+        let header = #"{"app_name":"Spooky","app_version":"0.8.0","build_version":"12","#
+            + #""os_version":"macOS 26.0 (25A100)"}"#
+
         let body = """
             {"exception":{"type":"EXC_BAD_ACCESS","signal":"SIGSEGV"},"termination":{"indicator":"Segmentation fault: 11"},
             "threads":[{"frames":[{"imageIndex":1,"imageOffset":16}]},
-            {"triggered":true,"frames":[{"imageIndex":0,"imageOffset":4096,"symbol":"RepositorySession.refresh()","symbolLocation":42},
+            {"triggered":true,"frames":[
+            {"imageIndex":0,"imageOffset":4096,"symbol":"RepositorySession.refresh()","symbolLocation":42},
             {"imageIndex":1,"imageOffset":255}]}],
             "usedImages":[{"name":"Spooky"},{"name":"AppKit"}]}
             """
@@ -50,33 +86,9 @@ struct HelpTests {
         #expect(report.summary.contains("EXC_BAD_ACCESS SIGSEGV Segmentation fault: 11"))
         #expect(report.summary.contains("0  Spooky  RepositorySession.refresh() + 42"))
         #expect(report.summary.contains("1  AppKit  0xff"))
+
+        // 不是 ips 格式
         #expect(CrashReport(data: Data("not a report".utf8)) == nil)
-    }
-
-    /// 只列出处理时间之后的 Spooky 报告，最新的在前；别的 App 的报告与旧报告不算。
-    @Test("待处理的崩溃报告")
-    func pendingReports() throws {
-        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-crash-" + UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let handled = Date(timeIntervalSince1970: 1_000_000)
-        let files: [(String, TimeInterval)] = [
-            ("Spooky-old.ips", 900_000),
-            ("Spooky-new.ips", 1_100_000),
-            ("Spooky-newest.ips", 1_200_000),
-            ("Other-new.ips", 1_300_000),
-            ("Spooky-new.txt", 1_300_000),
-        ]
-
-        for (name, time) in files {
-            let url = directory.appending(path: name)
-            try Data("x".utf8).write(to: url)
-            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: time)], ofItemAtPath: url.path)
-        }
-
-        let pending = CrashReporter.pendingReports(in: directory, after: handled)
-        #expect(pending.map(\.url.lastPathComponent) == ["Spooky-newest.ips", "Spooky-new.ips"])
     }
 
     /// 新问题页预填标题与正文，正文过长时截短。
@@ -95,6 +107,11 @@ struct HelpTests {
     func releaseNoteBlocks() {
         let blocks = ReleaseNotesView.blocks(of: "### New\n\n- **Clone** repositories\n* Scan folders\nThanks!\n")
 
-        #expect(blocks == [.heading("New"), .item("**Clone** repositories"), .item("Scan folders"), .paragraph("Thanks!")])
+        #expect(blocks == [
+            .heading("New"),
+            .item("**Clone** repositories"),
+            .item("Scan folders"),
+            .paragraph("Thanks!"),
+        ])
     }
 }

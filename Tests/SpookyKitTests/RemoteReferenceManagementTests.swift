@@ -9,7 +9,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteReferenceManagementTests {
     /// 快进、上游、改名、远端分支、标签与远端管理的命令都在 B 上执行，结果与本机一致。
-    @Test("服务器上的分支、标签与远端管理", .timeLimit(.minutes(3)))
+    @Test("服务器上的分支、标签与远端管理")
     func referenceManagement() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

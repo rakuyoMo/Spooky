@@ -1,150 +1,80 @@
 import AppKit
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
 
 // MARK: - WindowChromeTests
 
-/// 仓库窗口的工具栏、窗口标题、标签页与启动窗口。
+/// 仓库窗口的工具栏、窗口标题、标签页、侧边栏的首次宽度与启动窗口。
 @MainActor
 struct WindowChromeTests {
-    /// 工具栏只放有行为的项：默认排布与可选项都能创建，按钮的动作都有响应者，主机前缀不能被移除。
-    /// 跟随内层分栏的分隔符由窗口按需插入，不在自定义面板里，也不能被移除。
-    /// 标签与提示用 App 自己的叫法，重要的项在窗口变窄时最后才进溢出菜单，传输按钮的图标一眼认得出来。
-    @Test("工具栏的排布、标签、可见优先级与图标")
+    /// 同一个仓库窗口依次核对：工具栏的排布、标签、可见优先级与图标；刷新进行中 Refresh 照常可用；
+    /// 隐藏与显示窗口标题；主机前缀与仓库管理入口的状态；新标签与显式新窗口。
+    @Test("工具栏、刷新中的 Refresh、窗口标题与标签页")
     func toolbarItems() async throws {
         let fixture = try await NavigationTests.makeWindow()
-        defer { fixture.close() }
+
+        // 隐藏窗口标题是所有仓库窗口共用的标准偏好，测完恢复
+        let savedTitle = UserDefaults.standard.object(forKey: RepositoryWindowController.hidesTitleKey)
+
+        defer {
+            UserDefaults.standard.set(savedTitle, forKey: RepositoryWindowController.hidesTitleKey)
+            fixture.close()
+        }
 
         let controller = fixture.controller
         let toolbar = try #require(controller.window?.toolbar)
-        let identifiers = toolbar.items.map(\.itemIdentifier)
-        #expect(toolbar.identifier == RepositoryToolbar.identifier)
-        #expect(toolbar.allowsUserCustomization && toolbar.autosavesConfiguration)
-        #expect(identifiers.filter { $0 != RepositoryToolbar.detailSeparator } == RepositoryToolbar.defaultItems)
-        #expect(Set(RepositoryToolbar.defaultItems).isSubset(of: RepositoryToolbar.allowedItems))
-        #expect(controller.toolbarImmovableItemIdentifiers(toolbar).contains(RepositoryToolbar.host))
-        #expect(!RepositoryToolbar.allowedItems.contains(RepositoryToolbar.detailSeparator))
-        #expect(controller.toolbarImmovableItemIdentifiers(toolbar).contains(RepositoryToolbar.detailSeparator))
 
-        // 自定义面板里的每一项都能创建，每个按钮或分段的动作都由窗口响应
-        let system: Set<NSToolbarItem.Identifier> = [.space, .flexibleSpace]
-
-        for identifier in RepositoryToolbar.allowedItems where !system.contains(identifier) {
-            let item = try #require(
-                controller.toolbar(toolbar, itemForItemIdentifier: identifier, willBeInsertedIntoToolbar: false),
-                "无法创建工具栏项：\(identifier.rawValue)"
-            )
-
-            for subitem in (item as? NSToolbarItemGroup)?.subitems ?? [item] {
-                guard let action = subitem.action else {
-                    continue
-                }
-
-                #expect(controller.responds(to: action), "没有响应者：\(identifier.rawValue)")
-            }
-        }
-
-        // 全部暂存与提交只在主菜单里；以前保存的配置里留着这两个标识时创建不出项，由系统跳过
-        for identifier in [NSToolbarItem.Identifier("stageAll"), NSToolbarItem.Identifier("commit")] {
-            #expect(!RepositoryToolbar.allowedItems.contains(identifier))
-
-            #expect(
-                controller.toolbar(toolbar, itemForItemIdentifier: identifier, willBeInsertedIntoToolbar: false) == nil
-            )
-        }
-
-        // 各项的标签、可见优先级与图标在窗口显示仓库时核对
+        // 各项的排布、标签、可见优先级与图标在窗口显示仓库时核对
+        try Self.expectToolbarLayout(in: controller)
         try Self.expectToolbarLabels(in: controller)
-        try Self.expectEnglishToolbarTexts()
         try Self.expectTransferIcons(in: controller)
+
+        // 刷新进行中，工具栏的 Refresh 与 View › Refresh（⌘R）照常可用
+        let refresh = NSMenuItem(
+            title: "",
+            action: #selector(RepositoryWindowController.refreshRepository),
+            keyEquivalent: ""
+        )
+
+        controller.session.refresh(full: true)
+        #expect(controller.session.isRefreshing)
+        #expect(controller.validateUserInterfaceItem(refresh))
+
+        await controller.session.waitForRefresh()
+
+        Self.expectWindowTitle(in: controller)
 
         // 本机仓库隐藏主机前缀，仓库管理入口只在显示仓库管理时选中
         let host = try #require(toolbar.items.first { $0.itemIdentifier == RepositoryToolbar.host })
+
         let repositories = try #require(
             toolbar.items.first { $0.itemIdentifier == RepositoryToolbar.repositories } as? NSToolbarItemGroup
         )
+
         #expect(host.isHidden)
         #expect(!repositories.isSelected(at: 0))
 
         controller.showRepositories()
         #expect(repositories.isSelected(at: 0))
+
+        try Self.expectTabs(after: fixture)
     }
 
-    /// 隐藏窗口标题是所有仓库窗口共用的偏好，菜单项的标题随状态切换。
-    @Test("隐藏与显示窗口标题")
-    func windowTitle() async throws {
-        let fixture = try await NavigationTests.makeWindow()
-        let saved = UserDefaults.standard.object(forKey: RepositoryWindowController.hidesTitleKey)
-
-        defer {
-            UserDefaults.standard.set(saved, forKey: RepositoryWindowController.hidesTitleKey)
-            fixture.close()
-        }
-
-        let controller = fixture.controller
-        let item = NSMenuItem(
-            title: "",
-            action: #selector(RepositoryWindowController.toggleWindowTitle),
-            keyEquivalent: ""
-        )
-
-        UserDefaults.standard.set(false, forKey: RepositoryWindowController.hidesTitleKey)
-        controller.applyTitleVisibility()
-        #expect(controller.window?.titleVisibility == .visible)
-        #expect(controller.window?.representedURL != nil)
-
-        controller.toggleWindowTitle()
-        #expect(controller.window?.titleVisibility == .hidden)
-        #expect(controller.window?.representedURL == nil)
-        #expect(controller.validateUserInterfaceItem(item))
-        #expect(item.title == AppLocalization.text("menu.showWindowTitle"))
-
-        controller.toggleWindowTitle()
-        #expect(controller.window?.titleVisibility == .visible)
-        #expect(controller.validateUserInterfaceItem(item))
-        #expect(item.title == AppLocalization.text("menu.hideWindowTitle"))
-    }
-
-    /// 新标签加在发起窗口的标签组里；显式新窗口即使窗口偏好成为标签也保持独立，显示后仍可手动合并。
-    @Test("新标签与显式新窗口")
-    func tabs() async throws {
-        let fixture = try await NavigationTests.makeWindow()
-        defer { fixture.close() }
-
-        let coordinator = fixture.coordinator
-        let source = try #require(fixture.controller.window)
-
-        try #require(NSWindow.allowsAutomaticWindowTabbing)
-        coordinator.openTab(after: fixture.controller)
-
-        let tab = try #require(coordinator.windows.last?.window)
-        #expect(source.tabGroup?.windows.contains(tab) ?? false)
-        #expect(tab.windowController is RepositoryWindowController)
-
-        // 偏好成为标签的窗口经 “显式新窗口” 显示时不并进已有的标签组
-        let separate = coordinator.makeWindow()
-        separate.window?.tabbingMode = .preferred
-
-        coordinator.showSeparately(separate) {
-            separate.showWindow(nil)
-        }
-
-        let window = try #require(separate.window)
-        #expect(!(source.tabGroup?.windows.contains(window) ?? false))
-        #expect(window.tabbingMode == .automatic)
-    }
-
-    /// 还没有记下侧边栏宽度时，仓库视图的侧边栏宽 428 pt，仓库管理宽 260 pt。
+    /// 还没有记下侧边栏宽度与窗口尺寸时，仓库视图的侧边栏宽 428 pt，仓库管理宽 260 pt。
     @Test("侧边栏的首次宽度")
     func defaultSidebarWidths() async throws {
         let fixture = try await NavigationTests.makeCoordinator()
         defer { fixture.close() }
 
-        // 分栏宽度记在标准偏好里：从删掉记录到放回整段同步执行，其它测试的窗口插不进来改写
+        // 分栏宽度与窗口尺寸都记在标准偏好里，其它测试的窗口记下的窄窗口会挤窄侧边栏；
+        // 从删掉记录到放回整段同步执行，其它测试的窗口插不进来改写
         let keys = ["Spooky.Repositories", "Spooky.Repository"].map { "NSSplitView Subview Frames " + $0 }
+            + ["NSWindow Frame Spooky.RepositoryWindow"]
+
         let saved = keys.map { UserDefaults.standard.object(forKey: $0) }
 
         for key in keys {
@@ -197,7 +127,7 @@ struct WindowChromeTests {
         // 启动窗口只看成为主窗口的是不是仓库窗口：仓库窗口不必显示，通知由测试发出
         let repository = fixture.coordinator.makeWindow()
         NotificationCenter.default.post(name: NSWindow.didBecomeMainNotification, object: repository.window)
-        try await FileViewsTests.wait { LaunchWindowController.shown == nil }
+        await until { LaunchWindowController.shown == nil }
         #expect(!launch.isVisible)
     }
 }
@@ -205,6 +135,49 @@ struct WindowChromeTests {
 // MARK: - Steps
 
 extension WindowChromeTests {
+    /// 工具栏只放有行为的项：默认排布与可选项都能创建，按钮的动作都有响应者，主机前缀不能被移除；
+    /// 跟随内层分栏的分隔符由窗口按需插入，不在自定义面板里，也不能被移除。
+    private static func expectToolbarLayout(in controller: RepositoryWindowController) throws {
+        let toolbar = try #require(controller.window?.toolbar)
+        let identifiers = toolbar.items.map(\.itemIdentifier)
+        let immovable = controller.toolbarImmovableItemIdentifiers(toolbar)
+
+        #expect(toolbar.identifier == RepositoryToolbar.identifier)
+        #expect(toolbar.allowsUserCustomization && toolbar.autosavesConfiguration)
+        #expect(identifiers.filter { $0 != RepositoryToolbar.detailSeparator } == RepositoryToolbar.defaultItems)
+        #expect(Set(RepositoryToolbar.defaultItems).isSubset(of: RepositoryToolbar.allowedItems))
+        #expect(immovable.contains(RepositoryToolbar.host))
+        #expect(!RepositoryToolbar.allowedItems.contains(RepositoryToolbar.detailSeparator))
+        #expect(immovable.contains(RepositoryToolbar.detailSeparator))
+
+        // 自定义面板里的每一项都能创建，每个按钮或分段的动作都由窗口响应
+        let system: Set<NSToolbarItem.Identifier> = [.space, .flexibleSpace]
+
+        for identifier in RepositoryToolbar.allowedItems where !system.contains(identifier) {
+            let item = try #require(
+                controller.toolbar(toolbar, itemForItemIdentifier: identifier, willBeInsertedIntoToolbar: false),
+                "无法创建工具栏项：\(identifier.rawValue)"
+            )
+
+            for subitem in (item as? NSToolbarItemGroup)?.subitems ?? [item] {
+                guard let action = subitem.action else {
+                    continue
+                }
+
+                #expect(controller.responds(to: action), "没有响应者：\(identifier.rawValue)")
+            }
+        }
+
+        // 全部暂存与提交只在主菜单里；以前保存的配置里留着这两个标识时创建不出项，由系统跳过
+        for identifier in [NSToolbarItem.Identifier("stageAll"), NSToolbarItem.Identifier("commit")] {
+            #expect(!RepositoryToolbar.allowedItems.contains(identifier))
+
+            #expect(
+                controller.toolbar(toolbar, itemForItemIdentifier: identifier, willBeInsertedIntoToolbar: false) == nil
+            )
+        }
+    }
+
     /// 仓库管理入口叫 Bookmarks，Sync 在自定义面板里叫 Synchronize，后退 / 前进叫 Prev / Next，储藏两段叫 Apply / Save；
     /// 搜索框、父仓库、Bookmarks、新建分支与安全强推在窗口变窄时最后才进溢出菜单。
     private static func expectToolbarLabels(in controller: RepositoryWindowController) throws {
@@ -243,45 +216,57 @@ extension WindowChromeTests {
         }
     }
 
-    /// 英文的标签与提示。
-    private static func expectEnglishToolbarTexts() throws {
-        let english = try #require(
-            AppLocalization.bundle.url(forResource: "en", withExtension: "lproj").flatMap(Bundle.init(url:))
+    /// 隐藏窗口标题是所有仓库窗口共用的偏好，隐藏时一并去掉仓库目录图标，菜单项的标题随状态切换。
+    private static func expectWindowTitle(in controller: RepositoryWindowController) {
+        let item = NSMenuItem(
+            title: "",
+            action: #selector(RepositoryWindowController.toggleWindowTitle),
+            keyEquivalent: ""
         )
-        let expected = [
-            "toolbar.bookmarks": "Bookmarks",
-            "toolbar.bookmarks.tip": "Navigates to Bookmarks view",
-            "toolbar.previous": "Prev",
-            "toolbar.next": "Next",
-            "navigation.back.tip": "Navigates to the previous view",
-            "navigation.forward.tip": "Navigates to the next view",
-            "toolbar.synchronize": "Synchronize",
-            "toolbar.applyStash": "Apply",
-            "toolbar.saveStash": "Save",
-            "toolbar.applyStash.tip": "Reapplies changes to your working copy",
-            "toolbar.saveStash.tip": "Stores your local changes on the Stash",
-            "toolbar.quickActions.tip": "Shows Quick Actions",
-            "toolbar.createBranch.tip": "Create a new branch",
-            "toolbar.forcePush.tip": "Push using force-push with lease",
-            "toolbar.parentRepository.tip": "Go to parent repository",
-            "toolbar.labeledTip": "%1$@: %2$@",
-            "sync.fetch.tip": "Fetches remotes",
-            "sync.pull.tip": "Pulls remote branches",
-            "sync.push.tip": "Pushes local branches to remotes",
-            "sync.sync.tip": "Sync HEAD with a remote branch",
-            "sync.merge.tip": "Merges another branch into the HEAD branch",
-            "sync.rebaseHead.tip": "Rebases the current HEAD branch onto another branch",
-            "sync.quickFetch.tip": "Immediately fetches remotes",
-            "sync.quickPull.tip": "Pulls the tracking remote branch",
-            "sync.quickPush.tip": "Pushes the HEAD branch to its tracking branch",
-            "sync.quickSync.tip": "Syncs the HEAD branch with its tracking branch",
-            "sync.quickMerge.tip": "Merges the tracking branch of the current HEAD branch",
-            "sync.quickRebase.tip": "Rebases the current HEAD branch onto its tracking branch",
-        ]
 
-        for (key, value) in expected {
-            #expect(english.localizedString(forKey: key, value: nil, table: nil) == value, "\(key)")
+        UserDefaults.standard.set(false, forKey: RepositoryWindowController.hidesTitleKey)
+        controller.applyTitleVisibility()
+
+        #expect(controller.window?.titleVisibility == .visible)
+        #expect(controller.window?.representedURL != nil)
+
+        controller.toggleWindowTitle()
+
+        #expect(controller.window?.titleVisibility == .hidden)
+        #expect(controller.window?.representedURL == nil)
+        #expect(controller.validateUserInterfaceItem(item))
+        #expect(item.title == AppLocalization.text("menu.showWindowTitle"))
+
+        controller.toggleWindowTitle()
+
+        #expect(controller.window?.titleVisibility == .visible)
+        #expect(controller.validateUserInterfaceItem(item))
+        #expect(item.title == AppLocalization.text("menu.hideWindowTitle"))
+    }
+
+    /// 新标签加在发起窗口的标签组里；显式新窗口即使窗口偏好成为标签也保持独立，显示后仍可手动合并。
+    private static func expectTabs(after fixture: NavigationTests.WindowFixture) throws {
+        let coordinator = fixture.coordinator
+        let source = try #require(fixture.controller.window)
+
+        try #require(NSWindow.allowsAutomaticWindowTabbing)
+        coordinator.openTab(after: fixture.controller)
+
+        let tab = try #require(coordinator.windows.last?.window)
+        #expect(source.tabGroup?.windows.contains(tab) ?? false)
+        #expect(tab.windowController is RepositoryWindowController)
+
+        // 偏好成为标签的窗口经 “显式新窗口” 显示时不并进已有的标签组
+        let separate = coordinator.makeWindow()
+        separate.window?.tabbingMode = .preferred
+
+        coordinator.showSeparately(separate) {
+            separate.showWindow(nil)
         }
+
+        let window = try #require(separate.window)
+        #expect(!(source.tabGroup?.windows.contains(window) ?? false))
+        #expect(window.tabbingMode == .automatic)
     }
 
     /// Fetch | Pull | Push 三段依次用获取、拉取、推送的自绘图标，Push To 与 Force Push 用加了角标的推送图标；

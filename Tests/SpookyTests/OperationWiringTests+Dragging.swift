@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -7,12 +8,30 @@ import Testing
 // MARK: - Dragging
 
 extension OperationWiringTests {
-    /// 提交拖到工作区或 HEAD 分支是摘取、⌥ 是反转，可以多选；其它来源与落点只接受单项。
-    @Test("提交拖到工作区：摘取、反转与多选")
-    func dropCommits() async throws {
+    /// 提交、分支与标签拖到工作区、HEAD、Tags、远端与 Worktrees 时映射成的动作，以及需要参数的动作打开的预选对话框。
+    @Test("提交、分支与标签的拖放动作")
+    func dropActions() async throws {
         let fixture = try await Self.makeFixture()
         defer { fixture.close() }
 
+        checkCommitDrops(in: fixture)
+        checkBranchRebase(in: fixture)
+        try checkTagDrops(in: fixture)
+        try checkWorktreeDrop(in: fixture)
+    }
+
+    /// 变更集里的单个文件拖到工作区时只摘取这个文件；分支拖进文件夹时直接改名。
+    @Test("摘取单个文件与拖进文件夹改名")
+    func dropExecution() async throws {
+        let fixture = try await Self.makeFixture()
+        defer { fixture.close() }
+
+        try await checkCommitFileDrop(in: fixture)
+        try await checkMoveIntoFolder(in: fixture)
+    }
+
+    /// 提交拖到工作区或 HEAD 分支是摘取、⌥ 是反转，可以多选；其它来源与落点只接受单项。
+    private func checkCommitDrops(in fixture: Fixture) {
         let (d, b) = (fixture.ids["D"] ?? "", fixture.ids["B"] ?? "")
 
         #expect(fixture.drop([.commit(d)], on: .head) == "cherryPick:\(d)")
@@ -24,38 +43,41 @@ extension OperationWiringTests {
         #expect(fixture.drop([.commit(d), .local("refs/heads/side")], on: .head) == nil)
 
         // 别的仓库拖来的提交不接受
-        let other = RepositoryDragPayload(repository: .local(path: "/tmp/elsewhere"), kind: .commit, reference: d)
+        let other = RepositoryDragPayload(
+            repository: .local(path: "/tmp/elsewhere"),
+            kind: .commit,
+            reference: d
+        )
+
         #expect(fixture.drop([.payload(other)], on: .head) == nil)
     }
 
     /// 按住 ⌥ 把别的本地分支拖到 HEAD 是变基；当前分支自己不能变基到自己上面。
-    @Test("分支拖到 HEAD：⌥ 变基")
-    func dropBranchRebase() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
+    private func checkBranchRebase(in fixture: Fixture) {
+        let side = Fixture.Source.local("refs/heads/side")
 
-        #expect(fixture.drop([.local("refs/heads/side")], on: .head, alternate: true) == "rebase:refs/heads/side")
-        #expect(fixture.drop([.local("refs/heads/side")], on: .head) == nil)
+        #expect(fixture.drop([side], on: .head, alternate: true) == "rebase:refs/heads/side")
+        #expect(fixture.drop([side], on: .head) == nil)
         #expect(fixture.drop([.local("refs/heads/main")], on: .head, alternate: true) == nil)
     }
 
-    /// 提交与本地分支拖到 Tags 标题或标签文件夹是新建标签；标签拖到远端是发布到这个远端。
-    @Test("新建标签与发布标签的拖放")
-    func dropTags() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
+    /// 提交与本地分支拖到 Tags 标题或标签文件夹是新建标签；标签拖到远端是发布到这个远端，打开预选了标签与远端的对话框。
+    private func checkTagDrops(in fixture: Fixture) throws {
         let d = fixture.ids["D"] ?? ""
+        let tag = Fixture.Source.tag("refs/tags/v1")
 
         #expect(fixture.drop([.commit(d)], on: .tags) == "createTag:\(d)")
         #expect(fixture.drop([.commit(d)], on: .tags, alternate: true) == nil)
-        #expect(fixture.drop([.local("refs/heads/side")], on: .tagFolder("release")) == "createTag:refs/heads/side")
-        #expect(fixture.drop([.tag("refs/tags/v1")], on: .remote("origin")) == "publishTag:v1@origin")
+        #expect(
+            fixture.drop([.local("refs/heads/side")], on: .tagFolder("release"))
+                == "createTag:refs/heads/side"
+        )
+        #expect(fixture.drop([tag], on: .remote("origin")) == "publishTag:v1@origin")
 
-        // 发布打开预选了标签与远端的对话框
+        // 发布同步打开对话框
         var requests: [ReferenceRequest] = []
         fixture.session.onReferenceRequest = { requests.append($0) }
-        fixture.action([.tag("refs/tags/v1")], on: .remote("origin"))?.perform(in: fixture.session)
+        fixture.action([tag], on: .remote("origin"))?.perform(in: fixture.session)
 
         guard case .publishTag("v1", remote: "origin") = try #require(requests.first) else {
             Issue.record("应打开预选了标签与远端的发布对话框")
@@ -64,20 +86,17 @@ extension OperationWiringTests {
     }
 
     /// 本地分支拖到 Worktrees 标题是以它新建工作树，打开预选了这个分支的对话框；提交与按住 ⌥ 时不接受。
-    @Test("分支拖到 Worktrees：新建工作树")
-    func dropWorktree() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
+    private func checkWorktreeDrop(in fixture: Fixture) throws {
+        let side = Fixture.Source.local("refs/heads/side")
 
-        let d = fixture.ids["D"] ?? ""
+        #expect(fixture.drop([side], on: .worktrees) == "createWorktree:side")
+        #expect(fixture.drop([side], on: .worktrees, alternate: true) == nil)
+        #expect(fixture.drop([.commit(fixture.ids["D"] ?? "")], on: .worktrees) == nil)
 
-        #expect(fixture.drop([.local("refs/heads/side")], on: .worktrees) == "createWorktree:side")
-        #expect(fixture.drop([.local("refs/heads/side")], on: .worktrees, alternate: true) == nil)
-        #expect(fixture.drop([.commit(d)], on: .worktrees) == nil)
-
+        // 新建工作树同步打开对话框
         var requests: [WorktreeRequest] = []
         fixture.session.worktrees.onRequest = { requests.append($0) }
-        fixture.action([.local("refs/heads/side")], on: .worktrees)?.perform(in: fixture.session)
+        fixture.action([side], on: .worktrees)?.perform(in: fixture.session)
 
         guard case .add(revision: "side") = try #require(requests.first) else {
             Issue.record("应打开预选了这个分支的新建工作树对话框")
@@ -85,49 +104,17 @@ extension OperationWiringTests {
         }
     }
 
-    /// 本地分支拖进分支文件夹、远端分支拖进同一远端的文件夹是改名为 “文件夹/原名末段”；名字不变或拖到别的远端时不接受。
-    @Test("拖进文件夹改名")
-    func dropMoveHere() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
-        let local = Fixture.Source.local("refs/heads/side")
-        let remote = Fixture.Source.remote("refs/remotes/origin/main")
-
-        #expect(fixture.drop([local], on: .branchFolder("功能")) == "move:refs/heads/side→功能/side")
-        #expect(fixture.drop([remote], on: .remoteBranchFolder("origin", "旧")) == "move:refs/remotes/origin/main→旧/main")
-        #expect(fixture.drop([remote], on: .remoteBranchFolder("upstream", "旧")) == nil)
-
-        // 提交拖进分支文件夹是新建分支，由已有的参数表单处理
-        #expect(fixture.drop([.commit(fixture.ids["D"] ?? "")], on: .branchFolder("功能")) == nil)
-
-        // 改名直接执行，移进文件夹后原名字不在了
-        fixture.action([.local("refs/heads/side")], on: .branchFolder("功能"))?.perform(in: fixture.session)
-        await fixture.session.writeTask?.value
-
-        let names = try await fixture.runner.run(["for-each-ref", "--format=%(refname)", "refs/heads/"])
-        let branches = String(decoding: names, as: UTF8.self).split(separator: "\n").map(String.init)
-        #expect(branches.contains("refs/heads/功能/side"))
-        #expect(!branches.contains("refs/heads/side"))
-
-        // 已在这个文件夹里时名字不变，不接受
-        fixture.session.refresh(full: true)
-        await fixture.session.waitForRefresh()
-        try await FileViewsTests.wait { fixture.session.history.branches.contains { $0.name == "功能/side" } }
-        #expect(fixture.drop([.local("refs/heads/功能/side")], on: .branchFolder("功能")) == nil)
-    }
-
     /// 变更集里的单个文件拖到工作区：只把这个文件的改动套到工作区，暂存区不动；文件只能来自当前显示的提交详情。
-    @Test("变更集文件拖到工作区：只摘取这个文件")
-    func dropCommitFile() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
+    private func checkCommitFileDrop(in fixture: Fixture) async throws {
+        let session = fixture.session
         let unpulled = try await fixture.select("refs/heads/main", subjects: ["C"])
-        try await FileViewsTests.wait { fixture.session.history.changes.contains { $0.path == "C.txt" } }
+
+        // 选中后同步开始读变更集
+        await untilFinished { session.history.activeTasks }
+        try #require(session.history.changes.contains { $0.path == "C.txt" })
 
         let file = RepositoryDragPayload(
-            repository: try #require(fixture.session.repository),
+            repository: try #require(session.repository),
             kind: .commitFile,
             reference: unpulled.id,
             path: "C.txt"
@@ -136,8 +123,9 @@ extension OperationWiringTests {
         #expect(fixture.drop([.payload(file)], on: .head) == "pickFile:C.txt")
         #expect(fixture.drop([.payload(file)], on: .head, alternate: true) == nil)
 
-        fixture.action([.payload(file)], on: .head)?.perform(in: fixture.session)
-        await fixture.session.writeTask?.value
+        // 摘取只改工作区
+        fixture.action([.payload(file)], on: .head)?.perform(in: session)
+        await session.writeTask?.value
 
         let content = try Data(contentsOf: fixture.directory.appending(path: "C.txt"))
         #expect(String(decoding: content, as: UTF8.self) == "C\n")
@@ -145,9 +133,45 @@ extension OperationWiringTests {
         let status = try await fixture.runner.status()
         #expect(!status.entries.contains { $0.hasStagedChanges })
 
-        // 换选别的提交后，原来详情里的文件不再接受
+        // 换选别的提交后，前一个详情里的文件不接受
+        await session.waitForRefresh()
         _ = try await fixture.select("refs/heads/main", subjects: ["D"])
         #expect(fixture.drop([.payload(file)], on: .head) == nil)
+    }
+
+    /// 本地分支拖进分支文件夹、远端分支拖进同一远端的文件夹是改名为 “文件夹/原名末段”；名字不变或拖到别的远端时不接受。
+    private func checkMoveIntoFolder(in fixture: Fixture) async throws {
+        let session = fixture.session
+        let local = Fixture.Source.local("refs/heads/side")
+        let remote = Fixture.Source.remote("refs/remotes/origin/main")
+
+        #expect(fixture.drop([local], on: .branchFolder("功能")) == "move:refs/heads/side→功能/side")
+        #expect(fixture.drop([remote], on: .remoteBranchFolder("upstream", "旧")) == nil)
+
+        #expect(
+            fixture.drop([remote], on: .remoteBranchFolder("origin", "旧"))
+                == "move:refs/remotes/origin/main→旧/main"
+        )
+
+        // 提交拖进分支文件夹是新建分支，由已有的参数表单处理
+        #expect(fixture.drop([.commit(fixture.ids["D"] ?? "")], on: .branchFolder("功能")) == nil)
+
+        // 改名直接执行，移进文件夹后原名字不在了
+        fixture.action([local], on: .branchFolder("功能"))?.perform(in: session)
+        await session.writeTask?.value
+
+        let names = try await fixture.runner.run(["for-each-ref", "--format=%(refname)", "refs/heads/"])
+        let branches = String(decoding: names, as: UTF8.self).split(separator: "\n").map(String.init)
+
+        #expect(branches.contains("refs/heads/功能/side"))
+        #expect(!branches.contains("refs/heads/side"))
+
+        // 写完后的刷新读到新名字；已在这个文件夹里时名字不变，不接受
+        await session.waitForRefresh()
+        await untilFinished { session.history.activeTasks }
+        try #require(session.history.branches.contains { $0.name == "功能/side" })
+
+        #expect(fixture.drop([.local("refs/heads/功能/side")], on: .branchFolder("功能")) == nil)
     }
 }
 
@@ -189,7 +213,11 @@ extension OperationWiringTests.Fixture {
 
     /// 这些来源拖到落点时的动作，写成便于比较的文字；没有动作时为 nil。
     @MainActor
-    func drop(_ sources: [Source], on destination: RepositoryDropDestination, alternate: Bool = false) -> String? {
+    func drop(
+        _ sources: [Source],
+        on destination: RepositoryDropDestination,
+        alternate: Bool = false
+    ) -> String? {
         guard let action = action(sources, on: destination, alternate: alternate) else {
             return nil
         }
@@ -213,12 +241,17 @@ extension OperationWiringTests.Fixture {
             return nil
         }
 
+        let kind: RepositoryDragPayload.Kind
+        let reference: String
+
         switch source {
-        case .commit(let id): return RepositoryDragPayload(repository: repository, kind: .commit, reference: id)
-        case .local(let id): return RepositoryDragPayload(repository: repository, kind: .local, reference: id)
-        case .remote(let id): return RepositoryDragPayload(repository: repository, kind: .remote, reference: id)
-        case .tag(let id): return RepositoryDragPayload(repository: repository, kind: .tag, reference: id)
+        case .commit(let id): (kind, reference) = (.commit, id)
+        case .local(let id): (kind, reference) = (.local, id)
+        case .remote(let id): (kind, reference) = (.remote, id)
+        case .tag(let id): (kind, reference) = (.tag, id)
         case .payload(let payload): return payload
         }
+
+        return RepositoryDragPayload(repository: repository, kind: kind, reference: reference)
     }
 }

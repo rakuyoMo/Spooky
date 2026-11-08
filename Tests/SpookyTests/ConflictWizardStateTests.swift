@@ -9,7 +9,8 @@ import Testing
 /// 冲突向导的选择与结果框：选择只在视图里，结果按选择与当前文件得出；菜单的比较项按缺少的版本禁用。
 struct ConflictWizardStateTests {
     /// 单击选中、再单击取消；⌘ 单击加入另一张，不按 ⌘ 时换成只选这一张。
-    @Test("单击与 ⌘ 单击的选择")
+    /// 结果框里选择优先；没有选择时当前文件等于某侧就显示该侧，与两侧都不同且没有冲突标记是手动合并的结果，否则提示选择。
+    @Test("卡片的选择与结果框的五种状态")
     func selection() {
         #expect(ConflictSide.ours.toggled(in: [], adding: false) == [.ours])
         #expect(ConflictSide.theirs.toggled(in: [.ours], adding: false) == [.theirs])
@@ -18,11 +19,8 @@ struct ConflictWizardStateTests {
         // 再单击已选的卡片取消它，按不按 ⌘ 都一样
         #expect(ConflictSide.ours.toggled(in: [.ours], adding: false).isEmpty)
         #expect(ConflictSide.ours.toggled(in: [.ours, .theirs], adding: true) == [.theirs])
-    }
 
-    /// 选择优先；没有选择时当前文件等于某侧就显示该侧，与两侧都不同且没有冲突标记是手动合并的结果，否则提示选择。
-    @Test("结果框的五种状态")
-    func results() {
+        // 结果框
         let ours = Data("ours\n".utf8)
         let theirs = Data("theirs\n".utf8)
         let marked = Data("<<<<<<< HEAD\nours\n=======\ntheirs\n>>>>>>> side\n".utf8)
@@ -54,6 +52,7 @@ struct ConflictWizardStateTests {
         /// 只给出存在的 stage 的冲突文件。
         func entry(base: Bool, ours: Bool, theirs: Bool) -> StatusEntry {
             var entry = StatusEntry(kind: .conflicted, path: "文件 [x].txt")
+
             entry.conflict = ConflictStages(
                 base: base ? hash : nil,
                 ours: ours ? hash : nil,

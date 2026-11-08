@@ -34,23 +34,6 @@ extension MergeConflictTests {
         #expect(OperationProgress.preparedMessage(in: [:]) == nil)
     }
 
-    /// 合并冲突的预填保留 Git 写下的冲突清单注释，交给提交时的注释设置处理。
-    @Test("合并冲突的预填保留注释")
-    func preparedMessageKeepsComments() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-
-        _ = try await diverge(repository, base: ["x": "base\n"], ours: ["x": "ours\n"], theirs: ["x": "theirs\n"])
-        _ = try await repository.runner.execute(["merge", "--no-edit", "side"], acceptedExitCodes: [1])
-
-        let head = try await repository.runner.status().branch.oid
-        let message = try await WorkingCopyOperations(runner: repository.runner).context(head: head).preparedMessage
-
-        #expect(message.hasPrefix("Merge branch 'side'"))
-        #expect(message.contains("# Conflicts:"))
-    }
-
     /// 变基冲突解决后用编辑后的信息继续：Unicode、换行、引号与注释行原样进入提交，原作者与作者日期不变；
     /// 仓库配置 commit.cleanup=strip 时注释行同样保留。
     @Test("变基冲突用编辑后的信息继续", arguments: [false, true])
@@ -95,45 +78,16 @@ extension MergeConflictTests {
         #expect(try await fullMessage("HEAD", in: repository) == "after\n")
     }
 
-    /// squash 步冲突解决后改写正在合成的提交，编辑后的信息成为合成提交的信息。
-    @Test("squash 步冲突用编辑后的信息继续")
-    func continueSquashWithMessage() async throws {
-        let repository = try TemporaryRepository()
-        defer { repository.remove() }
-        try await repository.initialize()
-
-        let runner = repository.runner
-        try await commit(repository, ["x": "base\n"], message: "base")
-        try await commit(repository, ["x": "one\n"], message: "one")
-        try await commit(repository, ["x": "two\n"], message: "two")
-        try await commit(repository, ["x": "three\n"], message: "three")
-
-        let one = try await commitID("HEAD~2", in: repository)
-        let three = try await commitID("HEAD", in: repository)
-
-        // three 的改动基于 two，接在 one 上就冲突
-        try await rebaseInteractively(repository, todo: "pick \(one) one\nsquash \(three) three\n", onto: "HEAD~3")
-
-        let service = WorkingCopyOperations(runner: runner)
-        let prepared = try await service.context(head: try await runner.status().branch.oid).preparedMessage
-        #expect(prepared.contains("one") && prepared.contains("three"))
-
-        try await service.resolve(try await runner.status().entries, theirs: true)
-        try await service.continueSequence(.rebase, subject: "合成的提交", body: "")
-
-        #expect(try await service.context(head: try await runner.status().branch.oid).operation == nil)
-        #expect(try await fullMessage("HEAD", in: repository) == "合成的提交\n")
-        #expect(try await fullMessage("HEAD~1", in: repository) == "base\n")
-    }
-
-    /// 摘取序列的最后一步冲突时，提交即结束序列，不再执行继续命令；前一步由 Git 自己完成。
-    @Test("摘取序列最后一步冲突时提交后结束")
+    /// 序列的最后一个提交冲突时 todo 只剩一项，仍是序列，步数为 1 of 1；
+    /// 这时提交即结束序列，不执行继续命令；前一步由 Git 自己完成。
+    @Test("摘取序列的最后一步：仍是序列，冲突解决后提交即结束")
     func continueLastCherryPick() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
-        try await repository.initialize()
 
+        try await repository.initialize()
         let runner = repository.runner
+
         try await commit(repository, ["x": "base\n"], message: "base")
         _ = try await runner.run(["checkout", "-q", "-b", "picked"])
         try await commit(repository, ["y": "first\n"], message: "first", author: "Original Author")
@@ -143,6 +97,13 @@ extension MergeConflictTests {
 
         _ = try await runner.execute(["cherry-pick", "picked~1", "picked"], acceptedExitCodes: [1])
 
+        let progress = try await currentProgress(repository)
+
+        #expect(progress.state == .cherryPick && progress.isSequence)
+        #expect(progress.step == 1 && progress.stepCount == 1)
+        #expect(progress.stepSubject == "conflicting")
+
+        // 采用对方解决后用编辑后的标题提交
         let service = WorkingCopyOperations(runner: runner)
         try await service.resolve(try await runner.status().entries, theirs: true)
         try await service.continueSequence(.cherryPick, subject: "edited", body: "")
@@ -150,6 +111,7 @@ extension MergeConflictTests {
         #expect(try await service.context(head: try await runner.status().branch.oid).operation == nil)
 
         let log = String(decoding: try await runner.run(["log", "-3", "--format=%an|%s"]), as: UTF8.self)
+
         #expect(log == "Original Author|edited\nOriginal Author|first\nSpooky Test|main\n")
     }
 }
@@ -157,17 +119,12 @@ extension MergeConflictTests {
 // MARK: - Continue Helpers
 
 extension MergeConflictTests {
-    /// 提交的完整信息原文，末尾只留一个换行。
-    private func fullMessage(_ revision: String, in repository: TemporaryRepository) async throws -> String {
-        let output = try await repository.runner.run(["log", "-1", "--format=%B", revision, "--"])
-
-        // log 在信息原文之后再补一个换行
-        return String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines) + "\n"
-    }
-
     /// 提交的作者名、邮箱与原始格式的作者日期。
     private func authorLine(_ revision: String, in repository: TemporaryRepository) async throws -> String {
-        let output = try await repository.runner.run(["log", "-1", "--format=%an|%ae|%ad", "--date=raw", revision, "--"])
+        let output = try await repository.runner.run(
+            ["log", "-1", "--format=%an|%ae|%ad", "--date=raw", revision, "--"]
+        )
+
         return String(decoding: output, as: UTF8.self)
     }
 }

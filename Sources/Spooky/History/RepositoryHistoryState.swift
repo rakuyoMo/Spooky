@@ -127,7 +127,7 @@ final class RepositoryHistoryState {
     /// 双击进入左文件列表、右补丁的整页提交详情。
     var showsCommitPage = false
 
-    /// 从文件视图回到的提交；不在已加载的分页里时，整页详情仍按它显示。
+    /// 整页详情回到的提交：从文件视图回到的，或经链接、后退 / 前进打开整页详情时找到的；不在已加载的分页里时，整页详情仍按它显示。
     private(set) var revealedCommit: HistoryCommit? = nil
 
     /// 当前提交变更的文件列表。
@@ -550,9 +550,14 @@ extension RepositoryHistoryState {
             return
         }
 
-        if commits.contains(where: { $0.id == lookup }) {
+        if let found = commits.first(where: { $0.id == lookup }) {
             self.lookup = nil
             scrollTarget = lookup
+
+            // 整页详情找到的提交记作回到的提交：列表之后从第一页重读、不再含有它时，详情仍显示它
+            if showsCommitPage, selectedIDs == [lookup] {
+                revealedCommit = found
+            }
 
             // 选中它时它还不在列表里，当时读不到变更集，找到后补读
             if

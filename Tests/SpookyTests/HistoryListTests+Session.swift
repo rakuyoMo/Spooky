@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -15,11 +16,14 @@ extension HistoryListTests {
         defer { fixture.close() }
 
         let history = fixture.session.history
-        try await FileViewsTests.wait { history.commits.count == 3 && history.commitCount == 3 }
+        #expect(history.commits.count == 3)
+        #expect(history.commitCount == 3)
         #expect(!history.graphRows.isEmpty)
 
         history.setSearchText("FIX")
-        try await FileViewsTests.wait { history.query.isSearching && !history.isLoading && history.commitCount != nil }
+        await untilFinished { history.activeTasks }
+
+        #expect(history.query.isSearching)
         #expect(history.commits.map(\.subject) == ["gamma fix", "alpha fix"])
         #expect(history.commitCount == 2)
 
@@ -30,32 +34,45 @@ extension HistoryListTests {
         history.setSearchText("a")
         history.setSearchText("al")
         history.setSearchText("gamma")
-        try await FileViewsTests.wait { history.searchTask == nil && !history.isLoading && history.commitCount != nil }
+        await untilFinished { history.activeTasks }
+
         #expect(history.commits.map(\.subject) == ["gamma fix"])
 
         // 换成按作者搜索，再加一个提交信息条件，两类条件取交集
         history.setSearchText("spooky")
         history.setSearchScope(.author)
+
         let added = history.addSearchCondition()
         var condition = try #require(history.searchConditions.first { $0.id == added })
         condition.text = "beta"
         history.updateSearchCondition(condition)
-        try await FileViewsTests.wait { history.searchTask == nil && !history.isLoading && history.commitCount == 1 }
+        await untilFinished { history.activeTasks }
+
         #expect(history.commits.map(\.subject) == ["beta"])
+        #expect(history.commitCount == 1)
         #expect(history.primarySearchKind == .author)
         #expect(history.primarySearchText == "spooky")
 
-        // 移除一个条件后只剩作者条件；切换视图结束搜索并重读完整历史
+        // 移除一个条件后只剩作者条件
         history.removeSearchCondition(added)
-        try await FileViewsTests.wait { history.searchTask == nil && !history.isLoading && history.commitCount == 3 }
+        await untilFinished { history.activeTasks }
+
+        #expect(history.commitCount == 3)
+
+        // 切换视图结束搜索并重读完整历史
         fixture.session.activeView = .history
         fixture.session.activeView = .workingCopy
         #expect(history.searchConditions.isEmpty)
-        try await FileViewsTests.wait { !history.query.isSearching && !history.isLoading && history.commits.count == 3 }
+
+        await untilFinished { history.activeTasks }
+
+        #expect(!history.query.isSearching)
+        #expect(history.commits.count == 3)
     }
 
-    /// 回到的提交不在已加载的分页里时按 1000 条续载直到找到，排在询问的阈值以内不询问；找不到时说明原因。
-    @Test("回到历史时扩大加载并选中提交")
+    /// 列表已是全部历史并加载了要回到的提交时直接回到，不读取位置；只看一个引用时先核对位置再回到；
+    /// 不在已加载的分页里时按 1000 条续载直到找到，排在询问的阈值以内不询问；找不到时说明原因。
+    @Test("回到历史时按需核对、扩大加载并选中提交")
     func revealExpandsLoading() async throws {
         let fixture = try await Self.makeSession(
             commits: (0 ..< 250).map { "commit \($0)" },
@@ -63,223 +80,32 @@ extension HistoryListTests {
         )
         defer { fixture.close() }
 
-        let history = fixture.session.history
-        try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
+        let session = fixture.session
+        let history = session.history
         #expect(history.commits.count < 250)
 
         // 记下所有询问，不回调
         var prompts: [String] = []
-        fixture.session.onConfirm = { prompts.append($0.title) }
-
-        // 第 200 个提交不在第一页里
-        let head = try await RepositoryReferences(runner: fixture.runner).resolve("HEAD")
-        let page = try await RepositoryHistory(runner: fixture.runner).page(roots: [head], offset: 200, limit: 1)
-        let target = try #require(page.commits.first)
-        #expect(!history.commits.contains(target))
-
-        fixture.session.showCommit(target)
-        try await FileViewsTests.wait {
-            history.selectedIDs == [target.id] && history.lookup == nil && !history.isLoading
-        }
-
-        #expect(history.commits.contains(target))
-        #expect(history.scrollTarget == target.id)
-        #expect(history.selectedIDs == [target.id])
-        #expect(history.showsCommitPage)
-        #expect(history.lookupFailure == nil)
-        #expect(prompts.isEmpty)
-
-        // 没有引用指向的提交不在任何历史里
-        let orphan = try #require(fixture.orphan)
-
-        fixture.session.showCommit(orphan)
-        try await FileViewsTests.wait { history.lookupFailure != nil }
-        #expect(
-            history.lookupFailure
-                == AppLocalization.text("history.reveal.notFound", String(orphan.id.prefix(8)))
-        )
-        #expect(history.selectedCommit == orphan)
-        #expect(prompts.isEmpty)
-    }
-
-    /// 排在询问的阈值之后的提交要续载很多页，先核对位置再询问：询问期间与取消后，视图、所选的引用、搜索条件、列表与选中的提交都不变；
-    /// 同意后才切到整页详情并续载到它为止；不在历史里的提交不询问，直接说明找不到。
-    @Test("回到排在很后面的提交先询问")
-    func revealAsksBeyondThreshold() async throws {
-        let total = RepositoryHistoryState.slowLookupThreshold + 50
-        let fixture = try await Self.makeSession(
-            commits: (0 ..< total).map { "commit \($0)" },
-            createsOrphan: true
-        )
-        defer { fixture.close() }
-
-        let session = fixture.session
-        let history = session.history
-        try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
-
-        // 停在 Working Copy；历史只看 main、搜着 “commit 1”，并选中一个已加载的提交
-        history.selectedReferences = ["refs/heads/main"]
-        history.setSearchText("commit 1")
-        try await FileViewsTests.wait {
-            history.searchTask == nil && history.query.isSearching && !history.isLoading
-        }
-
-        let selected = try #require(history.commits.dropFirst().first).id
-        history.selectedIDs = [selected]
-
-        let commits = history.commits
-        let conditions = history.searchConditions
-        #expect(session.activeView == .workingCopy)
-
-        // 取消询问时不回调，只记下询问的标题、说明与主按钮
-        var prompts: [(title: String, message: String)] = []
-        var submitTitles: [String] = []
-
-        session.onConfirm = { request in
-            prompts.append((request.title, request.message))
-            submitTitles.append(request.submitTitle)
-        }
-
-        // 排在第 10,000 个之后的提交先询问；询问时还没切换，取消后什么都不变
-        let target = try await Self.commit(
-            at: RepositoryHistoryState.slowLookupThreshold + 20,
-            with: fixture.runner
-        )
-
-        session.showCommit(target)
-        try await FileViewsTests.wait { prompts.count == 1 }
-
-        #expect(prompts.first?.title == AppLocalization.text("history.reveal.slow"))
-        #expect(submitTitles == [AppLocalization.text("history.reveal.slow.submit")])
-        #expect(
-            prompts.first?.message
-                == AppLocalization.text(
-                    "history.reveal.slow.message",
-                    String(target.id.prefix(8)),
-                    RepositoryHistoryState.slowLookupThreshold
-                )
-        )
-
-        #expect(session.activeView == .workingCopy)
-        #expect(!history.showsCommitPage)
-        #expect(history.selectedReferences == ["refs/heads/main"])
-        #expect(history.searchConditions == conditions)
-        #expect(history.commits == commits)
-        #expect(history.selectedIDs == [selected])
-        #expect(history.lookup == nil)
-        #expect(!history.isLoading)
-
-        // 同意后切到整页详情，续载到它为止并选中，不再询问第二次
-        session.onConfirm = { request in
-            prompts.append((request.title, request.message))
-            request.action()
-        }
-
-        session.showCommit(target)
-        try await FileViewsTests.wait { history.scrollTarget == target.id && !history.isLoading }
-
-        #expect(prompts.count == 2)
-        #expect(session.activeView == .history)
-        #expect(history.showsCommitPage)
-        #expect(history.selectedReferences.isEmpty)
-        #expect(history.searchConditions.isEmpty)
-        #expect(history.commits.contains(target))
-        #expect(history.selectedIDs == [target.id])
-        #expect(history.lookup == nil)
-        #expect(history.lookupFailure == nil)
-
-        // 没有引用指向的提交不在历史里，不询问，直接说明找不到
-        let orphan = try #require(fixture.orphan)
-
-        session.showCommit(orphan)
-        try await FileViewsTests.wait { history.lookupFailure != nil && !history.isLoading }
-
-        #expect(
-            history.lookupFailure
-                == AppLocalization.text("history.reveal.notFound", String(orphan.id.prefix(8)))
-        )
-
-        #expect(prompts.count == 2)
-
-        // 列表一直续载到根提交，不设总数上限
-        while history.hasMore {
-            history.loadNextPage(pageSize: 1000)
-            try await FileViewsTests.wait { !history.isLoading }
-        }
-
-        #expect(history.commits.count == total)
-        #expect(try #require(history.commits.last).parents.isEmpty)
-    }
-
-    /// 在历史里从侧边栏回到排在询问的阈值之后的提交，取消询问时所选的引用、列表与选中的提交都不变。
-    @Test("在历史里回到很靠后的提交，取消时列表不变")
-    func revealInHistoryKeepsListOnCancel() async throws {
-        let total = RepositoryHistoryState.slowLookupThreshold + 50
-        let fixture = try await Self.makeSession(commits: (0 ..< total).map { "commit \($0)" })
-        defer { fixture.close() }
-
-        let session = fixture.session
-        let history = session.history
-
-        // 在历史里只看 main，并选中一个已加载的提交
-        session.activeView = .history
-        history.selectedReferences = ["refs/heads/main"]
-        try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
-
-        let selected = try #require(history.commits.dropFirst().first).id
-        history.selectedIDs = [selected]
-        let commits = history.commits
-
-        // 取消询问时不回调
-        var prompts = 0
-        session.onConfirm = { _ in prompts += 1 }
-
-        let target = try await Self.commit(
-            at: RepositoryHistoryState.slowLookupThreshold + 20,
-            with: fixture.runner
-        )
-
-        session.revealInHistory(target.id)
-        try await FileViewsTests.wait { prompts == 1 }
-
-        #expect(session.activeView == .history)
-        #expect(!history.showsCommitPage)
-        #expect(history.selectedReferences == ["refs/heads/main"])
-        #expect(history.commits == commits)
-        #expect(history.selectedIDs == [selected])
-        #expect(history.lookup == nil)
-        #expect(!history.isLoading)
-    }
-
-    /// 列表已是全部历史并加载了要回到的提交时直接回到，不读取位置；列表只看一个引用时先核对位置再回到。
-    @Test("已加载在全部历史里的提交直接回到")
-    func revealLoadedCommit() async throws {
-        let fixture = try await Self.makeSession(commits: ["first", "second", "third"])
-        defer { fixture.close() }
-
-        let session = fixture.session
-        let history = session.history
+        session.onConfirm = { prompts.append($0.title) }
 
         // 只看 main 时列表不是全部历史，即使已加载也先核对，核对完才切换
         history.selectedReferences = ["refs/heads/main"]
-        try await FileViewsTests.wait { history.commits.count == 3 && !history.isLoading }
+        await untilFinished { history.activeTasks }
 
-        let first = try #require(history.commits.last)
+        let loaded = try #require(history.commits.last)
 
-        session.showCommit(first)
+        session.showCommit(loaded)
         #expect(history.lookupCheckTask != nil)
         #expect(session.activeView == .workingCopy)
 
-        try await FileViewsTests.wait {
-            history.showsCommitPage && history.lookup == nil && !history.isLoading
-        }
+        await untilFinished { history.activeTasks }
 
         #expect(session.activeView == .history)
+        #expect(history.showsCommitPage)
         #expect(history.selectedReferences.isEmpty)
-        #expect(history.selectedIDs == [first.id])
+        #expect(history.selectedIDs == [loaded.id])
 
-        // 回到全部历史后它已加载，再回到别的已加载的提交时直接切过去
-        try await FileViewsTests.wait { history.commits.count == 3 }
+        // 回到全部历史后列表已加载它，再回到别的已加载的提交时直接切过去
         let second = try #require(history.commits.dropFirst().first)
         session.activeView = .workingCopy
 
@@ -287,116 +113,126 @@ extension HistoryListTests {
         #expect(history.lookupCheckTask == nil)
         #expect(session.activeView == .history)
         #expect(history.selectedIDs == [second.id])
-    }
 
-    /// 核对位置期间又要回到另一个提交时，前一个核对作废：只询问后一个。
-    @Test("核对期间又回到别的提交，前一个不询问")
-    func supersededLookupCheck() async throws {
-        let total = RepositoryHistoryState.slowLookupThreshold + 50
-        let fixture = try await Self.makeSession(commits: (0 ..< total).map { "commit \($0)" })
-        defer { fixture.close() }
+        await untilFinished { history.activeTasks }
 
-        let session = fixture.session
-        let history = session.history
-        try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
+        // 第 200 个提交不在第一页里
+        let target = try await Self.commit(at: 200, with: fixture.runner)
+        #expect(!history.commits.contains(target))
 
-        // 记下所有询问的说明，不回调
-        var prompts: [String] = []
-        session.onConfirm = { prompts.append($0.message) }
+        session.showCommit(target)
+        await untilFinished { history.activeTasks }
 
-        let earlier = try await Self.commit(
-            at: RepositoryHistoryState.slowLookupThreshold + 10,
-            with: fixture.runner
-        )
+        #expect(history.commits.contains(target))
+        #expect(history.scrollTarget == target.id)
+        #expect(history.selectedIDs == [target.id])
+        #expect(history.showsCommitPage)
+        #expect(history.lookupFailure == nil)
 
-        let later = try await Self.commit(
-            at: RepositoryHistoryState.slowLookupThreshold + 30,
-            with: fixture.runner
-        )
+        // 没有引用指向的提交不在任何历史里，不询问，直接说明找不到
+        let orphan = try #require(fixture.orphan)
 
-        session.showCommit(earlier)
-        session.showCommit(later)
-        try await FileViewsTests.wait { !prompts.isEmpty && history.lookupCheckTask == nil }
+        session.showCommit(orphan)
+        await untilFinished { history.activeTasks }
 
         #expect(
-            prompts
-                == [
-                    AppLocalization.text(
-                        "history.reveal.slow.message",
-                        String(later.id.prefix(8)),
-                        RepositoryHistoryState.slowLookupThreshold
-                    ),
-                ]
+            history.lookupFailure
+                == AppLocalization.text("history.reveal.notFound", String(orphan.id.prefix(8)))
         )
 
-        #expect(session.activeView == .workingCopy)
+        #expect(history.selectedCommit == orphan)
+        #expect(prompts.isEmpty)
     }
 
-    /// 从侧边栏回到排在询问的阈值之后的提交：询问框结束后窗口完整刷新、列表从第一页重读，同意后仍选中它，找到后读出它的变更。
-    @Test("同意询问后列表重读，仍选中要回到的提交")
-    func revealKeepsSelectionAfterReload() async throws {
+    /// 排在询问的阈值之后的提交要续载很多页，先核对位置再询问：核对期间又回到别的提交时前一个不询问；
+    /// 取消时什么都不变，同意后才切换并续载到它为止；列表一直续载到根提交，不设总数上限。
+    @Test("回到排在很后面的提交先询问")
+    func revealAsksBeyondThreshold() async throws {
         let total = RepositoryHistoryState.slowLookupThreshold + 50
         let fixture = try await Self.makeSession(commits: (0 ..< total).map { "commit \($0)" })
         defer { fixture.close() }
 
-        let session = fixture.session
-        let history = session.history
-        try await FileViewsTests.wait { !history.commits.isEmpty && !history.isLoading }
+        let history = fixture.session.history
 
-        let head = try await RepositoryReferences(runner: fixture.runner).resolve("HEAD")
-        let page = try await RepositoryHistory(runner: fixture.runner).page(
-            roots: [head],
-            offset: RepositoryHistoryState.slowLookupThreshold + 20,
-            limit: 1
+        let target = try await Self.commit(
+            at: RepositoryHistoryState.slowLookupThreshold + 20,
+            with: fixture.runner
         )
-        let target = try #require(page.commits.first)
 
-        // 同意后窗口重新成为主窗口，完整刷新从第一页重读列表
-        session.onConfirm = { request in
-            request.action()
-            history.reloadCommits()
+        try await cancelSlowLookups(to: target, in: fixture)
+        try await agreeSlowLookups(to: target, in: fixture)
+
+        // 列表一直续载到根提交，不设总数上限
+        while history.hasMore {
+            history.loadNextPage(pageSize: 1000)
+            await untilFinished { history.activeTasks }
         }
 
-        session.revealInHistory(target.id)
-        try await FileViewsTests.wait { history.scrollTarget == target.id && !history.isLoading }
-        try await FileViewsTests.wait { !history.isLoadingChanges }
+        #expect(history.commits.count == total)
+        #expect(try #require(history.commits.last).parents.isEmpty)
+    }
 
+    /// 整页详情回到第一页之后的提交，找到以后列表又从第一页重读：列表里不再有它，详情仍显示它。
+    @Test("整页详情回到的提交在列表重读后保留")
+    func commitPageSurvivesReload() async throws {
+        let fixture = try await Self.makeSession(commits: (0 ..< 150).map { "commit \($0)" })
+        defer { fixture.close() }
+
+        let session = fixture.session
+        let history = session.history
+        let target = try await Self.commit(at: 130, with: fixture.runner)
+
+        // 打开整页详情，续载到这个提交
+        history.showsCommitPage = true
+        history.locate(target.id)
+        await untilFinished { history.activeTasks }
+
+        #expect(history.selectedCommit == target)
+
+        // 完整刷新从第一页重读列表
+        session.refresh(full: true)
+        await session.waitForRefresh()
+        await untilFinished { history.activeTasks }
+
+        #expect(!history.commits.contains(target))
         #expect(history.selectedIDs == [target.id])
         #expect(history.selectedCommit == target)
-        #expect(history.changes.map(\.path) == ["file.txt"])
     }
 
     /// 工作区写出分支与改动数，分离 HEAD 时不写分支；历史写出所选引用与提交数，数到上限时写 “or more”。
     @Test("工作区与历史的窗口副标题")
     func subtitles() async throws {
-        let fixture = try await Self.makeSession(commits: ["first", "second"], createsWindowController: true)
+        let fixture = try await Self.makeSession(
+            commits: ["first", "second"],
+            createsWindowController: true
+        ) { runner, directory in
+            _ = try await runner.run(["branch", "topic", "HEAD~1"])
+
+            // 一个修改的文件与一个未跟踪的文件
+            try Data("changed\n".utf8).write(to: directory.appending(path: "file.txt"))
+            try Data("new\n".utf8).write(to: directory.appending(path: "new.txt"))
+        }
         defer { fixture.close() }
 
         let session = fixture.session
         let controller = try #require(fixture.controller)
-        _ = try await fixture.runner.run(["branch", "topic", "HEAD~1"])
-
-        // 一个修改的文件与一个未跟踪的文件
-        try Data("changed\n".utf8).write(to: fixture.directory.appending(path: "file.txt"))
-        try Data("new\n".utf8).write(to: fixture.directory.appending(path: "new.txt"))
-        session.refresh(full: true)
-        await session.waitForRefresh()
         #expect(controller.repositorySubtitle == AppLocalization.text("working.subtitle.branch", "main", 2))
 
+        // 切到历史不另读，提交数在打开仓库时已经读好
         session.activeView = .history
-        try await FileViewsTests.wait { session.history.commitCount == 2 }
         #expect(controller.repositorySubtitle == AppLocalization.text(
             "history.subtitle",
             AppLocalization.text("history.title"),
             2
         ))
 
+        // 换选引用时当场重读第一页与提交数
         session.history.selectedReference = "refs/heads/topic"
-        try await FileViewsTests.wait { session.history.commitCount == 1 }
+        await untilFinished { session.history.activeTasks }
         #expect(controller.repositorySubtitle == AppLocalization.text("history.subtitle", "topic", 1))
 
         session.history.selectedReferences = ["refs/heads/main", "refs/heads/topic"]
-        try await FileViewsTests.wait { session.history.commitCount == 2 }
+        await untilFinished { session.history.activeTasks }
         #expect(controller.repositorySubtitle == AppLocalization.text("history.subtitle", "main, topic", 2))
 
         session.history.commitCount = RepositoryHistoryState.countLimit
@@ -427,49 +263,196 @@ extension HistoryListTests {
         let runner = try await FileViewsTests.initializeRepository(at: location)
         _ = try await runner.run(["commit", "--allow-empty", "-q", "-m", "first"])
 
-        // 读全部引用的命令读完先留下记号，等闸门文件出现后才交出结果；其余命令直接交给 Git
-        let script = tools.appending(path: "gated-git")
-        try Data("""
-            #!/bin/sh
-            case "$*" in
-                *for-each-ref*--sort=refname*)
-                    tools=$(dirname "$0")
-                    output=$(mktemp)
-                    /usr/bin/git "$@" > "$output"
-                    code=$?
-                    : > "$tools/read"
-                    while [ ! -e "$tools/gate" ]; do sleep 0.02; done
-                    cat "$output"
-                    rm -f "$output"
-                    exit $code
-                    ;;
-            esac
-            exec /usr/bin/git "$@"
-            """.utf8).write(to: script)
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: script.path)
+        // 读全部引用的命令读完后停在闸门上，放行后才交出结果；其余命令直接交给 Git
+        let gate = try ProcessGate(in: tools)
+        defer { gate.release() }
 
-        let gated = GitRunner(
-            location: location,
-            executablePath: script.path,
-            environment: .inherit.updating([
-                "GIT_CONFIG_GLOBAL": "/dev/null",
-                "GIT_CONFIG_SYSTEM": "/dev/null",
-                "GIT_CONFIG_NOSYSTEM": "1",
-            ])
-        )
+        let gated = try Self.scriptedRunner(location: location, tools: tools, cases: """
+            *for-each-ref*--sort=refname*)
+                output=$(mktemp)
+                /usr/bin/git "$@" > "$output"
+                code=$?
+                \(gate.command)
+                cat "$output"
+                rm -f "$output"
+                exit $code
+                ;;
+            """)
+
         let status = try await runner.status()
         let history = RepositoryHistoryState()
         defer { history.close() }
 
-        // 第一次读取读完引用后停在闸门前，这时新建分支并再要求刷新
+        // 第一次读取读完引用后停在闸门上，这时新建分支并再要求刷新
         history.refresh(status: status, runner: gated)
-        try await FileViewsTests.wait { FileManager.default.fileExists(atPath: tools.appending(path: "read").path) }
+        await gate.arrival()
+
         _ = try await runner.run(["branch", "late"])
         history.refresh(status: status, runner: gated)
 
-        // 闸门打开后，第一次读取交出没有新分支的结果，补上的刷新读到它
-        try Data().write(to: tools.appending(path: "gate"))
-        try await FileViewsTests.wait { history.snapshot?.references.contains { $0.id == "refs/heads/late" } ?? false }
+        // 放行两次：第一次读取交出没有新分支的结果，读完时补上的刷新读到它
+        gate.release()
+        gate.release()
+        await untilFinished { history.activeTasks }
+
+        #expect(history.snapshot?.references.contains { $0.id == "refs/heads/late" } ?? false)
+    }
+}
+
+// MARK: - Slow Lookup
+
+extension HistoryListTests {
+    /// 回到提交前后应保持不变的视图与历史状态。
+    private struct LookupScene: Equatable {
+        /// 当前主视图。
+        let activeView: RepositoryView
+
+        /// 是否显示整页详情。
+        let showsCommitPage: Bool
+
+        /// 历史只看的引用。
+        let selectedReferences: Set<String>
+
+        /// 搜索条件。
+        let searchConditions: [HistorySearchCondition]
+
+        /// 列表里已加载的提交。
+        let commits: [HistoryCommit]
+
+        /// 选中的提交。
+        let selectedIDs: Set<String>
+
+        /// 正在查找的提交。
+        let lookup: String?
+
+        /// 是否正在读取列表。
+        let isLoading: Bool
+
+        /// 记下会话此刻的状态。
+        @MainActor
+        init(_ session: RepositorySession) {
+            activeView = session.activeView
+            showsCommitPage = session.history.showsCommitPage
+            selectedReferences = session.history.selectedReferences
+            searchConditions = session.history.searchConditions
+            commits = session.history.commits
+            selectedIDs = session.history.selectedIDs
+            lookup = session.history.lookup
+            isLoading = session.history.isLoading
+        }
+    }
+
+    /// 取消询问：从 Working Copy 回到整页详情，核对期间又回到 `target` 时只询问它；在历史里从侧边栏回到它。
+    /// 两处取消后视图、所选的引用、搜索条件、列表与选中的提交都不变。
+    private func cancelSlowLookups(to target: HistoryCommit, in fixture: SessionFixture) async throws {
+        let session = fixture.session
+        let history = session.history
+
+        // 停在 Working Copy；历史只看 main、搜着 “commit 1”，并选中一个已加载的提交
+        history.selectedReferences = ["refs/heads/main"]
+        history.setSearchText("commit 1")
+        await untilFinished { history.activeTasks }
+
+        #expect(history.query.isSearching)
+        history.selectedIDs = [try #require(history.commits.dropFirst().first).id]
+
+        // 取消询问时不回调，只记下询问
+        var requests: [ConfirmationRequest] = []
+        session.onConfirm = { requests.append($0) }
+
+        let earlier = try await Self.commit(
+            at: RepositoryHistoryState.slowLookupThreshold + 10,
+            with: fixture.runner
+        )
+
+        // 核对 earlier 期间又回到 target，前一个核对作废，只询问 target；询问时还没切换
+        var scene = LookupScene(session)
+        session.showCommit(earlier)
+        session.showCommit(target)
+        await untilFinished { history.activeTasks }
+
+        #expect(requests.map(\.title) == [AppLocalization.text("history.reveal.slow")])
+        #expect(requests.map(\.submitTitle) == [AppLocalization.text("history.reveal.slow.submit")])
+
+        #expect(
+            requests.first?.message
+                == AppLocalization.text(
+                    "history.reveal.slow.message",
+                    String(target.id.prefix(8)),
+                    RepositoryHistoryState.slowLookupThreshold
+                )
+        )
+
+        #expect(LookupScene(session) == scene)
+
+        // 切到历史结束搜索，再从侧边栏回到 target 并取消
+        session.activeView = .history
+        await untilFinished { history.activeTasks }
+
+        history.selectedIDs = [try #require(history.commits.dropFirst().first).id]
+        scene = LookupScene(session)
+
+        session.revealInHistory(target.id)
+        await untilFinished { history.activeTasks }
+
+        #expect(requests.count == 2)
+        #expect(LookupScene(session) == scene)
+    }
+
+    /// 同意询问：从 Working Copy 回到 `target` 时切到整页详情并续载到它为止；
+    /// 在历史里从侧边栏回到更靠后的提交时，询问框结束后窗口完整刷新、列表从第一页重读，仍选中它并读出它的变更。
+    private func agreeSlowLookups(to target: HistoryCommit, in fixture: SessionFixture) async throws {
+        let session = fixture.session
+        let history = session.history
+        var prompts = 0
+
+        // 回到 Working Copy 再搜 “commit 1”，同意后切到整页详情，所选的引用与搜索条件随之清掉
+        session.activeView = .workingCopy
+        history.setSearchText("commit 1")
+        await untilFinished { history.activeTasks }
+
+        session.onConfirm = { request in
+            prompts += 1
+            request.action()
+        }
+
+        session.showCommit(target)
+        await untilFinished { history.activeTasks }
+
+        #expect(prompts == 1)
+        #expect(session.activeView == .history)
+        #expect(history.showsCommitPage)
+        #expect(history.selectedReferences.isEmpty)
+        #expect(history.searchConditions.isEmpty)
+        #expect(history.commits.contains(target))
+        #expect(history.selectedIDs == [target.id])
+        #expect(history.lookup == nil)
+        #expect(history.lookupFailure == nil)
+
+        // 只看 main 时从侧边栏回到更靠后的提交；同意后窗口重新成为主窗口，完整刷新从第一页重读列表
+        let deeper = try await Self.commit(
+            at: RepositoryHistoryState.slowLookupThreshold + 40,
+            with: fixture.runner
+        )
+
+        history.selectedReferences = ["refs/heads/main"]
+        await untilFinished { history.activeTasks }
+
+        session.onConfirm = { request in
+            prompts += 1
+            request.action()
+            history.reloadCommits()
+        }
+
+        session.revealInHistory(deeper.id)
+        await untilFinished { history.activeTasks }
+
+        #expect(prompts == 2)
+        #expect(!history.showsCommitPage)
+        #expect(history.selectedReferences.isEmpty)
+        #expect(history.selectedIDs == [deeper.id])
+        #expect(history.selectedCommit == deeper)
+        #expect(history.changes.map(\.path) == ["file.txt"])
     }
 }
 
@@ -516,10 +499,12 @@ extension HistoryListTests {
     /// - Parameters:
     ///   - createsOrphan: 是否在显示仓库之前另建一个没有引用指向的提交，见 ``SessionFixture/orphan``。
     ///   - createsWindowController: 是否建出会话所在的窗口；副标题、远端变化后重读请求这类由窗口接上的行为才需要。
+    ///   - prepare: 显示仓库之前对仓库的改动，参数是仓库的 runner 与目录；改动不会引起自动刷新。
     static func makeSession(
         commits: [String],
         createsOrphan: Bool = false,
-        createsWindowController: Bool = false
+        createsWindowController: Bool = false,
+        prepare: (GitRunner, URL) async throws -> Void = { _, _ in }
     ) async throws -> SessionFixture {
         let directory = try FileViewsTests.temporaryDirectory()
         let location = RepositoryLocation.local(path: directory.path)
@@ -528,6 +513,7 @@ extension HistoryListTests {
 
         // 在文件监听开始之前写入，不会引起自动刷新
         let orphan = createsOrphan ? try await makeOrphan(with: runner) : nil
+        try await prepare(runner, directory)
 
         // 列表里的头像不联网，全部显示首字母
         AvatarStore.shared.fetch = { _ in nil }
@@ -550,6 +536,9 @@ extension HistoryListTests {
         session.display(location)
         session.refresh(full: true)
         await session.waitForRefresh()
+
+        // 刷新带起的引用、第一页与提交数也都读完，测试从读好的历史开始
+        await untilFinished { session.history.activeTasks }
 
         return SessionFixture(
             directory: directory,
@@ -589,6 +578,37 @@ extension HistoryListTests {
         )
 
         return try #require(page.commits.first)
+    }
+
+    /// 经脚本执行 Git 的执行器：脚本按 `cases` 处理匹配的命令，其余命令直接交给 Git；
+    /// 与临时仓库一样忽略系统和用户的全局配置。
+    ///
+    /// - Parameters:
+    ///   - location: 仓库位置。
+    ///   - tools: 放脚本的临时目录，由调用方删除。
+    ///   - cases: 按命令参数匹配的 `case` 分支，每个分支自行以 `;;` 结束。
+    static func scriptedRunner(location: RepositoryLocation, tools: URL, cases: String) throws -> GitRunner {
+        let script = tools.appending(path: "scripted-git")
+
+        try Data("""
+            #!/bin/sh
+            case "$*" in
+            \(cases)
+            esac
+            exec /usr/bin/git "$@"
+            """.utf8).write(to: script)
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: script.path)
+
+        return GitRunner(
+            location: location,
+            executablePath: script.path,
+            environment: .inherit.updating([
+                "GIT_CONFIG_GLOBAL": "/dev/null",
+                "GIT_CONFIG_SYSTEM": "/dev/null",
+                "GIT_CONFIG_NOSYSTEM": "1",
+            ])
+        )
     }
 
     /// 用 HEAD 的树另建一个没有引用指向的提交，它不在仓库的任何历史里。

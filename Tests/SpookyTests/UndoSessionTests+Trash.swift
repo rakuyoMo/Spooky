@@ -9,14 +9,17 @@ import Testing
 /// 丢弃与删除经废纸篓之后的撤销：会话记下移进废纸篓的位置，撤销时移回原处，重做时再移进去。
 extension UndoSessionTests {
     /// 丢弃全部改动先确认：已跟踪的改动恢复到最后一次提交，未跟踪文件进废纸篓；撤销放回，重做再丢弃一次。
-    @Test("丢弃全部改动经废纸篓的撤销与重做")
-    func discardAllThroughTrash() async throws {
+    /// 本机删除不确认，直接移进废纸篓；撤销把文件放回原处。
+    @Test("丢弃全部改动与删除经废纸篓的撤销")
+    func trashRoundTrip() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
+
         let session = fixture.session
         defer { Self.emptyTrash(of: session) }
 
         let untracked = fixture.directory.appending(path: "未跟踪 ' [x].txt")
+        let discard = AppLocalization.text("working.discard")
         var confirmations = 0
 
         session.onConfirm = { request in
@@ -28,44 +31,41 @@ extension UndoSessionTests {
         try Data("new\n".utf8).write(to: untracked)
         await fixture.refresh()
 
+        // 丢弃全部改动：确认一次，未跟踪文件进废纸篓
         try await fixture.perform { session.discard(session.status?.entries ?? []) }
+
         #expect(confirmations == 1)
         #expect(try fixture.read() == "base\n")
         #expect(!FileManager.default.fileExists(atPath: untracked.path))
 
         let location = try #require(Self.trashed(in: session.undoHistory?.undoEntries.last).first?.location)
+
         #expect(FileManager.default.fileExists(atPath: location))
-        #expect(
-            try await Self.settledState(of: session, redo: false) == .available(AppLocalization.text("working.discard"))
-        )
+        #expect(try await Self.settledState(of: session, redo: false) == .available(discard))
 
         // 撤销：未跟踪文件从废纸篓移回原处，已跟踪的改动回来
         try await fixture.perform { session.undoLastOperation() }
+
         #expect(try fixture.read() == "changed\n")
         #expect(try String(contentsOf: untracked, encoding: .utf8) == "new\n")
         #expect(!FileManager.default.fileExists(atPath: location))
 
         // 重做：再丢弃一次，新的位置留给下一次撤销
         try await fixture.perform { session.redoLastOperation() }
+
         #expect(try fixture.read() == "base\n")
         #expect(!FileManager.default.fileExists(atPath: untracked.path))
 
         let again = try #require(Self.trashed(in: session.undoHistory?.undoEntries.last).first?.location)
         #expect(FileManager.default.fileExists(atPath: again))
-    }
 
-    /// 本机删除不确认，直接移进废纸篓；撤销把文件放回原处。
-    @Test("删除经废纸篓的撤销")
-    func deleteThroughTrash() async throws {
-        let fixture = try await Fixture()
-        defer { fixture.remove() }
-        let session = fixture.session
-        defer { Self.emptyTrash(of: session) }
-
-        session.onConfirm = { Issue.record("不应弹出确认：\($0.title)") }
-
+        // 删除：不确认，直接移进废纸篓，撤销后文件回到原处
         try await fixture.perform { session.delete([StatusEntry(kind: .unchanged, path: "a b.txt")]) }
-        #expect(!FileManager.default.fileExists(atPath: fixture.directory.appending(path: "a b.txt").path))
+
+        let deleted = fixture.directory.appending(path: "a b.txt")
+
+        #expect(confirmations == 1)
+        #expect(!FileManager.default.fileExists(atPath: deleted.path))
         #expect(Self.trashed(in: session.undoHistory?.undoEntries.last).count == 1)
 
         try await fixture.perform { session.undoLastOperation() }
@@ -87,7 +87,10 @@ extension UndoSessionTests {
 
     /// 快照记录里移进废纸篓的项；没有记录或是反向操作的记录时为空。
     static func trashed(in entry: RepositoryUndoEntry?) -> [TrashedItem] {
-        guard case .snapshot(_, _, let trashed) = entry?.change else { return [] }
+        guard case .snapshot(_, _, let trashed) = entry?.change else {
+            return []
+        }
+
         return trashed
     }
 }

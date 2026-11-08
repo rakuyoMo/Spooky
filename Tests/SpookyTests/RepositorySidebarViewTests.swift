@@ -3,6 +3,7 @@ import Foundation
 import SpookyKit
 import SwiftUI
 import Testing
+import TestSupport
 
 @testable import Spooky
 
@@ -12,8 +13,9 @@ import Testing
 @MainActor
 struct RepositorySidebarViewTests {
     /// 远端是可展开的行，显示它时各行的行首让出展开箭头的位置；换回没有远端的仓库后，行首回到新开时的位置。
-    @Test("换回没有可展开行的仓库后，行首与新开时相同")
-    func leadingAfterSwitchingRepositories() async throws {
+    /// 换仓库时列表整个重建，原来在侧边栏里的键盘焦点落到新的列表上，不丢给窗口。
+    @Test("换仓库后行首与新开时相同，键盘焦点仍在侧边栏")
+    func switchingRepositories() async throws {
         let plain = try await Self.repository()
         let withRemote = try await Self.repository()
 
@@ -25,6 +27,7 @@ struct RepositorySidebarViewTests {
         _ = try await withRemote.runner.run(["remote", "add", "origin", plain.location.path])
 
         let runners = [plain.location: plain.runner, withRemote.location: withRemote.runner]
+
         let session = RepositorySession(
             makeRunner: { runners[$0] ?? plain.runner },
             activities: RepositoryActivities()
@@ -32,62 +35,35 @@ struct RepositorySidebarViewTests {
 
         defer { session.close() }
 
-        try await Self.display(plain.location, in: session, remotes: 0)
+        await Self.display(plain.location, in: session, remotes: 0)
+
         let window = Self.host(session)
-        let fresh = try #require(await Self.workingCopyLeading(in: window) { _ in true })
+        let root = try #require(window.contentView)
+        let fresh = try #require(await Self.rebuiltOutline(in: root, replacing: nil))
 
         // 有远端的仓库：行首右移，让出展开箭头的位置
-        try await Self.display(withRemote.location, in: session, remotes: 1)
-        let shifted = await Self.workingCopyLeading(in: window) { $0 > fresh }
-        #expect(shifted != nil)
+        await Self.display(withRemote.location, in: session, remotes: 1)
+
+        let shifted = try #require(await Self.rebuiltOutline(in: root, replacing: fresh))
+        #expect(Self.workingCopyLeading(of: shifted) > Self.workingCopyLeading(of: fresh))
+
+        // 换仓库之前让列表拿到键盘焦点；SwiftUI 在之后的几轮更新里才把第一响应者记进列表的焦点状态
+        window.makeFirstResponder(shifted)
+        await runLoopTurns(3) { root.layoutSubtreeIfNeeded() }
 
         // 换回没有远端的仓库：行首回到新开时的位置
-        try await Self.display(plain.location, in: session, remotes: 0)
-        let restored = await Self.workingCopyLeading(in: window) { $0 == fresh }
-        #expect(restored == fresh)
-    }
+        await Self.display(plain.location, in: session, remotes: 0)
 
-    /// 换仓库时列表整个重建，原来在侧边栏里的键盘焦点落到新的列表上，不丢给窗口。
-    @Test("换了仓库后键盘焦点仍在侧边栏")
-    func focusAfterSwitchingRepositories() async throws {
-        let first = try await Self.repository()
-        let second = try await Self.repository()
+        let restored = try #require(await Self.rebuiltOutline(in: root, replacing: shifted))
+        #expect(Self.workingCopyLeading(of: restored) == Self.workingCopyLeading(of: fresh))
 
-        defer {
-            try? FileManager.default.removeItem(atPath: first.location.path)
-            try? FileManager.default.removeItem(atPath: second.location.path)
+        // 新列表在重建之后的更新里拿回焦点，这是焦点恢复唯一的完成信号
+        await until {
+            root.layoutSubtreeIfNeeded()
+            return window.firstResponder === Self.outline(in: root)
         }
 
-        let runners = [first.location: first.runner, second.location: second.runner]
-        let session = RepositorySession(
-            makeRunner: { runners[$0] ?? first.runner },
-            activities: RepositoryActivities()
-        )
-
-        defer { session.close() }
-
-        try await Self.display(first.location, in: session, remotes: 0)
-        let window = Self.host(session)
-        _ = await Self.workingCopyLeading(in: window) { _ in true }
-
-        let root = try #require(window.contentView)
-        let original = try #require(Self.outline(in: root))
-        window.makeFirstResponder(original)
-
-        // SwiftUI 在之后的更新里才把第一响应者记进列表的焦点状态
-        try await Task.sleep(for: .milliseconds(300))
-
-        try await Self.display(second.location, in: session, remotes: 0)
-
-        let focused = await Self.eventually {
-            guard let current = Self.outline(in: root) else {
-                return false
-            }
-
-            return current !== original && window.firstResponder === current
-        }
-
-        #expect(focused)
+        #expect(window.firstResponder === restored)
     }
 }
 
@@ -144,59 +120,46 @@ extension RepositorySidebarViewTests {
         return view.subviews.lazy.compactMap { outline(in: $0) }.first
     }
 
-    /// 让会话显示仓库，等到读出的远端个数与预期相同。
+    /// 让会话显示仓库，等工作区刷新与它带起的历史读取结束，核对读出的远端个数。
     private static func display(
         _ location: RepositoryLocation,
         in session: RepositorySession,
         remotes: Int
-    ) async throws {
+    ) async {
         session.display(location)
         session.refresh(full: true)
+
         await session.waitForRefresh()
+        await untilFinished { session.history.activeTasks }
 
-        // 整套测试并行时 Git 读取要排队，等的上限按整套测试的耗时留足
-        try await FileViewsTests.wait { session.history.snapshot?.remotes.count == remotes }
+        #expect(session.history.snapshot?.remotes.count == remotes)
     }
 
-    /// 等 Working Copy 行（Workspace 标题下的第一行）的单元格左缘满足条件，返回它；超时为 nil。
-    private static func workingCopyLeading(
-        in window: NSWindow,
-        until condition: (CGFloat) -> Bool
-    ) async -> CGFloat? {
-        var leading: CGFloat? = nil
-
-        let satisfied = await eventually {
-            window.contentView?.layoutSubtreeIfNeeded()
-
-            guard
-                let root = window.contentView,
-                let outline = outline(in: root),
-                outline.numberOfRows > 1
-            else {
-                return false
-            }
-
-            leading = outline.frameOfCell(atColumn: 0, row: 1).minX
-            return leading.map(condition) ?? false
-        }
-
-        return satisfied ? leading : nil
-    }
-
-    /// 每 20 ms 检查一次条件，300 s 内满足时返回 true。
+    /// 等侧边栏换上新的列表并排好版：列表不是换仓库之前的那个，且 Workspace 标题下已有行。
     ///
-    /// 整套测试并行时主线程要排队，等待上限按整套测试的耗时留足。
-    private static func eventually(_ condition: () -> Bool) async -> Bool {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
+    /// - Parameters:
+    ///   - root: 侧边栏的根视图。
+    ///   - previous: 换仓库之前的列表；nil 时等第一个列表。
+    /// - Returns: 新的列表。
+    private static func rebuiltOutline(in root: NSView, replacing previous: NSOutlineView?) async -> NSOutlineView? {
+        var current: NSOutlineView? = nil
 
-        while !condition() {
-            guard .now < deadline else {
+        await until {
+            root.layoutSubtreeIfNeeded()
+            current = outline(in: root)
+
+            guard let current, current !== previous else {
                 return false
             }
 
-            try? await Task.sleep(for: .milliseconds(20))
+            return current.numberOfRows > 1
         }
 
-        return true
+        return current
+    }
+
+    /// Working Copy 行（Workspace 标题下的第一行）单元格的左缘。
+    private static func workingCopyLeading(of outline: NSOutlineView) -> CGFloat {
+        outline.frameOfCell(atColumn: 0, row: 1).minX
     }
 }

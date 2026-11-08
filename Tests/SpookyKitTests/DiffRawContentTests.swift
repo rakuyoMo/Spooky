@@ -20,7 +20,9 @@ struct DiffRawContentTests {
     /// 普通块保存非法 UTF-8、CRLF、Tab 和末行标记，组合块保存全部父前缀。
     @Test("普通与组合 Diff 保留原始块字节")
     func rawContent() throws {
-        let url = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures/diff-raw-hunks.json")
+        let url = URL(filePath: #filePath)
+            .deletingLastPathComponent()
+            .appending(path: "Fixtures/diff-raw-hunks.json")
         let fixtures = try JSONDecoder().decode([Fixture].self, from: Data(contentsOf: url))
         #expect(fixtures.count == 4)
 
@@ -28,12 +30,15 @@ struct DiffRawContentTests {
             let diff = try RepositoryDiff(patch: fixture.patch)
             #expect(diff.files.flatMap(\.hunks).map(\.rawContent) == fixture.blocks)
             #expect(fixture.blocks.allSatisfy { $0.starts(with: Data("@@".utf8)) && $0.last == 10 })
+
+            // 普通补丁里有非法 UTF-8、CRLF 与末行标记
             if fixture.name.hasPrefix("ordinary") {
                 #expect(fixture.blocks.contains { $0.contains(0xFF) })
                 #expect(fixture.blocks.contains { $0.contains(13) })
                 #expect(fixture.blocks.last?.contains(Data("\\ No newline at end of file\n".utf8)) ?? false)
             }
 
+            // 两份补丁连在一起时，块字节按顺序各出现一次
             let repeated = try RepositoryDiff(patch: fixture.patch + fixture.patch)
             #expect(repeated.files.flatMap(\.hunks).map(\.rawContent) == fixture.blocks + fixture.blocks)
         }

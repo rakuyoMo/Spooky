@@ -1,5 +1,6 @@
 import Foundation
 import Subprocess
+import TestSupport
 
 @testable import SpookyKit
 
@@ -36,13 +37,7 @@ struct TemporaryRepository: Sendable {
 
     /// 创建具有固定初始分支与仓库本地提交身份的工作区。
     func initialize(objectFormat: String = "sha1") async throws {
-        _ = try await runner.run([
-            "-c", "init.templateDir=",
-            "init", "-q", "-b", "main", "--object-format=\(objectFormat)",
-        ])
-        _ = try await runner.run(["config", "--local", "user.name", "Spooky Test"])
-        _ = try await runner.run(["config", "--local", "user.email", "spooky@example.invalid"])
-        _ = try await runner.run(["config", "--local", "commit.gpgSign", "false"])
+        try await RepositoryTemplate.create(at: directory, objectFormat: objectFormat)
     }
 
     /// 只删除本测试创建的临时目录。

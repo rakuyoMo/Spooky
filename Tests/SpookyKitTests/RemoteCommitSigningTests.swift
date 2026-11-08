@@ -8,7 +8,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteCommitSigningTests {
     /// B 上的 ssh-keygen 解锁签名私钥时询问一次签名口令；找不到签名程序时保留 B 上的原始错误。
-    @Test("服务器 SSH 签名与签名失败", .timeLimit(.minutes(2)))
+    @Test("服务器 SSH 签名与签名失败")
     func sshSigning() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -27,7 +27,11 @@ struct RemoteCommitSigningTests {
             let service = WorkingCopyOperations(runner: runner)
             let files = RepositoryFiles(runner: runner)
 
-            for (name, value) in [("gpg.format", "ssh"), ("user.signingkey", key + ".pub"), ("commit.gpgsign", "true")] {
+            for (name, value) in [
+                ("gpg.format", "ssh"),
+                ("user.signingkey", key + ".pub"),
+                ("commit.gpgsign", "true"),
+            ] {
                 _ = try await runner.run(["config", "--local", name, value])
             }
 

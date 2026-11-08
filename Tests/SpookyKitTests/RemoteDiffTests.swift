@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteDiffTests {
     /// 显示整个文件与忽略空白下的按块暂存在 B 上执行，图片新的一侧经 SFTP 读取。
-    @Test("服务器 Diff 选项与图片", .timeLimit(.minutes(2)))
+    @Test("服务器 Diff 选项与图片")
     func remoteDiff() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

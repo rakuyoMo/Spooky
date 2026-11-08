@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -9,10 +10,12 @@ import Testing
 
 /// 讨论里的评论与描述：只能修改与删除当前账号自己的、内容不为空的评论，只能修改自己的请求的描述；
 /// 托管服务支持时任何评论都能回复；账号需要重新认证或没有令牌时都不可用。右键菜单按同一组规则启用。
+/// 请求本身只有当前账号自己的、源项目还在的才能修改。
 @MainActor
 struct PullRequestCommentRulesTests {
-    /// 作者按用户名不分大小写认出当前账号；空评论不能修改；重新认证与令牌缺失时全部不可用。
-    @Test("评论与描述的可用条件")
+    /// 作者按用户名不分大小写认出当前账号；空评论不能修改；别人的请求与来自已删除 Fork 的请求不能修改；
+    /// 右键菜单按同一组规则启用；重新认证与令牌缺失时全部不可用。
+    @Test("评论、描述与请求的可用条件和右键菜单")
     func availability() async throws {
         let fixture = try await Fixture.make()
         defer { fixture.close() }
@@ -23,6 +26,7 @@ struct PullRequestCommentRulesTests {
         let deleted = Self.comment(id: 3, author: "me", body: "")
         let mine = try Self.request(author: "Me")
         let theirs = try Self.request(author: "bob")
+        let deletedFork = Self.request(from: mine, sourceProject: nil)
 
         #expect(session.canModify(own))
         #expect(!session.canModify(others))
@@ -30,6 +34,12 @@ struct PullRequestCommentRulesTests {
         #expect(session.canReplyToComments)
         #expect(session.canEditDescription(of: mine))
         #expect(!session.canEditDescription(of: theirs))
+        #expect(session.canEditPullRequest(mine))
+        #expect(!session.canEditPullRequest(theirs))
+        #expect(!session.canEditPullRequest(deletedFork))
+
+        // 右键菜单按同一组规则启用
+        try expectMenus(in: fixture)
 
         // 账号被标记为需要重新认证
         fixture.accounts.markNeedsReauthentication(fixture.account)
@@ -50,50 +60,7 @@ struct PullRequestCommentRulesTests {
         #expect(!session.canModify(own))
         #expect(!session.canReplyToComments)
         #expect(!session.canEditDescription(of: mine))
-    }
-
-    /// 一条评论：修改、回复、分隔线与删除，按规则启用；两条评论没有菜单；描述只有修改描述。
-    @Test("讨论里评论与描述的右键菜单")
-    func menus() async throws {
-        let fixture = try await Fixture.make()
-        defer { fixture.close() }
-
-        let request = try Self.request(author: "bob")
-
-        let comments = [
-            Self.comment(id: 1, author: "me", body: "看过了"),
-            Self.comment(id: 2, author: "bob", body: "需要改"),
-        ]
-
-        let view = PullRequestConversationView(
-            session: fixture.session,
-            request: request,
-            comments: comments,
-            commits: nil,
-            canComment: true
-        )
-
-        let coordinator = view.makeCoordinator()
-        let outline = Self.outline(for: coordinator)
-        coordinator.update(view)
-
-        // 行依次是头部、描述、两条评论与发表评论
-        #expect(Self.menu(of: coordinator, selecting: [2], in: outline) == [
-            "pullRequests.editComment.menu:on",
-            "pullRequests.replyComment.menu:on",
-            "-",
-            "pullRequests.deleteComment.menu:on",
-        ])
-
-        #expect(Self.menu(of: coordinator, selecting: [3], in: outline) == [
-            "pullRequests.editComment.menu:off",
-            "pullRequests.replyComment.menu:on",
-            "-",
-            "pullRequests.deleteComment.menu:off",
-        ])
-
-        #expect(Self.menu(of: coordinator, selecting: [2, 3], in: outline).isEmpty)
-        #expect(Self.menu(of: coordinator, selecting: [1], in: outline) == ["pullRequests.editDescription.menu:off"])
+        #expect(!session.canEditPullRequest(mine))
     }
 }
 
@@ -146,10 +113,7 @@ extension PullRequestCommentRulesTests {
             session.pullRequests.load(runner: runner)
 
             // 端口不可达，列表很快失败；远端与账号的对应在读列表前就已定下
-            for _ in 0 ..< 1000 where !session.pullRequests.isLoaded {
-                try await Task.sleep(for: .milliseconds(10))
-            }
-
+            await until { session.pullRequests.isLoaded }
             #expect(session.pullRequests.account == account)
 
             return Self(
@@ -210,6 +174,22 @@ extension PullRequestCommentRulesTests {
         )
     }
 
+    /// 换掉源分支所在项目的同一个请求。
+    static func request(from request: PullRequest, sourceProject: String?) -> PullRequest {
+        PullRequest(
+            id: request.id,
+            title: request.title,
+            body: request.body,
+            state: request.state,
+            isDraft: request.isDraft,
+            author: request.author,
+            createdAt: request.createdAt,
+            updatedAt: request.updatedAt,
+            source: PullRequestBranch(project: sourceProject, branch: request.source.branch, sha: request.source.sha),
+            target: request.target
+        )
+    }
+
     /// 与讨论相同设置的大纲列表，交给桥接器。
     static func outline(for coordinator: PullRequestConversationView.Coordinator) -> NSOutlineView {
         let frame = NSRect(x: 0, y: 0, width: 600, height: 800)
@@ -248,5 +228,47 @@ extension PullRequestCommentRulesTests {
             let key = menuKeys.first { AppLocalization.text($0) == item.title } ?? item.title
             return key + (item.isEnabled ? ":on" : ":off")
         }
+    }
+}
+
+// MARK: - Private
+
+extension PullRequestCommentRulesTests {
+    /// 核对讨论的右键菜单：一条评论有修改、回复、分隔线与删除，按规则启用；两条评论没有菜单；描述只有修改描述。
+    private func expectMenus(in fixture: Fixture) throws {
+        let comments = [
+            Self.comment(id: 1, author: "me", body: "看过了"),
+            Self.comment(id: 2, author: "bob", body: "需要改"),
+        ]
+
+        let view = PullRequestConversationView(
+            session: fixture.session,
+            request: try Self.request(author: "bob"),
+            comments: comments,
+            commits: nil,
+            canComment: true
+        )
+
+        let coordinator = view.makeCoordinator()
+        let outline = Self.outline(for: coordinator)
+        coordinator.update(view)
+
+        // 行依次是头部、描述、两条评论与发表评论
+        #expect(Self.menu(of: coordinator, selecting: [2], in: outline) == [
+            "pullRequests.editComment.menu:on",
+            "pullRequests.replyComment.menu:on",
+            "-",
+            "pullRequests.deleteComment.menu:on",
+        ])
+
+        #expect(Self.menu(of: coordinator, selecting: [3], in: outline) == [
+            "pullRequests.editComment.menu:off",
+            "pullRequests.replyComment.menu:on",
+            "-",
+            "pullRequests.deleteComment.menu:off",
+        ])
+
+        #expect(Self.menu(of: coordinator, selecting: [2, 3], in: outline).isEmpty)
+        #expect(Self.menu(of: coordinator, selecting: [1], in: outline) == ["pullRequests.editDescription.menu:off"])
     }
 }

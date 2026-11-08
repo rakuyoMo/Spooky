@@ -27,34 +27,28 @@ struct ReleaseScriptTests {
         esac
         """
 
-    /// 发布分支只从 main 切出。
-    @Test("不在 main 分支时拒绝")
-    func rejectsOtherBranch() async throws {
+    /// 发布分支只从 main 切出；更新说明以外的改动会混进发布提交。
+    @Test("不在 main 分支或工作区有其它改动时拒绝")
+    func rejectsBranchAndWorkTree() async throws {
         let fixture = try await ReleaseFixture()
         defer { fixture.remove() }
 
         try fixture.copyReleaseNotes(version: "1.2.0")
         try await fixture.git("switch", "-q", "-c", "feature")
 
-        let result = try await release(fixture, "1.2.0")
+        let otherBranch = try await release(fixture, "1.2.0")
 
-        #expect(result.status == 1)
-        #expect(result.error.contains("须在 main 分支上运行，当前分支：feature"))
-    }
+        #expect(otherBranch.status == 1)
+        #expect(otherBranch.error.contains("须在 main 分支上运行，当前分支：feature"))
 
-    /// 更新说明以外的改动会混进发布提交。
-    @Test("工作区有其它改动时拒绝")
-    func rejectsDirtyWorkTree() async throws {
-        let fixture = try await ReleaseFixture()
-        defer { fixture.remove() }
-
-        try fixture.copyReleaseNotes(version: "1.2.0")
+        // 回到 main，工作区多出一个更新说明以外的文件
+        try await fixture.git("switch", "-q", "main")
         try Data("改动\n".utf8).write(to: fixture.workTree.appending(path: "README.md"))
 
-        let result = try await release(fixture, "1.2.0")
+        let dirty = try await release(fixture, "1.2.0")
 
-        #expect(result.status == 1)
-        #expect(result.error.contains("工作区有未提交的改动或未跟踪的文件"))
+        #expect(dirty.status == 1)
+        #expect(dirty.error.contains("工作区有未提交的改动或未跟踪的文件"))
     }
 
     /// 开 PR 失败时撤回发布分支：本机与远端都不留下，版本号不变，更新说明留在工作区；
@@ -94,7 +88,13 @@ struct ReleaseScriptTests {
 
         let message = try await fixture.git("log", "-1", "--format=%s", "origin/release/1.2.0")
         let plist = try await fixture.git("show", "origin/release/1.2.0:Sources/Spooky/Info.plist")
-        let notes = try await fixture.git("ls-tree", "--name-only", "origin/release/1.2.0", "docs/release-notes/1.2.0/")
+        let notes = try await fixture.git(
+            "ls-tree",
+            "--name-only",
+            "origin/release/1.2.0",
+            "docs/release-notes/1.2.0/"
+        )
+
         let currentBranch = try await fixture.git("branch", "--show-current")
         let log = try String(contentsOf: fixture.root.appending(path: "gh.log"), encoding: .utf8)
 

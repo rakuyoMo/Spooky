@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -15,6 +16,7 @@ struct UndoSessionTests {
     func commitRoundTrip() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
+
         let session = fixture.session
         let root = try await fixture.head()
         let stage = AppLocalization.text("working.stage")
@@ -23,6 +25,7 @@ struct UndoSessionTests {
         try fixture.write("changed\n")
         await fixture.refresh()
         try await fixture.perform { session.stageAll(staged: true) }
+
         try await fixture.perform {
             session.confirmCommit(("提交 [x]", ""), amend: false, signOff: false, skipHooks: false)
         }
@@ -33,12 +36,15 @@ struct UndoSessionTests {
 
         // 撤销提交：HEAD 回到原处，改动回到暂存区，下一项是暂存
         try await fixture.perform { session.undoLastOperation() }
+
         #expect(try await fixture.head() == root)
         #expect(session.status?.entries.first?.staged == .modified)
         #expect(try await Self.settledState(of: session, redo: false) == .available(stage))
         #expect(try await Self.settledState(of: session, redo: true) == .available(commit))
 
+        // 重做：提交回来，没有可重做的操作
         try await fixture.perform { session.redoLastOperation() }
+
         #expect(try await fixture.head() == committed)
         #expect(try await Self.settledState(of: session, redo: true) == .empty)
 
@@ -46,34 +52,25 @@ struct UndoSessionTests {
         let titles = session.activities.items
             .filter { $0.repository == fixture.location }
             .map(\.title)
+
         #expect(titles.contains(UndoManager().undoMenuTitle(forUndoActionName: commit)))
     }
 
-    /// 丢弃所选的行可以撤销，误丢的改动能找回：撤销后文件回到丢弃前，重做再丢弃一次。
-    @Test("丢弃行的撤销与重做")
-    func discardLinesRoundTrip() async throws {
+    /// 丢掉本地改动的操作都可以撤销，误丢的改动能找回：丢弃所选的行、把文件恢复到某个版本、Revert to Revision 与硬重置
+    /// 撤销后改动回来，丢弃行的重做再丢弃一次。
+    @Test("丢弃行、恢复到某个版本与硬重置的撤销")
+    func discardedChangesRoundTrip() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
-        let session = fixture.session
 
+        let session = fixture.session
+        let root = try await fixture.head()
         session.onConfirm = { $0.action() }
 
+        // 丢弃所选的行：撤销后文件回到丢弃前，重做再丢弃一次
         try fixture.write("base\nadded\n")
         await fixture.refresh()
-
-        // 选中文件，等工作区一侧的 Diff 读完
-        let entry = try #require(session.status?.entries.first)
-        let row = StatusRowID(path: entry.path, kind: entry.kind)
-        session.selectedID = row
-        session.selectedIDs = [row]
-        try await FileViewsTests.wait { session.diffSnapshot?.diff != nil }
-
-        let file = try #require(session.diffSnapshot?.diff?.files.first)
-        let hunk = try #require(file.hunks.first)
-        let changes = hunk.lines.filter(\.isChange)
-        let line = try #require(changes.first)
-
-        try await fixture.perform { session.apply(file: file.id, hunk: hunk.id, lines: [line.id], discard: true) }
+        try await Self.discardFirstChangedLine(in: fixture)
         #expect(try fixture.read() == "base\n")
 
         try await fixture.perform { session.undoLastOperation() }
@@ -81,42 +78,24 @@ struct UndoSessionTests {
 
         try await fixture.perform { session.redoLastOperation() }
         #expect(try fixture.read() == "base\n")
-    }
 
-    /// 把文件恢复到某个版本、Revert to Revision 与硬重置都会丢掉本地改动，撤销后改动回来。
-    @Test("恢复到某个版本与硬重置的撤销")
-    func restoreAndResetRoundTrip() async throws {
-        let fixture = try await Fixture()
-        defer { fixture.remove() }
-        let session = fixture.session
-        let root = try await fixture.head()
-
-        session.onConfirm = { $0.action() }
-
+        // Restore…、Revert to Revision… 与硬重置各自丢掉改动，撤销后改动回来
         try fixture.write("changed\n")
         await fixture.refresh()
 
-        // Restore…：确认后文件回到那个版本
-        try await fixture.perform { session.restoreFile("a b.txt", at: root) }
-        #expect(try fixture.read() == "base\n")
+        let operations: [() -> Void] = [
+            { session.restoreFile("a b.txt", at: root) },
+            { session.revert(session.status?.entries ?? [], to: root) },
+            { session.reset(to: root, mode: .hard) },
+        ]
 
-        try await fixture.perform { session.undoLastOperation() }
-        #expect(try fixture.read() == "changed\n")
+        for operation in operations {
+            try await fixture.perform(operation)
+            #expect(try fixture.read() == "base\n")
 
-        // Revert to Revision…
-        let entries = session.status?.entries ?? []
-        try await fixture.perform { session.revert(entries, to: root) }
-        #expect(try fixture.read() == "base\n")
-
-        try await fixture.perform { session.undoLastOperation() }
-        #expect(try fixture.read() == "changed\n")
-
-        // 硬重置
-        try await fixture.perform { session.reset(to: root, mode: .hard) }
-        #expect(try fixture.read() == "base\n")
-
-        try await fixture.perform { session.undoLastOperation() }
-        #expect(try fixture.read() == "changed\n")
+            try await fixture.perform { session.undoLastOperation() }
+            #expect(try fixture.read() == "changed\n")
+        }
     }
 
     /// 删除储藏与强制删除没合并的分支都可以撤销：撤销后储藏与分支都回来，里面的改动与提交还在。
@@ -124,8 +103,8 @@ struct UndoSessionTests {
     func deletionsRoundTrip() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
-        let session = fixture.session
 
+        let session = fixture.session
         session.onConfirm = { $0.action() }
 
         // 储藏一份改动后删掉这个储藏
@@ -147,21 +126,28 @@ struct UndoSessionTests {
         _ = try await fixture.runner.run(["switch", "-q", "main"])
         await fixture.refresh()
 
-        try await fixture.perform { session.deleteBranches(["refs/heads/topic"], force: true, deletingUpstream: false) }
+        try await fixture.perform {
+            session.deleteBranches(["refs/heads/topic"], force: true, deletingUpstream: false)
+        }
+
         #expect(!Self.hasBranch("topic", in: session))
 
         try await fixture.perform { session.undoLastOperation() }
         #expect(Self.hasBranch("topic", in: session))
     }
 
-    /// 不能撤销的写操作清空撤销栈，菜单写明上一个操作不能撤销；自动获取这类不登记的操作不改动撤销栈。
+    /// 不能撤销的写操作清空撤销栈，菜单写明上一个操作不能撤销：没有声明的写操作与准备反向操作失败的写操作都这样处理；
+    /// 自动获取这类不登记的操作不改动撤销栈。
     @Test("不能撤销的操作不入栈")
     func irreversibleOperations() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
+
         let session = fixture.session
 
+        // 不登记的操作不改动撤销栈
         try await fixture.createBranch("topic")
+
         try await fixture.perform {
             session.performGit({ _, _ in }, title: "Background", undo: .unrecorded)
         }
@@ -178,6 +164,20 @@ struct UndoSessionTests {
 
         #expect(try await Self.settledState(of: session, redo: false) == .irreversible("Push"))
         #expect(session.undoHistory?.undoEntries.isEmpty ?? false)
+
+        // 准备反向操作失败时操作照常执行，同样按不能撤销处理
+        try await fixture.createBranch("other")
+
+        try await fixture.perform {
+            session.performGit(
+                { runner, _ in _ = try await runner.run(["config", "--local", "x.y", "w"]) },
+                title: "Prepare",
+                undo: .inverse { _ in throw RepositoryReadError.invalidQuery }
+            )
+        }
+
+        #expect(try await Self.settledState(of: session, redo: false) == .irreversible("Prepare"))
+        #expect(session.undoHistory?.undoEntries.isEmpty ?? false)
     }
 
     /// 操作之后仓库在外部又被改动：菜单写明仓库已变化；看起来没变、内容却变了时，执行前的完整核对拒绝并说明原因。
@@ -185,6 +185,7 @@ struct UndoSessionTests {
     func changedRepository() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
+
         let session = fixture.session
         let stage = AppLocalization.text("working.stage")
         var failures: [AppFailure] = []
@@ -198,7 +199,9 @@ struct UndoSessionTests {
         // 外部新建分支：界面的引用快照与记录不同
         _ = try await fixture.runner.run(["branch", "outside"])
         await fixture.refresh()
-        try await FileViewsTests.wait { Self.hasBranch("outside", in: session) }
+
+        #expect(Self.hasBranch("outside", in: session))
+
         #expect(
             try await Self.settledState(of: session, redo: false)
                 == .blocked(stage, reason: "undo.reason.changed")
@@ -219,6 +222,7 @@ struct UndoSessionTests {
         #expect(try await Self.settledState(of: session, redo: false) == .available("Branch"))
 
         try await fixture.perform { session.undoLastOperation() }
+
         #expect(failures.last?.title == AppLocalization.text("undo.error.changed"))
         #expect(session.undoHistory?.undoEntries.count == 2)
         #expect(try fixture.read() == "changed three times\n")
@@ -229,18 +233,16 @@ struct UndoSessionTests {
     func busy() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
+
         let session = fixture.session
         let runner = fixture.runner
 
         try await fixture.createBranch("topic")
 
-        // 写操作期间
-        session.performGit(
-            { _, _ in try await Task.sleep(for: .milliseconds(300)) },
-            title: "Wait",
-            undo: .unrecorded
-        )
+        // 写操作期间：写任务在主线程上执行，发起后让出主线程之前它还没有结束
+        session.performGit({ _, _ in }, title: "Wait", undo: .unrecorded)
         #expect(session.undoMenuState(redo: false) == .blocked("Branch", reason: "undo.reason.busy"))
+
         await session.writeTask?.value
         await session.waitForRefresh()
 
@@ -253,8 +255,10 @@ struct UndoSessionTests {
         _ = try await runner.run(["commit", "-q", "-a", "-m", "main"])
         _ = try await runner.execute(["merge", "-q", "topic"], acceptedExitCodes: [0, 1])
 
+        // 进行中的操作由会话在刷新后另行读取，读到合并就是读完
         await fixture.refresh()
-        try await FileViewsTests.wait { session.context?.operation == .merge }
+        await until { session.context?.operation == .merge }
+
         #expect(session.undoMenuState(redo: false) == .blocked("Branch", reason: "undo.reason.busy"))
     }
 
@@ -263,18 +267,23 @@ struct UndoSessionTests {
     func sharedHistory() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
+
         let other = RepositorySession(makeRunner: { [runner = fixture.runner] _ in runner })
         defer { other.close() }
 
         other.display(fixture.location)
         try await fixture.createBranch("topic")
 
+        // 另一个会话读完引用后，菜单与撤销栈都与第一个会话相同
         other.refresh(full: true)
         await other.waitForRefresh()
-        try await FileViewsTests.wait { Self.hasBranch("topic", in: other) }
+        await untilFinished { other.history.activeTasks + other.stashes.activeTasks }
+
+        #expect(Self.hasBranch("topic", in: other))
         #expect(other.undoHistory === fixture.session.undoHistory)
         #expect(try await Self.settledState(of: other, redo: false) == .available("Branch"))
 
+        // 在另一个会话里撤销，分支被删掉
         other.undoLastOperation()
         await other.writeTask?.value
 
@@ -282,6 +291,7 @@ struct UndoSessionTests {
             ["rev-parse", "-q", "--verify", "refs/heads/topic"],
             acceptedExitCodes: [1]
         )
+
         #expect(lookup.exitCode == 1)
     }
 
@@ -290,7 +300,10 @@ struct UndoSessionTests {
     func windowUndoManager() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
-        let defaults = try #require(UserDefaults(suiteName: fixture.directory.appending(path: "defaults").path))
+
+        let suite = fixture.directory.appending(path: "defaults").path
+        let defaults = try #require(UserDefaults(suiteName: suite))
+
         let controller = RepositoryWindowController(
             coordinator: SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults)),
             session: fixture.session
@@ -299,19 +312,23 @@ struct UndoSessionTests {
 
         controller.display(fixture.location)
         await fixture.session.waitForRefresh()
+
         let window = try #require(controller.window)
         let item = NSMenuItem(title: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
 
         #expect(window.undoManager === controller.repositoryUndoManager)
         #expect(!window.validateUserInterfaceItem(item))
 
+        // 可以撤销的操作：菜单项可用，标题带操作名
         try await fixture.createBranch("topic")
         _ = try await Self.settledState(of: fixture.session, redo: false)
+
         #expect(window.validateUserInterfaceItem(item))
         #expect(item.title == UndoManager().undoMenuTitle(forUndoActionName: "Branch"))
 
         // 不能撤销的操作：菜单项不可用，标题写明原因
         fixture.session.undoHistory?.recordIrreversible("Push")
+
         #expect(!window.validateUserInterfaceItem(item))
         #expect(item.title == AppLocalization.text("undo.cannotUndo", "Push"))
 
@@ -319,6 +336,7 @@ struct UndoSessionTests {
         let field = NSTextField()
         window.contentView?.addSubview(field)
         window.makeFirstResponder(field)
+
         #expect(window.undoManager === controller.textUndoManager)
     }
 }
@@ -328,13 +346,12 @@ struct UndoSessionTests {
 extension UndoSessionTests {
     /// 等会话不再忙于写入或刷新，再读菜单状态；本机仓库的文件监听随时可能触发一次刷新。
     static func settledState(of session: RepositorySession, redo: Bool) async throws -> UndoMenuState {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(300))
+        await until {
+            guard case .blocked(_, reason: "undo.reason.busy") = session.undoMenuState(redo: redo) else {
+                return true
+            }
 
-        while .now < deadline {
-            let state = session.undoMenuState(redo: redo)
-            guard case .blocked(_, reason: "undo.reason.busy") = state else { return state }
-
-            try await Task.sleep(for: .milliseconds(20))
+            return false
         }
 
         return session.undoMenuState(redo: redo)
@@ -343,6 +360,26 @@ extension UndoSessionTests {
     /// 会话的引用快照里是否已有这个本地分支。
     static func hasBranch(_ name: String, in session: RepositorySession) -> Bool {
         session.history.snapshot?.references.contains { $0.id == "refs/heads/" + name } ?? false
+    }
+
+    /// 选中仓库里唯一的文件，等工作区一侧的 Diff 读完，再丢弃第一行改动。
+    private static func discardFirstChangedLine(in fixture: Fixture) async throws {
+        let session = fixture.session
+        let entry = try #require(session.status?.entries.first)
+        let row = StatusRowID(path: entry.path, kind: entry.kind)
+
+        // 选中后会话同步开始读 Diff，读完时清除读取中的标记
+        session.selectedID = row
+        session.selectedIDs = [row]
+        await until { !session.isLoadingDiff }
+
+        let file = try #require(session.diffSnapshot?.diff?.files.first)
+        let hunk = try #require(file.hunks.first)
+        let line = try #require(hunk.lines.first { $0.isChange })
+
+        try await fixture.perform {
+            session.apply(file: file.id, hunk: hunk.id, lines: [line.id], discard: true)
+        }
     }
 }
 
@@ -368,9 +405,12 @@ extension UndoSessionTests {
         ///
         /// - Parameter allowsFileSubmodules: 允许子模块经 file 协议克隆本机路径。
         init(allowsFileSubmodules: Bool = false) async throws {
-            directory = FileManager.default.temporaryDirectory.appending(path: "spooky-undo 撤销-" + UUID().uuidString)
+            directory = FileManager.default.temporaryDirectory
+                .appending(path: "spooky-undo 撤销-" + UUID().uuidString)
+
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
             location = RepositoryLocation.local(path: directory.path)
+
             runner = try await FileViewsTests.initializeRepository(
                 at: location,
                 allowsFileSubmodules: allowsFileSubmodules
@@ -382,6 +422,7 @@ extension UndoSessionTests {
 
             let runner = runner
             session = RepositorySession(makeRunner: { _ in runner }, activities: RepositoryActivities())
+
             session.display(location)
             session.refresh(full: true)
             await session.waitForRefresh()
@@ -390,6 +431,7 @@ extension UndoSessionTests {
         /// 发起写操作，等它与随后的完整刷新、引用读取都结束。
         func perform(_ start: () -> Void) async throws {
             start()
+
             await session.writeTask?.value
             await session.waitForRefresh()
             await waitForReads()
@@ -409,6 +451,7 @@ extension UndoSessionTests {
         /// 读取一次完整状态，等引用与储藏也读完。
         func refresh() async {
             session.refresh(full: true)
+
             await session.waitForRefresh()
             await waitForReads()
         }
@@ -436,15 +479,7 @@ extension UndoSessionTests {
 
         /// 等引用与储藏的读取结束；读取期间又要求的刷新在读完后另起任务，也一起等完。
         private func waitForReads() async {
-            var awaited = Set<Task<Void, Never>>()
-
-            while
-                let task = (session.history.activeTasks + session.stashes.activeTasks)
-                    .first(where: { !awaited.contains($0) })
-            {
-                await task.value
-                awaited.insert(task)
-            }
+            await untilFinished { session.history.activeTasks + session.stashes.activeTasks }
         }
     }
 }

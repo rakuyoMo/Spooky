@@ -86,12 +86,24 @@ let package = Package(
         ),
         .testTarget(
             name: "SpookyKitTests",
-            dependencies: ["SpookyKit"],
+            dependencies: ["SpookyKit", "TestSupport"],
             resources: [.copy("Fixtures")]
         ),
         .testTarget(
             name: "SpookyTests",
-            dependencies: ["Spooky", "SpookyKit"]
+            dependencies: ["Spooky", "SpookyKit", "TestSupport", "InvisibleWindows"]
+        ),
+
+        // 核心库与 App 测试共用：等待主线程状态、让脚本停在闸门上、写出空的测试仓库
+        .target(
+            name: "TestSupport",
+            path: "Tests/TestSupport"
+        ),
+
+        // 链进 App 测试：测试进程里的窗口透明、sheet 不播动画，测试运行期间屏幕上看不到窗口
+        .target(
+            name: "InvisibleWindows",
+            path: "Tests/InvisibleWindows"
         ),
 
         // 发布脚本的检查与更新清单的合成，在临时仓库与临时目录里运行 scripts/ 下的脚本

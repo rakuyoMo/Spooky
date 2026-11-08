@@ -12,7 +12,8 @@ import Testing
 @MainActor
 struct ActivityArchiveTests {
     /// 结束的 Remote 记录写成文件，换一个实例读回后标题、传输方向、状态与日志都相同，并带读回标记；进行中的、Repository 与 Service 的记录不写。
-    @Test("Remote 记录结束时保存，重新启动后读回")
+    /// 清除 Remote 页的已结束记录时文件一起删，进行中的记录与别的页不动。
+    @Test("Remote 记录结束时保存，重新启动后读回，清除时删掉文件")
     func saveAndRestore() async throws {
         let directory = try FileViewsTests.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -67,10 +68,18 @@ struct ActivityArchiveTests {
 
         // 读回的记录不是本次运行里发生的，侧边栏底部据此不列它
         #expect(item.isRestored)
+
+        // 在原来的实例里清除 Remote 页的已结束记录，只删掉 fetch 与它的文件
+        let file = ActivityArchive(directory: directory).url(of: fetch.id)
+        activities.clearEnded(.remote)
+
+        #expect(activities.items.map(\.title) == ["Other", "Other", "Push"])
+        #expect(!exists(file))
     }
 
     /// 开始于 7 天前的记录读回时连文件删掉，读不了的文件跳过；运行期间按传入的当前时间删过期记录。
-    @Test("过期的 Remote 记录连文件删掉")
+    /// 较早保存的记录没有连接对象这一项，读回时为 nil，其余内容照常读回。
+    @Test("过期的 Remote 记录连文件删掉，没有连接对象的旧记录照常读回")
     func removeExpired() async throws {
         let directory = try FileViewsTests.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -80,7 +89,14 @@ struct ActivityArchiveTests {
         let old = record(started: now.addingTimeInterval(-8 * 24 * 60 * 60))
         let recent = record(started: now.addingTimeInterval(-60))
         archive.save(old)
-        archive.save(recent)
+
+        // recent 按较早的格式保存，去掉连接对象这一项
+        var object = try #require(
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(recent)) as? [String: Any]
+        )
+
+        #expect(object.removeValue(forKey: "target") != nil)
+        try JSONSerialization.data(withJSONObject: object).write(to: archive.url(of: recent.id))
         try Data("{".utf8).write(to: directory.appending(path: "broken.json"))
 
         let activities = RepositoryActivities()
@@ -90,6 +106,11 @@ struct ActivityArchiveTests {
         #expect(!exists(archive.url(of: old.id)))
         #expect(exists(archive.url(of: recent.id)))
 
+        let restored = try #require(activities.items.first)
+        #expect(restored.target == nil)
+        #expect(restored.title == "Fetch")
+        #expect(restored.state == "activity.finished")
+
         // 还没满 7 天的保留，满了的连文件删掉
         activities.removeExpired(now: now.addingTimeInterval(6 * 24 * 60 * 60))
         #expect(activities.items.map(\.id) == [recent.id])
@@ -97,54 +118,6 @@ struct ActivityArchiveTests {
         activities.removeExpired(now: now.addingTimeInterval(8 * 24 * 60 * 60))
         #expect(activities.items.isEmpty)
         #expect(!exists(archive.url(of: recent.id)))
-    }
-
-    /// 清除 Remote 页的已结束记录时文件一起删；进行中的记录与别的页不动。
-    @Test("清除 Remote 的已结束记录时删掉文件")
-    func clearEnded() async throws {
-        let directory = try FileViewsTests.temporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let location = RepositoryLocation.local(path: "/temporary/activity-" + UUID().uuidString)
-        let activities = RepositoryActivities()
-        await activities.restore(from: directory)
-
-        let fetch = RepositoryActivity(kind: .remote, repository: location, title: "Fetch", target: .fetch("origin"))
-        activities.insert(fetch)
-        fetch.state = "activity.finished"
-        activities.finish(fetch)
-
-        let running = RepositoryActivity(kind: .remote, repository: location, title: "Push")
-        activities.insert(running)
-
-        let commit = RepositoryActivity(kind: .repository, repository: location, title: "Branch")
-        activities.insert(commit)
-        commit.state = "activity.finished"
-        activities.finish(commit)
-
-        let file = ActivityArchive(directory: directory).url(of: fetch.id)
-        #expect(exists(file))
-
-        activities.clearEnded(.remote)
-
-        #expect(activities.items.map(\.id) == [commit.id, running.id])
-        #expect(!exists(file))
-    }
-
-    /// 较早保存的记录没有连接对象这一项，读回时为 nil，其余内容照常读回。
-    @Test("没有连接对象的旧记录照常读回")
-    func restoreWithoutTarget() throws {
-        let data = try JSONEncoder().encode(record(started: Date()))
-        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        #expect(object["target"] != nil)
-
-        object.removeValue(forKey: "target")
-        let old = try JSONSerialization.data(withJSONObject: object)
-        let decoded = try JSONDecoder().decode(ActivityRecord.self, from: old)
-
-        #expect(decoded.target == nil)
-        #expect(decoded.title == "Fetch")
-        #expect(decoded.state == "activity.finished")
     }
 
     /// 一条已完成的 Remote 记录。

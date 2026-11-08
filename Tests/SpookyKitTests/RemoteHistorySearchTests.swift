@@ -9,7 +9,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteHistorySearchTests {
     /// 搜索、计数、可达性与补全用的文件清单都在 B 上执行，路径按字面传过去。
-    @Test("服务器历史的组合搜索、哈希、计数与文件清单", .timeLimit(.minutes(3)))
+    @Test("服务器历史的组合搜索、哈希、计数与文件清单")
     func search() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

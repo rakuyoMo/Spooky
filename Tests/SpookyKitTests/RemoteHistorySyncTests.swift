@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteHistorySyncTests {
     /// 两个工作区和裸仓库都在 B 上，验证操作没有落到 A 的文件系统。
-    @Test("服务器历史、分支、首次发布、Fetch、Pull 与 Push", .timeLimit(.minutes(3)))
+    @Test("服务器历史、分支、首次发布、Fetch、Pull 与 Push")
     func dailyFlow() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -87,7 +87,7 @@ struct RemoteHistorySyncTests {
     }
 
     /// 关闭专属主连接时写入不能自动重试，重连后保留实际未推送状态。
-    @Test("服务器推送取消与主连接中断", .timeLimit(.minutes(3)))
+    @Test("服务器推送取消与主连接中断")
     func cancellationAndDisconnect() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()

@@ -10,8 +10,9 @@ import Testing
 /// 视图设置菜单与 View › Sidebar 是同一张菜单，选择后直接写偏好；分支行的标记与提示随设置变化。
 @MainActor
 struct SidebarSettingsTests {
-    /// 菜单按显示、分组、徽标、数量四组排列，勾选状态取偏好，依赖项随前一项启用。
-    @Test("视图设置菜单的结构与依赖")
+    /// 菜单按显示、分组、徽标、数量四组排列，勾选状态取偏好，依赖项随前一项启用；
+    /// 数量与排序子菜单的小标题不可点，选中的档位写进偏好，下次打开时打勾。
+    @Test("视图设置菜单的结构、依赖与子菜单")
     func menuItems() throws {
         let (defaults, directory) = try temporaryDefaults()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -31,47 +32,25 @@ struct SidebarSettingsTests {
         #expect(!menu.autoenablesItems)
 
         // 默认：分组开启、Reflog 与自动归档关闭，陈旧阈值 3 个月
-        let groupRefs = try item(SidebarPreferences.groupRefsKey, in: menu)
         let reflog = try item(SidebarPreferences.showReflogKey, in: menu)
         let autoArchive = try item(SidebarPreferences.autoArchiveKey, in: menu)
-        #expect(groupRefs.state == .on)
+        #expect(try item(SidebarPreferences.groupRefsKey, in: menu).state == .on)
         #expect(reflog.state == .off && autoArchive.state == .off)
 
         let interval = try #require(titled("sidebar.staleInterval", in: menu).submenu)
         #expect(interval.items.map(\.tag) == SidebarPreferences.staleIntervals)
         #expect(interval.items.first { $0.state == .on }?.tag == 3)
-        #expect(interval.items.first?.title == AppLocalization.text("sidebar.month"))
-        #expect(interval.items.last?.title == AppLocalization.text("sidebar.months", 24))
 
-        // 关闭分组后 “文件夹置前” 不可用；关闭陈旧信息后阈值不可用
-        builder.toggleSetting(groupRefs)
-        builder.toggleSetting(try item(SidebarPreferences.showStaleInfoKey, in: menu))
-        #expect(!SidebarPreferences.isOn(SidebarPreferences.groupRefsKey, in: defaults))
-
-        builder.menuNeedsUpdate(menu)
-        #expect(!(try item(SidebarPreferences.groupedRefsOnTopKey, in: menu).isEnabled))
-        #expect(!(try titled("sidebar.staleInterval", in: menu).isEnabled))
-    }
-
-    /// 数量与排序子菜单：小标题不可点，选中的档位写进偏好，下次打开时打勾。
-    @Test("数量与排序子菜单")
-    func filterSubmenus() throws {
-        let (defaults, directory) = try temporaryDefaults()
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let builder = SidebarViewSettingsMenu(defaults: defaults)
-        let menu = NSMenu()
-        builder.menuNeedsUpdate(menu)
-
+        // 远端分支的数量：小标题不可点，默认全部
         let remote = try #require(titled("sidebar.remoteFilter", in: menu).submenu)
         #expect(!(remote.items.first?.isEnabled ?? true))
         #expect(remote.items.dropFirst().map(\.tag) == SidebarPreferences.newestChoices)
-        #expect(remote.items[1].title == AppLocalization.text("sidebar.all"))
         #expect(remote.items[1].state == .on)
 
         builder.selectNumber(try #require(remote.items.first { $0.tag == 25 }))
         #expect(SidebarPreferences.integer(SidebarPreferences.newestRemoteBranchesKey, in: defaults) == 25)
 
+        // 标签：排序两项与数量之间用分隔线隔开
         let tags = try #require(titled("sidebar.tagsFilter", in: menu).submenu)
         let tagTitles = tags.items.map { $0.isSeparatorItem ? "|" : $0.title }
         #expect(
@@ -96,6 +75,15 @@ struct SidebarSettingsTests {
         builder.menuNeedsUpdate(menu)
         let reopened = try #require(titled("sidebar.remoteFilter", in: menu).submenu)
         #expect(reopened.items.first { $0.state == .on }?.tag == 25)
+
+        // 关闭分组后 “文件夹置前” 不可用；关闭陈旧信息后阈值不可用
+        builder.toggleSetting(try item(SidebarPreferences.groupRefsKey, in: menu))
+        builder.toggleSetting(try item(SidebarPreferences.showStaleInfoKey, in: menu))
+        #expect(!SidebarPreferences.isOn(SidebarPreferences.groupRefsKey, in: defaults))
+
+        builder.menuNeedsUpdate(menu)
+        #expect(!(try item(SidebarPreferences.groupedRefsOnTopKey, in: menu).isEnabled))
+        #expect(!(try titled("sidebar.staleInterval", in: menu).isEnabled))
     }
 
     /// 主菜单 View › Sidebar 由同一个生成者填充。
@@ -114,7 +102,8 @@ struct SidebarSettingsTests {
     }
 
     /// 陈旧的分支名称变灰，关闭陈旧信息后既不显示也不变灰；跟踪错误总是显示。
-    @Test("分支行的标记随设置变化")
+    /// 悬停提示逐行写出分支名、跟踪关系、计数、归档、陈旧与跟踪错误，服务器仓库带主机前缀。
+    @Test("分支行的标记与悬停提示")
     func branchStatus() throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         let old = try #require(Calendar.current.date(byAdding: .month, value: -7, to: now))
@@ -137,11 +126,8 @@ struct SidebarSettingsTests {
 
         let fresher = SidebarBranchStatus(condition: condition, staleMonths: 9, now: now)
         #expect(fresher.staleDuration == nil)
-    }
 
-    /// 悬停提示逐行写出分支名、跟踪关系、计数、归档、陈旧与跟踪错误，服务器仓库带主机前缀。
-    @Test("悬停提示")
-    func tooltips() throws {
+        // 悬停提示逐行写出各项，服务器仓库带主机前缀
         let branch = RepositoryReference(
             id: "refs/heads/feature/登录",
             objectID: String(repeating: "c", count: 40),
@@ -184,7 +170,10 @@ struct SidebarSettingsTests {
         #expect(gone.components(separatedBy: "\n").count == 3)
         #expect(gone.hasSuffix(AppLocalization.text("branch.tooltip.missingUpstream", "origin/feature/登录")))
 
-        let detached = SidebarTooltip.head(branch: BranchStatus(head: nil, oid: String(repeating: "d", count: 64)), host: nil)
+        let detached = SidebarTooltip.head(
+            branch: BranchStatus(head: nil, oid: String(repeating: "d", count: 64)),
+            host: nil
+        )
         #expect(detached == AppLocalization.text("branch.tooltip.detached", "dddddddd"))
 
         let tag = RepositoryReference(

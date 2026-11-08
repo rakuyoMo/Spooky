@@ -6,29 +6,37 @@ import Testing
 /// 合并停在冲突上时返回冲突结果；同样以非零退出的其它失败照原样抛出 Git 的错误。
 extension RepositorySyncTests {
     /// 普通合并与压缩合并的内容冲突都返回冲突结果，Git 留下合并状态与冲突文件。
-    @Test("合并与压缩合并的冲突返回冲突结果", arguments: [false, true])
-    func mergeConflicts(squash: Bool) async throws {
+    @Test("合并与压缩合并的冲突返回冲突结果")
+    func mergeConflicts() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
-        try await fixture.initialize()
 
+        try await fixture.initialize()
         let runner = fixture.runner
         try await divergedBranches(fixture, side: "side\n", main: "main\n")
 
-        var options = MergeOptions()
-        options.squash = squash
+        for squash in [false, true] {
+            var options = MergeOptions()
+            options.squash = squash
 
-        let outcome = try await RepositorySync(runner: runner)
-            .merge("refs/heads/side", options: options)
+            let outcome = try await RepositorySync(runner: runner)
+                .merge("refs/heads/side", options: options)
 
-        let head = try await runner.status().branch.oid
-        let progress = try await WorkingCopyOperations(runner: runner)
-            .context(head: head)
-            .progress
+            let head = try await runner.status().branch.oid
 
-        #expect(outcome == .conflicts)
-        #expect(progress?.state == (squash ? .squash : .merge))
-        #expect(try await runner.status().entries.map(\.kind) == [.conflicted])
+            let progress = try await WorkingCopyOperations(runner: runner)
+                .context(head: head)
+                .progress
+
+            #expect(outcome == .conflicts, "squash: \(squash)")
+            #expect(progress?.state == (squash ? .squash : .merge))
+            #expect(try await runner.status().entries.map(\.kind) == [.conflicted], "squash: \(squash)")
+
+            // 放弃普通合并，回到合并前再试压缩合并
+            if !squash {
+                _ = try await runner.run(["merge", "--abort"])
+            }
+        }
     }
 
     /// 合并干净、只是 pre-merge-commit 钩子失败时同样以 1 退出，仍是失败；锁文件挡住的合并抛出原始错误。
@@ -36,8 +44,8 @@ extension RepositorySyncTests {
     func mergeFailures() async throws {
         let fixture = try TemporaryRepository()
         defer { fixture.remove() }
-        try await fixture.initialize()
 
+        try await fixture.initialize()
         let runner = fixture.runner
         let sync = RepositorySync(runner: runner)
         try await divergedBranches(fixture, side: "side\n", main: "base\n", other: "other\n")
@@ -65,7 +73,9 @@ extension RepositorySyncTests {
         _ = try await runner.run(["merge", "--abort"])
         try FileManager.default.removeItem(at: hook)
 
-        let lock = URL(fileURLWithPath: hooks).deletingLastPathComponent().appending(path: "index.lock")
+        let lock = URL(fileURLWithPath: hooks)
+            .deletingLastPathComponent()
+            .appending(path: "index.lock")
         try Data().write(to: lock)
 
         do {

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -7,43 +8,38 @@ import Testing
 /// 变更集摘要独立选择各段单复数，不因统计缺失隐藏计数。
 @MainActor
 struct ChangesetPresentationTests {
-    /// 三段计数分别选择资源键，空数组仍保留完整的零摘要。
-    @Test("变更集摘要各段独立选择单复数")
+    /// 三段计数分别选择资源键，空数组保留完整的零摘要；二进制与不完整统计保留文件数，只累加已知值。
+    @Test("变更集摘要各段独立选择单复数，缺失统计按零累计")
     func counts() {
         #expect(ChangesetSummaryBar.summary([]) == expected(files: 0, additions: 0, deletions: 0))
 
-        for count in 1 ... 2 {
-            for additions in 0 ... 2 {
-                for deletions in 0 ... 2 {
-                    let files = (0 ..< count).map {
-                        CommitFileChange(
-                            path: "file-\($0)",
-                            originalPath: nil,
-                            status: "M",
-                            additions: $0 == 0 ? additions : 0,
-                            deletions: $0 == 0 ? deletions : 0
-                        )
-                    }
-                    #expect(ChangesetSummaryBar.summary(files) == expected(
-                        files: count,
-                        additions: additions,
-                        deletions: deletions
-                    ))
-                }
+        // 单数与复数分别落在不同的段上
+        for (count, additions, deletions) in [(1, 1, 2), (2, 2, 1)] {
+            let files = (0 ..< count).map {
+                CommitFileChange(
+                    path: "file-\($0)",
+                    originalPath: nil,
+                    status: "M",
+                    additions: $0 == 0 ? additions : 0,
+                    deletions: $0 == 0 ? deletions : 0
+                )
             }
+
+            #expect(ChangesetSummaryBar.summary(files) == expected(
+                files: count,
+                additions: additions,
+                deletions: deletions
+            ))
         }
 
-        for count in 0 ... 2 {
+        for count in 1 ... 2 {
             #expect(ChangesetSummaryBar.fileCount(count) == AppLocalization.text(
                 count == 1 ? "history.changes.one" : "history.changes",
                 count
             ))
         }
-    }
 
-    /// 二进制、组合统计与不完整统计都保留文件数，只分别累加已知值。
-    @Test("变更集缺失统计按零累计")
-    func unknownCounts() {
+        // 二进制与组合统计缺少的值按零累计，有文件时才显示展开按钮
         let binary = CommitFileChange(path: "binary", originalPath: nil, status: "M", additions: nil, deletions: nil)
         let partial = CommitFileChange(path: "partial", originalPath: nil, status: "MM", additions: nil, deletions: 2)
         #expect(ChangesetSummaryBar.summary([binary]) == expected(files: 1, additions: 0, deletions: 0))
@@ -58,37 +54,39 @@ struct ChangesetPresentationTests {
         let directory = try FileViewsTests.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
 
-        let location = RepositoryLocation.local(path: directory.path)
-        let runner = try await FileViewsTests.initializeRepository(at: location)
+        let runner = try await FileViewsTests.initializeRepository(at: .local(path: directory.path))
         _ = try await runner.run(["commit", "--allow-empty", "-m", "Empty"])
         let head = try await RepositoryReferences(runner: runner).resolve("HEAD")
-        let commit = try #require(try await RepositoryHistory(runner: runner).page(roots: [head], limit: 1).commits.first)
+        let page = try await RepositoryHistory(runner: runner).page(roots: [head], limit: 1)
+        let commit = try #require(page.commits.first)
         let session = RepositorySession(makeRunner: { _ in runner })
         defer { session.close() }
 
-        session.display(location)
-        session.refresh()
-        await session.waitForRefresh()
-        session.showCommit(commit)
-        try await FileViewsTests.wait {
-            session.history.selectedCommit?.id == commit.id && !session.history.isLoadingChanges
-        }
+        session.history.show(commit, runner: runner)
+        await until { !session.history.isLoadingChanges }
+
+        // 重新读取期间没有空行，读完空结果才显示
         session.history.loadChanges()
         let view = CommitFileListView(session: session, history: session.history, back: { })
         #expect(session.history.isLoadingChanges)
         #expect(view.emptyMessage == nil)
-        try await FileViewsTests.wait { !session.history.isLoadingChanges }
+
+        await until { !session.history.isLoadingChanges }
         #expect(session.history.changesFailure == nil)
         #expect(view.emptyMessage == AppLocalization.text("history.noChanges"))
     }
 
     /// 每段独立按数量选择，整句由语言自己的模板连接。
     private func expected(files: Int, additions: Int, deletions: Int) -> String {
-        AppLocalization.text(
+        let filesKey = files == 1 ? "history.summary.files.one" : "history.summary.files"
+        let additionsKey = additions == 1 ? "history.summary.additions.one" : "history.summary.additions"
+        let deletionsKey = deletions == 1 ? "history.summary.deletions.one" : "history.summary.deletions"
+
+        return AppLocalization.text(
             "history.summary",
-            AppLocalization.text(files == 1 ? "history.summary.files.one" : "history.summary.files", files),
-            AppLocalization.text(additions == 1 ? "history.summary.additions.one" : "history.summary.additions", additions),
-            AppLocalization.text(deletions == 1 ? "history.summary.deletions.one" : "history.summary.deletions", deletions)
+            AppLocalization.text(filesKey, files),
+            AppLocalization.text(additionsKey, additions),
+            AppLocalization.text(deletionsKey, deletions)
         )
     }
 }

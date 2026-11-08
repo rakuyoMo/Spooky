@@ -12,8 +12,9 @@ import Testing
 /// 用到真实 git-lfs 的测试在测试进程的 PATH 与 Homebrew 的默认位置里都找不到它时跳过；找到的目录经自定义变量 PATH 交给 Git，与 App 修复 PATH 的方式相同。
 struct RepositoryLFSTests {
     /// 找不到 git-lfs 时状态里没有版本；写操作报出能力缺失并带上 `git lfs version` 的原文，不改动仓库。
-    @Test("找不到 Git LFS")
-    func unavailable() async throws {
+    /// 版本低于 2.9.0 同样算能力缺失，状态里仍写出它报告的版本；只认 `git-lfs/` 开头、至少三段数字的版本，按数值逐段比较。
+    @Test("找不到 Git LFS 或版本不足")
+    func capabilityMissing() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
 
@@ -24,7 +25,9 @@ struct RepositoryLFSTests {
         let status = try await lfs.status()
         #expect(status.version == nil && !status.isSupported && !status.isEnabled)
 
-        let error = await #expect(throws: LFSError.self) { try await lfs.track(["*.psd"]) }
+        let error = await #expect(throws: LFSError.self) {
+            try await lfs.track(["*.psd"])
+        }
 
         guard case .unavailable(let result) = error else {
             Issue.record("找不到 Git LFS 时应报出能力缺失")
@@ -33,38 +36,10 @@ struct RepositoryLFSTests {
 
         #expect(result.arguments == ["lfs", "version"] && result.exitCode == 1)
         #expect(!FileManager.default.fileExists(atPath: root + "/.gitattributes"))
-    }
 
-    /// 版本低于 2.9.0 同样算能力缺失；状态里仍写出它报告的版本。
-    @Test("版本不足")
-    func outdated() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
+        try await Self.outdated(in: temporary)
 
-        try await temporary.initialize()
-
-        // 假的 git-lfs 只会报出旧版本
-        let directory = temporary.directory.appending(path: "bin")
-        let program = directory.appending(path: "git-lfs")
-        let version = "git-lfs/2.8.0 (GitHub; darwin arm64; go 1.12.7)"
-
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
-        try Data("#!/bin/sh\necho '\(version)'\n".utf8).write(to: program)
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: program.path)
-
-        let runner = lfsRunner(at: temporary.directory.path, searchPath: directory.path + ":/usr/bin:/bin")
-        let lfs = RepositoryLFS(runner: runner)
-
-        let status = try await lfs.status()
-        #expect(status.version == version && !status.isSupported)
-
-        await #expect(throws: LFSError.self) { try await lfs.install() }
-        #expect(!(try await lfs.status().isEnabled))
-    }
-
-    /// 只认 `git-lfs/` 开头、至少三段数字的版本，按数值逐段比较。
-    @Test("比较版本")
-    func versions() {
+        // 版本的比较
         #expect(RepositoryLFS.isSupported("git-lfs/3.8.1 (GitHub; darwin arm64; go 1.27.3)"))
         #expect(RepositoryLFS.isSupported("git-lfs/2.9.0 (GitHub; linux amd64; go 1.12.7)"))
         #expect(RepositoryLFS.isSupported("git-lfs/2.10.0"))
@@ -75,46 +50,11 @@ struct RepositoryLFSTests {
         #expect(!RepositoryLFS.isSupported("git: 'lfs' is not a git command. See 'git --help'."))
     }
 
+    /// 撤销启用去掉本地配置里的过滤器与 LFS 的钩子，仓库回到没有启用的样子；过滤器已经不在时拒绝，不做改动。
     /// 启用只写仓库本地的过滤器与钩子；规则写进根目录的 `.gitattributes`，含空格的模式与逐字文件名按 Git LFS 的写法转义；
     /// 去掉规则后读回核对，Git LFS 认不出的转义规则报出仍然留着。
-    @Test("启用与跟踪规则", .enabled(if: LFSProgram.directory != nil, "需要 git-lfs"))
-    func trackingPatterns() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
-
-        try await temporary.initialize()
-        let root = temporary.directory.path
-        let lfs = RepositoryLFS(runner: lfsRunner(at: root))
-
-        var status = try await lfs.status()
-        #expect(status.isSupported && !status.isEnabled)
-
-        try await lfs.install()
-        try await lfs.update()
-
-        status = try await lfs.status()
-        #expect(status.isEnabled)
-        #expect(try String(contentsOfFile: root + "/.git/hooks/pre-push", encoding: .utf8).contains("git lfs pre-push"))
-
-        try await lfs.track(["*.psd", "设计 稿/*.sketch"])
-        try await lfs.track(files: ["图 [1].bin"])
-
-        let literal = #"图[[:space:]]\[1\].bin"#
-        let tracked = try attributes(in: root)
-
-        // 同一次 track 传入的几个模式，Git LFS 写进文件的先后不固定，排序后比较
-        #expect(tracked.sorted() == ["*.psd", "设计[[:space:]]稿/*.sketch", literal].sorted())
-
-        // 列表里显示的就是文件里写着的模式，去掉它们即可停止跟踪
-        try await lfs.untrack(["*.psd", "设计[[:space:]]稿/*.sketch"])
-        #expect(try attributes(in: root) == [literal])
-
-        await #expect(throws: LFSError.patternsRemain([literal])) { try await lfs.untrack([literal]) }
-    }
-
-    /// 撤销启用去掉本地配置里的过滤器与 LFS 的钩子，仓库回到没有启用的样子；过滤器已经不在时拒绝，不做改动。
-    @Test("撤销启用", .enabled(if: LFSProgram.directory != nil, "需要 git-lfs"))
-    func undoInstall() async throws {
+    @Test("撤销启用，启用与跟踪规则", .enabled(if: LFSProgram.directory != nil, "需要 git-lfs"))
+    func installAndTrack() async throws {
         let temporary = try TemporaryRepository()
         defer { temporary.remove() }
 
@@ -130,12 +70,45 @@ struct RepositoryLFSTests {
         #expect(try await !lfs.status().isEnabled)
         #expect(!FileManager.default.fileExists(atPath: root + "/.git/hooks/pre-push"))
 
-        await #expect(throws: RepositoryUndoError.repositoryChanged) { try await lfs.undoInstall() }
+        await #expect(throws: RepositoryUndoError.repositoryChanged) {
+            try await lfs.undoInstall()
+        }
+
+        // 撤销后重新启用
+        var status = try await lfs.status()
+        #expect(status.isSupported && !status.isEnabled)
+
+        try await lfs.install()
+        try await lfs.update()
+
+        status = try await lfs.status()
+        #expect(status.isEnabled)
+
+        let hook = try String(contentsOfFile: root + "/.git/hooks/pre-push", encoding: .utf8)
+        #expect(hook.contains("git lfs pre-push"))
+
+        try await lfs.track(["*.psd", "设计 稿/*.sketch"])
+        try await lfs.track(files: ["图 [1].bin"])
+
+        let literal = #"图[[:space:]]\[1\].bin"#
+        let tracked = try attributes(in: root)
+
+        // 同一次 track 传入的几个模式，Git LFS 写进文件的先后不固定，排序后比较
+        #expect(tracked.sorted() == ["*.psd", "设计[[:space:]]稿/*.sketch", literal].sorted())
+
+        // 列表里显示的就是文件里写着的模式，去掉它们即可停止跟踪
+        try await lfs.untrack(["*.psd", "设计[[:space:]]稿/*.sketch"])
+        #expect(try attributes(in: root) == [literal])
+
+        await #expect(throws: LFSError.patternsRemain([literal])) {
+            try await lfs.untrack([literal])
+        }
     }
 
     /// 推送只上传 LFS 对象；克隆得到指针文件后，获取只下载对象，拉取把指针换成内容；传输进度留在输出里。
-    @Test("推送、获取与拉取", .enabled(if: LFSProgram.directory != nil, "需要 git-lfs"))
-    func transfer() async throws {
+    /// 选了 LFS 的克隆在检出时由过滤器换出内容：目标机器的全局配置登记了过滤器，与 `git lfs install` 之后相同。
+    @Test("推送、获取、拉取与带 LFS 的克隆", .enabled(if: LFSProgram.directory != nil, "需要 git-lfs"))
+    func transferAndClone() async throws {
         let root = try transferDirectory()
         defer { try? FileManager.default.removeItem(atPath: root) }
 
@@ -173,33 +146,61 @@ struct RepositoryLFSTests {
 
         try await lfs.pull(from: "origin")
         #expect(try Data(contentsOf: file) == content)
+
+        try await Self.cloneWithLFS(in: root, remote: remote, content: content)
+    }
+}
+
+// MARK: - Steps
+
+extension RepositoryLFSTests {
+    /// 假的 git-lfs 只会报出旧版本：版本低于 2.9.0 同样算能力缺失，状态里仍写出它报告的版本。
+    private static func outdated(in temporary: TemporaryRepository) async throws {
+        let directory = temporary.directory.appending(path: "bin")
+        let program = directory.appending(path: "git-lfs")
+        let version = "git-lfs/2.8.0 (GitHub; darwin arm64; go 1.12.7)"
+
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        try Data("#!/bin/sh\necho '\(version)'\n".utf8).write(to: program)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: program.path)
+
+        let runner = lfsRunner(at: temporary.directory.path, searchPath: directory.path + ":/usr/bin:/bin")
+        let lfs = RepositoryLFS(runner: runner)
+
+        let status = try await lfs.status()
+        #expect(status.version == version && !status.isSupported)
+
+        await #expect(throws: LFSError.self) {
+            try await lfs.install()
+        }
+
+        #expect(!(try await lfs.status().isEnabled))
     }
 
-    /// 选了 LFS 的克隆在检出时由过滤器换出内容：目标机器的全局配置登记了过滤器，与 `git lfs install` 之后相同。
-    @Test("带 LFS 的克隆", .enabled(if: LFSProgram.directory != nil, "需要 git-lfs"))
-    func cloneWithLFS() async throws {
-        let root = try transferDirectory()
-        defer { try? FileManager.default.removeItem(atPath: root) }
-
-        let remote = root + "/远 端.git"
-        let content = try await makeSource(in: root, remote: remote)
-        _ = try await lfsRunner(at: root + "/工作 区").run(["push", "-q", "origin", "main"])
-
-        // 全局配置只有 LFS 过滤器
+    /// 全局配置只登记 LFS 过滤器时选了 LFS 的克隆，检出的是文件内容。
+    private static func cloneWithLFS(in root: String, remote: String, content: Data) async throws {
         let global = root + "/全局.gitconfig"
         let configure = lfsRunner(at: root)
 
-        for (key, value) in [
+        let filters = [
             ("filter.lfs.clean", "git-lfs clean -- %f"),
             ("filter.lfs.smudge", "git-lfs smudge -- %f"),
             ("filter.lfs.process", "git-lfs filter-process"),
             ("filter.lfs.required", "true"),
-        ] {
+        ]
+
+        for (key, value) in filters {
             _ = try await configure.run(["config", "--file", global, key, value])
         }
 
-        let path = root + "/克 隆"
-        let clone = RepositoryClone(url: remote, destination: .local(path: path), options: CloneOptions(lfs: true))
+        let path = root + "/带 LFS 克 隆"
+
+        let clone = RepositoryClone(
+            url: remote,
+            destination: .local(path: path),
+            options: CloneOptions(lfs: true)
+        )
+
         _ = try await clone.start(credentialHandler: nil, onProgress: nil) {
             lfsRunner(at: $0.path, globalConfig: global)
         }.value

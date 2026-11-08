@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -8,16 +9,29 @@ import Testing
 // MARK: - Sidebar Menus
 
 extension OperationWiringTests {
-    /// HEAD 分支的推送、拉取与同步各带以跟踪分支为对象的 ⌥ 快速版本；其它本地分支是推送与 Push To；远端分支的快速拉取把它并入 HEAD。
-    @Test("分支右键菜单的推送与拉取一组")
-    func branchSyncMenu() async throws {
+    /// 分支右键菜单的推送、拉取、合并与变基两组随分支是否为 HEAD、是否有跟踪分支变化；
+    /// Push To 与变基对话框的预选；标签菜单的管理项。
+    @Test("分支与标签右键菜单的项与预选")
+    func referenceMenus() async throws {
         let fixture = try await Self.makeFixture()
         defer { fixture.close() }
 
+        try await checkBranchSyncMenu(in: fixture)
+        try checkBranchIntegrationMenu(in: fixture)
+        checkPushRevisionDefaults(in: fixture)
+        try await checkTagManagementMenu(in: fixture)
+        try await checkWithoutUpstream(in: fixture)
+    }
+
+    /// HEAD 分支的推送、拉取与同步各带以跟踪分支为对象的 ⌥ 快速版本；其它本地分支是推送与 Push To；
+    /// 远端分支的快速拉取把它并入 HEAD；Push To 打开推送任意版本的对话框，预选这个分支。
+    private func checkBranchSyncMenu(in fixture: Fixture) async throws {
         let (main, side, upstream) = try fixture.branches()
         let session = fixture.session
 
+        // HEAD 分支
         let head = HostedMenu(BranchSyncMenu(session: session, reference: main) { _ in })
+
         #expect(head.titles == [
             AppLocalization.text("sync.push"),
             AppLocalization.text("sync.quickPushNamed", "main", "origin/main"),
@@ -26,43 +40,48 @@ extension OperationWiringTests {
             AppLocalization.text("sync.syncMenu"),
             AppLocalization.text("sync.quickSyncNamed", "main", "origin/main"),
         ])
+
         #expect(head.alternates == [false, true, false, true, false, true])
 
+        // 其它本地分支
         let local = HostedMenu(BranchSyncMenu(session: session, reference: side) { _ in })
+
         #expect(local.titles == [
             AppLocalization.text("sync.push"),
             AppLocalization.text("branch.pushToMenu", "side"),
         ])
+
         #expect(!local.alternates.contains(true))
 
+        // 远端分支
         let remote = HostedMenu(BranchSyncMenu(session: session, reference: upstream) { _ in })
+
         #expect(remote.titles == [
             AppLocalization.text("sync.pull"),
             AppLocalization.text("sync.quickPullNamed", "origin/main"),
         ])
+
         #expect(remote.alternates == [false, true])
         #expect(remote.enabled == [true, true])
 
-        // Push To 打开推送任意版本的对话框，预选这个分支
+        // 菜单项的动作经 SwiftUI 转发，等请求到达
         var requests: [SyncDialogRequest] = []
         session.onSyncRequest = { requests.append($0) }
         local.perform(AppLocalization.text("branch.pushToMenu", "side"))
-        try await FileViewsTests.wait { !requests.isEmpty }
+        await until { !requests.isEmpty }
 
         #expect(requests.first?.kind == .pushRevision)
         #expect(requests.first?.preselection == "side")
     }
 
-    /// HEAD 分支的合并与变基以跟踪分支为对象，另有 Rebase Onto；其它分支只有把它并入 HEAD 的合并，变基到它上面经拖放或变基对话框。
-    @Test("分支右键菜单的合并与变基一组")
-    func branchIntegrationMenu() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
+    /// HEAD 分支的合并与变基以跟踪分支为对象，另有 Rebase Onto；其它分支只有把它并入 HEAD 的合并，
+    /// 变基到它上面经拖放或变基对话框；变基对话框按请求预选目标分支，没有预选时用 HEAD 的跟踪分支。
+    private func checkBranchIntegrationMenu(in fixture: Fixture) throws {
         let (main, side, _) = try fixture.branches()
         let session = fixture.session
 
         let head = HostedMenu(BranchIntegrationMenu(session: session, reference: main) { _ in })
+
         #expect(head.titles == [
             AppLocalization.text("sync.merge"),
             AppLocalization.text("sync.quickMergeInto", "origin/main", "main"),
@@ -70,52 +89,30 @@ extension OperationWiringTests {
             AppLocalization.text("sync.quickRebaseOn", "main", "origin/main"),
             AppLocalization.text("rewrite.rebaseOnto.menu"),
         ])
+
         #expect(head.alternates == [false, true, false, true, false])
 
         let other = HostedMenu(BranchIntegrationMenu(session: session, reference: side) { _ in })
+
         #expect(other.titles == [AppLocalization.text("sync.merge")])
         #expect(other.alternates == [false])
         #expect(!other.enabled.contains(false))
 
-        // 变基对话框按请求预选目标分支；没有预选时用 HEAD 的跟踪分支
+        // 请求同步交给回调
         var requests: [SyncDialogRequest] = []
         session.onSyncRequest = { requests.append($0) }
         session.requestSyncDialog(.rebase, preselecting: side.id)
-        try await FileViewsTests.wait { !requests.isEmpty }
 
         let request = try #require(requests.first)
+        let preselected = SyncDialog.rebaseTarget(preselection: request.preselection, in: session)
+
         #expect(request.kind == .rebase)
-        #expect(SyncDialog.rebaseTarget(preselection: request.preselection, in: session) == "refs/heads/side")
+        #expect(preselected == "refs/heads/side")
         #expect(SyncDialog.rebaseTarget(preselection: nil, in: session) == "refs/remotes/origin/main")
     }
 
-    /// HEAD 没有跟踪分支时，HEAD 分支一组没有快速版本。
-    @Test("没有跟踪分支时没有快速操作")
-    func noUpstream() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
-        _ = try await fixture.runner.run(["branch", "--unset-upstream"])
-        fixture.session.refresh(full: true)
-        await fixture.session.waitForRefresh()
-        try await FileViewsTests.wait {
-            fixture.session.headBranch?.upstream == nil && !fixture.session.history.isLoading
-        }
-
-        let (main, _, _) = try fixture.branches()
-        let sync = HostedMenu(BranchSyncMenu(session: fixture.session, reference: main) { _ in })
-        let integration = HostedMenu(BranchIntegrationMenu(session: fixture.session, reference: main) { _ in })
-
-        #expect(!sync.alternates.contains(true))
-        #expect(!integration.alternates.contains(true))
-    }
-
     /// 推送任意版本的预选：分支推到它跟踪的分支或同名分支，标签推到同名标签，远端取跟踪的远端。
-    @Test("Push To 对话框的预选")
-    func pushRevisionDefaults() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
+    private func checkPushRevisionDefaults(in fixture: Fixture) {
         let session = fixture.session
 
         let head = SyncDialog.pushRevisionDefaults(preselection: nil, in: session)
@@ -129,11 +126,7 @@ extension OperationWiringTests {
     }
 
     /// 标签菜单的管理项：发布与推送一组，新建分支与删除一组；Push To 交给推送对话框。
-    @Test("标签右键菜单的管理项")
-    func tagManagementMenu() async throws {
-        let fixture = try await Self.makeFixture()
-        defer { fixture.close() }
-
+    private func checkTagManagementMenu(in fixture: Fixture) async throws {
         let tag = try #require(fixture.session.tags.first { $0.name == "v1" })
         var pushed: [String] = []
 
@@ -154,9 +147,30 @@ extension OperationWiringTests {
             AppLocalization.text("reference.deleteMenu", "v1"),
         ])
 
+        // 菜单项的动作经 SwiftUI 转发，等回调到达
         menu.perform(AppLocalization.text("tag.pushToMenu", "v1"))
-        try await FileViewsTests.wait { !pushed.isEmpty }
+        await until { !pushed.isEmpty }
+
         #expect(pushed == ["v1"])
+    }
+
+    /// HEAD 没有跟踪分支时，HEAD 分支一组没有快速版本。
+    private func checkWithoutUpstream(in fixture: Fixture) async throws {
+        let session = fixture.session
+
+        // 刷新期间同步开始读引用，一起等完
+        _ = try await fixture.runner.run(["branch", "--unset-upstream"])
+        session.refresh(full: true)
+        await session.waitForRefresh()
+        await untilFinished { session.history.activeTasks }
+        try #require(session.headBranch?.upstream == nil)
+
+        let (main, _, _) = try fixture.branches()
+        let sync = HostedMenu(BranchSyncMenu(session: session, reference: main) { _ in })
+        let integration = HostedMenu(BranchIntegrationMenu(session: session, reference: main) { _ in })
+
+        #expect(!sync.alternates.contains(true))
+        #expect(!integration.alternates.contains(true))
     }
 }
 
@@ -175,7 +189,9 @@ struct HostedMenu {
 
     /// 各项是否为按住 ⌥ 时替换上一项的备选项。
     var alternates: [Bool] {
-        menu.items.filter { !$0.isSeparatorItem }.map { $0.isAlternate && $0.keyEquivalentModifierMask == .option }
+        menu.items
+            .filter { !$0.isSeparatorItem }
+            .map { $0.isAlternate && $0.keyEquivalentModifierMask == .option }
     }
 
     /// 各项是否可用。
@@ -209,7 +225,11 @@ struct HostedMenu {
 extension OperationWiringTests.Fixture {
     /// 当前分支 main、本地分支 side 与 main 跟踪的 origin/main。
     @MainActor
-    func branches() throws -> (main: RepositoryReference, side: RepositoryReference, upstream: RepositoryReference) {
+    func branches() throws -> (
+        main: RepositoryReference,
+        side: RepositoryReference,
+        upstream: RepositoryReference
+    ) {
         let branches = session.history.branches
 
         return (
