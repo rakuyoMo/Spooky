@@ -158,6 +158,67 @@ struct RepositorySyncTests {
     }
 }
 
+// MARK: - Untracked Files
+
+extension RepositorySyncTests {
+    /// 只有未跟踪的文件时拉取与合并照常执行，文件不动；合并预览把快进算作干净，HEAD 自身与已并入的分支算作无需合并。
+    /// 远端或所选版本带来同名文件时由 Git 拒绝：HEAD 与未跟踪文件的内容都不变，错误保留 Git 的原文。
+    @Test("只有未跟踪文件时直接拉取与合并，同名文件由 Git 拒绝")
+    func untrackedFiles() async throws {
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+
+        try await fixture.initialize()
+        let runner = fixture.runner
+        let sync = RepositorySync(runner: runner)
+        let bare = fixture.directory.appendingPathComponent("remote.git").path
+
+        try Self.exclude("remote.git/\nother/\n", in: fixture)
+        _ = try await runner.run(["init", "--bare", bare])
+        _ = try await runner.run(["remote", "add", "origin", bare])
+        _ = try await runner.run(["commit", "--allow-empty", "-m", "root"])
+        _ = try await sync.push(branch: "main", remote: "origin", destination: "main", setUpstream: true)
+
+        let other = try await Self.otherClone(of: bare, in: fixture)
+
+        // 另一个克隆提交一个新文件并推上远端
+        func pushFile(_ name: String) async throws {
+            let file = fixture.directory.appendingPathComponent("other/" + name)
+            try Data("remote\n".utf8).write(to: file)
+            _ = try await other.run(["add", name])
+            _ = try await other.run(["commit", "-m", name])
+            _ = try await other.run(["push", "origin", "main"])
+        }
+
+        let notes = fixture.directory.appendingPathComponent("notes.txt")
+        try Data("mine\n".utf8).write(to: notes)
+
+        // 拉取：远端带来别的文件
+        try await pushFile("incoming.txt")
+        try await sync.pull(rebase: false)
+
+        let incoming = fixture.directory.appendingPathComponent("incoming.txt")
+
+        #expect(FileManager.default.fileExists(atPath: incoming.path))
+        #expect(try String(contentsOf: notes, encoding: .utf8) == "mine\n")
+
+        // 合并：本地分支领先 HEAD 一个提交，可以快进
+        _ = try await runner.run(["switch", "-q", "-c", "topic"])
+        try Data("topic\n".utf8).write(to: fixture.directory.appendingPathComponent("topic.txt"))
+        _ = try await runner.run(["add", "topic.txt"])
+        _ = try await runner.run(["commit", "-m", "topic"])
+        _ = try await runner.run(["switch", "-q", "main"])
+
+        #expect(try await sync.previewMerge("refs/heads/topic") == .clean)
+        #expect(try await sync.previewMerge("refs/heads/main") == .unchanged)
+        #expect(try await sync.merge("refs/heads/topic") == .merged)
+        #expect(try await sync.previewMerge("refs/heads/topic") == .unchanged)
+        #expect(try String(contentsOf: notes, encoding: .utf8) == "mine\n")
+
+        try await Self.expectUntrackedConflicts(in: fixture, pushing: pushFile)
+    }
+}
+
 // MARK: - Publish
 
 extension RepositorySyncTests {
@@ -260,6 +321,40 @@ extension RepositorySyncTests {
         }
 
         #expect(message.contains("unknown option"))
+    }
+
+    /// 远端带来与未跟踪文件同名的文件：拉取与合并都被 Git 拒绝，文件内容与 HEAD 不变。
+    ///
+    /// - Parameter pushing: 让远端多出一个这个名字的文件。
+    private static func expectUntrackedConflicts(
+        in fixture: TemporaryRepository,
+        pushing: (String) async throws -> Void
+    ) async throws {
+        let runner = fixture.runner
+        let sync = RepositorySync(runner: runner)
+        let clash = fixture.directory.appendingPathComponent("clash.txt")
+        let head = try await RepositoryReferences(runner: runner).resolve("HEAD")
+
+        try await pushing("clash.txt")
+        try Data("mine\n".utf8).write(to: clash)
+
+        do {
+            try await sync.pull(rebase: false)
+            Issue.record("会覆盖未跟踪文件的拉取应被 Git 拒绝")
+        } catch let error as GitError {
+            #expect(error.message.contains("untracked working tree files would be overwritten"))
+        }
+
+        // 拉取的获取已更新远端跟踪分支，再直接合并它
+        do {
+            try await sync.merge("refs/remotes/origin/main")
+            Issue.record("会覆盖未跟踪文件的合并应被 Git 拒绝")
+        } catch let error as GitError {
+            #expect(error.message.contains("untracked working tree files would be overwritten"))
+        }
+
+        #expect(try String(contentsOf: clash, encoding: .utf8) == "mine\n")
+        #expect(try await RepositoryReferences(runner: runner).resolve("HEAD") == head)
     }
 
     /// 从裸远端克隆 `main` 到 `other`，提交身份只写进克隆自己的本地配置。

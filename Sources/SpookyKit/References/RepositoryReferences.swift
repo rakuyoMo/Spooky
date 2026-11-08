@@ -256,6 +256,34 @@ public struct RepositoryReferences: Sendable {
         return result
     }
 
+    /// 新建本地分支与本地分支改名在输入时的规范化：空白与 `~ : ? * [` 换成 “-”，`^ \` 与控制字符删掉，
+    /// 连续的 “.” 与 “/” 合并，删掉 “@{” 与末尾的 “.lock”。
+    ///
+    /// 开头的 “-” 保留，交给名称校验说明能否使用；开头的 “/” 与 “.” 照旧删掉。
+    public static func normalizedBranchName(_ value: String) -> String {
+        var result = ""
+
+        for scalar in value.precomposedStringWithCanonicalMapping.unicodeScalars {
+            let replaced = CharacterSet.whitespacesAndNewlines.contains(scalar)
+                || "~:?*[".unicodeScalars.contains(scalar)
+
+            if replaced {
+                result.append("-")
+            } else if scalar.value >= 32, scalar.value != 127, !"^\\".unicodeScalars.contains(scalar) {
+                result.unicodeScalars.append(scalar)
+            }
+        }
+
+        result = result.replacingOccurrences(of: "@{", with: "")
+        while result.contains("..") { result = result.replacingOccurrences(of: "..", with: ".") }
+        while result.contains("//") { result = result.replacingOccurrences(of: "//", with: "/") }
+        while let first = result.first, "/.".contains(first) { result.removeFirst() }
+        result = result.replacingOccurrences(of: "/.", with: "/")
+        while result.hasSuffix(".lock") { result.removeLast(5) }
+
+        return result
+    }
+
     /// 一次读取全部引用，另一次读取远端名字，再一次读取分支的附加信息；三者并发，空仓库也是合法快照。
     public func snapshot() async throws -> ReferenceSnapshot {
         async let refs = runner.run([
@@ -334,13 +362,16 @@ public struct RepositoryReferences: Sendable {
         }
     }
 
-    /// 以 Git 的分支规则校验，拒绝前一分支快捷写法、选项形式、控制字符与和对象哈希混淆的名字。
+    /// 以 Git 的分支规则校验，拒绝前一分支快捷写法、选项形式、控制字符与和对象哈希混淆的名字；
+    /// 拒绝时带上原因，Git 拒绝的另带上 `check-ref-format` 的结果。
     public func validate(name: String) async throws {
         guard Self.isPlausibleName(name) else {
-            throw ReferenceError.invalidName(name)
+            throw ReferenceError.invalidName(name, problem: Self.nameProblem(name))
         }
 
-        try await checkFormat(["--branch", name], rejecting: name)
+        try await checkFormat(["--branch", name], rejecting: name) { value, result in
+            .invalidName(value, problem: Self.nameProblem(value) ?? .other, output: result)
+        }
     }
 
     /// 新建并检出使用同一条 switch，检出失败不会遗留已创建的分支；置顶与父分支在同一个仓库操作里写入。
@@ -373,6 +404,38 @@ public struct RepositoryReferences: Sendable {
 
             if let parent {
                 try await setParent(parent, of: "refs/heads/" + name)
+            }
+        }
+    }
+
+    /// 先新建分支并写入置顶与父分支，再检出它；两步在同一个仓库操作里执行。
+    ///
+    /// 检出被 Git 拒绝时分支保留，抛出 ``ReferenceError/createdBranchCheckoutFailed(_:_:)``；取消与连接失败照常抛出。
+    ///
+    /// - Parameters:
+    ///   - pinned: 是否置顶新分支。
+    ///   - parent: 父分支的完整引用名；为 nil 时不设置。
+    public func createThenCheckOut(
+        name: String,
+        startingAt start: String,
+        track: Bool,
+        pinned: Bool = false,
+        parent: String? = nil
+    ) async throws {
+        try await runner.writeTransaction {
+            try await create(
+                name: name,
+                startingAt: start,
+                track: track,
+                checkout: false,
+                pinned: pinned,
+                parent: parent
+            )
+
+            do {
+                try await checkout("refs/heads/" + name)
+            } catch let error as GitError where !error.isCancelled {
+                throw ReferenceError.createdBranchCheckoutFailed(name, error)
             }
         }
     }

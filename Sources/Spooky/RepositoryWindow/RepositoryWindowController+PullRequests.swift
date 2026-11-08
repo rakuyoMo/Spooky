@@ -50,8 +50,7 @@ extension RepositoryWindowController {
             return repositoryView
 
         case #selector(publishRepository):
-            // 新仓库建在登录的账号下，没有账号时不可用
-            return repositoryView && session.canWrite && !session.pullRequests.accounts.items.isEmpty
+            return repositoryView && session.canPublishRepository
 
         default:
             return nil
@@ -201,6 +200,12 @@ extension RepositoryWindowController {
             Task { @MainActor in
                 let current = history.snapshot?.remoteSettingsDigests
                 self?.session.remotesDidChange(from: previous, to: current)
+
+                // 增减了远端时自动获取重新计时；仓库刚读出或换了仓库由显示仓库时处理
+                if let previous, let current, Set(previous.keys) != Set(current.keys) {
+                    self?.autoFetch.restart()
+                }
+
                 self?.observeRemotes(previous: current)
             }
         }

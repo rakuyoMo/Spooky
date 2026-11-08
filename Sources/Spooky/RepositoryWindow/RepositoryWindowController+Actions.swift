@@ -88,26 +88,15 @@ extension RepositoryWindowController {
     @objc
     func fetch() { presentRepositoryAction(RepositoryActionRequest(kind: .fetch)) }
 
-    /// 全部获取使用持久化的清理与标签选项。
+    /// 全部获取不打开对话框，清理与递归子模块读获取对话框保存的偏好。
     @objc
-    func fetchAll() {
-        let prune = UserDefaults.standard.bool(forKey: "fetchPrune")
-        let tags = UserDefaults.standard.bool(forKey: "fetchAllTags")
-        session.performGit(
-            { runner, output in
-                _ = try await RepositorySync(runner: runner)
-                    .fetch(prune: prune, allTags: tags, onRemote: ActivityRecording.fetching, onOutput: output)
-            },
-            title: AppLocalization.text("sync.fetch"),
-            target: .fetch(nil)
-        )
-    }
+    func fetchAll() { session.fetchAll() }
 
     /// 拉取表单明确选择合并或变基。
     @objc
     func pull() { presentRepositoryAction(RepositoryActionRequest(kind: .pull)) }
 
-    /// 推送表单明确目标远端和目标分支。
+    /// 推送 HEAD 的表单选择目标远端分支；没有远端时改为发布仓库。
     @objc
     func push() { presentRepositoryAction(RepositoryActionRequest(kind: .push)) }
 
@@ -150,6 +139,17 @@ extension RepositoryWindowController {
     /// 对话框关闭之后才启动写入，保存发起仓库身份以拒绝迟到提交。
     func presentRepositoryAction(_ request: RepositoryActionRequest) {
         guard session.canWrite else { return }
+
+        // 没有远端时，没有指定本地分支与目标的推送改为发布仓库：新建托管仓库、添加为远端再推送
+        if
+            request.kind == .push,
+            request.localBranch == nil,
+            request.reference == nil,
+            session.pushPublishesRepository
+        {
+            publishRepository()
+            return
+        }
 
         // HEAD 还没有上游时，推送 HEAD 分支改为打开发布分支的对话框
         let request = request.resolved(for: session.status?.branch)
@@ -256,7 +256,7 @@ extension RepositoryWindowController {
             repositoryView && session.canPull
 
         case #selector(push):
-            repositoryView && session.canPush
+            repositoryView && session.canPushHead
 
         case #selector(publishBranch):
             repositoryView && session.canPublish

@@ -96,6 +96,108 @@ struct ReferenceNamesTests {
         }
     }
 
+    /// 新建与改名本地分支的输入规范化：空白与 `~ : ? * [` 换成 “-”，`^ \` 删掉，连续的 “.” “/” 合并，
+    /// “@{” 与末尾的 “.lock” 删掉；开头的 “-” 留给校验说明，开头的 “/” “.” 与段首的 “.” 删掉，中文与版本号原样保留。
+    @Test(
+        "本地分支名的输入规范化",
+        arguments: [
+            ("feature x\ty", "feature-x-y"),
+            ("a~b:c?d*e[f", "a-b-c-d-e-f"),
+            ("a^b\\c", "abc"),
+            ("-topic", "-topic"),
+            ("a..b//c", "a.b/c"),
+            ("main@{1}", "main1}"),
+            ("topic.lock", "topic"),
+            ("x.lock.lock", "x"),
+            ("/.hidden/.b", "hidden/b"),
+            ("功能/v1.2", "功能/v1.2"),
+        ]
+    )
+    func branchNameNormalization(input: String, expected: String) {
+        #expect(RepositoryReferences.normalizedBranchName(input) == expected)
+    }
+
+    /// 分支名不合法时带上原因：选项形式、控制字符、“@{”、HEAD 与完整哈希在执行前拒绝，不带 Git 结果；
+    /// 其余由 `check-ref-format --branch` 以 128 拒绝，带上原因与 Git 原文。
+    /// “@” 与工作区里已有的文件名都是合法分支名；`main/x` 通过校验，由建分支的 Git 命令拒绝。
+    @Test("分支名不合法的原因、Git 的拒绝结果与操作时的检查")
+    func branchNameProblems() async throws {
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+
+        try await fixture.initialize()
+
+        let runner = fixture.runner
+        let refs = RepositoryReferences(runner: runner)
+
+        // 执行前拒绝的写法
+        let early: [(String, ReferenceNameProblem)] = [
+            ("-x", .leadingHyphen),
+            ("a\u{1}b", .character),
+            ("main@{1}", .sequence),
+            ("HEAD", .ambiguous),
+            (String(repeating: "a", count: 40), .ambiguous),
+        ]
+
+        for (name, expected) in early {
+            let error = try await #require(throws: ReferenceError.self) {
+                try await refs.validate(name: name)
+            }
+
+            guard case .invalidName(_, let problem, let output) = error else {
+                Issue.record("应说明名称不合法：\(error)")
+                continue
+            }
+
+            #expect(problem == expected, "原因：\(name.debugDescription)")
+            #expect(output == nil)
+        }
+
+        // Git 拒绝的写法
+        let rejected: [(String, ReferenceNameProblem)] = [
+            ("a/.b", .component),
+            ("a b", .character),
+            ("a..b", .sequence),
+            ("x/", .boundary),
+            ("x.lock", .component),
+        ]
+
+        for (name, expected) in rejected {
+            let error = try await #require(throws: ReferenceError.self) {
+                try await refs.validate(name: name)
+            }
+
+            guard case .invalidName(_, let problem, let output?) = error else {
+                Issue.record("应带上 Git 的结果：\(error)")
+                continue
+            }
+
+            #expect(problem == expected, "原因：\(name.debugDescription)")
+            #expect(output.exitCode == 128)
+            #expect(String(decoding: output.standardError, as: UTF8.self).contains("is not a valid branch name"))
+        }
+
+        // 与工作区文件同名的分支建好后检出的是分支，文件不受影响
+        _ = try await runner.run(["commit", "--allow-empty", "-m", "root"])
+        try Data("text\n".utf8).write(to: fixture.directory.appendingPathComponent("docs"))
+
+        try await refs.validate(name: "@")
+        try await refs.create(name: "docs", startingAt: "HEAD", track: false, checkout: true)
+
+        #expect(try await runner.status().branch.head == "docs")
+        #expect(try String(contentsOf: fixture.directory.appendingPathComponent("docs"), encoding: .utf8) == "text\n")
+
+        // 与已有分支的层级冲突通过校验，由 Git 在建分支时拒绝
+        try await refs.validate(name: "main/x")
+
+        let conflict = try await #require(throws: GitError.self) {
+            try await refs.create(name: "main/x", startingAt: "HEAD", track: false, checkout: false)
+        }
+
+        #expect(conflict.exitCode == 128)
+        #expect(conflict.message.contains("cannot lock ref"))
+    }
+
     /// 网页地址：SSH、scp 写法与 git 协议换成 HTTPS 并去掉端口，HTTP(S) 保留端口，用户名、口令与 .git 后缀都去掉；
     /// 本机路径、file 协议、不认识的协议与没有仓库路径的地址都换算不出网页地址。
     @Test("远端地址换算网页地址与换算不出的地址")

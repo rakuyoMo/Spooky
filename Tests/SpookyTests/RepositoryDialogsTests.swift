@@ -35,15 +35,20 @@ struct RepositoryDialogsTests {
     }
 
     /// 自动储藏的 Abort 在左、左缘对齐输入列；Do Not Stash 与 Stash Changes 在右，相隔 8，Stash Changes 距右 20。
-    @Test("自动储藏的备选底栏", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    /// 完成后恢复改动没有保存值时不勾，保存过勾选时按保存值。
+    @Test("自动储藏的备选底栏与恢复选项的默认值", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func autoStashFooter() async throws {
-        let skip = AppLocalization.text("stash.autoStash.skip")
+        // 恢复选项从没有保存值开始，结束后恢复
+        let saved = UserDefaults.standard.object(forKey: "autoStashReapply")
+        defer { UserDefaults.standard.set(saved, forKey: "autoStashReapply") }
 
-        let elements = await AccessibilityProbe.elements(
-            until: { elements in elements.contains { $0.role == "AXButton" && $0.name == skip } }
-        ) {
-            Self.stashDialog(.autoStash(Self.autoStash()), in: Self.session())
-        }
+        UserDefaults.standard.removeObject(forKey: "autoStashReapply")
+
+        let elements = await Self.autoStashElements()
+        let reapply = AppLocalization.text("stash.autoStash.reapply")
+        let unchecked = try #require(elements.first { $0.role == "AXCheckBox" && $0.name == reapply })
+
+        #expect(unchecked.value == "0")
 
         let field = try #require(elements.first { $0.role == "AXTextField" })
         let abort = try Self.button("stash.autoStash.abort", in: elements)
@@ -54,12 +59,32 @@ struct RepositoryDialogsTests {
         #expect(abs(stash.frame.minX - skipButton.frame.maxX - 8) <= 1)
         #expect(abs(stash.frame.maxX - (480 - 20)) <= 1)
         #expect(abort.frame.maxX < skipButton.frame.minX)
+
+        // 保存过勾选时按保存值
+        UserDefaults.standard.set(true, forKey: "autoStashReapply")
+
+        let checked = try #require(
+            await Self.autoStashElements().first { $0.role == "AXCheckBox" && $0.name == reapply }
+        )
+
+        #expect(checked.value == "1")
     }
 }
 
 // MARK: - Helpers
 
 extension RepositoryDialogsTests {
+    /// 打开原操作已被本地改动挡住的自动储藏对话框，读出全部元素。
+    private static func autoStashElements() async -> [AccessibilityProbe.Element] {
+        let skip = AppLocalization.text("stash.autoStash.skip")
+
+        return await AccessibilityProbe.elements(
+            until: { elements in elements.contains { $0.role == "AXButton" && $0.name == skip } }
+        ) {
+            stashDialog(.autoStash(autoStash()), in: session())
+        }
+    }
+
     /// 这几类对话框的每一种，名字用于定位失败的那一个。
     private static func dialogs() -> [(String, AnyView)] {
         let session = session()

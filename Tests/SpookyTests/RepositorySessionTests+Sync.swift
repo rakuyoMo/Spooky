@@ -5,25 +5,8 @@ import TestSupport
 @testable import Spooky
 @testable import SpookyKit
 
-/// 自动获取的记录与调度、同步停在哪一步的说明、快速推送缺少跟踪分支时的说明，以及 Push 改开 Publish Branch 的条件。
+/// 同步停在哪一步的说明、快速推送缺少跟踪分支时的说明，以及 Push 改开 Publish Branch 的条件。
 extension RepositorySessionTests {
-    /// 获取全部远端时每个远端记一条 Remote 记录，失败不弹错误、原因记进 Activity；
-    /// 只在窗口显示仓库、到期且仓库可写时获取；设了 skipFetchAll 的远端不获取；间隔为 0 时不获取。
-    @Test("自动获取：每个远端的记录、失败、调度条件与跳过的远端")
-    func autoFetch() async throws {
-        let directory = try temporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let (runner, other) = try await makeSyncRepository(in: directory)
-        let session = try await openSession(runner)
-        defer { session.close() }
-
-        try await autoFetchRecords(session, runner: runner, directory: directory)
-
-        _ = try await runner.run(["remote", "remove", "second"])
-        try await autoFetchSchedule(session, runner: runner, other: other, directory: directory)
-    }
-
     /// 没有跟踪分支的快速推送不开始写入，只说明原因；同步里的推送记录只写远端分支，当前分支与远端分支不同名时也是；
     /// 推送被拒时错误说明写明停在推送、获取与拉取已完成，Activity 把同步记成拉取与推送两条，拉取完成、推送失败。
     @Test("快速推送缺少跟踪分支，同步的记录与停下的步骤")
@@ -105,84 +88,6 @@ extension RepositorySessionTests {
 // MARK: - Steps
 
 extension RepositorySessionTests {
-    /// 第二个远端指向不存在的仓库：获取全部远端时每个远端记一条，标题都写自动获取；第二个失败只记进 Activity，不弹错误。
-    private func autoFetchRecords(
-        _ session: RepositorySession,
-        runner: GitRunner,
-        directory: URL
-    ) async throws {
-        var failures: [AppFailure] = []
-        session.onFailure = { failures.append($0) }
-
-        _ = try await runner.run(["remote", "add", "second", directory.appending(path: "missing.git").path])
-
-        #expect(session.autoFetch())
-        await session.writeTask?.value
-
-        let records = remoteRecords(runner).sorted {
-            ($0.target?.remote ?? "") < ($1.target?.remote ?? "")
-        }
-
-        #expect(failures.isEmpty)
-        #expect(records.map(\.target) == [.fetch("origin"), .fetch("second")])
-        #expect(records.map(\.state) == ["activity.finished", "activity.failed"])
-        let title = AppLocalization.text("sync.autoFetch")
-        #expect(records.allSatisfy { $0.title == title && $0.ended != nil })
-        #expect(records.last?.log.contains("does not appear to be a git repository") ?? false)
-    }
-
-    /// 调度器只在窗口显示仓库、到期时获取，间隔未到与跳过的远端都不获取；间隔为 0 时到期也不获取。
-    private func autoFetchSchedule(
-        _ session: RepositorySession,
-        runner: GitRunner,
-        other: GitRunner,
-        directory: URL
-    ) async throws {
-        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
-        defaults.set(300, forKey: RepositoryAutoFetch.intervalKey)
-
-        let window = RepositoryViewState()
-        let scheduler = RepositoryAutoFetch(session: session, defaults: defaults) { window.showsRepository }
-        let start = Date()
-        let due = start.addingTimeInterval(RepositoryAutoFetch.initialDelay + 1)
-
-        // 打开后先等一会儿；窗口不显示仓库时到期也不获取
-        #expect(!scheduler.check(now: start))
-        #expect(!scheduler.check(now: due))
-
-        window.showsRepository = true
-        let pushed = try await commitAndPush(other, message: "remote")
-
-        #expect(scheduler.check(now: due))
-        await session.writeTask?.value
-        #expect(try await tracking(runner) == pushed)
-
-        // 写入结束后的完整刷新另在 Repository 页记读取，只看 Remote 页最新的一条
-        let activity = remoteRecords(runner).first
-
-        #expect(activity?.title == AppLocalization.text("sync.autoFetch"))
-        #expect(activity?.state == "activity.finished")
-
-        // 间隔未到不获取；跳过的远端到期后也不获取
-        #expect(!scheduler.check(now: start.addingTimeInterval(100)))
-
-        _ = try await runner.run(["config", "--local", "remote.origin.skipFetchAll", "true"])
-        _ = try await commitAndPush(other, message: "skipped")
-
-        #expect(scheduler.check(now: start.addingTimeInterval(RepositoryAutoFetch.initialDelay + 302)))
-        await session.writeTask?.value
-        #expect(try await tracking(runner) == pushed)
-
-        // 间隔为 0 时到期也不获取。0 写进另一个偏好域：覆盖同一个域里已有的值时，若进程的偏好缓存在这之前被清掉过，紧接着读到的可能仍是旧值
-        let manual = try #require(UserDefaults(suiteName: directory.appending(path: "manual").path))
-        manual.set(0, forKey: RepositoryAutoFetch.intervalKey)
-        let paused = RepositoryAutoFetch(session: session, defaults: manual) { true }
-
-        // 第一次检查开始计时，第二次时早已到期
-        paused.check(now: start)
-        #expect(!paused.check(now: start.addingTimeInterval(100_000)))
-    }
-
     /// 远端的 pre-receive 钩子拒绝一切推送时同步停在推送：说明写明获取与拉取已完成，最新的两条记录是失败的推送与完成的拉取。
     private func rejectedSync(
         _ session: RepositorySession,
@@ -229,14 +134,14 @@ extension RepositorySessionTests {
 
 extension RepositorySessionTests {
     /// 本测试专用的临时目录。
-    private func temporaryDirectory() throws -> URL {
+    func temporaryDirectory() throws -> URL {
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-sync-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         return directory
     }
 
     /// 本地仓库发布 `main` 到同目录的裸远端，并克隆出另一个工作区模拟别人推送。
-    private func makeSyncRepository(in directory: URL) async throws -> (local: GitRunner, other: GitRunner) {
+    func makeSyncRepository(in directory: URL) async throws -> (local: GitRunner, other: GitRunner) {
         let local = directory.appending(path: "local")
         try FileManager.default.createDirectory(at: local, withIntermediateDirectories: false)
 
@@ -266,8 +171,13 @@ extension RepositorySessionTests {
     }
 
     /// 打开仓库，等刷新与它带起的引用读取都结束。
-    private func openSession(_ runner: GitRunner) async throws -> RepositorySession {
-        let session = RepositorySession(makeRunner: { _ in runner })
+    ///
+    /// - Parameter activities: 记录写入的列表；核对 Repository 页的记录时传独立的一份，免得被并行测试的记录挤出上限。
+    func openSession(
+        _ runner: GitRunner,
+        activities: RepositoryActivities = .shared
+    ) async throws -> RepositorySession {
+        let session = RepositorySession(makeRunner: { _ in runner }, activities: activities)
         session.display(runner.location)
         session.refresh()
         await session.waitForRefresh()
@@ -278,30 +188,21 @@ extension RepositorySessionTests {
     }
 
     /// 本地仓库在 Activity 的 Remote 页上的记录，新的在前。
-    private func remoteRecords(_ runner: GitRunner) -> [RepositoryActivity] {
-        RepositoryActivities.shared.items.filter {
+    func remoteRecords(_ runner: GitRunner, in activities: RepositoryActivities = .shared) -> [RepositoryActivity] {
+        activities.items.filter {
             $0.repository == runner.location && $0.kind == .remote
         }
     }
 
     /// 另一个克隆提交并推送，返回推上去的提交。
-    private func commitAndPush(_ other: GitRunner, message: String) async throws -> String {
+    func commitAndPush(_ other: GitRunner, message: String) async throws -> String {
         _ = try await other.run(["commit", "--allow-empty", "-m", message])
         _ = try await other.run(["push", "-q", "origin", "HEAD:main"])
         return try await RepositoryReferences(runner: other).resolve("HEAD")
     }
 
     /// 本地仓库里 `origin/main` 指向的提交。
-    private func tracking(_ runner: GitRunner) async throws -> String {
+    func tracking(_ runner: GitRunner) async throws -> String {
         try await RepositoryReferences(runner: runner).resolve("refs/remotes/origin/main")
     }
-}
-
-// MARK: - RepositoryViewState
-
-/// 测试里切换窗口是否正显示仓库，自动获取的调度器经闭包读它。
-@MainActor
-private final class RepositoryViewState {
-    /// 窗口是否正显示仓库。
-    var showsRepository = false
 }

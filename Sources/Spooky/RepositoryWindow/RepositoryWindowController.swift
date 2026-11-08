@@ -66,9 +66,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 文本框与提交信息编辑框自己的文字撤销。
     let textUndoManager = UndoManager()
 
-    /// 本窗口仓库的自动获取：只在窗口显示仓库时进行，App 在后台也照常。
-    private lazy var autoFetch = RepositoryAutoFetch(session: session) { [weak self] in
-        !(self?.showsManager ?? true)
+    /// 本窗口仓库的自动获取：只在窗口显示仓库、没有挂 sheet 时进行，App 在后台也照常。
+    lazy var autoFetch = RepositoryAutoFetch(session: session) { [weak self] in
+        self.map { !$0.showsManager && $0.window?.attachedSheet == nil } ?? false
     }
 
     /// 创建原生窗口；窗口按系统偏好参与标签页，并以视图引用参与系统的窗口恢复。
@@ -178,6 +178,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         observeSubtitle()
         observeHistorySearch()
         autoFetch.start()
+        observeSheets()
     }
 
     /// 窗口由代码构建，不从归档恢复控制器。
@@ -262,8 +263,10 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         updateSubtitle()
         window?.representedURL = repository.localURL
 
+        // 仓库视图进入窗口或换了仓库时，自动获取重新计时
         if !sameRepositoryView {
             configureRepositoryView()
+            autoFetch.restart()
         }
 
         showWindow(nil)
@@ -291,8 +294,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         workingCopySplit = nil
         historySplit = nil
 
-        // 管理页显示期间保留仓库会话，但按后台频率轮询。
+        // 管理页显示期间保留仓库会话，但按后台频率轮询；自动获取暂停，回到仓库时重新计时
         session.setActive(false)
+        autoFetch.pause()
 
         // 侧边栏与详情区共用本窗口的仓库管理状态
         let manager = RepositoryManagerController(bookmarks: coordinator.bookmarks, session: session)

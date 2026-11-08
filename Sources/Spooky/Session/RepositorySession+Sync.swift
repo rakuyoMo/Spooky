@@ -5,18 +5,6 @@ import SpookyKit
 
 /// 获取、拉取、推送与合并对话框记住的选项；跳过对话框的快速操作与自动获取沿用它们。
 enum SyncPreferences {
-    /// 获取对话框是否获取全部远端。
-    static var fetchAllRemotes: Bool { bool("fetchAllRemotes", default: true) }
-
-    /// 获取时清理远端已删除的分支。
-    static var fetchPrune: Bool { bool("fetchPrune") }
-
-    /// 获取时另取全部标签。
-    static var fetchAllTags: Bool { bool("fetchAllTags") }
-
-    /// 获取时同时获取子模块。
-    static var fetchSubmodules: Bool { bool("fetchSubmodules") }
-
     /// 拉取以变基代替合并。
     static var pullRebase: Bool { bool("pullUseRebase") }
 
@@ -47,9 +35,26 @@ enum SyncPreferences {
         return options
     }
 
+    /// 获取对话框是否获取全部远端；没有保存值时不勾。
+    static func fetchAllRemotes(in defaults: UserDefaults = .standard) -> Bool {
+        bool("fetchAllRemotes", in: defaults)
+    }
+
+    /// 跳过对话框的获取（快速获取、自动获取与 Fetch All）的选项：清理与递归子模块读获取对话框保存的偏好，
+    /// 清理没有保存值时勾选；全部标签只作用于在对话框里发起的获取。
+    ///
+    /// - Parameter defaults: 读取的偏好，测试使用独立的域。
+    static func fetchOptions(in defaults: UserDefaults = .standard) -> (prune: Bool, submodules: Bool) {
+        (bool("fetchPrune", default: true, in: defaults), bool("fetchSubmodules", in: defaults))
+    }
+
     /// 读取布尔偏好；没写过时取对话框里的默认值。
-    private static func bool(_ key: String, default value: Bool = false) -> Bool {
-        UserDefaults.standard.object(forKey: key) as? Bool ?? value
+    private static func bool(
+        _ key: String,
+        default value: Bool = false,
+        in defaults: UserDefaults = .standard
+    ) -> Bool {
+        defaults.object(forKey: key) as? Bool ?? value
     }
 }
 
@@ -123,15 +128,15 @@ final class SyncProgress {
 // MARK: - Sync & Quick Actions
 
 extension RepositorySession {
-    /// Sync 与快速同步需要可同步的当前分支与远端分支，规则与拉取相同。
-    var canSync: Bool { canPull }
+    /// Sync HEAD 对话框的入口只要可同步的当前分支；没有远端或远端分支时也能打开，由对话框禁止提交。
+    var canSync: Bool { canWrite && hasCurrentBranch }
 
     /// 变基当前分支需要可同步的当前分支与其它分支，规则与合并相同。
     var canRebase: Bool { canMerge }
 
-    /// 把任意版本推到远端引用：需要远端，且仓库至少有一个提交。
+    /// 把任意版本推到远端引用的对话框入口：仓库至少有一个提交；没有远端时也能打开，由对话框禁止提交。
     var canPushRevision: Bool {
-        canFetch && status?.branch.oid != nil
+        canWrite && status?.branch.oid != nil
     }
 
     /// HEAD 所在的本地分支；分离或未出生时为 nil。
@@ -141,36 +146,6 @@ extension RepositorySession {
         }
 
         return history.branches.first { $0.id == "refs/heads/" + head }
-    }
-
-    /// 自动获取：获取全部远端（跳过设了 skipFetchAll 的），不询问凭据，失败只记进 Activity。
-    ///
-    /// - Returns: 是否已开始执行。
-    @discardableResult
-    func autoFetch() -> Bool {
-        let prune = SyncPreferences.fetchPrune
-        let tags = SyncPreferences.fetchAllTags
-        let submodules = SyncPreferences.fetchSubmodules
-
-        return performGit(
-            { runner, output in
-                // 后台获取不能弹出输入框，只用已存的凭据
-                try await RemoteCallbackRequest.$allowsInteraction.withValue(false) {
-                    _ = try await RepositorySync(runner: runner)
-                        .fetch(
-                            prune: prune,
-                            allTags: tags,
-                            submodules: submodules,
-                            onRemote: ActivityRecording.fetching,
-                            onOutput: output
-                        )
-                }
-            },
-            title: AppLocalization.text("sync.autoFetch"),
-            target: .fetch(nil),
-            reportsFailure: false,
-            undo: .unrecorded
-        )
     }
 
     /// 同步当前分支与所选远端分支：依次获取、拉取、推送，Activity 的状态随步骤变化，失败时说明停在哪一步。
@@ -199,30 +174,6 @@ extension RepositorySession {
             target: .pull(remote, refspec: branch),
             offersAutoStash: true,
             failureNote: { progress.failureNote }
-        )
-    }
-
-    /// 快速获取：远端取自参数；未指定时按获取对话框的选择获取全部远端，或 HEAD 跟踪的远端。
-    func quickFetch(remote: String? = nil) {
-        let target = remote ?? (SyncPreferences.fetchAllRemotes ? nil : headBranch?.upstreamRemote)
-        let prune = SyncPreferences.fetchPrune
-        let tags = SyncPreferences.fetchAllTags
-        let submodules = SyncPreferences.fetchSubmodules
-
-        performGit(
-            { runner, output in
-                _ = try await RepositorySync(runner: runner)
-                    .fetch(
-                        remote: target,
-                        prune: prune,
-                        allTags: tags,
-                        submodules: submodules,
-                        onRemote: ActivityRecording.fetching,
-                        onOutput: output
-                    )
-            },
-            title: AppLocalization.text("sync.quickFetch"),
-            target: .fetch(target)
         )
     }
 

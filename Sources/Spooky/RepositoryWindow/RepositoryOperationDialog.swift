@@ -1,100 +1,6 @@
 import SpookyKit
 import SwiftUI
 
-// MARK: - RepositoryActionRequest
-
-/// 同一个 Git 动作的菜单、工具栏、右键和拖放共享参数入口。
-struct RepositoryActionRequest {
-    /// 这个入口支持的操作种类；原始值是 Activity 记录与拖放提示的标题的资源键，加上 `.help` 是对话框说明的资源键。
-    enum Kind: String {
-        /// 新建本地分支。
-        case create = "branch.create"
-
-        /// 新建跟踪远端的本地分支。
-        case track = "branch.track"
-
-        /// 获取一个或全部远端。
-        case fetch = "sync.fetch"
-
-        /// 显式合并或变基拉取。
-        case pull = "sync.pull"
-
-        /// 推送本地分支。
-        case push = "sync.push"
-
-        /// 首次发布分支。
-        case publish = "sync.publish"
-
-        /// 合并到当前分支。
-        case merge = "sync.merge"
-
-        /// Activity 记录的传输方向：要连接远端的获取、拉取、推送与发布有方向，记在 Remote 页；其余为 nil，记在 Repository 页。
-        var transfer: ActivityTransfer? {
-            switch self {
-            case .fetch: .fetch
-            case .pull: .pull
-            case .push, .publish: .push
-            case .create, .track, .merge: nil
-            }
-        }
-
-        /// 对话框标题的资源键：新建分支是 Create New Branch，推送按本地分支是不是 HEAD 分支写 Push HEAD 或 Push Branch。
-        ///
-        /// - Parameter pushesHead: 推送的本地分支是不是 HEAD 分支；其余种类不看它。
-        func titleKey(pushesHead: Bool) -> String {
-            switch self {
-            case .create: "branch.create.title"
-            case .push: pushesHead ? "sync.pushHead" : "sync.pushBranch"
-            case .track, .fetch, .pull, .publish, .merge: rawValue
-            }
-        }
-
-        /// 主按钮的资源键：跟踪远端分支是 Create，推送与标题相同。
-        ///
-        /// - Parameter pushesHead: 推送的本地分支是不是 HEAD 分支；其余种类不看它。
-        func submitKey(pushesHead: Bool) -> String {
-            switch self {
-            case .track: "branch.track.submit"
-            case .push: titleKey(pushesHead: pushesHead)
-            case .create, .fetch, .pull, .publish, .merge: rawValue
-            }
-        }
-    }
-
-    /// 对话框类型。
-    let kind: Kind
-
-    /// 已选的起点或目标引用。
-    var reference: String? = nil
-
-    /// 拖放或远端右键指定的远端。
-    var remote: String? = nil
-
-    /// 推送拖放指定的本地源分支。
-    var localBranch: String? = nil
-
-    /// 清理右键预设的选项。
-    var prune = false
-
-    /// 实际打开的请求：推送 HEAD 分支、没有指定目标远端分支而 HEAD 还没有上游时，改为发布这个分支；其它请求原样返回。
-    ///
-    /// - Parameter head: 当前分支的状态；读不到状态时为 nil。
-    func resolved(for head: BranchStatus?) -> Self {
-        guard
-            kind == .push,
-            reference == nil,
-            let head,
-            let name = head.head,
-            (localBranch ?? name) == name,
-            head.upstream == nil
-        else {
-            return self
-        }
-
-        return Self(kind: .publish, remote: remote, localBranch: localBranch)
-    }
-}
-
 // MARK: - RepositoryOperationDialog
 
 /// 参数 sheet 提交后立即关闭，Git 的进度与失败由仓库窗口承接。
@@ -170,21 +76,29 @@ struct RepositoryOperationDialog: View {
     @State
     private var skipHooks = false
 
-    /// 新建后检出偏好跨仓库保存。
+    /// 新建分支后是否检出，跨仓库保存；没有保存值时不勾。
     @AppStorage("checkoutCreatedBranch")
-    private var checkout = true
+    private var checkout = false
+
+    /// 跟踪远端分支后是否检出：每次打开默认勾选，不记忆，与新建分支的检出偏好分开。
+    @State
+    private var trackCheckout = true
 
     /// 输入时规范化名称的开关。
     @AppStorage("cleanRefNames")
     private var cleanNames = true
 
-    /// 获取全部远端的默认选择。
+    /// 获取全部远端，跨仓库保存；没有保存值时不勾，入口预选的远端不改变它。
     @AppStorage("fetchAllRemotes")
-    private var allRemotes = true
+    private var allRemotes = false
 
-    /// 清理远端引用的默认选择。
+    /// 清理远端引用的偏好，跨仓库保存；没有保存值时勾选。
     @AppStorage("fetchPrune")
-    private var prune = false
+    private var savedPrune = true
+
+    /// 本次获取是否清理：打开时取保存的偏好，Prune 入口打开时勾选；只有用户切换勾选框时写回偏好。
+    @State
+    private var prune = true
 
     /// 获取全部标签是 Fetch 的附带选项。
     @AppStorage("fetchAllTags")
@@ -231,10 +145,10 @@ struct RepositoryOperationDialog: View {
         RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(request.kind.titleKey(pushesHead: pushesHead)),
-            message: AppLocalization.text(request.kind.rawValue + ".help"),
+            message: message,
             width: request.kind == .push ? 450 : 480,
             submitTitle: AppLocalization.text(request.kind.submitKey(pushesHead: pushesHead)),
-            error: error,
+            error: Self.emptyState(for: request, in: session) ?? error,
             isValid: canSubmit,
             cancel: cancel,
             submit: perform,
@@ -243,10 +157,14 @@ struct RepositoryOperationDialog: View {
             rows
         }
         .onAppear(perform: prepare)
-        .onChange(of: name) {
-            if cleanNames {
-                name = RepositoryReferences.normalizedName(name)
+        .onChange(of: destinationIDs) { _, candidates in
+            // Destination 所选的远端分支不在候选里了，按同一顺序重新预选
+            if usesDestination, !candidates.contains(source) {
+                source = Self.destinationPreselection(preselection: request.reference, in: session)
             }
+        }
+        .onChange(of: name) {
+            name = Self.normalizedName(name, for: request.kind, cleaning: cleanNames)
         }
         .onChange(of: source) {
             if request.kind == .track {
@@ -282,7 +200,29 @@ struct RepositoryOperationDialog: View {
     /// 推送的本地分支是不是 HEAD 分支，决定推送对话框的标题与主按钮。
     private var pushesHead: Bool { localBranch == session.status?.branch.head }
 
+    /// 推送 HEAD 分支时只有一个 Destination，见 ``usesDestination(_:in:)``。
+    private var usesDestination: Bool { Self.usesDestination(request, in: session) }
+
+    /// Push HEAD 的 Destination 候选的完整引用名，其余表单为空，供候选变化时重新预选。
+    private var destinationIDs: [String] {
+        usesDestination ? Self.pushDestinations(in: session).map(\.id) : []
+    }
+
+    /// 标题下的说明：Push HEAD 写出 HEAD 分支名，其余按动作取。
+    private var message: String {
+        usesDestination
+            ? AppLocalization.text("sync.pushHead.help", localBranch)
+            : AppLocalization.text(request.kind.rawValue + ".help")
+    }
+
+    /// 已配置的远端里有表单所选的远端。
+    private var hasSelectedRemote: Bool {
+        session.history.snapshot?.remotes.contains { $0.name == remote } ?? false
+    }
+
     /// 表单校验在客户端及时反馈，执行时核心库仍重新核对；仓库是否可写由骨架判断。
+    ///
+    /// 所选的远端、来源或目标在对话框打开后被移除时不可提交。
     private var canSubmit: Bool {
         switch request.kind {
         case .create:
@@ -292,13 +232,18 @@ struct RepositoryOperationDialog: View {
             validName && branches.contains { $0.id == source && $0.isRemote }
 
         case .fetch:
-            !(session.history.snapshot?.remotes.isEmpty ?? true) && (allRemotes || !remote.isEmpty)
+            !(session.history.snapshot?.remotes.isEmpty ?? true) && (allRemotes || hasSelectedRemote)
 
         case .pull, .merge:
-            !source.isEmpty && session.status?.branch.head != nil && session.context?.operation == nil
+            Self.sourceCandidates(for: request.kind, in: session).contains { $0.id == source }
+                && session.status?.branch.head != nil
+                && session.context?.operation == nil
+
+        case .push where usesDestination:
+            !localBranch.isEmpty && Self.destinationTarget(source, in: session) != nil
 
         case .push, .publish:
-            validName && !remote.isEmpty && !localBranch.isEmpty
+            validName && hasSelectedRemote && branches.contains { $0.isLocal && $0.name == localBranch }
         }
     }
 }
@@ -403,11 +348,15 @@ extension RepositoryOperationDialog {
     /// 跟踪远端分支：远端分支、本地名称与新建后检出的选项。
     @ViewBuilder
     private var trackRows: some View {
-        branchPicker(local: false, label: "branch.remoteField")
+        referencePicker(branches.filter(\.isRemote), label: "branch.remoteField")
 
         nameRow
 
-        option("branch.checkoutCreated", value: $checkout)
+        option(
+            "branch.checkoutCreated",
+            title: AppLocalization.text("branch.track.checkout"),
+            value: $trackCheckout
+        )
     }
 
     /// 获取：选择单个远端，或改为获取全部远端。
@@ -421,17 +370,17 @@ extension RepositoryOperationDialog {
     /// 拉取：远端分支、是否以变基方式拉取，以及合并可行性预览。
     @ViewBuilder
     private var pullRows: some View {
-        branchPicker(local: false)
+        referencePicker(Self.sourceCandidates(for: .pull, in: session), label: "sync.remoteBranch")
 
         option("sync.rebase", value: $rebase)
 
         MergeabilityPreview(session: session, revision: source)
     }
 
-    /// 合并：目标分支，压缩、合并提交与自动提交的选项，以及合并可行性预览。
+    /// 合并：目标（分支或标签），压缩、合并提交与自动提交的选项，以及只在有冲突时显示的合并可行性预览。
     @ViewBuilder
     private var mergeRows: some View {
-        branchPicker(local: nil)
+        referencePicker(Self.sourceCandidates(for: .merge, in: session), label: "branch.target")
 
         option("merge.squash", value: $squash)
             .disabled(alwaysCommit)
@@ -449,12 +398,23 @@ extension RepositoryOperationDialog {
         )
         .disabled(!alwaysCommit || squash)
 
-        MergeabilityPreview(session: session, revision: source)
+        MergeabilityPreview(session: session, revision: source, showsCleanResults: false)
     }
 
-    /// 推送与发布：本地分支、远端与远端分支名；只有发布有跟踪远端分支的选项。
+    /// 推送与发布：Push HEAD 只有 Destination 一行；Push Branch 与发布是本地分支、远端与远端分支名，
+    /// 只有发布有跟踪新远端分支的选项。
     @ViewBuilder
     private var pushRows: some View {
+        if usesDestination {
+            referencePicker(Self.pushDestinations(in: session), label: "sync.destination")
+        } else {
+            branchPushRows
+        }
+    }
+
+    /// Push Branch 与发布的本地分支、远端与远端分支名三行，以及发布的跟踪选项。
+    @ViewBuilder
+    private var branchPushRows: some View {
         RepositoryDialogRows.row(AppLocalization.text("branch.local")) {
             Picker("", selection: $localBranch) {
                 ForEach(branches.filter(\.isLocal)) { Text($0.name).tag($0.name) }
@@ -473,9 +433,11 @@ extension RepositoryOperationDialog {
         }
     }
 
-    /// 名称字段在创建和发布时采用相同的实时规范化。
+    /// 名称字段：新建与跟踪是新本地分支的名称，推送与发布是远端分支名；输入时的规范化见 ``normalizedName(_:for:cleaning:)``。
     private var nameRow: some View {
-        RepositoryDialogRows.row(AppLocalization.text("branch.name")) {
+        let label = [.create, .track].contains(request.kind) ? "reference.name" : "branch.name"
+
+        return RepositoryDialogRows.row(AppLocalization.text(label)) {
             TextField("", text: $name)
                 .accessibilityIdentifier("branch-name")
                 .dialogFieldWidth(fieldWidth)
@@ -503,7 +465,15 @@ extension RepositoryOperationDialog {
             parentRows
 
         case .fetch:
-            option("sync.prune", value: $prune)
+            option(
+                "sync.prune",
+                value: Binding {
+                    prune
+                } set: {
+                    prune = $0
+                    savedPrune = $0
+                }
+            )
 
             option("sync.fetchSubmodules", value: $fetchSubmodules)
 
@@ -537,15 +507,15 @@ extension RepositoryOperationDialog {
         }
     }
 
-    /// 合并可选两类分支；拉取和跟踪只选远端。
+    /// 选择来源的下拉，列出引用的短名。
     ///
-    /// - Parameter label: 标签的文案键；跟踪远端分支写明是远端分支。
-    private func branchPicker(local: Bool?, label: String = "branch.target") -> some View {
+    /// - Parameters:
+    ///   - references: 可选的引用。
+    ///   - label: 标签的文案键。
+    private func referencePicker(_ references: [RepositoryReference], label: String) -> some View {
         RepositoryDialogRows.row(AppLocalization.text(label)) {
             Picker("", selection: $source) {
-                ForEach(branches.filter { local == nil || $0.isLocal == local }) {
-                    Text($0.name).tag($0.id)
-                }
+                ForEach(references) { Text($0.name).tag($0.id) }
             }
             .labelsHidden()
             .buttonSizing(.flexible)
@@ -592,21 +562,18 @@ extension RepositoryOperationDialog {
             parent = startBranch?.id ?? ""
 
         case .track:
-            source = request.reference ?? branches.first(where: \.isRemote)?.id ?? ""
+            source = Self.trackSource(preselection: request.reference, in: session)
             name = remoteBranchName(source)
 
         case .fetch:
-            if request.remote != nil { allRemotes = false }
-            if request.prune { prune = true }
+            // 入口预选的远端与 Prune 意图只作用于本次打开，不写回偏好
+            prune = request.prune || savedPrune
 
         case .merge, .pull:
-            let tracked = branches.first {
-                $0.id == head?.upstream && (request.kind == .merge || $0.isRemote)
-            }
-            source =
-                request.reference ?? tracked?.id
-                    ?? branches.first(where: { $0.id != head?.id && (request.kind == .merge || $0.isRemote) })?.id
-                    ?? ""
+            source = Self.sourcePreselection(for: request.kind, preselection: request.reference, in: session)
+
+        case .push where usesDestination:
+            source = Self.destinationPreselection(preselection: request.reference, in: session)
 
         case .push, .publish:
             let selected = branches.first { $0.isLocal && $0.name == localBranch }
@@ -622,50 +589,89 @@ extension RepositoryOperationDialog {
                     ?? localBranch
             }
         }
-
-        if
-            [.fetch, .pull, .push, .publish, .track].contains(request.kind),
-            session.history.snapshot?.remotes.isEmpty != false
-        {
-            error = AppLocalization.text("sync.noRemotes")
-        }
     }
 
-    /// 同名本地分支不能覆盖；名称校验异步去抖，保留 Git 原始错误。
+    /// 名称校验在输入停顿后进行，结果与说明见 ``nameValidation(_:for:remote:in:)``；输入变化后旧的结果作废。
     private func validateName() async {
         validName = false
-        guard
-            [.create, .track, .push, .publish].contains(request.kind), !name.isEmpty,
-            let runner = session.runner
-        else { return }
-        do {
-            try await Task.sleep(for: .milliseconds(150))
-            try await RepositoryReferences(runner: runner).validate(name: name)
-            try Task.checkCancellation()
-            if
-                [.create, .track].contains(request.kind),
-                branches.contains(where: { $0.id == "refs/heads/" + name })
-            {
-                error = AppLocalization.text("branch.exists")
+
+        // Push HEAD 从已有的远端分支里选目标，没有名称框
+        guard [.create, .track, .push, .publish].contains(request.kind), !usesDestination else {
+            return
+        }
+
+        // 空名称不必等输入停顿，立即禁用主按钮并清掉旧的说明
+        if !name.isEmpty {
+            do {
+                try await Task.sleep(for: .milliseconds(150))
+            } catch {
                 return
             }
-            if
-                request.kind == .publish,
-                branches.contains(where: { $0.id == "refs/remotes/" + remote + "/" + name })
-            {
-                error = AppLocalization.text("branch.exists")
+        }
+
+        let result = await Self.nameValidation(name, for: request.kind, remote: remote, in: session)
+
+        guard !Task.isCancelled else {
+            return
+        }
+
+        validName = result.isValid
+        error = result.error
+    }
+
+    /// 新建与跟踪分支的写入，捕获当前表单值：新建分支勾选检出时先建分支再检出，检出被拒绝时分支保留；
+    /// 其余用一条命令建好，跟踪远端分支总是跟踪所选分支，并按它自己的勾选检出。
+    ///
+    /// - Parameter revision: 新分支的起点。
+    private func branchCreation(startingAt revision: String) -> @Sendable (GitRunner) async throws -> Void {
+        let name = name
+        let creating = request.kind == .create
+        let track = !creating || track
+        let pinned = creating && pin
+        let parent = creating && !parent.isEmpty ? parent : nil
+        let checksOutAfterwards = creating && checkout
+        let checkout = !creating && trackCheckout
+
+        return { runner in
+            let references = RepositoryReferences(runner: runner)
+
+            // 分两步时检出失败的说明写明已创建、未检出
+            if checksOutAfterwards {
+                try await references.createThenCheckOut(
+                    name: name,
+                    startingAt: revision,
+                    track: track,
+                    pinned: pinned,
+                    parent: parent
+                )
+
                 return
             }
-            validName = true
-            error = ""
-        } catch {
-            if !Task.isCancelled {
-                self.error = AppFailure(error: error, opening: false, location: session.repository).details
-            }
+
+            try await references.create(
+                name: name,
+                startingAt: revision,
+                track: track,
+                checkout: checkout,
+                pinned: pinned,
+                parent: parent
+            )
         }
     }
 
-    /// 推送的选项与强推期望值：发布只带跳过钩子；推送时强推以表单所见的远端跟踪分支为期望值，没有跟踪分支时要求远端分支不存在。
+    /// 推送与发布的目标远端、远端上的分支名与强推的期望值：Push HEAD 取 Destination 所选的远端分支；
+    /// 其余取表单的远端与名称，期望值是表单所见的远端跟踪分支，没有跟踪分支时要求远端分支不存在。
+    private func pushTarget() -> (remote: String, branch: String, lease: String) {
+        if usesDestination {
+            return Self.destinationTarget(source, in: session) ?? ("", "", "")
+        }
+
+        let tracking = branches.first { $0.id == "refs/remotes/" + remote + "/" + name }
+
+        return (remote, name, tracking?.objectID ?? "")
+    }
+
+    /// 推送的选项与强推期望值：发布只带跳过钩子；推送时强推的期望值见 ``pushTarget()``。
     private func pushConfiguration() -> (options: PushOptions, lease: String?) {
         var options = PushOptions()
         options.skipHooks = skipHooks
@@ -680,8 +686,7 @@ extension RepositoryOperationDialog {
             options.submodules = SubmodulePushMode(rawValue: pushSubmoduleMode) ?? .onDemand
         }
 
-        let tracking = branches.first { $0.id == "refs/remotes/" + remote + "/" + name }
-        return (options, forcePush ? tracking?.objectID ?? "" : nil)
+        return (options, forcePush ? pushTarget().lease : nil)
     }
 
     /// 合并的选项：压缩、总是新建合并提交、随即提交、签名校验与跳过钩子都照表单。
@@ -702,7 +707,9 @@ extension RepositoryOperationDialog {
     ///   - pullRemote: 拉取来源所属的远端。
     ///   - pullBranch: 拉取来源在远端上的完整分支引用名。
     private func activityTarget(pullRemote: String?, pullBranch: String?) -> ActivityTarget? {
-        request.kind.transfer.map { transfer in
+        let push = pushTarget()
+
+        return request.kind.transfer.map { transfer in
             switch transfer {
             case .fetch:
                 ActivityTarget(transfer: transfer, remote: allRemotes ? nil : remote, refspec: nil)
@@ -713,8 +720,8 @@ extension RepositoryOperationDialog {
             case .push:
                 ActivityTarget(
                     transfer: transfer,
-                    remote: remote,
-                    refspec: "refs/heads/" + localBranch + ":refs/heads/" + name
+                    remote: push.remote,
+                    refspec: "refs/heads/" + localBranch + ":refs/heads/" + push.branch
                 )
             }
         }
@@ -740,21 +747,18 @@ extension RepositoryOperationDialog {
 
     /// 捕获表单值后关闭 sheet，再运行核心库动作。
     private func perform() {
-        let name = name
+        let destination = pushTarget()
 
         // 不与属性 source 同名：闭包里引用同名属性会让 Swift 6.3 的类型推断失败
         let revision = session.revision(for: source)
-        let pinned = request.kind == .create && pin
-        let parentBranch = request.kind == .create && !parent.isEmpty ? parent : nil
         let remote = remote
         let localBranch = localBranch
-        let checkout = checkout
-        let track = track
         let upstream = upstream
         let allRemotes = allRemotes
         let prune = prune
         let allTags = allTags
         let submodules = fetchSubmodules
+        let fetching = session.fetchingRemote()
         let rebase = rebase
         let verify = pullVerify
         let skipHooks = skipHooks
@@ -764,6 +768,7 @@ extension RepositoryOperationDialog {
         let pullBranch = selected.map { "refs/heads/" + remoteBranchName($0.id) }
         let push = pushConfiguration()
         let merge = session.mergeAction(revision, options: mergeConfiguration())
+        let createBranch = branchCreation(startingAt: revision)
 
         /// 按动作种类调用核心库，只读取上面复制的表单值。
         @Sendable
@@ -773,15 +778,7 @@ extension RepositoryOperationDialog {
         ) async throws {
             switch kind {
             case .create, .track:
-                try await RepositoryReferences(runner: runner)
-                    .create(
-                        name: name,
-                        startingAt: revision,
-                        track: kind == .track || track,
-                        checkout: checkout,
-                        pinned: pinned,
-                        parent: parentBranch
-                    )
+                try await createBranch(runner)
 
             case .fetch:
                 _ = try await RepositorySync(runner: runner)
@@ -790,7 +787,7 @@ extension RepositoryOperationDialog {
                         prune: prune,
                         allTags: allTags,
                         submodules: submodules,
-                        onRemote: ActivityRecording.fetching,
+                        onRemote: fetching,
                         onOutput: output
                     )
 
@@ -809,8 +806,8 @@ extension RepositoryOperationDialog {
                 _ = try await RepositorySync(runner: runner)
                     .push(
                         branch: localBranch,
-                        remote: remote,
-                        destination: name,
+                        remote: destination.remote,
+                        destination: destination.branch,
                         setUpstream: kind == .publish && upstream,
                         options: push.options,
                         lease: push.lease,

@@ -5,7 +5,9 @@ import Foundation
 /// 引用管理在执行写入前发现的问题，以及需要额外说明的 Git 失败。
 public enum ReferenceError: Error, Sendable {
     /// 分支、标签或远端名不合法：为空、以 “-” 开头、含控制字符、含 “@{”，或与 HEAD、完整对象哈希混淆。
-    case invalidName(String)
+    ///
+    /// 分支名的校验另带上不合法的原因，被 Git 拒绝时还带上 `check-ref-format` 的结果；标签与远端名两者都为 nil。
+    case invalidName(String, problem: ReferenceNameProblem? = nil, output: GitCommandResult? = nil)
 
     /// refspec 不符合 Git 的规则。
     case invalidRefspec(String)
@@ -27,6 +29,35 @@ public enum ReferenceError: Error, Sendable {
 
     /// 普通删除时部分分支未完全合并；带上这些分支的完整引用名与 Git 原文，供强制删除。
     case unmergedBranches([String], GitError)
+
+    /// 新分支已经建好，随后的检出被 Git 拒绝；带上新分支的短名与检出的 Git 原文。
+    case createdBranchCheckoutFailed(String, GitError)
+}
+
+// MARK: - ReferenceNameProblem
+
+/// 名称不合法的原因，供界面说明；按 Git 引用名的规则与执行前的检查归类。
+public enum ReferenceNameProblem: Sendable {
+    /// 以 “-” 开头，会被当成命令选项。
+    case leadingHyphen
+
+    /// 含空格、控制字符或 `~ ^ : ? * [ \` 之一。
+    case character
+
+    /// 含 “..”、“//” 或 “@{”。
+    case sequence
+
+    /// 以 “/” 开头或结尾，或以 “.” 结尾。
+    case boundary
+
+    /// 以 “/” 分隔的某一段以 “.” 开头或以 “.lock” 结尾。
+    case component
+
+    /// 是 HEAD 或完整的对象哈希，会与当前分支或提交混淆。
+    case ambiguous
+
+    /// Git 拒绝了名称，但不属于以上几类。
+    case other
 }
 
 // MARK: - Name Validation
@@ -59,6 +90,46 @@ extension RepositoryReferences {
 
         let hex = name.utf8.allSatisfy { (48 ... 57).contains($0) || (97 ... 102).contains($0) }
         return !(hex && [40, 64].contains(name.count))
+    }
+
+    /// 名称不合法的原因：依次看开头的 “-”、字符、字符序列、首尾、每一段，以及是否与 HEAD 或对象哈希混淆；
+    /// 空名称与看不出问题的名称为 nil。
+    ///
+    /// 只用来向用户说明原因，名称能否使用仍由 ``isPlausibleName(_:)`` 与 Git 决定。
+    static func nameProblem(_ name: String) -> ReferenceNameProblem? {
+        guard !name.isEmpty else {
+            return nil
+        }
+
+        if name.hasPrefix("-") {
+            return .leadingHyphen
+        }
+
+        // 32 以下与 127 是控制字符，其余是 Git 保留的空格与符号
+        let reserved = " ~^:?*[\\".unicodeScalars
+
+        let hasReserved = name.unicodeScalars.contains { scalar in
+            scalar.value < 32 || scalar.value == 127 || reserved.contains(scalar)
+        }
+
+        if hasReserved {
+            return .character
+        }
+
+        if ["..", "//", "@{"].contains(where: { name.contains($0) }) {
+            return .sequence
+        }
+
+        if name.hasPrefix("/") || name.hasSuffix("/") || name.hasSuffix(".") {
+            return .boundary
+        }
+
+        if name.split(separator: "/").contains(where: { $0.hasPrefix(".") || $0.hasSuffix(".lock") }) {
+            return .component
+        }
+
+        // 前面几类之外，执行前的检查只剩 HEAD 与完整对象哈希
+        return isPlausibleName(name) ? nil : .ambiguous
     }
 
     /// 标签名按 `refs/tags/<名称>` 的完整引用名交给 Git 校验。
@@ -111,8 +182,8 @@ extension RepositoryReferences {
         }
 
         for side in filled {
-            try await checkFormat(["--allow-onelevel", "--refspec-pattern", side], rejecting: refspec) {
-                ReferenceError.invalidRefspec($0)
+            try await checkFormat(["--allow-onelevel", "--refspec-pattern", side], rejecting: refspec) { value, _ in
+                ReferenceError.invalidRefspec(value)
             }
         }
     }
@@ -120,15 +191,17 @@ extension RepositoryReferences {
     /// 以 `check-ref-format` 校验；Git 判为不合法时换成说明名称的错误，其余失败照常抛出。
     ///
     /// 普通模式以 1 退出，`--branch` 模式以 128 退出，两者都表示名字不合法。
+    ///
+    /// - Parameter error: 由被拒绝的值与 Git 的结果得出要抛出的错误。
     func checkFormat(
         _ arguments: [String],
         rejecting value: String,
-        error: (String) -> ReferenceError = { .invalidName($0) }
+        error: (String, GitCommandResult) -> ReferenceError = { name, _ in .invalidName(name) }
     ) async throws {
         let result = try await runner.execute(["check-ref-format"] + arguments, acceptedExitCodes: [0, 1, 128])
 
         guard result.exitCode == 0 else {
-            throw error(value)
+            throw error(value, result)
         }
     }
 }

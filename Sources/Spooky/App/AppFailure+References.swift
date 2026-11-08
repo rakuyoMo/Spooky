@@ -5,12 +5,20 @@ import SpookyKit
 
 extension AppFailure {
     /// 引用管理失败的文案键、类别、恢复说明、Git 原文与诊断：名字、地址与快进条件属于仓库状态问题，诊断写出涉及的名字。
+    ///
+    /// 分支名带着不合法的原因时，恢复说明换成这条原因；新分支建好、检出失败时说明分支已经建好，原文是检出的 Git 输出。
     static func classification(
         of reference: ReferenceError
     ) -> (key: String, kind: FailureKind, recoveryKey: String, output: GitCommandResult?, diagnostic: String?) {
         switch reference {
-        case .invalidName(let name):
-            ("reference.error.name", .repository, "reference.error.name.help", nil, name)
+        case .invalidName(let name, let problem, let output):
+            (
+                "reference.error.name",
+                .repository,
+                problem?.messageKey ?? "reference.error.name.help",
+                output,
+                name
+            )
 
         case .invalidRefspec(let refspec):
             ("reference.error.refspec", .repository, "reference.error.refspec.help", nil, refspec)
@@ -32,6 +40,32 @@ extension AppFailure {
 
         case .unmergedBranches(_, let error):
             ("branch.error.unmerged", .git, "branch.error.unmerged.help", error.result, error.diagnostic)
+
+        case .createdBranchCheckoutFailed(_, let error):
+            (
+                "branch.error.checkoutCreated",
+                .git,
+                "branch.error.checkoutCreated.help",
+                error.result,
+                error.diagnostic
+            )
+        }
+    }
+}
+
+// MARK: - ReferenceNameProblem
+
+extension ReferenceNameProblem {
+    /// 说明这个原因的文案键，是一整句话。
+    var messageKey: String {
+        switch self {
+        case .leadingHyphen: "reference.name.leadingHyphen"
+        case .character: "reference.name.character"
+        case .sequence: "reference.name.sequence"
+        case .boundary: "reference.name.boundary"
+        case .component: "reference.name.component"
+        case .ambiguous: "reference.name.ambiguous"
+        case .other: "reference.name.other"
         }
     }
 }
