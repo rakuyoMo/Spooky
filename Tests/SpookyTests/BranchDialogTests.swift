@@ -8,7 +8,8 @@ import TestSupport
 
 // MARK: - BranchDialogTests
 
-/// 新建、跟踪、改名与删除分支的对话框：名称框的规范化与校验说明、跟踪远端分支的预选，以及删除分支的说明与选项顺序。
+/// 新建、跟踪、改名与删除分支的对话框：名称框的规范化与校验说明、跟踪远端分支与拉取、合并来源的预选，
+/// 以及删除分支的说明与选项顺序。
 ///
 /// 删除分支的一项经辅助功能接口读本进程的窗口，进程没有辅助功能权限时跳过。
 @MainActor
@@ -66,7 +67,10 @@ struct BranchDialogTests {
 
     /// 跟踪远端分支的预选：入口传入的远端分支优先；没有预选或预选不是远端分支时取 HEAD 的上游；
     /// HEAD 没有上游时取第一个远端分支；没有远端分支时为空。
-    @Test("跟踪远端分支的预选回退")
+    ///
+    /// 合并的候选依次是本地分支（含 HEAD 分支）、远端分支与标签，拉取只有远端分支；两者先预选 HEAD 的上游，
+    /// HEAD 没有上游时取第一个不是 HEAD 分支的候选。
+    @Test("跟踪远端分支与拉取、合并来源的候选和预选回退")
     func trackPreselection() async throws {
         let fixture = try await OperationWiringTests.makeFixture()
         defer { fixture.close() }
@@ -82,11 +86,26 @@ struct BranchDialogTests {
         #expect(source(nil) == "refs/remotes/origin/main")
         #expect(source("refs/heads/side") == "refs/remotes/origin/main")
 
+        // 拉取与合并的候选和预选
+        let candidates = { RepositoryOperationDialog.sourceCandidates(for: $0, in: session).map(\.id) }
+        let preselection = {
+            RepositoryOperationDialog.sourcePreselection(for: $0, preselection: nil, in: session)
+        }
+
+        let remotes = ["refs/remotes/origin/feature", "refs/remotes/origin/main"]
+
+        #expect(candidates(.merge) == ["refs/heads/main", "refs/heads/side"] + remotes + ["refs/tags/v1"])
+        #expect(candidates(.pull) == remotes)
+        #expect(preselection(.merge) == "refs/remotes/origin/main")
+        #expect(preselection(.pull) == "refs/remotes/origin/main")
+
         // HEAD 没有上游
         _ = try await fixture.runner.run(["branch", "--unset-upstream", "main"])
         await Self.reload(session)
 
         #expect(source(nil) == "refs/remotes/origin/feature")
+        #expect(preselection(.merge) == "refs/heads/side")
+        #expect(preselection(.pull) == "refs/remotes/origin/feature")
 
         // 没有远端分支
         let empty = RepositorySession(loadStatus: { _ in throw CancellationError() })

@@ -448,7 +448,8 @@
 "merge.checking" = "Comprobando el estado de la fusión…";
 "merge.clean" = "Sin conflictos al fusionar";
 "merge.unchanged" = "No hay cambios que fusionar";
-"merge.conflicts" = "Se han detectado conflictos de fusión en %d archivos";
+"merge.conflicts" = "La rama seleccionada tiene conflictos con la rama HEAD “%1$@” en %2$ld archivos.";
+"merge.conflicts.one" = "La rama seleccionada tiene conflictos con la rama HEAD “%@” en 1 archivo.";
 "merge.unavailable" = "No se ha podido previsualizar esta fusión";
 "activity.title" = "Actividad";
 "activity.clear" = "Borrar todo";

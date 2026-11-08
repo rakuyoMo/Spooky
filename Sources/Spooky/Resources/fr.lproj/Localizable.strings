@@ -448,7 +448,8 @@
 "merge.checking" = "Vérification de l’état de la fusion…";
 "merge.clean" = "Aucun conflit lors de la fusion";
 "merge.unchanged" = "Aucune modification à fusionner";
-"merge.conflicts" = "Conflits de fusion détectés dans %d fichiers";
+"merge.conflicts" = "La branche sélectionnée est en conflit avec la branche HEAD « %1$@ » dans %2$ld fichiers.";
+"merge.conflicts.one" = "La branche sélectionnée est en conflit avec la branche HEAD « %@ » dans 1 fichier.";
 "merge.unavailable" = "Impossible de prévisualiser cette fusion";
 "activity.title" = "Activité";
 "activity.clear" = "Tout effacer";

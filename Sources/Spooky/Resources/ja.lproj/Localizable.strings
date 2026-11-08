@@ -448,7 +448,8 @@
 "merge.checking" = "マージ状態を確認中…";
 "merge.clean" = "マージの競合はありません";
 "merge.unchanged" = "マージする変更はありません";
-"merge.conflicts" = "%d 個のファイルに競合があります";
+"merge.conflicts" = "選択したブランチは HEAD ブランチ「%1$@」と %2$ld 個のファイルで競合します。";
+"merge.conflicts.one" = "選択したブランチは HEAD ブランチ「%@」と 1 個のファイルで競合します。";
 "merge.unavailable" = "マージをプレビューできません";
 "activity.title" = "アクティビティ";
 "activity.clear" = "すべて消去";

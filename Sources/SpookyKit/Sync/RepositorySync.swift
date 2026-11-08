@@ -4,7 +4,7 @@ import Foundation
 
 /// 发起同步前的仓库条件错误，不伪造 Git 输出。
 public enum RepositorySyncError: Error, Sendable, Equatable {
-    /// 合并、变基、拉取与同步必须从干净工作区开始。
+    /// 合并、变基、拉取与同步必须从干净工作区开始；合并与拉取只看已跟踪的文件，未跟踪的文件不算。
     ///
     /// - Parameter rebase: 被挡住的是变基（包括用变基的拉取与同步），否则是合并。
     case dirtyWorkingCopy(rebase: Bool)
@@ -256,6 +256,8 @@ public struct RepositorySync: Sendable {
     }
 
     /// 获取选定分支后显式执行 merge 或 rebase，两个阶段共用同一写锁。
+    ///
+    /// 已跟踪的文件有改动或冲突时不开始；只有未跟踪的文件时照常执行，会覆盖同名未跟踪文件时由 Git 拒绝。
     public func pull(
         remote: String? = nil,
         branch: String? = nil,
@@ -271,7 +273,7 @@ public struct RepositorySync: Sendable {
                 throw RepositorySyncError.requiresBranch
             }
 
-            guard status.entries.isEmpty else {
+            guard !Self.hasTrackedChanges(status) else {
                 throw RepositorySyncError.dirtyWorkingCopy(rebase: rebase)
             }
 
@@ -369,13 +371,13 @@ public struct RepositorySync: Sendable {
 
     /// 执行合并；冲突与其它失败一样抛出 Git 的错误，须在写事务中调用。
     ///
-    /// 合并前再次读取工作区，避免对话框打开期间新增的改动被覆盖。
+    /// 合并前再次读取工作区，避免对话框打开期间新增的改动被覆盖；未跟踪的文件不挡住合并，会被覆盖时由 Git 拒绝。
     func performMerge(
         _ revision: String,
         options: MergeOptions,
         onOutput: (@Sendable (GitOutputEvent) -> Void)?
     ) async throws {
-        guard try await runner.status().entries.isEmpty else {
+        guard try await !Self.hasTrackedChanges(runner.status()) else {
             throw RepositorySyncError.dirtyWorkingCopy(rebase: false)
         }
 
@@ -435,6 +437,11 @@ extension RepositorySync {
         }
 
         return skipped
+    }
+
+    /// 已跟踪的文件有没有暂存、未暂存的改动或冲突；未跟踪与忽略的文件不算。
+    private static func hasTrackedChanges(_ status: WorkingCopyStatus) -> Bool {
+        status.entries.contains { $0.kind == .tracked || $0.kind == .conflicted }
     }
 
     /// 把当前分支变基到指定提交上；关掉自动储藏与编辑器，钩子按选择运行。

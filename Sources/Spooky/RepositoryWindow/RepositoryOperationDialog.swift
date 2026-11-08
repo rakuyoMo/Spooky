@@ -323,7 +323,7 @@ extension RepositoryOperationDialog {
     /// 跟踪远端分支：远端分支、本地名称与新建后检出的选项。
     @ViewBuilder
     private var trackRows: some View {
-        branchPicker(local: false, label: "branch.remoteField")
+        referencePicker(branches.filter(\.isRemote), label: "branch.remoteField")
 
         nameRow
 
@@ -345,17 +345,17 @@ extension RepositoryOperationDialog {
     /// 拉取：远端分支、是否以变基方式拉取，以及合并可行性预览。
     @ViewBuilder
     private var pullRows: some View {
-        branchPicker(local: false)
+        referencePicker(Self.sourceCandidates(for: .pull, in: session), label: "sync.remoteBranch")
 
         option("sync.rebase", value: $rebase)
 
         MergeabilityPreview(session: session, revision: source)
     }
 
-    /// 合并：目标分支，压缩、合并提交与自动提交的选项，以及合并可行性预览。
+    /// 合并：目标（分支或标签），压缩、合并提交与自动提交的选项，以及只在有冲突时显示的合并可行性预览。
     @ViewBuilder
     private var mergeRows: some View {
-        branchPicker(local: nil)
+        referencePicker(Self.sourceCandidates(for: .merge, in: session), label: "branch.target")
 
         option("merge.squash", value: $squash)
             .disabled(alwaysCommit)
@@ -373,7 +373,7 @@ extension RepositoryOperationDialog {
         )
         .disabled(!alwaysCommit || squash)
 
-        MergeabilityPreview(session: session, revision: source)
+        MergeabilityPreview(session: session, revision: source, showsCleanResults: false)
     }
 
     /// 推送与发布：本地分支、远端与远端分支名；只有发布有跟踪远端分支的选项。
@@ -463,15 +463,15 @@ extension RepositoryOperationDialog {
         }
     }
 
-    /// 合并可选两类分支；拉取和跟踪只选远端。
+    /// 选择来源的下拉，列出引用的短名。
     ///
-    /// - Parameter label: 标签的文案键；跟踪远端分支写明是远端分支。
-    private func branchPicker(local: Bool?, label: String = "branch.target") -> some View {
+    /// - Parameters:
+    ///   - references: 可选的引用。
+    ///   - label: 标签的文案键。
+    private func referencePicker(_ references: [RepositoryReference], label: String) -> some View {
         RepositoryDialogRows.row(AppLocalization.text(label)) {
             Picker("", selection: $source) {
-                ForEach(branches.filter { local == nil || $0.isLocal == local }) {
-                    Text($0.name).tag($0.id)
-                }
+                ForEach(references) { Text($0.name).tag($0.id) }
             }
             .labelsHidden()
             .buttonSizing(.flexible)
@@ -526,13 +526,7 @@ extension RepositoryOperationDialog {
             if request.prune { prune = true }
 
         case .merge, .pull:
-            let tracked = branches.first {
-                $0.id == head?.upstream && (request.kind == .merge || $0.isRemote)
-            }
-            source =
-                request.reference ?? tracked?.id
-                    ?? branches.first(where: { $0.id != head?.id && (request.kind == .merge || $0.isRemote) })?.id
-                    ?? ""
+            source = Self.sourcePreselection(for: request.kind, preselection: request.reference, in: session)
 
         case .push, .publish:
             let selected = branches.first { $0.isLocal && $0.name == localBranch }

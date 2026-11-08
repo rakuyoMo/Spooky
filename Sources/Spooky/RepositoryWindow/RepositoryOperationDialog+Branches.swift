@@ -79,6 +79,39 @@ extension RepositoryOperationDialog {
             ?? remotes.first?.id
             ?? ""
     }
+
+    /// 拉取与合并的来源候选：合并依次是本地分支（含 HEAD 分支）、远端分支与标签，拉取只有远端分支。
+    ///
+    /// - Parameters:
+    ///   - kind: 拉取或合并。
+    ///   - session: 对话框所属的窗口会话。
+    static func sourceCandidates(
+        for kind: RepositoryActionRequest.Kind,
+        in session: RepositorySession
+    ) -> [RepositoryReference] {
+        kind == .merge ? session.revisionReferences : session.history.branches.filter(\.isRemote)
+    }
+
+    /// 拉取与合并的预选：入口指定的引用，否则是 HEAD 的上游（在候选里时），再否则是第一个不是 HEAD 分支的候选。
+    ///
+    /// - Parameters:
+    ///   - kind: 拉取或合并。
+    ///   - preselection: 入口指定的完整引用名。
+    ///   - session: 对话框所属的窗口会话。
+    /// - Returns: 完整引用名；没有可选的候选时为空字符串。
+    static func sourcePreselection(
+        for kind: RepositoryActionRequest.Kind,
+        preselection: String?,
+        in session: RepositorySession
+    ) -> String {
+        let candidates = sourceCandidates(for: kind, in: session)
+        let head = session.headBranch
+
+        return preselection
+            ?? candidates.first { $0.id == head?.upstream }?.id
+            ?? candidates.first { $0.id != head?.id }?.id
+            ?? ""
+    }
 }
 
 // MARK: - Private

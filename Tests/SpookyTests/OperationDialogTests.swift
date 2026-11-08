@@ -37,6 +37,28 @@ struct OperationDialogTests {
         #expect(DialogLayoutTests.hosting(sync).frame.width == 480)
     }
 
+    /// 合并只在有冲突时有说明：干净、快进、已并入与 HEAD 自身都没有说明，无法检查时仍有；
+    /// 拉取等对话框也说明已确认没有冲突的结果；冲突说明按单复数写出文件数与 HEAD 分支。
+    @Test("合并预览的说明")
+    func mergePreviewMessages() {
+        let message = { MergeabilityPreview.message(for: $0, showsCleanResults: $1, head: "main") }
+
+        #expect(message(.clean, false) == nil)
+        #expect(message(.unchanged, false) == nil)
+        #expect(message(.unavailable("unknown option"), false) == AppLocalization.text("merge.unavailable"))
+        #expect(message(.clean, true) == AppLocalization.text("merge.clean"))
+        #expect(message(.unchanged, true) == AppLocalization.text("merge.unchanged"))
+
+        // 冲突说明在两种对话框里相同
+        for showsClean in [false, true] {
+            let one = message(.conflicts(["a"]), showsClean)
+            let many = message(.conflicts(["a", "b"]), showsClean)
+
+            #expect(one == AppLocalization.text("merge.conflicts.one", "main"))
+            #expect(many == AppLocalization.text("merge.conflicts", "main", 2))
+        }
+    }
+
     /// 同一个仓库上依次打开推送、新建与跟踪分支、合并、发布、拉取、同步与安全强推的对话框，读出标题、主按钮、行距与下拉宽度，
     /// 以及新建与跟踪分支的检出默认值。
     @Test("标题、主按钮、行距、下拉宽度与检出默认值", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))

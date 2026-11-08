@@ -448,7 +448,8 @@
 "merge.checking" = "Merge-Status wird geprüft …";
 "merge.clean" = "Keine Konflikte beim Zusammenführen";
 "merge.unchanged" = "Keine Änderungen zum Zusammenführen";
-"merge.conflicts" = "Merge-Konflikte in %d Dateien erkannt";
+"merge.conflicts" = "Der ausgewählte Branch hat in %2$ld Dateien Konflikte mit dem HEAD-Branch „%1$@“.";
+"merge.conflicts.one" = "Der ausgewählte Branch hat in 1 Datei Konflikte mit dem HEAD-Branch „%@“.";
 "merge.unavailable" = "Vorschau für diesen Merge nicht möglich";
 "activity.title" = "Aktivität";
 "activity.clear" = "Alle entfernen";

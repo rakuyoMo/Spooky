@@ -448,7 +448,8 @@
 "merge.checking" = "Checking merge status…";
 "merge.clean" = "No conflicts when merging";
 "merge.unchanged" = "No changes to merge";
-"merge.conflicts" = "Merge conflicts detected in %d files";
+"merge.conflicts" = "The selected branch conflicts with the HEAD branch “%1$@” in %2$ld files.";
+"merge.conflicts.one" = "The selected branch conflicts with the HEAD branch “%@” in 1 file.";
 "merge.unavailable" = "Could not preview this merge";
 "activity.title" = "Activity";
 "activity.clear" = "Clear All";

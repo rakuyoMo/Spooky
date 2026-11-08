@@ -448,7 +448,8 @@
 "merge.checking" = "正在檢查合併狀態…";
 "merge.clean" = "預覽未發現合併衝突";
 "merge.unchanged" = "沒有需要合併的變更";
-"merge.conflicts" = "預覽發現 %d 個檔案衝突";
+"merge.conflicts" = "所選分支與 HEAD 分支 “%1$@” 有 %2$ld 個檔案衝突。";
+"merge.conflicts.one" = "所選分支與 HEAD 分支 “%@” 有 1 個檔案衝突。";
 "merge.unavailable" = "無法預覽此次合併";
 "activity.title" = "活動";
 "activity.clear" = "全部清除";
