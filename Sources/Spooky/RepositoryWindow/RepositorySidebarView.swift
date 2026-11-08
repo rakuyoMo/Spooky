@@ -138,8 +138,6 @@ struct RepositorySidebarView: View {
             }
             .listStyle(.sidebar)
             .focused($listFocused)
-
-            // ⌘⌫ 删除所选的引用、远端或子模块，没有可删除的选择时菜单项不可用
             .onDeleteCommand(perform: deleteCommand)
             .id(session.repository)
 

@@ -247,7 +247,7 @@ extension OperationWiringTests {
         let side = try #require(branches.first { $0.id == "refs/heads/side" })
         let target = try #require(branches.first { $0.id == "refs/remotes/origin/side" })
 
-        var failure: AppFailure?
+        var failure: AppFailure? = nil
         session.onFailure = { failure = $0 }
         defer { session.onFailure = nil }
 
