@@ -100,6 +100,14 @@ Spooky 由两个 target 组成：
 
 - 本机与服务器的 Git 子进程都清除 `GIT_LITERAL_PATHSPECS`、`GIT_GLOB_PATHSPECS`、`GIT_NOGLOB_PATHSPECS`、`GIT_ICASE_PATHSPECS`；文件补丁通过字面包含与子项排除限定实际新旧路径，目录历史查询仍递归匹配。
 
+### 获取与自动获取
+
+- 不经对话框的获取（快速获取、Fetch All Remotes、自动获取、添加远端后的获取）共用 `SyncPreferences.fetchOptions(in:)` 给出的清理与子模块选项；获取对话框里入口带来的预选只作用于这一次，用户在对话框里切换的选项才写进偏好
+- 自动获取由 `RepositoryAutoFetch` 调度，每个远端各自计时：上次获取的时刻按仓库与远端名存在偏好 `remoteLastFetch`，跨重启保留；它是运行状态，不登记为用户数据
+  - 进入仓库视图、换仓库、sheet 结束、远端名单变化与改间隔时重新计时，10 s 后检查，之后每 160 s 检查一次；显示仓库管理或挂着 sheet 时暂停
+  - 每次检查只获取距上次获取已满设定间隔的远端，一个结束再开始下一个；各获取入口开始获取一个远端时都记下时刻，失败也记
+  - 跳过设了 `skipFetchAll` 的远端；本机仓库另跳过解析不出主机的地址（本机路径、`file://`），系统网络路径不可用时这次不获取；服务器仓库的地址交给 B 上的 Git，A 不判断主机与网络
+
 ## 进行中的操作与提交
 
 - 进行中的操作由 `OperationProgress` 一次读出：状态文件经同一次 `rev-parse --git-path` 定位、经 `RepositoryFiles` 读取，本机与服务器同一路径
