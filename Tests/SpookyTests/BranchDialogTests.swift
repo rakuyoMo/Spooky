@@ -68,8 +68,8 @@ struct BranchDialogTests {
     /// 跟踪远端分支的预选：入口传入的远端分支优先；没有预选或预选不是远端分支时取 HEAD 的上游；
     /// HEAD 没有上游时取第一个远端分支；没有远端分支时为空。
     ///
-    /// 合并的候选依次是本地分支（含 HEAD 分支）、远端分支与标签，拉取只有远端分支；两者先预选 HEAD 的上游，
-    /// HEAD 没有上游时取第一个不是 HEAD 分支的候选。
+    /// 合并的候选依次是本地分支（含 HEAD 分支）、远端分支与标签，拉取只有远端分支，各组按引用的公共顺序排列；
+    /// 两者先预选 HEAD 的上游，HEAD 没有上游时取第一个不是 HEAD 分支的候选。
     @Test("跟踪远端分支与拉取、合并来源的候选和预选回退")
     func trackPreselection() async throws {
         let fixture = try await OperationWiringTests.makeFixture()
@@ -92,7 +92,8 @@ struct BranchDialogTests {
             RepositoryOperationDialog.sourcePreselection(for: $0, preselection: nil, in: session)
         }
 
-        let remotes = ["refs/remotes/origin/feature", "refs/remotes/origin/main"]
+        // 远端分支里 main 排在最前，不按名字排在 feature 之后
+        let remotes = ["refs/remotes/origin/main", "refs/remotes/origin/feature"]
 
         #expect(candidates(.merge) == ["refs/heads/main", "refs/heads/side"] + remotes + ["refs/tags/v1"])
         #expect(candidates(.pull) == remotes)
@@ -105,7 +106,7 @@ struct BranchDialogTests {
 
         #expect(source(nil) == "refs/remotes/origin/feature")
         #expect(preselection(.merge) == "refs/heads/side")
-        #expect(preselection(.pull) == "refs/remotes/origin/feature")
+        #expect(preselection(.pull) == "refs/remotes/origin/main")
 
         // 没有远端分支
         let empty = RepositorySession(loadStatus: { _ in throw CancellationError() })

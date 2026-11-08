@@ -31,15 +31,28 @@ struct SidebarSettingsTests {
         #expect(titles == expected)
         #expect(!menu.autoenablesItems)
 
-        // 默认：分组开启、Reflog 与自动归档关闭，陈旧阈值 3 个月
-        let reflog = try item(SidebarPreferences.showReflogKey, in: menu)
-        let autoArchive = try item(SidebarPreferences.autoArchiveKey, in: menu)
+        // 默认：分组开启，Reflog、储藏个数、文件夹置前与自动归档关闭，陈旧阈值 6 个月
+        let off = [
+            SidebarPreferences.showReflogKey,
+            SidebarPreferences.showStashCountKey,
+            SidebarPreferences.groupedRefsOnTopKey,
+            SidebarPreferences.autoArchiveKey,
+        ]
+
         #expect(try item(SidebarPreferences.groupRefsKey, in: menu).state == .on)
-        #expect(reflog.state == .off && autoArchive.state == .off)
+        #expect(try off.allSatisfy { try item($0, in: menu).state == .off })
 
         let interval = try #require(titled("sidebar.staleInterval", in: menu).submenu)
         #expect(interval.items.map(\.tag) == SidebarPreferences.staleIntervals)
-        #expect(interval.items.first { $0.state == .on }?.tag == 3)
+        #expect(interval.items.first { $0.state == .on }?.tag == 6)
+
+        // 显式保存的值不被默认值覆盖，即使它等于以前的默认值
+        defaults.set(true, forKey: SidebarPreferences.showStashCountKey)
+        defaults.set(3, forKey: SidebarPreferences.staleIntervalKey)
+        builder.menuNeedsUpdate(menu)
+
+        #expect(try item(SidebarPreferences.showStashCountKey, in: menu).state == .on)
+        #expect(SidebarPreferences.integer(SidebarPreferences.staleIntervalKey, in: defaults) == 3)
 
         // 远端分支的数量：小标题不可点，默认全部
         let remote = try #require(titled("sidebar.remoteFilter", in: menu).submenu)
@@ -70,7 +83,7 @@ struct SidebarSettingsTests {
 
         // 记录了范围外的值时按默认值处理
         defaults.set(7, forKey: SidebarPreferences.staleIntervalKey)
-        #expect(SidebarPreferences.integer(SidebarPreferences.staleIntervalKey, in: defaults) == 3)
+        #expect(SidebarPreferences.integer(SidebarPreferences.staleIntervalKey, in: defaults) == 6)
 
         builder.menuNeedsUpdate(menu)
         let reopened = try #require(titled("sidebar.remoteFilter", in: menu).submenu)

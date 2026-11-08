@@ -33,9 +33,6 @@ struct RepositorySidebarView: View {
         case worktrees
     }
 
-    /// 置顶分组里的行身份前缀：同一分支在 Branches 分组里还有一行，两行各自高亮。
-    static let pinnedRowPrefix = "pinned:"
-
     /// 远端行的身份前缀：选中远端时主视图显示它的设置。
     static let remoteRowPrefix = "remote:"
 
@@ -111,10 +108,6 @@ struct RepositorySidebarView: View {
     /// 底栏过滤框的文字。
     @State
     var filterText = ""
-
-    /// 上一次点选的行身份，用来区分置顶分组与 Branches 分组里的同一分支。
-    @State
-    var rowSelection: Set<String> = []
 
     /// 正在显示签名弹窗的标签的完整引用名。
     @State
@@ -320,10 +313,8 @@ extension RepositorySidebarView {
 
         let references = session.history.selectedReferences
 
-        if references.isEmpty { return ["history"] }
-
-        // 选择来自点选时沿用点中的行；从菜单或其它视图改变选择时用分支在主分组里的行
-        return Set(rowSelection.map(Self.reference(forRow:))) == references ? rowSelection : references
+        // 每个引用只有一行，行的选择身份就是完整引用名
+        return references.isEmpty ? ["history"] : references
     }
 
     /// 选择存入会话，快捷键与点击保持一致。
@@ -338,7 +329,6 @@ extension RepositorySidebarView {
                 // 远端、子模块与工作树的行各自换成设置视图，不参与引用的多选
                 guard !selectSettingsRow(in: added) else { return }
 
-                rowSelection = value
                 session.history.showsCommitPage = false
 
                 if let view = Self.workspaceView(added: added, value: value) {
@@ -349,14 +339,13 @@ extension RepositorySidebarView {
                         session.reloadPullRequests()
                     }
                 } else {
-                    // 置顶分组里的行换回分支的完整引用名
+                    // 远端、子模块与工作树的行不是引用，从多选里去掉
                     let references = value
                         .subtracting(Self.workspaceRows.map(\.row) + ["history"])
                         .filter { row in
                             ![Self.remoteRowPrefix, Self.submoduleRowPrefix, Self.worktreeRowPrefix]
                                 .contains { row.hasPrefix($0) }
                         }
-                        .map(Self.reference(forRow:))
 
                     session.activeView = .history
                     session.history.selectedReferences =
@@ -371,19 +360,16 @@ extension RepositorySidebarView {
     /// 选中远端、子模块或工作树的行：主视图换成远端的设置、子模块的状态与配置或工作树的详情；返回是否已处理。
     private func selectSettingsRow(in added: Set<String>) -> Bool {
         if let remote = added.first(where: { $0.hasPrefix(Self.remoteRowPrefix) }) {
-            rowSelection = [remote]
             session.showRemote(String(remote.dropFirst(Self.remoteRowPrefix.count)))
             return true
         }
 
         if let submodule = added.first(where: { $0.hasPrefix(Self.submoduleRowPrefix) }) {
-            rowSelection = [submodule]
             session.showSubmodule(String(submodule.dropFirst(Self.submoduleRowPrefix.count)))
             return true
         }
 
         if let worktree = added.first(where: { $0.hasPrefix(Self.worktreeRowPrefix) }) {
-            rowSelection = [worktree]
             session.showWorktree(String(worktree.dropFirst(Self.worktreeRowPrefix.count)))
             return true
         }

@@ -80,7 +80,7 @@ extension RepositoryOperationDialog {
             ?? ""
     }
 
-    /// 拉取与合并的来源候选：合并依次是本地分支（含 HEAD 分支）、远端分支与标签，拉取只有远端分支。
+    /// 拉取与合并的来源候选：合并依次是本地分支（含 HEAD 分支）、远端分支与标签，拉取只有远端分支；组内按公共顺序排列。
     ///
     /// - Parameters:
     ///   - kind: 拉取或合并。
@@ -89,7 +89,9 @@ extension RepositoryOperationDialog {
         for kind: RepositoryActionRequest.Kind,
         in session: RepositorySession
     ) -> [RepositoryReference] {
-        kind == .merge ? session.revisionReferences : session.history.branches.filter(\.isRemote)
+        let references = kind == .merge ? session.revisionReferences : session.history.branches.filter(\.isRemote)
+
+        return ReferenceOrder.sorted(references, in: session.history.snapshot)
     }
 
     /// 拉取与合并的预选：入口指定的引用，否则是 HEAD 的上游（在候选里时），再否则是第一个不是 HEAD 分支的候选。

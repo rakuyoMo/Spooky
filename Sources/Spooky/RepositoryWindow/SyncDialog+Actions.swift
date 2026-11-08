@@ -80,7 +80,9 @@ extension SyncDialog {
 
         switch kind {
         case .sync:
-            source = tracked?.id ?? remoteBranches.first?.id ?? ""
+            // 没有跟踪分支时取下拉里的第一项
+            let first = ReferenceOrder.sorted(remoteBranches, in: session.history.snapshot).first
+            source = tracked?.id ?? first?.id ?? ""
 
         case .rebase:
             source = Self.rebaseTarget(preselection: preselection, in: session)

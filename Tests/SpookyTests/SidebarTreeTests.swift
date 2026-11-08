@@ -67,7 +67,7 @@ struct SidebarTreeTests {
             limit: 0,
             including: []
         )
-        #expect(nested.map(\.name) == ["feature/x", "main"])
+        #expect(nested.map(\.name) == ["main", "feature/x"])
 
         let remoteNodes = SidebarRefTree.nodes(
             for: nested,
@@ -77,6 +77,84 @@ struct SidebarTreeTests {
         )
         #expect(remoteNodes.first?.id.value == "remote|team/origin|folder|feature")
         #expect(remoteNodes.first?.children.first?.reference?.id == "refs/remotes/team/origin/feature/x")
+    }
+
+    /// 分支的公共顺序：main、master、trunk、dev、develop、next 依次在前，其余按名字逐段比较，当前分支不提前；
+    /// 不置前时文件夹按名字插在同级分支之间，置前时排在最前。远端分支去掉远端名后同样排序，标签只按名字。
+    /// 一组混合的引用里，本地分支、各远端的远端分支与标签各自成组，组的先后保持输入里第一次出现的位置。
+    @Test("引用的公共顺序")
+    func referenceOrder() {
+        let names = [
+            "zeta", "next", "feature/b", "develop", "Alpha", "main",
+            "dev", "feature/a", "trunk", "master", "beta",
+        ]
+
+        let branches = names.map { reference("refs/heads/" + $0) }
+        let entries = SidebarRefTree.branchEntries(branches, filter: "")
+
+        #expect(
+            entries.map(\.name) == [
+                "main", "master", "trunk", "dev", "develop", "next",
+                "Alpha", "beta", "feature/a", "feature/b", "zeta",
+            ]
+        )
+
+        // 文件夹不置前时按名字插在分支之间，置前时排在最前
+        let interleaved = SidebarRefTree.nodes(for: entries, grouped: true, foldersFirst: false, scope: "branches")
+        let foldersFirst = SidebarRefTree.nodes(for: entries, grouped: true, foldersFirst: true, scope: "branches")
+
+        #expect(
+            interleaved.map(\.name) == [
+                "main", "master", "trunk", "dev", "develop", "next",
+                "Alpha", "beta", "feature", "zeta",
+            ]
+        )
+        #expect(foldersFirst.map(\.name).first == "feature")
+
+        // 远端分支去掉远端名后比较，优先名同样在前
+        let snapshot = ReferenceSnapshot(
+            references: [
+                reference("refs/remotes/origin/feature"),
+                reference("refs/remotes/origin/HEAD", symbolicTarget: "refs/remotes/origin/main"),
+                reference("refs/remotes/origin/master"),
+                reference("refs/remotes/origin/main"),
+            ],
+            remotes: [RepositoryRemote(name: "origin")]
+        )
+
+        let remote = SidebarRefTree.remoteEntries(
+            of: RepositoryRemote(name: "origin"),
+            in: snapshot,
+            filter: "",
+            limit: 0,
+            including: []
+        )
+        #expect(remote.map(\.name) == ["main", "master", "feature"])
+
+        // 混合的引用按组排列，标签里的 main 不按优先名提前
+        let mixed = [
+            "refs/heads/feature",
+            "refs/remotes/origin/feature",
+            "refs/heads/main",
+            "refs/tags/v1",
+            "refs/remotes/origin/main",
+            "refs/tags/alpha",
+            "refs/tags/main",
+        ]
+
+        let sorted = ReferenceOrder.sorted(mixed.map { reference($0) }, in: snapshot)
+
+        #expect(
+            sorted.map(\.id) == [
+                "refs/heads/main",
+                "refs/heads/feature",
+                "refs/remotes/origin/main",
+                "refs/remotes/origin/feature",
+                "refs/tags/alpha",
+                "refs/tags/main",
+                "refs/tags/v1",
+            ]
+        )
     }
 
     /// 过滤按字符顺序匹配，不区分大小写与变音符号；空文字匹配一切。

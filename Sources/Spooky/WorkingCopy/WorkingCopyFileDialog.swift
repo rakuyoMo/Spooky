@@ -175,12 +175,9 @@ extension WorkingCopyFileDialog {
         }
     }
 
-    /// 组合框的候选，来自当前的引用快照与分支。
+    /// 组合框的候选，来自当前的引用快照。
     private var revisions: [String] {
-        Self.revisions(
-            in: session.history.snapshot?.references ?? [],
-            currentBranch: session.status?.branch.head
-        )
+        Self.revisions(in: session.history.snapshot)
     }
 
     /// 参数完整时允许提交；仓库是否可写由骨架判断。
@@ -192,20 +189,14 @@ extension WorkingCopyFileDialog {
         }
     }
 
-    /// 组合框的候选：当前分支在前，其后依次是本地分支、远端分支与标签，不含符号引用；第一项是打开时预选的版本。
+    /// 组合框的候选：本地分支、各远端的远端分支与标签依次成组，组内按公共顺序排列，不含符号引用；
+    /// 第一项是打开时预选的版本，当前分支不提前。同名的分支与标签各占一项。
     ///
-    /// - Parameters:
-    ///   - references: 按完整名称排序的引用快照。
-    ///   - currentBranch: 当前分支名，分离 HEAD 时为 nil。
-    static func revisions(in references: [RepositoryReference], currentBranch: String?) -> [String] {
-        #warning("TODO: 核实 Revert to Revision 候选引用的顺序与打开时预选的引用，目前当前分支在前、其后依次是本地分支、远端分支与标签；只影响组合框的候选顺序与预填的版本")
-        let candidates = references.filter { $0.symbolicTarget == nil }
-        let current = currentBranch.map { "refs/heads/" + $0 }
+    /// - Parameter snapshot: 引用快照；还没有读到时为 nil。
+    static func revisions(in snapshot: ReferenceSnapshot?) -> [String] {
+        let candidates = snapshot?.references.filter { $0.symbolicTarget == nil } ?? []
 
-        // 同名的分支与标签各占一项，按引用的完整名称认出当前分支
-        let ordered = candidates.filter { $0.id == current } + candidates.filter { $0.id != current }
-
-        return ordered.map(\.name)
+        return ReferenceOrder.sorted(candidates, in: snapshot).map(\.name)
     }
 
     /// 新路径必须是仓库内的相对路径：不能为空、以 “/” 开头、含 “.” 与 “..” 段或换行，也不能与原路径相同。

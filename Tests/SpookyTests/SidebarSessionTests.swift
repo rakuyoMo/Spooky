@@ -108,13 +108,37 @@ extension SidebarSessionTests {
             BranchFlagDropAction(payload: payload, destination: .branches, session: session) == nil
         )
 
-        session.history.selectedReferences = []
+        // 选中 feature 后置顶，写入后的刷新不改变选中的引用
+        session.activeView = .history
+        session.history.selectedReferences = [feature.id]
+
+        let sidebar = RepositorySidebarView(
+            session: session,
+            selectionChanged: { },
+            openTerminal: { },
+            revealFinder: { },
+            copyPath: { },
+            request: { _ in },
+            showActivity: { }
+        )
+
+        let groups = {
+            (
+                pinned: sidebar.pinnedReferences.map(\.id).contains(feature.id),
+                active: sidebar.activeReferences.map(\.id).contains(feature.id),
+                archived: sidebar.archivedReferences.map(\.id).contains(feature.id)
+            )
+        }
 
         // 置顶与归档各一次写入，Activity 记下操作名
         session.setPinned(true, branches: [feature])
         await settle(session)
 
         #expect(metadata()?.isPinned ?? false)
+
+        // 置顶的分支只在 Pinned 分组里有一行，那一行的选择身份仍是完整引用名
+        #expect(groups() == (true, false, false))
+        #expect(sidebar.selectedItems == [feature.id])
 
         #expect(
             session.activities.items.contains {
@@ -126,17 +150,28 @@ extension SidebarSessionTests {
         await settle(session)
         #expect(metadata() == BranchMetadata(isPinned: true, isArchived: true))
 
+        // 已归档的置顶分支仍只在 Pinned
+        #expect(groups() == (true, false, false))
+
         // 整理状态随引用一起读入：main 是基准分支，feature 不是
         #expect(try #require(session.history.conditions[main.id]).isBase)
         #expect(try !#require(session.history.conditions[feature.id]).isBase)
 
-        // 取消置顶与归档后分支配置里不再有整理标记
+        // 取消置顶后回到 Archived Branches，取消归档后回到 Branches，选中一直不变
         session.setPinned(false, branches: [feature])
         await settle(session)
+        #expect(groups() == (false, false, true))
+
         session.setArchived(false, branches: [feature])
         await settle(session)
+        #expect(groups() == (false, true, false))
+        #expect(sidebar.selectedItems == [feature.id])
 
+        // 分支配置里不再有整理标记
         #expect(session.history.snapshot?.metadata.isEmpty ?? false)
+
+        session.history.selectedReferences = []
+        session.activeView = .workingCopy
     }
 
     /// 检出本地分支与远端分支时，Activity 的标题带上分支名，远端分支带远端名前缀；双击标签检出成分离 HEAD。

@@ -145,14 +145,15 @@ enum SidebarRefTree {
         }
     }
 
-    /// 一组本地分支的条目：过滤时只留名字匹配的，显示名是分支名。
+    /// 一组本地分支的条目：过滤时只留名字匹配的，显示名是分支名，按公共顺序排列。
     static func branchEntries(_ branches: [RepositoryReference], filter: String) -> [Entry] {
         branches
             .filter { matches($0.name, filter: filter) }
             .map { Entry(reference: $0, name: $0.name) }
+            .sorted { ReferenceOrder.precedes(branch: $0.name, $1.name) }
     }
 
-    /// 一个远端的远端分支条目：按最长前缀判断归属，显示名去掉远端名。
+    /// 一个远端的远端分支条目：按最长前缀判断归属，显示名去掉远端名，按公共顺序排列。
     ///
     /// 过滤时列出全部匹配的分支；没有过滤时只留最新的 `limit` 个，`including` 里的总会留下。
     static func remoteEntries(
@@ -173,7 +174,10 @@ enum SidebarRefTree {
                 : references.filter { matches($0.name, filter: filter) }
 
         let prefix = "refs/remotes/" + remote.name + "/"
-        return shown.map { Entry(reference: $0, name: String($0.id.dropFirst(prefix.count))) }
+
+        return shown
+            .map { Entry(reference: $0, name: String($0.id.dropFirst(prefix.count))) }
+            .sorted { ReferenceOrder.precedes(branch: $0.name, $1.name) }
     }
 
     /// 标签条目：过滤与数量限制同远端分支，最后按名称排序。

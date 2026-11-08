@@ -49,22 +49,22 @@ enum SidebarPreferences {
     /// 远端分支与标签数量的档位，0 表示全部。
     static let newestChoices = [0, 10, 15, 25, 50, 100, 250, 500]
 
-    /// 开关没有记录时的取值。
+    /// 开关没有记录时的取值；只在没有显式保存的值时使用，不写回偏好。
     #warning(
-        "TODO: 除 Group Refs in Sidebar 默认开启、数量默认全部外，其余默认值是选定的：显示储藏个数、文件夹置前与陈旧信息开启，陈旧阈值 3 个月，Reflog 与自动归档关闭，标签按名称升序；核实方式：在全新的偏好里打开视图设置菜单比对勾选状态；影响首次打开时侧边栏显示哪些信息"
+        "TODO: 陈旧信息开启、Reflog 与自动归档关闭、标签按名称升序这几项默认值是选定的；核实方式：在全新的偏好里打开视图设置菜单比对勾选状态；影响首次打开时侧边栏显示哪些信息"
     )
     static let defaultFlags: [String: Bool] = [
         showReflogKey: false,
-        showStashCountKey: true,
+        showStashCountKey: false,
         groupRefsKey: true,
-        groupedRefsOnTopKey: true,
+        groupedRefsOnTopKey: false,
         showStaleInfoKey: true,
         autoArchiveKey: false,
     ]
 
-    /// 数值项没有记录时的取值。
+    /// 数值项没有记录时的取值；只在没有显式保存的值时使用，不写回偏好。
     static let defaultNumbers: [String: Int] = [
-        staleIntervalKey: 3,
+        staleIntervalKey: 6,
         newestRemoteBranchesKey: 0,
         tagOrderKey: TagOrder.nameAscending.rawValue,
         newestTagsKey: 0,

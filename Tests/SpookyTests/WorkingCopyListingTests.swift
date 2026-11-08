@@ -154,7 +154,8 @@ struct WorkingCopyListingTests {
     }
 
     /// 移动的新路径必须留在仓库内：不能是绝对路径、含 “.” 或 “..” 段、换行，或与原路径相同；
-    /// 恢复版本的候选：当前分支排在最前，打开表单时预选它；同名标签仍各占一项，符号引用不列出，分离 HEAD 时保持快照顺序。
+    /// 恢复版本的候选按引用的公共顺序排列，当前分支不提前，打开表单时预选第一项；同名标签仍各占一项，符号引用不列出；
+    /// 其它版本组合框的候选仍是当前分支在前。
     @Test("移动目标校验与恢复版本的候选")
     func dialogInputs() {
         #expect(WorkingCopyFileDialog.destination("docs/新 名字.md", from: "a.md") == "docs/新 名字.md")
@@ -163,7 +164,7 @@ struct WorkingCopyListingTests {
             #expect(WorkingCopyFileDialog.destination(invalid, from: "a.md") == nil)
         }
 
-        // 恢复版本的候选按当前分支排序。
+        // 恢复版本的候选：本地分支 main 排在 feature 之前，其后是远端分支与标签
         let references = [
             Self.reference("refs/heads/feature"),
             Self.reference("refs/heads/main"),
@@ -172,12 +173,17 @@ struct WorkingCopyListingTests {
             Self.reference("refs/tags/main"),
         ]
 
+        let snapshot = ReferenceSnapshot(references: references, remotes: [])
+
+        #expect(WorkingCopyFileDialog.revisions(in: snapshot) == ["main", "feature", "origin/main", "main"])
+
+        // 重置、检出版本与变基到别处的候选仍是当前分支在前，分离 HEAD 时保持快照顺序
         #expect(
-            WorkingCopyFileDialog.revisions(in: references, currentBranch: "main")
+            RepositorySession.revisionCandidates(in: references, currentBranch: "main")
                 == ["main", "feature", "origin/main", "main"]
         )
         #expect(
-            WorkingCopyFileDialog.revisions(in: references, currentBranch: nil)
+            RepositorySession.revisionCandidates(in: references, currentBranch: nil)
                 == ["feature", "main", "origin/main", "main"]
         )
     }

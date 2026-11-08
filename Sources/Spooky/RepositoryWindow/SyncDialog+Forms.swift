@@ -15,7 +15,12 @@ extension SyncDialog {
     var form: some View {
         switch kind {
         case .sync:
-            picker("sync.remoteBranch", selection: $source, references: remoteBranches)
+            // 拉取的来源与拉取对话框一样按公共顺序排列
+            picker(
+                "sync.remoteBranch",
+                selection: $source,
+                references: ReferenceOrder.sorted(remoteBranches, in: session.history.snapshot)
+            )
 
             option("sync.rebase", value: $rebase)
 
