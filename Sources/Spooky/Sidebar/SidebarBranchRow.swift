@@ -148,7 +148,9 @@ struct SidebarBranchRow: View {
     /// 名称在前、注记紧随、徽标靠右；名称的排版优先级高于注记，先拿到完整宽度。
     var body: some View {
         HStack(spacing: 4) {
+            // 系统符号自带的名称与分支无关（如 “Divide”），图标不进辅助功能，这一行由名称与注记说明
             Image(systemName: symbol)
+                .accessibilityHidden(true)
 
             Text(name)
                 .lineLimit(1)

@@ -4,12 +4,12 @@ import Testing
 
 @testable import Spooky
 
-/// 侧边栏分支行在窄侧边栏里的排版。
+/// 侧边栏分支行的排版与辅助功能。
 @MainActor
 struct SidebarBranchRowTests {
-    /// 窄侧边栏里名称是辨认分支的唯一依据，宽度不够时先让陈旧时长让出宽度。
-    @Test("宽度不够时陈旧时长先让出，名称保持完整", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func staleDurationYieldsToName() async {
+    /// 窄侧边栏里名称是辨认分支的唯一依据，宽度不够时先让陈旧时长让出宽度；行首图标的系统符号名与分支无关，不能让 VoiceOver 读出。
+    @Test("宽度不够时陈旧时长先让出、名称保持完整，行首图标不朗读", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    func staleDurationYieldsAndIconIsHidden() async {
         let name = "pinned-old"
         let staleLabel = AppLocalization.text("branch.staleFor", "2 years")
 
@@ -25,22 +25,25 @@ struct SidebarBranchRowTests {
         // 名称宽度与宽行相同，陈旧时长不越出行
         #expect(abs(narrow.name.width - wide.name.width) < 1)
         #expect(narrow.stale.maxX <= 110)
+
+        // 这一行没有跟踪错误与默认分支标记，图片元素只可能来自行首图标
+        #expect(wide.images.isEmpty)
     }
 
-    /// 在给定宽度下排出一行，读出名称与陈旧时长两个元素的位置；陈旧时长整段让出时为零。
+    /// 在给定宽度下排出一行，读出名称与陈旧时长两个元素的位置，以及全部图片元素的名称；陈旧时长整段让出时为零。
     ///
     /// - Parameters:
     ///   - width: 行的宽度。
     ///   - name: 分支名。
     ///   - staleLabel: 陈旧时长元素的辅助功能名称。
     ///   - status: 行的注记。
-    /// - Returns: 名称与陈旧时长的位置与大小。
+    /// - Returns: 名称与陈旧时长的位置与大小，以及图片元素的名称。
     private func frames(
         width: CGFloat,
         name: String,
         staleLabel: String,
         status: SidebarBranchStatus
-    ) async -> (name: CGRect, stale: CGRect) {
+    ) async -> (name: CGRect, stale: CGRect, images: [String]) {
         let elements = await AccessibilityProbe.elements(
             width: width,
             until: { elements in elements.contains { $0.value == name } }
@@ -57,6 +60,10 @@ struct SidebarBranchRowTests {
             .flatMap { $0.isNull ? nil : $0 }
             ?? .zero
 
-        return (nameFrame, staleFrame)
+        let images = elements
+            .filter { $0.role == "AXImage" }
+            .map(\.name)
+
+        return (nameFrame, staleFrame, images)
     }
 }
