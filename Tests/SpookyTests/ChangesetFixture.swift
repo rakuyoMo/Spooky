@@ -12,8 +12,8 @@ final class ChangesetFixture {
     /// 测试仓库与命令闸门。
     let directory: URL
 
-    /// 隔离偏好域名称。
-    let suite: String
+    /// 隔离偏好所在的临时目录，与仓库分开。
+    let defaultsDirectory: URL
 
     /// 不接触用户配置的自动展开设置。
     let defaults: UserDefaults
@@ -62,8 +62,11 @@ final class ChangesetFixture {
         self.directory = directory
         self.runner = runner
         self.commits = commits
-        suite = "Spooky.Changeset." + UUID().uuidString
-        defaults = try #require(UserDefaults(suiteName: suite))
+
+        // 偏好文件放进单独的临时目录，随目录删除，也不让仓库的工作区多出文件；
+        // 按名称建的偏好域即使清空，也会在用户的偏好目录里留下空文件
+        defaultsDirectory = try FileViewsTests.temporaryDirectory()
+        defaults = try #require(UserDefaults(suiteName: defaultsDirectory.appending(path: "defaults").path))
         defaults.set(0, forKey: "historyAutoExpand")
         session = RepositorySession(makeRunner: { _ in runner }, loadStatus: { _ in try await runner.status() })
         application = SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
@@ -177,7 +180,7 @@ final class ChangesetFixture {
     func close() {
         session.close()
         window?.window?.close()
-        defaults.removePersistentDomain(forName: suite)
+        try? FileManager.default.removeItem(at: defaultsDirectory)
         try? FileManager.default.removeItem(at: directory)
     }
 }

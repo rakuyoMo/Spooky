@@ -91,11 +91,11 @@ struct FileHistoryDirectoryLoadingTests {
     func preferenceChanges() async throws {
         let directory = try FileViewsTests.temporaryDirectory()
         let tools = try FileViewsTests.temporaryDirectory()
-        let suite = "Spooky.DirectoryOptions." + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
+
+        // 偏好文件放进随用例删除的临时目录；按名称建的偏好域即使清空，也会在用户的偏好目录里留下空文件
+        let defaults = try #require(UserDefaults(suiteName: tools.appending(path: "defaults").path))
 
         defer {
-            defaults.removePersistentDomain(forName: suite)
             try? FileManager.default.removeItem(at: directory)
             try? FileManager.default.removeItem(at: tools)
         }

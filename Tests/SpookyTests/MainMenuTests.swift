@@ -83,13 +83,11 @@ extension MainMenuTests {
     @Test("变更集菜单的全局阈值与快捷键")
     func changesetMenu() throws {
         let (controller, directory) = try Self.makeController()
-        let suite = "Spooky.ChangesetMenu." + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suite))
 
-        defer {
-            defaults.removePersistentDomain(forName: suite)
-            try? FileManager.default.removeItem(at: directory)
-        }
+        // 与控制器的偏好放在同一个临时目录里，随目录删除；按名称建的偏好域即使清空，也会在用户的偏好目录里留下空文件
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "changeset").path))
+
+        defer { try? FileManager.default.removeItem(at: directory) }
 
         controller.changesetPreferences = defaults
         let menu = try #require(Self.item("history.diffs", in: Self.topMenu("menu.view")).submenu)
