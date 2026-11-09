@@ -26,14 +26,12 @@ extension RepositoryOperationDialog {
         return session.history.branches.filter { $0.isRemote && snapshot.remote(for: $0) != nil }
     }
 
-    /// Destination 的预选：入口指定的远端分支，否则是 HEAD 的上游，HEAD 没有上游时是第一个在所属远端上与 HEAD 同名的远端分支，
+    /// Destination 的预选：HEAD 的上游，HEAD 没有上游时是第一个在所属远端上与 HEAD 同名的远端分支，
     /// 最后是第一个候选；每一级都要在候选里。HEAD 有上游、但上游已不在候选里时直接取第一个候选。
     ///
-    /// - Parameters:
-    ///   - preselection: 入口指定的远端分支的完整引用名，如把本地分支拖到远端分支上。
-    ///   - session: 对话框所属的窗口会话。
+    /// - Parameter session: 对话框所属的窗口会话。
     /// - Returns: 远端分支的完整引用名；没有候选时为空字符串。
-    static func destinationPreselection(preselection: String?, in session: RepositorySession) -> String {
+    static func destinationPreselection(in session: RepositorySession) -> String {
         let candidates = pushDestinations(in: session)
         let snapshot = session.history.snapshot
         let head = session.headBranch
@@ -53,8 +51,7 @@ extension RepositoryOperationDialog {
             }
         }
 
-        return candidates.first { $0.id == preselection }?.id
-            ?? candidates.first { $0.id == head?.upstream }?.id
+        return candidates.first { $0.id == head?.upstream }?.id
             ?? sameName?.id
             ?? candidates.first?.id
             ?? ""

@@ -1,19 +1,20 @@
+import AppKit
 import SpookyKit
 import SwiftUI
 
 // MARK: - Groups
 
 extension RepositorySidebarView {
-    /// Pinned 分组：只在有置顶分支时出现，里面同样按 “/” 折叠；置顶的分支在 Branches 分组里仍有一行。
+    /// Pinned 分组：只在有置顶分支时出现，里面同样按 “/” 折叠；置顶的分支只在这里有一行。
     @ViewBuilder
     var pinnedBranches: some View {
-        let pinned = localReferences.filter { metadata(for: $0).isPinned }
+        let pinned = pinnedReferences
 
         if !pinned.isEmpty {
             Section(isExpanded: isExpanded(.pinned)) {
                 SidebarRefTreeView(nodes: branchNodes(pinned, scope: "pinned"), isExpanded: isExpanded) { node in
                     if let ref = node.reference {
-                        localBranchRow(ref, name: node.name, tag: Self.pinnedRowPrefix + ref.id)
+                        localBranchRow(ref, name: node.name)
                     }
                 } folder: { node in
                     folderLabel(node, destination: .branchFolder(node.path))
@@ -24,7 +25,7 @@ extension RepositorySidebarView {
         }
     }
 
-    /// Branches 分组：未归档的本地分支；未出生和分离 HEAD 仍有一行当前分支。
+    /// Branches 分组：没有置顶也没有归档的本地分支；未出生和分离 HEAD 仍有一行当前分支。
     var localBranches: some View {
         Section(isExpanded: isExpanded(.branches)) {
             if localReferences.isEmpty, !isFiltering {
@@ -34,11 +35,11 @@ extension RepositorySidebarView {
             headRow
 
             SidebarRefTreeView(
-                nodes: branchNodes(localReferences.filter { !metadata(for: $0).isArchived }, scope: "branches"),
+                nodes: branchNodes(activeReferences, scope: "branches"),
                 isExpanded: isExpanded
             ) { node in
                 if let ref = node.reference {
-                    localBranchRow(ref, name: node.name, tag: ref.id)
+                    localBranchRow(ref, name: node.name)
                 }
             } folder: { node in
                 folderLabel(node, destination: .branchFolder(node.path))
@@ -46,7 +47,7 @@ extension RepositorySidebarView {
         } header: {
             groupHeader("branch.group", destination: .branches)
                 .contextMenu {
-                    Button(AppLocalization.text("branch.create")) {
+                    Button(AppLocalization.text("branch.createMenu")) {
                         request(RepositoryActionRequest(kind: .create))
                     }
                     .disabled(!session.canCreateBranch)
@@ -54,15 +55,15 @@ extension RepositorySidebarView {
         }
     }
 
-    /// Archived Branches 分组：按名称排列的已归档分支，同样按 “/” 折叠；没有归档分支时只有标题。
+    /// Archived Branches 分组：没有置顶的已归档分支，同样按 “/” 折叠；没有归档分支时只有标题。
     var archivedBranches: some View {
         Section(isExpanded: isExpanded(.archived)) {
             SidebarRefTreeView(
-                nodes: branchNodes(localReferences.filter { metadata(for: $0).isArchived }, scope: "archived"),
+                nodes: branchNodes(archivedReferences, scope: "archived"),
                 isExpanded: isExpanded
             ) { node in
                 if let ref = node.reference {
-                    localBranchRow(ref, name: node.name, tag: ref.id)
+                    localBranchRow(ref, name: node.name)
                 }
             } folder: { node in
                 folderLabel(node, destination: .branchFolder(node.path))
@@ -89,6 +90,13 @@ extension RepositorySidebarView {
             }
         } header: {
             Text(AppLocalization.text("remote.group"))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contextMenu {
+                    Button(AppLocalization.text("remote.addMenu")) {
+                        session.requestReference(.addRemote)
+                    }
+                    .disabled(!session.canWrite)
+                }
         }
     }
 
@@ -103,6 +111,7 @@ extension RepositorySidebarView {
                 help: SidebarTooltip.head(branch: branch, host: session.repository?.host)
             )
             .tag("HEAD")
+            .id(Self.headRowID)
         }
     }
 }
@@ -112,11 +121,11 @@ extension RepositorySidebarView {
 extension RepositorySidebarView {
     /// 本地分支行：单击显示历史，双击检出，可以拖动，HEAD 分支接受合并拖放。
     ///
-    /// - Parameter tag: 行的选择身份；置顶分组里的行带前缀。
-    func localBranchRow(_ ref: RepositoryReference, name: String, tag: String) -> some View {
+    /// 每个本地分支只在一个分组里有一行，行的选择身份就是完整引用名；置顶与取消置顶后选中的仍是这一行。
+    func localBranchRow(_ ref: RepositoryReference, name: String) -> some View {
         branchRow(ref, name: name)
-            .tag(tag)
-            .onTapGesture(count: 2) { session.checkoutBranch(ref, request: request) }
+            .tag(ref.id)
+            .onTapGesture(count: 2) { doubleClick(ref) }
             .onDrag { dragProvider(kind: .local, reference: ref.id) }
             .contextMenu { branchMenu(ref) }
             .modifier(
@@ -128,6 +137,12 @@ extension RepositorySidebarView {
             )
     }
 
+    /// 双击本地分支、远端分支或标签的行；按住 ⌘ 时，已在别的工作树检出的分支在新标签页打开那个工作树。
+    func doubleClick(_ ref: RepositoryReference) {
+        let target: RepositoryOpenTarget = NSEvent.modifierFlags.contains(.command) ? .newTab : .currentWindow
+        session.doubleClick(ref, in: target)
+    }
+
     /// 分组标题；作为落点时整行都接受拖放。
     func groupHeader(_ key: String, destination: RepositoryDropDestination) -> some View {
         Text(AppLocalization.text(key))
@@ -135,10 +150,40 @@ extension RepositorySidebarView {
             .modifier(RepositoryDropTarget(session: session, destination: destination, request: request))
     }
 
-    /// 按 “/” 折叠出的文件夹行；作为落点接受拖入改名、新建分支或标签。
+    /// 按 “/” 折叠出的文件夹行；作为落点接受拖入改名、新建分支或标签。本地分支与标签的文件夹有右键菜单，远端分支的文件夹没有。
+    @ViewBuilder
     func folderLabel(_ node: SidebarRefNode, destination: RepositoryDropDestination) -> some View {
-        SidebarFolderLabel(name: node.name)
+        let label = SidebarFolderLabel(name: node.name)
             .modifier(RepositoryDropTarget(session: session, destination: destination, request: request))
+
+        switch destination {
+        case .branchFolder, .tagFolder:
+            label.contextMenu { folderMenu(destination) }
+
+        default:
+            label
+        }
+    }
+
+    /// 文件夹的右键菜单只有一项新建，名称预填文件夹路径与结尾的 “/”：分支文件夹从 HEAD 新建分支，标签文件夹在 HEAD 上新建标签。
+    @ViewBuilder
+    func folderMenu(_ destination: RepositoryDropDestination) -> some View {
+        switch destination {
+        case .branchFolder(let path):
+            Button(AppLocalization.text("branch.createMenu")) {
+                request(RepositoryActionRequest(kind: .create, name: path + "/"))
+            }
+            .disabled(!session.canCreateBranch)
+
+        case .tagFolder(let path):
+            Button(AppLocalization.text("tag.createMenu")) {
+                session.requestReference(.createTag(revision: nil, name: path + "/"))
+            }
+            .disabled(!session.canCreateTag)
+
+        default:
+            EmptyView()
+        }
     }
 
     /// 胶囊徽标的各段：HEAD、超前、落后，有才显示。
@@ -191,24 +236,43 @@ extension RepositorySidebarView {
         session.history.branches.filter(\.isLocal)
     }
 
-    /// 当前分支行显示的名字；不是未出生或分离 HEAD，或者被过滤掉时为 nil，不显示这一行。
+    /// Pinned 分组里的分支：置顶的本地分支，已归档的也在这里。
+    var pinnedReferences: [RepositoryReference] {
+        localReferences.filter { metadata(for: $0).isPinned }
+    }
+
+    /// Branches 分组里的分支：没有置顶也没有归档的本地分支。
+    var activeReferences: [RepositoryReference] {
+        localReferences.filter { reference in
+            let flags = metadata(for: reference)
+            return !flags.isPinned && !flags.isArchived
+        }
+    }
+
+    /// Archived Branches 分组里的分支：没有置顶的已归档分支。
+    var archivedReferences: [RepositoryReference] {
+        localReferences.filter { reference in
+            let flags = metadata(for: reference)
+            return !flags.isPinned && flags.isArchived
+        }
+    }
+
+    /// 当前分支行显示的名字：未出生时是分支名，分离 HEAD 时是当前提交的 8 位短哈希；
+    /// 不是未出生或分离 HEAD，或者被过滤掉时为 nil，不显示这一行。
     var headRowName: String? {
-        guard let branch = session.status?.branch, branch.head == nil || branch.oid == nil else {
+        guard
+            let branch = session.status?.branch,
+            branch.head == nil || branch.oid == nil,
+            let name = branch.head ?? branch.oid.map({ String($0.prefix(8)) })
+        else {
             return nil
         }
-
-        let name = branch.head ?? AppLocalization.text("branch.detachedShort")
 
         guard !isFiltering || SidebarRefTree.matches(name, filter: filterText) else {
             return nil
         }
 
         return name
-    }
-
-    /// 行身份换成完整引用名：置顶分组里的行去掉前缀。
-    static func reference(forRow row: String) -> String {
-        row.hasPrefix(pinnedRowPrefix) ? String(row.dropFirst(pinnedRowPrefix.count)) : row
     }
 
     /// 分组的展开状态；过滤时固定展开，清空后回到原来的状态。
@@ -285,12 +349,11 @@ extension RepositorySidebarView {
         )
     }
 
-    /// 换仓库时回到默认的展开状态，清空过滤文字与点选记录。
+    /// 换仓库时回到默认的展开状态，清空过滤文字。
     func resetViewState() {
         collapsedGroups = [.tags]
         expandedNodes = [.remote("origin")]
         filterText = ""
-        rowSelection = []
     }
 
     /// 换了仓库重建列表后，原来有键盘焦点的话把焦点还给新的列表。

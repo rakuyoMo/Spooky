@@ -98,20 +98,11 @@ extension SetParentBranchDialog {
 
     /// 写入父分支；仓库忙碌或已切换时表单保持打开。
     private func submit() {
-        let parent = parent
-        let branch = branch
-
         guard session.repository == repository else {
             return
         }
 
-        let started = session.performGit(
-            { runner, _ in try await RepositoryReferences(runner: runner).setParent(parent, of: branch.id) },
-            title: AppLocalization.text("branch.parent.set"),
-            undo: .reversible
-        )
-
-        if started {
+        if session.setParent(parent, of: branch) {
             close()
         }
     }

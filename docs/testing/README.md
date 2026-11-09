@@ -59,7 +59,7 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
 | `RemoteHistorySearchTests` | 历史搜索、计数与可达性 |
 | `RemoteHistoryDetailsTests` | 合并 Diff、文件树、比较、签名与导出 |
 | `RemoteSidebarTests` | 标签说明、分支状态、置顶归档与标签检出 |
-| `RemoteReferenceManagementTests` | 分支、标签与远端管理 |
+| `RemoteReferenceManagementTests` | 分支、标签与远端管理，同名分支的跟踪检出、父分支、归档与撤销、非 HEAD 分支的安全强推与单分支推送 |
 | `RemoteRewriteTests` | 反转、摘取、重置、交互式变基与修补旧提交 |
 | `RemoteBranchesReviewTests` | 分支比较、分叉点、归档标记与 Update Branch |
 | `RemoteReflogUndoTests` | Reflog 与撤销、重做 |
@@ -102,3 +102,4 @@ SPOOKY_PERFORMANCE_TESTS=1 swift test -c release -Xswiftc -enable-testing --filt
 | [M15](M15.md) | 语言识别、头文件语法、按内容识别的字符数边界、Diff 两侧着色与语法记号颜色；主题色的色彩空间、推导色与颜色面板的往返保存；文件头部、原生动作组与重命名显示；目录文件历史、对象能力与精确补丁路径；变更集计数、部分展开与空行；可见详情的菜单路由与自动展开阈值；块内字符复制、折行与行号键盘 / 辅助功能；组合 Diff 多父列、文件头摘要与大 Diff 警告；工作区单文件快照安全边界、块头吸顶与分隔线；行选择、提示联动、末行补丁与按块原文跨重载保留；不可见字符、真实行尾与源串复制 |
 | [M16](M16.md) | 提交区的计数、提交进度与头像，进行中操作的分类、步数与横幅，Show only conflicts，合并冲突直接显示工作区与自动储藏后的冲突，提交信息的注释询问与编辑后继续，两种空提交确认，冲突向导的版本卡片、选择、版本菜单与外部比较，历史中旧提交的 Amend 与 Edit 停顿 |
 | [M17](M17.md) | 分支名的规范化与校验原因，新建、跟踪、改名与删除分支的对话框，获取的临时预选与保存的偏好、添加远端后获取，拉取与合并的候选、冲突预览与未跟踪文件，推送 HEAD 的 Destination、发布与没有远端时的入口，按远端计时的自动获取，自动储藏默认不恢复改动 |
+| [M18](M18.md) | Working Copy 行的标记、提示与右键菜单，分支、文件夹与分组标题的菜单和 ⌘⌫ 删除，双击、定位与同名分支的跟踪检出，引用的公共顺序与侧边栏默认值，父分支子菜单，归档建议与归档对话框，拖放落点、拖动影像上的动作名与 Push Branch |

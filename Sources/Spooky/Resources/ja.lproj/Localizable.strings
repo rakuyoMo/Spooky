@@ -92,6 +92,18 @@
 "branch.behind" = "%ld 遅れています";
 
 "workspace.changed" = "変更ファイル数：%ld";
+"workspace.checkoutMenu" = "チェックアウト";
+"workspace.checkoutRevisionMenu" = "リビジョンをチェックアウト…";
+"workspace.pushMenu" = "プッシュ…";
+"workspace.pushRevisionMenu" = "リビジョンを指定先にプッシュ…";
+"workspace.publishMenu" = "公開…";
+"workspace.resetMenu" = "リビジョンへリセット…";
+"workspace.mergeMenu" = "リビジョンとマージ…";
+"workspace.rebaseMenu" = "リビジョンにリベース…";
+"workspace.copyPathMenu" = "ファイルパスをコピー";
+"workspace.tooltip.head" = "ローカルの HEAD はブランチ「%@」";
+"workspace.tooltip.detached" = "ローカルの HEAD は「%@」で分離";
+"workspace.tooltip.changes" = "未コミットのファイル：%ld";
 
 "status.column" = "状態";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "行を破棄";
 "working.discardLines" = "選択行を破棄";
 "working.discard" = "変更を破棄";
-"working.discardAll" = "すべての変更を破棄…";
 "working.discard.title" = "ローカルの変更を破棄";
 "working.discardAll.title" = "すべてのローカルの変更を破棄";
 "working.discardAll.submit" = "すべての変更を破棄";
@@ -413,6 +424,7 @@
 "sync.pushHead.help" = "ローカルの HEAD ブランチ「%@」の新しいコミットを、選択したリモートブランチにプッシュします。";
 "sync.pushHead" = "HEAD をプッシュ";
 "sync.pushBranch" = "ブランチをプッシュ";
+"sync.pushBranch.help" = "選択したローカルブランチの新しいコミットを、選択したリモートブランチにプッシュします。";
 "sync.publish" = "ブランチを公開";
 "sync.publish.help" = "選択したリモートにブランチを作成します。";
 "sync.merge" = "マージ";
@@ -583,6 +595,7 @@
 "stash.snapshot" = "スナップショットを作成";
 "stash.snapshot.help" = "ローカルの変更をスタッシュに保存し、作業コピーはそのまま残します。";
 "stash.snapshotMenu" = "スナップショットを作成…";
+"stash.quickSnapshotMenu" = "スナップショットをすぐに作成";
 "stash.savePartial" = "一部をスタッシュに保存";
 "stash.savePartial.help" = "選択したファイルだけをスタッシュに保存し、作業コピーのほかの部分はそのまま残します。";
 "stash.snapshotPartial" = "一部のスナップショットを作成";
@@ -1113,6 +1126,9 @@
 "branch.tooltip.stale" = "- 古いブランチ（%@）";
 "branch.tooltip.missingUpstream" = "- 追跡ブランチ「%@」が存在しません";
 "remote.tooltip.branch" = "リモートブランチ「%@」";
+"remote.tooltip.remote" = "リモート「%@」";
+"remote.tooltip.fetchURL" = "フェッチ URL：%@";
+"remote.tooltip.pushURL" = "プッシュ URL：%@";
 "tag.tooltip.revision" = "リビジョン「%@」を指しています";
 "tag.tooltip.message" = "タグのメッセージ:「%@」";
 "tag.checkoutNamed" = "「%@」をチェックアウト…";
@@ -1326,20 +1342,20 @@
 "reference.error.url" = "リモート URL が無効です。";
 "reference.error.url.help" = "前後の空白や制御文字を含まず、「-」で始まらない URL を入力してください。";
 "branch.fastForward" = "「%@」を早送り";
-"branch.tracking" = "追跡";
+"branch.tracking" = "上流ブランチを追跡";
 "branch.tracking.remoteBranches" = "リモートブランチ";
 "branch.tracking.localBranches" = "ローカルブランチ";
 "branch.tracking.remove" = "追跡を解除";
 "branch.tracking.set" = "上流を設定";
-"branch.parent" = "親ブランチ";
+"branch.parent" = "親ブランチを追跡";
 "branch.parent.set" = "親ブランチを設定";
-"branch.parent.setMenu" = "親ブランチを設定…";
+"branch.parent.setMenu" = "別の親ブランチを追跡…";
 "branch.parent.remove" = "親ブランチを解除";
 "branch.parent.field" = "親：";
 "branch.parent.message" = "「%@」の元になるブランチを選びます。このブランチの比較と更新はそれを基準にします。";
 "branch.parent.replace" = "現在の親「%@」は置き換えられます。";
 "branch.parentOption" = "親ブランチ：";
-"branch.parentOption.none" = "なし";
+"branch.parentOption.none" = "親ブランチなし";
 "branch.parentOption.help" = "新しいブランチの比較と更新は親ブランチを基準にします。";
 "branch.pin.help" = "サイドバーの Pinned セクションにブランチを追加します。";
 "branch.trackStart.named" = "ブランチ「%@」を追跡";
@@ -1372,6 +1388,14 @@
 "branch.error.checkoutCreated.title" = "ブランチは作成されましたがチェックアウトされていません";
 "branch.error.checkoutCreated" = "新しいブランチは作成されましたが、チェックアウトに失敗しました。";
 "branch.error.checkoutCreated.help" = "ブランチはリポジトリに残っています。元の出力を確認し、問題を解決してからブランチをチェックアウトしてください。";
+"branch.error.inWorktree.title" = "ブランチは別のワークツリーでチェックアウトされています";
+"branch.error.inWorktree" = "このブランチはすでに別のワークツリーでチェックアウトされています。";
+"branch.error.inWorktree.help" = "何も変更していません。そのワークツリーを開くか、先にそちらで別のブランチに切り替えてください。";
+"branch.error.checkoutTracking.title" = "上流は設定されましたがブランチはチェックアウトされていません";
+"branch.error.checkoutTracking" = "ブランチの上流は設定されましたが、チェックアウトに失敗しました。";
+"branch.error.checkoutTracking.help" = "ブランチのコミットと新しい上流はそのまま残っています。元の出力を確認し、問題を解決してからブランチをチェックアウトしてください。";
+"branch.trackExisting.title" = "既存のブランチをチェックアウト";
+"branch.trackExisting.message" = "ローカルブランチ「%1$@」をチェックアウトし、リモートブランチ「%2$@」を追跡させます。ローカルブランチのコミットは変わりません。";
 "branch.error.unmerged.help" = "ブランチのコミットを確認するか、強制削除で削除してください。";
 "tag.create" = "新しいタグを作成";
 "tag.create.message" = "入力したリビジョンにローカルタグを作成します。";
@@ -1405,6 +1429,7 @@
 "remote.add.message" = "リモートリポジトリの名前と URL を入力してください。追加する前に接続を確認します。";
 "remote.add.submit" = "リモートを追加";
 "remote.addMenu" = "リモートリポジトリを追加…";
+"remote.fetchMenu" = "「%@」をフェッチ…";
 "remote.addMainMenu" = "新しいリモートを追加…";
 "remote.name.placeholder" = "リモート名";
 "remote.url" = "リモート URL：";
@@ -1464,6 +1489,7 @@
 "remote.error.browser" = "このリモートはブラウザで開けません。";
 "remote.error.browser.help" = "HTTP(S)、SSH、git プロトコルの URL を持つリモートだけに Web ページがあります。ローカルパスや file URL にはありません。";
 "branch.dragTrack" = "追跡";
+"branch.dragPublish" = "公開";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "リモート設定（%@）";
@@ -1509,13 +1535,14 @@
 "review.update.clean" = "親ブランチとのコンフリクトはありません";
 "review.archive.title" = "ブランチをアーカイブ";
 "review.archive.help" = "ブランチ一覧から隠すブランチを選択します。アーカイブしたブランチはサイドバーの「アーカイブ済みブランチ」に移り、そこから引き続き使えます。";
-"review.archive.automaticHelp" = "これらのブランチはしばらく更新されていないか、プルリクエストまたはマージリクエストがマージ済みのため、自動でアーカイブされます。残したいブランチのチェックを外してください。";
+"review.archive.automaticHelp" = "これらのブランチはしばらく更新されていないか、プルリクエストまたはマージリクエストがマージ済みのため、自動でアーカイブされます。アーカイブするブランチにチェックを入れてください。";
 "review.archive.submit" = "アーカイブ";
 "review.archive.empty" = "アーカイブするブランチはありません";
 "review.archive.emptyHelp" = "アーカイブを勧めるのは、しばらく更新されていないか、プルリクエストまたはマージリクエストがマージ済みのブランチだけです。";
 "review.archive.auto" = "ブランチを自動でアーカイブ";
 "review.archive.autoHelp" = "1 日 1 回、不要になったブランチを一覧表示し、確認してからアーカイブします。";
 "review.archive.count" = "%ld 個のブランチをアーカイブできます";
+"review.archive.selection" = "%2$ld 件中 %1$ld 件を選択";
 "review.archived.one" = "1 個のブランチをアーカイブしました";
 "review.archived.many" = "%ld 個のブランチをアーカイブしました";
 "review.archived.undo" = "取り消す";
@@ -1568,6 +1595,14 @@
 "sync.quickMergeInto" = "「%1$@」を「%2$@」へクイックマージ";
 "sync.quickRebaseOn" = "「%1$@」を「%2$@」の上へクイックリベース";
 "branch.pushToMenu" = "「%@」を指定先にプッシュ…";
+"branch.publishMenu" = "「%@」を公開…";
+"branch.createFromMenu" = "「%@」から新しいブランチを作成…";
+"branch.trackMenu" = "「%@」を追跡…";
+"branch.pullMenu" = "「%@」をプル…";
+"branch.copyRemoteNameMenu" = "リモートブランチ名をクリップボードにコピー";
+"branch.compareMenu" = "「%@」を別のリビジョンと比較…";
+"branch.rebaseOntoMenu" = "別の場所のリビジョンへリベース…";
+"branch.deleteMenu.multiple" = "%ld 個のブランチを削除…";
 "tag.compareMenu" = "「%@」を別のリビジョンと比較…";
 
 /* 分支拖进 “/” 文件夹时的动作名。 */
@@ -2442,6 +2477,8 @@
 
 "pr.title" = "プルリクエスト";
 "mr.title" = "マージリクエスト";
+"pr.archive.merged" = "プルリクエストがマージ済み";
+"mr.archive.merged" = "マージリクエストがマージ済み";
 "pr.show.menu" = "プルリクエストを表示";
 "mr.show.menu" = "マージリクエストを表示";
 "pr.create.menu" = "プルリクエストを作成…";

@@ -77,8 +77,9 @@ struct HistoryVanishedReferenceTests {
 
         defer { try? FileManager.default.removeItem(atPath: repository.location.path) }
 
-        // 文件夹排在前面：feature（里面只有 x）、alpha、gone、main、zeta；Tags 默认收起，没有远端、子模块与工作树
-        for name in ["alpha", "feature/x", "gone", "zeta"] {
+        // main 排在最前，其余按名字，文件夹按名字插在分支之间：main、alpha、feature（里面只有 x）、gone、omega、tau、zeta；
+        // Tags 默认收起，没有远端、子模块与工作树
+        for name in ["alpha", "feature/x", "gone", "omega", "tau", "zeta"] {
             _ = try await repository.runner.run(["branch", name])
         }
 
@@ -94,17 +95,17 @@ struct HistoryVanishedReferenceTests {
 
         let window = RepositorySidebarViewTests.host(session)
 
-        // 删掉中间的 gone：选中下面的 main
+        // 删掉中间的 gone：选中下面的 omega
         let below = try await Self.delete("gone", filteredIn: session, window: window, runner: repository.runner)
 
-        #expect(below == ["refs/heads/main"])
+        #expect(below == ["refs/heads/omega"])
 
-        // 删掉最后的 zeta：下面没有可选中的行，选中上面的 main
+        // 删掉最后的 zeta：下面没有可选中的行，选中上面的 tau
         let above = try await Self.delete("zeta", filteredIn: session, window: window, runner: repository.runner)
 
-        #expect(above == ["refs/heads/main"])
+        #expect(above == ["refs/heads/tau"])
 
-        // 展开 feature 文件夹，x 与文件夹一起消失：alpha 补到文件夹的行号上，原行号上是 main
+        // 展开 feature 文件夹，x 与文件夹一起消失：omega 补到文件夹的行号上，原行号上是 tau
         let outline = try #require(window.contentView.flatMap(RepositorySidebarViewTests.outline(in:)))
         let rows = outline.numberOfRows
         let folder = try #require(Self.folderRow(in: window))
@@ -123,7 +124,7 @@ struct HistoryVanishedReferenceTests {
             runner: repository.runner
         )
 
-        #expect(replacement == ["refs/heads/main"])
+        #expect(replacement == ["refs/heads/tau"])
     }
 
     /// 后退到筛选引用都已被删除的历史时留在当前视图，记录不变；位置停在那一步，再后退接着往前走。

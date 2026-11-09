@@ -131,6 +131,29 @@ extension RepositorySession {
         )
     }
 
+    /// 把本地分支的父分支设为另一个分支，可以撤销；父分支子菜单的建议与设置父分支对话框共用。
+    ///
+    /// - Parameters:
+    ///   - parent: 父分支的完整引用名。
+    ///   - branch: 要设置父分支的本地分支。
+    /// - Returns: 是否已开始执行。
+    @discardableResult
+    func setParent(_ parent: String, of branch: RepositoryReference) -> Bool {
+        guard canManage(branch), branch.isLocal, parent != branch.id else {
+            return false
+        }
+
+        let id = branch.id
+
+        return performGit(
+            { runner, _ in
+                try await RepositoryReferences(runner: runner).setParent(parent, of: id)
+            },
+            title: AppLocalization.text("branch.parent.set"),
+            undo: .reversible
+        )
+    }
+
     /// 移除本地分支的父分支；本来没有父分支时同样成功。
     func removeParent(of branch: RepositoryReference) {
         guard canManage(branch), branch.isLocal else {

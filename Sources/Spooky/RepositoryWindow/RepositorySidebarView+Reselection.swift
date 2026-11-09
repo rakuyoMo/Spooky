@@ -40,9 +40,7 @@ extension RepositorySidebarView {
         }
 
         // 原来选中的引用还在时，是点了 History 等操作回到全部历史，不是引用消失；还没有读到引用快照时同样不算
-        let references = Set(old.selection.map(Self.reference(forRow:)))
-
-        guard session.history.existingReferences(references).isEmpty else {
+        guard session.history.existingReferences(old.selection).isEmpty else {
             return
         }
 
@@ -82,31 +80,26 @@ extension RepositorySidebarView {
 
     /// Pinned、Branches 与 Archived Branches 三个分组的行。
     private var branchRows: [String?] {
-        let local = localReferences
-        let pinned = local.filter { metadata(for: $0).isPinned }
+        let pinned = pinnedReferences
         var rows: [String?] = []
 
-        // Pinned 分组只在有置顶分支时出现，行身份带前缀
+        // Pinned 分组只在有置顶分支时出现
         if !pinned.isEmpty {
             rows += section(.pinned) {
-                displayedRows(in: branchNodes(pinned, scope: "pinned")).map { row in
-                    row.map { Self.pinnedRowPrefix + $0 }
-                }
+                displayedRows(in: branchNodes(pinned, scope: "pinned"))
             }
         }
 
         rows += section(.branches) {
             // 没有本地分支时有一行占位文字，未出生或分离 HEAD 时有一行当前分支
-            let placeholder: [String?] = local.isEmpty && !isFiltering ? [nil] : []
+            let placeholder: [String?] = localReferences.isEmpty && !isFiltering ? [nil] : []
             let head: [String?] = headRowName == nil ? [] : ["HEAD"]
-            let active = local.filter { !metadata(for: $0).isArchived }
 
-            return placeholder + head + displayedRows(in: branchNodes(active, scope: "branches"))
+            return placeholder + head + displayedRows(in: branchNodes(activeReferences, scope: "branches"))
         }
 
         rows += section(.archived) {
-            let archived = local.filter { metadata(for: $0).isArchived }
-            return displayedRows(in: branchNodes(archived, scope: "archived"))
+            displayedRows(in: branchNodes(archivedReferences, scope: "archived"))
         }
 
         return rows

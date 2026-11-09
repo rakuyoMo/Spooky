@@ -16,8 +16,8 @@ enum ReferenceRequest {
     /// 为本地分支选择父分支。
     case setParent(RepositoryReference)
 
-    /// 新建标签；版本为 nil 时从 HEAD 开始。
-    case createTag(revision: String?)
+    /// 新建标签；版本为 nil 时从 HEAD 开始，名称预填 `name`，如标签文件夹的路径与结尾的 “/”。
+    case createTag(revision: String?, name: String = "")
 
     /// 发布一个本地标签；标签为 nil 时由对话框选择，远端为 nil 时预选 HEAD 跟踪的远端。
     case publishTag(String?, remote: String? = nil)

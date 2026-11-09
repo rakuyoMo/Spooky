@@ -245,7 +245,7 @@ extension RepositoryWindowController {
             }
 
             showHistory()
-            session.history.selectedReferences = Set(references)
+            session.history.reveal(Set(references))
 
         case .commit(let commit):
             // 先核对它在历史里的位置，排得很靠后时询问；取消时视图与历史都不变

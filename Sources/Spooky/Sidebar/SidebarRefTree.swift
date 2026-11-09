@@ -83,6 +83,17 @@ enum SidebarRefTree {
         return result
     }
 
+    /// 树里的每个引用与从顶层到它的各级节点身份，按显示顺序；收起的文件夹里的引用同样列出。
+    static func paths(in nodes: [SidebarRefNode]) -> [(reference: String, path: [SidebarNodeID])] {
+        nodes.flatMap { node -> [(reference: String, path: [SidebarNodeID])] in
+            if let reference = node.reference {
+                return [(reference.id, [node.id])]
+            }
+
+            return paths(in: node.children).map { ($0.reference, [node.id] + $0.path) }
+        }
+    }
+
     /// 模糊匹配：过滤文字的每个字符按顺序出现在名字里即算匹配，不区分大小写与变音符号；空文字匹配一切。
     #warning("TODO: 过滤按字符顺序的子序列匹配，未核实是否还应匹配单词首字母或容许错字；核实方式：输入跳字与错字比对结果；影响侧边栏过滤后留下哪些引用")
     static func matches(_ name: String, filter: String) -> Bool {
@@ -145,14 +156,15 @@ enum SidebarRefTree {
         }
     }
 
-    /// 一组本地分支的条目：过滤时只留名字匹配的，显示名是分支名。
+    /// 一组本地分支的条目：过滤时只留名字匹配的，显示名是分支名，按公共顺序排列。
     static func branchEntries(_ branches: [RepositoryReference], filter: String) -> [Entry] {
         branches
             .filter { matches($0.name, filter: filter) }
             .map { Entry(reference: $0, name: $0.name) }
+            .sorted { ReferenceOrder.precedes(branch: $0.name, $1.name) }
     }
 
-    /// 一个远端的远端分支条目：按最长前缀判断归属，显示名去掉远端名。
+    /// 一个远端的远端分支条目：按最长前缀判断归属，显示名去掉远端名，按公共顺序排列。
     ///
     /// 过滤时列出全部匹配的分支；没有过滤时只留最新的 `limit` 个，`including` 里的总会留下。
     static func remoteEntries(
@@ -173,7 +185,10 @@ enum SidebarRefTree {
                 : references.filter { matches($0.name, filter: filter) }
 
         let prefix = "refs/remotes/" + remote.name + "/"
-        return shown.map { Entry(reference: $0, name: String($0.id.dropFirst(prefix.count))) }
+
+        return shown
+            .map { Entry(reference: $0, name: String($0.id.dropFirst(prefix.count))) }
+            .sorted { ReferenceOrder.precedes(branch: $0.name, $1.name) }
     }
 
     /// 标签条目：过滤与数量限制同远端分支，最后按名称排序。

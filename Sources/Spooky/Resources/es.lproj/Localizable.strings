@@ -92,6 +92,18 @@
 "branch.behind" = "%ld por detrás";
 
 "workspace.changed" = "Archivos modificados: %ld";
+"workspace.checkoutMenu" = "Hacer checkout";
+"workspace.checkoutRevisionMenu" = "Hacer checkout de una revisión…";
+"workspace.pushMenu" = "Hacer push…";
+"workspace.pushRevisionMenu" = "Hacer push de una revisión a…";
+"workspace.publishMenu" = "Publicar…";
+"workspace.resetMenu" = "Restablecer a una revisión…";
+"workspace.mergeMenu" = "Fusionar con una revisión…";
+"workspace.rebaseMenu" = "Hacer rebase sobre una revisión…";
+"workspace.copyPathMenu" = "Copiar ruta del archivo";
+"workspace.tooltip.head" = "El HEAD local es la rama “%@”";
+"workspace.tooltip.detached" = "El HEAD local está desacoplado en “%@”";
+"workspace.tooltip.changes" = "Archivos sin confirmar: %ld";
 
 "status.column" = "Estado";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "Descartar línea";
 "working.discardLines" = "Descartar líneas";
 "working.discard" = "Descartar cambios";
-"working.discardAll" = "Descartar todos los cambios…";
 "working.discard.title" = "Descartar cambios locales";
 "working.discardAll.title" = "Descartar todos los cambios locales";
 "working.discardAll.submit" = "Descartar todos los cambios";
@@ -413,6 +424,7 @@
 "sync.pushHead.help" = "Hace push de los nuevos commits de la rama HEAD local “%@” a la rama remota seleccionada.";
 "sync.pushHead" = "Hacer push de HEAD";
 "sync.pushBranch" = "Hacer push de la rama";
+"sync.pushBranch.help" = "Hace push de los nuevos commits de la rama local seleccionada a la rama remota seleccionada.";
 "sync.publish" = "Publicar rama";
 "sync.publish.help" = "Crea una rama en el remoto seleccionado.";
 "sync.merge" = "Fusionar";
@@ -583,6 +595,7 @@
 "stash.snapshot" = "Crear instantánea";
 "stash.snapshot.help" = "Guarda los cambios locales en el stash y deja la copia de trabajo tal como está.";
 "stash.snapshotMenu" = "Crear instantánea…";
+"stash.quickSnapshotMenu" = "Crear instantánea rápida";
 "stash.savePartial" = "Guardar stash parcial";
 "stash.savePartial.help" = "Guarda solo los archivos seleccionados en el stash; el resto de la copia de trabajo no cambia.";
 "stash.snapshotPartial" = "Crear instantánea parcial";
@@ -1113,6 +1126,9 @@
 "branch.tooltip.stale" = "- está antigua (%@)";
 "branch.tooltip.missingUpstream" = "- la rama seguida “%@” ya no existe";
 "remote.tooltip.branch" = "Rama remota “%@”";
+"remote.tooltip.remote" = "Remoto “%@”";
+"remote.tooltip.fetchURL" = "URL de obtención: %@";
+"remote.tooltip.pushURL" = "URL de envío: %@";
 "tag.tooltip.revision" = "Apunta a la revisión “%@”";
 "tag.tooltip.message" = "Mensaje de la etiqueta: “%@”";
 "tag.checkoutNamed" = "Hacer checkout de “%@”…";
@@ -1326,20 +1342,20 @@
 "reference.error.url" = "La URL remota no es válida.";
 "reference.error.url.help" = "Introduce la URL sin espacios alrededor, sin caracteres de control y sin “-” al principio.";
 "branch.fastForward" = "Avance rápido de “%@”";
-"branch.tracking" = "Seguimiento";
+"branch.tracking" = "Seguir rama upstream";
 "branch.tracking.remoteBranches" = "Ramas remotas";
 "branch.tracking.localBranches" = "Ramas locales";
 "branch.tracking.remove" = "Quitar seguimiento";
 "branch.tracking.set" = "Establecer upstream";
-"branch.parent" = "Rama padre";
+"branch.parent" = "Seguir rama padre";
 "branch.parent.set" = "Establecer rama padre";
-"branch.parent.setMenu" = "Establecer rama padre…";
+"branch.parent.setMenu" = "Seguir otra rama padre…";
 "branch.parent.remove" = "Quitar rama padre";
 "branch.parent.field" = "Padre:";
 "branch.parent.message" = "Elige la rama en la que se basa “%@”. Las comparaciones y actualizaciones de la rama la usan como base.";
 "branch.parent.replace" = "Esto sustituye la rama padre actual “%@”.";
 "branch.parentOption" = "Rama padre:";
-"branch.parentOption.none" = "Ninguna";
+"branch.parentOption.none" = "Sin rama padre";
 "branch.parentOption.help" = "Las comparaciones y actualizaciones de la nueva rama usan la rama padre como base.";
 "branch.pin.help" = "Añade la rama a la sección Pinned de la barra lateral.";
 "branch.trackStart.named" = "Seguir la rama “%@”";
@@ -1372,6 +1388,14 @@
 "branch.error.checkoutCreated.title" = "Rama creada, pero sin checkout";
 "branch.error.checkoutCreated" = "La nueva rama se creó, pero no se pudo hacer checkout.";
 "branch.error.checkoutCreated.help" = "La rama sigue en el repositorio. Revisa la salida original y haz checkout de la rama después de resolver el problema.";
+"branch.error.inWorktree.title" = "Rama con checkout en otro worktree";
+"branch.error.inWorktree" = "La rama ya tiene checkout en otro worktree.";
+"branch.error.inWorktree.help" = "No se ha cambiado nada. Abre ese worktree o cambia allí primero a otra rama.";
+"branch.error.checkoutTracking.title" = "Upstream establecido, pero la rama sin checkout";
+"branch.error.checkoutTracking" = "Se estableció el upstream de la rama, pero no se pudo hacer checkout.";
+"branch.error.checkoutTracking.help" = "La rama conserva sus commits y su nuevo upstream. Revisa la salida original y haz checkout de la rama después de resolver el problema.";
+"branch.trackExisting.title" = "Hacer checkout de la rama existente";
+"branch.trackExisting.message" = "Se hará checkout de la rama local “%1$@” y seguirá a la rama remota “%2$@”. Sus commits no cambian.";
 "branch.error.unmerged.help" = "Revisa los commits de la rama o elimínala con Forzar eliminación.";
 "tag.create" = "Crear nueva etiqueta";
 "tag.create.message" = "Crea una etiqueta local en la revisión introducida.";
@@ -1405,6 +1429,7 @@
 "remote.add.message" = "Introduce un nombre y la URL del repositorio remoto. La conexión se comprueba antes de añadirlo.";
 "remote.add.submit" = "Añadir remoto";
 "remote.addMenu" = "Añadir repositorio remoto…";
+"remote.fetchMenu" = "Hacer fetch de “%@”…";
 "remote.addMainMenu" = "Añadir nuevo remoto…";
 "remote.name.placeholder" = "Nombre del remoto";
 "remote.url" = "URL remota:";
@@ -1464,6 +1489,7 @@
 "remote.error.browser" = "El remoto no se puede abrir en un navegador.";
 "remote.error.browser.help" = "Solo los remotos con una URL HTTP(S), SSH o del protocolo git tienen página web. Las rutas locales y las URL file no.";
 "branch.dragTrack" = "Seguir";
+"branch.dragPublish" = "Publicar";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Ajustes del remoto (%@)";
@@ -1509,13 +1535,14 @@
 "review.update.clean" = "Sin conflictos con la rama padre";
 "review.archive.title" = "Archivar ramas";
 "review.archive.help" = "Selecciona las ramas que quieres ocultar de la lista. Las ramas archivadas pasan a “Ramas archivadas” en la barra lateral y siguen disponibles allí.";
-"review.archive.automaticHelp" = "Estas ramas no se han actualizado recientemente o su pull request o merge request ya se fusionó, y se archivarán automáticamente. Desmarca las que quieras conservar.";
+"review.archive.automaticHelp" = "Estas ramas no se han actualizado recientemente o su pull request o merge request ya se fusionó, y se archivarán automáticamente. Marca las que quieras archivar.";
 "review.archive.submit" = "Archivar";
 "review.archive.empty" = "No hay ramas que archivar";
 "review.archive.emptyHelp" = "Solo se sugiere archivar las ramas que no se han actualizado recientemente o cuya pull request o merge request ya se fusionó.";
 "review.archive.auto" = "Archivar ramas automáticamente";
 "review.archive.autoHelp" = "Una vez al día se muestran las ramas obsoletas para que confirmes antes de archivarlas.";
 "review.archive.count" = "Se pueden archivar %ld ramas";
+"review.archive.selection" = "Seleccionadas: %1$ld de %2$ld";
 "review.archived.one" = "1 rama archivada";
 "review.archived.many" = "%ld ramas archivadas";
 "review.archived.undo" = "Deshacer";
@@ -1568,6 +1595,14 @@
 "sync.quickMergeInto" = "Fusión rápida de “%1$@” en “%2$@”";
 "sync.quickRebaseOn" = "Rebase rápido de “%1$@” sobre “%2$@”";
 "branch.pushToMenu" = "Hacer push de “%@” a…";
+"branch.publishMenu" = "Publicar “%@”…";
+"branch.createFromMenu" = "Crear rama desde “%@”…";
+"branch.trackMenu" = "Seguir “%@”…";
+"branch.pullMenu" = "Hacer pull de “%@”…";
+"branch.copyRemoteNameMenu" = "Copiar nombre de la rama remota al portapapeles";
+"branch.compareMenu" = "Comparar “%@” con una revisión…";
+"branch.rebaseOntoMenu" = "Hacer rebase en otra revisión…";
+"branch.deleteMenu.multiple" = "Eliminar %ld ramas…";
 "tag.compareMenu" = "Comparar “%@” con una revisión…";
 
 /* 分支拖进 “/” 文件夹时的动作名。 */
@@ -2442,6 +2477,8 @@
 
 "pr.title" = "Pull requests";
 "mr.title" = "Merge requests";
+"pr.archive.merged" = "Pull request fusionada";
+"mr.archive.merged" = "Merge request fusionada";
 "pr.show.menu" = "Mostrar pull requests";
 "mr.show.menu" = "Mostrar merge requests";
 "pr.create.menu" = "Crear pull request…";

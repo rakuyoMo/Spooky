@@ -4,9 +4,11 @@ import SpookyKit
 // MARK: - References
 
 extension AppFailure {
-    /// 引用管理失败的文案键、类别、恢复说明、Git 原文与诊断：名字、地址与快进条件属于仓库状态问题，诊断写出涉及的名字。
+    /// 引用管理失败的文案键、类别、恢复说明、Git 原文与诊断：名字、地址、快进条件与工作树占用属于仓库状态问题，
+    /// 诊断写出涉及的名字，工作树占用另写出那个工作树的路径。
     ///
-    /// 分支名带着不合法的原因时，恢复说明换成这条原因；新分支建好、检出失败时说明分支已经建好，原文是检出的 Git 输出。
+    /// 分支名带着不合法的原因时，恢复说明换成这条原因；新分支建好或上游设好、检出失败时说明已经完成的那一步，
+    /// 原文是检出的 Git 输出。
     static func classification(
         of reference: ReferenceError
     ) -> (key: String, kind: FailureKind, recoveryKey: String, output: GitCommandResult?, diagnostic: String?) {
@@ -46,6 +48,18 @@ extension AppFailure {
                 "branch.error.checkoutCreated",
                 .git,
                 "branch.error.checkoutCreated.help",
+                error.result,
+                error.diagnostic
+            )
+
+        case .checkedOutInWorktree(let branch, let path):
+            ("branch.error.inWorktree", .repository, "branch.error.inWorktree.help", nil, branch + " → " + path)
+
+        case .trackingCheckoutFailed(_, _, let error):
+            (
+                "branch.error.checkoutTracking",
+                .git,
+                "branch.error.checkoutTracking.help",
                 error.result,
                 error.diagnostic
             )

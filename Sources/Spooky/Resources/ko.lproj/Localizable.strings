@@ -92,6 +92,18 @@
 "branch.behind" = "%ld 뒤처짐";
 
 "workspace.changed" = "변경된 파일: %ld";
+"workspace.checkoutMenu" = "체크아웃";
+"workspace.checkoutRevisionMenu" = "리비전 체크아웃…";
+"workspace.pushMenu" = "푸시…";
+"workspace.pushRevisionMenu" = "리비전을 지정 위치로 푸시…";
+"workspace.publishMenu" = "게시…";
+"workspace.resetMenu" = "리비전으로 재설정…";
+"workspace.mergeMenu" = "리비전과 병합…";
+"workspace.rebaseMenu" = "리비전에 리베이스…";
+"workspace.copyPathMenu" = "파일 경로 복사";
+"workspace.tooltip.head" = "로컬 HEAD는 브랜치 “%@”";
+"workspace.tooltip.detached" = "로컬 HEAD가 “%@”에서 분리됨";
+"workspace.tooltip.changes" = "커밋하지 않은 파일: %ld";
 
 "status.column" = "상태";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "줄 버리기";
 "working.discardLines" = "선택한 줄 버리기";
 "working.discard" = "변경 사항 버리기";
-"working.discardAll" = "모든 변경 사항 버리기…";
 "working.discard.title" = "로컬 변경 사항 버리기";
 "working.discardAll.title" = "모든 로컬 변경 사항 버리기";
 "working.discardAll.submit" = "모든 변경 사항 버리기";
@@ -413,6 +424,7 @@
 "sync.pushHead.help" = "로컬 HEAD 브랜치 “%@”의 새 커밋을 선택한 원격 브랜치로 푸시합니다.";
 "sync.pushHead" = "HEAD 푸시";
 "sync.pushBranch" = "브랜치 푸시";
+"sync.pushBranch.help" = "선택한 로컬 브랜치의 새 커밋을 선택한 원격 브랜치로 푸시합니다.";
 "sync.publish" = "브랜치 게시";
 "sync.publish.help" = "선택한 원격에 브랜치를 만듭니다.";
 "sync.merge" = "병합";
@@ -583,6 +595,7 @@
 "stash.snapshot" = "스냅샷 만들기";
 "stash.snapshot.help" = "로컬 변경 사항을 스태시에 저장하고 작업 사본은 그대로 둡니다.";
 "stash.snapshotMenu" = "스냅샷 만들기…";
+"stash.quickSnapshotMenu" = "빠르게 스냅샷 만들기";
 "stash.savePartial" = "일부 스태시 저장";
 "stash.savePartial.help" = "선택한 파일만 스태시에 저장하고 작업 사본의 나머지는 그대로 둡니다.";
 "stash.snapshotPartial" = "일부 스냅샷 만들기";
@@ -1113,6 +1126,9 @@
 "branch.tooltip.stale" = "- 오래됨(%@)";
 "branch.tooltip.missingUpstream" = "- 추적 중인 브랜치 “%@”이(가) 더 이상 없음";
 "remote.tooltip.branch" = "원격 브랜치 “%@”";
+"remote.tooltip.remote" = "원격 “%@”";
+"remote.tooltip.fetchURL" = "페치 URL: %@";
+"remote.tooltip.pushURL" = "푸시 URL: %@";
 "tag.tooltip.revision" = "리비전 “%@”을(를) 가리킴";
 "tag.tooltip.message" = "태그 메시지: “%@”";
 "tag.checkoutNamed" = "“%@” 체크아웃…";
@@ -1326,20 +1342,20 @@
 "reference.error.url" = "원격 URL이 유효하지 않습니다.";
 "reference.error.url.help" = "앞뒤 공백이나 제어 문자 없이, “-”로 시작하지 않는 URL을 입력하세요.";
 "branch.fastForward" = "“%@” 빨리 감기";
-"branch.tracking" = "추적";
+"branch.tracking" = "업스트림 브랜치 추적";
 "branch.tracking.remoteBranches" = "원격 브랜치";
 "branch.tracking.localBranches" = "로컬 브랜치";
 "branch.tracking.remove" = "추적 해제";
 "branch.tracking.set" = "업스트림 설정";
-"branch.parent" = "부모 브랜치";
+"branch.parent" = "부모 브랜치 추적";
 "branch.parent.set" = "부모 브랜치 설정";
-"branch.parent.setMenu" = "부모 브랜치 설정…";
+"branch.parent.setMenu" = "다른 부모 브랜치 추적…";
 "branch.parent.remove" = "부모 브랜치 제거";
 "branch.parent.field" = "부모:";
 "branch.parent.message" = "“%@”의 기반이 되는 브랜치를 선택합니다. 이 브랜치를 비교하고 업데이트할 때 기준으로 씁니다.";
 "branch.parent.replace" = "현재 부모 “%@”을(를) 대체합니다.";
 "branch.parentOption" = "부모 브랜치:";
-"branch.parentOption.none" = "없음";
+"branch.parentOption.none" = "부모 브랜치 없음";
 "branch.parentOption.help" = "새 브랜치를 비교하고 업데이트할 때 부모 브랜치를 기준으로 씁니다.";
 "branch.pin.help" = "사이드바의 Pinned 섹션에 브랜치를 추가합니다.";
 "branch.trackStart.named" = "“%@” 브랜치 추적";
@@ -1372,6 +1388,14 @@
 "branch.error.checkoutCreated.title" = "브랜치를 만들었지만 체크아웃하지 않음";
 "branch.error.checkoutCreated" = "새 브랜치를 만들었지만 체크아웃하지 못했습니다.";
 "branch.error.checkoutCreated.help" = "브랜치는 저장소에 남아 있습니다. 원본 출력을 확인하고 문제를 해결한 뒤 브랜치를 체크아웃하세요.";
+"branch.error.inWorktree.title" = "다른 작업 트리에 체크아웃된 브랜치";
+"branch.error.inWorktree" = "이 브랜치는 이미 다른 작업 트리에 체크아웃되어 있습니다.";
+"branch.error.inWorktree.help" = "아무것도 바꾸지 않았습니다. 그 작업 트리를 열거나, 먼저 그곳에서 다른 브랜치로 전환하세요.";
+"branch.error.checkoutTracking.title" = "업스트림은 설정했지만 브랜치를 체크아웃하지 않음";
+"branch.error.checkoutTracking" = "브랜치의 업스트림은 설정했지만 체크아웃하지 못했습니다.";
+"branch.error.checkoutTracking.help" = "브랜치의 커밋과 새 업스트림은 그대로 남아 있습니다. 원본 출력을 확인하고 문제를 해결한 뒤 브랜치를 체크아웃하세요.";
+"branch.trackExisting.title" = "기존 브랜치 체크아웃";
+"branch.trackExisting.message" = "로컬 브랜치 “%1$@”을(를) 체크아웃하고 원격 브랜치 “%2$@”을(를) 추적하게 합니다. 로컬 브랜치의 커밋은 그대로 유지됩니다.";
 "branch.error.unmerged.help" = "브랜치의 커밋을 확인하거나 강제 삭제로 삭제하세요.";
 "tag.create" = "새 태그 만들기";
 "tag.create.message" = "입력한 리비전에 로컬 태그를 만듭니다.";
@@ -1405,6 +1429,7 @@
 "remote.add.message" = "원격 저장소의 이름과 URL을 입력하세요. 추가하기 전에 연결을 확인합니다.";
 "remote.add.submit" = "원격 추가";
 "remote.addMenu" = "원격 저장소 추가…";
+"remote.fetchMenu" = "“%@” 가져오기…";
 "remote.addMainMenu" = "새 원격 추가…";
 "remote.name.placeholder" = "원격 이름";
 "remote.url" = "원격 URL:";
@@ -1464,6 +1489,7 @@
 "remote.error.browser" = "이 원격은 브라우저에서 열 수 없습니다.";
 "remote.error.browser.help" = "HTTP(S), SSH, git 프로토콜 URL을 가진 원격에만 웹 페이지가 있습니다. 로컬 경로와 file URL에는 없습니다.";
 "branch.dragTrack" = "추적";
+"branch.dragPublish" = "게시";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "원격 설정 (%@)";
@@ -1509,13 +1535,14 @@
 "review.update.clean" = "상위 브랜치와 충돌 없음";
 "review.archive.title" = "브랜치 보관";
 "review.archive.help" = "브랜치 목록에서 숨길 브랜치를 선택합니다. 보관한 브랜치는 사이드바의 “보관된 브랜치”로 이동하며 계속 사용할 수 있습니다.";
-"review.archive.automaticHelp" = "이 브랜치들은 오랫동안 업데이트되지 않았거나 풀 리퀘스트 또는 머지 리퀘스트가 병합되어 자동으로 보관됩니다. 유지할 브랜치는 선택을 해제하십시오.";
+"review.archive.automaticHelp" = "이 브랜치들은 오랫동안 업데이트되지 않았거나 풀 리퀘스트 또는 머지 리퀘스트가 병합되어 자동으로 보관됩니다. 보관할 브랜치를 선택하십시오.";
 "review.archive.submit" = "보관";
 "review.archive.empty" = "보관할 브랜치 없음";
 "review.archive.emptyHelp" = "오랫동안 업데이트되지 않았거나 풀 리퀘스트 또는 머지 리퀘스트가 병합된 브랜치만 보관을 권장합니다.";
 "review.archive.auto" = "브랜치 자동 보관";
 "review.archive.autoHelp" = "하루에 한 번 오래된 브랜치를 나열하고 확인을 받은 뒤 보관합니다.";
 "review.archive.count" = "보관할 수 있는 브랜치 %ld개";
+"review.archive.selection" = "%2$ld개 중 %1$ld개 선택됨";
 "review.archived.one" = "브랜치 1개 보관함";
 "review.archived.many" = "브랜치 %ld개 보관함";
 "review.archived.undo" = "실행 취소";
@@ -1568,6 +1595,14 @@
 "sync.quickMergeInto" = "“%1$@”을(를) “%2$@”(으)로 빠른 병합";
 "sync.quickRebaseOn" = "“%1$@”을(를) “%2$@” 위로 빠른 리베이스";
 "branch.pushToMenu" = "“%@”을(를) 지정 위치로 푸시…";
+"branch.publishMenu" = "“%@” 게시…";
+"branch.createFromMenu" = "“%@”에서 새 브랜치 만들기…";
+"branch.trackMenu" = "“%@” 추적…";
+"branch.pullMenu" = "“%@” 풀…";
+"branch.copyRemoteNameMenu" = "원격 브랜치 이름을 클립보드에 복사";
+"branch.compareMenu" = "“%@”을(를) 다른 리비전과 비교…";
+"branch.rebaseOntoMenu" = "다른 곳의 리비전으로 리베이스…";
+"branch.deleteMenu.multiple" = "브랜치 %ld개 삭제…";
 "tag.compareMenu" = "“%@”을(를) 다른 리비전과 비교…";
 
 /* 分支拖进 “/” 文件夹时的动作名。 */
@@ -2442,6 +2477,8 @@
 
 "pr.title" = "풀 리퀘스트";
 "mr.title" = "머지 리퀘스트";
+"pr.archive.merged" = "풀 리퀘스트 병합됨";
+"mr.archive.merged" = "머지 리퀘스트 병합됨";
 "pr.show.menu" = "풀 리퀘스트 보기";
 "mr.show.menu" = "머지 리퀘스트 보기";
 "pr.create.menu" = "풀 리퀘스트 만들기…";

@@ -74,7 +74,7 @@ extension RepositoryWindowController {
         switch action {
         case .showReferenceHistory: session.showHistory(of: branch)
         case .revealInHistory: session.revealInHistory(branch.objectID)
-        case .checkout: session.checkoutBranch(branch, request: presentRepositoryAction)
+        case .checkout: session.checkoutBranch(branch)
         case .track: presentRepositoryAction(RepositoryActionRequest(kind: .track, reference: branch.id))
         case .mergeIntoHead: presentRepositoryAction(RepositoryActionRequest(kind: .merge, reference: branch.id))
         case .rebaseHead: session.requestSyncDialog(.rebase, preselecting: branch.id)

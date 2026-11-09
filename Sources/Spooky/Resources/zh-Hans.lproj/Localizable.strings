@@ -92,6 +92,18 @@
 "branch.behind" = "落后 %ld";
 
 "workspace.changed" = "改动文件：%ld";
+"workspace.checkoutMenu" = "检出";
+"workspace.checkoutRevisionMenu" = "检出版本…";
+"workspace.pushMenu" = "推送…";
+"workspace.pushRevisionMenu" = "把版本推送到…";
+"workspace.publishMenu" = "发布…";
+"workspace.resetMenu" = "重置到版本…";
+"workspace.mergeMenu" = "与版本合并…";
+"workspace.rebaseMenu" = "变基到版本…";
+"workspace.copyPathMenu" = "复制文件路径";
+"workspace.tooltip.head" = "本地 HEAD 是分支 “%@”";
+"workspace.tooltip.detached" = "本地 HEAD 分离于 “%@”";
+"workspace.tooltip.changes" = "未提交的文件：%ld";
 
 "status.column" = "状态";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "丢弃行";
 "working.discardLines" = "丢弃所选行";
 "working.discard" = "丢弃改动";
-"working.discardAll" = "丢弃全部改动…";
 "working.discard.title" = "丢弃本地改动";
 "working.discardAll.title" = "丢弃全部本地改动";
 "working.discardAll.submit" = "丢弃全部改动";
@@ -413,6 +424,7 @@
 "sync.pushHead.help" = "把本地 HEAD 分支 “%@” 的新提交推送到所选远端分支。";
 "sync.pushHead" = "推送 HEAD";
 "sync.pushBranch" = "推送分支";
+"sync.pushBranch.help" = "把所选本地分支的新提交推送到所选远端分支。";
 "sync.publish" = "发布分支";
 "sync.publish.help" = "在所选远端创建分支。";
 "sync.merge" = "合并";
@@ -583,6 +595,7 @@
 "stash.snapshot" = "创建快照";
 "stash.snapshot.help" = "把本地改动存进储藏，工作区保持不变。";
 "stash.snapshotMenu" = "创建快照…";
+"stash.quickSnapshotMenu" = "快速创建快照";
 "stash.savePartial" = "保存部分储藏";
 "stash.savePartial.help" = "只把所选文件存进储藏，工作区的其余内容保持不变。";
 "stash.snapshotPartial" = "创建部分快照";
@@ -1113,6 +1126,9 @@
 "branch.tooltip.stale" = "- 已陈旧（%@）";
 "branch.tooltip.missingUpstream" = "- 跟踪的分支 “%@” 已不存在";
 "remote.tooltip.branch" = "远端分支 “%@”";
+"remote.tooltip.remote" = "远端 “%@”";
+"remote.tooltip.fetchURL" = "获取地址：%@";
+"remote.tooltip.pushURL" = "推送地址：%@";
 "tag.tooltip.revision" = "指向版本 “%@”";
 "tag.tooltip.message" = "标签说明：“%@”";
 "tag.checkoutNamed" = "检出 “%@”…";
@@ -1326,20 +1342,20 @@
 "reference.error.url" = "远端地址无效。";
 "reference.error.url.help" = "地址首尾不能有空格或控制字符，也不能以 “-” 开头。";
 "branch.fastForward" = "快进 “%@”";
-"branch.tracking" = "跟踪";
+"branch.tracking" = "跟踪上游分支";
 "branch.tracking.remoteBranches" = "远端分支";
 "branch.tracking.localBranches" = "本地分支";
 "branch.tracking.remove" = "取消跟踪";
 "branch.tracking.set" = "设置上游";
-"branch.parent" = "父分支";
+"branch.parent" = "跟踪父分支";
 "branch.parent.set" = "设置父分支";
-"branch.parent.setMenu" = "设置父分支…";
+"branch.parent.setMenu" = "跟踪其他父分支…";
 "branch.parent.remove" = "移除父分支";
 "branch.parent.field" = "父分支：";
 "branch.parent.message" = "选择 “%@” 所基于的分支。比较与更新这个分支时以它为基准。";
 "branch.parent.replace" = "这会替换当前的父分支 “%@”。";
 "branch.parentOption" = "父分支：";
-"branch.parentOption.none" = "无";
+"branch.parentOption.none" = "无父分支";
 "branch.parentOption.help" = "比较与更新新分支时以父分支为基准。";
 "branch.pin.help" = "把分支加到侧边栏的 Pinned 分组。";
 "branch.trackStart.named" = "跟踪分支 “%@”";
@@ -1372,6 +1388,14 @@
 "branch.error.checkoutCreated.title" = "分支已创建，但未检出";
 "branch.error.checkoutCreated" = "新分支已创建，但检出失败。";
 "branch.error.checkoutCreated.help" = "分支保留在仓库中。请查看原始输出，解决问题后再检出这个分支。";
+"branch.error.inWorktree.title" = "分支已在别的工作树检出";
+"branch.error.inWorktree" = "这个分支已在另一个工作树中检出。";
+"branch.error.inWorktree.help" = "仓库没有任何改动。请打开那个工作树，或先在那里切换到其他分支。";
+"branch.error.checkoutTracking.title" = "上游已设置，但分支未检出";
+"branch.error.checkoutTracking" = "分支的上游已设置，但检出失败。";
+"branch.error.checkoutTracking.help" = "分支保留原有的提交与新的上游。请查看原始输出，解决问题后再检出这个分支。";
+"branch.trackExisting.title" = "检出已有分支";
+"branch.trackExisting.message" = "将检出本地分支 “%1$@”，并让它跟踪远端分支 “%2$@”。本地分支的提交保持不变。";
 "branch.error.unmerged.help" = "请检查分支的提交，或勾选强制删除后再删除。";
 "tag.create" = "新建标签";
 "tag.create.message" = "在输入的版本上新建本地标签。";
@@ -1405,6 +1429,7 @@
 "remote.add.message" = "输入远端仓库的名称与地址。添加前会先检查连接。";
 "remote.add.submit" = "添加远端";
 "remote.addMenu" = "添加远端仓库…";
+"remote.fetchMenu" = "获取 “%@”…";
 "remote.addMainMenu" = "添加远端…";
 "remote.name.placeholder" = "远端名称";
 "remote.url" = "远端地址：";
@@ -1464,6 +1489,7 @@
 "remote.error.browser" = "无法在浏览器中打开这个远端。";
 "remote.error.browser.help" = "只有 HTTP(S)、SSH 或 git 协议地址的远端有网页，本机路径与 file 地址没有。";
 "branch.dragTrack" = "跟踪";
+"branch.dragPublish" = "发布";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "远端设置（%@）";
@@ -1509,13 +1535,14 @@
 "review.update.clean" = "与父分支没有冲突";
 "review.archive.title" = "归档分支";
 "review.archive.help" = "选择要从分支列表中隐藏的分支。归档的分支移到侧边栏的 “已归档分支”，仍可在那里使用。";
-"review.archive.automaticHelp" = "这些分支长期没有更新，或者 Pull Request 或 Merge Request 已合并，即将自动归档。取消勾选要保留的分支。";
+"review.archive.automaticHelp" = "这些分支长期没有更新，或者 Pull Request 或 Merge Request 已合并，即将自动归档。勾选要归档的分支。";
 "review.archive.submit" = "归档";
 "review.archive.empty" = "没有可归档的分支";
 "review.archive.emptyHelp" = "只建议归档长期没有更新，或者 Pull Request 或 Merge Request 已合并的分支。";
 "review.archive.auto" = "自动归档分支";
 "review.archive.autoHelp" = "每天一次列出过时的分支，经你确认后再归档。";
 "review.archive.count" = "%ld 个分支可以归档";
+"review.archive.selection" = "已选 %1$ld 个，共 %2$ld 个";
 "review.archived.one" = "已归档 1 个分支";
 "review.archived.many" = "已归档 %ld 个分支";
 "review.archived.undo" = "撤销";
@@ -1568,6 +1595,14 @@
 "sync.quickMergeInto" = "快速把 “%1$@” 合并到 “%2$@”";
 "sync.quickRebaseOn" = "快速把 “%1$@” 变基到 “%2$@”";
 "branch.pushToMenu" = "把 “%@” 推送到…";
+"branch.publishMenu" = "发布 “%@”…";
+"branch.createFromMenu" = "从 “%@” 新建分支…";
+"branch.trackMenu" = "跟踪 “%@”…";
+"branch.pullMenu" = "拉取 “%@”…";
+"branch.copyRemoteNameMenu" = "将远端分支名复制到剪贴板";
+"branch.compareMenu" = "将 “%@” 与其他版本比较…";
+"branch.rebaseOntoMenu" = "变基到别处的版本…";
+"branch.deleteMenu.multiple" = "删除 %ld 个分支…";
 "tag.compareMenu" = "将 “%@” 与其他版本比较…";
 
 /* 分支拖进 “/” 文件夹时的动作名。 */
@@ -2442,6 +2477,8 @@
 
 "pr.title" = "Pull Request";
 "mr.title" = "Merge Request";
+"pr.archive.merged" = "Pull Request 已合并";
+"mr.archive.merged" = "Merge Request 已合并";
 "pr.show.menu" = "显示 Pull Request";
 "mr.show.menu" = "显示 Merge Request";
 "pr.create.menu" = "新建 Pull Request…";

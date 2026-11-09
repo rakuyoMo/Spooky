@@ -20,12 +20,19 @@ enum StashDropAction: Sendable {
         }
     }
 
-    /// 只认储藏来源与工作区或 HEAD 分支落点；储藏或文件已不在当前列表中、或当前不可应用时为 nil。
+    /// 只认储藏来源与 Working Copy 或 HEAD 分支落点；按住 ⌥、储藏或文件已不在当前列表中、或当前不可应用时为 nil。
+    ///
+    /// - Parameter alternate: 是否按住 ⌥。
     @MainActor
-    init?(payload: RepositoryDragPayload, destination: RepositoryDropDestination, session: RepositorySession) {
+    init?(
+        payload: RepositoryDragPayload,
+        destination: RepositoryDropDestination,
+        alternate: Bool,
+        session: RepositorySession
+    ) {
         guard
-            case .head = destination,
-            !NSEvent.modifierFlags.contains(.option),
+            [.workingCopy, .head].contains(destination),
+            !alternate,
             let stash = session.stashes.entries.first(where: { $0.id == payload.reference }),
             session.canApply(stash)
         else { return nil }
@@ -77,96 +84,67 @@ struct StashesDropTarget: ViewModifier {
     /// 当前会话。
     let session: RepositorySession
 
-    /// 悬停时的动作名。
-    @State
-    private var label: String?
-
     /// 读出拖动项中属于指定仓库的路径；格式不符或来自其它仓库的项被忽略。
-    static func paths(from providers: [NSItemProvider], in repository: RepositoryLocation) async -> [String] {
-        /// 读取一个拖动项的数据，失败时为 nil。
-        func load(_ provider: NSItemProvider) async -> Data? {
-            await withCheckedContinuation { continuation in
-                _ = provider.loadDataRepresentation(forTypeIdentifier: Payload.type) { data, _ in
-                    continuation.resume(returning: data)
-                }
-            }
-        }
-
-        var paths: [String] = []
-
-        for provider in providers {
+    ///
+    /// - Parameters:
+    ///   - items: 拖动的粘贴板项。
+    ///   - repository: 落点所在的仓库。
+    static func paths(from items: [NSPasteboardItem], in repository: RepositoryLocation) -> [String] {
+        items.compactMap { item in
             guard
-                let data = await load(provider),
+                let data = item.data(forType: type),
                 let payload = try? JSONDecoder().decode(Payload.self, from: data),
                 payload.repository == repository
-            else { continue }
+            else { return nil }
 
-            paths.append(payload.path)
+            return payload.path
         }
-
-        return paths
     }
 
-    /// 与引用落点相同的动作标签。
+    /// 落点盖在行上，点击穿透给行。
     func body(content: Content) -> some View {
         content
-            .overlay(alignment: .trailing) {
-                if let label {
-                    Text(label)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(Color.accentColor)
-                        .padding(.horizontal, 8)
-                        .frame(height: 24)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 4))
-                        .allowsHitTesting(false)
-                }
+            .overlay {
+                RepositoryDropView(type: Self.type) { action(for: $0) }
+                    .allowsHitTesting(false)
             }
-            .onDrop(of: [Payload.type], delegate: FileDropDelegate(session: session, label: $label))
     }
 }
 
-// MARK: - FileDropDelegate
+// MARK: - Private
 
-/// 工作区文件的落点规则：仓库可以储藏时才接受，落下后核对仓库与文件再打开对话框。
-private struct FileDropDelegate: DropDelegate {
-    /// 当前会话。
-    let session: RepositorySession
+extension StashesDropTarget {
+    /// 工作区文件拖动的粘贴板类型。
+    private static let type = NSPasteboard.PasteboardType(Payload.type)
 
-    /// 悬停时的动作名。
-    @Binding
-    var label: String?
+    /// 有工作区文件且仓库可以储藏时是部分储藏；落下后按当前状态把路径换成工作区条目，
+    /// 仓库已变化或文件已没有改动时放弃。
+    private func action(for info: any NSDraggingInfo) -> DropBadgeAction? {
+        let items = info.draggingPasteboard.pasteboardItems?.filter { $0.types.contains(Self.type) } ?? []
 
-    /// 有工作区文件且仓库可写时接受。
-    func validateDrop(info: DropInfo) -> Bool {
-        info.hasItemsConforming(to: [StashesDropTarget.Payload.type]) && session.canSaveStash
-    }
-
-    /// 悬停时显示部分储藏的动作名。
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        let valid = validateDrop(info: info)
-        label = valid ? AppLocalization.text("stash.stashItemsDrop") : nil
-        return DropProposal(operation: valid ? .copy : .forbidden)
-    }
-
-    /// 离开落点后移除提示。
-    func dropExited(info _: DropInfo) { label = nil }
-
-    /// 路径按当前状态换成工作区条目；异步期间仓库变化或文件已没有改动则放弃。
-    func performDrop(info: DropInfo) -> Bool {
-        label = nil
-        guard validateDrop(info: info), let repository = session.repository else { return false }
-        let providers = info.itemProviders(for: [StashesDropTarget.Payload.type])
-
-        Task { @MainActor in
-            let paths = Set(await StashesDropTarget.paths(from: providers, in: repository))
-            guard session.repository == repository else { return }
-
-            let entries = session.status?.entries.filter { paths.contains($0.path) } ?? []
-            guard !entries.isEmpty else { return }
-
-            session.requestSaveStash(snapshot: false, entries: entries)
+        guard !items.isEmpty, session.canSaveStash, let repository = session.repository else {
+            return nil
         }
 
-        return true
+        return DropBadgeAction(title: AppLocalization.text("stash.stashItemsDrop")) {
+            let paths = Set(Self.paths(from: items, in: repository))
+
+            // 拖动会话结束后再打开对话框
+            Task { @MainActor in
+                guard session.repository == repository else {
+                    return
+                }
+
+                let entries = session.status?.entries.filter { paths.contains($0.path) } ?? []
+
+                guard !entries.isEmpty else {
+                    return
+                }
+
+                session.requestSaveStash(snapshot: false, entries: entries)
+            }
+
+            return true
+        }
     }
 }

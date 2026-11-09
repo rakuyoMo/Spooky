@@ -83,22 +83,15 @@ struct OperationDialogTests {
 // MARK: - Dialogs
 
 extension OperationDialogTests {
-    /// 推送 HEAD 分支时标题与主按钮是 Push HEAD，下拉不超过 320；本地分支拖到远端分支这类指定了别的本地分支的推送是 Push Branch。
+    /// 推送 HEAD 分支时标题与主按钮是 Push HEAD，下拉不超过 320；分支右键菜单这类指定了别的本地分支的推送是 Push Branch。
     private static func expectPush(in session: RepositorySession) async throws {
         let head = await elements(of: RepositoryActionRequest(kind: .push), in: session)
 
         try expectTitle("sync.pushHead", submit: "sync.pushHead", in: head)
         try expectPopUps(in: head, atMost: 320)
 
-        // 与本地分支 side 拖到 origin/main 时的请求相同
-        let dragged = RepositoryActionRequest(
-            kind: .push,
-            reference: "refs/remotes/origin/main",
-            remote: "origin",
-            localBranch: "side"
-        )
-
-        let branch = await elements(of: dragged, in: session)
+        // 与右键本地分支 side 推送时的请求相同
+        let branch = await elements(of: RepositoryActionRequest(kind: .push, localBranch: "side"), in: session)
 
         try expectTitle("sync.pushBranch", submit: "sync.pushBranch", in: branch)
     }

@@ -68,8 +68,8 @@ struct BranchDialogTests {
     /// 跟踪远端分支的预选：入口传入的远端分支优先；没有预选或预选不是远端分支时取 HEAD 的上游；
     /// HEAD 没有上游时取第一个远端分支；没有远端分支时为空。
     ///
-    /// 合并的候选依次是本地分支（含 HEAD 分支）、远端分支与标签，拉取只有远端分支；两者先预选 HEAD 的上游，
-    /// HEAD 没有上游时取第一个不是 HEAD 分支的候选。
+    /// 合并的候选依次是本地分支（含 HEAD 分支）、远端分支与标签，拉取只有远端分支，各组按引用的公共顺序排列；
+    /// 两者先预选 HEAD 的上游，HEAD 没有上游时取第一个不是 HEAD 分支的候选。
     @Test("跟踪远端分支与拉取、合并来源的候选和预选回退")
     func trackPreselection() async throws {
         let fixture = try await OperationWiringTests.makeFixture()
@@ -92,7 +92,8 @@ struct BranchDialogTests {
             RepositoryOperationDialog.sourcePreselection(for: $0, preselection: nil, in: session)
         }
 
-        let remotes = ["refs/remotes/origin/feature", "refs/remotes/origin/main"]
+        // 远端分支里 main 排在最前，不按名字排在 feature 之后
+        let remotes = ["refs/remotes/origin/main", "refs/remotes/origin/feature"]
 
         #expect(candidates(.merge) == ["refs/heads/main", "refs/heads/side"] + remotes + ["refs/tags/v1"])
         #expect(candidates(.pull) == remotes)
@@ -105,12 +106,55 @@ struct BranchDialogTests {
 
         #expect(source(nil) == "refs/remotes/origin/feature")
         #expect(preselection(.merge) == "refs/heads/side")
-        #expect(preselection(.pull) == "refs/remotes/origin/feature")
+        #expect(preselection(.pull) == "refs/remotes/origin/main")
 
         // 没有远端分支
         let empty = RepositorySession(loadStatus: { _ in throw CancellationError() })
 
         #expect(RepositoryOperationDialog.trackSource(preselection: nil, in: empty).isEmpty)
+    }
+
+    /// 新建分支的父分支只能是起点本身（本地分支）或与远端起点同名、且确实跟踪它的本地分支；
+    /// 提交、标签、只是同名或只是跟踪它的起点都没有候选，候选分支消失后同样没有。
+    @Test("新建分支的父分支候选随起点核对")
+    func parentCandidates() async throws {
+        let fixture = try await OperationWiringTests.makeFixture()
+        defer { fixture.close() }
+
+        let session = fixture.session
+        let runner = fixture.runner
+        let candidate = { RepositoryOperationDialog.parentCandidate(for: $0, in: session)?.id }
+
+        // 远端有与 side 同名的分支 origin/side，还有 origin/feature
+        _ = try await runner.run(["update-ref", "refs/remotes/origin/side", "side"])
+        _ = try await runner.run(["update-ref", "refs/remotes/origin/feature", "HEAD"])
+        await Self.reload(session)
+
+        // 本地分支起点、提交与标签起点；main 跟踪同名的 origin/main
+        #expect(candidate("side") == "refs/heads/side")
+        #expect(candidate("refs/heads/main") == "refs/heads/main")
+        #expect(candidate(try #require(fixture.ids["A"])) == nil)
+        #expect(candidate("v1") == nil)
+        #expect(candidate("origin/main") == "refs/heads/main")
+
+        // side 同名但不跟踪 origin/side；跟踪 origin/feature 但不同名
+        _ = try await runner.run(["branch", "-q", "--set-upstream-to=origin/feature", "side"])
+        await Self.reload(session)
+
+        #expect(candidate("origin/side") == nil)
+        #expect(candidate("origin/feature") == nil)
+
+        // 改为跟踪同名的 origin/side 后才是候选
+        _ = try await runner.run(["branch", "-q", "--set-upstream-to=origin/side", "side"])
+        await Self.reload(session)
+
+        #expect(candidate("refs/remotes/origin/side") == "refs/heads/side")
+
+        // 候选分支消失
+        _ = try await runner.run(["branch", "-q", "-D", "side"])
+        await Self.reload(session)
+
+        #expect(candidate("origin/side") == nil)
     }
 
     /// 删除一个跟踪远端分支的本地分支：说明写出分支名，强制删除在上、不带说明、不勾，删除跟踪的远端分支在下并写出它；

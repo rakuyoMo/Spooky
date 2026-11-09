@@ -15,7 +15,12 @@ extension SyncDialog {
     var form: some View {
         switch kind {
         case .sync:
-            picker("sync.remoteBranch", selection: $source, references: remoteBranches)
+            // 拉取的来源与拉取对话框一样按公共顺序排列
+            picker(
+                "sync.remoteBranch",
+                selection: $source,
+                references: ReferenceOrder.sorted(remoteBranches, in: session.history.snapshot)
+            )
 
             option("sync.rebase", value: $rebase)
 
@@ -83,7 +88,12 @@ extension SyncDialog {
             return session.canRebase && !source.isEmpty
 
         case .forcePush:
-            return session.canPush && !checkingLease && (lease.map { $0.status != .sameRevision } ?? false)
+            // 强推的是所选的本地分支，不要求它是 HEAD 分支
+            let local = branches.first { $0.isLocal && $0.id == source }
+
+            return (local.map { session.canPush($0) } ?? false)
+                && !checkingLease
+                && (lease.map { $0.status != .sameRevision } ?? false)
 
         case .pushRevision:
             return session.canPushRevision

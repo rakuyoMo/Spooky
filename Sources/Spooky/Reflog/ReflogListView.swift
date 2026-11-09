@@ -141,16 +141,12 @@ extension ReflogListView {
 // MARK: - Actions
 
 extension ReflogListView {
-    /// 本地分支，当前分支在前，其余按名称排列。
+    /// 本地分支的完整引用名，按公共顺序排列，当前分支不提前。
     private var branches: [String] {
-        #warning(
-            "TODO: 引用菜单里分支的排序未核实：当前分支在前，其余按名称。核实方式：建几个最近提交时间不同的分支，比对 Ref 菜单里的先后；只影响菜单项的顺序。"
-        )
+        let snapshot = session.history.snapshot
+        let local = snapshot?.references.filter(\.isLocal) ?? []
 
-        let current = session.status?.branch.head.map { "refs/heads/" + $0 }
-        let local = session.history.snapshot?.references.filter(\.isLocal).map(\.id).sorted() ?? []
-
-        return local.filter { $0 == current } + local.filter { $0 != current }
+        return ReferenceOrder.sorted(local, in: snapshot).map(\.id)
     }
 
     /// 重置 HEAD；看分支时恢复这个分支；从记录新建分支与摘取；保存补丁。

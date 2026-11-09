@@ -66,6 +66,40 @@ extension RepositoryReferences {
         ])
     }
 
+    /// 检出已有的本地分支并把上游设为指定的分支，本地分支的提交不动；两步在同一个仓库操作里执行。
+    ///
+    /// 先核对本地分支没有在别的工作树检出：检出了时抛出 ``ReferenceError/checkedOutInWorktree(_:path:)``，不写上游。
+    /// 上游设好后检出被 Git 拒绝时上游保留，抛出 ``ReferenceError/trackingCheckoutFailed(_:upstream:_:)``；
+    /// 取消与连接失败照常抛出。
+    ///
+    /// - Parameters:
+    ///   - branch: 本地分支的完整引用名。
+    ///   - upstream: 新上游的完整引用名，远端分支或另一个本地分支。
+    public func checkout(_ branch: String, tracking upstream: String) async throws {
+        guard branch.hasPrefix("refs/heads/") else {
+            throw RepositoryReadError.invalidQuery
+        }
+
+        let name = String(branch.dropFirst("refs/heads/".count))
+
+        try await runner.writeTransaction {
+            // 在别的工作树检出的分支 Git 不许再检出，这时先写上游只会留下改了一半的结果
+            let worktrees = try await RepositoryWorktrees(runner: runner).list()
+
+            if let occupied = worktrees.first(where: { !$0.isCurrent && $0.branch == branch }) {
+                throw ReferenceError.checkedOutInWorktree(name, path: occupied.path)
+            }
+
+            try await setUpstream(upstream, for: branch)
+
+            do {
+                try await checkout(branch)
+            } catch let error as GitError where !error.isCancelled {
+                throw ReferenceError.trackingCheckoutFailed(name, upstream: upstream, error)
+            }
+        }
+    }
+
     /// 取消上游只删 `branch.<名称>.remote` 与 `merge`，分支配置段里的其它键保留。
     public func unsetUpstream(of branch: String) async throws {
         guard branch.hasPrefix("refs/heads/") else {

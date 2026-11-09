@@ -48,6 +48,36 @@ extension SyncDialog {
         let destination = branch?.upstreamBranch.map { String($0.dropFirst("refs/heads/".count)) } ?? source
         return (source, remote, destination)
     }
+
+    /// 安全强推的默认值：来源是入口预选的本地分支，没有预选或它已不在时是 HEAD 分支，再否则是第一个本地分支；
+    /// 目标见 ``forcePushDestination(for:in:)``。
+    ///
+    /// - Parameter preselection: 入口预选的本地分支的完整引用名，如分支菜单里被点击的分支。
+    static func forcePushDefaults(
+        preselection: String?,
+        in session: RepositorySession
+    ) -> (source: String, destination: String) {
+        let locals = session.history.branches.filter(\.isLocal)
+
+        let source = locals.first { $0.id == preselection }?.id
+            ?? session.headBranch?.id
+            ?? locals.first?.id
+            ?? ""
+
+        return (source, forcePushDestination(for: source, in: session))
+    }
+
+    /// 安全强推的目标：所选本地分支跟踪的远端分支，没有时取第一个远端分支。
+    ///
+    /// - Parameter source: 所选本地分支的完整引用名。
+    static func forcePushDestination(for source: String, in session: RepositorySession) -> String {
+        let remotes = session.history.branches.filter(\.isRemote)
+        let local = session.history.branches.first { $0.id == source }
+
+        return remotes.first { $0.id == local?.upstream }?.id
+            ?? remotes.first?.id
+            ?? ""
+    }
 }
 
 // MARK: - Actions
@@ -80,14 +110,15 @@ extension SyncDialog {
 
         switch kind {
         case .sync:
-            source = tracked?.id ?? remoteBranches.first?.id ?? ""
+            // 没有跟踪分支时取下拉里的第一项
+            let first = ReferenceOrder.sorted(remoteBranches, in: session.history.snapshot).first
+            source = tracked?.id ?? first?.id ?? ""
 
         case .rebase:
             source = Self.rebaseTarget(preselection: preselection, in: session)
 
         case .forcePush:
-            source = head?.id ?? branches.first(where: \.isLocal)?.id ?? ""
-            selectDestination()
+            (source, destination) = Self.forcePushDefaults(preselection: preselection, in: session)
 
         case .pushRevision:
             (source, remote, destination) = Self.pushRevisionDefaults(preselection: preselection, in: session)
@@ -98,15 +129,6 @@ extension SyncDialog {
         } else if [.sync, .forcePush].contains(kind), remoteBranches.isEmpty {
             error = AppLocalization.text("sync.noRemoteBranches")
         }
-    }
-
-    /// 强推的目标默认是所选本地分支的跟踪分支，没有时取第一个远端分支。
-    func selectDestination() {
-        let local = branches.first { $0.id == source }
-
-        destination = remoteBranches.first { $0.id == local?.upstream }?.id
-            ?? remoteBranches.first?.id
-            ?? ""
     }
 
     /// 计算强推的提交数与状态；所选分支一变就取消上一次计算。
@@ -201,40 +223,17 @@ extension SyncDialog {
         )
     }
 
-    /// 以对话框里核对过的远端版本为期望值强推。
+    /// 以对话框里核对过的远端版本为期望值，强推所选的本地分支。
     private func startForcePush() -> Bool {
         guard
             let lease,
-            let local = branches.first(where: { $0.id == source }),
-            let target = remoteBranches.first(where: { $0.id == destination }),
-            let owner = session.history.snapshot?.remote(for: target)
+            let local = branches.first(where: { $0.isLocal && $0.id == source }),
+            let target = remoteBranches.first(where: { $0.id == destination })
         else {
             return false
         }
 
-        let remote = owner.name
-        let name = String(target.id.dropFirst(("refs/remotes/" + remote + "/").count))
-        let expected = lease.destination
-        var settings = PushOptions()
-        settings.skipHooks = skipHooks
-        let options = settings
-
-        return session.performGit(
-            { runner, output in
-                _ = try await RepositorySync(runner: runner)
-                    .push(
-                        branch: local.name,
-                        remote: remote,
-                        destination: name,
-                        setUpstream: false,
-                        options: options,
-                        lease: expected,
-                        onOutput: output
-                    )
-            },
-            title: AppLocalization.text("sync.forcePush"),
-            target: .push(remote, refspec: "refs/heads/" + local.name + ":refs/heads/" + name)
-        )
+        return session.forcePush(local, to: target, lease: lease.destination, skipHooks: skipHooks)
     }
 
     /// 把所填版本推到所选远端的目标引用。

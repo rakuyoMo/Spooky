@@ -140,11 +140,10 @@ extension RepositoryWindowController {
     func presentRepositoryAction(_ request: RepositoryActionRequest) {
         guard session.canWrite else { return }
 
-        // 没有远端时，没有指定本地分支与目标的推送改为发布仓库：新建托管仓库、添加为远端再推送
+        // 没有远端时，没有指定本地分支的推送改为发布仓库：新建托管仓库、添加为远端再推送
         if
             request.kind == .push,
             request.localBranch == nil,
-            request.reference == nil,
             session.pushPublishesRepository
         {
             publishRepository()

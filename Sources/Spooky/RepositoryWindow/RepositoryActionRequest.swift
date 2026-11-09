@@ -69,19 +69,21 @@ struct RepositoryActionRequest {
     /// 拖放或远端右键指定的远端。
     var remote: String? = nil
 
-    /// 推送拖放指定的本地源分支。
+    /// 右键菜单、快捷操作或拖到远端指定的推送与发布的本地源分支。
     var localBranch: String? = nil
+
+    /// 新建分支预填的名称，如文件夹右键预填的文件夹路径与结尾的 “/”。
+    var name: String? = nil
 
     /// 清理右键预设的选项。
     var prune = false
 
-    /// 实际打开的请求：推送 HEAD 分支、没有指定目标远端分支而 HEAD 还没有上游时，改为发布这个分支；其它请求原样返回。
+    /// 实际打开的请求：推送 HEAD 分支而 HEAD 还没有上游时，改为发布这个分支；其它请求原样返回。
     ///
     /// - Parameter head: 当前分支的状态；读不到状态时为 nil。
     func resolved(for head: BranchStatus?) -> Self {
         guard
             kind == .push,
-            reference == nil,
             let head,
             let name = head.head,
             (localBranch ?? name) == name,

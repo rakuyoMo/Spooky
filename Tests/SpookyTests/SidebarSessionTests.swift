@@ -85,7 +85,7 @@ extension SidebarSessionTests {
         )
 
         let pin = try #require(
-            BranchFlagDropAction(payload: payload, destination: .pinned, session: session)
+            BranchFlagDropAction(payload: payload, destination: .pinned, alternate: false, session: session)
         )
         #expect(pin.titleKey == "branch.pin")
 
@@ -94,6 +94,7 @@ extension SidebarSessionTests {
         let archive = BranchFlagDropAction(
             payload: payload,
             destination: .archived,
+            alternate: false,
             session: session
         )
 
@@ -105,16 +106,40 @@ extension SidebarSessionTests {
         #expect(Set(selected.map(\.id)) == [feature.id, main.id])
 
         #expect(
-            BranchFlagDropAction(payload: payload, destination: .branches, session: session) == nil
+            BranchFlagDropAction(payload: payload, destination: .branches, alternate: false, session: session) == nil
         )
 
-        session.history.selectedReferences = []
+        // 选中 feature 后置顶，写入后的刷新不改变选中的引用
+        session.activeView = .history
+        session.history.selectedReferences = [feature.id]
+
+        let sidebar = RepositorySidebarView(
+            session: session,
+            selectionChanged: { },
+            openTerminal: { },
+            revealFinder: { },
+            copyPath: { },
+            request: { _ in },
+            showActivity: { }
+        )
+
+        let groups = {
+            (
+                pinned: sidebar.pinnedReferences.map(\.id).contains(feature.id),
+                active: sidebar.activeReferences.map(\.id).contains(feature.id),
+                archived: sidebar.archivedReferences.map(\.id).contains(feature.id)
+            )
+        }
 
         // 置顶与归档各一次写入，Activity 记下操作名
         session.setPinned(true, branches: [feature])
         await settle(session)
 
         #expect(metadata()?.isPinned ?? false)
+
+        // 置顶的分支只在 Pinned 分组里有一行，那一行的选择身份仍是完整引用名
+        #expect(groups() == (true, false, false))
+        #expect(sidebar.selectedItems == [feature.id])
 
         #expect(
             session.activities.items.contains {
@@ -126,32 +151,48 @@ extension SidebarSessionTests {
         await settle(session)
         #expect(metadata() == BranchMetadata(isPinned: true, isArchived: true))
 
+        // 已归档的置顶分支仍只在 Pinned
+        #expect(groups() == (true, false, false))
+
         // 整理状态随引用一起读入：main 是基准分支，feature 不是
         #expect(try #require(session.history.conditions[main.id]).isBase)
         #expect(try !#require(session.history.conditions[feature.id]).isBase)
 
-        // 取消置顶与归档后分支配置里不再有整理标记
+        // 取消置顶后回到 Archived Branches，取消归档后回到 Branches，选中一直不变
         session.setPinned(false, branches: [feature])
         await settle(session)
+        #expect(groups() == (false, false, true))
+
         session.setArchived(false, branches: [feature])
         await settle(session)
+        #expect(groups() == (false, true, false))
+        #expect(sidebar.selectedItems == [feature.id])
 
+        // 分支配置里不再有整理标记
         #expect(session.history.snapshot?.metadata.isEmpty ?? false)
+
+        session.history.selectedReferences = []
+        session.activeView = .workingCopy
     }
 
-    /// 检出本地分支与远端分支时，Activity 的标题带上分支名，远端分支带远端名前缀；双击标签检出成分离 HEAD。
+    /// 双击检出本地分支与远端分支时，Activity 的标题带上分支名，远端分支带远端名前缀；双击标签检出成分离 HEAD。
     private func checkCheckouts(in session: RepositorySession) async throws {
+        let beep: () -> Void = { Issue.record("可以检出时不响铃") }
+        var confirmations: [ConfirmationRequest] = []
+        session.onConfirm = { confirmations.append($0) }
+
         let feature = try #require(session.history.branches.first { $0.id == "refs/heads/feature/一" })
-        session.checkoutBranch(feature) { _ in Issue.record("本地分支直接检出") }
+        session.doubleClick(feature, in: .currentWindow, beep: beep)
         await settle(session)
         #expect(session.status?.branch.head == "feature/一")
 
-        // 远端分支没有对应的本地分支，建同名跟踪分支并检出
+        // 远端分支没有对应的本地分支，不询问，直接建同名跟踪分支并检出
         let references = session.history.snapshot?.references ?? []
         let side = try #require(references.first { $0.id == "refs/remotes/origin/side" })
-        session.checkoutBranch(side) { _ in Issue.record("没有同名的本地分支，不打开跟踪表单") }
+        session.doubleClick(side, in: .currentWindow, beep: beep)
         await settle(session)
         #expect(session.status?.branch.head == "side")
+        #expect(confirmations.isEmpty)
 
         let titles = session.activities.items.map(\.title)
 
@@ -160,9 +201,8 @@ extension SidebarSessionTests {
 
         // 双击标签按完整标签名检出，HEAD 分离在标签所指的提交上
         let tag = try #require(session.history.snapshot?.references.first { $0.isTag })
-        #expect(session.canCheckoutRevision)
 
-        session.checkout(revision: tag.id)
+        session.doubleClick(tag, in: .currentWindow, beep: beep)
         await settle(session)
 
         #expect(session.status?.branch.head == nil)
@@ -170,7 +210,7 @@ extension SidebarSessionTests {
     }
 
     /// 等写操作、随后的完整刷新与引用读取都结束；读引用期间又要求的读取也一起等完。
-    private func settle(_ session: RepositorySession) async {
+    func settle(_ session: RepositorySession) async {
         await session.writeTask?.value
         await session.waitForRefresh()
         await untilFinished { session.history.activeTasks }

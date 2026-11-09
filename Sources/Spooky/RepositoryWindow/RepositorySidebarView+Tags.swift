@@ -18,6 +18,12 @@ extension RepositorySidebarView {
         } header: {
             // 提交或本地分支拖到标题上新建标签
             groupHeader("sidebar.tags", destination: .tags)
+                .contextMenu {
+                    Button(AppLocalization.text("tag.createMenu")) {
+                        session.requestReference(.createTag(revision: nil))
+                    }
+                    .disabled(!session.canCreateTag)
+                }
         }
     }
 
@@ -49,11 +55,7 @@ extension RepositorySidebarView {
             .lineLimit(1)
             .help(SidebarTooltip.tag(ref, host: session.repository?.host))
             .tag(ref.id)
-            .onTapGesture(count: 2) {
-                guard session.canCheckoutRevision else { return }
-
-                session.checkout(revision: ref.id)
-            }
+            .onTapGesture(count: 2) { doubleClick(ref) }
             .onDrag { dragProvider(kind: .tag, reference: ref.id) }
             .contextMenu { tagMenu(ref) }
             .popover(isPresented: signaturePresented(ref), arrowEdge: .top) {

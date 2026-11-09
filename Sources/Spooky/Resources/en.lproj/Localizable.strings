@@ -92,6 +92,18 @@
 "branch.behind" = "%ld behind";
 
 "workspace.changed" = "Changed files: %ld";
+"workspace.checkoutMenu" = "Check Out";
+"workspace.checkoutRevisionMenu" = "Check Out Revision…";
+"workspace.pushMenu" = "Push…";
+"workspace.pushRevisionMenu" = "Push Revision To…";
+"workspace.publishMenu" = "Publish…";
+"workspace.resetMenu" = "Reset to Revision…";
+"workspace.mergeMenu" = "Merge With Revision…";
+"workspace.rebaseMenu" = "Rebase On Revision…";
+"workspace.copyPathMenu" = "Copy File Path";
+"workspace.tooltip.head" = "Local HEAD is branch “%@”";
+"workspace.tooltip.detached" = "Local HEAD is detached at “%@”";
+"workspace.tooltip.changes" = "Uncommitted files: %ld";
 
 "status.column" = "Status";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "Discard Line";
 "working.discardLines" = "Discard Lines";
 "working.discard" = "Discard Changes";
-"working.discardAll" = "Discard All Changes…";
 "working.discard.title" = "Discard Local Changes";
 "working.discardAll.title" = "Discard All Local Changes";
 "working.discardAll.submit" = "Discard All Changes";
@@ -413,6 +424,7 @@
 "sync.pushHead.help" = "Push the new commits on the local HEAD branch “%@” to the selected remote branch.";
 "sync.pushHead" = "Push HEAD";
 "sync.pushBranch" = "Push Branch";
+"sync.pushBranch.help" = "Push the new commits on the selected local branch to the selected remote branch.";
 "sync.publish" = "Publish Branch";
 "sync.publish.help" = "Create a branch on the selected remote.";
 "sync.merge" = "Merge";
@@ -583,6 +595,7 @@
 "stash.snapshot" = "Create Snapshot";
 "stash.snapshot.help" = "Saves your local changes on the Stash and keeps the working copy as it is.";
 "stash.snapshotMenu" = "Create Snapshot…";
+"stash.quickSnapshotMenu" = "Quick Create Snapshot";
 "stash.savePartial" = "Save Partial Stash";
 "stash.savePartial.help" = "Saves only the selected files on the Stash; the rest of the working copy stays as it is.";
 "stash.snapshotPartial" = "Create Partial Snapshot";
@@ -1113,6 +1126,9 @@
 "branch.tooltip.stale" = "- is stale (%@)";
 "branch.tooltip.missingUpstream" = "- tracked branch “%@” no longer exists";
 "remote.tooltip.branch" = "Remote branch “%@”";
+"remote.tooltip.remote" = "Remote “%@”";
+"remote.tooltip.fetchURL" = "Fetch URL: %@";
+"remote.tooltip.pushURL" = "Push URL: %@";
 "tag.tooltip.revision" = "Points at revision “%@”";
 "tag.tooltip.message" = "Tag Message: “%@”";
 "tag.checkoutNamed" = "Check Out “%@”…";
@@ -1326,20 +1342,20 @@
 "reference.error.url" = "The remote URL is not valid.";
 "reference.error.url.help" = "Enter the URL without surrounding spaces, control characters or a leading “-”.";
 "branch.fastForward" = "Fast-Forward “%@”";
-"branch.tracking" = "Tracking";
+"branch.tracking" = "Track Upstream Branch";
 "branch.tracking.remoteBranches" = "Remote Branches";
 "branch.tracking.localBranches" = "Local Branches";
 "branch.tracking.remove" = "Remove Tracking";
 "branch.tracking.set" = "Set Upstream";
-"branch.parent" = "Parent Branch";
+"branch.parent" = "Track Parent Branch";
 "branch.parent.set" = "Set Parent Branch";
-"branch.parent.setMenu" = "Set Parent Branch…";
+"branch.parent.setMenu" = "Track Other Parent Branch…";
 "branch.parent.remove" = "Remove Parent Branch";
 "branch.parent.field" = "Parent:";
 "branch.parent.message" = "Choose the branch that “%@” is based on. Comparing and updating the branch use it as the base.";
 "branch.parent.replace" = "This replaces the current parent “%@”.";
 "branch.parentOption" = "Parent Branch:";
-"branch.parentOption.none" = "None";
+"branch.parentOption.none" = "No Parent Branch";
 "branch.parentOption.help" = "Comparing and updating the new branch use the parent branch as the base.";
 "branch.pin.help" = "Adds the branch to the Pinned section of the sidebar.";
 "branch.trackStart.named" = "Track Branch “%@”";
@@ -1372,6 +1388,14 @@
 "branch.error.checkoutCreated.title" = "Branch Created but Not Checked Out";
 "branch.error.checkoutCreated" = "The new branch was created, but checking it out failed.";
 "branch.error.checkoutCreated.help" = "The branch stays in the repository. Check the original output, then check out the branch after fixing the problem.";
+"branch.error.inWorktree.title" = "Branch Checked Out in Another Worktree";
+"branch.error.inWorktree" = "The branch is already checked out in another worktree.";
+"branch.error.inWorktree.help" = "Nothing was changed. Open that worktree, or switch it to another branch first.";
+"branch.error.checkoutTracking.title" = "Upstream Set but Branch Not Checked Out";
+"branch.error.checkoutTracking" = "The upstream of the branch was set, but checking it out failed.";
+"branch.error.checkoutTracking.help" = "The branch keeps its commits and its new upstream. Check the original output, then check out the branch after fixing the problem.";
+"branch.trackExisting.title" = "Check Out Existing Branch";
+"branch.trackExisting.message" = "The local branch “%1$@” will be checked out and will track the remote branch “%2$@”. Its commits stay as they are.";
 "branch.error.unmerged.help" = "Check the branch's commits, or delete it with Force Deletion.";
 "tag.create" = "Create New Tag";
 "tag.create.message" = "Creates a local tag at the entered revision.";
@@ -1405,6 +1429,7 @@
 "remote.add.message" = "Enter a name and the URL of the remote repository. The connection is checked before the remote is added.";
 "remote.add.submit" = "Add Remote";
 "remote.addMenu" = "Add Remote Repository…";
+"remote.fetchMenu" = "Fetch “%@”…";
 "remote.addMainMenu" = "Add New Remote…";
 "remote.name.placeholder" = "Remote name";
 "remote.url" = "Remote URL:";
@@ -1464,6 +1489,7 @@
 "remote.error.browser" = "The remote can't be opened in a browser.";
 "remote.error.browser.help" = "Only remotes with an HTTP(S), SSH or git protocol URL have a web page. Local paths and file URLs don't.";
 "branch.dragTrack" = "Track";
+"branch.dragPublish" = "Publish";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Remote Settings (%@)";
@@ -1509,13 +1535,14 @@
 "review.update.clean" = "No conflicts with parent branch";
 "review.archive.title" = "Archive Branches";
 "review.archive.help" = "Select branches to hide from the main branch list. Archived branches move to Archived Branches in the sidebar and stay available there.";
-"review.archive.automaticHelp" = "These branches haven't been updated recently or their pull request or merge request has been merged, and are about to be archived automatically. Uncheck any branch you want to keep.";
+"review.archive.automaticHelp" = "These branches haven't been updated recently or their pull request or merge request has been merged, and are about to be archived automatically. Select the branches you want to archive.";
 "review.archive.submit" = "Archive";
 "review.archive.empty" = "No Branches to Archive";
 "review.archive.emptyHelp" = "Branches are only suggested for archiving when they haven't been updated recently or their pull request or merge request has been merged.";
 "review.archive.auto" = "Automatically archive branches";
 "review.archive.autoHelp" = "Once a day, obsolete branches are listed for you to confirm before they're archived.";
 "review.archive.count" = "%ld branches can be archived";
+"review.archive.selection" = "%1$ld of %2$ld selected";
 "review.archived.one" = "1 branch archived";
 "review.archived.many" = "%ld branches archived";
 "review.archived.undo" = "Undo";
@@ -1568,6 +1595,14 @@
 "sync.quickMergeInto" = "Quick Merge “%1$@” Into “%2$@”";
 "sync.quickRebaseOn" = "Quick Rebase “%1$@” on “%2$@”";
 "branch.pushToMenu" = "Push “%@” To…";
+"branch.publishMenu" = "Publish “%@”…";
+"branch.createFromMenu" = "Create New Branch from “%@”…";
+"branch.trackMenu" = "Track “%@”…";
+"branch.pullMenu" = "Pull “%@”…";
+"branch.copyRemoteNameMenu" = "Copy Remote Branch Name to Clipboard";
+"branch.compareMenu" = "Compare “%@” with Revision…";
+"branch.rebaseOntoMenu" = "Rebase Onto Revision…";
+"branch.deleteMenu.multiple" = "Delete %ld Branches…";
 "tag.compareMenu" = "Compare “%@” With Revision…";
 
 /* 分支拖进 “/” 文件夹时的动作名。 */
@@ -2442,6 +2477,8 @@
 
 "pr.title" = "Pull Requests";
 "mr.title" = "Merge Requests";
+"pr.archive.merged" = "Pull Request Merged";
+"mr.archive.merged" = "Merge Request Merged";
 "pr.show.menu" = "Show Pull Requests";
 "mr.show.menu" = "Show Merge Requests";
 "pr.create.menu" = "Create Pull Request…";

@@ -10,8 +10,8 @@ import TestSupport
 
 extension OperationWiringTests {
     /// 分支右键菜单的推送、拉取、合并与变基两组随分支是否为 HEAD、是否有跟踪分支变化；
-    /// Push To 与变基对话框的预选；标签菜单的管理项。
-    @Test("分支与标签右键菜单的项与预选")
+    /// Push To 与变基对话框的预选；标签菜单的管理项；Working Copy 右键菜单的分组、快速版本与发布的去向。
+    @Test("分支、标签与 Working Copy 右键菜单的项与预选")
     func referenceMenus() async throws {
         let fixture = try await Self.makeFixture()
         defer { fixture.close() }
@@ -20,11 +20,13 @@ extension OperationWiringTests {
         try checkBranchIntegrationMenu(in: fixture)
         checkPushRevisionDefaults(in: fixture)
         try await checkTagManagementMenu(in: fixture)
+        try await checkWorkingCopyMenu(in: fixture)
         try await checkWithoutUpstream(in: fixture)
     }
 
-    /// HEAD 分支的推送、拉取与同步各带以跟踪分支为对象的 ⌥ 快速版本；其它本地分支是推送与 Push To；
-    /// 远端分支的快速拉取把它并入 HEAD；Push To 打开推送任意版本的对话框，预选这个分支。
+    /// HEAD 分支的拉取、推送与同步各带以跟踪分支为对象的 ⌥ 快速版本，另有安全强推；其它本地分支只有安全强推；
+    /// 本地分支随后另起一组发布与 Push To；远端分支的快速拉取把它并入 HEAD。
+    /// 安全强推与 Push To 打开的对话框预选被点击的分支。
     private func checkBranchSyncMenu(in fixture: Fixture) async throws {
         let (main, side, upstream) = try fixture.branches()
         let session = fixture.session
@@ -33,21 +35,27 @@ extension OperationWiringTests {
         let head = HostedMenu(BranchSyncMenu(session: session, reference: main) { _ in })
 
         #expect(head.titles == [
-            AppLocalization.text("sync.push"),
-            AppLocalization.text("sync.quickPushNamed", "main", "origin/main"),
-            AppLocalization.text("sync.pull"),
+            AppLocalization.text("sync.pullMenu"),
             AppLocalization.text("sync.quickPullInto", "origin/main", "main"),
+            AppLocalization.text("workspace.pushMenu"),
+            AppLocalization.text("sync.quickPushNamed", "main", "origin/main"),
+            AppLocalization.text("sync.forcePushMenu"),
             AppLocalization.text("sync.syncMenu"),
             AppLocalization.text("sync.quickSyncNamed", "main", "origin/main"),
+            "",
+            AppLocalization.text("branch.publishMenu", "main"),
+            AppLocalization.text("branch.pushToMenu", "main"),
         ])
 
-        #expect(head.alternates == [false, true, false, true, false, true])
+        #expect(head.alternates == [false, true, false, true, false, false, true, false, false])
 
-        // 其它本地分支
+        // 其它本地分支没有普通推送
         let local = HostedMenu(BranchSyncMenu(session: session, reference: side) { _ in })
 
         #expect(local.titles == [
-            AppLocalization.text("sync.push"),
+            AppLocalization.text("sync.forcePushMenu"),
+            "",
+            AppLocalization.text("branch.publishMenu", "side"),
             AppLocalization.text("branch.pushToMenu", "side"),
         ])
 
@@ -57,7 +65,7 @@ extension OperationWiringTests {
         let remote = HostedMenu(BranchSyncMenu(session: session, reference: upstream) { _ in })
 
         #expect(remote.titles == [
-            AppLocalization.text("sync.pull"),
+            AppLocalization.text("branch.pullMenu", "origin/main"),
             AppLocalization.text("sync.quickPullNamed", "origin/main"),
         ])
 
@@ -68,35 +76,34 @@ extension OperationWiringTests {
         var requests: [SyncDialogRequest] = []
         session.onSyncRequest = { requests.append($0) }
         local.perform(AppLocalization.text("branch.pushToMenu", "side"))
-        await until { !requests.isEmpty }
+        local.perform(AppLocalization.text("sync.forcePushMenu"))
+        await until { requests.count == 2 }
 
-        #expect(requests.first?.kind == .pushRevision)
-        #expect(requests.first?.preselection == "side")
+        #expect(requests.map(\.kind) == [.pushRevision, .forcePush])
+        #expect(requests.map(\.preselection) == ["side", "refs/heads/side"])
     }
 
-    /// HEAD 分支的合并与变基以跟踪分支为对象，另有 Rebase Onto；其它分支只有把它并入 HEAD 的合并，
-    /// 变基到它上面经拖放或变基对话框；变基对话框按请求预选目标分支，没有预选时用 HEAD 的跟踪分支。
+    /// 只有 HEAD 分支有合并与变基，以跟踪分支为对象，另有 Rebase Onto Revision…；其它分支没有这一组，
+    /// 把它并入 HEAD 经拖放或 HEAD 分支的菜单；变基对话框按请求预选目标分支，没有预选时用 HEAD 的跟踪分支。
     private func checkBranchIntegrationMenu(in fixture: Fixture) throws {
-        let (main, side, _) = try fixture.branches()
+        let (main, side, upstream) = try fixture.branches()
         let session = fixture.session
 
         let head = HostedMenu(BranchIntegrationMenu(session: session, reference: main) { _ in })
 
         #expect(head.titles == [
-            AppLocalization.text("sync.merge"),
+            AppLocalization.text("workspace.mergeMenu"),
             AppLocalization.text("sync.quickMergeInto", "origin/main", "main"),
-            AppLocalization.text("sync.rebaseMenu"),
+            AppLocalization.text("workspace.rebaseMenu"),
             AppLocalization.text("sync.quickRebaseOn", "main", "origin/main"),
-            AppLocalization.text("rewrite.rebaseOnto.menu"),
+            AppLocalization.text("branch.rebaseOntoMenu"),
         ])
 
         #expect(head.alternates == [false, true, false, true, false])
 
-        let other = HostedMenu(BranchIntegrationMenu(session: session, reference: side) { _ in })
-
-        #expect(other.titles == [AppLocalization.text("sync.merge")])
-        #expect(other.alternates == [false])
-        #expect(!other.enabled.contains(false))
+        for other in [side, upstream] {
+            #expect(HostedMenu(BranchIntegrationMenu(session: session, reference: other) { _ in }).titles.isEmpty)
+        }
 
         // 请求同步交给回调
         var requests: [SyncDialogRequest] = []
@@ -152,6 +159,117 @@ extension OperationWiringTests {
         await until { !pushed.isEmpty }
 
         #expect(pushed == ["v1"])
+    }
+
+    /// Working Copy 的右键菜单分七组；推送、拉取、合并与变基的 ⌥ 快速版本写出 HEAD 与它的跟踪分支，快照另有快速版本。
+    /// Check Out 子菜单按公共顺序列出本地分支，HEAD 分支打勾；Publish… 打开发布仓库。
+    private func checkWorkingCopyMenu(in fixture: Fixture) async throws {
+        let session = fixture.session
+        let (_, side, _) = try fixture.branches()
+
+        // 发布仓库要求有登录的账号
+        let defaults = try #require(UserDefaults(suiteName: fixture.directory.appending(path: "defaults").path))
+        let accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials())
+
+        _ = try accounts.save(
+            HostingUser(username: "me", name: nil),
+            on: .github,
+            authentication: .personalAccessToken,
+            token: "t"
+        )
+
+        session.pullRequests.accounts = accounts
+
+        let menu = HostedMenu(
+            WorkingCopyMenu(
+                session: session,
+                request: { _ in },
+                copyPath: { },
+                revealFinder: { },
+                openTerminal: { }
+            )
+        )
+
+        let text = { (key: String) in AppLocalization.text(key) }
+
+        #expect(menu.titles == [
+            text("workspace.checkoutMenu"),
+            "",
+            text("stash.snapshotMenu"),
+            text("stash.quickSnapshotMenu"),
+            "",
+            text("workspace.pushMenu"),
+            AppLocalization.text("sync.quickPushNamed", "main", "origin/main"),
+            text("workspace.pushRevisionMenu"),
+            text("sync.pullMenu"),
+            AppLocalization.text("sync.quickPullInto", "origin/main", "main"),
+            text("workspace.publishMenu"),
+            "",
+            text("working.discardAllMenu"),
+            text("workspace.resetMenu"),
+            "",
+            text("workspace.mergeMenu"),
+            AppLocalization.text("sync.quickMergeInto", "origin/main", "main"),
+            text("workspace.rebaseMenu"),
+            AppLocalization.text("sync.quickRebaseOn", "main", "origin/main"),
+            text("files.applyPatch.menu"),
+            "",
+            text("externalTool.compare"),
+            "",
+            text("workspace.copyPathMenu"),
+            text("action.revealFinder"),
+            text("action.openTerminal"),
+        ])
+
+        #expect(menu.alternates == [
+            false, false, true, false, true, false, false, true, false,
+            false, false, false, true, false, true, false, false, false, false, false,
+        ])
+
+        // Check Out 子菜单：main 在前并打勾，分隔线后是检出任意版本
+        let checkout = try #require(menu.menu.items.first?.submenu)
+
+        #expect(checkout.items.map { $0.isSeparatorItem ? "" : $0.title } == [
+            "main", "side", "", text("workspace.checkoutRevisionMenu"),
+        ])
+        #expect(checkout.items.first?.state == .on)
+
+        // Publish… 打开发布仓库的对话框
+        var publications: [PullRequestRequest] = []
+        session.pullRequests.onRequest = { publications.append($0) }
+
+        let publish = menu.menu.items.first { $0.title == text("workspace.publishMenu") }
+        #expect(publish?.isEnabled ?? false)
+
+        menu.perform(text("workspace.publishMenu"))
+        await until { !publications.isEmpty }
+
+        guard case .publish = publications.first else {
+            Issue.record("Publish… 应当打开发布仓库的对话框")
+            return
+        }
+
+        await checkBranchPublish(side, in: session)
+    }
+
+    /// 本地分支菜单的 Publish 仍打开发布这一个分支的对话框，不随 Working Copy 的 Publish… 改为发布仓库。
+    private func checkBranchPublish(_ side: RepositoryReference, in session: RepositorySession) async {
+        var requests: [RepositoryActionRequest] = []
+        let sidebar = RepositorySidebarView(
+            session: session,
+            selectionChanged: { },
+            openTerminal: { },
+            revealFinder: { },
+            copyPath: { },
+            request: { requests.append($0) },
+            showActivity: { }
+        )
+
+        HostedMenu(sidebar.branchMenu(side)).perform(AppLocalization.text("branch.publishMenu", "side"))
+        await until { !requests.isEmpty }
+
+        #expect(requests.first?.kind == .publish)
+        #expect(requests.first?.localBranch == "side")
     }
 
     /// HEAD 没有跟踪分支时，HEAD 分支一组没有快速版本。

@@ -125,7 +125,7 @@ struct SidebarBadge: View {
 
 // MARK: - SidebarBranchRow
 
-/// 侧边栏的分支行：图标、名称、名称后的陈旧与跟踪错误注记、右侧胶囊徽标，宽度不够时先截名称。
+/// 侧边栏的分支行：图标、名称、名称后的陈旧与跟踪错误注记、右侧胶囊徽标；宽度不够时陈旧时长先让出，名称保持完整。
 struct SidebarBranchRow: View {
     /// 显示名。
     let name: String
@@ -145,7 +145,7 @@ struct SidebarBranchRow: View {
     /// 悬停提示。
     let help: String
 
-    /// 名称在前、注记紧随、徽标靠右。
+    /// 名称在前、注记紧随、徽标靠右；名称的排版优先级高于注记，先拿到完整宽度。
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: symbol)
@@ -154,6 +154,7 @@ struct SidebarBranchRow: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .foregroundStyle(status.isDimmed ? .secondary : .primary)
+                .layoutPriority(1)
 
             annotations
 
@@ -170,15 +171,22 @@ struct SidebarBranchRow: View {
         .help(help)
     }
 
-    /// 名称后的注记：陈旧的时长与跟踪错误标记，11 pt。
+    /// 名称后的注记：陈旧的时长与跟踪错误标记，11 pt；陈旧时长放不下时依次只留时钟图标、整段不显示。
     @ViewBuilder
     private var annotations: some View {
         if status.staleDuration != nil || status.missingUpstream != nil {
             HStack(spacing: 4) {
                 if let staleDuration = status.staleDuration {
-                    HStack(spacing: 2) {
+                    // 取第一个放得下的样式，最后一档不占宽度，名称不必为注记让位
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "clock")
+                            Text(staleDuration)
+                        }
+
                         Image(systemName: "clock")
-                        Text(staleDuration)
+
+                        Color.clear.frame(width: 0, height: 0)
                     }
                     .foregroundStyle(.secondary)
                     .accessibilityElement(children: .ignore)
@@ -193,7 +201,6 @@ struct SidebarBranchRow: View {
             }
             .font(.system(size: 11))
             .lineLimit(1)
-            .fixedSize()
         }
     }
 }

@@ -33,9 +33,6 @@ struct RepositorySidebarView: View {
         case worktrees
     }
 
-    /// 置顶分组里的行身份前缀：同一分支在 Branches 分组里还有一行，两行各自高亮。
-    static let pinnedRowPrefix = "pinned:"
-
     /// 远端行的身份前缀：选中远端时主视图显示它的设置。
     static let remoteRowPrefix = "remote:"
 
@@ -112,13 +109,13 @@ struct RepositorySidebarView: View {
     @State
     var filterText = ""
 
-    /// 上一次点选的行身份，用来区分置顶分组与 Branches 分组里的同一分支。
-    @State
-    var rowSelection: Set<String> = []
-
     /// 正在显示签名弹窗的标签的完整引用名。
     @State
     var signatureTag: String?
+
+    /// 各远端的设置，按远端名索引，供远端行的悬停提示写出获取与推送地址；远端的设置变化后重新读取。
+    @State
+    var remoteConfigurations: [String: RemoteConfiguration] = [:]
 
     /// 列表有键盘焦点。
     @FocusState
@@ -127,21 +124,27 @@ struct RepositorySidebarView: View {
     /// 分组顺序固定：Workspace、Pinned、Branches、Archived Branches、Tags、Remotes、Submodules、Worktrees。
     var body: some View {
         VStack(spacing: 0) {
-            // 列表按仓库区分身份，换了仓库就整个重建：列表显示过可展开的行（远端、文件夹）后，
-            // 行首一直留着展开箭头的位置，换成没有这类行的仓库也不收回；重建后与新开窗口的排版相同
-            List(selection: selection) {
-                workspace
-                pinnedBranches
-                localBranches
-                archivedBranches
-                tags
-                remoteBranches
-                submoduleGroup
-                worktreeGroup
+            ScrollViewReader { proxy in
+                // 列表按仓库区分身份，换了仓库就整个重建：列表显示过可展开的行（远端、文件夹）后，
+                // 行首一直留着展开箭头的位置，换成没有这类行的仓库也不收回；重建后与新开窗口的排版相同
+                List(selection: selection) {
+                    workspace
+                    pinnedBranches
+                    localBranches
+                    archivedBranches
+                    tags
+                    remoteBranches
+                    submoduleGroup
+                    worktreeGroup
+                }
+                .listStyle(.sidebar)
+                .focused($listFocused)
+                .onDeleteCommand(perform: deleteCommand)
+                .id(session.repository)
+                .onChange(of: session.history.revealRequests) {
+                    revealSelectedReferences(with: proxy)
+                }
             }
-            .listStyle(.sidebar)
-            .focused($listFocused)
-            .id(session.repository)
 
             // 刚归档的分支数与撤销
             ArchiveNoticeView(session: session)
@@ -163,98 +166,10 @@ struct RepositorySidebarView: View {
         .onChange(of: selectionState) { old, _ in
             reselectVanishedRows(from: old)
         }
-    }
 
-    /// Workspace 分组：工作区、历史、储藏、请求、分支整理，视图设置打开 Show Reflog 时的 Reflog，以及仓库设置。
-    private var workspace: some View {
-        Section(isExpanded: isExpanded(.workspace)) {
-            workingCopy
-                .tag("workingCopy")
-                .modifier(
-                    RepositoryDropTarget(session: session, destination: .head, request: request)
-                )
-            Label(AppLocalization.text("history.title"), systemImage: "clock").tag("history")
-
-            // 工作区文件拖到这里保存部分储藏
-            stashes
-                .tag("stashes")
-                .modifier(StashesDropTarget(session: session))
-
-            // 选中远端对应 GitLab 时叫 Merge Requests
-            Label(session.pullRequestText("title"), systemImage: "arrow.triangle.merge")
-                .tag("pullRequests")
-
-            Label(AppLocalization.text("review.title"), systemImage: "arrow.triangle.pull")
-                .tag("branchesReview")
-
-            // 视图设置打开 Show Reflog 时才显示
-            if showsReflog {
-                Label(AppLocalization.text("reflog.title"), systemImage: "clock.arrow.circlepath")
-                    .tag("reflog")
-            }
-
-            Label(AppLocalization.text("repositorySettings.title"), systemImage: "gearshape")
-                .tag("settings")
-        } header: {
-            Text(AppLocalization.text("workspace.group"))
-        }
-    }
-
-    /// 工作区保留改动数及已有文件操作入口。
-    private var workingCopy: some View {
-        HStack {
-            Label(AppLocalization.text("workspace.title"), systemImage: "folder")
-            Spacer(minLength: 4)
-            if session.isRefreshing {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel(AppLocalization.text("loading.status"))
-            } else if let status = session.status {
-                Text(status.entries.count.formatted())
-                    .font(.system(size: 11))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(AppPalette.color("sidebarBadgeBackgroundColor"), in: Capsule())
-                    .accessibilityLabel(AppLocalization.text("workspace.changed", status.entries.count))
-            }
-        }
-        .contextMenu {
-            Button(AppLocalization.text("sync.pull")) { request(RepositoryActionRequest(kind: .pull)) }
-                .disabled(!session.canPull)
-            Button(AppLocalization.text("sync.push")) { request(RepositoryActionRequest(kind: .push)) }
-                .disabled(!session.canPushHead)
-            Button(AppLocalization.text("sync.publish")) { request(RepositoryActionRequest(kind: .publish)) }
-                .disabled(!session.canPublish)
-            Button(AppLocalization.text("sync.merge")) { request(RepositoryActionRequest(kind: .merge)) }
-                .disabled(!session.canMerge)
-            Divider()
-            Button(AppLocalization.text("working.discardAll")) {
-                session.discard(session.status?.entries ?? [], all: true)
-            }
-            .disabled(!session.canDiscard(session.status?.entries ?? []))
-            Divider()
-            Button(AppLocalization.text("action.openTerminal"), action: openTerminal)
-            Button(AppLocalization.text("action.revealFinder"), action: revealFinder)
-                .disabled(!session.canShowInFinder)
-                .help(session.finderUnavailableTip ?? "")
-            Button(AppLocalization.text("action.copyPath"), action: copyPath)
-        }
-    }
-
-    /// 储藏入口；视图设置打开时带储藏个数，样式与工作区的改动数相同。
-    private var stashes: some View {
-        HStack {
-            Label(AppLocalization.text("stash.title"), systemImage: "tray.full")
-            Spacer(minLength: 4)
-
-            if showsStashCount, session.stashes.isLoaded {
-                Text(session.stashes.entries.count.formatted())
-                    .font(.system(size: 11))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(AppPalette.color("sidebarBadgeBackgroundColor"), in: Capsule())
-                    .accessibilityLabel(AppLocalization.text("stash.count", session.stashes.entries.count))
-            }
+        // 远端的设置随引用一起读出摘要，摘要变化时重新读取远端行提示里的地址
+        .task(id: session.history.snapshot?.remoteSettingsDigests) {
+            await loadRemoteConfigurations()
         }
     }
 
@@ -269,10 +184,11 @@ struct RepositorySidebarView: View {
             ArchiveFooterButton(session: session)
 
             Menu {
-                Button(AppLocalization.text("branch.create")) {
+                Button(AppLocalization.text("branch.createMenu")) {
                     request(RepositoryActionRequest(kind: .create))
                 }
                 .disabled(!session.canCreateBranch)
+
                 AddReferenceMenu(session: session)
             } label: {
                 Image(systemName: "plus")
@@ -320,10 +236,8 @@ extension RepositorySidebarView {
 
         let references = session.history.selectedReferences
 
-        if references.isEmpty { return ["history"] }
-
-        // 选择来自点选时沿用点中的行；从菜单或其它视图改变选择时用分支在主分组里的行
-        return Set(rowSelection.map(Self.reference(forRow:))) == references ? rowSelection : references
+        // 每个引用只有一行，行的选择身份就是完整引用名
+        return references.isEmpty ? ["history"] : references
     }
 
     /// 选择存入会话，快捷键与点击保持一致。
@@ -338,7 +252,6 @@ extension RepositorySidebarView {
                 // 远端、子模块与工作树的行各自换成设置视图，不参与引用的多选
                 guard !selectSettingsRow(in: added) else { return }
 
-                rowSelection = value
                 session.history.showsCommitPage = false
 
                 if let view = Self.workspaceView(added: added, value: value) {
@@ -349,14 +262,13 @@ extension RepositorySidebarView {
                         session.reloadPullRequests()
                     }
                 } else {
-                    // 置顶分组里的行换回分支的完整引用名
+                    // 远端、子模块与工作树的行不是引用，从多选里去掉
                     let references = value
                         .subtracting(Self.workspaceRows.map(\.row) + ["history"])
                         .filter { row in
                             ![Self.remoteRowPrefix, Self.submoduleRowPrefix, Self.worktreeRowPrefix]
                                 .contains { row.hasPrefix($0) }
                         }
-                        .map(Self.reference(forRow:))
 
                     session.activeView = .history
                     session.history.selectedReferences =
@@ -371,19 +283,16 @@ extension RepositorySidebarView {
     /// 选中远端、子模块或工作树的行：主视图换成远端的设置、子模块的状态与配置或工作树的详情；返回是否已处理。
     private func selectSettingsRow(in added: Set<String>) -> Bool {
         if let remote = added.first(where: { $0.hasPrefix(Self.remoteRowPrefix) }) {
-            rowSelection = [remote]
             session.showRemote(String(remote.dropFirst(Self.remoteRowPrefix.count)))
             return true
         }
 
         if let submodule = added.first(where: { $0.hasPrefix(Self.submoduleRowPrefix) }) {
-            rowSelection = [submodule]
             session.showSubmodule(String(submodule.dropFirst(Self.submoduleRowPrefix.count)))
             return true
         }
 
         if let worktree = added.first(where: { $0.hasPrefix(Self.worktreeRowPrefix) }) {
-            rowSelection = [worktree]
             session.showWorktree(String(worktree.dropFirst(Self.worktreeRowPrefix.count)))
             return true
         }
@@ -408,9 +317,7 @@ extension RepositorySidebarView {
             if let ref = node.reference {
                 branchRow(ref, name: node.name)
                     .tag(ref.id)
-                    .onTapGesture(count: 2) {
-                        session.checkoutBranch(ref, request: request)
-                    }
+                    .onTapGesture(count: 2) { doubleClick(ref) }
                     .onDrag { dragProvider(kind: .remote, reference: ref.id) }
                     .contextMenu { branchMenu(ref) }
                     .modifier(
@@ -426,11 +333,19 @@ extension RepositorySidebarView {
         }
     }
 
-    /// 远端名称行：右键获取或清理，按住 ⌥ 换成快速获取；接受本地分支拖入以发布分支、标签拖入以发布标签。
+    /// 远端名称行：悬停提示写出名称与获取、推送地址；右键获取或清理，按住 ⌥ 换成快速获取；
+    /// 接受本地分支拖入以发布分支、标签拖入以发布标签。
     func remoteLabel(_ remote: RepositoryRemote) -> some View {
         Label(remote.name, systemImage: "network")
+            .help(
+                SidebarTooltip.remote(
+                    remote.name,
+                    configuration: remoteConfigurations[remote.name],
+                    host: session.repository?.host
+                )
+            )
             .contextMenu {
-                Button(AppLocalization.text("sync.fetch")) {
+                Button(AppLocalization.text("remote.fetchMenu", remote.name)) {
                     request(RepositoryActionRequest(kind: .fetch, remote: remote.name))
                 }
                 .disabled(!session.canFetch)
@@ -492,73 +407,6 @@ extension RepositorySidebarView {
         )
     }
 
-    /// 分支菜单只包含已经实现的动作。
-    @ViewBuilder
-    func branchMenu(_ ref: RepositoryReference) -> some View {
-        let selected = session.history.branches.filter { session.history.selectedReferences.contains($0.id) }
-        if selected.count > 1, selected.contains(where: { $0.id == ref.id }), selected.allSatisfy(\.isLocal) {
-            pinMenuItems(selected)
-            Divider()
-            archiveMenuItems(selected)
-            Divider()
-            Button(AppLocalization.text("branch.deleteMultiple")) { delete(selected) }
-                .disabled(!session.canDelete(selected))
-        } else {
-            if ref.isLocal {
-                // 已在别的工作树检出的分支不能在这里检出，换成那个工作树的打开与删除
-                if session.worktrees.branchWorktrees[ref.id] == nil {
-                    Button(AppLocalization.text("branch.checkout")) { session.checkoutBranch(ref, request: request) }
-                        .disabled(!session.canCheckout(ref))
-                }
-
-                BranchWorktreeMenuItems(session: session, branch: ref)
-                Divider()
-                pinMenuItems([ref])
-                Divider()
-                Button(AppLocalization.text("sync.publish")) {
-                    request(RepositoryActionRequest(kind: .publish, localBranch: ref.name))
-                }
-                .disabled(!session.canPush(ref))
-
-                // 推送、拉取与同步，按住 ⌥ 换成快速操作
-                BranchSyncMenu(session: session, reference: ref, request: request)
-            } else {
-                Button(AppLocalization.text("branch.track")) {
-                    request(RepositoryActionRequest(kind: .track, reference: ref.id))
-                }
-                .disabled(!session.canTrack(ref))
-
-                BranchSyncMenu(session: session, reference: ref, request: request)
-            }
-            Button(AppLocalization.text("branch.create")) {
-                request(RepositoryActionRequest(kind: .create, reference: ref.id))
-            }
-            .disabled(!session.canCreateBranchFromReference)
-
-            // 已有打开着的请求时换成显示它
-            PullRequestBranchMenuItem(session: session, reference: ref)
-
-            // 合并与变基，按住 ⌥ 换成快速操作
-            BranchIntegrationMenu(session: session, reference: ref, request: request)
-
-            // HEAD 分支设了父分支时可以并入父分支或变基到父分支上
-            ParentBranchMenuItems(session: session, reference: ref, request: request)
-            if ref.isLocal {
-                Divider()
-                archiveMenuItems([ref])
-                Divider()
-                Button(AppLocalization.text("branch.delete")) { delete([ref]) }
-                    .disabled(!session.canDelete([ref]))
-            }
-            BranchManagementMenu(session: session, reference: ref)
-            Divider()
-            Button(AppLocalization.text("branch.copyName")) {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(ref.name, forType: .string)
-            }
-        }
-    }
-
     /// 拖动开始时仓库仍在显示才提供载荷；仓库刚关闭时返回空的拖动内容。
     func dragProvider(kind: RepositoryDragPayload.Kind, reference: String) -> NSItemProvider {
         guard let repository = session.repository else {
@@ -572,9 +420,24 @@ extension RepositorySidebarView {
 // MARK: - Actions
 
 extension RepositorySidebarView {
-    /// 删除前在对话框里确认，可选同时删除跟踪的远端分支与强制删除。
-    private func delete(_ references: [RepositoryReference]) {
-        session.requestReference(.deleteBranches(references))
+    /// 读出各远端的设置；读取失败或仓库已断开时清空，提示只写远端名。
+    private func loadRemoteConfigurations() async {
+        guard let runner = session.runner else {
+            remoteConfigurations = [:]
+            return
+        }
+
+        let configurations = try? await RepositoryRemotes(runner: runner).configurations()
+
+        // 读取期间换了仓库或设置又变了时，这次的结果交给新的读取覆盖
+        guard !Task.isCancelled else {
+            return
+        }
+
+        remoteConfigurations = Dictionary(
+            (configurations ?? []).map { ($0.name, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
     }
 }
 

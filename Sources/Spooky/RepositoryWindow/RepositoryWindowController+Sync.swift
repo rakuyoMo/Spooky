@@ -58,6 +58,17 @@ extension RepositoryWindowController {
         }
     }
 
+    /// Push Branch 对话框以 sheet 呈现；对话框自己开始推送，开始后关闭。
+    func presentPushBranchDialog(_ request: PushBranchRequest) {
+        guard session.canWrite else {
+            return
+        }
+
+        presentDialog { close in
+            PushBranchDialog(session: session, request: request, close: close)
+        }
+    }
+
     /// 同步、变基、强推、推送任意版本与各快速操作的可用性；动作不属于本组时为 nil。
     func syncAvailability(of action: Selector?, repositoryView: Bool) -> Bool? {
         switch action {

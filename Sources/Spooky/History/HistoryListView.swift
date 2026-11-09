@@ -205,7 +205,7 @@ struct HistoryListView: View {
 // MARK: - HistoryCommitTable
 
 /// NSTableView 提供固定行高、多选、复制和只限应用内的提交拖动。
-private struct HistoryCommitTable: NSViewRepresentable {
+struct HistoryCommitTable: NSViewRepresentable {
     /// 响应链上的 ⌘C 复制完整哈希，回车与双击一样进入整页详情。
     final class CommitTableView: NSTableView {
         /// 当前选择对应的复制动作。
@@ -242,9 +242,10 @@ private struct HistoryCommitTable: NSViewRepresentable {
         }
 
         /// 拖动结束时移除落点旁的动作名。
-        override func draggingEnded(_ sender: any NSDraggingInfo) {
-            super.draggingEnded(sender)
-
+        ///
+        /// NSTableView 与 NSView 都没有实现这个方法，不能调用 super：调用会在拖动结束时抛出异常，
+        /// 经过列表的拖动收不了尾，拖动来源的行之后再也拖不起来。
+        override func draggingEnded(_: any NSDraggingInfo) {
             dropLabel.hide()
         }
 

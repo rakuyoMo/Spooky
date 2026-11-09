@@ -9,7 +9,7 @@ import TestSupport
 
 // MARK: - RepositorySidebarViewTests
 
-/// 同一个窗口换着显示仓库时，侧边栏的排版与新开窗口相同，键盘焦点留在侧边栏。
+/// 同一个窗口换着显示仓库时，侧边栏的排版与新开窗口相同，键盘焦点留在侧边栏；程序化选中的引用展开并滚动到可见。
 @MainActor
 struct RepositorySidebarViewTests {
     /// 远端是可展开的行，显示它时各行的行首让出展开箭头的位置；换回没有远端的仓库后，行首回到新开时的位置。
@@ -65,6 +65,59 @@ struct RepositorySidebarViewTests {
 
         #expect(window.firstResponder === restored)
     }
+
+    /// 程序化选中收起的 Tags 分组里、文件夹中的标签时，列表展开分组与文件夹，选中那一行并滚动到可见；
+    /// 分离 HEAD 时，当前分支行的名字是当前提交的 8 位短哈希。
+    @Test("程序化选中展开分组与文件夹并滚动到可见，分离 HEAD 的行名是短哈希")
+    func revealingReferences() async throws {
+        let fixture = try await Self.repository()
+        defer { try? FileManager.default.removeItem(atPath: fixture.location.path) }
+
+        // 足够多的分支把 Tags 分组推出首屏；标签放在文件夹里，HEAD 分离在根提交上
+        let branches = 40
+
+        for index in 1 ... branches {
+            _ = try await fixture.runner.run(["branch", "branch-" + String(index)])
+        }
+
+        _ = try await fixture.runner.run(["tag", "release/v1"])
+        _ = try await fixture.runner.run(["switch", "-q", "--detach"])
+
+        let session = RepositorySession(
+            makeRunner: { _ in fixture.runner },
+            activities: RepositoryActivities()
+        )
+
+        defer { session.close() }
+
+        await Self.display(fixture.location, in: session, remotes: 0)
+
+        let oid = try #require(session.status?.branch.oid)
+        #expect(Self.sidebar(session).headRowName == String(oid.prefix(8)))
+
+        let window = Self.host(session)
+        let root = try #require(window.contentView)
+        let outline = try #require(await Self.rebuiltOutline(in: root, replacing: nil))
+        let rows = outline.numberOfRows
+
+        // 经快捷操作的入口选中标签：Tags 分组与 release 文件夹各展开一行，选中的标签行排在全部分支之后并滚动到可见
+        let tag = try #require(session.history.snapshot?.references.first { $0.id == "refs/tags/release/v1" })
+        session.showHistory(of: tag)
+
+        await until {
+            root.layoutSubtreeIfNeeded()
+
+            let row = outline.selectedRow
+
+            guard row > branches, outline.numberOfRows == rows + 2 else {
+                return false
+            }
+
+            return outline.visibleRect.intersects(outline.rect(ofRow: row))
+        }
+
+        #expect(session.history.selectedReferences == [tag.id])
+    }
 }
 
 // MARK: - Helpers
@@ -87,9 +140,9 @@ extension RepositorySidebarViewTests {
         return (location, runner)
     }
 
-    /// 把侧边栏放进不显示的窗口；窗口由调用方持有到测试结束。
-    static func host(_ session: RepositorySession) -> NSWindow {
-        let sidebar = RepositorySidebarView(
+    /// 回调什么都不做的侧边栏。
+    static func sidebar(_ session: RepositorySession) -> RepositorySidebarView {
+        RepositorySidebarView(
             session: session,
             selectionChanged: { },
             openTerminal: { },
@@ -98,7 +151,10 @@ extension RepositorySidebarViewTests {
             request: { _ in },
             showActivity: { }
         )
+    }
 
+    /// 把侧边栏放进不显示的窗口；窗口由调用方持有到测试结束。
+    static func host(_ session: RepositorySession) -> NSWindow {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 260, height: 600),
             styleMask: [.titled],
@@ -107,7 +163,7 @@ extension RepositorySidebarViewTests {
         )
 
         window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: sidebar)
+        window.contentView = NSHostingView(rootView: sidebar(session))
         return window
     }
 

@@ -132,12 +132,12 @@ struct BranchesReviewTests {
         try await checkDefaultBase(session, runner: runner)
     }
 
-    /// 归档建议只收陈旧与请求已合并的分支，排除基准分支、当前分支、置顶与已归档的分支；自动归档还排除勾了跳过的分支；每天只检查一次。
+    /// 归档建议只收陈旧与请求已合并的分支，排除基准分支、置顶与已归档的分支；自动归档还排除勾了跳过的分支；每天只检查一次。
     @Test("归档建议与每日检查")
     func archiveCandidates() throws {
         let date = Date(timeIntervalSince1970: 1_700_000_000)
         let old = date.addingTimeInterval(-400 * 24 * 60 * 60)
-        let references = ["main", "head", "requested", "stale", "pinned", "skipped", "archived", "active"].map {
+        let references = ["main", "requested", "stale", "pinned", "skipped", "archived", "active"].map {
             reference("refs/heads/" + $0, date: $0 == "active" || $0 == "requested" ? date : old)
         }
 
@@ -169,7 +169,6 @@ struct BranchesReviewTests {
         let manual = BranchArchiving.candidates(
             in: snapshot,
             conditions: conditions,
-            head: "head",
             staleMonths: 3,
             automatic: false,
             mergedOnServer: ["refs/heads/requested"],
@@ -181,7 +180,6 @@ struct BranchesReviewTests {
         let automatic = BranchArchiving.candidates(
             in: snapshot,
             conditions: conditions,
-            head: "head",
             staleMonths: 3,
             automatic: true,
             mergedOnServer: ["refs/heads/requested"],
@@ -255,7 +253,7 @@ extension BranchesReviewTests {
 
         let stale = try await addStaleBranch(session: session)
 
-        // 建议归档的只有陈旧的分支；基准与当前分支不在其中
+        // 建议归档的只有陈旧的分支；当前分支 main 是基准分支，不在其中
         #expect(session.archiveCandidates(automatic: true, staleMonths: 3).map(\.id) == [stale.id])
 
         session.archive([stale], automatic: true)
@@ -425,7 +423,7 @@ extension BranchesReviewTests {
     }
 
     /// 等写操作、随后的完整刷新与它带起的 History 读取都结束。
-    private func waitForWrite(_ session: RepositorySession) async {
+    func waitForWrite(_ session: RepositorySession) async {
         await session.writeTask?.value
         await session.waitForRefresh()
         await untilFinished { session.history.activeTasks }

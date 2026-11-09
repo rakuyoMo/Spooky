@@ -92,6 +92,18 @@
 "branch.behind" = "%ld zurück";
 
 "workspace.changed" = "Geänderte Dateien: %ld";
+"workspace.checkoutMenu" = "Auschecken";
+"workspace.checkoutRevisionMenu" = "Revision auschecken …";
+"workspace.pushMenu" = "Pushen …";
+"workspace.pushRevisionMenu" = "Revision pushen nach …";
+"workspace.publishMenu" = "Veröffentlichen …";
+"workspace.resetMenu" = "Auf Revision zurücksetzen …";
+"workspace.mergeMenu" = "Mit Revision zusammenführen …";
+"workspace.rebaseMenu" = "Rebase auf Revision …";
+"workspace.copyPathMenu" = "Dateipfad kopieren";
+"workspace.tooltip.head" = "Lokaler HEAD ist Branch „%@“";
+"workspace.tooltip.detached" = "Lokaler HEAD ist bei „%@“ losgelöst";
+"workspace.tooltip.changes" = "Nicht committete Dateien: %ld";
 
 "status.column" = "Status";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "Zeile verwerfen";
 "working.discardLines" = "Zeilen verwerfen";
 "working.discard" = "Änderungen verwerfen";
-"working.discardAll" = "Alle Änderungen verwerfen …";
 "working.discard.title" = "Lokale Änderungen verwerfen";
 "working.discardAll.title" = "Alle lokalen Änderungen verwerfen";
 "working.discardAll.submit" = "Alle Änderungen verwerfen";
@@ -413,6 +424,7 @@
 "sync.pushHead.help" = "Pusht die neuen Commits des lokalen HEAD-Branches „%@“ zum ausgewählten Remote-Branch.";
 "sync.pushHead" = "HEAD pushen";
 "sync.pushBranch" = "Branch pushen";
+"sync.pushBranch.help" = "Pusht die neuen Commits des ausgewählten lokalen Branches zum ausgewählten Remote-Branch.";
 "sync.publish" = "Branch veröffentlichen";
 "sync.publish.help" = "Erstellt einen Branch auf dem ausgewählten Remote.";
 "sync.merge" = "Zusammenführen";
@@ -583,6 +595,7 @@
 "stash.snapshot" = "Snapshot erstellen";
 "stash.snapshot.help" = "Sichert Ihre lokalen Änderungen im Stash und lässt die Arbeitskopie unverändert.";
 "stash.snapshotMenu" = "Snapshot erstellen …";
+"stash.quickSnapshotMenu" = "Sofort-Snapshot erstellen";
 "stash.savePartial" = "Teil-Stash sichern";
 "stash.savePartial.help" = "Sichert nur die ausgewählten Dateien im Stash; der Rest der Arbeitskopie bleibt unverändert.";
 "stash.snapshotPartial" = "Teil-Snapshot erstellen";
@@ -1113,6 +1126,9 @@
 "branch.tooltip.stale" = "- ist veraltet (%@)";
 "branch.tooltip.missingUpstream" = "- verfolgter Branch „%@“ existiert nicht mehr";
 "remote.tooltip.branch" = "Remote-Branch „%@“";
+"remote.tooltip.remote" = "Remote „%@“";
+"remote.tooltip.fetchURL" = "Fetch-URL: %@";
+"remote.tooltip.pushURL" = "Push-URL: %@";
 "tag.tooltip.revision" = "Zeigt auf Revision „%@“";
 "tag.tooltip.message" = "Tag-Nachricht: „%@“";
 "tag.checkoutNamed" = "„%@“ auschecken …";
@@ -1326,20 +1342,20 @@
 "reference.error.url" = "Die Remote-URL ist ungültig.";
 "reference.error.url.help" = "Gib die URL ohne umgebende Leerzeichen, Steuerzeichen oder führendes „-“ ein.";
 "branch.fastForward" = "„%@“ vorspulen";
-"branch.tracking" = "Tracking";
+"branch.tracking" = "Upstream-Branch verfolgen";
 "branch.tracking.remoteBranches" = "Remote-Branches";
 "branch.tracking.localBranches" = "Lokale Branches";
 "branch.tracking.remove" = "Tracking entfernen";
 "branch.tracking.set" = "Upstream festlegen";
-"branch.parent" = "Eltern-Branch";
+"branch.parent" = "Eltern-Branch verfolgen";
 "branch.parent.set" = "Eltern-Branch festlegen";
-"branch.parent.setMenu" = "Eltern-Branch festlegen…";
+"branch.parent.setMenu" = "Anderen Eltern-Branch verfolgen…";
 "branch.parent.remove" = "Eltern-Branch entfernen";
 "branch.parent.field" = "Eltern:";
 "branch.parent.message" = "Wähle den Branch, auf dem „%@“ basiert. Vergleiche und Aktualisierungen des Branches verwenden ihn als Basis.";
 "branch.parent.replace" = "Der aktuelle Eltern-Branch „%@“ wird ersetzt.";
 "branch.parentOption" = "Eltern-Branch:";
-"branch.parentOption.none" = "Keiner";
+"branch.parentOption.none" = "Kein Eltern-Branch";
 "branch.parentOption.help" = "Vergleiche und Aktualisierungen des neuen Branches verwenden den Eltern-Branch als Basis.";
 "branch.pin.help" = "Fügt den Branch dem Bereich „Pinned“ der Seitenleiste hinzu.";
 "branch.trackStart.named" = "Branch „%@“ verfolgen";
@@ -1372,6 +1388,14 @@
 "branch.error.checkoutCreated.title" = "Branch erstellt, aber nicht ausgecheckt";
 "branch.error.checkoutCreated" = "Der neue Branch wurde erstellt, aber das Auschecken ist fehlgeschlagen.";
 "branch.error.checkoutCreated.help" = "Der Branch bleibt im Repository. Prüfe die ursprüngliche Ausgabe und checke den Branch aus, nachdem du das Problem behoben hast.";
+"branch.error.inWorktree.title" = "Branch in einem anderen Worktree ausgecheckt";
+"branch.error.inWorktree" = "Der Branch ist bereits in einem anderen Worktree ausgecheckt.";
+"branch.error.inWorktree.help" = "Es wurde nichts geändert. Öffne diesen Worktree oder wechsle dort zuerst zu einem anderen Branch.";
+"branch.error.checkoutTracking.title" = "Upstream festgelegt, Branch aber nicht ausgecheckt";
+"branch.error.checkoutTracking" = "Der Upstream des Branches wurde festgelegt, aber das Auschecken ist fehlgeschlagen.";
+"branch.error.checkoutTracking.help" = "Der Branch behält seine Commits und seinen neuen Upstream. Prüfe die ursprüngliche Ausgabe und checke den Branch aus, nachdem du das Problem behoben hast.";
+"branch.trackExisting.title" = "Vorhandenen Branch auschecken";
+"branch.trackExisting.message" = "Der lokale Branch „%1$@“ wird ausgecheckt und verfolgt dann den Remote-Branch „%2$@“. Seine Commits bleiben unverändert.";
 "branch.error.unmerged.help" = "Prüfe die Commits des Branches oder lösche ihn mit „Löschen erzwingen“.";
 "tag.create" = "Neues Tag erstellen";
 "tag.create.message" = "Erstellt ein lokales Tag an der eingegebenen Revision.";
@@ -1405,6 +1429,7 @@
 "remote.add.message" = "Gib einen Namen und die URL des Remote-Repositorys ein. Die Verbindung wird vor dem Hinzufügen geprüft.";
 "remote.add.submit" = "Remote hinzufügen";
 "remote.addMenu" = "Remote-Repository hinzufügen…";
+"remote.fetchMenu" = "„%@“ abrufen…";
 "remote.addMainMenu" = "Neues Remote hinzufügen…";
 "remote.name.placeholder" = "Remote-Name";
 "remote.url" = "Remote-URL:";
@@ -1464,6 +1489,7 @@
 "remote.error.browser" = "Das Remote kann nicht im Browser geöffnet werden.";
 "remote.error.browser.help" = "Nur Remotes mit einer HTTP(S)-, SSH- oder git-Protokoll-URL haben eine Webseite. Lokale Pfade und file-URLs nicht.";
 "branch.dragTrack" = "Verfolgen";
+"branch.dragPublish" = "Veröffentlichen";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Remote-Einstellungen (%@)";
@@ -1509,13 +1535,14 @@
 "review.update.clean" = "Keine Konflikte mit dem übergeordneten Branch";
 "review.archive.title" = "Branches archivieren";
 "review.archive.help" = "Wähle Branches, die in der Branch-Liste ausgeblendet werden. Archivierte Branches stehen in der Seitenleiste unter „Archivierte Branches“ weiter zur Verfügung.";
-"review.archive.automaticHelp" = "Diese Branches wurden länger nicht aktualisiert oder ihr Pull Request bzw. Merge Request wurde gemergt; sie werden automatisch archiviert. Entferne das Häkchen bei Branches, die du behalten möchtest.";
+"review.archive.automaticHelp" = "Diese Branches wurden länger nicht aktualisiert oder ihr Pull Request bzw. Merge Request wurde gemergt; sie werden automatisch archiviert. Setze ein Häkchen bei den Branches, die du archivieren möchtest.";
 "review.archive.submit" = "Archivieren";
 "review.archive.empty" = "Keine Branches zum Archivieren";
 "review.archive.emptyHelp" = "Zum Archivieren werden nur Branches vorgeschlagen, die länger nicht aktualisiert wurden oder deren Pull Request bzw. Merge Request gemergt wurde.";
 "review.archive.auto" = "Branches automatisch archivieren";
 "review.archive.autoHelp" = "Einmal täglich werden veraltete Branches zur Bestätigung aufgelistet, bevor sie archiviert werden.";
 "review.archive.count" = "%ld Branches können archiviert werden";
+"review.archive.selection" = "%1$ld von %2$ld ausgewählt";
 "review.archived.one" = "1 Branch archiviert";
 "review.archived.many" = "%ld Branches archiviert";
 "review.archived.undo" = "Widerrufen";
@@ -1568,6 +1595,14 @@
 "sync.quickMergeInto" = "„%1$@“ schnell in „%2$@“ zusammenführen";
 "sync.quickRebaseOn" = "Schnelles Rebase von „%1$@“ auf „%2$@“";
 "branch.pushToMenu" = "„%@“ pushen nach…";
+"branch.publishMenu" = "„%@“ veröffentlichen…";
+"branch.createFromMenu" = "Neuen Branch aus „%@“ erstellen …";
+"branch.trackMenu" = "„%@“ verfolgen…";
+"branch.pullMenu" = "„%@“ pullen…";
+"branch.copyRemoteNameMenu" = "Remote-Branch-Namen in die Zwischenablage kopieren";
+"branch.compareMenu" = "„%@“ mit Revision vergleichen…";
+"branch.rebaseOntoMenu" = "Rebase auf andere Revision…";
+"branch.deleteMenu.multiple" = "%ld Branches löschen…";
 "tag.compareMenu" = "„%@“ mit Revision vergleichen…";
 
 /* 分支拖进 “/” 文件夹时的动作名。 */
@@ -2442,6 +2477,8 @@
 
 "pr.title" = "Pull Requests";
 "mr.title" = "Merge Requests";
+"pr.archive.merged" = "Pull Request gemergt";
+"mr.archive.merged" = "Merge Request gemergt";
 "pr.show.menu" = "Pull Requests anzeigen";
 "mr.show.menu" = "Merge Requests anzeigen";
 "pr.create.menu" = "Pull Request erstellen…";

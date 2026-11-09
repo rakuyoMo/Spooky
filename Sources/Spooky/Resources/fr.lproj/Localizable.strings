@@ -92,6 +92,18 @@
 "branch.behind" = "%ld en retard";
 
 "workspace.changed" = "Fichiers modifiés : %ld";
+"workspace.checkoutMenu" = "Extraire";
+"workspace.checkoutRevisionMenu" = "Extraire une révision…";
+"workspace.pushMenu" = "Pousser…";
+"workspace.pushRevisionMenu" = "Pousser une révision vers…";
+"workspace.publishMenu" = "Publier…";
+"workspace.resetMenu" = "Réinitialiser à une révision…";
+"workspace.mergeMenu" = "Fusionner avec une révision…";
+"workspace.rebaseMenu" = "Rebaser sur une révision…";
+"workspace.copyPathMenu" = "Copier le chemin du fichier";
+"workspace.tooltip.head" = "Le HEAD local est la branche « %@ »";
+"workspace.tooltip.detached" = "Le HEAD local est détaché sur « %@ »";
+"workspace.tooltip.changes" = "Fichiers non validés : %ld";
 
 "status.column" = "État";
 
@@ -313,7 +325,6 @@
 "working.discardLine" = "Abandonner la ligne";
 "working.discardLines" = "Abandonner les lignes";
 "working.discard" = "Abandonner les modifications";
-"working.discardAll" = "Abandonner toutes les modifications…";
 "working.discard.title" = "Abandonner les modifications locales";
 "working.discardAll.title" = "Abandonner toutes les modifications locales";
 "working.discardAll.submit" = "Abandonner toutes les modifications";
@@ -413,6 +424,7 @@
 "sync.pushHead.help" = "Pousser les nouveaux commits de la branche HEAD locale « %@ » vers la branche distante sélectionnée.";
 "sync.pushHead" = "Pousser HEAD";
 "sync.pushBranch" = "Pousser la branche";
+"sync.pushBranch.help" = "Pousser les nouveaux commits de la branche locale sélectionnée vers la branche distante sélectionnée.";
 "sync.publish" = "Publier la branche";
 "sync.publish.help" = "Créer une branche sur le dépôt distant sélectionné.";
 "sync.merge" = "Fusionner";
@@ -583,6 +595,7 @@
 "stash.snapshot" = "Créer un instantané";
 "stash.snapshot.help" = "Met vos modifications locales de côté dans un remisage sans toucher à la copie de travail.";
 "stash.snapshotMenu" = "Créer un instantané…";
+"stash.quickSnapshotMenu" = "Créer un instantané immédiat";
 "stash.savePartial" = "Remisage partiel";
 "stash.savePartial.help" = "Remise uniquement les fichiers sélectionnés ; le reste de la copie de travail reste inchangé.";
 "stash.snapshotPartial" = "Instantané partiel";
@@ -1113,6 +1126,9 @@
 "branch.tooltip.stale" = "- est ancienne (%@)";
 "branch.tooltip.missingUpstream" = "- la branche suivie « %@ » n’existe plus";
 "remote.tooltip.branch" = "Branche distante « %@ »";
+"remote.tooltip.remote" = "Dépôt distant « %@ »";
+"remote.tooltip.fetchURL" = "URL de récupération : %@";
+"remote.tooltip.pushURL" = "URL de poussée : %@";
 "tag.tooltip.revision" = "Pointe vers la révision « %@ »";
 "tag.tooltip.message" = "Message du tag : « %@ »";
 "tag.checkoutNamed" = "Basculer sur « %@ »…";
@@ -1326,20 +1342,20 @@
 "reference.error.url" = "L’URL distante n’est pas valide.";
 "reference.error.url.help" = "Saisissez l’URL sans espaces autour, sans caractères de contrôle et sans « - » au début.";
 "branch.fastForward" = "Avance rapide de « %@ »";
-"branch.tracking" = "Suivi";
+"branch.tracking" = "Suivre la branche amont";
 "branch.tracking.remoteBranches" = "Branches distantes";
 "branch.tracking.localBranches" = "Branches locales";
 "branch.tracking.remove" = "Retirer le suivi";
 "branch.tracking.set" = "Définir la branche amont";
-"branch.parent" = "Branche parente";
+"branch.parent" = "Suivre la branche parente";
 "branch.parent.set" = "Définir la branche parente";
-"branch.parent.setMenu" = "Définir la branche parente…";
+"branch.parent.setMenu" = "Suivre une autre branche parente…";
 "branch.parent.remove" = "Retirer la branche parente";
 "branch.parent.field" = "Parente :";
 "branch.parent.message" = "Choisissez la branche sur laquelle « %@ » est basée. Les comparaisons et mises à jour de la branche s’en servent comme base.";
 "branch.parent.replace" = "Cela remplace la branche parente actuelle « %@ ».";
 "branch.parentOption" = "Branche parente :";
-"branch.parentOption.none" = "Aucune";
+"branch.parentOption.none" = "Aucune branche parente";
 "branch.parentOption.help" = "Les comparaisons et mises à jour de la nouvelle branche se servent de la branche parente comme base.";
 "branch.pin.help" = "Ajoute la branche à la section Pinned de la barre latérale.";
 "branch.trackStart.named" = "Suivre la branche « %@ »";
@@ -1372,6 +1388,14 @@
 "branch.error.checkoutCreated.title" = "Branche créée mais non basculée";
 "branch.error.checkoutCreated" = "La nouvelle branche a été créée, mais le basculement sur celle-ci a échoué.";
 "branch.error.checkoutCreated.help" = "La branche reste dans le dépôt. Consultez la sortie d’origine, puis basculez sur la branche après avoir corrigé le problème.";
+"branch.error.inWorktree.title" = "Branche extraite dans un autre worktree";
+"branch.error.inWorktree" = "La branche est déjà extraite dans un autre worktree.";
+"branch.error.inWorktree.help" = "Rien n’a été modifié. Ouvrez ce worktree, ou basculez-le d’abord sur une autre branche.";
+"branch.error.checkoutTracking.title" = "Branche amont définie, mais branche non basculée";
+"branch.error.checkoutTracking" = "La branche amont a été définie, mais le basculement sur la branche a échoué.";
+"branch.error.checkoutTracking.help" = "La branche garde ses commits et sa nouvelle branche amont. Consultez la sortie d’origine, puis basculez sur la branche après avoir corrigé le problème.";
+"branch.trackExisting.title" = "Basculer sur la branche existante";
+"branch.trackExisting.message" = "Vous allez basculer sur la branche locale « %1$@ », qui suivra la branche distante « %2$@ ». Ses commits restent inchangés.";
 "branch.error.unmerged.help" = "Vérifiez les commits de la branche ou supprimez-la avec « Forcer la suppression ».";
 "tag.create" = "Créer un tag";
 "tag.create.message" = "Crée un tag local sur la révision saisie.";
@@ -1405,6 +1429,7 @@
 "remote.add.message" = "Saisissez un nom et l’URL du dépôt distant. La connexion est vérifiée avant l’ajout.";
 "remote.add.submit" = "Ajouter le dépôt distant";
 "remote.addMenu" = "Ajouter un dépôt distant…";
+"remote.fetchMenu" = "Récupérer « %@ »…";
 "remote.addMainMenu" = "Ajouter un dépôt distant…";
 "remote.name.placeholder" = "Nom du dépôt distant";
 "remote.url" = "URL distante :";
@@ -1464,6 +1489,7 @@
 "remote.error.browser" = "Le dépôt distant ne peut pas être ouvert dans un navigateur.";
 "remote.error.browser.help" = "Seuls les dépôts distants avec une URL HTTP(S), SSH ou du protocole git ont une page web. Les chemins locaux et les URL file n’en ont pas.";
 "branch.dragTrack" = "Suivre";
+"branch.dragPublish" = "Publier";
 
 /* 远端设置的窗口副标题。 */
 "remote.subtitle" = "Réglages du dépôt distant (%@)";
@@ -1509,13 +1535,14 @@
 "review.update.clean" = "Aucun conflit avec la branche parente";
 "review.archive.title" = "Archiver des branches";
 "review.archive.help" = "Sélectionnez les branches à masquer de la liste. Les branches archivées passent dans « Branches archivées » dans la barre latérale et y restent disponibles.";
-"review.archive.automaticHelp" = "Ces branches n’ont pas été mises à jour récemment ou leur pull request ou merge request a été fusionnée, et vont être archivées automatiquement. Décochez celles à conserver.";
+"review.archive.automaticHelp" = "Ces branches n’ont pas été mises à jour récemment ou leur pull request ou merge request a été fusionnée, et vont être archivées automatiquement. Cochez celles à archiver.";
 "review.archive.submit" = "Archiver";
 "review.archive.empty" = "Aucune branche à archiver";
 "review.archive.emptyHelp" = "Seules les branches non mises à jour récemment ou dont la pull request ou merge request a été fusionnée sont proposées à l’archivage.";
 "review.archive.auto" = "Archiver automatiquement les branches";
 "review.archive.autoHelp" = "Une fois par jour, les branches obsolètes sont listées pour confirmation avant d’être archivées.";
 "review.archive.count" = "%ld branches peuvent être archivées";
+"review.archive.selection" = "Sélection : %1$ld sur %2$ld";
 "review.archived.one" = "1 branche archivée";
 "review.archived.many" = "%ld branches archivées";
 "review.archived.undo" = "Annuler";
@@ -1568,6 +1595,14 @@
 "sync.quickMergeInto" = "Fusionner rapidement « %1$@ » dans « %2$@ »";
 "sync.quickRebaseOn" = "Rebaser rapidement « %1$@ » sur « %2$@ »";
 "branch.pushToMenu" = "Pousser « %@ » vers…";
+"branch.publishMenu" = "Publier « %@ »…";
+"branch.createFromMenu" = "Créer une branche à partir de « %@ »…";
+"branch.trackMenu" = "Suivre « %@ »…";
+"branch.pullMenu" = "Tirer « %@ »…";
+"branch.copyRemoteNameMenu" = "Copier le nom de la branche distante dans le presse-papiers";
+"branch.compareMenu" = "Comparer « %@ » à une révision…";
+"branch.rebaseOntoMenu" = "Rebaser ailleurs sur une révision…";
+"branch.deleteMenu.multiple" = "Supprimer %ld branches…";
 "tag.compareMenu" = "Comparer « %@ » à une révision…";
 
 /* 分支拖进 “/” 文件夹时的动作名。 */
@@ -2442,6 +2477,8 @@
 
 "pr.title" = "Pull requests";
 "mr.title" = "Merge requests";
+"pr.archive.merged" = "Pull request fusionnée";
+"mr.archive.merged" = "Merge request fusionnée";
 "pr.show.menu" = "Afficher les pull requests";
 "mr.show.menu" = "Afficher les merge requests";
 "pr.create.menu" = "Créer une pull request…";

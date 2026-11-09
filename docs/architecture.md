@@ -191,6 +191,8 @@ Spooky 由两个 target 组成：
 - 仓库书签由 `RepositoryBookmarks` 存在偏好里，全部窗口共用；打开成功的仓库自动加入书签，失效只做标记，从不自动删除
 - 仓库设置只写仓库本地配置（`GitRunner.setLocalConfig`）
 - 本地分支的置顶、归档、父分支与分支整理标记由 `BranchMetadata` 写在 `branch.<名称>.spooky-*`，改名时随段移动，删除分支时随段清除
+- 引用的公共顺序由 `ReferenceOrder` 定义：侧边栏、恢复版本的候选、Reflog 的引用菜单、合并与拉取的下拉共用，当前分支不提前
+- 侧边栏行的拖放落点是 `RepositoryDropView` 承载的 AppKit 视图，只登记拖放类型、点击穿透给所在的行；`ReferenceDropAction` 按来源、落点与 ⌥ 解析出动作，拖动中把动作名作为徽标加到拖动影像上，落下时执行同一个动作
 - `ViewReference` 是窗口里一个可以回到的视图，同时用于后退 / 前进、窗口恢复与 `spooky://` 链接；新增主视图时三处一起覆盖
 - 链接：
   - `spooky://open?repository=<位置>` 可带 `view`、`branch` 或 `commit`；服务器仓库的位置写 `<主机别名>:<远端路径>`

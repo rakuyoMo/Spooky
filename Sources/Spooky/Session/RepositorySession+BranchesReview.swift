@@ -20,7 +20,6 @@ extension RepositorySession {
         return BranchArchiving.candidates(
             in: snapshot,
             conditions: history.conditions,
-            head: status?.branch.head,
             staleMonths: months ?? staleMonths,
             automatic: automatic,
             mergedOnServer: Set(snapshot.references.filter { mergedPullRequest(of: $0) != nil }.map(\.id))

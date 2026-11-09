@@ -17,9 +17,9 @@ struct ArchiveBranchesDialog: View {
     /// 关闭 sheet。
     let close: () -> Void
 
-    /// 勾选的分支，默认全选。
+    /// 勾选的分支，每次打开都从空开始。
     @State
-    private var selected: Set<String>
+    private var selected: Set<String> = []
 
     /// 自动归档开关，与侧边栏视图设置、Settings → General 同一个偏好。
     @AppStorage(SidebarPreferences.autoArchiveKey)
@@ -57,7 +57,7 @@ struct ArchiveBranchesDialog: View {
         }
     }
 
-    /// 没有建议时说明原因；否则是可勾选的分支列表，最高 220 pt。
+    /// 没有建议时说明原因；否则是分组名与勾选计数在上、可勾选的分支列表在下。
     @ViewBuilder
     private var branches: some View {
         if candidates.isEmpty {
@@ -70,27 +70,54 @@ struct ArchiveBranchesDialog: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         } else {
-            List(candidates) { branch in
-                Toggle(isOn: binding(for: branch.id)) {
-                    HStack(spacing: 8) {
-                        Text(branch.name)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-
-                        Spacer(minLength: 8)
-
-                        Text(reason(for: branch))
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                    }
-                }
+            VStack(alignment: .leading, spacing: 6) {
+                header
+                list
             }
-            .listStyle(.bordered)
-            .frame(height: min(CGFloat(candidates.count) * 24 + 12, 220))
         }
     }
 
-    /// 创建对话框，默认勾选全部建议的分支。
+    /// 列表上方：左边是分组名，右边是已勾选的数量与总数，随勾选实时更新。
+    private var header: some View {
+        HStack(spacing: 8) {
+            Text(AppLocalization.text("branch.group"))
+                .bold()
+
+            Spacer(minLength: 8)
+
+            Text(AppLocalization.text("review.archive.selection", selected.count, candidates.count))
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+        }
+    }
+
+    /// 首行是 Select All，其下每个分支一行，最高 220 pt。
+    private var list: some View {
+        List {
+            Toggle(AppLocalization.text("menu.selectAll"), isOn: allSelected)
+
+            ForEach(candidates) { branch in
+                Toggle(isOn: binding(for: branch.id)) {
+                    row(branch)
+                }
+            }
+        }
+        .listStyle(.bordered)
+        .frame(height: min(CGFloat(candidates.count + 1) * 24 + 12, 220))
+    }
+
+    /// Select All 的勾选状态：全部勾上时为开；勾上时选中全部分支，取消时一个都不选。
+    private var allSelected: Binding<Bool> {
+        Binding(
+            get: { selected.count == candidates.count },
+            set: { checked in
+                selected = checked ? Set(candidates.map(\.id)) : []
+            }
+        )
+    }
+
+    /// 创建对话框，一个分支都不勾选。
     init(
         session: RepositorySession,
         automatic: Bool,
@@ -101,7 +128,6 @@ struct ArchiveBranchesDialog: View {
         self.automatic = automatic
         self.candidates = candidates
         self.close = close
-        _selected = State(initialValue: Set(candidates.map(\.id)))
     }
 
     /// 一个分支的勾选状态。
@@ -118,16 +144,51 @@ struct ArchiveBranchesDialog: View {
         )
     }
 
-    /// 建议归档的原因：请求已合并，或分支陈旧；两者都满足时写请求已合并。
-    private func reason(for branch: RepositoryReference) -> String {
-        let merged = session.mergedPullRequest(of: branch) != nil
+    /// 一行分支：分支图标、名称，右侧是建议归档的原因。
+    private func row(_ branch: RepositoryReference) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "arrow.triangle.branch")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
 
-        return AppLocalization.text(merged ? "pullRequests.state.merged" : "review.filter.stale")
+            Text(branch.name)
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+            Spacer(minLength: 8)
+
+            reasonBadge(for: branch)
+        }
     }
 
-    /// 归档勾选的分支后关闭。
+    /// 建议归档的原因胶囊：请求已合并是紫色，写明是哪种请求；陈旧是橙色。两者都满足时写请求已合并。
+    private func reasonBadge(for branch: RepositoryReference) -> some View {
+        let merged = session.mergedPullRequest(of: branch) != nil
+        let color: Color = merged ? .purple : .orange
+        let reason = merged ? session.pullRequestText("archive.merged") : AppLocalization.text("review.filter.stale")
+
+        return HStack(spacing: 4) {
+            Circle()
+                .fill(color)
+                .frame(width: 5, height: 5)
+                .accessibilityHidden(true)
+
+            Text(reason)
+        }
+        .font(.system(size: 11, weight: .medium))
+        .foregroundStyle(color)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 2)
+        .background(color.opacity(0.15), in: Capsule())
+        .fixedSize()
+    }
+
+    /// 归档勾选的分支后关闭；对话框开着时分支可能已被删除、置顶或归档，只归档仍在建议里的分支。
     private func submit() {
-        session.archive(candidates.filter { selected.contains($0.id) }, automatic: automatic)
+        let current = Set(session.archiveCandidates(automatic: automatic).map(\.id))
+        let branches = candidates.filter { selected.contains($0.id) && current.contains($0.id) }
+
+        session.archive(branches, automatic: automatic)
         close()
     }
 }

@@ -42,7 +42,22 @@ extension RepositorySession {
 
     /// 版本组合框的候选：当前分支在前，其后是本地分支、远端分支与标签。
     var revisionCandidates: [String] {
-        WorkingCopyFileDialog.revisions(in: history.snapshot?.references ?? [], currentBranch: status?.branch.head)
+        Self.revisionCandidates(in: history.snapshot?.references ?? [], currentBranch: status?.branch.head)
+    }
+
+    /// 版本组合框的候选：当前分支在前，其后依次是本地分支、远端分支与标签，不含符号引用。
+    ///
+    /// - Parameters:
+    ///   - references: 按完整名称排序的引用快照。
+    ///   - currentBranch: 当前分支名，分离 HEAD 时为 nil。
+    static func revisionCandidates(in references: [RepositoryReference], currentBranch: String?) -> [String] {
+        let candidates = references.filter { $0.symbolicTarget == nil }
+        let current = currentBranch.map { "refs/heads/" + $0 }
+
+        // 同名的分支与标签各占一项，按引用的完整名称认出当前分支
+        let ordered = candidates.filter { $0.id == current } + candidates.filter { $0.id != current }
+
+        return ordered.map(\.name)
     }
 }
 

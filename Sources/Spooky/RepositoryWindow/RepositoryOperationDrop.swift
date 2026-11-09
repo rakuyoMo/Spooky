@@ -70,18 +70,18 @@ enum RepositoryOperationDrop {
         else { return nil }
 
         switch (first.kind, destination) {
-        case (.commit, .head):
+        case (.commit, .workingCopy), (.commit, .head):
             guard session.canRewrite else { return nil }
 
             let commits = payloads.map(\.reference)
             self = alternate ? .revert(commits) : .cherryPick(commits)
 
-        case (.commitFile, .head):
+        case (.commitFile, .workingCopy), (.commitFile, .head):
             guard !alternate, let file = Self.commitFile(first, in: session) else { return nil }
 
             self = .cherryPickFile(file.change, file.commit)
 
-        case (.local, .head):
+        case (.local, .workingCopy), (.local, .head):
             guard
                 alternate,
                 let source = session.history.branches.first(where: { $0.id == first.reference }),

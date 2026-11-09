@@ -302,6 +302,9 @@ final class RepositorySession {
     /// 窗口负责呈现同步、变基、安全强推与推送任意版本的对话框。
     var onSyncRequest: ((SyncDialogRequest) -> Void)? = nil
 
+    /// 窗口负责呈现本地分支拖到远端分支时的 Push Branch 对话框。
+    var onPushBranchRequest: ((PushBranchRequest) -> Void)? = nil
+
     /// 远端视图显示的远端名。
     var selectedRemote: String? = nil
 

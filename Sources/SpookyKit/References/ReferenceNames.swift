@@ -32,6 +32,12 @@ public enum ReferenceError: Error, Sendable {
 
     /// 新分支已经建好，随后的检出被 Git 拒绝；带上新分支的短名与检出的 Git 原文。
     case createdBranchCheckoutFailed(String, GitError)
+
+    /// 本地分支已在别的工作树检出，检出之前发现，没有写入任何东西；带上分支的短名与那个工作树的路径。
+    case checkedOutInWorktree(String, path: String)
+
+    /// 本地分支的上游已经设好，随后的检出被 Git 拒绝；带上分支的短名、上游的完整引用名与检出的 Git 原文。
+    case trackingCheckoutFailed(String, upstream: String, GitError)
 }
 
 // MARK: - ReferenceNameProblem

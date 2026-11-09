@@ -127,18 +127,18 @@ struct StashSessionTests {
 
     /// 工作区文件列表写入的载荷按约定的 JSON 解码；其它仓库与格式不符的项被忽略。
     @Test("Stashes 落点解码工作区文件载荷")
-    func droppedFiles() async throws {
+    func droppedFiles() throws {
         let location = RepositoryLocation.local(path: "/tmp/仓 库")
         let other = RepositoryLocation.remote(host: "spooky-test", path: "/tmp/仓 库")
 
-        let providers = try [
-            provider(repository: location, path: "目录/文件 *.txt"),
-            provider(repository: other, path: "other.txt"),
-            provider(raw: Data("not json".utf8)),
-            provider(repository: location, path: "新 文件.txt"),
+        let items = try [
+            item(repository: location, path: "目录/文件 *.txt"),
+            item(repository: other, path: "other.txt"),
+            item(raw: Data("not json".utf8)),
+            item(repository: location, path: "新 文件.txt"),
         ]
 
-        let paths = await StashesDropTarget.paths(from: providers, in: location)
+        let paths = StashesDropTarget.paths(from: items, in: location)
         #expect(paths == ["目录/文件 *.txt", "新 文件.txt"])
     }
 }
@@ -170,25 +170,18 @@ extension StashSessionTests {
     }
 
     /// 按约定格式构造的拖动项：`{"repository": <RepositoryLocation>, "path": <相对路径>}`。
-    private func provider(repository: RepositoryLocation, path: String) throws -> NSItemProvider {
+    private func item(repository: RepositoryLocation, path: String) throws -> NSPasteboardItem {
         let location = try JSONSerialization.jsonObject(with: JSONEncoder().encode(repository))
         let data = try JSONSerialization.data(withJSONObject: ["repository": location, "path": path])
 
-        return provider(raw: data)
+        return item(raw: data)
     }
 
-    /// 以应用内类型登记任意数据的拖动项。
-    private func provider(raw data: Data) -> NSItemProvider {
-        let provider = NSItemProvider()
+    /// 以应用内类型写入任意数据的拖动项。
+    private func item(raw data: Data) -> NSPasteboardItem {
+        let item = NSPasteboardItem()
+        item.setData(data, forType: NSPasteboard.PasteboardType(StashesDropTarget.Payload.type))
 
-        provider.registerDataRepresentation(
-            forTypeIdentifier: StashesDropTarget.Payload.type,
-            visibility: .ownProcess
-        ) { completion in
-            completion(data, nil)
-            return nil
-        }
-
-        return provider
+        return item
     }
 }
