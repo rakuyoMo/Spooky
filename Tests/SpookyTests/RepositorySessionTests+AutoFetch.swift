@@ -63,7 +63,8 @@ extension RepositorySessionTests {
         conditions.showsRepository = true
         let pushed = try await commitAndPush(other, message: "remote")
 
-        #expect(await scheduler.check(now: first) == ["origin", "second"])
+        // 后面等获取时刻的步骤以这两次获取为前提，没开始时立即结束，不空等
+        try #require(await scheduler.check(now: first) == ["origin", "second"])
         #expect(try await tracking(runner) == pushed)
 
         let records = Array(remoteRecords(runner).prefix(2))
@@ -96,8 +97,9 @@ extension RepositorySessionTests {
 
         #expect(await scheduler.check(now: later).isEmpty)
 
+        // 只让 origin 到期；后面要等它的新时刻，这次获取没开始时立即结束
         RemoteFetchTimes.record("origin", in: repository, at: old, defaults: defaults)
-        #expect(await scheduler.check(now: later) == ["origin"])
+        try #require(await scheduler.check(now: later) == ["origin"])
 
         // 手动获取失败同样更新时刻
         let before = RemoteFetchTimes.lastFetch(of: "second", in: repository, defaults: defaults)
