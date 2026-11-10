@@ -64,6 +64,10 @@ let package = Package(
                 "AppIcon/AppIconConnected.icns",
                 "AppIcon/AppIconDark.icns",
                 "AppIcon/AppIconDarkConnected.icns",
+                "AppIcon/AppIconMidnight.icns",
+                "AppIcon/AppIconMidnightConnected.icns",
+                "AppIcon/AppIconMidnightDark.icns",
+                "AppIcon/AppIconMidnightDarkConnected.icns",
             ],
             resources: [
                 .process("Resources"),

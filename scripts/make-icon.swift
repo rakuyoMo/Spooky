@@ -1,16 +1,20 @@
-// 生成 Spooky 的应用图标：在无窗口的 WebKit 中运行同目录 make-icon.js 的 Canvas 绘制，
-// 为默认图标与深色图标的指示灯灭着、亮着两版各导出全部尺寸，再由 iconutil 合成四份 .icns。
+// 生成 Spooky 的两组应用图标：在无窗口的 WebKit 中运行同目录 make-icon.js 的 Canvas 绘制，
+// 为每组的默认图标与深色图标的指示灯灭着、亮着两版各导出全部尺寸，再由 iconutil 合成八份 .icns。
 //
 // 用法：swift scripts/make-icon.swift <输出目录>
 
 import WebKit
 
-/// 要生成的四份图标：.icns 的文件名，以及传给 renderIcon 的样式与指示灯是否亮着。
-let icons: [(name: String, style: String, lit: Bool)] = [
-    ("AppIcon", "default", false),
-    ("AppIconConnected", "default", true),
-    ("AppIconDark", "dark", false),
-    ("AppIconDarkConnected", "dark", true),
+/// 要生成的八份图标：.icns 的文件名，以及传给 renderIcon 的图标组、样式与指示灯是否亮着。
+let icons: [(name: String, group: String, style: String, lit: Bool)] = [
+    ("AppIcon", "serverGhost", "default", false),
+    ("AppIconConnected", "serverGhost", "default", true),
+    ("AppIconDark", "serverGhost", "dark", false),
+    ("AppIconDarkConnected", "serverGhost", "dark", true),
+    ("AppIconMidnight", "midnight", "default", false),
+    ("AppIconMidnightConnected", "midnight", "default", true),
+    ("AppIconMidnightDark", "midnight", "dark", false),
+    ("AppIconMidnightDarkConnected", "midnight", "dark", true),
 ]
 
 /// iconset 需要的文件名与像素尺寸。
@@ -54,8 +58,13 @@ for icon in icons {
     // 每个尺寸都以绘制脚本加一句 renderIcon 调用作为函数体执行，取回 PNG 的 data URL。
     for variant in variants {
         let result = try await webView.callAsyncJavaScript(
-            drawing + "\nreturn renderIcon(pixels, style, lit);",
-            arguments: ["pixels": variant.pixels, "style": icon.style, "lit": icon.lit],
+            drawing + "\nreturn renderIcon(pixels, group, style, lit);",
+            arguments: [
+                "pixels": variant.pixels,
+                "group": icon.group,
+                "style": icon.style,
+                "lit": icon.lit,
+            ],
             contentWorld: .page
         )
 
