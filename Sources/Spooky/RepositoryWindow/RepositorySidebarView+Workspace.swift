@@ -32,7 +32,7 @@ extension RepositorySidebarView {
 
     /// Workspace 分组：工作区、历史、储藏、请求、分支整理，视图设置打开 Show Reflog 时的 Reflog，以及仓库设置。
     var workspace: some View {
-        Section(isExpanded: isExpanded(.workspace)) {
+        sidebarSection(.workspace) {
             workingCopy
                 .tag("workingCopy")
                 .modifier(
@@ -109,7 +109,7 @@ extension RepositorySidebarView {
                     .accessibilityLabel(session.operationBannerTitle ?? "")
 
             case .changes(let count):
-                countBadge(count.formatted())
+                SidebarCountBadge(count: count)
                     .accessibilityLabel(AppLocalization.text("workspace.changed", count))
 
             case nil:
@@ -125,18 +125,9 @@ extension RepositorySidebarView {
             Spacer(minLength: 4)
 
             if showsStashCount, session.stashes.isLoaded {
-                countBadge(session.stashes.entries.count.formatted())
+                SidebarCountBadge(count: session.stashes.entries.count)
                     .accessibilityLabel(AppLocalization.text("stash.count", session.stashes.entries.count))
             }
         }
-    }
-
-    /// Workspace 行尾的胶囊计数。
-    private func countBadge(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 11))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(AppPalette.color("sidebarBadgeBackgroundColor"), in: Capsule())
     }
 }

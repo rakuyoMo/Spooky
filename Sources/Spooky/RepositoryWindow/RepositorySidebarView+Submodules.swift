@@ -9,7 +9,7 @@ extension RepositorySidebarView {
 
     /// Submodules 分组：按路径排列的子模块，过滤时按名称匹配；没有子模块时只有标题。
     var submoduleGroup: some View {
-        Section(isExpanded: isExpanded(.submodules)) {
+        sidebarSection(.submodules) {
             ForEach(filteredSubmodules) {
                 submoduleRow($0)
             }
@@ -65,11 +65,7 @@ private struct SubmoduleSidebarRow: View {
             Spacer(minLength: 4)
 
             if let changes = summary?.changes, changes > 0 {
-                Text(changes.formatted())
-                    .font(.system(size: 11))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(AppPalette.color("sidebarBadgeBackgroundColor"), in: Capsule())
+                SidebarCountBadge(count: changes)
                     .accessibilityLabel(AppLocalization.text("workspace.changed", changes))
             }
 

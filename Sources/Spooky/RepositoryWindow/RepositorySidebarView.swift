@@ -138,6 +138,7 @@ struct RepositorySidebarView: View {
                     worktreeGroup
                 }
                 .listStyle(.sidebar)
+                .environment(\.defaultMinListHeaderHeight, 20)
                 .focused($listFocused)
                 .onDeleteCommand(perform: deleteCommand)
                 .id(session.repository)

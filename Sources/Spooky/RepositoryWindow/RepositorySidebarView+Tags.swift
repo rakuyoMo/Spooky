@@ -7,7 +7,7 @@ import SwiftUI
 extension RepositorySidebarView {
     /// Tags 分组：默认收起；排序与数量照视图设置，过滤时列出全部匹配的标签。
     var tags: some View {
-        Section(isExpanded: isExpanded(.tags)) {
+        sidebarSection(.tags) {
             SidebarRefTreeView(nodes: tagNodes, isExpanded: isExpanded) { node in
                 if let ref = node.reference {
                     tagRow(ref, name: node.name)

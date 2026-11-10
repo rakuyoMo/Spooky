@@ -9,7 +9,8 @@ import TestSupport
 
 // MARK: - RepositorySidebarViewTests
 
-/// 同一个窗口换着显示仓库时，侧边栏的排版与新开窗口相同，键盘焦点留在侧边栏；程序化选中的引用展开并滚动到可见。
+/// 同一个窗口换着显示仓库时，侧边栏的排版与新开窗口相同，键盘焦点留在侧边栏；程序化选中的引用展开并滚动到可见；
+/// 分组标题的行高。
 @MainActor
 struct RepositorySidebarViewTests {
     /// 远端是可展开的行，显示它时各行的行首让出展开箭头的位置；换回没有远端的仓库后，行首回到新开时的位置。
@@ -118,6 +119,38 @@ struct RepositorySidebarViewTests {
 
         #expect(session.history.selectedReferences == [tag.id])
     }
+
+    /// 系统 “侧边栏图标大小” 的三档下，分组标题行高都是 20 pt。
+    @Test("分组标题行高 20")
+    func headerHeights() async throws {
+        let fixture = try await Self.repository()
+        defer { try? FileManager.default.removeItem(atPath: fixture.location.path) }
+
+        let session = RepositorySession(
+            makeRunner: { _ in fixture.runner },
+            activities: RepositoryActivities()
+        )
+
+        defer { session.close() }
+
+        await Self.display(fixture.location, in: session, remotes: 0)
+
+        for size in [SidebarRowSize.small, .medium, .large] {
+            let window = Self.host(session, rowSize: size)
+            defer { window.close() }
+
+            let root = try #require(window.contentView)
+            let outline = try #require(await Self.rebuiltOutline(in: root, replacing: nil))
+
+            let headers = (0 ..< outline.numberOfRows).filter {
+                outline.rowView(atRow: $0, makeIfNecessary: true)?.isGroupRowStyle ?? false
+            }
+
+            // Workspace、Branches、Archived Branches、Tags、Remotes、Submodules、Worktrees
+            #expect(headers.count == 7, "\(size)")
+            #expect(headers.allSatisfy { outline.rect(ofRow: $0).height == 20 }, "\(size)")
+        }
+    }
 }
 
 // MARK: - Helpers
@@ -154,7 +187,11 @@ extension RepositorySidebarViewTests {
     }
 
     /// 把侧边栏放进不显示的窗口；窗口由调用方持有到测试结束。
-    static func host(_ session: RepositorySession) -> NSWindow {
+    ///
+    /// - Parameters:
+    ///   - session: 侧边栏显示的会话。
+    ///   - rowSize: 代替系统 “侧边栏图标大小” 的档位；nil 时跟随系统。
+    static func host(_ session: RepositorySession, rowSize: SidebarRowSize? = nil) -> NSWindow {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 260, height: 600),
             styleMask: [.titled],
@@ -163,7 +200,12 @@ extension RepositorySidebarViewTests {
         )
 
         window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: sidebar(session))
+        window.contentView = NSHostingView(
+            rootView: sidebar(session).transformEnvironment(\.sidebarRowSize) { size in
+                size = rowSize ?? size
+            }
+        )
+
         return window
     }
 
