@@ -1658,6 +1658,11 @@
 "appIcon.serverGhost" = "服务器幽灵";
 "appIcon.midnight" = "午夜";
 "appIcon.writeFailed" = "切换失败，图标无法写入 Spooky.app。";
+"settings.appIcon.label" = "应用图标：";
+"settings.appIcon.change" = "更改…";
+"appIcon.choose" = "选择应用图标";
+"appIcon.choose.message" = "所选图标用于 Dock、App 切换器和访达。";
+"appIcon.choose.submit" = "选择";
 "settings.cloneDirectory" = "克隆仓库的默认目录：";
 "settings.cloneDirectory.select" = "选择…";
 "settings.warnDiscardingChunks" = "丢弃块中的改动前发出警告";

@@ -44,6 +44,9 @@ final class AppIconController {
     /// 当前的深浅：“图标与小组件样式” 选了深色，或选了自动且外观是深色时为深色；设置页按它显示深色或默认图标。
     private(set) var isDark = false
 
+    /// 设置页 “App Icon:” 一行显示的图标：所选的组在当前样式下指示灯灭着的一版，画法与 Dock 相同；生成不了时为 nil。
+    private(set) var unlitIcon: NSImage? = nil
+
     /// 是否有服务器仓库连着：连着时 App 图标上的指示灯亮起；自定义图标总是灭灯的一版，不用重写。
     @ObservationIgnored
     var isConnected = false {
@@ -270,6 +273,18 @@ final class AppIconController {
         self.group = group
         updateIcon()
     }
+
+    /// 图标列表里这一组在当前深浅下的一张图标，即包里的原图；取不到资源时为 nil。
+    /// - Parameters:
+    ///   - group: 图标所属的组
+    ///   - isConnected: 取指示灯亮着的一版
+    func bundledIcon(
+        of group: AppIconGroup,
+        isConnected: Bool
+    ) -> NSImage? {
+        let variant = AppIconVariant(isDark: isDark, isConnected: isConnected)
+        return bundle.image(forResource: group.iconName(for: variant))
+    }
 }
 
 // MARK: - Private
@@ -336,12 +351,29 @@ extension AppIconController {
         return data
     }
 
-    /// 把 App 图标设成所选的组在当前样式与连接状态下的一版；不需要换或生成不了时交还包里的默认图标。
+    /// 把 App 图标设成所选的组在当前样式与连接状态下的一版，不需要换或生成不了时交还包里的默认图标；
+    /// 设置页这一行的图标随之重画。
     private func updateIcon() {
+        let appearance = NSApp.effectiveAppearance
+
+        // 设置页这一行与 Dock 同样合成，只是指示灯总是灭着；不用换的一版就是包内图标本身，由系统画出的样子即是结果
+        let unlitVariant = Self.variant(
+            for: group,
+            iconTheme: iconTheme,
+            appearance: appearance,
+            isConnected: false
+        )
+
+        unlitIcon = icon(
+            for: unlitVariant ?? .standard,
+            of: group,
+            scale: 1
+        )
+
         let variant = Self.variant(
             for: group,
             iconTheme: iconTheme,
-            appearance: NSApp.effectiveAppearance,
+            appearance: appearance,
             isConnected: isConnected
         )
 

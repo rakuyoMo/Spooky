@@ -1658,6 +1658,11 @@
 "appIcon.serverGhost" = "서버 유령";
 "appIcon.midnight" = "한밤중";
 "appIcon.writeFailed" = "Spooky.app에 아이콘을 쓸 수 없어 전환하지 못했습니다.";
+"settings.appIcon.label" = "앱 아이콘:";
+"settings.appIcon.change" = "변경…";
+"appIcon.choose" = "앱 아이콘 선택";
+"appIcon.choose.message" = "선택한 아이콘은 Dock, 앱 전환기 및 Finder에서 사용됩니다.";
+"appIcon.choose.submit" = "선택";
 "settings.cloneDirectory" = "복제한 저장소의 기본 디렉터리:";
 "settings.cloneDirectory.select" = "선택…";
 "settings.warnDiscardingChunks" = "청크의 변경 사항을 폐기하기 전에 경고";

@@ -1658,6 +1658,11 @@
 "appIcon.serverGhost" = "伺服器幽靈";
 "appIcon.midnight" = "午夜";
 "appIcon.writeFailed" = "切換失敗，圖示無法寫入 Spooky.app。";
+"settings.appIcon.label" = "應用程式圖示：";
+"settings.appIcon.change" = "更改…";
+"appIcon.choose" = "選擇應用程式圖示";
+"appIcon.choose.message" = "所選圖示用於 Dock、App 切換器和 Finder。";
+"appIcon.choose.submit" = "選擇";
 "settings.cloneDirectory" = "複製儲存庫的預設目錄：";
 "settings.cloneDirectory.select" = "選擇⋯";
 "settings.warnDiscardingChunks" = "捨棄區塊中的變更前發出警告";

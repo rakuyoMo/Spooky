@@ -1658,6 +1658,11 @@
 "appIcon.serverGhost" = "Fantasma del servidor";
 "appIcon.midnight" = "Medianoche";
 "appIcon.writeFailed" = "No se ha podido cambiar el icono porque no se puede escribir en Spooky.app.";
+"settings.appIcon.label" = "Icono de la app:";
+"settings.appIcon.change" = "Cambiar…";
+"appIcon.choose" = "Elegir el icono de la app";
+"appIcon.choose.message" = "El icono elegido se usa en el Dock, el selector de apps y el Finder.";
+"appIcon.choose.submit" = "Elegir";
 "settings.cloneDirectory" = "Carpeta predeterminada para repositorios clonados:";
 "settings.cloneDirectory.select" = "Seleccionar…";
 "settings.warnDiscardingChunks" = "Avisar antes de descartar cambios de un bloque";

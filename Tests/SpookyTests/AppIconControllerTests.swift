@@ -290,18 +290,18 @@ extension AppIconControllerTests {
     }
 }
 
-// MARK: - Private
+// MARK: - Fixtures
 
 extension AppIconControllerTests {
-    /// 本测试独用的临时目录，放偏好域与临时 App 包；调用方负责删除。
-    private static func makeDirectory() -> URL {
+    /// 应用图标测试独用的临时目录，放偏好域与临时 App 包；调用方负责删除。
+    static func makeDirectory() -> URL {
         FileManager.default.temporaryDirectory
             .appending(path: testBundleIdentifier + "." + UUID().uuidString, directoryHint: .isDirectory)
     }
 
     /// 在目录里建一个只有 `Info.plist` 的 App 包，Bundle ID 是测试专用的；不向 LaunchServices 登记。
     /// - Parameter directory: 放 App 包的目录
-    private static func makeApp(in directory: URL) throws -> URL {
+    static func makeApp(in directory: URL) throws -> URL {
         let app = directory.appending(path: "Spooky.app", directoryHint: .isDirectory)
         let contents = app.appending(path: "Contents", directoryHint: .isDirectory)
 
@@ -318,7 +318,11 @@ extension AppIconControllerTests {
 
         return app
     }
+}
 
+// MARK: - Private
+
+extension AppIconControllerTests {
     /// 写进自定义图标用的一张纯色小图的数据。
     private static func sampleIcon() -> Data? {
         let icon = NSImage(size: NSSize(width: 32, height: 32), flipped: false) {

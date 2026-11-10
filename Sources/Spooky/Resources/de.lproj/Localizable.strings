@@ -1658,6 +1658,11 @@
 "appIcon.serverGhost" = "Server-Geist";
 "appIcon.midnight" = "Mitternacht";
 "appIcon.writeFailed" = "Das Symbol konnte nicht gewechselt werden, weil es nicht in Spooky.app geschrieben werden kann.";
+"settings.appIcon.label" = "App-Symbol:";
+"settings.appIcon.change" = "Ändern …";
+"appIcon.choose" = "App-Symbol auswählen";
+"appIcon.choose.message" = "Das ausgewählte Symbol wird im Dock, im App-Umschalter und im Finder verwendet.";
+"appIcon.choose.submit" = "Auswählen";
 "settings.cloneDirectory" = "Standardordner für geklonte Repositorys:";
 "settings.cloneDirectory.select" = "Auswählen …";
 "settings.warnDiscardingChunks" = "Vor dem Verwerfen von Änderungen in einem Block warnen";
