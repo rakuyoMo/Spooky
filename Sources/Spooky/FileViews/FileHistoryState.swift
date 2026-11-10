@@ -37,6 +37,9 @@ final class FileHistoryState {
     /// 时间线是否正在读取。
     private(set) var isLoading = false
 
+    /// 进行中的读取是 HEAD 移动引起的时间线重读；它在后台进行，不显示读取进度。
+    private(set) var isRefreshingCommits = false
+
     /// 时间线读取失败的可复制诊断。
     var failure: AppFailure? = nil
 
@@ -165,20 +168,30 @@ final class FileHistoryState {
         self.head = head
         resolvedPath = false
         isSubmodule = false
-        reload(records: records)
+        reload(records: records, refreshing: true)
     }
 
     /// 按当前条件读取第一页与总数，仍在结果中的提交保持选中。
     ///
-    /// - Parameter records: 第一页、总数与随后重读的详情是否记进 Activity；自动刷新引起的重读不记。
-    func reload(records: Bool = true) {
-        cancelTasks()
+    /// - Parameters:
+    ///   - records: 第一页、总数与随后重读的详情是否记进 Activity；自动刷新引起的重读不记。
+    ///   - refreshing: HEAD 移动引起的重读：已显示的时间线与详情保留到新的读完，至少读回已加载的条数；读取在后台进行，不显示进度。
+    func reload(records: Bool = true, refreshing: Bool = false) {
+        // 刷新时只取消时间线的读取，已显示的时间线、详情与各行的对象能力都保留
+        if refreshing {
+            pageTask?.cancel()
+            pageTask = nil
+        } else {
+            cancelTasks()
+            commits = []
+            totalCount = nil
+            hasMore = false
+        }
+
         recordsReads = records
         failure = nil
-        commits = []
-        totalCount = nil
-        hasMore = false
         isLoading = false
+        isRefreshingCommits = false
 
         guard let path, let runner else {
             return
@@ -186,6 +199,7 @@ final class FileHistoryState {
 
         // 仓库还没有提交时没有历史
         guard let head else {
+            commits = []
             totalCount = 0
             selectedID = nil
             return
@@ -195,7 +209,9 @@ final class FileHistoryState {
         let filter = filter
         let resolve = !resolvedPath
         let activities = activities
+        let limit = max(Self.pageSize, refreshing ? commits.count : 0)
         isLoading = true
+        isRefreshingCommits = refreshing
 
         pageTask = Task { [weak self] in
             do {
@@ -206,9 +222,9 @@ final class FileHistoryState {
                     of: path,
                     from: root,
                     filter: filter,
+                    limit: limit,
                     views: views,
-                    activities: activities,
-                    records: records
+                    activity: (activities, records)
                 )
 
                 guard let self, generation == request, !Task.isCancelled else {
@@ -229,6 +245,7 @@ final class FileHistoryState {
             }
 
             isLoading = false
+            isRefreshingCommits = false
         }
     }
 
@@ -357,16 +374,18 @@ extension FileHistoryState {
     /// 读取第一页与总数；按版本范围筛选时只取该版本上最近一次修改这个文件的提交。
     ///
     /// - Parameters:
-    ///   - activities: 读取记进的 Activity 列表；第一页记为 Load Commits，总数记为 Load Commit Count。
-    ///   - records: 是否记进 Activity。
+    ///   - limit: 第一页读的条数，超过一页时接着往下读。
+    ///   - activity: 读取记进的 Activity 列表与是否记录；第一页记为 Load Commits，总数记为 Load Commit Count。
     private static func firstPage(
         of path: String,
         from root: String?,
         filter: FileHistoryFilter,
+        limit: Int,
         views: RepositoryFileViews,
-        activities: RepositoryActivities,
-        records: Bool
+        activity: (store: RepositoryActivities, records: Bool)
     ) async throws -> FirstPage {
+        let (activities, records) = activity
+
         guard let root else {
             return FirstPage(commits: [], hasMore: false, count: 0)
         }
@@ -390,7 +409,9 @@ extension FileHistoryState {
             activities: activities,
             records: records
         ) {
-            try await views.page(of: path, from: root, filter: filter, limit: pageSize)
+            try await HistoryPage.reading(limit: limit) {
+                try await views.page(of: path, from: root, filter: filter, offset: $0, limit: $1)
+            }
         }
 
         async let count = activities.recordRead(
@@ -429,24 +450,37 @@ extension FileHistoryState {
         )
     }
 
-    /// 写入第一页的结果；仍在结果中的提交保持选中，否则清除选择。
+    /// 写入第一页的结果：时间线没变时不替换；仍在结果中的提交保持选中，否则清除选择。
     ///
     /// - Parameter records: 重读的详情是否记进 Activity，与第一页相同。
     private func apply(_ result: FirstPage, path: String, submodule: Bool?, records: Bool) {
-        if self.path?.utf8.elementsEqual(path.utf8) != true { targets = [:] }
+        let samePath = self.path?.utf8.elementsEqual(path.utf8) ?? false
+
+        // 换了路径时各行的对象能力作废，还在读的一并取消
+        if !samePath {
+            targets = [:]
+
+            for task in targetTasks.values { task.cancel() }
+            targetTasks = [:]
+        }
+
         self.path = path
         resolvedPath = true
 
         isSubmodule = submodule ?? isSubmodule
 
-        commits = result.commits
+        if commits != result.commits {
+            commits = result.commits
+        }
+
         hasMore = result.hasMore
         totalCount = result.count
 
+        // 刷新时路径没变，所选提交的详情在后台重读，不先清空
         if let selectedID, !commits.contains(where: { $0.id == selectedID }) {
             self.selectedID = nil
         } else {
-            loadDetail(records: records)
+            loadDetail(records: records, refreshing: isRefreshingCommits && samePath)
         }
     }
 

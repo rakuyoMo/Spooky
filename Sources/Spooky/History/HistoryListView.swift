@@ -83,7 +83,7 @@ struct HistoryListView: View {
         .onChange(of: comparesBranches) { session.history.loadBaseComparison() }
     }
 
-    /// 列表下方的读取状态：失败详情，以及读取中持续可见的取消入口。
+    /// 列表下方的读取状态：失败详情，以及读取中持续可见的取消入口；刷新引起的重读在后台进行，不显示。
     @ViewBuilder
     private var loadingStatus: some View {
         if let failure = session.history.failure {
@@ -91,7 +91,7 @@ struct HistoryListView: View {
                 .padding(12)
         }
 
-        if session.history.isLoading {
+        if session.history.isLoading, !session.history.isRefreshingCommits {
             HStack {
                 ProgressView().controlSize(.small)
                 Text(AppLocalization.text("history.loading"))

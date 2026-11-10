@@ -37,22 +37,37 @@ extension FileHistoryState {
     }
 
     /// 读取所选提交的对象能力，再决定单文件内容或完整目录变更。
-    func loadDetail(showLarge: Bool = false, records: Bool = true) {
+    ///
+    /// - Parameters:
+    ///   - showLarge: 是否放行超过阈值的大 Diff。
+    ///   - records: 是否记进 Activity。
+    ///   - refreshing: HEAD 移动后重读已显示的详情：不先清空、不显示读取中，读到的与已显示的相同时不替换，失败时保留已显示的内容。
+    func loadDetail(showLarge: Bool = false, records: Bool = true, refreshing: Bool = false) {
         detailTask?.cancel()
         detailRequest = UUID()
-        directory.close()
-        diff = nil
-        content = nil
-        detailFailure = nil
-        isLoadingDetail = false
+
+        if !refreshing {
+            directory.close()
+            diff = nil
+            content = nil
+            detailFailure = nil
+            isLoadingDetail = false
+        }
 
         guard let commit = selectedCommit, let path, let runner else { return }
+
         let request = detailRequest
         let mode = detailMode
         let options = DiffPreferences.options()
         let threshold = RepositorySession.diffWarningBytes / 1000
         let activities = activities
-        isLoadingDetail = true
+
+        // 已放行显示的大 Diff 重读时照样放行，不退回提示
+        let showLarge = showLarge || (refreshing && diff?.diff != nil)
+
+        if !refreshing {
+            isLoadingDetail = true
+        }
 
         detailTask = Task { [weak self] in
             do {
@@ -71,15 +86,14 @@ extension FileHistoryState {
                     return
                 }
 
-                diff = result.diff
-                content = result.content
-
-                if let files = result.files {
-                    directory.open(commit: commit, files: files, runner: runner, activities: activities, records: records)
-                }
+                store(result, of: commit, runner: runner, records: records)
             } catch {
                 guard let self, detailRequest == request, !Task.isCancelled else { return }
-                detailFailure = AppFailure(error: error, opening: false, location: runner.location)
+
+                // 刷新时的重读失败不盖住已显示的详情
+                if !refreshing || (diff == nil && content == nil && directory.commit == nil) {
+                    detailFailure = AppFailure(error: error, opening: false, location: runner.location)
+                }
             }
 
             guard let self, detailRequest == request, !Task.isCancelled else { return }
@@ -135,5 +149,33 @@ extension FileHistoryState {
 
             return result
         }
+    }
+
+    /// 写入详情的读取结果：与已显示的相同时不替换，之前的失败不再显示；目录变更与已显示的相同时，各文件的读取状态保留。
+    private func store(_ result: DetailResult, of commit: HistoryCommit, runner: GitRunner, records: Bool) {
+        if diff != result.diff {
+            diff = result.diff
+        }
+
+        if content != result.content {
+            content = result.content
+        }
+
+        if detailFailure != nil {
+            detailFailure = nil
+        }
+
+        guard
+            let files = result.files,
+            directory.commit?.id != commit.id || directory.files != files
+        else { return }
+
+        directory.open(
+            commit: commit,
+            files: files,
+            runner: runner,
+            activities: activities,
+            records: records
+        )
     }
 }

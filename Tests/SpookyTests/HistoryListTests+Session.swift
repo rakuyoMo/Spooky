@@ -189,9 +189,8 @@ extension HistoryListTests {
 
         #expect(history.selectedCommit == target)
 
-        // 完整刷新从第一页重读列表
-        session.refresh(full: true)
-        await session.waitForRefresh()
+        // 列表从第一页重读
+        history.reloadCommits()
         await untilFinished { history.activeTasks }
 
         #expect(!history.commits.contains(target))

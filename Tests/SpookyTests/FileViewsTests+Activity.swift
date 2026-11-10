@@ -115,12 +115,14 @@ extension FileViewsTests {
 
     /// 等 HEAD 移动后文件历史、所选提交的原文与跟随 HEAD 的 Blame 都重读完。
     ///
-    /// 刷新替换状态时已同步发起重读、清掉旧结果，所以这些结果再出现时就是重读的结果。
+    /// 文件历史换上新的总数时已在后台发起所选提交原文的重读，再等这次读取结束；
+    /// Blame 重读时先清掉旧结果，再出现时就是重读的结果。
     private func waitForFileViews(of session: RepositorySession, commits: Int) async throws {
         await until {
             session.fileHistory.totalCount == commits
-                && session.fileHistory.content != nil
                 && session.fileContent.blame?.lines.count == commits
         }
+
+        await untilFinished { [session.fileHistory.detailTask].compactMap { $0 } }
     }
 }

@@ -75,7 +75,8 @@ struct FileHistoryTimelineView: View {
                     .padding(12)
             }
 
-            if state.isLoading {
+            // HEAD 移动引起的重读在后台进行，不显示进度
+            if state.isLoading, !state.isRefreshingCommits {
                 HStack {
                     ProgressView().controlSize(.small)
                     Text(AppLocalization.text("history.loading"))

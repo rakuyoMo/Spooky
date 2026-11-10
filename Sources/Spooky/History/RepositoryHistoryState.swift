@@ -114,6 +114,9 @@ final class RepositoryHistoryState {
     /// 列表加载状态。
     private(set) var isLoading = false
 
+    /// 进行中的读取是刷新引起的列表重读；它在后台进行，列表下方不显示读取进度。
+    private(set) var isRefreshingCommits = false
+
     /// 已选提交的完整哈希集合，按列表顺序复制。
     var selectedIDs = Set<String>() {
         didSet {
@@ -131,13 +134,16 @@ final class RepositoryHistoryState {
     private(set) var revealedCommit: HistoryCommit? = nil
 
     /// 当前提交变更的文件列表。
-    private(set) var changes: [CommitFileChange] = []
+    var changes: [CommitFileChange] = []
 
     /// 变更集读取状态。
-    private(set) var isLoadingChanges = false
+    var isLoadingChanges = false
+
+    /// 变更集已经读出的提交；刷新时同一提交只在后台重读，不清空已显示的内容。
+    var loadedChangesID: String? = nil
 
     /// 变更集失败不能显示成没有变更。
-    private(set) var changesFailure: AppFailure? = nil
+    var changesFailure: AppFailure? = nil
 
     /// 展开的文件共享一个滚动区域。
     var expandedPaths = Set<String>()
@@ -148,13 +154,13 @@ final class RepositoryHistoryState {
     }
 
     /// 单文件已加载的补丁，切换提交时失效。
-    private(set) var diffs: [String: CommitDiff] = [:]
+    var diffs: [String: CommitDiff] = [:]
 
     /// 单文件失败独立显示，不覆盖其它文件的补丁。
-    private(set) var diffFailures: [String: AppFailure] = [:]
+    var diffFailures: [String: AppFailure] = [:]
 
     /// 当前正在读取补丁的文件。
-    private(set) var loadingPaths = Set<String>()
+    var loadingPaths = Set<String>()
 
     /// 历史读取失败的可复制诊断。
     private(set) var failure: AppFailure? = nil
@@ -186,13 +192,13 @@ final class RepositoryHistoryState {
     private var pageTask: Task<Void, Never>? = nil
 
     /// 选中提交变化时取消旧变更集。
-    private var changeTask: Task<Void, Never>? = nil
+    var changeTask: Task<Void, Never>? = nil
 
     /// 各文件独立取消，不重复加载同一路径。
-    private var diffTasks: [String: Task<Void, Never>] = [:]
+    var diffTasks: [String: Task<Void, Never>] = [:]
 
     /// 关闭或重载时变更代数，阻止旧引用快照回写。
-    private var generation = 0
+    private(set) var generation = 0
 
     /// 历史刷新时固定的起点，翻页期间不追逐变化的分支。
     private var roots: [String] = []
@@ -357,13 +363,6 @@ final class RepositoryHistoryState {
         }
     }
 
-    /// 用户取消分页后保留已有结果，可以继续滚动重试。
-    func cancelPage() {
-        pageTask?.cancel()
-        pageTask = nil
-        isLoading = false
-    }
-
     /// 切回仓库时恢复分支与提交选择；引用快照到达后再校验引用是否仍存在。
     func restore(references: Set<String>, commits: Set<String>) {
         selectedReferences = references
@@ -439,16 +438,30 @@ final class RepositoryHistoryState {
 // MARK: - Paging
 
 extension RepositoryHistoryState {
+    /// 用户取消分页后保留已有结果，可以继续滚动重试。
+    func cancelPage() {
+        pageTask?.cancel()
+        pageTask = nil
+        isLoading = false
+        isRefreshingCommits = false
+    }
+
     /// 固定当前引用哈希与视图设置、搜索条件，清空图状态后读取第一页与总数。
     ///
-    /// - Parameter records: 第一页与提交数的读取是否记进 Activity；自动刷新引起的重载不记。
-    func reloadCommits(records: Bool = true) {
+    /// - Parameters:
+    ///   - records: 第一页与提交数的读取是否记进 Activity；自动刷新引起的重载不记。
+    ///   - refreshing: 刷新引起的重载：至少读回已加载的条数，列表不因只剩第一页而跳回；提交数保留到新的数读完。
+    func reloadCommits(records: Bool = true, refreshing: Bool = false) {
         cancelPage()
         countTask?.cancel()
         countTask = nil
         failure = nil
         lookupFailure = nil
-        commitCount = nil
+
+        // 刷新时副标题的提交数保留到新的数读完，不先变空
+        if !refreshing {
+            commitCount = nil
+        }
 
         let settings = HistoryViewSettings(defaults: preferences)
         query = settings.query(conditions: searchConditions)
@@ -499,7 +512,11 @@ extension RepositoryHistoryState {
             return
         }
 
-        loadNextPage(replacing: true, records: records)
+        loadNextPage(
+            replacing: true,
+            keeping: refreshing ? commits.count : 0,
+            records: records
+        )
         loadCount(records: records)
     }
 
@@ -507,17 +524,29 @@ extension RepositoryHistoryState {
     ///
     /// - Parameters:
     ///   - pageSize: 回到历史查找提交时按 1000 条扩大加载；nil 时用设置中的条数。
+    ///   - keeping: 刷新时至少读回的条数，超过一页时接着往下读，读完一次替换；大于 0 时读取在后台进行，列表下方不显示进度。
     ///   - records: 是否记进 Activity；自动刷新引起的重载不记。
-    func loadNextPage(replacing: Bool = false, pageSize: Int? = nil, records: Bool = true) {
+    func loadNextPage(
+        replacing: Bool = false,
+        pageSize: Int? = nil,
+        keeping loaded: Int = 0,
+        records: Bool = true
+    ) {
         guard !isLoading, hasMore, let runner else { return }
         let request = generation
         let roots = roots
         let query = query
         let offset = replacing ? 0 : commits.count
         let configured = UserDefaults.standard.integer(forKey: "historyPageSize")
-        let limit = pageSize ?? ([100, 200, 500, 1000].contains(configured) ? configured : 100)
+        let pageLimit = pageSize ?? ([100, 200, 500, 1000].contains(configured) ? configured : 100)
+
+        // 刷新时读回已加载的条数，可以超过一页
+        let limit = max(pageLimit, loaded)
+
         let activities = activities
         isLoading = true
+        isRefreshingCommits = loaded > 0
+
         pageTask = Task { [weak self] in
             do {
                 let page = try await activities.recordRead(
@@ -526,8 +555,10 @@ extension RepositoryHistoryState {
                     records: records,
                     results: { [AppLocalization.text("activity.result.commits", $0.commits.count)] }
                 ) {
-                    try await RepositoryHistory(runner: runner)
-                        .page(roots: roots, query: query, offset: offset, limit: limit)
+                    try await HistoryPage.reading(from: offset, limit: limit) {
+                        try await RepositoryHistory(runner: runner)
+                            .page(roots: roots, query: query, offset: $0, limit: $1)
+                    }
                 }
 
                 guard let self, generation == request, !Task.isCancelled else { return }
@@ -542,6 +573,7 @@ extension RepositoryHistoryState {
 
             guard let self, generation == request, !Task.isCancelled else { return }
             isLoading = false
+            isRefreshingCommits = false
             pageTask = nil
 
             // 回到历史时要选中的提交还没出现在已加载的分页里，继续扩大加载
@@ -595,118 +627,6 @@ extension RepositoryHistoryState {
 // MARK: - Commit Details
 
 extension RepositoryHistoryState {
-    /// 单选变化后丢弃上一提交的补丁，元信息直接复用列表记录。
-    func loadChanges() {
-        changeTask?.cancel()
-        for task in diffTasks.values { task.cancel() }
-        diffTasks = [:]
-        changes = []
-        changesFailure = nil
-        diffs = [:]
-        diffFailures = [:]
-        loadingPaths = []
-        expandedPaths = []
-        selectedPath = nil
-        isLoadingChanges = false
-        guard let runner, let commit = selectedCommit else { return }
-        let request = generation
-        let mergeMode = MergeDiffMode.preferred
-        isLoadingChanges = true
-        changeTask = Task { [weak self] in
-            do {
-                let files = try await RepositoryHistory(runner: runner).changes(in: commit.id, mergeMode: mergeMode)
-                guard
-                    let self, generation == request, selectedCommit?.id == commit.id,
-                    !Task.isCancelled
-                else { return }
-                changes = files
-                let threshold = preferences.integer(forKey: "historyAutoExpand")
-                if threshold > 0, files.count <= threshold { expandAll(true) }
-            } catch {
-                guard
-                    let self, generation == request, selectedCommit?.id == commit.id,
-                    !Task.isCancelled
-                else { return }
-                changesFailure = AppFailure(error: error, opening: false, location: runner.location)
-            }
-
-            guard
-                let self, generation == request, selectedCommit?.id == commit.id,
-                !Task.isCancelled
-            else { return }
-            isLoadingChanges = false
-        }
-    }
-
-    /// 展开时才取文件补丁，放行大 Diff 只影响当前提交的当前文件。
-    func loadDiff(_ path: String, showLarge: Bool = false) {
-        guard
-            !loadingPaths.contains(path), showLarge || diffs[path] == nil,
-            let runner, let commit = selectedCommit, let file = changes.first(where: { $0.path == path })
-        else { return }
-        let request = generation
-        loadingPaths.insert(path)
-        diffFailures[path] = nil
-        let threshold =
-            UserDefaults.standard.object(forKey: "diffWarningKilobytes") as? Int
-                ?? WorkingCopyOperations.defaultWarningKilobytes
-
-        // 变更集沿用工作区的上下文与忽略空白偏好
-        let options = DiffPreferences.options()
-        let mergeMode = MergeDiffMode.preferred
-
-        diffTasks[path] = Task { [weak self] in
-            do {
-                let diff = try await RepositoryHistory(runner: runner)
-                    .diff(
-                        in: commit.id,
-                        file: file,
-                        mergeMode: mergeMode,
-                        options: options,
-                        warningKilobytes: threshold,
-                        showLarge: showLarge
-                    )
-                guard
-                    let self, generation == request, selectedCommit?.id == commit.id,
-                    !Task.isCancelled
-                else { return }
-                diffs[path] = diff
-            } catch {
-                guard
-                    let self, generation == request, selectedCommit?.id == commit.id,
-                    !Task.isCancelled
-                else { return }
-                diffFailures[path] = AppFailure(error: error, opening: false, location: runner.location)
-            }
-
-            guard
-                let self, generation == request, selectedCommit?.id == commit.id,
-                !Task.isCancelled
-            else { return }
-            loadingPaths.remove(path)
-            diffTasks[path] = nil
-        }
-    }
-
-    /// 上下文行数或忽略空白改变后丢弃已读的补丁，重新读取正在显示的文件。
-    func reloadDiffs() {
-        for task in diffTasks.values { task.cancel() }
-        diffTasks = [:]
-        loadingPaths = []
-        diffs = [:]
-        diffFailures = [:]
-
-        for path in expandedPaths.union(selectedPath.map { [$0] } ?? []) {
-            loadDiff(path)
-        }
-    }
-
-    /// 全部展开 / 收起与快捷键共用状态，补丁仍逐文件按需读取。
-    func expandAll(_ expanded: Bool) {
-        expandedPaths = expanded ? Set(changes.map(\.path)) : []
-        if expanded { for file in changes { loadDiff(file.path) } }
-    }
-
     /// 只显示一个给定的提交，不读引用也不分页；Reflog 的右栏用它复用提交详情。
     ///
     /// - Parameters:
@@ -856,7 +776,7 @@ extension RepositoryHistoryState {
 
         if changed || needsReload {
             needsReload = false
-            reloadCommits(records: records)
+            reloadCommits(records: records, refreshing: true)
         }
 
         // 刚打开仓库时等着引用的核对，读到引用后接着做
@@ -968,7 +888,6 @@ extension RepositoryHistoryState {
     private func loadCount(records: Bool) {
         countTask?.cancel()
         countTask = nil
-        commitCount = nil
 
         guard let runner, !roots.isEmpty else {
             return
@@ -1024,8 +943,9 @@ extension RepositoryHistoryState {
             .union(lookup.map { [$0] } ?? [])
         let selected = selectedIDs.intersection(loaded)
 
+        // 选择没有变化时在后台重读变更集，已显示的内容与展开状态不变
         if selected == selectedIDs {
-            loadChanges()
+            reloadChanges()
         } else {
             selectedIDs = selected
         }
