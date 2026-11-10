@@ -1657,6 +1657,7 @@
 "settings.appearance.label" = "外觀：";
 "appIcon.serverGhost" = "伺服器幽靈";
 "appIcon.midnight" = "午夜";
+"appIcon.writeFailed" = "切換失敗，圖示無法寫入 Spooky.app。";
 "settings.cloneDirectory" = "複製儲存庫的預設目錄：";
 "settings.cloneDirectory.select" = "選擇⋯";
 "settings.warnDiscardingChunks" = "捨棄區塊中的變更前發出警告";

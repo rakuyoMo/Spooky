@@ -1657,6 +1657,7 @@
 "settings.appearance.label" = "Apparence :";
 "appIcon.serverGhost" = "Fantôme du serveur";
 "appIcon.midnight" = "Minuit";
+"appIcon.writeFailed" = "Impossible de changer d’icône, car elle ne peut pas être écrite dans Spooky.app.";
 "settings.cloneDirectory" = "Dossier par défaut des dépôts clonés :";
 "settings.cloneDirectory.select" = "Choisir…";
 "settings.warnDiscardingChunks" = "Avertir avant d’abandonner les modifications d’un bloc";

@@ -1657,6 +1657,7 @@
 "settings.appearance.label" = "Erscheinungsbild:";
 "appIcon.serverGhost" = "Server-Geist";
 "appIcon.midnight" = "Mitternacht";
+"appIcon.writeFailed" = "Das Symbol konnte nicht gewechselt werden, weil es nicht in Spooky.app geschrieben werden kann.";
 "settings.cloneDirectory" = "Standardordner für geklonte Repositorys:";
 "settings.cloneDirectory.select" = "Auswählen …";
 "settings.warnDiscardingChunks" = "Vor dem Verwerfen von Änderungen in einem Block warnen";

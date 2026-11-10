@@ -1657,6 +1657,7 @@
 "settings.appearance.label" = "Apariencia:";
 "appIcon.serverGhost" = "Fantasma del servidor";
 "appIcon.midnight" = "Medianoche";
+"appIcon.writeFailed" = "No se ha podido cambiar el icono porque no se puede escribir en Spooky.app.";
 "settings.cloneDirectory" = "Carpeta predeterminada para repositorios clonados:";
 "settings.cloneDirectory.select" = "Seleccionar…";
 "settings.warnDiscardingChunks" = "Avisar antes de descartar cambios de un bloque";

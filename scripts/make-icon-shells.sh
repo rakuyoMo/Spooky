@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 在 App 包里写出每个非默认图标组的壳 App：只装该组的默认图标，App 取它的系统图标作为该组运行时图标的底
+# 在 App 包里写出每个非默认图标组的壳 App：只装该组的默认图标，App 取它的系统图标作为该组运行时图标与自定义图标的底
 # `scripts/build-app.sh` 与 `scripts/bundle.sh` 拷完 icns 之后调用
 #
 # 壳 App 放在 Contents/Resources/ 下：聚焦不收录这个位置的 App，壳 App 也作为资源封进外层签名，不必单独签名；

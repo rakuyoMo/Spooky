@@ -1657,6 +1657,7 @@
 "settings.appearance.label" = "Appearance:";
 "appIcon.serverGhost" = "Server Ghost";
 "appIcon.midnight" = "Midnight";
+"appIcon.writeFailed" = "Couldn’t switch the icon because it can’t be written to Spooky.app.";
 "settings.cloneDirectory" = "Default directory for cloned repositories:";
 "settings.cloneDirectory.select" = "Select…";
 "settings.warnDiscardingChunks" = "Warn when discarding changes in a chunk";

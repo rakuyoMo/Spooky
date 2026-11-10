@@ -43,7 +43,7 @@ struct AppIconRendererTests {
         let center = Self.side / 2
 
         let rendered = try #require(
-            AppIconRenderer.runtimeIcon(
+            AppIconRenderer.icon(
                 system: system,
                 bundled: empty,
                 target: empty
@@ -70,7 +70,7 @@ struct AppIconRendererTests {
 
         let bright = try Self.pixels(
             of: #require(
-                AppIconRenderer.runtimeIcon(
+                AppIconRenderer.icon(
                     system: Self.highDynamicRangeImage(),
                     bundled: black,
                     target: black
@@ -92,7 +92,7 @@ struct AppIconRendererTests {
 
         let output = try Self.pixels(
             of: #require(
-                AppIconRenderer.runtimeIcon(
+                AppIconRenderer.icon(
                     system: Self.image(color: (0.5, 0.5, 0.5)),
                     bundled: black,
                     target: Self.image(color: (0, 0, 0), square: (1, 0, 0), squareHalfSide: 100)

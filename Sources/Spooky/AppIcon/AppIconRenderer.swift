@@ -2,17 +2,17 @@ import AppKit
 
 // MARK: - AppIconRenderer
 
-/// 运行时 App 图标的合成：让 Dock 画出的运行时图标与它画包内图标的样子一致。
+/// App 图标的合成：以系统画好的包内图标为底，换成同一组里的另一版，让 Dock 画出的样子与它画包内图标时一致。
 ///
 /// 默认与深色样式下，Dock 把包内图标画成系统处理过的样子（裁成系统的圆角形状、加上亮边与阴影），
-/// 运行时设置的图标则原样画出，而且画得小一圈（macOS 27 实测）。
+/// 运行时设置的图标与写进包里的自定义图标则原样画出，运行时图标还画得小一圈（macOS 27 实测）。
 enum AppIconRenderer {
     /// 运行时图标的内容放大的倍数，抵消 Dock 把运行时图标画小的那一圈。
     ///
     /// 按 macOS 27 默认 Dock 尺寸下的 2× 截图，与只带同一张 icns 的 App 的 Dock 图标逐像素对照，取差别最小的倍数。
     static let dockScale = 1.0125
 
-    /// 合成运行时图标：以系统处理过的包内图标为底，叠上目标图标与包内图标的差别，再按 `dockScale` 放大。
+    /// 合成图标：以系统处理过的包内图标为底，叠上目标图标与包内图标的差别，再按 scale 放大。
     ///
     /// 目标图标与包内图标只有指示灯不同时，结果只有指示灯与系统的处理结果不同。
     /// 系统处理过的图标里亮边比白色还亮，所以在扩展 sRGB 的浮点位图里逐像素相加，超出 1 的部分才放得下。
@@ -20,15 +20,22 @@ enum AppIconRenderer {
     ///   - system: 系统处理过的包内图标，即 `NSWorkspace` 给出的 App 图标
     ///   - bundled: 包内图标
     ///   - target: 要换上的图标，与包内图标同样大小、同一个形状
-    /// - Returns: 运行时图标，像素尺寸与 system 相同；建不起位图上下文时为 nil
-    static func runtimeIcon(
+    ///   - scale: 内容放大的倍数：运行时图标用 `dockScale`，写进包里的自定义图标不放大、传 1
+    /// - Returns: 合成的图标，像素尺寸与 system 相同；建不起位图上下文时为 nil
+    static func icon(
         system: CGImage,
         bundled: CGImage,
-        target: CGImage
+        target: CGImage,
+        scale: Double = dockScale
     ) -> CGImage? {
         let width = system.width
         let height = system.height
-        let rect = scaledRect(width: width, height: height)
+
+        let rect = scaledRect(
+            width: width,
+            height: height,
+            scale: scale
+        )
 
         guard
             let scaledSystem = scaledSystemImage(system, in: rect),
@@ -64,16 +71,18 @@ enum AppIconRenderer {
 // MARK: - Private
 
 extension AppIconRenderer {
-    /// 图标按 `dockScale` 放大后在位图里的位置：以位图中心为中心。
+    /// 图标按 scale 放大后在位图里的位置：以位图中心为中心。
     /// - Parameters:
     ///   - width: 位图宽度
     ///   - height: 位图高度
+    ///   - scale: 放大的倍数
     private static func scaledRect(
         width: Int,
-        height: Int
+        height: Int,
+        scale: Double
     ) -> CGRect {
-        let scaledWidth = Double(width) * dockScale
-        let scaledHeight = Double(height) * dockScale
+        let scaledWidth = Double(width) * scale
+        let scaledHeight = Double(height) * scale
 
         return CGRect(
             x: (Double(width) - scaledWidth) / 2,
@@ -83,7 +92,7 @@ extension AppIconRenderer {
         )
     }
 
-    /// 把系统处理过的图标按 `dockScale` 放大，画进 16 位浮点位图；建不起位图时为 nil。
+    /// 把系统处理过的图标画进 16 位浮点位图里放大后的位置；建不起位图时为 nil。
     ///
     /// 这张图标带着高于白色的亮度余量，画进 8 位位图会被整体压暗（白色 255 → 249），画进扩展 sRGB 的浮点位图才原样保留。
     /// 缩放放在 16 位浮点位图里做：同样的缩放在 32 位浮点位图里做，Dock 里与包内图标的差别更大（2× 截图实测）。

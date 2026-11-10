@@ -1657,6 +1657,7 @@
 "settings.appearance.label" = "外観：";
 "appIcon.serverGhost" = "サーバーゴースト";
 "appIcon.midnight" = "ミッドナイト";
+"appIcon.writeFailed" = "アイコンを Spooky.app に書き込めないため、切り替えられませんでした。";
 "settings.cloneDirectory" = "クローンしたリポジトリのデフォルトの場所：";
 "settings.cloneDirectory.select" = "選択…";
 "settings.warnDiscardingChunks" = "チャンクの変更を破棄する前に警告";
