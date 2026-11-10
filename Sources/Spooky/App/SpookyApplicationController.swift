@@ -32,7 +32,7 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 跨仓库共用的 Activity 窗口。
     private var activityWindow: ActivityWindowController?
 
-    /// Dock 与 ⌘Tab 中的 App 图标：跟随 “图标与小组件样式”，连着服务器时指示灯亮起。
+    /// Dock 中的 App 图标：显示所选的一组，跟随 “图标与小组件样式”，连着服务器时指示灯亮起。
     private let appIconController = AppIconController()
 
     /// 正在退出时先回收自己的 SSH 主连接。

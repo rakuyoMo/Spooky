@@ -1655,6 +1655,8 @@
 "settings.gitConfig" = "Git 配置";
 "settings.integration" = "集成";
 "settings.appearance.label" = "外观：";
+"appIcon.serverGhost" = "服务器幽灵";
+"appIcon.midnight" = "午夜";
 "settings.cloneDirectory" = "克隆仓库的默认目录：";
 "settings.cloneDirectory.select" = "选择…";
 "settings.warnDiscardingChunks" = "丢弃块中的改动前发出警告";

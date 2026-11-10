@@ -1655,6 +1655,8 @@
 "settings.gitConfig" = "Configuración de Git";
 "settings.integration" = "Integración";
 "settings.appearance.label" = "Apariencia:";
+"appIcon.serverGhost" = "Fantasma del servidor";
+"appIcon.midnight" = "Medianoche";
 "settings.cloneDirectory" = "Carpeta predeterminada para repositorios clonados:";
 "settings.cloneDirectory.select" = "Seleccionar…";
 "settings.warnDiscardingChunks" = "Avisar antes de descartar cambios de un bloque";

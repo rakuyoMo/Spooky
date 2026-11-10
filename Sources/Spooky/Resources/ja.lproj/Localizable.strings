@@ -1655,6 +1655,8 @@
 "settings.gitConfig" = "Git 設定";
 "settings.integration" = "連携";
 "settings.appearance.label" = "外観：";
+"appIcon.serverGhost" = "サーバーゴースト";
+"appIcon.midnight" = "ミッドナイト";
 "settings.cloneDirectory" = "クローンしたリポジトリのデフォルトの場所：";
 "settings.cloneDirectory.select" = "選択…";
 "settings.warnDiscardingChunks" = "チャンクの変更を破棄する前に警告";

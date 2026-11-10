@@ -1655,6 +1655,8 @@
 "settings.gitConfig" = "Git 設定";
 "settings.integration" = "整合";
 "settings.appearance.label" = "外觀：";
+"appIcon.serverGhost" = "伺服器幽靈";
+"appIcon.midnight" = "午夜";
 "settings.cloneDirectory" = "複製儲存庫的預設目錄：";
 "settings.cloneDirectory.select" = "選擇⋯";
 "settings.warnDiscardingChunks" = "捨棄區塊中的變更前發出警告";

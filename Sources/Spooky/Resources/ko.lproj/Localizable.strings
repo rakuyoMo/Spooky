@@ -1655,6 +1655,8 @@
 "settings.gitConfig" = "Git 구성";
 "settings.integration" = "통합";
 "settings.appearance.label" = "모양:";
+"appIcon.serverGhost" = "서버 유령";
+"appIcon.midnight" = "한밤중";
 "settings.cloneDirectory" = "복제한 저장소의 기본 디렉터리:";
 "settings.cloneDirectory.select" = "선택…";
 "settings.warnDiscardingChunks" = "청크의 변경 사항을 폐기하기 전에 경고";

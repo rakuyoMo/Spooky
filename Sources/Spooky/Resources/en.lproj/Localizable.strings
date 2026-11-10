@@ -1655,6 +1655,8 @@
 "settings.gitConfig" = "Git Config";
 "settings.integration" = "Integration";
 "settings.appearance.label" = "Appearance:";
+"appIcon.serverGhost" = "Server Ghost";
+"appIcon.midnight" = "Midnight";
 "settings.cloneDirectory" = "Default directory for cloned repositories:";
 "settings.cloneDirectory.select" = "Select…";
 "settings.warnDiscardingChunks" = "Warn when discarding changes in a chunk";
