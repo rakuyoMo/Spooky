@@ -10,7 +10,7 @@ import TestSupport
 // MARK: - RepositorySidebarViewTests
 
 /// 同一个窗口换着显示仓库时，侧边栏的排版与新开窗口相同，键盘焦点留在侧边栏；程序化选中的引用展开并滚动到可见；
-/// 分组标题的行高。
+/// 分组标题与条目的行高。
 @MainActor
 struct RepositorySidebarViewTests {
     /// 远端是可展开的行，显示它时各行的行首让出展开箭头的位置；换回没有远端的仓库后，行首回到新开时的位置。
@@ -67,7 +67,7 @@ struct RepositorySidebarViewTests {
         #expect(window.firstResponder === restored)
     }
 
-    /// 程序化选中收起的 Tags 分组里、文件夹中的标签时，列表展开分组与文件夹，选中那一行并滚动到可见；
+    /// 程序化选中收起的 Tags 分组里、文件夹中的标签时，列表展开分组与文件夹，选中那一行并滚动到整行可见，中档下也是如此；
     /// 分离 HEAD 时，当前分支行的名字是当前提交的 8 位短哈希。
     @Test("程序化选中展开分组与文件夹并滚动到可见，分离 HEAD 的行名是短哈希")
     func revealingReferences() async throws {
@@ -96,33 +96,48 @@ struct RepositorySidebarViewTests {
         let oid = try #require(session.status?.branch.oid)
         #expect(Self.sidebar(session).headRowName == String(oid.prefix(8)))
 
-        let window = Self.host(session)
-        let root = try #require(window.contentView)
-        let outline = try #require(await Self.rebuiltOutline(in: root, replacing: nil))
-        let rows = outline.numberOfRows
-
-        // 经快捷操作的入口选中标签：Tags 分组与 release 文件夹各展开一行，选中的标签行排在全部分支之后并滚动到可见
         let tag = try #require(session.history.snapshot?.references.first { $0.id == "refs/tags/release/v1" })
-        session.showHistory(of: tag)
 
-        await until {
-            root.layoutSubtreeIfNeeded()
+        // 跟随系统的档位一次，中档一次：中档的条目行比列表估计的高，第一次滚动会停在目标行之前
+        for size in [nil, SidebarRowSize.medium] {
+            let reveal = SidebarReveal()
+            let window = Self.host(session, rowSize: size, reveal: reveal)
+            defer { window.close() }
 
-            let row = outline.selectedRow
+            let root = try #require(window.contentView)
+            let outline = try #require(await Self.rebuiltOutline(in: root, replacing: nil))
+            let rows = outline.numberOfRows
 
-            guard row > branches, outline.numberOfRows == rows + 2 else {
-                return false
+            // 经快捷操作的入口选中标签：Tags 分组与 release 文件夹各展开一行，定位在展开的同一次更新里开始
+            session.showHistory(of: tag)
+
+            // 选中的标签行排在全部分支之后；列表的选中在展开之后的更新里才同步
+            await until {
+                root.layoutSubtreeIfNeeded()
+
+                guard outline.numberOfRows == rows + 2 else {
+                    return false
+                }
+
+                return outline.selectedRow > branches && reveal.target == nil
             }
 
-            return outline.visibleRect.intersects(outline.rect(ofRow: row))
-        }
+            // 定位结束时，整行落在列表的可见范围内
+            let row = outline.selectedRow
 
-        #expect(session.history.selectedReferences == [tag.id])
+            #expect(outline.visibleRect.contains(outline.rect(ofRow: row)), "\(String(describing: size))")
+            #expect(session.history.selectedReferences == [tag.id])
+
+            // 文件夹展开出的行同样按档位定高
+            if let size {
+                #expect(outline.rect(ofRow: row).height == 28, "\(size)")
+            }
+        }
     }
 
-    /// 系统 “侧边栏图标大小” 的三档下，分组标题行高都是 20 pt。
-    @Test("分组标题行高 20")
-    func headerHeights() async throws {
+    /// 系统 “侧边栏图标大小” 的三档下，分组标题行高都是 20 pt，条目行高依次是 24、28、32 pt。
+    @Test("分组标题行高 20，条目行高随档位")
+    func rowHeights() async throws {
         let fixture = try await Self.repository()
         defer { try? FileManager.default.removeItem(atPath: fixture.location.path) }
 
@@ -135,7 +150,9 @@ struct RepositorySidebarViewTests {
 
         await Self.display(fixture.location, in: session, remotes: 0)
 
-        for size in [SidebarRowSize.small, .medium, .large] {
+        let heights: [(size: SidebarRowSize, row: CGFloat)] = [(.small, 24), (.medium, 28), (.large, 32)]
+
+        for (size, height) in heights {
             let window = Self.host(session, rowSize: size)
             defer { window.close() }
 
@@ -146,9 +163,15 @@ struct RepositorySidebarViewTests {
                 outline.rowView(atRow: $0, makeIfNecessary: true)?.isGroupRowStyle ?? false
             }
 
+            let items = Set(0 ..< outline.numberOfRows).subtracting(headers)
+
             // Workspace、Branches、Archived Branches、Tags、Remotes、Submodules、Worktrees
             #expect(headers.count == 7, "\(size)")
             #expect(headers.allSatisfy { outline.rect(ofRow: $0).height == 20 }, "\(size)")
+
+            // Workspace 的入口、当前分支与 “没有远端” 的说明行
+            #expect(!items.isEmpty, "\(size)")
+            #expect(items.allSatisfy { outline.rect(ofRow: $0).height == height }, "\(size)")
         }
     }
 }
@@ -174,7 +197,14 @@ extension RepositorySidebarViewTests {
     }
 
     /// 回调什么都不做的侧边栏。
-    static func sidebar(_ session: RepositorySession) -> RepositorySidebarView {
+    ///
+    /// - Parameters:
+    ///   - session: 侧边栏显示的会话。
+    ///   - reveal: 侧边栏的定位进度，测试借它等定位结束。
+    static func sidebar(
+        _ session: RepositorySession,
+        reveal: SidebarReveal = SidebarReveal()
+    ) -> RepositorySidebarView {
         RepositorySidebarView(
             session: session,
             selectionChanged: { },
@@ -182,7 +212,8 @@ extension RepositorySidebarViewTests {
             revealFinder: { },
             copyPath: { },
             request: { _ in },
-            showActivity: { }
+            showActivity: { },
+            reveal: reveal
         )
     }
 
@@ -191,7 +222,12 @@ extension RepositorySidebarViewTests {
     /// - Parameters:
     ///   - session: 侧边栏显示的会话。
     ///   - rowSize: 代替系统 “侧边栏图标大小” 的档位；nil 时跟随系统。
-    static func host(_ session: RepositorySession, rowSize: SidebarRowSize? = nil) -> NSWindow {
+    ///   - reveal: 侧边栏的定位进度。
+    static func host(
+        _ session: RepositorySession,
+        rowSize: SidebarRowSize? = nil,
+        reveal: SidebarReveal = SidebarReveal()
+    ) -> NSWindow {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 260, height: 600),
             styleMask: [.titled],
@@ -201,7 +237,7 @@ extension RepositorySidebarViewTests {
 
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(
-            rootView: sidebar(session).transformEnvironment(\.sidebarRowSize) { size in
+            rootView: sidebar(session, reveal: reveal).transformEnvironment(\.sidebarRowSize) { size in
                 size = rowSize ?? size
             }
         )

@@ -6,7 +6,7 @@ extension RepositorySidebarView {
     /// 分离或未出生 HEAD 那一行的滚动身份。
     static let headRowID = SidebarNodeID(value: "HEAD")
 
-    /// 展开选中的引用所在的分组、远端与各级文件夹，再滚动到其中最靠前的一行。
+    /// 展开选中的引用所在的分组、远端与各级文件夹，再滚动到其中最靠前的一行，直到它落在列表内。
     ///
     /// 只按完整引用名找行，引用已不在树里时什么都不展开，也不选中同名的其它引用。
     ///
@@ -25,10 +25,7 @@ extension RepositorySidebarView {
             return
         }
 
-        // 刚展开的行在这次更新之后才进入列表，下一轮再滚动
-        Task { @MainActor in
-            proxy.scrollTo(target)
-        }
+        reveal.start(target, proxy: proxy)
     }
 }
 

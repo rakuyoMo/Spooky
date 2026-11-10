@@ -112,6 +112,7 @@ extension RepositorySidebarView {
             )
             .tag("HEAD")
             .id(Self.headRowID)
+            .background { SidebarRevealAnchor(id: Self.headRowID) }
         }
     }
 }
@@ -143,7 +144,7 @@ extension RepositorySidebarView {
         session.doubleClick(ref, in: target)
     }
 
-    /// 可以收起的分组：标题行高 20 pt，文字距侧边栏左缘 19 pt。
+    /// 可以收起的分组：标题行高 20 pt，文字距侧边栏左缘 19 pt；条目行按系统 “侧边栏图标大小” 取行高与字体。
     ///
     /// - Parameters:
     ///   - group: 分组，决定展开状态。
@@ -154,7 +155,15 @@ extension RepositorySidebarView {
         @ViewBuilder content: () -> some View,
         @ViewBuilder header: () -> some View
     ) -> some View {
-        Section(isExpanded: isExpanded(group), content: content) {
+        Section(isExpanded: isExpanded(group)) {
+            // 列表固定在 `listSize` 的档位，这里的修饰分到每一行（包括文件夹与远端展开出的行）：
+            // 换回系统的档位与字体，图标随之还原，再去掉上下插距定成这一档的行高
+            Group(content: content)
+                .environment(\.sidebarRowSize, rowSize)
+                .font(rowSize.rowFont)
+                .frame(height: rowSize.rowHeight)
+                .listRowInsets(.vertical, 0)
+        } header: {
             // 列表给标题留出的左边距是 14 pt，再让出 5 pt
             header()
                 .padding(.leading, 5)
