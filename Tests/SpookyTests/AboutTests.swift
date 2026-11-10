@@ -6,7 +6,7 @@ import TestSupport
 
 // MARK: - AboutTests
 
-/// 关于窗口：固定尺寸的面板只建一个；Acknowledgements 按顺序列出三个库并接上各自的许可证；许可证的折行接回段落；文档 sheet 按 Esc 关闭。
+/// 关于窗口：固定尺寸的面板只建一个；说明在全部语言下从图标顶边排起；Acknowledgements 按顺序列出三个库并接上各自的许可证；许可证的折行接回段落；文档 sheet 按 Esc 关闭。
 @MainActor
 struct AboutTests {
     /// 面板内容 470 × 277、只能关闭，标题栏透明且不显示标题；Release Notes 与 Help 菜单是同一个动作；关掉后再打开仍是同一个窗口；
@@ -61,6 +61,47 @@ struct AboutTests {
         await until { about.presentedViewControllers?.isEmpty ?? true }
 
         #expect(window.attachedSheet == nil)
+    }
+
+    /// 全部支持语言的说明换上之后：说明的顶边与图标的顶边对齐、距内容顶边 40，与版权之间至少 20；
+    /// 两个按钮与 Release Notes 基线对齐，版权在按钮上方 20，位置不随说明的长短变化。
+    @Test("关于窗口的说明在全部语言下从图标顶边排起")
+    func creditsLayout() throws {
+        let content = AboutViewController().view
+        content.layoutSubtreeIfNeeded()
+
+        let texts = Self.textFields(in: content)
+        let buttons = Self.buttons(in: content)
+
+        let icon = try #require(content.subviews.first { $0 is NSImageView })
+        let credits = try #require(texts.first { $0.stringValue == AppLocalization.text("about.credits") })
+        let copyright = try #require(texts.first { $0.textColor == .secondaryLabelColor })
+
+        let releaseNotes = try #require(buttons.first { $0.title == AppLocalization.text("help.releaseNotes") })
+        let acknowledgements = try #require(buttons.first { $0.title == AppLocalization.text("about.acknowledgements") })
+
+        var copyrightFrames: [NSRect] = []
+
+        for language in AppLocalization.languages {
+            let url = try #require(AppLocalization.bundle.url(forResource: language, withExtension: "lproj"))
+            let bundle = try #require(Bundle(url: url))
+
+            credits.stringValue = bundle.localizedString(forKey: "about.credits", value: nil, table: nil)
+            content.layoutSubtreeIfNeeded()
+
+            // 说明从上往下排：顶边与图标的顶边同在距内容顶边 40 处，下面与版权至少隔 20
+            #expect(credits.frame.maxY == icon.frame.maxY, "\(language)")
+            #expect(AboutWindowController.size.height - credits.frame.maxY == 40, "\(language)")
+            #expect(credits.frame.minY - copyright.frame.maxY >= 20, "\(language)")
+
+            // 版权与按钮从下往上排：按钮与 Release Notes 基线对齐，版权在按钮上方 20
+            #expect(Self.baseline(of: acknowledgements) == Self.baseline(of: releaseNotes), "\(language)")
+            #expect(copyright.frame.minY - acknowledgements.frame.maxY == 20, "\(language)")
+
+            copyrightFrames.append(copyright.frame)
+        }
+
+        #expect(copyrightFrames.allSatisfy { $0 == copyrightFrames.first })
     }
 
     /// 许可证文件都在时，三个库按顺序出现，每个库的名称与版本、主页、许可证名称后面接着它的许可证全文，主页可以点开；
@@ -178,6 +219,16 @@ extension AboutTests {
         }
 
         return (view as? NSButton).map { [$0] } ?? view.subviews.flatMap { buttons(in: $0) }
+    }
+
+    /// 视图层级里的全部文本框。
+    private static func textFields(in view: NSView) -> [NSTextField] {
+        (view as? NSTextField).map { [$0] } ?? view.subviews.flatMap { textFields(in: $0) }
+    }
+
+    /// 控件第一行文字的基线在父视图里的纵坐标；基线从对齐矩形的顶边量起。
+    private static func baseline(of view: NSView) -> CGFloat {
+        view.alignmentRect(forFrame: view.frame).maxY - view.firstBaselineOffsetFromTop
     }
 
     /// 视图层级里的第一个文本视图。

@@ -2080,7 +2080,7 @@
 
 /* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "关于 Spooky";
-"about.credits" = "Spooky 是以 GNU 通用公共许可证 v3.0 发布的自由软件。";
+"about.credits" = "Spooky 没有什么宏大的愿景，它只是一只单纯的，喜欢在各个 Git 仓库之间飘来飘去的小幽灵罢了，嘿嘿。";
 "about.title" = "关于";
 "about.version" = "版本 %1$@ (%2$@)";
 "about.acknowledgements" = "致谢";

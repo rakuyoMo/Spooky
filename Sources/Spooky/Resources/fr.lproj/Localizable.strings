@@ -2080,7 +2080,7 @@
 
 /* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "À propos de Spooky";
-"about.credits" = "Spooky est un logiciel libre publié sous la licence publique générale GNU v3.0.";
+"about.credits" = "Spooky n’a pas de grande vision. Ce n’est qu’un simple petit fantôme qui aime flotter d’un dépôt Git à l’autre, voilà tout. Héhé.";
 "about.title" = "À propos";
 "about.version" = "Version %1$@ (%2$@)";
 "about.acknowledgements" = "Remerciements";

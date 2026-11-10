@@ -2080,7 +2080,7 @@
 
 /* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "Spooky에 관하여";
-"about.credits" = "Spooky는 GNU General Public License v3.0으로 배포되는 자유 소프트웨어입니다.";
+"about.credits" = "Spooky에게 거창한 비전 같은 건 없어요. 여러 Git 저장소 사이를 둥실둥실 떠다니길 좋아하는, 그저 단순한 꼬마 유령일 뿐이에요. 헤헤.";
 "about.title" = "정보";
 "about.version" = "버전 %1$@ (%2$@)";
 "about.acknowledgements" = "감사의 말";
