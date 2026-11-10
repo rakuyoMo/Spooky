@@ -93,6 +93,8 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - **主题**：Default 与 Default (Dark) 存为普通的主题文件，可以编辑，不能改名或删除；文件缺少或损坏时，下次启动 Spooky 会重新写入。可以新建自己的 Diff 与文件内容主题，逐类修改语法颜色，经拖放导入和导出，在 Finder 里打开或拖到 Dock 图标上的主题文件同样导入，并为浅色、深色外观各选一套
 
+- **应用图标**：在外观设置里从服务器幽灵与午夜两组图标中选择，Dock、App 切换器和 Finder 都显示所选的一组
+
 - **支持八种语言**：英文、简体中文、繁体中文、日文、韩文、德文、法文和西班牙文，自动跟随系统语言。其它语言环境下显示英文
 
 ## 系统要求
@@ -204,6 +206,7 @@ open .build/Spooky.app
 - 用 Warp 打开服务器仓库时，会在 `~/.warp/launch_configurations/` 写入 `Spooky-*.yaml`；退出 Spooky 时只清理它自己创建的这些文件
 - 启动时读取 `~/Library/Logs/DiagnosticReports/` 里 Spooky 自己的崩溃报告，用来询问是否在 GitHub 上报告；不会自动上传任何内容
 - 更新从 GitHub Releases 上的 `appcast.xml` 检查，下载的更新先校验 EdDSA 签名再安装
+- 选中服务器幽灵以外的应用图标时，Spooky 把它写成自己 App 包的自定义图标，即在 `Spooky.app` 的根目录加上 `Icon\r` 文件与 Finder 信息；每次启动与图标样式变化时重新写入，选回服务器幽灵时清除
 
 服务器：
 

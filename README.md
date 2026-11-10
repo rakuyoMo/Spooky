@@ -93,6 +93,8 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Themes**: Default and Default (Dark) are saved as regular themes that you can edit but not rename or delete, and are restored the next time Spooky starts if they're missing or damaged. Create your own themes for diffs and file contents, change the color of each syntax category, import and export them by drag and drop, import theme files opened in the Finder or dropped on the Dock icon, and choose one for the light appearance and one for the dark appearance
 
+- **App icon**: choose between the Server Ghost and Midnight icons in the Appearance settings. The chosen icon is used in the Dock, the app switcher, and the Finder
+
 - **Eight languages**: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish. The app uses your system language, or English if that language isn't supported
 
 ## Requirements
@@ -204,6 +206,7 @@ On your Mac:
 - Opening a server repository in Warp writes `Spooky-*.yaml` to `~/.warp/launch_configurations/`. When Spooky quits, it removes only the files it created
 - At launch, Spooky reads its own crash reports in `~/Library/Logs/DiagnosticReports/` to offer a GitHub issue. Nothing is uploaded automatically
 - Updates are checked against `appcast.xml` on GitHub Releases, and downloaded updates are verified with an EdDSA signature before they're installed
+- When an app icon other than Server Ghost is chosen, Spooky writes it as the custom icon of its own app bundle, which adds an `Icon\r` file and Finder information at the root of `Spooky.app`. Spooky writes it again at each launch and when the icon style changes, and removes it when you switch back to Server Ghost
 
 On the server:
 

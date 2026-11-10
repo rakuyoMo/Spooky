@@ -40,7 +40,7 @@ Spooky 由两个 target 组成：
 | 目录 | 职责 |
 |---|---|
 | `App/` | 入口、窗口与菜单协调、本地化与错误说明、外观、命名色与文本区主题、链接解析、系统通知 |
-| `AppIcon/` | App 图标，随图标样式与连接状态切换 |
+| `AppIcon/` | App 图标：图标组的选择，随图标样式、深浅与连接状态切换，写入 App 包的自定义图标 |
 | `Components/` | 对话框骨架与呈现它的 sheet 或模态窗口，空状态、错误详情、连接状态、头像等共用视图 |
 | `RepositoryManager/`、`Launch/`、`Clone/` | 仓库管理与书签、启动窗口，新建、克隆与扫描 |
 | `RepositoryWindow/` | 仓库窗口与菜单动作、侧边栏、搜索、操作对话框与拖放 |
@@ -206,6 +206,26 @@ Spooky 由两个 target 组成：
   - 解析不了的链接只显示错误，不执行任何动作
 - 诊断报告与崩溃报告离开本机前经 `DiagnosticRedactor` 脱敏；崩溃报告只打开预填的 GitHub 新问题页，由用户自己提交
 - `UpdateController` 按 Settings → Updates 的通道接收更新清单里的条目，只接受 EdDSA 签名的清单与更新包；`swift run` 时更新器不启动
+
+## App 图标
+
+- 图标组：
+  - `AppIconGroup` 有服务器幽灵与午夜两组，所选的组存在偏好 `appIconGroup`；键不存在或值不认识时为服务器幽灵，Reset / Clear User Defaults 之后随之回到服务器幽灵
+  - 每组四个 icns：默认、连接、深色、深色连接；连接版与灭灯版只差指示灯所在的一块，运行时的合成依赖这一点
+  - 服务器幽灵是包里的默认图标（`CFBundleIconFile`）
+- 深浅：读全局偏好 `AppleIconAppearanceTheme`；值以 `Dark` 结尾为深色，以 `Automatic` 结尾时跟随 App 的外观，其余与键不存在时为浅色
+- 壳 App：
+  - 其它组各有一个只装该组默认图标的壳 App，放在 `Contents/Resources/<资源名>.app`，由 `scripts/make-icon-shells.sh` 在打包时写出
+  - 系统画包内图标时会裁成圆角形状、缩到标准大小并加上亮边；`AppIconController` 取壳 App 的系统图标作为该组的底，服务器幽灵仍取 Spooky.app 自己的
+- 运行中的 Dock：`AppIconController` 按组、图标样式、深浅与连接状态挑出一版，由 `AppIconRenderer` 叠在该组的底上，设为 `NSApp.applicationIconImage`
+  - 默认与深色样式下，连着服务器仓库时只有指示灯不同
+  - 透明与色调样式下指示灯不亮：服务器幽灵交还包里的默认图标，其它组用系统按样式处理过的壳 App 图标
+  - 设置页 “App Icon:” 一行显示同样画法、指示灯灭着的一版
+- 自定义图标：
+  - 选中其它组时，把当前样式下指示灯灭着的一版以 `NSWorkspace.setIcon(_:forFile:options:)` 写成 Spooky.app 的自定义图标，App 没运行时的 Dock、⌘Tab 与 Finder 都显示所选的组；选回服务器幽灵时清除
+  - 写入会在包的根目录加上 `Icon\r` 与 Finder 信息，此时 `codesign --verify --strict` 不通过，不带 `--strict` 时仍通过
+  - 启动、换组、图标样式或深浅变化时重写，Sparkle 更新换掉整个包后由此写回；只有连接状态变化时不写
+  - 写入与清除在进程共用的一条串行队列上执行，主线程不等；换组时写成功才存偏好，失败时抛出 `AppIconWriteError`，偏好与图标都不动；其余时机的失败不提示
 
 ## 文本区
 
