@@ -144,7 +144,7 @@ extension RepositorySidebarView {
         session.doubleClick(ref, in: target)
     }
 
-    /// 可以收起的分组：标题行高 20 pt，文字距侧边栏左缘 19 pt；条目行按系统 “侧边栏图标大小” 取行高与字体。
+    /// 可以收起的分组：标题行高 20 pt，文字距侧边栏左缘 20 pt；条目行按系统 “侧边栏图标大小” 取行高与字体。
     ///
     /// - Parameters:
     ///   - group: 分组，决定展开状态。
@@ -164,9 +164,9 @@ extension RepositorySidebarView {
                 .frame(height: rowSize.rowHeight)
                 .listRowInsets(.vertical, 0)
         } header: {
-            // 列表给标题留出的左边距是 14 pt，再让出 5 pt
+            // 列表给标题留出的左边距是 14 pt，再让出 6 pt
             header()
-                .padding(.leading, 5)
+                .padding(.leading, 6)
         }
     }
 
