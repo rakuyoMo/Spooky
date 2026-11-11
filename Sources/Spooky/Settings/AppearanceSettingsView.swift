@@ -2,13 +2,13 @@ import SwiftUI
 
 // MARK: - AppearanceSettingsView
 
-/// Appearance 页：跟随系统、浅色、深色三张缩略图，点一张即切换整个 App 的外观。
+/// Appearance 页：跟随系统、浅色、深色三张缩略图，点一张即切换整个 App 的外观；下方一行选择应用图标。
 struct AppearanceSettingsView: View {
     /// 当前外观的 `rawValue`；与快捷操作的外观项读写同一个偏好。
     @AppStorage(AppAppearance.key)
     private var selection = AppAppearance.system.rawValue
 
-    /// 右对齐的标签与从 242 pt 起、278 pt 宽的缩略图选择器。
+    /// 右对齐的标签与从 242 pt 起、278 pt 宽的缩略图选择器，下方是应用图标一行。
     var body: some View {
         SettingsForm(layout: .appearance) {
             SettingsRow(AppLocalization.text("settings.appearance.label"), alignment: .top) {
@@ -19,6 +19,8 @@ struct AppearanceSettingsView: View {
                 }
                 .frame(width: 278, alignment: .leading)
             }
+
+            AppIconSettingsRow()
         }
     }
 }

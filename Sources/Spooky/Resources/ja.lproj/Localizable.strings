@@ -1655,6 +1655,14 @@
 "settings.gitConfig" = "Git 設定";
 "settings.integration" = "連携";
 "settings.appearance.label" = "外観：";
+"appIcon.serverGhost" = "サーバーゴースト";
+"appIcon.midnight" = "ミッドナイト";
+"appIcon.writeFailed" = "アイコンを Spooky.app に書き込めないため、切り替えられませんでした。";
+"settings.appIcon.label" = "アプリアイコン：";
+"settings.appIcon.change" = "変更…";
+"appIcon.choose" = "アプリアイコンを選択";
+"appIcon.choose.message" = "選択したアイコンは Dock、App スイッチャー、Finder で使用されます。";
+"appIcon.choose.submit" = "選択";
 "settings.cloneDirectory" = "クローンしたリポジトリのデフォルトの場所：";
 "settings.cloneDirectory.select" = "選択…";
 "settings.warnDiscardingChunks" = "チャンクの変更を破棄する前に警告";

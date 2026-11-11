@@ -32,6 +32,9 @@ enum AccessibilityProbe {
 
         /// 控件是否可用；没有这个属性的元素算可用。
         let isEnabled: Bool
+
+        /// 是否选中，如列表里选中的行；没有这个属性的元素算没选中。
+        let isSelected: Bool
     }
 
     /// 把视图放进屏外的窗口，在主线程经辅助功能接口读出全部元素。
@@ -146,7 +149,8 @@ extension AccessibilityProbe {
                 name: attribute(reference, kAXDescriptionAttribute) as? String ?? "",
                 title: titleElement.flatMap { attribute($0, kAXValueAttribute) as? String } ?? "",
                 frame: frame(of: reference).offsetBy(dx: -origin.x, dy: -origin.y),
-                isEnabled: attribute(reference, kAXEnabledAttribute) as? Bool ?? true
+                isEnabled: attribute(reference, kAXEnabledAttribute) as? Bool ?? true,
+                isSelected: attribute(reference, kAXSelectedAttribute) as? Bool ?? false
             )
 
             elements.append((reference, element))

@@ -1,55 +1,655 @@
 import AppKit
 import Testing
+import TestSupport
+import UniformTypeIdentifiers
 
 @testable import Spooky
 
-/// App 图标跟随 “图标与小组件样式” 与连接状态：深色样式换成深色图标，默认样式连着服务器时换成点亮指示灯的默认图标，
-/// 透明、色调样式一律不换。
+// MARK: - AppIconControllerTests
+
+/// App 图标显示所选的组，跟随 “图标与小组件样式” 与连接状态。
 ///
-/// Dock 只对包里的默认图标做透明、色调处理，运行时设置的图标会被它再处理一遍，与系统的样式不符，所以这两种样式下交还默认图标；
-/// 包里的默认图标指示灯灭着，所以默认样式只有连着服务器时才换。
+/// 默认与深色样式下按深浅与连接状态换成该组的一版，服务器幽灵浅色、没连时就是包里的默认图标，不用换；
+/// 透明、色调样式下系统按样式处理包内图标，运行时设置的图标会被原样画出，所以服务器幽灵交还默认图标，
+/// 其它组用系统已按样式处理过的壳 App 图标、指示灯不亮。
+/// ⌘Tab 与访达只认包里的图标，其它组要写成自定义图标、服务器幽灵清掉；写入在后台按顺序进行，主线程不等，
+/// 写不进去时偏好保持原来的组。
 @MainActor
 struct AppIconControllerTests {
-    /// 各样式在深浅外观下、没连与连着服务器时应换上的图标；nil 表示不设运行时图标。
-    ///
-    /// 深色样式的 “始终” 子变体不看外观；“自动” 子变体只在深色外观（含高对比度、vibrant 变体）下换成深色图标，
-    /// 浅色外观下与默认样式（键不存在）相同；透明、色调的各子变体在任何外观下都不换。
-    private static let cases: [(
-        iconTheme: String?,
-        appearance: NSAppearance.Name,
-        disconnected: AppIconVariant?,
-        connected: AppIconVariant?
-    )] = [
-        (nil, .darkAqua, nil, .connected),
-        ("RegularDark", .aqua, .dark(isConnected: false), .dark(isConnected: true)),
-        ("RegularAutomatic", .accessibilityHighContrastDarkAqua, .dark(isConnected: false), .dark(isConnected: true)),
-        ("RegularAutomatic", .vibrantDark, .dark(isConnected: false), .dark(isConnected: true)),
-        ("RegularAutomatic", .accessibilityHighContrastAqua, nil, .connected),
-        ("ClearAutomatic", .darkAqua, nil, nil),
-        ("TintedLight", .aqua, nil, nil),
-    ]
+    /// 测试里临时 App 包的 Bundle ID，与 Spooky 自身的不同。
+    private static let testBundleIdentifier = "com.rakuyo.spooky.tests.appicon"
 
-    /// 样式、外观与连接状态决定换上哪一版图标。
-    @Test("样式、深浅外观与连接状态决定换上的图标")
-    func variantFollowsIconStyleAndConnection() throws {
+    /// 组、样式、外观与连接状态决定深浅、运行时图标与自定义图标；
+    /// 自定义图标的数据在写原图时就是该组默认图标的文件，否则是合成的一版。
+    @Test("组、样式、深浅外观与连接状态决定换上的图标")
+    func variantFollowsGroupStyleAndConnection() throws {
+        let directory = Self.makeDirectory()
+
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        let app = try Self.makeApp(in: directory)
+
+        try Self.addMidnightIcons(to: app)
+
+        let controller = try AppIconController(defaults: defaults, bundle: #require(Bundle(url: app)))
+
+        let bundledIcon = try Data(
+            contentsOf: app.appending(
+                path: "Contents/Resources/\(AppIconGroup.midnight.iconName(for: .standard)).icns",
+                directoryHint: .notDirectory
+            )
+        )
+
         for entry in Self.cases {
             let appearance = try #require(NSAppearance(named: entry.appearance))
-            let label = "\(entry.iconTheme ?? "nil") \(entry.appearance.rawValue)"
+            let label = "\(entry.group) \(entry.iconTheme ?? "nil") \(entry.appearance.rawValue)"
 
-            let whenDisconnected = AppIconController.variant(
-                forIconTheme: entry.iconTheme,
-                appearance: appearance,
-                isConnected: false
+            let variant = { (isConnected: Bool) in
+                AppIconController.variant(
+                    for: entry.group,
+                    iconTheme: entry.iconTheme,
+                    appearance: appearance,
+                    isConnected: isConnected
+                )
+            }
+
+            let customIcon = AppIconController.customIconVariant(
+                for: entry.group,
+                iconTheme: entry.iconTheme,
+                appearance: appearance
             )
 
-            let whenConnected = AppIconController.variant(
-                forIconTheme: entry.iconTheme,
-                appearance: appearance,
-                isConnected: true
+            let writesBundled = AppIconController.writesBundledCustomIcon(
+                iconTheme: entry.iconTheme,
+                appearance: appearance
             )
 
-            #expect(whenDisconnected == entry.disconnected, "\(label)")
-            #expect(whenConnected == entry.connected, "\(label)")
+            #expect(AppIconController.isDark(forIconTheme: entry.iconTheme, appearance: appearance) == entry.isDark, "\(label)")
+            #expect(variant(false) == entry.unlit, "\(label)")
+            #expect(variant(true) == entry.lit, "\(label)")
+            #expect(customIcon == entry.customIcon, "\(label)")
+            #expect(writesBundled == entry.bundled, "\(label)")
+
+            // 实际写入的数据：服务器幽灵清掉；其它组写原图时与默认图标的文件逐字节相同，否则是合成的一版
+            let iconData = try controller.customIconData(
+                for: entry.group,
+                iconTheme: entry.iconTheme,
+                appearance: appearance
+            )
+
+            if entry.customIcon == nil {
+                #expect(iconData == nil, "\(label)")
+            } else {
+                #expect((iconData == bundledIcon) == entry.bundled, "\(label)")
+            }
         }
     }
+
+    /// 偏好里没有记录或记录无法识别时为服务器幽灵；所选的组不是 Reset User Defaults 保留的数据，
+    /// Reset 与 Clear 之后控制器都回到服务器幽灵，清掉 App 包的自定义图标，并重启 Dock。
+    @Test("偏好缺省与不认识的值为服务器幽灵，Reset / Clear 之后回到服务器幽灵")
+    func preferenceFallsBackToServerGhost() async throws {
+        let directory = Self.makeDirectory()
+
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let domain = directory.appending(path: "defaults").path
+        let defaults = try #require(UserDefaults(suiteName: domain))
+        let app = try Self.makeApp(in: directory)
+
+        // 没有记录、记录无法识别
+        #expect(AppIconGroup.current(in: defaults) == .serverGhost)
+
+        defaults.set("aurora", forKey: AppIconGroup.key)
+
+        #expect(AppIconGroup.current(in: defaults) == .serverGhost)
+
+        // 控制器读 App 的外观、设置运行时图标
+        _ = NSApplication.shared
+
+        // Reset 保留数据、Clear 全删，所选的组都不是数据；删完后控制器按偏好重新套用，清掉自定义图标，Dock 重启一次
+        for keepingData in [true, false] {
+            defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
+            try await AppIconController.setCustomIcon(Self.sampleIcon(), ofApp: app)
+
+            var dockRestarts = 0
+
+            let controller = try AppIconController(
+                defaults: defaults,
+                bundle: #require(Bundle(url: app)),
+                restartDock: { dockRestarts += 1 }
+            )
+
+            #expect(controller.group == .midnight)
+
+            DeveloperPreferences.removeValues(in: domain, of: defaults, keepingData: keepingData)
+            controller.reload()
+            await until { controller.pendingRequests == 0 }
+
+            #expect(controller.group == .serverGhost, "keepingData: \(keepingData)")
+            #expect(!Self.hasCustomIcon(app), "keepingData: \(keepingData)")
+            #expect(dockRestarts == 1, "keepingData: \(keepingData)")
+        }
+    }
+
+    /// 自定义图标写进包的根目录、清除时删掉；只读的包写不进去，换组失败时组、偏好与图标都保持原来的组。
+    /// 换组写完重启 Dock 一次，写入失败或选的就是当前的组时不重启。
+    @Test("写入与清除 App 包的自定义图标，写不进去时换组失败")
+    func writesAndClearsCustomIcon() async throws {
+        let directory = Self.makeDirectory()
+        let app = try Self.makeApp(in: directory)
+
+        defer {
+            try? Self.setPermissions(0o755, of: app)
+            try? FileManager.default.removeItem(at: directory)
+        }
+
+        // 写入后包的根目录出现 `Icon\r`，清除后消失
+        try await AppIconController.setCustomIcon(Self.sampleIcon(), ofApp: app)
+
+        #expect(Self.hasCustomIcon(app))
+
+        try await AppIconController.setCustomIcon(nil, ofApp: app)
+
+        #expect(!Self.hasCustomIcon(app))
+
+        // 只读的包：写入抛错；没有自定义图标时清除不改动它，不算失败
+        try Self.setPermissions(0o555, of: app)
+
+        await #expect(throws: AppIconWriteError.self) {
+            try await AppIconController.setCustomIcon(Self.sampleIcon(), ofApp: app)
+        }
+
+        try await AppIconController.setCustomIcon(nil, ofApp: app)
+
+        // 带着午夜的自定义图标变成只读：选回服务器幽灵失败，组、偏好与图标都还是午夜
+        try Self.setPermissions(0o755, of: app)
+        try await AppIconController.setCustomIcon(Self.sampleIcon(), ofApp: app)
+        try Self.setPermissions(0o555, of: app)
+
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
+
+        _ = NSApplication.shared
+
+        var dockRestarts = 0
+
+        let controller = try AppIconController(
+            defaults: defaults,
+            bundle: #require(Bundle(url: app)),
+            restartDock: { dockRestarts += 1 }
+        )
+
+        await #expect(throws: AppIconWriteError.self) {
+            try await controller.select(.serverGhost)
+        }
+
+        #expect(controller.group == .midnight)
+        #expect(AppIconGroup.current(in: defaults) == .midnight)
+        #expect(Self.hasCustomIcon(app))
+        #expect(dockRestarts == 0)
+
+        // 恢复可写后选回服务器幽灵：清掉自定义图标，偏好随之改变，Dock 重启一次
+        try Self.setPermissions(0o755, of: app)
+        try await controller.select(.serverGhost)
+
+        #expect(controller.group == .serverGhost)
+        #expect(AppIconGroup.current(in: defaults) == .serverGhost)
+        #expect(!Self.hasCustomIcon(app))
+        #expect(dockRestarts == 1)
+
+        // 再选当前的组：Dock 里的格子没有变，不重启
+        try await controller.select(.serverGhost)
+
+        #expect(dockRestarts == 1)
+    }
+
+    /// 写入在后台排队，系统询问权限这类写入卡住的情形下主线程照常往下走；
+    /// 写入按排队的顺序完成，Reset 之前发出、之后才写完的换组不把组存回偏好；
+    /// 几次请求先后排队时，等全部写完、包上有没有自定义图标与之前不同时才重启一次 Dock。
+    @Test("自定义图标在后台按顺序写入，主线程不等；Reset 之前发出的换组不覆盖 Reset 的结果")
+    func writesInBackgroundInOrder() async throws {
+        let directory = Self.makeDirectory()
+
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let domain = directory.appending(path: "defaults").path
+        let defaults = try #require(UserDefaults(suiteName: domain))
+        let app = try Self.makeApp(in: directory)
+
+        try Self.addMidnightIcons(to: app)
+
+        defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
+        try await AppIconController.setCustomIcon(Self.sampleIcon(), ofApp: app)
+
+        _ = NSApplication.shared
+
+        var dockRestarts = 0
+
+        let controller = try AppIconController(
+            defaults: defaults,
+            bundle: #require(Bundle(url: app)),
+            restartDock: { dockRestarts += 1 }
+        )
+
+        // 拦住写入队列，像系统询问权限时那样让写入一直等着
+        let gate = DispatchSemaphore(value: 0)
+
+        AppIconController.writeQueue.async {
+            gate.wait()
+        }
+
+        // 换组排进队列后挂起；主线程照常往下走，组与偏好都还没变
+        let selecting = Task.immediate {
+            try await controller.select(.serverGhost)
+        }
+
+        #expect(controller.group == .midnight)
+        #expect(Self.hasCustomIcon(app))
+
+        // Reset：删掉偏好后重新套用，重写同样只是排队，不等写完
+        DeveloperPreferences.removeValues(in: domain, of: defaults, keepingData: true)
+        controller.reload()
+
+        #expect(controller.group == .serverGhost)
+        #expect(Self.hasCustomIcon(app))
+
+        // 放行后按排队的顺序写完：自定义图标清掉了，先发出的换组没有把组存回偏好；
+        // 清掉图标的是那次换组，Reset 的重写包上已没有图标，最后写完时仍重启一次 Dock
+        gate.signal()
+
+        try await selecting.value
+        await until { controller.pendingRequests == 0 }
+
+        #expect(!Self.hasCustomIcon(app))
+        #expect(defaults.string(forKey: AppIconGroup.key) == nil)
+        #expect(controller.group == .serverGhost)
+        #expect(dockRestarts == 1)
+
+        // 换到午夜又换回服务器幽灵，两次都在主线程让出之前排进队列：包上最后与之前相同，不重启
+        let toMidnight = Task.immediate {
+            try await controller.select(.midnight)
+        }
+
+        let back = Task.immediate {
+            try await controller.select(.serverGhost)
+        }
+
+        try await toMidnight.value
+        try await back.value
+
+        #expect(controller.group == .serverGhost)
+        #expect(dockRestarts == 1)
+
+        // 连续两次换到午夜：包上写进了自定义图标，两次都写完后重启一次
+        let first = Task.immediate {
+            try await controller.select(.midnight)
+        }
+
+        let second = Task.immediate {
+            try await controller.select(.midnight)
+        }
+
+        try await first.value
+        try await second.value
+
+        #expect(controller.group == .midnight)
+        #expect(Self.hasCustomIcon(app))
+        #expect(dockRestarts == 2)
+    }
+
+    /// 启动时包上原本没有自定义图标、这次写了进去（如更新后第一次启动），固定在 Dock 里的格子显示的组不对，重启 Dock；
+    /// 选着服务器幽灵启动、包上已是所选的组的平常启动与样式变化后的重写都不重启。
+    @Test("启动时写进了自定义图标才重启 Dock，平常启动与样式变化的重写不重启")
+    func startupRestartsDockWhenCustomIconAppears() async throws {
+        let directory = Self.makeDirectory()
+
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        let app = try Self.makeApp(in: directory)
+
+        try Self.addMidnightIcons(to: app)
+
+        _ = NSApplication.shared
+
+        var dockRestarts = 0
+
+        let controller = try AppIconController(
+            defaults: defaults,
+            bundle: #require(Bundle(url: app)),
+            restartDock: { dockRestarts += 1 }
+        )
+
+        // 选着服务器幽灵启动：包上本来没有自定义图标，不用清，不重启
+        controller.reload()
+        await until { controller.pendingRequests == 0 }
+
+        #expect(!Self.hasCustomIcon(app))
+        #expect(dockRestarts == 0)
+
+        // 更新后第一次启动：选着午夜、包上没有自定义图标，写进去之后重启一次
+        defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
+        controller.reload()
+        await until { controller.pendingRequests == 0 }
+
+        #expect(Self.hasCustomIcon(app))
+        #expect(dockRestarts == 1)
+
+        // 平常启动：包上已是午夜，照样重写，不重启
+        controller.start()
+        await until { controller.pendingRequests == 0 }
+
+        #expect(dockRestarts == 1)
+
+        // 样式变化后的重写只换同一组的另一版：包上的自定义图标这时没了也只是写回，不重启
+        try await AppIconController.setCustomIcon(nil, ofApp: app)
+
+        NSWorkspace.shared.notificationCenter.post(
+            name: AppIconController.iconAppearanceDidChangeNotification,
+            object: nil
+        )
+
+        await Self.waitForWrites()
+        await until { controller.pendingRequests == 0 }
+
+        #expect(Self.hasCustomIcon(app))
+        #expect(dockRestarts == 1)
+    }
+}
+
+// MARK: AppIconControllerTests.Entry
+
+extension AppIconControllerTests {
+    /// 一组核对：组、样式与外观，以及应得的深浅、没连与连着时的运行时图标、自定义图标与它是否写原图。
+    fileprivate struct Entry {
+        /// 所选的组。
+        let group: AppIconGroup
+
+        /// 全局偏好 `AppleIconAppearanceTheme` 的值，“默认” 样式时为 nil。
+        let iconTheme: String?
+
+        /// App 的外观。
+        let appearance: NSAppearance.Name
+
+        /// 应得的深浅。
+        let isDark: Bool
+
+        /// 没连服务器时的运行时图标。
+        let unlit: AppIconVariant?
+
+        /// 连着服务器时的运行时图标。
+        let lit: AppIconVariant?
+
+        /// 写成 App 包自定义图标的一版；nil 表示清掉。
+        let customIcon: AppIconVariant?
+
+        /// 其它组的自定义图标是否写该组默认图标的原图，按样式与深浅判断，与组无关。
+        let bundled: Bool
+
+        /// 按表格的列依次给出各项。
+        init(
+            _ group: AppIconGroup,
+            _ iconTheme: String?,
+            _ appearance: NSAppearance.Name,
+            isDark: Bool,
+            unlit: AppIconVariant?,
+            lit: AppIconVariant?,
+            customIcon: AppIconVariant?,
+            bundled: Bool
+        ) {
+            self.group = group
+            self.iconTheme = iconTheme
+            self.appearance = appearance
+            self.isDark = isDark
+            self.unlit = unlit
+            self.lit = lit
+            self.customIcon = customIcon
+            self.bundled = bundled
+        }
+    }
+
+    /// 各组在各样式、深浅外观下的深浅，没连与连着服务器时应换上的一版，写成自定义图标的一版，
+    /// 以及自定义图标是否写原图；nil 表示不换或清掉。
+    ///
+    /// 深色的 “始终” 子选项不看外观；“自动” 子选项只在深色外观（含高对比度、vibrant 变体）下为深色；
+    /// 透明、色调各子选项的深浅同样按子选项判断，但运行时图标不分深浅、指示灯不亮。
+    /// 透明样式与色调浅色下自定义图标写原图，色调深色、默认与深色样式下写合成的一版。
+    fileprivate static let cases: [Entry] = [
+        Entry(.serverGhost, nil, .darkAqua, isDark: false, unlit: nil, lit: .lit, customIcon: nil, bundled: false),
+        Entry(.serverGhost, "RegularDark", .aqua, isDark: true, unlit: .dark, lit: .darkLit, customIcon: nil, bundled: false),
+        Entry(
+            .serverGhost,
+            "RegularAutomatic",
+            .accessibilityHighContrastDarkAqua,
+            isDark: true,
+            unlit: .dark,
+            lit: .darkLit,
+            customIcon: nil,
+            bundled: false
+        ),
+        Entry(
+            .serverGhost,
+            "RegularAutomatic",
+            .vibrantDark,
+            isDark: true,
+            unlit: .dark,
+            lit: .darkLit,
+            customIcon: nil,
+            bundled: false
+        ),
+        Entry(
+            .serverGhost,
+            "RegularAutomatic",
+            .accessibilityHighContrastAqua,
+            isDark: false,
+            unlit: nil,
+            lit: .lit,
+            customIcon: nil,
+            bundled: false
+        ),
+        Entry(.serverGhost, "ClearAutomatic", .darkAqua, isDark: true, unlit: nil, lit: nil, customIcon: nil, bundled: true),
+        Entry(.serverGhost, "TintedLight", .aqua, isDark: false, unlit: nil, lit: nil, customIcon: nil, bundled: true),
+        Entry(.midnight, nil, .darkAqua, isDark: false, unlit: .standard, lit: .lit, customIcon: .standard, bundled: false),
+        Entry(.midnight, "RegularDark", .aqua, isDark: true, unlit: .dark, lit: .darkLit, customIcon: .dark, bundled: false),
+        Entry(
+            .midnight,
+            "RegularAutomatic",
+            .aqua,
+            isDark: false,
+            unlit: .standard,
+            lit: .lit,
+            customIcon: .standard,
+            bundled: false
+        ),
+        Entry(
+            .midnight,
+            "RegularAutomatic",
+            .darkAqua,
+            isDark: true,
+            unlit: .dark,
+            lit: .darkLit,
+            customIcon: .dark,
+            bundled: false
+        ),
+        Entry(
+            .midnight,
+            "ClearDark",
+            .aqua,
+            isDark: true,
+            unlit: .standard,
+            lit: .standard,
+            customIcon: .standard,
+            bundled: true
+        ),
+        Entry(
+            .midnight,
+            "TintedAutomatic",
+            .darkAqua,
+            isDark: true,
+            unlit: .standard,
+            lit: .standard,
+            customIcon: .standard,
+            bundled: false
+        ),
+        Entry(
+            .midnight,
+            "TintedAutomatic",
+            .aqua,
+            isDark: false,
+            unlit: .standard,
+            lit: .standard,
+            customIcon: .standard,
+            bundled: true
+        ),
+        Entry(
+            .midnight,
+            "ClearLight",
+            .darkAqua,
+            isDark: false,
+            unlit: .standard,
+            lit: .standard,
+            customIcon: .standard,
+            bundled: true
+        ),
+    ]
+}
+
+// MARK: - Fixtures
+
+extension AppIconControllerTests {
+    /// 应用图标测试独用的临时目录，放偏好域与临时 App 包；调用方负责删除。
+    static func makeDirectory() -> URL {
+        FileManager.default.temporaryDirectory
+            .appending(path: testBundleIdentifier + "." + UUID().uuidString, directoryHint: .isDirectory)
+    }
+
+    /// 在目录里建一个只有 `Info.plist` 的 App 包，Bundle ID 是测试专用的；不向 LaunchServices 登记。
+    /// - Parameter directory: 放 App 包的目录
+    static func makeApp(in directory: URL) throws -> URL {
+        let app = directory.appending(path: "Spooky.app", directoryHint: .isDirectory)
+        let contents = app.appending(path: "Contents", directoryHint: .isDirectory)
+
+        try FileManager.default.createDirectory(at: contents, withIntermediateDirectories: true)
+
+        let info = [
+            "CFBundleIdentifier": testBundleIdentifier,
+            "CFBundleName": "Spooky",
+            "CFBundlePackageType": "APPL",
+        ]
+
+        let data = try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0)
+        try data.write(to: contents.appending(path: "Info.plist", directoryHint: .notDirectory))
+
+        return app
+    }
+}
+
+// MARK: - Private
+
+extension AppIconControllerTests {
+    /// 一张 32 × 32 纯色小图的 icns 数据，与包里的图标资源同一格式；也直接写成自定义图标。
+    private static func sampleIcon() -> Data? {
+        let data = NSMutableData()
+
+        guard
+            let space = CGColorSpace(name: CGColorSpace.sRGB),
+            let context = CGContext(
+                data: nil,
+                width: 32,
+                height: 32,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: space,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ),
+            let destination = CGImageDestinationCreateWithData(data, UTType.icns.identifier as CFString, 1, nil)
+        else {
+            return nil
+        }
+
+        context.setFillColor(NSColor.systemPurple.cgColor)
+        context.fill(CGRect(x: 0, y: 0, width: 32, height: 32))
+
+        guard let image = context.makeImage() else {
+            return nil
+        }
+
+        CGImageDestinationAddImage(destination, image, nil)
+
+        return CGImageDestinationFinalize(destination) ? data as Data : nil
+    }
+
+    /// 给临时 App 放上午夜组的四张 icns 图标，并用指向不存在位置的符号链接代替壳 App：控制器取到通用的系统图标，
+    /// 合成得出午夜的自定义图标，LaunchServices 也不登记它；同名的普通文件或目录会被当作 App 登记。
+    /// - Parameter app: App 包的位置
+    private static func addMidnightIcons(to app: URL) throws {
+        let resources = app.appending(path: "Contents/Resources", directoryHint: .isDirectory)
+        let icon = try #require(sampleIcon())
+
+        try FileManager.default.createDirectory(at: resources, withIntermediateDirectories: true)
+
+        for isDark in [false, true] {
+            for isConnected in [false, true] {
+                let variant = AppIconVariant(isDark: isDark, isConnected: isConnected)
+                let name = AppIconGroup.midnight.iconName(for: variant)
+
+                try icon.write(to: resources.appending(path: name + ".icns", directoryHint: .notDirectory))
+            }
+        }
+
+        let shell = resources.appending(
+            path: AppIconGroup.midnight.iconName(for: .standard) + ".app",
+            directoryHint: .notDirectory
+        )
+
+        try FileManager.default.createSymbolicLink(
+            at: shell,
+            withDestinationURL: resources.appending(path: "missing", directoryHint: .notDirectory)
+        )
+    }
+
+    /// App 包的根目录里是否有自定义图标的 `Icon\r` 文件。
+    /// - Parameter app: App 包的位置
+    private static func hasCustomIcon(_ app: URL) -> Bool {
+        let iconFile = app.appending(path: "Icon\r", directoryHint: .notDirectory)
+        return FileManager.default.fileExists(atPath: iconFile.path(percentEncoded: false))
+    }
+
+    /// 等写入队列里已经排着的写入全部做完：队列串行，排在最后的这一项执行时，前面的都已写完。
+    private static func waitForWrites() async {
+        await withCheckedContinuation { continuation in
+            AppIconController.writeQueue.async {
+                continuation.resume()
+            }
+        }
+    }
+
+    /// 改 App 包根目录的权限，用来模拟只读的位置。
+    /// - Parameters:
+    ///   - permissions: POSIX 权限位
+    ///   - app: App 包的位置
+    private static func setPermissions(
+        _ permissions: Int,
+        of app: URL
+    ) throws {
+        try FileManager.default.setAttributes(
+            [.posixPermissions: permissions],
+            ofItemAtPath: app.path(percentEncoded: false)
+        )
+    }
+}
+
+// MARK: - AppIconVariant
+
+extension AppIconVariant {
+    /// 默认图标，指示灯亮着。
+    fileprivate static let lit = Self(isDark: false, isConnected: true)
+
+    /// 深色图标，指示灯灭着。
+    fileprivate static let dark = Self(isDark: true, isConnected: false)
+
+    /// 深色图标，指示灯亮着。
+    fileprivate static let darkLit = Self(isDark: true, isConnected: true)
 }

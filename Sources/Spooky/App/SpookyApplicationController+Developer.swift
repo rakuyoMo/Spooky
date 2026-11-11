@@ -64,6 +64,9 @@ extension SpookyApplicationController {
             }
 
             DeveloperPreferences.removeValues(in: UserDefaults.appDomain, of: .standard, keepingData: true)
+
+            // 所选的图标组随之回到服务器幽灵，Dock、⌘Tab 与访达跟着恢复
+            appIconController.reload()
         }
     }
 
@@ -71,6 +74,9 @@ extension SpookyApplicationController {
     @objc
     func clearUserDefaults() {
         DeveloperPreferences.removeValues(in: UserDefaults.appDomain, of: .standard, keepingData: false)
+
+        // 所选的图标组随之回到服务器幽灵，Dock、⌘Tab 与访达跟着恢复
+        appIconController.reload()
     }
 
     /// Developer › Test Crash Reporting › Crash With Fake Exception：抛出没有人接住的 Objective-C 异常。

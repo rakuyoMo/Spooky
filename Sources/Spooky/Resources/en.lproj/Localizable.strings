@@ -1655,6 +1655,14 @@
 "settings.gitConfig" = "Git Config";
 "settings.integration" = "Integration";
 "settings.appearance.label" = "Appearance:";
+"appIcon.serverGhost" = "Server Ghost";
+"appIcon.midnight" = "Midnight";
+"appIcon.writeFailed" = "Couldn’t switch the icon because it can’t be written to Spooky.app.";
+"settings.appIcon.label" = "App Icon:";
+"settings.appIcon.change" = "Change…";
+"appIcon.choose" = "Choose App Icon";
+"appIcon.choose.message" = "The selected icon is used in the Dock, the app switcher, and Finder.";
+"appIcon.choose.submit" = "Choose";
 "settings.cloneDirectory" = "Default directory for cloned repositories:";
 "settings.cloneDirectory.select" = "Select…";
 "settings.warnDiscardingChunks" = "Warn when discarding changes in a chunk";

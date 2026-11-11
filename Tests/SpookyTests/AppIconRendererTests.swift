@@ -33,12 +33,6 @@ struct AppIconRendererTests {
     /// 指示灯的半径，外加 1 px 抗锯齿的边。
     private static let lightReach = 12
 
-    /// 指示灯灭着与亮着的两版图标：默认图标与深色图标各一对。
-    private static let iconPairs = [
-        (unlit: "AppIcon", lit: "AppIconConnected"),
-        (unlit: "AppIconDark", lit: "AppIconDarkConnected"),
-    ]
-
     /// 内容以中心为准按 `dockScale` 放大：方块的中心不动，左边缘向外移出原来的位置；
     /// 像素尺寸与系统图标相同，Dock 按同样的尺寸缩放，放大只发生在图标内部。
     @Test("内容以中心为准放大，像素尺寸与系统图标相同")
@@ -49,7 +43,7 @@ struct AppIconRendererTests {
         let center = Self.side / 2
 
         let rendered = try #require(
-            AppIconRenderer.runtimeIcon(
+            AppIconRenderer.icon(
                 system: system,
                 bundled: empty,
                 target: empty
@@ -76,7 +70,7 @@ struct AppIconRendererTests {
 
         let bright = try Self.pixels(
             of: #require(
-                AppIconRenderer.runtimeIcon(
+                AppIconRenderer.icon(
                     system: Self.highDynamicRangeImage(),
                     bundled: black,
                     target: black
@@ -98,7 +92,7 @@ struct AppIconRendererTests {
 
         let output = try Self.pixels(
             of: #require(
-                AppIconRenderer.runtimeIcon(
+                AppIconRenderer.icon(
                     system: Self.image(color: (0.5, 0.5, 0.5)),
                     bundled: black,
                     target: Self.image(color: (0, 0, 0), square: (1, 0, 0), squareHalfSide: 100)
@@ -118,9 +112,12 @@ struct AppIconRendererTests {
         }
     }
 
-    /// 亮灯版与灭灯版只在四盏指示灯处不同：运行时图标叠上的是两者的差别，别处不同就会把别的改动也带上去。
-    @Test("亮灯版与灭灯版只差指示灯", arguments: iconPairs)
-    func litIconDiffersOnlyAtLights(unlit: String, lit: String) throws {
+    /// 各组的默认图标与深色图标，亮灯版与灭灯版都只在指示灯处不同：服务器幽灵是机架上的四盏灯，午夜是眼睛与光晕；
+    /// 运行时图标叠上的是两者的差别，别处不同就会把别的改动也带上去。
+    @Test("亮灯版与灭灯版只差指示灯", arguments: AppIconGroup.allCases, [false, true])
+    func litIconDiffersOnlyAtLights(group: AppIconGroup, isDark: Bool) throws {
+        let unlit = group.iconName(for: AppIconVariant(isDark: isDark, isConnected: false))
+        let lit = group.iconName(for: AppIconVariant(isDark: isDark, isConnected: true))
         let unlitPixels = try Self.bytes(of: Self.icon(named: unlit))
         let litPixels = try Self.bytes(of: Self.icon(named: lit))
         var changed = 0
@@ -129,10 +126,7 @@ struct AppIconRendererTests {
             let x = index % 1024
             let y = index / 1024
 
-            #expect(
-                Self.lightCenters.contains { abs($0.0 - x) <= Self.lightReach && abs($0.1 - y) <= Self.lightReach },
-                "(\(x), \(y)) 不在指示灯上"
-            )
+            #expect(Self.isOnLight(x: x, y: y, of: group), "\(lit)：(\(x), \(y)) 不在指示灯上")
 
             changed += 1
         }
@@ -150,6 +144,39 @@ extension AppIconRendererTests {
 
     /// 高动态范围替身的亮度余量，与系统给出的 App 图标相同。
     private static let headroom: Float = 1.2
+
+    /// 午夜光晕的椭圆，在幽灵的直立坐标里：中心是眼睛的中心，与 `scripts/make-icon.js` 的 `MIDNIGHT_EYE`、`MIDNIGHT_GLOW` 一致。
+    private static let glow = (x: -125.0, y: -167.5, radiusX: 145.0, radiusY: 238.0)
+
+    /// 光晕椭圆向外放宽的距离，在直立坐标里约合 1024 px 图标的 2 px 抗锯齿边。
+    private static let glowReach = 3.0
+
+    /// 像素是否落在这一组的指示灯上：服务器幽灵是四盏灯，午夜是光晕的椭圆，眼睛在它以内。
+    /// - Parameters:
+    ///   - x: 1024 px 图标的列
+    ///   - y: 1024 px 图标的行，自上而下
+    ///   - group: 图标所属的组
+    private static func isOnLight(
+        x: Int,
+        y: Int,
+        of group: AppIconGroup
+    ) -> Bool {
+        guard group == .midnight else {
+            return lightCenters.contains { abs($0.0 - x) <= lightReach && abs($0.1 - y) <= lightReach }
+        }
+
+        // 先退出底板：满幅画面以 (100, 100) 为原点缩进 824 边长；再退出幽灵的姿态：原点 (700, 560)、向左倾斜 18°、缩到 0.95 倍。
+        let frameX = (Double(x) + 0.5 - 100) * 1024 / 824 - 700
+        let frameY = (Double(y) + 0.5 - 100) * 1024 / 824 - 560
+        let angle = 18 * Double.pi / 180
+        let uprightX = (frameX * cos(angle) - frameY * sin(angle)) / 0.95
+        let uprightY = (frameX * sin(angle) + frameY * cos(angle)) / 0.95
+
+        let dx = (uprightX - glow.x) / (glow.radiusX + glowReach)
+        let dy = (uprightY - glow.y) / (glow.radiusY + glowReach)
+
+        return dx * dx + dy * dy <= 1
+    }
 
     /// 一张 `side` 边长的 8 位 sRGB 图：整张不透明的底色，可以在中间画一个不透明的方块。
     /// - Parameters:
