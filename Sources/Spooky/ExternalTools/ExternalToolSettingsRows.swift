@@ -95,9 +95,7 @@ struct ExternalToolPopUp: View {
     @ViewBuilder
     private func icon(_ application: URL?) -> some View {
         if let application {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: application.path))
-                .resizable()
-                .frame(width: 16, height: 16)
+            Image(nsImage: NSWorkspace.shared.menuIcon(forFile: application.path))
                 .accessibilityHidden(true)
         } else {
             Image(systemName: "exclamationmark.circle")
