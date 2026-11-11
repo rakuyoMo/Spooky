@@ -23,7 +23,7 @@ final class AppIconController {
     private static let iconThemeKey = "AppleIconAppearanceTheme"
 
     /// 样式或色调颜色变化时 `NSWorkspace` 的通知中心发出的通知，此时全局偏好已是新值；名称不在公开头文件里。
-    private static let iconAppearanceDidChangeNotification = Notification.Name(
+    static let iconAppearanceDidChangeNotification = Notification.Name(
         "NSWorkspaceIconAppearanceConfigurationDidChangeNotification"
     )
 
@@ -201,7 +201,7 @@ final class AppIconController {
     ) async throws {
         try await withCheckedThrowingContinuation { continuation in
             enqueueWrite(iconData, ofApp: url) {
-                continuation.resume(with: $0)
+                continuation.resume(with: $0.map { _ in })
             }
         }
     }
@@ -247,6 +247,7 @@ final class AppIconController {
     /// 按偏好里所选的组重新套用：重画运行时图标，并在后台重写自定义图标；不等写完，重写失败不提示。
     ///
     /// 启动时与 Reset / Clear User Defaults 删掉偏好之后调用，后者回到服务器幽灵；此前发出、还没写完的换组不再存进偏好。
+    /// 包上有没有自定义图标因此变了时重启 Dock，如更新后第一次启动写了进去、Reset / Clear 清掉了。
     func reload() {
         reloadCount += 1
         group = AppIconGroup.current(in: defaults)
@@ -254,7 +255,7 @@ final class AppIconController {
         isDark = Self.isDark(forIconTheme: iconTheme, appearance: NSApp.effectiveAppearance)
 
         updateIcon()
-        rewriteCustomIcon()
+        rewriteCustomIcon(restartsDock: true)
     }
 
     /// 换成另一组：在后台写入或清除 App 包的自定义图标，写完后存进偏好，立即重画运行时图标，并重启 Dock。
@@ -330,14 +331,15 @@ extension AppIconController {
         updateIcon()
 
         if rewritesCustomIcon || isDark != wasDark {
-            rewriteCustomIcon()
+            rewriteCustomIcon(restartsDock: false)
         }
     }
 
     /// 在后台按 `requestedGroup` 与当前样式重写自定义图标，写完后重画运行时图标；不等写完，失败不提示。
     ///
     /// 服务器幽灵的运行时图标以 App 自身的系统图标为底，清掉自定义图标之后取到的才不是残留的那一张，所以写完再画一次。
-    private func rewriteCustomIcon() {
+    /// - Parameter restartsDock: 包上有没有自定义图标因此变了时重启 Dock；样式与深浅变化的重写只换同一组的另一版，不重启
+    private func rewriteCustomIcon(restartsDock: Bool) {
         let iconData: Data?
 
         do {
@@ -346,9 +348,16 @@ extension AppIconController {
             return
         }
 
-        Self.enqueueWrite(iconData, ofApp: bundle.bundleURL) { _ in
+        Self.enqueueWrite(iconData, ofApp: bundle.bundleURL) { result in
+            // 原本没有、这次写了进去，或原本有、这次清掉了：固定在 Dock 里的格子显示的组不对，重启才换
+            let changesDock = restartsDock && ((try? result.get()) ?? false)
+
             Task { @MainActor [weak self] in
                 self?.updateIcon()
+
+                if changesDock {
+                    self?.restartDock()
+                }
             }
         }
     }
@@ -469,11 +478,11 @@ extension AppIconController {
     /// - Parameters:
     ///   - iconData: 要写入的图标数据，nil 表示清掉自定义图标
     ///   - url: App 包的位置
-    ///   - completion: 写完后在写入队列上调用，带上写入的结果
+    ///   - completion: 写完后在写入队列上调用，带上写入的结果：包上有没有自定义图标是否因此变了
     private static func enqueueWrite(
         _ iconData: Data?,
         ofApp url: URL,
-        completion: @escaping @Sendable (Result<Void, any Error>) -> Void
+        completion: @escaping @Sendable (Result<Bool, any Error>) -> Void
     ) {
         writeQueue.async {
             completion(Result {
@@ -486,19 +495,18 @@ extension AppIconController {
     /// - Parameters:
     ///   - iconData: 要写入的图标数据，nil 表示清除
     ///   - url: App 包的位置
+    /// - Returns: 包上有没有自定义图标是否因此变了：原本没有、这次写了进去，或原本有、这次清掉了
     /// - Throws: 包所在的位置不可写，或数据解不出图标时抛出 `AppIconWriteError`
     private nonisolated static func writeIcon(
         _ iconData: Data?,
         toApp url: URL
-    ) throws {
+    ) throws -> Bool {
         let iconFile = url.appending(path: "Icon\r", directoryHint: .notDirectory)
+        let hadIcon = FileManager.default.fileExists(atPath: iconFile.path(percentEncoded: false))
 
         // 不可写的位置上，连没有自定义图标时的清除也会失败。
-        if
-            iconData == nil,
-            !FileManager.default.fileExists(atPath: iconFile.path(percentEncoded: false))
-        {
-            return
+        if iconData == nil, !hadIcon {
+            return false
         }
 
         let icon = iconData.flatMap(NSImage.init(data:))
@@ -516,6 +524,8 @@ extension AppIconController {
         guard isWritten else {
             throw AppIconWriteError()
         }
+
+        return hadIcon == (iconData == nil)
     }
 
     /// 图标在 `iconPixels` 边长下的位图；取不到时为 nil。

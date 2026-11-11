@@ -84,7 +84,7 @@ struct AppIconControllerTests {
     }
 
     /// 偏好里没有记录或记录无法识别时为服务器幽灵；所选的组不是 Reset User Defaults 保留的数据，
-    /// Reset 与 Clear 之后控制器都回到服务器幽灵，并清掉 App 包的自定义图标。
+    /// Reset 与 Clear 之后控制器都回到服务器幽灵，清掉 App 包的自定义图标，并重启 Dock。
     @Test("偏好缺省与不认识的值为服务器幽灵，Reset / Clear 之后回到服务器幽灵")
     func preferenceFallsBackToServerGhost() async throws {
         let directory = Self.makeDirectory()
@@ -105,7 +105,7 @@ struct AppIconControllerTests {
         // 控制器读 App 的外观、设置运行时图标
         _ = NSApplication.shared
 
-        // Reset 保留数据、Clear 全删，所选的组都不是数据；删完后控制器按偏好重新套用，清掉自定义图标，不重启 Dock
+        // Reset 保留数据、Clear 全删，所选的组都不是数据；删完后控制器按偏好重新套用，清掉自定义图标，Dock 重启一次
         for keepingData in [true, false] {
             defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
             try await AppIconController.setCustomIcon(Self.sampleIcon(), ofApp: app)
@@ -126,7 +126,7 @@ struct AppIconControllerTests {
 
             #expect(controller.group == .serverGhost, "keepingData: \(keepingData)")
             #expect(!Self.hasCustomIcon(app), "keepingData: \(keepingData)")
-            #expect(dockRestarts == 0, "keepingData: \(keepingData)")
+            #expect(dockRestarts == 1, "keepingData: \(keepingData)")
         }
     }
 
@@ -278,6 +278,64 @@ struct AppIconControllerTests {
         #expect(controller.group == .serverGhost)
         #expect(dockRestarts == 1)
     }
+
+    /// 启动时包上原本没有自定义图标、这次写了进去（如更新后第一次启动），固定在 Dock 里的格子显示的组不对，重启 Dock；
+    /// 选着服务器幽灵启动、包上已是所选的组的平常启动与样式变化后的重写都不重启。
+    @Test("启动时写进了自定义图标才重启 Dock，平常启动与样式变化的重写不重启")
+    func startupRestartsDockWhenCustomIconAppears() async throws {
+        let directory = Self.makeDirectory()
+
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        let app = try Self.makeApp(in: directory)
+
+        try Self.addMidnightIcons(to: app)
+
+        _ = NSApplication.shared
+
+        var dockRestarts = 0
+
+        let controller = try AppIconController(
+            defaults: defaults,
+            bundle: #require(Bundle(url: app)),
+            restartDock: { dockRestarts += 1 }
+        )
+
+        // 选着服务器幽灵启动：包上本来没有自定义图标，不用清，不重启
+        controller.reload()
+        await Self.waitForWrites()
+
+        #expect(!Self.hasCustomIcon(app))
+        #expect(dockRestarts == 0)
+
+        // 更新后第一次启动：选着午夜、包上没有自定义图标，写进去之后重启一次
+        defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
+        controller.reload()
+        await Self.waitForWrites()
+
+        #expect(Self.hasCustomIcon(app))
+        #expect(dockRestarts == 1)
+
+        // 平常启动：包上已是午夜，照样重写，不重启
+        controller.start()
+        await Self.waitForWrites()
+
+        #expect(dockRestarts == 1)
+
+        // 样式变化后的重写只换同一组的另一版：包上的自定义图标这时没了也只是写回，不重启
+        try await AppIconController.setCustomIcon(nil, ofApp: app)
+
+        NSWorkspace.shared.notificationCenter.post(
+            name: AppIconController.iconAppearanceDidChangeNotification,
+            object: nil
+        )
+
+        await Self.waitForWrites()
+
+        #expect(Self.hasCustomIcon(app))
+        #expect(dockRestarts == 1)
+    }
 }
 
 // MARK: AppIconControllerTests.Entry
@@ -369,6 +427,35 @@ extension AppIconControllerTests {
         }
 
         return icon.tiffRepresentation
+    }
+
+    /// 给临时 App 放上午夜组的四张图标，并用指向不存在位置的符号链接代替壳 App：控制器取到通用的系统图标，
+    /// 合成得出午夜的自定义图标，LaunchServices 也不登记它；同名的普通文件或目录会被当作 App 登记。
+    /// - Parameter app: App 包的位置
+    private static func addMidnightIcons(to app: URL) throws {
+        let resources = app.appending(path: "Contents/Resources", directoryHint: .isDirectory)
+        let icon = try #require(sampleIcon())
+
+        try FileManager.default.createDirectory(at: resources, withIntermediateDirectories: true)
+
+        for isDark in [false, true] {
+            for isConnected in [false, true] {
+                let variant = AppIconVariant(isDark: isDark, isConnected: isConnected)
+                let name = AppIconGroup.midnight.iconName(for: variant)
+
+                try icon.write(to: resources.appending(path: name + ".tiff", directoryHint: .notDirectory))
+            }
+        }
+
+        let shell = resources.appending(
+            path: AppIconGroup.midnight.iconName(for: .standard) + ".app",
+            directoryHint: .notDirectory
+        )
+
+        try FileManager.default.createSymbolicLink(
+            at: shell,
+            withDestinationURL: resources.appending(path: "missing", directoryHint: .notDirectory)
+        )
     }
 
     /// App 包的根目录里是否有自定义图标的 `Icon\r` 文件。
