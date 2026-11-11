@@ -215,8 +215,6 @@ final class AppIconController {
             return true
         }
 
-        #warning("TODO: 色调的 “自动” 子选项按外观归入色调浅色或色调深色是推断，需在浅色与深色外观下各核实一次没运行时 Dock 里的格子")
-
         // 色调样式按深浅子选项分开，“自动” 跟随外观
         return iconTheme.hasPrefix("Tinted") && !isDark(forIconTheme: iconTheme, appearance: appearance)
     }
