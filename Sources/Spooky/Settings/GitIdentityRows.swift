@@ -28,6 +28,8 @@ struct GitIdentityRows: View {
     private var layout
 
     /// 两行输入框共用 54 pt 的头像，上下缘与两个系统输入框的外缘齐平；说明在控件列下方。
+    ///
+    /// 两个输入框各自只跟随自己的键：写入一个键后的重读不冲掉另一个框里正在输入的文字。
     var body: some View {
         SettingsRow(AppLocalization.text("gitConfig.userName")) {
             field($name, key: GlobalGitConfiguration.Key.userName, label: "gitConfig.userName")
@@ -50,8 +52,10 @@ struct GitIdentityRows: View {
                 .settingsColumnWidth()
         }
         .padding(.top, SettingsFormLayout.rowSpacing)
-        .onChange(of: model.configuration, initial: true) {
+        .onChange(of: model.configuration.userName, initial: true) {
             name = model.configuration.userName ?? ""
+        }
+        .onChange(of: model.configuration.userEmail, initial: true) {
             email = model.configuration.userEmail ?? ""
         }
     }
