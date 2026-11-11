@@ -6,7 +6,8 @@ import TestSupport
 
 // MARK: - AboutTests
 
-/// 关于窗口：固定尺寸的面板只建一个；说明在全部语言下从图标顶边排起；Acknowledgements 按顺序列出三个库并接上各自的许可证；许可证的折行接回段落；文档 sheet 按 Esc 关闭。
+/// 关于窗口：固定尺寸的面板只建一个；图标随换组更新；说明在全部语言下与图标底板的顶边对齐；
+/// Acknowledgements 按顺序列出三个库并接上各自的许可证；许可证的折行接回段落；文档 sheet 按 Esc 关闭。
 @MainActor
 struct AboutTests {
     /// 面板内容 470 × 277、只能关闭，标题栏透明且不显示标题；Release Notes 与 Help 菜单是同一个动作；关掉后再打开仍是同一个窗口；
@@ -63,10 +64,68 @@ struct AboutTests {
         #expect(window.attachedSheet == nil)
     }
 
-    /// 全部支持语言的说明换上之后：说明的顶边与图标的顶边对齐、距内容顶边 40，与版权之间至少 20；
+    /// 关于窗口显示 `AppIconController` 记下的图标，换组后窗口不用重新打开就跟着换；交还包里的默认图标时是系统给出的包图标。
+    @Test("关于窗口的图标随换组更新")
+    func iconFollowsAppIcon() async throws {
+        let directory = AppIconControllerTests.makeDirectory()
+
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let app = try AppIconControllerTests.makeApp(in: directory)
+        let resources = app.appending(path: "Contents/Resources", directoryHint: .isDirectory)
+
+        try AppIconControllerTests.addMidnightIcons(to: app)
+
+        // 包里有默认图标的资源时，交还默认图标才取系统给出的包图标
+        try FileManager.default.copyItem(
+            at: resources.appending(path: AppIconGroup.midnight.iconName(for: .standard) + ".icns"),
+            to: resources.appending(path: AppIconGroup.serverGhost.iconName(for: .standard) + ".icns")
+        )
+
+        _ = NSApplication.shared
+
+        let controller = try AppIconController(
+            defaults: MemoryDefaults(),
+            bundle: #require(Bundle(url: app)),
+            restartDock: { }
+        )
+
+        controller.reload()
+        await until { controller.pendingRequests == 0 }
+
+        // 订阅图标变化的是内容控制器；关于窗口由窗口持有它，这里留到测试结束
+        let about = AboutViewController(appIconController: controller)
+        let icon = try #require(about.view.subviews.lazy.compactMap { $0 as? NSImageView }.first)
+
+        defer { withExtendedLifetime(about) { } }
+
+        // 服务器幽灵：系统给出的包图标
+        let defaultIcon = try #require(controller.applicationIcon)
+
+        #expect(icon.image === defaultIcon)
+
+        // 换到午夜：窗口不用重新打开，图标换成午夜的一版
+        try await controller.select(.midnight)
+        await until { icon.image === controller.applicationIcon }
+
+        let midnightIcon = icon.image
+
+        #expect(midnightIcon !== defaultIcon)
+
+        // 换回服务器幽灵：图标又换成系统给出的包图标
+        try await controller.select(.serverGhost)
+        await until { icon.image === controller.applicationIcon }
+
+        #expect(icon.image !== midnightIcon)
+    }
+
+    /// 全部支持语言的说明换上之后：说明第一行大写字母的顶边与图标底板的顶边对齐，与版权之间至少 20；
     /// 两个按钮与 Release Notes 基线对齐，版权在按钮上方 20，位置不随说明的长短变化。
-    @Test("关于窗口的说明在全部语言下从图标顶边排起")
+    @Test("关于窗口的说明在全部语言下与图标底板的顶边对齐")
     func creditsLayout() throws {
+        // 关于窗口的内容读 App 的代理与图标
+        _ = NSApplication.shared
+
         let content = AboutViewController().view
         content.layoutSubtreeIfNeeded()
 
@@ -89,9 +148,11 @@ struct AboutTests {
             credits.stringValue = bundle.localizedString(forKey: "about.credits", value: nil, table: nil)
             content.layoutSubtreeIfNeeded()
 
-            // 说明从上往下排：顶边与图标的顶边同在距内容顶边 40 处，下面与版权至少隔 20
-            #expect(credits.frame.maxY == icon.frame.maxY, "\(language)")
-            #expect(AboutWindowController.size.height - credits.frame.maxY == 40, "\(language)")
+            // 说明从上往下排：第一行大写字母的顶边与图标底板的顶边平齐，下面与版权至少隔 20
+            let capTop = Self.baseline(of: credits) + (credits.font?.capHeight ?? 0)
+            let plateTop = icon.frame.maxY - icon.frame.height * AppIconGroup.plateInset
+
+            #expect(abs(capTop - plateTop) < 1, "\(language)")
             #expect(credits.frame.minY - copyright.frame.maxY >= 20, "\(language)")
 
             // 版权与按钮从下往上排：按钮与 Release Notes 基线对齐，版权在按钮上方 20

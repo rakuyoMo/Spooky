@@ -47,6 +47,12 @@ final class AppIconController {
     /// 设置页 “App Icon:” 一行显示的图标：所选的组在当前样式下指示灯灭着的一版，画法与 Dock 相同；生成不了时为 nil。
     private(set) var unlitIcon: NSImage? = nil
 
+    /// App 里显示的应用图标，与运行中的 Dock 相同：设了运行时图标时就是它，交还包里的默认图标时是系统给出的包图标；
+    /// 没有 .app 包时为 nil。界面经 ``displayedIcon(of:)`` 取用。
+    ///
+    /// 启动时包上有自定义图标的话，`NSApp.applicationIconImage` 设回 nil 之后仍是启动时的那一张（macOS 27 实测），所以另外记下。
+    private(set) var applicationIcon: NSImage? = nil
+
     /// 是否有服务器仓库连着：连着时 App 图标上的指示灯亮起；自定义图标总是灭灯的一版，不用重写。
     @ObservationIgnored
     var isConnected = false {
@@ -249,6 +255,17 @@ final class AppIconController {
         }
     }
 
+    /// 启动窗口、对话框头部与关于窗口显示的应用图标：控制器记下的 ``applicationIcon``；
+    /// 没有控制器或它还没记下时是 `NSApp.applicationIconImage`。
+    ///
+    /// 在 SwiftUI 的 `body` 或 `withObservationTracking` 里读取，图标变了随之更新。
+    /// - Parameter controller: App 图标的控制器，默认取 App 自己的；测试传入指向临时 App 的控制器
+    static func displayedIcon(
+        of controller: AppIconController? = (NSApp.delegate as? SpookyApplicationController)?.appIconController
+    ) -> NSImage {
+        controller?.applicationIcon ?? NSApp.applicationIconImage
+    }
+
     /// 按偏好里所选的组与当前样式设一次图标，此后在样式或深浅变化时重新设置。
     func start() {
         reload()
@@ -403,6 +420,21 @@ extension AppIconController {
         UserDefaults.standard.string(forKey: Self.iconThemeKey)
     }
 
+    /// 交还包里的默认图标时 App 里显示的图标：系统给出的包图标，清掉自定义图标之后取到的就是包里的默认图标。
+    ///
+    /// 直接运行可执行文件时包的位置是可执行文件所在的目录，系统给出的是文件夹图标，所以包里没有默认图标的资源时为 nil。
+    private var defaultIcon: NSImage? {
+        guard let bundledIcon = bundle.image(forResource: AppIconGroup.serverGhost.iconName(for: .standard)) else {
+            return nil
+        }
+
+        // 系统给出的图标只有 32 × 32 pt，与合成的运行时图标一样取包内图标的尺寸；每次取到的都是新的一份
+        let icon = NSWorkspace.shared.icon(forFile: bundle.bundlePath)
+        icon.size = bundledIcon.size
+
+        return icon
+    }
+
     /// 样式或外观变化后重画运行时图标；样式变了或深浅变了时重写自定义图标，失败不提示。
     /// - Parameter rewritesCustomIcon: 样式变化时为真；只有外观变化时为假，只在深浅随之变化时重写
     private func styleDidChange(rewritesCustomIcon: Bool) {
@@ -482,7 +514,7 @@ extension AppIconController {
     }
 
     /// 把 App 图标设成所选的组在当前样式与连接状态下的一版，不需要换或生成不了时交还包里的默认图标；
-    /// 设置页这一行的图标随之重画。
+    /// 设置页这一行与 App 里显示的应用图标随之重画。
     private func updateIcon() {
         let appearance = NSApp.effectiveAppearance
 
@@ -507,18 +539,20 @@ extension AppIconController {
             isConnected: isConnected
         )
 
-        // 设为 nil 后 Dock 改回显示包里的默认图标，并按透明、色调样式重新处理。
-        guard let variant else {
-            NSApp.applicationIconImage = nil
-            return
+        // 生成不了时同样交还默认图标：上一次设的运行时图标与当前的组、样式或连接状态不符，默认图标至少由 Dock 按当前样式处理。
+        let runtimeIcon = variant.flatMap {
+            icon(
+                for: $0,
+                of: group,
+                scale: AppIconRenderer.dockScale
+            )
         }
 
-        // 生成不了时同样设为 nil：上一次设的运行时图标与当前的组、样式或连接状态不符，默认图标至少由 Dock 按当前样式处理。
-        NSApp.applicationIconImage = icon(
-            for: variant,
-            of: group,
-            scale: AppIconRenderer.dockScale
-        )
+        // 设为 nil 后 Dock 改回显示包里的默认图标，并按透明、色调样式重新处理。
+        NSApp.applicationIconImage = runtimeIcon
+
+        // 交还默认图标时，App 里显示系统给出的包图标
+        applicationIcon = runtimeIcon ?? defaultIcon
     }
 
     /// 按组与一版合成图标；取不到资源或合成失败时为 nil。

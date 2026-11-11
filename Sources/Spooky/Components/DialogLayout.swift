@@ -188,7 +188,7 @@ extension DialogLayout {
     /// 图标下方不留这 12，头部至少高 84：距顶 20 加上图标的 64。
     private var header: some View {
         HStack(alignment: .top, spacing: DialogMetrics.iconSpacing) {
-            Image(nsImage: icon ?? NSApp.applicationIconImage)
+            Image(nsImage: icon ?? AppIconController.displayedIcon())
                 .resizable()
                 .frame(width: 64, height: 64)
                 .accessibilityHidden(true)

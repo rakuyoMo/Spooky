@@ -221,6 +221,7 @@ Spooky 由两个 target 组成：
   - 默认与深色样式下，连着服务器仓库时只有指示灯不同
   - 透明与色调样式下指示灯不亮：服务器幽灵交还包里的默认图标，其它组用系统按样式处理过的壳 App 图标
   - 设置页 “App Icon:” 一行显示同样画法、指示灯灭着的一版
+  - 启动窗口、对话框头部与关于窗口经 `AppIconController.displayedIcon(of:)` 显示 `applicationIcon`，随它更新：设了运行时图标时就是它，交还默认图标时是系统给出的包图标；启动时包上有自定义图标的话，`NSApp.applicationIconImage` 设回 nil 之后仍是启动时的那一张
 - 自定义图标：
   - 选中其它组时，把当前样式下指示灯灭着的一版以 `NSWorkspace.setIcon(_:forFile:options:)` 写成 Spooky.app 的自定义图标，App 没运行时的 Dock、⌘Tab 与 Finder 都显示所选的组；选回服务器幽灵时清除
     - 透明样式与色调浅色下写该组默认图标的原图，由 Dock 按样式处理：Dock 在这几种样式下也处理自定义图标，写进系统已处理过的壳 App 图标会被处理第二遍，没运行时的格子发暗、发黑

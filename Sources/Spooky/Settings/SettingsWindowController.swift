@@ -9,14 +9,20 @@ final class SettingsWindowController: NSWindowController {
     /// 页签选择变化时同步窗口标题。
     private var selectionObservation: NSKeyValueObservation?
 
-    /// 按 ``SettingsPage/all`` 的顺序建立页签，窗口先按第一页的大小显示。
+    /// 按 ``SettingsPage/all`` 的顺序建立页签，窗口先按第一页的大小显示，屏幕放不下时缩到可用区域的高度。
     init() {
         let tabs = SettingsTabViewController()
         tabs.tabStyle = .toolbar
         tabs.transitionOptions = []
 
         for page in SettingsPage.all {
-            let content = NSHostingController(rootView: page.content())
+            // 窗口比页面矮时页面在窗口里上下滚动；放得下时不随触控板回弹
+            let content = NSHostingController(
+                rootView: ScrollView(.vertical) {
+                    page.content()
+                }
+                .scrollBounceBehavior(.basedOnSize)
+            )
 
             // 页面内容的高度会变，如出现读写失败的说明；变化经页签控制器传给窗口。
             content.sizingOptions = .preferredContentSize
@@ -34,8 +40,9 @@ final class SettingsWindowController: NSWindowController {
         window.tabbingMode = .disallowed
         window.isReleasedWhenClosed = false
 
+        // 第一页比屏幕的可用区域高时先缩到放得下，再居中
         if let first = tabs.tabViewItems.first?.viewController {
-            window.setContentSize(first.view.fittingSize)
+            window.setFrame(tabs.frame(of: window, fitting: first.preferredContentSize), display: false)
         }
 
         window.center()
@@ -64,6 +71,23 @@ final class SettingsWindowController: NSWindowController {
             .first
 
         controller?.select(page)
+    }
+
+    /// 把窗口收进屏幕的可用区域（除去菜单栏与 Dock）：比可用区域高时缩到同高，放不下的部分在页面里滚动；
+    /// 高度缩短时上边缘不动，下边缘落到可用区域以下时整个窗口往上移。
+    ///
+    /// - Parameters:
+    ///   - frame: 按页面大小算出的窗口外框。
+    ///   - visible: 窗口所在屏幕的可用区域。
+    static func constrained(_ frame: NSRect, to visible: NSRect) -> NSRect {
+        let height = min(frame.height, visible.height)
+
+        return NSRect(
+            x: frame.minX,
+            y: max(frame.maxY - height, visible.minY),
+            width: frame.width,
+            height: height
+        )
     }
 
     /// 显示窗口；窗口原本不在屏幕上时，焦点不留在任何输入框里。
@@ -97,8 +121,15 @@ final class SettingsWindowController: NSWindowController {
 
 // MARK: - SettingsTabViewController
 
-/// 切页时先隐藏内容，窗口以 0.2 s 的动画改成新页的大小并保持左上角不动，动画结束再显示新页。
+/// 切页时先隐藏内容，窗口以 0.2 s 的动画改成新页的大小并保持左上角不动，动画结束再显示新页；
+/// 新的大小超出屏幕的可用区域时按 ``SettingsWindowController/constrained(_:to:)`` 收进来。
 private final class SettingsTabViewController: NSTabViewController {
+    /// 页面高度的上限：窗口所在屏幕的可用区域里，除去标题栏与工具栏放得下的高度。
+    ///
+    /// AppKit 以略高于窗口保持原大小的优先级，把页面的 `preferredContentSize` 约束到窗口上，窗口显示时会被撑到整页的高度；
+    /// 这条必须满足的上限挡住它。
+    private var maxHeight: NSLayoutConstraint?
+
     /// 在窗口改变大小的动画里换页；还没有窗口时直接换页。
     override func transition(
         from fromViewController: NSViewController,
@@ -116,8 +147,12 @@ private final class SettingsTabViewController: NSTabViewController {
 
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.2
-            window.animator().setFrame(frame(of: window, fitting: toViewController.view.fittingSize), display: true)
+
+            // 先换上新页再改窗口：页面放进窗口后，preferredContentSize 才是 AppKit 用来定窗口大小的值；
+            // 换页前的值与它差 1–2 pt，动画结束后窗口会以左上角不动再补上，窗口靠下时下边缘落到 Dock 后面
             super.transition(from: fromViewController, to: toViewController, options: options, completionHandler: completion)
+
+            window.animator().setFrame(frame(of: window, fitting: toViewController.preferredContentSize), display: true)
         } completionHandler: { [weak self] in
             MainActor.assumeIsolated { self?.view.isHidden = false }
         }
@@ -141,15 +176,42 @@ private final class SettingsTabViewController: NSTabViewController {
         }
     }
 
-    /// 内容大小换算成窗口外框；原点按窗口原来的上边缘倒推，左上角保持不动。
-    private func frame(of window: NSWindow, fitting content: NSSize) -> NSRect {
+    /// 内容大小换算成窗口外框；原点按窗口原来的上边缘倒推，左上角保持不动，再收进所在屏幕的可用区域。
+    /// 页面高度的上限随之更新为这块可用区域放得下的高度。
+    ///
+    /// - Parameters:
+    ///   - window: 设置窗口；还没显示时按主屏幕算。
+    ///   - content: 页面内容的大小。
+    func frame(of window: NSWindow, fitting content: NSSize) -> NSRect {
         let size = window.frameRect(forContentRect: NSRect(origin: .zero, size: content)).size
 
-        return NSRect(
+        let frame = NSRect(
             x: window.frame.minX,
             y: window.frame.maxY - size.height,
             width: size.width,
             height: size.height
         )
+
+        guard let visible = (window.screen ?? NSScreen.main)?.visibleFrame else {
+            return frame
+        }
+
+        limitHeight(to: window.contentRect(forFrameRect: visible).height)
+
+        return SettingsWindowController.constrained(frame, to: visible)
+    }
+
+    /// 把页面高度的上限设为给定的高度，第一次调用时建立这条约束。
+    ///
+    /// - Parameter height: 页面最多能有的高度。
+    private func limitHeight(to height: CGFloat) {
+        if let maxHeight {
+            maxHeight.constant = height
+            return
+        }
+
+        let constraint = view.heightAnchor.constraint(lessThanOrEqualToConstant: height)
+        constraint.isActive = true
+        maxHeight = constraint
     }
 }

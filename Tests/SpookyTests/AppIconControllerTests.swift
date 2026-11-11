@@ -552,6 +552,35 @@ extension AppIconControllerTests {
 
         return app
     }
+
+    /// 给临时 App 放上午夜组的四张 icns 图标，并用指向不存在位置的符号链接代替壳 App：控制器取到通用的系统图标，
+    /// 合成得出午夜的自定义图标，LaunchServices 也不登记它；同名的普通文件或目录会被当作 App 登记。
+    /// - Parameter app: App 包的位置
+    static func addMidnightIcons(to app: URL) throws {
+        let resources = app.appending(path: "Contents/Resources", directoryHint: .isDirectory)
+        let icon = try #require(sampleIcon())
+
+        try FileManager.default.createDirectory(at: resources, withIntermediateDirectories: true)
+
+        for isDark in [false, true] {
+            for isConnected in [false, true] {
+                let variant = AppIconVariant(isDark: isDark, isConnected: isConnected)
+                let name = AppIconGroup.midnight.iconName(for: variant)
+
+                try icon.write(to: resources.appending(path: name + ".icns", directoryHint: .notDirectory))
+            }
+        }
+
+        let shell = resources.appending(
+            path: AppIconGroup.midnight.iconName(for: .standard) + ".app",
+            directoryHint: .notDirectory
+        )
+
+        try FileManager.default.createSymbolicLink(
+            at: shell,
+            withDestinationURL: resources.appending(path: "missing", directoryHint: .notDirectory)
+        )
+    }
 }
 
 // MARK: - Private
@@ -587,35 +616,6 @@ extension AppIconControllerTests {
         CGImageDestinationAddImage(destination, image, nil)
 
         return CGImageDestinationFinalize(destination) ? data as Data : nil
-    }
-
-    /// 给临时 App 放上午夜组的四张 icns 图标，并用指向不存在位置的符号链接代替壳 App：控制器取到通用的系统图标，
-    /// 合成得出午夜的自定义图标，LaunchServices 也不登记它；同名的普通文件或目录会被当作 App 登记。
-    /// - Parameter app: App 包的位置
-    private static func addMidnightIcons(to app: URL) throws {
-        let resources = app.appending(path: "Contents/Resources", directoryHint: .isDirectory)
-        let icon = try #require(sampleIcon())
-
-        try FileManager.default.createDirectory(at: resources, withIntermediateDirectories: true)
-
-        for isDark in [false, true] {
-            for isConnected in [false, true] {
-                let variant = AppIconVariant(isDark: isDark, isConnected: isConnected)
-                let name = AppIconGroup.midnight.iconName(for: variant)
-
-                try icon.write(to: resources.appending(path: name + ".icns", directoryHint: .notDirectory))
-            }
-        }
-
-        let shell = resources.appending(
-            path: AppIconGroup.midnight.iconName(for: .standard) + ".app",
-            directoryHint: .notDirectory
-        )
-
-        try FileManager.default.createSymbolicLink(
-            at: shell,
-            withDestinationURL: resources.appending(path: "missing", directoryHint: .notDirectory)
-        )
     }
 
     /// App 包的根目录里是否有自定义图标的 `Icon\r` 文件。

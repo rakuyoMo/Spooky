@@ -42,12 +42,12 @@ struct LaunchView: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 20))
     }
 
-    /// 左栏：图标、名称、版本与两个打开入口。
+    /// 左栏：图标、名称、版本与两个打开入口；图标随换组更新。
     private var introduction: some View {
         VStack(spacing: 0) {
             Spacer()
 
-            Image(nsImage: NSApp.applicationIconImage)
+            Image(nsImage: AppIconController.displayedIcon())
                 .resizable()
                 .frame(width: 96, height: 96)
                 .accessibilityHidden(true)
