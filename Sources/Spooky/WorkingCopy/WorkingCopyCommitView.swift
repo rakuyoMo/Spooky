@@ -15,7 +15,7 @@ struct WorkingCopyCommitView: View {
         case body
     }
 
-    /// 提交区的坐标空间，标题框的位置以它的左上角为原点。
+    /// 提交区的坐标空间，标题框与正文框的位置以它的左上角为原点。
     private static let coordinateSpace = "working-copy-commit-area"
 
     /// 当前仓库的草稿与操作状态。
@@ -41,6 +41,10 @@ struct WorkingCopyCommitView: View {
     /// 标题框在提交区里的位置，供材质在同一处画出框的底与描边。
     @State
     private var subjectFrame: CGRect?
+
+    /// 正文框在提交区里的位置，与标题框一样由材质画出框的底与描边。
+    @State
+    private var bodyFrame: CGRect?
 
     /// 是否显示标题剩余字数。
     @AppStorage(CommitEditorSettings.showsSubjectCounterKey)
@@ -100,7 +104,7 @@ struct WorkingCopyCommitView: View {
             }
         }
         .coordinateSpace(.named(Self.coordinateSpace))
-        .background(HeaderMaterial(fieldFrame: session.showsCommitArea ? subjectFrame : nil))
+        .background(HeaderMaterial(fieldFrames: fieldFrames))
         .onModifierKeysChanged(mask: .option) { _, flags in
             optionPressed = flags.contains(.option)
 
@@ -168,6 +172,15 @@ extension WorkingCopyCommitView {
         return !locked
     }
 
+    /// 材质要画出的输入框：显示信息区时有标题框，展开时还有正文框。
+    private var fieldFrames: [CGRect] {
+        guard session.showsCommitArea else {
+            return []
+        }
+
+        return [subjectFrame, isExpanded ? bodyFrame : nil].compactMap(\.self)
+    }
+
     /// 标题右端显示的剩余字数；不显示时为 nil。
     private var remaining: Int? {
         Self.remainingCharacters(
@@ -227,34 +240,10 @@ extension WorkingCopyCommitView {
         session.commitConfiguration?.bodyLineLimit ?? max(1, bodyLineLimit)
     }
 
-    /// 正文框连同底部的钉住与折行按钮，下沿与右下角可拖动；其下是提交选项与提交人，选项行下留 11 pt。
+    /// 正文框，其下是提交选项与提交人；选项行下留 11 pt。
     private var details: some View {
         VStack(spacing: 12) {
-            VStack(spacing: 0) {
-                CommitMessageEditor(
-                    role: .body,
-                    text: $session.commitBody,
-                    placeholder: AppLocalization.text("working.body") + "\n\n" + AppLocalization.text("commit.quickAmendHint"),
-                    isEditable: isEditable,
-                    releasesFocus: session.isCommitting,
-                    monospaced: hardWrap,
-                    characterLimit: effectiveBodyLineLimit,
-                    reformatLimit: effectiveBodyLineLimit,
-                    hardWrap: hardWrap,
-                    showsGuide: session.commitConfiguration?.showsBodyGuide ?? showsGuide,
-                    focusRequest: bodyFocusRequest,
-                    onFocusChange: { focusChanged(.body, focused: $0) },
-                    onSubmit: { },
-                    completions: { await session.completions(for: $0) }
-                )
-
-                Divider()
-                bodyActionBar
-            }
-            .frame(height: bodyHeight)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
-            .overlay(RoundedRectangle(cornerRadius: 5).stroke(.separator))
-            .overlay { resizeHandles }
+            bodyBox
 
             HStack(alignment: .top, spacing: 12) {
                 options
@@ -263,6 +252,42 @@ extension WorkingCopyCommitView {
             }
         }
         .padding(.bottom, 11)
+    }
+
+    /// 正文框连同底部的钉住与折行按钮，下沿与右下角可拖动。
+    ///
+    /// 框的底与描边和标题框一样由提交区的材质在同一位置画出。
+    private var bodyBox: some View {
+        VStack(spacing: 0) {
+            CommitMessageEditor(
+                role: .body,
+                text: $session.commitBody,
+                placeholder: AppLocalization.text("working.body")
+                    + "\n\n"
+                    + AppLocalization.text("commit.quickAmendHint"),
+                isEditable: isEditable,
+                releasesFocus: session.isCommitting,
+                monospaced: hardWrap,
+                characterLimit: effectiveBodyLineLimit,
+                reformatLimit: effectiveBodyLineLimit,
+                hardWrap: hardWrap,
+                showsGuide: session.commitConfiguration?.showsBodyGuide ?? showsGuide,
+                focusRequest: bodyFocusRequest,
+                onFocusChange: { focusChanged(.body, focused: $0) },
+                onSubmit: { },
+                completions: { await session.completions(for: $0) }
+            )
+
+            Divider()
+            bodyActionBar
+        }
+        .frame(height: bodyHeight)
+        .onGeometryChange(for: CGRect.self) {
+            $0.frame(in: .named(Self.coordinateSpace))
+        } action: {
+            bodyFrame = $0
+        }
+        .overlay { resizeHandles }
     }
 
     /// 钉住正文区与切换软 / 硬折行。

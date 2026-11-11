@@ -7,7 +7,7 @@ import TestSupport
 
 // MARK: - WorkingCopyCommitViewTests
 
-/// 提交区：标题剩余字数的计数，以及分支栏底边线与标题框画进材质的位置。
+/// 提交区：标题剩余字数的计数，以及分支栏底边线、标题框与正文框画进材质的位置。
 ///
 /// 剩余字数在信息为空时不占位置，计数按 UTF-16 码元，组合字符与 emoji 不能按字符数代替。
 struct WorkingCopyCommitViewTests {
@@ -29,8 +29,8 @@ struct WorkingCopyCommitViewTests {
     }
 
     /// 线与框画在材质视图里面、允许 vibrancy，系统才会随材质合成它们的颜色；
-    /// 框要与标题输入框重合，位置由 SwiftUI 量出后交给材质。
-    @Test("分支栏底边线与标题框画在材质里")
+    /// 框要与输入框重合，位置由 SwiftUI 量出后交给材质；正文框随正文区展开出现、收起移除。
+    @Test("分支栏底边线、标题框与正文框画在材质里")
     @MainActor
     func materialDecorations() async throws {
         let session = RepositorySession(loadStatus: { _ in throw CancellationError() })
@@ -76,6 +76,25 @@ struct WorkingCopyCommitViewTests {
         #expect(fieldFrame.minX == subjectFrame.minX)
         #expect(fieldFrame.maxX == subjectFrame.maxX)
         #expect(fieldFrame.minY == subjectFrame.minY)
+
+        // 正文非空时展开：正文框从正文输入区的左上角起、左右对齐，把输入区整个框在里面
+        session.commitBody = "正文"
+        await until { commit.subviews.count == 2 }
+
+        let body = try #require(Self.subviews(CommitMessageTextView.self, in: hosting).last?.enclosingScrollView)
+        let bodyField = commit.subviews[1]
+        let bodyFieldFrame = bodyField.convert(bodyField.bounds, to: hosting)
+        let bodyFrame = body.convert(body.bounds, to: hosting)
+
+        #expect(bodyField.allowsVibrancy)
+        #expect(bodyFieldFrame.minX == bodyFrame.minX)
+        #expect(bodyFieldFrame.maxX == bodyFrame.maxX)
+        #expect(bodyFieldFrame.minY == bodyFrame.minY)
+        #expect(bodyFieldFrame.contains(bodyFrame))
+
+        // 正文清空后收起，材质里只剩标题框
+        session.commitBody = ""
+        await until { commit.subviews.count == 1 }
     }
 }
 
