@@ -1,11 +1,13 @@
 import AppKit
+import SwiftUI
 import Testing
+import TestSupport
 
 @testable import Spooky
 
 // MARK: - SettingsWindowTests
 
-/// 设置窗口打开时的焦点，与设置页弹出菜单里的图标。
+/// 设置窗口与设置页里的原生控件：打开时的焦点、弹出菜单的图标、Editor 随折行方式停用的组合框与 Environment 的变量表。
 @MainActor
 struct SettingsWindowTests {
     /// General 页的组合框是第一个可输入的控件；窗口打开时焦点不能落进去，否则一打开就在编辑阈值。
@@ -28,5 +30,104 @@ struct SettingsWindowTests {
 
         #expect(icon.size == NSSize(width: 16, height: 16))
         #expect(NSWorkspace.shared.icon(forFile: path).size != icon.size)
+    }
+
+    /// 正文的字数上限只在硬折行时生效：软折行时它的组合框停用，换成硬折行后可用；标题的字数上限不受影响。
+    @Test("Editor 页软折行时停用正文字数上限")
+    func editorBodyLimitFollowsWrapping() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "com.rakuyo.spooky.tests.editor." + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        defaults.set(CommitEditorSettings.Wrapping.soft.rawValue, forKey: CommitEditorSettings.wrappingKey)
+
+        let window = Self.host(EditorSettingsView().defaultAppStorage(defaults))
+        defer { window.close() }
+
+        let boxes = Self.subviews(NSComboBox.self, in: try #require(window.contentView))
+        try #require(boxes.count == 2)
+        #expect(boxes[0].isEnabled)
+        #expect(!boxes[1].isEnabled)
+
+        defaults.set(CommitEditorSettings.Wrapping.hard.rawValue, forKey: CommitEditorSettings.wrappingKey)
+        await until { boxes[1].isEnabled }
+    }
+
+    /// 两张变量表都是行高 24 pt、变量名一列 260 pt、行间画实线；在自定义变量表里结束编辑一个格子，整张表立即保存。
+    @Test("Environment 的变量表：网格、列宽与编辑后保存")
+    func environmentTables() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "com.rakuyo.spooky.tests.environment-table." + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let preferences = LocalExecutionPreferences(
+            defaults: defaults,
+            readLoginShell: { ["EDITOR": "nano"] },
+            apply: { _ in }
+        )
+        preferences.saveCustomVariables([CustomEnvironmentVariable(name: "TOKEN", value: "旧值")])
+        preferences.setUsesLoginShell(true)
+
+        let window = Self.host(EnvironmentSettingsView(preferences: preferences))
+        defer { window.close() }
+
+        let content = try #require(window.contentView)
+        let custom = AppLocalization.text("settings.environment.custom")
+
+        // 登录 shell 的变量读完、自定义变量随页面出现载入后，两张表都有一行
+        await until {
+            let tables = Self.subviews(NSTableView.self, in: content)
+            return tables.count == 2 && tables.allSatisfy { $0.numberOfRows == 1 }
+        }
+
+        let tables = Self.subviews(NSTableView.self, in: content)
+
+        for table in tables {
+            #expect(table.gridStyleMask == .solidHorizontalGridLineMask)
+            #expect(table.rowHeight == 24)
+            #expect(table.tableColumns.first?.width == 260)
+        }
+
+        // 改写自定义变量的值，结束编辑即写进偏好
+        let table = try #require(tables.first { $0.accessibilityLabel() == custom })
+        let cell = try #require(table.view(atColumn: 1, row: 0, makeIfNecessary: true) as? NSTableCellView)
+        let field = try #require(cell.textField)
+
+        field.stringValue = "新值"
+
+        let notification = Notification(name: NSControl.textDidEndEditingNotification, object: field)
+        (table.delegate as? NSTextFieldDelegate)?.controlTextDidEndEditing?(notification)
+
+        #expect(preferences.customVariables.map(\.value) == ["新值"])
+    }
+}
+
+// MARK: - Helpers
+
+extension SettingsWindowTests {
+    /// 把页面放进不显示的窗口并完成一次布局，原生控件随之建立；窗口由调用方持有到测试结束。
+    private static func host(_ view: some View) -> NSWindow {
+        let hosting = NSHostingView(rootView: view)
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+
+        window.isReleasedWhenClosed = false
+        window.contentView = hosting
+        hosting.layoutSubtreeIfNeeded()
+        return window
+    }
+
+    /// 视图层级里给定类型的全部视图，按深度优先的顺序。
+    private static func subviews<Element: NSView>(_: Element.Type, in root: NSView) -> [Element] {
+        root.subviews.flatMap { child in
+            [child as? Element].compactMap(\.self) + subviews(Element.self, in: child)
+        }
     }
 }

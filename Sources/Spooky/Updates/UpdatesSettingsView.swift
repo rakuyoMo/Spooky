@@ -109,7 +109,7 @@ extension UpdatesSettingsView {
         }
     }
 
-    /// 最近一次检查的时间；从未检查时以次要颜色显示 Never。
+    /// 最近一次检查的时间，从未检查时是 Never；都用控件停用时的文字颜色。
     private var lastCheckRow: some View {
         SettingsRow(AppLocalization.text("updates.lastCheck")) {
             Group {
@@ -117,9 +117,9 @@ extension UpdatesSettingsView {
                     Text(date.formatted(date: .long, time: .shortened))
                 } else {
                     Text(AppLocalization.text("updates.never"))
-                        .foregroundStyle(.secondary)
                 }
             }
+            .foregroundStyle(Color(nsColor: .disabledControlTextColor))
             .settingsColumnWidth()
         }
     }

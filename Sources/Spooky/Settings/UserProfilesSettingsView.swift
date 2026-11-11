@@ -192,7 +192,7 @@ extension UserProfilesSettingsView {
     /// 解码后的档案。
     private var profiles: [UserProfile] { UserProfiles.decode(storage) }
 
-    /// 单列表格与贴在底部的 + / − 操作条。
+    /// 单列、无表头的表格与贴在底部的 + / − 操作条。
     private var profileList: some View {
         VStack(spacing: 0) {
             Table(profiles, selection: $selection) {
@@ -206,6 +206,7 @@ extension UserProfilesSettingsView {
                     .lineLimit(1)
                 }
             }
+            .tableColumnHeaders(.hidden)
             .alternatingRowBackgrounds(.disabled)
             .accessibilityIdentifier("user-profiles")
 

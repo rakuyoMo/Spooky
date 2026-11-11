@@ -2,8 +2,11 @@ import SwiftUI
 
 // MARK: - TextSettingsView
 
-/// 设置 → Text：语法着色、不可见字符与 Tab 宽度三组，组间用分隔线隔开，修改立即生效。
+/// 设置 → Text：语法着色、不可见字符与 Tab 宽度三组，组间留出空白、不画分隔线，修改立即生效。
 struct TextSettingsView: View {
+    /// 组与组的距离：到下一组第一行标签的顶边，与其它页分隔线上下的间距加线宽相同。
+    private static let groupSpacing = SettingsFormLayout.separatorSpacing * 2 + 1
+
     /// 语法着色总开关。
     @AppStorage(TextPreferences.syntaxColoringKey)
     private var colorsSyntax = true
@@ -34,17 +37,16 @@ struct TextSettingsView: View {
                 }
             }
 
-            SettingsSeparator(next: .checkbox)
-
+            // 组间不画线，下一组第一行的标签距上一组 33 pt
             SettingsRow(AppLocalization.text("text.invisibles")) {
                 Toggle(AppLocalization.text("text.showInvisibles"), isOn: $showsInvisibles)
             }
-
-            SettingsSeparator()
+            .padding(.top, Self.groupSpacing)
 
             SettingsRow(AppLocalization.text("text.tabWidth")) {
                 tabWidthControl
             }
+            .padding(.top, Self.groupSpacing - SettingsFormLayout.controlLabelInset)
         }
         .frame(height: 260, alignment: .top)
     }

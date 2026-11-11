@@ -142,13 +142,16 @@ struct EditorSettingsView: View {
             }
             .padding(.top, SettingsFormLayout.rowSpacing)
 
-            // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐。
+            // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐；字数上限只在硬折行时生效。
             SettingsRow(AppLocalization.text("editor.bodyLimit"), alignment: .center) {
                 limitBox($bodyLineLimit, label: "editor.bodyLimit", choices: CommitEditorSettings.bodyLineLimitChoices)
+                    .disabled(!hardWraps)
             }
             .padding(.top, SettingsFormLayout.rowSpacing)
 
             commentRows
+
+            SettingsSeparator(next: .checkbox)
 
             issueRow
         }
@@ -159,12 +162,13 @@ struct EditorSettingsView: View {
 // MARK: - Private
 
 extension EditorSettingsView {
-    /// 参考线与注释行的三个勾选框；“总是删除” 只在提示关闭时可用。
+    /// 参考线与注释行的三个勾选框；参考线只在硬折行时可用，“总是删除” 只在提示关闭时可用。
     @ViewBuilder
     private var commentRows: some View {
-        // 附在正文字数组合框下面的单个勾选框
+        // 附在正文字数组合框下面的单个勾选框，只在硬折行时生效
         SettingsRow {
             Toggle(AppLocalization.text("editor.showsGuide"), isOn: $showsGuide)
+                .disabled(!hardWraps)
         }
         .padding(.top, SettingsFormLayout.rowSpacing)
 
@@ -193,7 +197,11 @@ extension EditorSettingsView {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.top, SettingsFormLayout.rowSpacing + 12)
+    }
+
+    /// 正文按硬折行显示；正文的字数上限与参考线只在这时生效。
+    private var hardWraps: Bool {
+        wrapping == CommitEditorSettings.Wrapping.hard.rawValue
     }
 
     /// 60 pt 宽的字数上限组合框，可以输入 1–1000。
