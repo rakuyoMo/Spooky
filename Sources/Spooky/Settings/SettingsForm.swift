@@ -45,6 +45,9 @@ struct SettingsFormLayout {
     /// 勾选框之间的距离，两行的勾选框也一样。
     static let checkboxSpacing: CGFloat = 6
 
+    /// 组合框与下方分隔线的距离：描边到分隔线可见 6.5 pt。
+    static let comboBoxSeparatorSpacing: CGFloat = 7.5
+
     /// 控件列的左缘。
     let controlLeading: CGFloat
 
@@ -171,8 +174,17 @@ struct SettingsRow<Control: View>: View {
 
 // MARK: - SettingsSeparator
 
-/// 分组之间的分隔线：横贯整页，左右各距窗口边缘 40 pt；上方距上一组最后一个控件 16 pt，下方距下一组第一行的标签 16 pt。
+/// 分组之间的分隔线：横贯整页，左右各距窗口边缘 40 pt；上方距上一组最后一个控件 16 pt（组合框 7.5 pt），下方距下一组第一行的标签 16 pt。
 struct SettingsSeparator: View {
+    /// 上一组收尾的一行。
+    enum PreviousRow {
+        /// 弹出菜单、勾选框或文字。
+        case control
+
+        /// 组合框：分隔线贴近它的描边。
+        case comboBox
+    }
+
     /// 下一组打头的一行。
     enum NextRow {
         /// 弹出菜单或输入框：行的顶边是控件的顶边，比标签高出 ``SettingsFormLayout/controlLabelInset``。
@@ -182,6 +194,9 @@ struct SettingsSeparator: View {
         case checkbox
     }
 
+    /// 上一组收尾的一行。
+    var previous = PreviousRow.control
+
     /// 下一组打头的一行。
     var next = NextRow.control
 
@@ -189,8 +204,16 @@ struct SettingsSeparator: View {
     var body: some View {
         Divider()
             .padding(.horizontal, SettingsFormLayout.separatorInset)
-            .padding(.top, SettingsFormLayout.separatorSpacing)
+            .padding(.top, topSpacing)
             .padding(.bottom, bottomSpacing)
+    }
+
+    /// 上一行底边到分隔线的距离。
+    private var topSpacing: CGFloat {
+        switch previous {
+        case .control: SettingsFormLayout.separatorSpacing
+        case .comboBox: SettingsFormLayout.comboBoxSeparatorSpacing
+        }
     }
 
     /// 分隔线到下一行顶边的距离。

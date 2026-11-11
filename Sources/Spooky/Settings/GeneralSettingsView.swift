@@ -58,7 +58,7 @@ struct GeneralSettingsView: View {
 
             historyRows
 
-            SettingsSeparator()
+            SettingsSeparator(previous: .comboBox)
 
             WorkingCopySettingsRows()
 
