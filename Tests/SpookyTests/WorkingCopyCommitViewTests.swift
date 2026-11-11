@@ -34,7 +34,8 @@ struct WorkingCopyCommitViewTests {
     @MainActor
     func materialDecorations() async throws {
         let session = RepositorySession(loadStatus: { _ in throw CancellationError() })
-        let hosting = NSHostingView(rootView: WorkingCopyListView(session: session).frame(width: 400, height: 260))
+        let list = WorkingCopyListView(session: session).frame(width: 400, height: 260)
+        let hosting = NSHostingView(rootView: list)
 
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 400, height: 260),

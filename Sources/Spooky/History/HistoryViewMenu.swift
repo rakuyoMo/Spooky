@@ -87,10 +87,11 @@ struct HistoryViewMenuButton: NSViewRepresentable {
             systemSymbolName: "slider.horizontal.3",
             accessibilityDescription: AppLocalization.text("history.viewOptions")
         )
+        let configuration = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
 
         let menu = NSMenu()
         let icon = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-        icon.image = symbol?.withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 15, weight: .regular))
+        icon.image = symbol?.withSymbolConfiguration(configuration)
         menu.addItem(icon)
 
         HistoryViewMenu.addItems(to: menu, keyEquivalents: false)

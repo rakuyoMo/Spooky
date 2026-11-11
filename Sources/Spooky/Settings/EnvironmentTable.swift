@@ -217,9 +217,14 @@ final class EnvironmentTableCoordinator: NSObject, NSTableViewDataSource, NSTabl
 
         guard
             parent.variables.indices.contains(row),
-            table.tableColumns.indices.contains(columnIndex),
-            let column = EnvironmentTable.Column(rawValue: table.tableColumns[columnIndex].identifier.rawValue)
+            table.tableColumns.indices.contains(columnIndex)
         else { return }
+
+        let identifier = table.tableColumns[columnIndex].identifier
+
+        guard let column = EnvironmentTable.Column(rawValue: identifier.rawValue) else {
+            return
+        }
 
         commit(row, column, field.stringValue)
     }

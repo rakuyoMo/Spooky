@@ -69,7 +69,9 @@ extension WorkingCopyListView {
             accessibilityDescription: AppLocalization.text("working.viewMode")
         )
 
-        return symbol?.withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)) ?? NSImage()
+        let configuration = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
+
+        return symbol?.withSymbolConfiguration(configuration) ?? NSImage()
     }
 
     /// 视图设置菜单：与主菜单的 Working Copy Status 子菜单发送同一组动作。

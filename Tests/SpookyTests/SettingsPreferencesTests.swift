@@ -113,10 +113,11 @@ struct SettingsPreferencesTests {
         box.addItems(withObjectValues: ["20", "50", "500"])
 
         let endEditing = Notification(name: NSControl.textDidEndEditingNotification, object: box)
+        let selectionChange = Notification(name: NSComboBox.selectionDidChangeNotification, object: box)
 
         // 选中预设时取选中的候选，此时组合框的文字还没更新
         box.selectItem(at: 2)
-        coordinator.comboBoxSelectionDidChange(Notification(name: NSComboBox.selectionDidChangeNotification, object: box))
+        coordinator.comboBoxSelectionDidChange(selectionChange)
         #expect(value == 500)
 
         // 越界的输入取最近的边界，显示改成写回的值
