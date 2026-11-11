@@ -30,6 +30,7 @@ struct WorkingCopyCommitViewTests {
 
     /// 线与框画在材质视图里面、允许 vibrancy，系统才会随材质合成它们的颜色；
     /// 框要与输入框重合，位置由 SwiftUI 量出后交给材质；正文框随正文区展开出现、收起移除。
+    /// 正文框内的分隔线直接落在材质上、不压在底色上，合成出的颜色才与描边相同。
     @Test("分支栏底边线、标题框与正文框画在材质里")
     @MainActor
     func materialDecorations() async throws {
@@ -77,20 +78,32 @@ struct WorkingCopyCommitViewTests {
         #expect(fieldFrame.maxX == subjectFrame.maxX)
         #expect(fieldFrame.minY == subjectFrame.minY)
 
-        // 正文非空时展开：正文框从正文输入区的左上角起、左右对齐，把输入区整个框在里面
+        // 正文非空时展开：外框从正文输入区的左上角起、左右对齐，把输入区整个框在里面
         session.commitBody = "正文"
-        await until { commit.subviews.count == 2 }
+        await until { commit.subviews.count == 4 }
 
         let body = try #require(Self.subviews(CommitMessageTextView.self, in: hosting).last?.enclosingScrollView)
-        let bodyField = commit.subviews[1]
-        let bodyFieldFrame = bodyField.convert(bodyField.bounds, to: hosting)
+        let outline = commit.subviews[1]
+        let fill = commit.subviews[2]
+        let divider = commit.subviews[3]
+        let outlineFrame = outline.convert(outline.bounds, to: hosting)
+        let dividerFrame = divider.convert(divider.bounds, to: hosting)
         let bodyFrame = body.convert(body.bounds, to: hosting)
+        let vibrant = [outline, fill, divider].allSatisfy(\.allowsVibrancy)
 
-        #expect(bodyField.allowsVibrancy)
-        #expect(bodyFieldFrame.minX == bodyFrame.minX)
-        #expect(bodyFieldFrame.maxX == bodyFrame.maxX)
-        #expect(bodyFieldFrame.minY == bodyFrame.minY)
-        #expect(bodyFieldFrame.contains(bodyFrame))
+        #expect(vibrant)
+        #expect(outlineFrame.minX == bodyFrame.minX)
+        #expect(outlineFrame.maxX == bodyFrame.maxX)
+        #expect(outlineFrame.minY == bodyFrame.minY)
+        #expect(outlineFrame.contains(bodyFrame))
+
+        // 输入区的底停在分隔线上；分隔线紧接输入区下沿、在 24 pt 动作栏上方，左右收在描边以内
+        #expect(fill.frame.maxY == divider.frame.minY)
+        #expect(dividerFrame.minY == bodyFrame.maxY)
+        #expect(divider.frame.height == 1)
+        #expect(divider.frame.maxY == outline.frame.maxY - 24)
+        #expect(divider.frame.minX == outline.frame.minX + 1)
+        #expect(divider.frame.width == outline.frame.width - 2)
 
         // 正文清空后收起，材质里只剩标题框
         session.commitBody = ""

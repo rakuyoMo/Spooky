@@ -18,6 +18,9 @@ struct WorkingCopyCommitView: View {
     /// 提交区的坐标空间，标题框与正文框的位置以它的左上角为原点。
     private static let coordinateSpace = "working-copy-commit-area"
 
+    /// 正文框底部动作栏的高度，上方另有 1 pt 由材质画出的分隔线。
+    private static let bodyBarHeight: CGFloat = 24
+
     /// 当前仓库的草稿与操作状态。
     @Bindable
     var session: RepositorySession
@@ -104,7 +107,7 @@ struct WorkingCopyCommitView: View {
             }
         }
         .coordinateSpace(.named(Self.coordinateSpace))
-        .background(HeaderMaterial(fieldFrames: fieldFrames))
+        .background(HeaderMaterial(fields: materialFields))
         .onModifierKeysChanged(mask: .option) { _, flags in
             optionPressed = flags.contains(.option)
 
@@ -172,13 +175,19 @@ extension WorkingCopyCommitView {
         return !locked
     }
 
-    /// 材质要画出的输入框：显示信息区时有标题框，展开时还有正文框。
-    private var fieldFrames: [CGRect] {
+    /// 材质要画出的输入框：显示信息区时有标题框，展开时还有带动作栏的正文框。
+    private var materialFields: [HeaderMaterialField] {
         guard session.showsCommitArea else {
             return []
         }
 
-        return [subjectFrame, isExpanded ? bodyFrame : nil].compactMap(\.self)
+        let subject = subjectFrame.map { HeaderMaterialField(frame: $0) }
+
+        let body = isExpanded
+            ? bodyFrame.map { HeaderMaterialField(frame: $0, footerHeight: Self.bodyBarHeight + 1) }
+            : nil
+
+        return [subject, body].compactMap(\.self)
     }
 
     /// 标题右端显示的剩余字数；不显示时为 nil。
@@ -256,7 +265,7 @@ extension WorkingCopyCommitView {
 
     /// 正文框连同底部的钉住与折行按钮，下沿与右下角可拖动。
     ///
-    /// 框的底与描边和标题框一样由提交区的材质在同一位置画出。
+    /// 框的描边、输入区的底与动作栏上方的分隔线由提交区的材质在同一位置画出。
     private var bodyBox: some View {
         VStack(spacing: 0) {
             CommitMessageEditor(
@@ -278,8 +287,9 @@ extension WorkingCopyCommitView {
                 completions: { await session.completions(for: $0) }
             )
 
-            Divider()
+            // 动作栏上方留出 1 pt，分隔线由材质画出
             bodyActionBar
+                .padding(.top, 1)
         }
         .frame(height: bodyHeight)
         .onGeometryChange(for: CGRect.self) {
@@ -317,7 +327,7 @@ extension WorkingCopyCommitView {
         }
         .buttonStyle(.borderless)
         .padding(.horizontal, 8)
-        .frame(height: 24)
+        .frame(height: Self.bodyBarHeight)
     }
 
     /// 正文框下沿 4 pt 高、只改高度的细条，以及右下角 20 × 20 pt、还能移动分隔线的拖柄。
