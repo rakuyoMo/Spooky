@@ -27,12 +27,13 @@ struct GitIdentityRows: View {
     @Environment(\.settingsFormLayout)
     private var layout
 
-    /// 两行输入框共用 52 pt 的头像，头像盖住两行的高度；说明在控件列下方。
+    /// 两行输入框共用 54 pt 的头像，上下缘与两个系统输入框的外缘齐平；说明在控件列下方。
     var body: some View {
         SettingsRow(AppLocalization.text("gitConfig.userName")) {
             field($name, key: GlobalGitConfiguration.Key.userName, label: "gitConfig.userName")
                 .overlay(alignment: .topTrailing) {
                     avatar
+                        .padding(.top, SettingsTextField.bezelOutset)
                 }
         }
 
@@ -59,8 +60,8 @@ struct GitIdentityRows: View {
 // MARK: - Private
 
 extension GitIdentityRows {
-    /// 头像的边长，正好是两行输入框加行距的高度。
-    private static let avatarSize = 52.0
+    /// 头像的边长：两行输入框的可见边框连同行距共 56 pt，上下各收进系统输入框的边框宽度。
+    private static let avatarSize = 54.0
 
     /// 解码后的档案。
     private var profiles: [UserProfile] { UserProfiles.decode(storage) }
