@@ -7,7 +7,7 @@ import TestSupport
 
 // MARK: - SettingsWindowTests
 
-/// 设置窗口与设置页里的原生控件：打开时的焦点、弹出菜单的图标、Editor 随折行方式停用的组合框与 Environment 的变量表。
+/// 设置窗口与设置页里的原生控件：打开时的焦点、弹出菜单的图标、Editor 随折行方式停用的组合框、Environment 的变量表与输入框的可见边框。
 @MainActor
 struct SettingsWindowTests {
     /// General 页的组合框是第一个可输入的控件；窗口打开时焦点不能落进去，否则一打开就在编辑阈值。
@@ -131,6 +131,33 @@ struct SettingsWindowTests {
 
         #expect((window.firstResponder as? NSTextView)?.delegate === valueField)
     }
+
+    /// 输入框的边框画在布局框上：第一个输入框的边框就在表单的上边距处，每个高 24 pt，
+    /// 相邻两个的可见间隔正好是行距；边框伸出布局框时，间隔会比行距小。
+    @Test("Git Config 页姓名与邮箱输入框的可见边框")
+    func identityFieldBorders() throws {
+        let hosting = NSHostingView(
+            rootView: SettingsForm(layout: .gitConfig) {
+                GitIdentityRows(model: GlobalGitConfigModel())
+            }
+        )
+
+        hosting.appearance = NSAppearance(named: .aqua)
+        hosting.frame.size = hosting.fittingSize
+        hosting.layoutSubtreeIfNeeded()
+
+        let fields = Self.subviews(NSTextField.self, in: hosting).filter(\.isEditable)
+        try #require(fields.count == 2)
+
+        let bitmap = try #require(Self.render(hosting))
+        let borders = try fields.map {
+            try #require(Self.drawnRows(of: $0, in: hosting, bitmap: bitmap))
+        }
+
+        #expect(borders[0].lowerBound == SettingsFormLayout.verticalMargin)
+        #expect(borders.map { $0.upperBound - $0.lowerBound } == [24, 24])
+        #expect(borders[1].lowerBound - borders[0].upperBound == SettingsFormLayout.rowSpacing)
+    }
 }
 
 // MARK: - Helpers
@@ -151,6 +178,58 @@ extension SettingsWindowTests {
         window.contentView = hosting
         hosting.layoutSubtreeIfNeeded()
         return window
+    }
+
+    /// 按 2 倍像素画出排好版的视图；没有窗口时视图外是透明的。
+    private static func render(_ view: NSView) -> NSBitmapImageRep? {
+        let bitmap = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: Int(view.bounds.width) * 2,
+            pixelsHigh: Int(view.bounds.height) * 2,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        )
+
+        guard let bitmap else {
+            return nil
+        }
+
+        bitmap.size = view.bounds.size
+        view.cacheDisplay(in: view.bounds, to: bitmap)
+
+        return bitmap
+    }
+
+    /// 输入框画出的纵向范围：沿输入框中间的一列，从中心向上下找到透明处为止，单位是根视图的点。
+    private static func drawnRows(
+        of field: NSTextField,
+        in root: NSView,
+        bitmap: NSBitmapImageRep
+    ) -> Range<CGFloat>? {
+        let frame = field.convert(field.bounds, to: root)
+        let x = Int(frame.midX * 2)
+
+        let drawn = { (row: Int) in
+            (0 ..< bitmap.pixelsHigh).contains(row)
+                && (bitmap.colorAt(x: x, y: row)?.alphaComponent ?? 0) > 0
+        }
+
+        // 根视图是翻转的，像素的行号与纵坐标同样自上而下
+        let center = Int(frame.midY * 2)
+
+        guard drawn(center) else {
+            return nil
+        }
+
+        let top = (0 ... center).reversed().first { !drawn($0 - 1) } ?? center
+        let bottom = (center ..< bitmap.pixelsHigh).first { !drawn($0 + 1) } ?? center
+
+        return CGFloat(top) / 2 ..< CGFloat(bottom + 1) / 2
     }
 
     /// 视图层级里给定类型的全部视图，按深度优先的顺序。

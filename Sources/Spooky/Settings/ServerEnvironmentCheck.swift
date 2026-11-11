@@ -32,9 +32,8 @@ struct ServerEnvironmentCheck: View {
             HStack(spacing: 8) {
                 Text(AppLocalization.text("remote.host"))
 
-                TextField("", text: $host)
+                SettingsTextField(text: $host, label: AppLocalization.text("remote.host"))
                     .frame(width: 220)
-                    .accessibilityLabel(AppLocalization.text("remote.host"))
                     .onChange(of: host) {
                         environment = nil
                         failure = nil
