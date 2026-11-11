@@ -457,10 +457,10 @@ extension UserProfileEditor {
         }
     }
 
-    /// 一行标签与占满余下宽度的输入框；输入列至少从对齐线开始，标签长时随之右移，头部文字跟着它。
+    /// 一行标签与占满余下宽度、可见高 24 pt 的输入框；输入列至少从对齐线开始，标签长时随之右移，头部文字跟着它。
     private func field(_ label: String, text: Binding<String>) -> some View {
         DialogFormRow(label: AppLocalization.text(label)) {
-            TextField("", text: text)
+            SettingsTextField(text: text, label: AppLocalization.text(label))
                 .frame(maxWidth: .infinity)
         }
     }

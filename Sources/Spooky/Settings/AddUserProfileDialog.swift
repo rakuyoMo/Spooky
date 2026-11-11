@@ -27,7 +27,7 @@ struct AddUserProfileDialog: View {
     @State
     private var title = AppLocalization.text("profiles.newProfile")
 
-    /// 对话框骨架里放标题输入；重复的原因显示在错误区。
+    /// 对话框骨架里放可见高 24 pt 的标题输入框；重复的原因显示在错误区。
     var body: some View {
         DialogLayout(
             title: AppLocalization.text("profiles.add"),
@@ -46,8 +46,7 @@ struct AddUserProfileDialog: View {
             HStack(spacing: 8) {
                 Text(AppLocalization.text("profiles.title"))
 
-                TextField("", text: $title)
-                    .accessibilityLabel(AppLocalization.text("profiles.title"))
+                SettingsTextField(text: $title, label: AppLocalization.text("profiles.title"))
             }
             .padding(.leading, 150)
             .padding(.trailing, 20)
