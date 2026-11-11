@@ -54,7 +54,8 @@ struct SettingsWindowTests {
         await until { boxes[1].isEnabled }
     }
 
-    /// 两张变量表都是行高 24 pt、变量名一列 260 pt、行间画实线；在自定义变量表里结束编辑一个格子，整张表立即保存。
+    /// 两张变量表都是行高 24 pt、变量名一列 260 pt、行间画实线；在自定义变量表里结束编辑一个格子，整张表立即保存；
+    /// 按 Tab 移到同一行另一格的编辑不被随后的同步打断。
     @Test("Environment 的变量表：网格、列宽与编辑后保存")
     func environmentTables() async throws {
         let directory = FileManager.default.temporaryDirectory
@@ -101,6 +102,34 @@ struct SettingsWindowTests {
         (table.delegate as? NSTextFieldDelegate)?.controlTextDidEndEditing?(notification)
 
         #expect(preferences.customVariables.map(\.value) == ["新值"])
+
+        // 改写变量名后按 Tab 进入同一行的值：变量名先写回，表格接着编辑值，
+        // 之后带着新变量名的同步不能重载这一行，否则值的编辑被打断、输入的值丢失
+        let coordinator = try #require(table.delegate as? EnvironmentTableCoordinator)
+        let nameCell = try #require(table.view(atColumn: 0, row: 0, makeIfNecessary: true) as? NSTableCellView)
+        let nameField = try #require(nameCell.textField)
+
+        nameField.stringValue = "SECRET"
+        coordinator.controlTextDidEndEditing(
+            Notification(name: NSControl.textDidEndEditingNotification, object: nameField)
+        )
+
+        table.editColumn(1, row: 0, with: nil, select: true)
+
+        coordinator.update(
+            EnvironmentTable(
+                variables: [EnvironmentTable.Variable(name: "SECRET", value: "新值")],
+                label: custom
+            )
+        )
+
+        #expect(preferences.customVariables.map(\.name) == ["SECRET"])
+
+        // 字段编辑器仍属于这一行值的格子
+        let valueCell = try #require(table.view(atColumn: 1, row: 0, makeIfNecessary: false) as? NSTableCellView)
+        let valueField = try #require(valueCell.textField)
+
+        #expect((window.firstResponder as? NSTextView)?.delegate === valueField)
     }
 }
 

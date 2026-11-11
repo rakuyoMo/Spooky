@@ -204,7 +204,7 @@ final class EnvironmentTableCoordinator: NSObject, NSTableViewDataSource, NSTabl
         selection.wrappedValue = table.selectedRowIndexes
     }
 
-    /// 结束编辑一个格子时写回所在的行、列与文字。
+    /// 结束编辑一个格子时记下显示的文字，再写回所在的行、列与文字。
     func controlTextDidEndEditing(_ notification: Notification) {
         guard
             let field = notification.object as? NSTextField,
@@ -224,6 +224,18 @@ final class EnvironmentTableCoordinator: NSObject, NSTableViewDataSource, NSTabl
 
         guard let column = EnvironmentTable.Column(rawValue: identifier.rawValue) else {
             return
+        }
+
+        // 格子里已是输入的文字：先记进已显示的变量，随后的同步就不重载这一行，
+        // 按 Tab 移到同一行另一格的编辑不被打断
+        if displayed.indices.contains(row) {
+            let shown = displayed[row]
+
+            displayed[row] =
+                switch column {
+                case .name: EnvironmentTable.Variable(name: field.stringValue, value: shown.value)
+                case .value: EnvironmentTable.Variable(name: shown.name, value: field.stringValue)
+                }
         }
 
         commit(row, column, field.stringValue)
