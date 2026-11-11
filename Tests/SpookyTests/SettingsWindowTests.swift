@@ -8,8 +8,8 @@ import TestSupport
 
 // MARK: - SettingsWindowTests
 
-/// 设置窗口与设置页里的原生控件：打开时的焦点、弹出菜单的图标、Editor 随折行方式停用的组合框、Environment 的变量表，
-/// 以及输入框的可见边框与编辑中的同步。
+/// 设置窗口与设置页里的原生控件：打开时的焦点、窗口收进屏幕的可用区域、弹出菜单的图标、Editor 随折行方式停用的组合框、
+/// Environment 的变量表，以及输入框的可见边框与编辑中的同步。
 @MainActor
 struct SettingsWindowTests {
     /// General 页的组合框是第一个可输入的控件；窗口打开时焦点不能落进去，否则一打开就在编辑阈值。
@@ -22,6 +22,34 @@ struct SettingsWindowTests {
 
         let window = try #require(controller.window)
         #expect(window.firstResponder === window)
+    }
+
+    /// 页面比屏幕的可用区域高时，窗口不能伸到 Dock 后面：缩到可用区域的高度，放不下的部分在页面里滚动；
+    /// 高度放得下、下边缘却落到 Dock 后面时整个窗口往上移；放得下时原样不动。
+    @Test("设置窗口收进屏幕的可用区域")
+    func constrainedToVisibleFrame() {
+        let visible = NSRect(x: 0, y: 90, width: 1470, height: 833)
+
+        // 放得下
+        let fitting = NSRect(x: 100, y: 300, width: 900, height: 500)
+
+        #expect(SettingsWindowController.constrained(fitting, to: visible) == fitting)
+
+        // 比可用区域高：缩到同高，下边缘贴着 Dock 的上缘
+        let tall = NSRect(x: 100, y: -200, width: 900, height: 1000)
+
+        #expect(
+            SettingsWindowController.constrained(tall, to: visible)
+                == NSRect(x: 100, y: 90, width: 900, height: 833)
+        )
+
+        // 高度放得下、下边缘在 Dock 后面：往上移，高度不变
+        let low = NSRect(x: 100, y: 40, width: 900, height: 600)
+
+        #expect(
+            SettingsWindowController.constrained(low, to: visible)
+                == NSRect(x: 100, y: 90, width: 900, height: 600)
+        )
     }
 
     /// 弹出菜单拿到的图标是 16 × 16 pt；改的是新取的一份，系统再给出的图标仍是原来的尺寸。
