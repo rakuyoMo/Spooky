@@ -11,7 +11,7 @@ struct SettingsTextField: View {
     /// 画在视图外的边框宽度。
     private static let bezelOutset: CGFloat = 1
 
-    /// 输入框里的文字，随输入更新。
+    /// 输入框里的文字：随输入更新；外部改了它时，编辑中的输入框同样跟着显示。
     @Binding
     var text: String
 
@@ -94,13 +94,22 @@ private struct BezelTextField: NSViewRepresentable {
         return field
     }
 
-    /// 不在编辑时跟随外部对文字的修改，编辑中的内容不被覆盖。
+    /// 跟随外部对文字的修改，编辑中同样如此；输入法正在组字时不替换，组字的文字提交后写回绑定。
     func updateNSView(_ field: NSTextField, context: Context) {
         context.coordinator.parent = self
 
-        if field.currentEditor() == nil, field.stringValue != text {
-            field.stringValue = text
+        // 编辑中显示的是字段编辑器里的文字，直接比对它；打字写回的绑定与它相同，光标不动
+        if let editor = field.currentEditor() as? NSTextView {
+            guard !editor.hasMarkedText(), editor.string != text else {
+                return
+            }
+        } else if field.stringValue == text {
+            return
         }
+
+        // 编辑中设置 `stringValue` 时，系统替换字段编辑器里的文字并清掉它的撤销记录，编辑继续、不发出结束输入；
+        // 直接改字段编辑器的 `string` 会留下按旧文字记的撤销范围，之后撤销会越界
+        field.stringValue = text
     }
 
     /// 宽度按提议，高度固定。

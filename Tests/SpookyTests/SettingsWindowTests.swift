@@ -1,4 +1,5 @@
 import AppKit
+import Observation
 import SwiftUI
 import Testing
 import TestSupport
@@ -7,7 +8,8 @@ import TestSupport
 
 // MARK: - SettingsWindowTests
 
-/// 设置窗口与设置页里的原生控件：打开时的焦点、弹出菜单的图标、Editor 随折行方式停用的组合框、Environment 的变量表与输入框的可见边框。
+/// 设置窗口与设置页里的原生控件：打开时的焦点、弹出菜单的图标、Editor 随折行方式停用的组合框、Environment 的变量表，
+/// 以及输入框的可见边框与编辑中的同步。
 @MainActor
 struct SettingsWindowTests {
     /// General 页的组合框是第一个可输入的控件；窗口打开时焦点不能落进去，否则一打开就在编辑阈值。
@@ -157,6 +159,100 @@ struct SettingsWindowTests {
         #expect(borders[0].lowerBound == SettingsFormLayout.verticalMargin)
         #expect(borders.map { $0.upperBound - $0.lowerBound } == [24, 24])
         #expect(borders[1].lowerBound - borders[0].upperBound == SettingsFormLayout.rowSpacing)
+    }
+
+    /// 从菜单选别名、经档案改身份、按步进器时，输入框可能正在编辑；
+    /// 它不跟着显示的话，看到的与实际使用的不一致，结束输入时还会把打的字写回去。
+    @Test("编辑中的输入框显示外部对绑定的修改")
+    func textFieldFollowsBindingWhileEditing() async throws {
+        let draft = TextDraft()
+        let window = Self.host(TextDraftFields(draft: draft))
+        let root = try #require(window.contentView)
+
+        let fields = Self.subviews(NSTextField.self, in: root).filter(\.isEditable)
+        try #require(fields.count == 2)
+
+        // 第二个输入框绑定同一份文字、不编辑：它显示出新文字时，这一轮更新已经结束
+        let field = fields[0]
+        let mirror = fields[1]
+
+        window.makeFirstResponder(field)
+        let editor = try #require(field.currentEditor() as? NSTextView)
+        let undoManager = try #require(editor.undoManager)
+
+        // 打字写回绑定，更新之后光标仍在插入处
+        editor.setSelectedRange(NSRange(location: 1, length: 0))
+        editor.insertText("x", replacementRange: editor.selectedRange())
+        await until { mirror.stringValue == "oxld" }
+
+        #expect(draft.text == "oxld")
+        #expect(editor.selectedRange() == NSRange(location: 2, length: 0))
+
+        // 组字中外部改了绑定：组字不被打断；提交组字后，输入框里的文字写回绑定
+        editor.setMarkedText(
+            "か",
+            selectedRange: NSRange(location: 1, length: 0),
+            replacementRange: NSRange(location: NSNotFound, length: 0)
+        )
+
+        draft.text = "composing"
+        await until { mirror.stringValue == "composing" }
+
+        #expect(editor.hasMarkedText())
+        #expect(editor.string == "oxかld")
+
+        editor.insertText("カ", replacementRange: NSRange(location: NSNotFound, length: 0))
+        await until { mirror.stringValue == "oxカld" }
+
+        #expect(draft.text == "oxカld")
+
+        // 外部修改显示进编辑中的输入框：编辑不中断，撤销记录随之清空，不会按旧文字的范围撤销
+        draft.text = "external"
+        await until { mirror.stringValue == "external" }
+
+        #expect(editor.string == "external")
+        #expect(field.currentEditor() === editor)
+        #expect(!undoManager.canUndo)
+        #expect(draft.ended.isEmpty)
+
+        // 结束输入交出的是显示的文字
+        window.makeFirstResponder(nil)
+
+        #expect(draft.ended == ["external"])
+    }
+}
+
+// MARK: - TextDraft
+
+/// 测试里两个输入框共同绑定的文字，以及第一个输入框结束输入时交出的文字。
+@MainActor
+@Observable
+private final class TextDraft {
+    /// 两个输入框共同绑定的文字。
+    var text = "old"
+
+    /// 第一个输入框每次结束输入时交出的文字，按先后顺序。
+    var ended: [String] = []
+}
+
+// MARK: - TextDraftFields
+
+/// 绑定同一份文字的两个设置页输入框，只有第一个记下结束输入。
+private struct TextDraftFields: View {
+    /// 绑定的文字。
+    @Bindable
+    var draft: TextDraft
+
+    /// 上下排列的两个输入框。
+    var body: some View {
+        VStack {
+            SettingsTextField(text: $draft.text, label: "") {
+                draft.ended.append($0)
+            }
+
+            SettingsTextField(text: $draft.text, label: "")
+        }
+        .frame(width: 200)
     }
 }
 
