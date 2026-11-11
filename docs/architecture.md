@@ -223,6 +223,8 @@ Spooky 由两个 target 组成：
   - 设置页 “App Icon:” 一行显示同样画法、指示灯灭着的一版
 - 自定义图标：
   - 选中其它组时，把当前样式下指示灯灭着的一版以 `NSWorkspace.setIcon(_:forFile:options:)` 写成 Spooky.app 的自定义图标，App 没运行时的 Dock、⌘Tab 与 Finder 都显示所选的组；选回服务器幽灵时清除
+    - 透明样式与色调浅色下写该组默认图标的原图，由 Dock 按样式处理：Dock 在这几种样式下也处理自定义图标，写进系统已处理过的壳 App 图标会被处理第二遍，没运行时的格子发暗、发黑
+    - 色调深色下 Dock 不处理自定义图标，与默认、深色样式一样写合成的一版
   - 写入会在包的根目录加上 `Icon\r` 与 Finder 信息，此时 `codesign --verify --strict` 不通过，不带 `--strict` 时仍通过
   - 启动、换组、图标样式或深浅变化时重写，Sparkle 更新换掉整个包后由此写回；只有连接状态变化时不写
   - Dock 自己缓存固定格子的图标，写完只有重启 Dock 才换：换组与重新套用偏好（启动、Reset / Clear）各算一次请求，写完后包上有没有自定义图标变了时，向 Dock 进程发 SIGTERM，launchd 随即拉起新的 Dock，运行时图标跨重启保留

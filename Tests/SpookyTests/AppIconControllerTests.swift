@@ -1,6 +1,7 @@
 import AppKit
 import Testing
 import TestSupport
+import UniformTypeIdentifiers
 
 @testable import Spooky
 
@@ -18,46 +19,28 @@ struct AppIconControllerTests {
     /// 测试里临时 App 包的 Bundle ID，与 Spooky 自身的不同。
     private static let testBundleIdentifier = "com.rakuyo.spooky.tests.appicon"
 
-    /// 各组在各样式、深浅外观下的深浅，没连与连着服务器时应换上的一版，以及写成自定义图标的一版；nil 表示不换或清掉。
-    ///
-    /// 深色的 “始终” 子选项不看外观；“自动” 子选项只在深色外观（含高对比度、vibrant 变体）下为深色；
-    /// 透明、色调各子选项的深浅同样按子选项判断，但运行时图标不分深浅、指示灯不亮。
-    private static let cases: [Entry] = [
-        Entry(.serverGhost, nil, .darkAqua, isDark: false, unlit: nil, lit: .lit, customIcon: nil),
-        Entry(.serverGhost, "RegularDark", .aqua, isDark: true, unlit: .dark, lit: .darkLit, customIcon: nil),
-        Entry(
-            .serverGhost,
-            "RegularAutomatic",
-            .accessibilityHighContrastDarkAqua,
-            isDark: true,
-            unlit: .dark,
-            lit: .darkLit,
-            customIcon: nil
-        ),
-        Entry(.serverGhost, "RegularAutomatic", .vibrantDark, isDark: true, unlit: .dark, lit: .darkLit, customIcon: nil),
-        Entry(
-            .serverGhost,
-            "RegularAutomatic",
-            .accessibilityHighContrastAqua,
-            isDark: false,
-            unlit: nil,
-            lit: .lit,
-            customIcon: nil
-        ),
-        Entry(.serverGhost, "ClearAutomatic", .darkAqua, isDark: true, unlit: nil, lit: nil, customIcon: nil),
-        Entry(.serverGhost, "TintedLight", .aqua, isDark: false, unlit: nil, lit: nil, customIcon: nil),
-        Entry(.midnight, nil, .darkAqua, isDark: false, unlit: .standard, lit: .lit, customIcon: .standard),
-        Entry(.midnight, "RegularDark", .aqua, isDark: true, unlit: .dark, lit: .darkLit, customIcon: .dark),
-        Entry(.midnight, "RegularAutomatic", .aqua, isDark: false, unlit: .standard, lit: .lit, customIcon: .standard),
-        Entry(.midnight, "RegularAutomatic", .darkAqua, isDark: true, unlit: .dark, lit: .darkLit, customIcon: .dark),
-        Entry(.midnight, "ClearDark", .aqua, isDark: true, unlit: .standard, lit: .standard, customIcon: .standard),
-        Entry(.midnight, "TintedAutomatic", .darkAqua, isDark: true, unlit: .standard, lit: .standard, customIcon: .standard),
-        Entry(.midnight, "ClearLight", .darkAqua, isDark: false, unlit: .standard, lit: .standard, customIcon: .standard),
-    ]
-
-    /// 组、样式、外观与连接状态决定深浅、运行时图标与自定义图标。
+    /// 组、样式、外观与连接状态决定深浅、运行时图标与自定义图标；
+    /// 自定义图标的数据在写原图时就是该组默认图标的文件，否则是合成的一版。
     @Test("组、样式、深浅外观与连接状态决定换上的图标")
     func variantFollowsGroupStyleAndConnection() throws {
+        let directory = Self.makeDirectory()
+
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        let app = try Self.makeApp(in: directory)
+
+        try Self.addMidnightIcons(to: app)
+
+        let controller = try AppIconController(defaults: defaults, bundle: #require(Bundle(url: app)))
+
+        let bundledIcon = try Data(
+            contentsOf: app.appending(
+                path: "Contents/Resources/\(AppIconGroup.midnight.iconName(for: .standard)).icns",
+                directoryHint: .notDirectory
+            )
+        )
+
         for entry in Self.cases {
             let appearance = try #require(NSAppearance(named: entry.appearance))
             let label = "\(entry.group) \(entry.iconTheme ?? "nil") \(entry.appearance.rawValue)"
@@ -77,10 +60,29 @@ struct AppIconControllerTests {
                 appearance: appearance
             )
 
+            let writesBundled = AppIconController.writesBundledCustomIcon(
+                iconTheme: entry.iconTheme,
+                appearance: appearance
+            )
+
             #expect(AppIconController.isDark(forIconTheme: entry.iconTheme, appearance: appearance) == entry.isDark, "\(label)")
             #expect(variant(false) == entry.unlit, "\(label)")
             #expect(variant(true) == entry.lit, "\(label)")
             #expect(customIcon == entry.customIcon, "\(label)")
+            #expect(writesBundled == entry.bundled, "\(label)")
+
+            // 实际写入的数据：服务器幽灵清掉；其它组写原图时与默认图标的文件逐字节相同，否则是合成的一版
+            let iconData = try controller.customIconData(
+                for: entry.group,
+                iconTheme: entry.iconTheme,
+                appearance: appearance
+            )
+
+            if entry.customIcon == nil {
+                #expect(iconData == nil, "\(label)")
+            } else {
+                #expect((iconData == bundledIcon) == entry.bundled, "\(label)")
+            }
         }
     }
 
@@ -360,7 +362,7 @@ struct AppIconControllerTests {
 // MARK: AppIconControllerTests.Entry
 
 extension AppIconControllerTests {
-    /// 一组核对：组、样式与外观，以及应得的深浅、没连与连着时的运行时图标、自定义图标。
+    /// 一组核对：组、样式与外观，以及应得的深浅、没连与连着时的运行时图标、自定义图标与它是否写原图。
     fileprivate struct Entry {
         /// 所选的组。
         let group: AppIconGroup
@@ -383,6 +385,9 @@ extension AppIconControllerTests {
         /// 写成 App 包自定义图标的一版；nil 表示清掉。
         let customIcon: AppIconVariant?
 
+        /// 其它组的自定义图标是否写该组默认图标的原图，按样式与深浅判断，与组无关。
+        let bundled: Bool
+
         /// 按表格的列依次给出各项。
         init(
             _ group: AppIconGroup,
@@ -391,7 +396,8 @@ extension AppIconControllerTests {
             isDark: Bool,
             unlit: AppIconVariant?,
             lit: AppIconVariant?,
-            customIcon: AppIconVariant?
+            customIcon: AppIconVariant?,
+            bundled: Bool
         ) {
             self.group = group
             self.iconTheme = iconTheme
@@ -400,8 +406,114 @@ extension AppIconControllerTests {
             self.unlit = unlit
             self.lit = lit
             self.customIcon = customIcon
+            self.bundled = bundled
         }
     }
+
+    /// 各组在各样式、深浅外观下的深浅，没连与连着服务器时应换上的一版，写成自定义图标的一版，
+    /// 以及自定义图标是否写原图；nil 表示不换或清掉。
+    ///
+    /// 深色的 “始终” 子选项不看外观；“自动” 子选项只在深色外观（含高对比度、vibrant 变体）下为深色；
+    /// 透明、色调各子选项的深浅同样按子选项判断，但运行时图标不分深浅、指示灯不亮。
+    /// 透明样式与色调浅色下自定义图标写原图，色调深色、默认与深色样式下写合成的一版。
+    fileprivate static let cases: [Entry] = [
+        Entry(.serverGhost, nil, .darkAqua, isDark: false, unlit: nil, lit: .lit, customIcon: nil, bundled: false),
+        Entry(.serverGhost, "RegularDark", .aqua, isDark: true, unlit: .dark, lit: .darkLit, customIcon: nil, bundled: false),
+        Entry(
+            .serverGhost,
+            "RegularAutomatic",
+            .accessibilityHighContrastDarkAqua,
+            isDark: true,
+            unlit: .dark,
+            lit: .darkLit,
+            customIcon: nil,
+            bundled: false
+        ),
+        Entry(
+            .serverGhost,
+            "RegularAutomatic",
+            .vibrantDark,
+            isDark: true,
+            unlit: .dark,
+            lit: .darkLit,
+            customIcon: nil,
+            bundled: false
+        ),
+        Entry(
+            .serverGhost,
+            "RegularAutomatic",
+            .accessibilityHighContrastAqua,
+            isDark: false,
+            unlit: nil,
+            lit: .lit,
+            customIcon: nil,
+            bundled: false
+        ),
+        Entry(.serverGhost, "ClearAutomatic", .darkAqua, isDark: true, unlit: nil, lit: nil, customIcon: nil, bundled: true),
+        Entry(.serverGhost, "TintedLight", .aqua, isDark: false, unlit: nil, lit: nil, customIcon: nil, bundled: true),
+        Entry(.midnight, nil, .darkAqua, isDark: false, unlit: .standard, lit: .lit, customIcon: .standard, bundled: false),
+        Entry(.midnight, "RegularDark", .aqua, isDark: true, unlit: .dark, lit: .darkLit, customIcon: .dark, bundled: false),
+        Entry(
+            .midnight,
+            "RegularAutomatic",
+            .aqua,
+            isDark: false,
+            unlit: .standard,
+            lit: .lit,
+            customIcon: .standard,
+            bundled: false
+        ),
+        Entry(
+            .midnight,
+            "RegularAutomatic",
+            .darkAqua,
+            isDark: true,
+            unlit: .dark,
+            lit: .darkLit,
+            customIcon: .dark,
+            bundled: false
+        ),
+        Entry(
+            .midnight,
+            "ClearDark",
+            .aqua,
+            isDark: true,
+            unlit: .standard,
+            lit: .standard,
+            customIcon: .standard,
+            bundled: true
+        ),
+        Entry(
+            .midnight,
+            "TintedAutomatic",
+            .darkAqua,
+            isDark: true,
+            unlit: .standard,
+            lit: .standard,
+            customIcon: .standard,
+            bundled: false
+        ),
+        Entry(
+            .midnight,
+            "TintedAutomatic",
+            .aqua,
+            isDark: false,
+            unlit: .standard,
+            lit: .standard,
+            customIcon: .standard,
+            bundled: true
+        ),
+        Entry(
+            .midnight,
+            "ClearLight",
+            .darkAqua,
+            isDark: false,
+            unlit: .standard,
+            lit: .standard,
+            customIcon: .standard,
+            bundled: true
+        ),
+    ]
 }
 
 // MARK: - Fixtures
@@ -437,18 +549,39 @@ extension AppIconControllerTests {
 // MARK: - Private
 
 extension AppIconControllerTests {
-    /// 写进自定义图标用的一张纯色小图的数据。
+    /// 一张 32 × 32 纯色小图的 icns 数据，与包里的图标资源同一格式；也直接写成自定义图标。
     private static func sampleIcon() -> Data? {
-        let icon = NSImage(size: NSSize(width: 32, height: 32), flipped: false) {
-            NSColor.systemPurple.setFill()
-            $0.fill()
-            return true
+        let data = NSMutableData()
+
+        guard
+            let space = CGColorSpace(name: CGColorSpace.sRGB),
+            let context = CGContext(
+                data: nil,
+                width: 32,
+                height: 32,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: space,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ),
+            let destination = CGImageDestinationCreateWithData(data, UTType.icns.identifier as CFString, 1, nil)
+        else {
+            return nil
         }
 
-        return icon.tiffRepresentation
+        context.setFillColor(NSColor.systemPurple.cgColor)
+        context.fill(CGRect(x: 0, y: 0, width: 32, height: 32))
+
+        guard let image = context.makeImage() else {
+            return nil
+        }
+
+        CGImageDestinationAddImage(destination, image, nil)
+
+        return CGImageDestinationFinalize(destination) ? data as Data : nil
     }
 
-    /// 给临时 App 放上午夜组的四张图标，并用指向不存在位置的符号链接代替壳 App：控制器取到通用的系统图标，
+    /// 给临时 App 放上午夜组的四张 icns 图标，并用指向不存在位置的符号链接代替壳 App：控制器取到通用的系统图标，
     /// 合成得出午夜的自定义图标，LaunchServices 也不登记它；同名的普通文件或目录会被当作 App 登记。
     /// - Parameter app: App 包的位置
     private static func addMidnightIcons(to app: URL) throws {
@@ -462,7 +595,7 @@ extension AppIconControllerTests {
                 let variant = AppIconVariant(isDark: isDark, isConnected: isConnected)
                 let name = AppIconGroup.midnight.iconName(for: variant)
 
-                try icon.write(to: resources.appending(path: name + ".tiff", directoryHint: .notDirectory))
+                try icon.write(to: resources.appending(path: name + ".icns", directoryHint: .notDirectory))
             }
         }
 

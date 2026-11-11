@@ -196,6 +196,31 @@ final class AppIconController {
         )
     }
 
+    /// 其它组的自定义图标是否直接写该组默认图标的原图：透明样式（`Clear…`）与色调浅色下为真，与组无关。
+    ///
+    /// Dock 在这几种样式下按样式处理自定义图标，写进系统已按样式处理过的壳 App 图标会被处理第二遍，
+    /// 没运行时固定着的格子发暗、发黑（macOS 27 实测）；色调深色下 Dock 不处理自定义图标，与默认、深色样式一样写合成的一版。
+    /// - Parameters:
+    ///   - iconTheme: 全局偏好 `AppleIconAppearanceTheme` 的值，“默认” 样式时为 nil
+    ///   - appearance: App 的 `effectiveAppearance`，只在色调的 “自动” 子选项下起作用
+    static func writesBundledCustomIcon(
+        iconTheme: String?,
+        appearance: NSAppearance
+    ) -> Bool {
+        guard let iconTheme else {
+            return false
+        }
+
+        if iconTheme.hasPrefix("Clear") {
+            return true
+        }
+
+        #warning("TODO: 色调的 “自动” 子选项按外观归入色调浅色或色调深色是推断，需在浅色与深色外观下各核实一次没运行时 Dock 里的格子")
+
+        // 色调样式按深浅子选项分开，“自动” 跟随外观
+        return iconTheme.hasPrefix("Tinted") && !isDark(forIconTheme: iconTheme, appearance: appearance)
+    }
+
     /// 把图标写成 App 包的自定义图标并等它写完；iconData 为 nil 时清掉，包里没有自定义图标时不改动它。
     ///
     /// 写入排在 `writeQueue` 上，排队在挂起之前同步完成，先调用的先写。
@@ -274,9 +299,14 @@ final class AppIconController {
     /// 写入按调用的顺序排队，后选的组排在后面、最后写完；等待期间重新套用了偏好时，这一次不再存进偏好。
     /// 写完按 `finishRequest(changesIcon:)` 决定是否重启 Dock：选的就是当前的组时照写，包上没变，不重启。
     /// - Parameter group: 要换成的组
-    /// - Throws: 写不进 App 包，或取不到这一组的系统图标时抛出 `AppIconWriteError`，偏好与图标都保持原来的组
+    /// - Throws: 写不进 App 包，或取不到这一组的图标资源或系统图标时抛出 `AppIconWriteError`，偏好与图标都保持原来的组
     func select(_ group: AppIconGroup) async throws {
-        let iconData = try customIconData(for: group)
+        let iconData = try customIconData(
+            for: group,
+            iconTheme: iconTheme,
+            appearance: NSApp.effectiveAppearance
+        )
+
         let reloadCount = reloadCount
         let request = beginRequest()
         var changesIcon = false
@@ -320,6 +350,51 @@ final class AppIconController {
         let variant = AppIconVariant(isDark: isDark, isConnected: isConnected)
         return bundle.image(forResource: group.iconName(for: variant))
     }
+
+    /// 这一组写成自定义图标的数据：当前样式下指示灯灭着的一版；服务器幽灵为 nil，表示清掉自定义图标。
+    ///
+    /// 透明样式与色调浅色下是该组默认图标的原图，由 Dock 按样式处理，其余样式下在主线程上合成；交给写入队列的只有数据。
+    /// - Parameters:
+    ///   - group: 要写入的组
+    ///   - iconTheme: 全局偏好 `AppleIconAppearanceTheme` 的值，“默认” 样式时为 nil
+    ///   - appearance: App 的 `effectiveAppearance`，只在 “自动” 子选项下起作用
+    /// - Throws: 取不到这一组的图标资源或系统图标时抛出 `AppIconWriteError`
+    func customIconData(
+        for group: AppIconGroup,
+        iconTheme: String?,
+        appearance: NSAppearance
+    ) throws -> Data? {
+        let variant = Self.customIconVariant(
+            for: group,
+            iconTheme: iconTheme,
+            appearance: appearance
+        )
+
+        guard let variant else {
+            return nil
+        }
+
+        // 透明样式与色调浅色：写原图，只由 Dock 按样式处理一遍
+        if Self.writesBundledCustomIcon(iconTheme: iconTheme, appearance: appearance) {
+            let url = bundle.url(
+                forResource: group.iconName(for: .standard),
+                withExtension: "icns"
+            )
+
+            guard let url, let data = try? Data(contentsOf: url) else {
+                throw AppIconWriteError()
+            }
+
+            return data
+        }
+
+        // 自定义图标与包内图标一样由系统按原样大小画出，不像运行时图标那样放大。
+        guard let data = icon(for: variant, of: group, scale: 1)?.tiffRepresentation else {
+            throw AppIconWriteError()
+        }
+
+        return data
+    }
 }
 
 // MARK: - Private
@@ -352,7 +427,11 @@ extension AppIconController {
         let iconData: Data?
 
         do {
-            iconData = try customIconData(for: requestedGroup)
+            iconData = try customIconData(
+                for: requestedGroup,
+                iconTheme: iconTheme,
+                appearance: NSApp.effectiveAppearance
+            )
         } catch {
             return
         }
@@ -402,30 +481,6 @@ extension AppIconController {
 
         isDockStale = false
         restartDock()
-    }
-
-    /// 这一组写成自定义图标的数据：当前样式下指示灯灭着的一版；服务器幽灵为 nil，表示清掉自定义图标。
-    ///
-    /// 图标在主线程上合成，交给写入队列的只有数据。
-    /// - Parameter group: 要写入的组
-    /// - Throws: 取不到这一组的系统图标时抛出 `AppIconWriteError`
-    private func customIconData(for group: AppIconGroup) throws -> Data? {
-        let variant = Self.customIconVariant(
-            for: group,
-            iconTheme: iconTheme,
-            appearance: NSApp.effectiveAppearance
-        )
-
-        guard let variant else {
-            return nil
-        }
-
-        // 自定义图标与包内图标一样由系统按原样大小画出，不像运行时图标那样放大。
-        guard let data = icon(for: variant, of: group, scale: 1)?.tiffRepresentation else {
-            throw AppIconWriteError()
-        }
-
-        return data
     }
 
     /// 把 App 图标设成所选的组在当前样式与连接状态下的一版，不需要换或生成不了时交还包里的默认图标；
