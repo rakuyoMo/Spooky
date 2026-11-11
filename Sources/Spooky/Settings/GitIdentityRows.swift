@@ -23,16 +23,19 @@ struct GitIdentityRows: View {
     @State
     private var email = ""
 
-    /// 所在页的列位置。
+    /// 所在页的控件列宽。
     @Environment(\.settingsFormLayout)
     private var layout
 
-    /// 两行输入框共用 52 pt 的头像，头像盖住两行的高度；说明在控件列下方。
+    /// 两行输入框共用 54 pt 的头像，上下缘与两个系统输入框的外缘齐平；说明在控件列下方。
+    ///
+    /// 两个输入框各自只跟随自己的键：写入一个键后的重读不冲掉另一个框里正在输入的文字。
     var body: some View {
         SettingsRow(AppLocalization.text("gitConfig.userName")) {
             field($name, key: GlobalGitConfiguration.Key.userName, label: "gitConfig.userName")
                 .overlay(alignment: .topTrailing) {
                     avatar
+                        .padding(.top, SettingsTextField.bezelOutset)
                 }
         }
 
@@ -49,8 +52,10 @@ struct GitIdentityRows: View {
                 .settingsColumnWidth()
         }
         .padding(.top, SettingsFormLayout.rowSpacing)
-        .onChange(of: model.configuration, initial: true) {
+        .onChange(of: model.configuration.userName, initial: true) {
             name = model.configuration.userName ?? ""
+        }
+        .onChange(of: model.configuration.userEmail, initial: true) {
             email = model.configuration.userEmail ?? ""
         }
     }
@@ -59,8 +64,8 @@ struct GitIdentityRows: View {
 // MARK: - Private
 
 extension GitIdentityRows {
-    /// 头像的边长，正好是两行输入框加行距的高度。
-    private static let avatarSize = 52.0
+    /// 头像的边长：两行输入框的可见边框连同行距共 56 pt，上下各收进系统输入框的边框宽度。
+    private static let avatarSize = 54.0
 
     /// 解码后的档案。
     private var profiles: [UserProfile] { UserProfiles.decode(storage) }

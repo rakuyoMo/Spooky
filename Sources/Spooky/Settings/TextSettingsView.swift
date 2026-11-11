@@ -7,6 +7,9 @@ struct TextSettingsView: View {
     /// 组与组的距离：到下一组第一行标签的顶边，与其它页分隔线上下的间距加线宽相同。
     private static let groupSpacing = SettingsFormLayout.separatorSpacing * 2 + 1
 
+    /// 不可见字符组的勾选框方块底到 Tab 宽度数字框可见顶边的距离。
+    private static let tabWidthSpacing: CGFloat = 32
+
     /// 语法着色总开关。
     @AppStorage(TextPreferences.syntaxColoringKey)
     private var colorsSyntax = true
@@ -27,9 +30,9 @@ struct TextSettingsView: View {
     @State
     private var tabWidthText = ""
 
-    /// 标签列右对齐，控件列从 367 pt 起左对齐。
+    /// 标签列右对齐，控件列左对齐。
     var body: some View {
-        SettingsForm(layout: .text) {
+        SettingsForm {
             SettingsRow(AppLocalization.text("text.syntaxColoring")) {
                 VStack(alignment: .leading, spacing: SettingsFormLayout.checkboxSpacing) {
                     Toggle(AppLocalization.text("text.enableSyntaxColoring"), isOn: $colorsSyntax)
@@ -50,7 +53,7 @@ struct TextSettingsView: View {
             SettingsRow(AppLocalization.text("text.tabWidth")) {
                 tabWidthControl
             }
-            .padding(.top, Self.groupSpacing - SettingsFormLayout.controlLabelInset)
+            .padding(.top, Self.tabWidthSpacing)
         }
         .frame(height: 260, alignment: .top)
     }

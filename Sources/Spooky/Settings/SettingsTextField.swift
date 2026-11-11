@@ -8,8 +8,8 @@ import SwiftUI
 /// 系统输入框的边框画在视图外 1 pt，所以视图取 22 pt 高、上下各让出 1 pt，边框正好落在布局框上。
 /// SwiftUI 的 `TextField` 固定 24 pt 高，边框会伸出布局框，相邻输入框之间的可见间隔比行距小 2 pt。
 struct SettingsTextField: View {
-    /// 画在视图外的边框宽度。
-    private static let bezelOutset: CGFloat = 1
+    /// 画在视图外的边框宽度：系统输入框在可见边框里上下左右各收这么多。
+    static let bezelOutset: CGFloat = 1
 
     /// 输入框里的文字：随输入更新；外部改了它时，编辑中的输入框同样跟着显示。
     @Binding

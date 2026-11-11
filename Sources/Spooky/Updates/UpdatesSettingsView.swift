@@ -19,7 +19,7 @@ struct UpdatesSettingsView: View {
     @State
     private var state = UpdaterState(updater: UpdateController.shared.updater)
 
-    /// 通道一组，与下方的检查设置之间用分隔线隔开；标签右对齐，控件列从 558 pt 起宽 250 pt。
+    /// 通道一组，与下方的检查设置之间用分隔线隔开；标签右对齐，控件列宽 250 pt。
     var body: some View {
         SettingsForm(layout: .updates) {
             channelRow

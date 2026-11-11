@@ -8,7 +8,7 @@ struct IntegrationSettingsView: View {
     @AppStorage(CrashReporter.alwaysSendKey)
     private var alwaysSendsCrashReports = false
 
-    /// 标签右对齐、控件列从 562 pt 起宽 254 pt 的表单，组间以分隔线隔开。
+    /// 标签右对齐、控件列宽 254 pt 的表单，组间以分隔线隔开。
     var body: some View {
         SettingsForm(layout: .integration) {
             GitHubLinksSettingsRow()
@@ -27,7 +27,7 @@ struct IntegrationSettingsView: View {
 // MARK: - Private
 
 extension IntegrationSettingsView {
-    /// 崩溃报告的勾选框，下方 4 pt 是比勾选框缩进 20 pt 的 11 pt 说明；说明可以排到窗口右边距。
+    /// 崩溃报告的勾选框，下方 4 pt 是比勾选框缩进 20 pt 的 11 pt 说明；两者都在控件列内折行。
     private var crashReportsRow: some View {
         SettingsRow {
             VStack(alignment: .leading, spacing: 4) {

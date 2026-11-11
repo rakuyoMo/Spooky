@@ -38,9 +38,9 @@ struct GeneralSettingsView: View {
     @AppStorage(DeveloperPreferences.showsMenuKey)
     private var showsDeveloperMenu = false
 
-    /// General 表单按功能分为七组，组间以分隔线隔开；控件列从 530 pt 起，宽 278 pt。
+    /// General 表单按功能分为七组，组间以分隔线隔开；控件列宽 278 pt。
     var body: some View {
-        SettingsForm(layout: .general) {
+        SettingsForm {
             CloneDirectoryRow()
 
             terminalRow

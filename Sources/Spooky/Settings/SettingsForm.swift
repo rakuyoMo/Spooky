@@ -2,9 +2,10 @@ import SwiftUI
 
 // MARK: - SettingsFormLayout
 
-/// 设置页表单的列位置与行距：标签列右对齐，控件列在固定位置左对齐，各页只给出自己的控件列。
+/// 设置页表单的版式：标签列右对齐、控件列左对齐，两列合起来在窗口里水平居中；各页只给出自己的控件列宽。
 ///
-/// 横向坐标都相对 900 pt 宽的设置窗口左缘，指控件可见边框的位置；标签的右缘在控件列左侧 8 pt。
+/// 标签列宽到这一页最长的标签，标签的右缘在控件列左侧 8 pt，冒号排成一条竖线；
+/// 冒号右侧的内容都从控件列的左缘起，单个控件充满控件列，勾选框与说明文字在列宽内折行。
 ///
 /// 纵向间距是相邻两行布局框之间的距离：弹出菜单与输入框（``SettingsTextField``）的布局框就是可见边框，
 /// 单行勾选框的布局框上下就是方块；组合框的 1 pt 描边画在布局框外，与它相邻的可见间距比给出的值小 1 pt。
@@ -15,7 +16,7 @@ struct SettingsFormLayout {
     /// 内容距窗口上下边缘。
     static let verticalMargin: CGFloat = 20
 
-    /// 标签列距窗口左缘、控件列距窗口右缘的最小距离；标签或控件过长时在这里折行。
+    /// 表单距窗口左右边缘的最小距离；标签或控件过长时在这里折行。
     static let horizontalMargin: CGFloat = 20
 
     /// 标签右缘与控件列的间距。
@@ -48,83 +49,84 @@ struct SettingsFormLayout {
     /// 组合框与下方分隔线的距离：描边到分隔线可见 6.5 pt。
     static let comboBoxSeparatorSpacing: CGFloat = 7.5
 
-    /// 控件列的左缘。
-    let controlLeading: CGFloat
-
-    /// 弹出菜单与组合框的宽度，也是勾选框与说明文字折行的宽度。
+    /// 控件列的宽度：弹出菜单、组合框与输入框充满它，勾选框与说明文字在它里面折行。
     var controlWidth: CGFloat = 278
-
-    /// 标签列的宽度：从左边距到标签右缘。
-    var labelWidth: CGFloat {
-        controlLeading - Self.labelSpacing - Self.horizontalMargin
-    }
 }
 
 // MARK: SettingsFormLayout + Pages
 
 extension SettingsFormLayout {
-    /// General 页。
-    static let general = Self(controlLeading: 530)
+    /// Git Config 页：控件列宽 310。
+    static let gitConfig = Self(controlWidth: 310)
 
-    /// Appearance 页：缩略图选择器宽 278。
-    static let appearance = Self(controlLeading: 242)
+    /// Integration 页：控件列宽 254。
+    static let integration = Self(controlWidth: 254)
 
-    /// Git Config 页：弹出菜单宽 310。
-    static let gitConfig = Self(controlLeading: 490, controlWidth: 310)
-
-    /// Text 页：控件按内容取宽。
-    static let text = Self(controlLeading: 367)
-
-    /// Editor 页：字数组合框宽 60，折行方式的弹出菜单宽 120。
-    static let editor = Self(controlLeading: 517)
-
-    /// Integration 页：弹出菜单宽 254。
-    static let integration = Self(controlLeading: 562, controlWidth: 254)
-
-    /// Updates 页：弹出菜单宽 250。
-    static let updates = Self(controlLeading: 558, controlWidth: 250)
+    /// Updates 页：控件列宽 250。
+    static let updates = Self(controlWidth: 250)
 }
 
 // MARK: - EnvironmentValues + SettingsFormLayout
 
 extension EnvironmentValues {
-    /// 所在设置页表单的列位置；不在表单里时按 General 页。
+    /// 所在设置页表单的控件列宽；不在表单里时取默认的 278 pt。
     @Entry
-    var settingsFormLayout = SettingsFormLayout.general
+    var settingsFormLayout = SettingsFormLayout()
+}
+
+// MARK: - HorizontalAlignment + SettingsControlColumn
+
+extension HorizontalAlignment {
+    /// 控件列左缘的对齐线；没有标出的视图不按控件列排。
+    private enum SettingsControlColumn: AlignmentID {
+        /// 没有标出时取视图的左缘。
+        static func defaultValue(in context: ViewDimensions) -> CGFloat {
+            context[.leading]
+        }
+    }
+
+    /// 表单控件列的左缘：``SettingsRow`` 在控件的左缘标出它，``SettingsForm`` 按它把各行排齐。
+    fileprivate static let settingsControlColumn = HorizontalAlignment(SettingsControlColumn.self)
 }
 
 // MARK: - SettingsForm
 
-/// 设置页的表单：各行自上而下排列，距窗口上下边缘各 20 pt，宽同窗口；列位置经环境交给各行。
+/// 设置页的表单：各行自上而下排列，距窗口上下边缘各 20 pt，宽同窗口；控件列宽经环境交给各行。
 ///
 /// 行距由各行用 `padding(.top:)` 按 ``SettingsFormLayout`` 的行距给出，分组之间放 ``SettingsSeparator``。
 struct SettingsForm<Rows: View>: View {
-    /// 这一页的列位置。
+    /// 这一页的控件列宽。
     let layout: SettingsFormLayout
 
     /// 表单的行与分隔线。
     @ViewBuilder
     let rows: () -> Rows
 
-    /// 左对齐、不加行距的一列；分隔线把它撑到窗口宽。
+    /// 按控件列排齐、整体居中的各行；分隔线横贯整页。
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        SettingsFormStack {
             rows()
         }
         .padding(.vertical, SettingsFormLayout.verticalMargin)
         .frame(width: SettingsFormLayout.windowWidth, alignment: .topLeading)
         .environment(\.settingsFormLayout, layout)
     }
+
+    /// 创建表单。
+    ///
+    /// - Parameters:
+    ///   - layout: 这一页的控件列宽，默认 278 pt。
+    ///   - rows: 表单的行与分隔线。
+    init(layout: SettingsFormLayout = SettingsFormLayout(), @ViewBuilder rows: @escaping () -> Rows) {
+        self.layout = layout
+        self.rows = rows
+    }
 }
 
 // MARK: - SettingsRow
 
-/// 表单的一行：标签右对齐在标签列，控件从控件列左缘开始；没有标签时标签列留空。
+/// 表单的一行：标签紧挨在控件列左侧右对齐，控件列里的内容左对齐、宽同控件列；没有标签时内容直接从控件列开始。
 struct SettingsRow<Control: View>: View {
-    /// 所在页的列位置。
-    @Environment(\.settingsFormLayout)
-    private var layout
-
     /// 已本地化的标签，带冒号；为 nil 时标签列留空。
     let label: String?
 
@@ -135,24 +137,22 @@ struct SettingsRow<Control: View>: View {
     @ViewBuilder
     let control: () -> Control
 
-    /// 有标签时标签与控件并排，没有时控件直接从控件列左缘开始。
-    var body: some View {
-        Group {
-            if let label {
-                HStack(alignment: alignment, spacing: SettingsFormLayout.labelSpacing) {
-                    Text(label)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: layout.labelWidth, alignment: .trailing)
+    /// 所在页的控件列宽。
+    @Environment(\.settingsFormLayout)
+    private var layout
 
-                    control()
-                }
-                .padding(.leading, SettingsFormLayout.horizontalMargin)
-            } else {
-                control()
-                    .padding(.leading, layout.controlLeading)
+    /// 标签与控件列并排，相隔 8 pt；标签过长时在左边距处折行，各行右对齐。
+    var body: some View {
+        HStack(alignment: alignment, spacing: SettingsFormLayout.labelSpacing) {
+            if let label {
+                Text(label)
+                    .multilineTextAlignment(.trailing)
             }
+
+            control()
+                .frame(width: layout.controlWidth, alignment: .leading)
+                .alignmentGuide(.settingsControlColumn) { $0[.leading] }
         }
-        .padding(.trailing, SettingsFormLayout.horizontalMargin)
     }
 
     /// 创建一行。
@@ -228,7 +228,7 @@ struct SettingsSeparator: View {
 // MARK: - View + SettingsColumnWidth
 
 extension View {
-    /// 控件占满控件列的宽度并左对齐：弹出菜单拉宽到列宽，勾选框与说明文字在列宽内折行。
+    /// 控件充满控件列并左对齐：弹出菜单与组合框拉宽到列宽，勾选框与说明文字在列宽内折行。
     func settingsColumnWidth() -> some View {
         modifier(SettingsColumnWidth())
     }
@@ -236,16 +236,104 @@ extension View {
 
 // MARK: - SettingsColumnWidth
 
-/// 按所在页的控件宽度排布控件。
+/// 按所在页的控件列宽排布控件；与控件并排的附加按钮排在列外。
 private struct SettingsColumnWidth: ViewModifier {
-    /// 所在页的列位置。
+    /// 所在页的控件列宽。
     @Environment(\.settingsFormLayout)
     private var layout
 
-    /// 弹出菜单按可用宽度拉宽，其余控件在列宽内左对齐。
+    /// 弹出菜单按列宽拉宽，其余控件在列宽内左对齐。
     func body(content: Content) -> some View {
         content
             .buttonSizing(.flexible)
             .frame(width: layout.controlWidth, alignment: .leading)
+    }
+}
+
+// MARK: - SettingsFormStack
+
+/// 表单各行的排布：自上而下、行间不另加距离。
+///
+/// 标出控件列的行按控件列排齐：标签列宽到最长的标签，两列合起来在窗口里水平居中，
+/// 太宽时从左边距开始；没有标出控件列的内容（分隔线、失败说明）占满整页的宽度。
+private struct SettingsFormStack: Layout {
+    /// 宽度取提议的宽度，高度是各行之和。
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache _: inout ()
+    ) -> CGSize {
+        let width = proposal.width ?? SettingsFormLayout.windowWidth
+        let height = Self.measure(subviews, width: width).reduce(0) { $0 + $1.dimensions.height }
+
+        return CGSize(width: width, height: height)
+    }
+
+    /// 各行按控件列放好，其余内容从左缘开始。
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal _: ProposedViewSize,
+        subviews: Subviews,
+        cache _: inout ()
+    ) {
+        let items = Self.measure(subviews, width: bounds.width)
+
+        // 控件列左侧最宽的部分是标签列加间距，右侧是控件列
+        let leading = items.compactMap(\.column).max() ?? 0
+
+        let trailing = items
+            .compactMap { item in item.column.map { item.dimensions.width - $0 } }
+            .max() ?? 0
+
+        let margin = SettingsFormLayout.horizontalMargin
+        let column = (max(margin, (bounds.width - leading - trailing) / 2) + leading).rounded()
+
+        var y = bounds.minY
+
+        for (subview, item) in zip(subviews, items) {
+            let x = item.column.map { column - $0 } ?? 0
+            subview.place(at: CGPoint(x: bounds.minX + x, y: y), proposal: item.proposal)
+            y += item.dimensions.height
+        }
+    }
+}
+
+// MARK: SettingsFormStack.Item
+
+extension SettingsFormStack {
+    /// 量好的一项。
+    private struct Item {
+        /// 放置时的提议尺寸。
+        let proposal: ProposedViewSize
+
+        /// 在这个提议下的尺寸。
+        let dimensions: ViewDimensions
+
+        /// 控件列在这一项里的横坐标；为 nil 时这一项不按控件列排。
+        let column: CGFloat?
+    }
+}
+
+// MARK: SettingsFormStack + Measure
+
+extension SettingsFormStack {
+    /// 量出每一项：行按左右边距之间的宽度量，标出的控件列位置随之取出；其余内容按整页宽度量。
+    private static func measure(_ subviews: Subviews, width: CGFloat) -> [Item] {
+        let rowProposal = ProposedViewSize(width: width - SettingsFormLayout.horizontalMargin * 2, height: nil)
+        let fullProposal = ProposedViewSize(width: width, height: nil)
+
+        return subviews.map { subview in
+            let dimensions = subview.dimensions(in: rowProposal)
+
+            guard let column = dimensions[explicit: .settingsControlColumn] else {
+                return Item(
+                    proposal: fullProposal,
+                    dimensions: subview.dimensions(in: fullProposal),
+                    column: nil
+                )
+            }
+
+            return Item(proposal: rowProposal, dimensions: dimensions, column: column)
+        }
     }
 }

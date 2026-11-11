@@ -260,7 +260,7 @@ private struct TextDraftFields: View {
 
 extension SettingsWindowTests {
     /// 把页面放进不显示的窗口并完成一次布局，原生控件随之建立；窗口由调用方持有到测试结束。
-    private static func host(_ view: some View) -> NSWindow {
+    static func host(_ view: some View) -> NSWindow {
         let hosting = NSHostingView(rootView: view)
 
         let window = NSWindow(
@@ -329,7 +329,7 @@ extension SettingsWindowTests {
     }
 
     /// 视图层级里给定类型的全部视图，按深度优先的顺序。
-    private static func subviews<Element: NSView>(_: Element.Type, in root: NSView) -> [Element] {
+    static func subviews<Element: NSView>(_: Element.Type, in root: NSView) -> [Element] {
         root.subviews.flatMap { child in
             [child as? Element].compactMap(\.self) + subviews(Element.self, in: child)
         }

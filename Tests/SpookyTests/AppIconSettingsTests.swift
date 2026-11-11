@@ -39,7 +39,7 @@ struct AppIconSettingsTests {
         let row = await AccessibilityProbe.elements(
             until: { elements in elements.contains { $0.value == midnight } }
         ) {
-            SettingsForm(layout: .appearance) {
+            SettingsForm {
                 AppIconSettingsRow(controller: controller)
             }
         }
