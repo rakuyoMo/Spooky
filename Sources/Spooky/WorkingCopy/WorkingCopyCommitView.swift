@@ -15,6 +15,9 @@ struct WorkingCopyCommitView: View {
         case body
     }
 
+    /// 提交区的坐标空间，标题框的位置以它的左上角为原点。
+    private static let coordinateSpace = "working-copy-commit-area"
+
     /// 当前仓库的草稿与操作状态。
     @Bindable
     var session: RepositorySession
@@ -34,6 +37,10 @@ struct WorkingCopyCommitView: View {
     /// 标题按回车或 Tab 时让正文获得焦点。
     @State
     private var bodyFocusRequest = 0
+
+    /// 标题框在提交区里的位置，供材质在同一处画出框的底与描边。
+    @State
+    private var subjectFrame: CGRect?
 
     /// 是否显示标题剩余字数。
     @AppStorage(CommitEditorSettings.showsSubjectCounterKey)
@@ -69,7 +76,7 @@ struct WorkingCopyCommitView: View {
 
     /// 进行中横幅位于信息区上方；进行中的操作还有未解决冲突或尚未开始时只显示横幅。
     ///
-    /// 横幅自带外边距，信息区另有 20 pt 内边距，两者之间不再留间距。
+    /// 横幅自带外边距，信息区上、左、右各有 20 pt 内边距，两者之间不再留间距；按钮行下留 15 pt。
     var body: some View {
         VStack(spacing: 0) {
             OperationBannerView(session: session)
@@ -83,14 +90,17 @@ struct WorkingCopyCommitView: View {
                         details
                     }
 
+                    // 收起时按钮行距标题框 15 pt，展开时按 8 pt 的行距排在选项下面
                     actionRow
+                        .padding(.top, isExpanded ? 0 : 7)
                 }
                 .disabled(session.commitResetTask != nil)
                 .animation(.easeInOut(duration: 0.2), value: session.collapsesCommitBody)
-                .padding(20)
+                .padding(EdgeInsets(top: 20, leading: 20, bottom: 15, trailing: 20))
             }
         }
-        .background(HeaderMaterial())
+        .coordinateSpace(.named(Self.coordinateSpace))
+        .background(HeaderMaterial(fieldFrame: session.showsCommitArea ? subjectFrame : nil))
         .onModifierKeysChanged(mask: .option) { _, flags in
             optionPressed = flags.contains(.option)
 
@@ -175,7 +185,7 @@ extension WorkingCopyCommitView {
 
     /// 单行标题，右端是剩余字数；回车或 Tab 转到正文。
     ///
-    /// 剩余字数是带底色的浮层，只在显示时占用标题右侧的空间。
+    /// 框的底与描边由提交区的材质在同一位置画出，剩余字数只在显示时占用标题右侧的空间。
     private var subjectField: some View {
         HStack(spacing: 0) {
             CommitMessageEditor(
@@ -200,14 +210,16 @@ extension WorkingCopyCommitView {
                     .font(.system(size: 12))
                     .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
                     .padding(EdgeInsets(top: 2, leading: 6, bottom: 2, trailing: 3))
-                    .background(Color(nsColor: .controlBackgroundColor))
                     .padding(.trailing, 1)
                     .accessibilityLabel(AppLocalization.text("commit.remaining", remaining))
             }
         }
         .frame(height: 29)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
-        .overlay(RoundedRectangle(cornerRadius: 5).stroke(.separator))
+        .onGeometryChange(for: CGRect.self) {
+            $0.frame(in: .named(Self.coordinateSpace))
+        } action: {
+            subjectFrame = $0
+        }
     }
 
     /// 正文每行的字数上限：仓库设置里有时用仓库的，否则用 Editor 设置页的。

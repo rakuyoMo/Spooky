@@ -19,16 +19,14 @@ struct WorkingCopyListView: View {
     private var showsAssumeUnchanged = false
 
     /// 分支头、提交区与铺到底的状态表；刷新与写入期间不另显示文字。
+    ///
+    /// 分支头与提交区同一种材质，分支头底边的分隔线画在材质里；提交区与文件表头之间不画线。
     var body: some View {
         VStack(spacing: 0) {
             ConnectionStatusView(session: session)
             branchHeader
 
-            Divider()
-
             WorkingCopyCommitView(session: session)
-
-            Divider()
 
             WorkingCopyFileList(session: session)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -40,26 +38,38 @@ struct WorkingCopyListView: View {
 // MARK: - Private
 
 extension WorkingCopyListView {
-    /// 列表顶部的分支摘要与显示模式菜单。
+    /// 列表顶部的分支摘要与显示模式菜单，底边贴一条分隔线。
     private var branchHeader: some View {
         HStack(spacing: 8) {
             branchSummary
 
             Spacer(minLength: 0)
 
+            // 只显示 15 pt 的图标，不带下拉箭头
             Menu {
                 viewSettings
             } label: {
-                Image(systemName: "slider.horizontal.3")
+                Image(nsImage: viewOptionsIcon)
             }
             .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
             .frame(width: 24)
             .accessibilityLabel(AppLocalization.text("working.viewMode"))
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 40)
-        .background(AppPalette.color("general_header_background_color"))
+        .background(HeaderMaterial(showsBottomSeparator: true))
+    }
+
+    /// 视图设置按钮的图标：按 15 pt 取好的符号图像；`Menu` 会把符号按控件字号缩放，只有现成的图像保持这个大小。
+    private var viewOptionsIcon: NSImage {
+        let symbol = NSImage(
+            systemSymbolName: "slider.horizontal.3",
+            accessibilityDescription: AppLocalization.text("working.viewMode")
+        )
+
+        return symbol?.withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)) ?? NSImage()
     }
 
     /// 视图设置菜单：与主菜单的 Working Copy Status 子菜单发送同一组动作。
