@@ -58,10 +58,7 @@ struct SettingsPreferencesTests {
     /// 没有改过设置时读取登录 shell 的变量，本机 Git 才能找到 shell 配置里补进 PATH 的工具；存过关闭的不被默认值覆盖。
     @Test("本机执行设置的持久化，登录 shell 环境默认读取")
     func localExecutionPreferences() async throws {
-        let directory = FileManager.default.temporaryDirectory
-            .appending(path: "com.rakuyo.spooky.tests.environment." + UUID().uuidString)
-        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
-        defer { try? FileManager.default.removeItem(at: directory) }
+        let defaults = MemoryDefaults()
 
         var applied: [LocalExecutionSettings] = []
         let preferences = LocalExecutionPreferences(
