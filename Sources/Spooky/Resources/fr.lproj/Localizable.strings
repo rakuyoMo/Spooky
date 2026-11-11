@@ -2109,8 +2109,8 @@
 "crash.message" = "Voulez-vous signaler le problème sur GitHub ? Une nouvelle page de ticket s’ouvre dans votre navigateur avec un résumé du plantage. Les chemins personnels, adresses e-mail et adresses réseau sont retirés, et rien n’est envoyé tant que vous ne soumettez pas le ticket vous-même.";
 "crash.report" = "Signaler sur GitHub…";
 "crash.dontReport" = "Ne pas signaler";
-"settings.crashReports" = "Rapports de plantage :";
 "settings.crashReports.always" = "Toujours envoyer les rapports de plantage";
+"settings.crashReports.help" = "Les rapports de plantage aident à diagnostiquer et à corriger les problèmes de Spooky.";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
 "settings.showDeveloperMenu" = "Afficher le menu Developer";

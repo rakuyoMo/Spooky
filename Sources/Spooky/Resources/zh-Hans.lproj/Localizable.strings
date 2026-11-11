@@ -2109,8 +2109,8 @@
 "crash.message" = "要在 GitHub 上报告这个问题吗？浏览器会打开新问题页，附上崩溃的摘要。个人路径、邮箱与网络地址已经去掉，在你自己提交问题之前不会发送任何内容。";
 "crash.report" = "在 GitHub 上报告…";
 "crash.dontReport" = "不报告";
-"settings.crashReports" = "崩溃报告：";
 "settings.crashReports.always" = "总是发送崩溃报告";
+"settings.crashReports.help" = "崩溃报告用于诊断和修复 Spooky 的问题。";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
 "settings.showDeveloperMenu" = "显示 Developer 菜单";

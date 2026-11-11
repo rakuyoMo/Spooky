@@ -47,9 +47,7 @@ struct CloneDirectoryRow: View {
             Picker("", selection: selection) {
                 ForEach(CloneDirectory.candidates(selected: directory), id: \.self) { path in
                     HStack(spacing: 8) {
-                        Image(nsImage: NSWorkspace.shared.icon(forFile: path))
-                            .resizable()
-                            .frame(width: 16, height: 16)
+                        Image(nsImage: NSWorkspace.shared.menuIcon(forFile: path))
                             .accessibilityHidden(true)
 
                         Text(FileManager.default.displayName(atPath: path))

@@ -2109,8 +2109,8 @@
 "crash.message" = "要在 GitHub 上回報這個問題嗎？瀏覽器會打開新問題頁，附上當機的摘要。個人路徑、電子郵件與網路位址已經移除，在你自己提交問題之前不會傳送任何內容。";
 "crash.report" = "在 GitHub 上回報…";
 "crash.dontReport" = "不回報";
-"settings.crashReports" = "當機報告：";
 "settings.crashReports.always" = "一律傳送當機報告";
+"settings.crashReports.help" = "當機報告用於診斷和修正 Spooky 的問題。";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
 "settings.showDeveloperMenu" = "顯示 Developer 選單";

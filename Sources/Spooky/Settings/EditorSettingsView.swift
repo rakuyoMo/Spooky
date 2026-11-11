@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 // MARK: - CommitEditorSettings
@@ -197,89 +196,9 @@ extension EditorSettingsView {
         .padding(.top, SettingsFormLayout.rowSpacing + 12)
     }
 
-    /// 60 pt 宽的字数上限组合框。
+    /// 60 pt 宽的字数上限组合框，可以输入 1–1000。
     private func limitBox(_ value: Binding<Int>, label: String, choices: [Int]) -> some View {
-        LimitComboBox(value: value, choices: choices, label: AppLocalization.text(label))
+        LimitComboBox(value: value, choices: choices, range: 1 ... 1000, label: AppLocalization.text(label))
             .frame(width: 60)
-    }
-}
-
-// MARK: - LimitComboBox
-
-/// 字数上限的组合框：可以从候选值里选，也可以直接输入 1–1000 的整数；输入不是数字时恢复原值。
-private struct LimitComboBox: NSViewRepresentable {
-    /// 选中候选或结束输入时写回偏好。
-    @MainActor
-    final class Coordinator: NSObject, NSComboBoxDelegate {
-        /// 要写回的字数上限。
-        var value: Binding<Int>
-
-        /// 创建协调器。
-        init(value: Binding<Int>) {
-            self.value = value
-        }
-
-        /// 选中候选值后立即生效；此时组合框的文字还没更新，取选中的候选本身。
-        func comboBoxSelectionDidChange(_ notification: Notification) {
-            guard
-                let box = notification.object as? NSComboBox,
-                let text = box.objectValueOfSelectedItem as? String
-            else { return }
-
-            commit(text, in: box)
-        }
-
-        /// 输入结束（回车或离开输入框）时生效。
-        func controlTextDidEndEditing(_ notification: Notification) {
-            guard let box = notification.object as? NSComboBox else { return }
-
-            commit(box.stringValue, in: box)
-        }
-
-        /// 整数限制在 1–1000 后写回；不是整数时恢复原值。
-        private func commit(_ text: String, in box: NSComboBox) {
-            if let number = Int(text.trimmingCharacters(in: .whitespaces)) {
-                value.wrappedValue = max(1, min(number, 1000))
-            }
-
-            box.stringValue = String(value.wrappedValue)
-        }
-    }
-
-    /// 字数上限。
-    @Binding
-    var value: Int
-
-    /// 下拉列表里的候选值。
-    let choices: [Int]
-
-    /// 辅助功能读出的名称。
-    let label: String
-
-    /// 创建可编辑、显示 5 个候选的组合框。
-    func makeNSView(context: Context) -> NSComboBox {
-        let box = NSComboBox()
-        box.isEditable = true
-        box.usesDataSource = false
-        box.numberOfVisibleItems = 5
-        box.addItems(withObjectValues: choices.map(String.init))
-        box.stringValue = String(value)
-        box.delegate = context.coordinator
-        box.setAccessibilityLabel(label)
-        return box
-    }
-
-    /// 不在编辑时跟随偏好的变化。
-    func updateNSView(_ box: NSComboBox, context: Context) {
-        context.coordinator.value = $value
-
-        if box.currentEditor() == nil {
-            box.stringValue = String(value)
-        }
-    }
-
-    /// 创建接收选择与输入结束的协调器。
-    func makeCoordinator() -> Coordinator {
-        Coordinator(value: $value)
     }
 }

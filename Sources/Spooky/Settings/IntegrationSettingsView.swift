@@ -19,10 +19,27 @@ struct IntegrationSettingsView: View {
 
             SettingsSeparator(next: .checkbox)
 
-            SettingsRow(AppLocalization.text("settings.crashReports")) {
+            crashReportsRow
+        }
+    }
+}
+
+// MARK: - Private
+
+extension IntegrationSettingsView {
+    /// 崩溃报告的勾选框，下方 4 pt 是比勾选框缩进 20 pt 的 11 pt 说明；说明可以排到窗口右边距。
+    private var crashReportsRow: some View {
+        SettingsRow {
+            VStack(alignment: .leading, spacing: 4) {
                 Toggle(AppLocalization.text("settings.crashReports.always"), isOn: $alwaysSendsCrashReports)
                     .fixedSize(horizontal: false, vertical: true)
-                    .settingsColumnWidth()
+
+                // 说明与勾选框的文字对齐
+                Text(AppLocalization.text("settings.crashReports.help"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 20)
             }
         }
     }

@@ -66,13 +66,6 @@ struct OpenWithApplications: Equatable {
     static func name(of application: URL) -> String {
         FileManager.default.displayName(atPath: application.path)
     }
-
-    /// 菜单里 16 pt 的程序图标。
-    static func icon(of application: URL) -> NSImage {
-        let icon = NSWorkspace.shared.icon(forFile: application.path)
-        icon.size = NSSize(width: 16, height: 16)
-        return icon
-    }
 }
 
 // MARK: - OpenWithMenu
@@ -184,7 +177,7 @@ final class OpenWithMenu: NSObject, NSMenuDelegate {
         let item = NSMenuItem(title: title, action: #selector(openWithApplication(_:)), keyEquivalent: "")
         item.target = self
         item.representedObject = application
-        item.image = OpenWithApplications.icon(of: application)
+        item.image = NSWorkspace.shared.menuIcon(forFile: application.path)
         return item
     }
 
@@ -246,7 +239,7 @@ struct OpenWithMenuItems: View {
             Label {
                 Text(title)
             } icon: {
-                Image(nsImage: OpenWithApplications.icon(of: application))
+                Image(nsImage: NSWorkspace.shared.menuIcon(forFile: application.path))
             }
         }
     }

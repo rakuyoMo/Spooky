@@ -2109,8 +2109,8 @@
 "crash.message" = "GitHub에서 이 문제를 보고하겠습니까? 브라우저에서 충돌 요약이 담긴 새 이슈 페이지가 열립니다. 개인 경로, 이메일 주소와 네트워크 주소는 제거되며, 직접 이슈를 제출하기 전에는 아무것도 전송되지 않습니다.";
 "crash.report" = "GitHub에서 보고…";
 "crash.dontReport" = "보고 안 함";
-"settings.crashReports" = "충돌 보고서:";
 "settings.crashReports.always" = "항상 충돌 보고서 보내기";
+"settings.crashReports.help" = "충돌 보고서는 Spooky의 문제를 진단하고 수정하는 데 사용됩니다.";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
 "settings.showDeveloperMenu" = "Developer 메뉴 표시";

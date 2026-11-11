@@ -1,5 +1,6 @@
-import Foundation
+import AppKit
 import SpookyKit
+import SwiftUI
 import Testing
 import TestSupport
 
@@ -8,7 +9,7 @@ import TestSupport
 // MARK: - SettingsPreferencesTests
 
 /// 设置页写入的偏好：窗口恢复交还系统设置时必须删掉键，克隆目录的候选不重复，本机执行设置立即交给核心库并能读回，
-/// 登录 shell 环境默认读取。
+/// 登录 shell 环境默认读取，组合框写回的上限不越界。
 @MainActor
 struct SettingsPreferencesTests {
     /// 三种窗口恢复方式写进 App 自己的偏好域；交给系统设置时删除键，读出时不受全局域影响。
@@ -97,5 +98,43 @@ struct SettingsPreferencesTests {
         // 存过关闭的不被默认值覆盖
         let saved = LocalExecutionPreferences(defaults: defaults, readLoginShell: { [:] }, apply: { _ in })
         #expect(!saved.usesLoginShell)
+    }
+
+    /// 大 Diff 阈值与字数上限的组合框：选预设、输入越界的数、输入不是数字的文字，写回的值都在范围内，显示与写回的值一致。
+    @Test("组合框写回的上限钳制在范围内，不是数字时恢复")
+    func limitComboBox() {
+        var value = 20_000
+        let coordinator = LimitComboBox.Coordinator(
+            value: Binding(get: { value }, set: { value = $0 }),
+            range: 0 ... 268_435
+        )
+
+        let box = NSComboBox()
+        box.addItems(withObjectValues: ["20", "50", "500"])
+
+        let endEditing = Notification(name: NSControl.textDidEndEditingNotification, object: box)
+
+        // 选中预设时取选中的候选，此时组合框的文字还没更新
+        box.selectItem(at: 2)
+        coordinator.comboBoxSelectionDidChange(Notification(name: NSComboBox.selectionDidChangeNotification, object: box))
+        #expect(value == 500)
+
+        // 越界的输入取最近的边界，显示改成写回的值
+        box.stringValue = " 300000 "
+        coordinator.controlTextDidEndEditing(endEditing)
+        #expect(value == 268_435)
+        #expect(box.stringValue == "268435")
+
+        box.stringValue = "-5"
+        coordinator.controlTextDidEndEditing(endEditing)
+        #expect(value == 0)
+
+        // 不是数字或只有空白时不写回，显示恢复成当前值
+        for text in ["12kB", "  "] {
+            box.stringValue = text
+            coordinator.controlTextDidEndEditing(endEditing)
+            #expect(value == 0)
+            #expect(box.stringValue == "0")
+        }
     }
 }

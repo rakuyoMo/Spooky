@@ -5,7 +5,7 @@ import SwiftUI
 
 /// Integration 页的 github.com 一行：网页上 “Open with Desktop” 的仓库链接交给哪个 App 打开。
 ///
-/// 菜单列出能打开 `x-github-client://` 链接的 App，选中的 App 同时成为 `x-github-client` 与 `github-mac` 两个协议的默认程序。
+/// 菜单列出能打开 `x-github-client://` 链接的 App 与它们的图标，选中的 App 同时成为 `x-github-client` 与 `github-mac` 两个协议的默认程序。
 struct GitHubLinksSettingsRow: View {
     /// 能打开链接的 App，按名称排序。
     @State
@@ -21,8 +21,13 @@ struct GitHubLinksSettingsRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Picker("", selection: choice) {
                     ForEach(applications, id: \.self) { application in
-                        Text(FileManager.default.displayName(atPath: application.path))
-                            .tag(Optional(application))
+                        HStack(spacing: 8) {
+                            Image(nsImage: NSWorkspace.shared.menuIcon(forFile: application.path))
+                                .accessibilityHidden(true)
+
+                            Text(FileManager.default.displayName(atPath: application.path))
+                        }
+                        .tag(Optional(application))
                     }
                 }
                 .labelsHidden()

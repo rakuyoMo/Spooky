@@ -45,7 +45,7 @@ struct SSHAgentSettingsRow: View {
 // MARK: - Private
 
 extension SSHAgentSettingsRow {
-    /// 候选的 agent，选中即保存并重新检查。
+    /// 候选的 agent 带 16 pt 的图标，选中即保存并重新检查。
     private var picker: some View {
         Picker(
             "",
@@ -55,7 +55,15 @@ extension SSHAgentSettingsRow {
             )
         ) {
             ForEach(SSHAgent.allCases, id: \.self) { agent in
-                Text(Self.title(agent)).tag(agent)
+                HStack(spacing: 8) {
+                    if let application = Self.application(agent) {
+                        Image(nsImage: NSWorkspace.shared.menuIcon(forFile: application.path))
+                            .accessibilityHidden(true)
+                    }
+
+                    Text(Self.title(agent))
+                }
+                .tag(agent)
             }
         }
         .labelsHidden()
@@ -84,6 +92,13 @@ extension SSHAgentSettingsRow {
     private static func title(_ agent: SSHAgent) -> String {
         switch agent {
         case .system: AppLocalization.text("settings.sshAgent.system")
+        }
+    }
+
+    /// 菜单里代表 agent 的程序，取它的图标：系统 agent 用 “终端”。
+    private static func application(_ agent: SSHAgent) -> URL? {
+        switch agent {
+        case .system: TerminalApplication.terminal.applicationURL
         }
     }
 

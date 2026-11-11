@@ -76,16 +76,19 @@ struct GeneralSettingsView: View {
 // MARK: - Private
 
 extension GeneralSettingsView {
-    /// 操作相关的设置：自动获取的间隔、自动更新子模块、被本地改动挡住时询问储藏、输入时规范引用名、自动归档分支。
+    /// 大 Diff 警告阈值组合框里的预设值，单位为 1000 字节。
+    private static let diffWarningChoices = [20, 50, 500, 1000, 5000, 10_000]
+
+    /// 操作相关的设置：自动获取的间隔、被本地改动挡住时询问储藏、自动更新子模块、输入时规范引用名、自动归档分支。
     @ViewBuilder
     private var operationRows: some View {
         AutoFetchSettingsRow()
 
         // 勾选框组与上方的弹出菜单相隔 12，组内相隔 4
-        toggleRow("settings.autoUpdateSubmodules", isOn: $alwaysUpdateSubmodules)
+        toggleRow("stash.offerAutoStash", isOn: $offerAutoStash)
             .padding(.top, SettingsFormLayout.checkboxGroupSpacing)
 
-        toggleRow("stash.offerAutoStash", isOn: $offerAutoStash)
+        toggleRow("settings.autoUpdateSubmodules", isOn: $alwaysUpdateSubmodules)
             .padding(.top, SettingsFormLayout.checkboxSpacing)
 
         toggleRow("branch.cleanNames", isOn: $cleanRefNames)
@@ -123,11 +126,15 @@ extension GeneralSettingsView {
         MergeDiffModeRow()
             .padding(.top, SettingsFormLayout.rowSpacing)
 
-        SettingsRow(AppLocalization.text("working.diffThreshold")) {
-            TextField("", value: $diffWarning, format: .number.grouping(.never))
-                .frame(width: 100, alignment: .leading)
-                .accessibilityLabel(AppLocalization.text("working.diffThreshold"))
-                .onChange(of: diffWarning) { diffWarning = max(0, min(diffWarning, 268_435)) }
+        // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐。
+        SettingsRow(AppLocalization.text("working.diffThreshold"), alignment: .center) {
+            LimitComboBox(
+                value: $diffWarning,
+                choices: Self.diffWarningChoices,
+                range: 0 ... 268_435,
+                label: AppLocalization.text("working.diffThreshold")
+            )
+            .settingsColumnWidth()
         }
         .padding(.top, SettingsFormLayout.rowSpacing)
     }
@@ -139,9 +146,7 @@ extension GeneralSettingsView {
                 ForEach(TerminalApplication.allCases.filter { $0.applicationURL != nil }) { application in
                     HStack(spacing: 8) {
                         if let url = application.applicationURL {
-                            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                                .resizable()
-                                .frame(width: 16, height: 16)
+                            Image(nsImage: NSWorkspace.shared.menuIcon(forFile: url.path))
                                 .accessibilityHidden(true)
                         }
 
