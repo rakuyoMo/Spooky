@@ -225,6 +225,10 @@ Spooky 由两个 target 组成：
   - 选中其它组时，把当前样式下指示灯灭着的一版以 `NSWorkspace.setIcon(_:forFile:options:)` 写成 Spooky.app 的自定义图标，App 没运行时的 Dock、⌘Tab 与 Finder 都显示所选的组；选回服务器幽灵时清除
   - 写入会在包的根目录加上 `Icon\r` 与 Finder 信息，此时 `codesign --verify --strict` 不通过，不带 `--strict` 时仍通过
   - 启动、换组、图标样式或深浅变化时重写，Sparkle 更新换掉整个包后由此写回；只有连接状态变化时不写
+  - Dock 自己缓存固定格子的图标，写完只有重启 Dock 才换：换组写完后向 Dock 进程发 SIGTERM，launchd 随即拉起新的 Dock，运行时图标跨重启保留
+    - 连续换组只在最后一次写完后重启；选的就是当前的组时不重启
+    - 启动、Reset / Clear 与样式、深浅变化时的重写不重启 Dock
+    - 重启由 `AppIconController.init` 的 `restartDock` 注入，测试传入记录调用的闭包
   - 写入与清除在进程共用的一条串行队列上执行，主线程不等；换组时写成功才存偏好，失败时抛出 `AppIconWriteError`，偏好与图标都不动；其余时机的失败不提示
 
 ## 文本区

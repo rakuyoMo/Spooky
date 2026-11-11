@@ -88,18 +88,25 @@ final class AppIconController {
     @ObservationIgnored
     private var appearanceObservation: NSKeyValueObservation? = nil
 
+    /// 换组写完后重启 Dock，让固定在 Dock 里的格子换成所选的组；测试传入记录调用的闭包，不碰真实的 Dock。
+    @ObservationIgnored
+    private let restartDock: @MainActor () -> Void
+
     /// 从偏好读出所选的组；图标等到 `start()` 才设置。
     /// - Parameters:
     ///   - defaults: 保存所选的组的偏好域，测试使用独立的域
     ///   - bundle: 图标资源与壳 App 所在、写入自定义图标的 App 包；测试指向临时目录里的 App
+    ///   - restartDock: 重启 Dock，默认是 `restartSystemDock()`
     init(
         defaults: UserDefaults = .standard,
-        bundle: Bundle = .main
+        bundle: Bundle = .main,
+        restartDock: @escaping @MainActor () -> Void = AppIconController.restartSystemDock
     ) {
         let group = AppIconGroup.current(in: defaults)
 
         self.defaults = defaults
         self.bundle = bundle
+        self.restartDock = restartDock
         self.group = group
         requestedGroup = group
     }
@@ -199,6 +206,16 @@ final class AppIconController {
         }
     }
 
+    /// 重启 Dock：与 `killall Dock` 相同，向 Dock 进程发 SIGTERM，launchd 随即拉起新的 Dock，运行时图标跨重启保留。
+    ///
+    /// Dock 自己缓存固定格子的图标：写入或清除自定义图标之后，登记 LaunchServices、改包的修改时间都不能让格子换图，
+    /// 只有重启才换（macOS 27 实测）。
+    static func restartSystemDock() {
+        for dock in NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock") {
+            kill(dock.processIdentifier, SIGTERM)
+        }
+    }
+
     /// 按偏好里所选的组与当前样式设一次图标，此后在样式或深浅变化时重新设置。
     func start() {
         reload()
@@ -240,14 +257,18 @@ final class AppIconController {
         rewriteCustomIcon()
     }
 
-    /// 换成另一组：在后台写入或清除 App 包的自定义图标，写完后存进偏好，并立即重画运行时图标。
+    /// 换成另一组：在后台写入或清除 App 包的自定义图标，写完后存进偏好，立即重画运行时图标，并重启 Dock。
     ///
     /// 写入按调用的顺序排队，后选的组排在后面、最后写完；等待期间重新套用了偏好时，这一次不再存进偏好。
+    /// 连续换组只在最后一次写完后重启 Dock；选的就是当前的组时照写，不重启。
     /// - Parameter group: 要换成的组
     /// - Throws: 写不进 App 包，或取不到这一组的系统图标时抛出 `AppIconWriteError`，偏好与图标都保持原来的组
     func select(_ group: AppIconGroup) async throws {
         let iconData = try customIconData(for: group)
         let reloadCount = reloadCount
+
+        // Dock 里的格子本就是当前的组，选回它不用重启
+        let changesGroup = group != self.group
 
         latestSelection += 1
         let selection = latestSelection
@@ -272,6 +293,11 @@ final class AppIconController {
         defaults.set(group.rawValue, forKey: AppIconGroup.key)
         self.group = group
         updateIcon()
+
+        // 之后又有换组请求时，由最近的一次重启
+        if changesGroup, selection == latestSelection {
+            restartDock()
+        }
     }
 
     /// 图标列表里这一组在当前深浅下的一张图标，即包里的原图；取不到资源时为 nil。

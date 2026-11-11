@@ -105,14 +105,17 @@ struct AppIconControllerTests {
         // 控制器读 App 的外观、设置运行时图标
         _ = NSApplication.shared
 
-        // Reset 保留数据、Clear 全删，所选的组都不是数据；删完后控制器按偏好重新套用，清掉自定义图标
+        // Reset 保留数据、Clear 全删，所选的组都不是数据；删完后控制器按偏好重新套用，清掉自定义图标，不重启 Dock
         for keepingData in [true, false] {
             defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
             try await AppIconController.setCustomIcon(Self.sampleIcon(), ofApp: app)
 
+            var dockRestarts = 0
+
             let controller = try AppIconController(
                 defaults: defaults,
-                bundle: #require(Bundle(url: app))
+                bundle: #require(Bundle(url: app)),
+                restartDock: { dockRestarts += 1 }
             )
 
             #expect(controller.group == .midnight)
@@ -123,10 +126,12 @@ struct AppIconControllerTests {
 
             #expect(controller.group == .serverGhost, "keepingData: \(keepingData)")
             #expect(!Self.hasCustomIcon(app), "keepingData: \(keepingData)")
+            #expect(dockRestarts == 0, "keepingData: \(keepingData)")
         }
     }
 
     /// 自定义图标写进包的根目录、清除时删掉；只读的包写不进去，换组失败时组、偏好与图标都保持原来的组。
+    /// 换组写完重启 Dock 一次，写入失败或选的就是当前的组时不重启。
     @Test("写入与清除 App 包的自定义图标，写不进去时换组失败")
     func writesAndClearsCustomIcon() async throws {
         let directory = Self.makeDirectory()
@@ -165,9 +170,12 @@ struct AppIconControllerTests {
 
         _ = NSApplication.shared
 
+        var dockRestarts = 0
+
         let controller = try AppIconController(
             defaults: defaults,
-            bundle: #require(Bundle(url: app))
+            bundle: #require(Bundle(url: app)),
+            restartDock: { dockRestarts += 1 }
         )
 
         await #expect(throws: AppIconWriteError.self) {
@@ -177,18 +185,25 @@ struct AppIconControllerTests {
         #expect(controller.group == .midnight)
         #expect(AppIconGroup.current(in: defaults) == .midnight)
         #expect(Self.hasCustomIcon(app))
+        #expect(dockRestarts == 0)
 
-        // 恢复可写后选回服务器幽灵：清掉自定义图标，偏好随之改变
+        // 恢复可写后选回服务器幽灵：清掉自定义图标，偏好随之改变，Dock 重启一次
         try Self.setPermissions(0o755, of: app)
         try await controller.select(.serverGhost)
 
         #expect(controller.group == .serverGhost)
         #expect(AppIconGroup.current(in: defaults) == .serverGhost)
         #expect(!Self.hasCustomIcon(app))
+        #expect(dockRestarts == 1)
+
+        // 再选当前的组：Dock 里的格子没有变，不重启
+        try await controller.select(.serverGhost)
+
+        #expect(dockRestarts == 1)
     }
 
     /// 写入在后台排队，系统询问权限这类写入卡住的情形下主线程照常往下走；
-    /// 写入按排队的顺序完成，Reset 之前发出、之后才写完的换组不把组存回偏好。
+    /// 写入按排队的顺序完成，Reset 之前发出、之后才写完的换组不把组存回偏好；连续换组只在后一次写完之后重启 Dock。
     @Test("自定义图标在后台按顺序写入，主线程不等；Reset 之前发出的换组不覆盖 Reset 的结果")
     func writesInBackgroundInOrder() async throws {
         let directory = Self.makeDirectory()
@@ -204,9 +219,12 @@ struct AppIconControllerTests {
 
         _ = NSApplication.shared
 
+        var dockRestarts = 0
+
         let controller = try AppIconController(
             defaults: defaults,
-            bundle: #require(Bundle(url: app))
+            bundle: #require(Bundle(url: app)),
+            restartDock: { dockRestarts += 1 }
         )
 
         // 拦住写入队列，像系统询问权限时那样让写入一直等着
@@ -240,6 +258,25 @@ struct AppIconControllerTests {
         #expect(!Self.hasCustomIcon(app))
         #expect(defaults.string(forKey: AppIconGroup.key) == nil)
         #expect(controller.group == .serverGhost)
+        #expect(dockRestarts == 0)
+
+        // 连续两次换组：两次都在主线程让出之前排进队列，只在后一次写完之后重启 Dock
+        defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
+        controller.reload()
+
+        let first = Task.immediate {
+            try await controller.select(.serverGhost)
+        }
+
+        let second = Task.immediate {
+            try await controller.select(.serverGhost)
+        }
+
+        try await first.value
+        try await second.value
+
+        #expect(controller.group == .serverGhost)
+        #expect(dockRestarts == 1)
     }
 }
 

@@ -25,9 +25,12 @@ struct AppIconSettingsTests {
 
         defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
 
+        var dockRestarts = 0
+
         let controller = try AppIconController(
             defaults: defaults,
-            bundle: #require(Bundle(url: app))
+            bundle: #require(Bundle(url: app)),
+            restartDock: { dockRestarts += 1 }
         )
 
         let midnight = AppIconGroup.midnight.title
@@ -91,5 +94,6 @@ struct AppIconSettingsTests {
         #expect(!closed)
         #expect(controller.group == .midnight)
         #expect(AppIconGroup.current(in: defaults) == .midnight)
+        #expect(dockRestarts == 0)
     }
 }
