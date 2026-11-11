@@ -28,9 +28,15 @@ struct HeaderMaterial: NSViewRepresentable {
         return view
     }
 
-    /// 输入框跟随 SwiftUI 量出的位置。
-    func updateNSView(_ view: HeaderMaterialView, context _: Context) {
-        view.fields = fields
+    /// 输入框跟随 SwiftUI 量出的位置；出现与消失时按这次更新的动画淡入淡出，与 SwiftUI 里输入区的过渡同步。
+    func updateNSView(_ view: HeaderMaterialView, context: Context) {
+        let transaction = context.transaction
+        let animates = transaction.animation != nil && !transaction.disablesAnimations
+
+        view.setFields(
+            fields,
+            animate: animates ? { context.animate(changes: $0, completion: $1) } : nil
+        )
     }
 }
 
@@ -49,16 +55,8 @@ struct HeaderMaterialField: Equatable {
 
 /// 头部材质视图：坐标自上而下，与 SwiftUI 量出的位置一致。
 final class HeaderMaterialView: NSVisualEffectView {
-    /// 各输入框；少了的输入框随之移除。
-    var fields: [HeaderMaterialField] = [] {
-        didSet {
-            guard fields != oldValue else {
-                return
-            }
-
-            needsLayout = true
-        }
-    }
+    /// 各输入框，与 `fieldLayers` 依次对应。
+    private(set) var fields: [HeaderMaterialField] = []
 
     /// 底边的分隔线；没有时为 nil。
     private var separator: HeaderMaterialLayer?
@@ -84,6 +82,59 @@ final class HeaderMaterialView: NSVisualEffectView {
 
         self.separator = separator
         needsLayout = true
+    }
+
+    /// 换上新的输入框：新出现的淡入，少了的淡出后移除，其余挪到新的位置。
+    ///
+    /// - Parameters:
+    ///   - fields: 新的输入框。
+    ///   - animate: 以这次更新的动画执行淡入淡出，结束后调用完成回调；为 nil 时立即出现与移除。
+    func setFields(
+        _ fields: [HeaderMaterialField],
+        animate: ((_ changes: () -> Void, _ completion: @escaping () -> Void) -> Void)?
+    ) {
+        guard fields != self.fields else {
+            return
+        }
+
+        self.fields = fields
+
+        // 少了的输入框先留在材质里，淡出后再移除
+        let removed = fieldLayers.dropFirst(fields.count).flatMap(\.self)
+        fieldLayers.removeLast(fieldLayers.count - min(fieldLayers.count, fields.count))
+
+        let added = replaceLayers()
+        needsLayout = true
+
+        guard let animate else {
+            for layer in removed {
+                layer.removeFromSuperview()
+            }
+
+            return
+        }
+
+        // 新补上的图层从透明开始淡入
+        for layer in added {
+            layer.alphaValue = 0
+        }
+
+        animate(
+            {
+                for layer in removed {
+                    layer.animator().alphaValue = 0
+                }
+
+                for layer in added {
+                    layer.animator().alphaValue = 1
+                }
+            },
+            {
+                for layer in removed {
+                    layer.removeFromSuperview()
+                }
+            }
+        )
     }
 }
 
@@ -113,34 +164,40 @@ extension HeaderMaterialView {
         ]
     }
 
-    /// 按位置放上、挪动或移除输入框。
+    /// 为新出现的输入框补上一组图层；有无动作栏变了的输入框直接换一组。
+    ///
+    /// - Returns: 为新出现的输入框补上的图层。
+    private func replaceLayers() -> [HeaderMaterialLayer] {
+        var added: [HeaderMaterialLayer] = []
+
+        for (index, field) in fields.enumerated() {
+            let hasFooter = field.footerHeight > 0
+
+            if index == fieldLayers.count {
+                let layers = makeLayers(hasFooter: hasFooter)
+
+                fieldLayers.append(layers)
+                added += layers
+            } else if (fieldLayers[index].count > 1) != hasFooter {
+                for layer in fieldLayers[index] {
+                    layer.removeFromSuperview()
+                }
+
+                fieldLayers[index] = makeLayers(hasFooter: hasFooter)
+            }
+        }
+
+        return added
+    }
+
+    /// 把各输入框的图层放到最新的位置。
     ///
     /// 没有动作栏的输入框是一块图层：底色取 `text_view_background_color`，1 pt `separatorColor` 描边，圆角 5。
     /// 带动作栏的输入框分成只描边的外框、填在输入区的底色与两区之间的分隔线三块：
     /// 分隔线与描边一样直接落在材质上，合成出的颜色相同；动作栏不填底色。
     private func placeFields() {
-        // 输入框少了时移除多出来的几组
-        while fieldLayers.count > fields.count {
-            for layer in fieldLayers.removeLast() {
-                layer.removeFromSuperview()
-            }
-        }
-
-        for (index, field) in fields.enumerated() {
-            let frames = Self.layerFrames(of: field)
-
-            // 新出现的输入框补上一组图层，有无动作栏变了时换一组
-            if index == fieldLayers.count {
-                fieldLayers.append(makeLayers(hasFooter: field.footerHeight > 0))
-            } else if fieldLayers[index].count != frames.count {
-                for layer in fieldLayers[index] {
-                    layer.removeFromSuperview()
-                }
-
-                fieldLayers[index] = makeLayers(hasFooter: field.footerHeight > 0)
-            }
-
-            for (layer, frame) in zip(fieldLayers[index], frames) {
+        for (layers, field) in zip(fieldLayers, fields) {
+            for (layer, frame) in zip(layers, Self.layerFrames(of: field)) {
                 layer.frame = frame
             }
         }

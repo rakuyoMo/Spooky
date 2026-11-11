@@ -107,7 +107,11 @@ struct WorkingCopyCommitView: View {
             }
         }
         .coordinateSpace(.named(Self.coordinateSpace))
-        .background(HeaderMaterial(fields: materialFields))
+        .background(
+            // 提交后正文区收起时，材质里的正文框与正文区按同一动画淡出
+            HeaderMaterial(fields: materialFields)
+                .animation(.easeInOut(duration: 0.2), value: session.collapsesCommitBody)
+        )
         .onModifierKeysChanged(mask: .option) { _, flags in
             optionPressed = flags.contains(.option)
 

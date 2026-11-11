@@ -7,7 +7,7 @@ import TestSupport
 
 // MARK: - WorkingCopyCommitViewTests
 
-/// 提交区：标题剩余字数的计数，以及分支栏底边线、标题框与正文框画进材质的位置。
+/// 提交区：标题剩余字数的计数，分支栏底边线、标题框与正文框画进材质的位置，以及正文框随动画的淡入淡出。
 ///
 /// 剩余字数在信息为空时不占位置，计数按 UTF-16 码元，组合字符与 emoji 不能按字符数代替。
 struct WorkingCopyCommitViewTests {
@@ -109,6 +109,48 @@ struct WorkingCopyCommitViewTests {
         session.commitBody = ""
         await until { commit.subviews.count == 1 }
     }
+
+    /// 正文区展开、收起时内容在淡入淡出，材质里的正文框要跟着同一个动画走：
+    /// 新框从透明开始淡入；少了的框淡出，动画结束后才从材质移除，不在动画开始时就消失。
+    @Test("材质里的输入框随动画淡入淡出")
+    @MainActor
+    func materialFieldsFade() {
+        let material = HeaderMaterialView()
+        let subject = HeaderMaterialField(frame: CGRect(x: 10, y: 10, width: 200, height: 29))
+
+        let body = HeaderMaterialField(
+            frame: CGRect(x: 10, y: 49, width: 200, height: 120),
+            footerHeight: 25
+        )
+
+        material.setFields([subject], animate: nil)
+
+        // 展开：正文框的三块图层一放进材质就是透明的，在动画里变为不透明
+        var alphas: (before: [CGFloat], after: [CGFloat]) = ([], [])
+
+        material.setFields([subject, body]) { changes, completion in
+            alphas.before = material.subviews.map(\.alphaValue)
+            Self.runWithoutDuration(changes)
+            alphas.after = material.subviews.map(\.alphaValue)
+            completion()
+        }
+
+        #expect(alphas.before == [1, 0, 0, 0])
+        #expect(alphas.after == [1, 1, 1, 1])
+
+        // 收起：正文框在动画里淡出，动画结束前仍留在材质里，结束后移除
+        var finish: (() -> Void)? = nil
+
+        material.setFields([subject]) { changes, completion in
+            Self.runWithoutDuration(changes)
+            finish = completion
+        }
+
+        #expect(material.subviews.map(\.alphaValue) == [1, 0, 0, 0])
+
+        finish?()
+        #expect(material.subviews.count == 1)
+    }
 }
 
 // MARK: - Helpers
@@ -119,6 +161,15 @@ extension WorkingCopyCommitViewTests {
     private static func subviews<Element: NSView>(_: Element.Type, in root: NSView) -> [Element] {
         root.subviews.flatMap { child in
             [child as? Element].compactMap(\.self) + subviews(Element.self, in: child)
+        }
+    }
+
+    /// 在时长为 0 的动画组里执行改动，`animator()` 设下的值立即生效。
+    @MainActor
+    private static func runWithoutDuration(_ changes: () -> Void) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0
+            changes()
         }
     }
 
