@@ -10,7 +10,7 @@ extension RepositorySidebarView {
 
     /// Worktrees 分组：本窗口仓库之外的工作树，按名称排列，过滤时按路径匹配；标题接受本地分支拖入以新建工作树。
     var worktreeGroup: some View {
-        Section(isExpanded: isExpanded(.worktrees)) {
+        sidebarSection(.worktrees) {
             ForEach(filteredWorktrees) {
                 worktreeRow($0)
             }

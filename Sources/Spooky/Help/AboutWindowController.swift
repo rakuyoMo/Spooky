@@ -49,7 +49,7 @@ final class AboutWindowController: NSWindowController {
 
 /// 关于窗口的内容：左栏是图标、名称、版本与 Release Notes，右栏是说明、版权与 Acknowledgements、License 两个按钮。
 ///
-/// 左栏从上往下排；右栏从下往上排，两个按钮与 Release Notes 基线对齐。
+/// 左栏从上往下排；右栏的说明从上往下排、顶边与图标对齐，版权与两个按钮从下往上排，两个按钮与 Release Notes 基线对齐。
 final class AboutViewController: NSViewController {
     /// 窗口边缘与两栏之间的间距。
     private static let margin: CGFloat = 30
@@ -189,7 +189,8 @@ final class AboutViewController: NSViewController {
         ]
     }
 
-    /// 右栏：从图标右边 30 起到距右 30；版权在说明下 20，两个按钮在版权下 20，左右分别对齐说明的两边、宽度相同。
+    /// 右栏：从图标右边 30 起到距右 30；说明的顶边与图标的顶边对齐，两个按钮在版权下 20，左右分别对齐说明的两边、宽度相同；
+    /// 版权与说明之间至少 20，多出的空间留在两者之间。
     private func rightColumn(
         in background: NSView,
         credits: NSView,
@@ -200,10 +201,11 @@ final class AboutViewController: NSViewController {
         [
             credits.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: Self.margin),
             background.trailingAnchor.constraint(equalTo: credits.trailingAnchor, constant: Self.margin),
+            credits.topAnchor.constraint(equalTo: iconView.topAnchor),
 
             copyright.leadingAnchor.constraint(equalTo: credits.leadingAnchor),
             copyright.trailingAnchor.constraint(equalTo: credits.trailingAnchor),
-            copyright.topAnchor.constraint(equalTo: credits.bottomAnchor, constant: 20),
+            copyright.topAnchor.constraint(greaterThanOrEqualTo: credits.bottomAnchor, constant: 20),
 
             buttons.acknowledgements.leadingAnchor.constraint(equalTo: credits.leadingAnchor),
             buttons.acknowledgements.topAnchor.constraint(equalTo: copyright.bottomAnchor, constant: 20),

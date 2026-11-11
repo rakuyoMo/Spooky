@@ -18,7 +18,7 @@ struct SidebarRefTreeView<Row: View, Folder: View>: View {
     @ViewBuilder
     let folder: (SidebarRefNode) -> Folder
 
-    /// 文件夹递归展开子节点。
+    /// 文件夹递归展开子节点；引用行可以是程序化定位的目标。
     var body: some View {
         ForEach(nodes) { node in
             if node.isFolder {
@@ -29,6 +29,7 @@ struct SidebarRefTreeView<Row: View, Folder: View>: View {
                 }
             } else {
                 row(node)
+                    .background { SidebarRevealAnchor(id: node.id) }
             }
         }
     }

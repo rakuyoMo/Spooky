@@ -9,16 +9,6 @@
       "alpha": 1.0
     }
   },
-  "general_header_background_color": {
-    "light": {
-      "hex": "#F5F5F5",
-      "alpha": 1.0
-    },
-    "dark": {
-      "hex": "#46484B",
-      "alpha": 1.0
-    }
-  },
   "general_alternate_row_background_color": {
     "light": {
       "hex": "#FAFAFA",
@@ -47,6 +37,16 @@
     "dark": {
       "hex": "#FFFFFF",
       "alpha": 0.85
+    }
+  },
+  "text_view_background_color": {
+    "light": {
+      "hex": "#F2F2F2",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#111111",
+      "alpha": 1.0
     }
   },
   "text_view_warning_background_color": {

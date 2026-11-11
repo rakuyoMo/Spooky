@@ -12,12 +12,9 @@ struct SSHAgentSettingsRow: View {
     @State
     private var showsWarning = false
 
-    /// 右对齐的标签加 278 pt 宽的弹出菜单，下一行是说明。
+    /// 右对齐的标签加占满控件列的弹出菜单，下一行是说明。
     var body: some View {
-        GridRow {
-            Text(AppLocalization.text("settings.sshAgent"))
-                .gridColumnAlignment(.trailing)
-
+        SettingsRow(AppLocalization.text("settings.sshAgent")) {
             HStack(spacing: 8) {
                 picker
 
@@ -27,15 +24,14 @@ struct SSHAgentSettingsRow: View {
             }
         }
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             Text(AppLocalization.text("settings.sshAgent.description"))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
-                .frame(width: 278, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
+                .settingsColumnWidth()
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
     }
 
     /// 创建 SSH Agent 一行。
@@ -49,7 +45,7 @@ struct SSHAgentSettingsRow: View {
 // MARK: - Private
 
 extension SSHAgentSettingsRow {
-    /// 候选的 agent，选中即保存并重新检查。
+    /// 候选的 agent 带 16 pt 的图标，选中即保存并重新检查。
     private var picker: some View {
         Picker(
             "",
@@ -59,11 +55,19 @@ extension SSHAgentSettingsRow {
             )
         ) {
             ForEach(SSHAgent.allCases, id: \.self) { agent in
-                Text(Self.title(agent)).tag(agent)
+                HStack(spacing: 8) {
+                    if let application = Self.application(agent) {
+                        Image(nsImage: NSWorkspace.shared.menuIcon(forFile: application.path))
+                            .accessibilityHidden(true)
+                    }
+
+                    Text(Self.title(agent))
+                }
+                .tag(agent)
             }
         }
         .labelsHidden()
-        .frame(width: 278)
+        .settingsColumnWidth()
         .accessibilityLabel(AppLocalization.text("settings.sshAgent"))
     }
 
@@ -88,6 +92,13 @@ extension SSHAgentSettingsRow {
     private static func title(_ agent: SSHAgent) -> String {
         switch agent {
         case .system: AppLocalization.text("settings.sshAgent.system")
+        }
+    }
+
+    /// 菜单里代表 agent 的程序，取它的图标：系统 agent 用 “终端”。
+    private static func application(_ agent: SSHAgent) -> URL? {
+        switch agent {
+        case .system: TerminalApplication.terminal.applicationURL
         }
     }
 

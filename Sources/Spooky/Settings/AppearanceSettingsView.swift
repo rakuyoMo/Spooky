@@ -8,13 +8,10 @@ struct AppearanceSettingsView: View {
     @AppStorage(AppAppearance.key)
     private var selection = AppAppearance.system.rawValue
 
-    /// 右对齐的标签与 278 pt 宽的缩略图选择器。
+    /// 右对齐的标签与从 242 pt 起、278 pt 宽的缩略图选择器。
     var body: some View {
-        Grid(horizontalSpacing: 8, verticalSpacing: 8) {
-            GridRow(alignment: .top) {
-                Text(AppLocalization.text("settings.appearance.label"))
-                    .gridColumnAlignment(.trailing)
-
+        SettingsForm(layout: .appearance) {
+            SettingsRow(AppLocalization.text("settings.appearance.label"), alignment: .top) {
                 HStack(spacing: 6) {
                     ForEach(AppAppearance.allCases) { appearance in
                         option(appearance)
@@ -23,8 +20,6 @@ struct AppearanceSettingsView: View {
                 .frame(width: 278, alignment: .leading)
             }
         }
-        .padding(40)
-        .frame(width: 900, alignment: .top)
     }
 }
 

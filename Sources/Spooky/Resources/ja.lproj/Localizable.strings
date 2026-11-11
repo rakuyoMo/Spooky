@@ -2080,7 +2080,7 @@
 
 /* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "Spooky について";
-"about.credits" = "Spooky は GNU General Public License v3.0 で公開されているフリーソフトウェアです。";
+"about.credits" = "Spooky には壮大なビジョンなんてありません。あちこちの Git リポジトリをふわふわと漂うのが好きな、ただの素朴な小さいおばけです。えへへ。";
 "about.title" = "このアプリケーションについて";
 "about.version" = "バージョン %1$@ (%2$@)";
 "about.acknowledgements" = "謝辞";
@@ -2109,8 +2109,8 @@
 "crash.message" = "GitHub でこの問題を報告しますか？ブラウザでクラッシュの概要を添えた新しい Issue ページが開きます。個人のパス、メールアドレス、ネットワークアドレスは取り除かれ、ご自身で Issue を送信するまで何も送られません。";
 "crash.report" = "GitHub で報告…";
 "crash.dontReport" = "報告しない";
-"settings.crashReports" = "クラッシュレポート：";
 "settings.crashReports.always" = "クラッシュレポートを常に送信";
+"settings.crashReports.help" = "クラッシュレポートは Spooky の問題の診断と修正に役立ちます。";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
 "settings.showDeveloperMenu" = "Developer メニューを表示";

@@ -107,6 +107,31 @@ public struct HistoryPage: Sendable {
 
     /// 下一页是否仍有数据。
     public let hasMore: Bool
+
+    /// 从 `offset` 起连着读出 `limit` 个提交：分页一次最多读 1000 个，超出时接着往下读，读满或没有下一页为止。
+    ///
+    /// - Parameters:
+    ///   - offset: 第一个提交的位置。
+    ///   - limit: 要读的提交数。
+    ///   - read: 读取一页，参数是这一页的位置与条数。
+    /// - Returns: 读到的提交连成的一页。
+    public static func reading(
+        from offset: Int = 0,
+        limit: Int,
+        _ read: @Sendable (_ offset: Int, _ limit: Int) async throws -> Self
+    ) async throws -> Self {
+        var commits: [HistoryCommit] = []
+        var hasMore = true
+
+        while hasMore, commits.count < limit {
+            let page = try await read(offset + commits.count, min(limit - commits.count, 1000))
+
+            commits += page.commits
+            hasMore = page.hasMore
+        }
+
+        return Self(commits: commits, hasMore: hasMore)
+    }
 }
 
 // MARK: - CommitFileChange
@@ -307,7 +332,7 @@ private struct ChangeStatistic {
 // MARK: - CommitDiff
 
 /// 历史补丁只读，沿用工作区的大 Diff 阈值与解析器。
-public struct CommitDiff: Sendable {
+public struct CommitDiff: Sendable, Equatable {
     /// 单次补丁字节数。
     public let byteCount: Int
 

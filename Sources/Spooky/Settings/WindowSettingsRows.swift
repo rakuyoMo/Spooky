@@ -63,29 +63,26 @@ struct WindowSettingsRows: View {
     @State
     private var restoration = WindowRestoration.current(in: .standard, domain: UserDefaults.appDomain)
 
-    /// 右对齐的标签与 278 pt 宽的弹出菜单，下面是启动窗口的勾选框。
+    /// 右对齐的标签与占满控件列的弹出菜单，下面是启动窗口的勾选框。
     var body: some View {
-        GridRow {
-            Text(AppLocalization.text("settings.windowRestoration"))
-                .gridColumnAlignment(.trailing)
-
+        SettingsRow(AppLocalization.text("settings.windowRestoration")) {
             Picker("", selection: $restoration) {
                 ForEach(WindowRestoration.allCases, id: \.self) { option in
                     Text(option.title).tag(option)
                 }
             }
             .labelsHidden()
-            .frame(width: 278)
+            .settingsColumnWidth()
             .accessibilityLabel(AppLocalization.text("settings.windowRestoration"))
             .onChange(of: restoration) { restoration.save(in: .standard) }
         }
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        // 附在弹出菜单下面的单个勾选框
+        SettingsRow {
             Toggle(AppLocalization.text("settings.showLaunchWindow"), isOn: $showsLaunchWindow)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(width: 278, alignment: .leading)
+                .settingsColumnWidth()
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
     }
 }

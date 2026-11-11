@@ -11,7 +11,7 @@ extension RepositorySidebarView {
         let pinned = pinnedReferences
 
         if !pinned.isEmpty {
-            Section(isExpanded: isExpanded(.pinned)) {
+            sidebarSection(.pinned) {
                 SidebarRefTreeView(nodes: branchNodes(pinned, scope: "pinned"), isExpanded: isExpanded) { node in
                     if let ref = node.reference {
                         localBranchRow(ref, name: node.name)
@@ -27,7 +27,7 @@ extension RepositorySidebarView {
 
     /// Branches 分组：没有置顶也没有归档的本地分支；未出生和分离 HEAD 仍有一行当前分支。
     var localBranches: some View {
-        Section(isExpanded: isExpanded(.branches)) {
+        sidebarSection(.branches) {
             if localReferences.isEmpty, !isFiltering {
                 Text(AppLocalization.text("branch.empty")).foregroundStyle(.secondary)
             }
@@ -57,7 +57,7 @@ extension RepositorySidebarView {
 
     /// Archived Branches 分组：没有置顶的已归档分支，同样按 “/” 折叠；没有归档分支时只有标题。
     var archivedBranches: some View {
-        Section(isExpanded: isExpanded(.archived)) {
+        sidebarSection(.archived) {
             SidebarRefTreeView(
                 nodes: branchNodes(archivedReferences, scope: "archived"),
                 isExpanded: isExpanded
@@ -75,7 +75,7 @@ extension RepositorySidebarView {
 
     /// 每个配置远端都有一个可展开的节点，下面是它的远端分支；选中远端时主视图显示它的设置。
     var remoteBranches: some View {
-        Section(isExpanded: isExpanded(.remotes)) {
+        sidebarSection(.remotes) {
             if session.history.snapshot?.remotes.isEmpty != false {
                 Text(AppLocalization.text("sync.noRemotes")).foregroundStyle(.secondary)
             }
@@ -112,6 +112,7 @@ extension RepositorySidebarView {
             )
             .tag("HEAD")
             .id(Self.headRowID)
+            .background { SidebarRevealAnchor(id: Self.headRowID) }
         }
     }
 }
@@ -141,6 +142,32 @@ extension RepositorySidebarView {
     func doubleClick(_ ref: RepositoryReference) {
         let target: RepositoryOpenTarget = NSEvent.modifierFlags.contains(.command) ? .newTab : .currentWindow
         session.doubleClick(ref, in: target)
+    }
+
+    /// 可以收起的分组：标题行高 20 pt，文字距侧边栏左缘 20 pt；条目行按系统 “侧边栏图标大小” 取行高与字体。
+    ///
+    /// - Parameters:
+    ///   - group: 分组，决定展开状态。
+    ///   - content: 分组里的行。
+    ///   - header: 分组标题。
+    func sidebarSection(
+        _ group: SidebarGroup,
+        @ViewBuilder content: () -> some View,
+        @ViewBuilder header: () -> some View
+    ) -> some View {
+        Section(isExpanded: isExpanded(group)) {
+            // 列表固定在 `listSize` 的档位，这里的修饰分到每一行（包括文件夹与远端展开出的行）：
+            // 换回系统的档位与字体，图标随之还原，再去掉上下插距定成这一档的行高
+            Group(content: content)
+                .environment(\.sidebarRowSize, rowSize)
+                .font(rowSize.rowFont)
+                .frame(height: rowSize.rowHeight)
+                .listRowInsets(.vertical, 0)
+        } header: {
+            // 列表给标题留出的左边距是 14 pt，再让出 6 pt
+            header()
+                .padding(.leading, 6)
+        }
     }
 
     /// 分组标题；作为落点时整行都接受拖放。

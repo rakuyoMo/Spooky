@@ -41,18 +41,13 @@ struct CloneDirectoryRow: View {
     @AppStorage(CloneDirectory.key)
     private var directory = NSHomeDirectory()
 
-    /// 右对齐的标签与 278 pt 宽的弹出菜单。
+    /// 右对齐的标签与占满控件列的弹出菜单。
     var body: some View {
-        GridRow {
-            Text(AppLocalization.text("settings.cloneDirectory"))
-                .gridColumnAlignment(.trailing)
-
+        SettingsRow(AppLocalization.text("settings.cloneDirectory")) {
             Picker("", selection: selection) {
                 ForEach(CloneDirectory.candidates(selected: directory), id: \.self) { path in
                     HStack(spacing: 8) {
-                        Image(nsImage: NSWorkspace.shared.icon(forFile: path))
-                            .resizable()
-                            .frame(width: 16, height: 16)
+                        Image(nsImage: NSWorkspace.shared.menuIcon(forFile: path))
                             .accessibilityHidden(true)
 
                         Text(FileManager.default.displayName(atPath: path))
@@ -66,7 +61,7 @@ struct CloneDirectoryRow: View {
                     .tag(Self.selectTag)
             }
             .labelsHidden()
-            .frame(width: 278)
+            .settingsColumnWidth()
             .help(directory)
             .accessibilityLabel(AppLocalization.text("settings.cloneDirectory"))
         }

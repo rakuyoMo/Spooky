@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 // MARK: - CommitEditorSettings
@@ -119,75 +118,75 @@ struct EditorSettingsView: View {
     @AppStorage(CommitEditorSettings.completesIssuesKey)
     private var completesIssues = true
 
-    /// 标签列右对齐，控件列左对齐。
+    /// 标签列右对齐，控件列从 517 pt 起左对齐。
     var body: some View {
-        Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 8) {
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+        SettingsForm(layout: .editor) {
+            SettingsRow {
                 Toggle(AppLocalization.text("editor.showsCounter"), isOn: $showsCounter)
             }
 
             // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐。
-            GridRow(alignment: .center) {
-                Text(AppLocalization.text("editor.subjectLimit"))
-                    .gridColumnAlignment(.trailing)
+            SettingsRow(AppLocalization.text("editor.subjectLimit"), alignment: .center) {
                 limitBox($subjectLimit, label: "editor.subjectLimit", choices: CommitEditorSettings.subjectLimitChoices)
             }
+            .padding(.top, SettingsFormLayout.rowSpacing)
 
-            GridRow {
-                Text(AppLocalization.text("editor.wrapping"))
+            SettingsRow(AppLocalization.text("editor.wrapping")) {
                 Picker(AppLocalization.text("editor.wrapping"), selection: $wrapping) {
                     Text(AppLocalization.text("editor.softWrap")).tag(CommitEditorSettings.Wrapping.soft.rawValue)
                     Text(AppLocalization.text("editor.hardWrap")).tag(CommitEditorSettings.Wrapping.hard.rawValue)
                 }
                 .labelsHidden()
+                .buttonSizing(.flexible)
                 .frame(width: 120)
             }
+            .padding(.top, SettingsFormLayout.popUpAfterRowSpacing)
 
-            // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐。
-            GridRow(alignment: .center) {
-                Text(AppLocalization.text("editor.bodyLimit"))
+            // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐；字数上限只在硬折行时生效。
+            SettingsRow(AppLocalization.text("editor.bodyLimit"), alignment: .center) {
                 limitBox($bodyLineLimit, label: "editor.bodyLimit", choices: CommitEditorSettings.bodyLineLimitChoices)
+                    .disabled(!hardWraps)
             }
+            .padding(.top, SettingsFormLayout.rowSpacing)
 
             commentRows
 
+            SettingsSeparator(next: .checkbox)
+
             issueRow
         }
-        .padding(40)
-        .frame(width: 900, height: 360, alignment: .top)
+        .frame(height: 360, alignment: .top)
     }
 }
 
 // MARK: - Private
 
 extension EditorSettingsView {
-    /// 参考线与注释行的三个勾选框；“总是删除” 只在提示关闭时可用。
+    /// 参考线与注释行的三个勾选框；参考线只在硬折行时可用，“总是删除” 只在提示关闭时可用。
     @ViewBuilder
     private var commentRows: some View {
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+        // 附在正文字数组合框下面的单个勾选框，只在硬折行时生效
+        SettingsRow {
             Toggle(AppLocalization.text("editor.showsGuide"), isOn: $showsGuide)
+                .disabled(!hardWraps)
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+        SettingsRow {
             Toggle(AppLocalization.text("editor.warnsComments"), isOn: $warnsComments)
-                .padding(.top, 12)
         }
+        .padding(.top, SettingsFormLayout.checkboxSpacing)
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+        SettingsRow {
             Toggle(AppLocalization.text("editor.stripsComments"), isOn: $stripsComments)
                 .disabled(warnsComments)
         }
+        .padding(.top, SettingsFormLayout.checkboxSpacing)
     }
 
-    /// Issue 编号补全的勾选框与 11 pt 说明。
+    /// Issue 编号补全的勾选框与 11 pt 说明；说明比勾选框缩进 20。
     private var issueRow: some View {
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             VStack(alignment: .leading, spacing: 4) {
                 Toggle(AppLocalization.text("editor.completesIssues"), isOn: $completesIssues)
 
@@ -195,94 +194,19 @@ extension EditorSettingsView {
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 20)
             }
-            .padding(.top, 12)
         }
     }
 
-    /// 60 pt 宽的字数上限组合框。
+    /// 正文按硬折行显示；正文的字数上限与参考线只在这时生效。
+    private var hardWraps: Bool {
+        wrapping == CommitEditorSettings.Wrapping.hard.rawValue
+    }
+
+    /// 60 pt 宽的字数上限组合框，可以输入 1–1000。
     private func limitBox(_ value: Binding<Int>, label: String, choices: [Int]) -> some View {
-        LimitComboBox(value: value, choices: choices, label: AppLocalization.text(label))
+        LimitComboBox(value: value, choices: choices, range: 1 ... 1000, label: AppLocalization.text(label))
             .frame(width: 60)
-    }
-}
-
-// MARK: - LimitComboBox
-
-/// 字数上限的组合框：可以从候选值里选，也可以直接输入 1–1000 的整数；输入不是数字时恢复原值。
-private struct LimitComboBox: NSViewRepresentable {
-    /// 选中候选或结束输入时写回偏好。
-    @MainActor
-    final class Coordinator: NSObject, NSComboBoxDelegate {
-        /// 要写回的字数上限。
-        var value: Binding<Int>
-
-        /// 创建协调器。
-        init(value: Binding<Int>) {
-            self.value = value
-        }
-
-        /// 选中候选值后立即生效；此时组合框的文字还没更新，取选中的候选本身。
-        func comboBoxSelectionDidChange(_ notification: Notification) {
-            guard
-                let box = notification.object as? NSComboBox,
-                let text = box.objectValueOfSelectedItem as? String
-            else { return }
-
-            commit(text, in: box)
-        }
-
-        /// 输入结束（回车或离开输入框）时生效。
-        func controlTextDidEndEditing(_ notification: Notification) {
-            guard let box = notification.object as? NSComboBox else { return }
-
-            commit(box.stringValue, in: box)
-        }
-
-        /// 整数限制在 1–1000 后写回；不是整数时恢复原值。
-        private func commit(_ text: String, in box: NSComboBox) {
-            if let number = Int(text.trimmingCharacters(in: .whitespaces)) {
-                value.wrappedValue = max(1, min(number, 1000))
-            }
-
-            box.stringValue = String(value.wrappedValue)
-        }
-    }
-
-    /// 字数上限。
-    @Binding
-    var value: Int
-
-    /// 下拉列表里的候选值。
-    let choices: [Int]
-
-    /// 辅助功能读出的名称。
-    let label: String
-
-    /// 创建可编辑、显示 5 个候选的组合框。
-    func makeNSView(context: Context) -> NSComboBox {
-        let box = NSComboBox()
-        box.isEditable = true
-        box.usesDataSource = false
-        box.numberOfVisibleItems = 5
-        box.addItems(withObjectValues: choices.map(String.init))
-        box.stringValue = String(value)
-        box.delegate = context.coordinator
-        box.setAccessibilityLabel(label)
-        return box
-    }
-
-    /// 不在编辑时跟随偏好的变化。
-    func updateNSView(_ box: NSComboBox, context: Context) {
-        context.coordinator.value = $value
-
-        if box.currentEditor() == nil {
-            box.stringValue = String(value)
-        }
-    }
-
-    /// 创建接收选择与输入结束的协调器。
-    func makeCoordinator() -> Coordinator {
-        Coordinator(value: $value)
     }
 }

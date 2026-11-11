@@ -2,8 +2,11 @@ import SwiftUI
 
 // MARK: - TextSettingsView
 
-/// 设置 → Text：语法着色、不可见字符与 Tab 宽度三组，组间用分隔线隔开，修改立即生效。
+/// 设置 → Text：语法着色、不可见字符与 Tab 宽度三组，组间留出空白、不画分隔线，修改立即生效。
 struct TextSettingsView: View {
+    /// 组与组的距离：到下一组第一行标签的顶边，与其它页分隔线上下的间距加线宽相同。
+    private static let groupSpacing = SettingsFormLayout.separatorSpacing * 2 + 1
+
     /// 语法着色总开关。
     @AppStorage(TextPreferences.syntaxColoringKey)
     private var colorsSyntax = true
@@ -20,13 +23,11 @@ struct TextSettingsView: View {
     @AppStorage(TextPreferences.tabWidthKey)
     private var tabWidth = TextPreferences.defaultTabWidth
 
-    /// 标签列右对齐，控件列左对齐。
+    /// 标签列右对齐，控件列从 367 pt 起左对齐。
     var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 16) {
-            GridRow(alignment: .firstTextBaseline) {
-                label("text.syntaxColoring")
-
-                VStack(alignment: .leading, spacing: 8) {
+        SettingsForm(layout: .text) {
+            SettingsRow(AppLocalization.text("text.syntaxColoring")) {
+                VStack(alignment: .leading, spacing: SettingsFormLayout.checkboxSpacing) {
                     Toggle(AppLocalization.text("text.enableSyntaxColoring"), isOn: $colorsSyntax)
 
                     // Diff 着色是总开关下的子选项
@@ -36,24 +37,18 @@ struct TextSettingsView: View {
                 }
             }
 
-            Divider()
-                .gridCellColumns(2)
-
-            GridRow(alignment: .firstTextBaseline) {
-                label("text.invisibles")
+            // 组间不画线，下一组第一行的标签距上一组 33 pt
+            SettingsRow(AppLocalization.text("text.invisibles")) {
                 Toggle(AppLocalization.text("text.showInvisibles"), isOn: $showsInvisibles)
             }
+            .padding(.top, Self.groupSpacing)
 
-            Divider()
-                .gridCellColumns(2)
-
-            GridRow(alignment: .firstTextBaseline) {
-                label("text.tabWidth")
+            SettingsRow(AppLocalization.text("text.tabWidth")) {
                 tabWidthControl
             }
+            .padding(.top, Self.groupSpacing - SettingsFormLayout.controlLabelInset)
         }
-        .padding(40)
-        .frame(width: 900, height: 260, alignment: .top)
+        .frame(height: 260, alignment: .top)
     }
 
     /// 30 pt 宽的数字框、1–100 的步进器与单位。
@@ -74,11 +69,5 @@ struct TextSettingsView: View {
 
             Text(AppLocalization.text("text.spaces"))
         }
-    }
-
-    /// 右对齐的行标签。
-    private func label(_ key: String) -> some View {
-        Text(AppLocalization.text(key))
-            .gridColumnAlignment(.trailing)
     }
 }

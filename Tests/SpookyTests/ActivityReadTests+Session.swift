@@ -87,8 +87,11 @@ extension ActivityReadTests {
         await session.diffTask?.value
 
         #expect(session.diffSide == .staged)
+
+        // 文件监听引起的刷新可能还在重读 Diff，只核对这次调用没有另开读取
+        let reading = session.diffTask
         session.diffSideChanged()
-        #expect(!session.isLoadingDiff)
+        #expect(session.diffTask == reading)
         #expect(activities.items.count == recorded)
 
         // 另一个会话的完整刷新与同一份基准比较，只多出这个分支

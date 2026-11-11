@@ -2080,7 +2080,7 @@
 
 /* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "Über Spooky";
-"about.credits" = "Spooky ist freie Software unter der GNU General Public License v3.0.";
+"about.credits" = "Spooky hat keine große Vision. Es ist bloß ein schlichtes kleines Gespenst, das gern von Git-Repository zu Git-Repository schwebt – mehr nicht. Hihi.";
 "about.title" = "Über";
 "about.version" = "Version %1$@ (%2$@)";
 "about.acknowledgements" = "Danksagungen";
@@ -2109,8 +2109,8 @@
 "crash.message" = "Möchten Sie das Problem auf GitHub melden? Im Browser öffnet sich eine neue Issue-Seite mit einer Zusammenfassung des Absturzes. Persönliche Pfade, E-Mail-Adressen und Netzwerkadressen sind entfernt, und es wird nichts gesendet, bevor Sie das Issue selbst absenden.";
 "crash.report" = "Auf GitHub melden …";
 "crash.dontReport" = "Nicht melden";
-"settings.crashReports" = "Absturzberichte:";
 "settings.crashReports.always" = "Absturzberichte immer senden";
+"settings.crashReports.help" = "Absturzberichte helfen, Probleme in Spooky zu erkennen und zu beheben.";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
 "settings.showDeveloperMenu" = "Menü „Developer“ anzeigen";

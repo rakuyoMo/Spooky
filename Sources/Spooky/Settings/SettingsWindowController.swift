@@ -66,6 +66,20 @@ final class SettingsWindowController: NSWindowController {
         controller?.select(page)
     }
 
+    /// 显示窗口；窗口原本不在屏幕上时，焦点不留在任何输入框里。
+    override func showWindow(_ sender: Any?) {
+        let wasVisible = window?.isVisible ?? false
+
+        super.showWindow(sender)
+
+        // 窗口显示时，AppKit 把焦点交给第一个可输入的控件，如 General 页的组合框
+        guard !wasVisible else {
+            return
+        }
+
+        window?.makeFirstResponder(nil)
+    }
+
     /// 切到指定的页；页签已经是它时不动。
     ///
     /// - Parameter page: 要显示的页。

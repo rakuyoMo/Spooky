@@ -13,18 +13,16 @@ struct CommitDateFormatRow: View {
     @AppStorage(CommitDateFormat.key)
     private var format = CommitDateFormat.absolute
 
-    /// 与 General 页其它行相同：右对齐的标签加 278 pt 宽的弹出菜单。
+    /// 与 General 页其它行相同：右对齐的标签加占满控件列的弹出菜单。
     var body: some View {
-        GridRow {
-            Text(AppLocalization.text("settings.dateFormat"))
-
+        SettingsRow(AppLocalization.text("settings.dateFormat")) {
             Picker("", selection: $format) {
                 ForEach(CommitDateFormat.allCases, id: \.self) { format in
                     Text(format.string(from: Self.sample)).tag(format)
                 }
             }
             .labelsHidden()
-            .frame(width: 278)
+            .settingsColumnWidth()
             .accessibilityLabel(AppLocalization.text("settings.dateFormat"))
         }
     }

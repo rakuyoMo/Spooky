@@ -48,6 +48,43 @@ struct RepositoryHistoryTests {
         #expect(Set((first.commits + second.commits).map(\.id)).count == 3)
     }
 
+    /// 超过一页时接着往下读，每次最多 1000 个；读满或没有下一页时停下，后面是否还有提交取最后一页的结果。
+    @Test("连着读出超过一页的提交")
+    func readingPages() async throws {
+        let all = (0 ..< 2500).map { index in
+            HistoryCommit(
+                id: String(format: "%040x", index),
+                tree: String(repeating: "e", count: 40),
+                parents: [],
+                author: "Alice",
+                authorEmail: "alice@example.invalid",
+                authorDate: Date(timeIntervalSince1970: 0),
+                committer: "Alice",
+                committerEmail: "alice@example.invalid",
+                commitDate: Date(timeIntervalSince1970: 0),
+                message: "\(index)"
+            )
+        }
+
+        // 与真实的分页一样，一次最多读 1000 个，多取一个判断后面是否还有
+        let read: @Sendable (Int, Int) async throws -> HistoryPage = { offset, limit in
+            guard (1 ... 1000).contains(limit) else { throw RepositoryReadError.invalidQuery }
+
+            let slice = all.dropFirst(offset).prefix(limit + 1)
+            return HistoryPage(commits: Array(slice.prefix(limit)), hasMore: slice.count > limit)
+        }
+
+        // 读满为止，后面还有
+        let middle = try await HistoryPage.reading(from: 10, limit: 2100, read)
+        #expect(middle.commits == Array(all[10 ..< 2110]))
+        #expect(middle.hasMore)
+
+        // 没有下一页时停下
+        let whole = try await HistoryPage.reading(limit: 3000, read)
+        #expect(whole.commits == all)
+        #expect(!whole.hasMore)
+    }
+
     /// 文件名包含换行和通配符，二进制统计不会使后续文本错位；合并提交按第一父列出改动，图模型画出两条父线。
     @Test("提交变更集的特殊路径、二进制、重命名与第一父")
     func changes() async throws {

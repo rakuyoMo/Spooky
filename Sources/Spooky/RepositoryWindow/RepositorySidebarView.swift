@@ -121,29 +121,30 @@ struct RepositorySidebarView: View {
     @FocusState
     var listFocused: Bool
 
+    /// 程序化选中引用后滚动到它所在行的进度。
+    @State
+    var reveal = SidebarReveal()
+
+    /// 系统 “侧边栏图标大小”，决定条目行的行高与字体。
+    @Environment(\.sidebarRowSize)
+    var rowSize
+
     /// 分组顺序固定：Workspace、Pinned、Branches、Archived Branches、Tags、Remotes、Submodules、Worktrees。
     var body: some View {
         VStack(spacing: 0) {
             ScrollViewReader { proxy in
-                // 列表按仓库区分身份，换了仓库就整个重建：列表显示过可展开的行（远端、文件夹）后，
-                // 行首一直留着展开箭头的位置，换成没有这类行的仓库也不收回；重建后与新开窗口的排版相同
-                List(selection: selection) {
-                    workspace
-                    pinnedBranches
-                    localBranches
-                    archivedBranches
-                    tags
-                    remoteBranches
-                    submoduleGroup
-                    worktreeGroup
-                }
-                .listStyle(.sidebar)
-                .focused($listFocused)
-                .onDeleteCommand(perform: deleteCommand)
-                .id(session.repository)
-                .onChange(of: session.history.revealRequests) {
-                    revealSelectedReferences(with: proxy)
-                }
+                sidebarList
+                    .onChange(of: session.history.revealRequests) {
+                        revealSelectedReferences(with: proxy)
+                    }
+
+                    // 程序化定位核对目标行是否落在列表内，每次滚动后没落进就再滚
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: {
+                        reveal.listFrame = $0
+                    }
+                    .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, _ in
+                        reveal.listScrolled()
+                    }
             }
 
             // 刚归档的分支数与撤销
@@ -171,6 +172,29 @@ struct RepositorySidebarView: View {
         .task(id: session.history.snapshot?.remoteSettingsDigests) {
             await loadRemoteConfigurations()
         }
+    }
+
+    /// 各分组的列表：列表固定在 `listSize` 的档位，条目行在各分组里换回系统的档位与字体。
+    private var sidebarList: some View {
+        // 列表按仓库区分身份，换了仓库就整个重建：列表显示过可展开的行（远端、文件夹）后，
+        // 行首一直留着展开箭头的位置，换成没有这类行的仓库也不收回；重建后与新开窗口的排版相同
+        List(selection: selection) {
+            workspace
+            pinnedBranches
+            localBranches
+            archivedBranches
+            tags
+            remoteBranches
+            submoduleGroup
+            worktreeGroup
+        }
+        .listStyle(.sidebar)
+        .environment(\.sidebarRowSize, rowSize.listSize)
+        .environment(\.defaultMinListHeaderHeight, 20)
+        .environment(reveal)
+        .focused($listFocused)
+        .onDeleteCommand(perform: deleteCommand)
+        .id(session.repository)
     }
 
     /// 侧边栏底栏：左侧过滤框，右侧新建分支菜单与视图设置按钮。

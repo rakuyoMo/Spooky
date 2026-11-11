@@ -15,6 +15,12 @@ struct WorkingCopyCommitView: View {
         case body
     }
 
+    /// 提交区的坐标空间，标题框与正文框的位置以它的左上角为原点。
+    private nonisolated static let coordinateSpace = "working-copy-commit-area"
+
+    /// 正文框底部动作栏的高度，上方另有 1 pt 由材质画出的分隔线。
+    private static let bodyBarHeight: CGFloat = 24
+
     /// 当前仓库的草稿与操作状态。
     @Bindable
     var session: RepositorySession
@@ -34,6 +40,14 @@ struct WorkingCopyCommitView: View {
     /// 标题按回车或 Tab 时让正文获得焦点。
     @State
     private var bodyFocusRequest = 0
+
+    /// 标题框在提交区里的位置，供材质在同一处画出框的底与描边。
+    @State
+    private var subjectFrame: CGRect?
+
+    /// 正文框在提交区里的位置，与标题框一样由材质画出框的底与描边。
+    @State
+    private var bodyFrame: CGRect?
 
     /// 是否显示标题剩余字数。
     @AppStorage(CommitEditorSettings.showsSubjectCounterKey)
@@ -69,7 +83,7 @@ struct WorkingCopyCommitView: View {
 
     /// 进行中横幅位于信息区上方；进行中的操作还有未解决冲突或尚未开始时只显示横幅。
     ///
-    /// 横幅自带外边距，信息区另有 20 pt 内边距，两者之间不再留间距。
+    /// 横幅自带外边距，信息区上、左、右各有 20 pt 内边距，两者之间不再留间距；按钮行下留 15 pt。
     var body: some View {
         VStack(spacing: 0) {
             OperationBannerView(session: session)
@@ -83,14 +97,21 @@ struct WorkingCopyCommitView: View {
                         details
                     }
 
+                    // 收起时按钮行距标题框 15 pt，展开时按 8 pt 的行距排在选项下面
                     actionRow
+                        .padding(.top, isExpanded ? 0 : 7)
                 }
                 .disabled(session.commitResetTask != nil)
                 .animation(.easeInOut(duration: 0.2), value: session.collapsesCommitBody)
-                .padding(20)
+                .padding(EdgeInsets(top: 20, leading: 20, bottom: 15, trailing: 20))
             }
         }
-        .background(HeaderMaterial())
+        .coordinateSpace(.named(Self.coordinateSpace))
+        .background(
+            // 提交后正文区收起时，材质里的正文框与正文区按同一动画淡出
+            HeaderMaterial(fields: materialFields)
+                .animation(.easeInOut(duration: 0.2), value: session.collapsesCommitBody)
+        )
         .onModifierKeysChanged(mask: .option) { _, flags in
             optionPressed = flags.contains(.option)
 
@@ -158,6 +179,21 @@ extension WorkingCopyCommitView {
         return !locked
     }
 
+    /// 材质要画出的输入框：显示信息区时有标题框，展开时还有带动作栏的正文框。
+    private var materialFields: [HeaderMaterialField] {
+        guard session.showsCommitArea else {
+            return []
+        }
+
+        let subject = subjectFrame.map { HeaderMaterialField(frame: $0) }
+
+        let body = isExpanded
+            ? bodyFrame.map { HeaderMaterialField(frame: $0, footerHeight: Self.bodyBarHeight + 1) }
+            : nil
+
+        return [subject, body].compactMap(\.self)
+    }
+
     /// 标题右端显示的剩余字数；不显示时为 nil。
     private var remaining: Int? {
         Self.remainingCharacters(
@@ -175,7 +211,7 @@ extension WorkingCopyCommitView {
 
     /// 单行标题，右端是剩余字数；回车或 Tab 转到正文。
     ///
-    /// 剩余字数是带底色的浮层，只在显示时占用标题右侧的空间。
+    /// 框的底与描边由提交区的材质在同一位置画出，剩余字数只在显示时占用标题右侧的空间。
     private var subjectField: some View {
         HStack(spacing: 0) {
             CommitMessageEditor(
@@ -200,14 +236,16 @@ extension WorkingCopyCommitView {
                     .font(.system(size: 12))
                     .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
                     .padding(EdgeInsets(top: 2, leading: 6, bottom: 2, trailing: 3))
-                    .background(Color(nsColor: .controlBackgroundColor))
                     .padding(.trailing, 1)
                     .accessibilityLabel(AppLocalization.text("commit.remaining", remaining))
             }
         }
         .frame(height: 29)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
-        .overlay(RoundedRectangle(cornerRadius: 5).stroke(.separator))
+        .onGeometryChange(for: CGRect.self) {
+            $0.frame(in: .named(Self.coordinateSpace))
+        } action: {
+            subjectFrame = $0
+        }
     }
 
     /// 正文每行的字数上限：仓库设置里有时用仓库的，否则用 Editor 设置页的。
@@ -215,34 +253,10 @@ extension WorkingCopyCommitView {
         session.commitConfiguration?.bodyLineLimit ?? max(1, bodyLineLimit)
     }
 
-    /// 正文框连同底部的钉住与折行按钮，下沿与右下角可拖动；其下是提交选项与提交人，选项行下留 11 pt。
+    /// 正文框，其下是提交选项与提交人；选项行下留 11 pt。
     private var details: some View {
         VStack(spacing: 12) {
-            VStack(spacing: 0) {
-                CommitMessageEditor(
-                    role: .body,
-                    text: $session.commitBody,
-                    placeholder: AppLocalization.text("working.body") + "\n\n" + AppLocalization.text("commit.quickAmendHint"),
-                    isEditable: isEditable,
-                    releasesFocus: session.isCommitting,
-                    monospaced: hardWrap,
-                    characterLimit: effectiveBodyLineLimit,
-                    reformatLimit: effectiveBodyLineLimit,
-                    hardWrap: hardWrap,
-                    showsGuide: session.commitConfiguration?.showsBodyGuide ?? showsGuide,
-                    focusRequest: bodyFocusRequest,
-                    onFocusChange: { focusChanged(.body, focused: $0) },
-                    onSubmit: { },
-                    completions: { await session.completions(for: $0) }
-                )
-
-                Divider()
-                bodyActionBar
-            }
-            .frame(height: bodyHeight)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
-            .overlay(RoundedRectangle(cornerRadius: 5).stroke(.separator))
-            .overlay { resizeHandles }
+            bodyBox
 
             HStack(alignment: .top, spacing: 12) {
                 options
@@ -251,6 +265,43 @@ extension WorkingCopyCommitView {
             }
         }
         .padding(.bottom, 11)
+    }
+
+    /// 正文框连同底部的钉住与折行按钮，下沿与右下角可拖动。
+    ///
+    /// 框的描边、输入区的底与动作栏上方的分隔线由提交区的材质在同一位置画出。
+    private var bodyBox: some View {
+        VStack(spacing: 0) {
+            CommitMessageEditor(
+                role: .body,
+                text: $session.commitBody,
+                placeholder: AppLocalization.text("working.body")
+                    + "\n\n"
+                    + AppLocalization.text("commit.quickAmendHint"),
+                isEditable: isEditable,
+                releasesFocus: session.isCommitting,
+                monospaced: hardWrap,
+                characterLimit: effectiveBodyLineLimit,
+                reformatLimit: effectiveBodyLineLimit,
+                hardWrap: hardWrap,
+                showsGuide: session.commitConfiguration?.showsBodyGuide ?? showsGuide,
+                focusRequest: bodyFocusRequest,
+                onFocusChange: { focusChanged(.body, focused: $0) },
+                onSubmit: { },
+                completions: { await session.completions(for: $0) }
+            )
+
+            // 动作栏上方留出 1 pt，分隔线由材质画出
+            bodyActionBar
+                .padding(.top, 1)
+        }
+        .frame(height: bodyHeight)
+        .onGeometryChange(for: CGRect.self) {
+            $0.frame(in: .named(Self.coordinateSpace))
+        } action: {
+            bodyFrame = $0
+        }
+        .overlay { resizeHandles }
     }
 
     /// 钉住正文区与切换软 / 硬折行。
@@ -280,7 +331,7 @@ extension WorkingCopyCommitView {
         }
         .buttonStyle(.borderless)
         .padding(.horizontal, 8)
-        .frame(height: 24)
+        .frame(height: Self.bodyBarHeight)
     }
 
     /// 正文框下沿 4 pt 高、只改高度的细条，以及右下角 20 × 20 pt、还能移动分隔线的拖柄。

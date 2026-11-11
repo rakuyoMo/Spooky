@@ -27,7 +27,7 @@ extension GitSigningRows {
             }
         }
         .labelsHidden()
-        .frame(width: 278)
+        .settingsColumnWidth()
         .help(configured ?? "")
         .accessibilityLabel(AppLocalization.text("gitConfig.sshProgram"))
     }
@@ -52,7 +52,7 @@ extension GitSigningRows {
                 .tag(SigningPrograms.chooseTag)
         }
         .labelsHidden()
-        .frame(width: 278)
+        .settingsColumnWidth()
         .help(configured ?? "")
         .accessibilityLabel(AppLocalization.text("gitConfig.gpgProgram"))
     }
@@ -95,7 +95,7 @@ extension GitSigningRows {
                 .tag(String?.none)
         }
         .labelsHidden()
-        .frame(width: 278)
+        .settingsColumnWidth()
         .disabled(model.keys.isEmpty && configured == nil)
         .accessibilityLabel(AppLocalization.text("gitConfig.signingKey"))
     }
@@ -120,7 +120,7 @@ extension GitSigningRows {
                 .tag(SigningPrograms.chooseTag)
         }
         .labelsHidden()
-        .frame(width: 278)
+        .settingsColumnWidth()
         .help(configured ?? "")
         .accessibilityLabel(AppLocalization.text("gitConfig.allowedSigners"))
     }

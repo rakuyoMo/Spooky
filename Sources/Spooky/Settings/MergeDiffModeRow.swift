@@ -32,19 +32,16 @@ struct MergeDiffModeRow: View {
     @AppStorage(MergeDiffMode.preferenceKey)
     private var mode = MergeDiffMode.firstParent.rawValue
 
-    /// 右对齐的标签与 278 pt 宽的弹出菜单。
+    /// 右对齐的标签与占满控件列的弹出菜单。
     var body: some View {
-        GridRow {
-            Text(AppLocalization.text("history.mergeDiff"))
-                .gridColumnAlignment(.trailing)
-
+        SettingsRow(AppLocalization.text("history.mergeDiff")) {
             Picker("", selection: $mode) {
                 ForEach(MergeDiffMode.allCases, id: \.self) {
                     Text($0.title).tag($0.rawValue)
                 }
             }
             .labelsHidden()
-            .frame(width: 278)
+            .settingsColumnWidth()
             .accessibilityLabel(AppLocalization.text("history.mergeDiff"))
         }
     }
