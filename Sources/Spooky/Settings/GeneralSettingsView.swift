@@ -38,46 +38,38 @@ struct GeneralSettingsView: View {
     @AppStorage(DeveloperPreferences.showsMenuKey)
     private var showsDeveloperMenu = false
 
-    /// General 表单按功能分为七组，组间以分隔线隔开；控件列固定为 278 pt。
+    /// General 表单按功能分为七组，组间以分隔线隔开；控件列从 530 pt 起，宽 278 pt。
     var body: some View {
-        Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+        SettingsForm(layout: .general) {
             CloneDirectoryRow()
 
             terminalRow
+                .padding(.top, SettingsFormLayout.rowSpacing)
 
-            Divider()
-                .gridCellUnsizedAxes(.horizontal)
+            SettingsSeparator()
 
             operationRows
 
-            Divider()
-                .gridCellUnsizedAxes(.horizontal)
+            SettingsSeparator(next: .checkbox)
 
-            // 丢弃块的警告与服务器仓库的删除、覆盖确认列在一组，逐项打开或关闭
-            ForEach(ServerConfirmation.allCases, id: \.self) { ConfirmationRow(confirmation: $0) }
+            confirmationRows
 
-            Divider()
-                .gridCellUnsizedAxes(.horizontal)
+            SettingsSeparator()
 
             historyRows
 
-            Divider()
-                .gridCellUnsizedAxes(.horizontal)
+            SettingsSeparator()
 
             WorkingCopySettingsRows()
 
-            Divider()
-                .gridCellUnsizedAxes(.horizontal)
+            SettingsSeparator()
 
             WindowSettingsRows()
 
-            Divider()
-                .gridCellUnsizedAxes(.horizontal)
+            SettingsSeparator(next: .checkbox)
 
             toggleRow("settings.showDeveloperMenu", isOn: $showsDeveloperMenu)
         }
-        .padding(40)
-        .frame(width: 900, alignment: .top)
     }
 }
 
@@ -89,50 +81,60 @@ extension GeneralSettingsView {
     private var operationRows: some View {
         AutoFetchSettingsRow()
 
+        // 勾选框组与上方的弹出菜单相隔 12，组内相隔 4
         toggleRow("settings.autoUpdateSubmodules", isOn: $alwaysUpdateSubmodules)
+            .padding(.top, SettingsFormLayout.checkboxGroupSpacing)
 
         toggleRow("stash.offerAutoStash", isOn: $offerAutoStash)
+            .padding(.top, SettingsFormLayout.checkboxSpacing)
 
         toggleRow("branch.cleanNames", isOn: $cleanRefNames)
+            .padding(.top, SettingsFormLayout.checkboxSpacing)
 
         toggleRow("settings.autoArchive", isOn: $autoArchiveBranches)
+            .padding(.top, SettingsFormLayout.checkboxSpacing)
+    }
+
+    /// 丢弃块的警告与服务器仓库的删除、覆盖确认列在一组，逐项打开或关闭；组内相隔 4。
+    private var confirmationRows: some View {
+        ForEach(Array(ServerConfirmation.allCases.enumerated()), id: \.element) { index, confirmation in
+            ConfirmationRow(confirmation: confirmation)
+                .padding(.top, index == 0 ? 0 : SettingsFormLayout.checkboxSpacing)
+        }
     }
 
     /// 历史每页条数、提交日期格式、合并提交的 Diff 方式与大 Diff 的警告阈值。
     @ViewBuilder
     private var historyRows: some View {
-        GridRow {
-            Text(AppLocalization.text("history.pageSize"))
+        SettingsRow(AppLocalization.text("history.pageSize")) {
             Picker("", selection: $historyPageSize) {
                 ForEach([100, 200, 500, 1000], id: \.self) {
                     Text(AppLocalization.text("history.commitCount", $0)).tag($0)
                 }
             }
             .labelsHidden()
-            .frame(width: 278)
+            .settingsColumnWidth()
             .accessibilityLabel(AppLocalization.text("history.pageSize"))
         }
 
         CommitDateFormatRow()
+            .padding(.top, SettingsFormLayout.rowSpacing)
 
         MergeDiffModeRow()
+            .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            Text(AppLocalization.text("working.diffThreshold"))
-                .gridColumnAlignment(.trailing)
+        SettingsRow(AppLocalization.text("working.diffThreshold")) {
             TextField("", value: $diffWarning, format: .number.grouping(.never))
                 .frame(width: 100, alignment: .leading)
                 .accessibilityLabel(AppLocalization.text("working.diffThreshold"))
                 .onChange(of: diffWarning) { diffWarning = max(0, min(diffWarning, 268_435)) }
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
     }
 
     /// 终端选择行，每个候选显示应用图标与名称。
     private var terminalRow: some View {
-        GridRow {
-            Text(AppLocalization.text("settings.terminal"))
-                .gridColumnAlignment(.trailing)
-
+        SettingsRow(AppLocalization.text("settings.terminal")) {
             Picker(AppLocalization.text("settings.terminal"), selection: $terminal) {
                 ForEach(TerminalApplication.allCases.filter { $0.applicationURL != nil }) { application in
                     HStack(spacing: 8) {
@@ -149,19 +151,17 @@ extension GeneralSettingsView {
                 }
             }
             .labelsHidden()
-            .frame(width: 278)
+            .settingsColumnWidth()
             .accessibilityIdentifier("terminal-application")
         }
     }
 
     /// 标签列留空、控件列放一个勾选框的一行。
     private func toggleRow(_ key: String, isOn: Binding<Bool>) -> some View {
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             Toggle(AppLocalization.text(key), isOn: isOn)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(width: 278, alignment: .leading)
+                .settingsColumnWidth()
         }
     }
 }
@@ -179,12 +179,10 @@ private struct ConfirmationRow: View {
 
     /// 标签列留空，控件列放勾选框。
     var body: some View {
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             Toggle(AppLocalization.text(confirmation.titleKey), isOn: $isOn)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(width: 278, alignment: .leading)
+                .settingsColumnWidth()
         }
     }
 

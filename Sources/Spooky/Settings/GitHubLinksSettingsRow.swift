@@ -15,12 +15,9 @@ struct GitHubLinksSettingsRow: View {
     @State
     private var selection: URL?
 
-    /// 右对齐的标签与 278 pt 宽的弹出菜单，下面一行说明。
+    /// 右对齐的标签与占满控件列的弹出菜单，下面一行说明。
     var body: some View {
-        GridRow(alignment: .firstTextBaseline) {
-            Text(AppLocalization.text("settings.github"))
-                .gridColumnAlignment(.trailing)
-
+        SettingsRow(AppLocalization.text("settings.github")) {
             VStack(alignment: .leading, spacing: 4) {
                 Picker("", selection: choice) {
                     ForEach(applications, id: \.self) { application in
@@ -29,15 +26,15 @@ struct GitHubLinksSettingsRow: View {
                     }
                 }
                 .labelsHidden()
-                .frame(width: 278)
+                .settingsColumnWidth()
                 .disabled(applications.isEmpty)
                 .accessibilityLabel(AppLocalization.text("settings.github"))
 
                 Text(AppLocalization.text("settings.github.help"))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
-                    .frame(width: 278, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
+                    .settingsColumnWidth()
             }
         }
         .onAppear(perform: reload)

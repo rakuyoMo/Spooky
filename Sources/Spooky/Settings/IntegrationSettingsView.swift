@@ -8,29 +8,22 @@ struct IntegrationSettingsView: View {
     @AppStorage(CrashReporter.alwaysSendKey)
     private var alwaysSendsCrashReports = false
 
-    /// 标签右对齐、控件列 278 pt 的表单，组间以分隔线隔开。
+    /// 标签右对齐、控件列从 562 pt 起宽 254 pt 的表单，组间以分隔线隔开。
     var body: some View {
-        Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+        SettingsForm(layout: .integration) {
             GitHubLinksSettingsRow()
 
-            Divider()
-                .gridCellUnsizedAxes(.horizontal)
+            SettingsSeparator()
 
             SSHAgentSettingsRow()
 
-            Divider()
-                .gridCellUnsizedAxes(.horizontal)
+            SettingsSeparator(next: .checkbox)
 
-            GridRow {
-                Text(AppLocalization.text("settings.crashReports"))
-                    .gridColumnAlignment(.trailing)
-
+            SettingsRow(AppLocalization.text("settings.crashReports")) {
                 Toggle(AppLocalization.text("settings.crashReports.always"), isOn: $alwaysSendsCrashReports)
                     .fixedSize(horizontal: false, vertical: true)
-                    .frame(width: 278, alignment: .leading)
+                    .settingsColumnWidth()
             }
         }
-        .padding(40)
-        .frame(width: 900, alignment: .top)
     }
 }

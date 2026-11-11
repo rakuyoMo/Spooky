@@ -27,32 +27,32 @@ struct GitIdentityRows: View {
     @FocusState
     private var focusedKey: String?
 
+    /// 所在页的列位置。
+    @Environment(\.settingsFormLayout)
+    private var layout
+
     /// 两行输入框共用 52 pt 的头像，头像盖住两行的高度；说明在控件列下方。
     var body: some View {
-        GridRow {
-            label("gitConfig.userName")
-
+        SettingsRow(AppLocalization.text("gitConfig.userName")) {
             field($name, key: GlobalGitConfiguration.Key.userName, label: "gitConfig.userName")
                 .overlay(alignment: .topTrailing) {
                     avatar
                 }
         }
 
-        GridRow {
-            label("gitConfig.email")
-
+        SettingsRow(AppLocalization.text("gitConfig.email")) {
             field($email, key: GlobalGitConfiguration.Key.userEmail, label: "gitConfig.email")
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             Text(AppLocalization.text("gitConfig.scope", HomePath.abbreviated(GlobalGitConfig.filePath())))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(width: 278, alignment: .leading)
+                .settingsColumnWidth()
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
         .onChange(of: model.configuration, initial: true) {
             name = model.configuration.userName ?? ""
             email = model.configuration.userEmail ?? ""
@@ -123,18 +123,12 @@ extension GitIdentityRows {
         Button(AppLocalization.text("profiles.manage")) { SettingsWindowController.show(.userProfiles) }
     }
 
-    /// 右对齐的标签。
-    private func label(_ key: String) -> some View {
-        Text(AppLocalization.text(key))
-            .gridColumnAlignment(.trailing)
-    }
-
     /// 让出头像位置的输入框；回车或失去焦点时写入有变化的值。
     private func field(_ text: Binding<String>, key: String, label: String) -> some View {
         TextField("", text: text)
             .focused($focusedKey, equals: key)
-            .frame(width: 278 - 8 - Self.avatarSize)
-            .frame(width: 278, alignment: .leading)
+            .frame(width: layout.controlWidth - 8 - Self.avatarSize)
+            .frame(width: layout.controlWidth, alignment: .leading)
             .accessibilityLabel(AppLocalization.text(label))
             .onSubmit { save(text.wrappedValue, for: key) }
             .onChange(of: focusedKey == key) { _, focused in

@@ -19,18 +19,15 @@ struct UpdatesSettingsView: View {
     @State
     private var state = UpdaterState(updater: UpdateController.shared.updater)
 
-    /// 通道一组，与下方的检查设置之间用分隔线隔开；标签右对齐，控件列 250 pt。
+    /// 通道一组，与下方的检查设置之间用分隔线隔开；标签右对齐，控件列从 558 pt 起宽 250 pt。
     var body: some View {
-        Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+        SettingsForm(layout: .updates) {
             channelRow
 
-            Divider()
-                .gridCellUnsizedAxes(.horizontal)
+            SettingsSeparator(next: .checkbox)
 
             checkRows
         }
-        .padding(40)
-        .frame(width: 900, alignment: .top)
     }
 }
 
@@ -39,17 +36,14 @@ struct UpdatesSettingsView: View {
 extension UpdatesSettingsView {
     /// 更新通道的弹出菜单。
     private var channelRow: some View {
-        GridRow {
-            Text(AppLocalization.text("updates.channel"))
-                .gridColumnAlignment(.trailing)
-
+        SettingsRow(AppLocalization.text("updates.channel")) {
             Picker("", selection: $channel) {
                 ForEach(UpdateChannel.allCases) {
                     Text($0.title).tag($0.rawValue)
                 }
             }
             .labelsHidden()
-            .frame(width: 250)
+            .settingsColumnWidth()
             .accessibilityLabel(AppLocalization.text("updates.channel"))
         }
     }
@@ -59,9 +53,7 @@ extension UpdatesSettingsView {
     private var checkRows: some View {
         let updater = state.updater
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             Toggle(
                 AppLocalization.text("updates.automaticChecks"),
                 isOn: Binding(
@@ -69,12 +61,10 @@ extension UpdatesSettingsView {
                     set: { updater.automaticallyChecksForUpdates = $0 }
                 )
             )
-            .frame(width: 250, alignment: .leading)
+            .settingsColumnWidth()
         }
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             // 自动下载依赖自动检查；Bundle 所在位置不能写入时 Sparkle 也不允许自动安装
             Toggle(
                 AppLocalization.text("updates.automaticDownloads"),
@@ -83,23 +73,24 @@ extension UpdatesSettingsView {
                     set: { updater.automaticallyDownloadsUpdates = $0 }
                 )
             )
-            .frame(width: 250, alignment: .leading)
+            .settingsColumnWidth()
             .disabled(!state.automaticallyChecks || !state.allowsAutomaticUpdates)
         }
+        .padding(.top, SettingsFormLayout.checkboxSpacing)
 
+        // 勾选框组与下方的弹出菜单相隔 12
         intervalRow
+            .padding(.top, SettingsFormLayout.checkboxGroupSpacing)
 
         lastCheckRow
+            .padding(.top, SettingsFormLayout.rowSpacing)
     }
 
     /// 自动检查间隔的弹出菜单；关闭自动检查时禁用。
     private var intervalRow: some View {
         let updater = state.updater
 
-        return GridRow {
-            Text(AppLocalization.text("updates.interval"))
-                .gridColumnAlignment(.trailing)
-
+        return SettingsRow(AppLocalization.text("updates.interval")) {
             Picker(
                 "",
                 selection: Binding(
@@ -112,7 +103,7 @@ extension UpdatesSettingsView {
                 }
             }
             .labelsHidden()
-            .frame(width: 250)
+            .settingsColumnWidth()
             .disabled(!state.automaticallyChecks)
             .accessibilityLabel(AppLocalization.text("updates.interval"))
         }
@@ -120,10 +111,7 @@ extension UpdatesSettingsView {
 
     /// 最近一次检查的时间；从未检查时以次要颜色显示 Never。
     private var lastCheckRow: some View {
-        GridRow {
-            Text(AppLocalization.text("updates.lastCheck"))
-                .gridColumnAlignment(.trailing)
-
+        SettingsRow(AppLocalization.text("updates.lastCheck")) {
             Group {
                 if let date = state.lastCheck {
                     Text(date.formatted(date: .long, time: .shortened))
@@ -132,7 +120,7 @@ extension UpdatesSettingsView {
                         .foregroundStyle(.secondary)
                 }
             }
-            .frame(width: 250, alignment: .leading)
+            .settingsColumnWidth()
         }
     }
 

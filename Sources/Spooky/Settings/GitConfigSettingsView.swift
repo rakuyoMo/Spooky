@@ -9,31 +9,30 @@ struct GitConfigSettingsView: View {
     @State
     private var model = GlobalGitConfigModel()
 
-    /// 标签右对齐、控件列 278 pt 的表单，读写失败时在底部说明。
+    /// 标签右对齐、控件列从 490 pt 起宽 310 pt 的表单，读写失败时在底部说明。
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Grid(horizontalSpacing: 8, verticalSpacing: 8) {
-                GitIdentityRows(model: model)
+        SettingsForm(layout: .gitConfig) {
+            GitIdentityRows(model: model)
 
-                Divider()
-                    .gridCellUnsizedAxes(.horizontal)
+            SettingsSeparator()
 
-                GitProgramSettingsRow()
+            GitProgramSettingsRow()
 
+            VStack(alignment: .leading, spacing: 0) {
                 ExternalToolSettingsRows()
-
-                Divider()
-                    .gridCellUnsizedAxes(.horizontal)
-
-                GitSigningRows(model: model)
             }
+            .padding(.top, SettingsFormLayout.rowSpacing)
+
+            SettingsSeparator()
+
+            GitSigningRows(model: model)
 
             if let failure = model.failure {
                 GitConfigFailureView(failure: failure)
+                    .padding(.top, 16)
+                    .padding(.horizontal, SettingsFormLayout.separatorInset)
             }
         }
-        .padding(40)
-        .frame(width: 900, alignment: .top)
         .task {
             await model.reload()
             await model.reloadKeys()

@@ -26,23 +26,19 @@ struct GitProgramSettingsRow: View {
     @State
     private var rejected: GitProgram?
 
-    /// 右对齐的标签加 278 pt 宽的弹出菜单，下一行是最低版本。
+    /// 右对齐的标签加占满控件列的弹出菜单，下一行是最低版本。
     var body: some View {
-        GridRow {
-            Text(AppLocalization.text("settings.gitProgram"))
-                .gridColumnAlignment(.trailing)
-
+        SettingsRow(AppLocalization.text("settings.gitProgram")) {
             picker
         }
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             Text(AppLocalization.text("settings.gitProgram.minimum", GitVersion.minimum.description))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
-                .frame(width: 278, alignment: .leading)
+                .settingsColumnWidth()
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
     }
 
     /// 创建 Git binary 一行。
@@ -74,7 +70,7 @@ extension GitProgramSettingsRow {
             Text(AppLocalization.text("settings.gitProgram.choose")).tag(Self.chooseTag)
         }
         .labelsHidden()
-        .frame(width: 278)
+        .settingsColumnWidth()
         .accessibilityLabel(AppLocalization.text("settings.gitProgram"))
         .task(id: preferences.gitExecutable) { await load() }
         .alert(

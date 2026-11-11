@@ -8,19 +8,16 @@ struct AutoFetchSettingsRow: View {
     @AppStorage(RepositoryAutoFetch.intervalKey)
     private var interval = RepositoryAutoFetch.defaultInterval
 
-    /// 右对齐的标签与 278 pt 宽的弹出菜单。
+    /// 右对齐的标签与占满控件列的弹出菜单。
     var body: some View {
-        GridRow {
-            Text(AppLocalization.text("settings.autoFetch"))
-                .gridColumnAlignment(.trailing)
-
+        SettingsRow(AppLocalization.text("settings.autoFetch")) {
             Picker("", selection: $interval) {
                 ForEach(RepositoryAutoFetch.intervals, id: \.self) { seconds in
                     Text(Self.title(seconds)).tag(seconds)
                 }
             }
             .labelsHidden()
-            .frame(width: 278)
+            .settingsColumnWidth()
             .accessibilityLabel(AppLocalization.text("settings.autoFetch"))
         }
     }

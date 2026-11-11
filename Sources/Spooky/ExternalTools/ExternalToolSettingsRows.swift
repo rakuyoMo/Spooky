@@ -5,7 +5,7 @@ import SwiftUI
 
 /// Git Config 页的外部工具组：比较工具与目录对比、合并工具与保留冲突备份文件。
 ///
-/// 与 General 页的写法相同：放在 `Grid` 里，标签右对齐，控件列 278 pt。
+/// 与 General 页的写法相同：放在 `SettingsForm` 里，标签右对齐，弹出菜单占满控件列。
 struct ExternalToolSettingsRows: View {
     /// 比较工具的标识；空字符串表示还没有选。
     @AppStorage(ExternalTool.diffToolKey)
@@ -25,38 +25,33 @@ struct ExternalToolSettingsRows: View {
 
     /// 比较工具一行、目录对比一行、合并工具一行、保留备份一行。
     var body: some View {
-        GridRow {
-            Text(AppLocalization.text("externalTool.diffTool"))
-                .gridColumnAlignment(.trailing)
-
+        SettingsRow(AppLocalization.text("externalTool.diffTool")) {
             ExternalToolPopUp(selection: $diffTool, merge: false)
-                .frame(width: 278)
+                .settingsColumnWidth()
                 .accessibilityLabel(AppLocalization.text("externalTool.diffTool"))
         }
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        // 附在弹出菜单下面的单个勾选框
+        SettingsRow {
             Toggle(AppLocalization.text("externalTool.directoryDiff"), isOn: $compareDirectory)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(width: 278, alignment: .leading)
+                .settingsColumnWidth()
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            Text(AppLocalization.text("externalTool.mergeTool"))
-
+        SettingsRow(AppLocalization.text("externalTool.mergeTool")) {
             ExternalToolPopUp(selection: $mergeTool, merge: true)
-                .frame(width: 278)
+                .settingsColumnWidth()
                 .accessibilityLabel(AppLocalization.text("externalTool.mergeTool"))
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             Toggle(AppLocalization.text("externalTool.keepBackups"), isOn: $keepBackups)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(width: 278, alignment: .leading)
+                .settingsColumnWidth()
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
     }
 }
 

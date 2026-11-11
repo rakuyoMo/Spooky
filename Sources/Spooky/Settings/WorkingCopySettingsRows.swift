@@ -26,10 +26,9 @@ struct WorkingCopySettingsRows: View {
     @AppStorage(WorkingCopyPreferences.truncation)
     private var truncation = WorkingCopyPreferences.Truncation.middle
 
-    /// 与 General 页其它行相同：右对齐的标签加 278 pt 宽的弹出菜单。
+    /// 与 General 页其它行相同：右对齐的标签加占满控件列的弹出菜单。
     var body: some View {
-        GridRow {
-            Text(AppLocalization.text("files.doubleClick"))
+        SettingsRow(AppLocalization.text("files.doubleClick")) {
             picker("files.doubleClick", selection: $doubleClick) { action in
                 switch action {
                 case .openFile: AppLocalization.text("files.doubleClick.openFile")
@@ -39,15 +38,13 @@ struct WorkingCopySettingsRows: View {
         }
 
         // 紧跟在双击动作下方，标签列留空
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             Toggle(AppLocalization.text("files.openSubmodules"), isOn: $opensSubmodules)
-                .frame(width: 278, alignment: .leading)
+                .settingsColumnWidth()
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            Text(AppLocalization.text("files.spacebar"))
+        SettingsRow(AppLocalization.text("files.spacebar")) {
             picker("files.spacebar", selection: $spacebar) { action in
                 switch action {
                 case .toggleStaging: AppLocalization.text("files.spacebar.toggleStaging")
@@ -55,9 +52,9 @@ struct WorkingCopySettingsRows: View {
                 }
             }
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            Text(AppLocalization.text("files.fontSize"))
+        SettingsRow(AppLocalization.text("files.fontSize")) {
             picker("files.fontSize", selection: $fontSize) { size in
                 switch size {
                 case .regular: AppLocalization.text("files.fontSize.regular")
@@ -65,9 +62,9 @@ struct WorkingCopySettingsRows: View {
                 }
             }
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            Text(AppLocalization.text("files.truncation"))
+        SettingsRow(AppLocalization.text("files.truncation")) {
             picker("files.truncation", selection: $truncation) { mode in
                 switch mode {
                 case .beginning: AppLocalization.text("files.truncation.beginning")
@@ -75,6 +72,7 @@ struct WorkingCopySettingsRows: View {
                 }
             }
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
     }
 
     /// 选项逐个列出的弹出菜单，标签只给辅助技术使用。
@@ -89,7 +87,7 @@ struct WorkingCopySettingsRows: View {
             }
         }
         .labelsHidden()
-        .frame(width: 278)
+        .settingsColumnWidth()
         .accessibilityLabel(AppLocalization.text(key))
     }
 }

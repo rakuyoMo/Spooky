@@ -119,43 +119,41 @@ struct EditorSettingsView: View {
     @AppStorage(CommitEditorSettings.completesIssuesKey)
     private var completesIssues = true
 
-    /// 标签列右对齐，控件列左对齐。
+    /// 标签列右对齐，控件列从 517 pt 起左对齐。
     var body: some View {
-        Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 8) {
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+        SettingsForm(layout: .editor) {
+            SettingsRow {
                 Toggle(AppLocalization.text("editor.showsCounter"), isOn: $showsCounter)
             }
 
             // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐。
-            GridRow(alignment: .center) {
-                Text(AppLocalization.text("editor.subjectLimit"))
-                    .gridColumnAlignment(.trailing)
+            SettingsRow(AppLocalization.text("editor.subjectLimit"), alignment: .center) {
                 limitBox($subjectLimit, label: "editor.subjectLimit", choices: CommitEditorSettings.subjectLimitChoices)
             }
+            .padding(.top, SettingsFormLayout.rowSpacing)
 
-            GridRow {
-                Text(AppLocalization.text("editor.wrapping"))
+            SettingsRow(AppLocalization.text("editor.wrapping")) {
                 Picker(AppLocalization.text("editor.wrapping"), selection: $wrapping) {
                     Text(AppLocalization.text("editor.softWrap")).tag(CommitEditorSettings.Wrapping.soft.rawValue)
                     Text(AppLocalization.text("editor.hardWrap")).tag(CommitEditorSettings.Wrapping.hard.rawValue)
                 }
                 .labelsHidden()
+                .buttonSizing(.flexible)
                 .frame(width: 120)
             }
+            .padding(.top, SettingsFormLayout.rowSpacing)
 
             // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐。
-            GridRow(alignment: .center) {
-                Text(AppLocalization.text("editor.bodyLimit"))
+            SettingsRow(AppLocalization.text("editor.bodyLimit"), alignment: .center) {
                 limitBox($bodyLineLimit, label: "editor.bodyLimit", choices: CommitEditorSettings.bodyLineLimitChoices)
             }
+            .padding(.top, SettingsFormLayout.rowSpacing)
 
             commentRows
 
             issueRow
         }
-        .padding(40)
-        .frame(width: 900, height: 360, alignment: .top)
+        .frame(height: 360, alignment: .top)
     }
 }
 
@@ -165,29 +163,28 @@ extension EditorSettingsView {
     /// 参考线与注释行的三个勾选框；“总是删除” 只在提示关闭时可用。
     @ViewBuilder
     private var commentRows: some View {
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+        // 附在正文字数组合框下面的单个勾选框
+        SettingsRow {
             Toggle(AppLocalization.text("editor.showsGuide"), isOn: $showsGuide)
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+        // 注释行的两项自成一组，与上面多隔 12
+        SettingsRow {
             Toggle(AppLocalization.text("editor.warnsComments"), isOn: $warnsComments)
-                .padding(.top, 12)
         }
+        .padding(.top, SettingsFormLayout.rowSpacing + 12)
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+        SettingsRow {
             Toggle(AppLocalization.text("editor.stripsComments"), isOn: $stripsComments)
                 .disabled(warnsComments)
         }
+        .padding(.top, SettingsFormLayout.checkboxSpacing)
     }
 
     /// Issue 编号补全的勾选框与 11 pt 说明。
     private var issueRow: some View {
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             VStack(alignment: .leading, spacing: 4) {
                 Toggle(AppLocalization.text("editor.completesIssues"), isOn: $completesIssues)
 
@@ -196,8 +193,8 @@ extension EditorSettingsView {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.top, 12)
         }
+        .padding(.top, SettingsFormLayout.rowSpacing + 12)
     }
 
     /// 60 pt 宽的字数上限组合框。

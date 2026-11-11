@@ -12,12 +12,9 @@ struct SSHAgentSettingsRow: View {
     @State
     private var showsWarning = false
 
-    /// 右对齐的标签加 278 pt 宽的弹出菜单，下一行是说明。
+    /// 右对齐的标签加占满控件列的弹出菜单，下一行是说明。
     var body: some View {
-        GridRow {
-            Text(AppLocalization.text("settings.sshAgent"))
-                .gridColumnAlignment(.trailing)
-
+        SettingsRow(AppLocalization.text("settings.sshAgent")) {
             HStack(spacing: 8) {
                 picker
 
@@ -27,15 +24,14 @@ struct SSHAgentSettingsRow: View {
             }
         }
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             Text(AppLocalization.text("settings.sshAgent.description"))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
-                .frame(width: 278, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
+                .settingsColumnWidth()
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
     }
 
     /// 创建 SSH Agent 一行。
@@ -63,7 +59,7 @@ extension SSHAgentSettingsRow {
             }
         }
         .labelsHidden()
-        .frame(width: 278)
+        .settingsColumnWidth()
         .accessibilityLabel(AppLocalization.text("settings.sshAgent"))
     }
 

@@ -63,58 +63,52 @@ struct GitSigningRows: View {
     @State
     private var shownNotice: Notice?
 
-    /// 依次排列的七行；控件列 278 pt，警告按钮挂在控件右侧。
+    /// 依次排列的七行；弹出菜单占满控件列，警告按钮挂在控件右侧。
     var body: some View {
-        GridRow {
-            label("gitConfig.sshProgram")
-
+        SettingsRow(AppLocalization.text("gitConfig.sshProgram")) {
             sshProgramPicker
                 .overlay(alignment: .trailing) { caution(sshNotice) }
         }
 
-        GridRow {
-            label("gitConfig.gpgProgram")
-
+        SettingsRow(AppLocalization.text("gitConfig.gpgProgram")) {
             gpgProgramPicker
                 .overlay(alignment: .trailing) { caution(gpgNotice) }
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            label("gitConfig.signingKey")
-
+        SettingsRow(AppLocalization.text("gitConfig.signingKey")) {
             signingKeyPicker
                 .overlay(alignment: .trailing) { caution(mismatchNotice) }
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             Text(AppLocalization.text("gitConfig.agentKeys"))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
-                .frame(width: 278, alignment: .leading)
+                .settingsColumnWidth()
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            label("gitConfig.allowedSigners")
+        SettingsRow(AppLocalization.text("gitConfig.allowedSigners")) {
             allowedSignersPicker
         }
+        .padding(.top, SettingsFormLayout.rowSpacing)
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        // 勾选框组与上方的弹出菜单相隔 12，组内相隔 4
+        SettingsRow {
             Toggle(AppLocalization.text("gitConfig.signCommits"), isOn: signsCommits)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(width: 278, alignment: .leading)
+                .settingsColumnWidth()
         }
+        .padding(.top, SettingsFormLayout.checkboxGroupSpacing)
 
-        GridRow {
-            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-
+        SettingsRow {
             Toggle(AppLocalization.text("gitConfig.ensureEmailMatch"), isOn: $ensuresEmailMatch)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(width: 278, alignment: .leading)
+                .settingsColumnWidth()
         }
+        .padding(.top, SettingsFormLayout.checkboxSpacing)
         .alert(
             shownNotice?.title ?? "",
             isPresented: Binding(get: { shownNotice != nil }, set: { if !$0 { shownNotice = nil } }),
@@ -188,12 +182,6 @@ extension GitSigningRows {
                 Task { await model.write([(GlobalGitConfiguration.Key.signsCommits, enabled ? "true" : "false")]) }
             }
         )
-    }
-
-    /// 右对齐的标签。
-    func label(_ key: String) -> some View {
-        Text(AppLocalization.text(key))
-            .gridColumnAlignment(.trailing)
     }
 
     /// 控件右侧 8 pt 外的黄色警告按钮；没有问题时不占位置。
