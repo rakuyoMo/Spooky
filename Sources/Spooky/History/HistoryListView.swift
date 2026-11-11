@@ -272,6 +272,9 @@ struct HistoryCommitTable: NSViewRepresentable {
         /// 选中背景与引用徽标保持一致。
         private var selection = Set<String>()
 
+        /// 会话的选择改变后还没有滚到的选中行；刷新重载后表格恢复原有选中时不滚动。
+        private var revealsSelection = false
+
         /// 程序恢复选区时忽略表格的中间通知，防止 reloadData 清空业务选择。
         private var isUpdating = false
 
@@ -293,6 +296,10 @@ struct HistoryCommitTable: NSViewRepresentable {
             let ids = history.rows.map(\.id)
             let markers = [history.unpushed, history.unpulled, history.parentCommits]
 
+            if selection != history.selectedIDs {
+                revealsSelection = true
+            }
+
             if
                 displayed != ids || changedStyle || snapshot != history.snapshot
                 || trackingMarkers != markers || selection != history.selectedIDs
@@ -304,7 +311,8 @@ struct HistoryCommitTable: NSViewRepresentable {
                 table.reloadData()
             }
 
-            // 程序改变的选择滚动到可见处；用户点选时表格的选区已经一致
+            // 重载会清空表格的选区，这里按会话的选择恢复；只有会话的选择改变时才滚到选中行，
+            // 引用变化等刷新引起的重载保持用户滚到的位置
             let indexes = IndexSet(history.rows.indices.filter { row in
                 history.rows[row].commit.map { history.selectedIDs.contains($0.id) } ?? false
             })
@@ -312,9 +320,14 @@ struct HistoryCommitTable: NSViewRepresentable {
             if table.selectedRowIndexes != indexes {
                 table.selectRowIndexes(indexes, byExtendingSelection: false)
 
-                if let first = indexes.first {
+                if revealsSelection, let first = indexes.first {
                     Task { @MainActor in table.scrollRowToVisible(first) }
                 }
+            }
+
+            // 选中的提交还没有读进列表时保留标记，等它出现时再滚动
+            if !indexes.isEmpty {
+                revealsSelection = false
             }
 
             // 回到历史时找到的提交滚动到列表中间并让列表获得焦点，等表格完成布局后再滚动

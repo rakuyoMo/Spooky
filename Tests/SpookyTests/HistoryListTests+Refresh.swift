@@ -1,5 +1,7 @@
+import AppKit
 import Foundation
 import Observation
+import SwiftUI
 import Synchronization
 import Testing
 import TestSupport
@@ -68,5 +70,116 @@ extension HistoryListTests {
         #expect(history.changes.isEmpty)
         #expect(history.expandedPaths.isEmpty)
         #expect(history.diffs.isEmpty)
+    }
+
+    /// 会话的选择改变时列表滚到选中的提交；引用变化引起的刷新重载列表后恢复原有选中，
+    /// 不把用户滚开的列表滚回选中的提交。
+    @Test("引用变化后历史列表的滚动位置不变")
+    func refreshKeepsScrollPosition() async throws {
+        let fixture = try await Self.makeSession(commits: (0 ..< 60).map { "commit \($0)" })
+        defer { fixture.close() }
+
+        let session = fixture.session
+        let history = session.history
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+
+        window.contentView = NSHostingView(
+            rootView: HistoryCommitTable(
+                session: session,
+                showGraph: false,
+                smallRows: false,
+                dateFormat: .absolute,
+                createBranch: { _ in },
+                openCommit: { }
+            )
+        )
+
+        let root = try #require(window.contentView)
+        var found: NSTableView? = nil
+
+        await until {
+            root.layoutSubtreeIfNeeded()
+            found = Self.commitTable(in: root)
+
+            return found?.numberOfRows == history.rows.count
+        }
+
+        let table = try #require(found)
+
+        // 选中排在可见区之外的提交，列表滚到它
+        let target = try #require(history.commits.dropFirst(40).first)
+        let row = try #require(history.row(of: target.id))
+
+        history.selectedIDs = [target.id]
+
+        await until {
+            root.layoutSubtreeIfNeeded()
+
+            return table.visibleRect.contains(table.rect(ofRow: row))
+        }
+
+        await untilFinished { history.activeTasks }
+
+        // 用户把列表滚回顶部，选中的提交移出可见区
+        table.scroll(.zero)
+
+        let position = table.visibleRect.minY
+
+        #expect(!table.visibleRect.intersects(table.rect(ofRow: row)))
+
+        // 新建分支后刷新：引用变化让列表重载，表格按会话的选择恢复选中时发出选择变化的通知
+        let selectionChanges = Mutex(0)
+
+        let observer = NotificationCenter.default.addObserver(
+            forName: NSTableView.selectionDidChangeNotification,
+            object: table,
+            queue: nil
+        ) { _ in
+            selectionChanges.withLock { $0 += 1 }
+        }
+
+        defer { NotificationCenter.default.removeObserver(observer) }
+
+        _ = try await fixture.runner.run(["branch", "marker"])
+        session.refresh()
+        await session.waitForRefresh()
+        await untilFinished { history.activeTasks }
+
+        await until {
+            root.layoutSubtreeIfNeeded()
+
+            return selectionChanges.withLock { $0 } > 0 && table.selectedRowIndexes == [row]
+        }
+
+        // 恢复选中时排进主线程的工作都执行完，再核对滚动位置
+        await Task { @MainActor in }.value
+
+        let references = try #require(history.snapshot).references
+
+        #expect(references.contains { $0.name == "marker" })
+        #expect(history.selectedIDs == [target.id])
+        #expect(table.visibleRect.minY == position)
+    }
+}
+
+// MARK: - Helpers
+
+extension HistoryListTests {
+    /// 视图层级里的历史提交表格。
+    private static func commitTable(in view: NSView) -> NSTableView? {
+        if let table = view as? HistoryCommitTable.CommitTableView {
+            return table
+        }
+
+        return view.subviews.lazy.compactMap { commitTable(in: $0) }.first
     }
 }
