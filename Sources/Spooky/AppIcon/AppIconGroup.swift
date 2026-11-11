@@ -15,6 +15,10 @@ enum AppIconGroup: String, CaseIterable, Identifiable {
     /// 偏好键，保存 `rawValue`。
     static let key = "appIconGroup"
 
+    /// 底板四周的透明边占图标边长的比例：每组图标的底板都从 1024 网格的 (100, 100) 画起，见 `scripts/make-icon.js`；
+    /// 与图标并排的文字和控件按底板排齐。
+    static let plateInset = 100.0 / 1024
+
     /// SwiftUI 列表以 `rawValue` 作为稳定身份。
     var id: String { rawValue }
 

@@ -49,7 +49,7 @@ final class AboutWindowController: NSWindowController {
 
 /// 关于窗口的内容：左栏是图标、名称、版本与 Release Notes，右栏是说明、版权与 Acknowledgements、License 两个按钮。
 ///
-/// 左栏从上往下排；右栏的说明从上往下排、顶边与图标对齐，版权与两个按钮从下往上排，两个按钮与 Release Notes 基线对齐。
+/// 左栏从上往下排；右栏的说明从上往下排、字顶与图标底板的顶边对齐，版权与两个按钮从下往上排，两个按钮与 Release Notes 基线对齐。
 final class AboutViewController: NSViewController {
     /// 窗口边缘与两栏之间的间距。
     private static let margin: CGFloat = 30
@@ -63,8 +63,27 @@ final class AboutViewController: NSViewController {
     /// 右栏的宽度：窗口宽度减去图标与三处间距。
     private static let columnWidth = AboutWindowController.size.width - iconSize - margin * 3
 
-    /// 应用图标，显示时取当前的运行时图标。
+    /// 应用图标，与运行中的 Dock 相同，随换组、图标样式、深浅与连接状态更新。
     private let iconView = NSImageView()
+
+    /// App 图标的控制器；App 不是经 `SpookyApplicationController` 启动时为 nil，图标取 `NSApp.applicationIconImage`。
+    private let appIconController: AppIconController?
+
+    /// 建立关于窗口的内容。
+    ///
+    /// - Parameter appIconController: App 图标的控制器，默认取 App 自己的；测试传入指向临时 App 的控制器。
+    init(
+        appIconController: AppIconController? = (NSApp.delegate as? SpookyApplicationController)?.appIconController
+    ) {
+        self.appIconController = appIconController
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    /// 内容只由代码创建。
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        nil
+    }
 
     /// 版本行：短版本号与构建号，如 “Version 0.12.0 (1)”。
     ///
@@ -142,11 +161,11 @@ final class AboutViewController: NSViewController {
         view = background
     }
 
-    /// 每次显示时换上当前的应用图标，连接状态改变后图标也跟着变。
-    override func viewWillAppear() {
-        super.viewWillAppear()
+    /// 换上当前的应用图标，之后图标变了就跟着换，窗口开着时也一样。
+    override func viewDidLoad() {
+        super.viewDidLoad()
 
-        iconView.image = NSApp.applicationIconImage
+        observeIcon()
     }
 
     /// Acknowledgements：以 sheet 列出第三方库与各自的许可证。
@@ -163,6 +182,18 @@ final class AboutViewController: NSViewController {
         }
 
         presentAsSheet(AboutDocumentViewController(document: document))
+    }
+
+    /// 显示当前的应用图标，图标变化后重新显示并重新订阅。
+    private func observeIcon() {
+        iconView.image = withObservationTracking {
+            AppIconController.displayedIcon(of: appIconController)
+        } onChange: { [weak self] in
+            // 变更通知早于新值写入，下一轮主线程再显示并重新订阅。
+            Task { @MainActor in
+                self?.observeIcon()
+            }
+        }
     }
 
     /// 左栏：图标距左 30、距上 40，名称、版本与 Release Notes 依次排在下面，都与图标水平居中。
@@ -189,19 +220,22 @@ final class AboutViewController: NSViewController {
         ]
     }
 
-    /// 右栏：从图标右边 30 起到距右 30；说明的顶边与图标的顶边对齐，两个按钮在版权下 20，左右分别对齐说明的两边、宽度相同；
-    /// 版权与说明之间至少 20，多出的空间留在两者之间。
+    /// 右栏：从图标右边 30 起到距右 30；说明第一行大写字母的顶边与图标底板的顶边对齐，
+    /// 两个按钮在版权下 20，左右分别对齐说明的两边、宽度相同；版权与说明之间至少 20，多出的空间留在两者之间。
     private func rightColumn(
         in background: NSView,
-        credits: NSView,
+        credits: NSTextField,
         copyright: NSView,
         buttons: (acknowledgements: NSView, license: NSView),
         baseline releaseNotes: NSView
     ) -> [NSLayoutConstraint] {
-        [
+        // 图标四周是透明边，按看得见的底板对齐：说明第一行的基线在底板顶边往下一个大写字母高处
+        let creditsBaseline = Self.iconSize * AppIconGroup.plateInset + (credits.font?.capHeight ?? 0)
+
+        return [
             credits.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: Self.margin),
             background.trailingAnchor.constraint(equalTo: credits.trailingAnchor, constant: Self.margin),
-            credits.topAnchor.constraint(equalTo: iconView.topAnchor),
+            credits.firstBaselineAnchor.constraint(equalTo: iconView.topAnchor, constant: creditsBaseline),
 
             copyright.leadingAnchor.constraint(equalTo: credits.leadingAnchor),
             copyright.trailingAnchor.constraint(equalTo: credits.trailingAnchor),
