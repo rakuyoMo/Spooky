@@ -82,6 +82,9 @@ struct AboutTests {
             to: resources.appending(path: AppIconGroup.serverGhost.iconName(for: .standard) + ".icns")
         )
 
+        // 取系统给出的包图标时，LaunchServices 登记了这个临时 App；删掉文件后登记还在，要另外注销
+        defer { Self.unregister(app) }
+
         _ = NSApplication.shared
 
         let controller = try AppIconController(
@@ -295,5 +298,23 @@ extension AboutTests {
     /// 视图层级里的第一个文本视图。
     private static func textView(in view: NSView) -> NSTextView? {
         (view as? NSTextView) ?? view.subviews.lazy.compactMap { textView(in: $0) }.first
+    }
+
+    /// 把临时 App 从 LaunchServices 注销；不等注销结束，注销不成功只是多留一条登记。
+    /// - Parameter app: 临时 App 包的位置，文件还在
+    private static func unregister(_ app: URL) {
+        // LaunchServices 按解析过符号链接的路径登记，如 `/private/var/folders/…`；传 `/var/folders/…` 注销不掉
+        let path = (try? app.resourceValues(forKeys: [.canonicalPathKey]).canonicalPath) ?? app.path
+
+        let process = Process()
+
+        process.executableURL = URL(
+            filePath: "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+        )
+        process.arguments = ["-u", path]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+
+        try? process.run()
     }
 }
