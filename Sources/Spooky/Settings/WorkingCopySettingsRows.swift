@@ -52,7 +52,7 @@ struct WorkingCopySettingsRows: View {
                 }
             }
         }
-        .padding(.top, SettingsFormLayout.rowSpacing)
+        .padding(.top, SettingsFormLayout.popUpAfterCheckboxSpacing)
 
         SettingsRow(AppLocalization.text("files.fontSize")) {
             picker("files.fontSize", selection: $fontSize) { size in
@@ -62,7 +62,7 @@ struct WorkingCopySettingsRows: View {
                 }
             }
         }
-        .padding(.top, SettingsFormLayout.rowSpacing)
+        .padding(.top, SettingsFormLayout.popUpSpacing)
 
         SettingsRow(AppLocalization.text("files.truncation")) {
             picker("files.truncation", selection: $truncation) { mode in
@@ -72,7 +72,7 @@ struct WorkingCopySettingsRows: View {
                 }
             }
         }
-        .padding(.top, SettingsFormLayout.rowSpacing)
+        .padding(.top, SettingsFormLayout.popUpSpacing)
     }
 
     /// 选项逐个列出的弹出菜单，标签只给辅助技术使用。

@@ -5,6 +5,9 @@ import SwiftUI
 /// 设置页表单的列位置与行距：标签列右对齐，控件列在固定位置左对齐，各页只给出自己的控件列。
 ///
 /// 横向坐标都相对 900 pt 宽的设置窗口左缘，指控件可见边框的位置；标签的右缘在控件列左侧 8 pt。
+///
+/// 纵向间距是相邻两行布局框之间的距离：弹出菜单的布局框就是可见边框，单行勾选框的布局框上下就是方块；
+/// 组合框的 1 pt 描边画在布局框外，与它相邻的可见间距比给出的值小 1 pt。
 struct SettingsFormLayout {
     /// 设置窗口的宽度。
     static let windowWidth: CGFloat = 900
@@ -27,14 +30,20 @@ struct SettingsFormLayout {
     /// 弹出菜单与输入框的顶边比同一行标签的顶边高出的距离。
     static let controlLabelInset: CGFloat = 4
 
-    /// 弹出菜单之间，以及附在弹出菜单下面的单个勾选框、说明文字与它的距离。
+    /// 附在控件下面的单个勾选框、说明文字与它的距离，输入框之间的距离，以及组合框与上下相邻控件的距离。
     static let rowSpacing: CGFloat = 8
+
+    /// 弹出菜单之间的距离。
+    static let popUpSpacing: CGFloat = 10
+
+    /// 附在弹出菜单下面的勾选框与下一个弹出菜单的距离。
+    static let popUpAfterCheckboxSpacing: CGFloat = 20
 
     /// 弹出菜单与下方勾选框组的距离。
     static let checkboxGroupSpacing: CGFloat = 12
 
     /// 勾选框之间的距离，两行的勾选框也一样。
-    static let checkboxSpacing: CGFloat = 4
+    static let checkboxSpacing: CGFloat = 6
 
     /// 控件列的左缘。
     let controlLeading: CGFloat

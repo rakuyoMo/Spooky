@@ -44,7 +44,7 @@ struct ExternalToolSettingsRows: View {
                 .settingsColumnWidth()
                 .accessibilityLabel(AppLocalization.text("externalTool.mergeTool"))
         }
-        .padding(.top, SettingsFormLayout.rowSpacing)
+        .padding(.top, SettingsFormLayout.popUpAfterCheckboxSpacing)
 
         SettingsRow {
             Toggle(AppLocalization.text("externalTool.keepBackups"), isOn: $keepBackups)

@@ -44,7 +44,7 @@ struct GeneralSettingsView: View {
             CloneDirectoryRow()
 
             terminalRow
-                .padding(.top, SettingsFormLayout.rowSpacing)
+                .padding(.top, SettingsFormLayout.popUpSpacing)
 
             SettingsSeparator()
 
@@ -84,7 +84,7 @@ extension GeneralSettingsView {
     private var operationRows: some View {
         AutoFetchSettingsRow()
 
-        // 勾选框组与上方的弹出菜单相隔 12，组内相隔 4
+        // 勾选框组与上方的弹出菜单相隔 12，组内相隔 6
         toggleRow("stash.offerAutoStash", isOn: $offerAutoStash)
             .padding(.top, SettingsFormLayout.checkboxGroupSpacing)
 
@@ -98,7 +98,7 @@ extension GeneralSettingsView {
             .padding(.top, SettingsFormLayout.checkboxSpacing)
     }
 
-    /// 丢弃块的警告与服务器仓库的删除、覆盖确认列在一组，逐项打开或关闭；组内相隔 4。
+    /// 丢弃块的警告与服务器仓库的删除、覆盖确认列在一组，逐项打开或关闭；组内相隔 6。
     private var confirmationRows: some View {
         ForEach(Array(ServerConfirmation.allCases.enumerated()), id: \.element) { index, confirmation in
             ConfirmationRow(confirmation: confirmation)
@@ -121,10 +121,10 @@ extension GeneralSettingsView {
         }
 
         CommitDateFormatRow()
-            .padding(.top, SettingsFormLayout.rowSpacing)
+            .padding(.top, SettingsFormLayout.popUpSpacing)
 
         MergeDiffModeRow()
-            .padding(.top, SettingsFormLayout.rowSpacing)
+            .padding(.top, SettingsFormLayout.popUpSpacing)
 
         // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐。
         SettingsRow(AppLocalization.text("working.diffThreshold"), alignment: .center) {

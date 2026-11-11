@@ -74,13 +74,13 @@ struct GitSigningRows: View {
             gpgProgramPicker
                 .overlay(alignment: .trailing) { caution(gpgNotice) }
         }
-        .padding(.top, SettingsFormLayout.rowSpacing)
+        .padding(.top, SettingsFormLayout.popUpSpacing)
 
         SettingsRow(AppLocalization.text("gitConfig.signingKey")) {
             signingKeyPicker
                 .overlay(alignment: .trailing) { caution(mismatchNotice) }
         }
-        .padding(.top, SettingsFormLayout.rowSpacing)
+        .padding(.top, SettingsFormLayout.popUpSpacing)
 
         SettingsRow {
             Text(AppLocalization.text("gitConfig.agentKeys"))
@@ -95,7 +95,7 @@ struct GitSigningRows: View {
         }
         .padding(.top, SettingsFormLayout.rowSpacing)
 
-        // 勾选框组与上方的弹出菜单相隔 12，组内相隔 4
+        // 勾选框组与上方的弹出菜单相隔 12，组内相隔 6
         SettingsRow {
             Toggle(AppLocalization.text("gitConfig.signCommits"), isOn: signsCommits)
                 .fixedSize(horizontal: false, vertical: true)
