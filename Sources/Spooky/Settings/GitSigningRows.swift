@@ -93,7 +93,7 @@ struct GitSigningRows: View {
         SettingsRow(AppLocalization.text("gitConfig.allowedSigners")) {
             allowedSignersPicker
         }
-        .padding(.top, SettingsFormLayout.rowSpacing)
+        .padding(.top, SettingsFormLayout.popUpAfterRowSpacing)
 
         // 勾选框组与上方的弹出菜单相隔 12，组内相隔 6
         SettingsRow {

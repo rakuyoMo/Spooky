@@ -52,7 +52,7 @@ struct WorkingCopySettingsRows: View {
                 }
             }
         }
-        .padding(.top, SettingsFormLayout.popUpAfterCheckboxSpacing)
+        .padding(.top, SettingsFormLayout.popUpAfterRowSpacing)
 
         SettingsRow(AppLocalization.text("files.fontSize")) {
             picker("files.fontSize", selection: $fontSize) { size in

@@ -36,8 +36,8 @@ struct SettingsFormLayout {
     /// 弹出菜单之间的距离。
     static let popUpSpacing: CGFloat = 10
 
-    /// 附在弹出菜单下面的勾选框与下一个弹出菜单的距离。
-    static let popUpAfterCheckboxSpacing: CGFloat = 20
+    /// 弹出菜单与上面不是弹出菜单的一行（附在控件下的勾选框或说明文字、组合框）之间的距离。
+    static let popUpAfterRowSpacing: CGFloat = 20
 
     /// 弹出菜单与下方勾选框组的距离。
     static let checkboxGroupSpacing: CGFloat = 12

@@ -140,7 +140,7 @@ struct EditorSettingsView: View {
                 .buttonSizing(.flexible)
                 .frame(width: 120)
             }
-            .padding(.top, SettingsFormLayout.rowSpacing)
+            .padding(.top, SettingsFormLayout.popUpAfterRowSpacing)
 
             // 组合框是 AppKit 控件，没有文字基线可对，标签与它按竖直居中对齐；字数上限只在硬折行时生效。
             SettingsRow(AppLocalization.text("editor.bodyLimit"), alignment: .center) {
@@ -172,11 +172,10 @@ extension EditorSettingsView {
         }
         .padding(.top, SettingsFormLayout.rowSpacing)
 
-        // 注释行的两项自成一组，与上面多隔 12
         SettingsRow {
             Toggle(AppLocalization.text("editor.warnsComments"), isOn: $warnsComments)
         }
-        .padding(.top, SettingsFormLayout.rowSpacing + 12)
+        .padding(.top, SettingsFormLayout.checkboxSpacing)
 
         SettingsRow {
             Toggle(AppLocalization.text("editor.stripsComments"), isOn: $stripsComments)
@@ -185,7 +184,7 @@ extension EditorSettingsView {
         .padding(.top, SettingsFormLayout.checkboxSpacing)
     }
 
-    /// Issue 编号补全的勾选框与 11 pt 说明。
+    /// Issue 编号补全的勾选框与 11 pt 说明；说明比勾选框缩进 20。
     private var issueRow: some View {
         SettingsRow {
             VStack(alignment: .leading, spacing: 4) {
@@ -195,6 +194,7 @@ extension EditorSettingsView {
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 20)
             }
         }
     }
