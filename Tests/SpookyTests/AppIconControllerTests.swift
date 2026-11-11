@@ -27,7 +27,7 @@ struct AppIconControllerTests {
 
         defer { try? FileManager.default.removeItem(at: directory) }
 
-        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        let defaults = MemoryDefaults()
         let app = try Self.makeApp(in: directory)
 
         try Self.addMidnightIcons(to: app)
@@ -94,8 +94,7 @@ struct AppIconControllerTests {
 
         defer { try? FileManager.default.removeItem(at: directory) }
 
-        let domain = directory.appending(path: "defaults").path
-        let defaults = try #require(UserDefaults(suiteName: domain))
+        let defaults = MemoryDefaults()
         let app = try Self.makeApp(in: directory)
 
         // 没有记录、记录无法识别
@@ -123,7 +122,12 @@ struct AppIconControllerTests {
 
             #expect(controller.group == .midnight)
 
-            DeveloperPreferences.removeValues(in: domain, of: defaults, keepingData: keepingData)
+            DeveloperPreferences.removeValues(
+                in: defaults.name,
+                of: defaults,
+                keepingData: keepingData
+            )
+
             controller.reload()
             await until { controller.pendingRequests == 0 }
 
@@ -168,7 +172,7 @@ struct AppIconControllerTests {
         try await AppIconController.setCustomIcon(Self.sampleIcon(), ofApp: app)
         try Self.setPermissions(0o555, of: app)
 
-        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        let defaults = MemoryDefaults()
         defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
 
         _ = NSApplication.shared
@@ -214,8 +218,7 @@ struct AppIconControllerTests {
 
         defer { try? FileManager.default.removeItem(at: directory) }
 
-        let domain = directory.appending(path: "defaults").path
-        let defaults = try #require(UserDefaults(suiteName: domain))
+        let defaults = MemoryDefaults()
         let app = try Self.makeApp(in: directory)
 
         try Self.addMidnightIcons(to: app)
@@ -249,7 +252,12 @@ struct AppIconControllerTests {
         #expect(Self.hasCustomIcon(app))
 
         // Reset：删掉偏好后重新套用，重写同样只是排队，不等写完
-        DeveloperPreferences.removeValues(in: domain, of: defaults, keepingData: true)
+        DeveloperPreferences.removeValues(
+            in: defaults.name,
+            of: defaults,
+            keepingData: true
+        )
+
         controller.reload()
 
         #expect(controller.group == .serverGhost)
@@ -307,7 +315,7 @@ struct AppIconControllerTests {
 
         defer { try? FileManager.default.removeItem(at: directory) }
 
-        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        let defaults = MemoryDefaults()
         let app = try Self.makeApp(in: directory)
 
         try Self.addMidnightIcons(to: app)
