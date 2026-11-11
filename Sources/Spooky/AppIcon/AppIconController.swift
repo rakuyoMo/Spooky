@@ -72,9 +72,17 @@ final class AppIconController {
     @ObservationIgnored
     private var requestedGroup: AppIconGroup
 
-    /// 换组请求的序号，每次 `select(_:)` 加一：写入失败时只有最近一次请求把 `requestedGroup` 退回已选的组。
+    /// 换组与重新套用偏好的序号，每排进一次写入加一：写入失败时只有最近的一次请求把 `requestedGroup` 退回已选的组。
     @ObservationIgnored
-    private var latestSelection = 0
+    private var latestRequest = 0
+
+    /// 已排进队列、还没结算的换组与重新套用偏好：全部结算完时才决定是否重启 Dock；测试据此等待结算。
+    @ObservationIgnored
+    private(set) var pendingRequests = 0
+
+    /// 换组与重新套用偏好的写入让包上有没有自定义图标变了奇数次，固定在 Dock 里的格子显示的组不对；重启 Dock 后复位。
+    @ObservationIgnored
+    private var isDockStale = false
 
     /// 重新套用偏好的次数，每次 `reload()` 加一：此前发出、此后才写完的换组不再存进偏好。
     @ObservationIgnored
@@ -88,7 +96,7 @@ final class AppIconController {
     @ObservationIgnored
     private var appearanceObservation: NSKeyValueObservation? = nil
 
-    /// 换组写完后重启 Dock，让固定在 Dock 里的格子换成所选的组；测试传入记录调用的闭包，不碰真实的 Dock。
+    /// 包上有没有自定义图标变了时重启 Dock，让固定在 Dock 里的格子换成所选的组；测试传入记录调用的闭包，不碰真实的 Dock。
     @ObservationIgnored
     private let restartDock: @MainActor () -> Void
 
@@ -194,14 +202,16 @@ final class AppIconController {
     /// - Parameters:
     ///   - iconData: 要写入的图标数据，nil 表示清除
     ///   - url: App 包的位置
+    /// - Returns: 包上有没有自定义图标是否因此变了
     /// - Throws: 包所在的位置不可写时抛出 `AppIconWriteError`
+    @discardableResult
     static func setCustomIcon(
         _ iconData: Data?,
         ofApp url: URL
-    ) async throws {
+    ) async throws -> Bool {
         try await withCheckedThrowingContinuation { continuation in
             enqueueWrite(iconData, ofApp: url) {
-                continuation.resume(with: $0.map { _ in })
+                continuation.resume(with: $0)
             }
         }
     }
@@ -247,7 +257,8 @@ final class AppIconController {
     /// 按偏好里所选的组重新套用：重画运行时图标，并在后台重写自定义图标；不等写完，重写失败不提示。
     ///
     /// 启动时与 Reset / Clear User Defaults 删掉偏好之后调用，后者回到服务器幽灵；此前发出、还没写完的换组不再存进偏好。
-    /// 包上有没有自定义图标因此变了时重启 Dock，如更新后第一次启动写了进去、Reset / Clear 清掉了。
+    /// 重写与换组一样算一次请求，写完按 `finishRequest(changesIcon:)` 决定是否重启 Dock，
+    /// 如更新后第一次启动写了进去、Reset / Clear 清掉了。
     func reload() {
         reloadCount += 1
         group = AppIconGroup.current(in: defaults)
@@ -258,28 +269,30 @@ final class AppIconController {
         rewriteCustomIcon(restartsDock: true)
     }
 
-    /// 换成另一组：在后台写入或清除 App 包的自定义图标，写完后存进偏好，立即重画运行时图标，并重启 Dock。
+    /// 换成另一组：在后台写入或清除 App 包的自定义图标，写完后存进偏好，立即重画运行时图标，并按需重启 Dock。
     ///
     /// 写入按调用的顺序排队，后选的组排在后面、最后写完；等待期间重新套用了偏好时，这一次不再存进偏好。
-    /// 连续换组只在最后一次写完后重启 Dock；选的就是当前的组时照写，不重启。
+    /// 写完按 `finishRequest(changesIcon:)` 决定是否重启 Dock：选的就是当前的组时照写，包上没变，不重启。
     /// - Parameter group: 要换成的组
     /// - Throws: 写不进 App 包，或取不到这一组的系统图标时抛出 `AppIconWriteError`，偏好与图标都保持原来的组
     func select(_ group: AppIconGroup) async throws {
         let iconData = try customIconData(for: group)
         let reloadCount = reloadCount
+        let request = beginRequest()
+        var changesIcon = false
 
-        // Dock 里的格子本就是当前的组，选回它不用重启
-        let changesGroup = group != self.group
-
-        latestSelection += 1
-        let selection = latestSelection
         requestedGroup = group
 
+        // 成败都要结算；成功时排在存偏好与重画之后，Dock 重启后保留的是新的运行时图标
+        defer {
+            finishRequest(changesIcon: changesIcon)
+        }
+
         do {
-            try await Self.setCustomIcon(iconData, ofApp: bundle.bundleURL)
+            changesIcon = try await Self.setCustomIcon(iconData, ofApp: bundle.bundleURL)
         } catch {
-            // 之后又有换组请求时，由最近的一次决定退不退回
-            if selection == latestSelection {
+            // 之后又有请求时，由最近的一次决定退不退回
+            if request == latestRequest {
                 requestedGroup = self.group
             }
 
@@ -294,11 +307,6 @@ final class AppIconController {
         defaults.set(group.rawValue, forKey: AppIconGroup.key)
         self.group = group
         updateIcon()
-
-        // 之后又有换组请求时，由最近的一次重启
-        if changesGroup, selection == latestSelection {
-            restartDock()
-        }
     }
 
     /// 图标列表里这一组在当前深浅下的一张图标，即包里的原图；取不到资源时为 nil。
@@ -338,7 +346,8 @@ extension AppIconController {
     /// 在后台按 `requestedGroup` 与当前样式重写自定义图标，写完后重画运行时图标；不等写完，失败不提示。
     ///
     /// 服务器幽灵的运行时图标以 App 自身的系统图标为底，清掉自定义图标之后取到的才不是残留的那一张，所以写完再画一次。
-    /// - Parameter restartsDock: 包上有没有自定义图标因此变了时重启 Dock；样式与深浅变化的重写只换同一组的另一版，不重启
+    /// - Parameter restartsDock: 重新套用偏好时为真，算一次请求，写完结算是否重启 Dock；
+    ///   样式与深浅变化的重写只换同一组的另一版，不算请求，不重启
     private func rewriteCustomIcon(restartsDock: Bool) {
         let iconData: Data?
 
@@ -348,18 +357,51 @@ extension AppIconController {
             return
         }
 
+        if restartsDock {
+            beginRequest()
+        }
+
         Self.enqueueWrite(iconData, ofApp: bundle.bundleURL) { result in
-            // 原本没有、这次写了进去，或原本有、这次清掉了：固定在 Dock 里的格子显示的组不对，重启才换
-            let changesDock = restartsDock && ((try? result.get()) ?? false)
+            let changesIcon = (try? result.get()) ?? false
 
             Task { @MainActor [weak self] in
                 self?.updateIcon()
 
-                if changesDock {
-                    self?.restartDock()
+                if restartsDock {
+                    self?.finishRequest(changesIcon: changesIcon)
                 }
             }
         }
+    }
+
+    /// 开始一次换组或重新套用偏好：序号与还没结算的次数各加一。
+    /// - Returns: 这次请求的序号
+    @discardableResult
+    private func beginRequest() -> Int {
+        latestRequest += 1
+        pendingRequests += 1
+        return latestRequest
+    }
+
+    /// 一次换组或重新套用偏好的写入结束：记下包上有没有自定义图标是否因此变了；
+    /// 排着的请求全部结算完、且自上次重启以来变了奇数次时重启 Dock，几次请求先后排队时只在最后结算完时重启一次。
+    ///
+    /// 换组与重新套用经不同的路径回到主线程，结算的先后不一定与写入的先后相同，所以只数还没结算的次数。
+    /// - Parameter changesIcon: 包上有没有自定义图标是否因此变了；写入失败时为假
+    private func finishRequest(changesIcon: Bool) {
+        pendingRequests -= 1
+
+        // 变了又变回来时，格子显示的仍是对的组
+        if changesIcon {
+            isDockStale.toggle()
+        }
+
+        guard pendingRequests == 0, isDockStale else {
+            return
+        }
+
+        isDockStale = false
+        restartDock()
     }
 
     /// 这一组写成自定义图标的数据：当前样式下指示灯灭着的一版；服务器幽灵为 nil，表示清掉自定义图标。

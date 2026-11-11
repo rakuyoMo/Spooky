@@ -1,5 +1,6 @@
 import AppKit
 import Testing
+import TestSupport
 
 @testable import Spooky
 
@@ -122,7 +123,7 @@ struct AppIconControllerTests {
 
             DeveloperPreferences.removeValues(in: domain, of: defaults, keepingData: keepingData)
             controller.reload()
-            await Self.waitForWrites()
+            await until { controller.pendingRequests == 0 }
 
             #expect(controller.group == .serverGhost, "keepingData: \(keepingData)")
             #expect(!Self.hasCustomIcon(app), "keepingData: \(keepingData)")
@@ -203,7 +204,8 @@ struct AppIconControllerTests {
     }
 
     /// 写入在后台排队，系统询问权限这类写入卡住的情形下主线程照常往下走；
-    /// 写入按排队的顺序完成，Reset 之前发出、之后才写完的换组不把组存回偏好；连续换组只在后一次写完之后重启 Dock。
+    /// 写入按排队的顺序完成，Reset 之前发出、之后才写完的换组不把组存回偏好；
+    /// 几次请求先后排队时，等全部写完、包上有没有自定义图标与之前不同时才重启一次 Dock。
     @Test("自定义图标在后台按顺序写入，主线程不等；Reset 之前发出的换组不覆盖 Reset 的结果")
     func writesInBackgroundInOrder() async throws {
         let directory = Self.makeDirectory()
@@ -213,6 +215,8 @@ struct AppIconControllerTests {
         let domain = directory.appending(path: "defaults").path
         let defaults = try #require(UserDefaults(suiteName: domain))
         let app = try Self.makeApp(in: directory)
+
+        try Self.addMidnightIcons(to: app)
 
         defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
         try await AppIconController.setCustomIcon(Self.sampleIcon(), ofApp: app)
@@ -249,34 +253,48 @@ struct AppIconControllerTests {
         #expect(controller.group == .serverGhost)
         #expect(Self.hasCustomIcon(app))
 
-        // 放行后按排队的顺序写完：自定义图标清掉了，先发出的换组没有把组存回偏好
+        // 放行后按排队的顺序写完：自定义图标清掉了，先发出的换组没有把组存回偏好；
+        // 清掉图标的是那次换组，Reset 的重写包上已没有图标，最后写完时仍重启一次 Dock
         gate.signal()
 
         try await selecting.value
-        await Self.waitForWrites()
+        await until { controller.pendingRequests == 0 }
 
         #expect(!Self.hasCustomIcon(app))
         #expect(defaults.string(forKey: AppIconGroup.key) == nil)
         #expect(controller.group == .serverGhost)
-        #expect(dockRestarts == 0)
+        #expect(dockRestarts == 1)
 
-        // 连续两次换组：两次都在主线程让出之前排进队列，只在后一次写完之后重启 Dock
-        defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
-        controller.reload()
+        // 换到午夜又换回服务器幽灵，两次都在主线程让出之前排进队列：包上最后与之前相同，不重启
+        let toMidnight = Task.immediate {
+            try await controller.select(.midnight)
+        }
 
-        let first = Task.immediate {
+        let back = Task.immediate {
             try await controller.select(.serverGhost)
         }
 
+        try await toMidnight.value
+        try await back.value
+
+        #expect(controller.group == .serverGhost)
+        #expect(dockRestarts == 1)
+
+        // 连续两次换到午夜：包上写进了自定义图标，两次都写完后重启一次
+        let first = Task.immediate {
+            try await controller.select(.midnight)
+        }
+
         let second = Task.immediate {
-            try await controller.select(.serverGhost)
+            try await controller.select(.midnight)
         }
 
         try await first.value
         try await second.value
 
-        #expect(controller.group == .serverGhost)
-        #expect(dockRestarts == 1)
+        #expect(controller.group == .midnight)
+        #expect(Self.hasCustomIcon(app))
+        #expect(dockRestarts == 2)
     }
 
     /// 启动时包上原本没有自定义图标、这次写了进去（如更新后第一次启动），固定在 Dock 里的格子显示的组不对，重启 Dock；
@@ -304,7 +322,7 @@ struct AppIconControllerTests {
 
         // 选着服务器幽灵启动：包上本来没有自定义图标，不用清，不重启
         controller.reload()
-        await Self.waitForWrites()
+        await until { controller.pendingRequests == 0 }
 
         #expect(!Self.hasCustomIcon(app))
         #expect(dockRestarts == 0)
@@ -312,14 +330,14 @@ struct AppIconControllerTests {
         // 更新后第一次启动：选着午夜、包上没有自定义图标，写进去之后重启一次
         defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
         controller.reload()
-        await Self.waitForWrites()
+        await until { controller.pendingRequests == 0 }
 
         #expect(Self.hasCustomIcon(app))
         #expect(dockRestarts == 1)
 
         // 平常启动：包上已是午夜，照样重写，不重启
         controller.start()
-        await Self.waitForWrites()
+        await until { controller.pendingRequests == 0 }
 
         #expect(dockRestarts == 1)
 
@@ -332,6 +350,7 @@ struct AppIconControllerTests {
         )
 
         await Self.waitForWrites()
+        await until { controller.pendingRequests == 0 }
 
         #expect(Self.hasCustomIcon(app))
         #expect(dockRestarts == 1)
