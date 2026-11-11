@@ -23,6 +23,10 @@ struct TextSettingsView: View {
     @AppStorage(TextPreferences.tabWidthKey)
     private var tabWidth = TextPreferences.defaultTabWidth
 
+    /// 数字框里的文字：结束输入时才换成空格数。
+    @State
+    private var tabWidthText = ""
+
     /// 标签列右对齐，控件列从 367 pt 起左对齐。
     var body: some View {
         SettingsForm(layout: .text) {
@@ -54,14 +58,17 @@ struct TextSettingsView: View {
     /// 30 pt 宽的数字框、1–100 的步进器与单位。
     private var tabWidthControl: some View {
         HStack(spacing: 8) {
-            TextField("", value: $tabWidth, format: .number.grouping(.never))
-                .frame(width: 30)
-                .multilineTextAlignment(.trailing)
-                .accessibilityLabel(AppLocalization.text("text.tabWidth"))
-                .onChange(of: tabWidth) {
-                    let range = TextPreferences.tabWidths
-                    tabWidth = min(max(tabWidth, range.lowerBound), range.upperBound)
-                }
+            SettingsTextField(
+                text: $tabWidthText,
+                label: AppLocalization.text("text.tabWidth"),
+                alignment: .right
+            ) {
+                commitTabWidth($0)
+            }
+            .frame(width: 30)
+            .onChange(of: tabWidth, initial: true) {
+                tabWidthText = String(tabWidth)
+            }
 
             Stepper("", value: $tabWidth, in: TextPreferences.tabWidths)
                 .labelsHidden()
@@ -69,5 +76,15 @@ struct TextSettingsView: View {
 
             Text(AppLocalization.text("text.spaces"))
         }
+    }
+
+    /// 结束输入时换成空格数：超出范围时取最近的边界，不是整数时恢复原值。
+    private func commitTabWidth(_ text: String) {
+        if let number = Int(text.trimmingCharacters(in: .whitespaces)) {
+            let range = TextPreferences.tabWidths
+            tabWidth = min(max(number, range.lowerBound), range.upperBound)
+        }
+
+        tabWidthText = String(tabWidth)
     }
 }

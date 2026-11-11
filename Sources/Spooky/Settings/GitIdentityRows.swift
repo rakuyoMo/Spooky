@@ -23,10 +23,6 @@ struct GitIdentityRows: View {
     @State
     private var email = ""
 
-    /// 获得焦点的输入框对应的配置键。
-    @FocusState
-    private var focusedKey: String?
-
     /// 所在页的列位置。
     @Environment(\.settingsFormLayout)
     private var layout
@@ -125,17 +121,11 @@ extension GitIdentityRows {
 
     /// 让出头像位置的输入框；回车或失去焦点时写入有变化的值。
     private func field(_ text: Binding<String>, key: String, label: String) -> some View {
-        TextField("", text: text)
-            .focused($focusedKey, equals: key)
-            .frame(width: layout.controlWidth - 8 - Self.avatarSize)
-            .frame(width: layout.controlWidth, alignment: .leading)
-            .accessibilityLabel(AppLocalization.text(label))
-            .onSubmit { save(text.wrappedValue, for: key) }
-            .onChange(of: focusedKey == key) { _, focused in
-                if !focused {
-                    save(text.wrappedValue, for: key)
-                }
-            }
+        SettingsTextField(text: text, label: AppLocalization.text(label)) {
+            save($0, for: key)
+        }
+        .frame(width: layout.controlWidth - 8 - Self.avatarSize)
+        .frame(width: layout.controlWidth, alignment: .leading)
     }
 
     /// 档案的姓名与邮箱写进全局配置；档案带签名密钥时同时写入密钥与对应的签名格式。
