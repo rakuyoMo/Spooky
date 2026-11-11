@@ -16,7 +16,7 @@ struct WorkingCopyCommitView: View {
     }
 
     /// 提交区的坐标空间，标题框与正文框的位置以它的左上角为原点。
-    private static let coordinateSpace = "working-copy-commit-area"
+    private nonisolated static let coordinateSpace = "working-copy-commit-area"
 
     /// 正文框底部动作栏的高度，上方另有 1 pt 由材质画出的分隔线。
     private static let bodyBarHeight: CGFloat = 24
