@@ -9,7 +9,7 @@ struct GitConfigSettingsView: View {
     @State
     private var model = GlobalGitConfigModel()
 
-    /// 标签右对齐、控件列从 490 pt 起宽 310 pt 的表单，读写失败时在底部说明。
+    /// 标签右对齐、控件列宽 310 pt 的表单，读写失败时在底部说明。
     var body: some View {
         SettingsForm(layout: .gitConfig) {
             GitProgramSettingsRow()

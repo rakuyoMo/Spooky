@@ -27,9 +27,9 @@ struct TextSettingsView: View {
     @State
     private var tabWidthText = ""
 
-    /// 标签列右对齐，控件列从 367 pt 起左对齐。
+    /// 标签列右对齐，控件列左对齐。
     var body: some View {
-        SettingsForm(layout: .text) {
+        SettingsForm {
             SettingsRow(AppLocalization.text("text.syntaxColoring")) {
                 VStack(alignment: .leading, spacing: SettingsFormLayout.checkboxSpacing) {
                     Toggle(AppLocalization.text("text.enableSyntaxColoring"), isOn: $colorsSyntax)

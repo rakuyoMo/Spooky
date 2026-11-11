@@ -118,9 +118,9 @@ struct EditorSettingsView: View {
     @AppStorage(CommitEditorSettings.completesIssuesKey)
     private var completesIssues = true
 
-    /// 标签列右对齐，控件列从 517 pt 起左对齐。
+    /// 标签列右对齐，控件列左对齐；页高至少 360 pt，勾选框与说明折行多时随内容增高。
     var body: some View {
-        SettingsForm(layout: .editor) {
+        SettingsForm {
             SettingsRow {
                 Toggle(AppLocalization.text("editor.showsCounter"), isOn: $showsCounter)
             }
@@ -137,8 +137,7 @@ struct EditorSettingsView: View {
                     Text(AppLocalization.text("editor.hardWrap")).tag(CommitEditorSettings.Wrapping.hard.rawValue)
                 }
                 .labelsHidden()
-                .buttonSizing(.flexible)
-                .frame(width: 120)
+                .settingsColumnWidth()
             }
             .padding(.top, SettingsFormLayout.popUpAfterRowSpacing)
 
@@ -155,7 +154,7 @@ struct EditorSettingsView: View {
 
             issueRow
         }
-        .frame(height: 360, alignment: .top)
+        .frame(minHeight: 360, alignment: .top)
     }
 }
 
@@ -204,9 +203,9 @@ extension EditorSettingsView {
         wrapping == CommitEditorSettings.Wrapping.hard.rawValue
     }
 
-    /// 60 pt 宽的字数上限组合框，可以输入 1–1000。
+    /// 充满控件列的字数上限组合框，可以输入 1–1000。
     private func limitBox(_ value: Binding<Int>, label: String, choices: [Int]) -> some View {
         LimitComboBox(value: value, choices: choices, range: 1 ... 1000, label: AppLocalization.text(label))
-            .frame(width: 60)
+            .settingsColumnWidth()
     }
 }

@@ -23,7 +23,7 @@ struct GitIdentityRows: View {
     @State
     private var email = ""
 
-    /// 所在页的列位置。
+    /// 所在页的控件列宽。
     @Environment(\.settingsFormLayout)
     private var layout
 
