@@ -86,6 +86,10 @@ Spooky 由两个 target 组成：
   - 重命名后旧路径新建的独立未跟踪文件，其出现、消失或暂存使旧快照失效；只改内容不改变重命名指纹。按块 / 行写入只生成新路径补丁，不覆盖该独立文件
   - 按块 / 行写入在仓库锁内两次核对快照，并经 `git apply --check` 与正式写入检查。此锁只串行 App 内的写操作；外部 Git 和编辑器仍可改动仓库，因此属于乐观校验，不是跨进程原子快照
 - App 内同一仓库同时只允许一个写操作（`RepositoryWriteLocks`）；菜单、工具栏、右键菜单与拖放统一使用 `RepositorySession` 的 `can…` 可用性规则
+- 文件列表勾选框的暂存与取消暂存只锁住受影响的行：执行期间这些行按 `stagingOverrides` 显示目标状态并禁用，其它行仍可勾选（`canToggleStaging`），点下的请求排进 `queuedStaging`，在同一个写操作里依次执行，写入仍然串行
+  - 失败或取消时丢弃队列，行按刷新后的真实索引恢复；写锁被别的写操作占着时（`isRepositoryLocked`）整个文件列表变灰
+- 检出、合并、拉取、变基、重置这类改动当前工作区的写操作经 `performGit(progress:)` 带上标题，会话发布 `workspaceProgress`：工作区视图整块换成 `WorkspaceProgressView`（标题、进度条、停止按钮与 Git 的最后一行输出，行里有百分比时按比例），侧边栏 Working Copy 行转圈；停止按钮取消 `writeTask`，写操作结束时清空
+  - 同步只在拉取那一步显示，获取与推送开始时撤下
 - 写操作经 `RepositorySession.performGit(target:)` 声明记在 Activity 的哪一页：传了连接的对象（`ActivityTarget`：传输方向、远端名与 refspec）就记在 Remote 页，记录的标题与图标由它写出；没传的记在 Repository 页
   - 一次写操作连接几个对象时分成几条记录，如获取全部远端时每个远端一条，同步的拉取与推送各一条：动作里经 task-local 的 `ActivityRecording` 另起记录，这些事件与 Git 输出走同一个流，先后不乱
   - 核心库不知道 Activity，只报出分界：`RepositorySync.fetch` 获取全部远端时在每个远端开始前经 `onRemote` 报出远端名，`RepositorySync.sync` 在每一步开始前经 `onStep` 报出步骤；App 据此为每个远端、为同步的推送另起记录
@@ -96,6 +100,9 @@ Spooky 由两个 target 组成：
   - `.unrecorded`：自动获取这类不由用户直接发起的操作，以及撤销、重做本身
 - 撤销的快照建在仓库所在的机器上，写进仓库自己的对象库；恢复前核对仓库仍与记录一致
 - 移进废纸篓的文件不进快照：写操作期间由 `TrashLog` 记下它们在废纸篓里的位置，撤销时移回原处，重做时重新移进废纸篓；废纸篓程序不报告位置时这次操作不能撤销
+- 删除工作区文件同时暂存删除：写事务里先用 `ls-files -s -v -z` 记下要删除的路径下的已跟踪文件（目录展开成文件），移走后对它们执行 `update-index -z --force-remove --stdin`；未跟踪与被忽略的只移走
+  - 撤销是反向操作（`UndoRecording.deletingFiles`）：先核对这些路径仍不在索引里，再移回文件（废纸篓经 `TrashLog`，永久删除从删除前工作区快照的树写回），经 `update-index -z --index-info` 恢复索引项（含已暂存的内容），最后补回 assume-unchanged 标记，`--index-info` 不保留它
+  - 移走中途或索引更新失败时抛 `FileDeletionError`，错误框先列已移走的项，再接 Git 或废纸篓的原始错误
 - 发布分支与标签只连接一次远端：写操作期间由 `PushLog` 记下 `push --porcelain` 的逐条结果，新建了远端引用才登记撤销，已是最新时不碰撤销记录，快进了远端已有的分支与推送一样不能撤销
 
 - 本机与服务器的 Git 子进程都清除 `GIT_LITERAL_PATHSPECS`、`GIT_GLOB_PATHSPECS`、`GIT_NOGLOB_PATHSPECS`、`GIT_ICASE_PATHSPECS`；文件补丁通过字面包含与子项排除限定实际新旧路径，目录历史查询仍递归匹配。
@@ -213,6 +220,22 @@ Spooky 由两个 target 组成：
   - 侧边栏与历史列表的行是不接受第一响应者的 SwiftUI 视图，窗口不会因为点击把焦点交给列表；`RepositoryWindow` 在分发鼠标左键按下之前，把焦点交给点中的、还没有焦点的列表
 - 刷新、选中变化与读取完成的代码路径不调用 `makeFirstResponder`，也不改侧边栏列表的焦点状态，焦点不会被拉回侧边栏；打开或切换仓库时焦点默认在侧边栏
 - 历史列表与变更文件行的选中底色随焦点与窗口状态变化：有焦点用强调色，窗口是 key 而列表没有焦点用不强调的选中色，窗口不活跃时再与列表底色混合
+
+## 右键菜单的作用对象
+
+- 工作区文件列表、历史列表与变更集的右键菜单在构建时算出实际作用的条目：点在选区里作用于整个选区，点在选区外只作用于被点的一行，选区与右侧详情不变
+  - 标题、计数、可用性与执行都用这一份，动作闭包捕获条目本身，不在执行时回读选区；目录算一项，执行时再展开成文件
+  - 入口：工作区的 `buildMenu(_:clickedRow:)`、历史列表 `Coordinator.buildMenu(_:clickedRow:)`、变更集的 `ChangesetFileSelection.affected(clicked:order:)`
+- 文件列表空白处：有选择时作用于原选区，没有时作用于空目标，写操作与单文件视图禁用，Show in Finder 与 Open in Terminal 指向仓库根
+- 要另读 Git 才能判断的菜单项（assume-unchanged 标记、Git LFS 是否启用）先禁用，打开菜单时对作用条目读一次再启用；这些读取不进状态轮询
+
+## 历史与文件历史的搜索补全
+
+- `HistorySearchSuggestions` 每个会话一份，历史与文件历史的搜索框共用
+- 作者与提交人：会话每次读出新的 HEAD 时在后台非交互地读一次整个仓库的作者与提交人（`RepositoryFileViews.contributors(at:)`，按首次出现的顺序），同一仓库与 HEAD 只读一次；换 HEAD 时取消旧的读取，关闭仓库时取消并丢弃
+  - 结果随 HEAD 变化，不进 `immutableRun`；输入时还在读就等这一次读取，读取失败时没有人员建议，失败的结果不缓存
+- HEAD 中的文件清单在第一次输入文件条件时读取，同样按仓库与 HEAD 缓存
+- 人员建议对 “姓名 <邮箱>” 做不区分大小写的子序列匹配，同名不同邮箱各成一项
 
 ## 对话框的尺寸与动画
 
