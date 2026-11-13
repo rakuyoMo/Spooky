@@ -99,26 +99,6 @@ struct CommitDetailView: View {
         }
     }
 
-    /// 变更集的读取进度、失败、逐个文件与空状态。
-    @ViewBuilder
-    private var changeRows: some View {
-        if history.isLoadingChanges {
-            ProgressView(AppLocalization.text("history.loadingChanges"))
-                .controlSize(.small)
-                .padding(20)
-        }
-
-        if let failure = history.changesFailure {
-            FailureDetailsView(failure: failure) { history.loadChanges() }
-                .padding(20)
-        }
-
-        ForEach(history.changes) { file in
-            fileSection(file)
-            Divider()
-        }
-    }
-
     /// 文件行选中底的颜色：滚动内容有焦点且窗口在前时是强调色。
     private var fileSelectionColor: NSColor {
         .listSelection(
@@ -130,7 +110,10 @@ struct CommitDetailView: View {
 
     /// 滚动区域的内容：元信息、完整信息、操作按钮行、变更集摘要与逐个文件的 Diff。
     private func scrollContent(_ commit: HistoryCommit) -> some View {
-        LazyVStack(alignment: .leading, spacing: 0) {
+        // 焦点在这里读出：文件行是 `LazyVStack` 惰性排出的，只在行里读时，焦点变化不会让已排出的行重画
+        let selectionColor = fileSelectionColor
+
+        return LazyVStack(alignment: .leading, spacing: 0) {
             CommitMetadataView(commit: commit, signature: session.signatures.signatures[commit.id])
 
             Text(commit.message)
@@ -154,7 +137,7 @@ struct CommitDetailView: View {
 
             Divider()
 
-            changeRows
+            changeRows(selectionColor: selectionColor)
         }
         .focusable()
         .focused($filesFocused)
@@ -164,8 +147,34 @@ struct CommitDetailView: View {
         }
     }
 
+    /// 变更集的读取进度、失败、逐个文件与空状态。
+    ///
+    /// - Parameter selectionColor: 文件行选中底的颜色。
+    @ViewBuilder
+    private func changeRows(selectionColor: NSColor) -> some View {
+        if history.isLoadingChanges {
+            ProgressView(AppLocalization.text("history.loadingChanges"))
+                .controlSize(.small)
+                .padding(20)
+        }
+
+        if let failure = history.changesFailure {
+            FailureDetailsView(failure: failure) { history.loadChanges() }
+                .padding(20)
+        }
+
+        ForEach(history.changes) { file in
+            fileSection(file, selectionColor: selectionColor)
+            Divider()
+        }
+    }
+
     /// 单个变更文件的折叠组，展开时才读取它的 Diff。
-    private func fileSection(_ file: CommitFileChange) -> some View {
+    ///
+    /// - Parameters:
+    ///   - file: 变更文件。
+    ///   - selectionColor: 选中时垫在文件行下面的颜色。
+    private func fileSection(_ file: CommitFileChange, selectionColor: NSColor) -> some View {
         DisclosureGroup(
             isExpanded: Binding(
                 get: { history.expandedPaths.contains(file.path) },
@@ -196,7 +205,7 @@ struct CommitDetailView: View {
             // 选中底只垫在文件行下面，不延伸到展开的 Diff
             if history.fileSelection.paths.contains(file.path) {
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(nsColor: fileSelectionColor))
+                    .fill(Color(nsColor: selectionColor))
                     .frame(height: 30)
             }
         }
@@ -205,8 +214,6 @@ struct CommitDetailView: View {
 
     /// 点选一个文件行：按住 ⇧ 连续选，按住 ⌘ 切换这一行；键盘焦点随之交给变更文件所在的滚动内容。
     private func clickFile(_ path: String) {
-        #warning("TODO: 点选文件行后焦点从历史列表交给详情的滚动内容、↑ ↓ 随后移动文件的选中，要在真实窗口里点选确认")
-
         let modifiers = NSEvent.modifierFlags
 
         history.fileSelection.click(
