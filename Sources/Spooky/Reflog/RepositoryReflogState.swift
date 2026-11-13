@@ -81,7 +81,7 @@ final class RepositoryReflogState {
 
         self.reference = reference
         selectedID = nil
-        reload()
+        reload(count: Self.pageSize)
     }
 
     /// 搜索框的文字变化后按说明重新读取第一页。
@@ -90,41 +90,19 @@ final class RepositoryReflogState {
         guard text != query else { return }
 
         query = text
-        reload()
+        reload(count: Self.pageSize)
     }
 
-    /// 重读第一页，读到后按 ``selection(in:after:)`` 重新选中。
+    /// 按同一引用与搜索条件重读：至少读回已加载的条数，原来选中的记录在后续页里时也能找回。
     func reload() {
-        guard runner != nil else { return }
-
-        // 记下原来选中的记录与它所在的行
-        let previous = entries
-            .firstIndex { $0.id == selectedID }
-            .map { (entry: entries[$0], row: $0) }
-
-        load(offset: 0) { [weak self] page in
-            guard let self else { return }
-
-            entries = page.entries
-            hasMore = page.hasMore
-            isLoaded = true
-
-            let next = Self.selection(in: page.entries, after: previous)
-
-            // 仍是同一位置时 selectedID 不变，不会触发详情的更新，这里补上
-            if let next, next.id == selectedID {
-                showSelection()
-            } else {
-                selectedID = next?.id
-            }
-        }
+        reload(count: max(entries.count, Self.pageSize))
     }
 
     /// 滚到列表底部时续读下一页。
     func loadNextPage() {
         guard hasMore, !isLoading else { return }
 
-        load(offset: entries.count) { [weak self] page in
+        load(offset: entries.count, limit: Self.pageSize) { [weak self] page in
             self?.entries += page.entries
             self?.hasMore = page.hasMore
         }
@@ -152,12 +130,40 @@ final class RepositoryReflogState {
 // MARK: - Private
 
 extension RepositoryReflogState {
+    /// 从头读取 `count` 条，读到后按 ``selection(in:after:)`` 重新选中。
+    private func reload(count: Int) {
+        guard runner != nil else { return }
+
+        // 记下原来选中的记录与它所在的行
+        let previous = entries
+            .firstIndex { $0.id == selectedID }
+            .map { (entry: entries[$0], row: $0) }
+
+        load(offset: 0, limit: count) { [weak self] page in
+            guard let self else { return }
+
+            entries = page.entries
+            hasMore = page.hasMore
+            isLoaded = true
+
+            let next = Self.selection(in: page.entries, after: previous)
+
+            // 仍是同一位置时 selectedID 不变，不会触发详情的更新，这里补上
+            if let next, next.id == selectedID {
+                showSelection()
+            } else {
+                selectedID = next?.id
+            }
+        }
+    }
+
     /// 读取一页；同一时刻只有一个读取任务，后发起的读取取消先前的。
     ///
     /// - Parameters:
     ///   - offset: 跳过的记录数，第一页为 0。
+    ///   - limit: 最多读取的记录数。
     ///   - apply: 读到后在主线程合并结果。
-    private func load(offset: Int, apply: @escaping (ReflogPage) -> Void) {
+    private func load(offset: Int, limit: Int, apply: @escaping (ReflogPage) -> Void) {
         guard let runner else { return }
 
         generation += 1
@@ -173,7 +179,7 @@ extension RepositoryReflogState {
         pageTask = Task { [weak self] in
             do {
                 let page = try await RepositoryReflog(runner: runner)
-                    .page(of: reference, matching: query, offset: offset, limit: Self.pageSize)
+                    .page(of: reference, matching: query, offset: offset, limit: limit)
 
                 guard let self, generation == request, !Task.isCancelled else { return }
 

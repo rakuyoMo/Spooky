@@ -51,6 +51,7 @@ struct ReflogSessionTests {
     }
 
     /// 每页 30 条，与历史每页的条数设置无关；打开时选中第一条并显示它的提交；
+    /// 同一引用与搜索条件下的重读至少读回已加载的条数，换引用或搜索时从第一页开始；
     /// 重读后原来那条还在就仍选它，不在了选原来行号上的记录，即原来的下一条，行号超出列表时选最后一条。
     @Test("分页与读取后的选中")
     func pagingAndSelection() async throws {
@@ -73,6 +74,15 @@ struct ReflogSessionTests {
         await settle(reflog)
 
         #expect(reflog.entries.count == 35 && !reflog.hasMore)
+
+        // 选中第二页的记录后重读：读回已加载的 35 条，选中保留
+        reflog.selectedID = 32
+        reflog.reload()
+        await settle(reflog)
+
+        #expect(reflog.entries.count == 35)
+        #expect(reflog.selectedID == 32)
+        #expect(reflog.selectedEntry?.message == messages[32])
 
         // 原来那条还在：删掉最新的一条后它上移一行，仍然选中
         reflog.selectedID = 2

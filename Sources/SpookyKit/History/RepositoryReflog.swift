@@ -122,7 +122,7 @@ public struct RepositoryReflog: Sendable {
         offset: Int = 0,
         limit: Int = 100
     ) async throws -> ReflogPage {
-        guard Self.isValid(reference), offset >= 0, (1 ... 1000).contains(limit) else {
+        guard Self.isValid(reference), offset >= 0, limit > 0 else {
             throw RepositoryReadError.invalidQuery
         }
 
