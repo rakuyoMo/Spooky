@@ -199,6 +199,19 @@ extension UndoRecording {
             }
         }
     }
+
+    /// 删除文件并暂存删除：删除前记下其中已跟踪文件的索引项与 assume-unchanged 标记，
+    /// 撤销时把移进废纸篓的项移回原处，再按记录恢复索引。
+    static func deletingFiles(_ paths: [String]) -> Self {
+        .inverse { runner in
+            let entries = try await WorkingCopyOperations(runner: runner).trackedIndexEntries(under: paths)
+            let log = TrashLog()
+
+            return UndoInverse(trashLog: log) { runner, _ in
+                try await WorkingCopyOperations(runner: runner).restoreDeleted(log.items, entries: entries)
+            }
+        }
+    }
 }
 
 // MARK: - LFS

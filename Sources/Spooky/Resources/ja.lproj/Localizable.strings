@@ -934,6 +934,10 @@
 "files.error.destination" = "移動先がすでに存在します";
 "files.error.trashUnavailable" = "サーバーで使えるゴミ箱がありません";
 "files.error.trashedItems" = "ゴミ箱からファイルを戻せません";
+"files.error.partialDeletion" = "一部の項目を削除できませんでした";
+"files.error.partialDeletion.help" = "元の出力の先頭に示した項目はディスクから取り除かれましたが、削除はステージされていません。そのほかの項目は変更されていません。再試行する前に、更新して作業コピーを確認してください。";
+"files.error.unstagedDeletion" = "削除はステージされませんでした";
+"files.error.unstagedDeletion.help" = "元の出力の先頭に示した項目はすべてディスクから取り除かれましたが、追跡中のファイルの削除はステージされていません。作業コピーでこれらの削除をステージするか、元の出力で原因を確認してください。";
 "files.doubleClick" = "作業コピーのファイルをダブルクリック：";
 "files.doubleClick.openFile" = "デフォルトのアプリケーションで開く";
 "files.doubleClick.openDiff" = "比較ツールを開く";

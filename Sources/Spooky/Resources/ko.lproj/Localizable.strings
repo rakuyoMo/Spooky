@@ -934,6 +934,10 @@
 "files.error.destination" = "대상이 이미 있음";
 "files.error.trashUnavailable" = "서버에서 사용할 수 있는 휴지통이 없음";
 "files.error.trashedItems" = "휴지통에서 파일을 되돌릴 수 없음";
+"files.error.partialDeletion" = "일부 항목을 삭제하지 못함";
+"files.error.partialDeletion.help" = "원본 출력의 앞부분에 나열된 항목은 디스크에서 제거되었지만 삭제는 스테이지되지 않았습니다. 나머지 항목은 변경되지 않았습니다. 다시 시도하기 전에 새로 고쳐 작업 사본을 확인하세요.";
+"files.error.unstagedDeletion" = "삭제가 스테이지되지 않음";
+"files.error.unstagedDeletion.help" = "원본 출력의 앞부분에 나열된 항목은 모두 디스크에서 제거되었지만 추적 중인 파일의 삭제는 스테이지되지 않았습니다. 작업 사본에서 이 삭제를 스테이지하거나 원본 출력에서 원인을 확인하세요.";
 "files.doubleClick" = "작업 사본의 파일을 이중 클릭할 때:";
 "files.doubleClick.openFile" = "기본 응용 프로그램으로 열기";
 "files.doubleClick.openDiff" = "비교 도구 열기";

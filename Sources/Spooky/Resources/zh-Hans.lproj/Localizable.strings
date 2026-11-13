@@ -934,6 +934,10 @@
 "files.error.destination" = "目标位置已存在";
 "files.error.trashUnavailable" = "服务器上没有可用的废纸篓";
 "files.error.trashedItems" = "无法从废纸篓移回文件";
+"files.error.partialDeletion" = "没有全部删除";
+"files.error.partialDeletion.help" = "原始输出开头列出的项已从磁盘移走，删除没有暂存；其余的项没有改动。请刷新查看工作区，再决定是否重试。";
+"files.error.unstagedDeletion" = "删除没有暂存";
+"files.error.unstagedDeletion.help" = "原始输出开头列出的项都已从磁盘移走，但已跟踪文件的删除没有暂存。请在工作区中暂存这些删除，或查看原始输出了解原因。";
 "files.doubleClick" = "双击工作区中的文件：";
 "files.doubleClick.openFile" = "用默认应用程序打开";
 "files.doubleClick.openDiff" = "打开比较工具";

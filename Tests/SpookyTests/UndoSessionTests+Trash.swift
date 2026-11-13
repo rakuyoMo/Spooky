@@ -9,7 +9,7 @@ import Testing
 /// 丢弃与删除经废纸篓之后的撤销：会话记下移进废纸篓的位置，撤销时移回原处，重做时再移进去。
 extension UndoSessionTests {
     /// 丢弃全部改动先确认：已跟踪的改动恢复到最后一次提交，未跟踪文件进废纸篓；撤销放回，重做再丢弃一次。
-    /// 本机删除不确认，直接移进废纸篓；撤销把文件放回原处。
+    /// 本机删除不确认，直接移进废纸篓并暂存删除；撤销把文件与索引项放回原处。
     @Test("丢弃全部改动与删除经废纸篓的撤销")
     func trashRoundTrip() async throws {
         let fixture = try await Fixture()
@@ -59,17 +59,22 @@ extension UndoSessionTests {
         let again = try #require(Self.trashed(in: session.undoHistory?.undoEntries.last).first?.location)
         #expect(FileManager.default.fileExists(atPath: again))
 
-        // 删除：不确认，直接移进废纸篓，撤销后文件回到原处
+        // 删除：不确认，直接移进废纸篓，删除同时暂存
         try await fixture.perform { session.delete([StatusEntry(kind: .unchanged, path: "a b.txt")]) }
 
         let deleted = fixture.directory.appending(path: "a b.txt")
+        let entry = session.status?.entries.first
 
         #expect(confirmations == 1)
         #expect(!FileManager.default.fileExists(atPath: deleted.path))
+        #expect(entry?.path == "a b.txt" && entry?.staged == .deleted && entry?.unstaged == nil)
         #expect(Self.trashed(in: session.undoHistory?.undoEntries.last).count == 1)
 
+        // 撤销：文件回到原处，索引项随之恢复，工作区回到干净
         try await fixture.perform { session.undoLastOperation() }
+
         #expect(try fixture.read() == "base\n")
+        #expect(try #require(session.status).entries.isEmpty)
     }
 }
 
@@ -85,12 +90,12 @@ extension UndoSessionTests {
         }
     }
 
-    /// 快照记录里移进废纸篓的项；没有记录或是反向操作的记录时为空。
+    /// 记录里移进废纸篓的项：快照记录的，或反向操作收集的；没有记录时为空。
     static func trashed(in entry: RepositoryUndoEntry?) -> [TrashedItem] {
-        guard case .snapshot(_, _, let trashed) = entry?.change else {
-            return []
+        switch entry?.change {
+        case .snapshot(_, _, let trashed): trashed
+        case .inverse(_, _, _, let inverse): inverse.trashLog?.items ?? []
+        case nil: []
         }
-
-        return trashed
     }
 }

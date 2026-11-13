@@ -155,7 +155,7 @@ extension RepositorySession {
         )
     }
 
-    /// 删除所选文件：移进工作区所在机器的废纸篓；服务器上没有可用的废纸篓时，确认后永久删除。
+    /// 删除所选文件并暂存其中已跟踪文件的删除：移进工作区所在机器的废纸篓；服务器上没有可用的废纸篓时，确认后永久删除。
     func delete(_ entries: [StatusEntry]) {
         let targets = entries.filter(\.isDeletable)
         guard canWrite, !targets.isEmpty, let repository else { return }
@@ -164,13 +164,16 @@ extension RepositorySession {
         let removal = fileRemoval
         let title = AppLocalization.text(removal == .trash ? "files.trash" : "files.delete")
 
+        // 移进废纸篓的项连同索引项由反向操作恢复；永久删除的已跟踪文件按快照写回
+        let undo: UndoRecording = removal == .trash ? .deletingFiles(paths) : .reversible
+
         // 删除与其它写操作一样经仓库写队列执行
         let perform = { [weak self] in
             _ = self?.performGit(
                 { runner, _ in try await WorkingCopyOperations(runner: runner).delete(paths, removal: removal) },
                 title: title,
                 recordsActivity: false,
-                undo: .reversible
+                undo: undo
             )
         }
 

@@ -934,6 +934,10 @@
 "files.error.destination" = "El destino ya existe";
 "files.error.trashUnavailable" = "No hay papelera disponible en el servidor";
 "files.error.trashedItems" = "No se pueden restaurar desde la papelera";
+"files.error.partialDeletion" = "No se han eliminado todos los ítems";
+"files.error.partialDeletion.help" = "Los ítems que aparecen al principio de la salida original se quitaron del disco, pero su eliminación no se añadió al stage. Los demás ítems no han cambiado. Actualizar para revisar la copia de trabajo antes de volver a intentarlo.";
+"files.error.unstagedDeletion" = "La eliminación no se añadió al stage";
+"files.error.unstagedDeletion.help" = "Todos los ítems que aparecen al principio de la salida original se quitaron del disco, pero la eliminación de los archivos con seguimiento no se añadió al stage. Añadir la eliminación al stage en la copia de trabajo, o revisar la causa en la salida original.";
 "files.doubleClick" = "Doble clic en un archivo de la copia de trabajo:";
 "files.doubleClick.openFile" = "Abrir con la aplicación por omisión";
 "files.doubleClick.openDiff" = "Abrir herramienta de comparación";

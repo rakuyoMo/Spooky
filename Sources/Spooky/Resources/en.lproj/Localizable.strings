@@ -934,6 +934,10 @@
 "files.error.destination" = "The Destination Already Exists";
 "files.error.trashUnavailable" = "No Trash Is Available on the Server";
 "files.error.trashedItems" = "The Files Can’t Be Put Back from the Trash";
+"files.error.partialDeletion" = "Not All Items Were Deleted";
+"files.error.partialDeletion.help" = "The items listed at the start of the original output were removed from disk, but their deletion wasn’t staged. The other items weren’t changed. Refresh to check the working copy before trying again.";
+"files.error.unstagedDeletion" = "The Deletion Wasn’t Staged";
+"files.error.unstagedDeletion.help" = "The items listed at the start of the original output were all removed from disk, but the deletion of tracked files wasn’t staged. Stage the deletion in the working copy, or check the original output for the cause.";
 "files.doubleClick" = "Double-click on file in working copy:";
 "files.doubleClick.openFile" = "Open with default application";
 "files.doubleClick.openDiff" = "Open Diff tool";

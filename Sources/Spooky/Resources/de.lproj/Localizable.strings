@@ -934,6 +934,10 @@
 "files.error.destination" = "Das Ziel existiert bereits";
 "files.error.trashUnavailable" = "Auf dem Server ist kein Papierkorb verfügbar";
 "files.error.trashedItems" = "Zurücklegen aus dem Papierkorb nicht möglich";
+"files.error.partialDeletion" = "Nicht alle Objekte wurden gelöscht";
+"files.error.partialDeletion.help" = "Die am Anfang der Originalausgabe aufgeführten Objekte wurden von der Festplatte entfernt, das Löschen wurde jedoch nicht gestagt. Die übrigen Objekte sind unverändert. Aktualisieren Sie und prüfen Sie die Arbeitskopie, bevor Sie es erneut versuchen.";
+"files.error.unstagedDeletion" = "Das Löschen wurde nicht gestagt";
+"files.error.unstagedDeletion.help" = "Die am Anfang der Originalausgabe aufgeführten Objekte wurden alle von der Festplatte entfernt, das Löschen der verfolgten Dateien wurde jedoch nicht gestagt. Stagen Sie das Löschen in der Arbeitskopie oder prüfen Sie die Ursache in der Originalausgabe.";
 "files.doubleClick" = "Doppelklick auf Datei in der Arbeitskopie:";
 "files.doubleClick.openFile" = "Mit Standardprogramm öffnen";
 "files.doubleClick.openDiff" = "Vergleichswerkzeug öffnen";

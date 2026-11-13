@@ -14,6 +14,9 @@ struct RepositoryTrashTests {
     /// 名字覆盖空格、中文、引号与方括号的未跟踪文件。
     private static let untracked = "新 文件 ' \" [1].txt"
 
+    /// 删除测试里的已跟踪文件：未修改、已暂存、部分暂存、assume-unchanged，以及目录里名字带方括号的文件。
+    private static let tracked = ["tracked [*].txt", "staged.txt", "partial.txt", "assumed.txt", "dir/[x].txt"]
+
     /// 丢弃把已跟踪的改动恢复到最后一次提交，未跟踪文件移进废纸篓、内容不变；撤销从废纸篓移回原处，
     /// 重做再移进废纸篓并记下新的位置；废纸篓里的项不在了时撤销被拒绝，仓库保持操作后的样子；
     /// 永久删除时不进废纸篓。
@@ -87,48 +90,108 @@ struct RepositoryTrashTests {
         #expect(!FileManager.default.fileExists(atPath: repository.directory.appending(path: "gone.txt").path))
     }
 
-    /// 删除已跟踪的文件与整个未跟踪的目录都移进废纸篓，Git 看到的是未暂存的删除；
-    /// 撤销移回原处，内容与状态回到删除前。
-    @Test("撤销删除：文件与目录从废纸篓移回")
-    func undoDeleteThroughTrash() async throws {
-        let repository = try await committedRepository()
+    /// 删除把其中的已跟踪文件同时从索引移除：未修改、已暂存、部分暂存、assume-unchanged 与名字带方括号的文件
+    /// 都成为已暂存的删除，未跟踪的文件与目录只移进废纸篓；撤销移回原处，索引项、已暂存的内容与
+    /// assume-unchanged 标记都回到删除前；删除的文件又出现在索引里时撤销被拒绝，什么都不动。
+    @Test("删除并暂存删除，撤销恢复索引与标记")
+    func deleteStagesDeletion() async throws {
+        let repository = try await stagingRepository()
         defer { repository.remove() }
 
         let runner = repository.runner
-        let undo = RepositoryUndo(runner: runner)
+        let service = WorkingCopyOperations(runner: runner)
+        let paths = Self.tracked + ["new.txt", "build [x]/"]
 
         try FileManager.default.createDirectory(
             at: repository.directory.appending(path: "build [x]"),
             withIntermediateDirectories: true
         )
+        try write("new\n", to: "new.txt", in: repository)
         try write("a\n", to: "build [x]/a.o", in: repository)
-        try write("b\n", to: "build [x]/b.o", in: repository)
 
-        let before = try await undo.capture()
+        let index = try await runner.run(["ls-files", "-s", "-v", "-z"])
+        let entries = try await service.trackedIndexEntries(under: paths)
         let log = TrashLog()
 
-        try await TrashLog.$current.withValue(log) {
-            _ = try await WorkingCopyOperations(runner: runner).delete(["tracked [*].txt", "build [x]/"])
-        }
+        try await TrashLog.$current.withValue(log) { _ = try await service.delete(paths) }
 
-        let after = try await undo.capture()
         let trashed = log.items
         defer { Self.empty(trashed) }
 
-        // 两项都在废纸篓里，原处没有文件，已跟踪的文件成为未暂存的删除
-        let entries = try await runner.status().entries
-        #expect(trashed.count == 2)
-        #expect(trashed.allSatisfy { $0.location.map(FileManager.default.fileExists(atPath:)) ?? false })
-        #expect(!FileManager.default.fileExists(atPath: repository.directory.appending(path: "build [x]").path))
-        #expect(entries.map(\.path) == ["tracked [*].txt"])
-        #expect(entries.first?.unstaged == .deleted)
-        #expect(try await undo.canRestore(before, from: after, trashed: trashed))
+        // 已跟踪的都成为已暂存的删除，未跟踪的只移走
+        let status = try await runner.status().entries
 
-        // 撤销后内容与状态回到删除前
-        try await undo.restore(before, expecting: after, message: "undo", puttingBack: trashed)
-        #expect(try await undo.capture() == before)
-        #expect(try read("tracked [*].txt", in: repository) == "base\n")
-        #expect(try read("build [x]/b.o", in: repository) == "b\n")
+        #expect(trashed.count == paths.count)
+        #expect(status.map(\.path).sorted() == Self.tracked.sorted())
+        #expect(status.allSatisfy { $0.staged == .deleted && $0.unstaged == nil })
+
+        // 撤销：移回原处，索引与 assume-unchanged 标记回到删除前，工作区里的内容来自废纸篓
+        try await service.restoreDeleted(trashed, entries: entries)
+
+        #expect(try await runner.run(["ls-files", "-s", "-v", "-z"]) == index)
+        #expect(try read("partial.txt", in: repository) == "worktree\n")
+        #expect(try read("assumed.txt", in: repository) == "hidden\n")
+        #expect(try read("build [x]/a.o", in: repository) == "a\n")
+
+        // 再删一次后在原路径暂存了新文件：撤销被拒绝，废纸篓里的项没动
+        let single = try await service.trackedIndexEntries(under: ["staged.txt"])
+        let again = TrashLog()
+
+        try await TrashLog.$current.withValue(again) { _ = try await service.delete(["staged.txt"]) }
+        defer { Self.empty(again.items) }
+
+        try write("other\n", to: "staged.txt", in: repository)
+        _ = try await runner.run(["add", "--", "staged.txt"])
+
+        await #expect(throws: RepositoryUndoError.repositoryChanged) {
+            try await service.restoreDeleted(again.items, entries: single)
+        }
+        #expect(again.items.allSatisfy { $0.location.map(FileManager.default.fileExists(atPath:)) ?? false })
+    }
+
+    /// 删除没有全部完成时如实报告：有一项移不走时只列出已移走的项，索引不动；
+    /// 都已移进废纸篓、索引被锁住时报告删除没有暂存，文件留在废纸篓里。
+    @Test("删除中途失败的报告")
+    func partialDeletion() async throws {
+        let repository = try await stagingRepository()
+        defer { repository.remove() }
+
+        let runner = repository.runner
+        let service = WorkingCopyOperations(runner: runner)
+        let locked = repository.directory.appending(path: "locked")
+
+        // 只读目录里的文件移不走，排在它前面的文件已永久删除
+        try FileManager.default.createDirectory(at: locked, withIntermediateDirectories: true)
+        try write("x\n", to: "locked/x.txt", in: repository)
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: locked.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: locked.path) }
+
+        let partial = try await #require(throws: FileDeletionError.self) {
+            try await service.delete(["partial.txt", "locked/x.txt"], removal: .permanent)
+        }
+
+        #expect(partial.removed == ["partial.txt"])
+        #expect(!partial.removedAll)
+        #expect(FileManager.default.fileExists(atPath: locked.appending(path: "x.txt").path))
+        #expect(try await runner.status().entries.first { $0.path == "partial.txt" }?.unstaged == .deleted)
+
+        // 索引被锁住：文件已在废纸篓里，删除没有暂存
+        let lock = repository.directory.appending(path: ".git/index.lock")
+        let log = TrashLog()
+
+        try Data().write(to: lock)
+
+        let unstaged = try await #require(throws: FileDeletionError.self) {
+            try await TrashLog.$current.withValue(log) { _ = try await service.delete(["tracked [*].txt"]) }
+        }
+        defer { Self.empty(log.items) }
+
+        try FileManager.default.removeItem(at: lock)
+
+        #expect(unstaged.removed == ["tracked [*].txt"])
+        #expect(unstaged.removedAll)
+        #expect(log.items.count == 1)
+        #expect(try await runner.status().entries.first { $0.path == "tracked [*].txt" }?.unstaged == .deleted)
     }
 
     /// 服务器上 macOS 的废纸篓脚本在本机执行同一份：输出与路径一一对应，名字里的引号、换行与中文都能取出位置；
@@ -246,6 +309,37 @@ extension RepositoryTrashTests {
         try write("base\n", to: "tracked [*].txt", in: repository)
         _ = try await repository.runner.run(["add", "--all"])
         _ = try await repository.runner.run(["commit", "-q", "-m", "base"])
+
+        return repository
+    }
+
+    /// 有 ``tracked`` 各文件的临时仓库：`staged.txt` 有已暂存的改动，`partial.txt` 暂存后又改了工作区，
+    /// `assumed.txt` 标为 assume-unchanged 后有看不到的改动。
+    private func stagingRepository() async throws -> TemporaryRepository {
+        let repository = try await committedRepository()
+        let runner = repository.runner
+
+        try FileManager.default.createDirectory(
+            at: repository.directory.appending(path: "dir"),
+            withIntermediateDirectories: true
+        )
+
+        for path in Self.tracked.dropFirst() {
+            try write("base\n", to: path, in: repository)
+        }
+
+        _ = try await runner.run(["add", "--all"])
+        _ = try await runner.run(["commit", "-q", "-m", "files"])
+
+        // 已暂存的改动与部分暂存
+        try write("staged\n", to: "staged.txt", in: repository)
+        try write("index\n", to: "partial.txt", in: repository)
+        _ = try await runner.run(["add", "--", "staged.txt", "partial.txt"])
+        try write("worktree\n", to: "partial.txt", in: repository)
+
+        // assume-unchanged 之后的改动 Git 看不到
+        _ = try await runner.run(["update-index", "--assume-unchanged", "--", "assumed.txt"])
+        try write("hidden\n", to: "assumed.txt", in: repository)
 
         return repository
     }

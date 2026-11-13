@@ -934,6 +934,10 @@
 "files.error.destination" = "La destination existe déjà";
 "files.error.trashUnavailable" = "Aucune corbeille n’est disponible sur le serveur";
 "files.error.trashedItems" = "Impossible de restaurer depuis la corbeille";
+"files.error.partialDeletion" = "Tous les éléments n’ont pas été supprimés";
+"files.error.partialDeletion.help" = "Les éléments listés au début de la sortie d’origine ont été retirés du disque, mais leur suppression n’a pas été indexée. Les autres éléments sont inchangés. Actualisez pour vérifier la copie de travail avant de réessayer.";
+"files.error.unstagedDeletion" = "La suppression n’a pas été indexée";
+"files.error.unstagedDeletion.help" = "Tous les éléments listés au début de la sortie d’origine ont été retirés du disque, mais la suppression des fichiers suivis n’a pas été indexée. Indexez la suppression dans la copie de travail, ou consultez la sortie d’origine pour en connaître la cause.";
 "files.doubleClick" = "Double-clic sur un fichier de la copie de travail :";
 "files.doubleClick.openFile" = "Ouvrir avec l’application par défaut";
 "files.doubleClick.openDiff" = "Ouvrir l’outil de comparaison";

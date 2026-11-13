@@ -934,6 +934,10 @@
 "files.error.destination" = "目標位置已存在";
 "files.error.trashUnavailable" = "伺服器上沒有可用的垃圾桶";
 "files.error.trashedItems" = "無法從垃圾桶移回檔案";
+"files.error.partialDeletion" = "沒有全部刪除";
+"files.error.partialDeletion.help" = "原始輸出開頭列出的項目已從磁碟移除，刪除沒有暫存；其餘項目沒有變更。請重新整理以查看工作區，再決定是否重試。";
+"files.error.unstagedDeletion" = "刪除沒有暫存";
+"files.error.unstagedDeletion.help" = "原始輸出開頭列出的項目都已從磁碟移除，但已追蹤檔案的刪除沒有暫存。請在工作區中暫存這些刪除，或查看原始輸出了解原因。";
 "files.doubleClick" = "按兩下工作區中的檔案：";
 "files.doubleClick.openFile" = "以預設應用程式開啟";
 "files.doubleClick.openDiff" = "開啟比較工具";
