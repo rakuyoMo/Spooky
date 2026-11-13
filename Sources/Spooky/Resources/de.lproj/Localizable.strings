@@ -386,9 +386,10 @@
 "history.authorDate" = "Autordatum";
 "history.committer" = "Committer";
 "history.commitDate" = "Committer-Datum";
+"history.refs" = "Referenzen";
 "history.hash" = "Commit-Hash";
 "history.treeHash" = "Tree-Hash";
-"history.parents" = "Eltern-Hashes";
+"history.parentHash" = "Eltern-Hash";
 "history.showHead" = "HEAD-Branch anzeigen";
 "history.diffs" = "Diffs im Änderungssatz";
 "history.autoExpand.never" = "Nie automatisch erweitern";

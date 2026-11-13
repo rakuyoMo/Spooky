@@ -3,12 +3,12 @@ import SwiftUI
 
 // MARK: - HistoryRefBadges
 
-/// 提交行里的引用标记：HEAD 指向这个提交时最前面是一个蓝色的 HEAD，其后是指向它的各个引用，排成一行，最宽 300 pt。
+/// 提交行里的引用标记：HEAD 指向这个提交时最前面是一个蓝色的 HEAD，其后是指向它的各个引用，排成一行，默认最宽 300 pt。
 ///
 /// 从开头起放得下的标记照常显示，从第一个放不下的起折叠成一个 “…”；只占排出来的宽度，不在行里留空。
 struct HistoryRefBadges: View {
-    /// 一行标记的最大宽度。
-    static let maxWidth: CGFloat = 300
+    /// 提交行里一行标记的默认最大宽度。
+    static let defaultMaxWidth: CGFloat = 300
 
     /// 指向这个提交的完整引用。
     let references: [RepositoryReference]
@@ -22,6 +22,9 @@ struct HistoryRefBadges: View {
     /// 校验标签签名用的执行器。
     let runner: GitRunner?
 
+    /// 一行标记的最大宽度：提交行 300 pt，详情头部的 Refs 行 100 pt。
+    var maxWidth = Self.defaultMaxWidth
+
     /// 标记的个数，HEAD 也算一个。
     private var count: Int {
         (isHead ? 1 : 0) + references.count
@@ -29,7 +32,7 @@ struct HistoryRefBadges: View {
 
     /// 从显示全部标记起，每次少显示一个、末尾补 “…”，取第一种放得下的。
     var body: some View {
-        RefBadgeRowWidth(limit: Self.maxWidth) {
+        RefBadgeRowWidth(limit: maxWidth) {
             ViewThatFits(in: .horizontal) {
                 ForEach((0 ... count).reversed(), id: \.self) { shown in
                     row(showing: shown)
@@ -111,5 +114,26 @@ private struct RefBadgeRowWidth: Layout {
     /// - Parameter proposal: 行里给的提议。
     private func limited(_ proposal: ProposedViewSize) -> ProposedViewSize {
         ProposedViewSize(width: min(proposal.width ?? limit, limit), height: proposal.height)
+    }
+}
+
+// MARK: - RepositoryHistoryState
+
+extension RepositoryHistoryState {
+    /// 指向这个提交的引用，取自最新的引用快照：HEAD 所在分支在前，其余按完整引用名倒序。
+    ///
+    /// - Parameter commitID: 提交的完整哈希。
+    func decorations(of commitID: String) -> [RepositoryReference] {
+        snapshot?.decorations(
+            of: commitID,
+            headBranch: branch?.head.map { "refs/heads/" + $0 }
+        ) ?? []
+    }
+
+    /// HEAD 是否指向这个提交。
+    ///
+    /// - Parameter commitID: 提交的完整哈希。
+    func isHead(_ commitID: String) -> Bool {
+        branch?.oid == commitID
     }
 }

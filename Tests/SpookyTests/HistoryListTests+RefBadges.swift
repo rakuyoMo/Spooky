@@ -28,8 +28,8 @@ extension HistoryListTests {
         let all = try Self.badgesWidth(short, proposal: 1000)
         let ellipsis = try Self.badgesWidth(short, proposal: 20)
 
-        #expect(all < HistoryRefBadges.maxWidth)
-        #expect(try Self.badgesWidth(short, proposal: HistoryRefBadges.maxWidth) == all)
+        #expect(all < HistoryRefBadges.defaultMaxWidth)
+        #expect(try Self.badgesWidth(short, proposal: HistoryRefBadges.defaultMaxWidth) == all)
         #expect(ellipsis < 20)
 
         // 差一点放不下时，保留前面放得下的，末尾是 “…”
@@ -42,7 +42,7 @@ extension HistoryListTests {
         let capped = try Self.badgesWidth(long, proposal: 1000)
 
         #expect(capped > ellipsis)
-        #expect(capped <= HistoryRefBadges.maxWidth)
+        #expect(capped <= HistoryRefBadges.defaultMaxWidth)
 
         // 小号行里标题紧跟在标记之后，中间是 4 pt 的间距
         let plain = try Self.subjectStart(references: [], isHead: false)

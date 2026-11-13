@@ -386,9 +386,10 @@
 "history.authorDate" = "作者日期";
 "history.committer" = "提交人";
 "history.commitDate" = "提交日期";
+"history.refs" = "引用";
 "history.hash" = "提交哈希";
 "history.treeHash" = "树哈希";
-"history.parents" = "父提交哈希";
+"history.parentHash" = "父提交哈希";
 "history.showHead" = "显示 HEAD 分支";
 "history.diffs" = "变更集 Diff";
 "history.autoExpand.never" = "不自动展开";

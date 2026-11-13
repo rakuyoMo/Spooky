@@ -663,11 +663,8 @@ extension HistoryCommitTable.Coordinator {
             let view = HistoryCommitRow(
                 commit: commit,
                 graph: parent.showGraph ? history.graphRows[commit.id] : nil,
-                references: history.snapshot?.decorations(
-                    of: commit.id,
-                    headBranch: history.branch?.head.map { "refs/heads/" + $0 }
-                ) ?? [],
-                isHead: history.branch?.oid == commit.id,
+                references: history.decorations(of: commit.id),
+                isHead: history.isHead(commit.id),
                 small: parent.usesSmallRows,
                 dateFormat: parent.dateFormat,
                 unpushed: history.unpushed.contains(commit.id),

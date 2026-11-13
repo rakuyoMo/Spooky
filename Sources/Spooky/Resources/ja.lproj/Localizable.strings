@@ -386,9 +386,10 @@
 "history.authorDate" = "作成日時";
 "history.committer" = "コミッター";
 "history.commitDate" = "コミット日時";
+"history.refs" = "参照";
 "history.hash" = "コミットハッシュ";
 "history.treeHash" = "ツリーハッシュ";
-"history.parents" = "親コミットハッシュ";
+"history.parentHash" = "親コミットハッシュ";
 "history.showHead" = "HEAD ブランチを表示";
 "history.diffs" = "変更セットの差分";
 "history.autoExpand.never" = "自動展開しない";

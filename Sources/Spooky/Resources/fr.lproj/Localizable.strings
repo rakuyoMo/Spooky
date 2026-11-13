@@ -386,9 +386,10 @@
 "history.authorDate" = "Date d’auteur";
 "history.committer" = "Validateur";
 "history.commitDate" = "Date de validation";
+"history.refs" = "Références";
 "history.hash" = "Hash du commit";
 "history.treeHash" = "Hash de l’arbre";
-"history.parents" = "Hashs des parents";
+"history.parentHash" = "Hash du parent";
 "history.showHead" = "Afficher la branche HEAD";
 "history.diffs" = "Diffs de l’ensemble de modifications";
 "history.autoExpand.never" = "Ne jamais développer automatiquement";

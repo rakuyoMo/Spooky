@@ -43,7 +43,7 @@ struct ChangesetFileRow<Label: View, Diff: View>: View {
     /// 三角自己接收点击，行里其它位置都算点在这一行上。
     private var header: some View {
         HStack(spacing: 2) {
-            ChangesetDisclosureButton(isExpanded: $isExpanded)
+            DisclosureTriangleButton(isExpanded: $isExpanded)
                 .frame(width: 13, height: 13)
 
             label()
@@ -62,10 +62,10 @@ struct ChangesetFileRow<Label: View, Diff: View>: View {
     }
 }
 
-// MARK: - ChangesetDisclosureButton
+// MARK: - DisclosureTriangleButton
 
-/// 文件行左侧的系统披露三角：点它切换展开，辅助功能里是一个披露三角。
-private struct ChangesetDisclosureButton: NSViewRepresentable {
+/// 系统披露三角：点它切换展开，辅助功能里是一个披露三角；变更集文件行与提交详情头部共用。
+struct DisclosureTriangleButton: NSViewRepresentable {
     /// 按钮的动作接收方，把按钮的新状态写回展开状态。
     @MainActor
     final class Coordinator: NSObject {

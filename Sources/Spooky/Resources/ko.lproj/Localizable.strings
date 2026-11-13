@@ -386,9 +386,10 @@
 "history.authorDate" = "작성 날짜";
 "history.committer" = "커미터";
 "history.commitDate" = "커밋 날짜";
+"history.refs" = "참조";
 "history.hash" = "커밋 해시";
 "history.treeHash" = "트리 해시";
-"history.parents" = "부모 커밋 해시";
+"history.parentHash" = "부모 커밋 해시";
 "history.showHead" = "HEAD 브랜치 표시";
 "history.diffs" = "변경 집합 비교";
 "history.autoExpand.never" = "자동 펼치기 안 함";

@@ -25,6 +25,9 @@ struct CommitPageDiffView: View {
 
 /// 历史右侧的详情：单选时是提交的一体滚动详情或文件树，多选时是选中数与比较入口，比较两个版本时是比较视图。
 struct CommitDetailView: View {
+    /// 头部与提交说明所在容器的左右边距。
+    static let contentInset: CGFloat = 20
+
     /// 当前提交和文件读取状态。
     @Bindable
     var history: RepositoryHistoryState
@@ -114,13 +117,23 @@ struct CommitDetailView: View {
         let selectionColor = fileSelectionColor
 
         return LazyVStack(alignment: .leading, spacing: 0) {
-            CommitMetadataView(commit: commit, signature: session.signatures.signatures[commit.id])
+            CommitMetadataView(
+                commit: commit,
+                signature: session.signatures.signatures[commit.id],
+                references: history.decorations(of: commit.id),
+                isHead: history.isHead(commit.id),
+                runner: session.runner
+            )
 
+            // 提交说明的文字容器横向 3、纵向 8，右侧另留 20，放在与头部相同的详情容器里
             Text(commit.message)
                 .font(.system(size: 13))
                 .lineSpacing(3)
                 .textSelection(.enabled)
-                .padding(20)
+                .padding(.horizontal, 3)
+                .padding(.vertical, 8)
+                .padding(.trailing, 20)
+                .padding(.horizontal, Self.contentInset)
 
             // 在看 HEAD 分支时，信息下面是 Rollback 与 Revert
             if session.isViewingHead {
