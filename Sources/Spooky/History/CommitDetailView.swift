@@ -44,6 +44,14 @@ struct CommitDetailView: View {
     @State
     private var hovering = false
 
+    /// 变更文件行所在的滚动内容有键盘焦点时，↑ ↓ 移动文件的选中。
+    @FocusState
+    private var filesFocused: Bool
+
+    /// 窗口是否在前，决定文件行选中底的颜色。
+    @Environment(\.appearsActive)
+    private var appearsActive
+
     /// 换选提交时结束比较。
     var body: some View {
         content
@@ -111,6 +119,15 @@ struct CommitDetailView: View {
         }
     }
 
+    /// 文件行选中底的颜色：滚动内容有焦点且窗口在前时是强调色。
+    private var fileSelectionColor: NSColor {
+        .listSelection(
+            emphasized: appearsActive && filesFocused,
+            key: appearsActive,
+            background: .windowBackgroundColor
+        )
+    }
+
     /// 滚动区域的内容：元信息、完整信息、操作按钮行、变更集摘要与逐个文件的 Diff。
     private func scrollContent(_ commit: HistoryCommit) -> some View {
         LazyVStack(alignment: .leading, spacing: 0) {
@@ -139,6 +156,12 @@ struct CommitDetailView: View {
 
             changeRows
         }
+        .focusable()
+        .focused($filesFocused)
+        .focusEffectDisabled()
+        .onKeyPress(keys: [.upArrow, .downArrow], phases: [.down, .repeat]) { press in
+            moveFileSelection(press)
+        }
     }
 
     /// 单个变更文件的折叠组，展开时才读取它的 Diff。
@@ -160,6 +183,8 @@ struct CommitDetailView: View {
         } label: {
             CommitFileLabel(file: file)
                 .frame(height: 30)
+                .contentShape(Rectangle())
+                .onTapGesture { clickFile(file.path) }
                 .contextMenu {
                     if let commit = history.selectedCommit {
                         ChangesetFileMenu(session: session, path: file.path, originalPath: file.originalPath, commit: commit)
@@ -167,7 +192,46 @@ struct CommitDetailView: View {
                 }
                 .onDrag { CommitFileDragging.provider(file, session: session) }
         }
+        .background(alignment: .top) {
+            // 选中底只垫在文件行下面，不延伸到展开的 Diff
+            if history.fileSelection.paths.contains(file.path) {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color(nsColor: fileSelectionColor))
+                    .frame(height: 30)
+            }
+        }
         .padding(.horizontal, 8)
+    }
+
+    /// 点选一个文件行：按住 ⇧ 连续选，按住 ⌘ 切换这一行；键盘焦点随之交给变更文件所在的滚动内容。
+    private func clickFile(_ path: String) {
+        #warning("TODO: 点选文件行后焦点从历史列表交给详情的滚动内容、↑ ↓ 随后移动文件的选中，要在真实窗口里点选确认")
+
+        let modifiers = NSEvent.modifierFlags
+
+        history.fileSelection.click(
+            path,
+            extending: modifiers.contains(.shift),
+            toggling: modifiers.contains(.command),
+            order: history.changes.map(\.path)
+        )
+
+        filesFocused = true
+    }
+
+    /// ↑ ↓ 把文件的选中移到上一行或下一行，按住 ⇧ 从锚点连续选；没有变更文件时交给别处处理。
+    private func moveFileSelection(_ press: KeyPress) -> KeyPress.Result {
+        guard !history.changes.isEmpty else {
+            return .ignored
+        }
+
+        history.fileSelection.move(
+            by: press.key == .upArrow ? -1 : 1,
+            extending: press.modifiers.contains(.shift),
+            order: history.changes.map(\.path)
+        )
+
+        return .handled
     }
 }
 

@@ -148,6 +148,9 @@ final class RepositoryHistoryState {
     /// 展开的文件共享一个滚动区域。
     var expandedPaths = Set<String>()
 
+    /// 变更文件行的选区；换提交时清空，展开与 Expand All 不改它。
+    var fileSelection = ChangesetFileSelection()
+
     /// 仅当前变更集的每个文件都展开时成立，忽略残留的其它身份。
     var allItemsExpanded: Bool {
         !changes.isEmpty && changes.allSatisfy { expandedPaths.contains($0.path) }
@@ -425,6 +428,7 @@ final class RepositoryHistoryState {
         diffs = [:]
         diffFailures = [:]
         expandedPaths = []
+        fileSelection = ChangesetFileSelection()
         selectedPath = nil
         showsCommitPage = false
         revealedCommit = nil

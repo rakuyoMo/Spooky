@@ -24,13 +24,10 @@ extension HistoryListTests {
         // 窗口是 key 时只看列表有没有焦点
         let background = NSColor.controlBackgroundColor
 
-        #expect(
-            HistoryRowView.selectionColor(emphasized: true, key: true, background: background)
-                == .controlAccentColor
-        )
+        #expect(NSColor.listSelection(emphasized: true, key: true, background: background) == .controlAccentColor)
 
         #expect(
-            HistoryRowView.selectionColor(emphasized: false, key: true, background: background)
+            NSColor.listSelection(emphasized: false, key: true, background: background)
                 == .unemphasizedSelectedContentBackgroundColor
         )
 
@@ -96,19 +93,13 @@ extension HistoryListTests {
         return try RenderedPixels(view: row)
     }
 
-    /// 窗口不是 key 时的选中色画出来的像素：按列表的外观取色，填满一块色板后经同样的方式画出。
+    /// 窗口不是 key 时的选中色画出来的像素：用与列表相同的外观填满一块色板，经同样的方式画出。
     private static func inactiveSelectionPixel(of table: NSTableView) throws -> NSColor {
-        var resolved: NSColor? = nil
+        let swatch = ColorSwatch(
+            color: .listSelection(emphasized: true, key: false, background: table.backgroundColor)
+        )
 
-        table.effectiveAppearance.performAsCurrentDrawingAppearance {
-            resolved = HistoryRowView.selectionColor(
-                emphasized: true,
-                key: false,
-                background: table.backgroundColor
-            )
-        }
-
-        let swatch = ColorSwatch(color: try #require(resolved))
+        swatch.appearance = table.effectiveAppearance
 
         return try #require(RenderedPixels(view: swatch).color(x: 2, y: 2))
     }
@@ -196,7 +187,7 @@ private final class ColorSwatch: NSView {
 
     /// 建立填满 `color` 的色板。
     ///
-    /// - Parameter color: 已按外观取好的颜色。
+    /// - Parameter color: 填充的颜色，随色板的外观取色。
     init(color: NSColor) {
         self.color = color
         super.init(frame: NSRect(x: 0, y: 0, width: 4, height: 4))
