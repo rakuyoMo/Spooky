@@ -33,7 +33,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
     /// 构建事件与模型桥接器。
     func makeCoordinator() -> Coordinator { Coordinator(session: session) }
 
-    /// 表格固定状态列宽、行高与目录缩进，文件可以拖出到其它程序。
+    /// 表格固定状态列宽、行高与目录缩进，行间有分隔线，文件可以拖出到其它程序。
     func makeNSView(context: Context) -> NSScrollView {
         let outline = FileOutlineView()
         outline.delegate = context.coordinator
@@ -41,6 +41,11 @@ struct WorkingCopyFileList: NSViewRepresentable {
         outline.rowHeight = 28
         outline.intercellSpacing = .zero
         outline.style = .inset
+
+        // 行与行之间画系统分隔线
+        outline.gridStyleMask = .solidHorizontalGridLineMask
+        outline.gridColor = .separatorColor
+
         outline.allowsMultipleSelection = true
         outline.indentationPerLevel = 16
         outline.autoresizesOutlineColumn = false
@@ -212,7 +217,7 @@ extension WorkingCopyFileList {
         var node: Node?
     }
 
-    /// 冲突行以浅红背景辅助 U 徽标，选中时仍由系统绘制选区。
+    /// 冲突行以浅红背景辅助 U 徽标，选中时仍由系统绘制选区；行间分隔线在背景之后绘制，不被浅红盖住。
     final class ConflictRowView: NSTableRowView {
         /// 深浅外观分别使用 20% 与 10% 的系统红色。
         override func drawBackground(in dirtyRect: NSRect) {
