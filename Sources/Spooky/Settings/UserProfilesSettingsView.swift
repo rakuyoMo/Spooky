@@ -480,6 +480,8 @@ extension UserProfileEditor {
     }
 
     /// 签名密钥的弹出菜单：本机的 OpenPGP 与 SSH 密钥，找不到的已配置密钥，最后是不带密钥；本机没有密钥时整行不可用。
+    ///
+    /// 下拉填满输入列，与上面几行的输入框左右对齐。
     private var signingKeyRow: some View {
         GridRow {
             Text(AppLocalization.text("profiles.signingKey"))
@@ -503,7 +505,7 @@ extension UserProfileEditor {
                     .tag(String?.none)
             }
             .labelsHidden()
-            .frame(maxWidth: .infinity)
+            .buttonSizing(.flexible)
             .disabled(keys.isEmpty)
             .accessibilityLabel(AppLocalization.text("profiles.signingKey"))
         }
