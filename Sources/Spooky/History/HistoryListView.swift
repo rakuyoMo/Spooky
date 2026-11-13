@@ -709,18 +709,24 @@ struct HistoryCommitRow: View {
                     .frame(width: Self.graphWidth(graph))
                     .accessibilityHidden(true)
             }
-            if small {
-                smallLayout
-            } else {
-                mediumLayout
+
+            // 图之外的内容比行的正中高 1 pt：头像底（中号）到行底的分隔线留 7 pt，短哈希底（小号）留 6 pt
+            Group {
+                if small {
+                    smallLayout
+                } else {
+                    mediumLayout
+                }
+
+                if unpushed || unpulled {
+                    Image(systemName: unpushed ? "arrow.up" : "arrow.down")
+                        .font(.system(size: small ? 10 : 12))
+                        .accessibilityLabel(
+                            AppLocalization.text(unpushed ? "history.unpushed" : "history.unpulled")
+                        )
+                }
             }
-            if unpushed || unpulled {
-                Image(systemName: unpushed ? "arrow.up" : "arrow.down")
-                    .font(.system(size: small ? 10 : 12))
-                    .accessibilityLabel(
-                        AppLocalization.text(unpushed ? "history.unpushed" : "history.unpulled")
-                    )
-            }
+            .offset(y: -1)
         }
         .font(.system(size: small ? 11 : 12))
         .padding(.trailing, 8)

@@ -114,10 +114,6 @@ final class HistoryRowView: NSTableRowView {
         let cell = (view(atColumn: 0) as? NSView)?.frame ?? bounds
         let inset = separatorInset ?? 0
 
-        #warning(
-            "TODO: 分隔线贴着行的底边；中号行的头像在行内上下居中，分隔线离头像底 6 pt，小号行离短哈希底约 5 pt，比要求的 7 pt、6 pt 各少 1 pt，是否把行内的头像与文字上移 1 pt 未定。核实方式：深浅色 2× 截图量出头像、短哈希到分隔线的距离；只影响提交行内容的纵向位置。"
-        )
-
         separator.frame = NSRect(
             x: cell.minX + inset,
             y: isFlipped ? bounds.maxY - 1 : bounds.minY,

@@ -140,9 +140,9 @@ extension HistoryListTests {
 
 // MARK: - RenderedPixels
 
-/// 按 2 倍像素画出的视图，按 pt 坐标取色；行视图与色板经同一种位图画出，颜色可以直接比较。
+/// 按 2 倍像素画出的视图，按 pt 坐标取色；经同一种位图画出的颜色可以直接比较。
 @MainActor
-private struct RenderedPixels {
+struct RenderedPixels {
     /// 视图画出的位图。
     let bitmap: NSBitmapImageRep
 

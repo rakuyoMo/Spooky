@@ -12,6 +12,7 @@ import TestSupport
 extension HistoryListTests {
     /// 提交行在底边画分隔线，起点是头像或短哈希的左缘，终点是单元格的右缘，叠在单元格之上；
     /// 下一行是日期分组的标题时不画，标题行也不画。中号与小号行各核对一次。
+    /// 中号行的头像比行的正中高 1 pt，头像底离分隔线 7 pt。
     @Test("提交行的分隔线")
     func rowSeparators() async throws {
         let fixture = try await Self.makeSession(commits: ["a", "b", "c"])
@@ -42,6 +43,10 @@ extension HistoryListTests {
         let medium = try await Self.rowViews(in: window, session: fixture.session, small: false)
         try Self.expectSeparators(in: medium, inset: 25)
 
+        // 46 pt 的行里，32 pt 的头像画在行内 6–38 pt，底边到分隔线（45 pt 处）是 7 pt
+        let avatar = try Self.drawnRows(in: medium[2], x: 25 + 16)
+        #expect(avatar == 6 ..< 38)
+
         // 小号行不显示提交图：短哈希贴着单元格的左缘
         let small = try await Self.rowViews(in: window, session: fixture.session, small: true)
         try Self.expectSeparators(in: small, inset: 0)
@@ -71,6 +76,30 @@ extension HistoryListTests {
             #expect(row.separator.frame == expected)
             #expect(row.subviews.last === row.separator)
         }
+    }
+
+    /// 提交行在 `x` 这一列上画到的纵向范围（pt，从行顶起算）：按单元格的尺寸以 2 倍像素画出行的内容，
+    /// 从上往下找第一个与最后一个画到的像素（头像的底色是半透明的填充色）。
+    private static func drawnRows(in row: HistoryRowView, x: CGFloat) throws -> Range<CGFloat>? {
+        let cell = try #require(row.view(atColumn: 0) as? NSHostingView<HistoryCommitRow>)
+
+        let renderer = ImageRenderer(
+            content: cell.rootView.frame(width: cell.bounds.width, height: cell.bounds.height)
+        )
+
+        renderer.scale = 2
+
+        let bitmap = NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+
+        let drawn = (0 ..< bitmap.pixelsHigh).filter {
+            (bitmap.colorAt(x: Int(x * 2), y: $0)?.alphaComponent ?? 0) > 0.01
+        }
+
+        guard let first = drawn.first, let last = drawn.last else {
+            return nil
+        }
+
+        return CGFloat(first) / 2 ..< CGFloat(last + 1) / 2
     }
 }
 
