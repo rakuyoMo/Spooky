@@ -1171,7 +1171,7 @@
 "rewrite.edit.button" = "编辑";
 "rewrite.drop.button" = "删除";
 "rewrite.move.button" = "移动";
-"rewrite.autosquash.button" = "自动压缩";
+"rewrite.autosquash.button" = "自动压缩…";
 "rewrite.rebaseOnto.button" = "变基";
 "rewrite.revert.button" = "反转";
 "rewrite.cherryPick.button" = "摘取";
@@ -1630,7 +1630,8 @@
 "branch.moveHere" = "移到这里";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash" = "这个分支上有标记为 fixup!、squash! 或 amend! 的提交。";
+"history.autosquash.one" = "这个分支上有 %ld 个标记为 fixup!、squash! 或 amend! 的提交。";
+"history.autosquash" = "这个分支上有 %ld 个标记为 fixup!、squash! 或 amend! 的提交。";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "撤销";
 "menu.redo" = "重做";

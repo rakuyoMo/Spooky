@@ -4,7 +4,7 @@ import Foundation
 
 /// 提交日期的显示格式：Settings → General 的 “Date format for commits”。
 ///
-/// 历史的提交行与日期分组、储藏列表、文件历史都经这里格式化，改动设置后一起变化；两种写法都不带时间。
+/// 历史的提交行与日期分组、储藏列表、文件历史与 Reflog 都经这里格式化，改动设置后一起变化；只有 Reflog 的记录行带时间。
 enum CommitDateFormat: String, CaseIterable {
     /// 按语言与区域的短日期，如 “10/26/26”。
     case absolute
@@ -43,6 +43,27 @@ enum CommitDateFormat: String, CaseIterable {
         formatter.timeZone = calendar.timeZone
         formatter.dateStyle = self == .absolute ? .short : .long
         formatter.timeStyle = .none
+
+        return formatter.string(from: date)
+    }
+
+    /// 一个时刻连同系统的短时间，用于 Reflog 的记录行。
+    ///
+    /// 绝对写法是短日期加短时间，如 “11/13/26, 3:03 AM”；相对写法由系统的相对日期给出，
+    /// 今天、昨天这类相邻的日子写说法，其余写完整日期，日期与时间之间的连接也由系统按语言给出，
+    /// 如 “Today at 3:03 AM” “November 10, 2026 at 3:03 AM”。
+    ///
+    /// - Parameters:
+    ///   - date: 要写出的时刻。
+    ///   - calendar: 划分日子的日历；它的时区与语言区域也决定写出的样子。
+    func stringWithTime(from date: Date, calendar: Calendar = .current) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = calendar.locale ?? .current
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.dateStyle = self == .absolute ? .short : .long
+        formatter.timeStyle = .short
+        formatter.doesRelativeDateFormatting = self == .relative
 
         return formatter.string(from: date)
     }

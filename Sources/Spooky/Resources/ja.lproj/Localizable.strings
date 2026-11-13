@@ -1171,7 +1171,7 @@
 "rewrite.edit.button" = "編集";
 "rewrite.drop.button" = "削除";
 "rewrite.move.button" = "移動";
-"rewrite.autosquash.button" = "自動スカッシュ";
+"rewrite.autosquash.button" = "自動スカッシュ…";
 "rewrite.rebaseOnto.button" = "リベース";
 "rewrite.revert.button" = "リバート";
 "rewrite.cherryPick.button" = "チェリーピック";
@@ -1630,7 +1630,8 @@
 "branch.moveHere" = "ここへ移動";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash" = "このブランチには fixup!、squash!、amend! の付いたコミットがあります。";
+"history.autosquash.one" = "このブランチには fixup!、squash!、amend! の付いたコミットが %ld 件あります。";
+"history.autosquash" = "このブランチには fixup!、squash!、amend! の付いたコミットが %ld 件あります。";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "取り消す";
 "menu.redo" = "やり直す";

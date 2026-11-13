@@ -1171,7 +1171,7 @@
 "rewrite.edit.button" = "Bearbeiten";
 "rewrite.drop.button" = "Löschen";
 "rewrite.move.button" = "Verschieben";
-"rewrite.autosquash.button" = "Autosquash";
+"rewrite.autosquash.button" = "Autosquash …";
 "rewrite.rebaseOnto.button" = "Rebase";
 "rewrite.revert.button" = "Revert";
 "rewrite.cherryPick.button" = "Cherry-Pick";
@@ -1630,7 +1630,8 @@
 "branch.moveHere" = "Hierher verschieben";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash" = "Dieser Branch enthält Commits, die mit fixup!, squash! oder amend! markiert sind.";
+"history.autosquash.one" = "Dieser Branch enthält %ld Commit, der mit fixup!, squash! oder amend! markiert ist.";
+"history.autosquash" = "Dieser Branch enthält %ld Commits, die mit fixup!, squash! oder amend! markiert sind.";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "Widerrufen";
 "menu.redo" = "Wiederholen";

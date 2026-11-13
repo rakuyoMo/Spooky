@@ -1171,7 +1171,7 @@
 "rewrite.edit.button" = "편집";
 "rewrite.drop.button" = "삭제";
 "rewrite.move.button" = "이동";
-"rewrite.autosquash.button" = "자동 스쿼시";
+"rewrite.autosquash.button" = "자동 스쿼시…";
 "rewrite.rebaseOnto.button" = "리베이스";
 "rewrite.revert.button" = "되돌리기";
 "rewrite.cherryPick.button" = "체리픽";
@@ -1630,7 +1630,8 @@
 "branch.moveHere" = "여기로 이동";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash" = "이 브랜치에 fixup!, squash! 또는 amend! 표시가 있는 커밋이 있습니다.";
+"history.autosquash.one" = "이 브랜치에 fixup!, squash! 또는 amend! 표시가 있는 커밋이 %ld개 있습니다.";
+"history.autosquash" = "이 브랜치에 fixup!, squash! 또는 amend! 표시가 있는 커밋이 %ld개 있습니다.";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "실행 취소";
 "menu.redo" = "실행 복귀";

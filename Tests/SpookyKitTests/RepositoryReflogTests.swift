@@ -70,6 +70,34 @@ struct RepositoryReflogTests {
         }
     }
 
+    /// 配色只看说明的第一个词：变基的开始、逐个摘取与结束都和合并、拉取一样归合并类，
+    /// 修订与首次提交仍是提交类，检出与重置是移动类；带括号的阶段名与 `pull --rebase` 的选项不影响归类。
+    @Test("按说明分出三类配色")
+    func categories() throws {
+        let hash = String(repeating: "a", count: 40)
+        let commit = [hash, hash, "", "A", "a@x", "1", "C", "c@x", "2", "message"].joined(separator: "\0")
+
+        let expected: [(String, ReflogCategory)] = [
+            ("merge 功能/分支: Merge made by the 'ort' strategy.", .merge),
+            ("pull: Fast-forward", .merge),
+            ("pull --rebase (finish): returning to refs/heads/main", .merge),
+            ("rebase (start): checkout main", .merge),
+            ("rebase (pick): 功能", .merge),
+            ("rebase (finish): returning to refs/heads/功能/分支", .merge),
+            ("commit (amend): 功能", .commit),
+            ("commit (initial): 初始提交", .commit),
+            ("cherry-pick: 功能", .commit),
+            ("revert: Revert \"功能\"", .commit),
+            ("checkout: moving from main to 功能/分支", .move),
+            ("reset: moving to HEAD~1", .move),
+        ]
+
+        let output = expected.map { "HEAD@{100}\0" + $0.0 + "\0" + commit + "\0" }.joined()
+        let entries = try ReflogEntry.parse(Data(output.utf8), offset: 0)
+
+        #expect(entries.map(\.category) == expected.map(\.1))
+    }
+
     /// HEAD 与分支各有自己的记录，分页额外读一条判断是否还有下一页，位置延续上一页；
     /// 搜索只看说明，不区分大小写，方括号与星号按字面匹配；
     /// 分支能移回记录里的提交，分支已经不在读取时的位置上时 Git 拒绝，分支保持原样；

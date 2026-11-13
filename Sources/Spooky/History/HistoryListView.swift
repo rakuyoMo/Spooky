@@ -63,8 +63,12 @@ struct HistoryListView: View {
                 HistorySearchPanel(history: session.history)
             }
 
-            // 当前分支上有带 fixup! 等标记的提交时，提示自动压缩
-            HistoryAutosquashBanner(session: session)
+            // 当前分支上有带 fixup! 等标记的提交时，提示自动压缩；横幅随条件出现和消失，关闭状态只在这次出现期间有效
+            let autosquashCount = HistoryAutosquashBanner.commitCount(in: session)
+
+            if autosquashCount > 0 {
+                HistoryAutosquashBanner(session: session, count: autosquashCount)
+            }
 
             // 回到的提交在当前历史里找不到时说明原因
             if let reason = session.history.lookupFailure {
