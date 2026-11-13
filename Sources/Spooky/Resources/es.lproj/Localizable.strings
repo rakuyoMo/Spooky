@@ -129,7 +129,7 @@
 
 "status.unchanged" = "Sin cambios";
 
-"status.description" = "Índice: %@; árbol de trabajo: %@";
+"status.description" = "Cambios en el stage para confirmar: %@\nCambiado pero fuera del stage: %@";
 
 "detail.empty.title" = "Ningún archivo seleccionado";
 

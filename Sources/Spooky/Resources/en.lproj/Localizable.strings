@@ -129,7 +129,7 @@
 
 "status.unchanged" = "Unchanged";
 
-"status.description" = "Index: %@; Working tree: %@";
+"status.description" = "Staged changes to be committed: %@\nChanged but unstaged: %@";
 
 "detail.empty.title" = "No file selected";
 

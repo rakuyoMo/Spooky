@@ -129,7 +129,7 @@
 
 "status.unchanged" = "Unverändert";
 
-"status.description" = "Index: %@; Arbeitsverzeichnis: %@";
+"status.description" = "Gestagte Änderungen für den Commit: %@\nGeändert, aber nicht gestagt: %@";
 
 "detail.empty.title" = "Keine Datei ausgewählt";
 

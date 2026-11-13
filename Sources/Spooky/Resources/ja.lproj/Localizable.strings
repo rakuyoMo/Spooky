@@ -129,7 +129,7 @@
 
 "status.unchanged" = "変更なし";
 
-"status.description" = "インデックス：%@、作業ツリー：%@";
+"status.description" = "コミットするステージ済みの変更：%@\n変更済みで未ステージ：%@";
 
 "detail.empty.title" = "ファイル未選択";
 

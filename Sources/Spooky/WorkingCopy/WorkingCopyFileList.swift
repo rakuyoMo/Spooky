@@ -24,11 +24,11 @@ struct WorkingCopyFileList: NSViewRepresentable {
 
     /// 文件名的字号档位。
     @AppStorage(WorkingCopyPreferences.fontSize)
-    private var fontSize = WorkingCopyPreferences.FontSize.regular
+    private var fontSize = WorkingCopyPreferences.FontSize.medium
 
     /// 长文件名的截断位置。
     @AppStorage(WorkingCopyPreferences.truncation)
-    private var truncation = WorkingCopyPreferences.Truncation.middle
+    private var truncation = WorkingCopyPreferences.Truncation.beginning
 
     /// 构建事件与模型桥接器。
     func makeCoordinator() -> Coordinator { Coordinator(session: session) }
@@ -62,11 +62,11 @@ struct WorkingCopyFileList: NSViewRepresentable {
 
         let path = NSTableColumn(identifier: .init("path"))
         path.title = AppLocalization.text("status.filename")
-        path.minWidth = 100
+        path.minWidth = 40
         path.sortDescriptorPrototype = NSSortDescriptor(key: "path", ascending: true)
         outline.addTableColumn(path)
         outline.outlineTableColumn = path
-        outline.sortDescriptors = [NSSortDescriptor(key: "path", ascending: true)]
+        outline.sortDescriptors = WorkingCopyPreferences.sortDescriptors()
 
         // 键盘、双击、拖出与 Quick Look 都交给桥接器按偏好处理
         outline.coordinator = context.coordinator
@@ -360,10 +360,11 @@ extension WorkingCopyFileList {
             quickLook.selectionChanged()
         }
 
-        /// 表头排序改变后按相同模型恢复选择。
-        func outlineView(_: NSOutlineView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
+        /// 表头排序改变后记下新的排序，再按相同模型恢复选择；首次显示前载入保存的排序时不回写。
+        func outlineView(_ outlineView: NSOutlineView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
             guard let state = renderState else { return }
 
+            WorkingCopyPreferences.storeSortDescriptors(outlineView.sortDescriptors)
             renderState = nil
             update(listing: state.listing, style: state.style)
         }

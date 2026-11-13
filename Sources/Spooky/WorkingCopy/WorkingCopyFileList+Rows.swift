@@ -37,21 +37,36 @@ extension WorkingCopyFileList.Coordinator {
 
         button.state = states.allSatisfy { $0 == 1 } ? .on : (states.allSatisfy { $0 == 0 } ? .off : .mixed)
 
-        var views: [NSView] = [button]
+        // 勾选框距左 3，徽标区贴着单元格右缘，两者不一起左对齐
+        let cell = NSView()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        cell.addSubview(button)
 
-        if let entry = node.entry {
-            let marked = renderMarked.contains(entry.path)
-            views.append(NSHostingView(rootView: FileStatusView(entry: entry, assumeUnchanged: marked)))
-        }
+        NSLayoutConstraint.activate([
+            button.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 3),
+            button.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+        ])
 
-        let stack = NSStackView(views: views)
-        stack.spacing = 3
-        return stack
+        guard let entry = node.entry else { return cell }
+
+        let marked = renderMarked.contains(entry.path)
+        let badges = NSHostingView(rootView: FileStatusView(entry: entry, assumeUnchanged: marked))
+        badges.translatesAutoresizingMaskIntoConstraints = false
+        cell.addSubview(badges)
+
+        NSLayoutConstraint.activate([
+            badges.trailingAnchor.constraint(equalTo: cell.trailingAnchor),
+            badges.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+            badges.widthAnchor.constraint(equalToConstant: 42),
+            badges.heightAnchor.constraint(equalToConstant: 16),
+        ])
+
+        return cell
     }
 
     /// 图标与文件名：树形只显示末级名称，完整路径放在提示中；被忽略与 assume-unchanged 的文件变灰。
     func pathCell(_ node: WorkingCopyFileList.Node) -> NSView {
-        let style = renderState?.style ?? WorkingCopyFileList.Style(fontSize: .regular, truncation: .middle)
+        let style = renderState?.style ?? WorkingCopyFileList.Style(fontSize: .medium, truncation: .beginning)
         let tree = renderState?.listing.mode.isTree ?? false
         let entry = node.entry
         let dimmed = entry?.kind == .ignored || entry.map { renderMarked.contains($0.path) } ?? false
@@ -77,23 +92,9 @@ extension WorkingCopyFileList.Coordinator {
         return stack
     }
 
-    /// 递归排序使目录与文件使用相同的用户选项。
+    /// 递归排序使目录与文件使用相同的表头排序。
     func sortNodes() {
-        let descriptor = outline?.sortDescriptors.first
-        let ascending = descriptor?.ascending ?? true
-
-        /// 目录内部沿用相同排序，不把平铺的比较结果跨层混用。
-        func sorted(_ nodes: [WorkingCopyFileList.Node]) -> [WorkingCopyFileList.Node] {
-            for node in nodes { node.children = sorted(node.children) }
-
-            return nodes.sorted {
-                let left = descriptor?.key == "status" ? String($0.entry?.staged?.rawValue ?? ".") + $0.path : $0.path
-                let right = descriptor?.key == "status" ? String($1.entry?.staged?.rawValue ?? ".") + $1.path : $1.path
-                return ascending ? left < right : left > right
-            }
-        }
-
-        roots = sorted(roots)
+        roots = Self.sorted(roots, by: outline?.sortDescriptors ?? WorkingCopyPreferences.defaultSortDescriptors)
     }
 
     /// 重建前展开着的目录路径。
@@ -200,6 +201,43 @@ extension WorkingCopyFileList.Coordinator {
         return "\(original) → \(title)"
     }
 
+    /// 按表头的各级排序排列节点；目录内部沿用相同排序，不把平铺的比较结果跨层混用。
+    static func sorted(
+        _ nodes: [WorkingCopyFileList.Node],
+        by descriptors: [NSSortDescriptor]
+    ) -> [WorkingCopyFileList.Node] {
+        for node in nodes {
+            node.children = sorted(node.children, by: descriptors)
+        }
+
+        return nodes.sorted { ordered($0, $1, by: descriptors) }
+    }
+
+    /// 两个节点的先后：路径不区分大小写，状态按两位状态码；各级都相同时按路径原文，结果不随输入顺序变化。
+    private static func ordered(
+        _ lhs: WorkingCopyFileList.Node,
+        _ rhs: WorkingCopyFileList.Node,
+        by descriptors: [NSSortDescriptor]
+    ) -> Bool {
+        for descriptor in descriptors {
+            let result =
+                descriptor.key == "status"
+                    ? statusCode(lhs).compare(statusCode(rhs))
+                    : lhs.path.localizedCaseInsensitiveCompare(rhs.path)
+
+            guard result != .orderedSame else { continue }
+
+            return descriptor.ascending == (result == .orderedAscending)
+        }
+
+        return lhs.path < rhs.path
+    }
+
+    /// 状态列排序用的状态码；目录没有状态，按状态升序时排在同层文件之前。
+    private static func statusCode(_ node: WorkingCopyFileList.Node) -> String {
+        node.entry?.porcelainCode ?? ""
+    }
+
     /// 按目录组织条目：目录节点只建一次，文件挂在所在目录下；被忽略的整个目录本身是一个叶子。
     static func tree(_ entries: [StatusEntry]) -> [WorkingCopyFileList.Node] {
         var roots: [WorkingCopyFileList.Node] = []
@@ -251,5 +289,18 @@ extension StatusEntry {
     /// 可以勾选暂存或取消暂存：未改动与被忽略的文件没有可暂存的内容。
     var isStageable: Bool {
         kind != .unchanged && kind != .ignored
+    }
+
+    /// 与 porcelain v2 的 XY 相同的两位状态码：暂存区一位、工作区一位，没有变化的一侧写 “.”。
+    var porcelainCode: String {
+        switch kind {
+        case .untracked: "??"
+        case .ignored: "!!"
+        case .unchanged: ".."
+        case .tracked, .conflicted:
+            [staged, unstaged]
+                .map { change in change.map { String($0.rawValue) } ?? "." }
+                .joined()
+        }
     }
 }

@@ -129,7 +129,7 @@
 
 "status.unchanged" = "沒有變更";
 
-"status.description" = "暫存區：%@；工作區：%@";
+"status.description" = "待提交的已暫存變更：%@\n已變更但未暫存：%@";
 
 "detail.empty.title" = "未選擇檔案";
 

@@ -129,7 +129,7 @@
 
 "status.unchanged" = "변경 없음";
 
-"status.description" = "인덱스: %@; 작업 트리: %@";
+"status.description" = "커밋할 스테이지된 변경 사항: %@\n변경되었지만 스테이지 안 됨: %@";
 
 "detail.empty.title" = "선택한 파일 없음";
 

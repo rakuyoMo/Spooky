@@ -4,26 +4,33 @@ import SwiftUI
 // MARK: - FileStatusView
 
 /// 暂存区与工作区状态并排显示，字母沿用 Git 状态码。
+///
+/// 两枚 16 × 16 的徽标固定占 42 × 16 的区域：左边一枚贴区域左缘，两枚相隔 6；没有变化的一侧留空位。
 struct FileStatusView: View {
     /// 原始状态条目。
     let entry: StatusEntry
 
-    /// 文件标记了 assume-unchanged，显示灰色徽标与对应说明。
+    /// 文件标记了 assume-unchanged，悬停说明 Git 不检查它的改动。
     var assumeUnchanged = false
 
-    /// 辅助技术与悬停提示使用本地化全称；冲突文件说明冲突类型。
-    private var description: String {
-        #warning("TODO: 悬停冲突文件的状态列，核对提示是否为 “File requires merging: <冲突类型>”；只影响冲突文件行的悬停提示")
-
+    /// 辅助技术与悬停提示使用本地化全称：普通文件分两行写出已暂存与未暂存的变化，冲突文件只说明冲突类型。
+    var description: String {
         if assumeUnchanged {
             return AppLocalization.text("files.assumeUnchanged.status")
         }
 
         switch entry.kind {
-        case .untracked: return AppLocalization.text("status.untracked")
         case .ignored: return AppLocalization.text("status.ignored")
+
         case .conflicted: return AppLocalization.text("conflict.toolTip", (entry.conflictKind ?? .bothModified).title)
+
         case .unchanged: return AppLocalization.text("status.unchanged")
+
+        // 未跟踪的文件两行都写未跟踪
+        case .untracked:
+            let untracked = AppLocalization.text("status.untracked")
+            return AppLocalization.text("status.description", untracked, untracked)
+
         case .tracked:
             return AppLocalization.text(
                 "status.description",
@@ -33,32 +40,36 @@ struct FileStatusView: View {
         }
     }
 
-    /// 最多两枚状态徽标与可访问的完整说明。
+    /// 左右两枚状态徽标与可访问的完整说明；未跟踪与被忽略的文件只在右边一枚的位置画徽标，没有改动的文件不画。
     var body: some View {
-        HStack(spacing: 3) {
-            switch entry.kind {
-            case .untracked:
-                Self.badge("?")
-
-            case .ignored:
-                Self.badge("!")
-
-            case .conflicted:
-                Self.badge("U")
-
-            // 没有改动的文件不画徽标；assume-unchanged 用 ls-files -v 的小写标记 h
-            case .unchanged:
-                #warning("TODO: 打开 Show Assume-Unchanged Items，核实 assume-unchanged 文件的徽标字母，目前取 ls-files -v 的小写 h；只影响这类文件的徽标文字")
-                Self.badge(assumeUnchanged ? "h" : "")
-
-            case .tracked:
-                Self.badge(entry.staged.map { String($0.rawValue) } ?? "")
-                Self.badge(entry.unstaged.map { String($0.rawValue) } ?? "")
-            }
+        HStack(spacing: 6) {
+            Self.badge(codes.staged)
+            Self.badge(codes.unstaged)
         }
+        .frame(width: 42, height: 16, alignment: .leading)
         .help(description)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(description)
+    }
+
+    /// 左右两枚徽标的字母，空字符串表示这一侧没有徽标。
+    var codes: (staged: String, unstaged: String) {
+        switch entry.kind {
+        case .untracked: ("", "?")
+
+        case .ignored: ("", "!")
+
+        case .unchanged: ("", "")
+
+        case .tracked:
+            (
+                entry.staged.map { String($0.rawValue) } ?? "",
+                entry.unstaged.map { String($0.rawValue) } ?? ""
+            )
+
+        case .conflicted:
+            ("U", "")
+        }
     }
 
     /// 状态字母不会仅靠颜色传达差异；无改动的一侧保留空位。
@@ -66,7 +77,7 @@ struct FileStatusView: View {
         Text(code)
             .font(.custom("Monaco", size: 10))
             .foregroundStyle(.white)
-            .frame(width: 17, height: 16)
+            .frame(width: 16, height: 16)
             .background(code.isEmpty ? .clear : color(code), in: RoundedRectangle(cornerRadius: 2))
     }
 

@@ -129,7 +129,7 @@
 
 "status.unchanged" = "Inchangé";
 
-"status.description" = "Index : %@ ; arbre de travail : %@";
+"status.description" = "Modifications indexées à valider : %@\nModifié mais non indexé : %@";
 
 "detail.empty.title" = "Aucun fichier sélectionné";
 
