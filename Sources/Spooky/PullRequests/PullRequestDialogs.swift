@@ -185,10 +185,13 @@ extension MergePullRequestDialog {
                 try await client.mergeOptions(for: request)
             }
 
-            self.options = options
-            method = Self.preselectedMethod(in: options.methods)
-            squash = options.squashesByDefault
-            deletesBranch = options.deletesSourceBranchByDefault && options.canDeleteSourceBranch
+            // 转圈一行换成 1–3 行选项，对话框高度随之同步变化
+            DialogAnimation.perform {
+                self.options = options
+                method = Self.preselectedMethod(in: options.methods)
+                squash = options.squashesByDefault
+                deletesBranch = options.deletesSourceBranchByDefault && options.canDeleteSourceBranch
+            }
         } catch {
             failure = AppFailure(error: error, opening: false, location: nil).details
         }

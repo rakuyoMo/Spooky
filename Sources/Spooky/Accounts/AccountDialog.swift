@@ -185,7 +185,7 @@ extension AccountDialog {
     /// 认证方式的下拉，占满输入列：github.com 是浏览器授权与个人访问令牌，私有部署的 GitLab 是个人访问令牌与用户名和密码。
     private var authenticationRow: some View {
         DialogFormRow(label: AppLocalization.text("accounts.authentication")) {
-            Picker("", selection: $authentication) {
+            Picker("", selection: $authentication.animation(DialogAnimation.current)) {
                 ForEach(methods, id: \.self) { method in
                     Text(AppLocalization.text(Self.titleKey(of: method))).tag(method)
                 }
@@ -373,13 +373,13 @@ extension AccountDialog {
             do {
                 switch authentication {
                 case .oauth:
-                    progress = .authorizing(nil)
+                    DialogAnimation.perform { progress = .authorizing(nil) }
                     let credential = try await authorize()
-                    progress = .validating
+                    DialogAnimation.perform { progress = .validating }
                     try await save(credential, on: instance, authentication: .oauth)
 
                 case .personalAccessToken:
-                    progress = .validating
+                    DialogAnimation.perform { progress = .validating }
                     try await save(
                         token.trimmingCharacters(in: .whitespacesAndNewlines),
                         on: instance,
@@ -387,18 +387,18 @@ extension AccountDialog {
                     )
 
                 case .password:
-                    progress = .validating
+                    DialogAnimation.perform { progress = .validating }
                     try await signIn(on: instance)
                 }
 
                 close()
             } catch is CancellationError {
-                progress = .idle
+                DialogAnimation.perform { progress = .idle }
             } catch is ExistingAccount {
-                progress = .idle
+                DialogAnimation.perform { progress = .idle }
                 isExisting = true
             } catch {
-                progress = .idle
+                DialogAnimation.perform { progress = .idle }
                 failure = AppFailure(error: error, opening: false, location: nil)
             }
         }
@@ -413,7 +413,7 @@ extension AccountDialog {
         let flow = GitHubDeviceFlow(clientID: clientID)
         let authorization = try await flow.start()
 
-        progress = .authorizing(authorization)
+        DialogAnimation.perform { progress = .authorizing(authorization) }
         openVerificationPage(authorization)
 
         return try await flow.token(for: authorization)

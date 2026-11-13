@@ -113,9 +113,10 @@ extension RenameReferenceDialog {
     /// 名字为空或未变时直接不可提交；其余按 Git 规则校验，并检查同名对象。
     private func validate() async {
         isValid = false
-        error = ""
 
+        // 输入停顿期间保留上一次的错误，新结果出来后一次替换；名字为空或未变时没有错误
         guard !name.isEmpty, name != originalName, let runner = session.runner else {
+            error = ""
             return
         }
 
@@ -138,6 +139,7 @@ extension RenameReferenceDialog {
                 return
             }
 
+            error = ""
             isValid = true
         } catch {
             if !Task.isCancelled {

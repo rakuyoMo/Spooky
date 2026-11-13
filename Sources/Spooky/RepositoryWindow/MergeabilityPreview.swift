@@ -123,30 +123,37 @@ struct MergeabilityPreview: View {
     }
 
     /// 去抖后检查；任务被新的选择取消时不写入结果。
+    ///
+    /// 检查中一行与结果的切换都经 `DialogAnimation`，对话框高度随之同步变化。
     private func load() async {
-        preview = nil
-
         guard !revision.isEmpty, let runner = session.runner else {
-            checking = false
+            DialogAnimation.perform {
+                preview = nil
+                checking = false
+            }
+
             return
         }
 
-        checking = true
+        DialogAnimation.perform {
+            preview = nil
+            checking = true
+        }
 
         do {
             try await Task.sleep(for: .milliseconds(150))
             let result = try await RepositorySync(runner: runner).previewMerge(revision)
             try Task.checkCancellation()
-            preview = result
+            DialogAnimation.perform { preview = result }
         } catch {
             if !Task.isCancelled {
                 let failure = AppFailure(error: error, opening: false, location: session.repository)
-                preview = .unavailable(failure.details)
+                DialogAnimation.perform { preview = .unavailable(failure.details) }
             }
         }
 
         if !Task.isCancelled {
-            checking = false
+            DialogAnimation.perform { checking = false }
         }
     }
 }

@@ -124,10 +124,14 @@ extension ResetDialog {
     /// 输入停顿后解析版本并读出离开当前分支的提交；解析失败时说明原因，主按钮不可用。
     private func preview() async {
         resolved = false
-        leaving = []
 
+        // 输入停顿期间保留上一次的提交列表与错误，新结果出来后一次替换
         guard !target.isEmpty, let runner = session.runner else {
-            error = ""
+            DialogAnimation.perform {
+                leaving = []
+                error = ""
+            }
+
             return
         }
 
@@ -136,11 +140,18 @@ extension ResetDialog {
             let commits = try await RepositoryRewrite(runner: runner).commitsLeaving(to: target)
             try Task.checkCancellation()
 
-            leaving = commits
-            resolved = true
-            error = ""
+            DialogAnimation.perform {
+                leaving = commits
+                resolved = true
+                error = ""
+            }
         } catch {
-            if !Task.isCancelled { self.error = AppLocalization.text("rewrite.error.revision") }
+            if !Task.isCancelled {
+                DialogAnimation.perform {
+                    leaving = []
+                    self.error = AppLocalization.text("rewrite.error.revision")
+                }
+            }
         }
     }
 

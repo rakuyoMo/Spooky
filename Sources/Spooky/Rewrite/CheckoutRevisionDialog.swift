@@ -22,6 +22,10 @@ struct CheckoutRevisionDialog: View {
     @State
     private var destination: CheckoutTarget?
 
+    /// 去向是否按当前输入解析完；输入停顿期间仍显示上一次的去向，主按钮不可用。
+    @State
+    private var resolved = false
+
     /// 版本解析失败的说明。
     @State
     private var error = ""
@@ -34,7 +38,7 @@ struct CheckoutRevisionDialog: View {
             message: AppLocalization.text("rewrite.checkout.help"),
             submitTitle: AppLocalization.text("rewrite.checkout.button"),
             error: notice,
-            isValid: destination != nil,
+            isValid: resolved && destination != nil,
             cancel: close,
             submit: perform
         ) {
@@ -89,22 +93,35 @@ extension CheckoutRevisionDialog {
 extension CheckoutRevisionDialog {
     /// 输入停顿后判断去向；无法解析时说明原因，主按钮不可用。
     private func resolve() async {
-        destination = nil
+        resolved = false
 
+        // 输入停顿期间保留上一次的去向与错误，新结果出来后一次替换
         guard !target.isEmpty, let runner = session.runner else {
-            error = ""
+            DialogAnimation.perform {
+                destination = nil
+                error = ""
+            }
+
             return
         }
 
         do {
             try await Task.sleep(for: .milliseconds(150))
-            let resolved = try await RepositoryRewrite(runner: runner).checkoutTarget(for: target)
+            let found = try await RepositoryRewrite(runner: runner).checkoutTarget(for: target)
             try Task.checkCancellation()
 
-            destination = resolved
-            error = ""
+            DialogAnimation.perform {
+                destination = found
+                resolved = true
+                error = ""
+            }
         } catch {
-            if !Task.isCancelled { self.error = AppLocalization.text("rewrite.error.revision") }
+            if !Task.isCancelled {
+                DialogAnimation.perform {
+                    destination = nil
+                    self.error = AppLocalization.text("rewrite.error.revision")
+                }
+            }
         }
     }
 

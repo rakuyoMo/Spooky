@@ -119,7 +119,8 @@ extension HostDirectoryPicker {
                 return choosesOtherHost || !hosts.contains(host) ? Self.otherTag : host
             },
             set: { tag in
-                choosesOtherHost = tag == Self.otherTag
+                // 主机别名一行出现、消失时对话框高度随之同步变化
+                DialogAnimation.perform { choosesOtherHost = tag == Self.otherTag }
 
                 switch tag {
                 case Self.localTag:

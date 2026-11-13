@@ -32,6 +32,10 @@ struct RebaseOntoDialog: View {
     @State
     private var plan: RewritePlan?
 
+    /// 影响范围是否按当前参数读完；参数变化后仍显示上一次的结果，读完之前主按钮不可用。
+    @State
+    private var previewed = false
+
     /// 输入校验与读取失败的说明。
     @State
     private var error = ""
@@ -48,7 +52,7 @@ struct RebaseOntoDialog: View {
             message: session.rewriteDialogMessage(help),
             submitTitle: AppLocalization.text("rewrite.rebaseOnto.button"),
             error: error,
-            isValid: partial ? plan != nil : impact != nil,
+            isValid: previewed && (partial ? plan != nil : impact != nil),
             cancel: close,
             submit: perform
         ) {
@@ -140,11 +144,11 @@ extension RebaseOntoDialog {
 extension RebaseOntoDialog {
     /// 参数变化后重新读取影响范围；两个基点都不能是 HEAD 所在的提交。
     private func preview() async {
-        impact = nil
-        plan = nil
+        previewed = false
 
+        // 参数变化后保留上一次的影响范围与错误，新结果出来后一次替换
         guard let runner = session.runner, !newBase.isEmpty, partial || !currentBase.isEmpty else {
-            error = AppLocalization.text("rewrite.rebaseOnto.missing")
+            clearPreview(reason: AppLocalization.text("rewrite.rebaseOnto.missing"))
             return
         }
 
@@ -155,24 +159,33 @@ extension RebaseOntoDialog {
             let head = session.status?.branch.oid
 
             if try await references.resolve(newBase) == head {
-                error = AppLocalization.text("rewrite.rebaseOnto.newIsHead")
+                clearPreview(reason: AppLocalization.text("rewrite.rebaseOnto.newIsHead"))
                 return
             }
+
+            var impact: RewriteImpact? = nil
+            var plan: RewritePlan? = nil
 
             if partial {
                 plan = try await rewrite.plan(.rebase(commits, onto: newBase))
             } else if try await references.resolve(currentBase) == head {
-                error = AppLocalization.text("rewrite.rebaseOnto.currentIsHead")
+                clearPreview(reason: AppLocalization.text("rewrite.rebaseOnto.currentIsHead"))
                 return
             } else {
                 impact = try await rewrite.rebasePreview(from: currentBase)
             }
 
             try Task.checkCancellation()
-            error = ""
+
+            DialogAnimation.perform {
+                self.impact = impact
+                self.plan = plan
+                previewed = true
+                error = ""
+            }
         } catch {
             if !Task.isCancelled {
-                self.error = AppFailure(error: error, opening: false, location: session.repository).title
+                clearPreview(reason: AppFailure(error: error, opening: false, location: session.repository).title)
             }
         }
     }
@@ -187,5 +200,14 @@ extension RebaseOntoDialog {
             }
 
         if started { close() }
+    }
+
+    /// 读不出影响范围时收起它，错误区说明原因。
+    private func clearPreview(reason: String) {
+        DialogAnimation.perform {
+            impact = nil
+            plan = nil
+            error = reason
+        }
     }
 }
