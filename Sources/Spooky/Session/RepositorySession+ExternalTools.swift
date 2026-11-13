@@ -43,6 +43,8 @@ enum WorkingCopyComparison: CaseIterable {
     }
 
     /// 这个文件的左右两侧；这种比较不适用于这个文件，或两侧没有差别时为 nil。
+    ///
+    /// 工作区对 HEAD 要有已暂存或未暂存的改动，工作区对暂存区要有未暂存的改动，暂存区对 HEAD 要有已暂存的改动。
     func versions(of entry: StatusEntry) -> (left: FileVersion, right: FileVersion)? {
         guard !entry.path.hasSuffix("/") else {
             return nil
@@ -73,16 +75,17 @@ enum WorkingCopyComparison: CaseIterable {
 
 extension WorkingCopyComparison {
     /// 非冲突文件的三种比较；两侧没有差别时不提供。
+    ///
+    /// 只看已暂存与未暂存的改动：未跟踪、被忽略与冲突文件三种比较都不提供。
     private static func workingVersions(
         _ comparison: Self,
         entry: StatusEntry
     ) -> (left: FileVersion, right: FileVersion)? {
-        guard entry.kind != .conflicted else {
+        guard entry.kind != .conflicted, entry.kind != .untracked else {
             return nil
         }
 
-        // 未跟踪与被忽略的文件只在工作区里，与暂存区和 HEAD 都不同
-        let workingTreeDiffers = entry.unstaged != nil || entry.kind == .untracked || entry.kind == .ignored
+        let workingTreeDiffers = entry.unstaged != nil
         let indexDiffers = entry.staged != nil
 
         switch comparison {

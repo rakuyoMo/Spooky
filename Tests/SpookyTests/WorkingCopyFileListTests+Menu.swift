@@ -96,9 +96,10 @@ extension WorkingCopyFileListTests {
     }
 
     /// 冲突两个父项总能展开，子项按作用对象点名或计数；对方来自补丁或储藏时不加引号，没冲突过的文件不能恢复冲突。
-    /// Compare 总列三种工作区比较、按两侧有无差别启用，单个对象另列三种冲突比较，空白处比较整个工作区。
+    /// Compare 总列三种工作区比较、按两侧有无差别启用（未跟踪与冲突文件不算），单个对象另列三种冲突比较，
+    /// 空白处比较整个工作区。
     @Test("冲突与比较子菜单")
-    func conflictAndCompareMenus() async {
+    func conflictAndCompareMenus() async throws {
         let source = StatusSource()
         let session = RepositorySession(loadStatus: { _ in await source.status }, activities: RepositoryActivities())
         defer { session.close() }
@@ -140,6 +141,11 @@ extension WorkingCopyFileListTests {
         list.coordinator.buildMenu(menu, clickedRow: 2)
         #expect(!(Self.states(menu, "externalTool.compare")["externalTool.compare.indexToBase"] ?? true))
 
+        // 未跟踪文件不算有差别：三种工作区比较都不可用
+        list.select(rows: [0])
+        list.coordinator.buildMenu(menu, clickedRow: 0)
+        #expect(!Self.states(menu, "externalTool.compare").values.contains(true))
+
         // 多选：只有三种工作区比较，冲突标题计数
         list.select(rows: [1, 2])
         list.coordinator.buildMenu(menu, clickedRow: 1)
@@ -153,6 +159,22 @@ extension WorkingCopyFileListTests {
         list.select(rows: [])
         list.coordinator.buildMenu(menu, clickedRow: -1)
         #expect(Set(Self.states(menu, "externalTool.compare").values) == [true])
+
+        // 冲突文件的三种工作区比较不可用；只剩未跟踪与冲突文件时，空白处也没有可比较的改动
+        let conflicted = StatusEntry(kind: .conflicted, path: "merge.txt", staged: .unmerged, unstaged: .unmerged)
+
+        await list.show([.untracked("new.txt"), conflicted])
+
+        let row = try #require(list.paths.firstIndex(of: "merge.txt"))
+
+        list.select(rows: [row])
+        list.coordinator.buildMenu(menu, clickedRow: row)
+        #expect(!Self.states(menu, "externalTool.compare").values.contains(true))
+
+        list.select(rows: [])
+        list.coordinator.buildMenu(menu, clickedRow: -1)
+        #expect(Self.states(menu, "externalTool.compare").count == 3)
+        #expect(!Self.states(menu, "externalTool.compare").values.contains(true))
     }
 }
 
