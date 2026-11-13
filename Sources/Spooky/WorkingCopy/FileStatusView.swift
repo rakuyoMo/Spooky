@@ -71,11 +71,15 @@ struct FileStatusView: View {
     }
 
     /// 状态字母不会仅靠颜色传达差异；无改动的一侧保留空位。
-    static func badge(_ code: String) -> some View {
+    ///
+    /// - Parameters:
+    ///   - code: 状态字母，空字符串表示无改动。
+    ///   - size: 徽标的边长。
+    static func badge(_ code: String, size: CGFloat = 16) -> some View {
         Text(code)
             .font(.custom("Monaco", size: 10))
             .foregroundStyle(.white)
-            .frame(width: 16, height: 16)
+            .frame(width: size, height: size)
             .background(code.isEmpty ? .clear : color(code), in: RoundedRectangle(cornerRadius: 2))
     }
 
@@ -112,10 +116,13 @@ struct FileStatusView: View {
 
 // MARK: - FileChangeStatusView
 
-/// 提交里一个文件的状态徽标：字母、尺寸与底色和工作区的徽标相同，只有一枚；辅助技术读出状态全称。
+/// 提交里一个文件的状态徽标：字母与底色和工作区的徽标相同，默认尺寸也相同，只有一枚；辅助技术读出状态全称。
 struct FileChangeStatusView: View {
     /// Git raw 格式的状态字母，如 `M`、`A`。
     let code: String
+
+    /// 徽标的边长；整页提交详情的文件行用 18。
+    var size: CGFloat = 16
 
     /// 认得的字母读出本地化全称，认不得的照原样读出字母。
     private var description: String {
@@ -128,7 +135,7 @@ struct FileChangeStatusView: View {
 
     /// 一枚状态徽标；认不得的字母落在灰色底上。
     var body: some View {
-        FileStatusView.badge(code)
+        FileStatusView.badge(code, size: size)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(description)
     }

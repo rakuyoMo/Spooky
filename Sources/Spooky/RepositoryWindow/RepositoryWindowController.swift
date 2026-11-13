@@ -789,10 +789,7 @@ extension RepositoryWindowController {
 
         if session.history.showsCommitPage {
             let controller = NSHostingController(
-                rootView: CommitFileListView(session: session, history: session.history) { [weak self] in
-                    self?.session.history.showsCommitPage = false
-                    self?.configureRepositoryView()
-                }
+                rootView: CommitFileListView(session: session, history: session.history)
             )
             controller.sizingOptions = [.minSize]
             list = controller

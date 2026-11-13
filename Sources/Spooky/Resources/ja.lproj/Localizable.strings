@@ -380,7 +380,6 @@
 "history.multiple" = "%ld 個のコミットを選択中";
 "history.expandAll" = "すべて展開";
 "history.collapseAll" = "すべて折りたたむ";
-"history.back" = "履歴に戻る";
 "history.metadata" = "コミット情報を表示";
 "history.author" = "作成者";
 "history.authorDate" = "作成日時";

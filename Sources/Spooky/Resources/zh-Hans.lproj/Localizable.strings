@@ -380,7 +380,6 @@
 "history.multiple" = "已选择 %ld 个提交";
 "history.expandAll" = "全部展开";
 "history.collapseAll" = "全部折叠";
-"history.back" = "返回历史";
 "history.metadata" = "显示提交元信息";
 "history.author" = "作者";
 "history.authorDate" = "作者日期";

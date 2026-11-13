@@ -380,7 +380,6 @@
 "history.multiple" = "커밋 %ld개 선택됨";
 "history.expandAll" = "모두 펼치기";
 "history.collapseAll" = "모두 접기";
-"history.back" = "기록으로 돌아가기";
 "history.metadata" = "커밋 정보 표시";
 "history.author" = "작성자";
 "history.authorDate" = "작성 날짜";

@@ -380,7 +380,6 @@
 "history.multiple" = "%ld commits seleccionados";
 "history.expandAll" = "Expandir todo";
 "history.collapseAll" = "Contraer todo";
-"history.back" = "Volver al historial";
 "history.metadata" = "Mostrar metadatos del commit";
 "history.author" = "Autor";
 "history.authorDate" = "Fecha de autoría";
