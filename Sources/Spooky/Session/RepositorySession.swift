@@ -778,6 +778,20 @@ extension RepositorySession {
         record?.cancel = { task?.cancel() }
         return true
     }
+
+    /// 写操作走到占用工作区的一步时换上整页进度，离开这一步时撤下，如同步只在拉取那一步显示；
+    /// 仓库换了、写操作已结束或标题没变时不改动。
+    ///
+    /// - Parameters:
+    ///   - title: 整页进度的标题；为 nil 时撤下。
+    ///   - request: 发起写操作时的仓库代次。
+    func showWorkspaceProgress(_ title: String?, request: Int) {
+        guard generation == request, isWriting, workspaceProgress?.title != title else {
+            return
+        }
+
+        workspaceProgress = title.map { WorkspaceProgress(title: $0) }
+    }
 }
 
 // MARK: - Private

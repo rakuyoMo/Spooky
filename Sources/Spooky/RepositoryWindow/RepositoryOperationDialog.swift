@@ -14,11 +14,12 @@ struct RepositoryOperationDialog: View {
     /// 取消只关闭表单。
     let cancel: () -> Void
 
-    /// 提交交付操作名称、Activity 记录连接的对象、与撤销记录的关系和显式参数对应的业务操作；
+    /// 提交交付操作名称、工作区整页进度的标题、Activity 记录连接的对象、与撤销记录的关系和显式参数对应的业务操作；
     /// 返回 false 表示仓库暂不可写，表单保持打开。
     let submit:
         (
             String,
+            String?,
             ActivityTarget?,
             UndoRecording,
             @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
@@ -555,6 +556,17 @@ extension RepositoryOperationDialog {
 // MARK: - Actions
 
 extension RepositoryOperationDialog {
+    /// 执行期间工作区整页进度的标题：拉取、合并，以及勾选了检出的新建与跟踪分支占用工作区，其余为 nil。
+    private var workspaceProgressTitle: String? {
+        switch request.kind {
+        case .pull: AppLocalization.text("sync.step.pull")
+        case .merge: AppLocalization.text("workspaceProgress.merge")
+        case .create where checkout, .track where trackCheckout:
+            AppLocalization.text("workspaceProgress.checkoutBranch", name)
+        case .create, .track, .fetch, .push, .publish: nil
+        }
+    }
+
     /// 表单默认值来自 HEAD 跟踪关系或入口指定对象。
     private func prepare() {
         let head = branches.first { $0.id == "refs/heads/" + (session.status?.branch.head ?? "") }
@@ -838,6 +850,6 @@ extension RepositoryOperationDialog {
         let target = activityTarget(pullRemote: pullRemote?.name, pullBranch: pullBranch)
 
         // 仓库在点击瞬间变为不可写时表单不关闭，原因显示在表单内，已填写的参数原样保留。
-        _ = submit(AppLocalization.text(kind.rawValue), target, undoRecording(), run)
+        _ = submit(AppLocalization.text(kind.rawValue), workspaceProgressTitle, target, undoRecording(), run)
     }
 }

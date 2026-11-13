@@ -85,7 +85,7 @@ extension OperationDialogTests {
                 session: session,
                 request: request,
                 cancel: { },
-                submit: { _, _, _, _ in false }
+                submit: { _, _, _, _, _ in false }
             )
             .defaultAppStorage(defaults)
         }
