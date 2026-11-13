@@ -86,7 +86,7 @@ extension ThemesSettingsView {
 
                 // 内置主题不能删除；没有文件可删时页面显示的资源里的版本同样是内置主题。
                 listButton("minus", label: "themes.remove", width: 20) {
-                    delete(theme, dark: dark)
+                    delete(theme)
                 }
                 .disabled(ThemeStore.isBuiltin(theme))
             }
@@ -123,8 +123,8 @@ extension ThemesSettingsView {
         }
     }
 
-    /// 先在设置窗口上询问，确认后删除所选主题；所在外观改选列表的第一行。
-    private func delete(_ theme: TextTheme, dark: Bool) {
+    /// 先在设置窗口上询问，确认后删除所选主题；选着它的外观回到同外观的内置主题。
+    private func delete(_ theme: TextTheme) {
         let identifier = theme.id
         let window = NSApp.keyWindow
 
@@ -134,7 +134,7 @@ extension ThemesSettingsView {
             }
 
             do {
-                try store.delete(identifier, dark: dark)
+                try store.delete(identifier)
             } catch {
                 await ThemeTransfer.report(
                     error,
