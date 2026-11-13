@@ -81,9 +81,20 @@ struct DialogLayout<Content: View, Options: View>: View {
     @State
     private var inputColumn: CGFloat?
 
-    /// 头部、内容区、错误区、Options 与底栏依次排列；错误出现与消失时带动画。
+    /// 选项区展开时的高度；可以拉大的对话框收起选项区时，窗口减去这个高度。
+    @State
+    private var optionsHeight: CGFloat = 0
+
+    /// 对话框所在窗口的尺寸跟随；不经 `DialogWindow` 呈现时为 nil。
+    @Environment(\.dialogSizing)
+    private var sizing
+
+    /// 头部、内容区、错误区、Options 与底栏依次排列。
+    ///
+    /// 说明、错误区与底栏的进度变化时带上 `DialogAnimation` 的动画，同一次更新里内容区的变化一并在内；
+    /// 经 `DialogWindow` 呈现时报上理想尺寸，窗口随之同步变化。
     var body: some View {
-        DialogStack(width: width, fillsProposedWidth: resizable) {
+        DialogStack(width: width, fillsProposedWidth: resizable, fillsProposedHeight: sizing != nil) {
             VStack(alignment: .leading, spacing: 0) {
                 header
 
@@ -102,12 +113,20 @@ struct DialogLayout<Content: View, Options: View>: View {
                     optionsArea(options)
                 }
             }
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { size in
+                // 可以拉大的对话框由使用者决定尺寸，只在切换选项区时随之变化
+                guard !resizable else {
+                    return
+                }
+
+                sizing?.fit(CGSize(width: size.width, height: size.height + Self.footerHeight))
+            }
 
             footer
         }
         .coordinateSpace(.named(DialogMetrics.coordinateSpace))
         .onPreferenceChange(DialogInputColumnKey.self) { inputColumn = $0 }
-        .animation(.easeOut(duration: 0.2), value: error == nil)
+        .animation(DialogAnimation.current, value: [message, error, progress])
     }
 
     /// 创建对话框；不给内容区时是确认版，不给选项区时没有 Options 开关。
@@ -227,14 +246,16 @@ extension DialogLayout {
             .frame(maxWidth: .infinity, minHeight: 34, maxHeight: 34, alignment: .leading)
     }
 
-    /// 切换选项区时做 0.2 s 的 ease-out 动画；应用级模态窗口里不做动画。
+    /// 切换选项区时带上 `DialogAnimation` 的动画；可以拉大的对话框窗口随之减去或加回选项区的高度。
     private var animatedOptionsExpanded: Binding<Bool> {
         Binding(
             get: { optionsExpanded },
             set: { expanded in
-                let animation: Animation? = NSApp.modalWindow == nil ? .easeOut(duration: 0.2) : nil
+                if resizable {
+                    sizing?.toggleOptions(expanded: expanded, optionsHeight: optionsHeight)
+                }
 
-                withAnimation(animation) {
+                DialogAnimation.perform {
                     optionsExpanded = expanded
                 }
             }
@@ -278,7 +299,7 @@ extension DialogLayout {
         .padding(.leading, alternate == nil ? 20 : alignment)
         .padding(.trailing, 20)
         .padding(.top, 12)
-        .frame(height: 53, alignment: .top)
+        .frame(height: Self.footerHeight, alignment: .top)
         .background {
             // 没有取消按钮时 ⎋ 也按主按钮
             if cancel == nil {
@@ -334,6 +355,7 @@ extension DialogLayout {
                     .background(AppPalette.color("general_secondary_background_color"))
                     .overlay(alignment: .top) { optionsBorder }
                     .overlay(alignment: .bottom) { optionsBorder }
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { optionsHeight = $0 }
             }
         }
         .padding(.vertical, 8)
@@ -352,6 +374,11 @@ extension DialogLayout {
 // MARK: - Helpers
 
 extension DialogLayout {
+    /// 底栏的高度。
+    private static var footerHeight: CGFloat {
+        53
+    }
+
     /// 文字里的网址写成可点的链接。
     private static func linkingURLs(in text: String) -> AttributedString {
         var attributed = AttributedString(text)
@@ -438,6 +465,8 @@ private final class PassthroughButton: NSButton {
 ///
 /// 按钮文字较长的语言里，底栏的按钮组可能在指定宽度里放不下，对话框随之加宽，上面一段按同一宽度排版；
 /// 可以拉大的对话框再占满窗口给的宽度，高度有富余时都交给上面一段。
+///
+/// 经 `DialogWindow` 呈现时占满窗口的高度：窗口在动画中高于或矮于内容时，上面一段贴着顶边，底栏贴着底边。
 private struct DialogStack: Layout {
     /// 指定的宽度。
     let width: CGFloat
@@ -445,9 +474,19 @@ private struct DialogStack: Layout {
     /// 是否占满提议的宽度：可以拉大的对话框拉宽后，内容随窗口变宽。
     let fillsProposedWidth: Bool
 
-    /// 宽度取指定宽度与底栏理想宽度中较大的一个，高度是两段之和。
+    /// 是否占满提议的高度：窗口的尺寸由骨架报上的理想尺寸驱动，内容不再在窗口里上下居中。
+    let fillsProposedHeight: Bool
+
+    /// 宽度取指定宽度与底栏理想宽度中较大的一个，高度是两段之和；占满提议的高度时取提议的高度。
+    ///
+    /// 提议的高度为零时是在问最小尺寸，可以拉大的窗口据此限制最小尺寸，这时仍按两段之和回答。
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
         let width = resolvedWidth(subviews, proposed: proposal.width)
+
+        if fillsProposedHeight, let height = proposal.height, height.isFinite, height > 0 {
+            return CGSize(width: width, height: height)
+        }
+
         let footer = footerHeight(subviews, width: width)
 
         let body = subviews[0].sizeThatFits(ProposedViewSize(
@@ -458,18 +497,25 @@ private struct DialogStack: Layout {
         return CGSize(width: width, height: body.height + footer)
     }
 
-    /// 上面一段从顶边开始，底栏紧接在它下面。
+    /// 上面一段从顶边开始，底栏紧接在它下面；占满提议的高度时底栏贴着底边。
     func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
         let width = resolvedWidth(subviews, proposed: bounds.width)
         let footer = footerHeight(subviews, width: width)
 
-        let proposal = ProposedViewSize(width: width, height: max(bounds.height - footer, 0))
+        // 不能拉大的对话框占满窗口时，上面一段始终按理想高度排，不随动画中的窗口高度压缩或拉伸
+        let proposal = ProposedViewSize(
+            width: width,
+            height: fillsProposedHeight && !fillsProposedWidth ? nil : max(bounds.height - footer, 0)
+        )
+
         let body = subviews[0].sizeThatFits(proposal)
 
         subviews[0].place(at: bounds.origin, proposal: proposal)
 
+        let footerTop = fillsProposedHeight ? bounds.maxY - footer : bounds.minY + body.height
+
         subviews[1].place(
-            at: CGPoint(x: bounds.minX, y: bounds.minY + body.height),
+            at: CGPoint(x: bounds.minX, y: footerTop),
             proposal: ProposedViewSize(width: width, height: footer)
         )
     }

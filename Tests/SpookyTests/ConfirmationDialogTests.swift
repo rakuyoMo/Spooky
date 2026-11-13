@@ -27,14 +27,14 @@ struct ConfirmationDialogTests {
 
         // 会话的确认与空提交确认
         session.onConfirm?(Self.request(suppression: nil) { })
-        try await Self.expectSheet(NSHostingController<ConfirmationDialog>.self, on: window)
+        try await Self.expectSheet(NSHostingController<DialogWindowContent<ConfirmationDialog>>.self, on: window)
 
         session.onEmptyCommitPrompt?(EmptyCommitRequest(isSequence: false, commit: { }, alternate: { }))
-        try await Self.expectSheet(NSHostingController<ConfirmationDialog>.self, on: window)
+        try await Self.expectSheet(NSHostingController<DialogWindowContent<ConfirmationDialog>>.self, on: window)
 
         // 提交信息含注释的询问
         session.onCommentPrompt?(false) { _ in }
-        try await Self.expectSheet(NSHostingController<CommitCommentsDialog>.self, on: window)
+        try await Self.expectSheet(NSHostingController<DialogWindowContent<CommitCommentsDialog>>.self, on: window)
 
         try await Self.expectGitErrorSheet(in: fixture)
     }
@@ -188,12 +188,12 @@ extension ConfirmationDialogTests {
         controller.showFailure(failure)
 
         let sheet = try await PromptDialogTests.attachedSheet(of: window)
-        let dialog = try #require(sheet.contentViewController as? NSHostingController<GitErrorDialog>)
+        let dialog = try #require(sheet.contentViewController as? NSHostingController<DialogWindowContent<GitErrorDialog>>)
 
         #expect(sheet.styleMask.contains(.resizable))
         #expect(sheet.frameAutosaveName == "GitErrorDialog")
         #expect(savedFrameWidth() == sheet.frame.width)
-        #expect(dialog.rootView.chooseAnother == nil)
+        #expect(dialog.rootView.content.chooseAnother == nil)
 
         window.endSheet(sheet)
         await until { window.attachedSheet == nil }

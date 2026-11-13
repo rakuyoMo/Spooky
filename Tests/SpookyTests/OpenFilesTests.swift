@@ -47,9 +47,9 @@ struct OpenFilesTests {
         // 检查失败后在开出的窗口上挂错误框
         let window = try #require(coordinator.windows.first?.window)
         let sheet = try await PromptDialogTests.attachedSheet(of: window)
-        let dialog = try #require(sheet.contentViewController as? NSHostingController<GitErrorDialog>)
+        let dialog = try #require(sheet.contentViewController as? NSHostingController<DialogWindowContent<GitErrorDialog>>)
 
-        #expect(dialog.rootView.chooseAnother != nil)
+        #expect(dialog.rootView.content.chooseAnother != nil)
     }
 
     /// 经链接启动时，链接的仓库经正常的打开流程显示在唯一的窗口里，停在链接指向的视图，不另开仓库管理窗口。
