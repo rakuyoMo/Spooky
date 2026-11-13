@@ -64,6 +64,35 @@ struct DialogSizingTests {
         #expect(Self.contentSize(of: resizable).height == 400)
     }
 
+    /// 应用级模态窗口里改尺寸不做动画：调用返回时窗口已是新的尺寸。
+    @Test("应用级模态窗口里尺寸一次到位")
+    func modalWindowResizesAtOnce() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 480, height: 200),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+
+        window.isReleasedWhenClosed = false
+
+        let sizing = DialogSizing(window: window)
+        let session = NSApp.beginModalSession(for: window)
+
+        defer {
+            NSApp.endModalSession(session)
+            window.close()
+        }
+
+        // 模态期间窗口在前且可见，对话框的动画为空
+        #expect(window.isVisible)
+        #expect(DialogAnimation.current == nil)
+
+        sizing.fit(CGSize(width: 480, height: 320))
+
+        #expect(Self.contentSize(of: window).height == 320)
+    }
+
     /// 账号、身份档案、应用图标与仓库设置的值：打开后错误区或表单行会出现，都经对话框窗口挂成 sheet。
     @Test("打开后会变高的弹窗经对话框窗口呈现")
     func growingDialogsUseDialogWindow() async throws {
