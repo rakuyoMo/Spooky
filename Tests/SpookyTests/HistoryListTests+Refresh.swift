@@ -175,7 +175,7 @@ extension HistoryListTests {
 
 extension HistoryListTests {
     /// 视图层级里的历史提交表格。
-    private static func commitTable(in view: NSView) -> NSTableView? {
+    static func commitTable(in view: NSView) -> NSTableView? {
         if let table = view as? HistoryCommitTable.CommitTableView {
             return table
         }

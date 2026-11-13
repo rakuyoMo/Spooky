@@ -647,9 +647,12 @@ extension HistoryCommitTable.Coordinator {
 // MARK: - HistoryCommitRow
 
 /// 提交行提供中号双行和小号单行两种布局。
-private struct HistoryCommitRow: View {
+struct HistoryCommitRow: View {
     /// 选中行的文字使用系统的选中文字语义色。
     private static let selectedText = Color(nsColor: .alternateSelectedControlTextColor)
+
+    /// 行内元素的间距，也是图到头像（中号）或短哈希（小号）的距离。
+    private static let spacing: CGFloat = 8
 
     /// 当前提交元信息。
     let commit: HistoryCommit
@@ -689,10 +692,10 @@ private struct HistoryCommitRow: View {
 
     /// 图在最左侧，标题和元信息按固定行高排列。
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Self.spacing) {
             if let graph {
                 HistoryGraphView(row: graph)
-                    .frame(width: CGFloat(graph.columnCount) * 10 + 7)
+                    .frame(width: Self.graphWidth(graph))
                     .accessibilityHidden(true)
             }
             if small {
@@ -794,6 +797,18 @@ private struct HistoryCommitRow: View {
             if isHead || !references.isEmpty { badge("…", color: "gray") }
         }
         .frame(maxWidth: 300, alignment: .leading)
+    }
+
+    /// 行首到头像（中号）或短哈希（小号）左缘的距离：有图时是图宽加间距，没有图时贴着行首。
+    ///
+    /// - Parameter graph: 这一行的提交图；不显示图时为 nil。
+    static func contentLeading(graph: CommitGraphRow?) -> CGFloat {
+        graph.map { graphWidth($0) + spacing } ?? 0
+    }
+
+    /// 图的宽度：每列 10 pt，另加 7 pt。
+    private static func graphWidth(_ graph: CommitGraphRow) -> CGFloat {
+        CGFloat(graph.columnCount) * 10 + 7
     }
 
     /// 引用徽标使用 11 pt 文本和 4 pt 圆角。
