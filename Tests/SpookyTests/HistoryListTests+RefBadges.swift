@@ -44,11 +44,11 @@ extension HistoryListTests {
         #expect(capped > ellipsis)
         #expect(capped <= HistoryRefBadges.maxWidth)
 
-        // 小号行里标题紧跟在标记之后，中间是行内的 8 pt 间距
+        // 小号行里标题紧跟在标记之后，中间是 4 pt 的间距
         let plain = try Self.subjectStart(references: [], isHead: false)
         let badged = try Self.subjectStart(references: short, isHead: true)
 
-        #expect(abs(badged - plain - (all + 8)) < 1)
+        #expect(abs(badged - plain - (all + 4)) < 1)
 
         // 300 pt 宽的中号行里，作者、日期与全部标记一起放得下：最后一个标记的名字换了，画出来就不同
         let swapped = [short[0], Self.reference("refs/remotes/origin/niam")]

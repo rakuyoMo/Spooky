@@ -369,6 +369,7 @@
 "history.medium" = "中型提交列";
 "history.small" = "小型提交列";
 "history.viewOptions" = "歷史顯示選項";
+"history.viewOptions.help" = "更改顯示選項";
 "history.empty" = "沒有提交";
 "history.loading" = "正在載入提交…";
 "history.copyHash" = "複製提交雜湊";

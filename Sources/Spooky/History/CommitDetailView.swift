@@ -394,7 +394,6 @@ struct CommitFileLabel: View {
             }
         }
         .font(.system(size: 11))
-        .help(file.path)
     }
 }
 

@@ -12,7 +12,7 @@ import TestSupport
 extension HistoryListTests {
     /// 提交行在底边画分隔线，起点是头像或短哈希的左缘，终点是单元格的右缘，叠在单元格之上；
     /// 下一行是日期分组的标题时不画，标题行也不画。中号与小号行各核对一次。
-    /// 中号行的头像比行的正中高 1 pt，头像底离分隔线 7 pt。
+    /// 中号行的头像比行的正中高 1 pt，头像底离分隔线 7 pt。隐藏提交图时保存的小号档位不生效，行固定为 46 pt 的中号行。
     @Test("提交行的分隔线")
     func rowSeparators() async throws {
         let fixture = try await Self.makeSession(commits: ["a", "b", "c"])
@@ -47,9 +47,14 @@ extension HistoryListTests {
         let avatar = try Self.drawnRows(in: medium[2], x: 25 + 16)
         #expect(avatar == 6 ..< 38)
 
-        // 小号行不显示提交图：短哈希贴着单元格的左缘
+        // 小号行同样在图右侧 8 pt 起画
         let small = try await Self.rowViews(in: window, session: fixture.session, small: true)
-        try Self.expectSeparators(in: small, inset: 0)
+        try Self.expectSeparators(in: small, inset: 25)
+
+        // 隐藏提交图：保存的是小号档位，行仍是 46 pt 的中号行，头像贴着单元格的左缘
+        let hidden = try await Self.rowViews(in: window, session: fixture.session, small: true, showGraph: false)
+        try Self.expectSeparators(in: hidden, inset: 0)
+        #expect(hidden[0].frame.height == 46)
     }
 }
 
@@ -106,16 +111,21 @@ extension HistoryListTests {
 // MARK: - Helpers
 
 extension HistoryListTests {
-    /// 把会话的历史列表放进窗口，排好版后取出每一行的行视图；中号行显示提交图，小号行不显示。
+    /// 把会话的历史列表放进窗口，排好版后取出每一行的行视图。
+    ///
+    /// - Parameters:
+    ///   - small: 保存的行高档位是否是小号。
+    ///   - showGraph: 是否显示提交图；隐藏时行固定为中号。
     static func rowViews(
         in window: NSWindow,
         session: RepositorySession,
-        small: Bool
+        small: Bool,
+        showGraph: Bool = true
     ) async throws -> [HistoryRowView] {
         window.contentView = NSHostingView(
             rootView: HistoryCommitTable(
                 session: session,
-                showGraph: !small,
+                showGraph: showGraph,
                 smallRows: small,
                 dateFormat: .absolute,
                 createBranch: { _ in },
@@ -132,7 +142,7 @@ extension HistoryListTests {
             root.layoutSubtreeIfNeeded()
             found = Self.commitTable(in: root)
 
-            return found?.numberOfRows == count && found?.rect(ofRow: 0).height == (small ? 24 : 46)
+            return found?.numberOfRows == count && found?.rect(ofRow: 0).height == (small && showGraph ? 24 : 46)
         }
 
         let table = try #require(found)

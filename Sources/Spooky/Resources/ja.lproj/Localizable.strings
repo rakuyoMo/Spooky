@@ -369,6 +369,7 @@
 "history.medium" = "中サイズのコミット行";
 "history.small" = "小サイズのコミット行";
 "history.viewOptions" = "履歴の表示オプション";
+"history.viewOptions.help" = "表示オプションを変更";
 "history.empty" = "コミットがありません";
 "history.loading" = "コミットを読み込み中…";
 "history.copyHash" = "コミットハッシュをコピー";

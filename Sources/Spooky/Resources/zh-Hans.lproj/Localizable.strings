@@ -369,6 +369,7 @@
 "history.medium" = "中号提交行";
 "history.small" = "小号提交行";
 "history.viewOptions" = "历史视图选项";
+"history.viewOptions.help" = "更改显示选项";
 "history.empty" = "没有提交";
 "history.loading" = "正在加载提交…";
 "history.copyHash" = "复制提交哈希";

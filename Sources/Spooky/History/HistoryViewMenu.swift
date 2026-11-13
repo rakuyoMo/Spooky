@@ -78,7 +78,7 @@ struct HistoryViewMenuButton: NSViewRepresentable {
         let button = NSPopUpButton(frame: .zero, pullsDown: true)
         button.isBordered = false
         button.setAccessibilityLabel(AppLocalization.text("history.viewOptions"))
-        button.toolTip = AppLocalization.text("history.viewOptions")
+        button.toolTip = AppLocalization.text("history.viewOptions.help")
 
         button.imagePosition = .imageOnly
         (button.cell as? NSPopUpButtonCell)?.arrowPosition = .noArrow

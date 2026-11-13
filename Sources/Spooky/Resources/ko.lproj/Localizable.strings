@@ -369,6 +369,7 @@
 "history.medium" = "중간 커밋 행";
 "history.small" = "작은 커밋 행";
 "history.viewOptions" = "기록 보기 옵션";
+"history.viewOptions.help" = "보기 옵션 변경";
 "history.empty" = "커밋 없음";
 "history.loading" = "커밋 불러오는 중…";
 "history.copyHash" = "커밋 해시 복사";

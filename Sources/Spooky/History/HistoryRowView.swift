@@ -137,9 +137,9 @@ extension HistoryCommitTable.Coordinator {
             return rowView
         }
 
-        // 起点与单元格里头像或短哈希的左缘对齐，显示提交图时在图的右侧
+        // 起点与单元格里头像或短哈希的左缘对齐，显示提交图时在图的右侧，小号行没有图时也留出间距
         let graph = parent.showGraph ? parent.session.history.graphRows[commit.id] : nil
-        rowView.separatorInset = HistoryCommitRow.contentLeading(graph: graph)
+        rowView.separatorInset = HistoryCommitRow.contentLeading(graph: graph, small: parent.usesSmallRows)
 
         return rowView
     }

@@ -128,12 +128,12 @@ struct HistoryListView: View {
         .background(.bar)
     }
 
-    /// 所选引用与它的跟踪分支。
+    /// 所选引用与它的跟踪分支，各自至少 50 pt 宽。
     private var referenceTitle: some View {
         HStack(spacing: 2) {
             Text(session.history.title)
                 .lineLimit(1)
-                .help(session.repository?.displayPath ?? "")
+                .frame(minWidth: 50, alignment: .leading)
 
             // 本地分支有跟踪分支时写在后面
             if let tracking = trackingName {
@@ -144,6 +144,7 @@ struct HistoryListView: View {
                 Text(tracking)
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
+                    .frame(minWidth: 50, alignment: .leading)
             }
         }
     }
@@ -490,7 +491,7 @@ struct HistoryCommitTable: NSViewRepresentable {
     /// 当前图可见性。
     let showGraph: Bool
 
-    /// 当前行高档位。
+    /// 保存的行高档位。
     let smallRows: Bool
 
     /// 提交日期的显示格式。
@@ -501,6 +502,11 @@ struct HistoryCommitTable: NSViewRepresentable {
 
     /// 整页详情入口。
     let openCommit: () -> Void
+
+    /// 实际使用小号行：隐藏提交图时固定用 46 pt 的中号行，保存的档位不变，重新显示图时恢复。
+    var usesSmallRows: Bool {
+        smallRows && showGraph
+    }
 
     /// 建立数据源桥接。
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -560,13 +566,13 @@ extension HistoryCommitTable.Coordinator {
         let rows = parent.session.history.rows
 
         guard rows.indices.contains(row) else {
-            return parent.smallRows ? 24 : 46
+            return parent.usesSmallRows ? 24 : 46
         }
 
         switch rows[row] {
         case .group: return 30
-        case .noNewCommits: return parent.smallRows ? 40 : 46
-        case .commit, .forkPoint: return parent.smallRows ? 24 : 46
+        case .noNewCommits: return parent.usesSmallRows ? 40 : 46
+        case .commit, .forkPoint: return parent.usesSmallRows ? 24 : 46
         }
     }
 
@@ -620,7 +626,7 @@ extension HistoryCommitTable.Coordinator {
                 graph: parent.showGraph ? history.graphRows[commit.id] : nil,
                 references: history.snapshot?.references.filter { $0.objectID == commit.id } ?? [],
                 isHead: history.branch?.oid == commit.id,
-                small: parent.smallRows,
+                small: parent.usesSmallRows,
                 dateFormat: parent.dateFormat,
                 unpushed: history.unpushed.contains(commit.id),
                 unpulled: history.unpulled.contains(commit.id),
@@ -642,168 +648,4 @@ extension HistoryCommitTable.Coordinator {
         history.selectedIDs = Set(table.selectedRowIndexes.compactMap { history.commit(atRow: $0)?.id })
     }
 
-}
-
-// MARK: - HistoryCommitRow
-
-/// 提交行提供中号双行和小号单行两种布局。
-struct HistoryCommitRow: View {
-    /// 选中行的文字使用系统的选中文字语义色。
-    private static let selectedText = Color(nsColor: .alternateSelectedControlTextColor)
-
-    /// 行内元素的间距，也是图到头像（中号）或短哈希（小号）的距离。
-    private static let spacing: CGFloat = 8
-
-    /// 当前提交元信息。
-    let commit: HistoryCommit
-
-    /// 单行独立绘制模型。
-    let graph: CommitGraphRow?
-
-    /// 指向当前提交的完整引用。
-    let references: [RepositoryReference]
-
-    /// HEAD 作为独立蓝色徽标显示。
-    let isHead: Bool
-
-    /// 小号行高为 24 pt。
-    let small: Bool
-
-    /// 提交日期的显示格式。
-    let dateFormat: CommitDateFormat
-
-    /// 未推送提交在行尾显示上箭头。
-    let unpushed: Bool
-
-    /// 未拉取提交显示下箭头与弱化背景。
-    let unpulled: Bool
-
-    /// 与基准分支比较时，分叉点及其之下属于基准分支的提交，与未拉取的提交一样置灰。
-    let isParent: Bool
-
-    /// 被选中时文本和徽标采用选中配色。
-    let selected: Bool
-
-    /// 窗口的签名结果，开启签名校验时行末显示签名按钮。
-    let signatures: CommitSignatureStore
-
-    /// 校验签名与标签签名用的执行器。
-    let runner: GitRunner?
-
-    /// 图在最左侧，标题和元信息按固定行高排列。
-    var body: some View {
-        HStack(spacing: Self.spacing) {
-            if let graph {
-                HistoryGraphView(row: graph)
-                    .frame(width: Self.graphWidth(graph))
-                    .accessibilityHidden(true)
-            }
-
-            // 图之外的内容比行的正中高 1 pt：头像底（中号）到行底的分隔线留 7 pt，短哈希底（小号）留 6 pt
-            Group {
-                if small {
-                    smallLayout
-                } else {
-                    mediumLayout
-                }
-
-                if unpushed || unpulled {
-                    Image(systemName: unpushed ? "arrow.up" : "arrow.down")
-                        .font(.system(size: small ? 10 : 12))
-                        .accessibilityLabel(
-                            AppLocalization.text(unpushed ? "history.unpushed" : "history.unpulled")
-                        )
-                }
-            }
-            .offset(y: -1)
-        }
-        .font(.system(size: small ? 11 : 12))
-        .padding(.trailing, 8)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .foregroundStyle(selected ? Self.selectedText : (unpulled || isParent ? .secondary : .primary))
-        .background(
-            (unpulled || isParent) && !selected
-                ? AppPalette.color("general_alternate_row_background_color")
-                : .clear
-        )
-        .help(commit.id + "\n" + commit.subject)
-        .accessibilityElement(children: .combine)
-    }
-
-    /// 小号单行：哈希、徽标、标题、作者与日期依次排开。
-    @ViewBuilder
-    private var smallLayout: some View {
-        hash
-        badges
-        Text(commit.subject).lineLimit(1)
-        Spacer(minLength: 0)
-
-        Text(commit.author)
-            .foregroundStyle(selected ? Self.selectedText : .secondary)
-            .lineLimit(1)
-
-        date
-        CommitSignatureButton(store: signatures, commit: commit.id, runner: runner, small: true)
-    }
-
-    /// 中号双行：作者头像在左，右侧上行为作者、徽标与日期，下行为哈希与标题。
-    @ViewBuilder
-    private var mediumLayout: some View {
-        InitialsAvatar(name: commit.author, email: commit.authorEmail, size: 32)
-
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                Text(commit.author)
-                    .foregroundStyle(selected ? Self.selectedText : .secondary)
-                    .lineLimit(1)
-
-                badges
-                Spacer(minLength: 0)
-                date
-            }
-
-            HStack(spacing: 8) {
-                hash
-                Text(commit.subject).lineLimit(1)
-                Spacer(minLength: 0)
-                CommitSignatureButton(store: signatures, commit: commit.id, runner: runner, small: false)
-            }
-        }
-    }
-
-    /// 哈希使用等宽字体，动作仍使用完整 ID。
-    private var hash: some View {
-        Text(commit.shortID)
-            .font(.system(size: small ? 10 : 12, design: .monospaced))
-            .foregroundStyle(selected ? Self.selectedText : .secondary)
-    }
-
-    /// 列表按日期格式偏好显示提交人日期，完整两种日期在详情中展示。
-    private var date: some View {
-        Text(dateFormat.string(from: commit.commitDate))
-            .foregroundStyle(selected ? Self.selectedText : .secondary)
-            .lineLimit(1)
-            .layoutPriority(1)
-    }
-
-    /// 引用标记；在行里先于作者与标题取得宽度，日期仍最先。
-    @ViewBuilder
-    private var badges: some View {
-        if isHead || !references.isEmpty {
-            HistoryRefBadges(references: references, isHead: isHead, selected: selected, runner: runner)
-                .layoutPriority(0.5)
-        }
-    }
-
-    /// 行首到头像（中号）或短哈希（小号）左缘的距离：有图时是图宽加间距，没有图时贴着行首。
-    ///
-    /// - Parameter graph: 这一行的提交图；不显示图时为 nil。
-    static func contentLeading(graph: CommitGraphRow?) -> CGFloat {
-        graph.map { graphWidth($0) + spacing } ?? 0
-    }
-
-    /// 图的宽度：每列 10 pt，另加 7 pt。
-    private static func graphWidth(_ graph: CommitGraphRow) -> CGFloat {
-        CGFloat(graph.columnCount) * 10 + 7
-    }
 }

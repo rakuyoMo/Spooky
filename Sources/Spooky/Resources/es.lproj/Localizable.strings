@@ -369,6 +369,7 @@
 "history.medium" = "Vista de commits de tamaño mediano";
 "history.small" = "Vista de commits de tamaño pequeño";
 "history.viewOptions" = "Opciones de visualización del historial";
+"history.viewOptions.help" = "Cambiar las opciones de visualización";
 "history.empty" = "No hay commits";
 "history.loading" = "Cargando commits…";
 "history.copyHash" = "Copiar hashes de los commits";

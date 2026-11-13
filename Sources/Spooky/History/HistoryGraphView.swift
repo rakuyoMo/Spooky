@@ -16,6 +16,9 @@ struct HistoryGraphView: NSViewRepresentable {
         /// 分组行穿过的线：取下一个提交上沿进入的线段，按它们的上沿列画竖线。
         var passing: [CommitGraphSegment] = []
 
+        /// 圆点中心距画布顶的距离；nil 时在画布正中。
+        var dotCenter: CGFloat?
+
         /// 上沿接上一提交，采用从上向下的坐标系。
         override var isFlipped: Bool { true }
 
@@ -36,14 +39,16 @@ struct HistoryGraphView: NSViewRepresentable {
 
             guard let row else { return }
 
+            let center = dotCenter ?? bounds.midY
+
             for segment in row.segments {
                 let start = NSPoint(
                     x: CGFloat(segment.start) * 10 + 7,
-                    y: segment.startsAtCommit ? bounds.midY : 0
+                    y: segment.startsAtCommit ? center : 0
                 )
                 let end = NSPoint(
                     x: CGFloat(segment.end) * 10 + 7,
-                    y: segment.endsAtCommit ? bounds.midY : bounds.height
+                    y: segment.endsAtCommit ? center : bounds.height
                 )
                 let distance = (end.y - start.y) / 3
                 let path = NSBezierPath()
@@ -62,7 +67,7 @@ struct HistoryGraphView: NSViewRepresentable {
 
             // 圆点最后覆盖连接线，外圈厚度为 1.5 pt。
             let dot = NSBezierPath(
-                ovalIn: NSRect(x: CGFloat(row.column) * 10 + 3.5, y: bounds.midY - 3.5, width: 7, height: 7)
+                ovalIn: NSRect(x: CGFloat(row.column) * 10 + 3.5, y: center - 3.5, width: 7, height: 7)
             )
             dot.lineWidth = 3
             AppPalette.nsColor("repository_history_commit_bubble_border_color").setStroke()
@@ -84,6 +89,9 @@ struct HistoryGraphView: NSViewRepresentable {
     /// 分组行穿过的线。
     let passing: [CommitGraphSegment]
 
+    /// 圆点中心距行顶的距离；nil 时在行的正中。
+    let dotCenter: CGFloat?
+
     /// 画布宽度：提交行按本行的列数，分组行按穿过的最右一列。
     var width: CGFloat {
         let columns = row?.columnCount ?? (passing.map(\.start).max().map { $0 + 1 } ?? 0)
@@ -91,14 +99,20 @@ struct HistoryGraphView: NSViewRepresentable {
     }
 
     /// 提交行的图。
-    init(row: CommitGraphRow) {
+    ///
+    /// - Parameters:
+    ///   - row: 本行的线段与圆点。
+    ///   - dotCenter: 圆点中心距行顶的距离；nil 时在行的正中。
+    init(row: CommitGraphRow, dotCenter: CGFloat?) {
         self.row = row
+        self.dotCenter = dotCenter
         passing = []
     }
 
     /// 分组行的竖线，取下一个提交上沿进入的线段。
     init(passingInto next: CommitGraphRow?) {
         row = nil
+        dotCenter = nil
         passing = next?.segments.filter { !$0.startsAtCommit } ?? []
     }
 
@@ -109,6 +123,7 @@ struct HistoryGraphView: NSViewRepresentable {
     func updateNSView(_ view: GraphCanvas, context _: Context) {
         view.row = row
         view.passing = passing
+        view.dotCenter = dotCenter
         view.needsDisplay = true
     }
 }
