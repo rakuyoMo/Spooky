@@ -276,6 +276,10 @@
 
 "working.stage" = "暫存";
 "working.unstage" = "取消暫存";
+"working.stage.single" = "暫存 “%@”";
+"working.stage.multiple" = "暫存 %ld 個項目";
+"working.unstage.single" = "取消暫存 “%@”";
+"working.unstage.multiple" = "取消暫存 %ld 個項目";
 "working.stageAll" = "全部暫存";
 "working.unstageAll" = "全部取消暫存";
 "working.commit" = "提交";
@@ -325,6 +329,7 @@
 "working.discardLine" = "捨棄行";
 "working.discardLines" = "捨棄所選行";
 "working.discard" = "捨棄變更";
+"working.discard.menu" = "捨棄本機變更…";
 "working.discard.title" = "捨棄本機變更";
 "working.discardAll.title" = "捨棄全部本機變更";
 "working.discardAll.submit" = "捨棄全部變更";

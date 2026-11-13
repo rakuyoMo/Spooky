@@ -276,6 +276,10 @@
 
 "working.stage" = "Añadir al stage";
 "working.unstage" = "Quitar del stage";
+"working.stage.single" = "Añadir “%@” al stage";
+"working.stage.multiple" = "Añadir %ld ítems al stage";
+"working.unstage.single" = "Quitar “%@” del stage";
+"working.unstage.multiple" = "Quitar %ld ítems del stage";
 "working.stageAll" = "Añadir todo al stage";
 "working.unstageAll" = "Quitar todo del stage";
 "working.commit" = "Hacer commit";
@@ -325,6 +329,7 @@
 "working.discardLine" = "Descartar línea";
 "working.discardLines" = "Descartar líneas";
 "working.discard" = "Descartar cambios";
+"working.discard.menu" = "Descartar cambios locales…";
 "working.discard.title" = "Descartar cambios locales";
 "working.discardAll.title" = "Descartar todos los cambios locales";
 "working.discardAll.submit" = "Descartar todos los cambios";

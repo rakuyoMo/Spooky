@@ -107,7 +107,7 @@ extension WorkingCopyFileListTests {
 // MARK: - StatusSource
 
 /// 会话每次刷新读到的状态，测试逐步替换。
-private actor StatusSource {
+actor StatusSource {
     /// 当前的状态快照。
     private(set) var status = WorkingCopyStatus(branch: BranchStatus(head: "main"), entries: [])
 
@@ -121,7 +121,7 @@ private actor StatusSource {
 
 /// 不建窗口的文件列表：真实的列表视图与桥接器，按给定的显示选项渲染会话里的状态。
 @MainActor
-private final class FileListHarness {
+final class FileListHarness {
     /// 被测的会话。
     let session: RepositorySession
 
@@ -190,17 +190,17 @@ private final class FileListHarness {
 
 extension StatusEntry {
     /// 工作区里改过、还没暂存的文件。
-    fileprivate static func modified(_ path: String) -> Self {
+    static func modified(_ path: String) -> Self {
         Self(kind: .tracked, path: path, unstaged: .modified)
     }
 
     /// 已暂存的新文件。
-    fileprivate static func added(_ path: String) -> Self {
+    static func added(_ path: String) -> Self {
         Self(kind: .tracked, path: path, staged: .added)
     }
 
     /// 未跟踪的文件。
-    fileprivate static func untracked(_ path: String) -> Self {
+    static func untracked(_ path: String) -> Self {
         Self(kind: .untracked, path: path)
     }
 }

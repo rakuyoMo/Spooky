@@ -276,6 +276,10 @@
 
 "working.stage" = "Stagen";
 "working.unstage" = "Unstagen";
+"working.stage.single" = "„%@“ stagen";
+"working.stage.multiple" = "%ld Objekte stagen";
+"working.unstage.single" = "„%@“ unstagen";
+"working.unstage.multiple" = "%ld Objekte unstagen";
 "working.stageAll" = "Alle stagen";
 "working.unstageAll" = "Alle unstagen";
 "working.commit" = "Committen";
@@ -325,6 +329,7 @@
 "working.discardLine" = "Zeile verwerfen";
 "working.discardLines" = "Zeilen verwerfen";
 "working.discard" = "Änderungen verwerfen";
+"working.discard.menu" = "Lokale Änderungen verwerfen…";
 "working.discard.title" = "Lokale Änderungen verwerfen";
 "working.discardAll.title" = "Alle lokalen Änderungen verwerfen";
 "working.discardAll.submit" = "Alle Änderungen verwerfen";

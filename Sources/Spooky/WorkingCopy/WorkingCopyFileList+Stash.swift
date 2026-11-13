@@ -16,12 +16,15 @@ extension WorkingCopyFileList.Coordinator {
         let entries: [StatusEntry]
     }
 
-    /// 丢弃之后的储藏项：储藏与快照所选文件，按住 ⌥ 时换成跳过对话框的快速版本。
+    /// 丢弃之后的储藏项：储藏与快照所选文件，按住 ⌥ 时换成跳过对话框的快速版本；没有作用对象时不列出。
     func addStashItems(to menu: NSMenu, entries: [StatusEntry]) {
+        guard !menuTargets.isEmpty else { return }
+
         let enabled = session.canStash(entries)
 
-        // 单个文件显示文件名，多个文件显示数量
-        let name = entries.count == 1 ? entries.first?.path.split(separator: "/").last.map(String.init) : nil
+        // 单个对象显示名称，多个对象显示数量；树形里一个目录算一项
+        let name = menuTargets.count == 1 ? menuTargets.first?.name : nil
+        let count = menuTargets.count
 
         // 资源键依次是单个文件、多个文件、快速单个文件与快速多个文件的文案
         let groups = [
@@ -30,8 +33,8 @@ extension WorkingCopyFileList.Coordinator {
         ]
 
         for (snapshot, keys) in groups {
-            let title = name.map { AppLocalization.text(keys[0], $0) } ?? AppLocalization.text(keys[1], entries.count)
-            let quickTitle = name.map { AppLocalization.text(keys[2], $0) } ?? AppLocalization.text(keys[3], entries.count)
+            let title = name.map { AppLocalization.text(keys[0], $0) } ?? AppLocalization.text(keys[1], count)
+            let quickTitle = name.map { AppLocalization.text(keys[2], $0) } ?? AppLocalization.text(keys[3], count)
 
             menu.addItem(
                 stashItem(title, choice: StashChoice(snapshot: snapshot, quick: false, entries: entries), enabled: enabled)

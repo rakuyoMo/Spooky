@@ -266,7 +266,10 @@ extension WorkingCopyFileList {
         /// 已处理的焦点请求。
         var focusRequest: Int
 
-        /// 右键菜单作用的条目。
+        /// 右键菜单作用的行：点在选区内或空白处时是整个选区，点在选区外时只有被点的行；树形里一个目录算一项。
+        var menuTargets: [Node] = []
+
+        /// 右键菜单作用的条目：作用的行展开成的文件，菜单构建时算出一次，执行时不再回读选区。
         var menuEntries: [StatusEntry] = []
 
         /// 树形或平铺的顶层节点。

@@ -276,6 +276,10 @@
 
 "working.stage" = "Stage";
 "working.unstage" = "Unstage";
+"working.stage.single" = "Stage “%@”";
+"working.stage.multiple" = "Stage %ld Items";
+"working.unstage.single" = "Unstage “%@”";
+"working.unstage.multiple" = "Unstage %ld Items";
 "working.stageAll" = "Stage All";
 "working.unstageAll" = "Unstage All";
 "working.commit" = "Commit";
@@ -325,6 +329,7 @@
 "working.discardLine" = "Discard Line";
 "working.discardLines" = "Discard Lines";
 "working.discard" = "Discard Changes";
+"working.discard.menu" = "Discard Local Changes…";
 "working.discard.title" = "Discard Local Changes";
 "working.discardAll.title" = "Discard All Local Changes";
 "working.discardAll.submit" = "Discard All Changes";

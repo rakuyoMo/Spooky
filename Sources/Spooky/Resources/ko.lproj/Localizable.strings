@@ -276,6 +276,10 @@
 
 "working.stage" = "스테이지";
 "working.unstage" = "스테이지 해제";
+"working.stage.single" = "“%@” 스테이지";
+"working.stage.multiple" = "항목 %ld개 스테이지";
+"working.unstage.single" = "“%@” 스테이지 해제";
+"working.unstage.multiple" = "항목 %ld개 스테이지 해제";
 "working.stageAll" = "모두 스테이지";
 "working.unstageAll" = "모두 스테이지 해제";
 "working.commit" = "커밋";
@@ -325,6 +329,7 @@
 "working.discardLine" = "줄 버리기";
 "working.discardLines" = "선택한 줄 버리기";
 "working.discard" = "변경 사항 버리기";
+"working.discard.menu" = "로컬 변경 사항 버리기…";
 "working.discard.title" = "로컬 변경 사항 버리기";
 "working.discardAll.title" = "모든 로컬 변경 사항 버리기";
 "working.discardAll.submit" = "모든 변경 사항 버리기";

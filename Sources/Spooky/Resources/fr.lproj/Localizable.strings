@@ -276,6 +276,10 @@
 
 "working.stage" = "Indexer";
 "working.unstage" = "Désindexer";
+"working.stage.single" = "Indexer « %@ »";
+"working.stage.multiple" = "Indexer %ld éléments";
+"working.unstage.single" = "Désindexer « %@ »";
+"working.unstage.multiple" = "Désindexer %ld éléments";
 "working.stageAll" = "Tout indexer";
 "working.unstageAll" = "Tout désindexer";
 "working.commit" = "Valider";
@@ -325,6 +329,7 @@
 "working.discardLine" = "Abandonner la ligne";
 "working.discardLines" = "Abandonner les lignes";
 "working.discard" = "Abandonner les modifications";
+"working.discard.menu" = "Abandonner les modifications locales…";
 "working.discard.title" = "Abandonner les modifications locales";
 "working.discardAll.title" = "Abandonner toutes les modifications locales";
 "working.discardAll.submit" = "Abandonner toutes les modifications";

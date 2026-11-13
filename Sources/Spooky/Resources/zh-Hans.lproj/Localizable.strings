@@ -276,6 +276,10 @@
 
 "working.stage" = "暂存";
 "working.unstage" = "取消暂存";
+"working.stage.single" = "暂存 “%@”";
+"working.stage.multiple" = "暂存 %ld 个项目";
+"working.unstage.single" = "取消暂存 “%@”";
+"working.unstage.multiple" = "取消暂存 %ld 个项目";
 "working.stageAll" = "全部暂存";
 "working.unstageAll" = "全部取消暂存";
 "working.commit" = "提交";
@@ -325,6 +329,7 @@
 "working.discardLine" = "丢弃行";
 "working.discardLines" = "丢弃所选行";
 "working.discard" = "丢弃改动";
+"working.discard.menu" = "丢弃本地改动…";
 "working.discard.title" = "丢弃本地改动";
 "working.discardAll.title" = "丢弃全部本地改动";
 "working.discardAll.submit" = "丢弃全部改动";

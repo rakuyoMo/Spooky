@@ -276,6 +276,10 @@
 
 "working.stage" = "ステージ";
 "working.unstage" = "ステージ解除";
+"working.stage.single" = "「%@」をステージ";
+"working.stage.multiple" = "%ld 項目をステージ";
+"working.unstage.single" = "「%@」のステージを解除";
+"working.unstage.multiple" = "%ld 項目のステージを解除";
 "working.stageAll" = "すべてステージ";
 "working.unstageAll" = "すべてステージ解除";
 "working.commit" = "コミット";
@@ -325,6 +329,7 @@
 "working.discardLine" = "行を破棄";
 "working.discardLines" = "選択行を破棄";
 "working.discard" = "変更を破棄";
+"working.discard.menu" = "ローカルの変更を破棄…";
 "working.discard.title" = "ローカルの変更を破棄";
 "working.discardAll.title" = "すべてのローカルの変更を破棄";
 "working.discardAll.submit" = "すべての変更を破棄";
