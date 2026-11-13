@@ -39,6 +39,17 @@ public struct RevisionExport: Sendable {
         String((String(format: "%04d-", number) + subject).prefix(57)) + ".patch"
     }
 
+    /// 目标目录里已经有同名文件或目录的条目，按传入的顺序；悬空的符号链接也算。
+    ///
+    /// - Parameters:
+    ///   - paths: 要导出的条目在仓库里的相对路径。
+    ///   - folder: 本机上的目标目录。
+    public static func existingItems(_ paths: [String], in folder: URL) -> [String] {
+        paths.filter {
+            (try? FileManager.default.attributesOfItem(atPath: folder.appending(path: $0).path)) != nil
+        }
+    }
+
     /// 把一个版本或其中的部分路径打成归档。
     ///
     /// - Parameters:
@@ -60,10 +71,10 @@ public struct RevisionExport: Sendable {
         }
     }
 
-    /// 把一个版本或其中的部分路径导出成本机目录，目录结构与仓库一致：先取 tar 归档，再在本机解包。
+    /// 把一个版本的整棵树导出成本机目录，目录结构与仓库一致：先取 tar 归档，再在本机解包。
     ///
     /// - Parameter destination: 本机上的目标目录，已存在时整个替换。
-    public func export(_ revision: String, paths: [String] = [], to destination: URL) async throws {
+    public func export(_ revision: String, to destination: URL) async throws {
         guard GitObjectID.isValid(revision) else {
             throw RepositoryReadError.invalidQuery
         }
@@ -72,7 +83,7 @@ public struct RevisionExport: Sendable {
             let tarball = folder.deletingLastPathComponent().appendingPathComponent(UUID().uuidString + ".tar")
             defer { try? FileManager.default.removeItem(at: tarball) }
 
-            try await runner.stream(archiveArguments(revision, paths: paths, format: .tar), to: tarball)
+            try await runner.stream(archiveArguments(revision, paths: [], format: .tar), to: tarball)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
 
             // 本机的 bsdtar 默认拒绝绝对路径、“..” 与经由符号链接写到目录外
@@ -81,6 +92,65 @@ public struct RevisionExport: Sendable {
                 processArguments: ["-x", "-f", tarball.path, "-C", folder.path],
                 arguments: ["tar"]
             )
+        }
+    }
+
+    /// 把一个版本里的若干条目导出进本机的目录，每个条目放在它在仓库里的相对位置上；目标里已有的同名文件或目录被替换。
+    ///
+    /// 先在临时目录里取这些条目的 tar 归档并解包，再逐个移进目标；某个条目移不过去时继续其余条目，
+    /// 最后以 `RevisionExportFailure` 一并报告没写进去的条目。
+    ///
+    /// - Parameters:
+    ///   - revision: 提交的完整哈希。
+    ///   - paths: 树中存储的路径，不能为空。
+    ///   - folder: 本机上已存在的目标目录。
+    public func export(_ revision: String, paths: [String], into folder: URL) async throws {
+        guard GitObjectID.isValid(revision), !paths.isEmpty else {
+            throw RepositoryReadError.invalidQuery
+        }
+
+        let staging = try FileManager.default.url(
+            for: .itemReplacementDirectory,
+            in: .userDomainMask,
+            appropriateFor: folder,
+            create: true
+        )
+
+        defer { try? FileManager.default.removeItem(at: staging) }
+
+        let tarball = staging.appendingPathComponent("items.tar")
+        let unpacked = staging.appendingPathComponent("items", isDirectory: true)
+
+        try await runner.stream(archiveArguments(revision, paths: paths, format: .tar), to: tarball)
+        try FileManager.default.createDirectory(at: unpacked, withIntermediateDirectories: false)
+
+        // 本机的 bsdtar 默认拒绝绝对路径、“..” 与经由符号链接写到目录外
+        _ = try await CommandExecutor.execute(
+            executable: "/usr/bin/tar",
+            processArguments: ["-x", "-f", tarball.path, "-C", unpacked.path],
+            arguments: ["tar"]
+        )
+
+        try Task.checkCancellation()
+
+        // 所在目录也在条目里的条目随目录一起移走，不再单独移动
+        let roots = paths.filter { path in
+            !paths.contains { path.hasPrefix($0 + "/") }
+        }
+
+        // 逐个移进目标，失败的条目记下原因后继续
+        var failures: [RevisionExportFailure.Item] = []
+
+        for path in roots {
+            do {
+                try Self.move(unpacked.appending(path: path), to: folder.appending(path: path))
+            } catch {
+                failures.append(RevisionExportFailure.Item(path: path, reason: error.localizedDescription))
+            }
+        }
+
+        guard failures.isEmpty else {
+            throw RevisionExportFailure(items: failures)
         }
     }
 
@@ -218,6 +288,20 @@ public struct RevisionExport: Sendable {
 // MARK: - Private
 
 extension RevisionExport {
+    /// 把解包出的一个条目移到目标位置，缺少的上层目录随之创建，已有的同名文件或目录被替换。
+    private static func move(_ source: URL, to destination: URL) throws {
+        try FileManager.default.createDirectory(
+            at: destination.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+
+        if (try? FileManager.default.attributesOfItem(atPath: destination.path)) != nil {
+            _ = try FileManager.default.replaceItemAt(destination, withItemAt: source)
+        } else {
+            try FileManager.default.moveItem(at: source, to: destination)
+        }
+    }
+
     /// 在目标所在卷上的临时目录里写好，再替换目标；临时目录无论成败都删除。
     private static func replacing(_ destination: URL, write: (URL) async throws -> Void) async throws {
         let staging = try FileManager.default.url(
@@ -431,4 +515,21 @@ private final class OutputFileSink: Sendable {
             throw failure
         }
     }
+}
+
+// MARK: - RevisionExportFailure
+
+/// 导出条目时有的条目没能写进目标目录；其余条目已经写好。
+public struct RevisionExportFailure: Error, Sendable, Equatable {
+    /// 没写进目标的一个条目。
+    public struct Item: Sendable, Equatable {
+        /// 条目在仓库里的相对路径。
+        public let path: String
+
+        /// 文件系统给出的原因。
+        public let reason: String
+    }
+
+    /// 没写进目标的条目，按传入的顺序。
+    public let items: [Item]
 }

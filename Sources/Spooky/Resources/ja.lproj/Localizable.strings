@@ -1068,6 +1068,12 @@
 "export.prompt" = "書き出す";
 "export.nameLabel" = "名前：";
 "export.files" = "ファイルを書き出す";
+"export.exists.title" = "項目はすでに存在します";
+"export.exists.one" = "「%1$@」はすでに「%2$@」にあります。上書きしますか？";
+"export.exists" = "%1$ld 個の項目はすでに「%2$@」にあります。上書きしますか？";
+"export.overwrite" = "上書き";
+"export.error.partial" = "一部の項目を書き出せませんでした";
+"export.error.partial.help" = "ほかの項目は書き出されました。詳細に示した項目は書き出し先のフォルダに書き込めませんでした。フォルダに書き込めるか確認してから、もう一度お試しください。";
 "export.menu" = "リビジョンを書き出す…";
 "export.menuFrom" = "「%@」からファイルを書き出す…";
 "patch.title" = "パッチを保存";
@@ -1607,6 +1613,7 @@
 "history.createBranch" = "「%@」から新しいブランチを作成…";
 "history.createBranchGeneric" = "新しいブランチを作成…";
 "history.rollback" = "ロールバック";
+"history.diffTool" = "比較ツール";
 
 /* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
 "sync.quickFetchNamed" = "「%@」をクイックフェッチ";

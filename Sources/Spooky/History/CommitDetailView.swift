@@ -136,6 +136,15 @@ struct CommitDetailView: View {
                 runner: session.runner
             )
 
+            // 头部与提交说明之间画一条分隔线；在看 HEAD 分支时，操作条居中压在这条线上
+            ZStack {
+                Divider()
+
+                if session.isViewingHead {
+                    CommitActionRow(session: session, commit: commit, hovering: hovering)
+                }
+            }
+
             // 提交说明的文字容器横向 3、纵向 8，右侧另留 20，放在与头部相同的详情容器里
             Text(commit.message)
                 .font(.system(size: 13))
@@ -145,12 +154,6 @@ struct CommitDetailView: View {
                 .padding(.vertical, 8)
                 .padding(.trailing, 20)
                 .padding(.horizontal, Self.contentInset)
-
-            // 在看 HEAD 分支时，信息下面是 Rollback 与 Revert
-            if session.isViewingHead {
-                CommitActionRow(session: session, commit: commit, hovering: hovering)
-                    .padding(.bottom, 8)
-            }
 
             // 提交说明与 Expand All 一行之间不画分隔线，这一行下方画一条，隔开第一个文件行
             ChangesetSummaryBar(

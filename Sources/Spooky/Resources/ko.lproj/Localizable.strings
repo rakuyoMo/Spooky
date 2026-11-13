@@ -1068,6 +1068,12 @@
 "export.prompt" = "내보내기";
 "export.nameLabel" = "다른 이름으로 내보내기:";
 "export.files" = "파일 내보내기";
+"export.exists.title" = "항목이 이미 있음";
+"export.exists.one" = "“%1$@” 항목이 “%2$@”에 이미 있습니다. 덮어쓰시겠습니까?";
+"export.exists" = "%1$ld개 항목이 “%2$@”에 이미 있습니다. 덮어쓰시겠습니까?";
+"export.overwrite" = "덮어쓰기";
+"export.error.partial" = "일부 항목을 내보내지 못함";
+"export.error.partial.help" = "나머지 항목은 내보냈습니다. 세부 사항에 나열된 항목은 대상 폴더에 쓸 수 없었습니다. 폴더에 쓸 수 있는지 확인한 후 다시 시도하십시오.";
 "export.menu" = "리비전 내보내기…";
 "export.menuFrom" = "“%@”에서 파일 내보내기…";
 "patch.title" = "패치 저장";
@@ -1607,6 +1613,7 @@
 "history.createBranch" = "“%@”에서 새 브랜치 만들기…";
 "history.createBranchGeneric" = "새 브랜치 만들기…";
 "history.rollback" = "롤백";
+"history.diffTool" = "비교 도구";
 
 /* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
 "sync.quickFetchNamed" = "“%@” 빠른 가져오기";

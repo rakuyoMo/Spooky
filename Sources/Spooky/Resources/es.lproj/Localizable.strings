@@ -1068,6 +1068,12 @@
 "export.prompt" = "Exportar";
 "export.nameLabel" = "Exportar como:";
 "export.files" = "Exportar archivos";
+"export.exists.title" = "El ítem ya existe";
+"export.exists.one" = "“%1$@” ya existe en “%2$@”. ¿Sobrescribirlo?";
+"export.exists" = "%1$ld ítems ya existen en “%2$@”. ¿Sobrescribirlos?";
+"export.overwrite" = "Sobrescribir";
+"export.error.partial" = "No se han exportado todos los ítems";
+"export.error.partial.help" = "Los demás ítems se han exportado. Los ítems indicados en los detalles no se han podido escribir en la carpeta de destino; comprueba que se pueda escribir en ella y vuelve a intentarlo.";
 "export.menu" = "Exportar revisión…";
 "export.menuFrom" = "Exportar archivos de “%@”…";
 "patch.title" = "Guardar parche";
@@ -1607,6 +1613,7 @@
 "history.createBranch" = "Crear rama desde “%@”…";
 "history.createBranchGeneric" = "Crear rama…";
 "history.rollback" = "Retroceder";
+"history.diffTool" = "Comparar";
 
 /* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
 "sync.quickFetchNamed" = "Fetch rápido de “%@”";

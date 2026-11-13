@@ -4,7 +4,7 @@ import SpookyKit
 // MARK: - Machine
 
 extension AppFailure {
-    /// 本机启动终端与外部工具、目标机器上新建、克隆、扫描与目录浏览、仓库所在机器上 Git LFS，托管服务 API、账号与检出请求的失败，以及没有全部完成的删除：文案键、类别、恢复说明与原文。
+    /// 本机启动终端与外部工具、目标机器上新建、克隆、扫描与目录浏览、仓库所在机器上 Git LFS，托管服务 API、账号与检出请求的失败，以及没有全部完成的删除与导出：文案键、类别、恢复说明与原文。
     ///
     /// 不属于这几类的错误返回 nil。
     ///
@@ -39,6 +39,16 @@ extension AppFailure {
 
         case let deletion as FileDeletionError:
             classification(of: deletion)
+
+        // 其余条目已导出，没写进目标的条目与原因写进原文
+        case let export as RevisionExportFailure:
+            (
+                "export.error.partial",
+                .environment,
+                "export.error.partial.help",
+                nil,
+                export.items.map { $0.path + ": " + $0.reason }.joined(separator: "\n")
+            )
 
         default:
             nil
