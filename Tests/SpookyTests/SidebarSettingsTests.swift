@@ -105,7 +105,10 @@ struct SidebarSettingsTests {
         let (defaults, directory) = try temporaryDefaults()
         defer { try? FileManager.default.removeItem(at: directory) }
 
-        let controller = SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
+        let controller = SpookyApplicationController(
+            bookmarks: RepositoryBookmarks(defaults: defaults),
+            recentDocuments: .ignoring
+        )
         _ = NSApplication.shared
         controller.configureMenu()
 

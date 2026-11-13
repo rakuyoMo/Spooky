@@ -375,7 +375,10 @@ extension MainMenuTests {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "spooky-main-menu-" + UUID().uuidString)
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
-        let controller = SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
+        let controller = SpookyApplicationController(
+            bookmarks: RepositoryBookmarks(defaults: defaults),
+            recentDocuments: .ignoring
+        )
 
         _ = NSApplication.shared
         controller.configureMenu()

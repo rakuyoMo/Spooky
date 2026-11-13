@@ -305,7 +305,10 @@ struct UndoSessionTests {
         let defaults = try #require(UserDefaults(suiteName: suite))
 
         let controller = RepositoryWindowController(
-            coordinator: SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults)),
+            coordinator: SpookyApplicationController(
+                bookmarks: RepositoryBookmarks(defaults: defaults),
+                recentDocuments: .ignoring
+            ),
             session: fixture.session
         )
         defer { controller.window?.close() }

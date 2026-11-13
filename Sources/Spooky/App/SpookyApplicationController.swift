@@ -20,6 +20,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 跨窗口共享的仓库书签。
     let bookmarks: RepositoryBookmarks
 
+    /// 打开的仓库登记进系统的最近文稿，Dock 菜单据此列出最近的仓库。
+    let recentDocuments: RecentRepositoryDocuments
+
     /// 在后台进行的克隆，工具栏的 Clone 项与仓库管理共用。
     let clones: CloneActivities
 
@@ -53,9 +56,17 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             ?? (NSApp.mainWindow?.windowController as? RepositoryWindowController)
     }
 
-    /// 注入持久化的书签，测试与应用使用同一打开规则。
-    init(bookmarks: RepositoryBookmarks = RepositoryBookmarks()) {
+    /// 注入持久化的书签与最近文稿的登记，测试与应用使用同一打开规则。
+    ///
+    /// - Parameters:
+    ///   - bookmarks: 仓库书签。
+    ///   - recentDocuments: 系统最近文稿的登记；测试换成不碰系统的记录器。
+    init(
+        bookmarks: RepositoryBookmarks = RepositoryBookmarks(),
+        recentDocuments: RecentRepositoryDocuments = .system
+    ) {
         self.bookmarks = bookmarks
+        self.recentDocuments = recentDocuments
         clones = CloneActivities(bookmarks: bookmarks)
         super.init()
     }
@@ -479,6 +490,7 @@ extension SpookyApplicationController {
             }
 
         bookmarks.recordOpened(repository)
+        recentDocuments.record(repository)
         let previous = destination.session.repository
 
         showSeparately(destination, when: inNewWindow) {

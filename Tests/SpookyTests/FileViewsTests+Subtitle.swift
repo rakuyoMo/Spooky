@@ -29,7 +29,10 @@ extension FileViewsTests {
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
         let session = RepositorySession(makeRunner: { _ in runner })
         let controller = RepositoryWindowController(
-            coordinator: SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults)),
+            coordinator: SpookyApplicationController(
+                bookmarks: RepositoryBookmarks(defaults: defaults),
+                recentDocuments: .ignoring
+            ),
             session: session
         )
         defer {

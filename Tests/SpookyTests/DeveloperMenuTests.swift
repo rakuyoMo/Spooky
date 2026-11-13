@@ -28,7 +28,10 @@ struct DeveloperMenuTests {
         UserDefaults.standard.removeObject(forKey: key)
 
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
-        let controller = SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
+        let controller = SpookyApplicationController(
+            bookmarks: RepositoryBookmarks(defaults: defaults),
+            recentDocuments: .ignoring
+        )
 
         _ = NSApplication.shared
         controller.configureMenu()

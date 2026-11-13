@@ -56,10 +56,11 @@ extension SpookyApplicationController {
         menu.addItem(clear)
     }
 
-    /// Clear Menu：清空最近打开列表，书签都保留。
+    /// Clear Menu：清空最近打开列表，书签都保留；系统里 Spooky 的最近文稿一并清空，Dock 菜单随之不再列出。
     @objc
     func clearRecentRepositories() {
         bookmarks.clearRecentlyOpened()
+        recentDocuments.clear()
     }
 
     /// 最近菜单直接走窗口复用与版本检查流程。

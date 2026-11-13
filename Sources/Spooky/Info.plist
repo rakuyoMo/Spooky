@@ -68,6 +68,34 @@
         </dict>
         <dict>
             <key>CFBundleTypeName</key>
+            <string>Spooky Server Repository</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.rakuyo.spooky.server-repository</string>
+            </array>
+            <key>LSTypeIsPackage</key>
+            <false/>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Spooky Repository Location</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.rakuyo.spooky.repository-location</string>
+            </array>
+            <key>LSTypeIsPackage</key>
+            <false/>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
             <string>Folder</string>
             <key>CFBundleTypeRole</key>
             <string>Viewer</string>
@@ -95,6 +123,40 @@
                 <key>public.filename-extension</key>
                 <array>
                     <string>spookytheme</string>
+                </array>
+            </dict>
+        </dict>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.rakuyo.spooky.server-repository</string>
+            <key>UTTypeDescription</key>
+            <string>Spooky Server Repository</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.folder</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>spookyrepo</string>
+                </array>
+            </dict>
+        </dict>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.rakuyo.spooky.repository-location</string>
+            <key>UTTypeDescription</key>
+            <string>Spooky Repository Location</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.json</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>spookylocation</string>
                 </array>
             </dict>
         </dict>
