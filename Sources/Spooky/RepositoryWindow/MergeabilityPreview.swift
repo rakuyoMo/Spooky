@@ -5,7 +5,7 @@ import SwiftUI
 
 /// 合并、拉取、变基与同步对话框里的合并可行性预览：所选版本并入 HEAD 时会不会冲突。
 ///
-/// 放在对话框表单的最后，在上一行下方 20 pt；图标与文字这一组从输入列左侧 20 pt 开始，图标挂在输入列外侧。
+/// 放在对话框表单的最后，是表单的状态行，在上一行下方 20 pt；图标与文字这一组从输入列左侧 20 pt 开始，图标挂在输入列外侧。
 /// 所选版本一变就取消上一次检查重新计算，服务器上的慢响应不会覆盖新的选择；无法检查时不当作可以干净合并。
 /// 合并对话框只在有冲突时显示结果，已确认没有冲突时不占高度；检查中与无法检查在各对话框都照常显示。
 struct MergeabilityPreview: View {
@@ -35,7 +35,7 @@ struct MergeabilityPreview: View {
         let visible = checking || message != nil
 
         DialogInputColumnReader { inputColumn in
-            // 表单的行距 8 再加 12，与上一行相隔 20；表单左边距 20，这一组再从输入列往左 20
+            // 状态行不占表单的行距，显示时自己与上一行相隔 20；表单左边距 20，这一组再从输入列往左 20
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 if checking {
                     ProgressView()
@@ -50,13 +50,14 @@ struct MergeabilityPreview: View {
 
             // 说明里有 HEAD 分支名与冲突数，放不下时换行，不截断
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, visible ? 12 : 0)
+            .padding(.top, visible ? 20 : 0)
             .padding(.leading, inputColumn - 20 - 20)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .font(.system(size: 12))
         .foregroundStyle(.secondary)
         .task(id: revision) { await load() }
+        .containerValue(\.isDialogFormStatus, true)
     }
 
     /// 冲突说明里写出的 HEAD 分支名；分离 HEAD 时写 HEAD。

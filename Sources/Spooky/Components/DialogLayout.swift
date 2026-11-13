@@ -10,7 +10,8 @@ import SwiftUI
 /// 头部是 64 pt 图标与单行标题、自动折行的说明，服务器仓库在标题下多一行带主机前缀的位置。
 /// 头部文字、错误文字与备选底栏的按钮组对齐内容区的输入列，图标挂在头部文字左侧；输入列由 `DialogFormRow` 报上来，
 /// 标签长时随之右移，内容区没有输入列时对齐 `DialogMetrics.alignment`。
-/// 内容区与选项区的边距由内容自己决定，里面要按输入列定宽或缩进的部分用 `DialogInputColumnReader` 读到它。
+/// 内容区与选项区的边距由内容自己决定，里面要按输入列定宽或缩进的部分用 `DialogInputColumnReader` 读到它；
+/// 只有 Options 开关上方的间距由骨架定为 8 pt：内容区表单的最后一个控件下方，没有内容区时是头部的说明下方，各对话框不另留。
 ///
 /// 几种版本由参数组合出来：
 /// - 表单版：内容区是表单
@@ -95,22 +96,23 @@ struct DialogLayout<Content: View, Options: View>: View {
     /// 经 `DialogWindow` 呈现时报上理想尺寸，窗口随之同步变化。
     var body: some View {
         DialogStack(width: width, fillsProposedWidth: resizable, fillsProposedHeight: sizing != nil) {
-            VStack(alignment: .leading, spacing: 0) {
-                header
+            // 有 Options 开关时，开关上方那一段只留 8 pt：内容区的表单在最后一个控件下方，没有内容区时是头部的说明下方
+            Group(subviews: formattedContent) { contentViews in
+                VStack(alignment: .leading, spacing: 0) {
+                    header(textBottom: contentViews.isEmpty && options != nil ? 8 : 12)
 
-                content()
-                    .font(.system(size: 13))
-                    .environment(\.dialogInputColumn, alignment)
+                    ForEach(contentViews) { $0 }
 
-                if let error {
-                    errorRow(error)
-                        .transition(.opacity)
-                }
+                    if let error {
+                        errorRow(error)
+                            .transition(.opacity)
+                    }
 
-                if let options {
-                    optionsToggle
+                    if let options {
+                        optionsToggle
 
-                    optionsArea(options)
+                        optionsArea(options)
+                    }
                 }
             }
             .onGeometryChange(for: CGSize.self) { $0.size } action: { size in
@@ -202,40 +204,12 @@ extension DialogLayout {
         DialogMetrics.textLeading(for: inputColumn)
     }
 
-    /// 图标距顶 20，右侧 16 pt 是标题、服务器仓库的位置与说明；说明距头部底边 12，右边距 20。
-    ///
-    /// 图标下方不留这 12，头部至少高 84：距顶 20 加上图标的 64。
-    private var header: some View {
-        HStack(alignment: .top, spacing: DialogMetrics.iconSpacing) {
-            Image(nsImage: icon ?? AppIconController.displayedIcon())
-                .resizable()
-                .frame(width: 64, height: 64)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.system(size: 14, weight: .bold))
-                    .lineLimit(1)
-
-                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
-                if let repository, repository.host != nil {
-                    Text(repository.displayPath)
-                        .font(.system(size: 13))
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Text(message)
-                    .font(.system(size: 13))
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, 12)
-        }
-        .padding(.leading, alignment - DialogMetrics.iconSpacing - 64)
-        .padding(.trailing, 20)
-        .padding(.top, 20)
+    /// 内容区：13 pt 的字，表单按输入列排版；下面紧跟 Options 开关时表单底下只留 8 pt。
+    private var formattedContent: some View {
+        content()
+            .font(.system(size: 13))
+            .environment(\.dialogInputColumn, alignment)
+            .environment(\.dialogFormBottomInset, options == nil ? 12 : 8)
     }
 
     /// 高 34 的开关行：17 pt 的披露三角距左 20，右侧 4 pt 是文字，点文字也能切换。
@@ -320,6 +294,44 @@ extension DialogLayout {
             .fill(AppPalette.color("general_border_color"))
             .frame(height: 1)
             .shadow(color: .black.opacity(0.25), radius: 4)
+    }
+
+    /// 图标距顶 20，右侧 16 pt 是标题、服务器仓库的位置与说明；说明距头部底边 `textBottom`，右边距 20。
+    ///
+    /// 图标下方不留这段边距，头部至少高 84：距顶 20 加上图标的 64。
+    ///
+    /// - Parameter textBottom: 说明到头部底边的距离：一般是 12，没有内容区、下面紧跟 Options 开关时是 8。
+    private func header(textBottom: CGFloat) -> some View {
+        HStack(alignment: .top, spacing: DialogMetrics.iconSpacing) {
+            Image(nsImage: icon ?? AppIconController.displayedIcon())
+                .resizable()
+                .frame(width: 64, height: 64)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(.system(size: 14, weight: .bold))
+                    .lineLimit(1)
+
+                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
+                if let repository, repository.host != nil {
+                    Text(repository.displayPath)
+                        .font(.system(size: 13))
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Text(message)
+                    .font(.system(size: 13))
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, textBottom)
+        }
+        .padding(.leading, alignment - DialogMetrics.iconSpacing - 64)
+        .padding(.trailing, 20)
+        .padding(.top, 20)
     }
 
     /// 黄色警告图标挂在对齐线左侧 4 pt，原因文字从对齐线开始，右边距 20，至少高 51。

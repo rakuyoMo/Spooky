@@ -24,19 +24,34 @@ enum DialogMetrics {
 
 // MARK: - DialogForm
 
-/// 对话框的表单区：一组 `DialogFormRow`、`DialogFormOption` 与 `DialogFormField`，行距 8，左右各留 20 pt、上下各留 12 pt。
+/// 对话框的表单区：一组 `DialogFormRow`、`DialogFormOption` 与 `DialogFormField`，行距 8，左右各留 20 pt、顶上留 12 pt，
+/// 底下留 `dialogFormBottomInset`。
+///
+/// 容器值 `isDialogFormStatus` 标出的状态行排在网格之后，不占网格的行距：
+/// 没有内容时整行不占高度，表单的底边就是最后一个控件下方的边距。
 struct DialogForm<Rows: View>: View {
     /// 表单的行。
     @ViewBuilder
     let rows: () -> Rows
 
-    /// 标签列右对齐、输入列左对齐的网格。
+    /// 表单底下的边距，由外层的对话框骨架按下一段决定。
+    @Environment(\.dialogFormBottomInset)
+    private var bottomInset
+
+    /// 标签列右对齐、输入列左对齐的网格，状态行接在网格下方。
     var body: some View {
-        Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 8) {
-            rows()
+        Group(subviews: rows()) { subviews in
+            VStack(alignment: .leading, spacing: 0) {
+                Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 8) {
+                    ForEach(subviews.filter { !$0.containerValues.isDialogFormStatus }) { $0 }
+                }
+
+                ForEach(subviews.filter(\.containerValues.isDialogFormStatus)) { $0 }
+            }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.top, 12)
+        .padding(.bottom, bottomInset)
     }
 }
 
@@ -191,6 +206,18 @@ extension EnvironmentValues {
     /// 外层对话框骨架里输入列的左缘，也是头部与错误文字的左缘；不在骨架里时是 `DialogMetrics.alignment`。
     @Entry
     var dialogInputColumn = DialogMetrics.alignment
+
+    /// 表单底下的边距：内容区下面紧跟 Options 开关时是 8，其余是 12。
+    @Entry
+    var dialogFormBottomInset: CGFloat = 12
+}
+
+// MARK: - ContainerValues + DialogFormStatus
+
+extension ContainerValues {
+    /// 是否为表单末尾的状态行，如合并可行性预览：排在网格之后，与上一行的间距由它自己留，没有内容时不占高度。
+    @Entry
+    var isDialogFormStatus = false
 }
 
 // MARK: - DialogInputColumnKey
