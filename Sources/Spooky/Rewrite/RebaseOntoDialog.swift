@@ -7,6 +7,15 @@ import SwiftUI
 ///
 /// 两种情况都在执行前列出会被改写的提交，已推送或已并入其它分支时给出警告。
 struct RebaseOntoDialog: View {
+    /// 会被改写的提交。
+    private enum Scope {
+        /// 移动当前基点之后的全部提交时的影响范围。
+        case range(RewriteImpact)
+
+        /// 只移动所选提交时的计划。
+        case plan(RewritePlan)
+    }
+
     /// 发起动作的窗口会话。
     let session: RepositorySession
 
@@ -24,21 +33,9 @@ struct RebaseOntoDialog: View {
     @State
     private var newBase = ""
 
-    /// 会被改写的提交与其中已共享的提交；参数不完整或读取失败时为 nil。
+    /// 会被改写的提交与输入校验、读取失败的说明，记着对应的两个基点；参数变化后仍显示上一次的，读完之前主按钮不可用。
     @State
-    private var impact: RewriteImpact?
-
-    /// 只移动所选提交时的计划。
-    @State
-    private var plan: RewritePlan?
-
-    /// 影响范围是否按当前参数读完；参数变化后仍显示上一次的结果，读完之前主按钮不可用。
-    @State
-    private var previewed = false
-
-    /// 输入校验与读取失败的说明。
-    @State
-    private var error = ""
+    private var scope = RevisionPreview<[String], Scope>()
 
     /// 跳过 pre-rebase 钩子，只对本次有效。
     @State
@@ -51,8 +48,8 @@ struct RebaseOntoDialog: View {
             title: AppLocalization.text("rewrite.rebaseOnto"),
             message: session.rewriteDialogMessage(help),
             submitTitle: AppLocalization.text("rewrite.rebaseOnto.button"),
-            error: error,
-            isValid: previewed && (partial ? plan != nil : impact != nil),
+            error: scope.error,
+            isValid: scope.value(for: bases) != nil,
             cancel: close,
             submit: perform
         ) {
@@ -64,7 +61,7 @@ struct RebaseOntoDialog: View {
                 isOn: $skipHooks
             )
         }
-        .task(id: currentBase + "\u{0}" + newBase) { await preview() }
+        .task(id: bases) { await preview() }
     }
 }
 
@@ -74,6 +71,11 @@ extension RebaseOntoDialog {
     /// 只移动所选提交。
     private var partial: Bool {
         !commits.isEmpty
+    }
+
+    /// 当前基点与新基点，影响范围按它们读取。
+    private var bases: [String] {
+        [currentBase, newBase]
     }
 
     /// 说明：移动整段时说明基点，只移动所选提交时写出提交数。
@@ -107,14 +109,22 @@ extension RebaseOntoDialog {
 
     /// 已推送与已并入其它分支的提交。
     private var shared: (pushed: Set<String>, merged: Set<String>) {
-        (plan?.pushed ?? impact?.pushed ?? [], plan?.merged ?? impact?.merged ?? [])
+        switch scope.value {
+        case .range(let impact): (impact.pushed, impact.merged)
+        case .plan(let plan): (plan.pushed, plan.merged)
+        case nil: ([], [])
+        }
     }
 
     /// 影响范围的行：只移动所选提交时，同一段里没选的提交标为删除。
     private var rows: [CommitSummaryList.Row]? {
         let all = shared.pushed.union(shared.merged)
 
-        if let plan {
+        if case .range(let impact) = scope.value {
+            return impact.commits.map { .init(id: $0.id, subject: $0.subject, isShared: all.contains($0.id)) }
+        }
+
+        if case .plan(let plan) = scope.value {
             let commands = Dictionary(plan.instructions.map { ($0.commit, $0.command) }, uniquingKeysWith: { $1 })
 
             return plan.commits.reversed().map {
@@ -127,7 +137,7 @@ extension RebaseOntoDialog {
             }
         }
 
-        return impact?.commits.map { .init(id: $0.id, subject: $0.subject, isShared: all.contains($0.id)) }
+        return nil
     }
 
     /// 一行填满输入列的基点组合框。
@@ -144,11 +154,12 @@ extension RebaseOntoDialog {
 extension RebaseOntoDialog {
     /// 参数变化后重新读取影响范围；两个基点都不能是 HEAD 所在的提交。
     private func preview() async {
-        previewed = false
+        let input = bases
+        let (current, new) = (currentBase, newBase)
 
         // 参数变化后保留上一次的影响范围与错误，新结果出来后一次替换
-        guard let runner = session.runner, !newBase.isEmpty, partial || !currentBase.isEmpty else {
-            clearPreview(reason: AppLocalization.text("rewrite.rebaseOnto.missing"))
+        guard let runner = session.runner, !new.isEmpty, partial || !current.isEmpty else {
+            show(nil, error: AppLocalization.text("rewrite.rebaseOnto.missing"), for: input)
             return
         }
 
@@ -158,56 +169,58 @@ extension RebaseOntoDialog {
             let references = RepositoryReferences(runner: runner)
             let head = session.status?.branch.oid
 
-            if try await references.resolve(newBase) == head {
-                clearPreview(reason: AppLocalization.text("rewrite.rebaseOnto.newIsHead"))
+            if try await references.resolve(new) == head {
+                show(nil, error: AppLocalization.text("rewrite.rebaseOnto.newIsHead"), for: input)
                 return
             }
 
-            var impact: RewriteImpact? = nil
-            var plan: RewritePlan? = nil
+            let found: Scope
 
             if partial {
-                plan = try await rewrite.plan(.rebase(commits, onto: newBase))
-            } else if try await references.resolve(currentBase) == head {
-                clearPreview(reason: AppLocalization.text("rewrite.rebaseOnto.currentIsHead"))
+                found = try await .plan(rewrite.plan(.rebase(commits, onto: new)))
+            } else if try await references.resolve(current) == head {
+                show(nil, error: AppLocalization.text("rewrite.rebaseOnto.currentIsHead"), for: input)
                 return
             } else {
-                impact = try await rewrite.rebasePreview(from: currentBase)
+                found = try await .range(rewrite.rebasePreview(from: current))
             }
 
             try Task.checkCancellation()
 
-            DialogAnimation.perform {
-                self.impact = impact
-                self.plan = plan
-                previewed = true
-                error = ""
-            }
+            show(found, for: input)
         } catch {
             if !Task.isCancelled {
-                clearPreview(reason: AppFailure(error: error, opening: false, location: session.repository).title)
+                show(
+                    nil,
+                    error: AppFailure(error: error, opening: false, location: session.repository).title,
+                    for: input
+                )
             }
         }
     }
 
-    /// 执行变基；仓库暂不可写时对话框保持打开。
+    /// 执行变基：只用按当前两个基点读完的结果；仓库暂不可写时对话框保持打开。
     private func perform() {
+        guard let found = scope.value(for: bases) else {
+            return
+        }
+
         let started =
-            if let plan {
-                session.perform(plan, skipHooks: skipHooks)
-            } else {
-                session.rebase(onto: newBase, from: currentBase, skipHooks: skipHooks)
+            switch found {
+            case .plan(let plan): session.perform(plan, skipHooks: skipHooks)
+            case .range: session.rebase(onto: newBase, from: currentBase, skipHooks: skipHooks)
             }
 
         if started { close() }
     }
 
-    /// 读不出影响范围时收起它，错误区说明原因。
-    private func clearPreview(reason: String) {
-        DialogAnimation.perform {
-            impact = nil
-            plan = nil
-            error = reason
-        }
+    /// 某组基点读完：影响范围与错误随高度动画一次替换；读不出影响范围时收起它，错误区说明原因。
+    ///
+    /// - Parameters:
+    ///   - found: 读到的影响范围；读不出时为 nil。
+    ///   - error: 错误区的说明；没有错误时为空。
+    ///   - input: 读取时的两个基点。
+    private func show(_ found: Scope?, error: String = "", for input: [String]) {
+        DialogAnimation.perform { scope.show(found, error: error, for: input) }
     }
 }

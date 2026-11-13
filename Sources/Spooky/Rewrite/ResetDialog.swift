@@ -22,17 +22,9 @@ struct ResetDialog: View {
     @State
     private var mode = ResetMode.mixed
 
-    /// 重置后离开当前分支的提交，从新到旧。
+    /// 重置后离开当前分支的提交（从新到旧）与版本解析失败的说明，记着对应的版本；输入停顿期间仍显示上一次的，主按钮不可用。
     @State
-    private var leaving: [HistoryCommit] = []
-
-    /// 版本已解析成一个提交。
-    @State
-    private var resolved = false
-
-    /// 版本解析失败的说明。
-    @State
-    private var error = ""
+    private var leaving = RevisionPreview<String, [HistoryCommit]>()
 
     /// 版本、档位与影响范围；服务器仓库在说明后写明在哪台服务器上执行。
     var body: some View {
@@ -41,8 +33,8 @@ struct ResetDialog: View {
             title: AppLocalization.text("rewrite.reset.title"),
             message: session.rewriteDialogMessage(AppLocalization.text("rewrite.reset.help")),
             submitTitle: AppLocalization.text("rewrite.reset.button"),
-            error: error,
-            isValid: resolved,
+            error: leaving.error,
+            isValid: leaving.value(for: target) != nil,
             cancel: close,
             submit: perform
         ) {
@@ -78,12 +70,12 @@ extension ResetDialog {
             }
         }
 
-        if !leaving.isEmpty {
+        if let commits = leaving.value, !commits.isEmpty {
             DialogFormField {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(AppLocalization.text("rewrite.reset.leaving", leaving.count))
+                    Text(AppLocalization.text("rewrite.reset.leaving", commits.count))
 
-                    CommitSummaryList(rows: leaving.map { .init(id: $0.id, subject: $0.subject) })
+                    CommitSummaryList(rows: commits.map { .init(id: $0.id, subject: $0.subject) })
                 }
             }
         }
@@ -123,33 +115,24 @@ extension ResetDialog {
 extension ResetDialog {
     /// 输入停顿后解析版本并读出离开当前分支的提交；解析失败时说明原因，主按钮不可用。
     private func preview() async {
-        resolved = false
+        let input = target
 
         // 输入停顿期间保留上一次的提交列表与错误，新结果出来后一次替换
-        guard !target.isEmpty, let runner = session.runner else {
-            DialogAnimation.perform {
-                leaving = []
-                error = ""
-            }
-
+        guard !input.isEmpty, let runner = session.runner else {
+            DialogAnimation.perform { leaving.show(nil, for: input) }
             return
         }
 
         do {
             try await Task.sleep(for: .milliseconds(150))
-            let commits = try await RepositoryRewrite(runner: runner).commitsLeaving(to: target)
+            let commits = try await RepositoryRewrite(runner: runner).commitsLeaving(to: input)
             try Task.checkCancellation()
 
-            DialogAnimation.perform {
-                leaving = commits
-                resolved = true
-                error = ""
-            }
+            DialogAnimation.perform { leaving.show(commits, for: input) }
         } catch {
             if !Task.isCancelled {
                 DialogAnimation.perform {
-                    leaving = []
-                    self.error = AppLocalization.text("rewrite.error.revision")
+                    leaving.show(nil, error: AppLocalization.text("rewrite.error.revision"), for: input)
                 }
             }
         }

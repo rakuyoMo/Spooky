@@ -18,17 +18,9 @@ struct CheckoutRevisionDialog: View {
     @State
     private var target = ""
 
-    /// 解析出的去向；解析之前或失败时为 nil。
+    /// 解析出的去向与解析失败的说明，记着对应的版本；输入停顿期间仍显示上一次的，主按钮不可用。
     @State
-    private var destination: CheckoutTarget?
-
-    /// 去向是否按当前输入解析完；输入停顿期间仍显示上一次的去向，主按钮不可用。
-    @State
-    private var resolved = false
-
-    /// 版本解析失败的说明。
-    @State
-    private var error = ""
+    private var destination = RevisionPreview<String, CheckoutTarget>()
 
     /// 版本组合框与去向说明；仓库还没有引用时错误区说明原因，仍可直接输入版本。
     var body: some View {
@@ -38,7 +30,7 @@ struct CheckoutRevisionDialog: View {
             message: AppLocalization.text("rewrite.checkout.help"),
             submitTitle: AppLocalization.text("rewrite.checkout.button"),
             error: notice,
-            isValid: resolved && destination != nil,
+            isValid: destination.value(for: target) != nil,
             cancel: close,
             submit: perform
         ) {
@@ -54,8 +46,8 @@ struct CheckoutRevisionDialog: View {
 extension CheckoutRevisionDialog {
     /// 错误区的文字：版本解析失败的说明；仓库还没有引用时说明原因。
     private var notice: String {
-        guard error.isEmpty, session.revisionCandidates.isEmpty else {
-            return error
+        guard destination.error.isEmpty, session.revisionCandidates.isEmpty else {
+            return destination.error
         }
 
         return AppLocalization.text("rewrite.noRefs")
@@ -75,7 +67,7 @@ extension CheckoutRevisionDialog {
             )
         }
 
-        if case .detached(let commit) = destination {
+        if case .detached(let commit) = destination.value {
             DialogFormField {
                 Label(
                     AppLocalization.text("rewrite.checkout.detached", String(commit.prefix(8))),
@@ -93,33 +85,24 @@ extension CheckoutRevisionDialog {
 extension CheckoutRevisionDialog {
     /// 输入停顿后判断去向；无法解析时说明原因，主按钮不可用。
     private func resolve() async {
-        resolved = false
+        let input = target
 
         // 输入停顿期间保留上一次的去向与错误，新结果出来后一次替换
-        guard !target.isEmpty, let runner = session.runner else {
-            DialogAnimation.perform {
-                destination = nil
-                error = ""
-            }
-
+        guard !input.isEmpty, let runner = session.runner else {
+            DialogAnimation.perform { destination.show(nil, for: input) }
             return
         }
 
         do {
             try await Task.sleep(for: .milliseconds(150))
-            let found = try await RepositoryRewrite(runner: runner).checkoutTarget(for: target)
+            let found = try await RepositoryRewrite(runner: runner).checkoutTarget(for: input)
             try Task.checkCancellation()
 
-            DialogAnimation.perform {
-                destination = found
-                resolved = true
-                error = ""
-            }
+            DialogAnimation.perform { destination.show(found, for: input) }
         } catch {
             if !Task.isCancelled {
                 DialogAnimation.perform {
-                    destination = nil
-                    self.error = AppLocalization.text("rewrite.error.revision")
+                    destination.show(nil, error: AppLocalization.text("rewrite.error.revision"), for: input)
                 }
             }
         }
