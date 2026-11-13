@@ -372,7 +372,9 @@
 "history.viewOptions.help" = "보기 옵션 변경";
 "history.empty" = "커밋 없음";
 "history.loading" = "커밋 불러오는 중…";
-"history.copyHash" = "커밋 해시 복사";
+"history.copyHash" = "커밋 해시를 클립보드에 복사";
+"history.copyHashes" = "커밋 해시 %ld개를 클립보드에 복사";
+"history.copyInfo" = "커밋 정보를 클립보드에 복사";
 "history.changes" = "변경된 파일 %ld개";
 "history.noSelection" = "선택한 커밋 없음";
 "history.multiple" = "커밋 %ld개 선택됨";
@@ -1590,7 +1592,7 @@
 "rewrite.menu.revertGeneric" = "되돌리기…";
 "rewrite.menu.cherryPick" = "“%@” 체리픽…";
 "rewrite.menu.cherryPickMany" = "리비전 %ld개 체리픽…";
-"rewrite.menu.rebaseOnto" = "“%@”을(를) 다른 곳으로 리베이스…";
+"rewrite.menu.rebaseOnto" = "'%@'을(를) 다른 곳으로 리베이스…";
 "rewrite.menu.rebaseOntoMany" = "리비전 %ld개를 다른 곳으로 리베이스…";
 "rewrite.menu.amend" = "“%@” 수정";
 "rewrite.menu.edit" = "“%@” 편집";

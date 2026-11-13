@@ -372,7 +372,9 @@
 "history.viewOptions.help" = "Modifier les options d’affichage";
 "history.empty" = "Aucun commit";
 "history.loading" = "Chargement des commits…";
-"history.copyHash" = "Copier les hashs des commits";
+"history.copyHash" = "Copier le hash du commit dans le presse-papiers";
+"history.copyHashes" = "Copier %ld hashs de commits dans le presse-papiers";
+"history.copyInfo" = "Copier les infos du commit dans le presse-papiers";
 "history.changes" = "%ld fichiers modifiés";
 "history.noSelection" = "Aucun commit sélectionné";
 "history.multiple" = "%ld commits sélectionnés";
@@ -1590,7 +1592,7 @@
 "rewrite.menu.revertGeneric" = "Revert…";
 "rewrite.menu.cherryPick" = "Cherry-pick de « %@ »…";
 "rewrite.menu.cherryPickMany" = "Cherry-pick de %ld révisions…";
-"rewrite.menu.rebaseOnto" = "Rebaser « %@ » ailleurs…";
+"rewrite.menu.rebaseOnto" = "Rebaser '%@' ailleurs…";
 "rewrite.menu.rebaseOntoMany" = "Rebaser %ld révisions ailleurs…";
 "rewrite.menu.amend" = "Compléter « %@ »";
 "rewrite.menu.edit" = "Modifier « %@ »";

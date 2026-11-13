@@ -372,7 +372,9 @@
 "history.viewOptions.help" = "更改显示选项";
 "history.empty" = "没有提交";
 "history.loading" = "正在加载提交…";
-"history.copyHash" = "复制提交哈希";
+"history.copyHash" = "复制提交哈希到剪贴板";
+"history.copyHashes" = "复制 %ld 个提交哈希到剪贴板";
+"history.copyInfo" = "复制提交信息到剪贴板";
 "history.changes" = "%ld 个变更文件";
 "history.noSelection" = "未选择提交";
 "history.multiple" = "已选择 %ld 个提交";
@@ -1590,7 +1592,7 @@
 "rewrite.menu.revertGeneric" = "反转…";
 "rewrite.menu.cherryPick" = "摘取 “%@”…";
 "rewrite.menu.cherryPickMany" = "摘取 %ld 个版本…";
-"rewrite.menu.rebaseOnto" = "把 “%@” 变基到别处…";
+"rewrite.menu.rebaseOnto" = "把 '%@' 变基到别处…";
 "rewrite.menu.rebaseOntoMany" = "把 %ld 个版本变基到别处…";
 "rewrite.menu.amend" = "修补 “%@”";
 "rewrite.menu.edit" = "编辑 “%@”";

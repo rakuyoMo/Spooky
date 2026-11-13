@@ -223,29 +223,13 @@ struct HistoryListView: View {
 
 /// NSTableView 提供固定行高、多选、复制和只限应用内的提交拖动。
 struct HistoryCommitTable: NSViewRepresentable {
-    /// 响应链上的 ⌘C 复制完整哈希，回车与双击一样进入整页详情。
+    /// 响应链上的 ⌘C 复制完整哈希；回车不进入整页详情，双击才进入。
     final class CommitTableView: NSTableView {
         /// 当前选择对应的复制动作。
         var copySelection: (() -> Void)?
 
-        /// 键盘打开整页提交详情的动作。
-        var openSelection: (() -> Void)?
-
         /// 列表内拖放时落点旁的动作名。
         let dropLabel = HistoryDropLabel()
-
-        /// 回车与小键盘 Enter 是双击的键盘入口，其它按键交给系统列表。
-        override func keyDown(with event: NSEvent) {
-            if
-                [36, 76].contains(event.keyCode),
-                event.modifierFlags.isDisjoint(with: [.command, .option, .control])
-            {
-                openSelection?()
-                return
-            }
-
-            super.keyDown(with: event)
-        }
 
         /// 文本焦点位于表格时响应系统复制菜单。
         @objc
@@ -447,45 +431,56 @@ struct HistoryCommitTable: NSViewRepresentable {
             return true
         }
 
-        /// 右键在选区外时只作用于该行。
+        /// 菜单打开前按被点的行重建。
         func menuNeedsUpdate(_ menu: NSMenu) {
-            menu.removeAllItems()
-            guard let table else { return }
-            if table.clickedRow >= 0, !table.selectedRowIndexes.contains(table.clickedRow) {
-                table.selectRowIndexes(IndexSet(integer: table.clickedRow), byExtendingSelection: false)
-            }
-            let copy = NSMenuItem(
-                title: AppLocalization.text("history.copyHash"),
-                action: #selector(copyHashes),
-                keyEquivalent: ""
-            )
-            copy.target = self
-            copy.isEnabled = !parent.session.history.selectedIDs.isEmpty
-            menu.addItem(copy)
-
-            // 检出、改写、新建与补丁各组，按列表顺序传入选中的提交
-            let history = parent.session.history
-            let selected = history.commits.filter { history.selectedIDs.contains($0.id) }
-
-            for item in HistoryCommitMenu.items(
-                for: selected.isEmpty ? (history.selectedCommit.map { [$0] } ?? []) : selected,
-                session: parent.session,
-                createBranch: parent.createBranch
-            ) {
-                menu.addItem(item)
-            }
-
-            menu.autoenablesItems = false
+            buildMenu(menu, clickedRow: table?.clickedRow ?? -1)
         }
 
-        /// 多选复制按照列表顺序换行连接。
-        @objc
+        /// 右键在选区内或没有被点的行时作用于选区，在选区外时只作用于被点的行，选区与详情都不变；点在分组标题上时没有菜单项。
+        ///
+        /// - Parameters:
+        ///   - menu: 要重建的菜单。
+        ///   - clickedRow: 被点的行；没有时为 -1。
+        func buildMenu(_ menu: NSMenu, clickedRow clicked: Int) {
+            menu.removeAllItems()
+            menu.autoenablesItems = false
+
+            let history = parent.session.history
+
+            // 实际作用的提交只算一次，菜单标题、可用性与动作都用这一份
+            let targets: [HistoryCommit]
+
+            let clickedCommit = clicked >= 0 ? history.commit(atRow: clicked) : nil
+
+            let clickedOutside =
+                clicked >= 0
+                    && !(clickedCommit.map { history.selectedIDs.contains($0.id) } ?? false)
+
+            if clickedOutside {
+                targets = clickedCommit.map { [$0] } ?? []
+            } else {
+                let selected = history.commits.filter { history.selectedIDs.contains($0.id) }
+                targets = selected.isEmpty ? (history.selectedCommit.map { [$0] } ?? []) : selected
+            }
+
+            // 复制与定位在前，其后是检出、改写、新建与补丁各组，按列表顺序传入
+            let copies = HistoryCommitMenu.copyItems(for: targets, session: parent.session)
+
+            let actions = HistoryCommitMenu.items(
+                for: targets,
+                session: parent.session,
+                createBranch: parent.createBranch
+            )
+
+            for item in copies + actions {
+                menu.addItem(item)
+            }
+        }
+
+        /// ⌘C 按列表顺序复制选中提交的完整哈希，一行一个。
         func copyHashes() {
             let history = parent.session.history
-            let hashes = history.commits.filter { history.selectedIDs.contains($0.id) }.map(\.id)
-            guard !hashes.isEmpty else { return }
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(hashes.joined(separator: "\n"), forType: .string)
+            HistoryCommitMenu.copyHashes(of: history.commits.filter { history.selectedIDs.contains($0.id) })
         }
 
         /// 双击进入整页提交详情，保持相同 First Parent 比较语义。
@@ -556,7 +551,6 @@ struct HistoryCommitTable: NSViewRepresentable {
         table.target = context.coordinator
         table.doubleAction = #selector(Coordinator.doubleClick)
         table.copySelection = { context.coordinator.copyHashes() }
-        table.openSelection = { context.coordinator.doubleClick() }
         table.setDraggingSourceOperationMask([.copy, .move], forLocal: true)
         table.setDraggingSourceOperationMask([], forLocal: false)
 

@@ -961,7 +961,17 @@ extension RepositoryHistoryState {
         let loaded = Set(commits.map(\.id))
             .union(revealedCommit.map { [$0.id] } ?? [])
             .union(lookup.map { [$0] } ?? [])
-        let selected = selectedIDs.intersection(loaded)
+        var selected = selectedIDs.intersection(loaded)
+
+        // 刷新以外的读取读完后什么都没选中时，选中当前结果的第一行提交并显示详情；要找的提交由查找选中
+        if
+            selected.isEmpty,
+            !isRefreshingCommits,
+            lookup == nil,
+            let first = rows.lazy.compactMap(\.commit).first
+        {
+            selected = [first.id]
+        }
 
         // 选择没有变化时在后台重读变更集，已显示的内容与展开状态不变
         if selected == selectedIDs {
