@@ -234,6 +234,9 @@ extension RepositorySession {
     private func present(_ panel: NSSavePanel, then action: @escaping (URL) -> Void) {
         let completion: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK, let url = panel.url else { return }
+
+            // 完成回调里面板仍挂在窗口上，先收起，接着的覆盖确认才挂得上
+            panel.orderOut(nil)
             action(url)
         }
 
