@@ -215,6 +215,7 @@ Spooky 由两个 target 组成：
 
 ## 对话框的尺寸与动画
 
+- 打开后高度会变的弹窗都经 `DialogWindow` 呈现，设置页的账号、身份档案与应用图标也是；高度固定的服务器目录浏览与服务器环境提醒仍是 SwiftUI 的 sheet
 - 经 `DialogWindow` 呈现的对话框，窗口尺寸由骨架报上的理想尺寸驱动：`DialogLayout` 量出上面一段的高度加上底栏，交给 `DialogSizing.fit(_:)`，窗口不随约束自动变化；挂上之前先排成理想尺寸
 - 显示期间的变化是一段 0.2 s ease-out 的动画，窗口与内容同时开始、同时结束：骨架自己的输入（说明、错误区文字、底栏的进度）变化时由骨架带上 `DialogAnimation`；内容区里会改变高度的状态经 `DialogAnimation.perform(_:)` 或 `Binding.animation(DialogAnimation.current)` 修改，同一次修改里的几处变化合成一段
 - 动画期间窗口高于或矮于内容时，上面一段按理想高度贴顶，底栏贴着窗口底边；挂成 sheet 时系统把 sheet 摆在父窗口的竖直中线上，变高时上下两边各动一半

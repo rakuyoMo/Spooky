@@ -40,20 +40,12 @@ struct AccountDialog: View {
     }
 
     /// 对话框的用途。
-    enum Purpose: Identifiable {
+    enum Purpose {
         /// 添加一个新账号。
         case add(Kind)
 
         /// 给已有账号换上新令牌。
         case reauthenticate(HostingAccount)
-
-        /// sheet 的身份。
-        var id: String {
-            switch self {
-            case .add(let kind): "add-\(kind)"
-            case .reauthenticate(let account): account.id.uuidString
-            }
-        }
     }
 
     /// 等待中的步骤。
@@ -77,7 +69,7 @@ struct AccountDialog: View {
     /// 保存账号的地方。
     let accounts: HostingAccounts
 
-    /// 关闭 sheet。
+    /// 关闭对话框。
     let close: () -> Void
 
     /// 认证方式：github.com 与私有部署的 GitLab 在下拉里选，GitLab.com 只有个人访问令牌。
@@ -165,7 +157,7 @@ struct AccountDialog: View {
     /// - Parameters:
     ///   - purpose: 对话框的用途。
     ///   - accounts: 保存账号的地方。
-    ///   - close: 关闭 sheet。
+    ///   - close: 关闭对话框。
     init(purpose: Purpose, accounts: HostingAccounts, close: @escaping () -> Void) {
         self.purpose = purpose
         self.accounts = accounts
@@ -175,6 +167,26 @@ struct AccountDialog: View {
         case .add(.github): _authentication = State(initialValue: .oauth)
         case .add: _authentication = State(initialValue: .personalAccessToken)
         case .reauthenticate(let account): _authentication = State(initialValue: account.authentication)
+        }
+    }
+}
+
+// MARK: - Presenting
+
+extension AccountDialog {
+    /// 在设置窗口上以 sheet 打开对话框；没有窗口时不打开。
+    ///
+    /// - Parameters:
+    ///   - purpose: 对话框的用途。
+    ///   - accounts: 保存账号的地方。
+    ///   - window: 设置窗口。
+    static func present(_ purpose: Purpose, accounts: HostingAccounts, in window: NSWindow?) {
+        guard let window else {
+            return
+        }
+
+        DialogWindow.present(on: window) { close in
+            AccountDialog(purpose: purpose, accounts: accounts, close: close)
         }
     }
 }

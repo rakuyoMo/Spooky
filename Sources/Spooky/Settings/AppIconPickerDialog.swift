@@ -65,6 +65,25 @@ struct AppIconPickerDialog: View {
     }
 }
 
+// MARK: - Presenting
+
+extension AppIconPickerDialog {
+    /// 在设置窗口上以 sheet 打开对话框；没有窗口时不打开。
+    ///
+    /// - Parameters:
+    ///   - controller: App 图标的控制器。
+    ///   - window: 设置窗口。
+    static func present(controller: AppIconController, in window: NSWindow?) {
+        guard let window else {
+            return
+        }
+
+        DialogWindow.present(on: window) { close in
+            AppIconPickerDialog(controller: controller, close: close)
+        }
+    }
+}
+
 // MARK: - Private
 
 extension AppIconPickerDialog {

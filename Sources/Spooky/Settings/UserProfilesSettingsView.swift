@@ -132,10 +132,6 @@ struct UserProfilesSettingsView: View {
     @State
     private var selection: UserProfile.ID?
 
-    /// 正在编辑的档案；新建时是尚未加入列表的空档案。
-    @State
-    private var editing: UserProfile?
-
     /// 本机可用的签名密钥，供详情显示签名人与编辑时选择。
     @State
     private var keys: [SigningKey] = []
@@ -161,14 +157,6 @@ struct UserProfilesSettingsView: View {
         }
         .padding(20)
         .frame(width: 900, height: 381)
-        .sheet(item: $editing) { profile in
-            UserProfileEditor(
-                profile: profile,
-                isNew: !profiles.contains { $0.id == profile.id },
-                profiles: profiles,
-                keys: keys
-            ) { save($0) }
-        }
         .alert(
             AppLocalization.text("profiles.delete.title"),
             isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
@@ -179,8 +167,7 @@ struct UserProfilesSettingsView: View {
         } message: { profile in
             Text(AppLocalization.text("profiles.delete.message", profile.title))
         }
-        .task(id: editing == nil) {
-            // 打开页面与每次打开、关闭编辑框时重新列出密钥，agent 里的密钥可能随时增减。
+        .task {
             keys = await SigningKeys.local()
         }
     }
@@ -220,7 +207,7 @@ extension UserProfilesSettingsView {
     private var listActions: some View {
         HStack(spacing: 0) {
             Button {
-                editing = UserProfile(title: AppLocalization.text("profiles.newProfile"), name: "", email: "")
+                edit(UserProfile(title: AppLocalization.text("profiles.newProfile"), name: "", email: ""))
             } label: {
                 Image(systemName: "plus").frame(width: 24, height: 20)
             }
@@ -284,7 +271,7 @@ extension UserProfilesSettingsView {
 
             HStack {
                 Spacer(minLength: 0)
-                Button(AppLocalization.text("profiles.edit")) { editing = profile }
+                Button(AppLocalization.text("profiles.edit")) { edit(profile) }
             }
         }
         .padding(20)
@@ -315,6 +302,19 @@ extension UserProfilesSettingsView {
         }
     }
 
+    /// 在设置窗口上打开编辑框；关闭后重新列出密钥，agent 里的密钥可能在编辑期间增减。
+    private func edit(_ profile: UserProfile) {
+        UserProfileEditor.present(
+            profile,
+            profiles: profiles,
+            keys: keys,
+            in: NSApp.keyWindow,
+            save: save
+        ) {
+            Task { keys = await SigningKeys.local() }
+        }
+    }
+
     /// 新建的档案追加到列表末尾，已有的档案原位更新，并选中它。
     private func save(_ profile: UserProfile) {
         var current = profiles
@@ -335,7 +335,7 @@ extension UserProfilesSettingsView {
 /// 新建或更新档案的对话框：标题、姓名、邮箱与签名密钥；签名密钥从本机的密钥里选，或不带密钥。
 ///
 /// 标题、姓名与邮箱都不能为空；标题不能与其它档案重名，姓名与邮箱不能同时与其它档案相同。
-private struct UserProfileEditor: View {
+struct UserProfileEditor: View {
     /// 编辑中的副本。
     @State
     private var profile: UserProfile
@@ -346,18 +346,18 @@ private struct UserProfileEditor: View {
     /// 已有的全部档案，用来检查重复。
     let profiles: [UserProfile]
 
-    /// 本机可用的签名密钥。
-    let keys: [SigningKey]
-
     /// 保存回调。
     let onSave: (UserProfile) -> Void
 
+    /// 关闭对话框。
+    let close: () -> Void
+
+    /// 本机可用的签名密钥；先用打开时传入的，打开后重新列出，agent 里的密钥可能随时增减。
+    @State
+    private var keys: [SigningKey]
+
     /// 打开时档案里的签名密钥；本机找不到它时仍作为一项留在菜单里。
     private let configuredKey: String?
-
-    /// 关闭 sheet。
-    @Environment(\.dismiss)
-    private var dismiss
 
     /// 对话框骨架里放标签右对齐的四行表单。
     var body: some View {
@@ -369,13 +369,13 @@ private struct UserProfileEditor: View {
             canSubmit: duplicate == nil
                 && ![profile.title, profile.name, profile.email]
                 .contains { $0.trimmingCharacters(in: .whitespaces).isEmpty },
-            cancel: { dismiss() },
+            cancel: close,
             submit: {
                 var saved = profile
                 saved.title = profile.title.trimmingCharacters(in: .whitespaces)
                 saved.signingKey = selectedKey.wrappedValue
                 onSave(saved)
-                dismiss()
+                close()
             }
         ) {
             Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 8) {
@@ -387,22 +387,74 @@ private struct UserProfileEditor: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 20)
         }
+        .task {
+            keys = await SigningKeys.local()
+        }
     }
 
     /// 以档案的副本创建编辑框。
+    ///
+    /// - Parameters:
+    ///   - profile: 要编辑的档案。
+    ///   - isNew: 是否新建档案。
+    ///   - profiles: 已有的全部档案。
+    ///   - keys: 已列出的签名密钥。
+    ///   - onSave: 保存回调。
+    ///   - close: 关闭对话框。
     init(
         profile: UserProfile,
         isNew: Bool,
         profiles: [UserProfile],
         keys: [SigningKey],
-        onSave: @escaping (UserProfile) -> Void
+        onSave: @escaping (UserProfile) -> Void,
+        close: @escaping () -> Void
     ) {
         _profile = State(initialValue: profile)
+        _keys = State(initialValue: keys)
         self.isNew = isNew
         self.profiles = profiles
-        self.keys = keys
         self.onSave = onSave
+        self.close = close
         configuredKey = profile.signingKey
+    }
+}
+
+// MARK: - UserProfileEditor Presenting
+
+extension UserProfileEditor {
+    /// 在设置窗口上以 sheet 打开编辑框；没有窗口时不打开。
+    ///
+    /// - Parameters:
+    ///   - profile: 要编辑的档案；不在 `profiles` 里时是新建的档案。
+    ///   - profiles: 已有的全部档案。
+    ///   - keys: 已列出的签名密钥。
+    ///   - window: 设置窗口。
+    ///   - save: 保存回调。
+    ///   - closed: 编辑框关闭后的回调。
+    static func present(
+        _ profile: UserProfile,
+        profiles: [UserProfile],
+        keys: [SigningKey],
+        in window: NSWindow?,
+        save: @escaping (UserProfile) -> Void,
+        closed: @escaping () -> Void
+    ) {
+        guard let window else {
+            return
+        }
+
+        DialogWindow.present(on: window) { close in
+            UserProfileEditor(
+                profile: profile,
+                isNew: !profiles.contains { $0.id == profile.id },
+                profiles: profiles,
+                keys: keys,
+                onSave: save
+            ) {
+                close()
+                closed()
+            }
+        }
     }
 }
 
