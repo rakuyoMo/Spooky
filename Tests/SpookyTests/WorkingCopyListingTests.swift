@@ -112,6 +112,29 @@ struct WorkingCopyListingTests {
         #expect(WorkingCopyListMode.stored(defaults: unknown) == .list)
     }
 
+    /// 状态头的分支：未出生分支照写分支名、不附加说明；分离 HEAD 只取前 8 位哈希，SHA-256 仓库同样如此；
+    /// 既没有分支也没有提交时写没有 HEAD 分支。
+    @Test("状态头的分支写法")
+    func branchTitles() {
+        let sha1 = "0123456789abcdef0123456789abcdef01234567"
+        let sha256 = String(repeating: "fedcba98", count: 8)
+
+        #expect(WorkingCopyListView.branchTitle(BranchStatus(head: "main")) == "main")
+        #expect(WorkingCopyListView.branchTitle(BranchStatus(head: "main", oid: sha1)) == "main")
+
+        // 分离 HEAD 的显示缩写与哈希长度无关
+        #expect(
+            WorkingCopyListView.branchTitle(BranchStatus(oid: sha1))
+                == AppLocalization.text("branch.detached", "01234567")
+        )
+        #expect(
+            WorkingCopyListView.branchTitle(BranchStatus(oid: sha256))
+                == AppLocalization.text("branch.detached", "fedcba98")
+        )
+
+        #expect(WorkingCopyListView.branchTitle(BranchStatus()) == AppLocalization.text("branch.noHeadBranch"))
+    }
+
     /// 文件操作的可用范围：只有暂存区里的文件能停止跟踪，工作区里已经没有的文件不能删除或打开；
     /// 补丁前像不符与移动目标已存在都属于仓库状态问题，前像不符时列出这些文件，外部工具启动失败时写出诊断。
     @Test("文件操作的适用条目与错误呈现")

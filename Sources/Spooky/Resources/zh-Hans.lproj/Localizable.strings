@@ -79,11 +79,11 @@
 
 "loading.status" = "正在刷新状态…";
 
-"branch.unborn" = "%@（尚无提交）";
-
-"branch.detached" = "%@（分离 HEAD）";
+"branch.detached" = "%@（分离）";
 
 "branch.noHead" = "没有 HEAD 分支";
+
+"branch.noHeadBranch" = "（没有 HEAD 分支）";
 
 "branch.noTracking" = "没有上游";
 
@@ -543,7 +543,6 @@
 "recovery.notStarted" = "服务器连接不可用，“%@” 没有开始执行，服务器上没有任何改动。";
 "recovery.unborn" = "尚无提交";
 "dialog.blocked" = "此仓库有其它操作正在进行，或服务器已断开。已填写的设置会保留，请在仓库可用后重试。";
-"working.clean" = "没有本地改动";
 "history.loadingChanges" = "正在读取变更文件…";
 "repositories.unavailableShort" = "不可用";
 

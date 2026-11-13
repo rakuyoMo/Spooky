@@ -79,11 +79,11 @@
 
 "loading.status" = "Actualisation de l’état…";
 
-"branch.unborn" = "%@ (aucun commit)";
-
-"branch.detached" = "%@ (HEAD détachée)";
+"branch.detached" = "%@ (détaché)";
 
 "branch.noHead" = "Aucune branche HEAD";
+
+"branch.noHeadBranch" = "(Aucune branche HEAD)";
 
 "branch.noTracking" = "Aucun suivi";
 
@@ -543,7 +543,6 @@
 "recovery.notStarted" = "L’opération « %@ » n’a pas démarré, car la connexion au serveur était indisponible. Rien n’a été modifié sur le serveur.";
 "recovery.unborn" = "aucun commit";
 "dialog.blocked" = "Une autre opération est en cours sur ce dépôt, ou le serveur est déconnecté. Vos paramètres sont conservés ; réessayez lorsque le dépôt sera disponible.";
-"working.clean" = "Aucune modification locale";
 "history.loadingChanges" = "Chargement des fichiers modifiés…";
 "repositories.unavailableShort" = "Indisponible";
 

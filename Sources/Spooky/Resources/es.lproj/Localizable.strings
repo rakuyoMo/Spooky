@@ -79,11 +79,11 @@
 
 "loading.status" = "Actualizando el estado…";
 
-"branch.unborn" = "%@ (sin commits)";
-
-"branch.detached" = "%@ (HEAD desacoplado)";
+"branch.detached" = "%@ (desacoplado)";
 
 "branch.noHead" = "Sin rama HEAD";
+
+"branch.noHeadBranch" = "(Sin rama HEAD)";
 
 "branch.noTracking" = "Sin seguimiento";
 
@@ -543,7 +543,6 @@
 "recovery.notStarted" = "“%@” no se ha iniciado porque la conexión con el servidor no estaba disponible. No se ha cambiado nada en el servidor.";
 "recovery.unborn" = "ningún commit";
 "dialog.blocked" = "Hay otra operación en curso en este repositorio o el servidor está desconectado. Se conserva la configuración indicada; volver a intentarlo cuando el repositorio esté disponible.";
-"working.clean" = "No hay cambios locales";
 "history.loadingChanges" = "Cargando archivos modificados…";
 "repositories.unavailableShort" = "No disponible";
 

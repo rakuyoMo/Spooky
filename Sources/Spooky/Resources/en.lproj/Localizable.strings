@@ -79,11 +79,11 @@
 
 "loading.status" = "Refreshing status…";
 
-"branch.unborn" = "%@ (no commits)";
-
-"branch.detached" = "%@ (detached HEAD)";
+"branch.detached" = "%@ (detached)";
 
 "branch.noHead" = "No HEAD branch";
+
+"branch.noHeadBranch" = "(No head branch)";
 
 "branch.noTracking" = "No Tracking";
 
@@ -131,7 +131,7 @@
 
 "status.description" = "Index: %@; Working tree: %@";
 
-"detail.empty.title" = "No File Selected";
+"detail.empty.title" = "No file selected";
 
 
 
@@ -543,7 +543,6 @@
 "recovery.notStarted" = "“%@” did not start because the server connection was unavailable. Nothing was changed on the server.";
 "recovery.unborn" = "no commits";
 "dialog.blocked" = "Another operation is running on this repository, or the server is disconnected. Your settings are kept; try again when the repository is available.";
-"working.clean" = "No local changes";
 "history.loadingChanges" = "Loading changed files…";
 "repositories.unavailableShort" = "Unavailable";
 

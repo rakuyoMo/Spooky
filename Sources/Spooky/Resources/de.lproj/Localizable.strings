@@ -79,11 +79,11 @@
 
 "loading.status" = "Status wird aktualisiert …";
 
-"branch.unborn" = "%@ (keine Commits)";
-
-"branch.detached" = "%@ (losgelöster HEAD)";
+"branch.detached" = "%@ (losgelöst)";
 
 "branch.noHead" = "Kein HEAD-Branch";
+
+"branch.noHeadBranch" = "(Kein HEAD-Branch)";
 
 "branch.noTracking" = "Kein Upstream";
 
@@ -543,7 +543,6 @@
 "recovery.notStarted" = "„%@“ wurde nicht gestartet, weil die Serververbindung nicht verfügbar war. Auf dem Server wurde nichts geändert.";
 "recovery.unborn" = "keine Commits";
 "dialog.blocked" = "In diesem Repository läuft ein anderer Vorgang oder die Verbindung zum Server ist getrennt. Ihre Einstellungen bleiben erhalten; versuchen Sie es erneut, sobald das Repository verfügbar ist.";
-"working.clean" = "Keine lokalen Änderungen";
 "history.loadingChanges" = "Geänderte Dateien werden geladen …";
 "repositories.unavailableShort" = "Nicht verfügbar";
 

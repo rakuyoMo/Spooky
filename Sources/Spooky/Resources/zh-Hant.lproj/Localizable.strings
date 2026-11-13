@@ -79,11 +79,11 @@
 
 "loading.status" = "正在重新整理狀態…";
 
-"branch.unborn" = "%@（尚無提交）";
-
-"branch.detached" = "%@（分離 HEAD）";
+"branch.detached" = "%@（分離）";
 
 "branch.noHead" = "沒有 HEAD 分支";
+
+"branch.noHeadBranch" = "（沒有 HEAD 分支）";
 
 "branch.noTracking" = "沒有上游";
 
@@ -543,7 +543,6 @@
 "recovery.notStarted" = "伺服器連線無法使用，“%@” 沒有開始執行，伺服器上沒有任何變更。";
 "recovery.unborn" = "尚無提交";
 "dialog.blocked" = "此儲存庫有其他操作正在進行，或伺服器已中斷連線。已填寫的設定會保留，請在儲存庫可用後重試。";
-"working.clean" = "沒有本機變更";
 "history.loadingChanges" = "正在讀取變更檔案…";
 "repositories.unavailableShort" = "無法使用";
 

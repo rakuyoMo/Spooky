@@ -79,11 +79,11 @@
 
 "loading.status" = "상태를 새로 고치는 중…";
 
-"branch.unborn" = "%@ (커밋 없음)";
-
-"branch.detached" = "%@ (분리된 HEAD)";
+"branch.detached" = "%@ (분리됨)";
 
 "branch.noHead" = "HEAD 브랜치 없음";
+
+"branch.noHeadBranch" = "(HEAD 브랜치 없음)";
 
 "branch.noTracking" = "추적 브랜치 없음";
 
@@ -543,7 +543,6 @@
 "recovery.notStarted" = "서버 연결을 사용할 수 없어 “%@”이(가) 시작되지 않았습니다. 서버에서 변경된 내용은 없습니다.";
 "recovery.unborn" = "커밋 없음";
 "dialog.blocked" = "이 저장소에서 다른 작업이 진행 중이거나 서버 연결이 끊겼습니다. 입력한 설정은 유지되며, 저장소를 사용할 수 있게 되면 다시 시도하세요.";
-"working.clean" = "로컬 변경 사항 없음";
 "history.loadingChanges" = "변경된 파일 불러오는 중…";
 "repositories.unavailableShort" = "사용 불가";
 
