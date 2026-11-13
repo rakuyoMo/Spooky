@@ -552,7 +552,7 @@
 "recovery.notStarted" = "“%@” no se ha iniciado porque la conexión con el servidor no estaba disponible. No se ha cambiado nada en el servidor.";
 "recovery.unborn" = "ningún commit";
 "dialog.blocked" = "Hay otra operación en curso en este repositorio o el servidor está desconectado. Se conserva la configuración indicada; volver a intentarlo cuando el repositorio esté disponible.";
-"history.loadingChanges" = "Cargando archivos modificados…";
+"history.loadingChanges" = "Cargando cambios…";
 "repositories.unavailableShort" = "No disponible";
 
 /* 主题管理。 */

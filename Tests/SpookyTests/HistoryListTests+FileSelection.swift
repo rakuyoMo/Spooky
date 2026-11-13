@@ -72,6 +72,26 @@ extension HistoryListTests {
 
         retained.move(by: 1, extending: true, order: ["a", "b", "e"])
         #expect(retained.paths == ["a"])
+
+        // 移到的行完整露出时不滚动；没露出时向上移贴着上边、向下移贴着下边，向下移到展开着的行贴着上边
+        var scrolled = ChangesetFileSelection()
+        scrolled.click("b", extending: false, toggling: false, order: order)
+        scrolled.move(by: 1, extending: false, order: order)
+
+        #expect(scrolled.scrollTarget(movingDown: true, visible: ["b", "c"], expanded: []) == nil)
+
+        let below = scrolled.scrollTarget(movingDown: true, visible: ["a", "b"], expanded: [])
+        #expect(below?.path == "c")
+        #expect(below.map { !$0.alignsTop } ?? false)
+
+        let expandedBelow = scrolled.scrollTarget(movingDown: true, visible: ["a", "b"], expanded: ["c"])
+        #expect(expandedBelow?.alignsTop ?? false)
+
+        scrolled.move(by: -1, extending: true, order: order)
+
+        let above = scrolled.scrollTarget(movingDown: false, visible: ["c", "d"], expanded: [])
+        #expect(above?.path == "b")
+        #expect(above?.alignsTop ?? false)
     }
 
     /// 选中文件行不展开它，展开与 Expand All 不改选区，换选提交时选区清空。
@@ -133,7 +153,7 @@ extension HistoryListTests {
     }
 
     /// 文件行里三角以外的任何位置都算点在这一行上：行的上下边缘、三角的上下左右、文件名一栏与右侧的空白；
-    /// 点三角只切换展开，不点选。文件名一栏与提交详情里一样带右键菜单与拖动。
+    /// 点三角只切换展开，不点选。整行与提交详情里一样带右键菜单与拖动。
     @Test("变更文件行整行都能点选")
     func fileRowClickTargets() async throws {
         var clicks = 0
@@ -145,13 +165,12 @@ extension HistoryListTests {
                 set: { expanded = $0 }
             ),
             selection: nil,
-            select: { clicks += 1 }
+            select: { clicks += 1 },
+            drag: { NSItemProvider() }
         ) {
             Text("file.txt")
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .contextMenu { Button("Open") { } }
-                .onDrag { NSItemProvider() }
+        } menu: {
+            Button("Open") { }
         } diff: {
             Color.clear.frame(height: 20)
         }

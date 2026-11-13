@@ -552,7 +552,7 @@
 "recovery.notStarted" = "伺服器連線無法使用，“%@” 沒有開始執行，伺服器上沒有任何變更。";
 "recovery.unborn" = "尚無提交";
 "dialog.blocked" = "此儲存庫有其他操作正在進行，或伺服器已中斷連線。已填寫的設定會保留，請在儲存庫可用後重試。";
-"history.loadingChanges" = "正在讀取變更檔案…";
+"history.loadingChanges" = "正在讀取變更集…";
 "repositories.unavailableShort" = "無法使用";
 
 /* 主题管理。 */

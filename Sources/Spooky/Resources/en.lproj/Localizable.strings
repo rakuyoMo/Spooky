@@ -552,7 +552,7 @@
 "recovery.notStarted" = "“%@” did not start because the server connection was unavailable. Nothing was changed on the server.";
 "recovery.unborn" = "no commits";
 "dialog.blocked" = "Another operation is running on this repository, or the server is disconnected. Your settings are kept; try again when the repository is available.";
-"history.loadingChanges" = "Loading changed files…";
+"history.loadingChanges" = "Loading Changeset…";
 "repositories.unavailableShort" = "Unavailable";
 
 /* 主题管理。 */

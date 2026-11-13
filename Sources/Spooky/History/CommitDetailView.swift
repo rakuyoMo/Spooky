@@ -55,6 +55,10 @@ struct CommitDetailView: View {
     @Environment(\.appearsActive)
     private var appearsActive
 
+    /// 完整露在滚动区域里的文件行，键盘移动选中时据此判断要不要滚动。
+    @State
+    private var visibleFiles: Set<String> = []
+
     /// 换选提交时结束比较。
     var body: some View {
         content
@@ -78,8 +82,10 @@ struct CommitDetailView: View {
                 if history.showsTree {
                     CommitTreeView(tree: tree, session: session, commit: commit)
                 } else {
-                    ScrollView {
-                        scrollContent(commit)
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            scrollContent(commit, proxy: proxy)
+                        }
                     }
                     .onHover { hovering = $0 }
                 }
@@ -112,9 +118,14 @@ struct CommitDetailView: View {
     }
 
     /// 滚动区域的内容：元信息、完整信息、操作按钮行、变更集摘要与逐个文件的 Diff。
-    private func scrollContent(_ commit: HistoryCommit) -> some View {
+    ///
+    /// - Parameters:
+    ///   - commit: 详情显示的提交。
+    ///   - proxy: 键盘移动选中后把新选中的文件行滚到可见处。
+    private func scrollContent(_ commit: HistoryCommit, proxy: ScrollViewProxy) -> some View {
         // 焦点在这里读出：文件行是 `LazyVStack` 惰性排出的，只在行里读时，焦点变化不会让已排出的行重画
         let selectionColor = fileSelectionColor
+        let emphasized = appearsActive && filesFocused
 
         return LazyVStack(alignment: .leading, spacing: 0) {
             CommitMetadataView(
@@ -150,25 +161,25 @@ struct CommitDetailView: View {
 
             Divider()
 
-            changeRows(selectionColor: selectionColor)
+            changeRows(selectionColor: selectionColor, emphasized: emphasized)
         }
         .focusable()
         .focused($filesFocused)
         .focusEffectDisabled()
         .onKeyPress(keys: [.upArrow, .downArrow], phases: [.down, .repeat]) { press in
-            moveFileSelection(press)
+            moveFileSelection(press, proxy: proxy)
         }
     }
 
-    /// 变更集的读取进度、失败、逐个文件与空状态。
+    /// 变更集的读取进度、失败与逐个文件。
     ///
-    /// - Parameter selectionColor: 文件行选中底的颜色。
+    /// - Parameters:
+    ///   - selectionColor: 文件行选中底的颜色。
+    ///   - emphasized: 选中底是强调色，选中行的路径改为白色。
     @ViewBuilder
-    private func changeRows(selectionColor: NSColor) -> some View {
+    private func changeRows(selectionColor: NSColor, emphasized: Bool) -> some View {
         if history.isLoadingChanges {
-            ProgressView(AppLocalization.text("history.loadingChanges"))
-                .controlSize(.small)
-                .padding(20)
+            ChangesetLoadingRow()
         }
 
         if let failure = history.changesFailure {
@@ -177,18 +188,27 @@ struct CommitDetailView: View {
         }
 
         ForEach(history.changes) { file in
-            fileSection(file, selectionColor: selectionColor)
-            Divider()
+            VStack(spacing: 0) {
+                fileSection(file, selectionColor: selectionColor, emphasized: emphasized)
+                Divider()
+            }
         }
     }
 
-    /// 单个变更文件，展开时才读取它的 Diff；整行都能点选。
+    /// 单个变更文件，展开时才读取它的 Diff；整行都能点选、右键与拖动。
     ///
     /// - Parameters:
     ///   - file: 变更文件。
     ///   - selectionColor: 选中时垫在文件行下面的颜色。
-    private func fileSection(_ file: CommitFileChange, selectionColor: NSColor) -> some View {
-        ChangesetFileRow(
+    ///   - emphasized: 选中底是强调色。
+    private func fileSection(
+        _ file: CommitFileChange,
+        selectionColor: NSColor,
+        emphasized: Bool
+    ) -> some View {
+        let selected = history.fileSelection.paths.contains(file.path)
+
+        return ChangesetFileRow(
             isExpanded: Binding(
                 get: { history.expandedPaths.contains(file.path) },
                 set: {
@@ -200,18 +220,22 @@ struct CommitDetailView: View {
                     }
                 }
             ),
-            selection: history.fileSelection.paths.contains(file.path) ? selectionColor : nil,
-            select: { clickFile(file.path) }
+            selection: selected ? selectionColor : nil,
+            select: { clickFile(file.path) },
+            drag: { CommitFileDragging.provider(file, session: session) }
         ) {
-            CommitFileLabel(file: file)
-                .frame(maxHeight: .infinity)
-                .contentShape(Rectangle())
-                .contextMenu {
-                    if let commit = history.selectedCommit {
-                        ChangesetFileMenu(session: session, path: file.path, originalPath: file.originalPath, commit: commit)
+            CommitFileLabel(file: file, emphasized: selected && emphasized)
+                .onScrollVisibilityChange(threshold: 1) { visible in
+                    if visible {
+                        visibleFiles.insert(file.path)
+                    } else {
+                        visibleFiles.remove(file.path)
                     }
                 }
-                .onDrag { CommitFileDragging.provider(file, session: session) }
+        } menu: {
+            if let commit = history.selectedCommit {
+                ChangesetFileMenu(session: session, path: file.path, originalPath: file.originalPath, commit: commit)
+            }
         } diff: {
             CommitFileDiffView(history: history, path: file.path)
         }
@@ -232,18 +256,57 @@ struct CommitDetailView: View {
     }
 
     /// ↑ ↓ 把文件的选中移到上一行或下一行，按住 ⇧ 从锚点连续选；没有变更文件时交给别处处理。
-    private func moveFileSelection(_ press: KeyPress) -> KeyPress.Result {
+    ///
+    /// 移到的行没有完整露出时，滚到刚好露出：向上移贴着上边，向下移贴着下边。
+    private func moveFileSelection(_ press: KeyPress, proxy: ScrollViewProxy) -> KeyPress.Result {
         guard !history.changes.isEmpty else {
             return .ignored
         }
 
+        let movingDown = press.key == .downArrow
+
         history.fileSelection.move(
-            by: press.key == .upArrow ? -1 : 1,
+            by: movingDown ? 1 : -1,
             extending: press.modifiers.contains(.shift),
             order: history.changes.map(\.path)
         )
 
+        let target = history.fileSelection.scrollTarget(
+            movingDown: movingDown,
+            visible: visibleFiles,
+            expanded: history.expandedPaths
+        )
+
+        if let target {
+            proxy.scrollTo(target.path, anchor: target.alignsTop ? .top : .bottom)
+        }
+
         return .handled
+    }
+}
+
+// MARK: - ChangesetLoadingRow
+
+/// 变更集读取中的一行：32 pt 高，转圈距左 3 pt，其后是 Loading Changeset…，都用不可用控件的文字色。
+private struct ChangesetLoadingRow: View {
+    /// 与文件行三角右侧的一栏对齐，从 20 pt 起。
+    var body: some View {
+        HStack(spacing: 6) {
+            ProgressView()
+                .controlSize(.small)
+                .frame(width: 16, height: 16)
+
+            Text(AppLocalization.text("history.loadingChanges"))
+                .font(.system(size: 13))
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(Color(nsColor: .disabledControlTextColor))
+        .padding(.leading, 23)
+        .padding(.trailing, 3)
+        .frame(height: 32)
     }
 }
 
@@ -389,23 +452,27 @@ struct CommitFileListView: View {
 
 // MARK: - CommitFileLabel
 
-/// 文件状态与重命名路径在提交详情、整页详情、版本比较与目录的文件历史中保持一致。
+/// 文件状态与重命名路径在提交详情、版本比较与目录的文件历史中保持一致。
 struct CommitFileLabel: View {
     /// 当前文件变更。
     let file: CommitFileChange
 
-    /// 状态只用与工作区相同的徽标表示，辅助技术读出状态全称与路径。
+    /// 行已选中且选中底是强调色；此时路径改为白色，状态图标不变。
+    var emphasized = false
+
+    /// 16 × 16 的状态图标距左 3 pt，与路径隔 8 pt；路径平时用二级文字色。
     var body: some View {
         HStack(spacing: 8) {
             FileChangeStatusView(code: file.status)
+
             Text(file.originalPath.map { $0 + " → " + file.path } ?? file.path)
+                .foregroundStyle(Color(nsColor: emphasized ? .white : .secondaryLabelColor))
                 .lineLimit(1)
                 .truncationMode(.middle)
+
             Spacer(minLength: 0)
-            if let additions = file.additions, let deletions = file.deletions {
-                Text("+\(additions) −\(deletions)").foregroundStyle(.secondary)
-            }
         }
+        .padding(.leading, 3)
         .font(.system(size: 11))
     }
 }
