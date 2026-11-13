@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - CommitSignatureButton
 
-/// 列表行末的签名按钮：开启签名校验且签名有效时才出现，点击弹出签名详情。
+/// 列表行末的签名按钮：开启签名校验后，有签名的提交都有，点击弹出签名详情；没有签名或还没校验完时不出现。
 struct CommitSignatureButton: View {
     /// 窗口的签名结果。
     let store: CommitSignatureStore
@@ -26,24 +26,17 @@ struct CommitSignatureButton: View {
     @State
     private var showsPopover = false
 
-    #warning("TODO: 按钮只在签名有效时出现；“有效” 是否包括可信度未知（U）是推断。核实方式：在列表里看一个签名有效但密钥不受信任的提交是否有签名按钮；只影响列表行的签名按钮。")
-
-    /// 有效与可信度未知的签名用不同的状态点。
+    /// 状态图标按校验结果分三档。
     var body: some View {
-        if verifies, let signature = store.signatures[commit], [.good, .unknownValidity].contains(signature.status) {
-            let image = signature.status == .good
-                ? NSImage.statusAvailableName
-                : NSImage.statusPartiallyAvailableName
-
+        if verifies, let signature = store.signatures[commit], signature.status != .unsigned {
             Button {
                 showsPopover = true
             } label: {
-                Image(nsImage: NSImage(named: image) ?? NSImage())
-                    .resizable()
-                    .frame(width: small ? 10 : 12, height: small ? 10 : 12)
+                SignatureStatusIcon(status: signature.status, size: small ? 10 : 12)
             }
             .buttonStyle(.borderless)
             .accessibilityLabel(AppLocalization.text("signature.show"))
+            .accessibilityValue(signature.status.title)
             .popover(isPresented: $showsPopover, arrowEdge: .bottom) {
                 SignaturePopover(signature: signature)
             }
@@ -56,9 +49,62 @@ struct CommitSignatureButton: View {
     }
 }
 
+// MARK: - SignatureStatusIcon
+
+/// 签名状态的图标：有效是绿点，无效是红点，其余是黄点；系统开启 “区分时不仅依赖颜色” 时红点换成方块、黄点换成三角。
+private struct SignatureStatusIcon: View {
+    /// 签名的校验结果，不是没有签名。
+    let status: SignatureStatus
+
+    /// 图标边长。
+    let size: CGFloat
+
+    /// 系统的 “区分时不仅依赖颜色”。
+    @Environment(\.accessibilityDifferentiateWithoutColor)
+    private var differentiatesWithoutColor
+
+    /// 绿点不换形状；红点与黄点在不依赖颜色时换成方块与三角。
+    var body: some View {
+        switch status {
+        case .good:
+            Self.statusImage(NSImage.statusAvailableName, size: size)
+
+        case .bad:
+            if differentiatesWithoutColor {
+                Self.symbol("square.fill", color: .red, size: size)
+            } else {
+                Self.statusImage(NSImage.statusUnavailableName, size: size)
+            }
+
+        default:
+            if differentiatesWithoutColor {
+                Self.symbol("triangle.fill", color: .yellow, size: size)
+            } else {
+                Self.statusImage(NSImage.statusPartiallyAvailableName, size: size)
+            }
+        }
+    }
+
+    /// 系统的状态圆点。
+    private static func statusImage(_ name: NSImage.Name, size: CGFloat) -> some View {
+        Image(nsImage: NSImage(named: name) ?? NSImage())
+            .resizable()
+            .frame(width: size, height: size)
+    }
+
+    /// 填充的形状符号，与状态圆点同样大小。
+    private static func symbol(_ name: String, color: Color, size: CGFloat) -> some View {
+        Image(systemName: name)
+            .resizable()
+            .scaledToFit()
+            .foregroundStyle(color)
+            .frame(width: size, height: size)
+    }
+}
+
 // MARK: - SignaturePopover
 
-/// 签名详情：有签名者姓名与邮箱时显示头像与身份，只有密钥时显示密钥与状态，没有签名时只有一行说明。
+/// 签名详情：有姓名与邮箱的 OpenPGP 签名显示头像与身份，其余显示短标识与状态，没有签名时只有一行说明。
 ///
 /// 四周留 20 pt；校验结果晚于弹窗出现时，弹窗跟着结果变大。
 struct SignaturePopover: View {
@@ -71,7 +117,7 @@ struct SignaturePopover: View {
     var body: some View {
         Group {
             if let signature, signature.status != .unsigned {
-                if let name = signature.name, let email = signature.email {
+                if !signature.isSSH, let name = signature.name, let email = signature.email {
                     identity(name: name, email: email, signature: signature)
                 } else {
                     details(signature, keyLabel: "signature.signingKey", labelAlignment: .trailing)
@@ -114,7 +160,7 @@ struct SignaturePopover: View {
         }
     }
 
-    /// 密钥与状态两行；OpenPGP 的密钥标签为 GPG Key，其余为 Signing Key。
+    /// 短标识与状态两行；有身份的 OpenPGP 签名标签为 GPG Key，其余为 Signing Key；没有短标识时只有状态。
     ///
     /// - Parameter labelAlignment: 标签一列的对齐；有身份时两个标签居中对齐，只有密钥时靠右。
     private func details(
@@ -123,13 +169,12 @@ struct SignaturePopover: View {
         labelAlignment: HorizontalAlignment
     ) -> some View {
         Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 4) {
-            if !signature.key.isEmpty {
+            if let shortKeyID = signature.shortKeyID {
                 GridRow {
                     Text(AppLocalization.text(keyLabel))
                         .gridColumnAlignment(labelAlignment)
 
-                    Text(signature.key)
-                        .textSelection(.enabled)
+                    Text(shortKeyID)
                 }
             }
 

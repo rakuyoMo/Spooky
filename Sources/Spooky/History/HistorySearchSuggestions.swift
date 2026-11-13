@@ -3,9 +3,10 @@ import SpookyKit
 
 // MARK: - HistorySearchSuggestions
 
-/// 历史搜索的补全数据：仓库的作者与 HEAD 中的文件。
+/// 历史与文件历史搜索的补全数据：仓库的作者、提交人与 HEAD 中的文件。
 ///
-/// 同一仓库与 HEAD 只读取一次，服务器仓库的文件清单也只取回一次；读取失败的结果不缓存，下次输入时重试。
+/// 贡献者由会话在 HEAD 变化后于后台读取，同一仓库与 HEAD 只读取一次；服务器仓库的文件清单也只取回一次。
+/// 读取失败的结果不缓存，下次输入时重试。
 @MainActor
 final class HistorySearchSuggestions {
     /// 一次读取：仓库位置、HEAD 与读取任务。
@@ -23,8 +24,8 @@ final class HistorySearchSuggestions {
     /// 建议列表最多保留的条数。
     private static let limit = 100
 
-    /// 作者的读取。
-    private var authorsLoad: Load<[FileContributor]>? = nil
+    /// 作者与提交人的读取。
+    private var contributorsLoad: Load<RepositoryContributors>? = nil
 
     /// 文件清单的读取。
     private var filesLoad: Load<[String]>? = nil
@@ -43,7 +44,7 @@ final class HistorySearchSuggestions {
                 return (0, path)
             }
 
-            if isSubsequence(needle, of: name) {
+            if ContributorSuggestion.isSubsequence(needle, of: name) {
                 return (1, path)
             }
 
@@ -51,7 +52,7 @@ final class HistorySearchSuggestions {
                 return (2, path)
             }
 
-            return isSubsequence(needle, of: lowered) ? (3, path) : nil
+            return ContributorSuggestion.isSubsequence(needle, of: lowered) ? (3, path) : nil
         }
 
         return ranked
@@ -70,7 +71,69 @@ final class HistorySearchSuggestions {
             .map(\.path)
     }
 
-    /// 按条件种类给出建议：作者与提交人补全仓库的作者，文件补全 HEAD 中的路径，其余种类没有建议。
+    /// 整段输入可识别为日期时的 Since Dates 建议，排在其它建议之前；不是日期时为 nil。
+    ///
+    /// 输入只有一部分是日期（如 “fix tomorrow”）时不算，以免把普通的说明当成日期。
+    static func sinceSuggestion(for query: String) -> ContributorSuggestion? {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        let range = NSRange(trimmed.startIndex..., in: trimmed)
+
+        guard
+            !trimmed.isEmpty,
+            let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue),
+            let match = detector.firstMatch(in: trimmed, range: range),
+            match.range == range,
+            let date = match.date
+        else {
+            return nil
+        }
+
+        let title = AppLocalization.text(
+            "history.search.since",
+            date.formatted(date: .abbreviated, time: .omitted)
+        )
+
+        return ContributorSuggestion(
+            text: query,
+            name: title,
+            email: nil,
+            showsAvatar: false,
+            sinceDate: date
+        )
+    }
+
+    /// 会话读出新的 HEAD 后在后台读取贡献者，不等到第一次输入；同一仓库与 HEAD 已在读或已读完时不重读。
+    ///
+    /// 换了仓库或 HEAD 时取消旧的读取；读取不弹出凭据或口令的询问。
+    func prepareContributors(runner: GitRunner, head: String) {
+        _ = contributorsTask(runner: runner, head: head)
+    }
+
+    /// 仓库的作者与提交人；还在读时等这一次读取，读取失败时为空。
+    func contributors(runner: GitRunner, head: String) async -> RepositoryContributors {
+        let task = contributorsTask(runner: runner, head: head)
+
+        do {
+            return try await task.value
+        } catch {
+            // 失败的读取不留在缓存里，下次输入时重试
+            if contributorsLoad?.task == task {
+                contributorsLoad = nil
+            }
+
+            return RepositoryContributors()
+        }
+    }
+
+    /// 关闭仓库时取消还在进行的读取，丢掉读到的数据。
+    func close() {
+        contributorsLoad?.task.cancel()
+        contributorsLoad = nil
+        filesLoad?.task.cancel()
+        filesLoad = nil
+    }
+
+    /// 按条件种类给出建议：作者与提交人分别补全仓库的作者与提交人，文件补全 HEAD 中的路径，其余种类没有建议。
     func suggestions(
         for kind: HistorySearchCondition.Kind,
         matching query: String,
@@ -84,12 +147,13 @@ final class HistorySearchSuggestions {
         }
 
         switch kind {
-        case .author, .committer:
-            let authors = await load(\.authorsLoad, runner: runner, head: head) {
-                try await RepositoryFileViews(runner: runner).contributors(of: nil, at: head)
-            }
+        case .author:
+            let people = await contributors(runner: runner, head: head)
+            return ContributorSuggestion.matches(query, in: people.authors)
 
-            return ContributorSuggestion.matches(query, in: authors)
+        case .committer:
+            let people = await contributors(runner: runner, head: head)
+            return ContributorSuggestion.matches(query, in: people.committers)
 
         case .file:
             let files = await load(\.filesLoad, runner: runner, head: head) {
@@ -111,19 +175,23 @@ final class HistorySearchSuggestions {
 // MARK: - Private
 
 extension HistorySearchSuggestions {
-    /// needle 的字符是否按顺序出现在 haystack 里。
-    private static func isSubsequence(_ needle: String, of haystack: String) -> Bool {
-        var remaining = needle[...]
+    /// 同一仓库与 HEAD 的贡献者读取：已有就沿用，否则取消旧的读取、在后台开始新的一次。
+    private func contributorsTask(runner: GitRunner, head: String) -> Task<RepositoryContributors, Error> {
+        if let cached = contributorsLoad, cached.location == runner.location, cached.head == head {
+            return cached.task
+        }
 
-        for character in haystack where character == remaining.first {
-            remaining = remaining.dropFirst()
+        contributorsLoad?.task.cancel()
 
-            if remaining.isEmpty {
-                return true
+        // 不由用户直接发起的读取，不弹出凭据或口令的询问
+        let task = Task {
+            try await RemoteCallbackRequest.$allowsInteraction.withValue(false) {
+                try await RepositoryFileViews(runner: runner).contributors(at: head)
             }
         }
 
-        return remaining.isEmpty
+        contributorsLoad = Load(location: runner.location, head: head, task: task)
+        return task
     }
 
     /// 同一仓库与 HEAD 的读取共用一次结果；读取失败时没有建议，失败的读取不留在缓存里。
@@ -152,5 +220,4 @@ extension HistorySearchSuggestions {
             return []
         }
     }
-
 }

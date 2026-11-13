@@ -176,6 +176,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         restoreFrame()
         observeToolbarState()
         observeConnectionState()
+        observeWorkspaceProgress()
         observeHostingAccounts(previous: session.pullRequests.accounts.items)
         observeRemotes(previous: session.history.snapshot?.remoteSettingsDigests)
         observeSubtitle()
@@ -187,54 +188,6 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 窗口由代码构建，不从归档恢复控制器。
     required init?(coder _: NSCoder) {
         nil
-    }
-
-    /// 核对结果的说明：没有新的核对表示写入未在服务器上开始，否则比较写入前后的 HEAD。
-    static func recoveryMessage(_ write: InterruptedWrite, snapshot: RemoteRecoverySnapshot?) -> String {
-        guard let snapshot else {
-            return AppLocalization.text("recovery.notStarted", write.title)
-        }
-
-        let before = write.branch?.oid
-        let after = snapshot.status.branch.oid
-        let name: (String?) -> String = { $0.map { String($0.prefix(8)) } ?? AppLocalization.text("recovery.unborn") }
-        let summary = before == after
-            ? AppLocalization.text("recovery.unchanged", write.title, name(after))
-            : AppLocalization.text("recovery.changed", write.title, name(before), name(after))
-        let state = AppLocalization.text(
-            "connection.recovery",
-            snapshot.status.branch.head ?? AppLocalization.text("branch.detachedShort"),
-            snapshot.status.entries.count,
-            AppLocalization.text(snapshot.indexLocked ? "state.yes" : "state.no"),
-            AppLocalization.text(snapshot.merging ? "state.yes" : "state.no"),
-            AppLocalization.text(snapshot.rebasing ? "state.yes" : "state.no")
-        )
-        return summary + "\n\n" + state + "\n\n" + remoteReferenceChanges(write, snapshot: snapshot)
-    }
-
-    /// 中断前后远端跟踪分支的变化，每个变化的分支一行；获取或推送可能已经部分完成。
-    static func remoteReferenceChanges(_ write: InterruptedWrite, snapshot: RemoteRecoverySnapshot) -> String {
-        let before = write.remoteReferences
-        let after = snapshot.remoteReferences
-
-        // 提交取前 8 位，引用不存在时写 “无”
-        let name: (String?) -> String = { object in
-            object.map { String($0.prefix(8)) } ?? AppLocalization.text("recovery.noReference")
-        }
-
-        let changes = Set(before.keys).union(after.keys)
-            .filter { before[$0] != after[$0] }
-            .sorted()
-            .map { reference in
-                let branch = String(reference.dropFirst("refs/remotes/".count))
-                return branch + "  " + name(before[reference]) + " → " + name(after[reference])
-            }
-
-        guard !changes.isEmpty else {
-            return AppLocalization.text("recovery.remoteUnchanged")
-        }
-
-        return AppLocalization.text("recovery.remoteChanged") + "\n" + changes.joined(separator: "\n")
     }
 
     /// 恢复的窗口位置必须有一半以上落在某个屏幕内，且尺寸不超过该屏幕；否则视为恢复失败。
@@ -592,6 +545,30 @@ extension RepositoryWindowController {
         }
     }
 
+    /// 整页进度出现或消失时，正在显示的工作区换成进度或换回文件列表与详情。
+    private func observeWorkspaceProgress() {
+        withObservationTracking {
+            _ = session.workspaceProgress
+        } onChange: { [weak self] in
+            // 变更通知早于新值写入，下一轮主线程再比较并重新订阅；进度文字更新时不重建
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+
+                let showsProgress = session.workspaceProgress != nil
+
+                if
+                    !showsManager,
+                    session.activeView == .workingCopy,
+                    showsProgress == (workingCopySplit != nil)
+                {
+                    configureRepositoryView()
+                }
+
+                observeWorkspaceProgress()
+            }
+        }
+    }
+
     /// 本窗口的修饰键、提交快捷键和工具栏状态使用同一事件源。
     private func configureWorkingCopyKeys() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
@@ -695,11 +672,21 @@ extension RepositoryWindowController {
         didChangeView()
     }
 
-    /// 当前主视图的内容：工作区、历史与文件历史记下各自的内层分栏，其余视图清掉它们。
+    /// 当前主视图的内容：工作区、历史与文件历史记下各自的内层分栏，其余视图清掉它们；工作区有整页进度时换成进度，不记分栏。
     private func makeDetailView() -> NSViewController {
         switch session.activeView {
         case .workingCopy:
             historySplit = nil
+
+            // 占用工作区的写操作执行期间，文件列表与详情整块换成进度
+            if session.workspaceProgress != nil {
+                workingCopySplit = nil
+
+                let progress = NSHostingController(rootView: WorkspaceProgressView(session: session))
+                progress.sizingOptions = [.minSize]
+                return progress
+            }
+
             let split = makeWorkingCopySplit()
             workingCopySplit = split
             return split
@@ -802,10 +789,7 @@ extension RepositoryWindowController {
 
         if session.history.showsCommitPage {
             let controller = NSHostingController(
-                rootView: CommitFileListView(session: session, history: session.history) { [weak self] in
-                    self?.session.history.showsCommitPage = false
-                    self?.configureRepositoryView()
-                }
+                rootView: CommitFileListView(session: session, history: session.history)
             )
             controller.sizingOptions = [.minSize]
             list = controller

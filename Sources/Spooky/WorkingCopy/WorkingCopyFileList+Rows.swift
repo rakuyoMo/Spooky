@@ -8,6 +8,9 @@ extension WorkingCopyFileList.Coordinator {
     /// 本次渲染已知的 assume-unchanged 路径。
     private var renderMarked: Set<String> { renderState?.marked ?? [] }
 
+    /// 本次渲染时进行中的操作已经解决的冲突路径。
+    private var renderResolved: Set<String> { renderState?.listing.resolvedPaths ?? [] }
+
     /// 勾选框与状态徽标；不能暂存的未改动、被忽略文件隐藏勾选框。
     func statusCell(_ node: WorkingCopyFileList.Node) -> NSView {
         let entries = node.entries.filter(\.isStageable)
@@ -19,9 +22,14 @@ extension WorkingCopyFileList.Coordinator {
         button.node = node
         button.allowsMixedState = true
 
+        // 正在暂存的行显示目标状态并禁用，其它行在暂存期间仍可点，新的请求排在后面
+        let pending = entries.contains {
+            session.stagingOverrides[StatusRowID(path: $0.path, kind: $0.kind)] != nil
+        }
+
         // 不能暂存的行隐藏勾选框但保留位置，各行的徽标保持对齐
         button.alphaValue = entries.isEmpty ? 0 : 1
-        button.isEnabled = session.canWrite && !entries.isEmpty
+        button.isEnabled = session.canToggleStaging && !entries.isEmpty && !pending
         button.setAccessibilityElement(!entries.isEmpty)
         button.setAccessibilityLabel(AppLocalization.text("working.staging", node.path))
 
@@ -37,63 +45,87 @@ extension WorkingCopyFileList.Coordinator {
 
         button.state = states.allSatisfy { $0 == 1 } ? .on : (states.allSatisfy { $0 == 0 } ? .off : .mixed)
 
-        var views: [NSView] = [button]
+        // 勾选框距左 3，徽标区贴着单元格右缘，两者不一起左对齐
+        let cell = NSView()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        cell.addSubview(button)
 
-        if let entry = node.entry {
-            let marked = renderMarked.contains(entry.path)
-            views.append(NSHostingView(rootView: FileStatusView(entry: entry, assumeUnchanged: marked)))
-        }
+        NSLayoutConstraint.activate([
+            button.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 3),
+            button.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+        ])
 
-        let stack = NSStackView(views: views)
-        stack.spacing = 3
-        return stack
+        guard let entry = node.entry else { return cell }
+
+        let marked = renderMarked.contains(entry.path)
+        let badges = NSHostingView(rootView: FileStatusView(entry: entry, assumeUnchanged: marked))
+        badges.translatesAutoresizingMaskIntoConstraints = false
+        cell.addSubview(badges)
+
+        NSLayoutConstraint.activate([
+            badges.trailingAnchor.constraint(equalTo: cell.trailingAnchor),
+            badges.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+            badges.widthAnchor.constraint(equalToConstant: 42),
+            badges.heightAnchor.constraint(equalToConstant: 16),
+        ])
+
+        return cell
     }
 
-    /// 图标与文件名：树形只显示末级名称，完整路径放在提示中；被忽略与 assume-unchanged 的文件变灰。
+    /// 图标与文件名：树形只显示末级名称，完整路径放在提示中；被忽略、assume-unchanged 与解决成与 HEAD 相同的文件变灰，
+    /// 整个仓库被写操作占用时所有行变灰。
+    ///
+    /// 图标 16 × 16、距左 9，文字与图标相隔 8、距右 8；冲突与已解决的文件在图标右上叠标记。
     func pathCell(_ node: WorkingCopyFileList.Node) -> NSView {
-        let style = renderState?.style ?? WorkingCopyFileList.Style(fontSize: .regular, truncation: .middle)
+        let style = renderState?.style ?? WorkingCopyFileList.Style(fontSize: .medium, truncation: .beginning)
         let tree = renderState?.listing.mode.isTree ?? false
         let entry = node.entry
-        let dimmed = entry?.kind == .ignored || entry.map { renderMarked.contains($0.path) } ?? false
+        let resolved = entry.map { $0.kind != .conflicted && renderResolved.contains($0.path) } ?? false
+
+        // 整个仓库被写操作占用时所有行一起变灰
+        let dimmed = renderState?.locked ?? false
+            || entry.map { entry in
+                entry.kind == .ignored
+                    || renderMarked.contains(entry.path)
+                    || (resolved && entry.kind == .unchanged)
+            } ?? false
 
         let label = NSTextField(labelWithString: Self.pathTitle(node, tree: tree))
         label.font = .systemFont(ofSize: style.fontSize.pointSize)
         label.lineBreakMode = style.truncation.lineBreakMode
         label.textColor = dimmed ? .secondaryLabelColor : .controlTextColor
         label.toolTip = Self.pathTitle(node, tree: false)
+        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        // 冲突、目录与文件使用各自的系统符号；符号不可用时保留空白图标位
-        let symbol = entry?.kind == .conflicted
-            ? "exclamationmark.circle.fill"
-            : (entry == nil || node.path.hasSuffix("/") ? "folder" : "doc")
-        let icon = NSImageView(image: NSImage(systemSymbolName: symbol, accessibilityDescription: nil) ?? NSImage())
-        icon.contentTintColor = entry?.kind == .conflicted
-            ? .systemRed
-            : (dimmed ? .tertiaryLabelColor : .secondaryLabelColor)
-        icon.widthAnchor.constraint(equalToConstant: 16).isActive = true
+        // 目录与被忽略的整个目录用文件夹图标，文件按扩展名取系统图标，不读取本机或服务器上的文件；变灰的行图标同样变暗
+        let icon = NSImageView(
+            image: WorkingCopyFileHeader.icon(path: node.path, isFolder: entry == nil || node.path.hasSuffix("/"))
+        )
+        icon.imageScaling = .scaleProportionallyUpOrDown
+        icon.isEnabled = !dimmed
 
-        let stack = NSStackView(views: [icon, label])
-        stack.spacing = 8
-        return stack
-    }
+        let cell = NSView()
 
-    /// 递归排序使目录与文件使用相同的用户选项。
-    func sortNodes() {
-        let descriptor = outline?.sortDescriptors.first
-        let ascending = descriptor?.ascending ?? true
-
-        /// 目录内部沿用相同排序，不把平铺的比较结果跨层混用。
-        func sorted(_ nodes: [WorkingCopyFileList.Node]) -> [WorkingCopyFileList.Node] {
-            for node in nodes { node.children = sorted(node.children) }
-
-            return nodes.sorted {
-                let left = descriptor?.key == "status" ? String($0.entry?.staged?.rawValue ?? ".") + $0.path : $0.path
-                let right = descriptor?.key == "status" ? String($1.entry?.staged?.rawValue ?? ".") + $1.path : $1.path
-                return ascending ? left < right : left > right
-            }
+        for view in [icon, label] {
+            view.translatesAutoresizingMaskIntoConstraints = false
+            cell.addSubview(view)
         }
 
-        roots = sorted(roots)
+        NSLayoutConstraint.activate([
+            icon.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 9),
+            icon.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+            icon.widthAnchor.constraint(equalToConstant: 16),
+            icon.heightAnchor.constraint(equalToConstant: 16),
+            label.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 8),
+            label.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -8),
+            label.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+        ])
+
+        if entry?.kind == .conflicted || resolved {
+            Self.addConflictMark(resolved: resolved, over: icon, in: cell)
+        }
+
+        return cell
     }
 
     /// 重建前展开着的目录路径。
@@ -177,7 +209,12 @@ extension WorkingCopyFileList.Coordinator {
     func toggle(_ sender: WorkingCopyFileList.StagingButton) {
         guard let node = sender.node, let outline else { return }
 
-        let entries = outline.isRowSelected(outline.row(forItem: node)) ? session.selectedEntries : node.entries
+        // 正在收起的已删除行不再响应，动作不会落到过期的路径上
+        let row = outline.row(forItem: node)
+
+        guard row >= 0 else { return }
+
+        let entries = outline.isRowSelected(row) ? session.selectedEntries : node.entries
         let stageable = entries.filter(\.isStageable)
         session.stage(stageable, staged: stageable.contains(where: \.hasUnstagedChanges))
         outline.window?.makeFirstResponder(outline)
@@ -198,6 +235,43 @@ extension WorkingCopyFileList.Coordinator {
         else { return title }
 
         return "\(original) → \(title)"
+    }
+
+    /// 按表头的各级排序排列节点；目录内部沿用相同排序，不把平铺的比较结果跨层混用。
+    static func sorted(
+        _ nodes: [WorkingCopyFileList.Node],
+        by descriptors: [NSSortDescriptor]
+    ) -> [WorkingCopyFileList.Node] {
+        for node in nodes {
+            node.children = sorted(node.children, by: descriptors)
+        }
+
+        return nodes.sorted { ordered($0, $1, by: descriptors) }
+    }
+
+    /// 两个节点的先后：路径不区分大小写，状态按两位状态码；各级都相同时按路径原文，结果不随输入顺序变化。
+    private static func ordered(
+        _ lhs: WorkingCopyFileList.Node,
+        _ rhs: WorkingCopyFileList.Node,
+        by descriptors: [NSSortDescriptor]
+    ) -> Bool {
+        for descriptor in descriptors {
+            let result =
+                descriptor.key == "status"
+                    ? statusCode(lhs).compare(statusCode(rhs))
+                    : lhs.path.localizedCaseInsensitiveCompare(rhs.path)
+
+            guard result != .orderedSame else { continue }
+
+            return descriptor.ascending == (result == .orderedAscending)
+        }
+
+        return lhs.path < rhs.path
+    }
+
+    /// 状态列排序用的状态码；目录没有状态，按状态升序时排在同层文件之前。
+    private static func statusCode(_ node: WorkingCopyFileList.Node) -> String {
+        node.entry?.porcelainCode ?? ""
     }
 
     /// 按目录组织条目：目录节点只建一次，文件挂在所在目录下；被忽略的整个目录本身是一个叶子。
@@ -251,5 +325,42 @@ extension StatusEntry {
     /// 可以勾选暂存或取消暂存：未改动与被忽略的文件没有可暂存的内容。
     var isStageable: Bool {
         kind != .unchanged && kind != .ignored
+    }
+
+    /// 与 porcelain v2 的 XY 相同的两位状态码：暂存区一位、工作区一位，没有变化的一侧写 “.”。
+    var porcelainCode: String {
+        switch kind {
+        case .untracked: "??"
+        case .ignored: "!!"
+        case .unchanged: ".."
+        case .tracked, .conflicted:
+            [staged, unstaged]
+                .map { change in change.map { String($0.rawValue) } ?? "." }
+                .joined()
+        }
+    }
+}
+
+// MARK: - Private
+
+extension WorkingCopyFileList.Coordinator {
+    /// 在文件图标右上叠冲突标记：未解决是红色叹号，已解决是蓝色对勾；原图标保留。
+    ///
+    /// 标记宽 15、宽高比 0.8889，左缘压进图标 10，底边比图标顶边低 12。
+    private static func addConflictMark(resolved: Bool, over icon: NSView, in cell: NSView) {
+        let symbol = resolved ? "checkmark.circle.fill" : "exclamationmark.circle.fill"
+        let mark = NSImageView(image: NSImage(systemSymbolName: symbol, accessibilityDescription: nil) ?? NSImage())
+
+        mark.imageScaling = .scaleProportionallyUpOrDown
+        mark.contentTintColor = resolved ? .systemBlue : .systemRed
+        mark.translatesAutoresizingMaskIntoConstraints = false
+        cell.addSubview(mark)
+
+        NSLayoutConstraint.activate([
+            mark.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: -10),
+            mark.bottomAnchor.constraint(equalTo: icon.topAnchor, constant: 12),
+            mark.widthAnchor.constraint(equalToConstant: 15),
+            mark.heightAnchor.constraint(equalTo: mark.widthAnchor, multiplier: 1 / 0.8889),
+        ])
     }
 }

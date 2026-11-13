@@ -90,8 +90,8 @@ struct ThemeStoreTests {
     }
 
     /// 浅色、深色外观各自记住所选主题，Default 与 Default (Dark) 可以跨外观选用；
-    /// 删掉所选主题后，删除时所在的外观改选列表第一行，另一外观选的也是它时按名称回到目录里编辑过的 Default。
-    @Test("两种外观各自选择主题，删除所选主题后改选")
+    /// 删掉某一外观正在用的主题后，这一外观回到同外观的内置主题，深色不会落到浅色的 Default，另一外观的选择不变。
+    @Test("两种外观各自选择主题，删除所选主题后回到同外观的内置主题")
     func selectAndDelete() throws {
         let root = try Self.makeRoot()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -118,22 +118,34 @@ struct ThemeStoreTests {
         #expect(TextTheme.current(dark: false, in: reopened) == night)
         #expect(TextTheme.current(dark: true, in: reopened) == day)
 
-        // Aurora 排在列表第一行，Dusk 同时是两种外观的所选主题，在深色外观删掉它。
+        // Aurora 排在列表第一行，Dusk 同时是两种外观的所选主题；删掉后两种外观各自回到内置主题，重新启动后仍然有效。
         let aurora = try store.create(named: "Aurora", dark: false)
         store.select(dusk.id, dark: false)
         store.select(dusk.id, dark: true)
 
-        try store.delete(dusk.id, dark: true)
+        try store.delete(dusk.id)
         #expect(!(try Self.themeFiles(root).contains("Dusk.spookytheme")))
 
-        // 深色外观改选第一行的 Aurora，重新启动后仍然有效。
-        #expect(store.themes.first?.id == aurora.id)
-        #expect(TextTheme.current(dark: true, in: store) == aurora)
-        #expect(TextTheme.current(dark: true, in: try Self.store(in: root)) == aurora)
-
-        // 浅色外观按名称回到目录里编辑过的 Default。
+        let restarted = try Self.store(in: root)
+        #expect(TextTheme.current(dark: true, in: store) == night)
         #expect(TextTheme.current(dark: false, in: store) == day)
-        #expect(TextTheme.current(dark: false, in: try Self.store(in: root)) == day)
+        #expect(TextTheme.current(dark: true, in: restarted) == night)
+        #expect(TextTheme.current(dark: false, in: restarted) == day)
+
+        // 只有深色外观用着 Ember：删掉后深色回到 Default (Dark)，浅色仍是 Aurora。
+        let ember = try store.create(named: "Ember", dark: true)
+        store.select(aurora.id, dark: false)
+
+        try store.delete(ember.id)
+        #expect(TextTheme.current(dark: true, in: store) == night)
+        #expect(TextTheme.current(dark: false, in: store) == aurora)
+
+        // 只有浅色外观用着 Aurora：删掉后浅色回到 Default，深色仍是 Cinder。
+        let cinder = try store.create(named: "Cinder", dark: true)
+
+        try store.delete(aurora.id)
+        #expect(TextTheme.current(dark: false, in: store) == day)
+        #expect(TextTheme.current(dark: true, in: store) == cinder)
     }
 
     /// 导出的文件只含颜色、字体与名称标识，导入后与原主题一致；同名时必须确认覆盖，

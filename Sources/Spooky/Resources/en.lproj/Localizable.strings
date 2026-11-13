@@ -79,11 +79,11 @@
 
 "loading.status" = "Refreshing status…";
 
-"branch.unborn" = "%@ (no commits)";
-
-"branch.detached" = "%@ (detached HEAD)";
+"branch.detached" = "%@ (detached)";
 
 "branch.noHead" = "No HEAD branch";
+
+"branch.noHeadBranch" = "(No head branch)";
 
 "branch.noTracking" = "No Tracking";
 
@@ -129,9 +129,9 @@
 
 "status.unchanged" = "Unchanged";
 
-"status.description" = "Index: %@; Working tree: %@";
+"status.description" = "Staged changes to be committed: %@\nChanged but unstaged: %@";
 
-"detail.empty.title" = "No File Selected";
+"detail.empty.title" = "No file selected";
 
 
 
@@ -276,6 +276,10 @@
 
 "working.stage" = "Stage";
 "working.unstage" = "Unstage";
+"working.stage.single" = "Stage “%@”";
+"working.stage.multiple" = "Stage %ld Items";
+"working.unstage.single" = "Unstage “%@”";
+"working.unstage.multiple" = "Unstage %ld Items";
 "working.stageAll" = "Stage All";
 "working.unstageAll" = "Unstage All";
 "working.commit" = "Commit";
@@ -325,6 +329,7 @@
 "working.discardLine" = "Discard Line";
 "working.discardLines" = "Discard Lines";
 "working.discard" = "Discard Changes";
+"working.discard.menu" = "Discard Local Changes…";
 "working.discard.title" = "Discard Local Changes";
 "working.discardAll.title" = "Discard All Local Changes";
 "working.discardAll.submit" = "Discard All Changes";
@@ -364,23 +369,26 @@
 "history.medium" = "Medium Commit View Size";
 "history.small" = "Small Commit View Size";
 "history.viewOptions" = "History View Options";
+"history.viewOptions.help" = "Change viewing options";
 "history.empty" = "No commits";
 "history.loading" = "Loading commits…";
-"history.copyHash" = "Copy Commit Hashes";
+"history.copyHash" = "Copy Commit Hash to Clipboard";
+"history.copyHashes" = "Copy %ld Commit Hashes to Clipboard";
+"history.copyInfo" = "Copy Commit Info to Clipboard";
 "history.changes" = "%ld changed files";
 "history.noSelection" = "No commit selected";
 "history.multiple" = "%ld commits selected";
 "history.expandAll" = "Expand All";
 "history.collapseAll" = "Collapse All";
-"history.back" = "Back to History";
 "history.metadata" = "Show Commit Metadata";
 "history.author" = "Author";
 "history.authorDate" = "Author Date";
 "history.committer" = "Committer";
 "history.commitDate" = "Committer Date";
+"history.refs" = "Refs";
 "history.hash" = "Commit Hash";
 "history.treeHash" = "Tree Hash";
-"history.parents" = "Parent Hashes";
+"history.parentHash" = "Parent Hash";
 "history.showHead" = "Show HEAD Branch";
 "history.diffs" = "Diffs in Changeset";
 "history.autoExpand.never" = "Never Auto-Expand";
@@ -543,8 +551,7 @@
 "recovery.notStarted" = "“%@” did not start because the server connection was unavailable. Nothing was changed on the server.";
 "recovery.unborn" = "no commits";
 "dialog.blocked" = "Another operation is running on this repository, or the server is disconnected. Your settings are kept; try again when the repository is available.";
-"working.clean" = "No local changes";
-"history.loadingChanges" = "Loading changed files…";
+"history.loadingChanges" = "Loading Changeset…";
 "repositories.unavailableShort" = "Unavailable";
 
 /* 主题管理。 */
@@ -596,6 +603,7 @@
 "stash.snapshot.help" = "Saves your local changes on the Stash and keeps the working copy as it is.";
 "stash.snapshotMenu" = "Create Snapshot…";
 "stash.quickSnapshotMenu" = "Quick Create Snapshot";
+"stash.quickSaveMenu" = "Quick Save Stash";
 "stash.savePartial" = "Save Partial Stash";
 "stash.savePartial.help" = "Saves only the selected files on the Stash; the rest of the working copy stays as it is.";
 "stash.snapshotPartial" = "Create Partial Snapshot";
@@ -696,6 +704,8 @@
 "conflict.restoreUnmerged.many" = "Restore Unmerged Version of %d Items";
 "conflict.restoreUnmerged.one" = "Restore Unmerged Version of “%@”";
 "conflict.restoreVersion" = "Restore Version from “%@”";
+"conflict.resolveUsingVersion.applied" = "Resolve Using Version from Applied Patch or Stash";
+"conflict.restoreVersion.applied" = "Restore Version from Applied Patch or Stash";
 "conflict.result" = "Manually Edited or Merged Version";
 "conflict.step" = "Step %d of %d";
 "conflict.step.applying" = "Rebase %d of %d: Applying “%@”";
@@ -726,6 +736,8 @@
 "conflict.compareBase" = "Compare with Common Ancestor";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "File History";
+"fileHistory.scope.message" = "Message";
+"fileHistory.scope.hash" = "Commit Hash";
 "fileHistory.showCommit" = "Show Commit";
 "fileHistory.oneCommit" = "1 commit";
 "fileHistory.commits" = "%ld commits";
@@ -743,10 +755,13 @@
 "fileHistory.restore.remote" = "Overwrite “%@” with revision %@ on the server at %@. Staged and unstaged changes in this file are discarded, and the file is deleted on the server if it does not exist at that revision.";
 "fileHistory.scope.author" = "Author";
 "fileHistory.scope.committer" = "Committer";
-"fileHistory.scope.revision" = "Revision";
 "fileHistory.search.author" = "Search for Author";
 "fileHistory.search.committer" = "Search for Committer";
-"fileHistory.search.revision" = "Search for Revision";
+"fileHistory.search.message" = "Search for Message";
+"fileHistory.search.hash" = "Search for Commit Hash";
+"fileHistory.suggestions.authors" = "Authors";
+"fileHistory.suggestions.messages" = "Messages";
+"fileHistory.suggestions.committers" = "Committers";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
 "blame.show" = "Show Blame for “%@”";
@@ -927,6 +942,10 @@
 "files.error.destination" = "The Destination Already Exists";
 "files.error.trashUnavailable" = "No Trash Is Available on the Server";
 "files.error.trashedItems" = "The Files Can’t Be Put Back from the Trash";
+"files.error.partialDeletion" = "Not All Items Were Deleted";
+"files.error.partialDeletion.help" = "The items listed at the start of the original output were removed from disk, but their deletion wasn’t staged. The other items weren’t changed. Refresh to check the working copy before trying again.";
+"files.error.unstagedDeletion" = "The Deletion Wasn’t Staged";
+"files.error.unstagedDeletion.help" = "The items listed at the start of the original output were all removed from disk, but the deletion of tracked files wasn’t staged. Stage the deletion in the working copy, or check the original output for the cause.";
 "files.doubleClick" = "Double-click on file in working copy:";
 "files.doubleClick.openFile" = "Open with default application";
 "files.doubleClick.openDiff" = "Open Diff tool";
@@ -997,6 +1016,7 @@
 "history.search.before" = "is before";
 "history.search.range" = "is in range";
 "history.search.to" = "to";
+"history.search.since" = "Since %@";
 "history.reveal.notFound" = "Commit %@ isn't in this history.";
 "history.reveal.slow" = "Load More Commits";
 "history.reveal.slow.submit" = "Load";
@@ -1023,6 +1043,7 @@
 "history.gpgUser" = "GPG User";
 "history.gpgKey" = "GPG Key";
 "history.gpgStatus" = "GPG Status";
+"history.signingKey" = "Signing Key";
 "history.signingStatus" = "Signing Status";
 "history.changeset" = "Changeset";
 "history.tree" = "Tree";
@@ -1051,6 +1072,12 @@
 "export.prompt" = "Export";
 "export.nameLabel" = "Export As:";
 "export.files" = "Export Files";
+"export.exists.title" = "Item Exists";
+"export.exists.one" = "“%1$@” already exists in “%2$@”. Do you want to overwrite it?";
+"export.exists" = "%1$ld items already exist in “%2$@”. Do you want to overwrite them?";
+"export.overwrite" = "Overwrite";
+"export.error.partial" = "Not All Items Were Exported";
+"export.error.partial.help" = "The other items were exported. The items listed in the details couldn’t be written to the destination folder; check that the folder is writable and try again.";
 "export.menu" = "Export Revision…";
 "export.menuFrom" = "Export Files from “%@”…";
 "patch.title" = "Save Patch";
@@ -1155,7 +1182,7 @@
 "rewrite.edit.button" = "Edit";
 "rewrite.drop.button" = "Delete";
 "rewrite.move.button" = "Move";
-"rewrite.autosquash.button" = "Autosquash";
+"rewrite.autosquash.button" = "Autosquash…";
 "rewrite.rebaseOnto.button" = "Rebase";
 "rewrite.revert.button" = "Revert";
 "rewrite.cherryPick.button" = "Cherry-Pick";
@@ -1259,6 +1286,11 @@
 "sync.step.fetch" = "Fetching…";
 "sync.step.pull" = "Pulling…";
 "sync.step.push" = "Pushing…";
+"workspaceProgress.checkoutBranch" = "Checking Out “%@”…";
+"workspaceProgress.checkoutRevision" = "Checking Out Revision “%@”…";
+"workspaceProgress.merge" = "Merging…";
+"workspaceProgress.rebase" = "Rebasing…";
+"workspaceProgress.reset" = "Resetting HEAD…";
 "sync.stopped" = "Sync stopped at “%1$@”. Completed steps: %2$@.";
 "sync.stoppedFirst" = "Sync stopped at “%@”. No step was completed.";
 "settings.autoFetch" = "Automatically fetch remote repositories:";
@@ -1573,7 +1605,7 @@
 "rewrite.menu.revertGeneric" = "Revert…";
 "rewrite.menu.cherryPick" = "Cherry-Pick “%@”…";
 "rewrite.menu.cherryPickMany" = "Cherry-Pick %ld Revisions…";
-"rewrite.menu.rebaseOnto" = "Rebase “%@” Onto…";
+"rewrite.menu.rebaseOnto" = "Rebase '%@' Onto…";
 "rewrite.menu.rebaseOntoMany" = "Rebase %ld Revisions Onto…";
 "rewrite.menu.amend" = "Amend “%@”";
 "rewrite.menu.edit" = "Edit “%@”";
@@ -1585,6 +1617,7 @@
 "history.createBranch" = "Create New Branch from “%@”…";
 "history.createBranchGeneric" = "Create New Branch…";
 "history.rollback" = "Rollback";
+"history.diffTool" = "Difftool";
 
 /* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
 "sync.quickFetchNamed" = "Quick Fetch “%@”";
@@ -1609,7 +1642,8 @@
 "branch.moveHere" = "Move Here";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash" = "Some commits on this branch are marked with fixup!, squash! or amend!.";
+"history.autosquash.one" = "This branch has %ld commit marked fixup!, squash! or amend!.";
+"history.autosquash" = "This branch has %ld commits marked fixup!, squash! or amend!.";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "Undo";
 "menu.redo" = "Redo";
@@ -1788,6 +1822,7 @@
 "externalTool.compare.theirsToBase" = "Their Version to Merge Base";
 "externalTool.openDiffTool" = "Open Diff Tool";
 "externalTool.openDiffAt" = "Open Diff Tool for “%1$@” at Revision “%2$@”";
+"externalTool.openDiffItemsAt" = "Open Diff Tool for %1$ld Items at Revision “%2$@”";
 "externalTool.mergeIn" = "Merge in %@";
 "externalTool.chooseMergeTool" = "Choose Merge Tool";
 "files.openWith" = "Open With";

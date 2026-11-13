@@ -4,10 +4,10 @@ import Foundation
 
 /// 引用日志动作标记的三类配色：合并类、移动类与提交类。
 public enum ReflogCategory: Sendable {
-    /// 合并与拉取。
+    /// 合并、拉取与变基。
     case merge
 
-    /// 检出、重置、变基与分支操作等只移动引用的动作。
+    /// 检出、重置与分支操作等只移动引用的动作。
     case move
 
     /// 提交、摘取与反转等生成新提交的动作。
@@ -41,14 +41,10 @@ public struct ReflogEntry: Sendable, Equatable, Identifiable {
 
     /// 动作标记的配色类别，由命令名决定。
     public var category: ReflogCategory {
-        #warning(
-            "TODO: 命令名到三类配色的归属未核实：合并与拉取归合并类，提交、摘取、反转与 am 归提交类，其余归移动类。核实方式：分别做一次 merge、pull、commit --amend、cherry-pick、revert、rebase、reset 与 branch，比对 Reflog 里各自标记的颜色；影响 Reflog 列表的动作标记颜色。"
-        )
-
         switch command {
-        case "merge", "pull": return .merge
-        case "commit", "cherry-pick", "revert", "am": return .commit
-        default: return .move
+        case "merge", "pull", "rebase": .merge
+        case "commit", "cherry-pick", "revert", "am": .commit
+        default: .move
         }
     }
 
@@ -126,7 +122,7 @@ public struct RepositoryReflog: Sendable {
         offset: Int = 0,
         limit: Int = 100
     ) async throws -> ReflogPage {
-        guard Self.isValid(reference), offset >= 0, (1 ... 1000).contains(limit) else {
+        guard Self.isValid(reference), offset >= 0, limit > 0 else {
             throw RepositoryReadError.invalidQuery
         }
 

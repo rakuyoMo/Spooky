@@ -144,7 +144,7 @@ extension RepositorySession {
                 { runner, output in
                     let prepared = await PreparedInverse(prepare, runner: runner)
                     let log = PushLog()
-                    try await PushLog.$current.withValue(log) { try await redo(runner, output) }
+                    try await prepared.perform(redo, runner: runner, output: output, pushes: log)
 
                     switch prepared.confirmed(by: log) {
                     case .inverse(let inverse):
@@ -199,7 +199,7 @@ extension RepositorySession {
             return { runner, output in
                 let prepared = await PreparedInverse(prepare, runner: runner)
                 let log = PushLog()
-                try await PushLog.$current.withValue(log) { try await action(runner, output) }
+                try await prepared.perform(action, runner: runner, output: output, pushes: log)
 
                 switch prepared.confirmed(by: log) {
                 case .inverse(let inverse):
@@ -300,10 +300,38 @@ private enum PreparedInverse {
         }
     }
 
-    /// 原操作结束后按推送的逐条结果核对：反向操作要撤销的是推送新建的引用时，推送确实新建了它才保留，
-    /// 已是最新算作没有改动，更新了远端已有的引用或没有推送它都撤销不了。
+    /// 执行原操作：推送的逐条结果记进 `log`；反向操作带着废纸篓记录时，原操作移进废纸篓的项记进它。
+    func perform(
+        _ action: @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
+        runner: GitRunner,
+        output: @escaping @Sendable (GitOutputEvent) -> Void,
+        pushes log: PushLog
+    ) async throws {
+        let trashLog: TrashLog? =
+            if case .inverse(let inverse) = self {
+                inverse.trashLog
+            } else {
+                nil
+            }
+
+        try await TrashLog.$current.withValue(trashLog) {
+            try await PushLog.$current.withValue(log) { try await action(runner, output) }
+        }
+    }
+
+    /// 原操作结束后核对：移进废纸篓的项有的不知道位置时撤销不了；反向操作要撤销的是推送新建的引用时，
+    /// 推送确实新建了它才保留，已是最新算作没有改动，更新了远端已有的引用或没有推送它都撤销不了。
     func confirmed(by log: PushLog) -> Self {
-        guard case .inverse(let inverse) = self, let pushed = inverse.pushedReference else {
+        guard case .inverse(let inverse) = self else {
+            return self
+        }
+
+        // 废纸篓命令没有报告位置的项移不回来
+        if let trashed = inverse.trashLog?.items, trashed.contains(where: { $0.location == nil }) {
+            return .unavailable
+        }
+
+        guard let pushed = inverse.pushedReference else {
             return self
         }
 

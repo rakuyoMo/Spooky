@@ -16,22 +16,29 @@ extension WorkingCopyFileList.Coordinator {
         let entries: [StatusEntry]
     }
 
-    /// 丢弃之后的储藏项：储藏与快照所选文件，按住 ⌥ 时换成跳过对话框的快速版本。
+    /// 丢弃之后的储藏项：储藏与快照所选文件，按住 ⌥ 时换成跳过对话框的快速版本；
+    /// 没有作用对象时以通用标题列出且不可用。
     func addStashItems(to menu: NSMenu, entries: [StatusEntry]) {
         let enabled = session.canStash(entries)
 
-        // 单个文件显示文件名，多个文件显示数量
-        let name = entries.count == 1 ? entries.first?.path.split(separator: "/").last.map(String.init) : nil
-
-        // 资源键依次是单个文件、多个文件、快速单个文件与快速多个文件的文案
+        // 每组依次是单个对象、多个对象与没有作用对象时的资源键，常规项在前、快速项在后
         let groups = [
-            (false, ["stash.stashFile", "stash.stashItems", "stash.quickStashFile", "stash.quickStashItems"]),
-            (true, ["stash.snapshotFile", "stash.snapshotItems", "stash.quickSnapshotFile", "stash.quickSnapshotItems"]),
+            (
+                false,
+                ["stash.stashFile", "stash.stashItems", "stash.saveMenu"],
+                ["stash.quickStashFile", "stash.quickStashItems", "stash.quickSaveMenu"]
+            ),
+            (
+                true,
+                ["stash.snapshotFile", "stash.snapshotItems", "stash.snapshotMenu"],
+                ["stash.quickSnapshotFile", "stash.quickSnapshotItems", "stash.quickSnapshotMenu"]
+            ),
         ]
 
-        for (snapshot, keys) in groups {
-            let title = name.map { AppLocalization.text(keys[0], $0) } ?? AppLocalization.text(keys[1], entries.count)
-            let quickTitle = name.map { AppLocalization.text(keys[2], $0) } ?? AppLocalization.text(keys[3], entries.count)
+        for (snapshot, regularKeys, quickKeys) in groups {
+            // 单个对象显示名称，多个对象显示数量；树形里一个目录算一项
+            let title = countedTitle(single: regularKeys[0], multiple: regularKeys[1], generic: regularKeys[2])
+            let quickTitle = countedTitle(single: quickKeys[0], multiple: quickKeys[1], generic: quickKeys[2])
 
             menu.addItem(
                 stashItem(title, choice: StashChoice(snapshot: snapshot, quick: false, entries: entries), enabled: enabled)

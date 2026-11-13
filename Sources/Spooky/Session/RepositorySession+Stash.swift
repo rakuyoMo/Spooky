@@ -22,6 +22,9 @@ struct AutoStashRequest {
     /// 已本地化的操作名称。
     let title: String
 
+    /// 原操作的整页进度标题，重新执行时沿用；不占用工作区的操作为 nil。
+    var progress: String? = nil
+
     /// 原操作的失败；用户选择不储藏时照常报告。开始前询问时为 nil。
     let error: (any Error)?
 
@@ -187,6 +190,8 @@ extension RepositorySession {
     }
 
     /// 写操作被本地改动挡住时按设置询问是否先储藏；返回是否已转为询问，未询问时调用方照常报告失败。
+    ///
+    /// 在失败的写操作结束之前调用，重新执行时沿用它此刻的整页进度标题。
     func offerAutoStash(
         after error: any Error,
         title: String,
@@ -200,6 +205,7 @@ extension RepositorySession {
 
         let request = AutoStashRequest(
             title: title,
+            progress: workspaceProgress?.title,
             error: error,
             action: action,
             failureNote: failureNote,
@@ -224,6 +230,7 @@ extension RepositorySession {
                     }
             },
             title: request.title,
+            progress: request.progress,
             undo: request.undo,
             failureNote: request.failureNote
         )
@@ -235,6 +242,7 @@ extension RepositorySession {
             performGit(
                 request.action,
                 title: request.title,
+                progress: request.progress,
                 undo: request.undo,
                 failureNote: request.failureNote
             )

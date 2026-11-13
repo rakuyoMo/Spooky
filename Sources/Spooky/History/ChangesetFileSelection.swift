@@ -93,6 +93,36 @@ struct ChangesetFileSelection: Equatable {
         return retained
     }
 
+    /// 右键时实际作用的文件：点在选区里是整个选区，按变更集里的顺序；点在选区外只是被点的那一个。
+    ///
+    /// - Parameters:
+    ///   - path: 右键点中的文件。
+    ///   - order: 变更集里文件从上到下的顺序。
+    func affected(clicked path: String, order: [String]) -> [String] {
+        paths.contains(path) ? order.filter(paths.contains) : [path]
+    }
+
+    /// 键盘移动之后要滚到的行：移到的行已完整露出时为 nil。
+    ///
+    /// 向上移时把行贴着上边露出，向下移时贴着下边；向下移到展开着的行时贴着上边，免得为露出它的 Diff 末尾而越过文件行。
+    ///
+    /// - Parameters:
+    ///   - movingDown: 这次是向下移。
+    ///   - visible: 完整露在滚动区域里的文件。
+    ///   - expanded: 展开着的文件。
+    /// - Returns: 要滚到的文件，以及是否贴着上边。
+    func scrollTarget(
+        movingDown: Bool,
+        visible: Set<String>,
+        expanded: Set<String>
+    ) -> (path: String, alignsTop: Bool)? {
+        guard let cursor, !visible.contains(cursor) else {
+            return nil
+        }
+
+        return (cursor, !movingDown || expanded.contains(cursor))
+    }
+
     /// 只选中这一行，锚点与移动起点都移到这里。
     private mutating func select(_ path: String) {
         paths = [path]

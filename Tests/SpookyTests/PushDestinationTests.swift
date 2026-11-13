@@ -246,7 +246,7 @@ extension PushDestinationTests {
                 session: fixture.session,
                 request: RepositoryActionRequest(kind: .push),
                 cancel: { }
-            ) { _, target, _, operation in
+            ) { _, _, target, _, operation in
                 captured.target = target
                 captured.operation = operation
                 return true
@@ -289,7 +289,7 @@ extension PushDestinationTests {
                 session: session,
                 request: RepositoryActionRequest(kind: .push),
                 cancel: { },
-                submit: { _, _, _, _ in false }
+                submit: { _, _, _, _, _ in false }
             )
         }
 

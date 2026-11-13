@@ -132,21 +132,20 @@ extension StashDetailView {
                         stashes.expandedPaths.remove(change.id)
                     }
                 }
-            )
+            ),
+            drag: { dragProvider(change, in: stash) }
         ) {
             StashFileLabel(change: change)
-                .contextMenu {
-                    Button(
-                        AppLocalization.text(
-                            "externalTool.openDiffAt",
-                            RepositorySession.fileName(change.file.path),
-                            String(stash.id.prefix(8))
-                        )
-                    ) {
-                        session.openDiffTool(for: stash, changes: [change])
-                    }
-                }
-                .onDrag { dragProvider(change, in: stash) }
+        } menu: {
+            Button(
+                AppLocalization.text(
+                    "externalTool.openDiffAt",
+                    RepositorySession.fileName(change.file.path),
+                    String(stash.id.prefix(8))
+                )
+            ) {
+                session.openDiffTool(for: stash, changes: [change])
+            }
         } diff: {
             StashFileDiffView(stashes: stashes, path: change.id)
         }

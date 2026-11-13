@@ -24,7 +24,7 @@ struct OperationDialogTests {
                 session: session,
                 request: RepositoryActionRequest(kind: kind),
                 cancel: { },
-                submit: { _, _, _, _ in false }
+                submit: { _, _, _, _, _ in false }
             )
 
             let width = DialogLayoutTests.hosting(dialog).frame.width
@@ -229,7 +229,7 @@ extension OperationDialogTests {
                 session: fixture.session,
                 request: RepositoryActionRequest(kind: .merge, reference: "refs/heads/clash"),
                 cancel: { },
-                submit: { _, _, _, _ in false }
+                submit: { _, _, _, _, _ in false }
             )
         }
 
@@ -256,7 +256,7 @@ extension OperationDialogTests {
                 session: session,
                 request: request,
                 cancel: { },
-                submit: { _, _, _, _ in false }
+                submit: { _, _, _, _, _ in false }
             )
         }
     }

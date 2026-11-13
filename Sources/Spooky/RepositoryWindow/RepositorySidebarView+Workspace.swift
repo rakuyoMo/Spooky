@@ -91,13 +91,14 @@ extension RepositorySidebarView {
         }
     }
 
-    /// Working Copy 行尾：刷新中显示进度；否则有进行中的操作时显示 18 × 18 pt 的操作图标，没有时显示不为零的改动文件数。
+    /// Working Copy 行尾：刷新中或占用工作区的写操作执行中显示进度；否则有进行中的操作时显示 18 × 18 pt 的操作图标，
+    /// 没有时显示不为零的改动文件数。
     @ViewBuilder
     private var workingCopyAccessory: some View {
-        if session.isRefreshing {
+        if session.isRefreshing || session.workspaceProgress != nil {
             ProgressView()
                 .controlSize(.small)
-                .accessibilityLabel(AppLocalization.text("loading.status"))
+                .accessibilityLabel(session.workspaceProgress?.title ?? AppLocalization.text("loading.status"))
         } else {
             switch WorkingCopyMarker.current(progress: session.context?.progress, status: session.status) {
             case .operation(let symbol):

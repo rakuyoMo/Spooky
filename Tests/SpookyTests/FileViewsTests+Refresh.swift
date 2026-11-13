@@ -10,8 +10,8 @@ import TestSupport
 // MARK: - Refresh
 
 extension FileViewsTests {
-    /// HEAD 移动后时间线在后台重读，读回已加载的条数，所选提交与它的补丁都不被改写；
-    /// 所选提交不在新的时间线里时，选择与详情一起清空。
+    /// 打开时选中第一个提交；HEAD 移动后时间线在后台重读，读回已加载的条数，所选提交与它的补丁都不被改写；
+    /// 所选提交不在新的时间线里时改选第一个提交，详情换成它的。
     @Test("HEAD 移动后文件历史保持选择与详情")
     func fileHistoryRefresh() async throws {
         let directory = try Self.temporaryDirectory()
@@ -29,6 +29,8 @@ extension FileViewsTests {
         // 打开 file.txt 的历史，续载第二页，选中排在第一页之后的提交并读出补丁
         state.open("file.txt", head: try await references.resolve("HEAD"), runner: runner)
         await until { !state.isLoading }
+
+        #expect(state.selectedID == state.commits.first?.id)
 
         state.loadNextPage()
         await until { !state.isLoading }
@@ -66,7 +68,10 @@ extension FileViewsTests {
         state.update(head: try await references.resolve("HEAD"))
         await until { !state.isLoading }
 
-        #expect(state.selectedID == nil)
-        #expect(state.diff == nil)
+        let first = try #require(state.commits.first)
+
+        #expect(state.selectedID == first.id)
+
+        await until { !state.isLoadingDetail && state.diff != nil }
     }
 }

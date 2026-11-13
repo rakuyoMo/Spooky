@@ -102,13 +102,18 @@ extension RepositorySession {
         }
     }
 
-    /// 选择本机位置后导出一个版本：归档存成 zip 文件，否则存成与仓库结构相同的目录。
+    /// 选择本机位置后导出一个版本：归档存成 zip 文件；整棵树存成与仓库结构相同的新目录；所选条目导出进选定的目录。
     ///
     /// - Parameters:
     ///   - revision: 提交的完整哈希。
     ///   - paths: 只导出这些路径；为空时导出整棵树。
     func export(_ revision: String, paths: [String], archive: Bool) {
         guard let repository else {
+            return
+        }
+
+        guard archive || paths.isEmpty else {
+            chooseExportFolder(revision, paths: paths)
             return
         }
 
@@ -135,10 +140,45 @@ extension RepositorySession {
                 if archive {
                     try await export.archive(revision, paths: paths, format: .zip, to: destination)
                 } else {
-                    try await export.export(revision, paths: paths, to: destination)
+                    try await export.export(revision, to: destination)
                 }
             }
         }
+    }
+
+    /// 把版本里的条目导出进目标目录；目录里已有同名文件或目录时先询问是否覆盖，取消时不动已有的内容。
+    ///
+    /// 条目放在它在仓库里的相对位置上，有的条目没写进去时其余照常导出，没写进去的条目与原因显示在错误详情里。
+    ///
+    /// - Parameters:
+    ///   - revision: 提交的完整哈希。
+    ///   - paths: 要导出的条目。
+    ///   - folder: 本机上的目标目录。
+    func confirmExport(_ revision: String, paths: [String], into folder: URL) {
+        let perform: () -> Void = { [weak self] in
+            self?.runExport(AppLocalization.text("export.files")) { runner in
+                try await RevisionExport(runner: runner).export(revision, paths: paths, into: folder)
+            }
+        }
+
+        let existing = RevisionExport.existingItems(paths, in: folder)
+
+        guard let first = existing.first else {
+            perform()
+            return
+        }
+
+        let message =
+            existing.count == 1
+                ? AppLocalization.text("export.exists.one", first, folder.lastPathComponent)
+                : AppLocalization.text("export.exists", existing.count, folder.lastPathComponent)
+
+        onConfirm?(ConfirmationRequest(
+            title: AppLocalization.text("export.exists.title"),
+            message: message,
+            submitTitle: AppLocalization.text("export.overwrite"),
+            action: perform
+        ))
     }
 
     /// 在历史详情里比较两个已解析的提交；从其它视图发起时先回到历史。
@@ -194,6 +234,9 @@ extension RepositorySession {
     private func present(_ panel: NSSavePanel, then action: @escaping (URL) -> Void) {
         let completion: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK, let url = panel.url else { return }
+
+            // 完成回调里面板仍挂在窗口上，先收起，接着的覆盖确认才挂得上
+            panel.orderOut(nil)
             action(url)
         }
 
@@ -201,6 +244,19 @@ extension RepositorySession {
             panel.beginSheetModal(for: window, completionHandler: completion)
         } else {
             panel.begin(completionHandler: completion)
+        }
+    }
+
+    /// 导出所选条目时在本机选一个已有的目录，条目导出进这个目录。
+    private func chooseExportFolder(_ revision: String, paths: [String]) {
+        let panel = NSOpenPanel()
+        panel.prompt = AppLocalization.text("export.prompt")
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+
+        present(panel) { [weak self] folder in
+            self?.confirmExport(revision, paths: paths, into: folder)
         }
     }
 

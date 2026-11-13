@@ -8,7 +8,7 @@ import Testing
 
 /// 导出文件、归档与保存补丁都写到本机，输出边读边写；失败与取消不留下写了一半的文件。存进仓库根目录的补丁由 Git 直接写出。
 struct RevisionExportTests {
-    /// 导出成目录保留仓库里的目录结构、特殊字符路径与二进制内容，只导出所选路径时其余文件不出现；
+    /// 导出成目录保留仓库里的目录结构、特殊字符路径与二进制内容，再导出一次时已存在的目录整个替换；
     /// zip 与 tar 归档的内容能被本机解开，路径按字面匹配，通配符不会多选文件；
     /// 输出流式交给回调，不收集进结果；失败或取消时目标与临时文件都不存在。
     @Test("导出与归档：目录结构、特殊路径、字面匹配，流式写盘与失败、取消的清理")
@@ -42,11 +42,12 @@ struct RevisionExportTests {
         #expect(try Data(contentsOf: whole.appending(path: special)) == Data("one\n".utf8))
         #expect(try Data(contentsOf: whole.appending(path: "binary")) == Data([0, 1, 2, 255]))
 
-        // 只导出所选路径，已存在的目录整个替换
-        try await export.export(revision, paths: [special], to: whole)
+        // 再导出一次时已存在的目录整个替换
+        try Data("stray\n".utf8).write(to: whole.appending(path: "stray.txt"))
+        try await export.export(revision, to: whole)
 
         #expect(FileManager.default.fileExists(atPath: whole.appending(path: special).path))
-        #expect(!FileManager.default.fileExists(atPath: whole.appending(path: "binary").path))
+        #expect(!FileManager.default.fileExists(atPath: whole.appending(path: "stray.txt").path))
         #expect(try FileManager.default.contentsOfDirectory(atPath: output.path) == ["整个 版本"])
 
         // zip 归档整棵树，tar 只归档按字面匹配的路径

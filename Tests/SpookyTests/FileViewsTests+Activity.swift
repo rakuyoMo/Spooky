@@ -93,8 +93,8 @@ extension FileViewsTests {
         #expect(results("activity.read.blob", in: activities).count == 4)
         #expect(results("activity.read.blame", in: activities).count == 2)
 
-        // 按版本范围筛选：只读最近修改过这个文件的一个提交，不读总数
-        session.fileHistory.scope = .revision
+        // 按提交哈希筛选：只读最近修改过这个文件的一个提交，不读总数
+        session.fileHistory.scope = .hash
         await until { session.fileHistory.totalCount == 3 && session.fileHistory.content != nil }
 
         let before = activities.items.count

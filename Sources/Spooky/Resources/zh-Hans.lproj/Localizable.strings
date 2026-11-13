@@ -79,11 +79,11 @@
 
 "loading.status" = "正在刷新状态…";
 
-"branch.unborn" = "%@（尚无提交）";
-
-"branch.detached" = "%@（分离 HEAD）";
+"branch.detached" = "%@（分离）";
 
 "branch.noHead" = "没有 HEAD 分支";
+
+"branch.noHeadBranch" = "（没有 HEAD 分支）";
 
 "branch.noTracking" = "没有上游";
 
@@ -129,7 +129,7 @@
 
 "status.unchanged" = "没有变化";
 
-"status.description" = "暂存区：%@；工作区：%@";
+"status.description" = "待提交的已暂存改动：%@\n已改动但未暂存：%@";
 
 "detail.empty.title" = "未选择文件";
 
@@ -276,6 +276,10 @@
 
 "working.stage" = "暂存";
 "working.unstage" = "取消暂存";
+"working.stage.single" = "暂存 “%@”";
+"working.stage.multiple" = "暂存 %ld 个项目";
+"working.unstage.single" = "取消暂存 “%@”";
+"working.unstage.multiple" = "取消暂存 %ld 个项目";
 "working.stageAll" = "全部暂存";
 "working.unstageAll" = "全部取消暂存";
 "working.commit" = "提交";
@@ -325,6 +329,7 @@
 "working.discardLine" = "丢弃行";
 "working.discardLines" = "丢弃所选行";
 "working.discard" = "丢弃改动";
+"working.discard.menu" = "丢弃本地改动…";
 "working.discard.title" = "丢弃本地改动";
 "working.discardAll.title" = "丢弃全部本地改动";
 "working.discardAll.submit" = "丢弃全部改动";
@@ -364,23 +369,26 @@
 "history.medium" = "中号提交行";
 "history.small" = "小号提交行";
 "history.viewOptions" = "历史视图选项";
+"history.viewOptions.help" = "更改显示选项";
 "history.empty" = "没有提交";
 "history.loading" = "正在加载提交…";
-"history.copyHash" = "复制提交哈希";
+"history.copyHash" = "复制提交哈希到剪贴板";
+"history.copyHashes" = "复制 %ld 个提交哈希到剪贴板";
+"history.copyInfo" = "复制提交信息到剪贴板";
 "history.changes" = "%ld 个变更文件";
 "history.noSelection" = "未选择提交";
 "history.multiple" = "已选择 %ld 个提交";
 "history.expandAll" = "全部展开";
 "history.collapseAll" = "全部折叠";
-"history.back" = "返回历史";
 "history.metadata" = "显示提交元信息";
 "history.author" = "作者";
 "history.authorDate" = "作者日期";
 "history.committer" = "提交人";
 "history.commitDate" = "提交日期";
+"history.refs" = "引用";
 "history.hash" = "提交哈希";
 "history.treeHash" = "树哈希";
-"history.parents" = "父提交哈希";
+"history.parentHash" = "父提交哈希";
 "history.showHead" = "显示 HEAD 分支";
 "history.diffs" = "变更集 Diff";
 "history.autoExpand.never" = "不自动展开";
@@ -543,8 +551,7 @@
 "recovery.notStarted" = "服务器连接不可用，“%@” 没有开始执行，服务器上没有任何改动。";
 "recovery.unborn" = "尚无提交";
 "dialog.blocked" = "此仓库有其它操作正在进行，或服务器已断开。已填写的设置会保留，请在仓库可用后重试。";
-"working.clean" = "没有本地改动";
-"history.loadingChanges" = "正在读取变更文件…";
+"history.loadingChanges" = "正在读取变更集…";
 "repositories.unavailableShort" = "不可用";
 
 /* 主题管理。 */
@@ -596,6 +603,7 @@
 "stash.snapshot.help" = "把本地改动存进储藏，工作区保持不变。";
 "stash.snapshotMenu" = "创建快照…";
 "stash.quickSnapshotMenu" = "快速创建快照";
+"stash.quickSaveMenu" = "快速保存储藏";
 "stash.savePartial" = "保存部分储藏";
 "stash.savePartial.help" = "只把所选文件存进储藏，工作区的其余内容保持不变。";
 "stash.snapshotPartial" = "创建部分快照";
@@ -696,6 +704,8 @@
 "conflict.restoreUnmerged.many" = "恢复 %d 个项目的未合并版本";
 "conflict.restoreUnmerged.one" = "恢复 “%@” 的未合并版本";
 "conflict.restoreVersion" = "恢复来自 “%@” 的版本";
+"conflict.resolveUsingVersion.applied" = "采用来自应用的补丁或储藏的版本解决";
+"conflict.restoreVersion.applied" = "恢复来自应用的补丁或储藏的版本";
 "conflict.result" = "手动编辑或合并后的版本";
 "conflict.step" = "第 %d 步，共 %d 步";
 "conflict.step.applying" = "第 %d 步，共 %d 步：正在应用 “%@”";
@@ -726,6 +736,8 @@
 "conflict.compareBase" = "与共同祖先比较";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "文件历史";
+"fileHistory.scope.message" = "说明";
+"fileHistory.scope.hash" = "提交哈希";
 "fileHistory.showCommit" = "显示提交";
 "fileHistory.oneCommit" = "1 个提交";
 "fileHistory.commits" = "%ld 个提交";
@@ -743,10 +755,13 @@
 "fileHistory.restore.remote" = "将在服务器上覆盖 “%@”，改为版本 %@ 的内容。仓库：%@。这个文件已暂存和未暂存的改动都会被丢弃；该版本中没有这个文件时，会在服务器上将其删除。";
 "fileHistory.scope.author" = "作者";
 "fileHistory.scope.committer" = "提交人";
-"fileHistory.scope.revision" = "版本";
 "fileHistory.search.author" = "搜索作者";
 "fileHistory.search.committer" = "搜索提交人";
-"fileHistory.search.revision" = "搜索版本";
+"fileHistory.search.message" = "搜索说明";
+"fileHistory.search.hash" = "搜索提交哈希";
+"fileHistory.suggestions.authors" = "作者";
+"fileHistory.suggestions.messages" = "说明";
+"fileHistory.suggestions.committers" = "提交人";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
 "blame.show" = "显示 “%@” 的 Blame";
@@ -927,6 +942,10 @@
 "files.error.destination" = "目标位置已存在";
 "files.error.trashUnavailable" = "服务器上没有可用的废纸篓";
 "files.error.trashedItems" = "无法从废纸篓移回文件";
+"files.error.partialDeletion" = "没有全部删除";
+"files.error.partialDeletion.help" = "原始输出开头列出的项已从磁盘移走，删除没有暂存；其余的项没有改动。请刷新查看工作区，再决定是否重试。";
+"files.error.unstagedDeletion" = "删除没有暂存";
+"files.error.unstagedDeletion.help" = "原始输出开头列出的项都已从磁盘移走，但已跟踪文件的删除没有暂存。请在工作区中暂存这些删除，或查看原始输出了解原因。";
 "files.doubleClick" = "双击工作区中的文件：";
 "files.doubleClick.openFile" = "用默认应用程序打开";
 "files.doubleClick.openDiff" = "打开比较工具";
@@ -997,6 +1016,7 @@
 "history.search.before" = "早于";
 "history.search.range" = "介于";
 "history.search.to" = "至";
+"history.search.since" = "自 %@ 起";
 "history.reveal.notFound" = "提交 %@ 不在这段历史中。";
 "history.reveal.slow" = "加载更多提交";
 "history.reveal.slow.submit" = "加载";
@@ -1023,6 +1043,7 @@
 "history.gpgUser" = "GPG 用户";
 "history.gpgKey" = "GPG 密钥";
 "history.gpgStatus" = "GPG 状态";
+"history.signingKey" = "签名密钥";
 "history.signingStatus" = "签名状态";
 "history.changeset" = "变更集";
 "history.tree" = "文件树";
@@ -1051,6 +1072,12 @@
 "export.prompt" = "导出";
 "export.nameLabel" = "导出为：";
 "export.files" = "导出文件";
+"export.exists.title" = "项目已存在";
+"export.exists.one" = "“%2$@” 中已有 “%1$@”。要覆盖它吗？";
+"export.exists" = "“%2$@” 中已有 %1$ld 个项目。要覆盖它们吗？";
+"export.overwrite" = "覆盖";
+"export.error.partial" = "没有全部导出";
+"export.error.partial.help" = "其余项目已导出。详情中列出的项目没能写入目标文件夹；请检查该文件夹是否可写，然后重试。";
 "export.menu" = "导出版本…";
 "export.menuFrom" = "从 “%@” 导出文件…";
 "patch.title" = "保存补丁";
@@ -1155,7 +1182,7 @@
 "rewrite.edit.button" = "编辑";
 "rewrite.drop.button" = "删除";
 "rewrite.move.button" = "移动";
-"rewrite.autosquash.button" = "自动压缩";
+"rewrite.autosquash.button" = "自动压缩…";
 "rewrite.rebaseOnto.button" = "变基";
 "rewrite.revert.button" = "反转";
 "rewrite.cherryPick.button" = "摘取";
@@ -1259,6 +1286,11 @@
 "sync.step.fetch" = "正在获取…";
 "sync.step.pull" = "正在拉取…";
 "sync.step.push" = "正在推送…";
+"workspaceProgress.checkoutBranch" = "正在检出 “%@”…";
+"workspaceProgress.checkoutRevision" = "正在检出版本 “%@”…";
+"workspaceProgress.merge" = "正在合并…";
+"workspaceProgress.rebase" = "正在变基…";
+"workspaceProgress.reset" = "正在重置 HEAD…";
 "sync.stopped" = "同步停在 “%1$@” 这一步，已完成：%2$@。";
 "sync.stoppedFirst" = "同步停在 “%@” 这一步，还没有完成任何步骤。";
 "settings.autoFetch" = "自动获取远端仓库：";
@@ -1573,7 +1605,7 @@
 "rewrite.menu.revertGeneric" = "反转…";
 "rewrite.menu.cherryPick" = "摘取 “%@”…";
 "rewrite.menu.cherryPickMany" = "摘取 %ld 个版本…";
-"rewrite.menu.rebaseOnto" = "把 “%@” 变基到别处…";
+"rewrite.menu.rebaseOnto" = "把 '%@' 变基到别处…";
 "rewrite.menu.rebaseOntoMany" = "把 %ld 个版本变基到别处…";
 "rewrite.menu.amend" = "修补 “%@”";
 "rewrite.menu.edit" = "编辑 “%@”";
@@ -1585,6 +1617,7 @@
 "history.createBranch" = "从 “%@” 新建分支…";
 "history.createBranchGeneric" = "新建分支…";
 "history.rollback" = "回滚";
+"history.diffTool" = "比较工具";
 
 /* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
 "sync.quickFetchNamed" = "快速获取 “%@”";
@@ -1609,7 +1642,8 @@
 "branch.moveHere" = "移到这里";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash" = "这个分支上有标记为 fixup!、squash! 或 amend! 的提交。";
+"history.autosquash.one" = "这个分支上有 %ld 个标记为 fixup!、squash! 或 amend! 的提交。";
+"history.autosquash" = "这个分支上有 %ld 个标记为 fixup!、squash! 或 amend! 的提交。";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "撤销";
 "menu.redo" = "重做";
@@ -1788,6 +1822,7 @@
 "externalTool.compare.theirsToBase" = "对方版本与共同祖先";
 "externalTool.openDiffTool" = "打开比较工具";
 "externalTool.openDiffAt" = "用比较工具查看 “%1$@” 在版本 “%2$@” 的改动";
+"externalTool.openDiffItemsAt" = "用比较工具查看 %1$ld 项在版本 “%2$@” 的改动";
 "externalTool.mergeIn" = "在 %@ 中合并";
 "externalTool.chooseMergeTool" = "选择合并工具";
 "files.openWith" = "打开方式";

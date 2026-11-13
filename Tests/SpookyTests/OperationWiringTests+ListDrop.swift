@@ -29,7 +29,7 @@ extension OperationWiringTests {
         #expect(fixture.listDrop([d], row: try #require(fixture.session.history.row(of: s))) == nil)
     }
 
-    /// 在看 HEAD 分支、最近的提交里有能找到目标的 fixup! 提交时出现横幅；看别的分支时不出现。
+    /// 在看 HEAD 分支、最近的提交里有能找到目标的 fixup! 提交时出现横幅并写出数量；看别的分支时不出现。
     @Test("Autosquash 横幅")
     func autosquashBanner() async throws {
         let fixture = try await Self.makeFixture()
@@ -37,10 +37,9 @@ extension OperationWiringTests {
 
         let session = fixture.session
         let history = session.history
-        let banner = HistoryAutosquashBanner(session: session)
 
         _ = try await fixture.select("refs/heads/main", subjects: ["D"])
-        #expect(!banner.isVisible)
+        #expect(HistoryAutosquashBanner.commitCount(in: session) == 0)
 
         // 在 main 上提交一个 fixup! D，刷新后引用变化，列表随之重读
         try Data("D2\n".utf8).write(to: fixture.directory.appending(path: "D.txt"))
@@ -51,13 +50,13 @@ extension OperationWiringTests {
         await untilFinished { history.activeTasks }
         try #require(history.commits.contains { $0.subject == "fixup! D" })
 
-        #expect(banner.isVisible)
+        #expect(HistoryAutosquashBanner.commitCount(in: session) == 1)
 
         // 看别的分支时不出现
         history.selectedReferences = ["refs/heads/side"]
         await untilFinished { history.activeTasks }
 
-        #expect(!banner.isVisible)
+        #expect(HistoryAutosquashBanner.commitCount(in: session) == 0)
     }
 
     /// 提交落在另一个提交上是压缩、按住 ⌥ 是 fixup；未拉取的提交与提交自己都不是落点。

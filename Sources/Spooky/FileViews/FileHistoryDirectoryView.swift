@@ -26,8 +26,7 @@ struct FileHistoryDirectoryView: View {
                             .contextMenu {
                                 ChangesetFileMenu(
                                     session: session,
-                                    path: file.path,
-                                    originalPath: file.originalPath,
+                                    files: [file],
                                     commit: commit,
                                     contentEnabled: session.canReadFileHistory(state.targets[file.path])
                                 )

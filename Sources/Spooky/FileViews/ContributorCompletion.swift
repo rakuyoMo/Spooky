@@ -4,8 +4,29 @@ import SwiftUI
 
 // MARK: - ContributorSuggestion
 
-/// 搜索框的一条补全建议：贡献者或文件路径，选中后整条写进搜索框。
+/// 搜索框的一条补全建议：贡献者、提交说明或文件路径，选中后整条写进搜索框；历史搜索另有从某天起的日期建议。
 struct ContributorSuggestion: Identifiable, Equatable {
+    /// 建议所属的分组，弹窗在每组的第一条之前写出组名。
+    enum Group: Equatable {
+        /// 作者。
+        case authors
+
+        /// 提交说明。
+        case messages
+
+        /// 提交人。
+        case committers
+
+        /// 组名。
+        var title: String {
+            switch self {
+            case .authors: AppLocalization.text("fileHistory.suggestions.authors")
+            case .messages: AppLocalization.text("fileHistory.suggestions.messages")
+            case .committers: AppLocalization.text("fileHistory.suggestions.committers")
+            }
+        }
+    }
+
     /// 写进搜索框的文字：“姓名 <邮箱>”，同名有多个邮箱时另有只写姓名的一条。
     let text: String
 
@@ -18,17 +39,31 @@ struct ContributorSuggestion: Identifiable, Equatable {
     /// 贡献者在行首显示头像，文件路径不显示。
     var showsAvatar = true
 
-    /// 搜索框文字即身份。
-    var id: String { text }
+    /// 日期建议的那一天，接受后换成从这一天起的日期条件，这条建议的文字是原样的输入；其它建议为 nil。
+    var sinceDate: Date? = nil
 
-    /// 按姓名匹配查询，忽略大小写与变音符号，保持贡献者按提交数排列的顺序。
+    /// 所属的分组；不分组的建议为 nil。
+    var group: Group? = nil
+
+    /// 分组与文字合起来是身份，同一个人可以同时是作者与提交人。
+    var id: String { (group.map { "\($0)" } ?? "") + "\n" + text }
+
+    /// 按 “姓名 <邮箱>” 匹配查询：查询的字符按顺序出现即命中，忽略大小写与变音符号；保持贡献者传入的顺序。
     ///
     /// 同名有多个邮箱时，只写姓名的一条排在这个姓名的第一条之前，选它会匹配全部邮箱。
-    static func matches(_ query: String, in contributors: [FileContributor]) -> [Self] {
-        #warning("TODO: 补全目前按姓名的子串匹配、保持提交数顺序；是否改为模糊匹配并按相似度排序需实测核实；只影响文件历史搜索框补全的命中与顺序")
-        let query = query.trimmingCharacters(in: .whitespaces)
+    ///
+    /// - Parameters:
+    ///   - query: 搜索框的输入。
+    ///   - contributors: 按第一次出现的顺序排列的贡献者。
+    ///   - group: 建议所属的分组。
+    static func matches(
+        _ query: String,
+        in contributors: [FileContributor],
+        group: Group? = nil
+    ) -> [Self] {
+        let needle = fold(query.trimmingCharacters(in: .whitespaces))
 
-        guard !query.isEmpty else {
+        guard !needle.isEmpty else {
             return []
         }
 
@@ -36,20 +71,53 @@ struct ContributorSuggestion: Identifiable, Equatable {
         var named: Set<String> = []
         var suggestions: [Self] = []
 
-        for contributor in contributors where contributor.name.localizedStandardContains(query) {
-            // 同名的第一条之前插入只写姓名的一条
-            if emailCounts[contributor.name, default: 0] > 1, named.insert(contributor.name).inserted {
-                suggestions.append(Self(text: contributor.name, name: contributor.name, email: nil))
+        for contributor in contributors {
+            let text = contributor.name + " <" + contributor.email + ">"
+
+            guard isSubsequence(needle, of: fold(text)) else {
+                continue
             }
 
-            suggestions.append(Self(
-                text: contributor.name + " <" + contributor.email + ">",
-                name: contributor.name,
-                email: contributor.email
-            ))
+            // 同名的第一条之前插入只写姓名的一条
+            if emailCounts[contributor.name, default: 0] > 1, named.insert(contributor.name).inserted {
+                suggestions.append(Self(text: contributor.name, name: contributor.name, email: nil, group: group))
+            }
+
+            suggestions.append(Self(text: text, name: contributor.name, email: contributor.email, group: group))
         }
 
         return suggestions
+    }
+
+    /// 提交说明的建议：标题包含查询（忽略大小写与变音符号）即命中，按传入的顺序，相同的标题只列一次。
+    static func messages(_ query: String, in subjects: [String]) -> [Self] {
+        let query = query.trimmingCharacters(in: .whitespaces)
+
+        guard !query.isEmpty else {
+            return []
+        }
+
+        var seen: Set<String> = []
+
+        return subjects
+            .filter { $0.localizedStandardContains(query) && seen.insert($0).inserted }
+            .map { Self(text: $0, name: $0, email: nil, showsAvatar: false, group: .messages) }
+    }
+
+    /// 比较用的写法：忽略大小写与变音符号。
+    private static func fold(_ text: String) -> String {
+        text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+    }
+
+    /// needle 的字符是否按顺序出现在 haystack 里。
+    static func isSubsequence(_ needle: String, of haystack: String) -> Bool {
+        var remaining = needle[...]
+
+        for character in haystack where character == remaining.first {
+            remaining = remaining.dropFirst()
+        }
+
+        return remaining.isEmpty
     }
 }
 
@@ -94,8 +162,8 @@ final class ContributorCompletion: NSObject, NSSearchFieldDelegate {
     /// 按输入给出建议，由接管输入框的一方提供。
     private var provider: @MainActor (String) async -> [ContributorSuggestion] = { _ in [] }
 
-    /// 接受建议后把搜索框文字交给会话。
-    private var apply: (String) -> Void = { _ in }
+    /// 接受建议后把它交给会话。
+    private var apply: (ContributorSuggestion) -> Void = { _ in }
 
     /// 读取贡献者并筛选的任务，输入变化时取消。
     private var task: Task<Void, Never>? = nil
@@ -108,11 +176,11 @@ final class ContributorCompletion: NSObject, NSSearchFieldDelegate {
     /// - Parameters:
     ///   - field: 工具栏里的搜索框或过滤面板里的输入框，重建后重新接管。
     ///   - suggestions: 按输入给出建议；当前范围没有补全时返回空。
-    ///   - apply: 接受建议后写入的搜索内容。
+    ///   - apply: 接受建议后写入搜索内容；搜索框已显示建议的文字。
     func attach(
         to field: NSTextField,
         suggestions: @escaping @MainActor (String) async -> [ContributorSuggestion],
-        apply: @escaping (String) -> Void
+        apply: @escaping (ContributorSuggestion) -> Void
     ) {
         close()
         self.field = field
@@ -241,7 +309,7 @@ extension ContributorCompletion {
     private func accept(_ suggestion: ContributorSuggestion) {
         close()
         field?.stringValue = suggestion.text
-        apply(suggestion.text)
+        apply(suggestion)
     }
 
     /// 无边框、不激活的子窗口，内容是菜单材质的圆角背景与建议列表。
@@ -284,7 +352,8 @@ extension ContributorCompletion {
         let anchor = field.window?.convertToScreen(field.convert(field.bounds, to: nil)) ?? .zero
         let width = max(anchor.width, Self.minimumWidth)
         let height = min(
-            CGFloat(model.items.count) * ContributorCompletionList.rowHeight + ContributorCompletionList.padding * 2,
+            CGFloat(ContributorCompletionList.lineCount(model.items)) * ContributorCompletionList.rowHeight
+                + ContributorCompletionList.padding * 2,
             Self.maximumHeight
         )
         let below = NSRect(x: anchor.maxX - width, y: anchor.minY - height - 4, width: width, height: height)
@@ -325,6 +394,11 @@ private struct ContributorCompletionList: View {
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(Array(model.items.enumerated()), id: \.element.id) { index, item in
+                        // 每组的第一条之前写出组名
+                        if let group = item.group, index == 0 || model.items[index - 1].group != group {
+                            header(group)
+                        }
+
                         row(item, selected: index == model.selection)
                             .id(item.id)
                             .contentShape(Rectangle())
@@ -339,6 +413,25 @@ private struct ContributorCompletionList: View {
                 proxy.scrollTo(model.items[model.selection].id)
             }
         }
+    }
+
+    /// 列表占的行数：每条建议一行，每个分组的组名另占一行。
+    static func lineCount(_ items: [ContributorSuggestion]) -> Int {
+        let headers = items.indices.filter { index in
+            items[index].group != nil && (index == 0 || items[index - 1].group != items[index].group)
+        }
+
+        return items.count + headers.count
+    }
+
+    /// 组名：11 pt 中等字重的二级文字，与建议的姓名左对齐。
+    private func header(_ group: ContributorSuggestion.Group) -> some View {
+        Text(group.title)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(.secondary)
+            .padding(.leading, 8)
+            .frame(maxWidth: .infinity, minHeight: Self.rowHeight, alignment: .leading)
+            .accessibilityAddTraits(.isHeader)
     }
 
     /// 一行：头像距左 8 pt，与姓名相隔 4 pt；选中行使用强调色底与白字。

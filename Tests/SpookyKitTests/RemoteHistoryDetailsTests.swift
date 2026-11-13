@@ -58,8 +58,8 @@ struct RemoteHistoryDetailsTests {
             // 归档、导出与补丁都写在本机
             let export = RevisionExport(runner: runner)
             try await export.archive(merge, format: .zip, to: output.appending(path: "a.zip"))
-            try await export.export(merge, paths: ["目录 [*]"], to: output.appending(path: "files"))
-            #expect(try Data(contentsOf: output.appending(path: "files/" + path)) == Data("one\n".utf8))
+            try await export.export(merge, paths: ["目录 [*]"], into: output)
+            #expect(try Data(contentsOf: output.appending(path: path)) == Data("one\n".utf8))
             let patches = try await export.savePatches([base, merge], omitsPrefixes: true, to: output)
             #expect(patches.map(\.lastPathComponent) == ["0001-.patch"])
 

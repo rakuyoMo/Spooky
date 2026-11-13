@@ -72,6 +72,9 @@ final class RepositorySession {
     /// 写操作期间所有写入口共用锁定状态。
     private(set) var isWriting = false
 
+    /// 占用工作区的写操作执行期间，工作区换成的整页进度；其它写操作与没有写操作时为 nil。
+    private(set) var workspaceProgress: WorkspaceProgress? = nil
+
     /// 标题草稿，失败时保留。
     var commitSubject = ""
 
@@ -120,6 +123,12 @@ final class RepositorySession {
 
     /// 点击勾选框后的临时状态，刷新成功或失败后撤回。
     var stagingOverrides: [StatusRowID: Bool] = [:]
+
+    /// 暂存正在执行：只有受影响的行禁用，其它行的勾选框仍可点，新的请求排进 ``queuedStaging``。
+    var isStaging = false
+
+    /// 暂存执行期间收到的请求，在同一个写操作里依次执行；失败或取消时一并丢弃。
+    var queuedStaging: [(entries: [StatusEntry], staged: Bool)] = []
 
     /// 列表多选使用的稳定标识。
     var selectedIDs: Set<StatusRowID> = []
@@ -293,6 +302,7 @@ final class RepositorySession {
 
     /// 窗口负责呈现分支、标签与远端管理的对话框和询问。
     var onReferenceRequest: ((ReferenceRequest) -> Void)? = nil
+
     /// 打开另一个仓库，如子模块、父仓库或工作树；验证与窗口复用规则和打开其它仓库相同。
     var onOpenRepository: ((RepositoryLocation, RepositoryOpenTarget) -> Void)? = nil
 
@@ -356,6 +366,9 @@ final class RepositorySession {
         worktrees.activities = activities
         fileHistory.activities = activities
         fileContent.activities = activities
+
+        // Reflog 的详情不读引用，徽标、Refs 行与 HEAD 取本窗口历史的引用快照
+        reflog.detail.referenceSource = history
 
         // 服务器仓库读完工作树清单后，查找仓库目录与新出现的工作树在这台 Mac 上的挂载
         worktrees.onLoad = { [weak self] in self?.locateMounts() }
@@ -527,12 +540,15 @@ extension RepositorySession {
         diffTask = nil
         contextTask = nil
         isWriting = false
+        workspaceProgress = nil
         isLoadingDiff = false
         context = nil
         diffSnapshot = nil
         diffFailure = nil
         contentHash = nil
         stagingOverrides = [:]
+        isStaging = false
+        queuedStaging = []
         selectedIDs = []
         commitSubject = ""
         commitBody = ""
@@ -640,6 +656,8 @@ extension RepositorySession {
     ///
     /// - Parameters:
     ///   - title: 已本地化的操作名称，用于 Activity 与断线后的核对报告。
+    ///   - progress: 检出、合并、拉取、变基与重置这类占用工作区的操作传入整页进度的标题，执行期间工作区换成进度；
+    ///     其它写操作不传。
     ///   - recordsActivity: 网络与引用操作记入 Activity；工作区的高频写入只用于核对报告。
     ///   - target: 要连接远端传输对象或引用的操作传入连接的对象，记在 Activity 的 Remote 页，写进记录的图标与标题；
     ///     不传时记在 Repository 页。动作里经 `ActivityRecording` 另起的记录接在后面。
@@ -653,6 +671,7 @@ extension RepositorySession {
         _ action:
         @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
+        progress: String? = nil,
         recordsActivity: Bool = true,
         target: ActivityTarget? = nil,
         offersAutoStash: Bool = false,
@@ -678,6 +697,7 @@ extension RepositorySession {
         isRefreshing = false
         pendingFullRefresh = false
         isWriting = true
+        workspaceProgress = progress.map { WorkspaceProgress(title: $0) }
         let request = generation
         let runner = makeRunner(repository)
         let branch = status?.branch
@@ -716,12 +736,9 @@ extension RepositorySession {
         // 已初始化子模块的指针被改动时随后更新或询问；按声明在操作前后记下仓库状态，供撤销与重做使用
         let checked = updatingSubmodules(after: action, tracked: submodules.initialized)
         let recorded = recordingUndo(checked, title: title, target: target, recording: undo)
+        let collector = collect(events, into: record, request: request)
 
         writeTask = Task { [weak self] in
-            let collector = Task { @MainActor in
-                for await event in events { record?.receive(event) }
-            }
-
             // 状态与失败说明同样经流送出，落在最后一条记录上
             do {
                 try await ActivityRecording.$send.withValue({ continuation.yield($0) }) {
@@ -754,6 +771,7 @@ extension RepositorySession {
 
             guard let self, generation == request else { return }
             isWriting = false
+            workspaceProgress = nil
             writeTask = nil
             refresh(full: true)
             offerSubmoduleUpdate()
@@ -763,11 +781,48 @@ extension RepositorySession {
         record?.cancel = { task?.cancel() }
         return true
     }
+
+    /// 写操作走到占用工作区的一步时换上整页进度，离开这一步时撤下，如同步只在拉取那一步显示；
+    /// 仓库换了、写操作已结束或标题没变时不改动。
+    ///
+    /// - Parameters:
+    ///   - title: 整页进度的标题；为 nil 时撤下。
+    ///   - request: 发起写操作时的仓库代次。
+    func showWorkspaceProgress(_ title: String?, request: Int) {
+        guard generation == request, isWriting, workspaceProgress?.title != title else {
+            return
+        }
+
+        workspaceProgress = title.map { WorkspaceProgress(title: $0) }
+    }
 }
 
 // MARK: - Private
 
 extension RepositorySession {
+    /// 把写操作的事件依次交给 Activity 记录；有整页进度时，Git 输出的最后一个非空行同时写进进度。
+    ///
+    /// - Parameters:
+    ///   - events: 写操作的事件流。
+    ///   - record: 写操作的 Activity 记录；不记 Activity 时为 nil。
+    ///   - request: 发起写操作时的仓库代次，仓库换了之后不再改动进度。
+    private func collect(
+        _ events: AsyncStream<ActivityEvent>,
+        into record: WriteActivity?,
+        request: Int
+    ) -> Task<Void, Never> {
+        Task { [weak self] in
+            for await event in events {
+                record?.receive(event)
+
+                // 没有整页进度时不写这个属性，免得观察它的界面随每块输出刷新
+                if let self, generation == request, workspaceProgress != nil, let record {
+                    workspaceProgress?.detail = record.current.lastLine
+                }
+            }
+        }
+    }
+
     /// 刷新成功后一次性替换快照；仍存在的文件继续选中。
     ///
     /// - Parameter records: 文件视图因 HEAD 移动而重读时是否记进 Activity，与引起它的刷新相同。
@@ -778,13 +833,25 @@ extension RepositorySession {
         fileHistory.update(head: status.branch.oid, records: records)
         fileContent.update(head: status.branch.oid, records: records)
 
+        // 搜索框补全用的贡献者在后台跟着 HEAD 读取，不等到第一次输入
+        if let runner, let head = status.branch.oid {
+            history.suggestions.prepareContributors(runner: runner, head: head)
+        }
+
         stagingOverrides = [:]
 
-        // 暂存会把未跟踪项变为已跟踪项；同路径优先延续选择，双记录仍优先匹配类别。
+        // 选区保留列表里仍有的条目，补充清单里的未改动与被忽略文件同样算数
+        let visible = listing.entries(status: status.entries, files: workingTreeFiles)
+        let ids = Set(visible.map { StatusRowID(path: $0.path, kind: $0.kind) })
+        var byPath: [String: StatusRowID] = [:]
+
+        for entry in visible where byPath[entry.path] == nil {
+            byPath[entry.path] = StatusRowID(path: entry.path, kind: entry.kind)
+        }
+
+        /// 暂存会把未跟踪项变为已跟踪项：同路径优先延续选择，双记录仍优先匹配类别。
         func retainedID(_ selected: StatusRowID) -> StatusRowID? {
-            let entry = status.entries.first { $0.path == selected.path && $0.kind == selected.kind }
-                ?? status.entries.first { $0.path == selected.path }
-            return entry.map { StatusRowID(path: $0.path, kind: $0.kind) }
+            ids.contains(selected) ? selected : byPath[selected.path]
         }
 
         selectedIDs = Set(selectedIDs.compactMap(retainedID))

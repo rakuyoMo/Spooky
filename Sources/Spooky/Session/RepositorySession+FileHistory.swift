@@ -31,33 +31,32 @@ extension RepositorySession {
     /// 时间线右键以所指提交为目标，不依赖详情当前选择。
     func fileHistoryMenuActions(_ commit: HistoryCommit) -> [FileViewAction] {
         let path = fileHistory.path ?? ""
-        let name = Self.fileName(path)
         let contentEnabled = canReadFileHistory(fileHistory.targets[commit.id])
 
         return [
             FileViewAction(
-                title: AppLocalization.text("fileHistory.showAt", name, commit.shortID), enabled: contentEnabled
+                title: AppLocalization.text("fileHistory.showAt", path, commit.shortID), enabled: contentEnabled
             ) { [weak self] in
                 self?.showHistoryFile(path, commit: commit, mode: .raw)
             },
             FileViewAction(
-                title: AppLocalization.text("fileHistory.blameAt", name, commit.shortID), enabled: contentEnabled
+                title: AppLocalization.text("fileHistory.blameAt", path, commit.shortID), enabled: contentEnabled
             ) { [weak self] in
                 self?.showHistoryFile(path, commit: commit, mode: .blame)
             },
             FileViewAction(title: AppLocalization.text("fileHistory.showCommitFor", commit.shortID)) { [weak self] in
                 self?.showCommit(commit)
             },
-            FileViewAction(title: AppLocalization.text("externalTool.openDiffAt", name, commit.shortID)) { [weak self] in
+            FileViewAction(title: AppLocalization.text("externalTool.openDiffAt", path, commit.shortID)) { [weak self] in
                 self?.compareFileHistory(commit)
             },
             FileViewAction(
-                title: AppLocalization.text("fileHistory.restoreAt", name, commit.shortID), enabled: canWrite
+                title: AppLocalization.text("fileHistory.restoreAt", path, commit.shortID), enabled: canWrite
             ) { [weak self] in
                 self?.restoreFile(path, at: commit.id)
             },
             FileViewAction(
-                title: AppLocalization.text("fileHistory.exportAt", name, commit.shortID), enabled: contentEnabled
+                title: AppLocalization.text("fileHistory.exportAt", path, commit.shortID), enabled: contentEnabled
             ) { [weak self] in
                 guard let self, fileHistory.path == path, canReadFileHistory(fileHistory.targets[commit.id]) else { return }
                 exportFile(path, at: commit.id)

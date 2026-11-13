@@ -69,7 +69,7 @@ struct ChangesetPresentationTests {
 
         // 重新读取期间没有空行，读完空结果才显示
         session.history.loadChanges()
-        let view = CommitFileListView(session: session, history: session.history, back: { })
+        let view = CommitFileListView(session: session, history: session.history)
         #expect(session.history.isLoadingChanges)
         #expect(view.emptyMessage == nil)
 

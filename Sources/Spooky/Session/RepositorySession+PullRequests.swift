@@ -206,6 +206,7 @@ extension RepositorySession {
                 try await RepositoryPullRequests(runner: runner).checkout(request, remote: remote, as: name, onOutput: output)
             },
             title: pullRequestText("checkout.title"),
+            progress: AppLocalization.text("workspaceProgress.checkoutBranch", name),
             target: .pull(remote),
             offersAutoStash: true,
             undo: .reversible

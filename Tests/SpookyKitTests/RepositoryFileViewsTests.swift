@@ -68,8 +68,13 @@ struct RepositoryFileViewsTests {
         let carol = FileHistoryFilter(scope: .committer, text: "carol")
         #expect(try await subjects(carol) == ["applied"])
 
-        // 版本范围改变的是起点，不会变成作者或提交人条件
-        #expect(FileHistoryFilter(scope: .revision, text: "HEAD~1").arguments.isEmpty)
+        // 说明同样按字面子串匹配并忽略大小写
+        let message = FileHistoryFilter(scope: .message, text: "EDI")
+        #expect(try await subjects(message) == ["edit"])
+        #expect(try await views.count(of: Self.path, from: head, filter: message) == 1)
+
+        // 提交哈希改变的是起点，不会变成说明、作者或提交人条件
+        #expect(FileHistoryFilter(scope: .hash, text: "HEAD~1").arguments.isEmpty)
 
         // 贡献者按提交数排列，作者与提交人不同时只统计作者
         let contributors = try await views.contributors(of: Self.path, at: head)
@@ -77,10 +82,11 @@ struct RepositoryFileViewsTests {
         #expect(contributors.first?.commitCount == 2)
         #expect(contributors.first?.email == "alice@example.invalid")
 
-        // 不给路径时是整个仓库的作者，包括只改过其它文件的人
-        let authors = try await views.contributors(of: nil, at: head)
-        #expect(authors.map(\.name) == ["Alice", "Bob", "Bob [x]"])
-        #expect(authors.first?.commitCount == 2)
+        // 整个仓库的作者与提交人各按第一次出现的顺序从新到旧，包括只改过其它文件的人
+        let everyone = try await views.contributors(at: head)
+        #expect(everyone.authors.map(\.name) == ["Alice", "Bob [x]", "Bob"])
+        #expect(everyone.authors.first?.commitCount == 2)
+        #expect(everyone.committers.first?.name == "Carol")
     }
 
     /// Blame 的段、提交元信息与原文按 porcelain 协议解析，哈希长度随仓库算法变化；
@@ -253,6 +259,21 @@ struct RepositoryFileViewsTests {
             #expect(throws: RepositoryReadError.malformedOutput("shortlog")) {
                 try FileContributor.parse(Data(output.utf8))
             }
+        }
+
+        // 整个仓库的贡献者：同名不同邮箱各算一人，Unicode 姓名原样保留，按第一次出现的顺序累计提交数
+        let people = "李 雷\0li@e\0Zoë\0z@e\0李 雷\0lei@e\0Zoë\0z@e\0李 雷\0li@e\0李 雷\0li@e\0"
+        let everyone = try RepositoryContributors.parse(Data(people.utf8))
+
+        #expect(everyone.authors == [
+            FileContributor(name: "李 雷", email: "li@e", commitCount: 2),
+            FileContributor(name: "李 雷", email: "lei@e", commitCount: 1),
+        ])
+        #expect(everyone.committers.map(\.name) == ["Zoë", "李 雷"])
+        #expect(try RepositoryContributors.parse(Data()) == RepositoryContributors())
+
+        #expect(throws: RepositoryReadError.malformedOutput("log")) {
+            try RepositoryContributors.parse(Data("a\0b\0c\0".utf8))
         }
 
         // 三种查询都登记为只读

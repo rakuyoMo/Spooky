@@ -181,6 +181,7 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("review.updateBranch"),
+            progress: AppLocalization.text(rebase ? "workspaceProgress.rebase" : "workspaceProgress.merge"),
             offersAutoStash: true,
             undo: .reversible
         )
@@ -206,6 +207,7 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("review.resolveConflicts"),
+            progress: AppLocalization.text("workspaceProgress.merge"),
             offersAutoStash: true,
             undo: .reversible
         )

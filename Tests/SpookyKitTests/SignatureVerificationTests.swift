@@ -57,6 +57,13 @@ struct SignatureVerificationTests {
         #expect(signatures[good]?.status == .good)
         #expect(signatures[good]?.signer == "spooky@example.invalid")
         #expect(signatures[good]?.key.hasPrefix("SHA256:") ?? false)
+
+        // SSH 签名的短标识取 SHA-256 指纹的末 8 个字符
+        let fingerprint = try #require(signatures[good]?.fingerprint)
+
+        #expect(fingerprint.hasPrefix("SHA256:") && (signatures[good]?.isSSH ?? false))
+        #expect(signatures[good]?.shortKeyID == String(fingerprint.suffix(8)))
+
         #expect(signatures[good]?.email == nil)
         #expect(signatures[unsigned]?.status == SignatureStatus.unsigned)
         #expect(signatures[unknown]?.status == .unknownValidity)
@@ -65,6 +72,7 @@ struct SignatureVerificationTests {
         // 标签按同样的规则归类，未签名的附注标签与轻量标签都算没有签名
         let tag = try await references.signature(ofTag: "refs/tags/签名/v1.0")
         #expect(tag.status == .good && tag.signer == "spooky@example.invalid")
+        #expect(tag.isSSH && tag.shortKeyID == String(fingerprint.suffix(8)))
         #expect(try await references.signature(ofTag: "refs/tags/other").status == .unknownValidity)
         #expect(try await references.signature(ofTag: "refs/tags/plain").status == SignatureStatus.unsigned)
         #expect(try await references.signature(ofTag: "refs/tags/light").status == SignatureStatus.unsigned)
@@ -129,6 +137,10 @@ struct SignatureVerificationTests {
         let signature = try #require(try await RepositoryHistory(runner: runner).signatures(of: [commit])[commit])
         #expect([.good, .unknownValidity].contains(signature.status))
         #expect(signature.email == "spooky@example.invalid")
+
+        // 短标识取主密钥指纹的末 8 位
+        #expect(!signature.isSSH && !signature.primaryFingerprint.isEmpty)
+        #expect(signature.shortKeyID == String(signature.primaryFingerprint.suffix(8)))
     }
 
     /// OpenPGP 校验经包装器调用仓库配置的 gpg，并关闭自动取钥与信任库检查；用记录参数的假 gpg 验证，不需要真的 gpg。
@@ -174,12 +186,18 @@ struct SignatureVerificationTests {
     func parsing() throws {
         let hash = String(repeating: "b", count: 40)
 
-        // 签名查询的字段以 NUL 分隔，签名人拆成名字与邮箱；字段缺失、状态不认识或不是哈希时报错
-        let record = "\(hash)\0G\0Name <mail@example.invalid>\0KEY\0FPR\0"
-        let parsed = try CommitSignature.parse(Data(record.utf8))
-        #expect(parsed[hash]?.name == "Name" && parsed[hash]?.email == "mail@example.invalid")
+        // 签名查询的字段以 NUL 分隔，签名人拆成名字与邮箱
+        let record = "\(hash)\0G\0Name <mail@example.invalid>\0KEY\0PRIMARY0FDC76241\0SUBKEY00\0"
+        let parsed = try #require(try CommitSignature.parse(Data(record.utf8))[hash])
 
-        for malformed in ["\(hash)\0G\0", "\(hash)\0Z\0\0\0\0", "HEAD\0G\0\0\0\0", "\(hash)\0G\0\0\0"] {
+        #expect(parsed.name == "Name" && parsed.email == "mail@example.invalid")
+
+        // OpenPGP 的短标识取主密钥指纹的末 8 位，不拿密钥 ID 或子密钥指纹代替；缺主密钥指纹时没有短标识
+        #expect(!parsed.isSSH && parsed.shortKeyID == "FDC76241")
+        #expect(CommitSignature(status: .cannotCheck, key: "ABCDEF0123456789").shortKeyID == nil)
+
+        // 字段缺失、状态不认识或不是哈希时报错
+        for malformed in ["\(hash)\0G\0", "\(hash)\0Z\0\0\0\0\0", "HEAD\0G\0\0\0\0\0", "\(hash)\0G\0\0\0\0"] {
             #expect(throws: RepositoryReadError.self) {
                 try CommitSignature.parse(Data(malformed.utf8))
             }
@@ -195,7 +213,7 @@ struct SignatureVerificationTests {
             try CommitObjects.parse(Data("\(hash) commit 99\nshort\n".utf8))
         }
 
-        // 标签的 GOODSIG 带上信任行才算有效，签名人、密钥与主密钥指纹都取出
+        // 标签的 GOODSIG 带上信任行才算有效，签名人、密钥、主密钥指纹与签名密钥指纹都取出
         let good = "[GNUPG:] GOODSIG ABC Name <a@b.c>\n[GNUPG:] VALIDSIG F1 2 3 4 5 6 7 8 9 PRIMARY\n"
         let trusted = TagVerification.parse(Self.result(good + "[GNUPG:] TRUST_ULTIMATE 0 pgp\n"))
         #expect(TagVerification.parse(Self.result(good)).status == .unknownValidity)
@@ -204,7 +222,8 @@ struct SignatureVerificationTests {
                 status: .good,
                 signer: "Name <a@b.c>",
                 key: "ABC",
-                primaryFingerprint: "PRIMARY"
+                primaryFingerprint: "PRIMARY",
+                fingerprint: "F1"
             )
         )
 

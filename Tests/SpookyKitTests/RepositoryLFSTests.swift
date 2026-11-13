@@ -149,6 +149,52 @@ struct RepositoryLFSTests {
 
         try await Self.cloneWithLFS(in: root, remote: remote, content: content)
     }
+
+    /// 启用要同时有 clean 与 smudge 过滤器和仓库自己调用 `git lfs pre-push` 的 pre-push 钩子：过滤器按合并后的配置读取，
+    /// 登记在全局配置也算，但只有过滤器、没有这样的钩子时不算启用；钩子路径跟随 `core.hooksPath`，状态里的启用与它相同。
+    @Test("启用的判断")
+    func enabledState() async throws {
+        let temporary = try TemporaryRepository()
+        defer { temporary.remove() }
+
+        try await temporary.initialize()
+        let root = temporary.directory.path
+        let global = root + "/.git/全局 配置"
+        let configure = lfsRunner(at: root)
+        let isolated = RepositoryLFS(runner: configure)
+        let withGlobal = RepositoryLFS(runner: lfsRunner(at: root, globalConfig: global))
+        let filters = [("filter.lfs.clean", "git-lfs clean -- %f"), ("filter.lfs.smudge", "git-lfs smudge -- %f")]
+
+        // 全局配置登记了过滤器，仓库没有钩子：不算启用，钩子文件不存在也不算读取失败
+        for (key, value) in filters {
+            _ = try await configure.run(["config", "--file", global, key, value])
+        }
+
+        #expect(try await !isolated.isEnabled())
+        #expect(try await !withGlobal.isEnabled())
+
+        // 仓库本地登记了过滤器，pre-push 钩子不调用 Git LFS：仍不算启用
+        for (key, value) in filters {
+            _ = try await configure.run(["config", "--local", key, value])
+        }
+
+        try Self.writePrePushHook("#!/bin/sh\nexit 0\n", in: root + "/.git/hooks")
+        #expect(try await !isolated.isEnabled())
+
+        // 钩子调用 git lfs pre-push：与执行过 git lfs install --local 相同，算启用
+        try Self.writePrePushHook("#!/bin/sh\ngit lfs pre-push \"$@\"\n", in: root + "/.git/hooks")
+        #expect(try await isolated.isEnabled())
+
+        // 去掉本地过滤器只剩钩子：过滤器只在全局配置里时算启用，任何地方都没有时不算
+        _ = try await configure.run(["config", "--local", "--remove-section", "filter.lfs"])
+        #expect(try await !isolated.isEnabled())
+        #expect(try await withGlobal.isEnabled())
+        #expect(try await withGlobal.status().isEnabled)
+
+        // core.hooksPath 指向没有钩子的目录：不算启用
+        _ = try await configure.run(["config", "--local", "core.hooksPath", root + "/其它 钩子"])
+        #expect(try await !withGlobal.isEnabled())
+    }
 }
 
 // MARK: - Steps
@@ -206,6 +252,12 @@ extension RepositoryLFSTests {
         }.value
 
         #expect(try Data(contentsOf: URL(fileURLWithPath: path + "/大 文件.bin")) == content)
+    }
+
+    /// 在钩子目录里写出 pre-push 钩子，目录不存在时先建出。
+    private static func writePrePushHook(_ script: String, in directory: String) throws {
+        try FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
+        try Data(script.utf8).write(to: URL(fileURLWithPath: directory + "/pre-push"))
     }
 }
 

@@ -20,6 +20,10 @@ final class RepositoryHistoryState {
     /// 与引用快照一起使用的 HEAD 状态。
     private(set) var branch: BranchStatus? = nil
 
+    /// 提供引用快照与 HEAD 的历史状态；为 nil 时用自己读到的。Reflog 的详情不读引用，取窗口历史的快照。
+    @ObservationIgnored
+    weak var referenceSource: RepositoryHistoryState? = nil
+
     /// 分支相对上游的结构化计数。
     private(set) var divergence: [String: ReferenceDivergence] = [:]
 
@@ -116,6 +120,15 @@ final class RepositoryHistoryState {
 
     /// 进行中的读取是刷新引起的列表重读；它在后台进行，列表下方不显示读取进度。
     private(set) var isRefreshingCommits = false
+
+    /// 首屏加载行的显示阶段。
+    var loadingRowPhase = HistoryLoadingRowPhase.hidden
+
+    /// 首屏加载行的计时任务。
+    var loadingRowTask: Task<Void, Never>? = nil
+
+    /// 首屏加载行计时用的等待；测试换成由测试放行的等待。
+    var loadingRowSleep: @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
 
     /// 已选提交的完整哈希集合，按列表顺序复制。
     var selectedIDs = Set<String>() {
@@ -265,19 +278,6 @@ final class RepositoryHistoryState {
     /// 只展示真实分支，远端 HEAD 用于默认分支标记。
     var branches: [RepositoryReference] {
         snapshot?.references.filter { $0.isLocal || ($0.isRemote && $0.symbolicTarget == nil) } ?? []
-    }
-
-    /// 全部历史的起点：指向提交的引用与 HEAD 所指的提交，去重后排序。
-    var allHistoryRoots: [String] {
-        let references = snapshot?.references ?? []
-
-        return Array(
-            Set(
-                references.filter { $0.objectType == "commit" }.map(\.objectID)
-                    + (branch?.oid.map { [$0] } ?? [])
-            )
-        )
-        .sorted()
     }
 
     /// 历史表头当前引用，没有选择时展示全部引用语义。
@@ -436,18 +436,35 @@ final class RepositoryHistoryState {
         roots = []
         hasMore = false
         restoredReferences = nil
+
+        // 换仓库或关窗时取消补全数据的读取
+        suggestions.close()
     }
 }
 
 // MARK: - Paging
 
 extension RepositoryHistoryState {
+    /// 全部历史的起点：指向提交的引用与 HEAD 所指的提交，去重后排序。
+    var allHistoryRoots: [String] {
+        let references = snapshot?.references ?? []
+
+        return Array(
+            Set(
+                references.filter { $0.objectType == "commit" }.map(\.objectID)
+                    + (branch?.oid.map { [$0] } ?? [])
+            )
+        )
+        .sorted()
+    }
+
     /// 用户取消分页后保留已有结果，可以继续滚动重试。
     func cancelPage() {
         pageTask?.cancel()
         pageTask = nil
         isLoading = false
         isRefreshingCommits = false
+        hideLoadingRow()
     }
 
     /// 固定当前引用哈希与视图设置、搜索条件，清空图状态后读取第一页与总数。
@@ -551,6 +568,11 @@ extension RepositoryHistoryState {
         isLoading = true
         isRefreshingCommits = loaded > 0
 
+        // 列表里还没有提交时是首屏读取，过一会儿还没读完才显示加载行
+        if rows.isEmpty, loaded == 0 {
+            beginLoadingRow()
+        }
+
         pageTask = Task { [weak self] in
             do {
                 let page = try await activities.recordRead(
@@ -579,6 +601,7 @@ extension RepositoryHistoryState {
             isLoading = false
             isRefreshingCommits = false
             pageTask = nil
+            endLoadingRow()
 
             // 回到历史时要选中的提交还没出现在已加载的分页里，继续扩大加载
             continueLookup()
@@ -945,7 +968,17 @@ extension RepositoryHistoryState {
         let loaded = Set(commits.map(\.id))
             .union(revealedCommit.map { [$0.id] } ?? [])
             .union(lookup.map { [$0] } ?? [])
-        let selected = selectedIDs.intersection(loaded)
+        var selected = selectedIDs.intersection(loaded)
+
+        // 刷新以外的读取读完后什么都没选中时，选中当前结果的第一行提交并显示详情；要找的提交由查找选中
+        if
+            selected.isEmpty,
+            !isRefreshingCommits,
+            lookup == nil,
+            let first = rows.lazy.compactMap(\.commit).first
+        {
+            selected = [first.id]
+        }
 
         // 选择没有变化时在后台重读变更集，已显示的内容与展开状态不变
         if selected == selectedIDs {

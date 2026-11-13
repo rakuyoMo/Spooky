@@ -79,11 +79,11 @@
 
 "loading.status" = "状態を更新しています…";
 
-"branch.unborn" = "%@（コミットなし）";
-
-"branch.detached" = "%@（分離した HEAD）";
+"branch.detached" = "%@（分離）";
 
 "branch.noHead" = "HEAD ブランチなし";
+
+"branch.noHeadBranch" = "（HEAD ブランチなし）";
 
 "branch.noTracking" = "追跡先なし";
 
@@ -129,7 +129,7 @@
 
 "status.unchanged" = "変更なし";
 
-"status.description" = "インデックス：%@、作業ツリー：%@";
+"status.description" = "コミットするステージ済みの変更：%@\n変更済みで未ステージ：%@";
 
 "detail.empty.title" = "ファイル未選択";
 
@@ -276,6 +276,10 @@
 
 "working.stage" = "ステージ";
 "working.unstage" = "ステージ解除";
+"working.stage.single" = "「%@」をステージ";
+"working.stage.multiple" = "%ld 項目をステージ";
+"working.unstage.single" = "「%@」のステージを解除";
+"working.unstage.multiple" = "%ld 項目のステージを解除";
 "working.stageAll" = "すべてステージ";
 "working.unstageAll" = "すべてステージ解除";
 "working.commit" = "コミット";
@@ -325,6 +329,7 @@
 "working.discardLine" = "行を破棄";
 "working.discardLines" = "選択行を破棄";
 "working.discard" = "変更を破棄";
+"working.discard.menu" = "ローカルの変更を破棄…";
 "working.discard.title" = "ローカルの変更を破棄";
 "working.discardAll.title" = "すべてのローカルの変更を破棄";
 "working.discardAll.submit" = "すべての変更を破棄";
@@ -364,23 +369,26 @@
 "history.medium" = "中サイズのコミット行";
 "history.small" = "小サイズのコミット行";
 "history.viewOptions" = "履歴の表示オプション";
+"history.viewOptions.help" = "表示オプションを変更";
 "history.empty" = "コミットがありません";
 "history.loading" = "コミットを読み込み中…";
-"history.copyHash" = "コミットハッシュをコピー";
+"history.copyHash" = "コミットハッシュをクリップボードにコピー";
+"history.copyHashes" = "%ld 件のコミットハッシュをクリップボードにコピー";
+"history.copyInfo" = "コミット情報をクリップボードにコピー";
 "history.changes" = "%ld 個の変更ファイル";
 "history.noSelection" = "コミットが選択されていません";
 "history.multiple" = "%ld 個のコミットを選択中";
 "history.expandAll" = "すべて展開";
 "history.collapseAll" = "すべて折りたたむ";
-"history.back" = "履歴に戻る";
 "history.metadata" = "コミット情報を表示";
 "history.author" = "作成者";
 "history.authorDate" = "作成日時";
 "history.committer" = "コミッター";
 "history.commitDate" = "コミット日時";
+"history.refs" = "参照";
 "history.hash" = "コミットハッシュ";
 "history.treeHash" = "ツリーハッシュ";
-"history.parents" = "親コミットハッシュ";
+"history.parentHash" = "親コミットハッシュ";
 "history.showHead" = "HEAD ブランチを表示";
 "history.diffs" = "変更セットの差分";
 "history.autoExpand.never" = "自動展開しない";
@@ -543,8 +551,7 @@
 "recovery.notStarted" = "サーバーに接続できなかったため、「%@」は開始されていません。サーバー上は何も変更されていません。";
 "recovery.unborn" = "コミットなし";
 "dialog.blocked" = "このリポジトリで別の操作が実行中か、サーバーとの接続が切れています。入力した設定は保持されます。リポジトリが利用可能になってから再試行してください。";
-"working.clean" = "ローカルの変更はありません";
-"history.loadingChanges" = "変更ファイルを読み込み中…";
+"history.loadingChanges" = "変更セットを読み込み中…";
 "repositories.unavailableShort" = "利用不可";
 
 /* 主题管理。 */
@@ -596,6 +603,7 @@
 "stash.snapshot.help" = "ローカルの変更をスタッシュに保存し、作業コピーはそのまま残します。";
 "stash.snapshotMenu" = "スナップショットを作成…";
 "stash.quickSnapshotMenu" = "スナップショットをすぐに作成";
+"stash.quickSaveMenu" = "スタッシュをすぐに保存";
 "stash.savePartial" = "一部をスタッシュに保存";
 "stash.savePartial.help" = "選択したファイルだけをスタッシュに保存し、作業コピーのほかの部分はそのまま残します。";
 "stash.snapshotPartial" = "一部のスナップショットを作成";
@@ -696,6 +704,8 @@
 "conflict.restoreUnmerged.many" = "%d 項目の未マージのバージョンを復元";
 "conflict.restoreUnmerged.one" = "「%@」の未マージのバージョンを復元";
 "conflict.restoreVersion" = "「%@」のバージョンを復元";
+"conflict.resolveUsingVersion.applied" = "適用したパッチまたはスタッシュのバージョンで解決";
+"conflict.restoreVersion.applied" = "適用したパッチまたはスタッシュのバージョンを復元";
 "conflict.result" = "手動で編集またはマージしたバージョン";
 "conflict.step" = "ステップ %d / %d";
 "conflict.step.applying" = "ステップ %d / %d：「%@」を適用中";
@@ -726,6 +736,8 @@
 "conflict.compareBase" = "共通の祖先と比較";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "ファイル履歴";
+"fileHistory.scope.message" = "メッセージ";
+"fileHistory.scope.hash" = "コミットハッシュ";
 "fileHistory.showCommit" = "コミットを表示";
 "fileHistory.oneCommit" = "1 件のコミット";
 "fileHistory.commits" = "%ld 件のコミット";
@@ -743,10 +755,13 @@
 "fileHistory.restore.remote" = "サーバー上の「%@」をリビジョン %@ の内容で上書きします。対象：%@。このファイルのステージ済みと未ステージの変更は破棄され、そのリビジョンにファイルがない場合はサーバー上から削除されます。";
 "fileHistory.scope.author" = "作成者";
 "fileHistory.scope.committer" = "コミッター";
-"fileHistory.scope.revision" = "リビジョン";
 "fileHistory.search.author" = "作成者を検索";
 "fileHistory.search.committer" = "コミッターを検索";
-"fileHistory.search.revision" = "リビジョンを検索";
+"fileHistory.search.message" = "メッセージを検索";
+"fileHistory.search.hash" = "コミットハッシュを検索";
+"fileHistory.suggestions.authors" = "作成者";
+"fileHistory.suggestions.messages" = "メッセージ";
+"fileHistory.suggestions.committers" = "コミッター";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
 "blame.show" = "「%@」の Blame を表示";
@@ -927,6 +942,10 @@
 "files.error.destination" = "移動先がすでに存在します";
 "files.error.trashUnavailable" = "サーバーで使えるゴミ箱がありません";
 "files.error.trashedItems" = "ゴミ箱からファイルを戻せません";
+"files.error.partialDeletion" = "一部の項目を削除できませんでした";
+"files.error.partialDeletion.help" = "元の出力の先頭に示した項目はディスクから取り除かれましたが、削除はステージされていません。そのほかの項目は変更されていません。再試行する前に、更新して作業コピーを確認してください。";
+"files.error.unstagedDeletion" = "削除はステージされませんでした";
+"files.error.unstagedDeletion.help" = "元の出力の先頭に示した項目はすべてディスクから取り除かれましたが、追跡中のファイルの削除はステージされていません。作業コピーでこれらの削除をステージするか、元の出力で原因を確認してください。";
 "files.doubleClick" = "作業コピーのファイルをダブルクリック：";
 "files.doubleClick.openFile" = "デフォルトのアプリケーションで開く";
 "files.doubleClick.openDiff" = "比較ツールを開く";
@@ -997,6 +1016,7 @@
 "history.search.before" = "より前";
 "history.search.range" = "の範囲内";
 "history.search.to" = "〜";
+"history.search.since" = "%@ 以降";
 "history.reveal.notFound" = "コミット %@ はこの履歴にありません。";
 "history.reveal.slow" = "さらにコミットを読み込む";
 "history.reveal.slow.submit" = "読み込む";
@@ -1023,6 +1043,7 @@
 "history.gpgUser" = "GPG ユーザ";
 "history.gpgKey" = "GPG 鍵";
 "history.gpgStatus" = "GPG 状態";
+"history.signingKey" = "署名鍵";
 "history.signingStatus" = "署名の状態";
 "history.changeset" = "変更セット";
 "history.tree" = "ツリー";
@@ -1051,6 +1072,12 @@
 "export.prompt" = "書き出す";
 "export.nameLabel" = "名前：";
 "export.files" = "ファイルを書き出す";
+"export.exists.title" = "項目はすでに存在します";
+"export.exists.one" = "「%1$@」はすでに「%2$@」にあります。上書きしますか？";
+"export.exists" = "%1$ld 個の項目はすでに「%2$@」にあります。上書きしますか？";
+"export.overwrite" = "上書き";
+"export.error.partial" = "一部の項目を書き出せませんでした";
+"export.error.partial.help" = "ほかの項目は書き出されました。詳細に示した項目は書き出し先のフォルダに書き込めませんでした。フォルダに書き込めるか確認してから、もう一度お試しください。";
 "export.menu" = "リビジョンを書き出す…";
 "export.menuFrom" = "「%@」からファイルを書き出す…";
 "patch.title" = "パッチを保存";
@@ -1155,7 +1182,7 @@
 "rewrite.edit.button" = "編集";
 "rewrite.drop.button" = "削除";
 "rewrite.move.button" = "移動";
-"rewrite.autosquash.button" = "自動スカッシュ";
+"rewrite.autosquash.button" = "自動スカッシュ…";
 "rewrite.rebaseOnto.button" = "リベース";
 "rewrite.revert.button" = "リバート";
 "rewrite.cherryPick.button" = "チェリーピック";
@@ -1259,6 +1286,11 @@
 "sync.step.fetch" = "フェッチ中…";
 "sync.step.pull" = "プル中…";
 "sync.step.push" = "プッシュ中…";
+"workspaceProgress.checkoutBranch" = "「%@」をチェックアウト中…";
+"workspaceProgress.checkoutRevision" = "リビジョン「%@」をチェックアウト中…";
+"workspaceProgress.merge" = "マージ中…";
+"workspaceProgress.rebase" = "リベース中…";
+"workspaceProgress.reset" = "HEAD をリセット中…";
 "sync.stopped" = "同期は「%1$@」で停止しました。完了した手順：%2$@。";
 "sync.stoppedFirst" = "同期は「%@」で停止しました。完了した手順はありません。";
 "settings.autoFetch" = "リモートリポジトリを自動でフェッチ：";
@@ -1573,7 +1605,7 @@
 "rewrite.menu.revertGeneric" = "リバート…";
 "rewrite.menu.cherryPick" = "「%@」をチェリーピック…";
 "rewrite.menu.cherryPickMany" = "%ld 個のリビジョンをチェリーピック…";
-"rewrite.menu.rebaseOnto" = "「%@」を別の場所へリベース…";
+"rewrite.menu.rebaseOnto" = "'%@' を別の場所へリベース…";
 "rewrite.menu.rebaseOntoMany" = "%ld 個のリビジョンを別の場所へリベース…";
 "rewrite.menu.amend" = "「%@」を修正";
 "rewrite.menu.edit" = "「%@」を編集";
@@ -1585,6 +1617,7 @@
 "history.createBranch" = "「%@」から新しいブランチを作成…";
 "history.createBranchGeneric" = "新しいブランチを作成…";
 "history.rollback" = "ロールバック";
+"history.diffTool" = "比較ツール";
 
 /* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
 "sync.quickFetchNamed" = "「%@」をクイックフェッチ";
@@ -1609,7 +1642,8 @@
 "branch.moveHere" = "ここへ移動";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash" = "このブランチには fixup!、squash!、amend! の付いたコミットがあります。";
+"history.autosquash.one" = "このブランチには fixup!、squash!、amend! の付いたコミットが %ld 件あります。";
+"history.autosquash" = "このブランチには fixup!、squash!、amend! の付いたコミットが %ld 件あります。";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "取り消す";
 "menu.redo" = "やり直す";
@@ -1788,6 +1822,7 @@
 "externalTool.compare.theirsToBase" = "相手のバージョンと共通の祖先";
 "externalTool.openDiffTool" = "比較ツールを開く";
 "externalTool.openDiffAt" = "「%1$@」のリビジョン「%2$@」を比較ツールで開く";
+"externalTool.openDiffItemsAt" = "%1$ld 項目のリビジョン「%2$@」を比較ツールで開く";
 "externalTool.mergeIn" = "%@ でマージ";
 "externalTool.chooseMergeTool" = "マージツールを選択";
 "files.openWith" = "このアプリケーションで開く";

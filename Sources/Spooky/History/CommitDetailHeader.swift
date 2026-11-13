@@ -39,102 +39,204 @@ struct CommitDetailBar: View {
 
 // MARK: - CommitMetadataView
 
-/// 提交详情的头部：标签与值两列，右侧作者头像，提交人邮箱不同时再加提交人头像；可在摘要与全部之间切换。
+/// 提交详情的头部：标签与值两列，右侧是提交人与作者的头像，右上角的三角在展开与收起之间切换。
 struct CommitMetadataView: View {
+    /// 头部的一行：文字值或引用标记。
+    enum Row: Equatable {
+        /// 标签的资源键与可选中的值。
+        case text(key: String, value: String)
+
+        /// 指向这个提交的引用标记。
+        case refs
+    }
+
+    /// 保存展开状态的偏好键，所有窗口与重启后共用。
+    static let expandedKey = "commitDetailHeaderExpanded"
+
     /// 已从列表读取的提交记录。
     let commit: HistoryCommit
 
     /// 校验过的签名；还没有结果或没有签名时不显示签名行。
     let signature: CommitSignature?
 
-    /// 摘要和全部信息之间切换。
-    @State
-    private var expanded = false
+    /// 指向这个提交的引用，随引用快照变化。
+    let references: [RepositoryReference]
 
-    /// 信息列与头像列顶端对齐，头像距右 20 pt。
+    /// HEAD 是否指向这个提交。
+    let isHead: Bool
+
+    /// 校验标签签名用的执行器。
+    let runner: GitRunner?
+
+    /// 展开时显示全部字段；没有保存过时展开。
+    @AppStorage(Self.expandedKey)
+    private var expanded = true
+
+    /// 信息区上 8、下 4、左右 0，放在左右各 20 pt 的详情容器里；三角距顶、距右 8 pt。
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Grid(alignment: .leading, horizontalSpacing: 4, verticalSpacing: 4) {
-                rows
+                ForEach(Array(rows.enumerated()), id: \.offset) {
+                    row($0.element)
+                }
             }
 
             Spacer(minLength: 4)
 
             avatars
-
-            Button {
-                expanded.toggle()
-            } label: {
-                Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                    .frame(width: 13, height: 13)
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel(AppLocalization.text("history.metadata"))
         }
-        .padding(.leading, 20)
-        .padding(.trailing, 8)
         .padding(.top, 8)
         .padding(.bottom, 4)
+        .padding(.horizontal, CommitDetailView.contentInset)
         .font(.system(size: 12))
-    }
-
-    /// 摘要只有作者、提交日期与哈希；全部信息再加作者日期、提交人、树与父提交。
-    @ViewBuilder
-    private var rows: some View {
-        row("history.author", commit.author + " <" + commit.authorEmail + ">")
-        row("history.commitDate", commit.commitDate.formatted(date: .abbreviated, time: .standard))
-        row("history.hash", commit.id)
-
-        if expanded {
-            row("history.authorDate", commit.authorDate.formatted(date: .abbreviated, time: .standard))
-            row("history.committer", commit.committer + " <" + commit.committerEmail + ">")
-            row("history.treeHash", commit.tree)
-            row("history.parents", commit.parents.joined(separator: "\n"))
-        }
-
-        signatureRows
-    }
-
-    #warning(
-        "TODO: 详情头部签名行的取舍是推断：有姓名与邮箱的 OpenPGP 签名显示 GPG User / GPG Key / GPG Status，其余只显示 Signing Status。核实方式：分别打开 OpenPGP 与 SSH 签名的提交，对照详情头部出现哪些行；只影响这几行。"
-    )
-
-    /// 有签名时的签名行。
-    @ViewBuilder
-    private var signatureRows: some View {
-        if let signature, signature.status != .unsigned {
-            if signature.name != nil {
-                row("history.gpgUser", signature.signer)
-                row("history.gpgKey", signature.key)
-                row("history.gpgStatus", signature.status.title)
-            } else {
-                row("history.signingStatus", signature.status.title)
-            }
+        .overlay(alignment: .topTrailing) {
+            DisclosureTriangleButton(isExpanded: $expanded)
+                .frame(width: 13, height: 13)
+                .padding(8)
+                .accessibilityLabel(AppLocalization.text("history.metadata"))
         }
     }
 
-    /// 作者头像 80 pt；提交人邮箱与作者不同时再加提交人头像。
+    /// 当前开合状态下的行；签名行只在展开时接在后面。
+    private var rows: [Row] {
+        let rows = Self.rows(
+            commit,
+            expanded: expanded,
+            hasReferences: isHead || !references.isEmpty
+        )
+
+        guard expanded else {
+            return rows
+        }
+
+        return rows + Self.signatureRows(signature).map { .text(key: $0.key, value: $0.value) }
+    }
+
+    /// 提交人头像在左、作者头像在右，各 80 pt；提交人邮箱与作者相同时只有作者头像。
     private var avatars: some View {
         HStack(spacing: 8) {
-            InitialsAvatar(name: commit.author, email: commit.authorEmail, size: 80)
-
             if commit.committerEmail.caseInsensitiveCompare(commit.authorEmail) != .orderedSame {
                 InitialsAvatar(name: commit.committer, email: commit.committerEmail, size: 80)
             }
+
+            InitialsAvatar(name: commit.author, email: commit.authorEmail, size: 80)
         }
         .padding(.trailing, 12)
     }
 
-    /// 标签用三级文字色，值用二级文字色，长哈希允许换行。
-    private func row(_ key: String, _ value: String) -> some View {
-        GridRow(alignment: .top) {
-            Text(AppLocalization.text(key))
-                .foregroundStyle(.tertiary)
+    /// 头部的行：展开时依次是作者、作者日期、提交人、提交人日期、引用、哈希、每个父提交一行与树哈希，
+    /// 收起时只有作者、作者日期与引用；没有引用时不列引用行。
+    ///
+    /// - Parameters:
+    ///   - commit: 详情显示的提交。
+    ///   - expanded: 头部是否展开。
+    ///   - hasReferences: 是否有引用指向这个提交，HEAD 也算。
+    ///   - locale: 日期所用的语言区域，测试固定。
+    ///   - timeZone: 日期所用的时区，测试固定。
+    static func rows(
+        _ commit: HistoryCommit,
+        expanded: Bool,
+        hasReferences: Bool,
+        locale: Locale = .autoupdatingCurrent,
+        timeZone: TimeZone = .autoupdatingCurrent
+    ) -> [Row] {
+        let date = { headerDate($0, locale: locale, timeZone: timeZone) }
+        let refs: [Row] = hasReferences ? [.refs] : []
 
-            Text(value)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
+        let author: [Row] = [
+            .text(key: "history.author", value: commit.author + " <" + commit.authorEmail + ">"),
+            .text(key: "history.authorDate", value: date(commit.authorDate)),
+        ]
+
+        guard expanded else {
+            return author + refs
         }
+
+        let committer: [Row] = [
+            .text(key: "history.committer", value: commit.committer + " <" + commit.committerEmail + ">"),
+            .text(key: "history.commitDate", value: date(commit.commitDate)),
+        ]
+
+        let hashes: [Row] =
+            [.text(key: "history.hash", value: commit.id)]
+                + commit.parents.map { .text(key: "history.parentHash", value: $0) }
+                + [.text(key: "history.treeHash", value: commit.tree)]
+
+        return author + committer + refs + hashes
+    }
+
+    /// 头部的日期：完整日期、时间与时区，按语言区域书写，不随提交列表的日期格式变化。
+    ///
+    /// - Parameters:
+    ///   - date: 作者或提交人日期。
+    ///   - locale: 语言区域。
+    ///   - timeZone: 时区。
+    static func headerDate(_ date: Date, locale: Locale, timeZone: TimeZone) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.timeZone = timeZone
+        formatter.dateStyle = .long
+        formatter.timeStyle = .long
+
+        return formatter.string(from: date)
+    }
+
+    /// 签名行的标签键与值：有姓名与邮箱的 OpenPGP 签名是 GPG User、GPG Key、GPG Status，
+    /// SSH 与其它签名是 Signing Key、Signing Status；没有短标识时不写密钥行，没有签名时没有签名行。
+    static func signatureRows(_ signature: CommitSignature?) -> [(key: String, value: String)] {
+        guard let signature, signature.status != .unsigned else {
+            return []
+        }
+
+        let keyID = signature.shortKeyID
+        let status = signature.status.title
+
+        if !signature.isSSH, signature.name != nil, signature.email != nil {
+            return [("history.gpgUser", signature.signer)]
+                + (keyID.map { [("history.gpgKey", $0)] } ?? [])
+                + [("history.gpgStatus", status)]
+        }
+
+        return (keyID.map { [("history.signingKey", $0)] } ?? [])
+            + [("history.signingStatus", status)]
+    }
+
+    /// 一行：标签用三级文字色；值用二级文字色，单行、可选中、尾部截断，引用行是最宽 100、高 16 的引用标记。
+    @ViewBuilder
+    private func row(_ row: Row) -> some View {
+        switch row {
+        case .text(let key, let value):
+            GridRow(alignment: .firstTextBaseline) {
+                label(key)
+
+                Text(value)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .textSelection(.enabled)
+            }
+
+        case .refs:
+            GridRow(alignment: .center) {
+                label("history.refs")
+
+                HistoryRefBadges(
+                    references: references,
+                    isHead: isHead,
+                    selected: false,
+                    runner: runner,
+                    maxWidth: 100
+                )
+                .frame(height: 16)
+            }
+        }
+    }
+
+    /// 行首的标签。
+    private func label(_ key: String) -> some View {
+        Text(AppLocalization.text(key))
+            .foregroundStyle(.tertiary)
+            .lineLimit(1)
     }
 }
 

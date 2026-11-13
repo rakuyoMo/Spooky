@@ -127,7 +127,10 @@ struct BranchesReviewTests {
         session.history.loadBaseComparison()
 
         #expect(session.history.baseComparison == nil)
-        #expect(session.history.rows.allSatisfy { $0.commit != nil })
+
+        // 只剩提交与日期分组的标题，没有分叉点与没有新提交的行
+        #expect(!session.history.rows.contains(.forkPoint("main")))
+        #expect(!session.history.rows.contains(.noNewCommits("main")))
 
         try await checkDefaultBase(session, runner: runner)
     }

@@ -10,17 +10,28 @@ import Testing
 /// 历史列表的搜索、视图设置、日期分组、日期格式、窗口副标题与回到提交。
 @MainActor
 struct HistoryListTests {
+    /// 没有保存过时显示提交图、按日期排序、按月分组，保存过的值不被默认值覆盖；
     /// 显示提交图时总按拓扑序；两种排序都勾选时按日期；分组只在按日期排序时生效。
-    @Test("视图设置组成历史查询")
+    @Test("视图设置的默认值与历史查询")
     func viewSettings() throws {
         let (defaults, directory) = try Self.temporaryDefaults()
         defer { try? FileManager.default.removeItem(at: directory) }
 
-        // 没有设置过时显示提交图、按拓扑序、不分组
+        // 没有设置过：显示提交图，拓扑序与日期都勾选、以日期为准，按月分组
         var settings = HistoryViewSettings(defaults: defaults)
+
         #expect(settings.showsGraph)
+        #expect(settings.sortsByTopoOrder && settings.sortsByDate)
+        #expect(settings.order == .date)
+        #expect(settings.grouping == .month)
+
+        // 保存过不按日期排序、不分组：默认值不生效，菜单勾的是不分组
+        defaults.set(false, forKey: HistoryViewSettings.dateOrderKey)
+        defaults.set(HistoryGrouping.ungrouped.rawValue, forKey: HistoryViewSettings.groupingKey)
+        settings = HistoryViewSettings(defaults: defaults)
+
         #expect(settings.order == .topological)
-        #expect(settings.grouping == .ungrouped)
+        #expect(settings.selectedGrouping == .ungrouped)
 
         // 隐藏提交图且两种排序都不勾选时用 Git 默认的顺序；分组的设置不生效
         defaults.set(false, forKey: HistoryViewSettings.showGraphKey)
@@ -126,6 +137,36 @@ struct HistoryListTests {
         #expect(HistorySearchSuggestions.fileMatches("HIST", in: paths).last == "docs/hist/notes.md")
         #expect(HistorySearchSuggestions.fileMatches("历史", in: paths) == ["目录/历史 说明.md"])
         #expect(HistorySearchSuggestions.fileMatches("zzz", in: paths).isEmpty)
+    }
+
+    /// 整段输入是日期时给出从那一天起的建议，只有一部分是日期或不是日期时没有；
+    /// 接受后工具栏的文字条件换成从那一天起的日期条件，其它条件不变。
+    @Test("Since Dates 建议")
+    func sinceSuggestion() throws {
+        let suggestion = try #require(HistorySearchSuggestions.sinceSuggestion(for: "2026-01-05"))
+        let date = try #require(suggestion.sinceDate)
+
+        #expect(
+            Calendar.current.dateComponents([.year, .month, .day], from: date)
+                == DateComponents(year: 2026, month: 1, day: 5)
+        )
+
+        // 说明里夹着日期、哈希与纯数字都不是日期
+        for text in ["fix tomorrow", "deadbeef", "1234", " "] {
+            #expect(HistorySearchSuggestions.sinceSuggestion(for: text) == nil)
+        }
+
+        // 接受建议：第一个文字条件换成日期条件，后面的条件留着
+        let history = RepositoryHistoryState()
+        history.setSearchText("2026-01-05")
+        history.addSearchCondition()
+        history.searchSince(date)
+
+        let conditions = history.searchConditions
+
+        #expect(conditions.map(\.kind) == [.date, .message])
+        #expect(conditions[0].relation == .after && conditions[0].date == date)
+        #expect(history.primarySearchText.isEmpty)
     }
 
     /// 按邮箱读取的头像：读到时显示图片，没有头像或读取失败时记下、之后不再请求；

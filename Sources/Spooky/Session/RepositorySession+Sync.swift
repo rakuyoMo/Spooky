@@ -148,7 +148,8 @@ extension RepositorySession {
         return history.branches.first { $0.id == "refs/heads/" + head }
     }
 
-    /// 同步当前分支与所选远端分支：依次获取、拉取、推送，Activity 的状态随步骤变化，失败时说明停在哪一步。
+    /// 同步当前分支与所选远端分支：依次获取、拉取、推送，Activity 的状态随步骤变化，失败时说明停在哪一步；
+    /// 拉取那一步工作区显示整页进度。
     ///
     /// - Parameters:
     ///   - remote: 远端名。
@@ -158,15 +159,27 @@ extension RepositorySession {
     func sync(remote: String, branch: String, options: SyncOptions) -> Bool {
         // 拉取与推送各记一条，标题都只写远端分支；当前分支与它不同名时，传给 git 的仍是从当前分支推过去的 refspec
         let progress = SyncProgress(push: .push(remote, refspec: branch))
+        let request = generation
+        let pulling = AppLocalization.text("sync.step.pull")
 
         return performGit(
-            { runner, output in
+            { [weak self] runner, output in
+                let session = self
+
                 try await RepositorySync(runner: runner)
                     .sync(
                         remote: remote,
                         branch: branch,
                         options: options,
-                        onStep: { step in await progress.begin(step) },
+                        onStep: { step in
+                            await progress.begin(step)
+
+                            // 整页进度只在拉取这一步显示，获取与推送不改动工作区
+                            await session?.showWorkspaceProgress(
+                                step == .pull ? pulling : nil,
+                                request: request
+                            )
+                        },
                         onOutput: output
                     )
             },
@@ -293,6 +306,7 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("sync.quickPull"),
+            progress: AppLocalization.text("sync.step.pull"),
             target: .pull(source, refspec: refspec),
             offersAutoStash: true
         )
@@ -360,6 +374,7 @@ extension RepositorySession {
         performGit(
             mergeAction(target, options: SyncPreferences.merge),
             title: AppLocalization.text("sync.quickMerge"),
+            progress: AppLocalization.text("workspaceProgress.merge"),
             offersAutoStash: true,
             undo: .reversible
         )
@@ -377,6 +392,7 @@ extension RepositorySession {
                 try await RepositorySync(runner: runner).rebase(onto: target, onOutput: output)
             },
             title: AppLocalization.text("sync.quickRebase"),
+            progress: AppLocalization.text("workspaceProgress.rebase"),
             offersAutoStash: true,
             undo: .reversible
         )

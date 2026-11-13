@@ -79,11 +79,11 @@
 
 "loading.status" = "Actualisation de l’état…";
 
-"branch.unborn" = "%@ (aucun commit)";
-
-"branch.detached" = "%@ (HEAD détachée)";
+"branch.detached" = "%@ (détaché)";
 
 "branch.noHead" = "Aucune branche HEAD";
+
+"branch.noHeadBranch" = "(Aucune branche HEAD)";
 
 "branch.noTracking" = "Aucun suivi";
 
@@ -129,7 +129,7 @@
 
 "status.unchanged" = "Inchangé";
 
-"status.description" = "Index : %@ ; arbre de travail : %@";
+"status.description" = "Modifications indexées à valider : %@\nModifié mais non indexé : %@";
 
 "detail.empty.title" = "Aucun fichier sélectionné";
 
@@ -276,6 +276,10 @@
 
 "working.stage" = "Indexer";
 "working.unstage" = "Désindexer";
+"working.stage.single" = "Indexer « %@ »";
+"working.stage.multiple" = "Indexer %ld éléments";
+"working.unstage.single" = "Désindexer « %@ »";
+"working.unstage.multiple" = "Désindexer %ld éléments";
 "working.stageAll" = "Tout indexer";
 "working.unstageAll" = "Tout désindexer";
 "working.commit" = "Valider";
@@ -325,6 +329,7 @@
 "working.discardLine" = "Abandonner la ligne";
 "working.discardLines" = "Abandonner les lignes";
 "working.discard" = "Abandonner les modifications";
+"working.discard.menu" = "Abandonner les modifications locales…";
 "working.discard.title" = "Abandonner les modifications locales";
 "working.discardAll.title" = "Abandonner toutes les modifications locales";
 "working.discardAll.submit" = "Abandonner toutes les modifications";
@@ -364,23 +369,26 @@
 "history.medium" = "Taille moyenne pour la vue des commits";
 "history.small" = "Petite taille pour la vue des commits";
 "history.viewOptions" = "Options d’affichage de l’historique";
+"history.viewOptions.help" = "Modifier les options d’affichage";
 "history.empty" = "Aucun commit";
 "history.loading" = "Chargement des commits…";
-"history.copyHash" = "Copier les hashs des commits";
+"history.copyHash" = "Copier le hash du commit dans le presse-papiers";
+"history.copyHashes" = "Copier %ld hashs de commits dans le presse-papiers";
+"history.copyInfo" = "Copier les infos du commit dans le presse-papiers";
 "history.changes" = "%ld fichiers modifiés";
 "history.noSelection" = "Aucun commit sélectionné";
 "history.multiple" = "%ld commits sélectionnés";
 "history.expandAll" = "Tout développer";
 "history.collapseAll" = "Tout condenser";
-"history.back" = "Revenir à l’historique";
 "history.metadata" = "Afficher les métadonnées du commit";
 "history.author" = "Auteur";
 "history.authorDate" = "Date d’auteur";
 "history.committer" = "Validateur";
 "history.commitDate" = "Date de validation";
+"history.refs" = "Références";
 "history.hash" = "Hash du commit";
 "history.treeHash" = "Hash de l’arbre";
-"history.parents" = "Hashs des parents";
+"history.parentHash" = "Hash du parent";
 "history.showHead" = "Afficher la branche HEAD";
 "history.diffs" = "Diffs de l’ensemble de modifications";
 "history.autoExpand.never" = "Ne jamais développer automatiquement";
@@ -543,8 +551,7 @@
 "recovery.notStarted" = "L’opération « %@ » n’a pas démarré, car la connexion au serveur était indisponible. Rien n’a été modifié sur le serveur.";
 "recovery.unborn" = "aucun commit";
 "dialog.blocked" = "Une autre opération est en cours sur ce dépôt, ou le serveur est déconnecté. Vos paramètres sont conservés ; réessayez lorsque le dépôt sera disponible.";
-"working.clean" = "Aucune modification locale";
-"history.loadingChanges" = "Chargement des fichiers modifiés…";
+"history.loadingChanges" = "Chargement des modifications…";
 "repositories.unavailableShort" = "Indisponible";
 
 /* 主题管理。 */
@@ -596,6 +603,7 @@
 "stash.snapshot.help" = "Met vos modifications locales de côté dans un remisage sans toucher à la copie de travail.";
 "stash.snapshotMenu" = "Créer un instantané…";
 "stash.quickSnapshotMenu" = "Créer un instantané immédiat";
+"stash.quickSaveMenu" = "Remiser immédiatement";
 "stash.savePartial" = "Remisage partiel";
 "stash.savePartial.help" = "Remise uniquement les fichiers sélectionnés ; le reste de la copie de travail reste inchangé.";
 "stash.snapshotPartial" = "Instantané partiel";
@@ -696,6 +704,8 @@
 "conflict.restoreUnmerged.many" = "Restaurer la version non fusionnée de %d éléments";
 "conflict.restoreUnmerged.one" = "Restaurer la version non fusionnée de « %@ »";
 "conflict.restoreVersion" = "Restaurer la version de « %@ »";
+"conflict.resolveUsingVersion.applied" = "Résoudre avec la version du patch ou remisage appliqué";
+"conflict.restoreVersion.applied" = "Restaurer la version du patch ou remisage appliqué";
 "conflict.result" = "Version modifiée à la main ou fusionnée";
 "conflict.step" = "Étape %d sur %d";
 "conflict.step.applying" = "Étape %d sur %d : application de « %@ »";
@@ -726,6 +736,8 @@
 "conflict.compareBase" = "Comparer avec l’ancêtre commun";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "Historique du fichier";
+"fileHistory.scope.message" = "Message";
+"fileHistory.scope.hash" = "Hash du commit";
 "fileHistory.showCommit" = "Afficher le commit";
 "fileHistory.oneCommit" = "1 commit";
 "fileHistory.commits" = "%ld commits";
@@ -743,10 +755,13 @@
 "fileHistory.restore.remote" = "« %@ » sera écrasé par la révision %@ sur le serveur dans %@. Les modifications indexées et non indexées de ce fichier seront abandonnées ; s’il n’existe pas dans cette révision, il sera supprimé du serveur.";
 "fileHistory.scope.author" = "Auteur";
 "fileHistory.scope.committer" = "Validateur";
-"fileHistory.scope.revision" = "Révision";
 "fileHistory.search.author" = "Rechercher un auteur";
 "fileHistory.search.committer" = "Rechercher un validateur";
-"fileHistory.search.revision" = "Rechercher une révision";
+"fileHistory.search.message" = "Rechercher un message";
+"fileHistory.search.hash" = "Rechercher un hash de commit";
+"fileHistory.suggestions.authors" = "Auteurs";
+"fileHistory.suggestions.messages" = "Messages";
+"fileHistory.suggestions.committers" = "Validateurs";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
 "blame.show" = "Afficher le blame de « %@ »";
@@ -927,6 +942,10 @@
 "files.error.destination" = "La destination existe déjà";
 "files.error.trashUnavailable" = "Aucune corbeille n’est disponible sur le serveur";
 "files.error.trashedItems" = "Impossible de restaurer depuis la corbeille";
+"files.error.partialDeletion" = "Tous les éléments n’ont pas été supprimés";
+"files.error.partialDeletion.help" = "Les éléments listés au début de la sortie d’origine ont été retirés du disque, mais leur suppression n’a pas été indexée. Les autres éléments sont inchangés. Actualisez pour vérifier la copie de travail avant de réessayer.";
+"files.error.unstagedDeletion" = "La suppression n’a pas été indexée";
+"files.error.unstagedDeletion.help" = "Tous les éléments listés au début de la sortie d’origine ont été retirés du disque, mais la suppression des fichiers suivis n’a pas été indexée. Indexez la suppression dans la copie de travail, ou consultez la sortie d’origine pour en connaître la cause.";
 "files.doubleClick" = "Double-clic sur un fichier de la copie de travail :";
 "files.doubleClick.openFile" = "Ouvrir avec l’application par défaut";
 "files.doubleClick.openDiff" = "Ouvrir l’outil de comparaison";
@@ -997,6 +1016,7 @@
 "history.search.before" = "est avant";
 "history.search.range" = "est entre";
 "history.search.to" = "et";
+"history.search.since" = "Depuis le %@";
 "history.reveal.notFound" = "Le commit %@ n’est pas dans cet historique.";
 "history.reveal.slow" = "Charger plus de commits";
 "history.reveal.slow.submit" = "Charger";
@@ -1023,6 +1043,7 @@
 "history.gpgUser" = "Utilisateur GPG";
 "history.gpgKey" = "Clé GPG";
 "history.gpgStatus" = "État GPG";
+"history.signingKey" = "Clé de signature";
 "history.signingStatus" = "État de la signature";
 "history.changeset" = "Modifications";
 "history.tree" = "Arborescence";
@@ -1051,6 +1072,12 @@
 "export.prompt" = "Exporter";
 "export.nameLabel" = "Exporter sous :";
 "export.files" = "Exporter les fichiers";
+"export.exists.title" = "L’élément existe déjà";
+"export.exists.one" = "« %1$@ » existe déjà dans « %2$@ ». Voulez-vous l’écraser ?";
+"export.exists" = "%1$ld éléments existent déjà dans « %2$@ ». Voulez-vous les écraser ?";
+"export.overwrite" = "Écraser";
+"export.error.partial" = "Tous les éléments n’ont pas été exportés";
+"export.error.partial.help" = "Les autres éléments ont été exportés. Les éléments listés dans les détails n’ont pas pu être écrits dans le dossier de destination ; vérifiez que ce dossier est accessible en écriture, puis réessayez.";
 "export.menu" = "Exporter la révision…";
 "export.menuFrom" = "Exporter les fichiers de « %@ »…";
 "patch.title" = "Enregistrer le patch";
@@ -1155,7 +1182,7 @@
 "rewrite.edit.button" = "Modifier";
 "rewrite.drop.button" = "Supprimer";
 "rewrite.move.button" = "Déplacer";
-"rewrite.autosquash.button" = "Autosquash";
+"rewrite.autosquash.button" = "Autosquash…";
 "rewrite.rebaseOnto.button" = "Rebaser";
 "rewrite.revert.button" = "Revert";
 "rewrite.cherryPick.button" = "Cherry-pick";
@@ -1259,6 +1286,11 @@
 "sync.step.fetch" = "Récupération…";
 "sync.step.pull" = "Tirage…";
 "sync.step.push" = "Poussée…";
+"workspaceProgress.checkoutBranch" = "Basculement sur « %@ »…";
+"workspaceProgress.checkoutRevision" = "Extraction de la révision « %@ »…";
+"workspaceProgress.merge" = "Fusion…";
+"workspaceProgress.rebase" = "Rebasage…";
+"workspaceProgress.reset" = "Réinitialisation de HEAD…";
 "sync.stopped" = "La synchronisation s’est arrêtée à « %1$@ ». Étapes terminées : %2$@.";
 "sync.stoppedFirst" = "La synchronisation s’est arrêtée à « %@ ». Aucune étape n’a été terminée.";
 "settings.autoFetch" = "Récupérer automatiquement les dépôts distants :";
@@ -1573,7 +1605,7 @@
 "rewrite.menu.revertGeneric" = "Revert…";
 "rewrite.menu.cherryPick" = "Cherry-pick de « %@ »…";
 "rewrite.menu.cherryPickMany" = "Cherry-pick de %ld révisions…";
-"rewrite.menu.rebaseOnto" = "Rebaser « %@ » ailleurs…";
+"rewrite.menu.rebaseOnto" = "Rebaser '%@' ailleurs…";
 "rewrite.menu.rebaseOntoMany" = "Rebaser %ld révisions ailleurs…";
 "rewrite.menu.amend" = "Compléter « %@ »";
 "rewrite.menu.edit" = "Modifier « %@ »";
@@ -1585,6 +1617,7 @@
 "history.createBranch" = "Créer une branche à partir de « %@ »…";
 "history.createBranchGeneric" = "Créer une branche…";
 "history.rollback" = "Revenir ici";
+"history.diffTool" = "Comparer";
 
 /* 侧边栏右键菜单里按住 ⌥ 出现的快速操作，以及变基到所选分支、推送到指定位置与标签的比较。 */
 "sync.quickFetchNamed" = "Récupération rapide de « %@ »";
@@ -1609,7 +1642,8 @@
 "branch.moveHere" = "Déplacer ici";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash" = "Cette branche contient des commits marqués fixup!, squash! ou amend!.";
+"history.autosquash.one" = "Cette branche contient %ld commit marqué fixup!, squash! ou amend!.";
+"history.autosquash" = "Cette branche contient %ld commits marqués fixup!, squash! ou amend!.";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "Annuler";
 "menu.redo" = "Rétablir";
@@ -1788,6 +1822,7 @@
 "externalTool.compare.theirsToBase" = "Leur version et l’ancêtre commun";
 "externalTool.openDiffTool" = "Ouvrir l’outil de comparaison";
 "externalTool.openDiffAt" = "Ouvrir l’outil de comparaison pour « %1$@ » à la révision « %2$@ »";
+"externalTool.openDiffItemsAt" = "Ouvrir l’outil de comparaison pour %1$ld éléments à la révision « %2$@ »";
 "externalTool.mergeIn" = "Fusionner dans %@";
 "externalTool.chooseMergeTool" = "Choisir l’outil de fusion";
 "files.openWith" = "Ouvrir avec";

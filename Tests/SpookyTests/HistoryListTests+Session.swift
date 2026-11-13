@@ -198,8 +198,9 @@ extension HistoryListTests {
         #expect(history.selectedCommit == target)
     }
 
-    /// 工作区写出分支与改动数，分离 HEAD 时不写分支；历史写出所选引用与提交数，数到上限时写 “or more”。
-    @Test("工作区与历史的窗口副标题")
+    /// 工作区写出分支与改动数，分离 HEAD 时不写分支；历史写出所选引用与提交数，数到上限时写 “or more”；
+    /// Reflog 看 HEAD 时只写 Reflog，看分支时写出分支名。
+    @Test("工作区、历史与 Reflog 的窗口副标题")
     func subtitles() async throws {
         let fixture = try await Self.makeSession(
             commits: ["first", "second"],
@@ -239,6 +240,15 @@ extension HistoryListTests {
             controller.repositorySubtitle
                 == AppLocalization.text("history.subtitle.more", "main, topic", RepositoryHistoryState.countLimit)
         )
+
+        // Reflog 看 HEAD 时只写 Reflog，看分支时写出分支名
+        session.activeView = .reflog
+        #expect(controller.repositorySubtitle == AppLocalization.text("reflog.title"))
+
+        session.reflog.show(reference: "refs/heads/topic")
+        #expect(controller.repositorySubtitle == AppLocalization.text("reflog.subtitle", "topic"))
+
+        await untilFinished { session.reflog.activeTasks }
 
         // 分离 HEAD 时工作区不写分支
         _ = try await fixture.runner.run(["checkout", "-q", "--detach", "HEAD"])

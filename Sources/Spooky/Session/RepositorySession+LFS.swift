@@ -36,9 +36,25 @@ enum LFSTransfer {
 // MARK: - Availability
 
 extension RepositorySession {
-    /// 能否把这些文件交给 LFS 逐个跟踪：至少一个文件，且不含目录。
-    func canTrackLFS(_ entries: [StatusEntry]) -> Bool {
-        canWrite && !entries.isEmpty && !entries.contains { $0.path.hasSuffix("/") }
+    /// 能否把这些文件交给 LFS 逐个跟踪：仓库启用了 Git LFS，至少一个文件，且不含目录。
+    ///
+    /// - Parameters:
+    ///   - entries: 作用的条目。
+    ///   - lfsEnabled: 仓库是否启用了 Git LFS，由 ``isLFSEnabled()`` 读出。
+    func canTrackLFS(_ entries: [StatusEntry], lfsEnabled: Bool) -> Bool {
+        lfsEnabled && canWrite && !entries.isEmpty && !entries.contains { $0.path.hasSuffix("/") }
+    }
+
+    /// 仓库是否启用了 Git LFS，判断与仓库设置的 Git LFS 段相同；不在轮询里读取，打开 LFS 菜单时读一次。
+    ///
+    /// 没有仓库、读取失败或读取期间换了仓库时为 false。
+    func isLFSEnabled() async -> Bool {
+        guard let runner else { return false }
+
+        let request = generation
+        let enabled = (try? await RepositoryLFS(runner: runner).isEnabled()) ?? false
+
+        return generation == request && enabled
     }
 
     /// 按所选文件的扩展名跟踪时写入的规则，如 `*.psd`；目录与没有扩展名的文件不产生规则。

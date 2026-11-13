@@ -4,26 +4,33 @@ import SwiftUI
 // MARK: - FileStatusView
 
 /// 暂存区与工作区状态并排显示，字母沿用 Git 状态码。
+///
+/// 两枚 16 × 16 的徽标固定占 42 × 16 的区域：左边一枚贴区域左缘，两枚相隔 6；没有变化的一侧留空位。
 struct FileStatusView: View {
     /// 原始状态条目。
     let entry: StatusEntry
 
-    /// 文件标记了 assume-unchanged，显示灰色徽标与对应说明。
+    /// 文件标记了 assume-unchanged，悬停说明 Git 不检查它的改动。
     var assumeUnchanged = false
 
-    /// 辅助技术与悬停提示使用本地化全称；冲突文件说明冲突类型。
-    private var description: String {
-        #warning("TODO: 悬停冲突文件的状态列，核对提示是否为 “File requires merging: <冲突类型>”；只影响冲突文件行的悬停提示")
-
+    /// 辅助技术与悬停提示使用本地化全称：普通文件分两行写出已暂存与未暂存的变化，冲突文件只说明冲突类型。
+    var description: String {
         if assumeUnchanged {
             return AppLocalization.text("files.assumeUnchanged.status")
         }
 
         switch entry.kind {
-        case .untracked: return AppLocalization.text("status.untracked")
         case .ignored: return AppLocalization.text("status.ignored")
+
         case .conflicted: return AppLocalization.text("conflict.toolTip", (entry.conflictKind ?? .bothModified).title)
+
         case .unchanged: return AppLocalization.text("status.unchanged")
+
+        // 未跟踪的文件两行都写未跟踪
+        case .untracked:
+            let untracked = AppLocalization.text("status.untracked")
+            return AppLocalization.text("status.description", untracked, untracked)
+
         case .tracked:
             return AppLocalization.text(
                 "status.description",
@@ -33,40 +40,46 @@ struct FileStatusView: View {
         }
     }
 
-    /// 最多两枚状态徽标与可访问的完整说明。
+    /// 左右两枚状态徽标与可访问的完整说明；未跟踪与被忽略的文件只在右边一枚的位置画徽标，没有改动的文件不画。
     var body: some View {
-        HStack(spacing: 3) {
-            switch entry.kind {
-            case .untracked:
-                Self.badge("?")
-
-            case .ignored:
-                Self.badge("!")
-
-            case .conflicted:
-                Self.badge("U")
-
-            // 没有改动的文件不画徽标；assume-unchanged 用 ls-files -v 的小写标记 h
-            case .unchanged:
-                #warning("TODO: 打开 Show Assume-Unchanged Items，核实 assume-unchanged 文件的徽标字母，目前取 ls-files -v 的小写 h；只影响这类文件的徽标文字")
-                Self.badge(assumeUnchanged ? "h" : "")
-
-            case .tracked:
-                Self.badge(entry.staged.map { String($0.rawValue) } ?? "")
-                Self.badge(entry.unstaged.map { String($0.rawValue) } ?? "")
-            }
+        HStack(spacing: 6) {
+            Self.badge(codes.staged)
+            Self.badge(codes.unstaged)
         }
+        .frame(width: 42, height: 16, alignment: .leading)
         .help(description)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(description)
     }
 
+    /// 左右两枚徽标的字母，空字符串表示这一侧没有徽标。
+    var codes: (staged: String, unstaged: String) {
+        switch entry.kind {
+        case .untracked: ("", "?")
+
+        case .ignored: ("", "!")
+
+        case .unchanged: ("", "")
+
+        // 冲突文件的两枚是 Git 的未合并两码，如 AA、UU、DU，与普通文件的暂存区 / 工作区两列含义不同
+        case .tracked, .conflicted:
+            (
+                entry.staged.map { String($0.rawValue) } ?? "",
+                entry.unstaged.map { String($0.rawValue) } ?? ""
+            )
+        }
+    }
+
     /// 状态字母不会仅靠颜色传达差异；无改动的一侧保留空位。
-    static func badge(_ code: String) -> some View {
+    ///
+    /// - Parameters:
+    ///   - code: 状态字母，空字符串表示无改动。
+    ///   - size: 徽标的边长。
+    static func badge(_ code: String, size: CGFloat = 16) -> some View {
         Text(code)
             .font(.custom("Monaco", size: 10))
             .foregroundStyle(.white)
-            .frame(width: 17, height: 16)
+            .frame(width: size, height: size)
             .background(code.isEmpty ? .clear : color(code), in: RoundedRectangle(cornerRadius: 2))
     }
 
@@ -103,10 +116,13 @@ struct FileStatusView: View {
 
 // MARK: - FileChangeStatusView
 
-/// 提交里一个文件的状态徽标：字母、尺寸与底色和工作区的徽标相同，只有一枚；辅助技术读出状态全称。
+/// 提交里一个文件的状态徽标：字母与底色和工作区的徽标相同，默认尺寸也相同，只有一枚；辅助技术读出状态全称。
 struct FileChangeStatusView: View {
     /// Git raw 格式的状态字母，如 `M`、`A`。
     let code: String
+
+    /// 徽标的边长；整页提交详情的文件行用 18。
+    var size: CGFloat = 16
 
     /// 认得的字母读出本地化全称，认不得的照原样读出字母。
     private var description: String {
@@ -119,7 +135,7 @@ struct FileChangeStatusView: View {
 
     /// 一枚状态徽标；认不得的字母落在灰色底上。
     var body: some View {
-        FileStatusView.badge(code)
+        FileStatusView.badge(code, size: size)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(description)
     }

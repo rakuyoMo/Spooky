@@ -208,7 +208,7 @@ extension ReflogListView {
 
 // MARK: - ReflogRow
 
-/// 69 pt 的记录行：上行是短哈希、动作标记与日期，下行是记录的说明，最多两行。
+/// 69 pt 的记录行：上行是短哈希、动作标记与带时间的日期，下行是记录的说明，最多两行。
 private struct ReflogRow: View {
     /// 当前记录。
     let entry: ReflogEntry
@@ -222,7 +222,7 @@ private struct ReflogRow: View {
         prominence == .increased
     }
 
-    /// 日期按提交日期的显示格式。
+    /// 日期按提交日期的显示格式，后面带时间。
     @AppStorage(CommitDateFormat.key)
     private var dateFormat = CommitDateFormat.absolute
 
@@ -238,8 +238,8 @@ private struct ReflogRow: View {
                 badge
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                // 日期贴着行的右缘，始终完整显示
-                Text(dateFormat.string(from: entry.date))
+                // 日期与时间贴着行的右缘，始终完整显示
+                Text(dateFormat.stringWithTime(from: entry.date))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .fixedSize()

@@ -34,6 +34,10 @@ struct UndoInverse: Sendable {
     /// 新建了它才记一条，已是最新时不碰撤销记录，更新了远端已有的引用时按不能撤销处理。为 nil 时照常登记。
     var pushedReference: (remote: String, reference: String)? = nil
 
+    /// 收集原操作移进废纸篓的项，撤销时据此移回：原操作在它之下执行，有的项废纸篓命令没有报告位置时按不能撤销处理。
+    /// 为 nil 时不收集。
+    var trashLog: TrashLog? = nil
+
     /// 撤销时执行，输出经第二个参数送进 Activity：先核对前提，仓库已不是操作后的样子时抛出
     /// ``RepositoryUndoError/repositoryChanged``，不做任何改动。
     let undo: @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void

@@ -112,6 +112,35 @@ extension HistoryListTests {
         ])
     }
 
+    /// Reflog 行在日期后带系统的短时间：绝对写法是短日期加短时间；相对写法今天、昨天写说法，更早的日子写完整日期，
+    /// 日期与时间之间的连接由系统按语言给出。相对写法按运行时的当天判断，日子与时刻都取日历所在的时区。
+    @Test("Reflog 行带时间的两种写法")
+    func reflogDateFormats() throws {
+        let newYork = Self.calendar("en_US", timeZone: "America/New_York")
+        let today = try #require(newYork.date(bySettingHour: 10, minute: 5, second: 0, of: Date()))
+        let yesterday = try #require(newYork.date(byAdding: .day, value: -1, to: today))
+
+        let earlier = try #require(newYork.date(from: DateComponents(
+            year: 2025,
+            month: 3,
+            day: 4,
+            hour: 15,
+            minute: 30
+        )))
+
+        // 系统的短时间在 AM / PM 前用窄不换行空格
+        let space = "\u{202F}"
+
+        let absolute = { CommitDateFormat.absolute.stringWithTime(from: $0, calendar: newYork) }
+        let relative = { CommitDateFormat.relative.stringWithTime(from: $0, calendar: newYork) }
+
+        #expect(absolute(earlier) == "3/4/25, 3:30" + space + "PM")
+
+        #expect(relative(today) == "Today at 10:05" + space + "AM")
+        #expect(relative(yesterday) == "Yesterday at 10:05" + space + "AM")
+        #expect(relative(earlier) == "March 4, 2025 at 3:30" + space + "PM")
+    }
+
     /// 历史行写出提交人日期：作者日期与提交人日期不在同一天时，行里只出现提交人日期。
     @Test("历史行用提交人日期", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func rowCommitDate() async throws {

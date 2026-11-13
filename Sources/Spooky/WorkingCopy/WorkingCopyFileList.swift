@@ -24,11 +24,11 @@ struct WorkingCopyFileList: NSViewRepresentable {
 
     /// 文件名的字号档位。
     @AppStorage(WorkingCopyPreferences.fontSize)
-    private var fontSize = WorkingCopyPreferences.FontSize.regular
+    private var fontSize = WorkingCopyPreferences.FontSize.medium
 
     /// 长文件名的截断位置。
     @AppStorage(WorkingCopyPreferences.truncation)
-    private var truncation = WorkingCopyPreferences.Truncation.middle
+    private var truncation = WorkingCopyPreferences.Truncation.beginning
 
     /// 构建事件与模型桥接器。
     func makeCoordinator() -> Coordinator { Coordinator(session: session) }
@@ -62,11 +62,11 @@ struct WorkingCopyFileList: NSViewRepresentable {
 
         let path = NSTableColumn(identifier: .init("path"))
         path.title = AppLocalization.text("status.filename")
-        path.minWidth = 100
+        path.minWidth = 40
         path.sortDescriptorPrototype = NSSortDescriptor(key: "path", ascending: true)
         outline.addTableColumn(path)
         outline.outlineTableColumn = path
-        outline.sortDescriptors = [NSSortDescriptor(key: "path", ascending: true)]
+        outline.sortDescriptors = WorkingCopyPreferences.sortDescriptors()
 
         // 键盘、双击、拖出与 Quick Look 都交给桥接器按偏好处理
         outline.coordinator = context.coordinator
@@ -93,6 +93,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
             showsIgnored: showsIgnored,
             showsAssumeUnchanged: showsAssumeUnchanged,
             conflictPaths: onlyConflicts ? session.conflictPaths : nil,
+            resolvedPaths: session.context?.progress?.resolvedPaths ?? [],
             filter: session.searchText
         )
 
@@ -136,8 +137,11 @@ extension WorkingCopyFileList {
         /// 标记了 assume-unchanged 的路径。
         var marked: Set<String>
 
-        /// 仓库是否可写。
-        var canWrite: Bool
+        /// 勾选框能否点。
+        var canToggleStaging: Bool
+
+        /// 整个仓库被写操作占用，图标与文件名变灰。
+        var locked: Bool
 
         /// 表头排序。
         var sort: [NSSortDescriptor]
@@ -217,13 +221,26 @@ extension WorkingCopyFileList {
         var node: Node?
     }
 
-    /// 冲突行以浅红背景辅助 U 徽标，选中时仍由系统绘制选区；行间分隔线在背景之后绘制，不被浅红盖住。
-    final class ConflictRowView: NSTableRowView {
-        /// 深浅外观分别使用 20% 与 10% 的系统红色。
+    /// 文件列表的行：未解决的冲突行各画一块浅红圆角底，选中时仍由系统绘制选区；行间分隔线在背景之后绘制，不被浅红盖住。
+    final class FileRowView: NSTableRowView {
+        /// 这一行是未解决的冲突；行被复用或条目状态变化时由列表更新。
+        var isConflicted = false {
+            didSet {
+                guard isConflicted != oldValue else { return }
+
+                needsDisplay = true
+            }
+        }
+
+        /// 冲突行的底左右各内缩 10、圆角 8；深浅外观分别使用 20% 与 10% 的系统红色。
         override func drawBackground(in dirtyRect: NSRect) {
+            super.drawBackground(in: dirtyRect)
+
+            guard isConflicted else { return }
+
             let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
             NSColor.systemRed.withAlphaComponent(dark ? 0.2 : 0.1).setFill()
-            dirtyRect.fill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: 10, dy: 0), xRadius: 8, yRadius: 8).fill()
         }
     }
 
@@ -252,7 +269,10 @@ extension WorkingCopyFileList {
         /// 已处理的焦点请求。
         var focusRequest: Int
 
-        /// 右键菜单作用的条目。
+        /// 右键菜单作用的行：点在选区内或空白处时是整个选区，点在选区外时只有被点的行；树形里一个目录算一项。
+        var menuTargets: [Node] = []
+
+        /// 右键菜单作用的条目：作用的行展开成的文件，菜单构建时算出一次，执行时不再回读选区。
         var menuEntries: [StatusEntry] = []
 
         /// 树形或平铺的顶层节点。
@@ -271,7 +291,9 @@ extension WorkingCopyFileList {
             quickLook = WorkingCopyQuickLook(session: session)
         }
 
-        /// 根据 Git 模型、补充清单、显示选项和乐观状态重建行。
+        /// 根据 Git 模型、补充清单、显示选项和乐观状态更新行。
+        ///
+        /// 同一显示模式与样式下按条目身份增量更新并播放行动画；首次显示、切换模式或样式时整表重载。
         func update(listing: WorkingCopyListing, style: Style) {
             guard let outline else { return }
 
@@ -281,28 +303,47 @@ extension WorkingCopyFileList {
                 overrides: session.stagingOverrides,
                 listing: listing,
                 marked: session.workingTreeFiles.assumeUnchanged,
-                canWrite: session.canWrite,
+                canToggleStaging: session.canToggleStaging,
+                locked: session.isRepositoryLocked,
                 sort: outline.sortDescriptors,
                 style: style
             )
 
             guard state != renderState else { return }
 
-            // 重建前记下展开着的目录，显示全部文件时据此恢复
+            // 记下更新前的行与选择，选中项全部消失时据此找邻行；展开着的目录供整表重载后恢复
+            let previous = renderState
+            let rows = (0 ..< outline.numberOfRows).compactMap { outline.item(atRow: $0) as? Node }
+            let selectedRow = outline.selectedRowIndexes.first
             let expanded = expandedPaths()
+
             renderState = state
             updating = true
             defer { updating = false }
 
             // 平铺每个条目一行；树形按目录组织并缩进
             outline.indentationPerLevel = listing.mode.isTree ? 16 : 0
-            roots = listing.mode.isTree ? Self.tree(entries) : entries.map { Node(path: $0.path, entry: $0) }
-            sortNodes()
-            outline.reloadData()
-            restoreExpansion(mode: listing.mode, expanded: expanded)
 
-            // 恢复会话里的选区，搜索过滤掉的选择随后取消
+            let target = Self.sorted(
+                listing.mode.isTree ? Self.tree(entries) : entries.map { Node(path: $0.path, entry: $0) },
+                by: outline.sortDescriptors
+            )
+
+            if let previous, previous.listing.mode == listing.mode, previous.style == style {
+                applyChanges(target, mode: listing.mode)
+            } else {
+                roots = target
+                outline.reloadData()
+                restoreExpansion(mode: listing.mode, expanded: expanded)
+            }
+
+            // 恢复会话里的选区；只是数据变化而选中项全部消失时改选邻行，搜索过滤掉的选择随后取消
             restoreSelection()
+
+            if let selectedRow, previous?.listing.hasSameOptions(as: listing) ?? false {
+                selectNeighbor(of: selectedRow, in: rows)
+            }
+
             dropHiddenSelection(visible: entries, filtered: !listing.filter.isEmpty)
         }
 
@@ -330,9 +371,11 @@ extension WorkingCopyFileList {
             return !node.children.isEmpty
         }
 
-        /// 冲突状态不只通过文字颜色表达。
+        /// 冲突状态不只通过文字颜色表达，未解决的冲突行另画浅红底。
         func outlineView(_: NSOutlineView, rowViewForItem item: Any) -> NSTableRowView? {
-            (item as? Node)?.entry?.kind == .conflicted ? ConflictRowView() : nil
+            let row = FileRowView()
+            row.isConflicted = (item as? Node)?.entry?.kind == .conflicted
+            return row
         }
 
         /// 状态列为三态勾选和徽标，文件列为图标与按偏好截断的路径。
@@ -346,9 +389,16 @@ extension WorkingCopyFileList {
             return pathCell(node)
         }
 
-        /// 单独选中一个目录时右栏显示目录说明，单选文件驱动 Diff，多选显示独立空状态。
+        /// 用户改变选择后同步给会话；恢复选区期间不回写。
         func outlineViewSelectionDidChange(_: Notification) {
-            guard !updating, let outline else { return }
+            guard !updating else { return }
+
+            syncSelection()
+        }
+
+        /// 把列表里的选择写回会话：单独选中一个目录时右栏显示目录说明，单选文件驱动 Diff，多选显示独立空状态。
+        func syncSelection() {
+            guard let outline else { return }
 
             let nodes = outline.selectedRowIndexes.compactMap { outline.item(atRow: $0) as? Node }
             let entries = nodes.flatMap(\.entries)
@@ -360,10 +410,11 @@ extension WorkingCopyFileList {
             quickLook.selectionChanged()
         }
 
-        /// 表头排序改变后按相同模型恢复选择。
-        func outlineView(_: NSOutlineView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
+        /// 表头排序改变后记下新的排序，再按相同模型恢复选择；首次显示前载入保存的排序时不回写。
+        func outlineView(_ outlineView: NSOutlineView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
             guard let state = renderState else { return }
 
+            WorkingCopyPreferences.storeSortDescriptors(outlineView.sortDescriptors)
             renderState = nil
             update(listing: state.listing, style: state.style)
         }

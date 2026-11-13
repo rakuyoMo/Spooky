@@ -33,8 +33,11 @@ public enum SignatureStatus: String, Sendable, CaseIterable {
 
 /// 提交或附注标签的签名：状态、签名者与密钥。
 public struct CommitSignature: Sendable, Equatable {
-    /// 与 ``parse(_:)`` 配套的 log 格式：哈希、状态、签名者、签名密钥与主密钥指纹，以 NUL 分隔。
-    static let format = "--format=tformat:%H%x00%G?%x00%GS%x00%GK%x00%GP"
+    /// 与 ``parse(_:)`` 配套的 log 格式：哈希、状态、签名者、签名密钥、主密钥指纹与签名密钥指纹，以 NUL 分隔。
+    static let format = "--format=tformat:%H%x00%G?%x00%GS%x00%GK%x00%GP%x00%GF"
+
+    /// 每个提交在 ``format`` 输出里的字段数。
+    private static let fieldCount = 6
 
     /// 校验结果。
     public let status: SignatureStatus
@@ -47,6 +50,19 @@ public struct CommitSignature: Sendable, Equatable {
 
     /// OpenPGP 主密钥的指纹；SSH 签名为空。
     public let primaryFingerprint: String
+
+    /// 签名所用密钥的指纹：OpenPGP 为签名子密钥的指纹，SSH 为 `SHA256:` 开头的指纹；取不到时为空。
+    public let fingerprint: String
+
+    /// 是否 SSH 签名：Git 给出的指纹以 `SHA256:` 开头。
+    public var isSSH: Bool { fingerprint.hasPrefix("SHA256:") }
+
+    /// 界面显示的短标识：OpenPGP 取主密钥指纹、SSH 取 SHA-256 指纹的末 8 个字符；缺值时为 nil，不拿密钥 ID 代替。
+    public var shortKeyID: String? {
+        let source = isSSH ? fingerprint : primaryFingerprint
+
+        return source.isEmpty ? nil : String(source.suffix(8))
+    }
 
     /// 签名者为 “姓名 <邮箱>” 时拆出的姓名；SSH 签名者只有一个身份，没有姓名。
     public var name: String? { identity?.name }
@@ -72,14 +88,21 @@ public struct CommitSignature: Sendable, Equatable {
     }
 
     /// 创建一份签名记录。
-    public init(status: SignatureStatus, signer: String = "", key: String = "", primaryFingerprint: String = "") {
+    public init(
+        status: SignatureStatus,
+        signer: String = "",
+        key: String = "",
+        primaryFingerprint: String = "",
+        fingerprint: String = ""
+    ) {
         self.status = status
         self.signer = signer
         self.key = key
         self.primaryFingerprint = primaryFingerprint
+        self.fingerprint = fingerprint
     }
 
-    /// 解析 ``format`` 的输出，每个提交五个 NUL 字段。
+    /// 解析 ``format`` 的输出，每个提交六个 NUL 字段。
     static func parse(_ data: Data) throws -> [String: Self] {
         guard !data.isEmpty else {
             return [:]
@@ -93,13 +116,13 @@ public struct CommitSignature: Sendable, Equatable {
             .split(separator: 0, omittingEmptySubsequences: false)
             .map { String(decoding: $0, as: UTF8.self) }
 
-        guard fields.count.isMultiple(of: 5) else {
+        guard fields.count.isMultiple(of: Self.fieldCount) else {
             throw RepositoryReadError.malformedOutput("signature")
         }
 
         var signatures: [String: Self] = [:]
 
-        for start in stride(from: 0, to: fields.count, by: 5) {
+        for start in stride(from: 0, to: fields.count, by: Self.fieldCount) {
             guard
                 GitObjectID.isValid(fields[start]),
                 let status = SignatureStatus(rawValue: fields[start + 1])
@@ -109,7 +132,8 @@ public struct CommitSignature: Sendable, Equatable {
                 status: status,
                 signer: fields[start + 2],
                 key: fields[start + 3],
-                primaryFingerprint: fields[start + 4]
+                primaryFingerprint: fields[start + 4],
+                fingerprint: fields[start + 5]
             )
         }
 

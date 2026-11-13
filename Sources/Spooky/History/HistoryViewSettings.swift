@@ -112,6 +112,9 @@ struct HistoryViewSettings: Equatable {
     /// 是否按日期排列。
     let sortsByDate: Bool
 
+    /// 菜单里勾选的日期分组；没有保存过时按月。
+    let selectedGrouping: HistoryGrouping
+
     /// 生效的日期分组；不按日期排序时不分组。
     let grouping: HistoryGrouping
 
@@ -125,16 +128,17 @@ struct HistoryViewSettings: Equatable {
     }
 
     /// 读取偏好；测试传入临时的偏好域。
+    ///
+    /// 没有保存过的项取默认值：显示提交图、按日期排序、按月分组；保存过的值总是优先。
     init(defaults: UserDefaults = .standard) {
-        #warning("TODO: Sort By 的 Date 与 Group By 的默认值未核实，目前默认不按日期排序、不分组；只影响没有改过这两项设置时的历史顺序与分组")
-
         showsGraph = defaults.object(forKey: Self.showGraphKey) as? Bool ?? true
         showsFirstParentOnly = defaults.bool(forKey: Self.firstParentKey)
         sortsByTopoOrder = showsGraph || defaults.bool(forKey: Self.topoOrderKey)
-        sortsByDate = defaults.bool(forKey: Self.dateOrderKey)
+        sortsByDate = defaults.object(forKey: Self.dateOrderKey) as? Bool ?? true
 
-        let stored = HistoryGrouping(rawValue: defaults.integer(forKey: Self.groupingKey)) ?? .ungrouped
-        grouping = sortsByDate ? stored : .ungrouped
+        let stored = (defaults.object(forKey: Self.groupingKey) as? Int).flatMap(HistoryGrouping.init(rawValue:))
+        selectedGrouping = stored ?? .month
+        grouping = sortsByDate ? selectedGrouping : .ungrouped
     }
 
     /// 按当前设置与搜索条件组成历史查询。

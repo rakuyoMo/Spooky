@@ -9,10 +9,10 @@ import SpookyKit
 /// 多选时检出、重置、新建分支与标签只有灰色的通用项。按住 ⌥ 时保存补丁换成快速保存，比较两个提交换成反向比较。
 @MainActor
 enum HistoryCommitMenu {
-    /// 按选中的提交生成菜单项，前面带一条分隔线。
+    /// 按右键实际作用的提交生成复制项之后的菜单项，前面带一条分隔线。
     ///
     /// - Parameters:
-    ///   - commits: 选中的提交，按列表顺序从新到旧。
+    ///   - commits: 实际作用的提交，按列表顺序从新到旧。
     ///   - createBranch: 打开以这个版本为起点的新建分支对话框。
     static func items(
         for commits: [HistoryCommit],
@@ -35,6 +35,53 @@ enum HistoryCommitMenu {
             + [.separator()]
             + creationItems(commits, session: session, createBranch: createBranch)
             + patchItems(commits, session: session)
+    }
+
+    /// 菜单最前面的两项复制；单个提交时其后是 Reveal in History，只在看某个引用的历史时可用。
+    ///
+    /// - Parameters:
+    ///   - commits: 右键实际作用的提交，按列表顺序从新到旧。
+    ///   - session: 当前仓库会话。
+    static func copyItems(for commits: [HistoryCommit], session: RepositorySession) -> [NSMenuItem] {
+        guard !commits.isEmpty else {
+            return []
+        }
+
+        let hashes = item(
+            commits.count == 1
+                ? AppLocalization.text("history.copyHash")
+                : AppLocalization.text("history.copyHashes", commits.count)
+        ) {
+            copyHashes(of: commits)
+        }
+
+        // 每个提交一行 “短哈希 标题”
+        let info = item(AppLocalization.text("history.copyInfo")) {
+            copy(commits.map { $0.shortID + " " + $0.subject })
+        }
+
+        guard commits.count == 1, let commit = commits.first else {
+            return [hashes, info]
+        }
+
+        // 看全部历史时提交本来就在列表里，没有可回到的地方
+        let reveal = item(
+            AppLocalization.text("quickActions.revealInHistory"),
+            enabled: !session.history.selectedReferences.isEmpty
+        ) {
+            session.revealInHistory(commit.id)
+        }
+
+        return [hashes, info, reveal]
+    }
+
+    /// 把提交的完整哈希按给定顺序写进剪贴板，一行一个。
+    static func copyHashes(of commits: [HistoryCommit]) {
+        guard !commits.isEmpty else {
+            return
+        }
+
+        copy(commits.map(\.id))
     }
 }
 
@@ -229,7 +276,7 @@ extension HistoryCommitMenu {
         ]
     }
 
-    /// 选中两个提交时直接比较，默认从较早的到较新的，⌥ 时反向；其余数量打开比较对话框。
+    /// 作用于两个提交时直接比较这两个，默认从较早的到较新的，⌥ 时反向；其余数量打开比较对话框。
     private static func compare(_ commits: [HistoryCommit], session: RepositorySession) -> [NSMenuItem] {
         guard commits.count == 2 else {
             return [item(AppLocalization.text("compare.menu")) { session.onRevisionRequest?(.compare(base: nil)) }]
@@ -238,7 +285,7 @@ extension HistoryCommitMenu {
         let (newer, older) = (commits[0], commits[1])
 
         let reversed = item(AppLocalization.text("compare.menuPair", newer.shortID, older.shortID)) {
-            session.compareSelectedCommits(reversed: true)
+            session.compare(base: side(newer), target: side(older))
         }
 
         reversed.isAlternate = true
@@ -246,7 +293,7 @@ extension HistoryCommitMenu {
 
         return [
             item(AppLocalization.text("compare.menuPair", older.shortID, newer.shortID)) {
-                session.compareSelectedCommits(reversed: false)
+                session.compare(base: side(older), target: side(newer))
             },
             reversed,
         ]
@@ -264,5 +311,16 @@ extension HistoryCommitMenu {
     /// 带闭包动作的菜单项。
     private static func item(_ title: String, enabled: Bool = true, perform: @escaping () -> Void) -> NSMenuItem {
         FileViewMenuItem(FileViewAction(title: title, enabled: enabled, perform: perform))
+    }
+
+    /// 比较的一侧，标题是短哈希。
+    private static func side(_ commit: HistoryCommit) -> RevisionComparisonState.Side {
+        RevisionComparisonState.Side(id: commit.id, title: commit.shortID)
+    }
+
+    /// 把几行文字写进剪贴板。
+    private static func copy(_ lines: [String]) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(lines.joined(separator: "\n"), forType: .string)
     }
 }

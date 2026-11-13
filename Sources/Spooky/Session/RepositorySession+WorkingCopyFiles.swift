@@ -44,6 +44,7 @@ extension RepositorySession {
             showsIgnored: UserDefaults.standard.bool(forKey: WorkingCopyPreferences.showIgnored),
             showsAssumeUnchanged: UserDefaults.standard.bool(forKey: WorkingCopyPreferences.showAssumeUnchanged),
             conflictPaths: onlyConflicts ? conflictPaths : nil,
+            resolvedPaths: context?.progress?.resolvedPaths ?? [],
             filter: searchText
         )
     }
@@ -78,12 +79,12 @@ extension RepositorySession {
         loadWorkingTreeFiles()
     }
 
-    /// 补充清单里的条目：未改动或被忽略的文件，以及只看冲突时解决成与 HEAD 相同的冲突文件；清单里已经没有这个路径时为 nil。
+    /// 补充清单里的条目：未改动或被忽略的文件，以及解决成与 HEAD 相同的冲突文件；清单里已经没有这个路径时为 nil。
     func supplementaryEntry(_ id: StatusRowID) -> StatusEntry? {
-        let conflicted = listing.conflictPaths?.contains(id.path) ?? false
+        let resolved = listing.resolvedPaths.contains(id.path)
 
         return switch id.kind {
-        case .unchanged where workingTreeFiles.indexPaths.contains(id.path) || conflicted,
+        case .unchanged where workingTreeFiles.indexPaths.contains(id.path) || resolved,
              .ignored where workingTreeFiles.ignoredPaths.contains(id.path):
             StatusEntry(kind: id.kind, path: id.path)
 
@@ -154,7 +155,7 @@ extension RepositorySession {
         )
     }
 
-    /// 删除所选文件：移进工作区所在机器的废纸篓；服务器上没有可用的废纸篓时，确认后永久删除。
+    /// 删除所选文件并暂存其中已跟踪文件的删除：移进工作区所在机器的废纸篓；服务器上没有可用的废纸篓时，确认后永久删除。
     func delete(_ entries: [StatusEntry]) {
         let targets = entries.filter(\.isDeletable)
         guard canWrite, !targets.isEmpty, let repository else { return }
@@ -169,7 +170,7 @@ extension RepositorySession {
                 { runner, _ in try await WorkingCopyOperations(runner: runner).delete(paths, removal: removal) },
                 title: title,
                 recordsActivity: false,
-                undo: .reversible
+                undo: .deletingFiles(paths, removal: removal)
             )
         }
 
@@ -341,20 +342,34 @@ extension RepositorySession {
         canWrite && entries.contains { $0.kind != .ignored }
     }
 
-    /// 设置或清除标记：暂存区清单已读取时按实际标记判断，否则只要求是暂存区里的文件。
-    func canMarkAssumeUnchanged(_ entries: [StatusEntry], _ assumeUnchanged: Bool) -> Bool {
+    /// 设置或清除标记：暂存区里的条目有没标记的才能设置，有已标记的才能清除。
+    ///
+    /// - Parameters:
+    ///   - entries: 右键菜单作用的条目。
+    ///   - assumeUnchanged: 为 true 时判断设置，否则判断清除。
+    ///   - marked: 打开菜单时读到的、已标记的路径。
+    func canMarkAssumeUnchanged(_ entries: [StatusEntry], _ assumeUnchanged: Bool, marked: Set<String>) -> Bool {
         let markable = entries.filter(\.isInIndex)
 
         guard canWrite, !markable.isEmpty else {
             return false
         }
 
-        guard workingTreeFiles.index != nil else {
-            return true
-        }
-
-        let marked = workingTreeFiles.assumeUnchanged
         return markable.contains { marked.contains($0.path) != assumeUnchanged }
+    }
+
+    /// 这些条目里已标记 assume-unchanged 的路径；只在打开菜单时读一次，不进常规轮询。
+    ///
+    /// 读取失败或期间换了仓库时为 nil。
+    func assumeUnchangedPaths(of entries: [StatusEntry]) async -> Set<String>? {
+        let paths = entries.filter(\.isInIndex).map(\.path)
+
+        guard let runner, !paths.isEmpty else { return nil }
+
+        let request = generation
+        let marked = try? await WorkingCopyOperations(runner: runner).assumedUnchanged(paths)
+
+        return generation == request ? marked : nil
     }
 }
 

@@ -43,7 +43,7 @@ struct ChangesetEmptyStateTests {
 
         #expect(session.history.changesFailure != nil)
         #expect(session.history.changes.isEmpty)
-        #expect(CommitFileListView(session: session, history: session.history, back: { }).emptyMessage == nil)
+        #expect(CommitFileListView(session: session, history: session.history).emptyMessage == nil)
     }
 
     /// 相同版本的比较与树未改变的储藏都只渲染零摘要，没有文本 Diff 的空提示与展开全部。

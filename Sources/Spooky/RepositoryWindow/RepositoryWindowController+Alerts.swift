@@ -110,6 +110,54 @@ extension RepositoryWindowController {
             submit: close
         )
     }
+
+    /// 核对结果的说明：没有新的核对表示写入未在服务器上开始，否则比较写入前后的 HEAD。
+    static func recoveryMessage(_ write: InterruptedWrite, snapshot: RemoteRecoverySnapshot?) -> String {
+        guard let snapshot else {
+            return AppLocalization.text("recovery.notStarted", write.title)
+        }
+
+        let before = write.branch?.oid
+        let after = snapshot.status.branch.oid
+        let name: (String?) -> String = { $0.map { String($0.prefix(8)) } ?? AppLocalization.text("recovery.unborn") }
+        let summary = before == after
+            ? AppLocalization.text("recovery.unchanged", write.title, name(after))
+            : AppLocalization.text("recovery.changed", write.title, name(before), name(after))
+        let state = AppLocalization.text(
+            "connection.recovery",
+            snapshot.status.branch.head ?? AppLocalization.text("branch.detachedShort"),
+            snapshot.status.entries.count,
+            AppLocalization.text(snapshot.indexLocked ? "state.yes" : "state.no"),
+            AppLocalization.text(snapshot.merging ? "state.yes" : "state.no"),
+            AppLocalization.text(snapshot.rebasing ? "state.yes" : "state.no")
+        )
+        return summary + "\n\n" + state + "\n\n" + remoteReferenceChanges(write, snapshot: snapshot)
+    }
+
+    /// 中断前后远端跟踪分支的变化，每个变化的分支一行；获取或推送可能已经部分完成。
+    static func remoteReferenceChanges(_ write: InterruptedWrite, snapshot: RemoteRecoverySnapshot) -> String {
+        let before = write.remoteReferences
+        let after = snapshot.remoteReferences
+
+        // 提交取前 8 位，引用不存在时写 “无”
+        let name: (String?) -> String = { object in
+            object.map { String($0.prefix(8)) } ?? AppLocalization.text("recovery.noReference")
+        }
+
+        let changes = Set(before.keys).union(after.keys)
+            .filter { before[$0] != after[$0] }
+            .sorted()
+            .map { reference in
+                let branch = String(reference.dropFirst("refs/remotes/".count))
+                return branch + "  " + name(before[reference]) + " → " + name(after[reference])
+            }
+
+        guard !changes.isEmpty else {
+            return AppLocalization.text("recovery.remoteUnchanged")
+        }
+
+        return AppLocalization.text("recovery.remoteChanged") + "\n" + changes.joined(separator: "\n")
+    }
 }
 
 // MARK: - Private

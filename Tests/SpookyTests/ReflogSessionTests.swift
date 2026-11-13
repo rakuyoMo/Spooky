@@ -7,7 +7,7 @@ import TestSupport
 
 // MARK: - ReflogSessionTests
 
-/// Reflog 视图的会话层：HEAD 与分支的切换、按说明搜索、详情与恢复分支。
+/// Reflog 视图的会话层：HEAD 与分支的切换、按说明搜索、分页、读取后的选中、详情与恢复分支。
 @MainActor
 struct ReflogSessionTests {
     /// 默认看 HEAD 的记录，搜索只看记录的说明；换到分支后只剩这个分支自己的移动，选中记录时右栏显示它的提交；
@@ -43,11 +43,72 @@ struct ReflogSessionTests {
         reflog.selectedID = reflog.entries.first?.id
         #expect(reflog.detail.selectedCommit?.subject == "功能 [x] *")
 
+        // 详情的引用取窗口历史的引用快照，头部收起时同样有 Refs 行
+        let commit = try #require(reflog.detail.selectedCommit)
+        #expect(reflog.detail.decorations(of: commit.id).map(\.id) == ["refs/heads/功能/分支"])
+
         try await restoreBranch(in: fixture)
 
         // 关闭仓库后回到 HEAD
         session.close()
         #expect(reflog.reference == "HEAD" && reflog.entries.isEmpty)
+    }
+
+    /// 每页 30 条，与历史每页的条数设置无关；打开时选中第一条并显示它的提交；
+    /// 同一引用与搜索条件下的重读至少读回已加载的条数，换引用或搜索时从第一页开始；
+    /// 重读后原来那条还在就仍选它，不在了选原来行号上的记录，即原来的下一条，行号超出列表时选最后一条。
+    @Test("分页与读取后的选中")
+    func pagingAndSelection() async throws {
+        let fixture = try await UndoSessionTests.Fixture()
+        defer { fixture.remove() }
+
+        let reflog = fixture.session.reflog
+        let messages = try await writeReflog(count: 35, in: fixture)
+
+        try await load(reflog, in: fixture)
+
+        // 第一页 30 条，打开即选中第一条并显示它的提交
+        #expect(reflog.entries.map(\.message) == Array(messages.prefix(30)))
+        #expect(reflog.hasMore)
+        #expect(reflog.selectedID == reflog.entries.first?.id)
+        #expect(reflog.detail.selectedCommit?.id == reflog.entries.first?.commit.id)
+
+        // 续读剩下的 5 条
+        reflog.loadNextPage()
+        await settle(reflog)
+
+        #expect(reflog.entries.count == 35 && !reflog.hasMore)
+
+        // 选中第二页的记录后重读：读回已加载的 35 条，选中保留
+        reflog.selectedID = 32
+        reflog.reload()
+        await settle(reflog)
+
+        #expect(reflog.entries.count == 35)
+        #expect(reflog.selectedID == 32)
+        #expect(reflog.selectedEntry?.message == messages[32])
+
+        // 原来那条还在：删掉最新的一条后它上移一行，仍然选中
+        reflog.selectedID = 2
+        try await delete("HEAD@{0}", from: reflog, in: fixture)
+
+        #expect(reflog.selectedID == 1)
+        #expect(reflog.selectedEntry?.message == messages[2])
+
+        // 原来那条不在了：选原来行号上的记录，即原来的下一条
+        try await delete("HEAD@{1}", from: reflog, in: fixture)
+
+        #expect(reflog.selectedID == 1)
+        #expect(reflog.selectedEntry?.message == messages[3])
+
+        // 行号超出搜索结果：选最后一条
+        reflog.selectedID = 25
+        reflog.search("第 2")
+        await settle(reflog)
+
+        #expect(reflog.entries.count == 11)
+        #expect(reflog.selectedEntry == reflog.entries.last)
+        #expect(reflog.selectedEntry?.message == "reset: 第 2 条")
     }
 }
 
@@ -126,6 +187,35 @@ extension ReflogSessionTests {
 
         let runner = try #require(fixture.session.runner)
         reflog.load(runner: runner, location: fixture.location)
+        await settle(reflog)
+    }
+
+    /// 把 HEAD 的引用日志换成 `count` 条指向当前提交的记录，说明依次是 “reset: 第 1 条” 到 “reset: 第 `count` 条”，
+    /// 每条相隔一分钟；返回从新到旧的说明。
+    private func writeReflog(count: Int, in fixture: UndoSessionTests.Fixture) async throws -> [String] {
+        let output = try await fixture.runner.run(["rev-parse", "HEAD"])
+        let head = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let messages = (1 ... count).map { "reset: 第 \($0) 条" }
+
+        let lines = messages.enumerated().map { index, message in
+            "\(head) \(head) Spooky Test <spooky@example.invalid> \(1_767_323_220 + index * 60) +0000\t\(message)\n"
+        }
+
+        try Data(lines.joined().utf8).write(to: fixture.directory.appending(path: ".git/logs/HEAD"))
+
+        return messages.reversed()
+    }
+
+    /// 用 Git 删掉一条记录，再重读并等读取与详情结束。
+    private func delete(
+        _ selector: String,
+        from reflog: RepositoryReflogState,
+        in fixture: UndoSessionTests.Fixture
+    ) async throws {
+        _ = try await fixture.runner.run(["reflog", "delete", selector])
+
+        reflog.reload()
         await settle(reflog)
     }
 

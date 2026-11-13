@@ -8,6 +8,9 @@ import SpookyKit
 @MainActor
 @Observable
 final class RepositoryReflogState {
+    /// 每页读取的记录数，与历史每页的条数设置无关。
+    private static let pageSize = 30
+
     /// 所看的引用：`HEAD` 或本地分支的完整引用名。
     private(set) var reference = "HEAD"
 
@@ -78,7 +81,7 @@ final class RepositoryReflogState {
 
         self.reference = reference
         selectedID = nil
-        reload()
+        reload(count: Self.pageSize)
     }
 
     /// 搜索框的文字变化后按说明重新读取第一页。
@@ -87,39 +90,19 @@ final class RepositoryReflogState {
         guard text != query else { return }
 
         query = text
-        reload()
+        reload(count: Self.pageSize)
     }
 
-    /// 重读第一页；仍在列表里的选中记录保持选中。
+    /// 按同一引用与搜索条件重读：至少读回已加载的条数，原来选中的记录在后续页里时也能找回。
     func reload() {
-        guard runner != nil else { return }
-
-        let selected = selectedEntry
-        load(offset: 0) { [weak self] page in
-            guard let self else { return }
-
-            entries = page.entries
-            hasMore = page.hasMore
-            isLoaded = true
-
-            // 同一提交可以出现多次，按时间、说明与提交一起找回原来的那条
-            let kept = selected.flatMap { old in
-                page.entries.first { $0.commit.id == old.commit.id && $0.date == old.date && $0.message == old.message }
-            }
-
-            if let kept, kept.id == selectedID {
-                showSelection()
-            } else {
-                selectedID = kept?.id
-            }
-        }
+        reload(count: max(entries.count, Self.pageSize))
     }
 
     /// 滚到列表底部时续读下一页。
     func loadNextPage() {
         guard hasMore, !isLoading else { return }
 
-        load(offset: entries.count) { [weak self] page in
+        load(offset: entries.count, limit: Self.pageSize) { [weak self] page in
             self?.entries += page.entries
             self?.hasMore = page.hasMore
         }
@@ -147,12 +130,40 @@ final class RepositoryReflogState {
 // MARK: - Private
 
 extension RepositoryReflogState {
+    /// 从头读取 `count` 条，读到后按 ``selection(in:after:)`` 重新选中。
+    private func reload(count: Int) {
+        guard runner != nil else { return }
+
+        // 记下原来选中的记录与它所在的行
+        let previous = entries
+            .firstIndex { $0.id == selectedID }
+            .map { (entry: entries[$0], row: $0) }
+
+        load(offset: 0, limit: count) { [weak self] page in
+            guard let self else { return }
+
+            entries = page.entries
+            hasMore = page.hasMore
+            isLoaded = true
+
+            let next = Self.selection(in: page.entries, after: previous)
+
+            // 仍是同一位置时 selectedID 不变，不会触发详情的更新，这里补上
+            if let next, next.id == selectedID {
+                showSelection()
+            } else {
+                selectedID = next?.id
+            }
+        }
+    }
+
     /// 读取一页；同一时刻只有一个读取任务，后发起的读取取消先前的。
     ///
     /// - Parameters:
     ///   - offset: 跳过的记录数，第一页为 0。
+    ///   - limit: 最多读取的记录数。
     ///   - apply: 读到后在主线程合并结果。
-    private func load(offset: Int, apply: @escaping (ReflogPage) -> Void) {
+    private func load(offset: Int, limit: Int, apply: @escaping (ReflogPage) -> Void) {
         guard let runner else { return }
 
         generation += 1
@@ -161,12 +172,6 @@ extension RepositoryReflogState {
         let request = generation
         let reference = reference
         let query = query
-        #warning(
-            "TODO: 每页条数沿用历史的 Number of commits in history 设置未核实，Reflog 可能另有没有设置项的条数。核实方式：在记录很多的仓库里比对 Reflog 首屏读到的条数与滚到底后续读的条数；只影响分页大小。"
-        )
-
-        let configured = UserDefaults.standard.integer(forKey: "historyPageSize")
-        let limit = [100, 200, 500, 1000].contains(configured) ? configured : 100
 
         isLoading = true
         failure = nil
@@ -175,6 +180,7 @@ extension RepositoryReflogState {
             do {
                 let page = try await RepositoryReflog(runner: runner)
                     .page(of: reference, matching: query, offset: offset, limit: limit)
+
                 guard let self, generation == request, !Task.isCancelled else { return }
 
                 apply(page)
@@ -196,5 +202,34 @@ extension RepositoryReflogState {
         guard let runner else { return }
 
         detail.show(selectedEntry?.commit, runner: runner)
+    }
+}
+
+extension RepositoryReflogState {
+    /// 重读后要选中的记录：原来那条还在就仍选它；不在了选原来行号上的记录，即原来的下一条，
+    /// 行号超出列表时选最后一条；原来没有选中时选第一条。
+    ///
+    /// - Parameters:
+    ///   - entries: 重读到的记录。
+    ///   - previous: 重读前选中的记录与它所在的行；没有选中时为 nil。
+    private static func selection(
+        in entries: [ReflogEntry],
+        after previous: (entry: ReflogEntry, row: Int)?
+    ) -> ReflogEntry? {
+        guard let previous else {
+            return entries.first
+        }
+
+        // 同一提交可以出现多次，按时间、说明与提交一起找回原来的那条
+        let old = previous.entry
+        let kept = entries.first {
+            $0.commit.id == old.commit.id && $0.date == old.date && $0.message == old.message
+        }
+
+        if let kept {
+            return kept
+        }
+
+        return entries.isEmpty ? nil : entries[min(previous.row, entries.count - 1)]
     }
 }

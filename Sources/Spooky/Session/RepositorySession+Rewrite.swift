@@ -177,6 +177,7 @@ extension RepositorySession {
         performGit(
             { runner, _ in try await RepositoryRewrite(runner: runner).reset(to: revision, mode: mode) },
             title: AppLocalization.text("rewrite.reset"),
+            progress: AppLocalization.text("workspaceProgress.reset"),
             undo: .reversible
         )
     }
@@ -187,6 +188,7 @@ extension RepositorySession {
         performGit(
             { runner, _ in try await RepositoryRewrite(runner: runner).checkout(revision: revision) },
             title: AppLocalization.text("rewrite.checkout"),
+            progress: AppLocalization.text("workspaceProgress.checkoutRevision", revision),
             offersAutoStash: true,
             undo: .reversible
         )
@@ -201,6 +203,7 @@ extension RepositorySession {
                     .rebase(onto: newBase, from: currentBase, skipHooks: skipHooks, onOutput: output)
             },
             title: AppLocalization.text("rewrite.rebaseOnto"),
+            progress: AppLocalization.text("workspaceProgress.rebase"),
             offersAutoStash: true,
             undo: .reversible
         )
@@ -220,6 +223,7 @@ extension RepositorySession {
                 try await RepositoryRewrite(runner: runner).perform(plan, skipHooks: skipHooks, onOutput: output)
             },
             title: AppLocalization.text(Self.titleKey(of: plan.action)),
+            progress: AppLocalization.text("workspaceProgress.rebase"),
             offersAutoStash: !amends,
             undo: .reversible
         )
@@ -240,6 +244,7 @@ extension RepositorySession {
 
         let request = AutoStashRequest(
             title: AppLocalization.text(Self.titleKey(of: plan.action)),
+            progress: AppLocalization.text("workspaceProgress.rebase"),
             error: nil,
             action: { runner, output in
                 try await RepositoryRewrite(runner: runner).perform(plan, onOutput: output)

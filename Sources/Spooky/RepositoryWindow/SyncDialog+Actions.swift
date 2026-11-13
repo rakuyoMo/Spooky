@@ -224,6 +224,7 @@ extension SyncDialog {
                     .rebase(onto: target, skipHooks: skipHooks, onOutput: output)
             },
             title: AppLocalization.text("sync.rebaseHead"),
+            progress: AppLocalization.text("workspaceProgress.rebase"),
             offersAutoStash: true,
             undo: .reversible
         )

@@ -44,7 +44,7 @@ final class FileHistoryState {
     var failure: AppFailure? = nil
 
     /// 搜索框的匹配范围。
-    var scope = FileHistoryFilter.Scope.author {
+    var scope = FileHistoryFilter.Scope.message {
         didSet {
             if scope != oldValue { reload() }
         }
@@ -99,13 +99,6 @@ final class FileHistoryState {
 
     /// 搜索框输入的延迟任务。
     var searchTask: Task<Void, Never>? = nil
-
-    /// 搜索框补全用的整个仓库的作者：按仓库与 HEAD 读取一次，换文件时沿用。
-    var authorsLoad: (
-        location: RepositoryLocation,
-        head: String,
-        task: Task<[FileContributor], any Error>
-    )? = nil
 
     /// 时间线与详情的读取记进的 Activity 列表，由会话设成它自己的列表。
     @ObservationIgnored
@@ -249,12 +242,12 @@ final class FileHistoryState {
         }
     }
 
-    /// 列表请求最后一行时续载下一页；按版本范围筛选时只有一条。
+    /// 列表请求最后一行时续载下一页；按提交哈希筛选时只有一条。
     func loadNextPage() {
         guard
             !isLoading, hasMore,
             let path, let runner, let head,
-            scope != .revision || filter.trimmedText.isEmpty
+            scope != .hash || filter.trimmedText.isEmpty
         else { return }
 
         let request = generation
@@ -322,7 +315,7 @@ final class FileHistoryState {
         isLoading = false
         failure = nil
         searchText = ""
-        scope = .author
+        scope = .message
         selectedID = nil
         detailMode = .diff
         diff = nil
@@ -353,13 +346,13 @@ extension FileHistoryState {
         return [100, 200, 500, 1000].contains(configured) ? configured : 100
     }
 
-    /// 时间线的起点：按版本范围筛选时是该版本，版本不存在时没有起点，其余情况是 HEAD。
+    /// 时间线的起点：按提交哈希筛选时是输入的版本，版本不存在时没有起点，其余情况是 HEAD。
     private static func root(
         for filter: FileHistoryFilter,
         head: String,
         runner: GitRunner
     ) async throws -> String? {
-        guard filter.scope == .revision, !filter.trimmedText.isEmpty else {
+        guard filter.scope == .hash, !filter.trimmedText.isEmpty else {
             return head
         }
 
@@ -371,7 +364,7 @@ extension FileHistoryState {
         }
     }
 
-    /// 读取第一页与总数；按版本范围筛选时只取该版本上最近一次修改这个文件的提交。
+    /// 读取第一页与总数；按提交哈希筛选时只取该版本上最近一次修改这个文件的提交。
     ///
     /// - Parameters:
     ///   - limit: 第一页读的条数，超过一页时接着往下读。
@@ -390,8 +383,8 @@ extension FileHistoryState {
             return FirstPage(commits: [], hasMore: false, count: 0)
         }
 
-        // 按版本范围筛选时只读一页，不读总数
-        if filter.scope == .revision, !filter.trimmedText.isEmpty {
+        // 按提交哈希筛选时只读一页，不读总数
+        if filter.scope == .hash, !filter.trimmedText.isEmpty {
             let latest = try await recordPage(
                 in: views.runner.location,
                 activities: activities,
@@ -450,7 +443,7 @@ extension FileHistoryState {
         )
     }
 
-    /// 写入第一页的结果：时间线没变时不替换；仍在结果中的提交保持选中，否则清除选择。
+    /// 写入第一页的结果：时间线没变时不替换；仍在结果中的提交保持选中，否则选中第一个提交。
     ///
     /// - Parameter records: 重读的详情是否记进 Activity，与第一页相同。
     private func apply(_ result: FirstPage, path: String, submodule: Bool?, records: Bool) {
@@ -476,9 +469,13 @@ extension FileHistoryState {
         hasMore = result.hasMore
         totalCount = result.count
 
-        // 刷新时路径没变，所选提交的详情在后台重读，不先清空
-        if let selectedID, !commits.contains(where: { $0.id == selectedID }) {
-            self.selectedID = nil
+        // 原来选中的提交还在就保留，没有选中或它不在了选第一个
+        let kept = selectedID.flatMap { id in commits.first { $0.id == id }?.id }
+        let target = kept ?? commits.first?.id
+
+        // 选中没变时刷新详情：路径没变的刷新在后台重读，不先清空
+        if target != selectedID {
+            selectedID = target
         } else {
             loadDetail(records: records, refreshing: isRefreshingCommits && samePath)
         }

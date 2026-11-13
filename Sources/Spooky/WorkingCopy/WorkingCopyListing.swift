@@ -37,7 +37,7 @@ enum WorkingCopyListMode: Int {
 
 // MARK: - WorkingCopyPreferences
 
-/// 工作区列表的全局偏好：显示被忽略与 assume-unchanged 文件、双击与空格的动作、字号与截断方式。
+/// 工作区列表的全局偏好：显示被忽略与 assume-unchanged 文件、双击与空格的动作、字号、截断方式与表头排序。
 enum WorkingCopyPreferences {
     /// 双击文件的动作。
     enum DoubleClickAction: String, CaseIterable {
@@ -114,6 +114,60 @@ enum WorkingCopyPreferences {
 
     /// 丢弃块或行之前是否先确认；没有记录时确认。
     static let warnsDiscardingChunks = "workingCopyWarnDiscardingChunks"
+
+    /// 文件列表的表头排序，按优先级逐级保存列名与方向。
+    static let sortOrder = "workingCopySortOrder"
+
+    /// 没有保存过排序时的表头排序：先按路径，再按状态，都是升序。
+    static var defaultSortDescriptors: [NSSortDescriptor] {
+        [
+            NSSortDescriptor(key: "path", ascending: true),
+            NSSortDescriptor(key: "status", ascending: true),
+        ]
+    }
+
+    /// 可以排序的列，与文件列表的列标识相同。
+    private static let sortKeys: Set = ["path", "status"]
+
+    /// 所有仓库与窗口共用的表头排序；没有记录，或记录里有不认识的列、重复的列与缺少方向时，用默认排序。
+    ///
+    /// - Parameter defaults: 保存偏好的位置，测试使用独立的偏好域。
+    static func sortDescriptors(defaults: UserDefaults = .standard) -> [NSSortDescriptor] {
+        guard
+            let records = defaults.array(forKey: sortOrder) as? [[String: Any]],
+            !records.isEmpty
+        else { return defaultSortDescriptors }
+
+        var descriptors: [NSSortDescriptor] = []
+
+        for record in records {
+            guard
+                let key = record["key"] as? String,
+                let ascending = record["ascending"] as? Bool,
+                sortKeys.contains(key),
+                !descriptors.contains(where: { $0.key == key })
+            else { return defaultSortDescriptors }
+
+            descriptors.append(NSSortDescriptor(key: key, ascending: ascending))
+        }
+
+        return descriptors
+    }
+
+    /// 记住表头排序，之后打开的仓库与窗口都沿用它；不认识的列不保存。
+    ///
+    /// - Parameters:
+    ///   - descriptors: 表格当前的排序。
+    ///   - defaults: 保存偏好的位置，测试使用独立的偏好域。
+    static func storeSortDescriptors(_ descriptors: [NSSortDescriptor], defaults: UserDefaults = .standard) {
+        let records: [[String: Any]] = descriptors.compactMap { descriptor in
+            guard let key = descriptor.key, sortKeys.contains(key) else { return nil }
+
+            return ["key": key, "ascending": descriptor.ascending]
+        }
+
+        defaults.set(records, forKey: sortOrder)
+    }
 }
 
 // MARK: - WorkingTreeFileListing
@@ -161,6 +215,9 @@ struct WorkingCopyListing: Equatable {
     /// 只看冲突时保留的文件路径；为 nil 时不按冲突过滤。
     var conflictPaths: Set<String>? = nil
 
+    /// 进行中的操作里已经解决的冲突文件；解决成与 HEAD 相同、已不在状态里的也照样列出。
+    var resolvedPaths: Set<String> = []
+
     /// 工具栏搜索框的内容，按路径或文件名过滤。
     var filter = ""
 
@@ -171,9 +228,18 @@ struct WorkingCopyListing: Equatable {
             .contains { $0.range(of: query, options: .caseInsensitive) != nil }
     }
 
+    /// 两次显示的选项相同：显示模式、被忽略与 assume-unchanged 开关、是否只看冲突与搜索内容都没有变，列表的变化只来自数据。
+    func hasSameOptions(as other: Self) -> Bool {
+        mode == other.mode
+            && showsIgnored == other.showsIgnored
+            && showsAssumeUnchanged == other.showsAssumeUnchanged
+            && (conflictPaths == nil) == (other.conflictPaths == nil)
+            && filter == other.filter
+    }
+
     /// 列表条目：状态里的改动在前，按选项补出的被忽略、未改动与 assume-unchanged 文件在后，再按搜索过滤。
     ///
-    /// 只看冲突时只列冲突文件，解决后与 HEAD 相同、已不在状态里的文件补成未改动的条目，不补其它文件。
+    /// 解决后与 HEAD 相同、已不在状态里的冲突文件补成未改动的条目；只看冲突时只列冲突文件，不补其它文件。
     func entries(status: [StatusEntry], files: WorkingTreeFileListing) -> [StatusEntry] {
         var entries: [StatusEntry]
 
@@ -187,7 +253,15 @@ struct WorkingCopyListing: Equatable {
                 .sorted()
                 .map { StatusEntry(kind: .unchanged, path: $0) }
         } else {
-            entries = status + supplementaryEntries(status: status, files: files)
+            let listed = Set(status.map(\.path))
+
+            entries = status
+            entries += resolvedPaths
+                .subtracting(listed)
+                .sorted()
+                .map { StatusEntry(kind: .unchanged, path: $0) }
+
+            entries += supplementaryEntries(status: entries, files: files)
         }
 
         #warning("TODO: 核实搜索过滤后全部暂存、丢弃全部等动作是否只作用于可见的文件，目前作用于整个工作区；只影响过滤状态下的全部动作")
