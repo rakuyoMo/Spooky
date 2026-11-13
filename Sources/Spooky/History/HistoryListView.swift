@@ -786,23 +786,13 @@ struct HistoryCommitRow: View {
             .layoutPriority(1)
     }
 
-    /// 引用名标记排成一行，放不下时以 “…” 结尾；标签标记可点，弹出标签的签名。
+    /// 引用标记；在行里先于作者与标题取得宽度，日期仍最先。
+    @ViewBuilder
     private var badges: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 4) {
-                if isHead { badge("HEAD", color: "blue") }
-                ForEach(references) { ref in
-                    // 只有标签标记可点，点击显示标签的签名
-                    if ref.isLocal || ref.isRemote {
-                        badge(ref.name, color: ref.isLocal ? "blue" : "gray")
-                    } else {
-                        TagBadgeButton(reference: ref.id, runner: runner) { badge(ref.name, color: "yellow") }
-                    }
-                }
-            }
-            if isHead || !references.isEmpty { badge("…", color: "gray") }
+        if isHead || !references.isEmpty {
+            HistoryRefBadges(references: references, isHead: isHead, selected: selected, runner: runner)
+                .layoutPriority(0.5)
         }
-        .frame(maxWidth: 300, alignment: .leading)
     }
 
     /// 行首到头像（中号）或短哈希（小号）左缘的距离：有图时是图宽加间距，没有图时贴着行首。
@@ -815,19 +805,5 @@ struct HistoryCommitRow: View {
     /// 图的宽度：每列 10 pt，另加 7 pt。
     private static func graphWidth(_ graph: CommitGraphRow) -> CGFloat {
         CGFloat(graph.columnCount) * 10 + 7
-    }
-
-    /// 引用徽标使用 11 pt 文本和 4 pt 圆角。
-    private func badge(_ title: String, color: String) -> some View {
-        Text(title)
-            .font(.system(size: 11))
-            .lineLimit(1)
-            .padding(.horizontal, 4)
-            .padding(.vertical, 1)
-            .foregroundStyle(AppPalette.color((selected ? "selected" : color) + "_badge_text_color"))
-            .background(
-                AppPalette.color((selected ? "selected" : color) + "_badge_background_color"),
-                in: RoundedRectangle(cornerRadius: 4)
-            )
     }
 }
