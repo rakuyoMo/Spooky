@@ -5,6 +5,7 @@ import SwiftUI
 
 /// 变更集里的一个文件：上面是文件行，展开时下面接这个文件的 Diff。
 ///
+/// 提交详情（含 Reflog）、储藏详情与比较视图（比较两个版本、Branches Review、Pull Request）共用，文件行一样高。
 /// 点文件行左侧的三角切换展开；点行里其它任何位置，包括三角的上下左右与行的上下边缘，都交给 `select`。
 struct ChangesetFileRow<Label: View, Diff: View>: View {
     /// 是否展开。
@@ -12,10 +13,10 @@ struct ChangesetFileRow<Label: View, Diff: View>: View {
     var isExpanded: Bool
 
     /// 选中时垫满整行的颜色；没有选中时为 nil。
-    let selection: NSColor?
+    var selection: NSColor? = nil
 
-    /// 点在三角以外的位置时调用。
-    let select: () -> Void
+    /// 点在三角以外的位置时调用；文件行不能选中的列表为 nil。
+    var select: (() -> Void)? = nil
 
     /// 三角右侧的一栏。
     @ViewBuilder
@@ -37,7 +38,7 @@ struct ChangesetFileRow<Label: View, Diff: View>: View {
         }
     }
 
-    /// 文件行：整行 38 pt 高；三角宽 13 pt、距左缘 5 pt，三角右侧的一栏从 20 pt 起，右侧留 12 pt。
+    /// 文件行：整行 30 pt 高；三角宽 13 pt、距左缘 5 pt，三角右侧的一栏从 20 pt 起，右侧留 12 pt。
     ///
     /// 三角自己接收点击，行里其它位置都算点在这一行上。
     private var header: some View {
@@ -49,7 +50,7 @@ struct ChangesetFileRow<Label: View, Diff: View>: View {
         }
         .padding(.leading, 5)
         .padding(.trailing, 12)
-        .frame(height: 38)
+        .frame(height: 30)
         .background {
             // 选中底垫满整行：左右到列表边缘，上下到两条分隔线，直角
             if let selection {
@@ -57,7 +58,7 @@ struct ChangesetFileRow<Label: View, Diff: View>: View {
             }
         }
         .contentShape(Rectangle())
-        .onTapGesture(perform: select)
+        .onTapGesture { select?() }
     }
 }
 

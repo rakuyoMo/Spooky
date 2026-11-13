@@ -109,11 +109,14 @@ extension HistoryListTests {
         await untilFinished { history.activeTasks }
     }
 
-    /// 选中的文件行填满上下两条分隔线之间的整行，左右到列表边缘、直角；展开时只垫在文件行下面，不延伸到 Diff。
-    @Test("变更文件行选中底的范围")
+    /// 文件行 30 pt 高；选中的文件行填满上下两条分隔线之间的整行，左右到列表边缘、直角；展开时只垫在文件行下面，不延伸到 Diff。
+    @Test("变更文件行的行高与选中底的范围")
     func fileRowSelectionFill() throws {
         let collapsed = try Self.renderFileRow(expanded: false)
         let rows = try #require(Self.selectedRows(in: collapsed, x: collapsed.pixelsWide / 2))
+
+        // 文件行 30 pt，连同上下两条 1 pt 的分隔线共 32 pt
+        #expect(collapsed.pixelsHigh == 32 * 2)
 
         // 收起时从上面的分隔线下方一直填到下面的分隔线上方，两条线各 1 pt
         #expect(rows == 2 ..< collapsed.pixelsHigh - 2)
