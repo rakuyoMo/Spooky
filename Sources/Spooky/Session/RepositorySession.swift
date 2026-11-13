@@ -780,11 +780,18 @@ extension RepositorySession {
 
         stagingOverrides = [:]
 
-        // 暂存会把未跟踪项变为已跟踪项；同路径优先延续选择，双记录仍优先匹配类别。
+        // 选区保留列表里仍有的条目，补充清单里的未改动与被忽略文件同样算数
+        let visible = listing.entries(status: status.entries, files: workingTreeFiles)
+        let ids = Set(visible.map { StatusRowID(path: $0.path, kind: $0.kind) })
+        var byPath: [String: StatusRowID] = [:]
+
+        for entry in visible where byPath[entry.path] == nil {
+            byPath[entry.path] = StatusRowID(path: entry.path, kind: entry.kind)
+        }
+
+        /// 暂存会把未跟踪项变为已跟踪项：同路径优先延续选择，双记录仍优先匹配类别。
         func retainedID(_ selected: StatusRowID) -> StatusRowID? {
-            let entry = status.entries.first { $0.path == selected.path && $0.kind == selected.kind }
-                ?? status.entries.first { $0.path == selected.path }
-            return entry.map { StatusRowID(path: $0.path, kind: $0.kind) }
+            ids.contains(selected) ? selected : byPath[selected.path]
         }
 
         selectedIDs = Set(selectedIDs.compactMap(retainedID))

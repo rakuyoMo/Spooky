@@ -285,7 +285,9 @@ extension WorkingCopyFileList {
             quickLook = WorkingCopyQuickLook(session: session)
         }
 
-        /// 根据 Git 模型、补充清单、显示选项和乐观状态重建行。
+        /// 根据 Git 模型、补充清单、显示选项和乐观状态更新行。
+        ///
+        /// 同一显示模式与样式下按条目身份增量更新并播放行动画；首次显示、切换模式或样式时整表重载。
         func update(listing: WorkingCopyListing, style: Style) {
             guard let outline else { return }
 
@@ -302,21 +304,39 @@ extension WorkingCopyFileList {
 
             guard state != renderState else { return }
 
-            // 重建前记下展开着的目录，显示全部文件时据此恢复
+            // 记下更新前的行与选择，选中项全部消失时据此找邻行；展开着的目录供整表重载后恢复
+            let previous = renderState
+            let rows = (0 ..< outline.numberOfRows).compactMap { outline.item(atRow: $0) as? Node }
+            let selectedRow = outline.selectedRowIndexes.first
             let expanded = expandedPaths()
+
             renderState = state
             updating = true
             defer { updating = false }
 
             // 平铺每个条目一行；树形按目录组织并缩进
             outline.indentationPerLevel = listing.mode.isTree ? 16 : 0
-            roots = listing.mode.isTree ? Self.tree(entries) : entries.map { Node(path: $0.path, entry: $0) }
-            sortNodes()
-            outline.reloadData()
-            restoreExpansion(mode: listing.mode, expanded: expanded)
 
-            // 恢复会话里的选区，搜索过滤掉的选择随后取消
+            let target = Self.sorted(
+                listing.mode.isTree ? Self.tree(entries) : entries.map { Node(path: $0.path, entry: $0) },
+                by: outline.sortDescriptors
+            )
+
+            if let previous, previous.listing.mode == listing.mode, previous.style == style {
+                applyChanges(target, mode: listing.mode)
+            } else {
+                roots = target
+                outline.reloadData()
+                restoreExpansion(mode: listing.mode, expanded: expanded)
+            }
+
+            // 恢复会话里的选区；只是数据变化而选中项全部消失时改选邻行，搜索过滤掉的选择随后取消
             restoreSelection()
+
+            if let selectedRow, previous?.listing.hasSameOptions(as: listing) ?? false {
+                selectNeighbor(of: selectedRow, in: rows)
+            }
+
             dropHiddenSelection(visible: entries, filtered: !listing.filter.isEmpty)
         }
 
@@ -362,9 +382,16 @@ extension WorkingCopyFileList {
             return pathCell(node)
         }
 
-        /// 单独选中一个目录时右栏显示目录说明，单选文件驱动 Diff，多选显示独立空状态。
+        /// 用户改变选择后同步给会话；恢复选区期间不回写。
         func outlineViewSelectionDidChange(_: Notification) {
-            guard !updating, let outline else { return }
+            guard !updating else { return }
+
+            syncSelection()
+        }
+
+        /// 把列表里的选择写回会话：单独选中一个目录时右栏显示目录说明，单选文件驱动 Diff，多选显示独立空状态。
+        func syncSelection() {
+            guard let outline else { return }
 
             let nodes = outline.selectedRowIndexes.compactMap { outline.item(atRow: $0) as? Node }
             let entries = nodes.flatMap(\.entries)

@@ -228,6 +228,15 @@ struct WorkingCopyListing: Equatable {
             .contains { $0.range(of: query, options: .caseInsensitive) != nil }
     }
 
+    /// 两次显示的选项相同：显示模式、被忽略与 assume-unchanged 开关、是否只看冲突与搜索内容都没有变，列表的变化只来自数据。
+    func hasSameOptions(as other: Self) -> Bool {
+        mode == other.mode
+            && showsIgnored == other.showsIgnored
+            && showsAssumeUnchanged == other.showsAssumeUnchanged
+            && (conflictPaths == nil) == (other.conflictPaths == nil)
+            && filter == other.filter
+    }
+
     /// 列表条目：状态里的改动在前，按选项补出的被忽略、未改动与 assume-unchanged 文件在后，再按搜索过滤。
     ///
     /// 解决后与 HEAD 相同、已不在状态里的冲突文件补成未改动的条目；只看冲突时只列冲突文件，不补其它文件。

@@ -120,11 +120,6 @@ extension WorkingCopyFileList.Coordinator {
         return cell
     }
 
-    /// 递归排序使目录与文件使用相同的表头排序。
-    func sortNodes() {
-        roots = Self.sorted(roots, by: outline?.sortDescriptors ?? WorkingCopyPreferences.defaultSortDescriptors)
-    }
-
     /// 重建前展开着的目录路径。
     func expandedPaths() -> Set<String> {
         guard let outline else { return [] }
@@ -206,7 +201,12 @@ extension WorkingCopyFileList.Coordinator {
     func toggle(_ sender: WorkingCopyFileList.StagingButton) {
         guard let node = sender.node, let outline else { return }
 
-        let entries = outline.isRowSelected(outline.row(forItem: node)) ? session.selectedEntries : node.entries
+        // 正在收起的已删除行不再响应，动作不会落到过期的路径上
+        let row = outline.row(forItem: node)
+
+        guard row >= 0 else { return }
+
+        let entries = outline.isRowSelected(row) ? session.selectedEntries : node.entries
         let stageable = entries.filter(\.isStageable)
         session.stage(stageable, staged: stageable.contains(where: \.hasUnstagedChanges))
         outline.window?.makeFirstResponder(outline)
