@@ -309,34 +309,50 @@ extension WorkingCopyFileList.Coordinator {
         }
     }
 
-    /// LFS ▸：逐个跟踪所选文件、跟踪同类型的全部文件，或输入自定义规则；执行时才检查 Git LFS 是否可用。
+    /// LFS ▸：逐个跟踪所选文件、跟踪同类型的全部文件，或输入自定义规则；仓库启用了 Git LFS 时才可用。
+    ///
+    /// 启用状态不在轮询里读取：三项先禁用，打开菜单时读一次，读到启用后再按各自的条件启用。
     private func addLFSMenu(to menu: NSMenu) {
         beginGroup(in: menu)
 
         let lfs = submenu("lfs.menu", in: menu)
-        let single = menuEntries.count == 1
-        let types = session.lfsTypePatterns(for: menuEntries)
+        let entries = menuEntries
+        let types = session.lfsTypePatterns(for: entries)
 
         // 没有作用的文件时用单个文件的标题，不写出零个
-        add(
-            title: menuEntries.count > 1
-                ? AppLocalization.text("lfs.trackFiles", menuEntries.count)
+        let files = add(
+            title: entries.count > 1
+                ? AppLocalization.text("lfs.trackFiles", entries.count)
                 : AppLocalization.text("lfs.trackFile"),
             action: #selector(trackLFSFiles),
-            enabled: session.canTrackLFS(menuEntries),
+            enabled: false,
             to: lfs
         )
 
         // 一个文件时写出它的扩展名，多个文件时按各自的扩展名跟踪
-        let suffix = single ? types.first.map { String($0.dropFirst("*.".count)) } : nil
+        let suffix = entries.count == 1 ? types.first.map { String($0.dropFirst("*.".count)) } : nil
 
-        add(
+        let type = add(
             title: suffix.map { AppLocalization.text("lfs.trackType.single", $0) } ?? AppLocalization.text("lfs.trackType"),
             action: #selector(trackLFSTypes),
-            enabled: session.canWrite && !types.isEmpty,
+            enabled: false,
             to: lfs
         )
-        add("lfs.createPattern.menu", action: #selector(createLFSPattern), enabled: session.canWrite, to: lfs)
+
+        let pattern = add(
+            title: AppLocalization.text("lfs.createPattern.menu"),
+            action: #selector(createLFSPattern),
+            enabled: false,
+            to: lfs
+        )
+
+        Task { [session] in
+            let enabled = await session.isLFSEnabled()
+
+            files.isEnabled = session.canTrackLFS(entries, lfsEnabled: enabled)
+            type.isEnabled = enabled && session.canWrite && !types.isEmpty
+            pattern.isEnabled = enabled && session.canWrite
+        }
     }
 
     /// Compare ▸：总是列出工作区、暂存区与 HEAD 之间的三种比较，两侧没有差别时不可用；作用于单个对象时，

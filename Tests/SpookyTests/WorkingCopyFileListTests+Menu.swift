@@ -176,6 +176,46 @@ extension WorkingCopyFileListTests {
         #expect(Self.states(menu, "externalTool.compare").count == 3)
         #expect(!Self.states(menu, "externalTool.compare").values.contains(true))
     }
+
+    /// LFS ▸ 的启用状态不在轮询里读取：打开菜单时三项先禁用，读到仓库启用了 Git LFS 后再按各自的条件启用。
+    @Test("LFS 子菜单的可用条件")
+    func lfsMenu() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-lfs 菜单-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let location = RepositoryLocation.local(path: directory.path)
+        let runner = try await FileViewsTests.initializeRepository(at: location)
+        let source = StatusSource()
+        let session = RepositorySession(
+            makeRunner: { _ in runner },
+            loadStatus: { _ in await source.status },
+            activities: RepositoryActivities()
+        )
+        defer { session.close() }
+
+        session.display(location)
+
+        // 仓库本地登记过滤器并装上调用 git lfs pre-push 的钩子，与执行过 git lfs install --local 相同
+        _ = try await runner.run(["config", "--local", "filter.lfs.clean", "git-lfs clean -- %f"])
+        _ = try await runner.run(["config", "--local", "filter.lfs.smudge", "git-lfs smudge -- %f"])
+
+        let hooks = directory.appending(path: ".git/hooks")
+        try FileManager.default.createDirectory(at: hooks, withIntermediateDirectories: true)
+        try Data("#!/bin/sh\ngit lfs pre-push \"$@\"\n".utf8).write(to: hooks.appending(path: "pre-push"))
+
+        let list = FileListHarness(session: session, source: source)
+        let menu = NSMenu()
+
+        await list.show([.modified("设计 稿.psd")])
+        list.select(rows: [0])
+        list.coordinator.buildMenu(menu, clickedRow: 0)
+
+        let items = Self.items(menu, "lfs.menu")
+
+        #expect(items.count == 3 && !items.contains(where: \.isEnabled))
+        await until { items.allSatisfy(\.isEnabled) }
+    }
 }
 
 // MARK: - Private

@@ -7,7 +7,7 @@ public struct LFSStatus: Sendable, Equatable {
     /// `git lfs version` 输出的第一行，如 `git-lfs/3.4.0 (GitHub; darwin arm64; go 1.21)`；找不到 Git LFS 时为 nil。
     public let version: String?
 
-    /// 生效的 Git 配置里登记了 LFS 过滤器，检出与提交会经 Git LFS 转换文件。
+    /// 仓库启用了 Git LFS，判断见 ``RepositoryLFS/isEnabled()``。
     public let isEnabled: Bool
 
     /// Git LFS 可以执行，且版本不低于 ``RepositoryLFS/minimumVersion``。
@@ -41,6 +41,9 @@ public enum LFSError: Error, Sendable, Equatable {
 public struct RepositoryLFS: Sendable {
     /// 支持的最低版本：逐字跟踪文件名的 `track --filename` 从 2.9.0 开始提供。
     public static let minimumVersion = [2, 9, 0]
+
+    /// 读取 LFS 过滤器配置时的键名正则。
+    static let filterPattern = #"^filter\.lfs\."#
 
     /// 共享的本机或服务器执行器。
     public let runner: GitRunner
@@ -79,21 +82,47 @@ public struct RepositoryLFS: Sendable {
         return line.flatMap { $0.isEmpty ? nil : $0 }
     }
 
-    /// 读取 Git LFS 的版本与仓库是否启用了 LFS 过滤器；找不到 Git LFS 不算失败。
+    /// 读取 Git LFS 的版本与仓库是否启用了它；找不到 Git LFS 不算失败。
     public func status() async throws -> LFSStatus {
         async let versionResult = version()
-        async let filterResult = runner.execute(
-            ["config", "-z", "--get-regexp", #"^filter\.lfs\."#],
-            acceptedExitCodes: [0, 1]
-        )
+        async let enabled = isEnabled()
 
         let version = try await versionResult
-        let filters = try await filterResult
 
         return LFSStatus(
             version: version.exitCode == 0 ? Self.firstLine(of: version.standardOutput) : nil,
-            isEnabled: filters.exitCode == 0 && !filters.standardOutput.isEmpty
+            isEnabled: try await enabled
         )
+    }
+
+    /// 仓库是否启用了 Git LFS：生效配置里登记了 LFS 的 clean 与 smudge 过滤器，且仓库的 pre-push 钩子调用 `git lfs pre-push`。
+    ///
+    /// 过滤器按合并后的配置读取，全局登记的也算，但只有过滤器、没有仓库自己的钩子时不算启用。
+    /// 钩子路径经 `rev-parse --git-path` 解析，已包含 `core.hooksPath` 与链接工作树；钩子文件不存在时不算启用。
+    public func isEnabled() async throws -> Bool {
+        async let filterResult = runner.execute(
+            ["config", "-z", "--get-regexp", Self.filterPattern],
+            acceptedExitCodes: [0, 1]
+        )
+        async let located = runner.run(["rev-parse", "--path-format=absolute", "--git-path", "hooks/pre-push"])
+
+        let filters = try ConfigRecords.parse(
+            await filterResult.standardOutput,
+            pattern: Self.filterPattern,
+            context: "lfs filters"
+        )
+
+        guard
+            ConfigRecords.nonEmpty(filters["filter.lfs.clean"]) != nil,
+            ConfigRecords.nonEmpty(filters["filter.lfs.smudge"]) != nil
+        else {
+            return false
+        }
+
+        let path = String(decoding: try await located, as: UTF8.self).trimmingCharacters(in: .newlines)
+        let hook = try await RepositoryFiles(runner: runner).read([path])[path]
+
+        return hook.map { String(decoding: $0, as: UTF8.self).contains("git lfs pre-push") } ?? false
     }
 
     /// 在仓库本地启用 Git LFS：登记过滤器并装上 LFS 的钩子，不改全局配置。
@@ -104,7 +133,7 @@ public struct RepositoryLFS: Sendable {
     /// 仓库自己的配置文件里是否登记了 LFS 过滤器；全局配置里的不算。
     public func isInstalledLocally() async throws -> Bool {
         let filters = try await runner.execute(
-            ["config", "-z", "--local", "--get-regexp", #"^filter\.lfs\."#],
+            ["config", "-z", "--local", "--get-regexp", Self.filterPattern],
             acceptedExitCodes: [0, 1]
         )
 
