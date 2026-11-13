@@ -1038,6 +1038,7 @@
 "history.gpgUser" = "GPG 사용자";
 "history.gpgKey" = "GPG 키";
 "history.gpgStatus" = "GPG 상태";
+"history.signingKey" = "서명 키";
 "history.signingStatus" = "서명 상태";
 "history.changeset" = "변경 세트";
 "history.tree" = "트리";

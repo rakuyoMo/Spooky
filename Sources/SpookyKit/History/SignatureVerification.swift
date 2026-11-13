@@ -139,6 +139,7 @@ enum TagVerification {
         var signer = ""
         var key = ""
         var fingerprint = ""
+        var primaryFingerprint = ""
         var trusted = false
 
         for line in text.split(separator: "\n") where line.hasPrefix("[GNUPG:] ") {
@@ -153,7 +154,8 @@ enum TagVerification {
                 key = parts[2]
                 signer = parts[1] == "ERRSIG" ? "" : parts.dropFirst(3).joined(separator: " ")
             } else if parts[1] == "VALIDSIG", parts.count > 11 {
-                fingerprint = parts[11]
+                fingerprint = parts[2]
+                primaryFingerprint = parts[11]
             } else if ["TRUST_MARGINAL", "TRUST_FULLY", "TRUST_ULTIMATE"].contains(parts[1]) {
                 trusted = true
             }
@@ -163,7 +165,13 @@ enum TagVerification {
             status = .unknownValidity
         }
 
-        return CommitSignature(status: status, signer: signer, key: key, primaryFingerprint: fingerprint)
+        return CommitSignature(
+            status: status,
+            signer: signer,
+            key: key,
+            primaryFingerprint: primaryFingerprint,
+            fingerprint: fingerprint
+        )
     }
 
     /// SSH：“Good "git" signature for <身份> with <类型> key <指纹>” 有效；没有 “for” 的是不在 allowed signers 里的密钥。
@@ -178,12 +186,13 @@ enum TagVerification {
             guard
                 rest.hasPrefix("for "),
                 let with = rest.range(of: " with ", options: .backwards)
-            else { return CommitSignature(status: .unknownValidity, key: key) }
+            else { return CommitSignature(status: .unknownValidity, key: key, fingerprint: key) }
 
             return CommitSignature(
                 status: .good,
                 signer: String(rest[rest.index(rest.startIndex, offsetBy: 4) ..< with.lowerBound]),
-                key: key
+                key: key,
+                fingerprint: key
             )
         }
 

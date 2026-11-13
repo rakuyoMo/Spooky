@@ -1038,6 +1038,7 @@
 "history.gpgUser" = "GPG 用户";
 "history.gpgKey" = "GPG 密钥";
 "history.gpgStatus" = "GPG 状态";
+"history.signingKey" = "签名密钥";
 "history.signingStatus" = "签名状态";
 "history.changeset" = "变更集";
 "history.tree" = "文件树";

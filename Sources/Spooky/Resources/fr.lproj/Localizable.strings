@@ -1038,6 +1038,7 @@
 "history.gpgUser" = "Utilisateur GPG";
 "history.gpgKey" = "Clé GPG";
 "history.gpgStatus" = "État GPG";
+"history.signingKey" = "Clé de signature";
 "history.signingStatus" = "État de la signature";
 "history.changeset" = "Modifications";
 "history.tree" = "Arborescence";

@@ -95,21 +95,10 @@ struct CommitMetadataView: View {
         signatureRows
     }
 
-    #warning(
-        "TODO: 详情头部签名行的取舍是推断：有姓名与邮箱的 OpenPGP 签名显示 GPG User / GPG Key / GPG Status，其余只显示 Signing Status。核实方式：分别打开 OpenPGP 与 SSH 签名的提交，对照详情头部出现哪些行；只影响这几行。"
-    )
-
     /// 有签名时的签名行。
-    @ViewBuilder
     private var signatureRows: some View {
-        if let signature, signature.status != .unsigned {
-            if signature.name != nil {
-                row("history.gpgUser", signature.signer)
-                row("history.gpgKey", signature.key)
-                row("history.gpgStatus", signature.status.title)
-            } else {
-                row("history.signingStatus", signature.status.title)
-            }
+        ForEach(Self.signatureRows(signature), id: \.key) {
+            row($0.key, $0.value)
         }
     }
 
@@ -123,6 +112,26 @@ struct CommitMetadataView: View {
             }
         }
         .padding(.trailing, 12)
+    }
+
+    /// 签名行的标签键与值：有姓名与邮箱的 OpenPGP 签名是 GPG User、GPG Key、GPG Status，
+    /// SSH 与其它签名是 Signing Key、Signing Status；没有短标识时不写密钥行，没有签名时没有签名行。
+    static func signatureRows(_ signature: CommitSignature?) -> [(key: String, value: String)] {
+        guard let signature, signature.status != .unsigned else {
+            return []
+        }
+
+        let keyID = signature.shortKeyID
+        let status = signature.status.title
+
+        if !signature.isSSH, signature.name != nil, signature.email != nil {
+            return [("history.gpgUser", signature.signer)]
+                + (keyID.map { [("history.gpgKey", $0)] } ?? [])
+                + [("history.gpgStatus", status)]
+        }
+
+        return (keyID.map { [("history.signingKey", $0)] } ?? [])
+            + [("history.signingStatus", status)]
     }
 
     /// 标签用三级文字色，值用二级文字色，长哈希允许换行。

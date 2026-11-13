@@ -1038,6 +1038,7 @@
 "history.gpgUser" = "GPG User";
 "history.gpgKey" = "GPG Key";
 "history.gpgStatus" = "GPG Status";
+"history.signingKey" = "Signing Key";
 "history.signingStatus" = "Signing Status";
 "history.changeset" = "Changeset";
 "history.tree" = "Tree";

@@ -1038,6 +1038,7 @@
 "history.gpgUser" = "GPG-Benutzer";
 "history.gpgKey" = "GPG-Schlüssel";
 "history.gpgStatus" = "GPG-Status";
+"history.signingKey" = "Signaturschlüssel";
 "history.signingStatus" = "Signaturstatus";
 "history.changeset" = "Änderungen";
 "history.tree" = "Dateibaum";
