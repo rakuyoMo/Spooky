@@ -70,8 +70,8 @@ struct RepositoryDialogLayoutTests {
         #expect(try !Self.submit(in: remote).isEnabled)
     }
 
-    /// Options 开关上方的间距由骨架统一决定：内容区最后一个控件与开关一行相隔 8，没有内容区时头部的说明与它也相隔 8；
-    /// 没有选项区时最后一个控件到底栏是表单的 12；表单末尾没有内容的状态行（这里是没有版本可查的合并可行性预览）
+    /// Options 开关上方的间距由骨架统一决定：内容区最后一个控件与开关一行相隔 8，没有内容区时头部的说明、
+    /// 显示错误说明时那段说明与它也相隔 8；没有选项区时最后一个控件到底栏是表单的 12；表单末尾没有内容的状态行（这里是没有版本可查的合并可行性预览）
     /// 不占高度，也不多出一份行距。
     @Test("内容区与 Options 开关的间距", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func optionsSpacing() async throws {
@@ -141,6 +141,37 @@ struct RepositoryDialogLayoutTests {
 
         #expect(text.frame.maxY > 20 + 64)
         #expect(abs(headerToggle.frame.midY - text.frame.maxY - (8 + 34 / 2)) <= 1)
+
+        // 错误说明下面紧跟开关一行：说明只有一行，同样只相隔 8，不按没有选项区时的至少 51 高撑开
+        let reason = "Choose the base revisions."
+        let withError = await AccessibilityProbe.elements(
+            until: { elements in elements.contains { $0.value == reason } && Self.hasCheckBox(elements) }
+        ) {
+            RepositoryDialogLayout(
+                session: session,
+                title: "Title",
+                message: "Message",
+                submitTitle: "Submit",
+                error: reason,
+                isValid: false,
+                cancel: { },
+                submit: { }
+            ) {
+                Self.field("Name:")
+            } options: {
+                DialogFormOption(title: "Skip Hooks", isOn: .constant(false))
+            }
+        }
+
+        let reasonText = try #require(withError.first { $0.role == "AXStaticText" && $0.value == reason })
+        let errorToggle = try #require(
+            withError.first { $0.role == "AXCheckBox" && $0.name == AppLocalization.text("dialog.options") }
+        )
+
+        // 一行说明比 18 高的图标矮，这一行的底边是图标的底边；说明的顶边比图标低 1
+        let errorBottom = max(reasonText.frame.maxY, reasonText.frame.minY - 1 + 18)
+
+        #expect(abs(errorToggle.frame.midY - errorBottom - (8 + 34 / 2)) <= 1)
     }
 }
 

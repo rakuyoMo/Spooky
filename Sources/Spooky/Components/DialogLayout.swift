@@ -334,7 +334,9 @@ extension DialogLayout {
         .padding(.top, 20)
     }
 
-    /// 黄色警告图标挂在对齐线左侧 4 pt，原因文字从对齐线开始，右边距 20，至少高 51。
+    /// 黄色警告图标挂在对齐线左侧 4 pt，原因文字从对齐线开始，右边距 20。
+    ///
+    /// 没有 Options 时这一行至少高 51；下面紧跟 Options 开关时与表单一样，这一行下方只留 8 pt。
     private func errorRow(_ error: String) -> some View {
         HStack(alignment: .top, spacing: 4) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -349,11 +351,12 @@ extension DialogLayout {
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, minHeight: 51, alignment: .topLeading)
+                .frame(maxWidth: .infinity, minHeight: options == nil ? 51 : nil, alignment: .topLeading)
                 .padding(.top, 1)
         }
         .padding(.leading, alignment - 4 - 18)
         .padding(.trailing, 20)
+        .padding(.bottom, options == nil ? 0 : 8)
     }
 
     /// 选项区上下各留 8 pt；展开时整块填次要背景色，上下各一条带阴影的 1 pt 边线。
