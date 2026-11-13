@@ -1811,6 +1811,7 @@
 "externalTool.compare.theirsToBase" = "Their Version to Merge Base";
 "externalTool.openDiffTool" = "Open Diff Tool";
 "externalTool.openDiffAt" = "Open Diff Tool for “%1$@” at Revision “%2$@”";
+"externalTool.openDiffItemsAt" = "Open Diff Tool for %1$ld Items at Revision “%2$@”";
 "externalTool.mergeIn" = "Merge in %@";
 "externalTool.chooseMergeTool" = "Choose Merge Tool";
 "files.openWith" = "Open With";

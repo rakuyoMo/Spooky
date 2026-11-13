@@ -163,6 +163,23 @@ extension RepositorySession {
         }
     }
 
+    /// 把仓库内的路径放进剪贴板，每行一个；完整路径是仓库位置加相对路径，服务器仓库带主机前缀。
+    ///
+    /// - Parameters:
+    ///   - paths: 仓库内的相对路径。
+    ///   - relative: 只写相对路径。
+    ///   - pasteboard: 放入的剪贴板，测试使用独立的剪贴板。
+    func copyPaths(_ paths: [String], relative: Bool, to pasteboard: NSPasteboard = .general) {
+        guard let repository else {
+            return
+        }
+
+        let lines = relative ? paths : paths.map { repository.displayPath + "/" + $0 }
+
+        pasteboard.clearContents()
+        pasteboard.setString(lines.joined(separator: "\n"), forType: .string)
+    }
+
     /// 工作区详情动作按对象能力与当前比较侧生成，目录只提供文件历史。
     func workingCopyFileActions(
         _ path: String,

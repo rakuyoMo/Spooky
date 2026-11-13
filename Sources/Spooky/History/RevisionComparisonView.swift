@@ -135,22 +135,31 @@ struct RevisionComparisonView: View {
             )
         ) {
             CommitFileLabel(file: file)
-                .contextMenu {
-                    if let base = state.base, let target = state.target {
-                        Button(
-                            AppLocalization.text("externalTool.openDiffAt", RepositorySession.fileName(file.path), target.title)
-                        ) {
-                            session.openDiffTool(
-                                [ComparedFile(path: file.path, originalPath: file.originalPath)],
-                                left: .commit(base.id),
-                                right: .commit(target.id),
-                                names: (base.title, target.title)
-                            )
-                        }
-                    }
-                }
+        } menu: {
+            menu(for: file)
         } diff: {
             fileDiff(file.path)
+        }
+    }
+
+    /// 文件的右键菜单：复制路径，用比较工具比较这个文件在两侧的版本；标题写仓库内的完整路径。
+    @ViewBuilder
+    private func menu(for file: CommitFileChange) -> some View {
+        ForEach(ChangesetFileMenu.copyActions(session: session, paths: [file.path])) { action in
+            Button(action.title, action: action.perform)
+        }
+
+        if let base = state.base, let target = state.target {
+            Divider()
+
+            Button(AppLocalization.text("externalTool.openDiffAt", file.path, target.title)) {
+                session.openDiffTool(
+                    [ComparedFile(path: file.path, originalPath: file.originalPath)],
+                    left: .commit(base.id),
+                    right: .commit(target.id),
+                    names: (base.title, target.title)
+                )
+            }
         }
     }
 

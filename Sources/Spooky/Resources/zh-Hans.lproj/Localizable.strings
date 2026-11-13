@@ -1811,6 +1811,7 @@
 "externalTool.compare.theirsToBase" = "对方版本与共同祖先";
 "externalTool.openDiffTool" = "打开比较工具";
 "externalTool.openDiffAt" = "用比较工具查看 “%1$@” 在版本 “%2$@” 的改动";
+"externalTool.openDiffItemsAt" = "用比较工具查看 %1$ld 项在版本 “%2$@” 的改动";
 "externalTool.mergeIn" = "在 %@ 中合并";
 "externalTool.chooseMergeTool" = "选择合并工具";
 "files.openWith" = "打开方式";

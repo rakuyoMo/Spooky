@@ -1811,6 +1811,7 @@
 "externalTool.compare.theirsToBase" = "相手のバージョンと共通の祖先";
 "externalTool.openDiffTool" = "比較ツールを開く";
 "externalTool.openDiffAt" = "「%1$@」のリビジョン「%2$@」を比較ツールで開く";
+"externalTool.openDiffItemsAt" = "%1$ld 項目のリビジョン「%2$@」を比較ツールで開く";
 "externalTool.mergeIn" = "%@ でマージ";
 "externalTool.chooseMergeTool" = "マージツールを選択";
 "files.openWith" = "このアプリケーションで開く";

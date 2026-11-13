@@ -141,16 +141,15 @@ final class FileViewMenuItem: NSMenuItem {
 
 // MARK: - ChangesetFileMenu
 
-/// 提交变更集里一个文件的右键菜单：查看这个版本、文件历史、恢复到工作区与导出。
+/// 提交变更集里文件的右键菜单：复制路径、查看这个版本、文件历史、比较工具、恢复到工作区与导出。
+///
+/// 作用于右键时实际作用的文件：点在选区里是整个选区，点在选区外只是被点的那一个。
 struct ChangesetFileMenu: View {
     /// 当前仓库会话。
     let session: RepositorySession
 
-    /// 变更集里的文件路径，重命名时是新路径。
-    let path: String
-
-    /// 重命名前的路径；没有重命名时为 nil。
-    var originalPath: String? = nil
+    /// 实际作用的文件，按变更集里的顺序。
+    let files: [CommitFileChange]
 
     /// 文件所在的提交。
     let commit: HistoryCommit
@@ -158,44 +157,128 @@ struct ChangesetFileMenu: View {
     /// 目录对象与未解析的目标禁用内容读取，文件动作保持各自的能力。
     var contentEnabled = true
 
-    /// 查看组、比较工具与恢复、导出组之间有分隔线。
+    /// 各组之间有分隔线。
     var body: some View {
-        let name = RepositorySession.fileName(path)
+        let groups = Self.groups(session: session, files: files, commit: commit, contentEnabled: contentEnabled)
 
-        Button(AppLocalization.text("fileHistory.showAt", name, commit.shortID)) {
-            guard contentEnabled else { return }
-            session.showFile(path, at: commit.id, mode: .raw)
+        ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
+            if index > 0 {
+                Divider()
+            }
+
+            ForEach(group) { action in
+                Button(action.title, action: action.perform)
+                    .disabled(!action.enabled)
+            }
         }
-        .disabled(!contentEnabled)
+    }
 
-        Button(AppLocalization.text("fileHistory.blameAt", name, commit.shortID)) {
-            guard contentEnabled else { return }
-            session.showFile(path, at: commit.id, mode: .blame)
+    /// 菜单的各组动作。
+    ///
+    /// 单个文件时标题写仓库内的完整路径，有查看、Blame 与文件历史；多个文件时标题写数量，只有比较工具、恢复与导出。
+    ///
+    /// - Parameters:
+    ///   - session: 当前仓库会话。
+    ///   - files: 实际作用的文件。
+    ///   - commit: 文件所在的提交。
+    ///   - contentEnabled: 能否读取文件内容。
+    static func groups(
+        session: RepositorySession,
+        files: [CommitFileChange],
+        commit: HistoryCommit,
+        contentEnabled: Bool
+    ) -> [[FileViewAction]] {
+        guard let file = files.first else {
+            return []
         }
-        .disabled(!contentEnabled)
 
-        Button(AppLocalization.text("fileHistory.showHistoryOf", name)) {
-            session.showFileHistory(path)
+        let paths = files.map(\.path)
+        let compared = files.map { ComparedFile(path: $0.path, originalPath: $0.originalPath) }
+        let copy = copyActions(session: session, paths: paths)
+
+        guard files.count == 1 else {
+            return [
+                copy,
+                [
+                    FileViewAction(title: AppLocalization.text("externalTool.openDiffItemsAt", files.count, commit.shortID)) {
+                        session.openDiffTool(for: commit, files: compared)
+                    },
+                ],
+                [
+                    FileViewAction(
+                        title: AppLocalization.text("tree.restoreItems", files.count, commit.shortID),
+                        enabled: session.canWrite
+                    ) {
+                        session.restoreItems(paths, at: commit.id)
+                    },
+                    FileViewAction(
+                        title: AppLocalization.text("tree.exportItems", files.count, commit.shortID),
+                        enabled: contentEnabled
+                    ) {
+                        session.onRevisionRequest?(.export(revision: commit.id, paths: paths, archive: false))
+                    },
+                ],
+            ]
         }
 
-        Divider()
+        let path = file.path
 
-        // 与提交的第一个父提交比较
-        Button(AppLocalization.text("externalTool.openDiffAt", name, commit.shortID)) {
-            session.openDiffTool(for: commit, files: [ComparedFile(path: path, originalPath: originalPath)])
-        }
+        return [
+            copy,
+            [
+                FileViewAction(
+                    title: AppLocalization.text("fileHistory.showAt", path, commit.shortID),
+                    enabled: contentEnabled
+                ) {
+                    session.showFile(path, at: commit.id, mode: .raw)
+                },
+                FileViewAction(
+                    title: AppLocalization.text("fileHistory.blameAt", path, commit.shortID),
+                    enabled: contentEnabled
+                ) {
+                    session.showFile(path, at: commit.id, mode: .blame)
+                },
+                FileViewAction(title: AppLocalization.text("fileHistory.showHistoryOf", path)) {
+                    session.showFileHistory(path)
+                },
+            ],
 
-        Divider()
+            // 与提交的第一个父提交比较
+            [
+                FileViewAction(title: AppLocalization.text("externalTool.openDiffAt", path, commit.shortID)) {
+                    session.openDiffTool(for: commit, files: compared)
+                },
+            ],
+            [
+                FileViewAction(
+                    title: AppLocalization.text("fileHistory.restoreInWorkingCopy", path, commit.shortID),
+                    enabled: session.canWrite
+                ) {
+                    session.restoreFile(path, at: commit.id)
+                },
+                FileViewAction(
+                    title: AppLocalization.text("fileHistory.exportAt", path, commit.shortID),
+                    enabled: contentEnabled
+                ) {
+                    session.exportFile(path, at: commit.id)
+                },
+            ],
+        ]
+    }
 
-        Button(AppLocalization.text("fileHistory.restoreInWorkingCopy", name, commit.shortID)) {
-            session.restoreFile(path, at: commit.id)
-        }
-        .disabled(!session.canWrite)
-
-        Button(AppLocalization.text("fileHistory.exportAt", name, commit.shortID)) {
-            guard contentEnabled else { return }
-            session.exportFile(path, at: commit.id)
-        }
-        .disabled(!contentEnabled)
+    /// Copy File Path 与 Copy Relative File Path，比较视图的变更集菜单同样使用。
+    ///
+    /// - Parameters:
+    ///   - session: 当前仓库会话。
+    ///   - paths: 实际作用的文件。
+    static func copyActions(session: RepositorySession, paths: [String]) -> [FileViewAction] {
+        [
+            FileViewAction(title: AppLocalization.text("workspace.copyPathMenu")) {
+                session.copyPaths(paths, relative: false)
+            },
+            FileViewAction(title: AppLocalization.text("working.copyRelative")) {
+                session.copyPaths(paths, relative: true)
+            },
+        ]
     }
 }

@@ -234,11 +234,18 @@ struct CommitDetailView: View {
                 }
         } menu: {
             if let commit = history.selectedCommit {
-                ChangesetFileMenu(session: session, path: file.path, originalPath: file.originalPath, commit: commit)
+                ChangesetFileMenu(session: session, files: affectedFiles(file), commit: commit)
             }
         } diff: {
             CommitFileDiffView(history: history, path: file.path)
         }
+    }
+
+    /// 右键这一行时实际作用的文件：点在选区里是整个选区，点在选区外只是这一行，选区不变。
+    private func affectedFiles(_ file: CommitFileChange) -> [CommitFileChange] {
+        let paths = Set(history.fileSelection.affected(clicked: file.path, order: history.changes.map(\.path)))
+
+        return history.changes.filter { paths.contains($0.path) }
     }
 
     /// 点选一个文件行：按住 ⇧ 连续选，按住 ⌘ 切换这一行；键盘焦点随之交给变更文件所在的滚动内容。
@@ -388,7 +395,7 @@ struct CommitFileListView: View {
                     .tag(file.path)
                     .contextMenu {
                         if let commit = history.selectedCommit {
-                            ChangesetFileMenu(session: session, path: file.path, originalPath: file.originalPath, commit: commit)
+                            ChangesetFileMenu(session: session, files: [file], commit: commit)
                         }
                     }
                     .onDrag { CommitFileDragging.provider(file, session: session) }

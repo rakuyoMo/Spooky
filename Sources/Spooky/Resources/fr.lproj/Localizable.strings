@@ -1811,6 +1811,7 @@
 "externalTool.compare.theirsToBase" = "Leur version et l’ancêtre commun";
 "externalTool.openDiffTool" = "Ouvrir l’outil de comparaison";
 "externalTool.openDiffAt" = "Ouvrir l’outil de comparaison pour « %1$@ » à la révision « %2$@ »";
+"externalTool.openDiffItemsAt" = "Ouvrir l’outil de comparaison pour %1$ld éléments à la révision « %2$@ »";
 "externalTool.mergeIn" = "Fusionner dans %@";
 "externalTool.chooseMergeTool" = "Choisir l’outil de fusion";
 "files.openWith" = "Ouvrir avec";

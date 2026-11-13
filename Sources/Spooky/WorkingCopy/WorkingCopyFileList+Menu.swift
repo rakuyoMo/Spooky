@@ -506,22 +506,11 @@ extension WorkingCopyFileList.Coordinator {
 
     /// 复制远端路径时保留主机前缀。
     @objc
-    private func copyAbsolute() {
-        guard let repository = session.repository else { return }
-
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(
-            menuEntries.map { repository.displayPath + "/" + $0.path }.joined(separator: "\n"),
-            forType: .string
-        )
-    }
+    private func copyAbsolute() { session.copyPaths(menuEntries.map(\.path), relative: false) }
 
     /// 相对路径适合提交信息与终端中的仓库内引用。
     @objc
-    private func copyRelative() {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(menuEntries.map(\.path).joined(separator: "\n"), forType: .string)
-    }
+    private func copyRelative() { session.copyPaths(menuEntries.map(\.path), relative: true) }
 
     /// 交给 Finder 的是条目在这台 Mac 上的路径；服务器仓库按挂载位置换算，没有作用对象时显示仓库根目录。
     @objc
