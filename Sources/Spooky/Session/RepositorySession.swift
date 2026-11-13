@@ -121,6 +121,12 @@ final class RepositorySession {
     /// 点击勾选框后的临时状态，刷新成功或失败后撤回。
     var stagingOverrides: [StatusRowID: Bool] = [:]
 
+    /// 暂存正在执行：只有受影响的行禁用，其它行的勾选框仍可点，新的请求排进 ``queuedStaging``。
+    var isStaging = false
+
+    /// 暂存执行期间收到的请求，在同一个写操作里依次执行；失败或取消时一并丢弃。
+    var queuedStaging: [(entries: [StatusEntry], staged: Bool)] = []
+
     /// 列表多选使用的稳定标识。
     var selectedIDs: Set<StatusRowID> = []
 
@@ -534,6 +540,8 @@ extension RepositorySession {
         diffFailure = nil
         contentHash = nil
         stagingOverrides = [:]
+        isStaging = false
+        queuedStaging = []
         selectedIDs = []
         commitSubject = ""
         commitBody = ""

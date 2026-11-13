@@ -137,8 +137,11 @@ extension WorkingCopyFileList {
         /// 标记了 assume-unchanged 的路径。
         var marked: Set<String>
 
-        /// 仓库是否可写。
-        var canWrite: Bool
+        /// 勾选框能否点。
+        var canToggleStaging: Bool
+
+        /// 整个仓库被写操作占用，图标与文件名变灰。
+        var locked: Bool
 
         /// 表头排序。
         var sort: [NSSortDescriptor]
@@ -300,7 +303,8 @@ extension WorkingCopyFileList {
                 overrides: session.stagingOverrides,
                 listing: listing,
                 marked: session.workingTreeFiles.assumeUnchanged,
-                canWrite: session.canWrite,
+                canToggleStaging: session.canToggleStaging,
+                locked: session.isRepositoryLocked,
                 sort: outline.sortDescriptors,
                 style: style
             )

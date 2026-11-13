@@ -10,6 +10,18 @@ extension RepositorySession {
         return repository.host == nil || connectionState == .connected
     }
 
+    /// 文件列表的勾选框能否点：仓库可写，或本会话正在暂存、新的请求排在后面。
+    var canToggleStaging: Bool {
+        canWrite || isStaging
+    }
+
+    /// 整个仓库被写操作占用：写锁被占着，又不是本会话正在执行的暂存；文件列表的图标与文件名随之变灰。
+    var isRepositoryLocked: Bool {
+        guard let repository else { return false }
+
+        return RepositoryWriteLocks.shared.contains(repository) && !isStaging
+    }
+
     /// 菜单、工具栏、右键菜单与拖放共用的获取条件：需要已配置远端。
     var canFetch: Bool {
         canWrite && hasRemotes

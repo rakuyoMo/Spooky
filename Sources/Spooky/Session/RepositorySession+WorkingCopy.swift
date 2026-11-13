@@ -4,15 +4,43 @@ import SpookyKit
 // MARK: - Working Copy
 
 extension RepositorySession {
-    /// 勾选框先更新，再执行命令；任何失败都会撤回临时状态。
+    /// 受影响的行先显示目标状态，再执行命令；暂存正在执行时排在它后面，在同一个写操作里接着执行。
+    /// 任何失败都会撤回临时状态，排在后面的请求一并丢弃。
     func stage(_ entries: [StatusEntry], staged: Bool) {
-        guard canWrite, !entries.isEmpty else { return }
-        stagingOverrides = Dictionary(uniqueKeysWithValues: entries.map {
-            (StatusRowID(path: $0.path, kind: $0.kind), staged)
-        })
+        guard !entries.isEmpty else { return }
+
+        let targets = entries.map { (StatusRowID(path: $0.path, kind: $0.kind), staged) }
+
+        // 暂存正在执行：这些行先显示目标状态，请求排在后面
+        if isStaging {
+            stagingOverrides.merge(targets) { $1 }
+            queuedStaging.append((entries, staged))
+            return
+        }
+
+        guard canWrite else { return }
+
+        stagingOverrides = Dictionary(uniqueKeysWithValues: targets)
+        isStaging = true
+
+        let request = generation
+
         performGit(
-            { runner, _ in
-                try await WorkingCopyOperations(runner: runner).stage(entries, staged: staged)
+            { [weak self] runner, _ in
+                var next: (entries: [StatusEntry], staged: Bool)? = (entries, staged)
+
+                // 一次执行一个请求，做完再取排在后面的；失败时后面的请求不再执行
+                do {
+                    while let current = next {
+                        try await WorkingCopyOperations(runner: runner)
+                            .stage(current.entries, staged: current.staged)
+
+                        next = await self?.nextStaging(request)
+                    }
+                } catch {
+                    await self?.endStaging(request)
+                    throw error
+                }
             },
             title: AppLocalization.text(staged ? "working.stage" : "working.unstage"),
             recordsActivity: false,
@@ -375,5 +403,29 @@ extension RepositorySession {
         }
 
         onEmptyCommitPrompt?(EmptyCommitRequest(isSequence: isSequence, commit: commit, alternate: alternate))
+    }
+
+    /// 取出排在后面的下一个暂存请求；没有时结束暂存，之后的请求按仓库是否可写处理。仓库已切换时不再取。
+    ///
+    /// - Parameter request: 暂存开始时的仓库代数。
+    private func nextStaging(_ request: Int) -> (entries: [StatusEntry], staged: Bool)? {
+        guard generation == request else { return nil }
+
+        guard !queuedStaging.isEmpty else {
+            isStaging = false
+            return nil
+        }
+
+        return queuedStaging.removeFirst()
+    }
+
+    /// 暂存失败或被取消：结束暂存，排在后面的请求一并丢弃，它们的临时状态随之后的刷新撤回。
+    ///
+    /// - Parameter request: 暂存开始时的仓库代数。
+    private func endStaging(_ request: Int) {
+        guard generation == request else { return }
+
+        isStaging = false
+        queuedStaging = []
     }
 }

@@ -22,9 +22,14 @@ extension WorkingCopyFileList.Coordinator {
         button.node = node
         button.allowsMixedState = true
 
+        // 正在暂存的行显示目标状态并禁用，其它行在暂存期间仍可点，新的请求排在后面
+        let pending = entries.contains {
+            session.stagingOverrides[StatusRowID(path: $0.path, kind: $0.kind)] != nil
+        }
+
         // 不能暂存的行隐藏勾选框但保留位置，各行的徽标保持对齐
         button.alphaValue = entries.isEmpty ? 0 : 1
-        button.isEnabled = session.canWrite && !entries.isEmpty
+        button.isEnabled = session.canToggleStaging && !entries.isEmpty && !pending
         button.setAccessibilityElement(!entries.isEmpty)
         button.setAccessibilityLabel(AppLocalization.text("working.staging", node.path))
 
@@ -67,7 +72,8 @@ extension WorkingCopyFileList.Coordinator {
         return cell
     }
 
-    /// 图标与文件名：树形只显示末级名称，完整路径放在提示中；被忽略、assume-unchanged 与解决成与 HEAD 相同的文件变灰。
+    /// 图标与文件名：树形只显示末级名称，完整路径放在提示中；被忽略、assume-unchanged 与解决成与 HEAD 相同的文件变灰，
+    /// 整个仓库被写操作占用时所有行变灰。
     ///
     /// 图标 16 × 16、距左 9，文字与图标相隔 8、距右 8；冲突与已解决的文件在图标右上叠标记。
     func pathCell(_ node: WorkingCopyFileList.Node) -> NSView {
@@ -76,11 +82,13 @@ extension WorkingCopyFileList.Coordinator {
         let entry = node.entry
         let resolved = entry.map { $0.kind != .conflicted && renderResolved.contains($0.path) } ?? false
 
-        let dimmed = entry.map { entry in
-            entry.kind == .ignored
-                || renderMarked.contains(entry.path)
-                || (resolved && entry.kind == .unchanged)
-        } ?? false
+        // 整个仓库被写操作占用时所有行一起变灰
+        let dimmed = renderState?.locked ?? false
+            || entry.map { entry in
+                entry.kind == .ignored
+                    || renderMarked.contains(entry.path)
+                    || (resolved && entry.kind == .unchanged)
+            } ?? false
 
         let label = NSTextField(labelWithString: Self.pathTitle(node, tree: tree))
         label.font = .systemFont(ofSize: style.fontSize.pointSize)
