@@ -169,13 +169,13 @@ struct CommitDetailView: View {
         }
     }
 
-    /// 单个变更文件的折叠组，展开时才读取它的 Diff。
+    /// 单个变更文件，展开时才读取它的 Diff；整行都能点选。
     ///
     /// - Parameters:
     ///   - file: 变更文件。
     ///   - selectionColor: 选中时垫在文件行下面的颜色。
     private func fileSection(_ file: CommitFileChange, selectionColor: NSColor) -> some View {
-        DisclosureGroup(
+        ChangesetFileRow(
             isExpanded: Binding(
                 get: { history.expandedPaths.contains(file.path) },
                 set: {
@@ -186,27 +186,22 @@ struct CommitDetailView: View {
                         history.expandedPaths.remove(file.path)
                     }
                 }
-            )
+            ),
+            selection: history.fileSelection.paths.contains(file.path) ? selectionColor : nil,
+            select: { clickFile(file.path) }
         ) {
-            CommitFileDiffView(history: history, path: file.path)
-        } label: {
             CommitFileLabel(file: file)
-                .frame(height: 30)
-                .changesetFileRowLabel()
+                .frame(maxHeight: .infinity)
                 .contentShape(Rectangle())
-                .onTapGesture { clickFile(file.path) }
                 .contextMenu {
                     if let commit = history.selectedCommit {
                         ChangesetFileMenu(session: session, path: file.path, originalPath: file.originalPath, commit: commit)
                     }
                 }
                 .onDrag { CommitFileDragging.provider(file, session: session) }
+        } diff: {
+            CommitFileDiffView(history: history, path: file.path)
         }
-        .padding(.horizontal, 8)
-        .changesetFileRowSelection(
-            history.fileSelection.paths.contains(file.path),
-            color: selectionColor
-        )
     }
 
     /// 点选一个文件行：按住 ⇧ 连续选，按住 ⌘ 切换这一行；键盘焦点随之交给变更文件所在的滚动内容。
@@ -429,46 +424,5 @@ struct CommitFileDiffView: View {
         } else {
             ChangesetDiffLoadingView()
         }
-    }
-}
-
-// MARK: - File Row Selection
-
-extension View {
-    /// 标出变更文件行里文件名一栏的范围，`changesetFileRowSelection(_:color:)` 据此量出整行。
-    func changesetFileRowLabel() -> some View {
-        anchorPreference(key: ChangesetFileRowLabel.self, value: .bounds) { $0 }
-    }
-
-    /// 变更文件行的选中底：上下填满两条分隔线之间的整行，左右到列表边缘，直角；不延伸到展开的 Diff。
-    ///
-    /// 展开组在文件名一栏的上下留出相同的边距，整行的高度是这一栏的底边加上它到行顶的距离。
-    ///
-    /// - Parameters:
-    ///   - selected: 这一行是否选中。
-    ///   - color: 选中底的颜色。
-    func changesetFileRowSelection(_ selected: Bool, color: NSColor) -> some View {
-        backgroundPreferenceValue(ChangesetFileRowLabel.self, alignment: .top) { label in
-            if selected, let label {
-                GeometryReader { proxy in
-                    Rectangle()
-                        .fill(Color(nsColor: color))
-                        .frame(height: proxy[label].maxY + proxy[label].minY)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - ChangesetFileRowLabel
-
-/// 变更文件行里文件名一栏的范围；一行只有一个，取先报上来的。
-private struct ChangesetFileRowLabel: PreferenceKey {
-    /// 没有标出时为 nil。
-    static let defaultValue: Anchor<CGRect>? = nil
-
-    /// 保留已有的范围。
-    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
-        value = value ?? nextValue()
     }
 }
