@@ -124,9 +124,11 @@ extension RepositoryHistoryState {
     ///
     /// - Parameter commitID: 提交的完整哈希。
     func decorations(of commitID: String) -> [RepositoryReference] {
-        snapshot?.decorations(
+        let source = referenceSource ?? self
+
+        return source.snapshot?.decorations(
             of: commitID,
-            headBranch: branch?.head.map { "refs/heads/" + $0 }
+            headBranch: source.branch?.head.map { "refs/heads/" + $0 }
         ) ?? []
     }
 
@@ -134,6 +136,6 @@ extension RepositoryHistoryState {
     ///
     /// - Parameter commitID: 提交的完整哈希。
     func isHead(_ commitID: String) -> Bool {
-        branch?.oid == commitID
+        (referenceSource ?? self).branch?.oid == commitID
     }
 }

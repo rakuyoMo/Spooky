@@ -43,6 +43,10 @@ struct ReflogSessionTests {
         reflog.selectedID = reflog.entries.first?.id
         #expect(reflog.detail.selectedCommit?.subject == "功能 [x] *")
 
+        // 详情的引用取窗口历史的引用快照，头部收起时同样有 Refs 行
+        let commit = try #require(reflog.detail.selectedCommit)
+        #expect(reflog.detail.decorations(of: commit.id).map(\.id) == ["refs/heads/功能/分支"])
+
         try await restoreBranch(in: fixture)
 
         // 关闭仓库后回到 HEAD

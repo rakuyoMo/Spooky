@@ -367,6 +367,9 @@ final class RepositorySession {
         fileHistory.activities = activities
         fileContent.activities = activities
 
+        // Reflog 的详情不读引用，徽标、Refs 行与 HEAD 取本窗口历史的引用快照
+        reflog.detail.referenceSource = history
+
         // 服务器仓库读完工作树清单后，查找仓库目录与新出现的工作树在这台 Mac 上的挂载
         worktrees.onLoad = { [weak self] in self?.locateMounts() }
 

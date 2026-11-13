@@ -20,6 +20,10 @@ final class RepositoryHistoryState {
     /// 与引用快照一起使用的 HEAD 状态。
     private(set) var branch: BranchStatus? = nil
 
+    /// 提供引用快照与 HEAD 的历史状态；为 nil 时用自己读到的。Reflog 的详情不读引用，取窗口历史的快照。
+    @ObservationIgnored
+    weak var referenceSource: RepositoryHistoryState? = nil
+
     /// 分支相对上游的结构化计数。
     private(set) var divergence: [String: ReferenceDivergence] = [:]
 
