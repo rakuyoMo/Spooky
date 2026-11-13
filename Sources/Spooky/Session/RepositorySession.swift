@@ -293,6 +293,7 @@ final class RepositorySession {
 
     /// 窗口负责呈现分支、标签与远端管理的对话框和询问。
     var onReferenceRequest: ((ReferenceRequest) -> Void)? = nil
+
     /// 打开另一个仓库，如子模块、父仓库或工作树；验证与窗口复用规则和打开其它仓库相同。
     var onOpenRepository: ((RepositoryLocation, RepositoryOpenTarget) -> Void)? = nil
 
