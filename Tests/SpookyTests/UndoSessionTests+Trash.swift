@@ -76,6 +76,48 @@ extension UndoSessionTests {
         #expect(try fixture.read() == "base\n")
         #expect(try #require(session.status).entries.isEmpty)
     }
+
+    /// 服务器没有废纸篓、确认后的永久删除：撤销按删除前的工作区快照写回已跟踪的文件，索引项、已暂存的内容与
+    /// assume-unchanged 标记都回到删除前；其中有未跟踪的项时找不回内容，这次删除不能撤销。
+    @Test("永久删除的撤销恢复索引与 assume-unchanged 标记")
+    func permanentDeletionUndo() async throws {
+        let fixture = try await Fixture()
+        defer { fixture.remove() }
+
+        let runner = fixture.runner
+        let assumed = fixture.directory.appending(path: "assumed [x].txt")
+        let paths = ["a b.txt", "assumed [x].txt"]
+
+        // 标为 assume-unchanged 的文件与部分暂存的文件
+        try Data("base\n".utf8).write(to: assumed)
+        _ = try await runner.run(["add", "--", "assumed [x].txt"])
+        _ = try await runner.run(["commit", "-q", "-m", "assumed"])
+        _ = try await runner.run(["update-index", "--assume-unchanged", "--", "assumed [x].txt"])
+
+        try fixture.write("index\n")
+        _ = try await runner.run(["add", "--", "a b.txt"])
+        try fixture.write("worktree\n")
+
+        let index = try await runner.run(["ls-files", "-s", "-v", "-z"])
+        let inverse = try #require(try await Self.prepareDeletion(paths, removal: .permanent, runner: runner))
+
+        try await WorkingCopyOperations(runner: runner).delete(paths, removal: .permanent)
+        #expect(!FileManager.default.fileExists(atPath: assumed.path))
+
+        // 撤销：文件按删除前的工作区写回，索引与标记回到删除前
+        try await inverse.undo(runner) { _ in }
+
+        #expect(try await runner.run(["ls-files", "-s", "-v", "-z"]) == index)
+        #expect(try fixture.read() == "worktree\n")
+        #expect(try String(contentsOf: assumed, encoding: .utf8) == "base\n")
+
+        // 有未跟踪的项时不能撤销
+        try Data("new\n".utf8).write(to: fixture.directory.appending(path: "new.txt"))
+
+        await #expect(throws: RepositoryUndoError.untrackedFiles) {
+            _ = try await Self.prepareDeletion(["new.txt"], removal: .permanent, runner: runner)
+        }
+    }
 }
 
 // MARK: - Helpers
@@ -97,5 +139,18 @@ extension UndoSessionTests {
         case .inverse(_, _, _, let inverse): inverse.trashLog?.items ?? []
         case nil: []
         }
+    }
+
+    /// 执行删除记录的准备，取出它给出的反向操作。
+    static func prepareDeletion(
+        _ paths: [String],
+        removal: FileRemoval,
+        runner: GitRunner
+    ) async throws -> UndoInverse? {
+        guard case .inverse(let prepare) = UndoRecording.deletingFiles(paths, removal: removal) else {
+            return nil
+        }
+
+        return try await prepare(runner)
     }
 }

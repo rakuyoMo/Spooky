@@ -8,7 +8,7 @@ public struct TrackedIndexEntries: Sendable {
     let records: [String]
 
     /// 各记录的路径，与 ``records`` 一一对应。
-    let paths: [String]
+    public let paths: [String]
 
     /// 其中标为 assume-unchanged 的路径。
     let assumedUnchanged: [String]
@@ -120,20 +120,26 @@ extension WorkingCopyOperations {
         return try TrackedIndexEntries(parsing: output)
     }
 
-    /// 撤销删除：先核对删除的已跟踪文件仍不在索引里，再把废纸篓里的项移回原处，按删除前的记录恢复索引项与 assume-unchanged 标记。
+    /// 撤销删除：先核对删除的已跟踪文件仍不在索引里、原位置也没有新文件，再把废纸篓里的项移回原处，
+    /// 按删除前的记录恢复索引项与 assume-unchanged 标记。
     ///
-    /// 已暂存的内容随索引项一起回来，工作区里的内容来自废纸篓，不按快照重写文件。
+    /// 已暂存的内容随索引项一起回来；工作区里的内容来自废纸篓，永久删除的已跟踪文件按删除前的工作区快照写回。
     ///
     /// - Parameters:
     ///   - trashed: 删除时移进废纸篓的项。
     ///   - entries: 删除前读出的索引项。
-    /// - Throws: 文件已重新出现在索引里时抛出 ``RepositoryUndoError/repositoryChanged``；
+    ///   - contents: 永久删除时，删除前已跟踪文件在工作区里的内容所在的树；移进废纸篓时为 nil。
+    /// - Throws: 文件已重新出现在索引或原位置时抛出 ``RepositoryUndoError/repositoryChanged``；
     ///   废纸篓里的项移不回来时抛出 ``RepositoryUndoError/trashedItemsUnavailable``；两种情况都不做任何改动。
-    public func restoreDeleted(_ trashed: [TrashedItem], entries: TrackedIndexEntries) async throws {
+    public func restoreDeleted(
+        _ trashed: [TrashedItem],
+        entries: TrackedIndexEntries,
+        contents: String? = nil
+    ) async throws {
         try await runner.writeTransaction {
             if !entries.paths.isEmpty {
                 let present = try await runner.run(
-                    ["--literal-pathspecs", "ls-files", "-z", "--"] + entries.paths
+                    ["--literal-pathspecs", "ls-files", "-z", "--cached", "--others", "--"] + entries.paths
                 )
 
                 guard present.isEmpty else {
@@ -153,6 +159,14 @@ extension WorkingCopyOperations {
                 ["update-index", "-z", "--index-info"],
                 input: Self.pathInput(entries.records)
             )
+
+            // 永久删除的文件只写回工作区，索引已按记录恢复
+            if let contents {
+                _ = try await runner.run(
+                    ["--literal-pathspecs", "restore", "--source=" + contents, "--worktree"] + Self.pathInputOptions,
+                    input: Self.pathInput(entries.paths)
+                )
+            }
 
             // 重新登记的索引项不带 assume-unchanged 标记，原来有的补上
             if !entries.assumedUnchanged.isEmpty {

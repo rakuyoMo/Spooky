@@ -164,16 +164,13 @@ extension RepositorySession {
         let removal = fileRemoval
         let title = AppLocalization.text(removal == .trash ? "files.trash" : "files.delete")
 
-        // 移进废纸篓的项连同索引项由反向操作恢复；永久删除的已跟踪文件按快照写回
-        let undo: UndoRecording = removal == .trash ? .deletingFiles(paths) : .reversible
-
         // 删除与其它写操作一样经仓库写队列执行
         let perform = { [weak self] in
             _ = self?.performGit(
                 { runner, _ in try await WorkingCopyOperations(runner: runner).delete(paths, removal: removal) },
                 title: title,
                 recordsActivity: false,
-                undo: undo
+                undo: .deletingFiles(paths, removal: removal)
             )
         }
 
