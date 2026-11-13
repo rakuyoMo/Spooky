@@ -564,7 +564,7 @@ extension RepositoryWindowController {
         withObservationTracking {
             for action in [
                 #selector(fetch), #selector(pull), #selector(push), #selector(sync),
-                #selector(merge), #selector(rebase), #selector(refreshRepository), #selector(closeRepository),
+                #selector(merge), #selector(rebase), #selector(refreshRepository),
                 #selector(applyStash), #selector(saveStash), #selector(createBranch),
                 #selector(forcePushWithLease), #selector(pushRevision),
             ] {
