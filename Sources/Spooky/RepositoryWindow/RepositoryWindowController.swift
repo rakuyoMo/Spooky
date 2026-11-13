@@ -85,7 +85,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         self.coordinator = coordinator
         self.session = session
 
-        let window = NSWindow(
+        let window = RepositoryWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1000, height: 540),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,

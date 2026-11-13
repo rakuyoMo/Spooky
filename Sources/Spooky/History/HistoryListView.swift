@@ -217,17 +217,6 @@ struct HistoryCommitTable: NSViewRepresentable {
         /// 列表内拖放时落点旁的动作名。
         let dropLabel = HistoryDropLabel()
 
-        /// 点选一行时表格先拿到键盘焦点，↑ ↓ 随后在提交之间移动选中。
-        ///
-        /// 行内容是不接受第一响应者的 SwiftUI 视图，点击时窗口不把焦点交给表格，焦点会留在原处（通常是侧边栏）。
-        override func mouseDown(with event: NSEvent) {
-            #warning("TODO: 自动测试的窗口当不了 key window，真实点击经这里交出焦点还要在真实窗口里点选确认")
-
-            window?.makeFirstResponder(self)
-
-            super.mouseDown(with: event)
-        }
-
         /// 回车与小键盘 Enter 是双击的键盘入口，其它按键交给系统列表。
         override func keyDown(with event: NSEvent) {
             if
