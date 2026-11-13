@@ -97,13 +97,19 @@ struct CommitMetadataView: View {
         }
     }
 
-    /// 当前开合状态下的行，后接签名行。
+    /// 当前开合状态下的行；签名行只在展开时接在后面。
     private var rows: [Row] {
-        Self.rows(
+        let rows = Self.rows(
             commit,
             expanded: expanded,
             hasReferences: isHead || !references.isEmpty
-        ) + Self.signatureRows(signature).map { .text(key: $0.key, value: $0.value) }
+        )
+
+        guard expanded else {
+            return rows
+        }
+
+        return rows + Self.signatureRows(signature).map { .text(key: $0.key, value: $0.value) }
     }
 
     /// 提交人头像在左、作者头像在右，各 80 pt；提交人邮箱与作者相同时只有作者头像。
