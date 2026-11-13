@@ -128,13 +128,14 @@ struct CommitDetailView: View {
                     .padding(.bottom, 8)
             }
 
-            Divider()
-
+            // 提交说明与 Expand All 一行之间不画分隔线，这一行下方画一条，隔开第一个文件行
             ChangesetSummaryBar(
                 changes: history.changes,
                 expanded: history.allItemsExpanded,
                 toggle: { history.expandAll(!history.allItemsExpanded) }
             )
+
+            Divider()
 
             changeRows
         }
@@ -312,16 +313,15 @@ struct CommitFileListView: View {
 
 // MARK: - CommitFileLabel
 
-/// 文件状态与重命名路径在提交详情、整页详情与版本比较中保持一致。
+/// 文件状态与重命名路径在提交详情、整页详情、版本比较与目录的文件历史中保持一致。
 struct CommitFileLabel: View {
     /// 当前文件变更。
     let file: CommitFileChange
 
-    /// 状态字母和路径都支持辅助功能读取。
+    /// 状态只用与工作区相同的徽标表示，辅助技术读出状态全称与路径。
     var body: some View {
         HStack(spacing: 8) {
-            Text(file.status).frame(width: 24)
-            Image(systemName: "doc").accessibilityHidden(true)
+            FileChangeStatusView(code: file.status)
             Text(file.originalPath.map { $0 + " → " + file.path } ?? file.path)
                 .lineLimit(1)
                 .truncationMode(.middle)
