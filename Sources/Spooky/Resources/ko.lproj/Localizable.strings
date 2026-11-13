@@ -700,6 +700,8 @@
 "conflict.restoreUnmerged.many" = "항목 %d 개의 병합되지 않은 버전 복원";
 "conflict.restoreUnmerged.one" = "“%@”의 병합되지 않은 버전 복원";
 "conflict.restoreVersion" = "“%@”의 버전 복원";
+"conflict.resolveUsingVersion.applied" = "적용한 패치 또는 스태시의 버전으로 해결";
+"conflict.restoreVersion.applied" = "적용한 패치 또는 스태시의 버전 복원";
 "conflict.result" = "직접 편집하거나 병합한 버전";
 "conflict.step" = "%d / %d 단계";
 "conflict.step.applying" = "%d / %d 단계: “%@” 적용 중";

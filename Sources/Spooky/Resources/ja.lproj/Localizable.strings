@@ -700,6 +700,8 @@
 "conflict.restoreUnmerged.many" = "%d 項目の未マージのバージョンを復元";
 "conflict.restoreUnmerged.one" = "「%@」の未マージのバージョンを復元";
 "conflict.restoreVersion" = "「%@」のバージョンを復元";
+"conflict.resolveUsingVersion.applied" = "適用したパッチまたはスタッシュのバージョンで解決";
+"conflict.restoreVersion.applied" = "適用したパッチまたはスタッシュのバージョンを復元";
 "conflict.result" = "手動で編集またはマージしたバージョン";
 "conflict.step" = "ステップ %d / %d";
 "conflict.step.applying" = "ステップ %d / %d：「%@」を適用中";

@@ -8,8 +8,9 @@ import Testing
 
 /// 由操作自己给出反向操作的撤销：assume-unchanged 的标记与 Git LFS 的启用。
 extension UndoSessionTests {
-    /// 标记与取消 assume-unchanged 各自撤销后文件列表随之变化，重做后再次生效；标记本来都在时不占撤销栈。
-    @Test("assume-unchanged 的撤销与重做")
+    /// 右键菜单按读到的实际标记启用设置与清除；标记与取消 assume-unchanged 各自撤销后文件列表随之变化，重做后再次生效；
+    /// 标记本来都在时不占撤销栈。
+    @Test("assume-unchanged 的可用条件、撤销与重做")
     func assumeUnchangedRoundTrip() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
@@ -22,10 +23,20 @@ extension UndoSessionTests {
 
         let entry = try #require(session.status?.entries.first)
 
-        // 标记后 Git 不再报告这个文件的改动
+        // 右键菜单按读到的实际标记启用：没标记时只能设置
+        var marked = try #require(await session.assumeUnchangedPaths(of: [entry]))
+
+        #expect(session.canMarkAssumeUnchanged([entry], true, marked: marked))
+        #expect(!session.canMarkAssumeUnchanged([entry], false, marked: marked))
+
+        // 标记后 Git 不再报告这个文件的改动，菜单只能清除
         try await fixture.perform { session.setAssumeUnchanged([entry], true) }
+        marked = try #require(await session.assumeUnchangedPaths(of: [entry]))
 
         #expect(session.status?.entries.isEmpty ?? false)
+        #expect(marked == [entry.path])
+        #expect(!session.canMarkAssumeUnchanged([entry], true, marked: marked))
+        #expect(session.canMarkAssumeUnchanged([entry], false, marked: marked))
         #expect(try await Self.settledState(of: session, redo: false) == .available(set))
 
         try await fixture.perform { session.undoLastOperation() }

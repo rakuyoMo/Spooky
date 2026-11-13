@@ -700,6 +700,8 @@
 "conflict.restoreUnmerged.many" = "恢复 %d 个项目的未合并版本";
 "conflict.restoreUnmerged.one" = "恢复 “%@” 的未合并版本";
 "conflict.restoreVersion" = "恢复来自 “%@” 的版本";
+"conflict.resolveUsingVersion.applied" = "采用来自应用的补丁或储藏的版本解决";
+"conflict.restoreVersion.applied" = "恢复来自应用的补丁或储藏的版本";
 "conflict.result" = "手动编辑或合并后的版本";
 "conflict.step" = "第 %d 步，共 %d 步";
 "conflict.step.applying" = "第 %d 步，共 %d 步：正在应用 “%@”";

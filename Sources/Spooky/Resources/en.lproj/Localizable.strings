@@ -700,6 +700,8 @@
 "conflict.restoreUnmerged.many" = "Restore Unmerged Version of %d Items";
 "conflict.restoreUnmerged.one" = "Restore Unmerged Version of “%@”";
 "conflict.restoreVersion" = "Restore Version from “%@”";
+"conflict.resolveUsingVersion.applied" = "Resolve Using Version from Applied Patch or Stash";
+"conflict.restoreVersion.applied" = "Restore Version from Applied Patch or Stash";
 "conflict.result" = "Manually Edited or Merged Version";
 "conflict.step" = "Step %d of %d";
 "conflict.step.applying" = "Rebase %d of %d: Applying “%@”";

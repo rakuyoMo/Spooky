@@ -342,20 +342,34 @@ extension RepositorySession {
         canWrite && entries.contains { $0.kind != .ignored }
     }
 
-    /// 设置或清除标记：暂存区清单已读取时按实际标记判断，否则只要求是暂存区里的文件。
-    func canMarkAssumeUnchanged(_ entries: [StatusEntry], _ assumeUnchanged: Bool) -> Bool {
+    /// 设置或清除标记：暂存区里的条目有没标记的才能设置，有已标记的才能清除。
+    ///
+    /// - Parameters:
+    ///   - entries: 右键菜单作用的条目。
+    ///   - assumeUnchanged: 为 true 时判断设置，否则判断清除。
+    ///   - marked: 打开菜单时读到的、已标记的路径。
+    func canMarkAssumeUnchanged(_ entries: [StatusEntry], _ assumeUnchanged: Bool, marked: Set<String>) -> Bool {
         let markable = entries.filter(\.isInIndex)
 
         guard canWrite, !markable.isEmpty else {
             return false
         }
 
-        guard workingTreeFiles.index != nil else {
-            return true
-        }
-
-        let marked = workingTreeFiles.assumeUnchanged
         return markable.contains { marked.contains($0.path) != assumeUnchanged }
+    }
+
+    /// 这些条目里已标记 assume-unchanged 的路径；只在打开菜单时读一次，不进常规轮询。
+    ///
+    /// 读取失败或期间换了仓库时为 nil。
+    func assumeUnchangedPaths(of entries: [StatusEntry]) async -> Set<String>? {
+        let paths = entries.filter(\.isInIndex).map(\.path)
+
+        guard let runner, !paths.isEmpty else { return nil }
+
+        let request = generation
+        let marked = try? await WorkingCopyOperations(runner: runner).assumedUnchanged(paths)
+
+        return generation == request ? marked : nil
     }
 }
 

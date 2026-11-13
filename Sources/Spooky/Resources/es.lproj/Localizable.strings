@@ -700,6 +700,8 @@
 "conflict.restoreUnmerged.many" = "Restaurar la versión sin fusionar de %d elementos";
 "conflict.restoreUnmerged.one" = "Restaurar la versión sin fusionar de “%@”";
 "conflict.restoreVersion" = "Restaurar la versión de “%@”";
+"conflict.resolveUsingVersion.applied" = "Resolver con la versión del parche o stash aplicado";
+"conflict.restoreVersion.applied" = "Restaurar la versión del parche o stash aplicado";
 "conflict.result" = "Versión editada a mano o fusionada";
 "conflict.step" = "Paso %d de %d";
 "conflict.step.applying" = "Paso %d de %d: aplicando “%@”";

@@ -700,6 +700,8 @@
 "conflict.restoreUnmerged.many" = "Nicht zusammengeführte Version von %d Objekten wiederherstellen";
 "conflict.restoreUnmerged.one" = "Nicht zusammengeführte Version von „%@“ wiederherstellen";
 "conflict.restoreVersion" = "Version aus „%@“ wiederherstellen";
+"conflict.resolveUsingVersion.applied" = "Mit Version aus angewendetem Patch oder Stash auflösen";
+"conflict.restoreVersion.applied" = "Version aus angewendetem Patch oder Stash wiederherstellen";
 "conflict.result" = "Manuell bearbeitete oder zusammengeführte Version";
 "conflict.step" = "Schritt %d von %d";
 "conflict.step.applying" = "Schritt %d von %d: „%@“ wird angewendet";

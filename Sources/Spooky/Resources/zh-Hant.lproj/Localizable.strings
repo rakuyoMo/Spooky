@@ -700,6 +700,8 @@
 "conflict.restoreUnmerged.many" = "回復 %d 個項目的未合併版本";
 "conflict.restoreUnmerged.one" = "回復 “%@” 的未合併版本";
 "conflict.restoreVersion" = "回復來自 “%@” 的版本";
+"conflict.resolveUsingVersion.applied" = "採用來自套用的修補或儲藏的版本解決";
+"conflict.restoreVersion.applied" = "回復來自套用的修補或儲藏的版本";
 "conflict.result" = "手動編輯或合併後的版本";
 "conflict.step" = "第 %d 步，共 %d 步";
 "conflict.step.applying" = "第 %d 步，共 %d 步：正在套用 “%@”";

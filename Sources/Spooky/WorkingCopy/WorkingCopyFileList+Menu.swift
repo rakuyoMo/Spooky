@@ -229,7 +229,7 @@ extension WorkingCopyFileList.Coordinator {
     /// 冲突：解决合并冲突与恢复合并冲突版本两个子菜单，以及用合并工具解决单个冲突文件；可用性按所选文件逐项判断。
     private func addConflictItems(to menu: NSMenu) {
         beginGroup(in: menu)
-        ConflictMenu.add(to: menu, entries: menuEntries, session: session)
+        ConflictMenu.add(to: menu, entries: menuEntries, names: menuTargets.map(\.name), session: session)
         add(
             "externalTool.openMergeTool",
             action: #selector(mergeToolMenu),
@@ -275,18 +275,29 @@ extension WorkingCopyFileList.Coordinator {
         addPatternMenu("files.exclude", file: .exclude, to: menu)
 
         let mark = submenu("files.mark", in: menu)
-        add(
-            "files.assumeUnchanged.set",
+        let set = add(
+            title: AppLocalization.text("files.assumeUnchanged.set"),
             action: #selector(setAssumeUnchanged),
-            enabled: session.canMarkAssumeUnchanged(menuEntries, true),
+            enabled: false,
             to: mark
         )
-        add(
-            "files.assumeUnchanged.unset",
+
+        let unset = add(
+            title: AppLocalization.text("files.assumeUnchanged.unset"),
             action: #selector(unsetAssumeUnchanged),
-            enabled: session.canMarkAssumeUnchanged(menuEntries, false),
+            enabled: false,
             to: mark
         )
+
+        // 标记不在轮询里读取：打开菜单时读一次作用条目的实际标记，读到后再启用；读取失败时两项保持禁用
+        let entries = menuEntries
+
+        Task { [session] in
+            guard let marked = await session.assumeUnchangedPaths(of: entries) else { return }
+
+            set.isEnabled = session.canMarkAssumeUnchanged(entries, true, marked: marked)
+            unset.isEnabled = session.canMarkAssumeUnchanged(entries, false, marked: marked)
+        }
     }
 
     /// LFS ▸：逐个跟踪所选文件、跟踪同类型的全部文件，或输入自定义规则；执行时才检查 Git LFS 是否可用。
@@ -319,21 +330,31 @@ extension WorkingCopyFileList.Coordinator {
         add("lfs.createPattern.menu", action: #selector(createLFSPattern), enabled: session.canWrite, to: lfs)
     }
 
-    /// Compare ▸：用比较工具比较工作区、暂存区与 HEAD；单个冲突文件另有我方、对方与共同祖先之间的三种比较。
+    /// Compare ▸：总是列出工作区、暂存区与 HEAD 之间的三种比较，两侧没有差别时不可用；作用于单个对象时，
+    /// 再隔一条分隔线列出我方、对方与共同祖先之间的三种比较，不是冲突文件时不可用。
+    ///
+    /// 没有作用对象时前三种比较整个工作区。
     private func addCompareMenu(to menu: NSMenu) {
         beginGroup(in: menu)
 
         let compare = submenu("externalTool.compare", in: menu)
-        let conflicted = menuEntries.count == 1 && menuEntries.first?.conflict != nil
+        let entries = menuTargets.isEmpty ? session.status?.entries ?? [] : menuEntries
 
-        for comparison in WorkingCopyComparison.allCases where comparison.isConflictComparison == conflicted {
+        for comparison in WorkingCopyComparison.allCases {
+            guard !comparison.isConflictComparison || menuTargets.count == 1 else { continue }
+
+            // 冲突比较与前三种之间隔一条分隔线
+            if comparison == .oursToTheirs {
+                compare.addItem(.separator())
+            }
+
             let item = add(
                 title: AppLocalization.text(comparison.titleKey),
                 action: #selector(compareMenu(_:)),
-                enabled: session.canCompare(menuEntries, comparison),
+                enabled: session.canCompare(entries, comparison),
                 to: compare
             )
-            item.representedObject = comparison
+            item.representedObject = (comparison, entries)
         }
     }
 
@@ -389,11 +410,14 @@ extension WorkingCopyFileList.Coordinator {
         session.openMergeTool(entry)
     }
 
-    /// 用比较工具按菜单项对应的方式比较所选文件。
+    /// 用比较工具按菜单项对应的方式比较打开菜单时算出的文件。
     @objc
     private func compareMenu(_ sender: NSMenuItem) {
-        guard let comparison = sender.representedObject as? WorkingCopyComparison else { return }
-        session.compare(menuEntries, comparison)
+        guard let (comparison, entries) = sender.representedObject as? (WorkingCopyComparison, [StatusEntry]) else {
+            return
+        }
+
+        session.compare(entries, comparison)
     }
 
     /// 菜单暂存所选条目。

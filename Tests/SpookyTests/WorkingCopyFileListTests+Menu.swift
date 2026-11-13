@@ -90,4 +90,84 @@ extension WorkingCopyFileListTests {
         #expect(coordinator.menuEntries.map(\.path) == ["dir/sub/b.txt", "dir/sub/c.txt"])
         #expect(coordinator.terminalLocation == .local(path: root + "/dir/sub"))
     }
+
+    /// 冲突两个父项总能展开，子项按作用对象点名或计数；对方来自补丁或储藏时不加引号，没冲突过的文件不能恢复冲突。
+    /// Compare 总列三种工作区比较、按两侧有无差别启用，单个对象另列三种冲突比较，空白处比较整个工作区。
+    @Test("冲突与比较子菜单")
+    func conflictAndCompareMenus() async {
+        let source = StatusSource()
+        let session = RepositorySession(loadStatus: { _ in await source.status }, activities: RepositoryActivities())
+        defer { session.close() }
+
+        session.display(RepositoryLocation.local(path: "/temporary/compare-" + UUID().uuidString))
+
+        let list = FileListHarness(session: session, source: source)
+        let menu = NSMenu()
+
+        await list.show([.added("staged.txt"), .untracked("new.txt"), .modified("work.txt")])
+
+        // 只有暂存改动：工作区对暂存区不可用；冲突比较列出但不可用
+        list.select(rows: [1])
+        list.coordinator.buildMenu(menu, clickedRow: 1)
+
+        #expect(
+            Self.states(menu, "externalTool.compare") == [
+                "externalTool.compare.workingTreeToBase": true,
+                "externalTool.compare.workingTreeToIndex": false,
+                "externalTool.compare.indexToBase": true,
+                "externalTool.compare.oursToTheirs": false,
+                "externalTool.compare.oursToBase": false,
+                "externalTool.compare.theirsToBase": false,
+            ]
+        )
+
+        // 不是冲突文件：两个父项照样能展开，标题点名但不可用，对方的版本不加引号
+        let resolve = Self.items(menu, "conflict.menu.resolve")
+        let restore = Self.items(menu, "conflict.menu.restore")
+
+        #expect(resolve.first?.title == AppLocalization.text("conflict.markResolved.one", "staged.txt"))
+        #expect(resolve.last?.title == AppLocalization.text("conflict.resolveUsingVersion.applied"))
+        #expect(restore.first?.title == AppLocalization.text("conflict.restoreUnmerged.one", "staged.txt"))
+        #expect(!resolve.contains { $0.isEnabled })
+        #expect(!(restore.first?.isEnabled ?? true))
+
+        // 只有未暂存改动：暂存区对 HEAD 不可用
+        list.select(rows: [2])
+        list.coordinator.buildMenu(menu, clickedRow: 2)
+        #expect(!(Self.states(menu, "externalTool.compare")["externalTool.compare.indexToBase"] ?? true))
+
+        // 多选：只有三种工作区比较，冲突标题计数
+        list.select(rows: [1, 2])
+        list.coordinator.buildMenu(menu, clickedRow: 1)
+
+        let mark = Self.items(menu, "conflict.menu.resolve").first?.title
+
+        #expect(Self.states(menu, "externalTool.compare").count == 3)
+        #expect(mark == AppLocalization.text("conflict.markResolved.many", 2))
+
+        // 空白处没有选择：比较整个工作区，三项都可用
+        list.select(rows: [])
+        list.coordinator.buildMenu(menu, clickedRow: -1)
+        #expect(Set(Self.states(menu, "externalTool.compare").values) == [true])
+    }
+}
+
+// MARK: - Private
+
+extension WorkingCopyFileListTests {
+    /// 子菜单里除分隔线外的菜单项。
+    private static func items(_ menu: NSMenu, _ key: String) -> [NSMenuItem] {
+        (menu.item(withTitle: AppLocalization.text(key))?.submenu?.items ?? []).filter { !$0.isSeparatorItem }
+    }
+
+    /// 比较子菜单各项的可用性，按标题的资源键查。
+    private static func states(_ menu: NSMenu, _ key: String) -> [String: Bool] {
+        let keys = WorkingCopyComparison.allCases.map(\.titleKey)
+
+        return Dictionary(
+            uniqueKeysWithValues: items(menu, key).compactMap { item in
+                keys.first { AppLocalization.text($0) == item.title }.map { ($0, item.isEnabled) }
+            }
+        )
+    }
 }

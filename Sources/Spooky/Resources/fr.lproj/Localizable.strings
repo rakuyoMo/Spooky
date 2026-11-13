@@ -700,6 +700,8 @@
 "conflict.restoreUnmerged.many" = "Restaurer la version non fusionnée de %d éléments";
 "conflict.restoreUnmerged.one" = "Restaurer la version non fusionnée de « %@ »";
 "conflict.restoreVersion" = "Restaurer la version de « %@ »";
+"conflict.resolveUsingVersion.applied" = "Résoudre avec la version du patch ou remisage appliqué";
+"conflict.restoreVersion.applied" = "Restaurer la version du patch ou remisage appliqué";
 "conflict.result" = "Version modifiée à la main ou fusionnée";
 "conflict.step" = "Étape %d sur %d";
 "conflict.step.applying" = "Étape %d sur %d : application de « %@ »";

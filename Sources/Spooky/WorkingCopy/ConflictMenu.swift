@@ -3,7 +3,7 @@ import SpookyKit
 
 // MARK: - ConflictMenu
 
-/// 工作区文件右键菜单的冲突组：“解决合并冲突” 与 “恢复合并冲突的版本” 两个子菜单，可用性按所选文件逐项判断。
+/// 工作区文件右键菜单的冲突组：“解决合并冲突” 与 “恢复合并冲突的版本” 两个子菜单总能展开，子项按作用的文件逐项判断可用性。
 @MainActor
 enum ConflictMenu {
     /// 把冲突组的两个子菜单加到菜单末尾。
@@ -11,39 +11,37 @@ enum ConflictMenu {
     /// - Parameters:
     ///   - menu: 右键菜单。
     ///   - entries: 右键菜单作用的文件。
+    ///   - names: 右键菜单作用的各行的名称，标题按它点名或计数；树形里一个目录算一项。
     ///   - session: 执行操作与判断可用性的仓库会话。
-    static func add(to menu: NSMenu, entries: [StatusEntry], session: RepositorySession) {
-        let conflicted = entries.filter { $0.kind == .conflicted }
-
-        menu.addItem(submenu(
-            "conflict.menu.resolve",
-            items: resolveItems(conflicted, session: session),
-            enabled: !conflicted.isEmpty
-        ))
-
-        let restore = restoreItems(entries, session: session)
-
-        menu.addItem(submenu(
-            "conflict.menu.restore",
-            items: restore,
-            enabled: restore.contains(where: \.isEnabled)
-        ))
+    static func add(to menu: NSMenu, entries: [StatusEntry], names: [String], session: RepositorySession) {
+        menu.addItem(submenu("conflict.menu.resolve", items: resolveItems(entries, names: names, session: session)))
+        menu.addItem(submenu("conflict.menu.restore", items: restoreItems(entries, names: names, session: session)))
     }
 }
 
 // MARK: - Private
 
 extension ConflictMenu {
-    /// 标记解决与采用某一侧的版本。
-    private static func resolveItems(_ conflicted: [StatusEntry], session: RepositorySession) -> [NSMenuItem] {
+    /// 标记解决与采用某一侧的版本；只作用于其中的冲突文件。
+    private static func resolveItems(
+        _ entries: [StatusEntry],
+        names: [String],
+        session: RepositorySession
+    ) -> [NSMenuItem] {
+        let conflicted = entries.filter { $0.kind == .conflicted }
         let enabled = session.canResolve(conflicted)
+        let mark = title(
+            names,
+            one: "conflict.markResolved.one",
+            many: "conflict.markResolved.many",
+            generic: "working.resolved"
+        )
 
-        let mark: String =
-            switch conflicted.count {
-            case 1: AppLocalization.text("conflict.markResolved.one", fileName(conflicted[0]))
-            case 2...: AppLocalization.text("conflict.markResolved.many", conflicted.count)
-            default: AppLocalization.text("working.resolved")
-            }
+        // 对方来自补丁或储藏时没有版本名，不加引号
+        let theirs =
+            session.context?.progress == nil
+                ? AppLocalization.text("conflict.resolveUsingVersion.applied")
+                : AppLocalization.text("conflict.resolveUsingVersion", session.theirsName)
 
         return [
             ConflictMenuItem(title: mark, enabled: enabled) {
@@ -55,31 +53,35 @@ extension ConflictMenu {
             ) {
                 session.resolve(conflicted, theirs: false)
             },
-            ConflictMenuItem(
-                title: AppLocalization.text("conflict.resolveUsingVersion", session.theirsName),
-                enabled: enabled
-            ) {
+            ConflictMenuItem(title: theirs, enabled: enabled) {
                 session.resolve(conflicted, theirs: true)
             },
         ]
     }
 
     /// 重新生成冲突，以及恢复成我方、对方或共同祖先的版本。
-    private static func restoreItems(_ entries: [StatusEntry], session: RepositorySession) -> [NSMenuItem] {
-        let resolved = session.context?.progress?.resolvedPaths ?? []
-        let unmerged = entries.filter { $0.kind == .conflicted || resolved.contains($0.path) }
+    private static func restoreItems(
+        _ entries: [StatusEntry],
+        names: [String],
+        session: RepositorySession
+    ) -> [NSMenuItem] {
+        let restoreUnmerged = title(
+            names,
+            one: "conflict.restoreUnmerged.one",
+            many: "conflict.restoreUnmerged.many",
+            generic: "conflict.restoreUnmerged"
+        )
 
-        let restoreUnmerged: String =
-            switch unmerged.count {
-            case 1: AppLocalization.text("conflict.restoreUnmerged.one", fileName(unmerged[0]))
-            case 2...: AppLocalization.text("conflict.restoreUnmerged.many", unmerged.count)
-            default: AppLocalization.text("conflict.restoreUnmerged")
-            }
+        // 对方来自补丁或储藏时没有版本名，不加引号
+        let theirs =
+            session.context?.progress == nil
+                ? AppLocalization.text("conflict.restoreVersion.applied")
+                : AppLocalization.text("conflict.restoreVersion", session.theirsName)
 
         let versions: [(String, ConflictVersion)] = [
             (restoreUnmerged, .unmerged),
             (AppLocalization.text("conflict.restoreVersion", session.oursName), .ours),
-            (AppLocalization.text("conflict.restoreVersion", session.theirsName), .theirs),
+            (theirs, .theirs),
             (AppLocalization.text("conflict.restoreAncestor"), .base),
         ]
 
@@ -90,8 +92,8 @@ extension ConflictMenu {
         }
     }
 
-    /// 带子菜单的菜单项；子菜单的可用性由各项自己决定。
-    private static func submenu(_ key: String, items: [NSMenuItem], enabled: Bool) -> NSMenuItem {
+    /// 带子菜单的菜单项：父项总能展开，子菜单的可用性由各项自己决定。
+    private static func submenu(_ key: String, items: [NSMenuItem]) -> NSMenuItem {
         let item = NSMenuItem(title: AppLocalization.text(key), action: nil, keyEquivalent: "")
         let submenu = NSMenu(title: item.title)
 
@@ -99,13 +101,16 @@ extension ConflictMenu {
         items.forEach(submenu.addItem)
 
         item.submenu = submenu
-        item.isEnabled = enabled
         return item
     }
 
-    /// 菜单项里显示的文件名，不含目录。
-    private static func fileName(_ entry: StatusEntry) -> String {
-        entry.path.split(separator: "/").last.map(String.init) ?? entry.path
+    /// 按作用的全部对象点名或计数，没有作用对象时用通用标题；不是冲突文件、菜单项不可用时也照此书写。
+    private static func title(_ names: [String], one: String, many: String, generic: String) -> String {
+        switch names.count {
+        case 0: AppLocalization.text(generic)
+        case 1: AppLocalization.text(one, names[0])
+        default: AppLocalization.text(many, names.count)
+        }
     }
 }
 
