@@ -8,6 +8,9 @@ extension WorkingCopyFileList.Coordinator {
     /// 本次渲染已知的 assume-unchanged 路径。
     private var renderMarked: Set<String> { renderState?.marked ?? [] }
 
+    /// 本次渲染时进行中的操作已经解决的冲突路径。
+    private var renderResolved: Set<String> { renderState?.listing.resolvedPaths ?? [] }
+
     /// 勾选框与状态徽标；不能暂存的未改动、被忽略文件隐藏勾选框。
     func statusCell(_ node: WorkingCopyFileList.Node) -> NSView {
         let entries = node.entries.filter(\.isStageable)
@@ -64,32 +67,57 @@ extension WorkingCopyFileList.Coordinator {
         return cell
     }
 
-    /// 图标与文件名：树形只显示末级名称，完整路径放在提示中；被忽略与 assume-unchanged 的文件变灰。
+    /// 图标与文件名：树形只显示末级名称，完整路径放在提示中；被忽略、assume-unchanged 与解决成与 HEAD 相同的文件变灰。
+    ///
+    /// 图标 16 × 16、距左 9，文字与图标相隔 8、距右 8；冲突与已解决的文件在图标右上叠标记。
     func pathCell(_ node: WorkingCopyFileList.Node) -> NSView {
         let style = renderState?.style ?? WorkingCopyFileList.Style(fontSize: .medium, truncation: .beginning)
         let tree = renderState?.listing.mode.isTree ?? false
         let entry = node.entry
-        let dimmed = entry?.kind == .ignored || entry.map { renderMarked.contains($0.path) } ?? false
+        let resolved = entry.map { $0.kind != .conflicted && renderResolved.contains($0.path) } ?? false
+
+        let dimmed = entry.map { entry in
+            entry.kind == .ignored
+                || renderMarked.contains(entry.path)
+                || (resolved && entry.kind == .unchanged)
+        } ?? false
 
         let label = NSTextField(labelWithString: Self.pathTitle(node, tree: tree))
         label.font = .systemFont(ofSize: style.fontSize.pointSize)
         label.lineBreakMode = style.truncation.lineBreakMode
         label.textColor = dimmed ? .secondaryLabelColor : .controlTextColor
         label.toolTip = Self.pathTitle(node, tree: false)
+        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        // 冲突、目录与文件使用各自的系统符号；符号不可用时保留空白图标位
-        let symbol = entry?.kind == .conflicted
-            ? "exclamationmark.circle.fill"
-            : (entry == nil || node.path.hasSuffix("/") ? "folder" : "doc")
-        let icon = NSImageView(image: NSImage(systemSymbolName: symbol, accessibilityDescription: nil) ?? NSImage())
-        icon.contentTintColor = entry?.kind == .conflicted
-            ? .systemRed
-            : (dimmed ? .tertiaryLabelColor : .secondaryLabelColor)
-        icon.widthAnchor.constraint(equalToConstant: 16).isActive = true
+        // 目录与被忽略的整个目录用文件夹图标，文件按扩展名取系统图标，不读取本机或服务器上的文件；变灰的行图标同样变暗
+        let icon = NSImageView(
+            image: WorkingCopyFileHeader.icon(path: node.path, isFolder: entry == nil || node.path.hasSuffix("/"))
+        )
+        icon.imageScaling = .scaleProportionallyUpOrDown
+        icon.isEnabled = !dimmed
 
-        let stack = NSStackView(views: [icon, label])
-        stack.spacing = 8
-        return stack
+        let cell = NSView()
+
+        for view in [icon, label] {
+            view.translatesAutoresizingMaskIntoConstraints = false
+            cell.addSubview(view)
+        }
+
+        NSLayoutConstraint.activate([
+            icon.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 9),
+            icon.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+            icon.widthAnchor.constraint(equalToConstant: 16),
+            icon.heightAnchor.constraint(equalToConstant: 16),
+            label.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 8),
+            label.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -8),
+            label.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+        ])
+
+        if entry?.kind == .conflicted || resolved {
+            Self.addConflictMark(resolved: resolved, over: icon, in: cell)
+        }
+
+        return cell
     }
 
     /// 递归排序使目录与文件使用相同的表头排序。
@@ -302,5 +330,29 @@ extension StatusEntry {
                 .map { change in change.map { String($0.rawValue) } ?? "." }
                 .joined()
         }
+    }
+}
+
+// MARK: - Private
+
+extension WorkingCopyFileList.Coordinator {
+    /// 在文件图标右上叠冲突标记：未解决是红色叹号，已解决是蓝色对勾；原图标保留。
+    ///
+    /// 标记宽 15、宽高比 0.8889，左缘压进图标 10，底边比图标顶边低 12。
+    private static func addConflictMark(resolved: Bool, over icon: NSView, in cell: NSView) {
+        let symbol = resolved ? "checkmark.circle.fill" : "exclamationmark.circle.fill"
+        let mark = NSImageView(image: NSImage(systemSymbolName: symbol, accessibilityDescription: nil) ?? NSImage())
+
+        mark.imageScaling = .scaleProportionallyUpOrDown
+        mark.contentTintColor = resolved ? .systemBlue : .systemRed
+        mark.translatesAutoresizingMaskIntoConstraints = false
+        cell.addSubview(mark)
+
+        NSLayoutConstraint.activate([
+            mark.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: -10),
+            mark.bottomAnchor.constraint(equalTo: icon.topAnchor, constant: 12),
+            mark.widthAnchor.constraint(equalToConstant: 15),
+            mark.heightAnchor.constraint(equalTo: mark.widthAnchor, multiplier: 1 / 0.8889),
+        ])
     }
 }

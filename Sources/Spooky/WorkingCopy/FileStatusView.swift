@@ -61,14 +61,12 @@ struct FileStatusView: View {
 
         case .unchanged: ("", "")
 
-        case .tracked:
+        // 冲突文件的两枚是 Git 的未合并两码，如 AA、UU、DU，与普通文件的暂存区 / 工作区两列含义不同
+        case .tracked, .conflicted:
             (
                 entry.staged.map { String($0.rawValue) } ?? "",
                 entry.unstaged.map { String($0.rawValue) } ?? ""
             )
-
-        case .conflicted:
-            ("U", "")
         }
     }
 

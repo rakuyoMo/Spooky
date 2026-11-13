@@ -215,6 +215,9 @@ struct WorkingCopyListing: Equatable {
     /// 只看冲突时保留的文件路径；为 nil 时不按冲突过滤。
     var conflictPaths: Set<String>? = nil
 
+    /// 进行中的操作里已经解决的冲突文件；解决成与 HEAD 相同、已不在状态里的也照样列出。
+    var resolvedPaths: Set<String> = []
+
     /// 工具栏搜索框的内容，按路径或文件名过滤。
     var filter = ""
 
@@ -227,7 +230,7 @@ struct WorkingCopyListing: Equatable {
 
     /// 列表条目：状态里的改动在前，按选项补出的被忽略、未改动与 assume-unchanged 文件在后，再按搜索过滤。
     ///
-    /// 只看冲突时只列冲突文件，解决后与 HEAD 相同、已不在状态里的文件补成未改动的条目，不补其它文件。
+    /// 解决后与 HEAD 相同、已不在状态里的冲突文件补成未改动的条目；只看冲突时只列冲突文件，不补其它文件。
     func entries(status: [StatusEntry], files: WorkingTreeFileListing) -> [StatusEntry] {
         var entries: [StatusEntry]
 
@@ -241,7 +244,15 @@ struct WorkingCopyListing: Equatable {
                 .sorted()
                 .map { StatusEntry(kind: .unchanged, path: $0) }
         } else {
-            entries = status + supplementaryEntries(status: status, files: files)
+            let listed = Set(status.map(\.path))
+
+            entries = status
+            entries += resolvedPaths
+                .subtracting(listed)
+                .sorted()
+                .map { StatusEntry(kind: .unchanged, path: $0) }
+
+            entries += supplementaryEntries(status: entries, files: files)
         }
 
         #warning("TODO: 核实搜索过滤后全部暂存、丢弃全部等动作是否只作用于可见的文件，目前作用于整个工作区；只影响过滤状态下的全部动作")

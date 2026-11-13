@@ -44,6 +44,7 @@ extension RepositorySession {
             showsIgnored: UserDefaults.standard.bool(forKey: WorkingCopyPreferences.showIgnored),
             showsAssumeUnchanged: UserDefaults.standard.bool(forKey: WorkingCopyPreferences.showAssumeUnchanged),
             conflictPaths: onlyConflicts ? conflictPaths : nil,
+            resolvedPaths: context?.progress?.resolvedPaths ?? [],
             filter: searchText
         )
     }
@@ -78,12 +79,12 @@ extension RepositorySession {
         loadWorkingTreeFiles()
     }
 
-    /// 补充清单里的条目：未改动或被忽略的文件，以及只看冲突时解决成与 HEAD 相同的冲突文件；清单里已经没有这个路径时为 nil。
+    /// 补充清单里的条目：未改动或被忽略的文件，以及解决成与 HEAD 相同的冲突文件；清单里已经没有这个路径时为 nil。
     func supplementaryEntry(_ id: StatusRowID) -> StatusEntry? {
-        let conflicted = listing.conflictPaths?.contains(id.path) ?? false
+        let resolved = listing.resolvedPaths.contains(id.path)
 
         return switch id.kind {
-        case .unchanged where workingTreeFiles.indexPaths.contains(id.path) || conflicted,
+        case .unchanged where workingTreeFiles.indexPaths.contains(id.path) || resolved,
              .ignored where workingTreeFiles.ignoredPaths.contains(id.path):
             StatusEntry(kind: id.kind, path: id.path)
 

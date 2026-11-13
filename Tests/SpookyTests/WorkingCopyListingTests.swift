@@ -50,7 +50,8 @@ struct WorkingCopyListingTests {
         #expect(extra.map(\.kind) == [.ignored, .unchanged])
     }
 
-    /// 只看冲突时不补任何文件，但保留这次操作已经解决的文件：解决后仍有改动的照常列出，与 HEAD 相同、已不在状态里的补成未改动的条目；
+    /// 只看冲突时不补任何文件，但保留这次操作已经解决的文件：解决后仍有改动的照常列出，与 HEAD 相同、已不在状态里的补成未改动的条目，
+    /// 不只看冲突时同样保留；
     /// 搜索按路径或文件名过滤：不区分大小写，组合与分解两种 Unicode 写法相同，重命名的原路径也能命中。
     @Test("只看冲突与搜索的过滤")
     func conflictsAndFilter() {
@@ -75,6 +76,22 @@ struct WorkingCopyListingTests {
         // 搜索仍在冲突文件里过滤。
         resolved.filter = "same"
         #expect(resolved.entries(status: Self.status, files: Self.files).map(\.path) == ["same.txt"])
+
+        // 不只看冲突时，已解决、与 HEAD 相同的文件同样留在列表里；全部文件里不与暂存区清单重复
+        let kept = WorkingCopyListing(mode: .list, resolvedPaths: ["merge.txt", "same.txt"])
+            .entries(status: Self.status, files: Self.files)
+            .dropFirst(Self.status.count)
+
+        #expect(kept.map(\.path) == ["same.txt"] && kept.allSatisfy { $0.kind == .unchanged })
+
+        let allFiles = WorkingCopyListing(mode: .allFiles, resolvedPaths: ["README.md"])
+            .entries(status: Self.status, files: Self.files)
+            .map(\.path)
+
+        #expect(allFiles.filter { $0 == "README.md" }.count == 1)
+
+        // 操作结束后不再有已解决的记录，这类文件随之消失
+        #expect(WorkingCopyListing(mode: .list).entries(status: Self.status, files: Self.files) == Self.status)
 
         // 全部文件里搜索。
         let search = { (query: String) in

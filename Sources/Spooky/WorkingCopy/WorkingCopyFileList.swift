@@ -93,6 +93,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
             showsIgnored: showsIgnored,
             showsAssumeUnchanged: showsAssumeUnchanged,
             conflictPaths: onlyConflicts ? session.conflictPaths : nil,
+            resolvedPaths: session.context?.progress?.resolvedPaths ?? [],
             filter: session.searchText
         )
 
@@ -217,13 +218,26 @@ extension WorkingCopyFileList {
         var node: Node?
     }
 
-    /// 冲突行以浅红背景辅助 U 徽标，选中时仍由系统绘制选区；行间分隔线在背景之后绘制，不被浅红盖住。
-    final class ConflictRowView: NSTableRowView {
-        /// 深浅外观分别使用 20% 与 10% 的系统红色。
+    /// 文件列表的行：未解决的冲突行各画一块浅红圆角底，选中时仍由系统绘制选区；行间分隔线在背景之后绘制，不被浅红盖住。
+    final class FileRowView: NSTableRowView {
+        /// 这一行是未解决的冲突；行被复用或条目状态变化时由列表更新。
+        var isConflicted = false {
+            didSet {
+                guard isConflicted != oldValue else { return }
+
+                needsDisplay = true
+            }
+        }
+
+        /// 冲突行的底左右各内缩 10、圆角 8；深浅外观分别使用 20% 与 10% 的系统红色。
         override func drawBackground(in dirtyRect: NSRect) {
+            super.drawBackground(in: dirtyRect)
+
+            guard isConflicted else { return }
+
             let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
             NSColor.systemRed.withAlphaComponent(dark ? 0.2 : 0.1).setFill()
-            dirtyRect.fill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: 10, dy: 0), xRadius: 8, yRadius: 8).fill()
         }
     }
 
@@ -330,9 +344,11 @@ extension WorkingCopyFileList {
             return !node.children.isEmpty
         }
 
-        /// 冲突状态不只通过文字颜色表达。
+        /// 冲突状态不只通过文字颜色表达，未解决的冲突行另画浅红底。
         func outlineView(_: NSOutlineView, rowViewForItem item: Any) -> NSTableRowView? {
-            (item as? Node)?.entry?.kind == .conflicted ? ConflictRowView() : nil
+            let row = FileRowView()
+            row.isConflicted = (item as? Node)?.entry?.kind == .conflicted
+            return row
         }
 
         /// 状态列为三态勾选和徽标，文件列为图标与按偏好截断的路径。

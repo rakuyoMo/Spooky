@@ -116,4 +116,25 @@ struct WorkingCopyFileListTests {
         #expect(FileStatusView(entry: unchanged, assumeUnchanged: true).codes == ("", ""))
         #expect(!unchanged.isStageable)
     }
+
+    /// 冲突文件固定画两枚徽标，字母是 Git 的未合并两码：七种组合各自照原样显示，不套用普通的暂存区 / 工作区写法。
+    @Test("冲突的两枚徽标")
+    func conflictBadges() throws {
+        let codes = ["AA", "UU", "DU", "UD", "AU", "UA", "DD"]
+        let hash = String(repeating: "a", count: 40)
+
+        // 每种组合一条 porcelain v2 的未合并记录
+        let records = codes.enumerated().map { index, xy in
+            "u \(xy) N... 100644 100644 100644 100644 \(hash) \(hash) \(hash) file \(index).txt\0"
+        }
+
+        let status = try WorkingCopyStatus(porcelainV2: Data(records.joined().utf8))
+        let badges = status.entries.map { entry in
+            let badge = FileStatusView(entry: entry).codes
+            return badge.staged + badge.unstaged
+        }
+
+        #expect(status.entries.allSatisfy { $0.kind == .conflicted })
+        #expect(badges == codes)
+    }
 }
