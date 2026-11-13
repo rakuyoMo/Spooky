@@ -2,7 +2,8 @@ import AppKit
 
 // MARK: - HistoryRowView
 
-/// 历史列表的行视图：提交行在底边画一条系统分隔线，从头像（中号）或短哈希（小号）的左缘画到单元格的右缘。
+/// 历史列表的行视图：提交行在底边画一条系统分隔线，从头像（中号）或短哈希（小号）的左缘画到单元格的右缘；
+/// 选中底的形状沿用系统的 inset 样式，颜色随焦点与窗口状态变化，变化方式与侧边栏的选中行相同。
 final class HistoryRowView: NSTableRowView {
     /// 复用行视图的标识。
     static let identifier = NSUserInterfaceItemIdentifier("history-row")
@@ -31,6 +32,67 @@ final class HistoryRowView: NSTableRowView {
 
     /// 行视图只由代码创建。
     required init?(coder _: NSCoder) { nil }
+
+    /// 选中底的颜色。
+    ///
+    /// - Parameters:
+    ///   - emphasized: 列表是第一响应者。
+    ///   - key: 窗口是 key window。
+    ///   - background: 列表的底色，窗口不是 key window 时与未强调的选中色各取一半。
+    static func selectionColor(emphasized: Bool, key: Bool, background: NSColor) -> NSColor {
+        let unemphasized = NSColor.unemphasizedSelectedContentBackgroundColor
+
+        guard key else {
+            return unemphasized.blended(withFraction: 0.5, of: background) ?? unemphasized
+        }
+
+        return emphasized ? .controlAccentColor : unemphasized
+    }
+
+    /// 窗口成为或不再是 key window 时，选中底的颜色随之变化，需要重画。
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+
+        NotificationCenter.default.removeObserver(self, name: NSWindow.didBecomeKeyNotification, object: nil)
+        NotificationCenter.default.removeObserver(self, name: NSWindow.didResignKeyNotification, object: nil)
+
+        guard let window else {
+            return
+        }
+
+        for name in [NSWindow.didBecomeKeyNotification, NSWindow.didResignKeyNotification] {
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(keyStateChanged),
+                name: name,
+                object: window
+            )
+        }
+    }
+
+    /// 先让系统按 inset 样式画出选中底，再在同一透明层里把它整片换成 `selectionColor` 的颜色；边距、圆角与相邻选中行的连接都保持系统的画法。
+    override func drawSelection(in dirtyRect: NSRect) {
+        guard let context = NSGraphicsContext.current?.cgContext else {
+            return
+        }
+
+        let table = superview as? NSTableView
+
+        let color = Self.selectionColor(
+            emphasized: isEmphasized,
+            key: window?.isKeyWindow ?? false,
+            background: table?.backgroundColor ?? .controlBackgroundColor
+        )
+
+        context.beginTransparencyLayer(auxiliaryInfo: nil)
+        super.drawSelection(in: dirtyRect)
+
+        // 只在系统画过的地方上色
+        color.setFill()
+        bounds.fill(using: .sourceIn)
+
+        context.endTransparencyLayer()
+    }
 
     /// 单元格之后才加进来，每加一个子视图都把分隔线重新放回最上面，并按新单元格重新排布。
     override func didAddSubview(_ subview: NSView) {
@@ -62,6 +124,14 @@ final class HistoryRowView: NSTableRowView {
             width: max(0, cell.width - inset),
             height: 1
         )
+    }
+
+    /// 选中的行按新的窗口状态重画选中底。
+    @objc
+    private func keyStateChanged() {
+        if isSelected {
+            needsDisplay = true
+        }
     }
 }
 

@@ -78,7 +78,7 @@ extension HistoryListTests {
 
 extension HistoryListTests {
     /// 把会话的历史列表放进窗口，排好版后取出每一行的行视图；中号行显示提交图，小号行不显示。
-    private static func rowViews(
+    static func rowViews(
         in window: NSWindow,
         session: RepositorySession,
         small: Bool
