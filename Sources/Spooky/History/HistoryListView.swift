@@ -33,11 +33,11 @@ struct HistoryListView: View {
 
     /// 按日期排序。
     @AppStorage(HistoryViewSettings.dateOrderKey)
-    private var sortsByDate = false
+    private var sortsByDate = true
 
     /// 日期分组方式。
     @AppStorage(HistoryViewSettings.groupingKey)
-    private var grouping = HistoryGrouping.ungrouped.rawValue
+    private var grouping = HistoryGrouping.month.rawValue
 
     /// 提交日期的显示格式。
     @AppStorage(CommitDateFormat.key)

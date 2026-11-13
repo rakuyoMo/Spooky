@@ -1011,6 +1011,7 @@
 "history.search.before" = "より前";
 "history.search.range" = "の範囲内";
 "history.search.to" = "〜";
+"history.search.since" = "%@ 以降";
 "history.reveal.notFound" = "コミット %@ はこの履歴にありません。";
 "history.reveal.slow" = "さらにコミットを読み込む";
 "history.reveal.slow.submit" = "読み込む";

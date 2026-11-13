@@ -30,10 +30,10 @@ public struct HistorySearchCondition: Sendable, Equatable, Identifiable {
 
     /// 日期条件与所选日期的关系，按本地日历的整天比较。
     public enum DateRelation: String, Sendable, CaseIterable {
-        /// 所选那一天之后。
+        /// 从所选那一天起，包含这一天。
         case after
 
-        /// 所选那一天之前。
+        /// 到所选那一天为止，包含这一天。
         case before
 
         /// 两个日期之间，包含两端的那一天。
@@ -82,19 +82,18 @@ public struct HistorySearchCondition: Sendable, Equatable, Identifiable {
 
     /// 日期条件换算成提交人日期的上下限，单位为 Unix 秒，两端都包含在内。
     ///
-    /// “之后” 从下一天开始，“之前” 截止到前一天结束，区间从起始日开始、到结束日结束。
+    /// 所选那一天总在结果里：“之后” 从这一天的 0 点开始，“之前” 截止到这一天结束，区间从起始日开始、到结束日结束。
+    /// 一天的长短按日历计算，夏令时切换的那天是 23 或 25 小时。
     func bounds(in calendar: Calendar) -> (since: Int64?, until: Int64?) {
-        #warning("TODO: 日期条件按整天比较，“之后” 与 “之前” 都不含所选那一天；所选那一天是否应包含在内需实测核实，只影响按日期筛选结果的首尾一天")
-
         let start = calendar.startOfDay(for: date)
         let next = calendar.date(byAdding: .day, value: 1, to: start) ?? start
 
         switch relation {
         case .after:
-            return (Int64(next.timeIntervalSince1970), nil)
+            return (Int64(start.timeIntervalSince1970), nil)
 
         case .before:
-            return (nil, Int64(start.timeIntervalSince1970) - 1)
+            return (nil, Int64(next.timeIntervalSince1970) - 1)
 
         case .range:
             // 结束日早于起始日时交换两端

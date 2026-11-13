@@ -87,7 +87,7 @@ extension RepositoryWindowController {
 
                 return ContributorSuggestion.matches(query, in: (try? await state.authors()) ?? [])
             },
-            apply: { [weak self] in self?.session.searchText = $0 }
+            apply: { [weak self] in self?.session.searchText = $0.text }
         )
 
         for (index, candidate) in Self.fileHistoryScopes.enumerated() {

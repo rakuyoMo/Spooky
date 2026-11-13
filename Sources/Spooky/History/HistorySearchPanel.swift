@@ -280,7 +280,7 @@ private struct HistorySearchField: NSViewRepresentable {
             suggestions: { [weak coordinator] query in
                 await coordinator?.suggestions(query) ?? []
             },
-            apply: { [weak coordinator] in coordinator?.onChange($0) }
+            apply: { [weak coordinator] in coordinator?.onChange($0.text) }
         )
 
         return field

@@ -86,30 +86,44 @@ extension RepositoryWindowController {
         return (item as? NSSearchToolbarItem)?.searchField
     }
 
-    /// 历史的搜索框：范围菜单与占位文字，按作者、提交人或文件搜索时弹出补全。
+    /// 历史的搜索框：范围菜单与占位文字，按作者、提交人或文件搜索时弹出补全；输入像日期时最前面是 Since Dates 建议。
     private func configureHistorySearch(_ field: NSSearchField) {
         configureHistorySearchMenu(field)
 
         let history = session.history
 
-        // 接受补全后与键入一样写入搜索条件
+        // 接受补全后与键入一样写入搜索条件；日期建议换成从那一天起的日期条件
         contributorCompletion.attach(
             to: field,
             suggestions: { [weak history] query in
-                guard let history, let runner = history.runner, let head = history.branch?.oid else {
+                guard let history else {
                     return []
                 }
 
-                return await history.suggestions.suggestions(
+                let since = HistorySearchSuggestions.sinceSuggestion(for: query).map { [$0] } ?? []
+
+                guard let runner = history.runner, let head = history.branch?.oid else {
+                    return since
+                }
+
+                let others = await history.suggestions.suggestions(
                     for: history.primarySearchKind,
                     matching: query,
                     runner: runner,
                     head: head
                 )
+
+                return since + others
             },
-            apply: { [weak self] in
-                self?.session.searchText = $0
-                self?.session.history.setSearchText($0)
+            apply: { [weak self] suggestion in
+                if let date = suggestion.sinceDate {
+                    self?.session.searchText = ""
+                    self?.session.history.searchSince(date)
+                    return
+                }
+
+                self?.session.searchText = suggestion.text
+                self?.session.history.setSearchText(suggestion.text)
             }
         )
     }

@@ -15,10 +15,10 @@ extension RepositoryWindowController {
         toggle(HistoryViewSettings.topoOrderKey)
     }
 
-    /// 按日期排序的开关；关掉后日期分组随之失效。
+    /// 按日期排序的开关；关掉后日期分组随之失效。没有保存过时从默认的已勾选翻转。
     @objc
     func toggleSortByDate() {
-        toggle(HistoryViewSettings.dateOrderKey)
+        UserDefaults.standard.set(!HistoryViewSettings().sortsByDate, forKey: HistoryViewSettings.dateOrderKey)
     }
 
     /// 选择日期分组方式，菜单项的 tag 是分组的原始值。
@@ -47,8 +47,7 @@ extension RepositoryWindowController {
             return historyView
 
         case #selector(selectHistoryGrouping(_:)):
-            let stored = UserDefaults.standard.integer(forKey: HistoryViewSettings.groupingKey)
-            menuItem?.state = menuItem?.tag == stored ? .on : .off
+            menuItem?.state = menuItem?.tag == settings.selectedGrouping.rawValue ? .on : .off
             return historyView && settings.sortsByDate
 
         default:

@@ -1011,6 +1011,7 @@
 "history.search.before" = "早于";
 "history.search.range" = "介于";
 "history.search.to" = "至";
+"history.search.since" = "自 %@ 起";
 "history.reveal.notFound" = "提交 %@ 不在这段历史中。";
 "history.reveal.slow" = "加载更多提交";
 "history.reveal.slow.submit" = "加载";

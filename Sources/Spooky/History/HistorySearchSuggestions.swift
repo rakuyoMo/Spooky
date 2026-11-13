@@ -70,6 +70,37 @@ final class HistorySearchSuggestions {
             .map(\.path)
     }
 
+    /// 整段输入可识别为日期时的 Since Dates 建议，排在其它建议之前；不是日期时为 nil。
+    ///
+    /// 输入只有一部分是日期（如 “fix tomorrow”）时不算，以免把普通的说明当成日期。
+    static func sinceSuggestion(for query: String) -> ContributorSuggestion? {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        let range = NSRange(trimmed.startIndex..., in: trimmed)
+
+        guard
+            !trimmed.isEmpty,
+            let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue),
+            let match = detector.firstMatch(in: trimmed, range: range),
+            match.range == range,
+            let date = match.date
+        else {
+            return nil
+        }
+
+        let title = AppLocalization.text(
+            "history.search.since",
+            date.formatted(date: .abbreviated, time: .omitted)
+        )
+
+        return ContributorSuggestion(
+            text: query,
+            name: title,
+            email: nil,
+            showsAvatar: false,
+            sinceDate: date
+        )
+    }
+
     /// 按条件种类给出建议：作者与提交人补全仓库的作者，文件补全 HEAD 中的路径，其余种类没有建议。
     func suggestions(
         for kind: HistorySearchCondition.Kind,

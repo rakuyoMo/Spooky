@@ -1011,6 +1011,7 @@
 "history.search.before" = "is before";
 "history.search.range" = "is in range";
 "history.search.to" = "to";
+"history.search.since" = "Since %@";
 "history.reveal.notFound" = "Commit %@ isn't in this history.";
 "history.reveal.slow" = "Load More Commits";
 "history.reveal.slow.submit" = "Load";

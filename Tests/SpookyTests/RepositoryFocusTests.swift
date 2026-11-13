@@ -49,7 +49,10 @@ struct RepositoryFocusTests {
         // 点选第二个提交的结果：表格拿到焦点，选中这一行
         #expect(window.makeFirstResponder(table))
 
-        table.selectRowIndexes([1], byExtendingSelection: false)
+        // 历史默认按月分组，第二个提交前面还有一行分组标题
+        let second = try #require(history.row(of: history.commits[1].id))
+        table.selectRowIndexes([second], byExtendingSelection: false)
+
         #expect(history.selectedIDs == [history.commits[1].id])
 
         // ↓ 移到第三个提交，侧边栏的选中与主视图不变

@@ -39,6 +39,19 @@ extension RepositoryHistoryState {
         scheduleSearch()
     }
 
+    /// 接受 Since Dates 建议：工具栏搜索框的文字条件换成从这一天起的日期条件，搜索框随之清空。
+    func searchSince(_ date: Date) {
+        let condition = HistorySearchCondition(kind: .date, relation: .after, date: date)
+
+        if let index = primarySearchIndex {
+            searchConditions[index] = condition
+        } else {
+            searchConditions.append(condition)
+        }
+
+        scheduleSearch()
+    }
+
     /// 范围菜单切换种类，第一个文字条件随之改变。
     func setSearchScope(_ kind: HistorySearchCondition.Kind) {
         searchScope = kind

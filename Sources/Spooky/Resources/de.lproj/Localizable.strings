@@ -1011,6 +1011,7 @@
 "history.search.before" = "ist vor";
 "history.search.range" = "liegt zwischen";
 "history.search.to" = "und";
+"history.search.since" = "Seit %@";
 "history.reveal.notFound" = "Commit %@ ist nicht in diesem Verlauf.";
 "history.reveal.slow" = "Weitere Commits laden";
 "history.reveal.slow.submit" = "Laden";

@@ -58,6 +58,64 @@ struct HistoryQueryTests {
         try await Self.commitPositions(history, commits)
     }
 
+    /// 日期条件按所给日历的整天换算：同一时刻在不同时区落在不同的一天，夏令时开始的那天只有 23 小时；
+    /// 筛选看提交人日期，作者日期落在条件之外的提交照样在结果里。
+    @Test("日期条件的日界、时区、夏令时与提交人日期")
+    func dateBoundaries() async throws {
+        // 同一时刻在上海已是 1 月 3 日，在洛杉矶还是 1 月 2 日
+        let moment = try Self.instant("2026-01-03T02:00:00Z")
+        let after = HistorySearchCondition(kind: .date, relation: .after, date: moment)
+
+        let shanghai = after.bounds(in: Self.gregorian("Asia/Shanghai")).since
+        let losAngeles = after.bounds(in: Self.gregorian("America/Los_Angeles")).since
+
+        #expect(shanghai == Self.seconds(try Self.instant("2026-01-02T16:00:00Z")))
+        #expect(losAngeles == Self.seconds(try Self.instant("2026-01-02T08:00:00Z")))
+
+        // 纽约 2026 年 3 月 8 日开始夏令时：这一天从 05:00 UTC 到次日 04:00 UTC 之前
+        let newYork = Self.gregorian("America/New_York")
+        let springForward = try Self.instant("2026-03-08T17:00:00Z")
+        let dayStart = Self.seconds(try Self.instant("2026-03-08T05:00:00Z"))
+        let dayEnd = Self.seconds(try Self.instant("2026-03-09T04:00:00Z")) - 1
+
+        let sameDay = HistorySearchCondition(
+            kind: .date,
+            relation: .range,
+            date: springForward,
+            endDate: springForward
+        ).bounds(in: newYork)
+
+        let until = HistorySearchCondition(kind: .date, relation: .before, date: springForward)
+
+        #expect(sameDay.since == dayStart)
+        #expect(sameDay.until == dayEnd)
+        #expect(until.bounds(in: newYork).until == dayEnd)
+
+        // 提交人日期是 1 月 1 日，作者日期是 1 月 10 日
+        let fixture = try TemporaryRepository()
+        defer { fixture.remove() }
+
+        try await fixture.initialize()
+        try Data("late\n".utf8).write(to: fixture.directory.appending(path: "late.txt"))
+
+        let runner = Self.runner(in: fixture, day: 1)
+        _ = try await runner.run(["add", "--", "late.txt"])
+        _ = try await runner.run(["commit", "-q", "-m", "late author", "--date=2026-01-10T10:00:00Z"])
+
+        let head = try await RepositoryReferences(runner: fixture.runner).resolve("HEAD")
+        let history = RepositoryHistory(runner: fixture.runner)
+
+        let matches = { (relation: HistorySearchCondition.DateRelation) in
+            let condition = HistorySearchCondition(kind: .date, relation: relation, date: try Self.day(5))
+            let query = HistoryQuery(conditions: [condition], calendar: Self.calendar)
+
+            return try await history.page(roots: [head], query: query).commits.map(\.subject)
+        }
+
+        #expect(try await matches(.after).isEmpty)
+        #expect(try await matches(.before) == ["late author"])
+    }
+
     /// rev-list 每行一个哈希：空输出里没有位置，夹杂别的文字时拒绝，不把它当成找不到；计数不是整数时拒绝显示。
     @Test("rev-list 输出：提交位置的解析与损坏的计数")
     func revListOutput() async throws {
@@ -211,15 +269,15 @@ extension HistoryQueryTests {
         #expect(try await !history.contains(commits.side, roots: [commits.main]))
     }
 
-    /// 日期条件按整天比较提交人日期；多个日期条件取交集。
+    /// 日期条件按整天比较提交人日期，所选那一天在结果里；多个日期条件取交集。
     private static func dateConditions(_ history: RepositoryHistory, _ commits: Commits) async throws {
         let third = try Self.day(3)
 
         let after = HistorySearchCondition(kind: .date, relation: .after, date: third)
-        #expect(Set(try await Self.subjects(history, commits, [after])) == ["main work", "merge side"])
+        #expect(Set(try await Self.subjects(history, commits, [after])) == ["side work", "main work", "merge side"])
 
         let before = HistorySearchCondition(kind: .date, relation: .before, date: try Self.day(2))
-        #expect(try await Self.subjects(history, commits, [before]) == ["初始提交"])
+        #expect(Set(try await Self.subjects(history, commits, [before])) == ["初始提交", "Fix bug *star*"])
 
         // 结束日早于起始日时交换两端
         let range = HistorySearchCondition(
@@ -351,6 +409,23 @@ extension HistoryQueryTests {
     /// 2026 年 1 月某一天的正午（UTC）。
     private static func day(_ day: Int) throws -> Date {
         try #require(calendar.date(from: DateComponents(year: 2026, month: 1, day: day, hour: 12)))
+    }
+
+    /// ISO 8601 写法的时刻。
+    private static func instant(_ text: String) throws -> Date {
+        try #require(ISO8601DateFormatter().date(from: text))
+    }
+
+    /// 时刻的 Unix 秒。
+    private static func seconds(_ date: Date) -> Int64 {
+        Int64(date.timeIntervalSince1970)
+    }
+
+    /// 指定时区的公历。
+    private static func gregorian(_ timeZone: String) -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: timeZone) ?? .gmt
+        return calendar
     }
 
     /// 以合并提交为根，按条件读取的提交标题。

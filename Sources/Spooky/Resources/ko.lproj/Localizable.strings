@@ -1011,6 +1011,7 @@
 "history.search.before" = "이전";
 "history.search.range" = "범위 내";
 "history.search.to" = "~";
+"history.search.since" = "%@ 이후";
 "history.reveal.notFound" = "커밋 %@이(가) 이 기록에 없습니다.";
 "history.reveal.slow" = "커밋 더 불러오기";
 "history.reveal.slow.submit" = "불러오기";

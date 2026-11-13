@@ -50,7 +50,9 @@ enum HistoryViewMenu {
         menu.addItem(.separator())
         menu.addItem(item("signature.verify", action: #selector(RepositoryWindowController.toggleVerifySignatures)))
 
-        // 与基准分支比较只有主菜单那份带 ⌃⌥⌘C
+        // 与基准分支比较单独一组，只有主菜单那份带 ⌃⌥⌘C
+        menu.addItem(.separator())
+
         let compare = item("history.compareBranches", action: #selector(RepositoryWindowController.toggleCompareBranches))
 
         if keyEquivalents {

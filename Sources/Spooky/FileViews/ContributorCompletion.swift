@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - ContributorSuggestion
 
-/// 搜索框的一条补全建议：贡献者或文件路径，选中后整条写进搜索框。
+/// 搜索框的一条补全建议：贡献者或文件路径，选中后整条写进搜索框；历史搜索另有从某天起的日期建议。
 struct ContributorSuggestion: Identifiable, Equatable {
     /// 写进搜索框的文字：“姓名 <邮箱>”，同名有多个邮箱时另有只写姓名的一条。
     let text: String
@@ -17,6 +17,9 @@ struct ContributorSuggestion: Identifiable, Equatable {
 
     /// 贡献者在行首显示头像，文件路径不显示。
     var showsAvatar = true
+
+    /// 日期建议的那一天，接受后换成从这一天起的日期条件，这条建议的文字是原样的输入；其它建议为 nil。
+    var sinceDate: Date? = nil
 
     /// 搜索框文字即身份。
     var id: String { text }
@@ -94,8 +97,8 @@ final class ContributorCompletion: NSObject, NSSearchFieldDelegate {
     /// 按输入给出建议，由接管输入框的一方提供。
     private var provider: @MainActor (String) async -> [ContributorSuggestion] = { _ in [] }
 
-    /// 接受建议后把搜索框文字交给会话。
-    private var apply: (String) -> Void = { _ in }
+    /// 接受建议后把它交给会话。
+    private var apply: (ContributorSuggestion) -> Void = { _ in }
 
     /// 读取贡献者并筛选的任务，输入变化时取消。
     private var task: Task<Void, Never>? = nil
@@ -108,11 +111,11 @@ final class ContributorCompletion: NSObject, NSSearchFieldDelegate {
     /// - Parameters:
     ///   - field: 工具栏里的搜索框或过滤面板里的输入框，重建后重新接管。
     ///   - suggestions: 按输入给出建议；当前范围没有补全时返回空。
-    ///   - apply: 接受建议后写入的搜索内容。
+    ///   - apply: 接受建议后写入搜索内容；搜索框已显示建议的文字。
     func attach(
         to field: NSTextField,
         suggestions: @escaping @MainActor (String) async -> [ContributorSuggestion],
-        apply: @escaping (String) -> Void
+        apply: @escaping (ContributorSuggestion) -> Void
     ) {
         close()
         self.field = field
@@ -241,7 +244,7 @@ extension ContributorCompletion {
     private func accept(_ suggestion: ContributorSuggestion) {
         close()
         field?.stringValue = suggestion.text
-        apply(suggestion.text)
+        apply(suggestion)
     }
 
     /// 无边框、不激活的子窗口，内容是菜单材质的圆角背景与建议列表。
