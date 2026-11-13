@@ -100,66 +100,7 @@ extension RepositoryWindowController {
 
         // 经对话框骨架的窗口呈现：显示期间内容变化引起的尺寸变化与内容同步
         DialogWindow.present(on: window) { [session] close in
-            let dialog =
-                switch request {
-                case .create(let branch):
-                    AnyView(PullRequestFormDialog(session: session, request: nil, preselectedBranch: branch, close: close))
-
-                case .edit(let request):
-                    AnyView(PullRequestFormDialog(session: session, request: request, close: close))
-
-                case .merge(let request):
-                    AnyView(MergePullRequestDialog(session: session, request: request, close: close))
-
-                case .close(let request):
-                    AnyView(PullRequestTextDialog(session: session, request: request, kind: .close, close: close))
-
-                case .comment(let request):
-                    AnyView(PullRequestTextDialog(session: session, request: request, kind: .comment, close: close))
-
-                case .editComment(let request, let comment):
-                    AnyView(PullRequestTextDialog(
-                        session: session,
-                        request: request,
-                        kind: .editComment(comment),
-                        close: close
-                    ))
-
-                case .replyToComment(let request, let comment):
-                    AnyView(PullRequestTextDialog(
-                        session: session,
-                        request: request,
-                        kind: .reply(comment),
-                        close: close
-                    ))
-
-                case .deleteComment(let request, let comment):
-                    AnyView(PullRequestTextDialog(
-                        session: session,
-                        request: request,
-                        kind: .deleteComment(comment),
-                        close: close
-                    ))
-
-                case .editDescription(let request):
-                    AnyView(PullRequestTextDialog(
-                        session: session,
-                        request: request,
-                        kind: .editDescription,
-                        close: close
-                    ))
-
-                case .checkout(let request):
-                    AnyView(PullRequestTextDialog(session: session, request: request, kind: .checkout, close: close))
-
-                case .associate(let remote, let url):
-                    AnyView(AssociateRemoteDialog(session: session, remote: remote, url: url, close: close))
-
-                case .publish:
-                    AnyView(PublishRepositoryDialog(session: session, close: close))
-                }
-
-            dialog
+            Self.pullRequestDialog(for: request, in: session, close: close)
         }
     }
 
@@ -202,6 +143,75 @@ extension RepositoryWindowController {
 
                 self?.observeRemotes(previous: current)
             }
+        }
+    }
+}
+
+// MARK: - Private
+
+extension RepositoryWindowController {
+    /// 请求对应的 Pull Request 对话框。
+    private static func pullRequestDialog(
+        for request: PullRequestRequest,
+        in session: RepositorySession,
+        close: @escaping () -> Void
+    ) -> AnyView {
+        switch request {
+        case .create(let branch):
+            AnyView(PullRequestFormDialog(session: session, request: nil, preselectedBranch: branch, close: close))
+
+        case .edit(let request):
+            AnyView(PullRequestFormDialog(session: session, request: request, close: close))
+
+        case .merge(let request):
+            AnyView(MergePullRequestDialog(session: session, request: request, close: close))
+
+        case .close(let request):
+            AnyView(PullRequestTextDialog(session: session, request: request, kind: .close, close: close))
+
+        case .comment(let request):
+            AnyView(PullRequestTextDialog(session: session, request: request, kind: .comment, close: close))
+
+        case .editComment(let request, let comment):
+            AnyView(PullRequestTextDialog(
+                session: session,
+                request: request,
+                kind: .editComment(comment),
+                close: close
+            ))
+
+        case .replyToComment(let request, let comment):
+            AnyView(PullRequestTextDialog(
+                session: session,
+                request: request,
+                kind: .reply(comment),
+                close: close
+            ))
+
+        case .deleteComment(let request, let comment):
+            AnyView(PullRequestTextDialog(
+                session: session,
+                request: request,
+                kind: .deleteComment(comment),
+                close: close
+            ))
+
+        case .editDescription(let request):
+            AnyView(PullRequestTextDialog(
+                session: session,
+                request: request,
+                kind: .editDescription,
+                close: close
+            ))
+
+        case .checkout(let request):
+            AnyView(PullRequestTextDialog(session: session, request: request, kind: .checkout, close: close))
+
+        case .associate(let remote, let url):
+            AnyView(AssociateRemoteDialog(session: session, remote: remote, url: url, close: close))
+
+        case .publish:
+            AnyView(PublishRepositoryDialog(session: session, close: close))
         }
     }
 }
