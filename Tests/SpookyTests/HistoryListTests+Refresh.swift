@@ -12,7 +12,7 @@ import TestSupport
 // MARK: - Refresh
 
 extension HistoryListTests {
-    /// 刷新从头重读列表时读回已加载的条数，选中的提交、展开与选中的文件和已读的补丁都不被改写；
+    /// 刷新从头重读列表时读回已加载的条数，选中的提交、展开与选中的文件、文件行的选区和已读的补丁都不被改写；
     /// 选中的提交在刷新后不在历史里时，选择与详情一起清空。
     @Test("刷新时保持历史的选择、展开与已读的补丁")
     func refreshKeepsDetails() async throws {
@@ -32,19 +32,21 @@ extension HistoryListTests {
 
         history.expandedPaths = ["file.txt"]
         history.selectedPath = "file.txt"
+        history.fileSelection.click("file.txt", extending: false, toggling: false, order: ["file.txt"])
         await untilFinished { history.activeTasks }
 
         #expect(history.commits.count == 150)
         #expect(history.changes.map(\.path) == ["file.txt"])
         #expect(history.diffs["file.txt"]?.diff != nil)
 
-        // 改动工作区后刷新：列表与详情在后台重读，变更集、展开、选中的文件、补丁与读取状态都不被改写
+        // 改动工作区后刷新：列表与详情在后台重读，变更集、展开、选中的文件、文件行的选区、补丁与读取状态都不被改写
         let rewritten = Mutex(false)
 
         withObservationTracking {
             _ = history.changes
             _ = history.expandedPaths
             _ = history.selectedPath
+            _ = history.fileSelection
             _ = history.diffs
             _ = history.isLoadingChanges
         } onChange: {
@@ -175,7 +177,7 @@ extension HistoryListTests {
 
 extension HistoryListTests {
     /// 视图层级里的历史提交表格。
-    private static func commitTable(in view: NSView) -> NSTableView? {
+    static func commitTable(in view: NSView) -> NSTableView? {
         if let table = view as? HistoryCommitTable.CommitTableView {
             return table
         }

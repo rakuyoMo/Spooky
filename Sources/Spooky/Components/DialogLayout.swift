@@ -10,7 +10,8 @@ import SwiftUI
 /// 头部是 64 pt 图标与单行标题、自动折行的说明，服务器仓库在标题下多一行带主机前缀的位置。
 /// 头部文字、错误文字与备选底栏的按钮组对齐内容区的输入列，图标挂在头部文字左侧；输入列由 `DialogFormRow` 报上来，
 /// 标签长时随之右移，内容区没有输入列时对齐 `DialogMetrics.alignment`。
-/// 内容区与选项区的边距由内容自己决定，里面要按输入列定宽或缩进的部分用 `DialogInputColumnReader` 读到它。
+/// 内容区与选项区的边距由内容自己决定，里面要按输入列定宽或缩进的部分用 `DialogInputColumnReader` 读到它；
+/// 只有 Options 开关上方的间距由骨架定为 8 pt：内容区表单的最后一个控件下方，没有内容区时是头部的说明下方，各对话框不另留。
 ///
 /// 几种版本由参数组合出来：
 /// - 表单版：内容区是表单
@@ -81,33 +82,53 @@ struct DialogLayout<Content: View, Options: View>: View {
     @State
     private var inputColumn: CGFloat?
 
-    /// 头部、内容区、错误区、Options 与底栏依次排列；错误出现与消失时带动画。
+    /// 选项区展开时的高度；可以拉大的对话框收起选项区时，窗口减去这个高度。
+    @State
+    private var optionsHeight: CGFloat = 0
+
+    /// 对话框所在窗口的尺寸跟随；不经 `DialogWindow` 呈现时为 nil。
+    @Environment(\.dialogSizing)
+    private var sizing
+
+    /// 头部、内容区、错误区、Options 与底栏依次排列。
+    ///
+    /// 说明、错误区与底栏的进度变化时带上 `DialogAnimation` 的动画，同一次更新里内容区的变化一并在内；
+    /// 经 `DialogWindow` 呈现时报上理想尺寸，窗口随之同步变化。
     var body: some View {
-        DialogStack(width: width, fillsProposedWidth: resizable) {
-            VStack(alignment: .leading, spacing: 0) {
-                header
+        DialogStack(width: width, fillsProposedWidth: resizable, fillsProposedHeight: sizing != nil) {
+            // 有 Options 开关时，开关上方那一段只留 8 pt：内容区的表单在最后一个控件下方，没有内容区时是头部的说明下方
+            Group(subviews: formattedContent) { contentViews in
+                VStack(alignment: .leading, spacing: 0) {
+                    header(textBottom: contentViews.isEmpty && options != nil ? 8 : 12)
 
-                content()
-                    .font(.system(size: 13))
-                    .environment(\.dialogInputColumn, alignment)
+                    ForEach(contentViews) { $0 }
 
-                if let error {
-                    errorRow(error)
-                        .transition(.opacity)
+                    if let error {
+                        errorRow(error)
+                            .transition(.opacity)
+                    }
+
+                    if let options {
+                        optionsToggle
+
+                        optionsArea(options)
+                    }
+                }
+            }
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { size in
+                // 可以拉大的对话框由使用者决定尺寸，只在切换选项区时随之变化
+                guard !resizable else {
+                    return
                 }
 
-                if let options {
-                    optionsToggle
-
-                    optionsArea(options)
-                }
+                sizing?.fit(CGSize(width: size.width, height: size.height + Self.footerHeight))
             }
 
             footer
         }
         .coordinateSpace(.named(DialogMetrics.coordinateSpace))
         .onPreferenceChange(DialogInputColumnKey.self) { inputColumn = $0 }
-        .animation(.easeOut(duration: 0.2), value: error == nil)
+        .animation(DialogAnimation.current, value: [message, error, progress])
     }
 
     /// 创建对话框；不给内容区时是确认版，不给选项区时没有 Options 开关。
@@ -183,40 +204,12 @@ extension DialogLayout {
         DialogMetrics.textLeading(for: inputColumn)
     }
 
-    /// 图标距顶 20，右侧 16 pt 是标题、服务器仓库的位置与说明；说明距头部底边 12，右边距 20。
-    ///
-    /// 图标下方不留这 12，头部至少高 84：距顶 20 加上图标的 64。
-    private var header: some View {
-        HStack(alignment: .top, spacing: DialogMetrics.iconSpacing) {
-            Image(nsImage: icon ?? AppIconController.displayedIcon())
-                .resizable()
-                .frame(width: 64, height: 64)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.system(size: 14, weight: .bold))
-                    .lineLimit(1)
-
-                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
-                if let repository, repository.host != nil {
-                    Text(repository.displayPath)
-                        .font(.system(size: 13))
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Text(message)
-                    .font(.system(size: 13))
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, 12)
-        }
-        .padding(.leading, alignment - DialogMetrics.iconSpacing - 64)
-        .padding(.trailing, 20)
-        .padding(.top, 20)
+    /// 内容区：13 pt 的字，表单按输入列排版；下面紧跟 Options 开关时表单底下只留 8 pt。
+    private var formattedContent: some View {
+        content()
+            .font(.system(size: 13))
+            .environment(\.dialogInputColumn, alignment)
+            .environment(\.dialogFormBottomInset, options == nil ? 12 : 8)
     }
 
     /// 高 34 的开关行：17 pt 的披露三角距左 20，右侧 4 pt 是文字，点文字也能切换。
@@ -227,14 +220,16 @@ extension DialogLayout {
             .frame(maxWidth: .infinity, minHeight: 34, maxHeight: 34, alignment: .leading)
     }
 
-    /// 切换选项区时做 0.2 s 的 ease-out 动画；应用级模态窗口里不做动画。
+    /// 切换选项区时带上 `DialogAnimation` 的动画；可以拉大的对话框窗口随之减去或加回选项区的高度。
     private var animatedOptionsExpanded: Binding<Bool> {
         Binding(
             get: { optionsExpanded },
             set: { expanded in
-                let animation: Animation? = NSApp.modalWindow == nil ? .easeOut(duration: 0.2) : nil
+                if resizable {
+                    sizing?.toggleOptions(expanded: expanded, optionsHeight: optionsHeight)
+                }
 
-                withAnimation(animation) {
+                DialogAnimation.perform {
                     optionsExpanded = expanded
                 }
             }
@@ -278,7 +273,7 @@ extension DialogLayout {
         .padding(.leading, alternate == nil ? 20 : alignment)
         .padding(.trailing, 20)
         .padding(.top, 12)
-        .frame(height: 53, alignment: .top)
+        .frame(height: Self.footerHeight, alignment: .top)
         .background {
             // 没有取消按钮时 ⎋ 也按主按钮
             if cancel == nil {
@@ -301,7 +296,47 @@ extension DialogLayout {
             .shadow(color: .black.opacity(0.25), radius: 4)
     }
 
-    /// 黄色警告图标挂在对齐线左侧 4 pt，原因文字从对齐线开始，右边距 20，至少高 51。
+    /// 图标距顶 20，右侧 16 pt 是标题、服务器仓库的位置与说明；说明距头部底边 `textBottom`，右边距 20。
+    ///
+    /// 图标下方不留这段边距，头部至少高 84：距顶 20 加上图标的 64。
+    ///
+    /// - Parameter textBottom: 说明到头部底边的距离：一般是 12，没有内容区、下面紧跟 Options 开关时是 8。
+    private func header(textBottom: CGFloat) -> some View {
+        HStack(alignment: .top, spacing: DialogMetrics.iconSpacing) {
+            Image(nsImage: icon ?? AppIconController.displayedIcon())
+                .resizable()
+                .frame(width: 64, height: 64)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(.system(size: 14, weight: .bold))
+                    .lineLimit(1)
+
+                // 服务器仓库在标题下写出带主机前缀的位置，本机仓库没有这一行
+                if let repository, repository.host != nil {
+                    Text(repository.displayPath)
+                        .font(.system(size: 13))
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Text(message)
+                    .font(.system(size: 13))
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, textBottom)
+        }
+        .padding(.leading, alignment - DialogMetrics.iconSpacing - 64)
+        .padding(.trailing, 20)
+        .padding(.top, 20)
+    }
+
+    /// 黄色警告图标挂在对齐线左侧 4 pt，原因文字从对齐线开始，右边距 20。
+    ///
+    /// 没有 Options 时这一行至少高 51；下面紧跟 Options 开关时与表单一样，这一行下方只留 8 pt。
     private func errorRow(_ error: String) -> some View {
         HStack(alignment: .top, spacing: 4) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -316,11 +351,12 @@ extension DialogLayout {
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, minHeight: 51, alignment: .topLeading)
+                .frame(maxWidth: .infinity, minHeight: options == nil ? 51 : nil, alignment: .topLeading)
                 .padding(.top, 1)
         }
         .padding(.leading, alignment - 4 - 18)
         .padding(.trailing, 20)
+        .padding(.bottom, options == nil ? 0 : 8)
     }
 
     /// 选项区上下各留 8 pt；展开时整块填次要背景色，上下各一条带阴影的 1 pt 边线。
@@ -334,6 +370,7 @@ extension DialogLayout {
                     .background(AppPalette.color("general_secondary_background_color"))
                     .overlay(alignment: .top) { optionsBorder }
                     .overlay(alignment: .bottom) { optionsBorder }
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { optionsHeight = $0 }
             }
         }
         .padding(.vertical, 8)
@@ -352,6 +389,11 @@ extension DialogLayout {
 // MARK: - Helpers
 
 extension DialogLayout {
+    /// 底栏的高度。
+    private static var footerHeight: CGFloat {
+        53
+    }
+
     /// 文字里的网址写成可点的链接。
     private static func linkingURLs(in text: String) -> AttributedString {
         var attributed = AttributedString(text)
@@ -438,6 +480,8 @@ private final class PassthroughButton: NSButton {
 ///
 /// 按钮文字较长的语言里，底栏的按钮组可能在指定宽度里放不下，对话框随之加宽，上面一段按同一宽度排版；
 /// 可以拉大的对话框再占满窗口给的宽度，高度有富余时都交给上面一段。
+///
+/// 经 `DialogWindow` 呈现时占满窗口的高度：窗口在动画中高于或矮于内容时，上面一段贴着顶边，底栏贴着底边。
 private struct DialogStack: Layout {
     /// 指定的宽度。
     let width: CGFloat
@@ -445,9 +489,19 @@ private struct DialogStack: Layout {
     /// 是否占满提议的宽度：可以拉大的对话框拉宽后，内容随窗口变宽。
     let fillsProposedWidth: Bool
 
-    /// 宽度取指定宽度与底栏理想宽度中较大的一个，高度是两段之和。
+    /// 是否占满提议的高度：窗口的尺寸由骨架报上的理想尺寸驱动，内容不再在窗口里上下居中。
+    let fillsProposedHeight: Bool
+
+    /// 宽度取指定宽度与底栏理想宽度中较大的一个，高度是两段之和；占满提议的高度时取提议的高度。
+    ///
+    /// 提议的高度为零时是在问最小尺寸，可以拉大的窗口据此限制最小尺寸，这时仍按两段之和回答。
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
         let width = resolvedWidth(subviews, proposed: proposal.width)
+
+        if fillsProposedHeight, let height = proposal.height, height.isFinite, height > 0 {
+            return CGSize(width: width, height: height)
+        }
+
         let footer = footerHeight(subviews, width: width)
 
         let body = subviews[0].sizeThatFits(ProposedViewSize(
@@ -458,18 +512,25 @@ private struct DialogStack: Layout {
         return CGSize(width: width, height: body.height + footer)
     }
 
-    /// 上面一段从顶边开始，底栏紧接在它下面。
+    /// 上面一段从顶边开始，底栏紧接在它下面；占满提议的高度时底栏贴着底边。
     func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
         let width = resolvedWidth(subviews, proposed: bounds.width)
         let footer = footerHeight(subviews, width: width)
 
-        let proposal = ProposedViewSize(width: width, height: max(bounds.height - footer, 0))
+        // 不能拉大的对话框占满窗口时，上面一段始终按理想高度排，不随动画中的窗口高度压缩或拉伸
+        let proposal = ProposedViewSize(
+            width: width,
+            height: fillsProposedHeight && !fillsProposedWidth ? nil : max(bounds.height - footer, 0)
+        )
+
         let body = subviews[0].sizeThatFits(proposal)
 
         subviews[0].place(at: bounds.origin, proposal: proposal)
 
+        let footerTop = fillsProposedHeight ? bounds.maxY - footer : bounds.minY + body.height
+
         subviews[1].place(
-            at: CGPoint(x: bounds.minX, y: bounds.minY + body.height),
+            at: CGPoint(x: bounds.minX, y: footerTop),
             proposal: ProposedViewSize(width: width, height: footer)
         )
     }

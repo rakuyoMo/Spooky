@@ -45,11 +45,16 @@ struct CloneRepositoryDialog: View {
         ) {
             DialogForm {
                 DialogFormRow(label: AppLocalization.text("clone.url")) {
-                    TextField("", text: $url)
+                    TextField("", text: $url.animation(DialogAnimation.current))
                         .accessibilityIdentifier("clone-url")
                 }
 
-                HostDirectoryPicker(label: AppLocalization.text("clone.to"), hosts: hosts, directory: $parent)
+                // 目标路径一行随地址与位置出现、消失或改变折行，对话框高度随之同步变化
+                HostDirectoryPicker(
+                    label: AppLocalization.text("clone.to"),
+                    hosts: hosts,
+                    directory: $parent.animation(DialogAnimation.current)
+                )
 
                 if let destination {
                     DialogFormRow(label: "") {

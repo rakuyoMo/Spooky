@@ -119,9 +119,9 @@ struct RevisionComparisonView: View {
         }
     }
 
-    /// 单个文件的折叠组，展开时才读取补丁；右键用比较工具比较这个文件在两侧的版本。
+    /// 单个文件，展开时才读取补丁；右键用比较工具比较这个文件在两侧的版本。
     private func fileSection(_ file: CommitFileChange) -> some View {
-        DisclosureGroup(
+        ChangesetFileRow(
             isExpanded: Binding(
                 get: { state.expandedPaths.contains(file.path) },
                 set: {
@@ -134,10 +134,7 @@ struct RevisionComparisonView: View {
                 }
             )
         ) {
-            fileDiff(file.path)
-        } label: {
             CommitFileLabel(file: file)
-                .frame(height: 30)
                 .contextMenu {
                     if let base = state.base, let target = state.target {
                         Button(
@@ -152,8 +149,9 @@ struct RevisionComparisonView: View {
                         }
                     }
                 }
+        } diff: {
+            fileDiff(file.path)
         }
-        .padding(.horizontal, 8)
     }
 
     /// 文件补丁的失败、读取中与已读取三种状态。

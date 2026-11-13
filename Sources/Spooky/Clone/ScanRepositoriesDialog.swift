@@ -169,7 +169,7 @@ extension ScanRepositoriesDialog {
             return
         }
 
-        failure = nil
+        DialogAnimation.perform { failure = nil }
         let target = directory
 
         scan = Task {
@@ -186,7 +186,7 @@ extension ScanRepositoriesDialog {
                     selected.insert(location)
                 }
             } catch {
-                failure = AppFailure(error: error, opening: false, location: target)
+                DialogAnimation.perform { failure = AppFailure(error: error, opening: false, location: target) }
             }
 
             scan = nil

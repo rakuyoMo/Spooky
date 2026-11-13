@@ -131,9 +131,10 @@ extension RemoteValueDialog {
     /// 值为空或未变时直接不可提交；地址只查写法，refspec 按 Git 规则校验。
     private func validate() async {
         isValid = false
-        error = ""
 
+        // 输入停顿期间保留上一次的错误，新结果出来后一次替换；值为空或未变时没有错误
         guard !value.isEmpty, value != original, let runner = session.runner else {
+            error = ""
             return
         }
 
@@ -148,6 +149,7 @@ extension RemoteValueDialog {
                 try Task.checkCancellation()
             }
 
+            error = ""
             isValid = true
         } catch {
             if !Task.isCancelled {

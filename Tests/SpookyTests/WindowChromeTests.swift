@@ -11,7 +11,7 @@ import TestSupport
 /// 仓库窗口的工具栏、窗口标题、标签页、侧边栏的首次宽度与启动窗口。
 @MainActor
 struct WindowChromeTests {
-    /// 同一个仓库窗口依次核对：工具栏的排布、标签、可见优先级与图标；刷新进行中 Refresh 照常可用；
+    /// 同一个仓库窗口依次核对：工具栏的排布、旧排布里的关闭仓库、标签、可见优先级与图标；刷新进行中 Refresh 照常可用；
     /// 隐藏与显示窗口标题；主机前缀与仓库管理入口的状态；新标签与显式新窗口。
     @Test("工具栏、刷新中的 Refresh、窗口标题与标签页")
     func toolbarItems() async throws {
@@ -30,6 +30,7 @@ struct WindowChromeTests {
 
         // 各项的排布、标签、可见优先级与图标在窗口显示仓库时核对
         try Self.expectToolbarLayout(in: controller)
+        Self.expectSavedCloseRepositoryDropped(in: fixture)
         try Self.expectToolbarLabels(in: controller)
         try Self.expectTransferIcons(in: controller)
 
@@ -168,14 +169,55 @@ extension WindowChromeTests {
             }
         }
 
-        // 全部暂存与提交只在主菜单里；以前保存的配置里留着这两个标识时创建不出项，由系统跳过
-        for identifier in [NSToolbarItem.Identifier("stageAll"), NSToolbarItem.Identifier("commit")] {
+        // 全部暂存、提交与关闭仓库只在主菜单里；以前保存的配置里留着这几个标识时创建不出项，由系统跳过
+        let menuOnly = ["stageAll", "commit", "closeRepository"].map { NSToolbarItem.Identifier($0) }
+
+        for identifier in menuOnly {
             #expect(!RepositoryToolbar.allowedItems.contains(identifier))
 
             #expect(
                 controller.toolbar(toolbar, itemForItemIdentifier: identifier, willBeInsertedIntoToolbar: false) == nil
             )
         }
+    }
+
+    /// 以前保存的排布里有关闭仓库一项：按这份排布建出的工具栏载入后没有它，其余保存的项照旧；
+    /// 显示仓库的窗口里 File › Close Repository 仍然可用。
+    private static func expectSavedCloseRepositoryDropped(in fixture: NavigationTests.WindowFixture) {
+        let identifier = "spooky-saved-toolbar-" + UUID().uuidString
+        let key = "NSToolbar Configuration " + identifier
+        let saved = [RepositoryToolbar.refresh.rawValue, "closeRepository", RepositoryToolbar.search.rawValue]
+
+        UserDefaults.standard.set(["TB Item Identifiers": saved], forKey: key)
+
+        let controller = RepositoryWindowController(
+            coordinator: fixture.coordinator,
+            toolbarIdentifier: NSToolbar.Identifier(identifier)
+        )
+
+        defer {
+            controller.session.close()
+            controller.window?.close()
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+
+        // 父仓库与跟随内层分栏的分隔符由窗口补进来，不来自保存的排布
+        let added: Set<NSToolbarItem.Identifier> = [
+            RepositoryToolbar.parentRepository,
+            RepositoryToolbar.detailSeparator,
+        ]
+
+        let identifiers = controller.window?.toolbar?.items.map(\.itemIdentifier) ?? []
+        #expect(identifiers.filter { !added.contains($0) } == [RepositoryToolbar.refresh, RepositoryToolbar.search])
+
+        // 关闭仓库只留在 File 菜单里，显示仓库时照常可用
+        let close = NSMenuItem(
+            title: "",
+            action: #selector(RepositoryWindowController.closeRepository),
+            keyEquivalent: ""
+        )
+
+        #expect(fixture.controller.validateUserInterfaceItem(close))
     }
 
     /// 仓库管理入口叫 Bookmarks，Sync 在自定义面板里叫 Synchronize，后退 / 前进叫 Prev / Next，储藏两段叫 Apply / Save；

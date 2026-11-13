@@ -5,7 +5,8 @@ import SwiftUI
 
 /// 对话框骨架所在的窗口：有发起的窗口时挂成它的 sheet，没有时是应用级的模态窗口。
 ///
-/// 窗口不参与系统标签页与窗口恢复，高度随内容；给了尺寸记录名的对话框可以拉大，拉大后的尺寸按这个名字记住。
+/// 窗口不参与系统标签页与窗口恢复，尺寸随内容，显示期间的变化经 `DialogSizing` 与内容同步；
+/// 给了尺寸记录名的对话框可以拉大，拉大后的尺寸按这个名字记住。
 @MainActor
 enum DialogWindow {
     /// 呈现对话框。
@@ -41,19 +42,25 @@ enum DialogWindow {
             }
         }
 
-        let controller = NSHostingController(rootView: content(close))
+        let sizing = DialogSizing(window: window)
+        let controller = NSHostingController(rootView: DialogWindowContent(content: content(close), sizing: sizing))
         window.contentViewController = controller
 
         if let autosaveName {
             // 可以拉大的对话框以内容的最小尺寸为下限：先按约束把窗口排成这个尺寸再接上尺寸记录名，
             // 否则记下的是还没排版的空窗口；记住过尺寸的随即换成记住的尺寸
             controller.sizingOptions = [.minSize]
+            sizing.tracksMinimumSize = { [weak controller] tracks in
+                controller?.sizingOptions = tracks ? [.minSize] : []
+            }
+
             window.styleMask.insert(.resizable)
             window.updateConstraintsIfNeeded()
             window.setFrameAutosaveName(autosaveName)
         } else {
-            // 高度取内容的理想尺寸，说明折成几行就留几行的高度
-            controller.sizingOptions = .preferredContentSize
+            // 尺寸由骨架报上的理想尺寸驱动，窗口不随约束自动变化；首次显示前先排成理想尺寸，说明折成几行就留几行的高度
+            controller.sizingOptions = []
+            window.setContentSize(controller.sizeThatFits(in: DialogSizing.unconstrained))
         }
 
         guard let parent else {
@@ -83,5 +90,22 @@ extension DialogWindow {
 
         _ = NSApp.runModal(for: window)
         NotificationCenter.default.removeObserver(closing)
+    }
+}
+
+// MARK: - DialogWindowContent
+
+/// 对话框窗口的根视图：把窗口的尺寸跟随交给里面的骨架。
+struct DialogWindowContent<Content: View>: View {
+    /// 对话框的内容。
+    let content: Content
+
+    /// 对话框所在窗口的尺寸跟随。
+    let sizing: DialogSizing
+
+    /// 带上尺寸跟随的内容。
+    var body: some View {
+        content
+            .environment(\.dialogSizing, sizing)
     }
 }

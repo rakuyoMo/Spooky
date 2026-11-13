@@ -38,7 +38,8 @@ extension SyncDialog {
                 "branch.target",
                 selection: $source,
                 references: branches.filter(\.isLocal),
-                count: lease.map { Self.leaseCounts(of: $0).introduced }
+                count: lease.map { Self.leaseCounts(of: $0).introduced },
+                spacing: 12
             )
 
             leasePicker(
@@ -103,9 +104,13 @@ extension SyncDialog {
         }
     }
 
-    /// 强推核对的进度，或远端分支相对改写前版本的状态，在上一行下方 20 pt；图标挂在输入列外侧，文字对齐输入列。
+    /// 强推核对的进度，或远端分支相对改写前版本的状态：16 pt 图标加 12 pt 说明，只落后的远端没有这一行。
+    ///
+    /// 这是表单的状态行，显示时在上一行下方 20 pt，没有内容时不占高度；图标挂在输入列外侧，文字对齐输入列。
     private var leaseStatus: some View {
-        DialogInputColumnReader { inputColumn in
+        let line = lease.flatMap { Self.leaseLine(for: $0.status) }
+
+        return DialogInputColumnReader { inputColumn in
             // 表单左边距 20，16 pt 的图标加 4 pt 间距挂在输入列左侧
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 if checkingLease {
@@ -114,15 +119,24 @@ extension SyncDialog {
                         .frame(width: 16, height: 16)
 
                     Text(AppLocalization.text("sync.lease.checking"))
-                } else if let lease {
-                    leaseStatusLine(lease.status)
+                } else if let line {
+                    Image(systemName: line.icon)
+                        .font(.system(size: 13))
+                        .foregroundStyle(line.color)
+                        .frame(width: 16, height: 16)
+                        .accessibilityHidden(true)
+
+                    Text(line.text)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .font(.system(size: 12))
             .foregroundStyle(.secondary)
+            .padding(.top, checkingLease || line != nil ? 20 : 0)
             .padding(.leading, inputColumn - 20 - 20)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .containerValue(\.isDialogFormStatus, true)
     }
 
     /// 推送的版本：可输入，也可从本地分支与标签里补全。
@@ -195,6 +209,28 @@ extension SyncDialog {
             : AppLocalization.text("sync.lease.newer", count)
     }
 
+    /// 强推状态一行的图标、颜色与说明；只落后的远端不需要说明，为 nil。
+    private static func leaseLine(
+        for status: ForcePushPreview.Status
+    ) -> (icon: String, color: Color, text: String)? {
+        switch status {
+        case .fastForward:
+            nil
+
+        case .matchesLastKnown:
+            ("checkmark.circle.fill", .green, AppLocalization.text("sync.lease.matches"))
+
+        case .sameRevision:
+            ("equal.circle", .secondary, AppLocalization.text("sync.lease.same"))
+
+        case .differsFromLastKnown:
+            ("exclamationmark.triangle.fill", .yellow, AppLocalization.text("sync.lease.differs"))
+
+        case .newerOnRemote(let count):
+            ("exclamationmark.triangle.fill", .yellow, newerCommits(count))
+        }
+    }
+
     /// 标签加下拉框的一行，列出引用的短名。
     private func picker(
         _ label: String,
@@ -207,17 +243,19 @@ extension SyncDialog {
         }
     }
 
-    /// 强推的一行下拉：下方 4 pt 是 11 pt 次要色的提交数，与下拉同宽；与下一行相隔 20 pt。
+    /// 强推的一行下拉：下方 4 pt 是 11 pt 次要色的提交数，与下拉同宽。
     ///
-    /// - Parameter count: 提交数的说明；核对完成前为 nil。
+    /// - Parameters:
+    ///   - count: 提交数的说明；核对完成前为 nil。
+    ///   - spacing: 在表单行距之外与下一行多留的间距；Branch 一行多留 12，与 Destination 相隔 20。
     private func leasePicker(
         _ label: String,
         selection: Binding<String>,
         references: [RepositoryReference],
-        count: String?
+        count: String?,
+        spacing: CGFloat = 0
     ) -> some View {
         RepositoryDialogRows.row(AppLocalization.text(label)) {
-            // 表单的行距 8 再加 12，与下一行相隔 20
             VStack(alignment: .leading, spacing: 4) {
                 referencePicker(label, selection: selection, references: references)
 
@@ -229,7 +267,7 @@ extension SyncDialog {
                 }
             }
             .dialogFieldWidth(kind.pickerWidth)
-            .padding(.bottom, 12)
+            .padding(.bottom, spacing)
         }
     }
 
@@ -245,38 +283,5 @@ extension SyncDialog {
         .labelsHidden()
         .buttonSizing(.flexible)
         .accessibilityLabel(AppLocalization.text(label))
-    }
-
-    /// 强推状态的一行：16 pt 图标加 12 pt 说明；只落后的远端不需要说明。
-    @ViewBuilder
-    private func leaseStatusLine(_ status: ForcePushPreview.Status) -> some View {
-        let line: (icon: String, color: Color, text: String)? =
-            switch status {
-            case .fastForward:
-                nil
-
-            case .matchesLastKnown:
-                ("checkmark.circle.fill", .green, AppLocalization.text("sync.lease.matches"))
-
-            case .sameRevision:
-                ("equal.circle", .secondary, AppLocalization.text("sync.lease.same"))
-
-            case .differsFromLastKnown:
-                ("exclamationmark.triangle.fill", .yellow, AppLocalization.text("sync.lease.differs"))
-
-            case .newerOnRemote(let count):
-                ("exclamationmark.triangle.fill", .yellow, Self.newerCommits(count))
-            }
-
-        if let line {
-            Image(systemName: line.icon)
-                .font(.system(size: 13))
-                .foregroundStyle(line.color)
-                .frame(width: 16, height: 16)
-                .accessibilityHidden(true)
-
-            Text(line.text)
-                .fixedSize(horizontal: false, vertical: true)
-        }
     }
 }

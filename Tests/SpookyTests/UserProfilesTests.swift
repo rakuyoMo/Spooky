@@ -1,5 +1,7 @@
+import ApplicationServices
 import Foundation
 import SpookyKit
+import SwiftUI
 import Testing
 
 @testable import Spooky
@@ -86,5 +88,31 @@ struct UserProfilesTests {
         var edited = work
         edited.title = "Home"
         #expect(UserProfiles.duplicate(of: edited, in: [work, home]) == .title)
+    }
+
+    /// 编辑框里签名密钥的下拉与上面几行的输入框同宽、左右对齐，不在输入列里居中。
+    @Test("签名密钥下拉与输入框对齐", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    @MainActor
+    func signingKeyAlignment() async throws {
+        let elements = await AccessibilityProbe.elements(
+            until: { elements in
+                elements.contains { $0.role == "AXPopUpButton" } && elements.contains { $0.role == "AXTextField" }
+            }
+        ) {
+            UserProfileEditor(
+                profile: UserProfile(title: "Work", name: "", email: ""),
+                isNew: true,
+                profiles: [],
+                keys: [],
+                onSave: { _ in },
+                close: { }
+            )
+        }
+
+        let field = try #require(elements.first { $0.role == "AXTextField" })
+        let popUp = try #require(elements.first { $0.role == "AXPopUpButton" })
+
+        #expect(abs(popUp.frame.minX - field.frame.minX) <= 1)
+        #expect(abs(popUp.frame.maxX - field.frame.maxX) <= 1)
     }
 }

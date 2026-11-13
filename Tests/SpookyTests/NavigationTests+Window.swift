@@ -97,7 +97,10 @@ extension NavigationTests {
         let identifier = "spooky-navigation-" + UUID().uuidString
         let defaultsDirectory = FileManager.default.temporaryDirectory.appending(path: identifier)
         let defaults = try #require(UserDefaults(suiteName: defaultsDirectory.appending(path: "defaults").path))
-        let coordinator = SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
+        let coordinator = SpookyApplicationController(
+            bookmarks: RepositoryBookmarks(defaults: defaults),
+            recentDocuments: .ignoring
+        )
         let controller = RepositoryWindowController(
             coordinator: coordinator,
             session: RepositorySession(makeRunner: { _ in runner }),
@@ -119,7 +122,11 @@ extension NavigationTests {
     }
 
     /// 建立一个只有添加 a.txt 这一个提交的临时仓库，以及书签记在临时目录里的协调者。
-    static func makeCoordinator() async throws -> CoordinatorFixture {
+    ///
+    /// - Parameter recentDocuments: 协调者登记最近文稿用的登记；默认不碰系统的最近文稿。
+    static func makeCoordinator(
+        recentDocuments: RecentRepositoryDocuments = .ignoring
+    ) async throws -> CoordinatorFixture {
         // 仓库放在临时目录的子目录里，偏好文件不出现在工作区中
         let root = try FileViewsTests.temporaryDirectory()
         let directory = root.appending(path: "repository", directoryHint: .isDirectory)
@@ -136,7 +143,10 @@ extension NavigationTests {
             root: root,
             directory: directory,
             location: location,
-            coordinator: SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
+            coordinator: SpookyApplicationController(
+                bookmarks: RepositoryBookmarks(defaults: defaults),
+                recentDocuments: recentDocuments
+            )
         )
     }
 

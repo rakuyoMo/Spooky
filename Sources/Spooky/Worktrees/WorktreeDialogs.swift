@@ -183,9 +183,9 @@ extension AddWorktreeDialog {
 
     /// 目标位置在仓库所在的机器上是否已有文件或非空目录；输入停顿后再查。
     private func checkDestination() async {
-        destinationTaken = false
-
+        // 输入停顿期间保留上一次的结果，新结果出来后一次替换；不是绝对路径时不查
         guard let repository = session.repository, destination.hasPrefix("/") else {
+            destinationTaken = false
             return
         }
 
@@ -201,7 +201,10 @@ extension AddWorktreeDialog {
             try Task.checkCancellation()
             destinationTaken = status.exists && !status.isEmpty
         } catch {
-            // 查不到时交给 Git 在创建时报告
+            // 查不到时交给 Git 在创建时报告；被新的输入取消时由新的检查给出结果
+            if !Task.isCancelled {
+                destinationTaken = false
+            }
         }
     }
 

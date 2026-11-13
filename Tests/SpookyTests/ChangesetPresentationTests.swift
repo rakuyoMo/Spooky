@@ -1,4 +1,6 @@
+import ApplicationServices
 import Foundation
+import SwiftUI
 import Testing
 import TestSupport
 
@@ -74,6 +76,41 @@ struct ChangesetPresentationTests {
         await until { !session.history.isLoadingChanges }
         #expect(session.history.changesFailure == nil)
         #expect(view.emptyMessage == AppLocalization.text("history.noChanges"))
+    }
+
+    /// 变更文件行只用状态徽标表示修改类型：辅助技术从徽标读出状态全称，不再单独读出状态字母，路径照常读出。
+    @Test("变更文件行的状态徽标", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    func fileLabelStatus() async {
+        let files = [
+            CommitFileChange(path: "added.txt", originalPath: nil, status: "A", additions: 1, deletions: 0),
+            CommitFileChange(path: "modified.txt", originalPath: nil, status: "M", additions: 1, deletions: 1),
+            CommitFileChange(path: "deleted.txt", originalPath: nil, status: "D", additions: 0, deletions: 1),
+            CommitFileChange(path: "new.txt", originalPath: "old.txt", status: "R", additions: 0, deletions: 0),
+        ]
+
+        let paths = ["added.txt", "modified.txt", "deleted.txt", "old.txt → new.txt"]
+
+        let names = ["status.added", "status.modified", "status.deleted", "status.renamed"]
+            .map { AppLocalization.text($0) }
+
+        // 等四行的路径都读到，此时各行的徽标也已建好
+        let elements = await AccessibilityProbe.elements(
+            until: { elements in
+                paths.allSatisfy { path in elements.contains { $0.value == path } }
+            }
+        ) {
+            VStack(spacing: 0) {
+                ForEach(files) { CommitFileLabel(file: $0) }
+            }
+        }
+
+        for name in names {
+            #expect(elements.contains { $0.name == name || $0.value == name }, "\(name)")
+        }
+
+        // 状态字母不再作为单独的文字出现
+        let letters: Set = ["A", "M", "D", "R"]
+        #expect(!elements.contains { letters.contains($0.value) })
     }
 
     /// 每段独立按数量选择，整句由语言自己的模板连接。

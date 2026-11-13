@@ -11,10 +11,6 @@ struct AppIconSettingsRow: View {
     /// App 图标的控制器；App 不是经 `SpookyApplicationController` 启动时为 nil，这一行不显示。
     let controller: AppIconController?
 
-    /// 图标列表是否打开。
-    @State
-    private var isChoosing = false
-
     /// 右对齐的标签，控件列里依次是 64 pt 的图标、组名与 “Change…”，与上方的外观一行相距 8 pt；
     /// 组名到图标底板与到按钮看上去一样远。VoiceOver 把图标与组名读成 “App Icon” 与组名。
     var body: some View {
@@ -32,14 +28,9 @@ struct AppIconSettingsRow: View {
 
                     // 图标四周是透明边，组名到底板比到图标的边框远；按钮前补上同样宽的一段
                     Button(AppLocalization.text("settings.appIcon.change")) {
-                        isChoosing = true
+                        AppIconPickerDialog.present(controller: controller, in: NSApp.keyWindow)
                     }
                     .padding(.leading, Self.iconSize * AppIconGroup.plateInset)
-                    .sheet(isPresented: $isChoosing) {
-                        AppIconPickerDialog(controller: controller) {
-                            isChoosing = false
-                        }
-                    }
                 }
             }
             .padding(.top, SettingsFormLayout.rowSpacing)

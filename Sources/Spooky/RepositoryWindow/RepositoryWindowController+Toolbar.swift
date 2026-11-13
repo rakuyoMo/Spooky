@@ -47,9 +47,6 @@ enum RepositoryToolbar {
     /// 最近克隆的气泡；有克隆时才显示。
     static let clone = NSToolbarItem.Identifier("clone")
 
-    /// 关闭仓库，回到仓库管理。
-    static let closeRepository = NSToolbarItem.Identifier("closeRepository")
-
     /// 过滤当前视图列表的搜索框。
     static let search = NSToolbarItem.Identifier("search")
 
@@ -68,16 +65,16 @@ enum RepositoryToolbar {
     /// 在终端中打开。
     static let terminal = NSToolbarItem.Identifier("terminal")
 
-    /// 默认排布：侧边栏上方是仓库管理入口，主视图上方依次是父仓库、后退 / 前进、快捷操作、主机前缀、同步与合并、储藏、刷新、关闭仓库与搜索框。
+    /// 默认排布：侧边栏上方是仓库管理入口，主视图上方依次是父仓库、后退 / 前进、快捷操作、主机前缀、同步与合并、储藏、刷新与搜索框。
     static let defaultItems: [NSToolbarItem.Identifier] = [
         .flexibleSpace, repositories, sidebarSeparator, parentRepository, navigation, .flexibleSpace,
-        quickActions, host, sync, synchronize, merge, stashes, refresh, clone, closeRepository, search,
+        quickActions, host, sync, synchronize, merge, stashes, refresh, clone, search,
     ]
 
     /// 自定义面板里可选的项：默认项之外另有新建分支、安全强推、推送任意版本、Finder 与终端，以及系统的空白。
     static let allowedItems: [NSToolbarItem.Identifier] = [
         repositories, sidebarSeparator, parentRepository, navigation, quickActions, host, sync, synchronize, merge,
-        stashes, refresh, clone, closeRepository, search, createBranch, forcePush, pushTo, finder, terminal,
+        stashes, refresh, clone, search, createBranch, forcePush, pushTo, finder, terminal,
         .space, .flexibleSpace,
     ]
 
@@ -101,9 +98,6 @@ extension RepositoryWindowController {
         ),
         RepositoryToolbar.refresh: (
             "action.refresh", "action.refresh", .symbol("arrow.clockwise"), #selector(refreshRepository)
-        ),
-        RepositoryToolbar.closeRepository: (
-            "action.closeRepository", "action.closeRepository", .symbol("xmark.circle"), #selector(closeRepository)
         ),
         RepositoryToolbar.createBranch: (
             "toolbar.createBranch", "toolbar.createBranch", .symbol("arrow.branch"), #selector(createBranch)
@@ -133,7 +127,6 @@ extension RepositoryWindowController {
         #selector(saveStash): ("toolbar.saveStash.tip", "stash.save", false),
         #selector(showQuickActions): ("toolbar.quickActions.tip", "toolbar.quickActions", true),
         #selector(refreshRepository): ("action.refresh", nil, true),
-        #selector(closeRepository): ("action.closeRepository", nil, true),
         #selector(createBranch): ("toolbar.createBranch.tip", nil, true),
         #selector(forcePushWithLease): ("toolbar.forcePush.tip", nil, true),
         #selector(pushRevision): ("toolbar.pushTo", nil, true),

@@ -44,6 +44,14 @@ struct CommitDetailView: View {
     @State
     private var hovering = false
 
+    /// 变更文件行所在的滚动内容有键盘焦点时，↑ ↓ 移动文件的选中。
+    @FocusState
+    private var filesFocused: Bool
+
+    /// 窗口是否在前，决定文件行选中底的颜色。
+    @Environment(\.appearsActive)
+    private var appearsActive
+
     /// 换选提交时结束比较。
     var body: some View {
         content
@@ -91,29 +99,21 @@ struct CommitDetailView: View {
         }
     }
 
-    /// 变更集的读取进度、失败、逐个文件与空状态。
-    @ViewBuilder
-    private var changeRows: some View {
-        if history.isLoadingChanges {
-            ProgressView(AppLocalization.text("history.loadingChanges"))
-                .controlSize(.small)
-                .padding(20)
-        }
-
-        if let failure = history.changesFailure {
-            FailureDetailsView(failure: failure) { history.loadChanges() }
-                .padding(20)
-        }
-
-        ForEach(history.changes) { file in
-            fileSection(file)
-            Divider()
-        }
+    /// 文件行选中底的颜色：滚动内容有焦点且窗口在前时是强调色。
+    private var fileSelectionColor: NSColor {
+        .listSelection(
+            emphasized: appearsActive && filesFocused,
+            key: appearsActive,
+            background: .windowBackgroundColor
+        )
     }
 
     /// 滚动区域的内容：元信息、完整信息、操作按钮行、变更集摘要与逐个文件的 Diff。
     private func scrollContent(_ commit: HistoryCommit) -> some View {
-        LazyVStack(alignment: .leading, spacing: 0) {
+        // 焦点在这里读出：文件行是 `LazyVStack` 惰性排出的，只在行里读时，焦点变化不会让已排出的行重画
+        let selectionColor = fileSelectionColor
+
+        return LazyVStack(alignment: .leading, spacing: 0) {
             CommitMetadataView(commit: commit, signature: session.signatures.signatures[commit.id])
 
             Text(commit.message)
@@ -128,21 +128,54 @@ struct CommitDetailView: View {
                     .padding(.bottom, 8)
             }
 
-            Divider()
-
+            // 提交说明与 Expand All 一行之间不画分隔线，这一行下方画一条，隔开第一个文件行
             ChangesetSummaryBar(
                 changes: history.changes,
                 expanded: history.allItemsExpanded,
                 toggle: { history.expandAll(!history.allItemsExpanded) }
             )
 
-            changeRows
+            Divider()
+
+            changeRows(selectionColor: selectionColor)
+        }
+        .focusable()
+        .focused($filesFocused)
+        .focusEffectDisabled()
+        .onKeyPress(keys: [.upArrow, .downArrow], phases: [.down, .repeat]) { press in
+            moveFileSelection(press)
         }
     }
 
-    /// 单个变更文件的折叠组，展开时才读取它的 Diff。
-    private func fileSection(_ file: CommitFileChange) -> some View {
-        DisclosureGroup(
+    /// 变更集的读取进度、失败、逐个文件与空状态。
+    ///
+    /// - Parameter selectionColor: 文件行选中底的颜色。
+    @ViewBuilder
+    private func changeRows(selectionColor: NSColor) -> some View {
+        if history.isLoadingChanges {
+            ProgressView(AppLocalization.text("history.loadingChanges"))
+                .controlSize(.small)
+                .padding(20)
+        }
+
+        if let failure = history.changesFailure {
+            FailureDetailsView(failure: failure) { history.loadChanges() }
+                .padding(20)
+        }
+
+        ForEach(history.changes) { file in
+            fileSection(file, selectionColor: selectionColor)
+            Divider()
+        }
+    }
+
+    /// 单个变更文件，展开时才读取它的 Diff；整行都能点选。
+    ///
+    /// - Parameters:
+    ///   - file: 变更文件。
+    ///   - selectionColor: 选中时垫在文件行下面的颜色。
+    private func fileSection(_ file: CommitFileChange, selectionColor: NSColor) -> some View {
+        ChangesetFileRow(
             isExpanded: Binding(
                 get: { history.expandedPaths.contains(file.path) },
                 set: {
@@ -153,20 +186,51 @@ struct CommitDetailView: View {
                         history.expandedPaths.remove(file.path)
                     }
                 }
-            )
+            ),
+            selection: history.fileSelection.paths.contains(file.path) ? selectionColor : nil,
+            select: { clickFile(file.path) }
         ) {
-            CommitFileDiffView(history: history, path: file.path)
-        } label: {
             CommitFileLabel(file: file)
-                .frame(height: 30)
+                .frame(maxHeight: .infinity)
+                .contentShape(Rectangle())
                 .contextMenu {
                     if let commit = history.selectedCommit {
                         ChangesetFileMenu(session: session, path: file.path, originalPath: file.originalPath, commit: commit)
                     }
                 }
                 .onDrag { CommitFileDragging.provider(file, session: session) }
+        } diff: {
+            CommitFileDiffView(history: history, path: file.path)
         }
-        .padding(.horizontal, 8)
+    }
+
+    /// 点选一个文件行：按住 ⇧ 连续选，按住 ⌘ 切换这一行；键盘焦点随之交给变更文件所在的滚动内容。
+    private func clickFile(_ path: String) {
+        let modifiers = NSEvent.modifierFlags
+
+        history.fileSelection.click(
+            path,
+            extending: modifiers.contains(.shift),
+            toggling: modifiers.contains(.command),
+            order: history.changes.map(\.path)
+        )
+
+        filesFocused = true
+    }
+
+    /// ↑ ↓ 把文件的选中移到上一行或下一行，按住 ⇧ 从锚点连续选；没有变更文件时交给别处处理。
+    private func moveFileSelection(_ press: KeyPress) -> KeyPress.Result {
+        guard !history.changes.isEmpty else {
+            return .ignored
+        }
+
+        history.fileSelection.move(
+            by: press.key == .upArrow ? -1 : 1,
+            extending: press.modifiers.contains(.shift),
+            order: history.changes.map(\.path)
+        )
+
+        return .handled
     }
 }
 
@@ -312,16 +376,15 @@ struct CommitFileListView: View {
 
 // MARK: - CommitFileLabel
 
-/// 文件状态与重命名路径在提交详情、整页详情与版本比较中保持一致。
+/// 文件状态与重命名路径在提交详情、整页详情、版本比较与目录的文件历史中保持一致。
 struct CommitFileLabel: View {
     /// 当前文件变更。
     let file: CommitFileChange
 
-    /// 状态字母和路径都支持辅助功能读取。
+    /// 状态只用与工作区相同的徽标表示，辅助技术读出状态全称与路径。
     var body: some View {
         HStack(spacing: 8) {
-            Text(file.status).frame(width: 24)
-            Image(systemName: "doc").accessibilityHidden(true)
+            FileChangeStatusView(code: file.status)
             Text(file.originalPath.map { $0 + " → " + file.path } ?? file.path)
                 .lineLimit(1)
                 .truncationMode(.middle)

@@ -196,6 +196,7 @@ On your Mac:
 
 - Settings, user profiles, repository bookmarks, and the local folders chosen for server repositories in the repository settings are stored in the preferences domain `com.rakuyo.spooky`
 - Themes, including Default and Default (Dark), are stored in `~/Library/Application Support/Spooky/Themes`, one `.spookytheme` file per theme
+- Opened repositories are added to the system's recent documents so the Dock icon menu can list them: a local repository is added as its folder; a server repository is added as a `.spookyrepo` folder under `~/Library/Application Support/Spooky/Locations`, whose `.spookylocation` file records only the host alias and the remote path. There is one per server repository, reused when it is opened again; Clear Menu clears the recent documents and keeps these folders
 - Remote operations recorded in the **Activity** window, such as fetches, pulls, and pushes, are stored in `~/Library/Application Support/Spooky/Activity`, one file per record, and deleted after 7 days. Other Activity records are kept in memory only while Spooky is running
 - The previous lists of branches, remotes, stashes, and submodules that the **Activity** window compares against to count updated, added, and deleted items are stored in `~/Library/Application Support/Spooky/Baselines`, one file per repository
 - Credentials saved to the Keychain use the service name `com.rakuyo.spooky.remote.<host alias>`

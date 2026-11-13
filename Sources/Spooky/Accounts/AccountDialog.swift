@@ -40,20 +40,12 @@ struct AccountDialog: View {
     }
 
     /// 对话框的用途。
-    enum Purpose: Identifiable {
+    enum Purpose {
         /// 添加一个新账号。
         case add(Kind)
 
         /// 给已有账号换上新令牌。
         case reauthenticate(HostingAccount)
-
-        /// sheet 的身份。
-        var id: String {
-            switch self {
-            case .add(let kind): "add-\(kind)"
-            case .reauthenticate(let account): account.id.uuidString
-            }
-        }
     }
 
     /// 等待中的步骤。
@@ -77,7 +69,7 @@ struct AccountDialog: View {
     /// 保存账号的地方。
     let accounts: HostingAccounts
 
-    /// 关闭 sheet。
+    /// 关闭对话框。
     let close: () -> Void
 
     /// 认证方式：github.com 与私有部署的 GitLab 在下拉里选，GitLab.com 只有个人访问令牌。
@@ -165,7 +157,7 @@ struct AccountDialog: View {
     /// - Parameters:
     ///   - purpose: 对话框的用途。
     ///   - accounts: 保存账号的地方。
-    ///   - close: 关闭 sheet。
+    ///   - close: 关闭对话框。
     init(purpose: Purpose, accounts: HostingAccounts, close: @escaping () -> Void) {
         self.purpose = purpose
         self.accounts = accounts
@@ -179,13 +171,33 @@ struct AccountDialog: View {
     }
 }
 
+// MARK: - Presenting
+
+extension AccountDialog {
+    /// 在设置窗口上以 sheet 打开对话框；没有窗口时不打开。
+    ///
+    /// - Parameters:
+    ///   - purpose: 对话框的用途。
+    ///   - accounts: 保存账号的地方。
+    ///   - window: 设置窗口。
+    static func present(_ purpose: Purpose, accounts: HostingAccounts, in window: NSWindow?) {
+        guard let window else {
+            return
+        }
+
+        DialogWindow.present(on: window) { close in
+            AccountDialog(purpose: purpose, accounts: accounts, close: close)
+        }
+    }
+}
+
 // MARK: - Layout
 
 extension AccountDialog {
     /// 认证方式的下拉，占满输入列：github.com 是浏览器授权与个人访问令牌，私有部署的 GitLab 是个人访问令牌与用户名和密码。
     private var authenticationRow: some View {
         DialogFormRow(label: AppLocalization.text("accounts.authentication")) {
-            Picker("", selection: $authentication) {
+            Picker("", selection: $authentication.animation(DialogAnimation.current)) {
                 ForEach(methods, id: \.self) { method in
                     Text(AppLocalization.text(Self.titleKey(of: method))).tag(method)
                 }
@@ -373,13 +385,13 @@ extension AccountDialog {
             do {
                 switch authentication {
                 case .oauth:
-                    progress = .authorizing(nil)
+                    DialogAnimation.perform { progress = .authorizing(nil) }
                     let credential = try await authorize()
-                    progress = .validating
+                    DialogAnimation.perform { progress = .validating }
                     try await save(credential, on: instance, authentication: .oauth)
 
                 case .personalAccessToken:
-                    progress = .validating
+                    DialogAnimation.perform { progress = .validating }
                     try await save(
                         token.trimmingCharacters(in: .whitespacesAndNewlines),
                         on: instance,
@@ -387,18 +399,18 @@ extension AccountDialog {
                     )
 
                 case .password:
-                    progress = .validating
+                    DialogAnimation.perform { progress = .validating }
                     try await signIn(on: instance)
                 }
 
                 close()
             } catch is CancellationError {
-                progress = .idle
+                DialogAnimation.perform { progress = .idle }
             } catch is ExistingAccount {
-                progress = .idle
+                DialogAnimation.perform { progress = .idle }
                 isExisting = true
             } catch {
-                progress = .idle
+                DialogAnimation.perform { progress = .idle }
                 failure = AppFailure(error: error, opening: false, location: nil)
             }
         }
@@ -413,7 +425,7 @@ extension AccountDialog {
         let flow = GitHubDeviceFlow(clientID: clientID)
         let authorization = try await flow.start()
 
-        progress = .authorizing(authorization)
+        DialogAnimation.perform { progress = .authorizing(authorization) }
         openVerificationPage(authorization)
 
         return try await flow.token(for: authorization)

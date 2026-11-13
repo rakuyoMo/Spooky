@@ -647,9 +647,12 @@ extension HistoryCommitTable.Coordinator {
 // MARK: - HistoryCommitRow
 
 /// 提交行提供中号双行和小号单行两种布局。
-private struct HistoryCommitRow: View {
+struct HistoryCommitRow: View {
     /// 选中行的文字使用系统的选中文字语义色。
     private static let selectedText = Color(nsColor: .alternateSelectedControlTextColor)
+
+    /// 行内元素的间距，也是图到头像（中号）或短哈希（小号）的距离。
+    private static let spacing: CGFloat = 8
 
     /// 当前提交元信息。
     let commit: HistoryCommit
@@ -689,24 +692,30 @@ private struct HistoryCommitRow: View {
 
     /// 图在最左侧，标题和元信息按固定行高排列。
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Self.spacing) {
             if let graph {
                 HistoryGraphView(row: graph)
-                    .frame(width: CGFloat(graph.columnCount) * 10 + 7)
+                    .frame(width: Self.graphWidth(graph))
                     .accessibilityHidden(true)
             }
-            if small {
-                smallLayout
-            } else {
-                mediumLayout
+
+            // 图之外的内容比行的正中高 1 pt：头像底（中号）到行底的分隔线留 7 pt，短哈希底（小号）留 6 pt
+            Group {
+                if small {
+                    smallLayout
+                } else {
+                    mediumLayout
+                }
+
+                if unpushed || unpulled {
+                    Image(systemName: unpushed ? "arrow.up" : "arrow.down")
+                        .font(.system(size: small ? 10 : 12))
+                        .accessibilityLabel(
+                            AppLocalization.text(unpushed ? "history.unpushed" : "history.unpulled")
+                        )
+                }
             }
-            if unpushed || unpulled {
-                Image(systemName: unpushed ? "arrow.up" : "arrow.down")
-                    .font(.system(size: small ? 10 : 12))
-                    .accessibilityLabel(
-                        AppLocalization.text(unpushed ? "history.unpushed" : "history.unpulled")
-                    )
-            }
+            .offset(y: -1)
         }
         .font(.system(size: small ? 11 : 12))
         .padding(.trailing, 8)
@@ -777,36 +786,24 @@ private struct HistoryCommitRow: View {
             .layoutPriority(1)
     }
 
-    /// 引用名标记排成一行，放不下时以 “…” 结尾；标签标记可点，弹出标签的签名。
+    /// 引用标记；在行里先于作者与标题取得宽度，日期仍最先。
+    @ViewBuilder
     private var badges: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 4) {
-                if isHead { badge("HEAD", color: "blue") }
-                ForEach(references) { ref in
-                    // 只有标签标记可点，点击显示标签的签名
-                    if ref.isLocal || ref.isRemote {
-                        badge(ref.name, color: ref.isLocal ? "blue" : "gray")
-                    } else {
-                        TagBadgeButton(reference: ref.id, runner: runner) { badge(ref.name, color: "yellow") }
-                    }
-                }
-            }
-            if isHead || !references.isEmpty { badge("…", color: "gray") }
+        if isHead || !references.isEmpty {
+            HistoryRefBadges(references: references, isHead: isHead, selected: selected, runner: runner)
+                .layoutPriority(0.5)
         }
-        .frame(maxWidth: 300, alignment: .leading)
     }
 
-    /// 引用徽标使用 11 pt 文本和 4 pt 圆角。
-    private func badge(_ title: String, color: String) -> some View {
-        Text(title)
-            .font(.system(size: 11))
-            .lineLimit(1)
-            .padding(.horizontal, 4)
-            .padding(.vertical, 1)
-            .foregroundStyle(AppPalette.color((selected ? "selected" : color) + "_badge_text_color"))
-            .background(
-                AppPalette.color((selected ? "selected" : color) + "_badge_background_color"),
-                in: RoundedRectangle(cornerRadius: 4)
-            )
+    /// 行首到头像（中号）或短哈希（小号）左缘的距离：有图时是图宽加间距，没有图时贴着行首。
+    ///
+    /// - Parameter graph: 这一行的提交图；不显示图时为 nil。
+    static func contentLeading(graph: CommitGraphRow?) -> CGFloat {
+        graph.map { graphWidth($0) + spacing } ?? 0
+    }
+
+    /// 图的宽度：每列 10 pt，另加 7 pt。
+    private static func graphWidth(_ graph: CommitGraphRow) -> CGFloat {
+        CGFloat(graph.columnCount) * 10 + 7
     }
 }

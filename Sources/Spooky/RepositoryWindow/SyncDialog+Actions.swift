@@ -137,18 +137,24 @@ extension SyncDialog {
             return
         }
 
-        lease = nil
-
+        // 计数行与状态行的切换都经 `DialogAnimation`，对话框高度随之同步变化
         guard
             source.hasPrefix("refs/heads/"),
             destination.hasPrefix("refs/remotes/"),
             let runner = session.runner
         else {
-            checkingLease = false
+            DialogAnimation.perform {
+                lease = nil
+                checkingLease = false
+            }
+
             return
         }
 
-        checkingLease = true
+        DialogAnimation.perform {
+            lease = nil
+            checkingLease = true
+        }
 
         do {
             try await Task.sleep(for: .milliseconds(150))
@@ -156,7 +162,7 @@ extension SyncDialog {
                 .forcePushPreview(branch: source, destination: destination)
 
             try Task.checkCancellation()
-            lease = result
+            DialogAnimation.perform { lease = result }
         } catch {
             if !Task.isCancelled {
                 self.error = AppFailure(error: error, opening: false, location: session.repository).details
@@ -164,7 +170,7 @@ extension SyncDialog {
         }
 
         if !Task.isCancelled {
-            checkingLease = false
+            DialogAnimation.perform { checkingLease = false }
         }
     }
 

@@ -1,3 +1,4 @@
+import AppKit
 import SpookyKit
 import SwiftUI
 
@@ -13,10 +14,6 @@ struct AccountsSettingsView: View {
     /// 选中的账号。
     @State
     private var selection: HostingAccount.ID?
-
-    /// 正在添加或重新认证的对话框。
-    @State
-    private var dialog: AccountDialog.Purpose?
 
     /// 等待确认移除的账号。
     @State
@@ -40,9 +37,6 @@ struct AccountsSettingsView: View {
         }
         .padding(20)
         .frame(width: 900, height: 381)
-        .sheet(item: $dialog) { purpose in
-            AccountDialog(purpose: purpose, accounts: accounts) { dialog = nil }
-        }
         .alert(
             AppLocalization.text("accounts.remove.title"),
             isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
@@ -100,7 +94,9 @@ extension AccountsSettingsView {
         HStack(spacing: 0) {
             Menu {
                 ForEach(AccountDialog.Kind.allCases, id: \.self) { kind in
-                    Button(kind.menuTitle) { dialog = .add(kind) }
+                    Button(kind.menuTitle) {
+                        AccountDialog.present(.add(kind), accounts: accounts, in: NSApp.keyWindow)
+                    }
                 }
             } label: {
                 Image(systemName: "plus").frame(width: 24, height: 20)
@@ -120,7 +116,9 @@ extension AccountsSettingsView {
             Spacer(minLength: 0)
 
             Button(AppLocalization.text("accounts.reauthenticate")) {
-                selected.map { dialog = .reauthenticate($0) }
+                selected.map {
+                    AccountDialog.present(.reauthenticate($0), accounts: accounts, in: NSApp.keyWindow)
+                }
             }
             .disabled(selected == nil)
             .padding(.trailing, 8)

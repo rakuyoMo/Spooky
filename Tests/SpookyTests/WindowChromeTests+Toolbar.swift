@@ -160,7 +160,7 @@ extension WindowChromeTests {
         controller.updateQuickToolbarItems(option: false)
     }
 
-    /// 只显示图标时多数项在提示前面加上 “<标签>: ”，Sync、Create Branch、Refresh、Force Push、Push To、Close Repository
+    /// 只显示图标时多数项在提示前面加上 “<标签>: ”，Sync、Create Branch、Refresh、Force Push、Push To
     /// 与 Parent Repository 不加。
     private static func expectIconOnlyTips(in controller: RepositoryWindowController) {
         let text = { (key: String) in AppLocalization.text(key) }
@@ -213,7 +213,6 @@ extension WindowChromeTests {
         #expect(Self.tips(of: RepositoryToolbar.refresh, in: controller) == [text("action.refresh")])
         #expect(Self.tips(of: RepositoryToolbar.forcePush, in: controller) == [text("toolbar.forcePush.tip")])
         #expect(Self.tips(of: RepositoryToolbar.pushTo, in: controller) == [text("toolbar.pushTo")])
-        #expect(Self.tips(of: RepositoryToolbar.closeRepository, in: controller) == [text("action.closeRepository")])
         #expect(
             Self.tips(of: RepositoryToolbar.parentRepository, in: controller)
                 == [text("toolbar.parentRepository.tip")]

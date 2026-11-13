@@ -59,18 +59,22 @@ struct CommitSignatureButton: View {
 // MARK: - SignaturePopover
 
 /// 签名详情：有签名者姓名与邮箱时显示头像与身份，只有密钥时显示密钥与状态，没有签名时只有一行说明。
+///
+/// 四周留 20 pt；校验结果晚于弹窗出现时，弹窗跟着结果变大。
 struct SignaturePopover: View {
     /// 校验结果；正在校验时为空。
     let signature: CommitSignature?
 
     /// 三种视图按签名内容选择。
+    ///
+    /// 弹窗只在内容报出固定的理想尺寸时跟着内容变大小；去掉 `fixedSize()`，弹窗停在打开时转圈的大小，结果被截成 “…”。
     var body: some View {
         Group {
             if let signature, signature.status != .unsigned {
                 if let name = signature.name, let email = signature.email {
                     identity(name: name, email: email, signature: signature)
                 } else {
-                    details(signature, keyLabel: "signature.signingKey")
+                    details(signature, keyLabel: "signature.signingKey", labelAlignment: .trailing)
                 }
             } else if signature == nil {
                 ProgressView()
@@ -81,36 +85,48 @@ struct SignaturePopover: View {
             }
         }
         .padding(20)
+        .fixedSize()
     }
 
-    /// 有身份的签名：头像、姓名、邮箱，以及密钥与状态。
+    /// 有身份的签名：头像右边是姓名与邮箱，分隔线下方是密钥与状态。
     private func identity(name: String, email: String, signature: CommitSignature) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            InitialsAvatar(name: name, email: email, size: 35)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 8) {
+                InitialsAvatar(name: name, email: email, size: 35)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(name)
-                    .font(.system(size: 13))
-                    .textSelection(.enabled)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(name)
+                        .font(.system(size: 13))
+                        .textSelection(.enabled)
 
-                Text(email)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-
-                details(signature, keyLabel: "signature.gpgKey")
-                    .padding(.top, 4)
+                    Text(email)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
             }
+
+            Divider()
+                .padding(.top, 8)
+
+            details(signature, keyLabel: "signature.gpgKey", labelAlignment: .center)
+                .padding(.top, 12)
         }
     }
 
     /// 密钥与状态两行；OpenPGP 的密钥标签为 GPG Key，其余为 Signing Key。
-    private func details(_ signature: CommitSignature, keyLabel: String) -> some View {
-        Grid(alignment: .leading, horizontalSpacing: 6, verticalSpacing: 4) {
+    ///
+    /// - Parameter labelAlignment: 标签一列的对齐；有身份时两个标签居中对齐，只有密钥时靠右。
+    private func details(
+        _ signature: CommitSignature,
+        keyLabel: String,
+        labelAlignment: HorizontalAlignment
+    ) -> some View {
+        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 4) {
             if !signature.key.isEmpty {
                 GridRow {
                     Text(AppLocalization.text(keyLabel))
-                        .gridColumnAlignment(.trailing)
+                        .gridColumnAlignment(labelAlignment)
 
                     Text(signature.key)
                         .textSelection(.enabled)
@@ -119,7 +135,7 @@ struct SignaturePopover: View {
 
             GridRow {
                 Text(AppLocalization.text("signature.status"))
-                    .gridColumnAlignment(.trailing)
+                    .gridColumnAlignment(labelAlignment)
 
                 Text(signature.status.title)
             }

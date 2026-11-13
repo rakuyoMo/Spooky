@@ -86,9 +86,10 @@ extension AddRemoteDialog {
     /// 名称按 Git 的远端名规则校验，输入停顿后再查。
     private func validateName() async {
         validName = false
-        nameError = ""
 
+        // 输入停顿期间保留上一次的错误，新结果出来后一次替换；名字为空时没有错误
         guard !name.isEmpty, let runner = session.runner else {
+            nameError = ""
             return
         }
 
@@ -96,6 +97,7 @@ extension AddRemoteDialog {
             try await Task.sleep(for: .milliseconds(150))
             try await RepositoryReferences(runner: runner).validate(remote: name)
             try Task.checkCancellation()
+            nameError = ""
             validName = true
         } catch {
             if !Task.isCancelled {

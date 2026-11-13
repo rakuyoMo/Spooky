@@ -5,14 +5,26 @@ import SwiftUI
 // MARK: - Open Files
 
 extension SpookyApplicationController {
-    /// 从 Finder 打开或拖到 Dock 图标上的本机文件：主题文件与拖进 Themes 页的列表一样导入，其余按文件夹打开。
+    /// 从 Finder 打开或拖到 Dock 图标上的本机文件：主题文件与拖进 Themes 页的列表一样导入，
+    /// 服务器仓库的位置文件夹与位置文件打开记下的仓库，其余按文件夹打开。
     ///
     /// - Parameter urls: 本机文件的 URL，按交来的顺序依次处理。
     /// - Returns: 导入与打开的任务；结束时询问已经回答，打开的仓库已经显示。
     @discardableResult
     func openFiles(_ urls: [URL]) -> [Task<Void, Never>] {
+        let locationExtensions = [
+            RecentRepositoryDocuments.folderExtension,
+            RecentRepositoryDocuments.fileExtension,
+        ]
+
         let themes = urls.filter { $0.pathExtension.lowercased() == TextTheme.fileExtension }
-        let folders = urls.filter { $0.pathExtension.lowercased() != TextTheme.fileExtension }
+        let locations = urls.filter { locationExtensions.contains($0.pathExtension.lowercased()) }
+
+        let folders = urls.filter {
+            $0.pathExtension.lowercased() != TextTheme.fileExtension
+                && !locationExtensions.contains($0.pathExtension.lowercased())
+        }
+
         var tasks: [Task<Void, Never>] = []
 
         if !themes.isEmpty {
@@ -24,11 +36,32 @@ extension SpookyApplicationController {
             })
         }
 
+        tasks += locations.compactMap { openLocation(at: $0) }
+
         if !folders.isEmpty {
             tasks.append(openFolders(folders))
         }
 
         return tasks
+    }
+
+    /// 打开位置文件夹或位置文件记下的服务器仓库，与 Open Recent 一样走窗口复用与版本检查；读不出位置时提示打不开。
+    ///
+    /// 一个窗口都没有时先开一个，连接中的状态与服务器的询问显示在里面。
+    ///
+    /// - Parameter url: 位置文件夹或位置文件。
+    /// - Returns: 打开的任务；读不出位置或仓库还在克隆时为 nil。
+    @discardableResult
+    func openLocation(at url: URL) -> Task<Void, Never>? {
+        guard let location = RecentRepositoryDocuments.location(at: url) else {
+            DialogWindow.present(on: nil) { Self.invalidLinkNotice(for: url, close: $0) }
+            return nil
+        }
+
+        let source = activeWindow ?? (windows.isEmpty ? makeWindow() : nil)
+        source?.showWindow(nil)
+
+        return openRepository(at: location, from: source, inNewWindow: false)
     }
 
     /// 依次打开文件夹：仓库在当前窗口打开，没有窗口时新开一个；不是仓库的询问是否在这里新建。

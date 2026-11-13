@@ -1,3 +1,4 @@
+import AppKit
 import SpookyKit
 import SwiftUI
 
@@ -7,8 +8,8 @@ import SwiftUI
 ///
 /// 配置只写进这个仓库的本地配置；本仓库没有设置的项沿用全局设置，字数上限显示 “–”。
 struct RepositoryGeneralSettings: View {
-    /// 正在编辑的项。
-    private enum Editor: String, Identifiable {
+    /// 对话框里编辑的项。
+    enum Editor {
         /// 仓库描述。
         case description
 
@@ -20,9 +21,6 @@ struct RepositoryGeneralSettings: View {
 
         /// 服务器仓库的 allowed signers 文件，填写服务器上的路径。
         case allowedSigners
-
-        /// sheet 的身份。
-        var id: String { rawValue }
     }
 
     /// 服务器仓库在 Allowed Signers File 菜单里列出的文件，由服务器上的 Git 展开 `~`。
@@ -41,10 +39,6 @@ struct RepositoryGeneralSettings: View {
     @AppStorage(CommitEditorSettings.showsGuideKey)
     private var showsGuide = true
 
-    /// 正在编辑的项。
-    @State
-    private var editor: Editor?
-
     /// 本机的签名密钥，供 Signing Key 菜单列出。
     @State
     private var keys: [SigningKey] = []
@@ -56,9 +50,6 @@ struct RepositoryGeneralSettings: View {
         wrappingRows
 
         signingRows
-            .sheet(item: $editor) { editor in
-                dialog(for: editor)
-            }
     }
 }
 
@@ -85,7 +76,9 @@ extension RepositoryGeneralSettings {
         RemoteSettingRow(
             label: AppLocalization.text("bookmarks.detail.description"),
             value: summary.description?.trimmingCharacters(in: .newlines) ?? "",
-            actions: [action("bookmarks.detail.edit") { editor = .description }]
+            actions: [
+                action("bookmarks.detail.edit") { edit(.description, in: session.presentingWindow) },
+            ]
         )
 
         identityRow
@@ -96,7 +89,9 @@ extension RepositoryGeneralSettings {
         IdentitySettingRow(
             identity: summary.committer,
             isMenuEnabled: true,
-            actions: [action("bookmarks.detail.edit") { editor = .identity }]
+            actions: [
+                action("bookmarks.detail.edit") { edit(.identity, in: session.presentingWindow) },
+            ]
         ) {
             IdentityProfileMenu(
                 name: summary.committer?.name ?? "",
@@ -132,7 +127,10 @@ extension RepositoryGeneralSettings {
         RemoteSettingRow(
             label: AppLocalization.text("repositorySettings.lineLimit"),
             value: settings.bodyLineLimit.map(String.init) ?? "–",
-            actions: [action("remote.action.set") { editor = .lineLimit }, unset]
+            actions: [
+                action("remote.action.set") { edit(.lineLimit, in: session.presentingWindow) },
+                unset,
+            ]
         )
     }
 
@@ -254,7 +252,7 @@ extension RepositoryGeneralSettings {
     /// 选择 allowed signers 文件：本机仓库打开文件面板，服务器仓库打开输入服务器上路径的对话框。
     private func chooseAllowedSigners(isServer: Bool) {
         guard !isServer else {
-            editor = .allowedSigners
+            edit(.allowedSigners, in: session.presentingWindow)
             return
         }
 
@@ -265,11 +263,24 @@ extension RepositoryGeneralSettings {
 // MARK: - Dialogs
 
 extension RepositoryGeneralSettings {
+    /// 在仓库窗口上以 sheet 打开编辑一项的对话框；没有窗口时不打开。
+    ///
+    /// - Parameters:
+    ///   - editor: 编辑的项。
+    ///   - window: 仓库窗口。
+    func edit(_ editor: Editor, in window: NSWindow?) {
+        guard let window else {
+            return
+        }
+
+        DialogWindow.present(on: window) { close in
+            dialog(for: editor, close: close)
+        }
+    }
+
     /// 编辑一项的对话框；提交后写进仓库，结束后设置页重新读取。
     @ViewBuilder
-    private func dialog(for editor: Editor) -> some View {
-        let close = { self.editor = nil }
-
+    private func dialog(for editor: Editor, close: @escaping () -> Void) -> some View {
         switch editor {
         case .description:
             EditDescriptionDialog(text: summary.description ?? "", close: close) { text in

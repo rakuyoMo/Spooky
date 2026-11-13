@@ -48,8 +48,8 @@ struct HistoryListTests {
     }
 
     /// 按天、周、月分组时每组前插入一行标题，表格行号经映射找到提交，标题行不对应提交；
-    /// 绝对格式写出日期与时间，相对格式写出相对现在的时间，按天分组的标题跟随格式。
-    @Test("日期分组的行、标题与提交日期格式")
+    /// 按天分组的标题跟随日期格式。
+    @Test("日期分组的行与标题")
     func groupedRows() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: "UTC"))
@@ -81,17 +81,8 @@ struct HistoryListTests {
         #expect(history.row(of: commits[3].id) == 6)
         #expect(history.row(of: String(repeating: "f", count: 40)) == nil)
 
-        // 提交日期：绝对格式写出日期与时间，相对格式写出相对现在的时间
-        let now = Date(timeIntervalSince1970: 1_800_000_000)
-        let earlier = now.addingTimeInterval(-3 * 3600)
-        let absolute = CommitDateFormat.absolute.string(from: earlier, now: now)
-        let relative = CommitDateFormat.relative.string(from: earlier, now: now)
-
-        #expect(absolute == earlier.formatted(date: .abbreviated, time: .shortened))
-        #expect(relative.contains("3"))
-        #expect(relative != absolute)
-
         // 按天分组的标题跟随日期格式
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
         let local = Calendar.current
         let today = local.startOfDay(for: now)
         let yesterday = try #require(local.date(byAdding: .day, value: -1, to: today))

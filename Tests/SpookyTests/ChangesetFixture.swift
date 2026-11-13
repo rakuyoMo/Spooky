@@ -69,7 +69,10 @@ final class ChangesetFixture {
         defaults = try #require(UserDefaults(suiteName: defaultsDirectory.appending(path: "defaults").path))
         defaults.set(0, forKey: "historyAutoExpand")
         session = RepositorySession(makeRunner: { _ in runner }, loadStatus: { _ in try await runner.status() })
-        application = SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: defaults))
+        application = SpookyApplicationController(
+            bookmarks: RepositoryBookmarks(defaults: defaults),
+            recentDocuments: .ignoring
+        )
         application.changesetPreferences = defaults
         session.history.preferences = defaults
         session.reflog.detail.preferences = defaults

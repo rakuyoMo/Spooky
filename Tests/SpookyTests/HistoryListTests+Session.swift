@@ -527,7 +527,10 @@ extension HistoryListTests {
             defaultsDirectory = temporary.directory
 
             controller = RepositoryWindowController(
-                coordinator: SpookyApplicationController(bookmarks: RepositoryBookmarks(defaults: temporary.defaults)),
+                coordinator: SpookyApplicationController(
+                    bookmarks: RepositoryBookmarks(defaults: temporary.defaults),
+                    recentDocuments: .ignoring
+                ),
                 session: session
             )
         }

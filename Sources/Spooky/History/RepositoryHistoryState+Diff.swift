@@ -27,6 +27,7 @@ extension RepositoryHistoryState {
         diffFailures = [:]
         loadingPaths = []
         expandedPaths = []
+        fileSelection = ChangesetFileSelection()
         selectedPath = nil
         isLoadingChanges = false
 
@@ -189,7 +190,7 @@ extension RepositoryHistoryState {
 // MARK: - Private
 
 extension RepositoryHistoryState {
-    /// 把重读的变更集并入已显示的：内容不同才替换，行按路径更新；不在新变更集里的文件移出展开、选中与已读的补丁，展开与选中的文件在后台重读补丁。
+    /// 把重读的变更集并入已显示的：内容不同才替换，行按路径更新；不在新变更集里的文件移出展开、选中、文件行选区与已读的补丁，展开与选中的文件在后台重读补丁。
     private func mergeChanges(_ files: [CommitFileChange]) {
         if files != changes {
             changes = files
@@ -200,6 +201,8 @@ extension RepositoryHistoryState {
         if !expandedPaths.isSubset(of: paths) {
             expandedPaths.formIntersection(paths)
         }
+
+        fileSelection = fileSelection.retaining(files.map(\.path))
 
         if let selectedPath, !paths.contains(selectedPath) {
             self.selectedPath = nil

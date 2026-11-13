@@ -158,7 +158,11 @@ extension PublishRepositoryDialog {
     @ViewBuilder
     private var repositoryRows: some View {
         DialogFormRow(label: AppLocalization.text("publish.name")) {
-            TextField("", text: $name, prompt: Text(AppLocalization.text("publish.name.placeholder")))
+            TextField(
+                "",
+                text: $name.animation(DialogAnimation.current),
+                prompt: Text(AppLocalization.text("publish.name.placeholder"))
+            )
         }
 
         DialogFormRow(label: AppLocalization.text("pullRequests.description")) {
@@ -209,7 +213,10 @@ extension PublishRepositoryDialog {
     private var accountPicker: some View {
         let chosen = Binding(
             get: { selection?.id },
-            set: { chosenID = $0 }
+            set: { id in
+                // 目标地址随所有者变化，折行数跟着变时对话框高度同步变化
+                DialogAnimation.perform { chosenID = id }
+            }
         )
 
         return Picker("", selection: chosen) {
