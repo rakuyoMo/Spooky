@@ -600,6 +600,7 @@
 "stash.snapshot.help" = "Sichert Ihre lokalen Änderungen im Stash und lässt die Arbeitskopie unverändert.";
 "stash.snapshotMenu" = "Snapshot erstellen …";
 "stash.quickSnapshotMenu" = "Sofort-Snapshot erstellen";
+"stash.quickSaveMenu" = "Stash sofort sichern";
 "stash.savePartial" = "Teil-Stash sichern";
 "stash.savePartial.help" = "Sichert nur die ausgewählten Dateien im Stash; der Rest der Arbeitskopie bleibt unverändert.";
 "stash.snapshotPartial" = "Teil-Snapshot erstellen";

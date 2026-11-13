@@ -600,6 +600,7 @@
 "stash.snapshot.help" = "把本地改动存进储藏，工作区保持不变。";
 "stash.snapshotMenu" = "创建快照…";
 "stash.quickSnapshotMenu" = "快速创建快照";
+"stash.quickSaveMenu" = "快速保存储藏";
 "stash.savePartial" = "保存部分储藏";
 "stash.savePartial.help" = "只把所选文件存进储藏，工作区的其余内容保持不变。";
 "stash.snapshotPartial" = "创建部分快照";

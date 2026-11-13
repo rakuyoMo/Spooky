@@ -600,6 +600,7 @@
 "stash.snapshot.help" = "Guarda los cambios locales en el stash y deja la copia de trabajo tal como está.";
 "stash.snapshotMenu" = "Crear instantánea…";
 "stash.quickSnapshotMenu" = "Crear instantánea rápida";
+"stash.quickSaveMenu" = "Guardar stash rápido";
 "stash.savePartial" = "Guardar stash parcial";
 "stash.savePartial.help" = "Guarda solo los archivos seleccionados en el stash; el resto de la copia de trabajo no cambia.";
 "stash.snapshotPartial" = "Crear instantánea parcial";

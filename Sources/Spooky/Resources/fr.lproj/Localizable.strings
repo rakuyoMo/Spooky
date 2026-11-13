@@ -600,6 +600,7 @@
 "stash.snapshot.help" = "Met vos modifications locales de côté dans un remisage sans toucher à la copie de travail.";
 "stash.snapshotMenu" = "Créer un instantané…";
 "stash.quickSnapshotMenu" = "Créer un instantané immédiat";
+"stash.quickSaveMenu" = "Remiser immédiatement";
 "stash.savePartial" = "Remisage partiel";
 "stash.savePartial.help" = "Remise uniquement les fichiers sélectionnés ; le reste de la copie de travail reste inchangé.";
 "stash.snapshotPartial" = "Instantané partiel";

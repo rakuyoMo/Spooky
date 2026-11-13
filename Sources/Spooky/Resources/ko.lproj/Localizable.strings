@@ -600,6 +600,7 @@
 "stash.snapshot.help" = "로컬 변경 사항을 스태시에 저장하고 작업 사본은 그대로 둡니다.";
 "stash.snapshotMenu" = "스냅샷 만들기…";
 "stash.quickSnapshotMenu" = "빠르게 스냅샷 만들기";
+"stash.quickSaveMenu" = "빠르게 스태시 저장";
 "stash.savePartial" = "일부 스태시 저장";
 "stash.savePartial.help" = "선택한 파일만 스태시에 저장하고 작업 사본의 나머지는 그대로 둡니다.";
 "stash.snapshotPartial" = "일부 스냅샷 만들기";

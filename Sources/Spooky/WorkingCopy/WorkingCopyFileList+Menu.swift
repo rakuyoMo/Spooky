@@ -109,6 +109,15 @@ extension WorkingCopyFileList.Coordinator {
         quickLook.toggle(entries)
     }
 
+    /// 按作用的行点名或计数：一项时写出名称，多项时写出数量，没有作用对象时用通用标题；树形里一个目录算一项。
+    func countedTitle(single: String, multiple: String, generic: String) -> String {
+        switch menuTargets.count {
+        case 0: AppLocalization.text(generic)
+        case 1: AppLocalization.text(single, menuTargets[0].name)
+        default: AppLocalization.text(multiple, menuTargets.count)
+        }
+    }
+
     /// 双击文件按偏好打开或比较；双击目录展开或收起。
     @objc
     func doubleClicked(_: Any?) {
@@ -533,15 +542,6 @@ extension WorkingCopyFileList.Coordinator {
         }
 
         session.ignore(menuEntries, scope: scopes[tag], in: file)
-    }
-
-    /// 按作用的行点名或计数：一项时写出名称，多项时写出数量，没有作用对象时用通用标题；树形里一个目录算一项。
-    private func countedTitle(single: String, multiple: String, generic: String) -> String {
-        switch menuTargets.count {
-        case 0: AppLocalization.text(generic)
-        case 1: AppLocalization.text(single, menuTargets[0].name)
-        default: AppLocalization.text(multiple, menuTargets.count)
-        }
     }
 
     /// 新的一组菜单项前加分隔线；菜单开头和连续的分隔线不加。

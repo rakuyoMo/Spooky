@@ -56,7 +56,7 @@ extension WorkingCopyFileListTests {
         coordinator.buildMenu(menu, clickedRow: -1)
         #expect(coordinator.menuTargets.map(\.path) == ["a.txt", "dir/sub/b.txt"])
 
-        // 空白处没有选择：通用标题，要求条目的项不可用，Quick Look 与终端以仓库根目录为目标
+        // 空白处没有选择：通用标题，要求条目的项与储藏四项不可用，Quick Look 与终端以仓库根目录为目标
         list.select(rows: [])
         coordinator.buildMenu(menu, clickedRow: -1)
 
@@ -69,6 +69,10 @@ extension WorkingCopyFileListTests {
             "workspace.copyPathMenu",
             "quickActions.showFile",
             "files.open",
+            "stash.saveMenu",
+            "stash.quickSaveMenu",
+            "stash.snapshotMenu",
+            "stash.quickSnapshotMenu",
         ]
 
         #expect(coordinator.menuEntries.isEmpty)

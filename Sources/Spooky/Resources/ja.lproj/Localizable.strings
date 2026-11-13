@@ -600,6 +600,7 @@
 "stash.snapshot.help" = "ローカルの変更をスタッシュに保存し、作業コピーはそのまま残します。";
 "stash.snapshotMenu" = "スナップショットを作成…";
 "stash.quickSnapshotMenu" = "スナップショットをすぐに作成";
+"stash.quickSaveMenu" = "スタッシュをすぐに保存";
 "stash.savePartial" = "一部をスタッシュに保存";
 "stash.savePartial.help" = "選択したファイルだけをスタッシュに保存し、作業コピーのほかの部分はそのまま残します。";
 "stash.snapshotPartial" = "一部のスナップショットを作成";
