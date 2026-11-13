@@ -1270,6 +1270,11 @@
 "sync.step.fetch" = "가져오는 중…";
 "sync.step.pull" = "풀 진행 중…";
 "sync.step.push" = "푸시 진행 중…";
+"workspaceProgress.checkoutBranch" = "“%@” 체크아웃 중…";
+"workspaceProgress.checkoutRevision" = "리비전 “%@” 체크아웃 중…";
+"workspaceProgress.merge" = "병합 중…";
+"workspaceProgress.rebase" = "리베이스 중…";
+"workspaceProgress.reset" = "HEAD 재설정 중…";
 "sync.stopped" = "동기화가 “%1$@” 단계에서 중단되었습니다. 완료된 단계: %2$@.";
 "sync.stoppedFirst" = "동기화가 “%@” 단계에서 중단되었습니다. 완료된 단계가 없습니다.";
 "settings.autoFetch" = "원격 저장소 자동 가져오기:";

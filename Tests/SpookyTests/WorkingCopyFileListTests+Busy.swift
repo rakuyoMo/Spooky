@@ -35,7 +35,7 @@ extension WorkingCopyFileListTests {
         let gate = try ProcessGate(in: root)
         defer { gate.release() }
 
-        let runner = try stagingGatedRunner(fixture, gate: gate, root: root)
+        let runner = try fixture.gatedRunner(intercepting: "add", gate: gate)
         let session = RepositorySession(makeRunner: { _ in runner }, activities: RepositoryActivities())
         defer { session.close() }
 
@@ -140,42 +140,5 @@ extension WorkingCopyFileListTests {
     /// 会话状态里有已暂存改动的路径。
     private func stagedPaths(_ session: RepositorySession) -> [String] {
         (session.status?.entries ?? []).filter(\.hasStagedChanges).map(\.path).sorted()
-    }
-
-    /// 只拦下武装后的一次 `git add`：认领武装的进程停在闸门上，放行后再执行；其余命令直接交给系统 Git。
-    private func stagingGatedRunner(
-        _ fixture: UndoSessionTests.Fixture,
-        gate: ProcessGate,
-        root: URL
-    ) throws -> GitRunner {
-        let script = root.appending(path: "staging-git")
-        let source = """
-            #!/bin/sh
-            set -eu
-            root=\(GitRunner.shellQuoted(root.path))
-            for arg in "$@"; do
-                if [ "$arg" = add ] && mv "$root/arm" "$root/claimed" 2>/dev/null; then
-                    \(gate.command)
-                    break
-                fi
-            done
-            exec /usr/bin/git "$@"
-
-            """
-
-        try Data(source.utf8).write(to: script)
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: script.path)
-
-        return GitRunner(
-            location: fixture.location,
-            executablePath: script.path,
-            environment: .inherit.updating([
-                "GIT_CONFIG_GLOBAL": "/dev/null",
-                "GIT_CONFIG_SYSTEM": "/dev/null",
-                "GIT_CONFIG_NOSYSTEM": "1",
-                "GIT_CONFIG_PARAMETERS": nil,
-                "GIT_CONFIG_COUNT": nil,
-            ])
-        )
     }
 }

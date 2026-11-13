@@ -130,6 +130,7 @@ extension RepositorySession {
                     try await RepositoryReferences(runner: runner).checkout(reference.id)
                 },
                 title: AppLocalization.text("branch.checkoutNamed", reference.name),
+                progress: AppLocalization.text("workspaceProgress.checkoutBranch", reference.name),
                 offersAutoStash: true,
                 undo: .reversible
             )
@@ -164,6 +165,7 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("branch.checkoutNamed", reference.name),
+            progress: AppLocalization.text("workspaceProgress.checkoutBranch", reference.name),
             offersAutoStash: true,
             undo: .reversible
         )
@@ -205,6 +207,7 @@ extension RepositorySession {
                     try await RepositoryReferences(runner: runner).checkout(branch.id, tracking: upstream.id)
                 },
                 title: AppLocalization.text("branch.checkoutNamed", branch.name),
+                progress: AppLocalization.text("workspaceProgress.checkoutBranch", branch.name),
                 undo: .reversible
             )
         })

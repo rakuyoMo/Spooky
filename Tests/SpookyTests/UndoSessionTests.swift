@@ -474,6 +474,47 @@ extension UndoSessionTests {
             try await RepositoryReferences(runner: runner).resolve("HEAD")
         }
 
+        /// 经脚本执行 Git 的执行器：`.git/arm` 存在时，第一条带 `subcommand` 参数的命令认领它并停在闸门上，
+        /// 放行后再执行；其余命令直接交给系统 Git。
+        ///
+        /// - Parameters:
+        ///   - subcommand: 要拦下的 Git 子命令，逐个参数按字面比较。
+        ///   - gate: 认领后停住的闸门。
+        ///   - claimed: 认领后、停住前执行的一行 shell，如往标准错误写一行进度。
+        func gatedRunner(intercepting subcommand: String, gate: ProcessGate, claimed: String = ":") throws -> GitRunner {
+            let root = directory.appending(path: ".git")
+            let script = root.appending(path: "gated-git")
+            let source = """
+                #!/bin/sh
+                set -eu
+                root=\(GitRunner.shellQuoted(root.path))
+                for arg in "$@"; do
+                    if [ "$arg" = \(subcommand) ] && mv "$root/arm" "$root/claimed" 2>/dev/null; then
+                        \(claimed)
+                        \(gate.command)
+                        break
+                    fi
+                done
+                exec /usr/bin/git "$@"
+
+                """
+
+            try Data(source.utf8).write(to: script)
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: script.path)
+
+            return GitRunner(
+                location: location,
+                executablePath: script.path,
+                environment: .inherit.updating([
+                    "GIT_CONFIG_GLOBAL": "/dev/null",
+                    "GIT_CONFIG_SYSTEM": "/dev/null",
+                    "GIT_CONFIG_NOSYSTEM": "1",
+                    "GIT_CONFIG_PARAMETERS": nil,
+                    "GIT_CONFIG_COUNT": nil,
+                ])
+            )
+        }
+
         /// 关闭会话并删除临时仓库。
         func remove() {
             session.close()

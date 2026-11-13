@@ -1270,6 +1270,11 @@
 "sync.step.fetch" = "正在擷取…";
 "sync.step.pull" = "正在拉取…";
 "sync.step.push" = "正在推送…";
+"workspaceProgress.checkoutBranch" = "正在簽出 “%@”…";
+"workspaceProgress.checkoutRevision" = "正在檢出版本 “%@”…";
+"workspaceProgress.merge" = "正在合併…";
+"workspaceProgress.rebase" = "正在重定基底…";
+"workspaceProgress.reset" = "正在重設 HEAD…";
 "sync.stopped" = "同步停在 “%1$@” 這一步，已完成：%2$@。";
 "sync.stoppedFirst" = "同步停在 “%@” 這一步，尚未完成任何步驟。";
 "settings.autoFetch" = "自動擷取遠端儲存庫：";

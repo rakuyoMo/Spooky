@@ -1270,6 +1270,11 @@
 "sync.step.fetch" = "Wird abgerufen …";
 "sync.step.pull" = "Wird gepullt …";
 "sync.step.push" = "Wird gepusht …";
+"workspaceProgress.checkoutBranch" = "„%@“ wird ausgecheckt …";
+"workspaceProgress.checkoutRevision" = "Revision „%@“ wird ausgecheckt …";
+"workspaceProgress.merge" = "Wird zusammengeführt …";
+"workspaceProgress.rebase" = "Rebase läuft …";
+"workspaceProgress.reset" = "HEAD wird zurückgesetzt …";
 "sync.stopped" = "Die Synchronisierung wurde bei „%1$@“ angehalten. Abgeschlossen: %2$@.";
 "sync.stoppedFirst" = "Die Synchronisierung wurde bei „%@“ angehalten. Es wurde kein Schritt abgeschlossen.";
 "settings.autoFetch" = "Remote-Repositorys automatisch abrufen:";

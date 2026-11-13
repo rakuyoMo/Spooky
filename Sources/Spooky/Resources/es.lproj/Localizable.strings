@@ -1270,6 +1270,11 @@
 "sync.step.fetch" = "Haciendo fetch…";
 "sync.step.pull" = "Haciendo pull…";
 "sync.step.push" = "Haciendo push…";
+"workspaceProgress.checkoutBranch" = "Haciendo checkout de “%@”…";
+"workspaceProgress.checkoutRevision" = "Haciendo checkout de la revisión “%@”…";
+"workspaceProgress.merge" = "Fusionando…";
+"workspaceProgress.rebase" = "Haciendo rebase…";
+"workspaceProgress.reset" = "Restableciendo HEAD…";
 "sync.stopped" = "La sincronización se detuvo en “%1$@”. Pasos completados: %2$@.";
 "sync.stoppedFirst" = "La sincronización se detuvo en “%@”. No se completó ningún paso.";
 "settings.autoFetch" = "Hacer fetch automático de repositorios remotos:";

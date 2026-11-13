@@ -169,6 +169,7 @@ extension RepositoryWindowController {
                         session.performGit(
                             action,
                             title: title,
+                            progress: request.kind.progressKey.map { AppLocalization.text($0) },
                             target: target,
                             offersAutoStash: [.pull, .merge].contains(request.kind),
                             undo: undo

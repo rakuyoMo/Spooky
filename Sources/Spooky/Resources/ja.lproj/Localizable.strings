@@ -1270,6 +1270,11 @@
 "sync.step.fetch" = "フェッチ中…";
 "sync.step.pull" = "プル中…";
 "sync.step.push" = "プッシュ中…";
+"workspaceProgress.checkoutBranch" = "「%@」をチェックアウト中…";
+"workspaceProgress.checkoutRevision" = "リビジョン「%@」をチェックアウト中…";
+"workspaceProgress.merge" = "マージ中…";
+"workspaceProgress.rebase" = "リベース中…";
+"workspaceProgress.reset" = "HEAD をリセット中…";
 "sync.stopped" = "同期は「%1$@」で停止しました。完了した手順：%2$@。";
 "sync.stoppedFirst" = "同期は「%@」で停止しました。完了した手順はありません。";
 "settings.autoFetch" = "リモートリポジトリを自動でフェッチ：";

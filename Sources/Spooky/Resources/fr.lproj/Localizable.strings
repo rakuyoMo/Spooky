@@ -1270,6 +1270,11 @@
 "sync.step.fetch" = "Récupération…";
 "sync.step.pull" = "Tirage…";
 "sync.step.push" = "Poussée…";
+"workspaceProgress.checkoutBranch" = "Basculement sur « %@ »…";
+"workspaceProgress.checkoutRevision" = "Extraction de la révision « %@ »…";
+"workspaceProgress.merge" = "Fusion…";
+"workspaceProgress.rebase" = "Rebasage…";
+"workspaceProgress.reset" = "Réinitialisation de HEAD…";
 "sync.stopped" = "La synchronisation s’est arrêtée à « %1$@ ». Étapes terminées : %2$@.";
 "sync.stoppedFirst" = "La synchronisation s’est arrêtée à « %@ ». Aucune étape n’a été terminée.";
 "settings.autoFetch" = "Récupérer automatiquement les dépôts distants :";

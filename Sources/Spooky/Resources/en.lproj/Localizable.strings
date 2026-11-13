@@ -1270,6 +1270,11 @@
 "sync.step.fetch" = "Fetching…";
 "sync.step.pull" = "Pulling…";
 "sync.step.push" = "Pushing…";
+"workspaceProgress.checkoutBranch" = "Checking Out “%@”…";
+"workspaceProgress.checkoutRevision" = "Checking Out Revision “%@”…";
+"workspaceProgress.merge" = "Merging…";
+"workspaceProgress.rebase" = "Rebasing…";
+"workspaceProgress.reset" = "Resetting HEAD…";
 "sync.stopped" = "Sync stopped at “%1$@”. Completed steps: %2$@.";
 "sync.stoppedFirst" = "Sync stopped at “%@”. No step was completed.";
 "settings.autoFetch" = "Automatically fetch remote repositories:";

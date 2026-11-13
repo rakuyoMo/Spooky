@@ -72,6 +72,9 @@ final class RepositorySession {
     /// 写操作期间所有写入口共用锁定状态。
     private(set) var isWriting = false
 
+    /// 占用工作区的写操作执行期间，工作区换成的整页进度；其它写操作与没有写操作时为 nil。
+    private(set) var workspaceProgress: WorkspaceProgress? = nil
+
     /// 标题草稿，失败时保留。
     var commitSubject = ""
 
@@ -534,6 +537,7 @@ extension RepositorySession {
         diffTask = nil
         contextTask = nil
         isWriting = false
+        workspaceProgress = nil
         isLoadingDiff = false
         context = nil
         diffSnapshot = nil
@@ -649,6 +653,8 @@ extension RepositorySession {
     ///
     /// - Parameters:
     ///   - title: 已本地化的操作名称，用于 Activity 与断线后的核对报告。
+    ///   - progress: 检出、合并、拉取、变基与重置这类占用工作区的操作传入整页进度的标题，执行期间工作区换成进度；
+    ///     其它写操作不传。
     ///   - recordsActivity: 网络与引用操作记入 Activity；工作区的高频写入只用于核对报告。
     ///   - target: 要连接远端传输对象或引用的操作传入连接的对象，记在 Activity 的 Remote 页，写进记录的图标与标题；
     ///     不传时记在 Repository 页。动作里经 `ActivityRecording` 另起的记录接在后面。
@@ -662,6 +668,7 @@ extension RepositorySession {
         _ action:
         @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
+        progress: String? = nil,
         recordsActivity: Bool = true,
         target: ActivityTarget? = nil,
         offersAutoStash: Bool = false,
@@ -687,6 +694,7 @@ extension RepositorySession {
         isRefreshing = false
         pendingFullRefresh = false
         isWriting = true
+        workspaceProgress = progress.map { WorkspaceProgress(title: $0) }
         let request = generation
         let runner = makeRunner(repository)
         let branch = status?.branch
@@ -725,12 +733,9 @@ extension RepositorySession {
         // 已初始化子模块的指针被改动时随后更新或询问；按声明在操作前后记下仓库状态，供撤销与重做使用
         let checked = updatingSubmodules(after: action, tracked: submodules.initialized)
         let recorded = recordingUndo(checked, title: title, target: target, recording: undo)
+        let collector = collect(events, into: record, request: request)
 
         writeTask = Task { [weak self] in
-            let collector = Task { @MainActor in
-                for await event in events { record?.receive(event) }
-            }
-
             // 状态与失败说明同样经流送出，落在最后一条记录上
             do {
                 try await ActivityRecording.$send.withValue({ continuation.yield($0) }) {
@@ -763,6 +768,7 @@ extension RepositorySession {
 
             guard let self, generation == request else { return }
             isWriting = false
+            workspaceProgress = nil
             writeTask = nil
             refresh(full: true)
             offerSubmoduleUpdate()
@@ -777,6 +783,29 @@ extension RepositorySession {
 // MARK: - Private
 
 extension RepositorySession {
+    /// 把写操作的事件依次交给 Activity 记录；有整页进度时，Git 输出的最后一个非空行同时写进进度。
+    ///
+    /// - Parameters:
+    ///   - events: 写操作的事件流。
+    ///   - record: 写操作的 Activity 记录；不记 Activity 时为 nil。
+    ///   - request: 发起写操作时的仓库代次，仓库换了之后不再改动进度。
+    private func collect(
+        _ events: AsyncStream<ActivityEvent>,
+        into record: WriteActivity?,
+        request: Int
+    ) -> Task<Void, Never> {
+        Task { [weak self] in
+            for await event in events {
+                record?.receive(event)
+
+                // 没有整页进度时不写这个属性，免得观察它的界面随每块输出刷新
+                if let self, generation == request, workspaceProgress != nil, let record {
+                    workspaceProgress?.detail = record.current.lastLine
+                }
+            }
+        }
+    }
+
     /// 刷新成功后一次性替换快照；仍存在的文件继续选中。
     ///
     /// - Parameter records: 文件视图因 HEAD 移动而重读时是否记进 Activity，与引起它的刷新相同。

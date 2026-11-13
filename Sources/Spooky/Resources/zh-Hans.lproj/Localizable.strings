@@ -1270,6 +1270,11 @@
 "sync.step.fetch" = "正在获取…";
 "sync.step.pull" = "正在拉取…";
 "sync.step.push" = "正在推送…";
+"workspaceProgress.checkoutBranch" = "正在检出 “%@”…";
+"workspaceProgress.checkoutRevision" = "正在检出版本 “%@”…";
+"workspaceProgress.merge" = "正在合并…";
+"workspaceProgress.rebase" = "正在变基…";
+"workspaceProgress.reset" = "正在重置 HEAD…";
 "sync.stopped" = "同步停在 “%1$@” 这一步，已完成：%2$@。";
 "sync.stoppedFirst" = "同步停在 “%@” 这一步，还没有完成任何步骤。";
 "settings.autoFetch" = "自动获取远端仓库：";

@@ -58,6 +58,15 @@ struct RepositoryActionRequest {
             case .create, .fetch, .pull, .publish, .merge: rawValue
             }
         }
+
+        /// 执行期间工作区整页进度标题的资源键：拉取与合并占用工作区，其余种类为 nil。
+        var progressKey: String? {
+            switch self {
+            case .pull: "sync.step.pull"
+            case .merge: "workspaceProgress.merge"
+            case .create, .track, .fetch, .push, .publish: nil
+            }
+        }
     }
 
     /// 对话框类型。

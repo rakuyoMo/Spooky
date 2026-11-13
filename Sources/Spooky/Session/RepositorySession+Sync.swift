@@ -293,6 +293,7 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("sync.quickPull"),
+            progress: AppLocalization.text("sync.step.pull"),
             target: .pull(source, refspec: refspec),
             offersAutoStash: true
         )
@@ -360,6 +361,7 @@ extension RepositorySession {
         performGit(
             mergeAction(target, options: SyncPreferences.merge),
             title: AppLocalization.text("sync.quickMerge"),
+            progress: AppLocalization.text("workspaceProgress.merge"),
             offersAutoStash: true,
             undo: .reversible
         )
@@ -377,6 +379,7 @@ extension RepositorySession {
                 try await RepositorySync(runner: runner).rebase(onto: target, onOutput: output)
             },
             title: AppLocalization.text("sync.quickRebase"),
+            progress: AppLocalization.text("workspaceProgress.rebase"),
             offersAutoStash: true,
             undo: .reversible
         )
