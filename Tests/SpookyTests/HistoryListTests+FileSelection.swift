@@ -1,4 +1,6 @@
+import AppKit
 import Foundation
+import SwiftUI
 import Testing
 import TestSupport
 
@@ -105,5 +107,78 @@ extension HistoryListTests {
         #expect(history.fileSelection == ChangesetFileSelection())
 
         await untilFinished { history.activeTasks }
+    }
+
+    /// 选中的文件行填满上下两条分隔线之间的整行，左右到列表边缘、直角；展开时只垫在文件行下面，不延伸到 Diff。
+    /// 文件行与变更集里一样放在展开组里，组左右各缩进 8 pt。
+    @Test("变更文件行选中底的范围")
+    func fileRowSelectionFill() throws {
+        let collapsed = try Self.renderFileRow(expanded: false)
+        let rows = try #require(Self.selectedRows(in: collapsed, x: collapsed.pixelsWide / 2))
+
+        // 收起时从上面的分隔线下方一直填到下面的分隔线上方，两条线各 1 pt
+        #expect(rows == 2 ..< collapsed.pixelsHigh - 2)
+
+        // 左右两边到边缘，四角不留圆角
+        #expect(Self.selectedRows(in: collapsed, x: 0) == rows)
+        #expect(Self.selectedRows(in: collapsed, x: collapsed.pixelsWide - 1) == rows)
+
+        // 展开时选中底的高度不变，下面的 Diff 不垫
+        let expanded = try Self.renderFileRow(expanded: true)
+
+        #expect(Self.selectedRows(in: expanded, x: expanded.pixelsWide / 2) == rows)
+        #expect(expanded.pixelsHigh > collapsed.pixelsHigh)
+    }
+}
+
+// MARK: - Steps
+
+extension HistoryListTests {
+    /// 按 2 倍像素画出夹在两条分隔线之间、选中的一个文件行，选中底是红色。
+    ///
+    /// - Parameter expanded: 文件行是否展开。
+    private static func renderFileRow(expanded: Bool) throws -> NSBitmapImageRep {
+        let content = VStack(spacing: 0) {
+            Divider()
+
+            DisclosureGroup(isExpanded: .constant(expanded)) {
+                Color.clear.frame(height: 20)
+            } label: {
+                Color.clear
+                    .frame(height: 30)
+                    .changesetFileRowLabel()
+            }
+            .padding(.horizontal, 8)
+            .changesetFileRowSelection(true, color: .systemRed)
+
+            Divider()
+        }
+        .frame(width: 200)
+
+        let renderer = ImageRenderer(content: content)
+        renderer.scale = 2
+
+        return NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+    }
+
+    /// `x` 这一列上选中底覆盖的像素行；不连续时为 nil。
+    ///
+    /// - Parameters:
+    ///   - bitmap: 画出的文件行。
+    ///   - x: 像素列。
+    private static func selectedRows(in bitmap: NSBitmapImageRep, x: Int) -> Range<Int>? {
+        let red = (0 ..< bitmap.pixelsHigh).filter { y in
+            guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) else {
+                return false
+            }
+
+            return color.alphaComponent > 0.9 && color.redComponent > 0.8 && color.greenComponent < 0.5
+        }
+
+        guard let first = red.first, let last = red.last, red.count == last - first + 1 else {
+            return nil
+        }
+
+        return first ..< last + 1
     }
 }
