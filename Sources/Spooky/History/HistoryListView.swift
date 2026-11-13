@@ -83,22 +83,12 @@ struct HistoryListView: View {
         .onChange(of: comparesBranches) { session.history.loadBaseComparison() }
     }
 
-    /// 列表下方的读取状态：失败详情，以及读取中持续可见的取消入口；刷新引起的重读在后台进行，不显示。
+    /// 列表下方的读取失败详情；读取中的进度与取消入口画在列表里。
     @ViewBuilder
     private var loadingStatus: some View {
         if let failure = session.history.failure {
             FailureDetailsView(failure: failure) { session.history.reloadCommits() }
                 .padding(12)
-        }
-
-        if session.history.isLoading, !session.history.isRefreshingCommits {
-            HStack {
-                ProgressView().controlSize(.small)
-                Text(AppLocalization.text("history.loading"))
-                Button(AppLocalization.text("action.cancel")) { session.history.cancelPage() }
-            }
-            .font(.system(size: 11))
-            .padding(8)
         }
     }
 
@@ -162,11 +152,26 @@ struct HistoryListView: View {
         return references.first { $0.id == upstream }?.name ?? upstream
     }
 
-    /// 没有提交且不在读取时显示空状态，否则显示提交表格。
+    /// 首屏加载行、没有提交的一行或提交表格。
+    ///
+    /// 列表里还没有提交时：首屏读取过一会儿才在第一行显示加载行；读完且没有更多才写 No commits；
+    /// 读取刚开始、被取消或失败时留空，失败详情在列表下方。
     @ViewBuilder
     private var commitList: some View {
-        if session.history.rows.isEmpty, !session.history.isLoading {
-            EmptyStateView(title: AppLocalization.text("history.empty"), message: "", symbol: "clock")
+        let history = session.history
+
+        if history.loadingRowPhase.isVisible {
+            firstLine {
+                HistoryLoadingRow(title: AppLocalization.text("history.loading")) { history.cancelPage() }
+            }
+        } else if history.rows.isEmpty {
+            firstLine {
+                if history.snapshot != nil, !history.isLoading, !history.hasMore, history.failure == nil {
+                    Text(AppLocalization.text("history.empty"))
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+            }
         } else {
             HistoryCommitTable(
                 session: session,
@@ -176,6 +181,17 @@ struct HistoryListView: View {
                 createBranch: createBranch,
                 openCommit: openCommit
             )
+        }
+    }
+
+    /// 列表的第一行：整行居中，行高随当前档位，其下留空。
+    private func firstLine(@ViewBuilder content: () -> some View) -> some View {
+        VStack(spacing: 0) {
+            content()
+                .frame(maxWidth: .infinity)
+                .frame(height: smallRows && showGraph ? 24 : 46)
+
+            Spacer(minLength: 0)
         }
     }
 
@@ -273,6 +289,9 @@ struct HistoryCommitTable: NSViewRepresentable {
         /// 选中背景与引用徽标保持一致。
         private var selection = Set<String>()
 
+        /// 列表末尾是否有续页的加载行。
+        private(set) var showsLoadingRow = false
+
         /// 会话的选择改变后还没有滚到的选中行；刷新重载后表格恢复原有选中时不滚动。
         private var revealsSelection = false
 
@@ -296,6 +315,7 @@ struct HistoryCommitTable: NSViewRepresentable {
             let history = parent.session.history
             let ids = history.rows.map(\.id)
             let markers = [history.unpushed, history.unpulled, history.parentCommits]
+            let loadsMore = history.isLoading && !history.isRefreshingCommits && !history.rows.isEmpty
 
             if selection != history.selectedIDs {
                 revealsSelection = true
@@ -309,7 +329,19 @@ struct HistoryCommitTable: NSViewRepresentable {
                 snapshot = history.snapshot
                 trackingMarkers = markers
                 selection = history.selectedIDs
+                showsLoadingRow = loadsMore
                 table.reloadData()
+            } else if showsLoadingRow != loadsMore {
+                // 只增删末尾的加载行：重画最后一个提交行会立即续读，取消就不起作用了
+                showsLoadingRow = loadsMore
+
+                let index = IndexSet(integer: history.rows.count)
+
+                if loadsMore {
+                    table.insertRows(at: index)
+                } else {
+                    table.removeRows(at: index)
+                }
             }
 
             // 重载会清空表格的选区，这里按会话的选择恢复；只有会话的选择改变时才滚到选中行，
@@ -558,8 +590,10 @@ extension HistoryCommitTable.Coordinator {
         table.scroll(NSPoint(x: visible.minX, y: max(0, rect.midY - visible.height / 2)))
     }
 
-    /// 行数来自当前已完成的页与日期分组。
-    func numberOfRows(in _: NSTableView) -> Int { parent.session.history.rows.count }
+    /// 行数来自当前已完成的页与日期分组，续页时末尾多一行加载行。
+    func numberOfRows(in _: NSTableView) -> Int {
+        parent.session.history.rows.count + (showsLoadingRow ? 1 : 0)
+    }
 
     /// 提交行与分叉点行 24 / 46 pt，“没有新提交” 行 40 / 46 pt，日期分组行 30 pt。
     func tableView(_: NSTableView, heightOfRow row: Int) -> CGFloat {
@@ -586,11 +620,18 @@ extension HistoryCommitTable.Coordinator {
         proposed.filteredIndexSet { parent.session.history.commit(atRow: $0) != nil }
     }
 
-    /// 行内容按需复用，最后一行触发续页。
+    /// 行内容按需复用，最后一个提交行触发续页；续页的加载行排在最后。
     func tableView(_ tableView: NSTableView, viewFor _: NSTableColumn?, row: Int) -> NSView? {
         let history = parent.session.history
 
-        guard history.rows.indices.contains(row) else { return nil }
+        guard history.rows.indices.contains(row) else {
+            guard showsLoadingRow, row == history.rows.count else {
+                return nil
+            }
+
+            let view = HistoryLoadingRow(title: AppLocalization.text("history.loading")) { history.cancelPage() }
+            return tableView.hostingView(view, identifier: "history-loading")
+        }
 
         if row == history.rows.count - 1, history.hasMore {
             Task { @MainActor in history.loadNextPage() }
