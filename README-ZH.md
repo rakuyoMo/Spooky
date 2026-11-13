@@ -196,6 +196,7 @@ open .build/Spooky.app
 
 - 设置、身份档案、仓库书签和在仓库设置里为服务器仓库指定的本机文件夹保存在偏好设置域 `com.rakuyo.spooky`
 - 主题（包括 Default 与 Default (Dark)）保存在 `~/Library/Application Support/Spooky/Themes`，一个主题一个 `.spookytheme` 文件
+- 打开的仓库登记进系统的最近文稿，供 Dock 图标的右键菜单列出：本机仓库登记仓库文件夹；服务器仓库登记 `~/Library/Application Support/Spooky/Locations` 下的一个 `.spookyrepo` 文件夹，里面的 `.spookylocation` 文件只记主机别名与远端路径，每个服务器仓库一份，再次打开时沿用；Clear Menu 清空最近文稿，不删除这些文件夹
 - “活动” 窗口里获取、拉取、推送等远程操作的记录保存在 `~/Library/Application Support/Spooky/Activity`，一条记录一个文件，7 天后删除；其余记录只在 Spooky 运行期间保存在内存里
 - “活动” 窗口用来计算分支、远端、储藏与子模块增减的上一次清单保存在 `~/Library/Application Support/Spooky/Baselines`，每个仓库一个文件
 - 存入钥匙串的凭据，服务名为 `com.rakuyo.spooky.remote.<主机别名>`
