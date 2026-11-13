@@ -736,6 +736,8 @@
 "conflict.compareBase" = "共通の祖先と比較";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "ファイル履歴";
+"fileHistory.scope.message" = "メッセージ";
+"fileHistory.scope.hash" = "コミットハッシュ";
 "fileHistory.showCommit" = "コミットを表示";
 "fileHistory.oneCommit" = "1 件のコミット";
 "fileHistory.commits" = "%ld 件のコミット";
@@ -753,10 +755,13 @@
 "fileHistory.restore.remote" = "サーバー上の「%@」をリビジョン %@ の内容で上書きします。対象：%@。このファイルのステージ済みと未ステージの変更は破棄され、そのリビジョンにファイルがない場合はサーバー上から削除されます。";
 "fileHistory.scope.author" = "作成者";
 "fileHistory.scope.committer" = "コミッター";
-"fileHistory.scope.revision" = "リビジョン";
 "fileHistory.search.author" = "作成者を検索";
 "fileHistory.search.committer" = "コミッターを検索";
-"fileHistory.search.revision" = "リビジョンを検索";
+"fileHistory.search.message" = "メッセージを検索";
+"fileHistory.search.hash" = "コミットハッシュを検索";
+"fileHistory.suggestions.authors" = "作成者";
+"fileHistory.suggestions.messages" = "メッセージ";
+"fileHistory.suggestions.committers" = "コミッター";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
 "blame.show" = "「%@」の Blame を表示";

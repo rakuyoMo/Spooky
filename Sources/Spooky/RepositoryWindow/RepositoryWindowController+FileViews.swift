@@ -6,23 +6,25 @@ import SwiftUI
 
 extension RepositoryWindowController {
     /// 搜索框范围菜单的顺序，菜单项的 tag 是这里的序号。
-    private static let fileHistoryScopes: [FileHistoryFilter.Scope] = [.author, .committer, .revision]
+    private static let fileHistoryScopes: [FileHistoryFilter.Scope] = [.message, .hash, .author, .committer]
 
     /// 范围菜单项的标题。
     private static func title(of scope: FileHistoryFilter.Scope) -> String {
         switch scope {
+        case .message: AppLocalization.text("fileHistory.scope.message")
+        case .hash: AppLocalization.text("fileHistory.scope.hash")
         case .author: AppLocalization.text("fileHistory.scope.author")
         case .committer: AppLocalization.text("fileHistory.scope.committer")
-        case .revision: AppLocalization.text("fileHistory.scope.revision")
         }
     }
 
     /// 搜索框在各范围下的占位文字。
     private static func placeholder(of scope: FileHistoryFilter.Scope) -> String {
         switch scope {
+        case .message: AppLocalization.text("fileHistory.search.message")
+        case .hash: AppLocalization.text("fileHistory.search.hash")
         case .author: AppLocalization.text("fileHistory.search.author")
         case .committer: AppLocalization.text("fileHistory.search.committer")
-        case .revision: AppLocalization.text("fileHistory.search.revision")
         }
     }
 
@@ -70,25 +72,32 @@ extension RepositoryWindowController {
         return controller
     }
 
-    /// 文件历史里的搜索框按作者、提交人或版本筛选，范围在搜索框左侧的菜单里切换；按作者或提交人筛选时补全姓名。
+    /// 文件历史里的搜索框按说明、提交哈希、作者或提交人筛选，范围在搜索框左侧以 File History 为标题的菜单里切换；
+    /// 除提交哈希外，输入时分 Authors、Messages、Committers 三组补全。
     func configureFileHistorySearch(_ field: NSSearchField) {
         let scope = session.fileHistory.scope
         let menu = NSMenu()
-
-        // 作者与提交人范围补全仓库的作者；接受补全后与键入一样写入会话，由文件历史按新内容重读
         let state = session.fileHistory
+        let suggestions = session.history.suggestions
 
+        // 作者与提交人来自会话在后台维护的贡献者，说明来自已读出的时间线
         contributorCompletion.attach(
             to: field,
             suggestions: { [weak state] query in
-                guard let state, state.scope != .revision else {
+                guard let state, state.scope != .hash, let runner = state.runner, let head = state.head else {
                     return []
                 }
 
-                return ContributorSuggestion.matches(query, in: (try? await state.authors()) ?? [])
+                let contributors = await suggestions.contributors(runner: runner, head: head)
+
+                return ContributorSuggestion.matches(query, in: contributors.authors, group: .authors)
+                    + ContributorSuggestion.messages(query, in: state.commits.map(\.subject))
+                    + ContributorSuggestion.matches(query, in: contributors.committers, group: .committers)
             },
-            apply: { [weak self] in self?.session.searchText = $0.text }
+            apply: { [weak self] in self?.acceptFileHistorySuggestion($0) }
         )
+
+        menu.addItem(.sectionHeader(title: AppLocalization.text("fileHistory.title")))
 
         for (index, candidate) in Self.fileHistoryScopes.enumerated() {
             let item = NSMenuItem(
@@ -106,6 +115,24 @@ extension RepositoryWindowController {
         field.placeholderString = Self.placeholder(of: scope)
     }
 
+    /// 接受补全：按建议所属的分组换到对应的范围，再与键入一样写入会话，由文件历史按新内容重读。
+    private func acceptFileHistorySuggestion(_ suggestion: ContributorSuggestion) {
+        let scope: FileHistoryFilter.Scope? =
+            switch suggestion.group {
+            case .authors: .author
+            case .messages: .message
+            case .committers: .committer
+            case nil: nil
+            }
+
+        if let scope, scope != session.fileHistory.scope {
+            session.fileHistory.scope = scope
+            refreshFileHistorySearchField()
+        }
+
+        session.searchText = suggestion.text
+    }
+
     /// 切换搜索范围后按新范围重读，并更新菜单的勾选与占位文字。
     @objc
     private func selectFileHistorySearchScope(_ sender: NSMenuItem) {
@@ -114,7 +141,11 @@ extension RepositoryWindowController {
         }
 
         session.fileHistory.scope = Self.fileHistoryScopes[sender.tag]
+        refreshFileHistorySearchField()
+    }
 
+    /// 范围变化后重新配置工具栏的搜索框：菜单的勾选与占位文字随之更新。
+    private func refreshFileHistorySearchField() {
         let item = window?.toolbar?.items.first { $0.itemIdentifier.rawValue == "search" }
 
         if let field = (item as? NSSearchToolbarItem)?.searchField {

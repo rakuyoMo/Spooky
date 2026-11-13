@@ -736,6 +736,8 @@
 "conflict.compareBase" = "Compare with Common Ancestor";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "File History";
+"fileHistory.scope.message" = "Message";
+"fileHistory.scope.hash" = "Commit Hash";
 "fileHistory.showCommit" = "Show Commit";
 "fileHistory.oneCommit" = "1 commit";
 "fileHistory.commits" = "%ld commits";
@@ -753,10 +755,13 @@
 "fileHistory.restore.remote" = "Overwrite “%@” with revision %@ on the server at %@. Staged and unstaged changes in this file are discarded, and the file is deleted on the server if it does not exist at that revision.";
 "fileHistory.scope.author" = "Author";
 "fileHistory.scope.committer" = "Committer";
-"fileHistory.scope.revision" = "Revision";
 "fileHistory.search.author" = "Search for Author";
 "fileHistory.search.committer" = "Search for Committer";
-"fileHistory.search.revision" = "Search for Revision";
+"fileHistory.search.message" = "Search for Message";
+"fileHistory.search.hash" = "Search for Commit Hash";
+"fileHistory.suggestions.authors" = "Authors";
+"fileHistory.suggestions.messages" = "Messages";
+"fileHistory.suggestions.committers" = "Committers";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
 "blame.show" = "Show Blame for “%@”";

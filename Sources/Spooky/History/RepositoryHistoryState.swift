@@ -432,6 +432,9 @@ final class RepositoryHistoryState {
         roots = []
         hasMore = false
         restoredReferences = nil
+
+        // 换仓库或关窗时取消补全数据的读取
+        suggestions.close()
     }
 }
 

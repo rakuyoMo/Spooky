@@ -830,6 +830,11 @@ extension RepositorySession {
         fileHistory.update(head: status.branch.oid, records: records)
         fileContent.update(head: status.branch.oid, records: records)
 
+        // 搜索框补全用的贡献者在后台跟着 HEAD 读取，不等到第一次输入
+        if let runner, let head = status.branch.oid {
+            history.suggestions.prepareContributors(runner: runner, head: head)
+        }
+
         stagingOverrides = [:]
 
         // 选区保留列表里仍有的条目，补充清单里的未改动与被忽略文件同样算数

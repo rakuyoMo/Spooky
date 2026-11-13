@@ -66,14 +66,17 @@ public struct TreeEntry: Sendable, Equatable {
 public struct FileHistoryFilter: Sendable, Equatable {
     /// 搜索框的匹配范围。
     public enum Scope: String, Sendable, CaseIterable {
+        /// 提交说明，忽略大小写的字面匹配。
+        case message
+
+        /// 提交哈希或其它版本表达式，只显示该版本上最近一次修改此文件的提交。
+        case hash
+
         /// 作者的姓名或邮箱，忽略大小写的字面匹配。
         case author
 
         /// 提交人的姓名或邮箱，忽略大小写的字面匹配。
         case committer
-
-        /// 版本表达式，只显示该版本上最近一次修改此文件的提交。
-        case revision
     }
 
     /// 搜索框的匹配范围。
@@ -87,16 +90,24 @@ public struct FileHistoryFilter: Sendable, Equatable {
 
     /// 交给 log 与 rev-list 的限定参数；版本范围改变的是起点，不在这里表达。
     var arguments: [String] {
-        // 贡献者按字面子串匹配并忽略大小写，输入中的正则符号不会被解释
-        guard !trimmedText.isEmpty, scope != .revision else {
+        // 说明与贡献者按字面子串匹配并忽略大小写，输入中的正则符号不会被解释
+        let option =
+            switch scope {
+            case .message: "--grep="
+            case .author: "--author="
+            case .committer: "--committer="
+            case .hash: nil as String?
+            }
+
+        guard !trimmedText.isEmpty, let option else {
             return []
         }
 
-        return ["-i", "-F", (scope == .author ? "--author=" : "--committer=") + trimmedText]
+        return ["-i", "-F", option + trimmedText]
     }
 
     /// 创建筛选条件，默认不过滤。
-    public init(scope: Scope = .author, text: String = "") {
+    public init(scope: Scope = .message, text: String = "") {
         self.scope = scope
         self.text = text
     }
@@ -136,6 +147,77 @@ public struct FileContributor: Sendable, Equatable {
                     commitCount: count
                 )
             }
+    }
+}
+
+// MARK: - RepositoryContributors
+
+/// 整个仓库的作者与提交人，各按在历史里第一次出现的顺序（从新到旧）排列，同名不同邮箱各算一人；供搜索框补全。
+public struct RepositoryContributors: Sendable, Equatable {
+    /// 作者，经过仓库的 `.mailmap` 合并。
+    public let authors: [FileContributor]
+
+    /// 提交人，经过仓库的 `.mailmap` 合并。
+    public let committers: [FileContributor]
+
+    /// 创建贡献者数据。
+    public init(authors: [FileContributor] = [], committers: [FileContributor] = []) {
+        self.authors = authors
+        self.committers = committers
+    }
+
+    /// 解析 `log -z --format=%aN%x00%aE%x00%cN%x00%cE` 的输出：每个提交四个以 NUL 结尾的字段。
+    static func parse(_ data: Data) throws -> Self {
+        var fields = data.split(separator: 0, omittingEmptySubsequences: false).map {
+            String(decoding: $0, as: UTF8.self)
+        }
+
+        // 最后一个提交以 NUL 结尾，切分后多出一个空字段
+        if fields.last?.isEmpty ?? false {
+            fields.removeLast()
+        }
+
+        guard fields.count.isMultiple(of: 4) else {
+            throw RepositoryReadError.malformedOutput("log")
+        }
+
+        var authors = Tally()
+        var committers = Tally()
+
+        for start in stride(from: 0, to: fields.count, by: 4) {
+            authors.add(name: fields[start], email: fields[start + 1])
+            committers.add(name: fields[start + 2], email: fields[start + 3])
+        }
+
+        return Self(authors: authors.contributors, committers: committers.contributors)
+    }
+}
+
+// MARK: RepositoryContributors.Tally
+
+extension RepositoryContributors {
+    /// 按第一次出现的顺序累计每人的提交数。
+    private struct Tally {
+        /// 第一次出现的顺序。
+        private var order: [String] = []
+
+        /// 每人的姓名、邮箱与提交数，按 “姓名 <邮箱>” 归并。
+        private var people: [String: FileContributor] = [:]
+
+        /// 按第一次出现的顺序排列的贡献者。
+        var contributors: [FileContributor] { order.compactMap { people[$0] } }
+
+        /// 记一次提交。
+        mutating func add(name: String, email: String) {
+            let key = name + " <" + email + ">"
+            let count = people[key]?.commitCount ?? 0
+
+            if count == 0 {
+                order.append(key)
+            }
+
+            people[key] = FileContributor(name: name, email: email, commitCount: count + 1)
+        }
     }
 }
 
@@ -312,21 +394,38 @@ public struct RepositoryFileViews: Sendable {
     /// 指定提交之前修改过该文件的作者，按提交数从多到少排列。
     ///
     /// - Parameters:
-    ///   - path: 树中存储的路径；nil 表示整个仓库的作者，供文件历史的搜索框补全。
+    ///   - path: 树中存储的路径。
     ///   - revision: 起点提交的完整哈希。
-    public func contributors(of path: String?, at revision: String) async throws -> [FileContributor] {
-        guard GitObjectID.isValid(revision), path.map({ !$0.isEmpty }) ?? true else {
+    public func contributors(of path: String, at revision: String) async throws -> [FileContributor] {
+        guard GitObjectID.isValid(revision), !path.isEmpty else {
             throw RepositoryReadError.invalidQuery
         }
 
         // shortlog 没有起点时会改读标准输入，起点必须显式给出；作者随 `.mailmap` 合并，结果不按哈希复用
         let output = try await runner.run(
             Self.storedPathOptions + RepositoryHistory.logOptions
-                + ["shortlog", "-n", "-s", "-e", revision]
-                + (path.map { ["--", $0] } ?? [])
+                + ["shortlog", "-n", "-s", "-e", revision, "--", path]
         )
 
         return try FileContributor.parse(output)
+    }
+
+    /// 指定提交之前整个仓库的作者与提交人，各按第一次出现的顺序从新到旧排列，供搜索框补全。
+    ///
+    /// 每个提交只取四个身份字段；结果随 `.mailmap` 变化，不按哈希复用。
+    ///
+    /// - Parameter revision: 起点提交的完整哈希。
+    public func contributors(at revision: String) async throws -> RepositoryContributors {
+        guard GitObjectID.isValid(revision) else {
+            throw RepositoryReadError.invalidQuery
+        }
+
+        let output = try await runner.run(
+            RepositoryHistory.logOptions
+                + ["log", "-z", "--format=%aN%x00%aE%x00%cN%x00%cE", revision, "--"]
+        )
+
+        return try RepositoryContributors.parse(output)
     }
 
     /// 该文件在指定提交中的补丁，与第一父提交比较。

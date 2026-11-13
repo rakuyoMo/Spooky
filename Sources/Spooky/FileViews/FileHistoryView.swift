@@ -3,18 +3,18 @@ import SwiftUI
 
 // MARK: - FileHistoryTimelineView
 
-/// 文件历史的左栏：文件按钮与提交数，以及按天分组的提交时间线。
+/// 文件历史的左栏：文件按钮与提交数，以及按月分组的提交时间线；分组不随历史的分组偏好变化。
 struct FileHistoryTimelineView: View {
-    /// 同一天的提交组成一个分组。
-    private struct DaySection: Identifiable {
-        /// 这一天的开始时刻。
-        let day: Date
+    /// 同一个月的提交组成一个分组。
+    struct MonthSection: Identifiable {
+        /// 这个月第一天的开始时刻。
+        let month: Date
 
-        /// 这一天的提交，保持 Git 输出的顺序。
+        /// 这个月的提交，保持 Git 输出的顺序。
         var commits: [HistoryCommit]
 
-        /// 日期即身份。
-        var id: Date { day }
+        /// 月份即身份。
+        var id: Date { month }
     }
 
     /// 当前仓库会话。
@@ -28,26 +28,9 @@ struct FileHistoryTimelineView: View {
     @State
     private var choosingFile = false
 
-    /// 分组标题按提交日期的显示格式。
-    @AppStorage(CommitDateFormat.key)
-    private var dateFormat = CommitDateFormat.absolute
-
-    /// 按提交人日期把相邻的提交分到同一天。
-    private var sections: [DaySection] {
-        let calendar = Calendar.current
-        var sections: [DaySection] = []
-
-        for commit in state.commits {
-            let day = calendar.startOfDay(for: commit.commitDate)
-
-            if sections.last?.day == day {
-                sections[sections.count - 1].commits.append(commit)
-            } else {
-                sections.append(DaySection(day: day, commits: [commit]))
-            }
-        }
-
-        return sections
+    /// 按提交人日期把相邻的提交分到同一个月。
+    private var sections: [MonthSection] {
+        Self.sections(of: state.commits, calendar: .current)
     }
 
     /// 提交数的文案，读取完成前为空。
@@ -95,7 +78,7 @@ struct FileHistoryTimelineView: View {
             Button {
                 choosingFile = true
             } label: {
-                Label(RepositorySession.fileName(state.path ?? ""), systemImage: "doc")
+                Text(RepositorySession.fileName(state.path ?? ""))
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
@@ -120,7 +103,7 @@ struct FileHistoryTimelineView: View {
         .background(.bar)
     }
 
-    /// 子模块与空结果显示说明，否则显示按天分组的时间线。
+    /// 子模块与空结果显示说明，否则显示按月分组的时间线。
     @ViewBuilder
     private var timeline: some View {
         if state.isSubmodule {
@@ -140,7 +123,7 @@ struct FileHistoryTimelineView: View {
                                 }
                         }
                     } header: {
-                        Text(dateFormat.dayTitle(section.day).uppercased())
+                        Text(Self.monthTitle(section.month, locale: .autoupdatingCurrent, calendar: .current))
                             .font(.system(size: 11))
                     }
                 }
@@ -157,6 +140,43 @@ struct FileHistoryTimelineView: View {
             }
             .accessibilityIdentifier("file-history-commits")
         }
+    }
+
+    /// 把相邻的提交按提交人日期所在的月份分组。
+    ///
+    /// - Parameters:
+    ///   - commits: Git 输出顺序的提交。
+    ///   - calendar: 决定月份边界的日历。
+    static func sections(of commits: [HistoryCommit], calendar: Calendar) -> [MonthSection] {
+        var sections: [MonthSection] = []
+
+        for commit in commits {
+            let month = calendar.dateInterval(of: .month, for: commit.commitDate)?.start ?? commit.commitDate
+
+            if sections.last?.month == month {
+                sections[sections.count - 1].commits.append(commit)
+            } else {
+                sections.append(MonthSection(month: month, commits: [commit]))
+            }
+        }
+
+        return sections
+    }
+
+    /// 分组标题：本地化的月份与年份，全部大写。
+    ///
+    /// - Parameters:
+    ///   - month: 这个月里的任一时刻。
+    ///   - locale: 语言区域，测试固定。
+    ///   - calendar: 日历，测试固定。
+    static func monthTitle(_ month: Date, locale: Locale, calendar: Calendar) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.setLocalizedDateFormatFromTemplate("MMMMyyyy")
+
+        return formatter.string(from: month).uppercased(with: locale)
     }
 
     /// 时间线的右键菜单：查看这个版本、回到提交、用比较工具比较、恢复与导出。
@@ -182,7 +202,7 @@ struct FileHistoryTimelineView: View {
 
 // MARK: - FileHistoryCommitRow
 
-/// 时间线中的一个提交：左侧时间线节点，第一行标题，第二行短哈希、作者与时间。
+/// 时间线中的一个提交：左侧时间线节点，其后 32 × 32 的作者头像，再右是第一行标题、第二行短哈希、作者与时间。
 private struct FileHistoryCommitRow: View {
     /// 这一行的提交。
     let commit: HistoryCommit
@@ -191,11 +211,15 @@ private struct FileHistoryCommitRow: View {
     @AppStorage(CommitDateFormat.key)
     private var dateFormat = CommitDateFormat.absolute
 
-    /// 39 pt 高的两行布局。
+    /// 39 pt 高的两行布局；头像距行顶 3 pt，与时间线、文字各隔 8 pt。
     var body: some View {
         HStack(spacing: 8) {
             TimelineMark()
                 .frame(width: 14)
+
+            InitialsAvatar(name: commit.author, email: commit.authorEmail, size: 32)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .padding(.top, 3)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(commit.subject)
