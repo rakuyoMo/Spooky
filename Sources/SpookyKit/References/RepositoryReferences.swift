@@ -212,6 +212,26 @@ public struct ReferenceSnapshot: Sendable, Equatable {
         metadata[branch] ?? BranchMetadata()
     }
 
+    /// 指向一个提交的引用，按 `git log --decorate=full` 的 `%D` 排列：HEAD 所在的分支紧跟 HEAD 排在最前，
+    /// 其余按完整引用名的字节序倒排，依次是标签、远端分支（含 `origin/HEAD`）与本地分支。
+    ///
+    /// - Parameters:
+    ///   - objectID: 提交的完整哈希；附注标签按它指向的提交计。
+    ///   - headBranch: HEAD 所在分支的完整引用名；分离 HEAD 时为 nil。
+    public func decorations(of objectID: String, headBranch: String?) -> [RepositoryReference] {
+        // Git 按引用名顺序逐个读取，每读到一个都插到这个提交的标记最前面，结果是倒序
+        var result = references
+            .filter { $0.objectID == objectID }
+            .sorted { $1.id.utf8.lexicographicallyPrecedes($0.id.utf8) }
+
+        // HEAD 所在的分支写成 “HEAD -> 分支”，从原位置移到最前
+        if let index = result.firstIndex(where: { $0.id == headBranch }) {
+            result.insert(result.remove(at: index), at: 0)
+        }
+
+        return result
+    }
+
     /// 用最长前缀匹配带斜杠的远端名。
     public func remote(for reference: RepositoryReference) -> RepositoryRemote? {
         remotes.filter { reference.id.hasPrefix("refs/remotes/" + $0.name + "/") }

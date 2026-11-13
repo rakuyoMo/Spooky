@@ -624,7 +624,10 @@ extension HistoryCommitTable.Coordinator {
             let view = HistoryCommitRow(
                 commit: commit,
                 graph: parent.showGraph ? history.graphRows[commit.id] : nil,
-                references: history.snapshot?.references.filter { $0.objectID == commit.id } ?? [],
+                references: history.snapshot?.decorations(
+                    of: commit.id,
+                    headBranch: history.branch?.head.map { "refs/heads/" + $0 }
+                ) ?? [],
                 isHead: history.branch?.oid == commit.id,
                 small: parent.usesSmallRows,
                 dateFormat: parent.dateFormat,
