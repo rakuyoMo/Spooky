@@ -62,7 +62,7 @@ struct DialogForm<Rows: View>: View {
 
 /// 表单的一行：右对齐的标签与它右侧的输入控件。
 ///
-/// 标签列至少宽到让输入列从对齐线开始，标签长时输入列随之右移，并报给外层的对话框骨架。
+/// 标签列至少宽到让输入列从 `DialogMetrics.inputColumn` 开始，标签长时输入列随之右移，并报给外层的对话框骨架。
 /// 标签在辅助功能里是控件的标题，VoiceOver 读控件时读出标签；控件是只读的文字时，标签与文字本身都读得出，
 /// 一组控件时各自保留自己的名称。
 struct DialogFormRow<Field: View>: View {

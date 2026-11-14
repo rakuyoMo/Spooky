@@ -47,7 +47,7 @@ struct PullRequestFormDialog: View {
     @State
     private var description = ""
 
-    /// 480 宽的对话框骨架：标题与说明写出服务名与目标项目，表单的输入列从对齐线开始、宽 320。
+    /// 480 宽的对话框骨架：标题与说明写出服务名与目标项目，表单的输入列从 145 开始、宽 320。
     var body: some View {
         let texts = Self.texts(editing: request, instance: instance, project: targetProject, in: session)
 

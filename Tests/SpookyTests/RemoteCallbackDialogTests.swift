@@ -99,7 +99,7 @@ extension RemoteCallbackDialogTests {
         let save = try #require(elements.first { $0.role == "AXCheckBox" })
 
         #expect(field.subrole == "AXSecureTextField")
-        #expect(abs(field.frame.minX - DialogMetrics.alignment) <= 1)
+        #expect(abs(field.frame.minX - DialogMetrics.inputColumn) <= 1)
         #expect(abs(field.frame.maxX - 460) <= 1)
         #expect(save.name == AppLocalization.text("callback.saveKeychain"))
         #expect(save.value == "0")

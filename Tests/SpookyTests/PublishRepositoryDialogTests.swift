@@ -11,7 +11,7 @@ import TestSupport
 /// 发布仓库用 480 宽的对话框骨架：远端名避开已有的远端，账号与组织在同一个下拉里；没有登录的账号时菜单项不可用。
 @MainActor
 struct PublishRepositoryDialogTests {
-    /// 480 宽；Remote Name、Name 与 Description 从对齐线开始，右缘距对话框右边 20，Description 高 64。
+    /// 480 宽；Remote Name、Name 与 Description 从输入列开始，右缘距对话框右边 20，Description 高 64。
     @Test("对话框的宽度与输入框的位置")
     func layout() throws {
         let directory = FileManager.default.temporaryDirectory
@@ -39,7 +39,7 @@ struct PublishRepositoryDialogTests {
         let description = fields[2].insetBy(dx: -4, dy: -8)
 
         for frame in [fields[0], fields[1], description] {
-            #expect(abs(frame.minX - DialogMetrics.alignment) <= 1)
+            #expect(abs(frame.minX - DialogMetrics.inputColumn) <= 1)
             #expect(abs(frame.maxX - 460) <= 1)
         }
 

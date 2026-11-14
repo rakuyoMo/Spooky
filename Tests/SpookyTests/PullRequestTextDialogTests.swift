@@ -7,12 +7,12 @@ import Testing
 
 // MARK: - PullRequestTextDialogTests
 
-/// 请求的文字对话框用 480 宽的对话框骨架：评论与描述的文字区占满宽度、没有标签列，检出的分支名从对齐线开始，
+/// 请求的文字对话框用 480 宽的对话框骨架：评论与描述的文字区占满宽度、没有标签列，检出的分支名从输入列开始，
 /// 删除评论与关闭请求没有内容区。
 @MainActor
 struct PullRequestTextDialogTests {
     /// 发表、修改、回复评论与修改描述：文字区距左右各 20，宽 440、高 300；
-    /// 检出的分支名框从 120 的对齐线开始；删除评论与关闭请求只有头部与底栏，没有任何输入。
+    /// 检出的分支名框从 145 的输入列开始；删除评论与关闭请求只有头部与底栏，没有任何输入。
     @Test("文字区占满对话框的宽度，检出、删除评论与关闭请求的内容区")
     func layout() throws {
         let kinds: [PullRequestTextDialog.Kind] = [
@@ -43,7 +43,7 @@ struct PullRequestTextDialogTests {
         let field = try #require(Self.subviews(NSTextField.self, in: checkout).first { $0.isEditable })
         let frame = field.convert(field.bounds, to: checkout)
 
-        #expect(abs(frame.minX - DialogMetrics.alignment) <= 1)
+        #expect(abs(frame.minX - DialogMetrics.inputColumn) <= 1)
 
         // 删除评论与关闭请求
         for kind in [PullRequestTextDialog.Kind.deleteComment(Self.comment), .close] {

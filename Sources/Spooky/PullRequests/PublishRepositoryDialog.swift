@@ -54,7 +54,7 @@ struct PublishRepositoryDialog: View {
     @State
     private var popUpWidth: CGFloat?
 
-    /// 480 宽的对话框骨架：远端名、账号、名称、描述、可见性与将要添加的地址；输入列至少从对齐线开始，标签长时随之右移。
+    /// 480 宽的对话框骨架：远端名、账号、名称、描述、可见性与将要添加的地址；输入列至少从 145 开始，标签长时随之右移。
     var body: some View {
         DialogLayout(
             title: AppLocalization.text("publish.title"),

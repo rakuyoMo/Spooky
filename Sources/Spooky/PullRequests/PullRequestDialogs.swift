@@ -262,7 +262,7 @@ struct AssociateRemoteDialog: View {
     @State
     private var project = ""
 
-    /// 账号下拉与项目路径，从对齐线开始，项目路径占满输入列。
+    /// 账号下拉与项目路径，从输入列开始，项目路径占满输入列。
     ///
     /// 还没有账号或仓库暂不可写时，错误区写出原因。
     var body: some View {
