@@ -420,6 +420,7 @@
 "branch.track.checkout" = "Hacer checkout de la rama";
 "branch.cleanNames" = "Convertir automáticamente los nombres de referencia a un formato válido al escribir";
 "branch.exists" = "La rama local “%@” ya existe.";
+"branch.groupExists" = "Ya existe un grupo de referencias con este nombre.";
 "branch.error.unmerged" = "La rama no se ha fusionado por completo.";
 "sync.fetch" = "Hacer fetch";
 "sync.fetch.help" = "Descarga las actualizaciones del remoto sin cambiar la copia de trabajo.";
@@ -1386,13 +1387,13 @@
 "branch.parent.setMenu" = "Seguir otra rama padre…";
 "branch.parent.remove" = "Dejar de seguir la rama padre";
 "branch.parent.field" = "Padre:";
+"branch.parent.help" = "Las comparaciones y actualizaciones de la rama usan la rama padre como base.";
 "branch.parent.message" = "Elige la rama en la que se basa “%@”. Las comparaciones y actualizaciones de la rama la usan como base.";
 "branch.parent.replace" = "Esto sustituye la rama padre actual “%@”.";
 "branch.parentOption" = "Rama padre:";
 "branch.parentOption.none" = "Sin rama padre";
 "branch.parentOption.help" = "Las comparaciones y actualizaciones de la nueva rama usan la rama padre como base.";
 "branch.pin.help" = "Añade la rama a la sección Pinned de la barra lateral.";
-"branch.trackStart.named" = "Seguir la rama “%@”";
 "branch.remoteField" = "Rama remota:";
 "branch.rename" = "Renombrar rama";
 "branch.rename.message" = "Introduce un nuevo nombre para la rama local.";

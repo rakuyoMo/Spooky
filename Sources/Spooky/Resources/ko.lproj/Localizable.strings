@@ -420,6 +420,7 @@
 "branch.track.checkout" = "브랜치 체크아웃";
 "branch.cleanNames" = "입력 중 참조 이름을 유효한 형식으로 변환";
 "branch.exists" = "로컬 브랜치 “%@”이(가) 이미 있습니다.";
+"branch.groupExists" = "이 이름의 참조 그룹이 이미 있습니다.";
 "branch.error.unmerged" = "브랜치가 완전히 병합되지 않았습니다.";
 "sync.fetch" = "가져오기";
 "sync.fetch.help" = "작업 사본을 유지하고 원격 업데이트를 가져옵니다.";
@@ -1386,13 +1387,13 @@
 "branch.parent.setMenu" = "다른 부모 브랜치 추적…";
 "branch.parent.remove" = "부모 브랜치 추적 해제";
 "branch.parent.field" = "부모:";
+"branch.parent.help" = "브랜치를 비교하고 업데이트할 때 부모 브랜치를 기준으로 씁니다.";
 "branch.parent.message" = "“%@”의 기반이 되는 브랜치를 선택합니다. 이 브랜치를 비교하고 업데이트할 때 기준으로 씁니다.";
 "branch.parent.replace" = "현재 부모 “%@”을(를) 대체합니다.";
 "branch.parentOption" = "부모 브랜치:";
 "branch.parentOption.none" = "부모 브랜치 없음";
 "branch.parentOption.help" = "새 브랜치를 비교하고 업데이트할 때 부모 브랜치를 기준으로 씁니다.";
 "branch.pin.help" = "사이드바의 Pinned 섹션에 브랜치를 추가합니다.";
-"branch.trackStart.named" = "“%@” 브랜치 추적";
 "branch.remoteField" = "원격 브랜치:";
 "branch.rename" = "브랜치 이름 변경";
 "branch.rename.message" = "로컬 브랜치의 새 이름을 입력하세요.";

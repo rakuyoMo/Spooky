@@ -420,6 +420,7 @@
 "branch.track.checkout" = "检出分支";
 "branch.cleanNames" = "输入时自动规范引用名称";
 "branch.exists" = "本地分支 “%@” 已存在。";
+"branch.groupExists" = "已有同名的引用分组。";
 "branch.error.unmerged" = "分支尚未完全合并。";
 "sync.fetch" = "获取";
 "sync.fetch.help" = "获取远端更新，保留当前工作区。";
@@ -1386,13 +1387,13 @@
 "branch.parent.setMenu" = "跟踪其他父分支…";
 "branch.parent.remove" = "取消跟踪父分支";
 "branch.parent.field" = "父分支：";
+"branch.parent.help" = "比较与更新分支时以父分支为基准。";
 "branch.parent.message" = "选择 “%@” 所基于的分支。比较与更新这个分支时以它为基准。";
 "branch.parent.replace" = "这会替换当前的父分支 “%@”。";
 "branch.parentOption" = "父分支：";
 "branch.parentOption.none" = "无父分支";
 "branch.parentOption.help" = "比较与更新新分支时以父分支为基准。";
 "branch.pin.help" = "把分支加到侧边栏的 Pinned 分组。";
-"branch.trackStart.named" = "跟踪分支 “%@”";
 "branch.remoteField" = "远端分支：";
 "branch.rename" = "重命名分支";
 "branch.rename.message" = "输入本地分支的新名称。";

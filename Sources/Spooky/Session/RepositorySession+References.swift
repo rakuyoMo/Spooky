@@ -33,10 +33,23 @@ extension RepositorySession {
         canWrite && !tags.isEmpty && !(history.snapshot?.remotes.isEmpty ?? true)
     }
 
-    /// 版本框列表里的引用：本地分支、远端分支、标签依次排列，远端的 HEAD 不列出。
+    /// 版本框列表里的引用：本地分支、各远端的远端分支、标签依次成组，按 ``ReferenceOrder/candidates(_:in:)``；远端的 HEAD 不列出。
     var revisionReferences: [RepositoryReference] {
-        let branches = history.branches
-        return branches.filter(\.isLocal) + branches.filter(\.isRemote) + tags
+        ReferenceOrder.candidates(history.branches + tags, in: history.snapshot)
+    }
+
+    /// 远端名：名为 origin 的在最前，其余按名字；远端下拉的候选与没有上游时的默认远端都取这个顺序。
+    var orderedRemoteNames: [String] {
+        (history.snapshot?.remotes.map(\.name) ?? []).sorted(by: ReferenceOrder.precedes(remote:_:))
+    }
+
+    /// 名字是已有本地分支的文件夹（如已有 `feature/login` 时的 `feature`）；改名时不算被改名的分支自己。
+    ///
+    /// - Parameters:
+    ///   - name: 新的分支名。
+    ///   - excluded: 被改名的分支的完整引用名。
+    func isBranchFolder(_ name: String, excluding excluded: String? = nil) -> Bool {
+        history.branches.contains { $0.isLocal && $0.id != excluded && $0.name.hasPrefix(name + "/") }
     }
 
     /// 非当前的本地分支只落后于上游、没有自己的提交时才能快进。

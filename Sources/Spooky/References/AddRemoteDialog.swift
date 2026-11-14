@@ -31,6 +31,10 @@ struct AddRemoteDialog: View {
     @State
     private var nameError = ""
 
+    /// 输入时规范化名称的开关，与新建分支共用。
+    @AppStorage("cleanRefNames")
+    private var cleanNames = true
+
     /// “Name:” 与 “Remote URL:” 两个输入框。
     var body: some View {
         RepositoryDialogLayout(
@@ -54,6 +58,11 @@ struct AddRemoteDialog: View {
             }
         }
         .onAppear { repository = session.repository }
+        .onChange(of: name) {
+            if cleanNames {
+                name = RepositoryReferences.normalizedBranchName(name)
+            }
+        }
         .task(id: name) { await validateName() }
     }
 }

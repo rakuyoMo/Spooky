@@ -420,6 +420,7 @@
 "branch.track.checkout" = "Basculer sur la branche";
 "branch.cleanNames" = "Convertir automatiquement les noms de référence en un format valide lors de la saisie";
 "branch.exists" = "La branche locale « %@ » existe déjà.";
+"branch.groupExists" = "Un groupe de références porte déjà ce nom.";
 "branch.error.unmerged" = "La branche n’est pas entièrement fusionnée.";
 "sync.fetch" = "Récupérer";
 "sync.fetch.help" = "Télécharger les mises à jour distantes sans modifier la copie de travail.";
@@ -1386,13 +1387,13 @@
 "branch.parent.setMenu" = "Suivre une autre branche parente…";
 "branch.parent.remove" = "Ne plus suivre la branche parente";
 "branch.parent.field" = "Parente :";
+"branch.parent.help" = "Les comparaisons et mises à jour de la branche se servent de la branche parente comme base.";
 "branch.parent.message" = "Choisissez la branche sur laquelle « %@ » est basée. Les comparaisons et mises à jour de la branche s’en servent comme base.";
 "branch.parent.replace" = "Cela remplace la branche parente actuelle « %@ ».";
 "branch.parentOption" = "Branche parente :";
 "branch.parentOption.none" = "Aucune branche parente";
 "branch.parentOption.help" = "Les comparaisons et mises à jour de la nouvelle branche se servent de la branche parente comme base.";
 "branch.pin.help" = "Ajoute la branche à la section Pinned de la barre latérale.";
-"branch.trackStart.named" = "Suivre la branche « %@ »";
 "branch.remoteField" = "Branche distante :";
 "branch.rename" = "Renommer la branche";
 "branch.rename.message" = "Saisissez un nouveau nom pour la branche locale.";

@@ -420,6 +420,7 @@
 "branch.track.checkout" = "簽出分支";
 "branch.cleanNames" = "輸入時自動規範引用名稱";
 "branch.exists" = "本機分支 “%@” 已存在。";
+"branch.groupExists" = "已有同名的參照分組。";
 "branch.error.unmerged" = "分支尚未完全合併。";
 "sync.fetch" = "擷取";
 "sync.fetch.help" = "擷取遠端更新，保留目前工作區。";
@@ -1386,13 +1387,13 @@
 "branch.parent.setMenu" = "追蹤其他父分支…";
 "branch.parent.remove" = "取消追蹤父分支";
 "branch.parent.field" = "父分支：";
+"branch.parent.help" = "比較與更新分支時以父分支為基準。";
 "branch.parent.message" = "選擇 “%@” 所基於的分支。比較與更新這個分支時以它為基準。";
 "branch.parent.replace" = "這會取代目前的父分支 “%@”。";
 "branch.parentOption" = "父分支：";
 "branch.parentOption.none" = "無父分支";
 "branch.parentOption.help" = "比較與更新新分支時以父分支為基準。";
 "branch.pin.help" = "把分支加到側邊欄的 Pinned 分組。";
-"branch.trackStart.named" = "追蹤分支 “%@”";
 "branch.remoteField" = "遠端分支：";
 "branch.rename" = "重新命名分支";
 "branch.rename.message" = "輸入本機分支的新名稱。";

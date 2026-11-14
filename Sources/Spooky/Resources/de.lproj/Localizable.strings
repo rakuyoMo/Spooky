@@ -420,6 +420,7 @@
 "branch.track.checkout" = "Branch auschecken";
 "branch.cleanNames" = "Referenznamen bei der Eingabe automatisch in ein gültiges Format umwandeln";
 "branch.exists" = "Der lokale Branch „%@“ existiert bereits.";
+"branch.groupExists" = "Es gibt bereits eine Ref-Gruppe mit diesem Namen.";
 "branch.error.unmerged" = "Der Branch ist nicht vollständig zusammengeführt.";
 "sync.fetch" = "Abrufen";
 "sync.fetch.help" = "Lädt Aktualisierungen vom Remote herunter, ohne die Arbeitskopie zu ändern.";
@@ -1386,13 +1387,13 @@
 "branch.parent.setMenu" = "Anderen Eltern-Branch verfolgen…";
 "branch.parent.remove" = "Eltern-Branch nicht mehr verfolgen";
 "branch.parent.field" = "Eltern:";
+"branch.parent.help" = "Vergleiche und Aktualisierungen des Branches verwenden den Eltern-Branch als Basis.";
 "branch.parent.message" = "Wähle den Branch, auf dem „%@“ basiert. Vergleiche und Aktualisierungen des Branches verwenden ihn als Basis.";
 "branch.parent.replace" = "Der aktuelle Eltern-Branch „%@“ wird ersetzt.";
 "branch.parentOption" = "Eltern-Branch:";
 "branch.parentOption.none" = "Kein Eltern-Branch";
 "branch.parentOption.help" = "Vergleiche und Aktualisierungen des neuen Branches verwenden den Eltern-Branch als Basis.";
 "branch.pin.help" = "Fügt den Branch dem Bereich „Pinned“ der Seitenleiste hinzu.";
-"branch.trackStart.named" = "Branch „%@“ verfolgen";
 "branch.remoteField" = "Remote-Branch:";
 "branch.rename" = "Branch umbenennen";
 "branch.rename.message" = "Gib einen neuen Namen für den lokalen Branch ein.";

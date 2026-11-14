@@ -420,6 +420,7 @@
 "branch.track.checkout" = "ブランチをチェックアウト";
 "branch.cleanNames" = "入力中に参照名を有効な形式に変換";
 "branch.exists" = "ローカルブランチ「%@」はすでにあります。";
+"branch.groupExists" = "この名前の参照グループはすでにあります。";
 "branch.error.unmerged" = "ブランチは完全にマージされていません。";
 "sync.fetch" = "フェッチ";
 "sync.fetch.help" = "作業コピーを維持してリモートの更新を取得します。";
@@ -1386,13 +1387,13 @@
 "branch.parent.setMenu" = "別の親ブランチを追跡…";
 "branch.parent.remove" = "親ブランチの追跡を解除";
 "branch.parent.field" = "親：";
+"branch.parent.help" = "ブランチの比較と更新は親ブランチを基準にします。";
 "branch.parent.message" = "「%@」の元になるブランチを選びます。このブランチの比較と更新はそれを基準にします。";
 "branch.parent.replace" = "現在の親「%@」は置き換えられます。";
 "branch.parentOption" = "親ブランチ：";
 "branch.parentOption.none" = "親ブランチなし";
 "branch.parentOption.help" = "新しいブランチの比較と更新は親ブランチを基準にします。";
 "branch.pin.help" = "サイドバーの Pinned セクションにブランチを追加します。";
-"branch.trackStart.named" = "ブランチ「%@」を追跡";
 "branch.remoteField" = "リモートブランチ：";
 "branch.rename" = "ブランチ名を変更";
 "branch.rename.message" = "ローカルブランチの新しい名前を入力してください。";

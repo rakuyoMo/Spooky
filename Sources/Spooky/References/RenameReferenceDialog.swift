@@ -160,6 +160,10 @@ extension RenameReferenceDialog {
                 return taken ? AppLocalization.text("branch.remoteExists", name, parts.remote) : nil
             }
 
+            if session.isBranchFolder(name, excluding: reference.id) {
+                return AppLocalization.text("branch.groupExists")
+            }
+
             let taken = snapshot?.references.contains { $0.id == "refs/heads/" + name } ?? false
             return taken ? AppLocalization.text("branch.exists", name) : nil
 

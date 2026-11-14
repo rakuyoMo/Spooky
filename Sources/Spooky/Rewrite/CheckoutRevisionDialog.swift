@@ -8,7 +8,7 @@ struct CheckoutRevisionDialog: View {
     /// 发起动作的窗口会话。
     let session: RepositorySession
 
-    /// 预填的版本；为 nil 时为空。
+    /// 预填的版本；为 nil 时预填当前分支。
     let revision: String?
 
     /// 关闭对话框。
@@ -17,6 +17,10 @@ struct CheckoutRevisionDialog: View {
     /// 输入或选中的版本。
     @State
     private var target = ""
+
+    /// 没有指定版本时预填的当前分支；版本框仍是它时不可检出。
+    @State
+    private var prefilled: String? = nil
 
     /// 解析出的去向与解析失败的说明，记着对应的版本；输入停顿期间仍显示上一次的，主按钮不可用。
     @State
@@ -30,13 +34,13 @@ struct CheckoutRevisionDialog: View {
             message: AppLocalization.text("rewrite.checkout.help"),
             submitTitle: AppLocalization.text("rewrite.checkout.button"),
             error: notice,
-            isValid: destination.value(for: target) != nil,
+            isValid: destination.value(for: target) != nil && target != prefilled,
             cancel: close,
             submit: perform
         ) {
             rows
         }
-        .onAppear { target = revision ?? "" }
+        .onAppear(perform: prefill)
         .task(id: target) { await resolve() }
     }
 }
@@ -46,7 +50,7 @@ struct CheckoutRevisionDialog: View {
 extension CheckoutRevisionDialog {
     /// 错误区的文字：版本解析失败的说明；仓库还没有引用时说明原因。
     private var notice: String {
-        guard destination.error.isEmpty, session.revisionCandidates.isEmpty else {
+        guard destination.error.isEmpty, session.revisionReferences.isEmpty else {
             return destination.error
         }
 
@@ -60,7 +64,7 @@ extension CheckoutRevisionDialog {
         DialogFormRow(label: AppLocalization.text("rewrite.revision"), alignment: .center) {
             RevisionComboBox(
                 text: $target,
-                items: session.revisionCandidates,
+                items: session.revisionReferences.map(\.name),
                 label: AppLocalization.text("rewrite.revision"),
                 visibleItems: 10,
                 completes: true
@@ -83,6 +87,17 @@ extension CheckoutRevisionDialog {
 // MARK: - Actions
 
 extension CheckoutRevisionDialog {
+    /// 入口指定的版本原样填入；没有指定时填当前分支，分离 HEAD 时为空。
+    private func prefill() {
+        guard let revision else {
+            prefilled = session.status?.branch.head
+            target = prefilled ?? ""
+            return
+        }
+
+        target = revision
+    }
+
     /// 输入停顿后判断去向；无法解析时说明原因，主按钮不可用。
     private func resolve() async {
         let input = target

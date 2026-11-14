@@ -420,6 +420,7 @@
 "branch.track.checkout" = "Checkout Branch";
 "branch.cleanNames" = "Automatically convert ref names into valid format while typing";
 "branch.exists" = "A local branch named “%@” already exists.";
+"branch.groupExists" = "A ref group with this name already exists.";
 "branch.error.unmerged" = "The branch is not fully merged.";
 "sync.fetch" = "Fetch";
 "sync.fetch.help" = "Download remote updates without changing the working copy.";
@@ -1386,13 +1387,13 @@
 "branch.parent.setMenu" = "Track Other Parent Branch…";
 "branch.parent.remove" = "Untrack Parent Branch";
 "branch.parent.field" = "Parent:";
+"branch.parent.help" = "Comparing and updating the branch use the parent branch as the base.";
 "branch.parent.message" = "Choose the branch that “%@” is based on. Comparing and updating the branch use it as the base.";
 "branch.parent.replace" = "This replaces the current parent “%@”.";
 "branch.parentOption" = "Parent Branch:";
 "branch.parentOption.none" = "No Parent Branch";
 "branch.parentOption.help" = "Comparing and updating the new branch use the parent branch as the base.";
 "branch.pin.help" = "Adds the branch to the Pinned section of the sidebar.";
-"branch.trackStart.named" = "Track Branch “%@”";
 "branch.remoteField" = "Remote Branch:";
 "branch.rename" = "Rename Branch";
 "branch.rename.message" = "Enter a new name for the local branch.";

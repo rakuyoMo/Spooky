@@ -313,13 +313,8 @@ extension RepositoryOperationDialog {
             .dialogFieldWidth(fieldWidth)
         }
 
-        // 起点是分支时标题写出它的名字
-        option(
-            "branch.trackStart",
-            title: startBranch.map { AppLocalization.text("branch.trackStart.named", $0.name) },
-            value: $track
-        )
-        .disabled(!canTrack)
+        option("branch.trackStart", value: $track)
+            .disabled(!canTrack)
 
         option("branch.pin", value: $pin)
 
@@ -358,7 +353,7 @@ extension RepositoryOperationDialog {
     /// 跟踪远端分支：远端分支、本地名称与新建后检出的选项。
     @ViewBuilder
     private var trackRows: some View {
-        referencePicker(branches.filter(\.isRemote), label: "branch.remoteField")
+        referencePicker(Self.trackCandidates(in: session), label: "branch.remoteField")
 
         nameRow
 
@@ -458,7 +453,7 @@ extension RepositoryOperationDialog {
     private var remotePicker: some View {
         RepositoryDialogRows.row(AppLocalization.text("sync.remote")) {
             Picker("", selection: $remote) {
-                ForEach(session.history.snapshot?.remotes ?? []) { Text($0.name).tag($0.name) }
+                ForEach(session.orderedRemoteNames, id: \.self) { Text($0).tag($0) }
             }
             .labelsHidden()
             .buttonSizing(.flexible)
@@ -536,7 +531,7 @@ extension RepositoryOperationDialog {
     /// 勾选框与下一行的说明，说明的资源键是勾选框的资源键加 `.help`。
     ///
     /// - Parameters:
-    ///   - title: 随表单内容变化的标题；为 nil 时用资源键对应的标题。
+    ///   - title: 与资源键不同的标题；为 nil 时用资源键对应的标题。
     ///   - spacing: 勾选框到说明的间距。
     private func option(
         _ key: String,
@@ -570,7 +565,7 @@ extension RepositoryOperationDialog {
     /// 表单默认值来自 HEAD 跟踪关系或入口指定对象。
     private func prepare() {
         let head = branches.first { $0.id == "refs/heads/" + (session.status?.branch.head ?? "") }
-        remote = request.remote ?? head?.upstreamRemote ?? session.history.snapshot?.remotes.first?.name ?? ""
+        remote = request.remote ?? head?.upstreamRemote ?? session.orderedRemoteNames.first ?? ""
         localBranch =
             request.localBranch ?? session.status?.branch.head ?? branches.first(where: \.isLocal)?.name ?? ""
 
@@ -603,7 +598,7 @@ extension RepositoryOperationDialog {
 
             // 右键指定的源分支使用自己的上游，不能借用当前 HEAD 的推送目标。
             remote = request.remote ?? selected?.upstreamRemote
-                ?? session.history.snapshot?.remotes.first?.name ?? ""
+                ?? session.orderedRemoteNames.first ?? ""
             if request.kind == .publish {
                 name = localBranch
             } else {
