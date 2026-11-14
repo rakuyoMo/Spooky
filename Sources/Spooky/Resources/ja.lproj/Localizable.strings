@@ -1180,6 +1180,8 @@
 "rewrite.amend" = "コミットを修正";
 "rewrite.autosquash" = "コミットを自動スカッシュ";
 "rewrite.squash.button" = "スカッシュ";
+"rewrite.squash.submit" = "コミットをスカッシュ";
+"rewrite.squash.submit.one" = "コミットをスカッシュ";
 "rewrite.fixup.button" = "Fixup";
 "rewrite.edit.button" = "編集";
 "rewrite.drop.button" = "削除";
@@ -1191,7 +1193,7 @@
 "rewrite.reset.button" = "リセット";
 "rewrite.checkout.button" = "チェックアウト";
 "rewrite.reword.button" = "保存";
-"rewrite.squash.confirm" = "%ld 件のコミットを “%@” にスカッシュしますか？メッセージは結合されます。";
+"rewrite.squash.confirm" = "%ld 件のコミットを “%@” にスカッシュしますか？";
 "rewrite.fixup.confirm" = "%ld 件のコミットを “%@” に取り込み、そのメッセージだけを残しますか？";
 "rewrite.edit.confirm" = "“%@” で止めて、その変更を作業コピーに戻しますか？変更をコミットしてから “続行” をクリックしてください。";
 "rewrite.drop.confirm" = "現在のブランチから %ld 件のコミットを削除しますか？";
@@ -1270,7 +1272,7 @@
 "rewrite.reset.menu" = "HEAD をリビジョンへリセット…";
 "conflict.hint.rebase.edit" = "**コミット** でこのコミットを分割または書き直して新しいコミットを作成し、**編集を終了** をクリックしてリベースを続けてください。";
 "conflict.hint.rebase.pending" = "このインタラクティブリベースはまだどのコミットも処理していません。**中止** をクリックして取り消してください。";
-"rewrite.squash.confirm.one" = "“%@” を “%@” にスカッシュしますか？メッセージは結合されます。";
+"rewrite.squash.confirm.one" = "コミット “%@” を “%@” にスカッシュしますか？";
 "rewrite.fixup.confirm.one" = "“%@” を “%@” に取り込み、対象のメッセージだけを残しますか？";
 "rewrite.drop.confirm.one" = "現在のブランチから “%@” を削除しますか？";
 "rewrite.move.confirm.one" = "“%@” を新しい位置へ移動しますか？";

@@ -1180,6 +1180,8 @@
 "rewrite.amend" = "Commit ergänzen";
 "rewrite.autosquash" = "Commits automatisch zusammenfassen";
 "rewrite.squash.button" = "Zusammenfassen";
+"rewrite.squash.submit" = "Commits zusammenfassen";
+"rewrite.squash.submit.one" = "Commit zusammenfassen";
 "rewrite.fixup.button" = "Fixup";
 "rewrite.edit.button" = "Bearbeiten";
 "rewrite.drop.button" = "Löschen";
@@ -1191,7 +1193,7 @@
 "rewrite.reset.button" = "Zurücksetzen";
 "rewrite.checkout.button" = "Auschecken";
 "rewrite.reword.button" = "Sichern";
-"rewrite.squash.confirm" = "%ld Commits in „%@“ zusammenfassen? Ihre Nachrichten werden kombiniert.";
+"rewrite.squash.confirm" = "Möchten Sie %ld Commits wirklich in „%@“ zusammenfassen?";
 "rewrite.fixup.confirm" = "%ld Commits in „%@“ einfügen und nur dessen Nachricht behalten?";
 "rewrite.edit.confirm" = "Bei „%@“ anhalten und seine Änderungen in die Arbeitskopie zurückholen? Committen Sie sie und klicken Sie dann auf „Fortsetzen“.";
 "rewrite.drop.confirm" = "%ld Commits aus dem aktuellen Branch löschen?";
@@ -1270,7 +1272,7 @@
 "rewrite.reset.menu" = "HEAD auf Revision zurücksetzen…";
 "conflict.hint.rebase.edit" = "Teilen oder überarbeiten Sie diesen Commit, indem Sie mit **Committen** neue Commits erstellen, und klicken Sie dann auf **Bearbeitung beenden**, um den Rebase fortzusetzen.";
 "conflict.hint.rebase.pending" = "Dieser interaktive Rebase hat noch keine Commits verarbeitet. Klicken Sie auf **Vorgang abbrechen**, um ihn abzubrechen.";
-"rewrite.squash.confirm.one" = "„%@“ in „%@“ zusammenfassen? Die Nachrichten werden kombiniert.";
+"rewrite.squash.confirm.one" = "Möchten Sie den Commit „%@“ wirklich in „%@“ zusammenfassen?";
 "rewrite.fixup.confirm.one" = "„%@“ in „%@“ einfügen und nur die Nachricht des Ziels behalten?";
 "rewrite.drop.confirm.one" = "„%@“ aus dem aktuellen Branch löschen?";
 "rewrite.move.confirm.one" = "„%@“ an die neue Position verschieben?";

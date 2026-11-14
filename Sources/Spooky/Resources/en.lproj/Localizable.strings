@@ -1180,6 +1180,8 @@
 "rewrite.amend" = "Amend Revision";
 "rewrite.autosquash" = "Autosquash Commits";
 "rewrite.squash.button" = "Squash";
+"rewrite.squash.submit" = "Squash Revisions";
+"rewrite.squash.submit.one" = "Squash Revision";
 "rewrite.fixup.button" = "Fixup";
 "rewrite.edit.button" = "Edit";
 "rewrite.drop.button" = "Delete";
@@ -1191,7 +1193,7 @@
 "rewrite.reset.button" = "Reset";
 "rewrite.checkout.button" = "Check Out";
 "rewrite.reword.button" = "Save";
-"rewrite.squash.confirm" = "Squash %ld revisions into “%@”? Their messages are combined.";
+"rewrite.squash.confirm" = "Are you sure you want to squash %ld revisions into “%@”?";
 "rewrite.fixup.confirm" = "Fold %ld revisions into “%@” and keep only its message?";
 "rewrite.edit.confirm" = "Stop at “%@” and return its changes to the working copy? Commit them, then click Continue.";
 "rewrite.drop.confirm" = "Delete %ld revisions from the current branch?";
@@ -1270,7 +1272,7 @@
 "rewrite.reset.menu" = "Reset HEAD to Revision…";
 "conflict.hint.rebase.edit" = "Split or rewrite this commit by creating new commits with **Commit**, then click **End Editing** to continue the rebase.";
 "conflict.hint.rebase.pending" = "This interactive rebase has not processed any commits yet. Click **Abort** to cancel it.";
-"rewrite.squash.confirm.one" = "Squash “%@” into “%@”? Their messages are combined.";
+"rewrite.squash.confirm.one" = "Are you sure you want to squash revision “%@” into “%@”?";
 "rewrite.fixup.confirm.one" = "Fold “%@” into “%@” and keep only the message of the target?";
 "rewrite.drop.confirm.one" = "Delete “%@” from the current branch?";
 "rewrite.move.confirm.one" = "Move “%@” to the new position?";

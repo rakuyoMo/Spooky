@@ -1180,6 +1180,8 @@
 "rewrite.amend" = "Enmendar commit";
 "rewrite.autosquash" = "Combinar commits automáticamente";
 "rewrite.squash.button" = "Combinar";
+"rewrite.squash.submit" = "Combinar commits";
+"rewrite.squash.submit.one" = "Combinar commit";
 "rewrite.fixup.button" = "Fixup";
 "rewrite.edit.button" = "Editar";
 "rewrite.drop.button" = "Eliminar";
@@ -1191,7 +1193,7 @@
 "rewrite.reset.button" = "Restablecer";
 "rewrite.checkout.button" = "Hacer checkout";
 "rewrite.reword.button" = "Guardar";
-"rewrite.squash.confirm" = "¿Combinar %ld commits en «%@»? Sus mensajes se unen.";
+"rewrite.squash.confirm" = "¿Combinar %ld commits en «%@»?";
 "rewrite.fixup.confirm" = "¿Incorporar %ld commits en «%@» y conservar solo su mensaje?";
 "rewrite.edit.confirm" = "¿Detenerse en «%@» y devolver sus cambios a la copia de trabajo? Hacer commit de ellos y luego hacer clic en «Continuar».";
 "rewrite.drop.confirm" = "¿Eliminar %ld commits de la rama actual?";
@@ -1270,7 +1272,7 @@
 "rewrite.reset.menu" = "Restablecer HEAD a una revisión…";
 "conflict.hint.rebase.edit" = "Dividir o reescribir este commit creando commits nuevos con **Hacer commit** y, después, hacer clic en **Terminar edición** para continuar el rebase.";
 "conflict.hint.rebase.pending" = "Este rebase interactivo aún no ha procesado ningún commit. Hacer clic en **Abortar** para cancelarlo.";
-"rewrite.squash.confirm.one" = "¿Combinar «%@» en «%@»? Sus mensajes se unen.";
+"rewrite.squash.confirm.one" = "¿Combinar el commit «%@» en «%@»?";
 "rewrite.fixup.confirm.one" = "¿Incorporar «%@» en «%@» y conservar solo el mensaje del destino?";
 "rewrite.drop.confirm.one" = "¿Eliminar «%@» de la rama actual?";
 "rewrite.move.confirm.one" = "¿Mover «%@» a la nueva posición?";

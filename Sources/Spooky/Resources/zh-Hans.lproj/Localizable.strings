@@ -1180,6 +1180,8 @@
 "rewrite.amend" = "修补提交";
 "rewrite.autosquash" = "自动压缩提交";
 "rewrite.squash.button" = "压缩";
+"rewrite.squash.submit" = "压缩提交";
+"rewrite.squash.submit.one" = "压缩提交";
 "rewrite.fixup.button" = "Fixup";
 "rewrite.edit.button" = "编辑";
 "rewrite.drop.button" = "删除";
@@ -1191,7 +1193,7 @@
 "rewrite.reset.button" = "重置";
 "rewrite.checkout.button" = "检出";
 "rewrite.reword.button" = "保存";
-"rewrite.squash.confirm" = "将 %ld 个提交压缩进 “%@”？它们的提交信息会合并。";
+"rewrite.squash.confirm" = "确定要把 %ld 个提交压缩进 “%@” 吗？";
 "rewrite.fixup.confirm" = "将 %ld 个提交并入 “%@”，只保留它的提交信息？";
 "rewrite.edit.confirm" = "停在 “%@” 并把它的改动撤回到工作区？提交这些改动后点按 “继续”。";
 "rewrite.drop.confirm" = "从当前分支删除 %ld 个提交？";
@@ -1270,7 +1272,7 @@
 "rewrite.reset.menu" = "把 HEAD 重置到版本…";
 "conflict.hint.rebase.edit" = "用 **提交** 把这个提交拆分或改写成新的提交，然后点按 **结束编辑** 继续变基。";
 "conflict.hint.rebase.pending" = "这次交互式变基还没有处理任何提交。点按 **中止** 取消变基。";
-"rewrite.squash.confirm.one" = "将 “%@” 压缩进 “%@”？它们的提交信息会合并。";
+"rewrite.squash.confirm.one" = "确定要把提交 “%@” 压缩进 “%@” 吗？";
 "rewrite.fixup.confirm.one" = "将 “%@” 并入 “%@”，只保留目标的提交信息？";
 "rewrite.drop.confirm.one" = "从当前分支删除 “%@”？";
 "rewrite.move.confirm.one" = "把 “%@” 移到新的位置？";

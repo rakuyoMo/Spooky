@@ -1180,6 +1180,8 @@
 "rewrite.amend" = "커밋 수정";
 "rewrite.autosquash" = "커밋 자동 스쿼시";
 "rewrite.squash.button" = "스쿼시";
+"rewrite.squash.submit" = "커밋 스쿼시";
+"rewrite.squash.submit.one" = "커밋 스쿼시";
 "rewrite.fixup.button" = "Fixup";
 "rewrite.edit.button" = "편집";
 "rewrite.drop.button" = "삭제";
@@ -1191,7 +1193,7 @@
 "rewrite.reset.button" = "재설정";
 "rewrite.checkout.button" = "체크아웃";
 "rewrite.reword.button" = "저장";
-"rewrite.squash.confirm" = "%ld개의 커밋을 “%@”에 스쿼시할까요? 메시지는 합쳐집니다.";
+"rewrite.squash.confirm" = "%ld개의 커밋을 “%@”에 스쿼시할까요?";
 "rewrite.fixup.confirm" = "%ld개의 커밋을 “%@”에 합치고 그 메시지만 남길까요?";
 "rewrite.edit.confirm" = "“%@”에서 멈추고 변경을 작업 사본으로 되돌릴까요? 변경을 커밋한 뒤 “계속”을 클릭하세요.";
 "rewrite.drop.confirm" = "현재 브랜치에서 %ld개의 커밋을 삭제할까요?";
@@ -1270,7 +1272,7 @@
 "rewrite.reset.menu" = "HEAD를 리비전으로 재설정…";
 "conflict.hint.rebase.edit" = "**커밋**으로 이 커밋을 나누거나 다시 작성해 새 커밋을 만든 뒤 **편집 종료**를 클릭해 리베이스를 계속하세요.";
 "conflict.hint.rebase.pending" = "이 대화형 리베이스는 아직 어떤 커밋도 처리하지 않았습니다. **중단**을 클릭해 취소하세요.";
-"rewrite.squash.confirm.one" = "“%@”을(를) “%@”에 스쿼시할까요? 메시지는 합쳐집니다.";
+"rewrite.squash.confirm.one" = "커밋 “%@”을(를) “%@”에 스쿼시할까요?";
 "rewrite.fixup.confirm.one" = "“%@”을(를) “%@”에 합치고 대상의 메시지만 남길까요?";
 "rewrite.drop.confirm.one" = "현재 브랜치에서 “%@”을(를) 삭제할까요?";
 "rewrite.move.confirm.one" = "“%@”을(를) 새 위치로 옮길까요?";

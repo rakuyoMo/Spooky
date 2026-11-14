@@ -1180,6 +1180,8 @@
 "rewrite.amend" = "Compléter le commit";
 "rewrite.autosquash" = "Fusionner automatiquement les commits";
 "rewrite.squash.button" = "Fusionner";
+"rewrite.squash.submit" = "Fusionner les commits";
+"rewrite.squash.submit.one" = "Fusionner le commit";
 "rewrite.fixup.button" = "Fixup";
 "rewrite.edit.button" = "Modifier";
 "rewrite.drop.button" = "Supprimer";
@@ -1191,7 +1193,7 @@
 "rewrite.reset.button" = "Réinitialiser";
 "rewrite.checkout.button" = "Extraire";
 "rewrite.reword.button" = "Enregistrer";
-"rewrite.squash.confirm" = "Fusionner %ld commits dans « %@ » ? Leurs messages sont combinés.";
+"rewrite.squash.confirm" = "Voulez-vous vraiment fusionner %ld commits dans « %@ » ?";
 "rewrite.fixup.confirm" = "Intégrer %ld commits dans « %@ » en ne gardant que son message ?";
 "rewrite.edit.confirm" = "S’arrêter à « %@ » et remettre ses modifications dans la copie de travail ? Validez-les, puis cliquez sur « Continuer ».";
 "rewrite.drop.confirm" = "Supprimer %ld commits de la branche courante ?";
@@ -1270,7 +1272,7 @@
 "rewrite.reset.menu" = "Réinitialiser HEAD à une révision…";
 "conflict.hint.rebase.edit" = "Scindez ou réécrivez ce commit en créant de nouveaux commits avec **Valider**, puis cliquez sur **Terminer la modification** pour poursuivre le rebasage.";
 "conflict.hint.rebase.pending" = "Ce rebasage interactif n’a encore traité aucun commit. Cliquez sur **Abandonner** pour l’annuler.";
-"rewrite.squash.confirm.one" = "Fusionner « %@ » dans « %@ » ? Les messages sont combinés.";
+"rewrite.squash.confirm.one" = "Voulez-vous vraiment fusionner le commit « %@ » dans « %@ » ?";
 "rewrite.fixup.confirm.one" = "Intégrer « %@ » dans « %@ » en ne gardant que le message de la cible ?";
 "rewrite.drop.confirm.one" = "Supprimer « %@ » de la branche courante ?";
 "rewrite.move.confirm.one" = "Déplacer « %@ » vers la nouvelle position ?";
