@@ -4,8 +4,11 @@ import SwiftUI
 
 // MARK: - AddSubmoduleDialog
 
-/// 添加子模块：远端地址与工作区里的路径；路径可以手填，也可以选一个目录。
+/// 添加子模块：远端地址与工作区里的路径；路径在弹出菜单里选一个目录，选好之前不能添加。
 struct AddSubmoduleDialog: View {
+    /// 路径菜单里 “Select Destination…” 一项的标识，不是任何路径。
+    private static let chooseTag = "\u{0}choose"
+
     /// 发起动作的窗口会话。
     let session: RepositorySession
 
@@ -16,7 +19,7 @@ struct AddSubmoduleDialog: View {
     @State
     private var url = ""
 
-    /// 工作区里的相对路径。
+    /// 工作区里的相对路径；还没有选目录时为空。
     @State
     private var path = ""
 
@@ -42,13 +45,7 @@ struct AddSubmoduleDialog: View {
             }
 
             RepositoryDialogRows.row(AppLocalization.text("submodule.path")) {
-                HStack(spacing: 8) {
-                    TextField("", text: $path, prompt: Text(AppLocalization.text("submodule.path.placeholder")))
-                        .accessibilityIdentifier("submodule-path")
-
-                    Button(AppLocalization.text("submodule.path.select"), action: selectDestination)
-                        .fixedSize()
-                }
+                pathPicker
             }
         }
         .sheet(isPresented: $isBrowsing) {
@@ -59,12 +56,35 @@ struct AddSubmoduleDialog: View {
                 }
             }
         }
-        .onChange(of: url) { oldValue, newValue in
-            // 路径还空着或仍是按旧地址推出的名字时，跟着地址换成仓库名，与 git submodule add 的默认路径相同
-            if path.isEmpty || path == RepositoryClone.directoryName(for: oldValue) {
-                path = RepositoryClone.directoryName(for: newValue) ?? ""
+    }
+
+    /// 路径的弹出菜单：选中的目录（没有时是灰掉的 “None Selected”）、分隔线与 “Select Destination…”；
+    /// 选最后一项时打开目录选择，菜单仍停在原来的项上。
+    private var pathPicker: some View {
+        Picker(
+            "",
+            selection: Binding(
+                get: { path },
+                set: { $0 == Self.chooseTag ? selectDestination() : () }
+            )
+        ) {
+            if path.isEmpty {
+                Text(AppLocalization.text("submodule.path.none"))
+                    .tag("")
+                    .disabled(true)
+            } else {
+                Text(path)
+                    .tag(path)
             }
+
+            Divider()
+
+            Text(AppLocalization.text("submodule.path.select"))
+                .tag(Self.chooseTag)
         }
+        .labelsHidden()
+        .accessibilityLabel(AppLocalization.text("submodule.path"))
+        .accessibilityIdentifier("submodule-path")
     }
 }
 

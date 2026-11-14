@@ -2190,7 +2190,7 @@
 "submodule.action.rename" = "Renommer";
 "submodule.add" = "Ajouter un sous-module";
 "submodule.add.menu" = "Ajouter un sous-module…";
-"submodule.add.message" = "Clone un dépôt dans un dossier vide de ce dépôt et l’enregistre comme sous-module.";
+"submodule.add.message" = "Saisissez l’URL distante et le chemin local du nouveau sous-module. Le chemin doit désigner un dossier vide dans votre dépôt.";
 "submodule.add.submit" = "Ajouter le sous-module";
 "submodule.add.title" = "Ajouter un dépôt de sous-module";
 "submodule.autoUpdate" = "Mise à jour automatique des sous-modules";
@@ -2286,7 +2286,7 @@
 "submodule.path.choose" = "Sélectionner";
 "submodule.path.exists" = "Un autre sous-module utilise déjà ce chemin.";
 "submodule.path.invalid" = "Le chemin doit se trouver dans le dépôt.";
-"submodule.path.placeholder" = "Chemin du sous-module";
+"submodule.path.none" = "Aucune sélection";
 "submodule.path.select" = "Choisir la destination…";
 "submodule.quickFetch" = "Récupération rapide de « %@ »";
 "submodule.quickUpdate" = "Mise à jour rapide de « %@ »";
@@ -2355,13 +2355,13 @@
 "worktree.destination" = "Destination :";
 "worktree.destination.exists" = "« %@ » existe déjà à la destination sélectionnée. Choisissez une autre destination.";
 "worktree.detach" = "Détacher HEAD";
-"worktree.detach.help" = "Le worktree obtient une HEAD détachée sur la révision sélectionnée au lieu d’extraire la branche.";
+"worktree.detach.help" = "Le worktree aura une HEAD détachée basée sur la révision de départ sélectionnée.";
 "worktree.field.branch" = "Branche";
 "worktree.field.name" = "Nom";
 "worktree.field.path" = "Chemin";
 "worktree.field.revision" = "Révision actuelle";
 "worktree.force" = "Forcer";
-"worktree.force.help" = "Crée le worktree même si la branche est déjà extraite dans un autre worktree.";
+"worktree.force.help" = "Crée un worktree pour la révision de départ indiquée même si elle est déjà extraite dans un autre worktree.";
 "worktree.group" = "Worktrees";
 "worktree.invalid" = "Worktree non valide";
 "worktree.invalid.message" = "Le worktree n’est pas valide.";

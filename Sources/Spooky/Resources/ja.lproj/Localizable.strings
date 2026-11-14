@@ -2190,7 +2190,7 @@
 "submodule.action.rename" = "名前を変更";
 "submodule.add" = "サブモジュールを追加";
 "submodule.add.menu" = "サブモジュールを追加…";
-"submodule.add.message" = "リポジトリをこのリポジトリ内の空のディレクトリにクローンし、サブモジュールとして登録します。";
+"submodule.add.message" = "新しいサブモジュールのリモート URL とローカルパスを入力してください。パスはリポジトリ内の空のフォルダを指している必要があります。";
 "submodule.add.submit" = "サブモジュールを追加";
 "submodule.add.title" = "サブモジュールリポジトリを追加";
 "submodule.autoUpdate" = "サブモジュールの自動更新";
@@ -2286,7 +2286,7 @@
 "submodule.path.choose" = "選択";
 "submodule.path.exists" = "別のサブモジュールがすでにこのパスを使っています。";
 "submodule.path.invalid" = "パスはリポジトリ内でなければなりません。";
-"submodule.path.placeholder" = "サブモジュールのパス";
+"submodule.path.none" = "選択されていません";
 "submodule.path.select" = "保存先を選択…";
 "submodule.quickFetch" = "「%@」をクイックフェッチ";
 "submodule.quickUpdate" = "「%@」をクイック更新";
@@ -2355,13 +2355,13 @@
 "worktree.destination" = "保存先：";
 "worktree.destination.exists" = "選択した保存先にはすでに「%@」があります。別の保存先を選んでください。";
 "worktree.detach" = "HEAD を分離";
-"worktree.detach.help" = "ブランチをチェックアウトせず、選択したリビジョンで HEAD を分離した状態にします。";
+"worktree.detach.help" = "ワークツリーは選択した開始リビジョンを基にした切り離された HEAD になります。";
 "worktree.field.branch" = "ブランチ";
 "worktree.field.name" = "名前";
 "worktree.field.path" = "パス";
 "worktree.field.revision" = "現在のリビジョン";
 "worktree.force" = "強制";
-"worktree.force.help" = "ブランチが別のワークツリーでチェックアウトされていても作成します。";
+"worktree.force.help" = "指定した開始リビジョンが別のワークツリーでチェックアウト済みでも、ワークツリーを作成します。";
 "worktree.group" = "ワークツリー";
 "worktree.invalid" = "無効なワークツリー";
 "worktree.invalid.message" = "ワークツリーが無効です。";

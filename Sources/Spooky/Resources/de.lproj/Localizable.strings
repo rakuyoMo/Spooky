@@ -2190,7 +2190,7 @@
 "submodule.action.rename" = "Umbenennen";
 "submodule.add" = "Submodul hinzufügen";
 "submodule.add.menu" = "Submodul hinzufügen…";
-"submodule.add.message" = "Klont ein Repository in ein leeres Verzeichnis dieses Repositorys und trägt es als Submodul ein.";
+"submodule.add.message" = "Geben Sie die Remote-URL und den lokalen Pfad für das neue Submodul ein. Der Pfad muss auf einen leeren Ordner in Ihrem Repository zeigen.";
 "submodule.add.submit" = "Submodul hinzufügen";
 "submodule.add.title" = "Submodul-Repository hinzufügen";
 "submodule.autoUpdate" = "Submodule automatisch aktualisieren";
@@ -2286,7 +2286,7 @@
 "submodule.path.choose" = "Auswählen";
 "submodule.path.exists" = "Ein anderes Submodul verwendet diesen Pfad bereits.";
 "submodule.path.invalid" = "Der Pfad muss innerhalb des Repositorys liegen.";
-"submodule.path.placeholder" = "Pfad zum Submodul";
+"submodule.path.none" = "Nichts ausgewählt";
 "submodule.path.select" = "Ziel auswählen…";
 "submodule.quickFetch" = "„%@“ schnell abrufen";
 "submodule.quickUpdate" = "„%@“ schnell aktualisieren";
@@ -2355,13 +2355,13 @@
 "worktree.destination" = "Ziel:";
 "worktree.destination.exists" = "„%@“ ist am ausgewählten Ziel bereits vorhanden. Wähle ein anderes Ziel.";
 "worktree.detach" = "HEAD loslösen";
-"worktree.detach.help" = "Der Worktree erhält einen losgelösten HEAD auf der ausgewählten Revision, statt den Branch auszuchecken.";
+"worktree.detach.help" = "Der Worktree erhält einen losgelösten HEAD auf Basis der gewählten Startrevision.";
 "worktree.field.branch" = "Branch";
 "worktree.field.name" = "Name";
 "worktree.field.path" = "Pfad";
 "worktree.field.revision" = "Aktuelle Revision";
 "worktree.force" = "Erzwingen";
-"worktree.force.help" = "Erstellt den Worktree, auch wenn der Branch bereits in einem anderen Worktree ausgecheckt ist.";
+"worktree.force.help" = "Erstellt einen Worktree für die angegebene Startrevision, auch wenn sie bereits in einem anderen Worktree ausgecheckt ist.";
 "worktree.group" = "Worktrees";
 "worktree.invalid" = "Ungültiger Worktree";
 "worktree.invalid.message" = "Der Worktree ist ungültig.";

@@ -2190,7 +2190,7 @@
 "submodule.action.rename" = "Renombrar";
 "submodule.add" = "Añadir submódulo";
 "submodule.add.menu" = "Añadir submódulo…";
-"submodule.add.message" = "Clona un repositorio en una carpeta vacía de este repositorio y lo registra como submódulo.";
+"submodule.add.message" = "Introduce la URL remota y la ruta local del nuevo submódulo. La ruta debe apuntar a una carpeta vacía dentro de tu repositorio.";
 "submodule.add.submit" = "Añadir submódulo";
 "submodule.add.title" = "Añadir repositorio de submódulo";
 "submodule.autoUpdate" = "Actualizar submódulos automáticamente";
@@ -2286,7 +2286,7 @@
 "submodule.path.choose" = "Seleccionar";
 "submodule.path.exists" = "Otro submódulo ya usa esta ruta.";
 "submodule.path.invalid" = "La ruta debe estar dentro del repositorio.";
-"submodule.path.placeholder" = "Ruta del submódulo";
+"submodule.path.none" = "Nada seleccionado";
 "submodule.path.select" = "Seleccionar destino…";
 "submodule.quickFetch" = "Fetch rápido de “%@”";
 "submodule.quickUpdate" = "Actualización rápida de “%@”";
@@ -2355,13 +2355,13 @@
 "worktree.destination" = "Destino:";
 "worktree.destination.exists" = "“%@” ya existe en el destino seleccionado. Elige otro destino.";
 "worktree.detach" = "Desacoplar HEAD";
-"worktree.detach.help" = "El worktree queda con HEAD desacoplado en la revisión seleccionada en lugar de hacer checkout de la rama.";
+"worktree.detach.help" = "El árbol de trabajo tendrá un HEAD separado basado en la revisión inicial seleccionada.";
 "worktree.field.branch" = "Rama";
 "worktree.field.name" = "Nombre";
 "worktree.field.path" = "Ruta";
 "worktree.field.revision" = "Revisión actual";
 "worktree.force" = "Forzar";
-"worktree.force.help" = "Crea el worktree aunque la rama ya tenga checkout en otro worktree.";
+"worktree.force.help" = "Crea un árbol de trabajo para la revisión inicial indicada aunque ya esté extraída en otro árbol de trabajo.";
 "worktree.group" = "Worktrees";
 "worktree.invalid" = "Worktree no válido";
 "worktree.invalid.message" = "El worktree no es válido.";

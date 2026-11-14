@@ -2190,7 +2190,7 @@
 "submodule.action.rename" = "重命名";
 "submodule.add" = "添加子模块";
 "submodule.add.menu" = "添加子模块…";
-"submodule.add.message" = "把一个仓库克隆到本仓库的空目录里，并登记为子模块。";
+"submodule.add.message" = "输入新子模块的远端地址与本地路径。路径必须指向仓库里的一个空文件夹。";
 "submodule.add.submit" = "添加子模块";
 "submodule.add.title" = "添加子模块仓库";
 "submodule.autoUpdate" = "自动更新子模块";
@@ -2286,7 +2286,7 @@
 "submodule.path.choose" = "选择";
 "submodule.path.exists" = "别的子模块已经用了这个路径。";
 "submodule.path.invalid" = "路径必须在仓库里面。";
-"submodule.path.placeholder" = "子模块的路径";
+"submodule.path.none" = "未选择";
 "submodule.path.select" = "选择位置…";
 "submodule.quickFetch" = "快速获取 “%@”";
 "submodule.quickUpdate" = "快速更新 “%@”";
@@ -2355,13 +2355,13 @@
 "worktree.destination" = "目标位置：";
 "worktree.destination.exists" = "所选位置已经有 “%@”。请换一个位置。";
 "worktree.detach" = "分离 HEAD";
-"worktree.detach.help" = "工作树在所选版本上处于分离 HEAD，不检出分支。";
+"worktree.detach.help" = "工作树会以所选的起始版本为基础，处于分离 HEAD 状态。";
 "worktree.field.branch" = "分支";
 "worktree.field.name" = "名称";
 "worktree.field.path" = "路径";
 "worktree.field.revision" = "当前版本";
 "worktree.force" = "强制";
-"worktree.force.help" = "分支已在别的工作树检出时仍然创建。";
+"worktree.force.help" = "即使给定的起始版本已在另一个工作树里检出，也创建工作树。";
 "worktree.group" = "工作树";
 "worktree.invalid" = "无效的工作树";
 "worktree.invalid.message" = "工作树无效。";

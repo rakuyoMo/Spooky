@@ -16,13 +16,9 @@ struct AddWorktreeDialog: View {
     @State
     private var revision: String
 
-    /// 目标目录的绝对路径。
+    /// 目标目录的绝对路径；打开时为空。
     @State
     private var destination = ""
-
-    /// 目标目录跟着版本自动推出，用户改过之后不再跟随。
-    @State
-    private var followsRevision = true
 
     /// 以分离 HEAD 检出。
     @State
@@ -40,7 +36,7 @@ struct AddWorktreeDialog: View {
     @State
     private var isBrowsing = false
 
-    /// “Revision:” 与 “Destination:” 两行，以及两个勾选项。
+    /// “Revision:” 与 “Destination:” 两行、分离 HEAD 的勾选项，以及默认收起的 Options 里的强制创建。
     var body: some View {
         RepositoryDialogLayout(
             session: session,
@@ -62,7 +58,7 @@ struct AddWorktreeDialog: View {
 
             RepositoryDialogRows.row(AppLocalization.text("worktree.destination")) {
                 HStack(spacing: 8) {
-                    TextField("", text: destinationBinding)
+                    TextField("", text: $destination)
                         .accessibilityIdentifier("worktree-destination")
 
                     Button(AppLocalization.text("submodule.path.select"), action: selectDestination)
@@ -75,7 +71,7 @@ struct AddWorktreeDialog: View {
                 help: AppLocalization.text("worktree.detach.help"),
                 isOn: $detach
             )
-
+        } options: {
             DialogFormOption(
                 title: AppLocalization.text("worktree.force"),
                 help: AppLocalization.text("worktree.force.help"),
@@ -86,44 +82,31 @@ struct AddWorktreeDialog: View {
             if let host = session.repository?.host {
                 ServerDirectoryBrowser(host: host, path: parentDirectory) { chosen in
                     isBrowsing = false
-                    chosen.map { useDestination($0 + "/" + proposedName) }
+                    chosen.map { destination = $0 + "/" + proposedName }
                 }
             }
         }
-        .onAppear { updateProposal() }
-        .onChange(of: revision) { updateProposal() }
         .task(id: destination) { await checkDestination() }
     }
 
-    /// 创建对话框，预选给定的版本；没有给定时预选当前分支。
+    /// 创建对话框，预选给定的版本；没有给定时版本留空。
     init(session: RepositorySession, revision: String?, close: @escaping () -> Void) {
         self.session = session
         self.close = close
-        _revision = State(initialValue: revision ?? session.status?.branch.head ?? "")
+        _revision = State(initialValue: revision ?? "")
     }
 }
 
 // MARK: - Actions
 
 extension AddWorktreeDialog {
-    /// 目标目录的输入：手改之后不再跟随版本。
-    private var destinationBinding: Binding<String> {
-        Binding(
-            get: { destination },
-            set: {
-                destination = $0
-                followsRevision = false
-            }
-        )
-    }
-
-    /// 仓库所在的目录：默认目标与浏览都从这里开始。
+    /// 仓库所在的目录：选择目标时从这里开始。
     private var parentDirectory: String {
         let path = session.repository?.path ?? "/"
         return path.lastIndex(of: "/").map { String(path[..<$0]) }.flatMap { $0.isEmpty ? "/" : $0 } ?? "/"
     }
 
-    /// 默认的目录名：仓库名与版本以 “-” 相连，版本里的 “/” 换成 “-”。
+    /// 选择目标时建议的目录名：仓库名与版本以 “-” 相连，版本里的 “/” 换成 “-”。
     private var proposedName: String {
         let name = session.repository?.name ?? "worktree"
         let suffix = revision.replacingOccurrences(of: "/", with: "-")
@@ -149,20 +132,6 @@ extension AddWorktreeDialog {
         return ""
     }
 
-    /// 目标目录还跟随版本时按新版本重新推出。
-    private func updateProposal() {
-        guard followsRevision else { return }
-
-        let parent = parentDirectory
-        destination = (parent == "/" ? "" : parent) + "/" + proposedName
-    }
-
-    /// 选定的目标目录：不再跟随版本。
-    private func useDestination(_ path: String) {
-        destination = path
-        followsRevision = false
-    }
-
     /// 本机仓库用系统的存储面板起名并选位置，服务器仓库浏览 B 上的目录，在选中的目录里以默认名称新建。
     private func selectDestination() {
         guard session.repository?.localURL != nil else {
@@ -177,7 +146,7 @@ extension AddWorktreeDialog {
         panel.prompt = AppLocalization.text("submodule.path.choose")
 
         if panel.runModal() == .OK, let url = panel.url {
-            useDestination(url.path)
+            destination = url.path
         }
     }
 

@@ -2190,7 +2190,7 @@
 "submodule.action.rename" = "重新命名";
 "submodule.add" = "加入子模組";
 "submodule.add.menu" = "加入子模組…";
-"submodule.add.message" = "把一個儲存庫複製到本儲存庫的空目錄裡，並登記為子模組。";
+"submodule.add.message" = "輸入新子模組的遠端位址與本機路徑。路徑必須指向儲存庫裡的一個空資料夾。";
 "submodule.add.submit" = "加入子模組";
 "submodule.add.title" = "加入子模組倉庫";
 "submodule.autoUpdate" = "自動更新子模組";
@@ -2286,7 +2286,7 @@
 "submodule.path.choose" = "選擇";
 "submodule.path.exists" = "別的子模組已經用了這個路徑。";
 "submodule.path.invalid" = "路徑必須在儲存庫裡面。";
-"submodule.path.placeholder" = "子模組的路徑";
+"submodule.path.none" = "未選擇";
 "submodule.path.select" = "選擇位置…";
 "submodule.quickFetch" = "快速擷取 “%@”";
 "submodule.quickUpdate" = "快速更新 “%@”";
@@ -2355,13 +2355,13 @@
 "worktree.destination" = "目標位置：";
 "worktree.destination.exists" = "所選位置已經有 “%@”。請換一個位置。";
 "worktree.detach" = "分離 HEAD";
-"worktree.detach.help" = "工作樹在所選版本上處於分離 HEAD，不簽出分支。";
+"worktree.detach.help" = "工作樹會以所選的起始版本為基礎，處於分離 HEAD 狀態。";
 "worktree.field.branch" = "分支";
 "worktree.field.name" = "名稱";
 "worktree.field.path" = "路徑";
 "worktree.field.revision" = "目前版本";
 "worktree.force" = "強制";
-"worktree.force.help" = "分支已在別的工作樹簽出時仍然建立。";
+"worktree.force.help" = "即使給定的起始版本已在另一個工作樹裡檢出，也建立工作樹。";
 "worktree.group" = "工作樹";
 "worktree.invalid" = "無效的工作樹";
 "worktree.invalid.message" = "工作樹無效。";

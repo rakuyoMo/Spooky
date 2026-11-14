@@ -2190,7 +2190,7 @@
 "submodule.action.rename" = "Rename";
 "submodule.add" = "Add Submodule";
 "submodule.add.menu" = "Add Submodule…";
-"submodule.add.message" = "Clones a repository into an empty directory of this repository and records it as a submodule.";
+"submodule.add.message" = "Enter the remote URL and the local path for the new Submodule. The path must point to an empty directory inside your repository.";
 "submodule.add.submit" = "Add Submodule";
 "submodule.add.title" = "Add Submodule Repository";
 "submodule.autoUpdate" = "Auto-Update Submodules";
@@ -2286,7 +2286,7 @@
 "submodule.path.choose" = "Select";
 "submodule.path.exists" = "Another submodule already uses this path.";
 "submodule.path.invalid" = "The path must be inside the repository.";
-"submodule.path.placeholder" = "Path to the Submodule";
+"submodule.path.none" = "None Selected";
 "submodule.path.select" = "Select Destination…";
 "submodule.quickFetch" = "Quick Fetch “%@”";
 "submodule.quickUpdate" = "Quick Update “%@”";
@@ -2355,13 +2355,13 @@
 "worktree.destination" = "Destination:";
 "worktree.destination.exists" = "“%@” already exists at the selected destination. Choose a different destination.";
 "worktree.detach" = "Detach";
-"worktree.detach.help" = "The worktree gets a detached HEAD at the selected revision instead of checking out the branch.";
+"worktree.detach.help" = "The worktree will have a detached HEAD based on the selected starting revision.";
 "worktree.field.branch" = "Branch";
 "worktree.field.name" = "Name";
 "worktree.field.path" = "Path";
 "worktree.field.revision" = "Current Revision";
 "worktree.force" = "Force";
-"worktree.force.help" = "Creates the worktree even if the branch is already checked out in another worktree.";
+"worktree.force.help" = "Creates a worktree for the given starting revision even if it is already checked out in another worktree.";
 "worktree.group" = "Worktrees";
 "worktree.invalid" = "Invalid Worktree";
 "worktree.invalid.message" = "The worktree is not valid.";

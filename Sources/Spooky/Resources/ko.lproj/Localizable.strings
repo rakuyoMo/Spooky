@@ -2190,7 +2190,7 @@
 "submodule.action.rename" = "이름 변경";
 "submodule.add" = "하위 모듈 추가";
 "submodule.add.menu" = "하위 모듈 추가…";
-"submodule.add.message" = "저장소를 이 저장소의 빈 디렉터리에 복제하고 하위 모듈로 등록합니다.";
+"submodule.add.message" = "새 하위 모듈의 원격 URL과 로컬 경로를 입력하세요. 경로는 저장소 안의 빈 폴더를 가리켜야 합니다.";
 "submodule.add.submit" = "하위 모듈 추가";
 "submodule.add.title" = "하위 모듈 저장소 추가";
 "submodule.autoUpdate" = "하위 모듈 자동 업데이트";
@@ -2286,7 +2286,7 @@
 "submodule.path.choose" = "선택";
 "submodule.path.exists" = "다른 하위 모듈이 이미 이 경로를 사용 중입니다.";
 "submodule.path.invalid" = "경로는 저장소 안에 있어야 합니다.";
-"submodule.path.placeholder" = "하위 모듈 경로";
+"submodule.path.none" = "선택 안 됨";
 "submodule.path.select" = "위치 선택…";
 "submodule.quickFetch" = "“%@” 빠른 가져오기";
 "submodule.quickUpdate" = "“%@” 빠른 업데이트";
@@ -2355,13 +2355,13 @@
 "worktree.destination" = "대상:";
 "worktree.destination.exists" = "선택한 위치에 이미 “%@”이(가) 있습니다. 다른 위치를 선택하세요.";
 "worktree.detach" = "HEAD 분리";
-"worktree.detach.help" = "브랜치를 체크아웃하지 않고 선택한 리비전에서 HEAD가 분리된 상태로 만듭니다.";
+"worktree.detach.help" = "워크트리는 선택한 시작 리비전을 기반으로 분리된 HEAD를 갖게 됩니다.";
 "worktree.field.branch" = "브랜치";
 "worktree.field.name" = "이름";
 "worktree.field.path" = "경로";
 "worktree.field.revision" = "현재 리비전";
 "worktree.force" = "강제";
-"worktree.force.help" = "브랜치가 다른 작업 트리에 체크아웃되어 있어도 만듭니다.";
+"worktree.force.help" = "지정한 시작 리비전이 다른 워크트리에 이미 체크아웃되어 있어도 워크트리를 만듭니다.";
 "worktree.group" = "작업 트리";
 "worktree.invalid" = "잘못된 작업 트리";
 "worktree.invalid.message" = "작업 트리가 유효하지 않습니다.";
