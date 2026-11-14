@@ -30,6 +30,15 @@ enum BranchesReviewFilter: Int, CaseIterable {
     /// 没有打开着的 Pull Request 或 Merge Request 的分支。
     case withoutPullRequest = 8
 
+    /// 筛选菜单里的分组，按菜单顺序；组与组之间是分隔线。
+    static let menuGroups: [[Self]] = [
+        [.all],
+        [.active, .stale],
+        [.mergeable, .mergeConflicts],
+        [.withPullRequest, .withoutPullRequest],
+        [.trackingError],
+    ]
+
     /// 菜单项的资源键；按服务叫法变化的两项是 `pr.` 与 `mr.` 两组里的键。
     var titleKey: String {
         switch self {
@@ -251,6 +260,17 @@ final class BranchesReviewState {
         }
 
         compare(tips, base: base.objectID, runner: runner)
+    }
+
+    /// 列表的行变化后（进入、换基准、筛选或刷新），选中的行都不在列表里时改选第一行；还有选中的行在列表里时不动。
+    ///
+    /// - Parameter ids: 列表现在的行，按显示顺序。
+    func selectFirstIfNeeded(in ids: [String]) {
+        guard let first = ids.first, selectedIDs.isDisjoint(with: ids) else {
+            return
+        }
+
+        selectedIDs = [first]
     }
 
     /// 选择基准分支后立即重新比较。

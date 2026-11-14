@@ -67,10 +67,12 @@ private struct BranchesReviewDetailHeader: View {
                 .foregroundStyle(.tertiary)
                 .accessibilityHidden(true)
 
+            // 宽度不够时先截断分支名，基准名保持完整
             Text(state.base?.name ?? "")
                 .bold()
                 .lineLimit(1)
                 .truncationMode(.middle)
+                .layoutPriority(1)
 
             if case .conflicts(let paths) = state.comparisons[branch.id]?.merge {
                 conflictButton(paths)
