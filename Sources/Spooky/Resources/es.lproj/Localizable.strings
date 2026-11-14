@@ -793,8 +793,8 @@
 "showFile.error.missing" = "El archivo no existe en esta revisión";
 /* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "Al ignorar los espacios, las líneas seleccionadas no coinciden con los cambios del archivo. Muestra los cambios de espacios y vuelve a seleccionar las líneas.";
-"diff.ignoreWhitespace" = "Ignorar cambios de espacios";
-"diff.showEntireFile" = "Mostrar archivo completo";
+"diff.ignoreWhitespace" = "Mostrar / ocultar cambios de espacios";
+"diff.showEntireFile" = "Mostrar el archivo completo";
 "diff.context" = "Contexto:";
 "diff.contextMenu" = "Líneas de contexto del diff";
 "diff.contextLine" = "1 línea";

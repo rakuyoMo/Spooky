@@ -11,7 +11,8 @@ struct FileHeaderLayoutTests {
     /// 原生字体与分段控件需要初始化 AppKit。
     init() { _ = NSApplication.shared }
 
-    /// 窄栏仍为长名称与单字名称保留中间截断宽度，宽栏动作组按原生宽度显示，比较侧与动作组不重叠。
+    /// 名称优先完整显示，窄栏仍为长名称与单字名称保留中间截断宽度；动作组不占宽度，叠在名称所在区域的右端，
+    /// 宽栏按原生宽度显示，与比较侧不重叠。
     @Test("窄文件头保留名称与原生控件")
     func workingCopy() throws {
         let session = RepositorySession()
@@ -61,19 +62,19 @@ struct FileHeaderLayoutTests {
         let text = try #require(descendants(host).first { $0.accessibilityValue() as? String == name })
         let nameFrame = text.convert(text.bounds, to: host)
 
-        // 名称至少保留首尾各一字加省略号
-        let shortened = name.count > 2 ? "\(name.prefix(1))…\(name.suffix(1))" : name
+        // 名称放得下时完整显示，放不下时至少留出省略号
         let font = NSFont.boldSystemFont(ofSize: 13)
-        let minimum = NSAttributedString(string: shortened, attributes: [.font: font]).size().width
+        let full = NSAttributedString(string: name, attributes: [.font: font]).size().width
+        let area = sideFrame.minX - 8 - 52
         let visible = NSAttributedString(string: name.count > 2 ? "…" : name, attributes: [.font: font]).size().width
 
         #expect(host.window == nil)
         #expect(host.bounds.height == 40)
         #expect(nameFrame.minX == CGFloat(52))
         #expect(nameFrame.width >= visible - 1)
-        #expect(actionFrame.minX >= nameFrame.minX + minimum + 8 - 1)
-        #expect(nameFrame.maxX <= actionFrame.minX - 8)
-        #expect(actionFrame.maxX <= sideFrame.minX - 8)
+        #expect(nameFrame.width >= min(full, area) - 1)
+        #expect(actionFrame.minX >= nameFrame.minX - 1)
+        #expect(abs(actionFrame.maxX - (sideFrame.minX - 8)) <= 1)
         #expect(sideFrame.maxX <= width - 20)
         #expect(abs(sideFrame.width - sides.intrinsicContentSize.width) <= 1)
         #expect(actionFrame.width > 0)

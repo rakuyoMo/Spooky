@@ -32,6 +32,9 @@ struct FileActionBar: View {
     /// 文件头使用分段组，评论附件使用独立按钮。
     var segmented = true
 
+    /// 显示与隐藏切换时调用，参数是切换后是否显示。
+    var visibleChanged: (Bool) -> Void = { _ in }
+
     /// 原生分段组是否获得键盘焦点。
     @State
     private var segmentFocused = false
@@ -61,6 +64,7 @@ struct FileActionBar: View {
         .frame(height: 25)
         .opacity(visible ? 1 : 0)
         .animation(.easeInOut(duration: 0.15), value: visible)
+        .onChange(of: visible) { visibleChanged(visible) }
     }
 
     /// 鼠标与键盘任一入口都能显示动作。

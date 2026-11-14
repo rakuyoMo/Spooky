@@ -793,8 +793,8 @@
 "showFile.error.missing" = "File Not Found at This Revision";
 /* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "With whitespace ignored, the selected lines don’t match the changes in the file. Show whitespace changes and select the lines again.";
-"diff.ignoreWhitespace" = "Ignore Whitespace Changes";
-"diff.showEntireFile" = "Show Entire File";
+"diff.ignoreWhitespace" = "Show / Hide Whitespace Changes";
+"diff.showEntireFile" = "Display the Complete File";
 "diff.context" = "Context:";
 "diff.contextMenu" = "Diff Context Lines";
 "diff.contextLine" = "1 line";

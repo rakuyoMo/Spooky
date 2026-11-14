@@ -793,8 +793,8 @@
 "showFile.error.missing" = "이 리비전에 파일이 없음";
 /* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "공백을 무시하는 동안에는 선택한 줄이 파일의 변경 사항과 일치하지 않습니다. 공백 변경 사항을 표시한 후 다시 선택하십시오.";
-"diff.ignoreWhitespace" = "공백 변경 사항 무시";
-"diff.showEntireFile" = "전체 파일 보기";
+"diff.ignoreWhitespace" = "공백 변경 사항 보기 / 숨기기";
+"diff.showEntireFile" = "전체 파일 표시";
 "diff.context" = "컨텍스트:";
 "diff.contextMenu" = "Diff 컨텍스트 줄 수";
 "diff.contextLine" = "1줄";

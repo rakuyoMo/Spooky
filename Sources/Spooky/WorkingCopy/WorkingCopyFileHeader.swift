@@ -24,7 +24,11 @@ struct WorkingCopyFileHeader: View {
     @State
     private var hovering = false
 
-    /// 文件名中间截断，宽度不足时动作组按原生分段比例压缩。
+    /// 动作条是否显示；显示时叠在文件名上，文件名隐去。
+    @State
+    private var actionsVisible = false
+
+    /// 文件名优先完整显示，放不下时中间截断；动作条不占宽度，悬停或获得键盘焦点时叠在文件名所在的区域上。
     var body: some View {
         let actions = session.workingCopyFileActions(path, entry: entry, isDirectory: isDirectory)
         let folder = isDirectory || session.submodules.items.contains { $0.path == path }
@@ -43,12 +47,11 @@ struct WorkingCopyFileHeader: View {
                 .truncationMode(.middle)
                 .textSelection(.enabled)
                 .help(path)
-                .frame(minWidth: minimumNameWidth(name), alignment: .leading)
-                .layoutPriority(-1)
-
-            Spacer(minLength: 0)
-
-            FileActionBar(actions: actions, hovering: hovering)
+                .opacity(actionsVisible ? 0 : 1)
+                .frame(minWidth: minimumNameWidth(name), maxWidth: .infinity, alignment: .leading)
+                .overlay(alignment: .trailing) {
+                    FileActionBar(actions: actions, hovering: hovering) { actionsVisible = $0 }
+                }
 
             if let entry, entry.hasWorkingCopyDiff, !isDirectory {
                 DiffSidePicker(

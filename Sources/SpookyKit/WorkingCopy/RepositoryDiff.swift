@@ -19,7 +19,7 @@ public struct DiffOptions: Sendable, Equatable {
     public static let contextChoices = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 25, 50]
 
     /// 未设置偏好时的上下文行数。
-    public static let defaultContextLines = 3
+    public static let defaultContextLines = 7
 
     /// 显示整个文件时的上下文行数：改动前后 10 万行以内的内容都会显示，不超过这个行数的文件因此只有一块。
     static let entireFileContext = 100_000

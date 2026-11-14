@@ -793,8 +793,8 @@
 "showFile.error.missing" = "该版本中没有这个文件";
 /* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "忽略空白时，选中的行与文件中的改动对应不上。请显示空白改动后重新选择。";
-"diff.ignoreWhitespace" = "忽略空白改动";
-"diff.showEntireFile" = "显示整个文件";
+"diff.ignoreWhitespace" = "显示 / 隐藏空白改动";
+"diff.showEntireFile" = "显示完整的文件";
 "diff.context" = "上下文：";
 "diff.contextMenu" = "Diff 上下文行数";
 "diff.contextLine" = "1 行";
