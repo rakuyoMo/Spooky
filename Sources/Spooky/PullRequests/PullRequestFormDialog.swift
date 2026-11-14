@@ -8,9 +8,6 @@ import SwiftUI
 /// 远端只列出与所选账号在同一实例上的，源与目标在不同项目时就是来自 Fork 的请求。
 /// 修改时 Source 一行与目标远端不可改，只改目标分支、标题与描述。
 struct PullRequestFormDialog: View {
-    /// 输入控件的宽度；Source 与 Target 两行里远端、分支两个下拉合起来也是这么宽。
-    private static let fieldWidth: CGFloat = 320
-
     /// 发起动作的窗口会话。
     let session: RepositorySession
 
@@ -47,7 +44,7 @@ struct PullRequestFormDialog: View {
     @State
     private var description = ""
 
-    /// 480 宽的对话框骨架：标题与说明写出服务名与目标项目，表单的输入列从 145 开始、宽 320。
+    /// 480 宽的对话框骨架：标题与说明写出服务名与目标项目，表单的输入框从输入列开始，右缘与表单的右边距对齐。
     var body: some View {
         let texts = Self.texts(editing: request, instance: instance, project: targetProject, in: session)
 
@@ -75,7 +72,7 @@ struct PullRequestFormDialog: View {
 
                 DialogFormRow(label: AppLocalization.text("pullRequests.titleField")) {
                     TextField("", text: $title, prompt: Text(AppLocalization.text("pullRequests.required")))
-                        .frame(width: Self.fieldWidth)
+                        .frame(maxWidth: .infinity)
                 }
 
                 DialogFormRow(label: AppLocalization.text("pullRequests.description"), alignment: .top) {
@@ -208,11 +205,11 @@ extension PullRequestFormDialog {
         return hasBranches && hasTitle && !isIdentical && session.canWrite
     }
 
-    /// 320 × 64 的描述，带边框，回车换行；内容为空时叠上 “Optional” 的占位文字。
+    /// 占满输入列、高 64 的描述，带边框，回车换行；内容为空时叠上 “Optional” 的占位文字。
     private var descriptionEditor: some View {
         TextEditor(text: $description)
             .font(.system(size: 13))
-            .frame(width: Self.fieldWidth, height: 64)
+            .frame(maxWidth: .infinity, minHeight: 64, maxHeight: 64)
             .overlay(alignment: .topLeading) {
                 if description.isEmpty {
                     Text(AppLocalization.text("pullRequests.optional"))
@@ -226,7 +223,7 @@ extension PullRequestFormDialog {
             .overlay(RoundedRectangle(cornerRadius: 4).stroke(AppPalette.color("general_border_color")))
     }
 
-    /// 修改时的 Source 一行：远端与分支两个下拉平分 320 的宽度，各只有一项，不可改；有远端对应源项目时写 “远端 (项目)”，否则只写项目路径。
+    /// 修改时的 Source 一行：远端与分支两个下拉平分输入列的宽度，各只有一项，不可改；有远端对应源项目时写 “远端 (项目)”，否则只写项目路径。
     private func fixedSource(_ request: PullRequest) -> some View {
         let project = request.source.project ?? ""
         let remote = candidates.first { $0.project == project }?.remote
@@ -243,11 +240,11 @@ extension PullRequestFormDialog {
             .labelsHidden()
         }
         .buttonSizing(.flexible)
-        .frame(width: Self.fieldWidth)
+        .frame(maxWidth: .infinity)
         .disabled(true)
     }
 
-    /// 远端下拉与它的远端分支下拉，平分 320 的宽度；修改时远端固定为请求的目标项目。
+    /// 远端下拉与它的远端分支下拉，平分输入列的宽度；修改时远端固定为请求的目标项目。
     private func branchPickers(remote: Binding<String>, branch: Binding<String>) -> some View {
         HStack(spacing: 8) {
             Picker("", selection: remote) {
@@ -266,7 +263,7 @@ extension PullRequestFormDialog {
             .labelsHidden()
         }
         .buttonSizing(.flexible)
-        .frame(width: Self.fieldWidth)
+        .frame(maxWidth: .infinity)
     }
 
     /// 远端的远端分支短名，不含 HEAD 这类符号引用。
