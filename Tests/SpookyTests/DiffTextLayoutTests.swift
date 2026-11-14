@@ -64,6 +64,19 @@ struct DiffTextLayoutTests {
         }
     }
 
+    /// 改动段的边线按前后行决定：块首没有顶边，删除段紧接新增段时交界处只留新增段的顶边，
+    /// “无换行” 提示之前与块尾都有底边。
+    @Test("Diff 改动段的上下边线")
+    func changeEdges() throws {
+        let patch = "@@ -1,3 +1,3 @@\n-old\n+new\n same\n-tail\n\\ No newline at end of file\n+end\n"
+        let content = DiffTextContent(hunk: try Self.hunk(patch), style: Self.style, syntax: nil, highlights: [:])
+        let edges = content.rows.indices.map { DiffTextDocumentView.edges(at: $0, in: content.rows) }
+
+        // 依次是 -old、+new、上下文、-tail、无换行提示、+end
+        #expect(edges.map(\.top) == [false, true, true, true, true, true])
+        #expect(edges.map(\.bottom) == [false, true, false, true, false, true])
+    }
+
     /// 短行各 19 pt 且空行基线不跟随 LF 控制字形；长行折行后行号命中区覆盖全部折行；字体与 Tab 改变从当前宽度重新量高，颜色更新保留行矩形。
     @Test("Diff 短行、折行与布局输入")
     func layout() throws {

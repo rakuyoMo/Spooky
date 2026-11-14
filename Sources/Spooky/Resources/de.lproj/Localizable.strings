@@ -339,7 +339,7 @@
 "working.discard.message.single" = "Die Änderungen an „%@“ in %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen auf den letzten Commit zurückgesetzt, unversionierte Dateien werden in den Papierkorb gelegt.";
 "working.discard.remote.single" = "Die Änderungen an „%@“ auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden in den Papierkorb des Servers gelegt.";
 "working.discard.remotePermanent.single" = "Die Änderungen an „%@“ auf dem Server unter %@ werden verworfen: Versionierte Dateien werden einschließlich gestagter Änderungen mit dem letzten Commit überschrieben, unversionierte Dateien werden auf dem Server endgültig gelöscht.";
-"working.discard.lines" = "Die ausgewählten Zeilen in %@ werden verworfen.";
+"working.discard.selection" = "Der ausgewählte Diff-Inhalt wird verworfen.";
 "working.discard.remoteLines" = "Der ausgewählte Inhalt auf dem Server unter %@ wird überschrieben.";
 "working.resolved" = "Als aufgelöst markieren";
 "working.copyRelative" = "Relativen Dateipfad kopieren";

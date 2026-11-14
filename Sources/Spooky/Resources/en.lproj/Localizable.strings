@@ -339,7 +339,7 @@
 "working.discard.message.single" = "Discard changes in “%@” in %@. Tracked files are restored to the last commit, including staged changes, and untracked files are moved to the Trash.";
 "working.discard.remote.single" = "Discard changes in “%@” on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are moved to the Trash on the server.";
 "working.discard.remotePermanent.single" = "Discard changes in “%@” on the server at %@. Tracked files are overwritten with the last commit, including staged changes, and untracked files are permanently deleted on the server.";
-"working.discard.lines" = "Discard the selected lines in %@.";
+"working.discard.selection" = "The selected Diff content will be discarded.";
 "working.discard.remoteLines" = "Overwrite the selected content on the server at %@.";
 "working.resolved" = "Mark as Resolved";
 "working.copyRelative" = "Copy Relative File Path";

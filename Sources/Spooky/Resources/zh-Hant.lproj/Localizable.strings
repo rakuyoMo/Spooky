@@ -339,7 +339,7 @@
 "working.discard.message.single" = "將捨棄 “%@” 的變更：已追蹤的檔案恢復到最後一次提交（含暫存變更），未追蹤檔案丟到垃圾桶。儲存庫：%@。";
 "working.discard.remote.single" = "將在伺服器上捨棄 “%@” 的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案丟到伺服器的垃圾桶。儲存庫：%@。";
 "working.discard.remotePermanent.single" = "將在伺服器上捨棄 “%@” 的變更：已追蹤的檔案被最後一次提交覆寫（含暫存變更），未追蹤檔案在伺服器上永久刪除。儲存庫：%@。";
-"working.discard.lines" = "將捨棄 %@ 中所選行的變更。";
+"working.discard.selection" = "將捨棄所選的 Diff 內容。";
 "working.discard.remoteLines" = "將在伺服器 %@ 上覆寫所選內容。";
 "working.resolved" = "標記已解決";
 "working.copyRelative" = "複製相對檔案路徑";

@@ -339,7 +339,7 @@
 "working.discard.message.single" = "「%@」の変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットに戻し、未追跡ファイルはゴミ箱に入れます。";
 "working.discard.remote.single" = "サーバー上の「%@」の変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバーのゴミ箱に入れます。";
 "working.discard.remotePermanent.single" = "サーバー上の「%@」の変更を破棄します。対象：%@。追跡中のファイルはステージ済みの変更も含めて最後のコミットで上書きし、未追跡ファイルはサーバー上で完全に削除します。";
-"working.discard.lines" = "%@ の選択行の変更を破棄します。";
+"working.discard.selection" = "選択した Diff の内容を破棄します。";
 "working.discard.remoteLines" = "サーバー %@ 上の選択内容を上書きします。";
 "working.resolved" = "解決済みにする";
 "working.copyRelative" = "相対ファイルパスをコピー";

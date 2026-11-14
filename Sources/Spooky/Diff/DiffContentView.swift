@@ -62,7 +62,7 @@ struct DiffContentView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
                 if snapshot.onlyWhitespaceChanges {
-                    DiffNotice(key: "diff.onlyWhitespace", style: style)
+                    DiffNotice(key: "diff.onlyWhitespace")
                 }
 
                 ForEach(DiffSegment.all(in: diff)) { segment in
@@ -70,7 +70,9 @@ struct DiffContentView: View {
                 }
             }
         }
-        .background(style.color("background"))
+
+        // 文件摘要透出表格底色，与块头相同；各块正文自己铺主题背景，最后一块以下的空白也是表格底色
+        .background(Color(nsColor: .controlBackgroundColor))
         .safeAreaInset(edge: .bottom, spacing: 0) {
             DiffBottomBar(session: session, diff: diff)
         }
@@ -174,20 +176,22 @@ enum DiffSegment: Identifiable {
 
 // MARK: - DiffNotice
 
-/// Diff 区里与文件头同样式的一行说明，如只剩空白改动。
+/// Diff 区里与文件摘要同样式的一行说明，如只剩空白改动。
 struct DiffNotice: View {
     /// 说明的资源键。
     let key: String
 
-    /// 主题字体。
-    let style: TextStyle
-
-    /// 高 32 pt、左侧与文件头对齐。
+    /// 高 31 pt、铺表格底色，下面一条分隔线；字体与文件摘要相同，不随主题。
     var body: some View {
         Text(AppLocalization.text(key))
-            .font(style.font)
+            .font(Font(DiffFileHeaderView.summaryFont))
             .foregroundStyle(.secondary)
             .padding(.horizontal, 20)
-            .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 31, alignment: .leading)
+            .background(Color(nsColor: .controlBackgroundColor))
+            .overlay(alignment: .bottom) {
+                Color(nsColor: .separatorColor)
+                    .frame(height: 1)
+            }
     }
 }

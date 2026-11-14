@@ -339,7 +339,7 @@
 "working.discard.message.single" = "Descartar los cambios de “%@” en %@: los archivos con seguimiento vuelven al último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera.";
 "working.discard.remote.single" = "Descartar los cambios de “%@” del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera del servidor.";
 "working.discard.remotePermanent.single" = "Descartar los cambios de “%@” del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se eliminan permanentemente del servidor.";
-"working.discard.lines" = "Descartar las líneas seleccionadas en %@.";
+"working.discard.selection" = "Se descartará el contenido seleccionado del diff.";
 "working.discard.remoteLines" = "Sobrescribir el contenido seleccionado del servidor en %@.";
 "working.resolved" = "Marcar como resuelto";
 "working.copyRelative" = "Copiar ruta relativa del archivo";

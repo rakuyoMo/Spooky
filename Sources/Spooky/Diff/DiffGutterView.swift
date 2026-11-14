@@ -38,8 +38,13 @@ final class DiffGutterView: NSView {
     /// 行号与正文使用相同的向下坐标。
     override var isFlipped: Bool { true }
 
-    /// 一次 Tab 进入整条行号栏，再用方向键移动。
-    override var acceptsFirstResponder: Bool { !readOnly && enabled && !selectable.isEmpty }
+    /// 一次 Tab 进入整条行号栏，再用方向键移动；鼠标点选不让行号栏抢走正文的焦点，也就不画焦点框。
+    override var acceptsFirstResponder: Bool {
+        guard !readOnly, enabled, !selectable.isEmpty else { return false }
+
+        // 窗口在鼠标按下时询问点中的视图能否成为第一响应者，这时拒绝
+        return NSApp?.currentEvent?.type != .leftMouseDown
+    }
 
     /// 键盘焦点变化时重画焦点环。
     override func becomeFirstResponder() -> Bool {

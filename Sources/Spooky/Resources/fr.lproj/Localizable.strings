@@ -339,7 +339,7 @@
 "working.discard.message.single" = "Les modifications de « %@ » dans %@ seront abandonnées : les fichiers suivis reviennent au dernier commit, modifications indexées comprises, et les fichiers non suivis sont placés dans la corbeille.";
 "working.discard.remote.single" = "Les modifications de « %@ » seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont placés dans la corbeille du serveur.";
 "working.discard.remotePermanent.single" = "Les modifications de « %@ » seront abandonnées sur le serveur dans %@ : les fichiers suivis sont écrasés par le dernier commit, modifications indexées comprises, et les fichiers non suivis sont définitivement supprimés sur le serveur.";
-"working.discard.lines" = "Les modifications des lignes sélectionnées dans %@ seront abandonnées.";
+"working.discard.selection" = "Le contenu sélectionné du diff sera abandonné.";
 "working.discard.remoteLines" = "Le contenu sélectionné sera écrasé sur le serveur dans %@.";
 "working.resolved" = "Marquer comme résolu";
 "working.copyRelative" = "Copier le chemin relatif du fichier";

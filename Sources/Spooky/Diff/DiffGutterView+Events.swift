@@ -1,13 +1,12 @@
 import AppKit
 
 extension DiffGutterView {
-    /// 上下文也记录按下位置，以便拖动经过可选行时确定方向。
+    /// 上下文也记录按下位置，以便拖动经过可选行时确定方向；第一响应者保持不变。
     override func mouseDown(with event: NSEvent) {
         guard enabled, !readOnly, let row = owner?.textLayout?.row(at: convert(event.locationInWindow, from: nil)) else {
             return
         }
 
-        window?.makeFirstResponder(self)
         selection.begin(at: row.index, extending: event.modifierFlags.contains(.shift))
         if let id = selection.rows[row.index] { focus(id) }
         selectionChanged()
