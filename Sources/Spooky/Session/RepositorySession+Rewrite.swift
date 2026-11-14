@@ -171,14 +171,14 @@ extension RepositorySession {
         )
     }
 
-    /// 把 HEAD 重置到指定版本。
+    /// 把 HEAD 重置到指定版本；撤销时工作区有改动先询问是否储藏。
     @discardableResult
     func reset(to revision: String, mode: ResetMode) -> Bool {
         performGit(
             { runner, _ in try await RepositoryRewrite(runner: runner).reset(to: revision, mode: mode) },
             title: AppLocalization.text("rewrite.reset"),
             progress: AppLocalization.text("workspaceProgress.reset"),
-            undo: .reversible
+            undo: .reversibleAskingToStash
         )
     }
 

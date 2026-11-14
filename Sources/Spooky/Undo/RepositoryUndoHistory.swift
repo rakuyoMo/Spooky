@@ -9,6 +9,9 @@ enum UndoRecording {
     /// 记下操作前后的仓库状态；操作改动了仓库、又能安全恢复时可以撤销与重做。
     case reversible
 
+    /// 与 ``reversible`` 相同地记下前后状态；撤销时工作区有已跟踪文件的改动，先询问是否储藏。重置使用。
+    case reversibleAskingToStash
+
     /// 由操作自己给出反向操作，用于快照记不住的内容，如远端设置、assume-unchanged 标记、Git LFS 的启用、
     /// 远端上发布与改名的引用，以及子模块的结构与本地设置。
     ///
@@ -84,6 +87,9 @@ struct RepositoryUndoEntry: Identifiable, Sendable {
 
     /// 撤销与重做的办法。
     let change: Change
+
+    /// 撤销时工作区有已跟踪文件的改动，先询问是否储藏。
+    var asksToStash = false
 }
 
 // MARK: - RepositoryUndoHistory
@@ -144,7 +150,7 @@ final class RepositoryUndoHistory {
         let redone = redoEntries.remove(at: index)
 
         if let change {
-            undoEntries.append(RepositoryUndoEntry(title: redone.title, change: change))
+            undoEntries.append(RepositoryUndoEntry(title: redone.title, change: change, asksToStash: redone.asksToStash))
         }
     }
 }

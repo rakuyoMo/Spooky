@@ -119,6 +119,50 @@ public struct RepositoryUndo: Sendable {
     }
 }
 
+// MARK: - Stashing
+
+extension RepositoryUndo {
+    /// 先把已跟踪文件的本地改动储藏起来，再恢复成 `target`；新储藏留在储藏列表的最前面。撤销重置时使用。
+    ///
+    /// 储藏前仓库必须仍是 `expected`；储藏后按储藏后的状态核对，恢复时保留新储藏。
+    ///
+    /// - Parameters:
+    ///   - target: 要恢复成的状态。
+    ///   - expected: 储藏前仓库应有的状态。
+    ///   - message: 写进 reflog 的说明。
+    ///   - stashMessage: 储藏说明。
+    public func restore(
+        _ target: RepositoryState,
+        expecting expected: RepositoryState,
+        message: String,
+        stashing stashMessage: String
+    ) async throws {
+        try await runner.writeTransaction {
+            guard try await capture() == expected else {
+                throw RepositoryUndoError.repositoryChanged
+            }
+
+            _ = try await RepositoryStashes(runner: runner).save(message: stashMessage, includeUntracked: false)
+            let stashed = try await capture()
+
+            // 储藏列表以储藏后的为准，恢复时不删掉新储藏
+            let kept = RepositoryState(
+                headBranch: target.headBranch,
+                head: target.head,
+                references: target.references,
+                peeledReferences: target.peeledReferences,
+                branchSettings: target.branchSettings,
+                stashes: stashed.stashes,
+                index: target.index,
+                worktree: target.worktree,
+                entries: target.entries
+            )
+
+            try await restore(kept, expecting: stashed, message: message)
+        }
+    }
+}
+
 // MARK: - Stopped Operations
 
 extension RepositoryUndo {

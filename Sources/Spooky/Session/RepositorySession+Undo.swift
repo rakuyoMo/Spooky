@@ -90,6 +90,11 @@ extension RepositorySession {
             let entry = history.undoEntries.last
         else { return }
 
+        // 撤销重置时工作区有改动，先询问是否储藏
+        if askToStashBeforeUndo(entry, in: history) {
+            return
+        }
+
         // 只有反向操作会连接远端
         let target: ActivityTarget? =
             switch entry.change {
@@ -238,7 +243,10 @@ extension RepositorySession {
             }
 
         case .reversible:
-            return recordingSnapshots(action, title: title, target: target, history: history)
+            return recordingSnapshots(action, title: title, target: target, asksToStash: false, history: history)
+
+        case .reversibleAskingToStash:
+            return recordingSnapshots(action, title: title, target: target, asksToStash: true, history: history)
         }
     }
 }
@@ -256,12 +264,61 @@ extension RepositorySession {
         }
     }
 
+    /// 撤销重置前工作区有已跟踪文件的改动、且设置开启时，询问是否储藏：储藏时先储藏再回到重置前，不储藏时直接回到重置前；
+    /// Abort 不撤销，记录留在栈里。撤销成功后才把记录移到重做栈。
+    ///
+    /// - Returns: 是否已转为询问。
+    private func askToStashBeforeUndo(_ entry: RepositoryUndoEntry, in history: RepositoryUndoHistory) -> Bool {
+        let modified = status?.entries.contains { $0.kind == .tracked } ?? false
+
+        guard
+            entry.asksToStash,
+            modified,
+            Self.offersAutoStash,
+            let onStashRequest,
+            case .snapshot(let before, let after, _) = entry.change
+        else { return false }
+
+        let title = UndoManager().undoMenuTitle(forUndoActionName: entry.title)
+
+        // 给出储藏说明时先储藏再恢复，新储藏保留在储藏列表里
+        let restore = { @Sendable (runner: GitRunner, stash: String?) in
+            let undo = RepositoryUndo(runner: runner)
+
+            if let stash {
+                try await undo.restore(before, expecting: after, message: "undo", stashing: stash)
+            } else {
+                try await undo.restore(before, expecting: after, message: "undo")
+            }
+
+            await history.finishUndo(entry)
+        }
+
+        let request = AutoStashRequest(
+            title: title,
+            error: nil,
+            action: { runner, _ in try await restore(runner, nil) },
+            undo: .unrecorded,
+            keepsStash: true,
+            stashing: { [weak self] message in
+                self?.performGit({ runner, _ in try await restore(runner, message) }, title: title, undo: .unrecorded)
+                    ?? false
+            }
+        )
+
+        onStashRequest(.autoStash(request))
+        return true
+    }
+
     /// 可撤销的操作前后各记一次状态，连同移进废纸篓的项成功改动仓库后登记；操作单独记下的部分各记一步，
     /// 改写了名称时按改写后的名称登记。合并与反转停在冲突上时记成放弃它的反向操作。
+    ///
+    /// - Parameter asksToStash: 撤销时工作区有已跟踪文件的改动，先询问是否储藏；记在最后一步上。
     private func recordingSnapshots(
         _ action: @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
         target: ActivityTarget?,
+        asksToStash: Bool,
         history: RepositoryUndoHistory
     ) -> @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void {
         { runner, output in
@@ -273,6 +330,7 @@ extension RepositorySession {
                 action: action,
                 title: title,
                 target: target,
+                asksToStash: asksToStash,
                 steps: UndoSteps(),
                 undo: undo
             )
@@ -314,6 +372,9 @@ private struct SnapshotRecording {
 
     /// 写操作记在 Activity 的 Remote 页的对象，重做时记在同一页。
     let target: ActivityTarget?
+
+    /// 撤销最后一步时工作区有已跟踪文件的改动，先询问是否储藏。
+    let asksToStash: Bool
 
     /// 操作执行中对撤销记录的说明。
     let steps: UndoSteps
@@ -419,7 +480,8 @@ private struct SnapshotRecording {
             entries.append(
                 RepositoryUndoEntry(
                     title: titles[index],
-                    change: .snapshot(before: states[index], after: states[index + 1], trashed: items)
+                    change: .snapshot(before: states[index], after: states[index + 1], trashed: items),
+                    asksToStash: asksToStash && index == titles.count - 1
                 )
             )
         }

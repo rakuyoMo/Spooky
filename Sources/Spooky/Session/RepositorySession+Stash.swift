@@ -40,8 +40,11 @@ struct AutoStashRequest {
     /// 原操作能否撤销；储藏、重新执行与恢复储藏合起来按同一声明记录。
     var undo = UndoRecording.irreversible
 
-    /// 储藏一直保留，对话框不提供完成后恢复；修补旧提交使用。
+    /// 储藏一直保留，对话框不提供完成后恢复；修补旧提交与撤销重置使用。
     var keepsStash = false
+
+    /// 选择储藏时由操作自己储藏并执行，代替先储藏、再执行 `action`；参数是储藏说明，返回是否已开始执行。撤销重置使用。
+    var stashing: ((_ message: String) -> Bool)? = nil
 }
 
 // MARK: - Availability
@@ -276,6 +279,10 @@ extension RepositorySession {
     /// - Returns: 是否已开始执行。
     @discardableResult
     func performAutoStash(_ request: AutoStashRequest, message: String, reapply: Bool) -> Bool {
+        if let stashing = request.stashing {
+            return stashing(message)
+        }
+
         let action = request.action
 
         return performGit(
@@ -315,7 +322,7 @@ extension RepositorySession {
 
 extension RepositorySession {
     /// 设置 “Always offer to stash local changes”，默认开启。
-    private static var offersAutoStash: Bool {
+    static var offersAutoStash: Bool {
         UserDefaults.standard.object(forKey: "offerAutoStash") as? Bool ?? true
     }
 }
