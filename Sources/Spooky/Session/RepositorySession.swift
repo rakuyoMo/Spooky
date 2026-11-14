@@ -133,8 +133,11 @@ final class RepositorySession {
     /// 列表多选使用的稳定标识。
     var selectedIDs: Set<StatusRowID> = []
 
-    /// 主菜单请求聚焦提交标题。
+    /// 请求聚焦提交标题：主菜单，以及在正文里按 ⇧Tab。
     var commitFocusRequest = 0
+
+    /// 请求聚焦提交正文：在文件列表里按 ⇧Tab。
+    var commitBodyFocusRequest = 0
 
     /// 窗口快捷键只在编辑信息或按住 ⌥ 时提交。
     var isEditingCommitMessage = false

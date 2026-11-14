@@ -63,7 +63,7 @@ final class CommitMessageTextView: NSTextView {
         return accepted
     }
 
-    /// 视图宽度变化时，硬折行的文字区仍至少铺满可见区域。
+    /// 视图宽度变化时，标题与硬折行的文字区仍至少铺满可见区域。
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
 
@@ -180,12 +180,18 @@ extension CommitMessageTextView {
         needsDisplay = true
     }
 
-    /// 硬折行时文字区至少与可见区域一样宽，参考线右侧的底色铺满可见区域。
+    /// 标题与硬折行的正文，文字区至少与可见区域一样宽：标题框整条都能点，参考线右侧的底色铺满可见区域。
     private func updateMinimumWidth() {
-        let width = hardWrap ? enclosingScrollView?.contentSize.width ?? 0 : 0
+        let fills = hardWrap || !isVerticallyResizable
+        let width = fills ? enclosingScrollView?.contentSize.width ?? 0 : 0
 
         if minSize.width != width {
             minSize = NSSize(width: width, height: minSize.height)
+        }
+
+        // 不折行的文字区只在文字变化时按内容调整宽度，可见区域变宽时先补到最小宽度
+        if isHorizontallyResizable, frame.width < width {
+            setFrameSize(NSSize(width: width, height: frame.height))
         }
     }
 
@@ -303,6 +309,9 @@ struct CommitMessageEditor: NSViewRepresentable {
 
     /// 标题按回车或 Tab 时转到正文。
     let onSubmit: () -> Void
+
+    /// 正文按 Tab（参数为 true）或 ⇧Tab（false）时把焦点交给下一个或上一个视图。
+    let onTab: (_ forward: Bool) -> Void
 
     /// 按补全查询读取候选。
     let completions: (CompletionTrigger) async -> [CommitCompletion]
@@ -456,13 +465,15 @@ extension CommitMessageEditor {
             return false
         }
 
-        /// 补全弹窗优先处理按键；标题的回车与 Tab 转到正文。
+        /// 补全弹窗优先处理按键；标题的回车与 Tab 转到正文，正文的 Tab 与 ⇧Tab 移动焦点，不写入制表符。
         func textView(_: NSTextView, doCommandBy selector: Selector) -> Bool {
             if panel.handle(selector) {
                 return true
             }
 
-            guard parent.role == .subject else { return false }
+            guard parent.role == .subject else {
+                return handleBodyTab(selector)
+            }
 
             if
                 [
@@ -478,6 +489,22 @@ extension CommitMessageEditor {
             }
 
             return false
+        }
+
+        /// 正文的 Tab 与 ⇧Tab 交给外层移动焦点；其它按键照常处理。
+        private func handleBodyTab(_ selector: Selector) -> Bool {
+            switch selector {
+            case #selector(NSResponder.insertTab(_:)):
+                parent.onTab(true)
+                return true
+
+            case #selector(NSResponder.insertBacktab(_:)):
+                parent.onTab(false)
+                return true
+
+            default:
+                return false
+            }
         }
     }
 }

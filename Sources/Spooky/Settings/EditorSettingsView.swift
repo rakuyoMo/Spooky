@@ -43,7 +43,7 @@ enum CommitEditorSettings {
     /// 正文区是否钉住保持展开的偏好键。
     static let pinnedKey = "commitBodyPinned"
 
-    /// 正文区高度的偏好键。
+    /// 提交区展开部分高度的偏好键。
     static let bodyHeightKey = "commitBodyHeight"
 
     /// 标题字数上限的默认值。
@@ -52,7 +52,7 @@ enum CommitEditorSettings {
     /// 正文每行字数上限的默认值。
     static let defaultBodyLineLimit = 72
 
-    /// 正文区的最小与默认高度。
+    /// 提交区展开部分的最小与默认高度。
     static let minimumBodyHeight = 192.0
 
     /// 标题字数上限组合框里的候选值。

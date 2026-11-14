@@ -862,7 +862,7 @@
 "commit.continueHelp" = "Merge-Sequenz fortsetzen";
 "commit.remaining" = "Noch %ld Zeichen";
 "commit.quickAmendHint" = "• Halten Sie ⌥ gedrückt, während kein Nachrichtenfeld aktiv ist, um den letzten Commit schnell zu ändern.";
-"commit.pin" = "Beschreibung ausgeklappt lassen";
+"commit.pin" = "Textbereich ausgeklappt lassen";
 "commit.reformatParagraph" = "Absatz neu umbrechen";
 "commit.comments" = "Kommentare aus der Commit-Nachricht entfernen?";
 "commit.comments.help" = "Zeilen, die mit dem Kommentarzeichen beginnen, werden unverändert committet. Sie wurden möglicherweise von Git hinzugefügt.";

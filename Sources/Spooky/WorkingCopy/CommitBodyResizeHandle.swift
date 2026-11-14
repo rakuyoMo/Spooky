@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - CommitBodyResizeHandle
 
-/// 正文框的拖柄：下沿的细条只上下拖动改正文高度；右下角的拖柄还能左右拖动，直接移动工作区列表右侧的分隔线。
+/// 正文框的拖柄：下沿的细条只上下拖动改展开区高度；右下角的拖柄还能左右拖动，直接移动工作区列表右侧的分隔线。
 struct CommitBodyResizeHandle: NSViewRepresentable {
     /// 拖柄所在的位置。
     enum Kind {
@@ -87,7 +87,7 @@ struct CommitBodyResizeHandle: NSViewRepresentable {
     /// 拖柄的位置。
     let kind: Kind
 
-    /// 正文区高度，拖动时在 192 pt 与窗口高度的一半之间变化。
+    /// 展开区高度，拖动时在 192 pt 与窗口高度的一半之间变化。
     @Binding
     var height: Double
 
@@ -105,7 +105,7 @@ struct CommitBodyResizeHandle: NSViewRepresentable {
         view.onResize = { deltaY, windowHeight in resize(by: deltaY, windowHeight: windowHeight) }
     }
 
-    /// 按鼠标的纵向位移改正文高度，不小于 192 pt、不超过窗口高度的一半。
+    /// 按鼠标的纵向位移改展开区高度，不小于 192 pt、不超过窗口高度的一半。
     private func resize(by deltaY: Double, windowHeight: Double) {
         let minimum = CommitEditorSettings.minimumBodyHeight
         let maximum = max(minimum, windowHeight / 2)

@@ -862,7 +862,7 @@
 "commit.continueHelp" = "マージシーケンスを続行";
 "commit.remaining" = "残り %ld 文字";
 "commit.quickAmendHint" = "• メッセージ欄にフォーカスがないときに ⌥ を押したままにすると、直前のコミットをすばやく修正できます。";
-"commit.pin" = "説明を展開したままにする";
+"commit.pin" = "本文ビューを展開したままにする";
 "commit.reformatParagraph" = "段落を整形";
 "commit.comments" = "コミットメッセージからコメントを削除しますか？";
 "commit.comments.help" = "コメント文字で始まる行はそのままコミットされます。Git が追加した行かもしれません。";

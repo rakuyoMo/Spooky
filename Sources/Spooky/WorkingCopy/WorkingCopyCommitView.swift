@@ -37,7 +37,7 @@ struct WorkingCopyCommitView: View {
     @State
     private var quickAmend = false
 
-    /// 标题按回车或 Tab 时让正文获得焦点。
+    /// 标题按回车或 Tab、文件列表按 ⇧Tab 时让正文获得焦点。
     @State
     private var bodyFocusRequest = 0
 
@@ -77,7 +77,7 @@ struct WorkingCopyCommitView: View {
     @AppStorage(CommitEditorSettings.pinnedKey)
     private var pinned = false
 
-    /// 正文区高度。
+    /// 展开区的高度：标题框下面的 8 pt、正文框、选项与提交人那一行，以及下面的 11 pt。
     @AppStorage(CommitEditorSettings.bodyHeightKey)
     private var bodyHeight = CommitEditorSettings.minimumBodyHeight
 
@@ -124,6 +124,7 @@ struct WorkingCopyCommitView: View {
             }
         }
         .onChange(of: focusedField) { session.isEditingCommitMessage = focusedField != nil }
+        .onChange(of: session.commitBodyFocusRequest) { focusBody() }
         .onDisappear { session.isEditingCommitMessage = false }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
             optionPressed = false
@@ -228,6 +229,7 @@ extension WorkingCopyCommitView {
                 focusRequest: session.commitFocusRequest,
                 onFocusChange: { focusChanged(.subject, focused: $0) },
                 onSubmit: { bodyFocusRequest += 1 },
+                onTab: { _ in },
                 completions: { await session.completions(for: $0) }
             )
 
@@ -246,6 +248,7 @@ extension WorkingCopyCommitView {
         } action: {
             subjectFrame = $0
         }
+        .overlay { focusRing(focusedField == .subject) }
     }
 
     /// 正文每行的字数上限，取 Editor 设置页的值。
@@ -254,6 +257,9 @@ extension WorkingCopyCommitView {
     }
 
     /// 正文框，其下是提交选项与提交人；选项行下留 11 pt。
+    ///
+    /// 连同上面 8 pt 的行距一共是可拖动的展开区高度，正文框占去其余部分之后剩下的高度。
+    /// 提交人先按理想宽度排，放不下时才截断。
     private var details: some View {
         VStack(spacing: 12) {
             bodyBox
@@ -262,9 +268,11 @@ extension WorkingCopyCommitView {
                 options
                 Spacer(minLength: 0)
                 CommitIdentityView(session: session)
+                    .layoutPriority(1)
             }
         }
         .padding(.bottom, 11)
+        .frame(height: max(0, bodyHeight - 8))
     }
 
     /// 正文框连同底部的钉住与折行按钮，下沿与右下角可拖动。
@@ -288,6 +296,14 @@ extension WorkingCopyCommitView {
                 focusRequest: bodyFocusRequest,
                 onFocusChange: { focusChanged(.body, focused: $0) },
                 onSubmit: { },
+                onTab: { forward in
+                    // Tab 交给下面的文件列表，⇧Tab 回到标题
+                    if forward {
+                        session.fileListFocusRequest += 1
+                    } else {
+                        session.commitFocusRequest += 1
+                    }
+                },
                 completions: { await session.completions(for: $0) }
             )
 
@@ -295,12 +311,13 @@ extension WorkingCopyCommitView {
             bodyActionBar
                 .padding(.top, 1)
         }
-        .frame(height: bodyHeight)
+        .frame(maxHeight: .infinity)
         .onGeometryChange(for: CGRect.self) {
             $0.frame(in: .named(Self.coordinateSpace))
         } action: {
             bodyFrame = $0
         }
+        .overlay { focusRing(focusedField == .body) }
         .overlay { resizeHandles }
     }
 
@@ -411,6 +428,28 @@ extension WorkingCopyCommitView {
         let entries = session.status?.entries ?? []
         return entries.contains(where: \.hasStagedChanges)
             && (optionPressed || !entries.contains(where: \.hasUnstagedChanges))
+    }
+
+    /// 获得焦点的框外画一圈系统焦点环：标题框整框，正文框连同下面的动作栏。
+    @ViewBuilder
+    private func focusRing(_ isFocused: Bool) -> some View {
+        if isFocused {
+            RoundedRectangle(cornerRadius: 5)
+                .stroke(Color(nsColor: .keyboardFocusIndicatorColor), lineWidth: 3)
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// 让正文获得焦点：先展开正文区，等正文框出现后再请求焦点。
+    private func focusBody() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            session.collapsesCommitBody = false
+            focusedField = .body
+        }
+
+        DispatchQueue.main.async {
+            bodyFocusRequest += 1
+        }
     }
 
     /// 焦点在标题与正文之间移动时不收起：失去焦点后等这一轮事件结束，另一个框没有接过焦点才收起。

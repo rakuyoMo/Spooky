@@ -862,7 +862,7 @@
 "commit.continueHelp" = "Continue the merge sequence";
 "commit.remaining" = "%ld characters remaining";
 "commit.quickAmendHint" = "• Hold ⌥ while no message field is focused to amend the last commit quickly.";
-"commit.pin" = "Keep Description Expanded";
+"commit.pin" = "Keep Body View Expanded";
 "commit.reformatParagraph" = "Reformat Paragraph";
 "commit.comments" = "Remove comments from the commit message?";
 "commit.comments.help" = "Lines that start with the comment character are committed as they are. They may have been added by Git.";

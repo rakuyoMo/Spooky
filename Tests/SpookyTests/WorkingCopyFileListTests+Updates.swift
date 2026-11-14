@@ -45,7 +45,7 @@ extension WorkingCopyFileListTests {
         #expect(current == new)
     }
 
-    /// 重载后保留仍在的选中项，多选只剩一部分时只留这些；选中项全部消失时先改选下面的邻行、没有再改选上面的，详情随之同步；
+    /// 重载后保留仍在的选中项，多选只剩一部分时只留这些；选中项全部消失时改选原行号的行，原行号超出新列表时先改选下面的邻行、没有再改选上面的，详情随之同步；
     /// 暂存把未跟踪文件变成已跟踪文件时仍是同一行；平铺、树形与搜索过滤下规则相同，沿用的行是同一个节点。
     @Test("重载后的增量更新与选择")
     func incrementalUpdates() async throws {
@@ -80,6 +80,27 @@ extension WorkingCopyFileListTests {
 
         await list.show([])
         #expect(list.paths.isEmpty && list.selectedPaths.isEmpty)
+
+        // 上方的行一起消失时按原行号取行：选中第 2 行的 c，b、c 消失后第 2 行是 e
+        await list.show([.modified("a.txt"), .modified("b.txt"), .modified("c.txt"), .modified("d.txt"), .modified("e.txt")])
+        list.select(rows: [2])
+
+        await list.show([.modified("a.txt"), .modified("d.txt"), .modified("e.txt")])
+        #expect(list.selectedPaths == ["e.txt"])
+
+        // 原行号等于新的行数：选中第 2 行的 e，e 消失后改选上面仍在的 d
+        await list.show([.modified("a.txt"), .modified("d.txt")])
+        #expect(list.selectedPaths == ["d.txt"])
+
+        // 原行号超出新的行数：选中第 1 行的 d，d 与下面的 x、y 消失后改选上面仍在的 a
+        await list.show([.modified("a.txt"), .modified("d.txt"), .modified("x.txt"), .modified("y.txt")])
+        list.select(rows: [1])
+
+        await list.show([.modified("a.txt")])
+        #expect(list.selectedPaths == ["a.txt"])
+        await until { session.selectedID?.path == "a.txt" }
+
+        await list.show([])
 
         // 树形：选中的 src/x.swift 消失后改选同一目录里的 src/y.swift，目录行沿用
         list.listing = WorkingCopyListing(mode: .tree)

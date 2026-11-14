@@ -190,7 +190,7 @@ extension WorkingCopyFileList {
         /// 处理按键与 Quick Look 的桥接器。
         weak var coordinator: Coordinator?
 
-        /// 空格按偏好切换暂存或打开 Quick Look；⌘⌫ 删除所选文件。
+        /// 空格按偏好切换暂存或打开 Quick Look；⌘⌫ 删除所选文件；⇧Tab 回到提交正文。
         override func keyDown(with event: NSEvent) {
             let flags = event.modifierFlags.intersection([.command, .control, .option, .shift])
 
@@ -200,6 +200,9 @@ extension WorkingCopyFileList {
 
             case (51, [.command]):
                 coordinator?.deletePressed()
+
+            case (48, [.shift]) where coordinator?.session.showsCommitArea ?? false:
+                coordinator?.session.commitBodyFocusRequest += 1
 
             default:
                 super.keyDown(with: event)

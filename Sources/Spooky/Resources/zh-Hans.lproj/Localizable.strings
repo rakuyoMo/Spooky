@@ -862,7 +862,7 @@
 "commit.continueHelp" = "继续合并序列";
 "commit.remaining" = "还可输入 %ld 个字";
 "commit.quickAmendHint" = "• 焦点不在信息框时按住 ⌥ 可快速修补最近一次提交。";
-"commit.pin" = "保持正文展开";
+"commit.pin" = "保持正文区展开";
 "commit.reformatParagraph" = "重排段落";
 "commit.comments" = "要删除提交信息中的注释吗？";
 "commit.comments.help" = "以注释字符开头的行会原样提交，它们可能是 Git 自动生成的。";

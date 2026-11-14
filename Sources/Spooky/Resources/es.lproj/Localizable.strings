@@ -862,7 +862,7 @@
 "commit.continueHelp" = "Continuar la secuencia de fusión";
 "commit.remaining" = "Quedan %ld caracteres";
 "commit.quickAmendHint" = "• Mantener pulsada ⌥ cuando ningún campo del mensaje está activo para enmendar rápidamente el último commit.";
-"commit.pin" = "Mantener la descripción desplegada";
+"commit.pin" = "Mantener la vista del cuerpo desplegada";
 "commit.reformatParagraph" = "Reajustar párrafo";
 "commit.comments" = "¿Eliminar los comentarios del mensaje de commit?";
 "commit.comments.help" = "Las líneas que empiezan por el carácter de comentario se incluyen tal cual. Puede que las haya añadido Git.";

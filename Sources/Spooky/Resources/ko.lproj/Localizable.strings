@@ -862,7 +862,7 @@
 "commit.continueHelp" = "병합 시퀀스 계속";
 "commit.remaining" = "%ld자 남음";
 "commit.quickAmendHint" = "• 메시지 입력란에 포커스가 없을 때 ⌥를 누르고 있으면 최근 커밋을 빠르게 수정합니다.";
-"commit.pin" = "설명 펼친 상태 유지";
+"commit.pin" = "본문 보기 펼친 상태 유지";
 "commit.reformatParagraph" = "단락 다시 정렬";
 "commit.comments" = "커밋 메시지에서 주석을 제거하겠습니까?";
 "commit.comments.help" = "주석 문자로 시작하는 줄은 그대로 커밋됩니다. Git이 추가한 줄일 수 있습니다.";
