@@ -2203,9 +2203,9 @@
 "submodule.default" = "%@ (par défaut)";
 "submodule.delete" = "Supprimer le sous-module";
 "submodule.delete.keepWorkingTree" = "Conserver l’arbre de travail";
-"submodule.delete.keepWorkingTree.help" = "Supprime uniquement la configuration du sous-module ; ses fichiers restent dans la copie de travail.";
+"submodule.delete.keepWorkingTree.help" = "Supprime uniquement la configuration du sous-module, mais conserve ses fichiers de travail.";
 "submodule.delete.menu" = "Supprimer « %@ »…";
-"submodule.delete.message" = "Supprime le sous-module « %@ » de ce dépôt.";
+"submodule.delete.message" = "La suppression du sous-module le retirera de votre dépôt Git.";
 "submodule.delete.submit" = "Supprimer";
 "submodule.deleteSubmodules" = "Supprimer les sous-modules";
 "submodule.editURL" = "Modifier l’URL du sous-module";

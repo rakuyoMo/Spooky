@@ -2203,9 +2203,9 @@
 "submodule.default" = "%@ (기본값)";
 "submodule.delete" = "하위 모듈 삭제";
 "submodule.delete.keepWorkingTree" = "작업 트리 유지";
-"submodule.delete.keepWorkingTree.help" = "하위 모듈의 설정만 삭제하고 파일은 작업 사본에 남겨 둡니다.";
+"submodule.delete.keepWorkingTree.help" = "하위 모듈의 설정만 삭제하고 작업 파일은 유지합니다.";
 "submodule.delete.menu" = "“%@” 삭제…";
-"submodule.delete.message" = "이 저장소에서 하위 모듈 “%@”을(를) 삭제합니다.";
+"submodule.delete.message" = "하위 모듈을 삭제하면 Git 저장소에서 제거됩니다.";
 "submodule.delete.submit" = "삭제";
 "submodule.deleteSubmodules" = "하위 모듈 삭제";
 "submodule.editURL" = "하위 모듈 URL 편집";

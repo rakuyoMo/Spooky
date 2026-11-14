@@ -2203,9 +2203,9 @@
 "submodule.default" = "%@（默认）";
 "submodule.delete" = "删除子模块";
 "submodule.delete.keepWorkingTree" = "保留工作区";
-"submodule.delete.keepWorkingTree.help" = "只删除子模块的配置，它的文件留在工作区里。";
+"submodule.delete.keepWorkingTree.help" = "只删除子模块的配置，保留它的工作文件。";
 "submodule.delete.menu" = "删除 “%@”…";
-"submodule.delete.message" = "从这个仓库删除子模块 “%@”。";
+"submodule.delete.message" = "删除子模块会把它从 Git 仓库中移除。";
 "submodule.delete.submit" = "删除";
 "submodule.deleteSubmodules" = "删除子模块";
 "submodule.editURL" = "编辑子模块地址";

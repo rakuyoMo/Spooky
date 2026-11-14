@@ -2203,9 +2203,9 @@
 "submodule.default" = "%@ (Default)";
 "submodule.delete" = "Delete Submodule";
 "submodule.delete.keepWorkingTree" = "Keep Working Tree";
-"submodule.delete.keepWorkingTree.help" = "Only removes the submodule’s configuration; its files stay in the working copy.";
+"submodule.delete.keepWorkingTree.help" = "Removes only the submodule’s config, but keeps its working files.";
 "submodule.delete.menu" = "Delete “%@”…";
-"submodule.delete.message" = "Removes the submodule “%@” from this repository.";
+"submodule.delete.message" = "Deleting the submodule will remove it from your Git repository.";
 "submodule.delete.submit" = "Delete";
 "submodule.deleteSubmodules" = "Delete Submodules";
 "submodule.editURL" = "Edit Submodule URL";

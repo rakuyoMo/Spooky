@@ -2203,9 +2203,9 @@
 "submodule.default" = "%@（デフォルト）";
 "submodule.delete" = "サブモジュールを削除";
 "submodule.delete.keepWorkingTree" = "作業ツリーを残す";
-"submodule.delete.keepWorkingTree.help" = "サブモジュールの設定だけを削除し、ファイルは作業コピーに残します。";
+"submodule.delete.keepWorkingTree.help" = "サブモジュールの設定だけを削除し、作業ファイルは残します。";
 "submodule.delete.menu" = "「%@」を削除…";
-"submodule.delete.message" = "このリポジトリからサブモジュール「%@」を削除します。";
+"submodule.delete.message" = "サブモジュールを削除すると、Git リポジトリから取り除かれます。";
 "submodule.delete.submit" = "削除";
 "submodule.deleteSubmodules" = "サブモジュールを削除";
 "submodule.editURL" = "サブモジュールの URL を編集";

@@ -285,9 +285,9 @@ extension SubmoduleOperationDialog {
         }
     }
 
-    /// 菜单里列出的子模块：获取只列已检出的，更新列出配置完整的。
+    /// 菜单里列出的子模块：获取只列已检出的，更新只列可以更新的。
     private var candidates: [Submodule] {
-        session.submodules.items.filter { kind == .fetch ? session.canFetch($0) : $0.isValid }
+        session.submodules.items.filter { kind == .fetch ? session.canFetch($0) : session.canUpdate($0) }
     }
 
     /// 选中的子模块。
@@ -348,7 +348,7 @@ extension SubmoduleOperationDialog {
             return AppLocalization.text("submodule.repair.message")
 
         case .delete:
-            return AppLocalization.text("submodule.delete.message", selected?.name ?? "")
+            return AppLocalization.text("submodule.delete.message")
         }
     }
 

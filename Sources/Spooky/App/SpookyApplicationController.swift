@@ -118,6 +118,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 
         appIconController.start()
 
+        // 通知授权在启动时以 provisional 申请，系统不弹询问
+        SystemNotifications.shared.requestAuthorization()
+
         // 补上 What's New 的已读记录，决定这次启动是否在侧边栏显示新功能卡片
         WhatsNewState.shared.start()
 

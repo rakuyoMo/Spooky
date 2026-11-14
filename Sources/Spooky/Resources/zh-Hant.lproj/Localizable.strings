@@ -2203,9 +2203,9 @@
 "submodule.default" = "%@（預設）";
 "submodule.delete" = "刪除子模組";
 "submodule.delete.keepWorkingTree" = "保留工作區";
-"submodule.delete.keepWorkingTree.help" = "只刪除子模組的設定，它的檔案留在工作區裡。";
+"submodule.delete.keepWorkingTree.help" = "只刪除子模組的設定，保留它的工作檔案。";
 "submodule.delete.menu" = "刪除 “%@”…";
-"submodule.delete.message" = "從這個儲存庫刪除子模組 “%@”。";
+"submodule.delete.message" = "刪除子模組會把它從 Git 儲存庫中移除。";
 "submodule.delete.submit" = "刪除";
 "submodule.deleteSubmodules" = "刪除子模組";
 "submodule.editURL" = "編輯子模組位址";

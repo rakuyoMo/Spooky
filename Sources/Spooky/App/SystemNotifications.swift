@@ -6,7 +6,7 @@ import UserNotifications
 
 /// 克隆完成与自动归档分支之后发出的系统通知。
 ///
-/// 每次发送前申请授权：第一次由系统询问是否允许，之后直接得到已有的结果；没有授权或出错时不发，App 内的反馈照常。
+/// 启动时以 provisional 申请授权，不弹询问，通知先安静地进通知中心；发送前只看已有的授权，没有授权或出错时不发，App 内的反馈照常。
 @MainActor
 final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
     /// App 共用的一份，第一次发通知时创建。
@@ -84,6 +84,17 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         )
     }
 
+    /// 启动时申请角标、声音与提醒的授权，带 provisional：系统不询问，先给暂时的授权。
+    func requestAuthorization() {
+        guard let center else {
+            return
+        }
+
+        Task {
+            _ = try? await center.requestAuthorization(options: [.badge, .sound, .alert, .provisional])
+        }
+    }
+
     /// App 在前台时同样显示横幅，并留在通知中心；点通知只激活 App。
     nonisolated func userNotificationCenter(
         _: UNUserNotificationCenter,
@@ -92,7 +103,7 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         [.banner, .list]
     }
 
-    /// 申请授权后立即发送，不带声音与角标；没有授权或出错时不发。
+    /// 有授权时立即发送，不带声音与角标；没有授权或出错时不发。
     private func post(title: String, subtitle: String, body: String? = nil) {
         guard let center else {
             return
@@ -114,7 +125,10 @@ final class SystemNotifications: NSObject, UNUserNotificationCenterDelegate {
         )
 
         Task {
-            guard let granted = try? await center.requestAuthorization(options: [.alert]), granted else {
+            // 暂时的授权同样可以发送
+            let status = await center.notificationSettings().authorizationStatus
+
+            guard status == .authorized || status == .provisional else {
                 return
             }
 

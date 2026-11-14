@@ -233,7 +233,7 @@ private struct SubmoduleGeneralSettings: View {
                 text: AppLocalization.text("submodule.warning.uninitialized"),
                 action: RemoteSettingAction(
                     title: AppLocalization.text("submodule.update.submit"),
-                    isEnabled: session.canModify(submodule)
+                    isEnabled: session.canUpdate(submodule)
                 ) { session.requestSubmodule(.update(submodule)) }
             )
         }

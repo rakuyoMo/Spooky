@@ -2203,9 +2203,9 @@
 "submodule.default" = "%@ (predeterminado)";
 "submodule.delete" = "Eliminar submódulo";
 "submodule.delete.keepWorkingTree" = "Conservar el árbol de trabajo";
-"submodule.delete.keepWorkingTree.help" = "Solo elimina la configuración del submódulo; sus archivos permanecen en la copia de trabajo.";
+"submodule.delete.keepWorkingTree.help" = "Elimina solo la configuración del submódulo, pero conserva sus archivos de trabajo.";
 "submodule.delete.menu" = "Eliminar “%@”…";
-"submodule.delete.message" = "Elimina el submódulo “%@” de este repositorio.";
+"submodule.delete.message" = "Al eliminar el submódulo, se quitará de tu repositorio Git.";
 "submodule.delete.submit" = "Eliminar";
 "submodule.deleteSubmodules" = "Eliminar submódulos";
 "submodule.editURL" = "Editar URL del submódulo";
