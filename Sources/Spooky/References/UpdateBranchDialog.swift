@@ -5,7 +5,7 @@ import SwiftUI
 
 /// Update Branch：选一个设了父分支的本地分支，用合并或变基并入父分支的新提交；执行时先检出这个分支。
 ///
-/// 默认设置是合并、不强制生成合并提交、不校验签名、不跳过钩子，Quick Update 不开对话框，直接按这组设置更新。
+/// 合并提交与签名校验的初值取全局的合并偏好，合并方式初值是合并、不跳过钩子；Quick Update 不开对话框，按同样的初值直接更新。
 struct UpdateBranchDialog: View {
     /// 发起动作的窗口会话。
     let session: RepositorySession
@@ -72,7 +72,7 @@ struct UpdateBranchDialog: View {
                 isOn: $skipHooks
             )
         }
-        .onAppear { selection = branch.id }
+        .onAppear(perform: prepare)
         .task(id: selectedBranch) { await loadPreview() }
     }
 }
@@ -175,13 +175,24 @@ extension UpdateBranchDialog {
             return
         }
 
-        var options = MergeOptions()
+        // 自动提交仍取全局偏好，只在强制生成合并提交时生效
+        var options = SyncPreferences.merge
         options.alwaysCreateCommit = alwaysCommit
+        options.commit = alwaysCommit ? options.commit : true
         options.verifySignatures = verify
         options.skipHooks = skipHooks
 
         close()
         session.updateBranch(selectedBranch, rebase: rebase, options: options)
+    }
+
+    /// 预选入口的分支，合并提交与签名校验取全局的合并偏好。
+    private func prepare() {
+        let defaults = SyncPreferences.merge
+
+        selection = branch.id
+        alwaysCommit = defaults.alwaysCreateCommit
+        verify = defaults.verifySignatures
     }
 
     /// 读出所选分支与父分支的比较，作为冲突预览；读取失败时不显示预览。

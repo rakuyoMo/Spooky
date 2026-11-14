@@ -170,8 +170,12 @@ extension RepositorySession {
     /// - Parameters:
     ///   - reference: 要更新的本地分支。
     ///   - rebase: 为 true 时变基到父分支上，否则合并父分支。
-    ///   - options: 合并的提交方式、签名校验与跳过钩子；默认值就是 Update Branch 对话框的默认设置，Quick Update 直接使用。
-    func updateBranch(_ reference: RepositoryReference, rebase: Bool, options: MergeOptions = MergeOptions()) {
+    ///   - options: 合并的提交方式、签名校验与跳过钩子；默认取全局的合并偏好，Quick Update 与快捷操作直接使用。
+    func updateBranch(
+        _ reference: RepositoryReference,
+        rebase: Bool,
+        options: MergeOptions = SyncPreferences.merge
+    ) {
         guard canUpdateBranch(reference), let parent = parentBranch(of: reference) else {
             return
         }
