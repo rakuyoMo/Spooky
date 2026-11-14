@@ -65,8 +65,9 @@ extension RepositoryWindowController {
         Self.setAutosaveName("Spooky.PullRequests", of: split)
 
         let list = NSHostingController(rootView: PullRequestListView(session: session))
-        list.sizingOptions = [.minSize]
 
+        // 列表最窄 50 pt，由分栏项决定；宿主不把内容的最小尺寸交给分栏，否则按 50 pt 宽量出的高度会撑高窗口
+        list.sizingOptions = []
         let listItem = NSSplitViewItem(contentListWithViewController: list)
         listItem.minimumThickness = 50
         listItem.holdingPriority = .init(475)

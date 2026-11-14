@@ -61,9 +61,11 @@ extension RepositoryWindowController {
                 self?.presentRepositoryAction($0)
             }
         )
-        list.sizingOptions = [.minSize]
 
+        // 列表没有最小宽：宿主不把内容的最小尺寸交给分栏，内容列表的分栏项默认的最窄 200 改为 0
+        list.sizingOptions = []
         let listItem = NSSplitViewItem(contentListWithViewController: list)
+        listItem.minimumThickness = 0
         listItem.holdingPriority = .init(475)
         listItem.canCollapse = false
 

@@ -21,7 +21,6 @@ struct PullRequestListView: View {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(minWidth: 50)
     }
 }
 
