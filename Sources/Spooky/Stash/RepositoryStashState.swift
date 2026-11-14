@@ -30,6 +30,9 @@ final class RepositoryStashState {
         }
     }
 
+    /// 所选储藏提交的作者、提交人、父提交与树，与变更文件一起读取。
+    private(set) var commit: HistoryCommit? = nil
+
     /// 所选储藏的变更文件，已跟踪文件在前、未跟踪文件在后。
     private(set) var changes: [StashFileChange] = []
 
@@ -206,6 +209,7 @@ final class RepositoryStashState {
         isLoaded = false
         failure = nil
         selectedIDs = []
+        commit = nil
         changes = []
         changesFailure = nil
         diffs = [:]
@@ -217,11 +221,12 @@ final class RepositoryStashState {
 // MARK: - Stash Details
 
 extension RepositoryStashState {
-    /// 单选变化后丢弃上一储藏的补丁，重新读取变更文件。
+    /// 单选变化后丢弃上一储藏的补丁，重新读取储藏提交的元信息与变更文件。
     func loadChanges() {
         changeTask?.cancel()
         for task in diffTasks.values { task.cancel() }
         diffTasks = [:]
+        commit = nil
         changes = []
         changesFailure = nil
         diffs = [:]
@@ -231,13 +236,20 @@ extension RepositoryStashState {
         isLoadingChanges = false
 
         guard let runner, let stash = selectedStash else { return }
+
         let request = generation
         isLoadingChanges = true
 
         changeTask = Task { [weak self] in
             do {
-                let files = try await RepositoryStashes(runner: runner).changes(in: stash)
+                // 元信息与变更文件同时读取，详情在两者都读出后一起显示
+                async let metadata = RepositoryRewrite(runner: runner).commits([stash.id])
+                async let changed = RepositoryStashes(runner: runner).changes(in: stash)
+                let (commits, files) = try await (metadata, changed)
+
                 guard let self, generation == request, selectedStash?.id == stash.id, !Task.isCancelled else { return }
+
+                commit = commits.first
                 changes = files
 
                 let threshold = preferences.integer(forKey: "historyAutoExpand")
@@ -245,10 +257,12 @@ extension RepositoryStashState {
                 if threshold > 0, files.count <= threshold { expandAll(true) }
             } catch {
                 guard let self, generation == request, selectedStash?.id == stash.id, !Task.isCancelled else { return }
+
                 changesFailure = AppFailure(error: error, opening: false, location: runner.location)
             }
 
             guard let self, generation == request, selectedStash?.id == stash.id, !Task.isCancelled else { return }
+
             isLoadingChanges = false
             changeTask = nil
         }

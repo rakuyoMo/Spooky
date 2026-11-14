@@ -626,13 +626,9 @@
 "stash.delete.confirm" = "确定删除储藏 “%@” 吗？";
 "stash.deleteStashes" = "删除所选储藏";
 "stash.deleteStashes.confirm" = "确定删除所选的 %ld 个储藏吗？";
-"stash.applyButton" = "应用…";
+"stash.applyButton" = "应用";
 "stash.deleteButton" = "删除";
 "stash.basedOn" = "基于";
-"stash.baseCommit" = "基准提交";
-"stash.date" = "日期";
-"stash.hash" = "储藏";
-"stash.untracked" = "未跟踪";
 "stash.empty" = "没有储藏";
 "stash.noMatches" = "没有匹配的储藏";
 "stash.loading" = "正在读取储藏…";

@@ -3,33 +3,29 @@ import SwiftUI
 
 // MARK: - StashDetailView
 
-/// 储藏视图右栏：单选时显示元信息、操作按钮、变更文件与懒加载 Diff，多选时只提供删除。
+/// 储藏视图右栏：单选时与提交详情同一版式，显示储藏提交的元信息、操作条、说明与变更集或文件树；多选时只提供删除。
 struct StashDetailView: View {
     /// 当前仓库会话。
     let session: RepositorySession
+
+    /// 显示储藏提交的文件树；否则显示变更集。
+    @State
+    private var showsTree = false
+
+    /// 文件树的逐层读取状态。
+    @State
+    private var tree = CommitTreeState()
+
+    /// 鼠标是否在变更集详情上，决定操作条是否显示。
+    @State
+    private var hovering = false
 
     /// 单选、多选与未选三种状态。
     var body: some View {
         let stashes = session.stashes
 
         if let stash = stashes.selectedStash {
-            VStack(spacing: 0) {
-                HStack {
-                    Text(String(stash.id.prefix(8))).font(.system(size: 13, design: .monospaced))
-                    Spacer()
-                }
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 20)
-                .frame(height: 40)
-                .background(.bar)
-
-                Divider()
-
-                ScrollView {
-                    scrollContent(stash)
-                }
-                .reloadsOnDiffPreferenceChange { stashes.reloadDiffs() }
-            }
+            detail(stash)
         } else if stashes.selectedIDs.count > 1 {
             EmptyStateView(
                 title: AppLocalization.text("stash.multiple", stashes.selectedIDs.count),
@@ -50,70 +46,96 @@ struct StashDetailView: View {
 // MARK: - Layout
 
 extension StashDetailView {
-    /// 滚动区域：元信息、说明、操作按钮、变更文件栏与逐个文件的 Diff。
-    private func scrollContent(_ stash: StashEntry) -> some View {
-        LazyVStack(alignment: .leading, spacing: 0) {
-            metadata(stash)
+    /// 单选的详情：储藏提交与变更文件读出后显示头部与内容，此前是读取进度或可重试的失败。
+    @ViewBuilder
+    private func detail(_ stash: StashEntry) -> some View {
+        let stashes = session.stashes
 
-            Text(stash.title)
+        if let commit = stashes.commit {
+            VStack(spacing: 0) {
+                CommitDetailBar(commit: commit, showsTree: $showsTree)
+                Divider()
+
+                if showsTree {
+                    CommitTreeView(tree: tree, session: session, commit: commit)
+                } else {
+                    ScrollView {
+                        scrollContent(stash, commit: commit)
+                    }
+                    .onHover { hovering = $0 }
+                    .reloadsOnDiffPreferenceChange { stashes.reloadDiffs() }
+                }
+            }
+        } else if let failure = stashes.changesFailure {
+            FailureDetailsView(failure: failure) { stashes.loadChanges() }
+                .padding(20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        } else {
+            ProgressView()
+                .controlSize(.small)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    /// 滚动区域：元信息、压在分隔线上的操作条、说明原文、变更集摘要与逐个文件的 Diff，左右边距与提交详情相同。
+    ///
+    /// - Parameters:
+    ///   - stash: 详情显示的储藏。
+    ///   - commit: 储藏提交的元信息。
+    private func scrollContent(_ stash: StashEntry, commit: HistoryCommit) -> some View {
+        let stashes = session.stashes
+        let inset = CommitDetailView.contentInset
+
+        return LazyVStack(alignment: .leading, spacing: 0) {
+            CommitMetadataView(
+                commit: commit,
+                signature: nil,
+                references: [.stash(objectID: stash.id)],
+                isHead: false,
+                runner: session.runner
+            )
+
+            ZStack {
+                Divider()
+
+                CommitActionRow(session: session, stash: stash, hovering: hovering)
+                    .padding(.horizontal, inset)
+            }
+
+            // 说明写 Git 存下的原文，包括 “On <分支>: ” 前缀
+            Text(commit.message)
                 .font(.system(size: 13))
                 .lineSpacing(3)
                 .textSelection(.enabled)
-                .padding(20)
-
-            HStack(spacing: 8) {
-                Button(AppLocalization.text("stash.applyButton")) { session.requestApplyStash(stash) }
-                    .disabled(!session.canApply(stash))
-
-                Button(AppLocalization.text("stash.deleteButton")) { session.deleteStashes([stash]) }
-                    .disabled(!session.canDelete([stash]))
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 12)
-
-            Divider()
+                .padding(.horizontal, 3)
+                .padding(.vertical, 8)
+                .padding(.trailing, 20)
+                .padding(.horizontal, inset)
 
             ChangesetSummaryBar(
-                changes: session.stashes.changes.map(\.file),
-                expanded: session.stashes.allItemsExpanded,
-                toggle: { session.stashes.expandAll(!session.stashes.allItemsExpanded) }
+                changes: stashes.changes.map(\.file),
+                expanded: stashes.allItemsExpanded,
+                toggle: { stashes.expandAll(!stashes.allItemsExpanded) }
             )
-            changeList(stash)
-        }
-    }
+            .padding(.horizontal, inset)
 
-    /// 来源分支、基准提交、日期与储藏哈希，值可以复制。
-    private func metadata(_ stash: StashEntry) -> some View {
-        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 4) {
-            row("stash.basedOn", stash.branch ?? "—")
-            row("stash.baseCommit", stash.base)
-            row("stash.date", stash.date.formatted(date: .abbreviated, time: .standard))
-            row("stash.hash", stash.id)
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
-        .font(.system(size: 12))
-    }
-
-    /// 变更文件的读取状态与逐个文件的折叠组。
-    @ViewBuilder
-    private func changeList(_ stash: StashEntry) -> some View {
-        let stashes = session.stashes
-
-        if stashes.isLoadingChanges {
-            ProgressView(AppLocalization.text("history.loadingChanges"))
-                .controlSize(.small)
-                .padding(20)
-        }
-
-        if let failure = stashes.changesFailure {
-            FailureDetailsView(failure: failure) { stashes.loadChanges() }
-                .padding(20)
-        }
-
-        ForEach(stashes.changes) { change in
-            fileSection(change, in: stash)
             Divider()
+                .padding(.horizontal, inset)
+
+            changeRows(stash)
+        }
+    }
+
+    /// 逐个变更文件，每行下面一条分隔线，放在与头部相同的左右边距里。
+    ///
+    /// - Parameter stash: 详情显示的储藏。
+    private func changeRows(_ stash: StashEntry) -> some View {
+        ForEach(session.stashes.changes) { change in
+            VStack(spacing: 0) {
+                fileSection(change, in: stash)
+                Divider()
+            }
+            .padding(.horizontal, CommitDetailView.contentInset)
         }
     }
 
@@ -135,7 +157,7 @@ extension StashDetailView {
             ),
             drag: { dragProvider(change, in: stash) }
         ) {
-            StashFileLabel(change: change)
+            CommitFileLabel(file: change.file)
         } menu: {
             Button(
                 AppLocalization.text(
@@ -148,14 +170,6 @@ extension StashDetailView {
             }
         } diff: {
             StashFileDiffView(stashes: stashes, path: change.id)
-        }
-    }
-
-    /// 标签与值两列对齐，长哈希允许换行。
-    private func row(_ key: String, _ value: String) -> some View {
-        GridRow(alignment: .top) {
-            Text(AppLocalization.text(key)).foregroundStyle(.tertiary)
-            Text(value).foregroundStyle(.secondary).textSelection(.enabled)
         }
     }
 
@@ -172,38 +186,6 @@ extension StashDetailView {
             path: change.id
         )
         .provider()
-    }
-}
-
-// MARK: - StashFileLabel
-
-/// 文件状态、路径与增删行数；随 “包含未跟踪文件” 保存的文件另有标注。
-private struct StashFileLabel: View {
-    /// 当前文件变更。
-    let change: StashFileChange
-
-    /// 状态字母和路径都支持辅助功能读取。
-    var body: some View {
-        HStack(spacing: 8) {
-            Text(change.file.status).frame(width: 24)
-            Image(systemName: "doc").accessibilityHidden(true)
-
-            Text(change.file.originalPath.map { $0 + " → " + change.file.path } ?? change.file.path)
-                .lineLimit(1)
-                .truncationMode(.middle)
-
-            if change.isUntracked {
-                Text(AppLocalization.text("stash.untracked")).foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 0)
-
-            if let additions = change.file.additions, let deletions = change.file.deletions {
-                Text("+\(additions) −\(deletions)").foregroundStyle(.secondary)
-            }
-        }
-        .font(.system(size: 11))
-        .help(change.file.path)
     }
 }
 

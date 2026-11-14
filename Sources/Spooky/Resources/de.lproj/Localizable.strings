@@ -626,13 +626,9 @@
 "stash.delete.confirm" = "Möchten Sie den Stash „%@“ wirklich löschen?";
 "stash.deleteStashes" = "Stashes löschen";
 "stash.deleteStashes.confirm" = "Möchten Sie die %ld ausgewählten Stashes wirklich löschen?";
-"stash.applyButton" = "Anwenden …";
+"stash.applyButton" = "Anwenden";
 "stash.deleteButton" = "Löschen";
 "stash.basedOn" = "Basiert auf";
-"stash.baseCommit" = "Basis-Commit";
-"stash.date" = "Datum";
-"stash.hash" = "Stash";
-"stash.untracked" = "Nicht verfolgt";
 "stash.empty" = "Keine Stashes";
 "stash.noMatches" = "Keine passenden Stashes";
 "stash.loading" = "Stashes werden geladen …";

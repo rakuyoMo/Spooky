@@ -41,7 +41,7 @@ struct HistoryRefBadges: View {
         }
     }
 
-    /// 前 `shown` 个标记，没有全部显示时以 “…” 结尾；只有标签标记可点，点击显示标签的签名。
+    /// 前 `shown` 个标记，没有全部显示时以 “…” 结尾；本地分支蓝、远端分支灰、储藏红、标签黄，只有标签标记可点，点击显示标签的签名。
     ///
     /// - Parameter shown: 显示的标记个数，HEAD 也算一个。
     private func row(showing shown: Int) -> some View {
@@ -53,6 +53,8 @@ struct HistoryRefBadges: View {
             ForEach(references.prefix(max(0, shown - (isHead ? 1 : 0)))) { ref in
                 if ref.isLocal || ref.isRemote {
                     badge(ref.name, color: ref.isLocal ? "blue" : "gray")
+                } else if ref.isStash {
+                    badge("stash", color: "red")
                 } else {
                     TagBadgeButton(reference: ref.id, runner: runner) { badge(ref.name, color: "yellow") }
                 }

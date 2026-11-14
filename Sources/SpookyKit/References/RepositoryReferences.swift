@@ -80,6 +80,9 @@ public struct RepositoryReference: Sendable, Equatable, Identifiable {
     /// 引用是否为标签。
     public var isTag: Bool { id.hasPrefix("refs/tags/") }
 
+    /// 引用是否为储藏栈的顶端 `refs/stash`。
+    public var isStash: Bool { id == "refs/stash" }
+
     /// 供界面展示的名称，保留远端前缀。
     public var name: String {
         for prefix in ["refs/heads/", "refs/remotes/", "refs/tags/"] where id.hasPrefix(prefix) {
@@ -109,6 +112,21 @@ public struct RepositoryReference: Sendable, Equatable, Identifiable {
         self.symbolicTarget = symbolicTarget
         self.date = date
         self.message = message
+    }
+
+    /// 指向所给储藏提交的 `refs/stash`，储藏详情的 Refs 行用它显示储藏标记。
+    ///
+    /// - Parameter objectID: 储藏提交的完整哈希。
+    public static func stash(objectID: String) -> Self {
+        Self(
+            id: "refs/stash",
+            objectID: objectID,
+            objectType: "commit",
+            upstream: nil,
+            upstreamRemote: nil,
+            upstreamBranch: nil,
+            symbolicTarget: nil
+        )
     }
 
     /// 解析固定 NUL 字段，仅移除 Git 在记录间额外插入的一个换行。

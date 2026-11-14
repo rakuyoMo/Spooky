@@ -3,33 +3,31 @@ import SwiftUI
 
 // MARK: - CommitActionRow
 
-/// 提交详情的操作条：在 HEAD 分支上是 ROLLBACK（把 HEAD 重置到这个提交）、REVERT 与 DIFFTOOL（用外部比较工具看这个提交的全部改动）三段连成一组，
-/// 其它情况只有 DIFFTOOL 一段；文字大写，由详情居中压在头部与提交说明之间的分隔线上。
+/// 提交与储藏详情的操作条：几段连成一组，文字大写，由详情居中压在头部与说明之间的分隔线上。
 ///
 /// 操作条平时隐藏，鼠标移进详情或键盘焦点移到某一段上时淡入；隐藏时仍保留位置与键盘焦点。
 struct CommitActionRow: View {
-    /// 操作条的一段，也是键盘焦点的标识。
-    private enum Segment {
-        case rollback
-        case revert
-        case diffTool
+    /// 操作条的一段。
+    struct Action {
+        /// 本地化的标题，显示时改成大写；也是这一段的键盘焦点标识。
+        let title: String
+
+        /// 这一段是否可用。
+        let enabled: Bool
+
+        /// 点按时执行的动作。
+        let perform: () -> Void
     }
 
-    /// 发起操作的窗口会话。
-    let session: RepositorySession
-
-    /// 详情显示的提交。
-    let commit: HistoryCommit
-
-    /// 是否有 Rollback 与 Revert 两段：历史正在显示 HEAD 所在的分支时才有。
-    let rewrites: Bool
+    /// 从左到右的各段。
+    let actions: [Action]
 
     /// 鼠标是否在详情上。
     let hovering: Bool
 
-    /// 获得键盘焦点的一段。
+    /// 获得键盘焦点的一段的标题。
     @FocusState
-    private var focused: Segment?
+    private var focused: String?
 
     /// 各段之间露出 1 pt 的边框色作竖线，整组共用一个圆角底与描边。
     var body: some View {
@@ -37,26 +35,8 @@ struct CommitActionRow: View {
         let shape = RoundedRectangle(cornerRadius: 5)
 
         HStack(spacing: 1) {
-            if rewrites {
-                segment(.rollback, title: AppLocalization.text("history.rollback"), enabled: session.canRewrite) {
-                    session.requestReset(to: commit.id)
-                }
-
-                segment(.revert, title: AppLocalization.text("rewrite.revert.button"), enabled: session.canRewrite) {
-                    session.requestRevert([commit.id])
-                }
-            }
-
-            // 变更集读出之前没有可比较的文件
-            segment(
-                .diffTool,
-                title: AppLocalization.text("history.diffTool"),
-                enabled: !session.history.changes.isEmpty
-            ) {
-                session.openDiffTool(
-                    for: commit,
-                    files: RepositorySession.comparedFiles(session.history.changes)
-                )
+            ForEach(actions, id: \.title) {
+                segment($0)
             }
         }
         .background(border)
@@ -68,22 +48,80 @@ struct CommitActionRow: View {
 
     /// 操作条的一段；读屏读出原本大小写的标题。
     ///
-    /// - Parameters:
-    ///   - id: 这一段的焦点标识。
-    ///   - title: 本地化的标题，显示时改成大写。
-    ///   - enabled: 这一段是否可用。
-    ///   - action: 点按时执行的动作。
-    private func segment(
-        _ id: Segment,
-        title: String,
-        enabled: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(title, action: action)
+    /// - Parameter action: 这一段的标题、可用性与动作。
+    private func segment(_ action: Action) -> some View {
+        Button(action.title, action: action.perform)
             .buttonStyle(CommitActionSegmentStyle())
-            .disabled(!enabled)
-            .focused($focused, equals: id)
-            .accessibilityLabel(title)
+            .disabled(!action.enabled)
+            .focused($focused, equals: action.title)
+            .accessibilityLabel(action.title)
+    }
+}
+
+// MARK: - 提交与储藏
+
+extension CommitActionRow {
+    /// 提交详情的操作条：在 HEAD 分支上是 ROLLBACK（把 HEAD 重置到这个提交）、REVERT 与 DIFFTOOL（用外部比较工具看这个提交的全部改动），
+    /// 其它情况只有 DIFFTOOL 一段。
+    ///
+    /// - Parameters:
+    ///   - session: 发起操作的窗口会话。
+    ///   - commit: 详情显示的提交。
+    ///   - rewrites: 是否有 Rollback 与 Revert 两段：历史正在显示 HEAD 所在的分支时才有。
+    ///   - hovering: 鼠标是否在详情上。
+    init(session: RepositorySession, commit: HistoryCommit, rewrites: Bool, hovering: Bool) {
+        var actions: [Action] = []
+
+        if rewrites {
+            actions.append(
+                Action(title: AppLocalization.text("history.rollback"), enabled: session.canRewrite) {
+                    session.requestReset(to: commit.id)
+                }
+            )
+
+            actions.append(
+                Action(title: AppLocalization.text("rewrite.revert.button"), enabled: session.canRewrite) {
+                    session.requestRevert([commit.id])
+                }
+            )
+        }
+
+        // 变更集读出之前没有可比较的文件
+        actions.append(
+            Action(title: AppLocalization.text("history.diffTool"), enabled: !session.history.changes.isEmpty) {
+                session.openDiffTool(
+                    for: commit,
+                    files: RepositorySession.comparedFiles(session.history.changes)
+                )
+            }
+        )
+
+        self.init(actions: actions, hovering: hovering)
+    }
+
+    /// 储藏详情的操作条：APPLY、DELETE 与 DIFFTOOL（用外部比较工具看储藏相对基准的全部改动）。
+    ///
+    /// - Parameters:
+    ///   - session: 发起操作的窗口会话。
+    ///   - stash: 详情显示的储藏。
+    ///   - hovering: 鼠标是否在详情上。
+    init(session: RepositorySession, stash: StashEntry, hovering: Bool) {
+        let changes = session.stashes.changes
+
+        self.init(
+            actions: [
+                Action(title: AppLocalization.text("stash.applyButton"), enabled: session.canApply(stash)) {
+                    session.requestApplyStash(stash)
+                },
+                Action(title: AppLocalization.text("stash.deleteButton"), enabled: session.canDelete([stash])) {
+                    session.deleteStashes([stash])
+                },
+                Action(title: AppLocalization.text("history.diffTool"), enabled: !changes.isEmpty) {
+                    session.openDiffTool(for: stash, changes: changes)
+                },
+            ],
+            hovering: hovering
+        )
     }
 }
 

@@ -626,13 +626,9 @@
 "stash.delete.confirm" = "스태시 “%@”을(를) 삭제할까요?";
 "stash.deleteStashes" = "선택한 스태시 삭제";
 "stash.deleteStashes.confirm" = "선택한 스태시 %ld개를 삭제할까요?";
-"stash.applyButton" = "적용…";
+"stash.applyButton" = "적용";
 "stash.deleteButton" = "삭제";
 "stash.basedOn" = "기준";
-"stash.baseCommit" = "기준 커밋";
-"stash.date" = "날짜";
-"stash.hash" = "스태시";
-"stash.untracked" = "추적 안 함";
 "stash.empty" = "스태시 없음";
 "stash.noMatches" = "일치하는 스태시 없음";
 "stash.loading" = "스태시를 불러오는 중…";
