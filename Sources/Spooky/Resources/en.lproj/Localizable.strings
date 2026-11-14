@@ -734,8 +734,8 @@
 "conflict.lastEdited" = "Last edited %@";
 "conflict.openWith" = "Open Version from “%@” With";
 "conflict.openWith.missing" = "Open With";
-"conflict.compareOther" = "Compare with Other Version";
-"conflict.compareBase" = "Compare with Common Ancestor";
+"conflict.compareOther" = "Compare to Version from “%@”";
+"conflict.compareBase" = "Compare to Ancestor Version";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "File History";
 "fileHistory.scope.message" = "Message";

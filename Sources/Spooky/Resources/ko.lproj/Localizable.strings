@@ -734,8 +734,8 @@
 "conflict.lastEdited" = "마지막 편집: %@";
 "conflict.openWith" = "“%@”의 버전을 다음으로 열기";
 "conflict.openWith.missing" = "다음으로 열기";
-"conflict.compareOther" = "다른 버전과 비교";
-"conflict.compareBase" = "공통 조상과 비교";
+"conflict.compareOther" = "“%@”의 버전과 비교";
+"conflict.compareBase" = "조상 버전과 비교";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "파일 기록";
 "fileHistory.scope.message" = "메시지";

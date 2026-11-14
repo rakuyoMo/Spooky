@@ -734,8 +734,8 @@
 "conflict.lastEdited" = "最后编辑于 %@";
 "conflict.openWith" = "打开来自 “%@” 的版本的方式";
 "conflict.openWith.missing" = "打开方式";
-"conflict.compareOther" = "与另一侧版本比较";
-"conflict.compareBase" = "与共同祖先比较";
+"conflict.compareOther" = "与来自 “%@” 的版本比较";
+"conflict.compareBase" = "与祖先版本比较";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "文件历史";
 "fileHistory.scope.message" = "说明";

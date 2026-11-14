@@ -7,7 +7,7 @@ import SwiftUI
 /// 选中冲突文件时的右栏：上排我方、对方两张版本卡片，两条弯箭头汇入下方的结果框，结果框下是统一的动作按钮；
 /// 整块内容在右栏里竖直居中，右栏的最小宽度由窗口控制器在向导出现时放宽。
 ///
-/// 单击卡片选中这一侧，⌘ 单击另一张可以两侧都选，再单击已选的卡片取消；选择只是视图状态，不改工作区或索引。
+/// 单击卡片切换这一张的选中，两张都选就是两侧合并；选择只是视图状态，不改工作区或索引。
 struct ConflictWizardView: View {
     /// 触发载入的请求：文件的三方版本变化或需要重新读取时重新载入。
     private struct LoadRequest: Equatable {
@@ -41,9 +41,9 @@ struct ConflictWizardView: View {
     @State
     private var reloads = 0
 
-    /// 选中的版本卡片。
+    /// 选中的版本卡片；还没有单击过卡片时为 nil，结果按当前文件得出。
     @State
-    private var selection: Set<ConflictSide> = []
+    private var selection: Set<ConflictSide>? = nil
 
     /// 设置里选的合并工具，决定合并按钮的标题。
     @AppStorage(ExternalTool.mergeToolKey)
@@ -65,7 +65,7 @@ struct ConflictWizardView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task(id: LoadRequest(entry: entry, reloads: reloads)) { await load() }
-        .onChange(of: entry.path) { selection = [] }
+        .onChange(of: entry.path) { selection = nil }
         .onChange(of: session.isWriting) {
             if !session.isWriting { reloads += 1 }
         }
@@ -115,15 +115,15 @@ extension ConflictWizardView {
     ///
     /// 卡片各 198 pt、间距 22 pt，结果框 348 × 138 pt；右栏比内容窄时内容不撑开右栏。
     private func wizard(_ contents: ConflictContents) -> some View {
-        let result = ConflictResult.of(selection: selection, contents: contents)
+        let result = ConflictResult.of(selection: selection, contents: contents, kind: entry.conflictKind)
 
         return VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 22) {
-                card(.ours, data: contents.ours, commit: commits.ours)
-                card(.theirs, data: contents.theirs, commit: commits.theirs)
+                card(.ours, data: contents.ours, commit: commits.ours, highlighted: result.highlighted)
+                card(.theirs, data: contents.theirs, commit: commits.theirs, highlighted: result.highlighted)
             }
 
-            ConflictArrows(selection: selection)
+            ConflictArrows(selection: result.highlighted)
                 .frame(width: 418, height: 120)
 
             resultBox(result, contents: contents)
@@ -136,21 +136,30 @@ extension ConflictWizardView {
         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
     }
 
-    /// 一张版本卡片；单击选中或取消，按住 ⌘ 时加入已有的选择。
-    private func card(_ side: ConflictSide, data: Data?, commit: HistoryCommit?) -> some View {
+    /// 一张版本卡片；单击切换这一张的选中，当前文件等于这一侧时从画成选中的状态开始切换。
+    ///
+    /// - Parameters:
+    ///   - side: 卡片对应的一侧。
+    ///   - data: 这一侧的原文。
+    ///   - commit: 这一侧版本所在的提交。
+    ///   - highlighted: 画成选中的卡片。
+    private func card(
+        _ side: ConflictSide,
+        data: Data?,
+        commit: HistoryCommit?,
+        highlighted: Set<ConflictSide>
+    ) -> some View {
         ConflictVersionCard(
             session: session,
             entry: entry,
             side: side,
             data: data,
             commit: commit,
-            isSelected: selection.contains(side)
+            isSelected: highlighted.contains(side)
         )
         .frame(width: 198)
-        .onTapGesture {
-            selection = side.toggled(in: selection, adding: NSEvent.modifierFlags.contains(.command))
-        }
-        .accessibilityAddTraits(selection.contains(side) ? [.isButton, .isSelected] : .isButton)
+        .onTapGesture { selection = side.toggled(in: highlighted) }
+        .accessibilityAddTraits(highlighted.contains(side) ? [.isButton, .isSelected] : .isButton)
     }
 
     /// 结果框，与版本卡片同一种样子：未选时是空文件轮廓与提示；选了一侧时是这一侧的标题与摘要；

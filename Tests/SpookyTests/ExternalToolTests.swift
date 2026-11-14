@@ -5,7 +5,7 @@ import Testing
 
 // MARK: - ExternalToolTests
 
-/// 外部比较工具的命令行：TextMate 的命令行入口取应用包里实际存在的位置。
+/// 外部比较工具：选择工具的弹出菜单按名称字母序列出；TextMate 的命令行入口取应用包里实际存在的位置。
 struct ExternalToolTests {
     /// TextMate 经管道接收统一补丁；`mate` 不在应用包的这个位置时管道静默失败，TextMate 根本不会打开。
     @Test("TextMate 的命令行入口")
@@ -27,5 +27,13 @@ struct ExternalToolTests {
                 "/Applications/TextMate.app/Contents/MacOS/mate",
             ]
         )
+    }
+
+    /// 比较工具与合并工具的弹出菜单都按声明顺序列出，新增工具时同样要放在字母序的位置上。
+    @Test("工具按名称字母序列出")
+    func alphabeticalOrder() {
+        let names = ExternalTool.allCases.map(\.displayName)
+
+        #expect(names == names.sorted { $0.localizedStandardCompare($1) == .orderedAscending })
     }
 }

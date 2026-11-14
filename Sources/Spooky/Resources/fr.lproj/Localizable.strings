@@ -734,8 +734,8 @@
 "conflict.lastEdited" = "Dernière modification : %@";
 "conflict.openWith" = "Ouvrir la version de « %@ » avec";
 "conflict.openWith.missing" = "Ouvrir avec";
-"conflict.compareOther" = "Comparer avec l’autre version";
-"conflict.compareBase" = "Comparer avec l’ancêtre commun";
+"conflict.compareOther" = "Comparer à la version de « %@ »";
+"conflict.compareBase" = "Comparer à la version ancêtre";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "Historique du fichier";
 "fileHistory.scope.message" = "Message";

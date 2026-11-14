@@ -116,7 +116,9 @@ extension WorkingCopyFileList.Coordinator {
         icon.imageScaling = .scaleProportionallyUpOrDown
         icon.isEnabled = !dimmed
 
-        let cell = NSView()
+        // 表格把选中行的背景样式交给单元格，文件名（包括变灰的）随之换成选中行的文字颜色
+        let cell = NSTableCellView()
+        cell.textField = label
 
         for view in [icon, label] {
             view.translatesAutoresizingMaskIntoConstraints = false
@@ -176,6 +178,10 @@ extension WorkingCopyFileList.Coordinator {
     func restoreSelection() {
         guard let outline else { return }
 
+        // 选中的冲突文件解决后换成别的状态（如与 HEAD 相同的已解决行），仍选中同一个文件
+        let resolving = Set(session.selectedIDs.filter { $0.kind == .conflicted }.map(\.path))
+        var followed = false
+
         let rows = (0 ..< outline.numberOfRows).filter { row in
             guard let node = outline.item(atRow: row) as? WorkingCopyFileList.Node else { return false }
 
@@ -184,10 +190,25 @@ extension WorkingCopyFileList.Coordinator {
             }
 
             guard let entry = node.entry else { return false }
-            return session.selectedIDs.contains(StatusRowID(path: entry.path, kind: entry.kind))
+
+            if session.selectedIDs.contains(StatusRowID(path: entry.path, kind: entry.kind)) {
+                return true
+            }
+
+            guard entry.kind != .conflicted, resolving.contains(entry.path) else { return false }
+
+            followed = true
+            return true
         }
 
         outline.selectRowIndexes(IndexSet(rows), byExtendingSelection: false)
+
+        // 选区换成了新的行，会话在视图更新之后再跟着改
+        if followed {
+            Task { @MainActor [weak self] in
+                self?.syncSelection()
+            }
+        }
     }
 
     /// 搜索把选中的文件过滤掉后取消这些选择，菜单与快捷键不会作用于看不见的文件。

@@ -8,40 +8,50 @@ import Testing
 
 /// 冲突向导的选择与结果框：选择只在视图里，结果按选择与当前文件得出；菜单的比较项按缺少的版本禁用。
 struct ConflictWizardStateTests {
-    /// 单击选中、再单击取消；⌘ 单击加入另一张，不按 ⌘ 时换成只选这一张。
-    /// 结果框里选择优先；没有选择时当前文件等于某侧就显示该侧，与两侧都不同且没有冲突标记是手动合并的结果，否则提示选择。
-    @Test("卡片的选择与结果框的五种状态")
+    /// 单击切换这一张的选中，不看 ⌘：选了一张再单击另一张是两张都选，再单击已选的一张取消它。
+    /// 结果框：单击过卡片时按选择；还没有单击时，双方修改与双方新增的当前文件等于某侧就显示该侧并画成选中，
+    /// 修改 / 删除冲突打开时保持未选；与两侧都不同且没有冲突标记是手动合并的结果，否则提示选择。
+    @Test("卡片的选择与结果框的状态")
     func selection() {
-        #expect(ConflictSide.ours.toggled(in: [], adding: false) == [.ours])
-        #expect(ConflictSide.theirs.toggled(in: [.ours], adding: false) == [.theirs])
-        #expect(ConflictSide.theirs.toggled(in: [.ours], adding: true) == [.ours, .theirs])
+        #expect(ConflictSide.ours.toggled(in: []) == [.ours])
+        #expect(ConflictSide.theirs.toggled(in: [.ours]) == [.ours, .theirs])
+        #expect(ConflictSide.ours.toggled(in: [.ours, .theirs]) == [.theirs])
+        #expect(ConflictSide.ours.toggled(in: [.ours]).isEmpty)
 
-        // 再单击已选的卡片取消它，按不按 ⌘ 都一样
-        #expect(ConflictSide.ours.toggled(in: [.ours], adding: false).isEmpty)
-        #expect(ConflictSide.ours.toggled(in: [.ours, .theirs], adding: true) == [.theirs])
-
-        // 结果框
         let ours = Data("ours\n".utf8)
         let theirs = Data("theirs\n".utf8)
         let marked = Data("<<<<<<< HEAD\nours\n=======\ntheirs\n>>>>>>> side\n".utf8)
 
-        /// 当前文件为给定内容时的三方内容。
-        func contents(_ worktree: Data?) -> ConflictContents {
-            ConflictContents(base: nil, ours: ours, theirs: theirs, worktree: worktree)
+        /// 当前文件为给定内容、冲突类型为给定类型时的结果。
+        func result(
+            _ selection: Set<ConflictSide>?,
+            worktree: Data?,
+            kind: ConflictKind = .bothModified
+        ) -> ConflictResult {
+            ConflictResult.of(
+                selection: selection,
+                contents: ConflictContents(base: nil, ours: ours, theirs: theirs, worktree: worktree),
+                kind: kind
+            )
         }
 
-        #expect(ConflictResult.of(selection: [], contents: contents(marked)) == .unselected)
-        #expect(ConflictResult.of(selection: [.theirs], contents: contents(marked)) == .side(.theirs))
-        #expect(ConflictResult.of(selection: [.ours, .theirs], contents: contents(marked)) == .both)
+        #expect(result(nil, worktree: marked) == .unselected)
+        #expect(result([.theirs], worktree: marked) == .side(.theirs))
+        #expect(result([.ours, .theirs], worktree: marked).highlighted == [.ours, .theirs])
 
-        // 当前文件等于一侧时显示这一侧，选择仍然优先
-        #expect(ConflictResult.of(selection: [], contents: contents(ours)) == .side(.ours))
-        #expect(ConflictResult.of(selection: [], contents: contents(theirs)) == .side(.theirs))
-        #expect(ConflictResult.of(selection: [.ours], contents: contents(theirs)) == .side(.ours))
+        // 当前文件等于一侧时显示这一侧并画成选中；单击过卡片后按选择，全部取消后不再回到这一侧
+        #expect(result(nil, worktree: ours) == .side(.ours))
+        #expect(result(nil, worktree: theirs, kind: .bothAdded).highlighted == [.theirs])
+        #expect(result([.ours], worktree: theirs) == .side(.ours))
+        #expect(result([], worktree: ours) == .unselected)
+
+        // 修改 / 删除冲突打开时保持未选
+        #expect(result(nil, worktree: theirs, kind: .deletedByUs) == .unselected)
+        #expect(result(nil, worktree: ours, kind: .deletedByThem).highlighted.isEmpty)
 
         // 手动合并过且没有冲突标记；文件已不在工作区时只提示选择
-        #expect(ConflictResult.of(selection: [], contents: contents(Data("merged\n".utf8))) == .current)
-        #expect(ConflictResult.of(selection: [], contents: contents(nil)) == .unselected)
+        #expect(result(nil, worktree: Data("merged\n".utf8)) == .current)
+        #expect(result(nil, worktree: nil) == .unselected)
     }
 
     /// 比较用冲突的 stage 对象：删除的一侧不能与另一侧比较，双方新增没有共同祖先，不能与祖先比较。

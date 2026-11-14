@@ -734,8 +734,8 @@
 "conflict.lastEdited" = "最終編集：%@";
 "conflict.openWith" = "「%@」のバージョンを次で開く";
 "conflict.openWith.missing" = "このアプリケーションで開く";
-"conflict.compareOther" = "もう一方のバージョンと比較";
-"conflict.compareBase" = "共通の祖先と比較";
+"conflict.compareOther" = "「%@」のバージョンと比較";
+"conflict.compareBase" = "祖先のバージョンと比較";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "ファイル履歴";
 "fileHistory.scope.message" = "メッセージ";

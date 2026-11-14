@@ -25,18 +25,17 @@ struct ExternalToolInvocation: Equatable {
 // MARK: - ExternalTool
 
 /// 可选的外部比较与合并工具：都在本机启动，命令行按各工具的约定由 Spooky 组装。
+///
+/// 按名称的字母序声明，选择工具的弹出菜单按这个顺序列出。
 enum ExternalTool: String, CaseIterable, Identifiable {
-    /// Visual Studio Code。
-    case visualStudioCode = "vscode"
-
     /// Araxis Merge。
     case araxisMerge = "araxismerge"
 
-    /// Beyond Compare。
-    case beyondCompare = "beyondcompare"
-
     /// BBEdit。
     case bbEdit = "bbedit"
+
+    /// Beyond Compare。
+    case beyondCompare = "beyondcompare"
 
     /// DeltaWalker。
     case deltaWalker = "deltawalker"
@@ -52,6 +51,9 @@ enum ExternalTool: String, CaseIterable, Identifiable {
 
     /// TextMate。
     case textMate = "textmate"
+
+    /// Visual Studio Code。
+    case visualStudioCode = "vscode"
 
     /// 偏好：比较工具的标识。
     static let diffToolKey = "diffToolIdentifier"
