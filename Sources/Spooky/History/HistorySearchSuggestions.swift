@@ -166,7 +166,7 @@ final class HistorySearchSuggestions {
                 ContributorSuggestion(text: $0, name: $0, email: nil, showsAvatar: false)
             }
 
-        case .message, .hash, .date:
+        case .message, .hash, .date, .sinceDate, .untilDate:
             return []
         }
     }

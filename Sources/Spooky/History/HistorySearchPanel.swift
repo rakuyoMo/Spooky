@@ -95,7 +95,7 @@ private struct HistorySearchConditionRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Picker("", selection: binding(\.kind)) {
-                ForEach(HistorySearchCondition.Kind.allCases, id: \.self) { kind in
+                ForEach(Self.kinds(including: condition.kind), id: \.self) { kind in
                     Text(kind.title).tag(kind)
                 }
             }
@@ -197,6 +197,13 @@ private struct HistorySearchConditionRow: View {
         .labelsHidden()
         .pickerStyle(.menu)
         .fixedSize()
+    }
+
+    /// 种类菜单列出的种类：起止日期只在工具栏的范围菜单里选，行里正用着时才列出。
+    private static func kinds(including current: HistorySearchCondition.Kind) -> [HistorySearchCondition.Kind] {
+        HistorySearchCondition.Kind.allCases.filter { kind in
+            kind == current || ![.sinceDate, .untilDate].contains(kind)
+        }
     }
 
     /// 只选年月日的日期框。
@@ -366,6 +373,8 @@ extension HistorySearchCondition.Kind {
         case .file: AppLocalization.text("history.search.file")
         case .hash: AppLocalization.text("history.search.hash")
         case .date: AppLocalization.text("history.search.date")
+        case .sinceDate: AppLocalization.text("history.search.sinceDate")
+        case .untilDate: AppLocalization.text("history.search.untilDate")
         }
     }
 
@@ -378,6 +387,8 @@ extension HistorySearchCondition.Kind {
         case .file: AppLocalization.text("history.search.forFile")
         case .hash: AppLocalization.text("history.search.forHash")
         case .date: ""
+        case .sinceDate: AppLocalization.text("history.search.forSinceDate")
+        case .untilDate: AppLocalization.text("history.search.forUntilDate")
         }
     }
 }

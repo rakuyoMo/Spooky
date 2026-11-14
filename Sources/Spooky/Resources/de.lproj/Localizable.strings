@@ -1007,11 +1007,15 @@
 "history.search.file" = "Datei";
 "history.search.hash" = "Commit-Hash";
 "history.search.date" = "Datum";
+"history.search.sinceDate" = "Seit Datum";
+"history.search.untilDate" = "Bis Datum";
 "history.search.forMessage" = "Nach Nachricht suchen";
 "history.search.forAuthor" = "Nach Autor suchen";
 "history.search.forCommitter" = "Nach Committer suchen";
 "history.search.forFile" = "Nach Datei suchen";
 "history.search.forHash" = "Nach Commit-Hash suchen";
+"history.search.forSinceDate" = "Nach Commits seit Datum suchen";
+"history.search.forUntilDate" = "Nach Commits bis Datum suchen";
 "history.search.after" = "ist nach";
 "history.search.before" = "ist vor";
 "history.search.range" = "liegt zwischen";

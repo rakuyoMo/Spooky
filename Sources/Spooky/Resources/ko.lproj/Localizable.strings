@@ -1007,11 +1007,15 @@
 "history.search.file" = "파일";
 "history.search.hash" = "커밋 해시";
 "history.search.date" = "날짜";
+"history.search.sinceDate" = "시작 날짜";
+"history.search.untilDate" = "종료 날짜";
 "history.search.forMessage" = "메시지 검색";
 "history.search.forAuthor" = "작성자 검색";
 "history.search.forCommitter" = "커미터 검색";
 "history.search.forFile" = "파일 검색";
 "history.search.forHash" = "커밋 해시 검색";
+"history.search.forSinceDate" = "이 날짜 이후의 커밋 검색";
+"history.search.forUntilDate" = "이 날짜 이전의 커밋 검색";
 "history.search.after" = "이후";
 "history.search.before" = "이전";
 "history.search.range" = "범위 내";

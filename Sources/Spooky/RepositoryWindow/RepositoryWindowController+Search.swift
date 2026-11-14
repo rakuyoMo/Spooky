@@ -5,7 +5,15 @@ import SpookyKit
 
 extension RepositoryWindowController {
     /// 历史搜索框范围菜单的顺序，菜单项的 tag 是这里的序号。
-    private static let historyScopes: [HistorySearchCondition.Kind] = [.message, .author, .committer, .file, .hash]
+    private static let historyScopes: [HistorySearchCondition.Kind] = [
+        .message,
+        .author,
+        .committer,
+        .file,
+        .hash,
+        .sinceDate,
+        .untilDate,
+    ]
 
     /// 工具栏搜索框：输入即时写入会话，由当前主视图过滤自己的列表。
     func makeSearchItem(_ identifier: NSToolbarItem.Identifier) -> NSToolbarItem {

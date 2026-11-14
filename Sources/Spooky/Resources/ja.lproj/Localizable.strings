@@ -1007,11 +1007,15 @@
 "history.search.file" = "ファイル";
 "history.search.hash" = "コミットハッシュ";
 "history.search.date" = "日付";
+"history.search.sinceDate" = "開始日";
+"history.search.untilDate" = "終了日";
 "history.search.forMessage" = "メッセージを検索";
 "history.search.forAuthor" = "作成者を検索";
 "history.search.forCommitter" = "コミッターを検索";
 "history.search.forFile" = "ファイルを検索";
 "history.search.forHash" = "コミットハッシュを検索";
+"history.search.forSinceDate" = "この日以降のコミットを検索";
+"history.search.forUntilDate" = "この日以前のコミットを検索";
 "history.search.after" = "より後";
 "history.search.before" = "より前";
 "history.search.range" = "の範囲内";

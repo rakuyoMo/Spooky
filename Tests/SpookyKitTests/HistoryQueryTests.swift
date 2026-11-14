@@ -59,7 +59,7 @@ struct HistoryQueryTests {
     }
 
     /// 日期条件按所给日历的整天换算：同一时刻在不同时区落在不同的一天，夏令时开始的那天只有 23 小时；
-    /// 筛选看提交人日期，作者日期落在条件之外的提交照样在结果里。
+    /// 键入的起止日期按三种日期样式解析，解析不出时不筛选；筛选看提交人日期，作者日期落在条件之外的提交照样在结果里。
     @Test("日期条件的日界、时区、夏令时与提交人日期")
     func dateBoundaries() async throws {
         // 同一时刻在上海已是 1 月 3 日，在洛杉矶还是 1 月 2 日
@@ -90,6 +90,25 @@ struct HistoryQueryTests {
         #expect(sameDay.since == dayStart)
         #expect(sameDay.until == dayEnd)
         #expect(until.bounds(in: newYork).until == dayEnd)
+
+        // 键入的日期：短、中、长三种样式都能解析，起点是那天 0 点、终点是那天 23:59:59；解析不出时不按日期筛选
+        var typedCalendar = newYork
+        typedCalendar.locale = Locale(identifier: "en_US")
+
+        for text in ["3/8/26", " Mar 8, 2026 ", "March 8, 2026"] {
+            let since = HistorySearchCondition(kind: .sinceDate, text: text)
+            let typedUntil = HistorySearchCondition(kind: .untilDate, text: text)
+
+            #expect(since.bounds(in: typedCalendar).since == dayStart, "\(text)")
+            #expect(typedUntil.bounds(in: typedCalendar).until == dayEnd, "\(text)")
+        }
+
+        let unparsed = HistoryQuery(
+            conditions: [HistorySearchCondition(kind: .sinceDate, text: "notadate")],
+            calendar: typedCalendar
+        )
+
+        #expect(unparsed.isSearching && unparsed.filterArguments.isEmpty)
 
         // 提交人日期是 1 月 1 日，作者日期是 1 月 10 日
         let fixture = try TemporaryRepository()

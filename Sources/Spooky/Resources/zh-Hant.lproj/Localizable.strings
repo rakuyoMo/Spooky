@@ -1007,11 +1007,15 @@
 "history.search.file" = "檔案";
 "history.search.hash" = "提交雜湊";
 "history.search.date" = "日期";
+"history.search.sinceDate" = "起始日期";
+"history.search.untilDate" = "截止日期";
 "history.search.forMessage" = "搜尋提交訊息";
 "history.search.forAuthor" = "搜尋作者";
 "history.search.forCommitter" = "搜尋提交者";
 "history.search.forFile" = "搜尋檔案";
 "history.search.forHash" = "搜尋提交雜湊";
+"history.search.forSinceDate" = "搜尋此日期以來的提交";
+"history.search.forUntilDate" = "搜尋此日期以前的提交";
 "history.search.after" = "晚於";
 "history.search.before" = "早於";
 "history.search.range" = "介於";
