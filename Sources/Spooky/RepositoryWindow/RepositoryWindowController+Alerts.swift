@@ -48,10 +48,20 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 进行中的操作没有任何改动时确认是否保留空提交；窗口已有 sheet 时不叠加。
+    /// 进行中的操作没有任何改动时以系统提示框确认是否保留空提交；窗口已有 sheet 时不叠加。
     func showEmptyCommitPrompt(_ request: EmptyCommitRequest) {
-        presentDialog { close in
-            Self.emptyCommitDialog(request, close: close)
+        guard let window, window.attachedSheet == nil else {
+            return
+        }
+
+        let alert = Self.emptyCommitAlert(request)
+
+        alert.beginSheetModal(for: window) { response in
+            Self.finishEmptyCommit(
+                request,
+                response: response,
+                suppressed: alert.suppressionButton?.state == .on
+            )
         }
     }
 
@@ -71,41 +81,50 @@ extension RepositoryWindowController {
 // MARK: - Notices
 
 extension RepositoryWindowController {
-    /// 空提交的确认：主按钮保留空提交，备选是中止当前操作或跳过这一步，内容区是不再提示的勾选框。
-    ///
-    /// 勾上不再提示时，无论选哪个按钮（包括 Cancel）都关掉这项警告；Cancel 不执行 Git。
-    ///
-    /// - Parameters:
-    ///   - request: 会话发来的确认请求。
-    ///   - close: 关闭对话框。
-    static func emptyCommitDialog(_ request: EmptyCommitRequest, close: @escaping () -> Void) -> ConfirmationDialog {
-        let remember: (_ checked: Bool) -> Void = { checked in
-            if checked {
-                UserDefaults.standard.set(false, forKey: WorkingCopyPreferences.warnsEmptyCommit)
-            }
-        }
-
+    /// 空提交的确认：系统提示框，按钮依次是保留空提交、中止当前操作（序列里是跳过这一步）与 Cancel，带不再提示的勾选框。
+    static func emptyCommitAlert(_ request: EmptyCommitRequest) -> NSAlert {
         let keys = request.isSequence
             ? (message: "commit.empty.sequenceMessage", alternate: "commit.empty.skip")
             : (message: "commit.empty.message", alternate: "commit.empty.abort")
 
-        return ConfirmationDialog(
-            title: AppLocalization.text("commit.empty.title"),
-            message: AppLocalization.text(keys.message),
-            submitTitle: AppLocalization.text("commit.empty.use"),
-            alternate: (
-                title: AppLocalization.text(keys.alternate),
-                action: { checked in
-                    remember(checked)
-                    request.alternate()
-                }
-            ),
-            checkbox: AppLocalization.text("commit.empty.doNotShowAgain"),
-            close: close,
-            cancel: remember
-        ) { checked in
-            remember(checked)
+        let alert = NSAlert()
+        alert.messageText = AppLocalization.text("commit.empty.title")
+        alert.informativeText = AppLocalization.text(keys.message)
+
+        alert.addButton(withTitle: AppLocalization.text("commit.empty.use"))
+        alert.addButton(withTitle: AppLocalization.text(keys.alternate))
+        alert.addButton(withTitle: AppLocalization.text("action.cancel"))
+
+        alert.showsSuppressionButton = true
+        alert.suppressionButton?.title = AppLocalization.text("commit.empty.doNotShowAgain")
+
+        return alert
+    }
+
+    /// 按空提交提示框的结果执行：勾上不再提示时，无论选哪个按钮（包括 Cancel）都关掉这项警告；Cancel 不执行 Git。
+    ///
+    /// - Parameters:
+    ///   - request: 会话发来的确认请求。
+    ///   - response: 提示框的结果，按钮依 `emptyCommitAlert(_:)` 的顺序。
+    ///   - suppressed: 是否勾上了不再提示。
+    static func finishEmptyCommit(
+        _ request: EmptyCommitRequest,
+        response: NSApplication.ModalResponse,
+        suppressed: Bool
+    ) {
+        if suppressed {
+            UserDefaults.standard.set(false, forKey: WorkingCopyPreferences.warnsEmptyCommit)
+        }
+
+        switch response {
+        case .alertFirstButtonReturn:
             request.commit()
+
+        case .alertSecondButtonReturn:
+            request.alternate()
+
+        default:
+            break
         }
     }
 

@@ -38,9 +38,10 @@ struct OperationBannerView: View {
 // MARK: - Icons
 
 extension OperationBannerView {
-    /// 操作类型的系统符号名：合并与压缩合并用合并的图标，变基、摘取与反转用分支的图标；侧边栏的 Working Copy 行用同一分类。
-    static func symbolName(_ state: RepositoryOperationState) -> String {
-        state == .merge || state == .squash ? "arrow.triangle.merge" : "arrow.triangle.branch"
+    /// 操作的系统符号名，按有没有 sequencer 分两种：合并与单个提交的摘取、反转用合并的图标，变基与多个提交的摘取、反转用变基的图标；
+    /// 侧边栏的 Working Copy 行用同一分类。
+    static func symbolName(_ progress: OperationProgress) -> String {
+        progress.isSequence ? "arrow.triangle.branch" : "arrow.triangle.merge"
     }
 }
 
@@ -108,7 +109,7 @@ extension OperationBannerView {
         )
 
         return HStack(alignment: .top, spacing: 8) {
-            icon(progress.state)
+            icon(progress)
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(session.operationBannerTitle ?? "")
@@ -118,9 +119,11 @@ extension OperationBannerView {
                     .font(.system(size: 13))
                     .padding(.top, 4)
 
+                // 提示按文字列宽折行、几行都完整显示，不与文件列表争高度
                 Text(hint(progress))
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 12)
 
                 stepProgress(progress)
@@ -147,8 +150,8 @@ extension OperationBannerView {
     }
 
     /// 操作类型的图标；系统黄色，略微透明。
-    private func icon(_ state: RepositoryOperationState) -> some View {
-        Image(systemName: Self.symbolName(state))
+    private func icon(_ progress: OperationProgress) -> some View {
+        Image(systemName: Self.symbolName(progress))
             .font(.system(size: 36))
             .foregroundStyle(Color(nsColor: .systemYellow).opacity(0.9))
             .frame(width: 48, height: 48)
@@ -169,21 +172,21 @@ extension OperationBannerView {
                 Text(text)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.top, 12)
         }
     }
 
-    /// 只看冲突文件的勾选框，以及中止、结束编辑和跳过。
+    /// 只看冲突文件的勾选框，以及中止、结束编辑和跳过；勾选框完整显示，与按钮之间只留一份间距。
     private func actionRow(_ progress: OperationProgress) -> some View {
         HStack(spacing: 8) {
-            // 全部解决后仍可切换，直到操作结束
+            // 全部解决后仍可切换，直到操作结束；勾选框占去按钮左边的空间，按钮靠右
             Toggle(AppLocalization.text("working.onlyConflicts"), isOn: $onlyConflicts)
                 .toggleStyle(.checkbox)
                 .disabled(session.conflictPaths == nil)
-
-            Spacer(minLength: 0)
+                .fixedSize()
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             Button(AppLocalization.text("working.abort")) { session.finishOperation("abort") }
                 .disabled(!session.canWrite)

@@ -19,7 +19,7 @@ extension RepositorySidebarView {
         ///   - status: 工作区状态；还没有读到时为 nil。
         static func current(progress: OperationProgress?, status: WorkingCopyStatus?) -> Self? {
             if let progress {
-                return .operation(symbol: OperationBannerView.symbolName(progress.state))
+                return .operation(symbol: OperationBannerView.symbolName(progress))
             }
 
             guard let count = status?.entries.count, count > 0 else {

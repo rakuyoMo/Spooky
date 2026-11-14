@@ -153,7 +153,7 @@ extension PromptDialogTests {
     }
 
     /// 这几个资源键的文字。
-    private static func texts(_ keys: String...) -> [String] {
+    static func texts(_ keys: String...) -> [String] {
         keys.map { AppLocalization.text($0) }
     }
 }
