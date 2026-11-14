@@ -178,11 +178,19 @@ extension RepositorySidebarView {
             .modifier(RepositoryDropTarget(session: session, destination: destination, request: request))
     }
 
-    /// 按 “/” 折叠出的文件夹行；作为落点接受拖入改名、新建分支或标签。本地分支与标签的文件夹有右键菜单，远端分支的文件夹没有。
+    /// 按 “/” 折叠出的文件夹行；作为落点接受拖入改名、新建分支或标签，拖动停留时展开。
+    /// 本地分支与标签的文件夹有右键菜单，远端分支的文件夹没有。
     @ViewBuilder
     func folderLabel(_ node: SidebarRefNode, destination: RepositoryDropDestination) -> some View {
         let label = SidebarFolderLabel(name: node.name)
-            .modifier(RepositoryDropTarget(session: session, destination: destination, request: request))
+            .modifier(
+                RepositoryDropTarget(
+                    session: session,
+                    destination: destination,
+                    request: request,
+                    hovering: { springLoading.hover(node.id, hovering: $0, expanded: isExpanded(node.id)) }
+                )
+            )
 
         switch destination {
         case .branchFolder, .tagFolder:

@@ -109,6 +109,10 @@ struct RepositorySidebarView: View {
     @State
     var filterText = ""
 
+    /// 拖动中悬停展开远端与文件夹，拖动结束后收起。
+    @State
+    var springLoading = SidebarSpringLoading()
+
     /// 正在显示签名弹窗的标签的完整引用名。
     @State
     var signatureTag: String?
@@ -214,7 +218,25 @@ struct RepositorySidebarView: View {
         .environment(reveal)
         .focused($listFocused)
         .onCommand(#selector(NSText.delete(_:)), perform: deleteCommand)
+        .overlay { listEdges }
         .id(session.repository)
+    }
+
+    /// 列表上下边缘各 8 pt 的落点：文件夹里的分支拖到这里时整个列表是目标，放下后移到顶层；点击与滚动穿透给列表。
+    private var listEdges: some View {
+        let edge = Color.clear
+            .frame(maxWidth: .infinity)
+            .frame(height: 8)
+            .modifier(RepositoryDropTarget(session: session, destination: .listEdge, request: request))
+
+        return VStack(spacing: 0) {
+            edge
+
+            Spacer(minLength: 0)
+
+            edge
+        }
+        .allowsHitTesting(false)
     }
 
     /// 侧边栏底栏：左侧过滤框，右侧新建分支菜单与视图设置按钮。
@@ -421,7 +443,10 @@ extension RepositorySidebarView {
                 RepositoryDropTarget(
                     session: session,
                     destination: .remote(remote.name),
-                    request: request
+                    request: request,
+                    hovering: {
+                        springLoading.hover(remote.sidebarID, hovering: $0, expanded: isExpanded(remote.sidebarID))
+                    }
                 )
             )
     }
