@@ -65,7 +65,6 @@
 "repositories.unavailable" = "No disponible — abrir para reintentar";
 
 
-"repositories.panel.message" = "Seleccionar un árbol de trabajo de Git existente.";
 "repositories.panel.prompt" = "Abrir repositorio";
 
 "workspace.group" = "Espacio de trabajo";
@@ -1887,7 +1886,7 @@
 /* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
 "bookmarks.newGroup" = "Nuevo grupo";
 "bookmarks.add" = "Añadir repositorio…";
-"bookmarks.add.prompt" = "Añadir";
+"bookmarks.add.prompt" = "Añadir repositorio";
 "bookmarks.addMenu" = "Añadir";
 "bookmarks.create" = "Crear repositorio local…";
 "bookmarks.open" = "Abrir “%@”";
@@ -1908,8 +1907,7 @@
 "bookmarks.dropZone.subtitle" = "para añadir un repositorio Git";
 "bookmarks.dropZone.add" = "Añadir";
 "bookmarks.dropZone.create" = "Crear";
-"bookmarks.multiple.title" = "Varios elementos seleccionados";
-"bookmarks.multiple.message" = "%ld elementos";
+"bookmarks.multiple.title" = "%ld elementos seleccionados";
 "bookmarks.multiple.delete" = "Eliminar";
 "bookmarks.detail.location" = "Ubicación";
 "bookmarks.detail.branch" = "Rama actual";
@@ -2078,13 +2076,14 @@
 "scan.menu" = "Buscar repositorios…";
 "scan.title" = "Buscar repositorios";
 "scan.message" = "Busca repositorios Git dentro de la carpeta que elijas, en este Mac o en un servidor. No se busca fuera de esa carpeta.";
-"scan.add" = "Añadir repositorios (%ld)";
+"scan.add" = "Añadir repositorios";
 "scan.in" = "Buscar en:";
 "scan.start" = "Buscar";
 "scan.stop" = "Detener";
 "scan.selectAll" = "Seleccionar todo";
 "scan.searching" = "Buscando repositorios Git…";
 "scan.found" = "%ld repositorios encontrados";
+"scan.column.name" = "Nombre";
 
 /* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
 "link.invalid.title" = "No se puede abrir este enlace";

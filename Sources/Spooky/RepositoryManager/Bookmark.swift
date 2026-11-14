@@ -26,6 +26,15 @@ struct Bookmark: Codable, Hashable, Identifiable {
     /// 列表、详情与菜单显示的名称：服务器仓库带主机前缀，避免与本机同名仓库混淆。
     var displayName: String { (location?.host.map { $0 + ":" } ?? "") + name }
 
+    /// 本机仓库的目录已不在磁盘上；服务器仓库与文件夹都不算。
+    var isLocalDirectoryGone: Bool {
+        guard let location, location.host == nil else {
+            return false
+        }
+
+        return !FileManager.default.fileExists(atPath: location.path)
+    }
+
     /// 列表与详情头部的系统符号：文件夹、本机仓库与服务器仓库各一种。
     var symbolName: String {
         guard let location else {

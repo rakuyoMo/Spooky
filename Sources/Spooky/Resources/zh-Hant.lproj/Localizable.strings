@@ -65,7 +65,6 @@
 "repositories.unavailable" = "路徑失效或無法存取，可重新開啟";
 
 
-"repositories.panel.message" = "選擇現有 Git 儲存庫的工作區目錄。";
 "repositories.panel.prompt" = "開啟儲存庫";
 
 "workspace.group" = "工作空間";
@@ -1887,7 +1886,7 @@
 /* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
 "bookmarks.newGroup" = "新增群組";
 "bookmarks.add" = "加入倉庫…";
-"bookmarks.add.prompt" = "加入";
+"bookmarks.add.prompt" = "加入倉庫";
 "bookmarks.addMenu" = "加入";
 "bookmarks.create" = "新增本機倉庫…";
 "bookmarks.open" = "打開 “%@”";
@@ -1908,8 +1907,7 @@
 "bookmarks.dropZone.subtitle" = "以加入 Git 倉庫";
 "bookmarks.dropZone.add" = "加入";
 "bookmarks.dropZone.create" = "新增";
-"bookmarks.multiple.title" = "已選擇多個項目";
-"bookmarks.multiple.message" = "%ld 項";
+"bookmarks.multiple.title" = "已選擇 %ld 個項目";
 "bookmarks.multiple.delete" = "刪除";
 "bookmarks.detail.location" = "位置";
 "bookmarks.detail.branch" = "目前分支";
@@ -2078,13 +2076,14 @@
 "scan.menu" = "尋找倉庫…";
 "scan.title" = "尋找倉庫";
 "scan.message" = "在這台 Mac 或伺服器上你選的資料夾裡尋找 Git 倉庫，不會尋找這個資料夾以外的位置。";
-"scan.add" = "加入倉庫（%ld）";
+"scan.add" = "加入倉庫";
 "scan.in" = "尋找位置：";
 "scan.start" = "尋找";
 "scan.stop" = "停止";
 "scan.selectAll" = "全選";
 "scan.searching" = "正在尋找 Git 倉庫…";
 "scan.found" = "找到 %ld 個倉庫";
+"scan.column.name" = "名稱";
 
 /* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
 "link.invalid.title" = "無法打開這個連結";

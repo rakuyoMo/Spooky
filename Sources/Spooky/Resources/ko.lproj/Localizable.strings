@@ -65,7 +65,6 @@
 "repositories.unavailable" = "사용할 수 없습니다. 다시 열어 재시도하세요";
 
 
-"repositories.panel.message" = "기존 Git 작업 트리를 선택하세요.";
 "repositories.panel.prompt" = "저장소 열기";
 
 "workspace.group" = "작업 공간";
@@ -1887,7 +1886,7 @@
 /* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
 "bookmarks.newGroup" = "새 그룹";
 "bookmarks.add" = "저장소 추가…";
-"bookmarks.add.prompt" = "추가";
+"bookmarks.add.prompt" = "저장소 추가";
 "bookmarks.addMenu" = "추가";
 "bookmarks.create" = "새 로컬 저장소 만들기…";
 "bookmarks.open" = "“%@” 열기";
@@ -1908,8 +1907,7 @@
 "bookmarks.dropZone.subtitle" = "Git 저장소 추가";
 "bookmarks.dropZone.add" = "추가";
 "bookmarks.dropZone.create" = "만들기";
-"bookmarks.multiple.title" = "여러 항목이 선택됨";
-"bookmarks.multiple.message" = "%ld개 항목";
+"bookmarks.multiple.title" = "%ld개 항목이 선택됨";
 "bookmarks.multiple.delete" = "삭제";
 "bookmarks.detail.location" = "위치";
 "bookmarks.detail.branch" = "현재 브랜치";
@@ -2078,13 +2076,14 @@
 "scan.menu" = "저장소 찾기…";
 "scan.title" = "저장소 찾기";
 "scan.message" = "이 Mac 또는 서버에서 선택한 폴더 안의 Git 저장소를 찾습니다. 그 폴더 밖은 찾지 않습니다.";
-"scan.add" = "저장소 추가(%ld)";
+"scan.add" = "저장소 추가";
 "scan.in" = "찾을 위치:";
 "scan.start" = "찾기";
 "scan.stop" = "중단";
 "scan.selectAll" = "모두 선택";
 "scan.searching" = "Git 저장소를 찾는 중…";
 "scan.found" = "저장소 %ld개 찾음";
+"scan.column.name" = "이름";
 
 /* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
 "link.invalid.title" = "이 링크를 열 수 없음";

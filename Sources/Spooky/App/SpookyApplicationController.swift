@@ -163,8 +163,6 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = false
         panel.prompt = AppLocalization.text("repositories.panel.prompt")
-        panel.message = AppLocalization.text("repositories.panel.message")
-        panel.title = AppLocalization.text("action.openLocal")
 
         guard panel.runModal() == .OK, let url = panel.url else {
             return

@@ -31,6 +31,10 @@ struct ScanRepositoriesDialog: View {
     @State
     private var selected: Set<RepositoryLocation> = []
 
+    /// 结果表表头选的排序，没点过表头时为空。
+    @State
+    private var sortOrder: [KeyPathComparator<ScanResult>] = []
+
     /// 正在进行的扫描。
     @State
     private var scan: Task<Void, Never>?
@@ -44,7 +48,7 @@ struct ScanRepositoriesDialog: View {
         DialogLayout(
             title: AppLocalization.text("scan.title"),
             message: AppLocalization.text("scan.message"),
-            submitTitle: AppLocalization.text("scan.add", selected.count),
+            submitTitle: AppLocalization.text("scan.add"),
             error: nil,
             canSubmit: !selected.isEmpty,
             cancel: {
@@ -84,26 +88,42 @@ struct ScanRepositoriesDialog: View {
 // MARK: - Layout
 
 extension ScanRepositoriesDialog {
-    /// 按主机分组的结果，每行一个勾选框、仓库名与路径。
+    /// 按主机分组的结果表：勾选列与 Name 列，两列都能点表头排序，只在每台主机的分组内排。
     private var resultList: some View {
-        List {
+        Table(of: ScanResult.self, sortOrder: $sortOrder) {
+            TableColumn("", value: \.selectionRank) { result in
+                Toggle("", isOn: binding(for: result.location))
+                    .toggleStyle(.checkbox)
+                    .labelsHidden()
+            }
+            .width(28)
+
+            TableColumn(
+                AppLocalization.text("scan.column.name"),
+                value: \.name,
+                comparator: .localizedStandard
+            ) { result in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(result.name)
+                        .font(.system(size: 13))
+
+                    Text(result.location.path)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            }
+        } rows: {
+            let groups = Self.groups(
+                of: results,
+                selected: selected,
+                sortOrder: sortOrder
+            )
+
             ForEach(groups, id: \.title) { group in
                 Section(group.title) {
-                    ForEach(group.locations, id: \.self) { location in
-                        Toggle(isOn: binding(for: location)) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(location.name)
-                                    .font(.system(size: 13))
-
-                                Text(location.path)
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                            }
-                        }
-                        .toggleStyle(.checkbox)
-                    }
+                    ForEach(group.rows) { TableRow($0) }
                 }
             }
         }
@@ -133,15 +153,44 @@ extension ScanRepositoriesDialog {
         .padding(.bottom, 12)
     }
 
-    /// 结果按机器分组：本机在前，服务器按主机别名排序。
-    private var groups: [(title: String, locations: [RepositoryLocation])] {
+    /// 结果按机器分组：本机在前，服务器按主机别名排序；组内按表头选的排序，没选过时保持找到的顺序。
+    static func groups(
+        of results: [RepositoryLocation],
+        selected: Set<RepositoryLocation>,
+        sortOrder: [KeyPathComparator<ScanResult>]
+    ) -> [(title: String, rows: [ScanResult])] {
         let grouped = Dictionary(grouping: results) { $0.host ?? "" }
 
         return grouped.keys.sorted().map { host in
             let title = host.isEmpty ? AppLocalization.text("clone.machine.local") : host
-            return (title, grouped[host] ?? [])
+
+            let rows = (grouped[host] ?? []).map {
+                ScanResult(location: $0, isSelected: selected.contains($0))
+            }
+
+            return (title, sortOrder.isEmpty ? rows : rows.sorted(using: sortOrder))
         }
     }
+}
+
+// MARK: - ScanResult
+
+/// 扫描结果表的一行：找到的仓库与它的勾选状态。
+struct ScanResult: Identifiable {
+    /// 找到的仓库。
+    let location: RepositoryLocation
+
+    /// 是否勾选。
+    let isSelected: Bool
+
+    /// 以仓库位置区分各行。
+    var id: RepositoryLocation { location }
+
+    /// 仓库名，Name 列按它排序。
+    var name: String { location.name }
+
+    /// 勾选列的排序值：勾选的为 0，没勾选的为 1。
+    var selectionRank: Int { isSelected ? 0 : 1 }
 }
 
 // MARK: - Private

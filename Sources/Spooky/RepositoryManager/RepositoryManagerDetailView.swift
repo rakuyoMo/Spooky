@@ -46,8 +46,8 @@ struct RepositoryManagerDetailView: View {
 
         case .multiple(let count):
             EmptyStateView(
-                title: AppLocalization.text("bookmarks.multiple.title"),
-                message: AppLocalization.text("bookmarks.multiple.message", count),
+                title: AppLocalization.text("bookmarks.multiple.title", count),
+                message: "",
                 symbol: "square.stack"
             ) {
                 EmptyStateButton(AppLocalization.text("bookmarks.multiple.delete")) {

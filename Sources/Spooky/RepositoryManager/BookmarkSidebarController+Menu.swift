@@ -62,9 +62,18 @@ extension BookmarkSidebarController {
     }
 
     /// 一个目标为侧边栏的菜单项。
-    private func menuItem(_ key: String, action: Selector, id: Bookmark.ID? = nil, arguments: [CVarArg] = []) -> NSMenuItem {
-        let title = String(format: AppLocalization.text(key), locale: Locale.current, arguments: arguments)
-        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+    private func menuItem(
+        _ key: String,
+        action: Selector,
+        id: Bookmark.ID? = nil,
+        arguments: [CVarArg] = []
+    ) -> NSMenuItem {
+        let item = NSMenuItem(
+            title: AppLocalization.text(key, arguments: arguments),
+            action: action,
+            keyEquivalent: ""
+        )
+
         item.target = self
         item.representedObject = id
         return item
@@ -99,7 +108,7 @@ extension BookmarkSidebarController: NSMenuDelegate {
     }
 
     /// 一项书签的菜单：打开、在新窗口打开；Finder 或复制路径、终端；改名、删除；两种按名称排序。
-    private func singleItems(for bookmark: Bookmark) -> [NSMenuItem] {
+    func singleItems(for bookmark: Bookmark) -> [NSMenuItem] {
         let isRepository = !bookmark.isFolder
         let name = bookmark.displayName
 
@@ -118,6 +127,12 @@ extension BookmarkSidebarController: NSMenuDelegate {
 
         for item in [open, openNew, locate, terminal] {
             item.isEnabled = isRepository
+        }
+
+        // 本机仓库的目录已不存在时，没有可以在 Finder 或终端里打开的目录
+        if bookmark.isLocalDirectoryGone {
+            locate.isEnabled = false
+            terminal.isEnabled = false
         }
 
         let delete = isRepository

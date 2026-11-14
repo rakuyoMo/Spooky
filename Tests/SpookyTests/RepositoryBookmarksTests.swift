@@ -7,7 +7,7 @@ import Testing
 
 // MARK: - RepositoryBookmarksTests
 
-/// 仓库书签：旧记录的迁移、去重与打开时间、最近打开列表的清空、文件夹与手动顺序、改名、改指向工作区根目录与删除、失效标记与失效时的写法。
+/// 仓库书签：旧记录的迁移、去重与打开时间、最近打开列表的清空、文件夹与手动顺序、改名、改指向工作区根目录与删除、失效标记与失效时的写法、目录不存在时的右键菜单与删除，以及扫描结果的排序。
 @MainActor
 struct RepositoryBookmarksTests {
     /// 每个用例独立的偏好域与它所在的临时目录；用例结束时删掉目录。
@@ -194,11 +194,114 @@ struct RepositoryBookmarksTests {
         #expect(local.message == AppLocalization.text("missing.message", "~/Projects/gone"))
         #expect(remote.message == AppLocalization.text("missing.message", "spooky-test:" + home + "/repo"))
     }
+
+    /// 右键菜单的标题带书签的显示名；本机仓库的目录不存在时 Finder 与终端两项不可用，删除不询问、直接去掉书签。
+    @Test("目录不存在的书签：右键菜单与删除")
+    func goneDirectory() throws {
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let presentURL = directory.appending(path: "present")
+        try FileManager.default.createDirectory(at: presentURL, withIntermediateDirectories: true)
+
+        let bookmarks = RepositoryBookmarks(defaults: defaults)
+        let present = bookmarks.add(.local(path: presentURL.path))
+        let gone = bookmarks.add(.local(path: directory.appending(path: "gone").path))
+        let manager = RepositoryManagerController(bookmarks: bookmarks, session: RepositorySession())
+        let sidebar = BookmarkSidebarController(manager: manager)
+
+        // 标题里的名字已填好，不是 “(null)”
+        let presentItems = sidebar.singleItems(for: try #require(bookmarks.bookmark(present)))
+        #expect(presentItems.first?.title == AppLocalization.text("bookmarks.open", "present"))
+
+        // 目录还在时只有排序子项不可用；目录不在时 Finder 与终端也不可用
+        let goneItems = sidebar.singleItems(for: try #require(bookmarks.bookmark(gone)))
+        let sortChildren = AppLocalization.text("bookmarks.sortChildren")
+
+        #expect(Self.disabledTitles(presentItems) == [sortChildren])
+
+        #expect(
+            Self.disabledTitles(goneItems) == [
+                AppLocalization.text("action.revealFinder"),
+                AppLocalization.text("action.openTerminal"),
+                sortChildren,
+            ]
+        )
+
+        // 目录还在的书签要先询问，仓库管理没有窗口时询问出不来，书签都保留
+        manager.confirmDelete([gone, present])
+        #expect(bookmarks.items.count == 2)
+
+        // 只删目录不在的书签时直接删除
+        manager.confirmDelete([gone])
+        #expect(bookmarks.bookmark(gone) == nil)
+        #expect(bookmarks.bookmark(present) != nil)
+    }
+
+    /// 扫描结果按机器分组、本机在前；没点过表头时保持找到的顺序，点了表头只在每台主机的组内排序。
+    @Test("扫描结果在每台主机的分组内排序")
+    func scanResultOrder() {
+        let results: [RepositoryLocation] = [
+            .local(path: "/tmp/b2"),
+            .remote(host: "spooky-test", path: "/srv/zeta"),
+            .local(path: "/tmp/b10"),
+            .remote(host: "spooky-test", path: "/srv/Alpha"),
+            .local(path: "/tmp/b1"),
+        ]
+
+        let selected: Set<RepositoryLocation> = [results[2], results[3]]
+
+        let found = ScanRepositoriesDialog.groups(of: results, selected: selected, sortOrder: [])
+
+        #expect(found.map(\.title) == [AppLocalization.text("clone.machine.local"), "spooky-test"])
+
+        #expect(
+            found.map { $0.rows.map(\.name) } == [
+                ["b2", "b10", "b1"],
+                ["spooky-test:zeta", "spooky-test:Alpha"],
+            ]
+        )
+
+        // Name 列按名字排，数字按数值、不分大小写
+        let byName = ScanRepositoriesDialog.groups(
+            of: results,
+            selected: selected,
+            sortOrder: [KeyPathComparator(\ScanResult.name, comparator: .localizedStandard)]
+        )
+
+        #expect(
+            byName.map { $0.rows.map(\.name) } == [
+                ["b1", "b2", "b10"],
+                ["spooky-test:Alpha", "spooky-test:zeta"],
+            ]
+        )
+
+        // 勾选列把勾选的排在前面
+        let bySelection = ScanRepositoriesDialog.groups(
+            of: results,
+            selected: selected,
+            sortOrder: [KeyPathComparator(\ScanResult.selectionRank)]
+        )
+
+        #expect(
+            bySelection.map { $0.rows.map(\.name) } == [
+                ["b10", "b2", "b1"],
+                ["spooky-test:Alpha", "spooky-test:zeta"],
+            ]
+        )
+    }
 }
 
 // MARK: - Helpers
 
 extension RepositoryBookmarksTests {
+    /// 菜单项里不可用的那些的标题，分隔线不算。
+    private static func disabledTitles(_ items: [NSMenuItem]) -> [String] {
+        items
+            .filter { !$0.isSeparatorItem && !$0.isEnabled }
+            .map(\.title)
+    }
+
     /// 视图及其全部子视图里文本框显示的文字。
     private static func texts(in view: NSView) -> [String] {
         let own = (view as? NSTextField).map { [$0.stringValue] } ?? []

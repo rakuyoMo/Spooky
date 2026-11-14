@@ -80,7 +80,6 @@ extension RepositoryManagerController {
         panel.allowsMultipleSelection = true
         panel.canCreateDirectories = false
         panel.prompt = AppLocalization.text("bookmarks.add.prompt")
-        panel.message = AppLocalization.text("repositories.panel.message")
         let folder = selectedFolder
 
         panel.beginSheetModal(for: sheetParent) { [weak self] response in
@@ -153,10 +152,17 @@ extension RepositoryManagerController {
 
 extension RepositoryManagerController {
     /// 确认后删除书签；只移除记录，不动磁盘或服务器上的仓库。
+    ///
+    /// 要删的都是目录已不存在的本机仓库时不询问，直接删除书签。
     func confirmDelete(_ ids: [Bookmark.ID]) {
         let targets = ids.compactMap(bookmarks.bookmark)
 
         guard !targets.isEmpty else {
+            return
+        }
+
+        guard !targets.allSatisfy(\.isLocalDirectoryGone) else {
+            delete(targets)
             return
         }
 
@@ -179,12 +185,7 @@ extension RepositoryManagerController {
             submitTitle: AppLocalization.text("bookmarks.delete.submit"),
             close: close
         ) { [weak self] _ in
-            guard let self else {
-                return
-            }
-
-            bookmarks.delete(targets.map(\.id))
-            selection.removeAll { bookmarks.bookmark($0) == nil }
+            self?.delete(targets)
         }
     }
 
@@ -196,5 +197,15 @@ extension RepositoryManagerController {
     /// 书签所在的文件夹按名称排序；在最外层时排最外层。
     func sortParentFolder(of id: Bookmark.ID) {
         bookmarks.sortChildren(of: bookmarks.parent(of: id))
+    }
+}
+
+// MARK: - Private
+
+extension RepositoryManagerController {
+    /// 删除书签，并从选中里去掉。
+    private func delete(_ targets: [Bookmark]) {
+        bookmarks.delete(targets.map(\.id))
+        selection.removeAll { bookmarks.bookmark($0) == nil }
     }
 }
