@@ -182,7 +182,7 @@ extension OperationDialogTests {
         try expectPopUps(in: pull, atMost: 360)
     }
 
-    /// 同步的标题与主按钮是 Sync HEAD，Skip Hooks 与说明相隔 4；安全强推的输入列比上限宽，两个下拉正好 320。
+    /// 同步的标题与主按钮是 Sync HEAD，Skip Hooks 与说明相隔 4；安全强推的输入列从 145 起、比 320 的上限窄，两个下拉占满输入列。
     private static func expectSyncDialogs(in session: RepositorySession) async throws {
         let sync = await AccessibilityProbe.elements(
             pressing: [AppLocalization.text("dialog.options")],
@@ -205,8 +205,11 @@ extension OperationDialogTests {
 
         try #require(popUps.count == 2)
 
+        // 480 宽的对话框里，输入列右侧留 20 pt
+        let columnWidth = 480 - DialogMetrics.inputColumn - 20
+
         for popUp in popUps {
-            #expect(abs(popUp.frame.width - 320) <= 1)
+            #expect(abs(popUp.frame.width - columnWidth) <= 1)
         }
     }
 

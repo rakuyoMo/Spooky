@@ -103,20 +103,12 @@ struct OpenFilesTests {
         #expect(window.session.repository?.name == fixture.location.name)
     }
 
-    /// 经克隆链接启动时，克隆对话框显示在唯一的窗口上，不另开仓库管理窗口。
+    /// 经克隆链接启动时只开一个窗口，不另开仓库管理窗口；克隆对话框是应用级的模态窗口，不挂在窗口上。
     @Test("经克隆链接启动只开一个窗口")
     func launchWithCloneLink() async throws {
         let fixture = try await NavigationTests.makeCoordinator()
 
-        defer {
-            for window in fixture.coordinator.windows.compactMap(\.window) {
-                if let sheet = window.attachedSheet {
-                    window.endSheet(sheet)
-                }
-            }
-
-            fixture.close()
-        }
+        defer { fixture.close() }
 
         let coordinator = fixture.coordinator
         let url = try #require(URL(string: "spooky://clone?url=https://github.com/rakuyoMo/Spooky"))
@@ -124,13 +116,36 @@ struct OpenFilesTests {
         Self.beginLaunching(coordinator)
         coordinator.application(NSApplication.shared, open: [url])
 
-        // 链接不带文件，启动收尾同步开出挂克隆对话框的窗口
-        coordinator.finishLaunchOpenings()
-        #expect(coordinator.windows.count == 1)
+        // 启动收尾同步开出窗口并进入克隆对话框的模态循环；在模态循环里记下当时的窗口，再关掉对话框结束循环
+        let observation = ModalObservation()
 
-        let window = try #require(coordinator.windows.first?.window)
-        _ = try await PromptDialogTests.attachedSheet(of: window)
+        RunLoop.main.perform(inModes: [.modalPanel]) {
+            MainActor.assumeIsolated {
+                observation.windowCount = coordinator.windows.count
+                observation.dialog = NSApp.modalWindow
+                NSApp.modalWindow?.close()
+            }
+        }
+
+        coordinator.finishLaunchOpenings()
+
+        #expect(observation.windowCount == 1)
+
+        let dialog = try #require(observation.dialog)
+        #expect(dialog.sheetParent == nil)
     }
+}
+
+// MARK: - ModalObservation
+
+/// 模态循环里看到的窗口个数与模态窗口。
+@MainActor
+private final class ModalObservation {
+    /// 模态循环开始时协调者管理的窗口个数。
+    var windowCount = 0
+
+    /// 正在模态显示的窗口。
+    var dialog: NSWindow? = nil
 }
 
 // MARK: - Helpers
