@@ -1561,8 +1561,16 @@
 "review.noTracking" = "追跡ブランチなし";
 "review.selected" = "%ld 個のブランチを選択中";
 "review.noSelection" = "ブランチが選択されていません";
+"review.summary.contributors" = "貢献者";
+"review.summary.updated" = "最終更新";
+"review.summary.tracking" = "追跡";
+"review.summary.mergeStatus" = "マージ状態";
+"review.summary.divergence" = "「%2$@」に対して %1$@";
+"review.summary.canMerge" = "「%@」にマージできます";
+"review.summary.conflicts" = "「%@」にマージするとコンフリクトが発生します";
+"review.showing.one" = "1 件のコミットを表示";
+"review.showing" = "%ld 件のコミットを表示";
 "review.conflictsTip" = "マージすると %ld 個のファイルでコンフリクトが発生します";
-"review.createBranch" = "「%@」から新規ブランチを作成…";
 "review.resolveConflicts" = "マージコンフリクトを解決";
 "review.autoArchive" = "ブランチを自動アーカイブ";
 "review.skipAutoArchive" = "自動アーカイブしない";

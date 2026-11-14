@@ -1561,8 +1561,16 @@
 "review.noTracking" = "Kein Tracking-Branch";
 "review.selected" = "%ld Branches ausgewählt";
 "review.noSelection" = "Kein Branch ausgewählt";
+"review.summary.contributors" = "Mitwirkende";
+"review.summary.updated" = "Zuletzt aktualisiert";
+"review.summary.tracking" = "Tracking";
+"review.summary.mergeStatus" = "Merge-Status";
+"review.summary.divergence" = "%1$@ „%2$@“";
+"review.summary.canMerge" = "Kann in „%@“ gemergt werden";
+"review.summary.conflicts" = "Mergen in „%@“ führt zu Konflikten";
+"review.showing.one" = "1 Commit wird angezeigt";
+"review.showing" = "%ld Commits werden angezeigt";
 "review.conflictsTip" = "Mergen führt zu Konflikten in %ld Dateien";
-"review.createBranch" = "Neuen Branch aus „%@“ erstellen…";
 "review.resolveConflicts" = "Merge-Konflikte lösen";
 "review.autoArchive" = "Branches automatisch archivieren";
 "review.skipAutoArchive" = "Beim automatischen Archivieren auslassen";

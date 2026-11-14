@@ -1561,8 +1561,16 @@
 "review.noTracking" = "No tracking branch";
 "review.selected" = "%ld Branches Selected";
 "review.noSelection" = "No Branch Selected";
+"review.summary.contributors" = "Contributors";
+"review.summary.updated" = "Last Updated";
+"review.summary.tracking" = "Tracking";
+"review.summary.mergeStatus" = "Merge Status";
+"review.summary.divergence" = "%1$@ “%2$@”";
+"review.summary.canMerge" = "Can be merged into “%@”";
+"review.summary.conflicts" = "Merging into “%@” leads to conflicts";
+"review.showing.one" = "Showing 1 commit";
+"review.showing" = "Showing %ld commits";
 "review.conflictsTip" = "Merging leads to conflicts in %ld files";
-"review.createBranch" = "Create New Branch from “%@”…";
 "review.resolveConflicts" = "Resolve Merge Conflicts";
 "review.autoArchive" = "Archive Branches Automatically";
 "review.skipAutoArchive" = "Skips Auto-Archiving";

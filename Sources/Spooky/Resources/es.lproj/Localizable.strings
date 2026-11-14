@@ -1561,8 +1561,16 @@
 "review.noTracking" = "Sin rama de seguimiento";
 "review.selected" = "%ld ramas seleccionadas";
 "review.noSelection" = "Ninguna rama seleccionada";
+"review.summary.contributors" = "Colaboradores";
+"review.summary.updated" = "Última actualización";
+"review.summary.tracking" = "Seguimiento";
+"review.summary.mergeStatus" = "Estado de fusión";
+"review.summary.divergence" = "%1$@ “%2$@”";
+"review.summary.canMerge" = "Se puede fusionar en “%@”";
+"review.summary.conflicts" = "Fusionar en “%@” produce conflictos";
+"review.showing.one" = "Mostrando 1 commit";
+"review.showing" = "Mostrando %ld commits";
 "review.conflictsTip" = "Fusionar produce conflictos en %ld archivos";
-"review.createBranch" = "Crear rama desde “%@”…";
 "review.resolveConflicts" = "Resolver conflictos de fusión";
 "review.autoArchive" = "Archivar ramas automáticamente";
 "review.skipAutoArchive" = "Omitir en el archivado automático";

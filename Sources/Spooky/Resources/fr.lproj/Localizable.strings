@@ -1561,8 +1561,16 @@
 "review.noTracking" = "Aucune branche suivie";
 "review.selected" = "%ld branches sélectionnées";
 "review.noSelection" = "Aucune branche sélectionnée";
+"review.summary.contributors" = "Contributeurs";
+"review.summary.updated" = "Dernière mise à jour";
+"review.summary.tracking" = "Suivi";
+"review.summary.mergeStatus" = "État de fusion";
+"review.summary.divergence" = "%1$@ « %2$@ »";
+"review.summary.canMerge" = "Peut être fusionnée dans « %@ »";
+"review.summary.conflicts" = "La fusion dans « %@ » provoque des conflits";
+"review.showing.one" = "1 commit affiché";
+"review.showing" = "%ld commits affichés";
 "review.conflictsTip" = "La fusion provoque des conflits dans %ld fichiers";
-"review.createBranch" = "Créer une branche à partir de « %@ »…";
 "review.resolveConflicts" = "Résoudre les conflits de fusion";
 "review.autoArchive" = "Archiver les branches automatiquement";
 "review.skipAutoArchive" = "Ignorer lors de l’archivage automatique";

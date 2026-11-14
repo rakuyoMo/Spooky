@@ -253,6 +253,9 @@ struct ChangesetSummaryBar: View {
     /// 全部展开或全部收起。
     let toggle: () -> Void
 
+    /// 左侧有全部展开 / 收起按钮；没有时摘要靠右完整显示。
+    var showsExpandAll = true
+
     /// 11 pt 文字，摘要用二级文字色。
     var body: some View {
         HStack {
@@ -278,7 +281,7 @@ struct ChangesetSummaryBar: View {
     }
 
     /// 空变更集保留摘要，但没有可展开的文件。
-    var showsToggle: Bool { !changes.isEmpty }
+    var showsToggle: Bool { showsExpandAll && !changes.isEmpty }
 
     /// 文件数与两类行数分别选择单复数，未知统计按零累计。
     static func summary(_ changes: [CommitFileChange]) -> String {

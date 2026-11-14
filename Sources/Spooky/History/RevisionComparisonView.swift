@@ -18,6 +18,9 @@ struct RevisionComparisonView: View {
     /// 显示自带的顶栏；分支整理的详情用自己的头部时关掉。
     var showsHeader = true
 
+    /// 变更集摘要行左侧有全部展开 / 收起；分支整理的详情里没有，摘要靠右完整显示。
+    var showsExpandAll = true
+
     /// 读取失败时在内容上方显示诊断。
     var body: some View {
         VStack(spacing: 0) {
@@ -103,7 +106,8 @@ struct RevisionComparisonView: View {
             ChangesetSummaryBar(
                 changes: state.changes,
                 expanded: state.allItemsExpanded,
-                toggle: { state.expandAll(!state.allItemsExpanded) }
+                toggle: { state.expandAll(!state.allItemsExpanded) },
+                showsExpandAll: showsExpandAll
             )
 
             if state.isLoadingChanges {

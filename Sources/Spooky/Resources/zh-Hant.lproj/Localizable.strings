@@ -1561,8 +1561,16 @@
 "review.noTracking" = "沒有追蹤分支";
 "review.selected" = "已選擇 %ld 個分支";
 "review.noSelection" = "沒有選擇分支";
+"review.summary.contributors" = "貢獻者";
+"review.summary.updated" = "最後更新";
+"review.summary.tracking" = "追蹤";
+"review.summary.mergeStatus" = "合併狀態";
+"review.summary.divergence" = "相對 “%2$@” %1$@";
+"review.summary.canMerge" = "可以併入 “%@”";
+"review.summary.conflicts" = "併入 “%@” 會產生衝突";
+"review.showing.one" = "顯示 1 個提交";
+"review.showing" = "顯示 %ld 個提交";
 "review.conflictsTip" = "合併會使 %ld 個檔案衝突";
-"review.createBranch" = "從 “%@” 新增分支…";
 "review.resolveConflicts" = "解決合併衝突";
 "review.autoArchive" = "自動封存分支";
 "review.skipAutoArchive" = "自動封存時略過";

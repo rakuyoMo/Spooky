@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - BranchesReviewDetailView
 
-/// 分支整理的详情：40 pt 头部是 “分支 → 基准”、冲突按钮与 `Commits | Changeset`，下面是从分叉点到分支顶端的比较。
+/// 分支整理的详情：40 pt 头部是 “分支 → 基准”、冲突按钮与 `Commits | Changeset`，下面是摘要与从分叉点到分支顶端的比较。
 struct BranchesReviewDetailView: View {
     /// 当前仓库会话。
     let session: RepositorySession
@@ -27,7 +27,15 @@ struct BranchesReviewDetailView: View {
             VStack(spacing: 0) {
                 BranchesReviewDetailHeader(session: session, branch: branch)
                 Divider()
-                RevisionComparisonView(state: state.comparison, session: session, showsHeader: false)
+
+                BranchesReviewSummary(session: session, branch: branch)
+
+                RevisionComparisonView(
+                    state: state.comparison,
+                    session: session,
+                    showsHeader: false,
+                    showsExpandAll: false
+                )
             }
         } else {
             EmptyStateView(
@@ -151,7 +159,7 @@ struct ConflictFileList: View {
 
 // MARK: - BranchesReviewMenu
 
-/// 列表行的右键菜单：右键点在多选之内时作用于全部所选，否则只作用于被点的一行。
+/// 列表行的右键菜单，与侧边栏同一分支的菜单相同：右键点在多选之内时作用于全部所选，否则只作用于被点的一行。
 struct BranchesReviewMenu: View {
     /// 当前仓库会话。
     let session: RepositorySession
@@ -162,10 +170,10 @@ struct BranchesReviewMenu: View {
     /// 当前列表的全部行。
     let items: [BranchesReviewItem]
 
-    /// 新建分支的对话框由窗口呈现。
+    /// 新建分支等参数表单由窗口呈现。
     let request: (RepositoryActionRequest) -> Void
 
-    /// 置顶、新建、解决冲突、归档与删除。
+    /// 侧边栏的分支菜单；只作用于一个分支且并入基准会冲突时，最后加解决冲突一项。
     var body: some View {
         let selected = session.branchesReview.selectedIDs
         let targets =
@@ -173,82 +181,15 @@ struct BranchesReviewMenu: View {
                 ? items.filter { selected.contains($0.id) }.map(\.reference)
                 : [item.reference]
 
-        if targets.count == 1 {
-            singleItems
-        }
+        BranchMenu(session: session, references: targets, request: request)
 
-        archiveItems(targets)
-
-        Divider()
-
-        Button(
-            targets.count > 1
-                ? AppLocalization.text("branch.deleteMultiple")
-                : AppLocalization.text("reference.deleteMenu", item.reference.name)
-        ) {
-            session.requestReference(.deleteBranches(targets))
-        }
-        .disabled(!session.canDelete(targets))
-    }
-
-    /// 只对一个分支的项：置顶、从它新建分支与标签、并入基准解决冲突。
-    @ViewBuilder
-    private var singleItems: some View {
-        let reference = item.reference
-        let pinned = session.history.snapshot?.metadata(for: reference.id).isPinned ?? false
-
-        Button(AppLocalization.text(pinned ? "branch.unpinNamed" : "branch.pinNamed", reference.name)) {
-            session.setPinned(!pinned, branches: [reference])
-        }
-        .disabled(!session.canSetPinned([reference]))
-
-        Divider()
-
-        Button(AppLocalization.text("review.createBranch", reference.name)) {
-            request(RepositoryActionRequest(kind: .create, reference: reference.id))
-        }
-        .disabled(!session.canCreateBranchFromReference)
-
-        Button(AppLocalization.text("tag.createFrom", reference.name)) {
-            session.requestReference(.createTag(revision: reference.id))
-        }
-        .disabled(!session.canCreateTag)
-
-        if case .conflicts = item.comparison?.merge, let base = session.branchesReview.base {
+        if targets.count == 1, case .conflicts = item.comparison?.merge, let base = session.branchesReview.base {
             Divider()
 
             Button(AppLocalization.text("review.resolveConflicts")) {
-                session.mergeBase(base, into: reference)
+                session.mergeBase(base, into: item.reference)
             }
             .disabled(!session.canWrite || session.context?.operation != nil)
-        }
-
-        Divider()
-    }
-
-    /// 归档或取消归档：全部未归档时归档，全部已归档时取消归档，混合时不给。
-    @ViewBuilder
-    private func archiveItems(_ targets: [RepositoryReference]) -> some View {
-        let archived = targets.map { session.history.snapshot?.metadata(for: $0.id).isArchived ?? false }
-
-        if !archived.contains(true) {
-            Button(
-                targets.count > 1
-                    ? AppLocalization.text("branch.archiveMultiple", targets.count)
-                    : AppLocalization.text("branch.archiveNamed", item.reference.name)
-            ) {
-                session.archive(targets, automatic: false)
-            }
-            .disabled(!session.canSetArchived(targets))
-        } else if !archived.contains(false) {
-            Button(
-                targets.count > 1
-                    ? AppLocalization.text("branch.unarchiveMultiple", targets.count)
-                    : AppLocalization.text("branch.unarchiveNamed", item.reference.name)
-            ) {
-                session.setArchived(false, branches: targets)
-            }
-            .disabled(!session.canSetArchived(targets))
         }
     }
 }

@@ -1561,8 +1561,16 @@
 "review.noTracking" = "没有跟踪分支";
 "review.selected" = "已选择 %ld 个分支";
 "review.noSelection" = "没有选择分支";
+"review.summary.contributors" = "贡献者";
+"review.summary.updated" = "最后更新";
+"review.summary.tracking" = "跟踪";
+"review.summary.mergeStatus" = "合并状态";
+"review.summary.divergence" = "相对 “%2$@” %1$@";
+"review.summary.canMerge" = "可以并入 “%@”";
+"review.summary.conflicts" = "并入 “%@” 会产生冲突";
+"review.showing.one" = "显示 1 个提交";
+"review.showing" = "显示 %ld 个提交";
 "review.conflictsTip" = "合并会使 %ld 个文件冲突";
-"review.createBranch" = "从 “%@” 新建分支…";
 "review.resolveConflicts" = "解决合并冲突";
 "review.autoArchive" = "自动归档分支";
 "review.skipAutoArchive" = "自动归档时跳过";

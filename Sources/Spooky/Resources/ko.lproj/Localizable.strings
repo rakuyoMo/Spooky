@@ -1561,8 +1561,16 @@
 "review.noTracking" = "추적 브랜치 없음";
 "review.selected" = "브랜치 %ld개 선택됨";
 "review.noSelection" = "선택한 브랜치 없음";
+"review.summary.contributors" = "기여자";
+"review.summary.updated" = "마지막 업데이트";
+"review.summary.tracking" = "추적";
+"review.summary.mergeStatus" = "병합 상태";
+"review.summary.divergence" = "“%2$@” 대비 %1$@";
+"review.summary.canMerge" = "“%@”에 병합할 수 있음";
+"review.summary.conflicts" = "“%@”에 병합하면 충돌이 발생함";
+"review.showing.one" = "커밋 1개 표시 중";
+"review.showing" = "커밋 %ld개 표시 중";
 "review.conflictsTip" = "병합하면 파일 %ld개에서 충돌이 발생함";
-"review.createBranch" = "“%@”에서 새 브랜치 만들기…";
 "review.resolveConflicts" = "병합 충돌 해결";
 "review.autoArchive" = "브랜치 자동 보관";
 "review.skipAutoArchive" = "자동 보관 건너뛰기";

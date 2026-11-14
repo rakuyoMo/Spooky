@@ -213,6 +213,11 @@ extension OperationWiringTests {
             "",
         ] + Self.trailingTitles("side", copy: "branch.copyName"))
 
+        // 分支整理的行菜单与侧边栏同一分支的菜单相同
+        let item = BranchesReviewItem(reference: side, comparison: nil, condition: nil, pullRequest: nil)
+        let review = BranchesReviewMenu(session: session, item: item, items: [item]) { _ in }
+        #expect(HostedMenu(review).titles == HostedMenu(sidebar.branchMenu(side)).titles)
+
         // 远端分支
         let remote = HostedMenu(sidebar.branchMenu(upstream)).titles
 
