@@ -2036,7 +2036,6 @@
 "clone.submit" = "Clone";
 "clone.url" = "Remote URL:";
 "clone.to" = "Clone To:";
-"clone.destination" = "Clones into “%@”";
 "clone.lfs" = "Use LFS Clone";
 "clone.submodules" = "Initialize Submodules";
 "clone.error.invalidURL" = "Invalid remote URL";
@@ -2047,6 +2046,7 @@
 "clone.directory.prompt" = "Absolute path on the server";
 "clone.browse" = "Browse…";
 "clone.progress.title" = "Cloning “%@”…";
+"clone.failed.title" = "Couldn’t Clone “%@”";
 "clone.cancel" = "Cancel Clone";
 "clone.retry" = "Restart";
 "clone.remove" = "Remove";

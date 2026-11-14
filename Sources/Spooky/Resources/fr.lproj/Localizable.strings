@@ -2036,7 +2036,6 @@
 "clone.submit" = "Cloner";
 "clone.url" = "URL distante :";
 "clone.to" = "Cloner dans :";
-"clone.destination" = "Sera cloné dans « %@ »";
 "clone.lfs" = "Cloner avec LFS";
 "clone.submodules" = "Initialiser les sous-modules";
 "clone.error.invalidURL" = "URL distante non valide";
@@ -2047,6 +2046,7 @@
 "clone.directory.prompt" = "Chemin absolu sur le serveur";
 "clone.browse" = "Parcourir…";
 "clone.progress.title" = "Clonage de « %@ »…";
+"clone.failed.title" = "Impossible de cloner « %@ »";
 "clone.cancel" = "Annuler le clonage";
 "clone.retry" = "Recommencer";
 "clone.remove" = "Retirer";

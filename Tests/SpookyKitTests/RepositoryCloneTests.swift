@@ -84,6 +84,17 @@ struct RepositoryCloneTests {
         let created = fixture.directory.path + "/target"
         let missing = RepositoryClone(url: fixture.directory.path + "/missing.git", destination: .local(path: created))
 
+        // 克隆前的连接检查：源仓库在时通过；不存在时报出 Git 原文，不建目录
+        try await clone.checkConnection(credentialHandler: nil) { fixture.runner(at: $0.path) }
+
+        let checkError = await #expect(throws: GitError.self) {
+            try await missing.checkConnection(credentialHandler: nil) { fixture.runner(at: $0.path) }
+        }
+
+        #expect(checkError?.exitCode == 128)
+        #expect(checkError?.message.contains("missing.git") ?? false)
+        #expect(!FileManager.default.fileExists(atPath: created))
+
         let error = await #expect(throws: GitError.self) {
             try await missing.start(credentialHandler: nil, onProgress: nil) { fixture.runner(at: $0.path) }.value
         }

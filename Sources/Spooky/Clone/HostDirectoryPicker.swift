@@ -48,6 +48,9 @@ struct HostDirectoryPicker: View {
     @Binding
     var directory: RepositoryLocation
 
+    /// 将要在选中的目录下建的目录；有时机器菜单的当前项写它，本机缩写成 “~”，服务器带主机前缀。
+    var destination: RepositoryLocation? = nil
+
     /// 选了 “Other Server…”，主机别名手填。
     @State
     private var choosesOtherHost = false
@@ -60,19 +63,19 @@ struct HostDirectoryPicker: View {
     var body: some View {
         DialogFormRow(label: label) {
             Picker("", selection: machine) {
-                Text(AppLocalization.text("clone.machine.local")).tag(Self.localTag)
+                Text(title(of: Self.localTag, AppLocalization.text("clone.machine.local"))).tag(Self.localTag)
 
                 if !hosts.isEmpty {
                     Divider()
                 }
 
                 ForEach(hosts, id: \.self) { host in
-                    Text(host).tag(host)
+                    Text(title(of: host, host)).tag(host)
                 }
 
                 Divider()
 
-                Text(AppLocalization.text("clone.machine.other")).tag(Self.otherTag)
+                Text(title(of: Self.otherTag, AppLocalization.text("clone.machine.other"))).tag(Self.otherTag)
             }
             .labelsHidden()
             .fixedSize()
@@ -174,6 +177,19 @@ extension HostDirectoryPicker {
             get: { directory.path },
             set: { directory = .remote(host: directory.host ?? "", path: $0) }
         )
+    }
+
+    /// 机器菜单一项的标题：选中的一项在有目标目录时写目标目录，其余写机器名。
+    ///
+    /// - Parameters:
+    ///   - tag: 这一项的标记。
+    ///   - name: 机器名。
+    private func title(of tag: String, _ name: String) -> String {
+        guard let destination, machine.wrappedValue == tag else {
+            return name
+        }
+
+        return destination.host == nil ? HomePath.abbreviated(destination.path) : destination.displayPath
     }
 
     /// 换到一台已知主机：填入它记住的目录；没有记住的目录时连接这台主机，取 B 上用户的主目录。

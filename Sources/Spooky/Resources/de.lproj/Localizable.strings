@@ -2036,7 +2036,6 @@
 "clone.submit" = "Klonen";
 "clone.url" = "Entfernte URL:";
 "clone.to" = "Klonen nach:";
-"clone.destination" = "Wird nach „%@“ geklont";
 "clone.lfs" = "Mit LFS klonen";
 "clone.submodules" = "Submodule initialisieren";
 "clone.error.invalidURL" = "Ungültige entfernte URL";
@@ -2047,6 +2046,7 @@
 "clone.directory.prompt" = "Absoluter Pfad auf dem Server";
 "clone.browse" = "Durchsuchen …";
 "clone.progress.title" = "„%@“ wird geklont …";
+"clone.failed.title" = "„%@“ konnte nicht geklont werden";
 "clone.cancel" = "Klonen abbrechen";
 "clone.retry" = "Neu starten";
 "clone.remove" = "Entfernen";

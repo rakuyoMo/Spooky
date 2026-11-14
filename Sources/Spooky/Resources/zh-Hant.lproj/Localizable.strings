@@ -2036,7 +2036,6 @@
 "clone.submit" = "複製";
 "clone.url" = "遠端位址：";
 "clone.to" = "複製到：";
-"clone.destination" = "將複製到 “%@”";
 "clone.lfs" = "使用 LFS 複製";
 "clone.submodules" = "初始化子模組";
 "clone.error.invalidURL" = "遠端位址無效";
@@ -2047,6 +2046,7 @@
 "clone.directory.prompt" = "伺服器上的絕對路徑";
 "clone.browse" = "瀏覽…";
 "clone.progress.title" = "正在複製 “%@”…";
+"clone.failed.title" = "無法複製 “%@”";
 "clone.cancel" = "取消複製";
 "clone.retry" = "重新開始";
 "clone.remove" = "移除";

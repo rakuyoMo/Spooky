@@ -2036,7 +2036,6 @@
 "clone.submit" = "克隆";
 "clone.url" = "远端地址：";
 "clone.to" = "克隆到：";
-"clone.destination" = "将克隆到 “%@”";
 "clone.lfs" = "使用 LFS 克隆";
 "clone.submodules" = "初始化子模块";
 "clone.error.invalidURL" = "远端地址无效";
@@ -2047,6 +2046,7 @@
 "clone.directory.prompt" = "服务器上的绝对路径";
 "clone.browse" = "浏览…";
 "clone.progress.title" = "正在克隆 “%@”…";
+"clone.failed.title" = "无法克隆 “%@”";
 "clone.cancel" = "取消克隆";
 "clone.retry" = "重新开始";
 "clone.remove" = "移除";

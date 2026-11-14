@@ -2036,7 +2036,6 @@
 "clone.submit" = "복제";
 "clone.url" = "원격 URL:";
 "clone.to" = "복제할 위치:";
-"clone.destination" = "“%@”에 복제됨";
 "clone.lfs" = "LFS로 복제";
 "clone.submodules" = "하위 모듈 초기화";
 "clone.error.invalidURL" = "원격 URL이 유효하지 않음";
@@ -2047,6 +2046,7 @@
 "clone.directory.prompt" = "서버의 절대 경로";
 "clone.browse" = "탐색…";
 "clone.progress.title" = "“%@” 복제 중…";
+"clone.failed.title" = "“%@” 복제 실패";
 "clone.cancel" = "복제 취소";
 "clone.retry" = "다시 시작";
 "clone.remove" = "제거";

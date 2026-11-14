@@ -19,7 +19,7 @@ struct CloneProgressView: View {
     /// 标题与按状态变化的内容竖排居中。
     var body: some View {
         VStack(spacing: 12) {
-            Text(AppLocalization.text("clone.progress.title", activity.name))
+            Text(Self.title(of: activity))
                 .font(.system(size: 18))
                 .foregroundStyle(.secondary)
 
@@ -70,6 +70,17 @@ struct CloneProgressView: View {
             Text(AppLocalization.text("clone.state.finished"))
                 .foregroundStyle(.secondary)
         }
+    }
+
+    /// 页面标题：失败后写克隆失败，其余写正在克隆。
+    ///
+    /// - Parameter activity: 显示的克隆。
+    static func title(of activity: CloneActivity) -> String {
+        guard case .failed = activity.state else {
+            return AppLocalization.text("clone.progress.title", activity.name)
+        }
+
+        return AppLocalization.text("clone.failed.title", activity.name)
     }
 }
 

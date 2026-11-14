@@ -5,7 +5,8 @@ import SwiftUI
 
 /// 克隆远端仓库：地址、克隆到的机器与目录，以及初始化子模块与 LFS 克隆两个勾选框。
 ///
-/// 提交后对话框立即关闭，克隆在后台进行；服务器目标在 B 上克隆，并记住这台主机的克隆目录。
+/// 点 Clone 先在目标所在的机器上检查能否连上远端，连不上时在错误区写出原因、对话框不关；
+/// 连上后对话框关闭，克隆在后台进行。服务器目标在 B 上检查与克隆，并记住这台主机的克隆目录。
 struct CloneRepositoryDialog: View {
     /// 菜单里列出的服务器主机别名。
     let hosts: [String]
@@ -32,15 +33,24 @@ struct CloneRepositoryDialog: View {
     @State
     private var lfs = false
 
-    /// 地址、目标与两个勾选框。
+    /// 正在进行的连接检查，取消对话框时一并取消。
+    @State
+    private var task: Task<Void, Never>?
+
+    /// 连接检查失败的说明与原始输出；改了地址或目标后清除。
+    @State
+    private var failure: AppFailure?
+
+    /// 地址、目标与两个勾选框；检查连接时底栏写出进度，表单与主按钮不可用。
     var body: some View {
         DialogLayout(
             title: AppLocalization.text("clone.title"),
             message: AppLocalization.text("clone.message"),
             submitTitle: AppLocalization.text("clone.submit"),
-            error: problem,
-            canSubmit: destination != nil && problem == nil,
-            cancel: close,
+            error: AddRemoteRepositoryView.notice(for: failure) ?? problem,
+            progress: task == nil ? nil : AppLocalization.text("accounts.validating"),
+            canSubmit: destination != nil && problem == nil && task == nil,
+            cancel: cancel,
             submit: start
         ) {
             DialogForm {
@@ -49,22 +59,13 @@ struct CloneRepositoryDialog: View {
                         .accessibilityIdentifier("clone-url")
                 }
 
-                // 目标路径一行随地址与位置出现、消失或改变折行，对话框高度随之同步变化
+                // 地址可用时机器菜单的当前项直接写出将要建的目录
                 HostDirectoryPicker(
                     label: AppLocalization.text("clone.to"),
                     hosts: hosts,
-                    directory: $parent.animation(DialogAnimation.current)
+                    directory: $parent.animation(DialogAnimation.current),
+                    destination: destination
                 )
-
-                if let destination {
-                    DialogFormRow(label: "") {
-                        Text(AppLocalization.text("clone.destination", destination.displayPath))
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                            .truncationMode(.middle)
-                    }
-                }
 
                 // 两个勾选框与上一行相隔 10，彼此相隔 8
                 DialogFormOption(title: AppLocalization.text("clone.submodules"), isOn: $submodules)
@@ -72,7 +73,11 @@ struct CloneRepositoryDialog: View {
 
                 DialogFormOption(title: AppLocalization.text("clone.lfs"), isOn: $lfs)
             }
+            .disabled(task != nil)
         }
+        .onChange(of: url) { failure = nil }
+        .onChange(of: parent) { failure = nil }
+        .onDisappear { task?.cancel() }
     }
 
     /// 预填地址，如拖进来的 URL。
@@ -104,22 +109,49 @@ extension CloneRepositoryDialog {
         CloneTarget.problem(url: url, parent: parent)
     }
 
-    /// 开始克隆并关闭对话框；服务器目标记住这台主机的克隆目录。
+    /// 取消连接检查并关闭对话框。
+    private func cancel() {
+        task?.cancel()
+        close()
+    }
+
+    /// 先检查能否连上远端；连上后关闭对话框并开始克隆，服务器目标记住这台主机的克隆目录。
     private func start() {
         guard let destination else {
             return
         }
 
-        if let host = parent.host {
-            ServerCloneDirectories.remember(parent.path, for: host)
-        }
-
-        close()
-        submit(RepositoryClone(
+        let clone = RepositoryClone(
             url: url,
             destination: destination,
             options: CloneOptions(recurseSubmodules: submodules, lfs: lfs)
-        ))
+        )
+
+        failure = nil
+
+        task = Task {
+            do {
+                try await clone.checkConnection { await RemoteCallbackPresenter.shared.respond(to: $0) }
+            } catch {
+                task = nil
+
+                // 取消检查时只恢复表单，不写错误
+                if !(error is CancellationError || ((error as? GitError)?.isCancelled ?? false)) {
+                    failure = AppFailure(error: error, opening: false, location: destination, writing: false)
+                }
+
+                return
+            }
+
+            task = nil
+
+            if let host = parent.host {
+                ServerCloneDirectories.remember(parent.path, for: host)
+            }
+
+            close()
+            submit(clone)
+        }
     }
 }
 
@@ -127,9 +159,10 @@ extension CloneRepositoryDialog {
 
 /// 克隆对话框的目标与校验，放在视图外便于测试。
 enum CloneTarget {
-    /// 目录下以地址里的仓库名命名的新目录；地址不合法、取不出仓库名、主机别名为空或目录不是绝对路径时为 nil。
+    /// 目录下以地址里的仓库名命名的新目录；地址认不出远端或不合法、取不出仓库名、主机别名为空或目录不是绝对路径时为 nil。
     static func destination(url: String, parent: RepositoryLocation) -> RepositoryLocation? {
         guard
+            isRemoteAddress(url),
             (try? RepositoryReferences.validate(url: url)) != nil,
             let name = RepositoryClone.directoryName(for: url),
             parent.path.hasPrefix("/"),
@@ -147,9 +180,10 @@ enum CloneTarget {
         return .remote(host: host, path: path)
     }
 
-    /// 地址或目标的问题：地址不合法、服务器目录不是绝对路径、本机目标已存在且不是空目录；地址还没填时为 nil。
+    /// 地址或目标的问题：地址不合法、服务器目录不是绝对路径、本机目标已存在且不是空目录；
+    /// 地址还没填或认不出远端时为 nil，此时 Clone 不可用、错误区不写字。
     static func problem(url: String, parent: RepositoryLocation) -> String? {
-        guard !url.isEmpty else {
+        guard isRemoteAddress(url) else {
             return nil
         }
 
@@ -171,6 +205,22 @@ enum CloneTarget {
         }
 
         return contents.isEmpty ? nil : AppLocalization.text("clone.error.exists", destination.path)
+    }
+
+    /// 地址能否认作远端：带协议的地址（如 `https://`、`ssh://`、`file://`）、scp 写法的 `[用户@]主机:路径`，或绝对路径。
+    ///
+    /// - Parameter url: 填写的地址。
+    static func isRemoteAddress(_ url: String) -> Bool {
+        if url.contains("://") || url.hasPrefix("/") {
+            return true
+        }
+
+        // scp 写法：第一个冒号前有主机名，且没有斜杠
+        guard let colon = url.firstIndex(of: ":"), colon != url.startIndex else {
+            return false
+        }
+
+        return !url[..<colon].contains("/")
     }
 
     /// 本机目标是已有的文件时的问题。

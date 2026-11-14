@@ -2036,7 +2036,6 @@
 "clone.submit" = "クローン";
 "clone.url" = "リモート URL：";
 "clone.to" = "クローン先：";
-"clone.destination" = "「%@」にクローンします";
 "clone.lfs" = "LFS でクローン";
 "clone.submodules" = "サブモジュールを初期化";
 "clone.error.invalidURL" = "リモート URL が無効です";
@@ -2047,6 +2046,7 @@
 "clone.directory.prompt" = "サーバ上の絶対パス";
 "clone.browse" = "参照…";
 "clone.progress.title" = "「%@」をクローン中…";
+"clone.failed.title" = "「%@」をクローンできませんでした";
 "clone.cancel" = "クローンを中止";
 "clone.retry" = "再開";
 "clone.remove" = "削除";
