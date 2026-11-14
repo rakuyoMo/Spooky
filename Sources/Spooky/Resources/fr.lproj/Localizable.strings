@@ -2682,7 +2682,6 @@
 "pullRequests.strategy.ff" = "Fusion en avance rapide";
 "pullRequests.target" = "Cible :";
 "pullRequests.titleField" = "Titre :";
-"pullRequests.unsupported.title" = "Dépôt distant non pris en charge";
 "pullRequests.unsupported.message" = "« %@ » ne se trouve ni sur github.com, ni sur GitLab.com, ni sur une instance GitLab CE/EE de vos comptes. S’il appartient à l’un d’eux, associez-le à un compte et à un projet.";
 
 "publish.menu" = "Publier le dépôt…";

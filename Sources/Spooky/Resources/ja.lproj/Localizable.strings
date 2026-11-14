@@ -2682,7 +2682,6 @@
 "pullRequests.strategy.ff" = "早送りマージ";
 "pullRequests.target" = "ターゲット：";
 "pullRequests.titleField" = "タイトル：";
-"pullRequests.unsupported.title" = "未対応のリモート";
 "pullRequests.unsupported.message" = "「%@」は github.com、GitLab.com、またはアカウントの GitLab CE/EE 上にありません。いずれかに属している場合は、アカウントとプロジェクトに関連付けてください。";
 
 "publish.menu" = "リポジトリを公開…";

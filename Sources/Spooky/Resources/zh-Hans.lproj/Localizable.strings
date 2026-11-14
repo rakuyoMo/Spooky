@@ -2682,7 +2682,6 @@
 "pullRequests.strategy.ff" = "快进合并";
 "pullRequests.target" = "目标：";
 "pullRequests.titleField" = "标题：";
-"pullRequests.unsupported.title" = "不支持的远端";
 "pullRequests.unsupported.message" = "“%@” 不在 github.com、GitLab.com 或你账号所在的 GitLab CE/EE 上。如果它属于其中之一，请把它关联到账号与项目。";
 
 "publish.menu" = "发布仓库…";

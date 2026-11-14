@@ -2682,7 +2682,6 @@
 "pullRequests.strategy.ff" = "快轉合併";
 "pullRequests.target" = "目標：";
 "pullRequests.titleField" = "標題：";
-"pullRequests.unsupported.title" = "不支援的遠端";
 "pullRequests.unsupported.message" = "“%@” 不在 github.com、GitLab.com 或你帳號所在的 GitLab CE/EE 上。如果它屬於其中之一，請把它關聯到帳號與專案。";
 
 "publish.menu" = "發佈儲存庫…";

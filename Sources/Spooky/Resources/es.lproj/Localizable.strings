@@ -2682,7 +2682,6 @@
 "pullRequests.strategy.ff" = "Fusión con avance rápido";
 "pullRequests.target" = "Destino:";
 "pullRequests.titleField" = "Título:";
-"pullRequests.unsupported.title" = "Remoto no compatible";
 "pullRequests.unsupported.message" = "“%@” no está en github.com, GitLab.com ni en una instancia de GitLab CE/EE de tus cuentas. Si pertenece a uno de ellos, asócialo a una cuenta y a un proyecto.";
 
 "publish.menu" = "Publicar repositorio…";

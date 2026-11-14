@@ -2562,8 +2562,8 @@
 "mr.empty.title" = "No Merge Requests";
 "pr.empty.message" = "This project has no open pull requests.";
 "mr.empty.message" = "This project has no open merge requests.";
-"pr.noSelection" = "No Pull Request Selected";
-"mr.noSelection" = "No Merge Request Selected";
+"pr.noSelection" = "No pull request selected";
+"mr.noSelection" = "No merge request selected";
 "pr.noAccount.message" = "“%1$@” is on %2$@. Add an account for it in Settings → Accounts to see its pull requests.";
 "mr.noAccount.message" = "“%1$@” is on %2$@. Add an account for it in Settings → Accounts to see its merge requests.";
 "pr.fetchHead.title" = "Fetch %@";
@@ -2682,7 +2682,6 @@
 "pullRequests.strategy.ff" = "Fast-Forward Merge";
 "pullRequests.target" = "Target:";
 "pullRequests.titleField" = "Title:";
-"pullRequests.unsupported.title" = "Unsupported Remote";
 "pullRequests.unsupported.message" = "“%@” isn’t on github.com, GitLab.com or a GitLab CE/EE instance of your accounts. If it belongs to one of them, associate it with an account and project.";
 
 "publish.menu" = "Publish Repository…";

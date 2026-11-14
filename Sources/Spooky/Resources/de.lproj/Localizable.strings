@@ -2682,7 +2682,6 @@
 "pullRequests.strategy.ff" = "Fast-Forward-Merge";
 "pullRequests.target" = "Ziel:";
 "pullRequests.titleField" = "Titel:";
-"pullRequests.unsupported.title" = "Nicht unterstütztes Remote";
 "pullRequests.unsupported.message" = "„%@“ liegt nicht auf github.com, GitLab.com oder einer GitLab-CE/EE-Instanz Ihrer Accounts. Gehört es zu einem davon, ordnen Sie es einem Account und Projekt zu.";
 
 "publish.menu" = "Repository veröffentlichen…";

@@ -2682,7 +2682,6 @@
 "pullRequests.strategy.ff" = "빨리 감기 병합";
 "pullRequests.target" = "대상:";
 "pullRequests.titleField" = "제목:";
-"pullRequests.unsupported.title" = "지원하지 않는 원격";
 "pullRequests.unsupported.message" = "“%@”은(는) github.com, GitLab.com 또는 계정의 GitLab CE/EE에 있지 않습니다. 그중 하나에 속한다면 계정과 프로젝트에 연결하세요.";
 
 "publish.menu" = "저장소 게시…";
