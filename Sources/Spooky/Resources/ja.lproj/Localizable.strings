@@ -1502,7 +1502,6 @@
 "remote.page" = "リモートの設定";
 "remote.page.general" = "一般";
 "remote.page.branches" = "ブランチ";
-"remote.field.name" = "名前";
 "remote.field.fetchURL" = "フェッチ URL";
 "remote.field.pushURL" = "プッシュ URL";
 "remote.field.options" = "オプション";
@@ -1925,6 +1924,9 @@
 "bookmarks.detail.noRemotes" = "リモートはありません";
 "bookmarks.detail.edit" = "編集";
 "bookmarks.detail.unset" = "設定を解除";
+"bookmarks.detail.repository" = "リポジトリ";
+"bookmarks.detail.status" = "状態";
+"bookmarks.detail.noChanges" = "変更なし";
 "bookmarks.description.edit" = "リポジトリの説明を編集";
 "bookmarks.description.message" = "このリポジトリの説明を入力します。";
 "bookmarks.description.label" = "説明：";
@@ -2098,10 +2100,7 @@
 "repositorySettings.ignores" = "無視";
 "repositorySettings.excludes" = "除外";
 "repositorySettings.lfs.patterns" = "トラッキングパターン";
-"repositorySettings.ignores.patterns" = "無視パターン";
-"repositorySettings.excludes.patterns" = "除外パターン";
 "repositorySettings.openInEditor" = "エディタで開く";
-"repositorySettings.noPatterns" = "パターンはありません";
 "repositorySettings.name" = "名前";
 "repositorySettings.path" = "パス";
 "repositorySettings.localFolder" = "この Mac 上のフォルダ";
@@ -2110,10 +2109,6 @@
 "repositorySettings.localFolder.clear" = "消去";
 "repositorySettings.localFolder.rejected" = "このフォルダは使用できません";
 "repositorySettings.localFolder.rejected.message" = "「%1$@」は「%2$@」のリポジトリではありません。";
-"repositorySettings.wrapping" = "行の折り返し";
-"repositorySettings.pageGuide" = "ページガイドを表示";
-"repositorySettings.lineLimit" = "1 行の文字数上限";
-"repositorySettings.lineLimit.invalid" = "0 より大きい整数を入力してください。";
 "repositorySettings.signing" = "署名";
 "repositorySettings.signCommits" = "コミットに署名";
 "repositorySettings.signingKey" = "署名鍵";
@@ -2379,7 +2374,6 @@
 "worktree.open.current" = "ワークツリーを開く";
 "worktree.open.newTab" = "ワークツリーを新規タブで開く";
 "worktree.open.newWindow" = "ワークツリーを新規ウインドウで開く";
-"worktree.page" = "ワークツリーの設定";
 "worktree.page.general" = "一般";
 "worktree.relocate" = "ワークツリーの場所を指定";
 "worktree.relocate.message" = "ワークツリー「%@」のディレクトリが今ある場所を選ぶと、Git がこのリポジトリにつなぎ直します。";

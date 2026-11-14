@@ -25,8 +25,7 @@ struct RepositorySettingsTests {
         #expect(settings.exclude.path.hasSuffix("/info/exclude"))
 
         // 写入本地配置与两份规则文件后读回
-        try await runner.setLocalConfig(RepositorySettings.Key.bodyLineLimit, to: "80")
-        try await runner.setLocalConfig(RepositorySettings.Key.showsBodyGuide, to: "false")
+        try await runner.setLocalConfig(RepositorySettings.Key.signsCommits, to: "false")
         try await runner.setLocalConfig(RepositorySettings.Key.signingKey, to: "~/.ssh/id 签名.pub")
 
         try Data("# 注释\n\n*.log\n  build/  \n".utf8).write(to: root.appending(path: ".gitignore"))
@@ -34,8 +33,7 @@ struct RepositorySettingsTests {
             .write(to: root.appending(path: ".gitattributes"))
 
         settings = try await runner.repositorySettings()
-        #expect(settings.bodyLineLimit == 80)
-        #expect(settings.showsBodyGuide == Optional(false))
+        #expect(settings.signsCommits == Optional(false))
         #expect(settings.signingKey == "~/.ssh/id 签名.pub")
         #expect(settings.allowedSignersFile == nil)
         #expect(settings.ignore.exists)
@@ -43,15 +41,15 @@ struct RepositorySettingsTests {
         #expect(settings.lfs.patterns == ["*.psd", "设计 稿/*.sketch"])
 
         // 删除写过的键与没有写过的键都不报错
-        try await runner.setLocalConfig(RepositorySettings.Key.bodyLineLimit, to: nil)
+        try await runner.setLocalConfig(RepositorySettings.Key.signsCommits, to: nil)
         try await runner.setLocalConfig(RepositorySettings.Key.allowedSignersFile, to: nil)
 
         settings = try await runner.repositorySettings()
-        #expect(settings.bodyLineLimit == nil)
-        #expect(settings.showsBodyGuide == Optional(false))
+        #expect(settings.signsCommits == nil)
+        #expect(settings.signingKey == "~/.ssh/id 签名.pub")
 
         // 不认识的键与截断的值
-        for malformed in ["core.editor\nvim\0", "spooky.commitbodylimit\n80"] {
+        for malformed in ["core.editor\nvim\0", "commit.gpgsign\ntrue"] {
             #expect(throws: RepositoryReadError.self) {
                 try RepositorySettings.configuration(Data(malformed.utf8))
             }

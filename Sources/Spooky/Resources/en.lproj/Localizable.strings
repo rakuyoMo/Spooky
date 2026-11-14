@@ -1502,7 +1502,6 @@
 "remote.page" = "Remote Settings";
 "remote.page.general" = "General";
 "remote.page.branches" = "Branches";
-"remote.field.name" = "Name";
 "remote.field.fetchURL" = "Fetch URL";
 "remote.field.pushURL" = "Push URL";
 "remote.field.options" = "Options";
@@ -1925,6 +1924,9 @@
 "bookmarks.detail.noRemotes" = "No remotes";
 "bookmarks.detail.edit" = "Edit";
 "bookmarks.detail.unset" = "Unset";
+"bookmarks.detail.repository" = "Repository";
+"bookmarks.detail.status" = "Status";
+"bookmarks.detail.noChanges" = "No changes";
 "bookmarks.description.edit" = "Edit Repository Description";
 "bookmarks.description.message" = "Enter a description for this repository.";
 "bookmarks.description.label" = "Description:";
@@ -2098,10 +2100,7 @@
 "repositorySettings.ignores" = "Ignores";
 "repositorySettings.excludes" = "Excludes";
 "repositorySettings.lfs.patterns" = "Tracking Patterns";
-"repositorySettings.ignores.patterns" = "Ignore Patterns";
-"repositorySettings.excludes.patterns" = "Exclude Patterns";
 "repositorySettings.openInEditor" = "Open in Editor";
-"repositorySettings.noPatterns" = "No patterns";
 "repositorySettings.name" = "Name";
 "repositorySettings.path" = "Path";
 "repositorySettings.localFolder" = "Local Folder";
@@ -2110,10 +2109,6 @@
 "repositorySettings.localFolder.clear" = "Clear";
 "repositorySettings.localFolder.rejected" = "Folder Can’t Be Used";
 "repositorySettings.localFolder.rejected.message" = "“%1$@” isn’t the repository “%2$@”.";
-"repositorySettings.wrapping" = "Line Wrapping";
-"repositorySettings.pageGuide" = "Show Page Guide";
-"repositorySettings.lineLimit" = "Line Character Limit";
-"repositorySettings.lineLimit.invalid" = "Enter a whole number greater than 0.";
 "repositorySettings.signing" = "Signing";
 "repositorySettings.signCommits" = "Sign Commits";
 "repositorySettings.signingKey" = "Signing Key";
@@ -2379,7 +2374,6 @@
 "worktree.open.current" = "Open Worktree";
 "worktree.open.newTab" = "Open Worktree in New Tab";
 "worktree.open.newWindow" = "Open Worktree in New Window";
-"worktree.page" = "Worktree Settings";
 "worktree.page.general" = "General";
 "worktree.relocate" = "Relocate Worktree";
 "worktree.relocate.message" = "Choose where the directory of the worktree “%@” is now, so Git can reconnect it to this repository.";

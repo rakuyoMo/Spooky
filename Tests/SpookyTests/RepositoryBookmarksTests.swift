@@ -290,6 +290,20 @@ struct RepositoryBookmarksTests {
             ]
         )
     }
+
+    /// 详情里的时间只在今天写相对的日子，其它日子都写长日期加时间。
+    @Test("书签详情的日期写法")
+    func detailDateText() throws {
+        let absolute = DateFormatter()
+        absolute.dateStyle = .long
+        absolute.timeStyle = .short
+
+        let now = Date()
+        let yesterday = try #require(Calendar.current.date(byAdding: .day, value: -1, to: now))
+
+        #expect(BookmarkRepositoryDetailView.dateText(now) != absolute.string(from: now))
+        #expect(BookmarkRepositoryDetailView.dateText(yesterday) == absolute.string(from: yesterday))
+    }
 }
 
 // MARK: - Helpers

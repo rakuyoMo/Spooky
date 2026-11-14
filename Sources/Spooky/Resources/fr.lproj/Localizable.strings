@@ -1502,7 +1502,6 @@
 "remote.page" = "Réglages du dépôt distant";
 "remote.page.general" = "Général";
 "remote.page.branches" = "Branches";
-"remote.field.name" = "Nom";
 "remote.field.fetchURL" = "URL de récupération";
 "remote.field.pushURL" = "URL de poussée";
 "remote.field.options" = "Options";
@@ -1925,6 +1924,9 @@
 "bookmarks.detail.noRemotes" = "Aucun remote";
 "bookmarks.detail.edit" = "Modifier";
 "bookmarks.detail.unset" = "Retirer";
+"bookmarks.detail.repository" = "Dépôt";
+"bookmarks.detail.status" = "État";
+"bookmarks.detail.noChanges" = "Aucune modification";
 "bookmarks.description.edit" = "Modifier la description du dépôt";
 "bookmarks.description.message" = "Saisissez une description pour ce dépôt.";
 "bookmarks.description.label" = "Description :";
@@ -2098,10 +2100,7 @@
 "repositorySettings.ignores" = "Ignorés";
 "repositorySettings.excludes" = "Exclusions";
 "repositorySettings.lfs.patterns" = "Motifs suivis";
-"repositorySettings.ignores.patterns" = "Motifs ignorés";
-"repositorySettings.excludes.patterns" = "Motifs exclus";
 "repositorySettings.openInEditor" = "Ouvrir dans l’éditeur";
-"repositorySettings.noPatterns" = "Aucun motif";
 "repositorySettings.name" = "Nom";
 "repositorySettings.path" = "Chemin";
 "repositorySettings.localFolder" = "Dossier local";
@@ -2110,10 +2109,6 @@
 "repositorySettings.localFolder.clear" = "Effacer";
 "repositorySettings.localFolder.rejected" = "Impossible d’utiliser ce dossier";
 "repositorySettings.localFolder.rejected.message" = "« %1$@ » n’est pas le dépôt « %2$@ ».";
-"repositorySettings.wrapping" = "Retour à la ligne";
-"repositorySettings.pageGuide" = "Afficher le repère";
-"repositorySettings.lineLimit" = "Caractères par ligne";
-"repositorySettings.lineLimit.invalid" = "Saisissez un nombre entier supérieur à 0.";
 "repositorySettings.signing" = "Signature";
 "repositorySettings.signCommits" = "Signer les commits";
 "repositorySettings.signingKey" = "Clé de signature";
@@ -2379,7 +2374,6 @@
 "worktree.open.current" = "Ouvrir le worktree";
 "worktree.open.newTab" = "Ouvrir le worktree dans un nouvel onglet";
 "worktree.open.newWindow" = "Ouvrir le worktree dans une nouvelle fenêtre";
-"worktree.page" = "Réglages du worktree";
 "worktree.page.general" = "Général";
 "worktree.relocate" = "Relocaliser le worktree";
 "worktree.relocate.message" = "Choisissez l’emplacement actuel du dossier du worktree « %@ » pour que Git le reconnecte à ce dépôt.";

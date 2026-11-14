@@ -16,18 +16,12 @@ public struct RuleFile: Sendable, Equatable {
 
 // MARK: - RepositorySettings
 
-/// 仓库设置页读取的内容：仓库本地配置里的提交信息折行与签名，以及忽略、排除与 LFS 跟踪规则。
+/// 仓库设置页读取的内容：仓库本地配置里的签名，以及忽略、排除与 LFS 跟踪规则。
 ///
 /// 配置值只取仓库本地配置（`--local`），没有写在本仓库的为 nil，表示沿用全局设置。
 public struct RepositorySettings: Sendable, Equatable {
     /// 仓库本地配置里的键。
     public enum Key {
-        /// 提交信息正文每行的字数上限，覆盖 Editor 设置页的值。
-        public static let bodyLineLimit = "spooky.commitbodylimit"
-
-        /// 是否显示正文的参考线，覆盖 Editor 设置页的值。
-        public static let showsBodyGuide = "spooky.commitshowsguide"
-
         /// 是否签名提交。
         public static let signsCommits = "commit.gpgsign"
 
@@ -41,15 +35,8 @@ public struct RepositorySettings: Sendable, Equatable {
         public static let allowedSignersFile = "gpg.ssh.allowedsignersfile"
 
         /// 读取的键名正则；`--get-regexp` 匹配的是 Git 规范化后的小写键名。
-        static let pattern = "^(spooky\\.(commitbodylimit|commitshowsguide)"
-            + "|commit\\.gpgsign|user\\.signingkey|gpg\\.ssh\\.allowedsignersfile)$"
+        static let pattern = "^(commit\\.gpgsign|user\\.signingkey|gpg\\.ssh\\.allowedsignersfile)$"
     }
-
-    /// 本仓库的正文每行字数上限；不是正整数时视为没有设置。
-    public var bodyLineLimit: Int?
-
-    /// 本仓库是否显示正文参考线。
-    public var showsBodyGuide: Bool?
 
     /// 本仓库是否签名提交。
     public var signsCommits: Bool?
@@ -142,10 +129,6 @@ extension GitRunner {
         let values = try RepositorySettings.configuration(await config.standardOutput)
 
         return RepositorySettings(
-            bodyLineLimit: ConfigRecords.nonEmpty(values[RepositorySettings.Key.bodyLineLimit])
-                .flatMap { Int($0) }
-                .flatMap { $0 > 0 ? $0 : nil },
-            showsBodyGuide: values[RepositorySettings.Key.showsBodyGuide].map(ConfigRecords.boolean),
             signsCommits: values[RepositorySettings.Key.signsCommits].map(ConfigRecords.boolean),
             signingKey: ConfigRecords.nonEmpty(values[RepositorySettings.Key.signingKey]),
             allowedSignersFile: ConfigRecords.nonEmpty(values[RepositorySettings.Key.allowedSignersFile]),

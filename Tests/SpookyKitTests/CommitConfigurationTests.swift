@@ -6,7 +6,7 @@ import Testing
 /// 提交区据以判断签名、注释与钩子的配置，必须与 Git 实际采用的值一致。
 struct CommitConfigurationTests {
     /// 同一键以最后一个为准，无值布尔键为真，值里的空格与中文原样保留；未配置时使用 Git 的默认值，
-    /// auto 注释字符不会把用户输入当成注释；仓库设置的正文折行只认正整数与 Git 的布尔写法；
+    /// auto 注释字符不会把用户输入当成注释；
     /// 截断或错位的输出不能被当成 “未配置签名”；档案里的签名密钥按写法决定签名格式。
     @Test("解析生效的提交配置")
     func parsing() throws {
@@ -47,21 +47,6 @@ struct CommitConfigurationTests {
             hasCommitHooks: false
         )
         #expect(string.commentPrefix == "//")
-
-        // 仓库设置的正文折行覆盖 Editor 设置页的值
-        let configured = try CommitConfiguration.parse(
-            Data("spooky.commitbodylimit\n80\0spooky.commitshowsguide\nno\0".utf8),
-            hasCommitHooks: false
-        )
-        #expect(configured.bodyLineLimit == 80)
-        #expect(configured.showsBodyGuide == Optional(false))
-
-        let invalid = try CommitConfiguration.parse(
-            Data("spooky.commitbodylimit\n0\0".utf8),
-            hasCommitHooks: false
-        )
-        #expect(invalid.bodyLineLimit == nil)
-        #expect(invalid.showsBodyGuide == nil)
 
         // 截断的值与不在查询范围内的键
         for malformed in ["user.name\nTruncated", "remote.origin.url\nx\0"] {

@@ -134,13 +134,19 @@ public struct RepositorySubmodules: Sendable {
     ///
     /// - Parameter submodule: 已检出的子模块。
     public func revisions(of submodule: Submodule) async throws -> [SubmoduleRevision] {
-        let output = try await runner.run([
-            "-C", submodule.path, "for-each-ref",
-            "--format=%(refname)%00%(HEAD)%00%(objectname)%00%(*objectname)",
-            "refs/heads", "refs/tags",
-        ])
+        try Self.parseRevisions(try await references(in: submodule), checkedOut: submodule.checkedOut)
+    }
 
-        return try Self.parseRevisions(output, checkedOut: submodule.checkedOut)
+    /// 子模块里称呼一个提交的名字：HEAD 停在分支上时是这个分支名；分离 HEAD 时是指向这个提交、按名称排在最前的标签名；都没有时为 nil。
+    ///
+    /// - Parameters:
+    ///   - submodule: 已检出的子模块。
+    ///   - commit: 要称呼的提交，如检出的版本或父仓库记录的指针。
+    public func revisionName(of submodule: Submodule, commit: String) async throws -> String? {
+        let revisions = try Self.parseRevisions(try await references(in: submodule), checkedOut: commit)
+
+        // 把这个提交当作检出的提交：HEAD 在分支上时只有那个分支算当前，分离时只有指向它的标签算当前，分支排在标签前
+        return revisions.first(where: \.isCurrent)?.name
     }
 
     /// 本仓库作为子模块时父仓库工作区的绝对路径；不是子模块时为 nil。
@@ -173,6 +179,15 @@ extension RepositorySubmodules {
         return try Self.parseGitlinks(
             try await runner.run(["--literal-pathspecs", "ls-files", "-s", "-z", "--"] + paths)
         )
+    }
+
+    /// 子模块里的本地分支与标签，每行是引用名、HEAD 标记、对象与附注标签所指的对象。
+    private func references(in submodule: Submodule) async throws -> Data {
+        try await runner.run([
+            "-C", submodule.path, "for-each-ref",
+            "--format=%(refname)%00%(HEAD)%00%(objectname)%00%(*objectname)",
+            "refs/heads", "refs/tags",
+        ])
     }
 
     /// 只对配置完整的路径读取状态；仍然失败时状态未知。

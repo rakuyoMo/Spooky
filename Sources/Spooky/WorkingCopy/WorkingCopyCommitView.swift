@@ -248,9 +248,9 @@ extension WorkingCopyCommitView {
         }
     }
 
-    /// 正文每行的字数上限：仓库设置里有时用仓库的，否则用 Editor 设置页的。
+    /// 正文每行的字数上限，取 Editor 设置页的值。
     private var effectiveBodyLineLimit: Int {
-        session.commitConfiguration?.bodyLineLimit ?? max(1, bodyLineLimit)
+        max(1, bodyLineLimit)
     }
 
     /// 正文框，其下是提交选项与提交人；选项行下留 11 pt。
@@ -284,7 +284,7 @@ extension WorkingCopyCommitView {
                 characterLimit: effectiveBodyLineLimit,
                 reformatLimit: effectiveBodyLineLimit,
                 hardWrap: hardWrap,
-                showsGuide: session.commitConfiguration?.showsBodyGuide ?? showsGuide,
+                showsGuide: showsGuide,
                 focusRequest: bodyFocusRequest,
                 onFocusChange: { focusChanged(.body, focused: $0) },
                 onSubmit: { },

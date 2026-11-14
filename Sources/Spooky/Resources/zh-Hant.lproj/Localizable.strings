@@ -1502,7 +1502,6 @@
 "remote.page" = "遠端設定";
 "remote.page.general" = "一般";
 "remote.page.branches" = "分支";
-"remote.field.name" = "名稱";
 "remote.field.fetchURL" = "取得位址";
 "remote.field.pushURL" = "推送位址";
 "remote.field.options" = "選項";
@@ -1925,6 +1924,9 @@
 "bookmarks.detail.noRemotes" = "沒有遠端";
 "bookmarks.detail.edit" = "編輯";
 "bookmarks.detail.unset" = "取消設定";
+"bookmarks.detail.repository" = "倉庫";
+"bookmarks.detail.status" = "狀態";
+"bookmarks.detail.noChanges" = "沒有變更";
 "bookmarks.description.edit" = "編輯倉庫描述";
 "bookmarks.description.message" = "輸入這個倉庫的描述。";
 "bookmarks.description.label" = "描述：";
@@ -2098,10 +2100,7 @@
 "repositorySettings.ignores" = "忽略";
 "repositorySettings.excludes" = "排除";
 "repositorySettings.lfs.patterns" = "追蹤規則";
-"repositorySettings.ignores.patterns" = "忽略規則";
-"repositorySettings.excludes.patterns" = "排除規則";
 "repositorySettings.openInEditor" = "在編輯器中打開";
-"repositorySettings.noPatterns" = "沒有規則";
 "repositorySettings.name" = "名稱";
 "repositorySettings.path" = "路徑";
 "repositorySettings.localFolder" = "本機資料夾";
@@ -2110,10 +2109,6 @@
 "repositorySettings.localFolder.clear" = "清除";
 "repositorySettings.localFolder.rejected" = "無法使用這個資料夾";
 "repositorySettings.localFolder.rejected.message" = "“%1$@” 不是 “%2$@” 這個儲存庫。";
-"repositorySettings.wrapping" = "換行";
-"repositorySettings.pageGuide" = "顯示參考線";
-"repositorySettings.lineLimit" = "每行字數上限";
-"repositorySettings.lineLimit.invalid" = "請輸入大於 0 的整數。";
 "repositorySettings.signing" = "簽署";
 "repositorySettings.signCommits" = "簽署提交";
 "repositorySettings.signingKey" = "簽署金鑰";
@@ -2379,7 +2374,6 @@
 "worktree.open.current" = "開啟工作樹";
 "worktree.open.newTab" = "在新標籤頁中開啟工作樹";
 "worktree.open.newWindow" = "在新視窗中開啟工作樹";
-"worktree.page" = "工作樹設定";
 "worktree.page.general" = "一般";
 "worktree.relocate" = "重新定位工作樹";
 "worktree.relocate.message" = "選擇工作樹 “%@” 的目錄現在所在的位置，讓 Git 重新把它連到這個儲存庫。";

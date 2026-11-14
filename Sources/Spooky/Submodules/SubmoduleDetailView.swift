@@ -51,6 +51,16 @@ struct SubmoduleDetailView: View {
         }
         .frame(minWidth: 480, minHeight: 300)
     }
+
+    /// 子模块版本的写法：有名字时是 “名字 (8 位短哈希)”，没有时只写短哈希。
+    ///
+    /// - Parameters:
+    ///   - commit: 完整的提交哈希。
+    ///   - name: 子模块仓库里这个提交的名字。
+    fileprivate static func revisionText(_ commit: String, name: String?) -> String {
+        let short = String(commit.prefix(8))
+        return name.map { "\($0) (\(short))" } ?? short
+    }
 }
 
 // MARK: - Layout
@@ -71,15 +81,16 @@ extension SubmoduleDetailView {
             Spacer()
 
             if session.submodules.selected?.isValid ?? false {
-                Picker("", selection: $page) {
-                    Text(AppLocalization.text("submodule.page.general")).tag(Page.general)
-                    Text(AppLocalization.text("submodule.page.shared")).tag(Page.shared)
-                    Text(AppLocalization.text("submodule.page.local")).tag(Page.local)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
+                FittedSegmentedPicker(
+                    selection: $page,
+                    options: [
+                        (Page.general, AppLocalization.text("submodule.page.general")),
+                        (Page.shared, AppLocalization.text("submodule.page.shared")),
+                        (Page.local, AppLocalization.text("submodule.page.local")),
+                    ],
+                    accessibilityLabel: AppLocalization.text("submodule.page")
+                )
                 .fixedSize()
-                .accessibilityLabel(AppLocalization.text("submodule.page"))
             }
         }
         .padding(.horizontal, 20)
@@ -89,7 +100,7 @@ extension SubmoduleDetailView {
     /// 当前分段的设置表格。
     private func settings(of submodule: Submodule) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            SettingTable {
                 switch page {
                 case .general:
                     SubmoduleGeneralSettings(session: session, submodule: submodule)
@@ -140,6 +151,14 @@ private struct SubmoduleGeneralSettings: View {
     @State
     private var remoteURL: String?
 
+    /// 子模块仓库里检出版本的名字：当前分支，或分离 HEAD 时指向它的标签。
+    @State
+    private var checkedOutName: String?
+
+    /// 子模块仓库里指针所指提交的名字，规则与检出版本相同。
+    @State
+    private var pointerName: String?
+
     /// 各行依次排列，提示行在最前。
     var body: some View {
         warnings
@@ -147,7 +166,13 @@ private struct SubmoduleGeneralSettings: View {
         RemoteSettingsGroup(title: AppLocalization.text("submodule.group.general"))
 
         RemoteSettingRow(label: AppLocalization.text("submodule.field.name"), value: submodule.name)
-        RemoteSettingRow(label: AppLocalization.text("submodule.field.path"), value: submodule.path)
+
+        RemoteSettingRow(
+            label: AppLocalization.text("submodule.field.path"),
+            value: submodule.path,
+            folder: session.localFolder(of: submodule)
+        )
+
         RemoteSettingRow(label: AppLocalization.text("submodule.field.status"), value: submodule.state.title)
 
         if let changes = session.submodules.summaries[submodule.path]?.changes, changes > 0 {
@@ -160,26 +185,26 @@ private struct SubmoduleGeneralSettings: View {
         RemoteSettingRow(
             label: AppLocalization.text("submodule.field.checkedOut"),
             value: checkedOut,
-            small: submodule.checkedOut != nil,
             secondary: submodule.checkedOut == nil
         )
+        .task(id: submodule) { checkedOutName = await revisionName(of: submodule.checkedOut) }
 
         RemoteSettingRow(
             label: AppLocalization.text("submodule.field.pointer"),
-            value: submodule.pointer ?? AppLocalization.text("submodule.notAvailable"),
-            small: submodule.pointer != nil,
+            value: submodule.pointer.map { SubmoduleDetailView.revisionText($0, name: pointerName) }
+                ?? AppLocalization.text("submodule.notAvailable"),
             secondary: submodule.pointer == nil
         )
+        .task(id: submodule) { pointerName = await revisionName(of: submodule.pointer) }
 
         RemoteSettingsGroup(title: AppLocalization.text("submodule.group.active"))
 
-        RemoteSettingRow(label: AppLocalization.text("submodule.field.url"), value: submodule.url ?? "", small: true)
+        RemoteSettingRow(label: AppLocalization.text("submodule.field.url"), value: submodule.url ?? "")
 
         if submodule.needsSynchronizing {
             RemoteSettingRow(
                 label: AppLocalization.text("submodule.field.remoteURL"),
-                value: submodule.isPopulated ? remoteURL ?? "" : AppLocalization.text("submodule.notInitialized"),
-                small: true
+                value: submodule.isPopulated ? remoteURL ?? "" : AppLocalization.text("submodule.notInitialized")
             )
             .task(id: submodule) { await loadRemoteURL() }
         }
@@ -224,13 +249,14 @@ private struct SubmoduleGeneralSettings: View {
         }
     }
 
-    /// 检出的版本：没有初始化、读不到与提交哈希三种写法。
+    /// 检出的版本：没有初始化、读不到与带名字的短哈希三种写法。
     private var checkedOut: String {
         if submodule.state == .uninitialized {
             return AppLocalization.text("submodule.notInitialized")
         }
 
-        return submodule.checkedOut ?? AppLocalization.text("submodule.notAvailable")
+        return submodule.checkedOut.map { SubmoduleDetailView.revisionText($0, name: checkedOutName) }
+            ?? AppLocalization.text("submodule.notAvailable")
     }
 
     /// 没有配置时按 Git 的默认值显示，并标出是默认值。
@@ -245,6 +271,17 @@ private struct SubmoduleGeneralSettings: View {
         }
 
         remoteURL = try? await RepositorySubmodules(runner: runner).remoteURL(of: submodule)
+    }
+
+    /// 在子模块仓库里读出一个提交的名字；子模块没有检出或读不到时为 nil。
+    ///
+    /// - Parameter commit: 检出的版本或指针；为 nil 时不读取。
+    private func revisionName(of commit: String?) async -> String? {
+        guard let commit, submodule.isPopulated, let runner = session.runner else {
+            return nil
+        }
+
+        return try? await RepositorySubmodules(runner: runner).revisionName(of: submodule, commit: commit)
     }
 }
 
@@ -279,6 +316,7 @@ private struct SubmoduleConfigurationSettings: View {
             RemoteSettingRow(
                 label: AppLocalization.text("submodule.field.path"),
                 value: submodule.path,
+                folder: session.localFolder(of: submodule),
                 actions: [action("submodule.action.move") { session.requestSubmodule(.move(submodule)) }]
             )
         }
@@ -286,7 +324,6 @@ private struct SubmoduleConfigurationSettings: View {
         RemoteSettingRow(
             label: AppLocalization.text("submodule.field.remoteURLConfig"),
             value: settings?.url ?? AppLocalization.text("submodule.noValue"),
-            small: settings?.url != nil,
             secondary: settings?.url == nil,
             actions: urlActions
         )
@@ -337,7 +374,7 @@ private struct SubmoduleConfigurationSettings: View {
 
 // MARK: - SubmoduleOptionRow
 
-/// 选项行：240 pt 宽的次级色标签与弹出菜单；第一项是沿用默认值，配置里认不出的原值另列一项。
+/// 选项行：设置表格的标签与弹出菜单；先列各选项，配置里认不出的原值另列一项，最后是沿用默认值。
 private struct SubmoduleOptionRow: View {
     /// 左侧标签。
     let label: String
@@ -356,17 +393,8 @@ private struct SubmoduleOptionRow: View {
 
     /// 标签与菜单横向排列。
     var body: some View {
-        HStack(spacing: 0) {
-            Text(label)
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .frame(width: 240, alignment: .leading)
-
+        SettingTableRow(label: label) {
             Picker(label, selection: selection) {
-                Text(AppLocalization.text("submodule.useDefault")).tag(String?.none)
-
-                Divider()
-
                 ForEach(choices, id: \.value) { choice in
                     Text(choice.title).tag(Optional(choice.value))
                 }
@@ -374,6 +402,8 @@ private struct SubmoduleOptionRow: View {
                 if let unknown {
                     Text(verbatim: unknown).tag(Optional(unknown))
                 }
+
+                Text(AppLocalization.text("submodule.useDefault")).tag(String?.none)
             }
             .labelsHidden()
             .fixedSize()
@@ -381,8 +411,6 @@ private struct SubmoduleOptionRow: View {
 
             Spacer(minLength: 8)
         }
-        .padding(.horizontal, 20)
-        .frame(minHeight: 30)
     }
 
     /// 选中的配置值：认得出的原值换成对应选项的写法，大小写与布尔写法不同也算同一项。
@@ -463,5 +491,20 @@ extension SubmoduleUpdateStrategy {
         case .rebase: AppLocalization.text("submodule.updateStrategy.rebase")
         case .merge: AppLocalization.text("submodule.updateStrategy.merge")
         }
+    }
+}
+
+// MARK: - Private
+
+extension RepositorySession {
+    /// 本机仓库里子模块的目录，供 Path 一行在 Finder 打开；服务器仓库没有。
+    ///
+    /// - Parameter submodule: 显示的子模块。
+    fileprivate func localFolder(of submodule: Submodule) -> URL? {
+        guard let repository, repository.host == nil else {
+            return nil
+        }
+
+        return URL(fileURLWithPath: repository.path).appending(path: submodule.path)
     }
 }

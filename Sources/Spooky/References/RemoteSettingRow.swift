@@ -1,5 +1,100 @@
+import AppKit
 import SpookyKit
 import SwiftUI
+
+// MARK: - SettingTableMetrics
+
+/// 设置表格的尺寸：仓库管理的详情、仓库设置与远端、子模块、工作树详情共用。
+enum SettingTableMetrics {
+    /// 表格两侧的边距。
+    static let inset: CGFloat = 20
+
+    /// 标签列的宽度，标签在列里右对齐。
+    static let labelWidth: CGFloat = 242
+
+    /// 值列与标签列之间的间距。
+    static let valueSpacing: CGFloat = 18
+
+    /// 值列左缘到表格左缘的距离，也是行间分隔线的起点。
+    static let valueColumn = inset + labelWidth + valueSpacing
+
+    /// 普通行的最小高度。
+    static let rowHeight: CGFloat = 36
+
+    /// 分组标题行的高度。
+    static let groupHeight: CGFloat = 57
+}
+
+// MARK: - SettingTable
+
+/// 设置表格：按顺序排出分组标题行与普通行，在相邻两个普通行之间画一条从值列左缘到右侧的 1 pt 线。
+///
+/// 分组标题行下的线由标题行自己画，所以紧接在标题下的第一行上面不再画线；警告行与失败说明这类不是普通行的内容上下都不画线。
+struct SettingTable<Content: View>: View {
+    /// 表格的各行。
+    @ViewBuilder
+    let content: () -> Content
+
+    /// 各行依次排列，普通行与上一行都是普通行时在上缘画线。
+    var body: some View {
+        Group(subviews: content()) { subviews in
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(subviews.indices, id: \.self) { index in
+                    subviews[index]
+                        .overlay(alignment: .top) {
+                            if Self.drawsLine(above: index, in: subviews) {
+                                SettingTableLine()
+                                    .padding(.leading, SettingTableMetrics.valueColumn)
+                            }
+                        }
+                }
+            }
+        }
+    }
+
+    /// 这一行与上一行都是普通行时，在它的上缘画线。
+    ///
+    /// - Parameters:
+    ///   - index: 行的序号。
+    ///   - subviews: 表格的全部行。
+    private static func drawsLine(above index: Int, in subviews: SubviewsCollection) -> Bool {
+        index > 0
+            && subviews[index].containerValues.isSettingRow
+            && subviews[index - 1].containerValues.isSettingRow
+    }
+}
+
+// MARK: - SettingTableRow
+
+/// 设置表格普通行的骨架：右对齐的次级色标签占标签列，值列放调用方给的内容；行高至少 36 pt。
+struct SettingTableRow<Value: View>: View {
+    /// 左侧标签；空字符串表示延续上一行的标签。
+    let label: String
+
+    /// 行的最小高度。
+    var minHeight = SettingTableMetrics.rowHeight
+
+    /// 值列的内容，从值列左缘排到行的右端。
+    @ViewBuilder
+    let value: () -> Value
+
+    /// 标签列与值列横向排列。
+    var body: some View {
+        HStack(spacing: 0) {
+            Text(label)
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
+                .frame(width: SettingTableMetrics.labelWidth, alignment: .trailing)
+                .padding(.trailing, SettingTableMetrics.valueSpacing)
+
+            value()
+        }
+        .padding(.horizontal, SettingTableMetrics.inset)
+        .frame(minHeight: minHeight)
+        .containerValue(\.isSettingRow, true)
+    }
+}
 
 // MARK: - RemoteSettingAction
 
@@ -20,21 +115,21 @@ struct RemoteSettingAction: Identifiable {
 
 // MARK: - RemoteSettingRow
 
-/// 设置表格的一行：240 pt 宽的次级色标签、可选中的值，以及悬停或获得键盘焦点时出现的操作按钮。
+/// 设置表格的一行：标签、可选中的 13 pt 值、可选的在 Finder 打开按钮，以及悬停或获得键盘焦点时出现的操作按钮。
 ///
 /// 按钮淡出时仍在原处，用 Tab 可以移到它们上面；VoiceOver 把整行读作一个元素，操作经辅助功能动作执行。
 struct RemoteSettingRow: View {
     /// 左侧标签；空字符串表示延续上一行的标签。
     let label: String
 
-    /// 值；地址、refspec 与哈希用 11 pt。
+    /// 值。
     let value: String
-
-    /// 是否用 11 pt 显示值。
-    var small = false
 
     /// 值是否用次级色，如沿用获取地址的推送地址。
     var secondary = false
+
+    /// 值右边的跟随链接按钮在 Finder 打开的本机目录；为 nil 时没有这个按钮。
+    var folder: URL?
 
     /// 行尾的操作按钮。
     var actions: [RemoteSettingAction] = []
@@ -47,20 +142,20 @@ struct RemoteSettingRow: View {
     @FocusState
     private var focusedAction: String?
 
-    /// 标签、值与操作按钮横向排列。
+    /// 标签、值、跟随链接按钮与操作按钮横向排列。
     var body: some View {
-        HStack(spacing: 0) {
-            Text(label)
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .frame(width: 240, alignment: .leading)
-
+        SettingTableRow(label: label) {
             Text(value)
-                .font(.system(size: small ? 11 : 13))
+                .font(.system(size: 13))
                 .foregroundStyle(secondary ? .secondary : .primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .textSelection(.enabled)
+
+            if let folder {
+                FollowLinkButton(folder: folder)
+                    .padding(.leading, 6)
+            }
 
             Spacer(minLength: 8)
 
@@ -75,14 +170,16 @@ struct RemoteSettingRow: View {
             .opacity(isHovering || focusedAction != nil ? 1 : 0)
             .animation(.easeInOut(duration: 0.2), value: isHovering)
         }
-        .padding(.horizontal, 20)
-        .frame(minHeight: 30)
         .contentShape(Rectangle())
         .onHover { isHovering = $0 }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
         .accessibilityValue(value)
         .accessibilityActions {
+            if let folder {
+                Button(FollowLinkButton.title) { NSWorkspace.shared.open(folder) }
+            }
+
             ForEach(actions.filter(\.isEnabled)) { action in
                 Button(action.title, action: action.perform)
             }
@@ -90,9 +187,29 @@ struct RemoteSettingRow: View {
     }
 }
 
+// MARK: - RemoteSettingRow + Path
+
+extension RemoteSettingRow {
+    /// 路径一行：本机路径把家目录缩写成 “~”，右边带在 Finder 打开的按钮；服务器上的路径带主机前缀，没有按钮。
+    ///
+    /// - Parameters:
+    ///   - label: 左侧标签。
+    ///   - location: 要写的目录；为 nil 时值为空。
+    ///   - canReveal: 本机目录能否在 Finder 打开，目录已不存在时为 false。
+    init(label: String, location: RepositoryLocation?, canReveal: Bool = true) {
+        let isLocal = location?.host == nil
+
+        self.init(
+            label: label,
+            value: isLocal ? HomePath.abbreviated(location?.path ?? "") : location?.displayPath ?? "",
+            folder: isLocal && canReveal ? location.map { URL(fileURLWithPath: $0.path) } : nil
+        )
+    }
+}
+
 // MARK: - IdentitySettingRow
 
-/// 设置表格的提交人一行：标签、带身份档案菜单的 40 pt 头像、上下两行的姓名与邮箱，以及悬停或获得键盘焦点时出现的操作按钮。
+/// 设置表格的提交人一行：标签、带身份档案菜单的 42 pt 头像、上下两行的姓名与邮箱，以及悬停或获得键盘焦点时出现的操作按钮。
 ///
 /// 仓库管理的详情与仓库设置共用；VoiceOver 把整行读作一个元素，操作经辅助功能动作执行。
 struct IdentitySettingRow<ProfileMenu: View>: View {
@@ -119,14 +236,9 @@ struct IdentitySettingRow<ProfileMenu: View>: View {
 
     /// 标签、头像菜单、姓名与邮箱、操作按钮横向排列。
     var body: some View {
-        HStack(spacing: 0) {
-            Text(AppLocalization.text("bookmarks.detail.identity"))
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .frame(width: 240, alignment: .leading)
-
+        SettingTableRow(label: AppLocalization.text("bookmarks.detail.identity"), minHeight: 56) {
             Menu(content: menu) {
-                InitialsAvatar(name: name, email: identity?.email, size: 40)
+                InitialsAvatar(name: name, email: identity?.email, size: 42)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -149,8 +261,6 @@ struct IdentitySettingRow<ProfileMenu: View>: View {
 
             actionButtons
         }
-        .padding(.horizontal, 20)
-        .frame(minHeight: 56)
         .contentShape(Rectangle())
         .onHover { isHovering = $0 }
         .accessibilityElement(children: .ignore)
@@ -166,20 +276,43 @@ struct IdentitySettingRow<ProfileMenu: View>: View {
 
 // MARK: - RemoteSettingsGroup
 
-/// 设置表格的分组标题：大写的组名，以及悬停或获得键盘焦点时出现的操作按钮。
+/// 设置表格的分组标题行：大写的组名写在标签列里、右对齐，组的按钮常显在值列起点；行下一条从标签列左缘画起的线。
 struct RemoteSettingsGroup: View {
     /// 组名，显示为大写。
     let title: String
 
-    /// 分组的操作按钮。
+    /// 分组的按钮；有几个时连成一组。
     var actions: [RemoteSettingAction] = []
 
-    /// 组名与操作按钮共用一行的样式。
+    /// 组名与按钮在 57 pt 高的行里靠下排列。
     var body: some View {
-        RemoteSettingRow(label: title.uppercased(), value: "", actions: actions)
-            .fontWeight(.semibold)
-            .padding(.top, 12)
-            .accessibilityAddTraits(.isHeader)
+        HStack(spacing: 0) {
+            Text(title.uppercased())
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: SettingTableMetrics.labelWidth, alignment: .trailing)
+                .padding(.trailing, SettingTableMetrics.valueSpacing)
+                .accessibilityAddTraits(.isHeader)
+
+            if !actions.isEmpty {
+                ControlGroup {
+                    ForEach(actions) { action in
+                        Button(action.title, action: action.perform)
+                            .disabled(!action.isEnabled)
+                    }
+                }
+                .fixedSize()
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, SettingTableMetrics.inset)
+        .padding(.top, 8)
+        .frame(height: SettingTableMetrics.groupHeight)
+        .overlay(alignment: .bottom) {
+            SettingTableLine()
+                .padding(.leading, SettingTableMetrics.inset)
+        }
     }
 }
 
@@ -216,6 +349,14 @@ struct SettingWarningRow: View {
     }
 }
 
+// MARK: - ContainerValues + SettingRow
+
+extension ContainerValues {
+    /// 是否为设置表格的普通行；相邻两个普通行之间画分隔线。
+    @Entry
+    var isSettingRow = false
+}
+
 // MARK: - Private
 
 extension IdentitySettingRow {
@@ -236,5 +377,47 @@ extension IdentitySettingRow {
         }
         .opacity(isHovering || focusedAction != nil ? 1 : 0)
         .animation(.easeInOut(duration: 0.2), value: isHovering)
+    }
+}
+
+// MARK: - FollowLinkButton
+
+/// 值右边 18 × 18 的跟随链接按钮，在 Finder 打开一个本机目录。
+private struct FollowLinkButton: View {
+    /// 系统的跟随链接图，辅助功能描述由系统给出。
+    static let image = NSImage(named: NSImage.followLinkFreestandingTemplateName)
+
+    /// 按钮的辅助功能名称，取系统给图的描述。
+    static var title: String { image?.accessibilityDescription ?? "" }
+
+    /// 要打开的目录。
+    let folder: URL
+
+    /// 无边框的图形按钮。
+    var body: some View {
+        Button {
+            NSWorkspace.shared.open(folder)
+        } label: {
+            if let image = Self.image {
+                Image(nsImage: image)
+                    .resizable()
+                    .frame(width: 16, height: 16)
+            }
+        }
+        .buttonStyle(.plain)
+        .frame(width: 18, height: 18)
+        .accessibilityLabel(Self.title)
+    }
+}
+
+// MARK: - SettingTableLine
+
+/// 设置表格里 1 pt 高的分隔线。
+private struct SettingTableLine: View {
+    /// 系统分隔线颜色的细线。
+    var body: some View {
+        Rectangle()
+            .fill(Color(nsColor: .separatorColor))
+            .frame(height: 1)
     }
 }

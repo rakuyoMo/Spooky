@@ -1502,7 +1502,6 @@
 "remote.page" = "Remote-Einstellungen";
 "remote.page.general" = "Allgemein";
 "remote.page.branches" = "Branches";
-"remote.field.name" = "Name";
 "remote.field.fetchURL" = "Fetch-URL";
 "remote.field.pushURL" = "Push-URL";
 "remote.field.options" = "Optionen";
@@ -1925,6 +1924,9 @@
 "bookmarks.detail.noRemotes" = "Keine Remotes";
 "bookmarks.detail.edit" = "Bearbeiten";
 "bookmarks.detail.unset" = "Entfernen";
+"bookmarks.detail.repository" = "Repository";
+"bookmarks.detail.status" = "Status";
+"bookmarks.detail.noChanges" = "Keine Änderungen";
 "bookmarks.description.edit" = "Repository-Beschreibung bearbeiten";
 "bookmarks.description.message" = "Geben Sie eine Beschreibung für dieses Repository ein.";
 "bookmarks.description.label" = "Beschreibung:";
@@ -2098,10 +2100,7 @@
 "repositorySettings.ignores" = "Ignorieren";
 "repositorySettings.excludes" = "Ausschließen";
 "repositorySettings.lfs.patterns" = "Tracking-Muster";
-"repositorySettings.ignores.patterns" = "Ignoriermuster";
-"repositorySettings.excludes.patterns" = "Ausschlussmuster";
 "repositorySettings.openInEditor" = "Im Editor öffnen";
-"repositorySettings.noPatterns" = "Keine Muster";
 "repositorySettings.name" = "Name";
 "repositorySettings.path" = "Pfad";
 "repositorySettings.localFolder" = "Lokaler Ordner";
@@ -2110,10 +2109,6 @@
 "repositorySettings.localFolder.clear" = "Entfernen";
 "repositorySettings.localFolder.rejected" = "Ordner kann nicht verwendet werden";
 "repositorySettings.localFolder.rejected.message" = "„%1$@“ ist nicht das Repository „%2$@“.";
-"repositorySettings.wrapping" = "Zeilenumbruch";
-"repositorySettings.pageGuide" = "Hilfslinie anzeigen";
-"repositorySettings.lineLimit" = "Zeichen pro Zeile";
-"repositorySettings.lineLimit.invalid" = "Geben Sie eine ganze Zahl größer als 0 ein.";
 "repositorySettings.signing" = "Signieren";
 "repositorySettings.signCommits" = "Commits signieren";
 "repositorySettings.signingKey" = "Signaturschlüssel";
@@ -2379,7 +2374,6 @@
 "worktree.open.current" = "Worktree öffnen";
 "worktree.open.newTab" = "Worktree in neuem Tab öffnen";
 "worktree.open.newWindow" = "Worktree in neuem Fenster öffnen";
-"worktree.page" = "Worktree-Einstellungen";
 "worktree.page.general" = "Allgemein";
 "worktree.relocate" = "Worktree neu zuordnen";
 "worktree.relocate.message" = "Wähle aus, wo sich das Verzeichnis des Worktrees „%@“ jetzt befindet, damit Git ihn wieder mit diesem Repository verbindet.";

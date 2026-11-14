@@ -148,7 +148,7 @@ struct DialogSizingTests {
             summary: runner.repositorySummary()
         )
 
-        general.edit(.lineLimit, in: parent)
+        general.edit(.allowedSigners, in: parent)
 
         try await Self.expectDialogWindow(on: parent)
     }

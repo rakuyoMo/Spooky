@@ -35,13 +35,9 @@ struct Bookmark: Codable, Hashable, Identifiable {
         return !FileManager.default.fileExists(atPath: location.path)
     }
 
-    /// 列表与详情头部的系统符号：文件夹、本机仓库与服务器仓库各一种。
+    /// 列表与详情头部的系统符号：文件夹与本机仓库是文件夹轮廓，服务器仓库是机架。
     var symbolName: String {
-        guard let location else {
-            return "folder"
-        }
-
-        return location.host == nil ? "internaldrive" : "server.rack"
+        location?.host == nil ? "folder" : "server.rack"
     }
 
     /// 一个仓库书签，名称默认取工作区的目录名。
