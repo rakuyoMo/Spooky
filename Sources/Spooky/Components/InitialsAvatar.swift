@@ -36,7 +36,7 @@ struct InitialsAvatar: View {
                     .scaledToFill()
                     .clipShape(shape)
             } else {
-                Text(initials)
+                Text(Self.initials(of: name))
                     .font(.system(size: size * 0.4, weight: .medium))
                     .foregroundStyle(.secondary)
                     .frame(width: size, height: size)
@@ -88,11 +88,11 @@ struct InitialsAvatar: View {
     }
 }
 
-// MARK: - Private
+// MARK: - Helpers
 
 extension InitialsAvatar {
-    /// 前两个词各取首字母并转成大写；没有姓名时为空。
-    private var initials: String {
+    /// 姓名前两个词各取首字母并转成大写；没有姓名时为空。注释栏等自行绘制的头像也用它。
+    static func initials(of name: String) -> String {
         name.split(whereSeparator: \.isWhitespace)
             .prefix(2)
             .compactMap(\.first)

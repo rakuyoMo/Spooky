@@ -4,12 +4,15 @@ import SwiftUI
 
 // MARK: - CommitSelectorView
 
-/// 整页提交详情的版本选择器：上面是搜索框，下面是从 HEAD 起的提交列表。
+/// 整页提交详情与文件原文的版本选择器：上面是搜索框，下面是从 HEAD 起的提交列表。
 ///
-/// 打开时高亮 HEAD；单击与 ↑ ↓ 只移动高亮，回车不换，双击一行才换到那个提交，Esc 关闭。
+/// 打开时高亮当前版本，没有当前版本时高亮 HEAD；单击与 ↑ ↓ 只移动高亮，回车不换，双击一行才换到那个提交，Esc 关闭。
 struct CommitSelectorView: View {
     /// 当前仓库会话。
     let session: RepositorySession
+
+    /// 打开时高亮的当前版本；为空时高亮 HEAD。
+    var current: String? = nil
 
     /// 双击选定一个提交。
     let select: (HistoryCommit) -> Void
@@ -25,7 +28,7 @@ struct CommitSelectorView: View {
     /// 480 × 272：距上、左、右 20 pt 的搜索框，下面 8 pt 是贴满宽度的列表。
     var body: some View {
         VStack(spacing: 8) {
-            CommitSelectorSearchField(
+            SelectorSearchField(
                 onChange: { state.search($0) },
                 onMove: { state.moveHighlight(by: $0) },
                 onCancel: { dismiss() }
@@ -37,7 +40,14 @@ struct CommitSelectorView: View {
                 .frame(height: 220)
         }
         .frame(width: 480, height: 272)
-        .onAppear { state.open(runner: session.runner, head: session.status?.branch.oid) }
+        .onAppear {
+            state.open(runner: session.runner, head: session.status?.branch.oid)
+
+            // 第一页读完后当前版本仍在列表里就保留高亮，否则高亮第一行
+            if let current {
+                state.highlightedID = current
+            }
+        }
         .onDisappear { state.close() }
     }
 
@@ -155,12 +165,12 @@ private struct CommitSelectorRow: View {
     }
 }
 
-// MARK: - CommitSelectorSearchField
+// MARK: - SelectorSearchField
 
-/// 版本选择器的系统搜索框：13 pt、有焦点时画焦点环，占位是系统的 “Search”，打开时取得焦点。
+/// 版本与文件选择器共用的系统搜索框：13 pt、有焦点时画焦点环，占位是系统的 “Search”，打开时取得焦点。
 ///
 /// 每次输入与清除都写回；↑ ↓ 移动高亮，Esc 关闭选择器，回车什么都不做。
-private struct CommitSelectorSearchField: NSViewRepresentable {
+struct SelectorSearchField: NSViewRepresentable {
     /// 搜索框的协调者：接收输入与按键。
     @MainActor
     final class Coordinator: NSObject, NSSearchFieldDelegate {

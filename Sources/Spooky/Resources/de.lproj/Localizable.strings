@@ -771,6 +771,10 @@
 "search.contains.file" = "Datei enthält: %@";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
+"blame.hash" = "Hash";
+"blame.author" = "Autor";
+"blame.date" = "Datum";
+"blame.subject" = "Betreff";
 "blame.show" = "Blame für „%@“ anzeigen";
 "blame.loading" = "Blame wird geladen …";
 "blame.untracked" = "Für hinzugefügte oder nicht verfolgte Dateien ist kein Blame möglich";
@@ -788,8 +792,6 @@
 "showFile.noContributors" = "Noch keine Beitragenden";
 "showFile.oneContributor" = "1 Beitragende Person";
 "showFile.contributors" = "%ld Beitragende";
-"showFile.searchRevisions" = "Revisionen durchsuchen";
-"showFile.searchFiles" = "Dateien durchsuchen";
 "showFile.error.missing" = "Datei in dieser Revision nicht vorhanden";
 /* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "Bei ignorierten Leerzeichen passen die ausgewählten Zeilen nicht zu den Änderungen in der Datei. Blende Leerzeichenänderungen ein und wähle die Zeilen erneut aus.";

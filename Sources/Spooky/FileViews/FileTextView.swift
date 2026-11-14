@@ -42,14 +42,14 @@ struct FileTextAnnotations {
 
 /// 正文、行号与注释的字体和颜色，全部取自文本主题。
 struct FileTextStyle: Equatable {
-    /// 行高是主题字体默认行高的倍数。
-    private static let lineHeightMultiple: CGFloat = 1.4
-
     /// 主题字体。
     let font: NSFont
 
-    /// 固定行高，行号与注释按它和正文对齐。
+    /// 固定行高，行号与注释按它和正文对齐：原文是主题字体的默认行高，Blame 另加 10 pt。
     let lineHeight: CGFloat
+
+    /// 每行文字下方留的空白：Blame 把多出的高度上下各分一半，文字在行里竖直居中；原文为 0。
+    let lineSpacing: CGFloat
 
     /// 正文颜色。
     let text: NSColor
@@ -63,6 +63,12 @@ struct FileTextStyle: Equatable {
     /// 一起高亮的段的底色：背景色略微加深或提亮。
     let highlight: NSColor
 
+    /// Blame 注释栏的底色：背景色略微提亮或加深，与正文区分。
+    let annotationBackground: NSColor
+
+    /// 注释栏里一起高亮的段的底色：比注释栏的底色再提亮或加深一些。
+    let annotationHighlight: NSColor
+
     /// 段之间的分隔线颜色。
     let separator: NSColor
 
@@ -70,10 +76,19 @@ struct FileTextStyle: Equatable {
     let selection: NSColor
 
     /// 按主题计算全部样式。
-    init(theme: TextTheme) {
+    ///
+    /// - Parameters:
+    ///   - theme: 文本主题。
+    ///   - blame: 是否用 Blame 的行高。
+    init(theme: TextTheme, blame: Bool = false) {
         font = NSFont(name: theme.fontName, size: theme.fontSize)
             ?? .monospacedSystemFont(ofSize: theme.fontSize, weight: .regular)
-        lineHeight = (NSLayoutManager().defaultLineHeight(for: font) * Self.lineHeightMultiple).rounded()
+
+        // Blame 每行多出 10 pt，上下各留一半
+        let natural = NSLayoutManager().defaultLineHeight(for: font).rounded()
+        lineHeight = blame ? natural + 10 : natural
+        lineSpacing = blame ? 5 : 0
+
         text = theme.colors["text"]?.calibratedNSColor ?? .textColor
         background = theme.colors["background"]?.calibratedNSColor ?? .textBackgroundColor
         selection = theme.colors["selection"]?.calibratedNSColor ?? .selectedTextBackgroundColor
@@ -84,6 +99,8 @@ struct FileTextStyle: Equatable {
         secondary = Self.shifted(sourceText, by: Self.isDark(sourceText) ? 0.2 : -0.2)
         highlight = Self.shifted(sourceBackground, by: Self.isDark(sourceBackground) ? 0.1 : -0.1)
         separator = Self.shifted(sourceBackground, by: Self.isDark(sourceBackground) ? 0.2 : -0.2)
+        annotationBackground = Self.shifted(sourceBackground, by: Self.isDark(sourceBackground) ? 0.09 : -0.08)
+        annotationHighlight = Self.shifted(sourceBackground, by: Self.isDark(sourceBackground) ? 0.17 : -0.16)
     }
 
     /// 按亮度判断颜色偏深还是偏浅。
@@ -114,7 +131,7 @@ struct FileTextStyle: Equatable {
 
 // MARK: - FileTextView
 
-/// 只读、可选中、不折行的文件正文，左侧是行号栏；Blame 时行号栏左边再加一列按段对齐的注释。
+/// 只读、可选中、不折行的文件正文，左侧是行号栏；Blame 时正文右边再加一列按段对齐的注释。
 struct FileTextView: NSViewRepresentable {
     /// 桥接正文、行号栏与注释弹窗。
     @MainActor
@@ -161,7 +178,7 @@ struct FileTextView: NSViewRepresentable {
             popover.behavior = .transient
             popover.animates = false
             popover.contentViewController = NSHostingController(rootView: BlameCommitPopover(commit: commit))
-            popover.show(relativeTo: rect, of: view, preferredEdge: .maxX)
+            popover.show(relativeTo: rect, of: view, preferredEdge: .minX)
             self.popover = popover
         }
 
@@ -215,41 +232,31 @@ struct FileTextView: NSViewRepresentable {
     /// 建立桥接。
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    /// TextKit 1 的正文视图配合竖直标尺，行号与注释随正文纵向滚动、不随横向滚动。
-    func makeNSView(context: Context) -> NSScrollView {
-        let document = FileTextDocumentView.make()
-        let scroll = NSScrollView()
-        scroll.hasVerticalScroller = true
-        scroll.hasHorizontalScroller = true
-        scroll.autohidesScrollers = true
-        scroll.borderType = .noBorder
-        scroll.documentView = document
+    /// 正文、行号栏与注释栏的容器；注释的单击与双击交给桥接。
+    func makeNSView(context: Context) -> FileTextContainerView {
+        let container = FileTextContainerView()
 
-        let gutter = FileGutterView(scrollView: scroll, document: document)
-        gutter.clicked = { [weak coordinator = context.coordinator] index, rect, view in
+        container.annotationView.clicked = { [weak coordinator = context.coordinator] index, rect, view in
             coordinator?.annotationClicked(index, rect: rect, in: view)
         }
-        gutter.doubleClicked = { [weak coordinator = context.coordinator] in
+
+        container.annotationView.doubleClicked = { [weak coordinator = context.coordinator] in
             coordinator?.annotationDoubleClicked($0)
         }
 
-        scroll.verticalRulerView = gutter
-        scroll.hasVerticalRuler = true
-        scroll.rulersVisible = true
-        return scroll
+        return container
     }
 
     /// 内容身份或主题变化时替换正文，其余变化只重绘高亮与注释。
-    func updateNSView(_ scroll: NSScrollView, context: Context) {
+    func updateNSView(_ container: FileTextContainerView, context: Context) {
         let coordinator = context.coordinator
         coordinator.parent = self
 
-        guard
-            let document = scroll.documentView as? FileTextDocumentView,
-            let gutter = scroll.verticalRulerView as? FileGutterView
-        else { return }
+        guard let document = container.document, let gutter = container.gutter else {
+            return
+        }
 
-        let style = FileTextStyle(theme: theme)
+        let style = FileTextStyle(theme: theme, blame: annotations != nil)
         let rendering = TextStyle(theme: theme, tabWidth: tabWidth, showsInvisibles: showsInvisibles)
         let replaced = coordinator.contentID != contentID
 
@@ -273,8 +280,16 @@ struct FileTextView: NSViewRepresentable {
         highlight(in: document, style: style, rendering: rendering, coordinator: coordinator)
 
         document.annotations = annotations
-        gutter.update(lineCount: lines.count, annotations: annotations)
+        gutter.update(lineCount: lines.count)
         document.needsDisplay = true
+
+        // 原文没有注释栏
+        container.annotationView.update(annotations: annotations)
+
+        if container.annotationView.isHidden != (annotations == nil) {
+            container.annotationView.isHidden = annotations == nil
+            container.needsLayout = true
+        }
     }
 }
 
@@ -337,33 +352,77 @@ extension FileTextView {
     }
 }
 
+// MARK: - FileTextContainerView
+
+/// 正文的滚动视图与右边的 Blame 注释栏；原文时注释栏隐藏，正文占满。
+final class FileTextContainerView: NSView {
+    /// 带行号栏的正文滚动视图。
+    let scrollView: NSScrollView
+
+    /// 正文右边的注释栏。
+    let annotationView: FileAnnotationView
+
+    /// 正文。
+    var document: FileTextDocumentView? { scrollView.documentView as? FileTextDocumentView }
+
+    /// 行号栏。
+    var gutter: FileGutterView? { scrollView.verticalRulerView as? FileGutterView }
+
+    /// 创建正文、行号栏与注释栏。
+    init() {
+        let document = FileTextDocumentView.make()
+        scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = true
+        scrollView.autohidesScrollers = true
+        scrollView.borderType = .noBorder
+        scrollView.documentView = document
+
+        scrollView.verticalRulerView = FileGutterView(scrollView: scrollView, document: document)
+        scrollView.hasVerticalRuler = true
+        scrollView.rulersVisible = true
+
+        annotationView = FileAnnotationView(scrollView: scrollView, document: document)
+        super.init(frame: .zero)
+
+        addSubview(scrollView)
+        addSubview(annotationView)
+
+        annotationView.widthChanged = { [weak self] in
+            self?.needsLayout = true
+        }
+    }
+
+    /// 视图由代码构建。
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError("FileTextContainerView 不从归档恢复")
+    }
+
+    /// 有注释时注释栏贴右边，正文让出它的宽度。
+    override func layout() {
+        super.layout()
+
+        let annotationWidth = annotationView.isHidden ? 0 : min(annotationView.width, bounds.width)
+
+        scrollView.frame = NSRect(x: 0, y: 0, width: bounds.width - annotationWidth, height: bounds.height)
+        annotationView.frame = NSRect(
+            x: bounds.width - annotationWidth,
+            y: 0,
+            width: annotationWidth,
+            height: bounds.height
+        )
+
+        window?.invalidateCursorRects(for: annotationView)
+    }
+}
+
 // MARK: - FileGutterView
 
-/// 行号栏与 Blame 注释栏，随正文纵向滚动，不随横向滚动；两栏之间的分隔线可以拖动。
+/// 行号栏，随正文纵向滚动，不随横向滚动。
 final class FileGutterView: NSRulerView {
-    /// 拖动分隔线时注释栏宽度的范围。
-    static let annotationWidths: ClosedRange<CGFloat> = 175 ... 600
-
-    /// 没有保存过宽度时注释栏的宽度。
-    static let defaultAnnotationWidth: CGFloat = 405
-
-    /// 注释栏宽度在偏好里的键：拖动后保存，所有窗口共用。
-    static let annotationWidthKey = "blameAnnotationWidth"
-
     /// 行号四周的内边距。
     private static let padding: CGFloat = 10
-
-    /// 分隔线两侧各有这么宽的范围可以按住拖动。
-    private static let dividerHitWidth: CGFloat = 3
-
-    /// 注释文字的字号。
-    private static let annotationFontSize: CGFloat = 11
-
-    /// 单击注释：段的序号、注释所在的矩形与所在视图。
-    var clicked: ((Int, NSRect, NSView) -> Void)?
-
-    /// 双击注释：段的序号。
-    var doubleClicked: ((Int) -> Void)?
 
     /// 对应的正文。
     private weak var document: FileTextDocumentView?
@@ -371,16 +430,7 @@ final class FileGutterView: NSRulerView {
     /// 正文的行数。
     private var lineCount = 0
 
-    /// Blame 的注释；原文为 nil。
-    private var annotations: FileTextAnnotations?
-
-    /// 注释栏当前的宽度：取自偏好，限制在可拖动的范围内。
-    private var annotationWidth = FileGutterView.clampedAnnotationWidth(
-        (UserDefaults.standard.object(forKey: FileGutterView.annotationWidthKey) as? CGFloat)
-            ?? FileGutterView.defaultAnnotationWidth
-    )
-
-    /// 标尺只画行号与注释，没有刻度与标记区。
+    /// 标尺只画行号，没有刻度与标记区。
     override var requiredThickness: CGFloat { ruleThickness }
 
     /// 正文与标尺使用同样的翻转坐标。
@@ -395,16 +445,6 @@ final class FileGutterView: NSRulerView {
         let largest = NSAttributedString(string: String(lineCount), attributes: [.font: style.font])
 
         return largest.size().width.rounded(.up) + Self.padding * 2
-    }
-
-    /// 注释栏与行号栏之间可以按住拖动的范围。
-    private var dividerRect: NSRect {
-        NSRect(
-            x: annotationWidth - Self.dividerHitWidth,
-            y: bounds.minY,
-            width: Self.dividerHitWidth * 2,
-            height: bounds.height
-        )
     }
 
     /// 绑定正文；滚动时重绘。
@@ -434,39 +474,18 @@ final class FileGutterView: NSRulerView {
         fatalError("FileGutterView 不从归档恢复")
     }
 
-    /// 把宽度限制在可拖动的范围内。
-    private static func clampedAnnotationWidth(_ width: CGFloat) -> CGFloat {
-        min(max(width, annotationWidths.lowerBound), annotationWidths.upperBound)
-    }
-
-    /// 行数或注释变化后重新计算宽度并重绘。
-    func update(lineCount: Int, annotations: FileTextAnnotations?) {
+    /// 行数变化后重新计算宽度并重绘。
+    func update(lineCount: Int) {
         self.lineCount = lineCount
-        self.annotations = annotations
 
-        let thickness = (annotations == nil ? 0 : annotationWidth) + lineNumberWidth
-
-        if ruleThickness != thickness {
-            ruleThickness = thickness
+        if ruleThickness != lineNumberWidth {
+            ruleThickness = lineNumberWidth
         }
 
-        // 有没有注释栏决定分隔线的光标区域
-        window?.invalidateCursorRects(for: self)
         needsDisplay = true
     }
 
-    /// 有注释栏时，分隔线上显示左右调整的光标。
-    override func resetCursorRects() {
-        super.resetCursorRects()
-
-        guard annotations != nil else {
-            return
-        }
-
-        addCursorRect(dividerRect, cursor: .resizeLeftRight)
-    }
-
-    /// 只画可见范围内的行号与注释。
+    /// 只画可见范围内的行号。
     override func drawHashMarksAndLabels(in rect: NSRect) {
         guard let document, let style = document.style, style.lineHeight > 0 else {
             return
@@ -475,48 +494,7 @@ final class FileGutterView: NSRulerView {
         style.background.setFill()
         bounds.fill()
 
-        let lineNumberX = annotations == nil ? 0 : annotationWidth
-        let visible = convert(rect, to: document)
-
-        if let annotations {
-            drawAnnotations(annotations, in: visible, style: style)
-        }
-
-        drawLineNumbers(in: visible, x: lineNumberX, style: style)
-    }
-
-    /// 按住分隔线拖动注释栏的宽度；单击注释弹出提交摘要，双击回到对应的提交。
-    override func mouseDown(with event: NSEvent) {
-        let point = convert(event.locationInWindow, from: nil)
-
-        if annotations != nil, dividerRect.contains(point) {
-            trackDivider()
-
-            return
-        }
-
-        guard
-            let document, let style = document.style, style.lineHeight > 0,
-            let annotations, point.x < annotationWidth
-        else {
-            super.mouseDown(with: event)
-
-            return
-        }
-
-        // 换算到正文坐标，得到点中的行与段
-        let y = convert(point, to: document).y
-        let line = Int(((y - document.topInset) / style.lineHeight).rounded(.down)) + 1
-
-        guard line <= lineCount, let index = annotations.groupIndex(containing: line) else {
-            return
-        }
-
-        if event.clickCount >= 2 {
-            doubleClicked?(index)
-        } else {
-            clicked?(index, annotationRect(of: annotations.groups[index], style: style), self)
-        }
+        drawLineNumbers(in: convert(rect, to: document), style: style)
     }
 
     /// 正文滚动后标尺跟着重绘。
@@ -525,101 +503,16 @@ final class FileGutterView: NSRulerView {
         needsDisplay = true
     }
 
-    /// 跟随鼠标调整注释栏的宽度，正文随之让出或收回空间；松开后保存到偏好。
-    private func trackDivider() {
-        while let event = window?.nextEvent(matching: [.leftMouseDragged, .leftMouseUp]) {
-            let x = convert(event.locationInWindow, from: nil).x
-            annotationWidth = Self.clampedAnnotationWidth(x)
-            ruleThickness = annotationWidth + lineNumberWidth
-            needsDisplay = true
-
-            guard event.type == .leftMouseUp else {
-                continue
-            }
-
-            UserDefaults.standard.set(Double(annotationWidth), forKey: Self.annotationWidthKey)
-            window?.invalidateCursorRects(for: self)
-
-            return
-        }
-    }
-
-    /// 段第一行在注释栏中的矩形。
-    private func annotationRect(of group: BlameGroup, style: FileTextStyle) -> NSRect {
-        let top = convert(NSPoint(x: 0, y: document?.lineTop(group.firstLine - 1) ?? 0), from: document).y
-        return NSRect(x: 0, y: top, width: annotationWidth, height: style.lineHeight)
-    }
-
-    /// 画出可见的段：高亮底色、段之间的分隔线，以及第一行的标题、作者与日期。
-    private func drawAnnotations(_ annotations: FileTextAnnotations, in visible: NSRect, style: FileTextStyle) {
-        guard let document else {
-            return
-        }
-
-        for index in document.visibleGroups(in: visible, annotations: annotations) {
-            let group = annotations.groups[index]
-            let rect = annotationRect(of: group, style: style)
-            let height = CGFloat(group.lineCount) * style.lineHeight
-
-            if group.commitID == annotations.highlightedCommit {
-                style.highlight.setFill()
-                NSRect(x: 0, y: rect.minY, width: bounds.width, height: height).fill()
-            }
-
-            if index > 0 {
-                style.separator.setFill()
-                NSRect(x: 0, y: rect.minY, width: bounds.width, height: 1).fill()
-            }
-
-            if let commit = annotations.commits[group.commitID] {
-                drawAnnotation(commit, in: rect, style: style)
-            }
-        }
-
-        // 注释栏与行号栏之间的竖线
-        style.separator.setFill()
-        NSRect(x: annotationWidth - 1, y: bounds.minY, width: 1, height: bounds.height).fill()
-    }
-
-    /// 一行注释：标题靠左并按宽度截断，作者与日期靠右。
-    private func drawAnnotation(_ commit: BlameCommit, in rect: NSRect, style: FileTextStyle) {
-        let font = NSFont.systemFont(ofSize: Self.annotationFontSize)
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.lineBreakMode = .byTruncatingTail
-
-        let detail = NSAttributedString(
-            string: commit.author + "  " + commit.authorDate.formatted(date: .abbreviated, time: .omitted),
-            attributes: [.font: font, .foregroundColor: style.secondary, .paragraphStyle: paragraph]
-        )
-        let title = NSAttributedString(
-            string: commit.summary,
-            attributes: [.font: font, .foregroundColor: style.text, .paragraphStyle: paragraph]
-        )
-
-        // 文字在第一行里垂直居中；作者与日期最多占一半宽度
-        let textHeight = (font.ascender - font.descender).rounded(.up)
-        let y = rect.minY + (rect.height - textHeight) / 2
-        let detailWidth = min(detail.size().width.rounded(.up), (rect.width - 8) / 2)
-        detail.draw(
-            with: NSRect(x: rect.maxX - 6 - detailWidth, y: y, width: detailWidth, height: textHeight),
-            options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
-        )
-        title.draw(
-            with: NSRect(x: rect.minX + 6, y: y, width: rect.width - detailWidth - 18, height: textHeight),
-            options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
-        )
-    }
-
-    /// 画出可见行的行号，右对齐，与正文共用字体与行高。
-    private func drawLineNumbers(in visible: NSRect, x: CGFloat, style: FileTextStyle) {
+    /// 画出可见行的行号，右对齐，与正文共用字体、行高与文字的竖直位置。
+    private func drawLineNumbers(in visible: NSRect, style: FileTextStyle) {
         guard let document, lineCount > 0 else {
             return
         }
 
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .right
-        paragraph.minimumLineHeight = style.lineHeight
-        paragraph.maximumLineHeight = style.lineHeight
+        paragraph.minimumLineHeight = style.lineHeight - style.lineSpacing
+        paragraph.maximumLineHeight = style.lineHeight - style.lineSpacing
 
         let attributes: [NSAttributedString.Key: Any] = [
             .font: style.font,
@@ -638,7 +531,7 @@ final class FileGutterView: NSRulerView {
 
             NSAttributedString(string: String(index + 1), attributes: attributes).draw(
                 with: NSRect(
-                    x: x + Self.padding,
+                    x: Self.padding,
                     y: top,
                     width: lineNumberWidth - Self.padding * 2,
                     height: style.lineHeight
@@ -651,32 +544,39 @@ final class FileGutterView: NSRulerView {
 
 // MARK: - BlameCommitPopover
 
-/// 单击 Blame 注释弹出的提交摘要：哈希、作者、日期与标题。
+/// 单击 Blame 注释弹出的提交摘要：左边 64 pt 的头像，右边哈希、作者、日期与标题四行。
 private struct BlameCommitPopover: View {
     /// 注释对应的提交。
     let commit: BlameCommit
 
-    /// 上一行哈希与作者、日期，下一行可选中的标题。
+    /// 四行都是 13 pt 的系统字体，标题超过 311 pt 换行。
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 12) {
-                Text(commit.shortID)
-                    .font(.system(size: 11, design: .monospaced))
-                    .textSelection(.enabled)
+        HStack(alignment: .top, spacing: 12) {
+            InitialsAvatar(name: commit.author, email: commit.authorEmail, size: 64)
 
-                Spacer(minLength: 0)
-
-                Text(commit.author + "  " + commit.authorDate.formatted(date: .abbreviated, time: .shortened))
-                    .font(.system(size: 11))
+            Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 4) {
+                row("blame.hash", commit.shortID)
+                row("blame.author", commit.author + " <" + commit.authorEmail + ">")
+                row("blame.date", commit.authorDate.formatted(date: .abbreviated, time: .shortened))
+                row("blame.subject", commit.summary)
             }
-            .foregroundStyle(.tertiary)
-
-            Text(commit.summary)
-                .font(.system(size: 13))
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
+            .font(.system(size: 13))
         }
         .padding(12)
-        .frame(width: 335, alignment: .leading)
+        .frame(width: 423, alignment: .leading)
+    }
+
+    /// 一行：右对齐的次要色标签，后面是可选中的值。
+    private func row(_ key: String, _ value: String) -> some View {
+        GridRow {
+            Text(AppLocalization.text(key))
+                .foregroundStyle(.secondary)
+                .gridColumnAlignment(.trailing)
+
+            Text(value)
+                .textSelection(.enabled)
+                .frame(maxWidth: 311, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }

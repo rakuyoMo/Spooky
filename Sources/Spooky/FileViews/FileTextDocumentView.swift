@@ -44,13 +44,14 @@ final class FileTextDocumentView: NSTextView {
         document.isSelectable = true
         document.isRichText = false
         document.usesFindBar = false
+        document.usesFontPanel = false
         document.drawsBackground = true
         document.isVerticallyResizable = true
         document.isHorizontallyResizable = true
         document.minSize = .zero
         document.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         document.autoresizingMask = [.width]
-        document.textContainerInset = NSSize(width: 4, height: 6)
+        document.textContainerInset = NSSize(width: 4, height: 0)
         return document
     }
 
@@ -79,9 +80,11 @@ final class FileTextDocumentView: NSTextView {
         self.source = Array(source.utf16)
         mapping = TextSourceMap()
 
+        // 行距放在文字下方，加上段落行高正好是一行的固定高度
         let paragraph = NSMutableParagraphStyle()
-        paragraph.minimumLineHeight = style.lineHeight
-        paragraph.maximumLineHeight = style.lineHeight
+        paragraph.minimumLineHeight = style.lineHeight - style.lineSpacing
+        paragraph.maximumLineHeight = style.lineHeight - style.lineSpacing
+        paragraph.lineSpacing = style.lineSpacing
 
         let attributes: [NSAttributedString.Key: Any] = [
             .font: style.font,

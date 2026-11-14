@@ -771,6 +771,10 @@
 "search.contains.file" = "파일 포함: %@";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
+"blame.hash" = "해시";
+"blame.author" = "작성자";
+"blame.date" = "날짜";
+"blame.subject" = "제목";
 "blame.show" = "“%@” Blame 보기";
 "blame.loading" = "Blame 읽는 중…";
 "blame.untracked" = "추가되었거나 추적되지 않는 파일은 Blame할 수 없습니다";
@@ -788,8 +792,6 @@
 "showFile.noContributors" = "아직 기여자가 없습니다";
 "showFile.oneContributor" = "기여자 1명";
 "showFile.contributors" = "기여자 %ld명";
-"showFile.searchRevisions" = "리비전 검색";
-"showFile.searchFiles" = "파일 검색";
 "showFile.error.missing" = "이 리비전에 파일이 없음";
 /* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "공백을 무시하는 동안에는 선택한 줄이 파일의 변경 사항과 일치하지 않습니다. 공백 변경 사항을 표시한 후 다시 선택하십시오.";

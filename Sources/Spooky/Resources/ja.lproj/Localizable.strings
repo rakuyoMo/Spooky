@@ -771,6 +771,10 @@
 "search.contains.file" = "ファイルに含む: %@";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
+"blame.hash" = "ハッシュ";
+"blame.author" = "作成者";
+"blame.date" = "日付";
+"blame.subject" = "件名";
 "blame.show" = "「%@」の Blame を表示";
 "blame.loading" = "Blame を読み込み中…";
 "blame.untracked" = "追加済みまたは未追跡のファイルは Blame できません";
@@ -788,8 +792,6 @@
 "showFile.noContributors" = "まだコントリビュータはいません";
 "showFile.oneContributor" = "コントリビュータ 1 人";
 "showFile.contributors" = "コントリビュータ %ld 人";
-"showFile.searchRevisions" = "リビジョンを検索";
-"showFile.searchFiles" = "ファイルを検索";
 "showFile.error.missing" = "このリビジョンにファイルがありません";
 /* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "空白を無視しているため、選択した行がファイルの変更と一致しません。空白の変更を表示してから選択し直してください。";

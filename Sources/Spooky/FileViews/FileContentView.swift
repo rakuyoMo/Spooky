@@ -47,17 +47,20 @@ struct FileContentView: View {
         HStack(spacing: 8) {
             revisionButton
 
-            Image(systemName: "chevron.right")
-                .foregroundStyle(.tertiary)
-                .frame(width: 16, height: 16)
-                .accessibilityHidden(true)
+            // 箭头、文件类型图标与文件名靠得更近
+            HStack(spacing: 4) {
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 16, height: 16)
+                    .accessibilityHidden(true)
 
-            Image(systemName: "doc")
-                .font(.system(size: 18))
-                .frame(width: 24, height: 24)
-                .accessibilityHidden(true)
+                Image(nsImage: WorkingCopyFileHeader.icon(path: state.path ?? "", isFolder: false))
+                    .resizable()
+                    .frame(width: 16, height: 16)
+                    .accessibilityHidden(true)
 
-            fileButton
+                fileButton
+            }
 
             Spacer(minLength: 8)
 
@@ -69,7 +72,7 @@ struct FileContentView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 112)
+            .fixedSize()
         }
         .buttonStyle(.accessoryBar)
         .font(.system(size: 13))
@@ -87,9 +90,11 @@ struct FileContentView: View {
         .font(.system(size: 13, design: .monospaced))
         .accessibilityLabel(AppLocalization.text("showFile.revision"))
         .popover(isPresented: $choosingRevision, arrowEdge: .bottom) {
-            RevisionSelectorView(session: session, path: state.path ?? "") {
-                state.select(revision: $0)
+            CommitSelectorView(session: session, current: state.resolvedRevision) { commit in
                 choosingRevision = false
+
+                // 选中 HEAD 的提交时跟随 HEAD
+                state.select(revision: commit.id == session.status?.branch.oid ? nil : commit.id)
             }
         }
     }
@@ -112,12 +117,19 @@ struct FileContentView: View {
         .layoutPriority(-1)
     }
 
-    /// 修改过这个文件的作者数。
+    /// 修改过这个文件的作者数，后面并排各位作者 22 pt 的头像，悬停提示姓名与邮箱。
     private var contributorsRow: some View {
-        HStack {
+        HStack(spacing: 8) {
             Text(contributorsText)
                 .font(.system(size: 13))
                 .foregroundStyle(Color(nsColor: .disabledControlTextColor))
+
+            HStack(spacing: 4) {
+                ForEach(state.contributors ?? [], id: \.email) { contributor in
+                    InitialsAvatar(name: contributor.name, email: contributor.email, size: 22)
+                        .help(contributor.name + " <" + contributor.email + ">")
+                }
+            }
 
             Spacer(minLength: 0)
         }

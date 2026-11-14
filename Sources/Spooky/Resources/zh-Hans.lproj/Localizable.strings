@@ -771,6 +771,10 @@
 "search.contains.file" = "文件包含：%@";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
+"blame.hash" = "哈希";
+"blame.author" = "作者";
+"blame.date" = "日期";
+"blame.subject" = "标题";
 "blame.show" = "显示 “%@” 的 Blame";
 "blame.loading" = "正在加载 Blame…";
 "blame.untracked" = "无法 Blame 新增或未跟踪的文件";
@@ -788,8 +792,6 @@
 "showFile.noContributors" = "还没有贡献者";
 "showFile.oneContributor" = "1 位贡献者";
 "showFile.contributors" = "%ld 位贡献者";
-"showFile.searchRevisions" = "搜索版本";
-"showFile.searchFiles" = "搜索文件";
 "showFile.error.missing" = "该版本中没有这个文件";
 /* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "忽略空白时，选中的行与文件中的改动对应不上。请显示空白改动后重新选择。";

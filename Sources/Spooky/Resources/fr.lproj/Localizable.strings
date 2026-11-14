@@ -771,6 +771,10 @@
 "search.contains.file" = "Le fichier contient : %@";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
+"blame.hash" = "Hash";
+"blame.author" = "Auteur";
+"blame.date" = "Date";
+"blame.subject" = "Objet";
 "blame.show" = "Afficher le blame de « %@ »";
 "blame.loading" = "Chargement du blame…";
 "blame.untracked" = "Impossible d’utiliser blame sur un fichier ajouté ou non suivi";
@@ -788,8 +792,6 @@
 "showFile.noContributors" = "Aucun contributeur pour l’instant";
 "showFile.oneContributor" = "1 contributeur";
 "showFile.contributors" = "%ld contributeurs";
-"showFile.searchRevisions" = "Rechercher des révisions";
-"showFile.searchFiles" = "Rechercher des fichiers";
 "showFile.error.missing" = "Fichier absent de cette révision";
 /* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "Les espaces étant ignorés, les lignes sélectionnées ne correspondent pas aux modifications du fichier. Affichez les modifications d’espaces, puis sélectionnez à nouveau les lignes.";
