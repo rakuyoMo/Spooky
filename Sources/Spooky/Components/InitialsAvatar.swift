@@ -25,7 +25,7 @@ struct InitialsAvatar: View {
     @State
     private var image: NSImage? = nil
 
-    /// 头像按圆形或方形裁切；首字母按尺寸缩放字号，底色使用系统的四级填充色。
+    /// 头像按圆形或方形裁切，外圈 1 pt 分隔线色的描边；首字母按尺寸缩放字号，用次要文字色，底色是头像的命名底色。
     var body: some View {
         let shape = isSquare ? AnyShape(Rectangle()) : AnyShape(Circle())
 
@@ -40,10 +40,18 @@ struct InitialsAvatar: View {
                     .font(.system(size: size * 0.4, weight: .medium))
                     .foregroundStyle(.secondary)
                     .frame(width: size, height: size)
-                    .background(.quaternary, in: shape)
+                    .background(AppPalette.color("avatar_background_color"), in: shape)
             }
         }
         .frame(width: size, height: size)
+        .overlay {
+            // 描边画在裁切范围以内，图片与首字母占位都有
+            if isSquare {
+                Rectangle().strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+            } else {
+                Circle().strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+            }
+        }
         .accessibilityHidden(true)
         .task(id: avatarURL?.absoluteString ?? email) {
             // 行被复用换成别人时先回到首字母，避免短暂显示上一个人的头像

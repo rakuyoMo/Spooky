@@ -1630,6 +1630,7 @@
 "history.behindBase" = "“%1$@” está %2$ld commits por detrás de “%3$@”";
 "history.behindBase.one" = "“%1$@” está 1 commit por detrás de “%2$@”";
 "history.compareBranches" = "Comparar ramas";
+"history.compareBranches.help" = "Comparar con otra rama";
 "history.compareOn" = "Activado";
 "history.forkPoint" = "Punto de bifurcación de la rama padre “%@”";
 "history.noNewCommits" = "No hay commits nuevos en esta rama";

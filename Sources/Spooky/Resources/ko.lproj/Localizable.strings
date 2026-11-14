@@ -1630,6 +1630,7 @@
 "history.behindBase" = "“%1$@”은(는) “%3$@”보다 커밋 %2$ld개 뒤처짐";
 "history.behindBase.one" = "“%1$@”은(는) “%2$@”보다 커밋 1개 뒤처짐";
 "history.compareBranches" = "브랜치 비교";
+"history.compareBranches.help" = "다른 브랜치와 비교";
 "history.compareOn" = "켬";
 "history.forkPoint" = "상위 브랜치 “%@”의 분기점";
 "history.noNewCommits" = "이 브랜치에 새 커밋 없음";

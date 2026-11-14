@@ -1630,6 +1630,7 @@
 "history.behindBase" = "「%1$@」は「%3$@」より %2$ld 件遅れています";
 "history.behindBase.one" = "「%1$@」は「%2$@」より 1 件遅れています";
 "history.compareBranches" = "ブランチを比較";
+"history.compareBranches.help" = "別のブランチと比較";
 "history.compareOn" = "オン";
 "history.forkPoint" = "親ブランチ「%@」の分岐点";
 "history.noNewCommits" = "このブランチに新しいコミットはありません";

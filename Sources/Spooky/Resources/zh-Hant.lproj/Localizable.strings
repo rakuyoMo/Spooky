@@ -1630,6 +1630,7 @@
 "history.behindBase" = "“%1$@” 落後 “%3$@” %2$ld 個提交";
 "history.behindBase.one" = "“%1$@” 落後 “%2$@” 1 個提交";
 "history.compareBranches" = "比較分支";
+"history.compareBranches.help" = "與另一個分支比較";
 "history.compareOn" = "已開啟";
 "history.forkPoint" = "父分支 “%@” 的分岔點";
 "history.noNewCommits" = "這個分支沒有新提交";

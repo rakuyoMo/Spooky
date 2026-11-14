@@ -115,7 +115,7 @@ struct HistoryListView: View {
             CompareBranchesToggle(history: session.history)
 
             HistoryViewMenuButton()
-                .fixedSize()
+                .frame(width: 28, height: 22)
         }
         .font(.system(size: 13))
         .foregroundStyle(.secondary)
@@ -125,12 +125,11 @@ struct HistoryListView: View {
         .background(.bar)
     }
 
-    /// 所选引用与它的跟踪分支，各自至少 50 pt 宽。
+    /// 所选引用与它的跟踪分支：引用名贴合文字，跟踪名至少 50 pt 宽。
     private var referenceTitle: some View {
         HStack(spacing: 2) {
             Text(session.history.title)
                 .lineLimit(1)
-                .frame(minWidth: 50, alignment: .leading)
 
             // 本地分支有跟踪分支时写在后面
             if let tracking = trackingName {

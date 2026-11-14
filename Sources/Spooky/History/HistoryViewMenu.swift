@@ -75,10 +75,11 @@ enum HistoryViewMenu {
 
 /// 列表头右侧的设置按钮：下拉出与 View › History 相同的菜单。
 struct HistoryViewMenuButton: NSViewRepresentable {
-    /// 无边框、不带箭头的下拉按钮，第一项只提供按钮 15 pt 的图标。
+    /// 无边框、不带箭头的下拉按钮，第一项只提供按钮 15 pt 的图标，图标用次要文字色。
     func makeNSView(context _: Context) -> NSPopUpButton {
         let button = NSPopUpButton(frame: .zero, pullsDown: true)
         button.isBordered = false
+        button.contentTintColor = .secondaryLabelColor
         button.setAccessibilityLabel(AppLocalization.text("history.viewOptions"))
         button.toolTip = AppLocalization.text("history.viewOptions.help")
 
@@ -103,4 +104,9 @@ struct HistoryViewMenuButton: NSViewRepresentable {
 
     /// 菜单状态在打开时由窗口校验，这里不需要更新。
     func updateNSView(_: NSPopUpButton, context _: Context) { }
+
+    /// 按钮固定 28 × 22，不随系统给出的固有尺寸变化。
+    func sizeThatFits(_: ProposedViewSize, nsView _: NSPopUpButton, context _: Context) -> CGSize? {
+        CGSize(width: 28, height: 22)
+    }
 }

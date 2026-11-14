@@ -1630,6 +1630,7 @@
 "history.behindBase" = "« %1$@ » a %2$ld commits de retard sur « %3$@ »";
 "history.behindBase.one" = "« %1$@ » a 1 commit de retard sur « %2$@ »";
 "history.compareBranches" = "Comparer les branches";
+"history.compareBranches.help" = "Comparer à une autre branche";
 "history.compareOn" = "Activé";
 "history.forkPoint" = "Point de bifurcation de la branche parente « %@ »";
 "history.noNewCommits" = "Aucun nouveau commit sur cette branche";

@@ -101,7 +101,7 @@ struct HistoryBadge: View {
 
 // MARK: - CompareBranchesToggle
 
-/// 列表头的 Compare Branches 开关：20 × 20 的图标按钮，打开时填色。
+/// 列表头的 Compare Branches 开关：22 × 22 的图标按钮，打开时填色。
 struct CompareBranchesToggle: View {
     /// 历史状态，决定能不能比较。
     let history: RepositoryHistoryState
@@ -110,21 +110,25 @@ struct CompareBranchesToggle: View {
     @AppStorage(RepositoryHistoryState.comparesBranchesKey)
     private var comparesBranches = false
 
-    /// 只有单选本地分支时可用。
+    /// 看全部历史时不显示；只有单选本地分支时可用，看标签、远端分支等其它引用时禁用。
     var body: some View {
-        Button {
-            comparesBranches.toggle()
-        } label: {
-            Image(systemName: "arrow.triangle.branch")
-                .font(.system(size: 13))
-                .foregroundStyle(comparesBranches ? Color.accentColor : .secondary)
-                .frame(width: 20, height: 20)
+        if !history.selectedReferences.isEmpty {
+            let title = AppLocalization.text("history.compareBranches.help")
+
+            Button {
+                comparesBranches.toggle()
+            } label: {
+                Image(systemName: "arrow.left.arrow.right.circle")
+                    .font(.system(size: 14))
+                    .foregroundStyle(comparesBranches ? Color.accentColor : .secondary)
+                    .frame(width: 22, height: 22)
+            }
+            .buttonStyle(.borderless)
+            .disabled(history.selectedLocalBranch == nil)
+            .help(title)
+            .accessibilityLabel(title)
+            .accessibilityValue(comparesBranches ? AppLocalization.text("history.compareOn") : "")
         }
-        .buttonStyle(.borderless)
-        .disabled(history.selectedLocalBranch == nil)
-        .help(AppLocalization.text("history.compareBranches"))
-        .accessibilityLabel(AppLocalization.text("history.compareBranches"))
-        .accessibilityValue(comparesBranches ? AppLocalization.text("history.compareOn") : "")
     }
 }
 

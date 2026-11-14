@@ -528,5 +528,15 @@
       "hex": "#727272",
       "alpha": 1.0
     }
+  },
+  "avatar_background_color": {
+    "light": {
+      "hex": "#ECECEC",
+      "alpha": 0.15
+    },
+    "dark": {
+      "hex": "#323232",
+      "alpha": 0.4
+    }
   }
 }

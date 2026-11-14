@@ -1630,6 +1630,7 @@
 "history.behindBase" = "„%1$@“ ist %2$ld Commits hinter „%3$@“";
 "history.behindBase.one" = "„%1$@“ ist 1 Commit hinter „%2$@“";
 "history.compareBranches" = "Branches vergleichen";
+"history.compareBranches.help" = "Mit einem anderen Branch vergleichen";
 "history.compareOn" = "Ein";
 "history.forkPoint" = "Abzweigpunkt des übergeordneten Branches „%@“";
 "history.noNewCommits" = "Keine neuen Commits auf diesem Branch";

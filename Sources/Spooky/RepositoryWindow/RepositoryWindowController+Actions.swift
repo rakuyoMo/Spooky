@@ -309,12 +309,16 @@ extension RepositoryWindowController {
             (item as? NSMenuItem)?.state = HistoryViewSettings().showsGraph ? .on : .off
             return !showsManager && session.repository != nil
 
+        // 隐藏提交图时两项禁用，勾打在实际显示的中号行上
         case #selector(smallHistoryRows), #selector(mediumHistoryRows):
-            let small = UserDefaults.standard.bool(forKey: "historySmallRows")
-            (item as? NSMenuItem)?.state = (item.action == #selector(smallHistoryRows)) == small ? .on : .off
+            let settings = HistoryViewSettings()
+            let isSmallItem = item.action == #selector(smallHistoryRows)
+
+            (item as? NSMenuItem)?.state = isSmallItem == settings.usesSmallRows ? .on : .off
+
             return !showsManager
                 && session.repository != nil
-                && HistoryViewSettings().showsGraph
+                && settings.showsGraph
 
         case #selector(expandChanges), #selector(collapseChanges):
             return !showsManager && session.canExpandChanges
