@@ -47,7 +47,7 @@ extension RemoteConnection {
     /// 重连后的核对由 Git 定位元数据，只检查锁与进行中操作的存在性。
     func reconcile() async throws -> RemoteRecoverySnapshot {
         let rawStatus = try await runWrapped(
-            ["status", "--porcelain=v2", "-z", "--branch", "--untracked-files=all"],
+            ["status", "--porcelain=v2", "-z", "--branch", "--untracked-files=normal"],
             input: nil,
             acceptedExitCodes: [0],
             writing: false,

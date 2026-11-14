@@ -6,7 +6,8 @@ import Testing
 /// 用真实 Git 验证补丁的结果，断言未选内容仍留在原处。
 struct WorkingCopyOperationsTests {
     /// 暂存重命名与同名通配符文件必须独立操作，丢弃回到 HEAD；
-    /// 恢复到指定版本同时改写暂存区与工作区，旧版本里没有的文件随之删除，路径按字面匹配。
+    /// 恢复到指定版本同时改写暂存区与工作区，旧版本里没有的文件随之删除，路径按字面匹配；
+    /// 丢弃未跟踪目录的条目时，只有仍被 Git 折叠成一项的目录才整个删除。
     @Test("文件级暂存、重命名、丢弃与恢复到指定版本")
     func fileActions() async throws {
         let repository = try TemporaryRepository()
@@ -64,6 +65,24 @@ struct WorkingCopyOperationsTests {
         #expect(try await repository.runner.run(["show", ":文件 *.txt"]) == Data("one\n".utf8))
         #expect(!FileManager.default.fileExists(atPath: added.path))
         #expect(try Data(contentsOf: similar) == Data("changed\n".utf8))
+
+        // 未跟踪的整个目录：里面有了已跟踪的文件就不再按目录丢弃
+        let folder = repository.directory.appending(path: "新目录 [x]")
+        let directory = StatusEntry(kind: .untracked, path: "新目录 [x]/")
+
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+        try Data("a\n".utf8).write(to: folder.appending(path: "a.txt"))
+        try Data("b\n".utf8).write(to: folder.appending(path: "b.txt"))
+        _ = try await repository.runner.run(["--literal-pathspecs", "add", "--", "新目录 [x]/a.txt"])
+
+        try await service.discard([directory], removal: .permanent)
+        #expect(FileManager.default.fileExists(atPath: folder.appending(path: "b.txt").path))
+
+        // 仍被 Git 折叠成一项的目录整个永久删除
+        _ = try await repository.runner.run(["--literal-pathspecs", "rm", "-q", "--cached", "--", "新目录 [x]/a.txt"])
+
+        try await service.discard([directory], removal: .permanent)
+        #expect(!FileManager.default.fileExists(atPath: folder.path))
     }
 
     /// 新文件按非连续行暂存、按行与整块取消暂存都不改变工作区，整块操作保留新增 / 删除语义；

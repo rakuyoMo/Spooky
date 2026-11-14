@@ -94,7 +94,7 @@ public struct RepositoryState: Sendable, Equatable {
     /// 一致不代表文件内容相同，恢复前仍要完整核对；参数为 nil 的部分不参与比较。
     ///
     /// - Parameters:
-    ///   - status: 最近一次读取的工作区状态。
+    ///   - status: 最近一次读取的工作区状态；整个未跟踪的目录可以是一个以 “/” 结尾的条目。
     ///   - references: 分支与标签剥离附注标签后的目标，以完整引用名为键。
     ///   - stashes: 储藏提交的哈希，从新到旧。
     public func resembles(
@@ -107,7 +107,7 @@ public struct RepositoryState: Sendable, Equatable {
         guard
             headBranch == self.headBranch,
             status.branch.oid == head,
-            status.entries == entries
+            Self.listedEntries(status.entries, match: entries)
         else { return false }
 
         if let references, references != peeledReferences {
@@ -221,5 +221,53 @@ extension RepositoryState {
                     untracked: parents.count == 3 ? parents[2] : nil
                 )
             }
+    }
+}
+
+// MARK: - Private
+
+extension RepositoryState {
+    /// 界面读到的条目与记下的条目是否一致：界面把整个未跟踪的目录记成一个以 “/” 结尾的条目，记下的状态逐个列出其中的文件。
+    ///
+    /// 未跟踪以外的条目逐一相同；每个记下的未跟踪文件都落在界面的某个未跟踪条目里，界面的每个未跟踪条目也都对应着记下的文件。
+    private static func listedEntries(_ listed: [StatusEntry], match recorded: [StatusEntry]) -> Bool {
+        let isUntracked = { (entry: StatusEntry) in entry.kind == .untracked }
+
+        guard listed.filter({ !isUntracked($0) }) == recorded.filter({ !isUntracked($0) }) else {
+            return false
+        }
+
+        let listedPaths = Set(listed.filter(isUntracked).map(\.path))
+        var covered: Set<String> = []
+
+        for file in recorded where isUntracked(file) {
+            guard let path = coveringPath(of: file.path, in: listedPaths) else { return false }
+
+            covered.insert(path)
+        }
+
+        return covered == listedPaths
+    }
+
+    /// 界面上覆盖这个未跟踪文件的条目：文件自身，或它某一级上层目录的条目；嵌套的仓库两边都是同一个目录条目。
+    private static func coveringPath(of path: String, in listed: Set<String>) -> String? {
+        if listed.contains(path) {
+            return path
+        }
+
+        // 由浅到深逐级取上层目录，目录条目以 “/” 结尾
+        var index = path.startIndex
+
+        while let slash = path[index...].firstIndex(of: "/") {
+            let directory = String(path[...slash])
+
+            if listed.contains(directory) {
+                return directory
+            }
+
+            index = path.index(after: slash)
+        }
+
+        return nil
     }
 }

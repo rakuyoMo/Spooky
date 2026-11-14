@@ -358,7 +358,7 @@ final class RepositorySession {
         activities: RepositoryActivities = .shared
     ) {
         self.makeRunner = makeRunner
-        self.loadStatus = loadStatus ?? { try await makeRunner($0).status() }
+        self.loadStatus = loadStatus ?? { try await makeRunner($0).status(collapsesUntrackedDirectories: true) }
         self.activities = activities
         loadsRepositoryDetails = loadStatus == nil
 
