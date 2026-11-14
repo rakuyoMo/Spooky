@@ -1715,11 +1715,12 @@
 "gitConfig.sshProgram.system" = "ssh-keygen(시스템)";
 "gitConfig.sshProgram.onePassword" = "1Password";
 "gitConfig.gpgProgram" = "GPG 프로그램:";
+"gitConfig.gpgProgram.minimum" = "필요한 최소 GPG 버전은 %@입니다";
 "gitConfig.gpgProgram.none" = "선택한 GPG 프로그램 없음";
 "gitConfig.gpgProgram.notFound" = "GPG 프로그램을 찾을 수 없음";
 "gitConfig.gpgProgram.select" = "선택…";
 "gitConfig.signingKey" = "전역 서명 키:";
-"gitConfig.agentKeys" = "SSH 키는 시스템 SSH 에이전트에서 가져옵니다.";
+"gitConfig.agentKeys" = "SSH 키는 시스템 SSH 에이전트를 통해 불러옵니다.";
 "gitConfig.allowedSigners" = "Allowed signers 파일:";
 "gitConfig.allowedSigners.none" = "Allowed signers 파일 없음";
 "gitConfig.allowedSigners.select" = "Allowed signers 파일 선택…";
@@ -1727,6 +1728,8 @@
 "gitConfig.ensureEmailMatch" = "GPG 키 이메일이 커미터 이메일과 같은지 확인";
 "gitConfig.invalidGPG" = "잘못된 GPG 프로그램";
 "gitConfig.invalidGPG.message" = "%@의 프로그램은 올바른 GnuPG 프로그램이 아닙니다.";
+"gitConfig.outdatedGPG" = "이 GPG 프로그램을 사용할 수 없음";
+"gitConfig.outdatedGPG.message" = "“%1$@”은(는) GnuPG %2$@입니다. Spooky에는 GnuPG %3$@ 이상이 필요합니다.";
 "gitConfig.invalidSSH" = "잘못된 SSH 서명 프로그램";
 "gitConfig.invalidSSH.message" = "%@의 프로그램이 없거나 실행할 수 없습니다.";
 "gitConfig.emailMismatch" = "서명 키 이메일이 Git 사용자 이메일과 다름";
@@ -2092,7 +2095,6 @@
 "link.invalid.title" = "이 링크를 열 수 없음";
 "link.invalid.message" = "Spooky가 “%@”을(를) 열 수 없습니다. 링크가 유효하지 않거나 지원되지 않습니다.";
 "settings.github" = "github.com 저장소 열기:";
-"settings.github.help" = "github.com의 “Open with Desktop” 링크를 이 앱에서 엽니다.";
 
 /* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
 "repositorySettings.title" = "설정";

@@ -1715,11 +1715,12 @@
 "gitConfig.sshProgram.system" = "ssh-keygen（システム）";
 "gitConfig.sshProgram.onePassword" = "1Password";
 "gitConfig.gpgProgram" = "GPG プログラム：";
+"gitConfig.gpgProgram.minimum" = "必要な GPG の最低バージョンは %@ です";
 "gitConfig.gpgProgram.none" = "GPG プログラムが選択されていません";
 "gitConfig.gpgProgram.notFound" = "GPG プログラムが見つかりません";
 "gitConfig.gpgProgram.select" = "選択…";
 "gitConfig.signingKey" = "グローバルの署名鍵：";
-"gitConfig.agentKeys" = "SSH 鍵はシステムの SSH エージェントから一覧表示されます。";
+"gitConfig.agentKeys" = "SSH 鍵はシステムの SSH エージェントから読み込まれます。";
 "gitConfig.allowedSigners" = "Allowed signers ファイル：";
 "gitConfig.allowedSigners.none" = "Allowed signers ファイルを使わない";
 "gitConfig.allowedSigners.select" = "Allowed signers ファイルを選択…";
@@ -1727,6 +1728,8 @@
 "gitConfig.ensureEmailMatch" = "GPG 鍵のメールがコミッタのメールと一致するか確認";
 "gitConfig.invalidGPG" = "無効な GPG プログラム";
 "gitConfig.invalidGPG.message" = "%@ のプログラムは有効な GnuPG プログラムではありません。";
+"gitConfig.outdatedGPG" = "この GPG プログラムは使用できません";
+"gitConfig.outdatedGPG.message" = "「%1$@」は GnuPG %2$@ です。Spooky には GnuPG %3$@ 以降が必要です。";
 "gitConfig.invalidSSH" = "無効な SSH 署名プログラム";
 "gitConfig.invalidSSH.message" = "%@ のプログラムが存在しないか、実行できません。";
 "gitConfig.emailMismatch" = "署名鍵のメールが Git ユーザのメールと一致しません";
@@ -2092,7 +2095,6 @@
 "link.invalid.title" = "このリンクを開けません";
 "link.invalid.message" = "Spooky は「%@」を開けません。リンクが無効か、サポートされていません。";
 "settings.github" = "github.com のリポジトリを開く：";
-"settings.github.help" = "github.com の「Open with Desktop」リンクをこの App で開きます。";
 
 /* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
 "repositorySettings.title" = "設定";

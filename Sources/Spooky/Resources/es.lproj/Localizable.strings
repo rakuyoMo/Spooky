@@ -1714,12 +1714,13 @@
 "gitConfig.sshProgram" = "Programa de firma SSH:";
 "gitConfig.sshProgram.system" = "ssh-keygen (sistema)";
 "gitConfig.sshProgram.onePassword" = "1Password";
-"gitConfig.gpgProgram" = "Programa GPG:";
+"gitConfig.gpgProgram" = "Binario de GPG:";
+"gitConfig.gpgProgram.minimum" = "La versión mínima de GPG requerida es %@";
 "gitConfig.gpgProgram.none" = "Ningún programa GPG seleccionado";
 "gitConfig.gpgProgram.notFound" = "No se encontró ningún programa GPG";
 "gitConfig.gpgProgram.select" = "Seleccionar…";
 "gitConfig.signingKey" = "Clave de firma global:";
-"gitConfig.agentKeys" = "Las claves SSH se obtienen del agente SSH del sistema.";
+"gitConfig.agentKeys" = "Las claves SSH se cargan a través del agente SSH del sistema.";
 "gitConfig.allowedSigners" = "Archivo allowed signers:";
 "gitConfig.allowedSigners.none" = "Sin archivo allowed signers";
 "gitConfig.allowedSigners.select" = "Seleccionar archivo allowed signers…";
@@ -1727,6 +1728,8 @@
 "gitConfig.ensureEmailMatch" = "Comprobar que el correo de la clave GPG coincide con el del autor del commit";
 "gitConfig.invalidGPG" = "Programa GPG no válido";
 "gitConfig.invalidGPG.message" = "El programa en %@ no es un programa GnuPG válido.";
+"gitConfig.outdatedGPG" = "No se puede usar este binario de GPG";
+"gitConfig.outdatedGPG.message" = "“%1$@” es GnuPG %2$@. Spooky requiere GnuPG %3$@ o posterior.";
 "gitConfig.invalidSSH" = "Programa de firma SSH no válido";
 "gitConfig.invalidSSH.message" = "El programa en %@ no existe o no se puede ejecutar.";
 "gitConfig.emailMismatch" = "El correo de la clave de firma no coincide con el del usuario de Git";
@@ -2092,7 +2095,6 @@
 "link.invalid.title" = "No se puede abrir este enlace";
 "link.invalid.message" = "Spooky no puede abrir “%@”. El enlace no es válido o no es compatible.";
 "settings.github" = "Abrir repositorios de github.com:";
-"settings.github.help" = "Los enlaces “Open with Desktop” de github.com se abren en esta app.";
 
 /* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
 "repositorySettings.title" = "Ajustes";

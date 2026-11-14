@@ -1714,12 +1714,13 @@
 "gitConfig.sshProgram" = "Programme de signature SSH :";
 "gitConfig.sshProgram.system" = "ssh-keygen (système)";
 "gitConfig.sshProgram.onePassword" = "1Password";
-"gitConfig.gpgProgram" = "Programme GPG :";
+"gitConfig.gpgProgram" = "Binaire GPG :";
+"gitConfig.gpgProgram.minimum" = "Version minimale de GPG requise : %@";
 "gitConfig.gpgProgram.none" = "Aucun programme GPG sélectionné";
 "gitConfig.gpgProgram.notFound" = "Aucun programme GPG trouvé";
 "gitConfig.gpgProgram.select" = "Choisir…";
 "gitConfig.signingKey" = "Clé de signature globale :";
-"gitConfig.agentKeys" = "Les clés SSH proviennent de l’agent SSH du système.";
+"gitConfig.agentKeys" = "Les clés SSH sont chargées via l’agent SSH du système.";
 "gitConfig.allowedSigners" = "Fichier allowed signers :";
 "gitConfig.allowedSigners.none" = "Aucun fichier allowed signers";
 "gitConfig.allowedSigners.select" = "Choisir un fichier allowed signers…";
@@ -1727,6 +1728,8 @@
 "gitConfig.ensureEmailMatch" = "Vérifier que l’e-mail de la clé GPG correspond à celui du committer";
 "gitConfig.invalidGPG" = "Programme GPG non valide";
 "gitConfig.invalidGPG.message" = "Le programme situé à %@ n’est pas un programme GnuPG valide.";
+"gitConfig.outdatedGPG" = "Impossible d’utiliser ce binaire GPG";
+"gitConfig.outdatedGPG.message" = "« %1$@ » est GnuPG %2$@. Spooky nécessite GnuPG %3$@ ou ultérieur.";
 "gitConfig.invalidSSH" = "Programme de signature SSH non valide";
 "gitConfig.invalidSSH.message" = "Le programme situé à %@ n’existe pas ou ne peut pas être exécuté.";
 "gitConfig.emailMismatch" = "L’e-mail de la clé de signature ne correspond pas à celui de l’utilisateur Git";
@@ -2092,7 +2095,6 @@
 "link.invalid.title" = "Impossible d’ouvrir ce lien";
 "link.invalid.message" = "Spooky ne peut pas ouvrir « %@ ». Le lien n’est pas valide ou n’est pas pris en charge.";
 "settings.github" = "Ouvrir les dépôts de github.com :";
-"settings.github.help" = "Les liens « Open with Desktop » de github.com s’ouvrent dans cette app.";
 
 /* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
 "repositorySettings.title" = "Réglages";

@@ -1715,11 +1715,12 @@
 "gitConfig.sshProgram.system" = "ssh-keygen（系统）";
 "gitConfig.sshProgram.onePassword" = "1Password";
 "gitConfig.gpgProgram" = "GPG 程序：";
+"gitConfig.gpgProgram.minimum" = "最低要求的 GPG 版本为 %@";
 "gitConfig.gpgProgram.none" = "未选择 GPG 程序";
 "gitConfig.gpgProgram.notFound" = "未找到 GPG 程序";
 "gitConfig.gpgProgram.select" = "选择…";
 "gitConfig.signingKey" = "全局签名密钥：";
-"gitConfig.agentKeys" = "SSH 密钥取自系统的 SSH agent。";
+"gitConfig.agentKeys" = "SSH 密钥经由系统的 SSH agent 载入。";
 "gitConfig.allowedSigners" = "Allowed signers 文件：";
 "gitConfig.allowedSigners.none" = "不使用 Allowed signers 文件";
 "gitConfig.allowedSigners.select" = "选择 Allowed signers 文件…";
@@ -1727,6 +1728,8 @@
 "gitConfig.ensureEmailMatch" = "确认 GPG 密钥的邮箱与提交人邮箱一致";
 "gitConfig.invalidGPG" = "GPG 程序无效";
 "gitConfig.invalidGPG.message" = "%@ 处的程序不是可用的 GnuPG 程序。";
+"gitConfig.outdatedGPG" = "无法使用这个 GPG 程序";
+"gitConfig.outdatedGPG.message" = "“%1$@” 是 GnuPG %2$@。Spooky 要求 GnuPG %3$@ 或更高版本。";
 "gitConfig.invalidSSH" = "SSH 签名程序无效";
 "gitConfig.invalidSSH.message" = "%@ 处的程序不存在或无法运行。";
 "gitConfig.emailMismatch" = "签名密钥的邮箱与 Git 用户邮箱不一致";
@@ -2092,7 +2095,6 @@
 "link.invalid.title" = "无法打开这个链接";
 "link.invalid.message" = "Spooky 无法打开 “%@”。链接无效或不受支持。";
 "settings.github" = "打开来自 github.com 的仓库：";
-"settings.github.help" = "github.com 上 “Open with Desktop” 的链接由这个 App 打开。";
 
 /* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
 "repositorySettings.title" = "设置";

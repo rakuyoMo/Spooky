@@ -1715,11 +1715,12 @@
 "gitConfig.sshProgram.system" = "ssh-keygen (System)";
 "gitConfig.sshProgram.onePassword" = "1Password";
 "gitConfig.gpgProgram" = "GPG-Programm:";
+"gitConfig.gpgProgram.minimum" = "Mindestens erforderliche GPG-Version: %@";
 "gitConfig.gpgProgram.none" = "Kein GPG-Programm ausgewählt";
 "gitConfig.gpgProgram.notFound" = "Kein GPG-Programm gefunden";
 "gitConfig.gpgProgram.select" = "Auswählen …";
 "gitConfig.signingKey" = "Globaler Signaturschlüssel:";
-"gitConfig.agentKeys" = "SSH-Schlüssel stammen aus dem SSH-Agent des Systems.";
+"gitConfig.agentKeys" = "Die SSH-Schlüssel werden über den SSH-Agent des Systems geladen.";
 "gitConfig.allowedSigners" = "Allowed-Signers-Datei:";
 "gitConfig.allowedSigners.none" = "Keine Allowed-Signers-Datei";
 "gitConfig.allowedSigners.select" = "Allowed-Signers-Datei auswählen …";
@@ -1727,6 +1728,8 @@
 "gitConfig.ensureEmailMatch" = "Prüfen, ob die E-Mail des GPG-Schlüssels zur Committer-E-Mail passt";
 "gitConfig.invalidGPG" = "Ungültiges GPG-Programm";
 "gitConfig.invalidGPG.message" = "Das Programm unter %@ ist kein gültiges GnuPG-Programm.";
+"gitConfig.outdatedGPG" = "GPG-Programm kann nicht verwendet werden";
+"gitConfig.outdatedGPG.message" = "„%1$@“ ist GnuPG %2$@. Spooky benötigt GnuPG %3$@ oder neuer.";
 "gitConfig.invalidSSH" = "Ungültiges SSH-Signaturprogramm";
 "gitConfig.invalidSSH.message" = "Das Programm unter %@ existiert nicht oder kann nicht ausgeführt werden.";
 "gitConfig.emailMismatch" = "E-Mail des Signaturschlüssels passt nicht zur Git-Benutzer-E-Mail";
@@ -2092,7 +2095,6 @@
 "link.invalid.title" = "Dieser Link kann nicht geöffnet werden";
 "link.invalid.message" = "Spooky kann „%@“ nicht öffnen. Der Link ist ungültig oder wird nicht unterstützt.";
 "settings.github" = "Repositorys von github.com öffnen:";
-"settings.github.help" = "Die Links „Open with Desktop“ auf github.com werden in dieser App geöffnet.";
 
 /* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
 "repositorySettings.title" = "Einstellungen";
