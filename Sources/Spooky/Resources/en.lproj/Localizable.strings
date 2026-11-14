@@ -1153,9 +1153,9 @@
 "branch.tooltip.stale" = "- is stale (%@)";
 "branch.tooltip.missingUpstream" = "- tracked branch “%@” no longer exists";
 "remote.tooltip.branch" = "Remote branch “%@”";
-"remote.tooltip.remote" = "Remote “%@”";
-"remote.tooltip.fetchURL" = "Fetch URL: %@";
-"remote.tooltip.pushURL" = "Push URL: %@";
+"remote.tooltip.remote" = "Remote repository “%@”";
+"remote.tooltip.fetchURL" = "- Fetch URL: “%@”";
+"remote.tooltip.pushURL" = "- Push URL: “%@”";
 "tag.tooltip.revision" = "Points at revision “%@”";
 "tag.tooltip.message" = "Tag Message: “%@”";
 "tag.checkoutNamed" = "Check Out “%@”…";

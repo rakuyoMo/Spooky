@@ -125,6 +125,14 @@ struct RepositorySidebarView: View {
     @State
     var reveal = SidebarReveal()
 
+    /// 列表的内容高过可见区域，能纵向滚动。
+    @State
+    var listOverflows = false
+
+    /// 活动区有行、正在显示。
+    @State
+    var showsActivity = false
+
     /// 系统 “侧边栏图标大小”，决定条目行的行高与字体。
     @Environment(\.sidebarRowSize)
     var rowSize
@@ -145,13 +153,21 @@ struct RepositorySidebarView: View {
                     .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, _ in
                         reveal.listScrolled()
                     }
+
+                    // 内容连同上下插距高过可见区域时列表能滚动，底栏上方随之画分隔线
+                    .onScrollGeometryChange(for: Bool.self) { geometry in
+                        let insets = geometry.contentInsets.top + geometry.contentInsets.bottom
+                        return geometry.contentSize.height + insets > geometry.containerSize.height
+                    } action: { _, overflows in
+                        listOverflows = overflows
+                    }
             }
 
             // 刚归档的分支数与撤销
             ArchiveNoticeView(session: session)
 
             // 本仓库进行中与刚结束的远程操作
-            SidebarActivityView(session: session, showActivity: showActivity)
+            SidebarActivityView(session: session, isShown: $showsActivity, showActivity: showActivity)
 
             // 新版本第一次启动时的新功能卡片
             WhatsNewCard(state: .shared)
@@ -198,6 +214,8 @@ struct RepositorySidebarView: View {
     }
 
     /// 侧边栏底栏：左侧过滤框，右侧新建分支菜单与视图设置按钮。
+    ///
+    /// 列表能滚动、且活动区没有显示时，上方有一条分隔线；活动区显示时由它顶上的分隔线隔开列表。
     private var bottomBar: some View {
         HStack(spacing: 4) {
             SidebarFilterField(text: $filterText)
@@ -227,6 +245,11 @@ struct RepositorySidebarView: View {
         }
         .padding(.horizontal, 4)
         .frame(height: 40)
+        .overlay(alignment: .top) {
+            if listOverflows, !showsActivity {
+                Divider()
+            }
+        }
     }
 }
 
@@ -410,15 +433,12 @@ extension RepositorySidebarView {
         let metadata = session.history.snapshot?.metadata(for: ref.id) ?? BranchMetadata()
         let status = branchStatus(ref)
 
-        // 已在别的工作树检出的分支换成工作树图标
-        let symbol =
-            session.worktrees.branchWorktrees[ref.id] != nil
-                ? "rectangle.on.rectangle"
-                : (metadata.isArchived ? "archivebox" : "arrow.triangle.branch")
-
         return SidebarBranchRow(
             name: name,
-            symbol: symbol,
+            symbol: metadata.isArchived ? "archivebox" : "arrow.triangle.branch",
+
+            // 已在别的工作树检出的分支，图标右下角叠角标
+            isCheckedOutElsewhere: session.worktrees.branchWorktrees[ref.id] != nil,
             badge: badge(ref),
             status: status,
             help: SidebarTooltip.branch(

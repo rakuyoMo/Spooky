@@ -1153,9 +1153,9 @@
 "branch.tooltip.stale" = "- 古いブランチ（%@）";
 "branch.tooltip.missingUpstream" = "- 追跡ブランチ「%@」が存在しません";
 "remote.tooltip.branch" = "リモートブランチ「%@」";
-"remote.tooltip.remote" = "リモート「%@」";
-"remote.tooltip.fetchURL" = "フェッチ URL：%@";
-"remote.tooltip.pushURL" = "プッシュ URL：%@";
+"remote.tooltip.remote" = "リモートリポジトリ「%@」";
+"remote.tooltip.fetchURL" = "- フェッチ URL：「%@」";
+"remote.tooltip.pushURL" = "- プッシュ URL：「%@」";
 "tag.tooltip.revision" = "リビジョン「%@」を指しています";
 "tag.tooltip.message" = "タグのメッセージ:「%@」";
 "tag.checkoutNamed" = "「%@」をチェックアウト…";

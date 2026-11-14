@@ -1154,8 +1154,8 @@
 "branch.tooltip.missingUpstream" = "- la branche suivie « %@ » n’existe plus";
 "remote.tooltip.branch" = "Branche distante « %@ »";
 "remote.tooltip.remote" = "Dépôt distant « %@ »";
-"remote.tooltip.fetchURL" = "URL de récupération : %@";
-"remote.tooltip.pushURL" = "URL de poussée : %@";
+"remote.tooltip.fetchURL" = "- URL de récupération : « %@ »";
+"remote.tooltip.pushURL" = "- URL de poussée : « %@ »";
 "tag.tooltip.revision" = "Pointe vers la révision « %@ »";
 "tag.tooltip.message" = "Message du tag : « %@ »";
 "tag.checkoutNamed" = "Basculer sur « %@ »…";

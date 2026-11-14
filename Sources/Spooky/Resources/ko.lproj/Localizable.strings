@@ -1153,9 +1153,9 @@
 "branch.tooltip.stale" = "- 오래됨(%@)";
 "branch.tooltip.missingUpstream" = "- 추적 중인 브랜치 “%@”이(가) 더 이상 없음";
 "remote.tooltip.branch" = "원격 브랜치 “%@”";
-"remote.tooltip.remote" = "원격 “%@”";
-"remote.tooltip.fetchURL" = "페치 URL: %@";
-"remote.tooltip.pushURL" = "푸시 URL: %@";
+"remote.tooltip.remote" = "원격 저장소 “%@”";
+"remote.tooltip.fetchURL" = "- 페치 URL: “%@”";
+"remote.tooltip.pushURL" = "- 푸시 URL: “%@”";
 "tag.tooltip.revision" = "리비전 “%@”을(를) 가리킴";
 "tag.tooltip.message" = "태그 메시지: “%@”";
 "tag.checkoutNamed" = "“%@” 체크아웃…";

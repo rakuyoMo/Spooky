@@ -34,8 +34,13 @@ extension RepositorySidebarView {
             Text(worktree.name)
                 .lineLimit(1)
         } icon: {
-            Image(systemName: worktree.isValid ? "rectangle.on.rectangle" : "exclamationmark.triangle.fill")
-                .foregroundStyle(worktree.isValid ? Color.secondary : Color.yellow)
+            // 平时与其它行一样用强调色，失效时换成黄色的告警图标
+            if worktree.isValid {
+                Image(systemName: "rectangle.on.rectangle")
+            } else {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Color.yellow)
+            }
         }
         .help(tooltip(of: worktree))
         .tag(Self.worktreeRowPrefix + worktree.path)

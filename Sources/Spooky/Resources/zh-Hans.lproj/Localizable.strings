@@ -1153,9 +1153,9 @@
 "branch.tooltip.stale" = "- 已陈旧（%@）";
 "branch.tooltip.missingUpstream" = "- 跟踪的分支 “%@” 已不存在";
 "remote.tooltip.branch" = "远端分支 “%@”";
-"remote.tooltip.remote" = "远端 “%@”";
-"remote.tooltip.fetchURL" = "获取地址：%@";
-"remote.tooltip.pushURL" = "推送地址：%@";
+"remote.tooltip.remote" = "远端仓库 “%@”";
+"remote.tooltip.fetchURL" = "- 获取地址：“%@”";
+"remote.tooltip.pushURL" = "- 推送地址：“%@”";
 "tag.tooltip.revision" = "指向版本 “%@”";
 "tag.tooltip.message" = "标签说明：“%@”";
 "tag.checkoutNamed" = "检出 “%@”…";

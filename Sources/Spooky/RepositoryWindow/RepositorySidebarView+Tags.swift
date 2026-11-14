@@ -49,11 +49,13 @@ extension RepositorySidebarView {
         return SidebarRefTree.nodes(for: entries, grouped: groupsRefs, foldersFirst: groupedRefsOnTop, scope: "tags")
     }
 
-    /// 标签行：单击显示它的历史，可与分支一起多选；双击检出成分离 HEAD；可拖到 Branches 标题新建分支；
+    /// 标签行：单击显示它的历史，可与分支一起多选；双击检出成分离 HEAD，整行都响应；可拖到 Branches 标题新建分支；
     /// 右键的 Show Signature 在行的左侧弹出标签的签名，左侧放不下时系统换到另一侧。
     private func tagRow(_ ref: RepositoryReference, name: String) -> some View {
         Label(name, systemImage: "tag")
             .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
             .help(SidebarTooltip.tag(ref, host: session.repository?.host))
             .tag(ref.id)
             .onTapGesture(count: 2) { doubleClick(ref) }

@@ -1153,9 +1153,9 @@
 "branch.tooltip.stale" = "- está antigua (%@)";
 "branch.tooltip.missingUpstream" = "- la rama seguida “%@” ya no existe";
 "remote.tooltip.branch" = "Rama remota “%@”";
-"remote.tooltip.remote" = "Remoto “%@”";
-"remote.tooltip.fetchURL" = "URL de obtención: %@";
-"remote.tooltip.pushURL" = "URL de envío: %@";
+"remote.tooltip.remote" = "Repositorio remoto “%@”";
+"remote.tooltip.fetchURL" = "- URL de obtención: “%@”";
+"remote.tooltip.pushURL" = "- URL de envío: “%@”";
 "tag.tooltip.revision" = "Apunta a la revisión “%@”";
 "tag.tooltip.message" = "Mensaje de la etiqueta: “%@”";
 "tag.checkoutNamed" = "Hacer checkout de “%@”…";

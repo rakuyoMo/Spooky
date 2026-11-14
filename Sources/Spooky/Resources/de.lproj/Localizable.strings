@@ -1153,9 +1153,9 @@
 "branch.tooltip.stale" = "- ist veraltet (%@)";
 "branch.tooltip.missingUpstream" = "- verfolgter Branch „%@“ existiert nicht mehr";
 "remote.tooltip.branch" = "Remote-Branch „%@“";
-"remote.tooltip.remote" = "Remote „%@“";
-"remote.tooltip.fetchURL" = "Fetch-URL: %@";
-"remote.tooltip.pushURL" = "Push-URL: %@";
+"remote.tooltip.remote" = "Remote-Repository „%@“";
+"remote.tooltip.fetchURL" = "- Fetch-URL: „%@“";
+"remote.tooltip.pushURL" = "- Push-URL: „%@“";
 "tag.tooltip.revision" = "Zeigt auf Revision „%@“";
 "tag.tooltip.message" = "Tag-Nachricht: „%@“";
 "tag.checkoutNamed" = "„%@“ auschecken …";
