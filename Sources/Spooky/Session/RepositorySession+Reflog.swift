@@ -16,6 +16,11 @@ extension RepositorySession {
         return history.snapshot?.references.first { $0.id == reference && $0.isLocal }
     }
 
+    /// Reflog 里的 Reset HEAD 只在所看的引用就是 HEAD 所在的分支时可用；看 HEAD 或别的分支时不可用。
+    var canResetFromReflog: Bool {
+        canRewrite && reflog.reference == status?.branch.head.map { "refs/heads/" + $0 }
+    }
+
     /// 能否把所看的分支恢复到这条记录：分支现在不在这条记录的提交上，且仓库可写。
     func canRestoreReflogBranch(to entry: ReflogEntry) -> Bool {
         guard let branch = reflogRestorableBranch else { return false }

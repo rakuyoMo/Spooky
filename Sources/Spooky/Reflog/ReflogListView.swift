@@ -51,29 +51,17 @@ struct ReflogListView: View {
 // MARK: - Layout
 
 extension ReflogListView {
-    /// “Ref:” 与引用菜单，读取中显示转圈。
+    /// “Ref:” 与引用弹出按钮，读取中显示转圈。
     private var header: some View {
         HStack(spacing: 2) {
             Text(AppLocalization.text("reflog.ref"))
                 .foregroundStyle(.secondary)
 
-            Picker(
-                AppLocalization.text("reflog.ref"),
-                selection: Binding(
-                    get: { session.reflog.reference },
-                    set: { session.reflog.show(reference: $0) }
-                )
-            ) {
-                Text("HEAD").tag("HEAD")
-                Divider()
-
-                ForEach(branches, id: \.self) { branch in
-                    Text(Self.name(of: branch)).tag(branch)
-                }
-            }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .fixedSize()
+            ReflogReferencePopUp(
+                references: ["HEAD"] + branches,
+                current: session.reflog.reference
+            ) { session.reflog.show(reference: $0) }
+                .fixedSize()
 
             Spacer(minLength: 4)
 
@@ -110,7 +98,7 @@ extension ReflogListView {
         }
     }
 
-    /// 单选列表；最后一行出现时续读下一页。
+    /// 单选列表，行与行之间不另留间隔，内容左右各留 8 pt；最后一行出现时续读下一页。
     private var list: some View {
         let reflog = session.reflog
 
@@ -118,6 +106,7 @@ extension ReflogListView {
             ForEach(reflog.entries) { entry in
                 ReflogRow(entry: entry)
                     .tag(entry.id)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
                     .onDrag { dragProvider(entry) }
             }
 
@@ -156,7 +145,7 @@ extension ReflogListView {
         Button(AppLocalization.text("reflog.reset", hash)) {
             session.requestReset(to: entry.commit.id)
         }
-        .disabled(!session.canRewrite)
+        .disabled(!session.canResetFromReflog)
 
         if let branch = session.reflogRestorableBranch {
             Button(AppLocalization.text("reflog.restore", branch.name, hash)) {

@@ -304,8 +304,8 @@ extension RepositorySidebarView {
             return session.worktrees.selectedPath.map { [Self.worktreeRowPrefix + $0] } ?? []
         }
 
-        // 文件视图不对应侧边栏的任何一项，点 Working Copy 或 History 都能离开
-        if [.fileHistory, .fileContent].contains(session.activeView) { return [] }
+        // 文件原文不对应侧边栏的任何一项，点 Working Copy 或 History 都能离开；文件历史保持历史的选中
+        if session.activeView == .fileContent { return [] }
 
         let references = session.history.selectedReferences
 

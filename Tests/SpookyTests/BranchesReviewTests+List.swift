@@ -56,9 +56,13 @@ extension BranchesReviewTests {
     private func checkBaseMenu(session: RepositorySession) throws {
         let branches = session.history.branches.filter(\.isLocal)
         let base = try #require(session.branchesReview.base)
-        let menu = BranchesReviewBaseMenu()
+        let menu = ReferenceFilterMenu()
 
-        menu.rebuild(branches: branches, base: base)
+        menu.rebuild(
+            entries: branches.map { ReferenceFilterMenu.Entry(id: $0.id, title: $0.name) },
+            current: ReferenceFilterMenu.Entry(id: base.id, title: base.name),
+            emptyTitle: ""
+        )
 
         let items = menu.menu.items
         #expect(items.first?.view != nil)

@@ -23,22 +23,25 @@ struct ReflogSessionTests {
         try await prepareBranches(in: fixture)
         try await load(reflog, in: fixture)
 
-        // 默认看 HEAD；HEAD 的记录用重置 HEAD 恢复
+        // 默认看 HEAD；HEAD 的记录用重置 HEAD 恢复，但 Reset HEAD 只在看 HEAD 所在的分支时可用
         #expect(reflog.reference == "HEAD")
         #expect(reflog.entries.map(\.command) == ["checkout", "commit", "checkout", "commit"])
         #expect(session.reflogRestorableBranch == nil)
+        #expect(!session.canResetFromReflog)
 
         try await searchByMessage(reflog)
 
-        // 当前分支的记录同样用重置 HEAD 恢复
+        // 当前分支的记录同样用重置 HEAD 恢复，这时 Reset HEAD 可用
         reflog.show(reference: "refs/heads/main")
         await settle(reflog)
         #expect(session.reflogRestorableBranch == nil)
+        #expect(session.canResetFromReflog)
 
-        // 换到分支后只剩这个分支自己的移动；右栏复用提交详情，显示选中记录的提交
+        // 换到别的分支后只剩这个分支自己的移动，不能 Reset HEAD；右栏复用提交详情，显示选中记录的提交
         reflog.show(reference: "refs/heads/功能/分支")
         await settle(reflog)
         #expect(reflog.entries.map(\.message) == ["commit: 功能 [x] *", "branch: Created from HEAD"])
+        #expect(!session.canResetFromReflog)
 
         reflog.selectedID = reflog.entries.first?.id
         #expect(reflog.detail.selectedCommit?.subject == "功能 [x] *")
