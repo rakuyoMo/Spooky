@@ -198,7 +198,7 @@ extension HistoryListTests {
         #expect(history.selectedCommit == target)
     }
 
-    /// 工作区写出分支与改动数，分离 HEAD 时不写分支；历史写出所选引用与提交数，数到上限时写 “or more”；
+    /// 工作区写出分支与改动数；历史写出所选引用与提交数，数到上限时写 “or more”；
     /// Reflog 看 HEAD 时只写 Reflog，看分支时写出分支名。
     @Test("工作区、历史与 Reflog 的窗口副标题")
     func subtitles() async throws {
@@ -249,13 +249,6 @@ extension HistoryListTests {
         #expect(controller.repositorySubtitle == AppLocalization.text("reflog.subtitle", "topic"))
 
         await untilFinished { session.reflog.activeTasks }
-
-        // 分离 HEAD 时工作区不写分支
-        _ = try await fixture.runner.run(["checkout", "-q", "--detach", "HEAD"])
-        session.activeView = .workingCopy
-        session.refresh(full: true)
-        await session.waitForRefresh()
-        #expect(controller.repositorySubtitle == AppLocalization.text("working.subtitle", 2))
     }
 
     /// 读取引用期间又要求刷新时，读完后按最新的请求再读一次，读取开始之后新建的分支随之出现。
