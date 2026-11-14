@@ -96,7 +96,7 @@ struct FileViewsTests {
     }
 
     /// 单击注释按行找到所在的段，段外的行没有归属；行号栏按最大行号的文字宽度留出位置，Blame 的注释栏取保存的宽度，超出可拖动范围的记录按边界处理。
-    @Test("Blame 段查找、行号栏与注释栏的宽度")
+    @Test("Blame 段查找、行号栏与注释栏的宽度和裁剪")
     func gutters() throws {
         let lookup = FileTextAnnotations(
             groups: [
@@ -137,6 +137,14 @@ struct FileViewsTests {
         #expect(width(300.0) == 300)
         #expect(width(1000.0) == 600)
         #expect(width(100.0) == 175)
+
+        // 注释栏的底色不画出自己的范围，不盖住正文与头部
+        let annotationView = FileAnnotationView(
+            scrollView: NSScrollView(),
+            document: FileTextDocumentView.make()
+        )
+
+        #expect(annotationView.clipsToBounds)
     }
 
     /// 回到的提交不在已加载的分页里时，整页详情仍然显示它，重读分页也不会丢掉选择。

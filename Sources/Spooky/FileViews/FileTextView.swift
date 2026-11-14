@@ -174,10 +174,15 @@ struct FileTextView: NSViewRepresentable {
 
             parent.highlight?(commit.id)
 
+            let content = NSHostingController(rootView: BlameCommitPopover(commit: commit))
+
+            // 显示前就按内容定好大小：显示后再变大小，popover 会离开被点的那一组
+            content.sizingOptions = .preferredContentSize
+
             let popover = NSPopover()
             popover.behavior = .transient
             popover.animates = false
-            popover.contentViewController = NSHostingController(rootView: BlameCommitPopover(commit: commit))
+            popover.contentViewController = content
             popover.show(relativeTo: rect, of: view, preferredEdge: .minX)
             self.popover = popover
         }

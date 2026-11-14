@@ -68,6 +68,9 @@ final class FileAnnotationView: NSView {
         self.document = document
         super.init(frame: .zero)
 
+        // 底色只铺在注释栏自己的范围内，不盖住左边的正文与上方的头部
+        clipsToBounds = true
+
         scrollView.contentView.postsBoundsChangedNotifications = true
         NotificationCenter.default.addObserver(
             self,
