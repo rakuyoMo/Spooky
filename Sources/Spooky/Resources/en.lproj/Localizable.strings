@@ -1034,6 +1034,7 @@
 "history.reveal.slow.submit" = "Load";
 "history.reveal.slow.message" = "Commit %1$@ comes after the first %2$ld commits of this history. Loading the history up to it may take a while.";
 "history.subtitle" = "%@ (%ld Commits)";
+"history.commitPage.subtitle" = "Commit %@";
 "history.subtitle.more" = "%@ (%ld Commits or more)";
 "working.subtitle" = "Working Copy (%ld Changed Files)";
 "working.subtitle.branch" = "Working Copy (%@ – %ld Changed Files)";

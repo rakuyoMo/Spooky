@@ -1034,6 +1034,7 @@
 "history.reveal.slow.submit" = "Laden";
 "history.reveal.slow.message" = "Commit %1$@ liegt nach den ersten %2$ld Commits dieses Verlaufs. Das Laden des Verlaufs bis zu diesem Commit kann eine Weile dauern.";
 "history.subtitle" = "%@ (%ld Commits)";
+"history.commitPage.subtitle" = "Commit %@";
 "history.subtitle.more" = "%@ (%ld Commits oder mehr)";
 "working.subtitle" = "Arbeitskopie (%ld geänderte Dateien)";
 "working.subtitle.branch" = "Arbeitskopie (%@ – %ld geänderte Dateien)";

@@ -82,9 +82,15 @@ extension RepositoryWindowController {
         return AppLocalization.text("working.subtitle.branch", WorkingCopyListView.branchTitle(branch), count)
     }
 
-    /// 历史的副标题：所选引用以 “, ” 相连，没有选引用时是 “History”，与基准分支比较时是 “分支 → 基准”；后面是提交数，数到上限时写 “or more”。
+    /// 历史的副标题：整页详情是 “Commit 短哈希”；所选引用以 “, ” 相连，没有选引用时是 “History”，与基准分支比较时是 “分支 → 基准”；后面是提交数，数到上限时写 “or more”。
     private var historySubtitle: String {
         let history = session.history
+
+        // 整页详情写出所看的提交
+        if history.showsCommitPage, let commit = history.selectedCommit {
+            return AppLocalization.text("history.commitPage.subtitle", String(commit.id.prefix(8)))
+        }
+
         var name = history.selectedReferences.isEmpty ? AppLocalization.text("history.title") : history.title
 
         if let comparison = history.baseComparison {

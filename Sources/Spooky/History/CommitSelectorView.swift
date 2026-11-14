@@ -41,7 +41,7 @@ struct CommitSelectorView: View {
         .onDisappear { state.close() }
     }
 
-    /// 提交列表；读取失败时显示诊断与重试。高亮移动时滚到高亮的行。
+    /// 提交列表，顶上留 10 pt；读取失败时显示诊断与重试。高亮移动时滚到高亮的行。
     @ViewBuilder
     private var list: some View {
         if let failure = state.failure {
@@ -56,6 +56,7 @@ struct CommitSelectorView: View {
                             row(commit)
                         }
                     }
+                    .padding(.top, 10)
                     .padding(.horizontal, 10)
                 }
                 .onChange(of: state.highlightedID) { _, id in
@@ -95,7 +96,7 @@ struct CommitSelectorView: View {
 
 /// 版本选择器的一行：32 pt 头像，右边上行是作者与日期，下行是短哈希与标题。
 ///
-/// 高亮行是左右各内缩 10 pt、圆角 6 pt 的强调色底，文字反白；焦点在搜索框里时同样如此。
+/// 头像距高亮底左缘 20 pt；高亮行是左右各内缩 10 pt、圆角 6 pt 的强调色底，文字反白；焦点在搜索框里时同样如此。
 private struct CommitSelectorRow: View {
     /// 高亮行的文字使用系统的选中文字语义色。
     private static let highlightedText = Color(nsColor: .alternateSelectedControlTextColor)
@@ -140,7 +141,8 @@ private struct CommitSelectorRow: View {
             .font(.system(size: 11))
         }
         .frame(height: 38)
-        .padding(.horizontal, 10)
+        .padding(.leading, 20)
+        .padding(.trailing, 10)
         .foregroundStyle(highlighted ? Self.highlightedText : .primary)
         .background {
             if highlighted {
@@ -155,7 +157,7 @@ private struct CommitSelectorRow: View {
 
 // MARK: - CommitSelectorSearchField
 
-/// 版本选择器的系统搜索框：13 pt、不画焦点环，占位是系统的 “Search”，打开时取得焦点。
+/// 版本选择器的系统搜索框：13 pt、有焦点时画焦点环，占位是系统的 “Search”，打开时取得焦点。
 ///
 /// 每次输入与清除都写回；↑ ↓ 移动高亮，Esc 关闭选择器，回车什么都不做。
 private struct CommitSelectorSearchField: NSViewRepresentable {
@@ -216,7 +218,6 @@ private struct CommitSelectorSearchField: NSViewRepresentable {
     func makeNSView(context: Context) -> NSSearchField {
         let field = NSSearchField()
         field.font = .systemFont(ofSize: 13)
-        field.focusRingType = .none
         field.sendsSearchStringImmediately = true
         field.target = context.coordinator
         field.action = #selector(Coordinator.textChanged(_:))

@@ -148,8 +148,12 @@ final class RepositoryHistoryState {
     /// 提交详情的文件树分段；切换提交时保持，与菜单路由共用。
     var showsTree = false
 
-    /// 双击进入左文件列表、右补丁的整页提交详情。
-    var showsCommitPage = false
+    /// 双击进入左文件列表、右补丁的整页提交详情；打开时选中第一个文件。
+    var showsCommitPage = false {
+        didSet {
+            if showsCommitPage, !oldValue { selectFirstPageFile() }
+        }
+    }
 
     /// 整页详情回到的提交：从文件视图回到的，或经链接、后退 / 前进打开整页详情时找到的；不在已加载的分页里时，整页详情仍按它显示。
     private(set) var revealedCommit: HistoryCommit? = nil
@@ -171,11 +175,6 @@ final class RepositoryHistoryState {
 
     /// 变更文件行的选区；换提交时清空，展开与 Expand All 不改它。
     var fileSelection = ChangesetFileSelection()
-
-    /// 仅当前变更集的每个文件都展开时成立，忽略残留的其它身份。
-    var allItemsExpanded: Bool {
-        !changes.isEmpty && changes.allSatisfy { expandedPaths.contains($0.path) }
-    }
 
     /// 单文件已加载的补丁，切换提交时失效。
     var diffs: [String: CommitDiff] = [:]

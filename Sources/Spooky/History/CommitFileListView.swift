@@ -26,6 +26,8 @@ struct CommitFileListView: View {
             if let commit = history.selectedCommit {
                 toolbar(commit)
 
+                Divider()
+
                 card(commit)
             }
 
@@ -73,7 +75,7 @@ struct CommitFileListView: View {
             ForEach(history.changes) { file in
                 CommitPageFileRow(file: file)
                     .tag(file.path)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
+                    .listRowInsets(EdgeInsets(top: 0, leading: 2, bottom: 0, trailing: 8))
                     .onDrag { CommitFileDragging.provider(file, session: session) }
             }
         }
@@ -118,7 +120,7 @@ struct CommitFileListView: View {
         return AppLocalization.text("history.committedWith", commit.author, commit.committer, date)
     }
 
-    /// 40 pt 工具条：左边是版本按钮，右边是文件数。
+    /// 40 pt 工具条：左边是版本按钮，右边是文件数；下方与卡片之间隔一条分隔线。
     private func toolbar(_ commit: HistoryCommit) -> some View {
         HStack {
             revisionButton(commit)
@@ -137,11 +139,14 @@ struct CommitFileListView: View {
 
     /// 短哈希按钮：点开版本选择器，双击其中一个提交换成它的整页详情。
     private func revisionButton(_ commit: HistoryCommit) -> some View {
-        Button(commit.shortID) {
+        Button {
             choosingRevision = true
+        } label: {
+            // 字体设在标题上才不被按钮样式换掉
+            Text(commit.shortID)
+                .font(.custom("Menlo", size: 13))
         }
         .buttonStyle(.accessoryBar)
-        .font(.custom("Menlo", size: 13))
         .accessibilityLabel(AppLocalization.text("showFile.revision"))
         .popover(isPresented: $choosingRevision, arrowEdge: .bottom) {
             CommitSelectorView(session: session) {
@@ -151,12 +156,18 @@ struct CommitFileListView: View {
         }
     }
 
-    /// 68 pt 提交卡片：48 pt 头像，右边上排 11 pt 的作者与提交人，下排 13 pt 的标题，最右是有效签名的按钮。
+    /// 68 pt 提交卡片：48 pt 头像，悬停提示作者的姓名与邮箱；右边上排 11 pt 的作者与提交人，紧接着下排 13 pt 的标题，
+    /// 最右是有效签名的按钮。
     private func card(_ commit: HistoryCommit) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            InitialsAvatar(name: commit.author, email: commit.authorEmail, size: 48)
+            let identity = commit.author + " <" + commit.authorEmail + ">"
 
-            VStack(alignment: .leading, spacing: 4) {
+            InitialsAvatar(name: commit.author, email: commit.authorEmail, size: 48)
+                .help(identity)
+                .accessibilityElement()
+                .accessibilityLabel(identity)
+
+            VStack(alignment: .leading, spacing: 0) {
                 Text(Self.byline(commit))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
@@ -194,7 +205,8 @@ struct CommitFileListView: View {
 
 // MARK: - CommitPageFileRow
 
-/// 整页详情的一个变更文件，高 48 pt：18 × 18 的状态图标，右边上一行是文件名与绿色的新增、红色的删除行数，下一行是 11 pt 的路径。
+/// 整页详情的一个变更文件，高 48 pt：18 × 18 的状态图标，右边上一行是文件名，行尾右对齐绿色的新增、红色的删除行数，
+/// 下一行是 11 pt 的路径。
 ///
 /// 二进制文件没有行数，不写这两个数。
 struct CommitPageFileRow: View {
@@ -213,11 +225,13 @@ struct CommitPageFileRow: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
 
+                    Spacer(minLength: 0)
+
                     if let additions = file.additions, let deletions = file.deletions {
                         Text("+\(additions)")
                             .foregroundStyle(Color(nsColor: .systemGreen))
 
-                        Text("−\(deletions)")
+                        Text("-\(deletions)")
                             .foregroundStyle(Color(nsColor: .systemRed))
                     }
                 }
@@ -230,8 +244,6 @@ struct CommitPageFileRow: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
-
-            Spacer(minLength: 0)
         }
         .frame(height: 48)
     }

@@ -106,3 +106,45 @@ extension HistoryListTests {
         await until { selector.commits != previous && !selector.isLoading }
     }
 }
+
+// MARK: - Commit Selector Order
+
+extension HistoryListTests {
+    /// 版本选择器按提交人日期列出提交：合并进来的两条线按日期交错，父提交仍排在子提交之后。
+    @Test("版本选择器按日期排列提交")
+    func commitSelectorDateOrder() async throws {
+        let fixture = try await Self.makeSession(commits: ["A"]) { runner, _ in
+            // 侧线 S1、S2 与主线 M1、M2 都从 A 分出，日期交错，最后 MM 把侧线合进主线
+            let commits: [(branch: String, subject: String, minutes: Int, parent: String)] = [
+                ("side", "S1", 2, "from refs/heads/main^0"),
+                ("side", "S2", 4, ""),
+                ("main", "M1", 3, "from refs/heads/main^0"),
+                ("main", "M2", 5, ""),
+                ("main", "MM", 6, "merge :2"),
+            ]
+
+            var stream = ""
+
+            for (index, commit) in commits.enumerated() {
+                let content = "\(index)\n"
+                stream += "commit refs/heads/\(commit.branch)\n"
+                stream += "mark :\(index + 1)\n"
+                stream += "committer Spooky Test <spooky@example.invalid> \(1_700_000_000 + commit.minutes * 60) +0000\n"
+                stream += "data \(commit.subject.utf8.count)\n\(commit.subject)\n"
+                stream += commit.parent.isEmpty ? "" : commit.parent + "\n"
+                stream += "M 100644 inline \(commit.branch).txt\ndata \(content.utf8.count)\n\(content)\n"
+            }
+
+            _ = try await runner.run(["fast-import", "--quiet"], input: Data(stream.utf8))
+            _ = try await runner.run(["reset", "-q", "--hard"])
+        }
+        defer { fixture.close() }
+
+        let head = try #require(fixture.session.status?.branch.oid)
+        let selector = CommitSelectorState()
+        selector.open(runner: fixture.runner, head: head)
+        await until { !selector.isLoading }
+
+        #expect(selector.commits.map(\.subject) == ["MM", "M2", "S2", "M1", "S1", "A"])
+    }
+}

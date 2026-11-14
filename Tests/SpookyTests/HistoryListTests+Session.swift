@@ -241,6 +241,27 @@ extension HistoryListTests {
                 == AppLocalization.text("history.subtitle.more", "main, topic", RepositoryHistoryState.countLimit)
         )
 
+        // 整页详情写 “Commit 短哈希”，打开时选中第一个文件；回到列表后恢复历史的副标题
+        let history = session.history
+        let commit = try #require(history.selectedCommit)
+
+        history.showsCommitPage = true
+        await untilFinished { history.activeTasks }
+
+        #expect(
+            controller.repositorySubtitle
+                == AppLocalization.text("history.commitPage.subtitle", String(commit.id.prefix(8)))
+        )
+        #expect(history.selectedPath != nil)
+        #expect(history.selectedPath == history.changes.first?.path)
+
+        history.showsCommitPage = false
+
+        #expect(
+            controller.repositorySubtitle
+                == AppLocalization.text("history.subtitle.more", "main, topic", RepositoryHistoryState.countLimit)
+        )
+
         // Reflog 看 HEAD 时只写 Reflog，看分支时写出分支名
         session.activeView = .reflog
         #expect(controller.repositorySubtitle == AppLocalization.text("reflog.title"))

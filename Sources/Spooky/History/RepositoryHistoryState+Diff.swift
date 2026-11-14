@@ -4,6 +4,11 @@ import SpookyKit
 // MARK: - Diff
 
 extension RepositoryHistoryState {
+    /// 仅当前变更集的每个文件都展开时成立，忽略残留的其它身份。
+    var allItemsExpanded: Bool {
+        !changes.isEmpty && changes.allSatisfy { expandedPaths.contains($0.path) }
+    }
+
     /// 右侧详情列出变更文件的顺序：按路径不分大小写排序，只差大小写的路径按字节序；整页详情按 `changes` 的 Git 输出顺序。
     var pathOrderedChanges: [CommitFileChange] {
         changes.sorted {
@@ -22,6 +27,15 @@ extension RepositoryHistoryState {
         else { return nil }
 
         return CommitFileDiffSource(runner: runner, commit: commit.id, file: file, mergeMode: .preferred)
+    }
+
+    /// 整页详情打开或读完变更集时，还没有选中文件就选中第一个，右栏显示它的补丁。
+    func selectFirstPageFile() {
+        guard showsCommitPage, selectedPath == nil, let first = changes.first else {
+            return
+        }
+
+        selectedPath = first.path
     }
 
     /// 单选变化后丢弃上一提交的补丁，元信息直接复用列表记录。
@@ -57,6 +71,7 @@ extension RepositoryHistoryState {
 
                 changes = files
                 loadedChangesID = commit.id
+                selectFirstPageFile()
 
                 let threshold = preferences.integer(forKey: "historyAutoExpand")
                 if threshold > 0, files.count <= threshold { expandAll(true) }

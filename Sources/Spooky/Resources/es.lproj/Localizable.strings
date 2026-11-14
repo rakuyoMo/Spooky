@@ -1034,6 +1034,7 @@
 "history.reveal.slow.submit" = "Cargar";
 "history.reveal.slow.message" = "El commit %1$@ está después de los primeros %2$ld commits de este historial. Cargar el historial hasta ese commit puede tardar un poco.";
 "history.subtitle" = "%@ (%ld commits)";
+"history.commitPage.subtitle" = "Commit %@";
 "history.subtitle.more" = "%@ (%ld commits o más)";
 "working.subtitle" = "Copia de trabajo (%ld archivos modificados)";
 "working.subtitle.branch" = "Copia de trabajo (%@ – %ld archivos modificados)";

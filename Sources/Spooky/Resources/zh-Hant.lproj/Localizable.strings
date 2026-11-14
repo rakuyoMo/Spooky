@@ -1034,6 +1034,7 @@
 "history.reveal.slow.submit" = "載入";
 "history.reveal.slow.message" = "提交 %1$@ 排在這段歷史的前 %2$ld 個提交之後。載入到它為止可能需要一些時間。";
 "history.subtitle" = "%@（%ld 個提交）";
+"history.commitPage.subtitle" = "提交 %@";
 "history.subtitle.more" = "%@（%ld 個或更多提交）";
 "working.subtitle" = "工作區（%ld 個變更的檔案）";
 "working.subtitle.branch" = "工作區（%@ – %ld 個變更的檔案）";
