@@ -68,15 +68,16 @@ extension RepositoryWindowController {
 // MARK: - Private
 
 extension RepositoryWindowController {
-    /// 工作区的副标题：“Working Copy (分支 – n Changed Files)”，分离 HEAD 或还没读到状态时不写分支。
+    /// 工作区的副标题：“Working Copy (分支 – n Changed Files)”；分离 HEAD 时分支一段写前 8 位哈希与 “(detached)”，
+    /// 还没读到状态时不写分支。
     private var workingCopySubtitle: String {
         let count = session.status?.entries.count ?? 0
 
-        guard let branch = session.status?.branch.head else {
+        guard let branch = session.status?.branch, branch.head != nil || branch.oid != nil else {
             return AppLocalization.text("working.subtitle", count)
         }
 
-        return AppLocalization.text("working.subtitle.branch", branch, count)
+        return AppLocalization.text("working.subtitle.branch", WorkingCopyListView.branchTitle(branch), count)
     }
 
     /// 历史的副标题：所选引用以 “, ” 相连，没有选引用时是 “History”，与基准分支比较时是 “分支 → 基准”；后面是提交数，数到上限时写 “or more”。

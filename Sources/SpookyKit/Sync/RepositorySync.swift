@@ -313,7 +313,9 @@ public struct RepositorySync: Sendable {
                 var options = MergeOptions()
                 options.verifySignatures = verifySignatures
                 options.skipHooks = skipHooks
-                try await performMerge(fetched, options: options, onOutput: onOutput)
+
+                // 合并 FETCH_HEAD 本身，说明写成 “Merge branch '<分支>' of <远端地址>”
+                try await performMerge("FETCH_HEAD", options: options, onOutput: onOutput)
                 return
             }
 
@@ -410,7 +412,10 @@ public struct RepositorySync: Sendable {
             throw RepositorySyncError.dirtyWorkingCopy(rebase: false)
         }
 
-        let target = try await RepositoryReferences(runner: runner).resolve(revision)
+        // 先核对是一个提交；合并时交给 Git 的是名字，提交说明用 Git 对这个名字的默认写法
+        _ = try await RepositoryReferences(runner: runner).resolve(revision)
+        let name = revision.hasPrefix("refs/") ? try await shortName(of: revision) : revision
+
         var arguments = ["-c", "merge.autoStash=false", "merge", "--no-edit", "--no-autostash"]
 
         // 压缩合并留下暂存区，普通合并明确指定快进与提交策略。
@@ -429,7 +434,18 @@ public struct RepositorySync: Sendable {
             arguments.append("--no-verify")
         }
 
-        _ = try await runner.execute(arguments + [target], onOutput: onOutput)
+        _ = try await runner.execute(arguments + ["--end-of-options", name], onOutput: onOutput)
+    }
+
+    /// 引用不含糊的短名，如 `feature`、`origin/main`；与标签同名时带上 `heads/` 这类前缀。
+    ///
+    /// Git 的默认合并说明照抄交给它的名字，完整引用名会写成 “Merge branch 'refs/heads/feature'”。
+    private func shortName(of reference: String) async throws -> String {
+        // 调用方只交来 refs/ 开头的名字，不会被当成选项
+        let output = try await runner.run(["rev-parse", "--abbrev-ref", reference])
+        let name = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)
+
+        return name.isEmpty ? reference : name
     }
 }
 

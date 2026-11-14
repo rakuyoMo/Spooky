@@ -42,7 +42,7 @@ extension RepositorySync {
             if rebase {
                 try await rebaseCurrentBranch(onto: target, skipHooks: options.skipHooks, onOutput: onOutput)
             } else {
-                try await performMerge(target, options: options, onOutput: onOutput)
+                try await performMerge(parent, options: options, onOutput: onOutput)
             }
         }
     }
