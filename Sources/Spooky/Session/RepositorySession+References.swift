@@ -210,8 +210,7 @@ extension RepositorySession {
             return false
         }
 
-        let failure = AppFailure(error: offer.failure, opening: false, location: repository, writing: true)
-        onReferenceRequest(.forceDelete(offer, failure))
+        onReferenceRequest(.forceDelete(offer))
         return true
     }
 }

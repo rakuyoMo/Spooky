@@ -160,14 +160,16 @@ extension DeleteReferencesDialog {
         }
     }
 
-    /// 只删一个本地分支、且它跟踪远端分支时，那个远端分支的名字。
+    /// 只删一个本地分支、且它跟踪的远端分支仍然存在时，那个远端分支的名字。
     private var trackedUpstream: String? {
         guard
             case .branches(let items) = target,
             items.count == 1,
             let remote = items[0].upstreamRemote,
             remote != ".",
-            let branch = items[0].upstreamBranch?.dropFirst("refs/heads/".count)
+            let branch = items[0].upstreamBranch?.dropFirst("refs/heads/".count),
+            let upstream = items[0].upstream,
+            session.history.branches.contains(where: { $0.id == upstream })
         else {
             return nil
         }

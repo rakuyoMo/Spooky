@@ -111,7 +111,7 @@ extension ReferenceSessionTests {
         #expect(session.deleteBranches(["refs/heads/topic"], force: false, deletingUpstream: true))
         await settle(session)
 
-        guard case .forceDelete(let offer, let failure) = try #require(requests.last) else {
+        guard case .forceDelete(let offer) = try #require(requests.last) else {
             Issue.record("未合并分支的删除应询问强制删除")
             return
         }
@@ -119,9 +119,6 @@ extension ReferenceSessionTests {
         #expect(offer.branches == ["refs/heads/topic"])
         #expect(offer.deletingUpstream)
         #expect(failures.isEmpty)
-        #expect(failure.details.lowercased().contains("not fully merged"))
-        #expect(failure.title == AppLocalization.text("branch.error.delete"))
-        #expect(failure.message.hasPrefix(AppLocalization.text("branch.error.unmerged")))
 
         // 用户确认之前分支与远端分支都还在
         let kept = try await runner.run(["for-each-ref", "--format=%(refname)", "refs/heads/topic"])

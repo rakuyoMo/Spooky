@@ -158,7 +158,7 @@ struct BranchDialogTests {
     }
 
     /// 删除一个跟踪远端分支的本地分支：说明写出分支名，强制删除在上、不带说明、不勾，删除跟踪的远端分支在下并写出它；
-    /// 删除多个分支时说明写成所选分支，没有删除跟踪分支的选项。
+    /// 删除多个分支时说明写成所选分支；删除多个分支、或跟踪的远端分支已不存在时，没有删除跟踪分支的选项。
     @Test("删除分支的说明与选项顺序", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func deleteBranches() async throws {
         let fixture = try await OperationWiringTests.makeFixture()
@@ -187,6 +187,18 @@ struct BranchDialogTests {
 
         #expect(multiple.contains { $0.value == AppLocalization.text("branch.deleteMultiple.message") })
         #expect(multiple.filter { $0.role == "AXCheckBox" }.map(\.name) == [AppLocalization.text("branch.forceDelete")])
+
+        // 跟踪的远端分支已不存在：没有删除跟踪分支一项与它的说明
+        _ = try await fixture.runner.run(["config", "--local", "branch.side.remote", "origin"])
+        _ = try await fixture.runner.run(["config", "--local", "branch.side.merge", "refs/heads/gone"])
+        await Self.reload(session)
+
+        let tracking = try #require(session.history.branches.first { $0.id == "refs/heads/side" })
+        let gone = await Self.deleteDialog(.branches([tracking]), in: session)
+
+        #expect(tracking.upstream == "refs/remotes/origin/gone")
+        #expect(gone.filter { $0.role == "AXCheckBox" }.map(\.name) == [AppLocalization.text("branch.forceDelete")])
+        #expect(!gone.contains { $0.value == AppLocalization.text("branch.deleteUpstream.help", "origin/gone") })
     }
 }
 

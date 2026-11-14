@@ -40,6 +40,6 @@ enum ReferenceRequest {
     /// 添加或修改远端的一条 refspec；原值为 nil 表示添加。
     case refspec(remote: String, push: Bool, original: String?)
 
-    /// 普通删除因未合并失败后，询问是否按原选项强制删除这些分支；带上失败的说明与 Git 原文。
-    case forceDelete(ForceDeletionOffer, AppFailure)
+    /// 普通删除因未合并失败后，询问是否按原选项强制删除这些分支。
+    case forceDelete(ForceDeletionOffer)
 }

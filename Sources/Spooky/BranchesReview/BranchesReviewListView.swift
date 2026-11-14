@@ -102,7 +102,7 @@ struct BranchesReviewListView: View {
             + [session.status?.branch.head ?? ""]
     }
 
-    /// 没有分支时显示空状态，否则显示可多选的列表。
+    /// 没有分支时显示空状态，否则显示可多选的列表；删除只接 Edit › Delete（⌘⌫），单独的 ⌫ 不删除。
     @ViewBuilder
     private func list(_ items: [BranchesReviewItem]) -> some View {
         if items.isEmpty {
@@ -122,7 +122,20 @@ struct BranchesReviewListView: View {
                 }
             }
             .listStyle(.inset)
+            .onCommand(#selector(NSText.delete(_:)), perform: deleteCommand(items))
         }
+    }
+
+    /// Edit › Delete（⌘⌫）的动作：确认后删除列表里所选的分支；没有选中或不能删除时为 nil，菜单项随之不可用。
+    func deleteCommand(_ items: [BranchesReviewItem]) -> (() -> Void)? {
+        let selected = session.branchesReview.selectedIDs
+        let targets = items.filter { selected.contains($0.id) }.map(\.reference)
+
+        guard !targets.isEmpty, session.canDelete(targets) else {
+            return nil
+        }
+
+        return { session.requestReference(.deleteBranches(targets)) }
     }
 }
 

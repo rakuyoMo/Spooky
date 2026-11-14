@@ -190,7 +190,8 @@ struct RepositorySidebarView: View {
         }
     }
 
-    /// 各分组的列表：列表固定在 `listSize` 的档位，条目行在各分组里换回系统的档位与字体。
+    /// 各分组的列表：列表固定在 `listSize` 的档位，条目行在各分组里换回系统的档位与字体；
+    /// 删除只接 Edit › Delete（⌘⌫），单独的 ⌫ 不删除。
     private var sidebarList: some View {
         // 列表按仓库区分身份，换了仓库就整个重建：列表显示过可展开的行（远端、文件夹）后，
         // 行首一直留着展开箭头的位置，换成没有这类行的仓库也不收回；重建后与新开窗口的排版相同
@@ -209,7 +210,7 @@ struct RepositorySidebarView: View {
         .environment(\.defaultMinListHeaderHeight, 20)
         .environment(reveal)
         .focused($listFocused)
-        .onDeleteCommand(perform: deleteCommand)
+        .onCommand(#selector(NSText.delete(_:)), perform: deleteCommand)
         .id(session.repository)
     }
 
