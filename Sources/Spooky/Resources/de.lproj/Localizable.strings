@@ -892,6 +892,7 @@
 "files.move.title" = "„%@“ bewegen";
 "files.move.message" = "Geben Sie den neuen Pfad relativ zum Stammverzeichnis des Repositorys ein. Der Zielordner muss bereits existieren, vorhandene Dateien werden nie überschrieben.";
 "files.move.destination" = "Neuer Pfad:";
+"files.move.outside" = "Wählen Sie einen Ort innerhalb des Repositorys.";
 "files.revert.menu" = "Auf Revision zurücksetzen …";
 "files.revert" = "Auf Revision zurücksetzen";
 "files.revert.button" = "Zurücksetzen";
@@ -920,7 +921,7 @@
 "files.exclude.custom.message" = "Das Muster wird zu info/exclude im Git-Verzeichnis hinzugefügt. Es gilt nur für diese Kopie des Repositorys und wird nie committet.";
 "files.pattern" = "Muster:";
 "files.pattern.save" = "Muster sichern";
-"files.untrackIgnored.title" = "Diese Dateien auch nicht mehr verfolgen?";
+"files.untrackIgnored.title" = "Nicht verfolgte Dateien ignorieren";
 "files.untrackIgnored.message" = "Ignorier-Regeln gelten nicht für Dateien, die Git bereits verfolgt. Folgende verfolgte Dateien ebenfalls nicht mehr verfolgen? Sie bleiben in der Arbeitskopie.\n\n%@";
 "files.untrackIgnored.skip" = "Weiter verfolgen";
 "files.mark" = "Markieren";

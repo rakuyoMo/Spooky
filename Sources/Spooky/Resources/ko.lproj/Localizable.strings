@@ -892,6 +892,7 @@
 "files.move.title" = "“%@” 이동";
 "files.move.message" = "저장소 루트를 기준으로 새 경로를 입력하세요. 대상 폴더가 이미 있어야 하며, 기존 파일은 덮어쓰지 않습니다.";
 "files.move.destination" = "새 경로:";
+"files.move.outside" = "저장소 안의 위치를 선택하세요.";
 "files.revert.menu" = "리비전으로 되돌리기…";
 "files.revert" = "리비전으로 되돌리기";
 "files.revert.button" = "되돌리기";
@@ -920,7 +921,7 @@
 "files.exclude.custom.message" = "패턴은 Git 디렉터리의 info/exclude에 추가됩니다. 이 저장소에만 적용되며 커밋되지 않습니다.";
 "files.pattern" = "패턴:";
 "files.pattern.save" = "패턴 저장";
-"files.untrackIgnored.title" = "이 파일들의 추적도 중단할까요?";
+"files.untrackIgnored.title" = "추적하지 않는 파일 무시";
 "files.untrackIgnored.message" = "무시 규칙은 Git이 이미 추적하는 파일에는 적용되지 않습니다. 다음 추적 중인 파일의 추적도 중단할까요? 파일은 작업 사본에 남습니다.\n\n%@";
 "files.untrackIgnored.skip" = "추적 유지";
 "files.mark" = "표시";

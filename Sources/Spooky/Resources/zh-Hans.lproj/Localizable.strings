@@ -892,6 +892,7 @@
 "files.move.title" = "移动 “%@”";
 "files.move.message" = "输入相对仓库根目录的新路径。目标文件夹必须已经存在，已有的文件不会被覆盖。";
 "files.move.destination" = "新路径：";
+"files.move.outside" = "请选择仓库里面的位置。";
 "files.revert.menu" = "恢复到指定版本…";
 "files.revert" = "恢复到指定版本";
 "files.revert.button" = "恢复";
@@ -920,7 +921,7 @@
 "files.exclude.custom.message" = "规则会添加到 Git 目录下的 info/exclude，只对这份仓库生效，不会被提交。";
 "files.pattern" = "规则：";
 "files.pattern.save" = "保存规则";
-"files.untrackIgnored.title" = "同时停止跟踪这些文件？";
+"files.untrackIgnored.title" = "忽略未跟踪的文件";
 "files.untrackIgnored.message" = "忽略规则对 Git 已经跟踪的文件不起作用。要同时停止跟踪以下已跟踪的文件吗？文件会保留在工作区。\n\n%@";
 "files.untrackIgnored.skip" = "不停止跟踪";
 "files.mark" = "标记";

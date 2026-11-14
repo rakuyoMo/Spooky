@@ -41,11 +41,15 @@ extension RepositoryWindowController {
         presentFileRequest(.form(.applyPatch))
     }
 
-    /// 呈现文件操作的参数表单或询问；表单提交后写操作开始才关闭。
+    /// 呈现文件操作的参数表单、保存面板或询问；表单提交后写操作开始才关闭。
     func presentFileRequest(_ request: WorkingCopyFileRequest) {
         guard session.canWrite, let window, window.attachedSheet == nil else { return }
 
         switch request {
+        // 本机仓库的 Move… 用系统保存面板；服务器仓库没有本机文件夹可选，用表单
+        case .form(.move(let entry)) where session.repository?.localURL != nil:
+            presentMovePanel(entry, in: window)
+
         case .form(let form):
             presentDialog { close in
                 WorkingCopyFileDialog(session: session, form: form, close: close)
@@ -93,7 +97,6 @@ extension RepositoryWindowController {
             return nil
         }
     }
-
 }
 
 // MARK: - Prompts
@@ -135,6 +138,31 @@ extension RepositoryWindowController {
     }
 }
 
+// MARK: - Move Destination
+
+extension RepositoryWindowController {
+    /// 保存面板选定的位置相对仓库根目录的路径；不在仓库里面，或就是仓库根目录本身时为 nil。
+    ///
+    /// - Parameters:
+    ///   - url: 保存面板选定的位置，可能还不存在。
+    ///   - root: 本机仓库的根目录。
+    static func movePath(of url: URL, in root: URL) -> String? {
+        // 目标可能还不存在，只解析它所在文件夹的符号链接，再与解析后的根目录比较
+        let folder = url.deletingLastPathComponent().resolvingSymlinksInPath().path
+        let base = root.resolvingSymlinksInPath().path
+
+        guard folder == base || folder.hasPrefix(base + "/") else {
+            return nil
+        }
+
+        let relativeFolder = folder.dropFirst(base.count).drop { $0 == "/" }
+
+        return relativeFolder.isEmpty
+            ? url.lastPathComponent
+            : relativeFolder + "/" + url.lastPathComponent
+    }
+}
+
 // MARK: - Private
 
 extension RepositoryWindowController {
@@ -161,5 +189,63 @@ extension RepositoryWindowController {
         for controller in others {
             controller.session.setListMode(mode)
         }
+    }
+
+    /// 本机仓库的 Move…：系统保存面板预填名字（扩展名隐藏），定位到它所在的文件夹，只接受仓库里面的位置；选定后在仓库里移动。
+    private func presentMovePanel(_ entry: StatusEntry, in window: NSWindow) {
+        guard let root = session.repository?.localURL else { return }
+
+        let source = root.appending(path: entry.path)
+        let validator = MoveDestinationValidator(root: root)
+
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = source.lastPathComponent
+        panel.directoryURL = source.deletingLastPathComponent()
+        panel.isExtensionHidden = true
+        panel.delegate = validator
+
+        let request = session.generation
+
+        panel.beginSheetModal(for: window) { [weak self] response in
+            // 面板只弱引用代理，关闭前由这里持有
+            withExtendedLifetime(validator) { }
+
+            // 仓库已切换时不移动；选回原处时没有要做的
+            guard
+                response == .OK,
+                let url = panel.url,
+                let self,
+                session.generation == request,
+                let path = Self.movePath(of: url, in: root),
+                let destination = WorkingCopyFileDialog.destination(path, from: entry.path)
+            else { return }
+
+            session.move(entry, to: destination)
+        }
+    }
+}
+
+// MARK: - MoveDestinationValidator
+
+/// Move… 保存面板的代理：选到仓库外面时拒绝，面板保持打开并说明原因。
+private final class MoveDestinationValidator: NSObject, NSOpenSavePanelDelegate {
+    /// 本机仓库的根目录。
+    let root: URL
+
+    /// - Parameter root: 本机仓库的根目录。
+    init(root: URL) {
+        self.root = root
+    }
+
+    /// 位置不在仓库里面时抛出说明，面板把它显示出来。
+    func panel(_: Any, validate url: URL) throws {
+        guard RepositoryWindowController.movePath(of: url, in: root) == nil else {
+            return
+        }
+
+        throw CocoaError(
+            .fileWriteNoPermission,
+            userInfo: [NSLocalizedDescriptionKey: AppLocalization.text("files.move.outside")]
+        )
     }
 }

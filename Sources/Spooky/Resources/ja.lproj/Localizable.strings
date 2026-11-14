@@ -892,6 +892,7 @@
 "files.move.title" = "「%@」を移動";
 "files.move.message" = "リポジトリのルートからの新しいパスを入力してください。移動先のフォルダはあらかじめ存在している必要があり、既存のファイルが上書きされることはありません。";
 "files.move.destination" = "新しいパス：";
+"files.move.outside" = "リポジトリ内の場所を選択してください。";
 "files.revert.menu" = "リビジョンに戻す…";
 "files.revert" = "リビジョンに戻す";
 "files.revert.button" = "戻す";
@@ -920,7 +921,7 @@
 "files.exclude.custom.message" = "パターンは Git ディレクトリの info/exclude に追加されます。このリポジトリにだけ適用され、コミットされることはありません。";
 "files.pattern" = "パターン：";
 "files.pattern.save" = "パターンを保存";
-"files.untrackIgnored.title" = "これらのファイルの追跡も解除しますか？";
+"files.untrackIgnored.title" = "未追跡のファイルを無視";
 "files.untrackIgnored.message" = "Git がすでに追跡しているファイルには無視のルールが適用されません。次の追跡中のファイルの追跡も解除しますか？ファイルは作業コピーに残ります。\n\n%@";
 "files.untrackIgnored.skip" = "追跡を解除しない";
 "files.mark" = "マーク";

@@ -892,6 +892,7 @@
 "files.move.title" = "Move “%@”";
 "files.move.message" = "Enter the new path relative to the repository root. The destination folder must already exist, and existing files are never overwritten.";
 "files.move.destination" = "New path:";
+"files.move.outside" = "Choose a location inside the repository.";
 "files.revert.menu" = "Revert to Revision…";
 "files.revert" = "Revert to Revision";
 "files.revert.button" = "Revert";
@@ -920,7 +921,7 @@
 "files.exclude.custom.message" = "The pattern is added to info/exclude in the Git directory. It applies only to this copy of the repository and is never committed.";
 "files.pattern" = "Pattern:";
 "files.pattern.save" = "Save Pattern";
-"files.untrackIgnored.title" = "Untrack Tracked Files?";
+"files.untrackIgnored.title" = "Ignore Untracked Files";
 "files.untrackIgnored.message" = "Ignore rules don’t apply to files that Git already tracks. Untrack the following tracked files as well? They stay in your working copy.\n\n%@";
 "files.untrackIgnored.skip" = "Skip Untrack";
 "files.mark" = "Mark";

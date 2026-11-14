@@ -892,6 +892,7 @@
 "files.move.title" = "Mover “%@”";
 "files.move.message" = "Introduce la nueva ruta relativa a la raíz del repositorio. La carpeta de destino ya debe existir, y los archivos existentes nunca se sobrescriben.";
 "files.move.destination" = "Nueva ruta:";
+"files.move.outside" = "Elige una ubicación dentro del repositorio.";
 "files.revert.menu" = "Revertir a una revisión…";
 "files.revert" = "Revertir a una revisión";
 "files.revert.button" = "Revertir";
@@ -920,7 +921,7 @@
 "files.exclude.custom.message" = "El patrón se añade a info/exclude en el directorio de Git. Solo se aplica a esta copia del repositorio y nunca se incluye en un commit.";
 "files.pattern" = "Patrón:";
 "files.pattern.save" = "Guardar patrón";
-"files.untrackIgnored.title" = "¿Dejar de seguir también estos archivos?";
+"files.untrackIgnored.title" = "Ignorar archivos sin seguimiento";
 "files.untrackIgnored.message" = "Las reglas de ignorado no se aplican a los archivos que Git ya sigue. ¿Dejar de seguir también los siguientes archivos? Se quedan en la copia de trabajo.\n\n%@";
 "files.untrackIgnored.skip" = "Seguir rastreando";
 "files.mark" = "Marcar";

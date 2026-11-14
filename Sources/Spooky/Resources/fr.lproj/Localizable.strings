@@ -892,6 +892,7 @@
 "files.move.title" = "Déplacer « %@ »";
 "files.move.message" = "Saisissez le nouveau chemin par rapport à la racine du dépôt. Le dossier de destination doit déjà exister, et les fichiers existants ne sont jamais écrasés.";
 "files.move.destination" = "Nouveau chemin :";
+"files.move.outside" = "Choisissez un emplacement dans le dépôt.";
 "files.revert.menu" = "Rétablir la révision…";
 "files.revert" = "Rétablir la révision";
 "files.revert.button" = "Rétablir";
@@ -920,7 +921,7 @@
 "files.exclude.custom.message" = "Le motif est ajouté au fichier info/exclude du répertoire Git. Il ne s’applique qu’à cette copie du dépôt et n’est jamais validé.";
 "files.pattern" = "Motif :";
 "files.pattern.save" = "Enregistrer le motif";
-"files.untrackIgnored.title" = "Ne plus suivre ces fichiers également ?";
+"files.untrackIgnored.title" = "Ignorer les fichiers non suivis";
 "files.untrackIgnored.message" = "Les règles à ignorer ne s’appliquent pas aux fichiers déjà suivis par Git. Ne plus suivre également les fichiers suivis ci-dessous ? Ils restent dans la copie de travail.\n\n%@";
 "files.untrackIgnored.skip" = "Continuer le suivi";
 "files.mark" = "Marquer";
