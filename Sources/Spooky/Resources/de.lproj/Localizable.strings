@@ -730,6 +730,8 @@
 "conflict.change.modified" = "GEÄNDERT";
 "conflict.change.deleted" = "GELÖSCHT";
 "conflict.change.merge" = "ZUSAMMENFÜHREN";
+"conflict.change.edited" = "BEARBEITET";
+"conflict.lastEdited" = "Zuletzt bearbeitet: %@";
 "conflict.openWith" = "Version aus „%@“ öffnen mit";
 "conflict.openWith.missing" = "Öffnen mit";
 "conflict.compareOther" = "Mit anderer Version vergleichen";

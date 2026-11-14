@@ -46,10 +46,13 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     private(set) weak var coordinator: SpookyApplicationController?
 
     /// 外层侧边栏分栏。
-    private var outerSplit: NSSplitViewController?
+    var outerSplit: NSSplitViewController?
 
     /// 工作区的列表与详情分栏。
-    private var workingCopySplit: NSSplitViewController?
+    var workingCopySplit: NSSplitViewController?
+
+    /// 冲突向导出现前侧边栏与文件列表的宽度，向导离开后放回；没有工作区分栏时文件列表的宽度为 nil。
+    var widthsBeforeConflictWizard: (sidebar: CGFloat, list: CGFloat?)? = nil
 
     /// 历史、整页提交详情与文件历史拥有各自保存宽度的内层分栏。
     private var historySplit: NSSplitViewController?
@@ -173,7 +176,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 会话里的确认以确认版对话框挂成 sheet
         session.onConfirm = { [weak self] in self?.showConfirmation($0) }
 
-        // 进行中的操作没有任何改动时，空提交的确认同样以确认版对话框挂成 sheet
+        // 进行中的操作没有任何改动时，空提交的确认以系统提示框挂成 sheet
         session.onEmptyCommitPrompt = { [weak self] in self?.showEmptyCommitPrompt($0) }
 
         showRepositories()
@@ -182,6 +185,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         observeToolbarState()
         observeConnectionState()
         observeWorkspaceProgress()
+        observeConflictWizard()
         observeHostingAccounts(previous: session.pullRequests.accounts.items)
         observeRemotes(previous: session.history.snapshot?.remoteSettingsDigests)
         observeSubtitle()
@@ -776,6 +780,11 @@ extension RepositoryWindowController {
         fileDetail.sizingOptions = [.minSize]
         let detailItem = NSSplitViewItem(viewController: fileDetail)
         detailItem.holdingPriority = .init(470)
+
+        // 选中的是冲突文件时右栏一开始就放宽到冲突向导的最小宽度
+        if showsConflictWizard {
+            detailItem.minimumThickness = Self.conflictWizardMinimumWidth
+        }
 
         split.addSplitViewItem(listItem)
         split.addSplitViewItem(detailItem)

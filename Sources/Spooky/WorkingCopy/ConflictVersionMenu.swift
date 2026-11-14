@@ -20,7 +20,7 @@ struct ConflictVersionMenu: View {
     /// 这一侧的原文；这一侧删除了文件时为 nil。
     let data: Data?
 
-    /// 三组菜单项，按钮是省略号图标。
+    /// 三组菜单项；按钮是 28 × 28 的圆形省略号按钮，不带下箭头。
     var body: some View {
         Menu {
             openItems
@@ -40,9 +40,14 @@ struct ConflictVersionMenu: View {
             Button(AppLocalization.text("conflict.compareBase")) { session.compare([entry], baseComparison) }
                 .disabled(!session.canCompare([entry], baseComparison))
         } label: {
-            Image(systemName: "ellipsis.circle")
+            Image(systemName: "ellipsis")
+                .frame(width: 28, height: 28)
+                .background(.quaternary, in: Circle())
+                .contentShape(Circle())
         }
-        .menuStyle(.borderlessButton)
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
         .fixedSize()
         .accessibilityLabel(AppLocalization.text("conflict.versionMenu", name))
     }

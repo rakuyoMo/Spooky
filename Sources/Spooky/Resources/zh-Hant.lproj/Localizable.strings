@@ -730,6 +730,8 @@
 "conflict.change.modified" = "修改";
 "conflict.change.deleted" = "刪除";
 "conflict.change.merge" = "合併";
+"conflict.change.edited" = "已編輯";
+"conflict.lastEdited" = "最後編輯於 %@";
 "conflict.openWith" = "開啟來自 “%@” 的版本的方式";
 "conflict.openWith.missing" = "開啟方式";
 "conflict.compareOther" = "與另一側版本比較";

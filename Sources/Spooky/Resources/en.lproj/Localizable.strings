@@ -730,6 +730,8 @@
 "conflict.change.modified" = "MODIFIED";
 "conflict.change.deleted" = "DELETED";
 "conflict.change.merge" = "MERGE";
+"conflict.change.edited" = "EDITED";
+"conflict.lastEdited" = "Last edited %@";
 "conflict.openWith" = "Open Version from “%@” With";
 "conflict.openWith.missing" = "Open With";
 "conflict.compareOther" = "Compare with Other Version";

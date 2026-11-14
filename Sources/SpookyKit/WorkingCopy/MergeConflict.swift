@@ -158,6 +158,9 @@ public struct ConflictContents: Sendable, Equatable {
 
     /// 工作区里的当前文件，通常带着 Git 写入的冲突标记；文件已不在工作区时为 nil。
     public let worktree: Data?
+
+    /// 工作区文件在它所在机器上的修改时间；文件不在工作区或读不到时为 nil。
+    public var worktreeModified: Date? = nil
 }
 
 extension ConflictContents {
@@ -224,16 +227,18 @@ extension WorkingCopyOperations {
         // 对象与工作区文件互不依赖，并发读取；服务器上只占一次往返的等待时间
         async let objects = blobs(hashes)
         async let worktree = stages.existsInWorktree
-            ? RepositoryFiles(runner: runner).read([path])[path]
+            ? RepositoryFiles(runner: runner).readWithModificationDates([path])[path]
             : nil
 
         let found = try await objects
+        let file = try await worktree
 
         return ConflictContents(
             base: stages.base.flatMap { found[$0] },
             ours: stages.ours.flatMap { found[$0] },
             theirs: stages.theirs.flatMap { found[$0] },
-            worktree: try await worktree
+            worktree: file?.data,
+            worktreeModified: file?.modified
         )
     }
 

@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - InitialsAvatar
 
-/// 圆形头像：有头像地址时按地址取图片，否则按邮箱取；没有图片时显示姓名前两个词的首字母。
+/// 头像，默认是圆形：有头像地址时按地址取图片，否则按邮箱取；没有图片时显示姓名前两个词的首字母。
 ///
 /// 图片在后台读取，读到之前与读不到时都显示首字母，同一个人的占位在各处一致。
 struct InitialsAvatar: View {
@@ -15,27 +15,32 @@ struct InitialsAvatar: View {
     /// 托管服务给出的头像地址；有地址时不按邮箱取。
     let avatarURL: URL?
 
-    /// 圆形的直径。
+    /// 圆形的直径或方形的边长。
     let size: CGFloat
+
+    /// 是否画成方形；冲突向导的提交栏用方形。
+    let isSquare: Bool
 
     /// 读到的头像图片。
     @State
     private var image: NSImage? = nil
 
-    /// 头像按圆形裁切；首字母按直径缩放字号，底色使用系统的四级填充色。
+    /// 头像按圆形或方形裁切；首字母按尺寸缩放字号，底色使用系统的四级填充色。
     var body: some View {
+        let shape = isSquare ? AnyShape(Rectangle()) : AnyShape(Circle())
+
         Group {
             if let image {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFill()
-                    .clipShape(Circle())
+                    .clipShape(shape)
             } else {
                 Text(initials)
                     .font(.system(size: size * 0.4, weight: .medium))
                     .foregroundStyle(.secondary)
                     .frame(width: size, height: size)
-                    .background(.quaternary, in: Circle())
+                    .background(.quaternary, in: shape)
             }
         }
         .frame(width: size, height: size)
@@ -58,12 +63,20 @@ struct InitialsAvatar: View {
     ///   - name: 姓名，取首字母用。
     ///   - email: 取 Gravatar 头像用的邮箱。
     ///   - avatarURL: 托管服务给出的头像地址。
-    ///   - size: 圆形的直径。
-    init(name: String, email: String? = nil, avatarURL: URL? = nil, size: CGFloat) {
+    ///   - size: 圆形的直径或方形的边长。
+    ///   - isSquare: 是否画成方形。
+    init(
+        name: String,
+        email: String? = nil,
+        avatarURL: URL? = nil,
+        size: CGFloat,
+        isSquare: Bool = false
+    ) {
         self.name = name
         self.email = email
         self.avatarURL = avatarURL
         self.size = size
+        self.isSquare = isSquare
     }
 }
 

@@ -730,6 +730,8 @@
 "conflict.change.modified" = "変更";
 "conflict.change.deleted" = "削除";
 "conflict.change.merge" = "マージ";
+"conflict.change.edited" = "編集済み";
+"conflict.lastEdited" = "最終編集：%@";
 "conflict.openWith" = "「%@」のバージョンを次で開く";
 "conflict.openWith.missing" = "このアプリケーションで開く";
 "conflict.compareOther" = "もう一方のバージョンと比較";
