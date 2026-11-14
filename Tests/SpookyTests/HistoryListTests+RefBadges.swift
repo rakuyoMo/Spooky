@@ -11,7 +11,7 @@ import Testing
 extension HistoryListTests {
     /// 引用标记从开头起放得下的照常显示，从第一个放不下的起折叠成一个 “…”，不是整组换成 “…”；
     /// 最宽 300 pt，只占排出来的宽度：小号行里标题紧跟在标记之后，行再宽也不在中间留空。
-    /// 行变窄时标记先于作者取得宽度。
+    /// 小号行里没有标记时短哈希到标题仍是 8 pt；中号行变窄时作者名保持完整，放不下的标记先折成 “…”。
     @Test("引用标记的折叠与宽度")
     func refBadges() throws {
         let short = [
@@ -44,19 +44,40 @@ extension HistoryListTests {
         #expect(capped > ellipsis)
         #expect(capped <= HistoryRefBadges.defaultMaxWidth)
 
-        // 小号行里标题紧跟在标记之后，中间是 4 pt 的间距
+        // 小号行里短哈希、4 pt、标记、4 pt、标题；没有标记时两段 4 pt 都保留，标题右移的正好是标记的宽度
         let plain = try Self.subjectStart(references: [], isHead: false)
         let badged = try Self.subjectStart(references: short, isHead: true)
 
-        #expect(abs(badged - plain - (all + 4)) < 1)
+        #expect(abs(badged - plain - all) < 1)
 
-        // 300 pt 宽的中号行里，作者、日期与全部标记一起放得下：最后一个标记的名字换了，画出来就不同
+        // 行宽足够时，作者、日期与全部标记一起放得下：最后一个标记的名字换了，画出来就不同
         let swapped = [short[0], Self.reference("refs/remotes/origin/niam")]
 
-        let before = try Self.rowImage(references: short, subject: "a", small: false, width: 300)
-        let after = try Self.rowImage(references: swapped, subject: "a", small: false, width: 300)
+        let before = try Self.rowImage(references: short, subject: "a", small: false, width: 600)
+        let after = try Self.rowImage(references: swapped, subject: "a", small: false, width: 600)
 
         #expect(before.tiffRepresentation != after.tiffRepresentation)
+
+        // 行变窄到最后一个标记折进 “…”（换名字画出来相同）时，作者名仍完整：最后一个字母换了，画出来就不同
+        let folding = try stride(from: CGFloat(600), through: 200, by: -10).first { width in
+            let original = try Self.rowImage(references: short, subject: "a", small: false, width: width)
+            let renamed = try Self.rowImage(references: swapped, subject: "a", small: false, width: width)
+
+            return original.tiffRepresentation == renamed.tiffRepresentation
+        }
+
+        let width = try #require(folding)
+        let narrow = try Self.rowImage(references: short, subject: "a", small: false, width: width)
+
+        let renamed = try Self.rowImage(
+            references: short,
+            author: "Alice Examplf",
+            subject: "a",
+            small: false,
+            width: width
+        )
+
+        #expect(narrow.tiffRepresentation != renamed.tiffRepresentation)
     }
 }
 
@@ -118,18 +139,20 @@ extension HistoryListTests {
     /// - Parameters:
     ///   - references: 指向这个提交的引用。
     ///   - isHead: HEAD 是否指向这个提交。
+    ///   - author: 作者名。
     ///   - subject: 提交说明。
     ///   - small: 是否是小号行。
     ///   - width: 行宽。
     private static func rowImage(
         references: [RepositoryReference],
         isHead: Bool = true,
+        author: String = "Alice Example",
         subject: String,
         small: Bool,
         width: CGFloat
     ) throws -> NSBitmapImageRep {
         let row = HistoryCommitRow(
-            commit: commit(subject: subject),
+            commit: commit(author: author, subject: subject),
             graph: nil,
             references: references,
             isHead: isHead,
@@ -149,15 +172,17 @@ extension HistoryListTests {
         return NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
     }
 
-    /// 只有标题不同的测试提交。
+    /// 只有作者与标题不同的测试提交。
     ///
-    /// - Parameter subject: 提交说明。
-    private static func commit(subject: String) -> HistoryCommit {
+    /// - Parameters:
+    ///   - author: 作者名。
+    ///   - subject: 提交说明。
+    private static func commit(author: String, subject: String) -> HistoryCommit {
         HistoryCommit(
             id: String(repeating: "d", count: 40),
             tree: String(repeating: "e", count: 40),
             parents: [],
-            author: "Alice Example",
+            author: author,
             authorEmail: "alice@example.invalid",
             authorDate: Date(timeIntervalSince1970: 1_700_000_000),
             committer: "Alice Example",

@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 // MARK: - HistoryRowView
 
@@ -18,6 +19,11 @@ final class HistoryRowView: NSTableRowView {
 
     /// 分隔线；叠在单元格之上，未拉取提交的弱化底色不会盖住它。
     let separator = HistoryRowSeparator()
+
+    /// 列表成为或不再是第一响应者时，选中底在强调色与非强调色之间切换，提交行的文字配色随之切换。
+    override var isEmphasized: Bool {
+        didSet { updateCellEmphasis() }
+    }
 
     /// 建立不画分隔线的行视图。
     ///
@@ -88,6 +94,9 @@ final class HistoryRowView: NSTableRowView {
 
         addSubview(separator, positioned: .above, relativeTo: nil)
         needsLayout = true
+
+        // 复用的单元格放进来时按这一行现在的焦点状态配色
+        updateCellEmphasis()
     }
 
     /// 分隔线贴着行的底边，横向从单元格左缘加上 `separatorInset` 起，到单元格右缘止。
@@ -106,11 +115,30 @@ final class HistoryRowView: NSTableRowView {
         )
     }
 
-    /// 选中的行按新的窗口状态重画选中底。
+    /// 选中的行按新的窗口状态重画选中底，提交行的文字配色随之切换。
     @objc
     private func keyStateChanged() {
+        updateCellEmphasis()
+
         if isSelected {
             needsDisplay = true
+        }
+    }
+
+    /// 把选中底是否为强调色告诉提交行：列表有焦点且窗口是 key window 时才是。
+    private func updateCellEmphasis() {
+        // 行视图刚建好、还没有放进单元格时不取单元格，否则 AppKit 抛出越界异常
+        guard
+            numberOfColumns > 0,
+            let cell = view(atColumn: 0) as? NSHostingView<HistoryCommitRow>
+        else {
+            return
+        }
+
+        let emphasized = isEmphasized && (window?.isKeyWindow ?? false)
+
+        if cell.rootView.emphasized != emphasized {
+            cell.rootView.emphasized = emphasized
         }
     }
 }
@@ -137,9 +165,9 @@ extension HistoryCommitTable.Coordinator {
             return rowView
         }
 
-        // 起点与单元格里头像或短哈希的左缘对齐，显示提交图时在图的右侧，小号行没有图时也留出间距
+        // 起点与单元格里头像或短哈希的左缘对齐，显示提交图时在图的右侧，没有图时也留出间距
         let graph = parent.showGraph ? parent.session.history.graphRows[commit.id] : nil
-        rowView.separatorInset = HistoryCommitRow.contentLeading(graph: graph, small: parent.usesSmallRows)
+        rowView.separatorInset = HistoryCommitRow.contentLeading(graph: graph)
 
         return rowView
     }

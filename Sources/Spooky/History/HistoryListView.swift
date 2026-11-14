@@ -674,7 +674,8 @@ extension HistoryCommitTable.Coordinator {
                 isParent: history.parentCommits.contains(commit.id),
                 selected: history.selectedIDs.contains(commit.id),
                 signatures: parent.session.signatures,
-                runner: parent.session.runner
+                runner: parent.session.runner,
+                emphasized: (tableView.window?.isKeyWindow ?? false) && tableView.window?.firstResponder === tableView
             )
 
             return tableView.hostingView(view, identifier: "history-commit")

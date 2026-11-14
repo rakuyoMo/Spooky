@@ -208,7 +208,7 @@ struct TagBadgeButton<Label: View>: View {
     @State
     private var showsPopover = false
 
-    /// 点击打开弹窗，弹窗每次打开都重新校验。
+    /// 点击打开弹窗，弹窗每次打开都重新校验；读屏读标记上的标签名，Show Signature 作为操作提示。
     var body: some View {
         Button {
             showsPopover = true
@@ -216,7 +216,7 @@ struct TagBadgeButton<Label: View>: View {
             label()
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(AppLocalization.text("signature.show"))
+        .accessibilityHint(AppLocalization.text("signature.show"))
         .popover(isPresented: $showsPopover, arrowEdge: .top) {
             TagSignaturePopover(reference: reference, runner: runner)
         }

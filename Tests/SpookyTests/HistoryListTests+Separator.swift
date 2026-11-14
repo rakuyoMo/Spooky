@@ -51,9 +51,9 @@ extension HistoryListTests {
         let small = try await Self.rowViews(in: window, session: fixture.session, small: true)
         try Self.expectSeparators(in: small, inset: 25)
 
-        // 隐藏提交图：保存的是小号档位，行仍是 46 pt 的中号行，头像贴着单元格的左缘
+        // 隐藏提交图：保存的是小号档位，行仍是 46 pt 的中号行，头像距单元格的左缘 8 pt
         let hidden = try await Self.rowViews(in: window, session: fixture.session, small: true, showGraph: false)
-        try Self.expectSeparators(in: hidden, inset: 0)
+        try Self.expectSeparators(in: hidden, inset: 8)
         #expect(hidden[0].frame.height == 46)
     }
 }
