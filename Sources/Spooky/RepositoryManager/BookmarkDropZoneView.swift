@@ -83,10 +83,10 @@ struct BookmarkDropZoneView: View {
         .padding(.bottom, 72)
         .frame(maxWidth: .infinity)
         .overlay {
-            // 虚线 2 pt 粗、6 pt 实 8 pt 空，平时是 #727272 的灰色，拖动经过时换成强调色
+            // 虚线 2 pt 粗、6 pt 实 8 pt 空，平时是 `bookmarks_drop_zone_border_color` 的灰色，拖动经过时换成强调色
             RoundedRectangle(cornerRadius: 24)
                 .strokeBorder(
-                    isTargeted ? Color.accentColor : Color(white: 114 / 255),
+                    isTargeted ? Color.accentColor : AppPalette.color("bookmarks_drop_zone_border_color"),
                     style: StrokeStyle(lineWidth: 2, dash: [6, 8])
                 )
         }

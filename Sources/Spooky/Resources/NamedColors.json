@@ -518,5 +518,15 @@
       "hex": "#FF453A",
       "alpha": 0.5
     }
+  },
+  "bookmarks_drop_zone_border_color": {
+    "light": {
+      "hex": "#727272",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#727272",
+      "alpha": 1.0
+    }
   }
 }
