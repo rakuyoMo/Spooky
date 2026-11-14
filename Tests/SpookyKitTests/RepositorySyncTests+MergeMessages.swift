@@ -54,7 +54,11 @@ extension RepositorySyncTests {
         try await sync.updateBranch("refs/heads/topic", from: "refs/heads/main", rebase: false)
         #expect(try await Self.subject(in: runner) == "Merge branch 'main' into topic")
     }
+}
 
+// MARK: - Helpers
+
+extension RepositorySyncTests {
     /// HEAD 提交的标题。
     private static func subject(in runner: GitRunner) async throws -> String {
         let output = try await runner.run(["log", "-1", "--format=%s"])
