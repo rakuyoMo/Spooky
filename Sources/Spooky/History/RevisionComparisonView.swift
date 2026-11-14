@@ -46,7 +46,7 @@ struct RevisionComparisonView: View {
         }
     }
 
-    /// 顶栏：基准 → 目标、视图切换与关闭按钮。
+    /// 顶栏：基准 → 目标、视图切换与关闭按钮；窄时分段控件先收窄到 141 pt，标题再从中间截断。
     private var header: some View {
         HStack(spacing: 8) {
             Text((state.base?.title ?? "") + " → " + (state.target?.title ?? ""))
@@ -55,6 +55,7 @@ struct RevisionComparisonView: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .textSelection(.enabled)
+                .layoutPriority(1)
 
             Spacer(minLength: 8)
 
@@ -64,7 +65,7 @@ struct RevisionComparisonView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 180)
+            .frame(minWidth: 141, maxWidth: 180)
             .accessibilityLabel(AppLocalization.text("compare.view"))
 
             if let close {

@@ -4,6 +4,15 @@ import SpookyKit
 // MARK: - Diff
 
 extension RepositoryHistoryState {
+    /// 右侧详情列出变更文件的顺序：按路径不分大小写排序，只差大小写的路径按字节序；整页详情按 `changes` 的 Git 输出顺序。
+    var pathOrderedChanges: [CommitFileChange] {
+        changes.sorted {
+            let order = $0.path.caseInsensitiveCompare($1.path)
+
+            return order == .orderedSame ? $0.path < $1.path : order == .orderedAscending
+        }
+    }
+
     /// 当前提交里一个文件的只读补丁来源，供语法着色与图片对照读取内容；没有选中提交或文件不在变更里时为空。
     func diffSource(path: String) -> CommitFileDiffSource? {
         guard

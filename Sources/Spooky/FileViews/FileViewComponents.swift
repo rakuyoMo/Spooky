@@ -175,7 +175,8 @@ struct ChangesetFileMenu: View {
 
     /// 菜单的各组动作。
     ///
-    /// 单个文件时标题写仓库内的完整路径，有查看、Blame 与文件历史；多个文件时标题写数量，只有比较工具、恢复与导出。
+    /// 单个文件时先是复制路径两项，标题写仓库内的完整路径，有查看、Blame 与文件历史；
+    /// 多个文件时标题写数量，只有比较工具、恢复与导出。
     ///
     /// - Parameters:
     ///   - session: 当前仓库会话。
@@ -194,11 +195,9 @@ struct ChangesetFileMenu: View {
 
         let paths = files.map(\.path)
         let compared = files.map { ComparedFile(path: $0.path, originalPath: $0.originalPath) }
-        let copy = copyActions(session: session, paths: paths)
 
         guard files.count == 1 else {
             return [
-                copy,
                 [
                     FileViewAction(title: AppLocalization.text("externalTool.openDiffItemsAt", files.count, commit.shortID)) {
                         session.openDiffTool(for: commit, files: compared)
@@ -224,7 +223,7 @@ struct ChangesetFileMenu: View {
         let path = file.path
 
         return [
-            copy,
+            copyActions(session: session, paths: paths),
             [
                 FileViewAction(
                     title: AppLocalization.text("fileHistory.showAt", path, commit.shortID),

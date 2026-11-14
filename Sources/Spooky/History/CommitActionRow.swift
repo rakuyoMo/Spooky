@@ -3,8 +3,8 @@ import SwiftUI
 
 // MARK: - CommitActionRow
 
-/// 提交详情的操作条：ROLLBACK（把 HEAD 重置到这个提交）、REVERT 与 DIFFTOOL（用外部比较工具看这个提交的全部改动）三段连成一组，
-/// 文字大写，高 20 pt，由详情居中压在头部与提交说明之间的分隔线上。
+/// 提交详情的操作条：在 HEAD 分支上是 ROLLBACK（把 HEAD 重置到这个提交）、REVERT 与 DIFFTOOL（用外部比较工具看这个提交的全部改动）三段连成一组，
+/// 其它情况只有 DIFFTOOL 一段；文字大写，由详情居中压在头部与提交说明之间的分隔线上。
 ///
 /// 操作条平时隐藏，鼠标移进详情或键盘焦点移到某一段上时淡入；隐藏时仍保留位置与键盘焦点。
 struct CommitActionRow: View {
@@ -21,6 +21,9 @@ struct CommitActionRow: View {
     /// 详情显示的提交。
     let commit: HistoryCommit
 
+    /// 是否有 Rollback 与 Revert 两段：历史正在显示 HEAD 所在的分支时才有。
+    let rewrites: Bool
+
     /// 鼠标是否在详情上。
     let hovering: Bool
 
@@ -28,27 +31,21 @@ struct CommitActionRow: View {
     @FocusState
     private var focused: Segment?
 
-    /// 三段之间以 1 pt 的边框色竖线隔开，整组共用一个圆角底与描边。
+    /// 各段之间露出 1 pt 的边框色作竖线，整组共用一个圆角底与描边。
     var body: some View {
         let border = AppPalette.color("general_border_color")
         let shape = RoundedRectangle(cornerRadius: 5)
 
-        HStack(spacing: 0) {
-            segment(.rollback, title: AppLocalization.text("history.rollback"), enabled: session.canRewrite) {
-                session.requestReset(to: commit.id)
+        HStack(spacing: 1) {
+            if rewrites {
+                segment(.rollback, title: AppLocalization.text("history.rollback"), enabled: session.canRewrite) {
+                    session.requestReset(to: commit.id)
+                }
+
+                segment(.revert, title: AppLocalization.text("rewrite.revert.button"), enabled: session.canRewrite) {
+                    session.requestRevert([commit.id])
+                }
             }
-
-            Rectangle()
-                .fill(border)
-                .frame(width: 1)
-
-            segment(.revert, title: AppLocalization.text("rewrite.revert.button"), enabled: session.canRewrite) {
-                session.requestRevert([commit.id])
-            }
-
-            Rectangle()
-                .fill(border)
-                .frame(width: 1)
 
             // 变更集读出之前没有可比较的文件
             segment(
@@ -62,8 +59,7 @@ struct CommitActionRow: View {
                 )
             }
         }
-        .frame(height: 20)
-        .background(Color(nsColor: .controlBackgroundColor), in: shape)
+        .background(border)
         .clipShape(shape)
         .overlay(shape.strokeBorder(border))
         .opacity(hovering || focused != nil ? 1 : 0)
@@ -93,7 +89,7 @@ struct CommitActionRow: View {
 
 // MARK: - CommitActionSegmentStyle
 
-/// 操作条的一段：11 pt 中等字重的二级文字、大写，左右内边距 10；按下时文字白、底换成边框色，不可用时整体变淡。
+/// 操作条的一段：11 pt 中等字重的二级文字、大写，上下内边距 4、左右 8；按下时文字白、底换成边框色，不可用时整体变淡。
 private struct CommitActionSegmentStyle: ButtonStyle {
     /// 是否可用。
     @Environment(\.isEnabled)
@@ -105,10 +101,14 @@ private struct CommitActionSegmentStyle: ButtonStyle {
             .font(.system(size: 11, weight: .medium))
             .textCase(.uppercase)
             .foregroundStyle(configuration.isPressed ? Color.white : Color.secondary)
-            .padding(.horizontal, 10)
-            .frame(maxHeight: .infinity)
-            .background(configuration.isPressed ? AppPalette.color("general_border_color") : Color.clear)
-            .contentShape(Rectangle())
             .opacity(isEnabled ? 1 : 0.5)
+            .padding(.vertical, 4)
+            .padding(.horizontal, 8)
+            .background(
+                configuration.isPressed
+                    ? AppPalette.color("general_border_color")
+                    : Color(nsColor: .controlBackgroundColor)
+            )
+            .contentShape(Rectangle())
     }
 }

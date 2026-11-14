@@ -201,7 +201,7 @@ struct CommitMetadataView: View {
             + [("history.signingStatus", status)]
     }
 
-    /// 一行：标签用三级文字色；值用二级文字色，单行、可选中、尾部截断，引用行是最宽 100、高 16 的引用标记。
+    /// 一行：标签用三级文字色；值用二级文字色，单行、可选中、尾部截断，引用行是最宽 132、高 16 的引用标记。
     @ViewBuilder
     private func row(_ row: Row) -> some View {
         switch row {
@@ -225,18 +225,20 @@ struct CommitMetadataView: View {
                     isHead: isHead,
                     selected: false,
                     runner: runner,
-                    maxWidth: 100
+                    maxWidth: 132
                 )
                 .frame(height: 16)
             }
         }
     }
 
-    /// 行首的标签。
+    /// 行首的标签：整列右对齐，按最长的标签定宽、不被压缩，详情窄时只截值。
     private func label(_ key: String) -> some View {
         Text(AppLocalization.text(key))
             .foregroundStyle(.tertiary)
             .lineLimit(1)
+            .fixedSize()
+            .gridColumnAlignment(.trailing)
     }
 }
 
@@ -266,7 +268,8 @@ struct ChangesetSummaryBar: View {
                     .layoutPriority(1)
             }
 
-            Spacer(minLength: 0)
+            // 摘要再长也与按钮隔开 8 pt
+            Spacer(minLength: 8)
 
             Text(Self.summary(changes))
                 .foregroundStyle(Color(nsColor: .secondaryLabelColor))
