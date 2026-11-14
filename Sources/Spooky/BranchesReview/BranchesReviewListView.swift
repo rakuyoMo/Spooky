@@ -67,7 +67,6 @@ struct BranchesReviewListView: View {
 
             list(items)
         }
-        .frame(minWidth: 300)
         .task(id: snapshotKey) {
             state.update(
                 snapshot: session.history.snapshot,

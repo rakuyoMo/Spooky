@@ -21,7 +21,6 @@ struct ReflogListView: View {
 
             content
         }
-        .frame(minWidth: 300)
         .task(id: session.repository) {
             guard let runner = session.runner, let repository = session.repository else { return }
 

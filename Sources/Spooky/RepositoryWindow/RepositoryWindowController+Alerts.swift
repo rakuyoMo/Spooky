@@ -20,6 +20,26 @@ extension RepositoryWindowController {
         }
     }
 
+    /// 读取仓库状态失败：仓库已不在原处时整个窗口换成丢失页，与打开时就找不到的是同一页；
+    /// 显示仓库列表时后台会话的失败不弹框，其余弹出 Git 错误框。
+    ///
+    /// - Parameters:
+    ///   - error: 读取抛出的错误，用来认出仓库是否已不在原处。
+    ///   - failure: 错误的呈现。
+    func presentReadFailure(_ error: any Error, _ failure: AppFailure) {
+        guard !showsManager, let location = session.repository else {
+            return
+        }
+
+        // 换成丢失页时会话随之关闭，窗口再次成为 key 窗口也不会再读取这个仓库
+        guard !RepositoryManagerController.isMissing(location, error: error) else {
+            showMissingRepository(location, reason: .notFound)
+            return
+        }
+
+        showFailure(failure)
+    }
+
     /// 以确认版对话框挂成 sheet 请用户确认；窗口已有 sheet 时不叠加。
     func showConfirmation(_ request: ConfirmationRequest) {
         presentDialog { close in

@@ -205,7 +205,7 @@
 "callback.username.label" = "Username:";
 "callback.password.label" = "Password:";
 "callback.saveKeychain" = "Save in this Mac’s Keychain";
-"error.indexLocked" = "The index is locked by another Git process. Wait for it to finish, then retry.";
+"error.indexLocked" = "The repository is locked by another Git process; once you’re sure no other Git process is running, delete “%@” manually.";
 "error.terminal" = "Could Not Open Terminal";
 "error.terminalHelp" = "Check the selected terminal in Settings and its macOS Automation permission.";
 "error.remoteConnection" = "Connection to Remote Failed";

@@ -205,7 +205,7 @@
 "callback.username.label" = "用户名：";
 "callback.password.label" = "密码：";
 "callback.saveKeychain" = "存入这台 Mac 的钥匙串";
-"error.indexLocked" = "另一个 Git 进程持有暂存区锁，请等待它结束后重试。";
+"error.indexLocked" = "仓库被另一个 Git 进程锁住；确认没有别的 Git 进程在运行后，请手动删除 “%@”。";
 "error.terminal" = "无法打开终端";
 "error.terminalHelp" = "请检查设置中的终端选择及 macOS 自动化权限。";
 "error.remoteConnection" = "连接远端失败";

@@ -64,7 +64,6 @@ extension RepositoryWindowController {
         list.sizingOptions = [.minSize]
 
         let listItem = NSSplitViewItem(contentListWithViewController: list)
-        listItem.minimumThickness = 300
         listItem.holdingPriority = .init(475)
         listItem.canCollapse = false
 

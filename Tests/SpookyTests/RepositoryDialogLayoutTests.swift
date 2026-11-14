@@ -7,12 +7,12 @@ import Testing
 
 // MARK: - RepositoryDialogLayoutTests
 
-/// 仓库操作对话框的骨架：输入列至少从对齐线开始，头部与错误文字对齐输入列；服务器仓库写出位置，仓库不可写时说明原因。
+/// 仓库操作对话框的骨架：输入列至少从 145 开始，头部与错误文字对齐输入列；服务器仓库写出位置，仓库不可写时说明原因。
 ///
 /// 位置经辅助功能接口读取，进程没有辅助功能权限时跳过。
 @MainActor
 struct RepositoryDialogLayoutTests {
-    /// 标签长时输入列右移，标签短时输入列从 120 的对齐线开始，只有勾选框时勾选框从对齐线开始，标题、说明与错误文字都对齐它们；
+    /// 标签长时输入列右移，标签短时输入列从 145 开始，只有勾选框时勾选框从 145 开始，标题、说明与错误文字都对齐它们；
     /// 本机仓库没有位置一行，仓库可写、内容合法时错误区收起，主按钮可用；
     /// 服务器仓库在标题下写出带主机前缀的位置，没连上时仓库不可写，错误区说明原因，主按钮不可用。
     @Test("头部对齐、位置一行与不可写的说明", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
@@ -28,7 +28,7 @@ struct RepositoryDialogLayoutTests {
 
         let longField = try #require(long.first { $0.role == "AXTextField" })
 
-        #expect(longField.frame.minX > DialogMetrics.alignment + 1)
+        #expect(longField.frame.minX > DialogMetrics.inputColumn + 1)
         try Self.expectTexts(["Title", "Message", "Error"], in: long, startingAt: longField.frame.minX)
 
         // 只有勾选框
@@ -40,7 +40,7 @@ struct RepositoryDialogLayoutTests {
 
         let option = try #require(options.first { $0.role == "AXCheckBox" })
 
-        #expect(abs(option.frame.minX - DialogMetrics.alignment) <= 1)
+        #expect(abs(option.frame.minX - DialogMetrics.inputColumn) <= 1)
         try Self.expectTexts(["Title", "Message", "Error"], in: options, startingAt: option.frame.minX)
 
         // 本机仓库，短标签，没有错误
@@ -52,7 +52,7 @@ struct RepositoryDialogLayoutTests {
 
         let shortField = try #require(short.first { $0.role == "AXTextField" })
 
-        #expect(abs(shortField.frame.minX - DialogMetrics.alignment) <= 1)
+        #expect(abs(shortField.frame.minX - DialogMetrics.inputColumn) <= 1)
         try Self.expectTexts(["Title", "Message"], in: short, startingAt: shortField.frame.minX)
         #expect(!short.contains { $0.value.contains("/tmp/spooky-dialog") })
         #expect(!short.contains { $0.value == AppLocalization.text("dialog.blocked") })
@@ -70,8 +70,8 @@ struct RepositoryDialogLayoutTests {
         #expect(try !Self.submit(in: remote).isEnabled)
     }
 
-    /// Options 开关上方的间距由骨架统一决定：内容区最后一个控件与开关一行相隔 8，没有内容区时头部的说明、
-    /// 显示错误说明时那段说明与它也相隔 8；没有选项区时最后一个控件到底栏是表单的 12；表单末尾没有内容的状态行（这里是没有版本可查的合并可行性预览）
+    /// Options 开关上方的间距由骨架统一决定：内容区最后一个控件与开关一行相隔 20，没有内容区时头部的说明、
+    /// 显示错误说明时那段说明与它也相隔 20；没有选项区时最后一个控件到底栏是表单的 12；表单末尾没有内容的状态行（这里是没有版本可查的合并可行性预览）
     /// 不占高度，也不多出一份行距。
     @Test("内容区与 Options 开关的间距", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func optionsSpacing() async throws {
@@ -80,7 +80,7 @@ struct RepositoryDialogLayoutTests {
             Self.hasCheckBox(elements) && elements.contains { $0.value == "Help" }
         }
 
-        // 有选项区：说明文字的底边与开关一行相隔 8，开关一行高 34
+        // 有选项区：说明文字的底边与开关一行相隔 20，开关一行高 34
         let options = await AccessibilityProbe.elements(until: hasHelp) {
             RepositoryDialogLayout(
                 session: session,
@@ -103,7 +103,7 @@ struct RepositoryDialogLayoutTests {
             options.first { $0.role == "AXCheckBox" && $0.name == AppLocalization.text("dialog.options") }
         )
 
-        #expect(abs(toggle.frame.midY - help.frame.maxY - (8 + 34 / 2)) <= 1)
+        #expect(abs(toggle.frame.midY - help.frame.maxY - (20 + 34 / 2)) <= 1)
 
         // 没有选项区：说明文字的底边到底栏按钮是表单的 12 加按钮距底栏顶的 12
         let plain = await AccessibilityProbe.elements(until: hasHelp) {
@@ -119,7 +119,7 @@ struct RepositoryDialogLayoutTests {
 
         #expect(abs(cancel.frame.minY - plainHelp.frame.maxY - (12 + 12)) <= 1)
 
-        // 没有内容区：头部的说明折成几行、比图标高时，说明的底边与开关一行同样相隔 8
+        // 没有内容区：头部的说明折成几行、比图标高时，说明的底边与开关一行同样相隔 20
         let message = String(repeating: "Saves a patch file with all changes of the revision. ", count: 4)
         let headerOnly = await AccessibilityProbe.elements(
             until: { elements in elements.contains { $0.value == message } && Self.hasButtons(elements) }
@@ -140,9 +140,9 @@ struct RepositoryDialogLayoutTests {
         )
 
         #expect(text.frame.maxY > 20 + 64)
-        #expect(abs(headerToggle.frame.midY - text.frame.maxY - (8 + 34 / 2)) <= 1)
+        #expect(abs(headerToggle.frame.midY - text.frame.maxY - (20 + 34 / 2)) <= 1)
 
-        // 错误说明下面紧跟开关一行：说明只有一行，同样只相隔 8，不按没有选项区时的至少 51 高撑开
+        // 错误说明下面紧跟开关一行：说明只有一行，同样相隔 20，不按没有选项区时的至少 51 高撑开
         let reason = "Choose the base revisions."
         let withError = await AccessibilityProbe.elements(
             until: { elements in elements.contains { $0.value == reason } && Self.hasCheckBox(elements) }
@@ -171,7 +171,7 @@ struct RepositoryDialogLayoutTests {
         // 一行说明比 18 高的图标矮，这一行的底边是图标的底边；说明的顶边比图标低 1
         let errorBottom = max(reasonText.frame.maxY, reasonText.frame.minY - 1 + 18)
 
-        #expect(abs(errorToggle.frame.midY - errorBottom - (8 + 34 / 2)) <= 1)
+        #expect(abs(errorToggle.frame.midY - errorBottom - (20 + 34 / 2)) <= 1)
     }
 }
 

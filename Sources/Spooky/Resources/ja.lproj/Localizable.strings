@@ -205,7 +205,7 @@
 "callback.username.label" = "ユーザ名：";
 "callback.password.label" = "パスワード：";
 "callback.saveKeychain" = "この Mac のキーチェーンに保存";
-"error.indexLocked" = "別の Git プロセスがインデックスをロックしています。終了後に再試行してください。";
+"error.indexLocked" = "リポジトリが別の Git プロセスによってロックされています。ほかに実行中の Git プロセスがないことを確認してから、「%@」を手動で削除してください。";
 "error.terminal" = "ターミナルを開けません";
 "error.terminalHelp" = "設定のターミナル選択と macOS のオートメーション権限を確認してください。";
 "error.remoteConnection" = "リモートへの接続に失敗しました";

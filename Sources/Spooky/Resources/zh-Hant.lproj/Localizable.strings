@@ -205,7 +205,7 @@
 "callback.username.label" = "使用者名稱：";
 "callback.password.label" = "密碼：";
 "callback.saveKeychain" = "儲存至這台 Mac 的鑰匙圈";
-"error.indexLocked" = "另一個 Git 程序持有暫存區鎖定，請等待它結束後重試。";
+"error.indexLocked" = "儲存庫被另一個 Git 程序鎖住；確認沒有其他 Git 程序在執行後，請手動刪除 “%@”。";
 "error.terminal" = "無法開啟終端機";
 "error.terminalHelp" = "請檢查設定中的終端機選擇及 macOS 自動化權限。";
 "error.remoteConnection" = "連線遠端失敗";

@@ -205,7 +205,7 @@
 "callback.username.label" = "Nom d’utilisateur :";
 "callback.password.label" = "Mot de passe :";
 "callback.saveKeychain" = "Enregistrer dans le trousseau de ce Mac";
-"error.indexLocked" = "L’index est verrouillé par un autre processus Git. Attendez qu’il se termine, puis réessayez.";
+"error.indexLocked" = "Le dépôt est verrouillé par un autre processus Git ; une fois certain qu’aucun autre processus Git n’est en cours, supprimez « %@ » manuellement.";
 "error.terminal" = "Impossible d’ouvrir le terminal";
 "error.terminalHelp" = "Vérifiez le terminal sélectionné dans les Réglages, ainsi que son autorisation d’automatisation dans macOS.";
 "error.remoteConnection" = "Échec de la connexion au dépôt distant";

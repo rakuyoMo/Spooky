@@ -108,6 +108,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         configureWorkingCopyKeys()
         configureCommentPrompt()
         session.onFailure = { [weak self] in self?.showFailure($0) }
+        session.onReadFailure = { [weak self] in self?.presentReadFailure($0, $1) }
 
         session.history.onFailure = { [weak self] error in
             guard let self else { return }
@@ -115,7 +116,8 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
             if error is RemoteConnectionError {
                 self.session.reconnect()
             } else {
-                showFailure(AppFailure(error: error, opening: false, location: self.session.repository))
+                let failure = AppFailure(error: error, opening: false, location: self.session.repository)
+                presentReadFailure(error, failure)
             }
         }
 

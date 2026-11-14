@@ -225,6 +225,9 @@ final class RepositorySession {
     /// 窗口负责呈现错误 sheet。
     var onFailure: ((AppFailure) -> Void)? = nil
 
+    /// 窗口按它当前的显示处理读取仓库状态的失败，参数是原始错误与它的呈现。
+    var onReadFailure: ((any Error, AppFailure) -> Void)? = nil
+
     /// 窗口负责呈现储藏的对话框。
     var onStashRequest: ((StashRequest) -> Void)? = nil
 
@@ -903,13 +906,18 @@ extension RepositorySession {
         }
 
         let failure = AppFailure(error: error, opening: false, location: repository)
-        self.failure = failure
         Self.logger.error("刷新失败，类别 \(failure.kind.rawValue, privacy: .public)")
+        reportReadFailure(error, failure)
+    }
+
+    /// 记下读取失败：断线由连接横幅和重连接管，不额外弹出 sheet；其余错误交给窗口按它当前的显示处理。
+    private func reportReadFailure(_ error: any Error, _ failure: AppFailure) {
+        self.failure = failure
 
         if error is RemoteConnectionError {
             reconnect()
         } else {
-            onFailure?(failure)
+            onReadFailure?(error, failure)
         }
     }
 
@@ -1055,14 +1063,7 @@ extension RepositorySession {
                 guard let self, generation == request, !Task.isCancelled else { return }
 
                 let failure = AppFailure(error: error, opening: false, location: repository)
-                self.failure = failure
-
-                // 读取中断线由连接横幅和重连接管，不额外弹出 sheet。
-                if error is RemoteConnectionError {
-                    reconnect()
-                } else {
-                    onFailure?(failure)
-                }
+                reportReadFailure(error, failure)
             }
 
             guard let self, generation == request else { return }

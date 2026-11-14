@@ -209,11 +209,27 @@ struct AppFailure: Identifiable {
             AppLocalization.text("failure.reason", AppLocalization.text(cause), recovery)
         } ?? recovery
 
-        message = exceededOutputLimit
+        let explained = exceededOutputLimit
             ? AppLocalization.text("error.outputLimitHelp") + "\n\n" + reason
             : reason
 
+        // 索引被锁的说明只有一句，已写明怎样恢复，不再接恢复说明
+        message = Self.indexLockMessage(for: error) ?? explained
         details = Self.details(output: output, diagnostic: diagnostic)
+    }
+
+    /// 索引被锁时的说明：写出锁文件，确认没有别的 Git 进程在运行后手动删掉它；其它错误为 nil。
+    ///
+    /// Git 报出的是锁文件在它所在机器上的绝对路径，服务器仓库就是服务器上的路径；认不出时写仓库里的相对位置。
+    private static func indexLockMessage(for error: any Error) -> String? {
+        guard let git = error as? GitError, git.category == .indexLocked else {
+            return nil
+        }
+
+        let output = String(decoding: git.result.standardError, as: UTF8.self)
+        let lockFile = output.firstMatch(of: /Unable to create '(.+?)': File exists/).map { String($0.1) }
+
+        return AppLocalization.text("error.indexLocked", lockFile ?? ".git/index.lock")
     }
 
     /// 可复制的原文：先 stderr、再 stdout，版本校验等失败的原因可能只出现在 stdout；没有 Git 输出的错误写诊断原文，

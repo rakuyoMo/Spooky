@@ -205,7 +205,7 @@
 "callback.username.label" = "Nombre de usuario:";
 "callback.password.label" = "Contraseña:";
 "callback.saveKeychain" = "Guardar en el llavero de este Mac";
-"error.indexLocked" = "El índice está bloqueado por otro proceso de Git. Esperar a que termine y volver a intentarlo.";
+"error.indexLocked" = "El repositorio está bloqueado por otro proceso de Git; tras comprobar que no hay otro proceso de Git en ejecución, eliminar “%@” manualmente.";
 "error.terminal" = "No se ha podido abrir el terminal";
 "error.terminalHelp" = "Comprobar el terminal seleccionado en Ajustes y su permiso de Automatización de macOS.";
 "error.remoteConnection" = "Error al conectar con el remoto";

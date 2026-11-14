@@ -119,13 +119,8 @@ extension FailurePresentationTests {
             location: nil
         )
 
-        #expect(
-            locked.message == AppLocalization.text(
-                "failure.reason",
-                AppLocalization.text("error.indexLocked"),
-                AppLocalization.text("error.refreshHelp")
-            )
-        )
+        // 认不出锁文件的路径时写仓库里的相对位置，同样不接恢复说明
+        #expect(locked.message == AppLocalization.text("error.indexLocked", ".git/index.lock"))
 
         let generic = AppFailure(
             error: Self.gitError(.commandFailed, ["status"]),
@@ -155,6 +150,49 @@ extension FailurePresentationTests {
         #expect(details == "standard error\n\nstandard output\n")
         #expect(!details.contains("128"))
         #expect(silent.details == AppLocalization.text("error.noOutput"))
+    }
+}
+
+// MARK: - Index Lock
+
+extension FailurePresentationTests {
+    /// 索引被锁时说明只有一句，写出 Git 报出的锁文件路径，写操作也不接通用的恢复说明；类别与仓库位置两行照旧。
+    @Test("索引被锁的说明")
+    func indexLocked() async throws {
+        let directory = try FileViewsTests.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let location = RepositoryLocation.local(path: directory.path)
+        let runner = try await FileViewsTests.initializeRepository(at: location)
+
+        // 另一个 Git 进程留下的锁文件挡住暂存
+        try Data().write(to: directory.appending(path: ".git/index.lock"))
+        try Data("one\n".utf8).write(to: directory.appending(path: "a.txt"))
+
+        let thrown = await #expect(throws: GitError.self) {
+            try await runner.run(["add", "--", "a.txt"])
+        }
+
+        let error = try #require(thrown)
+        let failure = AppFailure(error: error, opening: false, location: location, writing: true)
+
+        // Git 报出的是解析过符号链接的绝对路径，临时目录在 /var 下时是 /private/var
+        let resolved = try #require(realpath(directory.path, nil))
+        defer { free(resolved) }
+
+        let lockFile = String(cString: resolved) + "/.git/index.lock"
+
+        #expect(error.category == .indexLocked)
+        #expect(failure.title == AppLocalization.text("error.indexLocked.title"))
+        #expect(failure.message == AppLocalization.text("error.indexLocked", lockFile))
+
+        #expect(
+            failure.context == [
+                AppLocalization.text("failure.category", AppLocalization.text("failure.kind.git")),
+                AppLocalization.text("failure.location", location.displayPath),
+            ]
+            .joined(separator: "\n")
+        )
     }
 }
 

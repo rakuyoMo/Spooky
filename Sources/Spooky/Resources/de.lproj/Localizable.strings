@@ -205,7 +205,7 @@
 "callback.username.label" = "Benutzername:";
 "callback.password.label" = "Passwort:";
 "callback.saveKeychain" = "Im Schlüsselbund dieses Mac sichern";
-"error.indexLocked" = "Der Index ist durch einen anderen Git-Prozess gesperrt. Warten Sie, bis dieser beendet ist, und versuchen Sie es dann erneut.";
+"error.indexLocked" = "Das Repository ist durch einen anderen Git-Prozess gesperrt; wenn Sie sicher sind, dass kein anderer Git-Prozess läuft, löschen Sie „%@“ manuell.";
 "error.terminal" = "Terminal konnte nicht geöffnet werden";
 "error.terminalHelp" = "Prüfen Sie das in den Einstellungen ausgewählte Terminal und seine macOS-Berechtigung für Automation.";
 "error.remoteConnection" = "Verbindung zum Remote fehlgeschlagen";
