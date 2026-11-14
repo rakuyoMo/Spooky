@@ -627,7 +627,7 @@
 "stash.deleteStashes" = "선택한 스태시 삭제";
 "stash.deleteStashes.confirm" = "선택한 스태시 %ld개를 삭제할까요?";
 "stash.applyButton" = "적용…";
-"stash.deleteButton" = "삭제…";
+"stash.deleteButton" = "삭제";
 "stash.basedOn" = "기준";
 "stash.baseCommit" = "기준 커밋";
 "stash.date" = "날짜";

@@ -94,7 +94,43 @@ final class RepositoryStashState {
         [listTask, changeTask].compactMap { $0 } + Array(diffTasks.values)
     }
 
-    /// 重新读取储藏列表；仍然存在的选择保留，已删除的储藏从选择中移除。
+    /// 列表重读后的选择：仍在的保留；选中的都被删掉时选原位置上的那一项；原来没有选中时选第一个。
+    ///
+    /// - Parameters:
+    ///   - selected: 重读前的选择。
+    ///   - previous: 重读前的列表。
+    ///   - current: 重读后的列表。
+    static func selection(
+        after selected: Set<String>,
+        previous: [StashEntry],
+        current: [StashEntry]
+    ) -> Set<String> {
+        let kept = selected.intersection(current.map(\.id))
+
+        guard kept.isEmpty, !current.isEmpty else {
+            return kept
+        }
+
+        // 取原来最靠前的选中项所在的位置，超出列表时取最后一个
+        let position = previous.firstIndex { selected.contains($0.id) } ?? 0
+        return [current[min(position, current.count - 1)].id]
+    }
+
+    /// 自动储藏的默认说明：产品名加保存时刻，如 “Spooky Auto-Stash: 2026-11-13 20:48:17 -0800”。
+    ///
+    /// - Parameters:
+    ///   - date: 保存的时刻。
+    ///   - timeZone: 写出时刻用的时区。
+    static func autoStashMessage(at date: Date, timeZone: TimeZone = .current) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = timeZone
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
+
+        return AppLocalization.text("stash.autoStash.message", formatter.string(from: date))
+    }
+
+    /// 重新读取储藏列表；选择按 ``selection(after:previous:current:)`` 更新。
     ///
     /// - Parameter records: 是否记进 Activity；自动刷新引起的重读不记。
     func refresh(runner: GitRunner, records: Bool = true) {
@@ -122,9 +158,10 @@ final class RepositoryStashState {
 
                 guard let self, generation == request, !Task.isCancelled else { return }
 
+                let previous = entries
                 entries = stashes
                 failure = nil
-                selectedIDs.formIntersection(stashes.map(\.id))
+                selectedIDs = Self.selection(after: selectedIDs, previous: previous, current: stashes)
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
                 failure = AppFailure(error: error, opening: false, location: runner.location)

@@ -627,7 +627,7 @@
 "stash.deleteStashes" = "Eliminar stashes";
 "stash.deleteStashes.confirm" = "¿Eliminar los %ld stashes seleccionados?";
 "stash.applyButton" = "Aplicar…";
-"stash.deleteButton" = "Eliminar…";
+"stash.deleteButton" = "Eliminar";
 "stash.basedOn" = "Basado en";
 "stash.baseCommit" = "Commit base";
 "stash.date" = "Fecha";

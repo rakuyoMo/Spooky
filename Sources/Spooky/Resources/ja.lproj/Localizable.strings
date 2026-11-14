@@ -627,7 +627,7 @@
 "stash.deleteStashes" = "選択したスタッシュを削除";
 "stash.deleteStashes.confirm" = "選択した %ld 個のスタッシュを削除しますか？";
 "stash.applyButton" = "適用…";
-"stash.deleteButton" = "削除…";
+"stash.deleteButton" = "削除";
 "stash.basedOn" = "ベース";
 "stash.baseCommit" = "ベースコミット";
 "stash.date" = "日付";

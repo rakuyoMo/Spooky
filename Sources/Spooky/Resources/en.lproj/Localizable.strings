@@ -627,7 +627,7 @@
 "stash.deleteStashes" = "Delete Stashes";
 "stash.deleteStashes.confirm" = "Do you really want to delete the %ld selected stashes?";
 "stash.applyButton" = "Apply…";
-"stash.deleteButton" = "Delete…";
+"stash.deleteButton" = "Delete";
 "stash.basedOn" = "Based on";
 "stash.baseCommit" = "Base Commit";
 "stash.date" = "Date";
@@ -636,8 +636,8 @@
 "stash.empty" = "No Stashes";
 "stash.noMatches" = "No Matching Stashes";
 "stash.loading" = "Loading stashes…";
-"stash.noSelection" = "No Stash Selected";
-"stash.multiple" = "%ld Stashes Selected";
+"stash.noSelection" = "No stashes selected";
+"stash.multiple" = "%ld stashes selected";
 "stash.stashFile" = "Stash “%@”…";
 "stash.stashItems" = "Stash %ld Items…";
 "stash.quickStashFile" = "Quick Stash “%@”";

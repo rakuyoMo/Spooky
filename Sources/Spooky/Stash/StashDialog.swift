@@ -69,7 +69,7 @@ extension StashDialog {
     private var form: some View {
         switch request {
         case .save(_, let entries):
-            messageRow(placeholder: "stash.messagePlaceholder")
+            messageRow(placeholder: "stash.messagePlaceholder", height: 47)
 
             // 部分储藏总是带上所选的未跟踪文件，不显示这个选项
             if entries.isEmpty {
@@ -81,7 +81,7 @@ extension StashDialog {
 
         case .autoStash(let pending):
             // 完成后恢复时储藏只是临时的，说明不可编辑；修补旧提交时储藏一直保留，不提供恢复选项
-            messageRow(placeholder: "stash.autoStash.placeholder", disabled: reapplies(pending))
+            messageRow(placeholder: "stash.autoStash.placeholder", height: 43, disabled: reapplies(pending))
 
             if !pending.keepsStash {
                 DialogFormOption(title: AppLocalization.text("stash.autoStash.reapply"), isOn: $reapply)
@@ -94,7 +94,7 @@ extension StashDialog {
     private var applyRows: some View {
         DialogFormRow(label: AppLocalization.text("stash.picker")) {
             Picker("", selection: $selectedStash) {
-                ForEach(session.stashes.entries) { Text($0.title).tag($0.id) }
+                ForEach(session.stashes.entries) { Text($0.subject).tag($0.id) }
             }
             .labelsHidden()
             .buttonSizing(.flexible)
@@ -128,8 +128,8 @@ extension StashDialog {
         return AppLocalization.text("stash.noStashes")
     }
 
-    /// 填满输入列、高两行的说明框。
-    private func messageRow(placeholder: String, disabled: Bool = false) -> some View {
+    /// 填满输入列、两行的说明框；保存与快照的高 47 pt，自动储藏的高 43 pt。
+    private func messageRow(placeholder: String, height: CGFloat, disabled: Bool = false) -> some View {
         DialogFormRow(label: AppLocalization.text("stash.message")) {
             TextField(
                 "",
@@ -138,6 +138,7 @@ extension StashDialog {
                 axis: .vertical
             )
             .lineLimit(2, reservesSpace: true)
+            .frame(height: height)
             .disabled(disabled)
         }
     }
@@ -227,7 +228,7 @@ extension StashDialog {
             // 完成后恢复时储藏只是临时的，说明固定为自动储藏的标记
             let reapply = reapplies(pending)
             let typed = message.trimmingCharacters(in: .whitespacesAndNewlines)
-            let text = reapply || typed.isEmpty ? AppLocalization.text("stash.autoStash.message", pending.title) : typed
+            let text = reapply || typed.isEmpty ? RepositoryStashState.autoStashMessage(at: Date()) : typed
             started = session.performAutoStash(pending, message: text, reapply: reapply)
         }
 

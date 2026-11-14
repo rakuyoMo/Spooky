@@ -627,7 +627,7 @@
 "stash.deleteStashes" = "Supprimer les remisages";
 "stash.deleteStashes.confirm" = "Voulez-vous vraiment supprimer les %ld remisages sélectionnés ?";
 "stash.applyButton" = "Appliquer…";
-"stash.deleteButton" = "Supprimer…";
+"stash.deleteButton" = "Supprimer";
 "stash.basedOn" = "Basé sur";
 "stash.baseCommit" = "Commit de base";
 "stash.date" = "Date";

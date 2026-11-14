@@ -627,7 +627,7 @@
 "stash.deleteStashes" = "删除所选储藏";
 "stash.deleteStashes.confirm" = "确定删除所选的 %ld 个储藏吗？";
 "stash.applyButton" = "应用…";
-"stash.deleteButton" = "删除…";
+"stash.deleteButton" = "删除";
 "stash.basedOn" = "基于";
 "stash.baseCommit" = "基准提交";
 "stash.date" = "日期";
