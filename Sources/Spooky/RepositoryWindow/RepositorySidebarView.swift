@@ -406,7 +406,12 @@ extension RepositorySidebarView {
                     )
                 }
                 .disabled(!session.canFetch)
-                RemoteManagementMenu(session: session, remote: remote.name)
+
+                RemoteManagementMenu(
+                    session: session,
+                    remote: remote.name,
+                    hasWebAddress: remoteConfigurations[remote.name]?.webURL != nil
+                )
             }
             .modifier(
                 RepositoryDropTarget(

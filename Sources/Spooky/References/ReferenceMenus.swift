@@ -138,7 +138,7 @@ struct BranchParentMenu: View {
 
 // MARK: - RemoteBranchManagementMenu
 
-/// 远端分支右键菜单里的引用管理项：重命名与删除；多选的都是远端分支时删除全部所选。
+/// 远端分支右键菜单里的引用管理项：重命名与删除右键的这一个远端分支。
 struct RemoteBranchManagementMenu: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -146,28 +146,19 @@ struct RemoteBranchManagementMenu: View {
     /// 右键的远端分支。
     let reference: RepositoryReference
 
-    /// 重命名只针对右键的分支，删除覆盖多选。
+    /// 与上一组以分隔线隔开。
     var body: some View {
-        let selected = session.history.branches.filter { session.history.selectedReferences.contains($0.id) }
-        let targets = selected.count > 1 && selected.contains(reference) && selected.allSatisfy(\.isRemote)
-            ? selected
-            : [reference]
-
         Divider()
 
         Button(AppLocalization.text("reference.renameMenu", reference.name)) {
             session.requestReference(.renameBranch(reference))
         }
-        .disabled(targets.count > 1 || !session.canManage(reference))
+        .disabled(!session.canManage(reference))
 
-        Button(
-            targets.count > 1
-                ? AppLocalization.text("branch.deleteRemoteMenu.multiple", targets.count)
-                : AppLocalization.text("reference.deleteMenu", reference.name)
-        ) {
-            session.requestReference(.deleteRemoteBranches(targets))
+        Button(AppLocalization.text("reference.deleteMenu", reference.name)) {
+            session.requestReference(.deleteRemoteBranches([reference]))
         }
-        .disabled(!session.canDeleteRemoteBranches(targets))
+        .disabled(!session.canDeleteRemoteBranches([reference]))
     }
 }
 
@@ -180,6 +171,9 @@ struct RemoteManagementMenu: View {
 
     /// 右键的远端名。
     let remote: String
+
+    /// 远端的地址能换算出网页地址；还没读出远端设置时为 false。
+    let hasWebAddress: Bool
 
     /// 各组之间以分隔线隔开。
     var body: some View {
@@ -214,12 +208,13 @@ struct RemoteManagementMenu: View {
         Button(AppLocalization.text("remote.viewInBrowser", remote)) {
             session.openRemoteInBrowser(remote)
         }
+        .disabled(!hasWebAddress)
     }
 }
 
 // MARK: - TagManagementMenu
 
-/// 标签右键菜单里的引用管理项：发布、推送到指定位置与删除；多选的都是标签时删除全部所选。
+/// 标签右键菜单里的引用管理项：发布、推送到指定位置、从它新建分支与删除右键的这一个标签。
 struct TagManagementMenu: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -235,9 +230,6 @@ struct TagManagementMenu: View {
 
     /// 发布与推送一组，新建分支与删除一组。
     var body: some View {
-        let selected = session.tags.filter { session.history.selectedReferences.contains($0.id) }
-        let targets = selected.count > 1 && selected.contains(reference) ? selected : [reference]
-
         Button(AppLocalization.text("tag.publishMenu", reference.name)) {
             session.requestReference(.publishTag(reference.name))
         }
@@ -255,12 +247,8 @@ struct TagManagementMenu: View {
         }
         .disabled(!session.canCreateBranchFromReference)
 
-        Button(
-            targets.count > 1
-                ? AppLocalization.text("tag.deleteMenu.multiple", targets.count)
-                : AppLocalization.text("reference.deleteMenu", reference.name)
-        ) {
-            session.requestReference(.deleteTags(targets.map(\.name)))
+        Button(AppLocalization.text("reference.deleteMenu", reference.name)) {
+            session.requestReference(.deleteTags([reference.name]))
         }
         .disabled(!session.canWrite)
     }

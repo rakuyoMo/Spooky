@@ -1356,6 +1356,7 @@
 "reference.rename" = "名前を変更";
 "reference.renameMenu" = "「%@」の名前を変更…";
 "reference.deleteMenu" = "「%@」を削除…";
+"reference.compareMenuPair" = "「%1$@」と「%2$@」を比較…";
 "reference.addMenu" = "追加";
 "reference.invalidName" = "「%@」は有効な名前ではありません。";
 "reference.invalidRefspec" = "「%@」は有効な refspec ではありません。";

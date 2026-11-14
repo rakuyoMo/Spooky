@@ -1356,6 +1356,7 @@
 "reference.rename" = "重新命名";
 "reference.renameMenu" = "重新命名 “%@”…";
 "reference.deleteMenu" = "刪除 “%@”…";
+"reference.compareMenuPair" = "比較 “%1$@” 與 “%2$@”…";
 "reference.addMenu" = "新增";
 "reference.invalidName" = "“%@” 不是有效的名稱。";
 "reference.invalidRefspec" = "“%@” 不是有效的 refspec。";

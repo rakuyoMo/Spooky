@@ -1356,6 +1356,7 @@
 "reference.rename" = "Renommer";
 "reference.renameMenu" = "Renommer « %@ »…";
 "reference.deleteMenu" = "Supprimer « %@ »…";
+"reference.compareMenuPair" = "Comparer « %1$@ » avec « %2$@ »…";
 "reference.addMenu" = "Ajouter";
 "reference.invalidName" = "« %@ » n’est pas un nom valide.";
 "reference.invalidRefspec" = "« %@ » n’est pas une refspec valide.";

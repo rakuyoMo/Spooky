@@ -6,6 +6,7 @@ import SwiftUI
 /// 分支右键菜单里的请求项：分支已有打开着的请求时显示它，否则从它新建。
 ///
 /// 是否已有请求只看请求视图读到的列表；还没读过时总是新建，打开请求视图时再读取。
+/// 新建一项的标题写右键的完整分支名，远端分支带远端名；可用条件与主菜单的新建请求相同。
 struct PullRequestBranchMenuItem: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -25,11 +26,11 @@ struct PullRequestBranchMenuItem: View {
                 session.pullRequests.select(existing.id, runner: runner)
             }
         } else {
-            Button(session.pullRequestText("forBranch.create", branch)) {
+            Button(session.pullRequestText("forBranch.create", reference.name)) {
                 session.showPullRequests()
                 session.requestPullRequest(.create(sourceBranch: branch))
             }
-            .disabled(session.repository == nil)
+            .disabled(!session.canCreatePullRequest)
         }
     }
 

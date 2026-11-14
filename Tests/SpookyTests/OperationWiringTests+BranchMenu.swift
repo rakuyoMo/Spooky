@@ -31,6 +31,7 @@ extension OperationWiringTests {
         try await checkBranchMenuTargets(sidebar, requests: { requests }, in: fixture)
         try await checkFolderMenus(sidebar, requests: { requests }, in: fixture)
         try await checkUpstreamStates(sidebar, in: fixture)
+        try await checkMultipleSelection(sidebar, in: fixture)
         try checkDeleteCommand(sidebar, in: fixture)
     }
 
@@ -143,7 +144,7 @@ extension OperationWiringTests {
 extension OperationWiringTests {
     /// 本地分支菜单的分组：HEAD 分支从置顶开始，依次是同步、发布、跟踪、合并与变基、归档、重命名与删除、新建、导出与比较、
     /// 在历史中显示与复制；其它本地分支以检出一组开头，同步一组只有安全强推，没有合并与变基；
-    /// 远端分支以 Pull “X”… 开头，没有合并；三者末尾都是导出、比较、在历史中显示与复制名字；多选的删除写出个数。
+    /// 远端分支以 Pull “X”… 开头，没有合并；三者末尾都是导出、比较、在历史中显示与复制名字。
     private func checkBranchMenuGroups(_ sidebar: RepositorySidebarView, in fixture: Fixture) throws {
         let (main, side, upstream) = try fixture.branches()
         let text = { (key: String, name: String) in AppLocalization.text(key, name) }
@@ -219,15 +220,6 @@ extension OperationWiringTests {
         #expect(remote.contains(text("branch.trackMenu", "origin/main")))
         #expect(!remote.contains(AppLocalization.text("sync.merge")))
         #expect(Array(remote.suffix(5)) == Self.trailingTitles("origin/main", copy: "branch.copyRemoteNameMenu"))
-
-        // 多选两个本地分支：删除写出个数，含当前分支时不可用
-        fixture.session.history.selectedReferences = [main.id, side.id]
-        defer { fixture.session.history.selectedReferences = [] }
-
-        let multiple = HostedMenu(sidebar.branchMenu(side))
-
-        #expect(multiple.titles.last == AppLocalization.text("branch.deleteMenu.multiple", 2))
-        #expect(multiple.enabled.suffix(1) == [false])
     }
 
     /// 导出、比较与新建分支作用于被点击的分支，不借用 HEAD。
@@ -349,6 +341,71 @@ extension OperationWiringTests {
 
         #expect(flags(untracked, remove) == [false, false])
         #expect(flags(HostedMenu(sidebar.branchMenu(solo)), forcePush) == [false, false])
+    }
+
+    /// 多选引用的菜单按四种组合给出：本地分支有置顶、归档与删除，标签与远端分支只有删除，分支加标签只有比较；
+    /// 选中两项时最后比较两者，按版本候选的顺序取基准。选中移到 Working Copy 后，右键原来选过的分支只作用于它自己。
+    private func checkMultipleSelection(_ sidebar: RepositorySidebarView, in fixture: Fixture) async throws {
+        let session = fixture.session
+        let history = session.history
+
+        _ = try await fixture.runner.run(["tag", "v2"])
+        await Self.reload(session)
+
+        let (main, side, upstream) = try fixture.branches()
+        let feature = try #require(history.branches.first { $0.id == "refs/remotes/origin/a-feature" })
+        let compare = { (lhs: String, rhs: String) in AppLocalization.text("reference.compareMenuPair", lhs, rhs) }
+
+        // 在 History 里选中这几项后，右键其中一项
+        let menu = { (selection: [RepositoryReference], clicked: RepositoryReference) -> HostedMenu in
+            session.activeView = .history
+            history.selectedReferences = Set(selection.map(\.id))
+            return HostedMenu(sidebar.branchMenu(clicked))
+        }
+
+        defer { history.selectedReferences = [] }
+
+        // 两个本地分支：删除写出个数，含当前分支时不可用；比较以 main 为基准
+        let locals = menu([side, main], side)
+
+        #expect(Array(locals.titles.suffix(3)) == [
+            AppLocalization.text("branch.deleteMenu.multiple", 2),
+            "",
+            compare("main", "side"),
+        ])
+        #expect(Array(locals.enabled.suffix(2)) == [false, true])
+
+        // 两个标签、两个远端分支各只有删除与比较；分支加标签只有比较
+        let tags = history.snapshot?.references.filter(\.isTag) ?? []
+        let v1 = try #require(tags.first)
+
+        #expect(menu(tags, v1).titles == [
+            AppLocalization.text("tag.deleteMenu.multiple", 2),
+            "",
+            compare("v1", "v2"),
+        ])
+        #expect(menu([feature, upstream], upstream).titles == [
+            AppLocalization.text("branch.deleteRemoteMenu.multiple", 2),
+            "",
+            compare("origin/main", "origin/a-feature"),
+        ])
+
+        let mixed = menu([v1, side], v1)
+
+        #expect(mixed.titles == [compare("side", "v1")])
+
+        // 比较打开两者的比较，基准是排在前面的 side
+        mixed.perform(compare("side", "v1"))
+        await until { session.comparison.target != nil }
+
+        #expect(session.comparison.base?.title == "side")
+        #expect(session.comparison.target?.id == v1.objectID)
+
+        // 选中移到 Working Copy：保留的旧选区不算，右键 side 是它自己的菜单
+        history.selectedReferences = [main.id, side.id]
+        session.activeView = .workingCopy
+
+        #expect(HostedMenu(sidebar.branchMenu(side)).titles.first == AppLocalization.text("branch.checkoutNamed", "side"))
     }
 
     /// ⌘⌫ 按所选对象打开本地分支、远端分支、标签或远端的删除确认；当前分支、几种引用混选、

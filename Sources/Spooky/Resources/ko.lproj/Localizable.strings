@@ -1356,6 +1356,7 @@
 "reference.rename" = "이름 변경";
 "reference.renameMenu" = "“%@” 이름 변경…";
 "reference.deleteMenu" = "“%@” 삭제…";
+"reference.compareMenuPair" = "“%1$@”와(과) “%2$@” 비교…";
 "reference.addMenu" = "추가";
 "reference.invalidName" = "“%@”은(는) 유효한 이름이 아닙니다.";
 "reference.invalidRefspec" = "“%@”은(는) 유효한 refspec이 아닙니다.";
