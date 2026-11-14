@@ -364,22 +364,18 @@ public struct RepositoryReferences: Sendable {
                 .map { (reference.id, reference.objectID, $0.objectID) }
         }
 
-        // 并发度由仓库队列的主机槽统一限制，服务器上不会超出会话上限。
-        return try await withThrowingTaskGroup(of: (String, ReferenceDivergence).self) { group in
-            for (id, local, upstream) in pairs {
-                group.addTask {
-                    (id, try await divergence(local: local, upstream: upstream))
-                }
-            }
+        return try await divergences(of: pairs)
+    }
 
-            var counts: [String: ReferenceDivergence] = [:]
-
-            for try await (id, divergence) in group {
-                counts[id] = divergence
-            }
-
-            return counts
+    /// 快照中设了父分支的本地分支相对父分支的计数；父分支已删除的分支不计数。
+    public func parentDivergences(in snapshot: ReferenceSnapshot) async throws -> [String: ReferenceDivergence] {
+        let pairs = snapshot.references.filter(\.isLocal).compactMap { reference in
+            snapshot.metadata(for: reference.id).parent
+                .flatMap { parent in snapshot.references.first { $0.id == parent } }
+                .map { (reference.id, reference.objectID, $0.objectID) }
         }
+
+        return try await divergences(of: pairs)
     }
 
     /// 以 Git 的分支规则校验，拒绝前一分支快捷写法、选项形式、控制字符与和对象哈希混淆的名字；
@@ -494,4 +490,29 @@ public struct RepositoryReferences: Sendable {
         return value
     }
 
+}
+
+// MARK: - Private
+
+extension RepositoryReferences {
+    /// 并发读取每一对哈希的计数，以分支的完整引用名为键；并发度由仓库队列的主机槽统一限制，服务器上不会超出会话上限。
+    ///
+    /// - Parameter pairs: 分支的完整引用名、分支顶端与比较对象的顶端。
+    private func divergences(of pairs: [(String, String, String)]) async throws -> [String: ReferenceDivergence] {
+        try await withThrowingTaskGroup(of: (String, ReferenceDivergence).self) { group in
+            for (id, local, upstream) in pairs {
+                group.addTask {
+                    (id, try await divergence(local: local, upstream: upstream))
+                }
+            }
+
+            var counts: [String: ReferenceDivergence] = [:]
+
+            for try await (id, divergence) in group {
+                counts[id] = divergence
+            }
+
+            return counts
+        }
+    }
 }

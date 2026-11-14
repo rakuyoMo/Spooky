@@ -16,6 +16,9 @@ enum ReferenceRequest {
     /// 为本地分支选择父分支。
     case setParent(RepositoryReference)
 
+    /// 用父分支的新提交更新一个本地分支，预选这个分支。
+    case updateBranch(RepositoryReference)
+
     /// 新建标签；版本为 nil 时从 HEAD 开始，名称预填 `name`，如标签文件夹的路径与结尾的 “/”。
     case createTag(revision: String?, name: String = "")
 

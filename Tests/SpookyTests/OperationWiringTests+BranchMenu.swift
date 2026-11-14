@@ -87,7 +87,8 @@ extension OperationWiringTests {
     }
 
     /// 没有父分支时，父分支子菜单列出不含分支自己的基准分支作为建议，选中即设为父分支，另一项打开设置父分支对话框；
-    /// 已有父分支时只显示它（打勾、不可点）与移除，移除后回到建议。
+    /// 已有父分支时只显示它（打勾、不可点）与移除，移除后回到建议；落后父分支时跟踪一组另有 Update Branch 的两项，
+    /// Update Branch 对话框只列设了父分支的分支，落后一个提交时说明用单数。
     @Test("父分支子菜单的建议、当前值与移除")
     func parentBranchMenu() async throws {
         let fixture = try await Self.makeFixture()
@@ -122,6 +123,25 @@ extension OperationWiringTests {
         await Self.reload(session)
 
         #expect(session.history.snapshot?.metadata(for: side.id).parent == "refs/heads/main")
+
+        // 设了父分支、且落后父分支：跟踪一组多出 Update “side”… 与按住 ⌥ 换上的 Quick Update “side”，两项都可用；
+        // 没有父分支的 main 没有这两项
+        let tracking = HostedMenu(BranchUpstreamMenus(session: session, reference: side))
+
+        #expect(tracking.titles.suffix(2) == [
+            AppLocalization.text("branch.updateNamed", "side"),
+            AppLocalization.text("branch.quickUpdateNamed", "side"),
+        ])
+
+        #expect(tracking.alternates.suffix(2) == [false, true])
+        #expect(tracking.enabled.suffix(2) == [true, true])
+        #expect(HostedMenu(BranchUpstreamMenus(session: session, reference: main)).titles.count == 2)
+        #expect(UpdateBranchDialog(session: session, branch: side) { }.candidates.map(\.id) == [side.id])
+
+        #expect(
+            UpdateBranchDialog.summary(behind: 1, parent: "main")
+                == AppLocalization.text("review.update.integrates.one", "main")
+        )
 
         // 已有父分支：当前值打勾且不可点，另有移除
         let current = HostedMenu(BranchParentMenu(session: session, branch: side))

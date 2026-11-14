@@ -134,6 +134,9 @@ extension RepositoryWindowController {
         case .setParent(let reference):
             AnyView(SetParentBranchDialog(session: session, branch: reference, close: close))
 
+        case .updateBranch(let reference):
+            AnyView(UpdateBranchDialog(session: session, branch: reference, close: close))
+
         case .createTag(let revision, let name):
             AnyView(CreateTagDialog(session: session, revision: revision, initialName: name, close: close))
 

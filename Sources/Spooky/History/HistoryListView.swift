@@ -58,6 +58,9 @@ struct HistoryListView: View {
             // 选中陈旧的分支时表头下方是提示条
             HistoryBranchHint(session: session)
 
+            // 所选分支落后父分支时提示并入父分支的改动
+            HistoryParentBanner(session: session)
+
             // 有搜索条件时表头下方是过滤面板
             if !session.history.searchConditions.isEmpty {
                 HistorySearchPanel(history: session.history)

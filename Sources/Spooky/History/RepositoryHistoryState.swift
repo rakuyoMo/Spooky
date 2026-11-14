@@ -27,6 +27,9 @@ final class RepositoryHistoryState {
     /// 分支相对上游的结构化计数。
     private(set) var divergence: [String: ReferenceDivergence] = [:]
 
+    /// 设了父分支的本地分支相对父分支的计数，以完整引用名为键；读完引用后接着读，读取失败时为空。
+    private(set) var parentDivergence: [String: ReferenceDivergence] = [:]
+
     /// 本地分支的最后更新时间、跟踪错误与是否为基准分支，以完整引用名为键；每次读完引用都会写入，随后通知窗口。
     private(set) var conditions: [String: BranchCondition] = [:] {
         didSet { onReferencesLoaded?() }
@@ -344,6 +347,13 @@ final class RepositoryHistoryState {
                 guard let self, generation == request, !Task.isCancelled else { return }
 
                 apply(snapshot, divergence: counts, status: status, records: records)
+
+                // 落后父分支的提交数只决定 Update Branch 是否可用，读不到时不影响引用与列表
+                let parents = try? await RepositoryReferences(runner: runner).parentDivergences(in: snapshot)
+
+                guard generation == request, !Task.isCancelled else { return }
+
+                parentDivergence = parents ?? [:]
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
                 failure = AppFailure(error: error, opening: false, location: runner.location)

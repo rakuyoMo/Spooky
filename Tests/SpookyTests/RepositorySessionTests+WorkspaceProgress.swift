@@ -104,6 +104,13 @@ extension RepositorySessionTests {
             session.mergeBase(topic, into: current)
         }
 
+        // 父分支 topic 前进一个提交，HEAD 分支落后父分支才能 Update Branch
+        let advanced = try await runner.run(["commit-tree", "-p", "topic", "-m", "topic 前进", "topic^{tree}"])
+        let tip = String(decoding: advanced, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        _ = try await runner.run(["update-ref", "refs/heads/topic", tip])
+        session.refresh(full: true)
+        await settle(session)
+
         await expectProgress(AppLocalization.text("workspaceProgress.rebase"), in: session) {
             session.updateBranch(current, rebase: true)
         }

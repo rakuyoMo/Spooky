@@ -46,9 +46,13 @@ extension RepositorySession {
         return history.branches.first { $0.id == parent }
     }
 
-    /// Update Branch 需要有父分支的本地分支，且没有进行中的操作。
+    /// Update Branch 需要有父分支、且落后父分支的本地分支，且没有进行中的操作。
     func canUpdateBranch(_ reference: RepositoryReference) -> Bool {
-        canWrite && context?.operation == nil && reference.isLocal && parentBranch(of: reference) != nil
+        canWrite
+            && context?.operation == nil
+            && reference.isLocal
+            && parentBranch(of: reference) != nil
+            && (history.parentDivergence[reference.id]?.behind ?? 0) > 0
     }
 
     /// 归档若干分支；完成后在侧边栏说明归档了几个分支，并可以撤销。
@@ -161,13 +165,16 @@ extension RepositorySession {
         )
     }
 
-    /// 用父分支更新一个本地分支：合并父分支或变基到父分支上；被本地改动挡住时询问是否先储藏。
-    func updateBranch(_ reference: RepositoryReference, rebase: Bool) {
+    /// 用父分支更新一个本地分支：先检出它，再合并父分支或变基到父分支上；被本地改动挡住时询问是否先储藏。
+    ///
+    /// - Parameters:
+    ///   - reference: 要更新的本地分支。
+    ///   - rebase: 为 true 时变基到父分支上，否则合并父分支。
+    ///   - options: 合并的提交方式、签名校验与跳过钩子；默认值就是 Update Branch 对话框的默认设置，Quick Update 直接使用。
+    func updateBranch(_ reference: RepositoryReference, rebase: Bool, options: MergeOptions = MergeOptions()) {
         guard canUpdateBranch(reference), let parent = parentBranch(of: reference) else {
             return
         }
-
-        let options = SyncPreferences.merge
 
         performGit(
             { runner, output in

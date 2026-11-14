@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - BranchUpstreamMenus
 
-/// 本地分支右键菜单里的跟踪一组：Track Upstream Branch 与 Track Parent Branch 两个子菜单。
+/// 本地分支右键菜单里的跟踪一组：Track Upstream Branch 与 Track Parent Branch 两个子菜单，设了父分支时再加 Update Branch 一项。
 struct BranchUpstreamMenus: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -12,7 +12,7 @@ struct BranchUpstreamMenus: View {
     /// 右键的本地分支。
     let reference: RepositoryReference
 
-    /// 两个子菜单，仓库不可写时整个子菜单不可用。
+    /// 两个子菜单，仓库不可写时整个子菜单不可用；Update Branch 落后父分支时才可用。
     var body: some View {
         Menu(AppLocalization.text("branch.tracking")) {
             BranchTrackingMenu(session: session, branch: reference)
@@ -23,6 +23,20 @@ struct BranchUpstreamMenus: View {
             BranchParentMenu(session: session, branch: reference)
         }
         .disabled(!session.canManage(reference))
+
+        // 设了父分支时可以用父分支的新提交更新，按住 ⌥ 换成不开对话框的快速更新
+        if session.parentBranch(of: reference) != nil {
+            Button(AppLocalization.text("branch.updateNamed", reference.name)) {
+                session.requestReference(.updateBranch(reference))
+            }
+            .disabled(!session.canUpdateBranch(reference))
+            .modifierKeyAlternate(.option) {
+                Button(AppLocalization.text("branch.quickUpdateNamed", reference.name)) {
+                    session.updateBranch(reference, rebase: false)
+                }
+                .disabled(!session.canUpdateBranch(reference))
+            }
+        }
     }
 }
 
