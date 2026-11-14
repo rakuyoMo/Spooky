@@ -80,10 +80,10 @@ extension StashDialog {
             applyRows
 
         case .autoStash(let pending):
-            // 完成后恢复时储藏只是临时的，说明不可编辑；开始前询问时储藏一直保留，不提供恢复选项
+            // 完成后恢复时储藏只是临时的，说明不可编辑；修补旧提交时储藏一直保留，不提供恢复选项
             messageRow(placeholder: "stash.autoStash.placeholder", disabled: reapplies(pending))
 
-            if !pending.asksBeforeStart {
+            if !pending.keepsStash {
                 DialogFormOption(title: AppLocalization.text("stash.autoStash.reapply"), isOn: $reapply)
             }
         }
@@ -107,7 +107,7 @@ extension StashDialog {
         DialogFormOption(title: AppLocalization.text("stash.restoreIndex"), isOn: $restoreIndex)
     }
 
-    /// 自动储藏的 Do Not Stash：关闭对话框，被挡住的操作照常报告失败；其余种类没有这个按钮。
+    /// 自动储藏的 Do Not Stash：关闭对话框，开始前询问的操作照常执行，被挡住的操作照常报告失败；其余种类没有这个按钮。
     private var skipAction: (() -> Void)? {
         guard case .autoStash(let pending) = request else {
             return nil
@@ -200,9 +200,9 @@ extension StashDialog {
         selectedStash = preselected?.id ?? session.stashes.entries.first?.id ?? ""
     }
 
-    /// 自动储藏的操作完成后是否恢复改动：开始前询问时总是保留储藏，其余按选项。
+    /// 自动储藏的操作完成后是否恢复改动：修补旧提交时总是保留储藏，其余按选项。
     private func reapplies(_ pending: AutoStashRequest) -> Bool {
-        reapply && !pending.asksBeforeStart
+        reapply && !pending.keepsStash
     }
 
     /// 捕获表单值后开始执行；仓库暂不可写时对话框保持打开，已填写的内容保留。

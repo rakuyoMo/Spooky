@@ -11,7 +11,7 @@ enum StashRequest {
     /// 应用储藏，可预选其中一个。
     case apply(StashEntry?)
 
-    /// 检出、拉取或合并被本地改动挡住后，询问是否先储藏。
+    /// 检出、拉取或合并被本地改动挡住后，或检出、修补旧提交开始前有本地改动时，询问是否先储藏。
     case autoStash(AutoStashRequest)
 }
 
@@ -25,6 +25,9 @@ struct AutoStashRequest {
     /// 原操作的整页进度标题，重新执行时沿用；不占用工作区的操作为 nil。
     var progress: String? = nil
 
+    /// 开始前询问的检出在 Activity 里连接的对象，执行时沿用。
+    var target: ActivityTarget? = nil
+
     /// 原操作的失败；用户选择不储藏时照常报告。开始前询问时为 nil。
     let error: (any Error)?
 
@@ -37,10 +40,8 @@ struct AutoStashRequest {
     /// 原操作能否撤销；储藏、重新执行与恢复储藏合起来按同一声明记录。
     var undo = UndoRecording.irreversible
 
-    /// 开始前询问：不储藏时直接执行原操作，储藏一直保留，对话框不提供完成后恢复。
-    var asksBeforeStart: Bool {
-        error == nil
-    }
+    /// 储藏一直保留，对话框不提供完成后恢复；修补旧提交使用。
+    var keepsStash = false
 }
 
 // MARK: - Availability
@@ -199,9 +200,7 @@ extension RepositorySession {
         failureNote: (() -> String?)? = nil,
         undo: UndoRecording = .irreversible
     ) -> Bool {
-        // 设置 “Always offer to stash local changes” 默认开启
-        let enabled = UserDefaults.standard.object(forKey: "offerAutoStash") as? Bool ?? true
-        guard enabled, Self.isBlockedByLocalChanges(error), let onStashRequest else { return false }
+        guard Self.offersAutoStash, Self.isBlockedByLocalChanges(error), let onStashRequest else { return false }
 
         let request = AutoStashRequest(
             title: title,
@@ -212,6 +211,63 @@ extension RepositorySession {
             undo: undo
         )
         onStashRequest(.autoStash(request))
+        return true
+    }
+
+    /// 检出别的分支或版本：工作区有已跟踪文件的修改时按设置先询问是否储藏，修改不妨碍检出时也问；
+    /// 询问的内容与选项和 Git 拒绝检出后的相同，不储藏时照常检出。其余情况直接检出，被本地改动挡住后再询问。
+    ///
+    /// 询问在下一轮主线程呈现：从对话框发起时，对话框在这一轮关闭。
+    ///
+    /// - Parameters:
+    ///   - action: 检出的执行闭包。
+    ///   - title: 已本地化的操作名称。
+    ///   - progress: 整页进度的标题。
+    ///   - target: 要连接远端的检出传入连接的对象，记在 Activity 的 Remote 页。
+    ///   - offersAutoStash: 没有先询问、执行时被本地改动挡住后是否再询问；先建分支再检出的写入重新执行会因分支已存在而失败，
+    ///     不再询问。
+    ///   - undo: 这次检出能否撤销。
+    /// - Returns: 是否已开始执行或已转为询问；仓库不可写时为 false。
+    @discardableResult
+    func performCheckout(
+        _ action:
+        @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
+        title: String,
+        progress: String,
+        target: ActivityTarget? = nil,
+        offersAutoStash: Bool = true,
+        undo: UndoRecording = .reversible
+    ) -> Bool {
+        let modified = status?.entries.contains { $0.kind == .tracked } ?? false
+
+        guard canWrite, modified, Self.offersAutoStash, onStashRequest != nil else {
+            return performGit(
+                action,
+                title: title,
+                progress: progress,
+                target: target,
+                offersAutoStash: offersAutoStash,
+                undo: undo
+            )
+        }
+
+        let request = AutoStashRequest(
+            title: title,
+            progress: progress,
+            target: target,
+            error: nil,
+            action: action,
+            undo: undo
+        )
+
+        let repository = repository
+
+        Task { @MainActor [weak self] in
+            guard let self, self.repository == repository else { return }
+
+            onStashRequest?(.autoStash(request))
+        }
+
         return true
     }
 
@@ -231,6 +287,7 @@ extension RepositorySession {
             },
             title: request.title,
             progress: request.progress,
+            target: request.target,
             undo: request.undo,
             failureNote: request.failureNote
         )
@@ -243,6 +300,7 @@ extension RepositorySession {
                 request.action,
                 title: request.title,
                 progress: request.progress,
+                target: request.target,
                 undo: request.undo,
                 failureNote: request.failureNote
             )
@@ -250,5 +308,14 @@ extension RepositorySession {
         }
 
         onFailure?(AppFailure(error: error, opening: false, location: repository, writing: true))
+    }
+}
+
+// MARK: - Helpers
+
+extension RepositorySession {
+    /// 设置 “Always offer to stash local changes”，默认开启。
+    private static var offersAutoStash: Bool {
+        UserDefaults.standard.object(forKey: "offerAutoStash") as? Bool ?? true
     }
 }

@@ -161,18 +161,18 @@ extension RepositoryWindowController {
                 session: session,
                 request: request,
                 cancel: close,
-                submit: { title, progress, target, undo, action in
-                    // 只有写操作真正开始才关闭表单；仓库忙碌或断线时保留未发送的参数。
-                    // 拉取与合并被本地改动挡住时按设置询问是否先储藏
+                submit: { [weak self] title, progress, target, undo, action in
+                    // 只有写操作真正开始或转为询问才关闭表单；仓库忙碌或断线时保留未发送的参数
                     guard
+                        let self,
                         session.repository == repository,
-                        session.performGit(
-                            action,
+                        startOperation(
+                            request.kind,
                             title: title,
                             progress: progress,
                             target: target,
-                            offersAutoStash: [.pull, .merge].contains(request.kind),
-                            undo: undo
+                            undo: undo,
+                            action: action
                         )
                     else { return false }
 
@@ -340,5 +340,42 @@ extension RepositoryWindowController {
         }
 
         return showsManager ? session.selectedRecentLocation?.localURL != nil : session.canShowInFinder
+    }
+}
+
+// MARK: - Private
+
+extension RepositoryWindowController {
+    /// 开始操作对话框提交的写操作：勾选了检出的新建与跟踪分支带整页进度，有本地修改时先询问是否储藏，
+    /// 执行时被本地改动挡住不再询问；拉取与合并被本地改动挡住时按设置询问是否先储藏。
+    ///
+    /// - Returns: 是否已开始执行或已转为询问。
+    private func startOperation(
+        _ kind: RepositoryActionRequest.Kind,
+        title: String,
+        progress: String?,
+        target: ActivityTarget?,
+        undo: UndoRecording,
+        action: @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
+    ) -> Bool {
+        if let progress, [.create, .track].contains(kind) {
+            return session.performCheckout(
+                action,
+                title: title,
+                progress: progress,
+                target: target,
+                offersAutoStash: false,
+                undo: undo
+            )
+        }
+
+        return session.performGit(
+            action,
+            title: title,
+            progress: progress,
+            target: target,
+            offersAutoStash: [.pull, .merge].contains(kind),
+            undo: undo
+        )
     }
 }

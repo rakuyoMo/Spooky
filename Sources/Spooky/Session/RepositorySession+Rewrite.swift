@@ -182,15 +182,13 @@ extension RepositorySession {
         )
     }
 
-    /// 检出任意版本；被本地改动挡住时询问是否先储藏。
+    /// 检出任意版本；有本地修改时先询问是否储藏，见 ``performCheckout(_:title:progress:target:undo:)``。
     @discardableResult
     func checkout(revision: String) -> Bool {
-        performGit(
+        performCheckout(
             { runner, _ in try await RepositoryRewrite(runner: runner).checkout(revision: revision) },
             title: AppLocalization.text("rewrite.checkout"),
-            progress: AppLocalization.text("workspaceProgress.checkoutRevision", revision),
-            offersAutoStash: true,
-            undo: .reversible
+            progress: AppLocalization.text("workspaceProgress.checkoutRevision", revision)
         )
     }
 
@@ -249,7 +247,8 @@ extension RepositorySession {
             action: { runner, output in
                 try await RepositoryRewrite(runner: runner).perform(plan, onOutput: output)
             },
-            undo: .reversible
+            undo: .reversible,
+            keepsStash: true
         )
 
         onStashRequest(.autoStash(request))

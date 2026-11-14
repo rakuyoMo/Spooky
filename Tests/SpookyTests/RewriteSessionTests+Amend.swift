@@ -165,7 +165,7 @@ extension RewriteSessionTests {
         let declined = try await requestAmend(commits[0], in: session, directory: directory)
 
         // Abort：询问时还没有开始写，HEAD、工作区与储藏列表都不变
-        #expect(declined.asksBeforeStart)
+        #expect(declined.error == nil && declined.keepsStash)
         #expect(!session.isWriting)
         #expect(session.status?.branch.oid == commits[2])
         #expect(try Data(contentsOf: file) == Data("本地\n".utf8))

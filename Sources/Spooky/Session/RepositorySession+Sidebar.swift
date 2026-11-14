@@ -105,7 +105,7 @@ extension RepositorySession {
         checkout(revision: reference.id)
     }
 
-    /// 检出分支，保留 Git 对本地修改的覆盖保护：本地分支直接检出，已在别的工作树检出时打开那个工作树；
+    /// 检出分支，有本地修改时先询问是否储藏：本地分支直接检出，已在别的工作树检出时打开那个工作树；
     /// 远端分支检出已有的跟踪分支，有不跟踪它的同名本地分支时询问后检出那个分支并设好上游，都没有时原子创建并检出同名跟踪分支。
     ///
     /// 菜单、快捷操作与双击共用；不能检出时什么都不做，入口自己禁用或响铃。
@@ -125,14 +125,12 @@ extension RepositorySession {
         }
 
         guard reference.isRemote else {
-            performGit(
+            performCheckout(
                 { runner, _ in
                     try await RepositoryReferences(runner: runner).checkout(reference.id)
                 },
                 title: AppLocalization.text("branch.checkoutNamed", reference.name),
-                progress: AppLocalization.text("workspaceProgress.checkoutBranch", reference.name),
-                offersAutoStash: true,
-                undo: .reversible
+                progress: AppLocalization.text("workspaceProgress.checkoutBranch", reference.name)
             )
             return
         }
@@ -154,7 +152,7 @@ extension RepositorySession {
             return
         }
 
-        performGit(
+        performCheckout(
             { runner, _ in
                 try await RepositoryReferences(runner: runner)
                     .create(
@@ -165,9 +163,7 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("branch.checkoutNamed", reference.name),
-            progress: AppLocalization.text("workspaceProgress.checkoutBranch", reference.name),
-            offersAutoStash: true,
-            undo: .reversible
+            progress: AppLocalization.text("workspaceProgress.checkoutBranch", reference.name)
         )
     }
 }
@@ -202,13 +198,12 @@ extension RepositorySession {
                 return
             }
 
-            performGit(
+            performCheckout(
                 { runner, _ in
                     try await RepositoryReferences(runner: runner).checkout(branch.id, tracking: upstream.id)
                 },
                 title: AppLocalization.text("branch.checkoutNamed", branch.name),
-                progress: AppLocalization.text("workspaceProgress.checkoutBranch", branch.name),
-                undo: .reversible
+                progress: AppLocalization.text("workspaceProgress.checkoutBranch", branch.name)
             )
         })
     }

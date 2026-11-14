@@ -211,20 +211,18 @@ extension RepositorySession {
         )
     }
 
-    /// 把请求检出成本地分支；工作区有改动挡住时按设置询问先储藏。
+    /// 把请求检出成本地分支；有本地修改时按设置先询问是否储藏。
     @discardableResult
     func checkoutPullRequest(_ request: PullRequest, as name: String) -> Bool {
         guard let remote = pullRequests.remote else { return false }
 
-        return performGit(
+        return performCheckout(
             { runner, output in
                 try await RepositoryPullRequests(runner: runner).checkout(request, remote: remote, as: name, onOutput: output)
             },
             title: pullRequestText("checkout.title"),
             progress: AppLocalization.text("workspaceProgress.checkoutBranch", name),
-            target: .pull(remote),
-            offersAutoStash: true,
-            undo: .reversible
+            target: .pull(remote)
         )
     }
 }

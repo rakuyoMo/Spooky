@@ -147,7 +147,7 @@ struct StashSessionTests {
 
 extension StashSessionTests {
     /// 带 main 与 feature 两个分支的隔离仓库：feature 多一个新文件，工作区干净。
-    private func makeRepository(at location: RepositoryLocation) async throws -> GitRunner {
+    func makeRepository(at location: RepositoryLocation) async throws -> GitRunner {
         let runner = try await FileViewsTests.initializeRepository(at: location)
         let root = URL(fileURLWithPath: location.path)
 
