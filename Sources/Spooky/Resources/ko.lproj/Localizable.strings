@@ -1209,6 +1209,8 @@
 "rewrite.shared" = "이미 푸시되었거나 병합됨";
 "rewrite.warning.pushed" = "일부 커밋은 이미 업스트림 브랜치에 있습니다. 다시 쓰면 로컬 브랜치와 업스트림이 갈라집니다.";
 "rewrite.warning.merged" = "일부 커밋은 이미 다른 브랜치에 포함되어 있습니다. 다시 쓰면 같은 변경이 두 벌 남습니다.";
+"rewrite.pushed.title" = "이미 업스트림 브랜치에 있는 커밋을 다시 쓰시겠습니까?";
+"rewrite.pushed.message" = "다시 쓴 커밋은 새 해시를 갖습니다. 로컬 브랜치와 업스트림이 갈라지고, 이 커밋을 이미 받은 사람은 기록을 다시 맞춰야 합니다.";
 "rewrite.affected" = "다시 쓰이는 커밋(%ld):";
 "rewrite.reflog" = "다시 쓰기 전의 커밋은 Reflog에서 되찾을 수 있습니다.";
 "rewrite.loadingCommits" = "커밋을 불러오는 중…";

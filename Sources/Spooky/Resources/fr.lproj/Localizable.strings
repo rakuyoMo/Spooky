@@ -1209,6 +1209,8 @@
 "rewrite.shared" = "Déjà poussé ou fusionné";
 "rewrite.warning.pushed" = "Certains de ces commits sont déjà sur la branche amont. Après la réécriture, la branche locale et l’amont divergent.";
 "rewrite.warning.merged" = "Certains de ces commits sont déjà dans d’autres branches. Les réécrire laisse deux copies des mêmes modifications.";
+"rewrite.pushed.title" = "Voulez-vous vraiment réécrire des commits qui sont déjà sur la branche amont ?";
+"rewrite.pushed.message" = "Les commits réécrits reçoivent de nouveaux hashs. La branche locale et l’amont divergent alors, et les personnes qui ont déjà ces commits doivent réconcilier leur historique.";
 "rewrite.affected" = "Commits réécrits (%ld) :";
 "rewrite.reflog" = "Les commits précédents restent récupérables depuis le reflog.";
 "rewrite.loadingCommits" = "Chargement des commits…";

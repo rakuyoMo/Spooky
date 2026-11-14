@@ -1209,6 +1209,8 @@
 "rewrite.shared" = "Ya enviado o fusionado";
 "rewrite.warning.pushed" = "Algunos de estos commits ya están en la rama upstream. Tras reescribirlos, la rama local y la upstream divergen.";
 "rewrite.warning.merged" = "Algunos de estos commits ya están en otras ramas. Reescribirlos deja dos copias de los mismos cambios.";
+"rewrite.pushed.title" = "¿Seguro que quieres reescribir commits que ya están en la rama upstream?";
+"rewrite.pushed.message" = "Los commits reescritos reciben hashes nuevos. La rama local y la upstream divergen, y quien ya tenga estos commits tendrá que reconciliar su historial.";
 "rewrite.affected" = "Commits reescritos (%ld):";
 "rewrite.reflog" = "Los commits anteriores siguen pudiéndose recuperar desde el reflog.";
 "rewrite.loadingCommits" = "Cargando commits…";

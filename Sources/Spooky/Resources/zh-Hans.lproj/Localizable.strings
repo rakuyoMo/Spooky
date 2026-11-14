@@ -1209,6 +1209,8 @@
 "rewrite.shared" = "已推送或已合并";
 "rewrite.warning.pushed" = "其中一些提交已经在上游分支中。改写之后，本地分支会与上游分叉。";
 "rewrite.warning.merged" = "其中一些提交已经并入其它分支。改写它们会让同样的改动留下两份。";
+"rewrite.pushed.title" = "确定要改写已在上游分支中的提交吗？";
+"rewrite.pushed.message" = "改写后的提交会有新的哈希。本地分支会与上游分叉，已经取得这些提交的人需要重新整理自己的历史。";
 "rewrite.affected" = "会被改写的提交（%ld）：";
 "rewrite.reflog" = "改写前的提交仍可在 Reflog 中找回。";
 "rewrite.loadingCommits" = "正在读取提交…";

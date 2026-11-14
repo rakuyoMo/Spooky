@@ -1209,6 +1209,8 @@
 "rewrite.shared" = "Already pushed or merged";
 "rewrite.warning.pushed" = "Some of these commits are already on the upstream branch. After rewriting, the local branch and its upstream diverge.";
 "rewrite.warning.merged" = "Some of these commits are already in other branches. Rewriting them leaves two copies of the same changes.";
+"rewrite.pushed.title" = "Are you sure you want to rewrite commits that are already on the upstream branch?";
+"rewrite.pushed.message" = "Rewritten commits get new hashes. The local branch then diverges from its upstream, and anyone who already has these commits has to reconcile their history.";
 "rewrite.affected" = "Rewritten commits (%ld):";
 "rewrite.reflog" = "The previous commits can still be recovered from the reflog.";
 "rewrite.loadingCommits" = "Loading commits…";

@@ -1209,6 +1209,8 @@
 "rewrite.shared" = "Bereits gepusht oder zusammengeführt";
 "rewrite.warning.pushed" = "Einige dieser Commits sind bereits im Upstream-Branch. Nach dem Umschreiben laufen lokaler Branch und Upstream auseinander.";
 "rewrite.warning.merged" = "Einige dieser Commits sind bereits in anderen Branches enthalten. Umschreiben hinterlässt dieselben Änderungen doppelt.";
+"rewrite.pushed.title" = "Möchten Sie Commits, die bereits im Upstream-Branch sind, wirklich umschreiben?";
+"rewrite.pushed.message" = "Umgeschriebene Commits erhalten neue Hashes. Lokaler Branch und Upstream laufen dann auseinander, und wer diese Commits bereits hat, muss seinen Verlauf abgleichen.";
 "rewrite.affected" = "Umgeschriebene Commits (%ld):";
 "rewrite.reflog" = "Die vorherigen Commits lassen sich weiterhin über das Reflog wiederherstellen.";
 "rewrite.loadingCommits" = "Commits werden geladen…";

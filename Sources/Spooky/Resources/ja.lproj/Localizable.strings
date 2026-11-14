@@ -1209,6 +1209,8 @@
 "rewrite.shared" = "プッシュ済みまたはマージ済み";
 "rewrite.warning.pushed" = "一部のコミットはすでに上流ブランチにあります。書き換えると、ローカルブランチと上流が分岐します。";
 "rewrite.warning.merged" = "一部のコミットはすでに他のブランチに含まれています。書き換えると同じ変更が 2 つ残ります。";
+"rewrite.pushed.title" = "上流ブランチにすでにあるコミットを書き換えてもよろしいですか？";
+"rewrite.pushed.message" = "書き換えたコミットには新しいハッシュが付きます。ローカルブランチと上流が分岐し、これらのコミットをすでに取得している人は履歴を整理し直す必要があります。";
 "rewrite.affected" = "書き換えられるコミット（%ld）：";
 "rewrite.reflog" = "書き換える前のコミットは Reflog から取り戻せます。";
 "rewrite.loadingCommits" = "コミットを読み込み中…";
