@@ -1112,6 +1112,7 @@
 "sidebar.archived" = "Archived Branches";
 "sidebar.tags" = "Tags";
 "sidebar.filter" = "Filter";
+"sidebar.filter.clear" = "Clear";
 "sidebar.menu" = "Sidebar";
 "sidebar.viewSettings" = "Sidebar View Settings";
 "sidebar.showReflog" = "Show Reflog";
@@ -1444,6 +1445,7 @@
 "tag.signRequiresMessage" = "Signed tags need a message.";
 "tag.noRevisions" = "This repository has no commits yet.";
 "tag.publish" = "Publish Tag";
+"drop.publishTag" = "Publish";
 "tag.publish.message" = "Creates the selected local tag on the selected remote.";
 "tag.publishMenu" = "Publish “%@”…";
 "tag.publishMainMenu" = "Publish Tag…";

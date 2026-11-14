@@ -74,13 +74,14 @@ extension RepositorySidebarView {
     }
 
     /// 每个配置远端都有一个可展开的节点，下面是它的远端分支；选中远端时主视图显示它的设置。
+    /// 过滤时只列出有匹配分支的远端。
     var remoteBranches: some View {
         sidebarSection(.remotes) {
             if session.history.snapshot?.remotes.isEmpty != false {
                 Text(AppLocalization.text("sync.noRemotes")).foregroundStyle(.secondary)
             }
 
-            ForEach(session.history.snapshot?.remotes ?? [], id: \.sidebarID) { remote in
+            ForEach(visibleRemotes, id: \.sidebarID) { remote in
                 DisclosureGroup(isExpanded: isExpanded(remote.sidebarID)) {
                     remoteBranchRows(remote)
                 } label: {
@@ -258,6 +259,17 @@ extension RepositorySidebarView {
     /// 过滤框有文字时，所有分组与文件夹都展开。
     var isFiltering: Bool { !filterText.isEmpty }
 
+    /// 侧边栏列出的远端：过滤时只留有匹配分支的远端，远端名连同分支名一起参与匹配。
+    var visibleRemotes: [RepositoryRemote] {
+        let remotes = session.history.snapshot?.remotes ?? []
+
+        guard isFiltering else {
+            return remotes
+        }
+
+        return remotes.filter { !remoteBranchNodes($0).isEmpty }
+    }
+
     /// 全部本地分支，按引用名排列。
     var localReferences: [RepositoryReference] {
         session.history.branches.filter(\.isLocal)
@@ -374,6 +386,19 @@ extension RepositorySidebarView {
             foldersFirst: groupedRefsOnTop,
             scope: remote.sidebarID.value
         )
+    }
+
+    /// 过滤把所选的远端藏起来时，选中改到 Workspace 的 Settings 行。
+    func selectSettingsIfRemoteHidden() {
+        guard
+            session.activeView == .remote,
+            let remote = session.selectedRemote,
+            !visibleRemotes.contains(where: { $0.name == remote })
+        else {
+            return
+        }
+
+        selection.wrappedValue = ["settings"]
     }
 
     /// 换仓库时回到默认的展开状态，清空过滤文字。

@@ -1112,6 +1112,7 @@
 "sidebar.archived" = "アーカイブ済みブランチ";
 "sidebar.tags" = "タグ";
 "sidebar.filter" = "フィルタ";
+"sidebar.filter.clear" = "消去";
 "sidebar.menu" = "サイドバー";
 "sidebar.viewSettings" = "サイドバーの表示設定";
 "sidebar.showReflog" = "Reflog を表示";
@@ -1444,6 +1445,7 @@
 "tag.signRequiresMessage" = "署名付きタグにはメッセージが必要です。";
 "tag.noRevisions" = "このリポジトリにはまだコミットがありません。";
 "tag.publish" = "タグを公開";
+"drop.publishTag" = "公開";
 "tag.publish.message" = "選んだローカルタグを選んだリモートに作成します。";
 "tag.publishMenu" = "「%@」を公開…";
 "tag.publishMainMenu" = "タグを公開…";

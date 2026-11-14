@@ -1112,6 +1112,7 @@
 "sidebar.archived" = "已归档分支";
 "sidebar.tags" = "标签";
 "sidebar.filter" = "过滤";
+"sidebar.filter.clear" = "清除";
 "sidebar.menu" = "侧边栏";
 "sidebar.viewSettings" = "侧边栏显示设置";
 "sidebar.showReflog" = "显示 Reflog";
@@ -1444,6 +1445,7 @@
 "tag.signRequiresMessage" = "签名的标签需要说明。";
 "tag.noRevisions" = "这个仓库还没有提交。";
 "tag.publish" = "发布标签";
+"drop.publishTag" = "发布";
 "tag.publish.message" = "在所选远端上新建所选的本地标签。";
 "tag.publishMenu" = "发布 “%@”…";
 "tag.publishMainMenu" = "发布标签…";

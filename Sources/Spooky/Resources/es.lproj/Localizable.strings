@@ -1112,6 +1112,7 @@
 "sidebar.archived" = "Ramas archivadas";
 "sidebar.tags" = "Etiquetas";
 "sidebar.filter" = "Filtrar";
+"sidebar.filter.clear" = "Borrar";
 "sidebar.menu" = "Barra lateral";
 "sidebar.viewSettings" = "Ajustes de visualización de la barra lateral";
 "sidebar.showReflog" = "Mostrar reflog";
@@ -1444,6 +1445,7 @@
 "tag.signRequiresMessage" = "Las etiquetas firmadas necesitan un mensaje.";
 "tag.noRevisions" = "Este repositorio aún no tiene commits.";
 "tag.publish" = "Publicar etiqueta";
+"drop.publishTag" = "Publicar";
 "tag.publish.message" = "Crea la etiqueta local elegida en el remoto elegido.";
 "tag.publishMenu" = "Publicar “%@”…";
 "tag.publishMainMenu" = "Publicar etiqueta…";

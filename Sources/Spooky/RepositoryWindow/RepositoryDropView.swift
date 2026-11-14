@@ -127,7 +127,7 @@ extension DropTargetView {
 
 // MARK: - DragBadge
 
-/// 拖动影像上的动作徽标：白底圆角 4、高 24、宽为文字宽 + 16，13 pt 粗体强调色文字，放在影像右侧 10 pt 处并竖直居中。
+/// 拖动影像上的动作徽标：白底圆角 4、高 24、宽为文字宽 + 16，13 pt 粗体强调色文字，放在影像左侧 10 pt 处并竖直居中。
 @MainActor
 enum DragBadge {
     /// 徽标在拖动项图像组件里的键。
@@ -153,7 +153,7 @@ enum DragBadge {
         badge.contents = image
 
         badge.frame = NSRect(
-            x: bounds.maxX + 10,
+            x: bounds.minX - 10 - image.size.width,
             y: bounds.midY - image.size.height / 2,
             width: image.size.width,
             height: image.size.height

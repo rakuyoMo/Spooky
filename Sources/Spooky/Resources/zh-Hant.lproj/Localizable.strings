@@ -1112,6 +1112,7 @@
 "sidebar.archived" = "已封存分支";
 "sidebar.tags" = "標籤";
 "sidebar.filter" = "篩選";
+"sidebar.filter.clear" = "清除";
 "sidebar.menu" = "側邊欄";
 "sidebar.viewSettings" = "側邊欄顯示設定";
 "sidebar.showReflog" = "顯示 Reflog";
@@ -1444,6 +1445,7 @@
 "tag.signRequiresMessage" = "簽署的標籤需要說明。";
 "tag.noRevisions" = "這個儲存庫還沒有提交。";
 "tag.publish" = "發佈標籤";
+"drop.publishTag" = "發佈";
 "tag.publish.message" = "在所選遠端上新增所選的本機標籤。";
 "tag.publishMenu" = "發佈 “%@”…";
 "tag.publishMainMenu" = "發佈標籤…";

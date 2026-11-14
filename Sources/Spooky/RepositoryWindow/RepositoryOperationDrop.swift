@@ -46,7 +46,7 @@ enum RepositoryOperationDrop {
         case .rebase: "sync.rebaseHead"
         case .createTag: "tag.create.submit"
         case .moveBranch: "branch.moveHere"
-        case .publishTag: "tag.publish"
+        case .publishTag: "drop.publishTag"
         case .createWorktree: "worktree.create"
         }
     }

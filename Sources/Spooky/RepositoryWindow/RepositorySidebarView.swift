@@ -183,6 +183,9 @@ struct RepositorySidebarView: View {
         .onChange(of: selectionState) { old, _ in
             reselectVanishedRows(from: old)
         }
+        .onChange(of: filterText) {
+            selectSettingsIfRemoteHidden()
+        }
 
         // 远端的设置随引用一起读出摘要，摘要变化时重新读取远端行提示里的地址
         .task(id: session.history.snapshot?.remoteSettingsDigests) {

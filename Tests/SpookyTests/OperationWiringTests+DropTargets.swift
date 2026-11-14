@@ -84,7 +84,7 @@ extension OperationWiringTests {
         let tracked = try #require(components().last)
 
         #expect(components().map(\.key) == [.icon, .label, DragBadge.key])
-        #expect(tracked.frame.minX == 184)
+        #expect(tracked.frame.maxX == -10)
         #expect(tracked.frame.midY == 11)
 
         // 换成更长的动作名：仍只有一个徽标，宽度随文字变化

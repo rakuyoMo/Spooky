@@ -1112,6 +1112,7 @@
 "sidebar.archived" = "보관된 브랜치";
 "sidebar.tags" = "태그";
 "sidebar.filter" = "필터";
+"sidebar.filter.clear" = "지우기";
 "sidebar.menu" = "사이드바";
 "sidebar.viewSettings" = "사이드바 보기 설정";
 "sidebar.showReflog" = "Reflog 보기";
@@ -1444,6 +1445,7 @@
 "tag.signRequiresMessage" = "서명한 태그에는 메시지가 필요합니다.";
 "tag.noRevisions" = "이 저장소에는 아직 커밋이 없습니다.";
 "tag.publish" = "태그 게시";
+"drop.publishTag" = "게시";
 "tag.publish.message" = "선택한 로컬 태그를 선택한 원격에 만듭니다.";
 "tag.publishMenu" = "“%@” 게시…";
 "tag.publishMainMenu" = "태그 게시…";

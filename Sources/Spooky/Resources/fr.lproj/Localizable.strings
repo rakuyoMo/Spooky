@@ -1112,6 +1112,7 @@
 "sidebar.archived" = "Branches archivées";
 "sidebar.tags" = "Tags";
 "sidebar.filter" = "Filtrer";
+"sidebar.filter.clear" = "Effacer";
 "sidebar.menu" = "Barre latérale";
 "sidebar.viewSettings" = "Réglages d’affichage de la barre latérale";
 "sidebar.showReflog" = "Afficher le reflog";
@@ -1444,6 +1445,7 @@
 "tag.signRequiresMessage" = "Les tags signés ont besoin d’un message.";
 "tag.noRevisions" = "Ce dépôt n’a encore aucun commit.";
 "tag.publish" = "Publier le tag";
+"drop.publishTag" = "Publier";
 "tag.publish.message" = "Crée le tag local choisi sur le dépôt distant choisi.";
 "tag.publishMenu" = "Publier « %@ »…";
 "tag.publishMainMenu" = "Publier un tag…";
