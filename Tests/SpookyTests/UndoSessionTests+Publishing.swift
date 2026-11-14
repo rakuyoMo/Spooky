@@ -8,7 +8,7 @@ import Testing
 
 /// 远端上的引用靠反向操作撤销：发布的分支与标签在远端删掉，改名的远端分支改回原名，撤销与重做记在 Activity 的 Remote 页。
 extension UndoSessionTests {
-    /// 发布分支撤销后远端没有这个分支、本地分支没有上游，重做后两者都恢复；撤销与重做都记在 Remote 页。
+    /// 发布分支撤销后远端没有这个分支、本地分支没有上游，重做后两者都恢复，之后的获取不挡住它；撤销与重做都记在 Remote 页。
     /// 远端已有这个分支时发布不新建分支：已是最新时撤销栈不动；快进了远端分支与推送一样不能撤销，撤销栈清空。
     @Test("发布分支的撤销与重做")
     func publishBranchRoundTrip() async throws {
@@ -40,6 +40,11 @@ extension UndoSessionTests {
 
         #expect(try await Self.references(in: bare, of: fixture) == ["refs/heads/main"])
         #expect(try await Self.upstream(in: fixture) == "origin")
+
+        // 获取不进撤销记录，之后仍能撤销更早的发布
+        try await fixture.perform { session.quickFetch(remote: "origin") }
+
+        #expect(try await Self.settledState(of: session, redo: false) == .available(publish))
 
         // 撤销只连接远端、不推送分支，Remote 页只写远端名；重做与原操作写同一个 refspec
         let undo = Self.activity(UndoManager().undoMenuTitle(forUndoActionName: publish), in: fixture)
