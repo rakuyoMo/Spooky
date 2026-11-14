@@ -5,22 +5,22 @@ import SwiftUI
 // MARK: - Working Copy Files
 
 extension RepositoryWindowController {
-    /// 树形显示，所有仓库共用。
+    /// 树形显示，按仓库记住。
     @objc
     func viewAsTree() {
-        Self.setListMode(.tree)
+        setListMode(.tree)
     }
 
-    /// 平铺显示，所有仓库共用。
+    /// 平铺显示，按仓库记住。
     @objc
     func viewAsList() {
-        Self.setListMode(.list)
+        setListMode(.list)
     }
 
     /// 树形里显示或隐藏没有改动的文件，即在树形与全部文件之间切换。
     @objc
     func toggleNonModifiedItems() {
-        Self.setListMode(session.listMode == .allFiles ? .tree : .allFiles)
+        setListMode(session.listMode == .allFiles ? .tree : .allFiles)
     }
 
     /// 显示或隐藏被忽略的文件，全局偏好。
@@ -147,11 +147,18 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 记住所有仓库共用的显示模式，各仓库窗口的列表一起切换。
-    private static func setListMode(_ mode: WorkingCopyListMode) {
-        WorkingCopyListMode.store(mode)
+    /// 记住当前仓库的显示模式，本窗口与显示同一仓库的其它窗口一起切换。
+    private func setListMode(_ mode: WorkingCopyListMode) {
+        guard let repository = session.repository else { return }
 
-        for controller in NSApp.windows.compactMap({ $0.windowController as? RepositoryWindowController }) {
+        WorkingCopyListMode.store(mode, for: repository)
+        session.setListMode(mode)
+
+        let others = NSApp.windows
+            .compactMap { $0.windowController as? RepositoryWindowController }
+            .filter { $0 !== self && $0.session.repository == repository }
+
+        for controller in others {
             controller.session.setListMode(mode)
         }
     }

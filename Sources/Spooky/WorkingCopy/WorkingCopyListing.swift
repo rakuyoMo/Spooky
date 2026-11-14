@@ -14,24 +14,37 @@ enum WorkingCopyListMode: Int {
     /// 全部文件：树形里同时显示没有改动的已跟踪文件。
     case allFiles = 2
 
-    /// 保存显示模式的偏好键，值是模式的原始值。
+    /// 全局显示模式的偏好键，值是模式的原始值；没有单独记过的仓库以它为初始值。
     private static let storageKey = "workingCopyViewMode"
+
+    /// 按仓库记的显示模式的偏好键；值以仓库的显示路径为键，记模式的原始值。
+    private static let repositoryStorageKey = "workingCopyViewModes"
 
     /// 是否按目录组织。
     var isTree: Bool { self != .list }
 
-    /// 所有仓库共用的显示模式；没有记录或记录无法识别时为平铺。
+    /// 仓库的显示模式；这个仓库没有记过时取全局的显示模式，都没有或记录无法识别时为平铺。
     ///
-    /// - Parameter defaults: 保存偏好的位置，测试使用独立的偏好域。
-    static func stored(defaults: UserDefaults = .standard) -> Self {
-        Self(rawValue: defaults.integer(forKey: storageKey)) ?? .list
+    /// - Parameters:
+    ///   - repository: 显示的仓库。
+    ///   - defaults: 保存偏好的位置，测试使用独立的偏好域。
+    static func stored(for repository: RepositoryLocation, defaults: UserDefaults = .standard) -> Self {
+        let modes = defaults.dictionary(forKey: repositoryStorageKey) as? [String: Int]
+        let rawValue = modes?[repository.displayPath] ?? defaults.integer(forKey: storageKey)
+
+        return Self(rawValue: rawValue) ?? .list
     }
 
-    /// 记住显示模式，之后打开的每个仓库都沿用它。
+    /// 记住这个仓库的显示模式，其它仓库不受影响。
     ///
-    /// - Parameter defaults: 保存偏好的位置，测试使用独立的偏好域。
-    static func store(_ mode: Self, defaults: UserDefaults = .standard) {
-        defaults.set(mode.rawValue, forKey: storageKey)
+    /// - Parameters:
+    ///   - mode: 显示模式。
+    ///   - repository: 显示的仓库。
+    ///   - defaults: 保存偏好的位置，测试使用独立的偏好域。
+    static func store(_ mode: Self, for repository: RepositoryLocation, defaults: UserDefaults = .standard) {
+        var modes = defaults.dictionary(forKey: repositoryStorageKey) ?? [:]
+        modes[repository.displayPath] = mode.rawValue
+        defaults.set(modes, forKey: repositoryStorageKey)
     }
 }
 

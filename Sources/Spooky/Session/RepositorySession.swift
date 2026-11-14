@@ -393,8 +393,8 @@ final class RepositorySession {
         self.repository = repository
         fileCache = RepositoryFileCache(runner: makeRunner(repository))
 
-        // 工作区列表沿用所有仓库共用的显示模式
-        listMode = WorkingCopyListMode.stored()
+        // 工作区列表用这个仓库记下的显示模式
+        listMode = WorkingCopyListMode.stored(for: repository)
 
         // 正在显示的仓库也计入缓存上限，超出时淘汰最久未使用的仓库。
         let saved = viewStates.state(for: repository)
