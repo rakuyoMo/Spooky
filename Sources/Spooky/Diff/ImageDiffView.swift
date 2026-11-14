@@ -46,9 +46,13 @@ struct ImageDiffView: View {
     @State
     private var mode = Mode.twoUp
 
-    /// One-Up 显示新的一侧。
+    /// One-Up 显示新的一侧；切到 One-Up 时先显示旧的一侧。
     @State
-    private var showsNew = true
+    private var showsNew = false
+
+    /// 图片区的大小，用来算放不下时的缩小比例。
+    @State
+    private var areaSize = CGSize.zero
 
     /// 动作条、图片区与读取状态。
     var body: some View {
@@ -58,13 +62,19 @@ struct ImageDiffView: View {
                 Divider()
             }
 
-            // 工作区里图片区占满动作条以上的空间，变更集里按图片高度排列
+            // 工作区里图片区占满动作条以上的空间，变更集里按图片高度排列；图片连同标签与说明在区内竖直居中
             content
                 .frame(
                     maxWidth: .infinity,
                     maxHeight: placement == .bottom ? .infinity : nil,
-                    alignment: .top
+                    alignment: images == nil || failed ? .top : .center
                 )
+                .background(Color(nsColor: .controlBackgroundColor))
+                .onGeometryChange(for: CGSize.self) {
+                    $0.size
+                } action: {
+                    areaSize = $0
+                }
 
             if placement == .bottom {
                 Divider()
@@ -82,11 +92,14 @@ struct ImageDiffView: View {
                 .foregroundStyle(.secondary)
                 .padding(20)
         } else if let images {
-            GeometryReader { proxy in
-                imageRow(images, width: proxy.size.width)
-                    .frame(maxWidth: .infinity)
+            let sides = visibleSides(images)
+            let scale = scale(of: sides)
+
+            HStack(alignment: .top, spacing: 8) {
+                ForEach(sides, id: \.label) {
+                    ImageDiffPane(side: $0, scale: scale)
+                }
             }
-            .frame(height: 20 + 16 + 20 + rowHeight(images) + 18 + 16)
         } else {
             HStack(spacing: 8) {
                 ProgressView().controlSize(.small)
@@ -98,10 +111,10 @@ struct ImageDiffView: View {
         }
     }
 
-    /// 两侧都在时才出现比较方式与 One-Up 的版本切换。
+    /// 两侧都在时才出现比较方式与 One-Up 的版本切换；两组分段控件用常规尺寸，相隔 7 pt。
     @ViewBuilder
     private var actionBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 7) {
             if let images, images.old != nil, images.new != nil {
                 Picker(AppLocalization.text("diff.imageMode"), selection: $mode) {
                     Text(AppLocalization.text("diff.twoUp")).tag(Mode.twoUp)
@@ -124,7 +137,6 @@ struct ImageDiffView: View {
 
             Spacer(minLength: 0)
         }
-        .controlSize(.small)
         .padding(.horizontal, 20)
     }
 
@@ -134,28 +146,10 @@ struct ImageDiffView: View {
         return file.isBinary && (UTType(filenameExtension: pathExtension)?.conforms(to: .image) ?? false)
     }
 
-    /// 按比较方式排出一张或两张图片，并排时每张可用宽度为一半减去间距与边距。
-    @ViewBuilder
-    private func imageRow(_ images: ImagePair, width: Double) -> some View {
-        let sides = visibleSides(images)
-        let paneWidth = sides.count == 2 ? width / 2 - 4 - 80 : width - 80
-
-        HStack(alignment: .top, spacing: 8) {
-            ForEach(sides, id: \.label) { side in
-                ImageDiffPane(
-                    label: side.label,
-                    image: side.image,
-                    data: side.data,
-                    maxWidth: max(40, paneWidth)
-                )
-            }
-        }
-    }
-
     /// 当前要显示的版本：Two-Up 两侧都显示，One-Up 只显示选中的一侧，单侧图片只有那一侧。
     private func visibleSides(_ images: ImagePair) -> [ImageSide] {
-        let old = images.old.map { ImageSide(label: "diff.oldLabel", image: $0.image, data: $0.data) }
-        let new = images.new.map { ImageSide(label: "diff.newLabel", image: $0.image, data: $0.data) }
+        let old = images.old.map { ImageSide(label: "diff.oldLabel", image: $0) }
+        let new = images.new.map { ImageSide(label: "diff.newLabel", image: $0) }
 
         guard let old, let new else {
             return [old, new].compactMap(\.self)
@@ -164,10 +158,21 @@ struct ImageDiffView: View {
         return mode == .twoUp ? [old, new] : [showsNew ? new : old]
     }
 
-    /// 图片区高度取两侧中较高的一张，最高 480 pt。
-    private func rowHeight(_ images: ImagePair) -> Double {
-        let heights = [images.old, images.new].compactMap { $0?.image.size.height }
-        return min(480, heights.max() ?? 0)
+    /// 像素数当点数显示，放不下时各图按同一比例缩小。
+    ///
+    /// 横向两边各留 40 pt、图间隔 8 pt；竖向扣除标签与说明占的高度，变更集里图片最高 480 pt。
+    private func scale(of sides: [ImageSide]) -> CGFloat {
+        let width = sides.reduce(0) { $0 + $1.image.pixels.width }
+        let height = sides.map(\.image.pixels.height).max() ?? 0
+
+        guard width > 0, height > 0, areaSize.width > 0 else {
+            return 1
+        }
+
+        let availableWidth = areaSize.width - 80 - 8 * CGFloat(sides.count - 1)
+        let availableHeight = placement == .bottom ? areaSize.height - ImageDiffPane.chromeHeight : 480
+
+        return max(0, min(1, availableWidth / width, availableHeight / height))
     }
 
     /// 读取字节并解码；任何一侧解码失败都按读取失败处理。
@@ -200,56 +205,54 @@ struct ImageDiffView: View {
 
 /// 一侧图片：顶部标签、衬棋盘格并描边的图片与底部的尺寸说明。
 private struct ImageDiffPane: View {
-    /// 顶部标签的资源键。
-    let label: String
+    /// 标签与说明连同上下边距占的高度：标签 20 + 16 + 20，说明 30 + 18 + 16。
+    static let chromeHeight: CGFloat = 56 + 64
 
-    /// 图片。
-    let image: NSImage
+    /// 要显示的版本。
+    let side: ImageSide
 
-    /// 原始字节，用于显示文件大小。
-    let data: Data
-
-    /// 可用宽度。
-    let maxWidth: Double
+    /// 像素数换成点数后的缩小比例。
+    let scale: CGFloat
 
     /// 竖向依次是上边距、标签、间隔、图片、说明与下边距。
     var body: some View {
         VStack(spacing: 0) {
-            Text(AppLocalization.text(label))
+            Text(AppLocalization.text(side.label))
                 .font(.system(size: 14))
                 .foregroundStyle(.secondary)
                 .frame(height: 16)
                 .padding(.top, 20)
                 .padding(.bottom, 20)
 
-            Image(nsImage: image)
+            Image(nsImage: side.image.image)
                 .resizable()
                 .interpolation(.high)
-                .aspectRatio(contentMode: .fit)
-                .frame(maxWidth: min(maxWidth, image.size.width), maxHeight: min(480, image.size.height))
+                .frame(
+                    width: side.image.pixels.width * scale,
+                    height: side.image.pixels.height * scale
+                )
                 .background(CheckerboardView())
                 .border(AppPalette.color("general_border_color"), width: 1)
 
+            // 说明在图片下方 30 pt，按自然宽度排，不随图片宽度截断
             Text(description)
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
+                .fixedSize()
                 .frame(height: 18)
+                .padding(.top, 30)
                 .padding(.bottom, 16)
         }
-        .frame(maxWidth: maxWidth)
         .accessibilityElement(children: .combine)
     }
 
     /// 像素尺寸与文件大小。
     private var description: String {
-        let pixels = image.representations.first.map { ($0.pixelsWide, $0.pixelsHigh) }
-            ?? (Int(image.size.width), Int(image.size.height))
-
-        return AppLocalization.text(
+        AppLocalization.text(
             "diff.imageSize",
-            pixels.0,
-            pixels.1,
-            ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .file)
+            Int(side.image.pixels.width),
+            Int(side.image.pixels.height),
+            ByteCountFormatter.string(fromByteCount: Int64(side.image.data.count), countStyle: .file)
         )
     }
 }
@@ -288,12 +291,15 @@ private struct CheckerboardView: View {
 
 // MARK: - DecodedImage
 
-/// 解码后的一侧图片与它的原始字节。
+/// 解码后的一侧图片、它的像素尺寸与原始字节。
 private struct DecodedImage {
     /// 图片。
     let image: NSImage
 
-    /// 原始字节。
+    /// 像素尺寸；矢量图等没有像素数的取点数。
+    let pixels: CGSize
+
+    /// 原始字节，用于显示文件大小。
     let data: Data
 
     /// 不能解码的数据视为读取失败。
@@ -304,6 +310,17 @@ private struct DecodedImage {
 
         self.image = image
         self.data = data
+
+        // 位图取第一份表示的像素数
+        if
+            let representation = image.representations.first,
+            representation.pixelsWide > 0,
+            representation.pixelsHigh > 0
+        {
+            pixels = CGSize(width: representation.pixelsWide, height: representation.pixelsHigh)
+        } else {
+            pixels = image.size
+        }
     }
 }
 
@@ -325,9 +342,6 @@ private struct ImageSide {
     /// 顶部标签的资源键，同时作为标识。
     let label: String
 
-    /// 图片。
-    let image: NSImage
-
-    /// 原始字节。
-    let data: Data
+    /// 解码后的图片。
+    let image: DecodedImage
 }
