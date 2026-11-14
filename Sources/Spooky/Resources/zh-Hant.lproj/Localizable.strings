@@ -408,7 +408,7 @@
 "branch.checkout" = "簽出分支";
 "branch.checkoutNamed" = "簽出 “%@”";
 "branch.delete" = "刪除分支";
-"branch.copyName" = "複製分支名稱";
+"branch.copyName" = "將分支名稱複製到剪貼簿";
 "branch.start" = "起點：";
 "branch.name" = "分支名稱：";
 "branch.local" = "本機分支：";
@@ -1382,7 +1382,7 @@
 "branch.parent" = "追蹤父分支";
 "branch.parent.set" = "設定父分支";
 "branch.parent.setMenu" = "追蹤其他父分支…";
-"branch.parent.remove" = "移除父分支";
+"branch.parent.remove" = "取消追蹤父分支";
 "branch.parent.field" = "父分支：";
 "branch.parent.message" = "選擇 “%@” 所基於的分支。比較與更新這個分支時以它為基準。";
 "branch.parent.replace" = "這會取代目前的父分支 “%@”。";
@@ -2392,7 +2392,7 @@
 "worktree.reveal" = "在 Finder 中顯示工作樹";
 "worktree.revision" = "版本：";
 "worktree.subtitle" = "工作樹（%@）";
-"worktree.terminal" = "在終端機中開啟工作樹";
+"worktree.checkedOutIn" = "已在工作樹 “%@” 中簽出";
 "worktree.tooltip" = "工作樹 “%@”";
 "worktree.tooltip.path" = "簽出位置：“%@”";
 

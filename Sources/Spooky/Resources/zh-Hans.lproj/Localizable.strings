@@ -408,7 +408,7 @@
 "branch.checkout" = "检出分支";
 "branch.checkoutNamed" = "检出 “%@”";
 "branch.delete" = "删除分支";
-"branch.copyName" = "复制分支名";
+"branch.copyName" = "将分支名复制到剪贴板";
 "branch.start" = "起点：";
 "branch.name" = "分支名称：";
 "branch.local" = "本地分支：";
@@ -1382,7 +1382,7 @@
 "branch.parent" = "跟踪父分支";
 "branch.parent.set" = "设置父分支";
 "branch.parent.setMenu" = "跟踪其他父分支…";
-"branch.parent.remove" = "移除父分支";
+"branch.parent.remove" = "取消跟踪父分支";
 "branch.parent.field" = "父分支：";
 "branch.parent.message" = "选择 “%@” 所基于的分支。比较与更新这个分支时以它为基准。";
 "branch.parent.replace" = "这会替换当前的父分支 “%@”。";
@@ -2392,7 +2392,7 @@
 "worktree.reveal" = "在 Finder 中显示工作树";
 "worktree.revision" = "版本：";
 "worktree.subtitle" = "工作树（%@）";
-"worktree.terminal" = "在终端中打开工作树";
+"worktree.checkedOutIn" = "已在工作树 “%@” 中检出";
 "worktree.tooltip" = "工作树 “%@”";
 "worktree.tooltip.path" = "检出位置：“%@”";
 

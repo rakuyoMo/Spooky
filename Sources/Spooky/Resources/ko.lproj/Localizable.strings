@@ -408,7 +408,7 @@
 "branch.checkout" = "브랜치 체크아웃";
 "branch.checkoutNamed" = "“%@” 체크아웃";
 "branch.delete" = "브랜치 삭제";
-"branch.copyName" = "브랜치 이름 복사";
+"branch.copyName" = "브랜치 이름을 클립보드에 복사";
 "branch.start" = "시작점:";
 "branch.name" = "브랜치 이름:";
 "branch.local" = "로컬 브랜치:";
@@ -1382,7 +1382,7 @@
 "branch.parent" = "부모 브랜치 추적";
 "branch.parent.set" = "부모 브랜치 설정";
 "branch.parent.setMenu" = "다른 부모 브랜치 추적…";
-"branch.parent.remove" = "부모 브랜치 제거";
+"branch.parent.remove" = "부모 브랜치 추적 해제";
 "branch.parent.field" = "부모:";
 "branch.parent.message" = "“%@”의 기반이 되는 브랜치를 선택합니다. 이 브랜치를 비교하고 업데이트할 때 기준으로 씁니다.";
 "branch.parent.replace" = "현재 부모 “%@”을(를) 대체합니다.";
@@ -2392,7 +2392,7 @@
 "worktree.reveal" = "Finder에서 작업 트리 보기";
 "worktree.revision" = "리비전:";
 "worktree.subtitle" = "작업 트리 (%@)";
-"worktree.terminal" = "터미널에서 작업 트리 열기";
+"worktree.checkedOutIn" = "작업 트리 “%@”에서 체크아웃됨";
 "worktree.tooltip" = "작업 트리 “%@”";
 "worktree.tooltip.path" = "체크아웃 위치: “%@”";
 

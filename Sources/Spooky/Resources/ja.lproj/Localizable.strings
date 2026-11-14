@@ -408,7 +408,7 @@
 "branch.checkout" = "ブランチをチェックアウト";
 "branch.checkoutNamed" = "「%@」をチェックアウト";
 "branch.delete" = "ブランチを削除";
-"branch.copyName" = "ブランチ名をコピー";
+"branch.copyName" = "ブランチ名をクリップボードにコピー";
 "branch.start" = "開始点：";
 "branch.name" = "ブランチ名：";
 "branch.local" = "ローカルブランチ：";
@@ -1382,7 +1382,7 @@
 "branch.parent" = "親ブランチを追跡";
 "branch.parent.set" = "親ブランチを設定";
 "branch.parent.setMenu" = "別の親ブランチを追跡…";
-"branch.parent.remove" = "親ブランチを解除";
+"branch.parent.remove" = "親ブランチの追跡を解除";
 "branch.parent.field" = "親：";
 "branch.parent.message" = "「%@」の元になるブランチを選びます。このブランチの比較と更新はそれを基準にします。";
 "branch.parent.replace" = "現在の親「%@」は置き換えられます。";
@@ -2392,7 +2392,7 @@
 "worktree.reveal" = "ワークツリーを Finder に表示";
 "worktree.revision" = "リビジョン：";
 "worktree.subtitle" = "ワークツリー（%@）";
-"worktree.terminal" = "ワークツリーをターミナルで開く";
+"worktree.checkedOutIn" = "ワークツリー「%@」でチェックアウト済み";
 "worktree.tooltip" = "ワークツリー「%@」";
 "worktree.tooltip.path" = "チェックアウト先：「%@」";
 

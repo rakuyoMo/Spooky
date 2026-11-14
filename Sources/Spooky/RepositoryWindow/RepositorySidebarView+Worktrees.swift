@@ -67,10 +67,10 @@ struct BranchWorktreeMenuItems: View {
     /// 本地分支。
     let branch: RepositoryReference
 
-    /// 检出项之后的一组。
+    /// 检出项之后的一组；已在别的工作树检出时以不可点的一行说明开头，写出那个工作树的名字。
     var body: some View {
         if let worktree = session.worktrees.branchWorktrees[branch.id] {
-            Text(session.location(of: worktree)?.displayPath ?? worktree.path)
+            Text(AppLocalization.text("worktree.checkedOutIn", worktree.name))
 
             WorktreeMenu(session: session, worktree: worktree, branch: branch.name)
         } else {
@@ -150,7 +150,7 @@ struct WorktreeMenu: View {
             .disabled(location == nil)
         }
 
-        Button(title("worktree.terminal", "worktree.branch.terminal")) {
+        Button(title("action.openTerminal", "worktree.branch.terminal")) {
             if let location { session.onOpenInTerminal?(location) }
         }
         .disabled(location == nil)

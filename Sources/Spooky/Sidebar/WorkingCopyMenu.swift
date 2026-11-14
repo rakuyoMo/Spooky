@@ -55,7 +55,7 @@ struct WorkingCopyMenu: View {
 // MARK: - Groups
 
 extension WorkingCopyMenu {
-    /// Check Out 子菜单：按公共顺序列出全部本地分支，HEAD 分支打勾；分隔线后是检出任意版本。
+    /// Check Out 子菜单：按公共顺序列出全部本地分支，HEAD 分支打勾且不可点；分隔线后是检出任意版本。
     private var checkoutMenu: some View {
         Menu(AppLocalization.text("workspace.checkoutMenu")) {
             let head = session.headBranch?.id
@@ -64,6 +64,7 @@ extension WorkingCopyMenu {
             ForEach(ReferenceOrder.sorted(branches, in: session.history.snapshot)) { branch in
                 if branch.id == head {
                     Toggle(branch.name, isOn: .constant(true))
+                        .disabled(true)
                 } else {
                     Button(branch.name) {
                         session.checkoutBranch(branch)

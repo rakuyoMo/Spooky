@@ -2,48 +2,18 @@ import AppKit
 import SpookyKit
 import SwiftUI
 
-// MARK: - BranchManagementMenu
+// MARK: - BranchUpstreamMenus
 
-/// 分支右键菜单里的引用管理项：本地分支与远端分支各有一组。
-struct BranchManagementMenu: View {
-    /// 所在窗口的会话。
-    let session: RepositorySession
-
-    /// 右键的分支。
-    let reference: RepositoryReference
-
-    /// 按分支种类选择一组菜单项。
-    var body: some View {
-        if reference.isLocal {
-            LocalBranchManagementMenu(session: session, reference: reference)
-        } else {
-            RemoteBranchManagementMenu(session: session, reference: reference)
-        }
-    }
-}
-
-// MARK: - LocalBranchManagementMenu
-
-/// 本地分支右键菜单里的引用管理项：快进、跟踪与父分支子菜单、重命名，以及从它新建标签。
-private struct LocalBranchManagementMenu: View {
+/// 本地分支右键菜单里的跟踪一组：Track Upstream Branch 与 Track Parent Branch 两个子菜单。
+struct BranchUpstreamMenus: View {
     /// 所在窗口的会话。
     let session: RepositorySession
 
     /// 右键的本地分支。
     let reference: RepositoryReference
 
-    /// 只落后于上游时才有快进；跟踪子菜单在分离 HEAD 时没有可设置的分支。
+    /// 两个子菜单，仓库不可写时整个子菜单不可用。
     var body: some View {
-        Divider()
-
-        if session.canFastForward(reference) {
-            Button(AppLocalization.text("branch.fastForward", reference.name)) {
-                session.fastForward(reference)
-            }
-
-            Divider()
-        }
-
         Menu(AppLocalization.text("branch.tracking")) {
             BranchTrackingMenu(session: session, branch: reference)
         }
@@ -53,27 +23,14 @@ private struct LocalBranchManagementMenu: View {
             BranchParentMenu(session: session, branch: reference)
         }
         .disabled(!session.canManage(reference))
-
-        Divider()
-
-        Button(AppLocalization.text("reference.renameMenu", reference.name)) {
-            session.requestReference(.renameBranch(reference))
-        }
-        .disabled(!session.canManage(reference))
-
-        Divider()
-
-        Button(AppLocalization.text("tag.createFrom", reference.name)) {
-            session.requestReference(.createTag(revision: reference.id))
-        }
-        .disabled(!session.canCreateTag)
     }
 }
 
 // MARK: - BranchTrackingMenu
 
-/// 跟踪子菜单：远端分支与本地分支两组，当前上游打勾；最后一项取消跟踪，没有上游时打勾。
-private struct BranchTrackingMenu: View {
+/// 跟踪子菜单：远端分支与本地分支两组，按版本候选的公共顺序排列，当前上游打勾且不可点；
+/// 最后一项取消跟踪，配置的上游已不存在时打勾，没有上游时不可用。
+struct BranchTrackingMenu: View {
     /// 所在窗口的会话。
     let session: RepositorySession
 
@@ -82,7 +39,7 @@ private struct BranchTrackingMenu: View {
 
     /// 两组分支各带一个不可点的组名。
     var body: some View {
-        let branches = session.history.branches
+        let branches = ReferenceOrder.candidates(session.history.branches, in: session.history.snapshot)
 
         Text(AppLocalization.text("branch.tracking.remoteBranches"))
 
@@ -98,16 +55,29 @@ private struct BranchTrackingMenu: View {
 
         Toggle(
             AppLocalization.text("branch.tracking.remove"),
-            isOn: Binding(get: { branch.upstream == nil }, set: { _ in session.unsetUpstream(of: branch) })
+            isOn: Binding(get: { isUpstreamGone }, set: { _ in session.unsetUpstream(of: branch) })
         )
+        .disabled(branch.upstream == nil)
     }
 
-    /// 一个候选上游，当前上游打勾。
+    /// 配置了上游，但它已不在引用里。
+    private var isUpstreamGone: Bool {
+        guard let upstream = branch.upstream else {
+            return false
+        }
+
+        return !session.history.branches.contains { $0.id == upstream }
+    }
+
+    /// 一个候选上游；当前上游打勾且不可点。
     private func candidate(_ upstream: RepositoryReference) -> some View {
-        Toggle(
+        let isCurrent = branch.upstream == upstream.id
+
+        return Toggle(
             upstream.name,
-            isOn: Binding(get: { branch.upstream == upstream.id }, set: { _ in session.setUpstream(upstream, for: branch) })
+            isOn: Binding(get: { isCurrent }, set: { _ in session.setUpstream(upstream, for: branch) })
         )
+        .disabled(isCurrent)
     }
 }
 
@@ -169,7 +139,7 @@ struct BranchParentMenu: View {
 // MARK: - RemoteBranchManagementMenu
 
 /// 远端分支右键菜单里的引用管理项：重命名与删除；多选的都是远端分支时删除全部所选。
-private struct RemoteBranchManagementMenu: View {
+struct RemoteBranchManagementMenu: View {
     /// 所在窗口的会话。
     let session: RepositorySession
 

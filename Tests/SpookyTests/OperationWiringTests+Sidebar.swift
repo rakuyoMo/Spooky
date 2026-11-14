@@ -72,15 +72,15 @@ extension OperationWiringTests {
         #expect(remote.alternates == [false, true])
         #expect(remote.enabled == [true, true])
 
-        // 菜单项的动作经 SwiftUI 转发，等请求到达
+        // 菜单项的动作经 SwiftUI 转发，等请求到达；side 没有上游，安全强推从有上游的 main 发起
         var requests: [SyncDialogRequest] = []
         session.onSyncRequest = { requests.append($0) }
         local.perform(AppLocalization.text("branch.pushToMenu", "side"))
-        local.perform(AppLocalization.text("sync.forcePushMenu"))
+        head.perform(AppLocalization.text("sync.forcePushMenu"))
         await until { requests.count == 2 }
 
         #expect(requests.map(\.kind) == [.pushRevision, .forcePush])
-        #expect(requests.map(\.preselection) == ["side", "refs/heads/side"])
+        #expect(requests.map(\.preselection) == ["side", "refs/heads/main"])
     }
 
     /// 只有 HEAD 分支有合并与变基，以跟踪分支为对象，另有 Rebase Onto Revision…；其它分支没有这一组，
@@ -226,13 +226,15 @@ extension OperationWiringTests {
             false, false, false, true, false, true, false, false, false, false, false,
         ])
 
-        // Check Out 子菜单：main 在前并打勾，分隔线后是检出任意版本
+        // Check Out 子菜单：main 在前，打勾且不可点；分隔线后是检出任意版本
         let checkout = try #require(menu.menu.items.first?.submenu)
 
         #expect(checkout.items.map { $0.isSeparatorItem ? "" : $0.title } == [
             "main", "side", "", text("workspace.checkoutRevisionMenu"),
         ])
-        #expect(checkout.items.first?.state == .on)
+        #expect(checkout.items[0].state == .on)
+        #expect(!checkout.items[0].isEnabled)
+        #expect(checkout.items[1].isEnabled)
 
         // Publish… 打开发布仓库的对话框
         var publications: [PullRequestRequest] = []
@@ -321,6 +323,11 @@ struct HostedMenu {
     init(_ content: some View) {
         menu = NSHostingMenu(rootView: content)
         menu.update()
+    }
+
+    /// 标题相同的第一项。
+    func item(_ title: String) -> NSMenuItem? {
+        menu.items.first { $0.title == title }
     }
 
     /// 选中标题相同的一项；直接调用菜单项的动作，不经过菜单的跟踪。

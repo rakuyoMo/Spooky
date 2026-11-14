@@ -408,7 +408,7 @@
 "branch.checkout" = "Hacer checkout de la rama";
 "branch.checkoutNamed" = "Hacer checkout de “%@”";
 "branch.delete" = "Eliminar rama";
-"branch.copyName" = "Copiar nombre de la rama";
+"branch.copyName" = "Copiar nombre de la rama al portapapeles";
 "branch.start" = "Punto de partida:";
 "branch.name" = "Nombre de la rama:";
 "branch.local" = "Rama local:";
@@ -1382,7 +1382,7 @@
 "branch.parent" = "Seguir rama padre";
 "branch.parent.set" = "Establecer rama padre";
 "branch.parent.setMenu" = "Seguir otra rama padre…";
-"branch.parent.remove" = "Quitar rama padre";
+"branch.parent.remove" = "Dejar de seguir la rama padre";
 "branch.parent.field" = "Padre:";
 "branch.parent.message" = "Elige la rama en la que se basa “%@”. Las comparaciones y actualizaciones de la rama la usan como base.";
 "branch.parent.replace" = "Esto sustituye la rama padre actual “%@”.";
@@ -2392,7 +2392,7 @@
 "worktree.reveal" = "Mostrar worktree en el Finder";
 "worktree.revision" = "Revisión:";
 "worktree.subtitle" = "Worktree (%@)";
-"worktree.terminal" = "Abrir worktree en el terminal";
+"worktree.checkedOutIn" = "Con checkout en el worktree “%@”";
 "worktree.tooltip" = "Worktree “%@”";
 "worktree.tooltip.path" = "Checkout en: “%@”";
 

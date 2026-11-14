@@ -127,6 +127,15 @@ extension RepositorySession {
         canWrite && hasRemotes && reference.isLocal
     }
 
+    /// 安全强推指定的本地分支：租约要拿上游作比较，上游须是仍然存在的远端分支。
+    func canForcePush(_ reference: RepositoryReference) -> Bool {
+        guard canPush(reference), let upstream = reference.upstream else {
+            return false
+        }
+
+        return history.branches.contains { $0.isRemote && $0.id == upstream }
+    }
+
     /// 为指定远端分支新建跟踪分支。
     func canTrack(_ reference: RepositoryReference) -> Bool {
         canCreateBranchFromReference && reference.isRemote

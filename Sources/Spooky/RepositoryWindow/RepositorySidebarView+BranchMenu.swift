@@ -38,11 +38,13 @@ extension RepositorySidebarView {
         .disabled(!session.canDelete(selected))
     }
 
-    /// 本地分支：检出与工作树（HEAD 分支没有这一组）；置顶；同步、发布与推送；新建分支与请求；
-    /// HEAD 分支的合并与变基、父分支两项；归档；删除与引用管理；最后是导出、比较与在历史中显示。
+    /// 本地分支：检出与工作树（HEAD 分支没有这一组）；置顶；同步；发布与推送；跟踪的上游与父分支；
+    /// HEAD 分支的合并与变基；归档；重命名与删除；新建分支、标签与请求；最后是导出、比较与在历史中显示。
     @ViewBuilder
     private func localBranchMenu(_ ref: RepositoryReference) -> some View {
-        if ref.name != session.status?.branch.head {
+        let isHead = ref.name == session.status?.branch.head
+
+        if !isHead {
             // 已在别的工作树检出的分支不能在这里检出，换成那个工作树的打开与删除
             if session.worktrees.branchWorktrees[ref.id] == nil {
                 Button(AppLocalization.text("branch.checkoutNamed", ref.name)) {
@@ -65,16 +67,16 @@ extension RepositorySidebarView {
 
         Divider()
 
-        createBranchItem(ref)
+        BranchUpstreamMenus(session: session, reference: ref)
 
-        // 已有打开着的请求时换成显示它
-        PullRequestBranchMenuItem(session: session, reference: ref)
+        if isHead {
+            Divider()
 
-        // HEAD 分支的合并与变基，按住 ⌥ 换成快速操作
-        BranchIntegrationMenu(session: session, reference: ref, request: request)
+            // 合并与变基，按住 ⌥ 换成快速操作；设了父分支时还可以并入父分支或变基到父分支上
+            BranchIntegrationMenu(session: session, reference: ref, request: request)
 
-        // HEAD 分支设了父分支时可以并入父分支或变基到父分支上
-        ParentBranchMenuItems(session: session, reference: ref, request: request)
+            ParentBranchMenuItems(session: session, reference: ref, request: request)
+        }
 
         Divider()
 
@@ -82,12 +84,27 @@ extension RepositorySidebarView {
 
         Divider()
 
+        Button(AppLocalization.text("reference.renameMenu", ref.name)) {
+            session.requestReference(.renameBranch(ref))
+        }
+        .disabled(!session.canManage(ref))
+
         Button(AppLocalization.text("reference.deleteMenu", ref.name)) {
             delete([ref])
         }
         .disabled(!session.canDelete([ref]))
 
-        BranchManagementMenu(session: session, reference: ref)
+        Divider()
+
+        createBranchItem(ref)
+
+        Button(AppLocalization.text("tag.createFrom", ref.name)) {
+            session.requestReference(.createTag(revision: ref.id))
+        }
+        .disabled(!session.canCreateTag)
+
+        // 已有打开着的请求时换成显示它
+        PullRequestBranchMenuItem(session: session, reference: ref)
 
         revisionItems(ref)
     }
@@ -110,7 +127,7 @@ extension RepositorySidebarView {
         // 已有打开着的请求时换成显示它
         PullRequestBranchMenuItem(session: session, reference: ref)
 
-        BranchManagementMenu(session: session, reference: ref)
+        RemoteBranchManagementMenu(session: session, reference: ref)
 
         revisionItems(ref)
     }

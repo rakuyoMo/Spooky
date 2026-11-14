@@ -408,7 +408,7 @@
 "branch.checkout" = "Basculer sur la branche";
 "branch.checkoutNamed" = "Basculer sur « %@ »";
 "branch.delete" = "Supprimer la branche";
-"branch.copyName" = "Copier le nom de la branche";
+"branch.copyName" = "Copier le nom de la branche dans le presse-papiers";
 "branch.start" = "Point de départ :";
 "branch.name" = "Nom de la branche :";
 "branch.local" = "Branche locale :";
@@ -1382,7 +1382,7 @@
 "branch.parent" = "Suivre la branche parente";
 "branch.parent.set" = "Définir la branche parente";
 "branch.parent.setMenu" = "Suivre une autre branche parente…";
-"branch.parent.remove" = "Retirer la branche parente";
+"branch.parent.remove" = "Ne plus suivre la branche parente";
 "branch.parent.field" = "Parente :";
 "branch.parent.message" = "Choisissez la branche sur laquelle « %@ » est basée. Les comparaisons et mises à jour de la branche s’en servent comme base.";
 "branch.parent.replace" = "Cela remplace la branche parente actuelle « %@ ».";
@@ -2392,7 +2392,7 @@
 "worktree.reveal" = "Afficher le worktree dans le Finder";
 "worktree.revision" = "Révision :";
 "worktree.subtitle" = "Worktree (%@)";
-"worktree.terminal" = "Ouvrir le worktree dans le terminal";
+"worktree.checkedOutIn" = "Basculée dans le worktree « %@ »";
 "worktree.tooltip" = "Worktree « %@ »";
 "worktree.tooltip.path" = "Extrait dans : « %@ »";
 

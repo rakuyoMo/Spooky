@@ -408,7 +408,7 @@
 "branch.checkout" = "Branch auschecken";
 "branch.checkoutNamed" = "„%@“ auschecken";
 "branch.delete" = "Branch löschen";
-"branch.copyName" = "Branch-Namen kopieren";
+"branch.copyName" = "Branch-Namen in die Zwischenablage kopieren";
 "branch.start" = "Ausgangspunkt:";
 "branch.name" = "Branch-Name:";
 "branch.local" = "Lokaler Branch:";
@@ -1382,7 +1382,7 @@
 "branch.parent" = "Eltern-Branch verfolgen";
 "branch.parent.set" = "Eltern-Branch festlegen";
 "branch.parent.setMenu" = "Anderen Eltern-Branch verfolgen…";
-"branch.parent.remove" = "Eltern-Branch entfernen";
+"branch.parent.remove" = "Eltern-Branch nicht mehr verfolgen";
 "branch.parent.field" = "Eltern:";
 "branch.parent.message" = "Wähle den Branch, auf dem „%@“ basiert. Vergleiche und Aktualisierungen des Branches verwenden ihn als Basis.";
 "branch.parent.replace" = "Der aktuelle Eltern-Branch „%@“ wird ersetzt.";
@@ -2392,7 +2392,7 @@
 "worktree.reveal" = "Worktree im Finder zeigen";
 "worktree.revision" = "Revision:";
 "worktree.subtitle" = "Worktree (%@)";
-"worktree.terminal" = "Worktree im Terminal öffnen";
+"worktree.checkedOutIn" = "Ausgecheckt im Worktree „%@“";
 "worktree.tooltip" = "Worktree „%@“";
 "worktree.tooltip.path" = "Ausgecheckt unter: „%@“";
 
