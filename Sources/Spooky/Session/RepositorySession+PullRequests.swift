@@ -84,7 +84,13 @@ extension RepositorySession {
     ///   - previous: 变化前的账号。
     ///   - current: 变化后的账号。
     func accountsDidChange(from previous: [HostingAccount], to current: [HostingAccount]) {
-        guard pullRequests.isLoaded, Self.accountsChangeReloadsPullRequests(from: previous, to: current) else {
+        // 请求视图还没读过时只重新对应账号，新建请求的对话框随之取到服务名与项目
+        guard pullRequests.isLoaded else {
+            pullRequests.resolveTarget()
+            return
+        }
+
+        guard Self.accountsChangeReloadsPullRequests(from: previous, to: current) else {
             return
         }
 
@@ -97,13 +103,22 @@ extension RepositorySession {
 extension RepositorySession {
     /// 远端加入、移除或设置变了之后，已读过的请求视图重新读出远端并读取请求；还没读到引用时不比较。
     ///
+    /// 请求视图还没读过时只读出远端，新建请求的可用性要用到各远端的地址；仓库刚读出引用时也读一次。
+    ///
     /// - Parameters:
     ///   - previous: 变化前各远端设置的摘要，以远端名为键。
     ///   - current: 变化后各远端设置的摘要，以远端名为键。
     func remotesDidChange(from previous: [String: String]?, to current: [String: String]?) {
-        guard pullRequests.isLoaded, let previous, let current, previous != current else {
+        guard let current, previous != current, let runner else {
             return
         }
+
+        guard pullRequests.isLoaded else {
+            pullRequests.readRemotes(runner: runner)
+            return
+        }
+
+        guard previous != nil else { return }
 
         reloadPullRequests()
     }

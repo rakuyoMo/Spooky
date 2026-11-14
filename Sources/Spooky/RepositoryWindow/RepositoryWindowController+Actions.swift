@@ -304,14 +304,16 @@ extension RepositoryWindowController {
     /// 历史显示选项的可用性，菜单项同时标出当前选中的选项；动作不属于本组时为 nil。
     private func historyDisplayAvailability(of item: any NSValidatedUserInterfaceItem) -> Bool? {
         switch item.action {
+        // 提交图与行高是全局的显示偏好，窗口显示仓库时在任何视图里都能改
         case #selector(toggleHistoryGraph):
             (item as? NSMenuItem)?.state = HistoryViewSettings().showsGraph ? .on : .off
-            return !showsManager && session.activeView == .history
+            return !showsManager && session.repository != nil
 
         case #selector(smallHistoryRows), #selector(mediumHistoryRows):
             let small = UserDefaults.standard.bool(forKey: "historySmallRows")
             (item as? NSMenuItem)?.state = (item.action == #selector(smallHistoryRows)) == small ? .on : .off
-            return !showsManager && session.activeView == .history
+            return !showsManager
+                && session.repository != nil
                 && HistoryViewSettings().showsGraph
 
         case #selector(expandChanges), #selector(collapseChanges):

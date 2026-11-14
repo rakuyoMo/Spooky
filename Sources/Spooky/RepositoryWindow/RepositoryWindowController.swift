@@ -36,6 +36,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 工具栏 Clone 项弹出的最近克隆。
     var clonePopover: NSPopover?
 
+    /// 上次打开 Repository › LFS 时读到启用了 Git LFS 的仓库；没有启用或换了仓库时，LFS 各项不可用。
+    var lfsEnabledRepository: RepositoryLocation?
+
     /// 正在按视图引用切换视图，中途经过的视图不记进后退 / 前进记录。
     var isApplyingReference = false
 

@@ -71,9 +71,12 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         super.init()
     }
 
-    /// 经链接或文件启动时，系统在启动完成之前交来它们；先存下，等外观、Git 程序与菜单都就绪后再处理。
+    /// 经链接或文件启动时，系统在启动完成之前交来它们；先存下，等外观与 Git 程序都就绪后再处理。
+    ///
+    /// 主菜单在这里建好：启动过程中 AppKit 按它补进系统项，如标签页、听写、表情与符号，以及 ⌥ 替换的退出与关闭全部。
     func applicationWillFinishLaunching(_: Notification) {
         launchURLs = []
+        configureMenu()
     }
 
     /// 启动总是进入仓库管理，不以 shell 当前目录作为仓库。
@@ -113,7 +116,6 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             )
         )
 
-        configureMenu()
         appIconController.start()
 
         // 补上 What's New 的已读记录，决定这次启动是否在侧边栏显示新功能卡片

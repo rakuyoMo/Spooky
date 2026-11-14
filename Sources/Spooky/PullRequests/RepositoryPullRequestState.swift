@@ -193,10 +193,7 @@ final class RepositoryPullRequestState {
                 let remotes = try await RepositoryRemotes(runner: runner).configurations()
                 guard let self, generation == request else { return }
 
-                self.remotes = remotes
-
-                let names = remotes.map(\.name)
-                remote = remote.flatMap { names.contains($0) ? $0 : nil } ?? (names.contains("origin") ? "origin" : names.first)
+                select(remotes)
                 await loadList(request: request)
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
@@ -388,13 +385,41 @@ extension RepositoryPullRequestState {
         AppLocalization.text((service == .gitlab ? "mr." : "pr.") + key)
     }
 
-    /// 选中远端对应账号与项目后读第一页。
-    private func loadList(request: Int) async {
+    /// 只读出远端、选出远端并找出它对应的账号与项目，不读列表；请求视图还没读过时，新建请求的可用性与对话框用它。
+    ///
+    /// 读完时请求视图已开始读取或换了仓库，就不写入。
+    func readRemotes(runner: GitRunner) {
+        let request = generation
+
+        Task { [weak self] in
+            let remotes = try? await RepositoryRemotes(runner: runner).configurations()
+            guard let self, let remotes, generation == request, !isLoading, !isLoaded else { return }
+
+            select(remotes)
+            resolveTarget()
+        }
+    }
+
+    /// 按选中远端的地址、已登录的账号与手动关联，重新找出对应的账号与项目。
+    func resolveTarget() {
         let associations = PullRequestAssociations.load()
 
         target = remoteURL.map {
             PullRequestTarget.resolve(remoteURL: $0, accounts: accounts.items, associations: associations)
         }
+    }
+
+    /// 记下读到的远端，沿用已选的远端，否则选 origin 或第一个。
+    private func select(_ remotes: [RemoteConfiguration]) {
+        self.remotes = remotes
+
+        let names = remotes.map(\.name)
+        remote = remote.flatMap { names.contains($0) ? $0 : nil } ?? (names.contains("origin") ? "origin" : names.first)
+    }
+
+    /// 选中远端对应账号与项目后读第一页。
+    private func loadList(request: Int) async {
+        resolveTarget()
 
         guard let client, let project else {
             items = []

@@ -64,13 +64,14 @@ extension RepositoryWindowController {
         let menuItem = item as? NSMenuItem
 
         switch item.action {
+        // 当前的显示方式打勾并且不可用，只有另一种可选
         case #selector(viewAsTree):
             menuItem?.state = session.listMode.isTree ? .on : .off
-            return repositoryView
+            return repositoryView && !session.listMode.isTree
 
         case #selector(viewAsList):
             menuItem?.state = session.listMode == .list ? .on : .off
-            return repositoryView
+            return repositoryView && session.listMode != .list
 
         case #selector(toggleNonModifiedItems):
             menuItem?.state = session.listMode == .allFiles ? .on : .off

@@ -47,7 +47,7 @@ extension RepositoryWindowController {
 
         case #selector(createPullRequest):
             (item as? NSMenuItem)?.title = session.pullRequestText("create.menu")
-            return repositoryView
+            return repositoryView && session.canCreatePullRequest
 
         case #selector(publishRepository):
             return repositoryView && session.canPublishRepository
@@ -95,6 +95,11 @@ extension RepositoryWindowController {
     /// 呈现请求的对话框；对话框在操作开始后才关闭。
     func presentPullRequestRequest(_ request: PullRequestRequest) {
         guard let window, session.repository != nil, window.attachedSheet == nil else {
+            return
+        }
+
+        // 新建请求的标题与说明写出服务名与目标项目，选中的远端对应不到账号时不打开
+        if case .create = request, session.pullRequests.account == nil || session.pullRequests.project == nil {
             return
         }
 

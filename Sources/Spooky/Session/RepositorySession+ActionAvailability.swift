@@ -22,6 +22,21 @@ extension RepositorySession {
         return RepositoryWriteLocks.shared.contains(repository) && !isStaging
     }
 
+    /// 新建请求的条件：有远端属于已登录账号的托管服务，对应到一个账号或同一实例上有几个账号待选都算。
+    var canCreatePullRequest: Bool {
+        let associations = PullRequestAssociations.load()
+        let accounts = pullRequests.accounts.items
+
+        return pullRequests.remotes.contains { remote in
+            guard let url = remote.url else { return false }
+
+            switch PullRequestTarget.resolve(remoteURL: url, accounts: accounts, associations: associations) {
+            case .resolved, .chooseAccount: return true
+            case .noAccount, .unsupported: return false
+            }
+        }
+    }
+
     /// 菜单、工具栏、右键菜单与拖放共用的获取条件：需要已配置远端。
     var canFetch: Bool {
         canWrite && hasRemotes

@@ -330,9 +330,11 @@ extension SpookyApplicationController {
         )
     }
 
-    /// LFS 子菜单：更新钩子，LFS 对象的获取、拉取与推送，以及新建跟踪规则。
+    /// LFS 子菜单：更新钩子，LFS 对象的获取、拉取与推送，以及新建跟踪规则；每次打开时读一次仓库是否启用了 Git LFS。
     private func configureLFSMenu(in repository: NSMenu) {
         let lfs = addMenu("lfs.menu", to: repository)
+        lfs.delegate = LFSMenuReader.shared
+
         addItem("lfs.menu.update", action: #selector(RepositoryWindowController.updateLFS), to: lfs)
 
         lfs.addItem(.separator())
