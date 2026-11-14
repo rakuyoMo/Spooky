@@ -1,5 +1,6 @@
 import AppKit
 import SpookyKit
+import Synchronization
 
 // MARK: - ForceDeletionOffer
 
@@ -13,6 +14,14 @@ struct ForceDeletionOffer: Error {
 
     /// 失败的说明与 Git 原文。
     let failure: ReferenceError
+}
+
+// MARK: - PendingForceDeletion
+
+/// 多选删除只删掉一部分时，写操作里记下、结束后再询问的强制删除。
+private final class PendingForceDeletion: Sendable {
+    /// 未合并分支的询问；全部删掉时为 nil。
+    let offer = Mutex<ForceDeletionOffer?>(nil)
 }
 
 // MARK: - Availability
@@ -184,6 +193,9 @@ extension RepositorySession {
 
     /// 删除本地分支；普通删除因未合并失败时，询问是否按原选项强制删除。
     ///
+    /// 多选的普通删除只删掉一部分时，删掉的先按实际个数记撤销，写操作结束后再询问未合并的。
+    /// 连同跟踪的远端分支一起删除的，撤销时先在远端重建远端分支。
+    ///
     /// - Parameters:
     ///   - branches: 本地分支的完整引用名。
     ///   - force: 是否强制删除。
@@ -195,6 +207,8 @@ extension RepositorySession {
         let upstream = tracked
             ? history.branches.first { $0.id == branches.first }?.upstreamRemote
             : nil
+
+        let pending = PendingForceDeletion()
 
         return performGit(
             { runner, output in
@@ -208,13 +222,26 @@ extension RepositorySession {
                     }
                 } catch let error as ReferenceError {
                     guard case .unmergedBranches(let names, _) = error else { throw error }
-                    throw ForceDeletionOffer(branches: names, deletingUpstream: tracked, failure: error)
+
+                    let offer = ForceDeletionOffer(branches: names, deletingUpstream: tracked, failure: error)
+
+                    // 一个也没删掉时整体失败，失败处理改为询问
+                    guard !names.isEmpty, names.count < branches.count else { throw offer }
+
+                    pending.offer.withLock { $0 = offer }
+
+                    let key = branches.count - names.count == 1 ? "branch.delete" : "branch.deleteMultiple"
+                    UndoSteps.current?.rename(AppLocalization.text(key))
                 }
             },
             title: AppLocalization.text(branches.count == 1 ? "branch.delete" : "branch.deleteMultiple"),
             target: tracked ? .push(upstream) : nil,
-            undo: tracked ? .irreversible : .reversible
-        )
+            undo: tracked ? .deletingBranch(withUpstream: branches[0]) : .reversible
+        ) { [weak self] in
+            if let offer = pending.offer.withLock({ $0 }) {
+                self?.onReferenceRequest?(.forceDelete(offer))
+            }
+        }
     }
 
     /// 写入失败是未合并分支的普通删除时，改为询问是否强制删除；返回是否已经接手。

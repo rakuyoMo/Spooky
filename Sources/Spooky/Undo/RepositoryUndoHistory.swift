@@ -38,6 +38,9 @@ struct UndoInverse: Sendable {
     /// 为 nil 时不收集。
     var trashLog: TrashLog? = nil
 
+    /// 撤销放弃的进行中操作，如停在冲突上的合并：仓库停在这个操作上时撤销不算忙碌。为 nil 时进行中的操作挡住撤销。
+    var abortedOperation: RepositoryOperationState? = nil
+
     /// 撤销时执行，输出经第二个参数送进 Activity：先核对前提，仓库已不是操作后的样子时抛出
     /// ``RepositoryUndoError/repositoryChanged``，不做任何改动。
     let undo: @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void

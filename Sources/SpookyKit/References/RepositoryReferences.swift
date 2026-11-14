@@ -431,12 +431,14 @@ public struct RepositoryReferences: Sendable {
     /// - Parameters:
     ///   - pinned: 是否置顶新分支。
     ///   - parent: 父分支的完整引用名；为 nil 时不设置。
+    ///   - beforeCheckout: 分支建好、检出之前执行，如把新建单独记成一步撤销。
     public func createThenCheckOut(
         name: String,
         startingAt start: String,
         track: Bool,
         pinned: Bool = false,
-        parent: String? = nil
+        parent: String? = nil,
+        beforeCheckout: (@Sendable () async -> Void)? = nil
     ) async throws {
         try await runner.writeTransaction {
             try await create(
@@ -447,6 +449,8 @@ public struct RepositoryReferences: Sendable {
                 pinned: pinned,
                 parent: parent
             )
+
+            await beforeCheckout?()
 
             do {
                 try await checkout("refs/heads/" + name)

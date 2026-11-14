@@ -88,6 +88,20 @@ extension UndoRecording {
         }
     }
 
+    /// 删除本地分支连同它跟踪的远端分支：撤销时先经推送在远端重建远端分支，再重建本地分支与上游设置；
+    /// 本地或远端已有同名分支、推送失败时撤销失败，说明原因。
+    ///
+    /// - Parameter branch: 本地分支的完整引用名。
+    static func deletingBranch(withUpstream branch: String) -> Self {
+        .inverse { runner in
+            let deletion = try await RepositoryReferences(runner: runner).deletion(of: branch)
+
+            return UndoInverse(target: deletion.upstream.map { .push($0.remote) }) {
+                try await RepositoryReferences(runner: $0).undoDelete(deletion, onOutput: $1)
+            }
+        }
+    }
+
     /// 把远端分支 `name` 改名为 `newName`：撤销时再改回原名。
     static func renamingRemoteBranch(_ name: String, on remote: String, to newName: String) -> Self {
         .inverse { _ in

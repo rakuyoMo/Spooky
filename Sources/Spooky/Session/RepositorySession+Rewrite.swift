@@ -150,7 +150,7 @@ extension RepositorySession {
             { runner, output in
                 try await RepositoryRewrite(runner: runner).revert(commits, options: options, onOutput: output)
             },
-            title: AppLocalization.text("rewrite.revert"),
+            title: AppLocalization.text("rewrite.revert.title"),
             offersAutoStash: true,
             undo: .reversible
         )

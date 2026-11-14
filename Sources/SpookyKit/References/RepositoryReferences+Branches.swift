@@ -222,7 +222,7 @@ extension RepositoryReferences {
     }
 
     /// 分支跟踪的远端与远端上的完整引用名；跟踪本地分支或没有上游时为 nil。
-    private func remoteUpstream(of branch: String) async throws -> (remote: String, branch: String)? {
+    func remoteUpstream(of branch: String) async throws -> (remote: String, branch: String)? {
         let output = try await runner.run([
             "for-each-ref", "--format=%(upstream:remotename)%00%(upstream:remoteref)", branch,
         ])

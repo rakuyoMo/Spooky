@@ -636,8 +636,8 @@ extension RepositoryOperationDialog {
         error = result.error
     }
 
-    /// 新建与跟踪分支的写入，捕获当前表单值：新建分支勾选检出时先建分支再检出，检出被拒绝时分支保留；
-    /// 其余用一条命令建好，跟踪远端分支总是跟踪所选分支，并按它自己的勾选检出。
+    /// 新建与跟踪分支的写入，捕获当前表单值：勾选检出时先建分支再检出，检出被拒绝时分支保留；
+    /// 新建与检出各记一步撤销，先撤销检出时分支还在。跟踪远端分支总是跟踪所选分支。
     ///
     /// - Parameter revision: 新分支的起点。
     private func branchCreation(startingAt revision: String) -> @Sendable (GitRunner) async throws -> Void {
@@ -645,6 +645,7 @@ extension RepositoryOperationDialog {
         let creating = request.kind == .create
         let track = !creating || track
         let pinned = creating && pin
+        let checksOut = creating ? checkout : trackCheckout
 
         // 提交时再核对一次，父分支必须仍是当前起点下的候选
         let parent =
@@ -652,18 +653,15 @@ extension RepositoryOperationDialog {
                 ? parent
                 : nil
 
-        let checksOutAfterwards = creating && checkout
-        let checkout = !creating && trackCheckout
-
         return { runner in
             let references = RepositoryReferences(runner: runner)
 
-            // 分两步时检出失败的说明写明已创建、未检出
-            if checksOutAfterwards {
-                try await references.createThenCheckOut(
+            guard checksOut else {
+                try await references.create(
                     name: name,
                     startingAt: revision,
                     track: track,
+                    checkout: false,
                     pinned: pinned,
                     parent: parent
                 )
@@ -671,14 +669,18 @@ extension RepositoryOperationDialog {
                 return
             }
 
-            try await references.create(
+            // 分两步时检出失败的说明写明已创建、未检出
+            try await references.createThenCheckOut(
                 name: name,
                 startingAt: revision,
                 track: track,
-                checkout: checkout,
                 pinned: pinned,
                 parent: parent
-            )
+            ) {
+                await UndoSteps.current?.mark(AppLocalization.text("branch.create"), runner: runner)
+            }
+
+            UndoSteps.current?.rename(AppLocalization.text("rewrite.checkout"))
         }
     }
 

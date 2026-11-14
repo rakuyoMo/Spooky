@@ -38,10 +38,20 @@ extension RepositorySession {
             return !redo ? history.irreversibleTitle.map(UndoMenuState.irreversible) ?? .empty : .empty
         }
 
+        // 撤销放弃的正是仓库停着的那个操作时，进行中的操作不挡住它
+        let aborted: RepositoryOperationState? =
+            if !redo, case .inverse(_, _, _, let inverse) = entry.change {
+                inverse.abortedOperation
+            } else {
+                nil
+            }
+
         // 写操作与合并、变基等进行中的操作都要等它结束
+        let operation = context?.operation
+
         let busy = isWriting
             || RepositoryWriteLocks.shared.contains(repository)
-            || context?.operation != nil
+            || (operation != nil && operation != aborted)
 
         if busy {
             return .blocked(entry.title, reason: "undo.reason.busy")
@@ -228,7 +238,7 @@ extension RepositorySession {
             }
 
         case .reversible:
-            return recordingSnapshots(action, title: title, history: history)
+            return recordingSnapshots(action, title: title, target: target, history: history)
         }
     }
 }
@@ -246,44 +256,175 @@ extension RepositorySession {
         }
     }
 
-    /// 可撤销的操作前后各记一次状态，连同移进废纸篓的项成功改动仓库后登记。
+    /// 可撤销的操作前后各记一次状态，连同移进废纸篓的项成功改动仓库后登记；操作单独记下的部分各记一步，
+    /// 改写了名称时按改写后的名称登记。合并与反转停在冲突上时记成放弃它的反向操作。
     private func recordingSnapshots(
         _ action: @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
         title: String,
+        target: ActivityTarget?,
         history: RepositoryUndoHistory
     ) -> @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void {
         { runner, output in
             let undo = RepositoryUndo(runner: runner)
             let before = try? await undo.capture()
             let log = TrashLog()
-            try await TrashLog.$current.withValue(log) { try await action(runner, output) }
 
-            guard let before, let after = try? await undo.capture() else {
-                await history.recordIrreversible(title)
+            let recording = SnapshotRecording(
+                action: action,
+                title: title,
+                target: target,
+                steps: UndoSteps(),
+                undo: undo
+            )
+
+            do {
+                try await UndoSteps.$current.withValue(recording.steps) {
+                    try await TrashLog.$current.withValue(log) { try await action(runner, output) }
+                }
+            } catch {
+                // 停在冲突上的反转以失败结束，同样记成放弃它的反向操作，失败照常报告
+                if before != nil, let entry = await recording.stopped() {
+                    await history.record(entry)
+                }
+
+                throw error
+            }
+
+            guard let entries = await recording.entries(before: before, trashed: log.items) else {
+                await history.recordIrreversible(recording.name)
                 return
             }
 
-            // 没有改动仓库的操作不占撤销栈
-            guard after != before else { return }
-
-            // 废纸篓命令没有报告位置的项移不回来
-            let trashed = log.items
-
-            guard trashed.allSatisfy({ $0.location != nil }) else {
-                await history.recordIrreversible(title)
-                return
-            }
-
-            let restorable = (try? await undo.canRestore(before, from: after, trashed: trashed)) ?? false
-
-            if restorable {
-                await history.record(
-                    RepositoryUndoEntry(title: title, change: .snapshot(before: before, after: after, trashed: trashed))
-                )
-            } else {
-                await history.recordIrreversible(title)
+            for entry in entries {
+                await history.record(entry)
             }
         }
+    }
+}
+
+// MARK: - SnapshotRecording
+
+/// 一次按快照记录撤销的写操作：结束后把前后状态与中间单独记下的状态切成各步撤销记录。
+private struct SnapshotRecording {
+    /// 写操作本身，停在冲突上的合并与反转重做时再执行它。
+    let action: @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
+
+    /// 写操作的名称。
+    let title: String
+
+    /// 写操作记在 Activity 的 Remote 页的对象，重做时记在同一页。
+    let target: ActivityTarget?
+
+    /// 操作执行中对撤销记录的说明。
+    let steps: UndoSteps
+
+    /// 读取与核对仓库状态。
+    let undo: RepositoryUndo
+
+    /// 最后一步的名称：操作改写过时用改写后的。
+    var name: String {
+        steps.title ?? title
+    }
+
+    /// 操作成功结束后的撤销记录，按先后排列：没有改动仓库时为空，撤销不了时为 nil。
+    ///
+    /// 操作前有进行中的操作、操作后停在进行中的状态（停在冲突上的合并与反转除外）、
+    /// 或移进废纸篓的项不知道位置时，都撤销不了。
+    ///
+    /// - Parameters:
+    ///   - before: 操作前的状态；读不到时为 nil。
+    ///   - trashed: 整个操作移进废纸篓的项。
+    func entries(before: RepositoryState?, trashed: [TrashedItem]) async -> [RepositoryUndoEntry]? {
+        guard let before else {
+            return nil
+        }
+
+        // 停在进行中的状态时，只有停在冲突上的合并与反转能撤销
+        guard let after = try? await undo.capture() else {
+            guard steps.marks.isEmpty else {
+                return nil
+            }
+
+            return await stopped().map { [$0] }
+        }
+
+        // 废纸篓命令没有报告位置的项移不回来
+        guard trashed.allSatisfy({ $0.location != nil }) else {
+            return nil
+        }
+
+        return await split(from: before, to: after, trashed: trashed)
+    }
+
+    /// 合并或反转停在冲突上时的撤销记录：撤销是放弃它；重做时再执行一次原操作，再次停在冲突上不算失败。
+    /// 没有停在冲突上时为 nil。
+    func stopped() async -> RepositoryUndoEntry? {
+        guard let operation = try? await undo.stoppedOperation() else {
+            return nil
+        }
+
+        let action = action
+
+        let inverse = UndoInverse(
+            abortedOperation: operation,
+            undo: { runner, _ in try await RepositoryUndo(runner: runner).abort(operation) },
+            redo: { runner, output in
+                do {
+                    try await action(runner, output)
+                } catch {
+                    guard (try? await RepositoryUndo(runner: runner).stoppedOperation()) == operation else {
+                        throw error
+                    }
+                }
+            }
+        )
+
+        return RepositoryUndoEntry(
+            title: name,
+            change: .inverse(prepare: { _ in inverse }, action: action, target: target, inverse: inverse)
+        )
+    }
+
+    /// 把前后状态按中间单独记下的状态切成各步，按先后排列；没有改动仓库的步不记，有一步撤销不了时为 nil。
+    ///
+    /// - Parameter trashed: 整个操作移进废纸篓的项，按单独记下时的项数分给各步。
+    private func split(
+        from before: RepositoryState,
+        to after: RepositoryState,
+        trashed: [TrashedItem]
+    ) async -> [RepositoryUndoEntry]? {
+        let marks = steps.marks
+        let middle = marks.compactMap(\.state)
+
+        // 中间有读不到的状态时撤销不了
+        guard middle.count == marks.count else {
+            return nil
+        }
+
+        let states = [before] + middle + [after]
+        let titles = marks.map(\.title) + [name]
+        let bounds = [0] + marks.map(\.trashed) + [trashed.count]
+        var entries: [RepositoryUndoEntry] = []
+
+        for index in titles.indices where states[index] != states[index + 1] {
+            let items = Array(trashed[bounds[index] ..< bounds[index + 1]])
+
+            let restorable =
+                (try? await undo.canRestore(states[index], from: states[index + 1], trashed: items)) ?? false
+
+            guard restorable else {
+                return nil
+            }
+
+            entries.append(
+                RepositoryUndoEntry(
+                    title: titles[index],
+                    change: .snapshot(before: states[index], after: states[index + 1], trashed: items)
+                )
+            )
+        }
+
+        return entries
     }
 }
 

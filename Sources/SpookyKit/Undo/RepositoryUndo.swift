@@ -119,6 +119,50 @@ public struct RepositoryUndo: Sendable {
     }
 }
 
+// MARK: - Stopped Operations
+
+extension RepositoryUndo {
+    /// 停在待解决冲突上的合并或反转；没有进行中的操作、是别的操作或没有冲突时为 nil。
+    ///
+    /// 这两种操作停下后，撤销就是放弃它，仓库回到操作前。
+    public func stoppedOperation() async throws -> RepositoryOperationState? {
+        async let loadedStatus = runner.status()
+        async let loadedFiles = WorkingCopyOperations(runner: runner).stateFiles(OperationProgress.stateFiles)
+
+        let status = try await loadedStatus
+        let files = try await loadedFiles
+
+        guard
+            let operation = OperationProgress(files: files, head: status.branch.oid)?.state,
+            [.merge, .revert].contains(operation),
+            status.entries.contains(where: { $0.kind == .conflicted })
+        else { return nil }
+
+        return operation
+    }
+
+    /// 放弃停下的合并或反转；冲突已解决了一部分时同样放弃。
+    ///
+    /// - Throws: 已没有进行中的操作或换成了别的操作时抛出 ``RepositoryUndoError/repositoryChanged``，不做任何改动。
+    public func abort(_ operation: RepositoryOperationState) async throws {
+        try await runner.writeTransaction {
+            let operations = WorkingCopyOperations(runner: runner)
+
+            async let loadedStatus = runner.status()
+            async let loadedFiles = operations.stateFiles(OperationProgress.stateFiles)
+
+            let head = try await loadedStatus.branch.oid
+            let files = try await loadedFiles
+
+            guard OperationProgress(files: files, head: head)?.state == operation else {
+                throw RepositoryUndoError.repositoryChanged
+            }
+
+            try await operations.finish(operation, action: "abort")
+        }
+    }
+}
+
 // MARK: - Capture
 
 extension RepositoryUndo {
