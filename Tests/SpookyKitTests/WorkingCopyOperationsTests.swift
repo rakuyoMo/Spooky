@@ -145,7 +145,7 @@ struct WorkingCopyOperationsTests {
         #expect(try Data(contentsOf: file) == Data((edited + "external\r\n").utf8))
     }
 
-    /// 二进制提示、空文件与大 Diff 使用补丁字节数，不使用文件大小；
+    /// 二进制提示、空文件与大 Diff 使用补丁字节数，不使用文件大小；二进制文件的判断按 Git 的内容与属性；
     /// 分解形式 Unicode 路径上的非 UTF-8 内容按行暂存后逐字节保留。
     @Test("二进制、空文件、大 Diff、类型变化与非 UTF-8 内容")
     func diffKinds() async throws {
@@ -185,6 +185,17 @@ struct WorkingCopyOperationsTests {
         // 空文件换成符号链接，类型变化读出两个补丁段
         try await service.stageAll(staged: true)
         try await service.commit(subject: "base", body: "")
+
+        // 二进制判断：内容含 NUL 的文件是二进制，普通文本不是；路径里的特殊字符原样读回，记录缺少 Tab 时按格式错误抛出
+        #expect(try await service.binaryPaths(["binary", "large"]) == ["binary"])
+
+        let record = Data("i/lf    w/-text attr/                 \t空格 [*].txt\0".utf8)
+
+        #expect(try WorkingCopyOperations.binaryPaths(lsFilesEOL: record) == ["空格 [*].txt"])
+        #expect(throws: RepositoryReadError.malformedOutput("ls-files --eol")) {
+            try WorkingCopyOperations.binaryPaths(lsFilesEOL: Data("i/lf w/lf\0".utf8))
+        }
+
         try FileManager.default.removeItem(at: repository.directory.appending(path: "empty"))
         try FileManager.default.createSymbolicLink(
             at: repository.directory.appending(path: "empty"),

@@ -6,7 +6,7 @@ import SwiftUI
 
 extension WorkingCopyFileList.Coordinator {
     /// 本次渲染已知的 assume-unchanged 路径。
-    private var renderMarked: Set<String> { renderState?.marked ?? [] }
+    var renderMarked: Set<String> { renderState?.marked ?? [] }
 
     /// 本次渲染时进行中的操作已经解决的冲突路径。
     private var renderResolved: Set<String> { renderState?.listing.resolvedPaths ?? [] }

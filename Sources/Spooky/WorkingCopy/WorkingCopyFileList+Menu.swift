@@ -12,6 +12,9 @@ extension WorkingCopyFileList.Coordinator {
 
         guard let target = menuTargets.first else { return repository }
 
+        // 已删除的文件与只剩已删除文件的目录不在磁盘上
+        guard session.isOnDisk(target.entries) else { return nil }
+
         // 目录取自身，文件取所在目录；未跟踪的目录条目以 “/” 结尾
         let path = target.path.hasSuffix("/") ? String(target.path.dropLast()) : target.path
         let isDirectory = target.entry == nil || target.path.hasSuffix("/")
@@ -25,6 +28,13 @@ extension WorkingCopyFileList.Coordinator {
         case .local: return .local(path: absolute)
         case .remote(let host, _): return .remote(host: host, path: absolute)
         }
+    }
+
+    /// 右键作用于树形里的单个目录行时代表目录本身的条目：Open With、Move…、Ignore 与 Exclude 把目录算一项。
+    var menuDirectory: StatusEntry? {
+        guard menuTargets.count == 1, let target = menuTargets.first, target.entry == nil else { return nil }
+
+        return StatusEntry(kind: .unchanged, path: target.path)
     }
 
     /// 右键菜单打开前按点击的位置重建。
@@ -142,7 +152,9 @@ extension WorkingCopyFileList.Coordinator {
         beginGroup(in: menu)
         add("files.open", action: #selector(openMenu), enabled: session.canOpen(menuEntries), to: menu)
 
-        let entries = menuEntries
+        // 目录行列出能打开文件夹的程序；服务器上的目录不能交给本机程序
+        let directory = menuDirectory
+        let entries = directory.map { [$0] } ?? menuEntries
         let names = entries.filter(\.isOpenable).map(\.path)
         let root = session.repository?.localURL
 
@@ -156,7 +168,7 @@ extension WorkingCopyFileList.Coordinator {
             other: { [session] in session.openWithOtherApplication(entries) }
         )
 
-        menu.addItem(openWith.item(enabled: session.canOpen(entries)))
+        menu.addItem(openWith.item(enabled: directory == nil ? session.canOpen(entries) : root != nil))
     }
 
     /// 路径：复制带主机前缀的完整路径与仓库内的相对路径；没有作用的条目时不可用。
@@ -193,7 +205,7 @@ extension WorkingCopyFileList.Coordinator {
         let revealItem = add(
             title: AppLocalization.text("action.revealFinder"),
             action: #selector(reveal),
-            enabled: session.canShowInFinder,
+            enabled: session.canShowInFinder && (menuTargets.isEmpty || session.isOnDisk(menuEntries)),
             to: menu
         )
         revealItem.toolTip = session.finderUnavailableTip
@@ -232,7 +244,12 @@ extension WorkingCopyFileList.Coordinator {
             enabled: session.canDelete(menuEntries),
             to: menu
         )
-        add("files.move.menu", action: #selector(moveMenu), enabled: session.canMove(menuEntries), to: menu)
+        add(
+            "files.move.menu",
+            action: #selector(moveMenu),
+            enabled: session.canMove(menuDirectory.map { [$0] } ?? menuEntries),
+            to: menu
+        )
     }
 
     /// 冲突：解决合并冲突与恢复合并冲突版本两个子菜单，以及用合并工具解决单个冲突文件；可用性按所选文件逐项判断。
@@ -252,12 +269,18 @@ extension WorkingCopyFileList.Coordinator {
         beginGroup(in: menu)
         add("working.discard.menu", action: #selector(discardMenu), enabled: session.canDiscard(menuEntries), to: menu)
         addStashItems(to: menu, entries: menuEntries)
-        add("files.revert.menu", action: #selector(revertMenu), enabled: session.canRevert(menuEntries), to: menu)
+        add(
+            "files.revert.menu",
+            action: #selector(revertMenu),
+            enabled: session.canRevert(menuEntries, marked: renderMarked),
+            to: menu
+        )
     }
 
-    /// 查看：原文、Blame 与文件历史，只对单个文件提供；没有作用对象时以通用标题显示且不可用。
+    /// 查看：原文、Blame 与文件历史，只对单个文件可用；多选与目录行照样列出，标题点名第一个作用对象；
+    /// 没有作用对象时以通用标题显示且不可用。
     private func addViewItems(to menu: NSMenu) {
-        guard !menuTargets.isEmpty else {
+        guard let first = menuTargets.first else {
             beginGroup(in: menu)
 
             for key in ["quickActions.showFile", "quickActions.showBlame", "quickActions.showFileHistory"] {
@@ -269,12 +292,10 @@ extension WorkingCopyFileList.Coordinator {
             return
         }
 
-        let items = session.fileViewMenuItems(for: menuEntries)
-
-        guard !items.isEmpty else { return }
+        let single = menuTargets.count == 1 && first.entry != nil
 
         beginGroup(in: menu)
-        items.forEach(menu.addItem)
+        session.fileViewMenuItems(for: first.path, entries: single ? menuEntries : []).forEach(menu.addItem)
     }
 
     /// 规则：忽略、排除与 assume-unchanged 标记的子菜单。
@@ -315,8 +336,9 @@ extension WorkingCopyFileList.Coordinator {
     private func addLFSMenu(to menu: NSMenu) {
         beginGroup(in: menu)
 
+        // 目录行的逐个跟踪与按类型跟踪都不可用
         let lfs = submenu("lfs.menu", in: menu)
-        let entries = menuEntries
+        let entries = menuDirectory == nil ? menuEntries : []
         let types = session.lfsTypePatterns(for: entries)
 
         // 没有作用的文件时用单个文件的标题，不写出零个
@@ -383,23 +405,25 @@ extension WorkingCopyFileList.Coordinator {
         }
     }
 
-    /// 忽略或排除子菜单：只匹配所选项、同名项、同类型文件，或输入自定义规则。
+    /// 忽略或排除子菜单：只匹配所选项、同名项、同类型文件，或输入自定义规则；树形的目录行算一项。
+    ///
+    /// 作用于多项时只有第一项可用。
     private func addPatternMenu(_ key: String, file: IgnoreFile, to menu: NSMenu) {
         let patterns = submenu(key, in: menu)
         let prefix = file == .gitignore ? "files.ignore" : "files.exclude"
         let enabled = session.canIgnore(menuEntries)
         let action = file == .gitignore ? #selector(ignoreMenu(_:)) : #selector(excludeMenu(_:))
 
-        // 类型规则取第一个文件的扩展名；目录与没有扩展名的文件没有类型规则
-        let first = menuEntries.first.map { WorkingCopyFileList.fileName(of: $0.path) }
-        let directory = menuEntries.first?.path.hasSuffix("/") ?? false
+        // 类型规则取第一项的扩展名；目录与没有扩展名的文件没有类型规则
+        let first = menuTargets.first?.name
+        let directory = menuDirectory != nil || (menuEntries.first?.path.hasSuffix("/") ?? false)
         let suffix = directory ? "" : WorkingCopyOperations.pathExtension(of: first ?? "")
-        let single = menuEntries.count == 1
+        let single = menuTargets.count == 1
 
         // 没有作用的条目时第一项用单项的标题，不写出零项
         let titles = [
-            menuEntries.count > 1
-                ? AppLocalization.text(prefix + ".items", menuEntries.count)
+            menuTargets.count > 1
+                ? AppLocalization.text(prefix + ".items", menuTargets.count)
                 : AppLocalization.text(prefix + ".item"),
             single
                 ? AppLocalization.text(prefix + ".name.single", first ?? "")
@@ -411,7 +435,9 @@ extension WorkingCopyFileList.Coordinator {
         ]
 
         for (tag, title) in titles.enumerated() {
-            let item = add(title: title, action: action, enabled: enabled && (tag != 2 || !suffix.isEmpty), to: patterns)
+            let available = (tag == 0 || single) && (tag != 2 || !suffix.isEmpty)
+            let item = add(title: title, action: action, enabled: enabled && available, to: patterns)
+
             item.tag = tag
         }
     }
@@ -464,7 +490,7 @@ extension WorkingCopyFileList.Coordinator {
     /// 移动表单由窗口呈现。
     @objc
     private func moveMenu() {
-        guard let entry = menuEntries.first else { return }
+        guard let entry = menuDirectory ?? menuEntries.first else { return }
         session.onFileRequest?(.form(.move(entry)))
     }
 
@@ -518,7 +544,7 @@ extension WorkingCopyFileList.Coordinator {
         let urls =
             menuTargets.isEmpty
                 ? [session.finderURL()].compactMap { $0 }
-                : menuEntries.compactMap { session.finderURL($0.path) }
+                : menuEntries.filter { !$0.isMissingFromWorkingTree }.compactMap { session.finderURL($0.path) }
 
         guard !urls.isEmpty else { return }
 
@@ -543,6 +569,14 @@ extension WorkingCopyFileList.Coordinator {
 
         guard scopes.indices.contains(tag) else {
             session.onFileRequest?(.form(.pattern(file, menuEntries)))
+            return
+        }
+
+        // 目录行写目录本身的规则，目录里已跟踪的文件仍按所选文件询问是否停止跟踪
+        if let directory = menuDirectory {
+            let patterns = WorkingCopyOperations.ignorePatterns(for: [directory.path + "/"], scope: scopes[tag])
+
+            session.addPatterns(patterns, for: menuEntries, in: file)
             return
         }
 

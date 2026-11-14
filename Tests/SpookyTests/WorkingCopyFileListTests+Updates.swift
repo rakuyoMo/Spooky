@@ -112,8 +112,12 @@ actor StatusSource {
     private(set) var status = WorkingCopyStatus(branch: BranchStatus(head: "main"), entries: [])
 
     /// 换成新的状态条目。
-    func set(_ entries: [StatusEntry]) {
-        status = WorkingCopyStatus(branch: BranchStatus(head: "main"), entries: entries)
+    ///
+    /// - Parameters:
+    ///   - entries: 工作区条目。
+    ///   - oid: HEAD 的提交；nil 表示还没有提交。
+    func set(_ entries: [StatusEntry], oid: String? = nil) {
+        status = WorkingCopyStatus(branch: BranchStatus(head: "main", oid: oid), entries: entries)
     }
 }
 

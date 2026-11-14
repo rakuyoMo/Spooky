@@ -222,7 +222,7 @@ extension WorkingCopyFileListTests {
 
 extension WorkingCopyFileListTests {
     /// 子菜单里除分隔线外的菜单项。
-    private static func items(_ menu: NSMenu, _ key: String) -> [NSMenuItem] {
+    static func items(_ menu: NSMenu, _ key: String) -> [NSMenuItem] {
         (menu.item(withTitle: AppLocalization.text(key))?.submenu?.items ?? []).filter { !$0.isSeparatorItem }
     }
 

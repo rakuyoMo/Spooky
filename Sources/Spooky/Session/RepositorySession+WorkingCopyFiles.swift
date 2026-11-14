@@ -340,14 +340,25 @@ extension RepositorySession {
         return entry.isDeletable && !entry.path.hasSuffix("/")
     }
 
-    /// 恢复到指定版本作用于已跟踪的文件，冲突文件交给冲突处理。
-    func canRevert(_ entries: [StatusEntry]) -> Bool {
-        canWrite && !entries.isEmpty && entries.allSatisfy { $0.kind == .tracked || $0.kind == .unchanged }
+    /// 恢复到指定版本作用于已跟踪的文件，冲突文件交给冲突处理；标了 assume-unchanged 的无状态行不可用。
+    ///
+    /// - Parameters:
+    ///   - entries: 作用的条目。
+    ///   - marked: 列表里显示的 assume-unchanged 路径。
+    func canRevert(_ entries: [StatusEntry], marked: Set<String> = []) -> Bool {
+        canWrite && !entries.isEmpty && entries.allSatisfy { entry in
+            entry.kind == .tracked || (entry.kind == .unchanged && !marked.contains(entry.path))
+        }
     }
 
-    /// 忽略与排除作用于还没有被忽略的文件。
+    /// 忽略与排除作用于任意条目：被忽略的文件可能只被本机的排除或全局规则忽略，仍可写进共享的规则。
     func canIgnore(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains { $0.kind != .ignored }
+        canWrite && !entries.isEmpty
+    }
+
+    /// Show in Finder 与终端要求作用对象在磁盘上：作用的条目全是工作区里已删除的文件时不可用。
+    func isOnDisk(_ entries: [StatusEntry]) -> Bool {
+        entries.contains { !$0.isMissingFromWorkingTree }
     }
 
     /// 设置或清除标记：暂存区里的条目有没标记的才能设置，有已标记的才能清除。
@@ -396,6 +407,11 @@ extension StatusEntry {
     /// 右栏显示 Diff 的条目：有改动的已跟踪文件与未跟踪文件；冲突、未改动与被忽略的文件另有视图。
     var hasWorkingCopyDiff: Bool {
         kind == .tracked || kind == .untracked
+    }
+
+    /// 已跟踪的文件在工作区里已删除：工作区一侧是删除，或只在暂存区里删除、工作区一侧没有记录。
+    var isMissingFromWorkingTree: Bool {
+        kind == .tracked && (unstaged == .deleted || (staged == .deleted && unstaged == nil))
     }
 
     /// 文件还在工作区里，可以删除或移动。
