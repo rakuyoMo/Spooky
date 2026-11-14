@@ -234,6 +234,11 @@ struct WorkingCopyListing: Equatable {
     /// 工具栏搜索框的内容，按路径或文件名过滤。
     var filter = ""
 
+    /// 列表按目录组织：树形与全部文件模式在没有搜索内容时；有搜索内容时按平铺写出完整路径。
+    var showsTree: Bool {
+        mode.isTree && filter.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     /// 路径包含搜索内容时匹配；不区分大小写，组合与分解两种 Unicode 写法视为相同。
     static func matches(_ entry: StatusEntry, query: String) -> Bool {
         [entry.path, entry.originalPath]

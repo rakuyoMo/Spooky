@@ -871,7 +871,6 @@
 "files.showNonModified" = "显示未改动的项目";
 "files.showIgnored" = "显示被忽略的项目";
 "files.showAssumeUnchanged" = "显示 assume-unchanged 项目";
-"files.noMatches" = "没有与 “%@” 匹配的文件。";
 "files.open" = "打开";
 "files.quickLook.single" = "快速查看 “%@”";
 "files.quickLook.multiple" = "快速查看 %ld 个项目";

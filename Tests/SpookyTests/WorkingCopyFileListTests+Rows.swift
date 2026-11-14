@@ -78,4 +78,33 @@ extension WorkingCopyFileListTests {
 
         #expect(list.paths == ["a.txt", "b.txt"])
     }
+
+    /// 树形有搜索内容时按平铺写出完整路径，没有目录行；清空后回到树形。
+    @Test("搜索时树形按平铺显示")
+    func filteredTree() async throws {
+        let source = StatusSource()
+        let session = RepositorySession(loadStatus: { _ in await source.status }, activities: RepositoryActivities())
+        defer { session.close() }
+
+        session.display(RepositoryLocation.local(path: "/temporary/filter-" + UUID().uuidString))
+
+        let list = FileListHarness(session: session, source: source)
+        let entries: [StatusEntry] = [.modified("dir/sub/a.txt"), .modified("dir/b.swift"), .modified("top.txt")]
+
+        session.searchText = "txt"
+        list.listing = WorkingCopyListing(mode: .tree, filter: "txt")
+        await list.show(entries)
+
+        let first = try #require(list.node(at: 0))
+
+        #expect(list.paths == ["dir/sub/a.txt", "top.txt"])
+        #expect(WorkingCopyFileList.Coordinator.pathTitle(first, tree: list.listing.showsTree) == "dir/sub/a.txt")
+
+        // 清空搜索：回到树形，目录行重新出现
+        session.searchText = ""
+        list.listing = WorkingCopyListing(mode: .tree)
+        await list.show(entries)
+
+        #expect(list.paths.first == "dir" && list.paths.contains("dir/sub"))
+    }
 }

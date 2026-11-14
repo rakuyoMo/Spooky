@@ -871,7 +871,6 @@
 "files.showNonModified" = "顯示未變更的項目";
 "files.showIgnored" = "顯示被忽略的項目";
 "files.showAssumeUnchanged" = "顯示 assume-unchanged 項目";
-"files.noMatches" = "沒有符合 “%@” 的檔案。";
 "files.open" = "開啟";
 "files.quickLook.single" = "快速查看 “%@”";
 "files.quickLook.multiple" = "快速查看 %ld 個項目";

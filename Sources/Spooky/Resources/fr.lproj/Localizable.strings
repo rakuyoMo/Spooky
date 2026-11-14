@@ -871,7 +871,6 @@
 "files.showNonModified" = "Afficher les éléments non modifiés";
 "files.showIgnored" = "Afficher les éléments ignorés";
 "files.showAssumeUnchanged" = "Afficher les éléments assume-unchanged";
-"files.noMatches" = "Aucun fichier ne correspond à « %@ ».";
 "files.open" = "Ouvrir";
 "files.quickLook.single" = "Coup d’œil sur « %@ »";
 "files.quickLook.multiple" = "Coup d’œil sur %ld éléments";

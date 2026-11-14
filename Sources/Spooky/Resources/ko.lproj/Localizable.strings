@@ -871,7 +871,6 @@
 "files.showNonModified" = "변경되지 않은 항목 보기";
 "files.showIgnored" = "무시된 항목 보기";
 "files.showAssumeUnchanged" = "assume-unchanged 항목 보기";
-"files.noMatches" = "“%@”과(와) 일치하는 파일이 없습니다.";
 "files.open" = "열기";
 "files.quickLook.single" = "“%@” 훑어보기";
 "files.quickLook.multiple" = "항목 %ld개 훑어보기";

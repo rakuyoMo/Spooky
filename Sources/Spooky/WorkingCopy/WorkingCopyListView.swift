@@ -22,7 +22,6 @@ struct WorkingCopyListView: View {
 
             WorkingCopyFileList(session: session)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .overlay { emptyListMessage }
         }
     }
 
@@ -60,22 +59,6 @@ extension WorkingCopyListView {
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 40)
         .background(HeaderMaterial(showsBottomSeparator: true))
-    }
-
-    /// 列表为空时的说明：只有搜索没有匹配时写出搜索内容；干净的工作区留空。
-    @ViewBuilder
-    private var emptyListMessage: some View {
-        if let status = session.status, !session.searchText.isEmpty {
-            let visible = session.listing.entries(status: status.entries, files: session.workingTreeFiles)
-
-            if visible.isEmpty {
-                Text(AppLocalization.text("files.noMatches", session.searchText))
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(20)
-            }
-        }
     }
 
     /// 一行当前分支、分隔图与跟踪分支，三者首尾相接；有进行中的操作时同样如此，没有上游时明确显示没有上游。

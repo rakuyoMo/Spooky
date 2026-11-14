@@ -86,7 +86,7 @@ extension WorkingCopyFileList.Coordinator {
     /// 图标 16 × 16、距左 9，文字与图标相隔 8、距右 8；冲突与已解决的文件在图标右上叠标记。
     func pathCell(_ node: WorkingCopyFileList.Node) -> NSView {
         let style = renderState?.style ?? WorkingCopyFileList.Style(fontSize: .medium, truncation: .beginning)
-        let tree = renderState?.listing.mode.isTree ?? false
+        let tree = renderState?.listing.showsTree ?? false
         let entry = node.entry
         let resolved = entry.map { $0.kind != .conflicted && renderResolved.contains($0.path) } ?? false
 

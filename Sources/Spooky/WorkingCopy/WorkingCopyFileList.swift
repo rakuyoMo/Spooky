@@ -330,20 +330,28 @@ extension WorkingCopyFileList {
             updating = true
             defer { updating = false }
 
-            // 平铺每个条目一行；树形按目录组织并缩进
-            outline.indentationPerLevel = listing.mode.isTree ? 16 : 0
+            // 平铺每个条目一行；树形按目录组织并缩进，搜索时按平铺显示
+            let tree = listing.showsTree
+            let shownMode = tree ? listing.mode : .list
+
+            outline.indentationPerLevel = tree ? 16 : 0
 
             let target = Self.sorted(
-                listing.mode.isTree ? Self.tree(entries) : Self.fileNodes(entries),
+                tree ? Self.tree(entries) : Self.fileNodes(entries),
                 by: outline.sortDescriptors
             )
 
-            if let previous, previous.listing.mode == listing.mode, previous.style == style {
-                applyChanges(target, mode: listing.mode)
+            if
+                let previous,
+                previous.listing.mode == listing.mode,
+                previous.listing.showsTree == tree,
+                previous.style == style
+            {
+                applyChanges(target, mode: shownMode)
             } else {
                 roots = target
                 outline.reloadData()
-                restoreExpansion(mode: listing.mode, expanded: expanded)
+                restoreExpansion(mode: shownMode, expanded: expanded)
             }
 
             // 恢复会话里的选区；只是数据变化而选中项全部消失时改选邻行，搜索过滤掉的选择随后取消
@@ -375,7 +383,7 @@ extension WorkingCopyFileList {
 
         /// 平铺不留展开控件，树形仅为目录提供三角。
         func outlineView(_: NSOutlineView, shouldShowOutlineCellForItem item: Any) -> Bool {
-            guard renderState?.listing.mode.isTree ?? false, let node = item as? Node else { return false }
+            guard renderState?.listing.showsTree ?? false, let node = item as? Node else { return false }
 
             return !node.children.isEmpty
         }

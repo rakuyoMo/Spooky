@@ -871,7 +871,6 @@
 "files.showNonModified" = "変更のない項目を表示";
 "files.showIgnored" = "無視された項目を表示";
 "files.showAssumeUnchanged" = "assume-unchanged の項目を表示";
-"files.noMatches" = "「%@」に一致するファイルはありません。";
 "files.open" = "開く";
 "files.quickLook.single" = "「%@」をクイックルック";
 "files.quickLook.multiple" = "%ld 項目をクイックルック";

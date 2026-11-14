@@ -871,7 +871,6 @@
 "files.showNonModified" = "Show Non-Modified Items";
 "files.showIgnored" = "Show Ignored Items";
 "files.showAssumeUnchanged" = "Show Assume-Unchanged Items";
-"files.noMatches" = "No files match “%@”.";
 "files.open" = "Open";
 "files.quickLook.single" = "Quick Look “%@”";
 "files.quickLook.multiple" = "Quick Look %ld Items";

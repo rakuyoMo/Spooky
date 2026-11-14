@@ -871,7 +871,6 @@
 "files.showNonModified" = "Unveränderte Objekte anzeigen";
 "files.showIgnored" = "Ignorierte Objekte anzeigen";
 "files.showAssumeUnchanged" = "Assume-unchanged-Objekte anzeigen";
-"files.noMatches" = "Keine Dateien entsprechen „%@“.";
 "files.open" = "Öffnen";
 "files.quickLook.single" = "Übersicht von „%@“";
 "files.quickLook.multiple" = "Übersicht von %ld Objekten";
