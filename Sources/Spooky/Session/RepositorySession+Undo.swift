@@ -101,8 +101,13 @@ extension RepositorySession {
             title: UndoManager().undoMenuTitle(forUndoActionName: entry.title),
             target: target,
             undo: .unrecorded
-        ) {
+        ) { [weak self] in
             history.finishUndo(entry)
+
+            // 反向操作按撤销后的仓库调整选中
+            if let self, case .inverse(_, _, _, let inverse) = entry.change {
+                inverse.afterUndo?(self)
+            }
         }
     }
 
@@ -163,7 +168,11 @@ extension RepositorySession {
                 title: title,
                 target: target,
                 undo: .unrecorded
-            )
+            ) { [weak self] in
+                if let self {
+                    inverse.afterRedo?(self)
+                }
+            }
         }
     }
 

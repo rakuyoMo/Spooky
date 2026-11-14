@@ -11,10 +11,23 @@ extension UndoRecording {
         }
     }
 
-    /// 把远端 `name` 改名为 `newName`：撤销时改回原名，远端跟踪分支与跟踪设置随之改回。
+    /// 把远端 `name` 改名为 `newName`：撤销时改回原名，远端跟踪分支与跟踪设置随之改回；
+    /// 选中的是这个远端时，撤销与重做后选中跟着它的名字走。
     static func renamingRemote(_ name: String, to newName: String) -> Self {
         .inverse { _ in
-            UndoInverse { runner, _ in try await RepositoryRemotes(runner: runner).undoRename(name, to: newName) }
+            UndoInverse(
+                undo: { runner, _ in try await RepositoryRemotes(runner: runner).undoRename(name, to: newName) },
+                afterUndo: { session in
+                    if session.selectedRemote == newName {
+                        session.selectedRemote = name
+                    }
+                },
+                afterRedo: { session in
+                    if session.selectedRemote == name {
+                        session.selectedRemote = newName
+                    }
+                }
+            )
         }
     }
 

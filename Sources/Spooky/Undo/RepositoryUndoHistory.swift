@@ -44,6 +44,12 @@ struct UndoInverse: Sendable {
 
     /// 重做时代替原操作执行，如复用撤销时留下的子模块 Git 目录重新添加；为 nil 时再执行一次原操作。
     var redo: (@Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void)? = nil
+
+    /// 撤销成功后调整窗口的选中，如让选中跟着改回的远端名走；为 nil 时不调整。
+    var afterUndo: (@MainActor @Sendable (RepositorySession) -> Void)? = nil
+
+    /// 重做成功后调整窗口的选中；为 nil 时不调整。
+    var afterRedo: (@MainActor @Sendable (RepositorySession) -> Void)? = nil
 }
 
 // MARK: - RepositoryUndoEntry

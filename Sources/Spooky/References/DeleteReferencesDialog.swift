@@ -236,6 +236,8 @@ extension DeleteReferencesDialog {
             )
 
         case .remotes(let names):
+            let order = session.history.snapshot?.remotes.map(\.name) ?? []
+
             return session.performGit(
                 { runner, _ in
                     for name in names {
@@ -245,12 +247,40 @@ extension DeleteReferencesDialog {
                 title: AppLocalization.text(keys.submit),
                 undo: .removingRemotes(names),
                 success: { [session] in
-                    if let selected = session.selectedRemote, names.contains(selected) {
+                    guard let selected = session.selectedRemote, names.contains(selected) else {
+                        return
+                    }
+
+                    // 删掉了选中的远端：选中同一分组里的下一个远端，没有时选上一个，一个都不剩时回到历史
+                    if let neighbor = Self.neighbor(of: selected, removing: names, in: order) {
+                        session.selectedRemote = neighbor
+                    } else {
                         session.activeView = .history
                         session.onActiveViewChange?()
                     }
                 }
             )
         }
+    }
+}
+
+// MARK: - Helpers
+
+extension DeleteReferencesDialog {
+    /// 删掉一组远端后接替选中的远端：侧边栏顺序里选中项之后第一个没被删的，没有时取之前最近的一个。
+    ///
+    /// - Parameters:
+    ///   - selected: 被删掉的选中远端。
+    ///   - removed: 这次删掉的远端。
+    ///   - order: 删除前侧边栏里远端的顺序。
+    static func neighbor(of selected: String, removing removed: [String], in order: [String]) -> String? {
+        guard let index = order.firstIndex(of: selected) else {
+            return nil
+        }
+
+        let remaining = { (name: String) in !removed.contains(name) }
+
+        return order[(index + 1)...].first(where: remaining)
+            ?? order[..<index].last(where: remaining)
     }
 }
