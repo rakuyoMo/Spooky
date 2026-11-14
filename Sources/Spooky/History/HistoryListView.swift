@@ -279,6 +279,12 @@ struct HistoryCommitTable: NSViewRepresentable {
         /// 选中背景与引用徽标保持一致。
         private var selection = Set<String>()
 
+        /// 表格正在显示的范围，即选中的引用；第一次更新之前为 nil。
+        private var displayedScope: Set<String>? = nil
+
+        /// 换范围后等新范围读完要滚到的位置。
+        private var pendingOffset: CGFloat? = nil
+
         /// 列表末尾是否有续页的加载行。
         private(set) var showsLoadingRow = false
 
@@ -307,8 +313,23 @@ struct HistoryCommitTable: NSViewRepresentable {
             let markers = [history.unpushed, history.unpulled, history.parentCommits]
             let loadsMore = history.isLoading && !history.isRefreshingCommits && !history.rows.isEmpty
 
+            // 换了范围：记下离开的范围滚到的位置，新范围读完后滚回它上次的位置，没看过的范围从顶部开始
+            let scope = history.selectedReferences
+
+            if let displayedScope, displayedScope != scope {
+                history.rememberScroll(table.visibleRect.minY, for: displayedScope)
+                pendingOffset = history.scopeMemories[scope]?.scrollOffset ?? 0
+            }
+
+            displayedScope = scope
+
             if selection != history.selectedIDs {
                 revealsSelection = true
+            }
+
+            // 要还原滚动位置时不再滚到选中行
+            if pendingOffset != nil {
+                revealsSelection = false
             }
 
             if
@@ -345,6 +366,15 @@ struct HistoryCommitTable: NSViewRepresentable {
 
                 if revealsSelection, let first = indexes.first {
                     Task { @MainActor in table.scrollRowToVisible(first) }
+                }
+            }
+
+            // 新范围读完后按记下的位置滚动，等表格完成布局后再滚
+            if let offset = pendingOffset, !history.isLoading {
+                pendingOffset = nil
+
+                Task { @MainActor in
+                    table.scroll(NSPoint(x: table.visibleRect.minX, y: offset))
                 }
             }
 

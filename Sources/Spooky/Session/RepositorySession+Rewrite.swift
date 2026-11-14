@@ -59,6 +59,20 @@ extension RepositorySession {
 
         return ordered.map(\.name)
     }
+
+    /// 检出所选提交：在检出版本的条件之外，所选提交就是 HEAD 时不可用。
+    ///
+    /// - Parameter id: 所选提交的完整哈希。
+    func canCheckout(commit id: String) -> Bool {
+        canCheckoutRevision && status?.branch.oid != id
+    }
+
+    /// 把 HEAD 重置到所选提交：在改写的条件之外，所选提交就是 HEAD 时不可用。
+    ///
+    /// - Parameter id: 所选提交的完整哈希。
+    func canReset(to id: String) -> Bool {
+        canRewrite && status?.branch.oid != id
+    }
 }
 
 // MARK: - Requests

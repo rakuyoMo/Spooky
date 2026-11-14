@@ -12,6 +12,7 @@ import TestSupport
 @MainActor
 struct OperationWiringTests {
     /// 只有选中当前分支或 HEAD 行才算在看 HEAD 分支，改写类入口据此出现；单选与多选、别的分支与当前分支、
+    /// HEAD 所在的提交不能检出与重置；
     /// 未拉取与合并提交各自拼出的项与可用状态；菜单项把所选提交交给会话的请求入口。
     @Test("历史右键菜单的项、可用状态与发出的请求")
     func commitMenu() async throws {
@@ -201,10 +202,19 @@ extension OperationWiringTests {
         #expect(!menu.contains("rewrite.menu.delete", side.shortID))
         #expect(!menu.contains("rewrite.menu.rebaseOnto", side.shortID))
 
+        // HEAD 所在的提交：检出与重置都不可用
+        let head = try await fixture.select("refs/heads/main", subjects: ["D"])
+        menu = fixture.menu()
+
+        #expect(menu.disabled("rewrite.menu.checkout", head.shortID))
+        #expect(menu.disabled("rewrite.menu.reset", head.shortID))
+
         // 当前分支上已在本地的提交
         let local = try await fixture.select("refs/heads/main", subjects: ["B"])
         menu = fixture.menu()
 
+        #expect(menu.enabled("rewrite.menu.checkout", local.shortID))
+        #expect(menu.enabled("rewrite.menu.reset", local.shortID))
         #expect(menu.enabled("rewrite.menu.revert", local.shortID))
         #expect(!menu.contains("rewrite.menu.cherryPick", local.shortID))
         #expect(menu.enabled("rewrite.menu.rebaseOnto", local.shortID))

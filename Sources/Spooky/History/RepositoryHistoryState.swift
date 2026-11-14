@@ -40,6 +40,7 @@ final class RepositoryHistoryState {
         didSet {
             if selectedReferences != oldValue {
                 comparisonBase = nil
+                switchScope(from: oldValue)
                 reloadCommits()
             }
         }
@@ -132,6 +133,10 @@ final class RepositoryHistoryState {
 
     /// 首屏加载行计时用的等待；测试换成由测试放行的等待。
     var loadingRowSleep: @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
+
+    /// 每个历史范围上次的选中与滚动位置，以选中的引用为键；只在窗口会话内记，关闭仓库时清空。
+    @ObservationIgnored
+    var scopeMemories: [Set<String>: HistoryScopeMemory] = [:]
 
     /// 已选提交的完整哈希集合，按列表顺序复制。
     var selectedIDs = Set<String>() {
@@ -376,13 +381,6 @@ final class RepositoryHistoryState {
         }
     }
 
-    /// 切回仓库时恢复分支与提交选择；引用快照到达后再校验引用是否仍存在。
-    func restore(references: Set<String>, commits: Set<String>) {
-        selectedReferences = references
-        selectedIDs = commits
-        restoredReferences = references.isEmpty ? nil : references
-    }
-
     /// 写入前取消读取，避免旧引用或补丁在写入后覆盖新快照。
     func suspend() {
         generation += 1
@@ -420,6 +418,7 @@ final class RepositoryHistoryState {
         selectedReference = nil
         commits = []
         rows = []
+        scopeMemories = [:]
         commitCount = nil
         searchConditions = []
         lookup = nil
@@ -734,6 +733,13 @@ extension RepositoryHistoryState {
     func reveal(_ references: Set<String>) {
         selectedReferences = references
         revealRequests += 1
+    }
+
+    /// 切回仓库时恢复分支与提交选择；引用快照到达后再校验引用是否仍存在。
+    func restore(references: Set<String>, commits: Set<String>) {
+        selectedReferences = references
+        selectedIDs = commits
+        restoredReferences = references.isEmpty ? nil : references
     }
 }
 
