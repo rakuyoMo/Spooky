@@ -31,7 +31,7 @@ struct WorkingCopyFileHeader: View {
         let name = RepositorySession.fileName(path)
 
         HStack(spacing: 8) {
-            Image(nsImage: Self.icon(path: path, isFolder: folder))
+            Image(nsImage: Self.icon(path: path, isFolder: folder, root: session.repository?.localURL))
                 .resizable()
                 .frame(width: 24, height: 24)
                 .accessibilityHidden(true)
@@ -66,15 +66,34 @@ struct WorkingCopyFileHeader: View {
         .modifier(FileActionHeader(actions: actions, hovering: $hovering))
     }
 
-    /// 只按名称与已知目录身份取系统图标，不读取本机或服务器文件。
-    static func icon(path: String, isFolder: Bool) -> NSImage {
+    /// 文件或目录的系统图标。
+    ///
+    /// 本机仓库里存在的文件取它实际的图标；服务器仓库、已删除的文件与目录按名称与身份取，
+    /// 以点开头、其后没有其它点的名字（如 `.gitignore`）没有扩展名。
+    ///
+    /// - Parameters:
+    ///   - path: 相对仓库根目录的路径。
+    ///   - isFolder: 是否按目录显示。
+    ///   - root: 本机仓库的根目录；服务器仓库传 `nil`。
+    static func icon(path: String, isFolder: Bool, root: URL? = nil) -> NSImage {
         if isFolder {
             return NSWorkspace.shared.icon(for: .folder)
         }
 
+        // 本机文件交给系统读取实际图标，自定义图标与应用程序包都能显示
+        if let root {
+            let file = root.appending(path: path)
+
+            if FileManager.default.fileExists(atPath: file.path) {
+                return NSWorkspace.shared.icon(forFile: file.path)
+            }
+        }
+
         let name = RepositorySession.fileName(path)
-        let extensionName = name.lastIndex(of: ".").map { String(name[name.index(after: $0)...]) } ?? ""
+        let dot = name.lastIndex(of: ".").flatMap { $0 == name.startIndex ? nil : $0 }
+        let extensionName = dot.map { String(name[name.index(after: $0)...]) } ?? ""
         let type = UTType(filenameExtension: extensionName) ?? .data
+
         return NSWorkspace.shared.icon(for: type)
     }
 

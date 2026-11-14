@@ -57,7 +57,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
         status.width = 68
         status.minWidth = 68
         status.maxWidth = 68
-        status.sortDescriptorPrototype = NSSortDescriptor(key: "status", ascending: true)
+        status.sortDescriptorPrototype = NSSortDescriptor(key: "status", ascending: false)
         outline.addTableColumn(status)
 
         let path = NSTableColumn(identifier: .init("path"))
@@ -158,21 +158,30 @@ extension WorkingCopyFileList {
         /// 文件节点对应的 Git 状态。
         var entry: StatusEntry?
 
+        /// 停止跟踪后同一路径的未跟踪记录，与暂存为删除的 ``entry`` 合成一行；其余节点为 nil。
+        var untrackedCopy: StatusEntry?
+
         /// 子节点按路径排序。
         var children: [Node] = []
 
-        /// 目录勾选作用于当前显示的全部后代文件。
+        /// 文件行作用于自身的记录，目录勾选作用于当前显示的全部后代文件。
         var entries: [StatusEntry] {
-            entry.map { [$0] } ?? children.flatMap(\.entries)
+            entry.map { [$0] + (untrackedCopy.map { [$0] } ?? []) } ?? children.flatMap(\.entries)
         }
 
         /// 末级名称。
         var name: String { WorkingCopyFileList.fileName(of: path) }
 
         /// 建立目录或文件节点。
-        init(path: String, entry: StatusEntry? = nil) {
+        ///
+        /// - Parameters:
+        ///   - path: 相对路径。
+        ///   - entry: 文件节点的 Git 状态；目录为 nil。
+        ///   - untrackedCopy: 停止跟踪后同一路径的未跟踪记录。
+        init(path: String, entry: StatusEntry? = nil, untrackedCopy: StatusEntry? = nil) {
             self.path = path
             self.entry = entry
+            self.untrackedCopy = untrackedCopy
         }
     }
 
@@ -325,7 +334,7 @@ extension WorkingCopyFileList {
             outline.indentationPerLevel = listing.mode.isTree ? 16 : 0
 
             let target = Self.sorted(
-                listing.mode.isTree ? Self.tree(entries) : entries.map { Node(path: $0.path, entry: $0) },
+                listing.mode.isTree ? Self.tree(entries) : Self.fileNodes(entries),
                 by: outline.sortDescriptors
             )
 
@@ -404,9 +413,12 @@ extension WorkingCopyFileList {
             let entries = nodes.flatMap(\.entries)
             let directory = nodes.count == 1 && nodes[0].entry == nil ? nodes[0].path : nil
 
+            // 单选一个文件行时详情显示这一行；停止跟踪后合成的一行显示暂存为删除的那条记录
+            let single = nodes.count == 1 ? nodes[0].entry : nil
+
             session.selectedIDs = Set(entries.map { StatusRowID(path: $0.path, kind: $0.kind) })
             session.selectedDirectory = directory
-            session.selectedID = directory == nil && entries.count == 1 ? session.selectedIDs.first : nil
+            session.selectedID = single.map { StatusRowID(path: $0.path, kind: $0.kind) }
             quickLook.selectionChanged()
         }
 

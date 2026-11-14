@@ -164,6 +164,7 @@ extension WorkingCopyFileList.Coordinator {
             guard let match else { return node }
 
             match.entry = node.entry
+            match.untrackedCopy = node.untrackedCopy
             return match
         }
 

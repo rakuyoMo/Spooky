@@ -71,7 +71,9 @@ extension RepositoryWindowController {
     /// 工作区的副标题：“Working Copy (分支 – n Changed Files)”；分离 HEAD 时分支一段写前 8 位哈希与 “(detached)”，
     /// 还没读到状态时不写分支。
     private var workingCopySubtitle: String {
-        let count = session.status?.entries.count ?? 0
+        // 停止跟踪后同一路径的两条记录在列表里是一行，改动数也按一条计
+        let entries = session.status?.entries ?? []
+        let count = entries.count - entries.untrackedCopies.count
 
         guard let branch = session.status?.branch, branch.head != nil || branch.oid != nil else {
             return AppLocalization.text("working.subtitle", count)

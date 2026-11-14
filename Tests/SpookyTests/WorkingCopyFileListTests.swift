@@ -17,8 +17,9 @@ struct WorkingCopyFileListTests {
         StatusEntry(kind: .tracked, path: "docs/A.md", unstaged: .deleted),
     ]
 
-    /// 默认先按路径排、不区分大小写，`notes.txt` 在 `README.md` 之前；按状态排时用两位状态码，可以倒序；
-    /// 树形的目录内部同样排序，目录没有状态，按状态升序时排在同层文件之前。
+    /// 默认先按路径排、不区分大小写，`notes.txt` 在 `README.md` 之前；按状态排时分三档：已暂存（含部分暂存）、
+    /// 已跟踪文件的未暂存改动、未跟踪文件，未改动与被忽略的文件在最后，同一档内按路径排，可以倒序；
+    /// 树形的目录内部同样排序，目录没有状态，按状态降序时排在同层文件之后。
     @Test("表头排序")
     func sorting() {
         let defaults = WorkingCopyPreferences.defaultSortDescriptors
@@ -29,12 +30,22 @@ struct WorkingCopyFileListTests {
 
         #expect(list(defaults) == ["docs/A.md", "docs/b.md", "notes.txt", "README.md"])
 
-        // 状态码依次是 .D、.M、??、A.
-        let status = [NSSortDescriptor(key: "status", ascending: true), defaults[0]]
-        #expect(list(status) == ["docs/A.md", "notes.txt", "README.md", "docs/b.md"])
+        // 按状态降序：已暂存的 b 在前，两个未暂存改动同档按路径排，未跟踪的在最后
+        let status = [NSSortDescriptor(key: "status", ascending: false), defaults[0]]
+        #expect(list(status) == ["docs/b.md", "docs/A.md", "notes.txt", "README.md"])
 
-        let descending = [NSSortDescriptor(key: "status", ascending: false), defaults[0]]
-        #expect(list(descending) == ["docs/b.md", "README.md", "notes.txt", "docs/A.md"])
+        let ascending = [NSSortDescriptor(key: "status", ascending: true), defaults[0]]
+        #expect(list(ascending) == ["README.md", "docs/A.md", "notes.txt", "docs/b.md"])
+
+        // 部分暂存与已暂存同档，被忽略的文件在未跟踪文件之后
+        let others = [
+            StatusEntry(kind: .ignored, path: "a.log"),
+            StatusEntry(kind: .untracked, path: "m.txt"),
+            StatusEntry(kind: .tracked, path: "z.txt", staged: .modified, unstaged: .modified),
+        ]
+        let otherRows = others.map { WorkingCopyFileList.Node(path: $0.path, entry: $0) }
+
+        #expect(WorkingCopyFileList.Coordinator.sorted(otherRows, by: status).map(\.path) == ["z.txt", "m.txt", "a.log"])
 
         // 树形：顶层与目录内部各自排序
         let tree = WorkingCopyFileList.Coordinator.sorted(
@@ -45,8 +56,8 @@ struct WorkingCopyFileListTests {
         #expect(tree[0].children.map(\.path) == ["docs/A.md", "docs/b.md"])
 
         let byStatus = WorkingCopyFileList.Coordinator.sorted(tree, by: status)
-        #expect(byStatus.map(\.path) == ["docs", "notes.txt", "README.md"])
-        #expect(byStatus[0].children.map(\.path) == ["docs/A.md", "docs/b.md"])
+        #expect(byStatus.map(\.path) == ["notes.txt", "README.md", "docs"])
+        #expect(byStatus[2].children.map(\.path) == ["docs/b.md", "docs/A.md"])
     }
 
     /// 表头排序所有仓库共用一个记录：没有记录时为默认排序，保存的多级排序原样读回；
@@ -61,7 +72,7 @@ struct WorkingCopyFileListTests {
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
         let keys = { (descriptors: [NSSortDescriptor]) in descriptors.map { "\($0.key ?? "")\($0.ascending)" } }
 
-        #expect(keys(WorkingCopyPreferences.sortDescriptors(defaults: defaults)) == ["pathtrue", "statustrue"])
+        #expect(keys(WorkingCopyPreferences.sortDescriptors(defaults: defaults)) == ["pathtrue", "statusfalse"])
 
         let changed = [
             NSSortDescriptor(key: "status", ascending: false),
@@ -81,7 +92,7 @@ struct WorkingCopyFileListTests {
             let domain = try #require(UserDefaults(suiteName: directory.appending(path: "invalid-\(index)").path))
             domain.set(records, forKey: WorkingCopyPreferences.sortOrder)
 
-            #expect(keys(WorkingCopyPreferences.sortDescriptors(defaults: domain)) == ["pathtrue", "statustrue"])
+            #expect(keys(WorkingCopyPreferences.sortDescriptors(defaults: domain)) == ["pathtrue", "statusfalse"])
         }
     }
 

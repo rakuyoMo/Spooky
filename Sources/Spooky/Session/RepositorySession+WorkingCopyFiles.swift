@@ -58,9 +58,17 @@ extension RepositorySession {
     }
 
     /// 批量动作对应当前多选；单选详情也可从菜单操作；未改动与被忽略的文件来自补充清单。
+    ///
+    /// 停止跟踪后同一路径的两条记录在列表里是一行，选中这一行即同时选中两条。
     var selectedEntries: [StatusEntry] {
         let ids = selectedIDs.isEmpty ? Set([selectedID].compactMap { $0 }) : selectedIDs
-        let listed = status?.entries.filter { ids.contains(StatusRowID(path: $0.path, kind: $0.kind)) } ?? []
+        let entries = status?.entries ?? []
+        let copies = Set(entries.untrackedCopies.map(\.path))
+
+        let listed = entries.filter { entry in
+            ids.contains(StatusRowID(path: entry.path, kind: entry.kind))
+                || (copies.contains(entry.path) && ids.contains(StatusRowID(path: entry.path, kind: .tracked)))
+        }
 
         // 状态里没有的条目才从补充清单里取，同一文件不会出现两次
         let found = Set(listed.map { StatusRowID(path: $0.path, kind: $0.kind) })

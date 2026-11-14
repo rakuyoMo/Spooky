@@ -13,6 +13,9 @@ struct FileStatusView: View {
     /// 文件标记了 assume-unchanged，悬停说明 Git 不检查它的改动。
     var assumeUnchanged = false
 
+    /// 停止跟踪后工作区里同一路径的未跟踪文件并进这一行：右边一枚写未跟踪。
+    var untrackedCopy = false
+
     /// 辅助技术与悬停提示使用本地化全称：普通文件分两行写出已暂存与未暂存的变化，冲突文件只说明冲突类型。
     var description: String {
         if assumeUnchanged {
@@ -35,7 +38,7 @@ struct FileStatusView: View {
             return AppLocalization.text(
                 "status.description",
                 Self.changeName(entry.staged),
-                Self.changeName(entry.unstaged)
+                untrackedCopy ? AppLocalization.text("status.untracked") : Self.changeName(entry.unstaged)
             )
         }
     }
@@ -65,7 +68,7 @@ struct FileStatusView: View {
         case .tracked, .conflicted:
             (
                 entry.staged.map { String($0.rawValue) } ?? "",
-                entry.unstaged.map { String($0.rawValue) } ?? ""
+                untrackedCopy ? "?" : entry.unstaged.map { String($0.rawValue) } ?? ""
             )
         }
     }
@@ -111,6 +114,71 @@ struct FileStatusView: View {
             }
 
         return AppPalette.color(name)
+    }
+}
+
+// MARK: - DirectoryStatusView
+
+/// 树形目录行的两枚状态徽标，版式与文件行相同：每一列汇总其下在这一列有改动的条目。
+struct DirectoryStatusView: View {
+    /// 目录下当前显示的条目。
+    let entries: [StatusEntry]
+
+    /// 左右两枚徽标的字母，空字符串表示这一列下没有改动。
+    ///
+    /// 一列下全是删除写 “D”，全是未跟踪写 “?”，全是被忽略写 “!”，只有未跟踪与被忽略时写 “?”；
+    /// 其余组合（含只有新增、新增与删除混合）都写 “M”。冲突文件按修改计。
+    var codes: (staged: String, unstaged: String) {
+        let columns = entries.map { entry -> (staged: String, unstaged: String) in
+            let codes = FileStatusView(entry: entry).codes
+
+            guard entry.kind == .conflicted else { return codes }
+
+            return (codes.staged.isEmpty ? "" : "M", codes.unstaged.isEmpty ? "" : "M")
+        }
+
+        return (Self.summary(columns.map(\.staged)), Self.summary(columns.map(\.unstaged)))
+    }
+
+    /// 两枚徽标与可访问的说明，说明的写法与文件行相同。
+    var body: some View {
+        let codes = codes
+        let description = AppLocalization.text(
+            "status.description",
+            Self.name(of: codes.staged),
+            Self.name(of: codes.unstaged)
+        )
+
+        HStack(spacing: 6) {
+            FileStatusView.badge(codes.staged)
+            FileStatusView.badge(codes.unstaged)
+        }
+        .frame(width: 42, height: 16, alignment: .leading)
+        .help(description)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(description)
+    }
+
+    /// 一列的汇总字母。
+    private static func summary(_ codes: [String]) -> String {
+        let changed = Set(codes.filter { !$0.isEmpty })
+
+        guard !changed.isEmpty else { return "" }
+
+        if changed.count == 1, let code = changed.first, ["D", "?", "!"].contains(code) {
+            return code
+        }
+
+        return changed == ["?", "!"] ? "?" : "M"
+    }
+
+    /// 汇总字母的本地化全称。
+    private static func name(of code: String) -> String {
+        switch code {
+        case "?": AppLocalization.text("status.untracked")
+        case "!": AppLocalization.text("status.ignored")
+        default: FileStatusView.changeName(code.first.flatMap(FileChange.init(rawValue:)))
+        }
     }
 }
 

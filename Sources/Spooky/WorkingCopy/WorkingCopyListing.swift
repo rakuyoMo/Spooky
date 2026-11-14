@@ -131,11 +131,11 @@ enum WorkingCopyPreferences {
     /// 文件列表的表头排序，按优先级逐级保存列名与方向。
     static let sortOrder = "workingCopySortOrder"
 
-    /// 没有保存过排序时的表头排序：先按路径，再按状态，都是升序。
+    /// 没有保存过排序时的表头排序：先按路径升序，再按状态；状态与第一次点表头时一样降序，已暂存的在前。
     static var defaultSortDescriptors: [NSSortDescriptor] {
         [
             NSSortDescriptor(key: "path", ascending: true),
-            NSSortDescriptor(key: "status", ascending: true),
+            NSSortDescriptor(key: "status", ascending: false),
         ]
     }
 
