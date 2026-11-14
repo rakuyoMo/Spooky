@@ -81,7 +81,7 @@ extension WorkingCopyFileListTests {
         #expect(lfs.first?.title == AppLocalization.text("lfs.trackFile"))
 
         // 目录行的 Create Ignore Pattern… 预填目录本身，已跟踪的文件仍随表单带上
-        var requested: WorkingCopyFileRequest?
+        var requested: WorkingCopyFileRequest? = nil
         session.onFileRequest = { requested = $0 }
 
         let custom = try #require(ignore.last)
