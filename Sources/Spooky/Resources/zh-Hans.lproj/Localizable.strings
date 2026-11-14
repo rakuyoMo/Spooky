@@ -831,7 +831,7 @@
 "editor.showsGuide" = "显示参考线";
 "editor.warnsComments" = "提交信息含注释时提示";
 "editor.stripsComments" = "总是删除提交信息中的注释";
-"profiles.help" = "身份档案用来快速切换仓库提交时使用的身份。";
+"profiles.help" = "使用 “身份档案” 可以在提交时轻松切换不同的身份。";
 "profiles.add" = "添加身份档案";
 "profiles.remove" = "移除身份档案";
 "profiles.newProfile" = "新档案";
@@ -840,6 +840,7 @@
 "profiles.email" = "邮箱：";
 "profiles.signingKey" = "签名密钥：";
 "profiles.edit" = "编辑";
+"profiles.noSelection" = "没有选中身份档案";
 "profiles.menu" = "提交人身份";
 "profiles.addCurrent" = "添加身份档案 “%@”…";
 "profiles.manage" = "管理身份档案…";
@@ -1734,7 +1735,7 @@
 "gitConfig.error.write" = "无法保存全局 Git 配置";
 
 "profiles.create.title" = "新建身份档案";
-"profiles.create.message" = "用填写的内容新建一个身份档案。";
+"profiles.create.message" = "用填写的值新建一个身份档案。";
 "profiles.create.submit" = "新建";
 "profiles.update.title" = "更新身份档案";
 "profiles.update.message" = "用填写的内容更新这个身份档案。";
@@ -1744,11 +1745,11 @@
 "profiles.delete.submit" = "删除";
 
 /* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
-"settings.environment.loginShell" = "自动从登录 shell 读取环境变量";
+"settings.environment.loginShell" = "自动向登录 shell 请求环境变量";
 "settings.environment.loginShellFailed" = "无法读取登录 shell 的环境变量。";
 "settings.environment.key" = "名称";
 "settings.environment.value" = "值";
-"settings.environment.custom" = "执行 Git 命令时使用的自定义环境变量：";
+"settings.environment.custom" = "配置执行 Git 命令时使用的自定义环境变量：";
 "settings.environment.add" = "添加变量";
 "settings.environment.remove" = "移除变量";
 "settings.environment.localOnly" = "这些设置只作用于在这台 Mac 上执行的 Git 命令；服务器上的仓库使用服务器自己的环境。";
@@ -1760,7 +1761,7 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH Agent：";
 "settings.sshAgent.system" = "系统 SSH Agent";
-"settings.sshAgent.description" = "所选的 SSH agent 用于 SSH 连接与 SSH 签名。";
+"settings.sshAgent.description" = "所选的 SSH agent 将用于 SSH 远端连接与 SSH 签名。";
 "settings.sshAgent.warning" = "SSH Agent 未运行";
 "settings.sshAgent.warning.system" = "系统 SSH agent 不可用。请重新启动 Mac。";
 
@@ -2443,14 +2444,14 @@
 "accounts.remove.message" = "将从 Spooky 移除 %2$@ 上的 “%1$@”，并从钥匙串删除它的令牌。";
 "accounts.kind.github" = "GitHub";
 "accounts.kind.gitlab" = "GitLab";
-"accounts.kind.gitlabSelfManaged" = "私有部署 GitLab";
+"accounts.kind.gitlabSelfManaged" = "GitLab CE/EE";
 "accounts.add.github" = "GitHub…";
 "accounts.add.gitlab" = "GitLab.com…";
-"accounts.add.gitlabSelfManaged" = "私有部署 GitLab…";
+"accounts.add.gitlabSelfManaged" = "GitLab CE/EE…";
 "accounts.add.github.title" = "添加 GitHub 账号";
 "accounts.update.github.title" = "更新 GitHub 账号";
 "accounts.add.gitlab.title" = "添加 GitLab 账号";
-"accounts.add.gitlabSelfManaged.title" = "添加私有部署 GitLab 账号";
+"accounts.add.gitlabSelfManaged.title" = "添加 GitLab CE/EE 账号";
 "accounts.update.gitlab.title" = "更新 GitLab 账号";
 "accounts.add.submit" = "添加账号";
 "accounts.update.submit" = "更新账号";
@@ -2493,7 +2494,7 @@
 "hosting.error.server" = "托管服务出错";
 "hosting.error.server.help" = "托管服务遇到了问题。请稍后再试。";
 "hosting.error.unreachable" = "连不上托管服务";
-"hosting.error.unreachable.help" = "请检查网络连接与实例地址。私有部署的实例必须能从这台 Mac 访问。";
+"hosting.error.unreachable.help" = "请检查网络连接与实例地址。GitLab CE/EE 实例必须能从这台 Mac 访问。";
 "hosting.error.certificate" = "证书不受信任";
 "hosting.error.certificate.help" = "这台 Mac 不信任服务器的证书。请检查实例地址，或者在 “钥匙串访问” 中信任该证书。";
 "hosting.error.incompatible" = "API 不兼容";
@@ -2661,7 +2662,7 @@
 "pullRequests.noDescription" = "没有描述";
 "pullRequests.noProjects" = "没有远端在所选账号的实例上。";
 "pullRequests.noRemotes.title" = "没有远端";
-"pullRequests.noRemotes.message" = "添加 github.com、GitLab.com 或私有部署 GitLab 上的远端，才能查看它的 Pull Request 与 Merge Request。";
+"pullRequests.noRemotes.message" = "添加 github.com、GitLab.com 或 GitLab CE/EE 上的远端，才能查看它的 Pull Request 与 Merge Request。";
 "pullRequests.openAccounts" = "打开账号设置";
 "pullRequests.optional" = "可选";
 "pullRequests.project" = "项目：";
@@ -2680,7 +2681,7 @@
 "pullRequests.target" = "目标：";
 "pullRequests.titleField" = "标题：";
 "pullRequests.unsupported.title" = "不支持的远端";
-"pullRequests.unsupported.message" = "“%@” 不在 github.com、GitLab.com 或你账号所在的私有部署 GitLab 上。如果它属于其中之一，请把它关联到账号与项目。";
+"pullRequests.unsupported.message" = "“%@” 不在 github.com、GitLab.com 或你账号所在的 GitLab CE/EE 上。如果它属于其中之一，请把它关联到账号与项目。";
 
 "publish.menu" = "发布仓库…";
 "publish.title" = "发布仓库";

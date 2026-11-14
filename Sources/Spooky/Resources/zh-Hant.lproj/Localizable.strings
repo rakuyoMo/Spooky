@@ -831,7 +831,7 @@
 "editor.showsGuide" = "顯示參考線";
 "editor.warnsComments" = "提交訊息含註解時提示";
 "editor.stripsComments" = "一律移除提交訊息中的註解";
-"profiles.help" = "身分設定檔可快速切換儲存庫提交時使用的身分。";
+"profiles.help" = "使用 “身分設定檔” 可以在提交時輕鬆切換不同的身分。";
 "profiles.add" = "加入身分設定檔";
 "profiles.remove" = "移除身分設定檔";
 "profiles.newProfile" = "新設定檔";
@@ -840,6 +840,7 @@
 "profiles.email" = "電子郵件：";
 "profiles.signingKey" = "簽署金鑰：";
 "profiles.edit" = "編輯";
+"profiles.noSelection" = "沒有選取身分設定檔";
 "profiles.menu" = "提交者身分";
 "profiles.addCurrent" = "加入身分設定檔 “%@”…";
 "profiles.manage" = "管理身分設定檔…";
@@ -1734,7 +1735,7 @@
 "gitConfig.error.write" = "無法儲存全域 Git 設定";
 
 "profiles.create.title" = "新增身分設定檔";
-"profiles.create.message" = "用填寫的內容新增一個身分設定檔。";
+"profiles.create.message" = "用填寫的值新增一個身分設定檔。";
 "profiles.create.submit" = "新增";
 "profiles.update.title" = "更新身分設定檔";
 "profiles.update.message" = "用填寫的內容更新這個身分設定檔。";
@@ -1744,11 +1745,11 @@
 "profiles.delete.submit" = "刪除";
 
 /* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
-"settings.environment.loginShell" = "自動從登入 shell 讀取環境變數";
+"settings.environment.loginShell" = "自動向登入 shell 請求環境變數";
 "settings.environment.loginShellFailed" = "無法讀取登入 shell 的環境變數。";
 "settings.environment.key" = "名稱";
 "settings.environment.value" = "值";
-"settings.environment.custom" = "執行 Git 指令時使用的自訂環境變數：";
+"settings.environment.custom" = "設定執行 Git 指令時使用的自訂環境變數：";
 "settings.environment.add" = "加入變數";
 "settings.environment.remove" = "移除變數";
 "settings.environment.localOnly" = "這些設定只作用於在這台 Mac 上執行的 Git 指令；伺服器上的儲存庫使用伺服器自己的環境。";
@@ -1760,7 +1761,7 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH Agent：";
 "settings.sshAgent.system" = "系統 SSH Agent";
-"settings.sshAgent.description" = "所選的 SSH agent 用於 SSH 連線與 SSH 簽署。";
+"settings.sshAgent.description" = "所選的 SSH agent 將用於 SSH 遠端連線與 SSH 簽署。";
 "settings.sshAgent.warning" = "SSH Agent 未執行";
 "settings.sshAgent.warning.system" = "系統 SSH agent 無法使用。請重新啟動 Mac。";
 
@@ -2443,14 +2444,14 @@
 "accounts.remove.message" = "將從 Spooky 移除 %2$@ 上的 “%1$@”，並從鑰匙圈刪除它的權杖。";
 "accounts.kind.github" = "GitHub";
 "accounts.kind.gitlab" = "GitLab";
-"accounts.kind.gitlabSelfManaged" = "私有部署 GitLab";
+"accounts.kind.gitlabSelfManaged" = "GitLab CE/EE";
 "accounts.add.github" = "GitHub…";
 "accounts.add.gitlab" = "GitLab.com…";
-"accounts.add.gitlabSelfManaged" = "私有部署 GitLab…";
+"accounts.add.gitlabSelfManaged" = "GitLab CE/EE…";
 "accounts.add.github.title" = "加入 GitHub 帳號";
 "accounts.update.github.title" = "更新 GitHub 帳號";
 "accounts.add.gitlab.title" = "加入 GitLab 帳號";
-"accounts.add.gitlabSelfManaged.title" = "加入私有部署 GitLab 帳號";
+"accounts.add.gitlabSelfManaged.title" = "加入 GitLab CE/EE 帳號";
 "accounts.update.gitlab.title" = "更新 GitLab 帳號";
 "accounts.add.submit" = "加入帳號";
 "accounts.update.submit" = "更新帳號";
@@ -2493,7 +2494,7 @@
 "hosting.error.server" = "託管服務出錯";
 "hosting.error.server.help" = "託管服務遇到了問題。請稍後再試。";
 "hosting.error.unreachable" = "連不上託管服務";
-"hosting.error.unreachable.help" = "請檢查網路連線與實例位址。私有部署的實例必須能從這台 Mac 存取。";
+"hosting.error.unreachable.help" = "請檢查網路連線與實例位址。GitLab CE/EE 實例必須能從這台 Mac 存取。";
 "hosting.error.certificate" = "憑證不受信任";
 "hosting.error.certificate.help" = "這台 Mac 不信任伺服器的憑證。請檢查實例位址，或者在 “鑰匙圈存取” 中信任該憑證。";
 "hosting.error.incompatible" = "API 不相容";
@@ -2661,7 +2662,7 @@
 "pullRequests.noDescription" = "沒有描述";
 "pullRequests.noProjects" = "沒有遠端在所選帳號的實例上。";
 "pullRequests.noRemotes.title" = "沒有遠端";
-"pullRequests.noRemotes.message" = "加入 github.com、GitLab.com 或私有部署 GitLab 上的遠端，才能查看它的 Pull Request 與 Merge Request。";
+"pullRequests.noRemotes.message" = "加入 github.com、GitLab.com 或 GitLab CE/EE 上的遠端，才能查看它的 Pull Request 與 Merge Request。";
 "pullRequests.openAccounts" = "打開帳號設定";
 "pullRequests.optional" = "選填";
 "pullRequests.project" = "專案：";
@@ -2680,7 +2681,7 @@
 "pullRequests.target" = "目標：";
 "pullRequests.titleField" = "標題：";
 "pullRequests.unsupported.title" = "不支援的遠端";
-"pullRequests.unsupported.message" = "“%@” 不在 github.com、GitLab.com 或你帳號所在的私有部署 GitLab 上。如果它屬於其中之一，請把它關聯到帳號與專案。";
+"pullRequests.unsupported.message" = "“%@” 不在 github.com、GitLab.com 或你帳號所在的 GitLab CE/EE 上。如果它屬於其中之一，請把它關聯到帳號與專案。";
 
 "publish.menu" = "發佈儲存庫…";
 "publish.title" = "發佈儲存庫";

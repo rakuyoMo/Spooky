@@ -831,7 +831,7 @@
 "editor.showsGuide" = "안내선 표시";
 "editor.warnsComments" = "메시지에 주석이 있으면 경고";
 "editor.stripsComments" = "커밋 메시지의 주석을 항상 제거";
-"profiles.help" = "사용자 프로필로 저장소에서 커밋할 때 사용하는 신원을 빠르게 전환할 수 있습니다.";
+"profiles.help" = "“사용자 프로필”을 사용하면 커밋할 때 여러 신원 사이를 쉽게 전환할 수 있습니다.";
 "profiles.add" = "사용자 프로필 추가";
 "profiles.remove" = "사용자 프로필 제거";
 "profiles.newProfile" = "새 프로필";
@@ -840,6 +840,7 @@
 "profiles.email" = "이메일:";
 "profiles.signingKey" = "서명 키:";
 "profiles.edit" = "편집";
+"profiles.noSelection" = "선택한 사용자 프로필 없음";
 "profiles.menu" = "커미터 신원";
 "profiles.addCurrent" = "사용자 프로필 “%@” 추가…";
 "profiles.manage" = "사용자 프로필 관리…";
@@ -1744,11 +1745,11 @@
 "profiles.delete.submit" = "삭제";
 
 /* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
-"settings.environment.loginShell" = "로그인 셸에서 환경 변수 자동으로 읽기";
+"settings.environment.loginShell" = "로그인 셸에 환경 변수 자동으로 요청하기";
 "settings.environment.loginShellFailed" = "로그인 셸의 환경 변수를 읽을 수 없습니다.";
 "settings.environment.key" = "이름";
 "settings.environment.value" = "값";
-"settings.environment.custom" = "Git 명령을 실행할 때 사용할 사용자 지정 환경 변수:";
+"settings.environment.custom" = "Git 명령을 실행할 때 사용할 사용자 지정 환경 변수 구성:";
 "settings.environment.add" = "변수 추가";
 "settings.environment.remove" = "변수 제거";
 "settings.environment.localOnly" = "이 설정은 이 Mac에서 실행하는 Git 명령에만 적용됩니다. 서버의 저장소는 서버 자체의 환경을 사용합니다.";
@@ -1760,7 +1761,7 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH 에이전트:";
 "settings.sshAgent.system" = "시스템 SSH 에이전트";
-"settings.sshAgent.description" = "선택한 SSH 에이전트는 SSH 연결과 SSH 서명에 사용됩니다.";
+"settings.sshAgent.description" = "선택한 SSH 에이전트는 SSH 원격 연결과 SSH 서명에 사용됩니다.";
 "settings.sshAgent.warning" = "SSH 에이전트가 실행 중이 아님";
 "settings.sshAgent.warning.system" = "시스템 SSH 에이전트를 사용할 수 없습니다. Mac을 재시동하세요.";
 
@@ -2443,14 +2444,14 @@
 "accounts.remove.message" = "%2$@의 “%1$@” 계정을 Spooky에서 제거하고, 해당 토큰을 키체인에서 삭제합니다.";
 "accounts.kind.github" = "GitHub";
 "accounts.kind.gitlab" = "GitLab";
-"accounts.kind.gitlabSelfManaged" = "GitLab Self-Managed";
+"accounts.kind.gitlabSelfManaged" = "GitLab CE/EE";
 "accounts.add.github" = "GitHub…";
 "accounts.add.gitlab" = "GitLab.com…";
-"accounts.add.gitlabSelfManaged" = "GitLab Self-Managed…";
+"accounts.add.gitlabSelfManaged" = "GitLab CE/EE…";
 "accounts.add.github.title" = "GitHub 계정 추가";
 "accounts.update.github.title" = "GitHub 계정 업데이트";
 "accounts.add.gitlab.title" = "GitLab 계정 추가";
-"accounts.add.gitlabSelfManaged.title" = "GitLab Self-Managed 계정 추가";
+"accounts.add.gitlabSelfManaged.title" = "GitLab CE/EE 계정 추가";
 "accounts.update.gitlab.title" = "GitLab 계정 업데이트";
 "accounts.add.submit" = "계정 추가";
 "accounts.update.submit" = "계정 업데이트";
@@ -2493,7 +2494,7 @@
 "hosting.error.server" = "호스팅 서비스 오류";
 "hosting.error.server.help" = "호스팅 서비스에 문제가 발생했습니다. 나중에 다시 시도하세요.";
 "hosting.error.unreachable" = "호스팅 서비스에 연결할 수 없음";
-"hosting.error.unreachable.help" = "네트워크 연결과 인스턴스 주소를 확인하세요. 자체 관리 인스턴스는 이 Mac에서 접근할 수 있어야 합니다.";
+"hosting.error.unreachable.help" = "네트워크 연결과 인스턴스 주소를 확인하세요. GitLab CE/EE 인스턴스는 이 Mac에서 접근할 수 있어야 합니다.";
 "hosting.error.certificate" = "인증서를 신뢰할 수 없음";
 "hosting.error.certificate.help" = "이 Mac은 서버의 인증서를 신뢰하지 않습니다. 인스턴스 주소를 확인하거나 “키체인 접근”에서 인증서를 신뢰하도록 설정하세요.";
 "hosting.error.incompatible" = "호환되지 않는 API";
@@ -2661,7 +2662,7 @@
 "pullRequests.noDescription" = "설명이 없습니다";
 "pullRequests.noProjects" = "선택한 계정의 인스턴스에 있는 원격이 없습니다.";
 "pullRequests.noRemotes.title" = "원격 없음";
-"pullRequests.noRemotes.message" = "github.com, GitLab.com 또는 자체 관리 GitLab의 원격을 추가하면 풀 리퀘스트와 머지 리퀘스트를 볼 수 있습니다.";
+"pullRequests.noRemotes.message" = "github.com, GitLab.com 또는 GitLab CE/EE의 원격을 추가하면 풀 리퀘스트와 머지 리퀘스트를 볼 수 있습니다.";
 "pullRequests.openAccounts" = "계정 설정 열기";
 "pullRequests.optional" = "선택 사항";
 "pullRequests.project" = "프로젝트:";
@@ -2680,7 +2681,7 @@
 "pullRequests.target" = "대상:";
 "pullRequests.titleField" = "제목:";
 "pullRequests.unsupported.title" = "지원하지 않는 원격";
-"pullRequests.unsupported.message" = "“%@”은(는) github.com, GitLab.com 또는 계정의 자체 관리 GitLab에 있지 않습니다. 그중 하나에 속한다면 계정과 프로젝트에 연결하세요.";
+"pullRequests.unsupported.message" = "“%@”은(는) github.com, GitLab.com 또는 계정의 GitLab CE/EE에 있지 않습니다. 그중 하나에 속한다면 계정과 프로젝트에 연결하세요.";
 
 "publish.menu" = "저장소 게시…";
 "publish.title" = "저장소 게시";

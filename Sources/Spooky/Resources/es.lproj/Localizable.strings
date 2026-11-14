@@ -831,7 +831,7 @@
 "editor.showsGuide" = "Mostrar guía";
 "editor.warnsComments" = "Avisar si el mensaje contiene comentarios";
 "editor.stripsComments" = "Eliminar siempre los comentarios del mensaje de commit";
-"profiles.help" = "Los perfiles de usuario permiten cambiar rápidamente la identidad con la que un repositorio hace commits.";
+"profiles.help" = "Usa los “perfiles de usuario” para cambiar fácilmente entre identidades al hacer commits.";
 "profiles.add" = "Añadir perfil de usuario";
 "profiles.remove" = "Eliminar perfil de usuario";
 "profiles.newProfile" = "Perfil nuevo";
@@ -840,6 +840,7 @@
 "profiles.email" = "Correo:";
 "profiles.signingKey" = "Clave de firma:";
 "profiles.edit" = "Editar";
+"profiles.noSelection" = "Ningún perfil de usuario seleccionado";
 "profiles.menu" = "Identidad del autor";
 "profiles.addCurrent" = "Añadir perfil de usuario “%@”…";
 "profiles.manage" = "Gestionar perfiles de usuario…";
@@ -1744,11 +1745,11 @@
 "profiles.delete.submit" = "Eliminar";
 
 /* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
-"settings.environment.loginShell" = "Leer automáticamente las variables de entorno del shell de inicio de sesión";
+"settings.environment.loginShell" = "Solicitar automáticamente las variables de entorno al shell de inicio de sesión";
 "settings.environment.loginShellFailed" = "No se han podido leer las variables de entorno del shell de inicio de sesión.";
 "settings.environment.key" = "Nombre";
 "settings.environment.value" = "Valor";
-"settings.environment.custom" = "Variables de entorno personalizadas para los comandos de Git:";
+"settings.environment.custom" = "Configura variables de entorno personalizadas para usar al ejecutar comandos de Git:";
 "settings.environment.add" = "Añadir variable";
 "settings.environment.remove" = "Eliminar variable";
 "settings.environment.localOnly" = "Estos ajustes solo se aplican a los comandos de Git que se ejecutan en este Mac. Los repositorios en servidores usan el entorno del propio servidor.";
@@ -1760,7 +1761,7 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "Agente SSH:";
 "settings.sshAgent.system" = "Agente SSH del sistema";
-"settings.sshAgent.description" = "El agente SSH seleccionado se usa para las conexiones SSH y las firmas SSH.";
+"settings.sshAgent.description" = "El agente SSH seleccionado se usará para las conexiones remotas SSH y las firmas SSH.";
 "settings.sshAgent.warning" = "El agente SSH no está en ejecución";
 "settings.sshAgent.warning.system" = "El agente SSH del sistema no está disponible. Reiniciar el Mac.";
 
@@ -2443,14 +2444,14 @@
 "accounts.remove.message" = "Se quitará “%1$@” en %2$@ de Spooky y se eliminará su token del llavero.";
 "accounts.kind.github" = "GitHub";
 "accounts.kind.gitlab" = "GitLab";
-"accounts.kind.gitlabSelfManaged" = "GitLab Self-Managed";
+"accounts.kind.gitlabSelfManaged" = "GitLab CE/EE";
 "accounts.add.github" = "GitHub…";
 "accounts.add.gitlab" = "GitLab.com…";
-"accounts.add.gitlabSelfManaged" = "GitLab Self-Managed…";
+"accounts.add.gitlabSelfManaged" = "GitLab CE/EE…";
 "accounts.add.github.title" = "Añadir cuenta de GitHub";
 "accounts.update.github.title" = "Actualizar cuenta de GitHub";
 "accounts.add.gitlab.title" = "Añadir cuenta de GitLab";
-"accounts.add.gitlabSelfManaged.title" = "Añadir cuenta de GitLab Self-Managed";
+"accounts.add.gitlabSelfManaged.title" = "Añadir cuenta de GitLab CE/EE";
 "accounts.update.gitlab.title" = "Actualizar cuenta de GitLab";
 "accounts.add.submit" = "Añadir cuenta";
 "accounts.update.submit" = "Actualizar cuenta";
@@ -2493,7 +2494,7 @@
 "hosting.error.server" = "Error del servicio de alojamiento";
 "hosting.error.server.help" = "El servicio de alojamiento tuvo un problema. Vuelve a intentarlo más tarde.";
 "hosting.error.unreachable" = "Servicio de alojamiento inaccesible";
-"hosting.error.unreachable.help" = "Comprueba la conexión de red y la dirección de la instancia. Una instancia autogestionada debe ser accesible desde este Mac.";
+"hosting.error.unreachable.help" = "Comprueba la conexión de red y la dirección de la instancia. Una instancia de GitLab CE/EE debe ser accesible desde este Mac.";
 "hosting.error.certificate" = "El certificado no es de confianza";
 "hosting.error.certificate.help" = "Este Mac no confía en el certificado del servidor. Comprueba la dirección de la instancia o confía en el certificado en Acceso a Llaveros.";
 "hosting.error.incompatible" = "API incompatible";
@@ -2661,7 +2662,7 @@
 "pullRequests.noDescription" = "Sin descripción";
 "pullRequests.noProjects" = "Ninguno de los remotos está en la instancia de la cuenta seleccionada.";
 "pullRequests.noRemotes.title" = "No hay remotos";
-"pullRequests.noRemotes.message" = "Añade un remoto en github.com, GitLab.com o un GitLab autogestionado para ver sus pull requests y merge requests.";
+"pullRequests.noRemotes.message" = "Añade un remoto en github.com, GitLab.com o GitLab CE/EE para ver sus pull requests y merge requests.";
 "pullRequests.openAccounts" = "Abrir cuentas";
 "pullRequests.optional" = "Opcional";
 "pullRequests.project" = "Proyecto:";
@@ -2680,7 +2681,7 @@
 "pullRequests.target" = "Destino:";
 "pullRequests.titleField" = "Título:";
 "pullRequests.unsupported.title" = "Remoto no compatible";
-"pullRequests.unsupported.message" = "“%@” no está en github.com, GitLab.com ni en un GitLab autogestionado de tus cuentas. Si pertenece a uno de ellos, asócialo a una cuenta y a un proyecto.";
+"pullRequests.unsupported.message" = "“%@” no está en github.com, GitLab.com ni en una instancia de GitLab CE/EE de tus cuentas. Si pertenece a uno de ellos, asócialo a una cuenta y a un proyecto.";
 
 "publish.menu" = "Publicar repositorio…";
 "publish.title" = "Publicar repositorio";

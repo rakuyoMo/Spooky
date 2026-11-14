@@ -226,13 +226,15 @@ extension UserProfilesSettingsView {
         .buttonStyle(.borderless)
     }
 
-    /// 所选档案：首字母头像、粗体标题、分隔线下的身份、签名密钥与签名人，右下角为编辑按钮；没有选中时只留空白边框。
+    /// 所选档案：首字母头像、粗体标题、分隔线下的身份、签名密钥与签名人，右下角为编辑按钮；没有选中时是不带图标的空状态。
     private var detail: some View {
         ZStack(alignment: .topLeading) {
             Color.clear
 
             if let profile = profiles.first(where: { $0.id == selection }) {
                 profileDetail(profile)
+            } else {
+                EmptyStateView(title: AppLocalization.text("profiles.noSelection"), message: "", symbol: nil)
             }
         }
     }
@@ -507,7 +509,6 @@ extension UserProfileEditor {
             .labelsHidden()
             .buttonSizing(.flexible)
             .disabled(keys.isEmpty)
-            .accessibilityLabel(AppLocalization.text("profiles.signingKey"))
         }
     }
 
