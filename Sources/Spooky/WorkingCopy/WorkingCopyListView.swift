@@ -80,14 +80,13 @@ extension WorkingCopyListView {
 
     /// 一行当前分支、分隔图与跟踪分支，三者首尾相接；有进行中的操作时同样如此，没有上游时明确显示没有上游。
     ///
-    /// 两段文字各留 2 pt 的内边距、最小宽 50；空间不够时先截短跟踪分支。
+    /// 两段文字各留 2 pt 的内边距：分支名贴合文字，跟踪名最小宽 50；空间不够时先截短跟踪分支。
+    /// 两段文字都没有悬停提示，读屏照读文字本身。
     @ViewBuilder
     private var branchSummary: some View {
         if let branch = session.status?.branch {
-            let title = Self.branchTitle(branch)
-
             HStack(spacing: 0) {
-                summaryText(title, color: .secondaryLabelColor)
+                summaryText(Self.branchTitle(branch), color: .secondaryLabelColor)
                     .layoutPriority(1)
 
                 if branch.head != nil {
@@ -101,9 +100,9 @@ extension WorkingCopyListView {
                         branch.upstream ?? AppLocalization.text("branch.noTracking"),
                         color: .tertiaryLabelColor
                     )
+                    .frame(minWidth: 50, alignment: .leading)
                 }
             }
-            .help(title)
         } else {
             Text(AppLocalization.text("workspace.title"))
                 .font(.system(size: 13))
@@ -111,7 +110,7 @@ extension WorkingCopyListView {
         }
     }
 
-    /// 状态头里的一段 13 pt 文字：单行、截掉末尾，带 2 pt 内边距，最小宽 50。
+    /// 状态头里的一段 13 pt 文字：单行、截掉末尾，带 2 pt 内边距。
     private func summaryText(_ text: String, color: NSColor) -> some View {
         Text(text)
             .font(.system(size: 13))
@@ -119,15 +118,15 @@ extension WorkingCopyListView {
             .lineLimit(1)
             .truncationMode(.tail)
             .padding(.horizontal, 2)
-            .frame(minWidth: 50, alignment: .leading)
     }
 }
 
 // MARK: - WorkingCopyViewSettingsButton
 
-/// 状态头的视图设置按钮：工具栏样式的下拉按钮，只显示用次要文字颜色着色的图标。
+/// 状态头的视图设置按钮：无边框的下拉按钮，平时与悬停时都只显示用次要文字颜色着色的图标。
 ///
 /// 菜单与主菜单的 Working Copy Status 子菜单发送同一组动作，勾选与可用状态由仓库窗口的菜单校验标出。
+/// 悬停提示与历史列表头的视图设置按钮相同。
 private struct WorkingCopyViewSettingsButton: NSViewRepresentable {
     /// 菜单项的资源键与动作，nil 表示分隔线。
     private static let items: [(key: String, action: Selector)?] = [
@@ -144,10 +143,10 @@ private struct WorkingCopyViewSettingsButton: NSViewRepresentable {
         let title = AppLocalization.text("working.viewMode")
         let button = NSPopUpButton(frame: .zero, pullsDown: true)
 
-        button.bezelStyle = .toolbar
+        button.isBordered = false
         button.imagePosition = .imageOnly
         button.contentTintColor = .secondaryLabelColor
-        button.toolTip = title
+        button.toolTip = AppLocalization.text("history.viewOptions.help")
         button.setAccessibilityLabel(title)
         (button.cell as? NSPopUpButtonCell)?.arrowPosition = .noArrow
 
