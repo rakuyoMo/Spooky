@@ -762,6 +762,11 @@
 "fileHistory.suggestions.authors" = "작성자";
 "fileHistory.suggestions.messages" = "메시지";
 "fileHistory.suggestions.committers" = "커미터";
+"fileHistory.suggestions.files" = "파일";
+"search.contains.message" = "메시지 포함: %@";
+"search.contains.author" = "작성자 포함: %@";
+"search.contains.committer" = "커미터 포함: %@";
+"search.contains.file" = "파일 포함: %@";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
 "blame.show" = "“%@” Blame 보기";

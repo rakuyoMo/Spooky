@@ -17,12 +17,26 @@ struct ContributorSuggestion: Identifiable, Equatable {
         /// 提交人。
         case committers
 
+        /// 文件。
+        case files
+
         /// 组名。
         var title: String {
             switch self {
             case .authors: AppLocalization.text("fileHistory.suggestions.authors")
             case .messages: AppLocalization.text("fileHistory.suggestions.messages")
             case .committers: AppLocalization.text("fileHistory.suggestions.committers")
+            case .files: AppLocalization.text("fileHistory.suggestions.files")
+            }
+        }
+
+        /// 按包含输入搜索这一组时的建议写法，如 “Message contains: <输入>”。
+        var containsKey: String {
+            switch self {
+            case .authors: "search.contains.author"
+            case .messages: "search.contains.message"
+            case .committers: "search.contains.committer"
+            case .files: "search.contains.file"
             }
         }
     }
@@ -102,6 +116,25 @@ struct ContributorSuggestion: Identifiable, Equatable {
         return subjects
             .filter { $0.localizedStandardContains(query) && seen.insert($0).inserted }
             .map { Self(text: $0, name: $0, email: nil, showsAvatar: false, group: .messages) }
+    }
+
+    /// 按包含输入搜索某一组的建议：行里写 “<组> contains: <输入>”，接受后搜索框写原样的输入；输入为空时没有。
+    ///
+    /// - Parameters:
+    ///   - query: 搜索框的输入。
+    ///   - group: 搜索的分组，接受后换到对应的范围。
+    static func contains(_ query: String, group: Group) -> Self? {
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return nil
+        }
+
+        return Self(
+            text: query,
+            name: AppLocalization.text(group.containsKey, query),
+            email: nil,
+            showsAvatar: false,
+            group: group
+        )
     }
 
     /// 比较用的写法：忽略大小写与变音符号。

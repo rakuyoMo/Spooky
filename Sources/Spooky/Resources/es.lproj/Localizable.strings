@@ -762,6 +762,11 @@
 "fileHistory.suggestions.authors" = "Autores";
 "fileHistory.suggestions.messages" = "Mensajes";
 "fileHistory.suggestions.committers" = "Committers";
+"fileHistory.suggestions.files" = "Archivos";
+"search.contains.message" = "El mensaje contiene: %@";
+"search.contains.author" = "El autor contiene: %@";
+"search.contains.committer" = "El committer contiene: %@";
+"search.contains.file" = "El archivo contiene: %@";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
 "blame.show" = "Mostrar blame de “%@”";

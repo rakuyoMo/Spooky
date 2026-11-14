@@ -44,6 +44,29 @@ extension FileViewsTests {
         #expect(messages.allSatisfy { $0.group == .messages && !$0.showsAvatar })
     }
 
+    /// 工作区搜索先列按顺序包含输入字符的文件（文件名连续命中的在前），最后一行按包含输入过滤；历史按说明搜索时四组各一行包含输入的搜索；
+    /// 接受后搜索框都写原样的输入或完整路径。
+    @Test("工作区与按说明搜索的建议")
+    func searchSuggestions() {
+        let files = RepositoryWindowController.workingCopySuggestions(
+            for: "rdm",
+            in: ["README.md", "src/a.swift", "docs/读我 [rdm].txt"]
+        )
+
+        #expect(files.map(\.text) == ["docs/读我 [rdm].txt", "README.md", "rdm"])
+        #expect(files.allSatisfy { $0.group == .files && !$0.showsAvatar })
+        #expect(files.last?.name == AppLocalization.text("search.contains.file", "rdm"))
+
+        // 输入只有空白时没有包含输入的一行
+        #expect(RepositoryWindowController.workingCopySuggestions(for: " ", in: []).isEmpty)
+
+        let message = RepositoryWindowController.messageScopeSuggestions(for: "fix")
+
+        #expect(message.map(\.group) == [.messages, .authors, .committers, .files])
+        #expect(message.allSatisfy { $0.text == "fix" })
+        #expect(message.first?.name == AppLocalization.text("search.contains.message", "fix"))
+    }
+
     /// 补全的作者与提交人由会话在刷新后于后台读取整个仓库：作者不含只做提交人的人，换文件沿用；
     /// 有新提交后按新的 HEAD 重读，新作者排在最前。
     @Test("补全读取整个仓库的作者与提交人")

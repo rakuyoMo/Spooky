@@ -762,6 +762,11 @@
 "fileHistory.suggestions.authors" = "作者";
 "fileHistory.suggestions.messages" = "說明";
 "fileHistory.suggestions.committers" = "提交者";
+"fileHistory.suggestions.files" = "檔案";
+"search.contains.message" = "說明包含：%@";
+"search.contains.author" = "作者包含：%@";
+"search.contains.committer" = "提交者包含：%@";
+"search.contains.file" = "檔案包含：%@";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
 "blame.show" = "顯示 “%@” 的 Blame";

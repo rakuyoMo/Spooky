@@ -762,6 +762,11 @@
 "fileHistory.suggestions.authors" = "作成者";
 "fileHistory.suggestions.messages" = "メッセージ";
 "fileHistory.suggestions.committers" = "コミッター";
+"fileHistory.suggestions.files" = "ファイル";
+"search.contains.message" = "メッセージに含む: %@";
+"search.contains.author" = "作成者に含む: %@";
+"search.contains.committer" = "コミッターに含む: %@";
+"search.contains.file" = "ファイルに含む: %@";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
 "blame.show" = "「%@」の Blame を表示";
