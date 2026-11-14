@@ -145,8 +145,8 @@ extension RepositorySessionTests {
         #expect(session.committer == ("", ""))
     }
 
-    /// 补全的提交来自最近历史，fixup 插入提交标题，文件补全来自改动列表。
-    @Test("补全候选来自最近提交与改动文件")
+    /// 补全的提交来自最近历史，插入短哈希与空格，fixup 插入带前导空格的提交标题；文件补全只列已暂存的文件，插入路径与空格。
+    @Test("补全候选来自最近提交与已暂存的文件")
     func completionSources() async throws {
         let (session, _, directory) = try await commitSession()
 
@@ -161,7 +161,17 @@ extension RepositorySessionTests {
         await session.writeTask?.value
         await session.waitForRefresh()
 
+        // 已暂存的新文件，以及未暂存的改动与未跟踪的文件
         try Data("changed".utf8).write(to: directory.appending(path: "改动 [*].txt"))
+        session.refresh(full: true)
+        await session.waitForRefresh()
+
+        session.stageAll(staged: true)
+        await session.writeTask?.value
+        await session.waitForRefresh()
+
+        try Data("unstaged".utf8).write(to: directory.appending(path: "file.txt"))
+        try Data("untracked".utf8).write(to: directory.appending(path: "改动 未跟踪.txt"))
         session.refresh(full: true)
         await session.waitForRefresh()
 
@@ -171,9 +181,10 @@ extension RepositorySessionTests {
         let files = await session.completions(for: .file(query: "改动", range: empty))
 
         #expect(commits.count == 1)
-        #expect(commits.first?.insertion.count == 8)
-        #expect(fixups.map(\.insertion) == ["修复 登录"])
-        #expect(files.map(\.insertion) == ["改动 [*].txt"])
+        #expect(commits.map(\.insertion.count) == [9])
+        #expect(try #require(commits.first).insertion.hasSuffix(" "))
+        #expect(fixups.map(\.insertion) == [" 修复 登录"])
+        #expect(files.map(\.insertion) == ["改动 [*].txt "])
     }
 }
 
