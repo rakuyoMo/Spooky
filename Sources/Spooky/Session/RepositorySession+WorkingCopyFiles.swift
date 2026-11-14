@@ -340,14 +340,15 @@ extension RepositorySession {
         return entry.isDeletable && !entry.path.hasSuffix("/")
     }
 
-    /// 恢复到指定版本作用于已跟踪的文件，冲突文件交给冲突处理；标了 assume-unchanged 的无状态行不可用。
+    /// 恢复到指定版本作用于已跟踪与冲突的文件，标了 assume-unchanged 的无状态行不可用；
+    /// 冲突文件恢复到含这个路径的版本后冲突结束，所选版本里没有它时 Git 报错、冲突保留。
     ///
     /// - Parameters:
     ///   - entries: 作用的条目。
     ///   - marked: 列表里显示的 assume-unchanged 路径。
     func canRevert(_ entries: [StatusEntry], marked: Set<String> = []) -> Bool {
         canWrite && !entries.isEmpty && entries.allSatisfy { entry in
-            entry.kind == .tracked || (entry.kind == .unchanged && !marked.contains(entry.path))
+            [.tracked, .conflicted].contains(entry.kind) || (entry.kind == .unchanged && !marked.contains(entry.path))
         }
     }
 

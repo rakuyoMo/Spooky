@@ -191,6 +191,9 @@ extension RepositorySession {
 extension StatusEntry {
     /// 能交给本机程序打开的文件：工作区里存在且不是目录。
     var isOpenable: Bool {
-        isDeletable && !path.hasSuffix("/")
+        // 冲突文件在工作区里留着带冲突标记或一侧的内容，只有两侧都删除时不在磁盘上
+        let onDisk = kind == .conflicted ? !(staged == .deleted && unstaged == .deleted) : isDeletable
+
+        return onDisk && !path.hasSuffix("/")
     }
 }
