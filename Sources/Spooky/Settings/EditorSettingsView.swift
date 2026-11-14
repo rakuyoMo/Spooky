@@ -171,13 +171,16 @@ extension EditorSettingsView {
         }
         .padding(.top, SettingsFormLayout.rowSpacing)
 
+        // 注释的两个勾选框按标题的完整宽度一行写完，可以伸出控件列的右缘
         SettingsRow {
             Toggle(AppLocalization.text("editor.warnsComments"), isOn: $warnsComments)
+                .fixedSize()
         }
         .padding(.top, SettingsFormLayout.checkboxSpacing)
 
         SettingsRow {
             Toggle(AppLocalization.text("editor.stripsComments"), isOn: $stripsComments)
+                .fixedSize()
                 .disabled(warnsComments)
         }
         .padding(.top, SettingsFormLayout.checkboxSpacing)

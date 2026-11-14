@@ -11,7 +11,7 @@ struct AppearanceSettingsView: View {
     /// 右对齐的标签与 278 pt 宽控件列里的缩略图选择器，下方是应用图标一行。
     var body: some View {
         SettingsForm {
-            SettingsRow(AppLocalization.text("settings.appearance.label"), alignment: .top) {
+            SettingsRow(AppLocalization.text("settings.appearance.label"), alignment: .center) {
                 HStack(spacing: 6) {
                     ForEach(AppAppearance.allCases) { appearance in
                         option(appearance)

@@ -263,9 +263,28 @@ extension ThemesSettingsView {
             }
         }
         .frame(width: 652, height: 222, alignment: .top)
+        .background {
+            gutterLines(style: style)
+        }
         .background(style.color("background"))
         .clipped()
         .overlay(Rectangle().strokeBorder(AppPalette.color("general_border_color")))
+    }
+
+    /// 预览块下方的空白里接着画两列行号的右边线，一直到预览框底。
+    private func gutterLines(style: TextStyle) -> some View {
+        let rows = Self.previewHunk().map(DiffDisplayLine.rows(in:)) ?? []
+        let width = DiffDisplayLine.columnWidth(in: rows, font: style.theme.font)
+        let count = rows.first?.numbers.count ?? 2
+
+        return Canvas { context, size in
+            let color = Color(nsColor: DiffGutterView.borderColor(style: style))
+
+            for column in 1 ... count {
+                let line = CGRect(x: CGFloat(column) * width - 1, y: 0, width: 1, height: size.height)
+                context.fill(Path(line), with: .color(color))
+            }
+        }
     }
 }
 
