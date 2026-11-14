@@ -209,7 +209,7 @@ struct SidebarSettingsTests {
         )
     }
 
-    /// Working Copy 行尾：改动数为零时没有标记；有进行中的操作时换成操作图标，合并与压缩合并、变基与摘取各用一个。
+    /// Working Copy 行尾：改动数为零时没有标记；有进行中的操作时换成操作图标，没有 sequencer 的操作与序列操作各用一个。
     /// Working Copy 的提示写出 HEAD 所在的分支或分离时的短哈希，以及未提交的文件数；远端的提示分行写出获取与推送地址。
     @Test("Working Copy 行的标记与提示，远端行的提示")
     func workingCopyMarker() throws {
