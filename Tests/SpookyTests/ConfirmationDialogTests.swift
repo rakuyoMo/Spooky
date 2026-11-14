@@ -169,6 +169,7 @@ extension ConfirmationDialogTests {
     }
 
     /// Git 错误框挂成可以拉大的 sheet，以 `GitErrorDialog` 记住排好版的尺寸；记住的尺寸比内容宽时，下次照它打开。
+    /// 窗口已有表单时错误框叠在表单上，关掉后回到表单。
     private static func expectGitErrorSheet(in fixture: NavigationTests.WindowFixture) async throws {
         let key = GitErrorDialogTests.frameKey
         let saved = UserDefaults.standard.object(forKey: key)
@@ -207,6 +208,27 @@ extension ConfirmationDialogTests {
         #expect(resized.frame.width == 700)
 
         window.endSheet(resized)
+        await until { window.attachedSheet == nil }
+
+        // 表单开着：错误框叠在表单上，窗口挂着的仍是表单
+        controller.presentDialog { close in
+            AddRemoteDialog(session: controller.session, close: close)
+        }
+
+        let form = try await PromptDialogTests.attachedSheet(of: window)
+        controller.showFailure(failure)
+
+        let stacked = try await PromptDialogTests.attachedSheet(of: form)
+
+        #expect(window.attachedSheet === form)
+
+        // 关掉错误框回到表单
+        form.endSheet(stacked)
+        await until { form.attachedSheet == nil }
+
+        #expect(window.attachedSheet === form)
+
+        window.endSheet(form)
         await until { window.attachedSheet == nil }
     }
 

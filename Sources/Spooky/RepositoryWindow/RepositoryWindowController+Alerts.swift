@@ -5,13 +5,14 @@ import SwiftUI
 // MARK: - Alerts
 
 extension RepositoryWindowController {
-    /// 以 Git 错误框挂成 sheet；窗口已有 sheet 时排在它后面。拉大后的尺寸记在 `GitErrorDialog` 名下。
+    /// 以 Git 错误框挂成 sheet；窗口已有 sheet 时叠在它上面，如执行期间保持打开的表单，关掉后回到那个 sheet。
+    /// 拉大后的尺寸记在 `GitErrorDialog` 名下。
     func showFailure(_ failure: AppFailure) {
         guard let window else {
             return
         }
 
-        DialogWindow.present(on: window, autosaveName: "GitErrorDialog") { [weak self] close in
+        DialogWindow.present(on: window.attachedSheet ?? window, autosaveName: "GitErrorDialog") { [weak self] close in
             GitErrorDialog(
                 failure: failure,
                 close: close,

@@ -4,6 +4,8 @@ import SwiftUI
 // MARK: - RemoteValueDialog
 
 /// 修改远端的一项设置：获取或推送地址，或者添加、修改一条 refspec；一个输入框，值不合法或未变时主按钮禁用。
+///
+/// 修改地址要先连上新地址：执行期间表单保持打开、底栏显示进度，成功后才关闭；失败时错误框叠在表单上，关掉后填写的值还在。
 struct RemoteValueDialog: View {
     /// 要修改的设置。
     enum Target {
@@ -43,6 +45,14 @@ struct RemoteValueDialog: View {
     @State
     private var error = ""
 
+    /// 修改地址正在执行。
+    @State
+    private var running = false
+
+    /// 最近一次修改地址已成功，执行结束后据此关闭表单。
+    @State
+    private var succeeded = false
+
     /// “Remote URL:” 或 “Refspec:” 一个输入框。
     var body: some View {
         RepositoryDialogLayout(
@@ -51,7 +61,8 @@ struct RemoteValueDialog: View {
             message: AppLocalization.text(keys.message, remote),
             submitTitle: AppLocalization.text(keys.submit),
             error: error,
-            isValid: isValid,
+            progress: running ? AppLocalization.text("remote.checking") : nil,
+            isValid: isValid && !running,
             cancel: close,
             submit: submit
         ) {
@@ -158,7 +169,7 @@ extension RemoteValueDialog {
         }
     }
 
-    /// 捕获表单值后开始写入；仓库忙碌或已切换时表单保持打开。
+    /// 捕获表单值后开始写入；仓库忙碌或已切换时表单保持打开。修改 refspec 开始后即关闭，修改地址见 ``submitURL(remote:push:)``。
     private func submit() {
         let value = value
         let title = AppLocalization.text(keys.title)
@@ -167,35 +178,59 @@ extension RemoteValueDialog {
             return
         }
 
-        let started: Bool =
-            switch target {
-            case .url(let remote, let push):
-                session.performGit(
-                    { runner, output in
-                        try await RepositoryRemotes(runner: runner).setURL(value, of: remote, push: push, onOutput: output)
-                    },
-                    title: title,
-                    undo: .changingRemote(remote)
-                )
+        switch target {
+        case .url(let remote, let push):
+            submitURL(remote: remote, push: push)
 
-            case .refspec(let remote, let push, let original):
-                session.performGit(
-                    { runner, _ in
-                        let remotes = RepositoryRemotes(runner: runner)
+        case .refspec(let remote, let push, let original):
+            let started = session.performGit(
+                { runner, _ in
+                    let remotes = RepositoryRemotes(runner: runner)
 
-                        if let original {
-                            try await remotes.replaceRefspec(original, with: value, in: remote, push: push)
-                        } else {
-                            try await remotes.addRefspec(value, to: remote, push: push)
-                        }
-                    },
-                    title: title,
-                    undo: .changingRemote(remote)
-                )
+                    if let original {
+                        try await remotes.replaceRefspec(original, with: value, in: remote, push: push)
+                    } else {
+                        try await remotes.addRefspec(value, to: remote, push: push)
+                    }
+                },
+                title: title,
+                undo: .changingRemote(remote)
+            )
+
+            if started {
+                close()
             }
+        }
+    }
 
-        if started {
-            close()
+    /// 开始修改地址，表单留到写操作结束：成功时关闭，失败时错误框已叠在表单上，表单留着；仓库忙碌时什么都不做。
+    private func submitURL(remote: String, push: Bool) {
+        let value = value
+        succeeded = false
+
+        let started = session.performGit(
+            { runner, output in
+                try await RepositoryRemotes(runner: runner).setURL(value, of: remote, push: push, onOutput: output)
+            },
+            title: AppLocalization.text(keys.title),
+            undo: .changingRemote(remote),
+            success: { succeeded = true }
+        )
+
+        guard started else {
+            return
+        }
+
+        running = true
+        let write = session.writeTask
+
+        Task {
+            await write?.value
+            running = false
+
+            if succeeded {
+                close()
+            }
         }
     }
 }

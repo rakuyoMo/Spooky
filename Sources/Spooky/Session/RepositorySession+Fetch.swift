@@ -81,9 +81,15 @@ extension RepositorySession {
     ///   - name: 远端名。
     ///   - url: 远端地址。
     ///   - defaults: 读取获取选项的偏好，测试使用独立的域。
+    ///   - added: 添加成功后、开始获取前调用。
     /// - Returns: 添加是否已开始执行；仓库不可写时不启动，调用方据此保留表单。
     @discardableResult
-    func addRemote(name: String, url: String, defaults: UserDefaults = .standard) -> Bool {
+    func addRemote(
+        name: String,
+        url: String,
+        defaults: UserDefaults = .standard,
+        added: (() -> Void)? = nil
+    ) -> Bool {
         performGit(
             { runner, output in
                 try await RepositoryRemotes(runner: runner).add(name: name, url: url, onOutput: output)
@@ -91,6 +97,7 @@ extension RepositorySession {
             title: AppLocalization.text("remote.add.submit"),
             undo: .addingRemote(name),
             success: { [weak self] in
+                added?()
                 self?.fetchAddedRemote(name, defaults: defaults)
             }
         )
