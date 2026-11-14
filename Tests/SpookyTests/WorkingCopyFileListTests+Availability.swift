@@ -10,7 +10,7 @@ import TestSupport
 
 extension WorkingCopyFileListTests {
     /// 多选与目录行照样列出查看三项且都不可用，规则子菜单只留第一项；已删除的文件不能在 Finder 与终端里打开；
-    /// 树形的目录行在 Move…、规则与 LFS 里算一项；被忽略的文件能写规则；标了 assume-unchanged 的无状态行不能恢复到指定版本；
+    /// 树形的目录行在 Move…、规则与 LFS 里算一项，自定义规则预填目录本身；被忽略的文件能写规则；标了 assume-unchanged 的无状态行不能恢复到指定版本；
     /// HEAD 里没有的文件不能看原文与 Blame。
     @Test("右键菜单各项的可用条件")
     func contextMenuAvailability() async throws {
@@ -79,6 +79,21 @@ extension WorkingCopyFileListTests {
             ]
         )
         #expect(lfs.first?.title == AppLocalization.text("lfs.trackFile"))
+
+        // 目录行的 Create Ignore Pattern… 预填目录本身，已跟踪的文件仍随表单带上
+        var requested: WorkingCopyFileRequest?
+        session.onFileRequest = { requested = $0 }
+
+        let custom = try #require(ignore.last)
+        _ = (custom.target as? NSObject)?.perform(custom.action, with: custom)
+
+        guard case .form(.pattern(.gitignore, let entries, let item))? = requested else {
+            Issue.record("没有请求自定义规则表单")
+            return
+        }
+
+        #expect(item == "dir/sub/")
+        #expect(entries.map(\.path) == ["dir/sub/b.txt", "dir/sub/c.txt"])
 
         // 被忽略的文件能写规则；标了 assume-unchanged 的无状态行不能恢复
         let assumed = StatusEntry(kind: .unchanged, path: "config.local")

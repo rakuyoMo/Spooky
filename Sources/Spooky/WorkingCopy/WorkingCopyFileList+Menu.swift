@@ -568,7 +568,10 @@ extension WorkingCopyFileList.Coordinator {
         let scopes: [IgnorePatternScope] = [.items, .name, .type]
 
         guard scopes.indices.contains(tag) else {
-            session.onFileRequest?(.form(.pattern(file, menuEntries)))
+            // 树形的目录行预填目录本身
+            let item = menuDirectory.map { $0.path + "/" } ?? menuEntries.first?.path
+
+            session.onFileRequest?(.form(.pattern(file, menuEntries, item: item)))
             return
         }
 

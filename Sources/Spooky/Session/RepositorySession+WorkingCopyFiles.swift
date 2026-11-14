@@ -22,8 +22,10 @@ enum WorkingCopyFileForm {
     /// 移动或重命名一个文件。
     case move(StatusEntry)
 
-    /// 输入自定义的忽略或排除规则，预填所选文件的规则。
-    case pattern(IgnoreFile, [StatusEntry])
+    /// 输入自定义的忽略或排除规则，预填只匹配 `item` 的规则；`item` 是第一项的路径，目录以 “/” 结尾，没有作用对象时为 nil。
+    ///
+    /// 条目里已跟踪的文件在保存时询问是否停止跟踪。
+    case pattern(IgnoreFile, [StatusEntry], item: String?)
 
     /// 输入交给 Git LFS 跟踪的规则，预填第一个所选文件的路径；没有所选文件时为空。
     case lfsPattern([StatusEntry])

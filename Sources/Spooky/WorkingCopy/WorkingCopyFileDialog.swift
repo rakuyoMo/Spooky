@@ -127,7 +127,7 @@ extension WorkingCopyFileDialog {
         case .move(let entry):
             AppLocalization.text("files.move.title", WorkingCopyFileList.fileName(of: entry.path))
 
-        case .pattern(let file, _):
+        case .pattern(let file, _, _):
             AppLocalization.text(file == .gitignore ? "files.ignore.custom.title" : "files.exclude.custom.title")
 
         case .lfsPattern:
@@ -154,7 +154,7 @@ extension WorkingCopyFileDialog {
         case .move:
             return AppLocalization.text("files.move.message")
 
-        case .pattern(let file, _):
+        case .pattern(let file, _, _):
             return AppLocalization.text(file == .gitignore ? "files.ignore.custom.message" : "files.exclude.custom.message")
 
         case .lfsPattern:
@@ -216,14 +216,14 @@ extension WorkingCopyFileDialog {
 // MARK: - Actions
 
 extension WorkingCopyFileDialog {
-    /// 预填输入：移动预填原路径，自定义规则预填只匹配第一个所选文件的规则，LFS 规则预填第一个所选文件的路径，恢复版本预选第一个候选引用。
+    /// 预填输入：移动预填原路径，自定义规则预填只匹配第一项（树形的目录行是目录本身）的规则，LFS 规则预填第一个所选文件的路径，恢复版本预选第一个候选引用。
     private func prepare() {
         switch form {
         case .move(let entry):
             text = entry.path
 
-        case .pattern(_, let entries):
-            text = WorkingCopyOperations.ignorePatterns(for: entries.prefix(1).map(\.path), scope: .items).first ?? ""
+        case .pattern(_, _, let item):
+            text = WorkingCopyOperations.ignorePatterns(for: item.map { [$0] } ?? [], scope: .items).first ?? ""
 
         case .lfsPattern(let entries):
             text = entries.first?.path ?? ""
@@ -270,7 +270,7 @@ extension WorkingCopyFileDialog {
             guard let destination = Self.destination(text, from: entry.path) else { return }
             if session.move(entry, to: destination) { close() }
 
-        case .pattern(let file, let entries):
+        case .pattern(let file, let entries, _):
             // 先关闭表单，需要询问是否停止跟踪时窗口才能呈现询问
             close()
             session.addPatterns([text], for: entries, in: file)
