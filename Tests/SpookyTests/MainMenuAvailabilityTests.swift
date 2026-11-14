@@ -42,6 +42,9 @@ struct MainMenuAvailabilityTests {
             controller.window?.close()
         }
 
+        // 整套测试并行时这个测试可能超过自动获取的首次等待；对 github.com 的获取会占住写入，LFS 等写入项随之不可用
+        controller.autoFetch.stop()
+
         controller.display(location)
         await session.waitForRefresh()
 
