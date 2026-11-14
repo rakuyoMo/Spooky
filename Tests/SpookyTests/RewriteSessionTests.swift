@@ -11,7 +11,8 @@ import TestSupport
 @MainActor
 struct RewriteSessionTests {
     /// 反转与摘取按历史列表的顺序排列：反转从新到旧；改信息时注释行按提交区的规则询问，选择删除后提交里不再有注释行。
-    @Test("反转多个提交与改写提交信息时处理注释行")
+    /// 改信息与压缩之后，历史按新哈希选中改过的提交。
+    @Test("反转多个提交与改写提交信息时处理注释行，改写后选中新提交")
     func revertAndReword() async throws {
         let (session, directory, commits) = try await makeSession()
         defer { cleanUp(session, directory) }
@@ -51,6 +52,27 @@ struct RewriteSessionTests {
 
         #expect(prompts == 1)
         #expect(message?.trimmingCharacters(in: .newlines) == "新的第一个\n\n正文")
+
+        await untilFinished { session.history.activeTasks }
+
+        #expect(session.history.selectedIDs == [first])
+
+        // 把最新的提交压缩进它的父提交：选中合成的提交，也就是新的 HEAD
+        let newest = try await rewrite.resolve("HEAD")
+        let parent = try await rewrite.resolve("HEAD~1")
+
+        session.requestRewrite(.squash([newest], into: parent))
+
+        guard case .confirm(let squash) = try await waitForRequest(in: session) else {
+            Issue.record("压缩应呈现确认 sheet")
+            return
+        }
+
+        session.perform(squash)
+        await settle(session)
+        await untilFinished { session.history.activeTasks }
+
+        #expect(session.history.selectedIDs == [try await rewrite.resolve("HEAD")])
     }
 
     /// 已跟踪的文件有未暂存的改动时，删除提交被挡住，转为询问是否先储藏；选择储藏后完成并恢复改动。

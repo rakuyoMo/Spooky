@@ -207,7 +207,7 @@ extension RepositorySession {
         )
     }
 
-    /// 执行已确认的交互式变基计划。
+    /// 执行已确认的交互式变基计划；改信息与压缩完成后，历史按新哈希选中改过的提交。
     ///
     /// 修补旧提交在开始前已按本地改动询问过是否储藏，被本地改动挡住时只报告 Git 的原始错误，不再询问。
     ///
@@ -217,8 +217,14 @@ extension RepositorySession {
         let amends = if case .amend = plan.action { true } else { false }
 
         return performGit(
-            { runner, output in
-                try await RepositoryRewrite(runner: runner).perform(plan, skipHooks: skipHooks, onOutput: output)
+            { [weak self] runner, output in
+                let rewrite = RepositoryRewrite(runner: runner)
+                try await rewrite.perform(plan, skipHooks: skipHooks, onOutput: output)
+
+                // 写操作结束后的刷新保留这个选中
+                if let rewritten = try? await rewrite.rewrittenCommit(of: plan) {
+                    await MainActor.run { self?.history.selectedIDs = [rewritten] }
+                }
             },
             title: AppLocalization.text(Self.titleKey(of: plan.action)),
             progress: AppLocalization.text("workspaceProgress.rebase"),
