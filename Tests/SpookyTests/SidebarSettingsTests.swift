@@ -223,10 +223,15 @@ struct SidebarSettingsTests {
         #expect(marker(nil, clean) == nil)
         #expect(marker(nil, changed) == .changes(2))
 
-        // 进行中的操作优先于改动数，合并与序列操作的图标不同
+        // 进行中的操作优先于改动数；没有 sequencer 的合并与单个摘取用同一个图标，变基与多个提交的摘取用另一个
         let merge = try #require(OperationProgress(files: ["MERGE_HEAD": "aaaa\n"], head: "bbbb"))
-        let squash = try #require(OperationProgress(files: ["SQUASH_MSG": "squash\n"], head: "bbbb"))
         let pick = try #require(OperationProgress(files: ["CHERRY_PICK_HEAD": "aaaa\n"], head: "bbbb"))
+        let picks = try #require(
+            OperationProgress(
+                files: ["CHERRY_PICK_HEAD": "aaaa\n", "sequencer/todo": "pick aaaa\npick dddd\n"],
+                head: "bbbb"
+            )
+        )
         let rebase = try #require(
             OperationProgress(
                 files: [
@@ -238,7 +243,7 @@ struct SidebarSettingsTests {
             )
         )
 
-        let symbols = [merge, squash, pick, rebase].compactMap { progress -> String? in
+        let symbols = [merge, pick, picks, rebase].compactMap { progress -> String? in
             guard case .operation(let symbol) = marker(progress, changed) else { return nil }
             return symbol
         }
