@@ -1857,7 +1857,6 @@
 "navigation.forward" = "下一頁";
 "navigation.back.tip" = "前往上一個視圖";
 "navigation.forward.tip" = "前往下一個視圖";
-"navigation.title" = "上一個/下一個";
 "menu.hideWindowTitle" = "隱藏視窗標題";
 "menu.showWindowTitle" = "顯示視窗標題";
 "menu.showToolbar" = "顯示工具列";
@@ -1969,6 +1968,9 @@
 "quickActions.type.stash" = "儲藏";
 "quickActions.type.userProfile" = "身分設定檔";
 "quickActions.type.appearance" = "外觀";
+"quickActions.appearance.system" = "自動外觀";
+"quickActions.appearance.light" = "淺色外觀";
+"quickActions.appearance.dark" = "深色外觀";
 "quickActions.type.theme" = "主題";
 "quickActions.type.file" = "檔案";
 "quickActions.type.commit" = "提交";

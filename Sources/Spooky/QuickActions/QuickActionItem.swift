@@ -211,7 +211,7 @@ enum QuickActionObject: Equatable {
         case .submodule(let submodule): submodule.name
         case .stash(let stash): stash.title
         case .userProfile(let profile): profile.title
-        case .appearance(let appearance): appearance.title
+        case .appearance(let appearance): Self.title(of: appearance)
         case .theme(_, let name): name
         case .file(let path): path.split(separator: "/").last.map(String.init) ?? path
         case .commit(let commit, _): commit.subject
@@ -250,6 +250,15 @@ enum QuickActionObject: Equatable {
         case .theme: "paintpalette"
         case .file: "doc"
         case .commit: "smallcircle.filled.circle"
+        }
+    }
+
+    /// 外观项的标题，写明是外观，与主题区分开。
+    private static func title(of appearance: AppAppearance) -> String {
+        switch appearance {
+        case .system: AppLocalization.text("quickActions.appearance.system")
+        case .light: AppLocalization.text("quickActions.appearance.light")
+        case .dark: AppLocalization.text("quickActions.appearance.dark")
         }
     }
 }

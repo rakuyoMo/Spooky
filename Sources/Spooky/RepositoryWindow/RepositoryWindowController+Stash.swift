@@ -48,26 +48,32 @@ extension RepositoryWindowController {
         return split
     }
 
-    /// 工具栏的储藏分段组：Apply | Save，空间不足时整组进入溢出菜单。
+    /// 工具栏的储藏分段组：Apply | Save，空间不足时整组进入溢出菜单；自定义面板里写 Apply Stash、Save Stash。
     func makeStashToolbarItem(_ identifier: NSToolbarItem.Identifier) -> NSToolbarItem {
+        let segments: [(label: String, palette: String, symbol: String, action: Selector)] = [
+            ("toolbar.applyStash", "stash.apply", "tray.and.arrow.down", #selector(applyStash)),
+            ("toolbar.saveStash", "stash.save", "tray.and.arrow.up", #selector(saveStash)),
+        ]
+
         let group = NSToolbarItemGroup(
             itemIdentifier: identifier,
-            images: ["tray.and.arrow.up", "tray.and.arrow.down"]
-                .map {
-                    // 取不到符号时以空图占位，分段数与标签保持一致。
-                    NSImage(systemSymbolName: $0, accessibilityDescription: nil) ?? NSImage()
-                },
+            images: segments.map {
+                // 取不到符号时以空图占位，分段数与标签保持一致；辅助功能读段名
+                NSImage(systemSymbolName: $0.symbol, accessibilityDescription: AppLocalization.text($0.label))
+                    ?? NSImage()
+            },
             selectionMode: .momentary,
-            labels: ["toolbar.applyStash", "toolbar.saveStash"].map { AppLocalization.text($0) },
+            labels: segments.map { AppLocalization.text($0.label) },
             target: self,
             action: nil
         )
         group.controlRepresentation = .expanded
 
-        // 每段带上自己的动作与提示，工具栏自动校验时逐段决定可用性。
-        for (segment, action) in zip(group.subitems, [#selector(applyStash), #selector(saveStash)]) {
+        // 每段带上自己的动作、面板名与提示，工具栏自动校验时逐段决定可用性。
+        for (segment, entry) in zip(group.subitems, segments) {
             segment.target = self
-            segment.action = action
+            segment.action = entry.action
+            segment.paletteLabel = AppLocalization.text(entry.palette)
             updateTip(of: segment)
         }
 

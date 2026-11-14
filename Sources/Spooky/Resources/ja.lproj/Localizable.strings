@@ -1857,7 +1857,6 @@
 "navigation.forward" = "進む";
 "navigation.back.tip" = "前の表示に移動";
 "navigation.forward.tip" = "次の表示に移動";
-"navigation.title" = "前へ/次へ";
 "menu.hideWindowTitle" = "ウインドウタイトルを非表示";
 "menu.showWindowTitle" = "ウインドウタイトルを表示";
 "menu.showToolbar" = "ツールバーを表示";
@@ -1969,6 +1968,9 @@
 "quickActions.type.stash" = "スタッシュ";
 "quickActions.type.userProfile" = "ユーザプロファイル";
 "quickActions.type.appearance" = "外観";
+"quickActions.appearance.system" = "自動外観";
+"quickActions.appearance.light" = "ライト外観";
+"quickActions.appearance.dark" = "ダーク外観";
 "quickActions.type.theme" = "テーマ";
 "quickActions.type.file" = "ファイル";
 "quickActions.type.commit" = "コミット";

@@ -220,7 +220,8 @@ extension WindowChromeTests {
         #expect(fixture.controller.validateUserInterfaceItem(close))
     }
 
-    /// 仓库管理入口叫 Bookmarks，Sync 在自定义面板里叫 Synchronize，后退 / 前进叫 Prev / Next，储藏两段叫 Apply / Save；
+    /// 仓库管理入口叫 Bookmarks，Sync 在自定义面板里叫 Synchronize，后退 / 前进叫 Prev / Next，储藏两段叫 Apply / Save、
+    /// 在自定义面板里叫 Apply Stash / Save Stash，分段图读段名；
     /// 搜索框、父仓库、Bookmarks、新建分支与安全强推在窗口变窄时最后才进溢出菜单。
     private static func expectToolbarLabels(in controller: RepositoryWindowController) throws {
         let group = { (identifier: NSToolbarItem.Identifier) in
@@ -237,6 +238,12 @@ extension WindowChromeTests {
         #expect(repositories.paletteLabel == text("toolbar.bookmarks"))
         #expect(navigation.subitems.map(\.label) == [text("toolbar.previous"), text("toolbar.next")])
         #expect(stashes.subitems.map(\.label) == [text("toolbar.applyStash"), text("toolbar.saveStash")])
+        #expect(stashes.subitems.map(\.paletteLabel) == [text("stash.apply"), text("stash.save")])
+
+        // 分段图的辅助功能描述读段名，不读符号的默认名
+        for segment in repositories.subitems + navigation.subitems + stashes.subitems {
+            #expect(segment.image?.accessibilityDescription == segment.label)
+        }
         #expect(synchronize.label == text("sync.sync"))
         #expect(synchronize.paletteLabel == text("toolbar.synchronize"))
 

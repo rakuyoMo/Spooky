@@ -144,8 +144,10 @@ extension RepositoryWindowController {
 
     /// 工具栏的同步项：Fetch | Pull | Push 分组、Sync 按钮、Merge | Rebase 分组；其它标识返回 nil。
     func makeSyncToolbarItem(_ identifier: NSToolbarItem.Identifier) -> NSToolbarItem? {
-        // 取不到符号时以空图占位，分段数与标签保持一致
-        let symbol = { NSImage(systemSymbolName: $0, accessibilityDescription: nil) ?? NSImage() }
+        // 取不到符号时以空图占位，分段数与标签保持一致；辅助功能读段名
+        let symbol = { (name: String, label: String) in
+            NSImage(systemSymbolName: name, accessibilityDescription: AppLocalization.text(label)) ?? NSImage()
+        }
 
         switch identifier.rawValue {
         case "sync":
@@ -162,8 +164,8 @@ extension RepositoryWindowController {
             return makeSegmentedGroup(
                 identifier,
                 segments: [
-                    ("sync.merge", symbol("arrow.triangle.merge"), #selector(merge)),
-                    ("sync.rebaseHead", symbol("arrow.triangle.branch"), #selector(rebase)),
+                    ("sync.merge", symbol("arrow.triangle.merge", "sync.merge"), #selector(merge)),
+                    ("sync.rebaseHead", symbol("arrow.triangle.branch", "sync.rebaseHead"), #selector(rebase)),
                 ]
             )
 

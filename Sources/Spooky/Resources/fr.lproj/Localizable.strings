@@ -1857,7 +1857,6 @@
 "navigation.forward" = "Suivant";
 "navigation.back.tip" = "Affiche la vue précédente";
 "navigation.forward.tip" = "Affiche la vue suivante";
-"navigation.title" = "Précédent/Suivant";
 "menu.hideWindowTitle" = "Masquer le titre de la fenêtre";
 "menu.showWindowTitle" = "Afficher le titre de la fenêtre";
 "menu.showToolbar" = "Afficher la barre d’outils";
@@ -1969,6 +1968,9 @@
 "quickActions.type.stash" = "Remisage";
 "quickActions.type.userProfile" = "Profil utilisateur";
 "quickActions.type.appearance" = "Apparence";
+"quickActions.appearance.system" = "Apparence automatique";
+"quickActions.appearance.light" = "Apparence claire";
+"quickActions.appearance.dark" = "Apparence sombre";
 "quickActions.type.theme" = "Thème";
 "quickActions.type.file" = "Fichier";
 "quickActions.type.commit" = "Commit";

@@ -1857,7 +1857,6 @@
 "navigation.forward" = "前进";
 "navigation.back.tip" = "前往上一个视图";
 "navigation.forward.tip" = "前往下一个视图";
-"navigation.title" = "上一个/下一个";
 "menu.hideWindowTitle" = "隐藏窗口标题";
 "menu.showWindowTitle" = "显示窗口标题";
 "menu.showToolbar" = "显示工具栏";
@@ -1969,6 +1968,9 @@
 "quickActions.type.stash" = "储藏";
 "quickActions.type.userProfile" = "身份档案";
 "quickActions.type.appearance" = "外观";
+"quickActions.appearance.system" = "自动外观";
+"quickActions.appearance.light" = "浅色外观";
+"quickActions.appearance.dark" = "深色外观";
 "quickActions.type.theme" = "主题";
 "quickActions.type.file" = "文件";
 "quickActions.type.commit" = "提交";

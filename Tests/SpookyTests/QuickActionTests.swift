@@ -73,8 +73,11 @@ struct QuickActionTests {
         #expect(files.head == head)
         #expect(files.paths == ["a b.txt"])
 
-        // 新建分支后完整刷新；引用快照在历史读取里另行更新，等这些读取都结束
+        // 新建分支、标签与远端分支后完整刷新；引用快照在历史读取里另行更新，等这些读取都结束
         _ = try await session.runner?.run(["branch", "topic"])
+        _ = try await session.runner?.run(["tag", "v1.0"])
+        _ = try await session.runner?.run(["remote", "add", "origin", "https://example.com/r.git"])
+        _ = try await session.runner?.run(["update-ref", "refs/remotes/origin/side", "HEAD"])
 
         session.refresh(full: true)
         await session.waitForRefresh()
@@ -106,6 +109,44 @@ struct QuickActionTests {
 
         // 本机仓库的工作区可以在 Finder 中显示
         #expect(catalog.actions(for: .navigation(.workingCopy)).contains(.revealInFinder))
+
+        try expectEmptyQuery(of: catalog)
+    }
+
+    /// 没有输入时不列远端分支与标签，外观三项写明是外观；输入 `v1`、`side` 后列出匹配的标签与远端分支。
+    private func expectEmptyQuery(of catalog: QuickActionCatalog) throws {
+        let quick = QuickActionController(catalog: catalog)
+        defer { quick.stop() }
+
+        let hidden = { (object: QuickActionObject) in
+            switch object {
+            case .remoteBranch, .tag: true
+            default: false
+            }
+        }
+
+        quick.start()
+        #expect(!quick.items.contains { hidden($0.object) })
+
+        let appearances = quick.items.filter {
+            guard case .appearance = $0.object else { return false }
+            return true
+        }
+
+        #expect(appearances.map(\.title) == [
+            AppLocalization.text("quickActions.appearance.system"),
+            AppLocalization.text("quickActions.appearance.light"),
+            AppLocalization.text("quickActions.appearance.dark"),
+        ])
+
+        let tag = try #require(catalog.session.tags.first)
+
+        quick.setQuery("v1")
+        #expect(quick.items.first?.object == .tag(tag))
+
+        quick.setQuery("side")
+        #expect(quick.items.first?.title == "origin/side")
+        #expect(try hidden(#require(quick.items.first).object))
     }
 
     /// 动作经窗口执行，走菜单的同一个入口：导航切换主视图，文件动作打开文件历史。
