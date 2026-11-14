@@ -1168,7 +1168,7 @@
 /* 改写操作：反转、摘取、重置、检出版本、变基到别处与交互式变基。 */
 "rewrite.revert" = "リバート";
 "rewrite.cherryPick" = "チェリーピック";
-"rewrite.reset" = "HEAD をリセット";
+"rewrite.reset" = "リビジョンをリセット";
 "rewrite.checkout" = "リビジョンをチェックアウト";
 "rewrite.rebaseOnto" = "別の場所へリベース";
 "rewrite.squash" = "コミットをスカッシュ";

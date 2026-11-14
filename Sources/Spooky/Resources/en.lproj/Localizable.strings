@@ -1168,8 +1168,8 @@
 /* 改写操作：反转、摘取、重置、检出版本、变基到别处与交互式变基。 */
 "rewrite.revert" = "Revert";
 "rewrite.cherryPick" = "Cherry-Pick";
-"rewrite.reset" = "Reset HEAD";
-"rewrite.checkout" = "Check Out Revision";
+"rewrite.reset" = "Reset Revision";
+"rewrite.checkout" = "Checkout Revision";
 "rewrite.rebaseOnto" = "Rebase Onto";
 "rewrite.squash" = "Squash Revisions";
 "rewrite.fixup" = "Fixup Revisions";

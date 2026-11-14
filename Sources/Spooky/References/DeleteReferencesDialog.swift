@@ -242,7 +242,7 @@ extension DeleteReferencesDialog {
                         try await RepositoryRemotes(runner: runner).remove(name)
                     }
                 },
-                title: title,
+                title: AppLocalization.text(keys.submit),
                 undo: .removingRemotes(names),
                 success: { [session] in
                     if let selected = session.selectedRemote, names.contains(selected) {

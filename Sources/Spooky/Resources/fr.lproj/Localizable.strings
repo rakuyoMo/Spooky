@@ -1168,7 +1168,7 @@
 /* 改写操作：反转、摘取、重置、检出版本、变基到别处与交互式变基。 */
 "rewrite.revert" = "Annuler par revert";
 "rewrite.cherryPick" = "Cherry-pick";
-"rewrite.reset" = "Réinitialiser HEAD";
+"rewrite.reset" = "Réinitialiser la révision";
 "rewrite.checkout" = "Extraire la révision";
 "rewrite.rebaseOnto" = "Rebaser ailleurs";
 "rewrite.squash" = "Fusionner des commits";

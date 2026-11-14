@@ -1168,7 +1168,7 @@
 /* 改写操作：反转、摘取、重置、检出版本、变基到别处与交互式变基。 */
 "rewrite.revert" = "되돌리기";
 "rewrite.cherryPick" = "체리픽";
-"rewrite.reset" = "HEAD 재설정";
+"rewrite.reset" = "리비전 재설정";
 "rewrite.checkout" = "리비전 체크아웃";
 "rewrite.rebaseOnto" = "다른 곳으로 리베이스";
 "rewrite.squash" = "커밋 스쿼시";

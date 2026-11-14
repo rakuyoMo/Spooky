@@ -750,12 +750,12 @@ extension RepositoryOperationDialog {
         }
     }
 
-    /// 与撤销记录的关系：新建分支与合并靠快照撤销，发布分支靠反向操作撤销，获取、拉取与推送不能撤销。
+    /// 与撤销记录的关系：新建分支与合并靠快照撤销，发布分支靠反向操作撤销，获取、拉取与推送不进撤销记录。
     private func undoRecording() -> UndoRecording {
         switch request.kind {
         case .create, .track, .merge: .reversible
         case .publish: .publishingBranch(localBranch, to: remote, as: name, setsUpstream: upstream)
-        case .fetch, .pull, .push: .irreversible
+        case .fetch, .pull, .push: .unrecorded
         }
     }
 

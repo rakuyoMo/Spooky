@@ -131,7 +131,7 @@ extension RepositorySessionTests {
         runner: GitRunner,
         activities: RepositoryActivities
     ) async throws {
-        let adding = AppLocalization.text("remote.add")
+        let adding = AppLocalization.text("remote.add.submit")
 
         #expect(session.addRemote(name: name, url: url))
         await session.writeTask?.value

@@ -33,7 +33,7 @@ extension RepositorySession {
         fetchWithPreferences(
             target,
             title: AppLocalization.text("sync.quickFetch"),
-            undo: .irreversible,
+            undo: .unrecorded,
             defaults: defaults
         )
     }
@@ -45,7 +45,7 @@ extension RepositorySession {
         fetchWithPreferences(
             nil,
             title: AppLocalization.text("sync.fetch"),
-            undo: .irreversible,
+            undo: .unrecorded,
             defaults: defaults
         )
     }
@@ -88,7 +88,7 @@ extension RepositorySession {
             { runner, output in
                 try await RepositoryRemotes(runner: runner).add(name: name, url: url, onOutput: output)
             },
-            title: AppLocalization.text("remote.add"),
+            title: AppLocalization.text("remote.add.submit"),
             undo: .addingRemote(name),
             success: { [weak self] in
                 self?.fetchAddedRemote(name, defaults: defaults)

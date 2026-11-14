@@ -1168,7 +1168,7 @@
 /* 改写操作：反转、摘取、重置、检出版本、变基到别处与交互式变基。 */
 "rewrite.revert" = "反转";
 "rewrite.cherryPick" = "摘取";
-"rewrite.reset" = "重置 HEAD";
+"rewrite.reset" = "重置版本";
 "rewrite.checkout" = "检出版本";
 "rewrite.rebaseOnto" = "变基到别处";
 "rewrite.squash" = "压缩提交";
