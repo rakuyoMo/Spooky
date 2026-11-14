@@ -47,7 +47,7 @@ struct CloneRepositoryDialog: View {
             title: AppLocalization.text("clone.title"),
             message: AppLocalization.text("clone.message"),
             submitTitle: AppLocalization.text("clone.submit"),
-            error: AddRemoteRepositoryView.notice(for: failure) ?? problem,
+            error: CloneTarget.notice(for: failure) ?? problem,
             progress: task == nil ? nil : AppLocalization.text("accounts.validating"),
             canSubmit: destination != nil && problem == nil && task == nil,
             cancel: cancel,
@@ -205,6 +205,23 @@ enum CloneTarget {
         }
 
         return contents.isEmpty ? nil : AppLocalization.text("clone.error.exists", destination.path)
+    }
+
+    /// 连接检查失败时错误区的文字：原因与 Git 原文，没有失败时为 nil。
+    ///
+    /// 刷新失败的恢复说明讲的是重新读取仓库，克隆时不适用，不写进错误区。
+    static func notice(for failure: AppFailure?) -> String? {
+        guard let failure else {
+            return nil
+        }
+
+        let reason = failure.message
+            .replacingOccurrences(of: AppLocalization.text("error.refreshHelp"), with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return [reason, failure.details]
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n")
     }
 
     /// 地址能否认作远端：带协议的地址（如 `https://`、`ssh://`、`file://`）、scp 写法的 `[用户@]主机:路径`，或绝对路径。
