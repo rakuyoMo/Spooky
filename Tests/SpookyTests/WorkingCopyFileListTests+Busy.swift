@@ -51,7 +51,7 @@ extension WorkingCopyFileListTests {
         let entry = { (path: String) in try #require(entries.first { $0.path == path }) }
 
         // 暂存 a 停在中途：只有 a 显示勾选并禁用，b、c 照常可点，文件名不变灰
-        try Data().write(to: root.appending(path: "arm"))
+        try gate.arm()
         session.stage([try entry("a b.txt")], staged: true)
         await gate.arrival()
 
@@ -76,7 +76,7 @@ extension WorkingCopyFileListTests {
         #expect(!session.isStaging && session.stagingOverrides.isEmpty)
 
         // 暂存 c 时索引被锁住而失败：排在后面的取消暂存 a 一并丢弃，行按真实索引恢复
-        try Data().write(to: root.appending(path: "arm"))
+        try gate.arm()
         session.stage([try entry("c.txt")], staged: true)
         await gate.arrival()
 

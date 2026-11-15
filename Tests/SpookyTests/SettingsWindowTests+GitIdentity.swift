@@ -45,7 +45,7 @@ extension SettingsWindowTests {
         await until { email.stringValue == "old@example.invalid" }
 
         // 姓名带首尾空格：写入的是去掉空格的值，姓名框换成读回的值时就知道重读的结果已经显示出来
-        try Data().write(to: directory.appending(path: "arm"))
+        try gate.arm()
 
         window.makeFirstResponder(name)
         let nameEditor = try #require(name.currentEditor() as? NSTextView)
@@ -82,7 +82,7 @@ extension SettingsWindowTests {
     /// - Parameters:
     ///   - file: 作为 `--global` 的配置文件。
     ///   - gate: 读取停住的闸门。
-    ///   - root: 放脚本与武装文件的目录。
+    ///   - root: 放脚本与暂存输出的目录。
     private static func gatedConfigRunner(file: URL, gate: ProcessGate, root: URL) throws -> GitRunner {
         let script = root.appending(path: "config-git")
         let source = """
@@ -93,12 +93,12 @@ extension SettingsWindowTests {
             for arg in "$@"; do
                 if [ "$arg" = --get-regexp ]; then kind=read; break; fi
             done
-            if [ "$kind" = read ] && [ -f "$root/arm" ]; then
+            if [ "$kind" = read ] && \(gate.armed); then
                 held="$root/held-$$"
                 /usr/bin/git "$@" > "$held"
 
-                if mv "$root/arm" "$root/claimed" 2>/dev/null; then
-                    \(gate.command)
+                if \(gate.claim); then
+                    \(gate.hold)
                 fi
 
                 cat "$held"

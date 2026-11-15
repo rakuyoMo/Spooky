@@ -474,7 +474,7 @@ extension UndoSessionTests {
             try await RepositoryReferences(runner: runner).resolve("HEAD")
         }
 
-        /// 经脚本执行 Git 的执行器：`.git/arm` 存在时，第一条带 `subcommands` 所列参数的命令认领它并停在闸门上，
+        /// 经脚本执行 Git 的执行器：闸门武装后，第一条带 `subcommands` 所列参数的命令认领武装并停在闸门上，
         /// 放行后再执行；其余命令直接交给系统 Git。
         ///
         /// - Parameters:
@@ -487,13 +487,12 @@ extension UndoSessionTests {
             let source = """
                 #!/bin/sh
                 set -eu
-                root=\(GitRunner.shellQuoted(root.path))
                 for arg in "$@"; do
                     case "$arg" in
                         \(subcommands))
-                            if mv "$root/arm" "$root/claimed" 2>/dev/null; then
+                            if \(gate.claim); then
                                 \(claimed)
-                                \(gate.command)
+                                \(gate.hold)
                                 break
                             fi
                             ;;

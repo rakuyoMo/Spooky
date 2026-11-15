@@ -46,7 +46,7 @@ extension ChangesetAutoExpandTests {
             await until { !session.stashes.isLoading }
         }
 
-        try Data().write(to: tools.appending(path: "arm"))
+        try gate.arm()
 
         switch kind {
         case 0: session.history.show(fixture.commits[2], runner: gated)
@@ -115,7 +115,7 @@ extension ChangesetAutoExpandTests {
     /// 只拦下武装后的一次变更清单：武装期间的变更清单都先读出真实输出，读完后认领到武装的一个停在闸门上，
     /// 放行后再输出；其余命令直接交给系统 Git。
     ///
-    /// 读到一半被取消的进程不占用武装；认领前开始忽略取消发出的 TERM，认领了的进程一定走到闸门报到。
+    /// 读到一半被取消的进程不占用武装；认领前开始忽略取消发出的 TERM，切换或关闭时取消的旧读取放行后照样输出。
     private func gatedRunner(location: RepositoryLocation, tools: URL, gate: ProcessGate) throws -> GitRunner {
         let script = tools.appending(path: "git")
         let source = """
@@ -123,14 +123,14 @@ extension ChangesetAutoExpandTests {
             tools=\(GitRunner.shellQuoted(tools.path))
             case " $* " in
                 *' --numstat '*)
-                    if [ -f "$tools/arm" ]; then
+                    if \(gate.armed); then
                         held="$tools/held-$$"
                         /usr/bin/git "$@" > "$held"
                         code=$?
 
                         trap '' TERM
-                        if mv "$tools/arm" "$tools/claimed" 2>/dev/null; then
-                            \(gate.command)
+                        if \(gate.claim); then
+                            \(gate.hold)
                         fi
                         trap - TERM
 
