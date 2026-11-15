@@ -74,13 +74,25 @@ jobs:
             --event-stream-output-path "$RUNNER_TEMP/test-events.jsonl" \
             --event-stream-version 0
 
-      # 测试失败时同样上传；产物名带上第几次运行，重跑时不与前一次重名
+      # swift test 运行中把每个测试目标的事件流写在临时目录的 swiftpm-test-output-* 里，全部跑完才合并成上面那一份
+      # 超时被取消时来不及合并，从临时目录取出各自的一份
+      - name: 取出未合并的测试事件
+        if: ${{ always() }}
+        run: |
+          [ -f "$RUNNER_TEMP/test-events.jsonl" ] && exit 0
+          mkdir -p "$RUNNER_TEMP/test-events-unmerged"
+          find "${TMPDIR:-/tmp}" -maxdepth 2 -path '*/swiftpm-test-output-*/event-stream-*.jsonl' \
+            -exec cp {} "$RUNNER_TEMP/test-events-unmerged/" \;
+
+      # 测试失败或超时被取消时同样上传，卡住的测试从事件流里找；产物名带上第几次运行，重跑时不与前一次重名
       - name: 上传测试事件
-        if: ${{ !cancelled() }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
           name: test-events-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/test-events.jsonl
+          path: |
+            ${{ runner.temp }}/test-events.jsonl
+            ${{ runner.temp }}/test-events-unmerged/
 
   bundle:
     name: 打包
