@@ -14,7 +14,8 @@ import Testing
 struct RepositoryDialogLayoutTests {
     /// 标签长时输入列右移，标签短时输入列从 145 开始，只有勾选框时勾选框从 145 开始，标题、说明与错误文字都对齐它们；
     /// 本机仓库没有位置一行，仓库可写、内容合法时错误区收起，主按钮可用；
-    /// 服务器仓库在标题下写出带主机前缀的位置，没连上时仓库不可写，错误区说明原因，主按钮不可用。
+    /// 服务器仓库在标题下写出带主机前缀的位置，没连上时仓库不可写，错误区说明原因，主按钮不可用；
+    /// 对话框自己的步骤进行中时只显示进度，不写不可写的原因。
     @Test("头部对齐、位置一行与不可写的说明", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func layout() async throws {
         let local = Self.session(.local(path: "/tmp/spooky-dialog"))
@@ -68,6 +69,20 @@ struct RepositoryDialogLayoutTests {
         #expect(remote.contains { $0.role == "AXStaticText" && $0.value == "spooky-test:/srv/repo" })
         #expect(remote.contains { $0.role == "AXStaticText" && $0.value == AppLocalization.text("dialog.blocked") })
         #expect(try !Self.submit(in: remote).isEnabled)
+
+        // 同一个不可写的服务器仓库，对话框自己的步骤进行中：只显示进度
+        let running = await AccessibilityProbe.elements(until: Self.hasField) {
+            Self.layout(
+                session: Self.session(.remote(host: "spooky-test", path: "/srv/repo")),
+                error: "",
+                progress: "Checking"
+            ) {
+                Self.field("Name:")
+            }
+        }
+
+        #expect(running.contains { $0.value == "Checking" })
+        #expect(!running.contains { $0.value == AppLocalization.text("dialog.blocked") })
     }
 
     /// Options 开关上方的间距由骨架统一决定：内容区最后一个控件与开关一行相隔 20，没有内容区时头部的说明、
@@ -186,10 +201,11 @@ extension RepositoryDialogLayoutTests {
         return session
     }
 
-    /// 给定会话与错误说明的对话框。
+    /// 给定会话、错误说明与进度的对话框。
     private static func layout(
         session: RepositorySession,
         error: String,
+        progress: String? = nil,
         @ViewBuilder content: @escaping () -> some View
     ) -> some View {
         RepositoryDialogLayout(
@@ -198,6 +214,7 @@ extension RepositoryDialogLayoutTests {
             message: "Message",
             submitTitle: "Submit",
             error: error,
+            progress: progress,
             isValid: true,
             cancel: { },
             submit: { },
