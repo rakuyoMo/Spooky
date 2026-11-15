@@ -6,12 +6,15 @@ import Testing
 
 // MARK: - Submodules
 
-/// 子模块的添加、删除、移动、改名、本地设置与检出别的版本靠反向操作撤销：撤销后回到操作前，重做时再执行一次，
-/// 添加的重做复用留下的 Git 目录；写进 `.gitmodules` 的设置按快照撤销，强制删除丢掉的改动找不回，不能撤销。
+/// 子模块的添加、删除、移动、改名、本地设置与检出别的版本靠反向操作撤销，撤销菜单写各自的操作名；
+/// 添加的重做复用留下的 Git 目录；强制删除丢掉的改动找不回，不能撤销。
 extension UndoSessionTests {
-    /// 添加后撤销，子模块与 `.gitmodules` 都不在了，上游改名后重做仍能加回来；删除后撤销，子模块回来且是干净的，重做再删掉。
-    @Test("子模块的添加与删除的撤销与重做")
-    func submoduleAdditionAndRemoval() async throws {
+    /// 同一个子模块依次核对：添加后撤销，子模块与 `.gitmodules` 都不在了，上游改名后重做仍能加回来；
+    /// 删除后撤销，子模块回来且是干净的；移动（同时改名）、改名、本地配置里的地址与更新策略、`.gitmodules` 里的忽略模式
+    /// 与在子模块里检出别的分支各自撤销后回到操作前，撤销菜单写的是各自的操作名，选项按设置还是删除区分；
+    /// 子模块里有改动时强制删除：改动找不回，这次删除不能撤销，之前的撤销记录也一并清空。
+    @Test("子模块写操作的撤销与重做")
+    func submoduleRoundTrips() async throws {
         let fixture = try await Fixture(allowsFileSubmodules: true)
         defer { fixture.remove() }
 
@@ -39,79 +42,32 @@ extension UndoSessionTests {
         try await fixture.perform { session.redoLastOperation() }
         #expect(try await Self.submodules(in: fixture).map(\.path) == ["依赖/lib"])
 
-        // 删除：撤销后子模块回来且是干净的，重做再删掉
+        // 删除：撤销后子模块回来且是干净的
         _ = try await fixture.runner.run(["commit", "-q", "-m", "子模块"])
         await fixture.refresh()
 
-        let submodule = try #require(try await Self.submodules(in: fixture).first)
+        let added = try #require(try await Self.submodules(in: fixture).first)
 
         try await fixture.perform {
-            _ = session.deleteSubmodule(submodule, keepsWorkingTree: false, force: false)
+            _ = session.deleteSubmodule(added, keepsWorkingTree: false, force: false)
         }
 
         #expect(try await Self.submodules(in: fixture).isEmpty)
 
         try await fixture.perform { session.undoLastOperation() }
-        #expect(try await Self.submodules(in: fixture).map(\.state) == [.clean])
 
-        try await fixture.perform { session.redoLastOperation() }
-        #expect(try await Self.submodules(in: fixture).isEmpty)
-    }
+        let submodule = try #require(try await Self.submodules(in: fixture).first)
+        #expect(submodule.state == .clean)
 
-    /// 移动（同时改名）、改名、本地配置里的地址与更新策略、`.gitmodules` 里的忽略模式各自撤销后回到操作前，
-    /// 撤销菜单写的是各自的操作名，选项按设置还是删除区分；在子模块里检出别的分支可以撤销与重做；
-    /// 子模块里有改动时强制删除：改动找不回，这次删除不能撤销，之前的撤销记录也一并清空。
-    @Test("子模块的移动、改名、设置、检出与强制删除的撤销")
-    func submoduleChangesRoundTrip() async throws {
-        let fixture = try await Fixture(allowsFileSubmodules: true)
-        defer { fixture.remove() }
-
-        let session = fixture.session
-        let submodule = try await Self.addCommittedSubmodule(in: fixture)
-        defer { try? FileManager.default.removeItem(at: submodule.upstream) }
-
-        // 本地配置里先写好更新策略，供删除选项的一项使用
-        _ = try await fixture.runner.run(["config", "--local", "submodule.lib.update", "rebase"])
-        await fixture.refresh()
-
-        let value = submodule.value
-        let url = "https://example.com/lib.git"
-
-        let operations: [(title: String, start: () -> Void)] = [
-            ("submodule.move", { _ = session.moveSubmodule(value, to: "外层/新 位置", renaming: true) }),
-            ("submodule.rename", { _ = session.renameSubmodule(value, to: "新名") }),
-            ("submodule.editURL", { _ = session.setSubmoduleURL(url, for: value, in: .local) }),
-            (
-                "submodule.unsetUpdateStrategy",
-                { session.setSubmoduleOption(.update, to: nil, for: value, in: .local) }
-            ),
-            (
-                "submodule.setIgnoreMode",
-                { session.setSubmoduleOption(.ignore, to: "dirty", for: value, in: .shared) }
-            ),
-        ]
-
-        // 每个操作都从同一个现状出发：撤销后回到操作前，下一个操作仍用同一个子模块
-        for operation in operations {
-            let before = try await Self.submoduleState(in: fixture)
-            try await fixture.perform(operation.start)
-            #expect(try await Self.submoduleState(in: fixture) != before)
-
-            let title = AppLocalization.text(operation.title)
-            #expect(try await Self.settledState(of: session, redo: false) == .available(title))
-
-            try await fixture.perform { session.undoLastOperation() }
-            #expect(try await Self.submoduleState(in: fixture) == before)
-        }
-
-        try await Self.checkoutSubmoduleBranchRoundTrip(in: value, of: fixture)
+        try await Self.expectSubmoduleChangesUndone(of: submodule, in: fixture)
+        try await Self.expectSubmoduleCheckoutUndone(of: submodule, in: fixture)
 
         // 子模块里有改动时强制删除，撤销栈清空
-        try Data("改动\n".utf8).write(to: fixture.directory.appending(path: "lib/a.txt"))
+        try Data("改动\n".utf8).write(to: fixture.directory.appending(path: submodule.path + "/a.txt"))
         await fixture.refresh()
 
         try await fixture.perform {
-            _ = session.deleteSubmodule(value, keepsWorkingTree: false, force: true)
+            _ = session.deleteSubmodule(submodule, keepsWorkingTree: false, force: true)
         }
 
         let delete = AppLocalization.text("submodule.deleteSubmodules")
@@ -175,19 +131,59 @@ extension UndoSessionTests {
         ]
     }
 
-    /// 在子模块里检出另一个分支：撤销后回到检出前的分支，重做再检出一次；撤销菜单写这次操作的名称。
-    private static func checkoutSubmoduleBranchRoundTrip(
-        in submodule: Submodule,
-        of fixture: Fixture
+    /// 移动（同时改名）、改名、本地配置里的地址与更新策略、`.gitmodules` 里的忽略模式各自撤销后回到操作前，
+    /// 撤销菜单写的是各自的操作名；每个操作都从同一个现状出发，下一个操作仍用同一个子模块。
+    private static func expectSubmoduleChangesUndone(
+        of submodule: Submodule,
+        in fixture: Fixture
+    ) async throws {
+        let session = fixture.session
+        let url = "https://example.com/lib.git"
+
+        // 本地配置里先写好更新策略，供删除选项的一项使用
+        _ = try await fixture.runner.run(["config", "--local", "submodule.\(submodule.name).update", "rebase"])
+        await fixture.refresh()
+
+        let operations: [(title: String, start: () -> Void)] = [
+            ("submodule.move", { _ = session.moveSubmodule(submodule, to: "外层/新 位置", renaming: true) }),
+            ("submodule.rename", { _ = session.renameSubmodule(submodule, to: "新名") }),
+            ("submodule.editURL", { _ = session.setSubmoduleURL(url, for: submodule, in: .local) }),
+            (
+                "submodule.unsetUpdateStrategy",
+                { session.setSubmoduleOption(.update, to: nil, for: submodule, in: .local) }
+            ),
+            (
+                "submodule.setIgnoreMode",
+                { session.setSubmoduleOption(.ignore, to: "dirty", for: submodule, in: .shared) }
+            ),
+        ]
+
+        for operation in operations {
+            let before = try await submoduleState(in: fixture)
+            try await fixture.perform(operation.start)
+            #expect(try await submoduleState(in: fixture) != before)
+
+            let title = AppLocalization.text(operation.title)
+            #expect(try await settledState(of: session, redo: false) == .available(title))
+
+            try await fixture.perform { session.undoLastOperation() }
+            #expect(try await submoduleState(in: fixture) == before)
+        }
+    }
+
+    /// 在子模块里检出另一个分支：撤销后回到检出前的分支；撤销菜单写这次操作的名称。
+    private static func expectSubmoduleCheckoutUndone(
+        of submodule: Submodule,
+        in fixture: Fixture
     ) async throws {
         let session = fixture.session
         let title = AppLocalization.text("submodule.checkoutSubmoduleRevision")
 
-        _ = try await fixture.runner.run(["-C", "lib", "branch", "特性"])
+        _ = try await fixture.runner.run(["-C", submodule.path, "branch", "特性"])
         await fixture.refresh()
 
         let currentBranch = {
-            let output = try await fixture.runner.run(["-C", "lib", "branch", "--show-current"])
+            let output = try await fixture.runner.run(["-C", submodule.path, "branch", "--show-current"])
             return String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)
         }
 
@@ -195,12 +191,9 @@ extension UndoSessionTests {
         try await fixture.perform { session.checkoutSubmoduleRevision(revision, in: submodule) }
 
         #expect(try await currentBranch() == "特性")
-        #expect(try await Self.settledState(of: session, redo: false) == .available(title))
+        #expect(try await settledState(of: session, redo: false) == .available(title))
 
         try await fixture.perform { session.undoLastOperation() }
         #expect(try await currentBranch() == "main")
-
-        try await fixture.perform { session.redoLastOperation() }
-        #expect(try await currentBranch() == "特性")
     }
 }

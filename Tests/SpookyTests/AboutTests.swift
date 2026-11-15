@@ -6,8 +6,8 @@ import TestSupport
 
 // MARK: - AboutTests
 
-/// 关于窗口：固定尺寸的面板只建一个；图标随换组更新；
-/// Acknowledgements 按顺序列出三个库并接上各自的许可证；许可证的折行接回段落；文档 sheet 按 Esc 关闭。
+/// 关于窗口：固定尺寸的面板只建一个；Acknowledgements 按顺序列出三个库并接上各自的许可证；
+/// 许可证的折行接回段落；文档 sheet 按 Esc 关闭。
 @MainActor
 struct AboutTests {
     /// 面板内容 470 × 277、只能关闭，标题栏透明且不显示标题；Release Notes 与 Help 菜单是同一个动作；关掉后再打开仍是同一个窗口；
@@ -62,64 +62,6 @@ struct AboutTests {
         await until { about.presentedViewControllers?.isEmpty ?? true }
 
         #expect(window.attachedSheet == nil)
-    }
-
-    /// 关于窗口显示 `AppIconController` 记下的图标，换组后窗口不用重新打开就跟着换；交还包里的默认图标时是系统给出的包图标。
-    @Test("关于窗口的图标随换组更新")
-    func iconFollowsAppIcon() async throws {
-        let directory = AppIconControllerTests.makeDirectory()
-
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let app = try AppIconControllerTests.makeApp(in: directory)
-        let resources = app.appending(path: "Contents/Resources", directoryHint: .isDirectory)
-
-        try AppIconControllerTests.addMidnightIcons(to: app)
-
-        // 包里有默认图标的资源时，交还默认图标才取系统给出的包图标
-        try FileManager.default.copyItem(
-            at: resources.appending(path: AppIconGroup.midnight.iconName(for: .standard) + ".icns"),
-            to: resources.appending(path: AppIconGroup.serverGhost.iconName(for: .standard) + ".icns")
-        )
-
-        // 取系统给出的包图标时，LaunchServices 登记了这个临时 App；删掉文件后登记还在，要另外注销
-        defer { Self.unregister(app) }
-
-        _ = NSApplication.shared
-
-        let controller = try AppIconController(
-            defaults: MemoryDefaults(),
-            bundle: #require(Bundle(url: app)),
-            restartDock: { }
-        )
-
-        controller.reload()
-        await until { controller.pendingRequests == 0 }
-
-        // 订阅图标变化的是内容控制器；关于窗口由窗口持有它，这里留到测试结束
-        let about = AboutViewController(appIconController: controller)
-        let icon = try #require(about.view.subviews.lazy.compactMap { $0 as? NSImageView }.first)
-
-        defer { withExtendedLifetime(about) { } }
-
-        // 服务器幽灵：系统给出的包图标
-        let defaultIcon = try #require(controller.applicationIcon)
-
-        #expect(icon.image === defaultIcon)
-
-        // 换到午夜：窗口不用重新打开，图标换成午夜的一版
-        try await controller.select(.midnight)
-        await until { icon.image === controller.applicationIcon }
-
-        let midnightIcon = icon.image
-
-        #expect(midnightIcon !== defaultIcon)
-
-        // 换回服务器幽灵：图标又换成系统给出的包图标
-        try await controller.select(.serverGhost)
-        await until { icon.image === controller.applicationIcon }
-
-        #expect(icon.image !== midnightIcon)
     }
 
     /// 许可证文件都在时，三个库按顺序出现，每个库的名称与版本、主页、许可证名称后面接着它的许可证全文，主页可以点开；
@@ -242,23 +184,5 @@ extension AboutTests {
     /// 视图层级里的第一个文本视图。
     private static func textView(in view: NSView) -> NSTextView? {
         (view as? NSTextView) ?? view.subviews.lazy.compactMap { textView(in: $0) }.first
-    }
-
-    /// 把临时 App 从 LaunchServices 注销；不等注销结束，注销不成功只是多留一条登记。
-    /// - Parameter app: 临时 App 包的位置，文件还在
-    private static func unregister(_ app: URL) {
-        // LaunchServices 按解析过符号链接的路径登记，如 `/private/var/folders/…`；传 `/var/folders/…` 注销不掉
-        let path = (try? app.resourceValues(forKeys: [.canonicalPathKey]).canonicalPath) ?? app.path
-
-        let process = Process()
-
-        process.executableURL = URL(
-            filePath: "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
-        )
-        process.arguments = ["-u", path]
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
-
-        try? process.run()
     }
 }

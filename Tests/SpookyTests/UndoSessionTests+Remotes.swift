@@ -8,11 +8,11 @@ import Testing
 
 /// 远端写操作靠反向操作撤销：添加、改名、删除与修改设置都能撤销与重做，前提不符时报仓库已改变，与快照记录交错时照栈的顺序撤销。
 extension UndoSessionTests {
-    /// 添加、改名与删除远端各自撤销后恢复、重做后再次生效；改名与删除带着远端跟踪分支与跟踪设置一起改回，
+    /// 同一个仓库依次核对：添加、改名与删除远端各自撤销后恢复、重做后再次生效；改名与删除带着远端跟踪分支与跟踪设置一起改回，
     /// 改名的撤销与重做让选中跟着远端名走；删掉选中的远端后选中相邻的远端。
-    /// 撤销添加之前远端已在外部被删掉：报仓库已改变，撤销栈不动。
-    @Test("远端的添加、改名与删除的撤销与重做")
-    func remoteLifecycleRoundTrip() async throws {
+    /// 撤销添加之前远端已在外部被删掉：报仓库已改变，撤销栈不动。随后核对远端设置的撤销，以及与提交交错时的撤销顺序。
+    @Test("远端写操作的撤销与重做")
+    func remoteRoundTrips() async throws {
         let fixture = try await Fixture()
         defer { fixture.remove() }
 
@@ -87,24 +87,28 @@ extension UndoSessionTests {
 
         #expect(failures.last?.title == AppLocalization.text("undo.error.changed"))
         #expect(session.undoHistory?.undoEntries.count == count)
+
+        try await Self.expectRemoteSettingsUndone(in: fixture, remote: bare)
+        try await Self.expectRenameUndoneBeforeCommit(in: fixture)
     }
+}
 
+// MARK: - Remote Steps
+
+extension UndoSessionTests {
     /// 去掉推送地址、删除 refspec 与 “获取全部” 各自撤销后配置回到操作前，重做后回到操作后。
-    @Test("远端设置的撤销与重做")
-    func remoteSettingsRoundTrip() async throws {
-        let fixture = try await Fixture()
-        defer { fixture.remove() }
-
+    ///
+    /// - Parameters:
+    ///   - fixture: 还没有 origin 的仓库。
+    ///   - remote: 作 origin 的裸仓库路径。
+    private static func expectRemoteSettingsUndone(in fixture: Fixture, remote: String) async throws {
         let session = fixture.session
-        let bare = try await Self.makeRemote(for: fixture)
-        defer { try? FileManager.default.removeItem(atPath: bare) }
-
         let notes = "+refs/notes/*:refs/notes/*"
         session.onConfirm = { $0.action() }
 
         // 远端带着推送地址与另一条获取 refspec
-        _ = try await fixture.runner.run(["remote", "add", "origin", bare])
-        _ = try await fixture.runner.run(["config", "--local", "remote.origin.pushurl", bare])
+        _ = try await fixture.runner.run(["remote", "add", "origin", remote])
+        _ = try await fixture.runner.run(["config", "--local", "remote.origin.pushurl", remote])
         _ = try await fixture.runner.run(["config", "--local", "--add", "remote.origin.fetch", notes])
 
         let operations: [() -> Void] = [
@@ -114,36 +118,30 @@ extension UndoSessionTests {
         ]
 
         for operation in operations {
-            let before = try await Self.remoteSettings(in: fixture)
+            let before = try await remoteSettings(in: fixture)
             try await fixture.perform(operation)
 
-            let after = try await Self.remoteSettings(in: fixture)
+            let after = try await remoteSettings(in: fixture)
             #expect(after != before)
 
             try await fixture.perform { session.undoLastOperation() }
-            #expect(try await Self.remoteSettings(in: fixture) == before)
+            #expect(try await remoteSettings(in: fixture) == before)
 
             try await fixture.perform { session.redoLastOperation() }
-            #expect(try await Self.remoteSettings(in: fixture) == after)
+            #expect(try await remoteSettings(in: fixture) == after)
         }
     }
 
-    /// 先提交、再给 main 跟踪的远端改名，连续撤销两次：改名先改回跟踪设置，提交的快照随后照常通过核对。
-    @Test("远端改名与提交交错时的撤销")
-    func remoteInterleavedWithSnapshot() async throws {
-        let fixture = try await Fixture()
-        defer { fixture.remove() }
-
+    /// 先提交、再给 main 跟踪的 origin 改名，连续撤销两次：改名先改回跟踪设置，提交的快照随后照常通过核对。
+    private static func expectRenameUndoneBeforeCommit(in fixture: Fixture) async throws {
         let session = fixture.session
-        let bare = try await Self.makeRemote(for: fixture)
-        defer { try? FileManager.default.removeItem(atPath: bare) }
-
         let root = try await fixture.head()
 
-        _ = try await fixture.runner.run(["remote", "add", "origin", bare])
         _ = try await fixture.runner.run(["push", "-q", "-u", "origin", "main"])
 
-        // 暂存、提交，再给远端改名，撤销栈里三项
+        // 暂存、提交，再给远端改名，撤销栈里多出三项
+        let count = session.undoHistory?.undoEntries.count ?? 0
+
         try fixture.write("changed\n")
         await fixture.refresh()
         try await fixture.perform { session.stageAll(staged: true) }
@@ -152,17 +150,17 @@ extension UndoSessionTests {
             session.confirmCommit(("提交", ""), amend: false, signOff: false, skipHooks: false)
         }
 
-        try await fixture.perform { Self.renameRemote("origin", to: "fork", in: session) }
-        #expect(session.undoHistory?.undoEntries.count == 3)
+        try await fixture.perform { renameRemote("origin", to: "fork", in: session) }
+        #expect(session.undoHistory?.undoEntries.count == count + 3)
 
         // 先撤销改名，再撤销提交
         try await fixture.perform { session.undoLastOperation() }
-        #expect(try await Self.upstream(in: fixture) == "origin")
+        #expect(try await upstream(in: fixture) == "origin")
 
         try await fixture.perform { session.undoLastOperation() }
 
         #expect(try await fixture.head() == root)
-        #expect(session.undoHistory?.undoEntries.count == 1)
+        #expect(session.undoHistory?.undoEntries.count == count + 1)
     }
 }
 
