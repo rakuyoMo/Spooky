@@ -40,18 +40,13 @@ extension ChangesetAutoExpandTests {
         let session = fixture.session
         fixture.setThreshold(Int.max)
 
-        // 储藏先读完列表，闸门只拦下选中储藏后的变更清单
-        if kind == 2 {
-            session.stashes.refresh(runner: gated, records: false)
-            await until { !session.stashes.isLoading }
-        }
-
         try gate.arm()
 
+        // 储藏由刷新发起读取：列表读完时没有选中项，自动选中第一个并读取它的变更清单
         switch kind {
         case 0: session.history.show(fixture.commits[2], runner: gated)
         case 1: fixture.open(session.comparison, runner: gated)
-        default: session.stashes.selectedIDs = [try #require(session.stashes.entries.first).id]
+        default: session.stashes.refresh(runner: gated, records: false)
         }
 
         await gate.arrival()
