@@ -59,7 +59,7 @@ struct AddSubmoduleDialog: View {
         }
     }
 
-    /// 路径的弹出菜单：选中的目录（没有时是灰掉的 “None Selected”）、分隔线与 “Select Destination…”；
+    /// 填满输入列的路径弹出菜单：选中的目录（没有时是灰掉的 “None Selected”）、分隔线与 “Select Destination…”；
     /// 选最后一项时打开目录选择，菜单仍停在原来的项上。
     private var pathPicker: some View {
         Picker(
@@ -84,6 +84,7 @@ struct AddSubmoduleDialog: View {
                 .tag(Self.chooseTag)
         }
         .labelsHidden()
+        .buttonSizing(.flexible)
         .accessibilityLabel(AppLocalization.text("submodule.path"))
         .accessibilityIdentifier("submodule-path")
     }

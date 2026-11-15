@@ -33,7 +33,9 @@ struct PublishTagDialog: View {
     @State
     private var skipHooks = false
 
-    /// “Local Tag:” 与 “Remote:” 两个下拉。
+    /// “Local Tag:” 与 “Remote:” 两个下拉，边框相隔 2 pt。
+    ///
+    /// 两个下拉各收进 3 pt：只收一个时，那一行的高度会由标签文字撑住。
     var body: some View {
         RepositoryDialogLayout(
             session: session,
@@ -51,6 +53,7 @@ struct PublishTagDialog: View {
                 }
                 .labelsHidden()
                 .buttonSizing(.flexible)
+                .padding(.bottom, -3)
             }
 
             RepositoryDialogRows.row(AppLocalization.text("sync.remote")) {
@@ -59,6 +62,7 @@ struct PublishTagDialog: View {
                 }
                 .labelsHidden()
                 .buttonSizing(.flexible)
+                .padding(.top, -3)
             }
         } options: {
             DialogFormOption(

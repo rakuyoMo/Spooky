@@ -16,7 +16,7 @@ import TestSupport
 @MainActor
 struct ConfirmationDialogTests {
     /// 会话发起的确认挂成确认对话框的 sheet，空提交确认与提交信息含注释的询问挂成系统提示框；
-    /// Git 错误框挂成可以拉大的 sheet，以 `GitErrorDialog` 记住排好版的尺寸，下次照记住的尺寸打开。
+    /// Git 错误框挂成可以拉大的 sheet，以 `GitErrorDialog` 记住排好版的尺寸，下次照记住的尺寸打开，排不下内容时放大到排得下。
     @Test("仓库窗口挂出的 sheet")
     func presentation() async throws {
         let fixture = try await NavigationTests.makeWindow()
@@ -197,7 +197,7 @@ extension ConfirmationDialogTests {
         )
     }
 
-    /// Git 错误框挂成可以拉大的 sheet，以 `GitErrorDialog` 记住排好版的尺寸；记住的尺寸比内容宽时，下次照它打开。
+    /// Git 错误框挂成可以拉大的 sheet，以 `GitErrorDialog` 记住排好版的尺寸；记住的尺寸比内容宽时，下次照它打开；比内容矮时按排得下内容的高度打开。
     /// 窗口已有表单时错误框叠在表单上，关掉后回到表单。
     private static func expectGitErrorSheet(in fixture: NavigationTests.WindowFixture) async throws {
         let key = GitErrorDialogTests.frameKey
@@ -237,6 +237,18 @@ extension ConfirmationDialogTests {
         #expect(resized.frame.width == 700)
 
         window.endSheet(resized)
+        await until { window.attachedSheet == nil }
+
+        // 记住的尺寸比这次的内容矮时，按内容排得下的高度打开，底栏不压住原文区
+        UserDefaults.standard.set("0 0 480 200 0 0 1470 923", forKey: key)
+        controller.showFailure(failure)
+
+        let short = try await PromptDialogTests.attachedSheet(of: window)
+        let content = NSHostingView(rootView: GitErrorDialog(failure: failure, close: { }, chooseAnother: nil))
+
+        #expect(short.contentRect(forFrameRect: short.frame).height >= content.fittingSize.height - 1)
+
+        window.endSheet(short)
         await until { window.attachedSheet == nil }
 
         // 表单开着：错误框叠在表单上，窗口挂着的仍是表单

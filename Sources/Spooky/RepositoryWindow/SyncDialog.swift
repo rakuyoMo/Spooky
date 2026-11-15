@@ -125,6 +125,7 @@ struct SyncDialog: View {
             message: help,
             width: kind == .forcePush ? 456 : 480,
             inputColumn: kind == .sync ? 128 : DialogMetrics.inputColumn,
+            formInsets: formInsets,
             submitTitle: AppLocalization.text(kind.submitKey),
             error: error,
             isValid: canSubmit,

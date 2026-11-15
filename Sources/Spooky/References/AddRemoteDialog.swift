@@ -45,7 +45,7 @@ struct AddRemoteDialog: View {
     @State
     private var succeeded = false
 
-    /// “Name:” 与 “Remote URL:” 两个输入框。
+    /// “Name:” 与 “Remote URL:” 两个输入框，相隔 10 pt。
     var body: some View {
         RepositoryDialogLayout(
             session: session,
@@ -62,6 +62,7 @@ struct AddRemoteDialog: View {
             RepositoryDialogRows.row(AppLocalization.text("reference.name")) {
                 TextField("", text: $name, prompt: Text(AppLocalization.text("remote.name.placeholder")))
                     .accessibilityIdentifier("remote-name")
+                    .padding(.bottom, 2)
             }
 
             RepositoryDialogRows.row(AppLocalization.text("remote.url")) {

@@ -323,11 +323,12 @@ extension DialogLayout {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
+                // 先给出至少 38 的高度再固定：可以拉大的窗口问最小尺寸时，说明也按整段文字的高度回答
                 Text(message)
                     .font(.system(size: 13))
                     .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
                     .frame(minHeight: 38, alignment: .topLeading)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.bottom, 12)

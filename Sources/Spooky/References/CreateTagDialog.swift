@@ -85,7 +85,7 @@ struct CreateTagDialog: View {
 // MARK: - Layout
 
 extension CreateTagDialog {
-    /// 表单各行；签名密钥只在勾选签名时可选。
+    /// 表单各行：说明框高 75 pt；签名密钥离上面的勾选框 20 pt，只在勾选签名时可选。
     @ViewBuilder
     private var rows: some View {
         RepositoryDialogRows.row(AppLocalization.text("reference.name")) {
@@ -107,8 +107,12 @@ extension CreateTagDialog {
         }
 
         RepositoryDialogRows.row(AppLocalization.text("tag.messageField")) {
-            TextField("", text: $message, axis: .vertical)
-                .lineLimit(4, reservesSpace: true)
+            BezelTextField(
+                text: $message,
+                label: AppLocalization.text("tag.messageField"),
+                height: 75,
+                wraps: true
+            )
         }
 
         DialogFormOption(title: AppLocalization.text("tag.sign"), isOn: $sign)
@@ -122,6 +126,7 @@ extension CreateTagDialog {
             .labelsHidden()
             .buttonSizing(.flexible)
             .disabled(!sign)
+            .padding(.top, 12)
         }
     }
 }

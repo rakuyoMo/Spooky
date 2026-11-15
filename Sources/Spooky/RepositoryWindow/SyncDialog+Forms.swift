@@ -75,6 +75,15 @@ extension SyncDialog {
         option("sync.skipHooks", spacing: kind == .rebase ? 8 : 4, value: $skipHooks)
     }
 
+    /// 内容区表单第一行上方与最后一行下方的边距：推送版本上 17、下 19；安全强推显示状态行时下方只留 8；其余上下各 20。
+    var formInsets: (top: CGFloat, bottom: CGFloat) {
+        switch kind {
+        case .pushRevision: (17, 19)
+        case .forcePush where showsLeaseStatus: (20, 8)
+        default: (20, 20)
+        }
+    }
+
     /// 参数完整且仓库可写时才能执行；同步与推送版本的目标远端分支或远端还要仍然存在；
     /// 强推还要求核对完成且两侧不是同一个提交。
     var canSubmit: Bool {
@@ -132,14 +141,19 @@ extension SyncDialog {
             }
             .font(.system(size: 12))
             .foregroundStyle(.secondary)
-            .padding(.top, checkingLease || line != nil ? 20 : 0)
+            .padding(.top, showsLeaseStatus ? 20 : 0)
             .padding(.leading, inputColumn - 20 - 20)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .containerValue(\.isDialogFormStatus, true)
     }
 
-    /// 推送的版本：可输入，也可从本地分支与标签里补全。
+    /// 强推的状态行是否有内容：核对进行中，或核对结果需要说明。
+    private var showsLeaseStatus: Bool {
+        checkingLease || lease.flatMap { Self.leaseLine(for: $0.status) } != nil
+    }
+
+    /// 推送的版本：可输入，也可从本地分支与标签里补全；与下面的远端相隔 14 pt。
     private var revisionRow: some View {
         let tags = session.history.snapshot?.references.filter { $0.id.hasPrefix("refs/tags/") } ?? []
 
@@ -150,10 +164,11 @@ extension SyncDialog {
                         Text(reference.name).textInputCompletion(reference.name)
                     }
                 }
+                .padding(.bottom, 6)
         }
     }
 
-    /// 推送到的远端，从配置的远端里选。
+    /// 推送到的远端，从配置的远端里选；与下面的目标引用相隔 12 pt。
     private var remoteRow: some View {
         RepositoryDialogRows.row(AppLocalization.text("sync.remote")) {
             Picker("", selection: $remote) {
@@ -161,6 +176,7 @@ extension SyncDialog {
             }
             .labelsHidden()
             .buttonSizing(.flexible)
+            .padding(.bottom, 4)
         }
     }
 
