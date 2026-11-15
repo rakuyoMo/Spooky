@@ -11,7 +11,8 @@ import TestSupport
 /// 变更集右键菜单的作用文件、标题与复制的内容。
 @MainActor
 struct ChangesetFileMenuTests {
-    /// 右键选区里的行作用于整个选区、选区外的行只作用于它；单个文件的标题写仓库内的完整路径，多个文件写数量；
+    /// 右键选区里的行作用于整个选区、选区外的行只作用于它；单个文件有复制路径两项，标题写仓库内的完整路径，
+    /// 多个文件没有复制路径，标题写数量；
     /// 复制的完整路径是仓库位置加相对路径，相对路径原样。
     @Test("变更集菜单的作用文件、标题与复制内容")
     func menuTargetsAndTitles() async throws {
@@ -58,7 +59,7 @@ struct ChangesetFileMenuTests {
             ],
         ])
 
-        // 多个文件：标题写数量，没有查看一组
+        // 多个文件：没有复制路径与查看两组，标题写数量
         let multiple = ChangesetFileMenu.groups(
             session: session,
             files: Array(files.prefix(2)),
@@ -67,7 +68,6 @@ struct ChangesetFileMenuTests {
         )
 
         #expect(multiple.map { $0.map(\.title) } == [
-            ["Copy File Path", "Copy Relative File Path"],
             ["Open Diff Tool for 2 Items at Revision “\(shortID)”"],
             [
                 "Restore 2 Items at Revision “\(shortID)” in Working Copy…",
@@ -87,6 +87,34 @@ struct ChangesetFileMenuTests {
 
         session.copyPaths(paths, relative: true, to: pasteboard)
         #expect(pasteboard.string(forType: .string) == deep + "\nb.txt")
+    }
+
+    /// 右侧详情按路径不分大小写列出变更文件，⇧ 连续选按这个顺序取范围；整页详情仍按 Git 的输出顺序。
+    @Test("右侧详情的文件顺序与连续选")
+    func detailFileOrder() {
+        let session = RepositorySession()
+        defer { session.close() }
+
+        let history = session.history
+
+        // Git 按字节序输出，大写在前
+        let gitOrder = ["B.txt", "C/x.txt", "a.txt", "b.txt"]
+
+        history.changes = gitOrder.map {
+            CommitFileChange(path: $0, originalPath: nil, status: "M", additions: 1, deletions: 0)
+        }
+
+        // 右侧不分大小写，只差大小写的两个路径按字节序
+        let detailOrder = history.pathOrderedChanges.map(\.path)
+        #expect(detailOrder == ["a.txt", "B.txt", "b.txt", "C/x.txt"])
+        #expect(history.changes.map(\.path) == gitOrder)
+
+        // 从 a.txt ⇧ 点到 b.txt，选中的是右侧相邻的三行
+        var selection = ChangesetFileSelection()
+        selection.click("a.txt", extending: false, toggling: false, order: detailOrder)
+        selection.click("b.txt", extending: true, toggling: false, order: detailOrder)
+
+        #expect(selection.paths == ["a.txt", "B.txt", "b.txt"])
     }
 }
 

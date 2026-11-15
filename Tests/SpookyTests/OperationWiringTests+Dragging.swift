@@ -140,6 +140,7 @@ extension OperationWiringTests {
     }
 
     /// 本地分支拖进分支文件夹、远端分支拖进同一远端的文件夹是改名为 “文件夹/原名末段”；名字不变或拖到别的远端时不接受。
+    /// 文件夹里的分支拖到列表边缘是移到顶层，已在顶层的不接受。
     private func checkMoveIntoFolder(in fixture: Fixture) async throws {
         let session = fixture.session
         let local = Fixture.Source.local("refs/heads/side")
@@ -172,6 +173,12 @@ extension OperationWiringTests {
         try #require(session.history.branches.contains { $0.name == "功能/side" })
 
         #expect(fixture.drop([.local("refs/heads/功能/side")], on: .branchFolder("功能")) == nil)
+
+        // 列表边缘：文件夹里的分支移到顶层；已在顶层、按住 ⌥ 或拖的是提交时不接受
+        #expect(fixture.drop([.local("refs/heads/功能/side")], on: .listEdge) == "move:refs/heads/功能/side→side")
+        #expect(fixture.drop([.local("refs/heads/功能/side")], on: .listEdge, alternate: true) == nil)
+        #expect(fixture.drop([remote], on: .listEdge) == nil)
+        #expect(fixture.drop([.commit(fixture.ids["D"] ?? "")], on: .listEdge) == nil)
     }
 }
 

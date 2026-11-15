@@ -226,13 +226,15 @@ extension UserProfilesSettingsView {
         .buttonStyle(.borderless)
     }
 
-    /// 所选档案：首字母头像、粗体标题、分隔线下的身份、签名密钥与签名人，右下角为编辑按钮；没有选中时只留空白边框。
+    /// 所选档案：首字母头像、粗体标题、分隔线下的身份、签名密钥与签名人，右下角为编辑按钮；没有选中时是不带图标的空状态。
     private var detail: some View {
         ZStack(alignment: .topLeading) {
             Color.clear
 
             if let profile = profiles.first(where: { $0.id == selection }) {
                 profileDetail(profile)
+            } else {
+                EmptyStateView(title: AppLocalization.text("profiles.noSelection"), message: "", symbol: nil)
             }
         }
     }
@@ -507,11 +509,10 @@ extension UserProfileEditor {
             .labelsHidden()
             .buttonSizing(.flexible)
             .disabled(keys.isEmpty)
-            .accessibilityLabel(AppLocalization.text("profiles.signingKey"))
         }
     }
 
-    /// 一行标签与占满余下宽度、可见高 24 pt 的输入框；输入列至少从对齐线开始，标签长时随之右移，头部文字跟着它。
+    /// 一行标签与占满余下宽度、可见高 24 pt 的输入框；输入列至少从 145 开始，标签长时随之右移，头部文字跟着它。
     private func field(_ label: String, text: Binding<String>) -> some View {
         DialogFormRow(label: AppLocalization.text(label)) {
             SettingsTextField(text: text, label: AppLocalization.text(label))

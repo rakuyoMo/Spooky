@@ -195,11 +195,13 @@ extension RepositoryDialogLayout where Options == EmptyView {
 
 extension RepositoryDialogLayout {
     /// 错误区的文字：校验失败的说明，以及仓库暂不可写的原因；都没有时为 nil。
+    ///
+    /// 对话框自己的步骤进行中时仓库同样不可写，这时只显示进度，不写不可写的原因。
     private var notice: String? {
         var lines = error.isEmpty ? [] : [error]
 
         // 断线或其它写操作进行中时主按钮禁用，说明原因并保留已填写的参数
-        if !session.canWrite {
+        if !session.canWrite, progress == nil {
             lines.append(AppLocalization.text("dialog.blocked"))
         }
 

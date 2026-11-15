@@ -36,6 +36,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 工具栏 Clone 项弹出的最近克隆。
     var clonePopover: NSPopover?
 
+    /// 上次打开 Repository › LFS 时读到启用了 Git LFS 的仓库；没有启用或换了仓库时，LFS 各项不可用。
+    var lfsEnabledRepository: RepositoryLocation?
+
     /// 正在按视图引用切换视图，中途经过的视图不记进后退 / 前进记录。
     var isApplyingReference = false
 
@@ -43,10 +46,13 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     private(set) weak var coordinator: SpookyApplicationController?
 
     /// 外层侧边栏分栏。
-    private var outerSplit: NSSplitViewController?
+    var outerSplit: NSSplitViewController?
 
     /// 工作区的列表与详情分栏。
-    private var workingCopySplit: NSSplitViewController?
+    var workingCopySplit: NSSplitViewController?
+
+    /// 冲突向导出现前侧边栏与文件列表的宽度，向导离开后放回；没有工作区分栏时文件列表的宽度为 nil。
+    var widthsBeforeConflictWizard: (sidebar: CGFloat, list: CGFloat?)? = nil
 
     /// 历史、整页提交详情与文件历史拥有各自保存宽度的内层分栏。
     private var historySplit: NSSplitViewController?
@@ -105,6 +111,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         configureWorkingCopyKeys()
         configureCommentPrompt()
         session.onFailure = { [weak self] in self?.showFailure($0) }
+        session.onReadFailure = { [weak self] in self?.presentReadFailure($0, $1) }
 
         session.history.onFailure = { [weak self] error in
             guard let self else { return }
@@ -112,7 +119,8 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
             if error is RemoteConnectionError {
                 self.session.reconnect()
             } else {
-                showFailure(AppFailure(error: error, opening: false, location: self.session.repository))
+                let failure = AppFailure(error: error, opening: false, location: self.session.repository)
+                presentReadFailure(error, failure)
             }
         }
 
@@ -168,7 +176,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         // 会话里的确认以确认版对话框挂成 sheet
         session.onConfirm = { [weak self] in self?.showConfirmation($0) }
 
-        // 进行中的操作没有任何改动时，空提交的确认同样以确认版对话框挂成 sheet
+        // 进行中的操作没有任何改动时，空提交的确认以系统提示框挂成 sheet
         session.onEmptyCommitPrompt = { [weak self] in self?.showEmptyCommitPrompt($0) }
 
         showRepositories()
@@ -177,6 +185,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         observeToolbarState()
         observeConnectionState()
         observeWorkspaceProgress()
+        observeConflictWizard()
         observeHostingAccounts(previous: session.pullRequests.accounts.items)
         observeRemotes(previous: session.history.snapshot?.remoteSettingsDigests)
         observeSubtitle()
@@ -771,6 +780,11 @@ extension RepositoryWindowController {
         fileDetail.sizingOptions = [.minSize]
         let detailItem = NSSplitViewItem(viewController: fileDetail)
         detailItem.holdingPriority = .init(470)
+
+        // 选中的是冲突文件时右栏一开始就放宽到冲突向导的最小宽度
+        if showsConflictWizard {
+            detailItem.minimumThickness = Self.conflictWizardMinimumWidth
+        }
 
         split.addSplitViewItem(listItem)
         split.addSplitViewItem(detailItem)

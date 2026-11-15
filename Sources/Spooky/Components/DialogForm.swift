@@ -4,8 +4,11 @@ import SwiftUI
 
 /// 对话框骨架的度量：头部文字、表单输入列与错误文字共用一条左对齐线。
 enum DialogMetrics {
-    /// 距对话框左缘 120 pt 的对齐线：表单标签都不长时输入列从这里开始，内容区没有输入列时头部与错误文字对齐它。
+    /// 距对话框左缘 120 pt 的对齐线：内容区没有输入列时，头部与错误文字对齐它。
     static let alignment: CGFloat = 120
+
+    /// 距对话框左缘 145 pt 的输入列：表单标签都不长时输入框从这里开始。
+    static let inputColumn: CGFloat = 145
 
     /// 头部图标与文字的间距。
     static let iconSpacing: CGFloat = 16
@@ -13,8 +16,8 @@ enum DialogMetrics {
     /// 对话框骨架的坐标空间，`dialogInputColumn()` 在其中量出输入列的位置。
     static let coordinateSpace = "DialogLayout"
 
-    /// 表单标签列的最小宽度：表单左边距 20 pt，标签右缘与输入列相隔 8 pt，输入列正好从对齐线开始。
-    static let labelWidth: CGFloat = alignment - 20 - 8
+    /// 表单标签列的最小宽度：表单左边距 20 pt，右对齐的标签与输入框相隔 8 pt，输入框正好从 `inputColumn` 开始。
+    static let labelWidth: CGFloat = inputColumn - 20 - 8
 
     /// 头部文字与错误文字的左缘：内容区的输入列，没有输入列时是 `alignment`；不小于图标距左 32 时文字的位置。
     static func textLeading(for inputColumn: CGFloat?) -> CGFloat {
@@ -59,7 +62,7 @@ struct DialogForm<Rows: View>: View {
 
 /// 表单的一行：右对齐的标签与它右侧的输入控件。
 ///
-/// 标签列至少宽到让输入列从对齐线开始，标签长时输入列随之右移，并报给外层的对话框骨架。
+/// 标签列至少宽到让输入列从 `DialogMetrics.inputColumn` 开始，标签长时输入列随之右移，并报给外层的对话框骨架。
 /// 标签在辅助功能里是控件的标题，VoiceOver 读控件时读出标签；控件是只读的文字时，标签与文字本身都读得出，
 /// 一组控件时各自保留自己的名称。
 struct DialogFormRow<Field: View>: View {

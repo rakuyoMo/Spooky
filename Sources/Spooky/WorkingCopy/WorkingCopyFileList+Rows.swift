@@ -6,7 +6,7 @@ import SwiftUI
 
 extension WorkingCopyFileList.Coordinator {
     /// 本次渲染已知的 assume-unchanged 路径。
-    private var renderMarked: Set<String> { renderState?.marked ?? [] }
+    var renderMarked: Set<String> { renderState?.marked ?? [] }
 
     /// 本次渲染时进行中的操作已经解决的冲突路径。
     private var renderResolved: Set<String> { renderState?.listing.resolvedPaths ?? [] }
@@ -55,10 +55,18 @@ extension WorkingCopyFileList.Coordinator {
             button.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
         ])
 
-        guard let entry = node.entry else { return cell }
+        // 文件行画自身的徽标，目录行按列汇总其下当前显示的条目
+        let badges: NSView =
+            if let entry = node.entry {
+                NSHostingView(rootView: FileStatusView(
+                    entry: entry,
+                    assumeUnchanged: renderMarked.contains(entry.path),
+                    untrackedCopy: node.untrackedCopy != nil
+                ))
+            } else {
+                NSHostingView(rootView: DirectoryStatusView(entries: node.entries))
+            }
 
-        let marked = renderMarked.contains(entry.path)
-        let badges = NSHostingView(rootView: FileStatusView(entry: entry, assumeUnchanged: marked))
         badges.translatesAutoresizingMaskIntoConstraints = false
         cell.addSubview(badges)
 
@@ -78,7 +86,7 @@ extension WorkingCopyFileList.Coordinator {
     /// 图标 16 × 16、距左 9，文字与图标相隔 8、距右 8；冲突与已解决的文件在图标右上叠标记。
     func pathCell(_ node: WorkingCopyFileList.Node) -> NSView {
         let style = renderState?.style ?? WorkingCopyFileList.Style(fontSize: .medium, truncation: .beginning)
-        let tree = renderState?.listing.mode.isTree ?? false
+        let tree = renderState?.listing.showsTree ?? false
         let entry = node.entry
         let resolved = entry.map { $0.kind != .conflicted && renderResolved.contains($0.path) } ?? false
 
@@ -97,14 +105,20 @@ extension WorkingCopyFileList.Coordinator {
         label.toolTip = Self.pathTitle(node, tree: false)
         label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        // 目录与被忽略的整个目录用文件夹图标，文件按扩展名取系统图标，不读取本机或服务器上的文件；变灰的行图标同样变暗
+        // 目录与被忽略或未跟踪的整个目录用文件夹图标，本机文件取实际图标，服务器文件按名称取；变灰的行图标同样变暗
         let icon = NSImageView(
-            image: WorkingCopyFileHeader.icon(path: node.path, isFolder: entry == nil || node.path.hasSuffix("/"))
+            image: WorkingCopyFileHeader.icon(
+                path: node.path,
+                isFolder: entry == nil || node.path.hasSuffix("/"),
+                root: session.repository?.localURL
+            )
         )
         icon.imageScaling = .scaleProportionallyUpOrDown
         icon.isEnabled = !dimmed
 
-        let cell = NSView()
+        // 表格把选中行的背景样式交给单元格，文件名（包括变灰的）随之换成选中行的文字颜色
+        let cell = NSTableCellView()
+        cell.textField = label
 
         for view in [icon, label] {
             view.translatesAutoresizingMaskIntoConstraints = false
@@ -164,6 +178,10 @@ extension WorkingCopyFileList.Coordinator {
     func restoreSelection() {
         guard let outline else { return }
 
+        // 选中的冲突文件解决后换成别的状态（如与 HEAD 相同的已解决行），仍选中同一个文件
+        let resolving = Set(session.selectedIDs.filter { $0.kind == .conflicted }.map(\.path))
+        var followed = false
+
         let rows = (0 ..< outline.numberOfRows).filter { row in
             guard let node = outline.item(atRow: row) as? WorkingCopyFileList.Node else { return false }
 
@@ -172,10 +190,25 @@ extension WorkingCopyFileList.Coordinator {
             }
 
             guard let entry = node.entry else { return false }
-            return session.selectedIDs.contains(StatusRowID(path: entry.path, kind: entry.kind))
+
+            if session.selectedIDs.contains(StatusRowID(path: entry.path, kind: entry.kind)) {
+                return true
+            }
+
+            guard entry.kind != .conflicted, resolving.contains(entry.path) else { return false }
+
+            followed = true
+            return true
         }
 
         outline.selectRowIndexes(IndexSet(rows), byExtendingSelection: false)
+
+        // 选区换成了新的行，会话在视图更新之后再跟着改
+        if followed {
+            Task { @MainActor [weak self] in
+                self?.syncSelection()
+            }
+        }
     }
 
     /// 搜索把选中的文件过滤掉后取消这些选择，菜单与快捷键不会作用于看不见的文件。
@@ -224,17 +257,15 @@ extension WorkingCopyFileList.Coordinator {
 // MARK: - Tree
 
 extension WorkingCopyFileList.Coordinator {
-    /// 重命名保留完整旧路径；树形的新路径只显示末级名称。
+    /// 行的标题：树形只显示末级名称；重命名在列表与树形里都写出完整的旧路径与新路径。
     static func pathTitle(_ node: WorkingCopyFileList.Node, tree: Bool) -> String {
-        let title = tree ? node.name : node.path
-
         guard
             let entry = node.entry,
             entry.staged == .renamed || entry.unstaged == .renamed,
             let original = entry.originalPath
-        else { return title }
+        else { return tree ? node.name : node.path }
 
-        return "\(original) → \(title)"
+        return "\(original) → \(node.path)"
     }
 
     /// 按表头的各级排序排列节点；目录内部沿用相同排序，不把平铺的比较结果跨层混用。
@@ -256,10 +287,20 @@ extension WorkingCopyFileList.Coordinator {
         by descriptors: [NSSortDescriptor]
     ) -> Bool {
         for descriptor in descriptors {
-            let result =
-                descriptor.key == "status"
-                    ? statusCode(lhs).compare(statusCode(rhs))
-                    : lhs.path.localizedCaseInsensitiveCompare(rhs.path)
+            let result: ComparisonResult
+
+            if descriptor.key == "status" {
+                let ranks = (statusRank(lhs), statusRank(rhs))
+
+                result =
+                    if ranks.0 == ranks.1 {
+                        .orderedSame
+                    } else {
+                        ranks.0 < ranks.1 ? .orderedAscending : .orderedDescending
+                    }
+            } else {
+                result = lhs.path.localizedCaseInsensitiveCompare(rhs.path)
+            }
 
             guard result != .orderedSame else { continue }
 
@@ -269,18 +310,46 @@ extension WorkingCopyFileList.Coordinator {
         return lhs.path < rhs.path
     }
 
-    /// 状态列排序用的状态码；目录没有状态，按状态升序时排在同层文件之前。
-    private static func statusCode(_ node: WorkingCopyFileList.Node) -> String {
-        node.entry?.porcelainCode ?? ""
+    /// 状态列排序的档次，数值大的在按状态降序时排在前面：已暂存（含部分暂存）→ 已跟踪文件与冲突的未暂存改动 → 未跟踪文件
+    /// → 未改动与被忽略的文件；同一档内不再按状态细分。
+    ///
+    /// 目录没有状态，低于所有文件。
+    private static func statusRank(_ node: WorkingCopyFileList.Node) -> Int {
+        guard let entry = node.entry else { return 0 }
+
+        if entry.hasStagedChanges {
+            return 4
+        }
+
+        return switch entry.kind {
+        case .tracked, .conflicted: 3
+        case .untracked: 2
+        case .unchanged, .ignored: 1
+        }
     }
 
-    /// 按目录组织条目：目录节点只建一次，文件挂在所在目录下；被忽略的整个目录本身是一个叶子。
+    /// 平铺的文件行：每个条目一行，停止跟踪后同一路径的未跟踪记录并进暂存为删除的那一行。
+    static func fileNodes(_ entries: [StatusEntry]) -> [WorkingCopyFileList.Node] {
+        let copies = Dictionary(
+            entries.untrackedCopies.map { ($0.path, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        return entries.compactMap { entry in
+            guard entry.kind != .untracked || copies[entry.path] == nil else { return nil }
+
+            let copy = entry.isStagedDeletion ? copies[entry.path] : nil
+            return WorkingCopyFileList.Node(path: entry.path, entry: entry, untrackedCopy: copy)
+        }
+    }
+
+    /// 按目录组织文件行：目录节点只建一次，文件挂在所在目录下；被忽略或未跟踪的整个目录本身是一个叶子。
     static func tree(_ entries: [StatusEntry]) -> [WorkingCopyFileList.Node] {
         var roots: [WorkingCopyFileList.Node] = []
         var directories: [String: WorkingCopyFileList.Node] = [:]
 
-        for entry in entries {
-            let trimmed = entry.path.hasSuffix("/") ? String(entry.path.dropLast()) : entry.path
+        for file in fileNodes(entries) {
+            let trimmed = file.path.hasSuffix("/") ? String(file.path.dropLast()) : file.path
             var parent: WorkingCopyFileList.Node?
             var prefix = ""
 
@@ -299,7 +368,7 @@ extension WorkingCopyFileList.Coordinator {
                 parent = directory
             }
 
-            append(WorkingCopyFileList.Node(path: entry.path, entry: entry), to: parent, roots: &roots)
+            append(file, to: parent, roots: &roots)
         }
 
         return roots
@@ -327,17 +396,21 @@ extension StatusEntry {
         kind != .unchanged && kind != .ignored
     }
 
-    /// 与 porcelain v2 的 XY 相同的两位状态码：暂存区一位、工作区一位，没有变化的一侧写 “.”。
-    var porcelainCode: String {
-        switch kind {
-        case .untracked: "??"
-        case .ignored: "!!"
-        case .unchanged: ".."
-        case .tracked, .conflicted:
-            [staged, unstaged]
-                .map { change in change.map { String($0.rawValue) } ?? "." }
-                .joined()
-        }
+    /// 只在暂存区里删除、工作区一侧没有记录的已跟踪文件，如停止跟踪后的文件。
+    var isStagedDeletion: Bool {
+        kind == .tracked && staged == .deleted && unstaged == nil
+    }
+}
+
+// MARK: - [StatusEntry]
+
+extension [StatusEntry] {
+    /// 停止跟踪后的同一路径：暂存为删除，工作区里又是未跟踪文件；返回其中未跟踪的那些记录。
+    ///
+    /// 列表、勾选、右键与改动数都把这样的两条记录算作一条。
+    var untrackedCopies: [StatusEntry] {
+        let deleted = Set(filter(\.isStagedDeletion).map(\.path))
+        return filter { $0.kind == .untracked && deleted.contains($0.path) }
     }
 }
 

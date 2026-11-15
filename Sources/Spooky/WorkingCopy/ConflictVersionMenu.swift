@@ -20,7 +20,7 @@ struct ConflictVersionMenu: View {
     /// 这一侧的原文；这一侧删除了文件时为 nil。
     let data: Data?
 
-    /// 三组菜单项，按钮是省略号图标。
+    /// 三组菜单项；按钮是 28 × 28 的圆形省略号按钮，不带下箭头。
     var body: some View {
         Menu {
             openItems
@@ -34,15 +34,20 @@ struct ConflictVersionMenu: View {
 
             Divider()
 
-            Button(AppLocalization.text("conflict.compareOther")) { compareOther() }
+            Button(AppLocalization.text("conflict.compareOther", otherName)) { compareOther() }
                 .disabled(!session.canCompare([entry], .oursToTheirs))
 
             Button(AppLocalization.text("conflict.compareBase")) { session.compare([entry], baseComparison) }
                 .disabled(!session.canCompare([entry], baseComparison))
         } label: {
-            Image(systemName: "ellipsis.circle")
+            Image(systemName: "ellipsis")
+                .frame(width: 28, height: 28)
+                .background(.quaternary, in: Circle())
+                .contentShape(Circle())
         }
-        .menuStyle(.borderlessButton)
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
         .fixedSize()
         .accessibilityLabel(AppLocalization.text("conflict.versionMenu", name))
     }
@@ -54,6 +59,11 @@ extension ConflictVersionMenu {
     /// 这一侧的引用名。
     private var name: String {
         ConflictVersionCard.name(of: side, in: session)
+    }
+
+    /// 另一侧的引用名。
+    private var otherName: String {
+        ConflictVersionCard.name(of: side == .ours ? .theirs : .ours, in: session)
     }
 
     /// 导出的标题；删除了文件的一侧只写动作名。

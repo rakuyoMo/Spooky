@@ -133,8 +133,11 @@ final class RepositorySession {
     /// 列表多选使用的稳定标识。
     var selectedIDs: Set<StatusRowID> = []
 
-    /// 主菜单请求聚焦提交标题。
+    /// 请求聚焦提交标题：主菜单，以及在正文里按 ⇧Tab。
     var commitFocusRequest = 0
+
+    /// 请求聚焦提交正文：在文件列表里按 ⇧Tab。
+    var commitBodyFocusRequest = 0
 
     /// 窗口快捷键只在编辑信息或按住 ⌥ 时提交。
     var isEditingCommitMessage = false
@@ -224,6 +227,9 @@ final class RepositorySession {
 
     /// 窗口负责呈现错误 sheet。
     var onFailure: ((AppFailure) -> Void)? = nil
+
+    /// 窗口按它当前的显示处理读取仓库状态的失败，参数是原始错误与它的呈现。
+    var onReadFailure: ((any Error, AppFailure) -> Void)? = nil
 
     /// 窗口负责呈现储藏的对话框。
     var onStashRequest: ((StashRequest) -> Void)? = nil
@@ -355,7 +361,7 @@ final class RepositorySession {
         activities: RepositoryActivities = .shared
     ) {
         self.makeRunner = makeRunner
-        self.loadStatus = loadStatus ?? { try await makeRunner($0).status() }
+        self.loadStatus = loadStatus ?? { try await makeRunner($0).status(collapsesUntrackedDirectories: true) }
         self.activities = activities
         loadsRepositoryDetails = loadStatus == nil
 
@@ -393,8 +399,8 @@ final class RepositorySession {
         self.repository = repository
         fileCache = RepositoryFileCache(runner: makeRunner(repository))
 
-        // 工作区列表沿用所有仓库共用的显示模式
-        listMode = WorkingCopyListMode.stored()
+        // 工作区列表用这个仓库记下的显示模式
+        listMode = WorkingCopyListMode.stored(for: repository)
 
         // 正在显示的仓库也计入缓存上限，超出时淘汰最久未使用的仓库。
         let saved = viewStates.state(for: repository)
@@ -903,13 +909,18 @@ extension RepositorySession {
         }
 
         let failure = AppFailure(error: error, opening: false, location: repository)
-        self.failure = failure
         Self.logger.error("刷新失败，类别 \(failure.kind.rawValue, privacy: .public)")
+        reportReadFailure(error, failure)
+    }
+
+    /// 记下读取失败：断线由连接横幅和重连接管，不额外弹出 sheet；其余错误交给窗口按它当前的显示处理。
+    private func reportReadFailure(_ error: any Error, _ failure: AppFailure) {
+        self.failure = failure
 
         if error is RemoteConnectionError {
             reconnect()
         } else {
-            onFailure?(failure)
+            onReadFailure?(error, failure)
         }
     }
 
@@ -1055,14 +1066,7 @@ extension RepositorySession {
                 guard let self, generation == request, !Task.isCancelled else { return }
 
                 let failure = AppFailure(error: error, opening: false, location: repository)
-                self.failure = failure
-
-                // 读取中断线由连接横幅和重连接管，不额外弹出 sheet。
-                if error is RemoteConnectionError {
-                    reconnect()
-                } else {
-                    onFailure?(failure)
-                }
+                reportReadFailure(error, failure)
             }
 
             guard let self, generation == request else { return }

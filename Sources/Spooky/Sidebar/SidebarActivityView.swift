@@ -22,6 +22,10 @@ struct SidebarActivityView: View {
     /// 所在窗口的仓库会话。
     let session: RepositorySession
 
+    /// 区里有行、正在显示；侧边栏据此决定底栏上方是否另画分隔线。
+    @Binding
+    var isShown: Bool
+
     /// 打开 Activity 窗口。
     let showActivity: () -> Void
 
@@ -50,6 +54,8 @@ struct SidebarActivityView: View {
                 withAnimation(animation) {
                     regionHeight = height
                 }
+
+                isShown = height > 0
             }
             .task(id: removal) {
                 guard let removal else {

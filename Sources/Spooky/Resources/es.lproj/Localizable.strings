@@ -65,7 +65,6 @@
 "repositories.unavailable" = "No disponible — abrir para reintentar";
 
 
-"repositories.panel.message" = "Seleccionar un árbol de trabajo de Git existente.";
 "repositories.panel.prompt" = "Abrir repositorio";
 
 "workspace.group" = "Espacio de trabajo";
@@ -205,7 +204,7 @@
 "callback.username.label" = "Nombre de usuario:";
 "callback.password.label" = "Contraseña:";
 "callback.saveKeychain" = "Guardar en el llavero de este Mac";
-"error.indexLocked" = "El índice está bloqueado por otro proceso de Git. Esperar a que termine y volver a intentarlo.";
+"error.indexLocked" = "El repositorio está bloqueado por otro proceso de Git; tras comprobar que no hay otro proceso de Git en ejecución, eliminar “%@” manualmente.";
 "error.terminal" = "No se ha podido abrir el terminal";
 "error.terminalHelp" = "Comprobar el terminal seleccionado en Ajustes y su permiso de Automatización de macOS.";
 "error.remoteConnection" = "Error al conectar con el remoto";
@@ -340,7 +339,7 @@
 "working.discard.message.single" = "Descartar los cambios de “%@” en %@: los archivos con seguimiento vuelven al último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera.";
 "working.discard.remote.single" = "Descartar los cambios de “%@” del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se trasladan a la papelera del servidor.";
 "working.discard.remotePermanent.single" = "Descartar los cambios de “%@” del servidor en %@: los archivos con seguimiento se sobrescriben con el último commit, incluidos los cambios en el stage, y los archivos sin seguimiento se eliminan permanentemente del servidor.";
-"working.discard.lines" = "Descartar las líneas seleccionadas en %@.";
+"working.discard.selection" = "Se descartará el contenido seleccionado del diff.";
 "working.discard.remoteLines" = "Sobrescribir el contenido seleccionado del servidor en %@.";
 "working.resolved" = "Marcar como resuelto";
 "working.copyRelative" = "Copiar ruta relativa del archivo";
@@ -409,7 +408,7 @@
 "branch.checkout" = "Hacer checkout de la rama";
 "branch.checkoutNamed" = "Hacer checkout de “%@”";
 "branch.delete" = "Eliminar rama";
-"branch.copyName" = "Copiar nombre de la rama";
+"branch.copyName" = "Copiar nombre de la rama al portapapeles";
 "branch.start" = "Punto de partida:";
 "branch.name" = "Nombre de la rama:";
 "branch.local" = "Rama local:";
@@ -421,6 +420,7 @@
 "branch.track.checkout" = "Hacer checkout de la rama";
 "branch.cleanNames" = "Convertir automáticamente los nombres de referencia a un formato válido al escribir";
 "branch.exists" = "La rama local “%@” ya existe.";
+"branch.groupExists" = "Ya existe un grupo de referencias con este nombre.";
 "branch.error.unmerged" = "La rama no se ha fusionado por completo.";
 "sync.fetch" = "Hacer fetch";
 "sync.fetch.help" = "Descarga las actualizaciones del remoto sin cambiar la copia de trabajo.";
@@ -626,13 +626,9 @@
 "stash.delete.confirm" = "¿Eliminar el stash “%@”?";
 "stash.deleteStashes" = "Eliminar stashes";
 "stash.deleteStashes.confirm" = "¿Eliminar los %ld stashes seleccionados?";
-"stash.applyButton" = "Aplicar…";
-"stash.deleteButton" = "Eliminar…";
+"stash.applyButton" = "Aplicar";
+"stash.deleteButton" = "Eliminar";
 "stash.basedOn" = "Basado en";
-"stash.baseCommit" = "Commit base";
-"stash.date" = "Fecha";
-"stash.hash" = "Stash";
-"stash.untracked" = "Sin seguimiento";
 "stash.empty" = "No hay stashes";
 "stash.noMatches" = "No hay stashes que coincidan";
 "stash.loading" = "Cargando stashes…";
@@ -730,10 +726,12 @@
 "conflict.change.modified" = "MODIFICADO";
 "conflict.change.deleted" = "ELIMINADO";
 "conflict.change.merge" = "FUSIÓN";
+"conflict.change.edited" = "EDITADO";
+"conflict.lastEdited" = "Última edición: %@";
 "conflict.openWith" = "Abrir la versión de “%@” con";
 "conflict.openWith.missing" = "Abrir con";
-"conflict.compareOther" = "Comparar con la otra versión";
-"conflict.compareBase" = "Comparar con el ancestro común";
+"conflict.compareOther" = "Comparar con la versión de “%@”";
+"conflict.compareBase" = "Comparar con la versión ancestro";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "Historial del archivo";
 "fileHistory.scope.message" = "Mensaje";
@@ -762,8 +760,17 @@
 "fileHistory.suggestions.authors" = "Autores";
 "fileHistory.suggestions.messages" = "Mensajes";
 "fileHistory.suggestions.committers" = "Committers";
+"fileHistory.suggestions.files" = "Archivos";
+"search.contains.message" = "El mensaje contiene: %@";
+"search.contains.author" = "El autor contiene: %@";
+"search.contains.committer" = "El committer contiene: %@";
+"search.contains.file" = "El archivo contiene: %@";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
+"blame.hash" = "Hash";
+"blame.author" = "Autor";
+"blame.date" = "Fecha";
+"blame.subject" = "Asunto";
 "blame.show" = "Mostrar blame de “%@”";
 "blame.loading" = "Cargando blame…";
 "blame.untracked" = "No se puede hacer blame de archivos añadidos o sin seguimiento";
@@ -781,13 +788,11 @@
 "showFile.noContributors" = "Aún no hay colaboradores";
 "showFile.oneContributor" = "1 colaborador";
 "showFile.contributors" = "%ld colaboradores";
-"showFile.searchRevisions" = "Buscar revisiones";
-"showFile.searchFiles" = "Buscar archivos";
 "showFile.error.missing" = "El archivo no existe en esta revisión";
 /* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "Al ignorar los espacios, las líneas seleccionadas no coinciden con los cambios del archivo. Muestra los cambios de espacios y vuelve a seleccionar las líneas.";
-"diff.ignoreWhitespace" = "Ignorar cambios de espacios";
-"diff.showEntireFile" = "Mostrar archivo completo";
+"diff.ignoreWhitespace" = "Mostrar / ocultar cambios de espacios";
+"diff.showEntireFile" = "Mostrar el archivo completo";
 "diff.context" = "Contexto:";
 "diff.contextMenu" = "Líneas de contexto del diff";
 "diff.contextLine" = "1 línea";
@@ -832,7 +837,7 @@
 "editor.showsGuide" = "Mostrar guía";
 "editor.warnsComments" = "Avisar si el mensaje contiene comentarios";
 "editor.stripsComments" = "Eliminar siempre los comentarios del mensaje de commit";
-"profiles.help" = "Los perfiles de usuario permiten cambiar rápidamente la identidad con la que un repositorio hace commits.";
+"profiles.help" = "Usa los “perfiles de usuario” para cambiar fácilmente entre identidades al hacer commits.";
 "profiles.add" = "Añadir perfil de usuario";
 "profiles.remove" = "Eliminar perfil de usuario";
 "profiles.newProfile" = "Perfil nuevo";
@@ -841,6 +846,7 @@
 "profiles.email" = "Correo:";
 "profiles.signingKey" = "Clave de firma:";
 "profiles.edit" = "Editar";
+"profiles.noSelection" = "Ningún perfil de usuario seleccionado";
 "profiles.menu" = "Identidad del autor";
 "profiles.addCurrent" = "Añadir perfil de usuario “%@”…";
 "profiles.manage" = "Gestionar perfiles de usuario…";
@@ -856,7 +862,7 @@
 "commit.continueHelp" = "Continuar la secuencia de fusión";
 "commit.remaining" = "Quedan %ld caracteres";
 "commit.quickAmendHint" = "• Mantener pulsada ⌥ cuando ningún campo del mensaje está activo para enmendar rápidamente el último commit.";
-"commit.pin" = "Mantener la descripción desplegada";
+"commit.pin" = "Mantener la vista del cuerpo desplegada";
 "commit.reformatParagraph" = "Reajustar párrafo";
 "commit.comments" = "¿Eliminar los comentarios del mensaje de commit?";
 "commit.comments.help" = "Las líneas que empiezan por el carácter de comentario se incluyen tal cual. Puede que las haya añadido Git.";
@@ -870,7 +876,6 @@
 "files.showNonModified" = "Mostrar ítems sin modificar";
 "files.showIgnored" = "Mostrar ítems ignorados";
 "files.showAssumeUnchanged" = "Mostrar ítems assume-unchanged";
-"files.noMatches" = "Ningún archivo coincide con “%@”.";
 "files.open" = "Abrir";
 "files.quickLook.single" = "Vista rápida de “%@”";
 "files.quickLook.multiple" = "Vista rápida de %ld ítems";
@@ -887,6 +892,7 @@
 "files.move.title" = "Mover “%@”";
 "files.move.message" = "Introduce la nueva ruta relativa a la raíz del repositorio. La carpeta de destino ya debe existir, y los archivos existentes nunca se sobrescriben.";
 "files.move.destination" = "Nueva ruta:";
+"files.move.outside" = "Elige una ubicación dentro del repositorio.";
 "files.revert.menu" = "Revertir a una revisión…";
 "files.revert" = "Revertir a una revisión";
 "files.revert.button" = "Revertir";
@@ -915,7 +921,7 @@
 "files.exclude.custom.message" = "El patrón se añade a info/exclude en el directorio de Git. Solo se aplica a esta copia del repositorio y nunca se incluye en un commit.";
 "files.pattern" = "Patrón:";
 "files.pattern.save" = "Guardar patrón";
-"files.untrackIgnored.title" = "¿Dejar de seguir también estos archivos?";
+"files.untrackIgnored.title" = "Ignorar archivos sin seguimiento";
 "files.untrackIgnored.message" = "Las reglas de ignorado no se aplican a los archivos que Git ya sigue. ¿Dejar de seguir también los siguientes archivos? Se quedan en la copia de trabajo.\n\n%@";
 "files.untrackIgnored.skip" = "Seguir rastreando";
 "files.mark" = "Marcar";
@@ -1007,11 +1013,15 @@
 "history.search.file" = "Archivo";
 "history.search.hash" = "Hash del commit";
 "history.search.date" = "Fecha";
+"history.search.sinceDate" = "Desde la fecha";
+"history.search.untilDate" = "Hasta la fecha";
 "history.search.forMessage" = "Buscar mensaje";
 "history.search.forAuthor" = "Buscar autor";
 "history.search.forCommitter" = "Buscar committer";
 "history.search.forFile" = "Buscar archivo";
 "history.search.forHash" = "Buscar hash del commit";
+"history.search.forSinceDate" = "Buscar commits desde la fecha";
+"history.search.forUntilDate" = "Buscar commits hasta la fecha";
 "history.search.after" = "es posterior a";
 "history.search.before" = "es anterior a";
 "history.search.range" = "está entre";
@@ -1022,6 +1032,7 @@
 "history.reveal.slow.submit" = "Cargar";
 "history.reveal.slow.message" = "El commit %1$@ está después de los primeros %2$ld commits de este historial. Cargar el historial hasta ese commit puede tardar un poco.";
 "history.subtitle" = "%@ (%ld commits)";
+"history.commitPage.subtitle" = "Commit %@";
 "history.subtitle.more" = "%@ (%ld commits o más)";
 "working.subtitle" = "Copia de trabajo (%ld archivos modificados)";
 "working.subtitle.branch" = "Copia de trabajo (%@ – %ld archivos modificados)";
@@ -1112,6 +1123,7 @@
 "sidebar.archived" = "Ramas archivadas";
 "sidebar.tags" = "Etiquetas";
 "sidebar.filter" = "Filtrar";
+"sidebar.filter.clear" = "Borrar";
 "sidebar.menu" = "Barra lateral";
 "sidebar.viewSettings" = "Ajustes de visualización de la barra lateral";
 "sidebar.showReflog" = "Mostrar reflog";
@@ -1153,9 +1165,9 @@
 "branch.tooltip.stale" = "- está antigua (%@)";
 "branch.tooltip.missingUpstream" = "- la rama seguida “%@” ya no existe";
 "remote.tooltip.branch" = "Rama remota “%@”";
-"remote.tooltip.remote" = "Remoto “%@”";
-"remote.tooltip.fetchURL" = "URL de obtención: %@";
-"remote.tooltip.pushURL" = "URL de envío: %@";
+"remote.tooltip.remote" = "Repositorio remoto “%@”";
+"remote.tooltip.fetchURL" = "- URL de obtención: “%@”";
+"remote.tooltip.pushURL" = "- URL de envío: “%@”";
 "tag.tooltip.revision" = "Apunta a la revisión “%@”";
 "tag.tooltip.message" = "Mensaje de la etiqueta: “%@”";
 "tag.checkoutNamed" = "Hacer checkout de “%@”…";
@@ -1166,7 +1178,7 @@
 /* 改写操作：反转、摘取、重置、检出版本、变基到别处与交互式变基。 */
 "rewrite.revert" = "Revertir";
 "rewrite.cherryPick" = "Cherry-pick";
-"rewrite.reset" = "Restablecer HEAD";
+"rewrite.reset" = "Restablecer revisión";
 "rewrite.checkout" = "Hacer checkout de la revisión";
 "rewrite.rebaseOnto" = "Hacer rebase en otra base";
 "rewrite.squash" = "Combinar commits";
@@ -1178,6 +1190,8 @@
 "rewrite.amend" = "Enmendar commit";
 "rewrite.autosquash" = "Combinar commits automáticamente";
 "rewrite.squash.button" = "Combinar";
+"rewrite.squash.submit" = "Combinar commits";
+"rewrite.squash.submit.one" = "Combinar commit";
 "rewrite.fixup.button" = "Fixup";
 "rewrite.edit.button" = "Editar";
 "rewrite.drop.button" = "Eliminar";
@@ -1189,7 +1203,7 @@
 "rewrite.reset.button" = "Restablecer";
 "rewrite.checkout.button" = "Hacer checkout";
 "rewrite.reword.button" = "Guardar";
-"rewrite.squash.confirm" = "¿Combinar %ld commits en «%@»? Sus mensajes se unen.";
+"rewrite.squash.confirm" = "¿Combinar %ld commits en «%@»?";
 "rewrite.fixup.confirm" = "¿Incorporar %ld commits en «%@» y conservar solo su mensaje?";
 "rewrite.edit.confirm" = "¿Detenerse en «%@» y devolver sus cambios a la copia de trabajo? Hacer commit de ellos y luego hacer clic en «Continuar».";
 "rewrite.drop.confirm" = "¿Eliminar %ld commits de la rama actual?";
@@ -1205,6 +1219,8 @@
 "rewrite.shared" = "Ya enviado o fusionado";
 "rewrite.warning.pushed" = "Algunos de estos commits ya están en la rama upstream. Tras reescribirlos, la rama local y la upstream divergen.";
 "rewrite.warning.merged" = "Algunos de estos commits ya están en otras ramas. Reescribirlos deja dos copias de los mismos cambios.";
+"rewrite.pushed.title" = "¿Seguro que quieres reescribir commits que ya están en la rama upstream?";
+"rewrite.pushed.message" = "Los commits reescritos reciben hashes nuevos. La rama local y la upstream divergen, y quien ya tenga estos commits tendrá que reconciliar su historial.";
 "rewrite.affected" = "Commits reescritos (%ld):";
 "rewrite.reflog" = "Los commits anteriores siguen pudiéndose recuperar desde el reflog.";
 "rewrite.loadingCommits" = "Cargando commits…";
@@ -1268,7 +1284,7 @@
 "rewrite.reset.menu" = "Restablecer HEAD a una revisión…";
 "conflict.hint.rebase.edit" = "Dividir o reescribir este commit creando commits nuevos con **Hacer commit** y, después, hacer clic en **Terminar edición** para continuar el rebase.";
 "conflict.hint.rebase.pending" = "Este rebase interactivo aún no ha procesado ningún commit. Hacer clic en **Abortar** para cancelarlo.";
-"rewrite.squash.confirm.one" = "¿Combinar «%@» en «%@»? Sus mensajes se unen.";
+"rewrite.squash.confirm.one" = "¿Combinar el commit «%@» en «%@»?";
 "rewrite.fixup.confirm.one" = "¿Incorporar «%@» en «%@» y conservar solo el mensaje del destino?";
 "rewrite.drop.confirm.one" = "¿Eliminar «%@» de la rama actual?";
 "rewrite.move.confirm.one" = "¿Mover «%@» a la nueva posición?";
@@ -1356,6 +1372,7 @@
 "reference.rename" = "Renombrar";
 "reference.renameMenu" = "Renombrar “%@”…";
 "reference.deleteMenu" = "Eliminar “%@”…";
+"reference.compareMenuPair" = "Comparar “%1$@” con “%2$@”…";
 "reference.addMenu" = "Añadir";
 "reference.invalidName" = "“%@” no es un nombre válido.";
 "reference.invalidRefspec" = "“%@” no es una refspec válida.";
@@ -1382,15 +1399,15 @@
 "branch.parent" = "Seguir rama padre";
 "branch.parent.set" = "Establecer rama padre";
 "branch.parent.setMenu" = "Seguir otra rama padre…";
-"branch.parent.remove" = "Quitar rama padre";
+"branch.parent.remove" = "Dejar de seguir la rama padre";
 "branch.parent.field" = "Padre:";
+"branch.parent.help" = "Las comparaciones y actualizaciones de la rama usan la rama padre como base.";
 "branch.parent.message" = "Elige la rama en la que se basa “%@”. Las comparaciones y actualizaciones de la rama la usan como base.";
 "branch.parent.replace" = "Esto sustituye la rama padre actual “%@”.";
 "branch.parentOption" = "Rama padre:";
 "branch.parentOption.none" = "Sin rama padre";
 "branch.parentOption.help" = "Las comparaciones y actualizaciones de la nueva rama usan la rama padre como base.";
 "branch.pin.help" = "Añade la rama a la sección Pinned de la barra lateral.";
-"branch.trackStart.named" = "Seguir la rama “%@”";
 "branch.remoteField" = "Rama remota:";
 "branch.rename" = "Renombrar rama";
 "branch.rename.message" = "Introduce un nuevo nombre para la rama local.";
@@ -1443,6 +1460,7 @@
 "tag.signRequiresMessage" = "Las etiquetas firmadas necesitan un mensaje.";
 "tag.noRevisions" = "Este repositorio aún no tiene commits.";
 "tag.publish" = "Publicar etiqueta";
+"drop.publishTag" = "Publicar";
 "tag.publish.message" = "Crea la etiqueta local elegida en el remoto elegido.";
 "tag.publishMenu" = "Publicar “%@”…";
 "tag.publishMainMenu" = "Publicar etiqueta…";
@@ -1503,7 +1521,6 @@
 "remote.page" = "Ajustes del remoto";
 "remote.page.general" = "General";
 "remote.page.branches" = "Ramas";
-"remote.field.name" = "Nombre";
 "remote.field.fetchURL" = "URL de obtención";
 "remote.field.pushURL" = "URL de envío";
 "remote.field.options" = "Opciones";
@@ -1532,6 +1549,7 @@
 "review.compareTo" = "Comparar ramas locales con:";
 "review.noBase" = "Sin ramas";
 "review.filter" = "Filtrar ramas";
+"review.filterHeading" = "Filtro";
 "review.filter.none" = "Ninguno";
 "review.filter.stale" = "Obsoletas";
 "review.filter.active" = "Activas";
@@ -1539,32 +1557,60 @@
 "review.filter.mergeable" = "Fusionables";
 "review.filter.conflicts" = "Conflictos de fusión";
 "review.viewSettings" = "Ajustes de visualización";
-"review.sort.name" = "Ordenar por nombre";
-"review.sort.date" = "Ordenar por última actualización";
+"review.sortBy" = "Ordenar por";
+"review.sortOrder" = "Orden";
+"review.sort.name" = "Nombre";
+"review.sort.date" = "Última actualización";
 "review.sort.ascending" = "Ascendente";
 "review.sort.descending" = "Descendente";
 "review.empty" = "No hay ramas que revisar";
 "review.status.mergeable" = "Se puede fusionar en la rama base seleccionada";
 "review.status.conflicts" = "Fusionar en la rama base seleccionada produce conflictos";
-"review.counts" = "%1$ld commits por delante, %2$ld commits por detrás";
+"review.counts" = "%1$@, %2$@";
+"review.ahead.one" = "1 commit por delante";
+"review.ahead" = "%ld commits por delante";
+"review.behind.one" = "1 commit por detrás";
+"review.behind" = "%ld commits por detrás";
 "review.comparing" = "Comparando…";
 "review.trackingMissing" = "Falta la rama de seguimiento";
 "review.noTracking" = "Sin rama de seguimiento";
 "review.selected" = "%ld ramas seleccionadas";
 "review.noSelection" = "Ninguna rama seleccionada";
+"review.summary.contributors" = "Colaboradores";
+"review.summary.updated" = "Última actualización";
+"review.summary.tracking" = "Seguimiento";
+"review.summary.mergeStatus" = "Estado de fusión";
+"review.summary.divergence" = "%1$@ “%2$@”";
+"review.summary.canMerge" = "Se puede fusionar en “%@”";
+"review.summary.conflicts" = "Fusionar en “%@” produce conflictos";
+"review.showing.one" = "Mostrando 1 commit";
+"review.showing" = "Mostrando %ld commits";
 "review.conflictsTip" = "Fusionar produce conflictos en %ld archivos";
-"review.createBranch" = "Crear rama desde “%@”…";
 "review.resolveConflicts" = "Resolver conflictos de fusión";
 "review.autoArchive" = "Archivar ramas automáticamente";
 "review.skipAutoArchive" = "Omitir en el archivado automático";
 "review.markReviewed" = "Marcar como revisada";
+"review.delete" = "Eliminar";
 "review.updateBranch" = "Actualizar rama";
-"review.update.summary" = "Fusionar “%1$@” en “%2$@” integrará %3$ld commits.";
 "review.update.merge" = "Fusionar";
 "review.update.rebase" = "Rebase";
 "review.update.noChanges" = "No hay cambios que integrar";
 "review.update.conflicts" = "Se detectaron conflictos de fusión";
 "review.update.clean" = "Sin conflictos con la rama padre";
+"branch.updateNamed" = "Actualizar “%@”…";
+"branch.quickUpdateNamed" = "Actualización rápida de “%@”";
+"review.update.message" = "Pone una rama al día con los commits nuevos de su rama padre. Antes se cambia a esa rama.";
+"review.update.branch" = "Rama:";
+"review.update.strategy" = "Estrategia de fusión:";
+"review.update.integrates" = "Se integrarán %1$ld commits de la rama padre “%2$@”.";
+"review.update.integrates.one" = "Se integrará 1 commit de la rama padre “%@”.";
+"review.update.clean.help" = "La rama padre se puede integrar sin conflictos de fusión.";
+"review.update.button" = "Actualizar";
+"review.updateBranch.menu" = "Actualizar rama…";
+"history.parentBanner.title" = "Integrar cambios de la rama padre";
+"history.parentBanner.message" = "A “%1$@” le faltan %2$ld commits de su rama padre “%3$@”.";
+"history.parentBanner.message.one" = "A “%1$@” le falta 1 commit de su rama padre “%2$@”.";
+"history.parentBanner.clean" = "Sin conflictos, ¡actualiza ahora!";
 "review.archive.title" = "Archivar ramas";
 "review.archive.help" = "Selecciona las ramas que quieres ocultar de la lista. Las ramas archivadas pasan a “Ramas archivadas” en la barra lateral y siguen disponibles allí.";
 "review.archive.automaticHelp" = "Estas ramas no se han actualizado recientemente o su pull request o merge request ya se fusionó, y se archivarán automáticamente. Marca las que quieras archivar.";
@@ -1581,7 +1627,9 @@
 "review.archived.notification" = "Ramas limpiadas automáticamente";
 "history.compareTo" = "Comparar con:";
 "history.behindBase" = "“%1$@” está %2$ld commits por detrás de “%3$@”";
+"history.behindBase.one" = "“%1$@” está 1 commit por detrás de “%2$@”";
 "history.compareBranches" = "Comparar ramas";
+"history.compareBranches.help" = "Comparar con otra rama";
 "history.compareOn" = "Activado";
 "history.forkPoint" = "Punto de bifurcación de la rama padre “%@”";
 "history.noNewCommits" = "No hay commits nuevos en esta rama";
@@ -1715,12 +1763,13 @@
 "gitConfig.sshProgram" = "Programa de firma SSH:";
 "gitConfig.sshProgram.system" = "ssh-keygen (sistema)";
 "gitConfig.sshProgram.onePassword" = "1Password";
-"gitConfig.gpgProgram" = "Programa GPG:";
+"gitConfig.gpgProgram" = "Binario de GPG:";
+"gitConfig.gpgProgram.minimum" = "La versión mínima de GPG requerida es %@";
 "gitConfig.gpgProgram.none" = "Ningún programa GPG seleccionado";
 "gitConfig.gpgProgram.notFound" = "No se encontró ningún programa GPG";
 "gitConfig.gpgProgram.select" = "Seleccionar…";
 "gitConfig.signingKey" = "Clave de firma global:";
-"gitConfig.agentKeys" = "Las claves SSH se obtienen del agente SSH del sistema.";
+"gitConfig.agentKeys" = "Las claves SSH se cargan a través del agente SSH del sistema.";
 "gitConfig.allowedSigners" = "Archivo allowed signers:";
 "gitConfig.allowedSigners.none" = "Sin archivo allowed signers";
 "gitConfig.allowedSigners.select" = "Seleccionar archivo allowed signers…";
@@ -1728,6 +1777,8 @@
 "gitConfig.ensureEmailMatch" = "Comprobar que el correo de la clave GPG coincide con el del autor del commit";
 "gitConfig.invalidGPG" = "Programa GPG no válido";
 "gitConfig.invalidGPG.message" = "El programa en %@ no es un programa GnuPG válido.";
+"gitConfig.outdatedGPG" = "No se puede usar este binario de GPG";
+"gitConfig.outdatedGPG.message" = "“%1$@” es GnuPG %2$@. Spooky requiere GnuPG %3$@ o posterior.";
 "gitConfig.invalidSSH" = "Programa de firma SSH no válido";
 "gitConfig.invalidSSH.message" = "El programa en %@ no existe o no se puede ejecutar.";
 "gitConfig.emailMismatch" = "El correo de la clave de firma no coincide con el del usuario de Git";
@@ -1746,11 +1797,11 @@
 "profiles.delete.submit" = "Eliminar";
 
 /* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
-"settings.environment.loginShell" = "Leer automáticamente las variables de entorno del shell de inicio de sesión";
+"settings.environment.loginShell" = "Solicitar automáticamente las variables de entorno al shell de inicio de sesión";
 "settings.environment.loginShellFailed" = "No se han podido leer las variables de entorno del shell de inicio de sesión.";
 "settings.environment.key" = "Nombre";
 "settings.environment.value" = "Valor";
-"settings.environment.custom" = "Variables de entorno personalizadas para los comandos de Git:";
+"settings.environment.custom" = "Configura variables de entorno personalizadas para usar al ejecutar comandos de Git:";
 "settings.environment.add" = "Añadir variable";
 "settings.environment.remove" = "Eliminar variable";
 "settings.environment.localOnly" = "Estos ajustes solo se aplican a los comandos de Git que se ejecutan en este Mac. Los repositorios en servidores usan el entorno del propio servidor.";
@@ -1762,7 +1813,7 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "Agente SSH:";
 "settings.sshAgent.system" = "Agente SSH del sistema";
-"settings.sshAgent.description" = "El agente SSH seleccionado se usa para las conexiones SSH y las firmas SSH.";
+"settings.sshAgent.description" = "El agente SSH seleccionado se usará para las conexiones remotas SSH y las firmas SSH.";
 "settings.sshAgent.warning" = "El agente SSH no está en ejecución";
 "settings.sshAgent.warning.system" = "El agente SSH del sistema no está disponible. Reiniciar el Mac.";
 
@@ -1857,7 +1908,6 @@
 "navigation.forward" = "Adelante";
 "navigation.back.tip" = "Va a la vista anterior";
 "navigation.forward.tip" = "Va a la vista siguiente";
-"navigation.title" = "Anterior/Siguiente";
 "menu.hideWindowTitle" = "Ocultar título de la ventana";
 "menu.showWindowTitle" = "Mostrar título de la ventana";
 "menu.showToolbar" = "Mostrar barra de herramientas";
@@ -1888,7 +1938,7 @@
 /* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
 "bookmarks.newGroup" = "Nuevo grupo";
 "bookmarks.add" = "Añadir repositorio…";
-"bookmarks.add.prompt" = "Añadir";
+"bookmarks.add.prompt" = "Añadir repositorio";
 "bookmarks.addMenu" = "Añadir";
 "bookmarks.create" = "Crear repositorio local…";
 "bookmarks.open" = "Abrir “%@”";
@@ -1909,8 +1959,7 @@
 "bookmarks.dropZone.subtitle" = "para añadir un repositorio Git";
 "bookmarks.dropZone.add" = "Añadir";
 "bookmarks.dropZone.create" = "Crear";
-"bookmarks.multiple.title" = "Varios elementos seleccionados";
-"bookmarks.multiple.message" = "%ld elementos";
+"bookmarks.multiple.title" = "%ld elementos seleccionados";
 "bookmarks.multiple.delete" = "Eliminar";
 "bookmarks.detail.location" = "Ubicación";
 "bookmarks.detail.branch" = "Rama actual";
@@ -1928,6 +1977,9 @@
 "bookmarks.detail.noRemotes" = "No hay remotos";
 "bookmarks.detail.edit" = "Editar";
 "bookmarks.detail.unset" = "Quitar";
+"bookmarks.detail.repository" = "Repositorio";
+"bookmarks.detail.status" = "Estado";
+"bookmarks.detail.noChanges" = "Sin cambios";
 "bookmarks.description.edit" = "Editar la descripción del repositorio";
 "bookmarks.description.message" = "Escribe una descripción para este repositorio.";
 "bookmarks.description.label" = "Descripción:";
@@ -1969,6 +2021,9 @@
 "quickActions.type.stash" = "Stash";
 "quickActions.type.userProfile" = "Perfil de usuario";
 "quickActions.type.appearance" = "Apariencia";
+"quickActions.appearance.system" = "Apariencia automática";
+"quickActions.appearance.light" = "Apariencia clara";
+"quickActions.appearance.dark" = "Apariencia oscura";
 "quickActions.type.theme" = "Tema";
 "quickActions.type.file" = "Archivo";
 "quickActions.type.commit" = "Commit";
@@ -2034,7 +2089,6 @@
 "clone.submit" = "Clonar";
 "clone.url" = "URL remota:";
 "clone.to" = "Clonar en:";
-"clone.destination" = "Se clonará en “%@”";
 "clone.lfs" = "Clonar con LFS";
 "clone.submodules" = "Inicializar submódulos";
 "clone.error.invalidURL" = "URL remota no válida";
@@ -2045,6 +2099,7 @@
 "clone.directory.prompt" = "Ruta absoluta en el servidor";
 "clone.browse" = "Explorar…";
 "clone.progress.title" = "Clonando “%@”…";
+"clone.failed.title" = "No se pudo clonar “%@”";
 "clone.cancel" = "Cancelar clonación";
 "clone.retry" = "Reiniciar";
 "clone.remove" = "Quitar";
@@ -2076,19 +2131,19 @@
 "scan.menu" = "Buscar repositorios…";
 "scan.title" = "Buscar repositorios";
 "scan.message" = "Busca repositorios Git dentro de la carpeta que elijas, en este Mac o en un servidor. No se busca fuera de esa carpeta.";
-"scan.add" = "Añadir repositorios (%ld)";
+"scan.add" = "Añadir repositorios";
 "scan.in" = "Buscar en:";
 "scan.start" = "Buscar";
 "scan.stop" = "Detener";
 "scan.selectAll" = "Seleccionar todo";
 "scan.searching" = "Buscando repositorios Git…";
 "scan.found" = "%ld repositorios encontrados";
+"scan.column.name" = "Nombre";
 
 /* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
 "link.invalid.title" = "No se puede abrir este enlace";
 "link.invalid.message" = "Spooky no puede abrir “%@”. El enlace no es válido o no es compatible.";
 "settings.github" = "Abrir repositorios de github.com:";
-"settings.github.help" = "Los enlaces “Open with Desktop” de github.com se abren en esta app.";
 
 /* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
 "repositorySettings.title" = "Ajustes";
@@ -2097,10 +2152,7 @@
 "repositorySettings.ignores" = "Ignorados";
 "repositorySettings.excludes" = "Exclusiones";
 "repositorySettings.lfs.patterns" = "Patrones de seguimiento";
-"repositorySettings.ignores.patterns" = "Patrones ignorados";
-"repositorySettings.excludes.patterns" = "Patrones excluidos";
 "repositorySettings.openInEditor" = "Abrir en el editor";
-"repositorySettings.noPatterns" = "No hay patrones";
 "repositorySettings.name" = "Nombre";
 "repositorySettings.path" = "Ruta";
 "repositorySettings.localFolder" = "Carpeta local";
@@ -2109,10 +2161,6 @@
 "repositorySettings.localFolder.clear" = "Borrar";
 "repositorySettings.localFolder.rejected" = "No se puede usar esta carpeta";
 "repositorySettings.localFolder.rejected.message" = "“%1$@” no es el repositorio “%2$@”.";
-"repositorySettings.wrapping" = "Ajuste de línea";
-"repositorySettings.pageGuide" = "Mostrar guía";
-"repositorySettings.lineLimit" = "Caracteres por línea";
-"repositorySettings.lineLimit.invalid" = "Escribe un número entero mayor que 0.";
 "repositorySettings.signing" = "Firma";
 "repositorySettings.signCommits" = "Firmar commits";
 "repositorySettings.signingKey" = "Clave de firma";
@@ -2191,7 +2239,7 @@
 "submodule.action.rename" = "Renombrar";
 "submodule.add" = "Añadir submódulo";
 "submodule.add.menu" = "Añadir submódulo…";
-"submodule.add.message" = "Clona un repositorio en una carpeta vacía de este repositorio y lo registra como submódulo.";
+"submodule.add.message" = "Introduce la URL remota y la ruta local del nuevo submódulo. La ruta debe apuntar a una carpeta vacía dentro de tu repositorio.";
 "submodule.add.submit" = "Añadir submódulo";
 "submodule.add.title" = "Añadir repositorio de submódulo";
 "submodule.autoUpdate" = "Actualizar submódulos automáticamente";
@@ -2204,9 +2252,9 @@
 "submodule.default" = "%@ (predeterminado)";
 "submodule.delete" = "Eliminar submódulo";
 "submodule.delete.keepWorkingTree" = "Conservar el árbol de trabajo";
-"submodule.delete.keepWorkingTree.help" = "Solo elimina la configuración del submódulo; sus archivos permanecen en la copia de trabajo.";
+"submodule.delete.keepWorkingTree.help" = "Elimina solo la configuración del submódulo, pero conserva sus archivos de trabajo.";
 "submodule.delete.menu" = "Eliminar “%@”…";
-"submodule.delete.message" = "Elimina el submódulo “%@” de este repositorio.";
+"submodule.delete.message" = "Al eliminar el submódulo, se quitará de tu repositorio Git.";
 "submodule.delete.submit" = "Eliminar";
 "submodule.deleteSubmodules" = "Eliminar submódulos";
 "submodule.editURL" = "Editar URL del submódulo";
@@ -2287,7 +2335,7 @@
 "submodule.path.choose" = "Seleccionar";
 "submodule.path.exists" = "Otro submódulo ya usa esta ruta.";
 "submodule.path.invalid" = "La ruta debe estar dentro del repositorio.";
-"submodule.path.placeholder" = "Ruta del submódulo";
+"submodule.path.none" = "Nada seleccionado";
 "submodule.path.select" = "Seleccionar destino…";
 "submodule.quickFetch" = "Fetch rápido de “%@”";
 "submodule.quickUpdate" = "Actualización rápida de “%@”";
@@ -2356,13 +2404,13 @@
 "worktree.destination" = "Destino:";
 "worktree.destination.exists" = "“%@” ya existe en el destino seleccionado. Elige otro destino.";
 "worktree.detach" = "Desacoplar HEAD";
-"worktree.detach.help" = "El worktree queda con HEAD desacoplado en la revisión seleccionada en lugar de hacer checkout de la rama.";
+"worktree.detach.help" = "El árbol de trabajo tendrá un HEAD separado basado en la revisión inicial seleccionada.";
 "worktree.field.branch" = "Rama";
 "worktree.field.name" = "Nombre";
 "worktree.field.path" = "Ruta";
 "worktree.field.revision" = "Revisión actual";
 "worktree.force" = "Forzar";
-"worktree.force.help" = "Crea el worktree aunque la rama ya tenga checkout en otro worktree.";
+"worktree.force.help" = "Crea un árbol de trabajo para la revisión inicial indicada aunque ya esté extraída en otro árbol de trabajo.";
 "worktree.group" = "Worktrees";
 "worktree.invalid" = "Worktree no válido";
 "worktree.invalid.message" = "El worktree no es válido.";
@@ -2378,7 +2426,6 @@
 "worktree.open.current" = "Abrir worktree";
 "worktree.open.newTab" = "Abrir worktree en una pestaña nueva";
 "worktree.open.newWindow" = "Abrir worktree en una ventana nueva";
-"worktree.page" = "Ajustes del worktree";
 "worktree.page.general" = "General";
 "worktree.relocate" = "Reubicar worktree";
 "worktree.relocate.message" = "Elige dónde está ahora el directorio del worktree “%@” para que Git lo vuelva a conectar a este repositorio.";
@@ -2394,7 +2441,7 @@
 "worktree.reveal" = "Mostrar worktree en el Finder";
 "worktree.revision" = "Revisión:";
 "worktree.subtitle" = "Worktree (%@)";
-"worktree.terminal" = "Abrir worktree en el terminal";
+"worktree.checkedOutIn" = "Con checkout en el worktree “%@”";
 "worktree.tooltip" = "Worktree “%@”";
 "worktree.tooltip.path" = "Checkout en: “%@”";
 
@@ -2448,14 +2495,14 @@
 "accounts.remove.message" = "Se quitará “%1$@” en %2$@ de Spooky y se eliminará su token del llavero.";
 "accounts.kind.github" = "GitHub";
 "accounts.kind.gitlab" = "GitLab";
-"accounts.kind.gitlabSelfManaged" = "GitLab Self-Managed";
+"accounts.kind.gitlabSelfManaged" = "GitLab CE/EE";
 "accounts.add.github" = "GitHub…";
 "accounts.add.gitlab" = "GitLab.com…";
-"accounts.add.gitlabSelfManaged" = "GitLab Self-Managed…";
+"accounts.add.gitlabSelfManaged" = "GitLab CE/EE…";
 "accounts.add.github.title" = "Añadir cuenta de GitHub";
 "accounts.update.github.title" = "Actualizar cuenta de GitHub";
 "accounts.add.gitlab.title" = "Añadir cuenta de GitLab";
-"accounts.add.gitlabSelfManaged.title" = "Añadir cuenta de GitLab Self-Managed";
+"accounts.add.gitlabSelfManaged.title" = "Añadir cuenta de GitLab CE/EE";
 "accounts.update.gitlab.title" = "Actualizar cuenta de GitLab";
 "accounts.add.submit" = "Añadir cuenta";
 "accounts.update.submit" = "Actualizar cuenta";
@@ -2498,7 +2545,7 @@
 "hosting.error.server" = "Error del servicio de alojamiento";
 "hosting.error.server.help" = "El servicio de alojamiento tuvo un problema. Vuelve a intentarlo más tarde.";
 "hosting.error.unreachable" = "Servicio de alojamiento inaccesible";
-"hosting.error.unreachable.help" = "Comprueba la conexión de red y la dirección de la instancia. Una instancia autogestionada debe ser accesible desde este Mac.";
+"hosting.error.unreachable.help" = "Comprueba la conexión de red y la dirección de la instancia. Una instancia de GitLab CE/EE debe ser accesible desde este Mac.";
 "hosting.error.certificate" = "El certificado no es de confianza";
 "hosting.error.certificate.help" = "Este Mac no confía en el certificado del servidor. Comprueba la dirección de la instancia o confía en el certificado en Acceso a Llaveros.";
 "hosting.error.incompatible" = "API incompatible";
@@ -2666,7 +2713,7 @@
 "pullRequests.noDescription" = "Sin descripción";
 "pullRequests.noProjects" = "Ninguno de los remotos está en la instancia de la cuenta seleccionada.";
 "pullRequests.noRemotes.title" = "No hay remotos";
-"pullRequests.noRemotes.message" = "Añade un remoto en github.com, GitLab.com o un GitLab autogestionado para ver sus pull requests y merge requests.";
+"pullRequests.noRemotes.message" = "Añade un remoto en github.com, GitLab.com o GitLab CE/EE para ver sus pull requests y merge requests.";
 "pullRequests.openAccounts" = "Abrir cuentas";
 "pullRequests.optional" = "Opcional";
 "pullRequests.project" = "Proyecto:";
@@ -2684,8 +2731,7 @@
 "pullRequests.strategy.ff" = "Fusión con avance rápido";
 "pullRequests.target" = "Destino:";
 "pullRequests.titleField" = "Título:";
-"pullRequests.unsupported.title" = "Remoto no compatible";
-"pullRequests.unsupported.message" = "“%@” no está en github.com, GitLab.com ni en un GitLab autogestionado de tus cuentas. Si pertenece a uno de ellos, asócialo a una cuenta y a un proyecto.";
+"pullRequests.unsupported.message" = "“%@” no está en github.com, GitLab.com ni en una instancia de GitLab CE/EE de tus cuentas. Si pertenece a uno de ellos, asócialo a una cuenta y a un proyecto.";
 
 "publish.menu" = "Publicar repositorio…";
 "publish.title" = "Publicar repositorio";

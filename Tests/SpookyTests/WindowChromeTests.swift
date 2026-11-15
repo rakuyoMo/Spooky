@@ -8,7 +8,7 @@ import TestSupport
 
 // MARK: - WindowChromeTests
 
-/// 仓库窗口的工具栏、窗口标题、标签页、侧边栏的首次宽度与启动窗口。
+/// 仓库窗口的工具栏、窗口标题、标签页、侧边栏的首次宽度、列表分栏的最小宽与启动窗口。
 @MainActor
 struct WindowChromeTests {
     /// 同一个仓库窗口依次核对：工具栏的排布、旧排布里的关闭仓库、标签、可见优先级与图标；刷新进行中 Refresh 照常可用；
@@ -103,6 +103,23 @@ struct WindowChromeTests {
 
         #expect(managerWidth == 260)
         #expect(repositoryWidth == 428)
+    }
+
+    /// 分栏的列表能拖到多窄：Reflog 与 Branches Review 的列表没有最小宽，Pull Requests 的列表最窄 50 pt。
+    @Test("列表分栏的最小宽")
+    func listMinimumWidths() async throws {
+        let fixture = try await NavigationTests.makeCoordinator()
+        let controller = RepositoryWindowController(coordinator: fixture.coordinator)
+
+        defer {
+            controller.session.close()
+            controller.window?.close()
+            fixture.close()
+        }
+
+        #expect(Self.minimumWidth(of: controller.makeReflogSplit()) == 0)
+        #expect(Self.minimumWidth(of: controller.makeBranchesReviewSplit()) == 0)
+        #expect(Self.minimumWidth(of: controller.makePullRequestsSplit()) == 50)
     }
 
     /// 启动窗口 600 × 450、没有标题栏、不能全屏；打开的仓库窗口成为主窗口后它自己关闭。
@@ -220,7 +237,8 @@ extension WindowChromeTests {
         #expect(fixture.controller.validateUserInterfaceItem(close))
     }
 
-    /// 仓库管理入口叫 Bookmarks，Sync 在自定义面板里叫 Synchronize，后退 / 前进叫 Prev / Next，储藏两段叫 Apply / Save；
+    /// 仓库管理入口叫 Bookmarks，Sync 在自定义面板里叫 Synchronize，后退 / 前进叫 Prev / Next，储藏两段叫 Apply / Save、
+    /// 在自定义面板里叫 Apply Stash / Save Stash，分段图读段名；
     /// 搜索框、父仓库、Bookmarks、新建分支与安全强推在窗口变窄时最后才进溢出菜单。
     private static func expectToolbarLabels(in controller: RepositoryWindowController) throws {
         let group = { (identifier: NSToolbarItem.Identifier) in
@@ -237,6 +255,12 @@ extension WindowChromeTests {
         #expect(repositories.paletteLabel == text("toolbar.bookmarks"))
         #expect(navigation.subitems.map(\.label) == [text("toolbar.previous"), text("toolbar.next")])
         #expect(stashes.subitems.map(\.label) == [text("toolbar.applyStash"), text("toolbar.saveStash")])
+        #expect(stashes.subitems.map(\.paletteLabel) == [text("stash.apply"), text("stash.save")])
+
+        // 分段图的辅助功能描述读段名，不读符号的默认名
+        for segment in repositories.subitems + navigation.subitems + stashes.subitems {
+            #expect(segment.image?.accessibilityDescription == segment.label)
+        }
         #expect(synchronize.label == text("sync.sync"))
         #expect(synchronize.paletteLabel == text("toolbar.synchronize"))
 
@@ -342,5 +366,24 @@ extension WindowChromeTests {
         // 五个按钮与 Clone 的图按像素比较，六张都不一样
         let images = sync.subitems.map(\.image) + [pushTo.image, forcePush.image, clone.image]
         #expect(Set(images.compactMap { $0?.tiffRepresentation }).count == 6)
+    }
+
+    /// 分栏放进 800 × 500 的窗口排版后，第一条分隔线最左能到的位置，即第一栏的列表能拖到的最窄宽度。
+    private static func minimumWidth(of split: NSSplitViewController) -> CGFloat {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 500),
+            styleMask: [.titled, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+
+        window.isReleasedWhenClosed = false
+        window.contentViewController = split
+        window.setContentSize(NSSize(width: 800, height: 500))
+        window.layoutIfNeeded()
+
+        defer { window.close() }
+
+        return split.splitView.minPossiblePositionOfDivider(at: 0)
     }
 }

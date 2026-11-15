@@ -6,7 +6,7 @@ import SwiftUI
 
 /// 请求列表：40 pt 头部的远端下拉、读取转圈与新建按钮，下面是打开着的请求或对应不上账号的说明。
 ///
-/// 远端不属于支持的服务时说明不支持并提供手动关联；没有账号时说明要登录哪个服务并可打开 Accounts 页。
+/// 远端不属于支持的服务时，列表顶部是说明原因的警告条与手动关联的按钮，列表留空；没有账号时说明要登录哪个服务并可打开 Accounts 页。
 struct PullRequestListView: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -21,7 +21,6 @@ struct PullRequestListView: View {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(minWidth: 260)
     }
 }
 
@@ -43,6 +42,8 @@ extension PullRequestListView {
                 }
             }
             .labelsHidden()
+            .pickerStyle(.menu)
+            .buttonStyle(.borderless)
             .fixedSize()
             .disabled(state.remotes.isEmpty)
             .accessibilityLabel(AppLocalization.text("sync.remote"))
@@ -95,13 +96,27 @@ extension PullRequestListView {
                 PullRequestAccountChoice(session: session, accounts: accounts)
 
             case .unsupported:
-                notice(
-                    title: AppLocalization.text("pullRequests.unsupported.title"),
-                    message: AppLocalization.text("pullRequests.unsupported.message", state.remote ?? ""),
-                    action: AppLocalization.text("pullRequests.associate")
-                ) { associate() }
+                unsupportedBar
+                    .frame(maxHeight: .infinity, alignment: .top)
             }
         }
+    }
+
+    /// 远端不受支持时列表顶部的警告条：说明原因的文字在窄列表里折行，右侧的关联按钮完整显示。
+    private var unsupportedBar: some View {
+        HStack(spacing: 8) {
+            Text(AppLocalization.text("pullRequests.unsupported.message", state.remote ?? ""))
+                .font(.system(size: 12))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button(AppLocalization.text("pullRequests.associate"), action: associate)
+                .controlSize(.small)
+                .fixedSize()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(AppPalette.color("general_warning_bg_color"))
     }
 
     /// 请求列表；滚到最后一行时读取下一页。双击请求打开修改对话框，回车不打开；右键菜单只作用于所点的请求。

@@ -12,6 +12,9 @@ struct GitSigningRows: View {
         /// 配置的 GPG 程序不是可用的 GnuPG。
         case invalidGPG(String)
 
+        /// GPG 程序是 GnuPG，但低于 ``GnuPGVersion/minimum``。
+        case outdatedGPG(path: String, version: GnuPGVersion)
+
         /// 配置的 SSH 签名程序不存在或不能执行。
         case invalidSSH(String)
 
@@ -22,6 +25,7 @@ struct GitSigningRows: View {
         var title: String {
             switch self {
             case .invalidGPG: AppLocalization.text("gitConfig.invalidGPG")
+            case .outdatedGPG: AppLocalization.text("gitConfig.outdatedGPG")
             case .invalidSSH: AppLocalization.text("gitConfig.invalidSSH")
             case .emailMismatch: AppLocalization.text("gitConfig.emailMismatch")
             }
@@ -30,9 +34,22 @@ struct GitSigningRows: View {
         /// 说明的正文。
         var message: String {
             switch self {
-            case .invalidGPG(let path): AppLocalization.text("gitConfig.invalidGPG.message", path)
-            case .invalidSSH(let path): AppLocalization.text("gitConfig.invalidSSH.message", path)
-            case .emailMismatch(let key, let user): AppLocalization.text("gitConfig.emailMismatch.message", key, user)
+            case .invalidGPG(let path):
+                AppLocalization.text("gitConfig.invalidGPG.message", path)
+
+            case .outdatedGPG(let path, let version):
+                AppLocalization.text(
+                    "gitConfig.outdatedGPG.message",
+                    path,
+                    version.description,
+                    GnuPGVersion.minimum.description
+                )
+
+            case .invalidSSH(let path):
+                AppLocalization.text("gitConfig.invalidSSH.message", path)
+
+            case .emailMismatch(let key, let user):
+                AppLocalization.text("gitConfig.emailMismatch.message", key, user)
             }
         }
     }
@@ -55,15 +72,15 @@ struct GitSigningRows: View {
     @State
     var onePasswordSigner: String?
 
-    /// 配置的 GPG 程序是可用的 GnuPG；没有配置时也算可用。
+    /// 配置的 GPG 程序的问题；没有配置或满足要求时为 nil。
     @State
-    private var gpgValid = true
+    private var gpgNotice: Notice?
 
     /// 正在显示的说明。
     @State
-    private var shownNotice: Notice?
+    var shownNotice: Notice?
 
-    /// 依次排列的七行；弹出菜单占满控件列，警告按钮挂在控件右侧。
+    /// 依次排列的八行；弹出菜单占满控件列，警告按钮挂在控件右侧。
     var body: some View {
         SettingsRow(AppLocalization.text("gitConfig.sshProgram")) {
             sshProgramPicker
@@ -76,11 +93,19 @@ struct GitSigningRows: View {
         }
         .padding(.top, SettingsFormLayout.popUpSpacing)
 
+        SettingsRow {
+            Text(AppLocalization.text("gitConfig.gpgProgram.minimum", GnuPGVersion.minimum.description))
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .settingsColumnWidth()
+        }
+        .padding(.top, SettingsFormLayout.rowSpacing)
+
         SettingsRow(AppLocalization.text("gitConfig.signingKey")) {
             signingKeyPicker
                 .overlay(alignment: .trailing) { caution(mismatchNotice) }
         }
-        .padding(.top, SettingsFormLayout.popUpSpacing)
+        .padding(.top, SettingsFormLayout.popUpAfterRowSpacing)
 
         SettingsRow {
             Text(AppLocalization.text("gitConfig.agentKeys"))
@@ -119,16 +144,34 @@ struct GitSigningRows: View {
             Text(notice.message)
         }
         .task(id: model.configuration.gpgProgram) {
-            gpgPrograms = SigningPrograms.gpgPrograms()
             onePasswordSigner = SigningPrograms.onePasswordSigner
 
-            // 没有配置 GPG 程序时不检查；配置了就看它能不能当 GnuPG 运行。
-            if let program = model.configuration.gpgProgram {
-                gpgValid = await SigningKeys.isGnuPG(HomePath.expanded(program))
-            } else {
-                gpgValid = true
+            // 菜单只列满足最低版本的 GnuPG
+            var supported: [String] = []
+
+            for program in SigningPrograms.gpgPrograms() where await Self.gpgNotice(for: program) == nil {
+                supported.append(program)
             }
+
+            gpgPrograms = supported
+            gpgNotice = await Self.gpgNotice(for: model.configuration.gpgProgram)
         }
+    }
+
+    /// GPG 程序的问题：不能当 GnuPG 运行时是无效程序，低于最低版本时说明版本。
+    ///
+    /// - Parameter program: 配置或选中的程序路径，可以用 `~` 开头。
+    /// - Returns: 没有程序或满足要求时为 nil。
+    static func gpgNotice(for program: String?) async -> Notice? {
+        guard let program else {
+            return nil
+        }
+
+        guard let version = await SigningKeys.gnuPGVersion(HomePath.expanded(program)) else {
+            return .invalidGPG(program)
+        }
+
+        return version < .minimum ? .outdatedGPG(path: program, version: version) : nil
     }
 }
 
@@ -145,15 +188,6 @@ extension GitSigningRows {
         }
 
         return .invalidSSH(program)
-    }
-
-    /// 配置的 GPG 程序不可用时的说明。
-    private var gpgNotice: Notice? {
-        guard let program = model.configuration.gpgProgram, !gpgValid else {
-            return nil
-        }
-
-        return .invalidGPG(program)
     }
 
     /// 打开检查时，OpenPGP 签名密钥的邮箱与全局提交人邮箱不一致的说明。

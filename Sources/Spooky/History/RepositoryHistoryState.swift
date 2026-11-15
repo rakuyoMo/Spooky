@@ -27,6 +27,9 @@ final class RepositoryHistoryState {
     /// 分支相对上游的结构化计数。
     private(set) var divergence: [String: ReferenceDivergence] = [:]
 
+    /// 设了父分支的本地分支相对父分支的计数，以完整引用名为键；读完引用后接着读，读取失败时为空。
+    private(set) var parentDivergence: [String: ReferenceDivergence] = [:]
+
     /// 本地分支的最后更新时间、跟踪错误与是否为基准分支，以完整引用名为键；每次读完引用都会写入，随后通知窗口。
     private(set) var conditions: [String: BranchCondition] = [:] {
         didSet { onReferencesLoaded?() }
@@ -37,6 +40,7 @@ final class RepositoryHistoryState {
         didSet {
             if selectedReferences != oldValue {
                 comparisonBase = nil
+                switchScope(from: oldValue)
                 reloadCommits()
             }
         }
@@ -130,6 +134,14 @@ final class RepositoryHistoryState {
     /// 首屏加载行计时用的等待；测试换成由测试放行的等待。
     var loadingRowSleep: @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
 
+    /// 每个历史范围上次的选中与滚动位置，以选中的引用为键；只在窗口会话内记，关闭仓库时清空。
+    @ObservationIgnored
+    var scopeMemories: [Set<String>: HistoryScopeMemory] = [:]
+
+    /// 换范围后新范围读完时列表要滚到的位置，滚过后清空；窗口换范围时会重建列表，记在这里新建的列表才接得上。
+    @ObservationIgnored
+    var pendingScroll: CGFloat? = nil
+
     /// 已选提交的完整哈希集合，按列表顺序复制。
     var selectedIDs = Set<String>() {
         didSet {
@@ -140,8 +152,12 @@ final class RepositoryHistoryState {
     /// 提交详情的文件树分段；切换提交时保持，与菜单路由共用。
     var showsTree = false
 
-    /// 双击进入左文件列表、右补丁的整页提交详情。
-    var showsCommitPage = false
+    /// 双击进入左文件列表、右补丁的整页提交详情；打开时选中第一个文件。
+    var showsCommitPage = false {
+        didSet {
+            if showsCommitPage, !oldValue { selectFirstPageFile() }
+        }
+    }
 
     /// 整页详情回到的提交：从文件视图回到的，或经链接、后退 / 前进打开整页详情时找到的；不在已加载的分页里时，整页详情仍按它显示。
     private(set) var revealedCommit: HistoryCommit? = nil
@@ -163,11 +179,6 @@ final class RepositoryHistoryState {
 
     /// 变更文件行的选区；换提交时清空，展开与 Expand All 不改它。
     var fileSelection = ChangesetFileSelection()
-
-    /// 仅当前变更集的每个文件都展开时成立，忽略残留的其它身份。
-    var allItemsExpanded: Bool {
-        !changes.isEmpty && changes.allSatisfy { expandedPaths.contains($0.path) }
-    }
 
     /// 单文件已加载的补丁，切换提交时失效。
     var diffs: [String: CommitDiff] = [:]
@@ -344,6 +355,13 @@ final class RepositoryHistoryState {
                 guard let self, generation == request, !Task.isCancelled else { return }
 
                 apply(snapshot, divergence: counts, status: status, records: records)
+
+                // 落后父分支的提交数只决定 Update Branch 是否可用，读不到时不影响引用与列表
+                let parents = try? await RepositoryReferences(runner: runner).parentDivergences(in: snapshot)
+
+                guard generation == request, !Task.isCancelled else { return }
+
+                parentDivergence = parents ?? [:]
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
                 failure = AppFailure(error: error, opening: false, location: runner.location)
@@ -364,13 +382,6 @@ final class RepositoryHistoryState {
                 )
             }
         }
-    }
-
-    /// 切回仓库时恢复分支与提交选择；引用快照到达后再校验引用是否仍存在。
-    func restore(references: Set<String>, commits: Set<String>) {
-        selectedReferences = references
-        selectedIDs = commits
-        restoredReferences = references.isEmpty ? nil : references
     }
 
     /// 写入前取消读取，避免旧引用或补丁在写入后覆盖新快照。
@@ -397,7 +408,11 @@ final class RepositoryHistoryState {
         loadingPaths = []
         isLoadingChanges = false
     }
+}
 
+// MARK: - Closing
+
+extension RepositoryHistoryState {
     /// 关闭仓库时清除全部快照和选区。
     func close() {
         suspend()
@@ -410,6 +425,8 @@ final class RepositoryHistoryState {
         selectedReference = nil
         commits = []
         rows = []
+        scopeMemories = [:]
+        pendingScroll = nil
         commitCount = nil
         searchConditions = []
         lookup = nil
@@ -724,6 +741,14 @@ extension RepositoryHistoryState {
     func reveal(_ references: Set<String>) {
         selectedReferences = references
         revealRequests += 1
+    }
+
+    /// 切回仓库时恢复分支与提交选择；引用快照到达后再校验引用是否仍存在。列表滚到恢复的选中行，不滚回范围记下的位置。
+    func restore(references: Set<String>, commits: Set<String>) {
+        selectedReferences = references
+        selectedIDs = commits
+        pendingScroll = nil
+        restoredReferences = references.isEmpty ? nil : references
     }
 }
 

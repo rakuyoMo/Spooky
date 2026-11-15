@@ -103,6 +103,9 @@ struct HistoryViewSettings: Equatable {
     /// 是否显示提交图。
     let showsGraph: Bool
 
+    /// 实际是否按小号行显示：只在显示提交图时生效，隐藏图时按中号行显示，保存的行高不变。
+    let usesSmallRows: Bool
+
     /// 合并提交只沿第一父向前。
     let showsFirstParentOnly: Bool
 
@@ -132,6 +135,7 @@ struct HistoryViewSettings: Equatable {
     /// 没有保存过的项取默认值：显示提交图、按日期排序、按月分组；保存过的值总是优先。
     init(defaults: UserDefaults = .standard) {
         showsGraph = defaults.object(forKey: Self.showGraphKey) as? Bool ?? true
+        usesSmallRows = showsGraph && defaults.bool(forKey: Self.smallRowsKey)
         showsFirstParentOnly = defaults.bool(forKey: Self.firstParentKey)
         sortsByTopoOrder = showsGraph || defaults.bool(forKey: Self.topoOrderKey)
         sortsByDate = defaults.object(forKey: Self.dateOrderKey) as? Bool ?? true

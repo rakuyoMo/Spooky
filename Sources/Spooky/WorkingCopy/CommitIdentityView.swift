@@ -12,7 +12,7 @@ struct CommitIdentityView: View {
     @State
     private var keys: [SigningKey] = []
 
-    /// 姓名与邮箱右对齐叠放在 45 pt 头像左侧，提示显示签名状态。
+    /// 姓名与邮箱右对齐叠放在 45 pt 头像左侧，两行没有悬停提示；头像的提示显示签名状态。
     var body: some View {
         HStack(spacing: 8) {
             VStack(alignment: .trailing, spacing: 4) {
@@ -25,7 +25,6 @@ struct CommitIdentityView: View {
             .truncationMode(.middle)
             .frame(minWidth: 50, alignment: .trailing)
             .textSelection(.enabled)
-            .help(session.repository?.displayPath ?? "")
 
             Menu {
                 IdentityProfileMenu(

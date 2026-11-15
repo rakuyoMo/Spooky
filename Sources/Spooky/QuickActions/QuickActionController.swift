@@ -320,7 +320,15 @@ extension QuickActionController {
                 .map { QuickActionItem(object: activeObject, action: $0) }
                 .filter { QuickActionMatcher.score($0.title, query: query) != nil }
         } else {
-            let objects = QuickActionMatcher.rank(catalog.immediateObjects(), query: query)
+            // 没有输入时不列远端分支与标签，输入后才按匹配列出
+            let candidates = catalog.immediateObjects().filter { object in
+                switch object {
+                case .remoteBranch, .tag: !query.isEmpty
+                default: true
+                }
+            }
+
+            let objects = QuickActionMatcher.rank(candidates, query: query)
                 + fileMatches
                 + commitMatches
 

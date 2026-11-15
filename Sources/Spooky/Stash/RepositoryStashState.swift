@@ -30,6 +30,9 @@ final class RepositoryStashState {
         }
     }
 
+    /// 所选储藏提交的作者、提交人、父提交与树，与变更文件一起读取。
+    private(set) var commit: HistoryCommit? = nil
+
     /// 所选储藏的变更文件，已跟踪文件在前、未跟踪文件在后。
     private(set) var changes: [StashFileChange] = []
 
@@ -94,7 +97,43 @@ final class RepositoryStashState {
         [listTask, changeTask].compactMap { $0 } + Array(diffTasks.values)
     }
 
-    /// 重新读取储藏列表；仍然存在的选择保留，已删除的储藏从选择中移除。
+    /// 列表重读后的选择：仍在的保留；选中的都被删掉时选原位置上的那一项；原来没有选中时选第一个。
+    ///
+    /// - Parameters:
+    ///   - selected: 重读前的选择。
+    ///   - previous: 重读前的列表。
+    ///   - current: 重读后的列表。
+    static func selection(
+        after selected: Set<String>,
+        previous: [StashEntry],
+        current: [StashEntry]
+    ) -> Set<String> {
+        let kept = selected.intersection(current.map(\.id))
+
+        guard kept.isEmpty, !current.isEmpty else {
+            return kept
+        }
+
+        // 取原来最靠前的选中项所在的位置，超出列表时取最后一个
+        let position = previous.firstIndex { selected.contains($0.id) } ?? 0
+        return [current[min(position, current.count - 1)].id]
+    }
+
+    /// 自动储藏的默认说明：产品名加保存时刻，如 “Spooky Auto-Stash: 2026-11-13 20:48:17 -0800”。
+    ///
+    /// - Parameters:
+    ///   - date: 保存的时刻。
+    ///   - timeZone: 写出时刻用的时区。
+    static func autoStashMessage(at date: Date, timeZone: TimeZone = .current) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = timeZone
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
+
+        return AppLocalization.text("stash.autoStash.message", formatter.string(from: date))
+    }
+
+    /// 重新读取储藏列表；选择按 ``selection(after:previous:current:)`` 更新。
     ///
     /// - Parameter records: 是否记进 Activity；自动刷新引起的重读不记。
     func refresh(runner: GitRunner, records: Bool = true) {
@@ -122,9 +161,10 @@ final class RepositoryStashState {
 
                 guard let self, generation == request, !Task.isCancelled else { return }
 
+                let previous = entries
                 entries = stashes
                 failure = nil
-                selectedIDs.formIntersection(stashes.map(\.id))
+                selectedIDs = Self.selection(after: selectedIDs, previous: previous, current: stashes)
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
                 failure = AppFailure(error: error, opening: false, location: runner.location)
@@ -169,6 +209,7 @@ final class RepositoryStashState {
         isLoaded = false
         failure = nil
         selectedIDs = []
+        commit = nil
         changes = []
         changesFailure = nil
         diffs = [:]
@@ -180,11 +221,12 @@ final class RepositoryStashState {
 // MARK: - Stash Details
 
 extension RepositoryStashState {
-    /// 单选变化后丢弃上一储藏的补丁，重新读取变更文件。
+    /// 单选变化后丢弃上一储藏的补丁，重新读取储藏提交的元信息与变更文件。
     func loadChanges() {
         changeTask?.cancel()
         for task in diffTasks.values { task.cancel() }
         diffTasks = [:]
+        commit = nil
         changes = []
         changesFailure = nil
         diffs = [:]
@@ -194,13 +236,20 @@ extension RepositoryStashState {
         isLoadingChanges = false
 
         guard let runner, let stash = selectedStash else { return }
+
         let request = generation
         isLoadingChanges = true
 
         changeTask = Task { [weak self] in
             do {
-                let files = try await RepositoryStashes(runner: runner).changes(in: stash)
+                // 元信息与变更文件同时读取，详情在两者都读出后一起显示
+                async let metadata = RepositoryRewrite(runner: runner).commits([stash.id])
+                async let changed = RepositoryStashes(runner: runner).changes(in: stash)
+                let (commits, files) = try await (metadata, changed)
+
                 guard let self, generation == request, selectedStash?.id == stash.id, !Task.isCancelled else { return }
+
+                commit = commits.first
                 changes = files
 
                 let threshold = preferences.integer(forKey: "historyAutoExpand")
@@ -208,10 +257,12 @@ extension RepositoryStashState {
                 if threshold > 0, files.count <= threshold { expandAll(true) }
             } catch {
                 guard let self, generation == request, selectedStash?.id == stash.id, !Task.isCancelled else { return }
+
                 changesFailure = AppFailure(error: error, opening: false, location: runner.location)
             }
 
             guard let self, generation == request, selectedStash?.id == stash.id, !Task.isCancelled else { return }
+
             isLoadingChanges = false
             changeTask = nil
         }

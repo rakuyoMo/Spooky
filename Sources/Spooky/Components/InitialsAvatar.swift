@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - InitialsAvatar
 
-/// 圆形头像：有头像地址时按地址取图片，否则按邮箱取；没有图片时显示姓名前两个词的首字母。
+/// 头像，默认是圆形：有头像地址时按地址取图片，否则按邮箱取；没有图片时显示姓名前两个词的首字母。
 ///
 /// 图片在后台读取，读到之前与读不到时都显示首字母，同一个人的占位在各处一致。
 struct InitialsAvatar: View {
@@ -15,30 +15,43 @@ struct InitialsAvatar: View {
     /// 托管服务给出的头像地址；有地址时不按邮箱取。
     let avatarURL: URL?
 
-    /// 圆形的直径。
+    /// 圆形的直径或方形的边长。
     let size: CGFloat
+
+    /// 是否画成方形；冲突向导的提交栏用方形。
+    let isSquare: Bool
 
     /// 读到的头像图片。
     @State
     private var image: NSImage? = nil
 
-    /// 头像按圆形裁切；首字母按直径缩放字号，底色使用系统的四级填充色。
+    /// 头像按圆形或方形裁切，外圈 1 pt 分隔线色的描边；首字母按尺寸缩放字号，用次要文字色，底色是头像的命名底色。
     var body: some View {
+        let shape = isSquare ? AnyShape(Rectangle()) : AnyShape(Circle())
+
         Group {
             if let image {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFill()
-                    .clipShape(Circle())
+                    .clipShape(shape)
             } else {
-                Text(initials)
+                Text(Self.initials(of: name))
                     .font(.system(size: size * 0.4, weight: .medium))
                     .foregroundStyle(.secondary)
                     .frame(width: size, height: size)
-                    .background(.quaternary, in: Circle())
+                    .background(AppPalette.color("avatar_background_color"), in: shape)
             }
         }
         .frame(width: size, height: size)
+        .overlay {
+            // 描边画在裁切范围以内，图片与首字母占位都有
+            if isSquare {
+                Rectangle().strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+            } else {
+                Circle().strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+            }
+        }
         .accessibilityHidden(true)
         .task(id: avatarURL?.absoluteString ?? email) {
             // 行被复用换成别人时先回到首字母，避免短暂显示上一个人的头像
@@ -58,20 +71,28 @@ struct InitialsAvatar: View {
     ///   - name: 姓名，取首字母用。
     ///   - email: 取 Gravatar 头像用的邮箱。
     ///   - avatarURL: 托管服务给出的头像地址。
-    ///   - size: 圆形的直径。
-    init(name: String, email: String? = nil, avatarURL: URL? = nil, size: CGFloat) {
+    ///   - size: 圆形的直径或方形的边长。
+    ///   - isSquare: 是否画成方形。
+    init(
+        name: String,
+        email: String? = nil,
+        avatarURL: URL? = nil,
+        size: CGFloat,
+        isSquare: Bool = false
+    ) {
         self.name = name
         self.email = email
         self.avatarURL = avatarURL
         self.size = size
+        self.isSquare = isSquare
     }
 }
 
-// MARK: - Private
+// MARK: - Helpers
 
 extension InitialsAvatar {
-    /// 前两个词各取首字母并转成大写；没有姓名时为空。
-    private var initials: String {
+    /// 姓名前两个词各取首字母并转成大写；没有姓名时为空。注释栏等自行绘制的头像也用它。
+    static func initials(of name: String) -> String {
         name.split(whereSeparator: \.isWhitespace)
             .prefix(2)
             .compactMap(\.first)

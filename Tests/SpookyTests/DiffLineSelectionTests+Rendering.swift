@@ -13,7 +13,7 @@ extension DiffLineSelectionTests {
         }
     }
 
-    /// 整块悬停共用实际折行矩形，只亮单个显示行，禁用后不保留临时状态；原生鼠标事件只改变逻辑选区，Command 与普通单击等价，计数在 mouseUp 发布。
+    /// 整块悬停共用实际折行矩形，只亮单个显示行，禁用后不保留临时状态；原生鼠标事件改变逻辑选区并把键盘焦点交给正文，Command 与普通单击等价，计数在 mouseUp 发布。
     @Test("行号的悬停、禁用与鼠标事件")
     func mouse() throws {
         let hunk = try DiffTextLayoutTests.hunk(Self.patch)
@@ -50,6 +50,33 @@ extension DiffLineSelectionTests {
             #expect(gutter.selection.publishedCount == 2)
             #expect(target.window == nil)
         }
+
+        // 点行号把键盘焦点交给本块正文，之后的 ↓ 滚动 Diff；焦点已在某块正文上时不动，文字选区保持活跃
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 600),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: true
+        )
+
+        let list = NSTableView()
+        let first = try layoutView(hunk)
+        let second = try layoutView(hunk)
+        second.frame.origin.y = first.frame.maxY
+
+        for view in [list, first, second] as [NSView] {
+            window.contentView?.addSubview(view)
+        }
+
+        let press = try event(.leftMouseDown, row: rows[2], gutter: first.gutter, command: false)
+
+        window.makeFirstResponder(list)
+        first.gutter.mouseDown(with: press)
+        #expect(window.firstResponder === first.document)
+
+        window.makeFirstResponder(second.document)
+        first.gutter.mouseDown(with: press)
+        #expect(window.firstResponder === second.document)
     }
 
     /// 选中再取消新增行，核对正文前景色、行底色与字符选区。

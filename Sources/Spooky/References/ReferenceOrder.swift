@@ -88,6 +88,42 @@ enum ReferenceOrder {
             }
             .map(\.reference)
     }
+
+    /// 版本候选的顺序：本地分支、各远端的远端分支、标签依次成组，组内按 ``sorted(_:in:)``；远端之间见 ``precedes(remote:_:)``。
+    ///
+    /// 新建分支与标签、检出版本、跟踪远端分支与设置上游的候选共用这一顺序。
+    ///
+    /// - Parameters:
+    ///   - references: 待排列的引用，不应含远端的 HEAD。
+    ///   - snapshot: 引用所在的快照，用来认出远端分支所属的远端。
+    static func candidates(
+        _ references: [RepositoryReference],
+        in snapshot: ReferenceSnapshot?
+    ) -> [RepositoryReference] {
+        // 远端分支按所属远端分组，组按远端的先后排好位置，组内的先后交给公共顺序
+        let byRemote = Dictionary(grouping: references.filter(\.isRemote)) {
+            remoteName(of: $0, in: snapshot)
+        }
+
+        let remoteBranches = byRemote.keys
+            .sorted(by: precedes(remote:_:))
+            .flatMap { byRemote[$0] ?? [] }
+
+        let others = references.filter { !$0.isLocal && !$0.isRemote }
+
+        return sorted(references.filter(\.isLocal), in: snapshot)
+            + sorted(remoteBranches, in: snapshot)
+            + sorted(others, in: snapshot)
+    }
+
+    /// 两个远端的先后：名为 origin 的远端在最前，其余按名字。
+    static func precedes(remote lhs: String, _ rhs: String) -> Bool {
+        guard (lhs == "origin") == (rhs == "origin") else {
+            return lhs == "origin"
+        }
+
+        return precedes(lhs, rhs)
+    }
 }
 
 // MARK: - Private
@@ -103,12 +139,15 @@ extension ReferenceOrder {
             return (kind, reference.name)
         }
 
-        // 远端名可以带 “/”，快照里配置的远端按最长前缀匹配；远端已不在配置里时取第一段
-        let remote =
-            snapshot?.remote(for: reference)?.name
-                ?? reference.name.split(separator: "/").first.map(String.init)
-                ?? ""
+        let remote = remoteName(of: reference, in: snapshot)
 
         return ("remotes/" + remote, String(reference.name.dropFirst(remote.count + 1)))
+    }
+
+    /// 远端分支所属的远端名：远端名可以带 “/”，快照里配置的远端按最长前缀匹配；远端已不在配置里时取第一段。
+    private static func remoteName(of reference: RepositoryReference, in snapshot: ReferenceSnapshot?) -> String {
+        snapshot?.remote(for: reference)?.name
+            ?? reference.name.split(separator: "/").first.map(String.init)
+            ?? ""
     }
 }

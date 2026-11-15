@@ -69,7 +69,7 @@ extension StashDialog {
     private var form: some View {
         switch request {
         case .save(_, let entries):
-            messageRow(placeholder: "stash.messagePlaceholder")
+            messageRow(placeholder: "stash.messagePlaceholder", height: 47)
 
             // 部分储藏总是带上所选的未跟踪文件，不显示这个选项
             if entries.isEmpty {
@@ -80,10 +80,10 @@ extension StashDialog {
             applyRows
 
         case .autoStash(let pending):
-            // 完成后恢复时储藏只是临时的，说明不可编辑；开始前询问时储藏一直保留，不提供恢复选项
-            messageRow(placeholder: "stash.autoStash.placeholder", disabled: reapplies(pending))
+            // 完成后恢复时储藏只是临时的，说明不可编辑；修补旧提交时储藏一直保留，不提供恢复选项
+            messageRow(placeholder: "stash.autoStash.placeholder", height: 43, disabled: reapplies(pending))
 
-            if !pending.asksBeforeStart {
+            if !pending.keepsStash {
                 DialogFormOption(title: AppLocalization.text("stash.autoStash.reapply"), isOn: $reapply)
             }
         }
@@ -94,7 +94,7 @@ extension StashDialog {
     private var applyRows: some View {
         DialogFormRow(label: AppLocalization.text("stash.picker")) {
             Picker("", selection: $selectedStash) {
-                ForEach(session.stashes.entries) { Text($0.title).tag($0.id) }
+                ForEach(session.stashes.entries) { Text($0.subject).tag($0.id) }
             }
             .labelsHidden()
             .buttonSizing(.flexible)
@@ -107,7 +107,7 @@ extension StashDialog {
         DialogFormOption(title: AppLocalization.text("stash.restoreIndex"), isOn: $restoreIndex)
     }
 
-    /// 自动储藏的 Do Not Stash：关闭对话框，被挡住的操作照常报告失败；其余种类没有这个按钮。
+    /// 自动储藏的 Do Not Stash：关闭对话框，开始前询问的操作照常执行，被挡住的操作照常报告失败；其余种类没有这个按钮。
     private var skipAction: (() -> Void)? {
         guard case .autoStash(let pending) = request else {
             return nil
@@ -128,16 +128,16 @@ extension StashDialog {
         return AppLocalization.text("stash.noStashes")
     }
 
-    /// 填满输入列、高两行的说明框。
-    private func messageRow(placeholder: String, disabled: Bool = false) -> some View {
+    /// 填满输入列、按词折行的说明框；输入框本身高 47 pt（保存与快照）或 43 pt（自动储藏）。
+    private func messageRow(placeholder: String, height: CGFloat, disabled: Bool = false) -> some View {
         DialogFormRow(label: AppLocalization.text("stash.message")) {
-            TextField(
-                "",
+            BezelTextField(
                 text: $message,
-                prompt: Text(AppLocalization.text(placeholder)),
-                axis: .vertical
+                label: AppLocalization.text("stash.message"),
+                height: height,
+                wraps: true,
+                placeholder: AppLocalization.text(placeholder)
             )
-            .lineLimit(2, reservesSpace: true)
             .disabled(disabled)
         }
     }
@@ -200,9 +200,9 @@ extension StashDialog {
         selectedStash = preselected?.id ?? session.stashes.entries.first?.id ?? ""
     }
 
-    /// 自动储藏的操作完成后是否恢复改动：开始前询问时总是保留储藏，其余按选项。
+    /// 自动储藏的操作完成后是否恢复改动：修补旧提交时总是保留储藏，其余按选项。
     private func reapplies(_ pending: AutoStashRequest) -> Bool {
-        reapply && !pending.asksBeforeStart
+        reapply && !pending.keepsStash
     }
 
     /// 捕获表单值后开始执行；仓库暂不可写时对话框保持打开，已填写的内容保留。
@@ -227,7 +227,7 @@ extension StashDialog {
             // 完成后恢复时储藏只是临时的，说明固定为自动储藏的标记
             let reapply = reapplies(pending)
             let typed = message.trimmingCharacters(in: .whitespacesAndNewlines)
-            let text = reapply || typed.isEmpty ? AppLocalization.text("stash.autoStash.message", pending.title) : typed
+            let text = reapply || typed.isEmpty ? RepositoryStashState.autoStashMessage(at: Date()) : typed
             started = session.performAutoStash(pending, message: text, reapply: reapply)
         }
 

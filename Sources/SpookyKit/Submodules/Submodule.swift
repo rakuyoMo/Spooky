@@ -3,15 +3,17 @@ import Foundation
 // MARK: - SubmoduleFetchMode
 
 /// 子模块的 `fetchRecurseSubmodules`：父仓库获取时是否连带获取这个子模块。
+///
+/// 各项按设置里弹出菜单的顺序排列。
 public enum SubmoduleFetchMode: String, Sendable, CaseIterable {
-    /// 从不连带获取。
-    case never = "false"
-
     /// 总是连带获取。
     case always = "true"
 
     /// 父仓库获取到改动了子模块指针的提交时才获取；没有配置时 Git 按它处理。
     case onDemand = "on-demand"
+
+    /// 从不连带获取。
+    case never = "false"
 
     /// 按 Git 的写法解析配置值：布尔值的各种写法都接受，认不出时为 nil。
     ///
@@ -29,18 +31,20 @@ public enum SubmoduleFetchMode: String, Sendable, CaseIterable {
 // MARK: - SubmoduleIgnoreMode
 
 /// 子模块的 `ignore`：父仓库的状态里忽略子模块的哪些改动。
+///
+/// 各项按设置里弹出菜单的顺序排列。
 public enum SubmoduleIgnoreMode: String, Sendable, CaseIterable {
-    /// 不忽略任何改动，配置值为 none；没有配置时 Git 按它处理。
-    case nothing = "none"
-
     /// 子模块的任何改动都不算改动，包括检出了别的提交。
     case all
+
+    /// 忽略子模块工作区里的全部改动，只看检出的提交。
+    case dirty
 
     /// 只忽略子模块里的未跟踪文件。
     case untracked
 
-    /// 忽略子模块工作区里的全部改动，只看检出的提交。
-    case dirty
+    /// 不忽略任何改动，配置值为 none；没有配置时 Git 按它处理。
+    case nothing = "none"
 
     /// 按配置原值解析，Git 对取值不区分大小写；认不出时为 nil。
     ///
@@ -53,18 +57,20 @@ public enum SubmoduleIgnoreMode: String, Sendable, CaseIterable {
 // MARK: - SubmoduleUpdateStrategy
 
 /// 子模块的 `update`：更新子模块时怎样把它带到指针所指的提交。
+///
+/// 各项按设置里弹出菜单的顺序排列。
 public enum SubmoduleUpdateStrategy: String, Sendable, CaseIterable {
-    /// 不更新，配置值为 none。
-    case skip = "none"
-
-    /// 以分离 HEAD 检出指针所指的提交；没有配置时 Git 按它处理。
-    case checkout
-
     /// 把子模块当前分支变基到指针所指的提交上。
     case rebase
 
     /// 把指针所指的提交合并进子模块当前分支。
     case merge
+
+    /// 以分离 HEAD 检出指针所指的提交；没有配置时 Git 按它处理。
+    case checkout
+
+    /// 不更新，配置值为 none。
+    case skip = "none"
 
     /// 按配置原值解析；`!命令` 这类自定义写法认不出，返回 nil。
     ///

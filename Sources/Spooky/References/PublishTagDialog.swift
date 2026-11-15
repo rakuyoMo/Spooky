@@ -55,7 +55,7 @@ struct PublishTagDialog: View {
 
             RepositoryDialogRows.row(AppLocalization.text("sync.remote")) {
                 Picker("", selection: $remote) {
-                    ForEach(session.history.snapshot?.remotes ?? []) { Text($0.name).tag($0.name) }
+                    ForEach(session.orderedRemoteNames, id: \.self) { Text($0).tag($0) }
                 }
                 .labelsHidden()
                 .buttonSizing(.flexible)
@@ -88,12 +88,13 @@ extension PublishTagDialog {
         return ""
     }
 
-    /// 预选入口指定的标签与远端；没有指定远端时预选当前分支的上游远端。
+    /// 预选入口指定的标签与远端；没有指定标签时预选列表里的最后一个标签，没有指定远端时预选当前分支的上游远端，
+    /// 再否则是排在最前的远端。
     private func prepare() {
         repository = session.repository
-        selectedTag = tag ?? session.tags.first?.name ?? ""
+        selectedTag = tag ?? session.tags.last?.name ?? ""
 
-        let remotes = session.history.snapshot?.remotes.map(\.name) ?? []
+        let remotes = session.orderedRemoteNames
         let head = session.history.branches.first { $0.isLocal && $0.name == session.status?.branch.head }
         let upstream = head?.upstreamRemote.flatMap { remotes.contains($0) ? $0 : nil }
 

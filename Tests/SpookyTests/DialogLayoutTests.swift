@@ -58,7 +58,7 @@ struct DialogLayoutTests {
 
         let field = try #require(form.first { $0.role == "AXTextField" })
 
-        #expect(field.frame.minX > DialogMetrics.alignment + 1)
+        #expect(field.frame.minX > DialogMetrics.inputColumn + 1)
         try Self.expectTexts(["Title", "Message", "Error", "Column"], in: form, startingAt: field.frame.minX)
 
         // 没有表单时都在对齐线上

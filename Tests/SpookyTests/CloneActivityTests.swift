@@ -18,8 +18,21 @@ struct CloneActivityTests {
         return (try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path)), directory)
     }
 
+    /// `git ls-remote` 以 128 退出、标准错误是 `error` 的失败。
+    private static func gitError(_ error: String, category: GitError.Category) -> GitError {
+        let result = GitCommandResult(
+            arguments: ["ls-remote", "--heads", "--", "/tmp/nope.git"],
+            standardOutput: Data(),
+            standardError: Data(error.utf8),
+            terminationStatus: .exited(128),
+            isCancelled: false
+        )
+
+        return GitError(result: result, category: category, diagnostic: nil)
+    }
+
     /// 目标是所选目录下以仓库名命名的新目录；服务器目标沿用主机，地址不合法、主机别名或目录不完整时没有目标。
-    /// 地址不合法时提示；本机目标已是有内容的目录或文件时提示，空目录可以；地址没填时不提示。
+    /// 地址认不出远端时不提示、没有目标，认得出但不合法时提示；本机目标已是有内容的目录或文件时提示，空目录可以；地址没填时不提示。
     @Test("克隆目标与它的校验")
     func destinations() throws {
         let url = "git@github.com:rakuyoMo/Spooky.git"
@@ -37,6 +50,7 @@ struct CloneActivityTests {
         #expect(CloneTarget.destination(url: url, parent: .remote(host: "b", path: "srv")) == nil)
         #expect(CloneTarget.destination(url: "https://", parent: .local(path: "/tmp")) == nil)
         #expect(CloneTarget.destination(url: "-invalid", parent: .local(path: "/tmp")) == nil)
+        #expect(CloneTarget.destination(url: "foo", parent: .local(path: "/tmp")) == nil)
 
         // 本机目标：空目录可以，有内容的目录与文件不行
         let root = FileManager.default.temporaryDirectory.appending(path: "spooky-clone-" + UUID().uuidString)
@@ -48,8 +62,16 @@ struct CloneActivityTests {
 
         let parent = RepositoryLocation.local(path: root.path)
 
+        let invalid = AppLocalization.text("clone.error.invalidURL")
+
+        // 认不出远端的地址不写字，认得出但不能用的写 Invalid remote URL
         #expect(CloneTarget.problem(url: "", parent: parent) == nil)
-        #expect(CloneTarget.problem(url: "--upload-pack=x", parent: parent) != nil)
+        #expect(CloneTarget.problem(url: "foo", parent: parent) == nil)
+        #expect(CloneTarget.problem(url: "--upload-pack=x", parent: parent) == nil)
+        #expect(CloneTarget.problem(url: "https://", parent: parent) == invalid)
+        #expect(CloneTarget.problem(url: "-x://example.invalid/a.git", parent: parent) == invalid)
+        #expect(CloneTarget.problem(url: "git@example.invalid:team/new.git", parent: parent) == nil)
+        #expect(CloneTarget.problem(url: root.path + "/source.git", parent: parent) == nil)
         #expect(CloneTarget.problem(url: "https://example.invalid/team/new.git", parent: parent) == nil)
         #expect(CloneTarget.problem(url: "https://example.invalid/team/empty.git", parent: parent) == nil)
         #expect(CloneTarget.problem(url: "https://example.invalid/team/full.git", parent: parent) != nil)
@@ -65,6 +87,36 @@ struct CloneActivityTests {
 
         #expect(server("srv") != nil)
         #expect(server("/srv") == nil)
+    }
+
+    /// 连接检查失败时，错误区写原因与 Git 原文，不写刷新失败的恢复说明；没有单独原因的失败只写原文。
+    @Test("连接检查失败的说明")
+    func connectionFailureNotice() throws {
+        let refreshHelp = AppLocalization.text("error.refreshHelp")
+        let destination = RepositoryLocation.local(path: "/tmp/克隆 目录/nope")
+
+        // 远端仓库不存在：原因一句，接着是 Git 原文
+        let missing = AppFailure(
+            error: Self.gitError("fatal: '/tmp/nope.git' does not appear to be a git repository\n", category: .remoteNotFound),
+            opening: false,
+            location: destination
+        )
+
+        let notice = try #require(CloneTarget.notice(for: missing))
+
+        #expect(missing.message.contains(refreshHelp))
+        #expect(!notice.contains(refreshHelp))
+        #expect(notice == AppLocalization.text("sync.error.remote") + "\n\n" + missing.details)
+
+        // 其它命令失败：说明只有恢复说明，错误区只写 Git 原文
+        let failed = AppFailure(
+            error: Self.gitError("fatal: unable to read from remote\n", category: .commandFailed),
+            opening: false,
+            location: destination
+        )
+
+        #expect(CloneTarget.notice(for: failed) == failed.details)
+        #expect(CloneTarget.notice(for: nil) == nil)
     }
 
     /// 每台主机记住上次克隆用的目录；选择机器时列出书签里的主机与克隆过的主机。
@@ -105,6 +157,9 @@ struct CloneActivityTests {
             Issue.record("目标不是绝对路径时克隆应失败")
             return
         }
+
+        // 失败后的页面标题写克隆失败，不再写正在克隆
+        #expect(CloneProgressView.title(of: activity) == AppLocalization.text("clone.failed.title", activity.name))
 
         bookmarks.delete(bookmarks.repositories.map(\.id))
         clones.restart(activity)

@@ -13,11 +13,12 @@ struct BookmarkDropZoneView: View {
     @State
     private var isTargeted = false
 
-    /// 328 pt 宽的虚线框与按钮行在详情区居中；按钮行按各按钮文字的宽度排开，不截断。
+    /// 326 pt 宽的虚线框与下方 20 pt 的按钮行在详情区居中；按钮行按各按钮文字的宽度排开，不截断。
+    /// 底色与选中书签时的详情页相同。
     var body: some View {
         VStack(spacing: 20) {
             dropZone
-                .frame(width: 328)
+                .frame(width: 326)
 
             HStack(spacing: 8) {
                 Button(AppLocalization.text("bookmarks.dropZone.add"), action: manager.addRepositories)
@@ -36,7 +37,7 @@ struct BookmarkDropZoneView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AppPalette.color("general_background_color"))
+        .background(Color(nsColor: .controlBackgroundColor))
         .dropDestination(for: URL.self) { urls, _ in
             let folders = urls.filter {
                 $0.isFileURL && ((try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false)
@@ -59,7 +60,7 @@ struct BookmarkDropZoneView: View {
         }
     }
 
-    /// 虚线圆角框，图标在上，两行 18 pt 的提示在下。
+    /// 虚线圆角框，高度随内容：上缘到图标 73 pt，图标下是一段两行的 18 pt 提示，提示底到下缘 72 pt。
     private var dropZone: some View {
         VStack(spacing: 8) {
             Image(systemName: "folder.badge.plus")
@@ -67,19 +68,26 @@ struct BookmarkDropZoneView: View {
                 .frame(width: 128, height: 100)
                 .accessibilityHidden(true)
 
-            Text(AppLocalization.text("bookmarks.dropZone.title"))
-            Text(AppLocalization.text("bookmarks.dropZone.subtitle"))
+            // 两行在同一段文字里，按 18 pt 的默认行距排
+            Text(
+                AppLocalization.text("bookmarks.dropZone.title")
+                    + "\n"
+                    + AppLocalization.text("bookmarks.dropZone.subtitle")
+            )
         }
         .font(.system(size: 18))
         .foregroundStyle(Color.primary.opacity(0.25))
         .multilineTextAlignment(.center)
+        .padding(.horizontal, 18)
+        .padding(.top, 73)
+        .padding(.bottom, 72)
         .frame(maxWidth: .infinity)
-        .frame(height: 279)
         .overlay {
-            RoundedRectangle(cornerRadius: 12)
+            // 虚线 2 pt 粗、6 pt 实 8 pt 空，平时是 `bookmarks_drop_zone_border_color` 的灰色，拖动经过时换成强调色
+            RoundedRectangle(cornerRadius: 24)
                 .strokeBorder(
-                    isTargeted ? Color.accentColor : Color.secondary.opacity(0.4),
-                    style: StrokeStyle(lineWidth: 2, dash: [8, 6])
+                    isTargeted ? Color.accentColor : AppPalette.color("bookmarks_drop_zone_border_color"),
+                    style: StrokeStyle(lineWidth: 2, dash: [6, 8])
                 )
         }
         .accessibilityElement(children: .combine)

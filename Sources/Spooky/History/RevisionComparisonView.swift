@@ -18,6 +18,9 @@ struct RevisionComparisonView: View {
     /// 显示自带的顶栏；分支整理的详情用自己的头部时关掉。
     var showsHeader = true
 
+    /// 变更集摘要行左侧有全部展开 / 收起；分支整理的详情里没有，摘要靠右完整显示。
+    var showsExpandAll = true
+
     /// 读取失败时在内容上方显示诊断。
     var body: some View {
         VStack(spacing: 0) {
@@ -43,7 +46,7 @@ struct RevisionComparisonView: View {
         }
     }
 
-    /// 顶栏：基准 → 目标、视图切换与关闭按钮。
+    /// 顶栏：基准 → 目标、视图切换与关闭按钮；窄时标题从中间截断，分段控件的占位最窄让到 141 pt，控件本身仍按文字宽度画出。
     private var header: some View {
         HStack(spacing: 8) {
             Text((state.base?.title ?? "") + " → " + (state.target?.title ?? ""))
@@ -52,6 +55,7 @@ struct RevisionComparisonView: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .textSelection(.enabled)
+                .layoutPriority(1)
 
             Spacer(minLength: 8)
 
@@ -61,7 +65,7 @@ struct RevisionComparisonView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 180)
+            .frame(minWidth: 141, maxWidth: 180)
             .accessibilityLabel(AppLocalization.text("compare.view"))
 
             if let close {
@@ -103,7 +107,8 @@ struct RevisionComparisonView: View {
             ChangesetSummaryBar(
                 changes: state.changes,
                 expanded: state.allItemsExpanded,
-                toggle: { state.expandAll(!state.allItemsExpanded) }
+                toggle: { state.expandAll(!state.allItemsExpanded) },
+                showsExpandAll: showsExpandAll
             )
 
             if state.isLoadingChanges {

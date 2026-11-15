@@ -11,10 +11,23 @@ extension UndoRecording {
         }
     }
 
-    /// 把远端 `name` 改名为 `newName`：撤销时改回原名，远端跟踪分支与跟踪设置随之改回。
+    /// 把远端 `name` 改名为 `newName`：撤销时改回原名，远端跟踪分支与跟踪设置随之改回；
+    /// 选中的是这个远端时，撤销与重做后选中跟着它的名字走。
     static func renamingRemote(_ name: String, to newName: String) -> Self {
         .inverse { _ in
-            UndoInverse { runner, _ in try await RepositoryRemotes(runner: runner).undoRename(name, to: newName) }
+            UndoInverse(
+                undo: { runner, _ in try await RepositoryRemotes(runner: runner).undoRename(name, to: newName) },
+                afterUndo: { session in
+                    if session.selectedRemote == newName {
+                        session.selectedRemote = name
+                    }
+                },
+                afterRedo: { session in
+                    if session.selectedRemote == name {
+                        session.selectedRemote = newName
+                    }
+                }
+            )
         }
     }
 
@@ -71,6 +84,20 @@ extension UndoRecording {
 
             return UndoInverse(target: .push(remote), pushedReference: (remote, "refs/tags/" + name)) {
                 try await RepositoryTags(runner: $0).undoPublish(name, on: remote, object: object, onOutput: $1)
+            }
+        }
+    }
+
+    /// 删除本地分支连同它跟踪的远端分支：撤销时先经推送在远端重建远端分支，再重建本地分支与上游设置；
+    /// 本地或远端已有同名分支、推送失败时撤销失败，说明原因。
+    ///
+    /// - Parameter branch: 本地分支的完整引用名。
+    static func deletingBranch(withUpstream branch: String) -> Self {
+        .inverse { runner in
+            let deletion = try await RepositoryReferences(runner: runner).deletion(of: branch)
+
+            return UndoInverse(target: deletion.upstream.map { .push($0.remote) }) {
+                try await RepositoryReferences(runner: $0).undoDelete(deletion, onOutput: $1)
             }
         }
     }

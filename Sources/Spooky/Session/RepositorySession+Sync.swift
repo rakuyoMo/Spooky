@@ -186,6 +186,7 @@ extension RepositorySession {
             title: AppLocalization.text("sync.sync"),
             target: .pull(remote, refspec: branch),
             offersAutoStash: true,
+            undo: .unrecorded,
             failureNote: { progress.failureNote }
         )
     }
@@ -230,7 +231,8 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("sync.forcePush"),
-            target: .push(remote, refspec: "refs/heads/" + local + ":refs/heads/" + name)
+            target: .push(remote, refspec: "refs/heads/" + local + ":refs/heads/" + name),
+            undo: .unrecorded
         )
     }
 
@@ -265,7 +267,7 @@ extension RepositorySession {
             },
             title: AppLocalization.text("sync.push"),
             target: .push(remote, refspec: "refs/heads/" + local + ":refs/heads/" + name),
-            undo: .irreversible
+            undo: .unrecorded
         )
     }
 
@@ -308,7 +310,8 @@ extension RepositorySession {
             title: AppLocalization.text("sync.quickPull"),
             progress: AppLocalization.text("sync.step.pull"),
             target: .pull(source, refspec: refspec),
-            offersAutoStash: true
+            offersAutoStash: true,
+            undo: .unrecorded
         )
     }
 
@@ -340,7 +343,8 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("sync.quickPush"),
-            target: .push(remote, refspec: "refs/heads/" + local.name + ":" + upstream)
+            target: .push(remote, refspec: "refs/heads/" + local.name + ":" + upstream),
+            undo: .unrecorded
         )
     }
 

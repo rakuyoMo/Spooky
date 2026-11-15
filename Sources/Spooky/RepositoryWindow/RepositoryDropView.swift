@@ -24,6 +24,9 @@ struct RepositoryDropView: NSViewRepresentable {
     /// 按这次拖动求当前的有效动作；没有时为 nil。
     let resolve: @MainActor (any NSDraggingInfo) -> DropBadgeAction?
 
+    /// 拖动进入（true）或离开、落下（false）时的回调。
+    var hovering: ((Bool) -> Void)? = nil
+
     /// 建出登记了拖放类型的视图。
     func makeNSView(context _: Context) -> DropTargetView {
         DropTargetView(type: type)
@@ -32,6 +35,7 @@ struct RepositoryDropView: NSViewRepresentable {
     /// 每次更新换上最新的会话、落点与回调。
     func updateNSView(_ view: DropTargetView, context _: Context) {
         view.resolve = resolve
+        view.hovering = hovering
     }
 }
 
@@ -43,6 +47,9 @@ struct RepositoryDropView: NSViewRepresentable {
 final class DropTargetView: NSView {
     /// 按这次拖动求当前的有效动作。
     var resolve: (@MainActor (any NSDraggingInfo) -> DropBadgeAction?)? = nil
+
+    /// 拖动进入（true）或离开、落下（false）时的回调；不论有没有有效动作都报告。
+    var hovering: ((Bool) -> Void)? = nil
 
     /// 拖动影像上当前的动作名；没有徽标时为 nil。
     private var badge: String? = nil
@@ -65,6 +72,8 @@ final class DropTargetView: NSView {
     /// 进入时拖动影像是来源给出的原样，按当前动作加徽标。
     override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
         badge = nil
+        hovering?(true)
+
         return update(sender)
     }
 
@@ -80,10 +89,13 @@ final class DropTargetView: NSView {
         }
 
         badge = nil
+        hovering?(false)
     }
 
     /// 落下时再求一次动作，没有有效动作就不接受。
     override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
+        hovering?(false)
+
         guard let action = resolve?(sender) else {
             return false
         }
@@ -127,7 +139,7 @@ extension DropTargetView {
 
 // MARK: - DragBadge
 
-/// 拖动影像上的动作徽标：白底圆角 4、高 24、宽为文字宽 + 16，13 pt 粗体强调色文字，放在影像右侧 10 pt 处并竖直居中。
+/// 拖动影像上的动作徽标：白底圆角 4、高 24、宽为文字宽 + 16，13 pt 粗体强调色文字，放在影像左侧 10 pt 处并竖直居中。
 @MainActor
 enum DragBadge {
     /// 徽标在拖动项图像组件里的键。
@@ -153,7 +165,7 @@ enum DragBadge {
         badge.contents = image
 
         badge.frame = NSRect(
-            x: bounds.maxX + 10,
+            x: bounds.minX - 10 - image.size.width,
             y: bounds.midY - image.size.height / 2,
             width: image.size.width,
             height: image.size.height

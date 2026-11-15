@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - BookmarkRepositoryDetailView
 
-/// 选中一个仓库时的详情：头部是图标与名称，下面是设置表格风格的位置、当前分支、最后提交、最近打开、提交人、描述与远端。
+/// 选中一个仓库时的详情：头部是图标与名称，下面的设置表格分 REPOSITORY、WORKING COPY 与 REMOTES 三组。
 ///
 /// 位置与最近打开时间来自书签，其余在选中后读取；服务器仓库经它自己的主连接读取。
 struct BookmarkRepositoryDetailView: View {
@@ -13,10 +13,6 @@ struct BookmarkRepositoryDetailView: View {
     /// 选中的仓库书签。
     let bookmark: Bookmark
 
-    /// 提交日期的写法，与历史共用。
-    @AppStorage(CommitDateFormat.key)
-    private var dateFormat = CommitDateFormat.absolute
-
     /// 头部固定 52 pt，表格可滚动。
     var body: some View {
         VStack(spacing: 0) {
@@ -25,7 +21,7 @@ struct BookmarkRepositoryDetailView: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
+                SettingTable {
                     rows
                 }
                 .padding(.vertical, 12)
@@ -33,6 +29,17 @@ struct BookmarkRepositoryDetailView: View {
             }
         }
         .background(Color(nsColor: .controlBackgroundColor))
+    }
+
+    /// 详情里的日期时间：今天写成 “Today at 2:57 PM”，其它日子写长日期加时间，如 “October 20, 2026 at 10:00 AM”。
+    ///
+    /// - Parameter date: 要写的时间。
+    static func dateText(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long
+        formatter.timeStyle = .short
+        formatter.doesRelativeDateFormatting = Calendar.current.isDateInToday(date)
+        return formatter.string(from: date)
     }
 }
 
@@ -66,60 +73,61 @@ extension BookmarkRepositoryDetailView {
             warningRow(AppLocalization.text("bookmarks.detail.missing"))
         }
 
+        RemoteSettingsGroup(title: AppLocalization.text("bookmarks.detail.repository"), actions: repositoryActions)
+
         RemoteSettingRow(
             label: AppLocalization.text("bookmarks.detail.location"),
-            value: bookmark.location?.displayPath ?? ""
+            location: bookmark.location,
+            canReveal: !bookmark.isLocalDirectoryGone
         )
 
+        lastOpenedRow
+
         switch manager.detailState {
-        case .loaded(let summary):
-            summaryRows(summary)
+        case .loaded(let summary, let changedFiles):
+            summaryRows(summary, changedFiles: changedFiles)
 
         case .failed(let failure):
-            lastOpenedRow
-
             FailureDetailsView(failure: failure, retry: manager.reloadDetail)
                 .padding(20)
 
         case .missing:
-            lastOpenedRow
+            EmptyView()
 
         case .loading, nil:
-            lastOpenedRow
-
             RemoteSettingRow(label: AppLocalization.text("bookmarks.detail.loading"), value: "")
         }
+    }
+
+    /// REPOSITORY 组的 Open 与 Delete。
+    private var repositoryActions: [RemoteSettingAction] {
+        [
+            RemoteSettingAction(title: AppLocalization.text("action.open"), isEnabled: true) {
+                manager.open(bookmark.id, inNewWindow: false)
+            },
+            RemoteSettingAction(title: AppLocalization.text("bookmarks.multiple.delete"), isEnabled: true) {
+                manager.confirmDelete([bookmark.id])
+            },
+        ]
     }
 
     /// 最近一次在窗口中打开的时间；没打开过的写明。
     private var lastOpenedRow: some View {
         RemoteSettingRow(
             label: AppLocalization.text("bookmarks.detail.lastOpened"),
-            value: bookmark.lastOpened.map { dateFormat.string(from: $0) }
+            value: bookmark.lastOpened.map(Self.dateText)
                 ?? AppLocalization.text("bookmarks.detail.neverOpened")
         )
     }
 
-    /// 读到的概况：当前分支、最后提交、最近打开、提交人、描述与远端。
+    /// 读到的概况：最后提交的时间、描述与提交人，WORKING COPY 组的当前分支与改动数，以及远端。
     @ViewBuilder
-    private func summaryRows(_ summary: RepositorySummary) -> some View {
-        RemoteSettingRow(
-            label: AppLocalization.text("bookmarks.detail.branch"),
-            value: summary.branch ?? AppLocalization.text("branch.detachedShort")
-        )
-
+    private func summaryRows(_ summary: RepositorySummary, changedFiles: Int) -> some View {
         RemoteSettingRow(
             label: AppLocalization.text("bookmarks.detail.lastCommit"),
-            value: summary.lastCommit?.subject ?? AppLocalization.text("bookmarks.detail.noCommits")
+            value: summary.lastCommit.map { Self.dateText($0.date) }
+                ?? AppLocalization.text("bookmarks.detail.noCommits")
         )
-
-        if let commit = summary.lastCommit {
-            RemoteSettingRow(label: "", value: dateFormat.string(from: commit.date), secondary: true)
-        }
-
-        lastOpenedRow
-
-        BookmarkIdentityRow(manager: manager, summary: summary)
 
         RemoteSettingRow(
             label: AppLocalization.text("bookmarks.detail.description"),
@@ -133,10 +141,26 @@ extension BookmarkRepositoryDetailView {
             ]
         )
 
+        BookmarkIdentityRow(manager: manager, summary: summary)
+
+        RemoteSettingsGroup(title: AppLocalization.text("workspace.title"))
+
+        RemoteSettingRow(
+            label: AppLocalization.text("bookmarks.detail.branch"),
+            value: summary.branch ?? AppLocalization.text("branch.detachedShort")
+        )
+
+        RemoteSettingRow(
+            label: AppLocalization.text("bookmarks.detail.status"),
+            value: changedFiles == 0
+                ? AppLocalization.text("bookmarks.detail.noChanges")
+                : ChangesetSummaryBar.fileCount(changedFiles)
+        )
+
         remoteRows(summary.remotes)
     }
 
-    /// 远端分组：每个远端的获取地址与在浏览器中打开的按钮；地址换算不出网页时按钮禁用。
+    /// 远端分组：每个远端的名字与获取地址，以及在浏览器中打开的按钮；地址换算不出网页时按钮禁用。
     @ViewBuilder
     private func remoteRows(_ remotes: [RemoteConfiguration]) -> some View {
         RemoteSettingsGroup(title: AppLocalization.text("bookmarks.detail.remotes"))
@@ -149,7 +173,6 @@ extension BookmarkRepositoryDetailView {
             RemoteSettingRow(
                 label: remote.name,
                 value: remote.url ?? "",
-                small: true,
                 actions: [
                     RemoteSettingAction(
                         title: AppLocalization.text("bookmarks.detail.viewInBrowser"),

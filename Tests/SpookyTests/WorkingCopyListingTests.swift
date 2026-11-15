@@ -108,25 +108,34 @@ struct WorkingCopyListingTests {
         #expect(search("zzz").isEmpty)
     }
 
-    /// 显示模式只有一个全局记录：没有记录时为平铺，记下的模式对之后打开的每个仓库都生效，无法识别的记录回到平铺。
-    @Test("显示模式所有仓库共用")
-    func sharedListMode() throws {
+    /// 显示模式按仓库记：没有记录时为平铺；仓库没有单独记过时以全局的记录为初始值，记下的模式只对这个仓库生效；
+    /// 无法识别的记录回到平铺。
+    @Test("显示模式按仓库记")
+    func repositoryListMode() throws {
         // 偏好写进临时目录里的 plist，测试结束随目录删除
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-modes-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         defer { try? FileManager.default.removeItem(at: directory) }
 
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        let first = RepositoryLocation.local(path: "/tmp/first")
+        let second = RepositoryLocation.remote(host: "server", path: "/tmp/first")
 
-        #expect(WorkingCopyListMode.stored(defaults: defaults) == .list)
+        #expect(WorkingCopyListMode.stored(for: first, defaults: defaults) == .list)
 
-        WorkingCopyListMode.store(.allFiles, defaults: defaults)
-        #expect(WorkingCopyListMode.stored(defaults: defaults) == .allFiles)
+        // 以前全局记下的选择是没有单独记过的仓库的初始值
+        defaults.set(WorkingCopyListMode.allFiles.rawValue, forKey: "workingCopyViewMode")
+        #expect(WorkingCopyListMode.stored(for: first, defaults: defaults) == .allFiles)
+
+        // 记下一个仓库的模式：同路径的服务器仓库不受影响，仍取全局的记录
+        WorkingCopyListMode.store(.list, for: first, defaults: defaults)
+        #expect(WorkingCopyListMode.stored(for: first, defaults: defaults) == .list)
+        #expect(WorkingCopyListMode.stored(for: second, defaults: defaults) == .allFiles)
 
         // 不认识的值写进另一个偏好域：覆盖已有的值后立即读取，可能仍读到旧值
         let unknown = try #require(UserDefaults(suiteName: directory.appending(path: "unknown").path))
         unknown.set(9, forKey: "workingCopyViewMode")
-        #expect(WorkingCopyListMode.stored(defaults: unknown) == .list)
+        #expect(WorkingCopyListMode.stored(for: first, defaults: unknown) == .list)
     }
 
     /// 状态头的分支：未出生分支照写分支名、不附加说明；分离 HEAD 只取前 8 位哈希，SHA-256 仓库同样如此；

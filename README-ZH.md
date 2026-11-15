@@ -218,7 +218,7 @@ open .build/Spooky.app
 仓库里：
 
 - 分支的置顶、归档、父分支与分支整理标记保存在仓库自己的 Git 配置里，键为 `branch.<名称>.spooky-*`；分支改名时随之移动，删除分支时一并清除
-- 仓库设置写进仓库自己的 Git 配置；折行使用键 `spooky.commitbodylimit` 与 `spooky.commitshowsguide`
+- 仓库设置写进仓库自己的 Git 配置
 - 启用 Git LFS 只在仓库自己的配置里登记它的过滤器与钩子，跟踪规则写进仓库根目录的 `.gitattributes`
 
 ## 开发

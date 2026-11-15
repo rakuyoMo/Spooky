@@ -59,7 +59,7 @@ extension SubmoduleMenu {
     private static func updateItems(session: RepositorySession, submodule: Submodule) -> [NSMenuItem] {
         let name = submodule.name
         let canFetch = session.canFetch(submodule)
-        let canModify = session.canModify(submodule)
+        let canUpdate = session.canUpdate(submodule)
 
         let fetch = item(AppLocalization.text("submodule.fetch.menu", name), enabled: canFetch) {
             session.requestSubmodule(.fetch(submodule))
@@ -72,18 +72,21 @@ extension SubmoduleMenu {
             )
         }
 
-        let update = item(AppLocalization.text("submodule.update.menu", name), enabled: canModify) {
+        let update = item(AppLocalization.text("submodule.update.menu", name), enabled: canUpdate) {
             session.requestSubmodule(.update(submodule))
         }
 
-        let quickUpdate = alternate(AppLocalization.text("submodule.quickUpdate", name), enabled: canModify) {
+        let quickUpdate = alternate(AppLocalization.text("submodule.quickUpdate", name), enabled: canUpdate) {
             session.updateSubmodules(
                 [submodule],
                 recursive: UserDefaults.standard.bool(forKey: SubmodulePreferences.updateRecursive)
             )
         }
 
-        let initialize = item(AppLocalization.text("submodule.initialize.menu", name), enabled: canModify) {
+        let initialize = item(
+            AppLocalization.text("submodule.initialize.menu", name),
+            enabled: session.canInitialize(submodule)
+        ) {
             session.requestSubmodule(.initialize(submodule))
         }
 

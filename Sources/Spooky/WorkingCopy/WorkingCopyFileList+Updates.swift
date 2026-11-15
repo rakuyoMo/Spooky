@@ -130,7 +130,9 @@ extension WorkingCopyFileList.Coordinator {
         reloadVisibleRows()
     }
 
-    /// 更新前选中的行全部消失、恢复出的选择为空时，改选原位置附近仍在的行，并在这一轮更新之后同步给会话。
+    /// 更新前选中的行全部消失、恢复出的选择为空时，改选原位置附近的行，并在这一轮更新之后同步给会话。
+    ///
+    /// 原行号在更新后的列表里时就选这一行；超出时在更新前的行里先向下、再向上找仍在的条目。
     ///
     /// - Parameters:
     ///   - row: 更新前第一个选中行的行号。
@@ -138,11 +140,14 @@ extension WorkingCopyFileList.Coordinator {
     func selectNeighbor(of row: Int, in rows: [WorkingCopyFileList.Node]) {
         guard let outline, outline.selectedRowIndexes.isEmpty else { return }
 
-        let neighbor = Self.neighbor(of: row, in: rows) { outline.row(forItem: $0) >= 0 }
+        let target = row < outline.numberOfRows
+            ? row
+            : Self.neighbor(of: row, in: rows) { outline.row(forItem: $0) >= 0 }
+                .map { outline.row(forItem: $0) }
 
-        guard let neighbor else { return }
+        guard let target else { return }
 
-        outline.selectRowIndexes(IndexSet(integer: outline.row(forItem: neighbor)), byExtendingSelection: false)
+        outline.selectRowIndexes(IndexSet(integer: target), byExtendingSelection: false)
 
         // 会话在视图更新之后才修改，避免在更新视图的过程中改变被观察的状态
         Task { @MainActor [weak self] in
@@ -164,6 +169,7 @@ extension WorkingCopyFileList.Coordinator {
             guard let match else { return node }
 
             match.entry = node.entry
+            match.untrackedCopy = node.untrackedCopy
             return match
         }
 

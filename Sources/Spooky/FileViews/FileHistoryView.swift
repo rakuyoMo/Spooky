@@ -113,21 +113,10 @@ struct FileHistoryTimelineView: View {
         } else {
             List(selection: $state.selectedID) {
                 ForEach(sections) { section in
-                    Section {
-                        ForEach(section.commits) { commit in
-                            FileHistoryCommitRow(commit: commit)
-                                .tag(commit.id)
-                                .onAppear {
-                                    state.prepareTarget(commit)
-                                    loadMoreIfLast(commit)
-                                }
-                        }
-                    } header: {
-                        Text(Self.monthTitle(section.month, locale: .autoupdatingCurrent, calendar: .current))
-                            .font(.system(size: 11))
-                    }
+                    rows(of: section)
                 }
             }
+            .environment(\.defaultMinListRowHeight, 30)
             .contextMenu(forSelectionType: String.self) { ids in
                 if let commit = state.commits.first(where: { ids.contains($0.id) }) {
                     menu(for: commit)
@@ -192,6 +181,26 @@ struct FileHistoryTimelineView: View {
         }
     }
 
+    /// 一个月的标题行与提交行，行与行之间不留间隔；第一个提交之后的月份标题有时间线穿过。
+    @ViewBuilder
+    private func rows(of section: MonthSection) -> some View {
+        FileHistoryMonthRow(
+            title: Self.monthTitle(section.month, locale: .autoupdatingCurrent, calendar: .current),
+            lined: section.id != sections.first?.id
+        )
+        .listRowInsets(EdgeInsets())
+
+        ForEach(section.commits) { commit in
+            FileHistoryCommitRow(commit: commit, first: commit.id == state.commits.first?.id)
+                .tag(commit.id)
+                .listRowInsets(EdgeInsets())
+                .onAppear {
+                    state.prepareTarget(commit)
+                    loadMoreIfLast(commit)
+                }
+        }
+    }
+
     /// 列表显示到最后一条时续载下一页。
     private func loadMoreIfLast(_ commit: HistoryCommit) {
         if commit.id == state.commits.last?.id, state.hasMore {
@@ -207,6 +216,9 @@ private struct FileHistoryCommitRow: View {
     /// 这一行的提交。
     let commit: HistoryCommit
 
+    /// 是否是时间线上的第一个提交：时间线从它的圆点起。
+    let first: Bool
+
     /// 提交日期的显示格式。
     @AppStorage(CommitDateFormat.key)
     private var dateFormat = CommitDateFormat.absolute
@@ -214,7 +226,7 @@ private struct FileHistoryCommitRow: View {
     /// 39 pt 高的两行布局；头像距行顶 3 pt，与时间线、文字各隔 8 pt。
     var body: some View {
         HStack(spacing: 8) {
-            TimelineMark()
+            TimelineMark(first: first)
                 .frame(width: 14)
 
             InitialsAvatar(name: commit.author, email: commit.authorEmail, size: 32)
@@ -249,16 +261,52 @@ private struct FileHistoryCommitRow: View {
     }
 }
 
+// MARK: - FileHistoryMonthRow
+
+/// 时间线的月份标题行，高 30 pt、没有底色；有时间线穿过时标题与头像左缘对齐，否则距行左缘 10 pt。
+private struct FileHistoryMonthRow: View {
+    /// 月份标题。
+    let title: String
+
+    /// 是否有时间线穿过。
+    let lined: Bool
+
+    /// 时间线占与提交行的节点相同的 14 pt 宽。
+    var body: some View {
+        HStack(spacing: 8) {
+            if lined {
+                TimelineLine()
+                    .frame(width: 14)
+            }
+
+            Text(title)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.leading, lined ? 0 : 10)
+        .frame(height: 30)
+    }
+}
+
 // MARK: - TimelineMark
 
-/// 时间线的竖线与节点：贯穿整行的细线，中间一个空心圆点。
+/// 时间线的竖线与节点：连续的蓝色竖线，中间一个空心圆点；第一个提交的竖线从圆点起向下。
 private struct TimelineMark: View {
+    /// 是否是时间线上的第一个提交。
+    let first: Bool
+
     /// 竖线在下，节点盖在中间。
     var body: some View {
         ZStack {
-            Rectangle()
-                .fill(.tertiary)
-                .frame(width: 2)
+            // 第一个提交只画行高的下半段
+            GeometryReader { proxy in
+                TimelineLine()
+                    .frame(height: first ? proxy.size.height / 2 : proxy.size.height)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            }
 
             Circle()
                 .fill(Color(nsColor: .controlBackgroundColor))
@@ -266,6 +314,19 @@ private struct TimelineMark: View {
                 .frame(width: 9, height: 9)
         }
         .accessibilityHidden(true)
+    }
+}
+
+// MARK: - TimelineLine
+
+/// 时间线的一段竖线：2 pt 宽，用提交图的蓝色，提交行与月份标题行各画一段，上下相接成一条线。
+private struct TimelineLine: View {
+    /// 撑满所在的高度。
+    var body: some View {
+        Rectangle()
+            .fill(AppPalette.color("blue_history_graph_line_color"))
+            .frame(width: 2)
+            .accessibilityHidden(true)
     }
 }
 

@@ -45,7 +45,7 @@ struct HistoryCommitRow: View {
     /// 与基准分支比较时，分叉点及其之下属于基准分支的提交，与未拉取的提交一样置灰。
     let isParent: Bool
 
-    /// 被选中时文本和徽标采用选中配色。
+    /// 是否被选中；选中时不铺未拉取提交的弱化底色。
     let selected: Bool
 
     /// 窗口的签名结果，开启签名校验时行末显示签名按钮。
@@ -53,6 +53,9 @@ struct HistoryCommitRow: View {
 
     /// 校验签名与标签签名用的执行器。
     let runner: GitRunner?
+
+    /// 选中底是否为强调色：列表有焦点、窗口是 key window 时才是；历史列表的行视图随焦点更新，其它地方按强调色。
+    var emphasized = true
 
     /// 图在最左侧，其余内容按档位排成单行或双行；整行不设悬停提示，辅助技术读出合并后的内容。
     var body: some View {
@@ -71,13 +74,13 @@ struct HistoryCommitRow: View {
                     mediumLayout
                 }
             }
-            .padding(.leading, graph != nil || small ? Self.spacing : 0)
+            .padding(.leading, Self.spacing)
             .offset(y: -1)
         }
         .font(.system(size: small ? 11 : 12))
         .padding(.trailing, small ? 16 : 8)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .foregroundStyle(isDimmed ? Self.dimmedText : (selected ? Self.selectedText : .primary))
+        .foregroundStyle(isDimmed ? Self.dimmedText : (showsSelectedColors ? Self.selectedText : .primary))
         .background(
             isDimmed && !selected
                 ? AppPalette.color("general_alternate_row_background_color")
@@ -86,14 +89,12 @@ struct HistoryCommitRow: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// 行首到头像（中号）或短哈希（小号）左缘的距离：有图时是图宽加间距；没有图时小号行留出间距，中号行贴着行首。
+    /// 行首到头像（中号）或短哈希（小号）左缘的距离：有图时是图宽加间距，没有图时只留间距。
     ///
-    /// - Parameters:
-    ///   - graph: 这一行的提交图；不显示图时为 nil。
-    ///   - small: 是否是小号行。
-    static func contentLeading(graph: CommitGraphRow?, small: Bool) -> CGFloat {
+    /// - Parameter graph: 这一行的提交图；不显示图时为 nil。
+    static func contentLeading(graph: CommitGraphRow?) -> CGFloat {
         guard let graph else {
-            return small ? spacing : 0
+            return spacing
         }
 
         return graphWidth(graph) + spacing
@@ -105,7 +106,8 @@ struct HistoryCommitRow: View {
 extension HistoryCommitRow {
     /// 小号单行：短哈希、引用、标题、作者、日期，行末是签名按钮与箭头。
     ///
-    /// 间距依次为 4、4、4、8、4 pt；窄窗口里先截作者，其次是标题、引用与日期，短哈希始终完整。
+    /// 间距依次为 4、4、4、8、4 pt：引用空着时两段 4 pt 都保留，行末空着时日期后的 4 pt 同样保留；
+    /// 窄窗口里作者先整个让出，其次是标题、引用与日期，短哈希始终完整。
     private var smallLayout: some View {
         HStack(spacing: 0) {
             hash
@@ -116,27 +118,40 @@ extension HistoryCommitRow {
 
             Text(commit.subject)
                 .lineLimit(1)
-                .padding(.leading, 4)
+                .padding(.leading, hasBadges ? 4 : 8)
                 .layoutPriority(0.25)
 
             // 空白最先让出
             Spacer(minLength: 0)
                 .layoutPriority(-1)
 
-            author
-                .padding(.leading, 4)
+            // 放不下完整的作者名时不显示，不留被截剩的残字
+            ViewThatFits(in: .horizontal) {
+                author
+                    .fixedSize()
+                    .padding(.leading, 4)
+
+                Color.clear
+                    .frame(width: 0, height: 0)
+            }
+
+            // 日期在标题与引用之后才截短，只有短哈希比它更不让
+            date
+                .padding(.leading, 8)
+                .padding(.trailing, 4)
+                .layoutPriority(2)
 
             HStack(spacing: 4) {
-                date
                 signatureButton
                 arrow
             }
-            .padding(.leading, 8)
             .layoutPriority(1)
         }
     }
 
-    /// 中号双行：作者头像在左；右侧上行为作者、引用、日期与箭头，下行为短哈希、标题与箭头正下方的签名按钮。
+    /// 中号双行：作者头像在左；右侧上行为作者、引用、日期与箭头位，下行为短哈希、标题与箭头正下方的签名按钮。
+    ///
+    /// 作者名先于引用取得宽度，放不下的引用先折成 “…”；箭头位始终占 12 pt，有没有箭头日期都在同一列。
     private var mediumLayout: some View {
         HStack(spacing: Self.spacing) {
             InitialsAvatar(name: commit.author, email: commit.authorEmail, size: 32)
@@ -144,11 +159,16 @@ extension HistoryCommitRow {
                 .help("\(commit.author) <\(commit.authorEmail)>")
 
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    author
-                    badges
-                    Spacer(minLength: 0)
-                    date
+                HStack(spacing: 6) {
+                    HStack(spacing: 8) {
+                        author
+                            .layoutPriority(0.6)
+
+                        badges
+                        Spacer(minLength: 0)
+                        date
+                    }
+
                     arrow
                 }
 
@@ -171,9 +191,14 @@ extension HistoryCommitRow {
         unpulled || isParent
     }
 
+    /// 文字与徽标换成选中配色：只在选中且选中底是强调色时，列表没有焦点时保持平时的颜色。
+    private var showsSelectedColors: Bool {
+        selected && emphasized
+    }
+
     /// 作者、短哈希与日期的颜色。
     private var secondaryText: Color {
-        selected && !isDimmed ? Self.selectedText : Self.dimmedText
+        showsSelectedColors && !isDimmed ? Self.selectedText : Self.dimmedText
     }
 
     /// 作者名。
@@ -198,13 +223,23 @@ extension HistoryCommitRow {
             .layoutPriority(1)
     }
 
-    /// 引用标记；在行里先于作者与标题取得宽度，日期仍最先。小号行里距短哈希 4 pt。
+    /// 有没有引用标记。
+    private var hasBadges: Bool {
+        isHead || !references.isEmpty
+    }
+
+    /// 引用标记：小号行里先于作者与标题取得宽度，中号行里让给作者，日期仍最先。小号行里距短哈希 4 pt。
     @ViewBuilder
     private var badges: some View {
-        if isHead || !references.isEmpty {
-            HistoryRefBadges(references: references, isHead: isHead, selected: selected, runner: runner)
-                .padding(.leading, small ? 4 : 0)
-                .layoutPriority(0.5)
+        if hasBadges {
+            HistoryRefBadges(
+                references: references,
+                isHead: isHead,
+                selected: showsSelectedColors,
+                runner: runner
+            )
+            .padding(.leading, small ? 4 : 0)
+            .layoutPriority(0.5)
         }
     }
 
@@ -213,17 +248,31 @@ extension HistoryCommitRow {
         CommitSignatureButton(store: signatures, commit: commit.id, runner: runner, small: small)
     }
 
-    /// 未推送的提交是上箭头，未拉取的是下箭头；中号行的箭头占 12 × 12 pt。
+    /// 未推送的提交是上箭头，未拉取的是下箭头；中号行的箭头位始终占 12 × 12 pt，没有箭头时空着。
     @ViewBuilder
     private var arrow: some View {
-        if unpushed || unpulled {
-            Image(systemName: unpushed ? "arrow.up" : "arrow.down")
-                .font(.system(size: small ? 10 : 12))
-                .frame(width: small ? nil : 12, height: small ? nil : 12)
-                .accessibilityLabel(
-                    AppLocalization.text(unpushed ? "history.unpushed" : "history.unpulled")
-                )
+        if small {
+            if unpushed || unpulled {
+                arrowImage
+            }
+        } else {
+            Color.clear
+                .frame(width: 12, height: 12)
+                .overlay {
+                    if unpushed || unpulled {
+                        arrowImage
+                    }
+                }
         }
+    }
+
+    /// 箭头图标，读屏读出未推送或未拉取。
+    private var arrowImage: some View {
+        Image(systemName: unpushed ? "arrow.up" : "arrow.down")
+            .font(.system(size: small ? 10 : 12))
+            .accessibilityLabel(
+                AppLocalization.text(unpushed ? "history.unpushed" : "history.unpulled")
+            )
     }
 
     /// 图的宽度：每列 10 pt，另加 7 pt。

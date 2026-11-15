@@ -218,7 +218,7 @@ On the server:
 In your repositories:
 
 - Pins, archives, parent branches, and branch review marks are stored in the repository's own Git configuration, as `branch.<name>.spooky-*`. They move with a branch when it's renamed and are removed when it's deleted
-- Repository settings are written to the repository's own Git configuration. Line wrapping uses the keys `spooky.commitbodylimit` and `spooky.commitshowsguide`
+- Repository settings are written to the repository's own Git configuration
 - Enabling Git LFS registers its filter and hooks only in the repository's own configuration, and tracking patterns are written to `.gitattributes` at the repository root
 
 ## Development

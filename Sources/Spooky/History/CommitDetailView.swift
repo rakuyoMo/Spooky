@@ -136,14 +136,7 @@ struct CommitDetailView: View {
                 runner: session.runner
             )
 
-            // 头部与提交说明之间画一条分隔线；在看 HEAD 分支时，操作条居中压在这条线上
-            ZStack {
-                Divider()
-
-                if session.isViewingHead {
-                    CommitActionRow(session: session, commit: commit, hovering: hovering)
-                }
-            }
+            actionDivider(commit)
 
             // 提交说明的文字容器横向 3、纵向 8，右侧另留 20，放在与头部相同的详情容器里
             Text(commit.message)
@@ -155,14 +148,17 @@ struct CommitDetailView: View {
                 .padding(.trailing, 20)
                 .padding(.horizontal, Self.contentInset)
 
-            // 提交说明与 Expand All 一行之间不画分隔线，这一行下方画一条，隔开第一个文件行
+            // 提交说明与 Expand All 一行之间不画分隔线，这一行下方画一条，隔开第一个文件行；
+            // 这一行与文件行都放在与头部相同的左右边距里
             ChangesetSummaryBar(
                 changes: history.changes,
                 expanded: history.allItemsExpanded,
                 toggle: { history.expandAll(!history.allItemsExpanded) }
             )
+            .padding(.horizontal, Self.contentInset)
 
             Divider()
+                .padding(.horizontal, Self.contentInset)
 
             changeRows(selectionColor: selectionColor, emphasized: emphasized)
         }
@@ -174,7 +170,25 @@ struct CommitDetailView: View {
         }
     }
 
-    /// 变更集的读取进度、失败与逐个文件。
+    /// 头部与提交说明之间的分隔线，操作条在左右缩进后的区域里居中压在这条线上，始终占着位置；
+    /// 在看 HEAD 分支时有 Rollback 与 Revert，其它范围与 Reflog 的详情只有 Diff Tool。
+    ///
+    /// - Parameter commit: 详情显示的提交。
+    private func actionDivider(_ commit: HistoryCommit) -> some View {
+        ZStack {
+            Divider()
+
+            CommitActionRow(
+                session: session,
+                commit: commit,
+                rewrites: history === session.history && session.isViewingHead,
+                hovering: hovering
+            )
+            .padding(.horizontal, Self.contentInset)
+        }
+    }
+
+    /// 变更集的读取进度、失败与逐个文件；文件按路径不分大小写排序，读取进度与文件行放在与头部相同的左右边距里。
     ///
     /// - Parameters:
     ///   - selectionColor: 文件行选中底的颜色。
@@ -183,6 +197,7 @@ struct CommitDetailView: View {
     private func changeRows(selectionColor: NSColor, emphasized: Bool) -> some View {
         if history.isLoadingChanges {
             ChangesetLoadingRow()
+                .padding(.horizontal, Self.contentInset)
         }
 
         if let failure = history.changesFailure {
@@ -190,11 +205,12 @@ struct CommitDetailView: View {
                 .padding(20)
         }
 
-        ForEach(history.changes) { file in
+        ForEach(history.pathOrderedChanges) { file in
             VStack(spacing: 0) {
                 fileSection(file, selectionColor: selectionColor, emphasized: emphasized)
                 Divider()
             }
+            .padding(.horizontal, Self.contentInset)
         }
     }
 
@@ -246,9 +262,10 @@ struct CommitDetailView: View {
 
     /// 右键这一行时实际作用的文件：点在选区里是整个选区，点在选区外只是这一行，选区不变。
     private func affectedFiles(_ file: CommitFileChange) -> [CommitFileChange] {
-        let paths = Set(history.fileSelection.affected(clicked: file.path, order: history.changes.map(\.path)))
+        let changes = history.pathOrderedChanges
+        let paths = Set(history.fileSelection.affected(clicked: file.path, order: changes.map(\.path)))
 
-        return history.changes.filter { paths.contains($0.path) }
+        return changes.filter { paths.contains($0.path) }
     }
 
     /// 点选一个文件行：按住 ⇧ 连续选，按住 ⌘ 切换这一行；键盘焦点随之交给变更文件所在的滚动内容。
@@ -259,7 +276,7 @@ struct CommitDetailView: View {
             path,
             extending: modifiers.contains(.shift),
             toggling: modifiers.contains(.command),
-            order: history.changes.map(\.path)
+            order: history.pathOrderedChanges.map(\.path)
         )
 
         filesFocused = true
@@ -278,7 +295,7 @@ struct CommitDetailView: View {
         history.fileSelection.move(
             by: movingDown ? 1 : -1,
             extending: press.modifiers.contains(.shift),
-            order: history.changes.map(\.path)
+            order: history.pathOrderedChanges.map(\.path)
         )
 
         let target = history.fileSelection.scrollTarget(

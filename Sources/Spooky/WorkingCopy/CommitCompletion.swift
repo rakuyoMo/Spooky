@@ -5,15 +5,15 @@ import UniformTypeIdentifiers
 
 // MARK: - CompletionTrigger
 
-/// 光标处正在输入的补全：`c:` 引用提交，`\` 引用改动文件，`#` 引用托管服务上的 Issue，标题以 `fixup!` / `squash!` 开头时选择目标提交。
+/// 光标处正在输入的补全：`c:` 引用提交，`\` 引用已暂存的文件，`#` 引用托管服务上的 Issue，标题以 `fixup!` / `squash!` 开头时选择目标提交。
 enum CompletionTrigger: Equatable {
-    /// `c:` 之后的查询，选中后替换为短哈希。
+    /// `c:` 之后的查询，选中后替换为短哈希与一个空格。
     case commit(query: String, range: NSRange)
 
-    /// `\` 之后的查询，选中后替换为文件路径。
+    /// `\` 之后的查询，选中后替换为文件路径与一个空格。
     case file(query: String, range: NSRange)
 
-    /// 前缀之后的查询，选中后把标题余下部分替换为目标提交的标题。
+    /// 前缀之后的查询，选中后把标题余下部分替换为一个空格与目标提交的标题。
     case fixup(query: String, range: NSRange)
 
     /// `#` 之后的查询，选中后替换为 Issue 编号。
@@ -38,12 +38,13 @@ enum CompletionTrigger: Equatable {
 
         let end = String.Index(utf16Offset: caret, in: text)
 
-        // 标题的前缀补全替换前缀之后的整行。
-        if subject, let prefix = ["fixup! ", "squash! "].first(where: text.hasPrefix) {
+        // 标题打到 “fixup!” 或 “squash!” 就补全，替换前缀之后的整行；查询去掉开头的空白
+        if subject, let prefix = ["fixup!", "squash!"].first(where: text.hasPrefix) {
             let start = text.index(text.startIndex, offsetBy: prefix.count)
 
             if end >= start {
-                return .fixup(query: String(text[start ..< end]), range: NSRange(start ..< text.endIndex, in: text))
+                let query = text[start ..< end].drop { $0.isWhitespace }
+                return .fixup(query: String(query), range: NSRange(start ..< text.endIndex, in: text))
             }
         }
 
@@ -90,7 +91,7 @@ struct CommitCompletion: Identifiable, Equatable {
     /// 显示内容。
     let content: Content
 
-    /// 选中后插入的文字，已规范为 NFC。
+    /// 选中后插入的文字，已规范为 NFC：提交与文件后面补一个空格，可以接着输入下一个触发词；fixup 是前面带空格的整行标题。
     let insertion: String
 
     /// 按触发方式筛选候选：提交按哈希前缀或标题、作者匹配，文件按路径匹配，Issue 按编号前缀或标题匹配，查询都不区分大小写。
@@ -119,14 +120,14 @@ struct CommitCompletion: Identifiable, Equatable {
                     Self(
                         id: $0.id,
                         content: .commit($0),
-                        insertion: (fixup ? $0.subject : $0.shortID).precomposedStringWithCanonicalMapping
+                        insertion: (fixup ? " " + $0.subject : $0.shortID + " ").precomposedStringWithCanonicalMapping
                     )
                 }
 
         case .file(let query, _):
             return paths
                 .filter { query.isEmpty || $0.localizedCaseInsensitiveContains(query) }
-                .map { Self(id: $0, content: .file($0), insertion: $0.precomposedStringWithCanonicalMapping) }
+                .map { Self(id: $0, content: .file($0), insertion: ($0 + " ").precomposedStringWithCanonicalMapping) }
 
         case .issue(let query, _):
             return issues
@@ -153,6 +154,16 @@ final class CommitCompletionPanel {
 
         /// 点击候选时接受。
         var onAccept: (CommitCompletion) -> Void = { _ in }
+
+        /// 候选是提交：`c:` 与 fixup / squash 的补全。
+        var showsCommits: Bool {
+            if case .commit = items.first?.content { true } else { false }
+        }
+
+        /// 列表上下的内边距：提交列表 9 pt，其余 6 pt。
+        var verticalPadding: CGFloat {
+            showsCommits ? 9 : 6
+        }
     }
 
     /// 弹窗默认宽度。
@@ -286,13 +297,23 @@ extension CommitCompletionPanel {
     }
 
     /// 弹窗放在补全起点的下方；下方空间不够时放到上方。
+    ///
+    /// 提交列表的左缘在补全起点右侧 1 pt、顶边高出这一行底边 2 pt；其余列表左缘在起点左侧 8 pt、顶边低于行底 4 pt。
     private func frame(for textView: NSTextView, at anchor: Int) -> NSRect {
         let caret = textView.firstRect(forCharacterRange: NSRange(location: anchor, length: 0), actualRange: nil)
+        let commits = model.showsCommits
+
         let height = min(
-            model.items.reduce(12.0) { $0 + CommitCompletionList.rowHeight(for: $1) },
+            model.items.reduce(model.verticalPadding * 2) { $0 + CommitCompletionList.rowHeight(for: $1) },
             Self.maximumHeight
         )
-        let below = NSRect(x: caret.minX - 8, y: caret.minY - height - 4, width: Self.width, height: height)
+
+        let below = NSRect(
+            x: caret.minX + (commits ? 1 : -8),
+            y: caret.minY + (commits ? 2 : -4) - height,
+            width: Self.width,
+            height: height
+        )
         let visible = textView.window?.screen?.visibleFrame ?? .infinite
 
         guard below.minY < visible.minY else {
@@ -330,7 +351,8 @@ private struct CommitCompletionList: View {
                             .onTapGesture { model.onAccept(item) }
                     }
                 }
-                .padding(6)
+                .padding(.horizontal, 6)
+                .padding(.vertical, model.verticalPadding)
             }
             .onChange(of: model.selection) {
                 guard model.items.indices.contains(model.selection) else { return }
@@ -339,9 +361,13 @@ private struct CommitCompletionList: View {
         }
     }
 
-    /// 提交行 44 pt，文件行 24 pt。
+    /// 提交行 44 pt，文件行 22 pt，Issue 行 24 pt。
     static func rowHeight(for item: CommitCompletion) -> CGFloat {
-        if case .commit = item.content { 44 } else { 24 }
+        switch item.content {
+        case .commit: 44
+        case .file: 22
+        case .issue: 24
+        }
     }
 }
 
@@ -360,7 +386,7 @@ extension CommitCompletionList {
         return UTType(filenameExtension: String(parts[parts.count - 1])) ?? .data
     }
 
-    /// 选中行使用强调色底与白字。
+    /// 选中行使用强调色底与白字；提交行左右留 8 pt，其余 3 pt。
     private func row(_ item: CommitCompletion, selected: Bool) -> some View {
         Group {
             switch item.content {
@@ -371,7 +397,7 @@ extension CommitCompletionList {
         }
         .font(.system(size: 12))
         .foregroundStyle(selected ? Color.white : Color.primary)
-        .padding(.horizontal, 3)
+        .padding(.horizontal, model.showsCommits ? 8 : 3)
         .frame(height: Self.rowHeight(for: item))
         .background(selected ? Color.accentColor : .clear, in: RoundedRectangle(cornerRadius: 5))
     }

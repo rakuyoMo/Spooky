@@ -19,7 +19,6 @@ struct RepositoryLocalFolderRow: View {
             label: AppLocalization.text("repositorySettings.localFolder"),
             value: folder.map { HomePath.abbreviated($0.path) }
                 ?? AppLocalization.text("repositorySettings.localFolder.none"),
-            small: true,
             actions: actions(folder: folder)
         )
     }

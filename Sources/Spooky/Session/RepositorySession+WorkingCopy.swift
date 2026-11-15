@@ -141,10 +141,11 @@ extension RepositorySession {
             return
         }
 
-        let message = AppLocalization.text(
-            repository.host == nil ? "working.discard.lines" : "working.discard.remoteLines",
-            repository.displayPath
-        )
+        // 本机仓库块与行共用一句说明；服务器仓库写明在哪台服务器上覆盖
+        let message =
+            repository.host == nil
+                ? AppLocalization.text("working.discard.selection")
+                : AppLocalization.text("working.discard.remoteLines", repository.displayPath)
 
         // 本机与服务器仓库的确认都可以勾选不再提醒，与 General 设置里的警告是同一项
         onConfirm?(ConfirmationRequest(

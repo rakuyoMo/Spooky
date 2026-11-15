@@ -185,8 +185,10 @@ extension RepositorySession {
             let issues = await pullRequests.openIssues(runner: runner, upstreamRemote: headBranch?.upstreamRemote)
             return CommitCompletion.matches(for: trigger, commits: [], paths: [], issues: issues)
 
+        // 只列已暂存的文件，输入文字后同样只在这些文件里匹配
         case .file:
-            return CommitCompletion.matches(for: trigger, commits: [], paths: status?.entries.map(\.path) ?? [])
+            let staged = status?.entries.filter(\.hasStagedChanges).map(\.path) ?? []
+            return CommitCompletion.matches(for: trigger, commits: [], paths: staged)
 
         case .commit, .fixup:
             guard let head = status?.branch.oid else {

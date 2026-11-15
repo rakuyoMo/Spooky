@@ -67,11 +67,16 @@ extension RepositoryOperationDialog {
 // MARK: - Preselection
 
 extension RepositoryOperationDialog {
+    /// 跟踪远端分支的候选：各远端的远端分支，按版本候选的顺序。
+    static func trackCandidates(in session: RepositorySession) -> [RepositoryReference] {
+        ReferenceOrder.candidates(session.history.branches.filter(\.isRemote), in: session.history.snapshot)
+    }
+
     /// 跟踪远端分支的预选：入口传入的远端分支在候选里时用它，否则取 HEAD 的上游（是远端分支时），再否则取第一个远端分支。
     ///
     /// - Returns: 远端分支的完整引用名；没有远端分支时为空字符串。
     static func trackSource(preselection: String?, in session: RepositorySession) -> String {
-        let remotes = session.history.branches.filter(\.isRemote)
+        let remotes = trackCandidates(in: session)
         let upstream = session.headBranch?.upstream
 
         return remotes.first { $0.id == preselection }?.id
@@ -116,7 +121,7 @@ extension RepositoryOperationDialog {
     ) -> [RepositoryReference] {
         let references = kind == .merge ? session.revisionReferences : session.history.branches.filter(\.isRemote)
 
-        return ReferenceOrder.sorted(references, in: session.history.snapshot)
+        return ReferenceOrder.candidates(references, in: session.history.snapshot)
     }
 
     /// 拉取与合并的预选：入口指定的引用，否则是 HEAD 的上游（在候选里时），再否则是第一个不是 HEAD 分支的候选。
@@ -155,6 +160,10 @@ extension RepositoryOperationDialog {
 
         switch kind {
         case .create, .track:
+            if session.isBranchFolder(name) {
+                return AppLocalization.text("branch.groupExists")
+            }
+
             guard branches.contains(where: { $0.id == "refs/heads/" + name }) else {
                 return nil
             }

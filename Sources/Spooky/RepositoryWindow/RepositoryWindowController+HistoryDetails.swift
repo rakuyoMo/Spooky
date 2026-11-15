@@ -48,10 +48,11 @@ extension RepositoryWindowController {
         case #selector(exportRevision), #selector(compareRevisions):
             return repositoryView && session.status?.branch.oid != nil
 
+        // 签名校验是全局的显示偏好，在任何视图里都能改
         case #selector(toggleVerifySignatures):
             let verifies = UserDefaults.standard.bool(forKey: CommitSignatureStore.verifiesKey)
             (item as? NSMenuItem)?.state = verifies ? .on : .off
-            return !showsManager && session.activeView == .history
+            return repositoryView
 
         default:
             return nil

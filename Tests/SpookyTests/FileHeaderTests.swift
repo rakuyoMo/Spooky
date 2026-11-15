@@ -64,8 +64,8 @@ struct FileHeaderTests {
         #expect(invoked == 1010)
     }
 
-    /// 重命名的完整旧路径在树形与平铺里都可见，复制不使用重命名箭头。
-    @Test("重命名列表保留旧路径与新路径层级")
+    /// 重命名在树形与平铺里都写出完整的旧路径与新路径，复制不使用重命名箭头。
+    @Test("重命名行写出完整的旧路径与新路径")
     func renamedPaths() {
         let entries = [
             StatusEntry(
@@ -85,9 +85,9 @@ struct FileHeaderTests {
         for entry in entries {
             let node = WorkingCopyFileList.Node(path: entry.path, entry: entry)
             let old = entry.originalPath ?? ""
-            let name = RepositorySession.fileName(entry.path)
+
             #expect(WorkingCopyFileList.Coordinator.pathTitle(node, tree: false) == "\(old) → \(entry.path)")
-            #expect(WorkingCopyFileList.Coordinator.pathTitle(node, tree: true) == "\(old) → \(name)")
+            #expect(WorkingCopyFileList.Coordinator.pathTitle(node, tree: true) == "\(old) → \(entry.path)")
             #expect(node.path == entry.path)
         }
 

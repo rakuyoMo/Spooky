@@ -9,8 +9,8 @@ import Testing
 /// 覆盖重命名、冲突、二进制、中文与引号路径、NFD 文件名、合并提交和 SHA-256 哈希。
 struct GitOutputFixtureTests {
     /// 分支头、各类条目与特殊路径都从同一份 porcelain v2 输出中读出；关闭预组合时 Git 输出原始 NFD 字节，
-    /// 路径保持原样，与 NFC 写法按规范等价比较。
-    @Test("status 夹具：上游计数、各类条目、特殊路径与 NFD 文件名")
+    /// 路径保持原样，与 NFC 写法按规范等价比较；按 Git 默认折叠的未跟踪目录是一个以 “/” 结尾的条目。
+    @Test("status 夹具：上游计数、各类条目、特殊路径、NFD 文件名与折叠的未跟踪目录")
     func status() throws {
         let status = try WorkingCopyStatus(porcelainV2: try fixture("status.bin"))
 
@@ -39,6 +39,18 @@ struct GitOutputFixtureTests {
         #expect(entry.path == "caf\u{E9}.txt")
         #expect(entry.path.precomposedStringWithCanonicalMapping.unicodeScalars.count == 8)
         #expect(decomposed.branch.head == nil)
+
+        // 按 Git 默认折叠的未跟踪目录：整个目录是一个以 “/” 结尾的条目，已跟踪目录下的未跟踪子目录同样如此
+        let collapsedOutput = try fixture("status-untracked-directories.bin")
+        let collapsed = try WorkingCopyStatus(porcelainV2: collapsedOutput)
+
+        #expect(collapsed.entries.map(\.path) == ["src/新目录/", "top.txt", "未跟踪 \"dir\" [*]/"])
+        #expect(collapsed.entries.allSatisfy { $0.kind == .untracked })
+
+        // 末尾缺少 NUL 的输出不能解析
+        #expect(throws: StatusParseError.self) {
+            try WorkingCopyStatus(porcelainV2: collapsedOutput.dropLast())
+        }
     }
 
     /// 两个块与末尾无换行的补丁可以逐行重组：未选的删除行原地变为上下文，未选的新增行连同无换行标记一起丢弃；

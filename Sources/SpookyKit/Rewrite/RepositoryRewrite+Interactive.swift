@@ -80,6 +80,38 @@ extension RepositoryRewrite {
             if case .edit = plan.action { try await reopenEditedCommit() }
         }
     }
+
+    /// 计划执行完后，改信息的提交或压缩合成的提交的新哈希；其余动作为 nil。
+    ///
+    /// 新提交按先后对应 todo 里产生提交的行：压缩与并入修正并进上一个提交，删除不产生提交。
+    public func rewrittenCommit(of plan: RewritePlan) async throws -> String? {
+        let focus: Int? =
+            switch plan.action {
+            case .reword(let commit, _):
+                plan.instructions.firstIndex { $0.commit == commit }
+
+            case .squash:
+                plan.instructions.firstIndex { $0.command == .squash }.map { $0 - 1 }
+
+            default:
+                nil
+            }
+
+        guard let focus, focus >= 0 else {
+            return nil
+        }
+
+        let position = plan.instructions[...focus]
+            .filter { ![.squash, .fixup, .drop].contains($0.command) }
+            .count - 1
+
+        // 范围以下的提交不变，范围从根提交开始时列出整个分支
+        let range = plan.base.map { $0 + "..HEAD" } ?? "HEAD"
+        let output = try await runner.run(["rev-list", "--first-parent", "--reverse", range, "--"])
+        let commits = String(decoding: output, as: UTF8.self).split(separator: "\n")
+
+        return commits.indices.contains(position) ? String(commits[position]) : nil
+    }
 }
 
 // MARK: - Todo

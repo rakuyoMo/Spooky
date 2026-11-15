@@ -12,9 +12,10 @@ import TestSupport
 /// Checkout Revision 子菜单的分支与标签缩进一级，选中别的版本即在子模块里检出它。
 @MainActor
 struct SubmoduleMenuTests {
-    /// 已检出、已初始化的子模块：各项都可用；子菜单的组名不缩进，分支缩进一级，当前分支打勾不可选，选中另一个分支即检出。
-    /// 去掉初始化的子模块：打开、检出版本、获取与同步不可用，更新、初始化、移动、改名与删除仍可用。
-    @Test("已检出与没有初始化的子模块")
+    /// 已检出、干净的子模块：更新、初始化与同步不可用，其余都可用；子菜单的组名不缩进，分支缩进一级，当前分支打勾不可选，选中另一个分支即检出。
+    /// 去掉初始化的子模块：打开、检出版本、获取与同步不可用，更新、初始化、移动、改名与删除仍可用；
+    /// 只登记了地址、还没有检出时不能再初始化；重新检出后 `.gitmodules` 的地址改了，只有同步可用。
+    @Test("干净、没有初始化、只登记与地址不一致的子模块")
     func submoduleStates() async throws {
         let fixture = try await UndoSessionTests.Fixture(allowsFileSubmodules: true)
 
@@ -50,12 +51,27 @@ struct SubmoduleMenuTests {
         await fixture.refresh()
         await until { session.submodules.items.first?.state == .uninitialized }
 
-        let submodule = try #require(session.submodules.items.first)
-        let menu = SubmoduleMenu.menu(session: session, submodule: submodule)
-        let enabled = menu.items.filter { !$0.isSeparatorItem }.map(\.isEnabled)
+        let menu = try #require(session.submodules.items.first.map { SubmoduleMenu.menu(session: session, submodule: $0) })
 
         #expect(Self.titles(menu) == Self.expectedTitles)
-        #expect(enabled == [false, false, false, false, true, true, true, false, true, true, true])
+        #expect(try Self.enabled(in: session) == [false, false, false, false, true, true, true, false, true, true, true])
+
+        // 只登记地址、不检出
+        _ = try await fixture.runner.run(["submodule", "init", "-q", "--", "lib"])
+
+        await fixture.refresh()
+        await until { session.submodules.items.first.map(\.isInitialized) ?? false }
+
+        #expect(try Self.enabled(in: session) == [false, false, false, false, true, true, false, false, true, true, true])
+
+        // 重新检出，再改 `.gitmodules` 里的地址
+        _ = try await fixture.runner.run(["submodule", "update", "-q", "--", "lib"])
+        _ = try await fixture.runner.run(["config", "-f", ".gitmodules", "submodule.lib.url", "../其它"])
+
+        await fixture.refresh()
+        await until { session.submodules.items.first.map(\.needsSynchronizing) ?? false }
+
+        #expect(try Self.enabled(in: session) == [true, true, true, true, false, false, false, true, true, true, true])
     }
 
     /// 已检出的子模块的菜单：项目与分组、⌥ 快速项、各项可用，Checkout Revision 子菜单的缩进、可用性与打勾；返回这个子菜单。
@@ -72,7 +88,7 @@ struct SubmoduleMenuTests {
 
         #expect(alternates.map(\.title) == [Self.expectedTitles[5], Self.expectedTitles[7]])
         #expect(alternates.allSatisfy { $0.keyEquivalentModifierMask == .option })
-        #expect(menu.items.filter { !$0.isSeparatorItem }.allSatisfy { $0.isEnabled })
+        #expect(try Self.enabled(in: session) == [true, true, true, true, false, false, false, false, true, true, true])
 
         // 子菜单：组名不缩进，分支缩进一级，当前分支打勾不可选
         let revisions = try #require(menu.items[2].submenu)
@@ -107,6 +123,14 @@ extension SubmoduleMenuTests {
         AppLocalization.text("submodule.rename.menu", "lib"),
         AppLocalization.text("submodule.delete.menu", "lib"),
     ]
+
+    /// 会话里第一个子模块的菜单各项是否可用，不含分隔线。
+    private static func enabled(in session: RepositorySession) throws -> [Bool] {
+        let submodule = try #require(session.submodules.items.first)
+        let menu = SubmoduleMenu.menu(session: session, submodule: submodule)
+
+        return menu.items.filter { !$0.isSeparatorItem }.map(\.isEnabled)
+    }
 
     /// 菜单项的标题，分隔线写作 “-”。
     private static func titles(_ menu: NSMenu) -> [String] {

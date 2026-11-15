@@ -16,11 +16,15 @@ struct HistorySearchPanel: View {
     @State
     private var focused: UUID? = nil
 
-    /// 按条件数量显示说明条或条件行，底部一条分隔线。
+    /// 一个条件时是说明条，多个条件时逐行列出；说明条与每个条件行的底部各有一条分隔线。
     var body: some View {
         VStack(spacing: 0) {
             if history.searchConditions.count == 1, let condition = history.searchConditions.first {
-                infoBar(condition)
+                VStack(spacing: 0) {
+                    infoBar(condition)
+                    Divider()
+                }
+                .background(.bar)
             } else {
                 ForEach(history.searchConditions) { condition in
                     HistorySearchConditionRow(
@@ -30,10 +34,7 @@ struct HistorySearchPanel: View {
                     )
                 }
             }
-
-            Divider()
         }
-        .background(.bar)
     }
 
     /// 说明条里条件的内容：文字条件是输入的文字，日期条件是关系与日期。
@@ -91,17 +92,17 @@ private struct HistorySearchConditionRow: View {
     @Binding
     var focused: UUID?
 
-    /// 种类菜单宽 108 pt，放得下最长的 “Commit Hash”；输入区占满中间，− / + 在最右；上下各留 7 pt。
+    /// 种类菜单按内容取宽；输入区占满中间，− / + 离右缘 20 pt；上下各留 7 pt，底是头部材质，行底一条分隔线。
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Picker("", selection: binding(\.kind)) {
-                ForEach(HistorySearchCondition.Kind.allCases, id: \.self) { kind in
+                ForEach(Self.kinds(including: condition.kind), id: \.self) { kind in
                     Text(kind.title).tag(kind)
                 }
             }
             .labelsHidden()
             .pickerStyle(.menu)
-            .frame(width: 108)
+            .fixedSize()
             .accessibilityLabel(AppLocalization.text("history.search.kind"))
 
             // 输入区占满中间的宽度，内容放不下时不把两侧的控件挤出去
@@ -123,16 +124,15 @@ private struct HistorySearchConditionRow: View {
             }
             .frame(width: 48, height: 24)
         }
-        .padding(.leading, 20)
-        .padding(.trailing, 8)
+        .padding(.horizontal, 20)
         .padding(.vertical, 7)
+        .background(HeaderMaterial(showsBottomSeparator: true))
     }
 
-    /// 文字条件的输入框，作者、提交人与文件条件补全。
+    /// 文字条件的输入框，不写占位文字；作者、提交人与文件条件补全。
     private var textInput: some View {
         HistorySearchField(
             text: condition.text,
-            placeholder: condition.kind.placeholder,
             focused: focused == condition.id,
             suggestions: { [history, kind = condition.kind] query in
                 guard let runner = history.runner, let head = history.branch?.oid else {
@@ -189,20 +189,22 @@ private struct HistorySearchConditionRow: View {
 
     /// 日期关系菜单：之后、之前与区间。
     private var relationPicker: some View {
-        Picker("", selection: binding(\.relation)) {
-            ForEach(HistorySearchCondition.DateRelation.allCases, id: \.self) { relation in
-                Text(relation.title).tag(relation)
-            }
-        }
-        .labelsHidden()
-        .pickerStyle(.menu)
-        .fixedSize()
+        HistorySearchRelationPopUp(relation: binding(\.relation))
+            .fixedSize()
     }
 
-    /// 只选年月日的日期框。
+    /// 种类菜单列出的种类：起止日期只在工具栏的范围菜单里选，行里正用着时才列出。
+    private static func kinds(including current: HistorySearchCondition.Kind) -> [HistorySearchCondition.Kind] {
+        HistorySearchCondition.Kind.allCases.filter { kind in
+            kind == current || ![.sinceDate, .untilDate].contains(kind)
+        }
+    }
+
+    /// 只选年月日的日期框；大尺寸让右侧的 stepper 带边框。
     private func datePicker(_ keyPath: WritableKeyPath<HistorySearchCondition, Date>) -> some View {
         DatePicker("", selection: binding(keyPath), displayedComponents: .date)
             .labelsHidden()
+            .controlSize(.large)
             .fixedSize()
     }
 
@@ -245,9 +247,6 @@ private struct HistorySearchField: NSViewRepresentable {
     /// 条件当前的文字。
     let text: String
 
-    /// 占位文字。
-    let placeholder: String
-
     /// 是否需要获得键盘焦点。
     let focused: Bool
 
@@ -286,7 +285,7 @@ private struct HistorySearchField: NSViewRepresentable {
         return field
     }
 
-    /// 同步文字、占位、补全来源与焦点；接受补全后与键入一样写回条件。
+    /// 同步文字、补全来源与焦点；接受补全后与键入一样写回条件。
     func updateNSView(_ field: NSTextField, context: Context) {
         context.coordinator.onChange = onChange
         context.coordinator.suggestions = suggestions
@@ -295,14 +294,63 @@ private struct HistorySearchField: NSViewRepresentable {
             field.stringValue = text
         }
 
-        field.placeholderString = placeholder
-
         guard focused else { return }
 
         Task { @MainActor in
             field.window?.makeFirstResponder(field)
             onFocus()
         }
+    }
+}
+
+// MARK: - HistorySearchRelationPopUp
+
+/// 日期关系的弹出按钮，标题居中。
+private struct HistorySearchRelationPopUp: NSViewRepresentable {
+    /// 转发菜单里的选择。
+    @MainActor
+    final class Coordinator: NSObject {
+        /// 选中一种关系后的动作。
+        var select: (HistorySearchCondition.DateRelation) -> Void = { _ in }
+
+        /// 菜单项与 `DateRelation.allCases` 依次对应。
+        @objc
+        func selected(_ sender: NSPopUpButton) {
+            let relations = HistorySearchCondition.DateRelation.allCases
+
+            guard relations.indices.contains(sender.indexOfSelectedItem) else {
+                return
+            }
+
+            select(relations[sender.indexOfSelectedItem])
+        }
+    }
+
+    /// 条件当前的关系。
+    @Binding
+    var relation: HistorySearchCondition.DateRelation
+
+    /// 建立协调者。
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    /// 13 pt 字、标题居中，依次列出之后、之前与区间。
+    func makeNSView(context: Context) -> NSPopUpButton {
+        let button = NSPopUpButton(frame: .zero, pullsDown: false)
+        button.font = .systemFont(ofSize: 13)
+        button.alignment = .center
+        button.addItems(withTitles: HistorySearchCondition.DateRelation.allCases.map(\.title))
+        button.target = context.coordinator
+        button.action = #selector(Coordinator.selected(_:))
+
+        return button
+    }
+
+    /// 更新选择动作，再选中当前的关系。
+    func updateNSView(_ button: NSPopUpButton, context: Context) {
+        context.coordinator.select = { relation = $0 }
+
+        let index = HistorySearchCondition.DateRelation.allCases.firstIndex(of: relation) ?? 0
+        button.selectItem(at: index)
     }
 }
 
@@ -366,6 +414,8 @@ extension HistorySearchCondition.Kind {
         case .file: AppLocalization.text("history.search.file")
         case .hash: AppLocalization.text("history.search.hash")
         case .date: AppLocalization.text("history.search.date")
+        case .sinceDate: AppLocalization.text("history.search.sinceDate")
+        case .untilDate: AppLocalization.text("history.search.untilDate")
         }
     }
 
@@ -378,6 +428,8 @@ extension HistorySearchCondition.Kind {
         case .file: AppLocalization.text("history.search.forFile")
         case .hash: AppLocalization.text("history.search.forHash")
         case .date: ""
+        case .sinceDate: AppLocalization.text("history.search.forSinceDate")
+        case .untilDate: AppLocalization.text("history.search.forUntilDate")
         }
     }
 }

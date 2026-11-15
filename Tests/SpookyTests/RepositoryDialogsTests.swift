@@ -69,6 +69,53 @@ struct RepositoryDialogsTests {
 
         #expect(checked.value == "1")
     }
+
+    /// 说明框的高度是输入框本身的高度，不是在系统输入框外面留出的空白：保存储藏 47，自动储藏 43。
+    @Test("储藏说明框的高度")
+    func stashMessageHeights() throws {
+        let requests: [(StashRequest, CGFloat)] = [
+            (.save(snapshot: false, entries: []), 47),
+            (.autoStash(Self.autoStash()), 43),
+        ]
+
+        for (request, height) in requests {
+            let hosting = DialogLayoutTests.hosting(Self.stashDialog(request, in: Self.session()))
+            let field = try #require(Self.subviews(NSTextField.self, in: hosting).first { $0.isEditable })
+
+            #expect(field.frame.height == height)
+        }
+    }
+
+    /// 改信息与删除的范围里有已推送的提交时，先弹提示框，主按钮是动作本身、另一个是 Cancel；
+    /// 没有已推送的提交，或是压缩等其它动作时不弹，直接打开对话框。
+    @Test("改写已推送的提交前的提示框")
+    func pushedRewriteAlert() {
+        let commit = String(repeating: "a", count: 40)
+        let cancel = AppLocalization.text("action.cancel")
+
+        // 有已推送的提交：改信息与删除各自的主按钮
+        let reword = RepositoryWindowController.pushedRewriteAlert(
+            for: .reword(Self.singleCommitPlan(pushed: true))
+        )
+        let drop = RepositoryWindowController.pushedRewriteAlert(
+            for: .confirm(Self.singleCommitPlan(pushed: true, action: .drop([commit])))
+        )
+
+        #expect(reword?.buttons.map(\.title) == [AppLocalization.text("rewrite.reword"), cancel])
+        #expect(drop?.buttons.map(\.title) == [AppLocalization.text("rewrite.drop"), cancel])
+        #expect(reword?.alertStyle == .warning)
+
+        // 没有已推送的提交，或是其它动作
+        let unpushed = RepositoryWindowController.pushedRewriteAlert(
+            for: .reword(Self.singleCommitPlan())
+        )
+        let squash = RepositoryWindowController.pushedRewriteAlert(
+            for: .confirm(Self.singleCommitPlan(pushed: true, action: .squash([commit], into: nil)))
+        )
+
+        #expect(unpushed == nil)
+        #expect(squash == nil)
+    }
 }
 
 // MARK: - Helpers
@@ -88,7 +135,7 @@ extension RepositoryDialogsTests {
     /// 这几类对话框的每一种，名字用于定位失败的那一个。
     private static func dialogs() -> [(String, AnyView)] {
         let session = session()
-        let plan = rewordPlan()
+        let plan = singleCommitPlan()
 
         return [
             ("checkout", AnyView(CheckoutRevisionDialog(session: session, revision: nil, close: { }))),
@@ -122,18 +169,22 @@ extension RepositoryDialogsTests {
         return session
     }
 
-    /// 改写一个提交信息的计划，范围里只有这个提交。
-    private static func rewordPlan() -> RewritePlan {
+    /// 范围里只有一个提交的计划，默认改写这个提交的信息。
+    ///
+    /// - Parameters:
+    ///   - pushed: 这个提交是否已推送到上游。
+    ///   - action: 计划的动作；nil 时改写信息。
+    private static func singleCommitPlan(pushed: Bool = false, action: RewriteAction? = nil) -> RewritePlan {
         let commit = HistoryListTests.commit("a", date: Date(timeIntervalSince1970: 1_800_000_000))
 
         return RewritePlan(
-            action: .reword(commit.id, message: commit.message),
+            action: action ?? .reword(commit.id, message: commit.message),
             head: commit.id,
             base: nil,
             onto: nil,
             commits: [commit],
             instructions: [],
-            pushed: [],
+            pushed: pushed ? [commit.id] : [],
             merged: []
         )
     }
@@ -151,6 +202,11 @@ extension RepositoryDialogsTests {
     /// 储藏对话框。
     private static func stashDialog(_ request: StashRequest, in session: RepositorySession) -> StashDialog {
         StashDialog(session: session, request: request, repository: session.repository, close: { })
+    }
+
+    /// 宿主树里这一类的全部视图。
+    private static func subviews<Element: NSView>(_: Element.Type, in root: NSView) -> [Element] {
+        root.subviews.flatMap { [$0 as? Element].compactMap(\.self) + subviews(Element.self, in: $0) }
     }
 
     /// 名称是这个资源键的按钮。

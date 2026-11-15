@@ -2,13 +2,10 @@ import SwiftUI
 
 // MARK: - TextSettingsView
 
-/// 设置 → Text：语法着色、不可见字符与 Tab 宽度三组，组间留出空白、不画分隔线，修改立即生效。
+/// 设置 → Text：语法着色、不可见字符与 Tab 宽度三组，组间是横贯整页的分隔线，修改立即生效。
 struct TextSettingsView: View {
-    /// 组与组的距离：到下一组第一行标签的顶边，与其它页分隔线上下的间距加线宽相同。
-    private static let groupSpacing = SettingsFormLayout.separatorSpacing * 2 + 1
-
-    /// 不可见字符组的勾选框方块底到 Tab 宽度数字框可见顶边的距离。
-    private static let tabWidthSpacing: CGFloat = 32
+    /// 页高：比三组合起来高，Tab 宽度一行下方留出空白。
+    private static let pageHeight: CGFloat = 214
 
     /// 语法着色总开关。
     @AppStorage(TextPreferences.syntaxColoringKey)
@@ -44,18 +41,19 @@ struct TextSettingsView: View {
                 }
             }
 
-            // 组间不画线，下一组第一行的标签距上一组 33 pt
+            SettingsSeparator(next: .checkbox)
+
             SettingsRow(AppLocalization.text("text.invisibles")) {
                 Toggle(AppLocalization.text("text.showInvisibles"), isOn: $showsInvisibles)
             }
-            .padding(.top, Self.groupSpacing)
+
+            SettingsSeparator()
 
             SettingsRow(AppLocalization.text("text.tabWidth")) {
                 tabWidthControl
             }
-            .padding(.top, Self.tabWidthSpacing)
         }
-        .frame(height: 260, alignment: .top)
+        .frame(height: Self.pageHeight, alignment: .top)
     }
 
     /// 30 pt 宽的数字框、1–100 的步进器与单位。

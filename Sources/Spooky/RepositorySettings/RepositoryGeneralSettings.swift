@@ -4,9 +4,9 @@ import SwiftUI
 
 // MARK: - RepositoryGeneralSettings
 
-/// 仓库设置的 General 段：名称、路径、服务器仓库的本机目录、描述与提交人身份，正文折行，以及提交签名。
+/// 仓库设置的 General 段：名称、路径、服务器仓库的本机目录、描述与提交人身份，以及提交签名。
 ///
-/// 配置只写进这个仓库的本地配置；本仓库没有设置的项沿用全局设置，字数上限显示 “–”。
+/// 配置只写进这个仓库的本地配置；本仓库没有设置的项沿用全局设置。
 struct RepositoryGeneralSettings: View {
     /// 对话框里编辑的项。
     enum Editor {
@@ -15,9 +15,6 @@ struct RepositoryGeneralSettings: View {
 
         /// 提交人身份。
         case identity
-
-        /// 正文每行字数上限。
-        case lineLimit
 
         /// 服务器仓库的 allowed signers 文件，填写服务器上的路径。
         case allowedSigners
@@ -35,19 +32,13 @@ struct RepositoryGeneralSettings: View {
     /// 描述与提交人身份。
     let summary: RepositorySummary
 
-    /// Editor 设置页的参考线开关，本仓库没有设置时沿用。
-    @AppStorage(CommitEditorSettings.showsGuideKey)
-    private var showsGuide = true
-
     /// 本机的签名密钥，供 Signing Key 菜单列出。
     @State
     private var keys: [SigningKey] = []
 
-    /// 三组设置依次排列。
+    /// 两组设置依次排列。
     var body: some View {
         generalRows
-
-        wrappingRows
 
         signingRows
     }
@@ -63,11 +54,7 @@ extension RepositoryGeneralSettings {
 
         RemoteSettingRow(label: AppLocalization.text("repositorySettings.name"), value: session.repository?.name ?? "")
 
-        RemoteSettingRow(
-            label: AppLocalization.text("repositorySettings.path"),
-            value: session.repository?.displayPath ?? "",
-            small: true
-        )
+        RemoteSettingRow(label: AppLocalization.text("repositorySettings.path"), location: session.repository)
 
         if session.repository?.host != nil {
             RepositoryLocalFolderRow(session: session)
@@ -102,36 +89,6 @@ extension RepositoryGeneralSettings {
                 apply: session.applyProfile
             )
         }
-    }
-
-    /// 正文参考线的开关与每行字数上限；Unset 在本地配置里没有字数上限时禁用。
-    @ViewBuilder
-    private var wrappingRows: some View {
-        let unset = RemoteSettingAction(
-            title: AppLocalization.text("bookmarks.detail.unset"),
-            isEnabled: session.canWrite && settings.bodyLineLimit != nil,
-            perform: { setConfig(RepositorySettings.Key.bodyLineLimit, to: nil) }
-        )
-
-        RemoteSettingsGroup(title: AppLocalization.text("repositorySettings.wrapping"))
-
-        RepositorySettingToggle(
-            label: AppLocalization.text("repositorySettings.wrapping"),
-            title: AppLocalization.text("repositorySettings.pageGuide"),
-            isOn: settings.showsBodyGuide ?? showsGuide,
-            isEnabled: session.canWrite
-        ) { isOn in
-            setConfig(RepositorySettings.Key.showsBodyGuide, to: isOn ? "true" : "false")
-        }
-
-        RemoteSettingRow(
-            label: AppLocalization.text("repositorySettings.lineLimit"),
-            value: settings.bodyLineLimit.map(String.init) ?? "–",
-            actions: [
-                action("remote.action.set") { edit(.lineLimit, in: session.presentingWindow) },
-                unset,
-            ]
-        )
     }
 
     /// 是否签名提交，以及签名密钥与 allowed signers 文件的弹出菜单，选中即写进本地配置。
@@ -298,18 +255,6 @@ extension RepositoryGeneralSettings {
                 }
             }
 
-        case .lineLimit:
-            SettingValueDialog(
-                label: AppLocalization.text("repositorySettings.lineLimit"),
-                value: settings.bodyLineLimit.map(String.init) ?? "",
-                problem: { value in
-                    Int(value).map { $0 > 0 } ?? false ? nil : AppLocalization.text("repositorySettings.lineLimit.invalid")
-                },
-                close: close
-            ) { value in
-                setConfig(RepositorySettings.Key.bodyLineLimit, to: value)
-            }
-
         case .allowedSigners:
             SettingValueDialog(
                 label: AppLocalization.text("repositorySettings.allowedSigners"),
@@ -347,7 +292,7 @@ extension RepositoryGeneralSettings {
 
 // MARK: - RepositorySettingToggle
 
-/// 设置表格里的一个勾选框：240 pt 宽的次级色标签与右侧带标题的勾选框。
+/// 设置表格里的一个勾选框：标签列的标签与值列里带标题的勾选框。
 private struct RepositorySettingToggle: View {
     /// 左侧标签。
     let label: String
@@ -366,26 +311,19 @@ private struct RepositorySettingToggle: View {
 
     /// 标签与勾选框横向排列。
     var body: some View {
-        HStack(spacing: 0) {
-            Text(label)
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .frame(width: 240, alignment: .leading)
-
+        SettingTableRow(label: label) {
             Toggle(title, isOn: Binding(get: { isOn }, set: change))
                 .toggleStyle(.checkbox)
                 .disabled(!isEnabled)
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
-        .frame(minHeight: 30)
     }
 }
 
 // MARK: - RepositorySettingMenu
 
-/// 设置表格里的一个弹出菜单：240 pt 宽的次级色标签与右侧按内容定宽的弹出菜单。
+/// 设置表格里的一个弹出菜单：标签列的标签与值列里按内容定宽的弹出菜单。
 private struct RepositorySettingMenu<Content: View>: View {
     /// 左侧标签，也是弹出菜单的辅助功能名称。
     let label: String
@@ -399,12 +337,7 @@ private struct RepositorySettingMenu<Content: View>: View {
 
     /// 标签与弹出菜单横向排列。
     var body: some View {
-        HStack(spacing: 0) {
-            Text(label)
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .frame(width: 240, alignment: .leading)
-
+        SettingTableRow(label: label) {
             menu()
                 .labelsHidden()
                 .fixedSize()
@@ -413,7 +346,5 @@ private struct RepositorySettingMenu<Content: View>: View {
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
-        .frame(minHeight: 30)
     }
 }

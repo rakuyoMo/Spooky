@@ -109,6 +109,10 @@ struct RepositorySidebarView: View {
     @State
     var filterText = ""
 
+    /// 拖动中悬停展开远端与文件夹，拖动结束后收起。
+    @State
+    var springLoading = SidebarSpringLoading()
+
     /// 正在显示签名弹窗的标签的完整引用名。
     @State
     var signatureTag: String?
@@ -124,6 +128,14 @@ struct RepositorySidebarView: View {
     /// 程序化选中引用后滚动到它所在行的进度。
     @State
     var reveal = SidebarReveal()
+
+    /// 列表的内容高过可见区域，能纵向滚动。
+    @State
+    var listOverflows = false
+
+    /// 活动区有行、正在显示。
+    @State
+    var showsActivity = false
 
     /// 系统 “侧边栏图标大小”，决定条目行的行高与字体。
     @Environment(\.sidebarRowSize)
@@ -145,13 +157,21 @@ struct RepositorySidebarView: View {
                     .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, _ in
                         reveal.listScrolled()
                     }
+
+                    // 内容连同上下插距高过可见区域时列表能滚动，底栏上方随之画分隔线
+                    .onScrollGeometryChange(for: Bool.self) { geometry in
+                        let insets = geometry.contentInsets.top + geometry.contentInsets.bottom
+                        return geometry.contentSize.height + insets > geometry.containerSize.height
+                    } action: { _, overflows in
+                        listOverflows = overflows
+                    }
             }
 
             // 刚归档的分支数与撤销
             ArchiveNoticeView(session: session)
 
             // 本仓库进行中与刚结束的远程操作
-            SidebarActivityView(session: session, showActivity: showActivity)
+            SidebarActivityView(session: session, isShown: $showsActivity, showActivity: showActivity)
 
             // 新版本第一次启动时的新功能卡片
             WhatsNewCard(state: .shared)
@@ -167,6 +187,9 @@ struct RepositorySidebarView: View {
         .onChange(of: selectionState) { old, _ in
             reselectVanishedRows(from: old)
         }
+        .onChange(of: filterText) {
+            selectSettingsIfRemoteHidden()
+        }
 
         // 远端的设置随引用一起读出摘要，摘要变化时重新读取远端行提示里的地址
         .task(id: session.history.snapshot?.remoteSettingsDigests) {
@@ -174,7 +197,8 @@ struct RepositorySidebarView: View {
         }
     }
 
-    /// 各分组的列表：列表固定在 `listSize` 的档位，条目行在各分组里换回系统的档位与字体。
+    /// 各分组的列表：列表固定在 `listSize` 的档位，条目行在各分组里换回系统的档位与字体；
+    /// 删除只接 Edit › Delete（⌘⌫），单独的 ⌫ 不删除。
     private var sidebarList: some View {
         // 列表按仓库区分身份，换了仓库就整个重建：列表显示过可展开的行（远端、文件夹）后，
         // 行首一直留着展开箭头的位置，换成没有这类行的仓库也不收回；重建后与新开窗口的排版相同
@@ -193,11 +217,31 @@ struct RepositorySidebarView: View {
         .environment(\.defaultMinListHeaderHeight, 20)
         .environment(reveal)
         .focused($listFocused)
-        .onDeleteCommand(perform: deleteCommand)
+        .onCommand(#selector(NSText.delete(_:)), perform: deleteCommand)
+        .overlay { listEdges }
         .id(session.repository)
     }
 
+    /// 列表上下边缘各 8 pt 的落点：文件夹里的分支拖到这里时整个列表是目标，放下后移到顶层；点击与滚动穿透给列表。
+    private var listEdges: some View {
+        let edge = Color.clear
+            .frame(maxWidth: .infinity)
+            .frame(height: 8)
+            .modifier(RepositoryDropTarget(session: session, destination: .listEdge, request: request))
+
+        return VStack(spacing: 0) {
+            edge
+
+            Spacer(minLength: 0)
+
+            edge
+        }
+        .allowsHitTesting(false)
+    }
+
     /// 侧边栏底栏：左侧过滤框，右侧新建分支菜单与视图设置按钮。
+    ///
+    /// 列表能滚动、且活动区没有显示时，上方有一条分隔线；活动区显示时由它顶上的分隔线隔开列表。
     private var bottomBar: some View {
         HStack(spacing: 4) {
             SidebarFilterField(text: $filterText)
@@ -227,6 +271,11 @@ struct RepositorySidebarView: View {
         }
         .padding(.horizontal, 4)
         .frame(height: 40)
+        .overlay(alignment: .top) {
+            if listOverflows, !showsActivity {
+                Divider()
+            }
+        }
     }
 }
 
@@ -255,8 +304,8 @@ extension RepositorySidebarView {
             return session.worktrees.selectedPath.map { [Self.worktreeRowPrefix + $0] } ?? []
         }
 
-        // 文件视图不对应侧边栏的任何一项，点 Working Copy 或 History 都能离开
-        if [.fileHistory, .fileContent].contains(session.activeView) { return [] }
+        // 文件原文与 Blame 选中 History 行；文件历史保持历史的选中
+        if session.activeView == .fileContent { return ["history"] }
 
         let references = session.history.selectedReferences
 
@@ -383,13 +432,21 @@ extension RepositorySidebarView {
                     )
                 }
                 .disabled(!session.canFetch)
-                RemoteManagementMenu(session: session, remote: remote.name)
+
+                RemoteManagementMenu(
+                    session: session,
+                    remote: remote.name,
+                    hasWebAddress: remoteConfigurations[remote.name]?.webURL != nil
+                )
             }
             .modifier(
                 RepositoryDropTarget(
                     session: session,
                     destination: .remote(remote.name),
-                    request: request
+                    request: request,
+                    hovering: {
+                        springLoading.hover(remote.sidebarID, hovering: $0, expanded: isExpanded(remote.sidebarID))
+                    }
                 )
             )
     }
@@ -410,15 +467,12 @@ extension RepositorySidebarView {
         let metadata = session.history.snapshot?.metadata(for: ref.id) ?? BranchMetadata()
         let status = branchStatus(ref)
 
-        // 已在别的工作树检出的分支换成工作树图标
-        let symbol =
-            session.worktrees.branchWorktrees[ref.id] != nil
-                ? "rectangle.on.rectangle"
-                : (metadata.isArchived ? "archivebox" : "arrow.triangle.branch")
-
         return SidebarBranchRow(
             name: name,
-            symbol: symbol,
+            symbol: metadata.isArchived ? "archivebox" : "arrow.triangle.branch",
+
+            // 已在别的工作树检出的分支，图标右下角叠角标
+            isCheckedOutElsewhere: session.worktrees.branchWorktrees[ref.id] != nil,
             badge: badge(ref),
             status: status,
             help: SidebarTooltip.branch(

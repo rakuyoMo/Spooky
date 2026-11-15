@@ -122,7 +122,7 @@ extension RepositoryWindowController {
             case .authors: .author
             case .messages: .message
             case .committers: .committer
-            case nil: nil
+            case .files, nil: nil
             }
 
         if let scope, scope != session.fileHistory.scope {

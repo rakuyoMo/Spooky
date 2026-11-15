@@ -68,20 +68,29 @@ extension RepositoryWindowController {
 // MARK: - Private
 
 extension RepositoryWindowController {
-    /// 工作区的副标题：“Working Copy (分支 – n Changed Files)”，分离 HEAD 或还没读到状态时不写分支。
+    /// 工作区的副标题：“Working Copy (分支 – n Changed Files)”；分离 HEAD 时分支一段写前 8 位哈希与 “(detached)”，
+    /// 还没读到状态时不写分支。
     private var workingCopySubtitle: String {
-        let count = session.status?.entries.count ?? 0
+        // 停止跟踪后同一路径的两条记录在列表里是一行，改动数也按一条计
+        let entries = session.status?.entries ?? []
+        let count = entries.count - entries.untrackedCopies.count
 
-        guard let branch = session.status?.branch.head else {
+        guard let branch = session.status?.branch, branch.head != nil || branch.oid != nil else {
             return AppLocalization.text("working.subtitle", count)
         }
 
-        return AppLocalization.text("working.subtitle.branch", branch, count)
+        return AppLocalization.text("working.subtitle.branch", WorkingCopyListView.branchTitle(branch), count)
     }
 
-    /// 历史的副标题：所选引用以 “, ” 相连，没有选引用时是 “History”，与基准分支比较时是 “分支 → 基准”；后面是提交数，数到上限时写 “or more”。
+    /// 历史的副标题：整页详情是 “Commit 短哈希”；所选引用以 “, ” 相连，没有选引用时是 “History”，与基准分支比较时是 “分支 → 基准”；后面是提交数，数到上限时写 “or more”。
     private var historySubtitle: String {
         let history = session.history
+
+        // 整页详情写出所看的提交
+        if history.showsCommitPage, let commit = history.selectedCommit {
+            return AppLocalization.text("history.commitPage.subtitle", String(commit.id.prefix(8)))
+        }
+
         var name = history.selectedReferences.isEmpty ? AppLocalization.text("history.title") : history.title
 
         if let comparison = history.baseComparison {

@@ -11,7 +11,7 @@ import SwiftUI
 /// 头部文字、错误文字与备选底栏的按钮组对齐内容区的输入列，图标挂在头部文字左侧；输入列由 `DialogFormRow` 报上来，
 /// 标签长时随之右移，内容区没有输入列时对齐 `DialogMetrics.alignment`。
 /// 内容区与选项区的边距由内容自己决定，里面要按输入列定宽或缩进的部分用 `DialogInputColumnReader` 读到它；
-/// 只有 Options 开关上方的间距由骨架定为 8 pt：内容区表单的最后一个控件下方，没有内容区时是头部的说明下方，各对话框不另留。
+/// 只有 Options 开关上方的间距由骨架定为 20 pt：内容区表单的最后一个控件下方，没有内容区时是头部的说明下方，各对话框不另留。
 ///
 /// 几种版本由参数组合出来：
 /// - 表单版：内容区是表单
@@ -96,10 +96,10 @@ struct DialogLayout<Content: View, Options: View>: View {
     /// 经 `DialogWindow` 呈现时报上理想尺寸，窗口随之同步变化。
     var body: some View {
         DialogStack(width: width, fillsProposedWidth: resizable, fillsProposedHeight: sizing != nil) {
-            // 有 Options 开关时，开关上方那一段只留 8 pt：内容区的表单在最后一个控件下方，没有内容区时是头部的说明下方
+            // 有 Options 开关时，开关上方那一段留 20 pt：内容区的表单在最后一个控件下方，没有内容区时是头部的说明下方
             Group(subviews: formattedContent) { contentViews in
                 VStack(alignment: .leading, spacing: 0) {
-                    header(textBottom: contentViews.isEmpty && options != nil ? 8 : 12)
+                    header(textBottom: contentViews.isEmpty && options != nil ? Self.optionsSpacing : 12)
 
                     ForEach(contentViews) { $0 }
 
@@ -204,12 +204,12 @@ extension DialogLayout {
         DialogMetrics.textLeading(for: inputColumn)
     }
 
-    /// 内容区：13 pt 的字，表单按输入列排版；下面紧跟 Options 开关时表单底下只留 8 pt。
+    /// 内容区：13 pt 的字，表单按输入列排版；下面紧跟 Options 开关时表单底下留 20 pt。
     private var formattedContent: some View {
         content()
             .font(.system(size: 13))
             .environment(\.dialogInputColumn, alignment)
-            .environment(\.dialogFormBottomInset, options == nil ? 12 : 8)
+            .environment(\.dialogFormBottomInset, options == nil ? 12 : Self.optionsSpacing)
     }
 
     /// 高 34 的开关行：17 pt 的披露三角距左 20，右侧 4 pt 是文字，点文字也能切换。
@@ -300,7 +300,7 @@ extension DialogLayout {
     ///
     /// 图标下方不留这段边距，头部至少高 84：距顶 20 加上图标的 64。
     ///
-    /// - Parameter textBottom: 说明到头部底边的距离：一般是 12，没有内容区、下面紧跟 Options 开关时是 8。
+    /// - Parameter textBottom: 说明到头部底边的距离：一般是 12，没有内容区、下面紧跟 Options 开关时是 20。
     private func header(textBottom: CGFloat) -> some View {
         HStack(alignment: .top, spacing: DialogMetrics.iconSpacing) {
             Image(nsImage: icon ?? AppIconController.displayedIcon())
@@ -336,7 +336,7 @@ extension DialogLayout {
 
     /// 黄色警告图标挂在对齐线左侧 4 pt，原因文字从对齐线开始，右边距 20。
     ///
-    /// 没有 Options 时这一行至少高 51；下面紧跟 Options 开关时与表单一样，这一行下方只留 8 pt。
+    /// 没有 Options 时这一行至少高 51；下面紧跟 Options 开关时与表单一样，这一行下方留 20 pt。
     private func errorRow(_ error: String) -> some View {
         HStack(alignment: .top, spacing: 4) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -356,7 +356,7 @@ extension DialogLayout {
         }
         .padding(.leading, alignment - 4 - 18)
         .padding(.trailing, 20)
-        .padding(.bottom, options == nil ? 0 : 8)
+        .padding(.bottom, options == nil ? 0 : Self.optionsSpacing)
     }
 
     /// 选项区上下各留 8 pt；展开时整块填次要背景色，上下各一条带阴影的 1 pt 边线。
@@ -376,11 +376,11 @@ extension DialogLayout {
         .padding(.vertical, 8)
     }
 
-    /// 最小 70 pt 宽的按钮：文字至少 56 pt，加上按钮自己的边距正好 70；文字长时随之加宽。
+    /// 最小 70 pt 宽的按钮：文字至少 46 pt，加上按钮左右各 12 pt 的边距正好 70；文字长时随之加宽。
     private func footerButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .frame(minWidth: 56)
+                .frame(minWidth: 46)
         }
         .fixedSize()
     }
@@ -392,6 +392,11 @@ extension DialogLayout {
     /// 底栏的高度。
     private static var footerHeight: CGFloat {
         53
+    }
+
+    /// Options 开关上方的间距。
+    private static var optionsSpacing: CGFloat {
+        20
     }
 
     /// 文字里的网址写成可点的链接。

@@ -20,12 +20,14 @@ extension DiffSelectionSessionTests {
         let row = try #require(fixture.session.selectedID)
         await fixture.session.shutdown()
 
-        // 换成只拦下一次 Diff 的执行器，重新打开同一个仓库
-        let root = fixture.directory.appending(path: ".git")
-        let gate = try ProcessGate(in: root)
+        // 换成只拦下一次 Diff 的执行器，重新打开同一个仓库；闸门与脚本放在仓库之外，它们的变化不触发刷新
+        let tools = try FileViewsTests.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: tools) }
+
+        let gate = try ProcessGate(in: tools)
         defer { gate.release() }
 
-        let runner = try gatedRunner(fixture, gate: gate, root: root)
+        let runner = try gatedRunner(fixture, gate: gate, tools: tools)
         let otherRunner = other.runner
         let location = fixture.location
         let activities = RepositoryActivities()
@@ -44,7 +46,7 @@ extension DiffSelectionSessionTests {
         let selected = old.selected
 
         // 下一次 Diff 停在闸门上，这时改变范围
-        try Data().write(to: root.appending(path: "arm"))
+        try gate.arm()
         session.loadDiff()
         await gate.arrival()
 
@@ -79,28 +81,33 @@ extension DiffSelectionSessionTests {
         await session.shutdown()
     }
 
-    /// 只拦下本测试仓库里武装后的一次 Diff：武装期间的 Diff 都先读出真实补丁，读完后认领到武装的一个停在闸门上，
+    /// 只拦下武装后的一次 Diff：武装期间的 Diff 都先读出真实补丁，读完后认领到武装的一个停在闸门上，
     /// 放行后再输出；其余命令直接交给系统 Git。
     ///
     /// 会话取消读取时先向进程组发 TERM，宽限期过后才 KILL。读补丁时被取消的进程还没认领，武装留给会话重发的读取；
-    /// 认领前开始忽略 TERM，认领了的进程一定走到闸门报到。
-    func gatedRunner(_ fixture: UndoSessionTests.Fixture, gate: ProcessGate, root: URL) throws -> GitRunner {
-        let script = root.appending(path: "selection-git")
+    /// 认领前开始忽略 TERM，在范围改变后才取消的旧读取放行后照样输出。
+    ///
+    /// - Parameters:
+    ///   - fixture: 要读取的仓库。
+    ///   - gate: 认领后停住的闸门。
+    ///   - tools: 放脚本与暂存补丁的目录。
+    func gatedRunner(_ fixture: UndoSessionTests.Fixture, gate: ProcessGate, tools: URL) throws -> GitRunner {
+        let script = tools.appending(path: "selection-git")
         let source = """
             #!/bin/sh
             set -eu
-            root=\(GitRunner.shellQuoted(root.path))
+            tools=\(GitRunner.shellQuoted(tools.path))
             kind=other
             for arg in "$@"; do
                 if [ "$arg" = diff ]; then kind=diff; break; fi
             done
-            if [ "$kind" = diff ] && [ -f "$root/arm" ]; then
-                held="$root/held-$$"
+            if [ "$kind" = diff ] && \(gate.armed); then
+                held="$tools/held-$$"
                 /usr/bin/git "$@" > "$held"
 
                 trap '' TERM
-                if mv "$root/arm" "$root/claimed" 2>/dev/null; then
-                    \(gate.command)
+                if \(gate.claim); then
+                    \(gate.hold)
                 fi
                 trap - TERM
 

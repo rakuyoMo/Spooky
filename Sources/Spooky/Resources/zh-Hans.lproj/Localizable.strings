@@ -65,7 +65,6 @@
 "repositories.unavailable" = "路径失效或不可访问，可重新打开";
 
 
-"repositories.panel.message" = "选择已有 Git 仓库的工作区目录。";
 "repositories.panel.prompt" = "打开仓库";
 
 "workspace.group" = "工作空间";
@@ -205,7 +204,7 @@
 "callback.username.label" = "用户名：";
 "callback.password.label" = "密码：";
 "callback.saveKeychain" = "存入这台 Mac 的钥匙串";
-"error.indexLocked" = "另一个 Git 进程持有暂存区锁，请等待它结束后重试。";
+"error.indexLocked" = "仓库被另一个 Git 进程锁住；确认没有别的 Git 进程在运行后，请手动删除 “%@”。";
 "error.terminal" = "无法打开终端";
 "error.terminalHelp" = "请检查设置中的终端选择及 macOS 自动化权限。";
 "error.remoteConnection" = "连接远端失败";
@@ -340,7 +339,7 @@
 "working.discard.message.single" = "将丢弃 “%@” 的改动：已跟踪的文件恢复到最后一次提交（含暂存改动），未跟踪文件移到废纸篓。仓库：%@。";
 "working.discard.remote.single" = "将在服务器上丢弃 “%@” 的改动：已跟踪的文件被最后一次提交覆盖（含暂存改动），未跟踪文件移到服务器的废纸篓。仓库：%@。";
 "working.discard.remotePermanent.single" = "将在服务器上丢弃 “%@” 的改动：已跟踪的文件被最后一次提交覆盖（含暂存改动），未跟踪文件在服务器上永久删除。仓库：%@。";
-"working.discard.lines" = "将丢弃 %@ 中所选行的改动。";
+"working.discard.selection" = "将丢弃所选的 Diff 内容。";
 "working.discard.remoteLines" = "将在服务器 %@ 上覆盖所选内容。";
 "working.resolved" = "标记已解决";
 "working.copyRelative" = "复制相对文件路径";
@@ -409,7 +408,7 @@
 "branch.checkout" = "检出分支";
 "branch.checkoutNamed" = "检出 “%@”";
 "branch.delete" = "删除分支";
-"branch.copyName" = "复制分支名";
+"branch.copyName" = "将分支名复制到剪贴板";
 "branch.start" = "起点：";
 "branch.name" = "分支名称：";
 "branch.local" = "本地分支：";
@@ -421,6 +420,7 @@
 "branch.track.checkout" = "检出分支";
 "branch.cleanNames" = "输入时自动规范引用名称";
 "branch.exists" = "本地分支 “%@” 已存在。";
+"branch.groupExists" = "已有同名的引用分组。";
 "branch.error.unmerged" = "分支尚未完全合并。";
 "sync.fetch" = "获取";
 "sync.fetch.help" = "获取远端更新，保留当前工作区。";
@@ -626,13 +626,9 @@
 "stash.delete.confirm" = "确定删除储藏 “%@” 吗？";
 "stash.deleteStashes" = "删除所选储藏";
 "stash.deleteStashes.confirm" = "确定删除所选的 %ld 个储藏吗？";
-"stash.applyButton" = "应用…";
-"stash.deleteButton" = "删除…";
+"stash.applyButton" = "应用";
+"stash.deleteButton" = "删除";
 "stash.basedOn" = "基于";
-"stash.baseCommit" = "基准提交";
-"stash.date" = "日期";
-"stash.hash" = "储藏";
-"stash.untracked" = "未跟踪";
 "stash.empty" = "没有储藏";
 "stash.noMatches" = "没有匹配的储藏";
 "stash.loading" = "正在读取储藏…";
@@ -730,10 +726,12 @@
 "conflict.change.modified" = "修改";
 "conflict.change.deleted" = "删除";
 "conflict.change.merge" = "合并";
+"conflict.change.edited" = "已编辑";
+"conflict.lastEdited" = "最后编辑于 %@";
 "conflict.openWith" = "打开来自 “%@” 的版本的方式";
 "conflict.openWith.missing" = "打开方式";
-"conflict.compareOther" = "与另一侧版本比较";
-"conflict.compareBase" = "与共同祖先比较";
+"conflict.compareOther" = "与来自 “%@” 的版本比较";
+"conflict.compareBase" = "与祖先版本比较";
 /* 文件历史、Blame 与原文。 */
 "fileHistory.title" = "文件历史";
 "fileHistory.scope.message" = "说明";
@@ -762,8 +760,17 @@
 "fileHistory.suggestions.authors" = "作者";
 "fileHistory.suggestions.messages" = "说明";
 "fileHistory.suggestions.committers" = "提交人";
+"fileHistory.suggestions.files" = "文件";
+"search.contains.message" = "说明包含：%@";
+"search.contains.author" = "作者包含：%@";
+"search.contains.committer" = "提交人包含：%@";
+"search.contains.file" = "文件包含：%@";
 "fileHistory.diff" = "Diff";
 "blame.title" = "Blame";
+"blame.hash" = "哈希";
+"blame.author" = "作者";
+"blame.date" = "日期";
+"blame.subject" = "标题";
 "blame.show" = "显示 “%@” 的 Blame";
 "blame.loading" = "正在加载 Blame…";
 "blame.untracked" = "无法 Blame 新增或未跟踪的文件";
@@ -781,13 +788,11 @@
 "showFile.noContributors" = "还没有贡献者";
 "showFile.oneContributor" = "1 位贡献者";
 "showFile.contributors" = "%ld 位贡献者";
-"showFile.searchRevisions" = "搜索版本";
-"showFile.searchFiles" = "搜索文件";
 "showFile.error.missing" = "该版本中没有这个文件";
 /* Diff 显示选项、语法着色、图片 Diff，以及设置 → Text。 */
 "diff.error.whitespace" = "忽略空白时，选中的行与文件中的改动对应不上。请显示空白改动后重新选择。";
-"diff.ignoreWhitespace" = "忽略空白改动";
-"diff.showEntireFile" = "显示整个文件";
+"diff.ignoreWhitespace" = "显示 / 隐藏空白改动";
+"diff.showEntireFile" = "显示完整的文件";
 "diff.context" = "上下文：";
 "diff.contextMenu" = "Diff 上下文行数";
 "diff.contextLine" = "1 行";
@@ -832,7 +837,7 @@
 "editor.showsGuide" = "显示参考线";
 "editor.warnsComments" = "提交信息含注释时提示";
 "editor.stripsComments" = "总是删除提交信息中的注释";
-"profiles.help" = "身份档案用来快速切换仓库提交时使用的身份。";
+"profiles.help" = "使用 “身份档案” 可以在提交时轻松切换不同的身份。";
 "profiles.add" = "添加身份档案";
 "profiles.remove" = "移除身份档案";
 "profiles.newProfile" = "新档案";
@@ -841,6 +846,7 @@
 "profiles.email" = "邮箱：";
 "profiles.signingKey" = "签名密钥：";
 "profiles.edit" = "编辑";
+"profiles.noSelection" = "没有选中身份档案";
 "profiles.menu" = "提交人身份";
 "profiles.addCurrent" = "添加身份档案 “%@”…";
 "profiles.manage" = "管理身份档案…";
@@ -856,7 +862,7 @@
 "commit.continueHelp" = "继续合并序列";
 "commit.remaining" = "还可输入 %ld 个字";
 "commit.quickAmendHint" = "• 焦点不在信息框时按住 ⌥ 可快速修补最近一次提交。";
-"commit.pin" = "保持正文展开";
+"commit.pin" = "保持正文区展开";
 "commit.reformatParagraph" = "重排段落";
 "commit.comments" = "要删除提交信息中的注释吗？";
 "commit.comments.help" = "以注释字符开头的行会原样提交，它们可能是 Git 自动生成的。";
@@ -870,7 +876,6 @@
 "files.showNonModified" = "显示未改动的项目";
 "files.showIgnored" = "显示被忽略的项目";
 "files.showAssumeUnchanged" = "显示 assume-unchanged 项目";
-"files.noMatches" = "没有与 “%@” 匹配的文件。";
 "files.open" = "打开";
 "files.quickLook.single" = "快速查看 “%@”";
 "files.quickLook.multiple" = "快速查看 %ld 个项目";
@@ -887,6 +892,7 @@
 "files.move.title" = "移动 “%@”";
 "files.move.message" = "输入相对仓库根目录的新路径。目标文件夹必须已经存在，已有的文件不会被覆盖。";
 "files.move.destination" = "新路径：";
+"files.move.outside" = "请选择仓库里面的位置。";
 "files.revert.menu" = "恢复到指定版本…";
 "files.revert" = "恢复到指定版本";
 "files.revert.button" = "恢复";
@@ -915,7 +921,7 @@
 "files.exclude.custom.message" = "规则会添加到 Git 目录下的 info/exclude，只对这份仓库生效，不会被提交。";
 "files.pattern" = "规则：";
 "files.pattern.save" = "保存规则";
-"files.untrackIgnored.title" = "同时停止跟踪这些文件？";
+"files.untrackIgnored.title" = "忽略未跟踪的文件";
 "files.untrackIgnored.message" = "忽略规则对 Git 已经跟踪的文件不起作用。要同时停止跟踪以下已跟踪的文件吗？文件会保留在工作区。\n\n%@";
 "files.untrackIgnored.skip" = "不停止跟踪";
 "files.mark" = "标记";
@@ -1007,11 +1013,15 @@
 "history.search.file" = "文件";
 "history.search.hash" = "提交哈希";
 "history.search.date" = "日期";
+"history.search.sinceDate" = "起始日期";
+"history.search.untilDate" = "截止日期";
 "history.search.forMessage" = "搜索提交信息";
 "history.search.forAuthor" = "搜索作者";
 "history.search.forCommitter" = "搜索提交人";
 "history.search.forFile" = "搜索文件";
 "history.search.forHash" = "搜索提交哈希";
+"history.search.forSinceDate" = "搜索此日期以来的提交";
+"history.search.forUntilDate" = "搜索此日期以前的提交";
 "history.search.after" = "晚于";
 "history.search.before" = "早于";
 "history.search.range" = "介于";
@@ -1022,6 +1032,7 @@
 "history.reveal.slow.submit" = "加载";
 "history.reveal.slow.message" = "提交 %1$@ 排在这段历史的前 %2$ld 个提交之后。加载到它为止可能需要一些时间。";
 "history.subtitle" = "%@（%ld 个提交）";
+"history.commitPage.subtitle" = "提交 %@";
 "history.subtitle.more" = "%@（%ld 个或更多提交）";
 "working.subtitle" = "工作区（%ld 个改动的文件）";
 "working.subtitle.branch" = "工作区（%@ – %ld 个改动的文件）";
@@ -1112,6 +1123,7 @@
 "sidebar.archived" = "已归档分支";
 "sidebar.tags" = "标签";
 "sidebar.filter" = "过滤";
+"sidebar.filter.clear" = "清除";
 "sidebar.menu" = "侧边栏";
 "sidebar.viewSettings" = "侧边栏显示设置";
 "sidebar.showReflog" = "显示 Reflog";
@@ -1153,9 +1165,9 @@
 "branch.tooltip.stale" = "- 已陈旧（%@）";
 "branch.tooltip.missingUpstream" = "- 跟踪的分支 “%@” 已不存在";
 "remote.tooltip.branch" = "远端分支 “%@”";
-"remote.tooltip.remote" = "远端 “%@”";
-"remote.tooltip.fetchURL" = "获取地址：%@";
-"remote.tooltip.pushURL" = "推送地址：%@";
+"remote.tooltip.remote" = "远端仓库 “%@”";
+"remote.tooltip.fetchURL" = "- 获取地址：“%@”";
+"remote.tooltip.pushURL" = "- 推送地址：“%@”";
 "tag.tooltip.revision" = "指向版本 “%@”";
 "tag.tooltip.message" = "标签说明：“%@”";
 "tag.checkoutNamed" = "检出 “%@”…";
@@ -1166,7 +1178,7 @@
 /* 改写操作：反转、摘取、重置、检出版本、变基到别处与交互式变基。 */
 "rewrite.revert" = "反转";
 "rewrite.cherryPick" = "摘取";
-"rewrite.reset" = "重置 HEAD";
+"rewrite.reset" = "重置版本";
 "rewrite.checkout" = "检出版本";
 "rewrite.rebaseOnto" = "变基到别处";
 "rewrite.squash" = "压缩提交";
@@ -1178,6 +1190,8 @@
 "rewrite.amend" = "修补提交";
 "rewrite.autosquash" = "自动压缩提交";
 "rewrite.squash.button" = "压缩";
+"rewrite.squash.submit" = "压缩提交";
+"rewrite.squash.submit.one" = "压缩提交";
 "rewrite.fixup.button" = "Fixup";
 "rewrite.edit.button" = "编辑";
 "rewrite.drop.button" = "删除";
@@ -1189,7 +1203,7 @@
 "rewrite.reset.button" = "重置";
 "rewrite.checkout.button" = "检出";
 "rewrite.reword.button" = "保存";
-"rewrite.squash.confirm" = "将 %ld 个提交压缩进 “%@”？它们的提交信息会合并。";
+"rewrite.squash.confirm" = "确定要把 %ld 个提交压缩进 “%@” 吗？";
 "rewrite.fixup.confirm" = "将 %ld 个提交并入 “%@”，只保留它的提交信息？";
 "rewrite.edit.confirm" = "停在 “%@” 并把它的改动撤回到工作区？提交这些改动后点按 “继续”。";
 "rewrite.drop.confirm" = "从当前分支删除 %ld 个提交？";
@@ -1205,6 +1219,8 @@
 "rewrite.shared" = "已推送或已合并";
 "rewrite.warning.pushed" = "其中一些提交已经在上游分支中。改写之后，本地分支会与上游分叉。";
 "rewrite.warning.merged" = "其中一些提交已经并入其它分支。改写它们会让同样的改动留下两份。";
+"rewrite.pushed.title" = "确定要改写已在上游分支中的提交吗？";
+"rewrite.pushed.message" = "改写后的提交会有新的哈希。本地分支会与上游分叉，已经取得这些提交的人需要重新整理自己的历史。";
 "rewrite.affected" = "会被改写的提交（%ld）：";
 "rewrite.reflog" = "改写前的提交仍可在 Reflog 中找回。";
 "rewrite.loadingCommits" = "正在读取提交…";
@@ -1268,7 +1284,7 @@
 "rewrite.reset.menu" = "把 HEAD 重置到版本…";
 "conflict.hint.rebase.edit" = "用 **提交** 把这个提交拆分或改写成新的提交，然后点按 **结束编辑** 继续变基。";
 "conflict.hint.rebase.pending" = "这次交互式变基还没有处理任何提交。点按 **中止** 取消变基。";
-"rewrite.squash.confirm.one" = "将 “%@” 压缩进 “%@”？它们的提交信息会合并。";
+"rewrite.squash.confirm.one" = "确定要把提交 “%@” 压缩进 “%@” 吗？";
 "rewrite.fixup.confirm.one" = "将 “%@” 并入 “%@”，只保留目标的提交信息？";
 "rewrite.drop.confirm.one" = "从当前分支删除 “%@”？";
 "rewrite.move.confirm.one" = "把 “%@” 移到新的位置？";
@@ -1356,6 +1372,7 @@
 "reference.rename" = "重命名";
 "reference.renameMenu" = "重命名 “%@”…";
 "reference.deleteMenu" = "删除 “%@”…";
+"reference.compareMenuPair" = "比较 “%1$@” 与 “%2$@”…";
 "reference.addMenu" = "添加";
 "reference.invalidName" = "“%@” 不是有效的名称。";
 "reference.invalidRefspec" = "“%@” 不是有效的 refspec。";
@@ -1382,15 +1399,15 @@
 "branch.parent" = "跟踪父分支";
 "branch.parent.set" = "设置父分支";
 "branch.parent.setMenu" = "跟踪其他父分支…";
-"branch.parent.remove" = "移除父分支";
+"branch.parent.remove" = "取消跟踪父分支";
 "branch.parent.field" = "父分支：";
+"branch.parent.help" = "比较与更新分支时以父分支为基准。";
 "branch.parent.message" = "选择 “%@” 所基于的分支。比较与更新这个分支时以它为基准。";
 "branch.parent.replace" = "这会替换当前的父分支 “%@”。";
 "branch.parentOption" = "父分支：";
 "branch.parentOption.none" = "无父分支";
 "branch.parentOption.help" = "比较与更新新分支时以父分支为基准。";
 "branch.pin.help" = "把分支加到侧边栏的 Pinned 分组。";
-"branch.trackStart.named" = "跟踪分支 “%@”";
 "branch.remoteField" = "远端分支：";
 "branch.rename" = "重命名分支";
 "branch.rename.message" = "输入本地分支的新名称。";
@@ -1443,6 +1460,7 @@
 "tag.signRequiresMessage" = "签名的标签需要说明。";
 "tag.noRevisions" = "这个仓库还没有提交。";
 "tag.publish" = "发布标签";
+"drop.publishTag" = "发布";
 "tag.publish.message" = "在所选远端上新建所选的本地标签。";
 "tag.publishMenu" = "发布 “%@”…";
 "tag.publishMainMenu" = "发布标签…";
@@ -1503,7 +1521,6 @@
 "remote.page" = "远端设置";
 "remote.page.general" = "通用";
 "remote.page.branches" = "分支";
-"remote.field.name" = "名称";
 "remote.field.fetchURL" = "获取地址";
 "remote.field.pushURL" = "推送地址";
 "remote.field.options" = "选项";
@@ -1532,6 +1549,7 @@
 "review.compareTo" = "本地分支对照：";
 "review.noBase" = "没有分支";
 "review.filter" = "筛选分支";
+"review.filterHeading" = "筛选";
 "review.filter.none" = "不筛选";
 "review.filter.stale" = "陈旧";
 "review.filter.active" = "活跃";
@@ -1539,32 +1557,60 @@
 "review.filter.mergeable" = "可以合并";
 "review.filter.conflicts" = "合并冲突";
 "review.viewSettings" = "视图设置";
-"review.sort.name" = "按名称排序";
-"review.sort.date" = "按最后更新时间排序";
+"review.sortBy" = "排序方式";
+"review.sortOrder" = "排列顺序";
+"review.sort.name" = "名称";
+"review.sort.date" = "最后更新";
 "review.sort.ascending" = "升序";
 "review.sort.descending" = "降序";
 "review.empty" = "没有可整理的分支";
 "review.status.mergeable" = "可以并入所选的基准分支";
 "review.status.conflicts" = "并入所选的基准分支会产生冲突";
-"review.counts" = "领先 %1$ld 个提交，落后 %2$ld 个提交";
+"review.counts" = "%1$@，%2$@";
+"review.ahead.one" = "领先 1 个提交";
+"review.ahead" = "领先 %ld 个提交";
+"review.behind.one" = "落后 1 个提交";
+"review.behind" = "落后 %ld 个提交";
 "review.comparing" = "正在比较…";
 "review.trackingMissing" = "跟踪的分支已不存在";
 "review.noTracking" = "没有跟踪分支";
 "review.selected" = "已选择 %ld 个分支";
 "review.noSelection" = "没有选择分支";
+"review.summary.contributors" = "贡献者";
+"review.summary.updated" = "最后更新";
+"review.summary.tracking" = "跟踪";
+"review.summary.mergeStatus" = "合并状态";
+"review.summary.divergence" = "相对 “%2$@” %1$@";
+"review.summary.canMerge" = "可以并入 “%@”";
+"review.summary.conflicts" = "并入 “%@” 会产生冲突";
+"review.showing.one" = "显示 1 个提交";
+"review.showing" = "显示 %ld 个提交";
 "review.conflictsTip" = "合并会使 %ld 个文件冲突";
-"review.createBranch" = "从 “%@” 新建分支…";
 "review.resolveConflicts" = "解决合并冲突";
 "review.autoArchive" = "自动归档分支";
 "review.skipAutoArchive" = "自动归档时跳过";
 "review.markReviewed" = "标为已查看";
+"review.delete" = "删除";
 "review.updateBranch" = "更新分支";
-"review.update.summary" = "把 “%1$@” 并入 “%2$@” 将带来 %3$ld 个提交。";
 "review.update.merge" = "合并";
 "review.update.rebase" = "变基";
 "review.update.noChanges" = "没有需要并入的改动";
 "review.update.conflicts" = "检测到合并冲突";
 "review.update.clean" = "与父分支没有冲突";
+"branch.updateNamed" = "更新 “%@”…";
+"branch.quickUpdateNamed" = "快速更新 “%@”";
+"review.update.message" = "用父分支的新提交更新一个分支；更新前先检出这个分支。";
+"review.update.branch" = "分支：";
+"review.update.strategy" = "合并方式：";
+"review.update.integrates" = "将从父分支 “%2$@” 并入 %1$ld 个提交。";
+"review.update.integrates.one" = "将从父分支 “%@” 并入 1 个提交。";
+"review.update.clean.help" = "可以并入父分支，不会产生合并冲突。";
+"review.update.button" = "更新";
+"review.updateBranch.menu" = "更新分支…";
+"history.parentBanner.title" = "并入父分支的改动";
+"history.parentBanner.message" = "“%1$@” 还没有父分支 “%3$@” 的 %2$ld 个提交。";
+"history.parentBanner.message.one" = "“%1$@” 还没有父分支 “%2$@” 的 1 个提交。";
+"history.parentBanner.clean" = "没有冲突，现在就更新吧！";
 "review.archive.title" = "归档分支";
 "review.archive.help" = "选择要从分支列表中隐藏的分支。归档的分支移到侧边栏的 “已归档分支”，仍可在那里使用。";
 "review.archive.automaticHelp" = "这些分支长期没有更新，或者 Pull Request 或 Merge Request 已合并，即将自动归档。勾选要归档的分支。";
@@ -1581,7 +1627,9 @@
 "review.archived.notification" = "分支已自动清理";
 "history.compareTo" = "比较对象：";
 "history.behindBase" = "“%1$@” 落后 “%3$@” %2$ld 个提交";
+"history.behindBase.one" = "“%1$@” 落后 “%2$@” 1 个提交";
 "history.compareBranches" = "比较分支";
+"history.compareBranches.help" = "与另一个分支比较";
 "history.compareOn" = "已打开";
 "history.forkPoint" = "父分支 “%@” 的分叉点";
 "history.noNewCommits" = "这个分支没有新提交";
@@ -1716,11 +1764,12 @@
 "gitConfig.sshProgram.system" = "ssh-keygen（系统）";
 "gitConfig.sshProgram.onePassword" = "1Password";
 "gitConfig.gpgProgram" = "GPG 程序：";
+"gitConfig.gpgProgram.minimum" = "最低要求的 GPG 版本为 %@";
 "gitConfig.gpgProgram.none" = "未选择 GPG 程序";
 "gitConfig.gpgProgram.notFound" = "未找到 GPG 程序";
 "gitConfig.gpgProgram.select" = "选择…";
 "gitConfig.signingKey" = "全局签名密钥：";
-"gitConfig.agentKeys" = "SSH 密钥取自系统的 SSH agent。";
+"gitConfig.agentKeys" = "SSH 密钥经由系统的 SSH agent 载入。";
 "gitConfig.allowedSigners" = "Allowed signers 文件：";
 "gitConfig.allowedSigners.none" = "不使用 Allowed signers 文件";
 "gitConfig.allowedSigners.select" = "选择 Allowed signers 文件…";
@@ -1728,6 +1777,8 @@
 "gitConfig.ensureEmailMatch" = "确认 GPG 密钥的邮箱与提交人邮箱一致";
 "gitConfig.invalidGPG" = "GPG 程序无效";
 "gitConfig.invalidGPG.message" = "%@ 处的程序不是可用的 GnuPG 程序。";
+"gitConfig.outdatedGPG" = "无法使用这个 GPG 程序";
+"gitConfig.outdatedGPG.message" = "“%1$@” 是 GnuPG %2$@。Spooky 要求 GnuPG %3$@ 或更高版本。";
 "gitConfig.invalidSSH" = "SSH 签名程序无效";
 "gitConfig.invalidSSH.message" = "%@ 处的程序不存在或无法运行。";
 "gitConfig.emailMismatch" = "签名密钥的邮箱与 Git 用户邮箱不一致";
@@ -1736,7 +1787,7 @@
 "gitConfig.error.write" = "无法保存全局 Git 配置";
 
 "profiles.create.title" = "新建身份档案";
-"profiles.create.message" = "用填写的内容新建一个身份档案。";
+"profiles.create.message" = "用填写的值新建一个身份档案。";
 "profiles.create.submit" = "新建";
 "profiles.update.title" = "更新身份档案";
 "profiles.update.message" = "用填写的内容更新这个身份档案。";
@@ -1746,11 +1797,11 @@
 "profiles.delete.submit" = "删除";
 
 /* Settings → Environment：从登录 shell 读到的环境变量与本机执行 Git 时的自定义变量。 */
-"settings.environment.loginShell" = "自动从登录 shell 读取环境变量";
+"settings.environment.loginShell" = "自动向登录 shell 请求环境变量";
 "settings.environment.loginShellFailed" = "无法读取登录 shell 的环境变量。";
 "settings.environment.key" = "名称";
 "settings.environment.value" = "值";
-"settings.environment.custom" = "执行 Git 命令时使用的自定义环境变量：";
+"settings.environment.custom" = "配置执行 Git 命令时使用的自定义环境变量：";
 "settings.environment.add" = "添加变量";
 "settings.environment.remove" = "移除变量";
 "settings.environment.localOnly" = "这些设置只作用于在这台 Mac 上执行的 Git 命令；服务器上的仓库使用服务器自己的环境。";
@@ -1762,7 +1813,7 @@
 /* Settings → Integration 的 SSH Agent 一行。 */
 "settings.sshAgent" = "SSH Agent：";
 "settings.sshAgent.system" = "系统 SSH Agent";
-"settings.sshAgent.description" = "所选的 SSH agent 用于 SSH 连接与 SSH 签名。";
+"settings.sshAgent.description" = "所选的 SSH agent 将用于 SSH 远端连接与 SSH 签名。";
 "settings.sshAgent.warning" = "SSH Agent 未运行";
 "settings.sshAgent.warning.system" = "系统 SSH agent 不可用。请重新启动 Mac。";
 
@@ -1857,7 +1908,6 @@
 "navigation.forward" = "前进";
 "navigation.back.tip" = "前往上一个视图";
 "navigation.forward.tip" = "前往下一个视图";
-"navigation.title" = "上一个/下一个";
 "menu.hideWindowTitle" = "隐藏窗口标题";
 "menu.showWindowTitle" = "显示窗口标题";
 "menu.showToolbar" = "显示工具栏";
@@ -1888,7 +1938,7 @@
 /* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
 "bookmarks.newGroup" = "新建分组";
 "bookmarks.add" = "添加仓库…";
-"bookmarks.add.prompt" = "添加";
+"bookmarks.add.prompt" = "添加仓库";
 "bookmarks.addMenu" = "添加";
 "bookmarks.create" = "新建本机仓库…";
 "bookmarks.open" = "打开 “%@”";
@@ -1909,8 +1959,7 @@
 "bookmarks.dropZone.subtitle" = "以添加 Git 仓库";
 "bookmarks.dropZone.add" = "添加";
 "bookmarks.dropZone.create" = "新建";
-"bookmarks.multiple.title" = "已选择多项";
-"bookmarks.multiple.message" = "%ld 项";
+"bookmarks.multiple.title" = "已选择 %ld 项";
 "bookmarks.multiple.delete" = "删除";
 "bookmarks.detail.location" = "位置";
 "bookmarks.detail.branch" = "当前分支";
@@ -1928,6 +1977,9 @@
 "bookmarks.detail.noRemotes" = "没有远端";
 "bookmarks.detail.edit" = "编辑";
 "bookmarks.detail.unset" = "取消设置";
+"bookmarks.detail.repository" = "仓库";
+"bookmarks.detail.status" = "状态";
+"bookmarks.detail.noChanges" = "没有改动";
 "bookmarks.description.edit" = "编辑仓库描述";
 "bookmarks.description.message" = "输入这个仓库的描述。";
 "bookmarks.description.label" = "描述：";
@@ -1969,6 +2021,9 @@
 "quickActions.type.stash" = "储藏";
 "quickActions.type.userProfile" = "身份档案";
 "quickActions.type.appearance" = "外观";
+"quickActions.appearance.system" = "自动外观";
+"quickActions.appearance.light" = "浅色外观";
+"quickActions.appearance.dark" = "深色外观";
 "quickActions.type.theme" = "主题";
 "quickActions.type.file" = "文件";
 "quickActions.type.commit" = "提交";
@@ -2034,7 +2089,6 @@
 "clone.submit" = "克隆";
 "clone.url" = "远端地址：";
 "clone.to" = "克隆到：";
-"clone.destination" = "将克隆到 “%@”";
 "clone.lfs" = "使用 LFS 克隆";
 "clone.submodules" = "初始化子模块";
 "clone.error.invalidURL" = "远端地址无效";
@@ -2045,6 +2099,7 @@
 "clone.directory.prompt" = "服务器上的绝对路径";
 "clone.browse" = "浏览…";
 "clone.progress.title" = "正在克隆 “%@”…";
+"clone.failed.title" = "无法克隆 “%@”";
 "clone.cancel" = "取消克隆";
 "clone.retry" = "重新开始";
 "clone.remove" = "移除";
@@ -2076,19 +2131,19 @@
 "scan.menu" = "查找仓库…";
 "scan.title" = "查找仓库";
 "scan.message" = "在这台 Mac 或服务器上你选的文件夹里查找 Git 仓库，不会查找这个文件夹以外的位置。";
-"scan.add" = "添加仓库（%ld）";
+"scan.add" = "添加仓库";
 "scan.in" = "查找位置：";
 "scan.start" = "查找";
 "scan.stop" = "停止";
 "scan.selectAll" = "全选";
 "scan.searching" = "正在查找 Git 仓库…";
 "scan.found" = "找到 %ld 个仓库";
+"scan.column.name" = "名称";
 
 /* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
 "link.invalid.title" = "无法打开这个链接";
 "link.invalid.message" = "Spooky 无法打开 “%@”。链接无效或不受支持。";
 "settings.github" = "打开来自 github.com 的仓库：";
-"settings.github.help" = "github.com 上 “Open with Desktop” 的链接由这个 App 打开。";
 
 /* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
 "repositorySettings.title" = "设置";
@@ -2097,10 +2152,7 @@
 "repositorySettings.ignores" = "忽略";
 "repositorySettings.excludes" = "排除";
 "repositorySettings.lfs.patterns" = "跟踪规则";
-"repositorySettings.ignores.patterns" = "忽略规则";
-"repositorySettings.excludes.patterns" = "排除规则";
 "repositorySettings.openInEditor" = "在编辑器中打开";
-"repositorySettings.noPatterns" = "没有规则";
 "repositorySettings.name" = "名称";
 "repositorySettings.path" = "路径";
 "repositorySettings.localFolder" = "本机文件夹";
@@ -2109,10 +2161,6 @@
 "repositorySettings.localFolder.clear" = "清除";
 "repositorySettings.localFolder.rejected" = "无法使用这个文件夹";
 "repositorySettings.localFolder.rejected.message" = "“%1$@” 不是 “%2$@” 这个仓库。";
-"repositorySettings.wrapping" = "折行";
-"repositorySettings.pageGuide" = "显示参考线";
-"repositorySettings.lineLimit" = "每行字数上限";
-"repositorySettings.lineLimit.invalid" = "请输入大于 0 的整数。";
 "repositorySettings.signing" = "签名";
 "repositorySettings.signCommits" = "签名提交";
 "repositorySettings.signingKey" = "签名密钥";
@@ -2191,7 +2239,7 @@
 "submodule.action.rename" = "重命名";
 "submodule.add" = "添加子模块";
 "submodule.add.menu" = "添加子模块…";
-"submodule.add.message" = "把一个仓库克隆到本仓库的空目录里，并登记为子模块。";
+"submodule.add.message" = "输入新子模块的远端地址与本地路径。路径必须指向仓库里的一个空文件夹。";
 "submodule.add.submit" = "添加子模块";
 "submodule.add.title" = "添加子模块仓库";
 "submodule.autoUpdate" = "自动更新子模块";
@@ -2204,9 +2252,9 @@
 "submodule.default" = "%@（默认）";
 "submodule.delete" = "删除子模块";
 "submodule.delete.keepWorkingTree" = "保留工作区";
-"submodule.delete.keepWorkingTree.help" = "只删除子模块的配置，它的文件留在工作区里。";
+"submodule.delete.keepWorkingTree.help" = "只删除子模块的配置，保留它的工作文件。";
 "submodule.delete.menu" = "删除 “%@”…";
-"submodule.delete.message" = "从这个仓库删除子模块 “%@”。";
+"submodule.delete.message" = "删除子模块会把它从 Git 仓库中移除。";
 "submodule.delete.submit" = "删除";
 "submodule.deleteSubmodules" = "删除子模块";
 "submodule.editURL" = "编辑子模块地址";
@@ -2287,7 +2335,7 @@
 "submodule.path.choose" = "选择";
 "submodule.path.exists" = "别的子模块已经用了这个路径。";
 "submodule.path.invalid" = "路径必须在仓库里面。";
-"submodule.path.placeholder" = "子模块的路径";
+"submodule.path.none" = "未选择";
 "submodule.path.select" = "选择位置…";
 "submodule.quickFetch" = "快速获取 “%@”";
 "submodule.quickUpdate" = "快速更新 “%@”";
@@ -2356,13 +2404,13 @@
 "worktree.destination" = "目标位置：";
 "worktree.destination.exists" = "所选位置已经有 “%@”。请换一个位置。";
 "worktree.detach" = "分离 HEAD";
-"worktree.detach.help" = "工作树在所选版本上处于分离 HEAD，不检出分支。";
+"worktree.detach.help" = "工作树会以所选的起始版本为基础，处于分离 HEAD 状态。";
 "worktree.field.branch" = "分支";
 "worktree.field.name" = "名称";
 "worktree.field.path" = "路径";
 "worktree.field.revision" = "当前版本";
 "worktree.force" = "强制";
-"worktree.force.help" = "分支已在别的工作树检出时仍然创建。";
+"worktree.force.help" = "即使给定的起始版本已在另一个工作树里检出，也创建工作树。";
 "worktree.group" = "工作树";
 "worktree.invalid" = "无效的工作树";
 "worktree.invalid.message" = "工作树无效。";
@@ -2378,7 +2426,6 @@
 "worktree.open.current" = "打开工作树";
 "worktree.open.newTab" = "在新标签页中打开工作树";
 "worktree.open.newWindow" = "在新窗口中打开工作树";
-"worktree.page" = "工作树设置";
 "worktree.page.general" = "通用";
 "worktree.relocate" = "重新定位工作树";
 "worktree.relocate.message" = "选择工作树 “%@” 的目录现在所在的位置，让 Git 重新把它连到这个仓库。";
@@ -2394,7 +2441,7 @@
 "worktree.reveal" = "在 Finder 中显示工作树";
 "worktree.revision" = "版本：";
 "worktree.subtitle" = "工作树（%@）";
-"worktree.terminal" = "在终端中打开工作树";
+"worktree.checkedOutIn" = "已在工作树 “%@” 中检出";
 "worktree.tooltip" = "工作树 “%@”";
 "worktree.tooltip.path" = "检出位置：“%@”";
 
@@ -2448,14 +2495,14 @@
 "accounts.remove.message" = "将从 Spooky 移除 %2$@ 上的 “%1$@”，并从钥匙串删除它的令牌。";
 "accounts.kind.github" = "GitHub";
 "accounts.kind.gitlab" = "GitLab";
-"accounts.kind.gitlabSelfManaged" = "私有部署 GitLab";
+"accounts.kind.gitlabSelfManaged" = "GitLab CE/EE";
 "accounts.add.github" = "GitHub…";
 "accounts.add.gitlab" = "GitLab.com…";
-"accounts.add.gitlabSelfManaged" = "私有部署 GitLab…";
+"accounts.add.gitlabSelfManaged" = "GitLab CE/EE…";
 "accounts.add.github.title" = "添加 GitHub 账号";
 "accounts.update.github.title" = "更新 GitHub 账号";
 "accounts.add.gitlab.title" = "添加 GitLab 账号";
-"accounts.add.gitlabSelfManaged.title" = "添加私有部署 GitLab 账号";
+"accounts.add.gitlabSelfManaged.title" = "添加 GitLab CE/EE 账号";
 "accounts.update.gitlab.title" = "更新 GitLab 账号";
 "accounts.add.submit" = "添加账号";
 "accounts.update.submit" = "更新账号";
@@ -2498,7 +2545,7 @@
 "hosting.error.server" = "托管服务出错";
 "hosting.error.server.help" = "托管服务遇到了问题。请稍后再试。";
 "hosting.error.unreachable" = "连不上托管服务";
-"hosting.error.unreachable.help" = "请检查网络连接与实例地址。私有部署的实例必须能从这台 Mac 访问。";
+"hosting.error.unreachable.help" = "请检查网络连接与实例地址。GitLab CE/EE 实例必须能从这台 Mac 访问。";
 "hosting.error.certificate" = "证书不受信任";
 "hosting.error.certificate.help" = "这台 Mac 不信任服务器的证书。请检查实例地址，或者在 “钥匙串访问” 中信任该证书。";
 "hosting.error.incompatible" = "API 不兼容";
@@ -2666,7 +2713,7 @@
 "pullRequests.noDescription" = "没有描述";
 "pullRequests.noProjects" = "没有远端在所选账号的实例上。";
 "pullRequests.noRemotes.title" = "没有远端";
-"pullRequests.noRemotes.message" = "添加 github.com、GitLab.com 或私有部署 GitLab 上的远端，才能查看它的 Pull Request 与 Merge Request。";
+"pullRequests.noRemotes.message" = "添加 github.com、GitLab.com 或 GitLab CE/EE 上的远端，才能查看它的 Pull Request 与 Merge Request。";
 "pullRequests.openAccounts" = "打开账号设置";
 "pullRequests.optional" = "可选";
 "pullRequests.project" = "项目：";
@@ -2684,8 +2731,7 @@
 "pullRequests.strategy.ff" = "快进合并";
 "pullRequests.target" = "目标：";
 "pullRequests.titleField" = "标题：";
-"pullRequests.unsupported.title" = "不支持的远端";
-"pullRequests.unsupported.message" = "“%@” 不在 github.com、GitLab.com 或你账号所在的私有部署 GitLab 上。如果它属于其中之一，请把它关联到账号与项目。";
+"pullRequests.unsupported.message" = "“%@” 不在 github.com、GitLab.com 或你账号所在的 GitLab CE/EE 上。如果它属于其中之一，请把它关联到账号与项目。";
 
 "publish.menu" = "发布仓库…";
 "publish.title" = "发布仓库";

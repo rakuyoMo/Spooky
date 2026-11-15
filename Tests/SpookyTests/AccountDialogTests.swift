@@ -12,13 +12,13 @@ import Testing
 /// 下拉的位置经辅助功能接口读取，进程没有辅助功能权限时跳过这一项。
 @MainActor
 struct AccountDialogTests {
-    /// 认证方式的下拉占满输入列：左缘与输入列对齐，右缘距对话框右边 20；只有下拉一行时输入列从对齐线开始。
+    /// 认证方式的下拉占满输入列：左缘与输入列对齐，右缘距对话框右边 20；只有下拉一行时输入列从 145 开始。
     @Test("认证方式的下拉占满输入列", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func authenticationPopUp() async throws {
         let github = try await Self.elements(of: .add(.github), until: ["AXPopUpButton"])
         let githubPopUp = try #require(github.first { $0.role == "AXPopUpButton" })
 
-        #expect(abs(githubPopUp.frame.minX - DialogMetrics.alignment) <= 1)
+        #expect(abs(githubPopUp.frame.minX - DialogMetrics.inputColumn) <= 1)
         #expect(abs(githubPopUp.frame.maxX - 460) <= 1)
 
         // 私有部署的令牌标签比标签列的最小宽度长，输入列随之右移，下拉与地址框仍在同一列

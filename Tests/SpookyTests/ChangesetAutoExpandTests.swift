@@ -29,14 +29,20 @@ struct ChangesetAutoExpandTests {
         // 新对象读取成功后才应用最后保存的阈值：文件数恰好达标时全部展开
         session.history.show(fixture.commits[1], runner: fixture.runner)
         fixture.open(session.comparison, target: 1)
-        session.stashes.selectedIDs = [try #require(session.stashes.entries.last).id]
+        let stash = try #require(session.stashes.entries.last)
+        session.stashes.selectedIDs = [stash.id]
         try await fixture.waitForChanges()
 
         let stashIDs = Set(session.stashes.changes.map(\.id))
         #expect(stashIDs.count == 2)
+
         #expect(session.history.expandedPaths == ["a.txt", "b.txt"])
         #expect(session.comparison.expandedPaths == ["a.txt", "b.txt"])
         #expect(session.stashes.expandedPaths == stashIDs)
+
+        // 储藏提交的元信息与变更文件一起读出；带未跟踪文件的储藏有三个父提交
+        #expect(session.stashes.commit?.id == stash.id)
+        #expect(session.stashes.commit?.parents.count == 3)
 
         // 展开后逐个读取补丁，储藏的两类文件各自按来源提交读取
         await waitForDiffs(session)

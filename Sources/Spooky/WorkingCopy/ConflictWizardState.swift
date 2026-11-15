@@ -29,30 +29,39 @@ enum ConflictResult: Equatable {
 }
 
 extension ConflictResult {
-    /// 按选择与当前文件得出结果：选择优先；没有选择时当前文件等于某侧就显示该侧，手动合并过就显示当前版本。
+    /// 画成选中的卡片与箭头：显示一侧时是这一侧，两侧都选时是两侧。
+    var highlighted: Set<ConflictSide> {
+        switch self {
+        case .side(let side): [side]
+        case .both: Set(ConflictSide.allCases)
+        case .unselected, .current: []
+        }
+    }
+
+    /// 按选择与当前文件得出结果：选过卡片时按选择；还没有选时，双方修改与双方新增的当前文件等于某侧就显示该侧；
+    /// 其余情况手动合并过就显示当前版本，否则提示选择。
     ///
     /// - Parameters:
-    ///   - selection: 选中的卡片。
+    ///   - selection: 选中的卡片；还没有单击过卡片时为 nil。
     ///   - contents: 载入的三方内容与当前文件。
-    static func of(selection: Set<ConflictSide>, contents: ConflictContents) -> Self {
-        if selection.count == ConflictSide.allCases.count {
-            return .both
-        }
+    ///   - kind: 冲突类型。
+    static func of(selection: Set<ConflictSide>?, contents: ConflictContents, kind: ConflictKind?) -> Self {
+        if let selection {
+            if selection.count == ConflictSide.allCases.count {
+                return .both
+            }
 
-        if let side = selection.first {
-            return .side(side)
-        }
+            if let side = selection.first {
+                return .side(side)
+            }
+        } else if kind == .bothModified || kind == .bothAdded, let worktree = contents.worktree {
+            if worktree == contents.ours {
+                return .side(.ours)
+            }
 
-        guard let worktree = contents.worktree else {
-            return .unselected
-        }
-
-        if worktree == contents.ours {
-            return .side(.ours)
-        }
-
-        if worktree == contents.theirs {
-            return .side(.theirs)
+            if worktree == contents.theirs {
+                return .side(.theirs)
+            }
         }
 
         return contents.isManuallyEdited ? .current : .unselected
@@ -62,16 +71,10 @@ extension ConflictResult {
 // MARK: - Selection
 
 extension ConflictSide {
-    /// 单击一张卡片后的选择：再单击已选的卡片取消它；按住 ⌘ 时加入已有的选择，否则只选这一张。
+    /// 单击一张卡片后的选择：已选就取消，没选就加入，不看 ⌘。
     ///
-    /// - Parameters:
-    ///   - selection: 单击前的选择。
-    ///   - adding: 单击时按住了 ⌘。
-    func toggled(in selection: Set<Self>, adding: Bool) -> Set<Self> {
-        if selection.contains(self) {
-            return selection.subtracting([self])
-        }
-
-        return adding ? selection.union([self]) : [self]
+    /// - Parameter selection: 单击前画成选中的卡片。
+    func toggled(in selection: Set<Self>) -> Set<Self> {
+        selection.contains(self) ? selection.subtracting([self]) : selection.union([self])
     }
 }

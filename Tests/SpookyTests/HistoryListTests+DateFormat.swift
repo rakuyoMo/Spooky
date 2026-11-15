@@ -112,6 +112,22 @@ extension HistoryListTests {
         ])
     }
 
+    /// 设置里 “Date format for commits” 的示例取三个日历日之前，两项都写出具体的日子；
+    /// 往前数的是日子而不是 72 小时，夏令时开始后的凌晨也落在三天前那一天。
+    @Test("日期格式菜单的示例日期")
+    func dateFormatSample() throws {
+        let newYork = Self.calendar("en_US", timeZone: "America/New_York")
+
+        // 3 月 8 日夏令时开始，3 月 10 日凌晨往前 72 小时会落到 3 月 6 日
+        let now = try Self.time(month: 3, day: 10, hour: 0, minute: 30, in: newYork)
+        let sample = CommitDateFormatRow.sample(now: now, calendar: newYork)
+
+        #expect(Self.formats(sample, now: now, in: newYork) == [
+            "3/7/26",
+            "March 7, 2026",
+        ])
+    }
+
     /// Reflog 行在日期后带系统的短时间：绝对写法是短日期加短时间；相对写法今天、昨天写说法，更早的日子写完整日期，
     /// 日期与时间之间的连接由系统按语言给出。相对写法按运行时的当天判断，日子与时刻都取日历所在的时区。
     @Test("Reflog 行带时间的两种写法")

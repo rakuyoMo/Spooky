@@ -205,12 +205,15 @@ extension RepositorySession {
         ]
     }
 
-    /// 工作区文件右键菜单的 “查看” 组：原文、Blame 与文件历史，都跟随当前 HEAD；只对单个文件提供。
-    func fileViewMenuItems(for entries: [StatusEntry]) -> [NSMenuItem] {
-        guard Set(entries.map(\.path)).count == 1, let path = entries.first?.path else {
-            return []
-        }
-
+    /// 工作区文件右键菜单的 “查看” 组：原文、Blame 与文件历史，都跟随当前 HEAD，标题点名第一个作用对象。
+    ///
+    /// 三项只在作用于单个文件时可用；原文与 Blame 还要求 HEAD 里有这个文件且不是二进制，
+    /// 二进制不在轮询里读取，打开菜单时读一次，读到不是二进制后再启用。
+    ///
+    /// - Parameters:
+    ///   - path: 第一个作用对象的路径。
+    ///   - entries: 作用于单个文件时它的条目；作用于多个对象或目录时传空数组。
+    func fileViewMenuItems(for path: String, entries: [StatusEntry]) -> [NSMenuItem] {
         let name = Self.fileName(path)
         let actions = [
             FileViewAction(title: AppLocalization.text("showFile.show", name)) { [weak self] in
@@ -224,7 +227,52 @@ extension RepositorySession {
             },
         ]
 
-        return actions.map(FileViewMenuItem.init)
+        let items = actions.map(FileViewMenuItem.init)
+        let shown = items.prefix(2)
+
+        items[2].isEnabled = !entries.isEmpty
+
+        for item in shown {
+            item.isEnabled = false
+        }
+
+        guard canShowFile(entries) else { return items }
+
+        Task { [weak self] in
+            guard let binary = await self?.binaryPaths([path]), !binary.contains(path) else { return }
+
+            for item in shown {
+                item.isEnabled = true
+            }
+        }
+
+        return items
+    }
+
+    /// 原文与 Blame 读 HEAD 里的文件：HEAD 里没有它时（新增、未跟踪、被忽略、重命名或复制后的新路径，
+    /// 冲突里我方新增或删除）不可用；是否二进制另在打开菜单时读取。
+    func canShowFile(_ entries: [StatusEntry]) -> Bool {
+        guard status?.branch.oid != nil, !entries.isEmpty else { return false }
+
+        return entries.allSatisfy { entry in
+            switch entry.kind {
+            case .untracked, .ignored: false
+            case .conflicted: ![.added, .deleted].contains(entry.staged)
+            case .tracked, .unchanged: ![.added, .renamed, .copied].contains(entry.staged)
+            }
+        }
+    }
+
+    /// 这些路径里 Git 当作二进制的文件；只在打开菜单时读一次，不进常规轮询。
+    ///
+    /// 读取失败或期间换了仓库时为 nil。
+    func binaryPaths(_ paths: [String]) async -> Set<String>? {
+        guard let runner, !paths.isEmpty else { return nil }
+
+        let request = generation
+        let binary = try? await WorkingCopyOperations(runner: runner).binaryPaths(paths)
+
+        return generation == request ? binary : nil
     }
 }
 

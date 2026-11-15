@@ -5,7 +5,15 @@ import SpookyKit
 
 extension RepositoryWindowController {
     /// 历史搜索框范围菜单的顺序，菜单项的 tag 是这里的序号。
-    private static let historyScopes: [HistorySearchCondition.Kind] = [.message, .author, .committer, .file, .hash]
+    private static let historyScopes: [HistorySearchCondition.Kind] = [
+        .message,
+        .author,
+        .committer,
+        .file,
+        .hash,
+        .sinceDate,
+        .untilDate,
+    ]
 
     /// 工具栏搜索框：输入即时写入会话，由当前主视图过滤自己的列表。
     func makeSearchItem(_ identifier: NSToolbarItem.Identifier) -> NSToolbarItem {
@@ -37,6 +45,11 @@ extension RepositoryWindowController {
         if session.activeView == .history {
             item.searchField.stringValue = session.history.primarySearchText
             configureHistorySearch(item.searchField)
+        }
+
+        // 工作区的搜索框按文件过滤，输入时列出匹配的文件
+        if session.activeView == .workingCopy {
+            configureWorkingCopySearch(item.searchField)
         }
 
         // 文件历史的搜索框带范围菜单
@@ -77,6 +90,29 @@ extension RepositoryWindowController {
     }
 }
 
+// MARK: - Suggestions
+
+extension RepositoryWindowController {
+    /// 工作区搜索的建议：Files 一组，先列按顺序包含输入字符的文件，最后一行按包含输入过滤。
+    ///
+    /// - Parameters:
+    ///   - query: 搜索框的输入。
+    ///   - paths: 工作区列表里的路径。
+    static func workingCopySuggestions(for query: String, in paths: [String]) -> [ContributorSuggestion] {
+        let files = HistorySearchSuggestions.fileMatches(query, in: paths).map { path in
+            ContributorSuggestion(text: path, name: path, email: nil, showsAvatar: false, group: .files)
+        }
+
+        return files + [ContributorSuggestion.contains(query, group: .files)].compactMap { $0 }
+    }
+
+    /// 历史按说明搜索时的建议：说明、作者、提交人与文件四组，各一行按包含输入搜索对应的范围。
+    static func messageScopeSuggestions(for query: String) -> [ContributorSuggestion] {
+        let groups: [ContributorSuggestion.Group] = [.messages, .authors, .committers, .files]
+        return groups.compactMap { ContributorSuggestion.contains(query, group: $0) }
+    }
+}
+
 // MARK: - Private
 
 extension RepositoryWindowController {
@@ -84,6 +120,16 @@ extension RepositoryWindowController {
     private var searchField: NSSearchField? {
         let item = window?.toolbar?.items.first { $0.itemIdentifier.rawValue == "search" }
         return (item as? NSSearchToolbarItem)?.searchField
+    }
+
+    /// 建议的分组对应的历史搜索范围。
+    private static func historyScope(of group: ContributorSuggestion.Group) -> HistorySearchCondition.Kind {
+        switch group {
+        case .messages: .message
+        case .authors: .author
+        case .committers: .committer
+        case .files: .file
+        }
     }
 
     /// 历史的搜索框：范围菜单与占位文字，按作者、提交人或文件搜索时弹出补全；输入像日期时最前面是 Since Dates 建议。
@@ -101,6 +147,10 @@ extension RepositoryWindowController {
                 }
 
                 let since = HistorySearchSuggestions.sinceSuggestion(for: query).map { [$0] } ?? []
+
+                guard history.primarySearchKind != .message else {
+                    return since + Self.messageScopeSuggestions(for: query)
+                }
 
                 guard let runner = history.runner, let head = history.branch?.oid else {
                     return since
@@ -122,9 +172,37 @@ extension RepositoryWindowController {
                     return
                 }
 
+                // 分组的建议换到对应的范围
+                if let kind = suggestion.group.map(Self.historyScope(of:)) {
+                    self?.session.history.setSearchScope(kind)
+                }
+
                 self?.session.searchText = suggestion.text
                 self?.session.history.setSearchText(suggestion.text)
             }
+        )
+    }
+
+    /// 工作区的搜索框：范围菜单只有 File 一项；输入时列出按顺序包含输入字符的文件，最后一行按包含输入过滤。
+    ///
+    /// 选一个文件后搜索框写它的完整路径，列表按这个路径过滤，文件不被选中。
+    private func configureWorkingCopySearch(_ field: NSSearchField) {
+        let menu = NSMenu()
+        let file = NSMenuItem(title: AppLocalization.text("history.search.file"), action: nil, keyEquivalent: "")
+
+        file.state = .on
+        menu.addItem(.sectionHeader(title: AppLocalization.text("workspace.title")))
+        menu.addItem(file)
+
+        field.searchMenuTemplate = menu
+        field.placeholderString = AppLocalization.text("history.search.forFile")
+
+        contributorCompletion.attach(
+            to: field,
+            suggestions: { [weak session] query in
+                Self.workingCopySuggestions(for: query, in: session?.status?.entries.map(\.path) ?? [])
+            },
+            apply: { [weak session] in session?.searchText = $0.text }
         )
     }
 

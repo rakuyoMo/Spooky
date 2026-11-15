@@ -80,6 +80,9 @@ public struct RepositoryReference: Sendable, Equatable, Identifiable {
     /// 引用是否为标签。
     public var isTag: Bool { id.hasPrefix("refs/tags/") }
 
+    /// 引用是否为储藏栈的顶端 `refs/stash`。
+    public var isStash: Bool { id == "refs/stash" }
+
     /// 供界面展示的名称，保留远端前缀。
     public var name: String {
         for prefix in ["refs/heads/", "refs/remotes/", "refs/tags/"] where id.hasPrefix(prefix) {
@@ -109,6 +112,21 @@ public struct RepositoryReference: Sendable, Equatable, Identifiable {
         self.symbolicTarget = symbolicTarget
         self.date = date
         self.message = message
+    }
+
+    /// 指向所给储藏提交的 `refs/stash`，储藏详情的 Refs 行用它显示储藏标记。
+    ///
+    /// - Parameter objectID: 储藏提交的完整哈希。
+    public static func stash(objectID: String) -> Self {
+        Self(
+            id: "refs/stash",
+            objectID: objectID,
+            objectType: "commit",
+            upstream: nil,
+            upstreamRemote: nil,
+            upstreamBranch: nil,
+            symbolicTarget: nil
+        )
     }
 
     /// 解析固定 NUL 字段，仅移除 Git 在记录间额外插入的一个换行。
@@ -364,22 +382,18 @@ public struct RepositoryReferences: Sendable {
                 .map { (reference.id, reference.objectID, $0.objectID) }
         }
 
-        // 并发度由仓库队列的主机槽统一限制，服务器上不会超出会话上限。
-        return try await withThrowingTaskGroup(of: (String, ReferenceDivergence).self) { group in
-            for (id, local, upstream) in pairs {
-                group.addTask {
-                    (id, try await divergence(local: local, upstream: upstream))
-                }
-            }
+        return try await divergences(of: pairs)
+    }
 
-            var counts: [String: ReferenceDivergence] = [:]
-
-            for try await (id, divergence) in group {
-                counts[id] = divergence
-            }
-
-            return counts
+    /// 快照中设了父分支的本地分支相对父分支的计数；父分支已删除的分支不计数。
+    public func parentDivergences(in snapshot: ReferenceSnapshot) async throws -> [String: ReferenceDivergence] {
+        let pairs = snapshot.references.filter(\.isLocal).compactMap { reference in
+            snapshot.metadata(for: reference.id).parent
+                .flatMap { parent in snapshot.references.first { $0.id == parent } }
+                .map { (reference.id, reference.objectID, $0.objectID) }
         }
+
+        return try await divergences(of: pairs)
     }
 
     /// 以 Git 的分支规则校验，拒绝前一分支快捷写法、选项形式、控制字符与和对象哈希混淆的名字；
@@ -435,12 +449,14 @@ public struct RepositoryReferences: Sendable {
     /// - Parameters:
     ///   - pinned: 是否置顶新分支。
     ///   - parent: 父分支的完整引用名；为 nil 时不设置。
+    ///   - beforeCheckout: 分支建好、检出之前执行，如把新建单独记成一步撤销。
     public func createThenCheckOut(
         name: String,
         startingAt start: String,
         track: Bool,
         pinned: Bool = false,
-        parent: String? = nil
+        parent: String? = nil,
+        beforeCheckout: (@Sendable () async -> Void)? = nil
     ) async throws {
         try await runner.writeTransaction {
             try await create(
@@ -451,6 +467,8 @@ public struct RepositoryReferences: Sendable {
                 pinned: pinned,
                 parent: parent
             )
+
+            await beforeCheckout?()
 
             do {
                 try await checkout("refs/heads/" + name)
@@ -494,4 +512,29 @@ public struct RepositoryReferences: Sendable {
         return value
     }
 
+}
+
+// MARK: - Private
+
+extension RepositoryReferences {
+    /// 并发读取每一对哈希的计数，以分支的完整引用名为键；并发度由仓库队列的主机槽统一限制，服务器上不会超出会话上限。
+    ///
+    /// - Parameter pairs: 分支的完整引用名、分支顶端与比较对象的顶端。
+    private func divergences(of pairs: [(String, String, String)]) async throws -> [String: ReferenceDivergence] {
+        try await withThrowingTaskGroup(of: (String, ReferenceDivergence).self) { group in
+            for (id, local, upstream) in pairs {
+                group.addTask {
+                    (id, try await divergence(local: local, upstream: upstream))
+                }
+            }
+
+            var counts: [String: ReferenceDivergence] = [:]
+
+            for try await (id, divergence) in group {
+                counts[id] = divergence
+            }
+
+            return counts
+        }
+    }
 }

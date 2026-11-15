@@ -92,9 +92,9 @@ struct HistoryGraphView: NSViewRepresentable {
     /// 圆点中心距行顶的距离；nil 时在行的正中。
     let dotCenter: CGFloat?
 
-    /// 画布宽度：提交行按本行的列数，分组行按穿过的最右一列。
+    /// 画布宽度：提交行按本行的列数，分组行按穿过的最右一列，没有线穿过时也按一列排。
     var width: CGFloat {
-        let columns = row?.columnCount ?? (passing.map(\.start).max().map { $0 + 1 } ?? 0)
+        let columns = row?.columnCount ?? max(passing.map(\.start).max().map { $0 + 1 } ?? 0, 1)
         return CGFloat(columns) * 10 + 7
     }
 
@@ -138,7 +138,7 @@ struct HistoryGroupRow: View {
     /// 组的标题。
     let title: String
 
-    /// 图在最左侧，标题距图 8 pt。
+    /// 图在最左侧，标题距图 8 pt；不显示提交图时标题与提交行的内容一样距行首 8 pt。
     var body: some View {
         HStack(spacing: 8) {
             if let graph {
@@ -154,6 +154,7 @@ struct HistoryGroupRow: View {
 
             Spacer(minLength: 0)
         }
+        .padding(.leading, graph == nil ? 8 : 0)
         .padding(.trailing, 8)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)

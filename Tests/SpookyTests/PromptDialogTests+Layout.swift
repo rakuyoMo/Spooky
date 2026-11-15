@@ -65,51 +65,6 @@ extension PromptDialogTests {
         #expect(closed == 2)
     }
 
-    /// 提交信息含注释：能删除注释时 Cancel 对齐对齐线，Keep Comments 与 Remove Comments 贴右边 20，有不再询问的勾选框，
-    /// 三个按钮在 480 里放不下时对话框随之加宽；去掉注释后为空时只有 Cancel 与 Keep Comments and Commit，没有勾选框。
-    @Test("提交信息含注释的询问", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func commitComments() async throws {
-        let cancel = AppLocalization.text("action.cancel")
-        let keep = AppLocalization.text("commit.keepComments")
-        let remove = AppLocalization.text("commit.removeComments")
-        let keepAndCommit = AppLocalization.text("commit.keepCommentsAndCommit")
-
-        let dialog = CommitCommentsDialog(empty: false) { } finish: { _, _ in }
-        let width = DialogLayoutTests.hosting(dialog).frame.width
-
-        let removable = await AccessibilityProbe.elements(
-            width: width,
-            until: { elements in elements.count { $0.role == "AXButton" } >= 3 }
-        ) {
-            dialog
-        }
-
-        let removableButtons = removable
-            .filter { $0.role == "AXButton" }
-            .sorted { $0.frame.minX < $1.frame.minX }
-
-        #expect(removableButtons.map(\.name) == [cancel, keep, remove])
-        #expect(abs((removableButtons.first?.frame.minX ?? 0) - DialogMetrics.alignment) <= 1)
-        #expect(abs(width - (removableButtons.last?.frame.maxX ?? 0) - 20) <= 1)
-        #expect(removable.contains {
-            $0.role == "AXCheckBox" && $0.name == AppLocalization.text("commit.doNotAskAgain")
-        })
-
-        // 去掉注释后为空
-        let commentsOnly = await AccessibilityProbe.elements(
-            until: { elements in elements.contains { $0.name == keepAndCommit } }
-        ) {
-            CommitCommentsDialog(empty: true) { } finish: { _, _ in }
-        }
-
-        let commentsOnlyButtons = commentsOnly
-            .filter { $0.role == "AXButton" }
-            .sorted { $0.frame.minX < $1.frame.minX }
-
-        #expect(commentsOnlyButtons.map(\.name) == [cancel, keepAndCommit])
-        #expect(!commentsOnly.contains { $0.role == "AXCheckBox" })
-    }
-
     /// 崩溃报告：Don’t Report 在取消的位置，Report on GitHub… 是主按钮；勾上 “总是发送” 后选 Don’t Report 不记下，
     /// 选报告才记下。
     @Test("崩溃报告的询问", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))

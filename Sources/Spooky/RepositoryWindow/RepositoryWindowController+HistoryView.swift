@@ -28,27 +28,29 @@ extension RepositoryWindowController {
     }
 
     /// 视图设置菜单各项的勾选与可用状态；动作不属于本组时为 nil。
+    ///
+    /// 这些是全局的显示偏好，窗口显示仓库时在任何视图里都能改，回到历史时生效。
     func historyViewSettingsAvailability(of item: any NSValidatedUserInterfaceItem) -> Bool? {
         let settings = HistoryViewSettings()
-        let historyView = !showsManager && session.activeView == .history
+        let repositoryView = !showsManager && session.repository != nil
         let menuItem = item as? NSMenuItem
 
         switch item.action {
         case #selector(toggleFirstParentOnly):
             menuItem?.state = settings.showsFirstParentOnly ? .on : .off
-            return historyView
+            return repositoryView
 
         case #selector(toggleSortByTopoOrder):
             menuItem?.state = settings.sortsByTopoOrder ? .on : .off
-            return historyView && !settings.showsGraph
+            return repositoryView && !settings.showsGraph
 
         case #selector(toggleSortByDate):
             menuItem?.state = settings.sortsByDate ? .on : .off
-            return historyView
+            return repositoryView
 
         case #selector(selectHistoryGrouping(_:)):
             menuItem?.state = menuItem?.tag == settings.selectedGrouping.rawValue ? .on : .off
-            return historyView && settings.sortsByDate
+            return repositoryView && settings.sortsByDate
 
         default:
             return nil

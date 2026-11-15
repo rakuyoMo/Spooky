@@ -168,6 +168,14 @@ extension SidebarSessionTests {
         #expect(groups() == (false, true, false))
         #expect(sidebar.selectedItems == [feature.id])
 
+        // 打开文件历史时侧边栏保持历史的选中
+        session.activeView = .fileHistory
+        #expect(sidebar.selectedItems == [feature.id])
+
+        // 打开文件原文或 Blame 时选中 History 行，不论历史里选着哪个引用
+        session.activeView = .fileContent
+        #expect(sidebar.selectedItems == ["history"])
+
         // 分支配置里不再有整理标记
         #expect(session.history.snapshot?.metadata.isEmpty ?? false)
 

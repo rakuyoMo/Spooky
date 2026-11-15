@@ -66,7 +66,7 @@ struct PullRequestTextDialog: View {
     @State
     private var nameProblem: BranchNameProblem? = nil
 
-    /// 评论与描述是占满宽度、高 300 的多行输入，检出是从对齐线开始的分支名，删除评论与关闭请求没有内容区。
+    /// 评论与描述是占满宽度、高 300 的多行输入，检出是从输入列开始的分支名，删除评论与关闭请求没有内容区。
     ///
     /// 仓库暂不可写时主按钮禁用，错误区写出原因；关闭请求不看仓库是否可写。
     var body: some View {

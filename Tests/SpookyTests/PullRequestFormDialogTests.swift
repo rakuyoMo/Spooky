@@ -7,11 +7,11 @@ import Testing
 
 // MARK: - PullRequestFormDialogTests
 
-/// 新建与修改请求用 480 宽的对话框骨架：输入列从对齐线开始、宽 320，标题与说明写出服务名与目标项目；
+/// 新建与修改请求用 480 宽的对话框骨架：输入列从 145 开始、宽 320，标题与说明写出服务名与目标项目；
 /// 两侧是同一个分支时不能提交，错误区写出原因。
 @MainActor
 struct PullRequestFormDialogTests {
-    /// Title 与 Description 从对齐线开始，宽 320；Description 高 64。
+    /// Title 与 Description 从输入列开始，右缘距对话框右边 20，不撑宽对话框；Description 高 64。
     ///
     /// Source 与 Target 两行的下拉由 SwiftUI 自己绘制，不在 AppKit 的视图树里，只在 App 里核对。
     @Test("新建与修改对话框的表单宽度")
@@ -24,14 +24,14 @@ struct PullRequestFormDialogTests {
             let title = try #require(Self.subviews(NSTextField.self, in: hosting).first { $0.isEditable })
             let titleFrame = title.convert(title.bounds, to: hosting)
 
-            #expect(abs(titleFrame.minX - DialogMetrics.alignment) <= 1)
-            #expect(abs(titleFrame.width - 320) <= 1)
+            #expect(abs(titleFrame.minX - DialogMetrics.inputColumn) <= 1)
+            #expect(abs(titleFrame.maxX - (480 - 20)) <= 1)
 
             let scroll = try #require(Self.subviews(NSTextView.self, in: hosting).first?.enclosingScrollView)
             let descriptionFrame = scroll.convert(scroll.bounds, to: hosting)
 
-            #expect(abs(descriptionFrame.minX - DialogMetrics.alignment) <= 1)
-            #expect(abs(descriptionFrame.width - 320) <= 1)
+            #expect(abs(descriptionFrame.minX - DialogMetrics.inputColumn) <= 1)
+            #expect(abs(descriptionFrame.maxX - (480 - 20)) <= 1)
             #expect(abs(descriptionFrame.height - 64) <= 1)
         }
     }

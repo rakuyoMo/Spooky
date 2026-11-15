@@ -10,7 +10,7 @@ import TestSupport
 /// 分支整理、归档与基准分支比较：结论只来自结构化的 Git 结果，未知状态不能当作已合并。
 @MainActor
 struct BranchesReviewTests {
-    /// 列表按与基准的比较筛选与排序；归档带待审阅标记并可撤销；Update Branch 合并父分支。
+    /// 列表按与基准的比较筛选与排序；归档带待审阅标记并可撤销；Update Branch 合并父分支；列表的选中、读屏、基准菜单与轻扫删除。
     @Test("分支整理的比较、筛选、归档与 Update Branch")
     func reviewSession() async throws {
         let directory = try FileViewsTests.temporaryDirectory()
@@ -80,6 +80,7 @@ struct BranchesReviewTests {
 
         try await archiveAndUndo(session: session)
         try await updateBranch(session: session)
+        try checkListRules(session: session)
     }
 
     /// 打开 Compare Branches 后插入分叉点行、置灰父分支的提交；没有新提交的分支只有一行说明；

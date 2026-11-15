@@ -8,7 +8,8 @@ import Testing
 
 /// 远端写操作靠反向操作撤销：添加、改名、删除与修改设置都能撤销与重做，前提不符时报仓库已改变，与快照记录交错时照栈的顺序撤销。
 extension UndoSessionTests {
-    /// 添加、改名与删除远端各自撤销后恢复、重做后再次生效；改名与删除带着远端跟踪分支与跟踪设置一起改回。
+    /// 添加、改名与删除远端各自撤销后恢复、重做后再次生效；改名与删除带着远端跟踪分支与跟踪设置一起改回，
+    /// 改名的撤销与重做让选中跟着远端名走；删掉选中的远端后选中相邻的远端。
     /// 撤销添加之前远端已在外部被删掉：报仓库已改变，撤销栈不动。
     @Test("远端的添加、改名与删除的撤销与重做")
     func remoteLifecycleRoundTrip() async throws {
@@ -39,14 +40,18 @@ extension UndoSessionTests {
         try await fixture.perform { Self.renameRemote("origin", to: "fork", in: session) }
         #expect(try await Self.upstream(in: fixture) == "fork")
 
+        // 选中的是改名后的远端：撤销后选中原名，重做后再回到新名
+        session.selectedRemote = "fork"
         try await fixture.perform { session.undoLastOperation() }
 
         #expect(try await Self.remoteNames(in: fixture) == ["origin"])
         #expect(try await Self.upstream(in: fixture) == "origin")
         #expect(try await Self.trackingReferences(in: fixture) == ["refs/remotes/origin/main"])
+        #expect(session.selectedRemote == "origin")
 
         try await fixture.perform { session.redoLastOperation() }
         #expect(try await Self.upstream(in: fixture) == "fork")
+        #expect(session.selectedRemote == "fork")
 
         // 删除：远端、远端跟踪分支与 main 的跟踪设置都回来
         try await fixture.perform { Self.removeRemotes(["fork"], in: session) }
@@ -62,6 +67,14 @@ extension UndoSessionTests {
 
         try await fixture.perform { session.redoLastOperation() }
         #expect(try await Self.remoteNames(in: fixture).isEmpty)
+
+        // 删掉选中的远端：选下一个，删的是最后一个时选上一个，一个不剩时没有
+        let order = ["a", "b", "c"]
+
+        #expect(DeleteReferencesDialog.neighbor(of: "b", removing: ["b"], in: order) == "c")
+        #expect(DeleteReferencesDialog.neighbor(of: "c", removing: ["c"], in: order) == "b")
+        #expect(DeleteReferencesDialog.neighbor(of: "b", removing: ["b", "c"], in: order) == "a")
+        #expect(DeleteReferencesDialog.neighbor(of: "a", removing: order, in: order) == nil)
 
         // 前提不符：添加的远端在外部被删掉后撤销添加
         try await fixture.perform { Self.addRemote("origin", url: bare, in: session) }

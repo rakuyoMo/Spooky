@@ -24,7 +24,8 @@ struct UpdatesSettingsView: View {
         SettingsForm(layout: .updates) {
             channelRow
 
-            SettingsSeparator(next: .checkbox)
+            // 通道菜单与组合框一样贴近下方的分隔线
+            SettingsSeparator(previous: .comboBox, next: .checkbox)
 
             checkRows
         }

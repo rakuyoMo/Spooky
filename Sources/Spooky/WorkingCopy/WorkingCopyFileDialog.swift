@@ -86,24 +86,15 @@ extension WorkingCopyFileDialog {
         }
     }
 
-    /// 补丁文件：输入列里填满的弹出菜单，列出本次表单选过的文件与选择新文件的入口；这一行没有标签。
+    /// 补丁文件：输入列里填满的弹出按钮，列出本次表单选过的文件与选择新文件的入口；这一行没有标签。
     private var patchRow: some View {
         DialogFormField {
-            Menu {
-                ForEach(patchFiles, id: \.self) { url in
-                    Toggle(url.lastPathComponent, isOn: Binding(get: { patchFile == url }, set: { _ in patchFile = url }))
-                }
-
-                if !patchFiles.isEmpty {
-                    Divider()
-                }
-
-                Button(AppLocalization.text("files.applyPatch.select"), action: choosePatchFile)
-            } label: {
-                Text(patchFile?.lastPathComponent ?? AppLocalization.text("files.applyPatch.none"))
-            }
-            .buttonSizing(.flexible)
-            .accessibilityLabel(AppLocalization.text("files.applyPatch.file"))
+            PatchFilePopUp(
+                files: patchFiles,
+                selection: patchFile,
+                select: { patchFile = $0 },
+                choose: choosePatchFile
+            )
         }
     }
 
@@ -127,7 +118,7 @@ extension WorkingCopyFileDialog {
         case .move(let entry):
             AppLocalization.text("files.move.title", WorkingCopyFileList.fileName(of: entry.path))
 
-        case .pattern(let file, _):
+        case .pattern(let file, _, _):
             AppLocalization.text(file == .gitignore ? "files.ignore.custom.title" : "files.exclude.custom.title")
 
         case .lfsPattern:
@@ -154,7 +145,7 @@ extension WorkingCopyFileDialog {
         case .move:
             return AppLocalization.text("files.move.message")
 
-        case .pattern(let file, _):
+        case .pattern(let file, _, _):
             return AppLocalization.text(file == .gitignore ? "files.ignore.custom.message" : "files.exclude.custom.message")
 
         case .lfsPattern:
@@ -211,19 +202,34 @@ extension WorkingCopyFileDialog {
 
         return text
     }
+
+    /// 自定义规则的默认值：只匹配这一项的规则，不带开头的 “/”。
+    ///
+    /// - Parameter item: 第一个作用对象的路径，目录以 “/” 结尾；没有时为 nil。
+    static func defaultPattern(for item: String?) -> String {
+        let anchored = WorkingCopyOperations.ignorePatterns(for: item.map { [$0] } ?? [], scope: .items).first ?? ""
+        let pattern = anchored.hasPrefix("/") ? String(anchored.dropFirst()) : anchored
+
+        // 去掉 “/” 后以 # 或 ! 开头的规则会被当作注释与取反，前面补反斜杠
+        guard pattern.hasPrefix("#") || pattern.hasPrefix("!") else {
+            return pattern
+        }
+
+        return "\\" + pattern
+    }
 }
 
 // MARK: - Actions
 
 extension WorkingCopyFileDialog {
-    /// 预填输入：移动预填原路径，自定义规则预填只匹配第一个所选文件的规则，LFS 规则预填第一个所选文件的路径，恢复版本预选第一个候选引用。
+    /// 预填输入：移动预填原路径，自定义规则预填只匹配第一项（树形的目录行是目录本身）、不带开头 “/” 的规则，LFS 规则预填第一个所选文件的路径，恢复版本预选第一个候选引用。
     private func prepare() {
         switch form {
         case .move(let entry):
             text = entry.path
 
-        case .pattern(_, let entries):
-            text = WorkingCopyOperations.ignorePatterns(for: entries.prefix(1).map(\.path), scope: .items).first ?? ""
+        case .pattern(_, _, let item):
+            text = Self.defaultPattern(for: item)
 
         case .lfsPattern(let entries):
             text = entries.first?.path ?? ""
@@ -270,7 +276,7 @@ extension WorkingCopyFileDialog {
             guard let destination = Self.destination(text, from: entry.path) else { return }
             if session.move(entry, to: destination) { close() }
 
-        case .pattern(let file, let entries):
+        case .pattern(let file, let entries, _):
             // 先关闭表单，需要询问是否停止跟踪时窗口才能呈现询问
             close()
             session.addPatterns([text], for: entries, in: file)
@@ -293,5 +299,127 @@ extension WorkingCopyFileDialog {
         } catch {
             self.error = error.localizedDescription
         }
+    }
+}
+
+// MARK: - PatchFilePopUp
+
+/// 补丁文件的弹出按钮：还没选文件时标题是灰色的 No Patch File Selected；
+/// 菜单先列出这一项（打勾、禁用）或选过的文件，分隔线下面是 Select Patch File…。
+private struct PatchFilePopUp: NSViewRepresentable {
+    /// 转发菜单里的选择。
+    @MainActor
+    final class Coordinator: NSObject {
+        /// 选中一个选过的文件。
+        var select: (URL) -> Void = { _ in }
+
+        /// 打开选择补丁文件的面板。
+        var choose: () -> Void = { }
+
+        /// 代表当前选择的菜单项。
+        var current: NSMenuItem? = nil
+
+        /// 协调者所属的弹出按钮。
+        weak var button: NSPopUpButton?
+
+        /// 选中一个文件菜单项。
+        @objc
+        func selectFile(_ item: NSMenuItem) {
+            guard let url = item.representedObject as? URL else {
+                return
+            }
+
+            select(url)
+        }
+
+        /// 选择新文件这一项不是一种选择，按钮先回到当前选择，再打开面板。
+        @objc
+        func chooseFile(_: NSMenuItem) {
+            button?.select(current)
+            choose()
+        }
+    }
+
+    /// 本次表单里选过的补丁文件，最近选的在前。
+    let files: [URL]
+
+    /// 当前要应用的补丁文件。
+    let selection: URL?
+
+    /// 选中一个选过的文件。
+    let select: (URL) -> Void
+
+    /// 打开选择补丁文件的面板。
+    let choose: () -> Void
+
+    /// 建立协调者。
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    /// 菜单项的可用状态由这里决定，不随目标自动启用。
+    func makeNSView(context: Context) -> NSPopUpButton {
+        let button = NSPopUpButton(frame: .zero, pullsDown: false)
+        button.autoenablesItems = false
+        button.setAccessibilityLabel(AppLocalization.text("files.applyPatch.file"))
+        context.coordinator.button = button
+
+        return button
+    }
+
+    /// 按选过的文件与当前选择重建菜单，再选中代表当前选择的一项。
+    func updateNSView(_ button: NSPopUpButton, context: Context) {
+        let coordinator = context.coordinator
+        coordinator.select = select
+        coordinator.choose = choose
+
+        button.removeAllItems()
+
+        guard let menu = button.menu else {
+            return
+        }
+
+        // 还没选文件时，第一项写明这一点，打勾但不可选
+        if selection == nil {
+            let none = NSMenuItem(
+                title: AppLocalization.text("files.applyPatch.none"),
+                action: nil,
+                keyEquivalent: ""
+            )
+            none.isEnabled = false
+            menu.addItem(none)
+        }
+
+        for url in files {
+            let item = NSMenuItem(
+                title: url.lastPathComponent,
+                action: #selector(Coordinator.selectFile(_:)),
+                keyEquivalent: ""
+            )
+            item.target = coordinator
+            item.representedObject = url
+            menu.addItem(item)
+        }
+
+        menu.addItem(.separator())
+
+        let chooseItem = NSMenuItem(
+            title: AppLocalization.text("files.applyPatch.select"),
+            action: #selector(Coordinator.chooseFile(_:)),
+            keyEquivalent: ""
+        )
+        chooseItem.target = coordinator
+        menu.addItem(chooseItem)
+
+        coordinator.current = menu.items.first { item in
+            selection == nil || (item.representedObject as? URL) == selection
+        }
+
+        button.select(coordinator.current)
+    }
+
+    /// 填满输入列的宽度。
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSPopUpButton, context _: Context) -> CGSize? {
+        let fitting = nsView.intrinsicContentSize
+
+        return CGSize(width: proposal.width ?? fitting.width, height: fitting.height)
     }
 }

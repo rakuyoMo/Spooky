@@ -30,7 +30,8 @@ struct PromptDialogTests {
             let dialog = Self.forceDeleteBranchesPrompt(branches, in: session)
 
             #expect(dialog.title == AppLocalization.text(title))
-            #expect(dialog.message.contains(branches.joined(separator: ", ")))
+            // 说明只写这些分支，不接失败的类别与仓库
+            #expect(dialog.message == AppLocalization.text("branch.forceDelete.ask", branches.joined(separator: ", ")))
             #expect(Self.buttons(of: dialog) == Self.texts("action.cancel", "branch.forceDelete.submit"))
             #expect(dialog.checkbox == nil)
         }
@@ -143,10 +144,7 @@ extension PromptDialogTests {
             failure: .invalidName("topic")
         )
 
-        let location = RepositoryLocation.local(path: "/temporary/prompt-" + UUID().uuidString)
-        let failure = AppFailure(error: offer.failure, opening: false, location: location, writing: true)
-
-        return RepositoryWindowController.forceDeleteBranchesPrompt(offer, failure: failure, in: session) { }
+        return RepositoryWindowController.forceDeleteBranchesPrompt(offer, in: session) { }
     }
 
     /// 底栏自左向右的按钮标题：取消、备选按钮（如果有）与主按钮。
@@ -155,7 +153,7 @@ extension PromptDialogTests {
     }
 
     /// 这几个资源键的文字。
-    private static func texts(_ keys: String...) -> [String] {
+    static func texts(_ keys: String...) -> [String] {
         keys.map { AppLocalization.text($0) }
     }
 }

@@ -111,14 +111,17 @@ public struct StatusParseError: Error, Sendable, Equatable {
 }
 
 extension GitRunner {
-    /// 读取工作区状态，未跟踪的文件逐个列出，不折叠成目录
-    public func status() async throws -> WorkingCopyStatus {
+    /// 读取工作区状态。
+    ///
+    /// - Parameter collapsesUntrackedDirectories: 为 true 时按 Git 的默认把整个未跟踪的目录记成一个以 “/” 结尾的条目，
+    ///   供工作区列表显示；默认逐个列出未跟踪的文件，撤销快照与写操作的核对都按文件进行。
+    public func status(collapsesUntrackedDirectories: Bool = false) async throws -> WorkingCopyStatus {
         let output = try await run([
             "status",
             "--porcelain=v2",
             "-z",
             "--branch",
-            "--untracked-files=all",
+            collapsesUntrackedDirectories ? "--untracked-files=normal" : "--untracked-files=all",
         ])
 
         return try WorkingCopyStatus(porcelainV2: output)

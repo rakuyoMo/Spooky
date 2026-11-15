@@ -201,27 +201,32 @@ public struct WorkingCopyOperations: Sendable {
     /// 丢弃选中文件的暂存与工作区改动：已跟踪的文件恢复到最后一次提交，未跟踪文件移进废纸篓；调用方必须先获得用户确认。
     ///
     /// - Parameters:
-    ///   - entries: 要丢弃的文件。
+    ///   - entries: 要丢弃的文件；以 “/” 结尾的未跟踪目录条目整个移走。
     ///   - removal: 未跟踪文件的删除方式；服务器没有可用的废纸篓、用户确认后才永久删除。
-    /// - Returns: 移进废纸篓的未跟踪文件；永久删除时为空。
+    /// - Returns: 移进废纸篓的未跟踪文件与目录；永久删除时为空。
     @discardableResult
     public func discard(_ entries: [StatusEntry], removal: FileRemoval = .trash) async throws -> [TrashedItem] {
         guard !entries.isEmpty else { return [] }
-        guard entries.allSatisfy({ !$0.path.hasSuffix("/") }) else {
-            throw WorkingCopyError.unsupportedFile
-        }
 
         return try await runner.writeTransaction {
-            let current = try await runner.status()
+            let status = try await runner.status()
+            var current = status.entries
+
+            // 整个未跟踪的目录只在 Git 折叠后的状态里是一个条目；仍被折叠说明目录里没有已跟踪的文件
+            if entries.contains(where: { $0.path.hasSuffix("/") }) {
+                current += try await runner.status(collapsesUntrackedDirectories: true).entries
+                    .filter { $0.kind == .untracked && $0.path.hasSuffix("/") }
+            }
+
             let selected = Set(entries.map { $0.path.precomposedStringWithCanonicalMapping })
-            let targets = current.entries.filter { selected.contains($0.path.precomposedStringWithCanonicalMapping) }
+            let targets = current.filter { selected.contains($0.path.precomposedStringWithCanonicalMapping) }
             let tracked = targets.filter { $0.kind != .untracked && $0.kind != .ignored }
             let untracked = targets.filter { $0.kind == .untracked }
 
             if !tracked.isEmpty {
                 // 空仓库以真实空树为来源，新增文件也能恢复为未存在状态。
                 let source: String =
-                    if let oid = current.branch.oid {
+                    if let oid = status.branch.oid {
                         oid
                     } else {
                         String(decoding: try await runner.run(
@@ -236,19 +241,11 @@ public struct WorkingCopyOperations: Sendable {
                 )
             }
 
-            // 本机与服务器的文件操作分开，远端绝对路径不会进入 A 的文件系统。
+            // 本机与服务器的文件操作分开，远端绝对路径不会进入 A 的文件系统；嵌套的仓库在两份状态里是同一个目录条目
             let trackedPaths = Set(tracked.map(\.path))
-            let deletions = untracked.filter { !trackedPaths.contains($0.path) }.map { runner.location.path + "/" + $0.path }
-            let files = RepositoryFiles(runner: runner)
+            let deletions = Set(untracked.map(\.path)).subtracting(trackedPaths).sorted()
 
-            switch removal {
-            case .trash:
-                return try await files.moveToTrash(deletions)
-
-            case .permanent:
-                try await files.remove(deletions)
-                return []
-            }
+            return try await remove(deletions, removal: removal)
         }
     }
 

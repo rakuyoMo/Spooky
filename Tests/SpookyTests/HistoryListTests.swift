@@ -12,6 +12,7 @@ import Testing
 struct HistoryListTests {
     /// 没有保存过时显示提交图、按日期排序、按月分组，保存过的值不被默认值覆盖；
     /// 显示提交图时总按拓扑序；两种排序都勾选时按日期；分组只在按日期排序时生效。
+    /// 隐藏提交图时按中号行显示，保存的行高不变。
     @Test("视图设置的默认值与历史查询")
     func viewSettings() throws {
         let (defaults, directory) = try Self.temporaryDefaults()
@@ -33,6 +34,10 @@ struct HistoryListTests {
         #expect(settings.order == .topological)
         #expect(settings.selectedGrouping == .ungrouped)
 
+        // 保存过小号行：显示提交图时按小号行
+        defaults.set(true, forKey: HistoryViewSettings.smallRowsKey)
+        #expect(HistoryViewSettings(defaults: defaults).usesSmallRows)
+
         // 隐藏提交图且两种排序都不勾选时用 Git 默认的顺序；分组的设置不生效
         defaults.set(false, forKey: HistoryViewSettings.showGraphKey)
         defaults.set(HistoryGrouping.week.rawValue, forKey: HistoryViewSettings.groupingKey)
@@ -40,6 +45,15 @@ struct HistoryListTests {
         #expect(settings.order == .default)
         #expect(settings.grouping == .ungrouped)
 
+        // 隐藏提交图时按中号行显示，保存的小号行不变，重新显示图后回到小号行
+        #expect(!settings.usesSmallRows)
+        #expect(defaults.bool(forKey: HistoryViewSettings.smallRowsKey))
+
+        defaults.set(true, forKey: HistoryViewSettings.showGraphKey)
+        #expect(HistoryViewSettings(defaults: defaults).usesSmallRows)
+        defaults.set(false, forKey: HistoryViewSettings.showGraphKey)
+
+        // 隐藏提交图时只勾 Topo Order 就按拓扑序
         defaults.set(true, forKey: HistoryViewSettings.topoOrderKey)
         #expect(HistoryViewSettings(defaults: defaults).order == .topological)
 

@@ -201,7 +201,7 @@ struct CommitMetadataView: View {
             + [("history.signingStatus", status)]
     }
 
-    /// 一行：标签用三级文字色；值用二级文字色，单行、可选中、尾部截断，引用行是最宽 100、高 16 的引用标记。
+    /// 一行：标签用三级文字色；值用二级文字色，单行、可选中、尾部截断，引用行是最宽 132、高 16 的引用标记。
     @ViewBuilder
     private func row(_ row: Row) -> some View {
         switch row {
@@ -225,18 +225,20 @@ struct CommitMetadataView: View {
                     isHead: isHead,
                     selected: false,
                     runner: runner,
-                    maxWidth: 100
+                    maxWidth: 132
                 )
                 .frame(height: 16)
             }
         }
     }
 
-    /// 行首的标签。
+    /// 行首的标签：整列右对齐，按最长的标签定宽、不被压缩，详情窄时只截值。
     private func label(_ key: String) -> some View {
         Text(AppLocalization.text(key))
             .foregroundStyle(.tertiary)
             .lineLimit(1)
+            .fixedSize()
+            .gridColumnAlignment(.trailing)
     }
 }
 
@@ -253,6 +255,9 @@ struct ChangesetSummaryBar: View {
     /// 全部展开或全部收起。
     let toggle: () -> Void
 
+    /// 左侧有全部展开 / 收起按钮；没有时摘要靠右完整显示。
+    var showsExpandAll = true
+
     /// 11 pt 文字，摘要用二级文字色。
     var body: some View {
         HStack {
@@ -263,7 +268,8 @@ struct ChangesetSummaryBar: View {
                     .layoutPriority(1)
             }
 
-            Spacer(minLength: 0)
+            // 摘要再长也与按钮隔开 8 pt
+            Spacer(minLength: 8)
 
             Text(Self.summary(changes))
                 .foregroundStyle(Color(nsColor: .secondaryLabelColor))
@@ -278,7 +284,7 @@ struct ChangesetSummaryBar: View {
     }
 
     /// 空变更集保留摘要，但没有可展开的文件。
-    var showsToggle: Bool { !changes.isEmpty }
+    var showsToggle: Bool { showsExpandAll && !changes.isEmpty }
 
     /// 文件数与两类行数分别选择单复数，未知统计按零累计。
     static func summary(_ changes: [CommitFileChange]) -> String {

@@ -182,8 +182,8 @@ extension WorkingCopyOperations {
 // MARK: - Private
 
 extension WorkingCopyOperations {
-    /// 把这些项从磁盘移走：移进废纸篓，或永久删除。
-    private func remove(_ paths: [String], removal: FileRemoval) async throws -> [TrashedItem] {
+    /// 把这些项从磁盘移走：移进废纸篓，或永久删除；以 “/” 结尾的目录整个移走。
+    func remove(_ paths: [String], removal: FileRemoval) async throws -> [TrashedItem] {
         let files = RepositoryFiles(runner: runner)
         let root = runner.location.path
 

@@ -56,8 +56,20 @@ struct RepositorySubmodulesTests {
             ]
         )
 
+        // 分离 HEAD 时版本的名字是指向该提交、按名称排在最前的标签；指针所指的提交没有标签时没有名字
+        let checkedOut = try #require(updated.checkedOut)
+        _ = try await repositories.parent.run(["-C", "依赖/my lib", "tag", "v1"])
+        #expect(try await submodules.revisionName(of: updated, commit: checkedOut) == "v1")
+        #expect(try await submodules.revisionName(of: updated, commit: repositories.upstreamHead) == nil)
+
         try await submodules.checkout(try #require(revisions.first), in: updated)
-        #expect(try await submodules.list().first?.state == .clean)
+
+        let clean = try #require(try await submodules.list().first)
+        #expect(clean.state == .clean)
+
+        // HEAD 停在分支上时，不论称呼哪个提交都是这个分支名
+        #expect(try await submodules.revisionName(of: clean, commit: repositories.upstreamHead) == "main")
+        #expect(try await submodules.revisionName(of: clean, commit: checkedOut) == "main")
 
         // 设下的 ignore 会改变状态的读数，选项放在最后
         try await Self.options(of: submodules)

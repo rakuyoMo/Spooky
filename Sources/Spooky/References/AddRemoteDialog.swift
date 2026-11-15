@@ -4,6 +4,8 @@ import SwiftUI
 // MARK: - AddRemoteDialog
 
 /// 添加远端：名称与地址；提交后先连上远端确认地址与认证，再写入配置，进度与失败进 Activity。
+///
+/// 执行期间表单保持打开、底栏显示进度，添加成功后才关闭；失败时错误框叠在表单上，关掉后填写的内容还在。
 struct AddRemoteDialog: View {
     /// 发起动作的窗口会话。
     let session: RepositorySession
@@ -31,6 +33,18 @@ struct AddRemoteDialog: View {
     @State
     private var nameError = ""
 
+    /// 输入时规范化名称的开关，与新建分支共用。
+    @AppStorage("cleanRefNames")
+    private var cleanNames = true
+
+    /// 添加正在执行。
+    @State
+    private var running = false
+
+    /// 最近一次添加已成功，执行结束后据此关闭表单。
+    @State
+    private var succeeded = false
+
     /// “Name:” 与 “Remote URL:” 两个输入框。
     var body: some View {
         RepositoryDialogLayout(
@@ -39,7 +53,8 @@ struct AddRemoteDialog: View {
             message: AppLocalization.text("remote.add.message"),
             submitTitle: AppLocalization.text("remote.add.submit"),
             error: error,
-            isValid: validName && !url.isEmpty && error.isEmpty,
+            progress: running ? AppLocalization.text("remote.checking") : nil,
+            isValid: validName && !url.isEmpty && error.isEmpty && !running,
             cancel: close,
             submit: submit
         ) {
@@ -54,6 +69,11 @@ struct AddRemoteDialog: View {
             }
         }
         .onAppear { repository = session.repository }
+        .onChange(of: name) {
+            if cleanNames {
+                name = RepositoryReferences.normalizedBranchName(name)
+            }
+        }
         .task(id: name) { await validateName() }
     }
 }
@@ -106,14 +126,29 @@ extension AddRemoteDialog {
         }
     }
 
-    /// 开始添加，添加成功后随即获取这个远端；仓库忙碌或已切换时表单保持打开。
+    /// 开始添加，添加成功后关闭表单并随即获取这个远端；仓库忙碌、已切换或添加失败时表单保持打开。
     private func submit() {
         guard session.repository == repository else {
             return
         }
 
-        if session.addRemote(name: name, url: url) {
-            close()
+        succeeded = false
+
+        guard session.addRemote(name: name, url: url, added: { succeeded = true }) else {
+            return
+        }
+
+        running = true
+        let write = session.writeTask
+
+        // 写操作结束后：成功时关闭，失败时错误框已叠在表单上，表单留着
+        Task {
+            await write?.value
+            running = false
+
+            if succeeded {
+                close()
+            }
         }
     }
 }

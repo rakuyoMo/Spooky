@@ -67,7 +67,6 @@ struct BranchesReviewListView: View {
 
             list(items)
         }
-        .frame(minWidth: 300)
         .task(id: snapshotKey) {
             state.update(
                 snapshot: session.history.snapshot,
@@ -103,7 +102,9 @@ struct BranchesReviewListView: View {
             + [session.status?.branch.head ?? ""]
     }
 
-    /// 没有分支时显示空状态，否则显示可多选的列表。
+    /// 没有分支时显示空状态，否则显示可多选的列表；删除只接 Edit › Delete（⌘⌫），单独的 ⌫ 不删除。
+    ///
+    /// 行变化后所选的行都不在列表里时，选中第一行。
     @ViewBuilder
     private func list(_ items: [BranchesReviewItem]) -> some View {
         if items.isEmpty {
@@ -120,10 +121,47 @@ struct BranchesReviewListView: View {
                         .contextMenu {
                             BranchesReviewMenu(session: session, item: item, items: items, request: request)
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            swipeDelete(item.reference)
+                        }
                 }
             }
             .listStyle(.inset)
+            .onCommand(#selector(NSText.delete(_:)), perform: deleteCommand(items))
+            .onChange(of: items.map(\.id), initial: true) { _, ids in
+                session.branchesReview.selectFirstIfNeeded(in: ids)
+            }
         }
+    }
+
+    /// 行尾侧轻扫出的 Delete，破坏性样式；当前分支的底色是灰色。
+    private func swipeDelete(_ branch: RepositoryReference) -> some View {
+        Button(AppLocalization.text("review.delete"), role: .destructive) {
+            deleteBySwipe(branch)
+        }
+        .tint(branch.id == session.headBranch?.id ? Color(nsColor: .systemGray) : nil)
+    }
+
+    /// Edit › Delete（⌘⌫）的动作：确认后删除列表里所选的分支；没有选中或不能删除时为 nil，菜单项随之不可用。
+    func deleteCommand(_ items: [BranchesReviewItem]) -> (() -> Void)? {
+        let selected = session.branchesReview.selectedIDs
+        let targets = items.filter { selected.contains($0.id) }.map(\.reference)
+
+        guard !targets.isEmpty, session.canDelete(targets) else {
+            return nil
+        }
+
+        return { session.requestReference(.deleteBranches(targets)) }
+    }
+
+    /// 轻扫出的 Delete 被点下：与右键删除同一个删除确认；当前分支等不能删除的只发提示音。
+    func deleteBySwipe(_ branch: RepositoryReference) {
+        guard session.canDelete([branch]) else {
+            NSSound.beep()
+            return
+        }
+
+        session.requestReference(.deleteBranches([branch]))
     }
 }
 
@@ -168,38 +206,32 @@ private struct BranchesReviewHeader: View {
         .background(.bar)
     }
 
-    /// 基准分支下拉：全部本地分支，当前基准打勾。
+    /// 基准分支的弹出按钮；表头放不下时先截断它。
     private var baseMenu: some View {
-        let base = session.branchesReview.base
-
-        return Menu {
-            ForEach(session.history.branches.filter(\.isLocal)) { branch in
-                Toggle(
-                    branch.name,
-                    isOn: Binding(
-                        get: { branch.id == base?.id },
-                        set: { _ in session.branchesReview.selectBase(branch.id) }
-                    )
-                )
-            }
-        } label: {
-            Text(base?.name ?? AppLocalization.text("review.noBase"))
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-        .foregroundStyle(.secondary)
-        .help(base?.name ?? "")
-        .accessibilityLabel(AppLocalization.text("review.compareTo"))
+        BranchesReviewBasePopUp(
+            branches: session.history.branches.filter(\.isLocal),
+            base: session.branchesReview.base
+        ) { session.branchesReview.selectBase($0) }
     }
 
-    /// 筛选下拉：有筛选时图标填色。
+    /// 筛选下拉：灰色标题 Filter 下按 `BranchesReviewFilter.menuGroups` 分组，组间是分隔线；有筛选时图标填色。
     private var filterMenu: some View {
         Menu {
-            ForEach(BranchesReviewFilter.allCases, id: \.self) { item in
-                Toggle(
-                    item.isPullRequestFilter ? session.pullRequestText(item.titleKey) : AppLocalization.text(item.titleKey),
-                    isOn: Binding(get: { filter == item.rawValue }, set: { _ in filter = item.rawValue })
-                )
+            Section(AppLocalization.text("review.filterHeading")) {
+                ForEach(BranchesReviewFilter.menuGroups.indices, id: \.self) { index in
+                    if index > 0 {
+                        Divider()
+                    }
+
+                    ForEach(BranchesReviewFilter.menuGroups[index], id: \.self) { item in
+                        Toggle(
+                            item.isPullRequestFilter
+                                ? session.pullRequestText(item.titleKey)
+                                : AppLocalization.text(item.titleKey),
+                            isOn: Binding(get: { filter == item.rawValue }, set: { _ in filter = item.rawValue })
+                        )
+                    }
+                }
             }
         } label: {
             Image(
@@ -215,28 +247,34 @@ private struct BranchesReviewHeader: View {
         .help(AppLocalization.text("review.filter"))
     }
 
-    /// 视图设置下拉：按名称或时间排序，升序或降序。
+    /// 视图设置下拉：灰色标题 Sort By 下是名称与最后更新时间，分隔线后灰色标题 Sort Order 下是升序与降序。
     private var viewSettingsMenu: some View {
         Menu {
-            Toggle(
-                AppLocalization.text("review.sort.name"),
-                isOn: Binding(get: { sort == BranchesReviewSort.name.rawValue }, set: { _ in sort = 0 })
-            )
-            Toggle(
-                AppLocalization.text("review.sort.date"),
-                isOn: Binding(get: { sort == BranchesReviewSort.date.rawValue }, set: { _ in sort = 1 })
-            )
+            Section(AppLocalization.text("review.sortBy")) {
+                Toggle(
+                    AppLocalization.text("review.sort.name"),
+                    isOn: Binding(get: { sort == BranchesReviewSort.name.rawValue }, set: { _ in sort = 0 })
+                )
+
+                Toggle(
+                    AppLocalization.text("review.sort.date"),
+                    isOn: Binding(get: { sort == BranchesReviewSort.date.rawValue }, set: { _ in sort = 1 })
+                )
+            }
 
             Divider()
 
-            Toggle(
-                AppLocalization.text("review.sort.ascending"),
-                isOn: Binding(get: { ascending }, set: { _ in ascending = true })
-            )
-            Toggle(
-                AppLocalization.text("review.sort.descending"),
-                isOn: Binding(get: { !ascending }, set: { _ in ascending = false })
-            )
+            Section(AppLocalization.text("review.sortOrder")) {
+                Toggle(
+                    AppLocalization.text("review.sort.ascending"),
+                    isOn: Binding(get: { ascending }, set: { _ in ascending = true })
+                )
+
+                Toggle(
+                    AppLocalization.text("review.sort.descending"),
+                    isOn: Binding(get: { !ascending }, set: { _ in ascending = false })
+                )
+            }
         } label: {
             Image(systemName: "slider.horizontal.3")
         }
@@ -250,7 +288,7 @@ private struct BranchesReviewHeader: View {
 
 // MARK: - BranchesReviewRow
 
-/// 一行 52 pt：合并状态图标、分支名与超前 / 落后，第二行是跟踪的远端分支与最后更新时间。
+/// 一行 52 pt：合并状态图标、分支名与靠右的超前 / 落后，第二行是跟踪的远端分支与靠右的最后更新时间。
 struct BranchesReviewRow: View {
     /// 这一行的分支与比较。
     let item: BranchesReviewItem
@@ -272,11 +310,13 @@ struct BranchesReviewRow: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
 
-                    counts
-
                     if let request = item.pullRequest {
                         pullRequestBadge(request)
                     }
+
+                    Spacer(minLength: 8)
+
+                    counts
                 }
 
                 HStack(spacing: 4) {
@@ -325,24 +365,29 @@ struct BranchesReviewRow: View {
         }
     }
 
-    /// 超前 / 落后的提交数；比较完成前显示 “Comparing…”。
+    /// 超前 / 落后的提交数，箭头斜向；比较完成前显示 “Comparing…”。
+    ///
+    /// 读屏时整组是一个元素，只读一遍，一个提交时用单数。
     @ViewBuilder
     private var counts: some View {
         if let divergence = item.comparison?.divergence {
             HStack(spacing: 3) {
-                Image(systemName: "arrow.up")
+                Image(systemName: "arrow.up.right")
                     .font(.system(size: 8))
                     .foregroundStyle(.tertiary)
+
                 Text(divergence.ahead.formatted())
 
-                Image(systemName: "arrow.down")
+                Image(systemName: "arrow.down.left")
                     .font(.system(size: 8))
                     .foregroundStyle(.tertiary)
+
                 Text(divergence.behind.formatted())
             }
             .font(.system(size: 11))
             .foregroundStyle(.secondary)
-            .accessibilityLabel(AppLocalization.text("review.counts", divergence.ahead, divergence.behind))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Self.countsLabel(divergence))
         } else {
             Text(AppLocalization.text("review.comparing"))
                 .font(.system(size: 11))
@@ -350,12 +395,12 @@ struct BranchesReviewRow: View {
         }
     }
 
-    /// 跟踪的远端分支；上游已不存在时带红色的错误图标。
+    /// 跟踪的远端分支，没有时写 No tracking branch，都是次级文字色；上游已不存在时名字与错误图标都是红色。
     @ViewBuilder
     private var tracking: some View {
         if let missing = item.condition?.missingUpstream {
             Text(Self.shortName(missing))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color(nsColor: .systemRed))
                 .lineLimit(1)
 
             Image(systemName: "exclamationmark.circle.fill")
@@ -369,9 +414,22 @@ struct BranchesReviewRow: View {
                 .lineLimit(1)
         } else {
             Text(AppLocalization.text("review.noTracking"))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
+    }
+
+    /// 超前 / 落后的读屏文字，一个提交时用单数。
+    static func countsLabel(_ divergence: ReferenceDivergence) -> String {
+        let ahead = divergence.ahead == 1
+            ? AppLocalization.text("review.ahead.one")
+            : AppLocalization.text("review.ahead", divergence.ahead)
+
+        let behind = divergence.behind == 1
+            ? AppLocalization.text("review.behind.one")
+            : AppLocalization.text("review.behind", divergence.behind)
+
+        return AppLocalization.text("review.counts", ahead, behind)
     }
 
     /// 去掉 refs/heads/ 或 refs/remotes/ 前缀的引用名。

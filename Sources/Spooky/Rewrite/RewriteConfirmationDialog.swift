@@ -20,7 +20,7 @@ struct RewriteConfirmationDialog: View {
             session: session,
             title: AppLocalization.text(RepositorySession.titleKey(of: plan.action)),
             message: session.rewriteDialogMessage(question),
-            submitTitle: AppLocalization.text(RepositorySession.titleKey(of: plan.action) + ".button"),
+            submitTitle: AppLocalization.text(submitKey),
             error: "",
             isValid: true,
             cancel: close,
@@ -34,21 +34,31 @@ struct RewriteConfirmationDialog: View {
 // MARK: - Layout
 
 extension RewriteConfirmationDialog {
-    /// 确认的问题，写出提交数或目标提交的标题。
+    /// 主按钮的资源键：压缩按并入的提交数写 Squash Revision 或 Squash Revisions，其余是动作自己的按钮。
+    private var submitKey: String {
+        guard case .squash = plan.action else {
+            return RepositorySession.titleKey(of: plan.action) + ".button"
+        }
+
+        return foldedInstructions.folded.count == 1 ? "rewrite.squash.submit.one" : "rewrite.squash.submit"
+    }
+
+    /// 确认的问题：压缩写出被并入与目标提交的短哈希，并入修正写出它们的标题，其余写出提交数或目标提交的标题。
     private var question: String {
         let key = RepositorySession.titleKey(of: plan.action) + ".confirm"
         switch plan.action {
         case .squash, .fixup:
-            // 并入的提交紧跟在目标之后
-            let folded = plan.instructions.filter { [.squash, .fixup].contains($0.command) }
-            let index = plan.instructions.firstIndex { [.squash, .fixup].contains($0.command) } ?? 0
-            let into = index > 0 ? plan.instructions[index - 1].subject : ""
-
-            if folded.count == 1, let only = folded.first {
-                return AppLocalization.text(key + ".one", only.subject, into)
+            let (folded, into) = foldedInstructions
+            let squashes = if case .squash = plan.action { true } else { false }
+            let name = { (instruction: RebaseInstruction) in
+                squashes ? String(instruction.commit.prefix(8)) : instruction.subject
             }
 
-            return AppLocalization.text(key, folded.count, into)
+            if folded.count == 1, let only = folded.first {
+                return AppLocalization.text(key + ".one", name(only), into.map(name) ?? "")
+            }
+
+            return AppLocalization.text(key, folded.count, into.map(name) ?? "")
 
         case .edit(let commit):
             return AppLocalization.text(key, subject(of: commit))
@@ -88,6 +98,14 @@ extension RewriteConfirmationDialog {
                 uniquingKeysWith: { $1 }
             )
         }
+    }
+
+    /// 压缩与并入修正里被并入的几行，以及它们并入的目标；被并入的提交紧跟在目标之后。
+    private var foldedInstructions: (folded: [RebaseInstruction], into: RebaseInstruction?) {
+        let folded = plan.instructions.filter { [.squash, .fixup].contains($0.command) }
+        let index = plan.instructions.firstIndex { [.squash, .fixup].contains($0.command) } ?? 0
+
+        return (folded, index > 0 ? plan.instructions[index - 1] : nil)
     }
 
     /// 范围里某个提交的标题。

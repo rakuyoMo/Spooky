@@ -6,7 +6,7 @@ import SwiftUI
 /// 分支右键菜单里的拉取与推送；按住 ⌥ 时换成跳过对话框的快速操作。
 ///
 /// HEAD 分支是 Pull…、Push…、Force Push with Lease… 与 Sync…，快速版本以它的跟踪分支为对象，没有跟踪分支时不提供；
-/// 其它本地分支只有 Force Push with Lease…；本地分支随后另起一组 Publish “X”… 与 Push “X” To…。
+/// 其它本地分支只有 Force Push with Lease…，能快进时另有快进；本地分支随后另起一组 Publish “X”… 与 Push “X” To…。
 /// 远端分支是 Pull “X”…，快速版本把它并入 HEAD。
 struct BranchSyncMenu: View {
     /// 所在窗口的会话。
@@ -36,6 +36,13 @@ struct BranchSyncMenu: View {
                 headItems
             } else {
                 forcePush
+
+                // 只落后于上游、没有自己的提交时可以快进
+                if session.canFastForward(reference) {
+                    Button(AppLocalization.text("branch.fastForward", reference.name)) {
+                        session.fastForward(reference)
+                    }
+                }
             }
 
             Divider()
@@ -85,12 +92,12 @@ struct BranchSyncMenu: View {
         }
     }
 
-    /// 安全强推这个本地分支：对话框预选它与它的跟踪分支，不换成 HEAD。
+    /// 安全强推这个本地分支：对话框预选它与它的跟踪分支，不换成 HEAD；没有仍存在的远端上游时不可用。
     private var forcePush: some View {
         Button(AppLocalization.text("sync.forcePushMenu")) {
             session.requestSyncDialog(.forcePush, preselecting: reference.id)
         }
-        .disabled(!session.canPush(reference))
+        .disabled(!session.canForcePush(reference))
     }
 
     /// 发布这一个分支，以及把它推到指定的远端引用。

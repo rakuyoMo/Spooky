@@ -14,24 +14,37 @@ enum WorkingCopyListMode: Int {
     /// 全部文件：树形里同时显示没有改动的已跟踪文件。
     case allFiles = 2
 
-    /// 保存显示模式的偏好键，值是模式的原始值。
+    /// 全局显示模式的偏好键，值是模式的原始值；没有单独记过的仓库以它为初始值。
     private static let storageKey = "workingCopyViewMode"
+
+    /// 按仓库记的显示模式的偏好键；值以仓库的显示路径为键，记模式的原始值。
+    private static let repositoryStorageKey = "workingCopyViewModes"
 
     /// 是否按目录组织。
     var isTree: Bool { self != .list }
 
-    /// 所有仓库共用的显示模式；没有记录或记录无法识别时为平铺。
+    /// 仓库的显示模式；这个仓库没有记过时取全局的显示模式，都没有或记录无法识别时为平铺。
     ///
-    /// - Parameter defaults: 保存偏好的位置，测试使用独立的偏好域。
-    static func stored(defaults: UserDefaults = .standard) -> Self {
-        Self(rawValue: defaults.integer(forKey: storageKey)) ?? .list
+    /// - Parameters:
+    ///   - repository: 显示的仓库。
+    ///   - defaults: 保存偏好的位置，测试使用独立的偏好域。
+    static func stored(for repository: RepositoryLocation, defaults: UserDefaults = .standard) -> Self {
+        let modes = defaults.dictionary(forKey: repositoryStorageKey) as? [String: Int]
+        let rawValue = modes?[repository.displayPath] ?? defaults.integer(forKey: storageKey)
+
+        return Self(rawValue: rawValue) ?? .list
     }
 
-    /// 记住显示模式，之后打开的每个仓库都沿用它。
+    /// 记住这个仓库的显示模式，其它仓库不受影响。
     ///
-    /// - Parameter defaults: 保存偏好的位置，测试使用独立的偏好域。
-    static func store(_ mode: Self, defaults: UserDefaults = .standard) {
-        defaults.set(mode.rawValue, forKey: storageKey)
+    /// - Parameters:
+    ///   - mode: 显示模式。
+    ///   - repository: 显示的仓库。
+    ///   - defaults: 保存偏好的位置，测试使用独立的偏好域。
+    static func store(_ mode: Self, for repository: RepositoryLocation, defaults: UserDefaults = .standard) {
+        var modes = defaults.dictionary(forKey: repositoryStorageKey) ?? [:]
+        modes[repository.displayPath] = mode.rawValue
+        defaults.set(modes, forKey: repositoryStorageKey)
     }
 }
 
@@ -118,11 +131,11 @@ enum WorkingCopyPreferences {
     /// 文件列表的表头排序，按优先级逐级保存列名与方向。
     static let sortOrder = "workingCopySortOrder"
 
-    /// 没有保存过排序时的表头排序：先按路径，再按状态，都是升序。
+    /// 没有保存过排序时的表头排序：先按路径升序，再按状态；状态与第一次点表头时一样降序，已暂存的在前。
     static var defaultSortDescriptors: [NSSortDescriptor] {
         [
             NSSortDescriptor(key: "path", ascending: true),
-            NSSortDescriptor(key: "status", ascending: true),
+            NSSortDescriptor(key: "status", ascending: false),
         ]
     }
 
@@ -220,6 +233,11 @@ struct WorkingCopyListing: Equatable {
 
     /// 工具栏搜索框的内容，按路径或文件名过滤。
     var filter = ""
+
+    /// 列表按目录组织：树形与全部文件模式在没有搜索内容时；有搜索内容时按平铺写出完整路径。
+    var showsTree: Bool {
+        mode.isTree && filter.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     /// 路径包含搜索内容时匹配；不区分大小写，组合与分解两种 Unicode 写法视为相同。
     static func matches(_ entry: StatusEntry, query: String) -> Bool {

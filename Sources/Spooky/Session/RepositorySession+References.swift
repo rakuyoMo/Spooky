@@ -1,5 +1,6 @@
 import AppKit
 import SpookyKit
+import Synchronization
 
 // MARK: - ForceDeletionOffer
 
@@ -13,6 +14,14 @@ struct ForceDeletionOffer: Error {
 
     /// 失败的说明与 Git 原文。
     let failure: ReferenceError
+}
+
+// MARK: - PendingForceDeletion
+
+/// 多选删除只删掉一部分时，写操作里记下、结束后再询问的强制删除。
+private final class PendingForceDeletion: Sendable {
+    /// 未合并分支的询问；全部删掉时为 nil。
+    let offer = Mutex<ForceDeletionOffer?>(nil)
 }
 
 // MARK: - Availability
@@ -33,10 +42,23 @@ extension RepositorySession {
         canWrite && !tags.isEmpty && !(history.snapshot?.remotes.isEmpty ?? true)
     }
 
-    /// 版本框列表里的引用：本地分支、远端分支、标签依次排列，远端的 HEAD 不列出。
+    /// 版本框列表里的引用：本地分支、各远端的远端分支、标签依次成组，按 ``ReferenceOrder/candidates(_:in:)``；远端的 HEAD 不列出。
     var revisionReferences: [RepositoryReference] {
-        let branches = history.branches
-        return branches.filter(\.isLocal) + branches.filter(\.isRemote) + tags
+        ReferenceOrder.candidates(history.branches + tags, in: history.snapshot)
+    }
+
+    /// 远端名：名为 origin 的在最前，其余按名字；远端下拉的候选与没有上游时的默认远端都取这个顺序。
+    var orderedRemoteNames: [String] {
+        (history.snapshot?.remotes.map(\.name) ?? []).sorted(by: ReferenceOrder.precedes(remote:_:))
+    }
+
+    /// 名字是已有本地分支的文件夹（如已有 `feature/login` 时的 `feature`）；改名时不算被改名的分支自己。
+    ///
+    /// - Parameters:
+    ///   - name: 新的分支名。
+    ///   - excluded: 被改名的分支的完整引用名。
+    func isBranchFolder(_ name: String, excluding excluded: String? = nil) -> Bool {
+        history.branches.contains { $0.isLocal && $0.id != excluded && $0.name.hasPrefix(name + "/") }
     }
 
     /// 非当前的本地分支只落后于上游、没有自己的提交时才能快进。
@@ -171,6 +193,9 @@ extension RepositorySession {
 
     /// 删除本地分支；普通删除因未合并失败时，询问是否按原选项强制删除。
     ///
+    /// 多选的普通删除只删掉一部分时，删掉的先按实际个数记撤销，写操作结束后再询问未合并的。
+    /// 连同跟踪的远端分支一起删除的，撤销时先在远端重建远端分支。
+    ///
     /// - Parameters:
     ///   - branches: 本地分支的完整引用名。
     ///   - force: 是否强制删除。
@@ -182,6 +207,8 @@ extension RepositorySession {
         let upstream = tracked
             ? history.branches.first { $0.id == branches.first }?.upstreamRemote
             : nil
+
+        let pending = PendingForceDeletion()
 
         return performGit(
             { runner, output in
@@ -195,13 +222,26 @@ extension RepositorySession {
                     }
                 } catch let error as ReferenceError {
                     guard case .unmergedBranches(let names, _) = error else { throw error }
-                    throw ForceDeletionOffer(branches: names, deletingUpstream: tracked, failure: error)
+
+                    let offer = ForceDeletionOffer(branches: names, deletingUpstream: tracked, failure: error)
+
+                    // 一个也没删掉时整体失败，失败处理改为询问
+                    guard !names.isEmpty, names.count < branches.count else { throw offer }
+
+                    pending.offer.withLock { $0 = offer }
+
+                    let key = branches.count - names.count == 1 ? "branch.delete" : "branch.deleteMultiple"
+                    UndoSteps.current?.rename(AppLocalization.text(key))
                 }
             },
             title: AppLocalization.text(branches.count == 1 ? "branch.delete" : "branch.deleteMultiple"),
             target: tracked ? .push(upstream) : nil,
-            undo: tracked ? .irreversible : .reversible
-        )
+            undo: tracked ? .deletingBranch(withUpstream: branches[0]) : .reversible
+        ) { [weak self] in
+            if let offer = pending.offer.withLock({ $0 }) {
+                self?.onReferenceRequest?(.forceDelete(offer))
+            }
+        }
     }
 
     /// 写入失败是未合并分支的普通删除时，改为询问是否强制删除；返回是否已经接手。
@@ -210,8 +250,7 @@ extension RepositorySession {
             return false
         }
 
-        let failure = AppFailure(error: offer.failure, opening: false, location: repository, writing: true)
-        onReferenceRequest(.forceDelete(offer, failure))
+        onReferenceRequest(.forceDelete(offer))
         return true
     }
 }

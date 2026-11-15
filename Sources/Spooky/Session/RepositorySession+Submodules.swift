@@ -29,9 +29,9 @@ extension RepositorySession {
         canWrite && submodules.items.contains { $0.isValid && $0.isPopulated }
     }
 
-    /// 有可以更新的子模块：配置完整。
+    /// 有可以更新的子模块，见 ``canUpdate(_:)``。
     var canUpdateSubmodules: Bool {
-        canWrite && submodules.items.contains(where: \.isValid)
+        submodules.items.contains { canUpdate($0) }
     }
 
     /// 父仓库的位置；本仓库不是子模块时为 nil。
@@ -51,14 +51,28 @@ extension RepositorySession {
         canWrite && submodule.isValid && submodule.isPopulated
     }
 
-    /// 能否更新、初始化、移动或改名这个子模块：配置完整即可。
+    /// 能否移动、改名这个子模块或修改它的配置：配置完整即可。
     func canModify(_ submodule: Submodule) -> Bool {
         canWrite && submodule.isValid
     }
 
-    /// 能否同步这个子模块的地址：已初始化。
+    /// 能否更新这个子模块：配置完整，检出的提交与指针不一致或还没有检出；干净与指针冲突时没有可更新的。
+    func canUpdate(_ submodule: Submodule) -> Bool {
+        canModify(submodule) && submodule.state != .clean && submodule.state != .unmerged
+    }
+
+    /// 能否初始化这个子模块：配置完整、还没有检出，且本地配置里还没有登记地址。
+    func canInitialize(_ submodule: Submodule) -> Bool {
+        canModify(submodule) && submodule.state == .uninitialized && !submodule.isInitialized
+    }
+
+    /// 能否同步这个子模块的地址：已初始化并检出、指针不在冲突中，且本地配置的地址与 `.gitmodules` 不同。
     func canSynchronize(_ submodule: Submodule) -> Bool {
-        canWrite && submodule.isValid && submodule.isInitialized
+        canModify(submodule)
+            && submodule.isInitialized
+            && submodule.state != .uninitialized
+            && submodule.state != .unmerged
+            && submodule.needsSynchronizing
     }
 
     /// 能否在这个子模块里检出别的版本：已检出。

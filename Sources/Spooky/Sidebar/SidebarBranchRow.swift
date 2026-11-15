@@ -126,12 +126,17 @@ struct SidebarBadge: View {
 // MARK: - SidebarBranchRow
 
 /// 侧边栏的分支行：图标、名称、名称后的陈旧与跟踪错误注记、右侧胶囊徽标；宽度不够时陈旧时长先让出，名称保持完整。
+///
+/// 图标与名称组成 `Label`，图标与侧边栏其它行一样，窗口活跃时用强调色、不活跃时变灰。
 struct SidebarBranchRow: View {
     /// 显示名。
     let name: String
 
     /// 图标的 SF Symbol 名。
     let symbol: String
+
+    /// 分支已在别的工作树签出，图标右下角叠一个角标。
+    var isCheckedOutElsewhere = false
 
     /// 胶囊徽标的各段；为空时不显示徽标。
     var badge: [SidebarBadgeSegment] = []
@@ -146,19 +151,30 @@ struct SidebarBranchRow: View {
     let help: String
 
     /// 名称在前、注记紧随、徽标靠右；名称的排版优先级高于注记，先拿到完整宽度。
+    ///
+    /// 整行都是点击区域，名称右边的空白处同样响应双击。
     var body: some View {
         HStack(spacing: 4) {
-            // 系统符号自带的名称与分支无关（如 “Divide”），图标不进辅助功能，这一行由名称与注记说明
-            Image(systemName: symbol)
-                .accessibilityHidden(true)
+            Label {
+                HStack(spacing: 4) {
+                    Text(name)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .foregroundStyle(status.isDimmed ? .secondary : .primary)
+                        .layoutPriority(1)
 
-            Text(name)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .foregroundStyle(status.isDimmed ? .secondary : .primary)
-                .layoutPriority(1)
-
-            annotations
+                    annotations
+                }
+            } icon: {
+                // 系统符号自带的名称与分支无关（如 “Divide”），图标不进辅助功能，这一行由名称与注记说明
+                Image(systemName: symbol)
+                    .overlay(alignment: .bottomTrailing) {
+                        if isCheckedOutElsewhere {
+                            WorktreeCornerBadge()
+                        }
+                    }
+                    .accessibilityHidden(true)
+            }
 
             Spacer(minLength: 4)
 
@@ -170,6 +186,7 @@ struct SidebarBranchRow: View {
                 Image(systemName: "house").help(AppLocalization.text("branch.default"))
             }
         }
+        .contentShape(Rectangle())
         .help(help)
     }
 
@@ -204,5 +221,17 @@ struct SidebarBranchRow: View {
             .font(.system(size: 11))
             .lineLimit(1)
         }
+    }
+}
+
+// MARK: - WorktreeCornerBadge
+
+/// 分支图标右下角的角标：两个叠放的小方块，表示分支已在别的工作树签出；颜色随图标。
+private struct WorktreeCornerBadge: View {
+    /// 落在分支图标右下角的空白处，略微伸出图标的边。
+    var body: some View {
+        Image(systemName: "square.on.square")
+            .font(.system(size: 7, weight: .bold))
+            .offset(x: 3, y: 2)
     }
 }

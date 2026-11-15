@@ -100,6 +100,18 @@ extension WorkingCopyOperations {
         return Set(try IndexFile.parse(lsFilesVerbose: output).filter(\.assumeUnchanged).map(\.path))
     }
 
+    /// 这几个路径里 Git 当作二进制的文件：暂存区或工作区里的内容是二进制，或属性里取消了 `text`（如 Git LFS 的规则）。
+    ///
+    /// 不在暂存区里的路径不会出现在结果里。
+    ///
+    /// - Parameter paths: 仓库内的相对路径，按字面值匹配。
+    public func binaryPaths(_ paths: [String]) async throws -> Set<String> {
+        guard !paths.isEmpty else { return [] }
+
+        let output = try await runner.run(["--literal-pathspecs", "ls-files", "-z", "--eol", "--"] + paths)
+        return try Self.binaryPaths(lsFilesEOL: output)
+    }
+
     /// 把规则追加到忽略文件末尾，已有的同一条规则不重复写入；文件不存在时新建
     ///
     /// - Parameters:
@@ -158,6 +170,36 @@ extension WorkingCopyOperations {
             try await verifyPreimages(PatchPreimage.preimages(in: patch))
             _ = try await runner.run(["apply", "-"], input: patch)
         }
+    }
+}
+
+// MARK: - Binary Paths
+
+extension WorkingCopyOperations {
+    /// 解析 `ls-files -z --eol` 的输出：每条记录是 “i/… w/… attr/…”、一个 Tab 与路径。
+    ///
+    /// - Parameter output: 以 NUL 结尾的记录。
+    static func binaryPaths(lsFilesEOL output: Data) throws -> Set<String> {
+        var paths: Set<String> = []
+
+        for record in output.split(separator: 0) {
+            guard let tab = record.firstIndex(of: 9) else {
+                throw RepositoryReadError.malformedOutput("ls-files --eol")
+            }
+
+            let fields = String(decoding: record[..<tab], as: UTF8.self).split(separator: " ")
+
+            guard fields.first?.hasPrefix("i/") ?? false else {
+                throw RepositoryReadError.malformedOutput("ls-files --eol")
+            }
+
+            // 暂存区与工作区按内容判断，属性一栏写 “-text” 表示规则里取消了文本处理
+            if fields.contains(where: { ["i/-text", "w/-text", "attr/-text"].contains($0) }) {
+                paths.insert(String(decoding: record[record.index(after: tab)...], as: UTF8.self))
+            }
+        }
+
+        return paths
     }
 }
 

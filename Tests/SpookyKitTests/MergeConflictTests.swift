@@ -10,7 +10,7 @@ struct MergeConflictTests {
     /// 向导显示的三方内容必须与索引一致；合并的对方提交是被合并的提交，预填保留 Git 写下的冲突清单注释；
     /// 恢复只改工作区，文件仍是冲突，恢复成某一侧之外的内容就算手动改过，标记解决后还能重新生成冲突；
     /// 采用一侧后 resolve-undo 记录让横幅能数出已解决的冲突。
-    @Test("合并冲突：三方内容、预填信息、恢复冲突版本、手动编辑的识别与采用一侧")
+    @Test("合并冲突：三方内容、预填信息、恢复冲突版本、手动编辑的识别与修改时间、采用一侧")
     func mergeWizard() async throws {
         let repository = try TemporaryRepository()
         defer { repository.remove() }
@@ -68,6 +68,12 @@ struct MergeConflictTests {
 
         #expect(try Data(contentsOf: file) == Data("base\n".utf8))
         #expect(try await service.conflictContents(of: entry).isManuallyEdited)
+
+        // 手动改过的文件带上工作区文件的修改时间
+        let edited = Date(timeIntervalSince1970: 1_800_000_000)
+        try FileManager.default.setAttributes([.modificationDate: edited], ofItemAtPath: file.path)
+
+        #expect(try await service.conflictContents(of: entry).worktreeModified == edited)
 
         try await service.restoreConflicts([entry], to: .unmerged)
 

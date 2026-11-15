@@ -91,22 +91,30 @@ struct DiffHunkView: View {
         )
     }
 
-    /// 块头原文与写入按钮。
+    /// 块头原文与写入按钮；原文放不下时直接切掉，按钮保持原宽。
     private var header: some View {
         HStack(spacing: 8) {
+            // 原文按自然宽度排，放不下的部分由外框切掉，不加省略号
             Text(hunk.header)
                 .font(.custom("Menlo", size: 10))
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
+                .fixedSize()
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                .clipped()
+                .layoutPriority(1)
 
             Spacer(minLength: 4)
 
             if !readOnly, hunk.combinedRanges == nil {
-                if !staged {
-                    Button(actionTitle("discard")) { apply(lineSelection.selected, true) }
-                }
+                // 按钮按自然宽度排，不参与压缩
+                HStack(spacing: 8) {
+                    if !staged {
+                        Button(actionTitle("discard")) { apply(lineSelection.selected, true) }
+                    }
 
-                Button(actionTitle(staged ? "unstage" : "stage")) { apply(lineSelection.selected, false) }
+                    Button(actionTitle(staged ? "unstage" : "stage")) { apply(lineSelection.selected, false) }
+                }
+                .fixedSize()
             }
         }
         .buttonStyle(.bordered)

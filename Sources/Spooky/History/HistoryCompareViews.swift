@@ -29,14 +29,7 @@ struct HistoryBaseBranchHeader: View {
 
                 if let behind = comparison.comparison?.divergence.behind, behind > 0 {
                     HistoryBadge(symbol: "arrow.down", count: behind)
-                        .help(
-                            AppLocalization.text(
-                                "history.behindBase",
-                                comparison.branch.name,
-                                behind,
-                                comparison.base.name
-                            )
-                        )
+                        .help(comparison.behindHelp(behind))
                 }
             }
         }
@@ -108,7 +101,7 @@ struct HistoryBadge: View {
 
 // MARK: - CompareBranchesToggle
 
-/// 列表头的 Compare Branches 开关：20 × 20 的图标按钮，打开时填色。
+/// 列表头的 Compare Branches 开关：22 × 22 的图标按钮，打开时填色。
 struct CompareBranchesToggle: View {
     /// 历史状态，决定能不能比较。
     let history: RepositoryHistoryState
@@ -117,34 +110,34 @@ struct CompareBranchesToggle: View {
     @AppStorage(RepositoryHistoryState.comparesBranchesKey)
     private var comparesBranches = false
 
-    /// 只有单选本地分支时可用。
+    /// 看全部历史时不显示；只有单选本地分支时可用，看标签、远端分支等其它引用时禁用。
     var body: some View {
-        Button {
-            comparesBranches.toggle()
-        } label: {
-            Image(systemName: "arrow.triangle.branch")
-                .font(.system(size: 13))
-                .foregroundStyle(comparesBranches ? Color.accentColor : .secondary)
-                .frame(width: 20, height: 20)
+        if !history.selectedReferences.isEmpty {
+            let title = AppLocalization.text("history.compareBranches.help")
+
+            Button {
+                comparesBranches.toggle()
+            } label: {
+                Image(systemName: "arrow.left.arrow.right.circle")
+                    .font(.system(size: 14))
+                    .foregroundStyle(comparesBranches ? Color.accentColor : .secondary)
+                    .frame(width: 22, height: 22)
+            }
+            .buttonStyle(.borderless)
+            .disabled(history.selectedLocalBranch == nil)
+            .help(title)
+            .accessibilityLabel(title)
+            .accessibilityValue(comparesBranches ? AppLocalization.text("history.compareOn") : "")
         }
-        .buttonStyle(.borderless)
-        .disabled(history.selectedLocalBranch == nil)
-        .help(AppLocalization.text("history.compareBranches"))
-        .accessibilityLabel(AppLocalization.text("history.compareBranches"))
-        .accessibilityValue(comparesBranches ? AppLocalization.text("history.compareOn") : "")
     }
 }
 
 // MARK: - IntegrateParentButton
 
-/// 列表头的集成父分支改动按钮：所选分支落后父分支时显示落后数，点开选择合并或变基。
+/// 列表头的集成父分支改动按钮：所选分支落后父分支时显示落后数，点开 Update Branch 对话框。
 struct IntegrateParentButton: View {
     /// 当前仓库会话。
     let session: RepositorySession
-
-    /// 弹出状态。
-    @State
-    private var showsPopover = false
 
     /// 没有父分支或不落后时不显示。
     var body: some View {
@@ -154,84 +147,14 @@ struct IntegrateParentButton: View {
             behind > 0
         {
             Button {
-                showsPopover = true
+                session.requestReference(.updateBranch(comparison.branch))
             } label: {
                 HistoryBadge(symbol: "arrow.down", count: behind)
             }
             .buttonStyle(.plain)
-            .help(
-                AppLocalization.text(
-                    "history.behindBase",
-                    comparison.branch.name,
-                    behind,
-                    comparison.base.name
-                )
-            )
+            .help(comparison.behindHelp(behind))
             .accessibilityLabel(AppLocalization.text("review.updateBranch"))
-            .popover(isPresented: $showsPopover, arrowEdge: .bottom) {
-                UpdateBranchPopover(session: session, comparison: comparison) { showsPopover = false }
-            }
         }
-    }
-}
-
-// MARK: - UpdateBranchPopover
-
-/// 集成父分支改动：说明要并入多少提交或会冲突的文件，用户明确选择合并或变基后执行。
-struct UpdateBranchPopover: View {
-    /// 当前仓库会话。
-    let session: RepositorySession
-
-    /// 所选分支与父分支的比较。
-    let comparison: HistoryBaseComparison
-
-    /// 关闭弹窗。
-    let close: () -> Void
-
-    /// 说明、预览状态与 Merge ▾ Rebase 按钮。
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if comparison.conflicts.isEmpty {
-                Text(
-                    AppLocalization.text(
-                        "review.update.summary",
-                        comparison.base.name,
-                        comparison.branch.name,
-                        comparison.comparison?.divergence.behind ?? 0
-                    )
-                )
-                .fixedSize(horizontal: false, vertical: true)
-            } else {
-                ConflictFileList(
-                    title: AppLocalization.text("review.conflictsTip", comparison.conflicts.count),
-                    paths: comparison.conflicts
-                )
-                .padding(-16)
-            }
-
-            UpdateBranchStatus(comparison: comparison)
-
-            HStack {
-                Spacer()
-
-                Menu(AppLocalization.text("review.update.merge")) {
-                    Button(AppLocalization.text("review.update.rebase")) { run(rebase: true) }
-                } primaryAction: {
-                    run(rebase: false)
-                }
-                .fixedSize()
-                .disabled(!session.canUpdateBranch(comparison.branch))
-            }
-        }
-        .font(.system(size: 13))
-        .padding(20)
-        .frame(width: 340)
-    }
-
-    /// 关闭弹窗后执行；冲突与本地改动由仓库窗口承接。
-    private func run(rebase: Bool) {
-        close()
-        session.updateBranch(comparison.branch, rebase: rebase)
     }
 }
 

@@ -16,7 +16,7 @@ extension RepositoryManagerController {
 
     /// 编辑描述的对话框，预填当前描述。
     func editDescription() {
-        guard canEditDetail, let location = detailLocation, case .loaded(let summary) = detailState else {
+        guard canEditDetail, let location = detailLocation, case .loaded(let summary, _) = detailState else {
             return
         }
 
@@ -29,7 +29,7 @@ extension RepositoryManagerController {
 
     /// 编辑仓库身份的对话框，预填当前提交人。
     func editIdentity() {
-        guard canEditDetail, let location = detailLocation, case .loaded(let summary) = detailState else {
+        guard canEditDetail, let location = detailLocation, case .loaded(let summary, _) = detailState else {
             return
         }
 

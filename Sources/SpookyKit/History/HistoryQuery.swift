@@ -26,6 +26,12 @@ public struct HistorySearchCondition: Sendable, Equatable, Identifiable {
 
         /// 提交人日期。
         case date
+
+        /// 键入的日期，从那一天的 0 点起；解析不出日期时不筛选。
+        case sinceDate
+
+        /// 键入的日期，到那一天的 23:59:59 为止；解析不出日期时不筛选。
+        case untilDate
     }
 
     /// 日期条件与所选日期的关系，按本地日历的整天比较。
@@ -85,6 +91,8 @@ public struct HistorySearchCondition: Sendable, Equatable, Identifiable {
     /// 所选那一天总在结果里：“之后” 从这一天的 0 点开始，“之前” 截止到这一天结束，区间从起始日开始、到结束日结束。
     /// 一天的长短按日历计算，夏令时切换的那天是 23 或 25 小时。
     func bounds(in calendar: Calendar) -> (since: Int64?, until: Int64?) {
+        guard kind == .date else { return typedBounds(in: calendar) }
+
         let start = calendar.startOfDay(for: date)
         let next = calendar.date(byAdding: .day, value: 1, to: start) ?? start
 
@@ -103,6 +111,44 @@ public struct HistorySearchCondition: Sendable, Equatable, Identifiable {
 
             return (Int64(lower.timeIntervalSince1970), Int64(upper.timeIntervalSince1970) - 1)
         }
+    }
+}
+
+// MARK: - Typed Dates
+
+extension HistorySearchCondition {
+    /// 键入的日期依次按短、中、长三种日期样式解析，不带时间，用日历自身的区域；取第一个解析成功的。
+    ///
+    /// - Parameter calendar: 解析与换算整天所用的日历。
+    func typedDate(in calendar: Calendar) -> Date? {
+        let formatter = DateFormatter()
+
+        formatter.calendar = calendar
+        formatter.locale = calendar.locale ?? .current
+        formatter.timeZone = calendar.timeZone
+        formatter.timeStyle = .none
+
+        for style in [DateFormatter.Style.short, .medium, .long] {
+            formatter.dateStyle = style
+
+            if let date = formatter.date(from: trimmedText) {
+                return date
+            }
+        }
+
+        return nil
+    }
+
+    /// 键入日期的上下限：起点取那一天的 0 点，终点取那一天的 23:59:59；解析不出日期时没有上下限。
+    private func typedBounds(in calendar: Calendar) -> (since: Int64?, until: Int64?) {
+        guard let typed = typedDate(in: calendar) else { return (nil, nil) }
+
+        let start = calendar.startOfDay(for: typed)
+
+        guard kind == .untilDate else { return (Int64(start.timeIntervalSince1970), nil) }
+
+        let next = calendar.date(byAdding: .day, value: 1, to: start) ?? start
+        return (nil, Int64(next.timeIntervalSince1970) - 1)
     }
 }
 
@@ -177,7 +223,7 @@ public struct HistoryQuery: Sendable, Equatable {
             case .message: "--grep=" + condition.trimmedText
             case .author: "--author=" + condition.trimmedText
             case .committer: "--committer=" + condition.trimmedText
-            case .file, .hash, .date: nil
+            case .file, .hash, .date, .sinceDate, .untilDate: nil
             }
         }
 
@@ -186,7 +232,9 @@ public struct HistoryQuery: Sendable, Equatable {
         }
 
         // 多个日期条件取交集：下限取最晚的，上限取最早的
-        let bounds = active.filter { $0.kind == .date }.map { $0.bounds(in: calendar) }
+        let bounds = active
+            .filter { [.date, .sinceDate, .untilDate].contains($0.kind) }
+            .map { $0.bounds(in: calendar) }
 
         if let since = bounds.compactMap(\.since).max() {
             arguments.append("--since=@\(since)")

@@ -34,9 +34,7 @@ extension RepositorySync {
             let references = RepositoryReferences(runner: runner)
             let target = try await references.resolve(parent)
 
-            #warning(
-                "TODO: 更新非当前分支时先检出它再合并或变基，是按 “并入所选分支” 的做法推断的；核实方式：在不是 HEAD 的分支上打开集成父分支改动的弹窗，点 Merge 后看 HEAD 是否切到该分支；影响历史表头与分支整理里对非当前分支的 Update Branch"
-            )
+            // 更新后 HEAD 停在所选分支上
             if "refs/heads/" + (status.branch.head ?? "") != branch {
                 try await references.checkout(branch)
             }
@@ -44,7 +42,7 @@ extension RepositorySync {
             if rebase {
                 try await rebaseCurrentBranch(onto: target, skipHooks: options.skipHooks, onOutput: onOutput)
             } else {
-                try await performMerge(target, options: options, onOutput: onOutput)
+                try await performMerge(parent, options: options, onOutput: onOutput)
             }
         }
     }

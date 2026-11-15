@@ -8,10 +8,10 @@ import Testing
 // MARK: - PullRequestDialogsTests
 
 /// 合并请求与关联远端用 480 宽的对话框骨架：合并的标题与说明写出服务与编号，GitHub 预选上次用的合并方式；
-/// 关联远端的输入从对齐线开始。
+/// 关联远端的输入从输入列开始。
 @MainActor
 struct PullRequestDialogsTests {
-    /// 合并对话框读取选项时内容区是转圈，仍是 480 宽；关联远端也是 480 宽，项目路径的输入框从 120 的对齐线开始、占满输入列。
+    /// 合并对话框读取选项时内容区是转圈，仍是 480 宽；关联远端也是 480 宽，项目路径的输入框从 145 的输入列开始、占满输入列。
     @Test("合并与关联远端对话框的宽度")
     func layout() throws {
         let merge = Self.host(
@@ -39,7 +39,7 @@ struct PullRequestDialogsTests {
         let field = try #require(Self.subviews(NSTextField.self, in: associate).first { $0.isEditable })
         let frame = field.convert(field.bounds, to: associate)
 
-        #expect(abs(frame.minX - DialogMetrics.alignment) <= 1)
+        #expect(abs(frame.minX - DialogMetrics.inputColumn) <= 1)
         #expect(abs(frame.maxX - 460) <= 1)
     }
 

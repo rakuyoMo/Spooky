@@ -9,13 +9,13 @@ import TestSupport
 
 // MARK: - ConfirmationDialogTests
 
-/// 确认对话框与仓库窗口挂出的 sheet：会话的确认、空提交的确认、提交信息含注释的询问与 Git 错误框都挂成 sheet；
+/// 确认对话框与仓库窗口挂出的 sheet：会话的确认与 Git 错误框挂成对话框，空提交的确认与提交信息含注释的询问挂成系统提示框；
 /// “Do not ask me again” 在内容区、对齐 120 pt 的对齐线，只在确认时生效；空提交的 “Do not show this warning again” 选哪个按钮都生效。
 ///
 /// 读勾选框与按钮的一项经辅助功能接口读本进程的窗口，进程没有辅助功能权限时跳过。
 @MainActor
 struct ConfirmationDialogTests {
-    /// 会话发起的确认与空提交确认挂成确认对话框的 sheet，提交信息含注释的询问挂成自己的 sheet；
+    /// 会话发起的确认挂成确认对话框的 sheet，空提交确认与提交信息含注释的询问挂成系统提示框；
     /// Git 错误框挂成可以拉大的 sheet，以 `GitErrorDialog` 记住排好版的尺寸，下次照记住的尺寸打开。
     @Test("仓库窗口挂出的 sheet")
     func presentation() async throws {
@@ -25,34 +25,34 @@ struct ConfirmationDialogTests {
         let session = fixture.controller.session
         let window = try #require(fixture.controller.window)
 
-        // 会话的确认与空提交确认
+        // 会话的确认
         session.onConfirm?(Self.request(suppression: nil) { })
         try await Self.expectSheet(NSHostingController<DialogWindowContent<ConfirmationDialog>>.self, on: window)
 
+        // 空提交确认与提交信息含注释的询问是系统提示框
         session.onEmptyCommitPrompt?(EmptyCommitRequest(isSequence: false, commit: { }, alternate: { }))
-        try await Self.expectSheet(NSHostingController<DialogWindowContent<ConfirmationDialog>>.self, on: window)
+        try await Self.expectAlert(AppLocalization.text("commit.empty.title"), on: window)
 
-        // 提交信息含注释的询问
         session.onCommentPrompt?(false) { _ in }
-        try await Self.expectSheet(NSHostingController<DialogWindowContent<CommitCommentsDialog>>.self, on: window)
+        try await Self.expectAlert(AppLocalization.text("commit.comments"), on: window)
 
         try await Self.expectGitErrorSheet(in: fixture)
     }
 
-    /// 空提交确认的备选按单个操作与序列分别是中止与跳过，内容区是不再提示的勾选框；
+    /// 空提交提示框的按钮依次是保留、中止（序列里是跳过）与 Cancel，带不再提示的勾选框；
     /// 不勾选时三个按钮都不改警告设置，勾上后选哪个按钮都关掉警告，Cancel 不执行任何动作。
-    @Test("空提交确认的备选与不再提示")
-    func emptyCommitDialog() {
+    @Test("空提交确认的按钮与不再提示")
+    func emptyCommitAlert() {
         let key = WorkingCopyPreferences.warnsEmptyCommit
         let saved = UserDefaults.standard.object(forKey: key)
         defer { UserDefaults.standard.set(saved, forKey: key) }
 
         for (isSequence, alternate) in [(false, "commit.empty.abort"), (true, "commit.empty.skip")] {
             let request = EmptyCommitRequest(isSequence: isSequence, commit: { }, alternate: { })
-            let dialog = RepositoryWindowController.emptyCommitDialog(request) { }
+            let alert = RepositoryWindowController.emptyCommitAlert(request)
 
-            #expect(dialog.alternate?.title == AppLocalization.text(alternate))
-            #expect(dialog.checkbox != nil)
+            #expect(alert.buttons.map(\.title) == PromptDialogTests.texts("commit.empty.use", alternate, "action.cancel"))
+            #expect(alert.showsSuppressionButton)
         }
 
         // 没写过这项设置时警告是开着的
@@ -67,35 +67,64 @@ struct ConfirmationDialogTests {
             alternate: { alternated += 1 }
         )
 
-        let dialog = RepositoryWindowController.emptyCommitDialog(request) { }
+        let finish = { (response: NSApplication.ModalResponse, suppressed: Bool) in
+            RepositoryWindowController.finishEmptyCommit(request, response: response, suppressed: suppressed)
+        }
 
         // 不勾选时三个按钮都不改警告设置；Cancel 不执行任何动作
         UserDefaults.standard.removeObject(forKey: key)
-        dialog.cancel(false)
-        dialog.alternate?.action(false)
-        dialog.submit(false)
+        finish(.alertThirdButtonReturn, false)
+        finish(.alertSecondButtonReturn, false)
+        finish(.alertFirstButtonReturn, false)
 
         #expect(UserDefaults.standard.object(forKey: key) == nil)
         #expect(committed == 1 && alternated == 1)
 
         // 勾上后 Cancel 同样关掉警告，仍不执行动作
-        dialog.cancel(true)
+        finish(.alertThirdButtonReturn, true)
 
         #expect(!warns())
         #expect(committed == 1 && alternated == 1)
 
         // 勾上后选备选或主按钮，关掉警告并执行各自的动作
         UserDefaults.standard.removeObject(forKey: key)
-        dialog.alternate?.action(true)
+        finish(.alertSecondButtonReturn, true)
 
         #expect(!warns())
         #expect(alternated == 2)
 
         UserDefaults.standard.removeObject(forKey: key)
-        dialog.submit(true)
+        finish(.alertFirstButtonReturn, true)
 
         #expect(!warns())
         #expect(committed == 2)
+    }
+
+    /// 能删除注释时按钮依次是 Remove Comments、Keep Comments 与 Cancel，带不再询问的勾选框；
+    /// 去掉注释后为空时只有 Keep Comments and Commit 与 Cancel，没有勾选框；Cancel 没有对应的处理。
+    @Test("提交信息含注释的询问")
+    func commentsAlert() {
+        let removable = RepositoryWindowController.commentsAlert(empty: false)
+
+        #expect(
+            removable.buttons.map(\.title)
+                == PromptDialogTests.texts("commit.removeComments", "commit.keepComments", "action.cancel")
+        )
+        #expect(removable.showsSuppressionButton)
+        #expect(removable.suppressionButton?.title == AppLocalization.text("commit.doNotAskAgain"))
+
+        let decisions = [NSApplication.ModalResponse.alertFirstButtonReturn, .alertSecondButtonReturn, .alertThirdButtonReturn]
+            .map { RepositoryWindowController.commentDecision(empty: false, response: $0) }
+
+        #expect(decisions == [.remove, .keep, nil])
+
+        // 去掉注释后为空
+        let commentsOnly = RepositoryWindowController.commentsAlert(empty: true)
+
+        #expect(commentsOnly.buttons.map(\.title) == PromptDialogTests.texts("commit.keepCommentsAndCommit", "action.cancel"))
+        #expect(!commentsOnly.showsSuppressionButton)
+        #expect(RepositoryWindowController.commentDecision(empty: true, response: .alertFirstButtonReturn) == .keep)
+        #expect(RepositoryWindowController.commentDecision(empty: true, response: .alertSecondButtonReturn) == nil)
     }
 
     /// 带可以关掉的确认项时内容区是 “Do not ask me again”，左缘在对齐线；勾上后取消只关闭对话框，确认项保持打开，
@@ -169,6 +198,7 @@ extension ConfirmationDialogTests {
     }
 
     /// Git 错误框挂成可以拉大的 sheet，以 `GitErrorDialog` 记住排好版的尺寸；记住的尺寸比内容宽时，下次照它打开。
+    /// 窗口已有表单时错误框叠在表单上，关掉后回到表单。
     private static func expectGitErrorSheet(in fixture: NavigationTests.WindowFixture) async throws {
         let key = GitErrorDialogTests.frameKey
         let saved = UserDefaults.standard.object(forKey: key)
@@ -208,6 +238,49 @@ extension ConfirmationDialogTests {
 
         window.endSheet(resized)
         await until { window.attachedSheet == nil }
+
+        // 表单开着：错误框叠在表单上，窗口挂着的仍是表单
+        controller.presentDialog { close in
+            AddRemoteDialog(session: controller.session, close: close)
+        }
+
+        let form = try await PromptDialogTests.attachedSheet(of: window)
+        controller.showFailure(failure)
+
+        let stacked = try await PromptDialogTests.attachedSheet(of: form)
+
+        #expect(window.attachedSheet === form)
+
+        // 关掉错误框回到表单
+        form.endSheet(stacked)
+        await until { form.attachedSheet == nil }
+
+        #expect(window.attachedSheet === form)
+
+        window.endSheet(form)
+        await until { window.attachedSheet == nil }
+    }
+
+    /// 等窗口挂上系统提示框，核对它的标题，再收起它。
+    private static func expectAlert(_ title: String, on window: NSWindow) async throws {
+        let sheet = try await PromptDialogTests.attachedSheet(of: window)
+
+        #expect(sheet.contentViewController == nil)
+        #expect(labels(in: sheet.contentView).contains(title))
+
+        window.endSheet(sheet)
+        await until { window.attachedSheet == nil }
+    }
+
+    /// 视图及其子视图里文本框的文字。
+    private static func labels(in view: NSView?) -> [String] {
+        guard let view else {
+            return []
+        }
+
+        let own = (view as? NSTextField).map { [$0.stringValue] } ?? []
+
+        return own + view.subviews.flatMap { labels(in: $0) }
     }
 
     /// 等窗口挂上 sheet，核对它的内容是这一类，再收起它。

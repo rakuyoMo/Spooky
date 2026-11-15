@@ -6,7 +6,8 @@ import SwiftUI
 /// 仓库设置的 Git LFS 段：仓库所在机器上的 Git LFS 版本，以及根目录 `.gitattributes` 里交给 Git LFS 的规则。
 ///
 /// 找不到 Git LFS 或版本过低时写出 PATH 的修复方向，需要执行 Git LFS 的按钮都不可用；
-/// 仓库没有启用 Git LFS 时规则组只有 “Enable Git LFS”，启用后是 “Create Tracking Pattern” 与 “Open in Editor”。
+/// 规则组的按钮常显：仓库没有启用 Git LFS 时只有 “Enable Git LFS”，启用后是连成一组的 “Create Tracking Pattern” 与 “Open in Editor”；
+/// 每条规则一行，用次级色的等宽字，没有规则时标题下没有行。
 struct RepositoryLFSSettings: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -34,14 +35,11 @@ struct RepositoryLFSSettings: View {
 
         RemoteSettingsGroup(title: AppLocalization.text("repositorySettings.lfs.patterns"), actions: groupActions)
 
-        if file.patterns.isEmpty {
-            RemoteSettingRow(label: AppLocalization.text("repositorySettings.noPatterns"), value: "")
-        }
-
         ForEach(Array(file.patterns.enumerated()), id: \.offset) { _, pattern in
             RemoteSettingRow(
                 label: "",
                 value: pattern,
+                secondary: true,
                 actions: [
                     RemoteSettingAction(
                         title: AppLocalization.text("lfs.remove"),

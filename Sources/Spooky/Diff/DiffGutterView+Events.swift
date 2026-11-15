@@ -1,13 +1,17 @@
 import AppKit
 
 extension DiffGutterView {
-    /// 上下文也记录按下位置，以便拖动经过可选行时确定方向。
+    /// 上下文也记录按下位置，以便拖动经过可选行时确定方向；行号栏自己不成为第一响应者，键盘焦点交给 Diff 的正文。
     override func mouseDown(with event: NSEvent) {
         guard enabled, !readOnly, let row = owner?.textLayout?.row(at: convert(event.locationInWindow, from: nil)) else {
             return
         }
 
-        window?.makeFirstResponder(self)
+        // 焦点不在 Diff 正文时交给本块正文，之后按 ↓ 滚动 Diff；已在正文时不动，文字选区保持活跃
+        if let document = owner?.document, !(window?.firstResponder is DiffTextDocumentView) {
+            window?.makeFirstResponder(document)
+        }
+
         selection.begin(at: row.index, extending: event.modifierFlags.contains(.shift))
         if let id = selection.rows[row.index] { focus(id) }
         selectionChanged()

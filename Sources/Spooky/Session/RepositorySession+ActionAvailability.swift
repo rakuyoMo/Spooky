@@ -22,6 +22,21 @@ extension RepositorySession {
         return RepositoryWriteLocks.shared.contains(repository) && !isStaging
     }
 
+    /// 新建请求的条件：有远端属于已登录账号的托管服务，对应到一个账号或同一实例上有几个账号待选都算。
+    var canCreatePullRequest: Bool {
+        let associations = PullRequestAssociations.load()
+        let accounts = pullRequests.accounts.items
+
+        return pullRequests.remotes.contains { remote in
+            guard let url = remote.url else { return false }
+
+            switch PullRequestTarget.resolve(remoteURL: url, accounts: accounts, associations: associations) {
+            case .resolved, .chooseAccount: return true
+            case .noAccount, .unsupported: return false
+            }
+        }
+    }
+
     /// 菜单、工具栏、右键菜单与拖放共用的获取条件：需要已配置远端。
     var canFetch: Bool {
         canWrite && hasRemotes
@@ -110,6 +125,15 @@ extension RepositorySession {
     /// 推送或发布指定的本地分支。
     func canPush(_ reference: RepositoryReference) -> Bool {
         canWrite && hasRemotes && reference.isLocal
+    }
+
+    /// 安全强推指定的本地分支：租约要拿上游作比较，上游须是仍然存在的远端分支。
+    func canForcePush(_ reference: RepositoryReference) -> Bool {
+        guard canPush(reference), let upstream = reference.upstream else {
+            return false
+        }
+
+        return history.branches.contains { $0.isRemote && $0.id == upstream }
     }
 
     /// 为指定远端分支新建跟踪分支。

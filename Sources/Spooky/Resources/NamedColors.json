@@ -518,5 +518,25 @@
       "hex": "#FF453A",
       "alpha": 0.5
     }
+  },
+  "bookmarks_drop_zone_border_color": {
+    "light": {
+      "hex": "#727272",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#727272",
+      "alpha": 1.0
+    }
+  },
+  "avatar_background_color": {
+    "light": {
+      "hex": "#ECECEC",
+      "alpha": 0.15
+    },
+    "dark": {
+      "hex": "#323232",
+      "alpha": 0.4
+    }
   }
 }

@@ -1,3 +1,4 @@
+import AppKit
 import SpookyKit
 import SwiftUI
 
@@ -72,7 +73,7 @@ extension StashListView {
         }
     }
 
-    /// 原生选择、右键菜单与删除键作用于同一组选择。
+    /// 原生选择、右键菜单与 Edit › Delete（⌘⌫）作用于同一组选择；单独的 ⌫ 不删除。
     private func list(_ visible: [StashEntry]) -> some View {
         List(selection: Bindable(session.stashes).selectedIDs) {
             ForEach(visible) { stash in
@@ -86,7 +87,7 @@ extension StashListView {
         .contextMenu(forSelectionType: String.self) { ids in
             menu(ids)
         }
-        .onDeleteCommand {
+        .onCommand(#selector(NSText.delete(_:))) {
             session.deleteStashes(session.stashes.selectedStashes)
         }
     }

@@ -18,9 +18,9 @@ struct ResetDialog: View {
     @State
     private var target = ""
 
-    /// 重置的档位，每次打开都从不丢改动的 mixed 开始。
+    /// 重置的档位，每次打开都从 soft 开始：离开分支的提交的改动留在暂存区。
     @State
-    private var mode = ResetMode.mixed
+    private var mode = ResetMode.soft
 
     /// 重置后离开当前分支的提交（从新到旧）与版本解析失败的说明，记着对应的版本；输入停顿期间仍显示上一次的，主按钮不可用。
     @State

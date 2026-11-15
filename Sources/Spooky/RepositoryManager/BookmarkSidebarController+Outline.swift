@@ -1,5 +1,6 @@
 import AppKit
 import SpookyKit
+import SwiftUI
 
 // MARK: - Configuration
 
@@ -106,6 +107,22 @@ extension BookmarkSidebarController: NSOutlineViewDelegate {
     /// 根分组标题是分组行。
     func outlineView(_: NSOutlineView, isGroupItem item: Any) -> Bool {
         (item as? BookmarkOutlineItem)?.id == nil
+    }
+
+    /// 根分组标题一行 20 pt；书签行随系统 “侧边栏图标大小” 取 24、28、32 pt，与仓库窗口的侧边栏相同。
+    func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
+        guard bookmark(for: item) != nil else {
+            return 20
+        }
+
+        let size: SidebarRowSize =
+            switch outlineView.effectiveRowSizeStyle {
+            case .small: .small
+            case .large: .large
+            default: .medium
+            }
+
+        return size.rowHeight
     }
 
     /// 根分组标题不能选中。

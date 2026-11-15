@@ -63,16 +63,45 @@ public struct RepositoryFiles: Sendable {
         return data
     }
 
+    /// 本机文件的修改时间；读不到属性时为 nil。
+    private static func modificationDate(_ url: URL) -> Date? {
+        (try? FileManager.default.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
+    }
+
     /// 批量读取已定位的绝对路径；缺失文件不进入快照，权限与传输失败仍抛错。
     public func read(_ paths: [String]) async throws -> [String: Data] {
+        try await snapshot(paths, preservingDates: false).mapValues(\.data)
+    }
+
+    /// 批量读取已定位的绝对路径，连同文件在工作区所在机器上的修改时间；缺失文件不进入结果。
+    ///
+    /// 服务器上的文件经 SFTP 带 `-p` 取回，本机副本保留远端的修改时间。
+    public func readWithModificationDates(_ paths: [String]) async throws -> [String: (data: Data, modified: Date?)] {
+        try await snapshot(paths, preservingDates: true)
+    }
+
+    /// 读取文件内容与修改时间。
+    ///
+    /// - Parameters:
+    ///   - paths: 工作区所在机器上的绝对路径。
+    ///   - preservingDates: 是否取修改时间；不取时结果里的时间都是 nil。
+    private func snapshot(
+        _ paths: [String],
+        preservingDates: Bool
+    ) async throws -> [String: (data: Data, modified: Date?)] {
         guard !paths.isEmpty else { return [:] }
 
         guard let remote = runner.remote else {
-            var result: [String: Data] = [:]
+            var result: [String: (data: Data, modified: Date?)] = [:]
 
             for path in paths {
+                let url = URL(fileURLWithPath: path)
+
                 do {
-                    result[path] = try Self.boundedRead(URL(fileURLWithPath: path))
+                    result[path] = (
+                        try Self.boundedRead(url),
+                        preservingDates ? Self.modificationDate(url) : nil
+                    )
                 } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
                     continue
                 }
@@ -92,9 +121,10 @@ public struct RepositoryFiles: Sendable {
         let directory = try Self.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
 
-        // 独立编号避免把远端路径解释为本机路径，也避免文件名的规范化碰撞。
+        // 独立编号避免把远端路径解释为本机路径，也避免文件名的规范化碰撞；-p 让本机副本带上远端的修改时间
+        let get = preservingDates ? "-get -p " : "-get "
         let commands = try existing.enumerated().map {
-            "-get " + (try Self.quoted($0.element)) + " "
+            get + (try Self.quoted($0.element)) + " "
                 + (try Self.quoted(directory.appending(path: String($0.offset)).path))
         }
         let result = try await transfer(commands, writing: false)
@@ -112,13 +142,16 @@ public struct RepositoryFiles: Sendable {
             throw GitError(result: result, category: .processIOFailed, diagnostic: nil)
         }
 
-        var contents: [String: Data] = [:]
+        var contents: [String: (data: Data, modified: Date?)] = [:]
 
         for (index, path) in existing.enumerated() {
             let local = directory.appending(path: String(index))
 
             if FileManager.default.fileExists(atPath: local.path) {
-                contents[path] = try Self.boundedRead(local)
+                contents[path] = (
+                    try Self.boundedRead(local),
+                    preservingDates ? Self.modificationDate(local) : nil
+                )
             }
         }
 

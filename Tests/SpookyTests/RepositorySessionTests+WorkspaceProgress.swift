@@ -56,7 +56,7 @@ extension RepositorySessionTests {
         let base = try await fixture.head()
 
         // 合并停在闸门上：标题写明合并，Git 的进度行写进进度文字，比例取其中的百分比
-        try Data().write(to: root.appending(path: "arm"))
+        try gate.arm()
         session.quickMerge(topic)
         await gate.arrival()
         await until { session.workspaceProgress?.detail == "Updating files:  50% (1/2)" }
@@ -104,6 +104,13 @@ extension RepositorySessionTests {
             session.mergeBase(topic, into: current)
         }
 
+        // 父分支 topic 前进一个提交，HEAD 分支落后父分支才能 Update Branch
+        let advanced = try await runner.run(["commit-tree", "-p", "topic", "-m", "topic 前进", "topic^{tree}"])
+        let tip = String(decoding: advanced, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        _ = try await runner.run(["update-ref", "refs/heads/topic", tip])
+        session.refresh(full: true)
+        await settle(session)
+
         await expectProgress(AppLocalization.text("workspaceProgress.rebase"), in: session) {
             session.updateBranch(current, rebase: true)
         }
@@ -134,7 +141,6 @@ extension RepositorySessionTests {
         gate: ProcessGate
     ) async throws {
         let runner = fixture.runner
-        let arm = fixture.directory.appending(path: ".git/arm")
 
         // 以本仓库为远端 origin；topic 上再加一个提交，拉取才有要并入的内容
         _ = try await runner.run(["remote", "add", "origin", fixture.directory.path])
@@ -144,7 +150,7 @@ extension RepositorySessionTests {
         _ = try await runner.run(["update-ref", "refs/heads/topic", synced])
 
         // 发起时没有整页进度；拉取的合并停在闸门上时显示拉取的标题
-        try Data().write(to: arm)
+        try gate.arm()
         session.sync(remote: "origin", branch: "refs/heads/topic", options: SyncOptions())
 
         #expect(session.isWriting && session.workspaceProgress == nil)
@@ -154,7 +160,7 @@ extension RepositorySessionTests {
         #expect(session.workspaceProgress?.title == AppLocalization.text("sync.step.pull"))
 
         // 放行合并后停在推送上：整页进度已撤下，同步仍在进行
-        try Data().write(to: arm)
+        try gate.arm()
         gate.release()
         await gate.arrival()
 

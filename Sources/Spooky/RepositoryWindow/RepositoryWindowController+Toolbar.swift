@@ -74,8 +74,8 @@ enum RepositoryToolbar {
     /// 自定义面板里可选的项：默认项之外另有新建分支、安全强推、推送任意版本、Finder 与终端，以及系统的空白。
     static let allowedItems: [NSToolbarItem.Identifier] = [
         repositories, sidebarSeparator, parentRepository, navigation, quickActions, host, sync, synchronize, merge,
-        stashes, refresh, clone, search, createBranch, forcePush, pushTo, finder, terminal,
-        .space, .flexibleSpace,
+        stashes, refresh, clone, search, createBranch, finder, terminal, forcePush, pushTo,
+        .flexibleSpace, .space,
     ]
 
     /// 不能移除或移动的项：父仓库在仓库是子模块时出现，主机前缀标明服务器仓库，Clone 在有克隆时出现，
@@ -349,7 +349,12 @@ extension RepositoryWindowController {
     private func makeRepositoriesItem() -> NSToolbarItem {
         let group = NSToolbarItemGroup(
             itemIdentifier: RepositoryToolbar.repositories,
-            images: [NSImage(systemSymbolName: "externaldrive", accessibilityDescription: nil) ?? NSImage()],
+            images: [
+                NSImage(
+                    systemSymbolName: "externaldrive",
+                    accessibilityDescription: AppLocalization.text("toolbar.bookmarks")
+                ) ?? NSImage(),
+            ],
             selectionMode: .selectAny,
             labels: [AppLocalization.text("toolbar.bookmarks")],
             target: self,
@@ -432,7 +437,7 @@ extension RepositoryWindowController {
         }
     }
 
-    /// Prev | Next：按本窗口的后退 / 前进记录启用，排在标题之前。
+    /// Prev | Next：按本窗口的后退 / 前进记录启用，排在标题之前；自定义面板里按段写出名字。
     private func makeNavigationItem() -> NSToolbarItem {
         let segments: [(label: String, symbol: String, action: Selector)] = [
             ("toolbar.previous", "chevron.left", #selector(navigateBack)),
@@ -442,8 +447,9 @@ extension RepositoryWindowController {
         let group = NSToolbarItemGroup(
             itemIdentifier: RepositoryToolbar.navigation,
             images: segments.map {
-                // 取不到符号时以空图占位，分段数与标签保持一致。
-                NSImage(systemSymbolName: $0.symbol, accessibilityDescription: nil) ?? NSImage()
+                // 取不到符号时以空图占位，分段数与标签保持一致；辅助功能读段名
+                NSImage(systemSymbolName: $0.symbol, accessibilityDescription: AppLocalization.text($0.label))
+                    ?? NSImage()
             },
             selectionMode: .momentary,
             labels: segments.map { AppLocalization.text($0.label) },
@@ -451,7 +457,6 @@ extension RepositoryWindowController {
             action: nil
         )
         group.controlRepresentation = .expanded
-        group.paletteLabel = AppLocalization.text("navigation.title")
         group.isNavigational = true
 
         // 每段带上自己的动作，工具栏自动校验时逐段决定可用性

@@ -126,6 +126,9 @@ enum RepositoryDropDestination: Equatable {
 
     /// Worktrees 标题。
     case worktrees
+
+    /// 列表的上下边缘：文件夹里的分支拖到这里移到顶层。
+    case listEdge
 }
 
 // MARK: - RepositoryDropTarget
@@ -141,12 +144,19 @@ struct RepositoryDropTarget: ViewModifier {
     /// 参数表单入口。
     let request: (RepositoryActionRequest) -> Void
 
+    /// 拖动进入（true）或离开、落下（false）这个落点时的回调；侧边栏用它在悬停时展开远端与文件夹。
+    var hovering: ((Bool) -> Void)? = nil
+
     /// 落点盖在行上，点击穿透给行。
     func body(content: Content) -> some View {
         content
             .overlay {
-                RepositoryDropView(type: Self.type) { action(for: $0) }
-                    .allowsHitTesting(false)
+                RepositoryDropView(
+                    type: Self.type,
+                    resolve: { action(for: $0) },
+                    hovering: hovering
+                )
+                .allowsHitTesting(false)
             }
     }
 }

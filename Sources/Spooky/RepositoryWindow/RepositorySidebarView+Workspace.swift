@@ -6,7 +6,7 @@ import SwiftUI
 extension RepositorySidebarView {
     /// Working Copy 行尾的标记：进行中的操作优先，其次是改动文件数；没有改动时不显示。
     enum WorkingCopyMarker: Equatable {
-        /// 进行中操作的图标，合并与压缩合并、变基与摘取和反转各用一个。
+        /// 进行中操作的图标，没有 sequencer 的合并与单个摘取、反转用一个，变基与多个提交的摘取、反转用另一个。
         case operation(symbol: String)
 
         /// 改动文件数，不为零。
@@ -19,7 +19,7 @@ extension RepositorySidebarView {
         ///   - status: 工作区状态；还没有读到时为 nil。
         static func current(progress: OperationProgress?, status: WorkingCopyStatus?) -> Self? {
             if let progress {
-                return .operation(symbol: OperationBannerView.symbolName(progress.state))
+                return .operation(symbol: OperationBannerView.symbolName(progress))
             }
 
             guard let count = status?.entries.count, count > 0 else {

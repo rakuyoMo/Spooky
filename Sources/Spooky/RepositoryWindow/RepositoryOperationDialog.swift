@@ -313,13 +313,8 @@ extension RepositoryOperationDialog {
             .dialogFieldWidth(fieldWidth)
         }
 
-        // 起点是分支时标题写出它的名字
-        option(
-            "branch.trackStart",
-            title: startBranch.map { AppLocalization.text("branch.trackStart.named", $0.name) },
-            value: $track
-        )
-        .disabled(!canTrack)
+        option("branch.trackStart", value: $track)
+            .disabled(!canTrack)
 
         option("branch.pin", value: $pin)
 
@@ -358,7 +353,7 @@ extension RepositoryOperationDialog {
     /// 跟踪远端分支：远端分支、本地名称与新建后检出的选项。
     @ViewBuilder
     private var trackRows: some View {
-        referencePicker(branches.filter(\.isRemote), label: "branch.remoteField")
+        referencePicker(Self.trackCandidates(in: session), label: "branch.remoteField")
 
         nameRow
 
@@ -458,7 +453,7 @@ extension RepositoryOperationDialog {
     private var remotePicker: some View {
         RepositoryDialogRows.row(AppLocalization.text("sync.remote")) {
             Picker("", selection: $remote) {
-                ForEach(session.history.snapshot?.remotes ?? []) { Text($0.name).tag($0.name) }
+                ForEach(session.orderedRemoteNames, id: \.self) { Text($0).tag($0) }
             }
             .labelsHidden()
             .buttonSizing(.flexible)
@@ -536,7 +531,7 @@ extension RepositoryOperationDialog {
     /// 勾选框与下一行的说明，说明的资源键是勾选框的资源键加 `.help`。
     ///
     /// - Parameters:
-    ///   - title: 随表单内容变化的标题；为 nil 时用资源键对应的标题。
+    ///   - title: 与资源键不同的标题；为 nil 时用资源键对应的标题。
     ///   - spacing: 勾选框到说明的间距。
     private func option(
         _ key: String,
@@ -570,7 +565,7 @@ extension RepositoryOperationDialog {
     /// 表单默认值来自 HEAD 跟踪关系或入口指定对象。
     private func prepare() {
         let head = branches.first { $0.id == "refs/heads/" + (session.status?.branch.head ?? "") }
-        remote = request.remote ?? head?.upstreamRemote ?? session.history.snapshot?.remotes.first?.name ?? ""
+        remote = request.remote ?? head?.upstreamRemote ?? session.orderedRemoteNames.first ?? ""
         localBranch =
             request.localBranch ?? session.status?.branch.head ?? branches.first(where: \.isLocal)?.name ?? ""
 
@@ -603,7 +598,7 @@ extension RepositoryOperationDialog {
 
             // 右键指定的源分支使用自己的上游，不能借用当前 HEAD 的推送目标。
             remote = request.remote ?? selected?.upstreamRemote
-                ?? session.history.snapshot?.remotes.first?.name ?? ""
+                ?? session.orderedRemoteNames.first ?? ""
             if request.kind == .publish {
                 name = localBranch
             } else {
@@ -641,8 +636,8 @@ extension RepositoryOperationDialog {
         error = result.error
     }
 
-    /// 新建与跟踪分支的写入，捕获当前表单值：新建分支勾选检出时先建分支再检出，检出被拒绝时分支保留；
-    /// 其余用一条命令建好，跟踪远端分支总是跟踪所选分支，并按它自己的勾选检出。
+    /// 新建与跟踪分支的写入，捕获当前表单值：勾选检出时先建分支再检出，检出被拒绝时分支保留；
+    /// 新建与检出各记一步撤销，先撤销检出时分支还在。跟踪远端分支总是跟踪所选分支。
     ///
     /// - Parameter revision: 新分支的起点。
     private func branchCreation(startingAt revision: String) -> @Sendable (GitRunner) async throws -> Void {
@@ -650,6 +645,7 @@ extension RepositoryOperationDialog {
         let creating = request.kind == .create
         let track = !creating || track
         let pinned = creating && pin
+        let checksOut = creating ? checkout : trackCheckout
 
         // 提交时再核对一次，父分支必须仍是当前起点下的候选
         let parent =
@@ -657,18 +653,15 @@ extension RepositoryOperationDialog {
                 ? parent
                 : nil
 
-        let checksOutAfterwards = creating && checkout
-        let checkout = !creating && trackCheckout
-
         return { runner in
             let references = RepositoryReferences(runner: runner)
 
-            // 分两步时检出失败的说明写明已创建、未检出
-            if checksOutAfterwards {
-                try await references.createThenCheckOut(
+            guard checksOut else {
+                try await references.create(
                     name: name,
                     startingAt: revision,
                     track: track,
+                    checkout: false,
                     pinned: pinned,
                     parent: parent
                 )
@@ -676,14 +669,18 @@ extension RepositoryOperationDialog {
                 return
             }
 
-            try await references.create(
+            // 分两步时检出失败的说明写明已创建、未检出
+            try await references.createThenCheckOut(
                 name: name,
                 startingAt: revision,
                 track: track,
-                checkout: checkout,
                 pinned: pinned,
                 parent: parent
-            )
+            ) {
+                await UndoSteps.current?.mark(AppLocalization.text("branch.create"), runner: runner)
+            }
+
+            UndoSteps.current?.rename(AppLocalization.text("rewrite.checkout"))
         }
     }
 
@@ -755,12 +752,12 @@ extension RepositoryOperationDialog {
         }
     }
 
-    /// 与撤销记录的关系：新建分支与合并靠快照撤销，发布分支靠反向操作撤销，获取、拉取与推送不能撤销。
+    /// 与撤销记录的关系：新建分支与合并靠快照撤销，发布分支靠反向操作撤销，获取、拉取与推送不进撤销记录。
     private func undoRecording() -> UndoRecording {
         switch request.kind {
         case .create, .track, .merge: .reversible
         case .publish: .publishingBranch(localBranch, to: remote, as: name, setsUpstream: upstream)
-        case .fetch, .pull, .push: .irreversible
+        case .fetch, .pull, .push: .unrecorded
         }
     }
 

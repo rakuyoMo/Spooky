@@ -88,14 +88,17 @@ enum HistoryCommitMenu {
 // MARK: - Groups
 
 extension HistoryCommitMenu {
-    /// 检出所选提交；多选时是灰色的通用项。
+    /// 检出所选提交；多选时是灰色的通用项，所选提交就是 HEAD 时灰色。
     private static func checkoutItems(_ commits: [HistoryCommit], session: RepositorySession) -> [NSMenuItem] {
         guard commits.count == 1, let commit = commits.first else {
             return [disabled("rewrite.menu.checkoutGeneric")]
         }
 
         return [
-            item(AppLocalization.text("rewrite.menu.checkout", commit.shortID), enabled: session.canCheckoutRevision) {
+            item(
+                AppLocalization.text("rewrite.menu.checkout", commit.shortID),
+                enabled: session.canCheckout(commit: commit.id)
+            ) {
                 session.requestCheckout(commit.id)
             },
         ]
@@ -194,13 +197,16 @@ extension HistoryCommitMenu {
         return [branch, tag]
     }
 
-    /// 重置到所选提交；多选时是灰色的通用项。
+    /// 重置到所选提交；多选时是灰色的通用项，所选提交就是 HEAD 时灰色。
     private static func reset(_ commits: [HistoryCommit], session: RepositorySession) -> NSMenuItem {
         guard commits.count == 1, let commit = commits.first else {
             return disabled("rewrite.menu.resetGeneric")
         }
 
-        return item(AppLocalization.text("rewrite.menu.reset", commit.shortID), enabled: session.canRewrite) {
+        return item(
+            AppLocalization.text("rewrite.menu.reset", commit.shortID),
+            enabled: session.canReset(to: commit.id)
+        ) {
             session.requestReset(to: commit.id)
         }
     }

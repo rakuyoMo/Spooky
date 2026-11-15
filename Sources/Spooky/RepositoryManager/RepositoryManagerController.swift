@@ -27,8 +27,8 @@ final class RepositoryManagerController {
         /// 正在连接或读取。
         case loading
 
-        /// 读取完成。
-        case loaded(RepositorySummary)
+        /// 读取完成：仓库概况与工作区里有改动的文件数。
+        case loaded(RepositorySummary, changedFiles: Int)
 
         /// 仓库所在的路径不存在，或那里已不是 Git 仓库。
         case missing
@@ -214,13 +214,17 @@ extension RepositoryManagerController {
         detailTask = Task { [weak self] in
             do {
                 let runner = try await Self.openedRunner(for: location)
-                let summary = try await runner.repositorySummary()
+
+                // 概况与工作区状态同时读取，状态只用来数有改动的文件
+                async let summary = runner.repositorySummary()
+                async let status = runner.status()
+                let (loadedSummary, loadedStatus) = try await (summary, status)
 
                 guard !Task.isCancelled, let self, detailLocation == location else {
                     return
                 }
 
-                detailState = .loaded(summary)
+                detailState = .loaded(loadedSummary, changedFiles: loadedStatus.entries.count)
                 bookmarks.markAvailable(location)
             } catch {
                 guard !Task.isCancelled, let self, detailLocation == location else {

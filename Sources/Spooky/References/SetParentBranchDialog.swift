@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - SetParentBranchDialog
 
-/// 为本地分支选择父分支：候选是其它本地分支与远端分支，已有父分支时预先选中并说明会被替换。
+/// 为本地分支选择父分支：候选是其它本地分支，已有父分支时预先选中并说明会被替换。
 struct SetParentBranchDialog: View {
     /// 发起动作的窗口会话。
     let session: RepositorySession
@@ -30,12 +30,13 @@ struct SetParentBranchDialog: View {
     @State
     private var error = ""
 
-    /// “Parent:” 下拉，宽不超过 350。
+    /// 宽 486 pt；“Parent:” 下拉宽不超过 350，下面一行说明父分支的用途，与下拉左对齐。
     var body: some View {
         RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("branch.parent.set"),
             message: message,
+            width: 486,
             submitTitle: AppLocalization.text("branch.parent.set"),
             error: error,
             isValid: !parent.isEmpty && parent != currentParent,
@@ -50,6 +51,17 @@ struct SetParentBranchDialog: View {
                 .buttonSizing(.flexible)
                 .frame(maxWidth: 350, alignment: .leading)
             }
+
+            GridRow {
+                Color.clear
+                    .frame(width: DialogMetrics.labelWidth, height: 0)
+                    .gridCellUnsizedAxes(.vertical)
+
+                Text(AppLocalization.text("branch.parent.help"))
+                    .font(.system(size: 11))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .task { await load() }
     }
@@ -58,10 +70,10 @@ struct SetParentBranchDialog: View {
 // MARK: - Actions
 
 extension SetParentBranchDialog {
-    /// 父分支的候选：其它本地分支在前，远端分支在后。
-    private var candidates: [RepositoryReference] {
-        let branches = session.history.branches.filter { $0.id != branch.id }
-        return branches.filter(\.isLocal) + branches.filter(\.isRemote)
+    /// 父分支的候选：其它本地分支，按版本候选的顺序，`main` 在最前。
+    var candidates: [RepositoryReference] {
+        let branches = session.history.branches.filter { $0.isLocal && $0.id != branch.id }
+        return ReferenceOrder.candidates(branches, in: session.history.snapshot)
     }
 
     /// 说明写出分支名；已有父分支时补一句它会被替换。

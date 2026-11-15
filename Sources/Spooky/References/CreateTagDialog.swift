@@ -199,7 +199,7 @@ extension CreateTagDialog {
                 try await RepositoryTags(runner: runner)
                     .create(name: name, revision: revision, message: message, sign: sign, signingKey: key)
             },
-            title: AppLocalization.text("tag.create"),
+            title: AppLocalization.text("tag.create.submit"),
             undo: .reversible
         )
 

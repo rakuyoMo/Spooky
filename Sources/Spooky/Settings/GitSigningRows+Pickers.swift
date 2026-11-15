@@ -37,7 +37,7 @@ extension GitSigningRows {
         let configured = model.configuration.gpgProgram
         let programs = gpgPrograms + (configured.map { gpgPrograms.contains($0) ? [] : [$0] } ?? [])
 
-        return Picker("", selection: choosingBinding(GlobalGitConfiguration.Key.gpgProgram, value: configured)) {
+        return Picker("", selection: gpgProgramBinding(value: configured)) {
             Text(AppLocalization.text(gpgPrograms.isEmpty ? "gitConfig.gpgProgram.notFound" : "gitConfig.gpgProgram.none"))
                 .tag("")
 
@@ -156,6 +156,36 @@ extension GitSigningRows {
                 }
 
                 SigningPrograms.chooseFile { binding.wrappedValue = $0 }
+            }
+        )
+    }
+
+    /// GPG 程序的绑定：选中 “选择…” 时打开面板；选好的文件是低于最低版本的 GnuPG 时说明原因、不写进配置，
+    /// 其它文件照常写入，不是 GnuPG 时由警告按钮提示。
+    ///
+    /// - Parameter value: 当前的值。
+    private func gpgProgramBinding(value: String?) -> Binding<String> {
+        let binding = configBinding(GlobalGitConfiguration.Key.gpgProgram, value: value)
+
+        return Binding(
+            get: { binding.wrappedValue },
+            set: { selected in
+                guard selected == SigningPrograms.chooseTag else {
+                    binding.wrappedValue = selected
+                    return
+                }
+
+                SigningPrograms.chooseFile { path in
+                    Task {
+                        let notice = await Self.gpgNotice(for: path)
+
+                        if case .outdatedGPG = notice {
+                            shownNotice = notice
+                        } else {
+                            binding.wrappedValue = path
+                        }
+                    }
+                }
             }
         )
     }

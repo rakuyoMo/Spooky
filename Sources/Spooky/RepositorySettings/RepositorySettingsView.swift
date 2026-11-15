@@ -9,7 +9,7 @@ import SwiftUI
 struct RepositorySettingsView: View {
     /// 四个分段。
     enum Page: CaseIterable, Hashable {
-        /// 名称、路径、描述、提交人身份、折行与签名。
+        /// 名称、路径、描述、提交人身份与签名。
         case general
 
         /// `.gitattributes` 里交给 Git LFS 的规则。
@@ -63,7 +63,7 @@ struct RepositorySettingsView: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
+                SettingTable {
                     if let failure {
                         FailureDetailsView(failure: failure)
                             .padding(20)
@@ -107,15 +107,12 @@ extension RepositorySettingsView {
 
             Spacer(minLength: 8)
 
-            Picker("", selection: $page) {
-                ForEach(Page.allCases, id: \.self) { page in
-                    Text(page.title).tag(page)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            FittedSegmentedPicker(
+                selection: $page,
+                options: Page.allCases.map { ($0, $0.title) },
+                accessibilityLabel: AppLocalization.text("repositorySettings.title")
+            )
             .fixedSize()
-            .accessibilityLabel(AppLocalization.text("repositorySettings.title"))
         }
         .padding(.horizontal, 20)
         .frame(height: 52)
@@ -132,10 +129,10 @@ extension RepositorySettingsView {
             RepositoryLFSSettings(session: session, file: settings.lfs, status: lfs)
 
         case .ignores:
-            RepositoryRuleList(session: session, title: "repositorySettings.ignores.patterns", file: settings.ignore)
+            RepositoryRuleList(session: session, title: "repositorySettings.ignores", file: settings.ignore)
 
         case .excludes:
-            RepositoryRuleList(session: session, title: "repositorySettings.excludes.patterns", file: settings.exclude)
+            RepositoryRuleList(session: session, title: "repositorySettings.excludes", file: settings.exclude)
         }
     }
 
@@ -163,7 +160,7 @@ extension RepositorySettingsView {
 
 // MARK: - RepositoryRuleList
 
-/// Ignores 与 Excludes 两段：分组标题带 “Open in Editor”，下面每条规则一行，用等宽字体。
+/// Ignores 与 Excludes 两段：分组标题带常显的 “Open in Editor”，下面每条规则一行，用次级色的等宽字；没有规则时标题下没有行。
 private struct RepositoryRuleList: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -174,7 +171,7 @@ private struct RepositoryRuleList: View {
     /// 规则文件。
     let file: RuleFile
 
-    /// 分组标题、规则行与没有规则时的说明。
+    /// 分组标题与规则行。
     var body: some View {
         RemoteSettingsGroup(
             title: AppLocalization.text(title),
@@ -187,12 +184,8 @@ private struct RepositoryRuleList: View {
             ]
         )
 
-        if file.patterns.isEmpty {
-            RemoteSettingRow(label: AppLocalization.text("repositorySettings.noPatterns"), value: "")
-        }
-
         ForEach(Array(file.patterns.enumerated()), id: \.offset) { _, pattern in
-            RemoteSettingRow(label: "", value: pattern)
+            RemoteSettingRow(label: "", value: pattern, secondary: true)
                 .monospaced()
         }
     }

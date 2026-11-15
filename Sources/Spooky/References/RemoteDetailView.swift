@@ -7,7 +7,7 @@ import SwiftUI
 struct RemoteDetailView: View {
     /// 两个分段。
     enum Page: Hashable {
-        /// 名称、地址、选项与 refspec。
+        /// 获取与推送两组：地址、选项与 refspec。
         case general
 
         /// 这个远端的远端分支。
@@ -38,7 +38,7 @@ struct RemoteDetailView: View {
 
             if let configuration {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
+                    SettingTable {
                         switch page {
                         case .general:
                             RemoteGeneralSettings(session: session, configuration: configuration)
@@ -85,23 +85,29 @@ extension RemoteDetailView {
 
             Spacer()
 
-            Picker("", selection: $page) {
-                Text(AppLocalization.text("remote.page.general")).tag(Page.general)
-                Text(AppLocalization.text("remote.page.branches")).tag(Page.branches)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            FittedSegmentedPicker(
+                selection: $page,
+                options: [
+                    (Page.general, AppLocalization.text("remote.page.general")),
+                    (Page.branches, AppLocalization.text("remote.page.branches")),
+                ],
+                accessibilityLabel: AppLocalization.text("remote.page")
+            )
             .fixedSize()
-            .accessibilityLabel(AppLocalization.text("remote.page"))
         }
         .padding(.horizontal, 20)
         .frame(height: 52)
     }
 
-    /// Branches 分段：分组标题与每个远端分支的名字和提交哈希，没有操作。
+    /// Branches 分段：分组标题与每个远端分支的名字和提交哈希，没有操作；分支按公共的引用顺序排列。
     @ViewBuilder
     private func branchRows(of remote: String) -> some View {
-        let branches = session.history.branches.filter { session.remoteParts(of: $0)?.remote == remote }
+        let branches = session.history.branches
+            .compactMap { branch in
+                session.remoteParts(of: branch)
+                    .flatMap { $0.remote == remote ? (name: $0.branch, objectID: branch.objectID) : nil }
+            }
+            .sorted { ReferenceOrder.precedes(branch: $0.name, $1.name) }
 
         RemoteSettingsGroup(title: AppLocalization.text("remote.page.branches"))
 
@@ -109,12 +115,8 @@ extension RemoteDetailView {
             RemoteSettingRow(label: AppLocalization.text("branch.empty"), value: "")
         }
 
-        ForEach(branches) { branch in
-            RemoteSettingRow(
-                label: session.remoteParts(of: branch)?.branch ?? branch.name,
-                value: branch.objectID,
-                small: true
-            )
+        ForEach(branches, id: \.name) { branch in
+            RemoteSettingRow(label: branch.name, value: branch.objectID)
         }
     }
 
@@ -153,7 +155,7 @@ private struct ReloadKey: Equatable {
 
 // MARK: - RemoteGeneralSettings
 
-/// General 分段：名称、获取与推送地址、自动获取排除项，以及 fetch 与 push 两组 refspec。
+/// General 分段：FETCH 组是获取地址、自动获取排除项与 fetch refspec，PUSH 组是推送地址与 push refspec。
 private struct RemoteGeneralSettings: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -161,44 +163,38 @@ private struct RemoteGeneralSettings: View {
     /// 远端设置。
     let configuration: RemoteConfiguration
 
-    /// 各行依次排列，每行的操作按钮悬停时出现。
+    /// 两组依次排列；组标题的 “Add Refspec” 常显，各行的操作按钮悬停时出现。
     var body: some View {
         let name = configuration.name
 
-        RemoteSettingRow(
-            label: AppLocalization.text("remote.field.name"),
-            value: name,
-            actions: [action("reference.rename") { session.requestReference(.renameRemote(name)) }]
-        )
+        refspecGroup(push: false)
 
         RemoteSettingRow(
             label: AppLocalization.text("remote.field.fetchURL"),
             value: configuration.url ?? "",
-            small: true,
             actions: [action("remote.action.edit") { session.requestReference(.editURL(remote: name, push: false)) }]
         )
 
+        SettingTableRow(label: AppLocalization.text("remote.field.options")) {
+            Toggle(AppLocalization.text("remote.skipFetchAll"), isOn: skipsFetchAll)
+                .font(.system(size: 13))
+                .disabled(!session.canWrite)
+
+            Spacer(minLength: 0)
+        }
+
+        refspecRows(configuration.fetchRefspecs, push: false)
+
+        refspecGroup(push: true)
+
+        // 没有单独的推送地址时用次级色写获取地址
         RemoteSettingRow(
             label: AppLocalization.text("remote.field.pushURL"),
             value: configuration.effectivePushURL ?? "",
-            small: true,
             secondary: configuration.pushURLs.isEmpty,
             actions: pushURLActions
         )
 
-        HStack(spacing: 0) {
-            Text(AppLocalization.text("remote.field.options"))
-                .foregroundStyle(.secondary)
-                .frame(width: 240, alignment: .leading)
-
-            Toggle(AppLocalization.text("remote.skipFetchAll"), isOn: skipsFetchAll)
-                .disabled(!session.canWrite)
-        }
-        .font(.system(size: 13))
-        .padding(.horizontal, 20)
-        .frame(minHeight: 30)
-
-        refspecRows(configuration.fetchRefspecs, push: false)
         refspecRows(configuration.pushRefspecs, push: true)
     }
 
@@ -222,12 +218,11 @@ private struct RemoteGeneralSettings: View {
         )
     }
 
-    /// 一组 refspec：分组标题带 “Add Refspec”，每条带 “Edit” 与 “Delete”。
-    @ViewBuilder
-    private func refspecRows(_ refspecs: [String], push: Bool) -> some View {
+    /// FETCH 或 PUSH 的分组标题，带 “Add Refspec”。
+    private func refspecGroup(push: Bool) -> some View {
         let name = configuration.name
 
-        RemoteSettingsGroup(
+        return RemoteSettingsGroup(
             title: AppLocalization.text(push ? "remote.group.push" : "remote.group.fetch"),
             actions: [
                 action("remote.action.addRefspec") {
@@ -235,12 +230,17 @@ private struct RemoteGeneralSettings: View {
                 },
             ]
         )
+    }
 
-        ForEach(Array(refspecs.enumerated()), id: \.offset) { index, refspec in
+    /// 一组 refspec，每条带 “Edit” 与 “Delete”；标签只写在第一条上。
+    private func refspecRows(_ refspecs: [String], push: Bool) -> some View {
+        let name = configuration.name
+        let label = AppLocalization.text(push ? "remote.field.pushRefspecs" : "remote.field.fetchRefspecs")
+
+        return ForEach(Array(refspecs.enumerated()), id: \.offset) { index, refspec in
             RemoteSettingRow(
-                label: index == 0 ? AppLocalization.text(push ? "remote.field.pushRefspecs" : "remote.field.fetchRefspecs") : "",
+                label: index == 0 ? label : "",
                 value: refspec,
-                small: true,
                 actions: [
                     action("remote.action.edit") {
                         session.requestReference(.refspec(remote: name, push: push, original: refspec))

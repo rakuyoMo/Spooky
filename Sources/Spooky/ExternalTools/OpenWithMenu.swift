@@ -17,11 +17,13 @@ struct OpenWithApplications: Equatable {
         defaultApplication == nil && others.isEmpty
     }
 
-    /// 按本机文件读取，适用于本机工作区里的文件。
+    /// 按本机文件读取，适用于本机工作区里的文件与目录；候选程序按全部角色列出，不只是查看与编辑。
     static func load(for files: [URL]) -> Self {
         combine(
             defaults: files.map { NSWorkspace.shared.urlForApplication(toOpen: $0) },
-            candidates: files.map { NSWorkspace.shared.urlsForApplications(toOpen: $0) }
+            candidates: files.map { file in
+                LSCopyApplicationURLsForURL(file as CFURL, .all)?.takeRetainedValue() as? [URL] ?? []
+            }
         )
     }
 

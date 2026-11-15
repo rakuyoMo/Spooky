@@ -36,13 +36,15 @@ extension DiffSelectionSessionTests {
         session.selectedID = StatusRowID(path: entry.path, kind: entry.kind)
         await until { !session.isLoadingDiff && session.diffSnapshot?.diff != nil }
 
-        // 显示用的会话经闸门读全文，着色任务可以停在读取上
+        // 显示用的会话经闸门读全文，着色任务可以停在读取上；闸门与脚本放在仓库之外，它们的变化不触发刷新
         let first = try #require(session.diffSnapshot)
-        let root = fixture.directory.appending(path: ".git")
-        let gate = try ProcessGate(in: root)
+        let tools = try FileViewsTests.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: tools) }
+
+        let gate = try ProcessGate(in: tools)
         defer { gate.release() }
 
-        let runner = try gatedRunner(fixture, gate: gate, root: root)
+        let runner = try gatedRunner(fixture, gate: gate, tools: tools)
         let display = RepositorySession(makeRunner: { _ in runner }, activities: RepositoryActivities())
         display.display(fixture.location)
         defer { display.close() }
@@ -72,7 +74,7 @@ extension DiffSelectionSessionTests {
 
         // 旧全文已读完但尚未返回时换快照，新任务结果不能再被旧着色覆盖
         try Data("let answer = 1\n".utf8).write(to: url)
-        try Data().write(to: root.appending(path: "arm"))
+        try gate.arm()
         host.rootView = DiffContentView(session: display, snapshot: first, diff: try #require(first.diff))
         host.layoutSubtreeIfNeeded()
         await gate.arrival()

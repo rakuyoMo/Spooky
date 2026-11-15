@@ -96,7 +96,7 @@ struct FileViewsTests {
     }
 
     /// 单击注释按行找到所在的段，段外的行没有归属；行号栏按最大行号的文字宽度留出位置，Blame 的注释栏取保存的宽度，超出可拖动范围的记录按边界处理。
-    @Test("Blame 段查找、行号栏与注释栏的宽度")
+    @Test("Blame 段查找、行号栏与注释栏的宽度和裁剪")
     func gutters() throws {
         let lookup = FileTextAnnotations(
             groups: [
@@ -112,17 +112,11 @@ struct FileViewsTests {
         #expect(lookup.groupIndex(containing: 7) == nil)
         #expect(lookup.groupIndex(containing: 0) == nil)
 
-        // 一段覆盖全部 1234 行的 Blame
+        // 1234 行的正文
         let lines = (1 ... 1234).map(String.init)
 
-        let annotations = FileTextAnnotations(
-            groups: [BlameGroup(commitID: "aaaa", firstLine: 1, lineCount: lines.count, originalLine: 1)],
-            commits: [:],
-            highlightedCommit: nil
-        )
-
         // 注释栏宽度只读标准偏好，本测试逐个写入，结束时还原
-        let key = FileGutterView.annotationWidthKey
+        let key = FileAnnotationView.annotationWidthKey
         let saved = UserDefaults.standard.object(forKey: key)
         defer { UserDefaults.standard.set(saved, forKey: key) }
 
@@ -131,17 +125,26 @@ struct FileViewsTests {
         let digits = NSAttributedString(string: "1234", attributes: [.font: style.font]).size().width
         let lineNumbers = digits.rounded(.up) + 20
 
-        // 每种保存的宽度都建一个新的标尺，按偏好取初始宽度
-        let thickness: (Any?, FileTextAnnotations?) -> CGFloat = { value, annotations in
+        #expect(ruleThickness(lines: lines, style: style) == lineNumbers)
+
+        // 每种保存的宽度都建一个新的注释栏，按偏好取初始宽度
+        let width = { (value: Any?) -> CGFloat in
             UserDefaults.standard.set(value, forKey: key)
-            return ruleThickness(lines: lines, style: style, annotations: annotations)
+            return FileAnnotationView(scrollView: NSScrollView(), document: FileTextDocumentView.make()).width
         }
 
-        #expect(thickness(nil, nil) == lineNumbers)
-        #expect(thickness(nil, annotations) == FileGutterView.defaultAnnotationWidth + lineNumbers)
-        #expect(thickness(300.0, annotations) == 300 + lineNumbers)
-        #expect(thickness(1000.0, annotations) == 600 + lineNumbers)
-        #expect(thickness(100.0, annotations) == 175 + lineNumbers)
+        #expect(width(nil) == FileAnnotationView.defaultAnnotationWidth)
+        #expect(width(300.0) == 300)
+        #expect(width(1000.0) == 600)
+        #expect(width(100.0) == 175)
+
+        // 注释栏的底色不画出自己的范围，不盖住正文与头部
+        let annotationView = FileAnnotationView(
+            scrollView: NSScrollView(),
+            document: FileTextDocumentView.make()
+        )
+
+        #expect(annotationView.clipsToBounds)
     }
 
     /// 回到的提交不在已加载的分页里时，整页详情仍然显示它，重读分页也不会丢掉选择。
@@ -277,7 +280,7 @@ struct FileViewsTests {
     }
 
     /// 在新的滚动视图里显示全部行，返回标尺按当前偏好取的初始宽度。
-    private func ruleThickness(lines: [String], style: FileTextStyle, annotations: FileTextAnnotations?) -> CGFloat {
+    private func ruleThickness(lines: [String], style: FileTextStyle) -> CGFloat {
         let rendering = TextStyle(theme: TextTheme.builtin[0], tabWidth: 4, showsInvisibles: false)
         let document = FileTextDocumentView.make()
         let scroll = NSScrollView()
@@ -285,7 +288,7 @@ struct FileViewsTests {
         document.show(lines, source: lines.joined(separator: "\n"), style: style, rendering: rendering, spans: nil)
 
         let gutter = FileGutterView(scrollView: scroll, document: document)
-        gutter.update(lineCount: lines.count, annotations: annotations)
+        gutter.update(lineCount: lines.count)
         return gutter.ruleThickness
     }
 }

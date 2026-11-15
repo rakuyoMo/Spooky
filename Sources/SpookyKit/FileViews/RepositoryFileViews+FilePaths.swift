@@ -51,7 +51,7 @@ extension RepositoryFileViews {
         }
 
         return wanted.map { ":(top,literal)" + $0 }
-            + minimal.map { ":(top,exclude,literal)" + $0 }
+            + minimal.map(exclusion)
     }
 
     /// 目录归属按 UTF-8 字节与路径组件边界判断。
@@ -67,6 +67,26 @@ extension RepositoryFileViews {
     /// 子项必须在父路径后的斜线边界内。
     private static func isDescendant(_ path: String, of parent: String) -> Bool {
         path.utf8.starts(with: (parent + "/").utf8)
+    }
+
+    /// 一项排除：以斜线结尾的只排除目录里的子项；其余按字面排除路径本身与它的子项。
+    ///
+    /// 字面的 `目录/` 也会排除同名的子模块，子模块的 Diff 因此为空；glob 写法的 `目录/**` 只匹配子项。
+    private static func exclusion(_ path: String) -> String {
+        guard path.hasSuffix("/") else {
+            return ":(top,exclude,literal)" + path
+        }
+
+        // 路径里的通配字符逐个转义，按字面匹配
+        let escaped = path.reduce(into: "") { result, character in
+            if "\\*?[".contains(character) {
+                result.append("\\")
+            }
+
+            result.append(character)
+        }
+
+        return ":(top,exclude,glob)" + escaped + "**"
     }
 
     /// 保持首次出现顺序，按 Git 使用的原始字节去重。

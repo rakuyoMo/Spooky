@@ -22,8 +22,10 @@ enum WorkingCopyFileForm {
     /// 移动或重命名一个文件。
     case move(StatusEntry)
 
-    /// 输入自定义的忽略或排除规则，预填所选文件的规则。
-    case pattern(IgnoreFile, [StatusEntry])
+    /// 输入自定义的忽略或排除规则，预填只匹配 `item` 的规则；`item` 是第一项的路径，目录以 “/” 结尾，没有作用对象时为 nil。
+    ///
+    /// 条目里已跟踪的文件在保存时询问是否停止跟踪。
+    case pattern(IgnoreFile, [StatusEntry], item: String?)
 
     /// 输入交给 Git LFS 跟踪的规则，预填第一个所选文件的路径；没有所选文件时为空。
     case lfsPattern([StatusEntry])
@@ -58,9 +60,17 @@ extension RepositorySession {
     }
 
     /// 批量动作对应当前多选；单选详情也可从菜单操作；未改动与被忽略的文件来自补充清单。
+    ///
+    /// 停止跟踪后同一路径的两条记录在列表里是一行，选中这一行即同时选中两条。
     var selectedEntries: [StatusEntry] {
         let ids = selectedIDs.isEmpty ? Set([selectedID].compactMap { $0 }) : selectedIDs
-        let listed = status?.entries.filter { ids.contains(StatusRowID(path: $0.path, kind: $0.kind)) } ?? []
+        let entries = status?.entries ?? []
+        let copies = Set(entries.untrackedCopies.map(\.path))
+
+        let listed = entries.filter { entry in
+            ids.contains(StatusRowID(path: entry.path, kind: entry.kind))
+                || (copies.contains(entry.path) && ids.contains(StatusRowID(path: entry.path, kind: .tracked)))
+        }
 
         // 状态里没有的条目才从补充清单里取，同一文件不会出现两次
         let found = Set(listed.map { StatusRowID(path: $0.path, kind: $0.kind) })
@@ -332,14 +342,26 @@ extension RepositorySession {
         return entry.isDeletable && !entry.path.hasSuffix("/")
     }
 
-    /// 恢复到指定版本作用于已跟踪的文件，冲突文件交给冲突处理。
-    func canRevert(_ entries: [StatusEntry]) -> Bool {
-        canWrite && !entries.isEmpty && entries.allSatisfy { $0.kind == .tracked || $0.kind == .unchanged }
+    /// 恢复到指定版本作用于已跟踪与冲突的文件，标了 assume-unchanged 的无状态行不可用；
+    /// 冲突文件恢复到含这个路径的版本后冲突结束，所选版本里没有它时 Git 报错、冲突保留。
+    ///
+    /// - Parameters:
+    ///   - entries: 作用的条目。
+    ///   - marked: 列表里显示的 assume-unchanged 路径。
+    func canRevert(_ entries: [StatusEntry], marked: Set<String> = []) -> Bool {
+        canWrite && !entries.isEmpty && entries.allSatisfy { entry in
+            [.tracked, .conflicted].contains(entry.kind) || (entry.kind == .unchanged && !marked.contains(entry.path))
+        }
     }
 
-    /// 忽略与排除作用于还没有被忽略的文件。
+    /// 忽略与排除作用于任意条目：被忽略的文件可能只被本机的排除或全局规则忽略，仍可写进共享的规则。
     func canIgnore(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains { $0.kind != .ignored }
+        canWrite && !entries.isEmpty
+    }
+
+    /// Show in Finder 与终端要求作用对象在磁盘上：作用的条目全是工作区里已删除的文件时不可用。
+    func isOnDisk(_ entries: [StatusEntry]) -> Bool {
+        entries.contains { !$0.isMissingFromWorkingTree }
     }
 
     /// 设置或清除标记：暂存区里的条目有没标记的才能设置，有已标记的才能清除。
@@ -388,6 +410,11 @@ extension StatusEntry {
     /// 右栏显示 Diff 的条目：有改动的已跟踪文件与未跟踪文件；冲突、未改动与被忽略的文件另有视图。
     var hasWorkingCopyDiff: Bool {
         kind == .tracked || kind == .untracked
+    }
+
+    /// 已跟踪的文件在工作区里已删除：工作区一侧是删除，或只在暂存区里删除、工作区一侧没有记录。
+    var isMissingFromWorkingTree: Bool {
+        kind == .tracked && (unstaged == .deleted || (staged == .deleted && unstaged == nil))
     }
 
     /// 文件还在工作区里，可以删除或移动。

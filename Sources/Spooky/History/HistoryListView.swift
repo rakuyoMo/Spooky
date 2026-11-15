@@ -58,6 +58,9 @@ struct HistoryListView: View {
             // 选中陈旧的分支时表头下方是提示条
             HistoryBranchHint(session: session)
 
+            // 所选分支落后父分支时提示并入父分支的改动
+            HistoryParentBanner(session: session)
+
             // 有搜索条件时表头下方是过滤面板
             if !session.history.searchConditions.isEmpty {
                 HistorySearchPanel(history: session.history)
@@ -112,7 +115,7 @@ struct HistoryListView: View {
             CompareBranchesToggle(history: session.history)
 
             HistoryViewMenuButton()
-                .fixedSize()
+                .frame(width: 28, height: 22)
         }
         .font(.system(size: 13))
         .foregroundStyle(.secondary)
@@ -122,12 +125,11 @@ struct HistoryListView: View {
         .background(.bar)
     }
 
-    /// 所选引用与它的跟踪分支，各自至少 50 pt 宽。
+    /// 所选引用与它的跟踪分支：引用名贴合文字，与分隔图、跟踪名首尾相接，跟踪名至少 50 pt 宽。
     private var referenceTitle: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 0) {
             Text(session.history.title)
                 .lineLimit(1)
-                .frame(minWidth: 50, alignment: .leading)
 
             // 本地分支有跟踪分支时写在后面
             if let tracking = trackingName {
@@ -309,6 +311,11 @@ struct HistoryCommitTable: NSViewRepresentable {
                 revealsSelection = true
             }
 
+            // 换范围后要滚回新范围记下的位置时不再滚到选中行
+            if history.pendingScroll != nil {
+                revealsSelection = false
+            }
+
             if
                 displayed != ids || changedStyle || snapshot != history.snapshot
                 || trackingMarkers != markers || selection != history.selectedIDs
@@ -343,6 +350,15 @@ struct HistoryCommitTable: NSViewRepresentable {
 
                 if revealsSelection, let first = indexes.first {
                     Task { @MainActor in table.scrollRowToVisible(first) }
+                }
+            }
+
+            // 换范围后新范围读完时滚回它上次的位置，等表格完成布局后再滚
+            if let offset = history.pendingScroll, !history.isLoading {
+                history.pendingScroll = nil
+
+                Task { @MainActor in
+                    table.scroll(NSPoint(x: table.visibleRect.minX, y: offset))
                 }
             }
 
@@ -568,6 +584,16 @@ struct HistoryCommitTable: NSViewRepresentable {
         let scroll = NSScrollView()
         scroll.hasVerticalScroller = true
         scroll.documentView = table
+
+        // 换范围时窗口会重建列表，滚动位置随滚随记在历史状态里，新建的列表才接得上
+        scroll.contentView.postsBoundsChangedNotifications = true
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(Coordinator.clipViewScrolled),
+            name: NSView.boundsDidChangeNotification,
+            object: scroll.contentView
+        )
+
         return scroll
     }
 
@@ -576,6 +602,24 @@ struct HistoryCommitTable: NSViewRepresentable {
         context.coordinator.update(self)
     }
 
+}
+
+// MARK: - Scrolling
+
+extension HistoryCommitTable.Coordinator {
+    /// 列表滚动后记下当前范围的可见区顶边，换到别的范围再换回来时滚回这里。
+    ///
+    /// 换范围后到滚回新范围记下的位置之前，列表里还是离开的范围的行，这段时间不记。
+    @objc
+    func clipViewScrolled(_: Notification) {
+        let history = parent.session.history
+
+        guard let table, table.window != nil, history.pendingScroll == nil else {
+            return
+        }
+
+        history.rememberScroll(table.visibleRect.minY, for: history.selectedReferences)
+    }
 }
 
 // MARK: - Data Source
@@ -672,7 +716,8 @@ extension HistoryCommitTable.Coordinator {
                 isParent: history.parentCommits.contains(commit.id),
                 selected: history.selectedIDs.contains(commit.id),
                 signatures: parent.session.signatures,
-                runner: parent.session.runner
+                runner: parent.session.runner,
+                emphasized: (tableView.window?.isKeyWindow ?? false) && tableView.window?.firstResponder === tableView
             )
 
             return tableView.hostingView(view, identifier: "history-commit")

@@ -57,8 +57,13 @@ private struct SubmoduleSidebarRow: View {
                 Text(submodule.name)
                     .lineLimit(1)
             } icon: {
-                Image(systemName: hasProblem ? "exclamationmark.triangle.fill" : "shippingbox")
-                    .foregroundStyle(hasProblem ? Color.yellow : Color.secondary)
+                // 平时与其它行一样用强调色，有问题时换成黄色的告警图标
+                if hasProblem {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Color.yellow)
+                } else {
+                    Image(systemName: "shippingbox")
+                }
             }
             .opacity(submodule.state == .uninitialized || !submodule.isValid ? 0.5 : 1)
 

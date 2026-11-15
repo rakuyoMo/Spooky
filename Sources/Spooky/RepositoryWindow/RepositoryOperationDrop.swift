@@ -46,7 +46,7 @@ enum RepositoryOperationDrop {
         case .rebase: "sync.rebaseHead"
         case .createTag: "tag.create.submit"
         case .moveBranch: "branch.moveHere"
-        case .publishTag: "tag.publish"
+        case .publishTag: "drop.publishTag"
         case .createWorktree: "worktree.create"
         }
     }
@@ -96,10 +96,10 @@ enum RepositoryOperationDrop {
 
             self = .createTag(first.reference)
 
-        case (.local, .branchFolder(let folder)), (.remote, .remoteBranchFolder(_, let folder)):
+        case (.local, .branchFolder), (.remote, .remoteBranchFolder), (.local, .listEdge), (.remote, .listEdge):
             guard
                 !alternate,
-                let move = Self.move(first, into: folder, destination: destination, in: session)
+                let move = Self.move(first, to: destination, in: session)
             else { return nil }
 
             self = .moveBranch(move.branch, to: move.name)
@@ -179,14 +179,14 @@ extension RepositoryOperationDrop {
         return (change, commit)
     }
 
-    /// 拖进文件夹后的新名字：“文件夹/原名末段”；与原名相同、新名字已被占用或不可管理时为 nil。
+    /// 拖进文件夹或列表边缘后的新名字：进文件夹是 “文件夹/原名末段”，到列表边缘是原名末段，即移到顶层；
+    /// 与原名相同、新名字已被占用或不可管理时为 nil。
     ///
-    /// 本地分支只能进本地分支的文件夹，远端分支只能进同一个远端下的文件夹。
+    /// 本地分支只能进本地分支的文件夹，远端分支只能进同一个远端下的文件夹；移到顶层时远端分支留在原来的远端。
     @MainActor
     private static func move(
         _ payload: RepositoryDragPayload,
-        into folder: String,
-        destination: RepositoryDropDestination,
+        to destination: RepositoryDropDestination,
         in session: RepositorySession
     ) -> (branch: RepositoryReference, name: String)? {
         guard
@@ -198,17 +198,26 @@ extension RepositoryOperationDrop {
         var current = source.name
         var prefix = "refs/heads/"
 
-        if case .remoteBranchFolder(let remote, _) = destination {
-            guard let parts = session.remoteParts(of: source), parts.remote == remote else {
+        if payload.kind == .remote {
+            guard let parts = session.remoteParts(of: source) else {
+                return nil
+            }
+
+            if case .remoteBranchFolder(let remote, _) = destination, parts.remote != remote {
                 return nil
             }
 
             current = parts.branch
-            prefix = "refs/remotes/" + remote + "/"
+            prefix = "refs/remotes/" + parts.remote + "/"
         }
 
         let last = current.split(separator: "/", omittingEmptySubsequences: false).last.map(String.init) ?? current
-        let name = folder + "/" + last
+
+        let name =
+            switch destination {
+            case .branchFolder(let folder), .remoteBranchFolder(_, let folder): folder + "/" + last
+            default: last
+            }
 
         // 读不到引用时按已被占用处理
         let taken = session.history.snapshot?.references.contains { $0.id == prefix + name } ?? true

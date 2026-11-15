@@ -262,7 +262,8 @@ extension SyncDialog {
                     )
             },
             title: AppLocalization.text("sync.pushRevision"),
-            target: .push(remote)
+            target: .push(remote),
+            undo: .unrecorded
         )
     }
 }

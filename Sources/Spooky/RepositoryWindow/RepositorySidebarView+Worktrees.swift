@@ -34,8 +34,13 @@ extension RepositorySidebarView {
             Text(worktree.name)
                 .lineLimit(1)
         } icon: {
-            Image(systemName: worktree.isValid ? "rectangle.on.rectangle" : "exclamationmark.triangle.fill")
-                .foregroundStyle(worktree.isValid ? Color.secondary : Color.yellow)
+            // 平时与其它行一样用强调色，失效时换成黄色的告警图标
+            if worktree.isValid {
+                Image(systemName: "rectangle.on.rectangle")
+            } else {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Color.yellow)
+            }
         }
         .help(tooltip(of: worktree))
         .tag(Self.worktreeRowPrefix + worktree.path)
@@ -62,10 +67,10 @@ struct BranchWorktreeMenuItems: View {
     /// 本地分支。
     let branch: RepositoryReference
 
-    /// 检出项之后的一组。
+    /// 检出项之后的一组；已在别的工作树检出时以不可点的一行说明开头，写出那个工作树的名字。
     var body: some View {
         if let worktree = session.worktrees.branchWorktrees[branch.id] {
-            Text(session.location(of: worktree)?.displayPath ?? worktree.path)
+            Text(AppLocalization.text("worktree.checkedOutIn", worktree.name))
 
             WorktreeMenu(session: session, worktree: worktree, branch: branch.name)
         } else {
@@ -145,7 +150,7 @@ struct WorktreeMenu: View {
             .disabled(location == nil)
         }
 
-        Button(title("worktree.terminal", "worktree.branch.terminal")) {
+        Button(title("action.openTerminal", "worktree.branch.terminal")) {
             if let location { session.onOpenInTerminal?(location) }
         }
         .disabled(location == nil)

@@ -6,7 +6,8 @@ import Testing
 /// 用真实 Git 验证补丁的结果，断言未选内容仍留在原处。
 struct WorkingCopyOperationsTests {
     /// 暂存重命名与同名通配符文件必须独立操作，丢弃回到 HEAD；
-    /// 恢复到指定版本同时改写暂存区与工作区，旧版本里没有的文件随之删除，路径按字面匹配。
+    /// 恢复到指定版本同时改写暂存区与工作区，旧版本里没有的文件随之删除，路径按字面匹配；
+    /// 丢弃未跟踪目录的条目时，只有仍被 Git 折叠成一项的目录才整个删除。
     @Test("文件级暂存、重命名、丢弃与恢复到指定版本")
     func fileActions() async throws {
         let repository = try TemporaryRepository()
@@ -64,6 +65,24 @@ struct WorkingCopyOperationsTests {
         #expect(try await repository.runner.run(["show", ":文件 *.txt"]) == Data("one\n".utf8))
         #expect(!FileManager.default.fileExists(atPath: added.path))
         #expect(try Data(contentsOf: similar) == Data("changed\n".utf8))
+
+        // 未跟踪的整个目录：里面有了已跟踪的文件就不再按目录丢弃
+        let folder = repository.directory.appending(path: "新目录 [x]")
+        let directory = StatusEntry(kind: .untracked, path: "新目录 [x]/")
+
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+        try Data("a\n".utf8).write(to: folder.appending(path: "a.txt"))
+        try Data("b\n".utf8).write(to: folder.appending(path: "b.txt"))
+        _ = try await repository.runner.run(["--literal-pathspecs", "add", "--", "新目录 [x]/a.txt"])
+
+        try await service.discard([directory], removal: .permanent)
+        #expect(FileManager.default.fileExists(atPath: folder.appending(path: "b.txt").path))
+
+        // 仍被 Git 折叠成一项的目录整个永久删除
+        _ = try await repository.runner.run(["--literal-pathspecs", "rm", "-q", "--cached", "--", "新目录 [x]/a.txt"])
+
+        try await service.discard([directory], removal: .permanent)
+        #expect(!FileManager.default.fileExists(atPath: folder.path))
     }
 
     /// 新文件按非连续行暂存、按行与整块取消暂存都不改变工作区，整块操作保留新增 / 删除语义；
@@ -126,7 +145,7 @@ struct WorkingCopyOperationsTests {
         #expect(try Data(contentsOf: file) == Data((edited + "external\r\n").utf8))
     }
 
-    /// 二进制提示、空文件与大 Diff 使用补丁字节数，不使用文件大小；
+    /// 二进制提示、空文件与大 Diff 使用补丁字节数，不使用文件大小；二进制文件的判断按 Git 的内容与属性；
     /// 分解形式 Unicode 路径上的非 UTF-8 内容按行暂存后逐字节保留。
     @Test("二进制、空文件、大 Diff、类型变化与非 UTF-8 内容")
     func diffKinds() async throws {
@@ -166,6 +185,17 @@ struct WorkingCopyOperationsTests {
         // 空文件换成符号链接，类型变化读出两个补丁段
         try await service.stageAll(staged: true)
         try await service.commit(subject: "base", body: "")
+
+        // 二进制判断：内容含 NUL 的文件是二进制，普通文本不是；路径里的特殊字符原样读回，记录缺少 Tab 时按格式错误抛出
+        #expect(try await service.binaryPaths(["binary", "large"]) == ["binary"])
+
+        let record = Data("i/lf    w/-text attr/                 \t空格 [*].txt\0".utf8)
+
+        #expect(try WorkingCopyOperations.binaryPaths(lsFilesEOL: record) == ["空格 [*].txt"])
+        #expect(throws: RepositoryReadError.malformedOutput("ls-files --eol")) {
+            try WorkingCopyOperations.binaryPaths(lsFilesEOL: Data("i/lf w/lf\0".utf8))
+        }
+
         try FileManager.default.removeItem(at: repository.directory.appending(path: "empty"))
         try FileManager.default.createSymbolicLink(
             at: repository.directory.appending(path: "empty"),

@@ -8,7 +8,7 @@ import Testing
 
 extension UndoSessionTests {
     /// 归档只改分支配置段，撤销后分支回到 Branches 分组，重做后再次归档；
-    /// 用父分支更新是本机的合并，撤销后分支回到合并前的提交。
+    /// 用父分支更新先检出所选分支再合并，只有落后父分支时可用，撤销后 HEAD 回到原分支。
     @Test("归档分支与 Update Branch 的撤销")
     func branchesReviewRoundTrip() async throws {
         let fixture = try await Fixture()
@@ -22,7 +22,6 @@ extension UndoSessionTests {
         _ = try await runner.run(["switch", "-q", "-c", "topic"])
         _ = try await runner.run(["switch", "-q", "main"])
         _ = try await runner.run(["commit", "-q", "--allow-empty", "-m", "main 前进"])
-        _ = try await runner.run(["switch", "-q", "topic"])
         try await RepositoryReferences(runner: runner).setParent("refs/heads/main", of: "refs/heads/topic")
         await fixture.refresh()
 
@@ -37,15 +36,24 @@ extension UndoSessionTests {
         try await fixture.perform { session.redoLastOperation() }
         #expect(session.history.snapshot?.metadata(for: old.id).isArchived ?? false)
 
-        // Update Branch：合并父分支后撤销，HEAD 回到合并前
+        // Update Branch：HEAD 在 main 上，更新 topic 后 HEAD 切到 topic；撤销名是 Update Branch，撤销后 HEAD 回到 main
         let before = try await fixture.head()
         let topic = try #require(session.history.branches.first { $0.id == "refs/heads/topic" })
+        let main = try #require(session.history.branches.first { $0.id == "refs/heads/main" })
+
         #expect(session.canUpdateBranch(topic))
+        #expect(!session.canUpdateBranch(main))
 
         try await fixture.perform { session.updateBranch(topic, rebase: false) }
-        #expect(try await fixture.head() != before)
+        #expect(session.status?.branch.head == "topic")
+        #expect(try await fixture.head() == main.objectID)
+        #expect(session.undoHistory?.undoEntries.last?.title == AppLocalization.text("review.updateBranch"))
+
+        // 并入后不再落后父分支，入口不可用
+        #expect(!session.canUpdateBranch(topic))
 
         try await fixture.perform { session.undoLastOperation() }
+        #expect(session.status?.branch.head == "main")
         #expect(try await fixture.head() == before)
     }
 }

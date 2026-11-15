@@ -139,7 +139,7 @@ struct ReadOnlyFileDiffView: View {
             pinnedViews: presentation == .standalone ? [.sectionHeaders] : []
         ) {
             if result.onlyWhitespaceChanges {
-                DiffNotice(key: "diff.onlyWhitespace", style: style)
+                DiffNotice(key: "diff.onlyWhitespace")
             }
 
             if let diff = result.diff {

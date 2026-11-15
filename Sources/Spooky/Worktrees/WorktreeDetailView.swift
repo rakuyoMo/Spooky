@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - WorktreeDetailView
 
-/// 工作树视图：头部是图标、工作树名与只有 General 一段的分段，下面是名称、当前版本、分支与路径；
+/// 工作树视图：头部是图标与工作树名，下面是名称、路径、当前版本与分支；
 /// 工作树失效时整页换成空状态，写出失效的原因。
 struct WorktreeDetailView: View {
     /// 所在窗口的会话。
@@ -44,7 +44,7 @@ struct WorktreeDetailView: View {
 // MARK: - Layout
 
 extension WorktreeDetailView {
-    /// 32 pt 图标、工作树名与右侧只有一段的分段。
+    /// 32 pt 图标与工作树名。
     private var header: some View {
         HStack(spacing: 8) {
             Image(systemName: "rectangle.on.rectangle")
@@ -57,32 +57,27 @@ extension WorktreeDetailView {
                 .lineLimit(1)
 
             Spacer()
-
-            Picker("", selection: .constant(0)) {
-                Text(AppLocalization.text("worktree.page.general")).tag(0)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .fixedSize()
-            .accessibilityLabel(AppLocalization.text("worktree.page"))
         }
         .padding(.horizontal, 20)
         .frame(height: 52)
     }
 
-    /// General 分段：名称、当前版本、分支与路径；服务器上的路径带主机前缀。
+    /// GENERAL 组：名称、路径、当前版本与分支；本机路径带在 Finder 打开的按钮，服务器上的路径带主机前缀。
     private func settings(of worktree: Worktree) -> some View {
-        let path = session.location(of: worktree)?.displayPath ?? worktree.path
-
-        return ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+        ScrollView {
+            SettingTable {
                 RemoteSettingsGroup(title: AppLocalization.text("worktree.page.general"))
+
                 RemoteSettingRow(label: AppLocalization.text("worktree.field.name"), value: worktree.name)
+
+                RemoteSettingRow(
+                    label: AppLocalization.text("worktree.field.path"),
+                    location: session.location(of: worktree)
+                )
 
                 RemoteSettingRow(
                     label: AppLocalization.text("worktree.field.revision"),
                     value: worktree.head ?? AppLocalization.text("submodule.notAvailable"),
-                    small: worktree.head != nil,
                     secondary: worktree.head == nil
                 )
 
@@ -91,8 +86,6 @@ extension WorktreeDetailView {
                     value: worktree.branchName ?? AppLocalization.text("branch.detachedShort"),
                     secondary: worktree.branch == nil
                 )
-
-                RemoteSettingRow(label: AppLocalization.text("worktree.field.path"), value: path, small: true)
             }
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, alignment: .leading)

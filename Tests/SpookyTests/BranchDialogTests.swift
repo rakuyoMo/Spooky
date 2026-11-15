@@ -16,7 +16,7 @@ import TestSupport
 struct BranchDialogTests {
     /// 新建本地分支与本地分支改名按分支规则规范化，推送与发布按通用规则，跟踪远端分支、远端分支改名与远端改名原样保留，
     /// 关闭设置后都原样保留；空名称不可提交也不显示说明，不合法时写出原因，新建与跟踪的本地重名、
-    /// 发布的远端重名分别说明，推送不查重名。
+    /// 与已有分支文件夹同名、发布的远端重名分别说明，推送不查重名。
     @Test("名称框的规范化与校验说明")
     func nameInput() async throws {
         let fixture = try await OperationWiringTests.makeFixture()
@@ -27,6 +27,10 @@ struct BranchDialogTests {
         let local = try #require(branches.first { $0.id == "refs/heads/side" })
         let remote = try #require(branches.first { $0.id == "refs/remotes/origin/main" })
         let input = "-a b~c..d.lock"
+
+        // 已有分支 feature/login，feature 是它的文件夹
+        _ = try await fixture.runner.run(["branch", "feature/login"])
+        await Self.reload(session)
 
         // 操作对话框的名称框
         #expect(RepositoryOperationDialog.normalizedName(input, for: .create, cleaning: true) == "-a-b-c.d")
@@ -47,6 +51,8 @@ struct BranchDialogTests {
             ("a/.b", .track, false, AppLocalization.text("reference.name.component")),
             ("side", .create, false, AppLocalization.text("branch.exists", "side")),
             ("side", .track, false, AppLocalization.text("branch.exists", "side")),
+            ("feature", .create, false, AppLocalization.text("branch.groupExists")),
+            ("feature", .track, false, AppLocalization.text("branch.groupExists")),
             ("main", .publish, false, AppLocalization.text("branch.remoteExists", "main", "origin")),
             ("main", .push, true, ""),
             ("feature/新", .create, true, ""),
@@ -63,13 +69,17 @@ struct BranchDialogTests {
             #expect(result.isValid == isValid, "\(name) \(kind)")
             #expect(result.error == error, "\(name) \(kind)")
         }
+
+        // 改名时文件夹里只有被改名的分支自己，不算同名
+        #expect(!session.isBranchFolder("feature", excluding: "refs/heads/feature/login"))
     }
 
     /// 跟踪远端分支的预选：入口传入的远端分支优先；没有预选或预选不是远端分支时取 HEAD 的上游；
     /// HEAD 没有上游时取第一个远端分支；没有远端分支时为空。
     ///
-    /// 合并的候选依次是本地分支（含 HEAD 分支）、远端分支与标签，拉取只有远端分支，各组按引用的公共顺序排列；
-    /// 两者先预选 HEAD 的上游，HEAD 没有上游时取第一个不是 HEAD 分支的候选。
+    /// 合并与版本框的候选依次是本地分支（含 HEAD 分支）、各远端的远端分支与标签，拉取与跟踪只有远端分支：
+    /// 组内 main 在最前，origin 的远端分支排在别的远端之前；两者先预选 HEAD 的上游，HEAD 没有上游时取第一个不是 HEAD 分支的候选。
+    /// 远端下拉同样 origin 在前；父分支只列其它本地分支。
     @Test("跟踪远端分支与拉取、合并来源的候选和预选回退")
     func trackPreselection() async throws {
         let fixture = try await OperationWiringTests.makeFixture()
@@ -77,11 +87,15 @@ struct BranchDialogTests {
 
         let session = fixture.session
         _ = try await fixture.runner.run(["update-ref", "refs/remotes/origin/feature", "HEAD"])
+
+        // 名字排在 origin 之前的另一个远端
+        _ = try await fixture.runner.run(["remote", "add", "extra", "/nonexistent/extra.git"])
+        _ = try await fixture.runner.run(["update-ref", "refs/remotes/extra/main", "HEAD"])
         await Self.reload(session)
 
         let source = { RepositoryOperationDialog.trackSource(preselection: $0, in: session) }
 
-        // 排在 origin/main 前面的 origin/feature 是第一个远端分支，HEAD 的上游是 origin/main
+        // HEAD 的上游是 origin/main
         #expect(source("refs/remotes/origin/feature") == "refs/remotes/origin/feature")
         #expect(source(nil) == "refs/remotes/origin/main")
         #expect(source("refs/heads/side") == "refs/remotes/origin/main")
@@ -92,11 +106,16 @@ struct BranchDialogTests {
             RepositoryOperationDialog.sourcePreselection(for: $0, preselection: nil, in: session)
         }
 
-        // 远端分支里 main 排在最前，不按名字排在 feature 之后
-        let remotes = ["refs/remotes/origin/main", "refs/remotes/origin/feature"]
+        // 远端分支里 main 排在最前，不按名字排在 feature 之后；origin 排在 extra 之前
+        let remotes = ["refs/remotes/origin/main", "refs/remotes/origin/feature", "refs/remotes/extra/main"]
 
         #expect(candidates(.merge) == ["refs/heads/main", "refs/heads/side"] + remotes + ["refs/tags/v1"])
         #expect(candidates(.pull) == remotes)
+        #expect(session.revisionReferences.map(\.id) == candidates(.merge))
+        #expect(session.orderedRemoteNames == ["origin", "extra"])
+
+        let side = try #require(session.history.branches.first { $0.id == "refs/heads/side" })
+        #expect(SetParentBranchDialog(session: session, branch: side) { }.candidates.map(\.id) == ["refs/heads/main"])
         #expect(preselection(.merge) == "refs/remotes/origin/main")
         #expect(preselection(.pull) == "refs/remotes/origin/main")
 
@@ -104,7 +123,7 @@ struct BranchDialogTests {
         _ = try await fixture.runner.run(["branch", "--unset-upstream", "main"])
         await Self.reload(session)
 
-        #expect(source(nil) == "refs/remotes/origin/feature")
+        #expect(source(nil) == "refs/remotes/origin/main")
         #expect(preselection(.merge) == "refs/heads/side")
         #expect(preselection(.pull) == "refs/remotes/origin/main")
 
@@ -158,7 +177,7 @@ struct BranchDialogTests {
     }
 
     /// 删除一个跟踪远端分支的本地分支：说明写出分支名，强制删除在上、不带说明、不勾，删除跟踪的远端分支在下并写出它；
-    /// 删除多个分支时说明写成所选分支，没有删除跟踪分支的选项。
+    /// 删除多个分支时说明写成所选分支；删除多个分支、或跟踪的远端分支已不存在时，没有删除跟踪分支的选项。
     @Test("删除分支的说明与选项顺序", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func deleteBranches() async throws {
         let fixture = try await OperationWiringTests.makeFixture()
@@ -187,6 +206,18 @@ struct BranchDialogTests {
 
         #expect(multiple.contains { $0.value == AppLocalization.text("branch.deleteMultiple.message") })
         #expect(multiple.filter { $0.role == "AXCheckBox" }.map(\.name) == [AppLocalization.text("branch.forceDelete")])
+
+        // 跟踪的远端分支已不存在：没有删除跟踪分支一项与它的说明
+        _ = try await fixture.runner.run(["config", "--local", "branch.side.remote", "origin"])
+        _ = try await fixture.runner.run(["config", "--local", "branch.side.merge", "refs/heads/gone"])
+        await Self.reload(session)
+
+        let tracking = try #require(session.history.branches.first { $0.id == "refs/heads/side" })
+        let gone = await Self.deleteDialog(.branches([tracking]), in: session)
+
+        #expect(tracking.upstream == "refs/remotes/origin/gone")
+        #expect(gone.filter { $0.role == "AXCheckBox" }.map(\.name) == [AppLocalization.text("branch.forceDelete")])
+        #expect(!gone.contains { $0.value == AppLocalization.text("branch.deleteUpstream.help", "origin/gone") })
     }
 }
 

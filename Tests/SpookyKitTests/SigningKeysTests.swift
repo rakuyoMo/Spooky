@@ -133,6 +133,40 @@ struct SigningKeysTests {
         let withoutGPG = await SigningKeys.local(searchPaths: ["/nonexistent"])
         #expect(withoutGPG.allSatisfy { $0.format == .ssh })
     }
+
+    /// 签名程序按 `gpg --version` 的第一行判断：括号里以 GnuPG 开头才算 GnuPG，修订号可以没有，版本按数值比较。
+    @Test("GnuPG 的版本")
+    func gnuPGVersion() async throws {
+        let parse = { (text: String) in GnuPGVersion(output: Data(text.utf8))?.description }
+
+        // 发行版、MacGPG2 与没有修订号的写法
+        #expect(parse("gpg (GnuPG) 2.4.5\nlibgcrypt 1.10.3\n") == "2.4.5")
+        #expect(parse("gpg (GnuPG/MacGPG2) 2.2.41\n") == "2.2.41")
+        #expect(parse("gpg (GnuPG) 2.1\n") == "2.1.0")
+
+        // 版本行不在第一行、括号里不是 GnuPG、没有版本号，都不算
+        #expect(parse("libgcrypt 1.10.3\ngpg (GnuPG) 2.4.5\n") == nil)
+        #expect(parse("sq (Sequoia) 1.0.0\n") == nil)
+        #expect(parse("gpg (GnuPG)\n") == nil)
+
+        // 2.10 高于 2.9
+        let newer = try #require(GnuPGVersion(output: Data("gpg (GnuPG) 2.10.0".utf8)))
+        let older = try #require(GnuPGVersion(output: Data("gpg (GnuPG) 2.9.9".utf8)))
+        #expect(older < newer)
+
+        // 程序的路径带空格与中文；能执行才读版本
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-gpg " + UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let gpg = directory.appending(path: "签名 gpg")
+        try Data("#!/bin/sh\necho 'gpg (GnuPG) 2.4.5'\n".utf8).write(to: gpg)
+
+        #expect(await SigningKeys.gnuPGVersion(gpg.path) == nil)
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: gpg.path)
+        #expect(await SigningKeys.gnuPGVersion(gpg.path)?.description == "2.4.5")
+    }
 }
 
 // MARK: - Helpers

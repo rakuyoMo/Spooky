@@ -49,11 +49,13 @@ extension RepositorySidebarView {
         return SidebarRefTree.nodes(for: entries, grouped: groupsRefs, foldersFirst: groupedRefsOnTop, scope: "tags")
     }
 
-    /// 标签行：单击显示它的历史，可与分支一起多选；双击检出成分离 HEAD；可拖到 Branches 标题新建分支；
+    /// 标签行：单击显示它的历史，可与分支一起多选；双击检出成分离 HEAD，整行都响应；可拖到 Branches 标题新建分支；
     /// 右键的 Show Signature 在行的左侧弹出标签的签名，左侧放不下时系统换到另一侧。
     private func tagRow(_ ref: RepositoryReference, name: String) -> some View {
         Label(name, systemImage: "tag")
             .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
             .help(SidebarTooltip.tag(ref, host: session.repository?.host))
             .tag(ref.id)
             .onTapGesture(count: 2) { doubleClick(ref) }
@@ -78,12 +80,12 @@ extension RepositorySidebarView {
 
     /// 标签菜单：检出；发布与推送；新建分支与删除；导出、比较与签名；在历史中显示与复制名称。
     ///
-    /// 点在多选里时只作用于整个选区：全是标签时只有删除所选标签。
+    /// 点在侧边栏当前的多选里时换成作用于整个选区的多选菜单。
     @ViewBuilder
     private func tagMenu(_ ref: RepositoryReference) -> some View {
-        let selected = session.history.selectedReferences
-
-        if selected.count <= 1 || !selected.contains(ref.id) {
+        if let selected = selectedReferences(including: ref) {
+            multipleReferenceMenu(selected)
+        } else {
             Button(AppLocalization.text("tag.checkoutNamed", ref.name)) { session.requestCheckout(ref.id) }
                 .disabled(!session.canCheckoutRevision)
 
@@ -116,13 +118,6 @@ extension RepositorySidebarView {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(ref.name, forType: .string)
             }
-        } else if selected.allSatisfy({ $0.hasPrefix("refs/tags/") }) {
-            let names = session.tags.filter { selected.contains($0.id) }.map(\.name)
-
-            Button(AppLocalization.text("tag.deleteMenu.multiple", names.count)) {
-                session.requestReference(.deleteTags(names))
-            }
-            .disabled(!session.canWrite)
         }
     }
 }

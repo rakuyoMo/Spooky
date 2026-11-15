@@ -114,7 +114,7 @@ extension ConfirmationTests {
         #expect(requests.allSatisfy { $0.suppression == nil })
     }
 
-    /// 丢弃一行时的确认带 “Do not ask me again”；在确认对话框里关掉这项警告以后直接丢弃。
+    /// 丢弃一行或整块时的确认带 “Do not ask me again”，说明是同一句、不写仓库路径；在确认对话框里关掉这项警告以后直接丢弃。
     private static func expectDiscardChunks(in fixture: UndoSessionTests.Fixture) async throws {
         let session = fixture.session
 
@@ -143,6 +143,13 @@ extension ConfirmationTests {
 
         #expect(request.title == AppLocalization.text("working.discardContent.title"))
         #expect(request.suppression == .discardChunks)
+        #expect(request.message == AppLocalization.text("working.discard.selection"))
+
+        // 丢弃整块用同一句说明
+        session.apply(file: file.id, hunk: hunk.id, lines: [], discard: true)
+
+        #expect(requests.count == 2)
+        #expect(requests.last?.message == request.message)
 
         // 在确认对话框里勾选不再提醒之后
         ServerConfirmation.discardChunks.isEnabled = false
@@ -151,7 +158,7 @@ extension ConfirmationTests {
             session.apply(file: file.id, hunk: hunk.id, lines: [line.id], discard: true)
         }
 
-        #expect(requests.count == 1)
+        #expect(requests.count == 2)
         #expect(try fixture.read() == "base\n")
     }
 }

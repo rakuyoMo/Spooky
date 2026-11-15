@@ -22,6 +22,14 @@ struct RewordDialog: View {
     @State
     private var messageBody = ""
 
+    /// 是否显示标题剩余字数，与提交区共用 Editor 设置。
+    @AppStorage(CommitEditorSettings.showsSubjectCounterKey)
+    private var showsCounter = true
+
+    /// 标题字数上限，与提交区共用 Editor 设置。
+    @AppStorage(CommitEditorSettings.subjectLimitKey)
+    private var subjectLimit = CommitEditorSettings.defaultSubjectLimit
+
     /// 标题框、正文框与影响范围占满内容区的宽度；服务器仓库在说明后写明在哪台服务器上执行。
     var body: some View {
         RepositoryDialogLayout(
@@ -35,14 +43,9 @@ struct RewordDialog: View {
             submit: perform
         ) {
             VStack(alignment: .leading, spacing: 8) {
-                TextField("", text: $subject, prompt: Text(AppLocalization.text("working.subject")))
-                    .accessibilityLabel(AppLocalization.text("working.subject"))
+                subjectField
 
-                TextEditor(text: $messageBody)
-                    .font(.system(size: 13))
-                    .frame(height: 180)
-                    .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(AppPalette.color("general_border_color")))
-                    .accessibilityLabel(AppLocalization.text("working.body"))
+                bodyEditor
 
                 RewriteImpactView(plan: plan)
             }
@@ -63,6 +66,47 @@ extension RewordDialog {
         }
 
         return plan.commits.first { $0.id == id }
+    }
+
+    /// 标题框，右端用灰字显示剩余字数；计数的规则与提交区相同。
+    private var subjectField: some View {
+        let remaining = WorkingCopyCommitView.remainingCharacters(
+            subject: subject,
+            body: messageBody,
+            limit: subjectLimit,
+            isEnabled: showsCounter
+        )
+
+        return HStack(spacing: 6) {
+            TextField("", text: $subject, prompt: Text(AppLocalization.text("working.subject")))
+                .accessibilityLabel(AppLocalization.text("working.subject"))
+
+            if let remaining {
+                Text(String(remaining))
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
+                    .accessibilityLabel(AppLocalization.text("commit.remaining", remaining))
+            }
+        }
+    }
+
+    /// 高 180 的正文框，带边框；内容为空时叠上与提交区相同的占位文字。
+    private var bodyEditor: some View {
+        TextEditor(text: $messageBody)
+            .font(.system(size: 13))
+            .frame(height: 180)
+            .overlay(alignment: .topLeading) {
+                if messageBody.isEmpty {
+                    Text(AppLocalization.text("working.body"))
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color(nsColor: .placeholderTextColor))
+                        .padding(.leading, 5)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(AppPalette.color("general_border_color")))
+            .accessibilityLabel(AppLocalization.text("working.body"))
     }
 
     /// 先关闭对话框，注释行的询问与执行都交给仓库窗口。

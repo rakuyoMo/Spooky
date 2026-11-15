@@ -120,6 +120,48 @@ public struct RepositoryClone: Sendable, Hashable {
         }
     }
 
+    /// 在目标所在的机器上确认地址能连上并通过认证：列一次远端分支，凭据经回调询问；服务器目标在 B 上连接。
+    ///
+    /// - Parameter credentialHandler: 用户名、密码与 SSH 私钥口令的询问入口；服务器目标装到主机连接上。
+    public func checkConnection(credentialHandler: RemoteCallbackHandler? = nil) async throws {
+        try await checkConnection(credentialHandler: credentialHandler) { GitRunner(location: $0) }
+    }
+
+    /// 与公开的 ``checkConnection(credentialHandler:)`` 相同，本机检查经指定方式创建执行器，测试据此隔离用户的 Git 配置。
+    func checkConnection(
+        credentialHandler: RemoteCallbackHandler?,
+        localRunner: (RepositoryLocation) -> GitRunner
+    ) async throws {
+        try RepositoryReferences.validate(url: url)
+
+        let arguments = ["ls-remote", "--heads", "--", url]
+
+        // 目标目录还不存在，命令在它的上级目录执行
+        let path = try HostOperationError.normalized(destination.path)
+        let parent = path.lastIndex(of: "/").map { $0 == path.startIndex ? "/" : String(path[..<$0]) } ?? path
+
+        guard let host = destination.host else {
+            var runner = localRunner(.local(path: parent))
+            runner.credentialHandler = credentialHandler
+
+            _ = try await runner.execute(arguments)
+            return
+        }
+
+        let connection = RemoteConnection.host(host)
+
+        if let credentialHandler {
+            await connection.setCallbackHandler(credentialHandler)
+        }
+
+        _ = try await connection.runOnHost(
+            .git(arguments),
+            at: parent,
+            writing: false,
+            acceptedExitCodes: [0]
+        ) { _ in }
+    }
+
     /// `git clone` 的参数：地址放在 `--` 之后，以 “-” 开头的地址不会被当成选项。
     func arguments(path: String) -> [String] {
         ["clone", "--progress"]

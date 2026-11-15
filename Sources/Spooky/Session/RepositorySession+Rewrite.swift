@@ -59,6 +59,20 @@ extension RepositorySession {
 
         return ordered.map(\.name)
     }
+
+    /// 检出所选提交：在检出版本的条件之外，所选提交就是 HEAD 时不可用。
+    ///
+    /// - Parameter id: 所选提交的完整哈希。
+    func canCheckout(commit id: String) -> Bool {
+        canCheckoutRevision && status?.branch.oid != id
+    }
+
+    /// 把 HEAD 重置到所选提交：在改写的条件之外，所选提交就是 HEAD 时不可用。
+    ///
+    /// - Parameter id: 所选提交的完整哈希。
+    func canReset(to id: String) -> Bool {
+        canRewrite && status?.branch.oid != id
+    }
 }
 
 // MARK: - Requests
@@ -150,7 +164,7 @@ extension RepositorySession {
             { runner, output in
                 try await RepositoryRewrite(runner: runner).revert(commits, options: options, onOutput: output)
             },
-            title: AppLocalization.text("rewrite.revert"),
+            title: AppLocalization.text("rewrite.revert.title"),
             offersAutoStash: true,
             undo: .reversible
         )
@@ -171,26 +185,24 @@ extension RepositorySession {
         )
     }
 
-    /// 把 HEAD 重置到指定版本。
+    /// 把 HEAD 重置到指定版本；撤销时工作区有改动先询问是否储藏。
     @discardableResult
     func reset(to revision: String, mode: ResetMode) -> Bool {
         performGit(
             { runner, _ in try await RepositoryRewrite(runner: runner).reset(to: revision, mode: mode) },
             title: AppLocalization.text("rewrite.reset"),
             progress: AppLocalization.text("workspaceProgress.reset"),
-            undo: .reversible
+            undo: .reversibleAskingToStash
         )
     }
 
-    /// 检出任意版本；被本地改动挡住时询问是否先储藏。
+    /// 检出任意版本；有本地修改时先询问是否储藏，见 ``performCheckout(_:title:progress:target:undo:)``。
     @discardableResult
     func checkout(revision: String) -> Bool {
-        performGit(
+        performCheckout(
             { runner, _ in try await RepositoryRewrite(runner: runner).checkout(revision: revision) },
             title: AppLocalization.text("rewrite.checkout"),
-            progress: AppLocalization.text("workspaceProgress.checkoutRevision", revision),
-            offersAutoStash: true,
-            undo: .reversible
+            progress: AppLocalization.text("workspaceProgress.checkoutRevision", revision)
         )
     }
 
@@ -209,7 +221,7 @@ extension RepositorySession {
         )
     }
 
-    /// 执行已确认的交互式变基计划。
+    /// 执行已确认的交互式变基计划；改信息与压缩完成后，历史按新哈希选中改过的提交。
     ///
     /// 修补旧提交在开始前已按本地改动询问过是否储藏，被本地改动挡住时只报告 Git 的原始错误，不再询问。
     ///
@@ -219,8 +231,14 @@ extension RepositorySession {
         let amends = if case .amend = plan.action { true } else { false }
 
         return performGit(
-            { runner, output in
-                try await RepositoryRewrite(runner: runner).perform(plan, skipHooks: skipHooks, onOutput: output)
+            { [weak self] runner, output in
+                let rewrite = RepositoryRewrite(runner: runner)
+                try await rewrite.perform(plan, skipHooks: skipHooks, onOutput: output)
+
+                // 写操作结束后的刷新保留这个选中
+                if let rewritten = try? await rewrite.rewrittenCommit(of: plan) {
+                    await MainActor.run { self?.history.selectedIDs = [rewritten] }
+                }
             },
             title: AppLocalization.text(Self.titleKey(of: plan.action)),
             progress: AppLocalization.text("workspaceProgress.rebase"),
@@ -249,7 +267,8 @@ extension RepositorySession {
             action: { runner, output in
                 try await RepositoryRewrite(runner: runner).perform(plan, onOutput: output)
             },
-            undo: .reversible
+            undo: .reversible,
+            keepsStash: true
         )
 
         onStashRequest(.autoStash(request))

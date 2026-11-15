@@ -9,6 +9,9 @@ enum UndoRecording {
     /// 记下操作前后的仓库状态；操作改动了仓库、又能安全恢复时可以撤销与重做。
     case reversible
 
+    /// 与 ``reversible`` 相同地记下前后状态；撤销时工作区有已跟踪文件的改动，先询问是否储藏。重置使用。
+    case reversibleAskingToStash
+
     /// 由操作自己给出反向操作，用于快照记不住的内容，如远端设置、assume-unchanged 标记、Git LFS 的启用、
     /// 远端上发布与改名的引用，以及子模块的结构与本地设置。
     ///
@@ -38,12 +41,21 @@ struct UndoInverse: Sendable {
     /// 为 nil 时不收集。
     var trashLog: TrashLog? = nil
 
+    /// 撤销放弃的进行中操作，如停在冲突上的合并：仓库停在这个操作上时撤销不算忙碌。为 nil 时进行中的操作挡住撤销。
+    var abortedOperation: RepositoryOperationState? = nil
+
     /// 撤销时执行，输出经第二个参数送进 Activity：先核对前提，仓库已不是操作后的样子时抛出
     /// ``RepositoryUndoError/repositoryChanged``，不做任何改动。
     let undo: @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
 
     /// 重做时代替原操作执行，如复用撤销时留下的子模块 Git 目录重新添加；为 nil 时再执行一次原操作。
     var redo: (@Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void)? = nil
+
+    /// 撤销成功后调整窗口的选中，如让选中跟着改回的远端名走；为 nil 时不调整。
+    var afterUndo: (@MainActor @Sendable (RepositorySession) -> Void)? = nil
+
+    /// 重做成功后调整窗口的选中；为 nil 时不调整。
+    var afterRedo: (@MainActor @Sendable (RepositorySession) -> Void)? = nil
 }
 
 // MARK: - RepositoryUndoEntry
@@ -75,6 +87,9 @@ struct RepositoryUndoEntry: Identifiable, Sendable {
 
     /// 撤销与重做的办法。
     let change: Change
+
+    /// 撤销时工作区有已跟踪文件的改动，先询问是否储藏。
+    var asksToStash = false
 }
 
 // MARK: - RepositoryUndoHistory
@@ -135,7 +150,7 @@ final class RepositoryUndoHistory {
         let redone = redoEntries.remove(at: index)
 
         if let change {
-            undoEntries.append(RepositoryUndoEntry(title: redone.title, change: change))
+            undoEntries.append(RepositoryUndoEntry(title: redone.title, change: change, asksToStash: redone.asksToStash))
         }
     }
 }

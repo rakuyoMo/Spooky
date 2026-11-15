@@ -32,6 +32,9 @@ struct FileActionBar: View {
     /// 文件头使用分段组，评论附件使用独立按钮。
     var segmented = true
 
+    /// 显示与隐藏切换时调用，参数是切换后是否显示。
+    var visibleChanged: (Bool) -> Void = { _ in }
+
     /// 原生分段组是否获得键盘焦点。
     @State
     private var segmentFocused = false
@@ -61,6 +64,7 @@ struct FileActionBar: View {
         .frame(height: 25)
         .opacity(visible ? 1 : 0)
         .animation(.easeInOut(duration: 0.15), value: visible)
+        .onChange(of: visible) { visibleChanged(visible) }
     }
 
     /// 鼠标与键盘任一入口都能显示动作。
@@ -175,7 +179,8 @@ struct ChangesetFileMenu: View {
 
     /// 菜单的各组动作。
     ///
-    /// 单个文件时标题写仓库内的完整路径，有查看、Blame 与文件历史；多个文件时标题写数量，只有比较工具、恢复与导出。
+    /// 单个文件时先是复制路径两项，标题写仓库内的完整路径，有查看、Blame 与文件历史；
+    /// 多个文件时标题写数量，只有比较工具、恢复与导出。
     ///
     /// - Parameters:
     ///   - session: 当前仓库会话。
@@ -194,11 +199,9 @@ struct ChangesetFileMenu: View {
 
         let paths = files.map(\.path)
         let compared = files.map { ComparedFile(path: $0.path, originalPath: $0.originalPath) }
-        let copy = copyActions(session: session, paths: paths)
 
         guard files.count == 1 else {
             return [
-                copy,
                 [
                     FileViewAction(title: AppLocalization.text("externalTool.openDiffItemsAt", files.count, commit.shortID)) {
                         session.openDiffTool(for: commit, files: compared)
@@ -224,7 +227,7 @@ struct ChangesetFileMenu: View {
         let path = file.path
 
         return [
-            copy,
+            copyActions(session: session, paths: paths),
             [
                 FileViewAction(
                     title: AppLocalization.text("fileHistory.showAt", path, commit.shortID),

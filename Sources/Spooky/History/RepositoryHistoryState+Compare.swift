@@ -25,6 +25,27 @@ struct HistoryBaseComparison: Equatable {
         guard case .conflicts(let paths) = comparison?.merge else { return [] }
         return paths
     }
+
+    /// 基准有新提交、且并入分支时没有冲突。
+    var integratesCleanly: Bool {
+        guard let comparison, comparison.divergence.behind > 0 else {
+            return false
+        }
+
+        switch comparison.merge {
+        case .clean, .unchanged: return true
+        case .conflicts, .unavailable: return false
+        }
+    }
+
+    /// 落后徽标的悬停提示：分支落后基准多少个提交，按单复数取文案。
+    ///
+    /// - Parameter behind: 落后的提交数。
+    func behindHelp(_ behind: Int) -> String {
+        behind == 1
+            ? AppLocalization.text("history.behindBase.one", branch.name, base.name)
+            : AppLocalization.text("history.behindBase", branch.name, behind, base.name)
+    }
 }
 
 // MARK: - Compare Branches

@@ -111,8 +111,9 @@ extension GeneralSettingsView {
     private var historyRows: some View {
         SettingsRow(AppLocalization.text("history.pageSize")) {
             Picker("", selection: $historyPageSize) {
+                // 条数不带千位分隔
                 ForEach([100, 200, 500, 1000], id: \.self) {
-                    Text(AppLocalization.text("history.commitCount", $0)).tag($0)
+                    Text(String(format: AppLocalization.format("history.commitCount"), $0)).tag($0)
                 }
             }
             .labelsHidden()
