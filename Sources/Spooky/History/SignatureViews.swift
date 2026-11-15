@@ -111,9 +111,9 @@ struct SignaturePopover: View {
     /// 校验结果；正在校验时为空。
     let signature: CommitSignature?
 
-    /// 三种视图按签名内容选择。
+    /// 三种视图按签名内容选择，校验结果到达之前是空的。
     ///
-    /// 弹窗只在内容报出固定的理想尺寸时跟着内容变大小；去掉 `fixedSize()`，弹窗停在打开时转圈的大小，结果被截成 “…”。
+    /// 弹窗只在内容报出固定的理想尺寸时跟着内容变大小；去掉 `fixedSize()`，弹窗停在打开时的大小，结果被截成 “…”。
     var body: some View {
         Group {
             if let signature, signature.status != .unsigned {
@@ -122,10 +122,7 @@ struct SignaturePopover: View {
                 } else {
                     details(signature, keyLabel: "signature.signingKey", labelAlignment: .trailing)
                 }
-            } else if signature == nil {
-                ProgressView()
-                    .controlSize(.small)
-            } else {
+            } else if signature != nil {
                 Text(AppLocalization.text("signature.unsigned"))
                     .font(.system(size: 13))
             }
@@ -235,7 +232,7 @@ struct TagSignaturePopover: View {
     /// 标签的完整引用名。
     let reference: String
 
-    /// 校验用的执行器；没有仓库时一直显示校验中。
+    /// 校验用的执行器；没有仓库时弹窗一直是空的。
     let runner: GitRunner?
 
     /// 校验结果；正在校验时为空。

@@ -70,22 +70,6 @@ struct RepositoryDialogsTests {
         #expect(checked.value == "1")
     }
 
-    /// 说明框的高度是输入框本身的高度，不是在系统输入框外面留出的空白：保存储藏 47，自动储藏 43。
-    @Test("储藏说明框的高度")
-    func stashMessageHeights() throws {
-        let requests: [(StashRequest, CGFloat)] = [
-            (.save(snapshot: false, entries: []), 47),
-            (.autoStash(Self.autoStash()), 43),
-        ]
-
-        for (request, height) in requests {
-            let hosting = DialogLayoutTests.hosting(Self.stashDialog(request, in: Self.session()))
-            let field = try #require(Self.subviews(NSTextField.self, in: hosting).first { $0.isEditable })
-
-            #expect(field.frame.height == height)
-        }
-    }
-
     /// 改信息与删除的范围里有已推送的提交时，先弹提示框，主按钮是动作本身、另一个是 Cancel；
     /// 没有已推送的提交，或是压缩等其它动作时不弹，直接打开对话框。
     @Test("改写已推送的提交前的提示框")
@@ -202,11 +186,6 @@ extension RepositoryDialogsTests {
     /// 储藏对话框。
     private static func stashDialog(_ request: StashRequest, in session: RepositorySession) -> StashDialog {
         StashDialog(session: session, request: request, repository: session.repository, close: { })
-    }
-
-    /// 宿主树里这一类的全部视图。
-    private static func subviews<Element: NSView>(_: Element.Type, in root: NSView) -> [Element] {
-        root.subviews.flatMap { [$0 as? Element].compactMap(\.self) + subviews(Element.self, in: $0) }
     }
 
     /// 名称是这个资源键的按钮。

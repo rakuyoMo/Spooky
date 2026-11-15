@@ -631,7 +631,6 @@
 "stash.basedOn" = "ベース";
 "stash.empty" = "スタッシュはありません";
 "stash.noMatches" = "一致するスタッシュはありません";
-"stash.loading" = "スタッシュを読み込み中…";
 "stash.noSelection" = "スタッシュが選択されていません";
 "stash.multiple" = "%ld 個のスタッシュを選択中";
 "stash.stashFile" = "「%@」をスタッシュ…";
@@ -772,7 +771,6 @@
 "blame.date" = "日付";
 "blame.subject" = "件名";
 "blame.show" = "「%@」の Blame を表示";
-"blame.loading" = "Blame を読み込み中…";
 "blame.untracked" = "追加済みまたは未追跡のファイルは Blame できません";
 "blame.binary" = "バイナリファイルは Blame できません";
 "blame.submodule" = "サブモジュールは Blame できません";
@@ -781,7 +779,6 @@
 "showFile.raw" = "原文";
 "showFile.revision" = "リビジョン";
 "showFile.file" = "ファイル";
-"showFile.loading" = "ファイルを読み込み中…";
 "showFile.untracked" = "追加済みまたは未追跡のファイルは表示できません";
 "showFile.binary" = "バイナリファイルは表示できません";
 "showFile.submodule" = "サブモジュールは表示できません";
@@ -1970,7 +1967,6 @@
 "bookmarks.detail.remotes" = "リモート";
 "bookmarks.detail.viewInBrowser" = "ブラウザで表示";
 "bookmarks.detail.missing" = "リポジトリが存在しません。";
-"bookmarks.detail.loading" = "読み込み中…";
 "bookmarks.detail.neverOpened" = "なし";
 "bookmarks.detail.noCommits" = "コミットはまだありません";
 "bookmarks.detail.noIdentity" = "未設定";

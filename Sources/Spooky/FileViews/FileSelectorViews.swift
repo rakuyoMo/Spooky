@@ -38,10 +38,6 @@ struct FileSelectorView: View {
     @State
     private var highlighted: String?
 
-    /// 是否正在读取。
-    @State
-    private var isLoading = true
-
     /// 读取失败的诊断。
     @State
     private var failure: AppFailure?
@@ -102,12 +98,6 @@ struct FileSelectorView: View {
                     }
                 }
             }
-            .overlay {
-                if isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-            }
         }
     }
 
@@ -166,8 +156,6 @@ struct FileSelectorView: View {
     /// 读取版本中的全部文件；子模块不是可查看的文件，不列出。
     private func load() async {
         failure = nil
-        isLoading = true
-        defer { isLoading = false }
 
         guard let runner = session.runner, let revision = revision ?? session.status?.branch.oid else {
             paths = []

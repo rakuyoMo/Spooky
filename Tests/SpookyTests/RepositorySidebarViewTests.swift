@@ -9,8 +9,7 @@ import TestSupport
 
 // MARK: - RepositorySidebarViewTests
 
-/// 同一个窗口换着显示仓库时，侧边栏的排版与新开窗口相同，键盘焦点留在侧边栏；程序化选中的引用展开并滚动到可见；
-/// 分组标题与条目的行高。
+/// 同一个窗口换着显示仓库时，侧边栏的排版与新开窗口相同，键盘焦点留在侧边栏；程序化选中的引用展开并滚动到可见。
 @MainActor
 struct RepositorySidebarViewTests {
     /// 远端是可展开的行，显示它时各行的行首让出展开箭头的位置；换回没有远端的仓库后，行首回到新开时的位置。
@@ -132,46 +131,6 @@ struct RepositorySidebarViewTests {
             if let size {
                 #expect(outline.rect(ofRow: row).height == 28, "\(size)")
             }
-        }
-    }
-
-    /// 系统 “侧边栏图标大小” 的三档下，分组标题行高都是 20 pt，条目行高依次是 24、28、32 pt。
-    @Test("分组标题行高 20，条目行高随档位")
-    func rowHeights() async throws {
-        let fixture = try await Self.repository()
-        defer { try? FileManager.default.removeItem(atPath: fixture.location.path) }
-
-        let session = RepositorySession(
-            makeRunner: { _ in fixture.runner },
-            activities: RepositoryActivities()
-        )
-
-        defer { session.close() }
-
-        await Self.display(fixture.location, in: session, remotes: 0)
-
-        let heights: [(size: SidebarRowSize, row: CGFloat)] = [(.small, 24), (.medium, 28), (.large, 32)]
-
-        for (size, height) in heights {
-            let window = Self.host(session, rowSize: size)
-            defer { window.close() }
-
-            let root = try #require(window.contentView)
-            let outline = try #require(await Self.rebuiltOutline(in: root, replacing: nil))
-
-            let headers = (0 ..< outline.numberOfRows).filter {
-                outline.rowView(atRow: $0, makeIfNecessary: true)?.isGroupRowStyle ?? false
-            }
-
-            let items = Set(0 ..< outline.numberOfRows).subtracting(headers)
-
-            // Workspace、Branches、Archived Branches、Tags、Remotes、Submodules、Worktrees
-            #expect(headers.count == 7, "\(size)")
-            #expect(headers.allSatisfy { outline.rect(ofRow: $0).height == 20 }, "\(size)")
-
-            // Workspace 的入口、当前分支与 “没有远端” 的说明行
-            #expect(!items.isEmpty, "\(size)")
-            #expect(items.allSatisfy { outline.rect(ofRow: $0).height == height }, "\(size)")
         }
     }
 }

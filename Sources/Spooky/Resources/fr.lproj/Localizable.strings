@@ -631,7 +631,6 @@
 "stash.basedOn" = "Basé sur";
 "stash.empty" = "Aucun remisage";
 "stash.noMatches" = "Aucun remisage correspondant";
-"stash.loading" = "Chargement des remisages…";
 "stash.noSelection" = "Aucun remisage sélectionné";
 "stash.multiple" = "%ld remisages sélectionnés";
 "stash.stashFile" = "Remiser « %@ »…";
@@ -772,7 +771,6 @@
 "blame.date" = "Date";
 "blame.subject" = "Objet";
 "blame.show" = "Afficher le blame de « %@ »";
-"blame.loading" = "Chargement du blame…";
 "blame.untracked" = "Impossible d’utiliser blame sur un fichier ajouté ou non suivi";
 "blame.binary" = "Impossible d’utiliser blame sur un fichier binaire";
 "blame.submodule" = "Impossible d’utiliser blame sur un sous-module";
@@ -781,7 +779,6 @@
 "showFile.raw" = "Brut";
 "showFile.revision" = "Révision";
 "showFile.file" = "Fichier";
-"showFile.loading" = "Chargement du fichier…";
 "showFile.untracked" = "Impossible d’afficher un fichier ajouté ou non suivi";
 "showFile.binary" = "Impossible d’afficher un fichier binaire";
 "showFile.submodule" = "Impossible d’afficher un sous-module";
@@ -1970,7 +1967,6 @@
 "bookmarks.detail.remotes" = "Remotes";
 "bookmarks.detail.viewInBrowser" = "Afficher dans le navigateur";
 "bookmarks.detail.missing" = "Le dépôt n’existe pas.";
-"bookmarks.detail.loading" = "Chargement…";
 "bookmarks.detail.neverOpened" = "Jamais";
 "bookmarks.detail.noCommits" = "Aucun commit pour l’instant";
 "bookmarks.detail.noIdentity" = "Non défini";

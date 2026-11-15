@@ -22,7 +22,7 @@ struct HistoryRefBadges: View {
     /// 校验标签签名用的执行器。
     let runner: GitRunner?
 
-    /// 一行标记的最大宽度：提交行 300 pt，详情头部的 Refs 行 100 pt。
+    /// 一行标记的最大宽度：提交行 300 pt；详情头部的 Refs 行不设上限，按可用宽度排。
     var maxWidth = Self.defaultMaxWidth
 
     /// 标记的个数，HEAD 也算一个。

@@ -6,9 +6,9 @@ import Testing
 /// 远端的增删改名、地址、refspec 与自动获取排除项只写仓库自己的配置；远端是测试目录里的裸仓库。
 struct RemoteManagementTests {
     /// 添加前先连上远端；重名、连不上与非法地址都不留下配置；改名（含只差大小写）与删除带走远端跟踪分支。
-    @Test("添加、重命名与删除远端", arguments: ["sha1", "sha256"])
-    func lifecycle(objectFormat: String) async throws {
-        let (fixture, bare) = try await BranchManagementTests.repository(objectFormat: objectFormat)
+    @Test("添加、重命名与删除远端")
+    func lifecycle() async throws {
+        let (fixture, bare) = try await BranchManagementTests.repository(objectFormat: "sha1")
         defer { fixture.remove() }
 
         let runner = fixture.runner

@@ -393,7 +393,7 @@ struct FileHistoryDetailView: View {
         .modifier(FileActionHeader(actions: actions(commit), hovering: $hovering))
     }
 
-    /// 补丁、原文、不能显示的说明或读取状态。
+    /// 补丁、原文或不能显示的说明；读出之前留空。
     @ViewBuilder
     private func content(_ commit: HistoryCommit) -> some View {
         if let failure = state.detailFailure {
@@ -414,10 +414,7 @@ struct FileHistoryDetailView: View {
         } else if state.detailMode == .raw, let content = state.content {
             raw(content, commit: commit)
         } else {
-            let key = state.detailMode == .diff ? "working.loadingDiff" : "showFile.loading"
-
-            ProgressView(AppLocalization.text(key))
-                .controlSize(.small)
+            Color.clear
         }
     }
 

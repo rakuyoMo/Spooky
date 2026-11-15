@@ -51,7 +51,7 @@ struct ReflogListView: View {
 // MARK: - Layout
 
 extension ReflogListView {
-    /// “Ref:” 与引用弹出按钮，读取中显示转圈。
+    /// “Ref:” 与引用弹出按钮。
     private var header: some View {
         HStack(spacing: 2) {
             Text(AppLocalization.text("reflog.ref"))
@@ -64,12 +64,6 @@ extension ReflogListView {
                 .fixedSize()
 
             Spacer(minLength: 4)
-
-            if session.reflog.isLoading {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel(AppLocalization.text("reflog.loading"))
-            }
         }
         .font(.system(size: 13))
         .padding(.horizontal, 12)

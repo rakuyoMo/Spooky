@@ -9,7 +9,7 @@ struct WorktreeDetailView: View {
     /// 所在窗口的会话。
     let session: RepositorySession
 
-    /// 头部固定 52 pt，内容区可滚动。
+    /// 头部固定 52 pt，内容区可滚动；列表读出之前内容区留空。
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -33,8 +33,7 @@ struct WorktreeDetailView: View {
                     symbol: "rectangle.on.rectangle"
                 )
             } else {
-                ProgressView()
-                    .frame(maxHeight: .infinity)
+                Color.clear
             }
         }
         .frame(minWidth: 480, minHeight: 300)

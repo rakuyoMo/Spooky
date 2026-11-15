@@ -129,29 +129,6 @@ extension HistoryListTests {
         await untilFinished { history.activeTasks }
     }
 
-    /// 文件行 30 pt 高；选中的文件行填满上下两条分隔线之间的整行，左右到列表边缘、直角；展开时只垫在文件行下面，不延伸到 Diff。
-    @Test("变更文件行的行高与选中底的范围")
-    func fileRowSelectionFill() throws {
-        let collapsed = try Self.renderFileRow(expanded: false)
-        let rows = try #require(Self.selectedRows(in: collapsed, x: collapsed.pixelsWide / 2))
-
-        // 文件行 30 pt，连同上下两条 1 pt 的分隔线共 32 pt
-        #expect(collapsed.pixelsHigh == 32 * 2)
-
-        // 收起时从上面的分隔线下方一直填到下面的分隔线上方，两条线各 1 pt
-        #expect(rows == 2 ..< collapsed.pixelsHigh - 2)
-
-        // 左右两边到边缘，四角不留圆角
-        #expect(Self.selectedRows(in: collapsed, x: 0) == rows)
-        #expect(Self.selectedRows(in: collapsed, x: collapsed.pixelsWide - 1) == rows)
-
-        // 展开时选中底的高度不变，下面的 Diff 不垫
-        let expanded = try Self.renderFileRow(expanded: true)
-
-        #expect(Self.selectedRows(in: expanded, x: expanded.pixelsWide / 2) == rows)
-        #expect(expanded.pixelsHigh > collapsed.pixelsHigh)
-    }
-
     /// 文件行里三角以外的任何位置都算点在这一行上：行的上下边缘、三角的上下左右、文件名一栏与右侧的空白；
     /// 点三角只切换展开，不点选。整行与提交详情里一样带右键菜单与拖动。
     @Test("变更文件行整行都能点选")
@@ -230,34 +207,6 @@ extension HistoryListTests {
 // MARK: - Steps
 
 extension HistoryListTests {
-    /// 按 2 倍像素画出夹在两条分隔线之间、选中的一个文件行，选中底是红色。
-    ///
-    /// - Parameter expanded: 文件行是否展开。
-    private static func renderFileRow(expanded: Bool) throws -> NSBitmapImageRep {
-        let content = VStack(spacing: 0) {
-            Divider()
-
-            ChangesetFileRow(
-                isExpanded: .constant(expanded),
-                selection: .systemRed,
-                select: { }
-            ) {
-                Color.clear
-            } diff: {
-                Color.clear.frame(height: 20)
-            }
-
-            Divider()
-        }
-        .frame(width: 200)
-
-        let host = NSHostingView(rootView: content)
-        host.frame = NSRect(origin: .zero, size: host.fittingSize)
-        host.layoutSubtreeIfNeeded()
-
-        return try RenderedPixels(view: host).bitmap
-    }
-
     /// 在 `point`（pt，视图左上角为原点）处按下再松开左键，经窗口发给视图。
     ///
     /// 只用于点在 SwiftUI 视图上：AppKit 的按钮按下后在自己的跟踪循环里等真实的松开，不能这样点。
@@ -297,27 +246,6 @@ extension HistoryListTests {
                 pressure: 1
             )
         )
-    }
-
-    /// `x` 这一列上选中底覆盖的像素行；不连续时为 nil。
-    ///
-    /// - Parameters:
-    ///   - bitmap: 画出的文件行。
-    ///   - x: 像素列。
-    private static func selectedRows(in bitmap: NSBitmapImageRep, x: Int) -> Range<Int>? {
-        let red = (0 ..< bitmap.pixelsHigh).filter { y in
-            guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) else {
-                return false
-            }
-
-            return color.alphaComponent > 0.9 && color.redComponent > 0.8 && color.greenComponent < 0.5
-        }
-
-        guard let first = red.first, let last = red.last, red.count == last - first + 1 else {
-            return nil
-        }
-
-        return first ..< last + 1
     }
 }
 

@@ -13,7 +13,7 @@ import UniformTypeIdentifiers
 /// 透明、色调样式下系统按样式处理包内图标，运行时设置的图标会被原样画出，所以服务器幽灵交还默认图标，
 /// 其它组用系统已按样式处理过的壳 App 图标、指示灯不亮。
 /// ⌘Tab 与访达只认包里的图标，其它组要写成自定义图标、服务器幽灵清掉；写入在后台按顺序进行，主线程不等，
-/// 写不进去时偏好保持原来的组。
+/// 写不进去时偏好保持原来的组。关于窗口显示控制器记下的图标，换组后不用重新打开就跟着换。
 @MainActor
 struct AppIconControllerTests {
     /// 测试里临时 App 包的 Bundle ID，与 Spooky 自身的不同。
@@ -41,7 +41,10 @@ struct AppIconControllerTests {
             )
         )
 
-        for entry in Self.cases {
+        // 合成的一版要在主线程上画整张图，实际写入的数据只取第一组合成的核对
+        let composedIndex = Self.cases.firstIndex { $0.customIcon != nil && !$0.bundled }
+
+        for (index, entry) in Self.cases.enumerated() {
             let appearance = try #require(NSAppearance(named: entry.appearance))
             let label = "\(entry.group) \(entry.iconTheme ?? "nil") \(entry.appearance.rawValue)"
 
@@ -70,6 +73,10 @@ struct AppIconControllerTests {
             #expect(variant(true) == entry.lit, "\(label)")
             #expect(customIcon == entry.customIcon, "\(label)")
             #expect(writesBundled == entry.bundled, "\(label)")
+
+            guard entry.customIcon == nil || entry.bundled || index == composedIndex else {
+                continue
+            }
 
             // 实际写入的数据：服务器幽灵清掉；其它组写原图时与默认图标的文件逐字节相同，否则是合成的一版
             let iconData = try controller.customIconData(
@@ -212,6 +219,7 @@ struct AppIconControllerTests {
     /// 写入在后台排队，系统询问权限这类写入卡住的情形下主线程照常往下走；
     /// 写入按排队的顺序完成，Reset 之前发出、之后才写完的换组不把组存回偏好；
     /// 几次请求先后排队时，等全部写完、包上有没有自定义图标与之前不同时才重启一次 Dock。
+    /// 关于窗口的图标随换组更新，交还包里的默认图标时是系统给出的包图标。
     @Test("自定义图标在后台按顺序写入，主线程不等；Reset 之前发出的换组不覆盖 Reset 的结果")
     func writesInBackgroundInOrder() async throws {
         let directory = Self.makeDirectory()
@@ -220,8 +228,18 @@ struct AppIconControllerTests {
 
         let defaults = MemoryDefaults()
         let app = try Self.makeApp(in: directory)
+        let resources = app.appending(path: "Contents/Resources", directoryHint: .isDirectory)
 
         try Self.addMidnightIcons(to: app)
+
+        // 包里有默认图标的资源时，交还默认图标才取系统给出的包图标
+        try FileManager.default.copyItem(
+            at: resources.appending(path: AppIconGroup.midnight.iconName(for: .standard) + ".icns"),
+            to: resources.appending(path: AppIconGroup.serverGhost.iconName(for: .standard) + ".icns")
+        )
+
+        // 取系统给出的包图标时，LaunchServices 登记了这个临时 App；删掉文件后登记还在，要另外注销
+        defer { Self.unregister(app) }
 
         defaults.set(AppIconGroup.midnight.rawValue, forKey: AppIconGroup.key)
         try await AppIconController.setCustomIcon(Self.sampleIcon(), ofApp: app)
@@ -235,6 +253,12 @@ struct AppIconControllerTests {
             bundle: #require(Bundle(url: app)),
             restartDock: { dockRestarts += 1 }
         )
+
+        // 订阅图标变化的是关于窗口的内容控制器；关于窗口由窗口持有它，这里留到测试结束
+        let about = AboutViewController(appIconController: controller)
+        let icon = try #require(about.view.subviews.lazy.compactMap { $0 as? NSImageView }.first)
+
+        defer { withExtendedLifetime(about) { } }
 
         // 拦住写入队列，像系统询问权限时那样让写入一直等着
         let gate = DispatchSemaphore(value: 0)
@@ -275,6 +299,11 @@ struct AppIconControllerTests {
         #expect(controller.group == .serverGhost)
         #expect(dockRestarts == 1)
 
+        // 关于窗口显示系统给出的包图标
+        await until { icon.image === controller.applicationIcon }
+
+        let defaultIcon = try #require(icon.image)
+
         // 换到午夜又换回服务器幽灵，两次都在主线程让出之前排进队列：包上最后与之前相同，不重启
         let toMidnight = Task.immediate {
             try await controller.select(.midnight)
@@ -305,6 +334,18 @@ struct AppIconControllerTests {
         #expect(controller.group == .midnight)
         #expect(Self.hasCustomIcon(app))
         #expect(dockRestarts == 2)
+
+        // 关于窗口不用重新打开就换成午夜的一版，换回服务器幽灵时又换成系统给出的包图标
+        await until { icon.image === controller.applicationIcon }
+
+        let midnightIcon = icon.image
+
+        #expect(midnightIcon !== defaultIcon)
+
+        try await controller.select(.serverGhost)
+        await until { icon.image === controller.applicationIcon }
+
+        #expect(icon.image !== midnightIcon)
     }
 
     /// 启动时包上原本没有自定义图标、这次写了进去（如更新后第一次启动），固定在 Dock 里的格子显示的组不对，重启 Dock；
@@ -552,11 +593,15 @@ extension AppIconControllerTests {
 
         return app
     }
+}
 
+// MARK: - Private
+
+extension AppIconControllerTests {
     /// 给临时 App 放上午夜组的四张 icns 图标，并用指向不存在位置的符号链接代替壳 App：控制器取到通用的系统图标，
     /// 合成得出午夜的自定义图标，LaunchServices 也不登记它；同名的普通文件或目录会被当作 App 登记。
     /// - Parameter app: App 包的位置
-    static func addMidnightIcons(to app: URL) throws {
+    private static func addMidnightIcons(to app: URL) throws {
         let resources = app.appending(path: "Contents/Resources", directoryHint: .isDirectory)
         let icon = try #require(sampleIcon())
 
@@ -581,11 +626,7 @@ extension AppIconControllerTests {
             withDestinationURL: resources.appending(path: "missing", directoryHint: .notDirectory)
         )
     }
-}
 
-// MARK: - Private
-
-extension AppIconControllerTests {
     /// 一张 32 × 32 纯色小图的 icns 数据，与包里的图标资源同一格式；也直接写成自定义图标。
     private static func sampleIcon() -> Data? {
         let data = NSMutableData()
@@ -632,6 +673,24 @@ extension AppIconControllerTests {
                 continuation.resume()
             }
         }
+    }
+
+    /// 把临时 App 从 LaunchServices 注销；不等注销结束，注销不成功只是多留一条登记。
+    /// - Parameter app: 临时 App 包的位置，文件还在
+    private static func unregister(_ app: URL) {
+        // LaunchServices 按解析过符号链接的路径登记，如 `/private/var/folders/…`；传 `/var/folders/…` 注销不掉
+        let path = (try? app.resourceValues(forKeys: [.canonicalPathKey]).canonicalPath) ?? app.path
+
+        let process = Process()
+
+        process.executableURL = URL(
+            filePath: "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+        )
+        process.arguments = ["-u", path]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+
+        try? process.run()
     }
 
     /// 改 App 包根目录的权限，用来模拟只读的位置。

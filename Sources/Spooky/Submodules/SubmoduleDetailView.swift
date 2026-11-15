@@ -25,7 +25,7 @@ struct SubmoduleDetailView: View {
     @State
     private var page = Page.general
 
-    /// 头部固定 52 pt，内容区可滚动。
+    /// 头部固定 52 pt，内容区可滚动；列表读出之前内容区留空。
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -45,8 +45,7 @@ struct SubmoduleDetailView: View {
                     symbol: "shippingbox"
                 )
             } else {
-                ProgressView()
-                    .frame(maxHeight: .infinity)
+                Color.clear
             }
         }
         .frame(minWidth: 480, minHeight: 300)

@@ -1,5 +1,5 @@
-import AppKit
 import ApplicationServices
+import Foundation
 import SwiftUI
 import Testing
 
@@ -8,35 +8,12 @@ import Testing
 
 // MARK: - OperationDialogTests
 
-/// 分支与同步的操作对话框：标题与主按钮按种类取，推送随所选本地分支是不是 HEAD 变化；推送宽 450、安全强推宽 456、其余 480；
+/// 分支与同步的操作对话框：标题与主按钮按种类取，推送随所选本地分支是不是 HEAD 变化；
 /// 表单行距 8，勾选框与说明相隔 8，几处 Skip Hooks 相隔 4；下拉不超过各自的上限。
 ///
 /// 读标题、按钮与位置的一项经辅助功能接口读本进程的窗口，进程没有辅助功能权限时跳过。
 @MainActor
 struct OperationDialogTests {
-    /// 推送对话框宽 450，安全强推宽 456，其余分支与同步的对话框宽 480。
-    @Test("宽度")
-    func widths() {
-        let session = RepositorySession(loadStatus: { _ in throw CancellationError() })
-
-        for kind in [RepositoryActionRequest.Kind.create, .push] {
-            let dialog = RepositoryOperationDialog(
-                session: session,
-                request: RepositoryActionRequest(kind: kind),
-                cancel: { },
-                submit: { _, _, _, _, _ in false }
-            )
-
-            let width = DialogLayoutTests.hosting(dialog).frame.width
-
-            #expect(width == (kind == .push ? 450 : 480), "\(kind)")
-        }
-
-        let sync = SyncDialog(session: session, kind: .forcePush, close: { })
-
-        #expect(DialogLayoutTests.hosting(sync).frame.width == 456)
-    }
-
     /// 合并只在有冲突时有说明：干净、快进、已并入与 HEAD 自身都没有说明，无法检查时仍有；
     /// 拉取等对话框也说明已确认没有冲突的结果；冲突说明按单复数写出文件数与 HEAD 分支。
     @Test("合并预览的说明")

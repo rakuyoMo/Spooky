@@ -46,7 +46,7 @@ struct StashDetailView: View {
 // MARK: - Layout
 
 extension StashDetailView {
-    /// 单选的详情：储藏提交与变更文件读出后显示头部与内容，此前是读取进度或可重试的失败。
+    /// 单选的详情：储藏提交与变更文件读出后显示头部与内容，读取失败时是可重试的失败，读出之前留空。
     @ViewBuilder
     private func detail(_ stash: StashEntry) -> some View {
         let stashes = session.stashes
@@ -71,9 +71,7 @@ extension StashDetailView {
                 .padding(20)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
-            ProgressView()
-                .controlSize(.small)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Color.clear
         }
     }
 
