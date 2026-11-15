@@ -47,7 +47,7 @@ extension PromptDialogTests {
         #expect(abs(cancel.frame.minX - DialogMetrics.alignment) <= 1)
         #expect(abs(box.frame.minX - DialogMetrics.alignment) <= 2)
         #expect(cancel.frame.maxX < other.frame.minX)
-        #expect(abs(submit.frame.minX - other.frame.maxX - 8) <= 1)
+        #expect(abs(submit.frame.minX - other.frame.maxX - 12) <= 1)
         #expect(abs(480 - submit.frame.maxX - 20) <= 1)
         #expect(alternate == [true])
 

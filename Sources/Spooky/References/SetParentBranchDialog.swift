@@ -31,12 +31,15 @@ struct SetParentBranchDialog: View {
     private var error = ""
 
     /// 宽 486 pt；“Parent:” 下拉宽不超过 350，下面一行说明父分支的用途，与下拉左对齐。
+    ///
+    /// 标签距内容区顶边 20，下拉与标签的基线对齐，顶边离内容区顶边 16。
     var body: some View {
         RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("branch.parent.set"),
             message: message,
             width: 486,
+            formInsets: (16, 20),
             submitTitle: AppLocalization.text("branch.parent.set"),
             error: error,
             isValid: !parent.isEmpty && parent != currentParent,
@@ -52,15 +55,10 @@ struct SetParentBranchDialog: View {
                 .frame(maxWidth: 350, alignment: .leading)
             }
 
-            GridRow {
-                Color.clear
-                    .frame(width: DialogMetrics.labelWidth, height: 0)
-                    .gridCellUnsizedAxes(.vertical)
-
+            DialogFormField {
                 Text(AppLocalization.text("branch.parent.help"))
                     .font(.system(size: 11))
                     .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .task { await load() }

@@ -54,12 +54,13 @@ struct PickRevisionsDialog: View {
     @AppStorage("cherryPickFastForward")
     private var fastForward = false
 
-    /// 内容区是直接提交的选项，选项区是主线与快进；读取提交时底栏左侧写出进度。
+    /// 内容区是直接提交的选项，上下各留 8；选项区是主线与快进；读取提交时底栏左侧写出进度。
     var body: some View {
         RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(titleKey),
             message: help,
+            formInsets: (8, 8),
             submitTitle: AppLocalization.text(
                 kind == .revert ? "rewrite.revert.button" : "rewrite.cherryPick.button"
             ),

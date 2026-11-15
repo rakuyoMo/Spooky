@@ -7,8 +7,8 @@ enum DialogMetrics {
     /// 距对话框左缘 120 pt 的对齐线：内容区没有输入列时，头部与错误文字对齐它。
     static let alignment: CGFloat = 120
 
-    /// 距对话框左缘 145 pt 的输入列：表单标签都不长时输入框从这里开始。
-    static let inputColumn: CGFloat = 145
+    /// 距对话框左缘 116 pt 的输入列：多数表单的标签都不长，输入框从这里开始；标签列更宽的对话框经 `DialogLayout` 另定。
+    static let inputColumn: CGFloat = 116
 
     /// 头部图标与文字的间距。
     static let iconSpacing: CGFloat = 16
@@ -16,8 +16,10 @@ enum DialogMetrics {
     /// 对话框骨架的坐标空间，`dialogInputColumn()` 在其中量出输入列的位置。
     static let coordinateSpace = "DialogLayout"
 
-    /// 表单标签列的最小宽度：表单左边距 20 pt，右对齐的标签与输入框相隔 8 pt，输入框正好从 `inputColumn` 开始。
-    static let labelWidth: CGFloat = inputColumn - 20 - 8
+    /// 输入框从这个位置开始时标签列的宽度：表单左边距 20 pt，右对齐的标签与输入框相隔 8 pt。
+    static func labelWidth(for inputColumn: CGFloat) -> CGFloat {
+        inputColumn - 20 - 8
+    }
 
     /// 头部文字与错误文字的左缘：内容区的输入列，没有输入列时是 `alignment`；不小于图标距左 32 时文字的位置。
     static func textLeading(for inputColumn: CGFloat?) -> CGFloat {
@@ -27,34 +29,35 @@ enum DialogMetrics {
 
 // MARK: - DialogForm
 
-/// 对话框的表单区：一组 `DialogFormRow`、`DialogFormOption` 与 `DialogFormField`，行距 8，左右各留 20 pt、顶上留 12 pt，
-/// 底下留 `dialogFormBottomInset`。
+/// 对话框的表单区：一组 `DialogFormRow`、`DialogFormOption` 与 `DialogFormField`，行距 8，左右各留 20 pt，上下默认各留 20 pt；
+/// 没有行时整个表单区不占位置。
 ///
 /// 容器值 `isDialogFormStatus` 标出的状态行排在网格之后，不占网格的行距：
 /// 没有内容时整行不占高度，表单的底边就是最后一个控件下方的边距。
 struct DialogForm<Rows: View>: View {
+    /// 第一行上方与最后一行下方的边距：多数表单上下各 20 pt，版式不同的对话框另定。
+    var insets: (top: CGFloat, bottom: CGFloat) = (20, 20)
+
     /// 表单的行。
     @ViewBuilder
     let rows: () -> Rows
 
-    /// 表单底下的边距，由外层的对话框骨架按下一段决定。
-    @Environment(\.dialogFormBottomInset)
-    private var bottomInset
-
     /// 标签列右对齐、输入列左对齐的网格，状态行接在网格下方。
     var body: some View {
         Group(subviews: rows()) { subviews in
-            VStack(alignment: .leading, spacing: 0) {
-                Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 8) {
-                    ForEach(subviews.filter { !$0.containerValues.isDialogFormStatus }) { $0 }
-                }
+            if !subviews.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 8) {
+                        ForEach(subviews.filter { !$0.containerValues.isDialogFormStatus }) { $0 }
+                    }
 
-                ForEach(subviews.filter(\.containerValues.isDialogFormStatus)) { $0 }
+                    ForEach(subviews.filter(\.containerValues.isDialogFormStatus)) { $0 }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, insets.top)
+                .padding(.bottom, insets.bottom)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 12)
-        .padding(.bottom, bottomInset)
     }
 }
 
@@ -62,7 +65,7 @@ struct DialogForm<Rows: View>: View {
 
 /// 表单的一行：右对齐的标签与它右侧的输入控件。
 ///
-/// 标签列至少宽到让输入列从 `DialogMetrics.inputColumn` 开始，标签长时输入列随之右移，并报给外层的对话框骨架。
+/// 标签列至少宽到让输入列从外层对话框骨架给的位置开始，标签长时输入列随之右移，并报给外层的对话框骨架。
 /// 标签在辅助功能里是控件的标题，VoiceOver 读控件时读出标签；控件是只读的文字时，标签与文字本身都读得出，
 /// 一组控件时各自保留自己的名称。
 struct DialogFormRow<Field: View>: View {
@@ -80,11 +83,15 @@ struct DialogFormRow<Field: View>: View {
     @Namespace
     private var accessibility
 
-    /// 标签列至少宽到 `DialogMetrics.labelWidth`。
+    /// 外层对话框骨架给的输入列起点，决定标签列的最小宽度。
+    @Environment(\.dialogMinimumInputColumn)
+    private var minimumInputColumn
+
+    /// 标签列至少宽到让输入列从 `minimumInputColumn` 开始。
     var body: some View {
         GridRow(alignment: alignment) {
             Text(label)
-                .frame(minWidth: DialogMetrics.labelWidth, alignment: .trailing)
+                .frame(minWidth: DialogMetrics.labelWidth(for: minimumInputColumn), alignment: .trailing)
                 .gridColumnAlignment(.trailing)
                 .accessibilityLabeledPair(role: .label, id: 0, in: accessibility)
 
@@ -147,11 +154,15 @@ struct DialogFormField<Content: View>: View {
     @ViewBuilder
     let content: () -> Content
 
+    /// 外层对话框骨架给的输入列起点，决定标签列留空的宽度。
+    @Environment(\.dialogMinimumInputColumn)
+    private var minimumInputColumn
+
     /// 标签列放一个只占宽度的空白，内容报为输入列。
     var body: some View {
         GridRow {
             Color.clear
-                .frame(width: DialogMetrics.labelWidth, height: 0)
+                .frame(width: DialogMetrics.labelWidth(for: minimumInputColumn), height: 0)
                 .gridCellUnsizedAxes(.vertical)
 
             content()
@@ -210,9 +221,9 @@ extension EnvironmentValues {
     @Entry
     var dialogInputColumn = DialogMetrics.alignment
 
-    /// 表单底下的边距：内容区下面紧跟 Options 开关时是 8，其余是 12。
+    /// 表单输入列的起点：标签都不长时输入框从这里开始，由外层的对话框骨架给出。
     @Entry
-    var dialogFormBottomInset: CGFloat = 12
+    var dialogMinimumInputColumn = DialogMetrics.inputColumn
 }
 
 // MARK: - ContainerValues + DialogFormStatus

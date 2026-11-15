@@ -49,6 +49,7 @@ struct RenameReferenceDialog: View {
             session: session,
             title: AppLocalization.text(keys.title),
             message: AppLocalization.text(keys.message, originalName),
+            inputColumn: inputColumn,
             submitTitle: AppLocalization.text("reference.rename"),
             error: error,
             isValid: isValid,
@@ -85,6 +86,14 @@ extension RenameReferenceDialog {
 
         case .remote:
             ("remote.rename", "remote.rename.message")
+        }
+    }
+
+    /// 输入列的起点：分支的输入框从 146 开始，远端的从 132 开始。
+    private var inputColumn: CGFloat {
+        switch target {
+        case .branch: 146
+        case .remote: 132
         }
     }
 

@@ -142,12 +142,17 @@ struct RepositoryOperationDialog: View {
     private var pullVerify = false
 
     /// 对话框骨架：头部、表单、错误区、Options 与底栏；跟踪远端分支没有选项区。
+    ///
+    /// 拉取的标签列宽一些，输入列从 128 开始。
+    /// 新建分支的选项区以父分支的下拉开头：标签距选项区顶边 20，下拉与标签的基线对齐，顶边离选项区顶边 16。
     var body: some View {
         RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(request.kind.titleKey(pushesHead: pushesHead)),
             message: message,
             width: request.kind == .push ? 450 : 480,
+            inputColumn: request.kind == .pull ? 128 : DialogMetrics.inputColumn,
+            optionsInsets: request.kind == .create ? (16, 20) : (20, 20),
             submitTitle: AppLocalization.text(request.kind.submitKey(pushesHead: pushesHead)),
             error: Self.emptyState(for: request, in: session) ?? error,
             isValid: canSubmit,
@@ -338,15 +343,10 @@ extension RepositoryOperationDialog {
             .disabled(parentCandidate == nil)
         }
 
-        GridRow {
-            Color.clear
-                .frame(width: DialogMetrics.labelWidth, height: 0)
-                .gridCellUnsizedAxes(.vertical)
-
+        DialogFormField {
             Text(AppLocalization.text("branch.parentOption.help"))
                 .font(.system(size: 11))
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

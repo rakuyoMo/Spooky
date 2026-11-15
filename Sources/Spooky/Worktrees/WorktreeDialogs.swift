@@ -42,6 +42,7 @@ struct AddWorktreeDialog: View {
             session: session,
             title: AppLocalization.text("worktree.add"),
             message: AppLocalization.text("worktree.add.message"),
+            width: 486,
             submitTitle: AppLocalization.text("worktree.add.submit"),
             error: error,
             isValid: !revision.isEmpty && destination.hasPrefix("/") && error.isEmpty,
@@ -331,12 +332,13 @@ struct RemoveWorktreeDialog: View {
     @State
     private var force = false
 
-    /// 说明与强制删除的勾选项。
+    /// 说明与强制删除的勾选项；勾选项紧贴头部，下方留 20。
     var body: some View {
         RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text("worktree.remove"),
             message: AppLocalization.text("worktree.remove.message", worktree.name),
+            formInsets: (0, 20),
             submitTitle: AppLocalization.text("worktree.remove.submit"),
             error: "",
             isValid: true,

@@ -49,12 +49,13 @@ struct DeleteReferencesDialog: View {
     @State
     private var remote = ""
 
-    /// 确认说明与按对象出现的勾选项。
+    /// 确认说明与按对象出现的勾选项；勾选项紧贴头部，下方留 20。
     var body: some View {
         RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(keys.title),
             message: message,
+            formInsets: (0, 20),
             submitTitle: AppLocalization.text(keys.submit),
             error: "",
             isValid: true,

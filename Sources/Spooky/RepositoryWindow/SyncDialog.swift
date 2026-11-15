@@ -116,11 +116,15 @@ struct SyncDialog: View {
     var pushSubmoduleMode = SubmodulePushMode.onDemand.rawValue
 
     /// 对话框骨架：头部、表单、错误区、Options 与底栏。
+    ///
+    /// 安全强推宽 456，两个下拉正好 320；同步的标签列宽一些，输入列从 128 开始。
     var body: some View {
         RepositoryDialogLayout(
             session: session,
             title: AppLocalization.text(kind.titleKey),
             message: help,
+            width: kind == .forcePush ? 456 : 480,
+            inputColumn: kind == .sync ? 128 : DialogMetrics.inputColumn,
             submitTitle: AppLocalization.text(kind.submitKey),
             error: error,
             isValid: canSubmit,

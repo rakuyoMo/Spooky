@@ -59,6 +59,7 @@ struct RemoteValueDialog: View {
             session: session,
             title: AppLocalization.text(keys.title),
             message: AppLocalization.text(keys.message, remote),
+            inputColumn: isURL ? 146 : DialogMetrics.inputColumn,
             submitTitle: AppLocalization.text(keys.submit),
             error: error,
             progress: running ? AppLocalization.text("remote.checking") : nil,

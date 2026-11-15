@@ -8,13 +8,13 @@ import Testing
 
 // MARK: - OperationDialogTests
 
-/// 分支与同步的操作对话框：标题与主按钮按种类取，推送随所选本地分支是不是 HEAD 变化；推送宽 450、其余 480；
+/// 分支与同步的操作对话框：标题与主按钮按种类取，推送随所选本地分支是不是 HEAD 变化；推送宽 450、安全强推宽 456、其余 480；
 /// 表单行距 8，勾选框与说明相隔 8，几处 Skip Hooks 相隔 4；下拉不超过各自的上限。
 ///
 /// 读标题、按钮与位置的一项经辅助功能接口读本进程的窗口，进程没有辅助功能权限时跳过。
 @MainActor
 struct OperationDialogTests {
-    /// 推送对话框宽 450，其余分支与同步的对话框宽 480。
+    /// 推送对话框宽 450，安全强推宽 456，其余分支与同步的对话框宽 480。
     @Test("宽度")
     func widths() {
         let session = RepositorySession(loadStatus: { _ in throw CancellationError() })
@@ -34,7 +34,7 @@ struct OperationDialogTests {
 
         let sync = SyncDialog(session: session, kind: .forcePush, close: { })
 
-        #expect(DialogLayoutTests.hosting(sync).frame.width == 480)
+        #expect(DialogLayoutTests.hosting(sync).frame.width == 456)
     }
 
     /// 合并只在有冲突时有说明：干净、快进、已并入与 HEAD 自身都没有说明，无法检查时仍有；
@@ -182,7 +182,7 @@ extension OperationDialogTests {
         try expectPopUps(in: pull, atMost: 360)
     }
 
-    /// 同步的标题与主按钮是 Sync HEAD，Skip Hooks 与说明相隔 4；安全强推的输入列从 145 起、比 320 的上限窄，两个下拉占满输入列。
+    /// 同步的标题与主按钮是 Sync HEAD，Skip Hooks 与说明相隔 4；安全强推宽 456，两个下拉占满输入列，正好是 320 的上限。
     private static func expectSyncDialogs(in session: RepositorySession) async throws {
         let sync = await AccessibilityProbe.elements(
             pressing: [AppLocalization.text("dialog.options")],
@@ -205,11 +205,8 @@ extension OperationDialogTests {
 
         try #require(popUps.count == 2)
 
-        // 480 宽的对话框里，输入列右侧留 20 pt
-        let columnWidth = 480 - DialogMetrics.inputColumn - 20
-
         for popUp in popUps {
-            #expect(abs(popUp.frame.width - columnWidth) <= 1)
+            #expect(abs(popUp.frame.width - 320) <= 1)
         }
     }
 
