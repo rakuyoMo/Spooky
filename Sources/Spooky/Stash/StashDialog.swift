@@ -70,7 +70,7 @@ extension StashDialog {
     private var form: some View {
         switch request {
         case .save(_, let entries):
-            messageRow(placeholder: "stash.messagePlaceholder", height: 47)
+            messageRow(placeholder: "stash.messagePlaceholder", height: 45, spacing: entries.isEmpty ? -1 : 0)
 
             // 部分储藏总是带上所选的未跟踪文件，不显示这个选项
             if entries.isEmpty {
@@ -90,10 +90,10 @@ extension StashDialog {
         }
     }
 
-    /// 表单第一行上方与最后一行下方的边距：储藏全部改动与快照上下各 12，应用储藏上 16、下 20，其余上下各 20。
+    /// 表单第一行上方与最后一行下方的边距：储藏全部改动与快照上 12、下 11，应用储藏上 16、下 20，其余上下各 20。
     private var formInsets: (top: CGFloat, bottom: CGFloat) {
         switch request {
-        case .save(_, let entries): entries.isEmpty ? (12, 12) : (20, 20)
+        case .save(_, let entries): entries.isEmpty ? (12, 11) : (20, 20)
         case .apply: (16, 20)
         case .autoStash: (20, 20)
         }
@@ -138,8 +138,19 @@ extension StashDialog {
         return AppLocalization.text("stash.noStashes")
     }
 
-    /// 填满输入列、按词折行的说明框；输入框本身高 47 pt（保存与快照）或 43 pt（自动储藏）。
-    private func messageRow(placeholder: String, height: CGFloat, disabled: Bool = false) -> some View {
+    /// 填满输入列、按词折行的说明框；输入框本身高 45 pt（保存与快照）或 43 pt（自动储藏）。
+    ///
+    /// - Parameters:
+    ///   - placeholder: 占位文字的资源键。
+    ///   - height: 输入框本身的高度。
+    ///   - spacing: 在表单行距之外与下一行多留的间距；储藏全部改动与快照是 −1，与勾选框相隔 7。
+    ///   - disabled: 说明是否不可编辑。
+    private func messageRow(
+        placeholder: String,
+        height: CGFloat,
+        spacing: CGFloat = 0,
+        disabled: Bool = false
+    ) -> some View {
         DialogFormRow(label: AppLocalization.text("stash.message")) {
             BezelTextField(
                 text: $message,
@@ -149,6 +160,7 @@ extension StashDialog {
                 placeholder: AppLocalization.text(placeholder)
             )
             .disabled(disabled)
+            .padding(.bottom, spacing)
         }
     }
 }

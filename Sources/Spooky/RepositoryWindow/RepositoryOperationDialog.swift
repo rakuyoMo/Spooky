@@ -143,7 +143,7 @@ struct RepositoryOperationDialog: View {
 
     /// 对话框骨架：头部、表单、错误区、Options 与底栏；跟踪远端分支没有选项区。
     ///
-    /// 拉取的标签列宽一些，输入列从 128 开始。
+    /// Push HEAD 的 Destination 下方只留 17 pt。
     /// 新建分支的选项区以父分支的下拉开头：标签距选项区顶边 20，下拉与标签的基线对齐，顶边离选项区顶边 16。
     var body: some View {
         RepositoryDialogLayout(
@@ -151,7 +151,8 @@ struct RepositoryOperationDialog: View {
             title: AppLocalization.text(request.kind.titleKey(pushesHead: pushesHead)),
             message: message,
             width: request.kind == .push ? 450 : 480,
-            inputColumn: request.kind == .pull ? 128 : DialogMetrics.inputColumn,
+            inputColumn: inputColumn,
+            formInsets: usesDestination ? (20, 17) : (20, 20),
             optionsInsets: request.kind == .create ? (16, 20) : (20, 20),
             submitTitle: AppLocalization.text(request.kind.submitKey(pushesHead: pushesHead)),
             error: Self.emptyState(for: request, in: session) ?? error,
@@ -266,6 +267,15 @@ struct RepositoryOperationDialog: View {
 // MARK: - Layout
 
 extension RepositoryOperationDialog {
+    /// 表单输入列的起点：拉取的标签列宽一些，从 128 开始；新建分支从 117.5 开始；其余从 116 开始。
+    private var inputColumn: CGFloat {
+        switch request.kind {
+        case .pull: 128
+        case .create: 117.5
+        default: DialogMetrics.inputColumn
+        }
+    }
+
     /// 内容区输入控件的宽度上限：拉取与合并 360，新建分支与发布 350，推送 320；跟踪与获取占满输入列。
     private var fieldWidth: CGFloat {
         switch request.kind {
@@ -439,6 +449,8 @@ extension RepositoryOperationDialog {
     }
 
     /// 名称字段：新建与跟踪是新本地分支的名称，推送与发布是远端分支名；输入时的规范化见 ``normalizedName(_:for:cleaning:)``。
+    ///
+    /// 发布时下方的跟踪选项离输入框 7 pt。
     private var nameRow: some View {
         let label = [.create, .track].contains(request.kind) ? "reference.name" : "branch.name"
 
@@ -446,10 +458,13 @@ extension RepositoryOperationDialog {
             TextField("", text: $name)
                 .accessibilityIdentifier("branch-name")
                 .dialogFieldWidth(fieldWidth)
+                .padding(.bottom, request.kind == .publish ? -1 : 0)
         }
     }
 
     /// 远端从配置快照中选择，不在 UI 接受未经验证的 URL；获取全部远端时不可用。
+    ///
+    /// 获取的下拉排在 20 pt 高的位置里，24 pt 的边框上下各伸出 2 pt。
     private var remotePicker: some View {
         RepositoryDialogRows.row(AppLocalization.text("sync.remote")) {
             Picker("", selection: $remote) {
@@ -457,6 +472,7 @@ extension RepositoryOperationDialog {
             }
             .labelsHidden()
             .buttonSizing(.flexible)
+            .frame(height: request.kind == .fetch ? 20 : nil)
             .dialogFieldWidth(fieldWidth)
             .disabled(request.kind == .fetch && allRemotes)
         }

@@ -50,7 +50,7 @@ struct GitErrorDialog: View {
 
 // MARK: - GitErrorText
 
-/// Git 原文：可以滚动与选中的等宽 11 pt 次要色文字，底色是控件背景色；外面一圈 1 pt 的边框由调用方画。
+/// Git 原文：可以滚动与选中的次要色文字，用用户的默认等宽字体、11 pt；底色是控件背景色；外面一圈 1 pt 的边框由调用方画。
 private struct GitErrorText: NSViewRepresentable {
     /// 原文。
     let text: String
@@ -68,7 +68,7 @@ private struct GitErrorText: NSViewRepresentable {
         textView.isEditable = false
         textView.isSelectable = true
         textView.isRichText = false
-        textView.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
+        textView.font = .userFixedPitchFont(ofSize: 11) ?? .monospacedSystemFont(ofSize: 11, weight: .regular)
         textView.textColor = .secondaryLabelColor
         textView.backgroundColor = .controlBackgroundColor
 
