@@ -26,19 +26,13 @@ struct StashListView: View {
 // MARK: - Layout
 
 extension StashListView {
-    /// 标题与读取中的转圈。
+    /// 标题。
     private var header: some View {
         HStack(spacing: 8) {
             Text(AppLocalization.text("stash.title"))
                 .lineLimit(1)
 
             Spacer(minLength: 4)
-
-            if session.stashes.isLoading {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel(AppLocalization.text("stash.loading"))
-            }
         }
         .font(.system(size: 13))
         .foregroundStyle(.secondary)
@@ -47,7 +41,7 @@ extension StashListView {
         .background(.bar)
     }
 
-    /// 读取失败、首次读取、没有储藏、搜索无结果与列表各有明确状态。
+    /// 读取失败、没有储藏、搜索无结果与列表各有明确状态；第一次读取完成前留空。
     @ViewBuilder
     private var content: some View {
         let stashes = session.stashes
@@ -61,9 +55,7 @@ extension StashListView {
                 .padding(12)
             }
         } else if !stashes.isLoaded {
-            ProgressView(AppLocalization.text("stash.loading"))
-                .controlSize(.small)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Color.clear
         } else if stashes.entries.isEmpty {
             EmptyStateView(title: AppLocalization.text("stash.empty"), message: "", symbol: "tray")
         } else if visible.isEmpty {

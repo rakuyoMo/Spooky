@@ -10,7 +10,7 @@ struct PullRequestDetailView: View {
     /// 所在窗口的会话。
     let session: RepositorySession
 
-    /// 没有选中时是空状态，否则是头部、内容与底栏。
+    /// 没有选中时是空状态，读出详情之前留空，否则是头部、内容与底栏。
     var body: some View {
         Group {
             if let request = state.detail {
@@ -31,8 +31,7 @@ struct PullRequestDetailView: View {
                     .padding(20)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else if state.isLoadingDetail {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Color.clear
             } else {
                 EmptyStateView(
                     title: session.pullRequestText("noSelection"),
@@ -58,11 +57,6 @@ extension PullRequestDetailView {
                 .font(.system(size: 13))
                 .foregroundStyle(.primary)
                 .textSelection(.enabled)
-
-            if state.isLoadingDetail {
-                ProgressView()
-                    .controlSize(.small)
-            }
 
             Spacer(minLength: 8)
 

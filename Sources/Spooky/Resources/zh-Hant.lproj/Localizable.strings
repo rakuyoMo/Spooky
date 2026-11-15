@@ -631,7 +631,6 @@
 "stash.basedOn" = "基於";
 "stash.empty" = "沒有儲藏";
 "stash.noMatches" = "沒有符合的儲藏";
-"stash.loading" = "正在讀取儲藏…";
 "stash.noSelection" = "未選取儲藏";
 "stash.multiple" = "已選取 %ld 個儲藏";
 "stash.stashFile" = "儲藏 “%@”…";
@@ -772,7 +771,6 @@
 "blame.date" = "日期";
 "blame.subject" = "標題";
 "blame.show" = "顯示 “%@” 的 Blame";
-"blame.loading" = "正在載入 Blame…";
 "blame.untracked" = "無法 Blame 新增或未追蹤的檔案";
 "blame.binary" = "無法 Blame 二進位檔案";
 "blame.submodule" = "無法 Blame 子模組類型的檔案";
@@ -781,7 +779,6 @@
 "showFile.raw" = "原文";
 "showFile.revision" = "版本";
 "showFile.file" = "檔案";
-"showFile.loading" = "正在載入檔案…";
 "showFile.untracked" = "無法顯示新增或未追蹤的檔案";
 "showFile.binary" = "無法顯示二進位檔案";
 "showFile.submodule" = "無法顯示子模組類型的檔案";
@@ -1970,7 +1967,6 @@
 "bookmarks.detail.remotes" = "遠端";
 "bookmarks.detail.viewInBrowser" = "在瀏覽器中檢視";
 "bookmarks.detail.missing" = "倉庫不存在。";
-"bookmarks.detail.loading" = "正在讀取…";
 "bookmarks.detail.neverOpened" = "從未";
 "bookmarks.detail.noCommits" = "還沒有提交";
 "bookmarks.detail.noIdentity" = "未設定";

@@ -631,7 +631,6 @@
 "stash.basedOn" = "기준";
 "stash.empty" = "스태시 없음";
 "stash.noMatches" = "일치하는 스태시 없음";
-"stash.loading" = "스태시를 불러오는 중…";
 "stash.noSelection" = "선택한 스태시 없음";
 "stash.multiple" = "스태시 %ld개 선택됨";
 "stash.stashFile" = "“%@” 스태시…";
@@ -772,7 +771,6 @@
 "blame.date" = "날짜";
 "blame.subject" = "제목";
 "blame.show" = "“%@” Blame 보기";
-"blame.loading" = "Blame 읽는 중…";
 "blame.untracked" = "추가되었거나 추적되지 않는 파일은 Blame할 수 없습니다";
 "blame.binary" = "바이너리 파일은 Blame할 수 없습니다";
 "blame.submodule" = "서브모듈은 Blame할 수 없습니다";
@@ -781,7 +779,6 @@
 "showFile.raw" = "원문";
 "showFile.revision" = "리비전";
 "showFile.file" = "파일";
-"showFile.loading" = "파일 읽는 중…";
 "showFile.untracked" = "추가되었거나 추적되지 않는 파일은 표시할 수 없습니다";
 "showFile.binary" = "바이너리 파일은 표시할 수 없습니다";
 "showFile.submodule" = "서브모듈은 표시할 수 없습니다";
@@ -1970,7 +1967,6 @@
 "bookmarks.detail.remotes" = "리모트";
 "bookmarks.detail.viewInBrowser" = "브라우저에서 보기";
 "bookmarks.detail.missing" = "저장소가 존재하지 않습니다.";
-"bookmarks.detail.loading" = "불러오는 중…";
 "bookmarks.detail.neverOpened" = "없음";
 "bookmarks.detail.noCommits" = "아직 커밋이 없음";
 "bookmarks.detail.noIdentity" = "설정되지 않음";

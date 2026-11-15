@@ -631,7 +631,6 @@
 "stash.basedOn" = "Basado en";
 "stash.empty" = "No hay stashes";
 "stash.noMatches" = "No hay stashes que coincidan";
-"stash.loading" = "Cargando stashes…";
 "stash.noSelection" = "Ningún stash seleccionado";
 "stash.multiple" = "%ld stashes seleccionados";
 "stash.stashFile" = "Hacer stash de “%@”…";
@@ -772,7 +771,6 @@
 "blame.date" = "Fecha";
 "blame.subject" = "Asunto";
 "blame.show" = "Mostrar blame de “%@”";
-"blame.loading" = "Cargando blame…";
 "blame.untracked" = "No se puede hacer blame de archivos añadidos o sin seguimiento";
 "blame.binary" = "No se puede hacer blame de archivos binarios";
 "blame.submodule" = "No se puede hacer blame de submódulos";
@@ -781,7 +779,6 @@
 "showFile.raw" = "Original";
 "showFile.revision" = "Revisión";
 "showFile.file" = "Archivo";
-"showFile.loading" = "Cargando archivo…";
 "showFile.untracked" = "No se pueden mostrar archivos añadidos o sin seguimiento";
 "showFile.binary" = "No se pueden mostrar archivos binarios";
 "showFile.submodule" = "No se pueden mostrar submódulos";
@@ -1970,7 +1967,6 @@
 "bookmarks.detail.remotes" = "Remotos";
 "bookmarks.detail.viewInBrowser" = "Ver en el navegador";
 "bookmarks.detail.missing" = "El repositorio no existe.";
-"bookmarks.detail.loading" = "Cargando…";
 "bookmarks.detail.neverOpened" = "Nunca";
 "bookmarks.detail.noCommits" = "Todavía no hay commits";
 "bookmarks.detail.noIdentity" = "Sin definir";

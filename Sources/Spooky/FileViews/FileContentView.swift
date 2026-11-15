@@ -163,7 +163,7 @@ struct FileContentView: View {
         ]
     }
 
-    /// 读取完成后才显示的内容：失败、不能显示的说明、原文或逐行追溯。
+    /// 读取完成后才显示的内容：失败、不能显示的说明、原文或逐行追溯；读出之前留空。
     @ViewBuilder
     private var content: some View {
         if let failure = state.failure {
@@ -178,8 +178,7 @@ struct FileContentView: View {
                 text(content)
             }
         } else {
-            ProgressView(AppLocalization.text(state.mode == .blame ? "blame.loading" : "showFile.loading"))
-                .controlSize(.small)
+            Color.clear
         }
     }
 
@@ -195,7 +194,7 @@ struct FileContentView: View {
         }
     }
 
-    /// 原文或逐行追溯的正文；逐行追溯读取完成前显示进度。
+    /// 原文或逐行追溯的正文；逐行追溯读取完成前留空。
     @ViewBuilder
     private func text(_ content: FileRevisionContent) -> some View {
         let theme = TextTheme.current(dark: colorScheme == .dark)
@@ -225,8 +224,7 @@ struct FileContentView: View {
                 openCommit: { session.showCommit(id: $0) }
             )
         } else {
-            ProgressView(AppLocalization.text("blame.loading"))
-                .controlSize(.small)
+            Color.clear
         }
     }
 }

@@ -91,11 +91,8 @@ extension BookmarkRepositoryDetailView {
             FailureDetailsView(failure: failure, retry: manager.reloadDetail)
                 .padding(20)
 
-        case .missing:
+        case .missing, .loading, nil:
             EmptyView()
-
-        case .loading, nil:
-            RemoteSettingRow(label: AppLocalization.text("bookmarks.detail.loading"), value: "")
         }
     }
 

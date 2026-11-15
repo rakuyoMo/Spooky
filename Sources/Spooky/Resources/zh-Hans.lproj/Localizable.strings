@@ -631,7 +631,6 @@
 "stash.basedOn" = "基于";
 "stash.empty" = "没有储藏";
 "stash.noMatches" = "没有匹配的储藏";
-"stash.loading" = "正在读取储藏…";
 "stash.noSelection" = "未选择储藏";
 "stash.multiple" = "已选择 %ld 个储藏";
 "stash.stashFile" = "储藏 “%@”…";
@@ -772,7 +771,6 @@
 "blame.date" = "日期";
 "blame.subject" = "标题";
 "blame.show" = "显示 “%@” 的 Blame";
-"blame.loading" = "正在加载 Blame…";
 "blame.untracked" = "无法 Blame 新增或未跟踪的文件";
 "blame.binary" = "无法 Blame 二进制文件";
 "blame.submodule" = "无法 Blame 子模块类型的文件";
@@ -781,7 +779,6 @@
 "showFile.raw" = "原文";
 "showFile.revision" = "版本";
 "showFile.file" = "文件";
-"showFile.loading" = "正在加载文件…";
 "showFile.untracked" = "无法显示新增或未跟踪的文件";
 "showFile.binary" = "无法显示二进制文件";
 "showFile.submodule" = "无法显示子模块类型的文件";
@@ -1970,7 +1967,6 @@
 "bookmarks.detail.remotes" = "远端";
 "bookmarks.detail.viewInBrowser" = "在浏览器中查看";
 "bookmarks.detail.missing" = "仓库不存在。";
-"bookmarks.detail.loading" = "正在读取…";
 "bookmarks.detail.neverOpened" = "从未";
 "bookmarks.detail.noCommits" = "还没有提交";
 "bookmarks.detail.noIdentity" = "未设置";
