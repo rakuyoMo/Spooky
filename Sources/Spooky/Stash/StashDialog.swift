@@ -128,17 +128,16 @@ extension StashDialog {
         return AppLocalization.text("stash.noStashes")
     }
 
-    /// 填满输入列、两行的说明框；保存与快照的高 47 pt，自动储藏的高 43 pt。
+    /// 填满输入列、按词折行的说明框；输入框本身高 47 pt（保存与快照）或 43 pt（自动储藏）。
     private func messageRow(placeholder: String, height: CGFloat, disabled: Bool = false) -> some View {
         DialogFormRow(label: AppLocalization.text("stash.message")) {
-            TextField(
-                "",
+            BezelTextField(
                 text: $message,
-                prompt: Text(AppLocalization.text(placeholder)),
-                axis: .vertical
+                label: AppLocalization.text("stash.message"),
+                height: height,
+                wraps: true,
+                placeholder: AppLocalization.text(placeholder)
             )
-            .lineLimit(2, reservesSpace: true)
-            .frame(height: height)
             .disabled(disabled)
         }
     }
