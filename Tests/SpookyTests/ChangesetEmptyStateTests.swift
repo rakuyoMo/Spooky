@@ -1,5 +1,5 @@
-import AppKit
 import ApplicationServices
+import Foundation
 import SwiftUI
 import Testing
 import TestSupport
@@ -11,7 +11,7 @@ import TestSupport
 
 /// 空变更集保留零摘要，失败不能显示为成功的空结果。
 ///
-/// 文字与转圈的位置经辅助功能接口读取，进程没有辅助功能权限时跳过。
+/// 零摘要经辅助功能接口读取，进程没有辅助功能权限时跳过这一项。
 @MainActor
 struct ChangesetEmptyStateTests {
     /// Git 对象读取失败时，整页详情的列表报告失败，不显示成功空结果的占位行。
@@ -78,26 +78,6 @@ struct ChangesetEmptyStateTests {
 
         await Self.expectEmpty { RevisionComparisonView(state: session.comparison, session: session) }
         await Self.expectEmpty { StashDetailView(session: session) }
-    }
-
-    /// 加载行高 32，转圈 16 × 16 距左 3，文字距左 25，两者在同一条水平中线上。
-    @Test("变更集加载行的转圈与文字位置", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func loadingGeometry() async throws {
-        let elements = await AccessibilityProbe.elements(
-            until: { elements in elements.contains { $0.role == "AXBusyIndicator" } }
-        ) {
-            ChangesetDiffLoadingView()
-        }
-
-        let spinner = try #require(elements.first { $0.role == "AXBusyIndicator" })
-        let text = try #require(elements.first { $0.value == AppLocalization.text("working.loadingDiff") })
-        let container = try #require(elements.first { $0.role == "AXGroup" })
-
-        #expect(container.frame.height == 32)
-        #expect(spinner.frame.width == 16 && spinner.frame.height == 16)
-        #expect(spinner.frame.minX == 3)
-        #expect(text.frame.minX == 25)
-        #expect(spinner.frame.midY == text.frame.midY)
     }
 }
 

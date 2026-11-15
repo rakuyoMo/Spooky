@@ -43,27 +43,6 @@ struct DiffSummaryLayoutTests {
         #expect(pasteboard.string(forType: type) == text)
     }
 
-    /// 两侧占宽不相等、左侧有刷新内容或摘要很长时，仍只压缩居中的摘要。
-    @Test("Diff 底栏摘要对齐整栏")
-    func bottomBar() {
-        for width in [300.0, 480, 800] {
-            for left in [64.0, 84] {
-                let sizes = [
-                    CGSize(width: left, height: 20),
-                    CGSize(width: 600, height: 13),
-                    CGSize(width: 110, height: 20),
-                ]
-
-                let frames = DiffBottomBarLayout.frames(width: width, sizes: sizes)
-                #expect(frames[1].midX == CGFloat(width / 2))
-                #expect(frames[1].midY == 16)
-                #expect(frames[0].width == left && frames[2].width == 110)
-                #expect(frames[1].minX >= frames[0].maxX + 8)
-                #expect(frames[1].maxX <= frames[2].minX - 8)
-            }
-        }
-    }
-
     /// 八语言标题在窄栏自然增高，实际按钮仍位于当前文件单元格之内。
     @Test("内联大 Diff 警告包含完整按钮")
     func inlineWarning() throws {

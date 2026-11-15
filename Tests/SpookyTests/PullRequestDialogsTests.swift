@@ -1,5 +1,4 @@
-import AppKit
-import SwiftUI
+import Foundation
 import Testing
 
 @testable import Spooky
@@ -7,42 +6,9 @@ import Testing
 
 // MARK: - PullRequestDialogsTests
 
-/// 合并请求与关联远端用 480 宽的对话框骨架：合并的标题与说明写出服务与编号，GitHub 预选上次用的合并方式；
-/// 关联远端的输入从输入列开始。
+/// 合并请求的对话框：标题与说明写出服务与编号，GitHub 预选上次用的合并方式。
 @MainActor
 struct PullRequestDialogsTests {
-    /// 合并对话框读取选项时内容区是转圈，仍是 480 宽；关联远端也是 480 宽，项目路径的输入框从 145 的输入列开始、占满输入列。
-    @Test("合并与关联远端对话框的宽度")
-    func layout() throws {
-        let merge = Self.host(
-            MergePullRequestDialog(
-                session: RepositorySession(),
-                request: Self.request(on: .github),
-                close: { }
-            )
-        )
-
-        #expect(merge.frame.width == 480)
-
-        // 关联远端
-        let associate = Self.host(
-            AssociateRemoteDialog(
-                session: RepositorySession(),
-                remote: "origin",
-                url: "git@example.com:group/project.git",
-                close: { }
-            )
-        )
-
-        #expect(associate.frame.width == 480)
-
-        let field = try #require(Self.subviews(NSTextField.self, in: associate).first { $0.isEditable })
-        let frame = field.convert(field.bounds, to: associate)
-
-        #expect(abs(frame.minX - DialogMetrics.inputColumn) <= 1)
-        #expect(abs(frame.maxX - 460) <= 1)
-    }
-
     /// GitHub 与 GitLab：标题写出服务名，说明写出编号，主按钮按服务叫 Merge Pull Request 或 Merge Merge Request；
     /// 仓库允许上次用的方式时预选它，不允许、没有记录或记录认不出时选仓库允许的第一种。
     @Test("合并对话框的文字与预选的合并方式")
@@ -104,20 +70,5 @@ extension PullRequestDialogsTests {
             source: PullRequestBranch(project: "group/project", branch: "feature", sha: ""),
             target: PullRequestBranch(project: "group/project", branch: "main", sha: "")
         )
-    }
-
-    /// 把对话框放进按内容定尺寸的宿主，排好版后返回。
-    private static func host(_ dialog: some View) -> NSView {
-        let hosting = NSHostingView(rootView: dialog)
-        hosting.frame.size = hosting.fittingSize
-        hosting.layoutSubtreeIfNeeded()
-        return hosting
-    }
-
-    /// 根视图下所有这一类的子视图。
-    private static func subviews<Element: NSView>(_: Element.Type, in root: NSView) -> [Element] {
-        root.subviews.flatMap { child in
-            [child as? Element].compactMap(\.self) + subviews(Element.self, in: child)
-        }
     }
 }

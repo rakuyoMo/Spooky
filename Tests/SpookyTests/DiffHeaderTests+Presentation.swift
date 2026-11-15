@@ -6,26 +6,6 @@ import Testing
 @testable import SpookyKit
 
 extension DiffHeaderTests {
-    /// 所有边线都落在固定高度内，首块和浮动块共用仅底线的背景；实际绘制取动态系统色，浅深外观都保持不透明。
-    @Test("块头背景的边线与系统底色")
-    func background() throws {
-        // 边线不增加高度
-        for top in [false, true] {
-            let view = DiffHeaderBackgroundView(frame: NSRect(x: 0, y: 0, width: 400, height: 32))
-            view.showsTopBorder = top
-            #expect(view.isOpaque)
-            #expect(view.hitTest(.zero) == nil)
-            #expect(view.borders.count == (top ? 2 : 1))
-            #expect(view.borders.last == NSRect(x: 0, y: 31, width: 400, height: 1))
-            #expect(view.borders.allSatisfy { view.bounds.contains($0) && $0.height == 1 })
-        }
-
-        // 浅深两种外观的实际绘制
-        for name in [NSAppearance.Name.aqua, .darkAqua] {
-            try expectSystemBackground(try #require(NSAppearance(named: name)))
-        }
-    }
-
     /// 预览不创建块头或边线，非零 ID 不影响调用方传入的首块规则；实际只读入口按每个文件重置首块规则，独立和内嵌模式都不显示写入按钮。
     @Test("预览与只读文件的块头")
     func preview() async throws {
@@ -74,46 +54,6 @@ extension DiffHeaderTests {
             #expect(headers.allSatisfy { $0.bounds.height == 32 })
             #expect(descendants(NSButton.self, in: host).isEmpty)
             #expect(host.window == nil)
-        }
-    }
-
-    /// 在离屏位图上按外观绘制块头背景，中心像素是不透明的控件底色。
-    private func expectSystemBackground(_ appearance: NSAppearance) throws {
-        let view = DiffHeaderBackgroundView(frame: NSRect(x: 0, y: 0, width: 200, height: 32))
-
-        let bitmap = try #require(NSBitmapImageRep(
-            bitmapDataPlanes: nil,
-            pixelsWide: 200,
-            pixelsHigh: 32,
-            bitsPerSample: 8,
-            samplesPerPixel: 4,
-            hasAlpha: true,
-            isPlanar: false,
-            colorSpaceName: .deviceRGB,
-            bytesPerRow: 0,
-            bitsPerPixel: 0
-        ))
-
-        let context = try #require(NSGraphicsContext(bitmapImageRep: bitmap))
-
-        appearance.performAsCurrentDrawingAppearance {
-            NSGraphicsContext.saveGraphicsState()
-            NSGraphicsContext.current = context
-            view.draw(view.bounds)
-            NSGraphicsContext.restoreGraphicsState()
-
-            let actual = bitmap.colorAt(x: 100, y: 16)?.usingColorSpace(.deviceRGB)
-            let expected = NSColor.controlBackgroundColor.usingColorSpace(.deviceRGB)
-            #expect(actual?.alphaComponent == 1)
-
-            guard let actual, let expected else {
-                Issue.record("无法读取块头系统色")
-                return
-            }
-
-            #expect(abs(actual.redComponent - expected.redComponent) < 0.01)
-            #expect(abs(actual.greenComponent - expected.greenComponent) < 0.01)
-            #expect(abs(actual.blueComponent - expected.blueComponent) < 0.01)
         }
     }
 

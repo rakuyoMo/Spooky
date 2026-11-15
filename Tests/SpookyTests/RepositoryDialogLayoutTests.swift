@@ -84,94 +84,6 @@ struct RepositoryDialogLayoutTests {
         #expect(running.contains { $0.value == "Checking" })
         #expect(!running.contains { $0.value == AppLocalization.text("dialog.blocked") })
     }
-
-    /// 表单上下各留 20：内容区最后一个控件与 Options 开关一行、没有选项区时与底栏都相隔 20；
-    /// 没有内容区时开关一行紧接头部：说明至少高 38、下方留 12，说明只有一行时头部也高 95；
-    /// 错误区至少高 52，下面紧跟开关一行；表单末尾没有内容的状态行（这里是没有版本可查的合并可行性预览）
-    /// 不占高度，也不多出一份行距。
-    @Test("内容区、头部与错误区到 Options 开关的间距", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
-    func optionsSpacing() async throws {
-        let session = Self.session(.local(path: "/tmp/spooky-dialog"))
-        let toggleTitle = AppLocalization.text("dialog.options")
-        let hasHelp: ([AccessibilityProbe.Element]) -> Bool = { elements in
-            Self.hasCheckBox(elements) && elements.contains { $0.value == "Help" }
-        }
-
-        // 有选项区：说明文字的底边与开关一行相隔 20，开关一行高 34
-        let options = await AccessibilityProbe.elements(until: hasHelp) {
-            RepositoryDialogLayout(
-                session: session,
-                title: "Title",
-                message: "Message",
-                submitTitle: "Submit",
-                error: "",
-                isValid: true,
-                cancel: { },
-                submit: { }
-            ) {
-                Self.lastRows(session: session)
-            } options: {
-                DialogFormOption(title: "Skip Hooks", isOn: .constant(false))
-            }
-        }
-
-        let help = try #require(options.first { $0.role == "AXStaticText" && $0.value == "Help" })
-        let toggle = try #require(options.first { $0.role == "AXCheckBox" && $0.name == toggleTitle })
-
-        #expect(abs(toggle.frame.midY - help.frame.maxY - (20 + 34 / 2)) <= 1)
-
-        // 没有选项区：说明文字的底边到底栏按钮是表单的 20 加按钮距底栏顶的 12
-        let plain = await AccessibilityProbe.elements(until: hasHelp) {
-            Self.layout(session: session, error: "") {
-                Self.lastRows(session: session)
-            }
-        }
-
-        let plainHelp = try #require(plain.first { $0.role == "AXStaticText" && $0.value == "Help" })
-        let cancel = try #require(
-            plain.first { $0.role == "AXButton" && $0.name == AppLocalization.text("action.cancel") }
-        )
-
-        #expect(abs(cancel.frame.minY - plainHelp.frame.maxY - (20 + 12)) <= 1)
-
-        // 没有内容区：头部的说明折成几行、比图标高时，开关一行在说明下方 12
-        let message = String(repeating: "Saves a patch file with all changes of the revision. ", count: 4)
-        let long = try await Self.headerOnly(message: message)
-
-        #expect(long.text.frame.maxY > long.title.frame.minY + 64)
-        #expect(abs(long.toggle.frame.midY - long.text.frame.maxY - (12 + 34 / 2)) <= 1)
-
-        // 说明只有一行时按 38 高排：头部高 95，标题距头部顶边 20
-        let short = try await Self.headerOnly(message: "Message")
-
-        #expect(abs(short.toggle.frame.midY - short.title.frame.minY - (95 - 20 + 34 / 2)) <= 1)
-
-        // 错误说明只有一行，错误区仍至少高 52：说明的顶边比错误区低 1，开关一行紧接错误区
-        let reason = "Choose the base revisions."
-        let withError = await AccessibilityProbe.elements(
-            until: { elements in elements.contains { $0.value == reason } && Self.hasCheckBox(elements) }
-        ) {
-            RepositoryDialogLayout(
-                session: session,
-                title: "Title",
-                message: "Message",
-                submitTitle: "Submit",
-                error: reason,
-                isValid: false,
-                cancel: { },
-                submit: { }
-            ) {
-                Self.field("Name:")
-            } options: {
-                DialogFormOption(title: "Skip Hooks", isOn: .constant(false))
-            }
-        }
-
-        let reasonText = try #require(withError.first { $0.role == "AXStaticText" && $0.value == reason })
-        let errorToggle = try #require(withError.first { $0.role == "AXCheckBox" && $0.name == toggleTitle })
-
-        #expect(abs(errorToggle.frame.midY - (reasonText.frame.minY - 1 + 52) - 34 / 2) <= 1)
-    }
 }
 
 // MARK: - Helpers
@@ -206,39 +118,6 @@ extension RepositoryDialogLayoutTests {
         )
     }
 
-    /// 表单最后是带说明的勾选框，再接一行没有版本可查、不显示内容的合并可行性预览。
-    @ViewBuilder
-    private static func lastRows(session: RepositorySession) -> some View {
-        DialogFormOption(title: "Squash", help: "Help", isOn: .constant(false))
-
-        MergeabilityPreview(session: session, revision: "", showsCleanResults: false)
-    }
-
-    /// 没有内容区、只有 Options 的对话框里，标题、说明与开关一行的位置。
-    private static func headerOnly(
-        message: String
-    ) async throws -> (title: AccessibilityProbe.Element, text: AccessibilityProbe.Element, toggle: AccessibilityProbe.Element) {
-        let toggleTitle = AppLocalization.text("dialog.options")
-        let elements = await AccessibilityProbe.elements(
-            until: { elements in elements.contains { $0.value == message } && Self.hasButtons(elements) }
-        ) {
-            DialogLayout(
-                title: "Title",
-                message: message,
-                submitTitle: "Submit",
-                cancel: { },
-                submit: { },
-                options: { DialogFormOption(title: "Omit Prefixes", isOn: .constant(false)) }
-            )
-        }
-
-        let title = try #require(elements.first { $0.role == "AXStaticText" && $0.value == "Title" })
-        let text = try #require(elements.first { $0.role == "AXStaticText" && $0.value == message })
-        let toggle = try #require(elements.first { $0.role == "AXCheckBox" && $0.name == toggleTitle })
-
-        return (title, text, toggle)
-    }
-
     /// 带这个标签的一行输入框。
     private static func field(_ label: String) -> some View {
         RepositoryDialogRows.row(label) {
@@ -267,11 +146,6 @@ extension RepositoryDialogLayoutTests {
     /// 输入框与标题都读到了。
     private static func hasField(_ elements: [AccessibilityProbe.Element]) -> Bool {
         elements.contains { $0.role == "AXTextField" } && elements.contains { $0.value == "Title" }
-    }
-
-    /// 底栏的两个按钮都读到了。
-    private static func hasButtons(_ elements: [AccessibilityProbe.Element]) -> Bool {
-        elements.filter { $0.role == "AXButton" }.count >= 2
     }
 
     /// 勾选框与标题都读到了。

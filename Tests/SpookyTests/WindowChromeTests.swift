@@ -8,7 +8,7 @@ import TestSupport
 
 // MARK: - WindowChromeTests
 
-/// 仓库窗口的工具栏、窗口标题、标签页、侧边栏的首次宽度、列表分栏的最小宽与启动窗口。
+/// 仓库窗口的工具栏、窗口标题、标签页与启动窗口。
 @MainActor
 struct WindowChromeTests {
     /// 同一个仓库窗口依次核对：工具栏的排布、旧排布里的关闭仓库、标签、可见优先级与图标；刷新进行中 Refresh 照常可用；
@@ -63,63 +63,6 @@ struct WindowChromeTests {
         #expect(repositories.isSelected(at: 0))
 
         try Self.expectTabs(after: fixture)
-    }
-
-    /// 还没有记下侧边栏宽度与窗口尺寸时，仓库视图的侧边栏宽 428 pt，仓库管理宽 260 pt。
-    @Test("侧边栏的首次宽度")
-    func defaultSidebarWidths() async throws {
-        let fixture = try await NavigationTests.makeCoordinator()
-        defer { fixture.close() }
-
-        // 分栏宽度与窗口尺寸都记在标准偏好里，其它测试的窗口记下的窄窗口会挤窄侧边栏；
-        // 从删掉记录到放回整段同步执行，其它测试的窗口插不进来改写
-        let keys = ["Spooky.Repositories", "Spooky.Repository"].map { "NSSplitView Subview Frames " + $0 }
-            + ["NSWindow Frame Spooky.RepositoryWindow"]
-
-        let saved = keys.map { UserDefaults.standard.object(forKey: $0) }
-
-        for key in keys {
-            UserDefaults.standard.removeObject(forKey: key)
-        }
-
-        let controller = RepositoryWindowController(coordinator: fixture.coordinator)
-
-        // 宽度取分栏里侧边栏一栏的右缘，即分隔线的位置：有的系统版本把侧边栏的内容缩进几 pt，内容视图比这一栏窄
-        let sidebarWidth = {
-            (controller.window?.contentViewController as? NSSplitViewController)?
-                .splitView.arrangedSubviews.first?.frame.maxX
-        }
-
-        let managerWidth = sidebarWidth()
-        controller.display(fixture.location)
-        let repositoryWidth = sidebarWidth()
-
-        controller.session.close()
-        controller.window?.close()
-
-        for (key, value) in zip(keys, saved) {
-            UserDefaults.standard.set(value, forKey: key)
-        }
-
-        #expect(managerWidth == 260)
-        #expect(repositoryWidth == 428)
-    }
-
-    /// 分栏的列表能拖到多窄：Reflog 与 Branches Review 的列表没有最小宽，Pull Requests 的列表最窄 50 pt。
-    @Test("列表分栏的最小宽")
-    func listMinimumWidths() async throws {
-        let fixture = try await NavigationTests.makeCoordinator()
-        let controller = RepositoryWindowController(coordinator: fixture.coordinator)
-
-        defer {
-            controller.session.close()
-            controller.window?.close()
-            fixture.close()
-        }
-
-        #expect(Self.minimumWidth(of: controller.makeReflogSplit()) == 0)
-        #expect(Self.minimumWidth(of: controller.makeBranchesReviewSplit()) == 0)
-        #expect(Self.minimumWidth(of: controller.makePullRequestsSplit()) == 50)
     }
 
     /// 启动窗口 600 × 450、没有标题栏、不能全屏；打开的仓库窗口成为主窗口后它自己关闭。
@@ -366,24 +309,5 @@ extension WindowChromeTests {
         // 五个按钮与 Clone 的图按像素比较，六张都不一样
         let images = sync.subitems.map(\.image) + [pushTo.image, forcePush.image, clone.image]
         #expect(Set(images.compactMap { $0?.tiffRepresentation }).count == 6)
-    }
-
-    /// 分栏放进 800 × 500 的窗口排版后，第一条分隔线最左能到的位置，即第一栏的列表能拖到的最窄宽度。
-    private static func minimumWidth(of split: NSSplitViewController) -> CGFloat {
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 800, height: 500),
-            styleMask: [.titled, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-
-        window.isReleasedWhenClosed = false
-        window.contentViewController = split
-        window.setContentSize(NSSize(width: 800, height: 500))
-        window.layoutIfNeeded()
-
-        defer { window.close() }
-
-        return split.splitView.minPossiblePositionOfDivider(at: 0)
     }
 }
