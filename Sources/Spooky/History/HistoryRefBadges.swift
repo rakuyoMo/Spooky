@@ -45,18 +45,25 @@ struct HistoryRefBadges: View {
     ///
     /// - Parameter shown: 显示的标记个数，HEAD 也算一个。
     private func row(showing shown: Int) -> some View {
-        HStack(spacing: 4) {
+        let visible = references.prefix(max(0, shown - (isHead ? 1 : 0)))
+
+        // 提交行合成一个读屏元素时，各标签的提示会连读成几遍 Show Signature；只让第一个标签带提示
+        let hintedTag = visible.first { !$0.isLocal && !$0.isRemote && !$0.isStash }?.id
+
+        return HStack(spacing: 4) {
             if isHead, shown > 0 {
                 badge("HEAD", color: "blue")
             }
 
-            ForEach(references.prefix(max(0, shown - (isHead ? 1 : 0)))) { ref in
+            ForEach(visible) { ref in
                 if ref.isLocal || ref.isRemote {
                     badge(ref.name, color: ref.isLocal ? "blue" : "gray")
                 } else if ref.isStash {
                     badge("stash", color: "red")
                 } else {
-                    TagBadgeButton(reference: ref.id, runner: runner) { badge(ref.name, color: "yellow") }
+                    TagBadgeButton(reference: ref.id, runner: runner, showsHint: ref.id == hintedTag) {
+                        badge(ref.name, color: "yellow")
+                    }
                 }
             }
 

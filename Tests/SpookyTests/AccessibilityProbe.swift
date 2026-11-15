@@ -24,6 +24,9 @@ enum AccessibilityProbe {
         /// 自己的名称（`AXDescription`）。
         let name: String
 
+        /// 提示（`AXHelp`），合成的元素里是各个子元素的提示连在一起；没有时为空。
+        let help: String
+
         /// 作为标题的元素的文字（`AXTitleUIElement` 的值）。
         let title: String
 
@@ -147,6 +150,7 @@ extension AccessibilityProbe {
                 subrole: attribute(reference, kAXSubroleAttribute) as? String ?? "",
                 value: text(attribute(reference, kAXValueAttribute)),
                 name: attribute(reference, kAXDescriptionAttribute) as? String ?? "",
+                help: attribute(reference, kAXHelpAttribute) as? String ?? "",
                 title: titleElement.flatMap { attribute($0, kAXValueAttribute) as? String } ?? "",
                 frame: frame(of: reference).offsetBy(dx: -origin.x, dy: -origin.y),
                 isEnabled: attribute(reference, kAXEnabledAttribute) as? Bool ?? true,

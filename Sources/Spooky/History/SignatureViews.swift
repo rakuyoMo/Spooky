@@ -200,6 +200,9 @@ struct TagBadgeButton<Label: View>: View {
     /// 校验用的执行器；没有仓库时点击无效。
     let runner: GitRunner?
 
+    /// 是否带 Show Signature 的操作提示；提交行把整行合成一个读屏元素，同一行只有第一个标签带。
+    let showsHint: Bool
+
     /// 标记本身的外观。
     @ViewBuilder
     let label: () -> Label
@@ -216,7 +219,7 @@ struct TagBadgeButton<Label: View>: View {
             label()
         }
         .buttonStyle(.plain)
-        .accessibilityHint(AppLocalization.text("signature.show"))
+        .accessibilityHint(showsHint ? AppLocalization.text("signature.show") : "")
         .popover(isPresented: $showsPopover, arrowEdge: .top) {
             TagSignaturePopover(reference: reference, runner: runner)
         }
