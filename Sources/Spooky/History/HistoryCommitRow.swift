@@ -135,9 +135,11 @@ extension HistoryCommitRow {
                     .frame(width: 0, height: 0)
             }
 
+            // 日期在标题与引用之后才截短，只有短哈希比它更不让
             date
                 .padding(.leading, 8)
                 .padding(.trailing, 4)
+                .layoutPriority(2)
 
             HStack(spacing: 4) {
                 signatureButton
