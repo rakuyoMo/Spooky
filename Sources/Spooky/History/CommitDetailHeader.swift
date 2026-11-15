@@ -201,7 +201,8 @@ struct CommitMetadataView: View {
             + [("history.signingStatus", status)]
     }
 
-    /// 一行：标签用三级文字色；值用二级文字色，单行、可选中、尾部截断，引用行是最宽 132、高 16 的引用标记。
+    /// 一行：标签用三级文字色；值用二级文字色，单行、可选中、尾部截断；
+    /// 引用行是高 16 的引用标记，按值一列的可用宽度排，放不下时才从第一个放不下的起折成 “…”。
     @ViewBuilder
     private func row(_ row: Row) -> some View {
         switch row {
@@ -225,7 +226,7 @@ struct CommitMetadataView: View {
                     isHead: isHead,
                     selected: false,
                     runner: runner,
-                    maxWidth: 132
+                    maxWidth: .infinity
                 )
                 .frame(height: 16)
             }
