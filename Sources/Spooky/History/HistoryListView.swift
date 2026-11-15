@@ -125,9 +125,9 @@ struct HistoryListView: View {
         .background(.bar)
     }
 
-    /// 所选引用与它的跟踪分支：引用名贴合文字，跟踪名至少 50 pt 宽。
+    /// 所选引用与它的跟踪分支：引用名贴合文字，与分隔图、跟踪名首尾相接，跟踪名至少 50 pt 宽。
     private var referenceTitle: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 0) {
             Text(session.history.title)
                 .lineLimit(1)
 
