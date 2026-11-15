@@ -46,7 +46,7 @@ struct RevisionComparisonView: View {
         }
     }
 
-    /// 顶栏：基准 → 目标、视图切换与关闭按钮；窄时分段控件先收窄到 141 pt，标题再从中间截断。
+    /// 顶栏：基准 → 目标、视图切换与关闭按钮；窄时标题从中间截断，分段控件的占位最窄让到 141 pt，控件本身仍按文字宽度画出。
     private var header: some View {
         HStack(spacing: 8) {
             Text((state.base?.title ?? "") + " → " + (state.target?.title ?? ""))
