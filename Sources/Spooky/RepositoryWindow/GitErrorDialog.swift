@@ -18,7 +18,7 @@ struct GitErrorDialog: View {
     /// 打开仓库失败时重新选择，对话框已经关掉；为 nil 时底栏只有 Close。
     let chooseAnother: (() -> Void)?
 
-    /// 头部、头部与开关之间 8 pt 的内容区、默认展开的原文区与底栏。
+    /// 头部、默认展开的原文区与底栏。
     var body: some View {
         DialogLayout(
             title: failure.title,
@@ -36,10 +36,6 @@ struct GitErrorDialog: View {
             resizable: true,
             cancel: nil,
             submit: close,
-            content: {
-                Color.clear
-                    .frame(height: 8)
-            },
             options: {
                 // 首选高 175：四周各留 20，中间是原文区；1 pt 的边框是露在原文区四周的边框色
                 GitErrorText(text: failure.details)
@@ -59,7 +55,7 @@ private struct GitErrorText: NSViewRepresentable {
     /// 原文。
     let text: String
 
-    /// 只读、可选中的纯文本视图，宽度随滚动区，长行折行。
+    /// 只读、可选中的纯文本视图，宽度随滚动区，长行折行；文字四周离边框 4 pt。
     func makeNSView(context _: Context) -> NSScrollView {
         let scroll = NSTextView.scrollableTextView()
         scroll.borderType = .noBorder
@@ -75,6 +71,11 @@ private struct GitErrorText: NSViewRepresentable {
         textView.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
         textView.textColor = .secondaryLabelColor
         textView.backgroundColor = .controlBackgroundColor
+
+        // 文字到边框的 4 pt 全由文字容器的边距给出，去掉文字容器默认在行首行尾留的空白
+        textView.textContainerInset = NSSize(width: 4, height: 4)
+        textView.textContainer?.lineFragmentPadding = 0
+
         textView.string = text
         textView.setAccessibilityLabel(AppLocalization.text("error.details"))
 

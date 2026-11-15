@@ -34,7 +34,7 @@ struct RepositoryDialogsTests {
         }
     }
 
-    /// 自动储藏的 Abort 在左、左缘对齐输入列；Do Not Stash 与 Stash Changes 在右，相隔 8，Stash Changes 距右 20。
+    /// 自动储藏的 Abort 在左、左缘对齐输入列；Do Not Stash 与 Stash Changes 在右，相隔 12，Stash Changes 距右 20。
     /// 完成后恢复改动没有保存值时不勾，保存过勾选时按保存值。
     @Test("自动储藏的备选底栏与恢复选项的默认值", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func autoStashFooter() async throws {
@@ -56,7 +56,7 @@ struct RepositoryDialogsTests {
         let stash = try Self.button("stash.autoStash.confirm", in: elements)
 
         #expect(abs(abort.frame.minX - field.frame.minX) <= 1)
-        #expect(abs(stash.frame.minX - skipButton.frame.maxX - 8) <= 1)
+        #expect(abs(stash.frame.minX - skipButton.frame.maxX - 12) <= 1)
         #expect(abs(stash.frame.maxX - (480 - 20)) <= 1)
         #expect(abort.frame.maxX < skipButton.frame.minX)
 

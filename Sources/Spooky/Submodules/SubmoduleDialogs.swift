@@ -33,6 +33,7 @@ struct AddSubmoduleDialog: View {
             session: session,
             title: AppLocalization.text("submodule.add.title"),
             message: AppLocalization.text("submodule.add.message"),
+            inputColumn: 144,
             submitTitle: AppLocalization.text("submodule.add.submit"),
             error: error,
             isValid: !url.isEmpty && !trimmedPath.isEmpty && error.isEmpty,
@@ -283,12 +284,13 @@ extension SubmoduleOperationDialog {
         }
     }
 
-    /// 只作用于一个子模块的种类：说明与删除的保留工作区。
+    /// 只作用于一个子模块的种类：说明与删除的保留工作区；勾选项紧贴头部，下方留 20。
     private var singleBody: some View {
         RepositoryDialogLayout(
             session: session,
             title: title,
             message: message,
+            formInsets: (0, 20),
             submitTitle: submitTitle,
             error: "",
             isValid: selected != nil,

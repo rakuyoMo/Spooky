@@ -6,11 +6,11 @@ import Testing
 
 // MARK: - DialogLayoutTests + Footer
 
-/// 头部与底栏：标题只占一行；按钮文字短时正好 70 宽、相隔 8、右边距 20；提交中两个按钮都不可用，进度文字在转圈右侧；
+/// 头部与底栏：标题只占一行；按钮文字短时正好 70 宽、相隔 12、右边距 20；提交中两个按钮都不可用，进度文字在转圈右侧；
 /// 备选底栏的取消对齐输入列；确认版与提示版的结构。
 extension DialogLayoutTests {
     /// 确认版只有标题、说明与两个按钮：超长的标题只占一行、截在右边距 20 之前，说明在它下方 8；
-    /// 取消与主按钮的文字短，两者都正好 70 宽、相隔 8，主按钮距右边 20；平时两个按钮都可用，底栏没有转圈。
+    /// 取消与主按钮的文字短，两者都正好 70 宽、相隔 12，主按钮距右边 20；平时两个按钮都可用，底栏没有转圈。
     /// 提交中两个按钮都不可用，进度文字在转圈右侧 8，两者与按钮在同一条水平中线上。
     @Test("确认版的头部、底栏与提交中的状态", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func confirmation() async throws {
@@ -46,7 +46,7 @@ extension DialogLayoutTests {
     }
 
     /// 按钮组在 480 里放不下时对话框随之加宽：备选底栏的取消仍对齐输入列（没有内容区时是 120），
-    /// 备选按钮与主按钮相隔 8、主按钮距右边 20；提示版只有一个 Close。
+    /// 备选按钮与主按钮相隔 12、主按钮距右边 20；提示版只有一个 Close。
     @Test("备选底栏与提示版", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func alternateAndNotice() async throws {
         let alternateTitle = String(repeating: "Alternate ", count: 8)
@@ -75,7 +75,7 @@ extension DialogLayoutTests {
 
         #expect(width > 480)
         #expect(abs(cancel.frame.minX - DialogMetrics.alignment) <= 1)
-        #expect(abs(submit.frame.minX - alternate.frame.maxX - 8) <= 1)
+        #expect(abs(submit.frame.minX - alternate.frame.maxX - 12) <= 1)
         #expect(abs(width - submit.frame.maxX - 20) <= 1)
 
         // 提示版：没有取消，只有 Close
@@ -116,14 +116,14 @@ extension DialogLayoutTests {
         #expect(abs(message.frame.minY - text.frame.maxY - 8) <= 2)
     }
 
-    /// 取消与主按钮 OK 的文字短，两者都正好 70 宽、相隔 8，主按钮距右边 20，两者同为可用或不可用。
+    /// 取消与主按钮 OK 的文字短，两者都正好 70 宽、相隔 12，主按钮距右边 20，两者同为可用或不可用。
     private static func expectButtons(in elements: [AccessibilityProbe.Element], enabled: Bool) throws {
         let cancel = try #require(button(AppLocalization.text("action.cancel"), in: elements))
         let submit = try #require(button("OK", in: elements))
 
         #expect(abs(cancel.frame.width - 70) <= 0.5)
         #expect(abs(submit.frame.width - 70) <= 0.5)
-        #expect(abs(submit.frame.minX - cancel.frame.maxX - 8) <= 1)
+        #expect(abs(submit.frame.minX - cancel.frame.maxX - 12) <= 1)
         #expect(abs(480 - submit.frame.maxX - 20) <= 1)
         #expect(cancel.isEnabled == enabled)
         #expect(submit.isEnabled == enabled)

@@ -55,7 +55,7 @@ struct RevisionDialog: View {
     @State
     private var isResolving = false
 
-    /// 对话框骨架：导出与比较的内容区是表单，保存补丁没有内容区、只有 Options。
+    /// 对话框骨架：导出与比较的内容区是表单，保存补丁没有内容区、只有 Options；导出的输入框从 146 开始。
     ///
     /// 这几种都只读取仓库，不随仓库是否可写禁用主按钮。
     var body: some View {
@@ -63,6 +63,7 @@ struct RevisionDialog: View {
             title: title,
             message: message,
             repository: session.repository,
+            inputColumn: isExport ? 146 : DialogMetrics.inputColumn,
             submitTitle: AppLocalization.text(submitKey),
             error: error.isEmpty ? nil : error,
             canSubmit: canSubmit,
@@ -93,6 +94,15 @@ extension RevisionDialog {
         return false
     }
 
+    /// 是否为导出。
+    private var isExport: Bool {
+        if case .export = request {
+            return true
+        }
+
+        return false
+    }
+
     /// 导出：版本与是否归档；比较：两个版本。
     @ViewBuilder
     private var form: some View {
@@ -112,12 +122,11 @@ extension RevisionDialog {
         }
     }
 
-    /// 保存补丁的选项区：去掉路径前缀；表单上下各留 20。
+    /// 保存补丁的选项区：去掉路径前缀。
     private var patchOptions: some View {
         DialogForm {
             option("patch.omitPrefixes", value: $omitsPrefixes)
         }
-        .padding(.vertical, 8)
     }
 
     /// 一行填满输入列、可输入的版本组合框，列表是仓库里的引用。

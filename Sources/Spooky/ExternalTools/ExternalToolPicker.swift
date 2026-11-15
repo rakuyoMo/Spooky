@@ -57,13 +57,14 @@ struct ConfigureExternalToolDialog: View {
     @State
     private var selection = ""
 
-    /// 还没有选工具时 Select 不可用。
+    /// 输入框从 146 开始；还没有选工具时 Select 不可用。
     var body: some View {
         DialogLayout(
             title: AppLocalization.text(merge ? "externalTool.configureMerge" : "externalTool.configureDiff"),
             message: AppLocalization.text(
                 merge ? "externalTool.configureMerge.message" : "externalTool.configureDiff.message"
             ),
+            inputColumn: 146,
             submitTitle: AppLocalization.text("externalTool.select"),
             canSubmit: ExternalTool(rawValue: selection) != nil,
             cancel: { finish(nil) },

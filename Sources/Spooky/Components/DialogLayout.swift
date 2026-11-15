@@ -9,9 +9,9 @@ import SwiftUI
 ///
 /// 头部是 64 pt 图标与单行标题、自动折行的说明，服务器仓库在标题下多一行带主机前缀的位置。
 /// 头部文字、错误文字与备选底栏的按钮组对齐内容区的输入列，图标挂在头部文字左侧；输入列由 `DialogFormRow` 报上来，
-/// 标签长时随之右移，内容区没有输入列时对齐 `DialogMetrics.alignment`。
-/// 内容区与选项区的边距由内容自己决定，里面要按输入列定宽或缩进的部分用 `DialogInputColumnReader` 读到它；
-/// 只有 Options 开关上方的间距由骨架定为 20 pt：内容区表单的最后一个控件下方，没有内容区时是头部的说明下方，各对话框不另留。
+/// 默认从 `DialogMetrics.inputColumn` 开始，标签列更宽的对话框另给起点，标签长时随之右移；
+/// 内容区没有输入列时对齐 `DialogMetrics.alignment`。
+/// 内容区与选项区的边距由内容自己决定，表单默认上下各留 20 pt；里面要按输入列定宽或缩进的部分用 `DialogInputColumnReader` 读到它。
 ///
 /// 几种版本由参数组合出来：
 /// - 表单版：内容区是表单
@@ -34,6 +34,9 @@ struct DialogLayout<Content: View, Options: View>: View {
 
     /// 对话框的宽度。
     let width: CGFloat
+
+    /// 表单输入列的起点：标签都不长时输入框从这里开始，内容区与选项区的表单都按它排版。
+    let inputColumn: CGFloat
 
     /// 主按钮的标题。
     let submitTitle: String
@@ -78,9 +81,9 @@ struct DialogLayout<Content: View, Options: View>: View {
     @State
     private var optionsExpanded: Bool
 
-    /// 内容区输入列的左缘；内容区没有输入列时为 nil。
+    /// 内容区报上来的输入列左缘；内容区没有输入列时为 nil。
     @State
-    private var inputColumn: CGFloat?
+    private var reportedInputColumn: CGFloat?
 
     /// 选项区展开时的高度；可以拉大的对话框收起选项区时，窗口减去这个高度。
     @State
@@ -96,23 +99,20 @@ struct DialogLayout<Content: View, Options: View>: View {
     /// 经 `DialogWindow` 呈现时报上理想尺寸，窗口随之同步变化。
     var body: some View {
         DialogStack(width: width, fillsProposedWidth: resizable, fillsProposedHeight: sizing != nil) {
-            // 有 Options 开关时，开关上方那一段留 20 pt：内容区的表单在最后一个控件下方，没有内容区时是头部的说明下方
-            Group(subviews: formattedContent) { contentViews in
-                VStack(alignment: .leading, spacing: 0) {
-                    header(textBottom: contentViews.isEmpty && options != nil ? Self.optionsSpacing : 12)
+            VStack(alignment: .leading, spacing: 0) {
+                header
 
-                    ForEach(contentViews) { $0 }
+                formattedContent
 
-                    if let error {
-                        errorRow(error)
-                            .transition(.opacity)
-                    }
+                if let error {
+                    errorRow(error)
+                        .transition(.opacity)
+                }
 
-                    if let options {
-                        optionsToggle
+                if let options {
+                    optionsToggle
 
-                        optionsArea(options)
-                    }
+                    optionsArea(options)
                 }
             }
             .onGeometryChange(for: CGSize.self) { $0.size } action: { size in
@@ -127,7 +127,8 @@ struct DialogLayout<Content: View, Options: View>: View {
             footer
         }
         .coordinateSpace(.named(DialogMetrics.coordinateSpace))
-        .onPreferenceChange(DialogInputColumnKey.self) { inputColumn = $0 }
+        .environment(\.dialogMinimumInputColumn, inputColumn)
+        .onPreferenceChange(DialogInputColumnKey.self) { reportedInputColumn = $0 }
         .animation(DialogAnimation.current, value: [message, error, progress])
     }
 
@@ -139,6 +140,7 @@ struct DialogLayout<Content: View, Options: View>: View {
     ///   - icon: 头部图标；为 nil 时是应用图标。
     ///   - repository: 对话框所属的仓库。
     ///   - width: 对话框的宽度。
+    ///   - inputColumn: 表单输入列的起点。
     ///   - submitTitle: 主按钮的标题。
     ///   - cancelTitle: 取消按钮的标题。
     ///   - alternate: 备选按钮的标题与动作。
@@ -159,6 +161,7 @@ struct DialogLayout<Content: View, Options: View>: View {
         icon: NSImage? = nil,
         repository: RepositoryLocation? = nil,
         width: CGFloat = 480,
+        inputColumn: CGFloat = DialogMetrics.inputColumn,
         submitTitle: String,
         cancelTitle: String = AppLocalization.text("action.cancel"),
         alternate: (title: String, action: () -> Void)? = nil,
@@ -179,6 +182,7 @@ struct DialogLayout<Content: View, Options: View>: View {
         self.icon = icon
         self.repository = repository
         self.width = width
+        self.inputColumn = inputColumn
         self.submitTitle = submitTitle
         self.cancelTitle = cancelTitle
         self.alternate = alternate
@@ -201,15 +205,14 @@ struct DialogLayout<Content: View, Options: View>: View {
 extension DialogLayout {
     /// 头部文字、错误文字与备选底栏按钮组的左缘。
     private var alignment: CGFloat {
-        DialogMetrics.textLeading(for: inputColumn)
+        DialogMetrics.textLeading(for: reportedInputColumn)
     }
 
-    /// 内容区：13 pt 的字，表单按输入列排版；下面紧跟 Options 开关时表单底下留 20 pt。
+    /// 内容区：13 pt 的字，表单按输入列排版。
     private var formattedContent: some View {
         content()
             .font(.system(size: 13))
             .environment(\.dialogInputColumn, alignment)
-            .environment(\.dialogFormBottomInset, options == nil ? 12 : Self.optionsSpacing)
     }
 
     /// 高 34 的开关行：17 pt 的披露三角距左 20，右侧 4 pt 是文字，点文字也能切换。
@@ -236,7 +239,9 @@ extension DialogLayout {
         )
     }
 
-    /// 左侧是加载中的步骤，右侧是取消与主按钮；给了备选按钮时换成备选底栏。高 53，按钮距顶 12。
+    /// 左侧是加载中的步骤，右侧是取消与主按钮；给了备选按钮时换成备选底栏，取消在左端。高 53，按钮距顶 12。
+    ///
+    /// 主按钮与它左侧的按钮相隔 12，转圈与步骤文字相隔 8。
     private var footer: some View {
         HStack(spacing: 8) {
             if alternate == nil, let progress {
@@ -247,28 +252,27 @@ extension DialogLayout {
                     .font(.system(size: 13))
             }
 
-            if alternate == nil || cancel == nil {
-                Spacer(minLength: 0)
+            // 备选底栏的取消贴按钮组左端，与右侧的两个按钮之间是空白
+            if alternate != nil, let cancel {
+                cancelButton(cancel)
             }
 
-            if let cancel {
-                footerButton(cancelTitle, action: cancel)
-                    .keyboardShortcut(.cancelAction)
-                    .disabled(submitting)
-            }
+            Spacer(minLength: 0)
 
-            if let alternate {
-                if cancel != nil {
-                    Spacer(minLength: 0)
+            HStack(spacing: 12) {
+                if alternate == nil, let cancel {
+                    cancelButton(cancel)
                 }
 
-                footerButton(alternate.title, action: alternate.action)
-                    .disabled(submitting)
-            }
+                if let alternate {
+                    footerButton(alternate.title, action: alternate.action)
+                        .disabled(submitting)
+                }
 
-            footerButton(submitTitle, action: submit)
-                .keyboardShortcut(.defaultAction)
-                .disabled(!canSubmit || submitting)
+                footerButton(submitTitle, action: submit)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!canSubmit || submitting)
+            }
         }
         .padding(.leading, alternate == nil ? 20 : alignment)
         .padding(.trailing, 20)
@@ -296,12 +300,10 @@ extension DialogLayout {
             .shadow(color: .black.opacity(0.25), radius: 4)
     }
 
-    /// 图标距顶 20，右侧 16 pt 是标题、服务器仓库的位置与说明；说明距头部底边 `textBottom`，右边距 20。
+    /// 图标距顶 20，右侧 16 pt 是标题、服务器仓库的位置与说明；说明至少高 38、距头部底边 12，右边距 20。
     ///
-    /// 图标下方不留这段边距，头部至少高 84：距顶 20 加上图标的 64。
-    ///
-    /// - Parameter textBottom: 说明到头部底边的距离：一般是 12，没有内容区、下面紧跟 Options 开关时是 20。
-    private func header(textBottom: CGFloat) -> some View {
+    /// 图标下方不留这段边距；说明不超过两行时头部高 95。
+    private var header: some View {
         HStack(alignment: .top, spacing: DialogMetrics.iconSpacing) {
             Image(nsImage: icon ?? AppIconController.displayedIcon())
                 .resizable()
@@ -325,9 +327,10 @@ extension DialogLayout {
                     .font(.system(size: 13))
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(minHeight: 38, alignment: .topLeading)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, textBottom)
+            .padding(.bottom, 12)
         }
         .padding(.leading, alignment - DialogMetrics.iconSpacing - 64)
         .padding(.trailing, 20)
@@ -336,7 +339,7 @@ extension DialogLayout {
 
     /// 黄色警告图标挂在对齐线左侧 4 pt，原因文字从对齐线开始，右边距 20。
     ///
-    /// 没有 Options 时这一行至少高 51；下面紧跟 Options 开关时与表单一样，这一行下方留 20 pt。
+    /// 文字比图标低 1、至少高 51，这一行至少高 52。
     private func errorRow(_ error: String) -> some View {
         HStack(alignment: .top, spacing: 4) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -351,12 +354,11 @@ extension DialogLayout {
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, minHeight: options == nil ? 51 : nil, alignment: .topLeading)
+                .frame(maxWidth: .infinity, minHeight: 51, alignment: .topLeading)
                 .padding(.top, 1)
         }
         .padding(.leading, alignment - 4 - 18)
         .padding(.trailing, 20)
-        .padding(.bottom, options == nil ? 0 : Self.optionsSpacing)
     }
 
     /// 选项区上下各留 8 pt；展开时整块填次要背景色，上下各一条带阴影的 1 pt 边线。
@@ -376,6 +378,13 @@ extension DialogLayout {
         .padding(.vertical, 8)
     }
 
+    /// 取消按钮：响应 ⎋，提交中不可用。
+    private func cancelButton(_ action: @escaping () -> Void) -> some View {
+        footerButton(cancelTitle, action: action)
+            .keyboardShortcut(.cancelAction)
+            .disabled(submitting)
+    }
+
     /// 最小 70 pt 宽的按钮：文字至少 46 pt，加上按钮左右各 12 pt 的边距正好 70；文字长时随之加宽。
     private func footerButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -392,11 +401,6 @@ extension DialogLayout {
     /// 底栏的高度。
     private static var footerHeight: CGFloat {
         53
-    }
-
-    /// Options 开关上方的间距。
-    private static var optionsSpacing: CGFloat {
-        20
     }
 
     /// 文字里的网址写成可点的链接。

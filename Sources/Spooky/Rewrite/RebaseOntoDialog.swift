@@ -47,6 +47,7 @@ struct RebaseOntoDialog: View {
             session: session,
             title: AppLocalization.text("rewrite.rebaseOnto"),
             message: session.rewriteDialogMessage(help),
+            inputColumn: 144,
             submitTitle: AppLocalization.text("rewrite.rebaseOnto.button"),
             error: scope.error,
             isValid: scope.value(for: bases) != nil,

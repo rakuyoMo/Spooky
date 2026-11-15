@@ -47,6 +47,7 @@ struct StashDialog: View {
             session: session,
             title: AppLocalization.text(titleKey),
             message: AppLocalization.text(titleKey + ".help"),
+            formInsets: formInsets,
             submitTitle: AppLocalization.text(submitKey),
             cancelTitle: AppLocalization.text(skipAction == nil ? "action.cancel" : "stash.autoStash.abort"),
             alternate: skipAction.map { (title: AppLocalization.text("stash.autoStash.skip"), action: $0) },
@@ -86,6 +87,15 @@ extension StashDialog {
             if !pending.keepsStash {
                 DialogFormOption(title: AppLocalization.text("stash.autoStash.reapply"), isOn: $reapply)
             }
+        }
+    }
+
+    /// 表单第一行上方与最后一行下方的边距：储藏全部改动与快照上下各 12，应用储藏上 16、下 20，其余上下各 20。
+    private var formInsets: (top: CGFloat, bottom: CGFloat) {
+        switch request {
+        case .save(_, let entries): entries.isEmpty ? (12, 12) : (20, 20)
+        case .apply: (16, 20)
+        case .autoStash: (20, 20)
         }
     }
 

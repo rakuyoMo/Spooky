@@ -32,6 +32,7 @@ struct ResetDialog: View {
             session: session,
             title: AppLocalization.text("rewrite.reset.title"),
             message: session.rewriteDialogMessage(AppLocalization.text("rewrite.reset.help")),
+            inputColumn: 146,
             submitTitle: AppLocalization.text("rewrite.reset.button"),
             error: leaving.error,
             isValid: leaving.value(for: target) != nil,

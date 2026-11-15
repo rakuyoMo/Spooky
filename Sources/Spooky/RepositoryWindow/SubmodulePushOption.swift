@@ -23,11 +23,7 @@ struct SubmodulePushOption: View {
             isOn: $enabled
         )
 
-        GridRow {
-            Color.clear
-                .frame(width: DialogMetrics.labelWidth, height: 0)
-                .gridCellUnsizedAxes(.vertical)
-
+        DialogFormField {
             Picker("", selection: $mode) {
                 Text(AppLocalization.text("sync.pushSubmodules.onDemand"))
                     .tag(SubmodulePushMode.onDemand.rawValue)

@@ -20,6 +20,15 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
     /// 对话框的宽度。
     let width: CGFloat
 
+    /// 表单输入列的起点：标签都不长时输入框从这里开始。
+    let inputColumn: CGFloat
+
+    /// 内容区表单第一行上方与最后一行下方的边距。
+    let formInsets: (top: CGFloat, bottom: CGFloat)
+
+    /// 选项区表单第一行上方与最后一行下方的边距。
+    let optionsInsets: (top: CGFloat, bottom: CGFloat)
+
     /// 主按钮的标题。
     let submitTitle: String
 
@@ -50,13 +59,14 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
     /// 选项区的表单行；为 nil 时没有 “Options” 开关。
     let options: (() -> Options)?
 
-    /// 主按钮只在内容合法且仓库可写时可用；选项区的表单上下各留 20。
+    /// 主按钮只在内容合法且仓库可写时可用。
     var body: some View {
         DialogLayout(
             title: title,
             message: message,
             repository: session.repository,
             width: width,
+            inputColumn: inputColumn,
             submitTitle: submitTitle,
             cancelTitle: cancelTitle,
             alternate: alternate,
@@ -65,9 +75,9 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
             canSubmit: isValid && session.canWrite,
             cancel: cancel,
             submit: submit,
-            content: { DialogForm(rows: content) },
+            content: { DialogForm(insets: formInsets, rows: content) },
             options: options.map { options in
-                { DialogForm(rows: options).padding(.vertical, 8) }
+                { DialogForm(insets: optionsInsets, rows: options) }
             }
         )
     }
@@ -79,6 +89,9 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
     ///   - title: 标题。
     ///   - message: 标题下方的一句说明。
     ///   - width: 对话框的宽度。
+    ///   - inputColumn: 表单输入列的起点。
+    ///   - formInsets: 内容区表单第一行上方与最后一行下方的边距。
+    ///   - optionsInsets: 选项区表单第一行上方与最后一行下方的边距。
     ///   - submitTitle: 主按钮的标题。
     ///   - cancelTitle: 取消按钮的标题。
     ///   - alternate: 备选按钮的标题与动作；给了时换成备选底栏。
@@ -94,6 +107,9 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
         title: String,
         message: String,
         width: CGFloat = 480,
+        inputColumn: CGFloat = DialogMetrics.inputColumn,
+        formInsets: (top: CGFloat, bottom: CGFloat) = (20, 20),
+        optionsInsets: (top: CGFloat, bottom: CGFloat) = (20, 20),
         submitTitle: String,
         cancelTitle: String = AppLocalization.text("action.cancel"),
         alternate: (title: String, action: () -> Void)? = nil,
@@ -109,6 +125,9 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
         self.title = title
         self.message = message
         self.width = width
+        self.inputColumn = inputColumn
+        self.formInsets = formInsets
+        self.optionsInsets = optionsInsets
         self.submitTitle = submitTitle
         self.cancelTitle = cancelTitle
         self.alternate = alternate
@@ -131,6 +150,8 @@ extension RepositoryDialogLayout {
         title: String,
         message: String,
         width: CGFloat = 480,
+        inputColumn: CGFloat = DialogMetrics.inputColumn,
+        formInsets: (top: CGFloat, bottom: CGFloat) = (20, 20),
         submitTitle: String,
         error: String,
         isValid: Bool,
@@ -144,6 +165,8 @@ extension RepositoryDialogLayout {
             title: title,
             message: message,
             width: width,
+            inputColumn: inputColumn,
+            formInsets: formInsets,
             submitTitle: submitTitle,
             error: error,
             isValid: isValid,
@@ -162,6 +185,8 @@ extension RepositoryDialogLayout where Options == EmptyView {
         title: String,
         message: String,
         width: CGFloat = 480,
+        inputColumn: CGFloat = DialogMetrics.inputColumn,
+        formInsets: (top: CGFloat, bottom: CGFloat) = (20, 20),
         submitTitle: String,
         cancelTitle: String = AppLocalization.text("action.cancel"),
         alternate: (title: String, action: () -> Void)? = nil,
@@ -177,6 +202,8 @@ extension RepositoryDialogLayout where Options == EmptyView {
             title: title,
             message: message,
             width: width,
+            inputColumn: inputColumn,
+            formInsets: formInsets,
             submitTitle: submitTitle,
             cancelTitle: cancelTitle,
             alternate: alternate,

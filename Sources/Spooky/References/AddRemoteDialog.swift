@@ -51,6 +51,7 @@ struct AddRemoteDialog: View {
             session: session,
             title: AppLocalization.text("remote.add"),
             message: AppLocalization.text("remote.add.message"),
+            inputColumn: 146,
             submitTitle: AppLocalization.text("remote.add.submit"),
             error: error,
             progress: running ? AppLocalization.text("remote.checking") : nil,
