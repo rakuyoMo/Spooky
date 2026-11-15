@@ -279,12 +279,6 @@ struct HistoryCommitTable: NSViewRepresentable {
         /// 选中背景与引用徽标保持一致。
         private var selection = Set<String>()
 
-        /// 表格正在显示的范围，即选中的引用；第一次更新之前为 nil。
-        private var displayedScope: Set<String>? = nil
-
-        /// 换范围后等新范围读完要滚到的位置。
-        private var pendingOffset: CGFloat? = nil
-
         /// 列表末尾是否有续页的加载行。
         private(set) var showsLoadingRow = false
 
@@ -313,22 +307,12 @@ struct HistoryCommitTable: NSViewRepresentable {
             let markers = [history.unpushed, history.unpulled, history.parentCommits]
             let loadsMore = history.isLoading && !history.isRefreshingCommits && !history.rows.isEmpty
 
-            // 换了范围：记下离开的范围滚到的位置，新范围读完后滚回它上次的位置，没看过的范围从顶部开始
-            let scope = history.selectedReferences
-
-            if let displayedScope, displayedScope != scope {
-                history.rememberScroll(table.visibleRect.minY, for: displayedScope)
-                pendingOffset = history.scopeMemories[scope]?.scrollOffset ?? 0
-            }
-
-            displayedScope = scope
-
             if selection != history.selectedIDs {
                 revealsSelection = true
             }
 
-            // 要还原滚动位置时不再滚到选中行
-            if pendingOffset != nil {
+            // 换范围后要滚回新范围记下的位置时不再滚到选中行
+            if history.pendingScroll != nil {
                 revealsSelection = false
             }
 
@@ -369,9 +353,9 @@ struct HistoryCommitTable: NSViewRepresentable {
                 }
             }
 
-            // 新范围读完后按记下的位置滚动，等表格完成布局后再滚
-            if let offset = pendingOffset, !history.isLoading {
-                pendingOffset = nil
+            // 换范围后新范围读完时滚回它上次的位置，等表格完成布局后再滚
+            if let offset = history.pendingScroll, !history.isLoading {
+                history.pendingScroll = nil
 
                 Task { @MainActor in
                     table.scroll(NSPoint(x: table.visibleRect.minX, y: offset))
@@ -600,6 +584,16 @@ struct HistoryCommitTable: NSViewRepresentable {
         let scroll = NSScrollView()
         scroll.hasVerticalScroller = true
         scroll.documentView = table
+
+        // 换范围时窗口会重建列表，滚动位置随滚随记在历史状态里，新建的列表才接得上
+        scroll.contentView.postsBoundsChangedNotifications = true
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(Coordinator.clipViewScrolled),
+            name: NSView.boundsDidChangeNotification,
+            object: scroll.contentView
+        )
+
         return scroll
     }
 
@@ -608,6 +602,24 @@ struct HistoryCommitTable: NSViewRepresentable {
         context.coordinator.update(self)
     }
 
+}
+
+// MARK: - Scrolling
+
+extension HistoryCommitTable.Coordinator {
+    /// 列表滚动后记下当前范围的可见区顶边，换到别的范围再换回来时滚回这里。
+    ///
+    /// 换范围后到滚回新范围记下的位置之前，列表里还是离开的范围的行，这段时间不记。
+    @objc
+    func clipViewScrolled(_: Notification) {
+        let history = parent.session.history
+
+        guard let table, table.window != nil, history.pendingScroll == nil else {
+            return
+        }
+
+        history.rememberScroll(table.visibleRect.minY, for: history.selectedReferences)
+    }
 }
 
 // MARK: - Data Source

@@ -138,6 +138,10 @@ final class RepositoryHistoryState {
     @ObservationIgnored
     var scopeMemories: [Set<String>: HistoryScopeMemory] = [:]
 
+    /// 换范围后新范围读完时列表要滚到的位置，滚过后清空；窗口换范围时会重建列表，记在这里新建的列表才接得上。
+    @ObservationIgnored
+    var pendingScroll: CGFloat? = nil
+
     /// 已选提交的完整哈希集合，按列表顺序复制。
     var selectedIDs = Set<String>() {
         didSet {
@@ -404,7 +408,11 @@ final class RepositoryHistoryState {
         loadingPaths = []
         isLoadingChanges = false
     }
+}
 
+// MARK: - Closing
+
+extension RepositoryHistoryState {
     /// 关闭仓库时清除全部快照和选区。
     func close() {
         suspend()
@@ -418,6 +426,7 @@ final class RepositoryHistoryState {
         commits = []
         rows = []
         scopeMemories = [:]
+        pendingScroll = nil
         commitCount = nil
         searchConditions = []
         lookup = nil
@@ -734,10 +743,11 @@ extension RepositoryHistoryState {
         revealRequests += 1
     }
 
-    /// 切回仓库时恢复分支与提交选择；引用快照到达后再校验引用是否仍存在。
+    /// 切回仓库时恢复分支与提交选择；引用快照到达后再校验引用是否仍存在。列表滚到恢复的选中行，不滚回范围记下的位置。
     func restore(references: Set<String>, commits: Set<String>) {
         selectedReferences = references
         selectedIDs = commits
+        pendingScroll = nil
         restoredReferences = references.isEmpty ? nil : references
     }
 }
