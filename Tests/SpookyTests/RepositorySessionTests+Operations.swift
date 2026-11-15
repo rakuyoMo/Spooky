@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 import TestSupport
 
@@ -122,6 +123,12 @@ extension RepositorySessionTests {
 
         await resolveAll(session, theirs: false)
         #expect(session.offersSkip && session.continuesSequence && session.showsCommitArea)
+
+        // 横幅带着进度、Skip 与提交区时，最小尺寸的高度不超过按最窄宽度真实排版的高度：提示与进度不按 0 宽逐字折行，横幅出现不把窗口撑高
+        let list = NSHostingController(rootView: WorkingCopyListView(session: session))
+        let minimum = list.sizeThatFits(in: .zero)
+
+        #expect(minimum.height <= list.sizeThatFits(in: CGSize(width: minimum.width, height: 0)).height)
 
         // 未跟踪的文件也是改动，这一步不再算空
         try Data("note".utf8).write(to: directory.appending(path: "note.txt"))

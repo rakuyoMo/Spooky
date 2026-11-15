@@ -18,6 +18,11 @@ struct OperationBannerView: View {
         case empty
     }
 
+    /// 文字列排版的最窄宽度。
+    ///
+    /// 宿主按 0 宽计算最小尺寸，提示与进度若按 0 宽逐字折行，算出的最小高度会把窗口撑高；文字列至少按这个宽度折行。
+    private static let minimumTextWidth: CGFloat = 200
+
     /// 当前仓库会话。
     let session: RepositorySession
 
@@ -131,6 +136,7 @@ extension OperationBannerView {
                 actionRow(progress)
                     .padding(.top, 16)
             }
+            .frame(minWidth: Self.minimumTextWidth, alignment: .leading)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
