@@ -93,7 +93,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Themes**: Default and Default (Dark) are saved as regular themes that you can edit but not rename or delete, and are restored the next time Spooky starts if they're missing or damaged. Create your own themes for diffs and file contents, change the color of each syntax category, import and export them by drag and drop, import theme files opened in the Finder or dropped on the Dock icon, and choose one for the light appearance and one for the dark appearance
 
-- **App icon**: choose between the Server Ghost and Midnight icons in the Appearance settings. The chosen icon is used in the Dock, the app switcher, and the Finder
+- **App icon**: choose among the Server Ghost, Midnight, Armful, Cherry Pick, and Perch icons in the Appearance settings. The chosen icon is used in the Dock, the app switcher, and the Finder
 
 - **Eight languages**: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish. The app uses your system language, or English if that language isn't supported
 

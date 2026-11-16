@@ -18,7 +18,10 @@ cd "$project_root"
 app_directory="$1"
 
 # 非默认组的默认图标名，与 `AppIconGroup` 的资源名一致；壳 App 与它同名
-icon_names=(AppIconMidnight)
+icon_names=(AppIconMidnight AppIconArmful AppIconCherryPick AppIconPerch)
+
+# 先删掉包里已有的壳 App：开发 Bundle 不从空目录组装，改了默认的一组或删了一组之后，不留下多余的壳 App
+rm -rf "$app_directory/Contents/Resources/"AppIcon*.app
 
 for icon_name in "${icon_names[@]}"; do
     shell="$app_directory/Contents/Resources/$icon_name.app"
@@ -27,7 +30,7 @@ for icon_name in "${icon_names[@]}"; do
     rm -rf "$shell"
     mkdir -p "$shell/Contents/MacOS" "$shell/Contents/Resources"
 
-    cp "Sources/Spooky/AppIcon/$icon_name.icns" "$shell/Contents/Resources/$icon_name.icns"
+    cp "Sources/Spooky/AppIcon/Icons/$icon_name.icns" "$shell/Contents/Resources/$icon_name.icns"
 
     cat > "$shell/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>

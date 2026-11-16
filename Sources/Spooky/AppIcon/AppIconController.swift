@@ -6,13 +6,13 @@ import Observation
 /// Dock、⌘Tab 与访达中的 App 图标：显示所选的一组，跟随 “系统设置 › 外观 › 图标与小组件样式”，连着服务器时指示灯亮起。
 ///
 /// Dock 画包内图标时会裁成系统的圆角形状、加上亮边与阴影，运行时设置的图标与写进包里的自定义图标都原样画出；
-/// 所以每组都以系统把这一组画成包内图标时的样子为底：服务器幽灵取 App 自身的系统图标，其它组取包里各自壳 App 的系统图标。
+/// 所以每组都以系统把这一组画成包内图标时的样子为底：默认的一组取 App 自身的系统图标，其它组取包里各自壳 App 的系统图标。
 ///
 /// - 默认与深色样式下系统不改动包内图标：深色样式换成该组的深色图标，连着服务器时换成指示灯亮着的一版
 /// - 透明、色调样式下系统按样式处理包内图标，运行时设置的图标做不到同样的效果，指示灯不亮：
-///   服务器幽灵交还包里的默认图标，其它组用系统已按样式处理过的壳 App 图标
+///   默认的一组交还包里的默认图标，其它组用系统已按样式处理过的壳 App 图标
 /// - macOS 27 的 ⌘Tab 切换器不用运行时设置的图标（实测）：选中其它组时把当前样式下指示灯灭着的一版写成 App 包的自定义图标，
-///   访达与没运行时的 Dock 也随之显示这一组；选回服务器幽灵时清掉
+///   访达与没运行时的 Dock 也随之显示这一组；选回默认的一组时清掉
 @MainActor
 @Observable
 final class AppIconController {
@@ -149,8 +149,8 @@ final class AppIconController {
 
     /// 运行时要换上的一版；nil 表示用包里的默认图标，由 Dock 按样式处理。
     ///
-    /// 默认与深色样式（键不存在或 `Regular…`）下按深浅与连接状态取该组的一版；服务器幽灵浅色、没连时就是包里的默认图标，不用换。
-    /// 透明、色调样式（`Clear…`、`Tinted…`）与其它取值下指示灯不亮：服务器幽灵不换，
+    /// 默认与深色样式（键不存在或 `Regular…`）下按深浅与连接状态取该组的一版；默认的一组浅色、没连时就是包里的默认图标，不用换。
+    /// 透明、色调样式（`Clear…`、`Tinted…`）与其它取值下指示灯不亮：默认的一组不换，
     /// 其它组用该组的默认图标，底图是系统已按样式处理过的壳 App 图标。
     /// - Parameters:
     ///   - group: 所选的组
@@ -166,7 +166,7 @@ final class AppIconController {
         let isRegular = iconTheme.map { $0.hasPrefix("Regular") } ?? true
 
         guard isRegular else {
-            return group == .serverGhost ? nil : .standard
+            return group == .defaultGroup ? nil : .standard
         }
 
         let variant = AppIconVariant(
@@ -174,12 +174,12 @@ final class AppIconController {
             isConnected: isConnected
         )
 
-        return group == .serverGhost && variant == .standard ? nil : variant
+        return group == .defaultGroup && variant == .standard ? nil : variant
     }
 
     /// 写成 App 包自定义图标的一版：当前样式下指示灯灭着的一版；nil 表示清掉自定义图标，交还包里的默认图标。
     ///
-    /// ⌘Tab、访达与没运行时的 Dock 只认包里的图标；服务器幽灵就是包里的默认图标，其它组才要写。
+    /// ⌘Tab、访达与没运行时的 Dock 只认包里的图标；默认的一组就是包里的默认图标，其它组才要写。
     /// 自定义图标与连接状态无关，只有连接状态变化时不用重写。
     /// - Parameters:
     ///   - group: 所选的组
@@ -190,7 +190,7 @@ final class AppIconController {
         iconTheme: String?,
         appearance: NSAppearance
     ) -> AppIconVariant? {
-        guard group != .serverGhost else {
+        guard group != .defaultGroup else {
             return nil
         }
 
@@ -296,7 +296,7 @@ final class AppIconController {
 
     /// 按偏好里所选的组重新套用：重画运行时图标，并在后台重写自定义图标；不等写完，重写失败不提示。
     ///
-    /// 启动时与 Reset / Clear User Defaults 删掉偏好之后调用，后者回到服务器幽灵；此前发出、还没写完的换组不再存进偏好。
+    /// 启动时与 Reset / Clear User Defaults 删掉偏好之后调用，后者回到默认的一组；此前发出、还没写完的换组不再存进偏好。
     /// 重写与换组一样算一次请求，写完按 `finishRequest(changesIcon:)` 决定是否重启 Dock，
     /// 如更新后第一次启动写了进去、Reset / Clear 清掉了。
     func reload() {
@@ -366,7 +366,7 @@ final class AppIconController {
         return bundle.image(forResource: group.iconName(for: variant))
     }
 
-    /// 这一组写成自定义图标的数据：当前样式下指示灯灭着的一版；服务器幽灵为 nil，表示清掉自定义图标。
+    /// 这一组写成自定义图标的数据：当前样式下指示灯灭着的一版；默认的一组为 nil，表示清掉自定义图标。
     ///
     /// 透明样式与色调浅色下是该组默认图标的原图，由 Dock 按样式处理，其余样式下在主线程上合成；交给写入队列的只有数据。
     /// - Parameters:
@@ -424,7 +424,7 @@ extension AppIconController {
     ///
     /// 直接运行可执行文件时包的位置是可执行文件所在的目录，系统给出的是文件夹图标，所以包里没有默认图标的资源时为 nil。
     private var defaultIcon: NSImage? {
-        guard let bundledIcon = bundle.image(forResource: AppIconGroup.serverGhost.iconName(for: .standard)) else {
+        guard let bundledIcon = bundle.image(forResource: AppIconGroup.defaultGroup.iconName(for: .standard)) else {
             return nil
         }
 
@@ -450,7 +450,7 @@ extension AppIconController {
 
     /// 在后台按 `requestedGroup` 与当前样式重写自定义图标，写完后重画运行时图标；不等写完，失败不提示。
     ///
-    /// 服务器幽灵的运行时图标以 App 自身的系统图标为底，清掉自定义图标之后取到的才不是残留的那一张，所以写完再画一次。
+    /// 默认的一组的运行时图标以 App 自身的系统图标为底，清掉自定义图标之后取到的才不是残留的那一张，所以写完再画一次。
     /// - Parameter restartsDock: 重新套用偏好时为真，算一次请求，写完结算是否重启 Dock；
     ///   样式与深浅变化的重写只换同一组的另一版，不算请求，不重启
     private func rewriteCustomIcon(restartsDock: Bool) {
@@ -589,10 +589,10 @@ extension AppIconController {
         return NSImage(cgImage: rendered, size: bundledIcon.size)
     }
 
-    /// 系统画这一组包内图标时用的包：服务器幽灵是 App 自身，其它组是包里与该组默认图标同名的壳 App；找不到时为 nil。
+    /// 系统画这一组包内图标时用的包：默认的一组是 App 自身，其它组是包里与该组默认图标同名的壳 App；找不到时为 nil。
     /// - Parameter group: 图标所属的组
     private func systemIconPath(of group: AppIconGroup) -> String? {
-        guard group != .serverGhost else {
+        guard group != .defaultGroup else {
             return bundle.bundlePath
         }
 

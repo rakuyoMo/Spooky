@@ -40,7 +40,7 @@ Spooky 由两个 target 组成：
 | 目录 | 职责 |
 |---|---|
 | `App/` | 入口、窗口与菜单协调、本地化与错误说明、外观、命名色与文本区主题、链接解析、系统通知 |
-| `AppIcon/` | App 图标：图标组的选择，随图标样式、深浅与连接状态切换，写入 App 包的自定义图标 |
+| `AppIcon/` | App 图标：图标组的选择，随图标样式、深浅与连接状态切换，写入 App 包的自定义图标；`Icons/` 是各组的 icns |
 | `Components/` | 对话框骨架与呈现它的 sheet 或模态窗口，空状态、错误详情、连接状态、头像等共用视图 |
 | `RepositoryManager/`、`Launch/`、`Clone/` | 仓库管理与书签、启动窗口，新建、克隆与扫描 |
 | `RepositoryWindow/` | 仓库窗口与菜单动作、侧边栏、搜索、操作对话框与拖放 |
@@ -264,20 +264,22 @@ Spooky 由两个 target 组成：
 ## App 图标
 
 - 图标组：
-  - `AppIconGroup` 有服务器幽灵与午夜两组，所选的组存在偏好 `appIconGroup`；键不存在或值不认识时为服务器幽灵，Reset / Clear User Defaults 之后随之回到服务器幽灵
-  - 每组四个 icns：默认、连接、深色、深色连接；连接版与灭灯版只差指示灯所在的一块，运行时的合成依赖这一点
-  - 服务器幽灵是包里的默认图标（`CFBundleIconFile`）
+  - `AppIconGroup` 有服务器幽灵、午夜、满怀、采撷与栖枝五组，默认的一组（`AppIconGroup.defaultGroup`）是服务器幽灵；所选的组存在偏好 `appIconGroup`，键不存在或值不认识时为默认的一组，Reset / Clear User Defaults 之后随之回到默认的一组
+  - 每组四个 icns：默认、连接、深色、深色连接，文件名是 `AppIcon<组名>` 加上 `Dark`、`Connected`；连接版与灭灯版只差亮起来的部分，运行时的合成依赖这一点
+  - 默认的一组的默认图标是包里的默认图标（`CFBundleIconFile`）
+  - 二十份 icns 都由 `scripts/make-icon.swift` 在无窗口的 WebKit 里执行 `scripts/make-icon/` 下的绘制脚本画出，放在 `Sources/Spooky/AppIcon/Icons/`；`kit.js` 是各组共用的底板、入口与绘图工具，每组另有一个文件；满怀的柔边与投影要用模糊与蒙版，这一组先拼成 SVG 再画进 Canvas，其余四组直接画 Canvas
+  - 重新生成时，直接画 Canvas 的四组与仓库里的逐字节相同；满怀的 1024 px 一张每次可能有几个像素差一个色阶（WebKit 画 SVG 滤镜时的舍入不固定，macOS 27 实测），看不出差别，没改画法时不必提交这种变化
 - 深浅：读全局偏好 `AppleIconAppearanceTheme`；值以 `Dark` 结尾为深色，以 `Automatic` 结尾时跟随 App 的外观，其余与键不存在时为浅色
 - 壳 App：
   - 其它组各有一个只装该组默认图标的壳 App，放在 `Contents/Resources/<资源名>.app`，由 `scripts/make-icon-shells.sh` 在打包时写出
-  - 系统画包内图标时会裁成圆角形状、缩到标准大小并加上亮边；`AppIconController` 取壳 App 的系统图标作为该组的底，服务器幽灵仍取 Spooky.app 自己的
+  - 系统画包内图标时会裁成圆角形状、缩到标准大小并加上亮边；`AppIconController` 取壳 App 的系统图标作为该组的底，默认的一组取 Spooky.app 自己的
 - 运行中的 Dock：`AppIconController` 按组、图标样式、深浅与连接状态挑出一版，由 `AppIconRenderer` 叠在该组的底上，设为 `NSApp.applicationIconImage`
   - 默认与深色样式下，连着服务器仓库时只有指示灯不同
-  - 透明与色调样式下指示灯不亮：服务器幽灵交还包里的默认图标，其它组用系统按样式处理过的壳 App 图标
+  - 透明与色调样式下指示灯不亮：默认的一组交还包里的默认图标，其它组用系统按样式处理过的壳 App 图标
   - 设置页 “App Icon:” 一行显示同样画法、指示灯灭着的一版
   - 启动窗口、对话框头部与关于窗口经 `AppIconController.displayedIcon(of:)` 显示 `applicationIcon`，随它更新：设了运行时图标时就是它，交还默认图标时是系统给出的包图标；启动时包上有自定义图标的话，`NSApp.applicationIconImage` 设回 nil 之后仍是启动时的那一张
 - 自定义图标：
-  - 选中其它组时，把当前样式下指示灯灭着的一版以 `NSWorkspace.setIcon(_:forFile:options:)` 写成 Spooky.app 的自定义图标，App 没运行时的 Dock、⌘Tab 与 Finder 都显示所选的组；选回服务器幽灵时清除
+  - 选中其它组时，把当前样式下指示灯灭着的一版以 `NSWorkspace.setIcon(_:forFile:options:)` 写成 Spooky.app 的自定义图标，App 没运行时的 Dock、⌘Tab 与 Finder 都显示所选的组；选回默认的一组时清除
     - 透明样式与色调浅色下写该组默认图标的原图，由 Dock 按样式处理：Dock 在这几种样式下也处理自定义图标，写进系统已处理过的壳 App 图标会被处理第二遍，没运行时的格子发暗、发黑
     - 色调深色下 Dock 不处理自定义图标，与默认、深色样式一样写合成的一版
   - 写入会在包的根目录加上 `Icon\r` 与 Finder 信息，此时 `codesign --verify --strict` 不通过，不带 `--strict` 时仍通过

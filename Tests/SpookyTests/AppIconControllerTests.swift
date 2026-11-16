@@ -9,10 +9,10 @@ import UniformTypeIdentifiers
 
 /// App 图标显示所选的组，跟随 “图标与小组件样式” 与连接状态。
 ///
-/// 默认与深色样式下按深浅与连接状态换成该组的一版，服务器幽灵浅色、没连时就是包里的默认图标，不用换；
-/// 透明、色调样式下系统按样式处理包内图标，运行时设置的图标会被原样画出，所以服务器幽灵交还默认图标，
+/// 默认与深色样式下按深浅与连接状态换成该组的一版，默认的一组浅色、没连时就是包里的默认图标，不用换；
+/// 透明、色调样式下系统按样式处理包内图标，运行时设置的图标会被原样画出，所以默认的一组交还默认图标，
 /// 其它组用系统已按样式处理过的壳 App 图标、指示灯不亮。
-/// ⌘Tab 与访达只认包里的图标，其它组要写成自定义图标、服务器幽灵清掉；写入在后台按顺序进行，主线程不等，
+/// ⌘Tab 与访达只认包里的图标，其它组要写成自定义图标、默认的一组清掉；写入在后台按顺序进行，主线程不等，
 /// 写不进去时偏好保持原来的组。关于窗口显示控制器记下的图标，换组后不用重新打开就跟着换。
 @MainActor
 struct AppIconControllerTests {
@@ -78,7 +78,7 @@ struct AppIconControllerTests {
                 continue
             }
 
-            // 实际写入的数据：服务器幽灵清掉；其它组写原图时与默认图标的文件逐字节相同，否则是合成的一版
+            // 实际写入的数据：默认的一组清掉；其它组写原图时与默认图标的文件逐字节相同，否则是合成的一版
             let iconData = try controller.customIconData(
                 for: entry.group,
                 iconTheme: entry.iconTheme,
@@ -93,9 +93,9 @@ struct AppIconControllerTests {
         }
     }
 
-    /// 偏好里没有记录或记录无法识别时为服务器幽灵；所选的组不是 Reset User Defaults 保留的数据，
-    /// Reset 与 Clear 之后控制器都回到服务器幽灵，清掉 App 包的自定义图标，并重启 Dock。
-    @Test("偏好缺省与不认识的值为服务器幽灵，Reset / Clear 之后回到服务器幽灵")
+    /// 偏好里没有记录或记录无法识别时为默认的一组；所选的组不是 Reset User Defaults 保留的数据，
+    /// Reset 与 Clear 之后控制器都回到默认的一组，清掉 App 包的自定义图标，并重启 Dock。
+    @Test("偏好缺省与不认识的值为默认的一组，Reset / Clear 之后回到默认的一组")
     func preferenceFallsBackToServerGhost() async throws {
         let directory = Self.makeDirectory()
 
@@ -105,11 +105,11 @@ struct AppIconControllerTests {
         let app = try Self.makeApp(in: directory)
 
         // 没有记录、记录无法识别
-        #expect(AppIconGroup.current(in: defaults) == .serverGhost)
+        #expect(AppIconGroup.current(in: defaults) == .defaultGroup)
 
         defaults.set("aurora", forKey: AppIconGroup.key)
 
-        #expect(AppIconGroup.current(in: defaults) == .serverGhost)
+        #expect(AppIconGroup.current(in: defaults) == .defaultGroup)
 
         // 控制器读 App 的外观、设置运行时图标
         _ = NSApplication.shared
@@ -138,7 +138,7 @@ struct AppIconControllerTests {
             controller.reload()
             await until { controller.pendingRequests == 0 }
 
-            #expect(controller.group == .serverGhost, "keepingData: \(keepingData)")
+            #expect(controller.group == .defaultGroup, "keepingData: \(keepingData)")
             #expect(!Self.hasCustomIcon(app), "keepingData: \(keepingData)")
             #expect(dockRestarts == 1, "keepingData: \(keepingData)")
         }
@@ -174,7 +174,7 @@ struct AppIconControllerTests {
 
         try await AppIconController.setCustomIcon(nil, ofApp: app)
 
-        // 带着午夜的自定义图标变成只读：选回服务器幽灵失败，组、偏好与图标都还是午夜
+        // 带着午夜的自定义图标变成只读：选回默认的一组失败，组、偏好与图标都还是午夜
         try Self.setPermissions(0o755, of: app)
         try await AppIconController.setCustomIcon(Self.sampleIcon(), ofApp: app)
         try Self.setPermissions(0o555, of: app)
@@ -193,7 +193,7 @@ struct AppIconControllerTests {
         )
 
         await #expect(throws: AppIconWriteError.self) {
-            try await controller.select(.serverGhost)
+            try await controller.select(.defaultGroup)
         }
 
         #expect(controller.group == .midnight)
@@ -201,17 +201,17 @@ struct AppIconControllerTests {
         #expect(Self.hasCustomIcon(app))
         #expect(dockRestarts == 0)
 
-        // 恢复可写后选回服务器幽灵：清掉自定义图标，偏好随之改变，Dock 重启一次
+        // 恢复可写后选回默认的一组：清掉自定义图标，偏好随之改变，Dock 重启一次
         try Self.setPermissions(0o755, of: app)
-        try await controller.select(.serverGhost)
+        try await controller.select(.defaultGroup)
 
-        #expect(controller.group == .serverGhost)
-        #expect(AppIconGroup.current(in: defaults) == .serverGhost)
+        #expect(controller.group == .defaultGroup)
+        #expect(AppIconGroup.current(in: defaults) == .defaultGroup)
         #expect(!Self.hasCustomIcon(app))
         #expect(dockRestarts == 1)
 
         // 再选当前的组：Dock 里的格子没有变，不重启
-        try await controller.select(.serverGhost)
+        try await controller.select(.defaultGroup)
 
         #expect(dockRestarts == 1)
     }
@@ -235,7 +235,7 @@ struct AppIconControllerTests {
         // 包里有默认图标的资源时，交还默认图标才取系统给出的包图标
         try FileManager.default.copyItem(
             at: resources.appending(path: AppIconGroup.midnight.iconName(for: .standard) + ".icns"),
-            to: resources.appending(path: AppIconGroup.serverGhost.iconName(for: .standard) + ".icns")
+            to: resources.appending(path: AppIconGroup.defaultGroup.iconName(for: .standard) + ".icns")
         )
 
         // 取系统给出的包图标时，LaunchServices 登记了这个临时 App；删掉文件后登记还在，要另外注销
@@ -269,7 +269,7 @@ struct AppIconControllerTests {
 
         // 换组排进队列后挂起；主线程照常往下走，组与偏好都还没变
         let selecting = Task.immediate {
-            try await controller.select(.serverGhost)
+            try await controller.select(.defaultGroup)
         }
 
         #expect(controller.group == .midnight)
@@ -284,7 +284,7 @@ struct AppIconControllerTests {
 
         controller.reload()
 
-        #expect(controller.group == .serverGhost)
+        #expect(controller.group == .defaultGroup)
         #expect(Self.hasCustomIcon(app))
 
         // 放行后按排队的顺序写完：自定义图标清掉了，先发出的换组没有把组存回偏好；
@@ -296,7 +296,7 @@ struct AppIconControllerTests {
 
         #expect(!Self.hasCustomIcon(app))
         #expect(defaults.string(forKey: AppIconGroup.key) == nil)
-        #expect(controller.group == .serverGhost)
+        #expect(controller.group == .defaultGroup)
         #expect(dockRestarts == 1)
 
         // 关于窗口显示系统给出的包图标
@@ -304,19 +304,19 @@ struct AppIconControllerTests {
 
         let defaultIcon = try #require(icon.image)
 
-        // 换到午夜又换回服务器幽灵，两次都在主线程让出之前排进队列：包上最后与之前相同，不重启
+        // 换到午夜又换回默认的一组，两次都在主线程让出之前排进队列：包上最后与之前相同，不重启
         let toMidnight = Task.immediate {
             try await controller.select(.midnight)
         }
 
         let back = Task.immediate {
-            try await controller.select(.serverGhost)
+            try await controller.select(.defaultGroup)
         }
 
         try await toMidnight.value
         try await back.value
 
-        #expect(controller.group == .serverGhost)
+        #expect(controller.group == .defaultGroup)
         #expect(dockRestarts == 1)
 
         // 连续两次换到午夜：包上写进了自定义图标，两次都写完后重启一次
@@ -335,21 +335,21 @@ struct AppIconControllerTests {
         #expect(Self.hasCustomIcon(app))
         #expect(dockRestarts == 2)
 
-        // 关于窗口不用重新打开就换成午夜的一版，换回服务器幽灵时又换成系统给出的包图标
+        // 关于窗口不用重新打开就换成午夜的一版，换回默认的一组时又换成系统给出的包图标
         await until { icon.image === controller.applicationIcon }
 
         let midnightIcon = icon.image
 
         #expect(midnightIcon !== defaultIcon)
 
-        try await controller.select(.serverGhost)
+        try await controller.select(.defaultGroup)
         await until { icon.image === controller.applicationIcon }
 
         #expect(icon.image !== midnightIcon)
     }
 
     /// 启动时包上原本没有自定义图标、这次写了进去（如更新后第一次启动），固定在 Dock 里的格子显示的组不对，重启 Dock；
-    /// 选着服务器幽灵启动、包上已是所选的组的平常启动与样式变化后的重写都不重启。
+    /// 选着默认的一组启动、包上已是所选的组的平常启动与样式变化后的重写都不重启。
     @Test("启动时写进了自定义图标才重启 Dock，平常启动与样式变化的重写不重启")
     func startupRestartsDockWhenCustomIconAppears() async throws {
         let directory = Self.makeDirectory()
@@ -371,7 +371,7 @@ struct AppIconControllerTests {
             restartDock: { dockRestarts += 1 }
         )
 
-        // 选着服务器幽灵启动：包上本来没有自定义图标，不用清，不重启
+        // 选着默认的一组启动：包上本来没有自定义图标，不用清，不重启
         controller.reload()
         await until { controller.pendingRequests == 0 }
 
@@ -466,10 +466,10 @@ extension AppIconControllerTests {
     /// 透明、色调各子选项的深浅同样按子选项判断，但运行时图标不分深浅、指示灯不亮。
     /// 透明样式与色调浅色下自定义图标写原图，色调深色、默认与深色样式下写合成的一版。
     fileprivate static let cases: [Entry] = [
-        Entry(.serverGhost, nil, .darkAqua, isDark: false, unlit: nil, lit: .lit, customIcon: nil, bundled: false),
-        Entry(.serverGhost, "RegularDark", .aqua, isDark: true, unlit: .dark, lit: .darkLit, customIcon: nil, bundled: false),
+        Entry(.defaultGroup, nil, .darkAqua, isDark: false, unlit: nil, lit: .lit, customIcon: nil, bundled: false),
+        Entry(.defaultGroup, "RegularDark", .aqua, isDark: true, unlit: .dark, lit: .darkLit, customIcon: nil, bundled: false),
         Entry(
-            .serverGhost,
+            .defaultGroup,
             "RegularAutomatic",
             .accessibilityHighContrastDarkAqua,
             isDark: true,
@@ -479,7 +479,7 @@ extension AppIconControllerTests {
             bundled: false
         ),
         Entry(
-            .serverGhost,
+            .defaultGroup,
             "RegularAutomatic",
             .vibrantDark,
             isDark: true,
@@ -489,7 +489,7 @@ extension AppIconControllerTests {
             bundled: false
         ),
         Entry(
-            .serverGhost,
+            .defaultGroup,
             "RegularAutomatic",
             .accessibilityHighContrastAqua,
             isDark: false,
@@ -498,8 +498,8 @@ extension AppIconControllerTests {
             customIcon: nil,
             bundled: false
         ),
-        Entry(.serverGhost, "ClearAutomatic", .darkAqua, isDark: true, unlit: nil, lit: nil, customIcon: nil, bundled: true),
-        Entry(.serverGhost, "TintedLight", .aqua, isDark: false, unlit: nil, lit: nil, customIcon: nil, bundled: true),
+        Entry(.defaultGroup, "ClearAutomatic", .darkAqua, isDark: true, unlit: nil, lit: nil, customIcon: nil, bundled: true),
+        Entry(.defaultGroup, "TintedLight", .aqua, isDark: false, unlit: nil, lit: nil, customIcon: nil, bundled: true),
         Entry(.midnight, nil, .darkAqua, isDark: false, unlit: .standard, lit: .lit, customIcon: .standard, bundled: false),
         Entry(.midnight, "RegularDark", .aqua, isDark: true, unlit: .dark, lit: .darkLit, customIcon: .dark, bundled: false),
         Entry(

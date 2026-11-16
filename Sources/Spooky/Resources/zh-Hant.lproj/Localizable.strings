@@ -1736,6 +1736,9 @@
 "settings.appearance.label" = "外觀：";
 "appIcon.serverGhost" = "伺服器幽靈";
 "appIcon.midnight" = "午夜";
+"appIcon.armful" = "滿懷";
+"appIcon.cherryPick" = "採擷";
+"appIcon.perch" = "棲枝";
 "appIcon.writeFailed" = "切換失敗，圖示無法寫入 Spooky.app。";
 "settings.appIcon.label" = "應用程式圖示：";
 "settings.appIcon.change" = "更改…";

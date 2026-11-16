@@ -25,9 +25,9 @@ struct AppIconRendererTests {
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .deletingLastPathComponent()
-        .appending(path: "Sources/Spooky/AppIcon", directoryHint: .isDirectory)
+        .appending(path: "Sources/Spooky/AppIcon/Icons", directoryHint: .isDirectory)
 
-    /// 1024 px 图标里四盏指示灯的圆心，y 自上而下，与 `scripts/make-icon.js` 的机架一致。
+    /// 1024 px 图标里四盏指示灯的圆心，y 自上而下，与 `scripts/make-icon/server-ghost.js` 的机架一致。
     private static let lightCenters = [(714, 626), (750, 626), (714, 772), (750, 772)]
 
     /// 指示灯的半径，外加 1 px 抗锯齿的边。
@@ -112,7 +112,8 @@ struct AppIconRendererTests {
         }
     }
 
-    /// 各组的默认图标与深色图标，亮灯版与灭灯版都只在指示灯处不同：服务器幽灵是机架上的四盏灯，午夜是眼睛与光晕；
+    /// 各组的默认图标与深色图标，亮灯版与灭灯版都只在指示灯处不同：服务器幽灵是机架上的四盏灯，午夜是眼睛与光晕，
+    /// 满怀是发光的声纹与眼睛，采撷是枝上的节点与眼睛，栖枝是枝头的果子；
     /// 运行时图标叠上的是两者的差别，别处不同就会把别的改动也带上去。
     @Test("亮灯版与灭灯版只差指示灯", arguments: AppIconGroup.allCases, [false, true])
     func litIconDiffersOnlyAtLights(group: AppIconGroup, isDark: Bool) throws {
@@ -145,13 +146,28 @@ extension AppIconRendererTests {
     /// 高动态范围替身的亮度余量，与系统给出的 App 图标相同。
     private static let headroom: Float = 1.2
 
-    /// 午夜光晕的椭圆，在幽灵的直立坐标里：中心是眼睛的中心，与 `scripts/make-icon.js` 的 `MIDNIGHT_EYE`、`MIDNIGHT_GLOW` 一致。
+    /// 午夜光晕的椭圆，在幽灵的直立坐标里：中心是眼睛的中心，与 `scripts/make-icon/midnight.js` 的 `MIDNIGHT_EYE`、`MIDNIGHT_GLOW` 一致。
     private static let glow = (x: -125.0, y: -167.5, radiusX: 145.0, radiusY: 238.0)
 
     /// 光晕椭圆向外放宽的距离，在直立坐标里约合 1024 px 图标的 2 px 抗锯齿边。
     private static let glowReach = 3.0
 
-    /// 像素是否落在这一组的指示灯上：服务器幽灵是四盏灯，午夜是光晕的椭圆，眼睛在它以内。
+    /// 满怀、采撷与栖枝亮起来的范围，1024 px 图标里的矩形（含两端），y 自上而下，四周各留 2 px 抗锯齿的边。
+    ///
+    /// 满怀的声纹横贯底板、光晕漫到底板的边，范围是整块底板（(100, 100) 起、边长 824），底板之外的投影不变；
+    /// 采撷是枝上四处节点的光晕，幽灵的眼睛落在第二处里；栖枝是枝头那颗果子的光晕。
+    private static let lightRects: [AppIconGroup: [(x: ClosedRange<Int>, y: ClosedRange<Int>)]] = [
+        .armful: [(100 ... 923, 100 ... 923)],
+        .cherryPick: [
+            (372 ... 447, 218 ... 293),
+            (479 ... 685, 206 ... 327),
+            (715 ... 814, 246 ... 345),
+            (826 ... 923, 216 ... 323),
+        ],
+        .perch: [(740 ... 879, 418 ... 557)],
+    ]
+
+    /// 像素是否落在这一组的指示灯上：服务器幽灵是四盏灯，午夜是光晕的椭圆，眼睛在它以内，其余三组见 `lightRects`。
     /// - Parameters:
     ///   - x: 1024 px 图标的列
     ///   - y: 1024 px 图标的行，自上而下
@@ -161,6 +177,10 @@ extension AppIconRendererTests {
         y: Int,
         of group: AppIconGroup
     ) -> Bool {
+        if let rects = lightRects[group] {
+            return rects.contains { $0.x.contains(x) && $0.y.contains(y) }
+        }
+
         guard group == .midnight else {
             return lightCenters.contains { abs($0.0 - x) <= lightReach && abs($0.1 - y) <= lightReach }
         }

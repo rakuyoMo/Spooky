@@ -1736,6 +1736,9 @@
 "settings.appearance.label" = "Appearance:";
 "appIcon.serverGhost" = "Server Ghost";
 "appIcon.midnight" = "Midnight";
+"appIcon.armful" = "Armful";
+"appIcon.cherryPick" = "Cherry Pick";
+"appIcon.perch" = "Perch";
 "appIcon.writeFailed" = "Couldn’t switch the icon because it can’t be written to Spooky.app.";
 "settings.appIcon.label" = "App Icon:";
 "settings.appIcon.change" = "Change…";
