@@ -48,7 +48,7 @@ struct SidebarBranchRowTests {
             width: width,
             until: { elements in elements.contains { $0.value == name } }
         ) {
-            SidebarBranchRow(name: name, symbol: "arrow.triangle.branch", status: status, help: "")
+            SidebarBranchRow(name: name, icon: .branch, status: status, help: "")
         }
 
         let nameFrame = elements.first { $0.value == name }?.frame ?? .zero

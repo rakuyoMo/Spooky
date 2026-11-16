@@ -458,7 +458,7 @@ extension RepositorySidebarView {
         guard ref.isLocal else {
             return SidebarBranchRow(
                 name: name,
-                symbol: "network",
+                icon: .remoteBranch,
                 isDefault: isDefaultBranch(ref),
                 help: SidebarTooltip.remoteBranch(ref, host: host)
             )
@@ -469,9 +469,9 @@ extension RepositorySidebarView {
 
         return SidebarBranchRow(
             name: name,
-            symbol: metadata.isArchived ? "archivebox" : "arrow.triangle.branch",
+            icon: metadata.isArchived ? .archived : .branch,
 
-            // 已在别的工作树检出的分支，图标右下角叠角标
+            // 已在别的工作树检出的分支，图标右下角带角标
             isCheckedOutElsewhere: session.worktrees.branchWorktrees[ref.id] != nil,
             badge: badge(ref),
             status: status,

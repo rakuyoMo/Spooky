@@ -145,7 +145,7 @@ struct ThemeAndTerminalTests {
         }
     }
 
-    /// 在终端里打开仓库的命令：路径与主机别名里的引号不能逃出两层转义；
+    /// 在终端里打开仓库的命令：路径与主机别名里的引号不能逃出两层转义；服务器不给终端时不要终端再连一次；
     /// Terminal 有两个以上窗口时在最前面的窗口里执行，iTerm 已在运行且有窗口时在第一个窗口里新建标签页；
     /// 命令经转义后才进入脚本。
     @Test("终端命令的双层转义，Terminal 与 iTerm 按已有的窗口决定在哪里执行")
@@ -159,6 +159,15 @@ struct ThemeAndTerminalTests {
         #expect(remote.terminalCommand.contains("'ForwardAgent=no'"))
         #expect(remote.terminalCommand.contains("'--' 'alias'\\''quoted'"))
         #expect(remote.localURL == nil)
+
+        // 服务器不给终端时 ssh 以 255 退出，改为不要终端再连一次，登录 shell 加 -i
+        let options = "'-a' '-o' 'ForwardAgent=no' '-o' 'StrictHostKeyChecking=yes' '--' 'b' "
+        #expect(
+            RepositoryLocation.remote(host: "b", path: "/srv/repo").terminalCommand
+                == "'/usr/bin/ssh' '-t' " + options + "'cd -- '\\''/srv/repo'\\'' && exec \"$SHELL\" -l'"
+                + " || { [ $? -eq 255 ] && '/usr/bin/ssh' '-T' " + options
+                + "'cd -- '\\''/srv/repo'\\'' && exec \"$SHELL\" -l -i'; }"
+        )
         #expect(TerminalLauncher.appleString("quoted\"\\\n") == "\"quoted\\\"\\\\\\n\"")
 
         // Terminal 与 iTerm 的脚本

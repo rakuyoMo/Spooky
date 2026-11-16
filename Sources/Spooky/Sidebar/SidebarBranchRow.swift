@@ -132,10 +132,10 @@ struct SidebarBranchRow: View {
     /// 显示名。
     let name: String
 
-    /// 图标的 SF Symbol 名。
-    let symbol: String
+    /// 图标表示的分支种类。
+    let icon: SidebarBranchIcon.Kind
 
-    /// 分支已在别的工作树签出，图标右下角叠一个角标。
+    /// 分支已在别的工作树签出，图标右下角带角标。
     var isCheckedOutElsewhere = false
 
     /// 胶囊徽标的各段；为空时不显示徽标。
@@ -166,13 +166,8 @@ struct SidebarBranchRow: View {
                     annotations
                 }
             } icon: {
-                // 系统符号自带的名称与分支无关（如 “Divide”），图标不进辅助功能，这一行由名称与注记说明
-                Image(systemName: symbol)
-                    .overlay(alignment: .bottomTrailing) {
-                        if isCheckedOutElsewhere {
-                            WorktreeCornerBadge()
-                        }
-                    }
+                // 图标不进辅助功能，这一行由名称与注记说明
+                SidebarBranchIcon(kind: icon, isCheckedOutElsewhere: isCheckedOutElsewhere)
                     .accessibilityHidden(true)
             }
 
@@ -221,17 +216,5 @@ struct SidebarBranchRow: View {
             .font(.system(size: 11))
             .lineLimit(1)
         }
-    }
-}
-
-// MARK: - WorktreeCornerBadge
-
-/// 分支图标右下角的角标：两个叠放的小方块，表示分支已在别的工作树签出；颜色随图标。
-private struct WorktreeCornerBadge: View {
-    /// 落在分支图标右下角的空白处，略微伸出图标的边。
-    var body: some View {
-        Image(systemName: "square.on.square")
-            .font(.system(size: 7, weight: .bold))
-            .offset(x: 3, y: 2)
     }
 }
