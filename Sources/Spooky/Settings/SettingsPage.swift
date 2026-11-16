@@ -10,7 +10,7 @@ struct SettingsPage {
     /// 页签名的资源键，也是这一页在页签控制器里的标识。
     let key: String
 
-    /// 页签图标的 SF Symbol。
+    /// 页签图标的符号名，系统符号或 `AppSymbol` 里的自绘图形。
     let symbol: String
 
     /// 生成这一页的内容视图。
@@ -46,7 +46,7 @@ extension SettingsPage {
     }
 
     /// 本机全局 Git 配置里的提交人身份与提交签名。
-    static let gitConfig = SettingsPage(key: "settings.gitConfig", symbol: "arrow.triangle.branch") {
+    static let gitConfig = SettingsPage(key: "settings.gitConfig", symbol: AppSymbol.branch) {
         AnyView(GitConfigSettingsView())
     }
 

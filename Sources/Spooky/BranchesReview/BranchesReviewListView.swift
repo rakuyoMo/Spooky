@@ -111,7 +111,7 @@ struct BranchesReviewListView: View {
             EmptyStateView(
                 title: AppLocalization.text("review.empty"),
                 message: "",
-                symbol: "arrow.triangle.branch"
+                symbol: AppSymbol.branch
             )
         } else {
             List(selection: Bindable(session.branchesReview).selectedIDs) {

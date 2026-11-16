@@ -30,7 +30,7 @@ final class SettingsWindowController: NSWindowController {
             let tab = NSTabViewItem(viewController: content)
             tab.identifier = page.key
             tab.label = AppLocalization.text(page.key)
-            tab.image = NSImage(systemSymbolName: page.symbol, accessibilityDescription: tab.label)
+            tab.image = AppSymbol.image(page.symbol, side: 26, inset: 3.5, accessibilityDescription: tab.label)
             tabs.addTabViewItem(tab)
         }
 

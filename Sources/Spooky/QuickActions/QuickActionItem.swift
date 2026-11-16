@@ -239,7 +239,7 @@ enum QuickActionObject: Equatable {
     var symbol: String {
         switch self {
         case .navigation(let destination): destination.symbol
-        case .branch: "arrow.triangle.branch"
+        case .branch: AppSymbol.branch
         case .worktree: "rectangle.on.rectangle"
         case .remote, .remoteBranch: "network"
         case .submodule: "shippingbox"

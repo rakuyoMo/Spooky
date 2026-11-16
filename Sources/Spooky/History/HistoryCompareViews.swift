@@ -223,7 +223,7 @@ struct HistoryForkPointRow: View {
                     .accessibilityHidden(true)
             }
 
-            Image(systemName: "arrow.triangle.branch")
+            AppSymbolImage(name: AppSymbol.branch)
                 .font(.system(size: 13))
                 .frame(width: 16, height: 16)
                 .accessibilityHidden(true)

@@ -122,6 +122,9 @@ final class ChangesetFixture {
             !self.session.history.branches.isEmpty && self.session.stashes.isLoaded && self.session.reflog.isLoaded
         }
 
+        // 提交分页读完时会重读所选提交的变更集与已展开文件的补丁，等它结束再选提交
+        await untilFinished { self.session.history.activeTasks }
+
         session.history.show(commits[2], runner: runner)
         session.stashes.selectedIDs = [try #require(session.stashes.entries.first).id]
         session.reflog.selectedID = try #require(session.reflog.entries.first { $0.commit.id == commits[2].id }).id
