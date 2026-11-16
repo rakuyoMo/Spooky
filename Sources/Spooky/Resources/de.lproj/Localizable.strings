@@ -1736,6 +1736,9 @@
 "settings.appearance.label" = "Erscheinungsbild:";
 "appIcon.serverGhost" = "Server-Geist";
 "appIcon.midnight" = "Mitternacht";
+"appIcon.armful" = "Ein Arm voll";
+"appIcon.cherryPick" = "Kirschenpflücken";
+"appIcon.perch" = "Auf dem Ast";
 "appIcon.writeFailed" = "Das Symbol konnte nicht gewechselt werden, weil es nicht in Spooky.app geschrieben werden kann.";
 "settings.appIcon.label" = "App-Symbol:";
 "settings.appIcon.change" = "Ändern …";

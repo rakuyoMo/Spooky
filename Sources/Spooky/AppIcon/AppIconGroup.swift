@@ -12,10 +12,22 @@ enum AppIconGroup: String, CaseIterable, Identifiable {
     /// 紫色夜空里探身进来的幽灵。
     case midnight
 
+    /// 抱着一对樱桃的幽灵，身后是一排声纹。
+    case armful
+
+    /// 伸手从枝上采撷的幽灵。
+    case cherryPick
+
+    /// 落在树枝上的幽灵。
+    case perch
+
+    /// 默认的一组：没选过时用它，它的默认图标就是包里的默认图标，不需要壳 App 与自定义图标。
+    static let defaultGroup = Self.serverGhost
+
     /// 偏好键，保存 `rawValue`。
     static let key = "appIconGroup"
 
-    /// 底板四周的透明边占图标边长的比例：每组图标的底板都从 1024 网格的 (100, 100) 画起，见 `scripts/make-icon.js`；
+    /// 底板四周的透明边占图标边长的比例：每组图标的底板都从 1024 网格的 (100, 100) 画起，见 `scripts/make-icon/kit.js`；
     /// 与图标并排的文字和控件按底板排齐。
     static let plateInset = 100.0 / 1024
 
@@ -27,13 +39,16 @@ enum AppIconGroup: String, CaseIterable, Identifiable {
         switch self {
         case .serverGhost: AppLocalization.text("appIcon.serverGhost")
         case .midnight: AppLocalization.text("appIcon.midnight")
+        case .armful: AppLocalization.text("appIcon.armful")
+        case .cherryPick: AppLocalization.text("appIcon.cherryPick")
+        case .perch: AppLocalization.text("appIcon.perch")
         }
     }
 
-    /// 偏好里所选的组；没有记录或记录无法识别时为服务器幽灵。
+    /// 偏好里所选的组；没有记录或记录无法识别时为默认的一组。
     /// - Parameter defaults: 读取的偏好，测试使用独立的域
     static func current(in defaults: UserDefaults = .standard) -> Self {
-        defaults.string(forKey: key).flatMap(Self.init(rawValue:)) ?? .serverGhost
+        defaults.string(forKey: key).flatMap(Self.init(rawValue:)) ?? defaultGroup
     }
 
     /// 这一组中某一版图标在包里的资源名，不含扩展名。
@@ -47,7 +62,7 @@ enum AppIconGroup: String, CaseIterable, Identifiable {
 
 /// 一组图标中的一版：深色或默认，指示灯亮着或灭着。
 struct AppIconVariant: Equatable {
-    /// 指示灯灭着的默认图标：服务器幽灵是包里的默认图标，其它组是各自壳 App 的包内图标。
+    /// 指示灯灭着的默认图标：默认的一组是包里的默认图标，其它组是各自壳 App 的包内图标。
     static let standard = Self(isDark: false, isConnected: false)
 
     /// 是否深色图标。
@@ -63,8 +78,11 @@ extension AppIconGroup {
     /// 这一组四个图标共用的资源名前缀，也是默认图标与壳 App 的名字。
     private var iconNamePrefix: String {
         switch self {
-        case .serverGhost: "AppIcon"
+        case .serverGhost: "AppIconServerGhost"
         case .midnight: "AppIconMidnight"
+        case .armful: "AppIconArmful"
+        case .cherryPick: "AppIconCherryPick"
+        case .perch: "AppIconPerch"
         }
     }
 }

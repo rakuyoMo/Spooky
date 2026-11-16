@@ -1,21 +1,31 @@
-// 生成 Spooky 的两组应用图标：在无窗口的 WebKit 中运行同目录 make-icon.js 的 Canvas 绘制，
-// 为每组的默认图标与深色图标的指示灯灭着、亮着两版各导出全部尺寸，再由 iconutil 合成八份 .icns。
+// 生成 Spooky 的五组应用图标：在无窗口的 WebKit 中运行 make-icon/ 目录下的 Canvas 绘制，
+// 为每组的默认图标与深色图标的指示灯灭着、亮着两版各导出全部尺寸，再由 iconutil 合成二十份 .icns。
 //
 // 用法：swift scripts/make-icon.swift <输出目录>
 
 import WebKit
 
-/// 要生成的八份图标：.icns 的文件名，以及传给 renderIcon 的图标组、样式与指示灯是否亮着。
-let icons: [(name: String, group: String, style: String, lit: Bool)] = [
-    ("AppIcon", "serverGhost", "default", false),
-    ("AppIconConnected", "serverGhost", "default", true),
-    ("AppIconDark", "serverGhost", "dark", false),
-    ("AppIconDarkConnected", "serverGhost", "dark", true),
-    ("AppIconMidnight", "midnight", "default", false),
-    ("AppIconMidnightConnected", "midnight", "default", true),
-    ("AppIconMidnightDark", "midnight", "dark", false),
-    ("AppIconMidnightDarkConnected", "midnight", "dark", true),
+/// 五组图标：.icns 文件名的前缀，传给 renderIcon 的图标组，以及 make-icon/ 目录下这一组的绘制脚本。
+let groups: [(prefix: String, group: String, script: String)] = [
+    ("AppIconServerGhost", "serverGhost", "server-ghost.js"),
+    ("AppIconMidnight", "midnight", "midnight.js"),
+    ("AppIconArmful", "armful", "armful.js"),
+    ("AppIconCherryPick", "cherryPick", "cherry-pick.js"),
+    ("AppIconPerch", "perch", "perch.js"),
 ]
+
+/// 每组的四版：接在前缀后面的文件名后缀，以及传给 renderIcon 的样式与指示灯是否亮着。
+let versions: [(suffix: String, style: String, lit: Bool)] = [
+    ("", "default", false),
+    ("Connected", "default", true),
+    ("Dark", "dark", false),
+    ("DarkConnected", "dark", true),
+]
+
+/// 要生成的二十份图标：.icns 的文件名，以及传给 renderIcon 的图标组、样式与指示灯是否亮着。
+let icons = groups.flatMap { group in
+    versions.map { (name: group.prefix + $0.suffix, group: group.group, style: $0.style, lit: $0.lit) }
+}
 
 /// iconset 需要的文件名与像素尺寸。
 let variants: [(name: String, pixels: Int)] = [
@@ -33,13 +43,15 @@ guard CommandLine.arguments.count == 2 else {
 
 let outputDirectory = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 
-/// 与本文件同目录的 make-icon.js 绘制脚本。
-let drawing = try String(
-    contentsOf: URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent()
-        .appending(path: "make-icon.js"),
-    encoding: .utf8
-)
+/// 与本文件同目录的 make-icon/ 目录，放着各组的绘制脚本与它们共用的 kit.js。
+let scriptDirectory = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent()
+    .appending(path: "make-icon", directoryHint: .isDirectory)
+
+/// 绘制脚本：kit.js 在前，各组的脚本依次接在后面，合成一份执行。
+let drawing = try (["kit.js"] + groups.map(\.script))
+    .map { try String(contentsOf: scriptDirectory.appending(path: $0), encoding: .utf8) }
+    .joined(separator: "\n")
 
 /// 执行绘制脚本的无窗口 WebKit 视图；Canvas 需要页面中的 document，因此先加载一个空白页面。
 let webView = WKWebView(frame: .zero)

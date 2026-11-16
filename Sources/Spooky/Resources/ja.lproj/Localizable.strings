@@ -1736,6 +1736,9 @@
 "settings.appearance.label" = "外観：";
 "appIcon.serverGhost" = "サーバーゴースト";
 "appIcon.midnight" = "ミッドナイト";
+"appIcon.armful" = "ひと抱え";
+"appIcon.cherryPick" = "チェリーピック";
+"appIcon.perch" = "止まり木";
 "appIcon.writeFailed" = "アイコンを Spooky.app に書き込めないため、切り替えられませんでした。";
 "settings.appIcon.label" = "アプリアイコン：";
 "settings.appIcon.change" = "変更…";
