@@ -107,7 +107,7 @@ extension RepositorySidebarView {
         if let name = headRowName, let branch = session.status?.branch {
             SidebarBranchRow(
                 name: name,
-                symbol: "arrow.triangle.branch",
+                icon: .branch,
                 badge: [.head],
                 help: SidebarTooltip.head(branch: branch, host: session.repository?.host)
             )

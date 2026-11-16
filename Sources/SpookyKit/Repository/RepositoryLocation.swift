@@ -45,11 +45,18 @@ public enum RepositoryLocation: Hashable, Sendable, Codable {
             return "cd -- " + GitRunner.shellQuoted(path)
 
         case .remote(let host, let path):
-            let script = "cd -- " + GitRunner.shellQuoted(path) + " && exec \"$SHELL\" -l"
-            return [
-                "/usr/bin/ssh", "-t", "-a", "-o", "ForwardAgent=no",
-                "-o", "StrictHostKeyChecking=yes", "--", host, script,
-            ].map(GitRunner.shellQuoted).joined(separator: " ")
+            let enter = "cd -- " + GitRunner.shellQuoted(path) + " && exec \"$SHELL\" -l"
+            let options = ["-a", "-o", "ForwardAgent=no", "-o", "StrictHostKeyChecking=yes", "--", host]
+
+            // 每个参数各自转义后拼成一条 ssh 命令
+            let ssh = { (arguments: [String]) in
+                (["/usr/bin/ssh"] + arguments).map(GitRunner.shellQuoted).joined(separator: " ")
+            }
+
+            // 服务器不给终端时（如公钥带 no-pty 限制），带 -t 的 ssh 不执行命令、以 255 退出；
+            // 这时不要终端再连一次，登录 shell 加 -i 才显示提示符
+            return ssh(["-t"] + options + [enter])
+                + " || { [ $? -eq 255 ] && " + ssh(["-T"] + options + [enter + " -i"]) + "; }"
         }
     }
 }
