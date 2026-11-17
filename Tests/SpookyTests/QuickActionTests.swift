@@ -110,6 +110,11 @@ struct QuickActionTests {
         // 本机仓库的工作区可以在 Finder 中显示
         #expect(catalog.actions(for: .navigation(.workingCopy)).contains(.revealInFinder))
 
+        // 本机仓库的工作树同样可以复制路径，排在终端之前
+        let worktree = Worktree(path: "/tmp/linked 工作树", head: head, branch: "refs/heads/topic", isMain: false)
+
+        #expect(catalog.actions(for: .worktree(worktree)).suffix(2) == [.copyPath, .openInTerminal])
+
         try expectEmptyQuery(of: catalog)
     }
 

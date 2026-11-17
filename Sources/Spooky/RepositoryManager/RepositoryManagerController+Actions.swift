@@ -27,7 +27,7 @@ extension RepositoryManagerController {
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
-    /// 复制带主机前缀的服务器路径，避免与本机目录混淆。
+    /// 复制路径：本机仓库是绝对路径，服务器仓库带主机前缀，避免与本机目录混淆。
     func copyPath(_ id: Bookmark.ID) {
         guard let location = bookmarks.bookmark(id)?.location else {
             return

@@ -59,16 +59,17 @@ struct RecentClonesView: View {
         Button(AppLocalization.text("action.open")) { open(destination) }
             .disabled(!activity.isFinished)
 
-        if let url = destination.localURL {
-            Button(AppLocalization.text("action.revealFinder")) {
+        Button(AppLocalization.text("action.revealFinder")) {
+            if let url = destination.localURL {
                 NSWorkspace.shared.activateFileViewerSelecting([url])
             }
-            .disabled(!activity.isFinished)
-        } else {
-            Button(AppLocalization.text("action.copyPath")) {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(destination.displayPath, forType: .string)
-            }
+        }
+        .disabled(!activity.isFinished)
+
+        // 克隆进行中也可以复制；本机仓库是绝对路径，服务器仓库带主机前缀
+        Button(AppLocalization.text("action.copyPath")) {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(destination.displayPath, forType: .string)
         }
 
         Button(AppLocalization.text("action.openTerminal")) { openInTerminal(destination) }

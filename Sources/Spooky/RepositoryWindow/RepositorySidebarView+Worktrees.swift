@@ -129,7 +129,7 @@ struct WorktreeMenu: View {
         systemItems
     }
 
-    /// 工作树在 Finder 中显示，服务器上的按挂载位置打开，另有复制带主机前缀的路径；都可以在终端中打开。
+    /// 工作树在 Finder 中显示，服务器上的按挂载位置打开；复制路径，服务器上的带主机前缀；都可以在终端中打开。
     @ViewBuilder
     private var systemItems: some View {
         let location = session.location(of: worktree)
@@ -142,13 +142,11 @@ struct WorktreeMenu: View {
         .disabled(!session.canShowInFinder(worktree))
         .help(session.finderUnavailableTip(of: worktree) ?? "")
 
-        if session.repository?.host != nil {
-            Button(AppLocalization.text("action.copyPath")) {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(location?.displayPath ?? worktree.path, forType: .string)
-            }
-            .disabled(location == nil)
+        Button(AppLocalization.text("action.copyPath")) {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(location?.displayPath ?? worktree.path, forType: .string)
         }
+        .disabled(location == nil)
 
         Button(title("action.openTerminal", "worktree.branch.terminal")) {
             if let location { session.onOpenInTerminal?(location) }
