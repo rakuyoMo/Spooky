@@ -108,7 +108,7 @@ extension RepositorySession {
             return false
         }
 
-        ServerLocalFolders.set(folder, for: repository)
+        ServerLocalLocation.store(.chosenFolder(folder), for: repository)
 
         // 核对期间窗口换了仓库时只记进偏好
         if self.repository == repository {
@@ -118,13 +118,24 @@ extension RepositorySession {
         return true
     }
 
+    /// 打开服务器仓库时读入这台 Mac 偏好里记下的本机位置；指定了文件夹时不再自动查找仓库目录的挂载。
+    func loadLocalLocation() {
+        guard let repository, repository.host != nil else {
+            return
+        }
+
+        if case .chosenFolder(let folder) = ServerLocalLocation.stored(for: repository) {
+            mounts.designate(folder, for: repository.path)
+        }
+    }
+
     /// 清除手动指定的本机目录，仓库目录恢复自动查找。
     func clearLocalFolder() {
         guard let repository else {
             return
         }
 
-        ServerLocalFolders.set(nil, for: repository)
+        ServerLocalLocation.store(.automatic, for: repository)
         mounts.designate(nil, for: repository.path)
         locateMounts()
     }

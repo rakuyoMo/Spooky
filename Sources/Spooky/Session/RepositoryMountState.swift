@@ -192,32 +192,3 @@ extension RepositoryMountState {
         locate(Array(lookups.keys), host: source.host, runner: source.runner, refreshes: true)
     }
 }
-
-// MARK: - ServerLocalFolders
-
-/// 服务器仓库在仓库设置里手动指定的本机目录，存在这台 Mac 的偏好里，全部窗口共用；不写进 B 的 Git 配置。
-enum ServerLocalFolders {
-    /// 偏好键，值是仓库的显示路径（`<别名>:<路径>`）到本机目录路径的字典。
-    static let key = "serverLocalFolders"
-
-    /// 这个仓库手动指定的本机目录；没有指定时为 nil。
-    ///
-    /// - Parameters:
-    ///   - location: 服务器仓库。
-    ///   - defaults: 存放记录的偏好。
-    static func folder(for location: RepositoryLocation, in defaults: UserDefaults = .standard) -> URL? {
-        (defaults.dictionary(forKey: key)?[location.displayPath] as? String).map { URL(filePath: $0) }
-    }
-
-    /// 保存或清除这个仓库手动指定的本机目录。
-    ///
-    /// - Parameters:
-    ///   - folder: 本机目录；nil 表示清除。
-    ///   - location: 服务器仓库。
-    ///   - defaults: 存放记录的偏好。
-    static func set(_ folder: URL?, for location: RepositoryLocation, in defaults: UserDefaults = .standard) {
-        var folders = defaults.dictionary(forKey: key) ?? [:]
-        folders[location.displayPath] = folder?.path
-        defaults.set(folders, forKey: key)
-    }
-}

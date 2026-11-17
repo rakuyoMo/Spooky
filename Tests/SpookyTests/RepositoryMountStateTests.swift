@@ -65,26 +65,56 @@ struct RepositoryMountStateTests {
         #expect(state.lookups.isEmpty)
     }
 
-    /// 手动指定的本机目录按仓库的显示路径记在偏好里：同一路径在不同主机上各记各的，清除后读不到。
-    @Test("记下与清除手动指定的目录")
-    func storedFolders() throws {
+    /// 本机位置按仓库的显示路径记在偏好里：同一路径在不同主机上各记各的，四种方式都原样读回，自动查找记作删掉；
+    /// 升级前只在旧键里手动指定过文件夹的仓库读作指定文件夹并迁进新键；Reset User Defaults 之后照样读得到。
+    @Test("本机位置的读写、迁移与 Reset 后保留")
+    func storedLocations() throws {
         let directory = try FileViewsTests.temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
 
-        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        let domain = directory.appending(path: "defaults").path
+        let defaults = try #require(UserDefaults(suiteName: domain))
 
         let repository = RepositoryLocation.remote(host: "spooky-test", path: "/Users/wgy/spooky-test/仓 库")
         let other = RepositoryLocation.remote(host: "spooky-other", path: "/Users/wgy/spooky-test/仓 库")
         let folder = URL(filePath: "/Volumes/spooky-test/仓 库")
+        let share = try #require(URL(string: "smb://wgy@127.0.0.1/wgy"))
 
-        #expect(ServerLocalFolders.folder(for: repository, in: defaults) == nil)
+        #expect(ServerLocalLocation.stored(for: repository, defaults: defaults) == .automatic)
 
-        ServerLocalFolders.set(folder, for: repository, in: defaults)
-        #expect(ServerLocalFolders.folder(for: repository, in: defaults)?.path == folder.path)
-        #expect(ServerLocalFolders.folder(for: other, in: defaults) == nil)
+        // 各方式原样读回，另一台主机上的同一路径不受影响
+        for location in [
+            ServerLocalLocation.smbMount(share: nil),
+            .smbMount(share: share),
+            .sshfsMount(folder: folder),
+            .chosenFolder(folder),
+        ] {
+            ServerLocalLocation.store(location, for: repository, defaults: defaults)
 
-        ServerLocalFolders.set(nil, for: repository, in: defaults)
-        #expect(ServerLocalFolders.folder(for: repository, in: defaults) == nil)
+            #expect(ServerLocalLocation.stored(for: repository, defaults: defaults) == location)
+            #expect(ServerLocalLocation.stored(for: other, defaults: defaults) == .automatic)
+        }
+
+        ServerLocalLocation.store(.automatic, for: repository, defaults: defaults)
+        #expect(defaults.dictionary(forKey: ServerLocalLocation.key)?[repository.displayPath] == nil)
+
+        // 旧键只记手动指定的文件夹；读到时迁成指定文件夹，旧键里的这一项删掉，别的仓库的旧记录留到它被读到
+        defaults.set(
+            [repository.displayPath: folder.path, other.displayPath: "/Volumes/other"],
+            forKey: ServerLocalLocation.legacyKey
+        )
+
+        #expect(ServerLocalLocation.stored(for: repository, defaults: defaults) == .chosenFolder(folder))
+        #expect(defaults.dictionary(forKey: ServerLocalLocation.legacyKey)?.keys.sorted() == [other.displayPath])
+
+        // Reset 之后新键与还没迁移的旧记录都在
+        DeveloperPreferences.removeValues(in: domain, of: defaults, keepingData: true)
+
+        #expect(ServerLocalLocation.stored(for: repository, defaults: defaults) == .chosenFolder(folder))
+        #expect(
+            ServerLocalLocation.stored(for: other, defaults: defaults) == .chosenFolder(URL(filePath: "/Volumes/other"))
+        )
+        #expect(defaults.object(forKey: ServerLocalLocation.legacyKey) == nil)
     }
 }
 

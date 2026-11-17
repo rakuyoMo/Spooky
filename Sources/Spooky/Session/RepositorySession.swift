@@ -414,8 +414,7 @@ final class RepositorySession {
             observeConnection(repository)
             startPolling()
 
-            // 仓库设置里手动指定的本机目录记在这台 Mac 的偏好里，设了就不再自动查找仓库目录的挂载
-            mounts.designate(ServerLocalFolders.folder(for: repository), for: repository.path)
+            loadLocalLocation()
         } else if loadsRepositoryDetails {
             fileMonitor = RepositoryFileMonitor(path: repository.path) { [weak self] in self?.autoReload() }
         }
