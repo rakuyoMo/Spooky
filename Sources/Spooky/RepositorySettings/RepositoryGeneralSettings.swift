@@ -57,7 +57,7 @@ extension RepositoryGeneralSettings {
         RemoteSettingRow(label: AppLocalization.text("repositorySettings.path"), location: session.repository)
 
         if session.repository?.host != nil {
-            RepositoryLocalFolderRow(session: session)
+            RepositoryLocalLocationRow(session: session)
         }
 
         RemoteSettingRow(

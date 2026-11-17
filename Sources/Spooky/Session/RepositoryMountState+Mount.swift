@@ -97,12 +97,11 @@ extension RepositoryMountState {
             return
         }
 
-        guard let repository, [.smbMount, .sshfsMount].contains(location.method) else {
+        guard let repository, location.method.mounting != nil else {
             return
         }
 
         let location = location
-        let defaults = defaults
 
         let task = Task { [weak self] in
             guard let self else { return }
@@ -116,14 +115,8 @@ extension RepositoryMountState {
 
             switch result {
             case .success(let mounted):
-                ServerLocalLocation.store(mounted, for: repository, defaults: defaults)
                 setMounting(nil)
-                apply(mounted)
-
-                // sshfs 挂上并核对过，文件夹此刻就能用
-                if mounted.method == .sshfsMount {
-                    setFolderAvailable(true)
-                }
+                save(mounted)
 
             case .failure(let failure):
                 setMounting(nil, failure: failure)
@@ -137,6 +130,50 @@ extension RepositoryMountState {
         if mountTask == task {
             setMounting(nil, failure: failure)
         }
+    }
+
+    /// 记下用户设置或挂载成功的本机位置：写进偏好，并改换这次运行里的本机位置。
+    ///
+    /// sshfs 挂载只在挂上并核对过之后记下，文件夹此刻就能用。
+    ///
+    /// - Parameter location: 要记下的本机位置。
+    func save(_ location: ServerLocalLocation) {
+        guard let repository else {
+            return
+        }
+
+        ServerLocalLocation.store(location, for: repository, defaults: defaults)
+        apply(location)
+
+        if location.method == .sshfsMount {
+            setFolderAvailable(true)
+        }
+    }
+
+    /// 经标记文件核对本机文件夹就是 B 上的仓库目录：在仓库的 Git 目录里临时放一个随机命名的文件，经文件夹看得到才算，随后删掉。
+    ///
+    /// - Parameters:
+    ///   - folder: 本机文件夹。
+    ///   - runner: 仓库的执行器。
+    /// - Returns: 没通过时是说明选的文件夹不是这个仓库的原因；通过时为 nil。
+    func verify(_ folder: URL, runner: GitRunner) async -> LocalLocationFailure? {
+        guard let repository else {
+            return nil
+        }
+
+        let mount = RemoteMount(remotePath: repository.path, localURL: folder)
+
+        if await RemoteMountLocator.verify(repository.path, through: mount, runner: runner) {
+            return nil
+        }
+
+        let reason = AppLocalization.text(
+            "repositorySettings.localFolder.rejected.message",
+            HomePath.abbreviated(folder.path),
+            repository.displayPath
+        )
+
+        return LocalLocationFailure(reason: reason)
     }
 
     /// 打开仓库、连上 B 之后在后台挂载一次：先查找或查看是否已经挂着，没有时检测可用条件，可用才挂载；不询问，失败只记下原因。
@@ -185,13 +222,11 @@ extension RepositoryMountState {
 
     /// 现在的方式在这台 Mac 上可用。
     private func isAvailable(on host: String) async -> Bool {
-        let methods = await mounter.methods(host)
-
-        switch location.method {
-        case .smbMount: return methods.contains(.smb)
-        case .sshfsMount: return methods.contains(.sshfs)
-        case .automatic, .chosenFolder: return false
+        guard let mounting = location.method.mounting else {
+            return false
         }
+
+        return await mounter.methods(host).contains(mounting)
     }
 
     /// 挂载 SMB 共享，再按自动查找的办法在挂着的卷里找这个仓库；找不到时算失败，卷保持挂载。
@@ -238,16 +273,8 @@ extension RepositoryMountState {
             return .failure(LocalLocationFailure(failure))
         }
 
-        let mount = RemoteMount(remotePath: path, localURL: folder)
-
-        guard await RemoteMountLocator.verify(path, through: mount, runner: runner) else {
-            let reason = AppLocalization.text(
-                "repositorySettings.localFolder.rejected.message",
-                HomePath.abbreviated(folder.path),
-                repository?.displayPath ?? path
-            )
-
-            return .failure(LocalLocationFailure(reason: reason))
+        if let failure = await verify(folder, runner: runner) {
+            return .failure(failure)
         }
 
         return .success(.sshfsMount(folder: folder))

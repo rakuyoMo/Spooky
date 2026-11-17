@@ -34,6 +34,25 @@ enum ServerLocalLocation: Equatable {
 
         /// 指定文件夹。
         case chosenFolder
+
+        /// 由 Spooky 挂载的方式对应的挂载办法；其余方式为 nil。
+        var mounting: RemoteMountMethod? {
+            switch self {
+            case .smbMount: .smb
+            case .sshfsMount: .sshfs
+            case .automatic, .chosenFolder: nil
+            }
+        }
+
+        /// 界面上的名称。
+        var title: String {
+            switch self {
+            case .automatic: AppLocalization.text("localLocation.method.automatic")
+            case .smbMount: AppLocalization.text("localLocation.method.smbMount")
+            case .sshfsMount: AppLocalization.text("localLocation.method.sshfsMount")
+            case .chosenFolder: AppLocalization.text("localLocation.method.chosenFolder")
+            }
+        }
     }
 
     /// 按仓库记下整条本机位置的偏好键，值以仓库的显示路径（`<别名>:<路径>`）为键。

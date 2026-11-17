@@ -147,7 +147,7 @@ final class RepositoryMountState {
     ///   - mountsInBackground: 打开仓库时为 true：方式是 SMB 或 sshfs 挂载时，连上 B 后在后台挂载一次。
     func load(_ location: ServerLocalLocation, for repository: RepositoryLocation, mountsInBackground: Bool) {
         self.repository = repository
-        backgroundMountPending = mountsInBackground && [.smbMount, .sshfsMount].contains(location.method)
+        backgroundMountPending = mountsInBackground && location.method.mounting != nil
         apply(location)
     }
 

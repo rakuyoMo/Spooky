@@ -87,33 +87,6 @@ extension RepositorySession {
         return mount?.localURL(for: worktree.path)
     }
 
-    /// 核对选定的本机目录确实是 B 上的仓库目录，通过后记进这台 Mac 的偏好，仓库目录此后按它换算、不再自动查找。
-    ///
-    /// 核对经 SSH 在仓库的 Git 目录里临时放一个随机命名的标记文件，经本机目录看得到才算，随后删掉。
-    ///
-    /// - Parameter folder: 选定的本机目录。
-    /// - Returns: 核对通过时为 true。
-    func chooseLocalFolder(_ folder: URL) async -> Bool {
-        guard let repository, repository.host != nil, let runner else {
-            return false
-        }
-
-        let mount = RemoteMount(remotePath: repository.path, localURL: folder)
-
-        guard await RemoteMountLocator.verify(repository.path, through: mount, runner: runner) else {
-            return false
-        }
-
-        ServerLocalLocation.store(.chosenFolder(folder), for: repository, defaults: mounts.defaults)
-
-        // 核对期间窗口换了仓库时只记进偏好
-        if self.repository == repository {
-            mounts.apply(.chosenFolder(folder))
-        }
-
-        return true
-    }
-
     /// 打开服务器仓库时读入这台 Mac 偏好里记下的本机位置；方式是 SMB 或 sshfs 挂载时，连上 B 后在后台挂载一次。
     func loadLocalLocation() {
         guard let repository, repository.host != nil else {
@@ -125,17 +98,6 @@ extension RepositorySession {
             for: repository,
             mountsInBackground: true
         )
-    }
-
-    /// 仓库目录的本机位置改回自动查找，并重新查找。
-    func clearLocalFolder() {
-        guard let repository else {
-            return
-        }
-
-        ServerLocalLocation.store(.automatic, for: repository, defaults: mounts.defaults)
-        mounts.apply(.automatic)
-        locateMounts()
     }
 
     /// 在后台查找服务器仓库的目录与仓库目录以外的工作树，已经有结果的目录不再查找；本机仓库与本机位置带文件夹的仓库目录不用查找。
