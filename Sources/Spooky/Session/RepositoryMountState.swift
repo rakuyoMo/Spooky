@@ -133,6 +133,10 @@ final class RepositoryMountState {
     /// - Parameter folder: 本机文件夹。
     nonisolated static func isVolumeRoot(_ folder: URL) async -> Bool {
         await Task.detached {
+            var folder = folder
+
+            // 先清掉缓存：同一个 URL 在挂载之前取过卷信息时，之后再取仍是旧值
+            folder.removeAllCachedResourceValues()
             let volume = try? folder.resourceValues(forKeys: [.volumeURLKey]).volume
 
             return volume?.standardizedFileURL.path == folder.resolvingSymlinksInPath().standardizedFileURL.path

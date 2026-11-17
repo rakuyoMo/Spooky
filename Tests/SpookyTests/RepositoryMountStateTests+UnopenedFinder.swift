@@ -39,6 +39,43 @@ extension RepositoryMountStateTests {
         await sshfs.checkFolder()
         #expect(sshfs.repositoryMount()?.localURL == root)
 
+        // 同一个文件夹先没挂着、之后挂上卷：再查看时是卷的根；先卸下再核对，核对失败也不留下挂载
+        let image = directory.appending(path: "volume.dmg")
+        let volume = directory.appending(path: "volume")
+        try FileManager.default.createDirectory(at: volume, withIntermediateDirectories: false)
+
+        sshfs.apply(.sshfsMount(folder: volume))
+        await sshfs.checkFolder()
+        let unmounted = sshfs.repositoryMount()
+
+        _ = try await CommandExecutor.execute(
+            executable: "/usr/bin/hdiutil",
+            processArguments: [
+                "create", "-quiet", "-size", "1m", "-fs", "HFS+", "-volname", "Spooky",
+                image.path,
+            ]
+        )
+
+        _ = try await CommandExecutor.execute(
+            executable: "/usr/bin/hdiutil",
+            processArguments: [
+                "attach", "-quiet", "-nobrowse", "-noautoopen",
+                "-mountpoint", volume.path,
+                image.path,
+            ]
+        )
+
+        await sshfs.checkFolder()
+        let mounted = sshfs.repositoryMount()?.localURL
+
+        _ = try await CommandExecutor.execute(
+            executable: "/usr/bin/hdiutil",
+            processArguments: ["detach", "-quiet", volume.path]
+        )
+
+        #expect(unmounted == nil)
+        #expect(mounted == volume)
+
         await Self.checkFinishAfterCancel(site: site, location: location)
         try await Self.checkFinishAfterForm(site: site, location: location)
         await Self.checkEndAfterClose(site: site, location: location)
