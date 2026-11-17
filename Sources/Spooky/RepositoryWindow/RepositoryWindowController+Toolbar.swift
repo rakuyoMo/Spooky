@@ -566,6 +566,8 @@ extension RepositoryWindowController {
     /// 需要显示跟随分隔符而工具栏里还没有时，把它插在侧边栏分隔符之后；侧边栏分隔符被移出工具栏时不插。
     ///
     /// 同一标识的工具栏按位置同步删除，删掉它会连带删掉别的仓库窗口同一位置上的项，所以插入后一直留着，不需要时隐藏。
+    ///
+    /// 插入同样同步给同一标识的工具栏，其中已经有这一项的会抛出重复项的异常，所以别的窗口已经有它时不插。
     private func insertDetailSeparatorIfNeeded(in toolbar: NSToolbar) {
         let identifiers = toolbar.items.map(\.itemIdentifier)
 
@@ -574,6 +576,15 @@ extension RepositoryWindowController {
             !identifiers.contains(RepositoryToolbar.detailSeparator),
             let sidebar = identifiers.firstIndex(of: RepositoryToolbar.sidebarSeparator)
         else {
+            return
+        }
+
+        let isInSibling = NSApp.windows.compactMap(\.toolbar).contains {
+            $0 !== toolbar && $0.identifier == toolbar.identifier
+                && $0.items.contains { $0.itemIdentifier == RepositoryToolbar.detailSeparator }
+        }
+
+        guard !isInSibling else {
             return
         }
 

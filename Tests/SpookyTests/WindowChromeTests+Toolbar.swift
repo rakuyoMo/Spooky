@@ -28,6 +28,7 @@ extension WindowChromeTests {
         Self.expectIconOnlyQuickTips(in: controller)
 
         try Self.expectDetailSeparator(in: controller)
+        try Self.expectSeparatorKeptOutOfSecondWindow(in: fixture)
 
         // 服务器仓库：窗口显示的是本机的工作区，会话换成同一目录的服务器仓库，只用来取主机别名
         controller.showWorkingCopy()
@@ -119,6 +120,41 @@ extension WindowChromeTests {
 
         // 来回切换始终只有一个
         #expect(toolbar.items.count(where: { $0.itemIdentifier == RepositoryToolbar.detailSeparator }) == 1)
+    }
+
+    /// 同一标识的工具栏里已经有一个带着跟随分隔符时，按不含它的排布建出的第二个窗口换到有内层分栏的视图后不插入它：
+    /// 系统把插入同步给同一标识的工具栏，已经有这一项的工具栏会抛出重复项的异常。
+    private static func expectSeparatorKeptOutOfSecondWindow(in fixture: NavigationTests.WindowFixture) throws {
+        let first = try #require(fixture.controller.window?.toolbar)
+        let key = "NSToolbar Configuration " + fixture.toolbarIdentifier
+        let saved = UserDefaults.standard.dictionary(forKey: key)
+
+        fixture.controller.showWorkingCopy()
+        #expect(first.items.contains { $0.itemIdentifier == RepositoryToolbar.detailSeparator })
+
+        // 第二个窗口按不含跟随分隔符的排布建出
+        let layout = first.items.map(\.itemIdentifier.rawValue).filter { $0 != RepositoryToolbar.detailSeparator.rawValue }
+        UserDefaults.standard.set(["TB Item Identifiers": layout, "TB Display Mode": 2], forKey: key)
+
+        let second = RepositoryWindowController(
+            coordinator: fixture.coordinator,
+            toolbarIdentifier: NSToolbar.Identifier(fixture.toolbarIdentifier)
+        )
+
+        defer {
+            second.session.close()
+            second.window?.close()
+            UserDefaults.standard.set(saved, forKey: key)
+        }
+
+        let toolbar = try #require(second.window?.toolbar)
+        #expect(!toolbar.items.contains { $0.itemIdentifier == RepositoryToolbar.detailSeparator })
+
+        second.display(fixture.location)
+
+        #expect(second.innerSplit != nil)
+        #expect(!toolbar.items.contains { $0.itemIdentifier == RepositoryToolbar.detailSeparator })
+        #expect(first.items.count(where: { $0.itemIdentifier == RepositoryToolbar.detailSeparator }) == 1)
     }
 
     /// 显示文字时提示就是一句话；按住 ⌥ 时同步一组换成快速操作的提示，同样不带标签。
