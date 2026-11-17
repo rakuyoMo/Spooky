@@ -354,16 +354,30 @@ final class AppIconController {
         updateIcon()
     }
 
-    /// 图标列表里这一组在当前深浅下的一张图标，即包里的原图；取不到资源时为 nil。
-    /// - Parameters:
-    ///   - group: 图标所属的组
-    ///   - isConnected: 取指示灯亮着的一版
-    func bundledIcon(
-        of group: AppIconGroup,
-        isConnected: Bool
-    ) -> NSImage? {
-        let variant = AppIconVariant(isDark: isDark, isConnected: isConnected)
+    /// 图标列表里这一组的小图标：当前深浅下指示灯灭着的一版，即包里的原图；取不到资源时为 nil。
+    /// - Parameter group: 图标所属的组
+    func bundledIcon(of group: AppIconGroup) -> NSImage? {
+        let variant = AppIconVariant(isDark: isDark, isConnected: false)
         return bundle.image(forResource: group.iconName(for: variant))
+    }
+
+    /// 这一组在当前样式下指示灯灭着的一版，画法与 Dock 相同；设置页预览指针所指的组时取用，生成不了时为 nil。
+    ///
+    /// 不用换的一版就是包内图标本身，由系统画出的样子即是结果。
+    /// - Parameter group: 图标所属的组
+    func unlitIcon(of group: AppIconGroup) -> NSImage? {
+        let variant = Self.variant(
+            for: group,
+            iconTheme: iconTheme,
+            appearance: NSApp.effectiveAppearance,
+            isConnected: false
+        )
+
+        return icon(
+            for: variant ?? .standard,
+            of: group,
+            scale: 1
+        )
     }
 
     /// 这一组写成自定义图标的数据：当前样式下指示灯灭着的一版；默认的一组为 nil，表示清掉自定义图标。
@@ -518,19 +532,8 @@ extension AppIconController {
     private func updateIcon() {
         let appearance = NSApp.effectiveAppearance
 
-        // 设置页这一行与 Dock 同样合成，只是指示灯总是灭着；不用换的一版就是包内图标本身，由系统画出的样子即是结果
-        let unlitVariant = Self.variant(
-            for: group,
-            iconTheme: iconTheme,
-            appearance: appearance,
-            isConnected: false
-        )
-
-        unlitIcon = icon(
-            for: unlitVariant ?? .standard,
-            of: group,
-            scale: 1
-        )
+        // 设置页这一行与 Dock 同样合成，只是指示灯总是灭着
+        unlitIcon = unlitIcon(of: group)
 
         let variant = Self.variant(
             for: group,
@@ -668,7 +671,7 @@ extension AppIconController {
 
 /// App 包的自定义图标写不进去：包所在的位置不可写（如只读的磁盘映像），或取不到所选的组的系统图标。
 struct AppIconWriteError: LocalizedError {
-    /// 图标列表的错误区里显示的说明。
+    /// 设置页 “App Icon:” 一行下方显示的说明。
     var errorDescription: String? {
         AppLocalization.text("appIcon.writeFailed")
     }
