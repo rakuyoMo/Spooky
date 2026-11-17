@@ -56,6 +56,9 @@ struct SettingsFormLayout {
 // MARK: SettingsFormLayout + Pages
 
 extension SettingsFormLayout {
+    /// Appearance 页：控件列宽 510，放得下应用图标的预览与列表。
+    static let appearance = Self(controlWidth: 510)
+
     /// Git Config 页：控件列宽 310。
     static let gitConfig = Self(controlWidth: 310)
 
