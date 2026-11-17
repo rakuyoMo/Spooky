@@ -16,9 +16,9 @@ Spooky 由两个 target 组成：
 | 目录 | 职责 |
 |---|---|
 | `Execution/` | Git 命令执行、异步子进程与取消、命令结果与错误分类、仓库写队列、只读结果缓存 |
-| `Remote/` | SSH 主连接、连接体检、断线重连与写入核对、远端取消、包装器安装、远端输出的解析与脱敏、服务器目录在本机的挂载位置 |
+| `Remote/` | SSH 主连接、连接体检、断线重连与写入核对、远端取消、包装器安装、远端输出的解析与脱敏、服务器目录在本机的挂载位置、SMB 与 sshfs 挂载 |
 | `Host/` | 仓库还不存在时在目标机器上的操作：列目录、检查目标路径、新建、克隆与扫描 |
-| `Callback/` | 口令、密码、签名口令与编辑器的回调服务，以及本机 Git 的凭据回调 |
+| `Callback/` | 口令、密码、签名口令与编辑器的回调服务，以及本机 Git 的凭据回调与 sshfs 挂载时的口令询问 |
 | `Environment/` | 本机执行 Git 时的程序与环境：Git 程序、登录 shell 的环境变量、SSH agent |
 | `Configuration/` | 全局与仓库本地的 Git 配置 |
 | `Repository/` | 仓库位置、本机仓库识别、文件读写、交给本机程序的文件副本、仓库概况 |
@@ -54,6 +54,7 @@ Spooky 由两个 target 组成：
 | `Activity/` | Activity 窗口、按 Remote / Repository / Service 分页的操作与读取记录、读取的增减计数与它的基准、Remote 记录与增减基准的本机保存，以及仓库写锁 |
 | `ExternalTools/` | 外部比较与合并工具、Open With 与远程编辑 |
 | `Settings/`、`RepositorySettings/` | 设置窗口与仓库设置 |
+| `LocalLocation/` | 服务器仓库的本机位置对话框与 Show in Finder 的流程 |
 | `Accounts/`、`PullRequests/` | 托管账号、Pull Request 与 Merge Request |
 | `Submodules/`、`Worktrees/`、`LFS/` | 子模块、工作树与 Git LFS 的视图与对话框 |
 | `Help/` | 关于窗口、Help 菜单、What's New 与新功能卡片、诊断报告与崩溃报告 |
@@ -140,12 +141,32 @@ Spooky 由两个 target 组成：
 - 文件读写经 `RepositoryFiles`；SFTP 经 `RemoteConnection.sftpCommand()` 接入同一主连接，读、写分别遵循主机并发与仓库写队列
 - 删除文件与丢弃未跟踪文件移进 B 的废纸篓：连接体检找出 B 上的程序，macOS 用系统自带的 `/usr/bin/trash`，Linux 依次找 `gio` 与 `trash-put`；都找不到时界面先确认，再永久删除
 - 服务器仓库里删除或覆盖文件前的确认都可以勾选不再提醒，Settings → General 逐项列出
-- Show in Finder：B 的目录经 SMB、NFS、AFP、WebDAV 或 sshfs 挂载到这台 Mac 时，`RemoteMountLocator` 找出它在本机的位置
-  - 找卷：比较 `ssh -G <别名>` 得到的主机与网络卷重新挂载地址里的主机解析出的地址
-  - 找目录：按远端路径从最长的后缀试起，在卷里找带 `.git` 的目录
-  - 核对：经 SSH 在 B 的 Git 目录里临时写一个随机命名的空文件，本机看得到才算同一个目录，随后删掉
-  - `RepositoryMountState` 按 B 上的目录缓存结果：仓库目录以外的工作树各自查找，读到工作树清单、这台 Mac 挂载或卸载卷时查找，结果只在本次运行里保留
-  - 仓库设置里可以为仓库目录手动指定本机目录：选定时按上面的办法核对一次，通过才记进这台 Mac 的偏好（`ServerLocalFolders`）；指定了就不再自动查找仓库目录，仓库目录以外的工作树照旧查找
+- 本机位置：服务器仓库目录在这台 Mac 上的位置，用于 Show in Finder
+  - 方式（`ServerLocalLocation`）：自动查找、SMB 挂载、sshfs 挂载与指定文件夹；按仓库记在这台 Mac 的偏好 `serverLocalLocations` 里，以 `<别名>:<路径>` 为键，不写进 B 的 Git 配置
+    - 旧偏好 `serverLocalFolders` 里手动指定的文件夹，读到时迁成指定文件夹
+    - 仓库目录以外的工作树不论方式，都各自自动查找
+  - 自动查找：`RemoteMountLocator` 在这台 Mac 已挂载的网络卷里找 B 的目录，不论卷由谁、经哪种协议挂载
+    - 找卷：比较 `ssh -G <别名>` 得到的主机与网络卷重新挂载地址里的主机解析出的地址
+    - 找目录：按远端路径从最长的后缀试起，在卷里找带 `.git` 的目录
+  - 核对：经 SSH 在 B 的 Git 目录里临时写一个随机命名的空文件，本机看得到才算同一个目录，随后删掉；自动查找、sshfs 挂载与指定文件夹都这样核对
+  - 挂载经 `RemoteMounter`，检测与两种挂载各是一个可替换的闭包，测试注入替身，不做真实挂载
+    - 可用条件：`ssh -G` 的主机解析出的任一地址 2 秒内连得上 445 端口时可以用 SMB；在 Homebrew 的目录与 `PATH` 里找得到 `sshfs` 时可以用 sshfs
+    - SMB 经 NetFS 挂载记下的共享（重新挂载地址，去掉密码），没有时挂主机的根地址、从共享列表选；账号与密码交给系统的登录框与钥匙串；同一个共享已经挂着时直接沿用；挂上后按自动查找的办法在卷里找仓库
+    - sshfs 挂到用户选定的空文件夹，远端写 `<别名>:<仓库路径>`，参数逐个传进进程、不经 shell，严格核对主机密钥；挂上后核对
+    - 用户发起的挂载允许系统的登录框、共享列表与口令询问；不由用户发起的不允许任何询问
+    - Spooky 不卸载卷：关闭仓库、退出 App 与改换本机位置时都不卸载
+  - `RepositoryMountState` 是会话里的本机位置状态：方式、查找结果、正在挂载、上次失败的原因与方式带的文件夹能否用；结果只在本次运行里保留
+    - 读到工作树清单、这台 Mac 挂载或卸载卷时查找；重新连上 B 后，没有挂载的目录一律重查
+    - 重新挂载：每次打开仓库只在后台试一次，SMB 要有记下的共享且没挂着，sshfs 要文件夹没挂着，都要这台 Mac 上可用；不询问，失败只记原因
+- Show in Finder：服务器仓库的入口一直可用，不能直接打开时提示写原因
+  - 已知本机位置且这个路径在时直接打开，不需要连着 B
+  - 否则 `ShowInFinderFlow` 在 sheet 里依次进行，取消只关闭 sheet，已开始的连接、查找与挂载照常结束、结果不采用：
+    1. 没连上 B 时连接；会话在等两次重连之间的间隔时，提前再连一次
+    2. 重新查找一次，不沿用之前 “没有挂载” 的结果；查找或后台挂载已在进行时等它的结果
+    3. 方式是 SMB 或 sshfs 挂载时，允许询问地挂载一次
+    4. 仍然没有时换成本机位置表单（`LocalLocationForm`），与仓库设置里的对话框相同
+  - 仓库管理与最近克隆：有窗口开着这个仓库时，交给那个会话的流程；没有时临时读入偏好里的本机位置，需要连接时按添加服务器仓库的体检建立，不打开仓库
+    - 流程进行期间在 `SpookyApplicationController` 登记这个仓库，`releaseConnection` 不关登记中的连接；流程结束后撤销登记再交还
 - 刷新：
   - 服务器仓库按 `RemoteConnection` 的常量轮询，前台 2 秒、后台 10 秒；只读 status 与所选文件的内容哈希，有变化才读取身份、引用、历史与 Diff
   - 本机仓库由 `RepositoryFileMonitor` 的递归 FSEvents 触发刷新
@@ -208,6 +229,7 @@ Spooky 由两个 target 组成：
 - 本地分支的置顶、归档、父分支与分支整理标记由 `BranchMetadata` 写在 `branch.<名称>.spooky-*`，改名时随段移动，删除分支时随段清除
 - 引用的公共顺序由 `ReferenceOrder` 定义：侧边栏、恢复版本的候选、Reflog 的引用菜单、合并与拉取的下拉共用，当前分支不提前
 - 侧边栏行的拖放落点是 `RepositoryDropView` 承载的 AppKit 视图，只登记拖放类型、点击穿透给所在的行；`ReferenceDropAction` 按来源、落点与 ⌥ 解析出动作，拖动中把动作名作为徽标加到拖动影像上，落下时执行同一个动作
+- 侧边栏的展开状态由 `SidebarExpansion` 按仓库记在偏好 `sidebarExpansion` 里，以仓库的显示路径为键：收起的分组与展开的远端、文件夹；过滤时的展开与拖动悬停的临时展开不记下
 - `ViewReference` 是窗口里一个可以回到的视图，同时用于后退 / 前进、窗口恢复与 `spooky://` 链接；新增主视图时三处一起覆盖
 - 链接：
   - `spooky://open?repository=<位置>` 可带 `view`、`branch` 或 `commit`；服务器仓库的位置写 `<主机别名>:<远端路径>`
