@@ -2428,6 +2428,7 @@
 "worktree.page.general" = "일반";
 "worktree.relocate" = "작업 트리 위치 지정";
 "worktree.relocate.message" = "작업 트리 “%@”의 디렉터리가 지금 있는 위치를 선택하면 Git이 이 저장소에 다시 연결합니다.";
+"worktree.relocate.panel" = "작업 트리 위치 선택";
 "worktree.relocate.submit" = "작업 트리 위치 지정";
 "worktree.remove" = "작업 트리 삭제";
 "worktree.remove.force" = "강제 삭제";
@@ -2436,7 +2437,14 @@
 "worktree.remove.message" = "작업 트리 “%@”과(와) 그 디렉터리를 영구적으로 삭제합니다.";
 "worktree.remove.submit" = "작업 트리 삭제";
 "worktree.repair" = "작업 트리 복구";
+"worktree.repair.alreadyUsed" = "선택한 폴더는 이미 다른 작업 트리에서 사용 중입니다.";
+"worktree.repair.invalid" = "선택한 경로에 이 저장소의 유효한 작업 트리 디렉터리가 없습니다.";
 "worktree.repair.menu" = "작업 트리 복구…";
+"worktree.repair.missingFolder" = "선택한 폴더가 존재하지 않습니다.";
+"worktree.repair.noGitFile" = "선택한 폴더에 .git 파일이 없습니다.";
+"worktree.repair.notNeeded" = "이 작업 트리는 복구할 필요가 없습니다.";
+"worktree.repair.otherRepository" = "선택한 폴더는 다른 저장소의 작업 트리입니다.";
+"worktree.repair.unreadableGitFile" = "선택한 폴더의 .git 파일을 읽을 수 없습니다.";
 "worktree.reveal" = "Finder에서 작업 트리 보기";
 "worktree.revision" = "리비전:";
 "worktree.subtitle" = "작업 트리 (%@)";

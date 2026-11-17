@@ -2428,6 +2428,7 @@
 "worktree.page.general" = "一般";
 "worktree.relocate" = "重新定位工作樹";
 "worktree.relocate.message" = "選擇工作樹 “%@” 的目錄現在所在的位置，讓 Git 重新把它連到這個儲存庫。";
+"worktree.relocate.panel" = "選擇工作樹的位置";
 "worktree.relocate.submit" = "重新定位工作樹";
 "worktree.remove" = "刪除工作樹";
 "worktree.remove.force" = "強制刪除";
@@ -2436,7 +2437,14 @@
 "worktree.remove.message" = "永久刪除工作樹 “%@” 及它的目錄。";
 "worktree.remove.submit" = "刪除工作樹";
 "worktree.repair" = "修復工作樹";
+"worktree.repair.alreadyUsed" = "選取的資料夾已被另一個工作樹使用。";
+"worktree.repair.invalid" = "選取的路徑裡沒有這個儲存庫的有效工作樹目錄。";
 "worktree.repair.menu" = "修復工作樹…";
+"worktree.repair.missingFolder" = "選取的資料夾不存在。";
+"worktree.repair.noGitFile" = "選取的資料夾裡沒有 .git 檔案。";
+"worktree.repair.notNeeded" = "這個工作樹不需要修復。";
+"worktree.repair.otherRepository" = "選取的資料夾是別的儲存庫的工作樹。";
+"worktree.repair.unreadableGitFile" = "選取資料夾裡的 .git 檔案無法讀取。";
 "worktree.reveal" = "在 Finder 中顯示工作樹";
 "worktree.revision" = "版本：";
 "worktree.subtitle" = "工作樹（%@）";

@@ -1,6 +1,7 @@
 import AppKit
 import SpookyKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - AddWorktreeDialog
 
@@ -188,25 +189,13 @@ extension AddWorktreeDialog {
 
 // MARK: - WorktreePathDialog
 
-/// 选一个位置的工作树对话框：移动到新位置，或给出手动移走的工作树现在的位置以修复它。
+/// 移动工作树：选新位置，选中的目录里保留工作树原来的名称。
 struct WorktreePathDialog: View {
-    /// 选的是什么。
-    enum Target {
-        /// 移动到新位置。
-        case move
-
-        /// 修复：工作树目录现在的位置。
-        case repair
-    }
-
     /// 发起动作的窗口会话。
     let session: RepositorySession
 
     /// 操作的工作树。
     let worktree: Worktree
-
-    /// 选的是什么。
-    let target: Target
 
     /// 关闭 sheet。
     let close: () -> Void
@@ -223,17 +212,15 @@ struct WorktreePathDialog: View {
     var body: some View {
         RepositoryDialogLayout(
             session: session,
-            title: AppLocalization.text(target == .move ? "worktree.move" : "worktree.relocate"),
-            message: AppLocalization.text(target == .move ? "worktree.move.message" : "worktree.relocate.message", worktree.name),
-            submitTitle: AppLocalization.text(target == .move ? "worktree.move.submit" : "worktree.relocate.submit"),
+            title: AppLocalization.text("worktree.move"),
+            message: AppLocalization.text("worktree.move.message", worktree.name),
+            submitTitle: AppLocalization.text("worktree.move.submit"),
             error: "",
             isValid: path.hasPrefix("/") && path != worktree.path,
             cancel: close,
             submit: submit
         ) {
-            RepositoryDialogRows.row(
-                AppLocalization.text(target == .move ? "worktree.destination" : "worktree.location")
-            ) {
+            RepositoryDialogRows.row(AppLocalization.text("worktree.destination")) {
                 HStack(spacing: 8) {
                     TextField("", text: $path)
                         .accessibilityIdentifier("worktree-path")
@@ -245,71 +232,210 @@ struct WorktreePathDialog: View {
         }
         .sheet(isPresented: $isBrowsing) {
             if let host = session.repository?.host {
-                ServerDirectoryBrowser(host: host, path: parent(of: path)) { chosen in
+                ServerDirectoryBrowser(host: host, path: Self.parent(of: path)) { chosen in
                     isBrowsing = false
 
-                    // 移动时在选中的目录里保留原来的名称，修复时选中的就是工作树目录
-                    chosen.map { path = target == .move ? $0 + "/" + worktree.name : $0 }
+                    // 在选中的目录里保留原来的名称
+                    chosen.map { path = $0 + "/" + worktree.name }
                 }
             }
         }
     }
 
     /// 创建对话框，输入框里填上工作树原来的路径。
-    init(session: RepositorySession, worktree: Worktree, target: Target, close: @escaping () -> Void) {
+    init(session: RepositorySession, worktree: Worktree, close: @escaping () -> Void) {
         self.session = session
         self.worktree = worktree
-        self.target = target
         self.close = close
         _path = State(initialValue: worktree.path)
+    }
+
+    /// 路径所在的目录。
+    static func parent(of path: String) -> String {
+        path.lastIndex(of: "/").map { String(path[..<$0]) }.flatMap { $0.isEmpty ? "/" : $0 } ?? "/"
     }
 }
 
 // MARK: - Actions
 
 extension WorktreePathDialog {
-    /// 路径所在的目录。
-    private func parent(of path: String) -> String {
-        path.lastIndex(of: "/").map { String(path[..<$0]) }.flatMap { $0.isEmpty ? "/" : $0 } ?? "/"
-    }
-
-    /// 本机仓库：移动用存储面板起名并选位置，修复用目录面板选工作树目录；服务器仓库浏览 B 上的目录。
+    /// 本机仓库用存储面板起名并选位置，服务器仓库浏览 B 上的目录。
     private func select() {
         guard session.repository?.localURL != nil else {
             isBrowsing = true
             return
         }
 
-        switch target {
-        case .move:
-            let panel = NSSavePanel()
-            panel.directoryURL = URL(filePath: parent(of: path))
-            panel.nameFieldStringValue = worktree.name
-            panel.canCreateDirectories = true
-            panel.prompt = AppLocalization.text("submodule.path.choose")
+        let panel = NSSavePanel()
+        panel.directoryURL = URL(filePath: Self.parent(of: path))
+        panel.nameFieldStringValue = worktree.name
+        panel.canCreateDirectories = true
+        panel.prompt = AppLocalization.text("submodule.path.choose")
 
-            if panel.runModal() == .OK, let url = panel.url { path = url.path }
+        if panel.runModal() == .OK, let url = panel.url { path = url.path }
+    }
 
-        case .repair:
-            let panel = NSOpenPanel()
-            panel.canChooseFiles = false
-            panel.canChooseDirectories = true
-            panel.directoryURL = URL(filePath: parent(of: path))
-            panel.prompt = AppLocalization.text("submodule.path.choose")
+    /// 开始移动；仓库忙碌时表单保持打开。
+    private func submit() {
+        if session.moveWorktree(worktree, to: path) {
+            close()
+        }
+    }
+}
 
-            if panel.runModal() == .OK, let url = panel.url { path = url.path }
+// MARK: - RelocateWorktreeDialog
+
+/// 修复工作树：在弹出菜单里选工作树目录现在的位置，选好后核对它是不是这个仓库的这个工作树，核对通过才能修复。
+struct RelocateWorktreeDialog: View {
+    /// 位置菜单里 “Select Destination…” 一项的标识，不是任何路径。
+    private static let chooseTag = "\u{0}choose"
+
+    /// 发起动作的窗口会话。
+    let session: RepositorySession
+
+    /// 失效的工作树。
+    let worktree: Worktree
+
+    /// 关闭 sheet。
+    let close: () -> Void
+
+    /// 选中的目录，仓库所在机器上的绝对路径；还没有选时为空。
+    @State
+    private var path = ""
+
+    /// 选中目录的核对结果：还在核对时为 nil，可以修复时为空，否则是错误区的说明。
+    @State
+    private var problem: String?
+
+    /// 正在浏览服务器上的目录。
+    @State
+    private var isBrowsing = false
+
+    /// “Location:” 一行；选中的目录与工作树登记的路径相同时不能修复，也不写说明。
+    var body: some View {
+        RepositoryDialogLayout(
+            session: session,
+            title: AppLocalization.text("worktree.relocate"),
+            message: AppLocalization.text("worktree.relocate.message", worktree.name),
+            submitTitle: AppLocalization.text("worktree.relocate.submit"),
+            error: isRegisteredPath ? "" : problem ?? "",
+            isValid: !path.isEmpty && !isRegisteredPath && (problem?.isEmpty ?? false),
+            cancel: close,
+            submit: submit
+        ) {
+            RepositoryDialogRows.row(AppLocalization.text("worktree.location")) {
+                locationPicker
+            }
+        }
+        .sheet(isPresented: $isBrowsing) {
+            if let host = session.repository?.host {
+                ServerDirectoryBrowser(host: host, path: WorktreePathDialog.parent(of: worktree.path)) { chosen in
+                    isBrowsing = false
+                    chosen.map { path = $0 }
+                }
+            }
+        }
+        .task(id: path) {
+            await check()
         }
     }
 
-    /// 开始移动或修复；仓库忙碌时表单保持打开。
-    private func submit() {
-        let started =
-            switch target {
-            case .move: session.moveWorktree(worktree, to: path)
-            case .repair: session.repairWorktree(at: path)
+    /// 填满输入列的位置弹出菜单：选中的目录（没有时是灰掉的 “None Selected”）、分隔线与 “Select Destination…”；
+    /// 选最后一项时打开目录选择，菜单仍停在原来的项上。
+    private var locationPicker: some View {
+        Picker(
+            "",
+            selection: Binding(
+                get: { path },
+                set: { $0 == Self.chooseTag ? selectDestination() : () }
+            )
+        ) {
+            if path.isEmpty {
+                Text(AppLocalization.text("submodule.path.none"))
+                    .tag("")
+                    .disabled(true)
+            } else {
+                Label {
+                    Text(session.repository?.host == nil ? HomePath.abbreviated(path) : path)
+                } icon: {
+                    Image(nsImage: Self.folderIcon)
+                }
+                .tag(path)
             }
 
-        if started {
+            Divider()
+
+            Text(AppLocalization.text("submodule.path.select"))
+                .tag(Self.chooseTag)
+        }
+        .labelsHidden()
+        .buttonSizing(.flexible)
+        .accessibilityLabel(AppLocalization.text("worktree.location"))
+        .accessibilityIdentifier("worktree-path")
+    }
+}
+
+// MARK: - Actions
+
+extension RelocateWorktreeDialog {
+    /// 菜单里选中目录前面的 16 × 16 文件夹图标。
+    private static var folderIcon: NSImage {
+        let icon = NSWorkspace.shared.icon(for: .folder)
+        icon.size = NSSize(width: 16, height: 16)
+        return icon
+    }
+
+    /// 选中的就是工作树登记的路径。
+    private var isRegisteredPath: Bool {
+        path == worktree.path
+    }
+
+    /// 核对选中的目录；选中的目录变了时上一次核对随任务取消。
+    private func check() async {
+        problem = nil
+
+        guard !path.isEmpty, !isRegisteredPath else {
+            return
+        }
+
+        let result = await session.repairProblem(of: worktree, at: path)
+
+        guard !Task.isCancelled else {
+            return
+        }
+
+        problem = result ?? ""
+    }
+
+    /// 本机仓库用目录面板，以 sheet 挂在对话框上；服务器仓库浏览 B 上的目录。
+    private func selectDestination() {
+        guard session.repository?.localURL != nil else {
+            isBrowsing = true
+            return
+        }
+
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.directoryURL = URL(filePath: WorktreePathDialog.parent(of: worktree.path))
+        panel.title = AppLocalization.text("worktree.relocate.panel")
+        panel.prompt = AppLocalization.text("submodule.path.choose")
+
+        let finish: (NSApplication.ModalResponse) -> Void = { response in
+            if response == .OK, let url = panel.url { path = url.path }
+        }
+
+        guard let window = NSApp.keyWindow else {
+            finish(panel.runModal())
+            return
+        }
+
+        panel.beginSheetModal(for: window, completionHandler: finish)
+    }
+
+    /// 开始修复；仓库忙碌时表单保持打开。
+    private func submit() {
+        if session.repairWorktree(at: path) {
             close()
         }
     }

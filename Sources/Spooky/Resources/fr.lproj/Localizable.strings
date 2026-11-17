@@ -2428,6 +2428,7 @@
 "worktree.page.general" = "Général";
 "worktree.relocate" = "Relocaliser le worktree";
 "worktree.relocate.message" = "Choisissez l’emplacement actuel du dossier du worktree « %@ » pour que Git le reconnecte à ce dépôt.";
+"worktree.relocate.panel" = "Choisir l’emplacement du worktree";
 "worktree.relocate.submit" = "Relocaliser le worktree";
 "worktree.remove" = "Supprimer le worktree";
 "worktree.remove.force" = "Forcer la suppression";
@@ -2436,7 +2437,14 @@
 "worktree.remove.message" = "Supprime définitivement le worktree « %@ » et son dossier.";
 "worktree.remove.submit" = "Supprimer le worktree";
 "worktree.repair" = "Réparer le worktree";
+"worktree.repair.alreadyUsed" = "Le dossier sélectionné est déjà utilisé par un autre worktree.";
+"worktree.repair.invalid" = "Le chemin sélectionné ne contient aucun dossier de worktree valide pour ce dépôt.";
 "worktree.repair.menu" = "Réparer le worktree…";
+"worktree.repair.missingFolder" = "Le dossier sélectionné n’existe pas.";
+"worktree.repair.noGitFile" = "Le dossier sélectionné ne contient pas de fichier .git.";
+"worktree.repair.notNeeded" = "Ce worktree n’a pas besoin d’être réparé.";
+"worktree.repair.otherRepository" = "Le dossier sélectionné est un worktree d’un autre dépôt.";
+"worktree.repair.unreadableGitFile" = "Le fichier .git du dossier sélectionné est illisible.";
 "worktree.reveal" = "Afficher le worktree dans le Finder";
 "worktree.revision" = "Révision :";
 "worktree.subtitle" = "Worktree (%@)";

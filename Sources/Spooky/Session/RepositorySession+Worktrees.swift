@@ -99,6 +99,33 @@ extension RepositorySession {
         )
     }
 
+    /// 修复工作树之前核对选中的目录：可以修复时为 nil，否则是对话框错误区的说明。
+    ///
+    /// - Parameters:
+    ///   - worktree: 失效的工作树。
+    ///   - directory: 选中的目录，仓库所在机器上的绝对路径。
+    func repairProblem(of worktree: Worktree, at directory: String) async -> String? {
+        guard let runner else {
+            return AppLocalization.text("worktree.repair.invalid")
+        }
+
+        do {
+            try await RepositoryWorktrees(runner: runner).validateRepair(of: worktree, at: directory)
+            return nil
+        } catch let problem as WorktreeRepairProblem {
+            return switch problem {
+            case .notNeeded: AppLocalization.text("worktree.repair.notNeeded")
+            case .directoryMissing: AppLocalization.text("worktree.repair.missingFolder")
+            case .gitFileMissing: AppLocalization.text("worktree.repair.noGitFile")
+            case .gitFileUnreadable: AppLocalization.text("worktree.repair.unreadableGitFile")
+            case .otherRepository: AppLocalization.text("worktree.repair.otherRepository")
+            case .alreadyUsed: AppLocalization.text("worktree.repair.alreadyUsed")
+            }
+        } catch {
+            return AppLocalization.text("worktree.repair.invalid")
+        }
+    }
+
     /// 按新位置修复手动移走的工作树。
     @discardableResult
     func repairWorktree(at location: String) -> Bool {

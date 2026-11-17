@@ -2428,6 +2428,7 @@
 "worktree.page.general" = "General";
 "worktree.relocate" = "Reubicar worktree";
 "worktree.relocate.message" = "Elige dónde está ahora el directorio del worktree “%@” para que Git lo vuelva a conectar a este repositorio.";
+"worktree.relocate.panel" = "Seleccionar la ubicación del worktree";
 "worktree.relocate.submit" = "Reubicar worktree";
 "worktree.remove" = "Eliminar worktree";
 "worktree.remove.force" = "Forzar eliminación";
@@ -2436,7 +2437,14 @@
 "worktree.remove.message" = "Elimina permanentemente el worktree “%@” y su directorio.";
 "worktree.remove.submit" = "Eliminar worktree";
 "worktree.repair" = "Reparar worktree";
+"worktree.repair.alreadyUsed" = "La carpeta seleccionada ya la usa otro worktree.";
+"worktree.repair.invalid" = "La ruta seleccionada no contiene un directorio de worktree válido para este repositorio.";
 "worktree.repair.menu" = "Reparar worktree…";
+"worktree.repair.missingFolder" = "La carpeta seleccionada no existe.";
+"worktree.repair.noGitFile" = "La carpeta seleccionada no tiene un archivo .git.";
+"worktree.repair.notNeeded" = "Este worktree no necesita reparación.";
+"worktree.repair.otherRepository" = "La carpeta seleccionada es un worktree de otro repositorio.";
+"worktree.repair.unreadableGitFile" = "No se puede leer el archivo .git de la carpeta seleccionada.";
 "worktree.reveal" = "Mostrar worktree en el Finder";
 "worktree.revision" = "Revisión:";
 "worktree.subtitle" = "Worktree (%@)";

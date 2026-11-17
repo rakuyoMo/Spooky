@@ -21,6 +21,63 @@ struct RepositoryWorktreesTests {
         try await Self.addAndList(worktrees, in: repository, temporary: temporary)
     }
 
+    /// 修复前按顺序核对选中的目录：不需要修复、目录不在、没有或读不了 `.git`、别的仓库的工作树、已被别的工作树使用；
+    /// 移走后的目录通过核对，`.git` 写的是相对路径时也一样，修复后工作树恢复有效。
+    @Test("修复前核对选中的目录")
+    func repairValidation() async throws {
+        let temporary = try TemporaryRepository()
+        let otherTemporary = try TemporaryRepository()
+
+        defer {
+            temporary.remove()
+            otherTemporary.remove()
+        }
+
+        let repository = try await WorktreeRepository(temporary)
+        let worktrees = RepositoryWorktrees(runner: repository.runner)
+
+        // live 留在原处，原处移到新处后失效
+        try await worktrees.add(at: repository.sibling("live"), revision: "feature", detach: false, force: false)
+        try await worktrees.add(at: repository.sibling("原处"), revision: repository.head, detach: true, force: false)
+        try FileManager.default.moveItem(atPath: repository.sibling("原处"), toPath: repository.sibling("新处"))
+        try FileManager.default.createDirectory(atPath: repository.sibling("空"), withIntermediateDirectories: false)
+
+        let listed = try await worktrees.list()
+        let live = try #require(listed.first { $0.path.hasSuffix("/live") })
+        let moved = try #require(listed.first { $0.path.hasSuffix("/原处") })
+
+        // 另一个仓库与它的工作树；普通仓库的 .git 是目录
+        let other = try await WorktreeRepository(otherTemporary)
+        try await RepositoryWorktrees(runner: other.runner)
+            .add(at: other.sibling("外人"), revision: "feature", detach: false, force: false)
+
+        let problem = { (worktree: Worktree, directory: String) async throws -> WorktreeRepairProblem? in
+            do {
+                try await worktrees.validateRepair(of: worktree, at: directory)
+                return nil
+            } catch let problem as WorktreeRepairProblem {
+                return problem
+            }
+        }
+
+        #expect(try await problem(live, repository.sibling("新处")) == .notNeeded)
+        #expect(try await problem(moved, repository.sibling("不存在")) == .directoryMissing)
+        #expect(try await problem(moved, repository.sibling("空")) == .gitFileMissing)
+        #expect(try await problem(moved, other.sibling("主 仓库")) == .gitFileUnreadable)
+        #expect(try await problem(moved, other.sibling("外人")) == .otherRepository)
+        #expect(try await problem(moved, repository.sibling("live")) == .alreadyUsed)
+
+        // .git 改写成相对新处的路径，同样指回这个仓库
+        let gitFile = URL(filePath: repository.sibling("新处") + "/.git")
+        try Data("gitdir: ../主 仓库/.git/worktrees/原处\n".utf8).write(to: gitFile)
+
+        #expect(try await problem(moved, repository.sibling("新处")) == nil)
+
+        try await worktrees.repair(at: repository.sibling("新处"))
+        let repaired = try #require(try await worktrees.list().first { $0.path.hasSuffix("/新处") })
+        #expect(repaired.isValid)
+    }
+
     /// 解析各种属性：分离 HEAD、锁定与失效的说明、裸仓库；格式错误时抛出。
     @Test("解析工作树清单")
     func parse() throws {

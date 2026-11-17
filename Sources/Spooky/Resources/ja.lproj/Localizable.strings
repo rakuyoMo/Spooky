@@ -2428,6 +2428,7 @@
 "worktree.page.general" = "一般";
 "worktree.relocate" = "ワークツリーの場所を指定";
 "worktree.relocate.message" = "ワークツリー「%@」のディレクトリが今ある場所を選ぶと、Git がこのリポジトリにつなぎ直します。";
+"worktree.relocate.panel" = "ワークツリーの場所を選択";
 "worktree.relocate.submit" = "ワークツリーの場所を指定";
 "worktree.remove" = "ワークツリーを削除";
 "worktree.remove.force" = "強制的に削除";
@@ -2436,7 +2437,14 @@
 "worktree.remove.message" = "ワークツリー「%@」とそのディレクトリを完全に削除します。";
 "worktree.remove.submit" = "ワークツリーを削除";
 "worktree.repair" = "ワークツリーを修復";
+"worktree.repair.alreadyUsed" = "選択したフォルダはすでに別のワークツリーで使われています。";
+"worktree.repair.invalid" = "選択したパスにこのリポジトリの有効なワークツリーディレクトリがありません。";
 "worktree.repair.menu" = "ワークツリーを修復…";
+"worktree.repair.missingFolder" = "選択したフォルダは存在しません。";
+"worktree.repair.noGitFile" = "選択したフォルダに .git ファイルがありません。";
+"worktree.repair.notNeeded" = "このワークツリーは修復の必要がありません。";
+"worktree.repair.otherRepository" = "選択したフォルダは別のリポジトリのワークツリーです。";
+"worktree.repair.unreadableGitFile" = "選択したフォルダの .git ファイルを読み取れません。";
 "worktree.reveal" = "ワークツリーを Finder に表示";
 "worktree.revision" = "リビジョン：";
 "worktree.subtitle" = "ワークツリー（%@）";
