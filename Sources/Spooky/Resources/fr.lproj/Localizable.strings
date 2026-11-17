@@ -209,6 +209,11 @@
 "remote.form.title" = "Ajouter un dépôt sur un serveur";
 "remote.host" = "Alias d’hôte :";
 "remote.path" = "Chemin du dépôt :";
+"remote.mount" = "Monter sur ce Mac :";
+"remote.mount.none" = "Ne pas monter";
+"remote.mount.smb" = "SMB";
+"remote.mount.sshfs" = "sshfs";
+"remote.mount.unavailable" = "Aucune méthode de montage disponible";
 "remote.checking" = "Vérification de la connexion…";
 "connection.connecting" = "Connexion en cours";
 "connection.connected" = "Connecté";

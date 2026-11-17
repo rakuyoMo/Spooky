@@ -209,6 +209,11 @@
 "remote.form.title" = "サーバーリポジトリを追加";
 "remote.host" = "ホスト名：";
 "remote.path" = "リポジトリのパス：";
+"remote.mount" = "このMacにマウント：";
+"remote.mount.none" = "マウントしない";
+"remote.mount.smb" = "SMB";
+"remote.mount.sshfs" = "sshfs";
+"remote.mount.unavailable" = "使用できるマウント方法がありません";
 "remote.checking" = "接続を確認中…";
 "connection.connecting" = "接続中";
 "connection.connected" = "接続済み";

@@ -209,6 +209,11 @@
 "remote.form.title" = "添加服务器仓库";
 "remote.host" = "主机别名：";
 "remote.path" = "仓库路径：";
+"remote.mount" = "挂载到本机：";
+"remote.mount.none" = "不挂载";
+"remote.mount.smb" = "SMB";
+"remote.mount.sshfs" = "sshfs";
+"remote.mount.unavailable" = "没有可用的挂载方式";
 "remote.checking" = "正在检查连接…";
 "connection.connecting" = "连接中";
 "connection.connected" = "已连接";

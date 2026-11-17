@@ -104,6 +104,26 @@ extension RepositorySession {
         )
     }
 
+    /// 添加服务器仓库时选了挂载方式：仓库打开后本机位置记为这种方式，随即挂载。
+    ///
+    /// 用户发起，允许系统的登录框与共享列表；这一次代替打开仓库后的后台挂载。失败不弹提示，原因记进本机位置状态。
+    ///
+    /// - Parameter location: 选的 SMB 或 sshfs 挂载。
+    func mountAddedRepository(_ location: ServerLocalLocation) {
+        guard let repository, let host = repository.host, let runner else {
+            return
+        }
+
+        // sshfs 的文件夹此刻还没挂上，只记下方式，不标成能用
+        ServerLocalLocation.store(location, for: repository, defaults: mounts.defaults)
+        mounts.backgroundMountPending = false
+        mounts.apply(location)
+
+        Task {
+            await mounts.mountRepository(host: host, runner: runner, interactive: true)
+        }
+    }
+
     /// 在后台查找服务器仓库的目录与仓库目录以外的工作树，已经有结果的目录不再查找；本机仓库与本机位置带文件夹的仓库目录不用查找。
     /// 随后做打开仓库后还没做过的那一次后台挂载。
     ///

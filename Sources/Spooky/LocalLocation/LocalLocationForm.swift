@@ -133,6 +133,17 @@ final class LocalLocationForm {
         }
     }
 
+    /// sshfs 挂载到的文件夹不能用的说明：不空时说明它；能用时为 nil。添加服务器仓库的挂载选项共用。
+    ///
+    /// - Parameter folder: 选定的本机文件夹。
+    static func problem(ofMountFolder folder: URL) -> String? {
+        let contents = (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
+
+        return contents.isEmpty
+            ? nil
+            : AppLocalization.text("localLocation.notEmpty", HomePath.abbreviated(folder.path))
+    }
+
     /// 检测这台 Mac 现在可用的挂载方式；对话框打开时调用。
     func detect() async {
         methods = await mounts.mounter.methods(host)
@@ -143,12 +154,7 @@ final class LocalLocationForm {
     /// - Parameter folder: 选定的本机文件夹。
     func selectMountFolder(_ folder: URL) {
         mountFolder = folder
-
-        let contents = (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
-
-        mountFolderProblem = contents.isEmpty
-            ? nil
-            : AppLocalization.text("localLocation.notEmpty", HomePath.abbreviated(folder.path))
+        mountFolderProblem = Self.problem(ofMountFolder: folder)
     }
 
     /// 按主按钮：自动查找保存后重新查找；挂载方式挂载并核对，SMB 总是从共享列表选共享；指定文件夹经标记文件核对。

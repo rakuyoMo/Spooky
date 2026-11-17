@@ -209,6 +209,11 @@
 "remote.form.title" = "Añadir repositorio de servidor";
 "remote.host" = "Alias del host:";
 "remote.path" = "Ruta del repositorio:";
+"remote.mount" = "Montar en este Mac:";
+"remote.mount.none" = "No montar";
+"remote.mount.smb" = "SMB";
+"remote.mount.sshfs" = "sshfs";
+"remote.mount.unavailable" = "No hay ningún método de montaje disponible";
 "remote.checking" = "Comprobando la conexión…";
 "connection.connecting" = "Conectando";
 "connection.connected" = "Conectado";

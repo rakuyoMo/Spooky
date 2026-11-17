@@ -33,10 +33,10 @@ struct LocalLocationDialog: View {
 
                 switch form.method {
                 case .sshfsMount:
-                    folderRow("localLocation.mountAt", folder: form.mountFolder, choose: chooseMountFolder)
+                    Self.folderRow("localLocation.mountAt", folder: form.mountFolder, choose: chooseMountFolder)
 
                 case .chosenFolder:
-                    folderRow("localLocation.folder", folder: form.chosenFolder, choose: chooseFolder)
+                    Self.folderRow("localLocation.folder", folder: form.chosenFolder, choose: chooseFolder)
 
                 case .automatic, .smbMount:
                     EmptyView()
@@ -84,11 +84,11 @@ struct LocalLocationDialog: View {
     }
 }
 
-// MARK: - Private
+// MARK: - Folder Row
 
 extension LocalLocationDialog {
-    /// 文件夹一行：选定的文件夹（主目录缩写成 `~`，没有时是灰掉的 “None Selected”）与 Choose…。
-    private func folderRow(_ label: String, folder: URL?, choose: @escaping () -> Void) -> some View {
+    /// 文件夹一行：选定的文件夹（主目录缩写成 `~`，没有时是灰掉的 “None Selected”）与 Choose…；添加服务器仓库的 Mount at 一行共用。
+    static func folderRow(_ label: String, folder: URL?, choose: @escaping () -> Void) -> some View {
         DialogFormRow(label: AppLocalization.text(label)) {
             HStack(spacing: 8) {
                 Text(folder.map { HomePath.abbreviated($0.path) } ?? AppLocalization.text("submodule.path.none"))
@@ -102,29 +102,8 @@ extension LocalLocationDialog {
         }
     }
 
-    /// 换方式时文件夹一行随对话框高度一起动画。
-    private func select(_ item: LocalLocationForm.Item) {
-        guard case .method(let method) = item else {
-            return
-        }
-
-        DialogAnimation.perform {
-            form.method = method
-        }
-    }
-
-    /// 选 sshfs 挂载到的文件夹；可以在面板里新建空文件夹。
-    private func chooseMountFolder() {
-        chooseDirectory(from: form.mountFolder, canCreate: true) { form.selectMountFolder($0) }
-    }
-
-    /// 选指定的文件夹。
-    private func chooseFolder() {
-        chooseDirectory(from: form.chosenFolder, canCreate: false) { form.chosenFolder = $0 }
-    }
-
-    /// 以 sheet 在对话框上打开目录选择面板。
-    private func chooseDirectory(from folder: URL?, canCreate: Bool, choose: @escaping (URL) -> Void) {
+    /// 以 sheet 在对话框上打开目录选择面板；添加服务器仓库选 sshfs 挂载到的文件夹时共用。
+    static func chooseDirectory(from folder: URL?, canCreate: Bool, choose: @escaping (URL) -> Void) {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
@@ -145,6 +124,31 @@ extension LocalLocationDialog {
         }
 
         panel.beginSheetModal(for: window, completionHandler: finish)
+    }
+}
+
+// MARK: - Private
+
+extension LocalLocationDialog {
+    /// 换方式时文件夹一行随对话框高度一起动画。
+    private func select(_ item: LocalLocationForm.Item) {
+        guard case .method(let method) = item else {
+            return
+        }
+
+        DialogAnimation.perform {
+            form.method = method
+        }
+    }
+
+    /// 选 sshfs 挂载到的文件夹；可以在面板里新建空文件夹。
+    private func chooseMountFolder() {
+        Self.chooseDirectory(from: form.mountFolder, canCreate: true) { form.selectMountFolder($0) }
+    }
+
+    /// 选指定的文件夹。
+    private func chooseFolder() {
+        Self.chooseDirectory(from: form.chosenFolder, canCreate: false) { form.chosenFolder = $0 }
     }
 
     /// 挂载、核对或保存；记下了本机位置时关闭。

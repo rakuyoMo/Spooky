@@ -209,6 +209,11 @@
 "remote.form.title" = "Server-Repository hinzufügen";
 "remote.host" = "Host-Alias:";
 "remote.path" = "Repository-Pfad:";
+"remote.mount" = "Auf diesem Mac einbinden:";
+"remote.mount.none" = "Nicht einbinden";
+"remote.mount.smb" = "SMB";
+"remote.mount.sshfs" = "sshfs";
+"remote.mount.unavailable" = "Keine Einbindungsmethode verfügbar";
 "remote.checking" = "Verbindung wird geprüft …";
 "connection.connecting" = "Wird verbunden";
 "connection.connected" = "Verbunden";

@@ -209,6 +209,11 @@
 "remote.form.title" = "加入伺服器儲存庫";
 "remote.host" = "主機別名：";
 "remote.path" = "儲存庫路徑：";
+"remote.mount" = "掛載到本機：";
+"remote.mount.none" = "不掛載";
+"remote.mount.smb" = "SMB";
+"remote.mount.sshfs" = "sshfs";
+"remote.mount.unavailable" = "沒有可用的掛載方式";
 "remote.checking" = "正在檢查連線…";
 "connection.connecting" = "連線中";
 "connection.connected" = "已連線";

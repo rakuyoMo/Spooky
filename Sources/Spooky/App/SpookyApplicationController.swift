@@ -471,13 +471,15 @@ extension SpookyApplicationController {
     /// - Parameters:
     ///   - view: 显示后切到的视图；nil 时显示仓库保存的视图状态。
     ///   - staysInSource: 在发起窗口里显示，不改用已显示这个仓库的其它窗口。
+    /// - Returns: 显示这个仓库的窗口。
+    @discardableResult
     func displayRepository(
         _ repository: RepositoryLocation,
         from source: RepositoryWindowController?,
         inNewWindow: Bool,
         showing view: RepositoryDestination? = nil,
         staysInSource: Bool = false
-    ) {
+    ) -> RepositoryWindowController {
         let sourceIsOpen = source.map { source in windows.contains { $0 === source } } ?? false
 
         let destination: RepositoryWindowController =
@@ -510,6 +512,8 @@ extension SpookyApplicationController {
 
         if let previous, previous != repository { releaseConnection(previous) }
         NSApp.activate(ignoringOtherApps: true)
+
+        return destination
     }
 
     /// 拖入或选择的文件夹只添加已验证的本机仓库，多个目录依次检查；只加了一个不是仓库的目录时询问是否在那里新建仓库。

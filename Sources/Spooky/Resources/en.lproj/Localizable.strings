@@ -209,6 +209,11 @@
 "remote.form.title" = "Add Server Repository";
 "remote.host" = "Host alias:";
 "remote.path" = "Repository path:";
+"remote.mount" = "Mount on This Mac:";
+"remote.mount.none" = "Don’t Mount";
+"remote.mount.smb" = "SMB";
+"remote.mount.sshfs" = "sshfs";
+"remote.mount.unavailable" = "No Mount Method Available";
 "remote.checking" = "Checking connection…";
 "connection.connecting" = "Connecting";
 "connection.connected" = "Connected";
