@@ -372,7 +372,7 @@ extension QuickActionViewController {
             return
         }
 
-        headerIcon.image = NSImage(systemSymbolName: object.symbol, accessibilityDescription: nil)
+        headerIcon.image = AppSymbol.image(object.symbol, side: 24, accessibilityDescription: nil)
         headerTitle.stringValue = object.title
         headerSubtitle.stringValue = object.subtitle
     }

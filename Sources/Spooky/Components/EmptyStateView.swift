@@ -15,7 +15,7 @@ struct EmptyStateView<Actions: View>: View {
     /// 本地化后的说明；为空时这一行留空。
     let message: String
 
-    /// 系统符号名称；为 nil 时没有图标。
+    /// 符号的名字，系统符号或 `AppSymbol` 里的自绘图形；为 nil 时没有图标。
     let symbol: String?
 
     /// 内联内容按实际文字和按钮确定高度，整页空状态仍铺满容器。
@@ -50,7 +50,7 @@ struct EmptyStateView<Actions: View>: View {
     @ViewBuilder
     private var content: some View {
         if let symbol {
-            Image(systemName: symbol)
+            AppSymbolImage(name: symbol)
                 .font(.system(size: 58, weight: .light))
                 .frame(width: 128, height: 100)
                 .foregroundStyle(.tertiary)

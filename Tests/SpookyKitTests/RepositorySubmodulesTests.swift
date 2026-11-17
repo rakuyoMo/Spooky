@@ -56,10 +56,11 @@ struct RepositorySubmodulesTests {
             ]
         )
 
-        // 分离 HEAD 时版本的名字是指向该提交、按名称排在最前的标签；指针所指的提交没有标签时没有名字
+        // 分离 HEAD 时版本的名字是指向该提交、按名称排在最前的标签；指针所指的提交没有标签时没有名字。
+        // 名称按系统区域比较，数字开头的名字在各区域都排在汉字与字母前
         let checkedOut = try #require(updated.checkedOut)
-        _ = try await repositories.parent.run(["-C", "依赖/my lib", "tag", "v1"])
-        #expect(try await submodules.revisionName(of: updated, commit: checkedOut) == "v1")
+        _ = try await repositories.parent.run(["-C", "依赖/my lib", "tag", "1.0"])
+        #expect(try await submodules.revisionName(of: updated, commit: checkedOut) == "1.0")
         #expect(try await submodules.revisionName(of: updated, commit: repositories.upstreamHead) == nil)
 
         try await submodules.checkout(try #require(revisions.first), in: updated)

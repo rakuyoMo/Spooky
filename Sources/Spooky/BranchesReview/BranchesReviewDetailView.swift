@@ -18,7 +18,7 @@ struct BranchesReviewDetailView: View {
             EmptyStateView(
                 title: AppLocalization.text("review.selected", selected.count),
                 message: "",
-                symbol: "arrow.triangle.branch"
+                symbol: AppSymbol.branch
             )
         } else if
             let id = selected.first,
@@ -41,7 +41,7 @@ struct BranchesReviewDetailView: View {
             EmptyStateView(
                 title: AppLocalization.text("review.noSelection"),
                 message: "",
-                symbol: "arrow.triangle.branch"
+                symbol: AppSymbol.branch
             )
         }
     }

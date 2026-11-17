@@ -76,7 +76,7 @@ final class QuickActionCellView: NSTableCellView {
     ///
     /// - Parameter hint: 对象行是 “默认动作 ↩︎” 与 “More Actions ⇥” 两行，动作行是 “↩︎”。
     func configure(_ item: QuickActionItem, hint: String) {
-        imageView?.image = NSImage(systemSymbolName: item.symbol, accessibilityDescription: item.title)
+        imageView?.image = AppSymbol.image(item.symbol, side: 24, accessibilityDescription: item.title)
         textField?.stringValue = item.title
         subtitleField.stringValue = item.subtitle
         hintField.stringValue = hint

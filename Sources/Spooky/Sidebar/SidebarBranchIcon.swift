@@ -53,18 +53,15 @@ struct SidebarBranchIcon: View {
             BranchGlyph(isArchived: false, hasWorktreeBadge: true).frame(width: side * 1.25, height: side * 1.25)
 
         case (.branch, false):
-            BranchGlyph(isArchived: false, hasWorktreeBadge: false).frame(width: side, height: side)
+            BranchShape().frame(width: side, height: side)
         }
     }
 }
 
 // MARK: - BranchGlyph
 
-/// 自行绘制的分支图形，按 18 × 18 的网格描出，随所在的矩形等比缩放。
-///
-/// - 分支：左侧一根竖直的主干连着上下两个圆环，右上的圆环经一段圆角折线斜着并入主干。
-/// - 已归档：带盖的归档盒。
-/// - 带角标时图形缩到左上，右下角是挖出两个并排小方块的实心圆，图形在角标四周让出一圈空隙。
+/// 带角标的分支图形，按 18 × 18 的网格描出，随所在的矩形等比缩放：分叉或带盖的归档盒缩到左上，
+/// 右下角是挖出两个并排小方块的实心圆，图形在角标四周让出一圈空隙。
 private struct BranchGlyph: Shape {
     /// 画归档盒；否则画分叉。
     let isArchived: Bool
@@ -112,6 +109,10 @@ private struct BranchGlyph: Shape {
 
     /// 不带角标的图形在给定正方形里的填充轮廓。
     private func outline(in square: CGRect) -> Path {
+        guard isArchived else {
+            return BranchShape.outline(in: square)
+        }
+
         let unit = square.width / 18
 
         // 网格坐标换成正方形里的点
@@ -121,42 +122,23 @@ private struct BranchGlyph: Shape {
 
         var path = Path()
 
-        if isArchived {
-            // 盒盖
-            path.addRoundedRect(
-                in: CGRect(origin: point(2, 3.2), size: CGSize(width: 14 * unit, height: 3.4 * unit)),
-                cornerSize: CGSize(width: unit, height: unit)
-            )
+        // 盒盖
+        path.addRoundedRect(
+            in: CGRect(origin: point(2, 3.2), size: CGSize(width: 14 * unit, height: 3.4 * unit)),
+            cornerSize: CGSize(width: unit, height: unit)
+        )
 
-            // 盒身
-            path.move(to: point(3.4, 6.6))
-            path.addLine(to: point(3.4, 13))
-            path.addQuadCurve(to: point(5, 14.6), control: point(3.4, 14.6))
-            path.addLine(to: point(13, 14.6))
-            path.addQuadCurve(to: point(14.6, 13), control: point(14.6, 14.6))
-            path.addLine(to: point(14.6, 6.6))
+        // 盒身
+        path.move(to: point(3.4, 6.6))
+        path.addLine(to: point(3.4, 13))
+        path.addQuadCurve(to: point(5, 14.6), control: point(3.4, 14.6))
+        path.addLine(to: point(13, 14.6))
+        path.addQuadCurve(to: point(14.6, 13), control: point(14.6, 14.6))
+        path.addLine(to: point(14.6, 6.6))
 
-            // 把手
-            path.move(to: point(7, 9.6))
-            path.addLine(to: point(11, 9.6))
-        } else {
-            let radius = 2.4
-
-            // 左上、右上与左下三个圆环
-            for center in [point(4.6, 3.9), point(13.4, 3.9), point(4.6, 14.1)] {
-                path.addEllipse(in: CGRect(origin: center, size: .zero).insetBy(dx: -radius * unit, dy: -radius * unit))
-            }
-
-            // 主干
-            path.move(to: point(4.6, 3.9 + radius))
-            path.addLine(to: point(4.6, 14.1 - radius))
-
-            // 右上的圆环向下，拐过圆角后斜着并入主干
-            path.move(to: point(13.4, 3.9 + radius))
-            path.addLine(to: point(13.4, 7))
-            path.addQuadCurve(to: point(12.1, 8.6), control: point(13.4, 8.1))
-            path.addLine(to: point(4.6, 11.2))
-        }
+        // 把手
+        path.move(to: point(7, 9.6))
+        path.addLine(to: point(11, 9.6))
 
         return path.strokedPath(StrokeStyle(lineWidth: 1.5 * unit, lineCap: .round, lineJoin: .round))
     }

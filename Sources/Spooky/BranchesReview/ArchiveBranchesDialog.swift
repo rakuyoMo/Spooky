@@ -147,7 +147,7 @@ struct ArchiveBranchesDialog: View {
     /// 一行分支：分支图标、名称，右侧是建议归档的原因。
     private func row(_ branch: RepositoryReference) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: "arrow.triangle.branch")
+            AppSymbolImage(name: AppSymbol.branch)
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
 
