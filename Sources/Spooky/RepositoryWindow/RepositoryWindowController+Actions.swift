@@ -328,7 +328,7 @@ extension RepositoryWindowController {
         }
     }
 
-    /// Show in Finder 的可用性；服务器仓库没有挂载到这台 Mac 时，菜单项与工具栏项的提示写明原因。
+    /// Show in Finder 的可用性：显示仓库时一直可用；服务器仓库不能直接打开时，菜单项与工具栏项的提示写明原因。
     private func finderAvailability(of item: any NSValidatedUserInterfaceItem) -> Bool {
         let tip = showsManager ? nil : session.finderUnavailableTip
 
@@ -343,7 +343,7 @@ extension RepositoryWindowController {
             }
         }
 
-        return showsManager ? session.selectedRecentLocation?.localURL != nil : session.canShowInFinder
+        return showsManager ? session.selectedRecentLocation?.localURL != nil : session.repository != nil
     }
 }
 

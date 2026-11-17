@@ -206,9 +206,8 @@ extension WorkingCopyMenu {
     private var toolItems: some View {
         Button(AppLocalization.text("workspace.copyPathMenu"), action: copyPath)
 
-        // 服务器仓库没有本机映射时不可用，悬停说明原因
+        // 服务器仓库不能直接打开时悬停说明原因
         Button(AppLocalization.text("action.revealFinder"), action: revealFinder)
-            .disabled(!session.canShowInFinder)
             .help(session.finderUnavailableTip ?? "")
 
         Button(AppLocalization.text("action.openTerminal"), action: openTerminal)

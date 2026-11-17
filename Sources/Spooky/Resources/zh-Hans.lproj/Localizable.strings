@@ -170,9 +170,11 @@
 "action.addRemote" = "添加服务器仓库…";
 "action.openTerminal" = "在终端中打开";
 "action.revealFinder" = "在 Finder 中显示";
-"action.revealFinder.notMounted" = "“%@” 没有挂载到这台 Mac。可以在仓库设置里手动指定它在本机的文件夹。";
-"action.revealFinder.worktreeNotMounted" = "“%@” 没有挂载到这台 Mac。";
+"action.revealFinder.notMounted" = "“%@” 没有挂载到这台 Mac。";
+"action.revealFinder.notConnected" = "没有连上 “%@”。";
 "action.revealFinder.folderMissing" = "找不到仓库设置里指定的本机文件夹 “%@”。";
+"localLocation.notInShare" = "挂载的共享里没有这个仓库。";
+"localLocation.sshfsFailed" = "sshfs 以状态 %ld 退出。";
 "action.copyPath" = "复制路径";
 "action.reconnect" = "重新连接";
 "action.cancel" = "取消";

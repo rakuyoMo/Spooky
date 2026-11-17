@@ -529,6 +529,7 @@ extension RepositoryWindowController {
                 #selector(merge), #selector(rebase), #selector(refreshRepository),
                 #selector(applyStash), #selector(saveStash), #selector(createBranch),
                 #selector(forcePushWithLease), #selector(pushRevision),
+                #selector(revealInFinder),
             ] {
                 _ = validateUserInterfaceItem(NSMenuItem(title: "", action: action, keyEquivalent: ""))
             }

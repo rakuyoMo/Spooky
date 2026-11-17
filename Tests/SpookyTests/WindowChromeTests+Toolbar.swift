@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -9,7 +10,7 @@ import Testing
 
 extension WindowChromeTests {
     /// 同一个工具栏独有的仓库窗口依次核对：本机仓库的提示随显示方式与 ⌥ 改写；
-    /// 跟随内层分栏的分隔符与内层分栏的列表；服务器仓库的主机前缀一项，以及与本机相同的提示。
+    /// 跟随内层分栏的分隔符与内层分栏的列表；服务器仓库的主机前缀一项，与本机相同的提示，以及随本机位置及时更新的 Finder 项提示。
     @Test("工具栏的提示、跟随内层分栏的分隔符与服务器仓库的主机前缀")
     func toolbarTipsAndSeparator() async throws {
         let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
@@ -41,6 +42,7 @@ extension WindowChromeTests {
         toolbar.displayMode = .iconAndLabel
         controller.updateToolbarItems()
         Self.expectServerLabelModeTips(in: controller)
+        try await Self.expectServerFinderTips(in: controller, directory: fixture.directory)
 
         toolbar.displayMode = .iconOnly
         Self.expectServerIconOnlyTips(in: controller)
@@ -316,6 +318,28 @@ extension WindowChromeTests {
         controller.updateQuickToolbarItems(option: true)
         #expect(Self.tips(of: RepositoryToolbar.sync, in: controller).first == text("sync.quickFetch.tip"))
         controller.updateQuickToolbarItems(option: false)
+    }
+
+    /// 服务器仓库的 Finder 项随本机位置的状态及时更新提示，不等下一次点按或按键：能直接打开时是平常的提示，指定的文件夹不在时写原因。
+    private static func expectServerFinderTips(in controller: RepositoryWindowController, directory: URL) async throws {
+        let toolbar = try #require(controller.window?.toolbar)
+        let mounts = controller.session.mounts
+
+        // 只有放在工具栏里的项随状态校验
+        if !toolbar.items.contains(where: { $0.itemIdentifier == RepositoryToolbar.finder }) {
+            toolbar.insertItem(withItemIdentifier: RepositoryToolbar.finder, at: 0)
+        }
+
+        let tips = { Self.tips(of: RepositoryToolbar.finder, in: controller) }
+
+        mounts.apply(.chosenFolder(directory))
+        await until { tips() == [AppLocalization.text("action.revealFinder")] }
+
+        let missing = directory.appending(path: "不在")
+        let reason = AppLocalization.text("action.revealFinder.folderMissing", HomePath.abbreviated(missing.path))
+
+        mounts.apply(.chosenFolder(missing))
+        await until { tips() == [reason] }
     }
 
     /// 服务器仓库只显示图标时与本机仓库相同：提示前面只加标签，按住 ⌥ 时同样如此；Push To 不加标签。

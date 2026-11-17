@@ -4,33 +4,29 @@ import SpookyKit
 // MARK: - Finder
 
 extension RepositorySession {
-    /// 菜单、工具栏、右键菜单与快捷操作共用的规则：仓库目录能否在 Finder 中显示；服务器仓库要找到 B 上这个目录在本机的挂载。
-    var canShowInFinder: Bool {
-        finderURL() != nil
-    }
-
-    /// 仓库目录不能在 Finder 中显示时的提示：手动指定的目录现在找不到，或 B 上的这个目录没有挂载到这台 Mac、可以在仓库设置里手动指定；
-    /// 能显示或还在查找时为 nil。
+    /// 仓库目录不能直接在 Finder 中显示时的提示：还没连上 B 或还没有查找结果、没有挂载、指定的文件夹不在，或 Spooky 上次挂载失败的原因；
+    /// 能直接显示与本机仓库为 nil。
     var finderUnavailableTip: String? {
-        guard let repository, repository.host != nil else {
+        guard let repository, let host = repository.host else {
             return nil
         }
 
-        // 手动指定了目录时只看它在不在
-        if let designation = mounts.designation {
-            return designation.exists
-                ? nil
-                : AppLocalization.text(
-                    "action.revealFinder.folderMissing",
-                    HomePath.abbreviated(designation.mount.localURL.path)
-                )
-        }
-
-        guard mounts.lookups[repository.path] == .notMounted else {
+        switch mounts.status {
+        case .available:
             return nil
-        }
 
-        return AppLocalization.text("action.revealFinder.notMounted", repository.displayPath)
+        case .folderMissing(let folder):
+            return AppLocalization.text("action.revealFinder.folderMissing", HomePath.abbreviated(folder.path))
+
+        case .failed(let failure):
+            return failure.reason
+
+        case .notMounted, .mounting:
+            return AppLocalization.text("action.revealFinder.notMounted", repository.displayPath)
+
+        case .unknown, .searching:
+            return AppLocalization.text("action.revealFinder.notConnected", host)
+        }
     }
 
     /// 工作树能否在 Finder 中显示；失效的工作树不能。
@@ -54,7 +50,7 @@ extension RepositorySession {
             return nil
         }
 
-        return AppLocalization.text("action.revealFinder.worktreeNotMounted", location.displayPath)
+        return AppLocalization.text("action.revealFinder.notMounted", location.displayPath)
     }
 
     /// 仓库里的路径在这台 Mac 上的位置：本机仓库直接拼接；服务器仓库按手动指定的目录或查到的挂载换算，没有挂载或还在查找时为 nil。
@@ -71,7 +67,7 @@ extension RepositorySession {
             return URL(filePath: full)
         }
 
-        return mounts.repositoryMount(of: repository.path)?.localURL(for: full)
+        return mounts.repositoryMount()?.localURL(for: full)
     }
 
     /// 工作树在这台 Mac 上的位置；失效的工作树为 nil。服务器上仓库目录里的工作树按仓库目录换算，其余按各自查到的挂载。
@@ -85,7 +81,7 @@ extension RepositorySession {
         }
 
         let mount = Self.path(worktree.path, isInside: repository.path)
-            ? mounts.repositoryMount(of: repository.path)
+            ? mounts.repositoryMount()
             : foundMount(of: worktree.path)
 
         return mount?.localURL(for: worktree.path)
@@ -108,39 +104,42 @@ extension RepositorySession {
             return false
         }
 
-        ServerLocalLocation.store(.chosenFolder(folder), for: repository)
+        ServerLocalLocation.store(.chosenFolder(folder), for: repository, defaults: mounts.defaults)
 
         // 核对期间窗口换了仓库时只记进偏好
         if self.repository == repository {
-            mounts.designate(folder, for: repository.path)
+            mounts.apply(.chosenFolder(folder))
         }
 
         return true
     }
 
-    /// 打开服务器仓库时读入这台 Mac 偏好里记下的本机位置；指定了文件夹时不再自动查找仓库目录的挂载。
+    /// 打开服务器仓库时读入这台 Mac 偏好里记下的本机位置；方式是 SMB 或 sshfs 挂载时，连上 B 后在后台挂载一次。
     func loadLocalLocation() {
         guard let repository, repository.host != nil else {
             return
         }
 
-        if case .chosenFolder(let folder) = ServerLocalLocation.stored(for: repository) {
-            mounts.designate(folder, for: repository.path)
-        }
+        mounts.load(
+            ServerLocalLocation.stored(for: repository, defaults: mounts.defaults),
+            for: repository,
+            mountsInBackground: true
+        )
     }
 
-    /// 清除手动指定的本机目录，仓库目录恢复自动查找。
+    /// 仓库目录的本机位置改回自动查找，并重新查找。
     func clearLocalFolder() {
         guard let repository else {
             return
         }
 
-        ServerLocalLocation.store(.automatic, for: repository)
-        mounts.designate(nil, for: repository.path)
+        ServerLocalLocation.store(.automatic, for: repository, defaults: mounts.defaults)
+        mounts.apply(.automatic)
         locateMounts()
     }
 
-    /// 在后台查找服务器仓库的目录与仓库目录以外的工作树，已经有结果的目录不再查找；本机仓库与手动指定了本机目录的仓库目录不用查找。
+    /// 在后台查找服务器仓库的目录与仓库目录以外的工作树，已经有结果的目录不再查找；本机仓库与本机位置带文件夹的仓库目录不用查找。
+    /// 随后做打开仓库后还没做过的那一次后台挂载。
     ///
     /// 读到工作树清单时调用：这时连得上 B，要查的目录也都知道了；这台 Mac 挂载或卸载卷时由 ``RepositoryMountState`` 重新查找。
     func locateMounts() {
@@ -158,6 +157,8 @@ extension RepositorySession {
             runner: runner,
             refreshes: false
         )
+
+        mounts.mountInBackground(host: host, runner: runner)
     }
 }
 

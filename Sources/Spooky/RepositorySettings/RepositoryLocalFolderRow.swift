@@ -13,7 +13,7 @@ struct RepositoryLocalFolderRow: View {
 
     /// 指定的目录（主目录缩写成 `~`）或 “Not set”，悬停时出现 Choose… 与 Clear。
     var body: some View {
-        let folder = session.mounts.designation?.mount.localURL
+        let folder = session.mounts.location.folder
 
         RemoteSettingRow(
             label: AppLocalization.text("repositorySettings.localFolder"),
@@ -81,7 +81,7 @@ extension RepositoryLocalFolderRow {
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
         panel.resolvesAliases = true
-        panel.directoryURL = session.mounts.designation?.mount.localURL
+        panel.directoryURL = session.mounts.location.folder
 
         let finish: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK, let url = panel.url else {

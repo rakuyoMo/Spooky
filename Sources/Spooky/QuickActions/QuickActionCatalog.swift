@@ -311,7 +311,6 @@ extension QuickActionCatalog {
 
     private func isAvailable(locationAction action: QuickAction) -> Bool {
         switch action {
-        case .revealInFinder: session.canShowInFinder
         case .createSnapshot: session.canSaveStash
         case .showFile, .showFileHistory, .showBlame, .openInEditor: session.runner != nil
         default: true

@@ -1014,14 +1014,15 @@ extension RepositorySession {
     private func connectionRestored(_ remote: RemoteConnection, request: Int) async {
         let recovery = await remote.recovery
 
-        guard generation == request else {
-            return
-        }
+        guard generation == request else { return }
 
         connectionState = .connected
         failure = nil
         stagingOverrides = [:]
         self.recovery = recovery
+
+        // 之前没有挂载的目录在连上后可能已经挂上
+        mounts.relocateUnmounted()
 
         // 只采用中断之后完成的核对；没有新的核对说明写入没有在服务器上开始。
         if let interruptedWrite {

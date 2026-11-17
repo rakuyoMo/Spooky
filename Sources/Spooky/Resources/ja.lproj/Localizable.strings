@@ -170,9 +170,11 @@
 "action.addRemote" = "サーバーリポジトリを追加…";
 "action.openTerminal" = "ターミナルで開く";
 "action.revealFinder" = "Finder に表示";
-"action.revealFinder.notMounted" = "「%@」はこの Mac にマウントされていません。リポジトリの設定で、この Mac 上のフォルダを指定できます。";
-"action.revealFinder.worktreeNotMounted" = "「%@」はこの Mac にマウントされていません。";
+"action.revealFinder.notMounted" = "「%@」はこの Mac にマウントされていません。";
+"action.revealFinder.notConnected" = "「%@」に接続されていません。";
 "action.revealFinder.folderMissing" = "リポジトリの設定で指定したこの Mac 上のフォルダ「%@」が見つかりません。";
+"localLocation.notInShare" = "マウントした共有にこのリポジトリがありません。";
+"localLocation.sshfsFailed" = "sshfs がステータス %ld で終了しました。";
 "action.copyPath" = "パスをコピー";
 "action.reconnect" = "再接続";
 "action.cancel" = "キャンセル";

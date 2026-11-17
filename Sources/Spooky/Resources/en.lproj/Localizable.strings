@@ -170,9 +170,11 @@
 "action.addRemote" = "Add Server Repository…";
 "action.openTerminal" = "Open in Terminal";
 "action.revealFinder" = "Show in Finder";
-"action.revealFinder.notMounted" = "“%@” isn’t mounted on this Mac. You can choose its local folder in the repository settings.";
-"action.revealFinder.worktreeNotMounted" = "“%@” isn’t mounted on this Mac.";
+"action.revealFinder.notMounted" = "“%@” isn’t mounted on this Mac.";
+"action.revealFinder.notConnected" = "Not connected to “%@”.";
 "action.revealFinder.folderMissing" = "The local folder “%@” chosen in the repository settings can’t be found.";
+"localLocation.notInShare" = "This repository isn’t in the mounted share.";
+"localLocation.sshfsFailed" = "sshfs exited with status %ld.";
 "action.copyPath" = "Copy Path";
 "action.reconnect" = "Reconnect";
 "action.cancel" = "Cancel";

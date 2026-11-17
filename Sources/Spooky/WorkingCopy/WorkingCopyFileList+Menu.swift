@@ -205,7 +205,7 @@ extension WorkingCopyFileList.Coordinator {
         let revealItem = add(
             title: AppLocalization.text("action.revealFinder"),
             action: #selector(reveal),
-            enabled: session.canShowInFinder && (menuTargets.isEmpty || session.isOnDisk(menuEntries)),
+            enabled: menuTargets.isEmpty || session.isOnDisk(menuEntries),
             to: menu
         )
         revealItem.toolTip = session.finderUnavailableTip

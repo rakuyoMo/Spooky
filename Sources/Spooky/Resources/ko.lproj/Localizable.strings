@@ -170,9 +170,11 @@
 "action.addRemote" = "서버 저장소 추가…";
 "action.openTerminal" = "터미널에서 열기";
 "action.revealFinder" = "Finder에서 보기";
-"action.revealFinder.notMounted" = "“%@”이(가) 이 Mac에 마운트되어 있지 않습니다. 저장소 설정에서 이 Mac의 폴더를 직접 지정할 수 있습니다.";
-"action.revealFinder.worktreeNotMounted" = "“%@”이(가) 이 Mac에 마운트되어 있지 않습니다.";
+"action.revealFinder.notMounted" = "“%@”이(가) 이 Mac에 마운트되어 있지 않습니다.";
+"action.revealFinder.notConnected" = "“%@”에 연결되어 있지 않습니다.";
 "action.revealFinder.folderMissing" = "저장소 설정에서 지정한 이 Mac의 폴더 “%@”을(를) 찾을 수 없습니다.";
+"localLocation.notInShare" = "마운트한 공유에 이 저장소가 없습니다.";
+"localLocation.sshfsFailed" = "sshfs가 상태 %ld(으)로 종료되었습니다.";
 "action.copyPath" = "경로 복사";
 "action.reconnect" = "다시 연결";
 "action.cancel" = "취소";
