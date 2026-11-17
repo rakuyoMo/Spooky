@@ -4,9 +4,14 @@ import SpookyKit
 // MARK: - Availability
 
 extension RepositorySession {
-    /// 能否移动或删除这个工作树：主工作树不能。
-    func canModify(_ worktree: Worktree) -> Bool {
+    /// 能否删除这个工作树：主工作树不能。
+    func canRemove(_ worktree: Worktree) -> Bool {
         canWrite && !worktree.isMain && !worktree.isBare
+    }
+
+    /// 能否移动这个工作树：在能删除之外还要有效，Git 不移动目录已不在的工作树。
+    func canMove(_ worktree: Worktree) -> Bool {
+        canRemove(worktree) && worktree.isValid
     }
 
     /// 能否修复这个工作树：只有失效的工作树需要修复。

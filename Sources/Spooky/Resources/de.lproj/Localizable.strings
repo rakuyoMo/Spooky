@@ -2412,6 +2412,8 @@
 "worktree.invalid" = "Ungültiger Worktree";
 "worktree.invalid.message" = "Der Worktree ist ungültig.";
 "worktree.invalid.reason" = "Der Worktree ist ungültig: %@";
+"worktree.invalid.remove" = "Entfernen";
+"worktree.invalid.repair" = "Reparieren…";
 "worktree.location" = "Ort:";
 "worktree.missing" = "Worktree nicht gefunden";
 "worktree.missing.message" = "Der Worktree „%@“ existiert nicht mehr.";
@@ -2441,6 +2443,7 @@
 "worktree.checkedOutIn" = "Ausgecheckt im Worktree „%@“";
 "worktree.tooltip" = "Worktree „%@“";
 "worktree.tooltip.path" = "Ausgecheckt unter: „%@“";
+"worktree.warning" = "Worktree-Warnung";
 
 "worktree.branchInUse" = "„%@“ ist bereits in einem Worktree ausgecheckt. Wähle „HEAD loslösen“ oder „Erzwingen“, um den Worktree trotzdem zu erstellen.";
 

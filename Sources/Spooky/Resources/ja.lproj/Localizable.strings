@@ -2412,6 +2412,8 @@
 "worktree.invalid" = "無効なワークツリー";
 "worktree.invalid.message" = "ワークツリーが無効です。";
 "worktree.invalid.reason" = "ワークツリーが無効です：%@";
+"worktree.invalid.remove" = "削除";
+"worktree.invalid.repair" = "修復…";
 "worktree.location" = "場所：";
 "worktree.missing" = "ワークツリーが見つかりません";
 "worktree.missing.message" = "ワークツリー「%@」はもうありません。";
@@ -2441,6 +2443,7 @@
 "worktree.checkedOutIn" = "ワークツリー「%@」でチェックアウト済み";
 "worktree.tooltip" = "ワークツリー「%@」";
 "worktree.tooltip.path" = "チェックアウト先：「%@」";
+"worktree.warning" = "ワークツリーの警告";
 
 "worktree.branchInUse" = "「%@」はすでにワークツリーでチェックアウトされています。作成するには「HEAD を分離」か「強制」を選んでください。";
 

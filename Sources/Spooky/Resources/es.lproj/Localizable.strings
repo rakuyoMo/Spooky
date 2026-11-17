@@ -2412,6 +2412,8 @@
 "worktree.invalid" = "Worktree no válido";
 "worktree.invalid.message" = "El worktree no es válido.";
 "worktree.invalid.reason" = "El worktree no es válido: %@";
+"worktree.invalid.remove" = "Eliminar";
+"worktree.invalid.repair" = "Reparar…";
 "worktree.location" = "Ubicación:";
 "worktree.missing" = "Worktree no encontrado";
 "worktree.missing.message" = "El worktree “%@” ya no existe.";
@@ -2441,6 +2443,7 @@
 "worktree.checkedOutIn" = "Con checkout en el worktree “%@”";
 "worktree.tooltip" = "Worktree “%@”";
 "worktree.tooltip.path" = "Checkout en: “%@”";
+"worktree.warning" = "Advertencia del worktree";
 
 "worktree.branchInUse" = "“%@” ya tiene checkout en un worktree. Elige “Desacoplar HEAD” o “Forzar” para crear el worktree de todos modos.";
 

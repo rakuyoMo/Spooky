@@ -2412,6 +2412,8 @@
 "worktree.invalid" = "잘못된 작업 트리";
 "worktree.invalid.message" = "작업 트리가 유효하지 않습니다.";
 "worktree.invalid.reason" = "작업 트리가 유효하지 않습니다: %@";
+"worktree.invalid.remove" = "삭제";
+"worktree.invalid.repair" = "복구…";
 "worktree.location" = "위치:";
 "worktree.missing" = "작업 트리를 찾을 수 없음";
 "worktree.missing.message" = "작업 트리 “%@”이(가) 더 이상 없습니다.";
@@ -2441,6 +2443,7 @@
 "worktree.checkedOutIn" = "작업 트리 “%@”에서 체크아웃됨";
 "worktree.tooltip" = "작업 트리 “%@”";
 "worktree.tooltip.path" = "체크아웃 위치: “%@”";
+"worktree.warning" = "작업 트리 경고";
 
 "worktree.branchInUse" = "“%@”은(는) 이미 작업 트리에 체크아웃되어 있습니다. 만들려면 “HEAD 분리”나 “강제”를 선택하세요.";
 

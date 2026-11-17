@@ -2412,6 +2412,8 @@
 "worktree.invalid" = "无效的工作树";
 "worktree.invalid.message" = "工作树无效。";
 "worktree.invalid.reason" = "工作树无效：%@";
+"worktree.invalid.remove" = "删除";
+"worktree.invalid.repair" = "修复…";
 "worktree.location" = "位置：";
 "worktree.missing" = "找不到工作树";
 "worktree.missing.message" = "工作树 “%@” 已不存在。";
@@ -2441,6 +2443,7 @@
 "worktree.checkedOutIn" = "已在工作树 “%@” 中检出";
 "worktree.tooltip" = "工作树 “%@”";
 "worktree.tooltip.path" = "检出位置：“%@”";
+"worktree.warning" = "工作树警告";
 
 "worktree.branchInUse" = "“%@” 已在某个工作树中检出。勾选 “分离 HEAD” 或 “强制” 才能创建。";
 

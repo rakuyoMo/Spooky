@@ -2410,8 +2410,10 @@
 "worktree.force.help" = "Creates a worktree for the given starting revision even if it is already checked out in another worktree.";
 "worktree.group" = "Worktrees";
 "worktree.invalid" = "Invalid Worktree";
-"worktree.invalid.message" = "The worktree is not valid.";
-"worktree.invalid.reason" = "The worktree is not valid: %@";
+"worktree.invalid.message" = "Worktree is not valid.";
+"worktree.invalid.reason" = "Worktree is not valid: %@";
+"worktree.invalid.remove" = "Remove";
+"worktree.invalid.repair" = "Repair…";
 "worktree.location" = "Location:";
 "worktree.missing" = "Worktree Not Found";
 "worktree.missing.message" = "The worktree “%@” no longer exists.";
@@ -2441,6 +2443,7 @@
 "worktree.checkedOutIn" = "Checked Out in Worktree “%@”";
 "worktree.tooltip" = "Worktree “%@”";
 "worktree.tooltip.path" = "Checked out at: “%@”";
+"worktree.warning" = "Worktree Warning";
 
 "worktree.branchInUse" = "“%@” is already checked out in a worktree. Choose Detach or Force to create the worktree anyway.";
 

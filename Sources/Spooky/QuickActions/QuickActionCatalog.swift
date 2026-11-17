@@ -295,8 +295,11 @@ extension QuickActionCatalog {
         case .openWorktree, .openWorktreeInNewTab, .openWorktreeInNewWindow, .openInTerminal, .copyPath:
             worktree.isValid && isAvailable(locationAction: action)
 
-        case .removeWorktree, .moveWorktree:
-            session.canModify(worktree)
+        case .removeWorktree:
+            session.canRemove(worktree)
+
+        case .moveWorktree:
+            session.canMove(worktree)
 
         case .repairWorktree:
             session.canRepair(worktree)
