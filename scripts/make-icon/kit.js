@@ -5,6 +5,7 @@
  * 为每组的默认图标与深色图标各画指示灯灭着、亮着两版，逐个尺寸调用 renderIcon 取回 PNG。
  *
  * 每组一个文件：配色与几何常量、入口 paint…Icon、绘制函数，以及只有这一组用到的工具；两组以上用到的工具放在本文件。
+ * 满怀的三组只差背景，共用 armful.js。
  * 加一组图标时新建一个文件，在 renderIcon 与 make-icon.swift 的表里各加一行。
  */
 
@@ -45,7 +46,8 @@ const PLATE_SHADOW = { offsetY: 10, blur: 20, color: 'rgba(0, 0, 0, 0.3)' };
  * 以给定像素尺寸渲染一组图标中的一个。
  *
  * @param {number} pixels 导出图片的边长
- * @param {'serverGhost' | 'midnight' | 'armful' | 'cherryPick' | 'perch'} group 图标组：服务器幽灵、午夜、满怀、采撷或栖枝
+ * @param {'armful' | 'armfulPlain' | 'armfulPurple' | 'perch' | 'cherryPick' | 'serverGhost' | 'midnight'} group
+ *     图标组：满怀、满怀 · 素底、满怀 · 紫底、栖枝、采撷、服务器幽灵或午夜
  * @param {'default' | 'dark'} style 默认图标或深色图标
  * @param {boolean} lit 指示灯是否亮着
  * @returns {Promise<string>} PNG 的 data URL
@@ -53,11 +55,13 @@ const PLATE_SHADOW = { offsetY: 10, blur: 20, color: 'rgba(0, 0, 0, 0.3)' };
 async function renderIcon(pixels, group, style, lit) {
     // 各组的入口，定义在各组的文件里。
     const painters = {
+        armful: paintArmfulIcon,
+        armfulPlain: paintArmfulPlainIcon,
+        armfulPurple: paintArmfulPurpleIcon,
+        perch: paintPerchIcon,
+        cherryPick: paintCherryPickIcon,
         serverGhost: paintServerGhostIcon,
         midnight: paintMidnightIcon,
-        armful: paintArmfulIcon,
-        cherryPick: paintCherryPickIcon,
-        perch: paintPerchIcon,
     };
 
     const canvas = document.createElement('canvas');

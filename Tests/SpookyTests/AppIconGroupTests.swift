@@ -8,9 +8,9 @@ import Testing
 /// 图标组与仓库里的图标资源、包的默认图标、打包脚本写出的壳 App 相互对得上。
 @MainActor
 struct AppIconGroupTests {
-    /// 默认的一组是服务器幽灵，包里的默认图标（`CFBundleIconFile`）是它的默认图标；每组的四份 icns 都在仓库里，
+    /// 默认的一组是满怀，包里的默认图标（`CFBundleIconFile`）是它的默认图标；每组的四份 icns 都在仓库里，
     /// 其它组都要写自定义图标，打包脚本给它们各写一个壳 App。
-    @Test("默认的一组是服务器幽灵；每组的图标资源齐全，其它组各有壳 App")
+    @Test("默认的一组是满怀；每组的图标资源齐全，其它组各有壳 App")
     func groupsMatchBundledResources() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
@@ -36,7 +36,7 @@ struct AppIconGroupTests {
 
         let appearance = try #require(NSAppearance(named: .aqua))
 
-        #expect(AppIconGroup.defaultGroup == .serverGhost)
+        #expect(AppIconGroup.defaultGroup == .armful)
         #expect(info["CFBundleIconFile"] as? String == AppIconGroup.defaultGroup.iconName(for: .standard))
         #expect(shells.contains("icon_names=(" + shellNames.joined(separator: " ") + ")"))
 

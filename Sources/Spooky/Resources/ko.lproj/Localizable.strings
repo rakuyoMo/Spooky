@@ -1737,6 +1737,8 @@
 "appIcon.serverGhost" = "서버 유령";
 "appIcon.midnight" = "한밤중";
 "appIcon.armful" = "한 아름";
+"appIcon.armfulPlain" = "한 아름(무지)";
+"appIcon.armfulPurple" = "한 아름(보라)";
 "appIcon.cherryPick" = "체리 따기";
 "appIcon.perch" = "나뭇가지";
 "appIcon.writeFailed" = "Spooky.app에 아이콘을 쓸 수 없어 전환하지 못했습니다.";

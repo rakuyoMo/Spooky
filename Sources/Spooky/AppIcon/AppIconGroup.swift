@@ -5,24 +5,31 @@ import Foundation
 /// 应用图标的一组：Settings › Appearance 里选定的一组用于 Dock、⌘Tab 与访达。
 ///
 /// 每组四个图标：默认、连接、深色、深色连接，资源名由组的前缀加上 `Dark`、`Connected` 拼成。
+/// 各组声明的先后就是图标列表里的顺序。
 enum AppIconGroup: String, CaseIterable, Identifiable {
-    /// 幽灵与机架，默认的一组；包里的默认图标（`CFBundleIconFile`）就是这一组的默认图标。
+    /// 抱着一对樱桃的幽灵，身后是一轮紫色的满月，默认的一组；包里的默认图标（`CFBundleIconFile`）就是这一组的默认图标。
+    case armful
+
+    /// 抱着一对樱桃的幽灵，身后只有炭黑的底板。
+    case armfulPlain
+
+    /// 抱着一对樱桃的幽灵，身后是紫色的底板。
+    case armfulPurple
+
+    /// 落在树枝上的幽灵。
+    case perch
+
+    /// 伸手从枝上采撷的幽灵。
+    case cherryPick
+
+    /// 幽灵与机架。
     case serverGhost
 
     /// 紫色夜空里探身进来的幽灵。
     case midnight
 
-    /// 抱着一对樱桃的幽灵，身后是一排声纹。
-    case armful
-
-    /// 伸手从枝上采撷的幽灵。
-    case cherryPick
-
-    /// 落在树枝上的幽灵。
-    case perch
-
     /// 默认的一组：没选过时用它，它的默认图标就是包里的默认图标，不需要壳 App 与自定义图标。
-    static let defaultGroup = Self.serverGhost
+    static let defaultGroup = Self.armful
 
     /// 偏好键，保存 `rawValue`。
     static let key = "appIconGroup"
@@ -37,11 +44,13 @@ enum AppIconGroup: String, CaseIterable, Identifiable {
     /// 设置页与图标列表中显示的组名。
     var title: String {
         switch self {
+        case .armful: AppLocalization.text("appIcon.armful")
+        case .armfulPlain: AppLocalization.text("appIcon.armfulPlain")
+        case .armfulPurple: AppLocalization.text("appIcon.armfulPurple")
+        case .perch: AppLocalization.text("appIcon.perch")
+        case .cherryPick: AppLocalization.text("appIcon.cherryPick")
         case .serverGhost: AppLocalization.text("appIcon.serverGhost")
         case .midnight: AppLocalization.text("appIcon.midnight")
-        case .armful: AppLocalization.text("appIcon.armful")
-        case .cherryPick: AppLocalization.text("appIcon.cherryPick")
-        case .perch: AppLocalization.text("appIcon.perch")
         }
     }
 
@@ -78,11 +87,13 @@ extension AppIconGroup {
     /// 这一组四个图标共用的资源名前缀，也是默认图标与壳 App 的名字。
     private var iconNamePrefix: String {
         switch self {
+        case .armful: "AppIconArmful"
+        case .armfulPlain: "AppIconArmfulPlain"
+        case .armfulPurple: "AppIconArmfulPurple"
+        case .perch: "AppIconPerch"
+        case .cherryPick: "AppIconCherryPick"
         case .serverGhost: "AppIconServerGhost"
         case .midnight: "AppIconMidnight"
-        case .armful: "AppIconArmful"
-        case .cherryPick: "AppIconCherryPick"
-        case .perch: "AppIconPerch"
         }
     }
 }
