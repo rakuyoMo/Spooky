@@ -18,7 +18,7 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 在 Finder 中显示仓库目录；管理页里显示选中的本机记录，服务器记录没有打开的会话，不能显示。
+    /// 在 Finder 中显示仓库目录；仓库管理页里显示选中的书签。
     @objc
     func revealInFinder() {
         guard showsManager else {
@@ -26,8 +26,8 @@ extension RepositoryWindowController {
             return
         }
 
-        if let url = session.selectedRecentLocation?.localURL {
-            NSWorkspace.shared.activateFileViewerSelecting([url])
+        if let location = session.selectedRecentLocation {
+            coordinator?.showInFinder(location, from: self)
         }
     }
 
@@ -351,7 +351,7 @@ extension RepositoryWindowController {
         }
     }
 
-    /// Show in Finder 的可用性：显示仓库时一直可用；服务器仓库不能直接打开时，菜单项与工具栏项的提示写明原因。
+    /// Show in Finder 的可用性：显示仓库或仓库管理选中了仓库时一直可用；服务器仓库不能直接打开时，菜单项与工具栏项的提示写明原因。
     private func finderAvailability(of item: any NSValidatedUserInterfaceItem) -> Bool {
         let tip = showsManager ? nil : session.mounts.unavailableReason
 
@@ -366,7 +366,7 @@ extension RepositoryWindowController {
             }
         }
 
-        return showsManager ? session.selectedRecentLocation?.localURL != nil : session.repository != nil
+        return (showsManager ? session.selectedRecentLocation : session.repository) != nil
     }
 }
 

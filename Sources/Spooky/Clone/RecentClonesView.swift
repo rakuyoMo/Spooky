@@ -6,7 +6,7 @@ import SwiftUI
 
 /// 工具栏 Clone 项弹出的最近克隆：标题与 Clear，下面每个克隆一行，按状态给出停止、重试、移除或在 Finder 中显示。
 ///
-/// 双击已完成的一行打开仓库；右键菜单另有打开、Finder 或复制路径、终端、重试、取消与移除。
+/// 双击已完成的一行打开仓库；右键菜单另有打开、Finder、复制路径、终端、重试、取消与移除。
 struct RecentClonesView: View {
     /// App 内最近的克隆。
     let clones: CloneActivities
@@ -16,6 +16,9 @@ struct RecentClonesView: View {
 
     /// 在终端中打开克隆好的仓库。
     let openInTerminal: (RepositoryLocation) -> Void
+
+    /// 在 Finder 中显示克隆好的仓库。
+    let showInFinder: (RepositoryLocation) -> Void
 
     /// 标题栏与列表，480 × 400。
     var body: some View {
@@ -37,7 +40,7 @@ struct RecentClonesView: View {
             Divider()
 
             List(clones.items) { activity in
-                RecentCloneRow(activity: activity, clones: clones)
+                RecentCloneRow(activity: activity, clones: clones, showInFinder: showInFinder)
                     .contentShape(Rectangle())
                     .onTapGesture(count: 2) {
                         if activity.isFinished {
@@ -59,12 +62,8 @@ struct RecentClonesView: View {
         Button(AppLocalization.text("action.open")) { open(destination) }
             .disabled(!activity.isFinished)
 
-        Button(AppLocalization.text("action.revealFinder")) {
-            if let url = destination.localURL {
-                NSWorkspace.shared.activateFileViewerSelecting([url])
-            }
-        }
-        .disabled(!activity.isFinished)
+        Button(AppLocalization.text("action.revealFinder")) { showInFinder(destination) }
+            .disabled(!activity.isFinished)
 
         // 克隆进行中也可以复制；本机仓库是绝对路径，服务器仓库带主机前缀
         Button(AppLocalization.text("action.copyPath")) {
@@ -96,6 +95,9 @@ private struct RecentCloneRow: View {
 
     /// 重试与移除经它执行。
     let clones: CloneActivities
+
+    /// 在 Finder 中显示克隆好的仓库。
+    let showInFinder: (RepositoryLocation) -> Void
 
     /// 32 pt 图标、名称与状态两行、右侧的按钮。
     var body: some View {
@@ -150,7 +152,7 @@ private struct RecentCloneRow: View {
         }
     }
 
-    /// 进行中可以停止；取消与失败可以重试与移除；完成的本机仓库可以在 Finder 中显示。
+    /// 进行中可以停止；取消与失败可以重试与移除；完成后可以在 Finder 中显示。
     @ViewBuilder
     private var buttons: some View {
         switch activity.state {
@@ -162,10 +164,8 @@ private struct RecentCloneRow: View {
             iconButton("minus.circle", label: "clone.remove") { clones.remove(activity) }
 
         case .finished:
-            if let url = activity.clone.destination.localURL {
-                iconButton("magnifyingglass.circle", label: "action.revealFinder") {
-                    NSWorkspace.shared.activateFileViewerSelecting([url])
-                }
+            iconButton("magnifyingglass.circle", label: "action.revealFinder") {
+                showInFinder(activity.clone.destination)
             }
         }
     }

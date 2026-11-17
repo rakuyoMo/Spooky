@@ -42,6 +42,22 @@ extension RepositoryMountState {
             return
         }
 
+        guard location.folder == nil else {
+            await checkFolder()
+            return
+        }
+
+        if lookups[path] != .searching {
+            locate([path], host: host, runner: runner, refreshes: true)
+        }
+
+        await waitForSearch(of: path)
+    }
+
+    /// 重新查看方式带的文件夹并等结果：指定的文件夹看在不在，sshfs 挂载到的文件夹看是不是正挂着；自动查找与 SMB 挂载不用查看。
+    ///
+    /// 不经连接 B，仓库管理与最近克隆据此决定能否直接打开 Finder。
+    func checkFolder() async {
         switch location {
         case .chosenFolder:
             refreshFolder()
@@ -55,11 +71,7 @@ extension RepositoryMountState {
             }
 
         case .automatic, .smbMount:
-            if lookups[path] != .searching {
-                locate([path], host: host, runner: runner, refreshes: true)
-            }
-
-            await waitForSearch(of: path)
+            return
         }
     }
 }

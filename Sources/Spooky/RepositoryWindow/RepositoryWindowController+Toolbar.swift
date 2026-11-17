@@ -190,7 +190,14 @@ extension RepositoryWindowController {
 
                 coordinator.openRepository(at: location, from: self, inNewWindow: false)
             },
-            openInTerminal: { [weak self] in self?.openLocationInTerminal($0) }
+            openInTerminal: { [weak self] in self?.openLocationInTerminal($0) },
+            showInFinder: { [weak self] location in
+                guard let self else {
+                    return
+                }
+
+                coordinator.showInFinder(location, from: self)
+            }
         ))
 
         clonePopover = popover

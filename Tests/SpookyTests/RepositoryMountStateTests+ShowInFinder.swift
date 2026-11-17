@@ -281,7 +281,7 @@ extension RepositoryMountStateTests {
     }
 
     /// 已经连着 B 的流程，选中仓库目录。
-    private static func connectedFlow(_ state: RepositoryMountState, site: Site) -> ShowInFinderFlow {
+    static func connectedFlow(_ state: RepositoryMountState, site: Site) -> ShowInFinderFlow {
         ShowInFinderFlow(
             mounts: state,
             host: "spooky-test",
@@ -291,7 +291,7 @@ extension RepositoryMountStateTests {
     }
 
     /// 流程换成的本机位置表单；没有换成表单时为 nil。
-    private static func form(of flow: ShowInFinderFlow) -> LocalLocationForm? {
+    static func form(of flow: ShowInFinderFlow) -> LocalLocationForm? {
         guard case .form(let form) = flow.step else {
             return nil
         }

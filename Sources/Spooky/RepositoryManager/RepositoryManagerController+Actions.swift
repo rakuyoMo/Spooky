@@ -18,13 +18,13 @@ extension RepositoryManagerController {
         coordinator?.openRepository(at: location, from: window, inNewWindow: inNewWindow)
     }
 
-    /// 在 Finder 中显示本机仓库。
+    /// 在 Finder 中显示仓库；服务器仓库不能直接打开时，sheet 挂在仓库管理所在的窗口上。
     func revealInFinder(_ id: Bookmark.ID) {
-        guard let url = bookmarks.bookmark(id)?.location?.localURL else {
+        guard let location = bookmarks.bookmark(id)?.location, let window else {
             return
         }
 
-        NSWorkspace.shared.activateFileViewerSelecting([url])
+        coordinator?.showInFinder(location, from: window)
     }
 
     /// 复制路径：本机仓库是绝对路径，服务器仓库带主机前缀，避免与本机目录混淆。

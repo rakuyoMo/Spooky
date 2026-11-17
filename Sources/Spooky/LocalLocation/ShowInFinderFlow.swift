@@ -53,17 +53,29 @@ final class ShowInFinderFlow {
     /// 现在的一步。
     private(set) var step: Step
 
+    /// 流程结束后的收尾：sheet 已关闭，已开始的连接、查找、挂载与表单的核对都已结束；仓库管理与最近克隆用它交还连接。
+    @ObservationIgnored
+    var onFinish: (() -> Void)? = nil
+
     /// 连上 B 并取得仓库的执行器。
     @ObservationIgnored
     private let connect: () async -> ConnectionResult
 
-    /// 已经开始：sheet 出现时开始一次。
+    /// sheet 出现时开始的那一次流程。
     @ObservationIgnored
-    private var hasStarted = false
+    private var running: Task<Void, Never>? = nil
+
+    /// 表单设置成功后，等本机位置再打开 Finder 的任务。
+    @ObservationIgnored
+    private var revealing: Task<Void, Never>? = nil
 
     /// 已经取消：进行中的连接、查找与挂载照常结束，之后不再往下走，也不打开 Finder。
     @ObservationIgnored
     private var isCancelled = false
+
+    /// sheet 已经关闭。
+    @ObservationIgnored
+    private var isClosed = false
 
     /// 底栏左侧的进度；没连上或换成表单后为 nil。
     var progress: String? {
@@ -97,28 +109,31 @@ final class ShowInFinderFlow {
         step = isConnected ? .searching : .connecting
     }
 
-    /// sheet 出现时开始流程，只开始一次；拿到本机位置时交给 `reveal`。
+    /// sheet 出现时开始流程，只开始一次。
     ///
     /// 流程在独立的任务里执行，sheet 关闭不会打断已经开始的连接、查找与挂载。
     ///
-    /// - Parameter reveal: 关闭 sheet 并在 Finder 中选中这些本机路径。
-    func start(reveal: @escaping ([URL]) -> Void) {
-        guard !hasStarted else {
+    /// - Parameters:
+    ///   - reveal: 拿到本机位置时关闭 sheet，并在 Finder 中选中这些本机路径。
+    ///   - end: 流程不能再继续时关闭 sheet，如仓库在这期间关闭。
+    func start(reveal: @escaping ([URL]) -> Void, end: @escaping () -> Void) {
+        guard running == nil else {
             return
         }
 
-        hasStarted = true
-
-        Task {
+        running = Task {
             if let urls = await run() {
                 reveal(urls)
+            } else if !isCancelled, progress != nil {
+                // 没有换成错误区或表单就结束了：仓库在这期间关闭
+                end()
             }
         }
     }
 
     /// 依次连接、查找与挂载，都不行时换成本机位置表单。
     ///
-    /// - Returns: 拿到本机位置时是要在 Finder 中选中的本机路径；没连上、换成表单或已经取消时为 nil。
+    /// - Returns: 拿到本机位置时是要在 Finder 中选中的本机路径；没连上、换成表单、已经取消或仓库已关闭时为 nil。
     func run() async -> [URL]? {
         let runner: GitRunner
 
@@ -176,9 +191,46 @@ final class ShowInFinderFlow {
         return localURLs()
     }
 
+    /// 本机位置表单关闭：设置成功时等拿到本机位置后交给 `reveal`。
+    ///
+    /// - Parameters:
+    ///   - saved: 表单是否记下了本机位置。
+    ///   - reveal: 在 Finder 中选中这些本机路径。
+    func formClosed(saved: Bool, reveal: @escaping ([URL]) -> Void) {
+        guard saved else {
+            return
+        }
+
+        revealing = Task {
+            if let urls = await savedLocation() {
+                reveal(urls)
+            }
+        }
+    }
+
     /// 取消：sheet 随即关闭，进行中的连接、查找与挂载照常结束，设置不变。
     func cancel() {
         isCancelled = true
+    }
+
+    /// sheet 已关闭：等已开始的连接、查找、挂载、表单的核对与设置后的查找都结束，再执行一次收尾。
+    func closed() {
+        guard !isClosed else {
+            return
+        }
+
+        isClosed = true
+
+        Task {
+            await running?.value
+
+            if case .form(let form) = step {
+                await form.waitForCheck()
+            }
+
+            await revealing?.value
+            onFinish?()
+        }
     }
 }
 
@@ -192,9 +244,9 @@ extension ShowInFinderFlow {
         }
     }
 
-    /// 换成本机位置表单；已经取消时不换。
+    /// 换成本机位置表单；已经取消、或仓库在这期间关闭时不换。
     private func showForm(runner: GitRunner, reason: String?, failure: String?) {
-        guard !isCancelled else {
+        guard !isCancelled, mounts.repository != nil else {
             return
         }
 

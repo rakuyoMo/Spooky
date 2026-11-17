@@ -50,6 +50,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 仓库管理的拖入验证任务，以及从 Finder 或 Dock 打开文件夹时的仓库检查。
     var addingTasks: [UUID: Task<Void, Never>] = [:]
 
+    /// 仓库管理与最近克隆里进行中的 Show in Finder 流程：按服务器仓库计数，交还连接时跳过它们。
+    var finderFlows: [RepositoryLocation: Int] = [:]
+
     /// 当前响应菜单动作的仓库窗口。
     var activeWindow: RepositoryWindowController? {
         (NSApp.keyWindow?.windowController as? RepositoryWindowController)
@@ -373,11 +376,12 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         }
     }
 
-    /// 最后一个持有仓库的窗口关闭后，回收专属主连接和会话临时目录。
+    /// 最后一个持有仓库的窗口关闭后，回收专属主连接和会话临时目录；Show in Finder 的流程还在用时不回收。
     func releaseConnection(_ location: RepositoryLocation) {
         guard
             location.host != nil,
             !windows.contains(where: { $0.session.repository == location }),
+            finderFlows[location] == nil,
             let remote = GitRunner(location: location).remote
         else { return }
 

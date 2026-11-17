@@ -17,10 +17,7 @@ struct ShowInFinderDialog: View {
     var body: some View {
         content
             .onAppear {
-                flow.start { urls in
-                    close()
-                    NSWorkspace.shared.activateFileViewerSelecting(urls)
-                }
+                flow.start(reveal: reveal, end: dismiss)
             }
     }
 
@@ -39,7 +36,7 @@ struct ShowInFinderDialog: View {
                 submitTitle: AppLocalization.text("action.close"),
                 error: AddRemoteRepositoryView.notice(for: failure),
                 cancel: nil,
-                submit: close
+                submit: dismiss
             )
 
         case .connecting, .searching, .mounting:
@@ -60,24 +57,27 @@ struct ShowInFinderDialog: View {
 // MARK: - Private
 
 extension ShowInFinderDialog {
+    /// 拿到本机位置：关闭 sheet，在 Finder 中选中目标。
+    private func reveal(_ urls: [URL]) {
+        dismiss()
+        NSWorkspace.shared.activateFileViewerSelecting(urls)
+    }
+
     /// 取消：关闭 sheet，进行中的连接、查找与挂载照常结束。
     private func cancel() {
         flow.cancel()
-        close()
+        dismiss()
     }
 
     /// 本机位置表单关闭：设置成功时拿到本机位置后在 Finder 中选中目标。
     private func finishForm(saved: Bool) {
+        flow.formClosed(saved: saved) { NSWorkspace.shared.activateFileViewerSelecting($0) }
+        dismiss()
+    }
+
+    /// 关闭 sheet，并告诉流程 sheet 已关闭。
+    private func dismiss() {
         close()
-
-        guard saved else {
-            return
-        }
-
-        Task {
-            if let urls = await flow.savedLocation() {
-                NSWorkspace.shared.activateFileViewerSelecting(urls)
-            }
-        }
+        flow.closed()
     }
 }

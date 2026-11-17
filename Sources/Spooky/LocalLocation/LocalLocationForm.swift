@@ -56,6 +56,10 @@ final class LocalLocationForm {
     @ObservationIgnored
     private var isCancelled = false
 
+    /// 最近一次挂载或核对。
+    @ObservationIgnored
+    private var checking: Task<Result<ServerLocalLocation, LocalLocationFailure>, Never>? = nil
+
     /// 弹出菜单的各项：自动查找与指定文件夹总在；挂载方式可用或是现在的方式时列出，检测中在它们的位置放一个 “正在检测”。
     var items: [Item] {
         var items: [Item] = []
@@ -166,7 +170,11 @@ final class LocalLocationForm {
 
         progress = AppLocalization.text(method == .chosenFolder ? "localLocation.verifying" : "localLocation.mounting")
 
-        let result = await check(location)
+        // 记下进行中的这次，对话框取消后 Show in Finder 的流程等它结束
+        let task = Task { await check(location) }
+        checking = task
+
+        let result = await task.value
         progress = nil
 
         guard !isCancelled else {
@@ -187,6 +195,11 @@ final class LocalLocationForm {
     /// 取消对话框：进行中的挂载或核对照常结束，结果不再采用。
     func cancel() {
         isCancelled = true
+    }
+
+    /// 等进行中的挂载或核对结束；没有时立即返回。
+    func waitForCheck() async {
+        _ = await checking?.value
     }
 }
 
