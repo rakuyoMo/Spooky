@@ -36,7 +36,7 @@ struct PullRequestDetailView: View {
                 EmptyStateView(
                     title: session.pullRequestText("noSelection"),
                     message: "",
-                    symbol: "arrow.triangle.pull"
+                    symbol: AppSymbol.pullRequest
                 )
             }
         }

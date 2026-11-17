@@ -25,7 +25,8 @@ struct HistoryAutosquashBanner: View {
     var body: some View {
         if !dismissed {
             HStack(spacing: 8) {
-                Image(systemName: "arrow.triangle.merge")
+                Image(systemName: "arrow.down.to.line.square.fill")
+                    .foregroundStyle(Color(nsColor: .systemYellow))
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {

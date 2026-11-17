@@ -43,10 +43,10 @@ struct OperationBannerView: View {
 // MARK: - Icons
 
 extension OperationBannerView {
-    /// 操作的系统符号名，按有没有 sequencer 分两种：合并与单个提交的摘取、反转用合并的图标，变基与多个提交的摘取、反转用变基的图标；
+    /// 操作的自绘图形名，按有没有 sequencer 分两种：合并与单个提交的摘取、反转用合并的图形，变基与多个提交的摘取、反转用变基的图形；
     /// 侧边栏的 Working Copy 行用同一分类。
-    static func symbolName(_ progress: OperationProgress) -> String {
-        progress.isSequence ? "arrow.triangle.branch" : "arrow.triangle.merge"
+    nonisolated static func symbolName(_ progress: OperationProgress) -> String {
+        progress.isSequence ? AppSymbol.rebase : AppSymbol.merge
     }
 }
 
@@ -157,7 +157,7 @@ extension OperationBannerView {
 
     /// 操作类型的图标；系统黄色，略微透明。
     private func icon(_ progress: OperationProgress) -> some View {
-        Image(systemName: Self.symbolName(progress))
+        AppSymbolImage(name: Self.symbolName(progress))
             .font(.system(size: 36))
             .foregroundStyle(Color(nsColor: .systemYellow).opacity(0.9))
             .frame(width: 48, height: 48)

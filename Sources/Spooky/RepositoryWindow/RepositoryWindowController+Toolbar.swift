@@ -100,7 +100,7 @@ extension RepositoryWindowController {
             "action.refresh", "action.refresh", .symbol("arrow.clockwise"), #selector(refreshRepository)
         ),
         RepositoryToolbar.createBranch: (
-            "toolbar.createBranch", "toolbar.createBranch", .symbol("arrow.branch"), #selector(createBranch)
+            "toolbar.createBranch", "toolbar.createBranch", .symbol(AppSymbol.createBranch), #selector(createBranch)
         ),
         RepositoryToolbar.forcePush: (
             "toolbar.forcePush", "toolbar.forcePush", .image(TransferIcon.forcePush), #selector(forcePushWithLease)
@@ -501,7 +501,7 @@ extension RepositoryWindowController {
 
         switch button.icon {
         case .symbol(let name):
-            item.image = NSImage(systemSymbolName: name, accessibilityDescription: item.paletteLabel)
+            item.image = AppSymbol.image(name, side: 18, accessibilityDescription: item.paletteLabel)
 
         case .image(let image):
             item.image = image
@@ -615,9 +615,9 @@ extension RepositoryWindowController {
 
 // MARK: - ToolbarButtonIcon
 
-/// 仓库动作按钮的图标：SF 符号，或随 App 打包的模板图。
+/// 仓库动作按钮的图标：按名字取用的符号，或随 App 打包的模板图。
 private enum ToolbarButtonIcon {
-    /// SF 符号的名字。
+    /// 系统符号或自绘图形的名字，见 `AppSymbol`；自绘的图形画成 18 pt 的模板图。
     case symbol(String)
 
     /// 随 App 打包的模板图。

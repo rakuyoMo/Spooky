@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - SidebarBranchIcon
 
-/// 侧边栏分支行的图标：本地分支是三个圆环连成的分叉，已归档的分支是归档盒，远端分支是地球；
+/// 侧边栏分支行的图标：本地与远端分支是三个圆环连成的分叉，已归档的分支是归档盒；
 /// 分支已在别的工作树签出时，图形缩到左上，右下角加一枚挖出两个小方块的实心圆角标。颜色随所在的行。
 struct SidebarBranchIcon: View {
     /// 分支的种类。
@@ -37,12 +37,9 @@ struct SidebarBranchIcon: View {
         }
     }
 
-    /// 图标；远端分支与不带角标的已归档分支用系统符号，其余自行绘制。带角标的图标边长放大到 1.25 倍，图形本身的大小不变。
+    /// 图标；不带角标的已归档分支用系统符号，其余自行绘制。带角标的图标边长放大到 1.25 倍，图形本身的大小不变。
     var body: some View {
         switch (kind, isCheckedOutElsewhere) {
-        case (.remoteBranch, _):
-            Image(systemName: "network")
-
         case (.archived, false):
             Image(systemName: "archivebox")
 
@@ -52,7 +49,7 @@ struct SidebarBranchIcon: View {
         case (.branch, true):
             BranchGlyph(isArchived: false, hasWorktreeBadge: true).frame(width: side * 1.25, height: side * 1.25)
 
-        case (.branch, false):
+        case (.branch, false), (.remoteBranch, _):
             BranchShape().frame(width: side, height: side)
         }
     }
@@ -78,33 +75,24 @@ private struct BranchGlyph: Shape {
             return outline(in: square)
         }
 
-        // 以角标圆心为中心、按边长比例取半径的圆
-        let center = CGPoint(x: square.minX + side * 0.74, y: square.minY + side * 0.74)
-        let circle = { (radius: Double) in
-            Path(ellipseIn: CGRect(origin: center, size: .zero).insetBy(dx: -side * radius, dy: -side * radius))
+        return SymbolBadge.outline(in: square, glyph: outline(in:)) { center, side in
+            // 左右两个小方块，各宽 0.13，中间隔 0.06
+            var squares = Path()
+
+            for offset in [-0.16, 0.03] {
+                squares.addRoundedRect(
+                    in: CGRect(
+                        x: center.x + side * offset,
+                        y: center.y - side * 0.065,
+                        width: side * 0.13,
+                        height: side * 0.13
+                    ),
+                    cornerSize: CGSize(width: side * 0.03, height: side * 0.03)
+                )
+            }
+
+            return squares
         }
-
-        // 左右两个小方块，各宽 0.13，中间隔 0.06
-        var squares = Path()
-
-        for offset in [-0.16, 0.03] {
-            squares.addRoundedRect(
-                in: CGRect(
-                    x: center.x + side * offset,
-                    y: center.y - side * 0.065,
-                    width: side * 0.13,
-                    height: side * 0.13
-                ),
-                cornerSize: CGSize(width: side * 0.03, height: side * 0.03)
-            )
-        }
-
-        // 图形缩到左上，挖掉比角标大一圈的圆，再放上角标
-        let scaled = CGRect(origin: square.origin, size: CGSize(width: side * 0.8, height: side * 0.8))
-        var path = outline(in: scaled).subtracting(circle(0.32))
-        path.addPath(circle(0.26).subtracting(squares))
-
-        return path
     }
 
     /// 不带角标的图形在给定正方形里的填充轮廓。

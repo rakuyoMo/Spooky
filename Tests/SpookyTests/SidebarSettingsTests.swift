@@ -250,7 +250,7 @@ struct SidebarSettingsTests {
 
         #expect(symbols.count == 4)
         #expect(symbols[0] == symbols[1] && symbols[2] == symbols[3] && symbols[0] != symbols[2])
-        #expect(symbols.allSatisfy { NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil })
+        #expect(symbols.allSatisfy { AppSymbol.outline($0, in: CGRect(x: 0, y: 0, width: 18, height: 18)) != nil })
 
         // Working Copy 的提示：分支名或分离时的短哈希，服务器仓库带主机前缀
         let oid = String(repeating: "d", count: 40)

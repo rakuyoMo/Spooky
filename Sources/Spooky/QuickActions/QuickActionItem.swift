@@ -114,8 +114,8 @@ enum QuickActionDestination: CaseIterable {
         case .workingCopy: "folder"
         case .history: "clock"
         case .stashes: "tray.full"
-        case .pullRequests: "arrow.triangle.merge"
-        case .branchesReview: "arrow.triangle.pull"
+        case .pullRequests: AppSymbol.pullRequest
+        case .branchesReview: "arrow.left.arrow.right.circle"
         case .reflog: "clock.arrow.circlepath"
         case .settings: "gearshape"
         }
@@ -239,9 +239,9 @@ enum QuickActionObject: Equatable {
     var symbol: String {
         switch self {
         case .navigation(let destination): destination.symbol
-        case .branch: AppSymbol.branch
+        case .branch, .remoteBranch: AppSymbol.branch
         case .worktree: "rectangle.on.rectangle"
-        case .remote, .remoteBranch: "network"
+        case .remote: "network"
         case .submodule: "shippingbox"
         case .tag: "tag"
         case .stash: "tray"
