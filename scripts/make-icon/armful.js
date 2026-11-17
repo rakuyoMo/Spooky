@@ -1,24 +1,24 @@
 /**
- * 满怀：炭黑底板上横着一排品牌紫的斜条，是 “spooky” 这个词念出来的声纹；白色幽灵侧身站着，把一对深樱桃红的樱桃抱在怀里，
- * 幽灵与樱桃共用一圈奶油白的贴纸边。App 连着服务器时，声纹整排提亮并发出紫光，眼睛亮成深橙。
- * 柔边、暗部与投影靠模糊与蒙版画出，WebKit 的 Canvas 2D 没有滤镜，所以这一组先拼成 SVG、再画进 Canvas。
- * 深色图标的底板是纯黑，幽灵换成浅米色，樱桃、叶子与声纹压暗一档。
+ * 满怀的三组：白色幽灵侧身站着，把一对樱桃红的樱桃抱在怀里，幽灵与樱桃共用一圈奶油白的贴纸边；三组只差身后的背景。
+ * 满怀是炭黑底板上的一轮紫色满月与三颗小星，满怀 · 素底只有炭黑底板，满怀 · 紫底是上浅下深的紫色底板。
+ * App 连着服务器时，眼睛亮成深橙。
+ * 柔边、暗部与投影靠模糊与蒙版画出，WebKit 的 Canvas 2D 没有滤镜，所以这三组先拼成 SVG、再画进 Canvas。
+ * 深色图标的幽灵换成浅米色，樱桃与叶子压暗一档；炭黑的底板换成纯黑，紫色的底板压深一档。
  */
 
 /**
- * 满怀两种图标的配色。
+ * 满怀两种图标的配色，三组共用。
  *
- * plate 是底板自上而下的三个色标，bars 是声纹从左到右的三个色标，cast 是贴纸落在底板上的影子，edge 是贴纸边；
+ * plate 是炭黑底板自上而下的三个色标，cast 是贴纸落在底板上的影子，edge 是贴纸边；
  * ghost 是幽灵从受光处到背光处的四个色标，rim 是轮廓内侧的一道淡色，fold 是褶，shadow 是樱桃落在幽灵身上的影子，
- * hand 是压在大果上的那只手从根部到手尖的颜色；cherry 是樱桃从受光处到背光处的四个色标，wine 是落在樱桃上的短影；
- * stem 是梗自上而下的颜色，leaf 是叶子从叶柄到叶尖的颜色，leafShade 是叶子的暗部，vein 是叶脉，eye 是眼睛。
+ * hand 是压在大果上的那只手从根部到手尖的颜色；cherry 是樱桃，wine 是落在樱桃上的短影；
+ * stem 是梗自上而下的颜色，leaf 是叶子，leafShade 是叶子的暗部，vein 是叶脉，eye 是眼睛。
  *
- * 默认图标是炭黑底板上的白色幽灵，眼睛与底板同色；深色图标的底板是纯黑，幽灵换成浅米色，樱桃、叶子与声纹压暗一档。
+ * 默认图标是白色幽灵，眼睛与炭黑底板同色；深色图标的底板是纯黑，幽灵换成浅米色，樱桃与叶子压暗一档。
  */
 const ARMFUL_PALETTES = {
     default: {
         plate: ['#262628', '#1C1C1E', '#151516'],
-        bars: ['#5B4BE0', '#7A63F6', '#A58DFF'],
         cast: '#070512',
         edge: '#FFFBF2',
         ghost: ['#FFFFFF', '#FFFFFF', '#EBE4FF', '#CDC1F8'],
@@ -26,17 +26,16 @@ const ARMFUL_PALETTES = {
         fold: '#A795EC',
         shadow: '#9C8AE8',
         hand: ['#FFFFFF', '#F6F2FF'],
-        cherry: ['#F0768A', '#D94460', '#C23050', '#A62444'],
-        wine: '#861A36',
+        cherry: '#A72D49',
+        wine: '#721F32',
         stem: ['#A9C06A', '#7E9A48'],
-        leaf: ['#5FC27A', '#A0E0A6'],
+        leaf: '#5FC27A',
         leafShade: '#44A866',
         vein: '#49AA6A',
         eye: '#1C1C1E',
     },
     dark: {
         plate: ['#000000', '#000000', '#000000'],
-        bars: ['#4C3EC4', '#6753DA', '#8C77E8'],
         cast: '#000000',
         edge: '#F6F2E6',
         ghost: ['#EFEADB', '#EBE5D5', '#DCD4C0', '#C6BBA4'],
@@ -44,10 +43,10 @@ const ARMFUL_PALETTES = {
         fold: '#BDB198',
         shadow: '#B3A68A',
         hand: ['#EBE5D5', '#E0D8C6'],
-        cherry: ['#DE6C80', '#C43E58', '#AE2C4A', '#93203E'],
-        wine: '#74162E',
+        cherry: '#962842',
+        wine: '#661B2D',
         stem: ['#98AE5E', '#708A40'],
-        leaf: ['#54AE6E', '#8FCC96'],
+        leaf: '#54AE6E',
         leafShade: '#3C965C',
         vein: '#41985F',
         eye: '#000000',
@@ -55,42 +54,38 @@ const ARMFUL_PALETTES = {
 };
 
 /**
- * 满怀连着服务器时亮起来的颜色，两种图标相同。
+ * 满怀连着服务器时亮起来的颜色，三组、两种图标相同。
  *
- * bars 是提亮的声纹从左到右的三个色标，barsGlow 是声纹四周的紫光；
  * eye 是眼睛自上而下的三个色标，与午夜的琥珀光同一个色相、压深一档，在浅色的幽灵上才看得清；eyeGlow 是眼睛四周的光。
  */
 const ARMFUL_LIT = {
-    bars: ['#9382FF', '#B09EFF', '#DCD2FF'],
-    barsGlow: '#7A63F6',
     eye: ['#FFC453', '#FF9F2E', '#F27A1A'],
     eyeGlow: '#FF9A2E',
 };
 
-/**
- * 满怀的声纹：“spooky” 这个词念出来的响度，从左到右是时间，最响处为 1。
- *
- * 开头一小段 s 的气声，p 闭口的停顿，又长又响的 “oo”，k 闭口的停顿，最后是渐弱的 “ky”。
- */
-const ARMFUL_LOUDNESS = [
-    0.11, 0.235, 0.387, 0.181, 0.007, 0.002, 0.172, 1, 0.967, 0.982, 0.853, 0.368,
-    0.083, 0.055, 0.123, 0.418, 0.731, 0.708, 0.621, 0.514, 0.456, 0.369, 0.155, 0.083,
-];
+/** 满月与星星用到的品牌紫，由深到浅三档。 */
+const ARMFUL_PURPLES = ['#5B4BE0', '#7A63F6', '#A58DFF'];
 
 /**
- * 声纹的斜条，满幅坐标下：每个响度一根往右倾的平行四边形竖条。
- *
- * left 是第一根的左边，pitch 是相邻两根的间距，width 是条宽，middle 是中线的 y；
- * reach 是最响处的半高，floor 是最矮的半高，slant 是上下两头相对中线横向错开的量与半高之比。
+ * 满怀的满月与三颗小星，满幅坐标下：moon 是圆心与半径，圆心在幽灵这一团的正中；
+ * stars 是每颗四角星的中心、从中心到角尖的长度与颜色，红的一颗与樱桃同色。
  */
-const ARMFUL_BARS = {
-    left: 34,
-    pitch: 40,
-    width: 26,
-    middle: 516,
-    reach: 430,
-    floor: 12,
-    slant: 0.26,
+const ARMFUL_MOON = {
+    moon: { x: 512, y: 520, radius: 410 },
+    stars: [
+        { x: 120, y: 150, size: 30, color: ARMFUL_PURPLES[2] },
+        { x: 905, y: 860, size: 24, color: ARMFUL_PALETTES.default.cherry },
+        { x: 900, y: 150, size: 18, color: ARMFUL_PURPLES[1] },
+    ],
+};
+
+/**
+ * 满怀 · 紫底两种图标的底板：plate 是底板自上而下的三个色标，sheen 是左上那团柔光的颜色与不透明度，
+ * eye 是眼睛，cast 是贴纸落在底板上的影子，两者都换成深紫。
+ */
+const ARMFUL_PURPLE_PLATES = {
+    default: { plate: ['#A593FF', '#7A63F6', '#4B3CCB'], sheen: ['#E2DAFF', 0.55], eye: '#221A55', cast: '#1A1250' },
+    dark: { plate: ['#6A58D8', '#4B3CCB', '#2A2090'], sheen: ['#B9AEF0', 0.35], eye: '#150F3A', cast: '#0D0830' },
 };
 
 /** 满怀的幽灵身体，满幅坐标下：轮廓从头顶起顺时针经过的锚点，曲线平滑地穿过它们，头往樱桃那边歪。 */
@@ -146,13 +141,10 @@ const ARMFUL_EYES = {
 /**
  * 满怀各块渐变的位置，满幅坐标下。
  *
- * ghost 是径向渐变的圆心与半径，受光处在头的右上；cherry 是樱桃径向渐变的圆心相对樱桃圆心的偏移与渐变半径，都以樱桃的半径为单位；
- * leaf 是叶子线性渐变的起点与终点，stem 是梗自上而下渐变的起止 y，hand 是近处那只手从左到右渐变的起止 x。
+ * ghost 是径向渐变的圆心与半径，受光处在头的右上；stem 是梗自上而下渐变的起止 y，hand 是近处那只手从左到右渐变的起止 x。
  */
 const ARMFUL_GRADIENTS = {
     ghost: { x: 533.09, y: 377.6, radius: 681.36 },
-    cherry: { x: 0.24, y: -0.48, radius: 1.96 },
-    leaf: [718.65, 425.26, 812.63, 459.46],
     stem: [442.87, 610.46],
     hand: [420.91, 629.58],
 };
@@ -170,7 +162,7 @@ const ARMFUL_POSE = {
 };
 
 /**
- * 满怀的入口：画面先铺满一张画布，再整张填进底板。
+ * 满怀的入口：炭黑底板上的满月与星星。
  *
  * @param {CanvasRenderingContext2D} context 已缩放到 1024 网格的上下文
  * @param {number} scale 导出像素与 1024 网格的比例
@@ -181,7 +173,40 @@ const ARMFUL_POSE = {
 async function paintArmfulIcon(context, scale, pixels, style, lit) {
     const palette = ARMFUL_PALETTES[style];
 
-    drawPlateScene(context, scale, await armfulScene(pixels, palette, lit), palette.plate[2]);
+    await paintArmfulScene(context, scale, pixels, palette, armfulCharcoalMarkup(palette) + armfulMoonMarkup(), lit);
+}
+
+/**
+ * 满怀 · 素底的入口：只有炭黑底板。参数见 paintArmfulIcon。
+ */
+async function paintArmfulPlainIcon(context, scale, pixels, style, lit) {
+    const palette = ARMFUL_PALETTES[style];
+
+    await paintArmfulScene(context, scale, pixels, palette, armfulCharcoalMarkup(palette), lit);
+}
+
+/**
+ * 满怀 · 紫底的入口：紫色底板，眼睛与贴纸的影子换成深紫。参数见 paintArmfulIcon。
+ */
+async function paintArmfulPurpleIcon(context, scale, pixels, style, lit) {
+    const { eye, cast } = ARMFUL_PURPLE_PLATES[style];
+    const palette = { ...ARMFUL_PALETTES[style], eye, cast };
+
+    await paintArmfulScene(context, scale, pixels, palette, armfulPurpleMarkup(ARMFUL_PURPLE_PLATES[style]), lit);
+}
+
+/**
+ * 画出一组满怀：画面先铺满一张画布，再整张填进底板。
+ *
+ * @param {CanvasRenderingContext2D} context 已缩放到 1024 网格的上下文
+ * @param {number} scale 导出像素与 1024 网格的比例
+ * @param {number} pixels 导出图片的边长
+ * @param {object} palette 所画图标的配色
+ * @param {string} backdrop 幽灵身后的背景，满幅坐标下的 SVG 片段
+ * @param {boolean} lit 眼睛是否亮着
+ */
+async function paintArmfulScene(context, scale, pixels, palette, backdrop, lit) {
+    drawPlateScene(context, scale, await armfulScene(pixels, backdrop + armfulClusterMarkup(palette, lit)), palette.plate[2]);
 }
 
 /**
@@ -191,12 +216,10 @@ async function paintArmfulIcon(context, scale, pixels, style, lit) {
  * WebKit 画 SVG 滤镜时的舍入不固定：同一份 SVG 每次画出的 1024 px 画面可能有几个像素差一个色阶（macOS 27 实测）。
  *
  * @param {number} pixels 导出图片的边长
- * @param {object} palette 所画图标的配色
- * @param {boolean} lit 声纹与眼睛是否亮着
+ * @param {string} markup 满幅坐标下的 SVG 片段：背景与抱着樱桃的幽灵
  * @returns {Promise<HTMLCanvasElement>}
  */
-async function armfulScene(pixels, palette, lit) {
-    const markup = armfulPlateMarkup(palette) + armfulBarsMarkup(palette, lit) + armfulClusterMarkup(palette, lit);
+async function armfulScene(pixels, markup) {
     const inset = `translate(${PLATE_ORIGIN} ${PLATE_ORIGIN}) scale(${PLATE_SIZE / GRID})`;
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${GRID}" height="${GRID}" viewBox="0 0 ${GRID} ${GRID}">`
@@ -218,69 +241,53 @@ async function armfulScene(pixels, palette, lit) {
 }
 
 /**
- * 满怀的底板：自上而下的炭黑渐变，边缘一圈极细的灰色亮线，上沿再压一道更淡的。
+ * 炭黑的底板：自上而下的渐变。
  *
  * @param {{plate: string[]}} palette 所画图标的配色
  * @returns {string} 满幅坐标下的 SVG 片段
  */
-function armfulPlateMarkup(palette) {
-    // 底板的轮廓放大到满幅坐标，亮线才贴着底板的边。
-    const contour = continuousSquareData(0, 0, GRID, (PLATE_RADIUS * GRID) / PLATE_SIZE);
-
+function armfulCharcoalMarkup(palette) {
     // 底色铺到画面之外：缩到小尺寸时，底板的边缘不会混进透明的像素。
-    return svgLinear('plate', [0, 0, 0, GRID], palette.plate)
-        + `<rect ${SVG_WIDE} fill="url(#plate)"/>`
-        + svgMasked(
-            'contour',
-            `<path d="${contour}" fill="#fff"/>`,
-            svgInnerBand(
-                'edge',
-                `<path d="${contour}" fill="#000" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>`,
-                { color: '#fff', blur: 3, gain: 1.4, opacity: 0.17 },
-            )
-            + svgInnerBand(
-                'top-edge',
-                `<path d="${contour}" fill="#000"/>`,
-                { color: '#fff', dy: 2, blur: 4, gain: 1.6, opacity: 0.1 },
-            ),
-        );
+    return svgLinear('plate', [0, 0, 0, GRID], palette.plate) + `<rect ${SVG_WIDE} fill="url(#plate)"/>`;
 }
 
 /**
- * 满怀的声纹：一排往右倾的平行四边形竖条，只用品牌紫一个色相，左深右浅；亮着时整排提亮，四周一圈紫光。
+ * 满月与星星：一轮自上而下由浅到深的紫色满月，四周一圈紫光，旁边三颗四角星；两种图标相同。
  *
- * @param {{bars: string[]}} palette 所画图标的配色
- * @param {boolean} lit 声纹是否亮着
  * @returns {string} 满幅坐标下的 SVG 片段
  */
-function armfulBarsMarkup(palette, lit) {
-    const { left, pitch, width, middle, reach, floor, slant } = ARMFUL_BARS;
+function armfulMoonMarkup() {
+    const { moon, stars } = ARMFUL_MOON;
+    const disc = (fill) => `<circle cx="${moon.x}" cy="${moon.y}" r="${moon.radius}" fill="${fill}"/>`;
 
-    // 每根竖条的半高跟着响度走，上下两头斜切。
-    const bars = ARMFUL_LOUDNESS.map((loudness, index) => {
-        const x = left + index * pitch;
-        const half = Math.max(floor, loudness * reach);
-        const lean = half * slant;
+    // 四角星：四个角尖之间的边往中心收成弧。
+    const star = ({ x, y, size, color }) => `<path d="M${x},${y - size}Q${x},${y} ${x + size},${y}Q${x},${y} ${x},${y + size}`
+        + `Q${x},${y} ${x - size},${y}Q${x},${y} ${x},${y - size}Z" fill="${color}"/>`;
 
-        return [
-            [x + lean, middle - half],
-            [x + width + lean, middle - half],
-            [x + width - lean, middle + half],
-            [x - lean, middle + half],
-        ];
-    });
+    return svgLinear('moon', [0, moon.y - moon.radius, 0, moon.y + moon.radius], [...ARMFUL_PURPLES].reverse())
+        + svgBlurred('moon-glow', disc(ARMFUL_PURPLES[0]), { blur: 40, opacity: 0.5 })
+        + disc('url(#moon)')
+        + stars.map(star).join('');
+}
 
-    const draw = (fill) => bars.map((corners) => `<path d="M${corners.join('L')}Z" fill="${fill}"/>`).join('');
-    const xs = bars.flat().map(([x]) => x);
+/**
+ * 紫色的底板：自上而下由浅到深，左上一团柔光，边缘内侧一圈宽的柔边。
+ *
+ * @param {{plate: string[], sheen: [string, number]}} plate 所画图标的底板，见 ARMFUL_PURPLE_PLATES
+ * @returns {string} 满幅坐标下的 SVG 片段
+ */
+function armfulPurpleMarkup({ plate, sheen: [sheenColor, sheenOpacity] }) {
+    // 底板的轮廓放大到满幅坐标，柔边才贴着底板的边。
+    const contour = continuousSquareData(0, 0, GRID, (PLATE_RADIUS * GRID) / PLATE_SIZE);
 
-    const glow = lit
-        ? svgBlurred('bars-glow', draw(ARMFUL_LIT.barsGlow), { blur: 30, opacity: 0.95 })
-        : '';
-
-    // 渐变横跨整排竖条。
-    return glow
-        + svgLinear('bars', [Math.min(...xs), 0, Math.max(...xs), 0], lit ? ARMFUL_LIT.bars : palette.bars)
-        + draw('url(#bars)');
+    return svgLinear('plate', [0, 0, 0, GRID], plate)
+        + `<rect ${SVG_WIDE} fill="url(#plate)"/>`
+        + svgBlurred('sheen', `<circle cx="250" cy="130" r="300" fill="${sheenColor}"/>`, { blur: 120, opacity: sheenOpacity })
+        + svgMasked(
+            'contour',
+            `<path d="${contour}" fill="#fff"/>`,
+            svgInnerBand('rim', `<path d="${contour}" fill="#000"/>`, { color: '#fff', blur: 24, gain: 1.2, opacity: 0.3 }),
+        );
 }
 
 /**
@@ -314,7 +321,7 @@ function armfulClusterMarkup(palette, lit) {
 
     const path = (data, fill) => `<path d="${data}" fill="${fill}"/>`;
     const disc = ({ x, y, radius }, fill) => `<circle cx="${x}" cy="${y}" r="${radius}" fill="${fill}"/>`;
-    const flood = (gradient) => `<rect ${SVG_WIDE} fill="url(#${gradient})"/>`;
+    const fill = (color) => `<rect ${SVG_WIDE} fill="${color}"/>`;
 
     // 修圆之后的两块：两头圆钝的叶子，以及融成一条轮廓的身体与远处那只手。
     const leafShape = (fill) => `<g filter="url(#leaf-rounding)">${path(leaf, fill)}</g>`;
@@ -330,14 +337,6 @@ function armfulClusterMarkup(palette, lit) {
             + `transform="rotate(${ARMFUL_EYES.tilt} ${x} ${y})" fill="${fill}"/>`)
         .join('');
 
-    const cherryGradient = (id, { x, y, radius }) => svgRadial(
-        id,
-        x + gradients.cherry.x * radius,
-        y + gradients.cherry.y * radius,
-        gradients.cherry.radius * radius,
-        [[0, palette.cherry[0]], [0.38, palette.cherry[1]], [0.75, palette.cherry[2]], [1, palette.cherry[3]]],
-    );
-
     const placed = `translate(${shift}) translate(${pivot}) scale(${scale}) rotate(${degrees}) translate(${-pivot[0]} ${-pivot[1]})`;
 
     // 整团的剪影往外描粗一圈：染成贴纸边的颜色就是贴纸边，染成影子的颜色再模糊就是贴纸的投影。
@@ -352,17 +351,16 @@ function armfulClusterMarkup(palette, lit) {
         + path(taper.nearHand, color)
         + '</g>';
 
-    // 叶子：从叶柄到叶尖的渐变，右下是暗部，上面压一道叶脉。
-    const leafMarkup = svgLinear('leaf', gradients.leaf, palette.leaf)
-        + svgMasked(
-            'leaf-inside',
-            leafShape('#fff'),
-            flood('leaf') + svgInnerBand(
-                'leaf-shade',
-                leafShape('#000'),
-                { color: palette.leafShade, dx: -7.07, dy: -7.07, blur: 16, gain: 1.25, opacity: 1 },
-            ),
-        )
+    // 叶子：平涂，右下是暗部，上面压一道叶脉。
+    const leafMarkup = svgMasked(
+        'leaf-inside',
+        leafShape('#fff'),
+        fill(palette.leaf) + svgInnerBand(
+            'leaf-shade',
+            leafShape('#000'),
+            { color: palette.leafShade, dx: -7.07, dy: -7.07, blur: 16, gain: 1.25, opacity: 1 },
+        ),
+    )
         + path(taper.vein, palette.vein);
 
     // 幽灵：受光处在头的右上；身上有近处那只手下缘的褶、樱桃与梗落下的影子，轮廓内侧一道淡色。
@@ -376,7 +374,7 @@ function armfulClusterMarkup(palette, lit) {
         + svgMasked(
             'ghost-inside',
             ghostShape('#fff'),
-            flood('ghost')
+            fill('url(#ghost)')
             + `<path d="${taper.crease}" fill="${palette.fold}" opacity="0.5"/>`
             + svgBlurred(
                 'cherry-shadow',
@@ -393,19 +391,17 @@ function armfulClusterMarkup(palette, lit) {
             + eyes('url(#eye)')
         : eyes(palette.eye);
 
-    // 樱桃：小果上有大果挡出的短影，大果上有那只手压出的短影。
-    const cherriesMarkup = cherryGradient('small', small)
-        + svgMasked(
-            'small-inside',
-            disc(small, '#fff'),
-            flood('small')
-            + svgBlurred('big-shadow', disc(big, palette.wine), { dx: 8, dy: -4, blur: 16, opacity: 0.5 }),
-        )
-        + cherryGradient('big', big)
+    // 樱桃：平涂，小果上有大果挡出的短影，大果上有那只手压出的短影。
+    const cherriesMarkup = svgMasked(
+        'small-inside',
+        disc(small, '#fff'),
+        fill(palette.cherry)
+        + svgBlurred('big-shadow', disc(big, palette.wine), { dx: 8, dy: -4, blur: 16, opacity: 0.5 }),
+    )
         + svgMasked(
             'big-inside',
             disc(big, '#fff'),
-            flood('big')
+            fill(palette.cherry)
             + svgBlurred('hand-shadow', path(taper.nearHand, palette.wine), { dx: 6, dy: -6, blur: 16, opacity: 0.55 }),
         );
 

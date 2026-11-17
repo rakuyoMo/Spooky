@@ -1737,6 +1737,8 @@
 "appIcon.serverGhost" = "Fantôme du serveur";
 "appIcon.midnight" = "Minuit";
 "appIcon.armful" = "Brassée";
+"appIcon.armfulPlain" = "Brassée – Unie";
+"appIcon.armfulPurple" = "Brassée – Violette";
 "appIcon.cherryPick" = "Cueillette de cerises";
 "appIcon.perch" = "Sur la branche";
 "appIcon.writeFailed" = "Impossible de changer d’icône, car elle ne peut pas être écrite dans Spooky.app.";

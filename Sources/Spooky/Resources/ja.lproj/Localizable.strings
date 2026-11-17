@@ -1737,6 +1737,8 @@
 "appIcon.serverGhost" = "サーバーゴースト";
 "appIcon.midnight" = "ミッドナイト";
 "appIcon.armful" = "ひと抱え";
+"appIcon.armfulPlain" = "ひと抱え（無地）";
+"appIcon.armfulPurple" = "ひと抱え（パープル）";
 "appIcon.cherryPick" = "チェリーピック";
 "appIcon.perch" = "止まり木";
 "appIcon.writeFailed" = "アイコンを Spooky.app に書き込めないため、切り替えられませんでした。";

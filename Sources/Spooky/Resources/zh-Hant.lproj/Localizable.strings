@@ -1737,6 +1737,8 @@
 "appIcon.serverGhost" = "伺服器幽靈";
 "appIcon.midnight" = "午夜";
 "appIcon.armful" = "滿懷";
+"appIcon.armfulPlain" = "滿懷 · 素底";
+"appIcon.armfulPurple" = "滿懷 · 紫底";
 "appIcon.cherryPick" = "採擷";
 "appIcon.perch" = "棲枝";
 "appIcon.writeFailed" = "切換失敗，圖示無法寫入 Spooky.app。";

@@ -96,7 +96,7 @@ struct AppIconControllerTests {
     /// 偏好里没有记录或记录无法识别时为默认的一组；所选的组不是 Reset User Defaults 保留的数据，
     /// Reset 与 Clear 之后控制器都回到默认的一组，清掉 App 包的自定义图标，并重启 Dock。
     @Test("偏好缺省与不认识的值为默认的一组，Reset / Clear 之后回到默认的一组")
-    func preferenceFallsBackToServerGhost() async throws {
+    func preferenceFallsBackToDefaultGroup() async throws {
         let directory = Self.makeDirectory()
 
         defer { try? FileManager.default.removeItem(at: directory) }

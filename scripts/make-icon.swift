@@ -1,17 +1,19 @@
-// 生成 Spooky 的五组应用图标：在无窗口的 WebKit 中运行 make-icon/ 目录下的 Canvas 绘制，
-// 为每组的默认图标与深色图标的指示灯灭着、亮着两版各导出全部尺寸，再由 iconutil 合成二十份 .icns。
+// 生成 Spooky 的七组应用图标：在无窗口的 WebKit 中运行 make-icon/ 目录下的 Canvas 绘制，
+// 为每组的默认图标与深色图标的指示灯灭着、亮着两版各导出全部尺寸，再由 iconutil 合成二十八份 .icns。
 //
 // 用法：swift scripts/make-icon.swift <输出目录>
 
 import WebKit
 
-/// 五组图标：.icns 文件名的前缀，传给 renderIcon 的图标组，以及 make-icon/ 目录下这一组的绘制脚本。
+/// 七组图标：.icns 文件名的前缀，传给 renderIcon 的图标组，以及 make-icon/ 目录下这一组的绘制脚本；满怀的三组共用一个脚本。
 let groups: [(prefix: String, group: String, script: String)] = [
+    ("AppIconArmful", "armful", "armful.js"),
+    ("AppIconArmfulPlain", "armfulPlain", "armful.js"),
+    ("AppIconArmfulPurple", "armfulPurple", "armful.js"),
+    ("AppIconPerch", "perch", "perch.js"),
+    ("AppIconCherryPick", "cherryPick", "cherry-pick.js"),
     ("AppIconServerGhost", "serverGhost", "server-ghost.js"),
     ("AppIconMidnight", "midnight", "midnight.js"),
-    ("AppIconArmful", "armful", "armful.js"),
-    ("AppIconCherryPick", "cherryPick", "cherry-pick.js"),
-    ("AppIconPerch", "perch", "perch.js"),
 ]
 
 /// 每组的四版：接在前缀后面的文件名后缀，以及传给 renderIcon 的样式与指示灯是否亮着。
@@ -22,7 +24,7 @@ let versions: [(suffix: String, style: String, lit: Bool)] = [
     ("DarkConnected", "dark", true),
 ]
 
-/// 要生成的二十份图标：.icns 的文件名，以及传给 renderIcon 的图标组、样式与指示灯是否亮着。
+/// 要生成的二十八份图标：.icns 的文件名，以及传给 renderIcon 的图标组、样式与指示灯是否亮着。
 let icons = groups.flatMap { group in
     versions.map { (name: group.prefix + $0.suffix, group: group.group, style: $0.style, lit: $0.lit) }
 }
@@ -48,8 +50,15 @@ let scriptDirectory = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
     .appending(path: "make-icon", directoryHint: .isDirectory)
 
-/// 绘制脚本：kit.js 在前，各组的脚本依次接在后面，合成一份执行。
-let drawing = try (["kit.js"] + groups.map(\.script))
+/// 绘制脚本的文件名：kit.js 在前，各组的脚本依次接在后面，几组共用的只接一次。
+let scripts = groups.reduce(into: ["kit.js"]) { scripts, group in
+    if !scripts.contains(group.script) {
+        scripts.append(group.script)
+    }
+}
+
+/// 绘制脚本：合成一份执行。
+let drawing = try scripts
     .map { try String(contentsOf: scriptDirectory.appending(path: $0), encoding: .utf8) }
     .joined(separator: "\n")
 
