@@ -30,12 +30,12 @@ extension RepositorySessionTests {
         let conditions = AutoFetchConditions(now: Date(timeIntervalSince1970: Date().timeIntervalSince1970.rounded()))
         let scheduler = conditions.scheduler(for: session, defaults: defaults)
 
-        try await firstChecks(scheduler, conditions: conditions, runner: runner, other: other, defaults: defaults)
+        try await firstChecks(scheduler, conditions: conditions, session: session, other: other, defaults: defaults)
         #expect(failures.isEmpty)
 
         try await perRemoteTimes(scheduler, conditions: conditions, session: session, defaults: defaults)
         try await skippedChecks(conditions: conditions, session: session, runner: runner, defaults: defaults)
-        await rescheduling(scheduler, conditions: conditions, defaults: defaults)
+        await rescheduling(scheduler, conditions: conditions, session: session, defaults: defaults)
     }
 }
 
@@ -47,16 +47,17 @@ extension RepositorySessionTests {
     private func firstChecks(
         _ scheduler: RepositoryAutoFetch,
         conditions: AutoFetchConditions,
-        runner: GitRunner,
+        session: RepositorySession,
         other: GitRunner,
         defaults: UserDefaults
     ) async throws {
+        let runner = try #require(session.runner)
         let first = conditions.now.addingTimeInterval(RepositoryAutoFetch.initialDelay)
 
         scheduler.restart()
         #expect(scheduler.nextCheck == first)
 
-        #expect(await scheduler.check(now: first).isEmpty)
+        await expectCheck(scheduler, now: first, fetches: [], session: session, defaults: defaults)
         #expect(scheduler.nextCheck == first.addingTimeInterval(RepositoryAutoFetch.checkInterval))
 
         // 显示仓库后获取：origin 带来新提交，second 指向不存在的仓库
@@ -64,7 +65,8 @@ extension RepositorySessionTests {
         let pushed = try await commitAndPush(other, message: "remote")
 
         // 后面等获取时刻的步骤以这两次获取为前提，没开始时立即结束，不空等
-        try #require(await scheduler.check(now: first) == ["origin", "second"])
+        let both = ["origin", "second"]
+        try #require(await expectCheck(scheduler, now: first, fetches: both, session: session, defaults: defaults))
         #expect(try await tracking(runner) == pushed)
 
         let records = Array(remoteRecords(runner).prefix(2))
@@ -95,11 +97,11 @@ extension RepositorySessionTests {
         let old = conditions.now.addingTimeInterval(-1000)
         let later = conditions.now.addingTimeInterval(100)
 
-        #expect(await scheduler.check(now: later).isEmpty)
+        await expectCheck(scheduler, now: later, fetches: [], session: session, defaults: defaults)
 
         // 只让 origin 到期；后面要等它的新时刻，这次获取没开始时立即结束
         RemoteFetchTimes.record("origin", in: repository, at: old, defaults: defaults)
-        try #require(await scheduler.check(now: later) == ["origin"])
+        try #require(await expectCheck(scheduler, now: later, fetches: ["origin"], session: session, defaults: defaults))
 
         // 手动获取失败同样更新时刻
         let before = RemoteFetchTimes.lastFetch(of: "second", in: repository, defaults: defaults)
@@ -112,7 +114,7 @@ extension RepositorySessionTests {
         let reopened = conditions.scheduler(for: session, defaults: defaults)
 
         await until { RemoteFetchTimes.lastFetch(of: "origin", in: repository, defaults: defaults) ?? old > old }
-        #expect(await reopened.check(now: later).isEmpty)
+        await expectCheck(reopened, now: later, fetches: [], session: session, defaults: defaults)
     }
 
     /// origin 设了 skipFetchAll、系统网络路径不可用或另有写操作时都不获取，跳过不更新它的时刻。
@@ -130,18 +132,18 @@ extension RepositorySessionTests {
         RemoteFetchTimes.record("origin", in: repository, at: old, defaults: defaults)
 
         _ = try await runner.run(["config", "--local", "remote.origin.skipFetchAll", "true"])
-        #expect(await scheduler.check(now: later).isEmpty)
+        await expectCheck(scheduler, now: later, fetches: [], session: session, defaults: defaults)
 
         _ = try await runner.run(["config", "--local", "--unset", "remote.origin.skipFetchAll"])
         conditions.networkAvailable = false
-        #expect(await scheduler.check(now: later).isEmpty)
+        await expectCheck(scheduler, now: later, fetches: [], session: session, defaults: defaults)
         #expect(RemoteFetchTimes.lastFetch(of: "origin", in: repository, defaults: defaults) == old)
 
         // 另有写操作时不获取
         conditions.networkAvailable = true
         session.quickFetch(remote: "second", defaults: defaults)
 
-        #expect(await scheduler.check(now: later).isEmpty)
+        await expectCheck(scheduler, now: later, fetches: [], session: session, defaults: defaults)
         await session.writeTask?.value
     }
 
@@ -149,6 +151,7 @@ extension RepositorySessionTests {
     private func rescheduling(
         _ scheduler: RepositoryAutoFetch,
         conditions: AutoFetchConditions,
+        session: RepositorySession,
         defaults: UserDefaults
     ) async {
         scheduler.pause()
@@ -170,8 +173,45 @@ extension RepositorySessionTests {
         defaults.set(0, forKey: RepositoryAutoFetch.intervalKey)
         await until { scheduler.nextCheck == nil }
 
-        #expect(await scheduler.check(now: expected).isEmpty)
+        await expectCheck(scheduler, now: expected, fetches: [], session: session, defaults: defaults)
         #expect(scheduler.nextCheck == nil)
+    }
+
+    /// 检查一次并核对这次获取的远端；不符时的记录带上实际获取的远端，以及决定获取哪些远端的状态：
+    /// 仓库能否获取、会话读到的远端、各远端距上次获取的秒数。
+    ///
+    /// - Parameters:
+    ///   - scheduler: 调度对象。
+    ///   - now: 这次检查的时刻。
+    ///   - expected: 应当获取的远端。
+    ///   - session: 调度对象所属的会话。
+    ///   - defaults: 保存获取时刻的偏好域。
+    ///   - sourceLocation: 记录指向的调用位置。
+    /// - Returns: 获取的远端是否与预期相符。
+    @discardableResult
+    private func expectCheck(
+        _ scheduler: RepositoryAutoFetch,
+        now: Date,
+        fetches expected: [String],
+        session: RepositorySession,
+        defaults: UserDefaults,
+        sourceLocation: SourceLocation = #_sourceLocation
+    ) async -> Bool {
+        // 状态在检查之前取：检查会改写获取时刻
+        let remotes = session.history.snapshot?.remotes.map(\.name)
+
+        let times = (remotes ?? []).map { remote in
+            let last = session.repository.flatMap { RemoteFetchTimes.lastFetch(of: remote, in: $0, defaults: defaults) }
+            return "\(remote)=\(last.map { String(now.timeIntervalSince($0)) } ?? "nil")"
+        }
+
+        let state = "canFetch=\(session.canFetch) isWriting=\(session.isWriting) "
+            + "remotes=\(remotes.map(String.init(describing:)) ?? "nil") secondsSinceFetch=\(times)"
+
+        let fetched = await scheduler.check(now: now)
+
+        #expect(fetched == expected, "\(state)", sourceLocation: sourceLocation)
+        return fetched == expected
     }
 
     /// origin 与 second 改用带主机的地址，经测试用的 ssh 在本机执行服务端命令；另加本机路径与 `file://` 两个远端。
