@@ -1140,7 +1140,6 @@
 "sidebar.showNewest" = "最新のみ表示";
 "sidebar.all" = "すべて";
 "branch.staleFor" = "%@ 更新なし";
-"branch.trackingError" = "追跡ブランチが存在しません";
 "branch.pin" = "ブランチをピン留め";
 "branch.unpin" = "ブランチのピン留めを解除";
 "branch.archive" = "ブランチをアーカイブ";
@@ -1160,7 +1159,6 @@
 "branch.tooltip.divergence" = "- %ld 個のコミットが進み、%ld 個のコミットが遅れています（ブランチ「%@」に対して）";
 "branch.tooltip.archived" = "- アーカイブ済み";
 "branch.tooltip.stale" = "- 古いブランチ（%@）";
-"branch.tooltip.missingUpstream" = "- 追跡ブランチ「%@」が存在しません";
 "remote.tooltip.branch" = "リモートブランチ「%@」";
 "remote.tooltip.remote" = "リモートリポジトリ「%@」";
 "remote.tooltip.fetchURL" = "- フェッチ URL：「%@」";
@@ -2516,7 +2514,7 @@
 "accounts.password.label" = "パスワード：";
 "accounts.password" = "パスワード";
 "accounts.code" = "コード：";
-"accounts.openGitHub" = "コードをコピーして GitHub を開く";
+"accounts.copyCode" = "コードをコピー";
 "accounts.validating" = "確認中…";
 "accounts.authorizing" = "認可を待っています…";
 "accounts.verify.title" = "アカウントを確認";

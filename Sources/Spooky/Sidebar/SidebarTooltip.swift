@@ -7,14 +7,14 @@ import SpookyKit
 enum SidebarTooltip {
     /// 本地分支的悬停提示。
     ///
-    /// 第一行是分支名，之后按需追加跟踪关系、超前落后、归档、陈旧与跟踪错误。
+    /// 第一行是分支名，之后按需追加跟踪关系、超前落后、归档与陈旧。
     ///
     /// - Parameters:
     ///   - reference: 本地分支。
     ///   - host: 服务器仓库的主机别名；本机仓库为 nil。
     ///   - divergence: 相对上游的计数；没有上游或上游已不存在时为 nil。
     ///   - metadata: 分支的置顶与归档信息。
-    ///   - status: 按视图设置筛过的陈旧与跟踪错误。
+    ///   - status: 按视图设置筛过的陈旧。
     static func branch(
         _ reference: RepositoryReference,
         host: String?,
@@ -43,10 +43,6 @@ enum SidebarTooltip {
 
         if let staleDuration = status.staleDuration {
             lines.append(AppLocalization.text("branch.tooltip.stale", staleDuration))
-        }
-
-        if let missingUpstream = status.missingUpstream {
-            lines.append(AppLocalization.text("branch.tooltip.missingUpstream", shortName(missingUpstream)))
         }
 
         return lines.joined(separator: "\n")

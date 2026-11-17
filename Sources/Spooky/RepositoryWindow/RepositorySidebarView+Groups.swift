@@ -238,7 +238,7 @@ extension RepositorySidebarView {
         return segments
     }
 
-    /// 按视图设置筛过的陈旧与跟踪错误。
+    /// 按视图设置筛过的陈旧。
     func branchStatus(_ ref: RepositoryReference) -> SidebarBranchStatus {
         let months =
             SidebarPreferences.isValid(staleInterval, for: SidebarPreferences.staleIntervalKey)

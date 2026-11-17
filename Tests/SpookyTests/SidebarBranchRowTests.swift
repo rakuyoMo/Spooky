@@ -26,7 +26,7 @@ struct SidebarBranchRowTests {
         #expect(abs(narrow.name.width - wide.name.width) < 1)
         #expect(narrow.stale.maxX <= 110)
 
-        // 这一行没有跟踪错误与默认分支标记，图片元素只可能来自行首图标
+        // 这一行没有默认分支标记，图片元素只可能来自行首图标
         #expect(wide.images.isEmpty)
     }
 

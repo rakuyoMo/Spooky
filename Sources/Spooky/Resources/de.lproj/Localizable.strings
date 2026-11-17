@@ -1140,7 +1140,6 @@
 "sidebar.showNewest" = "Neueste anzeigen";
 "sidebar.all" = "Alle";
 "branch.staleFor" = "Seit %@ nicht aktualisiert";
-"branch.trackingError" = "Verfolgter Branch existiert nicht mehr";
 "branch.pin" = "Branch anheften";
 "branch.unpin" = "Branch lösen";
 "branch.archive" = "Branch archivieren";
@@ -1160,7 +1159,6 @@
 "branch.tooltip.divergence" = "- ist %ld Commits voraus und %ld Commits hinter Branch „%@“";
 "branch.tooltip.archived" = "- ist archiviert";
 "branch.tooltip.stale" = "- ist veraltet (%@)";
-"branch.tooltip.missingUpstream" = "- verfolgter Branch „%@“ existiert nicht mehr";
 "remote.tooltip.branch" = "Remote-Branch „%@“";
 "remote.tooltip.remote" = "Remote-Repository „%@“";
 "remote.tooltip.fetchURL" = "- Fetch-URL: „%@“";
@@ -2516,7 +2514,7 @@
 "accounts.password.label" = "Passwort:";
 "accounts.password" = "Passwort";
 "accounts.code" = "Code:";
-"accounts.openGitHub" = "Code kopieren und GitHub öffnen";
+"accounts.copyCode" = "Code kopieren";
 "accounts.validating" = "Wird geprüft…";
 "accounts.authorizing" = "Warten auf Autorisierung…";
 "accounts.verify.title" = "Account prüfen";

@@ -1140,7 +1140,6 @@
 "sidebar.showNewest" = "최신 항목만 보기";
 "sidebar.all" = "전체";
 "branch.staleFor" = "%@ 동안 업데이트 없음";
-"branch.trackingError" = "추적 중인 브랜치가 더 이상 없음";
 "branch.pin" = "브랜치 고정";
 "branch.unpin" = "브랜치 고정 해제";
 "branch.archive" = "브랜치 보관";
@@ -1160,7 +1159,6 @@
 "branch.tooltip.divergence" = "- 커밋 %ld개 앞섬, 커밋 %ld개 뒤처짐(브랜치 “%@” 기준)";
 "branch.tooltip.archived" = "- 보관됨";
 "branch.tooltip.stale" = "- 오래됨(%@)";
-"branch.tooltip.missingUpstream" = "- 추적 중인 브랜치 “%@”이(가) 더 이상 없음";
 "remote.tooltip.branch" = "원격 브랜치 “%@”";
 "remote.tooltip.remote" = "원격 저장소 “%@”";
 "remote.tooltip.fetchURL" = "- 페치 URL: “%@”";
@@ -2516,7 +2514,7 @@
 "accounts.password.label" = "암호:";
 "accounts.password" = "암호";
 "accounts.code" = "코드:";
-"accounts.openGitHub" = "코드 복사 후 GitHub 열기";
+"accounts.copyCode" = "코드 복사";
 "accounts.validating" = "확인 중…";
 "accounts.authorizing" = "승인 대기 중…";
 "accounts.verify.title" = "계정 확인";

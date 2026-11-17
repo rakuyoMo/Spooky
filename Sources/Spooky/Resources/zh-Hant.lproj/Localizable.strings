@@ -1140,7 +1140,6 @@
 "sidebar.showNewest" = "顯示最新";
 "sidebar.all" = "全部";
 "branch.staleFor" = "已 %@ 未更新";
-"branch.trackingError" = "追蹤的分支已不存在";
 "branch.pin" = "釘選分支";
 "branch.unpin" = "取消釘選分支";
 "branch.archive" = "封存分支";
@@ -1160,7 +1159,6 @@
 "branch.tooltip.divergence" = "- 領先 %ld 個提交、落後 %ld 個提交（相對分支 “%@”）";
 "branch.tooltip.archived" = "- 已封存";
 "branch.tooltip.stale" = "- 已陳舊（%@）";
-"branch.tooltip.missingUpstream" = "- 追蹤的分支 “%@” 已不存在";
 "remote.tooltip.branch" = "遠端分支 “%@”";
 "remote.tooltip.remote" = "遠端儲存庫 “%@”";
 "remote.tooltip.fetchURL" = "- 取得位址：“%@”";
@@ -2516,7 +2514,7 @@
 "accounts.password.label" = "密碼：";
 "accounts.password" = "密碼";
 "accounts.code" = "驗證碼：";
-"accounts.openGitHub" = "拷貝驗證碼並打開 GitHub";
+"accounts.copyCode" = "拷貝驗證碼";
 "accounts.validating" = "正在驗證…";
 "accounts.authorizing" = "正在等待授權…";
 "accounts.verify.title" = "驗證帳號";

@@ -9,7 +9,7 @@ import Testing
 
 extension WindowChromeTests {
     /// 同一个工具栏独有的仓库窗口依次核对：本机仓库的提示随显示方式与 ⌥ 改写；
-    /// 跟随内层分栏的分隔符与内层分栏的列表；服务器仓库的提示与主机前缀。
+    /// 跟随内层分栏的分隔符与内层分栏的列表；服务器仓库的主机前缀一项，以及与本机相同的提示。
     @Test("工具栏的提示、跟随内层分栏的分隔符与服务器仓库的主机前缀")
     func toolbarTipsAndSeparator() async throws {
         let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
@@ -302,38 +302,35 @@ extension WindowChromeTests {
         }
     }
 
-    /// 服务器仓库显示文字时，按钮表里的按钮与同步一组的提示在最前面加主机前缀，按住 ⌥ 时同样加；Prev / Next 不加。
+    /// 服务器仓库显示文字时，按钮表里的按钮与同步一组的提示与本机仓库相同，不加主机前缀，按住 ⌥ 时同样不加。
     private static func expectServerLabelModeTips(in controller: RepositoryWindowController) {
         let text = { (key: String) in AppLocalization.text(key) }
-        let host = { (tip: String) in "spooky-test: " + tip }
 
-        #expect(Self.tips(of: RepositoryToolbar.refresh, in: controller) == [host(text("action.refresh"))])
-        #expect(Self.tips(of: RepositoryToolbar.sync, in: controller).first == host(text("sync.fetch.tip")))
+        #expect(Self.tips(of: RepositoryToolbar.refresh, in: controller) == [text("action.refresh")])
+        #expect(Self.tips(of: RepositoryToolbar.sync, in: controller).first == text("sync.fetch.tip"))
         #expect(
             Self.tips(of: RepositoryToolbar.navigation, in: controller)
                 == [text("navigation.back.tip"), text("navigation.forward.tip")]
         )
 
         controller.updateQuickToolbarItems(option: true)
-        #expect(Self.tips(of: RepositoryToolbar.sync, in: controller).first == host(text("sync.quickFetch.tip")))
+        #expect(Self.tips(of: RepositoryToolbar.sync, in: controller).first == text("sync.quickFetch.tip"))
         controller.updateQuickToolbarItems(option: false)
     }
 
-    /// 服务器仓库只显示图标时，主机前缀排在标签之前，按住 ⌥ 时同样如此；Push To 也不重复标签；
-    /// Bookmarks 与储藏两段不加主机前缀。
+    /// 服务器仓库只显示图标时与本机仓库相同：提示前面只加标签，按住 ⌥ 时同样如此；Push To 不加标签。
     private static func expectServerIconOnlyTips(in controller: RepositoryWindowController) {
         let text = { (key: String) in AppLocalization.text(key) }
-        let host = { (tip: String) in "spooky-test: " + tip }
 
         #expect(
             Self.tips(of: RepositoryToolbar.sync, in: controller).first
-                == host(Self.labeledTip("sync.fetch", "sync.fetch.tip"))
+                == Self.labeledTip("sync.fetch", "sync.fetch.tip")
         )
         #expect(
             Self.tips(of: RepositoryToolbar.quickActions, in: controller)
-                == [host(Self.labeledTip("toolbar.quickActions", "toolbar.quickActions.tip"))]
+                == [Self.labeledTip("toolbar.quickActions", "toolbar.quickActions.tip")]
         )
-        #expect(Self.tips(of: RepositoryToolbar.pushTo, in: controller) == [host(text("toolbar.pushTo"))])
+        #expect(Self.tips(of: RepositoryToolbar.pushTo, in: controller) == [text("toolbar.pushTo")])
         #expect(
             Self.tips(of: RepositoryToolbar.repositories, in: controller)
                 == [Self.labeledTip("toolbar.bookmarks", "toolbar.bookmarks.tip")]
@@ -346,7 +343,7 @@ extension WindowChromeTests {
         controller.updateQuickToolbarItems(option: true)
         #expect(
             Self.tips(of: RepositoryToolbar.sync, in: controller).first
-                == host(Self.labeledTip("sync.quickFetch", "sync.quickFetch.tip"))
+                == Self.labeledTip("sync.quickFetch", "sync.quickFetch.tip")
         )
         controller.updateQuickToolbarItems(option: false)
     }

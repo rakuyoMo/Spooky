@@ -1140,7 +1140,6 @@
 "sidebar.showNewest" = "显示最新";
 "sidebar.all" = "全部";
 "branch.staleFor" = "已 %@ 未更新";
-"branch.trackingError" = "跟踪的分支已不存在";
 "branch.pin" = "置顶分支";
 "branch.unpin" = "取消置顶分支";
 "branch.archive" = "归档分支";
@@ -1160,7 +1159,6 @@
 "branch.tooltip.divergence" = "- 领先 %ld 个提交、落后 %ld 个提交（相对分支 “%@”）";
 "branch.tooltip.archived" = "- 已归档";
 "branch.tooltip.stale" = "- 已陈旧（%@）";
-"branch.tooltip.missingUpstream" = "- 跟踪的分支 “%@” 已不存在";
 "remote.tooltip.branch" = "远端分支 “%@”";
 "remote.tooltip.remote" = "远端仓库 “%@”";
 "remote.tooltip.fetchURL" = "- 获取地址：“%@”";
@@ -2516,7 +2514,7 @@
 "accounts.password.label" = "密码：";
 "accounts.password" = "密码";
 "accounts.code" = "验证码：";
-"accounts.openGitHub" = "复制验证码并打开 GitHub";
+"accounts.copyCode" = "复制验证码";
 "accounts.validating" = "正在校验…";
 "accounts.authorizing" = "正在等待授权…";
 "accounts.verify.title" = "校验账号";

@@ -227,7 +227,7 @@ extension RepositoryWindowController {
         return group
     }
 
-    /// 按 ⌥ 的状态设置一个按钮的动作与提示，按钮由它当前的常态或快速动作认出；服务器仓库的提示带主机前缀。
+    /// 按 ⌥ 的状态设置一个按钮的动作与提示，按钮由它当前的常态或快速动作认出。
     private func updateQuickAction(of item: NSToolbarItem, option: Bool) {
         let actions = Self.quickActions.first { entry in
             [entry.action, entry.quick].contains(item.action)
@@ -244,8 +244,7 @@ extension RepositoryWindowController {
 
         item.toolTip = toolbarTip(
             AppLocalization.text(option ? actions.quickTip : actions.tip),
-            label: label.map { AppLocalization.text($0) },
-            showsHost: true
+            label: label.map { AppLocalization.text($0) }
         )
     }
 }
