@@ -262,16 +262,24 @@ final class RepositorySession {
     private let makeRunner: @Sendable (RepositoryLocation) -> GitRunner
 
     /// 窗口是否活跃，决定状态轮询频率。
-    private var isActive = true
+    var isActive = true
 
     /// 远端状态轮询任务。
-    private var pollingTask: Task<Void, Never>? = nil
+    var pollingTask: Task<Void, Never>? = nil
 
     /// 连接状态订阅任务。
     private var connectionTask: Task<Void, Never>? = nil
 
     /// 自动重连任务，重复断线事件共用一次重连。
-    private var reconnectTask: Task<Void, Never>? = nil
+    private(set) var reconnectTask: Task<Void, Never>? = nil
+
+    /// 自动重连两次尝试之间的等待；Show in Finder 要立即连接时提前结束它。
+    @ObservationIgnored
+    var reconnectDelay: Task<Void, Never>? = nil
+
+    /// 等自动重连下一次结果的 Show in Finder；连上时得到 nil，没连上时得到失败。
+    @ObservationIgnored
+    var reconnectWaiters: [CheckedContinuation<AppFailure?, Never>] = []
 
     /// 刷新进行中收到的完整刷新请求，本次结束后补做。
     private var pendingFullRefresh = false
@@ -569,6 +577,10 @@ extension RepositorySession {
         pollingTask = nil
         connectionTask = nil
         reconnectTask = nil
+
+        // 等重连结果的 Show in Finder 随仓库关闭结束，之后取不到执行器
+        resumeReconnectWaiters(with: nil)
+
         connectionState = nil
         serverHasTrash = false
         recovery = nil
@@ -601,25 +613,6 @@ extension RepositorySession {
 // MARK: - Connection
 
 extension RepositorySession {
-    /// 窗口重新激活后立即完整刷新一次；前后台切换重新计算下一次轮询时间。
-    func setActive(_ active: Bool) {
-        let wasActive = isActive
-        isActive = active
-
-        guard let repository else {
-            return
-        }
-
-        if repository.host != nil {
-            startPolling()
-        }
-
-        // 应用激活与窗口成为主窗口会先后通知，只有从后台回到前台时刷新。
-        if active, !wasActive {
-            refresh(full: true)
-        }
-    }
-
     /// 重连失败保留最后快照和原始错误，后台定时重试不阻塞 UI。
     func reconnect() {
         guard
@@ -637,17 +630,18 @@ extension RepositorySession {
                     guard let self, generation == request, !Task.isCancelled else { return }
                     reconnectTask = nil
                     await connectionRestored(remote, request: request)
+                    resumeReconnectWaiters(with: nil)
                     return
                 } catch {
                     guard let self, generation == request, !Task.isCancelled else { return }
                     connectionState = .unavailable
                     failure = AppFailure(error: error, opening: false, location: repository)
+                    resumeReconnectWaiters(with: failure)
                 }
 
-                do { try await Task.sleep(for: RemoteConnection.reconnectInterval) }
-                catch { return }
+                await self?.waitBeforeReconnecting()
 
-                guard let self, generation == request else { return }
+                guard let self, generation == request, !Task.isCancelled else { return }
                 connectionState = .reconnecting
             }
         }
@@ -1109,24 +1103,6 @@ extension RepositorySession {
                 if state == .connected, previous != nil, previous != .connected, reconnectTask == nil {
                     await connectionRestored(remote, request: request)
                 }
-            }
-        }
-    }
-
-    /// 轮询只读状态，任何失败都不重放写操作。
-    private func startPolling() {
-        pollingTask?.cancel()
-        let interval = isActive
-            ? RemoteConnection.foregroundPollInterval
-            : RemoteConnection.backgroundPollInterval
-
-        pollingTask = Task { [weak self] in
-            while !Task.isCancelled {
-                do { try await Task.sleep(for: interval) }
-                catch { return }
-
-                guard let self, repository?.host != nil else { return }
-                if connectionState == .connected { autoReload() }
             }
         }
     }

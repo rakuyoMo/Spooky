@@ -11,14 +11,14 @@ struct LocalLocationDialog: View {
     /// 对话框的表单。
     let form: LocalLocationForm
 
-    /// 关闭对话框。
-    let close: () -> Void
+    /// 关闭对话框；记下了本机位置时为 true，取消时为 false。
+    let close: (_ saved: Bool) -> Void
 
     /// 方式一行，选 sshfs 挂载或指定文件夹时多出文件夹一行，出现与收起随对话框高度一起动画。
     var body: some View {
         DialogLayout(
             title: AppLocalization.text("localLocation.title"),
-            message: AppLocalization.text("localLocation.message", form.mounts.repository?.displayPath ?? ""),
+            message: message,
             submitTitle: form.submitTitle,
             error: form.error,
             progress: form.progress,
@@ -47,6 +47,13 @@ struct LocalLocationDialog: View {
         .task {
             await form.detect()
         }
+    }
+
+    /// 说明；从 Show in Finder 换过来时前面先写不能直接打开的原因。
+    private var message: String {
+        let message = AppLocalization.text("localLocation.message", form.mounts.repository?.displayPath ?? "")
+
+        return form.reason.map { $0 + "\n" + message } ?? message
     }
 
     /// 方式弹出菜单；检测中的 “正在检测” 一项不可选。
@@ -144,7 +151,7 @@ extension LocalLocationDialog {
     private func submit() {
         Task {
             if await form.submit() {
-                close()
+                close(true)
             }
         }
     }
@@ -152,6 +159,6 @@ extension LocalLocationDialog {
     /// 关闭对话框，不改动设置。
     private func cancel() {
         form.cancel()
-        close()
+        close(false)
     }
 }

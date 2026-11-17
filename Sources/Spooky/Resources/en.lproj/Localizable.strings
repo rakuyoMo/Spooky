@@ -172,6 +172,7 @@
 "action.revealFinder" = "Show in Finder";
 "action.revealFinder.notMounted" = "“%@” isn’t mounted on this Mac.";
 "action.revealFinder.notConnected" = "Not connected to “%@”.";
+"action.revealFinder.connecting" = "Connecting to “%@”…";
 "action.revealFinder.folderMissing" = "The local folder “%@” chosen in the repository settings can’t be found.";
 "localLocation.notInShare" = "This repository isn’t in the mounted share.";
 "localLocation.sshfsFailed" = "sshfs exited with status %ld.";

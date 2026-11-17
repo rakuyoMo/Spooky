@@ -172,6 +172,7 @@
 "action.revealFinder" = "Afficher dans le Finder";
 "action.revealFinder.notMounted" = "« %@ » n’est pas monté sur ce Mac.";
 "action.revealFinder.notConnected" = "Non connecté à « %@ ».";
+"action.revealFinder.connecting" = "Connexion à « %@ »…";
 "action.revealFinder.folderMissing" = "Le dossier local « %@ » choisi dans les réglages du dépôt est introuvable.";
 "localLocation.notInShare" = "Ce dépôt ne se trouve pas dans le partage monté.";
 "localLocation.sshfsFailed" = "sshfs s’est terminé avec le code %ld.";

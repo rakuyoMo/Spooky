@@ -172,6 +172,7 @@
 "action.revealFinder" = "Finder に表示";
 "action.revealFinder.notMounted" = "「%@」はこの Mac にマウントされていません。";
 "action.revealFinder.notConnected" = "「%@」に接続されていません。";
+"action.revealFinder.connecting" = "「%@」に接続中…";
 "action.revealFinder.folderMissing" = "リポジトリの設定で指定したこの Mac 上のフォルダ「%@」が見つかりません。";
 "localLocation.notInShare" = "マウントした共有にこのリポジトリがありません。";
 "localLocation.sshfsFailed" = "sshfs がステータス %ld で終了しました。";

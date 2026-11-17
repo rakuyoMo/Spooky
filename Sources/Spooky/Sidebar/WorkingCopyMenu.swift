@@ -208,7 +208,7 @@ extension WorkingCopyMenu {
 
         // 服务器仓库不能直接打开时悬停说明原因
         Button(AppLocalization.text("action.revealFinder"), action: revealFinder)
-            .help(session.finderUnavailableTip ?? "")
+            .help(session.mounts.unavailableReason ?? "")
 
         Button(AppLocalization.text("action.openTerminal"), action: openTerminal)
     }

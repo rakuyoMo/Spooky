@@ -4,31 +4,6 @@ import SpookyKit
 // MARK: - Finder
 
 extension RepositorySession {
-    /// 仓库目录不能直接在 Finder 中显示时的提示：还没连上 B 或还没有查找结果、没有挂载、指定的文件夹不在，或 Spooky 上次挂载失败的原因；
-    /// 能直接显示与本机仓库为 nil。
-    var finderUnavailableTip: String? {
-        guard let repository, let host = repository.host else {
-            return nil
-        }
-
-        switch mounts.status {
-        case .available:
-            return nil
-
-        case .folderMissing(let folder):
-            return AppLocalization.text("action.revealFinder.folderMissing", HomePath.abbreviated(folder.path))
-
-        case .failed(let failure):
-            return failure.reason
-
-        case .notMounted, .mounting:
-            return AppLocalization.text("action.revealFinder.notMounted", repository.displayPath)
-
-        case .unknown, .searching:
-            return AppLocalization.text("action.revealFinder.notConnected", host)
-        }
-    }
-
     /// 工作树能否在 Finder 中显示；失效的工作树不能。
     func canShowInFinder(_ worktree: Worktree) -> Bool {
         finderURL(of: worktree) != nil
@@ -43,7 +18,7 @@ extension RepositorySession {
         else { return nil }
 
         if Self.path(worktree.path, isInside: repository.path) {
-            return finderUnavailableTip
+            return mounts.unavailableReason
         }
 
         guard mounts.lookups[worktree.path] == .notMounted else {
@@ -85,6 +60,35 @@ extension RepositorySession {
             : foundMount(of: worktree.path)
 
         return mount?.localURL(for: worktree.path)
+    }
+
+    /// 服务器仓库的目录或其中的文件不能直接在 Finder 中显示时的流程：用本会话的本机位置状态，连接经本会话；本机仓库为 nil。
+    ///
+    /// - Parameter paths: 仓库里的相对路径；为空时是仓库目录。
+    func showInFinderFlow(_ paths: [String]) -> ShowInFinderFlow? {
+        guard let repository, let host = repository.host else {
+            return nil
+        }
+
+        let targets = paths.isEmpty ? [repository.path] : paths.map { repository.path + "/" + $0 }
+
+        return ShowInFinderFlow(
+            mounts: mounts,
+            host: host,
+            paths: targets,
+            isConnected: connectionState == .connected
+        ) { [weak self] in
+            guard let self else { return .ended }
+
+            if let failure = await connectNow() {
+                return .failed(failure)
+            }
+
+            // 等待期间关闭或换了仓库时流程不再继续
+            guard self.repository == repository, let runner else { return .ended }
+
+            return .connected(runner)
+        }
     }
 
     /// 打开服务器仓库时读入这台 Mac 偏好里记下的本机位置；方式是 SMB 或 sshfs 挂载时，连上 B 后在后台挂载一次。

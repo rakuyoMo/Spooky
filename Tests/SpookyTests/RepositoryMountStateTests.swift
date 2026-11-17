@@ -131,33 +131,33 @@ struct RepositoryMountStateTests {
         let runner = try #require(session.runner)
 
         // 还没有查找结果
-        #expect(session.finderUnavailableTip == AppLocalization.text("action.revealFinder.notConnected", "spooky-test"))
+        #expect(mounts.unavailableReason == AppLocalization.text("action.revealFinder.notConnected", "spooky-test"))
 
         // 查找结束，没有挂载
         mounts.locate(["/srv/仓 库"], host: "spooky-test", runner: runner, refreshes: false)
         await until { mounts.status == .notMounted }
 
         #expect(
-            session.finderUnavailableTip == AppLocalization.text("action.revealFinder.notMounted", "spooky-test:/srv/仓 库")
+            mounts.unavailableReason == AppLocalization.text("action.revealFinder.notMounted", "spooky-test:/srv/仓 库")
         )
 
         // Spooky 上次挂载失败
         mounts.setMounting(nil, failure: LocalLocationFailure(reason: "mount_smbfs: server connection failed"))
-        #expect(session.finderUnavailableTip == "mount_smbfs: server connection failed")
+        #expect(mounts.unavailableReason == "mount_smbfs: server connection failed")
 
         // 指定的文件夹不在
         let missing = directory.appending(path: "不在")
         mounts.apply(.chosenFolder(missing))
 
         #expect(
-            session.finderUnavailableTip
+            mounts.unavailableReason
                 == AppLocalization.text("action.revealFinder.folderMissing", HomePath.abbreviated(missing.path))
         )
 
         // 指定的文件夹在：能直接打开
         mounts.apply(.chosenFolder(directory))
 
-        #expect(session.finderUnavailableTip == nil)
+        #expect(mounts.unavailableReason == nil)
         #expect(session.finderURL("a b.txt") == directory.appending(path: "a b.txt"))
     }
 
@@ -218,7 +218,7 @@ struct RepositoryMountStateTests {
 
 extension RepositoryMountStateTests {
     /// 模拟的现场：B 上的仓库目录、指向 “服务器” 的挂载卷与可以随时挂上的卷列表。
-    private final class Site: Sendable {
+    final class Site: Sendable {
         /// B 上的仓库目录。
         let repository: String
 
@@ -244,7 +244,7 @@ extension RepositoryMountStateTests {
     }
 
     /// 在临时目录里建出 B 上的仓库与指向它的挂载卷；Git 写出的路径不带符号链接，临时目录同样解析成真实路径。
-    private static func makeSite(in directory: URL) async throws -> Site {
+    static func makeSite(in directory: URL) async throws -> Site {
         let resolved = try #require(realpath(directory.path, nil))
         defer { free(resolved) }
 
@@ -261,7 +261,7 @@ extension RepositoryMountStateTests {
     }
 
     /// 在给定卷里查找、偏好只在内存里的状态。
-    private static func makeState(site: Site) -> RepositoryMountState {
+    static func makeState(site: Site) -> RepositoryMountState {
         let state = RepositoryMountState()
         state.defaults = MemoryDefaults()
         state.makeLocator = { _ in RemoteMountLocator(volumes: { site.volumes.withLock { $0 } }) }

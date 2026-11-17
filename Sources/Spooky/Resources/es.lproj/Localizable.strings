@@ -172,6 +172,7 @@
 "action.revealFinder" = "Mostrar en el Finder";
 "action.revealFinder.notMounted" = "“%@” no está montado en este Mac.";
 "action.revealFinder.notConnected" = "No hay conexión con “%@”.";
+"action.revealFinder.connecting" = "Conectando con “%@”…";
 "action.revealFinder.folderMissing" = "No se encuentra la carpeta local “%@” elegida en los ajustes del repositorio.";
 "localLocation.notInShare" = "Este repositorio no está en el recurso compartido montado.";
 "localLocation.sshfsFailed" = "sshfs terminó con el estado %ld.";

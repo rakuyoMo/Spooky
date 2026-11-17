@@ -172,6 +172,7 @@
 "action.revealFinder" = "Im Finder zeigen";
 "action.revealFinder.notMounted" = "„%@“ ist auf diesem Mac nicht eingebunden.";
 "action.revealFinder.notConnected" = "Keine Verbindung zu „%@“.";
+"action.revealFinder.connecting" = "Verbindung zu „%@“ wird hergestellt …";
 "action.revealFinder.folderMissing" = "Der in den Repository-Einstellungen festgelegte lokale Ordner „%@“ wurde nicht gefunden.";
 "localLocation.notInShare" = "Dieses Repository befindet sich nicht in der eingebundenen Freigabe.";
 "localLocation.sshfsFailed" = "sshfs wurde mit Status %ld beendet.";

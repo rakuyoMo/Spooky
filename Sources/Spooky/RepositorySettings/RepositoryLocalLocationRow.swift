@@ -89,7 +89,9 @@ extension RepositoryLocalLocationRow {
 
         let form = LocalLocationForm(mounts: session.mounts, host: host, runner: runner)
 
-        DialogWindow.present(on: session.presentingWindow) { LocalLocationDialog(form: form, close: $0) }
+        DialogWindow.present(on: session.presentingWindow) { close in
+            LocalLocationDialog(form: form) { _ in close() }
+        }
     }
 
     /// 用户发起的重新挂载：允许系统的登录框与口令询问，结果写回这一行。

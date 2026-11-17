@@ -158,10 +158,7 @@ extension RepositoryWindowController {
 
         case .openInEditor: session.edit(path)
 
-        case .revealInFinder:
-            if let url = session.finderURL(path) {
-                NSWorkspace.shared.activateFileViewerSelecting([url])
-            }
+        case .revealInFinder: showInFinder([path])
 
         case .copyPath:
             if let repository = session.repository {

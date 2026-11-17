@@ -18,14 +18,37 @@ extension RepositoryWindowController {
         }
     }
 
-    /// Finder 只能显示本机路径：仓库视图里的服务器仓库按查到的挂载换算，管理页里的服务器记录没有打开的会话，不能显示。
+    /// 在 Finder 中显示仓库目录；管理页里显示选中的本机记录，服务器记录没有打开的会话，不能显示。
     @objc
     func revealInFinder() {
-        guard let url = showsManager ? session.selectedRecentLocation?.localURL : session.finderURL() else {
+        guard showsManager else {
+            showInFinder([])
             return
         }
 
-        NSWorkspace.shared.activateFileViewerSelecting([url])
+        if let url = session.selectedRecentLocation?.localURL {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        }
+    }
+
+    /// 在 Finder 中显示仓库目录或其中的文件：能直接打开时打开；服务器仓库不能直接打开时挂 sheet，连接、查找、挂载或设置本机位置之后再打开。
+    ///
+    /// - Parameter paths: 仓库里的相对路径；为空时是仓库目录。
+    func showInFinder(_ paths: [String]) {
+        let urls = paths.isEmpty
+            ? [session.finderURL()].compactMap { $0 }
+            : paths.compactMap { session.finderURL($0) }
+
+        guard urls.isEmpty else {
+            NSWorkspace.shared.activateFileViewerSelecting(urls)
+            return
+        }
+
+        guard let flow = session.showInFinderFlow(paths) else {
+            return
+        }
+
+        presentDialog { ShowInFinderDialog(flow: flow, close: $0) }
     }
 
     /// 服务器路径带主机前缀，避免复制后误认为本机目录。
@@ -330,7 +353,7 @@ extension RepositoryWindowController {
 
     /// Show in Finder 的可用性：显示仓库时一直可用；服务器仓库不能直接打开时，菜单项与工具栏项的提示写明原因。
     private func finderAvailability(of item: any NSValidatedUserInterfaceItem) -> Bool {
-        let tip = showsManager ? nil : session.finderUnavailableTip
+        let tip = showsManager ? nil : session.mounts.unavailableReason
 
         if let menuItem = item as? NSMenuItem {
             menuItem.toolTip = tip

@@ -172,6 +172,7 @@
 "action.revealFinder" = "在 Finder 中显示";
 "action.revealFinder.notMounted" = "“%@” 没有挂载到这台 Mac。";
 "action.revealFinder.notConnected" = "没有连上 “%@”。";
+"action.revealFinder.connecting" = "正在连接 “%@”…";
 "action.revealFinder.folderMissing" = "找不到仓库设置里指定的本机文件夹 “%@”。";
 "localLocation.notInShare" = "挂载的共享里没有这个仓库。";
 "localLocation.sshfsFailed" = "sshfs 以状态 %ld 退出。";

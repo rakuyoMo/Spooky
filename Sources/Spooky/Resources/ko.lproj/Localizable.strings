@@ -172,6 +172,7 @@
 "action.revealFinder" = "Finder에서 보기";
 "action.revealFinder.notMounted" = "“%@”이(가) 이 Mac에 마운트되어 있지 않습니다.";
 "action.revealFinder.notConnected" = "“%@”에 연결되어 있지 않습니다.";
+"action.revealFinder.connecting" = "“%@”에 연결하는 중…";
 "action.revealFinder.folderMissing" = "저장소 설정에서 지정한 이 Mac의 폴더 “%@”을(를) 찾을 수 없습니다.";
 "localLocation.notInShare" = "마운트한 공유에 이 저장소가 없습니다.";
 "localLocation.sshfsFailed" = "sshfs가 상태 %ld(으)로 종료되었습니다.";

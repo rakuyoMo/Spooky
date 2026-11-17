@@ -225,11 +225,13 @@ final class RepositoryMountState {
         locate(paths, host: source.host, runner: source.runner, refreshes: true)
     }
 
-    /// 等这个目录进行中的查找结束；没有进行中的查找时立即返回。
+    /// 等这个目录进行中的查找结束；等待期间卷有变化、换成了新的一次查找时，等到最后一次结束。没有进行中的查找时立即返回。
     ///
     /// - Parameter path: B 上的目录。
     func waitForSearch(of path: String) async {
-        await searches[path]?.task.value
+        while lookups[path] == .searching, let task = searches[path]?.task {
+            await task.value
+        }
     }
 
     /// 服务器上仓库目录在这台 Mac 上的位置；拿不到时为 nil。
@@ -307,7 +309,6 @@ final class RepositoryMountState {
             setFolderAvailable(false)
         }
     }
-
 }
 
 // MARK: - Private

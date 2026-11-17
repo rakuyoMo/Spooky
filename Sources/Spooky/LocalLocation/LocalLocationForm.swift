@@ -28,6 +28,9 @@ final class LocalLocationForm {
     /// 仓库的执行器，核对用的标记文件经它写进 B 的 Git 目录。
     let runner: GitRunner
 
+    /// 从 Show in Finder 换过来时不能直接打开的原因，写在说明前面；其余为 nil。
+    let reason: String?
+
     /// 选中的方式。
     var method: ServerLocalLocation.Method
 
@@ -98,10 +101,20 @@ final class LocalLocationForm {
     ///   - mounts: 仓库的本机位置状态。
     ///   - host: 主机别名。
     ///   - runner: 仓库的执行器。
-    init(mounts: RepositoryMountState, host: String, runner: GitRunner) {
+    ///   - reason: 从 Show in Finder 换过来时不能直接打开的原因。
+    ///   - failure: 从 Show in Finder 换过来时挂载失败的说明，一开始就写在错误区。
+    init(
+        mounts: RepositoryMountState,
+        host: String,
+        runner: GitRunner,
+        reason: String? = nil,
+        failure: String? = nil
+    ) {
         self.mounts = mounts
         self.host = host
         self.runner = runner
+        self.reason = reason
+        self.failure = failure
         method = mounts.location.method
 
         switch mounts.location {
