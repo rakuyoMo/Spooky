@@ -13,15 +13,14 @@ extension RepositorySidebarView {
     /// - Parameter proxy: 侧边栏列表的滚动代理。
     func revealSelectedReferences(with proxy: ScrollViewProxy) {
         let references = session.history.selectedReferences
-        var target: SidebarNodeID? = nil
+        let locations = referenceLocations.filter { references.contains($0.reference) }
 
-        for location in referenceLocations where references.contains(location.reference) {
-            collapsedGroups.remove(location.group)
-            expandedNodes.formUnion(location.path.dropLast())
-            target = target ?? location.path.last
-        }
+        expansion.expand(
+            groups: locations.map(\.group),
+            nodes: locations.flatMap { $0.path.dropLast() }
+        )
 
-        guard let target else {
+        guard let target = locations.first?.path.last else {
             return
         }
 

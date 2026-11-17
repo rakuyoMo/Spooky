@@ -172,6 +172,9 @@ extension RepositorySidebarViewTests {
             copyPath: { },
             request: { _ in },
             showActivity: { },
+
+            // 展开状态按仓库记在偏好里；每个侧边栏用自己的内存偏好，同一仓库先后挂上的两个窗口都从默认的展开状态开始
+            defaults: MemoryDefaults(),
             reveal: reveal
         )
     }

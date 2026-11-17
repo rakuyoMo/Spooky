@@ -7,7 +7,7 @@ import SwiftUI
 /// Workspace、置顶、分支、归档、标签、远端、子模块与工作树各分组，加上活动区与底栏，共用仓库窗口侧边栏。
 struct RepositorySidebarView: View {
     /// 侧边栏的分组；分组标题都可以收起。
-    enum SidebarGroup: Hashable {
+    enum SidebarGroup: String, Hashable {
         /// 工作区、历史与储藏入口。
         case workspace
 
@@ -97,13 +97,9 @@ struct RepositorySidebarView: View {
     @AppStorage(SidebarPreferences.newestTagsKey)
     var newestTags = SidebarPreferences.defaultNumber(SidebarPreferences.newestTagsKey)
 
-    /// 收起的分组；Tags 默认收起。
+    /// 分组、远端与文件夹的展开状态，按仓库记在偏好里。
     @State
-    var collapsedGroups: Set<SidebarGroup> = [.tags]
-
-    /// 展开的远端与文件夹；默认只展开名为 origin 的远端。
-    @State
-    var expandedNodes: Set<SidebarNodeID> = [.remote("origin")]
+    var expansion = SidebarExpansion()
 
     /// 底栏过滤框的文字。
     @State
@@ -178,7 +174,7 @@ struct RepositorySidebarView: View {
 
             bottomBar
         }
-        .onChange(of: session.repository) {
+        .onChange(of: session.repository, initial: true) {
             resetViewState()
             restoreListFocus()
         }
@@ -445,7 +441,11 @@ extension RepositorySidebarView {
                     destination: .remote(remote.name),
                     request: request,
                     hovering: {
-                        springLoading.hover(remote.sidebarID, hovering: $0, expanded: isExpanded(remote.sidebarID))
+                        springLoading.hover(
+                            remote.sidebarID,
+                            hovering: $0,
+                            expanded: expansion.springBinding(for: remote.sidebarID, filtering: isFiltering)
+                        )
                     }
                 )
             )
