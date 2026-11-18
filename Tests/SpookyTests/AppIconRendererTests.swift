@@ -20,7 +20,7 @@ struct AppIconRendererTests {
     /// 8 位量化与缩放插值带来的误差上限。
     private static let tolerance: Float = 2 / 255
 
-    /// 图标的 icns 所在的目录：本文件位于 `Tests/SpookyTests/` 下，向上三级是仓库根目录。
+    /// 各组图标的文件夹所在的目录：本文件位于 `Tests/SpookyTests/` 下，向上三级是仓库根目录。
     private static let iconsURL = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .deletingLastPathComponent()
@@ -119,8 +119,8 @@ struct AppIconRendererTests {
     func litIconDiffersOnlyAtLights(group: AppIconGroup, isDark: Bool) throws {
         let unlit = group.iconName(for: AppIconVariant(isDark: isDark, isConnected: false))
         let lit = group.iconName(for: AppIconVariant(isDark: isDark, isConnected: true))
-        let unlitPixels = try Self.bytes(of: Self.icon(named: unlit))
-        let litPixels = try Self.bytes(of: Self.icon(named: lit))
+        let unlitPixels = try Self.bytes(of: Self.icon(named: unlit, of: group))
+        let litPixels = try Self.bytes(of: Self.icon(named: lit, of: group))
         var changed = 0
 
         for index in 0 ..< 1024 * 1024 where unlitPixels[index] != litPixels[index] {
@@ -307,9 +307,16 @@ extension AppIconRendererTests {
     }
 
     /// 仓库里的 icns 中 1024 px 的一张，原尺寸画出时逐像素不变。
-    /// - Parameter name: icns 的文件名，不含扩展名
-    private static func icon(named name: String) throws -> CGImage {
-        let icon = try #require(NSImage(contentsOf: iconsURL.appending(path: "\(name).icns")))
+    /// - Parameters:
+    ///   - name: icns 的文件名，不含扩展名
+    ///   - group: 图标所属的组，它的文件夹名是默认图标的名字去掉 `AppIcon` 前缀
+    private static func icon(
+        named name: String,
+        of group: AppIconGroup
+    ) throws -> CGImage {
+        let folder = group.iconName(for: .standard).dropFirst("AppIcon".count)
+        let url = iconsURL.appending(path: "\(folder)/\(name).icns")
+        let icon = try #require(NSImage(contentsOf: url))
 
         var rect = CGRect(x: 0, y: 0, width: 1024, height: 1024)
 

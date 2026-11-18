@@ -30,7 +30,8 @@ for icon_name in "${icon_names[@]}"; do
     rm -rf "$shell"
     mkdir -p "$shell/Contents/MacOS" "$shell/Contents/Resources"
 
-    cp "Sources/Spooky/AppIcon/Icons/$icon_name.icns" "$shell/Contents/Resources/$icon_name.icns"
+    # 每组的图标放在去掉 AppIcon 前缀的文件夹里
+    cp "Sources/Spooky/AppIcon/Icons/${icon_name#AppIcon}/$icon_name.icns" "$shell/Contents/Resources/$icon_name.icns"
 
     cat > "$shell/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
