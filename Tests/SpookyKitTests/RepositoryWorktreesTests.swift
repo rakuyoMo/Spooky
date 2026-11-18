@@ -21,7 +21,8 @@ struct RepositoryWorktreesTests {
         try await Self.addAndList(worktrees, in: repository, temporary: temporary)
     }
 
-    /// 修复前按顺序核对选中的目录：不需要修复、目录不在、没有或读不了 `.git`、别的仓库的工作树、已被别的工作树使用；
+    /// 修复前按顺序核对选中的目录：不需要修复、目录不在、没有或读不了 `.git`、别的仓库的工作树；
+    /// 本仓库另一个有效的工作树通过核对，拿它修复不改动它的登记与文件；
     /// 移走后的目录通过核对，`.git` 写的是相对路径时也一样，修复后工作树恢复有效。
     @Test("修复前核对选中的目录")
     func repairValidation() async throws {
@@ -65,7 +66,26 @@ struct RepositoryWorktreesTests {
         #expect(try await problem(moved, repository.sibling("空")) == .gitFileMissing)
         #expect(try await problem(moved, other.sibling("主 仓库")) == .gitFileUnreadable)
         #expect(try await problem(moved, other.sibling("外人")) == .otherRepository)
-        #expect(try await problem(moved, repository.sibling("live")) == .alreadyUsed)
+
+        // 本仓库另一个有效的工作树同样指回这个仓库，通过核对
+        #expect(try await problem(moved, repository.sibling("live")) == nil)
+
+        // 拿它修复后，它的登记与文件都不变，失效的工作树仍然失效
+        let liveFiles = [
+            repository.sibling("live") + "/.git",
+            repository.sibling("live") + "/a.txt",
+            repository.sibling("主 仓库") + "/.git/worktrees/live/gitdir",
+        ]
+
+        let before = try liveFiles.map { try Data(contentsOf: URL(filePath: $0)) }
+
+        try await worktrees.repair(at: repository.sibling("live"))
+
+        let afterLive = try await worktrees.list()
+
+        #expect(afterLive.first { $0.path == live.path } == live)
+        #expect(try liveFiles.map { try Data(contentsOf: URL(filePath: $0)) } == before)
+        #expect(afterLive.contains { $0.path == moved.path && !$0.isValid })
 
         // .git 改写成相对新处的路径，同样指回这个仓库
         let gitFile = URL(filePath: repository.sibling("新处") + "/.git")

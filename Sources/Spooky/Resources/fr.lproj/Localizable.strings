@@ -2461,7 +2461,6 @@
 "worktree.remove.message" = "Supprime définitivement le worktree « %@ » et son dossier.";
 "worktree.remove.submit" = "Supprimer le worktree";
 "worktree.repair" = "Réparer le worktree";
-"worktree.repair.alreadyUsed" = "Le dossier sélectionné est déjà utilisé par un autre worktree.";
 "worktree.repair.invalid" = "Le chemin sélectionné ne contient aucun dossier de worktree valide pour ce dépôt.";
 "worktree.repair.menu" = "Réparer le worktree…";
 "worktree.repair.missingFolder" = "Le dossier sélectionné n’existe pas.";

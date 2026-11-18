@@ -2461,7 +2461,6 @@
 "worktree.remove.message" = "작업 트리 “%@”과(와) 그 디렉터리를 영구적으로 삭제합니다.";
 "worktree.remove.submit" = "작업 트리 삭제";
 "worktree.repair" = "작업 트리 복구";
-"worktree.repair.alreadyUsed" = "선택한 폴더는 이미 다른 작업 트리에서 사용 중입니다.";
 "worktree.repair.invalid" = "선택한 경로에 이 저장소의 유효한 작업 트리 디렉터리가 없습니다.";
 "worktree.repair.menu" = "작업 트리 복구…";
 "worktree.repair.missingFolder" = "선택한 폴더가 존재하지 않습니다.";

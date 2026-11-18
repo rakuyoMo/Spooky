@@ -119,7 +119,6 @@ extension RepositorySession {
             case .gitFileMissing: AppLocalization.text("worktree.repair.noGitFile")
             case .gitFileUnreadable: AppLocalization.text("worktree.repair.unreadableGitFile")
             case .otherRepository: AppLocalization.text("worktree.repair.otherRepository")
-            case .alreadyUsed: AppLocalization.text("worktree.repair.alreadyUsed")
             }
         } catch {
             return AppLocalization.text("worktree.repair.invalid")
