@@ -1987,8 +1987,14 @@
 "bookmarks.sortParent" = "상위 폴더를 이름순으로 정렬";
 "bookmarks.delete.title" = "“%@”을(를) 삭제하겠습니까?";
 "bookmarks.delete.titleMultiple" = "%ld개 항목을 삭제하겠습니까?";
-"bookmarks.delete.message" = "책갈피만 제거됩니다. 저장소는 디스크나 서버에 그대로 남습니다.";
+"bookmarks.delete.note" = "책갈피가 제거됩니다. 휴지통으로 함께 이동하지 않으면 저장소 폴더는 디스크에 그대로 남습니다.";
+"bookmarks.delete.noteServer" = "책갈피가 제거됩니다. 휴지통으로 함께 이동하지 않으면 저장소는 원래 위치에 남습니다. 서버의 저장소는 해당 서버의 휴지통으로 이동합니다.";
+"bookmarks.delete.trash" = "커밋하지 않은 변경 사항을 포함하여 저장소 폴더도 휴지통으로 이동";
+"bookmarks.delete.trashMultiple" = "커밋하지 않은 변경 사항을 포함하여 저장소 폴더 %ld개도 휴지통으로 이동";
 "bookmarks.delete.submit" = "삭제";
+"bookmarks.trashFailed.title" = "휴지통으로 이동할 수 없음";
+"bookmarks.trashFailed.message" = "책갈피는 제거되었지만 다음 폴더는 원래 위치에 남아 있습니다:";
+"bookmarks.trashFailed.protected" = "이동하지 않음: 홈 폴더, 홈 폴더를 포함하는 폴더 또는 볼륨의 최상위입니다.";
 "bookmarks.dropZone.title" = "폴더나 URL을 놓아";
 "bookmarks.dropZone.subtitle" = "Git 저장소 추가";
 "bookmarks.dropZone.add" = "추가";

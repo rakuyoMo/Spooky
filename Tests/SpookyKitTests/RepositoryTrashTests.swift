@@ -289,6 +289,49 @@ struct RepositoryTrashTests {
 
         #expect(environment.trash == expected)
     }
+
+    /// 服务器上移走仓库目录前的核对在本机执行同一份，家目录换成临时目录：
+    /// 家目录、它的上级（含 `/`）、指向家目录的符号链接与挂载点的顶层不移，不存在的跳过，其余可以移。
+    @Test("移走仓库目录前的核对")
+    func repositoryTrashCheck() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-trash-check-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let home = directory.appending(path: "home 目录")
+        let repository = home.appending(path: "repo")
+        let link = directory.appending(path: "link")
+
+        try FileManager.default.createDirectory(at: repository, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: home)
+
+        let cases: [(path: String, exitCode: Int32)] = [
+            (repository.path, 0),
+            (directory.appending(path: "missing").path, 4),
+            (home.path, 5),
+            (directory.path, 5),
+            (link.path, 5),
+            ("/", 5),
+            ("/System/Volumes/Data", 5),
+        ]
+
+        for (path, exitCode) in cases {
+            let result = try await HostExecution.run(
+                [
+                    "/usr/bin/env",
+                    "HOME=" + home.path,
+                    "/bin/sh",
+                    "-c",
+                    RemoteConnection.repositoryTrashCheckScript,
+                    "spooky-trash-check",
+                    path,
+                ],
+                at: .local(path: directory.path),
+                acceptedExitCodes: [0, 4, 5]
+            )
+
+            #expect(result.exitCode == exitCode, "\(path)")
+        }
+    }
 }
 
 // MARK: - Helpers

@@ -1987,8 +1987,14 @@
 "bookmarks.sortParent" = "親フォルダを名前で並べ替え";
 "bookmarks.delete.title" = "「%@」を削除しますか？";
 "bookmarks.delete.titleMultiple" = "%ld 項目を削除しますか？";
-"bookmarks.delete.message" = "削除されるのはブックマークだけです。リポジトリはディスクやサーバ上に残ります。";
+"bookmarks.delete.note" = "ブックマークは削除されます。ゴミ箱にも移動しない限り、リポジトリのフォルダはディスク上に残ります。";
+"bookmarks.delete.noteServer" = "ブックマークは削除されます。ゴミ箱にも移動しない限り、リポジトリは元の場所に残ります。サーバ上のリポジトリはそのサーバのゴミ箱に移動します。";
+"bookmarks.delete.trash" = "リポジトリのフォルダもゴミ箱に移動（未コミットの変更を含む）";
+"bookmarks.delete.trashMultiple" = "%ld 個のリポジトリのフォルダもゴミ箱に移動（未コミットの変更を含む）";
 "bookmarks.delete.submit" = "削除";
+"bookmarks.trashFailed.title" = "ゴミ箱に移動できませんでした";
+"bookmarks.trashFailed.message" = "ブックマークは削除されましたが、次のフォルダは元の場所に残っています：";
+"bookmarks.trashFailed.protected" = "移動していません：ホームフォルダ、ホームフォルダを含むフォルダ、またはボリュームの最上位です。";
 "bookmarks.dropZone.title" = "フォルダや URL をドロップして";
 "bookmarks.dropZone.subtitle" = "Git リポジトリを追加";
 "bookmarks.dropZone.add" = "追加";

@@ -1987,8 +1987,14 @@
 "bookmarks.sortParent" = "按名称排序所在分组";
 "bookmarks.delete.title" = "删除 “%@”？";
 "bookmarks.delete.titleMultiple" = "删除 %ld 项？";
-"bookmarks.delete.message" = "只移除书签，仓库仍保留在磁盘或服务器上。";
+"bookmarks.delete.note" = "书签会被移除。仓库文件夹仍留在磁盘上，除非同时移到废纸篓。";
+"bookmarks.delete.noteServer" = "书签会被移除。仓库仍留在原处，除非同时移到废纸篓；服务器上的仓库移进那台服务器的废纸篓。";
+"bookmarks.delete.trash" = "同时把仓库文件夹移到废纸篓，包括未提交的改动";
+"bookmarks.delete.trashMultiple" = "同时把 %ld 个仓库文件夹移到废纸篓，包括未提交的改动";
 "bookmarks.delete.submit" = "删除";
+"bookmarks.trashFailed.title" = "没能移到废纸篓";
+"bookmarks.trashFailed.message" = "书签已移除，但下面的文件夹仍在原处：";
+"bookmarks.trashFailed.protected" = "没有移走：这是家目录、包含家目录的文件夹或卷的顶层。";
 "bookmarks.dropZone.title" = "拖入文件夹或地址";
 "bookmarks.dropZone.subtitle" = "以添加 Git 仓库";
 "bookmarks.dropZone.add" = "添加";

@@ -1987,8 +1987,14 @@
 "bookmarks.sortParent" = "Sort Parent Folder by Name";
 "bookmarks.delete.title" = "Delete “%@”?";
 "bookmarks.delete.titleMultiple" = "Delete %ld Items?";
-"bookmarks.delete.message" = "Only the bookmarks are removed. The repositories stay on disk or on the server.";
+"bookmarks.delete.note" = "The bookmarks are removed. The repository folders stay on disk unless you also move them to the Trash.";
+"bookmarks.delete.noteServer" = "The bookmarks are removed. The repositories stay where they are unless you also move them to the Trash; repositories on a server go to that server’s Trash.";
+"bookmarks.delete.trash" = "Also move the repository folder to the Trash, including uncommitted changes";
+"bookmarks.delete.trashMultiple" = "Also move %ld repository folders to the Trash, including uncommitted changes";
 "bookmarks.delete.submit" = "Delete";
+"bookmarks.trashFailed.title" = "Couldn’t Move to the Trash";
+"bookmarks.trashFailed.message" = "The bookmarks are removed, but these folders stay where they are:";
+"bookmarks.trashFailed.protected" = "Not moved: it’s a home folder, a folder containing one, or the top level of a volume.";
 "bookmarks.dropZone.title" = "Drop Folder or URL";
 "bookmarks.dropZone.subtitle" = "to Add Git Repository";
 "bookmarks.dropZone.add" = "Add";

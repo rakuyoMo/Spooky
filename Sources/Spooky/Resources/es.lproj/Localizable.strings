@@ -1987,8 +1987,14 @@
 "bookmarks.sortParent" = "Ordenar la carpeta superior por nombre";
 "bookmarks.delete.title" = "¿Eliminar “%@”?";
 "bookmarks.delete.titleMultiple" = "¿Eliminar %ld elementos?";
-"bookmarks.delete.message" = "Solo se eliminan los marcadores. Los repositorios siguen en el disco o en el servidor.";
+"bookmarks.delete.note" = "Se eliminan los marcadores. Las carpetas de los repositorios siguen en el disco, salvo que también las traslade a la Papelera.";
+"bookmarks.delete.noteServer" = "Se eliminan los marcadores. Los repositorios siguen donde están, salvo que también los traslade a la Papelera; los repositorios de un servidor van a la Papelera de ese servidor.";
+"bookmarks.delete.trash" = "Trasladar también la carpeta del repositorio a la Papelera, incluidos los cambios sin confirmar";
+"bookmarks.delete.trashMultiple" = "Trasladar también %ld carpetas de repositorios a la Papelera, incluidos los cambios sin confirmar";
 "bookmarks.delete.submit" = "Eliminar";
+"bookmarks.trashFailed.title" = "No se ha podido trasladar a la Papelera";
+"bookmarks.trashFailed.message" = "Se han eliminado los marcadores, pero estas carpetas siguen donde estaban:";
+"bookmarks.trashFailed.protected" = "No se ha trasladado: es una carpeta de inicio, una carpeta que contiene una o el nivel superior de un volumen.";
 "bookmarks.dropZone.title" = "Suelta una carpeta o una URL";
 "bookmarks.dropZone.subtitle" = "para añadir un repositorio Git";
 "bookmarks.dropZone.add" = "Añadir";

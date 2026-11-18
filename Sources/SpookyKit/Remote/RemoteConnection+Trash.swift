@@ -11,6 +11,20 @@ extension RemoteConnection {
         done
         """
 
+    /// 移走仓库目录前在 B 上的核对：参数是目录，不存在时以 4 退出；
+    /// 是家目录、它的上级目录（含 `/`），或是卷、挂载点的顶层时以 5 退出。路径都先解析成实际位置再比较。
+    static let repositoryTrashCheckScript = """
+        { [ -e "$1" ] || [ -L "$1" ]; } || exit 4
+        target=$(cd -P -- "$1" 2>/dev/null && pwd -P) || target=$1
+        home=$(cd -P -- "$HOME" 2>/dev/null && pwd -P) || home=$HOME
+
+        case "$home/" in "${target%/}/"*) exit 5 ;; esac
+
+        mount=$(/bin/df -P -- "$target" 2>/dev/null | tail -n 1)
+
+        case "$mount" in *" $target") exit 5 ;; esac
+        """
+
     /// 把废纸篓里的项移回原处：参数两两一组，依次是废纸篓里的位置与原来的路径。
     ///
     /// 先核对全部：任何一项不在废纸篓里、或原位置已被占用时以 3 退出，一项也不移动。
@@ -76,6 +90,33 @@ extension RemoteConnection {
         case .trashPut(let program):
             _ = try await runProgram([program] + paths)
             return paths.map { TrashedItem(path: $0, location: nil) }
+        }
+    }
+
+    /// 删除书签时把 B 上的仓库目录整个移进 B 的废纸篓；家目录、它的上级目录与卷或挂载点的顶层不移，目录已不存在时跳过。
+    ///
+    /// - Parameter path: B 上仓库目录的绝对路径。
+    /// - Returns: 移走、跳过还是因为受保护没有移动。
+    /// - Throws: B 上没有可用的废纸篓时抛出 ``RepositoryFileError/trashUnavailable``；连接与移动的失败照原样抛出。
+    public func moveRepositoryToTrash(_ path: String) async throws -> RepositoryTrashResult {
+        if repository == nil { _ = try await open() }
+        if let canonical { return try await canonical.moveRepositoryToTrash(path) }
+
+        let check = try await runProgram(
+            ["/bin/sh", "-c", Self.repositoryTrashCheckScript, "spooky-trash-check", path],
+            acceptedExitCodes: [0, 4, 5]
+        )
+
+        switch check.exitCode {
+        case 4:
+            return .missing
+
+        case 5:
+            return .protected
+
+        default:
+            _ = try await moveToTrash([path])
+            return .moved
         }
     }
 

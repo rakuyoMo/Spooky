@@ -1987,8 +1987,14 @@
 "bookmarks.sortParent" = "Trier le dossier parent par nom";
 "bookmarks.delete.title" = "Supprimer « %@ » ?";
 "bookmarks.delete.titleMultiple" = "Supprimer %ld éléments ?";
-"bookmarks.delete.message" = "Seuls les signets sont supprimés. Les dépôts restent sur le disque ou sur le serveur.";
+"bookmarks.delete.note" = "Les signets sont supprimés. Les dossiers des dépôts restent sur le disque, sauf si vous les placez aussi dans la Corbeille.";
+"bookmarks.delete.noteServer" = "Les signets sont supprimés. Les dépôts restent à leur emplacement, sauf si vous les placez aussi dans la Corbeille ; les dépôts d’un serveur vont dans la Corbeille de ce serveur.";
+"bookmarks.delete.trash" = "Placer aussi le dossier du dépôt dans la Corbeille, modifications non validées comprises";
+"bookmarks.delete.trashMultiple" = "Placer aussi %ld dossiers de dépôts dans la Corbeille, modifications non validées comprises";
 "bookmarks.delete.submit" = "Supprimer";
+"bookmarks.trashFailed.title" = "Impossible de placer dans la Corbeille";
+"bookmarks.trashFailed.message" = "Les signets sont supprimés, mais ces dossiers restent à leur emplacement :";
+"bookmarks.trashFailed.protected" = "Non déplacé : il s’agit d’un dossier de départ, d’un dossier qui en contient un ou du niveau supérieur d’un volume.";
 "bookmarks.dropZone.title" = "Déposez un dossier ou une URL";
 "bookmarks.dropZone.subtitle" = "pour ajouter un dépôt Git";
 "bookmarks.dropZone.add" = "Ajouter";

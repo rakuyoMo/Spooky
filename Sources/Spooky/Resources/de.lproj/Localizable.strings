@@ -1987,8 +1987,14 @@
 "bookmarks.sortParent" = "Übergeordneten Ordner nach Name sortieren";
 "bookmarks.delete.title" = "„%@“ löschen?";
 "bookmarks.delete.titleMultiple" = "%ld Objekte löschen?";
-"bookmarks.delete.message" = "Nur die Lesezeichen werden entfernt. Die Repositorys bleiben auf dem Datenträger oder dem Server.";
+"bookmarks.delete.note" = "Die Lesezeichen werden entfernt. Die Repository-Ordner bleiben auf dem Datenträger, sofern Sie sie nicht auch in den Papierkorb legen.";
+"bookmarks.delete.noteServer" = "Die Lesezeichen werden entfernt. Die Repositorys bleiben, wo sie sind, sofern Sie sie nicht auch in den Papierkorb legen; Repositorys auf einem Server kommen in den Papierkorb dieses Servers.";
+"bookmarks.delete.trash" = "Repository-Ordner auch in den Papierkorb legen, einschließlich nicht committeter Änderungen";
+"bookmarks.delete.trashMultiple" = "%ld Repository-Ordner auch in den Papierkorb legen, einschließlich nicht committeter Änderungen";
 "bookmarks.delete.submit" = "Löschen";
+"bookmarks.trashFailed.title" = "Nicht in den Papierkorb gelegt";
+"bookmarks.trashFailed.message" = "Die Lesezeichen wurden entfernt, aber diese Ordner bleiben, wo sie sind:";
+"bookmarks.trashFailed.protected" = "Nicht bewegt: Es ist ein Benutzerordner, ein Ordner, der einen Benutzerordner enthält, oder die oberste Ebene eines Volumes.";
 "bookmarks.dropZone.title" = "Ordner oder URL hierher ziehen,";
 "bookmarks.dropZone.subtitle" = "um ein Git-Repository hinzuzufügen";
 "bookmarks.dropZone.add" = "Hinzufügen";

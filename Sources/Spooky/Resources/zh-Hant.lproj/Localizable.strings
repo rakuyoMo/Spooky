@@ -1987,8 +1987,14 @@
 "bookmarks.sortParent" = "依名稱排序所在群組";
 "bookmarks.delete.title" = "刪除 “%@”？";
 "bookmarks.delete.titleMultiple" = "刪除 %ld 項？";
-"bookmarks.delete.message" = "只會移除書籤，倉庫仍保留在磁碟或伺服器上。";
+"bookmarks.delete.note" = "書籤會被移除。倉庫資料夾仍留在磁碟上，除非同時移到垃圾桶。";
+"bookmarks.delete.noteServer" = "書籤會被移除。倉庫仍留在原處，除非同時移到垃圾桶；伺服器上的倉庫會移進那台伺服器的垃圾桶。";
+"bookmarks.delete.trash" = "同時將倉庫資料夾移到垃圾桶，包括未提交的變更";
+"bookmarks.delete.trashMultiple" = "同時將 %ld 個倉庫資料夾移到垃圾桶，包括未提交的變更";
 "bookmarks.delete.submit" = "刪除";
+"bookmarks.trashFailed.title" = "無法移到垃圾桶";
+"bookmarks.trashFailed.message" = "書籤已移除，但下列資料夾仍在原處：";
+"bookmarks.trashFailed.protected" = "未移動：這是家目錄、包含家目錄的資料夾或卷宗的最上層。";
 "bookmarks.dropZone.title" = "拖入資料夾或網址";
 "bookmarks.dropZone.subtitle" = "以加入 Git 倉庫";
 "bookmarks.dropZone.add" = "加入";
