@@ -2239,6 +2239,8 @@
 "settings.crashReports.help" = "Absturzberichte helfen, Probleme in Spooky zu erkennen und zu beheben.";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showWorktreesInRepositoryList" = "Worktrees in der Repository-Liste anzeigen";
+"settings.showHostAliasesInRepositoryList" = "SSH-Host-Aliasse in der Repository-Liste anzeigen";
 "settings.showDeveloperMenu" = "Menü „Developer“ anzeigen";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";

@@ -20,14 +20,26 @@ final class BookmarkSidebarController: NSViewController {
     /// 书签行对应的对象，按身份复用。
     private var items: [Bookmark.ID: BookmarkOutlineItem] = [:]
 
+    /// 读取列表显示设置的偏好。
+    let defaults: UserDefaults
+
     /// 正在按模型设置选中行，期间不把选择写回模型。
     private(set) var isRestoringSelection = false
 
+    /// 上次载入时列表的显示设置：是否列出工作树、是否写主机别名；偏好变化后与它比较，变了才重新载入。
+    private(set) var displayOptions = (worktrees: false, hostAliases: true)
+
+    /// 偏好变化的通知。
+    private var defaultsObserver: (any NSObjectProtocol)?
+
     /// 创建侧边栏。
     ///
-    /// - Parameter manager: 所在窗口的仓库管理。
-    init(manager: RepositoryManagerController) {
+    /// - Parameters:
+    ///   - manager: 所在窗口的仓库管理。
+    ///   - defaults: 读取列表显示设置的偏好，测试使用独立的域。
+    init(manager: RepositoryManagerController, defaults: UserDefaults = .standard) {
         self.manager = manager
+        self.defaults = defaults
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -35,6 +47,13 @@ final class BookmarkSidebarController: NSViewController {
     @available(*, unavailable)
     required init?(coder _: NSCoder) {
         nil
+    }
+
+    /// 不再接收偏好变化的通知。
+    isolated deinit {
+        if let defaultsObserver {
+            NotificationCenter.default.removeObserver(defaultsObserver)
+        }
     }
 
     /// 列表占满上方，底部是 28 pt 高的底栏与它上面的分隔线。
@@ -91,6 +110,7 @@ final class BookmarkSidebarController: NSViewController {
         observeModel()
         observeSelection()
         observeClones()
+        observeDisplayOptions()
     }
 
     /// 显示后让列表接收键盘。
@@ -107,6 +127,14 @@ extension BookmarkSidebarController {
     /// 列表里选中的书签，按行的顺序排列。
     var selectedIDs: [Bookmark.ID] {
         outlineView.selectedRowIndexes.compactMap { (outlineView.item(atRow: $0) as? BookmarkOutlineItem)?.id }
+    }
+
+    /// 列表的显示设置：偏好里的两个选项。
+    private var currentDisplayOptions: (worktrees: Bool, hostAliases: Bool) {
+        (
+            worktrees: RepositoryManagerPreferences.showsWorktrees(in: defaults),
+            hostAliases: RepositoryManagerPreferences.showsHostAliases(in: defaults)
+        )
     }
 
     /// 一行对应的书签；根分组标题没有。
@@ -138,10 +166,11 @@ extension BookmarkSidebarController {
         return manager.bookmarks.bookmark(id)?.children ?? []
     }
 
-    /// 书签或失效标记变化后重新载入，展开与选中按身份保留；删掉的书签不再保留行对象。
+    /// 书签、失效标记或列表的显示设置变化后重新载入，展开与选中按身份保留；删掉的书签不再保留行对象。
     func reload() {
         let existing = Set(manager.bookmarks.items.flattened.map(\.id))
         items = items.filter { existing.contains($0.key) }
+        displayOptions = currentDisplayOptions
 
         outlineView.reloadData()
         outlineView.expandItem(header)
@@ -245,6 +274,27 @@ extension BookmarkSidebarController {
                 }
 
                 observeClones()
+            }
+        }
+    }
+
+    /// General 页的两个选项改动后立即重新载入；偏好里其它设置的变化不影响列表。
+    private func observeDisplayOptions() {
+        defaultsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: defaults,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard
+                    let self,
+                    self.currentDisplayOptions != self.displayOptions,
+                    self.outlineView.currentEditor() == nil
+                else {
+                    return
+                }
+
+                self.reload()
             }
         }
     }

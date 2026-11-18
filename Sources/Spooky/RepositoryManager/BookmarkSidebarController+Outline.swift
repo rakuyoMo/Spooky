@@ -152,7 +152,8 @@ extension BookmarkSidebarController: NSOutlineViewDelegate {
         cell.configure(
             bookmark,
             isMissing: bookmark.location.map(manager.bookmarks.isMissing) ?? false,
-            clone: bookmark.location.flatMap { manager.coordinator?.clones.unfinished(at: $0) }
+            clone: bookmark.location.flatMap { manager.coordinator?.clones.unfinished(at: $0) },
+            showsHost: displayOptions.hostAliases
         )
         cell.textField?.delegate = self
         return cell

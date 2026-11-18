@@ -2239,6 +2239,8 @@
 "settings.crashReports.help" = "崩溃报告用于诊断和修复 Spooky 的问题。";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showWorktreesInRepositoryList" = "在仓库管理中列出工作树";
+"settings.showHostAliasesInRepositoryList" = "在仓库管理中显示 SSH 主机别名";
 "settings.showDeveloperMenu" = "显示 Developer 菜单";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";

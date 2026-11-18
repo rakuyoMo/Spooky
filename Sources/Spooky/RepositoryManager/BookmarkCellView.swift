@@ -58,7 +58,7 @@ final class BookmarkOutlineView: NSOutlineView {
 
 // MARK: - BookmarkCellView
 
-/// 书签的一行：16 pt 图标、名称与警告图标或克隆进度；服务器仓库在名称前带主机前缀，名称可以原地改。
+/// 书签的一行：16 pt 图标、名称与警告图标或克隆进度；服务器仓库按设置在名称前带主机前缀，名称可以原地改。
 final class BookmarkCellView: NSTableCellView {
     /// 复用单元格的标识。
     static let identifier = NSUserInterfaceItemIdentifier("BookmarkCellView")
@@ -92,13 +92,14 @@ final class BookmarkCellView: NSTableCellView {
     ///   - bookmark: 要显示的书签。
     ///   - isMissing: 仓库是否已失效；克隆中不算失效。
     ///   - clone: 正在克隆到这个书签的活动；没有时为 nil。
-    func configure(_ bookmark: Bookmark, isMissing: Bool, clone: CloneActivity? = nil) {
+    ///   - showsHost: 服务器仓库是否在名称前写主机别名；悬停提示与 VoiceOver 的名字不论如何都带主机前缀。
+    func configure(_ bookmark: Bookmark, isMissing: Bool, clone: CloneActivity? = nil, showsHost: Bool = true) {
         let isMissing = isMissing && clone == nil
 
         imageView?.image = NSImage(systemSymbolName: bookmark.symbolName, accessibilityDescription: nil)
         textField?.stringValue = bookmark.name
 
-        let host = bookmark.location?.host
+        let host = showsHost ? bookmark.location?.host : nil
         hostField.stringValue = host.map { $0 + ":" } ?? ""
         hostField.isHidden = host == nil
 

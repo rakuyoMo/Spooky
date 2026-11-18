@@ -2239,6 +2239,8 @@
 "settings.crashReports.help" = "충돌 보고서는 Spooky의 문제를 진단하고 수정하는 데 사용됩니다.";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showWorktreesInRepositoryList" = "저장소 목록에 작업 트리 표시";
+"settings.showHostAliasesInRepositoryList" = "저장소 목록에 SSH 호스트 별칭 표시";
 "settings.showDeveloperMenu" = "Developer 메뉴 표시";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";

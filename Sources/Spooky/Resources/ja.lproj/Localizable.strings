@@ -2239,6 +2239,8 @@
 "settings.crashReports.help" = "クラッシュレポートは Spooky の問題の診断と修正に役立ちます。";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showWorktreesInRepositoryList" = "リポジトリ一覧にワークツリーを表示";
+"settings.showHostAliasesInRepositoryList" = "リポジトリ一覧に SSH ホストエイリアスを表示";
 "settings.showDeveloperMenu" = "Developer メニューを表示";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";
